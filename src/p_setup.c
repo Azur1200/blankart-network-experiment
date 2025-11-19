@@ -756,11 +756,11 @@ static void P_SpawnMapThings(boolean spawnemblems, boolean patch)
 			case 1700: // MT_AXIS
 			case 1701: // MT_AXISTRANSFER
 			case 1702: // MT_AXISTRANSFERLINE
-			case 2021: // MT_LOOPCENTERPOINT
+			case 20021: // MT_LOOPCENTERPOINT
 				mt->mobj = NULL;
 				P_SpawnMapThing(mt);
 				break;
-			case 2020: // MT_LOOPENDPOINT
+			case 20020: // MT_LOOPENDPOINT
 				num_loopends++;
 				break;
 			case 6502: // set flag here before spawning the waypoints
@@ -781,7 +781,7 @@ static void P_SpawnMapThings(boolean spawnemblems, boolean patch)
 			case 1700: // MT_AXIS
 			case 1701: // MT_AXISTRANSFER
 			case 1702: // MT_AXISTRANSFERLINE
-			case 2021: // MT_LOOPCENTERPOINT
+			case 20021: // MT_LOOPCENTERPOINT
 				continue; // These were already spawned
 		}
 
@@ -4911,8 +4911,8 @@ static void P_AddBinaryMapTags(void)
 		case 292:
 		case 294:
 		case 780:
-		case 2020: // MT_LOOPENDPOINT
-		case 2021: // MT_LOOPCENTERPOINT
+		case 20020: // MT_LOOPENDPOINT
+		case 20021: // MT_LOOPCENTERPOINT
 			mapthings[i].tid = mapthings[i].extrainfo;
 			break;
 		default:
@@ -7725,12 +7725,12 @@ static void P_ConvertBinaryThingTypes(void)
 
 			break;
 		}
-		case 2004: // MT_BOTHINT
+		case 20004: // MT_BOTHINT
 			mapthings[i].args[0] = mapthings[i].angle;
 			mapthings[i].args[1] = mapthings[i].extrainfo;
 			mapthings[i].args[2] = !!(mapthings[i].options & MTF_AMBUSH);
 			break;
-		case 2010: // MT_ITEMCAPSULE
+		case 20010: // MT_ITEMCAPSULE
 			mapthings[i].args[0] = mapthings[i].angle;
 			mapthings[i].args[1] = mapthings[i].extrainfo;
 
@@ -7750,14 +7750,14 @@ static void P_ConvertBinaryThingTypes(void)
 				mapthings[i].args[2] |= TMICF_INVERTSIZE;
 			}
 			break;
-		case 2020: // MT_LOOPENDPOINT
+		case 20020: // MT_LOOPENDPOINT
 		{
 			mapthings[i].args[0] =
 				mapthings[i].options & MTF_AMBUSH ?
 				TMLOOP_BETA : TMLOOP_ALPHA;
 			break;
 		}
-		case 2021: // MT_LOOPCENTERPOINT
+		case 20021: // MT_LOOPCENTERPOINT
 			mapthings[i].args[0] = (mapthings[i].options & MTF_AMBUSH) == MTF_AMBUSH;
 			mapthings[i].args[1] = mapthings[i].angle;
 			break;
@@ -7774,8 +7774,8 @@ static void P_ConvertBinaryThingTypes(void)
 		case 2018: // MT_PETSMOKER
 			mapthings[i].args[0] = !!(mapthings[i].options & MTF_OBJECTSPECIAL);
 			break;
-		case 3441: // MT_DASHRING
-		case 3442: // MT_RAINBOWDASHRING
+		case 30441: // MT_DASHRING
+		case 30442: // MT_RAINBOWDASHRING
 			mapthings[i].args[0] = mapthings[i].options & 13;
 			mapthings[i].args[1] = mapthings[i].extrainfo;
 		case FLOOR_SLOPE_THING:
@@ -7924,6 +7924,49 @@ const char *P_MapNamespaceString(mapnamespace_t mns)
 	return names[mns];
 }
 
+static void P_RemapDoomedNum(void)
+{
+	if (!udmf)
+		return;
+
+	if (mapnamespace != MNS_RINGRACERS && mapnamespace != MNS_BLANKART)
+		return;
+
+	if (mapnamespace == MNS_BLANKART && !((patch_version == 1) || udmf_version < 4))
+		return;
+
+	size_t i;
+
+#define TYPECONVERT(mobjtype, doomed) { \
+	if (mapthings && mapthings[i].type == doomed) \
+	{ mapthings[i].type = mobjinfo[mobjtype].doomednum; continue;} \
+}
+	for (i = 0; i < nummapthings; i++)
+	{
+		// Now remap the types.
+
+		if (mapnamespace == MNS_RINGRACERS)
+		{
+			// Ring Racers only.
+			TYPECONVERT(MT_REDSPRING, 552)
+			TYPECONVERT(MT_REDDIAG, 556)
+		}
+
+		TYPECONVERT(MT_SNEAKERPANEL, 510)
+		TYPECONVERT(MT_SNEAKERPANELSPAWNER, 511)
+		TYPECONVERT(MT_WAYPOINT_RISER, 2002)
+		TYPECONVERT(MT_WAYPOINT_ANCHOR, 2003)
+		TYPECONVERT(MT_BOTHINT, 2004)
+		TYPECONVERT(MT_ITEMCAPSULE, 2010)
+		TYPECONVERT(MT_LOOPENDPOINT, 2020)
+		TYPECONVERT(MT_LOOPCENTERPOINT, 2021)
+		TYPECONVERT(MT_DASHRING, 3441)
+		TYPECONVERT(MT_RAINBOWDASHRING, 3442)
+		TYPECONVERT(MT_SCRIPT_THING, 4096)
+	}
+#undef TYPECONVERT
+}
+
 static boolean P_LoadMapFromFile(void)
 {
 	TracyCZone(__zone, true);
@@ -7944,6 +7987,10 @@ static boolean P_LoadMapFromFile(void)
 	P_LoadMapLUT(curmapvirt);
 
 	P_LinkMapData();
+
+	// Convert the mapthing types of some known Ring Racers/older BlanKart objects to new BlanKart objects.
+	// Should allow for textmap conversion of things making it easier for people to convert their RR maps.
+	P_RemapDoomedNum();
 
 	if (!udmf)
 		P_AddBinaryMapTags();
