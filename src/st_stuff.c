@@ -745,6 +745,10 @@ void ST_drawTitleCard(void)
 	if (actnum[0])
 		V_DrawLevelTitle(ttlnumxpos+12, bary+6, V_SNAPTOBOTTOM, actnum);
 
+	// TODO: a bit more elaborate?
+	if (grandprixinfo.gp)
+		V_DrawCenteredString(BASEVIDWIDTH/2 + sub, bary+24, V_SNAPTOBOTTOM|V_YELLOWMAP, va("ROUND %d", grandprixinfo.roundnum));
+
 luahook:
 	if (renderisnewtic)
 	{
