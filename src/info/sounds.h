@@ -1010,3 +1010,7 @@ _(flipos)
 
 // Shout message sound effect
 _(sysmsg)
+
+// Dash Rings
+_(dashr)
+_(rainbr)
