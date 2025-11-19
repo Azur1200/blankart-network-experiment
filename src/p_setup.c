@@ -2552,214 +2552,217 @@ static void P_WriteTextmap(void)
 		}
 	}
 
-	freetag = Tag_NextUnused(0);
-
-	for (i = 0; i < nummapthings; i++)
+	if (!udmf)
 	{
-		subsector_t *ss;
-		INT32 s;
+		freetag = Tag_NextUnused(0);
 
-		if (wmapthings[i].type != 751 && wmapthings[i].type != 752 && wmapthings[i].type != 758)
-			continue;
-
-		ss = R_PointInSubsector(wmapthings[i].x << FRACBITS, wmapthings[i].y << FRACBITS);
-
-		if (!ss)
-			continue;
-
-		s = ss->sector - sectors;
-
-		switch (wmapthings[i].type)
+		for (i = 0; i < nummapthings; i++)
 		{
-			case 751:
-				if (!specialthings[s].teleport)
-					specialthings[s].teleport = &wmapthings[i];
-				break;
-			case 752:
-				if (!specialthings[s].altview)
-					specialthings[s].altview = &wmapthings[i];
-				break;
-			case 758:
-				if (!specialthings[s].angleanchor)
-					specialthings[s].angleanchor = &wmapthings[i];
-				break;
-			default:
-				break;
+			subsector_t *ss;
+			INT32 s;
+
+			if (wmapthings[i].type != 751 && wmapthings[i].type != 752 && wmapthings[i].type != 758)
+				continue;
+
+			ss = R_PointInSubsector(wmapthings[i].x << FRACBITS, wmapthings[i].y << FRACBITS);
+
+			if (!ss)
+				continue;
+
+			s = ss->sector - sectors;
+
+			switch (wmapthings[i].type)
+			{
+				case 751:
+					if (!specialthings[s].teleport)
+						specialthings[s].teleport = &wmapthings[i];
+					break;
+				case 752:
+					if (!specialthings[s].altview)
+						specialthings[s].altview = &wmapthings[i];
+					break;
+				case 758:
+					if (!specialthings[s].angleanchor)
+						specialthings[s].angleanchor = &wmapthings[i];
+					break;
+				default:
+					break;
+			}
 		}
-	}
 
-	for (i = 0; i < numlines; i++)
-	{
-		INT32 s;
-
-		switch (wlines[i].special)
+		for (i = 0; i < numlines; i++)
 		{
-			case 1:
-				TAG_ITER_SECTORS(Tag_FGet(&wlines[i].tags), s)
-				{
-					CONS_Alert(CONS_WARNING, M_GetText("Linedef %s applies custom gravity to sector %d. Changes to this gravity at runtime will not be reflected in the converted map. Use linedef type 469 for this.\n"), sizeu1(i), s);
-					wsectors[s].gravity = FixedDiv(lines[i].frontsector->floorheight >> FRACBITS, 1000);
-				}
-				break;
-			case 2:
-				CONS_Alert(CONS_WARNING, M_GetText("Custom exit linedef %s detected. Changes to the next map at runtime will not be reflected in the converted map. Use linedef type 468 for this.\n"), sizeu1(i));
-				wlines[i].args[0] = lines[i].frontsector->floorheight >> FRACBITS;
-				wlines[i].args[2] = lines[i].frontsector->ceilingheight >> FRACBITS;
-				break;
-			case 5:
-			case 50:
-			case 51:
-				CONS_Alert(CONS_WARNING, M_GetText("Linedef %s has type %d, which is not supported in UDMF.\n"), sizeu1(i), wlines[i].special);
-				break;
-			case 61:
-				if (wlines[i].flags & ML_MIDSOLID)
-					continue;
-				if (!wlines[i].args[1])
-					continue;
-				CONS_Alert(CONS_WARNING, M_GetText("Linedef %s with crusher type 61 rises twice as fast on spawn. This behavior is not supported in UDMF.\n"), sizeu1(i));
-				break;
-			case 76:
-				if (freetag == (mtag_t)MAXTAGS)
-				{
-					CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 76 cannot be converted.\n"), sizeu1(i));
-					break;
-				}
-				TAG_ITER_SECTORS(wlines[i].args[0], s)
-					for (j = 0; (unsigned)j < wsectors[s].linecount; j++)
-					{
-						line_t *line = wsectors[s].lines[j] - lines + wlines;
-						if (line->special < 100 || line->special >= 300)
-							continue;
-						Tag_Add(&line->tags, freetag);
-					}
-				wlines[i].args[0] = freetag;
-				freetag = Tag_NextUnused(freetag);
-				break;
-			case 259:
-				if (wlines[i].args[3] & FOF_QUICKSAND)
-					CONS_Alert(CONS_WARNING, M_GetText("Quicksand properties of custom FOF on linedef %s cannot be converted. Use linedef type 75 instead.\n"), sizeu1(i));
-				if (wlines[i].args[3] & FOF_BUSTUP)
-					CONS_Alert(CONS_WARNING, M_GetText("Bustable properties of custom FOF on linedef %s cannot be converted. Use linedef type 74 instead.\n"), sizeu1(i));
-				break;
-			case 412:
-				if ((s = Tag_Iterate_Sectors(wlines[i].args[0], 0)) < 0)
-					break;
-				if (!specialthings[s].teleport)
-					break;
-				if (freetag == (mtag_t)MAXTAGS)
-				{
-					CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 412 cannot be converted.\n"), sizeu1(i));
-					break;
-				}
-				specialthings[s].teleport->tid = freetag;
-				wlines[i].args[0] = freetag;
-				freetag = Tag_NextUnused(freetag);
-				break;
-			case 422:
-				if ((s = Tag_Iterate_Sectors(wlines[i].args[0], 0)) < 0)
-					break;
-				if (!specialthings[s].altview)
-					break;
-				if (freetag == (mtag_t)MAXTAGS)
-				{
-					CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 422 cannot be converted.\n"), sizeu1(i));
-					break;
-				}
-				specialthings[s].altview->tid = freetag;
-				wlines[i].args[0] = freetag;
-				specialthings[s].altview->pitch = wlines[i].args[2];
-				freetag = Tag_NextUnused(freetag);
-				break;
-			case 447:
-				CONS_Alert(CONS_WARNING, M_GetText("Linedef %s has change colormap action, which cannot be converted automatically. Tag arg0 to a sector with the desired colormap.\n"), sizeu1(i));
-				if (wlines[i].flags & ML_TFERLINE)
-					CONS_Alert(CONS_WARNING, M_GetText("Linedef %s mixes front and back colormaps, which is not supported in UDMF. Copy one colormap to the target sector first, then mix in the second one.\n"), sizeu1(i));
-				break;
-			case 455:
-				CONS_Alert(CONS_WARNING, M_GetText("Linedef %s has fade colormap action, which cannot be converted automatically. Tag arg0 to a sector with the desired colormap.\n"), sizeu1(i));
-				if (wlines[i].flags & ML_TFERLINE)
-					CONS_Alert(CONS_WARNING, M_GetText("Linedef %s specifies starting colormap for the fade, which is not supported in UDMF. Change the colormap with linedef type 447 instead.\n"), sizeu1(i));
-				break;
-			case 457:
-				if ((s = Tag_Iterate_Sectors(wlines[i].args[0], 0)) < 0)
-					break;
-				if (!specialthings[s].angleanchor)
-					break;
-				if (freetag == (mtag_t)MAXTAGS)
-				{
-					CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 457 cannot be converted.\n"), sizeu1(i));
-					break;
-				}
-				specialthings[s].angleanchor->tid = freetag;
-				wlines[i].args[0] = freetag;
-				freetag = Tag_NextUnused(freetag);
-				break;
-			case 606:
-				if (wlines[i].args[0] == MTAG_GLOBAL)
-				{
-					sector_t *sec = wlines[i].frontsector - sectors + wsectors;
-					sec->extra_colormap = wsides[wlines[i].sidenum[0]].colormap_data;
-				}
-				else
-				{
-					TAG_ITER_SECTORS(wlines[i].args[0], s)
-					{
-						if (wsectors[s].colormap_protected)
-							continue;
+			INT32 s;
 
-						wsectors[s].extra_colormap = wsides[wlines[i].sidenum[0]].colormap_data;
-						if (freetag == (mtag_t)MAXTAGS)
-						{
-							CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 606 cannot be converted.\n"), sizeu1(i));
-							break;
-						}
-						Tag_Add(&wsectors[s].tags, freetag);
-						wlines[i].args[1] = freetag;
-						freetag = Tag_NextUnused(freetag);
+			switch (wlines[i].special)
+			{
+				case 1:
+					TAG_ITER_SECTORS(Tag_FGet(&wlines[i].tags), s)
+					{
+						CONS_Alert(CONS_WARNING, M_GetText("Linedef %s applies custom gravity to sector %d. Changes to this gravity at runtime will not be reflected in the converted map. Use linedef type 469 for this.\n"), sizeu1(i), s);
+						wsectors[s].gravity = FixedDiv(lines[i].frontsector->floorheight >> FRACBITS, 1000);
+					}
+					break;
+				case 2:
+					CONS_Alert(CONS_WARNING, M_GetText("Custom exit linedef %s detected. Changes to the next map at runtime will not be reflected in the converted map. Use linedef type 468 for this.\n"), sizeu1(i));
+					wlines[i].args[0] = lines[i].frontsector->floorheight >> FRACBITS;
+					wlines[i].args[2] = lines[i].frontsector->ceilingheight >> FRACBITS;
+					break;
+				case 5:
+				case 50:
+				case 51:
+					CONS_Alert(CONS_WARNING, M_GetText("Linedef %s has type %d, which is not supported in UDMF.\n"), sizeu1(i), wlines[i].special);
+					break;
+				case 61:
+					if (wlines[i].flags & ML_MIDSOLID)
+						continue;
+					if (!wlines[i].args[1])
+						continue;
+					CONS_Alert(CONS_WARNING, M_GetText("Linedef %s with crusher type 61 rises twice as fast on spawn. This behavior is not supported in UDMF.\n"), sizeu1(i));
+					break;
+				case 76:
+					if (freetag == (mtag_t)MAXTAGS)
+					{
+						CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 76 cannot be converted.\n"), sizeu1(i));
 						break;
 					}
-				}
-				break;
-			default:
-				break;
+					TAG_ITER_SECTORS(wlines[i].args[0], s)
+						for (j = 0; (unsigned)j < wsectors[s].linecount; j++)
+						{
+							line_t *line = wsectors[s].lines[j] - lines + wlines;
+							if (line->special < 100 || line->special >= 300)
+								continue;
+							Tag_Add(&line->tags, freetag);
+						}
+					wlines[i].args[0] = freetag;
+					freetag = Tag_NextUnused(freetag);
+					break;
+				case 259:
+					if (wlines[i].args[3] & FOF_QUICKSAND)
+						CONS_Alert(CONS_WARNING, M_GetText("Quicksand properties of custom FOF on linedef %s cannot be converted. Use linedef type 75 instead.\n"), sizeu1(i));
+					if (wlines[i].args[3] & FOF_BUSTUP)
+						CONS_Alert(CONS_WARNING, M_GetText("Bustable properties of custom FOF on linedef %s cannot be converted. Use linedef type 74 instead.\n"), sizeu1(i));
+					break;
+				case 412:
+					if ((s = Tag_Iterate_Sectors(wlines[i].args[0], 0)) < 0)
+						break;
+					if (!specialthings[s].teleport)
+						break;
+					if (freetag == (mtag_t)MAXTAGS)
+					{
+						CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 412 cannot be converted.\n"), sizeu1(i));
+						break;
+					}
+					specialthings[s].teleport->tid = freetag;
+					wlines[i].args[0] = freetag;
+					freetag = Tag_NextUnused(freetag);
+					break;
+				case 422:
+					if ((s = Tag_Iterate_Sectors(wlines[i].args[0], 0)) < 0)
+						break;
+					if (!specialthings[s].altview)
+						break;
+					if (freetag == (mtag_t)MAXTAGS)
+					{
+						CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 422 cannot be converted.\n"), sizeu1(i));
+						break;
+					}
+					specialthings[s].altview->tid = freetag;
+					wlines[i].args[0] = freetag;
+					specialthings[s].altview->pitch = wlines[i].args[2];
+					freetag = Tag_NextUnused(freetag);
+					break;
+				case 447:
+					CONS_Alert(CONS_WARNING, M_GetText("Linedef %s has change colormap action, which cannot be converted automatically. Tag arg0 to a sector with the desired colormap.\n"), sizeu1(i));
+					if (wlines[i].flags & ML_TFERLINE)
+						CONS_Alert(CONS_WARNING, M_GetText("Linedef %s mixes front and back colormaps, which is not supported in UDMF. Copy one colormap to the target sector first, then mix in the second one.\n"), sizeu1(i));
+					break;
+				case 455:
+					CONS_Alert(CONS_WARNING, M_GetText("Linedef %s has fade colormap action, which cannot be converted automatically. Tag arg0 to a sector with the desired colormap.\n"), sizeu1(i));
+					if (wlines[i].flags & ML_TFERLINE)
+						CONS_Alert(CONS_WARNING, M_GetText("Linedef %s specifies starting colormap for the fade, which is not supported in UDMF. Change the colormap with linedef type 447 instead.\n"), sizeu1(i));
+					break;
+				case 457:
+					if ((s = Tag_Iterate_Sectors(wlines[i].args[0], 0)) < 0)
+						break;
+					if (!specialthings[s].angleanchor)
+						break;
+					if (freetag == (mtag_t)MAXTAGS)
+					{
+						CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 457 cannot be converted.\n"), sizeu1(i));
+						break;
+					}
+					specialthings[s].angleanchor->tid = freetag;
+					wlines[i].args[0] = freetag;
+					freetag = Tag_NextUnused(freetag);
+					break;
+				case 606:
+					if (wlines[i].args[0] == MTAG_GLOBAL)
+					{
+						sector_t *sec = wlines[i].frontsector - sectors + wsectors;
+						sec->extra_colormap = wsides[wlines[i].sidenum[0]].colormap_data;
+					}
+					else
+					{
+						TAG_ITER_SECTORS(wlines[i].args[0], s)
+						{
+							if (wsectors[s].colormap_protected)
+								continue;
+
+							wsectors[s].extra_colormap = wsides[wlines[i].sidenum[0]].colormap_data;
+							if (freetag == (mtag_t)MAXTAGS)
+							{
+								CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 606 cannot be converted.\n"), sizeu1(i));
+								break;
+							}
+							Tag_Add(&wsectors[s].tags, freetag);
+							wlines[i].args[1] = freetag;
+							freetag = Tag_NextUnused(freetag);
+							break;
+						}
+					}
+					break;
+				default:
+					break;
+			}
+
+			if (wlines[i].special >= 300 && wlines[i].special < 400 && wlines[i].flags & ML_WRAPMIDTEX)
+				CONS_Alert(CONS_WARNING, M_GetText("Linedef executor trigger linedef %s has disregard order flag, which is not supported in UDMF.\n"), sizeu1(i));
 		}
 
-		if (wlines[i].special >= 300 && wlines[i].special < 400 && wlines[i].flags & ML_WRAPMIDTEX)
-			CONS_Alert(CONS_WARNING, M_GetText("Linedef executor trigger linedef %s has disregard order flag, which is not supported in UDMF.\n"), sizeu1(i));
-	}
-
-	for (i = 0; i < numsectors; i++)
-	{
-		if (Tag_Find(&wsectors[i].tags, LE_CAPSULE0))
-			CONS_Alert(CONS_WARNING, M_GetText("Sector %s has reserved tag %d, which is not supported in UDMF. Use arg3 of the boss mapthing instead.\n"), sizeu1(i), LE_CAPSULE0);
-		if (Tag_Find(&wsectors[i].tags, LE_CAPSULE1))
-			CONS_Alert(CONS_WARNING, M_GetText("Sector %s has reserved tag %d, which is not supported in UDMF. Use arg3 of the boss mapthing instead.\n"), sizeu1(i), LE_CAPSULE1);
-		if (Tag_Find(&wsectors[i].tags, LE_CAPSULE2))
-			CONS_Alert(CONS_WARNING, M_GetText("Sector %s has reserved tag %d, which is not supported in UDMF. Use arg3 of the boss mapthing instead.\n"), sizeu1(i), LE_CAPSULE2);
-
-		switch (GETSECSPECIAL(wsectors[i].special, 1))
+		for (i = 0; i < numsectors; i++)
 		{
-			case 9:
-			case 10:
-				CONS_Alert(CONS_WARNING, M_GetText("Sector %s has ring drainer effect, which is not supported in UDMF. Use linedef type 460 instead.\n"), sizeu1(i));
-				break;
-			default:
-				break;
-		}
+			if (Tag_Find(&wsectors[i].tags, LE_CAPSULE0))
+				CONS_Alert(CONS_WARNING, M_GetText("Sector %s has reserved tag %d, which is not supported in UDMF. Use arg3 of the boss mapthing instead.\n"), sizeu1(i), LE_CAPSULE0);
+			if (Tag_Find(&wsectors[i].tags, LE_CAPSULE1))
+				CONS_Alert(CONS_WARNING, M_GetText("Sector %s has reserved tag %d, which is not supported in UDMF. Use arg3 of the boss mapthing instead.\n"), sizeu1(i), LE_CAPSULE1);
+			if (Tag_Find(&wsectors[i].tags, LE_CAPSULE2))
+				CONS_Alert(CONS_WARNING, M_GetText("Sector %s has reserved tag %d, which is not supported in UDMF. Use arg3 of the boss mapthing instead.\n"), sizeu1(i), LE_CAPSULE2);
 
-		switch (GETSECSPECIAL(wsectors[i].special, 2))
-		{
-			case 6:
-				CONS_Alert(CONS_WARNING, M_GetText("Sector %s has emerald check trigger type, which is not supported in UDMF. Use linedef types 337-339 instead.\n"), sizeu1(i));
-				break;
-			case 7:
-				CONS_Alert(CONS_WARNING, M_GetText("Sector %s has NiGHTS mare trigger type, which is not supported in UDMF. Use linedef types 340-342 instead.\n"), sizeu1(i));
-				break;
-			case 9:
-				CONS_Alert(CONS_WARNING, M_GetText("Sector %s has Egg Capsule type, which is not supported in UDMF. Use linedef type 464 instead.\n"), sizeu1(i));
-				break;
-			default:
-				break;
+			switch (GETSECSPECIAL(wsectors[i].special, 1))
+			{
+				case 9:
+				case 10:
+					CONS_Alert(CONS_WARNING, M_GetText("Sector %s has ring drainer effect, which is not supported in UDMF. Use linedef type 460 instead.\n"), sizeu1(i));
+					break;
+				default:
+					break;
+			}
+
+			switch (GETSECSPECIAL(wsectors[i].special, 2))
+			{
+				case 6:
+					CONS_Alert(CONS_WARNING, M_GetText("Sector %s has emerald check trigger type, which is not supported in UDMF. Use linedef types 337-339 instead.\n"), sizeu1(i));
+					break;
+				case 7:
+					CONS_Alert(CONS_WARNING, M_GetText("Sector %s has NiGHTS mare trigger type, which is not supported in UDMF. Use linedef types 340-342 instead.\n"), sizeu1(i));
+					break;
+				case 9:
+					CONS_Alert(CONS_WARNING, M_GetText("Sector %s has Egg Capsule type, which is not supported in UDMF. Use linedef type 464 instead.\n"), sizeu1(i));
+					break;
+				default:
+					break;
+			}
 		}
 	}
 
@@ -2767,13 +2770,16 @@ static void P_WriteTextmap(void)
 	fprintf(f, "version = %d;\n", UDMF_CURRENT_VERSION);
 	for (i = k = 0; i < nummapthings; i++)
 	{
-		if (wmapthings[i].type == mobjinfo[MT_WAYPOINT].doomednum
-			|| wmapthings[i].type == mobjinfo[MT_WAYPOINT_ANCHOR].doomednum
-			|| wmapthings[i].type == mobjinfo[MT_WAYPOINT_RISER].doomednum)
+		if (!udmf)
 		{
-			// Skip waypoints. Because the multi-thing setup was merged into a
-			// single thing type in UDMF, these must be converted later.
-			continue;
+			if (wmapthings[i].type == mobjinfo[MT_WAYPOINT].doomednum
+				|| wmapthings[i].type == mobjinfo[MT_WAYPOINT_ANCHOR].doomednum
+				|| wmapthings[i].type == mobjinfo[MT_WAYPOINT_RISER].doomednum)
+			{
+				// Skip waypoints. Because the multi-thing setup was merged into a
+				// single thing type in UDMF, these must be converted later.
+				continue;
+			}
 		}
 
 		P_WriteTextmapThing(f, wmapthings, i, k);
@@ -7830,9 +7836,6 @@ static void P_ConvertBinaryMap(void)
 	P_ConvertBinarySectorTypes();
 	P_ConvertBinaryThingTypes();
 	P_ConvertBinaryLinedefFlags();
-
-	if (M_CheckParm("-writetextmap"))
-		P_WriteTextmap();
 }
 
 static void P_MakeMapHash(virtres_t *virt, UINT64 *dest)
@@ -8035,6 +8038,9 @@ static boolean P_LoadMapFromFile(void)
 		CONS_Alert(CONS_ERROR, "Failed to load map patch for %s\n", G_BuildMapName(gamemap));
 	else
 		P_RemapDoomedNum(true);
+
+	if (M_CheckParm("-writetextmap"))
+		P_WriteTextmap();
 
 	Z_Free(patchdata);
 
