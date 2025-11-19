@@ -855,7 +855,7 @@ void K_DebugWaypointsVisualise(void)
 
 			if (!K_GetWaypointIsSpawnpoint(waypoint))
 			{
-				debugmobj->frame |= FF_TRANS40;
+				debugmobj->frame |= FF_TRANS60;
 			}
 
 			// Valid waypoint, so draw lines of SPARKLES to its next or previous waypoints
@@ -2111,7 +2111,7 @@ static UINT32 K_SetupCircuitLength(void)
 		if (bestcircuitpath.totaldist == 0) // try again using shortcuts
 			K_PathfindToWaypoint(wp, finishline, &bestcircuitpath, true, false);
 
-		if (bestcircuitpath.totaldist == 0 && wp != finishline && K_GetWaypointIsEnabled(wp)
+		if (bestcircuitpath.totaldist == 0 && wp != finishline
 		 && !(wp->numprevwaypoints > 0 && wp->prevwaypoints[0] == finishline)) // exception for sprint maps
 			CONS_Alert(CONS_WARNING, "Waypoint %d is a dead end\n", K_GetWaypointID(wp));
 
