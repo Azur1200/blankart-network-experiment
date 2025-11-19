@@ -10358,6 +10358,11 @@ static boolean P_FuseThink(mobj_t *mobj)
 		return false;
 	case MT_PLAYER:
 		break; // don't remove
+	case MT_SNEAKERPANELSPAWNER:
+	{
+		Obj_SneakerPanelSpawnerFuse(mobj);
+		break;
+	}
 	default:
 		P_SetMobjState(mobj, mobj->info->xdeathstate); // will remove the mobj if S_NULL.
 		break;
@@ -11502,6 +11507,9 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			break;
 		case MT_SNEAKERPANEL:
 			Obj_SneakerPanelSpawn(mobj);
+			break;
+		case MT_SNEAKERPANELSPAWNER:
+			Obj_SneakerPanelSpawnerSpawn(mobj);
 			break;
 		default:
 			break;
@@ -13759,6 +13767,11 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 	case MT_SNEAKERPANEL:
 	{
 		Obj_SneakerPanelSetup(mobj, mthing);
+		break;
+	}
+	case MT_SNEAKERPANELSPAWNER:
+	{
+		Obj_SneakerPanelSpawnerSetup(mobj, mthing);
 		break;
 	}
 	default:

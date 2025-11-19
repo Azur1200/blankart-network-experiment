@@ -2487,7 +2487,7 @@ struct complexity_sneaker_s
 		}
 	}
 
-	/*complexity_sneaker_s(mapthing_t *mt)
+	complexity_sneaker_s(mapthing_t *mt)
 	{
 		M_ClearBox(bbox);
 
@@ -2497,7 +2497,7 @@ struct complexity_sneaker_s
 
 		M_AddToBox(bbox, x - radius, y - radius);
 		M_AddToBox(bbox, x + radius, y + radius);
-	}*/
+	}
 };
 
 static boolean K_SneakerPanelOverlap(complexity_sneaker_s &panelA, complexity_sneaker_s &panelB)
@@ -2820,7 +2820,7 @@ static INT32 K_CalculateTrackComplexity(void)
 		}
 
 
-		/*for (size_t i = 0; i < nummapthings; i++)
+		for (size_t i = 0; i < nummapthings; i++)
 		{
 			mapthing_t *const mt = &mapthings[i];
 			if (mt->type != mobjinfo[MT_SNEAKERPANEL].doomednum)
@@ -2847,7 +2847,7 @@ static INT32 K_CalculateTrackComplexity(void)
 			{
 				sneaker_panels.push_back(new_panel);
 			}
-		}*/
+		}
 
 		CONS_Debug(DBG_SETUP, "%s", fmt::format("Num sneaker panel sets: {}\n", sneaker_panels.size()).c_str());
 		trackcomplexity -= sneaker_panels.size() * 1250;

@@ -1,7 +1,22 @@
+// BLANKART
+//-----------------------------------------------------------------------------
+// Copyright (C) 2025 by Lachlan "Lach" Wright
+// Copyright (C) 2025 by James Robert Roman
+// Copyright (C) 2025 by Ronald "Eidolon" Kinard
+// Copyright (C) 2025 by Kart Krew
+//
+// This program is free software distributed under the
+// terms of the GNU General Public License, version 2.
+// See the 'LICENSE' file for more details.
+//-----------------------------------------------------------------------------
+/// \file  sneaker-panel.c
+/// \brief Sneaker Panel and Sneaker Panel Spawner object code.
+
 #include "../r_main.h"
 #include "../p_slopes.h"
 #include "../p_local.h"
 #include "../k_kart.h"
+#include "../k_objects.h"
 
 #define SNEAKERPANEL_RADIUS (64*FRACUNIT)
 
@@ -9,11 +24,6 @@ void Obj_SneakerPanelSpriteScale(mobj_t *mobj)
 {
 	statenum_t newState;
 	fixed_t spriteScale;
-
-	if (mobj->scale == mobj->movefactor)
-		return;
-
-	mobj->movefactor = mobj->scale;
 
 	if (mobj->scale > FRACUNIT >> 1)
 	{
@@ -31,11 +41,8 @@ void Obj_SneakerPanelSpriteScale(mobj_t *mobj)
 		spriteScale = FRACUNIT << 2;
 	}
 
-	if (((statenum_t)(mobj->state - states)) != newState)
-	{
-		P_SetMobjState(mobj, newState);
-		mobj->spritexscale = mobj->spriteyscale = spriteScale;
-	}
+	P_SetMobjState(mobj, newState);
+	mobj->spritexscale = mobj->spriteyscale = spriteScale;
 }
 
 void Obj_SneakerPanelSpawn(mobj_t *mobj)
@@ -51,7 +58,21 @@ void Obj_SneakerPanelSetup(mobj_t *mobj, mapthing_t *mthing)
 		mobj->eflags |= MFE_VERTICALFLIP;
 		mobj->flags2 |= MF2_OBJECTFLIP;
 	}
-	P_TryMove(mobj, mobj->x, mobj->y, true, NULL); // sets standingslope
+
+	if (P_CheckPosition(mobj, mobj->x, mobj->y, NULL))
+	{
+		if (P_IsObjectFlipped(mobj))
+		{
+			if (g_tm.ceilingz <= mobj->z + mobj->height)
+				mobj->standingslope = g_tm.ceilingslope;
+		}
+		else
+		{
+			if (mobj->z <= g_tm.floorz)
+				mobj->standingslope = g_tm.floorslope;
+		}
+	}
+
 	Obj_SneakerPanelSpriteScale(mobj);
 }
 
@@ -119,4 +140,24 @@ void Obj_SneakerPanelCollide(mobj_t *panel, mobj_t *mo)
 		player->floorboost = 2;
 
 	K_DoSneaker(player, 0);
+}
+
+void Obj_SneakerPanelSpawnerSpawn(mobj_t *mobj)
+{
+	mobj->fuse = mobj->reactiontime;
+}
+
+void Obj_SneakerPanelSpawnerSetup(mobj_t *mobj, mapthing_t *mthing)
+{
+	if (mthing->args[0] != 0)
+	{
+		mobj->fuse = mobj->reactiontime = mthing->args[0];
+	}
+}
+
+void Obj_SneakerPanelSpawnerFuse(mobj_t *mobj)
+{
+	var1 = var2 = 0;
+	A_SpawnSneakerPanel(mobj);
+	mobj->fuse = mobj->reactiontime;
 }

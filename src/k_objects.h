@@ -20,6 +20,7 @@ void Obj_RegularDashRingSpawn(mobj_t *mobj);
 void Obj_RainbowDashRingSpawn(mobj_t *mobj);
 void Obj_DashRingSetup(mobj_t *mobj, mapthing_t *mthing);
 void Obj_RainbowDashRingThink(mobj_t *mobj);
+boolean Obj_DashRingIsUsableByPlayer(mobj_t *ring, player_t *player);
 void Obj_DashRingTouch(mobj_t *mobj, player_t *player);
 void Obj_DashRingPlayerThink(player_t *player);
 boolean Obj_DashRingPlayerHasNoGravity(player_t *player);
@@ -29,6 +30,9 @@ void Obj_SneakerPanelSpriteScale(mobj_t *mobj);
 void Obj_SneakerPanelSpawn(mobj_t *mobj);
 void Obj_SneakerPanelSetup(mobj_t *mobj, mapthing_t *mthing);
 void Obj_SneakerPanelCollide(mobj_t *pad, mobj_t *mo);
+void Obj_SneakerPanelSpawnerSpawn(mobj_t *mobj);
+void Obj_SneakerPanelSpawnerSetup(mobj_t *mobj, mapthing_t *mthing);
+void Obj_SneakerPanelSpawnerFuse(mobj_t *mobj);
 
 #ifdef __cplusplus
 } // extern "C"

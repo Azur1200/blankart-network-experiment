@@ -1,3 +1,16 @@
+// BLANKART
+//-----------------------------------------------------------------------------
+// Copyright (C) 2025 by "Lat'"
+// Copyright (C) 2025 by Lachlan "Lach" Wright
+// Copyright (C) 2025 by Kart Krew
+//
+// This program is free software distributed under the
+// terms of the GNU General Public License, version 2.
+// See the 'LICENSE' file for more details.
+//-----------------------------------------------------------------------------
+/// \file  dash-rings.c
+/// \brief Dash Ring and Rainbow Dash Ring object code.
+
 #include "../p_local.h"
 #include "../k_kart.h"
 #include "../k_objects.h"
@@ -66,7 +79,7 @@ void Obj_RainbowDashRingSpawn(mobj_t *mobj)
 
 void Obj_DashRingSetup(mobj_t *mobj, mapthing_t *mthing)
 {
-	static const UINT8 numColors = sizeof(rainbow_colors) / sizeof(skincolornum_t);
+	static const UINT8 numColors = sizeof(ring_colors) / sizeof(skincolornum_t);
 	const UINT8 additionalThrust = mthing->args[1];
 	statenum_t ringState, overlayState;
 
@@ -115,23 +128,32 @@ static boolean DashRingsAreTooClose(mobj_t *ring1, mobj_t *ring2)
 
 	if ((FixedHypot(ring2->x - ring1->x, ring2->y - ring1->y) < FixedMul(DASHRING_MIN_SPACING_HORIZONTAL, mapobjectscale))
 		&& (abs(ring1->z - ring2->z) < FixedMul(DASHRING_MIN_SPACING_VERTICAL, mapobjectscale)))
-			return true;
+		return true;
 
 	return false;
 }
 
-void Obj_DashRingTouch(mobj_t *ring, player_t *player)
+boolean Obj_DashRingIsUsableByPlayer(mobj_t *ring, player_t *player)
 {
 	if (player->carry != CR_NONE)
 	{
 		if (player->carry != CR_DASHRING) // being carried by something else
-			return;
+			return false;
 
 		if (player->dashRingPullTics > 0) // being pulled into a dash ring already
-			return;
+			return false;
 
 		if (player->dashRingPushTics > 0 && !P_MobjWasRemoved(player->mo->tracer) && DashRingsAreTooClose(player->mo->tracer, ring)) // dash ring is too close to recently used dash ring
-			return;
+			return false;
+	}
+	return true;
+}
+
+void Obj_DashRingTouch(mobj_t *ring, player_t *player)
+{
+	if (!Obj_DashRingIsUsableByPlayer(ring, player))
+	{
+		return;
 	}
 
 	P_SetTarget(&player->mo->tracer, ring);
@@ -161,6 +183,8 @@ static void DashRingLaunch(player_t *player, mobj_t *ring)
 	player->dashRingPushTics = DASHRING_PUSH_TICS;
 
 	player->mo->rollangle = 0;
+	player->mo->sloperoll = 0;
+	player->mo->slopepitch = 0;
 	//player->flashing = 0;
 
 	switch (ring->extravalue1)
