@@ -119,6 +119,8 @@
 #include <time.h>
 #endif
 
+consvar_t cv_writetextmap_includemappatch = CVAR_INIT ("writetextmap_includemappatch", "Off", CV_SAVE, CV_OnOff, NULL);
+
 //
 // Map hash, calculated on level load.
 // Sent to clients in PT_SERVERINFO.
@@ -8016,6 +8018,12 @@ static boolean P_LoadMapFromFile(void)
 
 	P_MakeMapHash(curmapvirt, &maphash);
 
+	if (!cv_writetextmap_includemappatch.value)
+	{
+		if (M_CheckParm("-writetextmap"))
+			P_WriteTextmap();
+	}
+
 	// load map patch?
 	char *patchdata = NULL;
 	size_t patchlen;
@@ -8039,8 +8047,12 @@ static boolean P_LoadMapFromFile(void)
 	else
 		P_RemapDoomedNum(true);
 
-	if (M_CheckParm("-writetextmap"))
-		P_WriteTextmap();
+
+	if (cv_writetextmap_includemappatch.value)
+	{
+		if (M_CheckParm("-writetextmap"))
+			P_WriteTextmap();
+	}
 
 	Z_Free(patchdata);
 
