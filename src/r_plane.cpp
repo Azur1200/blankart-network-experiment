@@ -1038,7 +1038,7 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 			spanfunctype = SPANDRAWFUNC_SPLAT;
 
 		if (pl->polyobj->translucency == 0 || (pl->extra_colormap && (pl->extra_colormap->flags & CMF_FOG)))
-			light = std::max((pl->lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
+			light = (std::max(pl->lightlevel, cv_secbright.value) >> LIGHTSEGSHIFT);
 		else
 			light = LIGHTLEVELS-1;
 	}
@@ -1079,17 +1079,17 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 				}
 
 				if ((spanfunctype == SPANDRAWFUNC_SPLAT) || (pl->extra_colormap && (pl->extra_colormap->flags & CMF_FOG)))
-					light = std::max((pl->lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
+					light = (std::max(pl->lightlevel, cv_secbright.value) >> LIGHTSEGSHIFT);
 				else
 					light = LIGHTLEVELS-1;
 			}
 			else if (pl->ffloor->fofflags & FOF_FOG)
 			{
 				spanfunctype = SPANDRAWFUNC_FOG;
-				light = std::max((pl->lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
+				light = (std::max(pl->lightlevel, cv_secbright.value) >> LIGHTSEGSHIFT);
 			}
 			else
-				light = std::max((pl->lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
+				light = (std::max(pl->lightlevel, cv_secbright.value) >> LIGHTSEGSHIFT);
 
 			debug = SW_HI_FOFPLANES;
 		}
@@ -1149,7 +1149,7 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 			}
 		}
 		else
-			light = std::max((pl->lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
+			light = (std::max(pl->lightlevel, cv_secbright.value) >> LIGHTSEGSHIFT);
 	}
 
 	ds->currentplane = pl;
