@@ -962,7 +962,7 @@ musictype_t I_SongType(void)
 	return MU_NONE;
 }
 
-boolean I_SongPlaying(void)
+/*boolean I_SongAcutallyPlaying(void)
 {
 	LOCKAUDIO;
 
@@ -974,6 +974,16 @@ boolean I_SongPlaying(void)
 		return false;
 
 	return value == AL_PLAYING;
+}*/
+
+boolean I_SongPlaying(void)
+{
+	LOCKAUDIO;
+
+	if (audio.music == INVALID_HANDLE)
+		return false;
+
+	return true;
 }
 
 boolean I_SongPaused(void)
