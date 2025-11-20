@@ -1936,7 +1936,13 @@ void I_Quit(void)
 	//        but sometimes we forget and use 'F10'.. so save here too.
 
 	if (demo.recording)
+	{
+		// SIGSEGV #8 is caused by the game still trying to save to an empty pointer.
+		// Prevent that by doing... this!
+		demo.gamequit = true;
+
 		G_CheckDemoStatus();
+	}
 	if (metalrecording)
 		G_StopMetalRecording(false);
 
