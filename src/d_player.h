@@ -127,6 +127,7 @@ typedef enum
 	// Specific level gimmicks.
 	CR_SLIDING,
 	CR_ZOOMTUBE,
+	CR_DASHRING,
 } carrytype_t; // carry
 
 typedef enum
@@ -683,6 +684,10 @@ struct player_t
 
 	UINT8 confirmVictim;		// Player ID that you dealt damage to
 	UINT8 confirmVictimDelay;	// Delay before playing the sound
+
+	UINT8 dashRingPullTics; // Timer during which the player is pulled towards a dash ring
+	UINT8 dashRingPushTics; // Timer during which the player displays effects and has no gravity after being thrust by a dash ring
+	UINT8 dashRainbowPogo; // Determines when to disable pogospring extra gravity after using a rainbow dash ring
 
 	INT32 interpoints; // BlanKart (port from SRB2Kart CEP): override for number of points earned in intermission
 	UINT32 roundscore; // battle score this round

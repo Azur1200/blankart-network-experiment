@@ -44,6 +44,8 @@
 
 #include "k_bot.h"
 
+#include "k_objects.h"
+
 tm_t g_tm = {0};
 
 void P_RestoreTMStruct(tm_t tmrestore)
@@ -872,6 +874,17 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			return BMIT_CONTINUE; // underneath
 
 		return K_FallingRockCollide(thing, g_tm.thing) ? BMIT_CONTINUE : BMIT_ABORT;
+	}
+
+	if (thing->type == MT_SNEAKERPANEL)
+	{
+		Obj_SneakerPanelCollide(thing, g_tm.thing);
+		return BMIT_CONTINUE;
+	}
+	else if (g_tm.thing->type == MT_SNEAKERPANEL)
+	{
+		Obj_SneakerPanelCollide(g_tm.thing, thing);
+		return BMIT_CONTINUE;
 	}
 
 	//}
@@ -3519,7 +3532,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	if (!cv_kartbumpspring.value || (modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
 	{
-		mo->player->pogospring = 0;
+		K_ResetPogoSpring(mo->player);
 	}
 
 	slidemo = mo;

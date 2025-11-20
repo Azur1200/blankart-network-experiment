@@ -2072,6 +2072,12 @@ boolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd)
 		return true;
 	}
 
+	if (player->dashRingPullTics || player->dashRingPushTics)
+	{
+		// Allow for turning adjustments while using dash rings.
+		return true;
+	}
+
 	if (player->mo && player->speed == 0)
 	{
 		// You need to be moving.

@@ -50,6 +50,7 @@
 #endif
 
 tic_t leveltime;
+boolean thinkersCompleted;
 
 UINT32 thinker_era = 0;
 
@@ -660,6 +661,8 @@ void P_Ticker(boolean run)
 {
 	INT32 i;
 
+	thinkersCompleted = false;
+
 	// Increment jointime and quittime even if paused
 	for (i = 0; i < MAXPLAYERS; i++)
 		if (playeringame[i])
@@ -782,6 +785,7 @@ void P_Ticker(boolean run)
 		ps_thinkertime = I_GetPreciseTime();
 		P_RunThinkers();
 		ps_thinkertime = I_GetPreciseTime() - ps_thinkertime;
+		thinkersCompleted = true;
 
 		// Run any "after all the other thinkers" stuff
 		for (i = 0; i < MAXPLAYERS; i++)

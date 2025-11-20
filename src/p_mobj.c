@@ -133,11 +133,10 @@ static void P_SetupStateAnimation(mobj_t *mobj, state_t *st)
 
 	if (st->frame & FF_GLOBALANIM)
 	{
-		// Attempt to account for the pre-ticker for objects spawned on load
-		if (!leveltime) return;
-
-		mobj->anim_duration -= (leveltime + 2) % st->var2;            // Duration synced to timer
-		mobj->frame += ((leveltime + 2) / st->var2) % (animlength + 1); // Frame synced to timer (duration taken into account)
+		mobj->anim_duration -= (leveltime % st->var2);            // Duration synced to timer
+		mobj->frame += (leveltime / st->var2) % (animlength + 1); // Frame synced to timer (duration taken into account)
+		if (!thinkersCompleted)                                   // objects spawned BEFORE (or during) thinkers will think during this tic...
+			mobj->anim_duration++;                                  // ...so increase the duration of their current frame by 1 to sync with objects spawned AFTER thinkers
 	}
 	else if (st->frame & FF_RANDOMANIM)
 	{
@@ -1171,9 +1170,14 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 		if (wasflip == !(mo->eflags & MFE_VERTICALFLIP)) // note!! == ! is not equivalent to != here - turns numeric into bool this way
 			P_PlayerFlip(mo);
 
-		if (mo->player->pogospring)
+		if (mo->player->pogospring && !mo->player->dashRainbowPogo)
 		{
 			gravityadd = (5*gravityadd)/2;
+		}
+
+		if (mo->player->carry == CR_DASHRING && Obj_DashRingPlayerHasNoGravity(mo->player))
+		{
+			gravityadd = 0;
 		}
 	}
 	else
@@ -10140,7 +10144,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->momx = mobj->momy = 0;
 			P_SetMobjState(mobj, mobj->info->spawnstate);
 		}
-			break;
+		break;
 	case MT_KARMAFIREWORK:
 		if (mobj->flags & MF_NOGRAVITY)
 			break;
@@ -10159,6 +10163,9 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			trail->scalespeed = mobj->scale/12;
 			trail->color = mobj->color;
 		}
+		break;
+	case MT_RAINBOWDASHRING:
+		Obj_RainbowDashRingThink(mobj);
 		break;
 	default:
 		// check mobj against possible water content, before movement code
@@ -10351,6 +10358,11 @@ static boolean P_FuseThink(mobj_t *mobj)
 		return false;
 	case MT_PLAYER:
 		break; // don't remove
+	case MT_SNEAKERPANELSPAWNER:
+	{
+		Obj_SneakerPanelSpawnerFuse(mobj);
+		break;
+	}
 	default:
 		P_SetMobjState(mobj, mobj->info->xdeathstate); // will remove the mobj if S_NULL.
 		break;
@@ -10986,6 +10998,9 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_EMBLEM:
 			thing->shadowscale = FRACUNIT/3;
 			break;
+		case MT_SNEAKERPANEL:
+			thing->shadowscale = 0;
+			break;
 		default:
 			if (thing->flags & (MF_ENEMY|MF_BOSS))
 				thing->shadowscale = FRACUNIT;
@@ -11484,6 +11499,19 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			break;
 		case MT_TUMBLEGEM:
 			mobj->color = P_RandomKey(numskincolors - 1) + 1;
+			break;
+		case MT_DASHRING:
+			Obj_RegularDashRingSpawn(mobj);
+			break;
+		case MT_RAINBOWDASHRING:
+			Obj_RainbowDashRingSpawn(mobj);
+			break;
+		case MT_SNEAKERPANEL:
+			Obj_SneakerPanelSpawn(mobj);
+			break;
+		case MT_SNEAKERPANELSPAWNER:
+			Obj_SneakerPanelSpawnerSpawn(mobj);
+			break;
 		default:
 			break;
 	}
@@ -12583,7 +12611,12 @@ fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mt
 	switch (mobjtype)
 	{
 	// Objects with a non-zero default height.
-	// (None yet)
+	// Horizontal springs, float additional units unless args[0] is set.
+	case MT_YELLOWHORIZ:
+	case MT_REDHORIZ:
+	case MT_BLUEHORIZ:
+		offset += mthing->args[0] ? 0 : 16*FRACUNIT;
+		break;
 
 	// Ring-like items, float additional units unless args[0] is set.
 	case MT_SPIKEBALL:
@@ -13719,17 +13752,44 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		break;
 
 	}
-	case MT_REDDIAG:
-	case MT_YELLOWDIAG:
-	case MT_BLUEDIAG:
 	case MT_REDSPRING:
 	case MT_BLUESPRING:
 	case MT_GRAYSPRING:
 	case MT_YELLOWSPRING:
 	case MT_INVISSPRING:
 	{
-		if (mapnamespace == MNS_SRB2KART)
-			mobj->flags ^= MF_NOGRAVITY;
+		if (mthing->args[0] & TMSPR_NOGRAVITY)
+			mobj->gravity = 0;
+		break;
+	}
+	case MT_YELLOWDIAG:
+	case MT_REDDIAG:
+	case MT_BLUEDIAG:
+	case MT_GRAYDIAG:
+	{
+		mobj->angle = FixedAngle(mthing->angle << FRACBITS);
+		if (mthing->args[0] & TMSPR_NOGRAVITY)
+			mobj->gravity = 0;
+		if (mthing->args[0] & TMSPR_ROTATEEXTRA)
+			mobj->angle += ANGLE_22h;
+		*doangle = false;
+		break;
+	}
+	case MT_DASHRING:
+	case MT_RAINBOWDASHRING:
+	{
+		Obj_DashRingSetup(mobj, mthing);
+		break;
+	}
+	case MT_SNEAKERPANEL:
+	{
+		Obj_SneakerPanelSetup(mobj, mthing);
+		break;
+	}
+	case MT_SNEAKERPANELSPAWNER:
+	{
+		Obj_SneakerPanelSpawnerSetup(mobj, mthing);
+		break;
 	}
 	default:
 		break;
@@ -13822,17 +13882,6 @@ static mobj_t *P_SpawnMobjFromMapThing(mapthing_t *mthing, fixed_t x, fixed_t y,
 	{
 		mobj->angle = FixedAngle(mthing->angle << FRACBITS);
 	}
-
-	// Maybe someday.
-	/*if ((mobj->flags & MF_SPRING)
-	&& mobj->info->damage != 0
-	&& mobj->info->mass == 0)
-	{
-		// Offset sprite of horizontal springs
-		angle_t a = mobj->angle + ANGLE_180;
-		mobj->sprxoff = FixedMul(mobj->radius, FINECOSINE(a >> ANGLETOFINESHIFT));
-		mobj->spryoff = FixedMul(mobj->radius, FINESINE(a >> ANGLETOFINESHIFT));
-	}*/
 
 	mobj->pitch = FixedAngle(mthing->pitch << FRACBITS);
 	mobj->roll = FixedAngle(mthing->roll << FRACBITS);

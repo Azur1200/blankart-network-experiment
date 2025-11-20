@@ -680,11 +680,12 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 				K_MomentumAngle(player->mo), thrustAngle,
 				playerSpeed, thrustSpeed
 			);
+			player->driftlock = TICRATE/8; // seems like a good value so its not noticable and you still get the right angle
 
 			P_InstaThrust(player->mo, thrustAngle, max(thrustSpeed, 2*playerSpeed));
 
 			player->dashpadcooldown = TICRATE/3;
-			player->pogospring = 0;
+			K_ResetPogoSpring(player);
 			player->floorboost = 2;
 
 			S_StartSound(player->mo, sfx_cdfm62);

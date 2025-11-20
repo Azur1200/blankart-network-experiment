@@ -712,6 +712,10 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].karmapoints);
 		SYNC(players[i].wanted);
 
+		SYNC(players[i].dashRingPullTics);
+		SYNC(players[i].dashRingPushTics);
+		SYNC(players[i].dashRainbowPogo);
+
 		SYNC(players[i].glanceDir);
 
 		SYNC(players[i].breathTimer);
