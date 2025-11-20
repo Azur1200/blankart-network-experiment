@@ -274,7 +274,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 			if ((R_CheckColumnFunc(COLDRAWFUNC_FUZZY) == false)
 				|| (rlight->flags & FOF_FOG)
 				|| (rlight->extra_colormap && (rlight->extra_colormap->flags & CMF_FOG)))
-				lightnum = std::max((rlight->lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
+				lightnum = (std::max((INT32)rlight->lightlevel, cv_secbright.value) >> LIGHTSEGSHIFT);
 			else
 				lightnum = LIGHTLEVELS - 1;
 
@@ -921,7 +921,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 			if (pfloor->fofflags & FOF_FOG)
 				rlight->lightnum = std::max((pfloor->master->frontsector->lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
 			else
-				rlight->lightnum = std::max((rlight->lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
+				rlight->lightnum = (std::max((INT32)rlight->lightlevel, cv_secbright.value) >> LIGHTSEGSHIFT);
 
 			if (pfloor->fofflags & FOF_FOG || rlight->flags & FOF_FOG || (rlight->extra_colormap && (rlight->extra_colormap->flags & CMF_FOG)))
 				;
@@ -937,14 +937,14 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 	{
 		// Get correct light level!
 		if ((frontsector->extra_colormap && (frontsector->extra_colormap->flags & CMF_FOG)))
-			lightnum = std::max((frontsector->lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
+			lightnum = (std::max((INT32)frontsector->lightlevel, cv_secbright.value) >> LIGHTSEGSHIFT);
 		else if (pfloor->fofflags & FOF_FOG)
-			lightnum = std::max((pfloor->master->frontsector->lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
+			lightnum = (std::max((INT32)pfloor->master->frontsector->lightlevel, cv_secbright.value) >> LIGHTSEGSHIFT);
 		else if (R_CheckColumnFunc(COLDRAWFUNC_FUZZY) == true)
 			lightnum = LIGHTLEVELS-1;
 		else
-			lightnum = std::max((R_FakeFlat(frontsector, &tempsec, &templight, &templight, false)
-											  ->lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
+			lightnum = (std::max((INT32)(R_FakeFlat(frontsector, &tempsec, &templight, &templight, false)
+											  ->lightlevel), cv_secbright.value) >> LIGHTSEGSHIFT);
 
 		if (pfloor->fofflags & FOF_FOG || (frontsector->extra_colormap && (frontsector->extra_colormap->flags & CMF_FOG)))
 			;
@@ -1556,7 +1556,7 @@ static void R_RenderSegLoop (drawcolumndata_t* dc)
 			for (i = 0; i < dc->numlights; i++)
 			{
 				INT32 lightnum;
-				lightnum = std::max((dc->lightlist[i].lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
+				lightnum = (std::max((INT32)dc->lightlist[i].lightlevel, cv_secbright.value) >> LIGHTSEGSHIFT);
 
 				if (dc->lightlist[i].extra_colormap)
 					;
@@ -2665,7 +2665,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		//  use different light tables
 		//  for horizontal / vertical / diagonal
 		// OPTIMIZE: get rid of LIGHTSEGSHIFT globally
-		lightnum = std::max((frontsector->lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
+		lightnum = (std::max((INT32)frontsector->lightlevel, cv_secbright.value) >> LIGHTSEGSHIFT);
 
 		if (P_ApplyLightOffset(lightnum, frontsector))
 			lightnum += curline->lightOffset;
