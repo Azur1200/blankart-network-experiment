@@ -10144,7 +10144,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->momx = mobj->momy = 0;
 			P_SetMobjState(mobj, mobj->info->spawnstate);
 		}
-			break;
+		break;
 	case MT_KARMAFIREWORK:
 		if (mobj->flags & MF_NOGRAVITY)
 			break;
@@ -11499,6 +11499,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			break;
 		case MT_TUMBLEGEM:
 			mobj->color = P_RandomKey(numskincolors - 1) + 1;
+			break;
 		case MT_DASHRING:
 			Obj_RegularDashRingSpawn(mobj);
 			break;
@@ -13749,6 +13750,7 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 	case MT_REDDIAG:
 	case MT_YELLOWDIAG:
 	case MT_BLUEDIAG:
+	case MT_GRAYDIAG:
 	case MT_REDSPRING:
 	case MT_BLUESPRING:
 	case MT_GRAYSPRING:
@@ -13757,6 +13759,7 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 	{
 		if (mapnamespace == MNS_SRB2KART)
 			mobj->flags ^= MF_NOGRAVITY;
+		break;
 	}
 	case MT_DASHRING:
 	case MT_RAINBOWDASHRING:
