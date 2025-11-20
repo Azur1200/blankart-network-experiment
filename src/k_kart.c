@@ -3388,6 +3388,7 @@ void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 	}
 
 	player->mo->flags |= MF_NOCLIP;
+
 	player->instashield = 15;
 }
 
@@ -3422,7 +3423,6 @@ INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source) // A 
 	player->mo->momz = 18*mapobjectscale*P_MobjFlip(player->mo); // please stop forgetting mobjflip checks!!!!
 	if (player->mo->eflags & MFE_UNDERWATER)
 		player->mo->momz = (117 * player->mo->momz) / 200;
-
 	player->mo->momx = player->mo->momy = 0;
 
 	player->spinouttype = KSPIN_EXPLOSION;

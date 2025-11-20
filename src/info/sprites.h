@@ -273,10 +273,6 @@ _(SPRG) // Grey Vertical Spring
 _(YSPR) // Yellow Diagonal Spring
 _(RSPR) // Red Diagonal Spring
 _(BSPR) // Blue Diagonal Spring
-_(SSWY) // Yellow Horizontal Spring
-_(SSWR) // Red Horizontal Spring
-_(SSWB) // Blue Horizontal Spring
-_(SSWG) // Grey Horizontal Spring
 _(BSTY) // Yellow Booster
 _(BSTR) // Red Booster
 
@@ -632,9 +628,6 @@ _(EGOO)
 _(WTRL) // Water Trail
 _(WTRU) // Water Trail Underlay
 
-_(GCHA) // follower: generic chao
-_(CHEZ) // follower: cheese
-
 _(BSSS) // Stacking effect
 
 _(BKAD) // Airdrop Dust
@@ -649,6 +642,13 @@ _(BSTP)
 _(BSTS)
 _(BSTT)
 
+// New Springs
+_(SSWY)
+_(SSWR)
+_(SSWB)
+
+_(GSPR)
+_(SSWG)
 
 // First person view sprites; this is a sprite so that it can be replaced by a specialized MD2 draw later
 _(VIEW)
