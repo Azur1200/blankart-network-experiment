@@ -502,44 +502,34 @@ static const char *gamecontrolname[num_gamecontrols] =
 
 skincolornum_t G_GetSkinColorForGamepad(INT32 playernum)
 {
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
+
 	if (gamestate == GS_LEVEL)
 	{
-		player_t *player = &players[displayplayers[playernum]];
+		const player_t *player = &players[displayplayers[playernum]];
 
 		if (player)
 		{
 			// make rgb rainbow vomit when invul or flash blue when grow
 			if ((cv_gamepadled[playernum].value == 2) && player->mo && player->mo->color)
-				return player->mo->color;
+				return (skincolornum_t)player->mo->color;
 
 			// take actual player skincolour when ingame
 			if (player->skincolor)
-				return player->skincolor;
+				return (skincolornum_t)player->skincolor;
 		}
 	}
 
 	// otherwise just fallback to whatever the cvar is
-	switch (playernum)
-	{
-		case 0:
-			return cv_playercolor[0].value;
-		case 1:
-			return cv_playercolor[1].value;
-		case 2:
-			return cv_playercolor[2].value;
-		case 3:
-			return cv_playercolor[3].value;
-		default:
-			return 0;
-	}
-
-	return 0;
+	return (skincolornum_t)cv_playercolor[playernum].value;
 }
 
+// Sets the Indicator LED on supported gamepads to a desired skincolor
+// pass SKINCOLOR_NONE/0 to set the players skin color
 void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color)
 {
 	skincolornum_t skincolor;
-	RGBA_t byte_color;
+	byteColor_t byte_color;
 
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
@@ -548,34 +538,40 @@ void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color)
 		return;
 	}
 
+	// so we can override this
 	skincolor = color ? color : G_GetSkinColorForGamepad(playernum);
-	byte_color = V_GetColor(skincolors[skincolor].ramp[8]);
+	byte_color = V_GetColor(skincolors[skincolor].ramp[8]).s;
 
-	I_SetGamepadIndicatorColor(playernum, byte_color.s.red, byte_color.s.green, byte_color.s.blue);
+	I_SetGamepadIndicatorColor(playernum, byte_color.red, byte_color.green, byte_color.blue);
 }
 
 static void G_ResetPlayerGamepadIndicatorColor(INT32 playernum)
 {
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
+
 	if (cv_gamepadled[playernum].value == 0)
 	{
 		I_SetGamepadIndicatorColor(playernum, 0, 0, 255);
 	}
 	else
+	{
 		G_SetPlayerGamepadIndicatorColor(playernum, 0);
+	}
 }
 
-static void G_ResetPlayerDeviceRumble(INT32 player)
+static void G_ResetPlayerDeviceRumble(INT32 playernum)
 {
-	INT32 device_id;
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
-	device_id = G_GetDevicePlayer(player);
+	I_GamepadRumble(playernum, 0, 0, 0);
+}
 
-	if (device_id < 1)
+void G_ResetAllDeviceRumbles(void)
+{
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		return;
+		I_GamepadRumble(i, 0, 0, 0);
 	}
-
-	I_GamepadRumble(device_id, 0, 0, 0);
 }
 
 void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)

@@ -482,10 +482,10 @@ consvar_t cv_dummyfollower = CVAR_INIT ("dummyfollower", "-1", CV_HIDEN, dummyfo
 SINT8 dummycolorplayer = 0;
 static void SetDummyColorPlayer(void)
 {
-	G_SetPlayerGamepadIndicatorColor(dummycolorplayer, cv_dummycolor.value);
+	G_SetPlayerGamepadIndicatorColor(dummycolorplayer, (UINT16)cv_dummycolor.value);
 }
 
-consvar_t cv_dummycolor = CVAR_INIT ("dummycolor", "0", CV_HIDEN, dummycolor_cons_t, SetDummyColorPlayer);
+consvar_t cv_dummycolor = CVAR_INIT ("dummycolor", "0", CV_HIDEN|CV_CALL|CV_NOINIT, dummycolor_cons_t, SetDummyColorPlayer);
 
 static CV_PossibleValue_t dummyserverpage_cons_t[] = {{0, "MIN"}, {0, "MAX"}, {0, NULL}};
 consvar_t cv_dummyserverpage = CVAR_INIT ("dummyserverpage", "0", CV_HIDEN, dummyserverpage_cons_t, NULL);
@@ -1358,7 +1358,7 @@ boolean M_Responder(event_t *ev)
 	|| gamestate == GS_BLANCREDITS || gamestate == GS_SECRETCREDITS
 	)
 		return false;
-		
+
 	if (CON_Ready() && gamestate != GS_WAITINGPLAYERS)
 		return false;
 
@@ -6764,7 +6764,7 @@ void MD_DrawMPMainMenu(void)
 			if (M_IsItemOn(MN_MP_MAIN, "PLAYERSETUP") && i == cv_dummymultiplayer.value+1)
 			{
 				static fixed_t cursorframe = 0;
-				
+
 				cursorframe += renderdeltatics / 4;
 				for (; cursorframe > 7 * FRACUNIT; cursorframe -= 7 * FRACUNIT) {}
 
@@ -6836,14 +6836,14 @@ static UINT8 setupplayer;
 #define charw 72
 
 void MD_DrawSetupMultiPlayerMenu(void)
-{	
+{
 	// use generic drawer for cursor, items and title
 	// bg, text, arrows handled by generic drawer
 	MD_DrawGenericMenu();
 
 	MD_DrawCssColourBar();
 	MD_DrawCssCharacter();
-	
+
 	if (cv_skinselectstyle.value)
 	{
 		MD_DrawCssStatBars();
@@ -6903,7 +6903,7 @@ void MD_DrawCssStatBars(void)
 
 	const INT32 BITSTARTXMAIN = 17;
 	const INT32 BITSTARTXSUB = 50;
-	
+
 	const INT32 BITSPEEDSTARTY = 2;
 	const INT32 BITWEIGHTSTARTY = 18;
 
@@ -6958,7 +6958,7 @@ void MD_DrawCssStatBars(void)
 	{
 		V_DrawFixedPatch((mx + BITSTARTXSUB - (BITSPACING * i))<<FRACBITS, (my + BITWEIGHTSTARTY + BITSHIFTSUB)<<FRACBITS, FRACUNIT, 0, statbitsub, subcolour);
 	}
-	
+
 	// Draw our icons
 	V_DrawFixedPatch((mx + ICNXFIRST)<<FRACBITS, (my + ICNYFIRST)<<FRACBITS, FRACUNIT, 0, speedicn, NULL);
 	V_DrawFixedPatch((mx + ICNXFIRST)<<FRACBITS, (my + ICNYSECOND)<<FRACBITS, FRACUNIT, 0, weighticn, NULL);
@@ -7225,10 +7225,10 @@ void MD_DrawGridCssSelector(void)
 	INT32 skinn;
 	patch_t *face;
 	UINT8 *colmap;
-	
+
 	patch_t *cursor;
 	static fixed_t cursorframe = 0;
-	
+
 	INT32 gridx;
 	INT32 gridy;
 	INT32 cursorx;
@@ -7236,7 +7236,7 @@ void MD_DrawGridCssSelector(void)
 	INT32 calcs;
 
 	INT32 skintodisplay = cv_chooseskin.value;
-	
+
 	// gridcss_skinydrag = 0;
 	// draws background and scroll bar
 	{
@@ -7250,10 +7250,10 @@ void MD_DrawGridCssSelector(void)
 		INT32 columncount;
 		INT32 barlen;
 		INT32 barpos;
-		
+
 		//draw BG
 		V_DrawFill(x, y, dx, dy, 159);
-		
+
 		columncount = ((numskins - 1) / SKINGRIDWIDTH) + 1;
 
 		if (columncount > SKINGRIDHEIGHT)
@@ -7283,9 +7283,9 @@ void MD_DrawGridCssSelector(void)
 		}
 	}
 	// end background and scroll bar
-	
+
 	for (INT32 gridslot = 0; gridslot < SKINGRIDWIDTH*SKINGRIDHEIGHT; gridslot++)
-	{	
+	{
 		gridx = ((gridslot % SKINGRIDWIDTH) * 18) + ((BASEVIDWIDTH / 2) - (18 * SKINGRIDWIDTH) - 8) + 100 + SKINXSHIFT; //BASEVIDWIDTH / 2 - ((icons + 1) * 24) - 4;
 		gridy = ((gridslot / SKINGRIDWIDTH) * 18) + ((BASEVIDHEIGHT / 2) - (18 * (SKINGRIDWIDTH/2))) + SKINYSHIFT; //BASEVIDWIDTH / 2 - ((icons + 1) * 24) - 4;
 		calcs = gridslot + (gridcss_skinydrag * SKINGRIDWIDTH);
@@ -7301,7 +7301,7 @@ void MD_DrawGridCssSelector(void)
 			V_DrawFill(gridx, gridy, 16, 16, 158);
 			continue;
 		}
-		
+
 		if (skinn == skintodisplay)
 		{
 			cursorx = gridx;
@@ -7322,13 +7322,13 @@ void MD_DrawGridCssSelector(void)
 		colmap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
 		V_DrawFixedPatch((cursorx * FRACUNIT) - (face->width * FRACUNIT/4), (cursory * FRACUNIT) - (face->height * FRACUNIT/4), FRACUNIT, 0, face, colmap);
 
-		
+
 		cursorframe += renderdeltatics / 4;
 		for (; cursorframe > 7 * FRACUNIT; cursorframe -= 7 * FRACUNIT) {}
 		cursor = W_CachePatchName(va("K_BHILI%d", (cursorframe >> FRACBITS) + 1), PU_CACHE);
 		// cursor patch offsets are wrong so draw at same coordinate as portrait
 		V_DrawFixedPatch((cursorx * FRACUNIT) - (face->width * FRACUNIT/4), (cursory * FRACUNIT) - (face->height * FRACUNIT/4), FRACUNIT, 0, cursor, colmap);
-		
+
 	}
 	else
 	{
@@ -7384,7 +7384,7 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 					gridcss_row = (numskins - 1) % SKINGRIDWIDTH;
 					gridcss_column = (numskins - 1) / SKINGRIDWIDTH;
 				}
-				
+
 				if ((gridcss_column - gridcss_skinydrag) > SKINGRIDHEIGHT - 1)
 					gridcss_skinydrag++;
 			}
@@ -7421,7 +7421,7 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 				{
 					gridcss_row = SKINGRIDWIDTH - 1;
 					gridcss_column--;
-	
+
 					if (gridcss_column < gridcss_skinydrag)
 						gridcss_skinydrag--;
 				}
@@ -7495,7 +7495,7 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 		default:
 			return false;
 	}
-		
+
 	CV_SetValue(&cv_chooseskin, skinsorted[MapGridSelectToSkin(gridcss_row, gridcss_column)]);
 	return true;
 }
@@ -7539,7 +7539,7 @@ INT32 MR_SetupMultiPlayer(INT32 arg)
 	CV_SetValue(&cv_dummycolor, cv_playercolor[arg].value);
 	G_SetPlayerGamepadIndicatorColor(arg, cv_playercolor[arg].value);
 	dummycolorplayer = arg;
-	
+
 	Skinsort_option_Onchange();
 
 	M_GetFollowerState();	// update follower state
@@ -7814,7 +7814,7 @@ void MD_DrawJoystick(void)
 	for (i = 0; i <= MAXGAMEPADS; i++)
 	{
 #ifdef JOYSTICK_HOTPLUG
-		if (atoi(cv_usejoystick[setupcontrolplayer-1].string) > I_NumJoys())
+		if (atoi(cv_usejoystick[setupcontrolplayer-1].string) > numcontrollers)
 			compareval = atoi(cv_usejoystick[setupcontrolplayer-1].string);
 		else
 #endif
@@ -7827,7 +7827,7 @@ void MD_DrawJoystick(void)
 INT32 MR_SetupJoystickMenu(INT32 arg)
 {
 	const char *joyNA = "Unavailable";
-	const INT32 n = I_NumJoys();
+	const INT32 n = numcontrollers;
 
 	INT32 i = 0;
 	INT32 j;
@@ -7872,7 +7872,7 @@ INT32 MR_AssignJoystick(INT32 arg)
 
 #ifdef JOYSTICK_HOTPLUG
 	INT32 oldchoice, oldstringchoice;
-	INT32 numjoys = I_NumJoys();
+	INT32 numjoys = numcontrollers;
 
 	oldchoice = oldstringchoice = atoi(cv_usejoystick[p].string) > numjoys ? atoi(cv_usejoystick[p].string) : cv_usejoystick[p].value;
 	CV_SetValue(&cv_usejoystick[p], arg);

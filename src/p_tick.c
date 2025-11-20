@@ -586,17 +586,37 @@ static void P_DeviceRumbleTick(void)
 		}
 
 		// pulse when gettin new driftlevel
-		if (player->driftcharge
-			&& player->driftlevel)
+		if (/*player->driftcharge // gets reset within K_KartDrift
+			&& */player->driftlevel)
 		{
 			high = CLAMP((high + FRACUNIT / 256), 0, UINT16_MAX);
 
-			if (player->driftlevel == 2)
-				lenght = 114;
-			else if (player->driftlevel == 3)
-				lenght = 144;
-			else if (player->driftlevel == 4)
-				lenght = 174;
+			// rumble during charging drifts
+			// when you reach new driftlevel
+			if (player->driftlevel < 20)
+			{
+				if (player->driftlevel == 2)
+					lenght = 114;
+				else if (player->driftlevel == 3)
+					lenght = 144;
+				else if (player->driftlevel == 4)
+					lenght = 174;
+			}
+
+			// drift release
+			// adjust those if you want
+			if (player->driftlevel >= 20)
+			{
+				// give some oompfh on release
+				low = CLAMP((low + FRACUNIT / 256), 0, UINT16_MAX);
+
+				if (player->driftlevel == 20)
+					lenght = 114;
+				else if (player->driftlevel == 30)
+					lenght = 144;
+				else if (player->driftlevel == 40)
+					lenght = 174;
+			}
 		}
 
 		// pulse when using rings

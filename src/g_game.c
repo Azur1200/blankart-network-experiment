@@ -1737,6 +1737,8 @@ void G_DoLoadLevel(boolean resetplayer)
 
 	server_lagless = cv_lagless.value;
 
+	G_ResetAllDeviceRumbles();
+
 	if (doAutomate == true)
 	{
 		Automate_Run(AEV_ROUNDSTART);
@@ -2866,7 +2868,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		karmapoints = players[player].karmapoints;
 		wanted = players[player].wanted;
 		rings = players[player].rings;
-		
+
 		minrings = players[player].ringmin;
 		maxrings = players[player].ringmax;
 
@@ -3583,9 +3585,10 @@ void G_BeginLevelExit(void)
 
 void G_FinishExitLevel(void)
 {
-
 	if (gamestate == GS_LEVEL)
 	{
+		G_ResetAllDeviceRumbles();
+
 		if (g_exit.retry)
 		{
 			// Restart cup here whenever we do Online GP

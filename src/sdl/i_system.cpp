@@ -1490,12 +1490,12 @@ const char *I_GetJoyName(INT32 joyindex)
 
 void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
 {
-	#if !(SDL_VERSION_ATLEAST(2,0,14))
+#if !(SDL_VERSION_ATLEAST(2,0,14))
 	(void)playernum;
 	(void)low_strength;
 	(void)high_strength;
 	(void)duration;
-	#else
+#else
 	SDL_GameController *controller = JoyInfo[playernum].dev;
 
 	if (controller == NULL)
@@ -1504,17 +1504,17 @@ void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength,
 	}
 
 	SDL_GameControllerRumble(controller, low_strength, high_strength, duration);
-	#endif
+#endif
 }
 
 void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 blue)
 {
-	#if !(SDL_VERSION_ATLEAST(2,0,14))
+#if !(SDL_VERSION_ATLEAST(2,0,14))
 	(void)playernum;
 	(void)red;
 	(void)green;
 	(void)blue;
-	#else
+#else
 	SDL_GameController *controller = JoyInfo[playernum].dev;
 
 	if (controller == NULL)
@@ -1523,7 +1523,7 @@ void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 b
 	}
 
 	SDL_GameControllerSetLED(controller, red, green, blue);
-	#endif
+#endif
 }
 
 #ifndef NOMUMBLE

@@ -8893,41 +8893,43 @@ static void K_KartDrift(player_t *player, boolean onground)
 
 			switch (driftstage)
 			{
-			case 1:
-				boost = 20;
-				player->driftlevel = 1;
-				break;
-			case 2:
-				boost = 50;
-				player->driftlevel = 2;
-				if (cv_kartdriftsounds.value)
-					S_StartSound(player->mo, sfx_kc5b);
-				break;
-			case 3:
-				boost = 80;
-				player->driftlevel = 3;
-				if (cv_kartdriftsounds.value)
-				{
-					S_StartSound(player->mo, sfx_kc5b);
-					S_StartSound(player->mo, sfx_kc3c);
-					S_StartSoundAtVolume(player->mo, sfx_s3k81, 128);
-					S_StartSound(player->mo, sfx_s3k47);
-				}
-				break;
-			case 4:
-				boost = 125;
-				player->driftlevel = 4;
-				if (cv_kartdriftsounds.value)
-				{
-					S_StartSound(player->mo, sfx_kc5b);
-					S_StartSound(player->mo, sfx_kc4d);
-					S_StartSoundAtVolume(player->mo, sfx_s3k81, 128);
-				}
-				break;
+				case 1:
+					boost = 20;
+					player->driftlevel = 1;
+					break;
+				case 2:
+					boost = 50;
+					player->driftlevel = 2;
+					if (cv_kartdriftsounds.value)
+						S_StartSound(player->mo, sfx_kc5b);
+					break;
+				case 3:
+					boost = 80;
+					player->driftlevel = 3;
+					if (cv_kartdriftsounds.value)
+					{
+						S_StartSound(player->mo, sfx_kc5b);
+						S_StartSound(player->mo, sfx_kc3c);
+						S_StartSoundAtVolume(player->mo, sfx_s3k81, 128);
+						S_StartSound(player->mo, sfx_s3k47);
+					}
+					break;
+				case 4:
+					boost = 125;
+					player->driftlevel = 4;
+					if (cv_kartdriftsounds.value)
+					{
+						S_StartSound(player->mo, sfx_kc5b);
+						S_StartSound(player->mo, sfx_kc4d);
+						S_StartSoundAtVolume(player->mo, sfx_s3k81, 128);
+					}
+					break;
 			}
 
 			if (player->driftboost < boost)
 				player->driftboost = boost;
+
+			player->driftlevel = driftstage * 10; // * 10 to detect that this came from drift release
 
 			K_SpawnDriftEFX(player, driftstage);
 		}
@@ -8974,7 +8976,6 @@ static void K_KartDrift(player_t *player, boolean onground)
 			player->pflags &= ~PF_DRIFTEND;
 	}
 
-
 	// Incease/decrease the drift value to continue drifting in that direction
 	if (!P_PlayerInPain(player) && (player->pflags & PF_DRIFTINPUT) && onground && player->drift != 0)
 	{
@@ -9015,6 +9016,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 			if (P_IsDisplayPlayer(player)) // UGHGHGH...
 				S_StartSoundAtVolume(player->mo, sfx_s3ka2, 192); // Ugh...
 
+			player->driftlevel = driftstage; // for rumble
 			player->driftsparkGrowTimer = DRIFTSPARKGROWTICS;
 		}
 
@@ -9039,6 +9041,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 	{
 		minspeed = 0;
 	}
+
 	if (P_PlayerInPain(player) || player->speed < minspeed)
 	{
 		player->drift = player->driftcharge = player->aizdriftstrat = 0;
@@ -9640,7 +9643,7 @@ static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fix
 
         // Double-remove the clusterplayer flag. Bad hack, I know...
         clusterplayer[i] = false;
-		
+
 		// 10/22/2025: Pairs don't count anymore
 		if (N < 2)
 		{
@@ -10146,7 +10149,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			}
 			// Other items
 			// TODO: how should player->itemusecooldown interact with LUA_HookPlayerItem?
-			else if (player->itemusecooldown == 0) 
+			else if (player->itemusecooldown == 0)
 			{
 				// Eggman Monitor exploding
 				if (player->eggmanexplode)
@@ -10198,7 +10201,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							SINT8 incr = (gametyperules & GTR_CLOSERPLAYERS) ? 3 : 2;
 							SINT8 metincr = (gametyperules & GTR_CLOSERPLAYERS) ? 4 : 3;
 							SINT8 comincr = (gametyperules & GTR_CLOSERPLAYERS) ? 10 : 4;
-							
+
 							// experiment: uses fuel faster, but raises temperature faster
 							if (cv_kartflame_fastfuel.value)
 							{
@@ -10230,7 +10233,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								player->flamedash += incr;
 								player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
 								player->flametimer -= comincr;
-								
+
 								P_Thrust(
 								player->mo, player->mo->angle,
 								FixedMul(player->mo->scale, K_GetKartGameSpeedScalar(gamespeed))/4

@@ -197,12 +197,12 @@ UINT8 ctrldown = 0; // 0x1 left, 0x2 right
 UINT8 altdown = 0; // 0x1 left, 0x2 right
 boolean capslock = 0;	// gee i wonder what this does.
 
-static UINT8 curcolor[MAXSPLITSCREENPLAYERS] = {};
+static skincolornum_t curcolor[MAXSPLITSCREENPLAYERS] = {};
 
 static void D_DeviceLEDTick(void)
 {
 	UINT8 i;
-	static UINT8 newcolor = UINT8_MAX;
+	static skincolornum_t newcolor = SKINCOLOR_NONE;
 
 	if (numcontrollers == 0)
 	{
@@ -1256,6 +1256,8 @@ void D_StartTitle(void)
 	// Reset the palette
 	if (rendermode != render_none)
 		V_SetPaletteLump("PLAYPAL");
+
+	G_ResetAllDeviceRumbles();
 
 	// The title screen is obviously not a tutorial! (Unless I'm mistaken)
 	tutorialmode = false;

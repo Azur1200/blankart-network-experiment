@@ -1998,7 +1998,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				return false;
 			}
 		case CL_LOADFILES:
-			if (CL_LoadServerFiles()) 
+			if (CL_LoadServerFiles())
 				cl_mode = CL_SETUPFILES;
 
 			break;
@@ -2594,9 +2594,9 @@ static void Command_connect(void)
 			M_ClearMenus(true);
 			D_QuitNetGame();
 			CL_Reset();
-			
+
 			D_StartTitle();
-			
+
 		}
 		else if (I_NetOpenSocket)
 		{
@@ -2741,7 +2741,7 @@ void CL_RemovePlayer(INT32 playernum, kickreason_t reason)
 
 	K_CheckBumpers();
 	P_CheckRacers();
-	
+
 	// Reset startedInFreePlay
 	{
 		INT32 i;
@@ -2806,6 +2806,8 @@ void CL_Reset(void)
 	curl_running = false;
 	http_source[0] = '\0';
 #endif
+
+	G_ResetAllDeviceRumbles();
 
 	// D_StartTitle should get done now, but the calling function will handle it
 }

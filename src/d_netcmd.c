@@ -2003,7 +2003,7 @@ void WeaponPref_Send(UINT8 ssplayer)
 
 	if (cv_shrinkme[ssplayer].value)
 		prefs |= WP_SHRINKME;
-	
+
 	if (cv_flipcam[ssplayer].value)
 		prefs |= WP_FLIPCAM;
 
@@ -2028,7 +2028,7 @@ void WeaponPref_Save(UINT8 **cp, INT32 playernum)
 
 	if (player->pflags & PF_SHRINKME)
 		prefs |= WP_SHRINKME;
-	
+
 	if (player->pflags & PF_FLIPCAM)
 		prefs |= WP_FLIPCAM;
 
@@ -2052,7 +2052,7 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 
 	if (prefs & WP_SHRINKME)
 		player->pflags |= PF_SHRINKME;
-	
+
 	if (prefs & WP_FLIPCAM)
 		player->pflags |= PF_FLIPCAM;
 
@@ -3239,7 +3239,7 @@ static void Command_Map_f(void)
 	// G_TOLFlag handles both multiplayer gametype and ignores it for !multiplayer
 	else
 	{
-		
+
 		if (!mapheaderinfo[newmapnum-1] || mapheaderinfo[newmapnum-1] == NULL)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Invalid mapheaderinfo for Course %s (%s)\n"), realmapname, G_BuildMapName(newmapnum));
@@ -3247,7 +3247,7 @@ static void Command_Map_f(void)
 			Z_Free(mapname);
 			return;
 		}
-		
+
 		if (!(
 					mapheaderinfo[newmapnum-1] &&
 					mapheaderinfo[newmapnum-1]->typeoflevel & G_TOLFlag(newgametype)
@@ -3604,6 +3604,7 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 	}
 
 	I_UpdateMouseGrab();
+	G_ResetAllDeviceRumbles();
 }
 
 // Command for stuck characters in netgames, griefing, etc.
@@ -4545,7 +4546,7 @@ void Schedule_Insert(scheduleTask_t *addTask)
 		{
 			schedule_size *= 2;
 		}
-		
+
 		schedule = Z_ReallocAlign(
 			(void*) schedule,
 			sizeof(scheduleTask_t*) * schedule_size,

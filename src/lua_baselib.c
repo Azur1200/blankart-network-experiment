@@ -1647,7 +1647,7 @@ static int lib_pSlideMove(lua_State *L)
 	INLEVEL
 	if (!mo)
 		return LUA_ErrInvalid(L, "mobj_t");
-	
+
 	if (!P_TryMove(mo, mo->x, mo->y, true, &result))
 		P_SlideMove(mo, &result);
 	return 0;
@@ -4505,7 +4505,7 @@ static int lib_kPlayerUsesBotMovement(lua_State *L)
 	INLEVEL
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	
+
 	lua_pushboolean(L, K_PlayerUsesBotMovement(player));
 	return 1;
 }
@@ -4516,7 +4516,7 @@ static int lib_kBotCanTakeCut(lua_State *L)
 	INLEVEL
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	
+
 	lua_pushboolean(L, K_BotCanTakeCut(player));
 	return 1;
 }
@@ -4527,13 +4527,13 @@ static int lib_kGetBotController(lua_State *L)
 	INLEVEL
 	if (!mobj)
 		return LUA_ErrInvalid(L, "mobj_t");
-	
+
 	botcontroller_t *botController = K_GetBotController(mobj);
 	if (botController != NULL)
 		LUA_PushUserdata(L, botController, META_BOTCONTROLLER);
 	else
 		lua_pushnil(L);
-	
+
 	return 1;
 }
 
@@ -4550,7 +4550,7 @@ static int lib_kBotRubberband(lua_State *L)
 	INLEVEL
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	
+
 	lua_pushfixed(L, K_BotRubberband(player));
 	return 1;
 }
@@ -4561,7 +4561,7 @@ static int lib_kUpdateRubberband(lua_State *L)
 	INLEVEL
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	
+
 	lua_pushfixed(L, K_UpdateRubberband(player));
 	return 1;
 }
@@ -4600,16 +4600,16 @@ static int lib_kAddBot(lua_State *L)
 		if (skinid == -1)
 			return luaL_error(L, "could not find skin %s by name", name);
 	}
-	
+
 	INLEVEL
-	
+
 	boolean success = K_AddBot(skinid, difficulty, style, &newplayernum);
 	lua_pushboolean(L, success);
 	if (success)
 		LUA_PushUserdata(L, &players[newplayernum - 1], META_PLAYER);
 	else
 		lua_pushnil(L);
-	
+
 	return 2;
 }
 
@@ -4621,9 +4621,9 @@ static int lib_kSetNameForBot(lua_State *L)
 		return LUA_ErrInvalid(L, "player_t");
 	if (!player->bot)
 		return luaL_error(L, "You may only change bot names.");
-	
+
 	K_SetNameForBot(player-players, realname);
-	
+
 	return 0;
 }
 
@@ -4635,9 +4635,9 @@ static int lib_kRemoveBot(lua_State *L)
 		return LUA_ErrInvalid(L, "player_t");
 	if (!player->bot)
 		return luaL_error(L, "You may only remove bots.");
-	
+
 	CL_RemovePlayer(player-players, KR_LEAVE);
-	
+
 	return 0;
 }
 
@@ -5111,6 +5111,12 @@ static int lib_gSetPlayerGamepadIndicatorColor(lua_State *L)
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
 	UINT16 color = (UINT16)luaL_checkinteger(L, 2); // skincolor
 
+	if (!plr)
+		return LUA_ErrInvalid(L, "player_t");
+
+	if (color >= numskincolors)
+		return luaL_error(L, "color %d out of range (0 - %d).", color, numskincolors-1);
+
 	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
 	{
 		if (plr - players == displayplayers[i])
@@ -5136,6 +5142,9 @@ static int lib_gPlayerDeviceRumble(lua_State *L)
 	UINT16 low_strength = (UINT16)luaL_checkinteger(L, 2); // low frequency rumble motor strenght
 	UINT16 high_strength = (UINT16)luaL_checkinteger(L, 3); // high frequency rumble motor strenght
 	UINT32 duration = (UINT32)luaL_optinteger(L, 4, 84); // duration of rumble in ms
+
+	if (!plr)
+		return LUA_ErrInvalid(L, "player_t");
 
 	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
 	{
@@ -5512,7 +5521,7 @@ static luaL_Reg lib[] = {
 	{"K_InitBossHealthBar", lib_kInitBossHealthBar},
 	{"K_UpdateBossHealthBar", lib_kUpdateBossHealthBar},
 	{"K_DeclareWeakspot", lib_kDeclareWeakspot},
-	
+
 	// I_System
 	{"I_GetPreciseTime",lib_iGetPreciseTime},
 
@@ -5539,7 +5548,7 @@ static luaL_Reg lib[] = {
 	{"K_HandleFootstepParticles", lib_kHandleFootstepParticles},
 	{"K_UpdateTerrainOverlay", lib_kUpdateTerrainOverlay},
 	{"K_TerrainHasAffect", lib_kTerrainHasAffect},
-	
+
 	// k_items
 	{"K_SetPlayerItemCooldown", lib_kSetPlayerItemCooldown},
 
