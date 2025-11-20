@@ -500,29 +500,7 @@ static const char *gamecontrolname[num_gamecontrols] =
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))
 
-static INT32 G_GetDeviceForPlayer(INT32 player)
-{
-	switch (player)
-	{
-		case 0:
-			return cv_usejoystick[0].value;
-			break;
-		case 1:
-			return cv_usejoystick[1].value;
-			break;
-		case 2:
-			return cv_usejoystick[2].value;
-			break;
-		case 3:
-			return cv_usejoystick[3].value;
-			break;
-		default:
-			return 0;
-			break;
-	}
-}
-
-UINT16 G_GetSkinColor(INT32 playernum)
+skincolornum_t G_GetSkinColorForGamepad(INT32 playernum)
 {
 	if (gamestate == GS_LEVEL)
 	{
@@ -560,7 +538,7 @@ UINT16 G_GetSkinColor(INT32 playernum)
 
 void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color)
 {
-	UINT16 skincolor;
+	skincolornum_t skincolor;
 	RGBA_t byte_color;
 
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
@@ -570,7 +548,7 @@ void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color)
 		return;
 	}
 
-	skincolor = color ? color : G_GetSkinColor(playernum);
+	skincolor = color ? color : G_GetSkinColorForGamepad(playernum);
 	byte_color = V_GetColor(skincolors[skincolor].ramp[8]);
 
 	I_SetGamepadIndicatorColor(playernum, byte_color.s.red, byte_color.s.green, byte_color.s.blue);
@@ -590,7 +568,7 @@ static void G_ResetPlayerDeviceRumble(INT32 player)
 {
 	INT32 device_id;
 
-	device_id = G_GetDeviceForPlayer(player);
+	device_id = G_GetDevicePlayer(player);
 
 	if (device_id < 1)
 	{

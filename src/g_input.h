@@ -17,6 +17,7 @@
 #include "d_event.h"
 #include "keys.h"
 #include "command.h"
+#include "info.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -128,7 +129,7 @@ extern const INT32 gcl_full[num_gcl_full];
 // peace to my little coder fingers!
 // check a gamecontrol being active or not
 
-UINT16 G_GetSkinColor(INT32 playernum);
+skincolornum_t G_GetSkinColorForGamepad(INT32 playernum);
 void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color);
 void G_ResetAllDeviceRumbles(void);
 void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
