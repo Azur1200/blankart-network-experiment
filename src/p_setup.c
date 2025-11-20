@@ -7350,9 +7350,9 @@ static void P_ConvertBinaryThingTypes(void)
 		case 557: //Diagonal blue spring
 		case 558: //Diagonal grey spring
 			if (mapthings[i].options & MTF_OBJECTSPECIAL)
-				mapthings[i].args[0] |= TMDS_NOGRAVITY;
+				mapthings[i].args[0] |= TMSPR_NOGRAVITY;
 			if (mapthings[i].options & MTF_AMBUSH)
-				mapthings[i].args[0] |= TMDS_ROTATEEXTRA;
+				mapthings[i].args[0] |= TMSPR_ROTATEEXTRA;
 			break;
 		case 559: //Horizontal yellow spring
 		case 560: //Horizontal red spring
@@ -7971,21 +7971,48 @@ static void P_RemapDoomedNum(boolean mappatch)
 			TYPECONVERT(MT_BLUEHORIZ, 560)
 			TYPECONVERT(MT_GRAYDIAG, 557)
 			TYPECONVERT(MT_GRAYHORIZ, 561)
+			TYPECONVERT(MT_SNEAKERPANEL, 510)
+			TYPECONVERT(MT_SNEAKERPANELSPAWNER, 511)
+			TYPECONVERT(MT_DASHRING, 3441)
+			TYPECONVERT(MT_RAINBOWDASHRING, 3442)
 		}
 
-		TYPECONVERT(MT_SNEAKERPANEL, 510)
-		TYPECONVERT(MT_SNEAKERPANELSPAWNER, 511)
 		TYPECONVERT(MT_WAYPOINT_RISER, 2002)
 		TYPECONVERT(MT_WAYPOINT_ANCHOR, 2003)
 		TYPECONVERT(MT_BOTHINT, 2004)
 		TYPECONVERT(MT_ITEMCAPSULE, 2010)
 		TYPECONVERT(MT_LOOPENDPOINT, 2020)
 		TYPECONVERT(MT_LOOPCENTERPOINT, 2021)
-		TYPECONVERT(MT_DASHRING, 3441)
-		TYPECONVERT(MT_RAINBOWDASHRING, 3442)
 		TYPECONVERT(MT_SCRIPT_THING, 4096)
 	}
 #undef TYPECONVERT
+}
+
+static void P_SetCompatArgs(void)
+{
+	if (mapnamespace != MNS_RINGRACERS)
+		return;
+	size_t i;
+
+	for (i = 0; i < nummapthings; i++)
+	{
+		switch(mapthings[i].type)
+		{
+			case MT_YELLOWDIAG:
+			case MT_REDDIAG:
+			case MT_BLUEDIAG:
+			case MT_GRAYDIAG:
+			case MT_REDSPRING:
+			case MT_BLUESPRING:
+			case MT_GRAYSPRING:
+			case MT_YELLOWSPRING:
+			case MT_INVISSPRING:
+				mapthings[i].args[0] |= TMSPR_NOGRAVITY;
+				break;
+			default:
+				break;
+		}
+	}
 }
 
 static boolean P_LoadMapFromFile(void)
@@ -8012,6 +8039,9 @@ static boolean P_LoadMapFromFile(void)
 	// Convert the mapthing types of some known Ring Racers/older BlanKart objects to new BlanKart objects.
 	// Should allow for textmap conversion of things making it easier for people to convert their RR maps.
 	P_RemapDoomedNum(false);
+
+	// Now set some arguments used for compatbility.
+	P_SetCompatArgs();
 
 	if (!udmf)
 		P_AddBinaryMapTags();

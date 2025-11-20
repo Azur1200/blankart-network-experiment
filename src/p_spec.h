@@ -118,9 +118,9 @@ typedef enum
 
 typedef enum
 {
-	TMDS_NOGRAVITY   = 1,
-	TMDS_ROTATEEXTRA = 1<<1,
-} textmapdiagonalspringflags_t;
+	TMSPR_NOGRAVITY   = 1,
+	TMSPR_ROTATEEXTRA = 1<<1,
+} textmapspringflags_t;
 
 typedef enum
 {

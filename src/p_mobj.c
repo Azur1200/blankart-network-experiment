@@ -12611,7 +12611,12 @@ fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mt
 	switch (mobjtype)
 	{
 	// Objects with a non-zero default height.
-	// (None yet)
+	// Horizontal springs, float additional units unless args[0] is set.
+	case MT_YELLOWHORIZ:
+	case MT_REDHORIZ:
+	case MT_BLUEHORIZ:
+		offset += mthing->args[0] ? 0 : 16*FRACUNIT;
+		break;
 
 	// Ring-like items, float additional units unless args[0] is set.
 	case MT_SPIKEBALL:
@@ -13747,18 +13752,27 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		break;
 
 	}
-	case MT_REDDIAG:
-	case MT_YELLOWDIAG:
-	case MT_BLUEDIAG:
-	case MT_GRAYDIAG:
 	case MT_REDSPRING:
 	case MT_BLUESPRING:
 	case MT_GRAYSPRING:
 	case MT_YELLOWSPRING:
 	case MT_INVISSPRING:
 	{
-		if (mapnamespace == MNS_SRB2KART)
-			mobj->flags ^= MF_NOGRAVITY;
+		if (mthing->args[0] & TMSPR_NOGRAVITY)
+			mobj->gravity = 0;
+		break;
+	}
+	case MT_YELLOWDIAG:
+	case MT_REDDIAG:
+	case MT_BLUEDIAG:
+	case MT_GRAYDIAG:
+	{
+		mobj->angle = FixedAngle(mthing->angle << FRACBITS);
+		if (mthing->args[0] & TMSPR_NOGRAVITY)
+			mobj->gravity = 0;
+		if (mthing->args[0] & TMSPR_ROTATEEXTRA)
+			mobj->angle += ANGLE_22h;
+		*doangle = false;
 		break;
 	}
 	case MT_DASHRING:
