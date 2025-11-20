@@ -4364,7 +4364,7 @@ boolean G_CheckDemoStatus(void)
 		return true;
 	}
 
-	if (demo.recording && (modeattacking || demo.savemode != DSM_NOTSAVING) && (!demo.gamequit))
+	if (demo.recording && (modeattacking || demo.savemode != DSM_NOTSAVING))
 	{
 		G_SaveDemo();
 		return true;

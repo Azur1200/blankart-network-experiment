@@ -59,7 +59,6 @@ struct demovars_s {
 	} savemode;
 
 	boolean freecam;
-	boolean gamequit; // Game is exiting.
 
 	const savebuffer_t *buffer; // debug, valid only if recording or playback
 };
