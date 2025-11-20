@@ -94,9 +94,6 @@ extern consvar_t cv_resetspecialmusic;
 
 extern consvar_t cv_resume;
 
-extern consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS];
-extern consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS];
-
 void weaponPrefChange(void);
 void weaponPrefChange2(void);
 void weaponPrefChange3(void);

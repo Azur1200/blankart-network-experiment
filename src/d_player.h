@@ -564,6 +564,7 @@ struct player_t
 	UINT8 driftboost;		// (0 to 125) - Boost you get from drifting
 	tic_t driftsparkGrowTimer;
 	tic_t driftelapsed;     // Elapsed time spent during a drift.
+	SINT8 driftlevel; 		// just for controller rumble for now
 
 	fixed_t spinoutrot;     // When a player spins out, this value increments modulus 360.
 

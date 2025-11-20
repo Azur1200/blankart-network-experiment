@@ -22,6 +22,7 @@
 #include "m_random.h"
 #include "s_sound.h"
 #include "g_game.h"
+#include "g_input.h"
 #include "m_menu.h"
 #include "y_inter.h"
 #include "hu_stuff.h"	// HU_AddChatText
@@ -5101,6 +5102,58 @@ static int lib_kSetPlayerItemCooldown(lua_State *L)
 	return 0;
 }
 
+// G_INPUT
+////////////
+
+static int lib_gSetPlayerGamepadIndicatorColor(lua_State *L)
+{
+	INT32 player = -1;
+	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
+	UINT16 color = (UINT16)luaL_checkinteger(L, 2); // skincolor
+
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
+	{
+		if (plr - players == displayplayers[i])
+		{
+			player = i;
+			break;
+		}
+	}
+
+	// Not a local player
+	if (player == -1) return 0;
+
+	// pls update with color 0 when youre done with changing led stuff so it can get player color again
+	G_SetPlayerGamepadIndicatorColor(player, color);
+
+	return 0;
+}
+
+static int lib_gPlayerDeviceRumble(lua_State *L)
+{
+	INT32 player = -1;
+	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
+	UINT16 low_strength = (UINT16)luaL_checkinteger(L, 2); // low frequency rumble motor strenght
+	UINT16 high_strength = (UINT16)luaL_checkinteger(L, 3); // high frequency rumble motor strenght
+	UINT32 duration = (UINT32)luaL_optinteger(L, 4, 84); // duration of rumble in ms
+
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
+	{
+		if (plr - players == displayplayers[i])
+		{
+			player = i;
+			break;
+		}
+	}
+
+	// Not a local player
+	if (player == -1) return 0;
+
+	G_PlayerDeviceRumble(player, low_strength, high_strength, duration);
+
+	return 0;
+}
+
 static luaL_Reg lib[] = {
 	{"print", lib_print},
 	{"chatprint", lib_chatprint},
@@ -5489,6 +5542,10 @@ static luaL_Reg lib[] = {
 	
 	// k_items
 	{"K_SetPlayerItemCooldown", lib_kSetPlayerItemCooldown},
+
+	//g_input
+	{"G_SetPlayerGamepadIndicatorColor",lib_gSetPlayerGamepadIndicatorColor},
+	{"G_PlayerDeviceRumble",lib_gPlayerDeviceRumble},
 
 	{NULL, NULL}
 };

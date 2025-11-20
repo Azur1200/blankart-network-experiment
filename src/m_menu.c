@@ -478,7 +478,14 @@ consvar_t cv_dummymultiplayer = CVAR_INIT ("dummymultiplayer", "0", CV_HIDEN, du
 consvar_t cv_dummyip = CVAR_INIT ("dummyip", "", CV_HIDEN, NULL, NULL);
 consvar_t cv_dummyname = CVAR_INIT ("dummyname", "", CV_HIDEN, NULL, NULL);
 consvar_t cv_dummyfollower = CVAR_INIT ("dummyfollower", "-1", CV_HIDEN, dummyfollower_cons_t, NULL);
-consvar_t cv_dummycolor = CVAR_INIT ("dummycolor", "0", CV_HIDEN, dummycolor_cons_t, NULL);
+
+SINT8 dummycolorplayer = 0;
+static void SetDummyColorPlayer(void)
+{
+	G_SetPlayerGamepadIndicatorColor(dummycolorplayer, cv_dummycolor.value);
+}
+
+consvar_t cv_dummycolor = CVAR_INIT ("dummycolor", "0", CV_HIDEN, dummycolor_cons_t, SetDummyColorPlayer);
 
 static CV_PossibleValue_t dummyserverpage_cons_t[] = {{0, "MIN"}, {0, "MAX"}, {0, NULL}};
 consvar_t cv_dummyserverpage = CVAR_INIT ("dummyserverpage", "0", CV_HIDEN, dummyserverpage_cons_t, NULL);
@@ -7530,6 +7537,8 @@ INT32 MR_SetupMultiPlayer(INT32 arg)
 	gridcss_skinmemory = cv_chooseskin.value;
 	CV_SetValue(&cv_dummyfollower, cv_follower[arg].value);
 	CV_SetValue(&cv_dummycolor, cv_playercolor[arg].value);
+	G_SetPlayerGamepadIndicatorColor(arg, cv_playercolor[arg].value);
+	dummycolorplayer = arg;
 	
 	Skinsort_option_Onchange();
 
@@ -7918,6 +7927,8 @@ INT32 MR_SetupControlsMenu(INT32 arg)
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEAZS", &cv_deadzonestyle[arg]);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "TURNSMOOTHING", &cv_turnsmooth[arg]);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "LITESTEER", &cv_litesteer[arg]);
+	M_SetItemCvar(MN_OP_CHANGECONTROLS, "LEDCOLOR", &cv_gamepadled[arg]);
+	M_SetItemCvar(MN_OP_CHANGECONTROLS, "RUMBLE", &cv_rumble[arg]);
 
 	M_SetItemVisible(MN_OP_CHANGECONTROLS, "TALK", player1); // Chat
 	//M_SetItemVisible(MN_OP_CHANGECONTROLS, "TEAM", player1); // Team-chat

@@ -349,21 +349,6 @@ typedef struct joystickvector2_s
 	INT32 yaxis;
 } joystickvector2_t;
 
-consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("litesteer",  "Off", CV_SAVE, CV_OnOff, NULL),
-	CVAR_INIT ("litesteer2", "Off", CV_SAVE, CV_OnOff, NULL),
-	CVAR_INIT ("litesteer3", "Off", CV_SAVE, CV_OnOff, NULL),
-	CVAR_INIT ("litesteer4", "Off", CV_SAVE, CV_OnOff, NULL)
-};
-
-static CV_PossibleValue_t turnsmooth_cons_t[] = {{2, "Slow"}, {1, "Fast"}, {0, "Off"}, {0, NULL}};
-consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("turnsmoothing",  "Off", CV_SAVE, turnsmooth_cons_t, NULL),
-	CVAR_INIT ("turnsmoothing2", "Off", CV_SAVE, turnsmooth_cons_t, NULL),
-	CVAR_INIT ("turnsmoothing3", "Off", CV_SAVE, turnsmooth_cons_t, NULL),
-	CVAR_INIT ("turnsmoothing4", "Off", CV_SAVE, turnsmooth_cons_t, NULL)
-};
-
 INT16 prevmap, nextmap;
 
 INT16 kartmap2native[NEXTMAP_SPECIAL] = {0}, nativemap2kart[NEXTMAP_SPECIAL] = {0};

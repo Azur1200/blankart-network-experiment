@@ -10987,7 +10987,7 @@ void A_SPBChase(void *thing)
 		if (players[i].mo->health <= 0)
 			continue; // dead
 
-		if (players[i].kartstuff[k_respawn])
+		if (players[i].respawn)
 			continue;*/ // respawning
 
 		if ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB))
@@ -11030,7 +11030,7 @@ void A_SPBChase(void *thing)
 
 				actor->lastlook = actor->tracer->player-players; // Save the player num for death scumming...
 
-				if (!P_IsObjectOnGround(actor->tracer) /*&& !actor->tracer->player->kartstuff[k_pogospring]*/)
+				if (!P_IsObjectOnGround(actor->tracer) /*&& !actor->tracer->player->pogospring*/)
 				{
 					// In the air you have no control; basically don't hit unless you make a near complete stop
 					defspeed = (7 * actor->tracer->player->speed) / 8;

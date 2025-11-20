@@ -286,6 +286,7 @@ static INT32 joystick_started[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
 /**	\brief SDL info about joystick 1
 */
 SDLJoyInfo_t JoyInfo[MAXSPLITSCREENPLAYERS];
+INT32 numcontrollers = 0;
 SDL_GameController *ExJoystick[MAXGAMEPADS];
 
 SDL_bool consolevent = SDL_FALSE;
@@ -1485,6 +1486,44 @@ const char *I_GetJoyName(INT32 joyindex)
 		}
 	}
 	return joyname;
+}
+
+void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
+{
+	#if !(SDL_VERSION_ATLEAST(2,0,14))
+	(void)playernum;
+	(void)low_strength;
+	(void)high_strength;
+	(void)duration;
+	#else
+	SDL_GameController *controller = JoyInfo[playernum].dev;
+
+	if (controller == NULL)
+	{
+		return;
+	}
+
+	SDL_GameControllerRumble(controller, low_strength, high_strength, duration);
+	#endif
+}
+
+void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 blue)
+{
+	#if !(SDL_VERSION_ATLEAST(2,0,14))
+	(void)playernum;
+	(void)red;
+	(void)green;
+	(void)blue;
+	#else
+	SDL_GameController *controller = JoyInfo[playernum].dev;
+
+	if (controller == NULL)
+	{
+		return;
+	}
+
+	SDL_GameControllerSetLED(controller, red, green, blue);
+	#endif
 }
 
 #ifndef NOMUMBLE

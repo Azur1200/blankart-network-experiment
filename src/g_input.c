@@ -21,11 +21,15 @@
 #include "console.h"
 #include "i_joy.h" // JOYAXISRANGE
 #include "m_menu.h" // menustack
+#include "i_system.h"
+#include "g_game.h"
+#include "v_video.h"
 
 #define MAXMOUSESENSITIVITY 100 // sensitivity steps
 
 static CV_PossibleValue_t mousesens_cons_t[] = {{1, "MIN"}, {MAXMOUSESENSITIVITY, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t onecontrolperkey_cons_t[] = {{1, "One"}, {2, "Several"}, {0, NULL}};
+static CV_PossibleValue_t turnsmooth_cons_t[] = {{2, "Slow"}, {1, "Fast"}, {0, "Off"}, {0, NULL}};
 
 // mouse values are used once
 consvar_t cv_mousesens = CVAR_INIT ("mousesens", "20", CV_SAVE, mousesens_cons_t, NULL);
@@ -33,6 +37,92 @@ consvar_t cv_mousesens2 = CVAR_INIT ("mousesens2", "20", CV_SAVE, mousesens_cons
 consvar_t cv_mouseysens = CVAR_INIT ("mouseysens", "20", CV_SAVE, mousesens_cons_t, NULL);
 consvar_t cv_mouseysens2 = CVAR_INIT ("mouseysens2", "20", CV_SAVE, mousesens_cons_t, NULL);
 consvar_t cv_controlperkey = CVAR_INIT ("controlperkey", "One", CV_SAVE, onecontrolperkey_cons_t, NULL);
+
+consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("litesteer",  "Off", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("litesteer2", "Off", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("litesteer3", "Off", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("litesteer4", "Off", CV_SAVE, CV_OnOff, NULL)
+};
+
+consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("turnsmoothing",  "Off", CV_SAVE, turnsmooth_cons_t, NULL),
+	CVAR_INIT ("turnsmoothing2", "Off", CV_SAVE, turnsmooth_cons_t, NULL),
+	CVAR_INIT ("turnsmoothing3", "Off", CV_SAVE, turnsmooth_cons_t, NULL),
+	CVAR_INIT ("turnsmoothing4", "Off", CV_SAVE, turnsmooth_cons_t, NULL)
+};
+
+static void G_ResetPlayerDeviceRumble(INT32 player);
+static void rumble_off_handle(void);
+static void rumble_off_handle2(void);
+static void rumble_off_handle3(void);
+static void rumble_off_handle4(void);
+
+static void G_ResetPlayerGamepadIndicatorColor(INT32 player);
+static void led_off_handle(void);
+static void led_off_handle2(void);
+static void led_off_handle3(void);
+static void led_off_handle4(void);
+
+consvar_t cv_rumble[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("rumble", "On", CV_SAVE, CV_OnOff, rumble_off_handle),
+	CVAR_INIT ("rumble2", "On", CV_SAVE, CV_OnOff, rumble_off_handle2),
+	CVAR_INIT ("rumble3", "On", CV_SAVE, CV_OnOff, rumble_off_handle3),
+	CVAR_INIT ("rumble4", "On", CV_SAVE, CV_OnOff, rumble_off_handle4)
+};
+
+static CV_PossibleValue_t gamepadled_cons_t[] = {{0, "Off"}, {1, "Skincolor"}, {2, "Mobjcolor"}, {0, NULL}};
+consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("gamepadled",  "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle),
+	CVAR_INIT ("gamepadled2", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle2),
+	CVAR_INIT ("gamepadled3", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle3),
+	CVAR_INIT ("gamepadled4", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle4)
+};
+
+static void rumble_off_handle(void)
+{
+	if (cv_rumble[0].value == 0)
+		G_ResetPlayerDeviceRumble(0);
+}
+
+static void rumble_off_handle2(void)
+{
+	if (cv_rumble[1].value == 0)
+		G_ResetPlayerDeviceRumble(1);
+}
+
+static void rumble_off_handle3(void)
+{
+	if (cv_rumble[2].value == 0)
+		G_ResetPlayerDeviceRumble(2);
+}
+
+static void rumble_off_handle4(void)
+{
+	if (cv_rumble[3].value == 0)
+		G_ResetPlayerDeviceRumble(3);
+}
+
+static void led_off_handle(void)
+{
+	G_ResetPlayerGamepadIndicatorColor(0);
+}
+
+static void led_off_handle2(void)
+{
+	G_ResetPlayerGamepadIndicatorColor(1);
+}
+
+static void led_off_handle3(void)
+{
+	G_ResetPlayerGamepadIndicatorColor(2);
+}
+
+static void led_off_handle4(void)
+{
+	G_ResetPlayerGamepadIndicatorColor(3);
+}
+
 // current state of the keys
 // JOYAXISRANGE for fully pressed, 0 for not pressed
 INT32 gamekeydown[MAXDEVICES][NUMINPUTS];
@@ -409,6 +499,118 @@ static const char *gamecontrolname[num_gamecontrols] =
 };
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))
+
+static INT32 G_GetDeviceForPlayer(INT32 player)
+{
+	switch (player)
+	{
+		case 0:
+			return cv_usejoystick[0].value;
+			break;
+		case 1:
+			return cv_usejoystick[1].value;
+			break;
+		case 2:
+			return cv_usejoystick[2].value;
+			break;
+		case 3:
+			return cv_usejoystick[3].value;
+			break;
+		default:
+			return 0;
+			break;
+	}
+}
+
+UINT16 G_GetSkinColor(INT32 playernum)
+{
+	if (gamestate == GS_LEVEL)
+	{
+		player_t *player = &players[displayplayers[playernum]];
+
+		if (player)
+		{
+			// make rgb rainbow vomit when invul or flash blue when grow
+			if ((cv_gamepadled[playernum].value == 2) && player->mo && player->mo->color)
+				return player->mo->color;
+
+			// take actual player skincolour when ingame
+			if (player->skincolor)
+				return player->skincolor;
+		}
+	}
+
+	// otherwise just fallback to whatever the cvar is
+	switch (playernum)
+	{
+		case 0:
+			return cv_playercolor[0].value;
+		case 1:
+			return cv_playercolor[1].value;
+		case 2:
+			return cv_playercolor[2].value;
+		case 3:
+			return cv_playercolor[3].value;
+		default:
+			return 0;
+	}
+
+	return 0;
+}
+
+void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color)
+{
+	UINT16 skincolor;
+	RGBA_t byte_color;
+
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
+
+	if (cv_gamepadled[playernum].value == 0)
+	{
+		return;
+	}
+
+	skincolor = color ? color : G_GetSkinColor(playernum);
+	byte_color = V_GetColor(skincolors[skincolor].ramp[8]);
+
+	I_SetGamepadIndicatorColor(playernum, byte_color.s.red, byte_color.s.green, byte_color.s.blue);
+}
+
+static void G_ResetPlayerGamepadIndicatorColor(INT32 playernum)
+{
+	if (cv_gamepadled[playernum].value == 0)
+	{
+		I_SetGamepadIndicatorColor(playernum, 0, 0, 255);
+	}
+	else
+		G_SetPlayerGamepadIndicatorColor(playernum, 0);
+}
+
+static void G_ResetPlayerDeviceRumble(INT32 player)
+{
+	INT32 device_id;
+
+	device_id = G_GetDeviceForPlayer(player);
+
+	if (device_id < 1)
+	{
+		return;
+	}
+
+	I_GamepadRumble(device_id, 0, 0, 0);
+}
+
+void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
+{
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
+
+	if (cv_rumble[playernum].value == 0)
+	{
+		return;
+	}
+
+	I_GamepadRumble(playernum, low_strength, high_strength, duration);
+}
 
 // If keybind is necessary to navigate menus, it's on this list.
 boolean G_KeyBindIsNecessary(INT32 gc)

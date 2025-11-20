@@ -1253,6 +1253,7 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_deadzonestyle[i]);
 		CV_RegisterVar(&cv_litesteer[i]);
 		CV_RegisterVar(&cv_turnsmooth[i]);
+		CV_RegisterVar(&cv_rumble[i]);
 	}
 
 	// filesrch.c

@@ -1040,7 +1040,10 @@ void I_GetEvent(void)
 					////////////////////////////////////////////////////////////
 
 					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+					{
 						I_InitJoystick(i);
+						G_SetPlayerGamepadIndicatorColor(i, G_GetSkinColor(i)); // gotta update the controller led again on reconnect
+					}
 
 					////////////////////////////////////////////////////////////
 
@@ -1050,6 +1053,8 @@ void I_GetEvent(void)
 					// update the menu
 					if (menustack[0] == MN_OP_JOYSTICKSET)
 						MR_SetupJoystickMenu(0);
+
+					numcontrollers = I_NumJoys();
 
 					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 					{
@@ -1110,6 +1115,7 @@ void I_GetEvent(void)
 				// update the menu
 				if (menustack[0] == MN_OP_JOYSTICKSET)
 					MR_SetupJoystickMenu(0);
+				numcontrollers = I_NumJoys();
 				break;
 			case SDL_DROPFILE:
 				dropped_filedir = evt.drop.file;
