@@ -39,6 +39,24 @@ angle_t K_GetCollideAngle(mobj_t *t1, mobj_t *t2)
 	return R_PointToAngle2(0, 0, momux, momuy);
 }
 
+// This/Other Item Damage
+static void K_ItemDamage(mobj_t *t1, mobj_t *t2, boolean clash)
+{
+	if (t1->eflags & MFE_VERTICALFLIP)
+		t1->z -= t1->height;
+	else
+		t1->z += t1->height;
+
+	S_StartSound(t1, t1->info->deathsound);
+	P_KillMobj(t1, t2, t2, DMG_NORMAL);
+
+	P_SetObjectMomZ(t1, 8*FRACUNIT, false);
+	P_InstaThrust(t1, K_GetCollideAngle(t2, t1), 16*FRACUNIT);
+
+	if (clash)
+		P_SpawnMobj(t1->x/2 + t2->x/2, t1->y/2 + t2->y/2, t1->z/2 + t2->z/2, MT_ITEMCLASH);
+}
+
 boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 {
 	boolean damageitem = false;
@@ -91,16 +109,7 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 		|| t2->type == MT_BALLHOG)
 	{
 		// Other Item Damage
-		angle_t bounceangle = K_GetCollideAngle(t1, t2);
-
-		S_StartSound(t2, t2->info->deathsound);
-		P_KillMobj(t2, t1, t1, DMG_NORMAL);
-
-		P_SetObjectMomZ(t2, 8*FRACUNIT, false);
-		P_InstaThrust(t2, bounceangle, 16*FRACUNIT);
-
-		P_SpawnMobj(t2->x/2 + t1->x/2, t2->y/2 + t1->y/2, t2->z/2 + t1->z/2, MT_ITEMCLASH);
-
+		K_ItemDamage(t2, t1, true);
 		damageitem = true;
 	}
 	else if (t2->type == MT_SSMINE_SHIELD || t2->type == MT_SSMINE || t2->type == MT_LANDMINE)
@@ -124,12 +133,7 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 	if (damageitem)
 	{
 		// This Item Damage
-		angle_t bounceangle = K_GetCollideAngle(t2, t1);
-		S_StartSound(t1, t1->info->deathsound);
-		P_KillMobj(t1, t2, t2, DMG_NORMAL);
-
-		P_SetObjectMomZ(t1, 8*FRACUNIT, false);
-		P_InstaThrust(t1, bounceangle, 16*FRACUNIT);
+		K_ItemDamage(t1, t2, false);
 	}
 
 	if (sprung)
@@ -188,16 +192,7 @@ boolean K_BananaBallhogCollide(mobj_t *t1, mobj_t *t2)
 		|| t2->type == MT_BALLHOG)
 	{
 		// Other Item Damage
-		angle_t bounceangle = K_GetCollideAngle(t1, t2);
-
-		S_StartSound(t2, t2->info->deathsound);
-		P_KillMobj(t2, t1, t1, DMG_NORMAL);
-
-		P_SetObjectMomZ(t2, 8*FRACUNIT, false);
-		P_InstaThrust(t2, bounceangle, 16*FRACUNIT);
-
-		P_SpawnMobj(t2->x/2 + t1->x/2, t2->y/2 + t1->y/2, t2->z/2 + t1->z/2, MT_ITEMCLASH);
-
+		K_ItemDamage(t2, t1, true);
 		damageitem = true;
 	}
 	else if (t2->type == MT_SSMINE_SHIELD || t2->type == MT_SSMINE || t2->type == MT_LANDMINE)
@@ -216,13 +211,7 @@ boolean K_BananaBallhogCollide(mobj_t *t1, mobj_t *t2)
 	if (damageitem)
 	{
 		// This Item Damage
-		angle_t bounceangle = K_GetCollideAngle(t2, t1);
-
-		S_StartSound(t1, t1->info->deathsound);
-		P_KillMobj(t1, t2, t2, DMG_NORMAL);
-
-		P_SetObjectMomZ(t1, 8*FRACUNIT, false);
-		P_InstaThrust(t1, bounceangle, 16*FRACUNIT);
+		K_ItemDamage(t1, t2, false);
 	}
 
 	return true;
@@ -333,16 +322,10 @@ boolean K_MineCollide(mobj_t *t1, mobj_t *t2)
 		|| t2->type == MT_ORBINAUT_SHIELD || t2->type == MT_JAWZ_SHIELD)
 	{
 		// Bomb death
-		angle_t bounceangle = K_GetCollideAngle(t1, t2);
-
 		P_KillMobj(t1, t2, t2, DMG_NORMAL);
 
 		// Other Item Damage
-		S_StartSound(t2, t2->info->deathsound);
-		P_KillMobj(t2, t1, t1, DMG_NORMAL);
-
-		P_SetObjectMomZ(t2, 8*FRACUNIT, false);
-		P_InstaThrust(t2, bounceangle, 16*FRACUNIT);
+		K_ItemDamage(t2, t1, false);
 	}
 	else if (t2->flags & MF_SHOOTABLE)
 	{
@@ -418,20 +401,7 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 		|| t2->type == MT_BALLHOG)
 	{
 		// Other Item Damage
-		angle_t bounceangle = K_GetCollideAngle(t1, t2);
-
-		if (t2->eflags & MFE_VERTICALFLIP)
-			t2->z -= t2->height;
-		else
-			t2->z += t2->height;
-
-		S_StartSound(t2, t2->info->deathsound);
-		P_KillMobj(t2, t1, t1, DMG_NORMAL);
-
-		P_SetObjectMomZ(t2, 8*FRACUNIT, false);
-		P_InstaThrust(t2, bounceangle, 16*FRACUNIT);
-
-		P_SpawnMobj(t2->x/2 + t1->x/2, t2->y/2 + t1->y/2, t2->z/2 + t1->z/2, MT_ITEMCLASH);
+		K_ItemDamage(t2, t1, true);
 
 		P_SpawnMobj(t1->x, t1->y, t1->z, MT_MINEEXPLOSIONSOUND);
 		P_KillMobj(t1, t2, t2, DMG_NORMAL);
