@@ -2314,7 +2314,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				|| inflictor->type == MT_JAWZ || inflictor->type == MT_JAWZ_SHIELD || inflictor->type == MT_JAWZ_DUD
 				|| inflictor->type == MT_SMK_THWOMP || inflictor->player)))
 			{
-				player->sneakertimer = player->numsneakers = 0;
+				player->sneakertimer = player->numsneakers = player->numpanels = 0;
 				player->flamestore = player->flamedash = 0;
 				player->bubbleboost = 0;
 				player->mo->flags2 &= ~MF2_WATERRUN;

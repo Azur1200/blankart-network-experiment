@@ -304,6 +304,7 @@ enum player_e
 	player_boostangle,
 	player_boostinfo,
 	player_numsneakers,
+	player_numpanels,
 	player_numboosts,
 	player_draftpower,
 	player_draftleeway,
@@ -519,6 +520,7 @@ static const char *const player_opt[] = {
 	"boostangle",
 	"boostinfo",
 	"numsneakers",
+	"numpanels",
 	"numboosts",
 	"draftpower",
 	"draftleeway",
@@ -905,6 +907,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_numsneakers:
 		lua_pushinteger(L, plr->numsneakers);
+		break;
+	case player_numpanels:
+		lua_pushinteger(L, plr->numpanels);
 		break;
 	case player_numboosts:
 		lua_pushinteger(L, plr->numboosts);
@@ -1652,6 +1657,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_numsneakers:
 		plr->numsneakers = luaL_checkinteger(L, 3);
+		break;
+	case player_numpanels:
+		plr->numpanels = luaL_checkinteger(L, 3);
 		break;
 	case player_numboosts:
 		plr->numboosts = luaL_checkinteger(L, 3);

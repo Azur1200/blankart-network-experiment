@@ -459,6 +459,9 @@ consvar_t cv_kartstacking_sneaker_expertspeedboost = CVAR_INIT ("vanillaboost_sn
 consvar_t cv_kartstacking_sneaker_accelboost = CVAR_INIT ("vanillaboost_sneaker_accelboost", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_sneaker_maxgrade = CVAR_INIT ("vanillaboost_sneaker_maxgrade", "3", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Natural, NULL);
 consvar_t cv_kartstacking_sneaker_stackable = CVAR_INIT ("vanillaboost_sneaker_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
+consvar_t cv_kartstacking_panel_separate = CVAR_INIT ("vanillaboost_panel_separate", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
+consvar_t cv_kartstacking_panel_maxgrade = CVAR_INIT ("vanillaboost_panel_maxgrade", "2", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Natural, NULL);
+
 
 consvar_t cv_kartstacking_invincibility_legacyspeedboost = CVAR_INIT ("vanillaboost_invincibility_legacyspeedboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_legacyaccelboost = CVAR_INIT ("vanillaboost_invincibility_legacyaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);

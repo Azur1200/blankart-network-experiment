@@ -109,6 +109,9 @@ extern consvar_t cv_kartstacking_sneaker_expertspeedboost;
 extern consvar_t cv_kartstacking_sneaker_accelboost;
 extern consvar_t cv_kartstacking_sneaker_maxgrade;
 extern consvar_t cv_kartstacking_sneaker_stackable;
+extern consvar_t cv_kartstacking_panel_separate;
+extern consvar_t cv_kartstacking_panel_maxgrade;
+
 
 extern consvar_t cv_kartstacking_invincibility_legacyspeedboost;
 extern consvar_t cv_kartstacking_invincibility_legacyaccelboost;

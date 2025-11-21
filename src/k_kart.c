@@ -303,6 +303,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_sneaker_accelboost);
 	CV_RegisterVar(&cv_kartstacking_sneaker_maxgrade);
 	CV_RegisterVar(&cv_kartstacking_sneaker_stackable);
+	CV_RegisterVar(&cv_kartstacking_panel_separate);
+	CV_RegisterVar(&cv_kartstacking_panel_maxgrade);
 
 	CV_RegisterVar(&cv_kartstacking_invincibility_legacyspeedboost);
 	CV_RegisterVar(&cv_kartstacking_invincibility_legacyaccelboost);
@@ -2655,7 +2657,7 @@ static void K_GetKartBoostPower(player_t *player)
 	{
 		UINT8 i;
 		fixed_t sneakerspeedboost = K_GetSneakerBoostSpeed();
-		UINT8 numsneakers = player->numsneakers ? player->numsneakers : 1;
+		UINT8 numsneakers = max(player->numsneakers + player->numpanels, 1);
 
 		for (i = 0; i < numsneakers; i++)
 		{
@@ -4741,9 +4743,19 @@ void K_DoSneaker(player_t *player, INT32 type)
 	player->sneakertimer = sneakerduration;
 	player->realsneakertimer = sneakerduration;
 
-	if (player->sneakertimer && (player->floorboost == 0 || player->floorboost == 3))
+	if (SEPARATEPANELS && (type == SNEAKERTYPE_PANEL || type == SNEAKERTYPE_WATERPANEL))
 	{
-		player->numsneakers = CLAMP(player->numsneakers+1, 0, stackingactive ? MAXSNEAKERSTACK : 1);
+		if (player->sneakertimer && (player->floorboost == 0 || player->floorboost == 3))
+		{
+			player->numpanels = CLAMP(player->numpanels+1, 0, stackingactive ? MAXPANELSTACK : 1);
+		}
+	}
+	else
+	{
+		if (player->sneakertimer && (player->floorboost == 0 || player->floorboost == 3))
+		{
+			player->numsneakers = CLAMP(player->numsneakers+1, 0, stackingactive ? MAXSNEAKERSTACK : 1);
+		}
 	}
 
 	if (type == SNEAKERTYPE_WATERPANEL)
@@ -7029,6 +7041,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	{
 		player->mo->flags2 &= ~MF2_WATERRUN;
 		player->numsneakers = 0;
+		player->numpanels = 0;
 	}
 
 	if (player->realsneakertimer)

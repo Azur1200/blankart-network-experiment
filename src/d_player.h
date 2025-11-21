@@ -589,6 +589,7 @@ struct player_t
 	angle_t boostangle;		// angle set when not spun out OR boosted to determine what direction you should keep going at if you're spun out and boosted.
 	boostinfo_t boostinfo;	// Stores values used for setting speed and accel boosts.
 	UINT8 numsneakers;		// Number of stacked sneakers
+	UINT8 numpanels;		// Number of stacked panels, used for panel stack toggle
 	UINT8 numboosts;		// Number of Boosts stacking this frame
 
 	fixed_t draftpower;		// (0 to FRACUNIT) - Drafting power, doubles your top speed & acceleration at max

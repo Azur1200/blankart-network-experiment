@@ -108,6 +108,8 @@ extern vector3_t clusterpoint, clusterdtf;
 #define SNEAKERACCELBOOST CV_Get(&cv_kartstacking_sneaker_accelboost)
 #define MAXSNEAKERSTACK CV_Get(&cv_kartstacking_sneaker_maxgrade)
 #define SNEAKERSTACKABLE CV_Get(&cv_kartstacking_sneaker_stackable)
+#define SEPARATEPANELS CV_Get(&cv_kartstacking_panel_separate)
+#define MAXPANELSTACK CV_Get(&cv_kartstacking_panel_maxgrade)
 
 #define INVINSPEEDBOOSTLGC CV_Get(&cv_kartstacking_invincibility_legacyspeedboost)
 #define INVINACCELBOOSTLGC CV_Get(&cv_kartstacking_invincibility_legacyaccelboost)
