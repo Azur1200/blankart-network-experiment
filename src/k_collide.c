@@ -169,6 +169,8 @@ boolean K_BananaBallhogCollide(mobj_t *t1, mobj_t *t2)
 
 	if (t2->player)
 	{
+		if (t2->player->flashing > 0)
+			return true;
 
 		// Banana snipe!
 		if (t1->type == MT_BANANA && t1->health > 1)
