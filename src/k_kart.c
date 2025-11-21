@@ -8908,33 +8908,27 @@ static void K_KartDrift(player_t *player, boolean onground)
 			{
 				case 1:
 					boost = 20;
-					player->driftlevel = 1;
 					break;
 				case 2:
 					boost = 50;
-					player->driftlevel = 2;
 					if (cv_kartdriftsounds.value)
 						S_StartSound(player->mo, sfx_kc5b);
 					break;
 				case 3:
 					boost = 80;
-					player->driftlevel = 3;
 					if (cv_kartdriftsounds.value)
 					{
 						S_StartSound(player->mo, sfx_kc5b);
 						S_StartSound(player->mo, sfx_kc3c);
 						S_StartSoundAtVolume(player->mo, sfx_s3k81, 128);
-						S_StartSound(player->mo, sfx_s3k47);
 					}
 					break;
 				case 4:
 					boost = 125;
-					player->driftlevel = 4;
 					if (cv_kartdriftsounds.value)
 					{
-						S_StartSound(player->mo, sfx_kc5b);
+						S_StartSound(player->mo, sfx_s3k81);
 						S_StartSound(player->mo, sfx_kc4d);
-						S_StartSoundAtVolume(player->mo, sfx_s3k81, 128);
 					}
 					break;
 			}
