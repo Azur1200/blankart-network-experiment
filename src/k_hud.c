@@ -6080,7 +6080,8 @@ void K_drawKartHUD(void)
 	if (modeattacking || freecam) // everything after here is MP and debug only
 		return;
 
-	if ((gametyperules & GTR_KARMA) && !r_splitscreen && (stplyr->karthud[khud_yougotem] % 2)) // * YOU GOT EM *
+	// TODO: Make this slide like the other titlecards
+	if ((gametyperules & GTR_KARMA) && !r_splitscreen && stplyr->karthud[khud_yougotem]) // * YOU GOT EM *
 		V_DrawScaledPatch(BASEVIDWIDTH/2 - (kp_yougotem->width/2), 32, V_HUDTRANS, kp_yougotem);
 
 	// Draw FREE PLAY.
