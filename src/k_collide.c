@@ -57,6 +57,12 @@ static void K_ItemDamage(mobj_t *t1, mobj_t *t2, boolean clash)
 		P_SpawnMobj(t1->x/2 + t2->x/2, t1->y/2 + t2->y/2, t1->z/2 + t2->z/2, MT_ITEMCLASH);
 }
 
+// makes sure that hitthing isn't set to tmthing, otherwise the bounce doesn't work
+static void K_SetHitThing(mobj_t *t1, mobj_t *t2)
+{
+	P_SetTarget(&g_tm.hitthing, t1 == g_tm.thing ? t2 : t1);
+}
+
 boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 {
 	boolean damageitem = false;
@@ -97,7 +103,7 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 		{
 			// Player Damage
 			P_DamageMobj(t2, t1, t1->target, 1, DMG_WIPEOUT);
-			P_SetTarget(&g_tm.hitthing, t1);
+			K_SetHitThing(t2, t1);
 			S_StartSound(t2, sfx_s3k7b);
 		}
 
@@ -754,7 +760,7 @@ boolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
 boolean K_FallingRockCollide(mobj_t *t1, mobj_t *t2)
 {
 	if ((t2->player && (G_CompatLevel(0x0008) || !t2->player->hyudorotimer)) || t2->type == MT_FALLINGROCK)
-		P_SetTarget(&g_tm.hitthing, t1);
+		K_SetHitThing(t1, t2);
 
 	return true;
 }
@@ -782,7 +788,7 @@ boolean K_SMKIceBlockCollide(mobj_t *t1, mobj_t *t2)
 		return true;
 	*/
 
-	P_SetTarget(&g_tm.hitthing, t1);
+	K_SetHitThing(t1, t2);
 	return false;
 }
 

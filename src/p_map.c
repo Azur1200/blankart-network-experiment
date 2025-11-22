@@ -3528,43 +3528,6 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		return;
 	}
 
-	if (!P_MobjWasRemoved(result->mo)) // object bounce
-	{
-		mobj_t *mo1 = mo, *mo2 = result->mo;
-		boolean bounce = false;
-
-		if (result->mo->player != NULL)
-		{
-			if (P_IsObjectOnGround(mo2) && mo1->momz < 0)
-			{
-				bounce = true;
-			}
-			else if (P_IsObjectOnGround(mo1) && mo2->momz < 0)
-			{
-				bounce = true;
-				mo1 = result->mo;
-				mo2 = mo;
-			}
-		}
-		else switch (mo2->type)
-		{
-		case MT_BLUEROBRA:
-		case MT_BLUEROBRA_HEAD:
-		case MT_SMK_PIPE:
-		case MT_SMK_THWOMP:
-		case MT_SMK_ICEBLOCK:
-			break;
-
-		default:
-		case MT_KART_LEFTOVER:
-			bounce = P_IsObjectOnGround(mo2) && mo1->momz < 0;
-			break;
-		}
-
-		// no more special logic! if you want a solid bounce, return BMIT_ABORT
-		K_KartBouncing(mo1, mo2, bounce, result->blockingmo);
-	}
-
 	if (result->line == NULL)
 		return;
 
@@ -3665,6 +3628,43 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 
 	if (P_MobjWasRemoved(mo))
 		return;
+
+	if (result != NULL && !P_MobjWasRemoved(result->mo)) // object bounce
+	{
+		mobj_t *mo1 = mo, *mo2 = result->mo;
+		boolean bounce = false;
+
+		if (mo2->player != NULL)
+		{
+			if (P_IsObjectOnGround(mo2) && mo1->momz < 0)
+			{
+				bounce = true;
+			}
+			else if (P_IsObjectOnGround(mo1) && mo2->momz < 0)
+			{
+				bounce = true;
+				mo1 = result->mo;
+				mo2 = mo;
+			}
+		}
+		else switch (mo2->type)
+		{
+		case MT_BLUEROBRA:
+		case MT_BLUEROBRA_HEAD:
+		case MT_SMK_PIPE:
+		case MT_SMK_THWOMP:
+		case MT_SMK_ICEBLOCK:
+			break;
+
+		default:
+		case MT_KART_LEFTOVER:
+			bounce = P_IsObjectOnGround(mo2) && mo1->momz < 0;
+			break;
+		}
+
+		// no more special logic! if you want a solid bounce, return BMIT_ABORT
+		K_KartBouncing(mo1, mo2, bounce, result->blockingmo);
+	}
 
 	if (mo->player)
 	{
