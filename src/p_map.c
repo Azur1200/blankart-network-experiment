@@ -1238,7 +1238,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			else
 			{
 				K_KartBouncing(g_tm.thing, thing, false, true);
-				return BMIT_CONTINUE;
+				return BMIT_ABORT;
 			}
 		}
 		else if (thing->type == MT_SMK_PIPE)
@@ -1259,7 +1259,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			}
 
 			K_KartBouncing(g_tm.thing, thing, false, true);
-			return BMIT_CONTINUE;
+			return BMIT_ABORT;
 		}
 		else if (thing->type == MT_SMK_THWOMP)
 		{
@@ -1302,7 +1302,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 				K_KartBouncing(g_tm.thing, thing, false, true);
 			}
 
-			return BMIT_CONTINUE;
+			return BMIT_ABORT;
 		}
 		else if (thing->type == MT_KART_LEFTOVER)
 		{
@@ -1317,7 +1317,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			else
 				K_KartBouncing(g_tm.thing, thing, false, false);
 
-			return BMIT_CONTINUE;
+			return BMIT_ABORT;
 		}
 		else if (thing->flags & MF_SOLID)
 		{
@@ -1332,7 +1332,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			else
 				K_KartBouncing(g_tm.thing, thing, false, true);
 
-			return BMIT_CONTINUE;
+			return BMIT_ABORT;
 		}
 	}
 #if 0
