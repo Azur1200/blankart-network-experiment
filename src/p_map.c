@@ -1204,7 +1204,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 				P_SetTarget(&g_tm.hitthing, thing);
 			}
 
-			return BMIT_ABORT;
+			return BMIT_CONTINUE;
 		}
 		else if (thing->type == MT_BLUEROBRA_HEAD || thing->type == MT_BLUEROBRA_JOINT)
 		{
@@ -1303,7 +1303,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 				return BMIT_CONTINUE; // underneath
 
 			P_SetTarget(&g_tm.hitthing, thing);
-			return BMIT_ABORT;
+			return BMIT_CONTINUE;
 		}
 		else if (thing->flags & MF_SOLID)
 		{
@@ -1644,7 +1644,8 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 		// TODO: refactor this into one place
 		if (ld->frontsector == ld->backsector && !P_MidtextureIsSolid(ld, g_tm.thing))
 		{
-			// you hit a FOF or polyobject in this sector, not the non-solid midtexture...
+			// if you reach this point, you've hit the planes of a FOF, or perhaps a polyobject,
+			// but you can't hit a non-solid midtexture sharing the same front and back sectors!
 		}
 		else if (open.range < g_tm.thing->height)
 		{
@@ -2061,6 +2062,15 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 		}
 	}
 
+	if (result != NULL)
+	{
+		if (result->mo == NULL) // || g_tm.hitthing != NULL) // don't bump the most distant object in multiple BMIT_CONTINUE bumps...?
+		{
+			result->mo = g_tm.hitthing;
+			result->blockingmo = !blockval;
+		}
+	}
+
 	validcount++;
 
 	// check lines
@@ -2080,7 +2090,6 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 	if (result != NULL)
 	{
 		result->line = NULL;
-		result->mo = g_tm.hitthing;
 	}
 	else
 	{
@@ -3090,7 +3099,6 @@ static boolean P_ThingHeightClip(mobj_t *thing)
 // SLIDE MOVE
 // Allows the player to slide along any angled walls.
 //
-static line_t *bestslideline;
 static mobj_t *slidemo;
 static fixed_t tmxmove, tmymove;
 
@@ -3138,17 +3146,10 @@ static void P_PlayerHitBounceLine(line_t *ld, vector2_t* normal)
 	if (slidemo->player && movelen < (15*mapobjectscale))
 		movelen = (15*mapobjectscale);
 
-	if (!ld)
-	{
-		angle_t th = R_PointToAngle2(0, 0, tmxmove, tmymove);
-		normal->x = -FCOS(th);
-		normal->y = -FSIN(th);
-	}
-
 	x = FixedMul(movelen, normal->x);
 	y = FixedMul(movelen, normal->y);
 
-	if (ld && P_IsLineTripWire(ld))
+	if (P_IsLineTripWire(ld))
 	{
 		tmxmove = FixedMul(x, FRACUNIT+(FRACUNIT/2));
 		tmymove = FixedMul(y, FRACUNIT+(FRACUNIT/2));
@@ -3319,6 +3320,7 @@ static void P_CheckLavaWall(mobj_t *mo, sector_t *sec)
 //
 void P_SlideMove(mobj_t *mo, TryMoveResult_t *result)
 {
+	line_t *bestslideline;
 	fixed_t newx, newy;
 	boolean success = false;
 
@@ -3517,8 +3519,8 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	if (mo->player == NULL)
 		return;
 
-	if (result == NULL || (result->line == NULL && P_MobjWasRemoved(result->mo)))
-		return; // don't be silly, you can't bounce off of thin air!
+	if (result == NULL)
+		return;
 
 	if (mo->player->spectator)
 	{
@@ -3526,52 +3528,45 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		return;
 	}
 
-	if (!P_MobjWasRemoved(result->mo))
+	if (!P_MobjWasRemoved(result->mo)) // object bounce
 	{
-		boolean solid = false, bounce = false;
+		mobj_t *mo1 = mo, *mo2 = result->mo;
+		boolean bounce = false;
 
 		if (result->mo->player != NULL)
 		{
-			// The bump has to happen last
-			mobj_t *mo1 = mo;
-			mobj_t *mo2 = result->mo;
-			boolean zbounce = false;
-
-			if (P_IsObjectOnGround(result->mo) && mo->momz < 0)
+			if (P_IsObjectOnGround(mo2) && mo1->momz < 0)
 			{
-				zbounce = true;
+				bounce = true;
+			}
+			else if (P_IsObjectOnGround(mo1) && mo2->momz < 0)
+			{
+				bounce = true;
 				mo1 = result->mo;
 				mo2 = mo;
 			}
-			else if (P_IsObjectOnGround(mo) && result->mo->momz < 0)
-			{
-				zbounce = true;
-			}
-
-			K_KartBouncing(mo1, mo2, zbounce, false);
-			return;
 		}
-		else switch (result->mo->type)
+		else switch (mo2->type)
 		{
 		case MT_BLUEROBRA:
 		case MT_BLUEROBRA_HEAD:
 		case MT_SMK_PIPE:
 		case MT_SMK_THWOMP:
-			solid = true;
+		case MT_SMK_ICEBLOCK:
 			break;
 
 		default:
-			if (result->mo->flags & MF_SOLID)
-				solid = true;
-			// FALLTHRU
 		case MT_KART_LEFTOVER:
-			bounce = P_IsObjectOnGround(result->mo) && mo->momz < 0;
+			bounce = P_IsObjectOnGround(mo2) && mo1->momz < 0;
 			break;
 		}
 
-		K_KartBouncing(mo, result->mo, bounce, solid);
-		return;
+		// no more special logic! if you want a solid bounce, return BMIT_ABORT
+		K_KartBouncing(mo1, mo2, bounce, result->blockingmo);
 	}
+
+	if (result->line == NULL)
+		return;
 
 	mmomx = mo->player->rmomx;
 	mmomy = mo->player->rmomy;
@@ -3606,7 +3601,6 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	}
 
 	slidemo = mo;
-	bestslideline = result->line;
 
 	/*if (mo->health <= 0)
 	{
@@ -3625,7 +3619,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
 	}
 
-	if (bestslideline && P_IsLineTripWire(bestslideline))
+	if (P_IsLineTripWire(result->line))
 	{
 		// TRIPWIRE CANNOT BE MADE NONBOUNCY
 		K_ApplyTripWire(mo->player, TRIPSTATE_BLOCKED);
@@ -3633,7 +3627,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	else
 	{
 		// Some walls aren't bouncy even if you are
-		if (bestslideline && (bestslideline->flags & ML_NOTBOUNCY))
+		if (result->line && (result->line->flags & ML_NOTBOUNCY))
 		{
 			// SRB2Kart: Non-bouncy line!
 			P_SlideMove(mo, result);
@@ -3643,7 +3637,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		K_SpawnBumpEffect(mo);
 	}
 
-	P_PlayerHitBounceLine(bestslideline, &result->normal);
+	P_PlayerHitBounceLine(result->line, &result->normal);
 	mo->eflags |= MFE_JUSTBOUNCEDWALL;
 
 	mo->momx = tmxmove;
@@ -3651,7 +3645,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	mo->player->cmomx = tmxmove;
 	mo->player->cmomy = tmymove;
 
-	if (!bestslideline || !P_IsLineTripWire(bestslideline))
+	if (!P_IsLineTripWire(result->line))
 	{
 		if (!P_TryMove(mo, mo->x + tmxmove, mo->y + tmymove, true, NULL))
 		{
@@ -3684,14 +3678,13 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 		return;
 	}
 
+	if (result->line == NULL)
+		return;
+
 	mmomx = mo->momx;
 	mmomy = mo->momy;
 
 	slidemo = mo;
-	bestslideline = result->line;
-
-	if (bestslideline == NULL)
-		return;
 
 	if (mo->type == MT_SHELL)
 	{
@@ -3715,7 +3708,7 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
 	}
 
-	P_HitBounceLine(bestslideline); // clip the moves
+	P_HitBounceLine(result->line); // clip the moves
 
 	mo->momx = tmxmove;
 	mo->momy = tmymove;

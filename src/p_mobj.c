@@ -1841,6 +1841,10 @@ void P_XYMovement(mobj_t *mo)
 	{
 		// TERRAIN footstep effects.
 		K_HandleFootstepParticles(mo);
+
+		// we still need to bounce off objects even if the move succeeded!
+		if (player != NULL && !P_MobjWasRemoved(result.mo))
+			P_BounceMove(mo, &result);
 	}
 
 	if (moved && oldslope && !(mo->flags & MF_NOCLIPHEIGHT))

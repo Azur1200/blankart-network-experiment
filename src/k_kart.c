@@ -482,60 +482,49 @@ static fixed_t K_PlayerWeight(mobj_t* mobj, mobj_t* against)
 	if (!mobj->player)
 		return weight;
 
-	if (against && !P_MobjWasRemoved(against) && against->player)
+	if (!P_MobjWasRemoved(against) && against->player)
 	{
-		if ((!P_PlayerInPain(against->player) &&
-		     P_PlayerInPain(mobj->player))  // You're hurt
-		    || (K_GetShieldFromPlayer(against->player) ==
-			    KSHIELD_BUBBLE  // They have a Bubble Shield
-			&& K_GetShieldFromPlayer(mobj->player) != KSHIELD_BUBBLE))  // and you don't
+		if ((!P_PlayerInPain(against->player) && P_PlayerInPain(mobj->player)) // You're hurt
+		 || (K_GetShieldFromPlayer(against->player) == KSHIELD_BUBBLE // They have a Bubble Shield
+		 && K_GetShieldFromPlayer(mobj->player) != KSHIELD_BUBBLE)) // and you don't
 		{
-			weight = 0;  // This player does not cause any bump action
+			return 0; // This player does not cause any bump action
 		}
 		else if (invinisalt && against->player->invincibilitytimer)
 		{
 			// Scale Alt. Invin. weight to their power. At full power, you get shoved
 			// off! Might cause less shitty-feeling bumpcheck moments.
-			weight = max(0,
-				     FRACUNIT - FixedMul((against->player->kartweight) * FRACUNIT,
-							 K_InvincibilityGradient(
-							     against->player->invincibilitytimer)));
+			return max(0, FRACUNIT - against->player->kartweight * K_InvincibilityGradient(against->player->invincibilitytimer));
 		}
 	}
-	else
+
+	// Applies rubberbanding, to prevent rubberbanding bots
+	// from causing super crazy bumps.
+	fixed_t spd = K_GetKartSpeed(mobj->player, false, true);
+
+	weight = (mobj->player->kartweight) * FRACUNIT;
+
+	if (invinisalt && mobj->player->invincibilitytimer)
 	{
-		// Applies rubberbanding, to prevent rubberbanding bots
-		// from causing super crazy bumps.
-		fixed_t spd = K_GetKartSpeed(mobj->player, false, true);
+		// Cap the gradient at 1.0 to prevent exaggerated nonsense.
+		fixed_t mygradient = min(FRACUNIT, K_InvincibilityGradient(mobj->player->invincibilitytimer));
 
-		weight = (mobj->player->kartweight) * FRACUNIT;
+		// Scale Alt. Invin. weight to your power. At full power, they get shoved off!
+		// Might cause less shitty-feeling bumpcheck moments.
+		weight = FixedMul(weight, mygradient);
 
-		if (invinisalt && mobj->player->invincibilitytimer)
-		{
-			// Cap the gradient at 1.0 to prevent exaggerated nonsense.
-			fixed_t mygradient = min(
-			    FRACUNIT, K_InvincibilityGradient(mobj->player->invincibilitytimer));
-
-			// Scale Alt. Invin. weight to your power. At full power, they get shoved
-			// off! Might cause less shitty-feeling bumpcheck moments.
-			weight = FixedMul(weight, mygradient);
-
-			// Like the Bubble Shield, nerf bumps a good bit to make them feel less
-			// ridiculous. As your power depletes, this nerf gets less necessary, so
-			// scale it to match.
-			weight =
-			    FixedMul(weight, FRACUNIT - FixedMul(INVBUMPBOTTLENECK, mygradient));
-		}
-		else if (K_GetShieldFromPlayer(mobj->player) == KSHIELD_BUBBLE &&
-			 mobj->player->bubblecool == 0)
-		{
-			weight = max(BUBBLEMINWEIGHT, weight);
-			weight = FixedMul(weight, FRACUNIT / 16);
-		}
-
-		if (mobj->player->speed > spd)
-			weight += (mobj->player->speed - spd) / 8;
+		// Like the Bubble Shield, nerf bumps a good bit to make them feel less ridiculous.
+		// As your power depletes, this nerf gets less necessary, so scale it to match.
+		weight = FixedMul(weight, FRACUNIT - FixedMul(INVBUMPBOTTLENECK, mygradient));
 	}
+	else if (K_GetShieldFromPlayer(mobj->player) == KSHIELD_BUBBLE && mobj->player->bubblecool == 0)
+	{
+		weight = max(BUBBLEMINWEIGHT, weight);
+		weight = FixedMul(weight, FRACUNIT / 16);
+	}
+
+	if (mobj->player->speed > spd)
+		weight += (mobj->player->speed - spd) / 8;
 
 	return weight;
 }
@@ -833,8 +822,17 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		return false;
 	}
 
-	if (bounce == true && mass2 > 0) // Perform a Goomba Bounce.
+	if (mobj2->health <= 0 && (mobj2->type == MT_ORBINAUT || mobj2->type == MT_ORBINAUT_SHIELD
+	 || mobj2->type == MT_JAWZ || mobj2->type == MT_JAWZ_SHIELD || mobj2->type == MT_JAWZ_DUD))
+	{
+		// dead orbis and jawz are supposed to have a momz of 0 here
+		// but K_KartBouncing now runs AFTER K_ItemDamage
+		mobj1->momz = 0;
+	}
+	else if (bounce == true && mass2 > 0) // Perform a Goomba Bounce.
+	{
 		mobj1->momz = -mobj1->momz;
+	}
 	else
 	{
 		fixed_t newz = mobj1->momz;

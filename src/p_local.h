@@ -483,6 +483,7 @@ struct TryMoveResult_t
 	boolean success;
 	line_t *line;
 	mobj_t *mo;
+	boolean blockingmo; // set if PIT_CheckThing blocked the move (mo may still be set!)
 	vector2_t normal;
 };
 
