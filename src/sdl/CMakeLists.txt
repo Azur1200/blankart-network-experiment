@@ -118,7 +118,11 @@ elseif(TARGET SDL2_mixer_ext::SDL2_mixer_ext OR TARGET SDL2_mixer_ext::SDL2_mixe
 elseif(TARGET SDL2_mixer::SDL2_mixer OR TARGET SDL2_mixer::SDL2_mixer-static)
 	message(STATUS "SDL2_mixer found")
 else()
-	message(FATAL_ERROR "no SDL2_mixer_ext or SDL2_mixer Found")
+	if(${SRB2_CONFIG_USE_OPENAL})
+		message(FATAL_ERROR "no OpenAL Found")
+	else()
+		message(FATAL_ERROR "no SDL2_mixer_ext or SDL2_mixer Found")
+	endif()
 endif()
 
 #### Installation ####
