@@ -1624,7 +1624,7 @@ void P_XYMovement(mobj_t *mo)
 		// blocked move
 		moved = false;
 
-		if (LUA_HookMobjMoveBlocked(mo, g_tm.hitthing, result.line))
+		if (LUA_HookMobjMoveBlocked(mo, result.mo, result.line))
 		{
 			if (P_MobjWasRemoved(mo))
 				return;

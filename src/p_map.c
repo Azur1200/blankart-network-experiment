@@ -1190,31 +1190,21 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 
 			{
 				// The bump has to happen last
-				mobj_t *mo1 = g_tm.thing;
-				mobj_t *mo2 = thing;
-				boolean zbounce = false;
-
 				if (P_IsObjectOnGround(thing) && g_tm.thing->momz < 0)
 				{
-					zbounce = true;
-					mo1 = thing;
-					mo2 = g_tm.thing;
-
 					if (g_tm.thing->player->pogospring)
 						P_DamageMobj(thing, g_tm.thing, g_tm.thing, 1, DMG_WIPEOUT|DMG_STEAL);
 				}
 				else if (P_IsObjectOnGround(g_tm.thing) && thing->momz < 0)
 				{
-					zbounce = true;
-
 					if (thing->player->pogospring)
 						P_DamageMobj(g_tm.thing, thing, thing, 1, DMG_WIPEOUT|DMG_STEAL);
 				}
 
-				K_KartBouncing(mo1, mo2, zbounce, false);
+				P_SetTarget(&g_tm.hitthing, thing);
 			}
 
-			return BMIT_CONTINUE;
+			return BMIT_ABORT;
 		}
 		else if (thing->type == MT_BLUEROBRA_HEAD || thing->type == MT_BLUEROBRA_JOINT)
 		{
@@ -1237,7 +1227,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			}
 			else
 			{
-				K_KartBouncing(g_tm.thing, thing, false, true);
+				P_SetTarget(&g_tm.hitthing, thing);
 				return BMIT_ABORT;
 			}
 		}
@@ -1258,7 +1248,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 				return BMIT_CONTINUE; // kill
 			}
 
-			K_KartBouncing(g_tm.thing, thing, false, true);
+			P_SetTarget(&g_tm.hitthing, thing);
 			return BMIT_ABORT;
 		}
 		else if (thing->type == MT_SMK_THWOMP)
@@ -1299,7 +1289,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			{
 				if (thing->flags2 & MF2_AMBUSH)
 					P_DamageMobj(g_tm.thing, thing, thing, 1, DMG_WIPEOUT);
-				K_KartBouncing(g_tm.thing, thing, false, true);
+				P_SetTarget(&g_tm.hitthing, thing);
 			}
 
 			return BMIT_ABORT;
@@ -1312,11 +1302,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			if (g_tm.thing->z + g_tm.thing->height < thing->z)
 				return BMIT_CONTINUE; // underneath
 
-			if (P_IsObjectOnGround(thing) && g_tm.thing->momz < 0)
-				K_KartBouncing(g_tm.thing, thing, true, false);
-			else
-				K_KartBouncing(g_tm.thing, thing, false, false);
-
+			P_SetTarget(&g_tm.hitthing, thing);
 			return BMIT_ABORT;
 		}
 		else if (thing->flags & MF_SOLID)
@@ -1327,11 +1313,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			if (g_tm.thing->z + g_tm.thing->height < thing->z)
 				return BMIT_CONTINUE; // underneath
 
-			if (P_IsObjectOnGround(thing) && g_tm.thing->momz < 0)
-				K_KartBouncing(g_tm.thing, thing, true, true);
-			else
-				K_KartBouncing(g_tm.thing, thing, false, true);
-
+			P_SetTarget(&g_tm.hitthing, thing);
 			return BMIT_ABORT;
 		}
 	}
@@ -1660,7 +1642,11 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 	{
 		// copied from P_TryMove
 		// TODO: refactor this into one place
-		if (open.range < g_tm.thing->height)
+		if (ld->frontsector == ld->backsector && !P_MidtextureIsSolid(ld, g_tm.thing))
+		{
+			// you hit a FOF or polyobject in this sector, not the non-solid midtexture...
+		}
+		else if (open.range < g_tm.thing->height)
 		{
 			P_TestLine(ld);
 		}
@@ -2065,10 +2051,6 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 				if (!P_BlockThingsIterator(bx, by, PIT_CheckThing))
 				{
 					blockval = false;
-				}
-				else
-				{
-					P_SetTarget(&g_tm.hitthing, g_tm.floorthing);
 				}
 
 				if (P_MobjWasRemoved(g_tm.thing))
@@ -3535,12 +3517,59 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	if (mo->player == NULL)
 		return;
 
-	if (result == NULL)
-		return;
+	if (result == NULL || (result->line == NULL && P_MobjWasRemoved(result->mo)))
+		return; // don't be silly, you can't bounce off of thin air!
 
 	if (mo->player->spectator)
 	{
 		P_SlideMove(mo, result);
+		return;
+	}
+
+	if (!P_MobjWasRemoved(result->mo))
+	{
+		boolean solid = false, bounce = false;
+
+		if (result->mo->player != NULL)
+		{
+			// The bump has to happen last
+			mobj_t *mo1 = mo;
+			mobj_t *mo2 = result->mo;
+			boolean zbounce = false;
+
+			if (P_IsObjectOnGround(result->mo) && mo->momz < 0)
+			{
+				zbounce = true;
+				mo1 = result->mo;
+				mo2 = mo;
+			}
+			else if (P_IsObjectOnGround(mo) && result->mo->momz < 0)
+			{
+				zbounce = true;
+			}
+
+			K_KartBouncing(mo1, mo2, zbounce, false);
+			return;
+		}
+		else switch (result->mo->type)
+		{
+		case MT_BLUEROBRA:
+		case MT_BLUEROBRA_HEAD:
+		case MT_SMK_PIPE:
+		case MT_SMK_THWOMP:
+			solid = true;
+			break;
+
+		default:
+			if (result->mo->flags & MF_SOLID)
+				solid = true;
+			// FALLTHRU
+		case MT_KART_LEFTOVER:
+			bounce = P_IsObjectOnGround(result->mo) && mo->momz < 0;
+			break;
+		}
+
+		K_KartBouncing(mo, result->mo, bounce, solid);
 		return;
 	}
 
