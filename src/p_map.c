@@ -3422,8 +3422,49 @@ void P_SlideMove(mobj_t *mo, TryMoveResult_t *result)
 	}
 
 papercollision:
-	tmxmove = mo->momx;
-	tmymove = mo->momy;
+	// TODO: sadly, we need to recreate kart's slidemove jank to fix the grand metropolis wall
+	// this thing here only works for 90-degree lines, can't be assed to deal with anything else
+	if (mapnamespace == MNS_SRB2KART && (bestslideline->slopetype == ST_HORIZONTAL || bestslideline->slopetype == ST_VERTICAL))
+	{
+		fixed_t leadx = mo->x + (mo->momx > 0 ? mo->radius : -mo->radius);
+		fixed_t leady = mo->y + (mo->momy > 0 ? mo->radius : -mo->radius);
+
+		// P_InterceptVector (bestslidefrac)
+		fixed_t den = FixedMul(bestslideline->dy>>8, mo->momx) - FixedMul(bestslideline->dx>>8, mo->momy);
+		fixed_t num = FixedMul((bestslideline->v1->x - leadx)>>8, bestslideline->dy) + FixedMul((leady - bestslideline->v1->y)>>8, bestslideline->dx);
+		fixed_t frac = den ? FixedDiv(num, den) : 0;
+
+		// fudge a bit to make sure it doesn't hit
+		frac -= 0x800;
+		if (frac > 0)
+		{
+			newx = FixedMul(mo->momx, frac);
+			newy = FixedMul(mo->momy, frac);
+
+			if (!P_TryMove(mo, mo->x + newx, mo->y + newy, true, NULL))
+			{
+				if (!P_TryMove(mo, mo->x, mo->y + mo->momy, true, NULL)) //Allow things to drop off.
+					P_TryMove(mo, mo->x + mo->momx, mo->y, true, NULL);
+				return;
+			}
+		}
+
+		frac = FRACUNIT - (frac + 0x800);
+
+		if (frac > FRACUNIT)
+			frac = FRACUNIT;
+
+		if (frac <= 0)
+			return;
+
+		tmxmove = FixedMul(mo->momx, frac);
+		tmymove = FixedMul(mo->momy, frac);
+	}
+	else
+	{
+		tmxmove = mo->momx;
+		tmymove = mo->momy;
+	}
 
 	P_HitSlideLine(bestslideline); // clip the moves
 
