@@ -628,7 +628,7 @@ static void P_DeviceRumbleTick(void)
 			&& player->rings < player->rings+1)
 		)
 		{
-			high = CLAMP((high + FRACUNIT / 256), 0, UINT16_MAX);
+			low = CLAMP((low + FRACUNIT / 256), 0, UINT16_MAX);
 		}
 
 		// hack alert! i just dont want this thing constantly resetting the rumble lol
