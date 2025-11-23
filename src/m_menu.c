@@ -7929,6 +7929,7 @@ INT32 MR_SetupControlsMenu(INT32 arg)
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "LITESTEER", &cv_litesteer[arg]);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "LEDCOLOR", &cv_gamepadled[arg]);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "RUMBLE", &cv_rumble[arg]);
+	M_SetItemCvar(MN_OP_CHANGECONTROLS, "RUMBLESTR", &cv_rumblestrength[arg]);
 
 	M_SetItemVisible(MN_OP_CHANGECONTROLS, "TALK", player1); // Chat
 	//M_SetItemVisible(MN_OP_CHANGECONTROLS, "TEAM", player1); // Team-chat

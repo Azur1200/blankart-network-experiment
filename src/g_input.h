@@ -98,6 +98,7 @@ extern consvar_t cv_controlperkey;
 extern consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_rumble[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_rumblestrength[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS];
 
 // current state of the keys: JOYAXISRANGE or 0 when boolean.

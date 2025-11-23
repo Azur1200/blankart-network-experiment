@@ -1257,6 +1257,7 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_litesteer[i]);
 		CV_RegisterVar(&cv_turnsmooth[i]);
 		CV_RegisterVar(&cv_rumble[i]);
+		CV_RegisterVar(&cv_rumblestrength[i]);
 		CV_RegisterVar(&cv_gamepadled[i]);
 	}
 
