@@ -478,11 +478,20 @@ void P_UnsetThingPosition(mobj_t *thing);
 void P_SetThingPosition(mobj_t *thing);
 void P_SetUnderlayPosition(mobj_t *thing);
 
+typedef struct
+{
+	// Lets calculate bounces at point of contact instead of using end of trymove position.
+	fixed_t x;
+	fixed_t y;
+	SINT8 mobjpnum;
+} bounceorgin_t;
+
 struct TryMoveResult_t
 {
 	boolean success;
 	line_t *line;
 	mobj_t *mo;
+	bounceorgin_t bounceorgin;
 	boolean blockingmo; // set if PIT_CheckThing blocked the move (mo may still be set!)
 	vector2_t normal;
 };

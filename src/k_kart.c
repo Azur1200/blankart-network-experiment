@@ -735,7 +735,7 @@ static void K_SetPlayerBumped(player_t *player, mobj_t *comparemobj)
 	}
 }
 
-boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
+boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid, TryMoveResult_t *result)
 {
 	fixed_t distx, disty;
 	fixed_t mass1, mass2;
@@ -811,9 +811,14 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 	else
 		mass2 = K_GetMobjWeight(mobj2, mobj1);
 
+	fixed_t mobj1x = result != NULL && result->bounceorgin.mobjpnum == 1 ? result->bounceorgin.x : mobj1->x;
+	fixed_t mobj1y = result != NULL && result->bounceorgin.mobjpnum == 1 ? result->bounceorgin.y : mobj1->y;
+	fixed_t mobj2x = result != NULL && result->bounceorgin.mobjpnum == 2 ? result->bounceorgin.x : mobj2->x;
+	fixed_t mobj2y = result != NULL && result->bounceorgin.mobjpnum == 2 ? result->bounceorgin.y : mobj2->y;
+
 	// Adds the OTHER player's momentum times a bunch, for the best chance of getting the correct direction
-	distx = (mobj1->x + mobj2->momx*3) - (mobj2->x + mobj1->momx*3);
-	disty = (mobj1->y + mobj2->momy*3) - (mobj2->y + mobj1->momy*3);
+	distx = (mobj1x + mobj2->momx*3) - (mobj2x + mobj1->momx*3);
+	disty = (mobj1y + mobj2->momy*3) - (mobj2y + mobj1->momy*3);
 
 	force = K_GetBounceForce(mobj1, mobj2, &distx, &disty, true);
 
