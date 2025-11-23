@@ -131,8 +131,11 @@ extern const INT32 gcl_full[num_gcl_full];
 
 skincolornum_t G_GetSkinColorForGamepad(INT32 playernum);
 void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color);
+void G_DeviceLEDTick(void);
+void G_ResetDeviceLED(void);
 void G_ResetAllDeviceRumbles(void);
 void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
+void G_DeviceRumbleTick(void);
 
 INT32 G_GetDevicePlayer(INT32 deviceID);
 

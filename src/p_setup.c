@@ -109,6 +109,7 @@
 #include "k_mapuser.h"
 #include "p_deepcopy.h"
 #include "k_specialstage.h"
+#include "g_input.h"
 
 #include "blan/b_soc.h"
 
@@ -9078,7 +9079,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	G_AddMapToBuffer(gamemap-1);
 
-	D_ResetDeviceLED();
+	G_ResetDeviceLED();
 
 	P_MapEnd(); // g_tm.thing is no longer needed from this point onwards
 
