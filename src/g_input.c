@@ -619,6 +619,18 @@ void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_stre
 	I_GamepadRumble(playernum, low_strength, high_strength, duration);
 }
 
+// rumble strengths
+enum
+{
+	RUMBLE_VERYSTRONG = FRACUNIT / 4,   // 16384
+	RUMBLE_STRONG     = FRACUNIT / 8,   // 8192
+	RUMBLE_MODERATE   = FRACUNIT / 64,  // 1024
+	RUMBLE_WEAK       = FRACUNIT / 128, // 512
+	RUMBLE_VERYWEAK   = FRACUNIT / 256, // 256
+};
+// TODO: multiplier to make them user changable
+// due to some controllers being more/less sensitive than others
+
 // Controller rumble!
 // this keeps track of a bunch of things
 // and makes your controller rumble accordingly
@@ -644,8 +656,8 @@ void G_DeviceRumbleTick(void)
 		}
 
 		UINT16 low = 0, high = 0;
-		UINT16 lenght = 57; // in ms
-
+		// for how long the action should rumble, in ms
+		UINT16 lenght = 57; // 57ms is a short pulse, matches super well with this updating once per tic
 		const player_t *player = &players[g_localplayers[i]];
 
 		// allow lua to do some crap for spectators
@@ -666,11 +678,11 @@ void G_DeviceRumbleTick(void)
 		if (player->spinouttimer)
 		{
 			//low = high = FRACUNIT / 6;
-			low = high = FixedMul((FRACUNIT / 4), (FixedDiv(player->spinouttimer, (3*TICRATE / 2)))); // try do some some kinda fadeout
+			low = high = FixedMul((RUMBLE_VERYSTRONG), (FixedDiv(player->spinouttimer, (3*TICRATE / 2)))); // try do some some kinda fadeout, 3*TICRATE / 2 is the "default" spinout time
 		}
 		else if (player->sneakertimer > (sneakertime-(TICRATE/2)))
 		{
-			low = high = FRACUNIT / 8;
+			low = high = RUMBLE_STRONG;
 		}
 		else if ((player->offroad)
 			&& player->speed != 0
@@ -679,15 +691,15 @@ void G_DeviceRumbleTick(void)
 			// weaken this depending on if you got hyu or invinc
 			if (player->hyudorotimer)
 			{
-				high = FRACUNIT / 128;
+				high = RUMBLE_WEAK;
 			}
 			else if (player->invincibilitytimer)
 			{
-				high = FRACUNIT / 64;
+				high = RUMBLE_MODERATE;
 			}
 			else
 			{
-				low = high = FRACUNIT / 64;
+				low = high = RUMBLE_MODERATE;
 			}
 		}
 		else if ((player->bananadrag > TICRATE)
@@ -695,19 +707,19 @@ void G_DeviceRumbleTick(void)
 			&& P_IsObjectOnGround(player->mo))
 		{
 			if (leveltime & 1) // this is actually funny lel
-				high = FRACUNIT / 64;
+				high = RUMBLE_MODERATE;
 		}
 
 		if (player->pflags & PF_BRAKEDRIFT)
 		{
-			high = CLAMP((high + FRACUNIT / 256), 0, UINT16_MAX);
+			high = CLAMP((high + RUMBLE_VERYWEAK), 0, UINT16_MAX);
 		}
 
 		// pulse when gettin new driftlevel
 		if (/*player->driftcharge // gets reset within K_KartDrift
 			&& */player->driftlevel)
 		{
-			high = CLAMP((high + FRACUNIT / 256), 0, UINT16_MAX);
+			high = CLAMP((high + RUMBLE_VERYWEAK), 0, UINT16_MAX);
 
 			// rumble during charging drifts
 			// when you reach new driftlevel
@@ -726,7 +738,7 @@ void G_DeviceRumbleTick(void)
 			if (player->driftlevel >= 20)
 			{
 				// give some oompfh on release
-				low = CLAMP((low + FRACUNIT / 256), 0, UINT16_MAX);
+				low = CLAMP((low + RUMBLE_VERYWEAK), 0, UINT16_MAX);
 
 				if (player->driftlevel == 20)
 					lenght = 114;
@@ -746,7 +758,7 @@ void G_DeviceRumbleTick(void)
 			&& player->rings < player->rings+1)
 		)
 		{
-			low = CLAMP((low + FRACUNIT / 256), 0, UINT16_MAX);
+			low = CLAMP((low + RUMBLE_VERYWEAK), 0, UINT16_MAX);
 		}
 
 		// hack alert! i just dont want this thing constantly resetting the rumble lol
