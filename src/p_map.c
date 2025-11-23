@@ -2724,6 +2724,11 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff, Try
 	fixed_t startingonground = P_IsObjectOnGround(thing);
 	sector_t *oldsector = thing->subsector->sector;
 
+	// no result provided? fine, i'll just make my own!
+	TryMoveResult_t tmp = {0};
+	if (result == NULL)
+		result = &tmp;
+
 	// Is the move OK?
 	boolean success = increment_move(thing, x, y, allowdropoff, result);
 	if (!success)
