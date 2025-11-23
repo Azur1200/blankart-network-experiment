@@ -1421,7 +1421,7 @@ static void K_drawKartItem(void)
 		V_SetClipRect((fx + 8) << FRACBITS, (fy + 8) << FRACBITS, 34 << FRACBITS, 34 << FRACBITS, V_HUDTRANS|fflags);
 		for (int rouletteshift = -1; rouletteshift <= 2; rouletteshift++)
 		{
-			shiftprog = (FRACUNIT * -rouletteshift) + (FixedDiv(stplyr->itemroulette, animlength) % FRACUNIT);
+			shiftprog = (FRACUNIT * -rouletteshift) + (FixedDiv((stplyr->itemroulette<<FRACBITS)|R_GetTimeFrac(RTF_LEVEL), animlength<<FRACBITS) % FRACUNIT);
 			alpha = (FixedMul((abs(shiftprog) * 10), FixedDiv(hudtrans << FRACBITS, 10 << FRACBITS)) >> FRACBITS)+(10-hudtrans);
 			rfy = (fy<<FRACBITS) + shift*shiftprog;
 			if (0 > alpha) alpha = 0;

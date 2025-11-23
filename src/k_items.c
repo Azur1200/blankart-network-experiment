@@ -71,7 +71,7 @@ static CV_PossibleValue_t kartitemvariant_cons_t[] = {{0, "Legacy"}, {1, "Altern
 #define MAXBATTLEPROBABILITY (REALMAXBATTLEPROB * BATTLEODDSMUL)
 
 consvar_t cv_fancyroulette = CVAR_INIT ("fancyroulette", "Off", CV_SAVE, CV_OnOff, NULL);
-consvar_t cv_fancyroulettespeed = CVAR_INIT ("fancyroulettespeed", "5", CV_SAVE, CV_Natural, NULL);
+consvar_t cv_fancyroulettespeed = CVAR_INIT ("fancyroulettespeed", "3", CV_SAVE, CV_Natural, NULL);
 
 void K_RegisterItem(kartitemtype_e itemtype)
 {
