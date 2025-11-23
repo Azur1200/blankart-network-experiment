@@ -3722,7 +3722,7 @@ static int lib_kKartBouncing(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (!mobj2)
 		return LUA_ErrInvalid(L, "mobj_t");
-	K_KartBouncing(mobj1, mobj2, bounce, solid, NULL);
+	K_KartBouncing(mobj1, mobj2, bounce, solid);
 	return 0;
 }
 

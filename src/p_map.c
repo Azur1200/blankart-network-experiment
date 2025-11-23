@@ -2067,9 +2067,6 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 		if (result->mo == NULL) // || g_tm.hitthing != NULL) // don't bump the most distant object in multiple BMIT_CONTINUE bumps...?
 		{
 			result->mo = g_tm.hitthing;
-			result->bounceorgin.x = g_tm.hitthing ? g_tm.hitthing->x : INT32_MAX;
-			result->bounceorgin.y = g_tm.hitthing ? g_tm.hitthing->y : INT32_MAX;
-			result->bounceorgin.mobjpnum = 0;
 			result->blockingmo = !blockval;
 		}
 	}
@@ -3638,8 +3635,6 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 		mobj_t *mo1 = mo, *mo2 = result->mo;
 		boolean bounce = false;
 
-		result->bounceorgin.mobjpnum = 2;
-
 		if (mo2->player != NULL)
 		{
 			if (P_IsObjectOnGround(mo2) && mo1->momz < 0)
@@ -3651,7 +3646,6 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 				bounce = true;
 				mo1 = result->mo;
 				mo2 = mo;
-				result->bounceorgin.mobjpnum = 1;
 			}
 		}
 		else switch (mo2->type)
@@ -3670,7 +3664,7 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 		}
 
 		// no more special logic! if you want a solid bounce, return BMIT_ABORT
-		if (!K_KartBouncing(mo1, mo2, bounce, result->blockingmo, result))
+		if (!K_KartBouncing(mo1, mo2, bounce, result->blockingmo))
 		{
 			// if you can't bounce, slide off of blocking mobjs instead of getting trapped
 			if (result->blockingmo)

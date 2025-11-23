@@ -206,7 +206,7 @@ boolean K_IsPlayerLosing(const player_t *player);
 fixed_t K_GetKartGameSpeedScalar(SINT8 value);
 
 fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against);
-boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid, TryMoveResult_t *result);
+boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid);
 void K_KartPainEnergyFling(player_t *player);
 void K_FlipFromObject(mobj_t *mo, mobj_t *master);
 void K_MatchGenericExtraFlags(mobj_t *mo, mobj_t *master);
