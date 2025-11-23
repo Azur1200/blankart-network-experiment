@@ -1655,14 +1655,14 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 		{
 			if (g_tm.thing->z < open.floor)
 			{
-				if (open.floorstep > g_tm.maxstep)
+				if (open.floor - g_tm.thing->z > g_tm.maxstep)
 				{
 					P_TestLine(ld);
 				}
 			}
 			else if (open.ceiling < g_tm.thing->z + g_tm.thing->height)
 			{
-				if (open.ceilingstep > g_tm.maxstep)
+				if ((g_tm.thing->z + g_tm.thing->height) - open.ceiling > g_tm.maxstep)
 				{
 					P_TestLine(ld);
 				}
