@@ -5529,12 +5529,6 @@ sector_t *P_ThingOnSpecial3DFloor(mobj_t *mo)
 {
 	ffloor_t *rover;
 
-	if (!mo || P_MobjWasRemoved(mo))
-		return NULL;
-
-	if (!mo->subsector)
-		return NULL;
-
 	for (rover = mo->subsector->sector->ffloors; rover; rover = rover->next)
 	{
 		if (!rover->master->frontsector->special)
