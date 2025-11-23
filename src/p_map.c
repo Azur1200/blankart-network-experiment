@@ -2062,12 +2062,67 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 		}
 	}
 
-	if (result != NULL)
+	// object bounces!
+	// ideally, this should NOT be located within P_CheckPosition, and should be placed in
+	// the respective collision response code... but that ship sailed decades ago, so here we are!
+	// this is a compromise to ensure consistent behavior with kart v1 (bumps should always happen,
+	// even for checkposition/teleportmove calls), while still letting us pass K_KartBouncing's
+	// result back via P_TryMove, so you slide off of solid mobjs, rather than clipping inside or
+	// getting stuck or bouncing multiple times... you get the idea.
+	if (!P_MobjWasRemoved(g_tm.hitthing))
 	{
-		if (result->mo == NULL) // || g_tm.hitthing != NULL) // don't bump the most distant object in multiple BMIT_CONTINUE bumps...?
+		mobj_t *mo1 = thing, *mo2 = g_tm.hitthing;
+		boolean stomp = false;
+
+		if (mo2->player != NULL)
+		{
+			if (P_IsObjectOnGround(mo2) && mo1->momz < 0)
+			{
+				stomp = true;
+			}
+			else if (P_IsObjectOnGround(mo1) && mo2->momz < 0)
+			{
+				stomp = true;
+				mo1 = g_tm.hitthing;
+				mo2 = thing;
+			}
+		}
+		else switch (mo2->type)
+		{
+		case MT_BLUEROBRA:
+		case MT_BLUEROBRA_HEAD:
+		case MT_SMK_PIPE:
+		case MT_SMK_THWOMP:
+		case MT_SMK_ICEBLOCK:
+			break;
+
+		default:
+		case MT_KART_LEFTOVER:
+			stomp = P_IsObjectOnGround(mo2) && mo1->momz < 0;
+			break;
+		}
+
+		// no more special logic! if you want a solid bounce, return BMIT_ABORT
+		boolean bounced = K_KartBouncing(mo1, mo2, stomp, !blockval);
+
+		// the first object you bump into is the one that gets returned
+		if (result != NULL && result->mo == NULL)
 		{
 			result->mo = g_tm.hitthing;
-			result->blockingmo = !blockval;
+			if (!blockval && !bounced) // if you can't bounce off a solid mobj,
+				result->slideout = true; // slide off instead of getting trapped
+		}
+
+		// items must be flung AFTER bouncing, to ensure correct physics
+		if (mo1->type == MT_ORBINAUT || mo1->type == MT_ORBINAUT_SHIELD
+		 || mo1->type == MT_JAWZ || mo1->type == MT_JAWZ_SHIELD || mo1->type == MT_JAWZ_DUD)
+		{
+			K_ItemDamage(mo1, mo2, false);
+		}
+		else if (mo2->type == MT_ORBINAUT || mo2->type == MT_ORBINAUT_SHIELD
+		 || mo2->type == MT_JAWZ || mo2->type == MT_JAWZ_SHIELD || mo2->type == MT_JAWZ_DUD)
+		{
+			K_ItemDamage(mo2, mo1, false);
 		}
 	}
 
@@ -2724,15 +2779,13 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff, Try
 	fixed_t startingonground = P_IsObjectOnGround(thing);
 	sector_t *oldsector = thing->subsector->sector;
 
-	// no result provided? fine, i'll just make my own!
-	TryMoveResult_t tmp = {0};
-	if (result == NULL)
-		result = &tmp;
-
 	// Is the move OK?
-	boolean success = increment_move(thing, x, y, allowdropoff, result);
-	if (!success)
-		goto exit;
+	if (!increment_move(thing, x, y, allowdropoff, result))
+	{
+		if (result != NULL)
+			result->success = false;
+		return false;
+	}
 
 	// If it's a pushable object, check if anything is
 	// standing on top and move it, too.
@@ -2849,64 +2902,10 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff, Try
 
 	numspechitint = 0U;
 
-exit:
 	if (result != NULL)
-		result->success = success;
+		result->success = true;
 
-	if (result != NULL && !P_MobjWasRemoved(result->mo)) // object bounce
-	{
-		mobj_t *mo1 = thing, *mo2 = result->mo;
-		boolean bounce = false;
-
-		if (mo2->player != NULL)
-		{
-			if (P_IsObjectOnGround(mo2) && mo1->momz < 0)
-			{
-				bounce = true;
-			}
-			else if (P_IsObjectOnGround(mo1) && mo2->momz < 0)
-			{
-				bounce = true;
-				mo1 = result->mo;
-				mo2 = thing;
-			}
-		}
-		else switch (mo2->type)
-		{
-		case MT_BLUEROBRA:
-		case MT_BLUEROBRA_HEAD:
-		case MT_SMK_PIPE:
-		case MT_SMK_THWOMP:
-		case MT_SMK_ICEBLOCK:
-			break;
-
-		default:
-		case MT_KART_LEFTOVER:
-			bounce = P_IsObjectOnGround(mo2) && mo1->momz < 0;
-			break;
-		}
-
-		// no more special logic! if you want a solid bounce, return BMIT_ABORT
-		if (!K_KartBouncing(mo1, mo2, bounce, result->blockingmo))
-		{
-			// if you can't bounce, slide off of blocking mobjs instead of getting trapped
-			if (result->blockingmo)
-				result->slideout = true;
-		}
-
-		if (mo1->type == MT_ORBINAUT || mo1->type == MT_ORBINAUT_SHIELD
-		 || mo1->type == MT_JAWZ || mo1->type == MT_JAWZ_SHIELD || mo1->type == MT_JAWZ_DUD)
-		{
-			K_ItemDamage(mo1, mo2, false);
-		}
-		else if (mo2->type == MT_ORBINAUT || mo2->type == MT_ORBINAUT_SHIELD
-		 || mo2->type == MT_JAWZ || mo2->type == MT_JAWZ_SHIELD || mo2->type == MT_JAWZ_DUD)
-		{
-			K_ItemDamage(mo2, mo1, false);
-		}
-	}
-
-	return success;
+	return true;
 }
 
 boolean P_SceneryTryMove(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *result)
@@ -3572,7 +3571,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	I_Assert(result != NULL);
 
-	if (mo->player->spectator || result->slideout)
+	if (mo->player->spectator || (result->slideout && result->line == NULL))
 	{
 		P_SlideMove(mo, result);
 		return;
@@ -3687,7 +3686,7 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 		return;
 	}
 
-	if (mo->eflags & MFE_JUSTBOUNCEDWALL || result->slideout)
+	if (mo->eflags & MFE_JUSTBOUNCEDWALL || (result->slideout && result->line == NULL))
 	{
 		P_SlideMove(mo, result);
 		return;
