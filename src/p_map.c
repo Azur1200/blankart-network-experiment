@@ -3508,7 +3508,7 @@ papercollision:
 // Bounce move, for players.
 //
 
-static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
+static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result, boolean slideout)
 {
 	fixed_t mmomx = 0, mmomy = 0;
 	fixed_t oldmomx = mo->momx, oldmomy = mo->momy;
@@ -3522,7 +3522,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	if (result == NULL)
 		return;
 
-	if (mo->player->spectator)
+	if (mo->player->spectator || slideout)
 	{
 		P_SlideMove(mo, result);
 		return;
@@ -3590,7 +3590,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	else
 	{
 		// Some walls aren't bouncy even if you are
-		if (result->line && (result->line->flags & ML_NOTBOUNCY))
+		if (result->line->flags & ML_NOTBOUNCY)
 		{
 			// SRB2Kart: Non-bouncy line!
 			P_SlideMove(mo, result);
@@ -3625,6 +3625,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 {
 	fixed_t mmomx = 0, mmomy = 0;
+	boolean slideout = false;
 
 	if (P_MobjWasRemoved(mo))
 		return;
@@ -3663,16 +3664,21 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 		}
 
 		// no more special logic! if you want a solid bounce, return BMIT_ABORT
-		K_KartBouncing(mo1, mo2, bounce, result->blockingmo);
+		if (!K_KartBouncing(mo1, mo2, bounce, result->blockingmo))
+		{
+			// if you can't bounce, slide off of blocking mobjs instead of getting trapped
+			if (result->blockingmo)
+				slideout = true;
+		}
 	}
 
 	if (mo->player)
 	{
-		P_BouncePlayerMove(mo, result);
+		P_BouncePlayerMove(mo, result, slideout);
 		return;
 	}
 
-	if (mo->eflags & MFE_JUSTBOUNCEDWALL)
+	if (mo->eflags & MFE_JUSTBOUNCEDWALL || slideout)
 	{
 		P_SlideMove(mo, result);
 		return;
