@@ -40,7 +40,7 @@ angle_t K_GetCollideAngle(mobj_t *t1, mobj_t *t2)
 }
 
 // This/Other Item Damage
-static void K_ItemDamage(mobj_t *t1, mobj_t *t2, boolean clash)
+void K_ItemDamage(mobj_t *t1, mobj_t *t2, boolean clash)
 {
 	if (t1->eflags & MFE_VERTICALFLIP)
 		t1->z -= t1->height;
@@ -98,6 +98,7 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 		{
 			// Melt item
 			S_StartSound(t2, sfx_s3k43);
+			damageitem = true;
 		}
 		else
 		{
@@ -105,9 +106,8 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 			P_DamageMobj(t2, t1, t1->target, 1, DMG_WIPEOUT);
 			K_SetHitThing(t2, t1);
 			S_StartSound(t2, sfx_s3k7b);
+			//damageitem = true; // delayed until K_KartBouncing, don't mess with the orbi's momentum
 		}
-
-		damageitem = true;
 	}
 	else if (t2->type == MT_ORBINAUT || t2->type == MT_JAWZ || t2->type == MT_JAWZ_DUD
 		|| t2->type == MT_ORBINAUT_SHIELD || t2->type == MT_JAWZ_SHIELD

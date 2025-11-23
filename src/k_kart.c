@@ -822,14 +822,7 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		return false;
 	}
 
-	if (mobj2->health <= 0 && (mobj2->type == MT_ORBINAUT || mobj2->type == MT_ORBINAUT_SHIELD
-	 || mobj2->type == MT_JAWZ || mobj2->type == MT_JAWZ_SHIELD || mobj2->type == MT_JAWZ_DUD))
-	{
-		// dead orbis and jawz are supposed to have a momz of 0 here
-		// but K_KartBouncing now runs AFTER K_ItemDamage
-		mobj1->momz = 0;
-	}
-	else if (bounce == true && mass2 > 0) // Perform a Goomba Bounce.
+	if (bounce == true && mass2 > 0) // Perform a Goomba Bounce.
 	{
 		mobj1->momz = -mobj1->momz;
 	}

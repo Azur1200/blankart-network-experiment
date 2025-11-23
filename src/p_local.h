@@ -484,6 +484,7 @@ struct TryMoveResult_t
 	line_t *line;
 	mobj_t *mo;
 	boolean blockingmo; // set if PIT_CheckThing blocked the move (mo may still be set!)
+	boolean slideout; // set if bouncing failed, and the moving mobj should slide
 	vector2_t normal;
 };
 
