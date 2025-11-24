@@ -844,7 +844,17 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch)
 	ALuint source = handle;
 	TRY(alSourcef, source, AL_GAIN, sfx_volume * (vol / 255.0f));
 	TRY(alSourcef, source, AL_PITCH, pitch / 128.0f);
-	(void)sep;
+
+	// TODO: Real 3D Audio.
+	// create a panning effect by moving the source in an arc around the listener
+	// Based on https://github.com/kcat/openal-soft/issues/194
+	float leftpan = min((0xff-sep)<<1, 0xff) / 255.0f;
+	float rightpan = min(sep<<1, 0xff) / 255.0f;
+	float pan = (acosf(leftpan) + asinf(rightpan)) / ((float)M_PI); // average angle in [0,1]
+	pan = 2 * pan - 1; // convert to [-1, 1]
+	pan = pan * 0.5f; // 0.5 = sin(30') for a +/- 30 degree arc
+	TRY(alSourcei, source, AL_SOURCE_RELATIVE, AL_TRUE);
+	TRY(alSource3f, source, AL_POSITION, pan, 0, -sqrtf(1.0f - pan*pan));
 }
 
 INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel)
@@ -873,7 +883,7 @@ INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priori
 		return INVALID_HANDLE;
 	}
 
-	(void)sep; // panning is now handled by real object positioning instead
+	//(void)sep; // panning is now handled by real object positioning instead
 	(void)priority; // priority and channel management is handled by SRB2...
 	(void)channel; // no longer used
 	return source;
