@@ -2089,16 +2089,22 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 		}
 		else switch (mo2->type)
 		{
-		case MT_BLUEROBRA:
 		case MT_BLUEROBRA_HEAD:
+		case MT_BLUEROBRA_JOINT:
 		case MT_SMK_PIPE:
 		case MT_SMK_THWOMP:
 		case MT_SMK_ICEBLOCK:
+		case MT_ORBINAUT:
+		case MT_ORBINAUT_SHIELD:
+		case MT_JAWZ:
+		case MT_JAWZ_SHIELD:
+		case MT_JAWZ_DUD:
+		case MT_FALLINGROCK:
 			break;
 
 		default:
 		case MT_KART_LEFTOVER:
-			stomp = P_IsObjectOnGround(mo2) && mo1->momz < 0;
+			stomp = P_IsObjectOnGround(mo2) && mo1->momz < 0; // huh? gravity flip? never heard of it :^)
 			break;
 		}
 
