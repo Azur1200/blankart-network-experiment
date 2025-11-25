@@ -989,7 +989,7 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 		//player->starposttime = leveltime;
 		player->starpostx = toucher->x;
 		player->starposty = toucher->y;
-		player->starpostz = post->z;
+		player->starpostz = toucher->eflags & MFE_VERTICALFLIP ? toucher->ceilingz : toucher->floorz;//post->z;
 		player->starpostangle = post->angle;
 		player->starpostflip = post->spawnpoint->options & MTF_OBJECTFLIP;	// store flipping
 	}
