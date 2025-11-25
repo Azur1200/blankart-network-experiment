@@ -12433,6 +12433,9 @@ void P_AfterPlayerSpawn(INT32 playernum)
 	mobj_t *mobj = p->mo;
 	UINT8 i;
 
+	// fix the verticalflip flag to prevent camera jank (the player mobj initially spawns at the origin)
+	P_CheckGravity(players[playernum].mo, false);
+
 	// Update interpolation
 	mobj->old_x = mobj->x;
 	mobj->old_y = mobj->y;
@@ -12582,18 +12585,15 @@ void P_MovePlayerToStarpost(INT32 playernum)
 	sector->c_slope ? P_GetSlopeZAt(sector->c_slope, mobj->x, mobj->y) :
 	sector->ceilingheight;
 
+	z = CLAMP(p->starpostz, floor, ceiling); // no more copyslope floorspawning jank
+
 	if (mobj->player->starpostflip)
-		z = p->starpostz - 128*mapobjectscale - mobj->height;
+		z -= 128*mapobjectscale + mobj->height;
 	else
-		z = p->starpostz + 128*mapobjectscale;
+		z += 128*mapobjectscale;
 
-	//z = (p->starpostz + 128) << FRACBITS; // reverse gravity exists, pls
-	mobj->player->starpostflip = 0;
-
-	if (z < floor)
-		z = floor;
-	else if (z > ceiling - mobjinfo[MT_PLAYER].height)
-		z = ceiling - mobjinfo[MT_PLAYER].height;
+	z = CLAMP(z, floor, ceiling - mobjinfo[MT_PLAYER].height);
+	//mobj->player->starpostflip = 0; // why???
 
 	mobj->floorz = floor;
 	mobj->ceilingz = ceiling;
