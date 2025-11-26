@@ -1960,7 +1960,7 @@ void P_SceneryXYMovement(mobj_t *mo)
 	oldy = mo->y;
 
 	if (!P_SceneryTryMove(mo, mo->x + mo->momx, mo->y + mo->momy, &result))
-		P_BounceMove(mo, &result);
+		(mo->flags & MF_BOUNCE ? P_BounceMove : P_SlideMove)(mo, &result);
 
 	if (P_MobjWasRemoved(mo))
 		return;
@@ -2422,6 +2422,11 @@ boolean P_ZMovement(mobj_t *mo)
 			mom.z = P_MobjFlip(mo)*FixedMul(5*FRACUNIT, mo->scale);
 		else if (mo->type == MT_SPINFIRE) // elemental shield fire is another exception here
 			;
+		else if (mo->type == MT_PLAYER) // only DEAD players
+		{
+			mom.z = -4*mom.z/5;
+			mo->flags |= MF_NOCLIPHEIGHT; // fall through floor next time
+		}
 		else if (mo->flags & MF_MISSILE)
 		{
 			if (!(mo->flags & MF_NOCLIP))
@@ -2992,7 +2997,12 @@ boolean P_SceneryZMovement(mobj_t *mo)
 		{
 			mo->eflags |= MFE_JUSTHITFLOOR; // Spin Attack
 
-			if (g_tm.floorthing)
+			if (mo->type == MT_KART_TIRE)
+			{
+				mo->momz = -mo->momz;
+				mo->flags |= MF_NOCLIPHEIGHT;
+			}
+			else if (g_tm.floorthing)
 				mo->momz = g_tm.floorthing->momz;
 			else if (!g_tm.floorthing)
 				mo->momz = 0;
@@ -7951,7 +7961,7 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 			}
 		}
 		// Apply gravity to fall downwards.
-		else if (skins[mobj->player->skin].flags & SF_OLDDEATH)
+		else if (mobj->player == NULL || skins[mobj->player->skin].flags & SF_OLDDEATH)
 		{
 			P_SetObjectMomZ(mobj, -3*FRACUNIT/2, true);
 			if (mobj->player != NULL)

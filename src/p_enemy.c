@@ -11987,3 +11987,27 @@ void A_SpawnSneakerPanel(void *thing)
 	mo->angle = actor->angle;
 	Obj_SneakerPanelSpriteScale(mo);
 }
+
+// spews the kart's gib particles
+void A_KartGibs(void *thing)
+{
+	mobj_t *actor = thing;
+	angle_t tireangle = actor->angle + ANGLE_90 - ANGLE_22h;
+	INT32 i;
+
+	if (LUA_CallAction(A_KARTGIBS, actor))
+		return;
+
+	for (i = 0; i < 4; i++, tireangle += ANGLE_45)
+	{
+		if (i == 2) tireangle += ANGLE_90;
+
+		mobj_t *tire = P_SpawnMobjFromMobj(actor, 0, 0, 0, MT_KART_TIRE);
+		tire->fuse = 3*TICRATE;
+		tire->angle = tireangle;
+		if (i == 0 || i == 3)
+			P_SetScale(tire, (tire->destscale = 3*tire->scale/4));
+		P_InstaThrust(tire, tireangle, 3 * tire->scale);
+		P_SetObjectMomZ(tire, 9*FRACUNIT + 3*P_RandomFixed(), false);
+	}
+}
