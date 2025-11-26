@@ -8885,6 +8885,12 @@ static void K_KartDrift(player_t *player, boolean onground)
 	if (player->pogospring == 2 && player->mo->scale > mapobjectscale)
 		minspeed = FixedMul(10<<FRACBITS, mapobjectscale);
 
+	// air thrust drag
+	if (K_IsAirThrustActive() && !onground)
+	{
+		K_HandleAirDriftDrag(player);
+	}
+	
 	// Drifting is actually straffing + automatic turning.
 	// Holding the Jump button will enable drifting.
 
