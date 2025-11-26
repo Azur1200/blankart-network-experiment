@@ -1229,9 +1229,9 @@ boolean HU_Responder(event_t *ev)
 		&& !G_ControlBoundToKey(0, gc_talkkey, ev->data1, false))
 			return false;
 
-		M_TextInputHandleEmotes(&w_chat, c, &emote_autocomplete);
-
-		if (c == KEY_ENTER)
+		if (M_TextInputHandleEmotes(&w_chat, c, &emote_autocomplete))
+			; // Do nothing
+		else if (c == KEY_ENTER)
 		{
 			if (!CHAT_MUTE)
 				HU_sendChatMessage();
@@ -1776,7 +1776,7 @@ static void HU_DrawChat(void)
 		}
 	}
 
-	if (emote_autocomplete.emotestart != -1 && (emote_autocomplete.complete[0] || (w_chat.cursor - emote_autocomplete.emotestart) > 0))
+	if (emote_autocomplete.emotestart != -1 && (emote_autocomplete.complete[0] || (w_chat.cursor - emote_autocomplete.emotestart) > 1))
 	{
 		emote_t *suggest;
 		int skip = 0;
