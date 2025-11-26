@@ -22,6 +22,7 @@
 #include "m_random.h"
 #include "s_sound.h"
 #include "g_game.h"
+#include "g_input.h"
 #include "m_menu.h"
 #include "y_inter.h"
 #include "hu_stuff.h"	// HU_AddChatText
@@ -33,7 +34,7 @@
 #include "k_color.h"
 #include "k_hud.h"
 #include "k_waypoint.h"
-#include "k_odds.h"
+#include "k_items.h"
 #include "d_netcmd.h" // IsPlayerAdmin
 #include "m_menu.h" // Player Setup menu color stuff
 #include "p_spec.h" // P_StartQuake
@@ -282,6 +283,15 @@ static int lib_userdataType(lua_State *L)
 	lua_settop(L, 1); // pop everything except arg 1 (in case somebody decided to add more)
 	luaL_checktype(L, 1, LUA_TUSERDATA);
 	lua_pushstring(L, GetUserdataUType(L));
+	return 1;
+}
+
+// Returns the output of a fixed-point value as a floating-point string.
+static int lib_toFloatStr(lua_State *L)
+{
+	lua_settop(L, 1);
+	fixed_t f = luaL_checkinteger(L, 1);
+	lua_pushstring(L, va("%f", FIXED_TO_FLOAT(f)));
 	return 1;
 }
 
@@ -1637,7 +1647,7 @@ static int lib_pSlideMove(lua_State *L)
 	INLEVEL
 	if (!mo)
 		return LUA_ErrInvalid(L, "mobj_t");
-	
+
 	if (!P_TryMove(mo, mo->x, mo->y, true, &result))
 		P_SlideMove(mo, &result);
 	return 0;
@@ -4026,10 +4036,44 @@ static int lib_kGetKartFlashing(lua_State *L)
 
 static int lib_kGetItemPatch(lua_State *L)
 {
-	UINT8 item = (UINT8)luaL_optinteger(L, 1, KITEM_NONE);
+	kartitemtype_e item = (kartitemtype_e)luaL_optinteger(L, 1, KITEM_NONE);
 	boolean tiny = lua_optboolean(L, 2);
 	//HUDSAFE
-	lua_pushstring(L, K_GetItemPatch(item, tiny));
+
+	// TODO: compatmode KRITEM
+	const char *sad = tiny ? "K_ISSAD" : "K_ITSAD";
+	if (item <= 0 || item >= numkartitems)
+	{
+		lua_pushstring(L, sad);
+		return 1;
+	}
+
+	kartitemgraphics_t *graphics = &kartitems[item].graphics[tiny ? 1 : 0];
+	lua_pushstring(L, graphics->numpatches == 0 ? sad : graphics->patchnames[0]);
+	return 1;
+}
+
+static int lib_kIsKartItemAlternate(lua_State *L)
+{
+	kartitemtype_e item = (kartitemtype_e)luaL_optinteger(L, 1, KITEM_NONE);
+	// HUDSAFE
+
+	if (item <= 0 || item >= numkartitems)
+		return luaL_error(L, "item number %d out of range (0 - %d)", item, numkartitems-1);
+
+	lua_pushboolean(L, K_IsKartItemAlternate(item));
+	return 1;
+}
+
+static int lib_kIsAltShrunk(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	lua_pushboolean(L, K_IsAltShrunk(player));
 	return 1;
 }
 
@@ -4102,7 +4146,7 @@ static int lib_kSetIndirectItemCountdown(lua_State *L)
 {
 	tic_t c = (tic_t)luaL_checkinteger(L, 1);
 	NOHUD
-	indirectitemcooldown = c;
+	K_SetIndirectItemCooldown(c);
 	return 0;
 }
 
@@ -4111,46 +4155,8 @@ static int lib_kSetHyuCountdown(lua_State *L)
 {
 	tic_t c = (tic_t)luaL_checkinteger(L, 1);
 	NOHUD
-	K_SetBGone(KITEM_HYUDORO, c);
+	K_GetKartResult("hyudoro")->cooldown = c;
 	return 0;
-}
-
-static int lib_kSetBGone(lua_State *L)
-{
-	SINT8 item = (SINT8)luaL_checkinteger(L, 1);
-	tic_t c = (tic_t)luaL_checkinteger(L, 2);
-	NOHUD
-	if (item < KITEM_SNEAKER || item > (NUMKARTRESULTS - 1))
-	{
-		luaL_error(L, "given item ID is outside bgone range");
-	}
-	K_SetBGone(item, c);
-	return 0;
-}
-
-static int lib_kSetBGoneToBase(lua_State *L)
-{
-	SINT8 item = (SINT8)luaL_checkinteger(L, 1);
-	NOHUD
-	if (item < KITEM_SNEAKER || item > (NUMKARTRESULTS - 1))
-	{
-		luaL_error(L, "given item ID is outside bgone range");
-	}
-	K_SetBGoneToBase(item);
-	return 0;
-}
-
-static int lib_kGetBGone(lua_State *L)
-{
-	SINT8 item = (SINT8)luaL_checkinteger(L, 1);
-	boolean base = lua_isnoneornil(L, 2) ? false : luaL_checkboolean(L, 2);
-	NOHUD
-	if (item < KITEM_SNEAKER || item > (NUMKARTRESULTS - 1))
-	{
-		luaL_error(L, "given item ID is outside bgone range");
-	}
-	lua_pushinteger(L, K_GetBGone(item, base));
-	return 1;
 }
 
 // Checks if the floor closet floor under an object would be safe to respawn/land on.
@@ -4224,13 +4230,6 @@ static int lib_kAirDropActive(lua_State *L)
 static int lib_kItemLitterActive(lua_State *L)
 {
 	lua_pushboolean(L, K_ItemLitterActive());
-	return 1;
-}
-
-// Grabs the currently active invintype.
-static int lib_kGetKartInvinType(lua_State *L)
-{
-	lua_pushinteger(L, K_GetKartInvinType());
 	return 1;
 }
 
@@ -4309,6 +4308,33 @@ static int lib_kGetNewSpeed(lua_State *L)
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
 	lua_pushinteger(L, K_GetNewSpeed(player));
+	return 1;
+}
+
+static int lib_kInvincibilityGradient(lua_State *L)
+{
+	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
+	// HUDSAFE
+
+	lua_pushinteger(L, K_InvincibilityGradient(time));
+	return 1;
+}
+
+static int lib_kGetInvincibilitySpeed(lua_State *L)
+{
+	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
+	// HUDSAFE
+
+	lua_pushinteger(L, K_GetInvincibilitySpeed(time));
+	return 1;
+}
+
+static int lib_kGetInvincibilityAccel(lua_State *L)
+{
+	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
+	// HUDSAFE
+
+	lua_pushinteger(L, K_GetInvincibilityAccel(time));
 	return 1;
 }
 
@@ -4438,6 +4464,18 @@ static int lib_kPlayerCanPunt(lua_State *L)
 	return 1;
 }
 
+static int lib_kMomentum3D(lua_State *L)
+{
+	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+
+	//HUDSAFE
+	if (!mo)
+		return LUA_ErrInvalid(L, "mobj_t");
+
+	lua_pushinteger(L, K_Momentum3D(mo));
+	return 1;
+}
+
 static int lib_kAddNewScoreboardMod(lua_State *L)
 {
 	const char *modname = luaL_checkstring(L, 1);
@@ -4467,7 +4505,7 @@ static int lib_kPlayerUsesBotMovement(lua_State *L)
 	INLEVEL
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	
+
 	lua_pushboolean(L, K_PlayerUsesBotMovement(player));
 	return 1;
 }
@@ -4478,7 +4516,7 @@ static int lib_kBotCanTakeCut(lua_State *L)
 	INLEVEL
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	
+
 	lua_pushboolean(L, K_BotCanTakeCut(player));
 	return 1;
 }
@@ -4489,13 +4527,13 @@ static int lib_kGetBotController(lua_State *L)
 	INLEVEL
 	if (!mobj)
 		return LUA_ErrInvalid(L, "mobj_t");
-	
+
 	botcontroller_t *botController = K_GetBotController(mobj);
 	if (botController != NULL)
 		LUA_PushUserdata(L, botController, META_BOTCONTROLLER);
 	else
 		lua_pushnil(L);
-	
+
 	return 1;
 }
 
@@ -4512,7 +4550,7 @@ static int lib_kBotRubberband(lua_State *L)
 	INLEVEL
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	
+
 	lua_pushfixed(L, K_BotRubberband(player));
 	return 1;
 }
@@ -4523,7 +4561,7 @@ static int lib_kUpdateRubberband(lua_State *L)
 	INLEVEL
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	
+
 	lua_pushfixed(L, K_UpdateRubberband(player));
 	return 1;
 }
@@ -4562,16 +4600,16 @@ static int lib_kAddBot(lua_State *L)
 		if (skinid == -1)
 			return luaL_error(L, "could not find skin %s by name", name);
 	}
-	
+
 	INLEVEL
-	
+
 	boolean success = K_AddBot(skinid, difficulty, style, &newplayernum);
 	lua_pushboolean(L, success);
 	if (success)
 		LUA_PushUserdata(L, &players[newplayernum - 1], META_PLAYER);
 	else
 		lua_pushnil(L);
-	
+
 	return 2;
 }
 
@@ -4583,9 +4621,9 @@ static int lib_kSetNameForBot(lua_State *L)
 		return LUA_ErrInvalid(L, "player_t");
 	if (!player->bot)
 		return luaL_error(L, "You may only change bot names.");
-	
+
 	K_SetNameForBot(player-players, realname);
-	
+
 	return 0;
 }
 
@@ -4597,9 +4635,9 @@ static int lib_kRemoveBot(lua_State *L)
 		return LUA_ErrInvalid(L, "player_t");
 	if (!player->bot)
 		return luaL_error(L, "You may only remove bots.");
-	
+
 	CL_RemovePlayer(player-players, KR_LEAVE);
-	
+
 	return 0;
 }
 
@@ -5053,6 +5091,78 @@ static int lib_kTerrainHasAffect(lua_State *L)
 	return 1;
 }
 
+static int lib_kSetPlayerItemCooldown(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	tic_t c = (tic_t)luaL_checkinteger(L, 2);
+	boolean force = lua_optboolean(L, 3);
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_SetPlayerItemCooldown(player, c, force);
+	return 0;
+}
+
+// G_INPUT
+////////////
+
+static int lib_gSetPlayerGamepadIndicatorColor(lua_State *L)
+{
+	INT32 player = -1;
+	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
+	UINT16 color = (UINT16)luaL_checkinteger(L, 2); // skincolor
+
+	if (!plr)
+		return LUA_ErrInvalid(L, "player_t");
+
+	if (color >= numskincolors)
+		return luaL_error(L, "color %d out of range (0 - %d).", color, numskincolors-1);
+
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
+	{
+		if (plr - players == displayplayers[i])
+		{
+			player = i;
+			break;
+		}
+	}
+
+	// Not a local player
+	if (player == -1) return 0;
+
+	// pls update with color 0 when youre done with changing led stuff so it can get player color again
+	G_SetPlayerGamepadIndicatorColor(player, color);
+
+	return 0;
+}
+
+static int lib_gPlayerDeviceRumble(lua_State *L)
+{
+	INT32 player = -1;
+	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
+	UINT16 low_strength = (UINT16)luaL_checkinteger(L, 2); // low frequency rumble motor strenght
+	UINT16 high_strength = (UINT16)luaL_checkinteger(L, 3); // high frequency rumble motor strenght
+	UINT32 duration = (UINT32)luaL_optinteger(L, 4, 84); // duration of rumble in ms
+
+	if (!plr)
+		return LUA_ErrInvalid(L, "player_t");
+
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
+	{
+		if (plr - players == displayplayers[i])
+		{
+			player = i;
+			break;
+		}
+	}
+
+	// Not a local player
+	if (player == -1) return 0;
+
+	G_PlayerDeviceRumble(player, low_strength, high_strength, duration);
+
+	return 0;
+}
+
 static luaL_Reg lib[] = {
 	{"print", lib_print},
 	{"chatprint", lib_chatprint},
@@ -5063,6 +5173,7 @@ static luaL_Reg lib[] = {
 	{"IsPlayerAdmin", lib_isPlayerAdmin},
 	{"reserveLuabanks", lib_reserveLuabanks},
 	{"tofixed", lib_tofixed},
+	{"tofloatstr", lib_toFloatStr},
 
 	// m_menu
 	{"M_MoveColorAfter",lib_pMoveColorAfter},
@@ -5337,13 +5448,12 @@ static luaL_Reg lib[] = {
 	{"K_GetKartAccel",lib_kGetKartAccel},
 	{"K_GetKartFlashing",lib_kGetKartFlashing},
 	{"K_GetItemPatch",lib_kGetItemPatch},
+	{"K_IsKartItemAlternate",lib_kIsKartItemAlternate},
+	{"K_IsAltShrunk", lib_kIsAltShrunk},
 	{"K_SetRaceCountdown",lib_kSetRaceCountdown},
 	{"K_SetExitCountdown",lib_kSetExitCountdown},
 	{"K_SetIndirectItemCooldown",lib_kSetIndirectItemCountdown},
 	{"K_SetHyudoroCooldown",lib_kSetHyuCountdown},
-	{"K_SetBGone", lib_kSetBGone},
-	{"K_SetBGoneToBase", lib_kSetBGoneToBase},
-	{"K_GetBGone", lib_kGetBGone},
 	{"K_SafeRespawnPosition",lib_kSafeRespawnPosition},
 
 	{"K_GetCollideAngle",lib_kGetCollideAngle},
@@ -5358,13 +5468,15 @@ static luaL_Reg lib[] = {
 	{"K_AirDropActive",lib_kAirDropActive},
 	{"K_ItemLitterActive",lib_kItemLitterActive},
 	{"K_GetBumpSpark",lib_kGetBumpSpark},
-	{"K_GetKartInvinType",lib_kGetKartInvinType},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
 	{"K_DoBoost",lib_kDoBoost},
 	{"K_ClearBoost",lib_kClearBoost},
 	{"K_BoostChain",lib_kBoostChain},
 	{"K_ChainOrDeincrementTime",lib_kChainOrDeincrementTime},
 	{"K_GetNewSpeed", lib_kGetNewSpeed},
+	{"K_InvincibilityGradient", lib_kInvincibilityGradient},
+	{"K_GetInvincibilitySpeed", lib_kGetInvincibilitySpeed},
+	{"K_GetInvincibilityAccel", lib_kGetInvincibilityAccel},
 	{"K_3dKartMovement", lib_k3dKartMovement},
 	{"K_MomentumAngle", lib_kMomentumAngle},
 	{"K_GetKartSpeedFromStat", lib_kGetKartSpeedFromStat},
@@ -5376,6 +5488,7 @@ static luaL_Reg lib[] = {
 	{"K_AwardScaledPlayerRings", lib_kAwardScaledPlayerRings},
 	{"K_GetShieldFromPlayer", lib_kGetShieldFromPlayer},
 	{"K_PlayerCanPunt", lib_kPlayerCanPunt},
+	{"K_Momentum3D", lib_kMomentum3D},
 
 	// k_hud
 	{"K_AddNewScoreboardMod", lib_kAddNewScoreboardMod},
@@ -5408,7 +5521,7 @@ static luaL_Reg lib[] = {
 	{"K_InitBossHealthBar", lib_kInitBossHealthBar},
 	{"K_UpdateBossHealthBar", lib_kUpdateBossHealthBar},
 	{"K_DeclareWeakspot", lib_kDeclareWeakspot},
-	
+
 	// I_System
 	{"I_GetPreciseTime",lib_iGetPreciseTime},
 
@@ -5435,6 +5548,13 @@ static luaL_Reg lib[] = {
 	{"K_HandleFootstepParticles", lib_kHandleFootstepParticles},
 	{"K_UpdateTerrainOverlay", lib_kUpdateTerrainOverlay},
 	{"K_TerrainHasAffect", lib_kTerrainHasAffect},
+
+	// k_items
+	{"K_SetPlayerItemCooldown", lib_kSetPlayerItemCooldown},
+
+	//g_input
+	{"G_SetPlayerGamepadIndicatorColor",lib_gSetPlayerGamepadIndicatorColor},
+	{"G_PlayerDeviceRumble",lib_gPlayerDeviceRumble},
 
 	{NULL, NULL}
 };

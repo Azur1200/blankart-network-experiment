@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Copyright (C) 2025 by Vivian "toastergrl" Grannell.
 // Copyright (C) 2025 by Kart Krew.
-// Copyright (C) 2025 by "Anonimus".
+// Copyright (C) 2025 by "yama".
 // Copyright (C) 2025 Blankart Team.
 //
 // This program is free software distributed under the

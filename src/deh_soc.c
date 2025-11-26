@@ -53,6 +53,7 @@
 #include "filesrch.h" // refreshdirmenu
 #include "k_follower.h"
 #include "doomstat.h" // MAXMUSNAMES
+#include "k_items.h"
 
 // Loops through every constant and operation in word and performs its calculations, returning the final value.
 fixed_t get_number(const char *word)
@@ -3686,7 +3687,7 @@ void readfollower(MYFILE *f)
 	char *s;
 	char *word, *word2, dname[SKINNAMESIZE+1];
 	char *tmp;
-	char testname[SKINNAMESIZE];
+	char testname[SKINNAMESIZE+1];
 
 	boolean nameset;
 	INT32 fallbackstate = 0;
@@ -4027,6 +4028,211 @@ void readweather(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
+#define WARN(str, ...) deh_warning("KartItem %s: " str, strbuf_get(kartitemnames, item->info.nameofs), __VA_ARGS__)
+#define WARN0(str) deh_warning("KartItem %s: " str, strbuf_get(kartitemnames, item->info.nameofs))
+void readkartitem(MYFILE *f, kartitem_t *item)
+{
+	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
+	char *word = s;
+	char *word2;
+	char *tmp;
+	INT32 i;
+
+	do if (myfgets(s, MAXLINELEN, f))
+	{
+		if (s[0] == '\n')
+			break;
+
+		// First remove trailing newline, if there is one
+		tmp = strchr(s, '\n');
+		if (tmp)
+			*tmp = '\0';
+
+		tmp = strchr(s, '#');
+		if (tmp)
+			*tmp = '\0';
+		if (s == tmp)
+			continue; // Skip comment lines, but don't break.
+
+		// Get the part before the " = "
+		tmp = strchr(s, '=');
+		if (tmp)
+			*(tmp-1) = '\0';
+		else
+			break;
+		strupr(word);
+
+		// Now get the part after
+		word2 = (tmp += 2);
+		strupr(word2);
+
+		if (fastcmp(word, "BIGPATCHES") || fastcmp(word, "SMALLPATCHES"))
+		{
+			kartitemgraphics_t *graphics = &item->graphics[word[0] == 'B' ? 0 : 1];
+
+			if (graphics == &item->graphics[0] && item->spritedef.numframes > 0)
+			{
+				Z_Free(item->spritedef.spriteframes);
+				memset(&item->spritedef, 0, sizeof(item->spritedef));
+			}
+			for (i = 0; i < graphics->numpatches; i++)
+			{
+				Z_Free(graphics->patchnames[i]);
+				Patch_Free(graphics->patches[i]);
+				graphics->patches[i] = NULL;
+			}
+
+			tmp = strtok(word2,",");
+			for (graphics->numpatches = 0; graphics->numpatches < MAXITEMPATCHES;)
+			{
+				graphics->patchnames[graphics->numpatches++] = Z_StrDup(tmp);
+				if ((tmp = strtok(NULL,",")) == NULL)
+					break;
+			}
+		}
+		else if (fastcmp(word, "FLAGS") || fastcmp(word, "FLAGSALT"))
+		{
+			item->flags[word[5] == 'A' ? 1 : 0] = get_number(word2);
+		}
+		else
+			WARN("unknown word '%s'", word);
+	}
+	while (!myfeof(f)); // finish when the line is empty
+
+	Z_Free(s);
+}
+#undef WARN
+#undef WARN0
+
+#define WARN(str, ...) deh_warning("KartResult %s: " str, result->cvar->name, __VA_ARGS__)
+#define WARN0(str) deh_warning("KartResult %s: " str, result->cvar->name)
+void readkartresult(MYFILE *f, kartresult_t *result)
+{
+	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
+	char *word = s;
+	char *word2;
+	char *tmp;
+
+	do if (myfgets(s, MAXLINELEN, f))
+	{
+		if (s[0] == '\n')
+			break;
+
+		// First remove trailing newline, if there is one
+		tmp = strchr(s, '\n');
+		if (tmp)
+			*tmp = '\0';
+
+		tmp = strchr(s, '#');
+		if (tmp)
+			*tmp = '\0';
+		if (s == tmp)
+			continue; // Skip comment lines, but don't break.
+
+		// Get the part before the " = "
+		tmp = strchr(s, '=');
+		if (tmp)
+			*(tmp-1) = '\0';
+		else
+			break;
+		strupr(word);
+
+		// Now get the part after
+		word2 = tmp + 2;
+		//strupr(word2);
+
+		if (fastcmp(word, "TYPE"))
+		{
+			if (result->isalt)
+			{
+				WARN0("can't set type for alternate result");
+				continue;
+			}
+			result->type = get_kartitem(word2);
+		}
+		else if (fastcmp(word, "AMOUNT"))
+		{
+			if (result->isalt)
+			{
+				WARN0("can't set amount for alternate result");
+				continue;
+			}
+			result->amount = get_number(word2);
+		}
+		else if (fastcmp(word, "ISALT"))
+		{
+			result->isalt = (boolean)(atoi(word2) || word2[0] == 'T' || word2[0] == 'Y');
+		}
+		else if (fastcmp(word, "FLAGS"))
+		{
+			result->flags = get_number(word2);
+		}
+		else if (fastncmp(word, "ODDS", 4))
+		{
+			UINT8 oddstable;
+			if (fastcmp(word+4, "RACE"))
+				oddstable = ODDS_RACE;
+			else if (fastcmp(word+4, "BATTLE"))
+				oddstable = ODDS_BATTLE;
+			else if (fastcmp(word+4, "SPECIAL"))
+				oddstable = ODDS_SPECIAL;
+			else
+			{
+				WARN("unknown word '%s'", word);
+				continue;
+			}
+
+			UINT8 *odds = result->odds[oddstable];
+			memset(odds, 0, sizeof(*odds)*MAXODDS);
+			tmp = strtok(word2,",");
+			for (UINT8 i = 0; i <= MAXODDS; i++)
+			{
+				if (i == oddstablemax[oddstable])
+				{
+					WARN("odds table %s is limited to %d odds", word+4, oddstablemax[oddstable]);
+					continue;
+				}
+				odds[i] = atoi(tmp);
+				if ((tmp = strtok(NULL,",")) == NULL)
+					break;
+			}
+		}
+		else if (fastncmp(word, "UNIQUEODDS", 10))
+		{
+			UINT8 oddstable;
+			if (fastcmp(word+10, "RACE"))
+				oddstable = ODDS_RACE;
+			else if (fastcmp(word+10, "BATTLE"))
+				oddstable = ODDS_BATTLE;
+			else if (fastcmp(word+10, "SPECIAL"))
+				oddstable = ODDS_SPECIAL;
+
+			else
+			{
+				WARN("unknown word '%s'", word);
+				continue;
+			}
+
+			result->unique_odds[oddstable] = get_useoddsfunc(word2);
+		}
+		else if (fastcmp(word, "COOLDOWNTIME"))
+		{
+			result->basecooldown = atoi(word2) * TICRATE;
+		}
+		else if (fastcmp(word, "DISPLAYNAME"))
+		{
+			result->displayname = Z_StrDup(word2);
+		}
+		else
+			WARN("unknown word '%s'", word);
+	}
+	while (!myfeof(f)); // finish when the line is empty
+
+	Z_Free(s);
+}
+#undef WARN
+#undef WARN0
+
 //
 //
 //
@@ -4182,6 +4388,29 @@ preciptype_t get_precip(const char *word)
 	}
 	deh_warning("Couldn't find weather type named 'PRECIP_%s'",word);
 	return PRECIP_NONE;
+}
+
+kartitemtype_e get_kartitem(const char *word)
+{ // Returns the value of KITEM_ enumerations
+	kartitemtype_e i;
+	if (fastncmp("KITEM_",word,6))
+		word += 6; // take off the KITEM_
+	i = DEH_FindKartItem(word);
+	if (i == MAXKARTITEMS)
+		deh_warning("Couldn't find kartitem named 'KITEM_%s'", word);
+	return i;
+}
+
+useoddsfunc_f *get_useoddsfunc(const char *word)
+{ // Returns the value of KO_ enumerations
+	size_t i;
+	if (fastncmp("KO_",word,3))
+		word += 3; // take off the KO_
+	for (i = 0; USEODDS_FUNCS[i].name; i++)
+		if (fasticmp(word, USEODDS_FUNCS[i].name))
+			return USEODDS_FUNCS[i].func;
+	deh_warning("Couldn't find odds function named 'KO_%s'",word);
+	return NULL;
 }
 
 /// \todo Make ANY of this completely over-the-top math craziness obey the order of operations.

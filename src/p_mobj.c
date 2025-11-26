@@ -15,6 +15,7 @@
 #include "d_netcmd.h"
 #include "d_think.h"
 #include "dehacked.h"
+#include "deh_tables.h"
 #include "doomdef.h"
 #include "doomstat.h"
 #include "doomtype.h"
@@ -51,7 +52,7 @@
 #include "k_terrain.h"
 #include "k_collide.h"
 #include "k_objects.h"
-#include "k_odds.h"
+#include "k_items.h"
 #include "k_waypoint.h"
 
 // BlanKart
@@ -132,11 +133,10 @@ static void P_SetupStateAnimation(mobj_t *mobj, state_t *st)
 
 	if (st->frame & FF_GLOBALANIM)
 	{
-		// Attempt to account for the pre-ticker for objects spawned on load
-		if (!leveltime) return;
-
-		mobj->anim_duration -= (leveltime + 2) % st->var2;            // Duration synced to timer
-		mobj->frame += ((leveltime + 2) / st->var2) % (animlength + 1); // Frame synced to timer (duration taken into account)
+		mobj->anim_duration -= (leveltime % st->var2);            // Duration synced to timer
+		mobj->frame += (leveltime / st->var2) % (animlength + 1); // Frame synced to timer (duration taken into account)
+		if (!thinkersCompleted)                                   // objects spawned BEFORE (or during) thinkers will think during this tic...
+			mobj->anim_duration++;                                  // ...so increase the duration of their current frame by 1 to sync with objects spawned AFTER thinkers
 	}
 	else if (st->frame & FF_RANDOMANIM)
 	{
@@ -1170,9 +1170,14 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 		if (wasflip == !(mo->eflags & MFE_VERTICALFLIP)) // note!! == ! is not equivalent to != here - turns numeric into bool this way
 			P_PlayerFlip(mo);
 
-		if (mo->player->pogospring)
+		if (mo->player->pogospring && !mo->player->dashRainbowPogo)
 		{
 			gravityadd = (5*gravityadd)/2;
+		}
+
+		if (mo->player->carry == CR_DASHRING && Obj_DashRingPlayerHasNoGravity(mo->player))
+		{
+			gravityadd = 0;
 		}
 	}
 	else
@@ -1228,6 +1233,7 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 				case MT_EGGMANITEM:
 				case MT_SSMINE:
 				case MT_LANDMINE:
+				// case MT_EGGMINE_CAPSULE:
 				case MT_SINK:
 					if (mo->extravalue2 > 0)
 					{
@@ -1618,7 +1624,7 @@ void P_XYMovement(mobj_t *mo)
 		// blocked move
 		moved = false;
 
-		if (LUA_HookMobjMoveBlocked(mo, g_tm.hitthing, result.line))
+		if (LUA_HookMobjMoveBlocked(mo, result.mo, result.line))
 		{
 			if (P_MobjWasRemoved(mo))
 				return;
@@ -4164,8 +4170,8 @@ static void P_RefreshItemCapsuleParts(mobj_t *mobj)
 	mobj_t *part;
 	UINT32 newRenderFlags = 0;
 
-	if (itemType < 1 || itemType >= NUMKARTITEMS)
-		itemType = KITEM_SAD;
+	if (itemType < 1 || itemType >= numkartitems)
+		itemType = MAXKARTITEMS;
 
 	part = mobj;
 	while (!P_MobjWasRemoved(part->hnext))
@@ -4185,40 +4191,8 @@ static void P_RefreshItemCapsuleParts(mobj_t *mobj)
 	K_UpdateMobjItemOverlay(part, itemType, mobj->movecount);
 
 	// update number frame
-	if (K_GetShieldFromItem(itemType) != KSHIELD_NONE) // shields don't stack, so don't show a number
-		;
-	else
-	{
-		switch (itemType)
-		{
-			case KITEM_SNEAKER:
-				if (mobj->movecount - 1 > K_GetMultItemFrame(mobj->movecount, 2))
-					count = mobj->movecount;
-				break;
-			case KITEM_ORBINAUT: // only display the number when the sprite no longer changes
-				if (mobj->movecount - 1 > K_GetMultItemFrame(mobj->movecount, 3))
-					count = mobj->movecount;
-				break;
-			case KITEM_BANANA: // only display the number when the sprite no longer changes
-				if (mobj->movecount - 1 > K_GetMultItemFrame(mobj->movecount, 3))
-					count = mobj->movecount;
-				break;
-			case KITEM_JAWZ: // only display the number when the sprite no longer changes
-				if (mobj->movecount - 1 > K_GetMultItemFrame(mobj->movecount, 1))
-					count = mobj->movecount;
-				break;
-			case KITEM_SUPERRING: // always display the number, and multiply it by 5
-				count = mobj->movecount * 5;
-				break;
-			case KITEM_SAD: // never display the number
-			case KITEM_SPB:
-				break;
-			default:
-				if (mobj->movecount > 1)
-					count = mobj->movecount;
-				break;
-		}
-	}
+	if (mobj->movecount >= K_GetItemNumberDisplayMin(itemType, false))
+		count = mobj->movecount;
 
 	while (count > 0)
 	{
@@ -6192,6 +6166,9 @@ void P_SetScale2(mobj_t *mobj, fixed_t newscale, boolean compat)
 
 	oldscale = mobj->scale; //keep for adjusting stuff below
 
+	if (LUA_HookMobjScaleChange(mobj, newscale, oldscale) || P_MobjWasRemoved(mobj))
+		return;
+
 	mobj->scale = newscale;
 
 	if (compat)
@@ -6513,6 +6490,7 @@ boolean P_IsKartFieldItem(INT32 type)
 		case MT_JAWZ_DUD:
 		case MT_SSMINE:
 		case MT_LANDMINE:
+		// case MT_EGGMINE_CAPSULE:
 		case MT_BALLHOG:
 		case MT_BUBBLESHIELDTRAP:
 		case MT_SINK:
@@ -7408,6 +7386,19 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 			return;
 		}
 		break;
+	case MT_BUBBLESHIELD_DEBRIS:
+		mobj->rollangle += ANG1 * 4;
+
+		if (P_IsObjectOnGround(mobj) && mobj->health > 0)
+		{
+			// "Despawn" and play the glass landing sound.
+			if (mobj->extravalue1 == 0)
+				S_StartSoundAtVolume(mobj, mobj->info->deathsound, 192);
+			P_KillMobj(mobj, NULL, NULL, DMG_NORMAL);
+			mobj->fuse = TICRATE;
+		}
+
+		goto dofuse;
 	case MT_SMOLDERING:
 		if (leveltime % 2 == 0)
 		{
@@ -7607,101 +7598,79 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 
 			if (!(mobj->renderflags & RF_DONTDRAW))
 			{
-				const INT32 numberdisplaymin = ((mobj->target->player->itemtype == KITEM_ORBINAUT) ? 5 : 2);
+				statenum_t statenum = S_PLAYERARROW_BOX;
+				kartitemtype_e itemtype = mobj->target->player->itemtype;
+				UINT8 itemamount = 0;
+				boolean hide = false;
 
 				// Set it to use the correct states for its condition
 				if (mobj->target->player->itemroulette)
 				{
-					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
-					mobj->tracer->sprite = SPR_ITEM;
-					mobj->tracer->frame = K_GetRollingRouletteItem(mobj->target->player) | FF_FULLBRIGHT;
-					mobj->tracer->renderflags &= ~RF_DONTDRAW;
+					itemtype = K_GetRollingRouletteItem(mobj->target->player);
 				}
 				else if (mobj->target->player->stealingtimer < 0)
 				{
-					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
-					mobj->tracer->sprite = SPR_ITEM;
-					mobj->tracer->frame = FF_FULLBRIGHT|KITEM_HYUDORO;
-					if (leveltime & 2)
-						mobj->tracer->renderflags &= ~RF_DONTDRAW;
-					else
-						mobj->tracer->renderflags |= RF_DONTDRAW;
+					itemtype = KITEM_HYUDORO;
+					hide = leveltime & 2;
 				}
 				else if ((mobj->target->player->stealingtimer > 0) && (leveltime & 2))
 				{
-					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
-					mobj->tracer->sprite = SPR_ITEM;
-					mobj->tracer->frame = FF_FULLBRIGHT|KITEM_HYUDORO;
-					mobj->tracer->renderflags &= ~RF_DONTDRAW;
+					itemtype = KITEM_HYUDORO;
 				}
 				else if (mobj->target->player->eggmanexplode > 1)
 				{
-					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
-					mobj->tracer->sprite = SPR_ITEM;
-					mobj->tracer->frame = FF_FULLBRIGHT|KITEM_EGGMAN;
-					if (leveltime & 1)
-						mobj->tracer->renderflags &= ~RF_DONTDRAW;
-					else
-						mobj->tracer->renderflags |= RF_DONTDRAW;
+					itemtype = KITEM_EGGMAN;
+					hide = leveltime & 1;
 				}
 				else if (mobj->target->player->rocketsneakertimer > 1)
 				{
 					//itembar = mobj->target->player->rocketsneakertimer; -- not today satan
-					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
-					mobj->tracer->sprite = SPR_ITEM;
-					mobj->tracer->frame = FF_FULLBRIGHT|KITEM_ROCKETSNEAKER;
-					if (leveltime & 1)
-						mobj->tracer->renderflags &= ~RF_DONTDRAW;
-					else
-						mobj->tracer->renderflags |= RF_DONTDRAW;
+					itemtype = KITEM_ROCKETSNEAKER;
+					hide = leveltime & 1;
 				}
 				else if (mobj->target->player->flametimer > 1)
 				{
 					//itembar = mobj->target->player->flametimer; -- not today satan
-					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
-					mobj->tracer->sprite = SPR_ITEM;
-					mobj->tracer->frame = FF_FULLBRIGHT|KITEM_FLAMESHIELD;
-					if (leveltime & 1)
-						mobj->tracer->renderflags &= ~RF_DONTDRAW;
-					else
-						mobj->tracer->renderflags |= RF_DONTDRAW;
+					itemtype = KITEM_FLAMESHIELD;
+					hide = leveltime & 1;
 				}
 				else if (mobj->target->player->growshrinktimer > 0)
 				{
-					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
-					mobj->tracer->sprite = SPR_ITEM;
-					mobj->tracer->frame = FF_FULLBRIGHT|KITEM_GROW;
-
-					if (leveltime & 1)
-						mobj->tracer->renderflags &= ~RF_DONTDRAW;
-					else
-						mobj->tracer->renderflags |= RF_DONTDRAW;
+					itemtype = KITEM_GROW;
+					hide = leveltime & 1;
 				}
 				else if (mobj->target->player->itemtype && mobj->target->player->itemamount > 0)
 				{
-					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
+					itemtype = mobj->target->player->itemtype;
+					itemamount = mobj->target->player->itemamount;
+					hide = mobj->target->player->itemflags & IF_ITEMOUT && leveltime & 1;
+				}
+				else
+				{
+					statenum = S_PLAYERARROW;
+				}
 
-					K_UpdateMobjItemOverlay(mobj->tracer, mobj->target->player->itemtype,mobj->target->player->itemamount);
-
-					if (mobj->target->player->itemflags & IF_ITEMOUT)
-					{
-						if (leveltime & 1)
-							mobj->tracer->renderflags &= ~RF_DONTDRAW;
-						else
-							mobj->tracer->renderflags |= RF_DONTDRAW;
-					}
+				P_SetMobjState(mobj, statenum);
+				if (statenum == S_PLAYERARROW_BOX)
+				{
+					mobj->tracer->sprite = SPR_ITEM;
+					K_UpdateMobjItemOverlay(mobj->tracer, itemtype, itemamount);
+					mobj->tracer->threshold = itemtype; // sorry, i have to
+					mobj->tracer->frame &= ~FF_PAPERSPRITE;
+					if (hide)
+						mobj->tracer->renderflags |= RF_DONTDRAW;
 					else
 						mobj->tracer->renderflags &= ~RF_DONTDRAW;
 				}
 				else
 				{
-					P_SetMobjState(mobj, S_PLAYERARROW);
 					P_SetMobjState(mobj->tracer, S_PLAYERARROW_ITEM);
+					mobj->tracer->renderflags &= ~RF_DONTDRAW;
 				}
 
 				mobj->tracer->destscale = scale;
 
-				if (mobj->target->player->itemamount >= numberdisplaymin
+				if (mobj->target->player->itemamount >= K_GetItemNumberDisplayMin(mobj->target->player->itemtype, false)
 					&& mobj->target->player->itemamount <= 10) // Meh, too difficult to support greater than this; convert this to a decent HUD object and then maybe :V
 				{
 					mobj_t *number = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_OVERLAY);
@@ -7717,6 +7686,10 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 					P_SetMobjState(numx, S_PLAYERARROW_X);
 					P_SetScale(numx, mobj->scale);
 					numx->destscale = scale;
+
+					// ugh... overlays....
+					number->old_z = number->z += FixedMul(number->state->var2 * FRACUNIT, mobj->scale);
+					numx->old_z = numx->z += FixedMul(number->state->var2 * FRACUNIT, mobj->scale);
 				}
 
 				if (K_IsPlayerWanted(mobj->target->player) && mobj->movecount != 1)
@@ -7801,6 +7774,9 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 		break;
 	case MT_ITEMCAPSULE_PART:
 		P_ItemCapsulePartThinker(mobj);
+
+		if (P_MobjWasRemoved(mobj))
+			return;
 		break;
 	case MT_SCRIPT_THING:
 	{
@@ -7847,6 +7823,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 	}
 	/* FALLTHRU */
 	default:
+	dofuse:
 		if (mobj->fuse)
 		{ // Scenery object fuse! Very basic!
 			mobj->fuse--;
@@ -8013,6 +7990,7 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 	case MT_BANANA:
 	case MT_EGGMANITEM:
 	case MT_LANDMINE:
+	// case MT_EGGMINE_CAPSULE:
 	case MT_SPB:
 		if (P_IsObjectOnGround(mobj))
 		{
@@ -8440,11 +8418,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 		}
 
-		if (mobj->threshold == KITEM_SPB || mobj->threshold == KITEM_SHRINK)
-		{
-			indirectitemcooldown = 20*TICRATE;
-		}
-
 		K_UpdateMobjItemOverlay(mobj, mobj->threshold, mobj->movecount);
 		break;
 	}
@@ -8480,12 +8453,10 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			 || mobj->movecount != part->movecount) // change the capsule properties if the item type or amount is updated
 				P_RefreshItemCapsuleParts(mobj);
 
-			// animate invincibility capsules
+			K_UpdateMobjItemOverlay(part, mobj->threshold, mobj->movecount);
+
 			if (mobj->threshold == KITEM_INVINCIBILITY)
-			{
 				mobj->color = K_RainbowColor(leveltime);
-				part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetInvincibilityItemFrame();
-			}
 		}
 		break;
 	case MT_ORBINAUT:
@@ -8715,8 +8686,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->threshold--;
 		break;
 	case MT_SPB:
-		indirectitemcooldown = 20*TICRATE;
-		/* FALLTHRU */
 	case MT_BALLHOG:
 		{
 			mobj_t *ghost = P_SpawnGhostMobj(mobj);
@@ -8804,6 +8773,11 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		if (mobj->threshold > 0)
 			mobj->threshold--;
+		break;
+	// case MT_EGGMINE_CAPSULE:
+		// todo
+		// decrement fuse while on ground
+		// when fuse runs out pop open and spawn a land mine
 		break;
 	case MT_SPBEXPLOSION:
 		mobj->health--;
@@ -9218,18 +9192,17 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				for (i = 0; i < 2; i++)
 				{
 					angle_t a = mobj->angle + ((i & 1) ? ANGLE_180 : 0);
-					fixed_t ws = player->mo->scale/4 + scale/4;
 					mobj_t *wave;
 
 					wave = P_SpawnMobj(
-						(player->mo->x - player->mo->momx) + P_ReturnThrustX(NULL, a, mobj->radius - (21*ws)),
-						(player->mo->y - player->mo->momy) + P_ReturnThrustY(NULL, a, mobj->radius - (21*ws)),
+						(player->mo->x - player->mo->momx) + P_ReturnThrustX(NULL, a, mobj->radius - (5*scale)),
+						(player->mo->y - player->mo->momy) + P_ReturnThrustY(NULL, a, mobj->radius - (5*scale)),
 						(player->mo->z - player->mo->momz), MT_THOK);
 
 					wave->colorized = true;
 					wave->color = SKINCOLOR_BLUE;
 					wave->flags &= ~(MF_NOCLIPHEIGHT|MF_NOGRAVITY);
-					P_SetScale(wave, (wave->destscale = ws));
+					P_SetScale(wave, (wave->destscale = scale/3));
 
 					P_SetMobjState(wave, S_SPLISH1);
 
@@ -9298,45 +9271,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		mobj->flags &= ~(MF_NOCLIP|MF_NOCLIPTHING);
 		P_MoveOrigin(mobj, player->mo->x, player->mo->y, player->mo->z);
 		mobj->flags |= MF_NOCLIP|MF_NOCLIPTHING;
-		break;
-	}
-	case MT_BUBBLESHLD_DEBRIS:
-	{
-		statenum_t curstate;
-		curstate = ((mobj->tics == 1) ? (mobj->state->nextstate) : ((statenum_t)(mobj->state-states)));
-
-		if (curstate != S_INVISIBLE)
-		{
-			mobj->rollangle += ANG1 * 4;
-		}
-		else
-		{
-			mobj->rollangle = 0;
-		}
-
-		if ((P_IsObjectOnGround(mobj)) && (!mobj->threshold))
-		{
-			mobj->threshold = (TICRATE / 2);
-
-			if (curstate != S_INVISIBLE)
-			{
-				// "Despawn" and play the glass landing sound.
-				if (mobj->extravalue1 == 0)
-					S_StartSoundAtVolume(mobj, mobj->info->activesound, 128);
-				P_SetMobjState(mobj, S_INVISIBLE);
-			}
-		}
-
-		if (mobj->threshold)
-		{
-			mobj->threshold--;
-
-			if (!mobj->threshold)
-			{
-				P_RemoveMobj(mobj);
-			}
-		}
-
 		break;
 	}
 	case MT_FLAMESHIELD:
@@ -10213,7 +10147,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->momx = mobj->momy = 0;
 			P_SetMobjState(mobj, mobj->info->spawnstate);
 		}
-			break;
+		break;
 	case MT_KARMAFIREWORK:
 		if (mobj->flags & MF_NOGRAVITY)
 			break;
@@ -10232,6 +10166,9 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			trail->scalespeed = mobj->scale/12;
 			trail->color = mobj->color;
 		}
+		break;
+	case MT_RAINBOWDASHRING:
+		Obj_RainbowDashRingThink(mobj);
 		break;
 	default:
 		// check mobj against possible water content, before movement code
@@ -10424,6 +10361,11 @@ static boolean P_FuseThink(mobj_t *mobj)
 		return false;
 	case MT_PLAYER:
 		break; // don't remove
+	case MT_SNEAKERPANELSPAWNER:
+	{
+		Obj_SneakerPanelSpawnerFuse(mobj);
+		break;
+	}
 	default:
 		P_SetMobjState(mobj, mobj->info->xdeathstate); // will remove the mobj if S_NULL.
 		break;
@@ -10479,8 +10421,15 @@ void P_MobjThinker(mobj_t *mobj)
 		P_CheckMobjTrigger(mobj, false);
 	}
 
+	I_Assert(!P_MobjWasRemoved(mobj));
+
 	if (mobj->scale != mobj->destscale)
+	{
 		P_MobjScaleThink(mobj); // Slowly scale up/down to reach your destscale.
+
+		if (P_MobjWasRemoved(mobj))
+			return;
+	}
 
 	if (mobj->type == MT_GHOST && mobj->fuse > 0) // Not guaranteed to be MF_SCENERY or not MF_SCENERY!
 	{
@@ -10926,6 +10875,8 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_SSMINE:
 		case MT_SSMINE_SHIELD:
 		case MT_LANDMINE:
+		// case MT_EGGMINE_CAPSULE:
+		// case MT_EGGMINE_SHIELD:
 		case MT_BALLHOG:
 		case MT_SINK:
 		case MT_ROCKETSNEAKER:
@@ -11056,6 +11007,9 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_THROWNGRENADE:
 		case MT_EMBLEM:
 			thing->shadowscale = FRACUNIT/3;
+			break;
+		case MT_SNEAKERPANEL:
+			thing->shadowscale = 0;
 			break;
 		default:
 			if (thing->flags & (MF_ENEMY|MF_BOSS))
@@ -11352,7 +11306,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			P_SetTarget(&spawn->target, mobj);
 			break;
 		}
-		case MT_BUBBLESHLD_DEBRIS:
+		case MT_BUBBLESHIELD_DEBRIS:
 		{
 			statenum_t shardset[] = {S_BUBBLEDEBRIS_1, S_BUBBLEDEBRIS_2, S_BUBBLEDEBRIS_3, S_BUBBLEDEBRIS_4, S_BUBBLEDEBRIS_5};
 			P_SetMobjState(mobj, shardset[P_RandomRange(0, 4)]);
@@ -11370,7 +11324,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			else if (P_RandomChance(FRACUNIT/3))
 				mobj->threshold = KITEM_ORBINAUT;
 			else
-				mobj->threshold = P_RandomRange(1, NUMKARTITEMS - 1);
+				mobj->threshold = P_RandomRange(1, numkartitems - 1);
 			mobj->movecount = P_RandomChance(FRACUNIT/3) ? 1 : P_RandomKey(32) + 1;
 #else
 			mobj->threshold = KITEM_SUPERRING; // default item is super ring
@@ -11555,6 +11509,19 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			break;
 		case MT_TUMBLEGEM:
 			mobj->color = P_RandomKey(numskincolors - 1) + 1;
+			break;
+		case MT_DASHRING:
+			Obj_RegularDashRingSpawn(mobj);
+			break;
+		case MT_RAINBOWDASHRING:
+			Obj_RainbowDashRingSpawn(mobj);
+			break;
+		case MT_SNEAKERPANEL:
+			Obj_SneakerPanelSpawn(mobj);
+			break;
+		case MT_SNEAKERPANELSPAWNER:
+			Obj_SneakerPanelSpawnerSpawn(mobj);
+			break;
 		default:
 			break;
 	}
@@ -12466,6 +12433,9 @@ void P_AfterPlayerSpawn(INT32 playernum)
 	mobj_t *mobj = p->mo;
 	UINT8 i;
 
+	// fix the verticalflip flag to prevent camera jank (the player mobj initially spawns at the origin)
+	P_CheckGravity(players[playernum].mo, false);
+
 	// Update interpolation
 	mobj->old_x = mobj->x;
 	mobj->old_y = mobj->y;
@@ -12615,18 +12585,15 @@ void P_MovePlayerToStarpost(INT32 playernum)
 	sector->c_slope ? P_GetSlopeZAt(sector->c_slope, mobj->x, mobj->y) :
 	sector->ceilingheight;
 
+	z = CLAMP(p->starpostz, floor, ceiling); // no more copyslope floorspawning jank
+
 	if (mobj->player->starpostflip)
-		z = p->starpostz - 128*mapobjectscale - mobj->height;
+		z -= 128*mapobjectscale + mobj->height;
 	else
-		z = p->starpostz + 128*mapobjectscale;
+		z += 128*mapobjectscale;
 
-	//z = (p->starpostz + 128) << FRACBITS; // reverse gravity exists, pls
-	mobj->player->starpostflip = 0;
-
-	if (z < floor)
-		z = floor;
-	else if (z > ceiling - mobjinfo[MT_PLAYER].height)
-		z = ceiling - mobjinfo[MT_PLAYER].height;
+	z = CLAMP(z, floor, ceiling - mobjinfo[MT_PLAYER].height);
+	//mobj->player->starpostflip = 0; // why???
 
 	mobj->floorz = floor;
 	mobj->ceilingz = ceiling;
@@ -12654,7 +12621,12 @@ fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mt
 	switch (mobjtype)
 	{
 	// Objects with a non-zero default height.
-	// (None yet)
+	// Horizontal springs, float additional units unless args[0] is set.
+	case MT_YELLOWHORIZ:
+	case MT_REDHORIZ:
+	case MT_BLUEHORIZ:
+		offset += mthing->args[0] ? 0 : 16*FRACUNIT;
+		break;
 
 	// Ring-like items, float additional units unless args[0] is set.
 	case MT_SPIKEBALL:
@@ -12681,11 +12653,29 @@ fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mt
 	return P_GetMobjSpawnHeight(mobjtype, x, y, dz, offset, mthing->layer, flip, mthing->scale);
 }
 
+static void SpreadFinishLine(line_t *line, line_t *prev, INT32 args)
+{
+	size_t i;
+	for (i = 0; i < numlines; i++)
+	{
+		line_t *line2 = &lines[i];
+		if (line2 != line && line2 != prev && (line2->slopetype == ST_HORIZONTAL || line2->slopetype == ST_VERTICAL) && line2->slopetype == line->slopetype &&
+		   (line->v1 == line2->v1 || line->v2 == line2->v2 || line->v1 == line2->v2 || line->v2 == line2->v1))
+		{
+			boolean flipped = line->v1 == line2->v1 || line->v2 == line2->v2 ? TMCFF_FLIP : 0;
+			line2->special = 2001; // Finish Line
+			line2->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
+			line2->args[0] = args ^ flipped;
+			SpreadFinishLine(line2, line, args ^ flipped);
+		}
+	}
+}
+
 static boolean P_SpawnNonMobjMapThing(mapthing_t *mthing)
 {
-// #if MAXPLAYERS > 32
-// 	You should think about modifying the deathmatch starts to take full advantage of this!
-// #endif
+#if MAXPLAYERS > 32
+	You should think about modifying the deathmatch starts to take full advantage of this!
+#endif
 	if (mthing->type <= MAXPLAYERS) // Player starts
 	{
 		// save spots for respawning in network games
@@ -12736,11 +12726,29 @@ static boolean P_SpawnNonMobjMapThing(mapthing_t *mthing)
 	{
 		return true; // These are handled elsewhere.
 	}
-	// else if (mthing->type > MAXPLAYERS && mthing->type <= 32) // be wary of playerstarts size!  playerstarts[MAXPLAYERS]
-	// {
-	// 	CONS_Alert(CONS_WARNING, "Excess player start detected %d\n", mthing->type);
-	// 	return true;
-	// }
+	else if (K_UsingPatchedMap() && mthing->type >= 6502 && mthing->type <= 6503) // mappatch things!
+	{
+		fixed_t x = mthing->x << FRACBITS, y = mthing->y << FRACBITS;
+		sector_t *sec = R_PointInSubsector(x, y)->sector;
+		line_t *line = P_FindNearestLine(x, y, sec, -1);
+
+		if (line != NULL) switch (mthing->type)
+		{
+		case 6502: // Spawn Finish Line
+			usedspawnfinishline = true;
+			line->special = 2001;
+			line->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
+			line->args[0] = mthing->args[0];
+			if (mthing->args[1] == 0) // don't spread?
+				SpreadFinishLine(line, NULL, mthing->args[0]);
+			break;
+
+		case 6503:
+			break;
+		}
+
+		return true;
+	}
 
 	return false;
 }
@@ -12787,7 +12795,7 @@ static boolean P_AllowMobjSpawn(mapthing_t* mthing, mobjtype_t i)
 		}
 		case MT_ITEMCAPSULE:
 			{
-				boolean isRingCapsule = (mthing->args[0] < 1 || mthing->args[0] == KITEM_SUPERRING || mthing->args[0] >= NUMKARTITEMS);
+				boolean isRingCapsule = mthing->args[0] < 1 || mthing->args[0] == KITEM_SUPERRING || mthing->args[0] >= numkartitems;
 
 				// don't spawn ring capsules in with rings off.
 				if (isRingCapsule && (K_RingsActive() ==  false))
@@ -13227,24 +13235,6 @@ static boolean P_SetupParticleGen(mapthing_t *mthing, mobj_t *mobj)
 	return true;
 }
 
-static void SpreadFinishLine(line_t *line, line_t *prev, INT32 args)
-{
-	size_t i;
-	for (i = 0; i < numlines; i++)
-	{
-		line_t *line2 = &lines[i];
-		if (line2 != line && line2 != prev && (line2->slopetype == ST_HORIZONTAL || line2->slopetype == ST_VERTICAL) && line2->slopetype == line->slopetype &&
-		   (line->v1 == line2->v1 || line->v2 == line2->v2 || line->v1 == line2->v2 || line->v2 == line2->v1))
-		{
-			boolean flipped = line->v1 == line2->v1 || line->v2 == line2->v2 ? TMCFF_FLIP : 0;
-			line2->special = 2001; // Finish Line
-			line2->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
-			line2->args[0] = args ^ flipped;
-			SpreadFinishLine(line2, line, args ^ flipped);
-		}
-	}
-}
-
 static mobj_t *P_MakeSoftwareCorona(mobj_t *mo, INT32 height)
 {
 	mobj_t *corona = P_SpawnMobjFromMobj(mo, 0, 0, height<<FRACBITS, MT_PARTICLE);
@@ -13544,8 +13534,9 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 				P_ClosestPointOnLine(mobj->x, mobj->y, finishline, (vertex_t *)&mobj->x);
 				P_SetThingPosition(mobj);
 
-				if (K_UsingPatchedMap())
+				if (K_UsingPatchedMap() && !usedspawnfinishline)
 				{
+					CONS_Alert(CONS_WARNING, "Using waypoints to generate finish lines is deprecated, please add mapthing type 6502 to your patch. Read the wiki article for details\n");
 					finishline->special = 2001; // Finish Line
 					finishline->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
 					finishline->args[0] = mthing->args[4];
@@ -13645,9 +13636,39 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		if (!P_IsObjectOnGround(mobj))
 			mobj->flags |= MF_NOGRAVITY;
 
-		// Angle = item type
-		if (mthing->args[0] > 0 && mthing->args[0] < NUMKARTITEMS)
-			mobj->threshold = mthing->args[0];
+		// Item type
+		static kartitemtype_e rrtypes[] = {
+			KITEM_SNEAKER,
+			KITEM_ROCKETSNEAKER,
+			KITEM_INVINCIBILITY,
+			KITEM_BANANA,
+			KITEM_EGGMAN,
+			KITEM_ORBINAUT,
+			KITEM_JAWZ,
+			KITEM_MINE,
+			MAXKARTITEMS, // LANDMINE
+			KITEM_BALLHOG,
+			KITEM_SPB,
+			KITEM_GROW,
+			KITEM_SHRINK,
+			KITEM_THUNDERSHIELD,
+			KITEM_BUBBLESHIELD,
+			KITEM_FLAMESHIELD,
+			KITEM_HYUDORO,
+			KITEM_POGOSPRING,
+			KITEM_SUPERRING,
+			KITEM_KITCHENSINK,
+			MAXKARTITEMS, // DROPTARGET
+			MAXKARTITEMS, // GARDENTOP
+			MAXKARTITEMS, // GACHABOM
+			MAXKARTITEMS, // STONESHOE
+			MAXKARTITEMS, // TOXOMISTER
+		};
+
+		if (mthing->stringargs[0] != NULL)
+			mobj->threshold = DEH_FindKartItem(mthing->stringargs[0]);
+		else if (mapnamespace == MNS_RINGRACERS && mthing->args[0] > 0 && (size_t)mthing->args[0] < sizeof(rrtypes)/sizeof(*rrtypes))
+			mobj->threshold = rrtypes[mthing->args[0] - 1];
 
 		// Parameter = extra items (x5 for rings)
 		mobj->movecount += mthing->args[1];
@@ -13741,17 +13762,44 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		break;
 
 	}
-	case MT_REDDIAG:
-	case MT_YELLOWDIAG:
-	case MT_BLUEDIAG:
 	case MT_REDSPRING:
 	case MT_BLUESPRING:
 	case MT_GRAYSPRING:
 	case MT_YELLOWSPRING:
 	case MT_INVISSPRING:
 	{
-		if (mapnamespace == MNS_SRB2KART)
-			mobj->flags ^= MF_NOGRAVITY;
+		if (mthing->args[0] & TMSPR_NOGRAVITY)
+			mobj->gravity = 0;
+		break;
+	}
+	case MT_YELLOWDIAG:
+	case MT_REDDIAG:
+	case MT_BLUEDIAG:
+	case MT_GRAYDIAG:
+	{
+		mobj->angle = FixedAngle(mthing->angle << FRACBITS);
+		if (mthing->args[0] & TMSPR_NOGRAVITY)
+			mobj->gravity = 0;
+		if (mthing->args[0] & TMSPR_ROTATEEXTRA)
+			mobj->angle += ANGLE_22h;
+		*doangle = false;
+		break;
+	}
+	case MT_DASHRING:
+	case MT_RAINBOWDASHRING:
+	{
+		Obj_DashRingSetup(mobj, mthing);
+		break;
+	}
+	case MT_SNEAKERPANEL:
+	{
+		Obj_SneakerPanelSetup(mobj, mthing);
+		break;
+	}
+	case MT_SNEAKERPANELSPAWNER:
+	{
+		Obj_SneakerPanelSpawnerSetup(mobj, mthing);
+		break;
 	}
 	default:
 		break;
@@ -13844,17 +13892,6 @@ static mobj_t *P_SpawnMobjFromMapThing(mapthing_t *mthing, fixed_t x, fixed_t y,
 	{
 		mobj->angle = FixedAngle(mthing->angle << FRACBITS);
 	}
-
-	// Maybe someday.
-	/*if ((mobj->flags & MF_SPRING)
-	&& mobj->info->damage != 0
-	&& mobj->info->mass == 0)
-	{
-		// Offset sprite of horizontal springs
-		angle_t a = mobj->angle + ANGLE_180;
-		mobj->sprxoff = FixedMul(mobj->radius, FINECOSINE(a >> ANGLETOFINESHIFT));
-		mobj->spryoff = FixedMul(mobj->radius, FINESINE(a >> ANGLETOFINESHIFT));
-	}*/
 
 	mobj->pitch = FixedAngle(mthing->pitch << FRACBITS);
 	mobj->roll = FixedAngle(mthing->roll << FRACBITS);

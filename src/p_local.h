@@ -483,6 +483,7 @@ struct TryMoveResult_t
 	boolean success;
 	line_t *line;
 	mobj_t *mo;
+	boolean slideout; // set if bouncing failed, and the moving mobj should slide
 	vector2_t normal;
 };
 
@@ -614,6 +615,14 @@ void P_TouchStarPost(mobj_t *starpost, player_t *player, boolean snaptopost);
 void P_CheckTimeLimit(void);
 void P_CheckPointLimit(void);
 boolean P_CheckRacers(void);
+
+typedef enum
+{
+	PICKUPITEM_RING,
+	PICKUPITEM_ITEM,
+	PICKUPITEM_EGGMAN,
+	PICKUPITEM_FLOATING,
+} pickupitem_e;
 
 boolean P_CanPickupItem(player_t *player, UINT8 weapon);
 

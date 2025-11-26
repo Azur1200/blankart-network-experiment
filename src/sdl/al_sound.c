@@ -1,0 +1,1691 @@
+// SONIC ROBO BLAST 2
+//-----------------------------------------------------------------------------
+// Copyright (C) 2025 by Classic Development Team.
+// Copyright (C) 2014-2020 by Sonic Team Junior.
+// Copyright (C) 2025 Blankart Team.
+//
+// This program is free software distributed under the
+// terms of the GNU General Public License, version 2.
+// See the 'LICENSE' file for more details.
+//-----------------------------------------------------------------------------
+/// \file al_sound.c
+/// \brief OpenAL interface for sound
+
+#ifdef HAVE_OPENAL
+
+#ifdef HAVE_GME
+#ifdef HAVE_ZLIB
+#ifndef _MSC_VER
+#ifndef _LARGEFILE64_SOURCE
+#define _LARGEFILE64_SOURCE
+#endif
+#endif
+
+#ifndef _LFS64_LARGEFILE
+#define _LFS64_LARGEFILE
+#endif
+
+#ifndef _FILE_OFFSET_BITS
+#define _FILE_OFFSET_BITS 0
+#endif
+
+#include <zlib.h>
+#endif // HAVE_ZLIB
+#endif // HAVE_GME
+
+#include <alc.h>
+#include <al.h>
+#include <alext.h>
+
+#include <sndfile.h>
+
+#ifdef HAVE_GME
+#include <gme/gme.h>
+#define GME_TREBLE 5.0f
+#define GME_BASS 1.0f
+#endif // HAVE_GME
+
+#define INVALID_HANDLE 0
+#define SAMPLERATE 44100
+#define BUFFERSIZE 4096
+#define BUFFERCOUNT 8
+
+#define FLOATEP 0.00001
+
+// don't set gain too high, avoids clipping with multiple sounds playing
+#define VOLUME_DIV 200.f
+
+typedef enum
+{
+	Int16,
+	Float,
+	// IMA4,
+	// MSADPCM
+} sample_format_t;
+
+#ifdef HAVE_OPENMPT
+#include "libopenmpt/libopenmpt.h"
+#endif
+
+#include "../i_sound.h"
+#include "../s_sound.h"
+#include "../byteptr.h"
+#include "../z_zone.h"
+#include "../w_wad.h"
+#include "../i_threads.h"
+#include "../i_system.h" // I_Sleep
+
+typedef struct
+{
+	char *data;
+	char *cur;
+	char *end;
+} viofile_t;
+
+UINT8 sound_started = false;
+
+static float music_volume, sfx_volume, internal_volume = 1.0f;
+
+// fading
+static boolean is_fading;
+static float fading_source;
+static float fading_target;
+static UINT32 fading_timer;
+static UINT32 fading_duration;
+static void (*fading_callback)(void);
+static boolean fading_nocleanup;
+
+// any access (read/write) to this struct MUST lock the mutex
+typedef struct audiostate_s
+{
+	I_mutex mutex;
+
+	viofile_t musicfile;
+	SNDFILE *musicstream;
+	SF_INFO musicinfo;
+	ALCdevice *device;
+	ALCcontext *context;
+	int bufferindex;
+	ALuint musicbuffers[BUFFERCOUNT];
+	ALuint music;
+	float loop_point;
+	boolean looping;
+
+	boolean startplay;
+	boolean shutdown;
+} audiostate_t;
+static audiostate_t audio;
+
+// use this helper to avoid boilerplate!
+#define LOCKAUDIO \
+	CLEANUP(UnlockMutex) char dummy__; \
+	I_lock_mutex(&audio.mutex) \
+
+static void UnlockMutex(char *dummy)
+{
+	(void)dummy;
+	I_unlock_mutex(audio.mutex);
+}
+
+#ifdef HAVE_GME
+static Music_Emu *gme;
+static UINT16 current_track;
+#endif
+
+#ifdef HAVE_OPENMPT
+static int mod_err = OPENMPT_ERROR_OK;
+static const char *mod_err_str;
+static INT16 current_subsong = -1;
+static size_t probesize;
+static int result;
+#endif
+
+#define TRY(func, ...) (func(__VA_ARGS__), ALError(__func__, #func))
+
+static boolean ALError(const char *srcfunc, const char *alfunc)
+{
+	const char *str;
+	switch (alGetError())
+	{
+	case AL_NO_ERROR:
+		str = NULL; break;
+	case AL_INVALID_NAME:
+		str = "Bad ID"; break;
+	case AL_INVALID_ENUM:
+		str = "Bad enum value"; break;
+	case AL_INVALID_VALUE:
+		str = "Bad value"; break;
+	case AL_INVALID_OPERATION:
+		str = "Operation not valid"; break;
+	case AL_OUT_OF_MEMORY:
+		str = "Out of memory"; break;
+	default:
+		str = "Unknown error"; break;
+	}
+
+	if (str != NULL)
+		CONS_Alert(CONS_ERROR, "%s: %s: %s\n", srcfunc, alfunc, str);
+	return str == NULL;
+}
+
+#if defined (HAVE_GME) && defined (HAVE_ZLIB)
+static const char* GetZLibError(int zErr)
+{
+	switch (zErr)
+	{
+		case Z_ERRNO:
+			return "Z_ERRNO";
+		case Z_STREAM_ERROR:
+			return "Z_STREAM_ERROR";
+		case Z_DATA_ERROR:
+			return "Z_DATA_ERROR";
+		case Z_MEM_ERROR:
+			return "Z_MEM_ERROR";
+		case Z_BUF_ERROR:
+			return "Z_BUF_ERROR";
+		case Z_VERSION_ERROR:
+			return "Z_VERSION_ERROR";
+		default:
+			return "unknown error";
+	}
+}
+#endif
+
+static sample_format_t I_GetSampleFormat(SF_INFO info)
+{
+	// use float format for those, otherwise shit will kill your ears
+	// thx WOOF for making me aware of this
+	switch ((info.format & SF_FORMAT_SUBMASK))
+	{
+		case SF_FORMAT_PCM_24:
+		case SF_FORMAT_PCM_32:
+		case SF_FORMAT_FLOAT:
+		case SF_FORMAT_DOUBLE:
+		case SF_FORMAT_VORBIS:
+		case SF_FORMAT_OPUS:
+		case SF_FORMAT_ALAC_20:
+		case SF_FORMAT_ALAC_24:
+		case SF_FORMAT_ALAC_32:
+#ifdef HAVE_SNDFILE_MPEG
+		case SF_FORMAT_MPEG_LAYER_I:
+		case SF_FORMAT_MPEG_LAYER_II:
+		case SF_FORMAT_MPEG_LAYER_III:
+#endif
+			// check if we actually even support shit
+			// otherwise everything will explode kek
+			if (alIsExtensionPresent("AL_EXT_FLOAT32"))
+			{
+				return Float;
+			}
+			break;
+		default:
+			return Int16;
+			break;
+	}
+
+	return Int16;
+}
+
+// who tf is Al
+static ALenum I_GetALFormat(SF_INFO info)
+{
+	sample_format_t sample_format = I_GetSampleFormat(info);
+
+	if (info.channels == 2) // stereo
+	{
+		return (sample_format == Float) ? AL_FORMAT_STEREO_FLOAT32 : AL_FORMAT_STEREO16;
+	}
+
+	return (sample_format == Float) ? AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_MONO16;
+}
+
+static void AudioThread(void *userdata);
+
+void I_StartupSound(void)
+{
+	if (sound_started)
+		return; // not an error condition
+
+	//LOCKAUDIO; don't need this on startup
+
+	CONS_Printf("I_StartupSound()...\n");
+	audio.device = alcOpenDevice(NULL);
+	if (audio.device == NULL)
+	{
+		CONS_Alert(CONS_ERROR, "OpenAL: Can't open audio device");
+		return;
+	}
+
+	// enable the limiter and disable hrtf
+	// idk if either is necessary tbh but fuckit
+	ALCint attrs[] = {
+		ALC_OUTPUT_LIMITER_SOFT, ALC_FALSE, // G: too noticeable
+		ALC_HRTF_SOFT, ALC_FALSE,
+		ALC_FREQUENCY, SAMPLERATE, // G: resampling to 48 kHz muffles the audio on My Machine
+		0
+	};
+
+	audio.context = alcCreateContext(audio.device, attrs);
+	if (audio.context == NULL)
+	{
+		CONS_Alert(CONS_ERROR, "OpenAL: Can't create context");
+		alcCloseDevice(audio.device);
+		return;
+	}
+
+	alcMakeContextCurrent(audio.context);
+
+	audio.music = INVALID_HANDLE;
+	audio.bufferindex = 0;
+
+	for (size_t i = 0; i < BUFFERCOUNT; i++)
+		audio.musicbuffers[i] = INVALID_HANDLE;
+	music_volume = sfx_volume = 0.f;
+	audio.loop_point = 0.0f;
+	audio.looping = false;
+	audio.startplay = false;
+
+#ifdef HAVE_OPENMPT
+	CONS_Printf("libopenmpt version: %s\n", openmpt_get_string("library_version"));
+	CONS_Printf("libopenmpt build date: %s\n", openmpt_get_string("build"));
+#endif
+
+#ifdef HAVE_THREADS
+	I_spawn_thread("update-audio", AudioThread, NULL);
+#endif
+
+	sound_started = true;
+}
+
+void I_ShutdownSound(void)
+{
+	if (!sound_started)
+		return; // not an error condition
+	CONS_Printf("I_ShutdownSound(): shut down\n");
+	sound_started = false;
+
+	// kill the audio thread in a half-assed way
+	{
+		LOCKAUDIO;
+		audio.shutdown = true;
+	}
+	while (true)
+	{
+		LOCKAUDIO;
+		if (audio.shutdown == false)
+			break;
+	}
+
+	// yay, the audio thread is dead! we can shut down now
+	alcMakeContextCurrent(NULL);
+	alcDestroyContext(audio.context);
+	alcCloseDevice(audio.device);
+
+#ifdef HAVE_GME
+	if (gme)
+	{
+		gme_delete(gme);
+		gme = NULL;
+	}
+#endif
+#ifdef HAVE_OPENMPT
+	if (openmpt_mhandle)
+	{
+		openmpt_module_destroy(openmpt_mhandle);
+		openmpt_mhandle = NULL;
+	}
+	current_subsong = -1;
+#endif
+	if (audio.musicstream != NULL)
+	{
+		sf_close(audio.musicstream);
+		audio.musicstream = NULL;
+	}
+}
+
+static boolean I_UpdateMusicVolume(void)
+{
+	LOCKAUDIO;
+	return TRY(alSourcef, audio.music, AL_GAIN, music_volume*internal_volume*(musicdef_volume/(float)MAX_VOLUME));
+}
+
+// Thank you random stack overflow user (second post)!
+// https://stackoverflow.com/questions/10160401/openal-get-the-current-playing-position-of-a-source
+
+static float SamplesToSeconds(sf_count_t samples, int sampleRate) {
+	return (float)samples / sampleRate;
+}
+
+static sf_count_t SecondsToSamples(float seconds, int sampleRate) {
+	return (sf_count_t)lround(seconds * sampleRate);
+}
+
+static boolean I_QueueNextSample(boolean unqueue)
+{
+	static INT16 *stream = NULL;
+	ALenum format = AL_FORMAT_MONO16;
+
+	LOCKAUDIO;
+
+	// keeping it at PU_CACHE_UNLOCKED is fine since we won't do any Z allocations while we use it
+	if (stream == NULL)
+		Z_Malloc(sizeof(INT16) * 2 * BUFFERSIZE, PU_CACHE_UNLOCKED, &stream);
+
+	size_t samplerate = SAMPLERATE;
+	size_t count;
+#ifdef HAVE_OPENMPT
+	if (openmpt_mhandle != NULL)
+	{
+		count = openmpt_module_read_interleaved_stereo(openmpt_mhandle, SAMPLERATE, BUFFERSIZE, stream) * 2 * sizeof(INT16);
+		format = AL_FORMAT_STEREO16;
+
+		// this is kinda dumb but works lol
+		// resets the songpos after it loops
+		if (I_GetSongPosition() >= I_GetSongLength())
+		{
+			openmpt_module_set_position_seconds(openmpt_mhandle, 0);
+		}
+	}
+	else
+#endif
+#ifdef HAVE_GME
+	if (gme != NULL)
+	{
+		count = BUFFERSIZE * 2 * sizeof(INT16);
+		gme_play(gme, BUFFERSIZE * 2, stream);
+		format = AL_FORMAT_STEREO16;
+		samplerate = SAMPLERATE;
+	}
+	else
+#endif
+	if (audio.musicstream != NULL)
+	{
+		format = I_GetALFormat(audio.musicinfo);
+		sample_format_t sample_format = I_GetSampleFormat(audio.musicinfo);
+
+		if (sample_format == Float)
+		{
+			count = sf_read_float(audio.musicstream, (float *)stream, BUFFERSIZE) * sizeof(float); // float is 4 bytes not 2, so just double this shit for now kek
+		}
+		else
+		{
+			count = sf_read_short(audio.musicstream, (short *)stream, BUFFERSIZE) * sizeof(short);
+		}
+
+		if (count == 0)
+		{
+			// Loop music otherwise stop.
+			if (audio.looping)
+			{
+				sf_count_t finalposition = SecondsToSamples(audio.loop_point, audio.musicinfo.samplerate);
+				sf_seek(audio.musicstream, finalposition, SF_SEEK_SET);
+			}
+		}
+
+		samplerate = audio.musicinfo.samplerate;
+	}
+	else
+	{
+		CONS_Alert(CONS_ERROR, "Music is active, but no source is available\n");
+		return false;
+	}
+
+	if (unqueue && !TRY(alSourceUnqueueBuffers, audio.music, 1, &audio.musicbuffers[audio.bufferindex]))
+		return false;
+
+	if (!TRY(alBufferData, audio.musicbuffers[audio.bufferindex], format, stream, count, samplerate))
+		return false;
+
+	if (!TRY(alSourceQueueBuffers, audio.music, 1, &audio.musicbuffers[audio.bufferindex]))
+		return false;
+
+	audio.bufferindex = (audio.bufferindex + 1) % BUFFERCOUNT;
+
+
+	if (count == 0 && !audio.looping)
+	{
+		I_StopSong();
+		return false;
+	}
+
+	return true;
+}
+
+static void UpdateSound(audiostate_t *aud)
+{
+	if (aud->music != INVALID_HANDLE)
+	{
+		ALint processed;
+		ALint queued;
+
+		// handle this in here not in i_loadsong!
+		if (aud->startplay)
+		{
+			for (size_t i = 0; i < BUFFERCOUNT; i++)
+			{
+				if (!I_QueueNextSample(false))
+				{
+					I_UnloadSong();
+					return;
+				}
+			}
+
+			TRY(alSourcePlay, aud->music);
+
+			aud->startplay = false;
+			return;
+		}
+
+		if (!TRY(alGetSourcei, aud->music, AL_BUFFERS_PROCESSED, &processed))
+			return;
+
+		if (!TRY(alGetSourcei, aud->music, AL_BUFFERS_QUEUED, &queued))
+			return;
+
+		// semi-hack because this is sometimes not called for a longer period of time
+		boolean need_restart = processed == BUFFERCOUNT;
+		while (processed > 0)
+		{
+			if (!I_QueueNextSample(true))
+				break;
+			processed--;
+		}
+		if (need_restart)
+			TRY(alSourcePlay, aud->music);
+	}
+
+	if (!is_fading
+		|| fabs(internal_volume - fading_target) < FLOATEP // EQUALS I love floats I love floats
+		|| fading_duration == 0)
+	{
+		I_StopFadingSong();
+	}
+	else if (I_SongPaused()) // don't decrement timer
+		return;
+	else if ((fading_timer -= 10) <= 0)  //((fading_timer -= 50) <= 0) //  Nah lets be funny :) -> //  gotta do 50ms steps since we slep that long.
+	{
+		internal_volume = fading_target;
+		I_UpdateMusicVolume();
+		I_StopFadingSong();
+	}
+	else
+	{
+		float delta = fabsf(fading_target - fading_source);
+		float factor = (fading_duration - fading_timer) / (float)fading_duration;
+
+		if (fading_target < fading_source)
+			internal_volume = max(min(internal_volume, fading_source - (delta * factor)), fading_target);
+		else if (fading_target > fading_source)
+			internal_volume = min(max(internal_volume, fading_source + (delta * factor)), fading_target);
+
+		I_UpdateMusicVolume();
+	}
+}
+
+void I_UpdateSound(void)
+{
+#ifndef HAVE_THREADS
+	UpdateSound(&audio);
+#endif
+}
+
+static void AudioThread(void *userdata)
+{
+	(void)userdata;
+
+	while (true)
+	{
+		// doesn't need to be that frequent, this thread just feeds buffers
+		// (and ticks music fades... someone better look into that!)
+		// too lazy lol, lower sleep it is.
+		I_Sleep(10);
+
+		{
+			LOCKAUDIO;
+			if (audio.shutdown)
+			{
+				audio.shutdown = false;
+				return;
+			}
+			UpdateSound(&audio);
+		}
+	}
+}
+
+static char *ds2chunk(void *stream, size_t *len, size_t *samplerate)
+{
+	UINT16 ver, freq;
+	UINT32 samples, i;
+	UINT8 *sound;
+
+	SINT8 *s;
+	INT16 *d;
+	INT16 o;
+
+	// lump header
+	ver = READUINT16(stream); // sound version format?
+	if (ver != 3) // It should be 3 if it's a doomsound...
+		return NULL; // onos! it's not a doomsound!
+
+	freq = READUINT16(stream);
+
+	// dont divide by 0
+	if (freq == 0)
+		return NULL;
+
+	*samplerate = (size_t)freq << 1; // yeah dont ask me i have no fucking clue why we gotta double that :chaosleep:
+
+	samples = READUINT32(stream);
+
+	sound = Z_Malloc(samples<<2, PU_SOUND, NULL); // samples * frequency shift * bytes per sample * channels
+
+	s = (SINT8 *)stream;
+	d = (INT16 *)sound;
+
+	i = 0;
+
+	// dont resample shit, let openal handle everything
+	while (i++ < samples)
+	{
+		o = ((INT16)(*s++)+0x80)<<8; // changed signedness and shift up to 16 bits
+		*d++ = o; // left channel
+		*d++ = o; // right channel
+	}
+
+	*len = (UINT8 *)d-sound;
+	return (char *)sound;
+}
+
+static sf_count_t GetVIOFileLen(void *userdata)
+{
+	viofile_t *file = userdata;
+	return (size_t)(file->end - file->data);
+}
+
+static sf_count_t ReadVIOFile(void *ptr, sf_count_t count, void *userdata)
+{
+	viofile_t *file = userdata;
+	if (count > file->end - file->cur)
+		count = file->end - file->cur;
+
+	memcpy(ptr, file->cur, count);
+	file->cur += count;
+	return count;
+}
+
+static sf_count_t WriteVIOFile(const void *ptr, sf_count_t count, void *userdata)
+{
+	(void)ptr;
+	(void)count;
+	(void)userdata;
+	return 0; // read-only
+}
+
+static sf_count_t SeekVIOFile(sf_count_t offset, int whence, void *userdata)
+{
+	viofile_t *file = userdata;
+	if (whence == SEEK_SET)
+		file->cur = file->data + offset;
+	else if (whence == SEEK_CUR)
+		file->cur += offset;
+	else if (whence == SEEK_END)
+		file->cur = file->end + offset;
+	if (file->cur > file->end)
+		file->cur = file->end;
+	if (file->cur < file->data)
+		file->cur = file->data;
+	return file->cur - file->data;
+}
+
+static sf_count_t TellVIOFile(void *userdata)
+{
+	viofile_t *file = userdata;
+	return file->cur - file->data;
+}
+
+static SF_VIRTUAL_IO virtual_io =
+{
+	.get_filelen = GetVIOFileLen,
+	.seek = SeekVIOFile,
+	.read = ReadVIOFile,
+	.write = WriteVIOFile,
+	.tell = TellVIOFile,
+};
+
+static ALuint LoadDataIntoBuffer(void *input, size_t size)
+{
+	size_t samplerate = SAMPLERATE;
+	CLEANUP(Z_Pfree) char *data = ds2chunk(input, &size, &samplerate);
+	ALenum format = AL_FORMAT_MONO16;
+
+	if (data == NULL)
+	{
+#ifdef HAVE_GME
+		Music_Emu *emu;
+		gme_info_t *gme_info;
+
+		// VGZ format
+		if (((UINT8 *)input)[0] == 0x1F
+			&& ((UINT8 *)input)[1] == 0x8B)
+		{
+#ifdef HAVE_ZLIB
+			UINT8 *inflatedData;
+			size_t inflatedLen;
+			z_stream stream;
+			int zErr; // Somewhere to handle any error messages zlib tosses out
+			memset(&stream, 0x00, sizeof (z_stream)); // Init zlib stream
+			// Begin the inflation process
+			inflatedLen = *(UINT32 *)input + (size-4); // Last 4 bytes are the decompressed size, typically
+			inflatedData = (UINT8 *)Z_Malloc(inflatedLen, PU_SOUND, NULL); // Make room for the decompressed data
+			stream.total_in = stream.avail_in = size;
+			stream.total_out = stream.avail_out = inflatedLen;
+			stream.next_in = (UINT8 *)input;
+			stream.next_out = inflatedData;
+			zErr = inflateInit2(&stream, 32 + MAX_WBITS);
+			if (zErr == Z_OK) // We're good to go
+			{
+				zErr = inflate(&stream, Z_FINISH);
+				if (zErr == Z_STREAM_END) {
+					// Run GME on new data
+					if (!gme_open_data(inflatedData, inflatedLen, &emu, SAMPLERATE))
+					{
+						short *mem;
+						UINT32 len;
+						gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
+
+						Z_Free(inflatedData); // GME supposedly makes a copy for itself, so we don't need this lying around
+
+						gme_start_track(emu, 0);
+						gme_set_equalizer(emu, &eq);
+						gme_track_info(emu, &gme_info, 0);
+
+						len = (gme_info->play_length * 441 / 10) << 2;
+						mem = Z_Malloc(len, PU_SOUND, 0);
+						gme_play(emu, len >> 1, mem);
+						gme_free_info(gme_info);
+						gme_delete(emu);
+
+						data = (char *)mem;
+						size = len;
+					}
+				}
+				else
+					CONS_Alert(CONS_ERROR,"Encountered %s when running inflate: %s\n", GetZLibError(zErr), stream.msg);
+				(void)inflateEnd(&stream);
+			}
+			else // Hold up, zlib's got a problem
+				CONS_Alert(CONS_ERROR,"Encountered %s when running inflateInit: %s\n", GetZLibError(zErr), stream.msg);
+			Z_Free(inflatedData); // GME didn't open jack, but don't let that stop us from freeing this up
+#else
+			return INVALID_HANDLE; // No zlib support
+#endif
+		}
+		// Try to read it as a GME sound
+		else if (!gme_open_data(input, size, &emu, SAMPLERATE))
+		{
+			short *mem;
+			gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
+
+			gme_start_track(emu, 0);
+			gme_set_equalizer(emu, &eq);
+			gme_track_info(emu, &gme_info, 0);
+
+			size = (gme_info->play_length * 441 / 10) << 2;
+			mem = Z_Malloc(size, PU_SOUND, 0);
+			gme_play(emu, size >> 1, mem);
+			gme_free_info(gme_info);
+			gme_delete(emu);
+
+			data = (char *)mem;
+		}
+#endif
+		if (data == NULL)
+		{
+			viofile_t file =
+			{
+				.data = input,
+				.cur = input,
+				.end = (char *)input + size,
+			};
+			SF_INFO info =
+			{
+				.frames = 1,
+				.samplerate = samplerate,
+				.channels = 1,
+				.format = 0,
+				.sections = 1,
+				.seekable = 1,
+			};
+			SNDFILE *snd = sf_open_virtual(&virtual_io, SFM_READ, &info, &file);
+			if (snd == NULL)
+				return INVALID_HANDLE;
+
+			size = 4096;
+			size_t pos = 0;
+			data = Z_Malloc(size, PU_SOUND, NULL);
+
+			format = I_GetALFormat(info);
+			sample_format_t sample_format = I_GetSampleFormat(info);
+
+			for (;;)
+			{
+				sf_count_t count;
+
+				if (sample_format == Float)
+					count = sf_read_float(snd, (float *)&data[pos], (size - pos) / sizeof(float));
+				else
+					count = sf_read_short(snd, (short *)&data[pos], (size - pos) / sizeof(short));
+
+				if (count == 0)
+					break;
+
+				pos += count * ((sample_format == Float) ? sizeof(float) : sizeof(short));
+				if (pos >= size)
+				{
+					size <<= 1;
+					data = Z_Realloc(data, size, PU_SOUND, NULL);
+				}
+			}
+
+			size = pos;
+			samplerate = info.samplerate;
+			sf_close(snd);
+		}
+	}
+
+	ALuint buffer;
+	if (!TRY(alGenBuffers, 1, &buffer))
+		return INVALID_HANDLE;
+
+	if (!TRY(alBufferData, buffer, format, data, size, samplerate))
+	{
+		alDeleteBuffers(1, &buffer);
+		return INVALID_HANDLE;
+	}
+
+	return buffer;
+}
+
+void *I_GetSfx(sfxinfo_t *sfx)
+{
+	if (sfx->data != NULL)
+		return sfx->data;
+
+	if (sfx->lumpnum == LUMPERROR)
+		sfx->lumpnum = S_GetSfxLumpNum(sfx);
+	sfx->length = W_LumpLength(sfx->lumpnum);
+
+	void *lump = W_CacheLumpNum(sfx->lumpnum, PU_SOUND);
+
+	ALuint buffer = LoadDataIntoBuffer(lump, sfx->length);
+	if (buffer == INVALID_HANDLE)
+		return NULL;
+
+	sfx->data = (void *)(uintptr_t)buffer;
+	return sfx->data;
+}
+
+void I_FreeSfx(sfxinfo_t *sfx)
+{
+	if (sfx->data)
+	{
+		ALuint buffer = (uintptr_t)sfx->data;
+		alDeleteBuffers(1, &buffer);
+	}
+	sfx->data = NULL;
+	sfx->lumpnum = LUMPERROR;
+}
+
+void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch)
+{
+	if (handle == INVALID_HANDLE)
+		return;
+
+	ALuint source = handle;
+	TRY(alSourcef, source, AL_GAIN, sfx_volume * (vol / 255.0f));
+	TRY(alSourcef, source, AL_PITCH, pitch / 128.0f);
+
+	// TODO: Real 3D Audio.
+	// create a panning effect by moving the source in an arc around the listener
+	// Based on https://github.com/kcat/openal-soft/issues/194
+	float leftpan = min((0xff-sep)<<1, 0xff) / 255.0f;
+	float rightpan = min(sep<<1, 0xff) / 255.0f;
+	float pan = (acosf(leftpan) + asinf(rightpan)) / ((float)M_PI); // average angle in [0,1]
+	pan = 2 * pan - 1; // convert to [-1, 1]
+	pan = pan * 0.5f; // 0.5 = sin(30') for a +/- 30 degree arc
+	TRY(alSourcei, source, AL_SOURCE_RELATIVE, AL_TRUE);
+	TRY(alSource3f, source, AL_POSITION, pan, 0, -sqrtf(1.0f - pan*pan));
+}
+
+INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel)
+{
+	ALuint source;
+	if (!TRY(alGenSources, 1, &source))
+		return INVALID_HANDLE;
+
+	if (!TRY(alSourcei, source, AL_BUFFER, (uintptr_t)S_sfx[id].data))
+	{
+		alDeleteSources(1, &source);
+		return INVALID_HANDLE;
+	}
+
+	if (!TRY(alSourcei, source, AL_SOURCE_RELATIVE, AL_TRUE))
+	{
+		alDeleteSources(1, &source);
+		return INVALID_HANDLE;
+	}
+
+	I_UpdateSoundParams(source, vol, sep, pitch);
+
+	if (!TRY(alSourcePlay, source))
+	{
+		alDeleteSources(1, &source);
+		return INVALID_HANDLE;
+	}
+
+	//(void)sep; // panning is now handled by real object positioning instead
+	(void)priority; // priority and channel management is handled by SRB2...
+	(void)channel; // no longer used
+	return source;
+}
+
+void I_StopSound(INT32 handle)
+{
+	if (handle == INVALID_HANDLE)
+		return;
+
+	ALuint source = handle;
+	TRY(alSourceStop, source);
+	TRY(alDeleteSources, 1, &source);
+}
+
+boolean I_SoundIsPlaying(INT32 handle)
+{
+	if (handle == INVALID_HANDLE || !alIsSource((ALuint)handle))
+		return false;
+
+	ALint value;
+	if (!TRY(alGetSourcei, (ALuint)handle, AL_SOURCE_STATE, &value))
+		return false;
+
+	return value == AL_PLAYING;
+}
+
+void I_SetSfxVolume(UINT8 volume)
+{
+	sfx_volume = volume / VOLUME_DIV;
+}
+
+void I_InitMusic(void)
+{
+}
+
+void I_ShutdownMusic(void)
+{
+	I_UnloadSong();
+}
+
+musictype_t I_SongType(void)
+{
+	LOCKAUDIO;
+
+#ifdef HAVE_GME
+	if (gme)
+		return MU_GME;
+#endif
+#ifdef HAVE_OPENMPT
+	if (openmpt_mhandle)
+		return MU_MOD_EX;
+#endif
+
+	// TODO if ever ported back to SRB2: add fluidsynth support
+
+	if (audio.music != INVALID_HANDLE)
+	{
+		switch ((audio.musicinfo.format & SF_FORMAT_SUBMASK))
+		{
+			case SF_FORMAT_OPUS:
+				return MU_OPUS;
+				break;
+			case SF_FORMAT_VORBIS:
+				return MU_OGG;
+				break;
+			case SF_FORMAT_FLAC:
+			case SF_FORMAT_ALAC_20:
+			case SF_FORMAT_ALAC_24:
+			case SF_FORMAT_ALAC_32:
+				return MU_FLAC;
+				break;
+			case SF_FORMAT_WAV:
+				return MU_WAV;
+				break;
+#ifdef HAVE_SNDFILE_MPEG
+			case SF_FORMAT_MPEG_LAYER_I:
+			case SF_FORMAT_MPEG_LAYER_II:
+			case SF_FORMAT_MPEG_LAYER_III:
+				return MU_MP3;
+				break;
+#endif
+		}
+	}
+
+	return MU_NONE;
+}
+
+/*boolean I_SongAcutallyPlaying(void)
+{
+	LOCKAUDIO;
+
+	if (audio.music == INVALID_HANDLE)
+		return false;
+
+	ALint value;
+	if (!TRY(alGetSourcei, audio.music, AL_SOURCE_STATE, &value))
+		return false;
+
+	return value == AL_PLAYING;
+}*/
+
+boolean I_SongPlaying(void)
+{
+	LOCKAUDIO;
+
+	if (audio.music == INVALID_HANDLE)
+		return false;
+
+	return true;
+}
+
+boolean I_SongPaused(void)
+{
+	LOCKAUDIO;
+
+	if (audio.music == INVALID_HANDLE)
+		return false;
+
+	ALint value;
+	if (!TRY(alGetSourcei, audio.music, AL_SOURCE_STATE, &value))
+		return false;
+
+	return value == AL_PAUSED;
+}
+
+boolean I_SetSongSpeed(float speed)
+{
+	LOCKAUDIO;
+
+	if (audio.music == INVALID_HANDLE)
+		return false;
+	if (speed > 250.0f)
+		speed = 250.0f; //limit speed up to 250x
+
+	// FIXME: implement
+	return false;
+}
+
+static UINT32 get_adjusted_position(UINT32 position)
+{
+	// all in milliseconds
+	UINT32 length = I_GetSongLength();
+
+	if (length)
+	{
+		UINT32 looppoint = I_GetSongLoopPoint();
+		return position >= length ? (position % (length-looppoint)) : position;
+	}
+	else
+		return position;
+}
+
+UINT32 I_GetSongLength(void)
+{
+	LOCKAUDIO;
+
+	if (audio.music == INVALID_HANDLE)
+		return 0;
+
+#ifdef HAVE_GME
+	if (gme)
+	{
+		gme_info_t *info;
+		gme_err_t gme_e = gme_track_info(gme, &info, current_track);
+
+		size_t length;
+
+		if (gme_e != NULL)
+		{
+			CONS_Alert(CONS_ERROR, "I_GetSongLength: GME error: %s\n", gme_e);
+			length = 0;
+		}
+		else
+		{
+			// reconstruct info->play_length, from GME source
+			// we only want intro + 1 loop, not 2
+			length = info->length;
+			if (length <= 0)
+			{
+				length = info->intro_length + info->loop_length; // intro + 1 loop
+				if (length <= 0)
+					length = 150 * 1000; // 2.5 minutes
+			}
+		}
+
+		gme_free_info(info);
+		return max(length, 0);
+	}
+#endif
+#ifdef HAVE_OPENMPT
+	if (openmpt_mhandle)
+		return (UINT32)(openmpt_module_get_duration_seconds(openmpt_mhandle) * 1000.);
+#endif
+
+	float position = SamplesToSeconds(audio.musicinfo.frames, audio.musicinfo.samplerate);
+
+	return position * 1000.0f;
+}
+
+boolean I_SetSongLoopPoint(UINT32 looppoint)
+{
+	(void)looppoint;
+
+	LOCKAUDIO;
+
+	const musictype_t mustype = I_SongType();
+
+	if (mustype == MU_GME || mustype == MU_MOD)
+		return false;
+
+	UINT32 length = I_GetSongLength();
+
+	if (length > 0)
+		looppoint %= length;
+
+	audio.loop_point = max((float)(looppoint / 1000.0L), 0);
+
+	return true;
+}
+
+UINT32 I_GetSongLoopPoint(void)
+{
+	LOCKAUDIO;
+
+	if (audio.music == INVALID_HANDLE)
+		return 0;
+
+#ifdef HAVE_GME
+	if (gme)
+	{
+		INT32 looppoint;
+		gme_info_t *info;
+		gme_err_t gme_e = gme_track_info(gme, &info, current_track);
+
+		if (gme_e != NULL)
+		{
+			CONS_Alert(CONS_ERROR, "I_GetSongLoopPoint: GME error: %s\n", gme_e);
+			looppoint = 0;
+		}
+		else
+		{
+			looppoint = info->intro_length > 0 ? info->intro_length : 0;
+		}
+
+		gme_free_info(info);
+		return max(looppoint, 0);
+	}
+	else
+#endif
+
+	return (UINT32)(audio.loop_point * 1000);
+}
+
+boolean I_SetSongPosition(UINT32 position)
+{
+	LOCKAUDIO;
+
+	if (audio.music == INVALID_HANDLE)
+		return false;
+
+#ifdef HAVE_GME
+	if (gme)
+	{
+		// this is unstable, so fail silently
+		return true;
+		// this isn't required technically, but GME thread-locks for a second
+		// if you seek too high from the counter
+		// length = I_GetSongLength();
+		// if (length)
+		// 	position = get_adjusted_position(position);
+
+		// SDL_LockAudio();
+		// gme_err_t gme_e = gme_seek(gme, position);
+		// SDL_UnlockAudio();
+
+		// if (gme_e != NULL)
+		// {
+		// 	CONS_Alert(CONS_ERROR, "I_SetSongPosition: GME error: %s\n", gme_e);
+		// 	return false;
+		// }
+		// else
+		// 	return true;
+	}
+	else
+#endif
+#ifdef HAVE_OPENMPT
+	if (openmpt_mhandle)
+	{
+		// This isn't 100% correct because we don't account for loop points because we can't get them.
+		// But if you seek past end of song, OpenMPT seeks to 0. So adjust the position anyway.
+		openmpt_module_set_position_seconds(openmpt_mhandle, (double)(get_adjusted_position(position)/1000.0L)); // returns new position
+		return true;
+	}
+	else
+#endif
+	{
+		UINT32 length = I_GetSongLength(); // get it in MS
+
+		if (length)
+			position = get_adjusted_position(position);
+
+		position = position / 1000.0f;
+
+		sf_count_t finalposition = SecondsToSamples(position, audio.musicinfo.samplerate);
+		sf_seek(audio.musicstream, finalposition, SF_SEEK_SET);
+
+		return true;
+	}
+}
+
+UINT32 I_GetSongPosition(void)
+{
+	LOCKAUDIO;
+
+	if (audio.music == INVALID_HANDLE)
+		return 0;
+
+#ifdef HAVE_GME
+	if (gme)
+	{
+		INT32 position = gme_tell(gme);
+
+		gme_info_t *info;
+		gme_err_t gme_e = gme_track_info(gme, &info, current_track);
+
+		if (gme_e != NULL)
+		{
+			CONS_Alert(CONS_ERROR, "I_GetSongPosition: GME error: %s\n", gme_e);
+			return position;
+		}
+		else
+		{
+			// adjust position, since GME's counter keeps going past loop
+			if (info->length > 0)
+				position %= info->length;
+			else if (info->intro_length + info->loop_length > 0)
+				position = position >= (info->intro_length + info->loop_length) ? (position % info->loop_length) : position;
+			else
+				position %= 150 * 1000; // 2.5 minutes
+		}
+
+		gme_free_info(info);
+
+		return (UINT32)(max(position, 0));
+	}
+	else
+#endif
+#ifdef HAVE_OPENMPT
+	if (openmpt_mhandle)
+		// This will be incorrect if we adjust for length because we can't get loop points.
+		// So return unadjusted. See note in SetMusicPosition: we adjust for that.
+		return (UINT32)(openmpt_module_get_position_seconds(openmpt_mhandle)*1000.);
+	else
+#endif
+	{
+		sf_count_t samples = sf_seek(audio.musicstream, 0, SF_SEEK_CUR);
+
+		float position = SamplesToSeconds(samples, audio.musicinfo.samplerate);
+
+		return (UINT32)(position * 1000.0f);
+	}
+}
+
+
+static boolean InitializeMusicStreaming(void *input, size_t size)
+{
+	LOCKAUDIO;
+
+	// Not a doom sound? Try something else.
+
+#ifdef HAVE_GME
+	// VGZ format
+	if (((UINT8 *)input)[0] == 0x1F
+		&& ((UINT8 *)input)[1] == 0x8B)
+	{
+#ifdef HAVE_ZLIB
+		UINT8 *inflatedData;
+		size_t inflatedLen;
+		z_stream stream;
+		int zErr; // Somewhere to handle any error messages zlib tosses out
+
+		memset(&stream, 0x00, sizeof (z_stream)); // Init zlib stream
+		// Begin the inflation process
+		inflatedLen = *(UINT32 *)input + (size-4); // Last 4 bytes are the decompressed size, typically
+		inflatedData = (UINT8 *)Z_Malloc(inflatedLen, PU_SOUND, NULL); // Make room for the decompressed data
+		stream.total_in = stream.avail_in = size;
+		stream.total_out = stream.avail_out = inflatedLen;
+		stream.next_in = (UINT8 *)input;
+		stream.next_out = inflatedData;
+
+		zErr = inflateInit2(&stream, 32 + MAX_WBITS);
+		if (zErr == Z_OK) // We're good to go
+		{
+			zErr = inflate(&stream, Z_FINISH);
+
+			if (zErr == Z_STREAM_END)
+			{
+				// Run GME on new data
+				if (!gme_open_data(inflatedData, inflatedLen, &gme, SAMPLERATE))
+				{
+					gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
+					gme_set_equalizer(gme, &eq);
+					gme_start_track(gme, 0);
+					current_track = 0;
+					Z_Free(inflatedData); // GME supposedly makes a copy for itself, so we don't need this lying around
+					inflateEnd(&stream);
+					return true;
+				}
+			}
+			else
+				CONS_Alert(CONS_ERROR,"Encountered %s when running inflate: %s\n", GetZLibError(zErr), stream.msg);
+
+			(void)inflateEnd(&stream);
+		}
+		else // Hold up, zlib's got a problem
+		{
+			CONS_Alert(CONS_ERROR,"Encountered %s when running inflateInit: %s\n", GetZLibError(zErr), stream.msg);
+		}
+
+		Z_Free(inflatedData); // GME didn't open jack, but don't let that stop us from freeing this up
+		return false;
+#else
+		return INVALID_HANDLE; // No zlib support
+#endif
+	}
+	// Try to read it as a GME sound
+	else if (!gme_open_data(input, size, &gme, SAMPLERATE))
+	{
+		gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
+		gme_set_equalizer(gme, &eq);
+		gme_start_track(gme, 0);
+		current_track = 0;
+		return true;
+	}
+#endif
+	audio.musicfile.data = input;
+	audio.musicfile.cur = input;
+	audio.musicfile.end = (char *)input + size;
+	audio.musicinfo.frames = 1,
+	audio.musicinfo.samplerate = SAMPLERATE,
+	audio.musicinfo.channels = 1,
+	audio.musicinfo.format = 0,
+	audio.musicinfo.sections = 1,
+	audio.musicinfo.seekable = 1,
+	audio.musicstream = sf_open_virtual(&virtual_io, SFM_READ, &audio.musicinfo, &audio.musicfile);
+	if (audio.musicstream != NULL)
+		return true;
+
+#ifdef HAVE_OPENMPT
+	/*
+		If the size of the data to be checked is bigger than the recommended size (> 2048 bytes)
+		Let's just set the probe size to the recommended size
+		Otherwise let's give it the full data size
+	*/
+
+	if (size > openmpt_probe_file_header_get_recommended_size())
+		probesize = openmpt_probe_file_header_get_recommended_size();
+	else
+		probesize = size;
+
+	result = openmpt_probe_file_header(OPENMPT_PROBE_FILE_HEADER_FLAGS_DEFAULT, input, probesize, size, NULL, NULL, NULL, NULL, NULL, NULL);
+	if (result != OPENMPT_PROBE_FILE_HEADER_RESULT_SUCCESS)
+		return false;
+
+	openmpt_mhandle = openmpt_module_create_from_memory2(input, size, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+	if (openmpt_mhandle)
+	{
+		current_subsong = 0;
+		return true;
+	}
+
+	mod_err = openmpt_module_error_get_last(openmpt_mhandle);
+	mod_err_str = openmpt_error_string(mod_err);
+	CONS_Alert(CONS_ERROR, "openmpt_module_create_from_memory2: %s\n", mod_err_str);
+	return false;
+#endif
+}
+
+boolean I_LoadSong(char *data, size_t len)
+{
+	const char *key1 = "LOOP";
+	const char *key2 = "POINT=";
+	const char *key3 = "MS=";
+	const size_t key1len = strlen(key1);
+	const size_t key2len = strlen(key2);
+	const size_t key3len = strlen(key3);
+	char *p = data;
+
+	LOCKAUDIO;
+
+	if (audio.music != INVALID_HANDLE)
+		I_UnloadSong();
+
+	if (!InitializeMusicStreaming(data, len))
+		return false;
+
+	if (!TRY(alGenSources, 1, &audio.music))
+	{
+		I_UnloadSong();
+		return false;
+	}
+
+	if (!TRY(alGenBuffers, BUFFERCOUNT, audio.musicbuffers))
+	{
+		I_UnloadSong();
+		return false;
+	}
+
+	// Find the OGG loop point.
+	audio.loop_point = 0.0f;
+
+	while ((UINT32)(p - data) < len)
+	{
+		if (fpclassify(audio.loop_point) == FP_ZERO && !strncmp(p, key1, key1len))
+		{
+			p += key1len; // skip LOOP
+			if (!strncmp(p, key2, key2len)) // is it LOOPPOINT=?
+			{
+				p += key2len; // skip POINT=
+				//audio.loop_point = (float)(((audio.musicinfo.samplerate / 1000.0L)+atoi(p)) / audio.musicinfo.samplerate); // LOOPPOINT works by sample count.
+				// Soooo.... another plan
+				// people were looping music around how shitty mixer_sound's loopcode is.
+				// so we need their shitty calc for it to sound right for some tracks. This SUCKS.
+				audio.loop_point = (float)((44.1L+atoi(p)) / 44100.0L);
+			}
+			else if (!strncmp(p, key3, key3len)) // is it LOOPMS=?
+			{
+				p += key3len; // skip MS=
+				audio.loop_point = (float)(atof(p) / 1000.0); // LOOPMS works by real time, as miliseconds.
+				// Everything that uses LOOPMS will work perfectly with SDL_Mixer.
+			}
+		}
+
+		if (fpclassify(audio.loop_point) != FP_ZERO) // Got what we needed
+			break;
+		else // continue searching
+			p++;
+	}
+	return true;
+}
+
+void I_UnloadSong(void)
+{
+	LOCKAUDIO;
+
+	I_StopSong();
+
+#ifdef HAVE_GME
+	if (gme)
+	{
+		gme_delete(gme);
+		gme = NULL;
+ 	}
+#endif
+#ifdef HAVE_OPENMPT
+	if (openmpt_mhandle)
+	{
+		openmpt_module_destroy(openmpt_mhandle);
+		openmpt_mhandle = NULL;
+	}
+#endif
+	if (audio.musicstream != NULL)
+	{
+		sf_close(audio.musicstream);
+		audio.musicstream = NULL;
+	}
+	if (audio.music != INVALID_HANDLE)
+	{
+		alDeleteSources(1, &audio.music);
+		alDeleteBuffers(BUFFERCOUNT, audio.musicbuffers);
+		for (size_t i = 0; i < BUFFERCOUNT; i++)
+			audio.musicbuffers[i] = INVALID_HANDLE;
+		audio.music = INVALID_HANDLE;
+		audio.loop_point = 0.0f;
+		audio.startplay = false;
+	}
+}
+
+boolean I_PlaySong(boolean looping)
+{
+	LOCKAUDIO;
+
+	if (audio.music == INVALID_HANDLE)
+		return false;
+
+	if (!I_UpdateMusicVolume())
+		return false;
+
+	audio.looping = looping;
+
+#ifdef HAVE_GME
+	if (gme)
+	{
+#if defined (GME_VERSION) && GME_VERSION >= 0x000603
+		if (looping)
+			gme_set_autoload_playback_limit(gme, 0);
+#endif
+	}
+	else
+#endif
+#ifdef HAVE_OPENMPT
+	if (openmpt_mhandle)
+	{
+		openmpt_module_select_subsong(openmpt_mhandle, 0);
+		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH, cv_modfilter.value);
+		if (looping)
+			openmpt_module_set_repeat_count(openmpt_mhandle, -1); // Always repeat
+		current_subsong = 0;
+	}
+#endif
+
+	//if (!TRY(alSourcePlay, audio.music))
+		//return false;
+
+	audio.startplay = true;
+
+	return true;
+}
+
+void I_StopSong(void)
+{
+	LOCKAUDIO;
+
+	// HACK: See music_loop on why we want fade timing to proceed
+	// after end of song
+	if (!fading_nocleanup)
+		I_StopFadingSong();
+
+#ifdef HAVE_GME
+	if (gme)
+		current_track = -1;
+#endif
+#ifdef HAVE_OPENMPT
+	if (openmpt_mhandle)
+		current_subsong = -1;
+#endif
+	if (audio.music != INVALID_HANDLE)
+		alSourceStop(audio.music);
+}
+
+void I_PauseSong(void)
+{
+	LOCKAUDIO;
+
+	if (audio.music != INVALID_HANDLE)
+		alSourcePause(audio.music);
+}
+
+void I_ResumeSong(void)
+{
+	LOCKAUDIO;
+
+	alSourcePlay(audio.music);
+}
+
+void I_SetMusicVolume(UINT8 volume)
+{
+	LOCKAUDIO;
+
+	music_volume = volume / VOLUME_DIV;
+	if (audio.music != INVALID_HANDLE)
+		I_UpdateMusicVolume();
+}
+
+boolean I_SetSongTrack(INT32 track)
+{
+	LOCKAUDIO;
+
+	if (audio.music == INVALID_HANDLE)
+		return false;
+
+#ifdef HAVE_GME
+	// If the specified track is within the number of tracks playing, then change it
+	if (gme)
+	{
+		if (current_track == track)
+			return false;
+
+		if (track >= 0 && track < gme_track_count(gme)-1)
+		{
+			gme_err_t gme_e = gme_start_track(gme, track);
+
+			if (gme_e != NULL)
+			{
+				CONS_Alert(CONS_ERROR, "GME error: %s\n", gme_e);
+				return false;
+			}
+
+			current_track = track;
+
+			return true;
+		}
+
+		return false;
+	}
+	else
+	{
+#endif
+#ifdef HAVE_OPENMPT
+		if (openmpt_mhandle)
+		{
+			if (current_subsong == track)
+				return false;
+			if (track >= 0 && track < openmpt_module_get_num_subsongs(openmpt_mhandle))
+			{
+				openmpt_module_select_subsong(openmpt_mhandle, track);
+				current_subsong = track;
+				return true;
+			}
+
+			return false;
+		}
+	}
+#endif
+
+	(void)track;
+	return false;
+}
+
+void I_UpdateSongLagThreshold(void){}
+void I_UpdateSongLagConditions(void){}
+
+void I_SetInternalMusicVolume(UINT8 volume)
+{
+	LOCKAUDIO;
+
+	internal_volume = volume / (float)MAX_VOLUME; // don't divide by VOLUME_DIV, this is a multiplier on music volume
+	if (audio.music != INVALID_HANDLE)
+		I_UpdateMusicVolume();
+}
+
+void I_StopFadingSong(void)
+{
+	is_fading = false;
+	fading_source = fading_target = fading_timer = fading_duration = 0;
+	// don't unset fading_nocleanup here just yet; fading_callback is cleaned up
+	// in var_cleanup()
+}
+
+boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms, void (*callback)(void))
+{
+	INT16 volume_delta;
+
+	source_volume = min(source_volume, MAX_VOLUME);
+	volume_delta = (INT16)(target_volume - source_volume);
+
+	I_StopFadingSong();
+
+	if (!ms && volume_delta)
+	{
+		I_SetInternalMusicVolume(target_volume);
+		if (callback)
+			(*callback)();
+		return true;
+
+	}
+	else if (!volume_delta)
+	{
+		if (callback)
+			(*callback)();
+		return true;
+	}
+
+	// Round MS to nearest 10
+	// If n - lower > higher - n, then round up
+	ms = (ms - ((ms / 10) * 10) > (((ms / 10) * 10) + 10) - ms) ?
+		(((ms / 10) * 10) + 10) // higher
+		: ((ms / 10) * 10); // lower
+
+	if (!ms)
+		I_SetInternalMusicVolume(target_volume);
+	else if (source_volume != target_volume)
+	{
+		is_fading = true;
+		fading_timer = fading_duration = ms;
+		fading_source = source_volume / 100.0f;
+		fading_target = target_volume / 100.0f;
+		fading_callback = callback;
+
+		if (fabs(internal_volume - (source_volume / 100.0f)) > FLOATEP) // NOT EQUAL I love floats I love floats
+			I_SetInternalMusicVolume(source_volume);
+	}
+
+	return is_fading;
+}
+
+boolean I_FadeSong(UINT8 target_volume, UINT32 ms, void (*callback)(void))
+{
+    return I_FadeSongFromVolume(target_volume, (internal_volume * 100.f), ms, callback);
+}
+boolean I_FadeOutStopSong(UINT32 ms)
+{
+    return I_FadeSongFromVolume(0, (internal_volume * 100.f), ms, &I_StopSong);
+}
+
+boolean I_FadeInPlaySong(UINT32 ms, boolean looping)
+{
+	if (I_PlaySong(looping))
+		return I_FadeSongFromVolume(100, 0, ms, NULL);
+	else
+		return false;
+}
+
+#endif // defined(HAVE_OPENAL)

@@ -140,6 +140,7 @@ static CV_PossibleValue_t fov_cons_t[] = {{60*FRACUNIT, "MIN"}, {179*FRACUNIT, "
 static CV_PossibleValue_t translucenthud_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t maxportals_cons_t[] = {{0, "MIN"}, {12, "MAX"}, {0, NULL}}; // lmao rendering 32 portals, you're a card
 static CV_PossibleValue_t homremoval_cons_t[] = {{0, "No"}, {1, "Yes"}, {2, "Flash"}, {0, NULL}};
+static CV_PossibleValue_t secbright_cons_t[] = {{0, "MIN"}, {255, "MAX"}, {0, NULL}};
 
 static void Fov_OnChange(void);
 
@@ -181,6 +182,8 @@ consvar_t cv_fov[MAXSPLITSCREENPLAYERS] = {
 
 // Okay, whoever said homremoval causes a performance hit should be shot.
 consvar_t cv_homremoval = CVAR_INIT ("homremoval", "Yes", CV_SAVE, homremoval_cons_t, NULL);
+
+consvar_t cv_secbright = CVAR_INIT ("r_secbright", "0", CV_SAVE, secbright_cons_t, NULL);
 
 consvar_t cv_maxportals = CVAR_INIT ("maxportals", "2", CV_SAVE, maxportals_cons_t, NULL);
 
@@ -1780,6 +1783,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_shadow);
 	CV_RegisterVar(&cv_skybox);
 	CV_RegisterVar(&cv_ffloorclip);
+	CV_RegisterVar(&cv_secbright);
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{

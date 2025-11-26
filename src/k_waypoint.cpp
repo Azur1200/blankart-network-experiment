@@ -855,7 +855,7 @@ void K_DebugWaypointsVisualise(void)
 
 			if (!K_GetWaypointIsSpawnpoint(waypoint))
 			{
-				debugmobj->frame |= FF_TRANS40;
+				debugmobj->frame |= FF_TRANS60;
 			}
 
 			// Valid waypoint, so draw lines of SPARKLES to its next or previous waypoints
@@ -2106,9 +2106,15 @@ static UINT32 K_SetupCircuitLength(void)
 	{
 		waypoint_t *wp = &waypointheap[i];
 		path_t bestcircuitpath = {0};
+
 		K_PathfindToWaypoint(wp, finishline, &bestcircuitpath, false, false);
-		if (K_GetWaypointIsEnabled(wp) && wp != finishline && bestcircuitpath.totaldist == 0)
+		if (bestcircuitpath.totaldist == 0) // try again using shortcuts
+			K_PathfindToWaypoint(wp, finishline, &bestcircuitpath, true, false);
+
+		if (bestcircuitpath.totaldist == 0 && wp != finishline
+		 && !(wp->numprevwaypoints > 0 && wp->prevwaypoints[0] == finishline)) // exception for sprint maps
 			CONS_Alert(CONS_WARNING, "Waypoint %d is a dead end\n", K_GetWaypointID(wp));
+
 		wp->distancetofinish = bestcircuitpath.totaldist;
 		Z_Free(bestcircuitpath.array);
 	}
@@ -2487,7 +2493,7 @@ struct complexity_sneaker_s
 		}
 	}
 
-	/*complexity_sneaker_s(mapthing_t *mt)
+	complexity_sneaker_s(mapthing_t *mt)
 	{
 		M_ClearBox(bbox);
 
@@ -2497,7 +2503,7 @@ struct complexity_sneaker_s
 
 		M_AddToBox(bbox, x - radius, y - radius);
 		M_AddToBox(bbox, x + radius, y + radius);
-	}*/
+	}
 };
 
 static boolean K_SneakerPanelOverlap(complexity_sneaker_s &panelA, complexity_sneaker_s &panelB)
@@ -2820,7 +2826,7 @@ static INT32 K_CalculateTrackComplexity(void)
 		}
 
 
-		/*for (size_t i = 0; i < nummapthings; i++)
+		for (size_t i = 0; i < nummapthings; i++)
 		{
 			mapthing_t *const mt = &mapthings[i];
 			if (mt->type != mobjinfo[MT_SNEAKERPANEL].doomednum)
@@ -2847,7 +2853,7 @@ static INT32 K_CalculateTrackComplexity(void)
 			{
 				sneaker_panels.push_back(new_panel);
 			}
-		}*/
+		}
 
 		CONS_Debug(DBG_SETUP, "%s", fmt::format("Num sneaker panel sets: {}\n", sneaker_panels.size()).c_str());
 		trackcomplexity -= sneaker_panels.size() * 1250;

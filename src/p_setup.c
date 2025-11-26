@@ -103,12 +103,13 @@
 #include "k_terrain.h" // TRF_TRIPWIRE
 #include "k_brightmap.h"
 #include "k_director.h" // K_InitDirector
-#include "k_odds.h" // ItemBGone
+#include "k_items.h"
 #include "acs/interface.h"
 #include "doomstat.h" // MAXMUSNAMES
 #include "k_mapuser.h"
 #include "p_deepcopy.h"
 #include "k_specialstage.h"
+#include "g_input.h"
 
 #include "blan/b_soc.h"
 
@@ -118,6 +119,8 @@
 #if !defined (UNDER_CE)
 #include <time.h>
 #endif
+
+consvar_t cv_writetextmap_includemappatch = CVAR_INIT ("writetextmap_includemappatch", "Off", CV_SAVE, CV_OnOff, NULL);
 
 //
 // Map hash, calculated on level load.
@@ -134,6 +137,7 @@ boolean udmf;
 INT32 udmf_version, patch_version;
 mapnamespace_t mapnamespace = MNS_UNKNOWN;
 size_t numvertexes, numsegs, numsectors, numsubsectors, numnodes, numlines, numsides, nummapthings;
+static size_t numpatchmapthings;
 size_t num_orig_vertexes;
 vertex_t *vertexes;
 seg_t *segs;
@@ -143,7 +147,7 @@ node_t *nodes;
 line_t *lines;
 side_t *sides;
 mapthing_t *mapthings;
-static boolean basemaptyperemoval[65537];
+static boolean basemaptyperemoval[65536];
 sector_t *spawnsectors;
 line_t *spawnlines;
 side_t *spawnsides;
@@ -215,6 +219,9 @@ UINT16 partadd_earliestfile = UINT16_MAX;
 // Renamed because SRB2Kart owns real waypoints.
 mobj_t *tubewaypoints[NUMTUBEWAYPOINTSEQUENCES][TUBEWAYPOINTSEQUENCESIZE];
 UINT16 numtubewaypoints[NUMTUBEWAYPOINTSEQUENCES];
+
+// for warnings
+boolean usedspawnfinishline = false;
 
 void P_AddTubeWaypoint(UINT8 sequence, UINT8 id, mobj_t *waypoint)
 {
@@ -729,7 +736,7 @@ static int cmp_loopends(const void *a, const void *b)
 	return maincomp != 0 ? maincomp : intsign((mt1 - mapthings) - (mt2 - mapthings));
 }
 
-static void P_SpawnMapThings(boolean spawnemblems)
+static void P_SpawnMapThings(boolean spawnemblems, boolean patch)
 {
 	size_t i;
 	mapthing_t *mt;
@@ -737,21 +744,30 @@ static void P_SpawnMapThings(boolean spawnemblems)
 	mapthing_t **loopends;
 	size_t num_loopends = 0;
 
+	// dodging copyslope compat nonsense
+	size_t start = 0, end = nummapthings;
+	if (patch)
+		start = end - numpatchmapthings;
+	else
+		end -= numpatchmapthings;
+
 	// Spawn axis points first so they are at the front of the list for fast searching.
-	for (i = 0, mt = mapthings; i < nummapthings; i++, mt++)
+	for (i = start, mt = mapthings + start; i < end; i++, mt++)
 	{
 		switch (mt->type)
 		{
 			case 1700: // MT_AXIS
 			case 1701: // MT_AXISTRANSFER
 			case 1702: // MT_AXISTRANSFERLINE
-			case 2021: // MT_LOOPCENTERPOINT
+			case 20021: // MT_LOOPCENTERPOINT
 				mt->mobj = NULL;
 				P_SpawnMapThing(mt);
 				break;
-			case 2020: // MT_LOOPENDPOINT
+			case 20020: // MT_LOOPENDPOINT
 				num_loopends++;
 				break;
+			case 6502: // set flag here before spawning the waypoints
+				usedspawnfinishline = true;
 			default:
 				break;
 		}
@@ -761,14 +777,14 @@ static void P_SpawnMapThings(boolean spawnemblems)
 			&loopends);
 	num_loopends = 0;
 
-	for (i = 0, mt = mapthings; i < nummapthings; i++, mt++)
+	for (i = start, mt = mapthings + start; i < end; i++, mt++)
 	{
 		switch (mt->type)
 		{
 			case 1700: // MT_AXIS
 			case 1701: // MT_AXISTRANSFER
 			case 1702: // MT_AXISTRANSFERLINE
-			case 2021: // MT_LOOPCENTERPOINT
+			case 20021: // MT_LOOPCENTERPOINT
 				continue; // These were already spawned
 		}
 
@@ -776,7 +792,7 @@ static void P_SpawnMapThings(boolean spawnemblems)
 			continue;
 
 		// Don't spawn non-patch objects of this type if they are uneeded
-		if (mt->patch == false && basemaptyperemoval[mt->type] == true)
+		if (!patch && basemaptyperemoval[mt->type])
 			continue;
 
 		if (mt->type == mobjinfo[MT_RANDOMITEM].doomednum)
@@ -1379,7 +1395,6 @@ static void P_LoadThings(UINT8 *data)
 		memset(mt->script_stringargs, 0x00, NUM_SCRIPT_STRINGARGS*sizeof(*mt->script_stringargs));
 		mt->pitch = mt->roll = 0;
 		mt->layer = 0;
-		mt->patch = false;
 
 		mt->type &= 4095;
 
@@ -2540,214 +2555,217 @@ static void P_WriteTextmap(void)
 		}
 	}
 
-	freetag = Tag_NextUnused(0);
-
-	for (i = 0; i < nummapthings; i++)
+	if (!udmf)
 	{
-		subsector_t *ss;
-		INT32 s;
+		freetag = Tag_NextUnused(0);
 
-		if (wmapthings[i].type != 751 && wmapthings[i].type != 752 && wmapthings[i].type != 758)
-			continue;
-
-		ss = R_PointInSubsector(wmapthings[i].x << FRACBITS, wmapthings[i].y << FRACBITS);
-
-		if (!ss)
-			continue;
-
-		s = ss->sector - sectors;
-
-		switch (wmapthings[i].type)
+		for (i = 0; i < nummapthings; i++)
 		{
-			case 751:
-				if (!specialthings[s].teleport)
-					specialthings[s].teleport = &wmapthings[i];
-				break;
-			case 752:
-				if (!specialthings[s].altview)
-					specialthings[s].altview = &wmapthings[i];
-				break;
-			case 758:
-				if (!specialthings[s].angleanchor)
-					specialthings[s].angleanchor = &wmapthings[i];
-				break;
-			default:
-				break;
+			subsector_t *ss;
+			INT32 s;
+
+			if (wmapthings[i].type != 751 && wmapthings[i].type != 752 && wmapthings[i].type != 758)
+				continue;
+
+			ss = R_PointInSubsector(wmapthings[i].x << FRACBITS, wmapthings[i].y << FRACBITS);
+
+			if (!ss)
+				continue;
+
+			s = ss->sector - sectors;
+
+			switch (wmapthings[i].type)
+			{
+				case 751:
+					if (!specialthings[s].teleport)
+						specialthings[s].teleport = &wmapthings[i];
+					break;
+				case 752:
+					if (!specialthings[s].altview)
+						specialthings[s].altview = &wmapthings[i];
+					break;
+				case 758:
+					if (!specialthings[s].angleanchor)
+						specialthings[s].angleanchor = &wmapthings[i];
+					break;
+				default:
+					break;
+			}
 		}
-	}
 
-	for (i = 0; i < numlines; i++)
-	{
-		INT32 s;
-
-		switch (wlines[i].special)
+		for (i = 0; i < numlines; i++)
 		{
-			case 1:
-				TAG_ITER_SECTORS(Tag_FGet(&wlines[i].tags), s)
-				{
-					CONS_Alert(CONS_WARNING, M_GetText("Linedef %s applies custom gravity to sector %d. Changes to this gravity at runtime will not be reflected in the converted map. Use linedef type 469 for this.\n"), sizeu1(i), s);
-					wsectors[s].gravity = FixedDiv(lines[i].frontsector->floorheight >> FRACBITS, 1000);
-				}
-				break;
-			case 2:
-				CONS_Alert(CONS_WARNING, M_GetText("Custom exit linedef %s detected. Changes to the next map at runtime will not be reflected in the converted map. Use linedef type 468 for this.\n"), sizeu1(i));
-				wlines[i].args[0] = lines[i].frontsector->floorheight >> FRACBITS;
-				wlines[i].args[2] = lines[i].frontsector->ceilingheight >> FRACBITS;
-				break;
-			case 5:
-			case 50:
-			case 51:
-				CONS_Alert(CONS_WARNING, M_GetText("Linedef %s has type %d, which is not supported in UDMF.\n"), sizeu1(i), wlines[i].special);
-				break;
-			case 61:
-				if (wlines[i].flags & ML_MIDSOLID)
-					continue;
-				if (!wlines[i].args[1])
-					continue;
-				CONS_Alert(CONS_WARNING, M_GetText("Linedef %s with crusher type 61 rises twice as fast on spawn. This behavior is not supported in UDMF.\n"), sizeu1(i));
-				break;
-			case 76:
-				if (freetag == (mtag_t)MAXTAGS)
-				{
-					CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 76 cannot be converted.\n"), sizeu1(i));
-					break;
-				}
-				TAG_ITER_SECTORS(wlines[i].args[0], s)
-					for (j = 0; (unsigned)j < wsectors[s].linecount; j++)
-					{
-						line_t *line = wsectors[s].lines[j] - lines + wlines;
-						if (line->special < 100 || line->special >= 300)
-							continue;
-						Tag_Add(&line->tags, freetag);
-					}
-				wlines[i].args[0] = freetag;
-				freetag = Tag_NextUnused(freetag);
-				break;
-			case 259:
-				if (wlines[i].args[3] & FOF_QUICKSAND)
-					CONS_Alert(CONS_WARNING, M_GetText("Quicksand properties of custom FOF on linedef %s cannot be converted. Use linedef type 75 instead.\n"), sizeu1(i));
-				if (wlines[i].args[3] & FOF_BUSTUP)
-					CONS_Alert(CONS_WARNING, M_GetText("Bustable properties of custom FOF on linedef %s cannot be converted. Use linedef type 74 instead.\n"), sizeu1(i));
-				break;
-			case 412:
-				if ((s = Tag_Iterate_Sectors(wlines[i].args[0], 0)) < 0)
-					break;
-				if (!specialthings[s].teleport)
-					break;
-				if (freetag == (mtag_t)MAXTAGS)
-				{
-					CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 412 cannot be converted.\n"), sizeu1(i));
-					break;
-				}
-				specialthings[s].teleport->tid = freetag;
-				wlines[i].args[0] = freetag;
-				freetag = Tag_NextUnused(freetag);
-				break;
-			case 422:
-				if ((s = Tag_Iterate_Sectors(wlines[i].args[0], 0)) < 0)
-					break;
-				if (!specialthings[s].altview)
-					break;
-				if (freetag == (mtag_t)MAXTAGS)
-				{
-					CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 422 cannot be converted.\n"), sizeu1(i));
-					break;
-				}
-				specialthings[s].altview->tid = freetag;
-				wlines[i].args[0] = freetag;
-				specialthings[s].altview->pitch = wlines[i].args[2];
-				freetag = Tag_NextUnused(freetag);
-				break;
-			case 447:
-				CONS_Alert(CONS_WARNING, M_GetText("Linedef %s has change colormap action, which cannot be converted automatically. Tag arg0 to a sector with the desired colormap.\n"), sizeu1(i));
-				if (wlines[i].flags & ML_TFERLINE)
-					CONS_Alert(CONS_WARNING, M_GetText("Linedef %s mixes front and back colormaps, which is not supported in UDMF. Copy one colormap to the target sector first, then mix in the second one.\n"), sizeu1(i));
-				break;
-			case 455:
-				CONS_Alert(CONS_WARNING, M_GetText("Linedef %s has fade colormap action, which cannot be converted automatically. Tag arg0 to a sector with the desired colormap.\n"), sizeu1(i));
-				if (wlines[i].flags & ML_TFERLINE)
-					CONS_Alert(CONS_WARNING, M_GetText("Linedef %s specifies starting colormap for the fade, which is not supported in UDMF. Change the colormap with linedef type 447 instead.\n"), sizeu1(i));
-				break;
-			case 457:
-				if ((s = Tag_Iterate_Sectors(wlines[i].args[0], 0)) < 0)
-					break;
-				if (!specialthings[s].angleanchor)
-					break;
-				if (freetag == (mtag_t)MAXTAGS)
-				{
-					CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 457 cannot be converted.\n"), sizeu1(i));
-					break;
-				}
-				specialthings[s].angleanchor->tid = freetag;
-				wlines[i].args[0] = freetag;
-				freetag = Tag_NextUnused(freetag);
-				break;
-			case 606:
-				if (wlines[i].args[0] == MTAG_GLOBAL)
-				{
-					sector_t *sec = wlines[i].frontsector - sectors + wsectors;
-					sec->extra_colormap = wsides[wlines[i].sidenum[0]].colormap_data;
-				}
-				else
-				{
-					TAG_ITER_SECTORS(wlines[i].args[0], s)
-					{
-						if (wsectors[s].colormap_protected)
-							continue;
+			INT32 s;
 
-						wsectors[s].extra_colormap = wsides[wlines[i].sidenum[0]].colormap_data;
-						if (freetag == (mtag_t)MAXTAGS)
-						{
-							CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 606 cannot be converted.\n"), sizeu1(i));
-							break;
-						}
-						Tag_Add(&wsectors[s].tags, freetag);
-						wlines[i].args[1] = freetag;
-						freetag = Tag_NextUnused(freetag);
+			switch (wlines[i].special)
+			{
+				case 1:
+					TAG_ITER_SECTORS(Tag_FGet(&wlines[i].tags), s)
+					{
+						CONS_Alert(CONS_WARNING, M_GetText("Linedef %s applies custom gravity to sector %d. Changes to this gravity at runtime will not be reflected in the converted map. Use linedef type 469 for this.\n"), sizeu1(i), s);
+						wsectors[s].gravity = FixedDiv(lines[i].frontsector->floorheight >> FRACBITS, 1000);
+					}
+					break;
+				case 2:
+					CONS_Alert(CONS_WARNING, M_GetText("Custom exit linedef %s detected. Changes to the next map at runtime will not be reflected in the converted map. Use linedef type 468 for this.\n"), sizeu1(i));
+					wlines[i].args[0] = lines[i].frontsector->floorheight >> FRACBITS;
+					wlines[i].args[2] = lines[i].frontsector->ceilingheight >> FRACBITS;
+					break;
+				case 5:
+				case 50:
+				case 51:
+					CONS_Alert(CONS_WARNING, M_GetText("Linedef %s has type %d, which is not supported in UDMF.\n"), sizeu1(i), wlines[i].special);
+					break;
+				case 61:
+					if (wlines[i].flags & ML_MIDSOLID)
+						continue;
+					if (!wlines[i].args[1])
+						continue;
+					CONS_Alert(CONS_WARNING, M_GetText("Linedef %s with crusher type 61 rises twice as fast on spawn. This behavior is not supported in UDMF.\n"), sizeu1(i));
+					break;
+				case 76:
+					if (freetag == (mtag_t)MAXTAGS)
+					{
+						CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 76 cannot be converted.\n"), sizeu1(i));
 						break;
 					}
-				}
-				break;
-			default:
-				break;
+					TAG_ITER_SECTORS(wlines[i].args[0], s)
+						for (j = 0; (unsigned)j < wsectors[s].linecount; j++)
+						{
+							line_t *line = wsectors[s].lines[j] - lines + wlines;
+							if (line->special < 100 || line->special >= 300)
+								continue;
+							Tag_Add(&line->tags, freetag);
+						}
+					wlines[i].args[0] = freetag;
+					freetag = Tag_NextUnused(freetag);
+					break;
+				case 259:
+					if (wlines[i].args[3] & FOF_QUICKSAND)
+						CONS_Alert(CONS_WARNING, M_GetText("Quicksand properties of custom FOF on linedef %s cannot be converted. Use linedef type 75 instead.\n"), sizeu1(i));
+					if (wlines[i].args[3] & FOF_BUSTUP)
+						CONS_Alert(CONS_WARNING, M_GetText("Bustable properties of custom FOF on linedef %s cannot be converted. Use linedef type 74 instead.\n"), sizeu1(i));
+					break;
+				case 412:
+					if ((s = Tag_Iterate_Sectors(wlines[i].args[0], 0)) < 0)
+						break;
+					if (!specialthings[s].teleport)
+						break;
+					if (freetag == (mtag_t)MAXTAGS)
+					{
+						CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 412 cannot be converted.\n"), sizeu1(i));
+						break;
+					}
+					specialthings[s].teleport->tid = freetag;
+					wlines[i].args[0] = freetag;
+					freetag = Tag_NextUnused(freetag);
+					break;
+				case 422:
+					if ((s = Tag_Iterate_Sectors(wlines[i].args[0], 0)) < 0)
+						break;
+					if (!specialthings[s].altview)
+						break;
+					if (freetag == (mtag_t)MAXTAGS)
+					{
+						CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 422 cannot be converted.\n"), sizeu1(i));
+						break;
+					}
+					specialthings[s].altview->tid = freetag;
+					wlines[i].args[0] = freetag;
+					specialthings[s].altview->pitch = wlines[i].args[2];
+					freetag = Tag_NextUnused(freetag);
+					break;
+				case 447:
+					CONS_Alert(CONS_WARNING, M_GetText("Linedef %s has change colormap action, which cannot be converted automatically. Tag arg0 to a sector with the desired colormap.\n"), sizeu1(i));
+					if (wlines[i].flags & ML_TFERLINE)
+						CONS_Alert(CONS_WARNING, M_GetText("Linedef %s mixes front and back colormaps, which is not supported in UDMF. Copy one colormap to the target sector first, then mix in the second one.\n"), sizeu1(i));
+					break;
+				case 455:
+					CONS_Alert(CONS_WARNING, M_GetText("Linedef %s has fade colormap action, which cannot be converted automatically. Tag arg0 to a sector with the desired colormap.\n"), sizeu1(i));
+					if (wlines[i].flags & ML_TFERLINE)
+						CONS_Alert(CONS_WARNING, M_GetText("Linedef %s specifies starting colormap for the fade, which is not supported in UDMF. Change the colormap with linedef type 447 instead.\n"), sizeu1(i));
+					break;
+				case 457:
+					if ((s = Tag_Iterate_Sectors(wlines[i].args[0], 0)) < 0)
+						break;
+					if (!specialthings[s].angleanchor)
+						break;
+					if (freetag == (mtag_t)MAXTAGS)
+					{
+						CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 457 cannot be converted.\n"), sizeu1(i));
+						break;
+					}
+					specialthings[s].angleanchor->tid = freetag;
+					wlines[i].args[0] = freetag;
+					freetag = Tag_NextUnused(freetag);
+					break;
+				case 606:
+					if (wlines[i].args[0] == MTAG_GLOBAL)
+					{
+						sector_t *sec = wlines[i].frontsector - sectors + wsectors;
+						sec->extra_colormap = wsides[wlines[i].sidenum[0]].colormap_data;
+					}
+					else
+					{
+						TAG_ITER_SECTORS(wlines[i].args[0], s)
+						{
+							if (wsectors[s].colormap_protected)
+								continue;
+
+							wsectors[s].extra_colormap = wsides[wlines[i].sidenum[0]].colormap_data;
+							if (freetag == (mtag_t)MAXTAGS)
+							{
+								CONS_Alert(CONS_WARNING, M_GetText("No unused tag found. Linedef %s with type 606 cannot be converted.\n"), sizeu1(i));
+								break;
+							}
+							Tag_Add(&wsectors[s].tags, freetag);
+							wlines[i].args[1] = freetag;
+							freetag = Tag_NextUnused(freetag);
+							break;
+						}
+					}
+					break;
+				default:
+					break;
+			}
+
+			if (wlines[i].special >= 300 && wlines[i].special < 400 && wlines[i].flags & ML_WRAPMIDTEX)
+				CONS_Alert(CONS_WARNING, M_GetText("Linedef executor trigger linedef %s has disregard order flag, which is not supported in UDMF.\n"), sizeu1(i));
 		}
 
-		if (wlines[i].special >= 300 && wlines[i].special < 400 && wlines[i].flags & ML_WRAPMIDTEX)
-			CONS_Alert(CONS_WARNING, M_GetText("Linedef executor trigger linedef %s has disregard order flag, which is not supported in UDMF.\n"), sizeu1(i));
-	}
-
-	for (i = 0; i < numsectors; i++)
-	{
-		if (Tag_Find(&wsectors[i].tags, LE_CAPSULE0))
-			CONS_Alert(CONS_WARNING, M_GetText("Sector %s has reserved tag %d, which is not supported in UDMF. Use arg3 of the boss mapthing instead.\n"), sizeu1(i), LE_CAPSULE0);
-		if (Tag_Find(&wsectors[i].tags, LE_CAPSULE1))
-			CONS_Alert(CONS_WARNING, M_GetText("Sector %s has reserved tag %d, which is not supported in UDMF. Use arg3 of the boss mapthing instead.\n"), sizeu1(i), LE_CAPSULE1);
-		if (Tag_Find(&wsectors[i].tags, LE_CAPSULE2))
-			CONS_Alert(CONS_WARNING, M_GetText("Sector %s has reserved tag %d, which is not supported in UDMF. Use arg3 of the boss mapthing instead.\n"), sizeu1(i), LE_CAPSULE2);
-
-		switch (GETSECSPECIAL(wsectors[i].special, 1))
+		for (i = 0; i < numsectors; i++)
 		{
-			case 9:
-			case 10:
-				CONS_Alert(CONS_WARNING, M_GetText("Sector %s has ring drainer effect, which is not supported in UDMF. Use linedef type 462 instead.\n"), sizeu1(i));
-				break;
-			default:
-				break;
-		}
+			if (Tag_Find(&wsectors[i].tags, LE_CAPSULE0))
+				CONS_Alert(CONS_WARNING, M_GetText("Sector %s has reserved tag %d, which is not supported in UDMF. Use arg3 of the boss mapthing instead.\n"), sizeu1(i), LE_CAPSULE0);
+			if (Tag_Find(&wsectors[i].tags, LE_CAPSULE1))
+				CONS_Alert(CONS_WARNING, M_GetText("Sector %s has reserved tag %d, which is not supported in UDMF. Use arg3 of the boss mapthing instead.\n"), sizeu1(i), LE_CAPSULE1);
+			if (Tag_Find(&wsectors[i].tags, LE_CAPSULE2))
+				CONS_Alert(CONS_WARNING, M_GetText("Sector %s has reserved tag %d, which is not supported in UDMF. Use arg3 of the boss mapthing instead.\n"), sizeu1(i), LE_CAPSULE2);
 
-		switch (GETSECSPECIAL(wsectors[i].special, 2))
-		{
-			case 6:
-				CONS_Alert(CONS_WARNING, M_GetText("Sector %s has emerald check trigger type, which is not supported in UDMF. Use linedef types 337-339 instead.\n"), sizeu1(i));
-				break;
-			case 7:
-				CONS_Alert(CONS_WARNING, M_GetText("Sector %s has NiGHTS mare trigger type, which is not supported in UDMF. Use linedef types 340-342 instead.\n"), sizeu1(i));
-				break;
-			case 9:
-				CONS_Alert(CONS_WARNING, M_GetText("Sector %s has Egg Capsule type, which is not supported in UDMF. Use linedef type 464 instead.\n"), sizeu1(i));
-				break;
-			default:
-				break;
+			switch (GETSECSPECIAL(wsectors[i].special, 1))
+			{
+				case 9:
+				case 10:
+					CONS_Alert(CONS_WARNING, M_GetText("Sector %s has ring drainer effect, which is not supported in UDMF. Use linedef type 460 instead.\n"), sizeu1(i));
+					break;
+				default:
+					break;
+			}
+
+			switch (GETSECSPECIAL(wsectors[i].special, 2))
+			{
+				case 6:
+					CONS_Alert(CONS_WARNING, M_GetText("Sector %s has emerald check trigger type, which is not supported in UDMF. Use linedef types 337-339 instead.\n"), sizeu1(i));
+					break;
+				case 7:
+					CONS_Alert(CONS_WARNING, M_GetText("Sector %s has NiGHTS mare trigger type, which is not supported in UDMF. Use linedef types 340-342 instead.\n"), sizeu1(i));
+					break;
+				case 9:
+					CONS_Alert(CONS_WARNING, M_GetText("Sector %s has Egg Capsule type, which is not supported in UDMF. Use linedef type 464 instead.\n"), sizeu1(i));
+					break;
+				default:
+					break;
+			}
 		}
 	}
 
@@ -2755,13 +2773,16 @@ static void P_WriteTextmap(void)
 	fprintf(f, "version = %d;\n", UDMF_CURRENT_VERSION);
 	for (i = k = 0; i < nummapthings; i++)
 	{
-		if (wmapthings[i].type == mobjinfo[MT_WAYPOINT].doomednum
-			|| wmapthings[i].type == mobjinfo[MT_WAYPOINT_ANCHOR].doomednum
-			|| wmapthings[i].type == mobjinfo[MT_WAYPOINT_RISER].doomednum)
+		if (!udmf)
 		{
-			// Skip waypoints. Because the multi-thing setup was merged into a
-			// single thing type in UDMF, these must be converted later.
-			continue;
+			if (wmapthings[i].type == mobjinfo[MT_WAYPOINT].doomednum
+				|| wmapthings[i].type == mobjinfo[MT_WAYPOINT_ANCHOR].doomednum
+				|| wmapthings[i].type == mobjinfo[MT_WAYPOINT_RISER].doomednum)
+			{
+				// Skip waypoints. Because the multi-thing setup was merged into a
+				// single thing type in UDMF, these must be converted later.
+				continue;
+			}
 		}
 
 		P_WriteTextmapThing(f, wmapthings, i, k);
@@ -3307,12 +3328,14 @@ static void P_LoadTextmap(boolean patch)
 		CONS_Alert(CONS_NOTICE, "Patching current map.\n");
 	}
 
+	if (patch) // ONLY load mapthings
+		goto patched;
+
 	/// Given the UDMF specs, some fields are given a default value.
 	/// If an element's field has a default value set, it is omitted
 	/// from the textmap, and therefore we have to account for it by
 	/// preemptively setting that value beforehand.
 
-	if (!patch)
 	for (i = 0, vt = vertexes; i < numvertexes; i++, vt++)
 	{
 		// Defaults.
@@ -3328,7 +3351,6 @@ static void P_LoadTextmap(boolean patch)
 			I_Error("P_LoadTextmap: vertex %s has no y value set!\n", sizeu1(i));
 	}
 
-	if (!patch)
 	for (i = 0, sc = sectors; i < numsectors; i++, sc++)
 	{
 		// Defaults.
@@ -3414,7 +3436,6 @@ static void P_LoadTextmap(boolean patch)
 		TextmapFixFlatOffsets(sc);
 	}
 
-	if (!patch)
 	for (i = 0, ld = lines; i < numlines; i++, ld++)
 	{
 		// Defaults.
@@ -3445,7 +3466,6 @@ static void P_LoadTextmap(boolean patch)
 		P_InitializeLinedef(ld);
 	}
 
-	if (!patch)
 	for (i = 0, sd = sides; i < numsides; i++, sd++)
 	{
 		// Defaults.
@@ -3469,6 +3489,7 @@ static void P_LoadTextmap(boolean patch)
 		P_InitializeSidedef(sd);
 	}
 
+patched:
 	for (i = 0, mt = mapthings; i < nummapthings; i++, mt++)
 	{
 		// Defaults.
@@ -3488,7 +3509,6 @@ static void P_LoadTextmap(boolean patch)
 		memset(mt->script_stringargs, 0x00, NUM_SCRIPT_STRINGARGS*sizeof(*mt->script_stringargs));
 		mt->layer = 0;
 		mt->mobj = NULL;
-		mt->patch = patch;
 
 		K_UserPropertiesClear(&mt->user);
 
@@ -3771,6 +3791,7 @@ static boolean P_LoadMapPatchData(const char *patchdata, size_t patchlen)
 	memcpy(realmapthings + realnummapthings, mapthings, nummapthings * sizeof (*mapthings));
 	Z_Free(mapthings);
 	mapthings = realmapthings;
+	numpatchmapthings = nummapthings;
 	nummapthings += realnummapthings;
 
 	TracyCZoneEnd(__zone);
@@ -4899,8 +4920,8 @@ static void P_AddBinaryMapTags(void)
 		case 292:
 		case 294:
 		case 780:
-		case 2020: // MT_LOOPENDPOINT
-		case 2021: // MT_LOOPCENTERPOINT
+		case 20020: // MT_LOOPENDPOINT
+		case 20021: // MT_LOOPCENTERPOINT
 			mapthings[i].tid = mapthings[i].extrainfo;
 			break;
 		default:
@@ -7330,9 +7351,9 @@ static void P_ConvertBinaryThingTypes(void)
 		case 557: //Diagonal blue spring
 		case 558: //Diagonal grey spring
 			if (mapthings[i].options & MTF_OBJECTSPECIAL)
-				mapthings[i].args[0] |= TMDS_NOGRAVITY;
+				mapthings[i].args[0] |= TMSPR_NOGRAVITY;
 			if (mapthings[i].options & MTF_AMBUSH)
-				mapthings[i].args[0] |= TMDS_ROTATEEXTRA;
+				mapthings[i].args[0] |= TMSPR_ROTATEEXTRA;
 			break;
 		case 559: //Horizontal yellow spring
 		case 560: //Horizontal red spring
@@ -7713,12 +7734,12 @@ static void P_ConvertBinaryThingTypes(void)
 
 			break;
 		}
-		case 2004: // MT_BOTHINT
+		case 20004: // MT_BOTHINT
 			mapthings[i].args[0] = mapthings[i].angle;
 			mapthings[i].args[1] = mapthings[i].extrainfo;
 			mapthings[i].args[2] = !!(mapthings[i].options & MTF_AMBUSH);
 			break;
-		case 2010: // MT_ITEMCAPSULE
+		case 20010: // MT_ITEMCAPSULE
 			mapthings[i].args[0] = mapthings[i].angle;
 			mapthings[i].args[1] = mapthings[i].extrainfo;
 
@@ -7738,14 +7759,14 @@ static void P_ConvertBinaryThingTypes(void)
 				mapthings[i].args[2] |= TMICF_INVERTSIZE;
 			}
 			break;
-		case 2020: // MT_LOOPENDPOINT
+		case 20020: // MT_LOOPENDPOINT
 		{
 			mapthings[i].args[0] =
 				mapthings[i].options & MTF_AMBUSH ?
 				TMLOOP_BETA : TMLOOP_ALPHA;
 			break;
 		}
-		case 2021: // MT_LOOPCENTERPOINT
+		case 20021: // MT_LOOPCENTERPOINT
 			mapthings[i].args[0] = (mapthings[i].options & MTF_AMBUSH) == MTF_AMBUSH;
 			mapthings[i].args[1] = mapthings[i].angle;
 			break;
@@ -7761,6 +7782,11 @@ static void P_ConvertBinaryThingTypes(void)
 			break;
 		case 2018: // MT_PETSMOKER
 			mapthings[i].args[0] = !!(mapthings[i].options & MTF_OBJECTSPECIAL);
+			break;
+		case 30441: // MT_DASHRING
+		case 30442: // MT_RAINBOWDASHRING
+			mapthings[i].args[0] = mapthings[i].options & 13;
+			mapthings[i].args[1] = mapthings[i].extrainfo;
 			break;
 		case FLOOR_SLOPE_THING:
 		case CEILING_SLOPE_THING:
@@ -7814,9 +7840,6 @@ static void P_ConvertBinaryMap(void)
 	P_ConvertBinarySectorTypes();
 	P_ConvertBinaryThingTypes();
 	P_ConvertBinaryLinedefFlags();
-
-	if (M_CheckParm("-writetextmap"))
-		P_WriteTextmap();
 }
 
 static void P_MakeMapHash(virtres_t *virt, UINT64 *dest)
@@ -7908,6 +7931,93 @@ const char *P_MapNamespaceString(mapnamespace_t mns)
 	return names[mns];
 }
 
+static void P_RemapDoomedNum(boolean mappatch)
+{
+	if (mapnamespace != MNS_RINGRACERS && mapnamespace != MNS_BLANKART && !mappatch)
+		return;
+
+	if (mapnamespace == MNS_BLANKART && udmf_version && udmf_version >= 4)
+		return;
+
+	if (mappatch && !patch_version)
+		return;
+
+	if (mappatch && (patch_version > 1))
+		return;
+
+	size_t i;
+
+#define TYPECONVERT(mobjtype, doomed) { \
+	if (mapthings && mapthings[i].type == doomed) \
+	{ \
+		if (mapnamespace == MNS_BLANKART || mappatch)\
+			CONS_Alert(CONS_WARNING, "Doomednum %d has move to %d, please update your map/map patch accordingly.\n", doomed, mobjinfo[mobjtype].doomednum);\
+		else\
+			CONS_Alert(CONS_NOTICE, "Converting RR doomednum %d to %d.\n", doomed, mobjinfo[mobjtype].doomednum);\
+		mapthings[i].type = mobjinfo[mobjtype].doomednum; \
+		continue; \
+	} \
+}
+	for (i = 0; i < nummapthings; i++)
+	{
+		// Now remap the types.
+
+		if (mapnamespace == MNS_RINGRACERS)
+		{
+			// Ring Racers only.
+			TYPECONVERT(MT_BALLOON, 543)
+			TYPECONVERT(MT_GRAYDIAG, 557)
+			TYPECONVERT(MT_BLUEDIAG, 556)
+			TYPECONVERT(MT_REDDIAG, 555)
+			TYPECONVERT(MT_YELLOWDIAG, 554)
+			TYPECONVERT(MT_YELLOWHORIZ, 558)
+			TYPECONVERT(MT_REDHORIZ, 559)
+			TYPECONVERT(MT_BLUEHORIZ, 560)
+			TYPECONVERT(MT_GRAYHORIZ, 561)
+			TYPECONVERT(MT_SNEAKERPANEL, 510)
+			TYPECONVERT(MT_SNEAKERPANELSPAWNER, 511)
+			TYPECONVERT(MT_DASHRING, 3441)
+			TYPECONVERT(MT_RAINBOWDASHRING, 3442)
+		}
+
+		TYPECONVERT(MT_WAYPOINT_RISER, 2002)
+		TYPECONVERT(MT_WAYPOINT_ANCHOR, 2003)
+		TYPECONVERT(MT_BOTHINT, 2004)
+		TYPECONVERT(MT_ITEMCAPSULE, 2010)
+		TYPECONVERT(MT_LOOPENDPOINT, 2020)
+		TYPECONVERT(MT_LOOPCENTERPOINT, 2021)
+		TYPECONVERT(MT_SCRIPT_THING, 4096)
+	}
+#undef TYPECONVERT
+}
+
+static void P_SetCompatArgs(void)
+{
+	if (mapnamespace != MNS_RINGRACERS)
+		return;
+	size_t i;
+
+	for (i = 0; i < nummapthings; i++)
+	{
+		switch(mapthings[i].type)
+		{
+			case MT_YELLOWDIAG:
+			case MT_REDDIAG:
+			case MT_BLUEDIAG:
+			case MT_GRAYDIAG:
+			case MT_REDSPRING:
+			case MT_BLUESPRING:
+			case MT_GRAYSPRING:
+			case MT_YELLOWSPRING:
+			case MT_INVISSPRING:
+				mapthings[i].args[0] |= TMSPR_NOGRAVITY;
+				break;
+			default:
+				break;
+		}
+	}
+}
+
 static boolean P_LoadMapFromFile(void)
 {
 	TracyCZone(__zone, true);
@@ -7916,6 +8026,8 @@ static boolean P_LoadMapFromFile(void)
 
 	udmf = textmap != NULL;
 	udmf_version = patch_version = 0;
+	numpatchmapthings = 0;
+	usedspawnfinishline = false;
 
 	if (!P_LoadMapData(curmapvirt))
 	{
@@ -7927,6 +8039,13 @@ static boolean P_LoadMapFromFile(void)
 
 	P_LinkMapData();
 
+	// Convert the mapthing types of some known Ring Racers/older BlanKart objects to new BlanKart objects.
+	// Should allow for textmap conversion of things making it easier for people to convert their RR maps.
+	P_RemapDoomedNum(false);
+
+	// Now set some arguments used for compatbility.
+	P_SetCompatArgs();
+
 	if (!udmf)
 		P_AddBinaryMapTags();
 
@@ -7936,6 +8055,12 @@ static boolean P_LoadMapFromFile(void)
 		P_ConvertBinaryMap();
 
 	P_MakeMapHash(curmapvirt, &maphash);
+
+	if (!cv_writetextmap_includemappatch.value)
+	{
+		if (M_CheckParm("-writetextmap"))
+			P_WriteTextmap();
+	}
 
 	// load map patch?
 	char *patchdata = NULL;
@@ -7957,6 +8082,15 @@ static boolean P_LoadMapFromFile(void)
 
 	if (patchdata != NULL && !P_LoadMapPatchData(patchdata, patchlen))
 		CONS_Alert(CONS_ERROR, "Failed to load map patch for %s\n", G_BuildMapName(gamemap));
+	else
+		P_RemapDoomedNum(true);
+
+
+	if (cv_writetextmap_includemappatch.value)
+	{
+		if (M_CheckParm("-writetextmap"))
+			P_WriteTextmap();
+	}
 
 	Z_Free(patchdata);
 
@@ -8071,7 +8205,6 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 		itempushing = true;
 
 	bumpsparkactive = (UINT8)cv_kartbumpspark.value;
-	invintype = (UINT8)cv_kartinvintype.value;
 
 	antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
 
@@ -8174,6 +8307,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	speedscramble = encorescramble = -1;
 }
 
+#if 0
 // Respawns all the mapthings and mobjs in the map from the already loaded map data.
 void P_RespawnThings(void)
 {
@@ -8208,6 +8342,7 @@ void P_RespawnThings(void)
 	skyboxmo[0] = skyboxviewpnts[(viewid >= 0) ? viewid : 0];
 	skyboxmo[1] = skyboxcenterpnts[(centerid >= 0) ? centerid : 0];
 }
+#endif
 
 static void P_RunLevelScript(const char *scriptname)
 {
@@ -8398,13 +8533,8 @@ static void P_InitGametype(void)
 	numlaps = K_RaceLapCount(gamemap - 1);
 
 	wantedcalcdelay = wantedfrequency*2;
-	indirectitemcooldown = 0;
 
-	for (i = 0; i < NUMKARTRESULTS; i++)
-	{
-		// hyubgone
-		ItemBGone[i][GONER_CURRCOOLDOWN] = 0;
-	}
+	K_SetupItemOdds();
 
 	mapreset = 0;
 
@@ -8837,7 +8967,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	P_InitSlopes(); //Initialize slopes before the map loads.
 
-	memset(basemaptyperemoval, 0, 65537*sizeof(boolean));
+	memset(basemaptyperemoval, 0, sizeof(basemaptyperemoval));
 
 	if (!P_LoadMapFromFile())
 	{
@@ -8851,7 +8981,19 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	P_SpawnSlopes(fromnetsave);
 
-	P_SpawnMapThings(!fromnetsave);
+	if (mapnamespace != MNS_SRB2KART)
+		P_SpawnCopySlopes();
+
+	// spawn non-patched mapthings first...
+	P_SpawnMapThings(!fromnetsave, false);
+
+	// in kart maps, copy slopes are spawned AFTER mapthings
+	if (mapnamespace == MNS_SRB2KART)
+		P_SpawnCopySlopes();
+
+	// ...NOW we can spawn patched mapthings
+	P_SpawnMapThings(!fromnetsave, true);
+
 	skyboxmo[0] = skyboxviewpnts[0];
 	skyboxmo[1] = skyboxcenterpnts[0];
 
@@ -8946,6 +9088,8 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		record->visited |= MV_MP; // you want to record that you've been there this session, but not permanently
 
 	G_AddMapToBuffer(gamemap-1);
+
+	G_ResetDeviceLED();
 
 	P_MapEnd(); // g_tm.thing is no longer needed from this point onwards
 

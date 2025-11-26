@@ -496,13 +496,18 @@ tryagain:
 }
 
 // get request filepak and put it on the send queue
-// returns false if a requested file was not found or cannot be sent
-boolean PT_RequestFile(INT32 node)
+void PT_RequestFile(INT32 node)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	char wad[MAX_WADPATH+1];
 	UINT8 *p = netbuffer->u.textcmd;
 	UINT8 id;
+
+	if (client || !cv_downloading.value)
+	{
+		Net_CloseConnection(node); // close connection if you are not the server or disabled downloading
+		return;
+	}
 
 	while (p < netbuffer->u.textcmd + MAXTEXTCMD) // Don't allow hacked client to overflow
 	{
@@ -515,10 +520,11 @@ boolean PT_RequestFile(INT32 node)
 			if (cv_noticedownload.value)
 				CONS_Printf("Bad PT_REQUESTFILE from node %d!\n", node);
 			SV_AbortSendFiles(node);
-			return false; // don't read any more
+			Net_CloseConnection(node); // close connection if one of the requested files could not be sent
+			return; // don't read the rest of the files
 		}
 	}
-	return true; // no problems with any files
+	return; // no problems with any files
 }
 
 /** Checks if the files needed aren't already loaded or on the disk
@@ -1262,13 +1268,15 @@ void FileSendTicker(void)
 	}
 }
 
-void PT_FileAck(void)
+void PT_FileAck(SINT8 node)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	fileack_pak *packet = (void*)&netbuffer->u.fileack;
-	INT32 node = doomcom->remotenode;
 	filetran_t *trans = &transfer[node];
 	INT32 i, j;
+
+	if (client)
+		return;
 
 	// Wrong file id? Ignore it, it's probably a late packet
 	if (!(trans->txlist && packet->fileid == trans->txlist->fileid))
@@ -1316,12 +1324,12 @@ void PT_FileAck(void)
 	}
 }
 
-void PT_FileReceived(void)
+void PT_FileReceived(SINT8 node)
 {
-	filetx_t *trans = transfer[doomcom->remotenode].txlist;
+	filetx_t *trans = transfer[node].txlist;
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
-	if (trans && netbuffer->u.filereceived == trans->fileid)
+	if (server && trans && netbuffer->u.filereceived == trans->fileid)
 		SV_EndFileSend(doomcom->remotenode);
 }
 
@@ -1409,8 +1417,27 @@ void FileReceiveTicker(void)
 	}
 }
 
-void PT_FileFragment(void)
+void PT_FileFragment(SINT8 node, INT32 netconsole)
 {
+	if (nodeingame[node])
+	{
+		// Only accept PT_FILEFRAGMENT from the server.
+		if (node != servernode)
+		{
+			CONS_Alert(CONS_WARNING, M_GetText("%s received from non-host %d\n"), "PT_FILEFRAGMENT", node);
+			if (server)
+				SendKick(netconsole, KICK_MSG_CON_FAIL /*| KICK_MSG_KEEP_BODY*/);
+			return;
+		}
+		if (server)
+			return;
+	}
+	else if (server || node != servernode)
+	{
+		Net_CloseConnection(node);
+		return;
+	}
+
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	filetx_pak *pak = (void*)&netbuffer->u.filetxpak;
 	INT32 filenum = pak->fileid;

@@ -41,7 +41,7 @@
 #include "k_battle.h"
 #include "k_pwrlv.h"
 #include "k_terrain.h"
-#include "k_odds.h"
+#include "k_items.h"
 #include "acs/interface.h"
 #include "g_party.h"
 #include "k_waypoint.h"
@@ -611,6 +611,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].accelboost);
 		SYNC(players[i].boostangle);
 		SYNC(players[i].numsneakers);
+		SYNC(players[i].numpanels);
 		SYNC(players[i].numboosts);
 
 		SYNC(players[i].draftpower);
@@ -712,6 +713,10 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].karmapoints);
 		SYNC(players[i].wanted);
 
+		SYNC(players[i].dashRingPullTics);
+		SYNC(players[i].dashRingPushTics);
+		SYNC(players[i].dashRainbowPogo);
+
 		SYNC(players[i].glanceDir);
 
 		SYNC(players[i].breathTimer);
@@ -776,6 +781,9 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		// Wall Transfer bonus
 		SYNCBOOLEAN(players[i].walltransfered);
 		SYNC(players[i].walltransferboost);
+
+		SYNC(players[i].itemusecooldown);
+		SYNC(players[i].itemusecooldownmax);
 	}
 	TracyCZoneEnd(__zone);
 }
@@ -3939,6 +3947,10 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 
 	SYNC(gametype);
 
+#if MAXPLAYERS > 32
+#error Update playeringame syncing please
+#endif
+
 	if (save->write)
 	{
 		UINT32 pig = 0;
@@ -4182,7 +4194,6 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(itemlittering);
 	SYNCBOOLEAN(itempushing);
 	SYNC(bumpsparkactive);
-	SYNC(invintype);
 	SYNC(antibumptime);
 
 	for (i = 0; i < sizeof(votelevels)/sizeof(*votelevels); i++)
@@ -4267,14 +4278,12 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 		SYNC(battlewanted[i]);
 
 	SYNC(wantedcalcdelay);
-	SYNC(indirectitemcooldown);
 
-	for (i = 0; i < NUMKARTRESULTS; i++)
-	{
-		// hyubgone
-		//SYNC(ItemBGone[i][GONER_BASECOOLDOWN]);
-		SYNC(ItemBGone[i][GONER_CURRCOOLDOWN]);
-	}
+	for (i = 0; i < numkartitems; i++)
+		SYNC(kartitems[i].altenabled);
+
+	for (i = 0; i < numkartresults; i++)
+		SYNC(kartresults[i].cooldown);
 
 	SYNC(mapreset);
 

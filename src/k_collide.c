@@ -7,7 +7,7 @@
 #include "doomtype.h"
 #include "p_mobj.h"
 #include "k_kart.h"
-#include "k_odds.h"
+#include "k_items.h"
 #include "p_local.h"
 #include "s_sound.h"
 #include "r_main.h" // R_PointToAngle2, R_PointToDist2
@@ -37,6 +37,30 @@ angle_t K_GetCollideAngle(mobj_t *t1, mobj_t *t2)
 	momuy = t2->momy - P_ReturnThrustX(t2, test, 2*momuy);
 
 	return R_PointToAngle2(0, 0, momux, momuy);
+}
+
+// This/Other Item Damage
+void K_ItemDamage(mobj_t *t1, mobj_t *t2, boolean clash)
+{
+	if (t1->eflags & MFE_VERTICALFLIP)
+		t1->z -= t1->height;
+	else
+		t1->z += t1->height;
+
+	S_StartSound(t1, t1->info->deathsound);
+	P_KillMobj(t1, t2, t2, DMG_NORMAL);
+
+	P_SetObjectMomZ(t1, 8*FRACUNIT, false);
+	P_InstaThrust(t1, K_GetCollideAngle(t2, t1), 16*FRACUNIT);
+
+	if (clash)
+		P_SpawnMobj(t1->x/2 + t2->x/2, t1->y/2 + t2->y/2, t1->z/2 + t2->z/2, MT_ITEMCLASH);
+}
+
+// makes sure that hitthing isn't set to tmthing, otherwise the bounce doesn't work
+static void K_SetHitThing(mobj_t *t1, mobj_t *t2)
+{
+	P_SetTarget(&g_tm.hitthing, t1 == g_tm.thing ? t2 : t1);
 }
 
 boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
@@ -74,16 +98,16 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 		{
 			// Melt item
 			S_StartSound(t2, sfx_s3k43);
+			damageitem = true;
 		}
 		else
 		{
 			// Player Damage
 			P_DamageMobj(t2, t1, t1->target, 1, DMG_WIPEOUT);
-			K_KartBouncing(t2, t1, false, false);
+			K_SetHitThing(t2, t1);
 			S_StartSound(t2, sfx_s3k7b);
+			//damageitem = true; // delayed until K_KartBouncing, don't mess with the orbi's momentum
 		}
-
-		damageitem = true;
 	}
 	else if (t2->type == MT_ORBINAUT || t2->type == MT_JAWZ || t2->type == MT_JAWZ_DUD
 		|| t2->type == MT_ORBINAUT_SHIELD || t2->type == MT_JAWZ_SHIELD
@@ -91,16 +115,7 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 		|| t2->type == MT_BALLHOG)
 	{
 		// Other Item Damage
-		angle_t bounceangle = K_GetCollideAngle(t1, t2);
-
-		S_StartSound(t2, t2->info->deathsound);
-		P_KillMobj(t2, t1, t1, DMG_NORMAL);
-
-		P_SetObjectMomZ(t2, 8*FRACUNIT, false);
-		P_InstaThrust(t2, bounceangle, 16*FRACUNIT);
-
-		P_SpawnMobj(t2->x/2 + t1->x/2, t2->y/2 + t1->y/2, t2->z/2 + t1->z/2, MT_ITEMCLASH);
-
+		K_ItemDamage(t2, t1, true);
 		damageitem = true;
 	}
 	else if (t2->type == MT_SSMINE_SHIELD || t2->type == MT_SSMINE || t2->type == MT_LANDMINE)
@@ -124,12 +139,7 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 	if (damageitem)
 	{
 		// This Item Damage
-		angle_t bounceangle = K_GetCollideAngle(t2, t1);
-		S_StartSound(t1, t1->info->deathsound);
-		P_KillMobj(t1, t2, t2, DMG_NORMAL);
-
-		P_SetObjectMomZ(t1, 8*FRACUNIT, false);
-		P_InstaThrust(t1, bounceangle, 16*FRACUNIT);
+		K_ItemDamage(t1, t2, false);
 	}
 
 	if (sprung)
@@ -165,6 +175,8 @@ boolean K_BananaBallhogCollide(mobj_t *t1, mobj_t *t2)
 
 	if (t2->player)
 	{
+		if (t2->player->flashing > 0)
+			return true;
 
 		// Banana snipe!
 		if (t1->type == MT_BANANA && t1->health > 1)
@@ -188,16 +200,7 @@ boolean K_BananaBallhogCollide(mobj_t *t1, mobj_t *t2)
 		|| t2->type == MT_BALLHOG)
 	{
 		// Other Item Damage
-		angle_t bounceangle = K_GetCollideAngle(t1, t2);
-
-		S_StartSound(t2, t2->info->deathsound);
-		P_KillMobj(t2, t1, t1, DMG_NORMAL);
-
-		P_SetObjectMomZ(t2, 8*FRACUNIT, false);
-		P_InstaThrust(t2, bounceangle, 16*FRACUNIT);
-
-		P_SpawnMobj(t2->x/2 + t1->x/2, t2->y/2 + t1->y/2, t2->z/2 + t1->z/2, MT_ITEMCLASH);
-
+		K_ItemDamage(t2, t1, true);
 		damageitem = true;
 	}
 	else if (t2->type == MT_SSMINE_SHIELD || t2->type == MT_SSMINE || t2->type == MT_LANDMINE)
@@ -216,13 +219,7 @@ boolean K_BananaBallhogCollide(mobj_t *t1, mobj_t *t2)
 	if (damageitem)
 	{
 		// This Item Damage
-		angle_t bounceangle = K_GetCollideAngle(t2, t1);
-
-		S_StartSound(t1, t1->info->deathsound);
-		P_KillMobj(t1, t2, t2, DMG_NORMAL);
-
-		P_SetObjectMomZ(t1, 8*FRACUNIT, false);
-		P_InstaThrust(t1, bounceangle, 16*FRACUNIT);
+		K_ItemDamage(t1, t2, false);
 	}
 
 	return true;
@@ -245,7 +242,7 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 		if (t1->health <= 0 || t2->health <= 0)
 			return true;
 
-		if (!P_CanPickupItem(t2->player, 2))
+		if (!P_CanPickupItem(t2->player, PICKUPITEM_EGGMAN))
 			return true;
 
 		if ((gametyperules & GTR_BUMPERS) && t2->player->bumper <= 0)
@@ -256,10 +253,7 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 		}
 		else
 		{
-			K_DropItems(t2->player); //K_StripItems(t2->player);
-			//K_StripOther(t2->player);
-			t2->player->itemroulette = KROULETTE_ACTIVE;
-			t2->player->roulettetype = KROULETTETYPE_EGGMAN;
+			K_StartRoulette(t2->player, KROULETTETYPE_EGGMAN);
 		}
 
 		if (t2->player->flamestore && (K_GetShieldFromPlayer(t2->player) == KSHIELD_FLAME))
@@ -336,16 +330,10 @@ boolean K_MineCollide(mobj_t *t1, mobj_t *t2)
 		|| t2->type == MT_ORBINAUT_SHIELD || t2->type == MT_JAWZ_SHIELD)
 	{
 		// Bomb death
-		angle_t bounceangle = K_GetCollideAngle(t1, t2);
-
 		P_KillMobj(t1, t2, t2, DMG_NORMAL);
 
 		// Other Item Damage
-		S_StartSound(t2, t2->info->deathsound);
-		P_KillMobj(t2, t1, t1, DMG_NORMAL);
-
-		P_SetObjectMomZ(t2, 8*FRACUNIT, false);
-		P_InstaThrust(t2, bounceangle, 16*FRACUNIT);
+		K_ItemDamage(t2, t1, false);
 	}
 	else if (t2->flags & MF_SHOOTABLE)
 	{
@@ -421,20 +409,7 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 		|| t2->type == MT_BALLHOG)
 	{
 		// Other Item Damage
-		angle_t bounceangle = K_GetCollideAngle(t1, t2);
-
-		if (t2->eflags & MFE_VERTICALFLIP)
-			t2->z -= t2->height;
-		else
-			t2->z += t2->height;
-
-		S_StartSound(t2, t2->info->deathsound);
-		P_KillMobj(t2, t1, t1, DMG_NORMAL);
-
-		P_SetObjectMomZ(t2, 8*FRACUNIT, false);
-		P_InstaThrust(t2, bounceangle, 16*FRACUNIT);
-
-		P_SpawnMobj(t2->x/2 + t1->x/2, t2->y/2 + t1->y/2, t2->z/2 + t1->z/2, MT_ITEMCLASH);
+		K_ItemDamage(t2, t1, true);
 
 		P_SpawnMobj(t1->x, t1->y, t1->z, MT_MINEEXPLOSIONSOUND);
 		P_KillMobj(t1, t2, t2, DMG_NORMAL);
@@ -515,6 +490,12 @@ static inline BlockItReturn_t PIT_ThunderShieldAttack(mobj_t *thing)
 	}
 #endif
 
+	if (thing->type == MT_SPB) // If you destroy a SPB, you don't get the luxury of a cooldown.
+	{
+		spbplace = -1;
+		K_SetIndirectItemCooldown(0);
+	}
+
 	P_DamageMobj(thing, lightningSource, lightningSource, 1, DMG_VOLTAGE|DMG_CANTHURTSELF);
 	return BMIT_CONTINUE;
 }
@@ -573,12 +554,13 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, INT16 d
 static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 {
 	return t->type == MT_BANANA || (t->type == MT_ORBINAUT && t->flags2 & MF2_AMBUSH) || t->type == MT_JAWZ_DUD ||
-	       t->type == MT_EGGMANITEM || t->type == MT_SSMINE || t->type == MT_SSMINE_SHIELD || t->type == MT_LANDMINE;
+	       t->type == MT_EGGMANITEM || t->type == MT_SSMINE || t->type == MT_SSMINE_SHIELD || t->type == MT_LANDMINE;// ||
+		//    t->type == MT_EGGMINE_CAPSULE || t->type == MT_EGGMINE_SHIELD;
 }
 
 static boolean K_StrongPlayerBump(const player_t *player)
 {
-	return (((K_GetKartInvinType() == KARTINVIN_LEGACY) && (player->invincibilitytimer))
+	return (((!K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (player->invincibilitytimer))
 	    || (player->growshrinktimer > 0));
 }
 
@@ -636,7 +618,7 @@ boolean K_BubbleShieldCanReflect(mobj_t *t)
 {
 	return (t->type == MT_ORBINAUT || t->type == MT_JAWZ || t->type == MT_JAWZ_DUD
 		|| t->type == MT_BANANA || t->type == MT_EGGMANITEM || t->type == MT_BALLHOG
-		|| t->type == MT_SSMINE || t->type == MT_LANDMINE || t->type == MT_SINK
+		|| t->type == MT_SSMINE || t->type == MT_LANDMINE || t->type == MT_SINK //|| t->type == MT_EGGMINE_CAPSULE
 		|| t->type == MT_KART_LEFTOVER
 		|| t->type == MT_PLAYER);
 }
@@ -656,6 +638,7 @@ static INT16 K_GetBubbleDamage(mobj_t* itm)
 	{
 	case MT_EGGMANITEM:
 	case MT_BALLHOG:
+	// case MT_EGGMINE_CAPSULE:
 		// Experiment: Let Bubble Shields hard-counter Ballhogs and Eggboxes.
 		dmg = 0;
 		break;
@@ -777,7 +760,7 @@ boolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
 boolean K_FallingRockCollide(mobj_t *t1, mobj_t *t2)
 {
 	if ((t2->player && (G_CompatLevel(0x0008) || !t2->player->hyudorotimer)) || t2->type == MT_FALLINGROCK)
-		K_KartBouncing(t2, t1, false, false);
+		K_SetHitThing(t1, t2);
 
 	return true;
 }
@@ -805,7 +788,7 @@ boolean K_SMKIceBlockCollide(mobj_t *t1, mobj_t *t2)
 		return true;
 	*/
 
-	K_KartBouncing(t2, t1, false, true);
+	K_SetHitThing(t1, t2);
 	return false;
 }
 
@@ -820,7 +803,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	boolean t2Condition = false;
 
 	// Rim suggestion: Flipover damage is negligible at best, just cull it from Invincibility as a whole.
-	if (K_GetKartInvinType() == KARTINVIN_LEGACY)
+	if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
 	{
 		t1Condition = (t1->player->invincibilitytimer > 0);
 		t2Condition = (t2->player->invincibilitytimer > 0);
@@ -832,7 +815,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 		K_DoInstashield(t2->player);
 		return false;
 	}
-	else if (K_GetKartInvinType() == KARTINVIN_LEGACY)
+	else if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
 	{
 		if (t1Condition == true && t2Condition == false)
 		{
@@ -857,19 +840,40 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	{
 		if (G_CompatLevel(0x0008) || !hyudoroT1)
 		{
-			switch (cv_kartairsquish.value)
+			if ((t2->player) && (K_IsAltShrunk(t2->player)) &&
+			    (!(t1->player && t1->player->growshrinktimer > 0)))
 			{
-				case 1:
-					P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
-					return true;
-					break;
-				case 2:
-					P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
-					return true;
-					break;
-				default:
-					return false;
-					break;
+				// Alt. Shrink: Just make the player flip over.
+				if (P_DamageMobj(t2, NULL, NULL, 1, DMG_FLIPOVER))
+				{
+					K_AltShrinkPityIncrease(t2->player);
+					t2->player->altshrinktimeshit++;
+
+					P_InstaThrust(t2, K_MomentumAngle(t2), K_Momentum2D(t2) / 3);
+
+					K_PlayPainSound(t2, NULL);
+				}
+			}
+			if (P_IsObjectOnGround(t1) && P_IsObjectOnGround(t2))
+			{
+				P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
+			}
+			else
+			{
+				switch (cv_kartairsquish.value)
+				{
+					case 1:
+						P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
+						return true;
+						break;
+					case 2:
+						P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
+						return true;
+						break;
+					default:
+						return false;
+						break;
+				}
 			}
 		}
 	}
@@ -878,20 +882,42 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 		if (G_CompatLevel(0x0008) || !hyudoroT2)
 		{
 			// shitty code duplication 🥲
-			switch (cv_kartairsquish.value)
+
+			if ((t1->player) && (K_IsAltShrunk(t1->player)) &&
+			    (!(t2->player && t2->player->growshrinktimer > 0)))
 			{
-				case 1:
-					P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
-					return true;
-					break;
-				case 2:
-					P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
-					return true;
-					break;
-				default:
-					return false;
-					break;
+				// Alt. Shrink: Just make the player flip over.
+				if (P_DamageMobj(t1, NULL, NULL, 1, DMG_FLIPOVER))
+				{
+					K_AltShrinkPityIncrease(t1->player);
+					t1->player->altshrinktimeshit++;
+
+					P_InstaThrust(t1, K_MomentumAngle(t1), K_Momentum2D(t1) / 3);
+
+					K_PlayPainSound(t1, NULL);
+				}
 			}
+			else if (P_IsObjectOnGround(t1) && P_IsObjectOnGround(t2))
+			{
+				P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
+			}
+			else
+			{
+				switch (cv_kartairsquish.value)
+				{
+					case 1:
+						P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
+						return true;
+						break;
+					case 2:
+						P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
+						return true;
+						break;
+					default:
+						return false;
+						break;
+				}
+		}
 		}
 		return true;
 	}

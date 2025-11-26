@@ -997,9 +997,9 @@ static png_bytep *PNG_Read(
 		// color is present on the image, the palette flag is disabled.
 		if (usepal)
 		{
-			png_get_tRNS(png_ptr, png_info_ptr, &trans, &trans_num, &trans_values);
+			boolean valid = png_get_tRNS(png_ptr, png_info_ptr, &trans, &trans_num, &trans_values);
 
-			if (trans && trans_num > 0)
+			if (valid && trans && trans_num > 0)
 			{
 				INT32 i;
 				for (i = 0; i < trans_num; i++)

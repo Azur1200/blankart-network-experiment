@@ -34,7 +34,8 @@ This is still in active development and things are going to change. If you find 
 
 ## Dependencies
 - SDL2 (Linux/OS X only)
-- SDL2-Mixer (Linux/OS X only)
+- libsndfile (Linux/OS X only)
+- openAL/openAL-Soft (Linux/OS X only)
 - libupnp (Linux/OS X only)
 - libgme (Linux/OS X only)
 - libopenmpt (Linux/OS X only)
@@ -60,8 +61,6 @@ git clone https://codeberg.org/NepDisk/blankart.git
 cd blankart
 mkdir build
 cd build
-cmake -G "MSYS Makefiles" .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-./_deps/sdl2_mixer-src/external/download.sh
 cmake -G "MSYS Makefiles" .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 make -j$(nproc)
 ```

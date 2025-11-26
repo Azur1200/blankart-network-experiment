@@ -94,8 +94,8 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x26b5dde340bc9059
-#define ASSET_HASH_MAPPATCH_PK3        0xd4d4ce4a090d5473
+#define ASSET_HASH_MAIN_PK3            0xb1730fd0965adcb1
+#define ASSET_HASH_MAPPATCH_PK3        0x0afd8afc6fc50175
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
 #define ASSET_HASH_PATCH_PK3           0x0000000000000000
@@ -907,6 +907,7 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 			ST_preLevelTitleCardDrawer();
 
 		D_WipeDraw(drawMenu);
+		I_UpdateSound();
 
 		// Only take screenshots after drawing.
 		if (moviemode)
@@ -1062,6 +1063,11 @@ void D_SRB2Loop(void)
 			}
 
 			renderisnewtic = true;
+
+			if (!dedicated)
+			{
+				G_DeviceLEDTick();
+			}
 		}
 		else
 		{
@@ -1206,6 +1212,11 @@ void D_ResetGameState(void)
 	// Reset the palette
 	if (rendermode != render_none)
 		V_SetPaletteLump("PLAYPAL");
+
+	G_ResetAllDeviceRumbles();
+
+	// map palettes affect this
+	G_ResetDeviceLED();
 
 	// The title screen is obviously not a tutorial! (Unless I'm mistaken)
 	tutorialmode = false;
@@ -1362,7 +1373,7 @@ static void IdentifyVersion(void)
 #endif
 ////
 
-#if !defined (HAVE_SDL) || defined (HAVE_MIXER)
+#if !defined (HAVE_SDL) || defined (HAVE_MIXER) || defined (HAVE_OPENAL)
 
 #define MUSICTEST(str) \
 	{\
@@ -1868,7 +1879,7 @@ void D_SRB2Main(void)
 		if (WADNAMECHECK(word))
 		{
 			if (!(pstartmap = wadnamemap))
-				I_Error("Bad '%s' level warp; pstartmap (%d) != wadnamemap (%d)).\n"
+				I_Error("Bad '%s' level warp; pstartmap (%d) != wadnamemap (%d).\n"
 #if defined (_WIN32)
 				"Are you using MSDOS 8.3 filenames in Zone Builder?\n"
 				"\n"

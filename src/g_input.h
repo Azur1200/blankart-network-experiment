@@ -17,6 +17,7 @@
 #include "d_event.h"
 #include "keys.h"
 #include "command.h"
+#include "info.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -94,6 +95,11 @@ typedef enum
 extern consvar_t cv_mousesens, cv_mouseysens;
 extern consvar_t cv_mousesens2, cv_mouseysens2;
 extern consvar_t cv_controlperkey;
+extern consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_rumble[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_rumblestrength[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS];
 
 // current state of the keys: JOYAXISRANGE or 0 when boolean.
 // Or anything inbetween for analog values
@@ -123,6 +129,14 @@ extern const INT32 gcl_full[num_gcl_full];
 
 // peace to my little coder fingers!
 // check a gamecontrol being active or not
+
+skincolornum_t G_GetSkinColorForGamepad(INT32 playernum);
+void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color);
+void G_DeviceLEDTick(void);
+void G_ResetDeviceLED(void);
+void G_ResetAllDeviceRumbles(void);
+void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
+void G_DeviceRumbleTick(void);
 
 INT32 G_GetDevicePlayer(INT32 deviceID);
 

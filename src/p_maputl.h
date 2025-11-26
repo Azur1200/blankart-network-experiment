@@ -79,6 +79,7 @@ void P_HitSpecialLines(mobj_t *thing, fixed_t x, fixed_t y, fixed_t momx, fixed_
 
 boolean P_GetMidtextureTopBottom(line_t *linedef, opening_t *open, fixed_t *return_top, fixed_t *return_bottom);
 boolean P_GetTripwireTopBottom(line_t *linedef, fixed_t x, fixed_t y, fixed_t *return_top, fixed_t *return_bottom);
+boolean P_MidtextureIsSolid(line_t *linedef, mobj_t *mobj);
 
 typedef enum
 {

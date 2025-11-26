@@ -27,6 +27,8 @@ extern "C" {
 // map hash, sent to players via PT_SERVERINFO
 extern UINT64 maphash;
 
+extern consvar_t cv_writetextmap_includemappatch;
+
 // Player spawn spots for deathmatch.
 #define MAX_DM_STARTS 64
 extern mapthing_t *deathmatchstarts[MAX_DM_STARTS];
@@ -39,6 +41,8 @@ extern UINT8 levelfadecol;
 
 extern lumpnum_t lastloadedmaplumpnum; // for comparative savegame
 extern virtres_t *curmapvirt;
+
+extern boolean usedspawnfinishline;
 
 typedef enum
 {

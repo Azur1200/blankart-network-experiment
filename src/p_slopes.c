@@ -846,6 +846,15 @@ pslope_t *MakeViaEquationConstants(const fixed_t a, const fixed_t b, const fixed
 	return ret;
 }
 
+void P_SpawnCopySlopes(void)
+{
+	/// Copies slopes from tagged sectors via line specials.
+	/// \note Doesn't actually copy, but instead they share the same pointers.
+	for (size_t i = 0; i < numlines; i++)
+		if (lines[i].special == 720)
+			P_CopySectorSlope(&lines[i]);
+}
+
 /// Initializes and reads the slopes from the map data.
 void P_SpawnSlopes(const boolean fromsave) {
 	size_t i;
@@ -880,21 +889,6 @@ void P_SpawnSlopes(const boolean fromsave) {
 	P_SetupAnchoredSlopes();
 
 	// end of jart
-
-	// in kart, copied slopes are created AFTER spawning mapthings
-	if (mapnamespace == MNS_SRB2KART)
-		return;
-
-	/// Copies slopes from tagged sectors via line specials.
-	/// \note Doesn't actually copy, but instead they share the same pointers.
-	for (i = 0; i < numlines; i++)
-		switch (lines[i].special)
-		{
-			case 720:
-				P_CopySectorSlope(&lines[i]);
-			default:
-				break;
-		}
 }
 
 /// Initializes slopes.

@@ -1,7 +1,6 @@
 # Declare SDL2 interface sources
 
 target_sources(SRB2SDL2 PRIVATE
-	mixer_sound.c
 	ogl_sdl.c
 	i_threads.c
 	i_net.c
@@ -51,12 +50,6 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES Darwin)
 	)
 endif()
 
-if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}" AND NOT "${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}")
-	target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2-static SDL2_mixer::SDL2_mixer-static)
-else()
-	target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2 SDL2_mixer::SDL2_mixer)
-endif()
-
 if("${CMAKE_SYSTEM_NAME}" MATCHES Linux)
 	target_link_libraries(SRB2SDL2 PRIVATE m rt)
 endif()
@@ -70,8 +63,67 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES Windows)
 	)
 endif()
 
-target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_MIXER -DSOUND=SOUND_MIXER)
+find_package(SDL2 CONFIG REQUIRED)
+find_package(SDL2 REQUIRED)
+target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2)
+if(TARGET SDL2main)
+	target_link_libraries(SRB2SDL2 PRIVATE SDL2main)
+endif()
+target_compile_definitions(SRB2SDL2 PRIVATE -DDIRECTFULLSCREEN)
+target_include_directories(SRB2SDL2 PRIVATE ${SDL2_INCLUDE_DIR})
 target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_SDL)
+
+find_package(OpenAL CONFIG QUIET)
+find_package(OpenAL QUIET)
+if(${SRB2_CONFIG_USE_OPENAL})
+	target_link_libraries(SRB2SDL2 PRIVATE sndfile)
+	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_OPENAL)
+	target_link_libraries(SRB2SDL2 PRIVATE OpenAL::OpenAL)
+	target_sources(SRB2SDL2 PRIVATE al_sound.c)
+	if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}" AND NOT "${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}")
+		target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2-static)
+	else()
+		target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2)
+	endif()
+else()
+	if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}" AND NOT "${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}")
+		target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2-static SDL2_mixer::SDL2_mixer-static)
+	else()
+		target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2 SDL2_mixer::SDL2_mixer)
+	endif()
+
+	if(TARGET SDL2_mixer_ext::SDL2_mixer_ext OR TARGET SDL2_mixer_ext::SDL2_mixer_ext_Static OR TARGET SDL2_mixer::SDL2_mixer OR TARGET SDL2_mixer::SDL2_mixer-static)
+		target_sources(SRB2SDL2 PRIVATE mixer_sound.c)
+	endif()
+
+	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_MIXER -DSOUND=SOUND_MIXER)
+endif()
+
+if(TARGET SDL2::SDL2)
+	message(STATUS "SDL2 Found")
+else()
+	message(STATUS "no SDL2 Found")
+endif()
+
+if(TARGET SDL2::SDL2main)
+	message(STATUS "SDL2main Found")
+else()
+	message(STATUS "No SDL2main Found")
+endif()
+
+if(TARGET OpenAL::OpenAL)
+	message(STATUS "OpenAL Found")
+elseif(TARGET SDL2_mixer_ext::SDL2_mixer_ext OR TARGET SDL2_mixer_ext::SDL2_mixer_ext_Static)
+	message(STATUS "SDL2_mixer_ext Found")
+elseif(TARGET SDL2_mixer::SDL2_mixer OR TARGET SDL2_mixer::SDL2_mixer-static)
+	message(STATUS "SDL2_mixer found")
+else()
+	if(${SRB2_CONFIG_USE_OPENAL})
+		message(FATAL_ERROR "no OpenAL Found")
+	else()
+		message(FATAL_ERROR "no SDL2_mixer_ext or SDL2_mixer Found")
+	endif()
+endif()
 
 #### Installation ####
 if("${CMAKE_SYSTEM_NAME}" MATCHES Darwin)

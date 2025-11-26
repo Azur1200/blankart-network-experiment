@@ -61,7 +61,7 @@
 #include "k_terrain.h" // K_SpawnSplashForMobj
 #include "k_color.h"
 #include "k_follower.h"
-#include "k_odds.h"
+#include "k_items.h"
 #include "g_party.h"
 
 #include "acs/interface.h"
@@ -831,6 +831,9 @@ void P_RestoreMusic(player_t *player)
 		{ wantedmus = 1; bestlocaltimer = players[p].growshrinktimer; } \
 		else if (players[p].invincibilitytimer > bestlocaltimer) \
 		{ wantedmus = 2; bestlocaltimer = players[p].invincibilitytimer; } \
+		else if ((K_IsKartItemAlternate(KITEM_SHRINK)) && \
+		    (K_GetShrinkTime(&players[p]) > bestlocaltimer)) \
+		{ wantedmus = 3; bestlocaltimer = K_GetShrinkTime(&players[p]); } \
 	}
 			setbests(localplayertable[0]);
 			setbests(localplayertable[1]);
@@ -848,6 +851,9 @@ void P_RestoreMusic(player_t *player)
 					wantedmus = 1;
 				else if (player->invincibilitytimer > 1)
 					wantedmus = 2;
+				else if ((K_IsKartItemAlternate(KITEM_SHRINK)) &&
+				    (K_GetShrinkTime(player) > 1))
+					wantedmus = 3;
 				
 			}
 		}
@@ -863,6 +869,12 @@ void P_RestoreMusic(player_t *player)
 		{
 			S_ChangeMusicInternal("kinvnc", true);
 			S_SetRestoreMusicFadeInCvar(&cv_invincmusicfade);
+		}
+		// Item - Shrink (Alternative)
+		else if ((wantedmus == 3) && cv_altshrinkmusic.value == 1)
+		{
+			S_ChangeMusicInternal("kshrnk", true);
+			S_SetRestoreMusicFadeInCvar(&cv_altshrinkmusicfade);
 		}
 		else
 		{
@@ -2060,6 +2072,12 @@ boolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd)
 		return true;
 	}
 
+	if (player->dashRingPullTics || player->dashRingPushTics)
+	{
+		// Allow for turning adjustments while using dash rings.
+		return true;
+	}
+
 	if (player->mo && player->speed == 0)
 	{
 		// You need to be moving.
@@ -2286,7 +2304,7 @@ void P_MovePlayer(player_t *player)
 	if ((player->invincibilitytimer > 0) &&
 		(((leveltime %
 		   max(1, 10 - FixedMul(9, K_InvincibilityGradient(player->invincibilitytimer)))) == 0) ||
-		 (K_GetKartInvinType() == KARTINVIN_LEGACY)))
+		 (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))))
 	{
 		K_SpawnSparkleTrail(player->mo);
 	}
@@ -2483,7 +2501,7 @@ void P_NukeEnemies(mobj_t *inflictor, mobj_t *source, fixed_t radius)
 		if (mo->type == MT_SPB) // If you destroy a SPB, you don't get the luxury of a cooldown.
 		{
 			spbplace = -1;
-			indirectitemcooldown = 0;
+			K_SetIndirectItemCooldown(0);
 		}
 
 		if (mo->flags & MF_BOSS) //don't OHKO bosses nor players!
@@ -3842,6 +3860,8 @@ void P_PlayerThink(player_t *player)
 	if (!player->mo)
 		I_Error("p_playerthink: players[%s].mo == NULL", sizeu1(playeri));
 #endif
+
+	player->driftlevel = 0; // idk where to put this
 
 	// todo: Figure out what is actually causing these problems in the first place...
 	if (player->mo->health <= 0 && player->playerstate == PST_LIVE) //you should be DEAD!

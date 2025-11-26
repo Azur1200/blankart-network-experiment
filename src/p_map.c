@@ -44,6 +44,8 @@
 
 #include "k_bot.h"
 
+#include "k_objects.h"
+
 tm_t g_tm = {0};
 
 void P_RestoreTMStruct(tm_t tmrestore)
@@ -874,6 +876,17 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		return K_FallingRockCollide(thing, g_tm.thing) ? BMIT_CONTINUE : BMIT_ABORT;
 	}
 
+	if (thing->type == MT_SNEAKERPANEL)
+	{
+		Obj_SneakerPanelCollide(thing, g_tm.thing);
+		return BMIT_CONTINUE;
+	}
+	else if (g_tm.thing->type == MT_SNEAKERPANEL)
+	{
+		Obj_SneakerPanelCollide(g_tm.thing, thing);
+		return BMIT_CONTINUE;
+	}
+
 	//}
 
 	if ((thing->type == MT_SPRINGSHELL || thing->type == MT_YELLOWSHELL) && thing->health > 0
@@ -1177,28 +1190,18 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 
 			{
 				// The bump has to happen last
-				mobj_t *mo1 = g_tm.thing;
-				mobj_t *mo2 = thing;
-				boolean zbounce = false;
-
 				if (P_IsObjectOnGround(thing) && g_tm.thing->momz < 0)
 				{
-					zbounce = true;
-					mo1 = thing;
-					mo2 = g_tm.thing;
-
 					if (g_tm.thing->player->pogospring)
 						P_DamageMobj(thing, g_tm.thing, g_tm.thing, 1, DMG_WIPEOUT|DMG_STEAL);
 				}
 				else if (P_IsObjectOnGround(g_tm.thing) && thing->momz < 0)
 				{
-					zbounce = true;
-
 					if (thing->player->pogospring)
 						P_DamageMobj(g_tm.thing, thing, thing, 1, DMG_WIPEOUT|DMG_STEAL);
 				}
 
-				K_KartBouncing(mo1, mo2, zbounce, false);
+				P_SetTarget(&g_tm.hitthing, thing);
 			}
 
 			return BMIT_CONTINUE;
@@ -1224,8 +1227,8 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			}
 			else
 			{
-				K_KartBouncing(g_tm.thing, thing, false, true);
-				return BMIT_CONTINUE;
+				P_SetTarget(&g_tm.hitthing, thing);
+				return BMIT_ABORT;
 			}
 		}
 		else if (thing->type == MT_SMK_PIPE)
@@ -1245,8 +1248,8 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 				return BMIT_CONTINUE; // kill
 			}
 
-			K_KartBouncing(g_tm.thing, thing, false, true);
-			return BMIT_CONTINUE;
+			P_SetTarget(&g_tm.hitthing, thing);
+			return BMIT_ABORT;
 		}
 		else if (thing->type == MT_SMK_THWOMP)
 		{
@@ -1286,10 +1289,10 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			{
 				if (thing->flags2 & MF2_AMBUSH)
 					P_DamageMobj(g_tm.thing, thing, thing, 1, DMG_WIPEOUT);
-				K_KartBouncing(g_tm.thing, thing, false, true);
+				P_SetTarget(&g_tm.hitthing, thing);
 			}
 
-			return BMIT_CONTINUE;
+			return BMIT_ABORT;
 		}
 		else if (thing->type == MT_KART_LEFTOVER)
 		{
@@ -1299,11 +1302,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			if (g_tm.thing->z + g_tm.thing->height < thing->z)
 				return BMIT_CONTINUE; // underneath
 
-			if (P_IsObjectOnGround(thing) && g_tm.thing->momz < 0)
-				K_KartBouncing(g_tm.thing, thing, true, false);
-			else
-				K_KartBouncing(g_tm.thing, thing, false, false);
-
+			P_SetTarget(&g_tm.hitthing, thing);
 			return BMIT_CONTINUE;
 		}
 		else if (thing->flags & MF_SOLID)
@@ -1314,12 +1313,8 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			if (g_tm.thing->z + g_tm.thing->height < thing->z)
 				return BMIT_CONTINUE; // underneath
 
-			if (P_IsObjectOnGround(thing) && g_tm.thing->momz < 0)
-				K_KartBouncing(g_tm.thing, thing, true, true);
-			else
-				K_KartBouncing(g_tm.thing, thing, false, true);
-
-			return BMIT_CONTINUE;
+			P_SetTarget(&g_tm.hitthing, thing);
+			return BMIT_ABORT;
 		}
 	}
 #if 0
@@ -1647,7 +1642,12 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 	{
 		// copied from P_TryMove
 		// TODO: refactor this into one place
-		if (open.range < g_tm.thing->height)
+		if (ld->frontsector == ld->backsector && !P_MidtextureIsSolid(ld, g_tm.thing))
+		{
+			// if you reach this point, you've hit the planes of a FOF, or perhaps a polyobject,
+			// but you can't hit a non-solid midtexture sharing the same front and back sectors!
+		}
+		else if (open.range < g_tm.thing->height)
 		{
 			P_TestLine(ld);
 		}
@@ -1655,14 +1655,14 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 		{
 			if (g_tm.thing->z < open.floor)
 			{
-				if (open.floorstep > g_tm.maxstep)
+				if (open.floor - g_tm.thing->z > g_tm.maxstep)
 				{
 					P_TestLine(ld);
 				}
 			}
 			else if (open.ceiling < g_tm.thing->z + g_tm.thing->height)
 			{
-				if (open.ceilingstep > g_tm.maxstep)
+				if ((g_tm.thing->z + g_tm.thing->height) - open.ceiling > g_tm.maxstep)
 				{
 					P_TestLine(ld);
 				}
@@ -2053,16 +2053,82 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 				{
 					blockval = false;
 				}
-				else
-				{
-					P_SetTarget(&g_tm.hitthing, g_tm.floorthing);
-				}
 
 				if (P_MobjWasRemoved(g_tm.thing))
 				{
 					return false;
 				}
 			}
+		}
+	}
+
+	// object bounces!
+	// ideally, this should NOT be located within P_CheckPosition, and should be placed in
+	// the respective collision response code... but that ship sailed decades ago, so here we are!
+	// this is a compromise to ensure consistent behavior with kart v1 (bumps should always happen,
+	// even for checkposition/teleportmove calls), while still letting us pass K_KartBouncing's
+	// result back via P_TryMove, so you slide off of solid mobjs, rather than clipping inside or
+	// getting stuck or bouncing multiple times... you get the idea.
+	if (!P_MobjWasRemoved(g_tm.hitthing))
+	{
+		mobj_t *mo1 = thing, *mo2 = g_tm.hitthing;
+		boolean stomp = false;
+
+		if (mo2->player != NULL)
+		{
+			if (P_IsObjectOnGround(mo2) && mo1->momz < 0)
+			{
+				stomp = true;
+			}
+			else if (P_IsObjectOnGround(mo1) && mo2->momz < 0)
+			{
+				stomp = true;
+				mo1 = g_tm.hitthing;
+				mo2 = thing;
+			}
+		}
+		else switch (mo2->type)
+		{
+		case MT_BLUEROBRA_HEAD:
+		case MT_BLUEROBRA_JOINT:
+		case MT_SMK_PIPE:
+		case MT_SMK_THWOMP:
+		case MT_SMK_ICEBLOCK:
+		case MT_ORBINAUT:
+		case MT_ORBINAUT_SHIELD:
+		case MT_JAWZ:
+		case MT_JAWZ_SHIELD:
+		case MT_JAWZ_DUD:
+		case MT_FALLINGROCK:
+			break;
+
+		default:
+		case MT_KART_LEFTOVER:
+			stomp = P_IsObjectOnGround(mo2) && mo1->momz < 0; // huh? gravity flip? never heard of it :^)
+			break;
+		}
+
+		// no more special logic! if you want a solid bounce, return BMIT_ABORT
+		boolean bounced = K_KartBouncing(mo1, mo2, stomp, !blockval);
+
+		// the first object you bump into is the one that gets returned
+		if (result != NULL && result->mo == NULL)
+		{
+			result->mo = g_tm.hitthing;
+			if (!blockval && !bounced) // if you can't bounce off a solid mobj,
+				result->slideout = true; // slide off instead of getting trapped
+		}
+
+		// items must be flung AFTER bouncing, to ensure correct physics
+		if (mo1->type == MT_ORBINAUT || mo1->type == MT_ORBINAUT_SHIELD
+		 || mo1->type == MT_JAWZ || mo1->type == MT_JAWZ_SHIELD || mo1->type == MT_JAWZ_DUD)
+		{
+			K_ItemDamage(mo1, mo2, false);
+		}
+		else if (mo2->type == MT_ORBINAUT || mo2->type == MT_ORBINAUT_SHIELD
+		 || mo2->type == MT_JAWZ || mo2->type == MT_JAWZ_SHIELD || mo2->type == MT_JAWZ_DUD)
+		{
+			K_ItemDamage(mo2, mo1, false);
 		}
 	}
 
@@ -2085,7 +2151,6 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 	if (result != NULL)
 	{
 		result->line = NULL;
-		result->mo = g_tm.hitthing;
 	}
 	else
 	{
@@ -2721,12 +2786,10 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff, Try
 	sector_t *oldsector = thing->subsector->sector;
 
 	// Is the move OK?
-	if (increment_move(thing, x, y, allowdropoff, result) == false)
+	if (!increment_move(thing, x, y, allowdropoff, result))
 	{
 		if (result != NULL)
-		{
 			result->success = false;
-		}
 		return false;
 	}
 
@@ -2846,9 +2909,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff, Try
 	numspechitint = 0U;
 
 	if (result != NULL)
-	{
 		result->success = true;
-	}
 
 	return true;
 }
@@ -3095,7 +3156,6 @@ static boolean P_ThingHeightClip(mobj_t *thing)
 // SLIDE MOVE
 // Allows the player to slide along any angled walls.
 //
-static line_t *bestslideline;
 static mobj_t *slidemo;
 static fixed_t tmxmove, tmymove;
 
@@ -3143,17 +3203,10 @@ static void P_PlayerHitBounceLine(line_t *ld, vector2_t* normal)
 	if (slidemo->player && movelen < (15*mapobjectscale))
 		movelen = (15*mapobjectscale);
 
-	if (!ld)
-	{
-		angle_t th = R_PointToAngle2(0, 0, tmxmove, tmymove);
-		normal->x = -FCOS(th);
-		normal->y = -FSIN(th);
-	}
-
 	x = FixedMul(movelen, normal->x);
 	y = FixedMul(movelen, normal->y);
 
-	if (ld && P_IsLineTripWire(ld))
+	if (P_IsLineTripWire(ld))
 	{
 		tmxmove = FixedMul(x, FRACUNIT+(FRACUNIT/2));
 		tmymove = FixedMul(y, FRACUNIT+(FRACUNIT/2));
@@ -3324,6 +3377,7 @@ static void P_CheckLavaWall(mobj_t *mo, sector_t *sec)
 //
 void P_SlideMove(mobj_t *mo, TryMoveResult_t *result)
 {
+	line_t *bestslideline;
 	fixed_t newx, newy;
 	boolean success = false;
 
@@ -3333,8 +3387,7 @@ void P_SlideMove(mobj_t *mo, TryMoveResult_t *result)
 	if (P_MobjWasRemoved(mo))
 		return;
 
-	if (result == NULL)
-		return;
+	I_Assert(result != NULL);
 
 	if (result->mo && mo->z + mo->height > result->mo->z && mo->z < result->mo->z + result->mo->height)
 	{
@@ -3409,8 +3462,49 @@ void P_SlideMove(mobj_t *mo, TryMoveResult_t *result)
 	}
 
 papercollision:
-	tmxmove = mo->momx;
-	tmymove = mo->momy;
+	// TODO: sadly, we need to recreate kart's slidemove jank to fix the grand metropolis wall
+	// this thing here only works for 90-degree lines, can't be assed to deal with anything else
+	if (mapnamespace == MNS_SRB2KART && (bestslideline->slopetype == ST_HORIZONTAL || bestslideline->slopetype == ST_VERTICAL))
+	{
+		fixed_t leadx = mo->x + (mo->momx > 0 ? mo->radius : -mo->radius);
+		fixed_t leady = mo->y + (mo->momy > 0 ? mo->radius : -mo->radius);
+
+		// P_InterceptVector (bestslidefrac)
+		fixed_t den = FixedMul(bestslideline->dy>>8, mo->momx) - FixedMul(bestslideline->dx>>8, mo->momy);
+		fixed_t num = FixedMul((bestslideline->v1->x - leadx)>>8, bestslideline->dy) + FixedMul((leady - bestslideline->v1->y)>>8, bestslideline->dx);
+		fixed_t frac = den ? FixedDiv(num, den) : 0;
+
+		// fudge a bit to make sure it doesn't hit
+		frac -= 0x800;
+		if (frac > 0)
+		{
+			newx = FixedMul(mo->momx, frac);
+			newy = FixedMul(mo->momy, frac);
+
+			if (!P_TryMove(mo, mo->x + newx, mo->y + newy, true, NULL))
+			{
+				if (!P_TryMove(mo, mo->x, mo->y + mo->momy, true, NULL)) //Allow things to drop off.
+					P_TryMove(mo, mo->x + mo->momx, mo->y, true, NULL);
+				return;
+			}
+		}
+
+		frac = FRACUNIT - (frac + 0x800);
+
+		if (frac > FRACUNIT)
+			frac = FRACUNIT;
+
+		if (frac <= 0)
+			return;
+
+		tmxmove = FixedMul(mo->momx, frac);
+		tmymove = FixedMul(mo->momy, frac);
+	}
+	else
+	{
+		tmxmove = mo->momx;
+		tmymove = mo->momy;
+	}
 
 	P_HitSlideLine(bestslideline); // clip the moves
 
@@ -3481,14 +3575,16 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	if (mo->player == NULL)
 		return;
 
-	if (result == NULL)
-		return;
+	I_Assert(result != NULL);
 
-	if (mo->player->spectator)
+	if (mo->player->spectator || (result->slideout && result->line == NULL))
 	{
 		P_SlideMove(mo, result);
 		return;
 	}
+
+	if (result->line == NULL)
+		return;
 
 	mmomx = mo->player->rmomx;
 	mmomy = mo->player->rmomy;
@@ -3519,11 +3615,10 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	if (!cv_kartbumpspring.value || (modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
 	{
-		mo->player->pogospring = 0;
+		K_ResetPogoSpring(mo->player);
 	}
 
 	slidemo = mo;
-	bestslideline = result->line;
 
 	/*if (mo->health <= 0)
 	{
@@ -3542,7 +3637,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
 	}
 
-	if (bestslideline && P_IsLineTripWire(bestslideline))
+	if (P_IsLineTripWire(result->line))
 	{
 		// TRIPWIRE CANNOT BE MADE NONBOUNCY
 		K_ApplyTripWire(mo->player, TRIPSTATE_BLOCKED);
@@ -3550,7 +3645,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	else
 	{
 		// Some walls aren't bouncy even if you are
-		if (bestslideline && (bestslideline->flags & ML_NOTBOUNCY))
+		if (result->line->flags & ML_NOTBOUNCY)
 		{
 			// SRB2Kart: Non-bouncy line!
 			P_SlideMove(mo, result);
@@ -3560,7 +3655,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		K_SpawnBumpEffect(mo);
 	}
 
-	P_PlayerHitBounceLine(bestslideline, &result->normal);
+	P_PlayerHitBounceLine(result->line, &result->normal);
 	mo->eflags |= MFE_JUSTBOUNCEDWALL;
 
 	mo->momx = tmxmove;
@@ -3568,7 +3663,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	mo->player->cmomx = tmxmove;
 	mo->player->cmomy = tmymove;
 
-	if (!bestslideline || !P_IsLineTripWire(bestslideline))
+	if (!P_IsLineTripWire(result->line))
 	{
 		if (!P_TryMove(mo, mo->x + tmxmove, mo->y + tmymove, true, NULL))
 		{
@@ -3589,26 +3684,27 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 	if (P_MobjWasRemoved(mo))
 		return;
 
+	I_Assert(result != NULL);
+
 	if (mo->player)
 	{
 		P_BouncePlayerMove(mo, result);
 		return;
 	}
 
-	if (mo->eflags & MFE_JUSTBOUNCEDWALL)
+	if (mo->eflags & MFE_JUSTBOUNCEDWALL || (result->slideout && result->line == NULL))
 	{
 		P_SlideMove(mo, result);
 		return;
 	}
 
+	if (result->line == NULL)
+		return;
+
 	mmomx = mo->momx;
 	mmomy = mo->momy;
 
 	slidemo = mo;
-	bestslideline = result->line;
-
-	if (bestslideline == NULL)
-		return;
 
 	if (mo->type == MT_SHELL)
 	{
@@ -3632,7 +3728,7 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
 	}
 
-	P_HitBounceLine(bestslideline); // clip the moves
+	P_HitBounceLine(result->line); // clip the moves
 
 	mo->momx = tmxmove;
 	mo->momy = tmymove;

@@ -42,7 +42,7 @@
 #include "k_director.h"
 #include "acs/interface.h"
 #include "k_bot.h" // K_BotTicker
-#include "k_odds.h" // ItemBGone
+#include "k_items.h" // ItemBGone
 #include "k_specialstage.h"
 
 #ifdef PARANOIA
@@ -50,6 +50,7 @@
 #endif
 
 tic_t leveltime;
+boolean thinkersCompleted;
 
 UINT32 thinker_era = 0;
 
@@ -660,6 +661,8 @@ void P_Ticker(boolean run)
 {
 	INT32 i;
 
+	thinkersCompleted = false;
+
 	// Increment jointime and quittime even if paused
 	for (i = 0; i < MAXPLAYERS; i++)
 		if (playeringame[i])
@@ -782,11 +785,18 @@ void P_Ticker(boolean run)
 		ps_thinkertime = I_GetPreciseTime();
 		P_RunThinkers();
 		ps_thinkertime = I_GetPreciseTime() - ps_thinkertime;
+		thinkersCompleted = true;
 
 		// Run any "after all the other thinkers" stuff
 		for (i = 0; i < MAXPLAYERS; i++)
 			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 				P_PlayerAfterThink(&players[i]);
+
+		// Apply rumble to local players
+		if (!demo.playback)
+		{
+			G_DeviceRumbleTick();
+		}
 
 		// run all the bot tickers
 		if (server)
@@ -897,25 +907,7 @@ void P_Ticker(boolean run)
 		if (exitcountdown > 1)
 			exitcountdown--;
 
-		if (indirectitemcooldown > 0)
-			indirectitemcooldown--;
-
-		for (i = 0; i < NUMKARTRESULTS; i++)
-		{
-			// hyubgone
-			if (K_GetBGone(i, false) > 0)
-			{
-				ItemBGone[i][GONER_CURRCOOLDOWN]--;
-			}
-		}
-
-		if (gametyperules & GTR_RACEODDS)
-		{
-			// Shield cooldowns
-			K_KartHandleShieldCooldown(KITEM_THUNDERSHIELD);
-			K_KartHandleShieldCooldown(KITEM_BUBBLESHIELD);
-			K_KartHandleShieldCooldown(KITEM_FLAMESHIELD);
-		}
+		K_UpdateItemCooldown();
 
 		K_BossInfoTicker();
 

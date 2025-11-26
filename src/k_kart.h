@@ -33,6 +33,7 @@ Make sure this matches the actual number of states
 #define SHRINK_SCALE ((6*FRACUNIT)/8)
 
 #define BASEINVINTIME (10 * TICRATE)
+#define MININVINTIME (7 * TICRATE)
 
 #define AUTORESPAWN_TIME (TICRATE/2)
 #define AUTORESPAWN_THRESHOLD (TICRATE/4)
@@ -107,6 +108,8 @@ extern vector3_t clusterpoint, clusterdtf;
 #define SNEAKERACCELBOOST CV_Get(&cv_kartstacking_sneaker_accelboost)
 #define MAXSNEAKERSTACK CV_Get(&cv_kartstacking_sneaker_maxgrade)
 #define SNEAKERSTACKABLE CV_Get(&cv_kartstacking_sneaker_stackable)
+#define SEPARATEPANELS CV_Get(&cv_kartstacking_panel_separate)
+#define MAXPANELSTACK CV_Get(&cv_kartstacking_panel_maxgrade)
 
 #define INVINSPEEDBOOSTLGC CV_Get(&cv_kartstacking_invincibility_legacyspeedboost)
 #define INVINACCELBOOSTLGC CV_Get(&cv_kartstacking_invincibility_legacyaccelboost)
@@ -125,6 +128,11 @@ extern vector3_t clusterpoint, clusterdtf;
 #define FLAMESPEEDVAL CV_Get(&cv_kartstacking_flame_speedval)
 #define FLAMEACCELBOOST CV_Get(&cv_kartstacking_flame_accelboost)
 #define FLAMESTACKABLE CV_Get(&cv_kartstacking_flame_stackable)
+
+#define ALTSHRINKTIME CV_Get(&cv_kartaltshrinktime)
+#define SHRINKSPEEDBOOST CV_Get(&cv_kartstacking_altshrink_speedboost)
+#define SHRINKACCELBOOST CV_Get(&cv_kartstacking_altshrink_accelboost)
+#define SHRINKSTACKABLE CV_Get(&cv_kartstacking_altshrink_stackable)
 
 #define STARTSPEEDBOOST CV_Get(&cv_kartstacking_start_speedboost)
 #define STARTACCELBOOST CV_Get(&cv_kartstacking_start_accelboost)
@@ -254,12 +262,15 @@ void K_DoSneaker(player_t *player, INT32 type);
 void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound);
 fixed_t K_InvincibilityGradient(UINT16 time);
 UINT16 K_GetInvincibilityTime(player_t *player);
+fixed_t K_GetInvincibilitySpeed(UINT16 time);
+fixed_t K_GetInvincibilityAccel(UINT16 time);
+void K_ResetPogoSpring(player_t *player);
 void K_DoInvincibility(player_t *player, tic_t time);
 void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source);
 void K_UpdateHnextList(player_t *player, boolean clean);
 void K_DropHnextList(player_t *player);
 void K_PopPlayerShield(player_t *player);
-boolean K_IsBubbleDefending(player_t *player);
+boolean K_IsBubbleDefending(const player_t *player);
 void K_RemoveBubbleHealth(player_t *player, INT16 sub);
 boolean K_CheckBubbleChip(const mobj_t *mobj);
 void K_RepairOrbitChain(mobj_t *orbit);
@@ -295,6 +306,7 @@ void K_SpawnWaterTrail(mobj_t *mobj);
 boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item);
 void K_SetTireGrease(player_t *player, tic_t tics);
 boolean K_SlopeResistance(const player_t *player);
+void K_RemoveGrowShrink(player_t *player);
 void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 void K_ApplyTripWire(player_t *player, tripwirestate_t state);
 fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb);
@@ -313,8 +325,6 @@ SINT8 K_Sliptiding(const player_t *player);
 fixed_t K_PlayerBaseFriction(const player_t *player, fixed_t original);
 void K_MoveKartPlayer(player_t *player, boolean onground);
 void K_CheckSpectateStatus(boolean considermapreset);
-UINT8 K_GetInvincibilityItemFrame(void);
-UINT8 K_GetMultItemFrame(UINT8 count, UINT8 max);
 boolean K_IsSPBInGame(void);
 
 // sound stuff for lua
@@ -344,15 +354,12 @@ boolean K_DraftingActive(void);
 boolean K_AirDropActive(void);
 boolean K_ItemLitterActive(void);
 boolean K_ItemPushingActive(void);
-boolean K_GetKartInvinType(void);
 INT32 K_GetBumpSpark(void);
 boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);
 INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement, boolean chainsound);
 boolean K_UsingLegacyCheckpoints(void);
 boolean K_UsingPatchedMap(void);
 INT32 K_CheckpointThreshold(boolean roundup);
-
-void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount);
 
 fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmin,fixed_t newmax);
 void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, boolean stack, boolean visible);

@@ -30,6 +30,8 @@
 #include "k_waypoint.h"
 #include "k_battle.h"
 #include "k_collide.h"
+#include "k_items.h"
+#include "k_objects.h"
 
 #ifdef HW3SOUND
 #include "hardware/hw3sound.h"
@@ -10838,7 +10840,7 @@ void A_ItemPop(void *thing)
 
 	if (!((gametyperules & GTR_BUMPERS) && actor->target->player->bumper <= 0) && !itembreaker)
 	{
-		actor->target->player->itemroulette = KROULETTE_ACTIVE;
+		K_StartRoulette(actor->target->player, KROULETTETYPE_NORMAL);
 	}
 	else if (itembreaker)
 	{
@@ -10985,7 +10987,7 @@ void A_SPBChase(void *thing)
 		if (players[i].mo->health <= 0)
 			continue; // dead
 
-		if (players[i].kartstuff[k_respawn])
+		if (players[i].respawn)
 			continue;*/ // respawning
 
 		if ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB))
@@ -11028,7 +11030,7 @@ void A_SPBChase(void *thing)
 
 				actor->lastlook = actor->tracer->player-players; // Save the player num for death scumming...
 
-				if (!P_IsObjectOnGround(actor->tracer) /*&& !actor->tracer->player->kartstuff[k_pogospring]*/)
+				if (!P_IsObjectOnGround(actor->tracer) /*&& !actor->tracer->player->pogospring*/)
 				{
 					// In the air you have no control; basically don't hit unless you make a near complete stop
 					defspeed = (7 * actor->tracer->player->speed) / 8;
@@ -11951,4 +11953,37 @@ void A_ReaperThinker(void *thing)
 				P_SetTarget(&actor->target, actor->hnext);
 		}
 	}
+}
+
+// Function: A_SpawnSneakerPanel
+//
+// Description: Spawns a sneaker panel object relative to the location of the actor
+//
+// var1:
+//		var1 >> 16 = x offset
+//		var1 & 65535 = y offset
+// var2:
+//		var2 >> 16 = z
+//		var2 & 65535 = unused
+//
+void A_SpawnSneakerPanel(void *thing)
+{
+	mobj_t *actor = thing;
+	INT16 x, y, z;
+	mobj_t *mo;
+	INT32 locvar1 = var1;
+	INT32 locvar2 = var2;
+
+	if (LUA_CallAction(A_SPAWNSNEAKERPANEL, actor))
+	{
+		return;
+	}
+
+	x = (INT16)(locvar1 >> 16);
+	y = (INT16)(locvar1 & 65535);
+	z = (INT16)(locvar2 >> 16);
+
+	mo = P_SpawnMobjFromMobj(actor, x << FRACBITS, y << FRACBITS, z << FRACBITS, MT_SNEAKERPANEL);
+	mo->angle = actor->angle;
+	Obj_SneakerPanelSpriteScale(mo);
 }

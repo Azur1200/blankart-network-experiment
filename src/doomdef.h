@@ -193,6 +193,7 @@ extern char logfilename[1024];
 #define MAXPLAYERNAME 21
 #define MAXSPLITSCREENPLAYERS 4 // Max number of players on a single computer
 #define MAXGAMEPADS (MAXSPLITSCREENPLAYERS * 2) // Number of gamepads we'll be allowing
+#define PACKETLOSSCYCLES 4 // amount of cycles to do when measuring packet loss
 
 #define MAXSKINS 4096
 #define MAXFOLLOWERS UINT16_MAX
@@ -358,7 +359,7 @@ typedef enum
 	DBG_DETAILED		= 0x00000002,
 	DBG_PLAYER			= 0x00000004,
 	DBG_RENDER			= 0x00000008,
-	//DBG_NIGHTSBASIC	= 0x00000010, // free
+	DBG_MUSIC			= 0x00000010,
 	//DBG_NIGHTS		= 0x00000020, // free
 	DBG_POLYOBJ			= 0x00000040,
 	DBG_GAMELOGIC		= 0x00000080,
@@ -566,10 +567,10 @@ extern int compuncommitted;
 #define NO_PNG_LUMPS
 #endif
 
-/// Divide volume of music and sounds by this much (loudest sounds on earth)
-#define VOLUME_DIVIDER 4
-#define USER_VOLUME_SCALE 2
-#define MAX_VOLUME ( 100 * VOLUME_DIVIDER / USER_VOLUME_SCALE )
+// Volume scale is 0-100 in new mixer. 100 is treated as -0dB or 100% gain. No more weirdness to work around SDL_mixer
+// problems
+
+#define MAX_VOLUME 100
 
 #ifdef HAVE_CURL
 #define MASTERSERVER

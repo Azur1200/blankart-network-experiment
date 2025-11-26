@@ -1,4 +1,3 @@
-
 //-----------------------------------------------------------------------------
 // Copyright (C) 2012-2016 by John "JTE" Muniz.
 // Copyright (C) 2012-2022 by Sonic Team Junior.
@@ -40,6 +39,7 @@ automatically.
 	X (MobjFuse),/* when mobj->fuse runs out */\
 	X (MobjThinker),/* P_MobjThinker, P_SceneryThinker */\
 	X (BossThinker),/* P_GenericBossThinker */\
+	X (MobjScaleChange),/*SRB2KART*/\
 	X (ShouldDamage),/* P_DamageMobj (Should mobj take damage?) */\
 	X (ShouldSpin),/* P_DamageMobj (Should mobj take spinout damage?) */\
 	X (ShouldExplode),/* P_DamageMobj (Should mobj take explosion damage?) */\
@@ -86,6 +86,12 @@ automatically.
 	X (BotJoin),\
 	X (GPRankPoints),/* K_CalculateGPRankPoints */\
 	X (AddonLoaded),\
+	X (PlayerItem),/*SRB2KART*/\
+	X (KartHyudoro),/*SRB2KART*/\
+	X (KartSneaker),/*SRB2KART*/\
+	X (KartStripItems),/*SRB2KART*/\
+	X (KartStripOther),/*SRB2KART*/\
+	X (CanPickupItem),/*SRB2KART*/\
 
 #define STRING_HOOK_LIST(X) \
 	X (SpecialExecute),\
@@ -170,6 +176,15 @@ int  LUA_HookSeenPlayer(player_t *player, player_t *seenfriend);
 int LUA_HookGPRankPoints(UINT8 position, UINT8 numplayers, INT16 *points);
 int  LUA_HookShouldJingleContinue(player_t *, const char *musname);
 int  LUA_HookMusicChange(const char *oldname, struct MusicChange *);
+
+// Item shit
+boolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, boolean wasHoldingItem, boolean *force);
+boolean LUA_HookKartHyudoro(player_t *player, INT32 *target, boolean sink); // SRB2Kart: Hook for K_DoHyudoroSteal and overriding its results.
+boolean LUA_HookMobjScaleChange(mobj_t *target, fixed_t newscale, fixed_t oldscale); // SRB2Kart: Hook for P_SetScale.
+boolean LUA_HookKartSneaker(player_t *player, int type); // SRB2Kart: Hook for K_DoSneaker.
+boolean LUA_HookKartStripItems(player_t *player, UINT8 item); // SRB2Kart: Hook for K_StripItems.
+boolean LUA_HookKartStripOther(player_t *player); // SRB2Kart: Hook for K_StripOther.
+boolean LUA_HookCanPickupItem(player_t *player, UINT8 weapon, boolean *force); // SRB2Kart: Hook for P_CanPickupItem.
 
 #ifdef __cplusplus
 } // extern "C"

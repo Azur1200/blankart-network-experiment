@@ -75,8 +75,8 @@ consvar_t stereoreverse = CVAR_INIT ("stereoreverse", "Off", CV_SAVE, CV_OnOff, 
 static consvar_t precachesound = CVAR_INIT ("precachesound", "Off", CV_SAVE, CV_OnOff, NULL);
 
 // actual general (maximum) sound & music volume, saved into the config
-consvar_t cv_soundvolume = CVAR_INIT ("soundvolume", "50", CV_SAVE, soundvolume_cons_t, NULL);
-consvar_t cv_digmusicvolume = CVAR_INIT ("musicvolume", "50", CV_SAVE, soundvolume_cons_t, NULL);
+consvar_t cv_soundvolume = CVAR_INIT ("soundvolume", "80", CV_SAVE, soundvolume_cons_t, NULL);
+consvar_t cv_digmusicvolume = CVAR_INIT ("musicvolume", "80", CV_SAVE, soundvolume_cons_t, NULL);
 
 // number of channels available
 consvar_t cv_numChannels = CVAR_INIT ("snd_channels", "64", CV_SAVE|CV_CALL, CV_Unsigned, SetChannelsNum);
@@ -116,8 +116,6 @@ openmpt_module *openmpt_mhandle = NULL;
 static CV_PossibleValue_t interpolationfilter_cons_t[] = {{0, "Default"}, {1, "None"}, {2, "Linear"}, {4, "Cubic"}, {8, "Windowed sinc"}, {0, NULL}};
 consvar_t cv_modfilter = CVAR_INIT ("modfilter", "0", CV_SAVE|CV_CALL, interpolationfilter_cons_t, ModFilter_OnChange);
 #endif
-
-#define S_MAX_VOLUME 127
 
 // when to clip out sounds
 // Does not fit the large outdoor areas.
@@ -651,7 +649,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 					{
 						continue;
 					}
-				
+
 					recdist = thisdist;
 					i = j;
 				}
@@ -778,9 +776,9 @@ void S_UpdateSounds(void)
 	mobj_t *listenmobj[MAXSPLITSCREENPLAYERS];
 
 	// Update sound/music volumes, if changed manually at console
-	if (actualsfxvolume != cv_soundvolume.value * USER_VOLUME_SCALE)
+	if (actualsfxvolume != cv_soundvolume.value)
 		S_SetSfxVolume (cv_soundvolume.value);
-	if (actualdigmusicvolume != cv_digmusicvolume.value * USER_VOLUME_SCALE)
+	if (actualdigmusicvolume != cv_digmusicvolume.value)
 		S_SetDigMusicVolume (cv_digmusicvolume.value);
 
 	memset(listener, 0, sizeof(listener));
@@ -976,8 +974,7 @@ void S_UpdateClosedCaptions(void)
 
 void S_SetSfxVolume(INT32 volume)
 {
-	//CV_SetValue(&cv_soundvolume, volume);
-	actualsfxvolume = cv_soundvolume.value * USER_VOLUME_SCALE;
+	actualsfxvolume = volume;
 
 #ifdef HW3SOUND
 	hws_mode == HWS_DEFAULT_MODE ? I_SetSfxVolume(volume&0x1F) : HW3S_SetSfxVolume(volume&0x1F);
@@ -1001,8 +998,7 @@ static void S_StopChannel(INT32 cnum)
 	if (c->sfxinfo)
 	{
 		// stop the sound playing
-		if (I_SoundIsPlaying(c->handle))
-			I_StopSound(c->handle);
+		I_StopSound(c->handle);
 
 		// degrade usefulness of sound data
 		c->sfxinfo->usefulness--;
@@ -1455,7 +1451,7 @@ ReadMusicDefFields
 				}
 
 				def->numtracks = i;
-				def->volume = DEFAULT_MUSICDEF_VOLUME;
+				def->volume = MAX_VOLUME;
 				def->legacy = true;
 
 				def->next = musicdefstart;
@@ -1525,7 +1521,7 @@ ReadMusicDefFields
 			}
 			else if (!stricmp(stoken, "volume"))
 			{
-				def->volume = atoi(textline) / VOLUME_DIVIDER;
+				def->volume = atoi(textline);
 				def->legacy = false;
 			}
 			else if (!stricmp(stoken, "contentidunsafe"))
@@ -1624,7 +1620,7 @@ static void S_LoadMusicDefLump(lumpnum_t lumpnum)
 		else
 			break;/* EOF */
 	}
-	
+
 	musicdef_t *df;
 	// Replace all _ with spaces on legacy musicdefs
 	for (df = musicdefstart; df; df = df->next)
@@ -1861,6 +1857,50 @@ boolean S_MusicNotInFocus(void)
 musictype_t S_MusicType(void)
 {
 	return I_SongType();
+}
+
+const char *S_MusicTypeName(musictype_t mustype)
+{
+	const char *TypeString = "Unknown";
+	musictype_t MusicType = mustype;
+
+	switch (MusicType)
+	{
+		case MU_GME:
+			TypeString = "Game Music Emu";
+			break;
+		case MU_MOD_EX:
+			TypeString = "OpenMPT";
+			break;
+		case MU_MOD:
+			TypeString = "MOD";
+			break;
+		case MU_MID:
+			TypeString = "Native MIDI";
+			break;
+		case MU_MID_EX:
+			TypeString = "Software MIDI";
+			break;
+		case MU_WAV:
+			TypeString = "Wave Audio";
+			break;
+		case MU_OPUS:
+			TypeString = "Opus";
+			break;
+		case MU_OGG:
+			TypeString = "Vorbis";
+			break;
+		case MU_MP3:
+			TypeString = "MPEG";
+			break;
+		case MU_FLAC:
+			TypeString = "FLAC";
+			break;
+		default:
+			break;
+	}
+
+	return TypeString;
 }
 
 const char *S_MusicName(void)
@@ -2291,7 +2331,7 @@ static boolean S_CheckMusicIsSafe(void)
 			}
 		}
 	}
-	
+
 	return true;
 }
 
@@ -2299,7 +2339,7 @@ static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)
 {
 	if (S_MusicDisabled())
 		return false;
-	
+
 	if (!S_CheckMusicIsSafe())
 		return false;
 
@@ -2414,7 +2454,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 		music_flags = mflags;
 		music_looping = looping;
 
-		musicdef_volume = DEFAULT_MUSICDEF_VOLUME;
+		musicdef_volume = MAX_VOLUME;
 
 		{
 			UINT8 i = 0;
@@ -2455,7 +2495,7 @@ void S_ChangeMusicSpecial (const char *mmusic)
 }
 
 void S_StopMusic(void)
-{	
+{
 	boolean safe = S_CheckMusicIsSafe();
 	if (!I_SongPlaying()
 		|| demo.rewinding // Don't mess with music while rewinding!
@@ -2463,7 +2503,7 @@ void S_StopMusic(void)
 		return;
 
 	if (strcasecmp(music_name, mapmusname) == 0)
-		mapmusresume = I_GetSongPosition();
+		mapmusresume = S_GetMusicPosition();
 
 	if (I_SongPaused() && safe == true)
 		I_ResumeSong();
@@ -2501,10 +2541,10 @@ void S_PauseAudio(void)
 }
 
 void S_ResumeAudio(void)
-{	
+{
 	if (S_MusicNotInFocus())
 		return;
-	
+
 	if (!S_CheckMusicIsSafe())
 		return;
 
@@ -2519,8 +2559,7 @@ void S_SetMusicVolume(INT32 digvolume)
 	if (digvolume < 0)
 		digvolume = cv_digmusicvolume.value;
 
-	//CV_SetValue(&cv_digmusicvolume, digvolume);
-	actualdigmusicvolume = cv_digmusicvolume.value * USER_VOLUME_SCALE;
+	actualdigmusicvolume = digvolume;
 	I_SetMusicVolume(digvolume);
 }
 
@@ -2590,12 +2629,10 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 //
 void S_InitLevelMusic(boolean fromnetsave)
 {
-
 	if (mapmusflags & MUSIC_RELOADRESET)
 	{
 		if (!fromnetsave)
 		{
-			
 			if (demo.playback)
 			{
 				if (mapheaderinfo[gamemap-1]->musname_size > 1)
@@ -2610,19 +2647,19 @@ void S_InitLevelMusic(boolean fromnetsave)
 			}
 			else
 			{
-				
+
 				if (mapheaderinfo[gamemap-1]->musname_size > 1)
 					mapmusrng = P_RandomKey(mapheaderinfo[gamemap-1]->musname_size);
 				else
 					mapmusrng = 0;
 			}
 		}
-		
+
 		if (mapheaderinfo[gamemap-1]->musname[0][0] == 0)
 			strncpy(mapmusname, va("%sM", G_BuildMapName(gamemap)), 7);
 		else
 			strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname[mapmusrng], 7);
-		
+
 		mapmusname[6] = 0;
 		mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
 		mapmusposition = mapheaderinfo[gamemap-1]->muspos;
@@ -2759,6 +2796,7 @@ static void Command_RestartAudio_f(void)
 
 	S_StopMusic();
 	S_StopSounds();
+	S_ClearSfx();
 	I_ShutdownMusic();
 	I_ShutdownSound();
 	I_StartupSound();

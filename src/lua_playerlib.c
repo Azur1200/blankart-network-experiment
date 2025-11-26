@@ -164,6 +164,74 @@ static int lib_lenDisplayplayers(lua_State *L)
 	return 1;
 }
 
+// Same deal as the three functions above but for localplayers
+// don't gotta fix what ain't broken
+
+static int lib_iterateLocalplayers(lua_State *L)
+{
+	INT32 i = lua_tonumber(L, lua_upvalueindex(1));
+
+	if (lua_gettop(L) < 2)
+	{
+		lua_pushcclosure(L, lib_iterateLocalplayers, 1);
+		return 1;
+	}
+
+	if (i <= splitscreen)
+	{
+		if (!playeringame[g_localplayers[i]] || (i > 0 && g_localplayers[i] == g_localplayers[0]))
+			return 0;
+
+		// Return player and splitscreen index.
+		LUA_PushUserdata(L, &players[g_localplayers[i]], META_PLAYER);
+		lua_pushnumber(L, i);
+
+		// Update splitscreen index value for next iteration.
+		lua_pushnumber(L, i + 1);
+		lua_pushvalue(L, -1);
+		lua_replace(L, lua_upvalueindex(1));
+		lua_pop(L, 1);
+
+		return 2;
+	}
+	return 0;
+}
+
+static int lib_getLocalplayers(lua_State *L)
+{
+	const char *field;
+	// i -> players[i]
+	if (lua_type(L, 2) == LUA_TNUMBER)
+	{
+		lua_Integer i = luaL_checkinteger(L, 2);
+		if (i < 0 || i >= MAXSPLITSCREENPLAYERS)
+			return luaL_error(L, "localplayers[] index %d out of range (0 - %d)", i, MAXSPLITSCREENPLAYERS-1);
+		if (i > splitscreen)
+			return 0;
+		if (i > 0 && g_localplayers[i] == g_localplayers[0])
+			return 0;
+		if (!playeringame[g_localplayers[i]])
+			return 0;
+		LUA_PushUserdata(L, &players[g_localplayers[i]], META_PLAYER);
+		return 1;
+	}
+
+	field = luaL_checkstring(L, 2);
+	if (fastcmp(field,"iterate"))
+	{
+		lua_pushcclosure(L, lib_iterateLocalplayers, 1);
+		return 1;
+	}
+	return 0;
+}
+
+// #localplayers -> MAXSPLITSCREENPLAYERS
+static int lib_lenLocalplayers(lua_State *L)
+{
+	lua_pushinteger(L, MAXSPLITSCREENPLAYERS);
+	return 1;
+}
+
 enum player_e
 {
 	player_valid,
@@ -176,7 +244,9 @@ enum player_e
 	player_health,
 	player_viewz,
 	player_viewheight,
+	player_cameraOffset,
 	player_viewrollangle,
+	player_tilt,
 	player_aiming,
 	player_drawangle,
 	player_frameangle,
@@ -234,6 +304,7 @@ enum player_e
 	player_boostangle,
 	player_boostinfo,
 	player_numsneakers,
+	player_numpanels,
 	player_numboosts,
 	player_draftpower,
 	player_draftleeway,
@@ -249,6 +320,8 @@ enum player_e
 	player_roulettetype,
 	player_itemtype,
 	player_itemamount,
+	player_itemusecooldown,
+	player_itemusecooldownmax,
 	player_throwdir,
 	player_sadtimer,
 	player_rings,
@@ -285,6 +358,10 @@ enum player_e
 	player_squishedtimer,
 	player_rocketsneakertimer,
 	player_invincibilitytimer,
+	player_maxinvincibilitytime,
+	player_invincibilitybottleneck,
+	player_invincibilitycancel,
+	player_invincibilitywarning,
 	player_eggmanexplode,
 	player_eggmanblame,
 	player_bananadrag,
@@ -292,6 +369,9 @@ enum player_e
 	player_jawztargetdelay,
 	player_confirmVictim,
 	player_confirmVictimDelay,
+	player_dashRingPullTics,
+	player_dashRingPushTics,
+	player_dashRainbowPogo,
 	player_glanceDir,
 	player_breathTimer,
 	player_lastsafelap,
@@ -380,7 +460,9 @@ static const char *const player_opt[] = {
 	"health",
 	"viewz",
 	"viewheight",
+	"cameraOffset",
 	"viewrollangle",
+	"tilt",
 	"aiming",
 	"drawangle",
 	"frameangle",
@@ -438,6 +520,7 @@ static const char *const player_opt[] = {
 	"boostangle",
 	"boostinfo",
 	"numsneakers",
+	"numpanels",
 	"numboosts",
 	"draftpower",
 	"draftleeway",
@@ -453,6 +536,8 @@ static const char *const player_opt[] = {
 	"roulettetype",
 	"itemtype",
 	"itemamount",
+	"itemusecooldown",
+	"itemusecooldownmax",
 	"throwdir",
 	"sadtimer",
 	"rings",
@@ -489,6 +574,10 @@ static const char *const player_opt[] = {
 	"squishedtimer",
 	"rocketsneakertimer",
 	"invincibilitytimer",
+	"maxinvincibilitytime",
+	"invincibilitybottleneck",
+	"invincibilitycancel",
+	"invincibilitywarning", // This gets cast to a boolean in Lua.
 	"eggmanexplode",
 	"eggmanblame",
 	"bananadrag",
@@ -496,6 +585,9 @@ static const char *const player_opt[] = {
 	"jawztargetdelay",
 	"confirmVictim",
 	"confirmVictimDelay",
+	"dashRingPullTics",
+	"dashRingPushTics",
+	"dashRainbowPogo",
 	"glanceDir",
 	"breathTimer",
 	"lastsafelap",
@@ -630,8 +722,14 @@ static int player_get(lua_State *L)
 	case player_viewheight:
 		lua_pushfixed(L, plr->viewheight);
 		break;
+	case player_cameraOffset:
+		lua_pushfixed(L, plr->cameraOffset);
+		break;
 	case player_viewrollangle:
 		lua_pushangle(L, plr->viewrollangle);
+		break;
+	case player_tilt:
+		lua_pushangle(L, plr->tilt);
 		break;
 	case player_aiming:
 		lua_pushangle(L, plr->aiming);
@@ -810,6 +908,9 @@ static int player_get(lua_State *L)
 	case player_numsneakers:
 		lua_pushinteger(L, plr->numsneakers);
 		break;
+	case player_numpanels:
+		lua_pushinteger(L, plr->numpanels);
+		break;
 	case player_numboosts:
 		lua_pushinteger(L, plr->numboosts);
 		break;
@@ -854,6 +955,12 @@ static int player_get(lua_State *L)
 		break;
 	case player_itemamount:
 		lua_pushinteger(L, plr->itemamount);
+		break;
+	case player_itemusecooldown:
+		lua_pushinteger(L, plr->itemusecooldown);
+		break;
+	case player_itemusecooldownmax:
+		lua_pushinteger(L, plr->itemusecooldownmax);
 		break;
 	case player_throwdir:
 		lua_pushinteger(L, plr->throwdir);
@@ -963,6 +1070,19 @@ static int player_get(lua_State *L)
 	case player_invincibilitytimer:
 		lua_pushinteger(L, plr->invincibilitytimer);
 		break;
+	case player_maxinvincibilitytime:
+		lua_pushinteger(L, plr->maxinvincibilitytime);
+		break;
+	case player_invincibilitybottleneck:
+		// Push as an INT16 due to the negative value signal systems.
+		lua_pushinteger(L, (INT16)plr->invincibilitybottleneck);
+		break;
+	case player_invincibilitycancel:
+		lua_pushinteger(L, plr->invincibilitycancel);
+		break;
+	case player_invincibilitywarning:
+		lua_pushboolean(L, (boolean)plr->invincibilitywarning);
+		break;
 	case player_eggmanexplode:
 		lua_pushinteger(L, plr->eggmanexplode);
 		break;
@@ -983,6 +1103,15 @@ static int player_get(lua_State *L)
 		break;
 	case player_confirmVictimDelay:
 		lua_pushinteger(L, plr->confirmVictimDelay);
+		break;
+	case player_dashRingPullTics:
+		lua_pushinteger(L, plr->dashRingPullTics);
+		break;
+	case player_dashRingPushTics:
+		lua_pushinteger(L, plr->dashRingPushTics);
+		break;
+	case player_dashRainbowPogo:
+		lua_pushinteger(L, plr->dashRainbowPogo);
 		break;
 	case player_glanceDir:
 		lua_pushinteger(L, plr->glanceDir);
@@ -1288,8 +1417,14 @@ static int player_set(lua_State *L)
 	case player_viewheight:
 		plr->viewheight = luaL_checkfixed(L, 3);
 		break;
+	case player_cameraOffset:
+		plr->cameraOffset = luaL_checkfixed(L, 3);
+		break;
 	case player_viewrollangle:
 		plr->viewrollangle = luaL_checkangle(L, 3);
+		break;
+	case player_tilt:
+		plr->tilt = luaL_checkangle(L, 3);
 		break;
 	case player_aiming:
 	{
@@ -1523,6 +1658,9 @@ static int player_set(lua_State *L)
 	case player_numsneakers:
 		plr->numsneakers = luaL_checkinteger(L, 3);
 		break;
+	case player_numpanels:
+		plr->numpanels = luaL_checkinteger(L, 3);
+		break;
 	case player_numboosts:
 		plr->numboosts = luaL_checkinteger(L, 3);
 		break;
@@ -1567,6 +1705,12 @@ static int player_set(lua_State *L)
 		break;
 	case player_itemamount:
 		plr->itemamount = luaL_checkinteger(L, 3);
+		break;
+	case player_itemusecooldown:
+		plr->itemusecooldown = luaL_checkinteger(L, 3);
+		break;
+	case player_itemusecooldownmax:
+		plr->itemusecooldownmax = luaL_checkinteger(L, 3);
 		break;
 	case player_throwdir:
 		plr->throwdir = luaL_checkinteger(L, 3);
@@ -1667,13 +1811,33 @@ static int player_set(lua_State *L)
 		plr->growcancel = luaL_checkinteger(L, 3);
 		break;
 	case player_squishedtimer:
-		plr->squishedtimer = luaL_checkinteger(L, 3);
+	{
+		// Unsquish for the ease of Lua programmers
+		INT16 squishtimer = (INT16)luaL_checkinteger(L, 3);
+
+		if (squishtimer == 0)
+			plr->mo->spriteyscale = FRACUNIT;
+
+		plr->squishedtimer = squishtimer;
 		break;
+	}
 	case player_rocketsneakertimer:
 		plr->rocketsneakertimer = luaL_checkinteger(L, 3);
 		break;
 	case player_invincibilitytimer:
 		plr->invincibilitytimer = luaL_checkinteger(L, 3);
+		break;
+	case player_maxinvincibilitytime:
+		// For most other cases, I'd just say: "it's your funeral". Not for this one.
+		return NOSET;
+	case player_invincibilitybottleneck:
+		plr->invincibilitybottleneck = (UINT16)luaL_checkinteger(L, 3);
+		break;
+	case player_invincibilitycancel:
+		plr->invincibilitycancel = (INT16)luaL_checkinteger(L, 3);
+		break;
+	case player_invincibilitywarning:
+		plr->invincibilitywarning = (UINT8)luaL_checkboolean(L, 3);
 		break;
 	case player_eggmanexplode:
 		plr->eggmanexplode = luaL_checkinteger(L, 3);
@@ -1695,6 +1859,15 @@ static int player_set(lua_State *L)
 		break;
 	case player_confirmVictimDelay:
 		plr->confirmVictimDelay = luaL_checkinteger(L, 3);
+		break;
+	case player_dashRingPullTics:
+		plr->dashRingPullTics = luaL_checkinteger(L, 3);
+		break;
+	case player_dashRingPushTics:
+		plr->dashRingPushTics = luaL_checkinteger(L, 3);
+		break;
+	case player_dashRainbowPogo:
+		plr->dashRainbowPogo = luaL_checkinteger(L, 3);
 		break;
 	case player_glanceDir:
 		plr->glanceDir = luaL_checkinteger(L, 3);
@@ -2455,8 +2628,14 @@ static int kartstuff_set(lua_State *L)
 				plr->growshrinktimer = CLAMP(i, INT16_MIN, INT16_MAX);
 				break;
 			case k_squishedtimer:
+			{
+				// Unsquish for the ease of Lua programmers
+				if (i == 0)
+					plr->mo->spriteyscale = FRACUNIT;
+
 				plr->squishedtimer = CLAMP(i, INT16_MIN, INT16_MAX);
 				break;
+			}
 			case k_rocketsneakertimer:
 				plr->rocketsneakertimer = CLAMP(i, 0, UINT16_MAX);
 				break;
@@ -2487,7 +2666,7 @@ static int kartstuff_set(lua_State *L)
 				break;
 			case k_justbumped:
 				plr->justbumped = i;
-				break;;
+				break;
 			case k_comebacktimer:
 				plr->karmadelay = i;
 				break;
@@ -2952,6 +3131,17 @@ int LUA_PlayerLib(lua_State *L)
 			lua_setfield(L, -2, "__len");
 		lua_setmetatable(L, -2);
 	lua_setglobal(L, "displayplayers");
+	
+	// ditto with localplayers
+	lua_newuserdata(L, 0);
+		lua_createtable(L, 0, 2);
+			lua_pushcfunction(L, lib_getLocalplayers);
+			lua_setfield(L, -2, "__index");
+
+			lua_pushcfunction(L, lib_lenLocalplayers);
+			lua_setfield(L, -2, "__len");
+		lua_setmetatable(L, -2);
+	lua_setglobal(L, "localplayers");
 
 	return 0;
 }

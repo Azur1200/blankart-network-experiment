@@ -106,12 +106,6 @@ void M_LoadEmotes(UINT16 wadnum)
 				UINT8 numframes = 0;
 
 				auto copy_frame = [&] {
-					if (numframes == MAXEMOTEFRAMES)
-					{
-						CONS_Alert(CONS_WARNING, "EMOTES: Too many frames. (file %s, line %d)", wadfiles[wadnum]->filename, linenum);
-						return false;
-					}
-
 					size_t list_split = value.find(',');
 					std::string framelumpname = value.substr(0, list_split);
 					trim(framelumpname);
@@ -124,6 +118,13 @@ void M_LoadEmotes(UINT16 wadnum)
 					// End of list of frames
 					if (framelumpname.size() == 0)
 						return false;
+
+					// Only print this warning if we actually got new frame
+					if (numframes == MAXEMOTEFRAMES)
+					{
+						CONS_Alert(CONS_WARNING, "EMOTES: Too many frames. (file %s, line %d)\n", wadfiles[wadnum]->filename, linenum);
+						return false;
+					}
 
 					if (framelumpname.size() > 8)
 					{
@@ -188,7 +189,7 @@ emote_t *M_FindEmote(const char *name, int len, int skip)
 
 	for (auto &pair: emotes)
 	{
-		if (pair.first.rfind(query, 0, std::min(len, MAXEMOTENAME)) != 0)
+		if (pair.first.rfind(query) == std::string::npos)
 			continue;
 
 		if (skip > 0)

@@ -18,6 +18,7 @@
 #include "p_tick.h"
 #include "typedef.h"
 #include "r_fps.h"
+#include "k_items.h"
 
 #ifdef ROTSPRITE
 fixed_t rollcosang[ROTANGLES];
@@ -84,7 +85,7 @@ static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer)
 // Hacky boolean to check if we're the rainbow Invincibility overlay
 boolean R_IsOverlayingInvinciblePlayer(mobj_t* mobj)
 {
-	return ((K_GetKartInvinType() == KARTINVIN_ALTERN) && (mobj->type == MT_OVERLAY) &&
+	return ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (mobj->type == MT_OVERLAY) &&
 			(mobj->target) && (mobj->extravalue2) && (mobj->target->player) &&
 			(mobj->target->player->invincibilitytimer));
 }

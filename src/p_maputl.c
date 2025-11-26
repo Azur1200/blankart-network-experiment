@@ -588,7 +588,7 @@ P_GetTripwireTopBottom
 	return true;
 }
 
-static boolean P_MidtextureIsSolid(line_t *linedef, mobj_t *mobj)
+boolean P_MidtextureIsSolid(line_t *linedef, mobj_t *mobj)
 {
 	if (linedef->polyobj)
 	{

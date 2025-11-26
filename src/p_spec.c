@@ -45,6 +45,7 @@
 
 // SRB2kart
 #include "k_kart.h"
+#include "k_items.h"
 #include "console.h" // CON_LogMessage
 #include "k_terrain.h"
 #include "acs/interface.h"
@@ -5170,7 +5171,7 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 	player->dashpadcooldown = TICRATE/3;
 	// player->drift = 0;
 	// player->driftcharge = 0;
-	player->pogospring = 0;
+	K_ResetPogoSpring(player);
 
 	sfxnum = lines[lineindex].stringargs[0] ? get_number(lines[lineindex].stringargs[0]) : sfx_spdpad;
 
@@ -6992,7 +6993,8 @@ void P_SpawnSpecials(boolean fromnetsave)
 			case 15: // Bouncy FOF
 				if (udmf)
 					break;
-				CONS_Alert(CONS_WARNING, M_GetText("Deprecated bouncy FOF sector type detected. Please use linedef type 76 instead.\n"));
+				if (mapnamespace != MNS_SRB2KART)
+					CONS_Alert(CONS_WARNING, M_GetText("Deprecated bouncy FOF sector type detected. Please use linedef type 76 instead.\n"));
 				CheckForBouncySector = true;
 				break;
 		}
@@ -7003,7 +7005,8 @@ void P_SpawnSpecials(boolean fromnetsave)
 			case 11: // Custom global gravity!
 				if (udmf)
 					break;
-				CONS_Alert(CONS_WARNING, M_GetText("Deprecated sector type for global gravity detected. Please use the Gravity level header option instead.\n"));
+				if (mapnamespace != MNS_SRB2KART)
+					CONS_Alert(CONS_WARNING, M_GetText("Deprecated sector type for global gravity detected. Please use the Gravity level header option instead.\n"));
 				gravity = sector->floorheight/1000;
 				break;
 		}
@@ -7996,9 +7999,6 @@ void P_SpawnSpecialsThatRequireObjects(boolean fromnetsave)
 
 	for (i = 0; i < numlines; i++)
 	{
-		if (mapnamespace == MNS_SRB2KART && lines[i].special == 720)
-			P_CopySectorSlope(&lines[i]);
-
 		if (P_IsLineDisabled(&lines[i]))
 		{
 			/* remove the special so it can't even be found during the level */
@@ -9222,7 +9222,8 @@ boolean P_AllowFriction(mobj_t *mobj)
 	if (mobj->player->invincibilitytimer
 		|| mobj->player->hyudorotimer
 		|| mobj->player->sneakertimer
-		|| mobj->player->growshrinktimer > 0)
+		|| mobj->player->growshrinktimer > 0
+		|| K_IsAltShrunk(mobj->player))
 		return false;
 
 	return true;

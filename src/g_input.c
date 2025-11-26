@@ -21,11 +21,16 @@
 #include "console.h"
 #include "i_joy.h" // JOYAXISRANGE
 #include "m_menu.h" // menustack
+#include "i_system.h"
+#include "g_game.h"
+#include "v_video.h"
+#include "p_local.h"
 
 #define MAXMOUSESENSITIVITY 100 // sensitivity steps
 
 static CV_PossibleValue_t mousesens_cons_t[] = {{1, "MIN"}, {MAXMOUSESENSITIVITY, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t onecontrolperkey_cons_t[] = {{1, "One"}, {2, "Several"}, {0, NULL}};
+static CV_PossibleValue_t turnsmooth_cons_t[] = {{2, "Slow"}, {1, "Fast"}, {0, "Off"}, {0, NULL}};
 
 // mouse values are used once
 consvar_t cv_mousesens = CVAR_INIT ("mousesens", "20", CV_SAVE, mousesens_cons_t, NULL);
@@ -33,6 +38,101 @@ consvar_t cv_mousesens2 = CVAR_INIT ("mousesens2", "20", CV_SAVE, mousesens_cons
 consvar_t cv_mouseysens = CVAR_INIT ("mouseysens", "20", CV_SAVE, mousesens_cons_t, NULL);
 consvar_t cv_mouseysens2 = CVAR_INIT ("mouseysens2", "20", CV_SAVE, mousesens_cons_t, NULL);
 consvar_t cv_controlperkey = CVAR_INIT ("controlperkey", "One", CV_SAVE, onecontrolperkey_cons_t, NULL);
+
+consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("litesteer",  "Off", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("litesteer2", "Off", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("litesteer3", "Off", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("litesteer4", "Off", CV_SAVE, CV_OnOff, NULL)
+};
+
+consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("turnsmoothing",  "Off", CV_SAVE, turnsmooth_cons_t, NULL),
+	CVAR_INIT ("turnsmoothing2", "Off", CV_SAVE, turnsmooth_cons_t, NULL),
+	CVAR_INIT ("turnsmoothing3", "Off", CV_SAVE, turnsmooth_cons_t, NULL),
+	CVAR_INIT ("turnsmoothing4", "Off", CV_SAVE, turnsmooth_cons_t, NULL)
+};
+
+static void G_ResetPlayerDeviceRumble(INT32 player);
+static void rumble_off_handle(void);
+static void rumble_off_handle2(void);
+static void rumble_off_handle3(void);
+static void rumble_off_handle4(void);
+
+static void G_ResetPlayerGamepadIndicatorColor(INT32 player);
+static void led_off_handle(void);
+static void led_off_handle2(void);
+static void led_off_handle3(void);
+static void led_off_handle4(void);
+
+consvar_t cv_rumble[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("rumble", "On", CV_SAVE, CV_OnOff, rumble_off_handle),
+	CVAR_INIT ("rumble2", "On", CV_SAVE, CV_OnOff, rumble_off_handle2),
+	CVAR_INIT ("rumble3", "On", CV_SAVE, CV_OnOff, rumble_off_handle3),
+	CVAR_INIT ("rumble4", "On", CV_SAVE, CV_OnOff, rumble_off_handle4)
+};
+
+static CV_PossibleValue_t rumblestrength_cons_t[] = {{FRACUNIT/4, "MIN"}, {FRACUNIT*4, "MAX"}, {0, NULL}};
+
+consvar_t cv_rumblestrength[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("rumblestrength",  "1.0", CV_SAVE|CV_FLOAT, rumblestrength_cons_t, NULL),
+	CVAR_INIT ("rumblestrength2", "1.0", CV_SAVE|CV_FLOAT, rumblestrength_cons_t, NULL),
+	CVAR_INIT ("rumblestrength3", "1.0", CV_SAVE|CV_FLOAT, rumblestrength_cons_t, NULL),
+	CVAR_INIT ("rumblestrength4", "1.0", CV_SAVE|CV_FLOAT, rumblestrength_cons_t, NULL)
+};
+
+static CV_PossibleValue_t gamepadled_cons_t[] = {{0, "Off"}, {1, "Skincolor"}, {2, "Mobjcolor"}, {0, NULL}};
+consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("gamepadled",  "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle),
+	CVAR_INIT ("gamepadled2", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle2),
+	CVAR_INIT ("gamepadled3", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle3),
+	CVAR_INIT ("gamepadled4", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle4)
+};
+
+static void rumble_off_handle(void)
+{
+	if (cv_rumble[0].value == 0)
+		G_ResetPlayerDeviceRumble(0);
+}
+
+static void rumble_off_handle2(void)
+{
+	if (cv_rumble[1].value == 0)
+		G_ResetPlayerDeviceRumble(1);
+}
+
+static void rumble_off_handle3(void)
+{
+	if (cv_rumble[2].value == 0)
+		G_ResetPlayerDeviceRumble(2);
+}
+
+static void rumble_off_handle4(void)
+{
+	if (cv_rumble[3].value == 0)
+		G_ResetPlayerDeviceRumble(3);
+}
+
+static void led_off_handle(void)
+{
+	G_ResetPlayerGamepadIndicatorColor(0);
+}
+
+static void led_off_handle2(void)
+{
+	G_ResetPlayerGamepadIndicatorColor(1);
+}
+
+static void led_off_handle3(void)
+{
+	G_ResetPlayerGamepadIndicatorColor(2);
+}
+
+static void led_off_handle4(void)
+{
+	G_ResetPlayerGamepadIndicatorColor(3);
+}
+
 // current state of the keys
 // JOYAXISRANGE for fully pressed, 0 for not pressed
 INT32 gamekeydown[MAXDEVICES][NUMINPUTS];
@@ -409,6 +509,280 @@ static const char *gamecontrolname[num_gamecontrols] =
 };
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))
+
+skincolornum_t G_GetSkinColorForGamepad(INT32 playernum)
+{
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
+
+	if (gamestate == GS_LEVEL)
+	{
+		const player_t *player = &players[displayplayers[playernum]];
+
+		if (player)
+		{
+			// make rgb rainbow vomit when invul or flash blue when grow
+			if ((cv_gamepadled[playernum].value == 2) && player->mo && player->mo->color)
+				return (skincolornum_t)player->mo->color;
+
+			// take actual player skincolour when ingame
+			if (player->skincolor)
+				return (skincolornum_t)player->skincolor;
+		}
+	}
+
+	// otherwise just fallback to whatever the cvar is
+	return (skincolornum_t)cv_playercolor[playernum].value;
+}
+
+// Sets the Indicator LED on supported gamepads to a desired skincolor
+// pass SKINCOLOR_NONE/0 to set the players skin color
+void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color)
+{
+	skincolornum_t skincolor;
+	byteColor_t byte_color;
+
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
+
+	if (cv_gamepadled[playernum].value == 0)
+	{
+		return;
+	}
+
+	// so we can override this
+	skincolor = color ? color : G_GetSkinColorForGamepad(playernum);
+	byte_color = V_GetColor(skincolors[skincolor].ramp[8]).s;
+
+	I_SetGamepadIndicatorColor(playernum, byte_color.red, byte_color.green, byte_color.blue);
+}
+
+static void G_ResetPlayerGamepadIndicatorColor(INT32 playernum)
+{
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
+
+	if (cv_gamepadled[playernum].value == 0)
+	{
+		I_SetGamepadIndicatorColor(playernum, 0, 0, 255);
+	}
+	else
+	{
+		G_SetPlayerGamepadIndicatorColor(playernum, 0);
+	}
+}
+
+static skincolornum_t curcolor[MAXSPLITSCREENPLAYERS] = {};
+
+void G_DeviceLEDTick(void)
+{
+	UINT8 i;
+	static skincolornum_t newcolor = SKINCOLOR_NONE;
+
+	if (numcontrollers == 0)
+	{
+		return;
+	}
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		if (!cv_usejoystick[i].value || !cv_gamepadled[i].value)
+			continue;
+
+		newcolor = G_GetSkinColorForGamepad(i);
+
+		if (curcolor[i] == newcolor) // dont update if same colour
+			continue;
+
+		G_SetPlayerGamepadIndicatorColor(i, newcolor);
+		curcolor[i] = newcolor;
+	}
+}
+
+void G_ResetDeviceLED(void)
+{
+	memset(curcolor, 0, sizeof(curcolor));
+}
+
+static void G_ResetPlayerDeviceRumble(INT32 playernum)
+{
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
+
+	I_GamepadRumble(playernum, 0, 0, 0);
+}
+
+void G_ResetAllDeviceRumbles(void)
+{
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		I_GamepadRumble(i, 0, 0, 0);
+	}
+}
+
+void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
+{
+	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
+
+	if (cv_rumble[playernum].value == 0)
+	{
+		return;
+	}
+
+	// doesent need to be super precise
+	// but ensure this is within range (0-65535)
+	// placed here so it applies to lua aswell
+	low_strength = (UINT16)min(FixedMul(low_strength, cv_rumblestrength[playernum].value), UINT16_MAX);
+	high_strength = (UINT16)min(FixedMul(high_strength, cv_rumblestrength[playernum].value), UINT16_MAX);
+
+	I_GamepadRumble(playernum, low_strength, high_strength, duration);
+}
+
+// rumble strengths
+enum
+{
+	RUMBLE_VERYSTRONG = FRACUNIT / 4,   // 16384
+	RUMBLE_STRONG     = FRACUNIT / 8,   // 8192
+	RUMBLE_MODERATE   = FRACUNIT / 64,  // 1024
+	RUMBLE_WEAK       = FRACUNIT / 128, // 512
+	RUMBLE_VERYWEAK   = FRACUNIT / 256, // 256
+};
+
+// Controller rumble!
+// this keeps track of a bunch of things
+// and makes your controller rumble accordingly
+void G_DeviceRumbleTick(void)
+{
+	UINT8 i;
+
+	if (dedicated || numcontrollers == 0 || gamestate != GS_LEVEL)
+	{
+		return;
+	}
+
+	for (i = 0; i <= splitscreen; i++)
+	{
+		if (!cv_usejoystick[i].value || !cv_rumble[i].value)
+		{
+			continue;
+		}
+
+		if (camera[i].freecam)
+		{
+			continue;
+		}
+
+		UINT16 low = 0, high = 0;
+		// for how long the action should rumble, in ms
+		UINT16 lenght = 57; // 57ms is a short pulse, matches super well with this updating once per tic
+		const player_t *player = &players[g_localplayers[i]];
+
+		// allow lua to do some crap for spectators
+		if (player->spectator || !player->mo)
+		{
+			continue;
+		}
+
+		// reset the rumble if you exit or are ded lel
+		if (player->exiting ||
+			player->playerstate == PST_DEAD ||
+			player->respawn > 1)
+		{
+			G_PlayerDeviceRumble(i, low, high, 0);
+			continue;
+		}
+
+		if (player->spinouttimer)
+		{
+			//low = high = FRACUNIT / 6;
+			low = high = FixedMul((RUMBLE_VERYSTRONG), (FixedDiv(player->spinouttimer, (3*TICRATE / 2)))); // try do some some kinda fadeout, 3*TICRATE / 2 is the "default" spinout time
+		}
+		else if (player->sneakertimer > (sneakertime-(TICRATE/2)))
+		{
+			low = high = RUMBLE_STRONG;
+		}
+		else if ((player->offroad)
+			&& player->speed != 0
+			&& P_IsObjectOnGround(player->mo))
+		{
+			// weaken this depending on if you got hyu or invinc
+			if (player->hyudorotimer)
+			{
+				high = RUMBLE_WEAK;
+			}
+			else if (player->invincibilitytimer)
+			{
+				high = RUMBLE_MODERATE;
+			}
+			else
+			{
+				low = high = RUMBLE_MODERATE;
+			}
+		}
+		else if ((player->bananadrag > TICRATE)
+			&& player->speed != 0
+			&& P_IsObjectOnGround(player->mo))
+		{
+			if (leveltime & 1) // this is actually funny lel
+				high = RUMBLE_MODERATE;
+		}
+
+		if (player->pflags & PF_BRAKEDRIFT)
+		{
+			high = CLAMP((high + RUMBLE_VERYWEAK), 0, UINT16_MAX);
+		}
+
+		// pulse when gettin new driftlevel
+		if (/*player->driftcharge // gets reset within K_KartDrift
+			&& */player->driftlevel)
+		{
+			high = CLAMP((high + RUMBLE_VERYWEAK), 0, UINT16_MAX);
+
+			// rumble during charging drifts
+			// when you reach new driftlevel
+			if (player->driftlevel < 20)
+			{
+				if (player->driftlevel == 2)
+					lenght = 114;
+				else if (player->driftlevel == 3)
+					lenght = 144;
+				else if (player->driftlevel == 4)
+					lenght = 174;
+			}
+
+			// drift release
+			// adjust those if you want
+			if (player->driftlevel >= 20)
+			{
+				// give some oompfh on release
+				low = CLAMP((low + RUMBLE_VERYWEAK), 0, UINT16_MAX);
+
+				if (player->driftlevel == 20)
+					lenght = 114;
+				else if (player->driftlevel == 30)
+					lenght = 144;
+				else if (player->driftlevel == 40)
+					lenght = 174;
+			}
+		}
+
+		// pulse when using rings
+		// let this come last
+		if ((player->cmd.buttons & BT_ATTACK)
+			&& (player->itemflags & IF_USERINGS)
+			&& (player->rings > 0
+			&& player->rings > player->rings-1
+			&& player->rings < player->rings+1)
+		)
+		{
+			low = CLAMP((low + RUMBLE_VERYWEAK), 0, UINT16_MAX);
+		}
+
+		// hack alert! i just dont want this thing constantly resetting the rumble lol
+		if (low == 0 && high == 0)
+		{
+			continue;
+		}
+
+		G_PlayerDeviceRumble(i, low, high, lenght);
+	}
+}
 
 // If keybind is necessary to navigate menus, it's on this list.
 boolean G_KeyBindIsNecessary(INT32 gc)

@@ -425,7 +425,7 @@ static void ST_pushDebugString(INT32 *height, const char *string)
 	*height -= 8;
 }
 
-/*static void ST_pushDebugTimeMS(INT32 *height, const char *label, UINT32 ms)
+static void ST_pushDebugTimeMS(INT32 *height, const char *label, UINT32 ms)
 {
 	ST_pushDebugString(height, va("%s%02d:%05.2f", label,
 				ms / 60000, ms % 60000 / 1000.f));
@@ -467,11 +467,12 @@ static void ST_drawMusicDebug(INT32 *height)
 
 	if (format)
 	{
-		ST_pushDebugString(height, va("  Format: %d", S_MusicType()));
+		musictype_t mustype = S_MusicType();
+		ST_pushDebugString(height, va("  Format: %s", S_MusicTypeName(mustype)));
 	}
 
 	ST_pushDebugString(height, va("    Song: %8s", mname));
-}*/
+}
 
 static void ST_drawRenderDebug(INT32 *height)
 {
@@ -568,10 +569,10 @@ static void ST_drawDebugInfo(void)
 		height -= 32;
 	}
 
-	/*if (cht_debug & DBG_MUSIC)
+	if (cht_debug & DBG_MUSIC)
 	{
 		ST_drawMusicDebug(&height);
-	}*/
+	}
 
 	if (cht_debug & DBG_RENDER)
 	{
@@ -676,10 +677,10 @@ void ST_drawTitleCard(void)
 		? BASEVIDHEIGHT/2
 		: 163;
 	INT32 lvlw;
-	
+
 	if (!cv_stagetitle.value)
 		return;
-	
+
 	if (!LUA_HudEnabled(hud_stagetitle))
 		goto luahook;
 
@@ -743,6 +744,10 @@ void ST_drawTitleCard(void)
 
 	if (actnum[0])
 		V_DrawLevelTitle(ttlnumxpos+12, bary+6, V_SNAPTOBOTTOM, actnum);
+
+	// TODO: a bit more elaborate?
+	if (grandprixinfo.gp)
+		V_DrawCenteredString(BASEVIDWIDTH/2 + sub, bary+24, V_SNAPTOBOTTOM|V_YELLOWMAP, va("ROUND %d", grandprixinfo.roundnum));
 
 luahook:
 	if (renderisnewtic)

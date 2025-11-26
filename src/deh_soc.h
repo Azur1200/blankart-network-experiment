@@ -36,6 +36,7 @@
 #include "fastcmp.h"
 #include "lua_script.h" // Reluctantly included for LUA_EvalMath
 #include "d_clisrv.h"
+#include "k_items.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_light.h"
@@ -62,6 +63,8 @@ menudrawer_f *get_menudrawer(const char *word);
 //INT16 get_gametype(const char *word);
 //powertype_t get_power(const char *word);
 skincolornum_t get_skincolor(const char *word);
+kartitemtype_e get_kartitem(const char *word);
+useoddsfunc_f *get_useoddsfunc(const char *word);
 
 void readwipes(MYFILE *f);
 void readmaincfg(MYFILE *f);
@@ -91,6 +94,8 @@ void readcupheader(MYFILE *f, cupheader_t *cup);
 void readfollower(MYFILE *f);
 preciptype_t get_precip(const char *word);
 void readweather(MYFILE *f, INT32 num);
+void readkartitem(MYFILE *f, kartitem_t *item);
+void readkartresult(MYFILE *f, kartresult_t *result);
 
 #ifdef __cplusplus
 } // extern "C"

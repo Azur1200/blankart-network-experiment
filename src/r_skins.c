@@ -238,10 +238,10 @@ void R_InitSkins(void)
 			R_PatchSkins((UINT16)i);
 		R_LoadSpriteInfoLumps(i, wadfiles[i]->numlumps);
 
+#ifdef HAVE_DISCORDRPC
 		if (i < NUMMAINWADS)
-		{
 			g_discord_skins = numskins;
-		}
+#endif
 	}
 	ST_ReloadSkinFaceGraphics();
 }

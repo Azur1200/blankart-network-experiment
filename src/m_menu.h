@@ -326,6 +326,7 @@ INT32 MR_HandleMusicTest(INT32 choice);
 INT32 MR_ResetControls(INT32 choice);
 INT32 MR_ChangeControl(INT32 arg);
 INT32 MR_AssignJoystick(INT32 arg);
+INT32 MR_SetupMonitorToggles(INT32 choice);
 INT32 MR_HandleMonitorToggles(INT32 choice);
 INT32 MR_RestartAudio(INT32 choice);
 INT32 MR_EnterViewServer(INT32 choice);

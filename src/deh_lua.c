@@ -357,7 +357,7 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 		if (mathlib) return luaL_error(L, "player sprite '%s' could not be found.\n", word);
 		return 0;
 	}
-	else if (!mathlib && fastncmp("sfx_",word,4)) {
+	else if (fastncmp("sfx_",word,4)) {
 		p = word+4;
 		for (i = 0; i < NUMSFX; i++)
 			if (S_sfx[i].name && fastcmp(p, S_sfx[i].name)) {
@@ -438,6 +438,26 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 				return 1;
 			}
 		return luaL_error(L, "karthud '%s' could not be found.\n", word);
+	}
+	else if (fastncmp("KITEM_",word,6)) {
+		p = word+6;
+		if (fastcmp(p, "LIGHTNINGSHIELD"))
+		{
+			lua_pushinteger(L, KITEM_THUNDERSHIELD);
+			return 1;
+		}
+		if (fastcmp(p, "SAD"))
+		{
+			lua_pushinteger(L, MAXKARTITEMS);
+			return 1;
+		}
+		i = DEH_FindKartItem(p);
+		if (i != MAXKARTITEMS)
+		{
+			CacheAndPushConstant(L, word, i);
+			return 1;
+		}
+		return luaL_error(L, "kartitem '%s' could not be found.\n", word);
 	}
 	else if (fastncmp("SKINCOLOR_",word,10)) {
 		p = word+10;
