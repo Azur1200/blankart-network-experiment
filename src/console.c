@@ -33,6 +33,8 @@
 #include "d_main.h"
 #include "m_menu.h"
 #include "m_textinput.h"
+#include "m_emotes.h"
+#include "i_time.h"
 #include "filesrch.h"
 #include "m_misc.h"
 
@@ -1450,7 +1452,18 @@ static void CON_DrawHudlines(void)
 			}
 			if (c >= con_width)
 				break;
-			if (*p < HU_FONTSTART)
+
+			int emotelen;
+			emote_t *emote;
+
+			if ((emote = M_VerifyEmote((const char *)p, &emotelen)))
+			{
+				M_DrawScaledEmote(x<<FRACBITS, (y+2*con_scalefactor)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, I_GetTime(), V_NOSCALESTART|V_NOSCALEPATCH);
+				p += emotelen-1;
+				c += emotelen-1;
+				continue;
+			}
+			else if (*p < HU_FONTSTART)
 				;//charwidth = 4 * con_scalefactor;
 			else
 			{
