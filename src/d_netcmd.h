@@ -194,6 +194,9 @@ extern consvar_t cv_kartairsquish;
 
 extern consvar_t cv_kartairdrop;
 
+extern consvar_t cv_kartairthrust;
+extern consvar_t cv_kartairthrust_reductionrate;
+
 extern consvar_t cv_kartitemlitter, cv_kartitempush;
 
 extern consvar_t cv_kartantibump;

@@ -383,6 +383,9 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartslipdash);
 
+	CV_RegisterVar(&cv_kartairthrust);
+	CV_RegisterVar(&cv_kartairthrust_reductionrate);
+
 	CV_RegisterVar(&cv_kartslopeboost);
 
 	CV_RegisterVar(&cv_kartaltshrinktime);
@@ -8888,13 +8891,12 @@ static void K_KartDrift(player_t *player, boolean onground)
 	// Drift Release (Moved here so you can't "chain" drifts)
 	if (player->drift != -5 && player->drift != 5)
 	{
-		if (driftstage && onground)
+		if (driftstage && (onground || K_IsAirThrustActive()))
 		{
 			UINT8 boost = 0;
-
 			if (!cv_kartdriftsounds.value || driftstage < 3)
 				S_StartSound(player->mo, sfx_s23c);
-
+			
 			switch (driftstage)
 			{
 				case 1:
@@ -8903,7 +8905,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 				case 2:
 					boost = 50;
 					if (cv_kartdriftsounds.value)
-						S_StartSound(player->mo, sfx_kc5b);
+					S_StartSound(player->mo, sfx_kc5b);
 					break;
 				case 3:
 					boost = 80;
@@ -8923,6 +8925,29 @@ static void K_KartDrift(player_t *player, boolean onground)
 					}
 					break;
 			}
+			if (K_IsAirThrustActive() && !onground) // Air Thrust is enabled
+			{
+				// before thrust, set player's target speed to their speed before the air thrust
+				// after the air thrust player's momentum will be reduced back to this value
+				fixed_t airthrust = 0;
+				
+				player->airdriftspeed = max(K_GetKartSpeed(player), player->speed);
+
+				if (driftstage == 1)
+					airthrust = FRACUNIT / 6;		// ~15% boost
+				else if (driftstage == 2)
+					airthrust = FRACUNIT / 3;		// ~33% boost
+				else if (driftstage == 3)
+					airthrust = FRACUNIT / 2; 		// 50% boost
+				else if (driftstage == 4)
+					airthrust = 3 * FRACUNIT / 4;	// 75% boost
+
+				// Give the player a forward boost
+				P_Thrust(player->mo, K_MomentumAngle(player->mo), FixedMul(player->speed, airthrust));
+
+				// Slash the player's vertical momentum. Gets stronger with higher drift charge, but is significantly weaker in water
+				player->mo->momz = FixedMul(player->mo->momz, FRACUNIT - FixedMul(airthrust, abs(P_GetMobjGravity(player->mo))));
+			}
 
 			if (player->driftboost < boost)
 				player->driftboost = boost;
@@ -8940,7 +8965,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 			player->karthud[khud_afterimagetime] = 10;
 		}
 
-		if (onground)
+		if (onground || K_IsAirThrustActive())
 			player->driftcharge = 0;
 	}
 
@@ -9097,6 +9122,23 @@ static void K_KartDrift(player_t *player, boolean onground)
 	}
 	else
 		player->pflags &= ~PF_BRAKEDRIFT;
+}
+
+static void K_HandleAirDriftDrag(player_t *player)
+{
+	fixed_t difference;
+	if (player->mo && player->airdriftspeed > 0)
+	{
+		if (player->speed > player->airdriftspeed)
+		{
+			difference = player->speed - player->airdriftspeed;
+			P_Thrust(player->mo, K_MomentumAngle(player->mo), -min(difference, cv_kartairthrust_reductionrate.value));
+		}
+		else	// we're done doing drag (TODO: also stop applying drag after being bumped or hit or sprung etc.)
+		{
+			player->airdriftspeed = 0;
+		}
+	}
 }
 
 static void K_KartSlipdash(player_t *player, boolean onground)
@@ -10716,6 +10758,17 @@ boolean K_AirDropActive(void)
 	if (airdropactive)
 	{
 		// Air Drop is enabled!
+		return true;
+	}
+
+	return false;
+}
+
+boolean K_AirThrustActive(void)
+{
+	if (airthrustactive)
+	{
+		// Air Thrust is enabled!
 		return true;
 	}
 

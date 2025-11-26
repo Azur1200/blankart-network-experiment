@@ -281,6 +281,7 @@ enum player_e
 	player_drift,
 	player_driftcharge,
 	player_driftboost,
+	player_airdriftspeed,
 	player_boostcharge,
 	player_slopeboost,
 	player_prevslopeboost,
@@ -497,6 +498,7 @@ static const char *const player_opt[] = {
 	"drift",
 	"driftcharge",
 	"driftboost",
+	"airdriftspeed",
 	"boostcharge",
 	"slopeboost",
 	"prevslopeboost",
@@ -838,6 +840,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_driftboost:
 		lua_pushinteger(L, plr->driftboost);
+		break;
+	case player_airdriftspeed:
+		lua_pushinteger(L, plr->airdriftspeed);
 		break;
 	case player_boostcharge:
 		lua_pushinteger(L, plr->boostcharge);
@@ -1588,6 +1593,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_driftboost:
 		plr->driftboost = luaL_checkinteger(L, 3);
+		break;
+	case player_airdriftspeed:
+		plr->airdriftspeed = luaL_checkinteger(L, 3);
 		break;
 	case player_boostcharge:
 		plr->boostcharge = luaL_checkinteger(L, 3);
