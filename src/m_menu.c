@@ -5719,7 +5719,7 @@ INT32 MR_StartGrandPrix(INT32 choice)
 	G_DeferedInitNew(
 		false,
 		levelNum + 1,
-		(UINT8)(cv_chooseskin.value),
+		cv_chooseskin.value,
 		(UINT8)(cv_splitplayers.value - 1),
 		false
 	);
