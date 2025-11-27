@@ -562,9 +562,10 @@ struct player_t
 	SINT8 driftlock;		// Prevents you from using drift angle for x tics. Used for zipper fix.
 	fixed_t driftcharge;	// Charge your drift so you can release a burst of speed
 	UINT8 driftboost;		// (0 to 125) - Boost you get from drifting
-	tic_t driftsparkGrowTimer;
-	tic_t driftelapsed;     // Elapsed time spent during a drift.
-	SINT8 driftlevel; 		// just for controller rumble for now
+	fixed_t airdriftspeed;	// target velocity to reduce player velocity to while air trusting
+	tic_t driftsparkGrowTimer;	// CLIENT ONLY -
+	tic_t driftelapsed;     	// CLIENT ONLY - Elapsed time spent during a drift.
+	SINT8 driftlevel; 			// CLIENT ONLY - handles controller rumble and air thrust power, cleared at the start of every tick.
 
 	fixed_t spinoutrot;     // When a player spins out, this value increments modulus 360.
 

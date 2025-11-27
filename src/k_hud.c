@@ -2346,10 +2346,12 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 		{"Slope Boost", 0, NULL, K_PurpleDriftActive() > 0, true},
 		{"Drafting", 0, NULL, K_DraftingActive() > 0, true},
 		{"Air Drop", 0, NULL, K_AirDropActive() > 0, true},
+		{"Air Thrust", 0, NULL, K_AirThrustActive() > 0, true},
 		{"Bump Spark", 0, &cv_kartbumpspark, -1, true},
 		{"Bump Drift", 0, NULL, K_GetBumpSpark() > 0, true},
 		{"Bump Spark", 0, NULL, K_GetBumpSpark() > BUMPSPARK_NOCHARGE, true},
 		{"Bump Spring", 0, &cv_kartbumpspring, -1, true},
+		//TODO: separate drawer that enumerates item changes?
 		{"Alt. Invin.", 0, NULL, K_IsKartItemAlternate(KITEM_INVINCIBILITY), true}
 	};
 

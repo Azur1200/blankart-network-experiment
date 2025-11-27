@@ -163,6 +163,7 @@ static void KartSlipdash_OnChange(void);
 static void KartSlopeBoost_OnChange(void);
 static void KartDrafting_OnChange(void);
 static void KartAirDrop_OnChange(void);
+static void KartAirThrust_OnChange(void);
 static void KartItemLitter_OnChange(void);
 static void KartItemPush_OnChange(void);
 static void KartAntiBump_OnChange(void);
@@ -552,6 +553,13 @@ consvar_t cv_kartdrafting_closedeadzone = CVAR_INIT ("kartdrafting_closedeadzone
 consvar_t cv_kartdrafting_basedistance = CVAR_INIT ("kartdrafting_basedistance", "2560", CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
 
 consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartAirDrop_OnChange);
+
+consvar_t cv_kartairthrust = CVAR_INIT ("kartairthrust", "Off", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_OnOff, KartAirThrust_OnChange);
+consvar_t cv_kartairthrust_reductionrate = CVAR_INIT ("kartairthrust_reductionrate", "0.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartairthrust_power1 = CVAR_INIT ("kartairthrust_power1", "0.2", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartairthrust_power2 = CVAR_INIT ("kartairthrust_power2", "0.35", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartairthrust_power3 = CVAR_INIT ("kartairthrust_power3", "0.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartairthrust_power4 = CVAR_INIT ("kartairthrust_power4", "0.75", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 
 consvar_t cv_kartitemlitter = CVAR_INIT ("kartitemlitter", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemLitter_OnChange);
 consvar_t cv_kartitempush = CVAR_INIT ("kartitempush", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemPush_OnChange);
@@ -7661,11 +7669,44 @@ static void KartAirDrop_OnChange(void)
 		if (leveltime < starttime)
 		{
 			airdropactive = false;
-			CONS_Printf(M_GetText("Drafting has been turned \"Off\".\n"));
+			CONS_Printf(M_GetText("Air Drop has been turned \"Off\".\n"));
 		}
 		else
 		{
-			CONS_Printf(M_GetText("Drafting will be turned \"Off\" next round.\n"));
+			CONS_Printf(M_GetText("Air Drop will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
+static void KartAirThrust_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_AirThrustActive() && cv_kartairthrust.value)
+	{
+		if (leveltime < starttime)
+		{
+			airthrustactive = true;
+			CONS_Printf(M_GetText("Air Thrust has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Air Thrust will be turned \"On\" Next Round.\n"));
+		}
+	}
+	else if (K_AirThrustActive() && !cv_kartairthrust.value)
+	{
+		if (leveltime < starttime)
+		{
+			airthrustactive = false;
+			CONS_Printf(M_GetText("Air Thrust has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Air Thrust will be turned \"Off\" next round.\n"));
 		}
 	}
 }
