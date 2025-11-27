@@ -2850,7 +2850,7 @@ fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dor
 	boolean karmabomb = ((gametyperules & GTR_BUMPERS) && player->bumper <= 0);
 	fixed_t finalspeed;
 
-	if (doboostpower && !player->pogospring && !P_IsObjectOnGround(player->mo))
+	if (doboostpower && !player->pogospring && !P_IsObjectOnGround(player->mo) && (player->airdriftspeed == 0))
 		return (75*mapobjectscale); // air speed cap
 
 	finalspeed = K_GetKartSpeedFromStat(player->kartspeed, karmabomb);
@@ -8986,7 +8986,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 					P_Thrust(player->mo, K_MomentumAngle(player->mo), FixedMul(player->speed, airthrust));
 					
 					// Slash the player's vertical momentum. Gets stronger with higher drift charge, but is significantly weaker in water
-					player->mo->momz = FixedMul(player->mo->momz, FRACUNIT - FixedMul(airthrust, abs(P_GetMobjGravity(player->mo))));
+					player->mo->momz = FixedMul(player->mo->momz, FRACUNIT - FixedMul(airthrust/2, abs(P_GetMobjGravity(player->mo))));
 				}
 			}
 
