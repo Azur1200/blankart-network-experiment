@@ -1458,7 +1458,7 @@ static void CON_DrawHudlines(void)
 
 			if ((emote = M_VerifyEmote((const char *)p, &emotelen)))
 			{
-				M_DrawScaledEmote(x<<FRACBITS, (y+2*con_scalefactor)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, I_GetTime(), V_NOSCALESTART|V_NOSCALEPATCH);
+				M_DrawScaledEmote(x<<FRACBITS, (y+2*con_scalefactor)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART|V_NOSCALEPATCH);
 				p += emotelen-1;
 				c += emotelen-1;
 				continue;
@@ -1579,6 +1579,17 @@ static void CON_DrawConsole(void)
 				}
 				if (c >= con_width)
 					break;
+
+				int emotelen;
+				emote_t *emote;
+
+				if ((emote = M_VerifyEmote((const char *)p, &emotelen)))
+				{
+					M_DrawScaledEmote(x<<FRACBITS, (y+2*con_scalefactor)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART|V_NOSCALEPATCH);
+					p += emotelen-1;
+					c += emotelen-1;
+					continue;
+				}
 				V_DrawCharacter(x, y, (INT32)(*p) | charflags | cv_constextsize.value | V_NOSCALESTART, true);
 			}
 		}
