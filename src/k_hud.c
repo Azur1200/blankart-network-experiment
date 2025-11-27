@@ -1402,7 +1402,7 @@ static void K_drawKartItem(void)
 				V_DrawString(fx+24, fy+31, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, va("x%d", stplyr->itemamount));
 		else
 		{
-			V_DrawScaledPatch(fy+28, fy+41, V_HUDTRANS|fflags, kp_itemx);
+			V_DrawScaledPatch(fx+28, fy+41, V_HUDTRANS|fflags, kp_itemx);
 			V_DrawKartString(fx+38, fy+36, V_HUDTRANS|fflags, va("%d", stplyr->itemamount));
 		}
 	}
@@ -2346,10 +2346,12 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 		{"Slope Boost", 0, NULL, K_PurpleDriftActive() > 0, true},
 		{"Drafting", 0, NULL, K_DraftingActive() > 0, true},
 		{"Air Drop", 0, NULL, K_AirDropActive() > 0, true},
+		{"Air Thrust", 0, NULL, K_AirThrustActive() > 0, true},
 		{"Bump Spark", 0, &cv_kartbumpspark, -1, true},
 		{"Bump Drift", 0, NULL, K_GetBumpSpark() > 0, true},
 		{"Bump Spark", 0, NULL, K_GetBumpSpark() > BUMPSPARK_NOCHARGE, true},
 		{"Bump Spring", 0, &cv_kartbumpspring, -1, true},
+		//TODO: separate drawer that enumerates item changes?
 		{"Alt. Invin.", 0, NULL, K_IsKartItemAlternate(KITEM_INVINCIBILITY), true}
 	};
 
@@ -2643,7 +2645,8 @@ static void K_drawKartStatsnLives(void)
 		// Lives
 		if (LUA_HudEnabled(hud_lives) && uselives)
 		{
-			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, K_GetHudColor(), GTC_CACHE);
+			// We specify stplyr->skincolor since we want it to match the player and not the hud color.
+			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, stplyr->skincolor, GTC_CACHE);
 			patch_t *mmappatch = faceprefix[stplyr->skin][FACE_MINIMAP];
 
 			V_DrawMappedPatch(fx+21+mmappatch->leftoffset, fy-13+mmappatch->topoffset, V_HUDTRANS|splitflags, mmappatch, colormap);
@@ -2672,7 +2675,8 @@ static void K_drawKartStatsnLives(void)
 				}
 			}
 
-			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, K_GetHudColor(), GTC_CACHE);
+			// We specify stplyr->skincolor since we want it to match the player and not the hud color.
+			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, stplyr->skincolor, GTC_CACHE);
 			patch_t *facerank = faceprefix[stplyr->skin][FACE_RANK];
 			V_DrawMappedPatch(fx+59+offsetx+facerank->leftoffset, fy-16+offsety+facerank->topoffset, V_HUDTRANS|splitflags, facerank, colormap);
 			if (stplyr->lives >= 0 && uselives)

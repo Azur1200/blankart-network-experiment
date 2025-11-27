@@ -611,6 +611,7 @@ extern boolean purpledriftactive;
 extern boolean slopeboostactive;
 extern boolean draftingactive;
 extern boolean airdropactive;
+extern boolean airthrustactive;
 extern boolean itemlittering;
 extern boolean itempushing;
 extern UINT8   bumpsparkactive;
