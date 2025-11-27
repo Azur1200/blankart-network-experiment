@@ -2645,7 +2645,8 @@ static void K_drawKartStatsnLives(void)
 		// Lives
 		if (LUA_HudEnabled(hud_lives) && uselives)
 		{
-			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, K_GetHudColor(), GTC_CACHE);
+			// We specify stplyr->skincolor since we want it to match the player and not the hud color.
+			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, stplyr->skincolor, GTC_CACHE);
 			patch_t *mmappatch = faceprefix[stplyr->skin][FACE_MINIMAP];
 
 			V_DrawMappedPatch(fx+21+mmappatch->leftoffset, fy-13+mmappatch->topoffset, V_HUDTRANS|splitflags, mmappatch, colormap);
@@ -2674,7 +2675,8 @@ static void K_drawKartStatsnLives(void)
 				}
 			}
 
-			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, K_GetHudColor(), GTC_CACHE);
+			// We specify stplyr->skincolor since we want it to match the player and not the hud color.
+			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, stplyr->skincolor, GTC_CACHE);
 			patch_t *facerank = faceprefix[stplyr->skin][FACE_RANK];
 			V_DrawMappedPatch(fx+59+offsetx+facerank->leftoffset, fy-16+offsety+facerank->topoffset, V_HUDTRANS|splitflags, facerank, colormap);
 			if (stplyr->lives >= 0 && uselives)

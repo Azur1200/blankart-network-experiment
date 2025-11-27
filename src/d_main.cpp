@@ -1661,6 +1661,8 @@ void D_SRB2Main(void)
 
 	M_InitPlayerSetupColors();
 
+	K_ReloadHUDColorCvar();
+
 	// Do it before P_InitMapData because PNG patch
 	// conversion sometimes needs the palette
 	V_ReloadPalette();
