@@ -196,6 +196,10 @@ extern consvar_t cv_kartairdrop;
 
 extern consvar_t cv_kartairthrust;
 extern consvar_t cv_kartairthrust_reductionrate;
+extern consvar_t cv_kartairthrust_power1;
+extern consvar_t cv_kartairthrust_power2;
+extern consvar_t cv_kartairthrust_power3;
+extern consvar_t cv_kartairthrust_power4;
 
 extern consvar_t cv_kartitemlitter, cv_kartitempush;
 

@@ -385,6 +385,10 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartairthrust);
 	CV_RegisterVar(&cv_kartairthrust_reductionrate);
+	CV_RegisterVar(&cv_kartairthrust_power1);
+	CV_RegisterVar(&cv_kartairthrust_power2);
+	CV_RegisterVar(&cv_kartairthrust_power3);
+	CV_RegisterVar(&cv_kartairthrust_power4);
 
 	CV_RegisterVar(&cv_kartslopeboost);
 
@@ -8954,29 +8958,30 @@ static void K_KartDrift(player_t *player, boolean onground)
 			}
 			if (K_AirThrustActive() && !onground) // Air Thrust is enabled
 			{
-				// before thrust, set player's target speed to their speed before the air thrust
-				// after the air thrust player's momentum will be reduced back to this value
 				fixed_t airthrust = 0;
 				
 				switch (driftstage)
 				{
 					case 1:
-						airthrust = FRACUNIT / 6;		// ~15% boost
+						airthrust = cv_kartairthrust_power1.value;
 						break;
 					case 2:
-						airthrust = FRACUNIT / 3;		// ~33% boost
+						airthrust = cv_kartairthrust_power2.value;
 						break;
 					case 3:
-						airthrust = FRACUNIT / 2; 		// 50% boost
+						airthrust = cv_kartairthrust_power3.value;
 						break;
 					case 4:
-						airthrust = 3 * FRACUNIT / 4;	// 75% boost
+						airthrust = cv_kartairthrust_power4.value;
 						break;
 				}
 				
 				if (driftstage > 0)
 				{
+					// before thrust, set player's target speed to their speed before the air thrust
+					// after the air thrust player's momentum will be reduced back to this value
 					player->airdriftspeed = max(K_GetKartSpeed(player, false, false), player->speed);
+
 					// Give the player a forward boost
 					P_Thrust(player->mo, K_MomentumAngle(player->mo), FixedMul(player->speed, airthrust));
 					
