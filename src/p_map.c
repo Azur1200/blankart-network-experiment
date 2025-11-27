@@ -287,8 +287,11 @@ P_DoSpringEx
 
 			P_InstaThrust(object, finalAngle, FixedMul(finalSpeed,FixedSqrt(FixedMul(hscale, scaleVal))));
 
-			// clear air thrust target speed too
-			object->player->airdriftspeed = 0;
+			if (object->player->airdriftspeed > 0)
+			{
+				// clear air thrust target speed too
+				object->player->airdriftspeed = 0;
+			}
 		}
 	}
 }
@@ -403,8 +406,11 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 			}
 		}
 
-		// clear air thrust target speed too
-		object->player->airdriftspeed = 0;
+		if (object->player->airdriftspeed > 0)
+		{
+			// clear air thrust target speed too
+			object->player->airdriftspeed = 0;
+		}
 	}
 	return true;
 }
@@ -474,7 +480,7 @@ static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 			break;
 	}
 
-	if (object->player)
+	if (object->player && object->player->airdriftspeed > 0)
 	{
 		// clear air thrust target speed too
 		object->player->airdriftspeed = 0;
