@@ -2934,8 +2934,15 @@ boolean P_SceneryTryMove(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *r
 		else
 			tryy = y;
 
+		// yeah yeah, performance, but the result needs a line now!!!
+		if (result != NULL)
+			g_tm.sweep = true;
+
 		if (!P_CheckPosition(thing, tryx, tryy, result))
 			return false; // solid wall or thing
+
+		if (result != NULL)
+			result->line = P_SweepTestLines(thing->x, thing->y, tryx, tryy, thing->radius, &result->normal);
 
 		if (!(thing->flags & MF_NOCLIP))
 		{
