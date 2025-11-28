@@ -3880,6 +3880,25 @@ static int lib_kDriftDustHandling(lua_State *L)
 	return 0;
 }
 
+static int lib_kThrowKartItem(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	boolean missile = luaL_checkboolean(L, 2);
+	mobjtype_t thingtype = luaL_checkinteger(L, 3);
+	INT32 defaultdir = luaL_optinteger(L, 4, 0);
+	INT32 altthrow = luaL_optinteger(L, 5, 0);
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	mobj_t *mo = K_ThrowKartItem(player, missile, thingtype, defaultdir, altthrow);
+	if (mo)
+		LUA_PushUserdata(L, mo, META_MOBJ);
+	else
+		lua_pushnil(L);
+
+	return 1;
+}
+
 static int lib_kDoSneaker(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -3959,6 +3978,17 @@ static int lib_kKartUpdatePosition(lua_State *L)
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
 	K_KartUpdatePosition(player);
+	return 0;
+}
+
+static int lib_kUpdateHnextList(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	boolean clean = lua_optboolean(L, 2);
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_UpdateHnextList(player, clean);
 	return 0;
 }
 
@@ -5433,6 +5463,7 @@ static luaL_Reg lib[] = {
 	{"K_SpawnSparkleTrail",lib_kSpawnSparkleTrail},
 	{"K_SpawnWipeoutTrail",lib_kSpawnWipeoutTrail},
 	{"K_DriftDustHandling",lib_kDriftDustHandling},
+	{"K_ThrowKartItem",lib_kThrowKartItem},
 	{"K_DoSneaker",lib_kDoSneaker},
 	{"K_DoPogoSpring",lib_kDoPogoSpring},
 	{"K_KillBananaChain",lib_kKillBananaChain},
@@ -5440,6 +5471,7 @@ static luaL_Reg lib[] = {
 	{"K_FindJawzTarget",lib_kFindJawzTarget},
 	{"K_GetKartDriftSparkValue",lib_kGetKartDriftSparkValue},
 	{"K_KartUpdatePosition",lib_kKartUpdatePosition},
+	{"K_UpdateHnextList",lib_kUpdateHnextList},
 	{"K_DropItems",lib_kDropItems},
 	{"K_StripItems",lib_kStripItems},
 	{"K_StripOther",lib_kStripOther},
