@@ -7351,10 +7351,14 @@ static void P_ConvertBinaryThingTypes(void)
 		case 556: //Diagonal red spring
 		case 557: //Diagonal blue spring
 		case 558: //Diagonal grey spring
-			if (mapthings[i].options & MTF_OBJECTSPECIAL)
-				mapthings[i].args[0] |= TMSPR_NOGRAVITY;
-			if (mapthings[i].options & MTF_AMBUSH)
-				mapthings[i].args[0] |= TMSPR_ROTATEEXTRA;
+			//if (mapthings[i].options & MTF_OBJECTSPECIAL)
+				//mapthings[i].args[0] |= TMSPR_NOGRAVITY;
+			// Not all springs had rotate extra in v1
+			if (!(mapthings[i].type == 557 || mapthings[i].type == 558))
+			{
+				if (mapthings[i].options & MTF_AMBUSH)
+					mapthings[i].args[0] |= TMSPR_ROTATEEXTRA;
+			}
 			break;
 		case 559: //Horizontal yellow spring
 		case 560: //Horizontal red spring
