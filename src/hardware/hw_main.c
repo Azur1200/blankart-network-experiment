@@ -2855,9 +2855,12 @@ static void HWR_Subsector(size_t num)
 // hurdler: faux: on ajoute seulement les sprites, le murs sont trac� d'abord
 	if (line)
 	{
-		// draw sprites first, coz they are clipped to the solidsegs of
-		// subsectors more 'in front'
-		HWR_AddSprites(gl_frontsector);
+		if (sub->sector->validcount != validcount)
+		{
+			// draw sprites first, coz they are clipped to the solidsegs of
+			// subsectors more 'in front'
+			HWR_AddSprites(gl_frontsector);
+		}
 
 		//Hurdler: at this point validcount must be the same, but is not because
 		//         gl_frontsector doesn't point anymore to sub->sector due to
