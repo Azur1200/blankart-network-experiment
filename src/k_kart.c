@@ -5562,9 +5562,11 @@ void K_CalculateBananaSlope(mobj_t *mobj, fixed_t x, fixed_t y, fixed_t z, fixed
 }
 
 // Move the hnext chain!
+//TODO: generalize further?
 static void K_MoveHeldObjects(player_t *player)
 {
 	TryMoveResult_t result = {0};
+	kartitemequip_e equipstyle = KITEMEQUIP_NONE;
 	if (!player->mo)
 		return;
 
@@ -5598,10 +5600,11 @@ static void K_MoveHeldObjects(player_t *player)
 		return;
 	}
 
-	switch (player->mo->hnext->type)
+	equipstyle = K_GetItemEquipStyle(player->mo->hnext->type);
+
+	switch (equipstyle)
 	{
-		case MT_ORBINAUT_SHIELD: // Kart orbit items
-		case MT_JAWZ_SHIELD:
+		case KITEMEQUIP_ORBIT: // Kart orbit items
 			{
 				mobj_t *cur = player->mo->hnext;
 				fixed_t speed = ((8 - min(4, player->itemamount)) * cur->info->speed) / 7;
@@ -5677,10 +5680,7 @@ static void K_MoveHeldObjects(player_t *player)
 				}
 			}
 			break;
-		case MT_BANANA_SHIELD: // Kart trailing items
-		case MT_SSMINE_SHIELD:
-		case MT_EGGMANITEM_SHIELD:
-		case MT_SINK_SHIELD:
+		case KITEMEQUIP_TRAIL: // Kart trailing items
 			{
 				mobj_t *cur = player->mo->hnext;
 				mobj_t *curnext;
@@ -5789,7 +5789,7 @@ static void K_MoveHeldObjects(player_t *player)
 				}
 			}
 			break;
-		case MT_ROCKETSNEAKER: // Special rocket sneaker stuff
+		case KITEMEQUIP_ROCKETS: //TODO: generalize with customizable offsets (Special rocket sneaker stuff)
 			{
 				mobj_t *cur = player->mo->hnext;
 				INT32 num = 0;

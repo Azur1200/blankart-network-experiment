@@ -1418,3 +1418,31 @@ boolean LUA_HookCanPickupItem(player_t *player, UINT8 weapon, boolean *force)
 	*force = state.force;
 	return state.override;
 }
+
+static void res_itemequipstyle(Hook_State *hook)
+{
+	if (!lua_isnil(gL, -1))
+	{
+		UINT32 ret = lua_tonumber(gL, -1);
+		hook->status = ret;
+	}
+	else
+	{
+		hook->status = 0;
+	}
+}
+
+
+int LUA_HookGetItemEquipStyle(mobjtype_t type)
+{
+	Hook_State hook;
+
+	if (prepare_hook(&hook, 0, HOOK(GetItemEquipStyle)))
+	{
+		lua_pushinteger(gL, type);
+
+		call_hooks(&hook, 1, res_itemequipstyle);
+	}
+
+	return hook.status;
+}

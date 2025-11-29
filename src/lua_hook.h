@@ -92,6 +92,7 @@ automatically.
 	X (KartStripItems),/*SRB2KART*/\
 	X (KartStripOther),/*SRB2KART*/\
 	X (CanPickupItem),/*SRB2KART*/\
+	X (GetItemEquipStyle),/*SRB2KART*/\
 
 #define STRING_HOOK_LIST(X) \
 	X (SpecialExecute),\
@@ -185,6 +186,7 @@ boolean LUA_HookKartSneaker(player_t *player, int type); // SRB2Kart: Hook for K
 boolean LUA_HookKartStripItems(player_t *player, UINT8 item); // SRB2Kart: Hook for K_StripItems.
 boolean LUA_HookKartStripOther(player_t *player); // SRB2Kart: Hook for K_StripOther.
 boolean LUA_HookCanPickupItem(player_t *player, UINT8 weapon, boolean *force); // SRB2Kart: Hook for P_CanPickupItem.
+int 	LUA_HookGetItemEquipStyle(mobjtype_t mobjtype); // SRB2Kart: Hook for K_GetItemEquipStyle.
 
 #ifdef __cplusplus
 } // extern "C"

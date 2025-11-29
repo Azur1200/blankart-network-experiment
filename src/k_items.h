@@ -45,6 +45,14 @@ typedef enum
 
 typedef enum
 {
+	KITEMEQUIP_NONE,
+	KITEMEQUIP_ORBIT,	// orbiters (orbi, jawz)
+	KITEMEQUIP_TRAIL,	// dragged items (bananas, mines, sinks)
+	KITEMEQUIP_ROCKETS,	// direct player position with offset (rockets)
+} kartitemequip_e;
+
+typedef enum
+{
 	KITEMBLINK_NORMAL,
 	KITEMBLINK_MASHED,
 	KITEMBLINK_KARMA,
@@ -210,6 +218,8 @@ boolean K_IsAltShrunk(const player_t *player);
 void K_AltShrinkPityIncrease(player_t *player);
 
 void K_PlayerItemThink(player_t *player, boolean onground);
+
+kartitemequip_e K_GetItemEquipStyle(mobjtype_t mobjtype);
 
 #ifdef __cplusplus
 } // extern "C"
