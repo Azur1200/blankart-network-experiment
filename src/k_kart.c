@@ -8875,6 +8875,21 @@ static boolean K_AltInvinSliptideCondition(player_t *player)
 	return (K_InvincibilityGradient(player->invincibilitytimer) > (FRACUNIT/2));
 }
 
+// Sliptide conditions for Alt. Shrink
+static boolean K_AltShrinkSliptideCondition(player_t *player)
+{
+	if (!(K_IsAltShrunk(player)))
+	{
+		// Not Alt. Shrunk!
+		return false;
+	}
+
+	const fixed_t speedPercent = FixedDiv(player->speed, K_GetKartSpeed(player, false, false));
+
+	// Allow sliptides if you're moving above 125% speed.
+	return (speedPercent > (5 * FRACUNIT / 4));
+}
+
 static void K_HandleAirDriftDrag(player_t *player, boolean onground)
 {
 	if (onground && player->airdriftspeed > 0)
@@ -9112,7 +9127,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 		player->pflags &= ~(PF_BRAKEDRIFT|PF_GETSPARKS);
 	}
 
-	if ( (!(player->sneakertimer || player->flamestore || player->bubbleboost || K_AltInvinSliptideCondition(player)))
+	if ( (!(player->sneakertimer || player->flamestore || player->bubbleboost || K_AltInvinSliptideCondition(player) || K_AltShrinkSliptideCondition(player)))
 	|| (!player->cmd.turning)
 	|| (!player->aizdriftstrat)
 	|| (player->cmd.turning > 0) != (player->aizdriftstrat > 0))
