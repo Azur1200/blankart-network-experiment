@@ -2045,7 +2045,7 @@ static void P_3dMovement(player_t *player)
 				}
 				// else do nothing
 			}
-			else
+			else if (player->airdriftspeed == 0)
 			{
 				tempmomx = FixedMul(FixedDiv(player->mo->momx - player->cmomx, newMagnitude), K_GetKartSpeed(player, true, true)); //topspeed)
 				tempmomy = FixedMul(FixedDiv(player->mo->momy - player->cmomy, newMagnitude), K_GetKartSpeed(player, true, true)); //topspeed)

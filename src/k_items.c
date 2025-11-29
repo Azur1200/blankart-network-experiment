@@ -2431,3 +2431,27 @@ void K_AltShrinkPityIncrease(player_t *player)
 
     player->growshrinktimer = ((INT16)shrinktime) * -1;
 }
+
+// this shit is so ass 🥲
+kartitemequip_e K_GetItemEquipStyle(mobjtype_t mobjtype)
+{
+	//TODO: lua hook to use any of these for a given mobj
+	// if we could use tables or dicts I'd use those insteasd
+	switch (mobjtype)
+	{
+		case MT_ORBINAUT_SHIELD:
+		case MT_JAWZ_SHIELD:
+			return KITEMEQUIP_ORBIT;
+		case MT_BANANA_SHIELD:
+		case MT_SSMINE_SHIELD:
+		case MT_EGGMANITEM_SHIELD:
+		case MT_SINK_SHIELD:
+			return KITEMEQUIP_TRAIL;
+		case MT_ROCKETSNEAKER:
+			return KITEMEQUIP_ROCKETS;
+		default:
+		{
+			return LUA_HookGetItemEquipStyle(mobjtype);
+		}
+	}
+}

@@ -161,6 +161,7 @@ boolean purpledriftactive;
 boolean slopeboostactive;
 boolean draftingactive;
 boolean airdropactive;
+boolean airthrustactive;
 boolean itemlittering;
 boolean itempushing;
 UINT8   bumpsparkactive;
@@ -7350,10 +7351,14 @@ static void P_ConvertBinaryThingTypes(void)
 		case 556: //Diagonal red spring
 		case 557: //Diagonal blue spring
 		case 558: //Diagonal grey spring
-			if (mapthings[i].options & MTF_OBJECTSPECIAL)
-				mapthings[i].args[0] |= TMSPR_NOGRAVITY;
-			if (mapthings[i].options & MTF_AMBUSH)
-				mapthings[i].args[0] |= TMSPR_ROTATEEXTRA;
+			//if (mapthings[i].options & MTF_OBJECTSPECIAL)
+				//mapthings[i].args[0] |= TMSPR_NOGRAVITY;
+			// Not all springs had rotate extra in v1
+			if (!(mapthings[i].type == 557 || mapthings[i].type == 558))
+			{
+				if (mapthings[i].options & MTF_AMBUSH)
+					mapthings[i].args[0] |= TMSPR_ROTATEEXTRA;
+			}
 			break;
 		case 559: //Horizontal yellow spring
 		case 560: //Horizontal red spring
@@ -8169,6 +8174,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	slopeboostactive = false;
 	draftingactive = false;
 	airdropactive = false;
+	airthrustactive = false;
 	itemlittering = false;
 	itempushing = false;
 	bumpsparkactive = 0;
@@ -8197,6 +8203,9 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 
 	if (cv_kartairdrop.value)
 		airdropactive = true;
+
+	if (cv_kartairthrust.value)
+		airthrustactive = true;
 
 	if (cv_kartitemlitter.value)
 		itemlittering = true;
