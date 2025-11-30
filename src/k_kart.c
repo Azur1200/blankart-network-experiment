@@ -484,6 +484,7 @@ fixed_t K_GetKartGameSpeedScalar(SINT8 value)
 static fixed_t K_PlayerWeight(mobj_t* mobj, mobj_t* against)
 {
 	fixed_t weight = 5 * FRACUNIT;
+	fixed_t bubbleMultiplier = FRACUNIT;
 	const boolean invinisalt = K_IsKartItemAlternate(KITEM_INVINCIBILITY);
 
 	if (!mobj->player)
@@ -491,11 +492,24 @@ static fixed_t K_PlayerWeight(mobj_t* mobj, mobj_t* against)
 
 	if (!P_MobjWasRemoved(against) && against->player)
 	{
-		if ((!P_PlayerInPain(against->player) && P_PlayerInPain(mobj->player)) // You're hurt
-		 || (K_GetShieldFromPlayer(against->player) == KSHIELD_BUBBLE // They have a Bubble Shield
-		 && K_GetShieldFromPlayer(mobj->player) != KSHIELD_BUBBLE)) // and you don't
+		if (!P_PlayerInPain(against->player) && P_PlayerInPain(mobj->player)) // You're hurt
 		{
 			return 0; // This player does not cause any bump action
+		}
+		else if ((K_GetShieldFromPlayer(against->player) == KSHIELD_BUBBLE // They have a Bubble Shield
+		 && K_GetShieldFromPlayer(mobj->player) != KSHIELD_BUBBLE)) // and you don't
+		{
+			// Check if the player is defending.
+			if (K_IsBubbleDefending(against->player))
+			{
+				// If they are, don't register a bump.
+				// TODO: Make this scale to speed(?)
+				return 0;
+			}
+			else
+			{
+				bubbleMultiplier = (FRACUNIT / 4); // 25% bump severity for uninflated Bubble Shields.
+			}
 		}
 		else if (invinisalt && against->player->invincibilitytimer)
 		{
@@ -528,6 +542,11 @@ static fixed_t K_PlayerWeight(mobj_t* mobj, mobj_t* against)
 	{
 		weight = max(BUBBLEMINWEIGHT, weight);
 		weight = FixedMul(weight, FRACUNIT / 16);
+	}
+
+	if (bubbleMultiplier)
+	{
+		weight = FixedMul(weight, bubbleMultiplier);
 	}
 
 	if (mobj->player->speed > spd)
