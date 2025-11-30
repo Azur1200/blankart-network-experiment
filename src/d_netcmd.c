@@ -1899,7 +1899,7 @@ static void SendNameAndColor(UINT8 n)
 	// If you're not in a netgame, merely update the skin, color, and name.
 	if (!netgame)
 	{
-		INT32 foundskin, vid;
+		INT32 foundskin, voxid;
 
 		CleanupPlayerName(playernum, cv_playername[n].zstring);
 		strcpy(player_names[playernum], cv_playername[n].zstring);
@@ -1932,9 +1932,9 @@ static void SendNameAndColor(UINT8 n)
 			{
 				if (cv_voice[n].string)
 				{
-					vid = R_FindIDForVoice(&skins[player->skin], cv_voice[n].string);
+					voxid = R_FindIDForVoice(&skins[player->skin], cv_voice[n].string);
 
-					if (vid == MAXSKINVOICES)
+					if (voxid == MAXSKINVOICES)
 					{
 						// No dice; use the default voice.
 						valuevoice = &skins[player->skin].voices[0];
@@ -1942,7 +1942,7 @@ static void SendNameAndColor(UINT8 n)
 					else
 					{
 
-						valuevoice = &skins[player->skin].voices[vid];
+						valuevoice = &skins[player->skin].voices[voxid];
 					}
 				}
 				else
@@ -1972,9 +1972,9 @@ static void SendNameAndColor(UINT8 n)
 			{
 				if (cv_voice[n].string)
 				{
-					vid = R_FindIDForVoice(&skins[player->skin], cv_voice[n].string);
+					voxid = R_FindIDForVoice(&skins[player->skin], cv_voice[n].string);
 
-					if (vid == MAXSKINVOICES)
+					if (voxid == MAXSKINVOICES)
 					{
 						// No dice; use the default voice.
 						valuevoice = &skins[player->skin].voices[0];
@@ -1982,7 +1982,7 @@ static void SendNameAndColor(UINT8 n)
 					else
 					{
 
-						valuevoice = &skins[player->skin].voices[vid];
+						valuevoice = &skins[player->skin].voices[voxid];
 					}
 				}
 				else
