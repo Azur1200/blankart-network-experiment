@@ -2667,7 +2667,7 @@ static void K_drawKartStatsnLives(void)
 			INT32 offsety = 0;
 			boolean split = r_splitscreen == 1;
 
-			if ((cv_lives_xoffset.value == 0 || cv_lives_yoffset.value == 0) || split)
+			if ((cv_lives_xoffset.value == 0 && cv_lives_yoffset.value == 0) || split)
 			{
 				if ((cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2) && !K_RingsActive() && !split)
 				{
