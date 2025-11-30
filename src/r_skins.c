@@ -720,7 +720,6 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 INT32 R_FindIDForVoice(skin_t *skin, const char* voicename)
 {
 	INT32 i;
-	const char *checkvoicename;
 
 	// Scan through our allocated skin voices for the wanted voice.
 
@@ -1091,7 +1090,6 @@ static void R_IHateThatHedgehog(UINT16 wadnum)
 	strcpy(skin->name, "sonic");
 
 	// Add voice
-	INT32 dummy;
 	if (R_FindIDForVoice(skin, "default") == MAXSKINVOICES)
 	{
 		// Hey guy, take care!
@@ -1656,7 +1654,6 @@ void R_AddSkins(UINT16 wadnum)
 		free(buf2);
 
 		// Add voice
-		INT32 dummy;
 		if (R_FindIDForVoice(skin, "default") == MAXSKINVOICES)
 		{
 			// We couldn't allocate our own skin's voice?!
@@ -1707,7 +1704,6 @@ void R_PatchSkins(UINT16 wadnum)
 	size_t size;
 	skin_t *skin;
 	boolean noskincomplain, realname;
-	sfxenum_t *array_target;
 
 	//
 	// search for all skin patch markers in pwad
@@ -1749,8 +1745,6 @@ void R_PatchSkins(UINT16 wadnum)
 			}
 
 			value = strtok(NULL, "\r\n= ");
-
-			array_target = NULL;
 
 			if (!value)
 				I_Error("R_PatchSkins: syntax error in P_SKIN lump# %d(%s) in WAD %s\n", lump, W_CheckNameForNumPwad(wadnum,lump), wadfiles[wadnum]->filename);
