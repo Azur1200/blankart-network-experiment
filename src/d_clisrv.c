@@ -145,7 +145,9 @@ static tic_t firstticstosend; // min of the nettics
 static tic_t tictoclear = 0; // optimize d_clearticcmd
 static tic_t maketic;
 
-static INT16 consistancy[BACKUPTICS];
+static consistancy_t consistancy[BACKUPTICS];
+
+#define CONSISTANCYDBGSIZE 4096
 
 static UINT8 player_joining = false;
 UINT8 hu_redownloadinggamestate = 0;
@@ -559,7 +561,7 @@ void ReadLmpExtraData(UINT8 **demo_pointer, INT32 playernum)
 // end extra data function for lmps
 // -----------------------------------------------------------------
 
-static INT16 Consistancy(void);
+static INT16 Consistancy(consistancy_t *c);
 
 static void GetPackets(void);
 
@@ -1389,7 +1391,7 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 		CONS_Alert(CONS_ERROR, M_GetText("Can't delete %s\n"), tmpsave);
 	}
 
-	consistancy[gametic%BACKUPTICS] = Consistancy();
+	Consistancy(&consistancy[gametic%BACKUPTICS]);
 	CON_ToggleOff();
 
 	// Tell the server we have received and reloaded the gamestate
@@ -4724,9 +4726,11 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 			return;
 	}
 
+	consistancy_t clientconsistancy = netbuffer->u.clientpak.consistancy;
+
 	// Check player consistancy during the level
 	if (realstart <= gametic && realstart + BACKUPTICS - 1 > gametic && gamestate == GS_LEVEL
-		&& consistancy[realstart%BACKUPTICS] != SHORT(netbuffer->u.clientpak.consistancy)
+		&& consistancy[realstart%BACKUPTICS].checksum != SHORT(clientconsistancy.checksum)
 		&& !resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime()
 		&& !SV_ResendingSavegameToAnyone())
 	{
@@ -4739,21 +4743,33 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 			resendingsavegame[node] = true;
 
 			if (cv_blamecfail.value)
+			{
+				char cfailrecieved[CONSISTANCYDBGSIZE]; // This one's huge!
+				char cfailexpected[CONSISTANCYDBGSIZE];
+
+				SPrintConsistancy(&cfailrecieved[0], &clientconsistancy);
+				SPrintConsistancy(&cfailexpected[0], &consistancy[realstart%BACKUPTICS]);
+
 				CONS_Printf(M_GetText("Synch failure for player %d (%s); expected %hd, got %hd\n"),
-							netconsole+1, player_names[netconsole],
-				consistancy[realstart%BACKUPTICS],
-				SHORT(netbuffer->u.clientpak.consistancy));
+					netconsole+1, player_names[netconsole],
+					consistancy[realstart%BACKUPTICS].checksum,
+					SHORT(clientconsistancy.checksum));
+
+				// Extremely elaborate debug!
+				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
+				CONS_Printf(M_GetText("RECIEVED\n%s"), cfailrecieved);
+			}
 			DEBFILE(va("Restoring player %d (synch failure) [%update] %d!=%d\n",
-					   netconsole, realstart, consistancy[realstart%BACKUPTICS],
-			  SHORT(netbuffer->u.clientpak.consistancy)));
+				netconsole, realstart, consistancy[realstart%BACKUPTICS].checksum,
+			SHORT(clientconsistancy.checksum)));
 			return;
 		}
 		else
 		{
 			SendKick(netconsole, KICK_MSG_CON_FAIL);
 			DEBFILE(va("player %d kicked (synch failure) [%u] %d!=%d\n",
-					   netconsole, realstart, consistancy[realstart%BACKUPTICS],
-			  SHORT(netbuffer->u.clientpak.consistancy)));
+						netconsole, realstart, consistancy[realstart%BACKUPTICS].checksum,
+						SHORT(clientconsistancy.checksum)));
 			return;
 		}
 	}
@@ -5332,6 +5348,124 @@ static void GetPackets(void)
 	}
 }
 
+static UINT32 GenerateConsistancySum(consistancy_t *c)
+{
+	UINT32 sum = 0;
+
+	// RNG seed
+	sum += c->rngseed;
+
+	// Player data
+	sum += c->playerpos[0];
+	sum += c->playerpos[1];
+	sum += c->itemsum;
+
+	// Object data
+	sum += c->position[0];
+	sum += c->position[1];
+	sum += c->position[2];
+
+	sum += c->momentum[0];
+	sum += c->momentum[1];
+	sum += c->momentum[2];
+
+	sum += c->mobjtype;
+	sum += c->mobjangle;
+	sum += c->mobjflags;
+	sum += c->mobjflags2;
+	sum += c->mobjeflags;
+	sum += c->mobjstate;
+	sum += c->mobjtics;
+	sum += c->mobjsprite;
+	sum += c->mobjframe;
+
+	c->checksum = (INT16)(sum & 0xFFFF);
+
+	return sum;
+}
+
+static void ResetConsistancy(consistancy_t *c)
+{
+	c->checksum = 0;
+
+	c->playerpos[0] = 0;
+	c->playerpos[1] = 0;
+
+	c->position[0] = 0;
+	c->position[1] = 0;
+	c->position[2] = 0;
+
+	c->momentum[0] = 0;
+	c->momentum[1] = 0;
+	c->momentum[2] = 0;
+
+	c->itemsum = 0; // Player item checksum
+
+	c->rngseed = 0;
+
+	// Object data checksum
+	c->mobjtype = 0;
+	c->mobjangle = 0;
+	c->mobjflags = 0;
+	c->mobjflags2 = 0;
+	c->mobjeflags = 0;
+	c->mobjstate = 0;
+	c->mobjtics = 0;
+	c->mobjsprite = 0;
+	c->mobjframe = 0;
+}
+
+// Feeds a consistancy debug print to a string.
+void SPrintConsistancy(char *out, consistancy_t *c)
+{
+	snprintf(out,
+			 CONSISTANCYDBGSIZE,
+			 "------------\nChecksum: %d\nRandomization Seed: %d\n[Player Position] X: %d, Y: %d\nItem Checksum: %d\n[Position] X: %d, Y: %d, Z: %d\n[Speed] X: %d, Y: %d, Z: %d\nObject Type: %d\nAngle: %d\n[Flags] Flags1: %d, Flags2: %d, EFlags: %d\n[Animation] State: %d, Tics %d, Sprite: %d, Frame: %d\n------------\n",
+			 c->checksum,
+			 c->rngseed,
+			 c->playerpos[0], c->playerpos[1],
+			 c->itemsum,
+			 c->position[0], c->position[1], c->position[2],
+			 c->momentum[0], c->momentum[1], c->momentum[2],
+			 c->mobjtype,
+			 c->mobjangle,
+			 c->mobjflags, c->mobjflags2, c->mobjeflags,
+			 c->mobjstate,
+			 c->mobjtics,
+			 c->mobjsprite,
+			 c->mobjframe);
+}
+
+// I'm losing my sanity fast, just do this.
+inline static void ConsistancyXOR(consistancy_t *c, INT32 value)
+{
+	c->playerpos[0] ^= value;
+	c->playerpos[1] ^= value;
+
+	c->itemsum ^= value; // Player item checksum
+
+	c->position[0] ^= value;
+	c->position[1] ^= value;
+	c->position[2] ^= value;
+
+	c->momentum[0] ^= value;
+	c->momentum[1] ^= value;
+	c->momentum[2] ^= value;
+
+	c->rngseed ^= value;
+
+	// Object data checksum
+	c->mobjtype ^= value;
+	c->mobjangle ^= value;
+	c->mobjflags ^= value;
+	c->mobjflags2 ^= value;
+	c->mobjeflags ^= value;
+	c->mobjstate ^= value;
+	c->mobjtics ^= value;
+	c->mobjsprite ^= value;
+	c->mobjframe ^= value;
+}
+
 //
 // NetUpdate
 // Builds ticcmds for console player,
@@ -5340,7 +5474,7 @@ static void GetPackets(void)
 // no more use random generator, because at very first tic isn't yet synchronized
 // Note: It is called consistAncy on purpose.
 //
-static INT16 Consistancy(void)
+static INT16 Consistancy(consistancy_t *c)
 {
 	INT32 i;
 	UINT32 ret = 0;
@@ -5351,23 +5485,39 @@ static INT16 Consistancy(void)
 
 	DEBFILE(va("TIC %u ", gametic));
 
+	if (!c)
+	{
+		// !?
+		return -1;
+	}
+
+	ResetConsistancy(c);
+
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i])
-			ret ^= 0xCCCC;
+		{
+			c->playerpos[0] ^= 0xCCCC;
+			c->playerpos[1] ^= 0xCCCC;
+			c->itemsum ^= 0xCCCC;
+		}
 		else if (!players[i].mo || gamestate != GS_LEVEL);
 		else
 		{
-			ret += players[i].mo->x;
-			ret -= players[i].mo->y;
-			ret += players[i].itemtype;
-			ret *= i+1;
+			c->playerpos[0] += players[i].mo->x;
+			c->playerpos[1] -= players[i].mo->y;
+			c->itemsum += players[i].itemtype; // powers[pw_shield]
+
+
+			c->playerpos[0] *= i+1;
+			c->playerpos[1] *= i+1;
+			c->itemsum *= i+1;
 		}
 	}
 	// I give up
 	// Coop desynching enemies is painful
 	if (gamestate == GS_LEVEL)
-		ret += P_GetRandSeed();
+		c->rngseed += P_GetRandSeed();
 
 #ifdef MOBJCONSISTANCY
 	if (gamestate == GS_LEVEL)
@@ -5381,106 +5531,108 @@ static INT16 Consistancy(void)
 
 			if (mo->flags & (MF_SPECIAL | MF_SOLID | MF_PUSHABLE | MF_BOSS | MF_MISSILE | MF_SPRING | MF_MONITOR | MF_FIRE | MF_ENEMY | MF_PAIN | MF_STICKY))
 			{
-				ret -= mo->type;
-				ret += mo->x;
-				ret -= mo->y;
-				ret += mo->z;
-				ret -= mo->momx;
-				ret += mo->momy;
-				ret -= mo->momz;
-				ret += mo->angle;
-				ret -= mo->flags;
-				ret += mo->flags2;
-				ret -= mo->eflags;
+				c->mobjtype -= mo->type;
+				c->position[0] += mo->x;
+				c->position[1] -= mo->y;
+				c->position[2] += mo->z;
+				c->momentum[0] -= mo->momx;
+				c->momentum[1] += mo->momy;
+				c->momentum[2] -= mo->momz;
+				c->mobjangle += mo->angle;
+				c->mobjflags -= mo->flags;
+				c->mobjflags2 += mo->flags2;
+				c->mobjeflags -= mo->eflags;
 				if (mo->target)
 				{
-					ret += mo->target->type;
-					ret -= mo->target->x;
-					ret += mo->target->y;
-					ret -= mo->target->z;
-					ret += mo->target->momx;
-					ret -= mo->target->momy;
-					ret += mo->target->momz;
-					ret -= mo->target->angle;
-					ret += mo->target->flags;
-					ret -= mo->target->flags2;
-					ret += mo->target->eflags;
-					ret -= mo->target->state - states;
-					ret += mo->target->tics;
-					ret -= mo->target->sprite;
-					ret += mo->target->frame;
+					c->mobjtype += mo->target->type;
+					c->position[0] -= mo->target->x;
+					c->position[1] += mo->target->y;
+					c->position[2] -= mo->target->z;
+					c->momentum[0] += mo->target->momx;
+					c->momentum[1] -= mo->target->momy;
+					c->momentum[2] += mo->target->momz;
+					c->mobjangle -= mo->target->angle;
+					c->mobjflags += mo->target->flags;
+					c->mobjflags2 -= mo->target->flags2;
+					c->mobjeflags += mo->target->eflags;
+					c->mobjstate -= mo->target->state - states;
+					c->mobjtics += mo->target->tics;
+					c->mobjsprite -= mo->target->sprite;
+					c->mobjframe += mo->target->frame;
 				}
 				else
-					ret ^= 0x3333;
+					ConsistancyXOR(c, 0x3333);
 				if (mo->tracer && mo->tracer->type != MT_OVERLAY)
 				{
-					ret += mo->tracer->type;
-					ret -= mo->tracer->x;
-					ret += mo->tracer->y;
-					ret -= mo->tracer->z;
-					ret += mo->tracer->momx;
-					ret -= mo->tracer->momy;
-					ret += mo->tracer->momz;
-					ret -= mo->tracer->angle;
-					ret += mo->tracer->flags;
-					ret -= mo->tracer->flags2;
-					ret += mo->tracer->eflags;
-					ret -= mo->tracer->state - states;
-					ret += mo->tracer->tics;
-					ret -= mo->tracer->sprite;
-					ret += mo->tracer->frame;
+					c->mobjtype += mo->tracer->type;
+					c->position[0] -= mo->tracer->x;
+					c->position[1] += mo->tracer->y;
+					c->position[2] -= mo->tracer->z;
+					c->momentum[0] += mo->tracer->momx;
+					c->momentum[1] -= mo->tracer->momy;
+					c->momentum[2] += mo->tracer->momz;
+					c->mobjangle -= mo->tracer->angle;
+					c->mobjflags += mo->tracer->flags;
+					c->mobjflags2 -= mo->tracer->flags2;
+					c->mobjeflags += mo->tracer->eflags;
+					c->mobjstate -= mo->tracer->state - states;
+					c->mobjtics += mo->tracer->tics;
+					c->mobjsprite -= mo->tracer->sprite;
+					c->mobjframe += mo->tracer->frame;
 				}
 				else
-					ret ^= 0xAAAA;
+					ConsistancyXOR(c, 0xAAAA);
 				// SRB2Kart: We use hnext & hprev very extensively
 				if (mo->hnext && mo->hnext->type != MT_OVERLAY)
 				{
-					ret += mo->hnext->type;
-					ret -= mo->hnext->x;
-					ret += mo->hnext->y;
-					ret -= mo->hnext->z;
-					ret += mo->hnext->momx;
-					ret -= mo->hnext->momy;
-					ret += mo->hnext->momz;
-					ret -= mo->hnext->angle;
-					ret += mo->hnext->flags;
-					ret -= mo->hnext->flags2;
-					ret += mo->hnext->eflags;
-					ret -= mo->hnext->state - states;
-					ret += mo->hnext->tics;
-					ret -= mo->hnext->sprite;
-					ret += mo->hnext->frame;
+					c->mobjtype += mo->hnext->type;
+					c->position[0] -= mo->hnext->x;
+					c->position[1] += mo->hnext->y;
+					c->position[2] -= mo->hnext->z;
+					c->momentum[0] += mo->hnext->momx;
+					c->momentum[1] -= mo->hnext->momy;
+					c->momentum[2] += mo->hnext->momz;
+					c->mobjangle -= mo->hnext->angle;
+					c->mobjflags += mo->hnext->flags;
+					c->mobjflags2 -= mo->hnext->flags2;
+					c->mobjeflags += mo->hnext->eflags;
+					c->mobjstate -= mo->hnext->state - states;
+					c->mobjtics += mo->hnext->tics;
+					c->mobjsprite -= mo->hnext->sprite;
+					c->mobjframe += mo->hnext->frame;
 				}
 				else
-					ret ^= 0x5555;
+					ConsistancyXOR(c, 0x5555);
 				if (mo->hprev && mo->hprev->type != MT_OVERLAY)
 				{
-					ret += mo->hprev->type;
-					ret -= mo->hprev->x;
-					ret += mo->hprev->y;
-					ret -= mo->hprev->z;
-					ret += mo->hprev->momx;
-					ret -= mo->hprev->momy;
-					ret += mo->hprev->momz;
-					ret -= mo->hprev->angle;
-					ret += mo->hprev->flags;
-					ret -= mo->hprev->flags2;
-					ret += mo->hprev->eflags;
-					ret -= mo->hprev->state - states;
-					ret += mo->hprev->tics;
-					ret -= mo->hprev->sprite;
-					ret += mo->hprev->frame;
+					c->mobjtype += mo->hprev->type;
+					c->position[0] -= mo->hprev->x;
+					c->position[1] += mo->hprev->y;
+					c->position[2] -= mo->hprev->z;
+					c->momentum[0] += mo->hprev->momx;
+					c->momentum[1] -= mo->hprev->momy;
+					c->momentum[2] += mo->hprev->momz;
+					c->mobjangle -= mo->hprev->angle;
+					c->mobjflags += mo->hprev->flags;
+					c->mobjflags2 -= mo->hprev->flags2;
+					c->mobjeflags += mo->hprev->eflags;
+					c->mobjstate -= mo->hprev->state - states;
+					c->mobjtics += mo->hprev->tics;
+					c->mobjsprite -= mo->hprev->sprite;
+					c->mobjframe += mo->hprev->frame;
 				}
 				else
-					ret ^= 0xCCCC;
-				ret -= mo->state - states;
-				ret += mo->tics;
-				ret -= mo->sprite;
-				ret += mo->frame;
+					ConsistancyXOR(c, 0xCCCC);
+				c->mobjstate -= mo->state - states;
+				c->mobjtics += mo->tics;
+				c->mobjsprite -= mo->sprite;
+				c->mobjframe += mo->frame;
 			}
 		}
 	}
 #endif
+
+	ret = GenerateConsistancySum(c);
 
 	DEBFILE(va("Consistancy = %u\n", (ret & 0xFFFF)));
 
@@ -5510,6 +5662,33 @@ static void SV_SendServerKeepAlive(void)
 			HSendPacket(n, false, 0, 0);
 		}
 	}
+}
+
+// Consistancy A gets all of Consistancy B's values.
+#define CloneConsistancy(ca, cb) \
+{ \
+	ca.checksum = cb.checksum; \
+	ca.rngseed = cb.rngseed; \
+	ca.itemsum = cb.itemsum; \
+\
+	ca.playerpos[0] = cb.playerpos[0]; \
+	ca.playerpos[1] = cb.playerpos[1]; \
+\
+	ca.position[0] = cb.position[0]; \
+	ca.position[1] = cb.position[1]; \
+	ca.position[2] = cb.position[2]; \
+	ca.momentum[0] = cb.momentum[0]; \
+	ca.momentum[1] = cb.momentum[1]; \
+	ca.momentum[2] = cb.momentum[2]; \
+	ca.mobjtype = cb.mobjtype; \
+	ca.mobjangle = cb.mobjangle; \
+	ca.mobjflags = cb.mobjflags; \
+	ca.mobjflags2 = cb.mobjflags2; \
+	ca.mobjeflags = cb.mobjeflags; \
+	ca.mobjstate = cb.mobjstate; \
+	ca.mobjtics = cb.mobjtics; \
+	ca.mobjsprite = cb.mobjsprite; \
+	ca.mobjframe = cb.mobjframe; \
 }
 
 // send the client packet to the server
@@ -5549,7 +5728,7 @@ static void CL_SendClientCmd(void)
 
 		packetsize = sizeof (clientcmd_pak);
 		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds[0][lagDelay], 1);
-		netbuffer->u.clientpak.consistancy = SHORT(consistancy[gametic % BACKUPTICS]);
+		CloneConsistancy(netbuffer->u.clientpak.consistancy, consistancy[gametic % BACKUPTICS]);
 
 		if (splitscreen) // Send a special packet with 2 cmd for splitscreen
 		{
@@ -5900,7 +6079,7 @@ boolean TryRunTics(tic_t realtics)
 				}
 
 				gametic++;
-				consistancy[gametic % BACKUPTICS] = Consistancy();
+				Consistancy(&consistancy[gametic%BACKUPTICS]);
 
 				ps_tictime = I_GetPreciseTime() - ps_tictime;
 
@@ -6444,6 +6623,8 @@ rewind_t *CL_RewindToTime(tic_t time)
 
 	return rewindhead;
 }
+
+#undef CloneConsistancy
 
 void D_SHA256PasswordPass(const UINT8 *buffer, size_t len, const char *salt, UINT8 dest[static 32])
 {
