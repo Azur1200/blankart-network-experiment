@@ -1921,7 +1921,7 @@ static void SendNameAndColor(UINT8 n)
 		}
 		else if ((foundskin = R_SkinAvailable(cv_skin[n].string)) != -1 && R_SkinUsable(playernum, foundskin))
 		{
-			prevskin = skins[cv_skin[n].value].name;
+			prevskin = cv_skin[n].value;
 
 			cv_skin[n].value = foundskin;
 			SetPlayerSkin(playernum, cv_skin[n].string);
