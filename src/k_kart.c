@@ -2113,6 +2113,7 @@ tripwirepass_t K_TripwirePassConditions(const player_t *player)
 	if (
 			player->invincibilitytimer ||
 			player->bubbleboost ||
+			K_IsAltShrunk(player) ||
 			(player->sneakertimer && player->realsneakertimer)
 		)
 		return TRIPWIRE_BLASTER;
