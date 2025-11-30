@@ -1183,64 +1183,6 @@ static UINT8 reallygrossvoicesfxadder(INT32 skinsound, const char *value, kartvo
 
 static kartvoice_t *allocvoice;
 
-static void readkartvoice(skin_t *skin, char *stoken, char *value, kartvoice_t *voice)
-{
-	if (!stricmp(stoken, "voicename"))
-	{
-		// Allocate the actual voice,
-	}
-	else if (!stricmp(stoken, "GLOAT"))
-	{
-		reallygrossvoicesfxadder(SKSKPOWR, value, voice);
-	}
-	else if (!stricmp(stoken, "WIN"))
-	{
-		reallygrossvoicesfxadder(SKSKWIN, value, voice);
-	}
-	else if (!stricmp(stoken, "LOSE"))
-	{
-		reallygrossvoicesfxadder(SKSKLOSE, value, voice);
-	}
-	else if (!stricmp(stoken, "SLOW") || !stricmp(stoken, "OVERTAKE") || !stricmp(stoken, "PASS"))
-	{
-		reallygrossvoicesfxadder(SKSKSLOW, value, voice);
-	}
-	else if (!stricmp(stoken, "PAIN1") || !stricmp(stoken, "HURT1") || !stricmp(stoken, "DAMAGE1"))
-	{
-		reallygrossvoicesfxadder(SKSKPAN1, value, voice);
-	}
-	else if (!stricmp(stoken, "PAIN2") || !stricmp(stoken, "HURT2") || !stricmp(stoken, "DAMAGE2"))
-	{
-		reallygrossvoicesfxadder(SKSKPAN2, value, voice);
-	}
-	else if (!stricmp(stoken, "ATTACK"))
-	{
-		// Needs to be handled like rival allocation
-	}
-	else if (!stricmp(stoken, "ATTACK1"))
-	{
-		reallygrossvoicesfxadder(SKSKATK1, value, voice);
-	}
-	else if (!stricmp(stoken, "ATTACK2"))
-	{
-		reallygrossvoicesfxadder(SKSKATK2, value, voice);
-	}
-	else if (!stricmp(stoken, "BOOST1"))
-	{
-		reallygrossvoicesfxadder(SKSKBST1, value, voice);
-	}
-	else if (!stricmp(stoken, "BOOST2"))
-	{
-		reallygrossvoicesfxadder(SKSKBST2, value, voice);
-	}
-	else if (!stricmp(stoken, "HITEM") || !stricmp(stoken, "HITCONFIRM"))
-	{
-		reallygrossvoicesfxadder(SKSKHITM, value, voice);
-	}
-
-	return -1;
-}
-
 // returns whether found appropriate property
 static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 {
