@@ -2146,7 +2146,7 @@ static void SendNameAndColor(UINT8 n)
 	WRITEUINT32(p, (UINT32)player->availabilities);
 	WRITEUINT16(p, (UINT16)cv_playercolor[n].value);
 	WRITEUINT16(p, (UINT16)cv_skin[n].value);
-	WRITESINT8(p, (SINT8)cv_follower[n].value);
+	WRITEINT32(p, (INT32)cv_follower[n].value);
 	WRITEUINT16(p, (UINT16)cv_followercolor[n].value);
 	WRITEUINT16(p, (UINT16)cv_voice[n].value);
 
@@ -2160,7 +2160,7 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	char voicename[VOICENAMESIZE+1];
 	UINT16 color, followercolor;
 	UINT16 skin, voice;
-	SINT8 follower;
+	INT32 follower;
 	SINT8 localplayer = -1;
 	UINT16 i;
 
@@ -2189,7 +2189,7 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	p->availabilities = READUINT32(*cp);
 	color = READUINT16(*cp);
 	skin = READUINT16(*cp);
-	follower = READSINT8(*cp);
+	follower = READINT32(*cp);
 	followercolor = READUINT16(*cp);
 	voice = READUINT16(*cp);
 

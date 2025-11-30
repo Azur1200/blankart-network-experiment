@@ -62,7 +62,7 @@ boolean R_IsEmptyLine(seg_t *line, sector_t *front, sector_t *back);
 boolean R_IsDebugLine(seg_t *line);
 
 INT32 R_GetPlaneLight(sector_t *sector, fixed_t planeheight, boolean underside);
-void R_Prep3DFloors(sector_t *sector);
+void R_Prep3DFloors(sector_t *sector, fixed_t secceilz);
 
 #ifdef __cplusplus
 } // extern "C"
