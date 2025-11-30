@@ -97,7 +97,7 @@ struct skin_t
 	// Proxy value for the (now removed) soundsid array.
 	// This is ONLY used in a Lua context.
 	// It doesn't actually have anything and will never actually have anything.
-	skinsound_t soundsid[1];
+	skinsound_t soundsid[2];
 
 	// contains super versions too
 	spritedef_t sprites[NUMPLAYERSPRITES*2];

@@ -182,6 +182,7 @@ static const struct {
 	{META_SOUNDSID,     "skin_t.soundsid"},
 	{META_SKINSPRITES,  "skin_t.sprites"},
 	{META_SKINSPRITESLIST,  "skin_t.sprites[]"},
+	{META_SKINVOICES, "skin_t.voices"},
 
 	{META_VERTEX,       "vertex_t"},
 	{META_LINE,         "line_t"},

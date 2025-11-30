@@ -39,7 +39,7 @@ enum skin {
 	skin_highresscale,
 	skin_rivals,
 	skin_soundsid,
-	skin_voice,
+	skin_voices,
 	skin_sprites
 };
 static const char *const skin_opt[] = {
@@ -61,7 +61,7 @@ static const char *const skin_opt[] = {
 	"highresscale",
 	"rivals",
 	"soundsid",
-	"voice",
+	"voices",
 	"sprites",
 	NULL
 };
@@ -141,13 +141,12 @@ static int skin_get(lua_State *L)
 		// This would be pretty cool to push
 		return UNIMPLEMENTED;
 	case skin_soundsid:
-		LUA_PushUserdata(L, skin->soundsid, META_SOUNDSID);
+		LUA_PushUserdata(L, &skin->soundsid[0], META_SOUNDSID);
 		break;
-	case skin_voice:
+	case skin_voices:
 		// ...uuuuuuughhhhh...
-		return UNIMPLEMENTED;
-		//LUA_PushUserdata(L, skin->voice, META_VOICE);
-		//break;
+		LUA_PushUserdata(L, &skin->soundsid[1], META_SKINVOICES);
+		break;
 	case skin_sprites:
 		LUA_PushUserdata(L, skin->sprites, META_SKINSPRITES);
 		break;
@@ -250,7 +249,7 @@ static int soundsid_get(lua_State *L)
 {
 	// soundsid is a route to the voice struct. That's how we're doing this.
 	sfxenum_t *soundsid = *((sfxenum_t **)luaL_checkudata(L, 1, META_SOUNDSID));
-	skin_t *s = (skin_t*)((char*)soundsid - offsetof(skin_t, soundsid));
+	skin_t *s = (skin_t*)((char*)soundsid - offsetof(skin_t, soundsid[0]));
 
 	skinsound_t i = luaL_checkinteger(L, 2);
 
@@ -265,6 +264,29 @@ static int soundsid_get(lua_State *L)
 static int soundsid_num(lua_State *L)
 {
 	lua_pushinteger(L, NUMSKINSOUNDS);
+	return 1;
+}
+
+// voices, i -> voices[i]
+static int skinvoices_get(lua_State *L)
+{
+	// Use soundsid to route to the voice array so that voices[0] isn't considered THE VOICE ARRAY
+	sfxenum_t *svoices = *((sfxenum_t **)luaL_checkudata(L, 1, META_SKINVOICES));
+	skin_t *s = (skin_t*)((char*)svoices - offsetof(skin_t, soundsid[1]));
+
+	skinsound_t i = luaL_checkinteger(L, 2);
+
+	if (i >= s->numvoices)
+		return luaL_error(L, "skin.voices[] index %s out of range (0 - %d)", va("%u", (UINT32)i), s->numvoices - 1);
+
+	LUA_PushUserdata(L, &s->voices[i], META_VOICE);
+	return 1;
+}
+
+// #voices -> NUMSKINSOUNDS
+static int skinvoices_num(lua_State *L)
+{
+	lua_pushinteger(L, MAXSKINVOICES);
 	return 1;
 }
 
@@ -344,6 +366,14 @@ int LUA_SkinLib(lua_State *L)
 	luaL_newmetatable(L, META_SKINSPRITESLIST);
 		lua_pushcfunction(L, sprite_get);
 		lua_setfield(L, -2, "__index");
+	lua_pop(L,1);
+
+	luaL_newmetatable(L, META_SKINVOICES);
+		lua_pushcfunction(L, skinvoices_get);
+		lua_setfield(L, -2, "__index");
+
+		lua_pushcfunction(L, skinvoices_num);
+		lua_setfield(L, -2, "__len");
 	lua_pop(L,1);
 
 	lua_newuserdata(L, 0);
