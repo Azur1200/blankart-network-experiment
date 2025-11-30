@@ -8906,8 +8906,8 @@ static boolean K_AltShrinkSliptideCondition(player_t *player)
 
 	const fixed_t speedPercent = FixedDiv(player->speed, K_GetKartSpeed(player, false, false));
 
-	// Allow sliptides if you're moving above 125% speed.
-	return (speedPercent > (5 * FRACUNIT / 4));
+	// Allow sliptides if you're moving above 75% speed.
+	return (speedPercent > (3 * FRACUNIT / 4));
 }
 
 static void K_HandleAirDriftDrag(player_t *player, boolean onground)
