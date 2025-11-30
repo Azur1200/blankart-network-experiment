@@ -714,7 +714,7 @@ INT32 R_FindIDForVoice(skin_t *skin, const char* voicename)
 	// Scan through our allocated skin voices for the wanted voice.
 
 	// First pass: Check the actual name.
-	for (i = 0; i < MAXSKINVOICES; i++)
+	for (i = 0; i < skin->numvoices; i++)
 	{
 		if (strnicmp(voicename, skin->voices[i].name, VOICENAMESIZE) == 0)
 		{
@@ -724,7 +724,7 @@ INT32 R_FindIDForVoice(skin_t *skin, const char* voicename)
 	}
 
 	// Second pass: check the display name.
-	for (i = 0; i < MAXSKINVOICES; i++)
+	for (i = 0; i < skin->numvoices; i++)
 	{
 		// Whatever. Go, my code duplication!
 		if (strnicmp(voicename, skin->voices[i].realname, VOICENAMESIZE) == 0)
@@ -738,31 +738,10 @@ INT32 R_FindIDForVoice(skin_t *skin, const char* voicename)
 	return MAXSKINVOICES;
 }
 
-static INT32 R_FindIDForVoiceNum(skin_t *skin, UINT16 voicenum)
-{
-	INT32 i;
-
-	// Scan through our allocated skin voices for the wanted voice.
-	for (i = 0; i < MAXSKINVOICES; i++)
-	{
-		// Whatever. Go, my code duplication!
-		if (skin->voices[i].id == voicenum)
-		{
-			// Found a voice.
-			return i;
-		}
-	}
-
-	// Couldn't find a voice.
-	return MAXSKINVOICES;
-}
-
 // network code calls this when a 'voice change' is received
-void SetPlayerVoice(INT32 playernum, const char* voicename)
+void SetPlayerVoice(INT32 playernum, const char *voicename)
 {
-	player_t* player = &players[playernum];
-
-	INT32 voxid = R_FindIDForVoice(&skins[player->skin], voicename);
+	INT32 voxid = R_FindIDForVoice(&skins[players[playernum].skin], voicename);
 
 	if (voxid == MAXSKINVOICES)
 	{
@@ -770,93 +749,24 @@ void SetPlayerVoice(INT32 playernum, const char* voicename)
 		voxid = 0;
 	}
 
-	if (P_MobjWasRemoved(player->mo))
-	{
-		// No object to give a voice to.
-		// Store the found ID in the player, at least. Object spawning will take care of
-		// assigning a voice.
-		player->voice_id = (UINT16)voxid;
-
-		// Tell the demo that we've updated our voice_id as well.
-		demo_extradata[playernum] |= DXD_SKIN;
-		return;
-	}
-
-	const kartvoice_t* myvoice = P_GetMobjVoice(player->mo);
-
-	if (!strnicmp(voicename, myvoice->name, VOICENAMESIZE))
-	{
-		// Hey... this voice is the same as before!
-		// WAIT! Before we go, reset the player's voice ID!
-		player->voice_id = myvoice->id;
-
-		// AND tell the game to rescan for skins/voices!
-		demo_extradata[playernum] |= DXD_SKIN;
-		return;
-	}
-
-	// We've done the precautions to check for disallowed dubs in the cvar, just do a blind-read
-	// for the needed name. If we're down here, we've passed the safeguards and can assign a
-	// voice.
-
-	if (voxid)
-		player->mo->voice = &skins[player->skin].voices[(UINT16)voxid];
-	else
-		player->mo->voice = NULL;
-
-	player->voice_id = (UINT16)(voxid);
-
-	// Tell the demo that we've updated our voice_id as well.
-	demo_extradata[playernum] |= DXD_SKIN;
+	SetPlayerVoiceByNum(playernum, voxid);
 }
 
 // network code calls this when a 'voice change' is received
 void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 {
 	player_t* player = &players[playernum];
-	INT32 voxid = R_FindIDForVoiceNum(&skins[player->skin], voicenum);
 
-	if (voxid == MAXSKINVOICES)
-	{
-		// Couldn't find a voice. Default to the skin's default.
-		voxid = 0;
-	}
-
-	if (P_MobjWasRemoved(player->mo))
-	{
-		// No object to give a voice to.
-		// Store the found ID in the player, at least. Object spawning will take care of
-		// assigning a voice.
-		player->voice_id = (UINT16)voxid;
-
-		// Tell the demo that we've updated our voice_id as well.
-		demo_extradata[playernum] |= DXD_SKIN;
-		return;
-	}
-
-	const kartvoice_t* myvoice = P_GetMobjVoice(player->mo);
-
-	if (myvoice->id == voicenum)
+	if (player->voice_id == voicenum)
 	{
 		// Hey... this voice is the same as before!
-		// WAIT! Before we go, reset the player's voice ID!
-		player->voice_id = myvoice->id;
-
-		// AND tell the game to rescan for skins/voices!
-		demo_extradata[playernum] |= DXD_SKIN;
 		return;
 	}
 
-	// We've done the precautions to check for disallowed dubs in the cvar, just do a blind-read
-	// for the needed name. If we're down here, we've passed the safeguards and can assign a
-	// voice.
+	player->voice_id = voicenum;
 
-	if (voxid)
-		player->mo->voice = &skins[player->skin].voices[(UINT16)voxid];
-	else
-		player->mo->voice = NULL;
-
-	player->voice_id = (UINT16)(voxid);
+	if (!P_MobjWasRemoved(player->mo))
+		player->mo->voice = &skins[player->skin].voices[voicenum];
 
 	// Tell the demo that we've updated our voice_id as well.
 	demo_extradata[playernum] |= DXD_SKIN;
@@ -1503,11 +1413,6 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 //
 INT32 R_AllocKartVoice(skin_t *skin, const char* name, INT32 *out)
 {
-	char voxname_upper[VOICENAMESIZE];
-
-	strlcpy(voxname_upper, name, sizeof(voxname_upper));
-	strupr(voxname_upper);
-
 	*out = R_FindIDForVoice(skin, name);
     if (*out != MAXSKINVOICES)
         return -1; // already allocated
