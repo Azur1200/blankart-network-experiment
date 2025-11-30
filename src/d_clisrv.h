@@ -135,6 +135,33 @@ typedef enum
 	NUMPACKETTYPE
 } packettype_t;
 
+typedef struct consistancy_s
+{
+	INT16 checksum; // Total consistancy checksum
+
+	INT32 playerpos[2];
+	INT32 position[3]; // Position checksum
+
+	INT32 momentum[3]; // Speed checksum
+
+	INT32 itemsum; // Player item checksum
+
+	UINT32 rngseed;
+
+	// Object data checksum
+	INT32 mobjtype;
+	INT32 mobjangle;
+	INT32 mobjflags;
+	INT32 mobjflags2;
+	INT32 mobjeflags;
+	INT32 mobjstate;
+	INT32 mobjtics;
+	INT32 mobjsprite;
+	INT32 mobjframe;
+} consistancy_t;
+
+void SPrintConsistancy(char *out, consistancy_t *c);
+
 #ifdef PACKETDROP
 void Command_Drop(void);
 void Command_Droprate(void);
@@ -148,7 +175,7 @@ struct clientcmd_pak
 {
 	UINT8 client_tic;
 	UINT8 resendfrom;
-	INT16 consistancy;
+	consistancy_t consistancy;
 	ticcmd_t cmd;
 } ATTRPACK;
 
@@ -158,7 +185,7 @@ struct client2cmd_pak
 {
 	UINT8 client_tic;
 	UINT8 resendfrom;
-	INT16 consistancy;
+	consistancy_t consistancy;
 	ticcmd_t cmd, cmd2;
 } ATTRPACK;
 
@@ -168,7 +195,7 @@ struct client3cmd_pak
 {
 	UINT8 client_tic;
 	UINT8 resendfrom;
-	INT16 consistancy;
+	consistancy_t consistancy;
 	ticcmd_t cmd, cmd2, cmd3;
 } ATTRPACK;
 
@@ -178,7 +205,7 @@ struct client4cmd_pak
 {
 	UINT8 client_tic;
 	UINT8 resendfrom;
-	INT16 consistancy;
+	consistancy_t consistancy;
 	ticcmd_t cmd, cmd2, cmd3, cmd4;
 } ATTRPACK;
 
