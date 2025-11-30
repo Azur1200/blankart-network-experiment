@@ -390,6 +390,7 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 		DEH_Link(word, &kartitems[numkartitems].info, &kartitemnames);
 		K_RegisterItem(numkartitems);
 		*out = numkartitems++;
+		return 0;
 	}
 
 	return -2;
@@ -786,32 +787,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 						result = K_RegisterResult(word2, alternate);
 					readkartresult(f, result);
 				}
-				/*else if (fastncmp(word, "KARTVOICE", 9)) (Deprecated; getting merged into skins)
-				{
-					if (i == 0 && word2[0] != '0') // If word2 isn't a number
-						i = DEH_FindKartVoice(word2); // find a voice by name
-
-					if (i == MAXSKINVOICES)
-					{
-						// Found nothing; auto-allocate our voice.
-						const INT32 allocresult = R_AllocKartVoice(false, word2, &i);
-
-						if (allocresult < 0)
-						{
-							deh_warning("Voice '%s' could not be allocated.", word2);
-							ignorelines(f);
-						}
-					}
-
-					if (i >= 0 && i < numskinvoices)
-						readkartvoice(f, &skinvoices[i]);
-					else
-					{
-						// zero-based, but let's start at 1
-						deh_warning("KartVoice number %d out of range (0 - %d)", i, numskinvoices);
-						ignorelines(f);
-					}
-				}*/
 				else if (fastcmp(word, "WEATHER") || fastcmp(word, "PRECIP") || fastcmp(word, "PRECIPITATION"))
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number

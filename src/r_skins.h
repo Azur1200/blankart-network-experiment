@@ -124,10 +124,9 @@ enum skinmenusortoption
 };
 
 /// Externs
-extern INT32 numskins, numskinvoices;
+extern INT32 numskins;
 extern skin_t skins[MAXSKINS];
 extern INT32 skinsorted[MAXSKINS];
-//extern kartvoice_t skinvoices[MAXSKINVOICES];
 
 extern CV_PossibleValue_t Forceskin_cons_t[];
 
@@ -150,7 +149,6 @@ UINT8 P_GetSkinSprite2(skin_t *skin, UINT8 spr2, player_t *player);
 UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe);
 
 INT32 R_AllocKartVoice(skin_t *skin, const char* name, INT32 *out);
-void R_ClearVoice(skin_t *skin, INT32 voicetype);
 void Sk_SetSkinVoiceValue(kartvoice_t *voice, INT32 skinsound, INT32 writesound);
 
 INT32 R_FindIDForVoice(skin_t *skin, const char *voicename);

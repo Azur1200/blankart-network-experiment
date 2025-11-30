@@ -240,7 +240,7 @@ void P_ResetData(INT32 flags)
 		for (i = 0; i < MN_FIRSTFREESLOT; i++, name += strlen(name)+1)
 			DEH_Link(name, &menudefs[i].info, &menunames);
 	}
-	
+
 	// kartitems
 	if (init)
 	{

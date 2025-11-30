@@ -41,7 +41,6 @@
 #include "lua_hook.h"
 #include "p_saveg.h" // savebuffer_t
 #include "g_party.h"
-#include "deh_tables.h"
 
 // SRB2Kart
 #include "d_netfil.h" // nameonly
@@ -55,7 +54,6 @@
 #include "k_color.h"
 #include "k_follower.h"
 #include "k_grandprix.h"
-//#include "strbuf.h"
 
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
 consvar_t cv_recordmultiplayerdemos = CVAR_INIT ("netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL);

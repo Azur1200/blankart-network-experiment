@@ -27,7 +27,6 @@
 #include "y_inter.h"
 #include "hu_stuff.h"	// HU_AddChatText
 #include "console.h"
-#include "deh_tables.h" // DEH_FindKartVoice
 #include "k_kart.h" // SRB2Kart
 #include "k_battle.h"
 #include "k_boss.h"

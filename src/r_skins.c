@@ -28,7 +28,6 @@
 #include "dehacked.h" // get_number (for thok)
 #include "m_cond.h"
 #include "d_main.h" // MAINWAD_CHARS
-#include "deh_tables.h" // Voice freeslotting
 #if 0
 #include "k_kart.h" // K_KartResetPlayerColor
 #endif
@@ -40,10 +39,8 @@
 #include "discord.h"
 
 INT32 numskins = 0;
-INT32 numskinvoices = 0;
 skin_t skins[MAXSKINS];
 INT32 skinsorted[MAXSKINS];
-//kartvoice_t skinvoices[MAXSKINVOICES];
 
 // FIXTHIS: don't work because it must be inistilised before the config load
 //#define SKINVALUES
@@ -296,13 +293,6 @@ sfxenum_t P_GetKartVoiceSFX(kartvoice_t *voice, INT32 skinsound)
 	}
 
 	return sfx_thok;
-}
-
-void R_ClearVoice(skin_t *skin, INT32 voicetype)
-{
-	kartvoice_t *voice = &skin->voices[voicetype];
-
-	memset(voice, 0, sizeof(kartvoice_t));
 }
 
 static void Sk_SetDefaultValue(skin_t *skin, kartvoice_t *skin_voice)
@@ -1817,8 +1807,6 @@ void R_PatchSkins(UINT16 wadnum)
 				}
 				else if (!R_ProcessPatchableFields(skin, stoken, value))
 					CONS_Debug(DBG_SETUP, "R_PatchSkins: Unknown keyword '%s' in P_SKIN lump #%d (WAD %s)\n", stoken, lump, wadfiles[wadnum]->filename);
-
-				
 			}
 
 			if (!skin)

@@ -1407,7 +1407,7 @@ static void Skin_FindRealNameSkin(consvar_t *cvar)
 	}
 }
 
-static UINT8 Skin_FindValidDub(consvar_t *cvar, UINT16 skin_id, kartvoice_t *voice, boolean forceme, boolean silent)
+static UINT8 Skin_FindValidDub(consvar_t *cvar, UINT16 skin_id, kartvoice_t *voice, boolean silent)
 {
 	// Not the best way to implements this but it will do.
 
@@ -2066,7 +2066,7 @@ static void SendNameAndColor(UINT8 n)
 	{
 		CV_StealthSet(&cv_skin[n], skins[player->skin].name);
 
-		if (Skin_FindValidDub(&cv_voice[n], cv_skin[n].value, voice, false, true))
+		if (Skin_FindValidDub(&cv_voice[n], cv_skin[n].value, voice, true))
 		{
 			// Our voice is no longer valid, set it to that of our skin's.
 			strlcpy(voicebuf, skins[player->skin].voices[0].name, sizeof(voicebuf));
@@ -2100,7 +2100,7 @@ static void SendNameAndColor(UINT8 n)
 
 	if (!permamute)
 	{
-		if (Skin_FindValidDub(&cv_voice[n], cv_skin[n].value, voice, false, true))
+		if (Skin_FindValidDub(&cv_voice[n], cv_skin[n].value, voice, true))
 		{
 			// In the chance our current voice isn't valid,
 			// rescan our current voice and send that over the network.
@@ -7550,7 +7550,7 @@ static void __voice_cvar_func(INT32 pid, UINT8 pnum)
 		}
 	}
 
-	Skin_FindValidDub(&cv_voice[pnum], players[pid].skin, myvoice, false, false);
+	Skin_FindValidDub(&cv_voice[pnum], players[pid].skin, myvoice, false);
 
 	if (!Playing())
 		return; // do whatever you want
