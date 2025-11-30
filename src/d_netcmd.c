@@ -622,6 +622,14 @@ consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "Off", CV_NET
 // we want this to be default now apparently
 consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "On", CV_NETVAR, CV_OnOff, NULL);
 
+// "Arrow Bullet": above a certain speed threshold, an aura in the shape of the Shrink arrow
+// covers you, signaling protection from (most) items and players.
+// Default threshold percentage is currently 166%.
+consvar_t cv_kartaltshrink_arrowbullet = CVAR_INIT ("kart_altshrink_arrowbullet", "On", CV_NETVAR, CV_OnOff, NULL);
+
+static CV_PossibleValue_t altshrink_arrowbullet_threshold_cons_t[] = {{0, "MIN"}, {2 * FRACUNIT, "MAX"}, {0, NULL}};
+consvar_t cv_kartaltshrink_arrowbulletthres = CVAR_INIT ("kart_altshrink_arrowbullet_threshold", "1.66", CV_NETVAR|CV_FLOAT, altshrink_arrowbullet_threshold_cons_t, NULL);
+
 static CV_PossibleValue_t kartairsquish_cons_t[] = {{1, "Squish"}, {2, "Flip-over"}, {0, "None"}, {0, NULL}};
 consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kartairsquish_cons_t, NULL);
 
@@ -5478,9 +5486,9 @@ static void Command_ListDoomednums_f(void)
 static void Command_Version_f(void)
 {
 #ifdef DEVELOP
-	CONS_Printf("SRB2Kart %s-%s (%s %s)\n", compbranch, comprevision, compdate, comptime);
+	CONS_Printf("SRB2Kart %s-%s (%s %s)\n", D_GetFancyBranchName(), comprevision, compdate, comptime);
 #else
-	CONS_Printf("SRB2Kart %s (%s %s %s %s) ", VERSIONSTRING, compdate, comptime, comprevision, compbranch);
+	CONS_Printf("SRB2Kart %s (%s %s %s %s) ", VERSIONSTRING, compdate, comptime, comprevision, D_GetFancyBranchName());
 #endif
 
 	// Base library

@@ -190,6 +190,8 @@ extern consvar_t cv_kartbubble_defense_damagerate;
 extern consvar_t cv_kartbubble_boost_allow;
 extern consvar_t cv_kartflame_fastfuel;
 extern consvar_t cv_kartflame_offroadburn;
+extern consvar_t cv_kartaltshrink_arrowbullet;
+extern consvar_t cv_kartaltshrink_arrowbulletthres;
 
 extern consvar_t cv_kartairsquish;
 

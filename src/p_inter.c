@@ -2125,7 +2125,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	if (damagetype != DMG_SPECTATOR && target->player && target->player->spectator)
 		return false;
 
-	if (source && source->player && source->player->spectator)
+	if (!P_MobjWasRemoved(source) && source->player && source->player->spectator)
 		return false;
 
 	switch (target->type)
@@ -2215,6 +2215,9 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			const boolean explosioncombo = type == DMG_EXPLODE // This damage type can do evil stuff like ALWAYS combo
 			                               && player->bubbleboost == 0; // ...but popping a Bubble Shield protects you!
 
+			// An Arrow Bullet player ran into a player with a stronger power item. Damage them!
+			const boolean intercept = ((!P_MobjWasRemoved(inflictor)) && inflictor->player && K_InterceptArrowBullet(inflictor->player));
+
 			// Check if the player is allowed to be damaged!
 			// If not, then spawn the instashield effect instead.
 			if (!force)
@@ -2249,6 +2252,13 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				if ((explosioncombo == false) && (player->flashing > 0 || player->squishedtimer > 0))
 				{
 					// Post-hit invincibility
+					K_DoInstashield(player);
+					return false;
+				}
+
+				// Alt. Shrink: Tank non-explosion hits, as long as you're in Arrow Bullet mode.
+				if ((explosioncombo == false) && (intercept == false) && (K_AltShrinkArrowBulletCondition(player)))
+				{
 					K_DoInstashield(player);
 					return false;
 				}

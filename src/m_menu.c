@@ -2848,6 +2848,7 @@ texty -= 10*vid.dupy;\
 #if defined(DEVELOP)
 			addtext(V_ALLOWLOWERCASE|V_GREENMAP|V_TRANSLUCENT, comprevision);
 			addtext(V_ALLOWLOWERCASE|V_YELLOWMAP|V_TRANSLUCENT, compbranch);
+			addtext(0, D_GetFancyBranchName());
 			V_DrawThinString(0, 0, V_ALLOWLOWERCASE|V_ORANGEMAP|V_TRANSLUCENT|V_SNAPTOTOP, va("%s", complast));
 #else // Regular build
 			addtext(V_ALLOWLOWERCASE|V_TRANSLUCENT, va("%s", VERSIONSTRING));

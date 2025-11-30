@@ -2036,7 +2036,7 @@ static void K_drawBossHealthBar(void)
 	UINT8 i = 0, barstatus = 1, randlen = 0, darken = 0;
 	const INT32 startx = BASEVIDWIDTH - 23;
 	INT32 starty = BASEVIDHEIGHT - 25;
-	INT32 rolrand = 0;
+	INT32 rolrand = 0, randtemp = 0;
 	boolean randsign = false;
 
 	if (bossinfo.barlen <= 1)
@@ -2082,7 +2082,9 @@ static void K_drawBossHealthBar(void)
 		barstatus = 2;
 	}
 
-	randlen = M_RandomKey(bossinfo.visualbar-(bossinfo.visualdiv/(2*FRACUNIT)))+1;
+	randtemp = bossinfo.visualbar-(bossinfo.visualdiv/(2*FRACUNIT));
+	if (randtemp > 0)
+		randlen = M_RandomKey(randtemp)+1;
 	randsign = M_RandomChance(FRACUNIT/2);
 
 	// Right wing.
@@ -2097,7 +2099,9 @@ static void K_drawBossHealthBar(void)
 			randlen--;
 			if (!randlen)
 			{
-				randlen = M_RandomKey(bossinfo.visualbar-(bossinfo.visualdiv/(2*FRACUNIT)))+1;
+				randtemp = bossinfo.visualbar-(bossinfo.visualdiv/(2*FRACUNIT));
+				if (randtemp > 0)
+					randlen = M_RandomKey(randtemp)+1;
 				if (barstatus > 1)
 				{
 					rolrand = M_RandomKey(barstatus)+1;
@@ -2661,10 +2665,11 @@ static void K_drawKartStatsnLives(void)
 		{
 			INT32 offsetx = 0;
 			INT32 offsety = 0;
+			boolean split = r_splitscreen == 1;
 
-			if (cv_lives_xoffset.value == 0 || cv_lives_yoffset.value == 0)
+			if ((cv_lives_xoffset.value == 0 && cv_lives_yoffset.value == 0) || split)
 			{
-				if ((cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2) && !K_RingsActive())
+				if ((cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2) && !K_RingsActive() && !split)
 				{
 					offsetx = 25;
 					offsety = 15;
