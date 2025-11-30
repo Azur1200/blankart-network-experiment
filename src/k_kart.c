@@ -406,6 +406,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbubble_boost_allow);
 	CV_RegisterVar(&cv_kartflame_fastfuel);
 	CV_RegisterVar(&cv_kartflame_offroadburn);
+	CV_RegisterVar(&cv_kartaltshrink_arrowbullet);
+	CV_RegisterVar(&cv_kartaltshrink_arrowbulletthres);
 
 	CV_RegisterVar(&cv_kartairsquish);
 
@@ -825,6 +827,22 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 	}
 
 	if (mobj2->player && mobj2->player->flipovertimer)
+	{
+		mobj2->player->justbumped = bumptime;
+		return false;
+	}
+
+	const boolean mobj1_intercepting = ((mobj1->player) && (K_InterceptArrowBullet(mobj1->player)));
+	const boolean mobj2_intercepting = ((mobj2->player) && (K_InterceptArrowBullet(mobj2->player)));
+
+	// The other player is an Arrow Bullet, ignore them.
+	if (mobj1->player && K_AltShrinkArrowBulletCondition(mobj1->player) && (!mobj2_intercepting))
+	{
+		mobj1->player->justbumped = bumptime;
+		return false;
+	}
+
+	if (mobj2->player && K_AltShrinkArrowBulletCondition(mobj2->player) && (!mobj1_intercepting))
 	{
 		mobj2->player->justbumped = bumptime;
 		return false;
@@ -2160,7 +2178,8 @@ boolean K_TripwirePass(const player_t *player)
 boolean K_PlayerCanPunt(const player_t *player)
 {
 	return player->invincibilitytimer > 0 || player->growshrinktimer > 0 ||
-	       (player->flamestore > 0 && K_GetShieldFromPlayer(player) == KSHIELD_FLAME);
+	       (player->flamestore > 0 && K_GetShieldFromPlayer(player) == KSHIELD_FLAME) ||
+		   K_AltShrinkArrowBulletCondition(player);
 }
 
 boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item)
@@ -7520,7 +7539,15 @@ void K_KartResetPlayerColor(player_t *player)
 
 	if (player->growshrinktimer) // Ditto, for grow/shrink
 	{
-		if (player->growshrinktimer % 5 == 0)
+		if (K_AltShrinkArrowBulletCondition(player))
+		{
+			// Arrow Bullet!
+			player->mo->colorized = true;
+			player->mo->color = SKINCOLOR_CREAMSICLE;
+			fullbright = true;
+			goto finalise;
+		}
+		else if (player->growshrinktimer % 5 == 0)
 		{
 			player->mo->colorized = true;
 			player->mo->color = player->growshrinktimer < 0 ? SKINCOLOR_CREAMSICLE : SKINCOLOR_PERIWINKLE;
@@ -8895,6 +8922,14 @@ static boolean K_AltInvinSliptideCondition(player_t *player)
 	return (K_InvincibilityGradient(player->invincibilitytimer) > (FRACUNIT/2));
 }
 
+fixed_t K_GetSpeedPercentage(player_t *player)
+{
+	if (!player)
+		return 0; // NULL player means there's no speeed to gather.
+
+	return (FixedDiv(player->speed, K_GetKartSpeed(player, false, false)));
+}
+
 // Sliptide conditions for Alt. Shrink
 static boolean K_AltShrinkSliptideCondition(player_t *player)
 {
@@ -8908,6 +8943,28 @@ static boolean K_AltShrinkSliptideCondition(player_t *player)
 
 	// Allow sliptides if you're moving above 75% speed.
 	return (speedPercent > (3 * FRACUNIT / 4));
+}
+
+// Conditions for putting the player in "arrow bullet" mode.
+boolean K_AltShrinkArrowBulletCondition(player_t *player)
+{
+	if (!cv_kartaltshrink_arrowbullet.value) // Not toggled on; we can't do anything
+		return false;
+
+	if (!player)
+		return false; // NULL player means there's no way we can BE an arrow bullet.
+
+	// Only if you're at or above the threshold percentage!
+	return (K_GetSpeedPercentage(player) >= cv_kartaltshrink_arrowbulletthres.value);
+}
+
+// This player intercepts an Arrow Bullet and causes damage.
+boolean K_InterceptArrowBullet(player_t *player)
+{
+	if (!player)
+		return false;
+	
+	return ((player->invincibilitytimer && !K_IsKartItemAlternate(KITEM_INVINCIBILITY)) || (player->growshrinktimer > 0) || (player->flamestore));
 }
 
 static void K_HandleAirDriftDrag(player_t *player, boolean onground)

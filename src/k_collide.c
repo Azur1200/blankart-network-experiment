@@ -856,6 +856,8 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 					P_InstaThrust(t2, K_MomentumAngle(t2), K_Momentum2D(t2) / 3);
 
 					K_PlayPainSound(t2, NULL);
+
+					return true;
 				}
 			}
 			if (P_IsObjectOnGround(t1) && P_IsObjectOnGround(t2))
@@ -899,6 +901,8 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 					P_InstaThrust(t1, K_MomentumAngle(t1), K_Momentum2D(t1) / 3);
 
 					K_PlayPainSound(t1, NULL);
+
+					return true;
 				}
 			}
 			else if (P_IsObjectOnGround(t1) && P_IsObjectOnGround(t2))

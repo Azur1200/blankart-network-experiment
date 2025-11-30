@@ -2309,6 +2309,11 @@ void P_MovePlayer(player_t *player)
 		K_SpawnSparkleTrail(player->mo);
 	}
 
+	if (K_AltShrinkArrowBulletCondition(player))
+	{
+		K_SpawnSparkleTrail(player->mo);
+	}
+
 	if (player->wipeoutslow > 1 && (leveltime & 1))
 		K_SpawnWipeoutTrail(player->mo, false);
 
