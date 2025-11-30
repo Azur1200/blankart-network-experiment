@@ -4242,8 +4242,9 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 #undef WARN
 #undef WARN0
 
-#define WARN(str, ...) deh_warning("KartVoice %s: " str, strbuf_get(voicenames, voice->info.nameofs), __VA_ARGS__)
-#define WARN0(str) deh_warning("KartVoice %s: " str, strbuf_get(voicenames, voice->info.nameofs))
+/*
+#define WARN(str, ...) deh_warning("KartVoice %s: " str, voice->name, __VA_ARGS__)
+#define WARN0(str) deh_warning("KartVoice %s: " str, voice->name)
 
 // Necessary for sound adding, so we can gather flags and singularity data.
 static sfxenum_t skinsoundreroute[] = {
@@ -4416,13 +4417,13 @@ void readkartvoice(MYFILE *f, kartvoice_t *voice)
 	while (!myfeof(f)); // finish when the line is empty
 
 	// Set our ID afterwards.
-	voice->id = (UINT32)(voice - skinvoices);
+	//voice->id = (UINT32)(voice - skinvoices);
 
 	Z_Free(s);
 }
 
 #undef WARN
-#undef WARN0
+#undef WARN0*/
 
 //
 //
@@ -4602,15 +4603,6 @@ useoddsfunc_f *get_useoddsfunc(const char *word)
 			return USEODDS_FUNCS[i].func;
 	deh_warning("Couldn't find odds function named 'KO_%s'",word);
 	return NULL;
-}
-
-kartvoicetype_e get_kartvoice(const char *word)
-{ // Returns the value of KVOICE_ enumerations
-	kartvoicetype_e i;
-	i = DEH_FindKartVoice(word);
-	if (i == MAXSKINVOICES)
-		deh_warning("Couldn't find voice named 'KVOICE_%s'", word);
-	return i;
 }
 
 /// \todo Make ANY of this completely over-the-top math craziness obey the order of operations.

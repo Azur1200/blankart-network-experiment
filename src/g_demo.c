@@ -1268,28 +1268,31 @@ void G_ReadDemoExtraData(void)
 				FindClosestSkinForStats(p, extra.kartspeed, extra.kartweight);
 
 			// Voice
-			const INT32 vce = R_FindIDForVoice(extra.voicename);
+			const INT32 vce = R_FindIDForVoice(&skins[players[p].skin], extra.voicename);
 
 			if (vce == MAXSKINVOICES)
 			{
 				// The above function didn't find a voice, so we'll just fall back
 				// to the skin's voice.
-				players[p].voice_id = skins[players[p].skin].voice->id;
+				players[p].voice_id = 0;
 			}
 			else
 			{
 				players[p].voice_id = (UINT16)vce;
 			}
 
-			if (skinvoices[players[p].voice_id].parent ==
-				skins[players[p].skin].voice->parent &&
-			    skinvoices[players[p].voice_id].id !=
-				skins[players[p].skin].voice->id &&
+			if (skins[players[p].skin].voices[players[p].voice_id].id == 0)
+			{
+				// Default voice for this skin. Just strip the object of its voice.
+				players[p].mo->voice = NULL;
+			}
+			else if (skins[players[p].skin].voices[players[p].voice_id].id !=
+				skins[players[p].skin].voices[0].id &&
 			    !P_MobjWasRemoved(players[p].mo))
 			{
 				// This player's mobj exists, and their voice is valid, and isn't
 				// the default. So, attach the voice to the mobj!
-				players[p].mo->voice = &skinvoices[players[p].voice_id];
+				players[p].mo->voice = &skins[players[p].skin].voices[players[p].voice_id];
 			}
 
 			players[p].kartspeed = extra.kartspeed;
@@ -1396,7 +1399,7 @@ void G_WriteDemoExtraData(void)
 				WRITESTRINGL(demobuf.p, skins[players[i].skin].name, 16+1);
 
 				// Voice
-				WRITESTRINGL(demobuf.p, DEH_KartVoiceName(players[i].voice_id), 32+1);
+				WRITESTRINGL(demobuf.p, skins[players[i].skin].voices[players[i].voice_id].name, 32+1);
 
 				// Stats
 				WRITEUINT8(demobuf.p, skins[players[i].skin].kartspeed);
@@ -2983,7 +2986,7 @@ void G_BeginRecording(void)
 			WRITESTRINGL(demobuf.p, skincolors[player->skincolor].name, 16+1);
 
 			// Voice
-			WRITESTRINGL(demobuf.p, DEH_KartVoiceName(player->voice_id), 32+1);
+			WRITESTRINGL(demobuf.p, skins[player->skin].voices[player->voice_id].name, 32+1);
 
 			// Save follower's skin name
 			// PS: We must check for 'follower' to determine if the followerskin is valid. It's going to be 0 if we don't have a follower, but 0 is also absolutely a valid follower!
@@ -3859,13 +3862,13 @@ void G_DoPlayDemo(char *defdemoname)
 		// We'll only assign IDs, since the actual voice assignment happens during
 		// player spawn.
 
-		const INT32 vce = R_FindIDForVoice(plr->voice);
+		const INT32 vce = R_FindIDForVoice(&skins[players[p].skin], plr->voice);
 
 		if (vce == MAXSKINVOICES)
 		{
 			// The above function didn't find a voice, so we'll just fall back to
 			// the skin's voice.
-			players[p].voice_id = skins[players[p].skin].voice->id;
+			players[p].voice_id = 0;
 		}
 		else
 		{

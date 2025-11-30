@@ -2615,38 +2615,6 @@ static int lib_rGetNameByColor(lua_State *L)
 }
 
 
-// R_SKINS
-////////////
-
-// Lua-exclusive; allocates a voice into memory, and returns a pointer to said voice.
-// Mangled clone of deh_soc's get_kartvoice, modified for Lua.
-static int lib_rAddKartVoice(lua_State *L)
-{
-	const char* word = luaL_checkstring(L, 1);
-	NOHUD
-
-	char wordupper[VOICENAMESIZE+1];
-
-	strlcpy(wordupper, word, sizeof(wordupper));
-	strupr(wordupper);
-
-	INT32 i = DEH_FindKartVoice(wordupper);
-	if (i == MAXSKINVOICES)
-	{
-		// Freeslot voices that don't exist yet.
-		const INT32 allocresult = R_AllocKartVoice(false, word, &i);
-
-		if (allocresult < 0)
-			return luaL_error(L, "kartvoice_t '%s' could not be allocated.", word);
-		else
-			skinvoices[i].id = (UINT32)(&skinvoices[i] - skinvoices);
-	}
-
-	// If we're down here, we managed to allocate our voice.
-	LUA_PushUserdata(L, &skinvoices[i], META_VOICE);
-	return 1;
-}
-
 // S_SOUND
 ////////////
 static int GetValidSoundOrigin(lua_State *L, void **origin)
@@ -5425,9 +5393,6 @@ static luaL_Reg lib[] = {
 	{"R_GetColorByName", lib_rGetColorByName},
 	{"R_GetSuperColorByName", lib_rGetSuperColorByName},
 	{"R_GetNameByColor", lib_rGetNameByColor},
-
-	// r_skins (voice)
-	{"R_AddKartVoice", lib_rAddKartVoice},
 
 	// s_sound
 	{"S_StartSound",lib_sStartSound},

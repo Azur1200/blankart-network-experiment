@@ -258,19 +258,4 @@ void P_ResetData(INT32 flags)
 			K_RegisterItem(i);
 		}
 	}
-
-	// voices
-	if (init)
-	{
-		for (i = 0; i < MAXSKINVOICES; i++)
-		{
-			R_ClearVoice(i);
-		}
-
-		numskinvoices = 0;
-
-		if (voicenames)
-			Z_Free(voicenames);
-		voicenames = strbuf_alloc();
-	}
 }

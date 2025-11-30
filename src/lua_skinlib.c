@@ -144,8 +144,10 @@ static int skin_get(lua_State *L)
 		LUA_PushUserdata(L, skin->soundsid, META_SOUNDSID);
 		break;
 	case skin_voice:
-		LUA_PushUserdata(L, skin->voice, META_VOICE);
-		break;
+		// ...uuuuuuughhhhh...
+		return UNIMPLEMENTED;
+		//LUA_PushUserdata(L, skin->voice, META_VOICE);
+		//break;
 	case skin_sprites:
 		LUA_PushUserdata(L, skin->sprites, META_SKINSPRITES);
 		break;
@@ -255,7 +257,7 @@ static int soundsid_get(lua_State *L)
 	if (i >= NUMSKINSOUNDS)
 		return luaL_error(L, "%s cannot be %s", LUA_QL("skinsound_t"), va("%u", (UINT32)i));
 
-	lua_pushinteger(L, P_GetKartVoiceSFX(s->voice, i));
+	lua_pushinteger(L, P_GetKartVoiceSFX(&s->voices[0], i));
 	return 1;
 }
 

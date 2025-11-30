@@ -2703,7 +2703,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	UINT8 latestlap;
 	UINT16 skincolor;
 	INT32 skin;
-	kartvoicetype_e voice;
+	UINT16 voice;
 	UINT32 availabilities;
 
 	tic_t jointime;

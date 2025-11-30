@@ -1316,7 +1316,7 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 				//const INT32 sfx_id = (losing ? sfx_klose : sfx_kwin);
 				skin_t *playerskin = &skins[player->skin];
 
-				const kartvoice_t *playervoice = (!P_MobjWasRemoved(player->mo) ? P_GetMobjVoice(player->mo) : playerskin->voice);
+				const kartvoice_t *playervoice = (!P_MobjWasRemoved(player->mo) ? P_GetMobjVoice(player->mo) : &playerskin->voices[0]);
 
 				if (playervoice)
 				{

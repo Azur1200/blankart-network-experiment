@@ -2337,12 +2337,19 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	SYNCF(MD3_EXTVAL3, mobj->extravalue3);
 	SYNCF(MD3_LIFETIME, mobj->mobjlifetime);
 
-	if (GETB(MD3_VOICE))
+	if (GETB(MD3_VOICE) && mobj->skin)
 	{
 		if (save->write)
-			WRITEUINT16(save->p, (UINT16)((kartvoice_t *)mobj->voice - skinvoices));
+			WRITEUINT16(save->p, (UINT16)(mobj->voice - &((skin_t *)(mobj->skin))->voices[0]));
 		else
-			mobj->voice = &skinvoices[READUINT16(save->p)];
+		{
+			UINT16 savedvoice = READUINT16(save->p);
+
+			if (savedvoice > ((skin_t *)(mobj->skin))->numvoices)
+				savedvoice = 0;
+
+			mobj->voice = &((skin_t *)(mobj->skin))->voices[savedvoice];
+		}
 	}
 
 	if (!save->write)

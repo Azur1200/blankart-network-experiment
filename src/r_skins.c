@@ -43,7 +43,7 @@ INT32 numskins = 0;
 INT32 numskinvoices = 0;
 skin_t skins[MAXSKINS];
 INT32 skinsorted[MAXSKINS];
-kartvoice_t skinvoices[MAXSKINVOICES];
+//kartvoice_t skinvoices[MAXSKINVOICES];
 
 // FIXTHIS: don't work because it must be inistilised before the config load
 //#define SKINVALUES
@@ -298,9 +298,9 @@ sfxenum_t P_GetKartVoiceSFX(kartvoice_t *voice, INT32 skinsound)
 	return sfx_thok;
 }
 
-void R_ClearVoice(kartvoicetype_e voicetype)
+void R_ClearVoice(skin_t *skin, INT32 voicetype)
 {
-	kartvoice_t *voice = &skinvoices[voicetype];
+	kartvoice_t *voice = &skin->voices[voicetype];
 
 	memset(voice, 0, sizeof(kartvoice_t));
 }
@@ -343,12 +343,11 @@ static void Sk_SetDefaultValue(skin_t *skin, kartvoice_t *skin_voice)
 		}
 	}
 
-	// TODO: Make this hexadecimal
-	skin_voice->parent = (UINT16)(skin - skins);
-	
-	skin_voice->id = skin_voice-skinvoices;
+	strlcpy(skin_voice->name, "default", sizeof(skin_voice->name));
+	strlcpy(skin_voice->realname, "Default", sizeof(skin_voice->realname));
 
-	skin->voice = skin_voice;
+	skin->numvoices++;
+	CONS_Printf(M_GetText("%d %s allocated for this skin.\n"), skin->numvoices, (skin->numvoices == 1) ? "voice" : "voices");
 }
 
 static void R_IHateThatHedgehog(UINT16 wadnum);
@@ -718,20 +717,31 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 
 // Gets the corresponding voice ID for a given voice's name.
 // Returns MAXSKINVOICES if nothing is found.
-kartvoicetype_e R_FindIDForVoice(const char* voicename)
+INT32 R_FindIDForVoice(skin_t *skin, const char* voicename)
 {
 	INT32 i;
 	const char *checkvoicename;
 
 	// Scan through our allocated skin voices for the wanted voice.
-	for (i = 0; i < numskinvoices; i++)
+
+	// First pass: Check the actual name.
+	for (i = 0; i < MAXSKINVOICES; i++)
 	{
-		// Whatever. Go, my code duplication!
-		checkvoicename = DEH_KartVoiceName(i);
-		if (strnicmp(voicename, checkvoicename, VOICENAMESIZE) == 0)
+		if (strnicmp(voicename, skin->voices[i].name, VOICENAMESIZE) == 0)
 		{
 			// Found a voice.
-			return (kartvoicetype_e)i;
+			return i;
+		}
+	}
+
+	// Second pass: check the display name.
+	for (i = 0; i < MAXSKINVOICES; i++)
+	{
+		// Whatever. Go, my code duplication!
+		if (strnicmp(voicename, skin->voices[i].realname, VOICENAMESIZE) == 0)
+		{
+			// Found a voice.
+			return i;
 		}
 	}
 
@@ -739,18 +749,18 @@ kartvoicetype_e R_FindIDForVoice(const char* voicename)
 	return MAXSKINVOICES;
 }
 
-static kartvoicetype_e R_FindIDForVoiceNum(UINT16 voicenum)
+static INT32 R_FindIDForVoiceNum(skin_t *skin, UINT16 voicenum)
 {
 	INT32 i;
 
 	// Scan through our allocated skin voices for the wanted voice.
-	for (i = 0; i < numskinvoices; i++)
+	for (i = 0; i < MAXSKINVOICES; i++)
 	{
 		// Whatever. Go, my code duplication!
-		if (skinvoices[i].id == voicenum)
+		if (skin->voices[i].id == voicenum)
 		{
 			// Found a voice.
-			return (kartvoicetype_e)i;
+			return i;
 		}
 	}
 
@@ -763,12 +773,12 @@ void SetPlayerVoice(INT32 playernum, const char* voicename)
 {
 	player_t* player = &players[playernum];
 
-	kartvoicetype_e voxid = R_FindIDForVoice(voicename);
+	INT32 voxid = R_FindIDForVoice(&skins[player->skin], voicename);
 
 	if (voxid == MAXSKINVOICES)
 	{
-		// Couldn't find a voice. Default to the skin's.
-		voxid = skins[player->skin].voice->id;
+		// Couldn't find a voice. Default to the skin's default.
+		voxid = 0;
 	}
 
 	if (P_MobjWasRemoved(player->mo))
@@ -785,8 +795,7 @@ void SetPlayerVoice(INT32 playernum, const char* voicename)
 
 	const kartvoice_t* myvoice = P_GetMobjVoice(player->mo);
 
-	const char* myvoicename = DEH_KartVoiceName(myvoice->id);
-	if (!strnicmp(voicename, myvoicename, VOICENAMESIZE))
+	if (!strnicmp(voicename, myvoice->name, VOICENAMESIZE))
 	{
 		// Hey... this voice is the same as before!
 		// WAIT! Before we go, reset the player's voice ID!
@@ -801,8 +810,8 @@ void SetPlayerVoice(INT32 playernum, const char* voicename)
 	// for the needed name. If we're down here, we've passed the safeguards and can assign a
 	// voice.
 
-	if (voxid != skins[player->skin].voice->id)
-		player->mo->voice = &skinvoices[(UINT16)voxid];
+	if (voxid)
+		player->mo->voice = &skins[player->skin].voices[(UINT16)voxid];
 	else
 		player->mo->voice = NULL;
 
@@ -816,12 +825,12 @@ void SetPlayerVoice(INT32 playernum, const char* voicename)
 void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 {
 	player_t* player = &players[playernum];
-	kartvoicetype_e voxid = R_FindIDForVoiceNum(voicenum);
+	INT32 voxid = R_FindIDForVoiceNum(&skins[player->skin], voicenum);
 
 	if (voxid == MAXSKINVOICES)
 	{
-		// Couldn't find a voice. Default to the skin's.
-		voxid = skins[player->skin].voice->id;
+		// Couldn't find a voice. Default to the skin's default.
+		voxid = 0;
 	}
 
 	if (P_MobjWasRemoved(player->mo))
@@ -853,8 +862,8 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 	// for the needed name. If we're down here, we've passed the safeguards and can assign a
 	// voice.
 
-	if (voxid != skins[player->skin].voice->id)
-		player->mo->voice = &skinvoices[(UINT16)voxid];
+	if (voxid)
+		player->mo->voice = &skins[player->skin].voices[(UINT16)voxid];
 	else
 		player->mo->voice = NULL;
 
@@ -1076,15 +1085,14 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 static void R_IHateThatHedgehog(UINT16 wadnum)
 {
 	skin_t *skin = &skins[0];
-	kartvoice_t *skin_voice = &skinvoices[0];
+	kartvoice_t *skin_voice = &skin->voices[0];
 	Sk_SetDefaultValue(skin, skin_voice);
 	skin->wadnum = wadnum;
 	strcpy(skin->name, "sonic");
-	skin->voice->parent = 0;
 
 	// Add voice
 	INT32 dummy;
-	if (R_AllocKartVoice(true, skin->name, &dummy) < 0)
+	if (R_FindIDForVoice(skin, "default") == MAXSKINVOICES)
 	{
 		// Hey guy, take care!
 		I_Error("Failed to allocate initial skin voice\n");
@@ -1101,6 +1109,136 @@ static void R_IHateThatHedgehog(UINT16 wadnum)
 	if (rendermode == render_opengl)
 		HWR_AddPlayerModel(0);
 #endif
+}
+
+// Necessary for sound adding, so we can gather flags and singularity data.
+static sfxenum_t skinsoundreroute[] = {
+	sfx_kwin,
+	sfx_klose,
+	sfx_khurt1,
+	sfx_khurt2,
+	sfx_kattk1, // Offense item taunt
+	sfx_kattk2,
+	sfx_kbost1, // Boost item taunt
+	sfx_kbost2,
+	sfx_kslow, // Overtake taunt
+	sfx_khitem, // Hit confirm taunt
+	sfx_kgloat, // Power item taunt
+};
+
+// Extremely shitty and lifted almost entirely from r_skins.c
+// Sets the sound effect value for a voice, given a valid skinsound value is passed.
+static UINT8 reallygrossvoicesfxadder(INT32 skinsound, const char *value, kartvoice_t *voice)
+{
+	sfxenum_t i, j, reroute;
+	char printval[6];
+
+	// Remove the prefix. (We can affect this directly since we're not going to use it again.)
+	if ((value[0] == 'D' || value[0] == 'd') && (value[1] == 'S' || value[1] == 's')) // DS*
+		value += 2;
+	else // sfx_*
+		value += 4;
+
+	strncpy(printval, value, 6);
+
+	reroute = skinsoundreroute[skinsound];
+
+	// Automatically allocate any defined voice sounds.
+	// Freeslotted voice clips won't ever belong to a skin.
+
+	i = sfx_None;
+
+	// Find if this sound already exists first.
+	for (j = 0; j < NUMSFX; j++)
+	{
+		if (!S_sfx[j].name)
+			continue;
+
+		if (!stricmp(S_sfx[j].name, value))
+		{
+			// Found an existing sound.
+			i = j;
+			break;
+		}
+	}
+
+	// This sound doesn't seem to exist, so let's add a new one.
+	if (i == sfx_None)
+	{
+		CONS_Printf("Sound sfx_%s allocated.\n", value);
+		i = S_AddSoundFx(value, S_sfx[reroute].singularity, S_sfx[reroute].flags, false);
+	}
+
+	if (i != sfx_None)
+	{
+		if (voice)
+		{
+			Sk_SetSkinVoiceValue(voice, skinsound, i);
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+static kartvoice_t *allocvoice;
+
+static void readkartvoice(skin_t *skin, char *stoken, char *value, kartvoice_t *voice)
+{
+	if (!stricmp(stoken, "voicename"))
+	{
+		// Allocate the actual voice,
+	}
+	else if (!stricmp(stoken, "GLOAT"))
+	{
+		reallygrossvoicesfxadder(SKSKPOWR, value, voice);
+	}
+	else if (!stricmp(stoken, "WIN"))
+	{
+		reallygrossvoicesfxadder(SKSKWIN, value, voice);
+	}
+	else if (!stricmp(stoken, "LOSE"))
+	{
+		reallygrossvoicesfxadder(SKSKLOSE, value, voice);
+	}
+	else if (!stricmp(stoken, "SLOW") || !stricmp(stoken, "OVERTAKE") || !stricmp(stoken, "PASS"))
+	{
+		reallygrossvoicesfxadder(SKSKSLOW, value, voice);
+	}
+	else if (!stricmp(stoken, "PAIN1") || !stricmp(stoken, "HURT1") || !stricmp(stoken, "DAMAGE1"))
+	{
+		reallygrossvoicesfxadder(SKSKPAN1, value, voice);
+	}
+	else if (!stricmp(stoken, "PAIN2") || !stricmp(stoken, "HURT2") || !stricmp(stoken, "DAMAGE2"))
+	{
+		reallygrossvoicesfxadder(SKSKPAN2, value, voice);
+	}
+	else if (!stricmp(stoken, "ATTACK"))
+	{
+		// Needs to be handled like rival allocation
+	}
+	else if (!stricmp(stoken, "ATTACK1"))
+	{
+		reallygrossvoicesfxadder(SKSKATK1, value, voice);
+	}
+	else if (!stricmp(stoken, "ATTACK2"))
+	{
+		reallygrossvoicesfxadder(SKSKATK2, value, voice);
+	}
+	else if (!stricmp(stoken, "BOOST1"))
+	{
+		reallygrossvoicesfxadder(SKSKBST1, value, voice);
+	}
+	else if (!stricmp(stoken, "BOOST2"))
+	{
+		reallygrossvoicesfxadder(SKSKBST2, value, voice);
+	}
+	else if (!stricmp(stoken, "HITEM") || !stricmp(stoken, "HITCONFIRM"))
+	{
+		reallygrossvoicesfxadder(SKSKHITM, value, voice);
+	}
+
+	return -1;
 }
 
 // returns whether found appropriate property
@@ -1222,6 +1360,173 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 	GETPATCH(facemmap)
 #undef GETPATCH
 
+	else if (!stricmp(stoken, "voicename"))
+	{
+		// Change the current voice.
+		INT32 vox_id = R_FindIDForVoice(skin, value);
+
+		if (vox_id == MAXSKINVOICES)
+		{
+			if (!stricmp(stoken, "default"))
+			{
+				// "default" should ALWAYS exist!
+				I_Error("Failed to allocate default voice for skin %s\n", skin->name);
+			}
+
+			// Couldn't find this voice; let's try allocating.
+			if (R_AllocKartVoice(skin, value, &vox_id) + 1)
+			{
+				// Allocated a voice!
+				allocvoice = &skin->voices[vox_id];
+				CONS_Printf(M_GetText("%d %s allocated for this skin.\n"), skin->numvoices, (skin->numvoices == 1) ? "voice" : "voices");
+			}
+			
+			// Found nothing, or we're full. Let's just keep moving.
+		}
+		else
+			allocvoice = &skin->voices[vox_id];
+	}
+	else if (!stricmp(stoken, "voicerealname"))
+	{
+		// Set the "realname" field for the current voice.
+		STRBUFCPY(allocvoice->realname, value);
+		SYMBOLCONVERT(allocvoice->realname);
+	}
+	else if (!stricmp(stoken, "voicegloat"))
+	{
+		reallygrossvoicesfxadder(SKSKPOWR, value, allocvoice);
+	}
+	else if (!stricmp(stoken, "voicewin"))
+	{
+		reallygrossvoicesfxadder(SKSKWIN, value, allocvoice);
+	}
+	else if (!stricmp(stoken, "voicelose"))
+	{
+		reallygrossvoicesfxadder(SKSKLOSE, value, allocvoice);
+	}
+	else if (!stricmp(stoken, "voiceslow") || !stricmp(stoken, "voiceovertake") || !stricmp(stoken, "voicepass"))
+	{
+		reallygrossvoicesfxadder(SKSKSLOW, value, allocvoice);
+	}
+	else if (!stricmp(stoken, "voicepain1") || !stricmp(stoken, "voicehurt1") || !stricmp(stoken, "voicedamage1"))
+	{
+		reallygrossvoicesfxadder(SKSKPAN1, value, allocvoice);
+	}
+	else if (!stricmp(stoken, "voicepain2") || !stricmp(stoken, "voicehurt2") || !stricmp(stoken, "voicedamage2"))
+	{
+		reallygrossvoicesfxadder(SKSKPAN2, value, allocvoice);
+	}
+	else if (!stricmp(stoken, "voiceattack1"))
+	{
+		reallygrossvoicesfxadder(SKSKATK1, value, allocvoice);
+	}
+	else if (!stricmp(stoken, "voiceattack2"))
+	{
+		reallygrossvoicesfxadder(SKSKATK2, value, allocvoice);
+	}
+	else if (!stricmp(stoken, "voiceboost1"))
+	{
+		reallygrossvoicesfxadder(SKSKBST1, value, allocvoice);
+	}
+	else if (!stricmp(stoken, "voiceboost2"))
+	{
+		reallygrossvoicesfxadder(SKSKBST2, value, allocvoice);
+	}
+	else if (!stricmp(stoken, "voicehitem") || !stricmp(stoken, "voicehitconfirm"))
+	{
+		reallygrossvoicesfxadder(SKSKHITM, value, allocvoice);
+	}
+	else if (!stricmp(stoken, "voicehurt") || !stricmp(stoken, "voicepain") || !stricmp(stoken, "voicedamage"))
+	{
+		// (that one gif of patrick drooling where his mouth is his entire face)
+		size_t len = strlen(value);
+		size_t i;
+		char voicename[VOICENAMESIZE] = "";
+		UINT8 pos = 0;
+		UINT8 numvoices = 0;
+
+		for (i = 0; i <= len; i++)
+		{
+			if (numvoices >= VOICEARRAYSIZE)
+			{
+				break;
+			}
+
+			if (value[i] == ',' || i == len)
+			{
+				reallygrossvoicesfxadder((numvoices < 1) ? SKSKPAN1 : SKSKPAN2, voicename, allocvoice);
+				numvoices++;
+
+				memset(voicename, 0, sizeof (voicename));
+				pos = 0;
+
+				continue;
+			}
+
+			voicename[pos] = value[i];
+			pos++;
+		}
+	}
+	else if (!stricmp(stoken, "voiceattack"))
+	{
+		size_t len = strlen(value);
+		size_t i;
+		char voicename[VOICENAMESIZE] = "";
+		UINT8 pos = 0;
+		UINT8 numvoices = 0;
+
+		for (i = 0; i <= len; i++)
+		{
+			if (numvoices >= VOICEARRAYSIZE)
+			{
+				break;
+			}
+
+			if (value[i] == ',' || i == len)
+			{
+				reallygrossvoicesfxadder((numvoices < 1) ? SKSKATK1 : SKSKATK2, voicename, allocvoice);
+				numvoices++;
+
+				memset(voicename, 0, sizeof (voicename));
+				pos = 0;
+
+				continue;
+			}
+
+			voicename[pos] = value[i];
+			pos++;
+		}
+	}
+	else if (!stricmp(stoken, "voiceboost"))
+	{
+		size_t len = strlen(value);
+		size_t i;
+		char voicename[VOICENAMESIZE] = "";
+		UINT8 pos = 0;
+		UINT8 numvoices = 0;
+
+		for (i = 0; i <= len; i++)
+		{
+			if (numvoices >= VOICEARRAYSIZE)
+			{
+				break;
+			}
+
+			if (value[i] == ',' || i == len)
+			{
+				reallygrossvoicesfxadder((numvoices < 1) ? SKSKBST1 : SKSKBST2, voicename, allocvoice);
+				numvoices++;
+
+				memset(voicename, 0, sizeof (voicename));
+				pos = 0;
+
+				continue;
+			}
+
+			voicename[pos] = value[i];
+			pos++;
+		}
+	}
 	else // let's check if it's a sound, otherwise error out
 	{
 		boolean found = false;
@@ -1252,10 +1557,7 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 			{
 				newskinsound = S_AddSoundFx(value, S_sfx[i].singularity, S_sfx[i].flags, true);
 
-				if (skin->voice)
-				{
-					Sk_SetSkinVoiceValue(skin->voice, S_sfx[i].skinsound, newskinsound);
-				}
+				Sk_SetSkinVoiceValue(allocvoice, S_sfx[i].skinsound, newskinsound);
 
 				found = true;
 			}
@@ -1269,26 +1571,30 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 // Allocates a voice onto the dehacked list, and iterates the provided output pointer
 // (should it exist).
 //
-INT32 R_AllocKartVoice(boolean skinalloc, const char* name, INT32 *out)
+INT32 R_AllocKartVoice(skin_t *skin, const char* name, INT32 *out)
 {
 	char voxname_upper[VOICENAMESIZE];
 
 	strlcpy(voxname_upper, name, sizeof(voxname_upper));
 	strupr(voxname_upper);
 
-	*out = DEH_FindKartVoice(voxname_upper);
+	*out = R_FindIDForVoice(skin, name);
     if (*out != MAXSKINVOICES)
-        return skinalloc ? -1 : 0; // already allocated
+        return -1; // already allocated
 
-    if (numskinvoices == MAXSKINVOICES - 1) {
+    if (skin->numvoices == MAXSKINVOICES - 1) {
         CONS_Alert(CONS_WARNING, "Ran out of free voice slots!\n");
         return -1;
     }
 
-	CONS_Printf("Voice %s allocated.\n",voxname_upper);
-    DEH_Link(voxname_upper, &skinvoices[numskinvoices].info, &voicenames);
+	strlcpy(skin->voices[skin->numvoices].name, name, sizeof(skin->voices[skin->numvoices].name));
+	strlwr(skin->voices[skin->numvoices].name);
 
-    *out = numskinvoices++;
+	skin->voices[skin->numvoices].id = skin->numvoices;
+
+	CONS_Printf("Voice %s allocated for skin %s.\n",skin->voices[skin->numvoices].name,skin->name);
+
+    *out = skin->numvoices++;
 	return 0;
 }
 
@@ -1334,7 +1640,9 @@ void R_AddSkins(UINT16 wadnum)
 
 		// set defaults
 		skin = &skins[numskins];
-		skin_voice = &skinvoices[numskinvoices];
+		skin_voice = &skin->voices[0];
+		allocvoice = skin_voice;
+
 		Sk_SetDefaultValue(skin, skin_voice);
 		skin->wadnum = wadnum;
 		realname = false;
@@ -1364,7 +1672,6 @@ void R_AddSkins(UINT16 wadnum)
 				if (skinnum == -1)
 				{
 					STRBUFCPY(skin->name, value);
-					skin->voice->parent = (UINT16)(skin - skins);
 				}
 				// the skin name must uniquely identify a single skin
 				// if the name is already used I make the name 'namex'
@@ -1382,7 +1689,6 @@ void R_AddSkins(UINT16 wadnum)
 						// I'm lazy so if NEW name is already used I leave the 'skin x'
 						// default skin name set in Sk_SetDefaultValue
 						STRBUFCPY(skin->name, value2);
-						skin->voice->parent = (UINT16)(skin - skins);
 					}
 					Z_Free(value2);
 				}
@@ -1409,14 +1715,10 @@ void R_AddSkins(UINT16 wadnum)
 
 		// Add voice
 		INT32 dummy;
-		if (R_AllocKartVoice(true, skin->name, &dummy) < 0)
+		if (R_FindIDForVoice(skin, "default") == MAXSKINVOICES)
 		{
 			// We couldn't allocate our own skin's voice?!
 			I_Error("Failed to allocate voice for skin %s\n", skin->name);
-		}
-		else
-		{
-			CONS_Printf(M_GetText("%d voices allocated.\n"), numskinvoices);
 		}
 
 		// Add sprites
@@ -1463,6 +1765,7 @@ void R_PatchSkins(UINT16 wadnum)
 	size_t size;
 	skin_t *skin;
 	boolean noskincomplain, realname;
+	sfxenum_t *array_target;
 
 	//
 	// search for all skin patch markers in pwad
@@ -1505,6 +1808,8 @@ void R_PatchSkins(UINT16 wadnum)
 
 			value = strtok(NULL, "\r\n= ");
 
+			array_target = NULL;
+
 			if (!value)
 				I_Error("R_PatchSkins: syntax error in P_SKIN lump# %d(%s) in WAD %s\n", lump, W_CheckNameForNumPwad(wadnum,lump), wadfiles[wadnum]->filename);
 
@@ -1515,7 +1820,10 @@ void R_PatchSkins(UINT16 wadnum)
 					strlwr(value);
 					skinnum = R_SkinAvailable(value);
 					if (skinnum != -1)
+					{
 						skin = &skins[skinnum];
+						allocvoice = &skins[skinnum].voices[0];
+					}
 					else
 					{
 						CONS_Debug(DBG_SETUP, "R_PatchSkins: unknown skin name in P_SKIN lump# %d(%s) in WAD %s\n", lump, W_CheckNameForNumPwad(wadnum,lump), wadfiles[wadnum]->filename);
@@ -1573,6 +1881,8 @@ void R_PatchSkins(UINT16 wadnum)
 				}
 				else if (!R_ProcessPatchableFields(skin, stoken, value))
 					CONS_Debug(DBG_SETUP, "R_PatchSkins: Unknown keyword '%s' in P_SKIN lump #%d (WAD %s)\n", stoken, lump, wadfiles[wadnum]->filename);
+
+				
 			}
 
 			if (!skin)

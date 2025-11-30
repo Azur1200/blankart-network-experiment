@@ -12381,24 +12381,12 @@ void P_SpawnPlayer(INT32 playernum)
 	mobj->skin = &skins[p->skin];
 	P_SetupStateAnimation(mobj, mobj->state);
 
-	if (p->voice_id != skins[p->skin].voice->id)
+	if (p->voice_id)
 	{
 		// During respawns, do a quick check on our voice ID to make sure
 		// our skin can use it.
 		// This should prevent bots from always having Sonic's voice.
-		kartvoice_t *tentative_voice = &skinvoices[p->voice_id];
-
-		if (tentative_voice->parent == skins[p->skin].voice->parent)
-		{
-			// Seems OK, set our voice!
-			mobj->voice = tentative_voice;
-		}
-		else
-		{
-			// Parent mismatch; use the skin default.
-			p->voice_id = skins[p->skin].voice->id;
-			mobj->voice = NULL;
-		}
+		mobj->voice = &skins[p->skin].voices[p->voice_id];
 	}
 
 	mobj->health = 1;
@@ -14991,9 +14979,9 @@ kartvoice_t *P_GetMobjVoice(const mobj_t *mo)
 	{
 		return mo->voice;
 	}
-	else if (mo->skin && ((skin_t *)mo->skin)->voice)
+	else if (mo->skin)
 	{
-		return ((skin_t *)mo->skin)->voice;
+		return &((skin_t *)mo->skin)->voices[0];
 	}
 
 	return NULL;

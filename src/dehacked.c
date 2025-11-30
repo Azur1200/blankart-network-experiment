@@ -786,7 +786,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 						result = K_RegisterResult(word2, alternate);
 					readkartresult(f, result);
 				}
-				else if (fastncmp(word, "KARTVOICE", 9))
+				/*else if (fastncmp(word, "KARTVOICE", 9)) (Deprecated; getting merged into skins)
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = DEH_FindKartVoice(word2); // find a voice by name
@@ -811,7 +811,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 						deh_warning("KartVoice number %d out of range (0 - %d)", i, numskinvoices);
 						ignorelines(f);
 					}
-				}
+				}*/
 				else if (fastcmp(word, "WEATHER") || fastcmp(word, "PRECIP") || fastcmp(word, "PRECIPITATION"))
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number

@@ -38,26 +38,18 @@ extern "C" {
 
 extern consvar_t cv_skinselectstyle, cv_skinselectsort;
 
-typedef enum
-{
-	KSKVC_FIRSTSLOT = 0,
-	KSKVC_LASTSLOT = 65535,
-	MAXSKINVOICES
-} kartvoicetype_e;
-
-#define MAXVOICEFREESLOTS (MAXSKINVOICES - KSKVC_FIRSTFREESLOT)
+#define MAXSKINVOICES 16 // 16 voices * 4096 skins = 65536 voices in total :^)
 
 // Player voice struct
 struct kartvoice_t
 {
     UINT32 id;
 
-	// Dehacked info for the voice's name (hash and pointer within the voicenames array).
-	dehinfo_t info;
+	// The voice's name.
+	char name[VOICENAMESIZE+1];
 
-	// UINT16 ID of the parent skin this voice belongs to.
-	// Checked when the voice is assigned to prevent erroneous dubs.
-	UINT16 parent;
+	// Display name, for things such as menus
+	char realname[VOICENAMESIZE+1];
 	
 	sfxenum_t win;
     sfxenum_t lose;
@@ -98,7 +90,9 @@ struct skin_t
 
 	// Pointer to a skin's voice, providing specific sounds per-skin.
 	// If an mobj_t doesn't have a voice, it defaults to this value, given a skin is in use.
-	kartvoice_t *voice;
+	kartvoice_t voices[MAXSKINVOICES];
+
+	UINT16 numvoices;
 
 	// Proxy value for the (now removed) soundsid array.
 	// This is ONLY used in a Lua context.
@@ -133,7 +127,7 @@ enum skinmenusortoption
 extern INT32 numskins, numskinvoices;
 extern skin_t skins[MAXSKINS];
 extern INT32 skinsorted[MAXSKINS];
-extern kartvoice_t skinvoices[MAXSKINVOICES];
+//extern kartvoice_t skinvoices[MAXSKINVOICES];
 
 extern CV_PossibleValue_t Forceskin_cons_t[];
 
@@ -155,11 +149,11 @@ void R_AddSkins(UINT16 wadnum);
 UINT8 P_GetSkinSprite2(skin_t *skin, UINT8 spr2, player_t *player);
 UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe);
 
-INT32 R_AllocKartVoice(boolean skinalloc, const char* name, INT32 *out);
-void R_ClearVoice(kartvoicetype_e voicetype);
+INT32 R_AllocKartVoice(skin_t *skin, const char* name, INT32 *out);
+void R_ClearVoice(skin_t *skin, INT32 voicetype);
 void Sk_SetSkinVoiceValue(kartvoice_t *voice, INT32 skinsound, INT32 writesound);
 
-kartvoicetype_e R_FindIDForVoice(const char *voicename);
+INT32 R_FindIDForVoice(skin_t *skin, const char *voicename);
 void SetPlayerVoice(INT32 playernum, const char *voicename);
 void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum);
 sfxenum_t P_GetKartVoiceSFX(kartvoice_t *voice, INT32 skinsound);
