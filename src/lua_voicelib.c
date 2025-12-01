@@ -100,6 +100,11 @@ static int voice_get(lua_State* L)
 	return 1;
 }
 
+static int voice_set(lua_State *L)
+{
+	return luaL_error(L, LUA_QL("kartvoice_t") " struct cannot be edited by Lua.");
+}
+
 static int voice_num(lua_State* L)
 {
 	kartvoice_t* voice = *((kartvoice_t**)luaL_checkudata(L, 1, META_VOICE));
@@ -193,6 +198,9 @@ int LUA_VoiceLib(lua_State* L)
 	luaL_newmetatable(L, META_VOICE);
 	lua_pushcfunction(L, voice_get);
 	lua_setfield(L, -2, "__index");
+
+	lua_pushcfunction(L, voice_set);
+	lua_setfield(L, -2, "__newindex");
 
 	lua_pushcfunction(L, voice_num);
 	lua_setfield(L, -2, "__len");
