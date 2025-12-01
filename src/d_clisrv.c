@@ -2739,7 +2739,7 @@ void CL_RemovePlayer(INT32 playernum, kickreason_t reason)
 	LUA_InvalidatePlayer(&players[playernum]);
 
 	// don't look through someone's view who isn't there
-	G_ResetViews();
+	G_ResetViews(false);
 
 	K_CheckBumpers();
 	P_CheckRacers();
