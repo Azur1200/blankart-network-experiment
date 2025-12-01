@@ -1112,12 +1112,15 @@ static void P_PlayerFlip(mobj_t *mo)
 fixed_t P_GetMobjGravity(mobj_t *mo)
 {
 	fixed_t gravityadd = 0;
+	fixed_t gravitymul = FRACUNIT;
 	sector_t *gravsector = NULL; // Custom gravity
 	boolean goopgravity = false;
 	boolean wasflip;
 
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
+
+	gravitymul = mo->scale;
 
 	wasflip = (mo->eflags & MFE_VERTICALFLIP) != 0;
 	mo->eflags &= ~MFE_VERTICALFLIP;
@@ -1178,6 +1181,11 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 		if (mo->player->carry == CR_DASHRING && Obj_DashRingPlayerHasNoGravity(mo->player))
 		{
 			gravityadd = 0;
+		}
+
+		if (K_IsAltShrunk(mo->player))
+		{
+			gravitymul = mapobjectscale;
 		}
 	}
 	else
@@ -1263,7 +1271,7 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 	if (goopgravity)
 		gravityadd = -gravityadd/5;
 
-	gravityadd = FixedMul(gravityadd, mo->scale);
+	gravityadd = FixedMul(gravityadd, gravitymul);
 
 	return gravityadd;
 }
