@@ -8954,6 +8954,9 @@ boolean K_AltShrinkArrowBulletCondition(player_t *player)
 	if (!player)
 		return false; // NULL player means there's no way we can BE an arrow bullet.
 
+	if (!K_IsAltShrunk(player)) // Not Alt. Shrunk!
+		return false;
+
 	// Only if you're at or above the threshold percentage!
 	return (K_GetSpeedPercentage(player) >= cv_kartaltshrink_arrowbulletthres.value);
 }
