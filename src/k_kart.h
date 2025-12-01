@@ -28,12 +28,11 @@ If states are ever added or removed
 Make sure this matches the actual number of states
 */
 #define KART_NUMINVSPARKLESANIM 12
+#define BASEINVINTIME (10 * TICRATE)
+#define MININVINTIME (7 * TICRATE)
 
 #define GROW_SCALE ((3*FRACUNIT)/2)
 #define SHRINK_SCALE ((6*FRACUNIT)/8)
-
-#define BASEINVINTIME (10 * TICRATE)
-#define MININVINTIME (7 * TICRATE)
 
 #define AUTORESPAWN_TIME (TICRATE/2)
 #define AUTORESPAWN_THRESHOLD (TICRATE/4)
