@@ -1157,6 +1157,8 @@ void G_ReadDemoExtraData(void)
 		demobuf.p = G_ReadRawExtraData(&extra, demobuf.p, demo.version);
 		p = extra.playernum;
 
+		player_t *player = &players[p];
+
 		if (p == DW_END)
 			break;
 
@@ -1181,42 +1183,42 @@ void G_ReadDemoExtraData(void)
 				G_AddPlayer(extra.playernum, extra.playernum);
 			}
 
-			players[p].bot = extra.joindata.bot;
-			if (players[p].bot)
+			player->bot = extra.joindata.bot;
+			if (player->bot)
 			{
-				players[p].botvars.difficulty = extra.joindata.difficulty;
-				players[p].botvars.diffincrease = extra.joindata.diffincrease; // needed to avoid having to duplicate logic
-				players[p].botvars.rival = extra.joindata.rival;
+				player->botvars.difficulty = extra.joindata.difficulty;
+				player->botvars.diffincrease = extra.joindata.diffincrease; // needed to avoid having to duplicate logic
+				player->botvars.rival = extra.joindata.rival;
 			}
 		}
 		if (extra.flags & DXD_PLAYSTATE)
 		{
 			switch (extra.playstate) {
 			case DXD_PST_PLAYING:
-				if (players[p].spectator == true)
+				if (player->spectator == true)
 				{
-					if (players[p].bot)
+					if (player->bot)
 					{
-						players[p].spectator = false;
+						player->spectator = false;
 					}
 					else
 					{
-						players[p].pflags |= PF_WANTSTOJOIN;
+						player->pflags |= PF_WANTSTOJOIN;
 					}
 				}
 				//CONS_Printf("player %s is despectating on tic %d\n", player_names[p], leveltime);
 				break;
 
 			case DXD_PST_SPECTATING:
-				if (players[p].spectator)
+				if (player->spectator)
 				{
-					players[p].pflags &= ~PF_WANTSTOJOIN;
+					player->pflags &= ~PF_WANTSTOJOIN;
 				}
 				else
 				{
-					if (players[p].mo)
+					if (player->mo)
 					{
-						P_DamageMobj(players[p].mo, NULL, NULL, 1, DMG_SPECTATOR);
+						P_DamageMobj(player->mo, NULL, NULL, 1, DMG_SPECTATOR);
 					}
 					P_SetPlayerSpectator(p);
 				}
@@ -1244,11 +1246,11 @@ void G_ReadDemoExtraData(void)
 			// Skin
 			SetPlayerSkin(p, extra.skinname);
 
-			if (stricmp(skins[players[p].skin].name, extra.skinname) != 0)
+			if (stricmp(skins[player->skin].name, extra.skinname) != 0)
 				FindClosestSkinForStats(p, extra.kartspeed, extra.kartweight);
 
-			players[p].kartspeed = extra.kartspeed;
-			players[p].kartweight = extra.kartweight;
+			player->kartspeed = extra.kartspeed;
+			player->kartweight = extra.kartweight;
 		}
 		if (extra.flags & DXD_COLOR)
 		{
@@ -1256,9 +1258,9 @@ void G_ReadDemoExtraData(void)
 			for (i = 0; i < numskincolors; i++)
 				if (!stricmp(skincolors[i].name, extra.colorname)) // SRB2kart
 				{
-					players[p].skincolor = i;
-					if (players[p].mo)
-						players[p].mo->color = i;
+					player->skincolor = i;
+					if (player->mo)
+						player->mo->color = i;
 					break;
 				}
 		}
@@ -1271,16 +1273,16 @@ void G_ReadDemoExtraData(void)
 			for (i = 0; i < numskincolors +2; i++)	// +2 because of Match and Opposite
 				if (!stricmp(Followercolor_cons_t[i].strvalue, extra.followercolor))
 				{
-					players[p].followercolor = i;
+					player->followercolor = i;
 					break;
 				}
 		}
 		if (extra.flags & DXD_RESPAWN)
 		{
-			if (players[p].mo)
+			if (player->mo)
 			{
 				// Is this how this should work..?
-				P_DamageMobj(players[p].mo, NULL, NULL, 1, DMG_INSTAKILL);
+				P_DamageMobj(player->mo, NULL, NULL, 1, DMG_INSTAKILL);
 			}
 		}
 		if (extra.flags & DXD_WEAPONPREF)
@@ -3758,36 +3760,38 @@ void G_DoPlayDemo(char *defdemoname)
 	{
 		demoplayer_t *plr = &header.playerdata[pnum];
 		UINT8 p = plr->playernum;
+		player_t *player = &players[p];
+
 
 		if (!playeringame[displayplayers[0]] || players[displayplayers[0]].spectator)
 			displayplayers[0] = consoleplayer = serverplayer = p;
 
 		G_AddPlayer(p, p);
-		players[p].spectator = !!(plr->flags & DEMO_SPECTATOR);
+		player->spectator = !!(plr->flags & DEMO_SPECTATOR);
 
 		if (plr->flags & DEMO_KICKSTART)
-			players[p].pflags |= PF_KICKSTARTACCEL;
+			player->pflags |= PF_KICKSTARTACCEL;
 		else
-			players[p].pflags &= ~PF_KICKSTARTACCEL;
+			player->pflags &= ~PF_KICKSTARTACCEL;
 
 		if (plr->flags & DEMO_SHRINKME)
-			players[p].pflags |= PF_SHRINKME;
+			player->pflags |= PF_SHRINKME;
 		else
-			players[p].pflags &= ~PF_SHRINKME;
+			player->pflags &= ~PF_SHRINKME;
 
-		K_UpdateShrinkCheat(&players[p]);
+		K_UpdateShrinkCheat(player);
 
-		if ((players[p].bot = !!(plr->flags & DEMO_BOT)) == true)
+		if ((player->bot = !!(plr->flags & DEMO_BOT)) == true)
 		{
-			players[p].botvars.difficulty = plr->bot.difficulty;
-			players[p].botvars.diffincrease = plr->bot.diffincrease; // needed to avoid having to duplicate logic
-			players[p].botvars.rival = plr->bot.rival;
+			player->botvars.difficulty = plr->bot.difficulty;
+			player->botvars.diffincrease = plr->bot.diffincrease; // needed to avoid having to duplicate logic
+			player->botvars.rival = plr->bot.rival;
 		}
 
 		// Name
 		strcpy(player_names[p], plr->name);
 
-		/*if (players[p].spectator)
+		/*if (player->spectator)
 		{
 			CONS_Printf("player %s is spectator at start\n", player_names[p]);
 		}*/
@@ -3799,7 +3803,7 @@ void G_DoPlayDemo(char *defdemoname)
 		for (i = 0; i < numskincolors; i++)
 			if (!stricmp(skincolors[i].name, plr->color)) // SRB2kart
 			{
-				players[p].skincolor = i;
+				player->skincolor = i;
 				break;
 			}
 
@@ -3810,23 +3814,23 @@ void G_DoPlayDemo(char *defdemoname)
 		for (i = 0; i < numskincolors +2; i++)	// +2 because of Match and Opposite
 			if (!stricmp(Followercolor_cons_t[i].strvalue, plr->followercolor))
 			{
-				players[p].followercolor = i;
+				player->followercolor = i;
 				break;
 			}
 
 		// Score, since Kart uses this to determine where you start on the map
-		players[p].score = plr->score;
+		player->score = plr->score;
 
 		// Power Levels
 		clientpowerlevels[p][gametype == GT_BATTLE ? PWRLV_BATTLE : PWRLV_RACE] = plr->powerlevel;
 
 		// Kart stats (set later)
 
-		if (stricmp(skins[players[p].skin].name, plr->skin) != 0)
+		if (stricmp(skins[player->skin].name, plr->skin) != 0)
 			FindClosestSkinForStats(p, plr->kartspeed, plr->kartweight);
 
 		// Followitem
-		players[p].followitem = plr->followitem;
+		player->followitem = plr->followitem;
 	}
 
 	// end of player read (the 0xFF marker)
