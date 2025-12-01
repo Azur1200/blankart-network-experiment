@@ -1230,7 +1230,7 @@ void G_ReadDemoExtraData(void)
 				break;
 			}
 
-			G_ResetViews();
+			G_ResetViews(false); // dont reset our freecam pls thx!
 
 			// maybe these are necessary?
 			K_CheckBumpers();
@@ -2397,7 +2397,7 @@ void G_ConfirmRewind(tic_t rewindtime)
 	displayplayers[2] = olddp3;
 	displayplayers[3] = olddp4;
 	R_ExecuteSetViewSize();
-	G_ResetViews();
+	G_ResetViews(true);
 
 	for (i = splitscreen; i >= 0; i--)
 		P_ResetCamera(&players[displayplayers[i]], &camera[i]);
