@@ -12378,7 +12378,7 @@ void P_SpawnPlayer(INT32 playernum)
 	// set 'spritedef' override in mobj for player skins.. (see ProjectSprite)
 	// (usefulness: when body mobj is detached from player (who respawns),
 	// the dead body mobj retains the skin through the 'spritedef' override).
-	mobj->skin = &skins[p->skin];
+	R_ApplySkin(mobj, &skins[p->skin]);
 	P_SetupStateAnimation(mobj, mobj->state);
 
 	if (p->voice_id)
@@ -14979,12 +14979,20 @@ kartvoice_t *P_GetMobjVoice(const mobj_t *mo)
 	{
 		return mo->voice;
 	}
+#ifdef PARANOIA
+	else
+	{
+		I_Error("P_GetMobjVoice: This object has no voice!");
+		return NULL;
+	}
+#else
 	else if (mo->skin)
 	{
 		return &((skin_t *)mo->skin)->voices[0];
 	}
 
 	return NULL;
+#endif
 }
 
 //

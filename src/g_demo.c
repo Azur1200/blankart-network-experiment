@@ -1279,17 +1279,9 @@ void G_ReadDemoExtraData(void)
 				players[p].voice_id = (UINT16)vce;
 			}
 
-			if (skins[players[p].skin].voices[players[p].voice_id].id == 0)
+			if (!P_MobjWasRemoved(players[p].mo))
 			{
-				// Default voice for this skin. Just strip the object of its voice.
-				players[p].mo->voice = NULL;
-			}
-			else if (skins[players[p].skin].voices[players[p].voice_id].id !=
-				skins[players[p].skin].voices[0].id &&
-			    !P_MobjWasRemoved(players[p].mo))
-			{
-				// This player's mobj exists, and their voice is valid, and isn't
-				// the default. So, attach the voice to the mobj!
+				// This player's mobj exists. So, attach the voice to the mobj!
 				players[p].mo->voice = &skins[players[p].skin].voices[players[p].voice_id];
 			}
 
@@ -2105,7 +2097,7 @@ void G_GhostTicker(void)
 				{
 				default:
 				case GHC_RETURNSKIN:
-					g->mo->skin = g->oldmo.skin;
+					R_ApplySkin(g->mo, g->oldmo.skin);
 					/* FALLTHRU */
 				case GHC_NORMAL: // Go back to skin color
 					g->mo->color = g->oldmo.color;
@@ -2166,7 +2158,7 @@ void G_GhostTicker(void)
 					fmo->colorized = true;
 
 				if (zt.followflags & FZT_SKIN)
-					fmo->skin = &skins[zt.follow.skin];
+					R_ApplySkin(fmo, &skins[zt.follow.skin]);
 			}
 			if (fmo)
 			{
@@ -2569,7 +2561,7 @@ void G_ReadMetalTic(mobj_t *metal)
 					follow->colorized = true;
 
 				if (followtic & FZT_SKIN)
-					follow->skin = &skins[READUINT8(metal_p)];
+					R_ApplySkin(follow, &skins[READUINT8(metal_p)]);
 			}
 			if (follow)
 			{
@@ -4124,7 +4116,8 @@ void G_AddGhost(char *defdemoname)
 	gh->mo->tics = -1;
 
 	// Set skin
-	gh->mo->skin = gh->oldmo.skin = ghskin;
+	R_ApplySkin(&gh->oldmo, ghskin);
+	R_ApplySkin(gh->mo, gh->oldmo.skin);
 
 	// Set color
 	gh->mo->color = ((skin_t*)gh->mo->skin)->prefcolor;

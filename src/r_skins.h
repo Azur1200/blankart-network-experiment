@@ -144,6 +144,8 @@ UINT32 R_GetSkinAvailabilities(void);
 INT32 R_SkinAvailable(const char *name);
 void R_PatchSkins(UINT16 wadnum);
 void R_AddSkins(UINT16 wadnum);
+void R_ApplySkin(mobj_t *mo, skin_t *skin);
+void R_ApplySkinOnly(mobj_t *mo, skin_t *skin);
 
 UINT8 P_GetSkinSprite2(skin_t *skin, UINT8 spr2, player_t *player);
 UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe);

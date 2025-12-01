@@ -2001,10 +2001,10 @@ static void SendNameAndColor(UINT8 n)
 	// Need to update voices after the fact.
 	if (!cv_voice[n].string)
 	{
-		CV_StealthSet(&cv_voice[n], skins[player->skin].voices[0].name);
+		CV_StealthSet(&cv_voice[n], skins[cv_skin[n].value].voices[0].name);
 	}
 
-	if (R_FindIDForVoice(&skins[player->skin], cv_voice[n].string) == MAXSKINVOICES)
+	if (R_FindIDForVoice(&skins[cv_skin[n].value], cv_voice[n].string) == MAXSKINVOICES)
 	{
 		// In the chance our current voice isn't valid,
 		// rescan our current voice and send that over the network.
@@ -2018,7 +2018,7 @@ static void SendNameAndColor(UINT8 n)
 		{
 			// Get the voice from our ID.
 			// No need to compare parents.
-			valuevoice = &skins[player->skin].voices[player->voice_id];
+			valuevoice = &skins[cv_skin[n].value].voices[player->voice_id];
 
 			if (valuevoice)
 			{
@@ -2027,9 +2027,22 @@ static void SendNameAndColor(UINT8 n)
 			else
 			{
 				// ...still nothing?
-				CV_StealthSet(&cv_voice[n], skins[player->skin].voices[0].name);
+				CV_StealthSet(&cv_voice[n], skins[cv_skin[n].value].voices[0].name);
 			}
 		}
+	}
+
+	// After EVERYTHING, do one last check on our voice so we can set the value.
+	INT32 cvar_voxid = R_FindIDForVoice(&skins[cv_skin[n].value], cv_voice[n].string);
+
+	if (cvar_voxid == MAXSKINVOICES)
+	{
+		// ...huh?! Reset to the default.
+		cv_voice[n].value = 0;
+	}
+	else
+	{
+		cv_voice[n].value = cvar_voxid;
 	}
 
 	// Finally write out the complete packet and send it off.
@@ -7416,6 +7429,12 @@ static void Color4_OnChange(void)
 
 static void __voice_cvar_func(INT32 pid, UINT8 pnum)
 {
+	if (!numskins)
+	{
+		// There aren't even any skins yet!
+		return;
+	}
+
 	kartvoice_t *myvoice = P_GetMobjVoice(players[pid].mo);
 
 	if (!myvoice)

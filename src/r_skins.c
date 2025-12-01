@@ -675,13 +675,8 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 
 		if (player->mo)
 		{
-			player->mo->skin = skin;
+			R_ApplySkin(player->mo, skin);
 
-			if (player->mo->voice)
-			{
-				// Clear out the voice pointer, so we can fall back to using skin voices.
-				player->mo->voice = NULL;
-			}
 			P_SetScale(player->mo, player->mo->scale);
 			P_SetPlayerMobjState(player->mo, player->mo->state-states); // Prevent visual errors when switching between skins with differing number of frames
 		}
@@ -770,6 +765,27 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 
 	// Tell the demo that we've updated our voice_id as well.
 	demo_extradata[playernum] |= DXD_SKIN;
+}
+
+/**	\brief	Applies the skin and its default voice.
+
+	\param	mo		(mobj_t) the given object the skin and voice are being assigned to
+	\param	skin	(skin_t) the skin to attach to the object. The voice is sourced from this skin
+*/
+void R_ApplySkin(mobj_t *mo, skin_t *skin)
+{
+	mo->skin = skin;
+	mo->voice = &((skin_t *)mo->skin)->voices[0];
+}
+
+/**	\brief	Applies only the skin.
+
+	\param	mo		(mobj_t) the given object the skin is being assigned to
+	\param	skin	(skin_t) the skin to attach to the object
+*/
+void R_ApplySkinOnly(mobj_t *mo, skin_t *skin)
+{
+	mo->skin = skin;
 }
 
 //
