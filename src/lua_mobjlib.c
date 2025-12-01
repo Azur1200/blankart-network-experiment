@@ -64,6 +64,7 @@ enum mobj_e {
 	mobj_eflags,
 	mobj_renderflags,
 	mobj_skin,
+	mobj_voice,
 	mobj_color,
 	mobj_bnext,
 	mobj_bprev,
@@ -161,6 +162,7 @@ static const char *const mobj_opt[] = {
 	"eflags",
 	"renderflags",
 	"skin",
+	"voice",
 	"color",
 	"bnext",
 	"bprev",
@@ -426,6 +428,9 @@ static int mobj_get(lua_State *L)
 		if (!mo->skin)
 			return 0;
 		lua_pushstring(L, ((skin_t *)mo->skin)->name);
+		break;
+	case mobj_voice: // just push the struct damnit!
+		LUA_PushUserdata(L, mo->voice, META_VOICE);
 		break;
 	case mobj_color:
 		lua_pushinteger(L, mo->color);
@@ -901,6 +906,12 @@ static int mobj_set(lua_State *L)
 			}
 		return luaL_error(L, "mobj.skin '%s' not found!", skin);
 	}
+	case mobj_voice:
+		// as much as i want to allow ironman without overwriting the player's skin,
+		// letting the mobj's voice desync with the skin has some nasty implications at the moment
+		return NOSET;
+		//mo->voice = *((kartvoice_t **)luaL_checkudata(L, 3, META_VOICE));
+		//break;
 	case mobj_color:
 	{
 		UINT16 newcolor = (UINT16)luaL_checkinteger(L,3);

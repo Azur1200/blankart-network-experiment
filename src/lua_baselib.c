@@ -251,7 +251,8 @@ static const struct {
 	{META_MATRIX,       "matrix_t"},
 	{META_QUATERNION,   "quaternion_t"},
 	{META_VOICE,        "kartvoice_t"},
-	{META_VOICE_ARRAY,  "kartvoice_t.array"},
+	{META_VOICE_ARRAY,  "kartvoice_t.array[]"},
+	{META_VOICE_ARRAY1, "kartvoice_t.array[1]"},
 
 	{NULL,              NULL}
 };

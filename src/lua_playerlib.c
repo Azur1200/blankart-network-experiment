@@ -1507,6 +1507,8 @@ static int player_set(lua_State *L)
 	}
 	case player_skin:
 		return NOSET;
+	case player_voice_id:
+		return NOSET;
 	case player_availabilities:
 		return NOSET;
 	case player_score:

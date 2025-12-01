@@ -75,10 +75,10 @@ static int voice_get(lua_State* L)
 		lua_pushstring(L, voice->name);
 		break;
 	case voicevars_win:
-		LUA_PushUserdata(L, &S_sfx[voice->win], META_SFXINFO);
+		LUA_PushUserdata(L, &voice->win, META_VOICE_ARRAY1);
 		break;
 	case voicevars_lose:
-		LUA_PushUserdata(L, &S_sfx[voice->lose], META_SFXINFO);
+		LUA_PushUserdata(L, &voice->lose, META_VOICE_ARRAY1);
 		break;
 	case voicevars_pain:
 		LUA_PushUserdata(L, voice->pain, META_VOICE_ARRAY);
@@ -90,13 +90,13 @@ static int voice_get(lua_State* L)
 		LUA_PushUserdata(L, voice->boost, META_VOICE_ARRAY);
 		break;
 	case voicevars_overtake:
-		LUA_PushUserdata(L, &S_sfx[voice->overtake], META_SFXINFO);
+		LUA_PushUserdata(L, &voice->overtake, META_VOICE_ARRAY1);
 		break;
 	case voicevars_hitem:
-		LUA_PushUserdata(L, &S_sfx[voice->hitem], META_SFXINFO);
+		LUA_PushUserdata(L, &voice->hitem, META_VOICE_ARRAY1);
 		break;
 	case voicevars_power:
-		LUA_PushUserdata(L, &S_sfx[voice->power], META_SFXINFO);
+		LUA_PushUserdata(L, &voice->power, META_VOICE_ARRAY1);
 		break;
 	default:
 		return RNOFIELD;
@@ -181,9 +181,9 @@ static int voice_array_get(lua_State *L)
 	INT32 i = luaL_checkinteger(L, 2);
 
 	if (i < 0 || i >= VOICEARRAYSIZE)
-		return luaL_error(L, "index %d out of range (0 - %d)", i, VOICEARRAYSIZE);
+		return luaL_error(L, "index %d out of range (0 - %d)", i, VOICEARRAYSIZE-1);
 
-	LUA_PushUserdata(L, &S_sfx[voice_array[i]], META_SFXINFO);
+	lua_pushinteger(L, voice_array[i]);
 	return 1;
 }
 
@@ -193,7 +193,7 @@ static int voice_array_set(lua_State *L)
 	INT32 i = luaL_checkinteger(L, 2);
 
 	if (i < 0 || i >= VOICEARRAYSIZE)
-		return luaL_error(L, "index %d out of range (0 - %d)", i, VOICEARRAYSIZE);
+		return luaL_error(L, "index %d out of range (0 - %d)", i, VOICEARRAYSIZE-1);
 
 	voice_array[i] = (sfxenum_t)luaL_checkinteger(L, 3);
 	return 0;
@@ -203,6 +203,41 @@ static int voice_array_set(lua_State *L)
 static int voice_array_num(lua_State *L)
 {
 	lua_pushinteger(L, VOICEARRAYSIZE);
+	return 1;
+}
+
+// i would've liked to shove the length of the voice array into the userdata...
+// but this codebase is not ready for that, sooooo... have yet ANOTHER userdata type!
+
+// voice_array, i -> voice.array[i]
+static int voice_array1_get(lua_State *L)
+{
+	sfxenum_t *voice_array = *((sfxenum_t **)luaL_checkudata(L, 1, META_VOICE_ARRAY1));
+	INT32 i = luaL_checkinteger(L, 2);
+
+	if (i < 0 || i >= 1)
+		return luaL_error(L, "index %d out of range (0 - %d)", i, 1-1);
+
+	lua_pushinteger(L, voice_array[i]);
+	return 1;
+}
+
+static int voice_array1_set(lua_State *L)
+{
+	sfxenum_t *voice_array = *((sfxenum_t **)luaL_checkudata(L, 1, META_VOICE_ARRAY1));
+	INT32 i = luaL_checkinteger(L, 2);
+
+	if (i < 0 || i >= 1)
+		return luaL_error(L, "index %d out of range (0 - %d)", i, 1-1);
+
+	voice_array[i] = (sfxenum_t)luaL_checkinteger(L, 3);
+	return 0;
+}
+
+// #voice.array -> 1
+static int voice_array1_num(lua_State *L)
+{
+	lua_pushinteger(L, 1);
 	return 1;
 }
 
@@ -227,6 +262,17 @@ int LUA_VoiceLib(lua_State* L)
 	lua_setfield(L, -2, "__newindex");
 
 	lua_pushcfunction(L, voice_array_num);
+	lua_setfield(L, -2, "__len");
+	lua_pop(L,1);
+
+	luaL_newmetatable(L, META_VOICE_ARRAY1);
+	lua_pushcfunction(L, voice_array1_get);
+	lua_setfield(L, -2, "__index");
+
+	lua_pushcfunction(L, voice_array1_set);
+	lua_setfield(L, -2, "__newindex");
+
+	lua_pushcfunction(L, voice_array1_num);
 	lua_setfield(L, -2, "__len");
 	lua_pop(L,1);
 

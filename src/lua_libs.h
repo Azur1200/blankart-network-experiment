@@ -124,7 +124,9 @@ extern lua_State *gL;
 #define META_QUATERNION "QUATERNION_T"
 
 #define META_VOICE "KARTVOICE_T*"
-#define META_VOICE_ARRAY "KARTVOICE_T*ARRAY"
+#define META_VOICE_ARRAY "KARTVOICE_T*[]"
+// TODO: kill this one
+#define META_VOICE_ARRAY1 "KARTVOICE_T*[1]"
 
 boolean luaL_checkboolean(lua_State *L, int narg);
 
