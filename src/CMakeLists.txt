@@ -508,6 +508,7 @@ target_compile_options(SRB2SDL2 PRIVATE
 		-Wno-error=constant-conversion
 		-Wno-unused-but-set-variable
 		-Wno-error=unused-but-set-variable
+		-Wshadow
 	>
 
 	# C++, GNU, Clang and Apple Clang

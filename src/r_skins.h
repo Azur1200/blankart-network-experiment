@@ -97,7 +97,7 @@ struct skin_t
 	// Proxy value for the (now removed) soundsid array.
 	// This is ONLY used in a Lua context.
 	// It doesn't actually have anything and will never actually have anything.
-	skinsound_t soundsid[2];
+	UINT8 soundsid[2];
 
 	// contains super versions too
 	spritedef_t sprites[NUMPLAYERSPRITES*2];
@@ -151,12 +151,10 @@ UINT8 P_GetSkinSprite2(skin_t *skin, UINT8 spr2, player_t *player);
 UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe);
 
 INT32 R_AllocKartVoice(skin_t *skin, const char* name, INT32 *out);
-void Sk_SetSkinVoiceValue(kartvoice_t *voice, INT32 skinsound, INT32 writesound);
-
 INT32 R_FindIDForVoice(skin_t *skin, const char *voicename);
 void SetPlayerVoice(INT32 playernum, const char *voicename);
 void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum);
-sfxenum_t P_GetKartVoiceSFX(kartvoice_t *voice, INT32 skinsound);
+sfxenum_t R_GetLegacySkinSound(const kartvoice_t *voice, sfxenum_t sound);
 
 #ifdef __cplusplus
 } // extern "C"

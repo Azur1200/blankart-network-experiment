@@ -170,134 +170,72 @@ UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe)
 	return P_GetSkinSprite2(skin, spr2, NULL);
 }
 
-void Sk_SetSkinVoiceValue(kartvoice_t *voice, INT32 skinsound, INT32 writesound)
+// returns the sound flags that should be applied to a voice's sound array
+static INT32 R_GetVoiceArraySoundFlags(const kartvoice_t *voice, const sfxenum_t *array)
 {
-	INT32 usesound;
-	
-	switch(skinsound)
-	{
-		case SKSKWIN: // Win quote
-			voice->win = writesound;
-			break;
-		case SKSKLOSE: // Lose quote
-			voice->lose = writesound;
-			break;
-		case SKSKPAN1: // Pain
-		case SKSKPAN2:
-			usesound = skinsound - SKSKPAN1;
-			if (usesound < 2)
-			{
-				voice->pain[usesound] = writesound;
-			}
-			else
-			{
-				I_Error("Sk_SetSkinVoiceValue: Attempted to allocate a pain sound of ID %d.\n", usesound);
-			}
-			
-			break;
-		case SKSKATK1: // Offense item taunt
-		case SKSKATK2:
-			usesound = skinsound - SKSKATK1;
-			if (usesound < 2)
-			{
-				voice->attack[usesound] = writesound;
-			}
-			else
-			{
-				I_Error("Sk_SetSkinVoiceValue: Attempted to allocate an attack sound of ID %d.\n", usesound);
-			}
-			break;
-		case SKSKBST1: // Boost item taunt
-		case SKSKBST2:
-			usesound = skinsound - SKSKBST1;
-			if (usesound < 2)
-			{
-				voice->boost[usesound] = writesound;
-			}
-			else
-			{
-				I_Error("Sk_SetSkinVoiceValue: Attempted to allocate a boost sound of ID %d.\n", usesound);
-			}
-			break;
-		case SKSKSLOW: // Overtake taunt
-			voice->overtake = writesound;
-			break;
-		case SKSKHITM: // Hit confirm taunt
-			voice->hitem = writesound;
-			break;
-		case SKSKPOWR: // Power item taunt
-			voice->power = writesound;
-			break;
-		default:
-			// Ignore any values outside of this range.
-			CONS_Alert(CONS_NOTICE, "Sk_SetSkinVoiceValue: ID %d isn't in the range of possible skin sounds (0 to %d)! Ignoring...\n", skinsound, NUMSKINSOUNDS - 1);
-			break;
-	}
+	if (array == &voice->overtake || array == &voice->hitem)
+		return SF_NOINTERRUPT;
+	else if (array == &voice->power)
+		return SF_NOINTERRUPT|SF_X8AWAYSOUND;
+	else
+		return SF_NOINTERRUPT|SF_X2AWAYSOUND;
 }
 
-sfxenum_t P_GetKartVoiceSFX(kartvoice_t *voice, INT32 skinsound)
+// parses the name of a voice sound array from S_SKIN without the "Voice" prefix
+// returns the length and pointer to the matching voice sound array, or 0 if nothing matched
+static size_t R_ParseVoiceSoundKey(kartvoice_t *voice, const char *name, sfxenum_t **outarray)
 {
-	INT32 usesound;
-	
-	switch(skinsound)
+	// woah! comma operator!
+#define S(str, ret) if (!stricmp(name, #str)) return *outarray = voice->ret, sizeof(voice->ret)/sizeof(*voice->ret)
+#define S1(str, ret) if (!stricmp(name, #str)) return *outarray = &voice->ret, 1
+	S1(WIN, win);
+	S1(LOSE, lose);
+	S(HURT, pain);
+	S(PAIN, pain);
+	S(DAMAGE, pain);
+	S(ATTACK, attack);
+	S(BOOST, boost);
+	S1(SLOW, overtake);
+	S1(OVERTAKE, overtake);
+	S1(PASS, overtake);
+	S1(HITEM, hitem);
+	S1(HITCONFIRM, hitem);
+	S1(GLOAT, power);
+#undef S
+
+	return 0;
+}
+
+sfxenum_t R_GetLegacySkinSound(const kartvoice_t *voice, sfxenum_t sound)
+{
+	switch (sound)
 	{
-		case SKSKWIN: // Win quote
+		case sfx_kwin: // Win quote
 			return voice->win;
-		case SKSKLOSE: // Lose quote
+		case sfx_klose: // Lose quote
 			return voice->lose;
-		case SKSKPAN1: // Pain
-		case SKSKPAN2:
-			usesound = skinsound - SKSKPAN1;
-			if (usesound < 2)
-			{
-				return voice->pain[usesound];
-			}
-			else
-			{
-				I_Error("P_GetKartVoiceSFX: Attempted to retrieve a pain sound of ID %d.\n", usesound);
-			}
-			
-			break;
-		case SKSKATK1: // Offense item taunt
-		case SKSKATK2:
-			usesound = skinsound - SKSKATK1;
-			if (usesound < 2)
-			{
-				return voice->attack[usesound];
-			}
-			else
-			{
-				I_Error("P_GetKartVoiceSFX: Attempted to retrieve an attack sound of ID %d.\n", usesound);
-			}
-			break;
-		case SKSKBST1: // Boost item taunt
-		case SKSKBST2:
-			usesound = skinsound - SKSKBST1;
-			if (usesound < 2)
-			{
-				return voice->boost[usesound];
-			}
-			else
-			{
-				I_Error("P_GetKartVoiceSFX: Attempted to retrieve a boost sound of ID %d.\n", usesound);
-			}
-			break;
-		case SKSKSLOW: // Overtake taunt
+		case sfx_khurt1: // Pain
+		case sfx_khurt2:
+			return voice->pain[sound - sfx_khurt1];
+		case sfx_kattk1: // Offense item taunt
+		case sfx_kattk2:
+			return voice->attack[sound - sfx_kattk1];
+		case sfx_kbost1: // Boost item taunt
+		case sfx_kbost2:
+			return voice->boost[sound - sfx_kbost1];
+		case sfx_kslow: // Overtake taunt
 			return voice->overtake;
-		case SKSKHITM: // Hit confirm taunt
+		case sfx_khitem: // Hit confirm taunt
 			return voice->hitem;
-		case SKSKPOWR: // Power item taunt
+		case sfx_kgloat: // Power item taunt
 			return voice->power;
 		default:
 			return sfx_thok;
 	}
-
-	return sfx_thok;
 }
 
 static void Sk_SetDefaultValue(skin_t *skin, kartvoice_t *skin_voice)
 {
-	INT32 i;
 	//
 	// set default skin values
 	//
@@ -325,13 +263,14 @@ static void Sk_SetDefaultValue(skin_t *skin, kartvoice_t *skin_voice)
 
 	skin->highresscale = FRACUNIT;
 
-	for (i = 0; i < sfx_skinsoundslot0; i++)
-	{	
-		if (S_sfx[i].skinsound != -1)
-		{
-			Sk_SetSkinVoiceValue(skin_voice, S_sfx[i].skinsound, i);
-		}
-	}
+	skin_voice->win = sfx_thok;
+	skin_voice->lose = sfx_thok;
+	skin_voice->pain[0] = skin_voice->pain[1] = sfx_thok;
+	skin_voice->attack[0] = skin_voice->attack[1] = sfx_thok;
+	skin_voice->boost[0] = skin_voice->boost[1] = sfx_thok;
+	skin_voice->overtake = sfx_thok;
+	skin_voice->hitem = sfx_thok;
+	skin_voice->power = sfx_thok;
 
 	strlcpy(skin_voice->name, "default", sizeof(skin_voice->name));
 	strlcpy(skin_voice->realname, "Default", sizeof(skin_voice->realname));
@@ -1025,76 +964,6 @@ static void R_IHateThatHedgehog(UINT16 wadnum)
 #endif
 }
 
-// Necessary for sound adding, so we can gather flags and singularity data.
-static sfxenum_t skinsoundreroute[] = {
-	sfx_kwin,
-	sfx_klose,
-	sfx_khurt1,
-	sfx_khurt2,
-	sfx_kattk1, // Offense item taunt
-	sfx_kattk2,
-	sfx_kbost1, // Boost item taunt
-	sfx_kbost2,
-	sfx_kslow, // Overtake taunt
-	sfx_khitem, // Hit confirm taunt
-	sfx_kgloat, // Power item taunt
-};
-
-// Extremely shitty and lifted almost entirely from r_skins.c
-// Sets the sound effect value for a voice, given a valid skinsound value is passed.
-static UINT8 reallygrossvoicesfxadder(INT32 skinsound, const char *value, kartvoice_t *voice)
-{
-	sfxenum_t i, j, reroute;
-	char printval[6];
-
-	// Remove the prefix. (We can affect this directly since we're not going to use it again.)
-	if ((value[0] == 'D' || value[0] == 'd') && (value[1] == 'S' || value[1] == 's')) // DS*
-		value += 2;
-	else // sfx_*
-		value += 4;
-
-	strncpy(printval, value, 6);
-
-	reroute = skinsoundreroute[skinsound];
-
-	// Automatically allocate any defined voice sounds.
-	// Freeslotted voice clips won't ever belong to a skin.
-
-	i = sfx_None;
-
-	// Find if this sound already exists first.
-	for (j = 0; j < NUMSFX; j++)
-	{
-		if (!S_sfx[j].name)
-			continue;
-
-		if (!stricmp(S_sfx[j].name, value))
-		{
-			// Found an existing sound.
-			i = j;
-			break;
-		}
-	}
-
-	// This sound doesn't seem to exist, so let's add a new one.
-	if (i == sfx_None)
-	{
-		CONS_Printf("Sound sfx_%s allocated.\n", value);
-		i = S_AddSoundFx(value, S_sfx[reroute].singularity, S_sfx[reroute].flags, false);
-	}
-
-	if (i != sfx_None)
-	{
-		if (voice)
-		{
-			Sk_SetSkinVoiceValue(voice, skinsound, i);
-			return 0;
-		}
-	}
-
-	return 1;
-}
-
 static kartvoice_t *allocvoice;
 
 // returns whether found appropriate property
@@ -1248,51 +1117,7 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 		STRBUFCPY(allocvoice->realname, value);
 		SYMBOLCONVERT(allocvoice->realname);
 	}
-	else if (!stricmp(stoken, "voicegloat"))
-	{
-		reallygrossvoicesfxadder(SKSKPOWR, value, allocvoice);
-	}
-	else if (!stricmp(stoken, "voicewin"))
-	{
-		reallygrossvoicesfxadder(SKSKWIN, value, allocvoice);
-	}
-	else if (!stricmp(stoken, "voicelose"))
-	{
-		reallygrossvoicesfxadder(SKSKLOSE, value, allocvoice);
-	}
-	else if (!stricmp(stoken, "voiceslow") || !stricmp(stoken, "voiceovertake") || !stricmp(stoken, "voicepass"))
-	{
-		reallygrossvoicesfxadder(SKSKSLOW, value, allocvoice);
-	}
-	else if (!stricmp(stoken, "voicepain1") || !stricmp(stoken, "voicehurt1") || !stricmp(stoken, "voicedamage1"))
-	{
-		reallygrossvoicesfxadder(SKSKPAN1, value, allocvoice);
-	}
-	else if (!stricmp(stoken, "voicepain2") || !stricmp(stoken, "voicehurt2") || !stricmp(stoken, "voicedamage2"))
-	{
-		reallygrossvoicesfxadder(SKSKPAN2, value, allocvoice);
-	}
-	else if (!stricmp(stoken, "voiceattack1"))
-	{
-		reallygrossvoicesfxadder(SKSKATK1, value, allocvoice);
-	}
-	else if (!stricmp(stoken, "voiceattack2"))
-	{
-		reallygrossvoicesfxadder(SKSKATK2, value, allocvoice);
-	}
-	else if (!stricmp(stoken, "voiceboost1"))
-	{
-		reallygrossvoicesfxadder(SKSKBST1, value, allocvoice);
-	}
-	else if (!stricmp(stoken, "voiceboost2"))
-	{
-		reallygrossvoicesfxadder(SKSKBST2, value, allocvoice);
-	}
-	else if (!stricmp(stoken, "voicehitem") || !stricmp(stoken, "voicehitconfirm"))
-	{
-		reallygrossvoicesfxadder(SKSKHITM, value, allocvoice);
-	}
-	else if (!stricmp(stoken, "voicehurt") || !stricmp(stoken, "voicepain") || !stricmp(stoken, "voicedamage"))
+	else if (!strnicmp(stoken, "voice", 5))
 	{
 		// (that one gif of patrick drooling where his mouth is his entire face)
 		size_t len = strlen(value);
@@ -1301,17 +1126,30 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 		UINT8 pos = 0;
 		UINT8 numvoices = 0;
 
+		sfxenum_t *voicearray;
+		size_t voicearraylen = R_ParseVoiceSoundKey(allocvoice, stoken+5, &voicearray);
+		if (voicearraylen == 0)
+			return false;
+
 		for (i = 0; i <= len; i++)
 		{
-			if (numvoices >= VOICEARRAYSIZE)
-			{
-				break;
-			}
-
 			if (value[i] == ',' || i == len)
 			{
-				reallygrossvoicesfxadder((numvoices < 1) ? SKSKPAN1 : SKSKPAN2, voicename, allocvoice);
-				numvoices++;
+				// Automatically allocate any defined voice sounds.
+				// Freeslotted voice clips won't ever belong to a skin.
+				sfxenum_t j;
+				const char *sfxname = voicename;
+				if (toupper(voicename[0]) == 'D' && toupper(voicename[1]) == 'S')
+					sfxname += 2;
+
+				j = S_AddSoundFx(sfxname, true);
+				if (j == sfx_None)
+					I_Error("Skin %s: out of skin sound slots", skin->name);
+				S_sfx[j].flags = R_GetVoiceArraySoundFlags(allocvoice, voicearray);
+
+				voicearray[numvoices++] = j;
+				if (numvoices >= voicearraylen && i != len)
+					I_Error("Skin %s: voice array %s exceeds max length of %zu", skin->name, stoken, voicearraylen);
 
 				memset(voicename, 0, sizeof (voicename));
 				pos = 0;
@@ -1323,102 +1161,43 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 			pos++;
 		}
 	}
-	else if (!stricmp(stoken, "voiceattack"))
+	else // let's check if it's a legacy skinsound, otherwise error out
 	{
-		size_t len = strlen(value);
-		size_t i;
-		char voicename[VOICENAMESIZE] = "";
-		UINT8 pos = 0;
-		UINT8 numvoices = 0;
-
-		for (i = 0; i <= len; i++)
-		{
-			if (numvoices >= VOICEARRAYSIZE)
-			{
+		sfxenum_t i;
+		for (i = sfx_kwin; i <= sfx_kgloat; i++)
+			if (!stricmp(stoken+2, S_sfx[i].name))
 				break;
-			}
+		if (i > sfx_kgloat)
+			return false;
 
-			if (value[i] == ',' || i == len)
-			{
-				reallygrossvoicesfxadder((numvoices < 1) ? SKSKATK1 : SKSKATK2, voicename, allocvoice);
-				numvoices++;
+		static const char *tonewname[] = {
+			"WIN",
+			"LOSE",
+			"PAIN",
+			"PAIN",
+			"ATTACK",
+			"ATTACK",
+			"BOOST",
+			"BOOST",
+			"SLOW",
+			"HITEM",
+			"GLOAT",
+		};
 
-				memset(voicename, 0, sizeof (voicename));
-				pos = 0;
+		sfxenum_t *voicearray;
+		size_t len = R_ParseVoiceSoundKey(allocvoice, tonewname[i - sfx_kwin], &voicearray);
+		if (len == 0)
+			return false;
 
-				continue;
-			}
+		// grab the flags now before messing with the pointer
+		INT32 flags = R_GetVoiceArraySoundFlags(allocvoice, voicearray);
 
-			voicename[pos] = value[i];
-			pos++;
-		}
-	}
-	else if (!stricmp(stoken, "voiceboost"))
-	{
-		size_t len = strlen(value);
-		size_t i;
-		char voicename[VOICENAMESIZE] = "";
-		UINT8 pos = 0;
-		UINT8 numvoices = 0;
+		if (i == sfx_khurt2 || i == sfx_kattk2 || i == sfx_kbost2)
+			voicearray++;
 
-		for (i = 0; i <= len; i++)
-		{
-			if (numvoices >= VOICEARRAYSIZE)
-			{
-				break;
-			}
-
-			if (value[i] == ',' || i == len)
-			{
-				reallygrossvoicesfxadder((numvoices < 1) ? SKSKBST1 : SKSKBST2, voicename, allocvoice);
-				numvoices++;
-
-				memset(voicename, 0, sizeof (voicename));
-				pos = 0;
-
-				continue;
-			}
-
-			voicename[pos] = value[i];
-			pos++;
-		}
-	}
-	else // let's check if it's a sound, otherwise error out
-	{
-		boolean found = false;
-		sfxenum_t i, newskinsound;
-		size_t stokenadjust;
-
-		// Remove the prefix. (We need to affect an adjusting variable so that we can print error messages if it's not actually a sound.)
-		if ((stoken[0] == 'D' || stoken[0] == 'd') && (stoken[1] == 'S' || stoken[1] == 's')) // DS*
-			stokenadjust = 2;
-		else // sfx_*
-			stokenadjust = 4;
-
-		// Remove the prefix. (We can affect this directly since we're not going to use it again.)
-		if ((value[0] == 'D' || value[0] == 'd') && (value[1] == 'S' || value[1] == 's')) // DS*
-			value += 2;
-		else // sfx_*
-			value += 4;
-
-		// copy name of sounds that are remapped
-		// for this skin
-		for (i = 0; i < sfx_skinsoundslot0; i++)
-		{
-			if (!S_sfx[i].name)
-				continue;
-			if (S_sfx[i].skinsound != -1
-				&& !stricmp(S_sfx[i].name,
-					stoken + stokenadjust))
-			{
-				newskinsound = S_AddSoundFx(value, S_sfx[i].singularity, S_sfx[i].flags, true);
-
-				Sk_SetSkinVoiceValue(allocvoice, S_sfx[i].skinsound, newskinsound);
-
-				found = true;
-			}
-		}
-		return found;
+		*voicearray = S_AddSoundFx(value+2, true);
+		if (*voicearray != sfx_None)
+			S_sfx[*voicearray].flags = flags;
 	}
 	return true;
 }

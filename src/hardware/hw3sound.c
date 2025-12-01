@@ -360,6 +360,7 @@ INT32 HW3S_I_StartSound(const void *origin_p, source3D_data_t *source_parm, chan
 
 	sfx = &S_sfx[sfx_id];
 
+#error See? This shit's been unused for over a decade
 	if (sfx->skinsound!=-1 && origin && origin->skin)
 	{
 		// it redirect player sound to any voice values, should they exist

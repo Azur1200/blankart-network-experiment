@@ -1477,12 +1477,15 @@ static int sfxinfo_get(lua_State *L)
 		lua_pushstring(L, sfx->caption);
 		return 1;
 	case sfxinfor_skinsound:
-		lua_pushinteger(L, sfx->skinsound);
+		if (!lua_compatmode)
+			goto nope;
+		sfxenum_t sound = sfx - S_sfx;
+		lua_pushinteger(L, sound >= sfx_kwin && sound <= sfx_kgloat ? sound - sfx_kwin : -1);
 		return 1;
-	case sfxinfor_string: {
+	case sfxinfor_string:
 		lua_pushstring(L, sfx->name);
 		return 1;
-	}
+	nope:
 	default:
 		return luaL_error(L, "Field does not exist in sfxinfo_t");
 	}

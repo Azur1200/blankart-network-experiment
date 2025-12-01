@@ -141,6 +141,8 @@ static int skin_get(lua_State *L)
 		// This would be pretty cool to push
 		return UNIMPLEMENTED;
 	case skin_soundsid:
+		if (!lua_compatmode)
+			return UNIMPLEMENTED; // close enough
 		LUA_PushUserdata(L, &skin->soundsid[0], META_SOUNDSID);
 		break;
 	case skin_voices:
@@ -251,12 +253,12 @@ static int soundsid_get(lua_State *L)
 	sfxenum_t *soundsid = *((sfxenum_t **)luaL_checkudata(L, 1, META_SOUNDSID));
 	skin_t *s = (skin_t*)((char*)soundsid - offsetof(skin_t, soundsid[0]));
 
-	skinsound_t i = luaL_checkinteger(L, 2);
+	INT32 i = luaL_checkinteger(L, 2);
 
-	if (i >= NUMSKINSOUNDS)
-		return luaL_error(L, "%s cannot be %s", LUA_QL("skinsound_t"), va("%u", (UINT32)i));
+	if (i < 0 || i >= NUMSKINSOUNDS)
+		return luaL_error(L, "%s cannot be %s", LUA_QL("skinsound_t"), va("%u", i));
 
-	lua_pushinteger(L, P_GetKartVoiceSFX(&s->voices[0], i));
+	lua_pushinteger(L, R_GetLegacySkinSound(&s->voices[0], sfx_kwin + i));
 	return 1;
 }
 
@@ -267,23 +269,22 @@ static int soundsid_num(lua_State *L)
 	return 1;
 }
 
-// voices, i -> voices[i]
 static int skinvoices_get(lua_State *L)
 {
 	// Use soundsid to route to the voice array so that voices[0] isn't considered THE VOICE ARRAY
 	sfxenum_t *svoices = *((sfxenum_t **)luaL_checkudata(L, 1, META_SKINVOICES));
 	skin_t *s = (skin_t*)((char*)svoices - offsetof(skin_t, soundsid[1]));
 
-	skinsound_t i = luaL_checkinteger(L, 2);
+	INT32 i = luaL_checkinteger(L, 2);
 
-	if (i >= s->numvoices)
-		return luaL_error(L, "skin.voices[] index %s out of range (0 - %d)", va("%u", (UINT32)i), s->numvoices - 1);
+	if (i < 0 || i >= s->numvoices)
+		return luaL_error(L, "skin.voices[] index %s out of range (0 - %d)", va("%u", i), s->numvoices - 1);
 
 	LUA_PushUserdata(L, &s->voices[i], META_VOICE);
 	return 1;
 }
 
-// #voices -> NUMSKINSOUNDS
+// #voice -> MAXSKINVOICES
 static int skinvoices_num(lua_State *L)
 {
 	lua_pushinteger(L, MAXSKINVOICES);

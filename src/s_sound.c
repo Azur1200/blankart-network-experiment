@@ -520,7 +520,6 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 	const INT32 initial_volume = (origin ? S_ScaleVolumeWithSplitscreen(volume) : volume);
 
 	sfxinfo_t *sfx;
-	kartvoice_t *cur_voice;
 	INT32 sep, pitch, priority, cnum;
 	boolean anyListeners = false;
 	boolean itsUs = false;
@@ -604,23 +603,19 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		return;
 	}
 
+	if (origin && sfx_id >= sfx_kwin && sfx_id <= sfx_kgloat)
+	{
+		// legacy skinsound remapping
+		kartvoice_t *cur_voice = P_GetMobjVoice(origin);
+		if (cur_voice != NULL)
+			sfx_id = R_GetLegacySkinSound(cur_voice, sfx_id);
+	}
+
 	// check for bogus sound #
 	I_Assert(sfx_id >= 1);
 	I_Assert(sfx_id < NUMSFX);
 
 	sfx = &S_sfx[sfx_id];
-
-	if (sfx->skinsound != -1 && origin && origin->skin)
-	{
-		// redirect player sound to any voice values, should they exist
-		cur_voice = P_GetMobjVoice(origin);
-
-		if (cur_voice)
-		{
-			sfx_id = P_GetKartVoiceSFX(cur_voice, sfx->skinsound);
-			sfx = &S_sfx[sfx_id];
-		}
-	}
 
 	// Initialize sound parameters
 	pitch = NORM_PITCH;
@@ -1280,7 +1275,7 @@ void S_StartSoundName(void *mo, const char *soundname)
 			return;
 		}
 
-		soundnum = S_AddSoundFx(soundname, false, 0, false);
+		soundnum = S_AddSoundFx(soundname, false);
 		newsounds[i] = soundnum;
 	}
 
