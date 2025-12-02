@@ -3946,7 +3946,7 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 		P_SetTarget(&throwmo->target, source);
 	}
 
-	return NULL;
+	return throwmo;
 }
 
 UINT16 K_DriftSparkColor(player_t *player, INT32 charge)
