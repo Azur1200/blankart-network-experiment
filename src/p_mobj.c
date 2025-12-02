@@ -12651,6 +12651,7 @@ fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mt
 	case MT_YELLOWHORIZ:
 	case MT_REDHORIZ:
 	case MT_BLUEHORIZ:
+	case MT_GRAYHORIZ:
 		offset += mthing->args[0] ? 0 : 16*FRACUNIT;
 		break;
 

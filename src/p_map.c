@@ -254,6 +254,36 @@ static boolean P_SpecialIsLinedefCrossType(line_t *ld)
 	return linedefcrossspecial;
 }
 
+static boolean P_ShouldSpringForceAngle(mobj_t *spring, ticcmd_t *cmd)
+{
+	switch (spring->type)
+	{
+		case MT_YELLOWDIAG:
+		case MT_REDDIAG:
+		case MT_BLUEDIAG:
+		case MT_GRAYDIAG:
+			if (spring->args[0] & TMSPR_FORCEANGLE)
+				return true;
+			break;
+		case MT_YELLOWHORIZ:
+		case MT_REDHORIZ:
+		case MT_BLUEHORIZ:
+		case MT_GRAYHORIZ:
+			if (spring->args[1] & TMSPR_FORCEANGLE)
+				return true;
+			break;
+		default:
+			break;
+	}
+
+	// Not forced or a irregular spring?
+	// Always allow players that release accel to adjust angle.
+	if (cmd->forwardmove == 0 && cmd->sidemove == 0)
+		return true;
+
+	return false;
+}
+
 void
 P_DoSpringEx
 (		mobj_t * object,
@@ -388,7 +418,7 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 	{
 		if (spring->flags & MF_ENEMY) // Spring shells
 			P_SetTarget(&spring->target, object);
-		if (horizspeed && object->player->cmd.forwardmove == 0 && object->player->cmd.sidemove == 0)
+		if (horizspeed && P_ShouldSpringForceAngle(spring, &object->player->cmd))
 		{
 			object->angle = spring->angle;
 			object->player->angleturn = spring->angle;

@@ -120,6 +120,7 @@ typedef enum
 {
 	TMSPR_NOGRAVITY   = 1,
 	TMSPR_ROTATEEXTRA = 1<<1,
+	TMSPR_FORCEANGLE  = 1<<2,
 } textmapspringflags_t;
 
 typedef enum
