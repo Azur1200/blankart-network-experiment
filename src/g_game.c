@@ -2316,11 +2316,16 @@ void G_FixCamera(UINT8 view)
 // Increment a viewpoint by offset from the current player. A negative value
 // decrements.
 //
-void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive)
+void G_AdjustViewEx(UINT8 viewnum, INT32 offset, boolean onlyactive, boolean resetfreecam)
 {
 	INT32 *displayplayerp, oldview;
 	displayplayerp = &displayplayers[viewnum-1];
 	oldview = (*displayplayerp);
+
+	// turn off the freecam
+	if (resetfreecam)
+		camera[viewnum-1].freecam = false;
+
 	G_ResetView(viewnum, ( (*displayplayerp) + offset ), onlyactive);
 
 	// If no other view could be found, go back to what we had.
@@ -2333,7 +2338,7 @@ void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive)
 // Ensures all viewpoints are valid
 // Also demotes splitscreen down to one player.
 //
-void G_ResetViews(void)
+void G_ResetViews(boolean resetfreecam)
 {
 	UINT8 splits;
 	UINT8 viewd;
@@ -2357,7 +2362,7 @@ void G_ResetViews(void)
 	*/
 	for (viewd = 1; viewd <= splits; ++viewd)
 	{
-		G_AdjustView(viewd, 0, false);
+		G_AdjustViewEx(viewd, 0, false, resetfreecam);
 	}
 }
 

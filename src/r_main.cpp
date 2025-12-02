@@ -1216,7 +1216,8 @@ static void R_SetupAimingFrame(int s)
 	player_t *player = &players[displayplayers[s]];
 	camera_t *thiscam = &camera[s];
 
-	if (player->awayviewtics)
+	if (player->awayviewtics && player->awayviewmobj
+	 && thiscam && !thiscam->freecam) // dont force this if we wanna freecam!
 	{
 		newview->aim = player->awayviewaiming;
 		newview->angle = player->awayviewmobj->angle;
@@ -1265,10 +1266,10 @@ void R_SetupFrame(int s, boolean skybox)
 
 	R_SetupAimingFrame(s);
 
-	if (player->awayviewtics)
+	if (player->awayviewtics && player->awayviewmobj // cut-away view stuff
+	 && thiscam && !thiscam->freecam) // dont force this when we wanna freecam!
 	{
-		// cut-away view stuff
-		r_viewmobj = player->awayviewmobj; // should be a MT_ALTVIEWMAN
+		r_viewmobj = player->awayviewmobj; // should be a MT_ALTVIEWMAN      whos altview man?
 		I_Assert(r_viewmobj != NULL);
 
 		newview->x = r_viewmobj->x;
@@ -1476,7 +1477,7 @@ static void R_PortalFrame(portal_t *portal)
 	}
 }
 
-static void Mask_Pre (maskcount_t* m)
+static void Mask_Pre(maskcount_t* m)
 {
 	m->drawsegs[0] = ds_p - drawsegs;
 	m->vissprites[0] = visspritecount;
@@ -1486,7 +1487,7 @@ static void Mask_Pre (maskcount_t* m)
 	m->viewsector = viewsector;
 }
 
-static void Mask_Post (maskcount_t* m)
+static void Mask_Post(maskcount_t* m)
 {
 	m->drawsegs[1] = ds_p - drawsegs;
 	m->vissprites[1] = visspritecount;
