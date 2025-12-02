@@ -124,6 +124,7 @@ add_executable(SRB2SDL2 MACOSX_BUNDLE WIN32
 	lua_vectorlib.c
 	lua_matrixlib.c
 	lua_quaternionlib.c
+	lua_voicelib.c
 	k_kart.c
 	k_collide.c
 	k_color.c
@@ -507,6 +508,7 @@ target_compile_options(SRB2SDL2 PRIVATE
 		-Wno-error=constant-conversion
 		-Wno-unused-but-set-variable
 		-Wno-error=unused-but-set-variable
+		-Wshadow
 	>
 
 	# C++, GNU, Clang and Apple Clang

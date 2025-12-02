@@ -181,6 +181,7 @@ static const struct {
 	{META_SOUNDSID,     "skin_t.soundsid"},
 	{META_SKINSPRITES,  "skin_t.sprites"},
 	{META_SKINSPRITESLIST,  "skin_t.sprites[]"},
+	{META_SKINVOICES, "skin_t.voices"},
 
 	{META_VERTEX,       "vertex_t"},
 	{META_LINE,         "line_t"},
@@ -249,6 +250,9 @@ static const struct {
 	{META_VECTOR3,      "vector3_t"},
 	{META_MATRIX,       "matrix_t"},
 	{META_QUATERNION,   "quaternion_t"},
+	{META_VOICE,        "kartvoice_t"},
+	{META_VOICE_ARRAY,  "kartvoice_t.array[]"},
+	{META_VOICE_ARRAY1, "kartvoice_t.array[1]"},
 
 	{NULL,              NULL}
 };
@@ -2611,6 +2615,7 @@ static int lib_rGetNameByColor(lua_State *L)
 	return 1;
 }
 
+
 // S_SOUND
 ////////////
 static int GetValidSoundOrigin(lua_State *L, void **origin)
@@ -3679,12 +3684,21 @@ static int lib_kGloatSound(lua_State *L)
 static int lib_kLossSound(lua_State *L)
 {
 	mobj_t *mobj = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));	// let's require a mobj for consistency with the other functions
+	kartvoice_t *mo_voice;
 	sfxenum_t sfx_id;
 	NOHUD
 	if (!mobj->player)
 		return luaL_error(L, "K_PlayLossSound: mobj_t isn't a player object.");
 
-	sfx_id = ((skin_t *)mobj->skin)->soundsid[S_sfx[sfx_klose].skinsound];
+	mo_voice = P_GetMobjVoice(mobj);
+
+	if (!mo_voice)
+	{
+		// No voice!
+		return 0;
+	}
+
+	sfx_id = mo_voice->lose;
 	S_StartSound(mobj, sfx_id);
 	return 0;
 }

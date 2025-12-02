@@ -20,27 +20,12 @@
 extern "C" {
 #endif
 
-// Customisable sounds for Skins
-typedef enum
-{
-	// SRB2kart
-	SKSKWIN, // Win quote
-	SKSKLOSE, // Lose quote
-	SKSKPAN1, // Pain
-	SKSKPAN2,
-	SKSKATK1, // Offense item taunt
-	SKSKATK2,
-	SKSKBST1, // Boost item taunt
-	SKSKBST2,
-	SKSKSLOW, // Overtake taunt
-	SKSKHITM, // Hit confirm taunt
-	SKSKPOWR, // Power item taunt
-	NUMSKINSOUNDS
-} skinsound_t;
+// keep this one around at least, for compatibility code
+#define NUMSKINSOUNDS 11
 
 // free sfx for S_AddSoundFx()
 #define NUMSFXFREESLOTS 2500 // Matches SOC Editor.
-#define NUMSKINSFXSLOTS (MAXSKINS*NUMSKINSOUNDS)
+#define NUMSKINSFXSLOTS (50000 - NUMSFXFREESLOTS)
 
 //
 // SoundFX struct.
@@ -68,10 +53,6 @@ struct sfxinfo_t
 
 	// length of sound data
 	size_t length;
-
-	// sound that can be remapped for a skin, indexes skins[].skinsounds
-	// 0 up to (NUMSKINSOUNDS-1), -1 = not skin specifc
-	INT32 skinsound;
 
 	// this is checked every second to see if sound
 	// can be thrown out (if 0, then decrement, if -1,
@@ -114,8 +95,8 @@ typedef enum
 
 
 void S_InitRuntimeSounds(void);
-sfxenum_t S_AddSoundFx(const char *name, boolean singular, INT32 flags, boolean skinsound);
-extern sfxenum_t sfxfree; // sound test and slotting
+sfxenum_t S_AddSoundFx(const char *name, boolean skinsound);
+extern sfxenum_t sfxfree, skinsfxfree; // sound test and slotting
 void S_RemoveSoundFx(sfxenum_t id);
 
 #ifdef __cplusplus

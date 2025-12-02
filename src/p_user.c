@@ -1313,9 +1313,15 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 
 			if (cv_kartvoices.value)
 			{
-				const INT32 sfx_id = (losing ? sfx_klose : sfx_kwin);
+				//const INT32 sfx_id = (losing ? sfx_klose : sfx_kwin);
 				skin_t *playerskin = &skins[player->skin];
-				S_StartSound(player->mo, playerskin->soundsid[S_sfx[sfx_id].skinsound]);
+
+				const kartvoice_t *playervoice = (!P_MobjWasRemoved(player->mo) ? P_GetMobjVoice(player->mo) : &playerskin->voices[0]);
+
+				if (playervoice)
+				{
+					S_StartSound(player->mo, (losing ? playervoice->lose : playervoice->win));
+				}
 			}
 
 			// See Y_StartIntermission timer handling

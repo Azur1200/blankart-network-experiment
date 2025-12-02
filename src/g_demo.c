@@ -54,7 +54,6 @@
 #include "k_color.h"
 #include "k_follower.h"
 #include "k_grandprix.h"
-#include "strbuf.h"
 
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
 consvar_t cv_recordmultiplayerdemos = CVAR_INIT ("netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL);
@@ -111,7 +110,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x000D
+#define DEMOVERSION 0x000E
 #define DEMOHEADER  "\xF0" "BlanReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -222,6 +221,7 @@ typedef struct
 	char color[16+1];
 	char follower[16+1];
 	char followercolor[16+1];
+	char voice[32+1];
 
 	UINT32 score;
 	UINT16 powerlevel;
@@ -342,6 +342,7 @@ typedef struct
 
 	// DXD_SKIN
 	char skinname[17];
+	char voicename[33];
 	UINT8 kartspeed;
 	UINT8 kartweight;
 
@@ -621,9 +622,18 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 		{
 			READMEM(dp, extra->skinname, 16);
 			extra->skinname[16] = '\0';
+
+			extra->voicename[0] = '\0';
 		}
 		else
+		{
 			READSTRINGL(dp, extra->skinname, 16+1);
+
+			if (version > 0x000D)
+				READSTRINGL(dp, extra->voicename, 32+1);
+			else
+				extra->voicename[0] = '\0';
+		}
 		extra->kartspeed = READUINT8(dp);
 		extra->kartweight = READUINT8(dp);
 	}
@@ -682,6 +692,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	boolean raflag = false;
 	boolean serverinfo = true;
 	boolean rapreset = true; // + extended serverinfo length
+	boolean dubs = true; // Multiple voices
 
 	// these may not be present in old demo formats, so initialize them
 	// also initialize them so the header can be free'd without issues
@@ -716,6 +727,9 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 		case 0x000C:
 			rapreset = false;
 			raflag = true;
+			/* FALLTHRU */
+		case 0x000D:
+			dubs = false;
 			break;
 
 		default: // too old, cannot support.
@@ -724,7 +738,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	}
 	else if (!memcmp(startdp, "\xF0" "KartReplay" "\x0F", 12))
 	{
-		rapreset = raflag = false;
+		dubs = rapreset = raflag = false;
 		serverinfo = false;
 		switch (header->demoversion)
 		{
@@ -946,6 +960,10 @@ skipfiles:
 			READSTRINGL(dp, plr->name, 21+1);
 			READSTRINGL(dp, plr->skin, 16+1);
 			READSTRINGL(dp, plr->color, 16+1);
+
+			if (dubs)
+				READSTRINGL(dp, plr->voice, 32+1);
+
 			READSTRINGL(dp, plr->follower, 16+1);
 			READSTRINGL(dp, plr->followercolor, 16+1);
 		}
@@ -1249,6 +1267,26 @@ void G_ReadDemoExtraData(void)
 			if (stricmp(skins[player->skin].name, extra.skinname) != 0)
 				FindClosestSkinForStats(p, extra.kartspeed, extra.kartweight);
 
+			// Voice
+			const INT32 vce = R_FindIDForVoice(&skins[player->skin], extra.voicename);
+
+			if (vce == MAXSKINVOICES)
+			{
+				// The above function didn't find a voice, so we'll just fall back
+				// to the skin's voice.
+				player->voice_id = 0;
+			}
+			else
+			{
+				player->voice_id = (UINT16)vce;
+			}
+
+			if (!P_MobjWasRemoved(player->mo))
+			{
+				// This player's mobj exists. So, attach the voice to the mobj!
+				player->mo->voice = &skins[player->skin].voices[player->voice_id];
+			}
+
 			player->kartspeed = extra.kartspeed;
 			player->kartweight = extra.kartweight;
 		}
@@ -1352,6 +1390,10 @@ void G_WriteDemoExtraData(void)
 				// Skin
 				WRITESTRINGL(demobuf.p, skins[players[i].skin].name, 16+1);
 
+				// Voice
+				WRITESTRINGL(demobuf.p, skins[players[i].skin].voices[players[i].voice_id].name, 32+1);
+
+				// Stats
 				WRITEUINT8(demobuf.p, skins[players[i].skin].kartspeed);
 				WRITEUINT8(demobuf.p, skins[players[i].skin].kartweight);
 
@@ -2057,7 +2099,7 @@ void G_GhostTicker(void)
 				{
 				default:
 				case GHC_RETURNSKIN:
-					g->mo->skin = g->oldmo.skin;
+					R_ApplySkin(g->mo, g->oldmo.skin);
 					/* FALLTHRU */
 				case GHC_NORMAL: // Go back to skin color
 					g->mo->color = g->oldmo.color;
@@ -2118,7 +2160,7 @@ void G_GhostTicker(void)
 					fmo->colorized = true;
 
 				if (zt.followflags & FZT_SKIN)
-					fmo->skin = &skins[zt.follow.skin];
+					R_ApplySkin(fmo, &skins[zt.follow.skin]);
 			}
 			if (fmo)
 			{
@@ -2521,7 +2563,7 @@ void G_ReadMetalTic(mobj_t *metal)
 					follow->colorized = true;
 
 				if (followtic & FZT_SKIN)
-					follow->skin = &skins[READUINT8(metal_p)];
+					R_ApplySkin(follow, &skins[READUINT8(metal_p)]);
 			}
 			if (follow)
 			{
@@ -2934,6 +2976,9 @@ void G_BeginRecording(void)
 
 			// Color
 			WRITESTRINGL(demobuf.p, skincolors[player->skincolor].name, 16+1);
+
+			// Voice
+			WRITESTRINGL(demobuf.p, skins[player->skin].voices[player->voice_id].name, 32+1);
 
 			// Save follower's skin name
 			// PS: We must check for 'follower' to determine if the followerskin is valid. It's going to be 0 if we don't have a follower, but 0 is also absolutely a valid follower!
@@ -3807,6 +3852,23 @@ void G_DoPlayDemo(char *defdemoname)
 				break;
 			}
 
+		// Voice
+		// We'll only assign IDs, since the actual voice assignment happens during
+		// player spawn.
+
+		const INT32 vce = R_FindIDForVoice(&skins[player->skin], plr->voice);
+
+		if (vce == MAXSKINVOICES)
+		{
+			// The above function didn't find a voice, so we'll just fall back to
+			// the skin's voice.
+			player->voice_id = 0;
+		}
+		else
+		{
+			player->voice_id = (UINT16)vce;
+		}
+
 		// Follower
 		K_SetFollowerByName(p, plr->follower);
 
@@ -4058,7 +4120,8 @@ void G_AddGhost(char *defdemoname)
 	gh->mo->tics = -1;
 
 	// Set skin
-	gh->mo->skin = gh->oldmo.skin = ghskin;
+	R_ApplySkin(&gh->oldmo, ghskin);
+	R_ApplySkin(gh->mo, gh->oldmo.skin);
 
 	// Set color
 	gh->mo->color = ((skin_t*)gh->mo->skin)->prefcolor;

@@ -2544,7 +2544,9 @@ void readsound(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "SKINSOUND"))
 			{
-				S_sfx[num].skinsound = get_number(word2);
+				// ignore this for the sake of not needing an asset update
+				// this was only exposed in blan anyway
+				//S_sfx[num].skinsound = get_number(word2);
 			}
 			else if (fastcmp(word, "CAPTION") || fastcmp(word, "DESCRIPTION"))
 			{
@@ -4325,7 +4327,7 @@ sfxenum_t get_sfx(const char *word)
 		if (S_sfx[i].name && fasticmp(word, S_sfx[i].name))
 			return i;
 	deh_warning("Couldn't find sfx named 'SFX_%s'",word);
-	return -1;
+	return NUMSFX;
 }
 
 menutype_t get_menutype(const char *word)

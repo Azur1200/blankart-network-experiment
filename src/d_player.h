@@ -497,6 +497,7 @@ struct player_t
 	UINT16 skincolor;
 
 	INT32 skin;
+	UINT16 voice_id;
 	UINT32 availabilities;
 
 	UINT8 kartspeed; // Kart speed stat between 1 and 9

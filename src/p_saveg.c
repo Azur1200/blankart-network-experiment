@@ -476,6 +476,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		SYNC(players[i].skincolor);
 		SYNC(players[i].skin);
+		SYNC(players[i].voice_id);
 		SYNC(players[i].availabilities);
 		SYNC(players[i].score);
 		SYNC(players[i].lives);
@@ -1847,6 +1848,7 @@ enum mobj_diff_t
 	MD3_BAKEDOFFSET,
 	MD3_EXTVAL3,
 	MD3_LIFETIME,
+	MD3_VOICE,
 
 	MD__MAX
 };
@@ -2009,6 +2011,7 @@ static void DiffMobj(const mobj_t *mobj, UINT32 diff[])
 	DIFF(mobj->bakexoff || mobj->bakeyoff || mobj->bakezoff || mobj->bakexpiv || mobj->bakeypiv || mobj->bakezpiv, MD3_BAKEDOFFSET);
 	DIFF(mobj->extravalue3, MD3_EXTVAL3);
 	DIFF(mobj->mobjlifetime, MD3_LIFETIME);
+	DIFF(mobj->voice, MD3_VOICE);
 }
 
 static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
@@ -2221,7 +2224,7 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 		if (save->write)
 			WRITEUINT16(save->p, (UINT16)((skin_t *)mobj->skin - skins));
 		else
-			mobj->skin = &skins[READUINT16(save->p)];
+			R_ApplySkin(mobj, &skins[READUINT16(save->p)]);
 	}
 	SYNCF(MD2_COLOR, mobj->color);
 	SYNCF(MD2_EXTVAL1, mobj->extravalue1);
@@ -2333,6 +2336,21 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	SYNCF(MD3_BAKEDOFFSET, mobj->bakezpiv);
 	SYNCF(MD3_EXTVAL3, mobj->extravalue3);
 	SYNCF(MD3_LIFETIME, mobj->mobjlifetime);
+
+	if (GETB(MD3_VOICE) && mobj->skin)
+	{
+		if (save->write)
+			WRITEUINT16(save->p, (UINT16)(mobj->voice - &((skin_t *)(mobj->skin))->voices[0]));
+		else
+		{
+			UINT16 savedvoice = READUINT16(save->p);
+
+			if (savedvoice > ((skin_t *)(mobj->skin))->numvoices)
+				savedvoice = 0;
+
+			mobj->voice = &((skin_t *)(mobj->skin))->voices[savedvoice];
+		}
+	}
 
 	if (!save->write)
 	{

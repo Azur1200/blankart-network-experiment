@@ -219,7 +219,7 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 	if (fastcmp(type, "SFX"))
 	{
 		CONS_Printf("Sound sfx_%s allocated.\n", word);
-		i = S_AddSoundFx(word, false, 0, false);
+		i = S_AddSoundFx(word, false);
 		if (i != sfx_None)
 		{
 			*out = i;

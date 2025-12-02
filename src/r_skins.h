@@ -27,6 +27,8 @@ extern "C" {
 
 /// Defaults
 #define SKINNAMESIZE 16
+#define VOICENAMESIZE 32
+#define VOICEARRAYSIZE 2
 #define SKINRIVALS 3
 // should be all lowercase!! S_SKIN processing does a strlwr
 #define DEFAULTSKIN "sonic"
@@ -35,6 +37,29 @@ extern "C" {
 #define DEFAULTSKIN4 "eggman" // fourth player
 
 extern consvar_t cv_skinselectstyle, cv_skinselectsort;
+
+#define MAXSKINVOICES 16 // 16 voices * 4096 skins = 65536 voices in total :^)
+
+// Player voice struct
+struct kartvoice_t
+{
+    UINT32 id;
+
+	// The voice's name.
+	char name[VOICENAMESIZE+1];
+
+	// Display name, for things such as menus
+	char realname[VOICENAMESIZE+1];
+	
+	sfxenum_t win;
+    sfxenum_t lose;
+    sfxenum_t pain[VOICEARRAYSIZE];
+    sfxenum_t attack[VOICEARRAYSIZE];
+    sfxenum_t boost[VOICEARRAYSIZE];
+    sfxenum_t overtake;
+    sfxenum_t hitem;
+    sfxenum_t power;
+};
 
 /// The skin_t struct
 struct skin_t
@@ -63,8 +88,16 @@ struct skin_t
 
 	char rivals[SKINRIVALS][SKINNAMESIZE+1]; // Your top 3 rivals for GP mode. Uses names so that you can reference skins that aren't added
 
-	// specific sounds per skin
-	sfxenum_t soundsid[NUMSKINSOUNDS]; // sound # in S_sfx table
+	// Pointer to a skin's voice, providing specific sounds per-skin.
+	// If an mobj_t doesn't have a voice, it defaults to this value, given a skin is in use.
+	kartvoice_t voices[MAXSKINVOICES];
+
+	UINT16 numvoices;
+
+	// Proxy value for the (now removed) soundsid array.
+	// This is ONLY used in a Lua context.
+	// It doesn't actually have anything and will never actually have anything.
+	UINT8 soundsid[2];
 
 	// contains super versions too
 	spritedef_t sprites[NUMPLAYERSPRITES*2];
@@ -111,9 +144,17 @@ UINT32 R_GetSkinAvailabilities(void);
 INT32 R_SkinAvailable(const char *name);
 void R_PatchSkins(UINT16 wadnum);
 void R_AddSkins(UINT16 wadnum);
+void R_ApplySkin(mobj_t *mo, skin_t *skin);
+void R_ApplySkinOnly(mobj_t *mo, skin_t *skin);
 
 UINT8 P_GetSkinSprite2(skin_t *skin, UINT8 spr2, player_t *player);
 UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe);
+
+INT32 R_AllocKartVoice(skin_t *skin, const char* name, INT32 *out);
+INT32 R_FindIDForVoice(skin_t *skin, const char *voicename);
+void SetPlayerVoice(INT32 playernum, const char *voicename);
+void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum);
+sfxenum_t R_GetLegacySkinSound(const kartvoice_t *voice, sfxenum_t sound);
 
 #ifdef __cplusplus
 } // extern "C"

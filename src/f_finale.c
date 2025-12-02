@@ -414,7 +414,8 @@ void F_IntroTicker(void)
 			// Need to use M_Random otherwise it always uses the same sound
 			INT32 rskin = M_RandomKey(numskins);
 			UINT8 rtaunt = M_RandomKey(2);
-			sfxenum_t rsound = skins[rskin].soundsid[SKSKBST1+rtaunt];
+
+			sfxenum_t rsound = skins[rskin].voices[0].boost[rtaunt];
 			S_StartSound(NULL, rsound);
 		}
 	}
@@ -443,11 +444,13 @@ void F_IntroTicker(void)
 			// Tails: NepDisk
 			// Chao: Alug
 			// Aiai: GHG
-			// Sakura: Anon
+			// Sakura: Yama
 			// Doomguy: Minenice
 			char chars[6][10] = {"tails", "chao", "aiai", "sakura", "doom"};
 			SINT8 random = M_RandomRange(0, 4);
-			sfxenum_t rsound = skins[R_SkinAvailable(chars[random])].soundsid[SKSKWIN];
+			const INT32 rskin = R_SkinAvailable(chars[random]);
+			
+			sfxenum_t rsound = skins[rskin].voices[0].win;
 			S_StartSound(NULL, sfx_flgcap);
 			S_StartSound(NULL, rsound);
 		}

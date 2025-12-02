@@ -603,18 +603,19 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		return;
 	}
 
+	if (origin && sfx_id >= sfx_kwin && sfx_id <= sfx_kgloat)
+	{
+		// legacy skinsound remapping
+		kartvoice_t *cur_voice = P_GetMobjVoice(origin);
+		if (cur_voice != NULL)
+			sfx_id = R_GetLegacySkinSound(cur_voice, sfx_id);
+	}
+
 	// check for bogus sound #
 	I_Assert(sfx_id >= 1);
 	I_Assert(sfx_id < NUMSFX);
 
 	sfx = &S_sfx[sfx_id];
-
-	if (sfx->skinsound != -1 && origin && origin->skin)
-	{
-		// redirect player sound to the sound in the skin table
-		sfx_id = ((skin_t *)origin->skin)->soundsid[sfx->skinsound];
-		sfx = &S_sfx[sfx_id];
-	}
 
 	// Initialize sound parameters
 	pitch = NORM_PITCH;
@@ -1274,7 +1275,7 @@ void S_StartSoundName(void *mo, const char *soundname)
 			return;
 		}
 
-		soundnum = S_AddSoundFx(soundname, false, 0, false);
+		soundnum = S_AddSoundFx(soundname, false);
 		newsounds[i] = soundnum;
 	}
 

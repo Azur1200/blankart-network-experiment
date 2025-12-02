@@ -12386,8 +12386,16 @@ void P_SpawnPlayer(INT32 playernum)
 	// set 'spritedef' override in mobj for player skins.. (see ProjectSprite)
 	// (usefulness: when body mobj is detached from player (who respawns),
 	// the dead body mobj retains the skin through the 'spritedef' override).
-	mobj->skin = &skins[p->skin];
+	R_ApplySkin(mobj, &skins[p->skin]);
 	P_SetupStateAnimation(mobj, mobj->state);
+
+	if (p->voice_id)
+	{
+		// During respawns, do a quick check on our voice ID to make sure
+		// our skin can use it.
+		// This should prevent bots from always having Sonic's voice.
+		mobj->voice = &skins[p->skin].voices[p->voice_id];
+	}
 
 	mobj->health = 1;
 	p->playerstate = PST_LIVE;
@@ -14965,6 +14973,31 @@ fixed_t P_GetMobjZMovement(mobj_t *mo)
 	speed = FixedHypot(mo->momx, mo->momy);
 
 	return P_ReturnThrustY(mo, slope->zangle, P_ReturnThrustX(mo, angDiff, speed));
+}
+
+kartvoice_t *P_GetMobjVoice(const mobj_t *mo)
+{
+	if (P_MobjWasRemoved(mo))
+	{
+		// Nonexistent or NULL object.
+		return NULL;
+	}
+
+	if (mo->voice)
+	{
+		return mo->voice;
+	}
+
+#ifdef PARANOIA
+	// Scream at the idiot that let this happen :^)
+	CONS_Printf(
+		"PARANOIA/P_GetMobjVoice: %p MT_%s passed to function with NULL voice\n",
+		(void*)mo,
+		P_MobjTypeName(mo)
+	);
+#endif
+
+	return NULL;
 }
 
 //

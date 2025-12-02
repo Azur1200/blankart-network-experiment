@@ -41,6 +41,7 @@ strbuf_t *mobjnames;
 strbuf_t *skincolornames;
 strbuf_t *menunames;
 strbuf_t *kartitemnames;
+
 UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
 const char *DEH_MobjtypeName(mobjtype_t i)
@@ -1177,17 +1178,17 @@ struct int_const_s const INT_CONST[] = {
 
 	// Customisable sounds for Skins, from sounds.h
 	// SRB2kart
-	{"SKSKWIN",SKSKWIN}, // Win quote
-	{"SKSKLOSE",SKSKLOSE}, // Lose quote
-	{"SKSKPAN1",SKSKPAN1}, // Pain
-	{"SKSKPAN2",SKSKPAN2},
-	{"SKSKATK1",SKSKATK1}, // Offense item taunt
-	{"SKSKATK2",SKSKATK2},
-	{"SKSKBST1",SKSKBST1}, // Boost item taunt
-	{"SKSKBST2",SKSKBST2},
-	{"SKSKSLOW",SKSKSLOW}, // Overtake taunt
-	{"SKSKHITM",SKSKHITM}, // Hit confirm taunt
-	{"SKSKPOWR",SKSKPOWR}, // Power item taunt
+	{"SKSKWIN",0}, // Win quote
+	{"SKSKLOSE",1}, // Lose quote
+	{"SKSKPAN1",2}, // Pain
+	{"SKSKPAN2",3},
+	{"SKSKATK1",4}, // Offense item taunt
+	{"SKSKATK2",5},
+	{"SKSKBST1",6}, // Boost item taunt
+	{"SKSKBST2",7},
+	{"SKSKSLOW",8}, // Overtake taunt
+	{"SKSKHITM",9}, // Hit confirm taunt
+	{"SKSKPOWR",10}, // Power item taunt
 
 	// 3D Floor/Fake Floor/FOF/whatever flags
 	{"FOF_EXISTS",FOF_EXISTS},                   ///< Always set, to check for validity.

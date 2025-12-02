@@ -345,6 +345,7 @@ static void make_outphase_sfx(void *dest, void *src, INT32 size)
 INT32 HW3S_I_StartSound(const void *origin_p, source3D_data_t *source_parm, channel_type_t c_type, sfxenum_t sfx_id, INT32 volume, INT32 pitch, INT32 sep)
 {
 	sfxinfo_t       *sfx;
+	kartvoice_t     *voice;
 	const mobj_t    *origin = (const mobj_t *)origin_p;
 	source3D_data_t source3d_data;
 	INT32             s_num = 0;
@@ -359,11 +360,17 @@ INT32 HW3S_I_StartSound(const void *origin_p, source3D_data_t *source_parm, chan
 
 	sfx = &S_sfx[sfx_id];
 
+#error See? This shit's been unused for over a decade
 	if (sfx->skinsound!=-1 && origin && origin->skin)
 	{
-		// it redirect player sound to the sound in the skin table
-		sfx_id = ((skin_t *)origin->skin)->soundsid[sfx->skinsound];
-		sfx    = &S_sfx[sfx_id];
+		// it redirect player sound to any voice values, should they exist
+		voice = P_GetMobjVoice(origin);
+
+		if (voice)
+		{
+			sfx_id = sfx_id = P_GetKartVoiceSFX(voice, sfx->skinsound);
+			sfx    = &S_sfx[sfx_id];
+		}
 	}
 
 	if (!sfx->data)

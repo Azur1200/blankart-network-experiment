@@ -352,6 +352,11 @@ struct mobj_t
 	void *skin; // overrides 'sprite' when non-NULL (for player bodies to 'remember' the skin)
 	// Player and mobj sprites in multiplayer modes are modified
 	//  using an internal color lookup table for re-indexing.
+
+	// Pointer to a set of voice values. If this doesn't exist,
+	// the game attempts to use tke skin's voice, should this object have a skin assigned.
+	kartvoice_t *voice;
+
 	UINT16 color; // This replaces MF_TRANSLATION. Use 0 for default (no translation).
 
 	// More list: links in sector (if needed)
@@ -593,6 +598,8 @@ boolean P_ZMovement(mobj_t *mo);
 void P_RingZMovement(mobj_t *mo);
 boolean P_SceneryZMovement(mobj_t *mo);
 void P_PlayerZMovement(mobj_t *mo);
+
+kartvoice_t *P_GetMobjVoice(const mobj_t *mo);
 
 extern INT32 modulothing;
 

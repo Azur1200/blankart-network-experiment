@@ -376,6 +376,7 @@ TYPEDEF (visffloor_t);
 TYPEDEF (portal_t);
 
 // r_skins.h
+TYPEDEF (kartvoice_t);
 TYPEDEF (skin_t);
 
 // r_splats.h
