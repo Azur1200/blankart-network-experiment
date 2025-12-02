@@ -790,6 +790,14 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 			size = pos;
 			samplerate = info.samplerate;
 			sf_close(snd);
+
+			// SFC_SET_NORM_FLOAT apparently doesn't work, so gotta do this ourselves
+			if (sample_format == Float)
+			{
+				float *norm = (float *)data;
+				for (pos = 0; pos < size / sizeof(float); pos++)
+					norm[pos] = CLAMP(norm[pos], -1.0f, 1.0f);
+			}
 		}
 	}
 
