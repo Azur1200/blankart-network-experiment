@@ -203,6 +203,8 @@ static void Command_Respawn2(void);
 static void Command_Respawn3(void);
 static void Command_Respawn4(void);
 
+static void Command_ReplayMarker(void);
+
 static void Command_Version_f(void);
 #ifdef UPDATE_ALERT
 static void Command_ModDetails_f(void);
@@ -952,6 +954,8 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("togglemodified", Command_Togglemodified_f);
 	COM_AddCommand("archivetest", Command_Archivetest_f);
 #endif
+
+	COM_AddCommand("replaymarker", Command_ReplayMarker);
 
 	COM_AddCommand("downloads", Command_Downloads_f);
 
@@ -3625,6 +3629,41 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 
 	I_UpdateMouseGrab();
 	G_ResetAllDeviceRumbles();
+}
+
+static void Command_ReplayMarker(void)
+{
+	if (gamestate != GS_LEVEL)
+	{
+		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
+		return;
+	}
+	if (demo.savemode == DSM_WILLAUTOSAVE)
+	{
+		demo.savemode = DSM_NOTSAVING;
+		CONS_Printf("Replay unmarked.\n");
+	}
+	else
+	{
+		demo.savemode = DSM_WILLAUTOSAVE;
+
+		int adjustedleveltime = leveltime - starttime;
+
+		if (adjustedleveltime < 0)
+			adjustedleveltime = 0;
+
+		char *title = G_BuildMapTitle(gamemap);
+
+		if (title)
+		{
+			snprintf(demo.titlename, 64, "%s [%i:%02d/%.5s]", title, G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
+			Z_Free(title);
+		}
+		else
+			snprintf(demo.titlename, 64, "[%i:%02d/%.5s]", G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
+
+		CONS_Printf("Replay will be saved!\n");
+	}
 }
 
 // Command for stuck characters in netgames, griefing, etc.
