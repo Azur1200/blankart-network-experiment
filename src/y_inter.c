@@ -1082,6 +1082,9 @@ static void Y_VoteScreenCheck(void)
 	VoteScreen.foundLuaVoteFrames = VoteScreen.foundLuaVoteWideFrames = 0;
 	VoteScreen.currentAnimFrame = 0;
 
+	if (VoteScreen.timePerAnimFrame == 0)
+		VoteScreen.timePerAnimFrame = 2;
+
 	INT32 i = 1;
 
 	// check for lua vote background replacements
@@ -1173,7 +1176,7 @@ static void Y_DrawLuaVoteScreenPatch(boolean widePatch)
 
 	Y_VoteBackgroundDrawer(votebg);
 
-	if (renderisnewtic && (votetic % 2 == 0) && !paused)
+	if (renderisnewtic && (votetic % VoteScreen.timePerAnimFrame == 0) && !paused)
 		VoteScreen.currentAnimFrame = (nextframe > tempfoundAnimLuaVoteFrames) ? 0 : nextframe;
 }
 
