@@ -14987,20 +14987,17 @@ kartvoice_t *P_GetMobjVoice(const mobj_t *mo)
 	{
 		return mo->voice;
 	}
+
 #ifdef PARANOIA
-	else
-	{
-		I_Error("P_GetMobjVoice: This object has no voice!");
-		return NULL;
-	}
-#else
-	else if (mo->skin)
-	{
-		return &((skin_t *)mo->skin)->voices[0];
-	}
+	// Scream at the idiot that let this happen :^)
+	CONS_Printf(
+		"PARANOIA/P_GetMobjVoice: %p MT_%s passed to function with NULL voice\n",
+		(void*)mo,
+		MobjTypeName(mo)
+	);
+#endif
 
 	return NULL;
-#endif
 }
 
 //
