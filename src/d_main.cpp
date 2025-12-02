@@ -1089,9 +1089,9 @@ void D_SRB2Loop(void)
 			}
 			else if (!dedicated && frameskip)
 			{
-				// always update console and hud
-				// otherwise it may take minutes to open it
-				CON_Drawer();
+				// always update console movement
+				// otherwise it will takes literal ages to open
+				CON_MoveConsole();
 			}
 		}
 
