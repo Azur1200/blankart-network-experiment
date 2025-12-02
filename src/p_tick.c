@@ -262,7 +262,7 @@ void P_AddThinker(const thinklistnum_t n, thinker_t *thinker)
 }
 
 #ifdef PARANOIA
-static const char *MobjTypeName(const mobj_t *mobj)
+const char *P_MobjTypeName(const mobj_t *mobj)
 {
 	actionf_p1 p1 = mobj->thinker.function;
 
@@ -338,7 +338,7 @@ void P_RemoveThinkerDelayed(thinker_t *thinker)
 			CONS_Printf(
 					"PARANOIA/P_RemoveThinkerDelayed: %p MT_%s references=%d\n",
 					(void*)thinker,
-					MobjTypeName((mobj_t*)thinker),
+					P_MobjTypeName((mobj_t*)thinker),
 					thinker->references
 			);
 
@@ -428,7 +428,7 @@ mobj_t *P_SetTarget2(mobj_t **mop, mobj_t *targ
 			CONS_Printf(
 					"PARANOIA/P_SetTarget: %p MT_%s %s references=%d, references go negative! (%s:%d)\n",
 					(void*)*mop,
-					MobjTypeName(*mop),
+					P_MobjTypeName(*mop),
 					MobjThinkerName(*mop),
 					(*mop)->thinker.references,
 					source_file,

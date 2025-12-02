@@ -44,6 +44,10 @@ mobj_t *P_SetTarget2(mobj_t **mo, mobj_t *target
 #define P_SetTarget P_SetTarget2
 #endif
 
+#ifdef PARANOIA
+const char *P_MobjTypeName(const mobj_t *mobj);
+#endif
+
 extern UINT32 thinker_era;
 
 // Negate the value for tics
