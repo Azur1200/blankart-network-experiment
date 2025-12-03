@@ -515,11 +515,11 @@ waypoint_t *K_GetBestWaypointForMobj(mobj_t *const mobj, waypoint_t *const hint)
 					}
 				}
 
-				// Do not consider z height for next/prev waypoints of current waypoint.
+				// Put less weight on z height for next/prev waypoints of current waypoint.
 				// This helps the current waypoint not be behind you when you're taking a jump.
 				if (connectedToHint == true)
 				{
-					zMultiplier = 0;
+					zMultiplier = 1;
 				}
 			}
 
