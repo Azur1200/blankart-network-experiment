@@ -1308,7 +1308,8 @@ static void DiffSectors(const sector_t *ss, const sector_t *spawnss, UINT8 diff[
 		SETB(SD_TAG);
 
 	//DIFFNE(ss, ..., SD__UNUSED);
-	DIFFNE(ss, extra_colormap, SD_COLORMAP);
+	if (ss->extra_colormap != ss->spawn_extra_colormap)
+		SETB(SD_COLORMAP);
 	DIFFIF(ss, crumblestate, SD_CRUMBLESTATE);
 	if (ss->floorlightlevel != spawnss->floorlightlevel || ss->floorlightabsolute != spawnss->floorlightabsolute)
 		SETB(SD_FLOORLIGHT);
