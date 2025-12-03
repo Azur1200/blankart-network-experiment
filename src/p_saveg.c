@@ -686,6 +686,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		SYNC(players[i].growshrinktimer);
 		SYNC(players[i].growcancel);
+		SYNC(players[i].altshrinktimeshit);
+		RSYNC(players[i].arrowbullet);
 
 		SYNC(players[i].rocketsneakertimer);
 
@@ -3776,6 +3778,7 @@ static void P_RelinkPointers(savebuffer_t *save)
 		RELINK(&players[i].currentwaypoint);
 		RELINK(&players[i].nextwaypoint);
 		RELINK(&players[i].shieldtracer);
+		RELINK(&players[i].arrowbullet);
 	}
 }
 

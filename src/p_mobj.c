@@ -6718,7 +6718,11 @@ void P_RunOverlays(void)
 
 		mo->eflags = (mo->eflags & ~MFE_VERTICALFLIP) | (mo->target->eflags & MFE_VERTICALFLIP);
 		mo->scale = mo->destscale = FixedMul(mo->target->scale, mo->movefactor);
-		mo->angle = (mo->target->player ? mo->target->player->drawangle : mo->target->angle) + mo->movedir;
+
+		if (!(mo->threshold & OV_DONTCOPYANGLE))
+		{
+			mo->angle = (mo->target->player ? mo->target->player->drawangle : mo->target->angle) + mo->movedir;
+		}
 
 		if (!(mo->threshold & OV_DONTSCREENOFFSET))
 		{

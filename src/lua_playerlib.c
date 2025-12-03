@@ -357,6 +357,7 @@ enum player_e
 	player_growshrinktimer,
 	player_growcancel,
 	player_squishedtimer,
+	player_arrowbullet,
 	player_rocketsneakertimer,
 	player_invincibilitytimer,
 	player_maxinvincibilitytime,
@@ -575,6 +576,7 @@ static const char *const player_opt[] = {
 	"growshrinktimer",
 	"growcancel",
 	"squishedtimer",
+	"arrowbullet",
 	"rocketsneakertimer",
 	"invincibilitytimer",
 	"maxinvincibilitytime",
@@ -1070,6 +1072,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_squishedtimer:
 		lua_pushinteger(L, plr->squishedtimer);
+		break;
+	case player_arrowbullet:
+		LUA_PushUserdata(L, plr->arrowbullet, META_MOBJ);
 		break;
 	case player_rocketsneakertimer:
 		lua_pushinteger(L, plr->rocketsneakertimer);
@@ -1836,6 +1841,8 @@ static int player_set(lua_State *L)
 		plr->squishedtimer = squishtimer;
 		break;
 	}
+	case player_arrowbullet:
+		return NOSET;
 	case player_rocketsneakertimer:
 		plr->rocketsneakertimer = luaL_checkinteger(L, 3);
 		break;

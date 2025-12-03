@@ -64,6 +64,8 @@
 #include "k_items.h"
 #include "g_party.h"
 
+#include "m_easing.h" // Arrow Bullet aura
+
 #include "acs/interface.h"
 
 #ifdef HW3SOUND
@@ -2315,10 +2317,70 @@ void P_MovePlayer(player_t *player)
 		K_SpawnSparkleTrail(player->mo);
 	}
 
+#define MINAURAPCT (cv_kartaltshrink_arrowbulletthres.value - (FRACUNIT / 4))
+#define AURA_DIFF (max(1, (FRACUNIT << 1) - MINAURAPCT))
+	// The Arrow Bullet aura should spawn before you actually enter the Arrow Bullet state.
+	if (cv_kartaltshrink_arrowbullet.value && K_IsAltShrunk(player) && (K_GetSpeedPercentage(player) >= MINAURAPCT))
+	{
+		fixed_t aura_scalar = FixedDiv(min(max(0, K_GetSpeedPercentage(player) - MINAURAPCT), (FRACUNIT << 1)), AURA_DIFF);
+
+		INT32 auravis = 10 - FixedMul(7, Easing_OutCubic(aura_scalar, 0, FRACUNIT));
+		auravis = min(9, max(1, auravis)) << FF_TRANSSHIFT;
+
+		fixed_t aura_scale = Easing_OutCubic(aura_scalar, FRACHALF, FRACUNIT + FRACHALF);
+
+		if ((!player->arrowbullet) || (P_MobjWasRemoved(player->arrowbullet)))
+		{
+			mobj_t *newbullet = P_SpawnMobjFromMobj(player->mo, 0, 0, 0, MT_OVERLAY);
+
+			P_SetMobjState(newbullet, S_ALTSHRINK_ARROWBULLET);
+
+            newbullet->movefactor = aura_scale;
+			newbullet->threshold |= OV_DONTCOPYANGLE;
+
+			P_SetTarget(&newbullet->target, player->mo);
+
+			P_SetTarget(&player->arrowbullet, newbullet);
+
+			player->arrowbullet->angle = K_MomentumAngle(player->mo);
+			player->arrowbullet->sloperoll = player->mo->sloperoll;
+			player->arrowbullet->slopepitch = player->mo->slopepitch;
+
+			player->arrowbullet->frame &= ~FF_TRANSMASK;
+			player->arrowbullet->frame |= auravis;
+
+			player->arrowbullet->dispoffset = min(2, player->mo->dispoffset + 1);
+		}
+		else
+		{
+			player->arrowbullet->angle = K_MomentumAngle(player->mo);
+			player->arrowbullet->sloperoll = player->mo->sloperoll;
+			player->arrowbullet->slopepitch = player->mo->slopepitch;
+
+			player->arrowbullet->movefactor = aura_scale;
+
+			player->arrowbullet->frame &= ~FF_TRANSMASK;
+			player->arrowbullet->frame |= auravis;
+
+			player->arrowbullet->dispoffset = min(2, player->mo->dispoffset + 1);
+		}
+	}
+	else
+	{
+		if ((player->arrowbullet) && (!P_MobjWasRemoved(player->arrowbullet)))
+		{
+			P_SetTarget(&player->arrowbullet->target, NULL);
+			P_RemoveMobj(player->arrowbullet);
+			P_SetTarget(&player->arrowbullet, NULL);
+		}
+	}
+
 	if (K_AltShrinkArrowBulletCondition(player))
 	{
-		K_SpawnSparkleTrail(player->mo);
+		K_SpawnNormalSpeedLines(player);
 	}
+#undef MINAURAPCT
+#undef AURA_DIFF
 
 	if (player->wipeoutslow > 1 && (leveltime & 1))
 		K_SpawnWipeoutTrail(player->mo, false);

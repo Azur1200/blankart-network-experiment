@@ -669,6 +669,7 @@ struct player_t
 	INT16 altshrinktimeshit;		// (Alt. Shrink) How many times were you flipped over while shrunk?
 	INT16 growcancel;				// Duration of grow canceling
 	INT16 squishedtimer;			// Duration of being squished
+	mobj_t *arrowbullet;			// (Alt. Shrink) Arrow Bullet aura visual
 
 	UINT16 rocketsneakertimer;		// Rocket Sneaker duration timer
 

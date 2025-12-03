@@ -1407,7 +1407,7 @@ void K_SpawnNormalSpeedLines(player_t *player)
 	else if (player->tripwireLeniency)
 	{
 		// Make it pink+blue+big when you can go through tripwire
-		fast->color = (leveltime & 1) ? SKINCOLOR_LILAC : SKINCOLOR_JAWZ;
+		fast->color = (K_IsAltShrunk(player)) ? SKINCOLOR_PERIWINKLE : ((leveltime & 1) ? SKINCOLOR_LILAC : SKINCOLOR_JAWZ);
 		fast->colorized = true;
 		fast->renderflags |= RF_ADD;
 	}
@@ -10501,7 +10501,16 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		}
 
 		if (player->growshrinktimer == 0)
+		{
 			player->altshrinktimeshit = 0;
+
+			if (player->arrowbullet && (!P_MobjWasRemoved(player->arrowbullet)))
+			{
+				P_SetTarget(&player->arrowbullet->target, NULL);
+				P_RemoveMobj(player->arrowbullet);
+				P_SetTarget(&player->arrowbullet, NULL);
+			}
+		}
 
 		if (player->growshrinktimer <= 0)
 			player->growcancel = -1;
