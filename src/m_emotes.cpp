@@ -21,6 +21,8 @@ static void Command_ListEmotes_f(void);
 
 static std::map<std::string, emote_t> emotes;
 
+static std::vector<emotecache_t> emotecache;
+
 // TODO - Would be really nice to generalize soc-like file parsing and not reimplement it 100 times :)))))
 void M_LoadEmotes(UINT16 wadnum)
 {
@@ -167,13 +169,6 @@ void M_LoadEmotes(UINT16 wadnum)
 			{
 				CONS_Alert(CONS_WARNING, "EMOTES: Unrecognized field '%s'. (file %s, line %d)\n", field.c_str(), wadfiles[wadnum]->filename, linenum);
 			}
-
-			// Cache frames for speedy use later.
-			for (size_t i = 0; i < MAXEMOTEFRAMES; i++)
-			{
-				emote->frames_cached[i] = (patch_t *)W_CachePatchName(emote->frames[i], PU_CACHE);
-			}
-
 		}
 		else
 		{
@@ -251,20 +246,48 @@ emote_t *M_VerifyEmote(const char *name, int *emotelen)
 	return match;
 }
 
+static patch_t *M_ReturnEmotePatch(const char *lumpname)
+{
+	UINT32 hash = HASH32(lumpname, 8);
+	emotecache_t cache;
+
+	if (emotecache.empty())
+	{
+		cache = {lumpname, hash, (patch_t*)W_CachePatchName(lumpname, PU_CACHE)};
+
+		emotecache.push_back(cache);
+		return emotecache.back().patch;
+	}
+	else
+	{
+		size_t i;
+
+		for (i = 0; i < emotecache.size(); i++)
+		{
+			if (emotecache[i].hash != hash)
+				continue;
+			if (stricmp(emotecache[i].name, lumpname))
+				continue;
+
+			return emotecache[i].patch;
+		}
+
+		cache = {lumpname, hash, (patch_t*)W_CachePatchName(lumpname, PU_CACHE)};
+
+		emotecache.push_back(cache);
+		return emotecache.back().patch;
+	}
+}
+
 void M_DrawScaledEmote(fixed_t x, fixed_t y, fixed_t scale, emote_t *emote, INT32 flags)
 {
 	if (emote->numframes == 0)
 		return;
 
-	//const char *lumpname = emote->frames[(I_GetTime()/emote->timeperframe) % emote->numframes];
-	INT32 emoteframe = (I_GetTime()/emote->timeperframe) % emote->numframes;
-	patch_t *emotepatch = emote->frames_cached[emoteframe];
-
-	if (!emotepatch)
-	{
-		CONS_Printf("Emote Patch is NULL?\n");
-		return;
-	}
+	const char *lumpname = emote->frames[(I_GetTime()/emote->timeperframe) % emote->numframes];
+	// Cache this emote patch after grabbing it for the first time
+	// so packed addon lists don't get their frames nuked by cachenum calls...
+	patch_t *emotepatch = M_ReturnEmotePatch(lumpname);
 
 	const int CHARHEIGHT = 6;
 
