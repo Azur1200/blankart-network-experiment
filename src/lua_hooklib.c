@@ -1432,7 +1432,6 @@ static void res_itemequipstyle(Hook_State *hook)
 	}
 }
 
-
 int LUA_HookGetItemEquipStyle(mobjtype_t type)
 {
 	Hook_State hook;
@@ -1444,5 +1443,41 @@ int LUA_HookGetItemEquipStyle(mobjtype_t type)
 		call_hooks(&hook, 1, res_itemequipstyle);
 	}
 
+	return hook.status;
+}
+
+typedef struct {
+	mobjtype_t *droptype;
+	boolean *orbit;
+	boolean *dropall;
+} KartDropHnextList_State;
+
+static void res_kartdrophnext(Hook_State *hook)
+{
+	KartDropHnextList_State *state = (KartDropHnextList_State*)hook->userdata;
+	if (lua_isnumber(gL, -3))
+		*state->droptype = lua_tonumber(gL, -3);
+	if (lua_isboolean(gL, -2))
+		*state->orbit = lua_toboolean(gL, -2);
+	if (lua_isboolean(gL, -1))
+		*state->dropall = lua_toboolean(gL, -1);
+}
+
+boolean LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t *droptype, boolean *orbit, boolean *dropall)
+{
+	Hook_State hook;
+	KartDropHnextList_State state = {0};
+	state.droptype = droptype;
+	state.orbit = orbit;
+	state.dropall = dropall;
+
+	if (prepare_mobj_hook(&hook, false, HOOK(DropHnextList), mobj->type))
+	{
+		LUA_PushUserdata(gL, mobj, META_MOBJ);
+		hook.userdata = &state;
+
+		call_hooks(&hook, 3, res_kartdrophnext);
+	}
+	
 	return hook.status;
 }

@@ -5006,8 +5006,10 @@ void K_DropHnextList(player_t *player)
 {
 	mobj_t *work = player->mo, *nextwork, *dropwork;
 	INT32 flip;
-	mobjtype_t type;
-	boolean orbit, ponground, dropall = true;
+	mobjtype_t type = MT_NULL;
+	boolean orbit = true;
+	boolean dropall = true;
+	boolean ponground = true;
 
 	if (work == NULL || P_MobjWasRemoved(work))
 	{
@@ -5066,8 +5068,16 @@ void K_DropHnextList(player_t *player)
 			case MT_ROCKETSNEAKER:
 			case MT_SINK_SHIELD:
 				return;
+			// fall-through to the lua-scriptable condition
 			default:
-				continue;
+				break;
+		}
+
+		LUA_HookDropHnextList(work, &type, &orbit, &dropall);
+		if (type == MT_NULL)	// who's the fucking bitch
+		{
+			P_RemoveMobj(work);
+			continue;			// that took my shit
 		}
 
 		if ((!itemlittering) && (type == MT_SSMINE))
