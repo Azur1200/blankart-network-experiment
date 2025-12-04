@@ -1447,7 +1447,7 @@ int LUA_HookGetItemEquipStyle(mobjtype_t type)
 }
 
 typedef struct {
-	mobjtype_t *droptype;
+	mobjtype_t droptype;
 	boolean *orbit;
 	boolean *dropall;
 } KartDropHnextList_State;
@@ -1455,15 +1455,22 @@ typedef struct {
 static void res_kartdrophnext(Hook_State *hook)
 {
 	KartDropHnextList_State *state = (KartDropHnextList_State*)hook->userdata;
-	if (lua_isnumber(gL, -3))
-		*state->droptype = lua_tonumber(gL, -3);
-	if (lua_isboolean(gL, -2))
-		*state->orbit = lua_toboolean(gL, -2);
-	if (lua_isboolean(gL, -1))
-		*state->dropall = lua_toboolean(gL, -1);
+	if (!lua_isnil(gL, -3))
+	{
+		state->droptype = luaL_checkinteger(gL, -3);
+
+		if (lua_isboolean(gL, -2))
+		{
+			*state->orbit = lua_toboolean(gL, -2);
+		}
+		if (lua_isboolean(gL, -1))
+		{
+			*state->dropall = lua_toboolean(gL, -1);
+		}
+	}
 }
 
-boolean LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t *droptype, boolean *orbit, boolean *dropall)
+int LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t droptype, boolean *orbit, boolean *dropall)
 {
 	Hook_State hook;
 	KartDropHnextList_State state = {0};
@@ -1471,13 +1478,14 @@ boolean LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t *droptype, boolean *orbit
 	state.orbit = orbit;
 	state.dropall = dropall;
 
-	if (prepare_mobj_hook(&hook, false, HOOK(DropHnextList), mobj->type))
+	if (prepare_mobj_hook(&hook, 0, HOOK(DropHnextList), mobj->type))
 	{
 		LUA_PushUserdata(gL, mobj, META_MOBJ);
 		hook.userdata = &state;
 
 		call_hooks(&hook, 3, res_kartdrophnext);
 	}
-	
-	return hook.status;
+	CONS_Printf("mobj type is %d\n", mobj->type);
+	CONS_Printf("droptype is %d\n", state.droptype);
+	return state.droptype;
 }

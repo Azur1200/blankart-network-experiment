@@ -5024,6 +5024,7 @@ void K_DropHnextList(player_t *player)
 	while ((work = nextwork) && !(work == NULL || P_MobjWasRemoved(work)))
 	{
 		nextwork = work->hnext;
+		type = MT_NULL;
 
 		if (!work->health)
 			continue; // taking care of itself
@@ -5073,11 +5074,11 @@ void K_DropHnextList(player_t *player)
 				break;
 		}
 
-		LUA_HookDropHnextList(work, &type, &orbit, &dropall);
-		if (type == MT_NULL)	// who's the fucking bitch
+		type = LUA_HookDropHnextList(work, type, &orbit, &dropall);
+		if (type == MT_NULL)	// who's the fucking bitch 🗣️🗣️🗣️🔥🔥🔥
 		{
 			P_RemoveMobj(work);
-			continue;			// that took my shit
+			continue;			// that took my shit 🗣️🗣️🗣️🔥🔥🔥
 		}
 
 		if ((!itemlittering) && (type == MT_SSMINE))

@@ -55,6 +55,7 @@ automatically.
 	X (MobjMoveBlocked),/* P_XYMovement (when movement is blocked) */\
 	X (MapThingSpawn),/* P_SpawnMapThing */\
 	X (FollowMobj),/* P_PlayerAfterThink Smiles mobj-following */\
+	X (DropHnextList),/*SRB2KART*/\
 
 #define HOOK_LIST(X) \
 	X (NetVars),/* add to archive table (netsave) */\
@@ -93,7 +94,6 @@ automatically.
 	X (KartStripOther),/*SRB2KART*/\
 	X (CanPickupItem),/*SRB2KART*/\
 	X (GetItemEquipStyle),/*SRB2KART*/\
-	X (DropHnextList),/*SRB2KART*/\
 
 #define STRING_HOOK_LIST(X) \
 	X (SpecialExecute),\
@@ -188,7 +188,7 @@ boolean LUA_HookKartStripItems(player_t *player, UINT8 item); // SRB2Kart: Hook 
 boolean LUA_HookKartStripOther(player_t *player); // SRB2Kart: Hook for K_StripOther.
 boolean LUA_HookCanPickupItem(player_t *player, UINT8 weapon, boolean *force); // SRB2Kart: Hook for P_CanPickupItem.
 int 	LUA_HookGetItemEquipStyle(mobjtype_t mobjtype); // SRB2Kart: Hook for K_GetItemEquipStyle.
-boolean LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t *droptype, boolean *orbit, boolean *dropall); // SRB2Kart: Hook for K_DropHnextList.
+int		LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t droptype, boolean *orbit, boolean *dropall); // SRB2Kart: Hook for K_DropHnextList.
 
 #ifdef __cplusplus
 } // extern "C"
