@@ -1478,14 +1478,12 @@ int LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t droptype, boolean *orbit, boo
 	state.orbit = orbit;
 	state.dropall = dropall;
 
-	if (prepare_mobj_hook(&hook, 0, HOOK(DropHnextList), mobj->type))
+	if (prepare_mobj_hook(&hook, 0, MOBJ_HOOK(DropHnextList), mobj->type))
 	{
 		LUA_PushUserdata(gL, mobj, META_MOBJ);
 		hook.userdata = &state;
 
 		call_hooks(&hook, 3, res_kartdrophnext);
 	}
-	CONS_Printf("mobj type is %d\n", mobj->type);
-	CONS_Printf("droptype is %d\n", state.droptype);
 	return state.droptype;
 }
