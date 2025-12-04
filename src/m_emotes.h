@@ -20,13 +20,8 @@ typedef struct emote_s {
 	char frames[MAXEMOTEFRAMES][9];
 	UINT8 numframes;
 	tic_t timeperframe;
+	patch_t *frames_cached[MAXEMOTEFRAMES];
 } emote_t;
-
-typedef struct emotecache_s {
-	const char *name;
-	UINT32 hash;
-	patch_t *patch;
-} emotecache_t;
 
 // Reads and adds emotes from EMOTES lump, with syntax similar to soc
 void M_LoadEmotes(UINT16 wadnum);
