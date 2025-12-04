@@ -1850,9 +1850,11 @@ static int player_set(lua_State *L)
 		plr->invincibilitytimer = luaL_checkinteger(L, 3);
 		break;
 	case player_maxinvincibilitytime:
+	{
 		UINT16 maxinv = max(1, (UINT16)luaL_checkinteger(L, 3)); // Prevent zero-divides
 		plr->maxinvincibilitytime = maxinv;
 		break;
+	}
 	case player_invincibilitybottleneck:
 		plr->invincibilitybottleneck = (UINT16)luaL_checkinteger(L, 3);
 		break;
