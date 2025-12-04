@@ -3761,7 +3761,7 @@ void readfollower(MYFILE *f)
 
 			if (fastcmp(word, "NAME"))
 			{
-				strcpy(followers[numfollowers].name, word2);
+				strlcpy(followers[numfollowers].name, word2, SKINNAMESIZE+1);
 				nameset = true;
 			}
 			else if (fastcmp(word, "ICON"))
@@ -3891,13 +3891,13 @@ void readfollower(MYFILE *f)
 	if (!nameset)
 	{
 		// well this is problematic.
-		strcpy(followers[numfollowers].name, va("Follower%d", numfollowers)); // this is lazy, so what
+		strlcpy(followers[numfollowers].name, va("Follower%d", numfollowers), SKINNAMESIZE+1); // this is lazy, so what
 	}
 
 	// set skin name (this is just the follower's name in lowercases):
 	// but before we do, let's... actually check if another follower isn't doing the same shit...
 
-	strcpy(testname, followers[numfollowers].name);
+	strlcpy(testname, followers[numfollowers].name, SKINNAMESIZE+1);
 
 	// lower testname for skin checks...
 	strlwr(testname);
@@ -3912,8 +3912,8 @@ void readfollower(MYFILE *f)
 		// in that case, we'll be very lazy and copy numfollowers to the end of our skin name.
 	}
 
-	strcpy(followers[numfollowers].skinname, testname);
-	strcpy(dname, followers[numfollowers].skinname);	// display name, just used for printing succesful stuff or errors later down the line.
+	strlcpy(followers[numfollowers].skinname, testname, SKINNAMESIZE+1);
+	strlcpy(dname, followers[numfollowers].skinname, SKINNAMESIZE+1);	// display name, just used for printing succesful stuff or errors later down the line.
 
 	// now that the skin name is ready, post process the actual name to turn the underscores into spaces!
 	for (i = 0; followers[numfollowers].name[i]; i++)
