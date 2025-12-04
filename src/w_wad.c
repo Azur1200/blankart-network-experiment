@@ -1297,7 +1297,7 @@ UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 				continue;
 			if (lump_p->hash.name != hash)
 				continue;
-			if (strncasecmp(lump_p->name, name, sizeof(name) - 1))
+			if (strncasecmp(lump_p->name, name, strlen(name)))
 				continue;
 			return i;
 		}
