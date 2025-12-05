@@ -764,6 +764,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "TIMEATTACKPRESET", &MR_TimeAttackPreset },
 	{ "REPLAYSTAFF", &MR_ReplayStaff },
 	{ "CONNECTIP", &MR_ConnectIP },
+	{ "CONNECTLASTSERVER", &MR_ConnectLastServer },
 	{ "QUITMULTIPLAYERMENU", &MR_QuitMultiPlayerMenu },
 	{ "STARTSERVERMENU", &MR_StartServerMenu },
 	{ "STARTSERVER", &MR_StartServer },

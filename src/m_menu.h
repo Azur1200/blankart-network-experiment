@@ -272,6 +272,7 @@ INT32 MR_TimeAttackPreset(INT32 arg);
 INT32 MR_ReplayTimeAttack(INT32 arg);
 INT32 MR_ReplayStaff(INT32 choice);
 INT32 MR_ConnectIP(INT32 choice);
+INT32 MR_ConnectLastServer(INT32 choice);
 INT32 MR_QuitMultiPlayerMenu(INT32 choice);
 INT32 MR_StartServerMenu(INT32 choice);
 INT32 MR_StartServer(INT32 choice);

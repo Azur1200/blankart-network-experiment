@@ -59,6 +59,7 @@
 #endif
 
 #include "d_net.h"
+#include "i_net.h"
 #include "mserv.h"
 #include "m_misc.h"
 #include "m_anigif.h"
@@ -6138,6 +6139,8 @@ INT32 MR_Connect(INT32 arg)
 	// do not call menuexitfunc
 	M_ClearMenus(false);
 
+	CV_Set(&cv_lastserver, I_GetNodeAddress(serverlist[arg + cv_dummyserverpage.value * M_ServersPerPage()].node));
+
 	COM_BufAddText(va("connect node %d\n", serverlist[arg + cv_dummyserverpage.value * M_ServersPerPage()].node));
 	return true;
 }
@@ -6804,6 +6807,7 @@ INT32 MR_ConnectIP(INT32 choice)
 
 	M_ClearMenus(true);
 
+	CV_Set(&cv_lastserver,cv_dummyip.string);
 	COM_BufAddText(va("connect \"%s\"\n", cv_dummyip.string));
 
 	// A little "please wait" message.
@@ -6813,6 +6817,23 @@ INT32 MR_ConnectIP(INT32 choice)
 	I_UpdateNoBlit();
 	if (rendermode == render_soft)
 		I_FinishUpdate(); // page flip or blit buffer
+	return true;
+}
+
+
+//Join Last server
+INT32 MR_ConnectLastServer(INT32 choice)
+{
+	(void)choice;
+
+	if (!*cv_lastserver.string)
+	{
+		M_StartMessage("You haven't previosuly joined a server.\n", NULL, MM_NOTHING);
+		return false;
+	}
+
+	M_ClearMenus(true);
+	COM_BufAddText(va("connect \"%s\"\n", cv_lastserver.string));
 	return true;
 }
 

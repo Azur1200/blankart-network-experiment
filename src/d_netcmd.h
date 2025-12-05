@@ -73,6 +73,9 @@ extern consvar_t cv_spectatorreentry, cv_antigrief;
 	extern consvar_t cv_debugtraversemax;
 #endif
 
+//Save server ip
+extern consvar_t cv_lastserver;
+
 extern consvar_t cv_kartminimap;
 extern consvar_t cv_kartcheck;
 extern consvar_t cv_kartinvinsfx;

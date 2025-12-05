@@ -400,6 +400,7 @@ consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS] = { //Alam: Dummy for save
 #endif
 
 // SRB2kart
+consvar_t cv_lastserver = CVAR_INIT ("lastserver", "", CV_SAVE, NULL, NULL);
 static CV_PossibleValue_t kartminimap_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
 consvar_t cv_kartminimap = CVAR_INIT ("kartminimap", "4", CV_SAVE, kartminimap_cons_t, NULL);
 consvar_t cv_kartcheck = CVAR_INIT ("kartcheck", "Yes", CV_SAVE, CV_YesNo, NULL);
@@ -1351,6 +1352,9 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_resume);
 	CV_RegisterVar(&cv_perfstats);
+
+	//Value used to store last server player has joined
+	CV_RegisterVar(&cv_lastserver);
 
 	CV_RegisterVar(&cv_laglesscam);
 
