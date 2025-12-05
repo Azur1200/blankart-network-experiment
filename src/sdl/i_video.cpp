@@ -113,6 +113,9 @@ UINT8 graphics_started = 0; // Is used in console.c and screen.c
 boolean allow_fullscreen = false;
 static bool disable_fullscreen = false;
 
+// hack to avoid resolution being forced back to 320x200 on entering fullscreen
+static bool just_switched;
+
 #define USE_FULLSCREEN (disable_fullscreen||!allow_fullscreen)?static_cast<bool>(0):static_cast<bool>(cv_fullscreen.value == 1)
 
 static bool disable_mouse = false;
@@ -301,6 +304,7 @@ static bool SDLSetMode(INT32 width, INT32 height, bool fullscreen, bool repositi
 {
 	static bool wasfullscreen = false;
 	int fullscreen_type = SDL_WINDOW_FULLSCREEN;
+	just_switched = true;
 
 	src_rect.w = vid.width = width;
 	src_rect.h = vid.height = height;
@@ -336,19 +340,13 @@ static bool SDLSetMode(INT32 width, INT32 height, bool fullscreen, bool repositi
 	}
 	else
 	{
-		SDL_Window *win = Impl_CreateWindow();
-		if (win == NULL)
+		window = Impl_CreateWindow();
+		if (window == NULL)
 			return false;
 
 		wasfullscreen = fullscreen;
-		SDL_SetWindowSize(win, width, height);
 		if (fullscreen)
-			SDL_SetWindowFullscreen(win, fullscreen_type);
-
-		SDL_SyncWindow(win);
-
-		// set the window variable here, so asynchronous events don't break resolution
-		window = win;
+			SDL_SetWindowFullscreen(window, fullscreen_type);
 	}
 
 	if (Impl_RenderContextReset() == false)
@@ -659,8 +657,9 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 			mousefocus = false;
 			break;
 		case SDL_EVENT_WINDOW_MAXIMIZED:
-			break;
+		case SDL_EVENT_WINDOW_RESIZED:
 		case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+			just_switched = false;
 			break;
 		default:
 			return;
