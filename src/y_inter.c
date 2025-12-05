@@ -352,7 +352,7 @@ void Y_ConsiderScreenBuffer(void)
 	else if (rendermode == render_opengl)
 	{
 		y_screenbuffer = Z_Malloc(0, PU_STATIC, NULL);
-		HWR_MakeIntermissionBG();
+		HWR_DrawIntermissionBG();
 	}
 #endif
 }

@@ -37,6 +37,7 @@
 #define  _CREATE_DLL_  // necessary for Unix AND Windows
 #include "../../doomdef.h"
 #include "../hw_drv.h"
+#include "../../z_zone.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,10 +54,10 @@ extern "C" {
 #define DEBUG_TO_FILE           // output debugging msgs to ogllog.txt
 
 // todo: find some way of getting SDL to log to ogllog.txt, without
-// interfering with r_opengl.dll
-#ifdef HAVE_SDL
-#undef DEBUG_TO_FILE
-#endif
+// interfering with r_opengl.dll  r_opengl.dll is gone since over a decade lol
+//#ifdef HAVE_SDL
+//#undef DEBUG_TO_FILE
+//#endif
 //#if defined(HAVE_SDL) && !defined(_DEBUG)
 //#undef DEBUG_TO_FILE
 //#endif
