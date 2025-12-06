@@ -251,6 +251,7 @@ static void Command_Isgamemodified_f(void);
 static void Command_Cheats_f(void);
 
 static void Command_ListSkins(void);
+static void Command_ListVoices(void);
 
 #ifdef _DEBUG
 static void Command_Togglemodified_f(void);
@@ -1395,6 +1396,7 @@ void D_RegisterClientCommands(void)
 #endif
 
 	COM_AddCommand("listskins", Command_ListSkins);
+	COM_AddCommand("listvoices", Command_ListVoices);
 
 	CV_RegisterVar(&cv_connectawaittime);
 	CV_RegisterVar(&cv_serverinfoscreen);
@@ -7356,6 +7358,144 @@ static void Command_ListSkins(void)
 	if (page + 1 != numpages)
 	{
 		CONS_Printf("Use \"listskins %d\" to see the next page.\n", page + 2);
+	}
+	else
+	{
+		CONS_Printf("There are no more pages.\n");
+	}
+}
+
+static void Command_ListVoices(void)
+{
+	int i;
+	int sid = -1;
+	int pid = 0;
+	int page = 0;
+	int longest_name = 0;
+	boolean searchedskin = false;
+
+	if (COM_Argc() > 1)
+	{
+		if (sscanf(COM_Argv(1), " %d", &pid) == 0)
+		{
+			if (!stricmp(COM_Argv(1), "--help"))
+			{
+				// Anyone who names their skin "--help" can suck it.
+				CONS_Printf(
+				    "Usage: \"listvoices <playernum/skinname> "
+				    "<pagenum>\"\nAlternatively: \"listvoices\" alone\n");
+				return;
+			}
+			// Assume the player is searching by skin name instead.
+			INT32 j = R_SkinAvailable(COM_Argv(1));
+
+			if (j == -1)
+			{
+				CONS_Printf(
+				    "No skin exists with the name %s. \n(TIP: Type \"skin\" in the "
+				    "console to see your current skin!)\n",
+				    COM_Argv(1));
+				return;
+			}
+
+			searchedskin = true;
+			sid = j;
+		}
+		else if (pid > (splitscreen + 1))
+		{
+			CONS_Printf("There %s only %d %s.\n",
+				    (splitscreen) ? "are" : "is",
+				    (splitscreen + 1),
+				    (splitscreen) ? "players" : "player");
+			return;
+		}
+		else if (pid < 0)
+		{
+			CONS_Printf("Player number cannot be negative.\n");
+			return;
+		}
+
+		if (sid == -1)
+		{
+			if (pid != 0)  // What the hell, sure. Let "Player 0" slide.
+				pid--;
+
+			sid = cv_skin[pid].value;
+		}
+	}
+	else
+	{
+		sid = cv_skin[0].value;
+	}
+
+	if (sid == -1)
+		return;
+
+	skin_t* source_skin = &skins[sid];
+
+	int numpages = source_skin->numvoices / 10 + (source_skin->numvoices % 10 ? 1 : 0);
+
+	if (COM_Argc() > 2)
+	{
+		if (sscanf(COM_Argv(2), " %d", &page) == 0)
+		{
+			CONS_Printf("Expected a number.\n");
+			return;
+		}
+		else if (page > numpages)
+		{
+			CONS_Printf("There %s only %d %s.\n",
+				    (numpages != 1) ? "are" : "is",
+				    numpages,
+				    (numpages != 1) ? "pages" : "page");
+			return;
+		}
+		else if (page < 0)
+		{
+			CONS_Printf("Page number cannot be negative.\n");
+			return;
+		}
+		else if (page == 0)
+		{
+			CONS_Printf("There is no 0th page. (What are you a programmer?)\n");
+			return;
+		}
+
+		--page;
+	}
+
+	CONS_Printf("Total %d %s. Page (%d/%d)\n",
+		    source_skin->numvoices,
+		    (source_skin->numvoices != 1) ? "voices" : "voice",
+		    page + 1,
+		    numpages);
+
+	//  Find the longest name and realname in the voices list. (used for alignment)
+	for (i = page * 10; i < source_skin->numvoices && i < (page + 1) * 10; i++)
+	{
+		int length;
+		kartvoice_t* vox = &source_skin->voices[i];
+
+		if ((length = strlen(vox->name)) > longest_name)
+			longest_name = length;
+	}
+
+	for (i = page * 10; i < source_skin->numvoices && i < (page + 1) * 10; i++)
+	{
+		kartvoice_t* vox = &source_skin->voices[i];
+
+		CONS_Printf("[%-*s]\x80 %s\n", longest_name, vox->name, vox->realname);
+	}
+
+	if (page + 1 != numpages)
+	{
+		if (searchedskin)
+			CONS_Printf("Use \"listvoices %s %d\" to see the next page.\n",
+				    source_skin->name,
+				    page + 2);
+		else
+			CONS_Printf(
+			    "Use \"listvoices %d %d\" to see the next page.\n", pid + 1, page + 2);
 	}
 	else
 	{
