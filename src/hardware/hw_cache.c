@@ -1809,8 +1809,8 @@ UINT32 HWR_GetLightTableID(extracolormap_t *colormap)
 
 		if (default_colormap)
 			colormap_pointer = colormaps; // don't actually use the data from the "default colormap"
-			else
-				colormap_pointer = colormap->colormap;
+		else
+			colormap_pointer = colormap->colormap;
 		colormap->gl_lighttable_id = HWR_CreateLightTable(colormap_pointer);
 	}
 

@@ -2051,9 +2051,10 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	pglUseProgram(shader->program);
 
 	// texture unit numbers for the samplers used for palette rendering
-	UNIFORM_1(shader->uniforms[gluniform_palette_tex], 2, pglUniform1i);
-	UNIFORM_1(shader->uniforms[gluniform_palette_lookup_tex], 1, pglUniform1i);
-	UNIFORM_1(shader->uniforms[gluniform_lighttable_tex], 2, pglUniform1i);
+	UNIFORM_1(shader->uniforms[gluniform_palette_tex], 3, pglUniform1i);
+	UNIFORM_1(shader->uniforms[gluniform_palette_lookup_tex], 2, pglUniform1i);
+	UNIFORM_1(shader->uniforms[gluniform_lighttable_tex], 3, pglUniform1i);
+	// changed to tex units 2 and 3 due to brightmap handling, binding two things to the same unit will just overwrite each other!
 
 	// restore gl shader state
 	pglUseProgram(gl_shaderstate.program);
@@ -2124,7 +2125,7 @@ static void PreparePolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FBITFIELD
 
 			if (pSurf->LightTableId && pSurf->LightTableId != lt_downloaded)
 			{
-				pglActiveTexture(GL_TEXTURE2);
+				pglActiveTexture(GL_TEXTURE3);
 				pglBindTexture(GL_TEXTURE_2D, pSurf->LightTableId);
 				pglActiveTexture(GL_TEXTURE0);
 				lt_downloaded = pSurf->LightTableId;
@@ -3388,7 +3389,7 @@ EXPORT void HWRAPI(SetPaletteLookup)(UINT8 *lut)
 	}
 	if (!paletteLookupTex)
 		pglGenTextures(1, &paletteLookupTex);
-	pglActiveTexture(GL_TEXTURE1);
+	pglActiveTexture(GL_TEXTURE2);
 	pglBindTexture(GL_TEXTURE_3D, paletteLookupTex);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	pglTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -3447,7 +3448,7 @@ EXPORT void HWRAPI(SetScreenPalette)(RGBA_t *palette)
 		memcpy(screenPalette, palette, sizeof(screenPalette));
 		if (!screenPaletteTex)
 			pglGenTextures(1, &screenPaletteTex);
-		pglActiveTexture(GL_TEXTURE2);
+		pglActiveTexture(GL_TEXTURE3);
 		pglBindTexture(GL_TEXTURE_1D, screenPaletteTex);
 		pglTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		pglTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
