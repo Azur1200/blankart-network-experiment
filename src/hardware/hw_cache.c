@@ -1734,6 +1734,26 @@ void HWR_SetMapPalette(void)
 			RGBA_converted[i].s.blue = *(RGB_data++);
 			RGBA_converted[i].s.alpha = 255;
 		}
+
+		// remap the palette from 2.1 to 2.2 indices in compatmode
+		RGBA_t *palcopy = NULL;
+
+		if (wadfiles[WADFILENUM(lumpnum)]->compatmode)
+		{
+			palcopy = malloc(sizeof(*palcopy)*256);
+			memcpy(palcopy, RGBA_converted, sizeof(*palcopy)*256);
+		}
+
+		if (palcopy)
+		{
+			for (i = 0; i < 256; i++)
+			{
+				RGBA_converted[i].rgba = palcopy[R_InvPaletteRemap(i)].rgba;
+			}
+
+			free(palcopy);
+		}
+
 		palette = RGBA_converted;
 	}
 

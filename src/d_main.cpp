@@ -94,7 +94,7 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0xbd8469ee97e7f1cc
+#define ASSET_HASH_MAIN_PK3            0x188bfbcbec9f91e4
 #define ASSET_HASH_MAPPATCH_PK3        0x0afd8afc6fc50175
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
@@ -1905,7 +1905,7 @@ void D_SRB2Main(void)
 		if (WADNAMECHECK(word))
 		{
 			if (!(pstartmap = wadnamemap))
-				I_Error("Bad '%s' level warp; pstartmap (%d) != wadnamemap (%d).\n"
+				I_Error("Bad '%s' level warp; wadnamemap is %d.\n"
 #if defined (_WIN32)
 				"Are you using MSDOS 8.3 filenames in Zone Builder?\n"
 				"\n"
@@ -1913,7 +1913,7 @@ void D_SRB2Main(void)
 				"Go to the Testing tab and make sure \"Use short paths and file names\" is turned off.\n"
 				"(The option is hidden by default. Check \"Customize parameters\" to show it.)\n"
 #endif
-				, word, pstartmap, wadnamemap);
+				, word, wadnamemap);
 		}
 		else
 		{
