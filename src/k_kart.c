@@ -10201,19 +10201,6 @@ INT32 K_GetShieldFromItem(INT32 item)
 	}
 }
 
-void K_SetItemOut(player_t *player, kartitemtype_e itemtype)
-{
-	player->itemflags |= IF_ITEMOUT;
-	player->equippeditem = itemtype;
-}
-
-void K_UnsetItemOut(player_t *player)
-{
-	player->itemflags &= ~(IF_ITEMOUT|IF_HOLDREADY);
-	player->bananadrag = 0;
-	player->equippeditem = KITEM_NONE;
-}
-
 static boolean K_InvincibilitySlotHogging(player_t *player)
 {
 	if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))

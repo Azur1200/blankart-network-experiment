@@ -187,6 +187,9 @@ kartitemequip_e K_GetItemEquipStyle(kartitemtype_e mobjtype);
 UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny);
 patch_t *K_GetCachedItemPatch(kartitemtype_e type, boolean tiny, UINT8 amount);
 
+void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags);
+void K_UnsetItemOut(player_t *player);
+
 void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, kartitemblink_e blink);
 void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCount);
 void K_UpdateItemCooldown(void);

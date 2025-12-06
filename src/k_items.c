@@ -335,6 +335,19 @@ static boolean K_DontDoubleMyItems(kartitemtype_e type, UINT8 amount)
 	    || type >= KITEM_FIRSTFREESLOT; // TODO: excludes custom items for now
 }
 
+void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags)
+{
+	player->itemflags |= flags;
+	player->equippeditem = itemtype;
+}
+
+void K_UnsetItemOut(player_t *player)
+{
+	player->itemflags &= ~(IF_ITEMOUT|IF_EGGMANOUT|IF_HOLDREADY);
+	player->bananadrag = 0;
+	player->equippeditem = KITEM_NONE;
+}
+
 static sfxenum_t resultfx[] = {
 	[KITEMBLINK_NORMAL] = sfx_itrolf,
 	[KITEMBLINK_MASHED] = sfx_itrolm,
@@ -1937,7 +1950,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 
 			player->rocketsneakertimer = (itemtime*3);
 			player->itemamount--;
-			player->equippeditem = KITEM_ROCKETSNEAKER;
+			K_SetItemOut(player, KITEM_ROCKETSNEAKER, 0);
 			K_UpdateHnextList(player, true);
 
 			for (moloop = 0; moloop < 2; moloop++)
@@ -1974,7 +1987,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *prev = player->mo;
 
 			//K_PlayAttackTaunt(player->mo);
-			K_SetItemOut(player, KITEM_BANANA);
+			K_SetItemOut(player, KITEM_BANANA, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s254);
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
@@ -2014,8 +2027,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		{
 			mobj_t *mo;
 			player->itemamount--;
-			player->itemflags |= IF_EGGMANOUT;
-			player->equippeditem = KITEM_EGGMAN;
+			K_SetItemOut(player, KITEM_EGGMAN, IF_EGGMANOUT);
 			S_StartSound(player->mo, sfx_s254);
 			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EGGMANITEM_SHIELD);
 			if (mo)
@@ -2040,7 +2052,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *prev = player->mo;
 
 			//K_PlayAttackTaunt(player->mo);
-			K_SetItemOut(player, KITEM_ORBINAUT);
+			K_SetItemOut(player, KITEM_ORBINAUT, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s3k3a);
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
@@ -2083,7 +2095,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *prev = player->mo;
 
 			//K_PlayAttackTaunt(player->mo);
-			K_SetItemOut(player, KITEM_JAWZ);
+			K_SetItemOut(player, KITEM_JAWZ, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s3k3a);
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
@@ -2123,7 +2135,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 		{
 			mobj_t *mo;
-			K_SetItemOut(player, KITEM_MINE);
+			K_SetItemOut(player, KITEM_MINE, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s254);
 			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_SSMINE_SHIELD);
 			if (mo)
@@ -2374,7 +2386,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 		{
 			mobj_t *mo;
-			K_SetItemOut(player, KITEM_KITCHENSINK);
+			K_SetItemOut(player, KITEM_KITCHENSINK, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s254);
 			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_SINK_SHIELD);
 			if (mo)
