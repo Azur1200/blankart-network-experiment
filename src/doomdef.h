@@ -213,8 +213,8 @@ extern char logfilename[1024];
 //#define ZLIB_LEVEL 5
 
 // LZ4 Options
-#define USE_LZ4 // Use LZ4 for network savegame compression
-#define LZ4_ACCEL 1
+//#define USE_LZ4 // Use LZ4 for network savegame compression
+//#define LZ4_ACCEL 1
 
 // surely nobody's gonna change the palette a second time :Clueless:
 #define FADECOLOR 0 // 120
