@@ -897,6 +897,7 @@ static void P_LoadVertices(UINT8 *data)
 static void P_InitializeSector(sector_t *ss)
 {
 	memset(&ss->soundorg, 0, sizeof(ss->soundorg));
+	ss->soundorg.thinker.function = (actionf_p1)P_MobjThinker;
 
 	ss->validcount = 0;
 

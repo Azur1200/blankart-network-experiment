@@ -886,7 +886,12 @@ void S_UpdateSounds(void)
 						itsUs = true;
 					}
 
-					if (itsUs == false)
+					if (P_MobjWasRemoved(c->origin))
+					{
+						// origin was removed, stop the music
+						S_StopChannel(cnum);
+					}
+					else if (itsUs == false)
 					{
 						const mobj_t *origin = c->origin;
 
