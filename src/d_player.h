@@ -612,6 +612,7 @@ struct player_t
 	// Item held stuff
 	UINT8 itemtype;				// KITEM_ constant for item number
 	UINT8 itemamount;			// Amount of said item
+	UINT8 equippeditem;			// Item type that is currently "equipped"
 	itemflags_t itemflags; 		// holds IF_flags (see itemstate_t)
 	tic_t itemusecooldown;		// timer for which the player is locked out of using an item or mashing the item roulette (implementation of xItemLib setPlayerItemCooldown)
 	tic_t itemusecooldownmax;	// most recent highest value for itemusecooldown, mainly used for HUD rendering currently

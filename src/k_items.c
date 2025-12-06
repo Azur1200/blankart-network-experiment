@@ -1937,6 +1937,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 
 			player->rocketsneakertimer = (itemtime*3);
 			player->itemamount--;
+			player->equippeditem = KITEM_ROCKETSNEAKER;
 			K_UpdateHnextList(player, true);
 
 			for (moloop = 0; moloop < 2; moloop++)
@@ -1973,7 +1974,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *prev = player->mo;
 
 			//K_PlayAttackTaunt(player->mo);
-			K_SetItemOut(player);
+			K_SetItemOut(player, KITEM_BANANA);
 			S_StartSound(player->mo, sfx_s254);
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
@@ -2014,6 +2015,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *mo;
 			player->itemamount--;
 			player->itemflags |= IF_EGGMANOUT;
+			player->equippeditem = KITEM_EGGMAN;
 			S_StartSound(player->mo, sfx_s254);
 			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EGGMANITEM_SHIELD);
 			if (mo)
@@ -2038,7 +2040,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *prev = player->mo;
 
 			//K_PlayAttackTaunt(player->mo);
-			K_SetItemOut(player);
+			K_SetItemOut(player, KITEM_ORBINAUT);
 			S_StartSound(player->mo, sfx_s3k3a);
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
@@ -2081,7 +2083,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *prev = player->mo;
 
 			//K_PlayAttackTaunt(player->mo);
-			K_SetItemOut(player);
+			K_SetItemOut(player, KITEM_JAWZ);
 			S_StartSound(player->mo, sfx_s3k3a);
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
@@ -2121,7 +2123,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 		{
 			mobj_t *mo;
-			K_SetItemOut(player);
+			K_SetItemOut(player, KITEM_MINE);
 			S_StartSound(player->mo, sfx_s254);
 			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_SSMINE_SHIELD);
 			if (mo)
@@ -2372,7 +2374,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 		{
 			mobj_t *mo;
-			K_SetItemOut(player);
+			K_SetItemOut(player, KITEM_KITCHENSINK);
 			S_StartSound(player->mo, sfx_s254);
 			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_SINK_SHIELD);
 			if (mo)
