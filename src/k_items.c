@@ -184,6 +184,14 @@ kartitemflags_e K_GetItemFlags(kartitemtype_e itemtype)
 	return kartitems[itemtype].flags[K_IsKartItemAlternate(itemtype) ? 1 : 0];
 }
 
+kartitemequip_e K_GetItemEquipStyle(kartitemtype_e itemtype)
+{
+	if (itemtype >= numkartitems)
+		return KITEMEQUIP_NONE;
+
+	return kartitems[itemtype].equipstyle[K_IsKartItemAlternate(itemtype) ? 1 : 0];
+}
+
 UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny)
 {
 	if (type == MAXKARTITEMS)
@@ -2430,28 +2438,4 @@ void K_AltShrinkPityIncrease(player_t *player)
     shrinktime = min(INT16_MAX, shrinktime + PITY_SHRINKINCREASE_BASE + FixedMul(PITY_SHRINKINCREASE, dimin));
 
     player->growshrinktimer = ((INT16)shrinktime) * -1;
-}
-
-// this shit is so ass 🥲
-kartitemequip_e K_GetItemEquipStyle(mobjtype_t mobjtype)
-{
-	//TODO: lua hook to use any of these for a given mobj
-	// if we could use tables or dicts I'd use those insteasd
-	switch (mobjtype)
-	{
-		case MT_ORBINAUT_SHIELD:
-		case MT_JAWZ_SHIELD:
-			return KITEMEQUIP_ORBIT;
-		case MT_BANANA_SHIELD:
-		case MT_SSMINE_SHIELD:
-		case MT_EGGMANITEM_SHIELD:
-		case MT_SINK_SHIELD:
-			return KITEMEQUIP_TRAIL;
-		case MT_ROCKETSNEAKER:
-			return KITEMEQUIP_ROCKETS;
-		default:
-		{
-			return LUA_HookGetItemEquipStyle(mobjtype);
-		}
-	}
 }

@@ -4107,6 +4107,10 @@ void readkartitem(MYFILE *f, kartitem_t *item)
 		{
 			item->flags[word[5] == 'A' ? 1 : 0] = get_number(word2);
 		}
+		else if (fastcmp(word, "EQUIP") || fastcmp(word, "EQUIPALT"))
+		{
+			item->equipstyle[word[5] == 'A' ? 1 : 0] = get_number(word2);
+		}
 		else
 			WARN("unknown word '%s'", word);
 	}

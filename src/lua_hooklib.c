@@ -1432,20 +1432,6 @@ static void res_itemequipstyle(Hook_State *hook)
 	}
 }
 
-int LUA_HookGetItemEquipStyle(mobjtype_t type)
-{
-	Hook_State hook;
-
-	if (prepare_hook(&hook, 0, HOOK(GetItemEquipStyle)))
-	{
-		lua_pushinteger(gL, type);
-
-		call_hooks(&hook, 1, res_itemequipstyle);
-	}
-
-	return hook.status;
-}
-
 typedef struct {
 	mobjtype_t droptype;
 	boolean *orbit;

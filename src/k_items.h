@@ -49,6 +49,7 @@ typedef enum
 	KITEMEQUIP_ORBIT,	// orbiters (orbi, jawz)
 	KITEMEQUIP_TRAIL,	// dragged items (bananas, mines, sinks)
 	KITEMEQUIP_ROCKETS,	// direct player position with offset (rockets)
+	KITEMEQUIP_SHIELD,	//TODO: spawns a shield when active (currently acts like KITEMEQUIP_NONE)
 } kartitemequip_e;
 
 typedef enum
@@ -114,16 +115,13 @@ struct kartitemgraphics_t
 struct kartitem_t
 {
 	dehinfo_t info;
+	kartitemequip_e equipstyle[2];
 	kartitemflags_e flags[2];
 	kartitemgraphics_t graphics[2];
 	spritedef_t spritedef;
 
 	consvar_t *altcvar; // if not NULL, an altitem exists
 	boolean altenabled;
-
-	// note: could be how we do this?
-	// int (*oddsOverrideFunc)(player_t *p, int pos, int mashed, boolean spbrush, fixed_t seconddist, int pingame, int pexiting);
-	// int (*resultOverrideFunc)(player_t *p);
 };
 
 struct kartresult_t
@@ -185,6 +183,7 @@ void K_SetupItemOdds(void);
 boolean K_ItemResultEnabled(const kartresult_t *result);
 boolean K_IsKartItemAlternate(kartitemtype_e itemtype);
 kartitemflags_e K_GetItemFlags(kartitemtype_e itemtype);
+kartitemequip_e K_GetItemEquipStyle(kartitemtype_e mobjtype);
 UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny);
 patch_t *K_GetCachedItemPatch(kartitemtype_e type, boolean tiny, UINT8 amount);
 
@@ -218,8 +217,6 @@ boolean K_IsAltShrunk(const player_t *player);
 void K_AltShrinkPityIncrease(player_t *player);
 
 void K_PlayerItemThink(player_t *player, boolean onground);
-
-kartitemequip_e K_GetItemEquipStyle(mobjtype_t mobjtype);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -5666,7 +5666,7 @@ static void K_MoveHeldObjects(player_t *player)
 		return;
 	}
 
-	equipstyle = K_GetItemEquipStyle(player->mo->hnext->type);
+	equipstyle = K_GetItemEquipStyle(player->itemtype);
 
 	switch (equipstyle)
 	{
