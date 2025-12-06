@@ -300,6 +300,10 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 		poly_color.s.blue = (UINT8)blue;
 	}
 
+	// Shift the lightlevel for Palette rendering mode to replicate software´s limited 32 lightlevels
+	if (HWR_ShouldUsePaletteRendering())
+		light_level = (light_level >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT;
+
 	// Clamp the light level, since it can sometimes go out of the 0-255 range from animations
 	light_level = min(max(light_level, cv_secbright.value), 255);
 
