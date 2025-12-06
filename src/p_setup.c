@@ -108,6 +108,7 @@
 #include "k_mapuser.h"
 #include "p_deepcopy.h"
 #include "k_specialstage.h"
+#include "k_itemlist.hpp"
 #include "g_input.h"
 
 #include "blan/b_soc.h"
@@ -8216,6 +8217,8 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	bumpsparkactive = (UINT8)cv_kartbumpspark.value;
 
 	antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
+
+	K_ClearItemRollLists();
 
 	// emerald hunt
 	hunt1 = hunt2 = hunt3 = NULL;
