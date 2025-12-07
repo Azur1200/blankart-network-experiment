@@ -1501,6 +1501,7 @@ static void R_ProjectDropShadow(
 
 	if (shadowpatch == NULL)
 	{
+		CONS_Debug(DBG_RENDER, "Recaching shadow patch\n");
 		shadowpatch = static_cast<patch_t*>(W_CachePatchName("DSHADOW", PU_SPRITE));
 	}
 
