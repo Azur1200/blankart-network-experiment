@@ -58,19 +58,17 @@ aatree_t *M_AATreeAlloc(UINT32 flags)
 	return aatree;
 }
 
-static void M_AATreeFree_Node(aatree_node_t *node, bool is_string)
+static void M_AATreeFree_Node(aatree_node_t *node)
 {
-	if (node->left) M_AATreeFree_Node(node->left, is_string);
-	if (node->right) M_AATreeFree_Node(node->right, is_string);
-	if (is_string)
-		Z_Free(node->value);
+	if (node->left) M_AATreeFree_Node(node->left);
+	if (node->right) M_AATreeFree_Node(node->right);
 	Z_Free(node);
 }
 
 void M_AATreeFree(aatree_t *aatree)
 {
 	if (aatree->root)
-		M_AATreeFree_Node(aatree->root, (aatree->flags & AATREE_STRING) == AATREE_STRING);
+		M_AATreeFree_Node(aatree->root);
 
 	Z_Free(aatree);
 }
