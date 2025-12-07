@@ -45,6 +45,7 @@
 #include "acs/interface.h"
 #include "g_party.h"
 #include "k_waypoint.h"
+#include "k_itemlist.hpp"
 
 #include <tracy/tracy/TracyC.h>
 
@@ -404,6 +405,9 @@ static void P_RelinkWaypoint(savebuffer_t *save, waypoint_t **ptr)
 #define ARCHIVEBLOCK_SPECIALS 0x7F228378
 #define ARCHIVEBLOCK_WAYPOINTS 0x7F46498F
 
+// Specialized netsynch markers
+#define PLYRSYNC_ITEMLIST (1)
+
 static inline void P_ArchivePlayer(savebuffer_t *save)
 {
 	const player_t *player = &players[consoleplayer];
@@ -456,6 +460,12 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		SYNC(playerconsole[i]);
 		SYNC(splitscreen_invitations[i]);
+
+		// Item lists
+		if (P_SyncUINT32(save, (K_GetItemListSize(i) ? PLYRSYNC_ITEMLIST : 0)))
+		{
+			K_SyncItemList(save, i);
+		}
 
 		SYNC(players[i].angleturn);
 		SYNC(players[i].aiming);
