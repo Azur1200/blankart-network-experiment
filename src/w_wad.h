@@ -126,6 +126,8 @@ struct wadfile_t
 	lumpcache_t *lumpcache;
 	lumpcache_t *patchcache;
 	lumpcache_t *rotcache;
+	struct FolderCache *startfolders;
+	struct FolderCache *endfolders;
 	UINT16 numlumps; // this wad's number of resources
 	FILE *handle;
 	UINT32 filesize; // for network

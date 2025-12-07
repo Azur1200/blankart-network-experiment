@@ -114,6 +114,10 @@ struct LumpnumStringEquals
 
 static std::unordered_map<std::string, lumpnum_t, LumpnumNameHash, LumpnumStringEquals> lumpnumcache(LUMPNUMCACHESIZE);
 
+// gotta wrap this in a struct due to external C linkage
+struct FolderCache {
+	std::unordered_map<std::string, UINT16, LumpnumNameHash, LumpnumStringEquals> map;
+};
 
 //===========================================================================
 //                                                                    GLOBALS
@@ -142,6 +146,9 @@ void W_Shutdown(void)
 				Z_Free(wad->lumpinfo[wad->numlumps].fullname);
 			}
 		}
+
+		delete wad->startfolders;
+		delete wad->endfolders;
 
 		Z_Free(wad->lumpinfo);
 		Z_Free(wad);
@@ -1042,6 +1049,8 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boole
 	fseek(handle, 0, SEEK_END);
 	wadfile->filesize = (unsigned)ftell(handle);
 	wadfile->type = type;
+	wadfile->startfolders = new FolderCache();
+	wadfile->endfolders = new FolderCache();
 
 	// already generated, just copy it over
 	wadfile->hash = filehash;
@@ -1374,21 +1383,31 @@ W_CheckNumForMarkerStartPwad (const char *name, UINT16 wad, UINT16 startlump)
 // Look for the first lump from a folder.
 UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlump)
 {
-	size_t name_length;
-	INT32 i;
+	UINT16 i;
+	size_t namelen;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
-	name_length = strlen(name);
+
+	auto it = wadfiles[wad]->startfolders->map.find(name);
+	if (it != wadfiles[wad]->startfolders->map.end())
+		return it->second;
+
+	namelen = strlen(name);
+
 	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
 	{
-		if (strnicmp(name, lump_p->fullname, name_length) == 0)
+		if (strnicmp(name, lump_p->fullname, namelen) == 0)
 		{
 			/* SLADE is special and puts a single directory entry. Skip that. */
-			if (strlen(lump_p->fullname) == name_length)
+			if (lump_p->fullnamelength == namelen)
 				i++;
-			break;
+
+			wadfiles[wad]->startfolders->map[name] = i;
+			return i;
 		}
 	}
-	return i;
+
+	wadfiles[wad]->startfolders->map[name] = INT16_MAX;
+	return INT16_MAX;
 }
 
 // In a PK3 type of resource file, it looks for the next lumpinfo entry that doesn't share the specified pathfile.
@@ -1396,13 +1415,23 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 // Returns the position of the lumpinfo entry.
 UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 {
-	INT32 i;
+	UINT16 i;
+	size_t namelen;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
+
+	auto it = wadfiles[wad]->endfolders->map.find(name);
+	if (it != wadfiles[wad]->endfolders->map.end())
+		return it->second;
+
+	namelen = strlen(name);
+
 	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
 	{
-		if (strnicmp(name, lump_p->fullname, strlen(name)))
+		if (strnicmp(name, lump_p->fullname, namelen))
 			break;
 	}
+
+	wadfiles[wad]->endfolders->map[name] = i;
 	return i;
 }
 
