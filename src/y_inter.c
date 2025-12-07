@@ -621,13 +621,25 @@ void Y_IntermissionDrawer(void)
 				y2 = y;
 
 				INT32 slen = 0;
+				INT32 slen_temp = slen;
 
 				if (manyplayers16)
 					V_DrawThinString(x+18, y, hilicol|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 				else if (displayitemrolls)
 				{
 					V_DrawSmallString(xx, y2 + 1, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
-					slen = V_SmallStringWidth(strtime, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE);
+
+					// Get the longest string size. This is... gross.
+					INT32 ii;
+
+					for (ii = 0; ii < data.numplayers; ii++)
+					{
+						if (data.num[ii] != MAXPLAYERS && playeringame[data.num[ii]] && !players[data.num[ii]].spectator)
+						{
+							slen_temp = V_SmallStringWidth(data.name[ii], ((data.num[ii] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE);
+							slen = ((slen_temp > slen) ? slen_temp : slen);
+						}
+					}
 				}
 				else if (manyplayers8)
 				{
