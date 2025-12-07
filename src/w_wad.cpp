@@ -1423,6 +1423,20 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump)
 	return INT16_MAX;
 }
 
+static lumpnum_t CheckLumpInCache(const char *name)
+{
+	auto it = lumpnumcache.find(name);
+	if (it != lumpnumcache.end())
+		return it->second;
+
+	return LUMPERROR;
+}
+
+static void AddLumpToCache(lumpnum_t lumpnum, const char *name)
+{
+	lumpnumcache.insert({name, lumpnum});
+}
+
 //
 // W_CheckNumForName
 // Returns LUMPERROR if name not found.
@@ -1438,11 +1452,10 @@ lumpnum_t W_CheckNumForName(const char *name)
 	if (!*name) // some doofus gave us an empty string?
 		return LUMPERROR;
 
-	// Check the lumpnumcache first. Loop backwards so that we check
-	// most recent entries first
-	auto it = lumpnumcache.find(name);
-	if (it != lumpnumcache.end())
-		return it->second;
+	// Check the lumpnumcache first.
+	lumpnum_t cachenum = CheckLumpInCache(name);
+	if (cachenum != LUMPERROR)
+		return cachenum;
 
 	// scan wad files backwards so patch lump files take precedence
 	for (i = numwadfiles - 1; i >= 0; i--)
@@ -1481,10 +1494,9 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 
 	// Check the lumpnumcache first. Loop backwards so that we check
 	// most recent entries first
-	auto it = lumpnumcache.find(name);
-	if (it != lumpnumcache.end())
-		return it->second;
-
+	lumpnum_t cachenum = CheckLumpInCache(name);
+	if (cachenum != LUMPERROR)
+		return cachenum;
 
 	// scan wad files backwards so patch lump files take precedence
 	for (i = numwadfiles - 1; i >= 0; i--)
@@ -1501,7 +1513,8 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 		{
 			// Update the cache.
 			lumpnum_t lumpnum = (i << 16) | check;
-			lumpnumcache.insert({name, lumpnum});
+			AddLumpToCache(lumpnum, name);
+
 			return lumpnum;
 		}
 
@@ -1544,7 +1557,8 @@ lumpnum_t W_CheckNumForMap(const char *name, boolean checktofirst)
 		{
 			// Update the cache.
 			lumpnum_t lumpnum = (i << 16) | check;
-			lumpnumcache.insert({name, lumpnum});
+			AddLumpToCache(lumpnum, name);
+
 			return lumpnum;
 		}
 
@@ -1659,13 +1673,39 @@ lumpnum_t W_CheckNumForNameInFolder(const char *lump, const char *folder)
 #include "fastcmp.h"
 UINT8 W_LumpExists(const char *name)
 {
-	INT32 i,j;
+	INT32 i, j;
+	UINT32 hash;
+	size_t namelen;
+
+	lumpnum_t cachenum = CheckLumpInCache(name);
+	if (cachenum != LUMPERROR)
+	{
+		// ok ok, we did find a lump in our lumpcache BUTT
+		// the lumpcache map is case insensitive
+		// extract the lumpinfo out of the lumpnum
+		// so we can do one more extra case ~sensitive~ name compare
+		// otherwise we gotta fall through to our manual lump search below
+		// lumpnum == (i << 16) | check
+		UINT16 wadnum = (cachenum >> 16) & 0xFFFF;
+		UINT16 lumpid = cachenum & 0xFFFF;
+		lumpinfo_t *lump_p = &wadfiles[wadnum]->lumpinfo[lumpid];
+		if (fastcmp(lump_p->longname, name))
+			return true;
+	}
+
+	namelen = strlen(name);
+	hash = W_HashLumpName(name, namelen);
+
 	for (i = numwadfiles - 1; i >= 0; i--)
 	{
 		lumpinfo_t *lump_p = wadfiles[i]->lumpinfo;
 		for (j = 0; j < wadfiles[i]->numlumps; ++j, ++lump_p)
-			if (fastcmp(lump_p->longname, name))
+		{
+			if (lump_p->longnamelength == namelen
+			 && lump_p->hash.longname == hash
+			 && fastcmp(lump_p->longname, name))
 				return true;
+		}
 	}
 	return false;
 }
