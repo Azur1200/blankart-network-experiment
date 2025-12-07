@@ -694,6 +694,8 @@ skiptallydrawer:
 
 		if (multiplayer && demo.playback)
 			string = va("Replay ends in %d", tickdown);
+		else if (modeattacking != ATTACKING_NONE)
+			string = va("Exiting in %d", tickdown);
 		else
 			string = va("%s starts in %d", cv_advancemap.string, tickdown);
 
