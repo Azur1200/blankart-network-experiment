@@ -4459,11 +4459,11 @@ mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t mapthing, 
 			if (dir == -1)
 			{
 				// Shoot backward
-				K_SpawnKartMissile(player->mo, mapthing, (player->mo->angle + ANGLE_180) - 0x06000000, 0, PROJSPEED*dir/8);
-				K_SpawnKartMissile(player->mo, mapthing, (player->mo->angle + ANGLE_180) - 0x03000000, 0, PROJSPEED*dir/8);
-				K_SpawnKartMissile(player->mo, mapthing, player->mo->angle + ANGLE_180, 0, PROJSPEED*dir/8);
-				K_SpawnKartMissile(player->mo, mapthing, (player->mo->angle + ANGLE_180) + 0x03000000, 0, PROJSPEED*dir/8);
-				K_SpawnKartMissile(player->mo, mapthing, (player->mo->angle + ANGLE_180) + 0x06000000, 0, PROJSPEED*dir/8);
+				K_SpawnKartMissile(player->mo, mapthing, (player->mo->angle + ANGLE_180) - 0x06000000, 0, PROJSPEED*(-dir)/8);
+				K_SpawnKartMissile(player->mo, mapthing, (player->mo->angle + ANGLE_180) - 0x03000000, 0, PROJSPEED*(-dir)/8);
+				K_SpawnKartMissile(player->mo, mapthing, player->mo->angle + ANGLE_180, 0, PROJSPEED*(-dir)/8);
+				K_SpawnKartMissile(player->mo, mapthing, (player->mo->angle + ANGLE_180) + 0x03000000, 0, PROJSPEED*(-dir)/8);
+				K_SpawnKartMissile(player->mo, mapthing, (player->mo->angle + ANGLE_180) + 0x06000000, 0, PROJSPEED*(-dir)/8);
 			}
 			else
 			{
@@ -5440,6 +5440,7 @@ void K_DropRocketSneaker(player_t *player)
 	}
 	P_SetTarget(&player->mo->hnext, NULL);
 	player->rocketsneakertimer = 0;
+	player->equippeditem = KITEM_NONE;
 }
 
 void K_DropKitchenSink(player_t *player)
@@ -5666,7 +5667,7 @@ static void K_MoveHeldObjects(player_t *player)
 		return;
 	}
 
-	equipstyle = K_GetItemEquipStyle(player->mo->hnext->type);
+	equipstyle = K_GetItemEquipStyle(player->equippeditem);
 
 	switch (equipstyle)
 	{
@@ -9945,6 +9946,7 @@ void K_StripItems(player_t *player)
 	K_DropRocketSneaker(player);
 	K_DropKitchenSink(player);
 	player->itemtype = KITEM_NONE;
+	player->equippeditem = KITEM_NONE;
 	player->itemamount = 0;
 	player->itemflags &= ~IF_EGGMANOUT;
 	K_UnsetItemOut(player);
@@ -10199,17 +10201,6 @@ INT32 K_GetShieldFromItem(INT32 item)
 	}
 }
 
-void K_SetItemOut(player_t *player)
-{
-	player->itemflags |= IF_ITEMOUT;
-}
-
-void K_UnsetItemOut(player_t *player)
-{
-	player->itemflags &= ~(IF_ITEMOUT|IF_HOLDREADY);
-	player->bananadrag = 0;
-}
-
 static boolean K_InvincibilitySlotHogging(player_t *player)
 {
 	if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
@@ -10354,6 +10345,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 						K_ThrowKartItem(player, false, MT_EGGMANITEM, -1, 0);
 						K_PlayAttackTaunt(player->mo);
 						player->itemflags &= ~IF_EGGMANOUT;
+						player->equippeditem = KITEM_NONE;
 						K_UpdateHnextList(player, true);
 						K_BotResetItemConfirm(player, false);
 					}

@@ -4006,6 +4006,28 @@ static int lib_kUpdateHnextList(lua_State *L)
 	return 0;
 }
 
+static int lib_kSetItemOut(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	kartitemtype_e itemtype = luaL_checkint(L, 2);
+	itemflags_t flags = luaL_optint(L, 3, 0);
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_SetItemOut(player, itemtype, flags);
+	return 0;
+}
+
+static int lib_kUnsetItemOut(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_UnsetItemOut(player);
+	return 0;
+}
+
 static int lib_kDropItems(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -5497,6 +5519,8 @@ static luaL_Reg lib[] = {
 	{"K_GetKartDriftSparkValue",lib_kGetKartDriftSparkValue},
 	{"K_KartUpdatePosition",lib_kKartUpdatePosition},
 	{"K_UpdateHnextList",lib_kUpdateHnextList},
+	{"K_SetItemOut",lib_kSetItemOut},
+	{"K_UnsetItemOut",lib_kUnsetItemOut},
 	{"K_DropItems",lib_kDropItems},
 	{"K_StripItems",lib_kStripItems},
 	{"K_StripOther",lib_kStripOther},

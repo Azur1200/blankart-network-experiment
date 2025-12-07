@@ -341,9 +341,6 @@ void K_PlayPowerGloatSound(mobj_t *source);
 INT32 K_GetShieldFromPlayer(const player_t *player);
 INT32 K_GetShieldFromItem(INT32 item);
 
-void K_SetItemOut(player_t *player);
-void K_UnsetItemOut(player_t *player);
-
 boolean K_SafeRespawnPosition(mobj_t * mo);
 
 boolean K_RingsActive(void);

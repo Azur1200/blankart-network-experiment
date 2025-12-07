@@ -184,6 +184,14 @@ kartitemflags_e K_GetItemFlags(kartitemtype_e itemtype)
 	return kartitems[itemtype].flags[K_IsKartItemAlternate(itemtype) ? 1 : 0];
 }
 
+kartitemequip_e K_GetItemEquipStyle(kartitemtype_e itemtype)
+{
+	if (itemtype >= numkartitems)
+		return KITEMEQUIP_NONE;
+
+	return kartitems[itemtype].equipstyle[K_IsKartItemAlternate(itemtype) ? 1 : 0];
+}
+
 UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny)
 {
 	if (type == MAXKARTITEMS)
@@ -325,6 +333,19 @@ static boolean K_DontDoubleMyItems(kartitemtype_e type, UINT8 amount)
 	    || (type == KITEM_SNEAKER && amount >= 3)
 	    || (type == KITEM_JAWZ && amount >= 2)
 	    || type >= KITEM_FIRSTFREESLOT; // TODO: excludes custom items for now
+}
+
+void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags)
+{
+	player->itemflags |= flags;
+	player->equippeditem = itemtype;
+}
+
+void K_UnsetItemOut(player_t *player)
+{
+	player->itemflags &= ~(IF_ITEMOUT|IF_EGGMANOUT|IF_HOLDREADY);
+	player->bananadrag = 0;
+	player->equippeditem = KITEM_NONE;
 }
 
 static sfxenum_t resultfx[] = {
@@ -1929,6 +1950,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 
 			player->rocketsneakertimer = (itemtime*3);
 			player->itemamount--;
+			K_SetItemOut(player, KITEM_ROCKETSNEAKER, 0);
 			K_UpdateHnextList(player, true);
 
 			for (moloop = 0; moloop < 2; moloop++)
@@ -1965,7 +1987,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *prev = player->mo;
 
 			//K_PlayAttackTaunt(player->mo);
-			K_SetItemOut(player);
+			K_SetItemOut(player, KITEM_BANANA, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s254);
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
@@ -2005,7 +2027,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		{
 			mobj_t *mo;
 			player->itemamount--;
-			player->itemflags |= IF_EGGMANOUT;
+			K_SetItemOut(player, KITEM_EGGMAN, IF_EGGMANOUT);
 			S_StartSound(player->mo, sfx_s254);
 			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EGGMANITEM_SHIELD);
 			if (mo)
@@ -2030,7 +2052,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *prev = player->mo;
 
 			//K_PlayAttackTaunt(player->mo);
-			K_SetItemOut(player);
+			K_SetItemOut(player, KITEM_ORBINAUT, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s3k3a);
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
@@ -2073,7 +2095,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *prev = player->mo;
 
 			//K_PlayAttackTaunt(player->mo);
-			K_SetItemOut(player);
+			K_SetItemOut(player, KITEM_JAWZ, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s3k3a);
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
@@ -2113,7 +2135,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 		{
 			mobj_t *mo;
-			K_SetItemOut(player);
+			K_SetItemOut(player, KITEM_MINE, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s254);
 			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_SSMINE_SHIELD);
 			if (mo)
@@ -2364,7 +2386,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 		{
 			mobj_t *mo;
-			K_SetItemOut(player);
+			K_SetItemOut(player, KITEM_KITCHENSINK, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s254);
 			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_SINK_SHIELD);
 			if (mo)
@@ -2430,28 +2452,4 @@ void K_AltShrinkPityIncrease(player_t *player)
     shrinktime = min(INT16_MAX, shrinktime + PITY_SHRINKINCREASE_BASE + FixedMul(PITY_SHRINKINCREASE, dimin));
 
     player->growshrinktimer = ((INT16)shrinktime) * -1;
-}
-
-// this shit is so ass 🥲
-kartitemequip_e K_GetItemEquipStyle(mobjtype_t mobjtype)
-{
-	//TODO: lua hook to use any of these for a given mobj
-	// if we could use tables or dicts I'd use those insteasd
-	switch (mobjtype)
-	{
-		case MT_ORBINAUT_SHIELD:
-		case MT_JAWZ_SHIELD:
-			return KITEMEQUIP_ORBIT;
-		case MT_BANANA_SHIELD:
-		case MT_SSMINE_SHIELD:
-		case MT_EGGMANITEM_SHIELD:
-		case MT_SINK_SHIELD:
-			return KITEMEQUIP_TRAIL;
-		case MT_ROCKETSNEAKER:
-			return KITEMEQUIP_ROCKETS;
-		default:
-		{
-			return LUA_HookGetItemEquipStyle(mobjtype);
-		}
-	}
 }
