@@ -244,7 +244,8 @@ void I_ShutdownSound(void)
 	Mix_Quit();
 #endif
 
-	SDL_QuitSubSystem(SDL_INIT_AUDIO);
+	if (SDL_WasInit(SDL_INIT_AUDIO) == SDL_INIT_AUDIO)
+		SDL_QuitSubSystem(SDL_INIT_AUDIO);
 
 #ifdef HAVE_GME
 	if (gme)
