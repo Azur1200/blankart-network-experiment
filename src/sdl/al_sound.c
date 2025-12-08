@@ -440,7 +440,15 @@ static boolean I_QueueNextSample(boolean unqueue)
 			// Loop music otherwise stop.
 			if (audio.looping)
 			{
-				sf_count_t finalposition = SecondsToSamples(audio.loop_point, audio.musicinfo.samplerate);
+				float songlength = I_GetSongLength() / 1000;
+				float looppoint = audio.loop_point;
+
+				// Bad Loop Point?
+				// Go back to the start.
+				if (audio.loop_point > songlength)
+					looppoint = 0.0f;
+
+				sf_count_t finalposition = SecondsToSamples(looppoint, audio.musicinfo.samplerate);
 				sf_seek(audio.musicstream, finalposition, SF_SEEK_SET);
 			}
 		}
@@ -1475,6 +1483,7 @@ boolean I_LoadSong(char *data, size_t len)
 		else // continue searching
 			p++;
 	}
+
 	return true;
 }
 
