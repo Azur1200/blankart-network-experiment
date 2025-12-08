@@ -244,6 +244,33 @@ static ALenum I_GetALFormat(SF_INFO info)
 
 static void AudioThread(void *userdata);
 
+static void var_cleanup(void)
+{
+	LOCKAUDIO;
+
+	fading_source = fading_target = fading_timer = fading_duration = 0;
+
+	audio.music = INVALID_HANDLE;
+	audio.bufferindex = 0;
+
+	for (size_t i = 0; i < BUFFERCOUNT; i++)
+		audio.musicbuffers[i] = INVALID_HANDLE;
+	audio.loop_point = 0.0f;
+	audio.looping = false;
+	audio.startplay = false;
+
+	is_fading = false;
+
+	// HACK: See music_loop, where we want the fade timing to proceed after a non-looping
+	// song has stopped playing
+	if (!fading_nocleanup)
+		fading_callback = NULL;
+	else
+		fading_nocleanup = false; // use it once, set it back immediately
+
+	internal_volume = 1.0f;
+}
+
 void I_StartupSound(void)
 {
 	if (sound_started)
@@ -278,15 +305,8 @@ void I_StartupSound(void)
 
 	alcMakeContextCurrent(audio.context);
 
-	audio.music = INVALID_HANDLE;
-	audio.bufferindex = 0;
-
-	for (size_t i = 0; i < BUFFERCOUNT; i++)
-		audio.musicbuffers[i] = INVALID_HANDLE;
+	var_cleanup();
 	music_volume = sfx_volume = 0.f;
-	audio.loop_point = 0.0f;
-	audio.looping = false;
-	audio.startplay = false;
 
 #ifdef HAVE_OPENMPT
 	CONS_Printf("libopenmpt version: %s\n", openmpt_get_string("library_version"));
@@ -1408,6 +1428,8 @@ boolean I_LoadSong(char *data, size_t len)
 	if (audio.music != INVALID_HANDLE)
 		I_UnloadSong();
 
+	var_cleanup();
+
 	if (!InitializeMusicStreaming(data, len))
 		return false;
 
@@ -1553,6 +1575,8 @@ void I_StopSong(void)
 #endif
 	if (audio.music != INVALID_HANDLE)
 		alSourceStop(audio.music);
+
+	var_cleanup();
 }
 
 void I_PauseSong(void)
