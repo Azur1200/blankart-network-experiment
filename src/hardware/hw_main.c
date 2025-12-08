@@ -3138,17 +3138,17 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	FOutVector shadowVerts[4];
 	FSurfaceInfo sSurf;
 	float fscale; float fx; float fy; float offset;
-	float ph;
 	extracolormap_t *colormap = NULL;
 	FBITFIELD blendmode = PF_ReverseSubtract;
 	INT32 shader = SHADER_NONE;
 	UINT8 i;
+	INT32 heightsec, phs;
 	SINT8 flip = P_MobjFlip(thing);
 
 	INT32 light;
 	fixed_t scalemul;
+	fixed_t floordiff;
 	fixed_t groundz;
-	fixed_t slopez;
 	pslope_t *groundslope;
 
 	// uncapped/interpolation
@@ -3163,6 +3163,26 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 
 	groundz = R_GetShadowZ(thing, &groundslope);
 
+	heightsec = thing->subsector->sector->heightsec;
+	if (viewplayer->mo && viewplayer->mo->subsector)
+		phs = viewplayer->mo->subsector->sector->heightsec;
+	else
+		phs = -1;
+
+	if (heightsec != -1 && phs != -1) // only clip things which are in special sectors
+	{
+		if (gl_viewz < FIXED_TO_FLOAT(sectors[phs].floorheight) ?
+			thing->z >= sectors[heightsec].floorheight :
+			thing->z < sectors[heightsec].floorheight)
+			return;
+		if (gl_viewz > FIXED_TO_FLOAT(sectors[phs].ceilingheight) ?
+			thing->z < sectors[heightsec].ceilingheight && gl_viewz >= FIXED_TO_FLOAT(sectors[heightsec].ceilingheight) :
+			thing->z >= sectors[heightsec].ceilingheight)
+			return;
+	}
+
+	floordiff = abs((flip < 0 ? interp.height : 0) + interp.z - groundz);
+
 	if (!shadowpatch || !shadowpatch->hardware)
 	{
 		CONS_Debug(DBG_RENDER, "Recaching shadow patch\n");
@@ -3170,33 +3190,25 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	}
 
 	gpatch = shadowpatch;
-
-	if (!gpatch || !gpatch->hardware || !((GLPatch_t *)gpatch->hardware)->mipmap->format)
-		return;
-
+	if (!gpatch || !gpatch->hardware || !((GLPatch_t *)gpatch->hardware)->mipmap->format) return;
 	HWR_GetPatch(gpatch);
 
-	scalemul = FixedMul(scale, (thing->radius * 2) / gpatch->height);
-
-	ph = (float)gpatch->height;
+	scalemul = FixedMul(FRACUNIT - floordiff/640, scale);
+	scalemul = FixedMul(scalemul, (interp.radius*2) / gpatch->height);
 
 	fscale = FIXED_TO_FLOAT(scalemul);
 	fx = FIXED_TO_FLOAT(interp.x);
 	fy = FIXED_TO_FLOAT(interp.y);
 
-	if (fscale > 0.0)
-	{
-		offset = (ph / 2) * fscale;
-	}
-	else
-	{
-		return;
-	}
-
 	//  3--2
 	//  | /|
 	//  |/ |
 	//  0--1
+
+	if (thing && fabsf(fscale - 1.0f) > 1.0E-36f)
+		offset = (gpatch->height/2) * fscale;
+	else
+		offset = (float)(gpatch->height/2);
 
 	shadowVerts[2].x = shadowVerts[3].x = fx + offset;
 	shadowVerts[1].x = shadowVerts[0].x = fx - offset;
@@ -3215,7 +3227,7 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	{
 		for (i = 0; i < 4; i++)
 		{
-			slopez = P_GetSlopeZAt(groundslope, FLOAT_TO_FIXED(shadowVerts[i].x), FLOAT_TO_FIXED(shadowVerts[i].z));
+			fixed_t slopez = P_GetSlopeZAt(groundslope, FLOAT_TO_FIXED(shadowVerts[i].x), FLOAT_TO_FIXED(shadowVerts[i].z));
 			shadowVerts[i].y = FIXED_TO_FLOAT(slopez) + flip * 0.05f;
 		}
 	}

@@ -1509,15 +1509,17 @@ static void R_SkewShadowSprite(
 
 static patch_t *shadowpatch = NULL;
 
-static void R_ProjectDropShadow(
-	mobj_t *thing, vissprite_t *vis,
-	fixed_t scale, fixed_t tx, fixed_t tz)
+static void R_ProjectDropShadow(mobj_t *thing, vissprite_t *vis, fixed_t scale, fixed_t tx, fixed_t tz)
 {
 	vissprite_t *shadow;
 	patch_t *patch;
 	fixed_t xscale, yscale, shadowxscale, shadowyscale, shadowskew, x1, x2;
+	INT32 heightsec, phs;
+	fixed_t scalemul;
+	fixed_t floordiff;
 	fixed_t groundz;
 	pslope_t *groundslope;
+	boolean isflipped = thing->eflags & MFE_VERTICALFLIP;
 	interpmobjstate_t interp = {0};
 
 	groundz = R_GetShadowZ(thing, &groundslope);
@@ -1525,6 +1527,28 @@ static void R_ProjectDropShadow(
 	if (abs(groundz-viewz)/tz > 4) return; // Prevent stretchy shadows and possible crashes
 
 	R_InterpolateMobjState(thing, R_GetTimeFrac(RTF_LEVEL), &interp);
+
+	heightsec = thing->subsector->sector->heightsec;
+	if (viewplayer->mo && viewplayer->mo->subsector)
+		phs = viewplayer->mo->subsector->sector->heightsec;
+	else
+		phs = -1;
+
+	if (heightsec != -1 && phs != -1) // only clip things which are in special sectors
+	{
+		if (viewz < sectors[phs].floorheight ?
+			groundz >= sectors[heightsec].floorheight :
+			groundz < sectors[heightsec].floorheight)
+			return;
+		if (viewz > sectors[phs].ceilingheight ?
+			groundz < sectors[heightsec].ceilingheight && viewz >= sectors[heightsec].ceilingheight :
+			groundz >= sectors[heightsec].ceilingheight)
+			return;
+	}
+
+	floordiff = abs((isflipped ? interp.height : 0) + interp.z - groundz);
+
+	scalemul = FixedMul(FRACUNIT - floordiff/640, scale);
 
 	if (shadowpatch == NULL)
 	{
@@ -1535,20 +1559,14 @@ static void R_ProjectDropShadow(
 	patch = shadowpatch;
 	xscale = FixedDiv(projection[viewssnum], tz);
 	yscale = FixedDiv(projectiony[viewssnum], tz);
-	shadowxscale = FixedMul(thing->radius*2, scale);
-	shadowyscale = FixedMul(FixedMul(thing->radius*2, scale), FixedDiv(abs(groundz - viewz), tz));
+	shadowxscale = FixedMul(interp.radius*2, scalemul);
+	shadowyscale = FixedMul(FixedMul(interp.radius*2, scalemul), FixedDiv(abs(groundz - viewz), tz));
 	shadowyscale = std::min(shadowyscale, shadowxscale) / patch->height;
 	shadowxscale /= patch->width;
 	shadowskew = 0;
 
 	if (groundslope)
-	{
-		R_SkewShadowSprite(
-			thing,
-			groundslope, groundz,
-			patch->height, FRACUNIT,
-			&shadowyscale, &shadowskew);
-	}
+		R_SkewShadowSprite(thing, groundslope, groundz, patch->height, scalemul, &shadowyscale, &shadowskew);
 
 	tx -= patch->width * shadowxscale/2;
 	x1 = (centerxfrac + FixedMul(tx,xscale))>>FRACBITS;
@@ -1565,6 +1583,10 @@ static void R_ProjectDropShadow(
 	shadow->bright = NULL;
 	shadow->heightsec = vis->heightsec;
 
+	shadow->thingheight = FRACUNIT;
+	shadow->pz = groundz + (isflipped ? -shadow->thingheight : 0);
+	shadow->pzt = shadow->pz + shadow->thingheight;
+
 	shadow->mobjflags = 0;
 	shadow->renderflags = 0;
 	shadow->floorclip = 0;
@@ -1572,9 +1594,11 @@ static void R_ProjectDropShadow(
 	shadow->dispoffset = vis->dispoffset - 5;
 	shadow->gx = interp.x;
 	shadow->gy = interp.y;
-	shadow->gzt = groundz + patch->height * shadowyscale / 2;
+	shadow->gzt = (isflipped ? shadow->pzt : shadow->pz) + patch->height * shadowyscale / 2;
 	shadow->gz = shadow->gzt - patch->height * shadowyscale;
 	shadow->texturemid = FixedMul(interp.scale, FixedDiv(shadow->gzt - viewz, shadowyscale));
+	if (thing->skin && ((skin_t *)thing->skin)->highresscale != FRACUNIT)
+		shadow->texturemid = FixedMul(shadow->texturemid, ((skin_t *)thing->skin)->highresscale);
 	shadow->scalestep = 0;
 	shadow->shear.tan = shadowskew; // repurposed variable
 
