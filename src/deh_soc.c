@@ -4079,9 +4079,15 @@ void readkartitem(MYFILE *f, kartitem_t *item)
 		word2 = (tmp += 2);
 		strupr(word2);
 
-		if (fastcmp(word, "BIGPATCHES") || fastcmp(word, "SMALLPATCHES"))
+		if (fastcmp(word, "BIGPATCHES") || fastcmp(word, "SMALLPATCHES") ||
+		    fastcmp(word, "BIGALTPATCHES") || fastcmp(word, "SMALLALTPATCHES"))
 		{
-			kartitemgraphics_t *graphics = &item->graphics[word[0] == 'B' ? 0 : 1];
+			UINT8 patch_idx = (word[0] == 'B') ? 0 : 1;
+
+			// Alt. patches are stored in the same array, just in their own slots.
+			patch_idx += (word[3 + (patch_idx << 1)] == 'A') ? 2 : 0;
+
+			kartitemgraphics_t* graphics = &item->graphics[patch_idx];
 
 			if (graphics == &item->graphics[0] && item->spritedef.numframes > 0)
 			{
@@ -4095,11 +4101,17 @@ void readkartitem(MYFILE *f, kartitem_t *item)
 				graphics->patches[i] = NULL;
 			}
 
-			tmp = strtok(word2,",");
+			tmp = strtok(word2, ",");
 			for (graphics->numpatches = 0; graphics->numpatches < MAXITEMPATCHES;)
 			{
 				graphics->patchnames[graphics->numpatches++] = Z_StrDup(tmp);
-				if ((tmp = strtok(NULL,",")) == NULL)
+
+				if (patch_idx > 1)
+				{
+					item->altgraphics = true;
+				}
+
+				if ((tmp = strtok(NULL, ",")) == NULL)
 					break;
 			}
 		}

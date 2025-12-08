@@ -542,7 +542,9 @@ void K_LoadKartHUDGraphics(void)
 	for (i = 0; i < numkartitems; i++)
 	{
 		kartitem_t *item = &kartitems[i];
-		for (j = 0; j < 2; j++)
+
+		INT32 n = (item->altgraphics) ? 4 : 2;
+		for (j = 0; j < n; j++)
 		{
 			kartitemgraphics_t *graphics = &item->graphics[j];
 			for (INT32 k = 0; k < graphics->numpatches; k++)
@@ -1330,7 +1332,7 @@ static void K_drawKartItem(void)
 			localpatch = K_GetCachedItemPatch(stplyr->itemtype, tiny, stplyr->itemamount);
 			if (localpatch == NULL)
 				localpatch = kp_nodraw; // diagnose underflows
-			else if (K_IsKartItemAlternate(stplyr->itemtype))
+			else if (K_IsKartItemAlternate(stplyr->itemtype) && (!kartitems[stplyr->itemtype].altgraphics))
 				isalt = true;
 
 			dark = K_GetItemFlags(stplyr->itemtype) & KIF_DARKBG;

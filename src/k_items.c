@@ -202,10 +202,15 @@ UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny)
 	return K_GetItemFlags(type) & KIF_ANIMATED ? 2 : kartitems[type].graphics[tiny ? 1 : 0].numpatches + 1;
 }
 
-patch_t *K_GetCachedItemPatch(kartitemtype_e type, boolean tiny, UINT8 amount)
+patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, boolean tiny, UINT8 amount, boolean *altforce)
 {
 	kartitem_t *item = &kartitems[type >= numkartresults ? 0 : type];
-	kartitemgraphics_t *graphics = &item->graphics[tiny ? 1 : 0];
+	boolean alt = item->altgraphics && K_IsKartItemAlternate(type);
+
+	if (altforce != NULL)
+		alt = (*altforce) && item->altgraphics;
+
+	kartitemgraphics_t *graphics = &item->graphics[(tiny ? 1 : 0) + (alt ? 2 : 0)];
 
 	if (graphics->numpatches == 0)
 		return missingpat;

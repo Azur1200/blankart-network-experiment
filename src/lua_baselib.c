@@ -4104,6 +4104,7 @@ static int lib_kGetItemPatch(lua_State *L)
 {
 	kartitemtype_e item = (kartitemtype_e)luaL_optinteger(L, 1, KITEM_NONE);
 	boolean tiny = lua_optboolean(L, 2);
+	boolean alt = lua_isnoneornil(L, 3) ? false : luaL_checkboolean(L, 3);
 	//HUDSAFE
 
 	// TODO: compatmode KRITEM
@@ -4114,8 +4115,24 @@ static int lib_kGetItemPatch(lua_State *L)
 		return 1;
 	}
 
-	kartitemgraphics_t *graphics = &kartitems[item].graphics[tiny ? 1 : 0];
+	if (alt && (!kartitems[item].altgraphics))
+	{
+		alt = false;
+	}
+
+	kartitemgraphics_t *graphics = &kartitems[item].graphics[(tiny ? 1 : 0) + (alt ? 2 : 0)];
 	lua_pushstring(L, graphics->numpatches == 0 ? sad : graphics->patchnames[0]);
+	return 1;
+}
+
+static int lib_kItemHasAltPatches(lua_State *L)
+{
+	kartitemtype_e item = (kartitemtype_e)luaL_optinteger(L, 1, KITEM_NONE);
+
+	if (item <= 0 || item >= numkartitems)
+		return luaL_error(L, "item number %d out of range (0 - %d)", item, numkartitems-1);
+
+	lua_pushboolean(L, kartitems[item].altgraphics);
 	return 1;
 }
 
@@ -5530,6 +5547,7 @@ static luaL_Reg lib[] = {
 	{"K_GetKartFlashing",lib_kGetKartFlashing},
 	{"K_GetItemPatch",lib_kGetItemPatch},
 	{"K_IsKartItemAlternate",lib_kIsKartItemAlternate},
+	{"K_ItemHasAltPatches", lib_kItemHasAltPatches},
 	{"K_IsAltShrunk", lib_kIsAltShrunk},
 	{"K_SetRaceCountdown",lib_kSetRaceCountdown},
 	{"K_SetExitCountdown",lib_kSetExitCountdown},
