@@ -2345,7 +2345,6 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 			water->momy = mobj->momy;
 			water->momz = mobj->momz;
 			P_SetScale(water, trailScale);
-			water->old_scale = trailScale;
 			P_SetMobjState(water, S_WATERTRAILS);
 			water->frame = curFrame;
 			water->flags2 |= MF2_DONTSYNC;
@@ -2360,7 +2359,6 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 			water->momy = mobj->momy;
 			water->momz = mobj->momz;
 			P_SetScale(water, trailScale);
-			water->old_scale = trailScale;
 			P_SetMobjState(water, S_WATERTRAILSUNDERLAY);
 			water->frame = curFrame|FF_ADD|FF_TRANS40;
 			water->flags2 |= MF2_DONTSYNC;
@@ -2374,7 +2372,6 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 			water->momy = mobj->momy;
 			water->momz = mobj->momz;
 			P_SetScale(water, trailScale);
-			water->old_scale = trailScale;
 			P_SetMobjState(water, S_WATERTRAILS);
 			water->frame = curFrame;
 			water->flags2 |= MF2_DONTSYNC;
@@ -2401,7 +2398,6 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 		}
 		water->destscale = mobj->scale;
 		P_SetScale(water, mobj->scale);
-		water->old_scale = trailScale;
 		water->flags2 |= MF2_DONTSYNC;
 	}
 
