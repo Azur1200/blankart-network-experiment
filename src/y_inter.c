@@ -55,6 +55,11 @@
 #include "hardware/hw_main.h"
 #endif
 
+#define ITEMLIST_PLAYER_YOFFSET 8
+#define ITEMLIST_SCROLLSPEED (3 * FRACUNIT / 4)
+#define ITEMLIST_SCROLLDELAY (TICRATE)
+#define ITEMLIST_SCROLLREPEAT 2
+
 typedef struct
 {
 	char patch[9];
@@ -115,6 +120,10 @@ static INT32 intertic;
 static INT32 endtic = -1;
 static INT32 sorttic = -1;
 static INT32 rolltic = -1;
+
+static boolean listscroll_reverse = false;
+static INT32 listscroll_delay = 0;
+fixed_t yscroll = 0;
 
 intertype_t intertype = int_none;
 intertype_t intermissiontypes[NUMGAMETYPES];
@@ -404,6 +413,12 @@ void Y_IntermissionDrawer(void)
 	if (intertype == int_none || rendermode == render_none)
 		return;
 
+	INT32 w = (vid.width / vid.dupx);
+	INT32 h = (vid.height / vid.dupy);
+
+	const INT32 vidxdiff = (w - BASEVIDWIDTH) / 2;
+	const INT32 vidydiff = (h - BASEVIDHEIGHT) / 2;
+
 	if (!useinterpic && y_screenbuffer == NULL
 #ifdef HWRENDER
 	// TODO resolution changes breaks the screentexture capture, I have no clue why
@@ -482,7 +497,7 @@ void Y_IntermissionDrawer(void)
 		INT32 y = 41, gutter = ((data.numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
 		INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
 		const char *timeheader;
-		
+
 		boolean manyplayers16 = (data.numplayers > NUMFORNEWCOLUMN*2);
 		boolean manyplayers8 = (data.numplayers > NUMFORNEWCOLUMN);
 		boolean displayitemrolls = (data.itemrolls && (intertic <= rolltic));
@@ -557,7 +572,15 @@ void Y_IntermissionDrawer(void)
 					y--;
 
 				if (manyplayers16||displayitemrolls)
-					V_DrawPingNum(x + 6, (displayitemrolls) ? y-2 : y+2, 0, data.pos[i], NULL);
+				{
+					if (displayitemrolls)
+						V_SetClipRect((-vidxdiff - 2) * FRACUNIT, (36) * FRACUNIT, w*FRACUNIT, (h - 36)*FRACUNIT, 0);
+
+					V_DrawPingNum(x + 6, ((displayitemrolls) ? y-2 : y+2) - (yscroll / FRACUNIT), 0, data.pos[i], NULL);
+
+					if (displayitemrolls)
+						V_ClearClipRect();
+				}
 				else
 					V_DrawCenteredString(x+6, y, 0, va("%d", data.pos[i]));
 
@@ -588,7 +611,13 @@ void Y_IntermissionDrawer(void)
 						xoffs = FixedMul(16, scale);
 						yoffs = FixedMul(4, scale);
 
-						V_DrawFixedPatch((x+xoffs)<<FRACBITS, (y-yoffs)<<FRACBITS, scale, 0, facerank, colormap);
+						if (displayitemrolls)
+							V_SetClipRect((-vidxdiff - 2) * FRACUNIT, (36) * FRACUNIT, w*FRACUNIT, (h - 36)*FRACUNIT, 0);
+
+						V_DrawFixedPatch((x+xoffs)<<FRACBITS, ((y-yoffs-(yscroll / FRACUNIT))<<FRACBITS), scale, 0, facerank, colormap);
+
+						if (displayitemrolls)
+							V_ClearClipRect();
 
 						xx = (x+xoffs) + FixedMul(20, scale);
 					}
@@ -627,7 +656,16 @@ void Y_IntermissionDrawer(void)
 					V_DrawThinString(x+18, y, hilicol|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 				else if (displayitemrolls)
 				{
-					V_DrawSmallString(xx, y2 + 1, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+					V_SetClipRect((-vidxdiff - 2) * FRACUNIT, (36) * FRACUNIT, w*FRACUNIT, (h - 36)*FRACUNIT, 0);
+
+					V_DrawSmallString(xx,
+							  (y2 + 1 - (yscroll / FRACUNIT)),
+							  ((data.num[i] == whiteplayer)
+							  ? hilicol : 0)|V_ALLOWLOWERCASE
+							  |V_6WIDTHSPACE,
+							  strtime);
+
+					V_ClearClipRect();
 
 					// Get the longest string size. This is... gross.
 					INT32 ii;
@@ -688,7 +726,9 @@ void Y_IntermissionDrawer(void)
 				}
 				else if (data.itemrolls && (intertic <= rolltic))
 				{
-					K_DrawItemList((INT32)(&players[data.num[i]] - players), (xx+2+slen) * FRACUNIT, (y-1) * FRACUNIT);
+					V_SetClipRect((-vidxdiff - 2) * FRACUNIT, (36) * FRACUNIT, w*FRACUNIT, (h - 36)*FRACUNIT, 0);
+					K_DrawItemList((INT32)(&players[data.num[i]] - players), (xx+2+slen) * FRACUNIT, ((y-1-(yscroll / FRACUNIT)) * FRACUNIT));
+					V_ClearClipRect();
 				}
 				else
 				{
@@ -739,7 +779,7 @@ void Y_IntermissionDrawer(void)
 			}
 			else
 			{
-				y += (displayitemrolls) ? 8 : 18;
+				y += (displayitemrolls) ? ITEMLIST_PLAYER_YOFFSET : 18;
 
 				if ((!displayitemrolls) && i == NUMFORNEWCOLUMN-1)
 				{
@@ -829,6 +869,58 @@ void Y_Ticker(void)
 	LUA_HOOK(IntermissionThinker);
 
 	intertic++;
+
+	// Used to scroll the end-of-race item list.
+	UINT16 manyplayers18 = max(0, data.numplayers - 18);
+
+	// Let's precalculate this, so it's not being done in the Big Stupid Player Loop
+	fixed_t listscroll_length = (manyplayers18 * ITEMLIST_PLAYER_YOFFSET * FRACUNIT);
+
+	if (listscroll_length && (intertic > (TICRATE * 2)) && (intertic <= rolltic))
+	{
+
+		if (!listscroll_reverse)
+		{
+			if ((yscroll >= listscroll_length))
+			{
+				if (!listscroll_delay)
+					listscroll_delay = ITEMLIST_SCROLLDELAY;
+			}
+			else
+				yscroll = min(listscroll_length, yscroll + ITEMLIST_SCROLLSPEED);
+		}
+		else
+		{
+			if ((yscroll <= 0))
+			{
+				if (!listscroll_delay)
+					listscroll_delay = ITEMLIST_SCROLLDELAY;
+			}
+			else
+				yscroll = max(0, yscroll - ITEMLIST_SCROLLSPEED);
+		}
+
+		if (listscroll_delay)
+		{
+			listscroll_delay--;
+
+			if (!listscroll_delay)
+				listscroll_reverse = (!listscroll_reverse);
+		}
+	}
+	else
+	{
+		listscroll_delay = 0;
+		listscroll_reverse = false;
+
+		if (yscroll > 0)
+		{
+			if (intertic < rolltic)
+				yscroll = max(0, yscroll - ITEMLIST_SCROLLSPEED);
+			else
+				yscroll = 0;
+		}
+	}
 
 	// Team scramble code for team match and CTF.
 	// Don't do this if we're going to automatically scramble teams next round.
@@ -1010,7 +1102,7 @@ void Y_StartIntermission(void)
 	if (!timer)
 	{
 		// Prevent a weird bug
-		timer = 1; 
+		timer = 1;
 	}
 	else if (nump < 2 && !netgame)
 	{
@@ -1062,7 +1154,19 @@ void Y_StartIntermission(void)
 
 			if (data.itemrolls)
 			{
-				rolltic = 15 * TICRATE;
+				// Used to scroll the end-of-race item list.
+				UINT16 manyplayers18 = max(0, nump - 18);
+
+				// Let's precalculate this, so it's not being done in the Big Stupid Player Loop
+				fixed_t listscroll_length = (manyplayers18 * ITEMLIST_PLAYER_YOFFSET * FRACUNIT);
+
+				// Same for the time needed
+				// We'll scroll the list up and down 3 times, and have 2 seconds before scrolling happens
+				tic_t timetoscrolllist = (listscroll_length / ITEMLIST_SCROLLSPEED);
+				tic_t listscroll_time = ((ITEMLIST_SCROLLREPEAT * 2) * (ITEMLIST_SCROLLDELAY + timetoscrolllist)) + (TICRATE * 2);
+
+				rolltic = max(15 * TICRATE, listscroll_time);
+
 				sorttic += rolltic;
 				timer += rolltic;
 			}
@@ -2227,3 +2331,7 @@ void Y_SetupVoteFinish(SINT8 pick, SINT8 level)
 	g_pickedVote = pick;
 	timer = 0;
 }
+
+#undef ITEMLIST_PLAYER_YOFFSET
+#undef ITEMLIST_SCROLLSPEED
+#undef ITEMLIST_SCROLLDELAY
