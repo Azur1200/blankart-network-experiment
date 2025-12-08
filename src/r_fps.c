@@ -319,9 +319,9 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	}
 	else
 	{
-		out->scale = R_LerpFixed(mobj->old_scale, mobj->scale, frac);
-		out->radius = FixedMul(mobj->radius, FixedDiv(out->scale, mobj->scale));
-		out->height = FixedMul(mobj->height, FixedDiv(out->scale, mobj->scale));
+		out->scale = mobj->resetinterp ? mobj->scale : R_LerpFixed(mobj->old_scale, mobj->scale, frac);
+		out->radius = mobj->resetinterp ? mobj->radius : FixedMul(mobj->radius, FixedDiv(out->scale, mobj->scale));
+		out->height = mobj->resetinterp ? mobj->height : FixedMul(mobj->height, FixedDiv(out->scale, mobj->scale));
 	}
 
 	out->subsector = R_PointInSubsector(out->x, out->y);
