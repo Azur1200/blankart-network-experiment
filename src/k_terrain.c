@@ -680,7 +680,14 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 				K_MomentumAngle(player->mo), thrustAngle,
 				playerSpeed, thrustSpeed
 			);
+
+			player->mo->angle = player->drawangle = thrustAngle;
 			player->driftlock = TICRATE/8; // seems like a good value so its not noticable and you still get the right angle
+
+			if (!demo.playback)
+				P_ForceLocalAngle(player, player->mo->angle, true);
+
+			player->angleturn = player->mo->angle;
 
 			P_InstaThrust(player->mo, thrustAngle, max(thrustSpeed, 2*playerSpeed));
 
