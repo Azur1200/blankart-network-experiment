@@ -1648,6 +1648,9 @@ void I_SetInternalMusicVolume(UINT8 volume)
 
 void I_StopFadingSong(void)
 {
+	if (fading_id)
+		SDL_RemoveTimer(fading_id);
+
 	is_fading = false;
 	fading_source = fading_target = fading_timer = fading_duration = 0;
 	// don't unset fading_nocleanup here just yet; fading_callback is cleaned up
