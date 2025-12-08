@@ -1294,8 +1294,8 @@ void K_GenericExtraFlagsNoZAdjust(mobj_t *mo, mobj_t *master)
 	mo->renderflags = (mo->renderflags & ~RF_DONTDRAW) | (master->renderflags & RF_DONTDRAW);
 }
 
-
-void K_SpawnDashDustRelease(player_t *player)
+// Force is used to allow this to be used under lua contexts.
+void K_SpawnDashDustRelease(player_t *player, boolean force)
 {
 	fixed_t newx;
 	fixed_t newy;
@@ -1310,7 +1310,7 @@ void K_SpawnDashDustRelease(player_t *player)
 	if (!P_IsObjectOnGround(player->mo))
 		return;
 
-	if (!player->speed && !(player->startboost || player->walltransferboost))
+	if (!player->speed && !(player->startboost || player->walltransferboost) && !force)
 		return;
 
 	travelangle = player->mo->angle;
@@ -1685,7 +1685,7 @@ static void K_RespawnChecker(player_t *player)
 			{
 				S_StartSound(player->mo, sfx_s23c);
 				player->startboost = 50;
-				K_SpawnDashDustRelease(player);
+				K_SpawnDashDustRelease(player, false);
 			}
 
 			P_PlayerRingBurst(player, 2);
@@ -4780,7 +4780,7 @@ void K_DoSneaker(player_t *player, INT32 type)
 	if (player->floorboost == 0 || player->floorboost == 3)
 	{
 		K_SneakerPanelStackSound(player);
-		K_SpawnDashDustRelease(player);
+		K_SpawnDashDustRelease(player, false);
 		if (intendedboost > player->speedboost)
 			player->karthud[khud_destboostcam] = FixedMul(FRACUNIT, FixedDiv((intendedboost - player->speedboost), intendedboost));
 
@@ -6494,7 +6494,7 @@ static void K_RaceStart(player_t *player)
 			}
 			else
 			{
-				K_SpawnDashDustRelease(player); // already handled for perfect boosts by K_DoSneaker
+				K_SpawnDashDustRelease(player, false); // already handled for perfect boosts by K_DoSneaker
 				if ((!player->floorboost || player->floorboost == 3) && P_IsLocalPlayer(player))
 				{
 					if (player->boostcharge <= 40)
@@ -10582,7 +10582,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 	if (player->walltransfered && onground)
 	{
-		K_SpawnDashDustRelease(player);
+		K_SpawnDashDustRelease(player, false);
 		S_StartSound(player->mo, sfx_s23c);
 		player->walltransferboost += 15;
 		player->walltransfered = false;

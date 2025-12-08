@@ -3756,6 +3756,49 @@ static int lib_kMatchGenericExtraFlags(lua_State *L)
 	return 0;
 }
 
+static int lib_kGenericExtraFlagsNoZAdjust(lua_State *L)
+{
+	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	mobj_t *master = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+	NOHUD
+	if (!mo)
+		return LUA_ErrInvalid(L, "mobj_t");
+	if (!master)
+		return LUA_ErrInvalid(L, "mobj_t");
+	K_GenericExtraFlagsNoZAdjust(mo, master);
+	return 0;
+}
+
+static int lib_kSpawnDashDustRelease(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_SpawnDashDustRelease(player, true);
+	return 0;
+}
+
+static int lib_kSpawnNormalSpeedLines(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_SpawnNormalSpeedLines(player);
+	return 0;
+}
+
+static int lib_kSpawnBumpEffect(lua_State *L)
+{
+	mobj_t *mobj = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	NOHUD
+	if (!mobj)
+		return LUA_ErrInvalid(L, "mobj_t");
+	K_SpawnBumpEffect(mobj);
+	return 0;
+}
+
 static int lib_kDoInstashield(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -5522,6 +5565,10 @@ static luaL_Reg lib[] = {
 	{"K_IsPlayerWanted",lib_kIsPlayerWanted},
 	{"K_KartBouncing",lib_kKartBouncing},
 	{"K_MatchGenericExtraFlags",lib_kMatchGenericExtraFlags},
+	{"K_GenericExtraFlagsNoZAdjust",lib_kGenericExtraFlagsNoZAdjust},
+	{"K_SpawnDashDustRelease",lib_kSpawnDashDustRelease},
+	{"K_SpawnNormalSpeedLines",lib_kSpawnNormalSpeedLines},
+	{"K_SpawnBumpEffect",lib_kSpawnBumpEffect},
 	{"K_DoInstashield",lib_kDoInstashield},
 	{"K_SpawnBattlePoints",lib_kSpawnBattlePoints},
 	{"K_SpinPlayer",lib_kSpinPlayer},
