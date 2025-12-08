@@ -75,6 +75,8 @@ typedef enum
 #include "../i_threads.h"
 #include "../i_system.h" // I_Sleep
 
+#include <SDL.h>
+
 typedef struct
 {
 	char *data;
@@ -92,6 +94,7 @@ static float fading_source;
 static float fading_target;
 static UINT32 fading_timer;
 static UINT32 fading_duration;
+static INT32 fading_id;
 static void (*fading_callback)(void);
 static boolean fading_nocleanup;
 
@@ -493,33 +496,6 @@ static void UpdateSound(audiostate_t *aud)
 		if (need_restart)
 			TRY(alSourcePlay, aud->music);
 	}
-
-	if (!is_fading
-		|| fabs(internal_volume - fading_target) < FLOATEP // EQUALS I love floats I love floats
-		|| fading_duration == 0)
-	{
-		I_StopFadingSong();
-	}
-	else if (I_SongPaused()) // don't decrement timer
-		return;
-	else if ((fading_timer -= 10) <= 0)  //((fading_timer -= 50) <= 0) //  Nah lets be funny :) -> //  gotta do 50ms steps since we slep that long.
-	{
-		internal_volume = fading_target;
-		I_UpdateMusicVolume();
-		I_StopFadingSong();
-	}
-	else
-	{
-		float delta = fabsf(fading_target - fading_source);
-		float factor = (fading_duration - fading_timer) / (float)fading_duration;
-
-		if (fading_target < fading_source)
-			internal_volume = max(min(internal_volume, fading_source - (delta * factor)), fading_target);
-		else if (fading_target > fading_source)
-			internal_volume = min(max(internal_volume, fading_source + (delta * factor)), fading_target);
-
-		I_UpdateMusicVolume();
-	}
 }
 
 void I_UpdateSound(void)
@@ -536,9 +512,7 @@ static void AudioThread(void *userdata)
 	while (true)
 	{
 		// doesn't need to be that frequent, this thread just feeds buffers
-		// (and ticks music fades... someone better look into that!)
-		// too lazy lol, lower sleep it is.
-		I_Sleep(10);
+		I_Sleep(50);
 
 		{
 			LOCKAUDIO;
@@ -922,6 +896,54 @@ boolean I_SoundIsPlaying(INT32 handle)
 void I_SetSfxVolume(UINT8 volume)
 {
 	sfx_volume = volume / VOLUME_DIV;
+}
+
+static void do_fading_callback(void)
+{
+	if (fading_callback)
+		(*fading_callback)();
+
+	fading_callback = NULL;
+}
+
+static UINT32 music_fade(UINT32 interval, void *param)
+{
+	(void)param;
+
+	if (!is_fading
+		|| fabs(internal_volume - fading_target) < FLOATEP // EQUALS I love floats I love floats
+		|| fading_duration == 0)
+	{
+		I_StopFadingSong();
+		do_fading_callback();
+		return 0;
+	}
+	else if (I_SongPaused()) // don't decrement timer
+	{
+		return interval;
+	}
+	else if ((fading_timer -= 10) <= 0)
+	{
+		internal_volume = fading_target;
+		I_UpdateMusicVolume();
+		I_StopFadingSong();
+		do_fading_callback();
+		return 0;
+	}
+	else
+	{
+		float delta = fabsf(fading_target - fading_source);
+		float factor = (fading_duration - fading_timer) / (float)fading_duration;
+
+		if (fading_target < fading_source)
+			internal_volume = max(min(internal_volume, fading_source - (delta * factor)), fading_target);
+		else if (fading_target > fading_source)
+			internal_volume = min(max(internal_volume, fading_source + (delta * factor)), fading_target);
+
+		I_UpdateMusicVolume();
+
+		return interval;
+	}
 }
 
 void I_InitMusic(void)
@@ -1666,14 +1688,19 @@ boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms
 		I_SetInternalMusicVolume(target_volume);
 	else if (source_volume != target_volume)
 	{
-		is_fading = true;
-		fading_timer = fading_duration = ms;
-		fading_source = source_volume / 100.0f;
-		fading_target = target_volume / 100.0f;
-		fading_callback = callback;
+		fading_id = SDL_AddTimer(10, music_fade, NULL);
 
-		if (fabs(internal_volume - (source_volume / 100.0f)) > FLOATEP) // NOT EQUAL I love floats I love floats
-			I_SetInternalMusicVolume(source_volume);
+		if (fading_id)
+		{
+			is_fading = true;
+			fading_timer = fading_duration = ms;
+			fading_source = source_volume / 100.0f;
+			fading_target = target_volume / 100.0f;
+			fading_callback = callback;
+
+			if (fabs(internal_volume - (source_volume / 100.0f)) > FLOATEP) // NOT EQUAL I love floats I love floats
+				I_SetInternalMusicVolume(source_volume);
+		}
 	}
 
 	return is_fading;
