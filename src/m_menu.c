@@ -76,6 +76,7 @@
 #include "k_grandprix.h"
 #include "k_follower.h"
 #include "r_fps.h"
+#include "m_easing.h"
 
 #include "i_joy.h" // for joystick menu controls
 
@@ -8350,6 +8351,12 @@ INT32 MR_CameraSetup(INT32 arg)
 // ===============
 
 static tic_t shitsfree = 0;
+static tic_t fliptic[MAXKARTITEMS] = {0};
+
+// Not "oldalt", since that's actually used for other purposes.
+static boolean lastaltvalue[MAXKARTITEMS];
+
+#define FLIPTIC_TIME (TICRATE / 2)
 
 INT32 MR_SetupMonitorToggles(INT32 choice)
 {
@@ -8406,20 +8413,21 @@ void MD_DrawMonitorToggles(void)
 	const INT32 edges = 4;
 	const INT32 height = 4;
 	const INT32 spacing = 35;
-	const INT32 column = itemOn/height;
-	//const INT32 row = itemOn%height;
+	const INT32 column = itemOn / height;
+	// const INT32 row = itemOn%height;
 	INT32 leftdraw, rightdraw, totaldraw;
-	INT32 x = currentMenu->x, y = currentMenu->y+(spacing/4);
+	INT32 x = currentMenu->x, y = currentMenu->y + (spacing / 4);
 	INT32 onx = 0, ony = 0;
 	INT32 i, translucent;
-	const char *displayname;
+	const char* displayname;
 
 	// INCREDIBLY goofy hack, but I don't wanna have to pass a "use cvar or altenabled"
 	// flag to literally ALL of the item functions just for the sake of the menu
 	boolean oldalt[MAXKARTITEMS];
 	for (i = 0; i < numkartitems; i++)
 	{
-		kartitem_t *item = &kartitems[i];
+		kartitem_t* item = &kartitems[i];
+
 		oldalt[i] = item->altenabled;
 		item->altenabled = item->altcvar != NULL && item->altcvar->value == 1;
 	}
@@ -8429,14 +8437,14 @@ void MD_DrawMonitorToggles(void)
 	// Find the available space around column
 	leftdraw = rightdraw = column;
 	totaldraw = 0;
-	for (i = 0; (totaldraw < edges*2 && i < edges*4); i++)
+	for (i = 0; (totaldraw < edges * 2 && i < edges * 4); i++)
 	{
-		if (rightdraw+1 < (currentMenu->numitems/height)+1)
+		if (rightdraw + 1 < (currentMenu->numitems / height) + 1)
 		{
 			rightdraw++;
 			totaldraw++;
 		}
-		if (leftdraw-1 >= 0)
+		if (leftdraw - 1 >= 0)
 		{
 			leftdraw--;
 			totaldraw++;
@@ -8449,7 +8457,7 @@ void MD_DrawMonitorToggles(void)
 
 		for (j = 0; j < height; j++, y += spacing)
 		{
-			const INT32 thisitem = (i*height)+j;
+			const INT32 thisitem = (i * height) + j;
 
 			if (thisitem >= currentMenu->numitems)
 				continue;
@@ -8464,7 +8472,8 @@ void MD_DrawMonitorToggles(void)
 			switch (currentMenu->menuitems[thisitem].argument)
 			{
 			case 2:
-				V_DrawScaledPatch(x, y, V_TRANSLUCENT, W_CachePatchName("K_ISBG", PU_CACHE));
+				V_DrawScaledPatch(
+				    x, y, V_TRANSLUCENT, W_CachePatchName("K_ISBG", PU_CACHE));
 				continue;
 			case 1:
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISBG", PU_CACHE));
@@ -8472,8 +8481,10 @@ void MD_DrawMonitorToggles(void)
 				continue;
 			}
 
-			const kartresult_t *result = K_GetKartResult(currentMenu->menuitems[thisitem].patch);
-			const kartitem_t *item = &kartitems[result->type];
+			const kartresult_t* result =
+			    K_GetKartResult(currentMenu->menuitems[thisitem].patch);
+
+			const kartitem_t* item = &kartitems[result->type];
 			boolean enabled = result->cvar->value == 1;
 
 			if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
@@ -8489,84 +8500,142 @@ void MD_DrawMonitorToggles(void)
 			if (result->amount >= K_GetItemNumberDisplayMin(result->type, true))
 			{
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISMUL", PU_CACHE));
-				V_DrawScaledPatch(x, y, translucent, K_GetCachedItemPatch(result->type, true, result->amount));
-				V_DrawString(x+24, y+31, V_ALLOWLOWERCASE|translucent, va("x%d", result->amount));
+				V_DrawScaledPatch(
+				    x,
+				    y,
+				    translucent,
+				    K_GetCachedItemPatch(result->type, true, result->amount));
+				V_DrawString(x + 24,
+					     y + 31,
+					     V_ALLOWLOWERCASE | translucent,
+					     va("x%d", result->amount));
 			}
 			else
-				V_DrawScaledPatch(x, y, translucent, K_GetCachedItemPatch(result->type, true, result->amount));
+				V_DrawScaledPatch(
+				    x,
+				    y,
+				    translucent,
+				    K_GetCachedItemPatch(result->type, true, result->amount));
 
-			if (item->altenabled)
+			if (item->altenabled && (!item->altgraphics))
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ALTITS", PU_CACHE));
 		}
 
 		x += spacing;
-		y = currentMenu->y+(spacing/4);
+		y = currentMenu->y + (spacing / 4);
 	}
 
 	switch (currentMenu->menuitems[itemOn].argument)
 	{
-		case 2:
+	case 2:
+	{
+		displayname = "---";
+
+		V_DrawScaledPatch(
+		    onx - 1, ony - 2, V_TRANSLUCENT, W_CachePatchName("K_ITBG", PU_CACHE));
+
+		if (shitsfree)
 		{
-			displayname = "---";
-			V_DrawScaledPatch(onx-1, ony-2, V_TRANSLUCENT, W_CachePatchName("K_ITBG", PU_CACHE));
-			if (shitsfree)
-			{
-				INT32 trans = V_TRANSLUCENT;
-				if (shitsfree-1 > TICRATE-5)
-					trans = ((10-TICRATE)+shitsfree-1)<<V_ALPHASHIFT;
-				else if (shitsfree < 5)
-					trans = (10-shitsfree)<<V_ALPHASHIFT;
-				V_DrawScaledPatch(onx-1, ony-2, trans, W_CachePatchName("K_ITFREE", PU_CACHE));
-			}
-			break;
+			INT32 trans = V_TRANSLUCENT;
+			if (shitsfree - 1 > TICRATE - 5)
+				trans = ((10 - TICRATE) + shitsfree - 1) << V_ALPHASHIFT;
+			else if (shitsfree < 5)
+				trans = (10 - shitsfree) << V_ALPHASHIFT;
+			V_DrawScaledPatch(
+			    onx - 1, ony - 2, trans, W_CachePatchName("K_ITFREE", PU_CACHE));
 		}
-		case 1:
+		break;
+	}
+	case 1:
+	{
+		displayname = "Toggle All";
+		V_DrawScaledPatch(onx - 1, ony - 2, 0, W_CachePatchName("K_ITBG", PU_CACHE));
+		V_DrawScaledPatch(onx - 1, ony - 2, 0, W_CachePatchName("K_ITTOGL", PU_CACHE));
+		break;
+	}
+	default:
+	{
+		const kartresult_t* result = K_GetKartResult(currentMenu->menuitems[itemOn].patch);
+		const kartitem_t* item = &kartitems[result->type];
+		boolean enabled = result->cvar->value == 1;
+
+		fixed_t fancyflip = FixedMul(
+		    FRACUNIT,
+		    abs(FCOS(FixedAngle(Easing_InOutCubic(
+			fliptic[result->type] * FRACUNIT / FLIPTIC_TIME, 0, 180 * FRACUNIT)))));
+		fixed_t flipoffset = FixedMul(25 * FRACUNIT, FRACUNIT - fancyflip);
+
+		if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
+			enabled = false;
+
+		displayname = result->displayname;
+		translucent = enabled ? 0 : V_TRANSLUCENT;
+
+		if (enabled)
+			V_DrawScaledPatch(
+			    onx - 1, ony - 2, 0, W_CachePatchName("K_ITBG", PU_CACHE));
+		else
+			V_DrawScaledPatch(
+			    onx - 1, ony - 2, 0, W_CachePatchName("K_ITBGD", PU_CACHE));
+
+		boolean* altbool =
+		    (fliptic[result->type] && (fliptic[result->type] > (FLIPTIC_TIME / 2)))
+			? &lastaltvalue[result->type]
+			: &item->altenabled;
+
+		if (result->amount >= K_GetItemNumberDisplayMin(result->type, false))
 		{
-			displayname = "Toggle All";
-			V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITBG", PU_CACHE));
-			V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITTOGL", PU_CACHE));
-			break;
+			V_DrawScaledPatch(
+			    onx - 1, ony - 2, 0, W_CachePatchName("K_ITMUL", PU_CACHE));
+
+			V_DrawStretchyFixedPatch(
+			    ((onx - 1) << FRACBITS) + flipoffset,
+			    (ony - 2) << FRACBITS,
+			    fancyflip,
+			    FRACUNIT,
+			    translucent,
+			    K_GetCachedItemPatchEx(result->type, false, result->amount, altbool),
+			    NULL);
+
+			V_DrawScaledPatch(
+			    onx + 27, ony + 39, translucent, W_CachePatchName("K_ITX", PU_CACHE));
+
+			V_DrawKartString(onx + 37, ony + 34, translucent, va("%d", result->amount));
 		}
-		default:
+		else
+			V_DrawStretchyFixedPatch(
+			    ((onx - 1) << FRACBITS) + flipoffset,
+			    (ony - 2) << FRACBITS,
+			    fancyflip,
+			    FRACUNIT,
+			    translucent,
+			    K_GetCachedItemPatchEx(result->type, false, result->amount, altbool),
+			    NULL);
+
+		if ((item->altcvar != NULL) && (!item->altgraphics))
 		{
-			const kartresult_t *result = K_GetKartResult(currentMenu->menuitems[itemOn].patch);
-			const kartitem_t *item = &kartitems[result->type];
-			boolean enabled = result->cvar->value == 1;
+			translucent = item->altenabled ? 0 : V_TRANSLUCENT;
+			V_DrawScaledPatch(
+			    onx - 1, ony - 2, translucent, W_CachePatchName("K_ALTITM", PU_CACHE));
+		}
+		break;
+	}
+	}
 
-			if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
-				enabled = false;
+	if (renderisnewtic)
+	{
+		if (shitsfree)
+			shitsfree--;
 
-			displayname = result->displayname;
-			translucent = enabled ? 0 : V_TRANSLUCENT;
-
-			if (enabled)
-				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITBG", PU_CACHE));
-			else
-				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITBGD", PU_CACHE));
-
-			if (result->amount >= K_GetItemNumberDisplayMin(result->type, false))
-			{
-				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITMUL", PU_CACHE));
-				V_DrawScaledPatch(onx-1, ony-2, translucent, K_GetCachedItemPatch(result->type, false, result->amount));
-				V_DrawScaledPatch(onx+27, ony+39, translucent, W_CachePatchName("K_ITX", PU_CACHE));
-				V_DrawKartString(onx+37, ony+34, translucent, va("%d", result->amount));
-			}
-			else
-				V_DrawScaledPatch(onx-1, ony-2, translucent, K_GetCachedItemPatch(result->type, false, result->amount));
-
-			if (item->altcvar != NULL)
-			{
-				translucent = item->altenabled ? 0 : V_TRANSLUCENT;
-				V_DrawScaledPatch(onx-1, ony-2, translucent, W_CachePatchName("K_ALTITM", PU_CACHE));
-			}
-			break;
+		for (i = 0; i < numkartitems; i++)
+		{
+			if (fliptic[i])
+				fliptic[i]--;
 		}
 	}
 
-	if (renderisnewtic && shitsfree)
-		shitsfree--;
-
-	V_DrawCenteredString(BASEVIDWIDTH/2, currentMenu->y, MENUCAPS|highlightflags, va("* %s *", displayname));
+	V_DrawCenteredString(
+	    BASEVIDWIDTH / 2, currentMenu->y, MENUCAPS | highlightflags, va("* %s *", displayname));
 
 	M_DrawMenuTooltips();
 
@@ -8665,7 +8734,16 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 		case KEY_BACKSPACE:
 			if (result != NULL && kartitems[result->type].altcvar != NULL)
 			{
-				S_StartSound(NULL, sfx_s3kb7);
+				if (kartitems[result->type].altgraphics)
+				{
+					S_StartSound(NULL, sfx_mds0a);
+					fliptic[result->type] = FLIPTIC_TIME;
+				}
+				else
+					S_StartSound(NULL, sfx_s3kb7);
+
+				lastaltvalue[result->type] = kartitems[result->type].altcvar->value;
+
 				CV_AddValue(kartitems[result->type].altcvar, 1);
 			}
 			break;
