@@ -4106,11 +4106,6 @@ void readkartitem(MYFILE *f, kartitem_t *item)
 			{
 				graphics->patchnames[graphics->numpatches++] = Z_StrDup(tmp);
 
-				if (patch_idx > 1)
-				{
-					item->altgraphics = true;
-				}
-
 				if ((tmp = strtok(NULL, ",")) == NULL)
 					break;
 			}

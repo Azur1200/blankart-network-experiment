@@ -128,6 +128,10 @@ extern lua_State *gL;
 // TODO: kill this one
 #define META_VOICE_ARRAY1 "KARTVOICE_T*[1]"
 
+#define META_KARTITEM "KARTITEM_T*"
+#define META_KARTRESULT "KARTRESULT_T*"
+#define META_KARTITEMGRAPHICS "KARTITEMGRAPHICS_T*"
+
 boolean luaL_checkboolean(lua_State *L, int narg);
 
 int LUA_EnumLib(lua_State *L);
@@ -154,6 +158,7 @@ int LUA_MatrixLib(lua_State *L);
 int LUA_QuaternionLib(lua_State *L);
 int LUA_VectorLib(lua_State *L);
 int LUA_VoiceLib(lua_State* L);
+int LUA_ItemLib(lua_State* L);
 
 #ifdef __cplusplus
 } // extern "C"

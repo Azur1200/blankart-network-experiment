@@ -121,7 +121,6 @@ struct kartitem_t
 	spritedef_t spritedef;
 
 	consvar_t *altcvar; // if not NULL, an altitem exists
-	boolean altgraphics;
 	boolean altenabled;
 };
 
@@ -186,8 +185,8 @@ boolean K_IsKartItemAlternate(kartitemtype_e itemtype);
 kartitemflags_e K_GetItemFlags(kartitemtype_e itemtype);
 kartitemequip_e K_GetItemEquipStyle(kartitemtype_e mobjtype);
 UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny);
-patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, boolean tiny, UINT8 amount, boolean *altforce);
-#define K_GetCachedItemPatch(type, tiny, amount) K_GetCachedItemPatchEx(type, tiny, amount, NULL)
+patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, boolean tiny, UINT8 amount, SINT8 altmode);
+#define K_GetCachedItemPatch(type, tiny, amount) K_GetCachedItemPatchEx(type, tiny, amount, -1)
 
 void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags);
 void K_UnsetItemOut(player_t *player);

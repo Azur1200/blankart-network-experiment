@@ -543,7 +543,7 @@ void K_LoadKartHUDGraphics(void)
 	{
 		kartitem_t *item = &kartitems[i];
 
-		INT32 n = (item->altgraphics) ? 4 : 2;
+		INT32 n = sizeof(item->graphics)/sizeof(*item->graphics);
 		for (j = 0; j < n; j++)
 		{
 			kartitemgraphics_t *graphics = &item->graphics[j];
@@ -739,6 +739,11 @@ patch_t *K_getItemAltPatch(boolean small, boolean multimode)
 {
 	UINT8 ofs = (small ? 1 : 0) + (multimode ? 2 : 0);
 	return kp_itemalt[ofs];
+}
+
+boolean K_ShowAltItemIcon(kartitemtype_e type, boolean small)
+{
+	return K_GetCachedItemPatchEx(type, small, 0, (SINT8)true) == missingpat;
 }
 
 // This version of the function was prototyped in Lua by Nev3r ... a HUGE thank you goes out to them!
@@ -1332,7 +1337,7 @@ static void K_drawKartItem(void)
 			localpatch = K_GetCachedItemPatch(stplyr->itemtype, tiny, stplyr->itemamount);
 			if (localpatch == NULL)
 				localpatch = kp_nodraw; // diagnose underflows
-			else if (K_IsKartItemAlternate(stplyr->itemtype) && (!kartitems[stplyr->itemtype].altgraphics))
+			else if (K_IsKartItemAlternate(stplyr->itemtype) && K_ShowAltItemIcon(stplyr->itemtype, tiny))
 				isalt = true;
 
 			dark = K_GetItemFlags(stplyr->itemtype) & KIF_DARKBG;
@@ -1393,15 +1398,15 @@ static void K_drawKartItem(void)
 		K_DrawItemCooldown(fx, fy, V_HUDTRANSHALF|fflags, stplyr->itemusecooldown, stplyr->itemusecooldownmax);
 
 		if (isalt)
-		{
 			V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, K_getItemAltPatch(tiny, true), colmap);
-		}
 
 		if (tiny)
+		{
 			if (flipamount) // reminder that this is for 3/4p's right end of the screen.
 				V_DrawString(fx+2, fy+31, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, va("x%d", stplyr->itemamount));
 			else
 				V_DrawString(fx+24, fy+31, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, va("x%d", stplyr->itemamount));
+		}
 		else
 		{
 			V_DrawScaledPatch(fx+28, fy+41, V_HUDTRANS|fflags, kp_itemx);
@@ -1447,7 +1452,6 @@ static void K_drawKartItem(void)
 		// draw minecraft-style cooldown
 		K_DrawItemCooldown(fx, fy, V_HUDTRANSHALF|fflags, stplyr->itemusecooldown, stplyr->itemusecooldownmax);
 
-		// TODO: Some proper check for if an alt has unique graphics
 		if (isalt)
 			V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, K_getItemAltPatch(tiny, false), colmap);
 	}
@@ -5703,7 +5707,7 @@ static void K_drawDistributionDebugger(void)
 
 			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetCachedItemPatch(result->type, true, 0));
 			if (result->isalt)
-				V_DrawScaledPatch(x+2, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, W_CachePatchName("K_ALTITS", PU_CACHE));
+				V_DrawScaledPatch(x+2, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_getItemAltPatch(true, false));
 			V_DrawThinString(x+11, y+31, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, roulette.forceme[i] ? va("\x85" "FRC(%d)" "\x80 ", roulette.forceme[i]) : va("%d", itemodds[i]));
 			if (result->amount > 1)
 				V_DrawString(x+24, y+31, V_SPLITSCREEN|V_ALLOWLOWERCASE|V_HUDTRANS|V_SNAPTOTOP, va("x%d", result->amount));

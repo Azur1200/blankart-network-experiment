@@ -8353,9 +8353,6 @@ INT32 MR_CameraSetup(INT32 arg)
 static tic_t shitsfree = 0;
 static tic_t fliptic[MAXKARTITEMS] = {0};
 
-// Not "oldalt", since that's actually used for other purposes.
-static boolean lastaltvalue[MAXKARTITEMS];
-
 #define FLIPTIC_TIME (TICRATE / 2)
 
 INT32 MR_SetupMonitorToggles(INT32 choice)
@@ -8421,17 +8418,6 @@ void MD_DrawMonitorToggles(void)
 	INT32 i, translucent;
 	const char* displayname;
 
-	// INCREDIBLY goofy hack, but I don't wanna have to pass a "use cvar or altenabled"
-	// flag to literally ALL of the item functions just for the sake of the menu
-	boolean oldalt[MAXKARTITEMS];
-	for (i = 0; i < numkartitems; i++)
-	{
-		kartitem_t* item = &kartitems[i];
-
-		oldalt[i] = item->altenabled;
-		item->altenabled = item->altcvar != NULL && item->altcvar->value == 1;
-	}
-
 	M_DrawMenuTitle();
 
 	// Find the available space around column
@@ -8484,7 +8470,6 @@ void MD_DrawMonitorToggles(void)
 			const kartresult_t* result =
 			    K_GetKartResult(currentMenu->menuitems[thisitem].patch);
 
-			const kartitem_t* item = &kartitems[result->type];
 			boolean enabled = result->cvar->value == 1;
 
 			if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
@@ -8517,8 +8502,8 @@ void MD_DrawMonitorToggles(void)
 				    translucent,
 				    K_GetCachedItemPatch(result->type, true, result->amount));
 
-			if (item->altenabled && (!item->altgraphics))
-				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ALTITS", PU_CACHE));
+			if (kartitems[result->type].altcvar != NULL && kartitems[result->type].altcvar->value && K_ShowAltItemIcon(result->type, true))
+				V_DrawScaledPatch(x, y, 0, K_getItemAltPatch(true, false));
 		}
 
 		x += spacing;
@@ -8559,11 +8544,9 @@ void MD_DrawMonitorToggles(void)
 		const kartitem_t* item = &kartitems[result->type];
 		boolean enabled = result->cvar->value == 1;
 
-		fixed_t fancyflip = FixedMul(
-		    FRACUNIT,
-		    abs(FCOS(FixedAngle(Easing_InOutCubic(
-			fliptic[result->type] * FRACUNIT / FLIPTIC_TIME, 0, 180 * FRACUNIT)))));
-		fixed_t flipoffset = FixedMul(25 * FRACUNIT, FRACUNIT - fancyflip);
+		fixed_t fancyflip = abs(FCOS(FixedAngle(Easing_InOutCubic(
+		                        fliptic[result->type] * FRACUNIT / FLIPTIC_TIME, 0, 180 * FRACUNIT))));
+		fixed_t flipoffset = 25 * (FRACUNIT - fancyflip);
 
 		if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
 			enabled = false;
@@ -8578,10 +8561,9 @@ void MD_DrawMonitorToggles(void)
 			V_DrawScaledPatch(
 			    onx - 1, ony - 2, 0, W_CachePatchName("K_ITBGD", PU_CACHE));
 
-		boolean* altbool =
-		    (fliptic[result->type] && (fliptic[result->type] > (FLIPTIC_TIME / 2)))
-			? &lastaltvalue[result->type]
-			: &item->altenabled;
+		SINT8 showalt = item->altcvar != NULL && !K_ShowAltItemIcon(result->type, false) ? item->altcvar->value : -1;
+		if (fliptic[result->type] > FLIPTIC_TIME/2)
+			showalt = !showalt;
 
 		if (result->amount >= K_GetItemNumberDisplayMin(result->type, false))
 		{
@@ -8594,7 +8576,7 @@ void MD_DrawMonitorToggles(void)
 			    fancyflip,
 			    FRACUNIT,
 			    translucent,
-			    K_GetCachedItemPatchEx(result->type, false, result->amount, altbool),
+			    K_GetCachedItemPatchEx(result->type, false, result->amount, showalt),
 			    NULL);
 
 			V_DrawScaledPatch(
@@ -8609,14 +8591,14 @@ void MD_DrawMonitorToggles(void)
 			    fancyflip,
 			    FRACUNIT,
 			    translucent,
-			    K_GetCachedItemPatchEx(result->type, false, result->amount, altbool),
+			    K_GetCachedItemPatchEx(result->type, false, result->amount, showalt),
 			    NULL);
 
-		if ((item->altcvar != NULL) && (!item->altgraphics))
+		if (item->altcvar != NULL && K_ShowAltItemIcon(result->type, false))
 		{
-			translucent = item->altenabled ? 0 : V_TRANSLUCENT;
+			translucent = item->altcvar->value ? 0 : V_TRANSLUCENT;
 			V_DrawScaledPatch(
-			    onx - 1, ony - 2, translucent, W_CachePatchName("K_ALTITM", PU_CACHE));
+			    onx - 1, ony - 2, translucent, K_getItemAltPatch(false, false));
 		}
 		break;
 	}
@@ -8638,9 +8620,6 @@ void MD_DrawMonitorToggles(void)
 	    BASEVIDWIDTH / 2, currentMenu->y, MENUCAPS | highlightflags, va("* %s *", displayname));
 
 	M_DrawMenuTooltips();
-
-	for (i = 0; i < numkartitems; i++)
-		kartitems[i].altenabled = oldalt[i];
 }
 
 INT32 MR_HandleMonitorToggles(INT32 choice)
@@ -8734,15 +8713,15 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 		case KEY_BACKSPACE:
 			if (result != NULL && kartitems[result->type].altcvar != NULL)
 			{
-				if (kartitems[result->type].altgraphics)
+				if (K_ShowAltItemIcon(result->type, false))
+				{
+					S_StartSound(NULL, sfx_s3kb7);
+				}
+				else
 				{
 					S_StartSound(NULL, sfx_mds0a);
 					fliptic[result->type] = FLIPTIC_TIME;
 				}
-				else
-					S_StartSound(NULL, sfx_s3kb7);
-
-				lastaltvalue[result->type] = kartitems[result->type].altcvar->value;
 
 				CV_AddValue(kartitems[result->type].altcvar, 1);
 			}

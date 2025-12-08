@@ -125,6 +125,7 @@ add_executable(SRB2SDL2 MACOSX_BUNDLE WIN32
 	lua_matrixlib.c
 	lua_quaternionlib.c
 	lua_voicelib.c
+	lua_itemlib.c
 	k_kart.c
 	k_collide.c
 	k_color.c
