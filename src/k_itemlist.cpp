@@ -134,6 +134,7 @@ extern "C"
             ir_length = static_cast<INT32>(strlen(va("%d", n.second)));
 
             V_DrawFixedPatch(dx, y - (25 * FRACUNIT / 6), FRACUNIT / 3, 0, localpatch, NULL);
+
             V_DrawSmallString((dx / FRACUNIT) + ((5 + (std::max(0, ir_length - 1) * 3))),
                               (y / FRACUNIT) + 2,
                               V_ALLOWLOWERCASE | V_6WIDTHSPACE,
