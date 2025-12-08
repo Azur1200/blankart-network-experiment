@@ -953,6 +953,8 @@ const char *blancredits[] = {
 	"\"Mayo\"",
 	"\"WumboSpasm\"",
 	"\"Miguelius256\"",
+	"\"Todddoesstuff\"",
+	"\"RetroStation\"",
 	"",
 	"\1New Misc Art",
 	"\"scizor300\"",
