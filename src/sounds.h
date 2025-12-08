@@ -24,7 +24,7 @@ extern "C" {
 #define NUMSKINSOUNDS 11
 
 // free sfx for S_AddSoundFx()
-#define NUMSFXFREESLOTS 2500 // Matches SOC Editor.
+#define NUMSFXFREESLOTS 7000 // Matches SOC Editor.
 #define NUMSKINSFXSLOTS (50000 - NUMSFXFREESLOTS)
 
 //
