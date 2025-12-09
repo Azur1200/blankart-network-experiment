@@ -8833,7 +8833,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->movefactor -= 1;
 			if (mobj->movefactor <= 0) 
 			{
-				K_EggMinePop(mobj);
 				P_KillMobj(mobj, mobj, NULL, DMG_INSTAKILL);
 			}
 		else

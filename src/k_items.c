@@ -2564,35 +2564,6 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 	}
 }
 
-void K_EggMinePop(mobj_t *mo)
-{
-	mobj_t *poof;
-	mobj_t *landMine;
-	player_t *player;
-
-	if (mo->lastlook == 0) return;
-
-	poof = P_SpawnMobj(mo->x, mo->y, mo->z, MT_EXPLODE);
-	S_StartSound(poof, mo->info->deathsound);
-	
-	if (!(mo->target && mo->target->player)) return;
-	
-	player = mo->target->player;
-	
-	landMine = P_SpawnMobj(mo->x, mo->y, mo->z + mo->height/2, MT_LANDMINE);
-	K_FlipFromObject(landMine, mo);
-	landMine->threshold = 10;
-	landMine->target = player->mo;
-
-	P_SetScale(landMine, 3*mo->scale/4);
-	landMine->destscale = mo->destscale;
-
-	landMine->angle = mo->angle;
-
-	landMine->momz = (28 * mapobjectscale * P_MobjFlip(mo));
-	landMine->color = player->skincolor;
-}
-
 void K_EggMineSetup(mobj_t *mo)
 {
 	mobj_t *overlay;
