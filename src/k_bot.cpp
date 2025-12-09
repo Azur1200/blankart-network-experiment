@@ -83,7 +83,7 @@ void K_DrawBotDebugger(const player_t *player)
 	V_DrawThinString(x2, y+32, vflags|(bd->driftlockout ? V_ORANGEMAP : 0), va("driftlockout: %d", bd->driftlockout));
 	V_DrawThinString(x1, y+40, vflags, va("driftturn: %d", bd->driftturn));
 	V_DrawThinString(x2, y+40, vflags, va("drifttime: %d", bd->drifttime));
-	V_DrawThinString(x1, y+48, vflags, va("preditionerror: %d", bd->predictionerror));
+	V_DrawThinString(x1, y+48, vflags, va("predicterr: %.1f", ((double)(INT32)bd->predictionerror)/ANG1));
 	V_DrawThinString(x2, y+48, vflags|(bd->griplockout ? V_ORANGEMAP : 0), va("griplockout: %d", bd->griplockout));
 }
 
@@ -1905,9 +1905,9 @@ void K_BotReborn(const player_t *player)
 	bd->driftskill = FixedMul(MAXDRIFTSKILL, K_BotDetermineDriftSkill(player));
 
 	// drift parameters, just fixed values for now
-	bd->driftmaxdist = 200 + gamespeed*50;
+	bd->driftmaxdist = 300;
 	bd->driftpowerdiv = 40;
-	bd->driftstatedelay = TICRATE/2 - gamespeed*5;
+	bd->driftstatedelay = TICRATE/5;
 }
 
 void K_BotResetItemConfirm(const player_t *player, boolean setdelay)
