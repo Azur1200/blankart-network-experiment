@@ -339,6 +339,13 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 			return true;
 		}
 
+		if (t2->player && t2->player->flamestore && (K_GetShieldFromPlayer(t2->player) == KSHIELD_FLAME))
+		{
+			// Melt item
+			S_StartSound(t2, sfx_s3k43);
+			return true;
+		}
+
 		if (t2->type == MT_PLAYER && t1->health > 1)
 		{
 			if (t1->health > 2)
@@ -359,7 +366,37 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 		}
 		K_EggMineBounce(t1, t2);
 	}
+	else if (K_IsMissileOrKartItem(t2))
+	{
+		if (t2->type == MT_SPB)
+		{
+			return false;
+		}
+		else
+		{
+			P_KillMobj(t2, t1, t1->target, DMG_INSTAKILL);
+		}
+		P_KillMobj(t1, t2, t2->target, DMG_INSTAKILL);
+	}
 	return true;
+}
+
+boolean K_EggMineShieldCollide(mobj_t *t1, mobj_t *t2)
+{
+	if (t1->health <= 0 || t2->health <= 0)
+		return true;
+
+	if (K_IsMissileOrKartItem(t2))
+	{
+		if (!(t2->type == MT_SPB || t2->type == MT_EGGMINE || t2->type == MT_EGGMINE_SHIELD))
+		{
+			P_KillMobj(t2, t1, t1->target, DMG_INSTAKILL);
+		}
+		P_KillMobj(t1, t2, t2->target, DMG_INSTAKILL);
+		return true;
+	}
+		
+	return false;
 }
 
 boolean K_MineCollide(mobj_t *t1, mobj_t *t2)
