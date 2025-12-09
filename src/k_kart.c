@@ -5412,7 +5412,7 @@ void K_DropItems(player_t *player)
 {
 	K_DropHnextList(player);
 
-	if (player->mo && !P_MobjWasRemoved(player->mo) && player->itemamount > 0)
+	if (player->mo && !P_MobjWasRemoved(player->mo) && player->itemamount > 0 && player->itemtype != MAXKARTITEMS)	// don't drop KITEM_SAD
 	{
 		mobj_t *drop = K_CreatePaperItem(
 			player->mo->x, player->mo->y, player->mo->z + player->mo->height/2,
