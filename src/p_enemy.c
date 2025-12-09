@@ -11496,8 +11496,8 @@ void A_EggMinePop(void *thing)
 	landMine->threshold = 10;
 	landMine->target = player->mo;
 
+	landMine->destscale = mapobjectscale;
 	P_SetScale(landMine, 3*actor->scale/4);
-	landMine->destscale = actor->destscale;
 
 	landMine->angle = actor->angle;
 

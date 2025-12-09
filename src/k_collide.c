@@ -894,7 +894,8 @@ boolean K_SMKIceBlockCollide(mobj_t *t1, mobj_t *t2)
 	if (t2->type == MT_BANANA || t2->type == MT_BANANA_SHIELD
 		|| t2->type == MT_EGGMANITEM || t2->type == MT_EGGMANITEM_SHIELD
 		|| t2->type == MT_SSMINE || t2->type == MT_SSMINE_SHIELD
-		|| t2->type == MT_ORBINAUT_SHIELD || t2->type == MT_JAWZ_SHIELD)
+		|| t2->type == MT_ORBINAUT_SHIELD || t2->type == MT_JAWZ_SHIELD
+		|| t2->type == MT_EGGMINE_SHIELD)
 		return false;
 
 	if (t1->health)

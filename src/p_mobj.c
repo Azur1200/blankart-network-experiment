@@ -7403,6 +7403,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 	case MT_BANANA_SHIELD:
 	case MT_SSMINE_SHIELD:
 	case MT_EGGMANITEM_SHIELD:
+	case MT_EGGMINE_SHIELD:
 	case MT_SINK_SHIELD:
 		if ((mobj->health > 0
 			&& (!mobj->target || !mobj->target->player || mobj->target->health <= 0 || mobj->target->player->spectator))
@@ -8026,6 +8027,7 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 		}
 		/* FALLTHRU */
 	case MT_ORBINAUT_SHIELD:
+	case MT_EGGMINE_SHIELD:
 	case MT_BANANA_SHIELD:
 	case MT_EGGMANITEM_SHIELD:
 		mobj->renderflags ^= RF_DONTDRAW;

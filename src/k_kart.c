@@ -3828,9 +3828,10 @@ void K_SpawnMineExplosion(mobj_t *source, UINT8 color)
 
 static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, INT32 flags2, fixed_t speed)
 {
-	mobj_t *th;
+	mobj_t *missile;
 	fixed_t x, y, z;
 	fixed_t finalspeed = speed;
+	fixed_t spawndist;
 	mobj_t *throwmo;
 
 	if (source->player && source->player->speed > K_GetKartSpeed(source->player, false, false))
@@ -3855,82 +3856,101 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 		z = source->z+source->height - mobjinfo[type].height;
 	}
 
-	th = P_SpawnMobj(x, y, z, type);
+	missile = P_SpawnMobj(x, y, z, type);
 
-	th->flags2 |= flags2;
+	missile->flags2 |= flags2;
 
 	if (source->flags2 & MF2_WATERRUN)
 	{
 		// Allow certain items to run on water as well!
-		if (K_ItemMobjAllowedtoWaterRun(th))
+		if (K_ItemMobjAllowedtoWaterRun(missile))
 		{
-			th->flags2 |= MF2_WATERRUN;
+			missile->flags2 |= MF2_WATERRUN;
 		}
 	}
 
-	th->threshold = 10;
+	missile->threshold = 10;
 
-	if (th->info->seesound)
-		S_StartSound(source, th->info->seesound);
+	if (missile->info->seesound)
+		S_StartSound(source, missile->info->seesound);
 
-	P_SetTarget(&th->target, source);
+	P_SetTarget(&missile->target, source);
 
-	if (P_IsObjectOnGround(source))
+	if ((type != MT_EGGMINE) && P_IsObjectOnGround(source))
 	{
 		// floorz and ceilingz aren't properly set to account for FOFs and Polyobjects on spawn
 		// This should set it for FOFs
-		P_SetOrigin(th, th->x, th->y, th->z);
+		P_SetOrigin(missile, missile->x, missile->y, missile->z);
 		// spawn on the ground if the player is on the ground
 		if (P_MobjFlip(source) < 0)
 		{
-			th->z = th->ceilingz - th->height;
-			th->eflags |= MFE_VERTICALFLIP;
+			missile->z = missile->ceilingz - missile->height;
+			missile->eflags |= MFE_VERTICALFLIP;
 		}
 		else
-			th->z = th->floorz;
+			missile->z = missile->floorz;
 	}
 
-	th->angle = an;
+	missile->angle = an;
 
-	th->momx = FixedMul(finalspeed, FINECOSINE(an>>ANGLETOFINESHIFT));
-	th->momy = FixedMul(finalspeed, FINESINE(an>>ANGLETOFINESHIFT));
+	missile->momx = FixedMul(finalspeed, FINECOSINE(an>>ANGLETOFINESHIFT));
+	missile->momy = FixedMul(finalspeed, FINESINE(an>>ANGLETOFINESHIFT));
 
 	switch (type)
 	{
 		case MT_ORBINAUT:
 			if (source && source->player)
-				th->color = source->player->skincolor;
+				missile->color = source->player->skincolor;
 			else
-				th->color = SKINCOLOR_GREY;
-			th->movefactor = finalspeed;
+				missile->color = SKINCOLOR_GREY;
+			missile->movefactor = finalspeed;
 			break;
 		case MT_JAWZ:
 			if (source && source->player)
 			{
 				INT32 lasttarg = source->player->lastjawztarget;
-				th->cvmem = source->player->skincolor;
+				missile->cvmem = source->player->skincolor;
 				if ((lasttarg >= 0 && lasttarg < MAXPLAYERS)
 					&& playeringame[lasttarg]
 					&& !players[lasttarg].spectator
 					&& players[lasttarg].mo)
 				{
-					P_SetTarget(&th->tracer, players[lasttarg].mo);
+					P_SetTarget(&missile->tracer, players[lasttarg].mo);
 				}
 			}
 			else
-				th->cvmem = SKINCOLOR_KETCHUP;
+				missile->cvmem = SKINCOLOR_KETCHUP;
 			/* FALLTHRU */
 		case MT_JAWZ_DUD:
-			S_StartSound(th, th->info->activesound);
+			S_StartSound(missile, missile->info->activesound);
 			/* FALLTHRU */
 		case MT_SPB:
-			th->movefactor = finalspeed;
+			missile->movefactor = finalspeed;
 			break;
 		case MT_BUBBLESHIELDTRAP:
-			P_SetScale(th, ((5*th->destscale)>>2)*4);
-			th->destscale = (5*th->destscale)>>2;
-			S_StartSound(th, sfx_s3kbfl);
-			S_StartSound(th, sfx_cdfm35);
+			P_SetScale(missile, ((5*missile->destscale)>>2)*4);
+			missile->destscale = (5*missile->destscale)>>2;
+			S_StartSound(missile, sfx_s3kbfl);
+			S_StartSound(missile, sfx_cdfm35);
+			break;
+		case MT_EGGMINE:
+			// eggmines should spawn closer to the source
+			P_SetOrigin(missile, 
+				source->x + FixedMul(source->radius + mobjinfo[type].radius, FINECOSINE(an>>ANGLETOFINESHIFT)), 
+				source->y + FixedMul(source->radius + mobjinfo[type].radius, FINESINE(an>>ANGLETOFINESHIFT)), 
+				missile->z
+			);
+			// spawn on the ground if the player is on the ground
+			if (P_IsObjectOnGround(source))
+			{
+				if (P_MobjFlip(source) < 0)
+				{
+					missile->z = missile->ceilingz - missile->height;
+					missile->eflags |= MFE_VERTICALFLIP;
+				}
+				else
+					missile->z = missile->floorz;
+			}
 			break;
 		default:
 			break;
@@ -3938,15 +3958,15 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 
 	if (type != MT_BUBBLESHIELDTRAP)
 	{
-		x = x + P_ReturnThrustX(source, an, source->radius + th->radius);
-		y = y + P_ReturnThrustY(source, an, source->radius + th->radius);
+		x = x + P_ReturnThrustX(source, an, source->radius + missile->radius);
+		y = y + P_ReturnThrustY(source, an, source->radius + missile->radius);
 		throwmo = P_SpawnMobj(x, y, z, MT_FIREDITEM);
 		throwmo->movecount = 1;
 		throwmo->movedir = source->angle - an;
 		P_SetTarget(&throwmo->target, source);
 	}
 
-	return th;
+	return missile;
 }
 
 UINT16 K_DriftSparkColor(player_t *player, INT32 charge)
