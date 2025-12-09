@@ -1397,7 +1397,7 @@ static int player_get(lua_State *L)
 	return 1;
 }
 
-#define NOSET luaL_error(L, LUA_QL("player_t") " field " LUA_QS " should not be set directly.", field)
+#define NOSET luaL_error(L, LUA_QL("player_t") " field " LUA_QS " should not be set directly.", player_opt[field])
 static int player_set(lua_State *L)
 {
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -2791,8 +2791,8 @@ static int karthud_len(lua_State *L)
 }
 
 // player.cmd get/set
-#define NOFIELD luaL_error(L, LUA_QL("ticcmd_t") " has no field named " LUA_QS, field)
-#define NOSET luaL_error(L, LUA_QL("ticcmd_t") " field " LUA_QS " cannot be set.", field)
+#define NOFIELD luaL_error(L, "%s %s", LUA_QL("ticcmd_t"), va("has no field named %ui", field))
+#define NOSET luaL_error(L, LUA_QL("ticcmd_t") " field " LUA_QS " cannot be set.", ticcmd_opt[field])
 
 enum ticcmd_e
 {
