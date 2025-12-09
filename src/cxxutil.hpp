@@ -2,6 +2,7 @@
 #define __SRB2_CXXUTIL_HPP__
 
 #include <cstdlib>
+#include <cmath>
 #include <type_traits>
 #include <utility>
 
