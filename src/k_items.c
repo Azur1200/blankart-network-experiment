@@ -2554,7 +2554,9 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 		{
 			S_StartSound(tmo, sfx_bewar3);
 			K_DropItems(tmo->player);
-			tmo->player->itemblink = TICRATE/2;
+			tmo->player->itemtype = MAXKARTITEMS;	// aka KITEM_SAD
+			tmo->player->itemamount = 1;
+			tmo->player->itemblink = TICRATE;
 			tmo->player->itemblinkmode = KITEMBLINK_MASHED;
 			K_SetPlayerItemCooldown(tmo->player, TICRATE, false);
 		}
