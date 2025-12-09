@@ -220,6 +220,12 @@ INT16 K_GetShrinkTime(const player_t *player);
 boolean K_IsAltShrunk(const player_t *player);
 void K_AltShrinkPityIncrease(player_t *player);
 
+void K_SpawnEggMineBumpEffect(mobj_t *mo);
+void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source);
+void K_EggMinePop(mobj_t *mo);
+void K_EggMineSetup(mobj_t *mo);
+void K_EggMineBounce(mobj_t *t1, mobj_t *t2);
+
 void K_PlayerItemThink(player_t *player, boolean onground);
 
 #ifdef __cplusplus

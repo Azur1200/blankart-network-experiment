@@ -1656,6 +1656,15 @@ void P_XYMovement(mobj_t *mo)
 			}
 		}
 		//}
+		else if (mo->type == MT_EGGMINE)
+		{
+			if (result.line != NULL)
+			{
+				mo->momx /= 3;
+				mo->momy /= 3;
+				K_SpawnEggMineBumpEffect(mo);
+			}
+		}
 		else if (mo->flags & MF_MISSILE)
 		{
 			// explode a missile
