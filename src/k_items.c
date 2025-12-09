@@ -2050,7 +2050,6 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 						player->itemamount = moloop;
 						break;
 					}
-					K_EggMineSetup(mo);
 					mo->flags |= MF_NOCLIPTHING;
 					mo->angle = newangle;
 					mo->movecount = player->itemamount;
@@ -2071,7 +2070,6 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 				if (player->throwdir == 1)
 				{
 					mo = K_ThrowKartItem(player, false, MT_EGGMINE, 1, 0);
-					K_EggMineSetup(mo);
 					mo->health = 3;
 					mo->whiteshadow = true;
 					mo->lastlook = 1;
@@ -2079,7 +2077,6 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 				else
 				{
 					mo = K_ThrowKartItem(player, true, MT_EGGMINE, 4, 0);
-					K_EggMineSetup(mo);
 					if (player->throwdir == 0)
 					{
 						mo->health = 2;
@@ -2561,51 +2558,5 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 			tmo->player->itemblinkmode = KITEMBLINK_MASHED;
 			K_SetPlayerItemCooldown(tmo->player, TICRATE, false);
 		}
-	}
-}
-
-void K_EggMineSetup(mobj_t *mo)
-{
-	mobj_t *overlay;
-
-	mo->movefactor = TICRATE;
-	mo->threshold = 6;
-
-	overlay = P_SpawnMobj(mo->x, mo->y, mo->z, MT_OVERLAY);
-	overlay->target = mo;
-	overlay->tracer = mo;
-	overlay->state = S_EGGMINE_OVERLAY;
-	overlay->flags2 |= MF2_LINKDRAW;
-	overlay->dispoffset = -1;
-}
-
-void K_EggMineBounce(mobj_t *t1, mobj_t *t2)
-{
-	fixed_t zimpulse;
-	fixed_t impulse = min(max(FixedMul(R_PointToDist2(0, 0, t2->momx, t2->momy), 115*FRACUNIT/100), 15*mapobjectscale), 45*mapobjectscale);
-	fixed_t pointx = (t1->x + t2->x)/2;
-	fixed_t pointy = (t1->y + t2->y)/2;
-	fixed_t localspacex = t1->x - pointx;
-	fixed_t localspacey = t1->y - pointy;
-	angle_t impulseangle = R_PointToAngle2(0, 0, (localspacex + t2->momx)/2, (localspacey + t2->momy)/2);
-	P_InstaThrust(t1, impulseangle, impulse);
-	
-	zimpulse = (P_MobjFlip(t1) * min((P_AproxDistance(t2->momx, t2->momy) + P_AproxDistance(t1->momx, t1->momy)), 28*mapobjectscale)) + t2->momz/2;
-	if (t2->type == MT_EGGMINE);
-	{
-		fixed_t zdiff = (t1->z + (t1->height*P_MobjFlip(t1)/2)) - (t2->z + (t2->height*P_MobjFlip(t2))/2);
-		zimpulse /= 2;
-		if (zdiff < 0)
-		{
-			zimpulse *= -1;
-		}
-	}
-	t1->momz = zimpulse;
-
-	if (t1->extravalue1 == 0)
-	{
-
-		K_SpawnEggMineBumpEffect(t1);
-		t1->extravalue1 = 6;
 	}
 }

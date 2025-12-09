@@ -5065,6 +5065,13 @@ void K_DropHnextList(player_t *player)
 				orbit = false;
 				type = MT_EGGMANITEM;
 				break;
+			case MT_EGGMINE_SHIELD:
+				orbit = false;
+				dropall = true;
+				type = MT_EGGMINE;
+
+				work->lastlook = 0;
+				break;
 			// intentionally do nothing
 			case MT_ROCKETSNEAKER:
 			case MT_SINK_SHIELD:

@@ -1234,7 +1234,7 @@ void K_BotItemUsage(botdata_t *bd, const player_t *player)
 	{
 		K_BotItemEggmanExplosion(bd, player);
 	}
-	else if (player->itemflags & IF_EGGMANOUT)
+	else if ((!K_IsKartItemAlternate(KITEM_EGGMAN)) && (player->itemflags & IF_EGGMANOUT))
 	{
 		K_BotItemEggman(bd, player);
 	}
@@ -1291,7 +1291,22 @@ void K_BotItemUsage(botdata_t *bd, const player_t *player)
 			}
 			break;
 		case KITEM_EGGMAN:
-			K_BotItemEggmanShield(bd, player);
+			if (K_IsKartItemAlternate(KITEM_EGGMAN))
+			{
+				if (!(player->itemflags & IF_ITEMOUT))
+				{
+					K_BotItemGenericOrbitShield(bd, player);
+				}
+				else if (player->position != 1) // Hold onto orbiting items when in 1st :)
+				{
+					// about the same usage (?), maybe a dedicated usage function one day
+					K_BotItemMine(bd, player);
+				}
+			}
+			else
+			{
+				K_BotItemEggmanShield(bd, player);
+			}
 			break;
 		case KITEM_ORBINAUT:
 			if (!(player->itemflags & IF_ITEMOUT))

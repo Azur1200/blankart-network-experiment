@@ -3813,6 +3813,11 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 		tmxmove = FixedMul(mmomx, (FRACUNIT - (FRACUNIT>>6) - (FRACUNIT>>5)));
 		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>6) - (FRACUNIT>>5)));
 	}
+	else if (mo->type == MT_EGGMINE)
+	{
+		tmxmove = mmomx/3;
+		tmymove = mmomy/3;
+	}
 	else if (mo->type == MT_THROWNGRENADE || mo->type == MT_CYBRAKDEMON_NAPALM_BOMB_LARGE)
 	{
 		// Quickly decay speed as it bounces

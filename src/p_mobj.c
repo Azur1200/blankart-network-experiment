@@ -1656,15 +1656,6 @@ void P_XYMovement(mobj_t *mo)
 			}
 		}
 		//}
-		else if (mo->type == MT_EGGMINE)
-		{
-			if (result.line != NULL)
-			{
-				mo->momx /= 3;
-				mo->momy /= 3;
-				K_SpawnEggMineBumpEffect(mo);
-			}
-		}
 		else if (mo->flags & MF_MISSILE)
 		{
 			// explode a missile
@@ -1807,6 +1798,10 @@ void P_XYMovement(mobj_t *mo)
 						else
 							fx->eflags &= ~MFE_VERTICALFLIP;
 						fx->scale = mo->scale;
+					}
+					else if (mo->type == MT_EGGMINE)
+					{
+						K_SpawnEggMineBumpEffect(mo);
 					}
 
 					switch (mo->type)
@@ -6538,6 +6533,7 @@ boolean P_IsKartItem(INT32 type)
 		case MT_JAWZ_SHIELD:
 		case MT_SSMINE_SHIELD:
 		case MT_SINK_SHIELD:
+		case MT_EGGMINE_SHIELD:
 			return true;
 
 		// Primarily for minimap data, handle with care
@@ -8835,11 +8831,10 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			{
 				P_KillMobj(mobj, mobj, NULL, DMG_INSTAKILL);
 			}
-		else
-			if (S_SoundPlaying(mobj, sfx_s3kd2l)) 
-			{
-				S_StopSoundByID(mobj, sfx_s3kd2l);
-			}
+		}
+		else if (S_SoundPlaying(mobj, sfx_s3kd2l)) 
+		{
+			S_StopSoundByID(mobj, sfx_s3kd2l);
 		}
 		
 		if (mobj->threshold > 0) 
@@ -11368,6 +11363,22 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 				nummaprings++;
 			break;
 		// SRB2Kart
+		case MT_EGGMINE:
+		case MT_EGGMINE_SHIELD:
+		{
+			mobj_t *overlay = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_OVERLAY);
+			P_SetMobjState(overlay, S_EGGMINE_OVERLAY);
+			overlay->destscale = mobj->scale;
+			P_SetScale(overlay, mobj->scale);
+			P_SetTarget(&overlay->target, mobj);
+			P_SetTarget(&overlay->tracer, mobj);
+			overlay->flags2 |= MF2_LINKDRAW;
+			overlay->dispoffset = -1;
+
+			mobj->movefactor = TICRATE;
+			mobj->threshold = 6;
+			break;
+		}
 		case MT_BUBBLESHIELD:
 		{
 			// Spawn in the damage overlay
