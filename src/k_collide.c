@@ -296,6 +296,72 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 	return true;
 }
 
+void K_EggMineBounce(mobj_t *t1, mobj_t *t2)
+{
+	fixed_t zimpulse;
+	fixed_t impulse = min(max(FixedMul(R_PointToDist2(0, 0, t2->momx, t2->momy), 115*FRACUNIT/100), 15*mapobjectscale), 45*mapobjectscale);
+	fixed_t pointx = (t1->x + t2->x)/2;
+	fixed_t pointy = (t1->y + t2->y)/2;
+	fixed_t localspacex = t1->x - pointx;
+	fixed_t localspacey = t1->y - pointy;
+	angle_t impulseangle = R_PointToAngle2(0, 0, (localspacex + t2->momx)/2, (localspacey + t2->momy)/2);
+	P_InstaThrust(t1, impulseangle, impulse);
+	
+	zimpulse = (P_MobjFlip(t1) * min((P_AproxDistance(t2->momx, t2->momy) + P_AproxDistance(t1->momx, t1->momy)), 28*mapobjectscale)) + t2->momz/2;
+	if (t2->type == MT_EGGMINE);
+	{
+		fixed_t zdiff = (t1->z + (t1->height*P_MobjFlip(t1)/2)) - (t2->z + (t2->height*P_MobjFlip(t2))/2);
+		zimpulse /= 2;
+		if (zdiff < 0)
+		{
+			zimpulse *= -1;
+		}
+	}
+	t1->momz = zimpulse;
+
+	if (t1->extravalue1 == 0)
+	{
+
+		K_SpawnEggMineBumpEffect(t1);
+		t1->extravalue1 = 6;
+	}
+}
+
+boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
+{
+	if (t1->health <= 0 || t2->health <= 0)
+		return true;
+	
+	if (t2->player || t2->type == MT_EGGMINE || t2->type == MT_EGGMINE_SHIELD)
+	{
+		if ((t2 == t1->target || t2->target == t1->target) && t1->threshold > 0)
+		{
+			return true;
+		}
+
+		if (t2->type == MT_PLAYER && t1->health > 1)
+		{
+			if (t1->health > 2)
+			{
+				S_StartSound(t2, sfx_bsnipe);
+				P_DamageMobj(t2, t1, t1->target, 1, DMG_FLIPOVER);
+				P_RemoveMobj(t1);
+				return true;
+			}
+			else if (P_IsObjectOnGround(t2))
+			{
+				S_StartSound(t2, sfx_cdfm37);
+				t2->momz = 3*t1->scale*P_MobjFlip(t2);
+				K_SpawnEggMineBumpEffect(t1);
+				t1->extravalue1 = 6;
+				return true;
+			}
+		}
+		K_EggMineBounce(t1, t2);
+	}
+	return true;
+}
+
 boolean K_MineCollide(mobj_t *t1, mobj_t *t2)
 {
 	if (((t1->target == t2) || (!(t2->flags & (MF_ENEMY|MF_BOSS)) && (t1->target == t2->target))) && (t1->threshold > 0 || (t2->type != MT_PLAYER && t2->threshold > 0)))
@@ -618,7 +684,7 @@ boolean K_BubbleShieldCanReflect(mobj_t *t)
 {
 	return (t->type == MT_ORBINAUT || t->type == MT_JAWZ || t->type == MT_JAWZ_DUD
 		|| t->type == MT_BANANA || t->type == MT_EGGMANITEM || t->type == MT_BALLHOG
-		|| t->type == MT_SSMINE || t->type == MT_LANDMINE || t->type == MT_SINK //|| t->type == MT_EGGMINE_CAPSULE
+		|| t->type == MT_SSMINE || t->type == MT_LANDMINE || t->type == MT_SINK || t->type == MT_EGGMINE
 		|| t->type == MT_KART_LEFTOVER
 		|| t->type == MT_PLAYER);
 }
@@ -638,7 +704,7 @@ static INT16 K_GetBubbleDamage(mobj_t* itm)
 	{
 	case MT_EGGMANITEM:
 	case MT_BALLHOG:
-	// case MT_EGGMINE_CAPSULE:
+	case MT_EGGMINE:
 		// Experiment: Let Bubble Shields hard-counter Ballhogs and Eggboxes.
 		dmg = 0;
 		break;
