@@ -2140,6 +2140,8 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 			kick = true;
 
 		// availabilities
+		// TODO: Port commit from RR: 6d0637d3
+		/*
 		for (i = 0; i < MAXSKINS; i++)
 		{
 			UINT32 playerhasunlocked = (p->availabilities & (1 << i));
@@ -2165,6 +2167,7 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 				break;
 			}
 		}
+		*/
 
 		if (kick)
 		{
