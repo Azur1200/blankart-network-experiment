@@ -396,7 +396,7 @@ struct doomdata_t
 		client4cmd_pak client4pak;
 		servertics_pak serverpak;
 		serverconfig_pak servercfg;
-		UINT8 textcmd[MAXTEXTCMD+2];
+		UINT8 textcmd[MAXTEXTCMD+1];
 		char filetxpak[sizeof (filetx_pak)];
 		char fileack[sizeof (fileack_pak)];
 		UINT8 filereceived;
