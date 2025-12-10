@@ -503,6 +503,7 @@ target_compile_options(SRB2SDL2 PRIVATE
 	$<$<AND:$<COMPILE_LANGUAGE:C>,$<OR:$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:Clang>>>:
 		-Wall
 		-Wextra
+		-Wno-error=date-time
 		-Wno-absolute-value
 		-Wno-trigraphs
 		-Wno-error=non-literal-null-conversion
@@ -515,6 +516,7 @@ target_compile_options(SRB2SDL2 PRIVATE
 	# C++, GNU, Clang and Apple Clang
 	$<$<AND:$<COMPILE_LANGUAGE:CXX>,$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:Clang>>>:
 		-Wall
+		-Wno-error=date-time
 		-Wno-unused-function
 		-Wno-unused-but-set-variable
 		-Wno-unused-private-field
