@@ -3437,6 +3437,10 @@ static void M_AddonsClearName(INT32 choice)
 	messagebox.active = false;
 }
 
+#define FILEADDSFX sfx_addfil
+#define FILENOTADDSFX sfx_notadd
+#define FILEERRORSFX sfx_adderr
+
 // returns whether to do message draw
 static boolean M_AddonsRefresh(void)
 {
@@ -3463,7 +3467,7 @@ static boolean M_AddonsRefresh(void)
 
 		if (refreshdirmenu & REFRESHDIR_NOTLOADED)
 		{
-			S_StartSound(NULL, sfx_s26d);
+			S_StartSound(NULL, FILENOTADDSFX);
 			if (refreshdirmenu & REFRESHDIR_MAX)
 				message = va("%c%s\x80\nMaximum number of addons reached.\nA file could not be loaded.\nIf you wish to play with this addon, restart the game to clear existing ones.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
 			else
@@ -3471,12 +3475,12 @@ static boolean M_AddonsRefresh(void)
 		}
 		else if (refreshdirmenu & (REFRESHDIR_WARNING|REFRESHDIR_ERROR))
 		{
-			S_StartSound(NULL, sfx_s224);
+			S_StartSound(NULL, FILEERRORSFX);
 			message = va("%c%s\x80\nA file was loaded with %s.\nCheck the console log for more information.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname, ((refreshdirmenu & REFRESHDIR_ERROR) ? "errors" : "warnings"));
 		}
 		else if (majormods && !prevmajormods)
 		{
-			S_StartSound(NULL, sfx_s221);
+			S_StartSound(NULL, FILEADDSFX);
 			message = va("%c%s\x80\nYou've loaded a gameplay-modifying addon.\n\nRecord Attack data will be saved to seperate save.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
 			prevmajormods = majormods;
 		}
@@ -3487,7 +3491,7 @@ static boolean M_AddonsRefresh(void)
 			return true;
 		}
 
-		S_StartSound(NULL, sfx_s221);
+		S_StartSound(NULL, FILEADDSFX);
 		CLEARNAME;
 	}
 
@@ -3693,7 +3697,7 @@ INT32 MR_HandleAddons(INT32 choice)
 			{
 				boolean refresh = true;
 				if (!dirmenu[dir_on[menudepthleft]])
-					S_StartSound(NULL, sfx_s26d);
+					S_StartSound(NULL, FILENOTADDSFX);
 				else
 				{
 					switch (dirmenu[dir_on[menudepthleft]][DIR_TYPE])
@@ -3707,7 +3711,7 @@ INT32 MR_HandleAddons(INT32 choice)
 
 								if (!preparefilemenu(false, false))
 								{
-									S_StartSound(NULL, sfx_s224);
+									S_StartSound(NULL, FILEERRORSFX);
 									M_StartMessage(va("%c%s\x80\nThis folder is empty.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING);
 									menupath[menupathindex[++menudepthleft]] = 0;
 
@@ -3726,7 +3730,7 @@ INT32 MR_HandleAddons(INT32 choice)
 							}
 							else
 							{
-								S_StartSound(NULL, sfx_s26d);
+								S_StartSound(NULL, FILENOTADDSFX);
 								M_StartMessage(va("%c%s\x80\nThis folder is too deep to navigate to!\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING);
 								menupath[menupathindex[menudepthleft]] = 0;
 							}
@@ -3756,7 +3760,7 @@ INT32 MR_HandleAddons(INT32 choice)
 							COM_BufAddText(va("addfile \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
 							break;
 						default:
-							S_StartSound(NULL, sfx_s26d);
+							S_StartSound(NULL, FILENOTADDSFX);
 					}
 				}
 				if (refresh)
