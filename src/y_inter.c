@@ -49,16 +49,17 @@
 #include "k_grandprix.h"
 #include "k_bot.h" // cv_botcanvote
 #include "r_fps.h" // R_GetTimeFrac
+#include "k_hud.h"
 #include "k_itemlist.hpp"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
 #endif
 
-#define ITEMLIST_PLAYER_YOFFSET 8
+#define ITEMLIST_PLAYER_YOFFSET 9
 #define ITEMLIST_SCROLLSPEED (3 * FRACUNIT / 4)
-#define ITEMLIST_SCROLLDELAY (TICRATE)
-#define ITEMLIST_SCROLLREPEAT 2
+#define ITEMLIST_SCROLLDELAY (3 * TICRATE)
+#define ITEMLIST_SCROLLREPEAT 1
 
 typedef struct
 {
@@ -571,15 +572,16 @@ void Y_IntermissionDrawer(void)
 				if (dojitter)
 					y--;
 
-				if (manyplayers16||displayitemrolls)
+				if (displayitemrolls)
 				{
-					if (displayitemrolls)
-						V_SetClipRect((-vidxdiff - 2) * FRACUNIT, (36) * FRACUNIT, w*FRACUNIT, (h - 36)*FRACUNIT, 0);
-
-					V_DrawPingNum(x + 6, ((displayitemrolls) ? y-2 : y+2) - (yscroll / FRACUNIT), 0, data.pos[i], NULL);
-
-					if (displayitemrolls)
-						V_ClearClipRect();
+					if (data.pos[i] < 0 || data.pos[i] > 16)
+						V_DrawPingNum(x+2, y+1, 0, data.pos[i], NULL);
+					else
+						V_DrawScaledPatch(x-5, y+1, 0, kp_facenum[data.pos[i]]);
+				}
+				else if (manyplayers16)
+				{
+					V_DrawPingNum(x + 6, y + 2, 0, data.pos[i], NULL);
 				}
 				else
 					V_DrawCenteredString(x+6, y, 0, va("%d", data.pos[i]));
@@ -589,10 +591,7 @@ void Y_IntermissionDrawer(void)
 					UINT8 *colormap = R_GetTranslationColormap(*data.character[i], *data.color[i], GTC_CACHE);
 					patch_t *facerank;
 
-					if (displayitemrolls)
-						facerank = faceprefix[*data.character[i]][FACE_MINIMAP];
-					else
-						facerank = faceprefix[*data.character[i]][FACE_RANK];
+					facerank = faceprefix[*data.character[i]][FACE_RANK];
 
 					fixed_t scale = FRACUNIT;
 
@@ -612,14 +611,22 @@ void Y_IntermissionDrawer(void)
 						yoffs = FixedMul(4, scale);
 
 						if (displayitemrolls)
-							V_SetClipRect((-vidxdiff - 2) * FRACUNIT, (36) * FRACUNIT, w*FRACUNIT, (h - 36)*FRACUNIT, 0);
+						{
+							V_DrawFixedPatch(
+								((x+11)*FRACUNIT) + ((facerank->leftoffset) * scale),
+								((y+1)*FRACUNIT) + ((facerank->topoffset) * scale),
+								scale,
+								0,
+								facerank,
+								colormap
+							);
 
-						V_DrawFixedPatch((x+xoffs)<<FRACBITS, ((y-yoffs-(yscroll / FRACUNIT))<<FRACBITS), scale, 0, facerank, colormap);
-
-						if (displayitemrolls)
-							V_ClearClipRect();
-
-						xx = (x+xoffs) + FixedMul(20, scale);
+							xx = (x+11) + 20;
+						}
+						else
+						{
+							V_DrawFixedPatch((x+xoffs)<<FRACBITS, ((y-yoffs)<<FRACBITS), scale, 0, facerank, colormap);
+						}
 					}
 				}
 
@@ -653,19 +660,10 @@ void Y_IntermissionDrawer(void)
 				INT32 slen_temp = slen;
 
 				if (manyplayers16)
-					V_DrawThinString(x+18, y, hilicol|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+					V_DrawThinString(x+18, y, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 				else if (displayitemrolls)
 				{
-					V_SetClipRect((-vidxdiff - 2) * FRACUNIT, (36) * FRACUNIT, w*FRACUNIT, (h - 36)*FRACUNIT, 0);
-
-					V_DrawSmallString(xx,
-							  (y2 + 1 - (yscroll / FRACUNIT)),
-							  ((data.num[i] == whiteplayer)
-							  ? hilicol : 0)|V_ALLOWLOWERCASE
-							  |V_6WIDTHSPACE,
-							  strtime);
-
-					V_ClearClipRect();
+					V_DrawThinString(x + 20, y, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 
 					// Get the longest string size. This is... gross.
 					INT32 ii;
@@ -674,7 +672,7 @@ void Y_IntermissionDrawer(void)
 					{
 						if (data.num[ii] != MAXPLAYERS && playeringame[data.num[ii]] && !players[data.num[ii]].spectator)
 						{
-							slen_temp = V_SmallStringWidth(data.name[ii], ((data.num[ii] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE);
+							slen_temp = V_ThinStringWidth(data.name[ii], ((data.num[ii] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE);
 							slen = ((slen_temp > slen) ? slen_temp : slen);
 						}
 					}
@@ -726,9 +724,7 @@ void Y_IntermissionDrawer(void)
 				}
 				else if (data.itemrolls && (intertic <= rolltic))
 				{
-					V_SetClipRect((-vidxdiff - 2) * FRACUNIT, (36) * FRACUNIT, w*FRACUNIT, (h - 36)*FRACUNIT, 0);
-					K_DrawItemList((INT32)(&players[data.num[i]] - players), (xx+2+slen) * FRACUNIT, ((y-1-(yscroll / FRACUNIT)) * FRACUNIT));
-					V_ClearClipRect();
+					K_DrawItemList((INT32)(&players[data.num[i]] - players), (xx+2+slen) * FRACUNIT, ((y+1) * FRACUNIT));
 				}
 				else
 				{
@@ -781,7 +777,7 @@ void Y_IntermissionDrawer(void)
 			{
 				y += (displayitemrolls) ? ITEMLIST_PLAYER_YOFFSET : 18;
 
-				if ((!displayitemrolls) && i == NUMFORNEWCOLUMN-1)
+				if ((i % 16) == (((displayitemrolls) ? 2 : 1) * NUMFORNEWCOLUMN) - 1)
 				{
 					y = 41;
 					x += BASEVIDWIDTH/2;
