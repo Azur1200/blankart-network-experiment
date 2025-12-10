@@ -331,7 +331,7 @@ void K_EggMineBounce(mobj_t *t1, mobj_t *t2)
 
 boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 {
-	boolean sprung;
+	boolean sprung = false;
 
 	if (t1->health <= 0 || t2->health <= 0)
 		return true;
