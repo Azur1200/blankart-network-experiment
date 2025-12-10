@@ -5448,7 +5448,7 @@ void SPrintConsistancy(char *out, consistancy_t *c)
 }
 
 // I'm losing my sanity fast, just do this.
-inline static void ConsistancyXOR(consistancy_t *c, INT32 value)
+/*inline static void ConsistancyXOR(consistancy_t *c, INT32 value)
 {
 	c->playerpos[0] ^= value;
 	c->playerpos[1] ^= value;
@@ -5475,7 +5475,7 @@ inline static void ConsistancyXOR(consistancy_t *c, INT32 value)
 	c->mobjtics ^= value;
 	c->mobjsprite ^= value;
 	c->mobjframe ^= value;
-}
+}*/
 
 //
 // NetUpdate

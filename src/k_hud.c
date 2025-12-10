@@ -2337,7 +2337,7 @@ void K_SetScoreboardModStatus(const char *name, SINT8 active)
 	CONS_Alert(CONS_WARNING, "Server mod '%s' does not exist so status cannot be changed.\n", name);
 }
 
-#define BASEMODS 15
+#define BASEMODS 16
 static void K_DrawServerMods(INT32 x, INT32 y)
 {
 	UINT8 i, j;

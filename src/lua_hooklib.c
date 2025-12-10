@@ -1419,19 +1419,6 @@ boolean LUA_HookCanPickupItem(player_t *player, UINT8 weapon, boolean *force)
 	return state.override;
 }
 
-static void res_itemequipstyle(Hook_State *hook)
-{
-	if (!lua_isnil(gL, -1))
-	{
-		UINT32 ret = lua_tonumber(gL, -1);
-		hook->status = ret;
-	}
-	else
-	{
-		hook->status = 0;
-	}
-}
-
 typedef struct {
 	mobjtype_t droptype;
 	boolean *orbit;

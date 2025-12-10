@@ -3831,7 +3831,7 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 	mobj_t *missile;
 	fixed_t x, y, z;
 	fixed_t finalspeed = speed;
-	fixed_t spawndist;
+	//fixed_t spawndist;
 	mobj_t *throwmo;
 
 	if (source->player && source->player->speed > K_GetKartSpeed(source->player, false, false))
@@ -8977,7 +8977,7 @@ static boolean K_AltInvinSliptideCondition(player_t *player)
 	return (K_InvincibilityGradient(player->invincibilitytimer) > (FRACUNIT/2));
 }
 
-fixed_t K_GetSpeedPercentage(player_t *player)
+fixed_t K_GetSpeedPercentage(const player_t *player)
 {
 	if (!player)
 		return 0; // NULL player means there's no speeed to gather.
@@ -9001,7 +9001,7 @@ static boolean K_AltShrinkSliptideCondition(player_t *player)
 }
 
 // Conditions for putting the player in "arrow bullet" mode.
-boolean K_AltShrinkArrowBulletCondition(player_t *player)
+boolean K_AltShrinkArrowBulletCondition(const player_t *player)
 {
 	if (!cv_kartaltshrink_arrowbullet.value) // Not toggled on; we can't do anything
 		return false;
@@ -9414,7 +9414,7 @@ INT32 K_GetDriftAngleOffset(player_t *player)
 	return a;
 }
 
-static fixed_t K_Distance3D(fixed_t x1, fixed_t y1, fixed_t z1, fixed_t x2, fixed_t y2, fixed_t z2)
+/*static fixed_t K_Distance3D(fixed_t x1, fixed_t y1, fixed_t z1, fixed_t x2, fixed_t y2, fixed_t z2)
 {
     fixed_t dist_xy = R_PointToDist2(x1,y1,x2,y2);
 
@@ -9427,7 +9427,7 @@ static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
         return INT32_MAX; // Return a garbage value.
 
     return K_Distance3D(source->mo->x,source->mo->y,source->mo->z,destination->mo->x,destination->mo->y,destination->mo->z);
-}
+}*/
 
 #define MINCLUSTERPLAYERS 6
 
