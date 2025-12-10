@@ -700,7 +700,7 @@ static inline void CL_DrawConnectionStatus(void)
 
 			// Loading progress
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32, MENUCAPS|V_YELLOWMAP, "Checking server addons...");
-			totalfileslength = (INT32)((checkednum/(double)(fileneedednum)) * 256);
+			totalfileslength = !fileneedednum ? 0 : ((checkednum/fileneedednum) * 256);
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 96);
@@ -1438,7 +1438,8 @@ static void SendAskInfo(INT32 node)
 	if (node != 0 && node != BROADCASTADDR &&
 			cv_rendezvousserver.string[0])
 	{
-		I_NetRequestHolePunch(node);
+		if (node > 0)
+			I_NetRequestHolePunch(node);
 	}
 
 	asktime = I_GetTime();

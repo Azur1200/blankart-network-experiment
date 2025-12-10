@@ -1063,7 +1063,7 @@ boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlen
 		return false;
 	}
 
-	if (node < MAXNETNODES) // Can be a broadcast
+	if (node >= 0 && node < MAXNETNODES) // Can be a broadcast
 		netbuffer->ackreturn = GetAcktosend(node);
 	else
 		netbuffer->ackreturn = 0;
@@ -1083,7 +1083,7 @@ boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlen
 	else
 		netbuffer->ack = acknum;
 
-	if (node < MAXNETNODES)
+	if (node >= 0 && node < MAXNETNODES) // Can be a broadcast
 		netbuffer->packetindex = nodes[doomcom->remotenode].sendnum++;
 	netbuffer->checksum = NetbufferChecksum();
 	sendbytes += packetheaderlength + doomcom->datalength; // For stat
