@@ -1083,7 +1083,8 @@ boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlen
 	else
 		netbuffer->ack = acknum;
 
-	netbuffer->packetindex = nodes[doomcom->remotenode].sendnum++;
+	if (node < MAXNETNODES)
+		netbuffer->packetindex = nodes[doomcom->remotenode].sendnum++;
 	netbuffer->checksum = NetbufferChecksum();
 	sendbytes += packetheaderlength + doomcom->datalength; // For stat
 

@@ -19,6 +19,7 @@
 #include <cstring>
 #include <functional>
 #include <memory>
+#include <istream>
 
 
 //----------------------------------------------------------------------------|
