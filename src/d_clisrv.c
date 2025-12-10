@@ -203,7 +203,7 @@ struct textcmdbuf_s
 	UINT8 cmd[MAXTEXTCMD];
 };
 
-static textcmdbuf_t *textcmdbuf[MAXSPLITSCREENPLAYERS];
+static textcmdbuf_t *textcmdbuf[MAXSPLITSCREENPLAYERS] = {NULL};
 
 static ticcmd_t playercmds[MAXPLAYERS];
 ticcmd_t netcmds[BACKUPTICS][MAXPLAYERS];
