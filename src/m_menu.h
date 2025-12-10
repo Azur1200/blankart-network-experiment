@@ -331,6 +331,7 @@ INT32 MR_EnterViewServer(INT32 choice);
 INT32 MR_QuitViewServer(INT32 choice);
 INT32 MR_HandleViewServer(INT32 choice);
 INT32 MR_CameraSetup(INT32 arg);
+INT32 MR_HandleLevelPlatter(INT32 choice);
 #ifdef HAVE_DISCORDRPC
 INT32 MR_HandleDiscordRequests(INT32 choice);
 #endif
@@ -358,6 +359,7 @@ void MD_DrawMusicTest(void);
 void MD_DrawJoystick(void);
 void MD_DrawMonitorToggles(void);
 void MD_DrawViewServer(void);
+void MD_DrawLevelPlatterMenu(void);
 #ifdef HAVE_DISCORDRPC
 void MD_DrawDiscordRequests(void);
 #endif
@@ -373,30 +375,6 @@ extern I_mutex m_menu_mutex;
 
 // Call upon joystick hotplug
 INT32 MR_SetupJoystickMenu(INT32 arg);
-
-// level select platter
-typedef struct
-{
-	char header[22+5]; // mapheader_t lvltttl max length + " ZONE"
-	INT32 maplist[3];
-	char mapnames[3][17+1];
-	boolean mapavailable[4]; // mapavailable[3] == wide or not
-} levelselectrow_t;
-
-typedef struct
-{
-	UINT8 numrows;
-	levelselectrow_t *rows;
-} levelselect_t;
-// experimental level select end
-
-// descriptions for gametype select screen
-/*typedef struct
-{
-	UINT8 col[2];
-	char notes[441];
-} gtdesc_t;
-extern gtdesc_t gametypedesc[NUMGAMETYPES];*/
 
 // mode descriptions for video mode menu
 struct modedesc_t
@@ -419,7 +397,7 @@ typedef struct
 } saveinfo_t;
 
 extern consvar_t cv_showfocuslost;
-extern consvar_t cv_newgametype, cv_nextmap, cv_chooseskin, cv_serversort;
+extern consvar_t cv_newgametype, cv_nextmap, cv_chooseskin, cv_serversort, cv_levelselectsort;
 extern consvar_t cv_dummygpdifficulty, cv_dummygpencore, cv_dummygpcup;
 extern consvar_t cv_dummymenuplayer, cv_dummyteam, cv_dummyspectate, cv_dummyscramble;
 extern consvar_t cv_dummyattackingrings, cv_dummyattackingstacking,  cv_dummyattackingchaining;

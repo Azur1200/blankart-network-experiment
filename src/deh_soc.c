@@ -1869,6 +1869,7 @@ static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ "DUMMYFOLLOWER", &cv_dummyfollower },
 	{ "DUMMYCOLOR", &cv_dummycolor },
 	{ "DUMMYSERVERPAGE", &cv_dummyserverpage },
+	{ "LEVELSELECTSORT", &cv_levelselectsort },
 	{ NULL, NULL }
 };
 

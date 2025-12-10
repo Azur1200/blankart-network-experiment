@@ -5788,9 +5788,11 @@ char *G_BuildMapTitle(INT32 mapnum)
 			zonetext = M_GetText("Zone");
 			len += strlen(zonetext) + 1;	// ' ' + zonetext
 		}
-
-		if (actnum)
-			len += 1 + 11;					// ' ' + INT32
+		if (strlen(mapheaderinfo[mapnum-1]->actnum) > 0)
+		{
+			actnum = M_GetText(mapheaderinfo[mapnum-1]->actnum);
+			len += strlen(actnum) + 1;	// ' ' + actnum
+		}
 
 		title = Z_Malloc(len, PU_STATIC, NULL);
 
@@ -5798,7 +5800,6 @@ char *G_BuildMapTitle(INT32 mapnum)
 			return NULL;
 
 		sprintf(title, "%s", mapheaderinfo[mapnum-1]->lvlttl);
-
 		if (zonetext) sprintf(title + strlen(title), " %s", zonetext);
 		if (actnum) sprintf(title + strlen(title), " %s", actnum);
 	}

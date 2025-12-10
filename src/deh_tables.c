@@ -826,9 +826,11 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "CAMERASETUP", &MR_CameraSetup },
 	// { "BARCSS", &MR_HandleBarCss },
 	{ "HANDLESETUPMULTIPLAYERMENU", &MR_HandleSetupMultiPlayerMenu },
+	{ "HANDLELEVELPLATTER", &MR_HandleLevelPlatter },
 #ifdef HAVE_DISCORDRPC
 	{ "HANDLEDISCORDREQUESTS", &MR_HandleDiscordRequests },
 #endif
+
 	{ NULL, NULL }
 };
 
@@ -853,6 +855,7 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWMONITORTOGGLES", &MD_DrawMonitorToggles },
 	{ "DRAWCONNECTMENU", &MD_DrawConnectMenu },
 	{ "DRAWVIEWSERVER", &MD_DrawViewServer },
+	{ "DRAWLEVELPLATTERMENU", &MD_DrawLevelPlatterMenu },
 #ifdef HAVE_DISCORDRPC
 	{ "DRAWDISCORDREQUESTS", &MD_DrawDiscordRequests },
 #endif
