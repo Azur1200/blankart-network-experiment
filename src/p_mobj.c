@@ -1241,7 +1241,7 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 				case MT_EGGMANITEM:
 				case MT_SSMINE:
 				case MT_LANDMINE:
-				// case MT_EGGMINE_CAPSULE:
+				case MT_EGGMINE:
 				case MT_SINK:
 					if (mo->extravalue2 > 0)
 					{
@@ -1798,6 +1798,10 @@ void P_XYMovement(mobj_t *mo)
 						else
 							fx->eflags &= ~MFE_VERTICALFLIP;
 						fx->scale = mo->scale;
+					}
+					else if (mo->type == MT_EGGMINE)
+					{
+						K_SpawnEggMineBumpEffect(mo);
 					}
 
 					switch (mo->type)
@@ -6508,7 +6512,7 @@ boolean P_IsKartFieldItem(INT32 type)
 		case MT_JAWZ_DUD:
 		case MT_SSMINE:
 		case MT_LANDMINE:
-		// case MT_EGGMINE_CAPSULE:
+		case MT_EGGMINE:
 		case MT_BALLHOG:
 		case MT_BUBBLESHIELDTRAP:
 		case MT_SINK:
@@ -6529,6 +6533,7 @@ boolean P_IsKartItem(INT32 type)
 		case MT_JAWZ_SHIELD:
 		case MT_SSMINE_SHIELD:
 		case MT_SINK_SHIELD:
+		case MT_EGGMINE_SHIELD:
 			return true;
 
 		// Primarily for minimap data, handle with care
@@ -7398,6 +7403,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 	case MT_BANANA_SHIELD:
 	case MT_SSMINE_SHIELD:
 	case MT_EGGMANITEM_SHIELD:
+	case MT_EGGMINE_SHIELD:
 	case MT_SINK_SHIELD:
 		if ((mobj->health > 0
 			&& (!mobj->target || !mobj->target->player || mobj->target->health <= 0 || mobj->target->player->spectator))
@@ -8012,7 +8018,7 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 	case MT_BANANA:
 	case MT_EGGMANITEM:
 	case MT_LANDMINE:
-	// case MT_EGGMINE_CAPSULE:
+	case MT_EGGMINE:
 	case MT_SPB:
 		if (P_IsObjectOnGround(mobj))
 		{
@@ -8021,6 +8027,7 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 		}
 		/* FALLTHRU */
 	case MT_ORBINAUT_SHIELD:
+	case MT_EGGMINE_SHIELD:
 	case MT_BANANA_SHIELD:
 	case MT_EGGMANITEM_SHIELD:
 		mobj->renderflags ^= RF_DONTDRAW;
@@ -8796,10 +8803,50 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		if (mobj->threshold > 0)
 			mobj->threshold--;
 		break;
-	// case MT_EGGMINE_CAPSULE:
-		// todo
-		// decrement fuse while on ground
-		// when fuse runs out pop open and spawn a land mine
+	case MT_EGGMINE:
+		mobj->friction = 95*ORIG_FRICTION/100;
+		if (mobj->momx || mobj->momy)
+		{
+			mobj_t *ghost = P_SpawnGhostMobj(mobj);
+			
+			if (mobj->target && mobj->target->player)
+			{
+				ghost->color = mobj->target->player->skincolor;
+				ghost->colorized = true;
+			}
+		}
+
+		if (P_IsObjectOnGround(mobj)) 
+		{
+			if (mobj->health > 1 && mobj->threshold == 0) 
+			{
+				S_StartSound(mobj, mobj->info->activesound);
+				mobj->health = 1;
+				mobj->whiteshadow = false;
+			}
+			if (!S_SoundPlaying(mobj, sfx_s3kd2l)) 
+			{
+				S_StartSound(mobj, sfx_s3kd2l);
+			}
+			mobj->movefactor -= 1;
+			if (mobj->movefactor <= 0) 
+			{
+				P_KillMobj(mobj, mobj, NULL, DMG_INSTAKILL);
+			}
+		}
+		else if (S_SoundPlaying(mobj, sfx_s3kd2l)) 
+		{
+			S_StopSoundByID(mobj, sfx_s3kd2l);
+		}
+		
+		if (mobj->threshold > 0) 
+		{
+			mobj->threshold -= 1;
+		}
+		if (mobj->extravalue1 > 0) 
+		{
+			mobj->extravalue1 -= 1;
+		}
 		break;
 	case MT_SPBEXPLOSION:
 		mobj->health--;
@@ -10897,8 +10944,8 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_SSMINE:
 		case MT_SSMINE_SHIELD:
 		case MT_LANDMINE:
-		// case MT_EGGMINE_CAPSULE:
-		// case MT_EGGMINE_SHIELD:
+		case MT_EGGMINE:
+		case MT_EGGMINE_SHIELD:
 		case MT_BALLHOG:
 		case MT_SINK:
 		case MT_ROCKETSNEAKER:
@@ -11318,6 +11365,22 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 				nummaprings++;
 			break;
 		// SRB2Kart
+		case MT_EGGMINE:
+		case MT_EGGMINE_SHIELD:
+		{
+			mobj_t *overlay = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_OVERLAY);
+			P_SetMobjState(overlay, S_EGGMINE_OVERLAY);
+			overlay->destscale = mobj->scale;
+			P_SetScale(overlay, mobj->scale);
+			P_SetTarget(&overlay->target, mobj);
+			P_SetTarget(&overlay->tracer, mobj);
+			overlay->flags2 |= MF2_LINKDRAW;
+			overlay->dispoffset = -1;
+
+			mobj->movefactor = TICRATE;
+			mobj->threshold = 6;
+			break;
+		}
 		case MT_BUBBLESHIELD:
 		{
 			// Spawn in the damage overlay

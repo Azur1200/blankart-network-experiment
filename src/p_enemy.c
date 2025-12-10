@@ -11472,6 +11472,39 @@ void A_LandMineExplode(void *thing)
 	}
 }
 
+void A_EggMinePop(void *thing)
+{
+	mobj_t *actor = thing;
+	mobj_t *poof;
+	mobj_t *landMine;
+	player_t *player;
+
+	if (LUA_CallAction(A_EGGMINEPOP, actor))
+		return;
+
+	if (actor->lastlook == 0) return;
+
+	poof = P_SpawnMobj(actor->x, actor->y, actor->z, MT_EXPLODE);
+	S_StartSound(poof, actor->info->deathsound);
+	
+	if (!(actor->target && actor->target->player)) return;
+	
+	player = actor->target->player;
+	
+	landMine = P_SpawnMobj(actor->x, actor->y, actor->z + actor->height/2, MT_LANDMINE);
+	K_FlipFromObject(landMine, actor);
+	landMine->threshold = 10;
+	landMine->target = player->mo;
+
+	landMine->destscale = mapobjectscale;
+	P_SetScale(landMine, 3*actor->scale/4);
+
+	landMine->angle = actor->angle;
+
+	landMine->momz = (28 * mapobjectscale * P_MobjFlip(actor));
+	landMine->color = player->skincolor;
+}
+
 void A_BallhogExplode(void *thing)
 {
 	mobj_t *actor = thing;

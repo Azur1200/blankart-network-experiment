@@ -772,6 +772,48 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		return K_EggItemCollide(thing, g_tm.thing) ? BMIT_CONTINUE : BMIT_ABORT;
 	}
 
+	if (g_tm.thing->type == MT_EGGMINE)
+	{
+		// see if it went over / under
+		if (g_tm.thing->z > thing->z + thing->height)
+			return BMIT_CONTINUE; // overhead
+		if (g_tm.thing->z + g_tm.thing->height < thing->z)
+			return BMIT_CONTINUE; // underneath
+
+		return K_EggMineCollide(g_tm.thing, thing) ? BMIT_CONTINUE : BMIT_ABORT;
+	}
+	else if (thing->type == MT_EGGMINE)
+	{
+		// see if it went over / under
+		if (g_tm.thing->z > thing->z + thing->height)
+			return BMIT_CONTINUE; // overhead
+		if (g_tm.thing->z + g_tm.thing->height < thing->z)
+			return BMIT_CONTINUE; // underneath
+
+		return K_EggMineCollide(thing, g_tm.thing) ? BMIT_CONTINUE : BMIT_ABORT;
+	}
+
+	if (g_tm.thing->type == MT_EGGMINE_SHIELD)
+	{
+		// see if it went over / under
+		if (g_tm.thing->z > thing->z + thing->height)
+			return BMIT_CONTINUE; // overhead
+		if (g_tm.thing->z + g_tm.thing->height < thing->z)
+			return BMIT_CONTINUE; // underneath
+
+		return K_EggMineShieldCollide(g_tm.thing, thing) ? BMIT_CONTINUE : BMIT_ABORT;
+	}
+	else if (thing->type == MT_EGGMINE_SHIELD)
+	{
+		// see if it went over / under
+		if (g_tm.thing->z > thing->z + thing->height)
+			return BMIT_CONTINUE; // overhead
+		if (g_tm.thing->z + g_tm.thing->height < thing->z)
+			return BMIT_CONTINUE; // underneath
+
+		return K_EggMineShieldCollide(thing, g_tm.thing) ? BMIT_CONTINUE : BMIT_ABORT;
+	}
+
 	if (g_tm.thing->type == MT_RANDOMITEM)
 		return BMIT_CONTINUE;
 
@@ -3770,6 +3812,11 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 	{
 		tmxmove = FixedMul(mmomx, (FRACUNIT - (FRACUNIT>>6) - (FRACUNIT>>5)));
 		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>6) - (FRACUNIT>>5)));
+	}
+	else if (mo->type == MT_EGGMINE)
+	{
+		tmxmove = mmomx/3;
+		tmymove = mmomy/3;
 	}
 	else if (mo->type == MT_THROWNGRENADE || mo->type == MT_CYBRAKDEMON_NAPALM_BOMB_LARGE)
 	{

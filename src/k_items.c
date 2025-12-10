@@ -2028,24 +2028,93 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		}
 		break;
 	case KITEM_EGGMAN:
-		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
+		if (K_IsKartItemAlternate(KITEM_EGGMAN))
 		{
-			mobj_t *mo;
-			player->itemamount--;
-			K_SetItemOut(player, KITEM_EGGMAN, IF_EGGMANOUT);
-			S_StartSound(player->mo, sfx_s254);
-			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EGGMANITEM_SHIELD);
-			if (mo)
+			if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 			{
-				K_FlipFromObject(mo, player->mo);
-				mo->flags |= MF_NOCLIPTHING;
-				mo->threshold = 10;
-				mo->movecount = 1;
-				mo->movedir = 1;
-				P_SetTarget(&mo->target, player->mo);
-				P_SetTarget(&player->mo->hnext, mo);
+				angle_t newangle;
+				INT32 moloop;
+				mobj_t *mo = NULL;
+				mobj_t *prev = player->mo;
+
+				//K_PlayAttackTaunt(player->mo);
+				K_SetItemOut(player, KITEM_EGGMAN, IF_ITEMOUT);
+				S_StartSound(player->mo, sfx_s3k3a);
+
+				for (moloop = 0; moloop < player->itemamount; moloop++)
+				{
+					newangle = (player->mo->angle + ANGLE_157h) + FixedAngle(((360 / player->itemamount) * moloop) << FRACBITS) + ANGLE_90;
+					mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EGGMINE_SHIELD);
+					if (!mo)
+					{
+						player->itemamount = moloop;
+						break;
+					}
+					mo->flags |= MF_NOCLIPTHING;
+					mo->angle = newangle;
+					mo->movecount = player->itemamount;
+					mo->movedir = mo->lastlook = moloop+1;
+
+					P_SetTarget(&mo->target, player->mo);
+					P_SetTarget(&mo->hprev, prev);
+					P_SetTarget(&prev->hnext, mo);
+					prev = mo;
+				}
+				K_BotResetItemConfirm(player, false);
 			}
-			K_BotResetItemConfirm(player, false);
+			else if (ATTACK_IS_DOWN && (player->itemflags & IF_ITEMOUT)) // Egg Mine Thrown
+			{
+				mobj_t *mo;
+				player->itemamount -= 1;
+	
+				if (player->throwdir == 1)
+				{
+					mo = K_ThrowKartItem(player, false, MT_EGGMINE, 1, 0);
+					mo->health = 3;
+					mo->whiteshadow = true;
+					mo->lastlook = 1;
+				}
+				else
+				{
+					mo = K_ThrowKartItem(player, true, MT_EGGMINE, 4, 0);
+					if (player->throwdir == 0)
+					{
+						mo->health = 2;
+						mo->whiteshadow = true;
+					}
+					else
+					{
+						
+						mo->health = 1;
+						mo->whiteshadow = false;
+					}
+					mo->lastlook = 1;
+				}
+				K_UpdateHnextList(player, false);
+				K_PlayAttackTaunt(player->mo);
+			}
+		}
+		else
+		{
+			if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
+			{
+				mobj_t *mo;
+				player->itemamount--;
+				K_SetItemOut(player, KITEM_EGGMAN, IF_EGGMANOUT);
+				S_StartSound(player->mo, sfx_s254);
+				mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EGGMANITEM_SHIELD);
+				if (mo)
+				{
+					K_FlipFromObject(mo, player->mo);
+					mo->flags |= MF_NOCLIPTHING;
+					mo->threshold = 10;
+					mo->movecount = 1;
+					mo->movedir = 1;
+					P_SetTarget(&mo->target, player->mo);
+					P_SetTarget(&player->mo->hnext, mo);
+				}
+				K_BotResetItemConfirm(player, false);
+			}
 		}
 		break;
 	case KITEM_ORBINAUT:
@@ -2457,4 +2526,39 @@ void K_AltShrinkPityIncrease(player_t *player)
     shrinktime = min(INT16_MAX, shrinktime + PITY_SHRINKINCREASE_BASE + FixedMul(PITY_SHRINKINCREASE, dimin));
 
     player->growshrinktimer = ((INT16)shrinktime) * -1;
+}
+
+#undef PITY_SHRINKINCREASE_BASE
+#undef PITY_SHRINKINCREASE
+
+void K_SpawnEggMineBumpEffect(mobj_t *mo)
+{
+	mobj_t *fx = P_SpawnMobj(mo->x, mo->y, mo->z, MT_BUMP);
+	if (mo->eflags & MFE_VERTICALFLIP)
+	{
+		fx->eflags |= MFE_VERTICALFLIP;
+	}
+	else
+	{
+		fx->eflags |= ~MFE_VERTICALFLIP;
+	}
+	fx->scale = mo->scale;
+	S_StartSound(mo, sfx_cdfm15);
+}
+
+void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
+{
+	if (inflictor && (inflictor->type == MT_LANDMINE || inflictor->type == MT_EGGMINE))
+	{
+		if (tmo->player)
+		{
+			S_StartSound(tmo, sfx_bewar3);
+			K_DropItems(tmo->player);
+			tmo->player->itemtype = MAXKARTITEMS;	// aka KITEM_SAD
+			tmo->player->itemamount = 1;
+			tmo->player->itemblink = TICRATE;
+			tmo->player->itemblinkmode = KITEMBLINK_MASHED;
+			K_SetPlayerItemCooldown(tmo->player, TICRATE, false);
+		}
+	}
 }

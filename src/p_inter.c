@@ -1432,7 +1432,8 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 					target->target->player->itemamount--;
 			}
 			else if ((target->type == MT_ORBINAUT_SHIELD && target->target->player->itemtype == KITEM_ORBINAUT) // orbit items
-				|| (target->type == MT_JAWZ_SHIELD && target->target->player->itemtype == KITEM_JAWZ))
+				|| (target->type == MT_JAWZ_SHIELD && target->target->player->itemtype == KITEM_JAWZ)
+				|| (target->type == MT_EGGMINE_SHIELD && target->target->player->itemtype == KITEM_EGGMAN && K_IsKartItemAlternate(KITEM_EGGMAN)))
 			{
 				if (target->target->player->itemamount)
 					target->target->player->itemamount--;
@@ -1443,7 +1444,10 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			}
 
 			if (!target->target->player->itemamount)
-				target->target->player->itemflags &= ~IF_ITEMOUT;
+			{
+				K_UnsetItemOut(target->target->player);
+				// target->target->player->itemflags &= ~IF_ITEMOUT;
+			}
 
 			if (target->target->hnext == target)
 				P_SetTarget(&target->target->hnext, NULL);
