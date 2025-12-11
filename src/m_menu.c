@@ -229,6 +229,8 @@ static struct levelselect_t
 	UINT8 highlight;
 	INT32 namescroll;
 
+	INT16 firstmenuitem, lastmenuitem;
+
 	UINT8 numrows;
 	levelselectrow_t *rows;
 } levelselect = {0};
@@ -267,7 +269,7 @@ static void M_ChangecontrolResponse(event_t *ev);
 
 // Consvar onchange functions
 static void Newgametype_OnChange(void);
-static void Levelselectsort_OnChange(void);
+static void Levelsort_OnChange(void);
 static void Dummymenuplayer_OnChange(void);
 static void Dummystaff_OnChange(void);
 
@@ -442,14 +444,16 @@ enum {
 	LEVELSORT_ID,
 	LEVELSORT_NAME,
 	LEVELSORT_CUP,
+	LEVELSORT_FILE,
 };
-static CV_PossibleValue_t levelselectsort_cons_t[] = {
+static CV_PossibleValue_t levelsort_cons_t[] = {
 	{LEVELSORT_ID,   "Order Added"},
 	{LEVELSORT_NAME, "Name"},
 	{LEVELSORT_CUP,  "Cup"},
+	{LEVELSORT_FILE, "Addon"},
 	{0, NULL}
 };
-consvar_t cv_levelselectsort = CVAR_INIT ("levelselectsort", "Order Added", CV_HIDEN|CV_CALL, levelselectsort_cons_t, Levelselectsort_OnChange);
+consvar_t cv_levelsort = CVAR_INIT ("levelsort", "Order Added", CV_HIDEN|CV_CALL, levelsort_cons_t, Levelsort_OnChange);
 
 consvar_t cv_showallmaps = CVAR_INIT ("showallmaps", "No", CV_SAVE, CV_YesNo, NULL);
 consvar_t cv_showtrackaddon = CVAR_INIT ("showtrackaddon", "Yes", CV_SAVE, CV_YesNo, NULL);
@@ -514,7 +518,7 @@ static CV_PossibleValue_t dummybumpspark_cons_t[] = {{BUMPSPARK_NONE, "Off"},
 						     {0, NULL}};
 consvar_t cv_dummyattackingbumpspark = CVAR_INIT ("dummyattackingbumpspark", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, dummybumpspark_cons_t, Nextmap_OnChange);
 
-static CV_PossibleValue_t dummygpcup_cons_t[50] = {{1, "TEMP"}}; // A REALLY BIG NUMBER, SINCE THIS IS TEMP UNTIL NEW MENUS
+static CV_PossibleValue_t dummygpcup_cons_t[500] = {{1, "TEMP"}}; // A REALLY BIG NUMBER, SINCE THIS IS TEMP UNTIL NEW MENUS
 
 consvar_t cv_dummygpdifficulty = CVAR_INIT ("dummygpdifficulty", "Normal", CV_HIDEN, gpdifficulty_cons_t, NULL);
 consvar_t cv_dummygpencore = CVAR_INIT ("dummygpencore", "Off", CV_HIDEN, CV_OnOff, NULL);
@@ -864,7 +868,7 @@ static void Newgametype_OnChange(void)
 	}
 }
 
-static void Levelselectsort_OnChange(void)
+static void Levelsort_OnChange(void)
 {
 	if (menustack[0] && cv_nextmap.value)
 	{
@@ -1395,6 +1399,8 @@ static boolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
 	 || routine == MR_SetupMultiPlayer
 	 || routine == MR_SetupControlsMenu
 	 || routine == MR_ChangeControl
+	 || routine == MR_MapChange
+	 || routine == MR_HandleLevelPlatter
 	)
 		return false;
 
@@ -2201,7 +2207,7 @@ void M_Init(void)
 {
 	CV_RegisterVar(&cv_nextmap);
 	CV_RegisterVar(&cv_newgametype);
-	CV_RegisterVar(&cv_levelselectsort);
+	CV_RegisterVar(&cv_levelsort);
 	CV_RegisterVar(&cv_chooseskin);
 	CV_RegisterVar(&cv_skinselectstyle);
 	CV_RegisterVar(&cv_skinselectsort);
@@ -2795,8 +2801,6 @@ static INT16 M_GetItemAbsY(menu_t *menu, INT16 index)
 	return y;
 }
 
-static INT32 platterscrollhack = 0;
-
 void MD_DrawGenericMenu(void)
 {
 	INT16 scrollx = currentMenu->x, scrolly = currentMenu->y;
@@ -2806,17 +2810,12 @@ void MD_DrawGenericMenu(void)
 	if (!currentMenu->numitems)
 		return;
 
-	boolean onlevelselect = currentMenu->drawroutine == MD_DrawLevelPlatterMenu;
-	boolean hidecursor = onlevelselect && levelselect.row > 0;
+	boolean hidecursor = currentMenu->drawroutine == MD_DrawLevelPlatterMenu && levelselect.row > 0;
 
 	INT16 topy = M_GetItemAbsY(currentMenu, 0);
 	INT16 boty = M_GetItemAbsY(currentMenu, currentMenu->numitems-1);
 
-	if (onlevelselect)
-	{
-		scrolly = platterscrollhack;
-	}
-	else if (boty - topy > scrollheight)
+	if (boty - topy > scrollheight)
 	{
 		scrolly = scrolly - M_GetItemAbsY(currentMenu, itemOn) + scrollheight/2;
 		if (scrolly > currentMenu->y - topy)
@@ -2870,9 +2869,7 @@ void MD_DrawGenericMenu(void)
 					y = dy;
 			}
 
-			if (onlevelselect)
-				;
-			else if (dy < currentMenu->y)
+			if (dy < currentMenu->y)
 			{
 				cliptop = true;
 				goto nodraw;
@@ -3162,47 +3159,81 @@ static int Levelsort_Cup(const void *a, const void *b)
 		if (cup == NULL)
 			return m1 - m2;
 
-		int pos1, pos2;
-		for (size_t i = 0; i < cup->numlevels; i++)
+		INT32 pos1 = 0, pos2 = 0;
+		for (INT32 i = 0; i < cup->numlevels; i++)
 		{
 			if (cup->cachedlevels[i] == m1)
 				pos1 = i;
 			if (cup->cachedlevels[i] == m2)
 				pos2 = i;
 		}
-		return pos1 - pos2;
+		return pos1 - pos2 ? pos1 - pos2 : m1 - m2;
 	}
 	else
 	{
-		// sort cupless maps to bottom, otherwise sort by cup load order
-		if (mapheaderinfo[m1]->cup == NULL || mapheaderinfo[m2]->cup == NULL)
-			return mapheaderinfo[m1]->cup == NULL ? 1 : -1;
-		else
-			return mapheaderinfo[m1]->cup - mapheaderinfo[m2]->cup;
+		// sort cupless maps to bottom, otherwise sort by cup ID
+		return mapheaderinfo[m1]->cup == NULL ? 1
+		     : mapheaderinfo[m2]->cup == NULL ? -1
+		     : mapheaderinfo[m1]->cup->id - mapheaderinfo[m2]->cup->id;
 	}
+}
+
+static int Levelsort_File(const void *a, const void *b)
+{
+	const INT16 m1 = *(const INT16 *)a, m2 = *(const INT16 *)b;
+	return mapheaderinfo[m1]->lumpnum - mapheaderinfo[m2]->lumpnum;
 }
 
 static qsort_f *levelsortfuncs[] = {
 	[LEVELSORT_ID] = NULL,
 	[LEVELSORT_NAME] = Levelsort_Name,
 	[LEVELSORT_CUP] = Levelsort_Cup,
+	[LEVELSORT_FILE] = Levelsort_File,
 };
+
+// TODO: port cup->realname
+static const char *CupName(cupheader_t *cup)
+{
+	char *name = strchr(cup->name, '_');
+	if (name != NULL)
+		name++;
+	else
+		name = cup->name;
+
+	// extra cursed so you really want to remove this hack!
+	char *s = name = va("%s", name);
+	while (*s++ != '\0')
+		if (*s == '_')
+			*s = ' ';
+	return strcat(name, " Cup");
+}
 
 static boolean M_MakeLevelSelectHeader(levelselectrow_t *row, mapheader_t *prev, mapheader_t *iter)
 {
-	switch (cv_levelselectsort.value)
+	const char *header = NULL;
+
+	switch (cv_levelsort.value)
 	{
 	case LEVELSORT_CUP:
 		if (iter == NULL || prev->cup != iter->cup)
+			header = prev->cup == NULL ? "Unsorted" : CupName(prev->cup);
+		break;
+	case LEVELSORT_FILE:
+		if (iter == NULL || WADFILENUM(prev->lumpnum) != WADFILENUM(iter->lumpnum))
 		{
-			strcpy(row->header, prev->cup == NULL ? "Unsorted" : prev->cup->name);
-			return true;
+			const char *wadname = wadfiles[WADFILENUM(prev->lumpnum)]->filename;
+			header = strrchr(wadname, *PATHSEP);
+			if (header != NULL)
+				header++;
+			else
+				header = wadname;
 		}
 		break;
 	default:
 		break;
 	}
-	return false;
+
+	return header != NULL && strcpy(row->header, header);
 }
 
 //
@@ -3223,10 +3254,29 @@ static boolean M_PrepareLevelPlatter(INT32 gt, boolean nextmappick)
 		if (M_CanShowLevelInList(i, gt))
 			sortedmaps[numsortedmaps++] = i;
 
-	if (levelsortfuncs[cv_levelselectsort.value] != NULL)
-		qs22j(sortedmaps, numsortedmaps, sizeof(*sortedmaps), levelsortfuncs[cv_levelselectsort.value]);
+	if (levelsortfuncs[cv_levelsort.value] != NULL)
+		qs22j(sortedmaps, numsortedmaps, sizeof(*sortedmaps), levelsortfuncs[cv_levelsort.value]);
 
 	M_SetItemVisible(MN_CHANGELEVEL, "GAMETYPE", levellistmode == LLM_CREATESERVER);
+	M_SetItemVisible(MN_CHANGELEVEL, "ENCORE", M_SecretUnlocked(SECRET_ENCORE));
+
+	// dumbass hack until menu frames
+	levelselect.firstmenuitem = 0;
+	for (i = 0; i < menudefs[MN_CHANGELEVEL].numitems; i++)
+	{
+		if (!M_ItemSelectable(&menudefs[MN_CHANGELEVEL].menuitems[i]))
+			continue;
+		levelselect.firstmenuitem = i;
+		break;
+	}
+	levelselect.lastmenuitem = menudefs[MN_CHANGELEVEL].numitems-1;
+	for (i = menudefs[MN_CHANGELEVEL].numitems - 1; i >= 0; i--)
+	{
+		if (!M_ItemSelectable(&menudefs[MN_CHANGELEVEL].menuitems[i]))
+			continue;
+		levelselect.lastmenuitem = i;
+		break;
+	}
 
 	if (levelselect.rows != NULL)
 		Z_Free(levelselect.rows);
@@ -3335,10 +3385,10 @@ INT32 MR_HandleLevelPlatter(INT32 choice)
 	switch (choice)
 	{
 	case KEY_DOWNARROW:
-		if (levelselect.row == 0 && itemOn < currentMenu->numitems - 1)
+		if (levelselect.row == 0 && itemOn < levelselect.lastmenuitem)
 			return false;
-		else
-			itemOn = levellistmode == LLM_CREATESERVER ? 0 : 1; // oooooh i NEED menu frames...
+		else if (levelselect.row == levelselect.numrows-1)
+			itemOn = levelselect.firstmenuitem;
 
 		if (levelselect.row == levelselect.numrows-1)
 		{
@@ -3367,10 +3417,10 @@ INT32 MR_HandleLevelPlatter(INT32 choice)
 		return true;
 
 	case KEY_UPARROW:
-		if (levelselect.row == 0 && itemOn > (levellistmode == LLM_CREATESERVER ? 0 : 1))
+		if (levelselect.row == 0 && itemOn > levelselect.firstmenuitem)
 			return false;
-		else
-			itemOn = currentMenu->numitems - 1;
+		else if (levelselect.row == 1)
+			itemOn = levelselect.lastmenuitem;
 
 		iter = levelselect.row;
 		if (!levelselect.row)
@@ -3472,7 +3522,7 @@ INT32 MR_HandleLevelPlatter(INT32 choice)
 			INT32 dir = levelselect.row >= levelselect.numrows/2 ? 1 : -1;
 			for (iter = levelselect.row; iter > 0 && iter < levelselect.numrows; iter += dir)
 				lsoffsy += lsvseperation(iter)*FRACUNIT*dir;
-			itemOn = levelselect.row = levelselect.column = 0;
+			levelselect.row = levelselect.column = 0;
 			S_StartSound(NULL, sfx_menu1);
 			return true;
 		}
@@ -3517,14 +3567,23 @@ static void M_DrawLevelPlatterMap(UINT8 row, UINT8 col, INT32 x, INT32 y, boolea
 	{
 		// wide thumbnails? mmm... i dunno... maybe...
 		patch_t *patch;
+		boolean encore = cv_kartencore.value == 1 && gamestate != GS_TIMEATTACK && cv_newgametype.value == GT_RACE;
 		fixed_t thumbscale = M_GetMapThumbnail(lsrow->maplist[col] - 1, &patch);
-		V_DrawSciencePatch(x*FRACUNIT, y*FRACUNIT, 0, patch, FixedMul(thumbscale/4, scale));
+
+		V_DrawSciencePatch(x*FRACUNIT + (encore ? width : 0), y*FRACUNIT, encore ? V_FLIP : 0, patch, FixedMul(thumbscale/4, scale));
+		if (encore && highlight)
+		{
+			static angle_t rubyfloattime = 0;
+			const fixed_t rubyheight = FSIN(rubyfloattime)*2;
+			V_DrawSciencePatch(x*FRACUNIT + width/2, y*FRACUNIT + 25*scale - rubyheight, 0, W_CachePatchName("RUBYICON", PU_CACHE), FRACUNIT);
+			rubyfloattime += FixedMul(ANGLE_MAX/NEWTICRATE, renderdeltatics);
+		}
 	}
 
 	y += (50*scale)>>FRACBITS;
 	V_SetClipRect(x*FRACUNIT, y*FRACUNIT, width, (wide || highlight ? 9 : 4)*FRACUNIT, 0);
 
-	V_DrawFill(0, 0, 319, 200, lsrow->mapcolors[col]);
+	V_DrawFill(-9999, -9999, 22222, 22222, V_NOSCALESTART|lsrow->mapcolors[col]);
 	if (wide || highlight)
 	{
 		INT32 scrollamt = V_ThinStringWidth(lsrow->mapnames[col], MENUCAPS|V_6WIDTHSPACE) - width/FRACUNIT;
@@ -3554,10 +3613,11 @@ static void M_DrawLevelPlatterRow(UINT8 row, INT32 y)
 
 	if (row == 0)
 	{
-		platterscrollhack = y+2;
-		V_DrawFill((BASEVIDWIDTH - 282)/2, y, 282, 44, 27);
+		currentMenu->y = y+2;
+		V_SetClipRect(0, y*FRACUNIT, 320*FRACUNIT, (currentMenu->scrollheight+12)*FRACUNIT, 0);
+		V_DrawFill((BASEVIDWIDTH - 282)/2, -9999, 282, 22222, 27);
 		MD_DrawGenericMenu();
-		platterscrollhack = 0;
+		V_ClearClipRect();
 	}
 	else if (levelselect.rows[row].wide)
 	{

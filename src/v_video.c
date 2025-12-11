@@ -1370,10 +1370,10 @@ void V_DrawFixedFill(fixed_t x, fixed_t y, INT32 w, INT32 h, INT32 c)
 			return;
 		}
 
-		x = (x * dupx) >> FRACBITS;
-		y = (y * dupy) >> FRACBITS;
-		w = (w * dupx) >> FRACBITS;
-		h = (h * dupy) >> FRACBITS;
+		x = FixedMul(x, dupx);
+		y = FixedMul(y, dupy);
+		w = FixedMul(w, dupx);
+		h = FixedMul(h, dupy);
 
 		// Center it if necessary
 		V_AdjustXYWithSnap(&x, &y, c, dupx, dupy);
