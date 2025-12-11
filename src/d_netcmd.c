@@ -483,8 +483,8 @@ consvar_t cv_kartstacking_panel_separate = CVAR_INIT ("vanillaboost_panel_separa
 consvar_t cv_kartstacking_panel_maxgrade = CVAR_INIT ("vanillaboost_panel_maxgrade", "2", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Natural, NULL);
 
 
-consvar_t cv_kartstacking_invincibility_legacyspeedboost = CVAR_INIT ("vanillaboost_invincibility_legacyspeedboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_legacyaccelboost = CVAR_INIT ("vanillaboost_invincibility_legacyaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_classicspeedboost = CVAR_INIT ("vanillaboost_invincibility_classicspeedboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_classicaccelboost = CVAR_INIT ("vanillaboost_invincibility_classicaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_alternatespeedboost = CVAR_INIT ("vanillaboost_invincibility_alternatespeedboost", "0.68", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_alternateaccelboost = CVAR_INIT ("vanillaboost_invincibility_alternateaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_invincibility_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);

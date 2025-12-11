@@ -306,8 +306,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_panel_separate);
 	CV_RegisterVar(&cv_kartstacking_panel_maxgrade);
 
-	CV_RegisterVar(&cv_kartstacking_invincibility_legacyspeedboost);
-	CV_RegisterVar(&cv_kartstacking_invincibility_legacyaccelboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_classicspeedboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_classicaccelboost);
     CV_RegisterVar(&cv_kartstacking_invincibility_alternatespeedboost);
 	CV_RegisterVar(&cv_kartstacking_invincibility_alternateaccelboost);
 	CV_RegisterVar(&cv_kartstacking_invincibility_stackable);
@@ -2525,7 +2525,7 @@ UINT16 K_GetInvincibilityTime(player_t *player)
 fixed_t K_GetInvincibilitySpeed(UINT16 time)
 {
     if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-        return INVINSPEEDBOOSTLGC;
+        return INVINSPEEDBOOSTCLS;
 
     fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
     return Easing_OutCubic(t, 0, INVINSPEEDBOOSTALT);
@@ -2534,7 +2534,7 @@ fixed_t K_GetInvincibilitySpeed(UINT16 time)
 fixed_t K_GetInvincibilityAccel(UINT16 time)
 {
     if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-        return INVINACCELBOOSTLGC;
+        return INVINACCELBOOSTCLS;
 
     fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
     return Easing_OutCubic(t, 0, INVINACCELBOOSTALT);

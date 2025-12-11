@@ -117,8 +117,8 @@ extern consvar_t cv_kartstacking_panel_separate;
 extern consvar_t cv_kartstacking_panel_maxgrade;
 
 
-extern consvar_t cv_kartstacking_invincibility_legacyspeedboost;
-extern consvar_t cv_kartstacking_invincibility_legacyaccelboost;
+extern consvar_t cv_kartstacking_invincibility_classicspeedboost;
+extern consvar_t cv_kartstacking_invincibility_classicaccelboost;
 extern consvar_t cv_kartstacking_invincibility_alternatespeedboost;
 extern consvar_t cv_kartstacking_invincibility_alternateaccelboost;
 extern consvar_t cv_kartstacking_invincibility_stackable;
