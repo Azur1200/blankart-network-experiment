@@ -604,29 +604,42 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 			const char *trimname, *dotpos;
 
 			trimname = strrchr(filename, PATHSEP[0]);
-#if defined (_WIN32)
+#if (defined (_WIN32)) || (defined(__linux__))
 			// For Zone Builder support, work around temporary filenames.
 			// They're annoyingly randomised, BUT they follow \Temp\8\8.3...
 			// AND they're always guaranteed to follow the map file, which
 			// should already have a WADNAME in it for us to piggyback off.
-			// EXAMPLE: // \Temp\gj3l7w7n\4f926789.wad
+			// WINDOWS EXAMPLE: // \Temp\gj3l7w7n\4f926789.wad
+			// LINUX EXAMPLE:   // /tmp/p68uf2zt/65wav2y1.wad
 
 			if (trimname != 0
 				&& wadnamelump != LUMPERROR
 				&& strlen(trimname+1) == 8+1+3)
 			{
 				const char *temp = trimname-1;
+				// CONS_Printf("wadnumtemp: %s\n", temp);
+#if (defined(_WIN32))
 				while (temp >= filename+5 && *temp != PATHSEP[0])
 					temp--;
 
 				if (((trimname-1) - temp) == 8
 					&& temp >= filename+5
 					&& !strncmp(temp-5, PATHSEP"Temp", 5))
+#elif (defined(__linux__))
+				while (temp >= filename+4 && *temp != PATHSEP[0])
+					temp--;
+
+				if (((trimname-1) - temp) == 8
+					&& temp >= filename+4
+					&& !strncmp(temp-4, PATHSEP"tmp", 4))
+#endif
 				{
 					filename = wadfiles[
 						((wadnamelump & ~UINT16_MAX) >> 16)
 						]->filename;
 					trimname = strrchr(filename, PATHSEP[0]);
+					// CONS_Printf("wadnumfilename: %s\n", filename);
+					// CONS_Printf("wadnumtrimname: %s\n", trimname);
 				}
 			}
 #endif
@@ -643,28 +656,15 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 				namelen = strlen(trimname);
 
 			// Allocate the lump's long and full name (save on memory).
-			lump_p->longname = lump_p->fullname = (char *)Z_Calloc(namelen * sizeof(char), PU_STATIC, NULL);
+			lump_p->longname = lump_p->fullname = static_cast<char*>(Z_Calloc(namelen * sizeof(char), PU_STATIC, NULL));
 			strncpy(lump_p->longname, trimname, namelen);
 			lump_p->longname[namelen-1] = '\0';
-
-			lump_p->namelength = strlen(lump_p->longname);
-			lump_p->hash.name = W_HashLumpName(lump_p->longname, lump_p->namelength);
-
-			// Allocate the lump's long name.
-			lump_p->longname = (char *)Z_Malloc(namelen * sizeof(char), PU_STATIC, NULL);
-			strncpy(lump_p->longname, fileinfo->name, 8);
-			lump_p->longname[namelen-1] = '\0';
-			lump_p->longnamelength = lump_p->namelength;
-			lump_p->hash.longname = lump_p->hash.name;
-
-			// Allocate the lump's full name.
-			lump_p->fullname =(char *) Z_Malloc(namelen * sizeof(char), PU_STATIC, NULL);
-			strncpy(lump_p->fullname, fileinfo->name, 8);
-			lump_p->fullname[namelen-1] = '\0';
-			lump_p->fullnamelength = lump_p->namelength;
-			lump_p->hash.fullname = lump_p->hash.name;
+			lump_p->hash.longname = lump_p->hash.fullname = W_HashLumpName(lump_p->longname, strlen(lump_p->longname));
 
 			CONS_Debug(DBG_SETUP, "WADNAME handling:\n -- path %s\n -- interpreted lumpname %s\n", filename, lump_p->longname);
+
+			// Grab the hash from the first part
+			lump_p->hash.name = W_HashLumpName(lump_p->longname, 8);
 
 			wadnamelump = i | (numwadfiles << 16);
 		}
