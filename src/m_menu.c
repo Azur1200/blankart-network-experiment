@@ -3148,7 +3148,7 @@ typedef int (qsort_f)(const void *, const void *);
 static int Levelsort_Name(const void *a, const void *b)
 {
 	const INT16 m1 = *(const INT16 *)a, m2 = *(const INT16 *)b;
-	int c = !fastcmp(mapheaderinfo[m1]->lvlttl, mapheaderinfo[m2]->lvlttl);
+	int c = strcmp(mapheaderinfo[m1]->lvlttl, mapheaderinfo[m2]->lvlttl);
 	return c != 0 ? c : m1 - m2;
 }
 
