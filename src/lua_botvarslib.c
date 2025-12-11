@@ -12,8 +12,6 @@
 /// \brief player botvars structure library for Lua scripting
 
 #include "doomdef.h"
-#include "fastcmp.h"
-
 #include "lua_script.h"
 #include "lua_libs.h"
 #include "k_bot.h"

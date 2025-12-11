@@ -11,7 +11,6 @@
 /// \brief Lua scripting basics
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "dehacked.h"
 #include "deh_lua.h"
 #include "z_zone.h"

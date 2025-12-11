@@ -26,7 +26,6 @@
 #include "lua_hook.h" // hook_cmd_running errors
 
 #include "dehacked.h"
-#include "fastcmp.h"
 #include "doomstat.h"
 
 enum sector_e {

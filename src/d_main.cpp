@@ -66,7 +66,6 @@
 #include "m_misc.h" // screenshot functionality
 #include "deh_tables.h" // Dehacked list test
 #include "m_cond.h" // condition initialization
-#include "fastcmp.h"
 #include "r_fps.h" // Frame interpolation/uncapped
 #include "keys.h"
 #include "filesrch.h" // refreshdirmenu
@@ -1406,7 +1405,7 @@ D_ConvertVersionNumbers (void)
 
 const char *D_GetFancyBranchName(void)
 {
-	if (fastcmp(compbranch, ""))
+	if (compbranch[0] == '\0')
 	{
 		// \x8b = aqua highlight
 		return "\x8b" "detached HEAD" "\x80";

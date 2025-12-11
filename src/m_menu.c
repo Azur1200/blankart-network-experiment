@@ -87,7 +87,6 @@
 #include "m_random.h"
 
 #include "deh_tables.h" // menunames
-#include "fastcmp.h"
 
 #if defined(HAVE_SDL)
 #include <SDL.h>

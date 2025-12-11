@@ -11,7 +11,6 @@
 /// \brief basic math library for Lua scripting
 
 #include "doomdef.h"
-//#include "fastcmp.h"
 #include "tables.h"
 #include "p_local.h"
 #include "doomstat.h" // for ALLCHAOSEMERALDS

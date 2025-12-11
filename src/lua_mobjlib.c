@@ -11,7 +11,6 @@
 /// \brief mobj/thing library for Lua scripting
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "r_skins.h"
 #include "p_local.h"
 #include "g_game.h"

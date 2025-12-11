@@ -15,7 +15,6 @@
 #include "doomdata.h"
 #include "doomdef.h"
 #include "doomtype.h"
-#include "fastcmp.h"
 #include "r_textures.h"
 #include "w_wad.h"
 #include "z_zone.h"

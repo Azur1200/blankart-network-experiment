@@ -38,7 +38,6 @@
 #include "p_local.h"
 #include "p_setup.h"
 #include "st_stuff.h" // hud hiding
-#include "fastcmp.h"
 #include "r_fps.h" // R_GetTimeFrac
 
 #include "lua_hud.h"

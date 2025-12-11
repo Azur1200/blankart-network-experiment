@@ -11,7 +11,6 @@
 /// \brief console modifying/etc library for Lua scripting
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "p_local.h"
 #include "g_game.h"
 #include "byteptr.h"

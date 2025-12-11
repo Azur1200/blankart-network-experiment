@@ -28,7 +28,6 @@
 #include "d_netfil.h"
 #include "r_sky.h" // skyflatnum
 #include "p_local.h" // camera info
-#include "fastcmp.h"
 #include "m_misc.h" // for tunes command
 #include "m_cond.h" // for conditionsets
 #include "lua_hook.h" // MusicChange hook

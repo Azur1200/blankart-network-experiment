@@ -38,8 +38,6 @@
 #include "lua_script.h"
 #include "lua_hook.h"
 
-#include "fastcmp.h"
-
 //
 // CHEAT SEQUENCE PACKAGE
 //

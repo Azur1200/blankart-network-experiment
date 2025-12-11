@@ -11,7 +11,6 @@
 /// \brief basic functions for Lua scripting
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "p_local.h"
 #include "p_setup.h" // So we can have P_SetupLevelSky
 #include "p_slopes.h" // P_GetSlopeZAt

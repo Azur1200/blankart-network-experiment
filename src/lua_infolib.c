@@ -11,7 +11,6 @@
 /// \brief infotable editing library for Lua scripting
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "info.h"
 #include "dehacked.h"
 #include "deh_tables.h"

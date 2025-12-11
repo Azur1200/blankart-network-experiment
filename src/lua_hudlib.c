@@ -11,7 +11,6 @@
 /// \brief custom HUD rendering library for Lua scripting
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "r_defs.h"
 #include "r_local.h"
 #include "r_fps.h"

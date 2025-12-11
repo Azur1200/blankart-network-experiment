@@ -10,6 +10,7 @@
 /// \file  h_timers.cpp
 /// \brief C++ port of Home's item timers
 
+#include "doomdef.h"
 #include "h_timers.h"
 #include "k_hud.h"
 #include "r_draw.h"
@@ -30,7 +31,6 @@
 #include "r_main.h"
 #include "r_fps.h"
 #include "s_sound.h"
-#include "fastcmp.h"
 #include "m_cond.h"
 #include <unordered_map>
 #include <vector>

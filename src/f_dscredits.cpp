@@ -43,7 +43,6 @@
 #include "p_local.h"
 #include "p_setup.h"
 #include "st_stuff.h" // hud hiding
-#include "fastcmp.h"
 #include "r_fps.h" // R_GetTimeFrac
 #include "r_things.h" // numskins
 #include "r_skins.h"

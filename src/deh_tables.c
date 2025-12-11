@@ -34,7 +34,6 @@
 #include "k_waypoint.h" // waypoint values (for lua)
 
 #include "deh_tables.h"
-#include "fastcmp.h"
 
 strbuf_t *statenames;
 strbuf_t *mobjnames;

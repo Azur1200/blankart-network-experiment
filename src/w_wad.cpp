@@ -44,7 +44,6 @@
 
 #include "w_wad.h"
 #include "z_zone.h"
-#include "fastcmp.h"
 
 #include "g_game.h" // G_LoadGameData
 #include "filesrch.h"
@@ -1699,7 +1698,6 @@ lumpnum_t W_CheckNumForNameInFolder(const char *lump, const char *folder)
 }
 
 // Used by Lua. Case sensitive lump checking, quickly...
-#include "fastcmp.h"
 UINT8 W_LumpExists(const char *name)
 {
 	INT32 i, j;

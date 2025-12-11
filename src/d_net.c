@@ -944,7 +944,7 @@ void Command_Drop(void)
 		return;
 	}
 
-	if (!(!fasticmp(COM_Argv(1), "reset") && !fasticmp(COM_Argv(1), "cancel") && !fasticmp(COM_Argv(1), "stop")))
+	if (fasticmp(COM_Argv(1), "reset") || fasticmp(COM_Argv(1), "cancel") || fasticmp(COM_Argv(1), "stop"))
 	{
 		memset(packetdropquantity, 0, sizeof(packetdropquantity));
 		return;
@@ -964,7 +964,7 @@ void Command_Drop(void)
 
 	packetname = COM_Argv(1);
 
-	if (!(!fasticmp(packetname, "all") && !fasticmp(packetname, "any")))
+	if (fasticmp(packetname, "all") || fasticmp(packetname, "any"))
 		for (i = 0; i < NUMPACKETTYPE; i++)
 			packetdropquantity[i] = packetquantity;
 	else

@@ -11,7 +11,6 @@
 /// \brief polyobject library for Lua scripting
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "p_local.h"
 #include "p_polyobj.h"
 #include "lua_script.h"

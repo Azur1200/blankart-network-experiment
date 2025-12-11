@@ -2336,7 +2336,7 @@ char *I_GetUserName(void)
 	}
 
 
-	if (!fastcmp(username, ""))
+	if (username[0] != '\0')
 		return username;
 	return NULL; // dummy for platform independent version
 }

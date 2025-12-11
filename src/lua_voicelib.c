@@ -13,7 +13,6 @@
 /// \brief voice structure library for Lua scripting
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "r_skins.h"
 #include "sounds.h"
 #include "deh_tables.h"

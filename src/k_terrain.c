@@ -20,7 +20,6 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "doomtype.h"
-#include "fastcmp.h"
 #include "m_fixed.h"
 #include "m_random.h"
 #include "p_local.h"

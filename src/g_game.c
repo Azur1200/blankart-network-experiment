@@ -5771,7 +5771,7 @@ char *G_BuildMapTitle(INT32 mapnum)
 	if (!mapnum || mapnum > nummapheaders || !mapheaderinfo[mapnum-1])
 		I_Error("G_BuildMapTitle: Internal map ID %d not found (nummapheaders = %d)", mapnum-1, nummapheaders);
 
-	if (!fastcmp(mapheaderinfo[mapnum-1]->lvlttl, ""))
+	if (mapheaderinfo[mapnum-1]->lvlttl[0] != '\0')
 	{
 		size_t len = 1;
 		const char *zonetext = NULL;

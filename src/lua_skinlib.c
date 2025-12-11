@@ -11,7 +11,6 @@
 /// \brief player skin structure library for Lua scripting
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "r_skins.h"
 #include "sounds.h"
 

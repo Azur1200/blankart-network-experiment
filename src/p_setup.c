@@ -89,7 +89,6 @@
 
 #include "p_slopes.h"
 
-#include "fastcmp.h" // textmap parsing
 #include "taglist.h"
 
 // SRB2Kart

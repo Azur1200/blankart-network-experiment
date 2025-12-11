@@ -12,7 +12,6 @@
 
 #include "blua/lua.h"
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "p_mobj.h"
 #include "d_player.h"
 #include "g_game.h"

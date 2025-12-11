@@ -22,7 +22,6 @@
 #include "../d_main.h"
 #include "../doomdef.h"
 #include "../doomstat.h"
-#include "../fastcmp.h"
 
 #ifdef HWRENDER
 #include "hw_drv.h"

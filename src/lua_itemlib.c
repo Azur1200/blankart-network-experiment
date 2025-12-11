@@ -12,7 +12,6 @@
 /// \brief item structures library for Lua scripting
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "k_items.h"
 
 #include "lua_script.h"

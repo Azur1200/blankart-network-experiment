@@ -33,7 +33,6 @@
 #include "r_picformats.h"
 #include "r_things.h" // R_Char2Frame
 #include "r_sky.h"
-#include "fastcmp.h"
 #include "lua_script.h" // Reluctantly included for LUA_EvalMath
 #include "d_clisrv.h"
 #include "k_items.h"

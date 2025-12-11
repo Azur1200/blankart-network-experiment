@@ -12,7 +12,6 @@
 /// \brief player follower structure library for Lua scripting
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "k_follower.h"
 #include "r_skins.h"
 #include "sounds.h"
