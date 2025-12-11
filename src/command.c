@@ -2053,7 +2053,7 @@ void CV_ResetCheatNetVars(void)
 // Returns true if the variable's current value is its default value
 boolean CV_IsSetToDefault(consvar_t *v)
 {
-	return (!(!fastcmp(v->defaultvalue, v->string)));
+	return fastcmp(v->defaultvalue, v->string);
 }
 
 // If any cheats CVars are not at their default settings, return true.
