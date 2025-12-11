@@ -1562,9 +1562,9 @@ lumpnum_t W_CheckNumForMap(const char *name, boolean checktofirst)
 
 	// Check the lumpnumcache first. Loop backwards so that we check
 	// most recent entries first
-	auto it = lumpnumcache.find(name);
-	if (it != lumpnumcache.end())
-		return it->second;
+	lumpnum_t cachenum = CheckLumpInCache(name);
+	if (cachenum != LUMPERROR)
+		return cachenum;
 
 	uhash = W_HashLumpName(name, strlen(name)); // Not a mistake, legacy system for short lumpnames
 
