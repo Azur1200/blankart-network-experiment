@@ -2261,8 +2261,10 @@ static void CL_ConnectToServer(void)
 		{
 			pnumnodes = 0;
 			for (i = 0; i < MAXNETNODES; i++)
+			{
 				if (nodeingame[i])
 					pnumnodes++;
+			}
 		}
 	}
 	while (!(cl_mode == CL_CONNECTED && (client || (server && nodewaited <= pnumnodes))));
@@ -3691,8 +3693,10 @@ void D_QuitNetGame(void)
 
 		netbuffer->packettype = PT_SERVERSHUTDOWN;
 		for (i = 0; i < MAXNETNODES; i++)
+		{
 			if (nodeingame[i])
 				HSendPacket(i, true, 0, 0);
+		}
 #ifdef MASTERSERVER
 		if (serverrunning && netgame && cv_advertise.value) // see mserv.c Online()
 			UnregisterServer();
@@ -6236,8 +6240,10 @@ static inline void PingUpdate(void)
 
 	//send out our ping packets
 	for (i = 0; i < MAXNETNODES; i++)
+	{
 		if (nodeingame[i])
 			HSendPacket(i, true, 0, sizeof(netinfo_pak));
+	}
 
 	pingmeasurecount = 0; //Reset count
 }
@@ -6340,8 +6346,10 @@ static void HandleNodeTimeouts(void)
 	if (server)
 	{
 		for (i = 1; i < MAXNETNODES; i++)
+		{
 			if (nodeingame[i] && freezetimeout[i] < I_GetTime())
 				Net_ConnectionTimeout(i);
+		}
 
 		// In case the cvar value was lowered
 		if (joindelay)
