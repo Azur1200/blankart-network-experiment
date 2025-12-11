@@ -394,6 +394,8 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartaltshrinktime);
 
+	CV_RegisterVar(&cv_kartinvintheme);
+
     CV_RegisterVar(&cv_kartinvindist);
     CV_RegisterVar(&cv_kartinvindistmul);
 
@@ -4906,6 +4908,14 @@ void K_ResetPogoSpring(player_t *player)
 	player->dashRainbowPogo = 0;
 }
 
+// This likely won't find use until Mission Mode, but alas
+boolean forcefullinvintheme = false;
+
+boolean K_PlayFullInvinTheme(void)
+{
+	return ((cv_kartinvintheme.value == 1) || (forcefullinvintheme == true));
+}
+
 void K_DoInvincibility(player_t *player, tic_t time)
 {
 	const boolean isalt = K_IsKartItemAlternate(KITEM_INVINCIBILITY);
@@ -4952,7 +4962,7 @@ void K_DoInvincibility(player_t *player, tic_t time)
 
 	if (P_IsLocalPlayer(player) == true)
 	{
-		S_ChangeMusicSpecial("kinvnc");
+		S_ChangeMusicSpecial(K_PlayFullInvinTheme() ? "kinvnf" : "kinvnc");
 	}
 	else //used to be "if (P_IsDisplayPlayer(player) == false)"
 	{

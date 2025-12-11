@@ -182,6 +182,7 @@ extern consvar_t cv_kartexplosion_limitlifetime;
 extern consvar_t cv_kartexplosion_limitlifetime_cap;
 extern consvar_t cv_kartslipdash;
 extern consvar_t cv_kartslopeboost;
+extern consvar_t cv_kartinvintheme;
 extern consvar_t cv_kartinvindist;
 extern consvar_t cv_kartinvindistmul;
 extern consvar_t cv_kartinvin_maxtime;

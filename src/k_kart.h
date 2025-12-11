@@ -259,15 +259,19 @@ typedef enum
 void K_DoSneaker(player_t *player, INT32 type);
 
 void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound);
-fixed_t K_InvincibilityGradient(UINT16 time);
-UINT16 K_GetInvincibilityTime(player_t *player);
-fixed_t K_GetInvincibilitySpeed(UINT16 time);
-fixed_t K_GetInvincibilityAccel(UINT16 time);
 fixed_t K_GetSpeedPercentage(const player_t *player);
 boolean K_AltShrinkArrowBulletCondition(const player_t *player);
 boolean K_InterceptArrowBullet(player_t *player);
 void K_ResetPogoSpring(player_t *player);
+
+extern boolean forcefullinvintheme;
+boolean K_PlayFullInvinTheme(void);
 void K_DoInvincibility(player_t *player, tic_t time);
+fixed_t K_InvincibilityGradient(UINT16 time);
+UINT16 K_GetInvincibilityTime(player_t *player);
+fixed_t K_GetInvincibilitySpeed(UINT16 time);
+fixed_t K_GetInvincibilityAccel(UINT16 time);
+
 void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source);
 void K_UpdateHnextList(player_t *player, boolean clean);
 void K_DropHnextList(player_t *player);

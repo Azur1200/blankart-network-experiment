@@ -609,6 +609,10 @@ consvar_t cv_kartspbrush = CVAR_INIT ("kartspbrush", "On", CV_NETVAR, CV_OnOff, 
 static CV_PossibleValue_t altshrinktime_cons_t[] = {{0, "MIN"}, {(INT16_MAX / TICRATE), "MAX"}, {0, NULL}};
 consvar_t cv_kartaltshrinktime = CVAR_INIT ("kartaltshrinktime", "14", CV_NETVAR|CV_CHEAT|CV_GUARD, altshrinktime_cons_t, NULL);
 
+// Toggle Full or Standard Invincibility music
+static CV_PossibleValue_t kartinvintheme_cons_t[] = {{0, "Standard"}, {1, "Full"}, {0, NULL}};
+consvar_t cv_kartinvintheme = CVAR_INIT ("kartinvintheme", "Standard", CV_SAVE, kartinvintheme_cons_t, NULL);
+
 // How far the player must be from the cluster to begin frequently rolling Invincibility.
 static CV_PossibleValue_t invindist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
 consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "8400", CV_NETVAR|CV_CHEAT|CV_GUARD, invindist_cons_t, NULL);

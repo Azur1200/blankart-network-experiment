@@ -869,7 +869,7 @@ void P_RestoreMusic(player_t *player)
 		// Item - Invincibility
 		else if ((wantedmus == 2) && cv_supermusic.value == 1)
 		{
-			S_ChangeMusicInternal("kinvnc", true);
+			S_ChangeMusicInternal(K_PlayFullInvinTheme() ? "kinvnf" : "kinvnc", true);
 			S_SetRestoreMusicFadeInCvar(&cv_invincmusicfade);
 		}
 		// Item - Shrink (Alternative)
