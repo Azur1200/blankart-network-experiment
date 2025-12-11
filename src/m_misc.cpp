@@ -465,7 +465,7 @@ char configfile[MAX_WADPATH];
 // ==========================================================================
 //                          CONFIGURATION
 // ==========================================================================
-static boolean gameconfig_loaded = false; // true once config.cfg loaded AND executed
+boolean gameconfig_loaded = false; // true once config.cfg loaded AND executed
 
 /** Saves a player's config, possibly to a particular file.
   *

@@ -1763,23 +1763,63 @@ filestatus_t findfile(char *filename, UINT64 wantedhash, boolean completepath)
 	filestatus_t homecheck; // store result of last file search
 	boolean badhash = false; // store whether hash was bad from either of the first two searches (if nothing was found in the third)
 
+	// skip for startup, our mainwads wont be in there
+	if (gameconfig_loaded)
+	{
+		if (cv_addons_option.value == 3 && *cv_addons_folder.string != '\0')
+		{
+			// first, check any custom directory if specified
+			homecheck = filesearch(filename, cv_addons_folder.string, wantedhash, completepath, 10);
+
+			if (homecheck == FS_FOUND) // we found the file, so return that we have :)
+				return FS_FOUND;
+			else if (homecheck == FS_BADHASH) // file has a bad hash; move on and look for a file with the right md5
+				badhash = true;
+			// if not found at all, just move on without doing anything
+		}
+
+		// next, check "DOWNLOAD" directory
+		homecheck = filesearch(filename, "DOWNLOAD", wantedhash, completepath, 10);
+
+		if (homecheck == FS_FOUND) // we found the file, so return that we have :)
+			return FS_FOUND;
+		else if (homecheck == FS_BADHASH) // file has a bad md5; move on and look for a file with the right md5
+			badhash = true;
+		// if not found at all, just move on without doing anything
+
+		// next, check "addons" directory
+		homecheck = filesearch(filename, "addons", wantedhash, completepath, 10);
+
+		if (homecheck == FS_FOUND) // we found the file, so return that we have :)
+			return FS_FOUND;
+		else if (homecheck == FS_BADHASH) // file has a bad md5; move on and look for a file with the right md5
+			badhash = true;
+		// if not found at all, just move on without doing anything
+	}
+
 	// first, check SRB2's "home" directory
-	homecheck = filesearch(filename, srb2home, wantedhash, completepath, 10);
+	if (strcmp(srb2home, "."))
+	{
+		homecheck = filesearch(filename, srb2home, wantedhash, completepath, 10);
 
-	if (homecheck == FS_FOUND) // we found the file, so return that we have :)
-		return FS_FOUND;
-	else if (homecheck == FS_BADHASH) // file has a bad hash; move on and look for a file with the right hash
-		badhash = true;
-	// if not found at all, just move on without doing anything
+		if (homecheck == FS_FOUND) // we found the file, so return that we have :)
+			return FS_FOUND;
+		else if (homecheck == FS_BADHASH) // file has a bad hash; move on and look for a file with the right hash
+			badhash = true;
+		// if not found at all, just move on without doing anything
+	}
 
-	// next, check SRB2's "path" directory
-	homecheck = filesearch(filename, srb2path, wantedhash, completepath, 10);
+	if (strcmp(srb2home, "."))
+	{
+		// next, check SRB2's "path" directory
+		homecheck = filesearch(filename, srb2path, wantedhash, completepath, 10);
 
-	if (homecheck == FS_FOUND) // we found the file, so return that we have :)
-		return FS_FOUND;
-	else if (homecheck == FS_BADHASH) // file has a bad hash; move on and look for a file with the right hash
-		badhash = true;
-	// if not found at all, just move on without doing anything
+		if (homecheck == FS_FOUND) // we found the file, so return that we have :)
+			return FS_FOUND;
+		else if (homecheck == FS_BADHASH) // file has a bad hash; move on and look for a file with the right hash
+			badhash = true;
+		// if not found at all, just move on without doing anything
+	}
 
 	// finally check "." directory
 	homecheck = filesearch(filename, ".", wantedhash, completepath, 10);
