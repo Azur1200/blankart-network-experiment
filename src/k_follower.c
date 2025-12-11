@@ -30,7 +30,7 @@ INT32 K_FollowerAvailable(const char *name)
 
 	for (i = 0; i < numfollowers; i++)
 	{
-		if (stricmp(followers[i].skinname, name) == 0)
+		if (fasticmp(followers[i].skinname, name))
 			return i;
 	}
 
@@ -47,7 +47,7 @@ boolean K_SetFollowerByName(INT32 playernum, const char *skinname)
 	INT32 i;
 	player_t *player = &players[playernum];
 
-	if (stricmp("None", skinname) == 0)
+	if (fasticmp("None", skinname))
 	{
 		K_SetFollowerByNum(playernum, -1); // reminder that -1 is nothing
 		return true;
@@ -56,7 +56,7 @@ boolean K_SetFollowerByName(INT32 playernum, const char *skinname)
 	for (i = 0; i < numfollowers; i++)
 	{
 		// search in the skin list
-		if (stricmp(followers[i].skinname, skinname) == 0)
+		if (fasticmp(followers[i].skinname, skinname))
 		{
 			K_SetFollowerByNum(playernum, i);
 			return true;

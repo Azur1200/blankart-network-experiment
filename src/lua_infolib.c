@@ -1683,7 +1683,7 @@ static int lib_setSkinColor(lua_State *L)
 			if (info->name[0] != '\0') // don't check empty string for dupe
 			{
 				UINT16 dupecheck = R_GetColorByName(info->name);
-				if (!stricmp(info->name, skincolors[SKINCOLOR_NONE].name) || (dupecheck && (dupecheck != info-skincolors)))
+				if (fasticmp(info->name, skincolors[SKINCOLOR_NONE].name) || (dupecheck && (dupecheck != info-skincolors)))
 					CONS_Alert(CONS_WARNING, "skincolor_t field 'name' ('%s') is a duplicate of another skincolor's name.\n", info->name);
 			}
 		} else if (i == 2 || (str && fastcmp(str,"ramp"))) {
@@ -1778,7 +1778,7 @@ static int skincolor_set(lua_State *L)
 		if (info->name[0] != '\0') // don't check empty string for dupe
 		{
 			UINT16 dupecheck = R_GetColorByName(info->name);
-			if (!stricmp(info->name, skincolors[SKINCOLOR_NONE].name) || (dupecheck && (dupecheck != cnum)))
+			if (fasticmp(info->name, skincolors[SKINCOLOR_NONE].name) || (dupecheck && (dupecheck != cnum)))
 				CONS_Alert(CONS_WARNING, "skincolor_t field 'name' ('%s') is a duplicate of another skincolor's name.\n", info->name);
 		}
 	} else if (fastcmp(field,"ramp")) {

@@ -106,7 +106,7 @@ void M_LoadEmotes(UINT16 wadnum)
 			trim(field);
 			trim(value);
 
-			if (stricmp(field.c_str(), "frames") == 0)
+			if (fasticmp(field.c_str(), "frames"))
 			{
 				UINT8 numframes = 0;
 
@@ -153,7 +153,7 @@ void M_LoadEmotes(UINT16 wadnum)
 
 				emote->numframes = numframes;
 			}
-			else if (stricmp(field.c_str(), "timeperframe") == 0)
+			else if (fasticmp(field.c_str(), "timeperframe"))
 			{
 				emote->timeperframe = std::stoi(value);
 

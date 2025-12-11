@@ -136,7 +136,7 @@ kartresult_t *K_GetKartResultAlt(const char *name, boolean alternate)
 {
 	for (UINT8 i = 0; i < numkartresults; i++)
 	{
-		if (!stricmp(name, kartresults[i].cvar->name) && kartresults[i].isalt == alternate)
+		if (fasticmp(name, kartresults[i].cvar->name) && kartresults[i].isalt == alternate)
 			return &kartresults[i];
 	}
 

@@ -1254,7 +1254,7 @@ void S_StartSoundName(void *mo, const char *soundname)
 	{
 		if (!S_sfx[i].name)
 			continue;
-		if (!stricmp(S_sfx[i].name, soundname))
+		if (fasticmp(S_sfx[i].name, soundname))
 		{
 			soundnum = i;
 			break;
@@ -1373,7 +1373,7 @@ musicdef_t *S_FindMusicDef(const char *name, UINT8 *i)
 			if (hash != def->hash[*i])
 				continue;
 
-			if (stricmp(def->name[*i], name))
+			if (!fasticmp(def->name[*i], name))
 				continue;
 
 			return def;
@@ -1420,7 +1420,7 @@ ReadMusicDefFields
 	char *value;
 	char *textline;
 
-	if (!stricmp(stoken, "lump"))
+	if (fasticmp(stoken, "lump"))
 	{
 		value = strtok(NULL, " ,");
 		if (!value)
@@ -1502,41 +1502,41 @@ ReadMusicDefFields
 
 			textline = value;
 
-			if (!stricmp(stoken, "title"))
+			if (fasticmp(stoken, "title"))
 			{
 				Z_Free(def->title);
 				def->title = Z_StrDup(textline);
 				def->legacy = false;
 			}
-			else if (!stricmp(stoken, "author"))
+			else if (fasticmp(stoken, "author"))
 			{
 				Z_Free(def->author);
 				def->author = Z_StrDup(textline);
 				def->legacy = false;
 			}
-			else if (!stricmp(stoken, "source"))
+			else if (fasticmp(stoken, "source"))
 			{
 				Z_Free(def->source);
 				def->source = Z_StrDup(textline);
 			}
-			else if (!stricmp(stoken, "originalcomposers"))
+			else if (fasticmp(stoken, "originalcomposers"))
 			{
 				Z_Free(def->composers);
 				def->composers = Z_StrDup(textline);
 				def->legacy = false;
 			}
-			else if (!stricmp(stoken, "volume"))
+			else if (fasticmp(stoken, "volume"))
 			{
 				def->volume = atoi(textline);
 				def->legacy = false;
 			}
-			else if (!stricmp(stoken, "contentidunsafe"))
+			else if (fasticmp(stoken, "contentidunsafe"))
 			{
 				textline[0] = toupper(textline[0]);
 				def->contentidunsafe = (textline[0] == 'Y' || textline[0] == 'T' || textline[0] == '1');
 				def->legacy = false;
 			}
-			else if (!stricmp(stoken, "usage"))
+			else if (fasticmp(stoken, "usage"))
 			{
 				Z_Free(def->usage);
 				def->usage = Z_StrDup(textline);
@@ -1675,7 +1675,7 @@ void S_InitMusicDefs(void)
 	for (i = 0; i < numwadfiles; i++)
 	{
 		nameonly(tempname = va("%s", wadfiles[i]->filename));
-		if (wadfiles[i]->filename && !stricmp(tempname, MUSICNAME))
+		if (wadfiles[i]->filename && fasticmp(tempname, MUSICNAME))
 		{
 			// Awful hack but what can you do?
 			continue;

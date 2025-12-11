@@ -9329,7 +9329,7 @@ static lumpinfo_t* FindFolder(const char *folName, UINT16 *start, UINT16 *end, l
 {
 	UINT16 numlumps = *pnumlumps;
 	size_t i = *pi;
-	if (!stricmp(lumpinfo->fullname, folName))
+	if (fasticmp(lumpinfo->fullname, folName))
 	{
 		lumpinfo++;
 		*start = ++i;

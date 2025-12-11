@@ -342,7 +342,7 @@ static int lib_userdataMetatable(lua_State *L)
 
 	// Find internal metatable name
 	for (i = 0; meta2utype[i].meta; i++)
-		if (!strcmp(udname, meta2utype[i].utype))
+		if (fastcmp(udname, meta2utype[i].utype))
 		{
 			luaL_getmetatable(L, meta2utype[i].meta);
 			return 1;

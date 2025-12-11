@@ -1527,7 +1527,7 @@ static void SL_InsertServer(serverinfo_pak* info, SINT8 node)
 		if (info->subversion != SUBVERSION)
 			return; // Close, but no cigar.
 
-		if (strcmp(info->application, SRB2APPLICATION))
+		if (!fastcmp(info->application, SRB2APPLICATION))
 			return;/* that's a different mod */
 
 		i = serverlistcount++;
@@ -1555,7 +1555,7 @@ void CL_QueryServerList (msg_server_t *server_list)
 		// thwart nefarious servers who lie to the MS.
 
 		/* lol bruh, that version COMES from the servers */
-		//if (strcmp(version, server_list[i].version) == 0)
+		//if (fastcmp(version, server_list[i].version))
 		{
 			INT32 node = I_NetMakeNodewPort(server_list[i].ip, server_list[i].port);
 			if (node == -1)
@@ -2594,7 +2594,7 @@ static void Command_connect(void)
 	connectedtodedicated = false;
 
 /*
-	if (!stricmp(COM_Argv(1), "self"))
+	if (fasticmp(COM_Argv(1), "self"))
 	{
 		servernode = 0;
 		server = true;
@@ -2605,7 +2605,7 @@ static void Command_connect(void)
 */
 	{
 		// used in menu to connect to a server in the list
-		if (netgame && !stricmp(COM_Argv(1), "node"))
+		if (netgame && fasticmp(COM_Argv(1), "node"))
 		{
 			servernode = (SINT8)atoi(COM_Argv(2));
 		}
@@ -2624,7 +2624,7 @@ static void Command_connect(void)
 			netgame = true;
 			multiplayer = true;
 
-			if (!stricmp(COM_Argv(1), "any"))
+			if (fasticmp(COM_Argv(1), "any"))
 				servernode = BROADCASTADDR;
 			else if (I_NetMakeNodewPort)
 			{
@@ -2850,7 +2850,7 @@ SINT8 nametonum(const char *name)
 {
 	INT32 playernum, i;
 
-	if (!strcmp(name, "0"))
+	if (fastcmp(name, "0"))
 		return 0;
 
 	playernum = (SINT8)atoi(name);
@@ -2867,7 +2867,7 @@ SINT8 nametonum(const char *name)
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++)
-		if (playeringame[i] && !stricmp(player_names[i], name))
+		if (playeringame[i] && fasticmp(player_names[i], name))
 			return (SINT8)i;
 
 	CONS_Printf(M_GetText("There is no player named \"%s\"\n"), name);

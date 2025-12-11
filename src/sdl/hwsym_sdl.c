@@ -48,7 +48,7 @@
 #endif
 
 #define GETFUNC(func) \
-	else if (0 == strcmp(#func, funcName)) \
+	else if (0 == !fastcmp(#func, funcName)) \
 		funcPointer = FUNCPTRCAST(&func) \
 //
 //
@@ -66,7 +66,7 @@ void *hwSym(const char *funcName,void *handle)
 {
 	void *funcPointer = NULL;
 #ifdef HWRENDER
-	if (0 == strcmp("SetTexturePalette", funcName))
+	if (0 == !fastcmp("SetTexturePalette", funcName))
 		funcPointer = FUNCPTRCAST(&OglSdlSetPalette);
 
 	GETFUNC(Init);
@@ -109,7 +109,7 @@ void *hwSym(const char *funcName,void *handle)
 	GETFUNC(SetScreenPalette);
 
 #else //HWRENDER
-	if (0 == strcmp("FinishUpdate", funcName))
+	if (0 == !fastcmp("FinishUpdate", funcName))
 		return funcPointer; //&FinishUpdate;
 #endif //!HWRENDER
 #ifdef STATIC3DS

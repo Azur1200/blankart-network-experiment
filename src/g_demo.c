@@ -1264,7 +1264,7 @@ void G_ReadDemoExtraData(void)
 			// Skin
 			SetPlayerSkin(p, extra.skinname);
 
-			if (stricmp(skins[player->skin].name, extra.skinname) != 0)
+			if (!fasticmp(skins[player->skin].name, extra.skinname))
 				FindClosestSkinForStats(p, extra.kartspeed, extra.kartweight);
 
 			// Voice
@@ -1294,7 +1294,7 @@ void G_ReadDemoExtraData(void)
 		{
 			// Color
 			for (i = 0; i < numskincolors; i++)
-				if (!stricmp(skincolors[i].name, extra.colorname)) // SRB2kart
+				if (fasticmp(skincolors[i].name, extra.colorname)) // SRB2kart
 				{
 					player->skincolor = i;
 					if (player->mo)
@@ -1309,7 +1309,7 @@ void G_ReadDemoExtraData(void)
 
 			// Follower's color
 			for (i = 0; i < numskincolors +2; i++)	// +2 because of Match and Opposite
-				if (!stricmp(Followercolor_cons_t[i].strvalue, extra.followercolor))
+				if (fasticmp(Followercolor_cons_t[i].strvalue, extra.followercolor))
 				{
 					player->followercolor = i;
 					break;
@@ -3400,11 +3400,11 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	{
 		if (header.cvars[i].name == NULL)
 			continue;
-		if (!strcmp(header.cvars[i].name, cv_kartspeed.name))
+		if (fastcmp(header.cvars[i].name, cv_kartspeed.name))
 		{
 			UINT8 j;
 			for (j = 0; kartspeed_cons_t[j].strvalue; j++)
-				if (!stricmp(kartspeed_cons_t[j].strvalue, header.cvars[i].value))
+				if (fasticmp(kartspeed_cons_t[j].strvalue, header.cvars[i].value))
 					pdemo->kartspeed = kartspeed_cons_t[j].value;
 		}
 	}
@@ -3441,11 +3441,13 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 			READSTRINGL(extrainfo_p, temp, 16+1);
 		pdemo->standings[count].skin = UINT16_MAX;
 		for (i = 0; i < numskins; i++)
-			if (stricmp(skins[i].name, temp) == 0)
+		{
+			if (fasticmp(skins[i].name, temp))
 			{
 				pdemo->standings[count].skin = i;
 				break;
 			}
+		}
 
 		// Color
 		if (header.demoversion <= 0x000C)
@@ -3457,7 +3459,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 			READSTRINGL(extrainfo_p, temp, 16+1);
 		pdemo->standings[count].color = SKINCOLOR_NONE;
 		for (i = 0; i < numskincolors; i++)
-			if (!stricmp(skincolors[i].name,temp))				// SRB2kart
+			if (fasticmp(skincolors[i].name,temp))				// SRB2kart
 			{
 				pdemo->standings[count].color = i;
 				break;
@@ -3846,7 +3848,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 		// Color
 		for (i = 0; i < numskincolors; i++)
-			if (!stricmp(skincolors[i].name, plr->color)) // SRB2kart
+			if (fasticmp(skincolors[i].name, plr->color)) // SRB2kart
 			{
 				player->skincolor = i;
 				break;
@@ -3874,7 +3876,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 		// Follower colour
 		for (i = 0; i < numskincolors +2; i++)	// +2 because of Match and Opposite
-			if (!stricmp(Followercolor_cons_t[i].strvalue, plr->followercolor))
+			if (fasticmp(Followercolor_cons_t[i].strvalue, plr->followercolor))
 			{
 				player->followercolor = i;
 				break;
@@ -3888,7 +3890,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 		// Kart stats (set later)
 
-		if (stricmp(skins[player->skin].name, plr->skin) != 0)
+		if (!fasticmp(skins[player->skin].name, plr->skin))
 			FindClosestSkinForStats(p, plr->kartspeed, plr->kartweight);
 
 		// Followitem
@@ -4059,7 +4061,7 @@ void G_AddGhost(char *defdemoname)
 	}
 
 	for (i = 0; i < numskins; i++)
-		if (!stricmp(skins[i].name, plr->skin))
+		if (fasticmp(skins[i].name, plr->skin))
 		{
 			ghskin = &skins[i];
 			break;
@@ -4126,7 +4128,7 @@ void G_AddGhost(char *defdemoname)
 	// Set color
 	gh->mo->color = ((skin_t*)gh->mo->skin)->prefcolor;
 	for (i = 0; i < numskincolors; i++)
-		if (!stricmp(skincolors[i].name, plr->color))
+		if (fasticmp(skincolors[i].name, plr->color))
 		{
 			gh->mo->color = (UINT16)i;
 			break;

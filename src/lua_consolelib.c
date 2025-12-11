@@ -447,12 +447,12 @@ static int lib_cvFindVar(lua_State *L)
 	{
 		// cv_numlaps -> numlaps (global, not cvar)
 		// cv_basenumlaps -> cv_numlaps
-		if (!strcmp(name, "numlaps"))
+		if (fastcmp(name, "numlaps"))
 		{
 			LUA_PushUserdata(L, &cv_fakenumlaps, META_CVAR);
 			return 1;
 		}
-		else if (!strcmp(name, "basenumlaps"))
+		else if (fastcmp(name, "basenumlaps"))
 			name = "numlaps";
 	}
 	LUA_PushUserdata(L, CV_FindVar(name), META_CVAR);

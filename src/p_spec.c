@@ -254,17 +254,17 @@ void P_ParseANIMDEFSLump(INT32 wadNum, UINT16 lumpnum)
 	animdefsToken = M_GetToken(p);
 	while (animdefsToken != NULL)
 	{
-		if (stricmp(animdefsToken, "TEXTURE") == 0)
+		if (fasticmp(animdefsToken, "TEXTURE"))
 		{
 			Z_Free(animdefsToken);
 			P_ParseAnimationDefintion(1, compat);
 		}
-		else if (stricmp(animdefsToken, "FLAT") == 0)
+		else if (fasticmp(animdefsToken, "FLAT"))
 		{
 			Z_Free(animdefsToken);
 			P_ParseAnimationDefintion(0, compat);
 		}
-		else if (stricmp(animdefsToken, "OSCILLATE") == 0)
+		else if (fasticmp(animdefsToken, "OSCILLATE"))
 		{
 			// This probably came off the tail of an earlier definition. It's technically legal syntax, but we don't support it.
 			I_Error("Error parsing ANIMDEFS lump: Animation definitions utilizing \"OSCILLATE\" (the animation plays in reverse when it reaches the end) are not supported by SRB2");
@@ -296,7 +296,7 @@ void P_ParseAnimationDefintion(SINT8 istexture, boolean compat)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where start texture/flat name should be");
 	}
-	if (stricmp(animdefsToken, "OPTIONAL") == 0)
+	if (fasticmp(animdefsToken, "OPTIONAL"))
 	{
 		// This is meaningful to ZDoom - it tells the program NOT to bomb out
 		// if the textures can't be found - but it's useless in SRB2, so we'll
@@ -308,7 +308,7 @@ void P_ParseAnimationDefintion(SINT8 istexture, boolean compat)
 		{
 			I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where start texture/flat name should be");
 		}
-		else if (stricmp(animdefsToken, "RANGE") == 0)
+		else if (fasticmp(animdefsToken, "RANGE"))
 		{
 			// Oh. Um. Apparently "OPTIONAL" is a texture name. Naughty.
 			// I should probably handle this more gracefully, but right now
@@ -326,7 +326,7 @@ void P_ParseAnimationDefintion(SINT8 istexture, boolean compat)
 	// Search for existing animdef
 	for (i = 0; i < maxanims; i++)
 		if ((compat || animdefs[i].istexture == istexture) // Check if it's the same type!
-		&& stricmp(animdefsToken, animdefs[i].startname) == 0)
+		&& fasticmp(animdefsToken, animdefs[i].startname))
 		{
 			//CONS_Alert(CONS_NOTICE, "Duplicate animation: %s\n", animdefsToken);
 
@@ -357,18 +357,18 @@ void P_ParseAnimationDefintion(SINT8 istexture, boolean compat)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where \"RANGE\" after \"%s\"'s startname should be", animdefs[i].startname);
 	}
-	if (stricmp(animdefsToken, "ALLOWDECALS") == 0)
+	if (fasticmp(animdefsToken, "ALLOWDECALS"))
 	{
 		// Another ZDoom keyword, ho-hum. Skip it, move on to the next token.
 		Z_Free(animdefsToken);
 		animdefsToken = M_GetToken(NULL);
 	}
-	if (stricmp(animdefsToken, "PIC") == 0)
+	if (fasticmp(animdefsToken, "PIC"))
 	{
 		// This is technically legitimate ANIMDEFS syntax, but SRB2 doesn't support it.
 		I_Error("Error parsing ANIMDEFS lump: Animation definitions utilizing \"PIC\" (specific frames instead of a consecutive range) are not supported by SRB2");
 	}
-	if (stricmp(animdefsToken, "RANGE") != 0)
+	if (!fasticmp(animdefsToken, "RANGE"))
 	{
 		I_Error("Error parsing ANIMDEFS lump: Expected \"RANGE\" after \"%s\"'s startname, got \"%s\"", animdefs[i].startname, animdefsToken);
 	}
@@ -394,12 +394,12 @@ void P_ParseAnimationDefintion(SINT8 istexture, boolean compat)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where \"%s\"'s \"TICS\" should be", animdefs[i].startname);
 	}
-	if (stricmp(animdefsToken, "RAND") == 0)
+	if (fasticmp(animdefsToken, "RAND"))
 	{
 		// This is technically legitimate ANIMDEFS syntax, but SRB2 doesn't support it.
 		I_Error("Error parsing ANIMDEFS lump: Animation definitions utilizing \"RAND\" (random duration per frame) are not supported by SRB2");
 	}
-	if (stricmp(animdefsToken, "TICS") != 0)
+	if (!fasticmp(animdefsToken, "TICS"))
 	{
 		I_Error("Error parsing ANIMDEFS lump: Expected \"TICS\" in animation definition for \"%s\", got \"%s\"", animdefs[i].startname, animdefsToken);
 	}
@@ -1570,7 +1570,7 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 				return false;
 			if (!triggerline->stringargs[0])
 				return false;
-			if (!(stricmp(triggerline->stringargs[0], skins[actor->player->skin].name) == 0) ^ !!(triggerline->args[1]))
+			if (!(fasticmp(triggerline->stringargs[0], skins[actor->player->skin].name)) ^ !!(triggerline->args[1]))
 				return false;
 			break;
 		case 334: // object dye

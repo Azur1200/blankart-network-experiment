@@ -1313,7 +1313,7 @@ static int joy_open(int playerIndex, int joyIndex)
 		JoyInfo[playerIndex].hats = 1;
 		JoyInfo[playerIndex].balls = 0;
 
-		//JoyInfo[playerIndex].bGamepadStyle = !stricmp(SDL_JoystickName(JoyInfo[playerIndex].dev), "pad");
+		//JoyInfo[playerIndex].bGamepadStyle = fasticmp(SDL_JoystickName(JoyInfo[playerIndex].dev), "pad");
 
 		return JoyInfo[playerIndex].axises;
 	}
@@ -2336,7 +2336,7 @@ char *I_GetUserName(void)
 	}
 
 
-	if (strcmp(username, "") != 0)
+	if (!fastcmp(username, ""))
 		return username;
 	return NULL; // dummy for platform independent version
 }

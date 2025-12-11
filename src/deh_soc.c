@@ -413,7 +413,7 @@ void readskincolor(MYFILE *f, INT32 num, boolean mainfile)
 
 				deh_strlcpy(truncword, word2, namesize, va("Skincolor %d: name", num)); // truncate here to check for dupes
 				dupecheck = R_GetColorByName(truncword);
-				if (truncword[0] != '\0' && (!stricmp(truncword, skincolors[SKINCOLOR_NONE].name) || (dupecheck && dupecheck != num)))
+				if (truncword[0] != '\0' && (fasticmp(truncword, skincolors[SKINCOLOR_NONE].name) || (dupecheck && dupecheck != num)))
 				{
 					size_t lastchar = strlen(truncword);
 					char oldword[lastchar+1];

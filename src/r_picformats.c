@@ -1422,7 +1422,7 @@ static void R_ParseSpriteInfoSkin(struct ParseSpriteInfoState *parser)
 		I_Error("Error parsing SPRTINFO lump: Unexpected end of file where skin frame should be");
 	}
 
-	if (strcmp(sprinfoToken, "*")==0) // All skins
+	if (fastcmp(sprinfoToken, "*")) // All skins
 	{
 		parser->foundskins = -1;
 	}
@@ -1513,7 +1513,7 @@ static boolean R_ParseSpriteInfoFrame(struct ParseSpriteInfoState *parser, boole
 	}
 	else
 	{
-		if (strcmp(sprinfoToken,"{")==0)
+		if (fastcmp(sprinfoToken,"{"))
 		{
 			Z_Free(sprinfoToken);
 			sprinfoToken = M_GetToken(NULL);
@@ -1522,32 +1522,32 @@ static boolean R_ParseSpriteInfoFrame(struct ParseSpriteInfoState *parser, boole
 				CONS_Alert(CONS_WARNING, "Error parsing SPRTINFO lump: Unexpected end of file where sprite info should be\n");
 				return false;
 			}
-			while (strcmp(sprinfoToken,"}")!=0)
+			while (!fastcmp(sprinfoToken,"}"))
 			{
-				if (stricmp(sprinfoToken, "XPIVOT")==0)
+				if (fasticmp(sprinfoToken, "XPIVOT"))
 				{
 					Z_Free(sprinfoToken);
 					sprinfoToken = M_GetToken(NULL);
 					frameXPivot = atoi(sprinfoToken);
 				}
-				else if (stricmp(sprinfoToken, "YPIVOT")==0)
+				else if (fasticmp(sprinfoToken, "YPIVOT"))
 				{
 					Z_Free(sprinfoToken);
 					sprinfoToken = M_GetToken(NULL);
 					frameYPivot = atoi(sprinfoToken);
 				}
-				else if (stricmp(sprinfoToken, "ROTAXIS")==0)
+				else if (fasticmp(sprinfoToken, "ROTAXIS"))
 				{
 					Z_Free(sprinfoToken);
 					sprinfoToken = M_GetToken(NULL);
-					if ((stricmp(sprinfoToken, "X")==0) || (stricmp(sprinfoToken, "XAXIS")==0) || (stricmp(sprinfoToken, "ROLL")==0))
+					if ((fasticmp(sprinfoToken, "X")) || (fasticmp(sprinfoToken, "XAXIS")) || (fasticmp(sprinfoToken, "ROLL")))
 						frameRotAxis = ROTAXIS_X;
-					else if ((stricmp(sprinfoToken, "Y")==0) || (stricmp(sprinfoToken, "YAXIS")==0) || (stricmp(sprinfoToken, "PITCH")==0))
+					else if ((fasticmp(sprinfoToken, "Y")) || (fasticmp(sprinfoToken, "YAXIS")) || (fasticmp(sprinfoToken, "PITCH")))
 						frameRotAxis = ROTAXIS_Y;
-					else if ((stricmp(sprinfoToken, "Z")==0) || (stricmp(sprinfoToken, "ZAXIS")==0) || (stricmp(sprinfoToken, "YAW")==0))
+					else if ((fasticmp(sprinfoToken, "Z")) || (fasticmp(sprinfoToken, "ZAXIS")) || (fasticmp(sprinfoToken, "YAW")))
 						frameRotAxis = ROTAXIS_Z;
 				}
-				else if (stricmp(sprinfoToken, "BRIGHTMAP")==0)
+				else if (fasticmp(sprinfoToken, "BRIGHTMAP"))
 				{
 					Z_Free(bright);
 					bright = M_GetToken(NULL);
@@ -1657,7 +1657,7 @@ static boolean R_ParseSpriteInfo(boolean spr2)
 		return false;
 	}
 
-	if (!strcmp(sprinfoToken, "*")) // All sprites
+	if (fastcmp(sprinfoToken, "*")) // All sprites
 	{
 		parser.any = true;
 	}
@@ -1730,7 +1730,7 @@ static boolean R_ParseSpriteInfo(boolean spr2)
 
 	boolean error = false;
 
-	if (strcmp(sprinfoToken,"{")==0)
+	if (fastcmp(sprinfoToken,"{"))
 	{
 		Z_Free(sprinfoToken);
 		sprinfoToken = M_GetToken(NULL);
@@ -1740,9 +1740,9 @@ static boolean R_ParseSpriteInfo(boolean spr2)
 			Z_Free(parser.info);
 			return false;
 		}
-		while (strcmp(sprinfoToken,"}")!=0)
+		while (!fastcmp(sprinfoToken,"}"))
 		{
-			if (stricmp(sprinfoToken, "SKIN")==0)
+			if (fasticmp(sprinfoToken, "SKIN"))
 			{
 				if (!spr2)
 				{
@@ -1754,7 +1754,7 @@ static boolean R_ParseSpriteInfo(boolean spr2)
 				Z_Free(sprinfoToken);
 				R_ParseSpriteInfoSkin(&parser);
 			}
-			else if (stricmp(sprinfoToken, "FRAME")==0)
+			else if (fasticmp(sprinfoToken, "FRAME"))
 			{
 				Z_Free(sprinfoToken);
 				if (!R_ParseSpriteInfoFrame(&parser, PARSER_FRAME))
@@ -1763,7 +1763,7 @@ static boolean R_ParseSpriteInfo(boolean spr2)
 					break;
 				}
 			}
-			else if (stricmp(sprinfoToken, "DEFAULT")==0)
+			else if (fasticmp(sprinfoToken, "DEFAULT"))
 			{
 				Z_Free(sprinfoToken);
 				if (!R_ParseSpriteInfoFrame(&parser, PARSER_DEFAULT))
@@ -1833,9 +1833,9 @@ void R_ParseSPRTINFOLump(UINT16 wadNum, UINT16 lumpNum)
 	{
 		boolean error = true;
 
-		if (!stricmp(sprinfoToken, "SPRITE"))
+		if (fasticmp(sprinfoToken, "SPRITE"))
 			error = !R_ParseSpriteInfo(false);
-		else if (!stricmp(sprinfoToken, "SPRITE2"))
+		else if (fasticmp(sprinfoToken, "SPRITE2"))
 			error = !R_ParseSpriteInfo(true);
 		else
 			CONS_Alert(CONS_WARNING, "Error parsing SPRTINFO lump: Unknown keyword \"%s\"\n", sprinfoToken);

@@ -106,7 +106,7 @@ static boolean K_BRIGHTLumpParser(char *data, size_t size)
 	{
 		boolean valid = true;
 
-		if (stricmp(tkn, "texture") == 0)
+		if (fasticmp(tkn, "texture"))
 		{
 			Z_Free(tkn);
 			tkn = M_GetToken(NULL);

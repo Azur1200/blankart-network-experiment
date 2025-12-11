@@ -1025,7 +1025,7 @@ void I_GetEvent(void)
 
 					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 					{
-						if (!strcmp(cv_usejoystick[i].string, "0") || !cv_usejoystick[i].value)
+						if (fastcmp(cv_usejoystick[i].string, "0") || !cv_usejoystick[i].value)
 							cv_usejoystick[i].value = 0;
 						else if (atoi(cv_usejoystick[i].string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
 								 && cv_usejoystick[i].value) // update the cvar ONLY if a device exists
@@ -1096,7 +1096,7 @@ void I_GetEvent(void)
 
 				for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 				{
-					if (!strcmp(cv_usejoystick[i].string, "0"))
+					if (fastcmp(cv_usejoystick[i].string, "0"))
 					{
 						cv_usejoystick[i].value = 0;
 					}
@@ -1675,7 +1675,7 @@ void I_StartupGraphics(void)
 		const char *modeparm = M_GetNextParm();
 		while (renderer_list[i].strvalue)
 		{
-			if (!stricmp(modeparm, renderer_list[i].strvalue))
+			if (fasticmp(modeparm, renderer_list[i].strvalue))
 			{
 				chosenrendermode = static_cast<rendermode_t>(renderer_list[i].value);
 				break;

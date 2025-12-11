@@ -1051,7 +1051,7 @@ void M_ChangeMenuMusic(void)
 	}
 	else
 	{
-		if (stricmp(menudefs[target].musname, S_MusicName()))
+		if (!fasticmp(menudefs[target].musname, S_MusicName()))
 		{
 			S_ChangeMusic(menudefs[target].musname, menudefs[target].mustrack, menudefs[target].muslooping);
 
@@ -3148,7 +3148,7 @@ typedef int (qsort_f)(const void *, const void *);
 static int Levelsort_Name(const void *a, const void *b)
 {
 	const INT16 m1 = *(const INT16 *)a, m2 = *(const INT16 *)b;
-	int c = strcmp(mapheaderinfo[m1]->lvlttl, mapheaderinfo[m2]->lvlttl);
+	int c = !fastcmp(mapheaderinfo[m1]->lvlttl, mapheaderinfo[m2]->lvlttl);
 	return c != 0 ? c : m1 - m2;
 }
 
@@ -6237,7 +6237,7 @@ INT32 MR_HandleLevelStats(INT32 choice)
 			S_StartSound(NULL, sfx_menu1);
 			recordpresetnum_e i, j;
 			for (i = 0; i < numrecordpresets; i++)
-				if (!strcmp(currentrecordpreset, recordpresets[i]->name))
+				if (fastcmp(currentrecordpreset, recordpresets[i]->name))
 					break;
 			for (j = i; (i = (i + 1) % numrecordpresets) != j;)
 				if (recordpresets[i]->numversions)
@@ -8762,7 +8762,7 @@ INT32 MR_VideoModeMenu(INT32 choice)
 			// VESA mode, which is always a higher modenum
 			for (j = 0; j < vidm_nummodes; j++)
 			{
-				if (!strcmp(modedescs[j].desc, desc))
+				if (fastcmp(modedescs[j].desc, desc))
 				{
 					// mode(0): 320x200 is always standard VGA, not vesa
 					if (modedescs[j].modenum)

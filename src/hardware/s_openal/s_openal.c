@@ -316,7 +316,7 @@ EXPORT INT32 HWRAPI( Startup ) (I_Error_t FatalErrorFunction, snddev_t *snd_dev)
 	const ALCubyte *ALCdriver  = alcGetString(NULL,ALC_DEFAULT_DEVICE_SPECIFIER);
 	const ALCubyte *DSdriver = "DirectSound";
 
-	if (!strcmp((const ALCbyte *)ALCdriver,"DirectSound3D")) //Alam: OpenAL's DS3D is buggy
+	if (fastcmp((const ALCbyte *)ALCdriver,"DirectSound3D")) //Alam: OpenAL's DS3D is buggy
 		ALCDevice = alcOpenDevice(DSdriver); //Open DirectSound
 	else //Alam: The OpenAl device
 		ALCDevice = alcOpenDevice(ALCdriver); //Open Default

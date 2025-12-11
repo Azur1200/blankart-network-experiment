@@ -349,7 +349,7 @@ static inline boolean CheckCompatExtension(const char *filename)
 {
 	char *basename = (char *)strrchr(filename, '.');
 
-	if (!stricmp(basename+1, "KART"))
+	if (fasticmp(basename+1, "KART"))
 		return true;
 
 	return false;
@@ -473,11 +473,11 @@ UINT32 W_HashLumpName(const char *name, size_t len)
  */
 static restype_t ResourceFileDetect (const char* filename)
 {
-	if (!stricmp(&filename[strlen(filename) - 4], ".pk3"))
+	if (fasticmp(&filename[strlen(filename) - 4], ".pk3"))
 		return RET_PK3;
-	if (!stricmp(&filename[strlen(filename) - 4], ".soc"))
+	if (fasticmp(&filename[strlen(filename) - 4], ".soc"))
 		return RET_SOC;
-	if (!stricmp(&filename[strlen(filename) - 4], ".lua"))
+	if (fasticmp(&filename[strlen(filename) - 4], ".lua"))
 		return RET_LUA;
 
 	return RET_WAD;
@@ -2576,13 +2576,13 @@ static int W_VerifyFile(const char *filename, lumpchecklist_t *checklist,
 	if ((handle = W_OpenWadFile(&filename, false)) == NULL)
 		return -1;
 
-	if (stricmp(&filename[strlen(filename) - 4], ".pk3") == 0)
+	if (fasticmp(&filename[strlen(filename) - 4], ".pk3"))
 		goodfile = W_VerifyPK3(handle, checklist, status);
 	else
 	{
 		// detect wad file by the absence of the other supported extensions
-		if (stricmp(&filename[strlen(filename) - 4], ".soc")
-		&& stricmp(&filename[strlen(filename) - 4], ".lua"))
+		if (!fasticmp(&filename[strlen(filename) - 4], ".soc")
+		&& !fasticmp(&filename[strlen(filename) - 4], ".lua"))
 		{
 			goodfile = W_VerifyWAD(handle, checklist, status);
 		}

@@ -763,7 +763,7 @@ void Command_Devmode_f(void)
 			// Try it as a string
 			for (j = 0; debug_flag_names[j].str; j++)
 			{
-				if (stricmp(arg, debug_flag_names[j].str) == 0)
+				if (fasticmp(arg, debug_flag_names[j].str))
 				{
 					break;
 				}

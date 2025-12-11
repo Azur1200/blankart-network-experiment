@@ -656,7 +656,7 @@ void M_DrawPerfStats(void)
 				char* tempstr = tempbuffer;
 				int len = (int)strlen(str);
 				char* str_ptr;
-				if (strcmp(".lua", str + len - 4) == 0)
+				if (fastcmp(".lua", str + len - 4))
 				{
 					str[len-4] = '\0'; // remove .lua at end
 					len -= 4;
@@ -674,7 +674,7 @@ void M_DrawPerfStats(void)
 					if (str_ptr)
 						tempstr = str_ptr + 1;
 					// tempstr should now point to the mod name, (wad/pk3) possibly truncated
-					if (strcmp(tempstr, last_mod_name) != 0)
+					if (!fastcmp(tempstr, last_mod_name))
 					{
 						strcpy(last_mod_name, tempstr);
 						len = (int)strlen(tempstr);

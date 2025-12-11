@@ -1540,7 +1540,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where comma after \"%s\"'s patch name should be",patchName);
 	}
-	if (strcmp(texturesToken,",")!=0)
+	if (!fastcmp(texturesToken,","))
 	{
 		I_Error("Error parsing TEXTURES lump: Expected \",\" after %s's patch name, got \"%s\"",patchName,texturesToken);
 	}
@@ -1575,7 +1575,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where comma after patch \"%s\"'s x coordinate should be",patchName);
 	}
-	if (strcmp(texturesToken,",")!=0)
+	if (!fastcmp(texturesToken,","))
 	{
 		I_Error("Error parsing TEXTURES lump: Expected \",\" after patch \"%s\"'s x coordinate, got \"%s\"",patchName,texturesToken);
 	}
@@ -1613,7 +1613,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 		; // move on and ignore, R_ParseTextures will deal with this
 	else
 	{
-		if (strcmp(texturesToken,"{")==0)
+		if (fastcmp(texturesToken,"{"))
 		{
 			Z_Free(texturesToken);
 			texturesToken = M_GetToken(NULL);
@@ -1621,32 +1621,32 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 			{
 				I_Error("Error parsing TEXTURES lump: Unexpected end of file where patch \"%s\"'s parameters should be",patchName);
 			}
-			while (strcmp(texturesToken,"}")!=0)
+			while (!fastcmp(texturesToken,"}"))
 			{
-				if (stricmp(texturesToken, "ALPHA")==0)
+				if (fasticmp(texturesToken, "ALPHA"))
 				{
 					Z_Free(texturesToken);
 					texturesToken = M_GetToken(NULL);
 					alpha = 255*strtof(texturesToken, NULL);
 				}
-				else if (stricmp(texturesToken, "STYLE")==0)
+				else if (fasticmp(texturesToken, "STYLE"))
 				{
 					Z_Free(texturesToken);
 					texturesToken = M_GetToken(NULL);
-					if (stricmp(texturesToken, "TRANSLUCENT")==0)
+					if (fasticmp(texturesToken, "TRANSLUCENT"))
 						style = AST_TRANSLUCENT;
-					else if (stricmp(texturesToken, "ADD")==0)
+					else if (fasticmp(texturesToken, "ADD"))
 						style = AST_ADD;
-					else if (stricmp(texturesToken, "SUBTRACT")==0)
+					else if (fasticmp(texturesToken, "SUBTRACT"))
 						style = AST_SUBTRACT;
-					else if (stricmp(texturesToken, "REVERSESUBTRACT")==0)
+					else if (fasticmp(texturesToken, "REVERSESUBTRACT"))
 						style = AST_REVERSESUBTRACT;
-					else if (stricmp(texturesToken, "MODULATE")==0)
+					else if (fasticmp(texturesToken, "MODULATE"))
 						style = AST_MODULATE;
 				}
-				else if (stricmp(texturesToken, "FLIPX")==0)
+				else if (fasticmp(texturesToken, "FLIPX"))
 					flip |= 1;
-				else if (stricmp(texturesToken, "FLIPY")==0)
+				else if (fasticmp(texturesToken, "FLIPY"))
 					flip |= 2;
 				Z_Free(texturesToken);
 
@@ -1728,7 +1728,7 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where comma after texture \"%s\"'s name should be",newTextureName);
 	}
-	else if (strcmp(texturesToken,",")!=0)
+	else if (!fastcmp(texturesToken,","))
 	{
 		I_Error("Error parsing TEXTURES lump: Expected \",\" after texture \"%s\"'s name, got \"%s\"",newTextureName,texturesToken);
 	}
@@ -1762,7 +1762,7 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where comma after texture \"%s\"'s width should be",newTextureName);
 	}
-	if (strcmp(texturesToken,",")!=0)
+	if (!fastcmp(texturesToken,","))
 	{
 		I_Error("Error parsing TEXTURES lump: Expected \",\" after texture \"%s\"'s width, got \"%s\"",newTextureName,texturesToken);
 	}
@@ -1796,7 +1796,7 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 	{
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where open curly brace for texture \"%s\" should be",newTextureName);
 	}
-	if (strcmp(texturesToken,"{")==0)
+	if (fastcmp(texturesToken,"{"))
 	{
 		if (actuallyLoadTexture)
 		{
@@ -1815,9 +1815,9 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 		{
 			I_Error("Error parsing TEXTURES lump: Unexpected end of file where patch definition for texture \"%s\" should be",newTextureName);
 		}
-		while (strcmp(texturesToken,"}")!=0)
+		while (!fastcmp(texturesToken,"}"))
 		{
-			if (stricmp(texturesToken, "PATCH")==0)
+			if (fasticmp(texturesToken, "PATCH"))
 			{
 				Z_Free(texturesToken);
 				if (resultTexture)
@@ -1893,7 +1893,7 @@ int R_CountTexturesInTEXTURESLump(UINT16 wadNum, UINT16 lumpNum)
 	texturesToken = M_GetToken(texturesText);
 	while (texturesToken != NULL)
 	{
-		if (stricmp(texturesToken, "WALLTEXTURE") == 0 || stricmp(texturesToken, "TEXTURE") == 0)
+		if (fasticmp(texturesToken, "WALLTEXTURE") || fasticmp(texturesToken, "TEXTURE"))
 		{
 			numTexturesInLump++;
 			Z_Free(texturesToken);
@@ -1942,7 +1942,7 @@ void R_ParseTEXTURESLump(UINT16 wadNum, UINT16 lumpNum, INT32 *texindex)
 	texturesToken = M_GetToken(texturesText);
 	while (texturesToken != NULL)
 	{
-		if (stricmp(texturesToken, "WALLTEXTURE") == 0 || stricmp(texturesToken, "TEXTURE") == 0)
+		if (fasticmp(texturesToken, "WALLTEXTURE") || fasticmp(texturesToken, "TEXTURE"))
 		{
 			Z_Free(texturesToken);
 			// Get the new texture

@@ -200,7 +200,7 @@ static int CheckFileName(lua_State* L, const char* filename, boolean extensionch
 	if (extensioncheck)
 	{
 		for (i = 0; i < (sizeof(whitelist) / sizeof(const char*)); i++)
-			if (!stricmp(&filename[length - strlen(whitelist[i])], whitelist[i]))
+			if (fasticmp(&filename[length - strlen(whitelist[i])], whitelist[i]))
 			{
 				pass = true;
 				break;
@@ -243,7 +243,7 @@ static int io_openlocal (lua_State *L) {
 
 	// Prevent access if the file is being downloaded
 	for (filetransfer = luafiletransfers; filetransfer; filetransfer = filetransfer->next)
-		if (!stricmp(filetransfer->filename, filename))
+		if (fasticmp(filetransfer->filename, filename))
 			I_Error("Access denied to %s\n"
 			        "Files can't be opened while being downloaded\n",
 			        filename);

@@ -332,7 +332,7 @@ boolean CL_CheckDownloadable(void)
 static boolean CL_CanResumeDownload(fileneeded_t *file)
 {
 	return pauseddownload
-		&& !strcmp(pauseddownload->filename, file->filename) // Same name
+		&& fastcmp(pauseddownload->filename, file->filename) // Same name
 		&& pauseddownload->hash == file->hash // Same checksum
 		&& pauseddownload->fragmentsize == file->fragmentsize; // Same fragment size
 }
@@ -622,7 +622,7 @@ INT32 CL_CheckFiles(void)
 		for (; wadfiles[j]; j++)
 		{
 			nameonly(strcpy(wadfilename, wadfiles[j]->filename));
-			if (!stricmp(wadfilename, fileneeded[i].filename) &&
+			if (fasticmp(wadfilename, fileneeded[i].filename) &&
 				wadfiles[j]->hash == fileneeded[i].hash)
 			{
 				CONS_Debug(DBG_NETPLAY, "already loaded\n");
@@ -939,7 +939,7 @@ static boolean AddFileToSendQueue(INT32 node, const char *filename, UINT8 fileid
 	{
 		strlcpy(wadfilename, wadfiles[i]->filename, MAX_WADPATH);
 		nameonly(wadfilename);
-		if (!stricmp(wadfilename, p->id.filename))
+		if (fasticmp(wadfilename, p->id.filename))
 		{
 			// Copy file name with full path
 			strlcpy(p->id.filename, wadfiles[i]->filename, MAX_WADPATH);
@@ -1450,18 +1450,18 @@ void PT_FileFragment(SINT8 node, INT32 netconsole)
 	filename = va("%s", file->filename);
 	nameonly(filename);
 
-	if (!strcmp(filename, SRB2NAME)
-		|| !strcmp(filename, GRAPHICSNAME)
-		|| !strcmp(filename, TEXTURESNAME)
-		|| !strcmp(filename, CHARSNAME)
-		|| !strcmp(filename, MAPSNAME)
-		|| !strcmp(filename, MAINNAME)
-		|| !strcmp(filename, MAPPATCHNAME)
-		|| !strcmp(filename, BONUSCHARSNAME)
-		|| !strcmp(filename, PATCHNAME)
-		|| !strcmp(filename, SOUNDSNAME)
-		|| !strcmp(filename, MUSICNAME)
-		|| !strcmp(filename, BLANMUSICNAME)
+	if (fastcmp(filename, SRB2NAME)
+		|| fastcmp(filename, GRAPHICSNAME)
+		|| fastcmp(filename, TEXTURESNAME)
+		|| fastcmp(filename, CHARSNAME)
+		|| fastcmp(filename, MAPSNAME)
+		|| fastcmp(filename, MAINNAME)
+		|| fastcmp(filename, MAPPATCHNAME)
+		|| fastcmp(filename, BONUSCHARSNAME)
+		|| fastcmp(filename, PATCHNAME)
+		|| fastcmp(filename, SOUNDSNAME)
+		|| fastcmp(filename, MUSICNAME)
+		|| fastcmp(filename, BLANMUSICNAME)
 		)
 	{
 		I_Error("Tried to download base-game file: \"%s\"", filename);
@@ -1798,7 +1798,7 @@ filestatus_t findfile(char *filename, UINT64 wantedhash, boolean completepath)
 	}
 
 	// first, check SRB2's "home" directory
-	if (strcmp(srb2home, "."))
+	if (!fastcmp(srb2home, "."))
 	{
 		homecheck = filesearch(filename, srb2home, wantedhash, completepath, 10);
 
@@ -1809,7 +1809,7 @@ filestatus_t findfile(char *filename, UINT64 wantedhash, boolean completepath)
 		// if not found at all, just move on without doing anything
 	}
 
-	if (strcmp(srb2home, "."))
+	if (!fastcmp(srb2home, "."))
 	{
 		// next, check SRB2's "path" directory
 		homecheck = filesearch(filename, srb2path, wantedhash, completepath, 10);
@@ -2069,7 +2069,7 @@ CURLGetLogin (const char *url, HTTP_login ***return_prev_next)
 			( login = (*prev_next));
 			prev_next = &login->next
 	){
-		if (strcmp(login->url, url) == 0)
+		if (fastcmp(login->url, url))
 		{
 			if (return_prev_next)
 				(*return_prev_next) = prev_next;

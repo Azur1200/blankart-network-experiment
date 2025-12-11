@@ -583,7 +583,7 @@ loadmodelfile:
 		{
 			for (i = 0; i < NUMSPRITES; i++)
 			{
-				if (stricmp(name, sprnames[i]) == 0)
+				if (fasticmp(name, sprnames[i]))
 				{
 					md2_models[i].scale = scale;
 					md2_models[i].offset = offset;
@@ -598,7 +598,7 @@ addskinmodel:
 		// add player model
 		for (s = 0; s < MAXSKINS; s++)
 		{
-			if (stricmp(skinname, skins[s].name) == 0)
+			if (fasticmp(skinname, skins[s].name))
 			{
 				boolean iscompatskin = wadfiles[skins[s].wadnum]->compatmode;
 				md2_playermodels[s].skin = s;
@@ -672,7 +672,7 @@ void HWR_AddPlayerModel(int skin) // For skins that were added after startup
 		if (!strnicmp(name, PLAYERMODELPREFIX, prefixlen) && (len > prefixlen))
 			skinname += prefixlen;
 
-		if (stricmp(skinname, skins[skin].name) == 0)
+		if (fasticmp(skinname, skins[skin].name))
 		{
 			boolean iscompatskin = wadfiles[skins[skin].wadnum]->compatmode;
 			md2_playermodels[skin].skin = skin;
@@ -734,7 +734,7 @@ void HWR_AddSpriteModel(size_t spritenum) // For sprites that were added after s
 		if (!strnicmp(name, PLAYERMODELPREFIX, strlen(PLAYERMODELPREFIX)))
 			continue; // that's not a sprite...
 
-		if (stricmp(name, sprnames[spritenum]) == 0)
+		if (fasticmp(name, sprnames[spritenum]))
 		{
 			md2_models[spritenum].scale = scale;
 			md2_models[spritenum].offset = offset;

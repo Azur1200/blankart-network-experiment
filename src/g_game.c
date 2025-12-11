@@ -488,7 +488,7 @@ INT32 player_name_changes[MAXPLAYERS];
 static recordpreset_t *G_GetRecordPreset(const char *name)
 {
 	for (recordpresetnum_e i = 0; i < numrecordpresets; i++)
-		if (!strcmp(recordpresets[i]->name, name))
+		if (fastcmp(recordpresets[i]->name, name))
 			return recordpresets[i];
 	return NULL;
 }
@@ -560,9 +560,9 @@ const char *G_CheckPresetCvars(strbuf_t *pv)
 			const char *value = s;
 			s += strlen(s)+1;
 
-			if (!strcmp(name, cvar->name))
+			if (fastcmp(name, cvar->name))
 			{
-				if (!strcmp(value, cvar->string))
+				if (fastcmp(value, cvar->string))
 					goto next;
 				else
 					return cvar->name;
@@ -570,7 +570,7 @@ const char *G_CheckPresetCvars(strbuf_t *pv)
 		}
 
 		// otherwise, the cvar must be set to its default value
-		if (strcmp(cvar->string, cvar->defaultvalue))
+		if (!fastcmp(cvar->string, cvar->defaultvalue))
 			return cvar->name;
 	next:;
 	}
@@ -596,7 +596,7 @@ void G_SetPresetCvars(strbuf_t *pv)
 maprecord_t *G_GetMapRecord(const char *mapname)
 {
 	for (size_t i = 0; i < nummaprecords; i++)
-		if (!strcmp(maprecords[i]->name, mapname))
+		if (fastcmp(maprecords[i]->name, mapname))
 			return maprecords[i];
 	return NULL;
 }
@@ -617,7 +617,7 @@ maprecord_t *G_AllocateMapRecord(const char *mapname)
 maprecordpreset_t *G_GetMapRecordPreset(maprecord_t *record, const char *presetname)
 {
 	for (UINT16 k = 0; k < record->numpresets; k++)
-		if (!strcmp(record->presets[k].prename, presetname))
+		if (fastcmp(record->presets[k].prename, presetname))
 			return &record->presets[k];
 	return NULL;
 }
@@ -762,7 +762,7 @@ tic_t G_GetBestTime(INT16 map)
 
 	for (UINT16 k = 0; k < record->numpresets; k++)
 	{
-		if (strcmp(record->presets[k].prename, "kart"))
+		if (!fastcmp(record->presets[k].prename, "kart"))
 			continue; // doesn't count
 		if (record->presets[k].besttime < besttime)
 			besttime = record->presets[k].besttime;
@@ -778,7 +778,7 @@ boolean G_CompareRecordPresetVersions(strbuf_t *pre1, strbuf_t *pre2)
 
 boolean G_EmblemsEnabled(void)
 {
-	return !demo.playback && !strcmp(currentrecordpreset, "kart");
+	return !demo.playback && fastcmp(currentrecordpreset, "kart");
 }
 
 char *G_GetRecordReplayFolder(boolean home, boolean breaker)
@@ -3877,7 +3877,7 @@ INT32 G_GetGametypeByName(const char *gametypestr)
 	INT32 i;
 
 	for (i = 0; i < gametypecount; i++)
-		if (!stricmp(gametypestr, Gametype_Names[i]))
+		if (fasticmp(gametypestr, Gametype_Names[i]))
 			return i;
 
 	return -1; // unknown gametype
@@ -4966,7 +4966,7 @@ static void DataCorrupt(UINT8 *corrupted)
 	if (*corrupted)
 	{
 		const char *gdfolder = "the SRB2Kart folder";
-		if (strcmp(srb2home,"."))
+		if (!fastcmp(srb2home,"."))
 			gdfolder = srb2home;
 
 		I_Error(*corrupted == 1
@@ -5328,7 +5328,7 @@ void G_SaveGameData(void)
 			maprecordpreset_t *preset = &record->presets[j];
 
 			for (k = 0; k < knownprecount; k++)
-				if (!strcmp(knownpre[k], preset->prename))
+				if (fastcmp(knownpre[k], preset->prename))
 					break;
 			if (k == knownprecount)
 			{
@@ -5386,7 +5386,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 
 	memset(vcheck, 0, sizeof (vcheck));
 	sprintf(vcheck, (marathonmode ? "back-up %d" : "version %d"), VERSION);
-	if (strcmp((const char *)save.p, (const char *)vcheck))
+	if (!fastcmp((const char *)save.p, (const char *)vcheck))
 	{
 #ifdef SAVEGAME_OTHERVERSIONS
 		M_StartMessage(M_GetText("Save game from different version.\nYou can load this savegame, but\nsaving afterwards will be disabled.\n\nDo you want to continue anyway?\n\n(Press 'Y' to confirm)\n"),
@@ -5536,7 +5536,7 @@ void G_SaveGameOver(UINT32 slot, boolean modifylives)
 		// Version check
 		memset(vcheck, 0, sizeof (vcheck));
 		sprintf(vcheck, (marathonmode ? "back-up %d" : "version %d"), VERSION);
-		if (strcmp((const char *)save.p, (const char *)vcheck)) BADSAVE
+		if (!fastcmp((const char *)save.p, (const char *)vcheck)) BADSAVE
 		save.p += VERSIONSIZE;
 
 		// P_UnArchiveMisc()
@@ -5545,7 +5545,7 @@ void G_SaveGameOver(UINT32 slot, boolean modifylives)
 		(void)READUINT16(save.p); // emeralds
 		CHECKPOS
 		READSTRINGN(save.p, temp, sizeof(temp)); // mod it belongs to
-		if (strcmp(temp, timeattackfolder)) BADSAVE
+		if (!fastcmp(temp, timeattackfolder)) BADSAVE
 
 		// P_UnArchivePlayer()
 		CHECKPOS
@@ -5771,7 +5771,7 @@ char *G_BuildMapTitle(INT32 mapnum)
 	if (!mapnum || mapnum > nummapheaders || !mapheaderinfo[mapnum-1])
 		I_Error("G_BuildMapTitle: Internal map ID %d not found (nummapheaders = %d)", mapnum-1, nummapheaders);
 
-	if (strcmp(mapheaderinfo[mapnum-1]->lvlttl, ""))
+	if (!fastcmp(mapheaderinfo[mapnum-1]->lvlttl, ""))
 	{
 		size_t len = 1;
 		const char *zonetext = NULL;

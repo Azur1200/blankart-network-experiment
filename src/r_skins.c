@@ -186,8 +186,8 @@ static INT32 R_GetVoiceArraySoundFlags(const kartvoice_t *voice, const sfxenum_t
 static size_t R_ParseVoiceSoundKey(kartvoice_t *voice, const char *name, sfxenum_t **outarray)
 {
 	// woah! comma operator!
-#define S(str, ret) if (!stricmp(name, #str)) return *outarray = voice->ret, sizeof(voice->ret)/sizeof(*voice->ret)
-#define S1(str, ret) if (!stricmp(name, #str)) return *outarray = &voice->ret, 1
+#define S(str, ret) if (fasticmp(name, #str)) return *outarray = voice->ret, sizeof(voice->ret)/sizeof(*voice->ret)
+#define S1(str, ret) if (fasticmp(name, #str)) return *outarray = &voice->ret, 1
 	S1(WIN, win);
 	S1(LOSE, lose);
 	S(HURT, pain);
@@ -529,7 +529,7 @@ INT32 R_SkinAvailable(const char *name)
 	for (i = 0; i < numskins; i++)
 	{
 		// search in the skin list
-		if (stricmp(skins[i].name,name)==0)
+		if (fasticmp(skins[i].name,name))
 			return i;
 	}
 	return -1;
@@ -832,7 +832,7 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 		*lastlump = newlastlump; // okay, make the normal sprite set loading end there
 	}*/
 
-	boolean sonic = !strcmp(skin->name, "sonic") && wadnum == MAINWAD_MAIN;
+	boolean sonic = fastcmp(skin->name, "sonic") && wadnum == MAINWAD_MAIN;
 
 	if (!wadfiles[wadnum]->compatmode && !sonic)
 	{
@@ -981,7 +981,7 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 {
 	boolean compat = wadfiles[skin->wadnum]->compatmode;
 
-	if (!stricmp(stoken, "rivals"))
+	if (fasticmp(stoken, "rivals"))
 	{
 		size_t len = strlen(value);
 		size_t i;
@@ -1036,16 +1036,16 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 	}
 
 	// custom translation table
-	else if (!stricmp(stoken, "startcolor"))
+	else if (fasticmp(stoken, "startcolor"))
 		skin->starttranscolor = compat ? R_GetPaletteRemap(atoi(value)) : atoi(value);
 
-#define FULLPROCESS(field) else if (!stricmp(stoken, #field)) skin->field = get_number(value);
+#define FULLPROCESS(field) else if (fasticmp(stoken, #field)) skin->field = get_number(value);
 	// character type identification
 	FULLPROCESS(flags)
 	FULLPROCESS(followitem)
 #undef FULLPROCESS
 
-#define GETSKINCOLOR(field) else if (!stricmp(stoken, #field)) \
+#define GETSKINCOLOR(field) else if (fasticmp(stoken, #field)) \
 { \
 	UINT16 color = R_GetColorByName(value); \
 	skin->field = (color ? color : SKINCOLOR_GREEN); \
@@ -1053,18 +1053,18 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 	GETSKINCOLOR(prefcolor)
 	GETSKINCOLOR(prefoppositecolor)
 #undef GETSKINCOLOR
-	else if (!stricmp(stoken, "supercolor"))
+	else if (fasticmp(stoken, "supercolor"))
 	{
 		UINT16 color = R_GetSuperColorByName(value);
 		skin->supercolor = (color ? color : SKINCOLOR_SUPER1);
 	}
 
-#define GETFLOAT(field) else if (!stricmp(stoken, #field)) skin->field = FLOAT_TO_FIXED(atof(value));
+#define GETFLOAT(field) else if (fasticmp(stoken, #field)) skin->field = FLOAT_TO_FIXED(atof(value));
 	GETFLOAT(highresscale)
 #undef GETFLOAT
 
 #define GETKARTSTAT(field) \
-	else if (!stricmp(stoken, #field)) \
+	else if (fasticmp(stoken, #field)) \
 	{ \
 		skin->field = atoi(value); \
 		if (skin->field < 1) skin->field = 1; \
@@ -1075,7 +1075,7 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 #undef GETKARTSTAT
 
 
-#define GETFLAG(field) else if (!stricmp(stoken, #field)) { \
+#define GETFLAG(field) else if (fasticmp(stoken, #field)) { \
 	strupr(value); \
 	if (atoi(value) || value[0] == 'T' || value[0] == 'Y') \
 		skin->flags |= (SF_##field); \
@@ -1089,18 +1089,18 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 	GETFLAG(OLDDEATH)
 #undef GETFLAG
 
-#define GETPATCH(field) else if (compat && !stricmp(stoken, #field)) strncpy(skin->field, value, 8);
+#define GETPATCH(field) else if (compat && fasticmp(stoken, #field)) strncpy(skin->field, value, 8);
 	GETPATCH(facerank)
 	GETPATCH(facewant)
 	GETPATCH(facemmap)
 #undef GETPATCH
 
-	else if (!stricmp(stoken, "voicename"))
+	else if (fasticmp(stoken, "voicename"))
 	{
 		// Change the current voice.
 		allocvoice = &skin->voices[R_AllocKartVoice(skin, value)];
 	}
-	else if (!stricmp(stoken, "voicerealname"))
+	else if (fasticmp(stoken, "voicerealname"))
 	{
 		if (allocvoice == NULL)
 			I_Error("Skin %s: cannot set voice realname without a voice selected", skin->name);
@@ -1158,12 +1158,12 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 	}
 	else // let's check if it's a legacy skinsound, otherwise error out
 	{
-		if (!stricmp(stoken, "DSKTALK"))
+		if (fasticmp(stoken, "DSKTALK"))
 			return true; // SILENCE!
 
 		sfxenum_t i;
 		for (i = sfx_kwin; i <= sfx_kgloat; i++)
-			if (!stricmp(stoken+2, S_sfx[i].name))
+			if (fasticmp(stoken+2, S_sfx[i].name))
 				break;
 		if (i > sfx_kgloat)
 			return false;
@@ -1173,7 +1173,7 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 			allocvoice = &skin->voices[R_AllocKartVoice(skin, "default")];
 			strcpy(allocvoice->realname, "Default");
 		}
-		else if (strcmp(allocvoice->name, "default"))
+		else if (!fastcmp(allocvoice->name, "default"))
 		{
 			// an incentive to read the wiki page
 			I_Error("Skin %s: cannot use legacy skinsounds to define voices", skin->name);
@@ -1276,7 +1276,7 @@ void R_AddSkins(UINT16 wadnum)
 
 			// Some of these can't go in R_ProcessPatchableFields because they have side effects for future lines.
 			// Others can't go in there because we don't want them to be patchable.
-			if (!stricmp(stoken, "name"))
+			if (fasticmp(stoken, "name"))
 			{
 				INT32 skinnum = R_SkinAvailable(value);
 				strlwr(value);
@@ -1311,7 +1311,7 @@ void R_AddSkins(UINT16 wadnum)
 					SYMBOLCONVERT(skin->realname);
 				}
 			}
-			else if (!stricmp(stoken, "realname"))
+			else if (fasticmp(stoken, "realname"))
 			{ // Display name (eg. "Knuckles")
 				realname = true;
 				STRBUFCPY(skin->realname, value);
@@ -1419,7 +1419,7 @@ void R_PatchSkins(UINT16 wadnum)
 
 			if (!skin) // Get the name!
 			{
-				if (!stricmp(stoken, "name"))
+				if (fasticmp(stoken, "name"))
 				{
 					strlwr(value);
 					skinnum = R_SkinAvailable(value);
@@ -1437,13 +1437,13 @@ void R_PatchSkins(UINT16 wadnum)
 			else // Get the properties!
 			{
 				// Some of these can't go in R_ProcessPatchableFields because they have side effects for future lines.
-				if (!stricmp(stoken, "realname"))
+				if (fasticmp(stoken, "realname"))
 				{ // Display name (eg. "Knuckles")
 					realname = true;
 					STRBUFCPY(skin->realname, value);
 					SYMBOLCONVERT(skin->realname)
 				}
-				else if (!stricmp(stoken, "rivals"))
+				else if (fasticmp(stoken, "rivals"))
 				{
 					size_t len = strlen(value);
 					size_t i;

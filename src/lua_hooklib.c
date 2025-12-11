@@ -90,7 +90,7 @@ static int hook_in_list
 
 	for (type = 0; list[type] != NULL; ++type)
 	{
-		if (strcmp(name, list[type]) == 0)
+		if (fastcmp(name, list[type]))
 			break;
 	}
 
@@ -235,7 +235,7 @@ static int lib_addHook(lua_State *L)
 	{
 		add_hook(&hookIds[type]);
 	}
-	else if (strcmp(name, "HUD") == 0)
+	else if (fastcmp(name, "HUD"))
 	{
 		add_hud_hook(L, 3);
 	}

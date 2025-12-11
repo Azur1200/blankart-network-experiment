@@ -1153,7 +1153,7 @@ static boolean P_SectorStringArgsEqual(const sector_t *sc, const sector_t *spawn
 		if (!sc->stringargs[i])
 			return !spawnsc->stringargs[i];
 
-		if (strcmp(sc->stringargs[i], spawnsc->stringargs[i]))
+		if (!fastcmp(sc->stringargs[i], spawnsc->stringargs[i]))
 			return false;
 	}
 
@@ -1217,7 +1217,7 @@ static boolean P_LineStringArgsEqual(const line_t *li, const line_t *spawnli)
 		if (!li->stringargs[i])
 			return !spawnli->stringargs[i];
 
-		if (strcmp(li->stringargs[i], spawnli->stringargs[i]))
+		if (!fastcmp(li->stringargs[i], spawnli->stringargs[i]))
 			return false;
 	}
 
@@ -1752,7 +1752,7 @@ static boolean P_ThingStringArgsEqual(const mobj_t *mobj, const mapthing_t *mapt
 		if (!mobj->stringargs[i])
 			return !mapthing->stringargs[i];
 
-		if (strcmp(mobj->stringargs[i], mapthing->stringargs[i]))
+		if (!fastcmp(mobj->stringargs[i], mapthing->stringargs[i]))
 			return false;
 	}
 
@@ -1774,7 +1774,7 @@ static boolean P_ThingScriptEqual(const mobj_t *mobj, const mapthing_t *mapthing
 		if (!mobj->script_stringargs[i])
 			return !mapthing->script_stringargs[i];
 
-		if (strcmp(mobj->script_stringargs[i], mapthing->script_stringargs[i]))
+		if (!fastcmp(mobj->script_stringargs[i], mapthing->script_stringargs[i]))
 			return false;
 	}
 
@@ -3829,7 +3829,7 @@ static inline void P_NetSyncSpecials(savebuffer_t *save)
 	// Sky texture
 	strcpy(skytex, globallevelskytexture);
 	P_SyncStringN(save, skytex, 9);
-	if (strcmp(skytex, globallevelskytexture))
+	if (!fastcmp(skytex, globallevelskytexture))
 		P_SetupLevelSky(skytex, true);
 
 	// Current global weather type
@@ -3920,7 +3920,7 @@ static inline void P_UnArchiveSPGame(savebuffer_t *save, INT16 mapoverride)
 
 	READSTRINGN(save->p, testname, sizeof(testname));
 
-	if (strcmp(testname, timeattackfolder))
+	if (!fastcmp(testname, timeattackfolder))
 	{
 		if (modifiedgame)
 			I_Error("Save game not for this modification.");

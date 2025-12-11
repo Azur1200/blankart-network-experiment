@@ -1343,7 +1343,7 @@ static void IdentifyVersion(void)
 	}
 
 #if (1) // reduce the amount of findfile by only using full cwd in this func
-	if (strcmp(tempsrb2path, srb2waddir))
+	if (!fastcmp(tempsrb2path, srb2waddir))
 #endif
 	{
 		strlcpy(srb2path, srb2waddir, sizeof (srb2path));
@@ -1406,7 +1406,7 @@ D_ConvertVersionNumbers (void)
 
 const char *D_GetFancyBranchName(void)
 {
-	if (!strcmp(compbranch, ""))
+	if (fastcmp(compbranch, ""))
 	{
 		// \x8b = aqua highlight
 		return "\x8b" "detached HEAD" "\x80";

@@ -1834,12 +1834,12 @@ static void SendNameAndColor(UINT8 n)
 		voice = &skins[player->skin].voices[0];
 	}
 
-	if (!strcmp(cv_playername[n].string, player_names[playernum])
+	if (fastcmp(cv_playername[n].string, player_names[playernum])
 		&& cv_playercolor[n].value == player->skincolor
-		&& !strcmp(cv_skin[n].string, skins[player->skin].name)
+		&& fastcmp(cv_skin[n].string, skins[player->skin].name)
 		&& cv_follower[n].value == player->followerskin
 		&& cv_followercolor[n].value == player->followercolor
-		&& !stricmp(cv_voice[n].string, voice->name))
+		&& fasticmp(cv_voice[n].string, voice->name))
 		return;
 
 	player->availabilities = R_GetSkinAvailabilities();
@@ -2992,8 +2992,8 @@ static void Command_Playdemo_f(void)
 
 	CONS_Printf(M_GetText("Playing back demo '%s'.\n"), name);
 
-	demo.loadfiles = strcmp(COM_Argv(2), "-addfiles") == 0;
-	demo.ignorefiles = strcmp(COM_Argv(2), "-force") == 0;
+	demo.loadfiles = fastcmp(COM_Argv(2), "-addfiles");
+	demo.ignorefiles = fastcmp(COM_Argv(2), "-force");
 
 	// Internal if no extension, external if one exists
 	// If external, convert the file name to a path in SRB2's home directory
@@ -5191,7 +5191,7 @@ static void Command_Addfile(void)
 		for (ii = 0; ii < numfilesadded; ii++)
 		{
 			// If this is one of them, don't try to add it.
-			if (!strcmp(fn, addedfiles[ii]))
+			if (fastcmp(fn, addedfiles[ii]))
 			{
 				fileadded = true;
 				break;
@@ -5459,7 +5459,7 @@ static void Command_ListDoomednums_f(void)
 
 	if (argc > 1)
 	{
-		nodoubles = (strcmp(COM_Argv(1), "-nodoubles") == 0);
+		nodoubles = (fastcmp(COM_Argv(1), "-nodoubles"));
 		if (nodoubles)
 		{
 			argc--;
@@ -5854,7 +5854,7 @@ void D_GameTypeChanged(INT32 lastgametype)
 static void Gravity_OnChange(void)
 {
 	if (!M_SecretUnlocked(SECRET_PANDORA) && !netgame && !cht_debug
-		&& strcmp(cv_gravity.string, cv_gravity.defaultvalue))
+		&& !fastcmp(cv_gravity.string, cv_gravity.defaultvalue))
 	{
 		CONS_Printf(M_GetText("You haven't earned this yet.\n"));
 		CV_StealthSet(&cv_gravity, cv_gravity.defaultvalue);
@@ -6703,7 +6703,7 @@ static void Command_Cheats_f(void)
 
 		for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		{
-			if ((cvar->flags & CV_CHEAT) && strcmp(cvar->defaultvalue, cvar->string))
+			if ((cvar->flags & CV_CHEAT) && !fastcmp(cvar->defaultvalue, cvar->string))
 			{
 				CONS_Printf("%s: Default Value: %s Current Value:%s\n", cvar->name, cvar->defaultvalue, cvar->string);
 			}
@@ -7048,9 +7048,9 @@ static void Follower_OnChange(void)
 	strcpy(str, cv_follower[0].string);
 	strcpy(cpy, cv_follower[0].string);
 	strlwr(str);
-	if (stricmp(cpy,"0") !=0 && !atoi(cpy))	// yep, that's a string alright...
+	if (!fasticmp(cpy,"0") && !atoi(cpy))	// yep, that's a string alright...
 	{
-		if (stricmp(cpy, "None") == 0)
+		if (fasticmp(cpy, "None"))
 		{
 			CV_StealthSet(&cv_follower[0], "-1");
 
@@ -7101,9 +7101,9 @@ static void Follower2_OnChange(void)
 	strcpy(str, cv_follower[1].string);
 	strcpy(cpy, cv_follower[1].string);
 	strlwr(str);
-	if (stricmp(cpy,"0") !=0 && !atoi(cpy))	// yep, that's a string alright...
+	if (!fasticmp(cpy,"0") && !atoi(cpy))	// yep, that's a string alright...
 	{
-		if (stricmp(cpy, "None") == 0)
+		if (fasticmp(cpy, "None"))
 		{
 			CV_StealthSet(&cv_follower[1], "-1");
 
@@ -7151,9 +7151,9 @@ static void Follower3_OnChange(void)
 	strcpy(str, cv_follower[2].string);
 	strcpy(cpy, cv_follower[2].string);
 	strlwr(str);
-	if (stricmp(cpy,"0") !=0 && !atoi(cpy))	// yep, that's a string alright...
+	if (!fasticmp(cpy,"0") && !atoi(cpy))	// yep, that's a string alright...
 	{
-		if (stricmp(cpy, "None") == 0)
+		if (fasticmp(cpy, "None"))
 		{
 			CV_StealthSet(&cv_follower[2], "-1");
 
@@ -7201,9 +7201,9 @@ static void Follower4_OnChange(void)
 	strcpy(str, cv_follower[3].string);
 	strcpy(cpy, cv_follower[3].string);
 	strlwr(str);
-	if (stricmp(cpy,"0") !=0 && !atoi(cpy))	// yep, that's a string alright...
+	if (!fasticmp(cpy,"0") && !atoi(cpy))	// yep, that's a string alright...
 	{
-		if (stricmp(cpy, "None") == 0)
+		if (fasticmp(cpy, "None"))
 		{
 			CV_StealthSet(&cv_follower[3], "-1");
 
@@ -7412,7 +7412,7 @@ static void Command_ListVoices(void)
 	{
 		if (sscanf(COM_Argv(1), " %d", &pid) == 0)
 		{
-			if (!stricmp(COM_Argv(1), "--help"))
+			if (fasticmp(COM_Argv(1), "--help"))
 			{
 				// Anyone who names their skin "--help" can suck it.
 				CONS_Printf(

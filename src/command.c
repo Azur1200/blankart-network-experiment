@@ -524,7 +524,7 @@ void COM_AddCommand(const char *name, com_func_t func)
 	// fail if the command already exists
 	for (cmd = com_commands; cmd; cmd = cmd->next)
 	{
-		if (!stricmp(name, cmd->name)) //case insensitive now that we have lower and uppercase!
+		if (fasticmp(name, cmd->name)) //case insensitive now that we have lower and uppercase!
 		{
 			// don't I_Error for Lua commands
 			// Lua commands can replace game commands, and they have priority.
@@ -557,13 +557,13 @@ int COM_AddLuaCommand(const char *name)
 	if (CV_StringValue(name)[0] != '\0')
 		return -1;
 
-	if (!stricmp(name, "respawn"))
+	if (fasticmp(name, "respawn"))
 		return -1; // fuck you.
 
 	// command already exists
 	for (cmd = com_commands; cmd; cmd = cmd->next)
 	{
-		if (!stricmp(name, cmd->name)) //case insensitive now that we have lower and uppercase!
+		if (fasticmp(name, cmd->name)) //case insensitive now that we have lower and uppercase!
 		{
 			// replace the built in command.
 			cmd->function = COM_Lua_f;
@@ -590,7 +590,7 @@ static boolean COM_Exists(const char *com_name)
 	xcommand_t *cmd;
 
 	for (cmd = com_commands; cmd; cmd = cmd->next)
-		if (!stricmp(com_name, cmd->name))
+		if (fasticmp(com_name, cmd->name))
 			return true;
 
 	return false;
@@ -668,7 +668,7 @@ static void COM_ExecuteString(char *ptext)
 	// check functions
 	for (cmd = com_commands; cmd; cmd = cmd->next)
 	{
-		if (!stricmp(com_argv[0], cmd->name)) //case insensitive now that we have lower and uppercase!
+		if (fasticmp(com_argv[0], cmd->name)) //case insensitive now that we have lower and uppercase!
 		{
 			cmd->function();
 			return;
@@ -678,7 +678,7 @@ static void COM_ExecuteString(char *ptext)
 	// check aliases
 	for (a = com_alias; a; a = a->next)
 	{
-		if (!stricmp(com_argv[0], a->name))
+		if (fasticmp(com_argv[0], a->name))
 		{
 			if (recursion > MAX_ALIAS_RECURSION)
 				CONS_Alert(CONS_WARNING, M_GetText("Alias recursion cycle detected!\n"));
@@ -962,7 +962,7 @@ static void COM_Help_f(void)
 				{
 #define MINVAL 0
 #define MAXVAL 1
-					if (!stricmp(cvar->PossibleValue[MINVAL].strvalue, "MIN"))
+					if (fasticmp(cvar->PossibleValue[MINVAL].strvalue, "MIN"))
 					{
 						if (floatmode)
 						{
@@ -1003,14 +1003,14 @@ static void COM_Help_f(void)
 			else
 				CONS_Printf(" Current value: %d\n", cvar->value);
 
-			if (cvar->revert.v.string != NULL && strcmp(cvar->revert.v.string, cvar->string) != 0)
+			if (cvar->revert.v.string != NULL && !fastcmp(cvar->revert.v.string, cvar->string))
 				CONS_Printf(" Value before netgame: %s\n", cvar->revert.v.string);
 		}
 		else
 		{
 			for (cmd = com_commands; cmd; cmd = cmd->next)
 			{
-				if (strcmp(cmd->name, help))
+				if (!fastcmp(cmd->name, help))
 					continue;
 
 				CONS_Printf("\x82""Command %s:\n", cmd->name);
@@ -1171,7 +1171,7 @@ static void COM_Toggle_f(void)
 
 			if (CV_CompleteValue(cvar, &str, &val))
 			{
-				if (str ? !stricmp(cvar->string, str)
+				if (str ? fasticmp(cvar->string, str)
 						: cvar->value == val)
 				{
 					CV_Set(cvar, COM_Argv(i + 1));
@@ -1309,7 +1309,7 @@ static void COM_Reset_f(void)
 		CV_Set(cvar, cvar->defaultvalue);
 
 		// Sometimes a cvar cannot be changed, e.g. CV_NETVAR without admin privilege.
-		if (!stricmp(cvar->string, cvar->defaultvalue))
+		if (fasticmp(cvar->string, cvar->defaultvalue))
 		{
 			CONS_Printf("%s = %s\n", cvar->name, cvar->string);
 		}
@@ -1449,7 +1449,7 @@ consvar_t *CV_FindVar(const char *name)
 	consvar_t *cvar;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
-		if (!stricmp(name,cvar->name))
+		if (fasticmp(name,cvar->name))
 			return cvar;
 
 	return NULL;
@@ -1664,7 +1664,7 @@ boolean CV_CompleteValue(consvar_t *var, const char **valstrp, INT32 *intval)
 				v = INT32_MIN; // Invalid integer trigger
 		}
 
-		if (var->PossibleValue[0].strvalue && !stricmp(var->PossibleValue[0].strvalue, "MIN")) // bounded cvar
+		if (var->PossibleValue[0].strvalue && fasticmp(var->PossibleValue[0].strvalue, "MIN")) // bounded cvar
 		{
 #define MINVAL 0
 #define MAXVAL 1
@@ -1675,15 +1675,15 @@ boolean CV_CompleteValue(consvar_t *var, const char **valstrp, INT32 *intval)
 
 			// search for other
 			for (i = MAXVAL+1; var->PossibleValue[i].strvalue; i++)
-				if (v == var->PossibleValue[i].value || !stricmp(var->PossibleValue[i].strvalue, valstr))
+				if (v == var->PossibleValue[i].value || fasticmp(var->PossibleValue[i].strvalue, valstr))
 					goto found;
 
-			if ((v != INT32_MIN && v < var->PossibleValue[MINVAL].value) || !stricmp(valstr, "MIN"))
+			if ((v != INT32_MIN && v < var->PossibleValue[MINVAL].value) || fasticmp(valstr, "MIN"))
 			{
 				i = MINVAL;
 				goto found;
 			}
-			else if ((v != INT32_MIN && v > var->PossibleValue[MAXVAL].value) || !stricmp(valstr, "MAX"))
+			else if ((v != INT32_MIN && v > var->PossibleValue[MAXVAL].value) || fasticmp(valstr, "MAX"))
 			{
 				i = MAXVAL;
 				goto found;
@@ -1698,7 +1698,7 @@ boolean CV_CompleteValue(consvar_t *var, const char **valstrp, INT32 *intval)
 		{
 			// check first strings
 			for (i = 0; var->PossibleValue[i].strvalue; i++)
-				if (!stricmp(var->PossibleValue[i].strvalue, valstr))
+				if (fasticmp(var->PossibleValue[i].strvalue, valstr))
 					goto found;
 			if (v != INT32_MIN)
 			{
@@ -1711,9 +1711,9 @@ boolean CV_CompleteValue(consvar_t *var, const char **valstrp, INT32 *intval)
 			if (var->PossibleValue == CV_OnOff || var->PossibleValue == CV_YesNo)
 			{
 				overrideval = -1;
-				if (!stricmp(valstr, "on") || !stricmp(valstr, "yes"))
+				if (fasticmp(valstr, "on") || fasticmp(valstr, "yes"))
 					overrideval = 1;
-				else if (!stricmp(valstr, "off") || !stricmp(valstr, "no"))
+				else if (fasticmp(valstr, "off") || fasticmp(valstr, "no"))
 					overrideval = 0;
 
 				if (overrideval != -1)
@@ -1767,11 +1767,11 @@ static void Setvalue(consvar_t *var, const char *valstr, boolean stealth)
 	if (numwadfiles == 0 && var->PossibleValue == Color_cons_t)
 	{
 		override = true;
-		if (!strcmp(valstr, "Blue"))
+		if (fastcmp(valstr, "Blue"))
 			overrideval = SKINCOLOR_BLUE;
-		else if (!strcmp(valstr, "Orange"))
+		else if (fastcmp(valstr, "Orange"))
 			overrideval = SKINCOLOR_ORANGE;
-		else if (!strcmp(valstr, "Red"))
+		else if (fastcmp(valstr, "Red"))
 			overrideval = SKINCOLOR_RED;
 		else
 			I_Error("Sorry, you need to add %s to the list of skincolors in Setvalue", valstr);
@@ -2053,7 +2053,7 @@ void CV_ResetCheatNetVars(void)
 // Returns true if the variable's current value is its default value
 boolean CV_IsSetToDefault(consvar_t *v)
 {
-	return (!(strcmp(v->defaultvalue, v->string)));
+	return (!(!fastcmp(v->defaultvalue, v->string)));
 }
 
 // If any cheats CVars are not at their default settings, return true.
@@ -2065,7 +2065,7 @@ UINT8 CV_CheatsEnabled(void)
 	consvar_t *cvar;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
-		if ((cvar->flags & CV_CHEAT) && strcmp(cvar->defaultvalue, cvar->string))
+		if ((cvar->flags & CV_CHEAT) && !fastcmp(cvar->defaultvalue, cvar->string))
 			return 1;
 	return 0;
 }
@@ -2086,7 +2086,7 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 	if (!var->string)
 		I_Error("CV_Set: %s no string set!\n", var->name);
 #endif
-	if (!var || !var->string || !value || !stricmp(var->string, value))
+	if (!var || !var->string || !value || fasticmp(var->string, value))
 		return; // no changes
 
 	if (var->flags & CV_NETVAR)
@@ -2116,7 +2116,7 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 
 		if (var == &cv_kartspeed && !M_SecretUnlocked(SECRET_HARDSPEED))
 		{
-			if (!stricmp(value, "Hard") || !stricmp(value, "Expert") || atoi(value) >= KARTSPEED_HARD)
+			if (fasticmp(value, "Hard") || fasticmp(value, "Expert") || atoi(value) >= KARTSPEED_HARD)
 			{
 				CONS_Printf(M_GetText("You haven't unlocked this yet!\n"));
 				return;
@@ -2126,7 +2126,7 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 		if (var == &cv_forceskin)
 		{
 			INT32 skin = R_SkinAvailable(value);
-			if ((stricmp(value, "None")) && ((skin == -1) || !R_SkinUsable(-1, skin)))
+			if ((!fasticmp(value, "None")) && ((skin == -1) || !R_SkinUsable(-1, skin)))
 			{
 				CONS_Printf("Please provide a valid skin name (\"None\" disables).\n");
 				return;
@@ -2273,7 +2273,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 	{
 #define MINVAL 0
 #define MAXVAL 1
-		if (var->PossibleValue[MINVAL].strvalue && !strcmp(var->PossibleValue[MINVAL].strvalue, "MIN"))
+		if (var->PossibleValue[MINVAL].strvalue && fastcmp(var->PossibleValue[MINVAL].strvalue, "MIN"))
 		{
 #ifdef PARANOIA
 			if (!var->PossibleValue[MAXVAL].strvalue)
@@ -2499,11 +2499,11 @@ void CV_SaveVariables(FILE *f)
 			if (
 					cvar->PossibleValue != NULL &&
 					cvar->PossibleValue[0].strvalue &&
-					stricmp(cvar->PossibleValue[0].strvalue, "MIN") == 0
+					fasticmp(cvar->PossibleValue[0].strvalue, "MIN")
 			){ // bounded cvar
-				int which = stricmp(string, "MAX") == 0;
+				int which = fasticmp(string, "MAX");
 
-				if (which || stricmp(string, "MIN") == 0)
+				if (which || fasticmp(string, "MIN"))
 				{
 					INT32 value = cvar->PossibleValue[which].value;
 
