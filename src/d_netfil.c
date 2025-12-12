@@ -674,18 +674,18 @@ boolean CL_LoadServerFiles(void)
 			const char *s;
 			switch(fileneeded[i].status)
 			{
-				case FS_NOTFOUND:
-					s = "FS_NOTFOUND";
-					break;
-				case FS_REQUESTED:
-					s = "FS_REQUESTED";
-					break;
-				case FS_DOWNLOADING:
-					s = "FS_DOWNLOADING";
-					break;
-				default:
-					s = "unknown";
-					break;
+			case FS_NOTFOUND:
+				s = "FS_NOTFOUND";
+				break;
+			case FS_REQUESTED:
+				s = "FS_REQUESTED";
+				break;
+			case FS_DOWNLOADING:
+				s = "FS_DOWNLOADING";
+				break;
+			default:
+				s = "unknown";
+				break;
 			}
 			I_Error("Try to load file \"%s\" with status of %d (%s)\n", fileneeded[i].filename,
 				fileneeded[i].status, s);
@@ -1585,21 +1585,21 @@ void PT_FileFragment(SINT8 node, INT32 netconsole)
 		const char *s;
 		switch(file->status)
 		{
-			case FS_NOTFOUND:
-				s = "FS_NOTFOUND";
-				break;
-			case FS_FOUND:
-				s = "FS_FOUND";
-				break;
-			case FS_OPEN:
-				s = "FS_OPEN";
-				break;
-			case FS_BADHASH:
-				s = "FS_BADHASH";
-				break;
-			default:
-				s = "unknown";
-				break;
+		case FS_NOTFOUND:
+			s = "FS_NOTFOUND";
+			break;
+		case FS_FOUND:
+			s = "FS_FOUND";
+			break;
+		case FS_OPEN:
+			s = "FS_OPEN";
+			break;
+		case FS_BADHASH:
+			s = "FS_BADHASH";
+			break;
+		default:
+			s = "unknown";
+			break;
 		}
 		I_Error("Received a file not requested (file id: %d, file status: %s)\n", filenum, s);
 	}
