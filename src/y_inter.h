@@ -80,6 +80,13 @@ typedef struct
 } votescreen_t;
 extern votescreen_t VoteScreen;
 
+boolean Y_PlayerIDCanVote(const UINT8 id);
+
+typedef enum
+{
+	VOTE_NOT_PICKED = -1,
+} votetype_e;
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

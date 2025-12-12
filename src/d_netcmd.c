@@ -3179,17 +3179,21 @@ void D_SetupVote(void)
 	SendNetXCmd(XD_SETUPVOTE, buf, p - buf);
 }
 
-void D_ModifyClientVote(UINT8 player, SINT8 voted, UINT8 splitplayer)
+void D_ModifyClientVote(UINT8 player, SINT8 voted)
 {
-	char buf[2];
+	char buf[1];
 	char *p = buf;
 
-	if (splitplayer > 0)
-		player = g_localplayers[splitplayer];
+	if (player >= MAXSPLITSCREENPLAYERS)
+	{
+		if (!server)
+		{
+			return;
+		}
+	}
 
 	WRITESINT8(p, voted);
-	WRITEUINT8(p, player);
-	SendNetXCmd(XD_MODIFYVOTE, &buf, 2);
+	SendNetXCmdForPlayer(player, XD_MODIFYVOTE, &buf, p - buf);
 }
 
 void D_PickVote(void)
@@ -3198,21 +3202,21 @@ void D_PickVote(void)
 	char* p = buf;
 	SINT8 temppicks[MAXPLAYERS];
 	SINT8 templevels[MAXPLAYERS];
-	SINT8 votecompare = -1;
+	SINT8 votecompare = VOTE_NOT_PICKED;
 	UINT8 numvotes = 0, key = 0;
 	INT32 i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!Y_PlayerIDCanVote(i))
 			continue;
-		if (votes[i] != -1)
+		if (g_votes[i] != VOTE_NOT_PICKED)
 		{
 			temppicks[numvotes] = i;
-			templevels[numvotes] = votes[i];
+			templevels[numvotes] = g_votes[i];
 			numvotes++;
-			if (votecompare == -1)
-				votecompare = votes[i];
+			if (votecompare == VOTE_NOT_PICKED)
+				votecompare = g_votes[i];
 		}
 	}
 
@@ -3224,7 +3228,7 @@ void D_PickVote(void)
 	}
 	else
 	{
-		WRITESINT8(p, -1);
+		WRITESINT8(p, VOTE_NOT_PICKED);
 		WRITESINT8(p, 0);
 	}
 
@@ -6123,7 +6127,7 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 
 	tempvotelevels[2][1] = secondgt;
 
-	memcpy(votelevels, tempvotelevels, sizeof(votelevels));
+	memcpy(g_voteLevels, tempvotelevels, sizeof(g_voteLevels));
 
 	// If third entry has an illelegal Encore flag... (illelegal!?)
 	if ((secondgt & VOTEMODIFIER_ENCORE)
@@ -6133,12 +6137,12 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 		// Apply it to the second entry instead, gametype permitting!
 		if (gametypedefaultrules[gt] & GTR_CIRCUIT)
 		{
-			votelevels[1][1] |= VOTEMODIFIER_ENCORE;
+			g_voteLevels[1][1] |= VOTEMODIFIER_ENCORE;
 		}
 	}
 
 	// Finally, set third entry's gametype/Encore status.
-	votelevels[2][1] = secondgt;
+	g_voteLevels[2][1] = secondgt;
 
 	G_SetGamestate(GS_VOTING);
 	Y_StartVote();
@@ -6146,11 +6150,7 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 
 static void Got_ModifyVotecmd(UINT8 **cp, INT32 playernum)
 {
-	SINT8 voted = READSINT8(*cp);
-	UINT8 p = READUINT8(*cp);
-
-	(void)playernum;
-	votes[p] = voted;
+	g_votes[playernum] =  READSINT8(*cp);
 }
 
 static void Got_PickVotecmd(UINT8 **cp, INT32 playernum)

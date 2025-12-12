@@ -4225,16 +4225,16 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNC(bumpsparkactive);
 	SYNC(antibumptime);
 
-	for (i = 0; i < sizeof(votelevels)/sizeof(*votelevels); i++)
+	for (i = 0; i < sizeof(g_voteLevels)/sizeof(*g_voteLevels); i++)
 	{
-		SYNC(votelevels[i][0]);
-		SYNC(votelevels[i][1]);
+		SYNC(g_voteLevels[i][0]);
+		SYNC(g_voteLevels[i][1]);
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++)
-		SYNC(votes[i]);
+		SYNC(g_votes[i]);
 
-	SYNC(pickedvote);
+	SYNC(g_pickedVote);
 
 	SYNC(emeralds);
 	if (save->write)

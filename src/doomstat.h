@@ -683,9 +683,9 @@ extern boolean legitimateexit;
 extern boolean comebackshowninfo;
 extern tic_t antibumptime;
 
-extern INT16 votelevels[12][2];
-extern SINT8 votes[MAXPLAYERS];
-extern SINT8 pickedvote;
+extern INT16 g_voteLevels[12][2];
+extern SINT8 g_votes[MAXPLAYERS];
+extern SINT8 g_pickedVote;
 
 extern UINT32 timesBeaten; // # of times the game has been beaten.
 

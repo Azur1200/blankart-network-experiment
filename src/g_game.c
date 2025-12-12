@@ -301,9 +301,9 @@ boolean franticitems; // Frantic items currently enabled?
 boolean comeback; // Battle Mode's karma comeback is on/off
 
 // Voting system
-INT16 votelevels[12][2]; // Levels that were rolled by the host
-SINT8 votes[MAXPLAYERS]; // Each player's vote
-SINT8 pickedvote; // What vote the host rolls
+INT16 g_voteLevels[12][2]; // Levels that were rolled by the host
+SINT8 g_votes[MAXPLAYERS]; // Each player's vote
+SINT8 g_pickedVote; // What vote the host rolls
 
 // Server-sided, synched variables
 SINT8 battlewanted[4]; // WANTED players in battle, worth x2 points

@@ -46,9 +46,10 @@
 #include "k_waypoint.h"
 #include "k_items.h"
 
-consvar_t cv_forcebots = CVAR_INIT ("kartforcebots", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_botcontrol = CVAR_INIT ("kartbotcontrol", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_forcebots = CVAR_INIT ("kartbot_force", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_botcontrol = CVAR_INIT ("kartbot_control", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_forcerival = CVAR_INIT ("kartbot_forcerival", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_botcanvote = CVAR_INIT ("kartbot_canvote", "Off", CV_NETVAR, CV_OnOff, NULL);
 
 botdata_t botdata[MAXPLAYERS];
 
