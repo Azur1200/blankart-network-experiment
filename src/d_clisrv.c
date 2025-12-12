@@ -2226,7 +2226,7 @@ static void CL_ConnectToServer(void)
 	DEBFILE(va("waiting %d nodes\n", doomcom->numnodes));
 	M_ClearMenus(true);
 	G_SetGamestate(GS_WAITINGPLAYERS);
-	wipegamestate = GS_WAITINGPLAYERS;
+	wipegamestate = GS_NULL;
 
 	ClearAdminPlayers();
 	Schedule_Clear();
