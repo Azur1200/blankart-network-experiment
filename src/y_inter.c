@@ -1713,14 +1713,14 @@ void Y_VoteTicker(void)
 
 		if (voteendtic == -1)
 		{
-			UINT8 tempg_votes[MAXPLAYERS];
+			UINT8 tempvotes[MAXPLAYERS];
 			UINT8 numvotes = 0;
 
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
 				if (g_votes[i] == VOTE_NOT_PICKED)
 					continue;
-				tempg_votes[numvotes] = i;
+				tempvotes[numvotes] = i;
 				numvotes++;
 			}
 
@@ -1741,7 +1741,7 @@ void Y_VoteTicker(void)
 			}
 
 			if (voteclient.rendoff == 0 || voteclient.roffset < voteclient.rendoff)
-				voteclient.ranim = tempg_votes[((g_pickedVote + voteclient.roffset) % numvotes)];
+				voteclient.ranim = tempvotes[((g_pickedVote + voteclient.roffset) % numvotes)];
 
 			if (voteclient.roffset >= 20)
 			{
@@ -1751,7 +1751,7 @@ void Y_VoteTicker(void)
 					{
 						for (i = 5; i >= 3; i--) // Find a suitable place to stop
 						{
-							if (tempg_votes[((g_pickedVote + voteclient.roffset + i) % numvotes)] == g_pickedVote)
+							if (tempvotes[((g_pickedVote + voteclient.roffset + i) % numvotes)] == g_pickedVote)
 							{
 								voteclient.rendoff = voteclient.roffset+i;
 								if (M_RandomChance(FRACUNIT/32)) // Let it cheat occasionally~
