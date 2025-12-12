@@ -48,17 +48,17 @@ extraemblem_t extraemblems[MAXEXTRAEMBLEMS] =
 // Default Unlockables
 unlockable_t unlockables[MAXUNLOCKABLES] =
 {
-	// Name, Objective, Showing Conditionset, ConditionSet, Unlock Type, Variable, NoCecho, NoChecklist
-	/* 01 */ {"Egg Cup",  "", -1, 1, SECRET_NONE, 0, false, false, 0},
-	/* 02 */ {"Chao Cup", "", -1, 2, SECRET_NONE, 0, false, false, 0},
-	/* 03 */ {"SMK Cup",  "",  2, 3, SECRET_NONE, 0, false, false, 0},
+	// Name, Objective, Showing Conditionset, ConditionSet, Unlock Type, Variable, NoCecho, NoChecklist, Unlocked
+	/* 01 */ {"Egg Cup",  "", -1, 1, SECRET_NONE, 0, "", false, false, 0},
+	/* 02 */ {"Chao Cup", "", -1, 2, SECRET_NONE, 0, "", false, false, 0},
+	/* 03 */ {"SMK Cup",  "",  2, 3, SECRET_NONE, 0, "", false, false, 0},
 
-	/* 04 */ {"Hard Game Speed", "", -1, 4, SECRET_HARDSPEED,  0, false, false, 0},
-	/* 05 */ {"Encore Mode",     "",  4, 5, SECRET_ENCORE,     0, false, false, 0},
-	/* 06 */ {"Hell Attack",     "",  6, 6, SECRET_HELLATTACK, 0, false, false, 0},
+	/* 04 */ {"Hard Game Speed", "", -1, 4, SECRET_HARDSPEED,  0, "", false, false, 0},
+	/* 05 */ {"Encore Mode",     "",  4, 5, SECRET_ENCORE,     0, "", false, false, 0},
+	/* 06 */ {"Hell Attack",     "",  6, 6, SECRET_HELLATTACK, 0, "", false, false, 0},
 
-	/* 07 */ {"Record Attack", "", -1, -1, SECRET_TIMEATTACK, 0, true, true, 0},
-	/* 08 */ {"Capsule Attack", "", -1, -1, SECRET_ITEMBREAKER, 0, true, true, 0},
+	/* 07 */ {"Record Attack", "", -1, -1, SECRET_TIMEATTACK, 0, "" ,true, true, 0},
+	/* 08 */ {"Capsule Attack", "", -1, -1, SECRET_ITEMBREAKER, 0, "", true, true, 0},
 };
 
 // Number of emblems and extra emblems
@@ -344,11 +344,6 @@ void M_SilentUpdateUnlockablesAndEmblems(void)
 			continue;
 		unlockables[i].unlocked = M_Achieved(unlockables[i].conditionset - 1);
 	}
-
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		players[g_localplayers[i]].availabilities = R_GetSkinAvailabilities();
-	}
 }
 
 // Emblem unlocking shit
@@ -553,6 +548,35 @@ UINT8 M_GotLowEnoughTime(INT32 tictime)
 	}
 	return true;
 	*/
+}
+
+// Gets the skin number for a SECRET_SKIN unlockable.
+INT32 M_UnlockableSkinNum(unlockable_t *unlock)
+{
+	if (unlock->type != SECRET_SKIN)
+	{
+		// This isn't a skin unlockable...
+		return -1;
+	}
+
+	if (unlock->stringVar && strcmp(unlock->stringVar, ""))
+	{
+		// Get the skin from the string.
+		INT32 skinnum = R_SkinAvailable(unlock->stringVar);
+		if (skinnum != -1)
+		{
+			return skinnum;
+		}
+	}
+
+	if (unlock->variable >= 0 && unlock->variable < numskins)
+	{
+		// Use the number directly.
+		return unlock->variable;
+	}
+
+	// Invalid skin unlockable.
+	return -1;
 }
 
 // ----------------

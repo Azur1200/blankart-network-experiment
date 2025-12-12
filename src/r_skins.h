@@ -140,7 +140,7 @@ INT32 FindSortedSkinIndex(INT32 skinnum);
 void SetPlayerSkin(INT32 playernum,const char *skinname);
 void SetPlayerSkinByNum(INT32 playernum,INT32 skinnum); // Tails 03-16-2002
 boolean R_SkinUsable(INT32 playernum, INT32 skinnum);
-UINT32 R_GetSkinAvailabilities(void);
+UINT8 *R_GetSkinAvailabilities(void);
 INT32 R_SkinAvailable(const char *name);
 void R_PatchSkins(UINT16 wadnum);
 void R_AddSkins(UINT16 wadnum);

@@ -1723,6 +1723,10 @@ UINT8 CanChangeSkin(INT32 playernum)
 static void ForceAllSkins(INT32 forcedskin)
 {
 	INT32 i, j;
+
+	if (demo.playback)
+		return; // DXD_SKIN should handle all changes for us
+
 	for (i = 0; i < MAXPLAYERS; ++i)
 	{
 		if (!playeringame[i])
@@ -1793,6 +1797,8 @@ static void SendNameAndColor(UINT8 n)
 	char buf[MAXPLAYERNAME+12];
 	char *p;
 
+	UINT16 i = 0;
+
 	if (splitscreen < n)
 		return; // can happen if skin4/color4/name4 changed
 
@@ -1810,9 +1816,10 @@ static void SendNameAndColor(UINT8 n)
 			CV_StealthSetValue(&cv_playercolor[n], skins[player->skin].prefcolor);
 		else if (skincolors[atoi(cv_playercolor[n].defaultvalue)].accessible)
 			CV_StealthSet(&cv_playercolor[n], cv_playercolor[n].defaultvalue);
-		else {
-			UINT16 i = 0;
-			while (i<numskincolors && !skincolors[i].accessible) i++;
+		else
+		{
+			while (i<numskincolors && !skincolors[i].accessible)
+				i++;
 			CV_StealthSetValue(&cv_playercolor[n], (i != numskincolors) ? i : SKINCOLOR_BLUE);
 		}
 	}
@@ -1841,8 +1848,6 @@ static void SendNameAndColor(UINT8 n)
 		&& cv_followercolor[n].value == player->followercolor
 		&& fasticmp(cv_voice[n].string, voice->name))
 		return;
-
-	player->availabilities = R_GetSkinAvailabilities();
 
 	// We'll handle it later if we're not playing.
 	if (!Playing())
@@ -2063,7 +2068,6 @@ static void SendNameAndColor(UINT8 n)
 
 	// Finally write out the complete packet and send it off.
 	WRITESTRINGN(p, cv_playername[n].zstring, MAXPLAYERNAME);
-	WRITEUINT32(p, (UINT32)player->availabilities);
 	WRITEUINT16(p, (UINT16)cv_playercolor[n].value);
 	WRITEUINT16(p, (UINT16)cv_skin[n].value);
 	WRITEINT32(p, (INT32)cv_follower[n].value);
@@ -2105,7 +2109,6 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	}
 
 	READSTRINGN(*cp, name, MAXPLAYERNAME);
-	p->availabilities = READUINT32(*cp);
 	color = READUINT16(*cp);
 	skin = READUINT16(*cp);
 	follower = READINT32(*cp);
@@ -2143,36 +2146,6 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 		if (skincolors[p->skincolor].accessible == false)
 			kick = true;
 
-		// availabilities
-		// TODO: Port commit from RR: 6d0637d3
-		/*
-		for (i = 0; i < MAXSKINS; i++)
-		{
-			UINT32 playerhasunlocked = (p->availabilities & (1 << i));
-			boolean islocked = false;
-			UINT8 j;
-
-			for (j = 0; j < MAXUNLOCKABLES; j++)
-			{
-				if (unlockables[j].type != SECRET_SKIN)
-					continue;
-
-				if (unlockables[j].variable == i)
-				{
-					islocked = true;
-					break;
-				}
-			}
-
-			if (islocked == false && playerhasunlocked == true)
-			{
-				// hacked client that enabled every bit
-				kick = true;
-				break;
-			}
-		}
-		*/
-
 		if (kick)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Illegal color change received from %s (team: %d), color: %d)\n"), player_names[playernum], p->ctfteam, p->skincolor);
@@ -2182,7 +2155,7 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	}
 
 	// set skin
-	if (cv_forceskin.value >= 0 && (netgame || multiplayer)) // Server wants everyone to use the same player
+	if (cv_forceskin.value >= 0 && K_CanChangeRules(true)) // Server wants everyone to use the same player
 	{
 		const INT32 forcedskin = cv_forceskin.value;
 		SetPlayerSkinByNum(playernum, forcedskin);
@@ -6630,11 +6603,6 @@ void Command_ExitGame_f(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		CL_ClearPlayer(i);
-
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		players[g_localplayers[i]].availabilities = R_GetSkinAvailabilities();
-	}
 
 	splitscreen = 0;
 	SplitScreen_OnChange();

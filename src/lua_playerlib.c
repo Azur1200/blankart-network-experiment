@@ -1191,9 +1191,9 @@ static int player_get(lua_State *L)
 	case player_voice_id:
 		lua_pushinteger(L, plr->voice_id);
 		break;
-	case player_availabilities:
+	/*case player_availabilities:
 		lua_pushinteger(L, plr->availabilities);
-		break;
+		break;*/
 	case player_score:
 		lua_pushinteger(L, plr->score);
 		break;
@@ -1518,8 +1518,8 @@ static int player_set(lua_State *L)
 		return NOSET;
 	case player_voice_id:
 		return NOSET;
-	case player_availabilities:
-		return NOSET;
+	/*case player_availabilities:
+		return NOSET;*/
 	case player_score:
 		plr->score = luaL_checkinteger(L, 3);
 		break;

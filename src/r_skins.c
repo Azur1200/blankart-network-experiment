@@ -36,6 +36,8 @@
 #include "hardware/hw_md2.h"
 #endif
 
+#include "k_grandprix.h"
+
 #include "discord.h"
 
 INT32 numskins = 0;
@@ -305,21 +307,34 @@ void R_InitSkins(void)
 	ST_ReloadSkinFaceGraphics();
 }
 
-UINT32 R_GetSkinAvailabilities(void)
+UINT8 *R_GetSkinAvailabilities(void)
 {
-	UINT8 i;
-	UINT32 response = 0;
+	UINT8 i, shif, byte;
+	INT32 skinid;
+	static UINT8 responsebuffer[MAXAVAILABILITY];
+
+	memset(&responsebuffer, 0, sizeof(responsebuffer));
 
 	for (i = 0; i < MAXUNLOCKABLES; i++)
 	{
-		if (unlockables[i].type == SECRET_SKIN && unlockables[i].unlocked)
-		{
-			UINT16 s = min(unlockables[i].variable, MAXSKINS);
-			response |= (1 << s);
-		}
+		if (unlockables[i].type != SECRET_SKIN)
+			continue;
+
+		if (unlockables[i].unlocked != true)
+			continue;
+
+		skinid = M_UnlockableSkinNum(&unlockables[i]);
+
+		if (skinid < 0 || skinid >= MAXSKINUNAVAILABLE)
+			continue;
+
+		shif = (skinid % 8);
+		byte = (skinid / 8);
+
+		responsebuffer[byte] |= (1 << shif);
 	}
 
-	return response;
+	return responsebuffer;
 }
 
 //
@@ -461,7 +476,9 @@ INT32 FindSortedSkinIndex(INT32 skinnum)
 boolean R_SkinUsable(INT32 playernum, INT32 skinnum)
 {
 	boolean needsunlocked = false;
+	boolean useplayerstruct = (Playing() && playernum != -1);
 	UINT8 i;
+	INT32 skinid;
 
 	if (skinnum == -1)
 	{
@@ -475,7 +492,7 @@ boolean R_SkinUsable(INT32 playernum, INT32 skinnum)
 		return true;
 	}
 
-	if (netgame && (cv_forceskin.value == skinnum))
+	if (K_CanChangeRules(true) && (cv_forceskin.value == skinnum))
 	{
 		// Being forced to play as this character by the server
 		return true;
@@ -488,36 +505,45 @@ boolean R_SkinUsable(INT32 playernum, INT32 skinnum)
 		return (skinnum == metalskin);
 	}
 
+	if (skinnum >= MAXSKINUNAVAILABLE)
+	{
+		// Keeping our packet size nice and sane in the wake of MAXSKINS increase, as suggested by toaster
+		return true;
+	}
+
 	// Determine if this character is supposed to be unlockable or not
 	for (i = 0; i < MAXUNLOCKABLES; i++)
 	{
-		if (unlockables[i].type == SECRET_SKIN && unlockables[i].variable == skinnum)
-		{
-			// i is now the unlockable index, we can use this later
-			needsunlocked = true;
-			break;
-		}
+		if (unlockables[i].type != SECRET_SKIN)
+			continue;
+
+		skinid = M_UnlockableSkinNum(&unlockables[i]);
+
+		if (skinid != skinnum)
+			continue;
+
+		// i is now the unlockable index, we can use this later
+		needsunlocked = true;
+		break;
 	}
 
-	if (needsunlocked == true)
-	{
-		// You can use this character IF you have it unlocked.
-		if ((netgame || multiplayer) && playernum != -1)
-		{
-			// Use the netgame synchronized unlocks.
-			return (boolean)(!(players[playernum].availabilities & (1 << skinnum)));
-		}
-		else
-		{
-			// Use the unlockables table directly
-			return (boolean)(unlockables[i].unlocked);
-		}
-	}
-	else
+	if (needsunlocked == false)
 	{
 		// Didn't trip anything, so we can use this character.
 		return true;
 	}
+
+	// Ok, you can use this character IF you have it unlocked.
+	if (useplayerstruct)
+	{
+		// Use the netgame synchronized unlocks.
+		UINT8 shif = (skinnum % 8);
+		UINT8 byte = (skinnum / 8);
+		return !!(players[playernum].availabilities[byte] & (1 << shif));
+	}
+
+	// Use the unlockables table directly
+	return (boolean)(unlockables[i].unlocked);
 }
 
 // returns true if the skin name is found (loaded from pwad)
@@ -533,6 +559,24 @@ INT32 R_SkinAvailable(const char *name)
 			return i;
 	}
 	return -1;
+}
+
+// Gets the player to the first usuable skin in the game.
+// (If your mod locked them all, then you kinda stupid)
+static INT32 GetPlayerDefaultSkin(INT32 playernum)
+{
+	INT32 i;
+
+	for (i = 0; i < numskins; i++)
+	{
+		if (R_SkinUsable(playernum, i))
+		{
+			return i;
+		}
+	}
+
+	I_Error("All characters are locked!");
+	return 0;
 }
 
 // network code calls this when a 'skin change' is received
@@ -552,7 +596,7 @@ void SetPlayerSkin(INT32 playernum, const char *skinname)
 	else if(server || IsPlayerAdmin(consoleplayer))
 		CONS_Alert(CONS_WARNING, M_GetText("Player %d (%s) skin '%s' not found\n"), playernum, player_names[playernum], skinname);
 
-	SetPlayerSkinByNum(playernum, 0);
+	SetPlayerSkinByNum(playernum, GetPlayerDefaultSkin(playernum));
 }
 
 // Same as SetPlayerSkin, but uses the skin #.
@@ -621,7 +665,7 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 	else if(server || IsPlayerAdmin(consoleplayer))
 		CONS_Alert(CONS_WARNING, "Player %d (%s) skin %d not found\n", playernum, player_names[playernum], skinnum);
 
-	SetPlayerSkinByNum(playernum, 0); // not found, put in the default skin
+	SetPlayerSkinByNum(playernum, GetPlayerDefaultSkin(playernum)); // not found, put in the default skin
 }
 
 // Gets the corresponding voice ID for a given voice's name.

@@ -477,7 +477,12 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].skincolor);
 		SYNC(players[i].skin);
 		SYNC(players[i].voice_id);
-		SYNC(players[i].availabilities);
+
+		for (j = 0; j < MAXAVAILABILITY; j++)
+		{
+			SYNC(players[i].availabilities[j]);
+		}
+
 		SYNC(players[i].score);
 		SYNC(players[i].lives);
 		SYNC(players[i].xtralife);

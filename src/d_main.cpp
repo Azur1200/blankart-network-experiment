@@ -1174,11 +1174,6 @@ void D_StartTitle(void)
 	for (i = 0; i < MAXPLAYERS; i++)
 		CL_ClearPlayer(i);
 
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		players[g_localplayers[i]].availabilities = R_GetSkinAvailabilities();
-	}
-
 	splitscreen = 0;
 	SplitScreen_OnChange();
 

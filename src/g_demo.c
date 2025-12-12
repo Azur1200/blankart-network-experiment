@@ -110,7 +110,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x000E
+#define DEMOVERSION 0x000F
 #define DEMOHEADER  "\xF0" "BlanReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -228,6 +228,7 @@ typedef struct
 	UINT8 kartspeed;
 	UINT8 kartweight;
 	mobjtype_t followitem;
+	UINT8 availabilities[MAXAVAILABILITY];
 } demoplayer_t;
 
 typedef struct
@@ -550,6 +551,7 @@ static void G_FreeExtraZipTic(ziptic_t *zt)
 
 static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 {
+	INT32 i;
 	UINT8 extradata;
 	extra->playernum = READUINT8(dp);
 	boolean kart = version <= 0x0002;
@@ -591,6 +593,14 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 
 	if (extradata & DXD_JOINDATA)
 	{
+		if (version >= 0x000F)
+		{
+			for (i = 0; i < MAXAVAILABILITY; i++)
+			{
+				players[extra->playernum].availabilities[i] = READUINT8(dp);
+			}
+		}
+
 		extra->joindata.bot = !!(READUINT8(dp));
 		if (extra->joindata.bot)
 		{
@@ -693,6 +703,8 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	boolean serverinfo = true;
 	boolean rapreset = true; // + extended serverinfo length
 	boolean dubs = true; // Multiple voices
+	boolean availabilities = true; // Store player availabilities
+	INT32 i;
 
 	// these may not be present in old demo formats, so initialize them
 	// also initialize them so the header can be free'd without issues
@@ -730,6 +742,8 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 			/* FALLTHRU */
 		case 0x000D:
 			dubs = false;
+		case 0x000E:
+			availabilities = false;
 			break;
 
 		default: // too old, cannot support.
@@ -739,7 +753,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	else if (!memcmp(startdp, "\xF0" "KartReplay" "\x0F", 12))
 	{
 		dubs = rapreset = raflag = false;
-		serverinfo = false;
+		serverinfo = availabilities = false;
 		switch (header->demoversion)
 		{
 		case 0x0001: // SRB2Kart 1.0.x (only staff ghosts supported)
@@ -832,7 +846,7 @@ readfiles:
 	header->numfiles = READUINT8(dp);
 	if (header->numfiles)
 		header->files = malloc(sizeof(demofile_t) * header->numfiles);
-	for (UINT8 i = 0; i < header->numfiles; i++)
+	for (i = 0; i < header->numfiles; i++)
 	{
 		char filename[MAX_WADPATH];
 		READSTRINGL(dp, filename, MAX_WADPATH);
@@ -891,7 +905,7 @@ skipfiles:
 	header->numcvars = READUINT16(dp);
 	if (header->numcvars)
 		header->cvars = malloc(sizeof(democvar_t) * header->numcvars);
-	for (UINT16 i = 0; i < header->numcvars; i++)
+	for (i = 0; i < header->numcvars; i++)
 	{
 		if (kart)
 		{
@@ -994,6 +1008,11 @@ skipfiles:
 		plr->kartspeed = READUINT8(dp);
 		plr->kartweight = READUINT8(dp);
 		plr->followitem = !kart ? READUINT32(dp) : MT_NULL;
+
+		for (i = 0; i < MAXAVAILABILITY; i++)
+		{
+			plr->availabilities[i] = availabilities ? READUINT8(dp) : 0;
+		}
 	}
 
 	// Sigh ... it's an empty demo. Again.
@@ -1342,7 +1361,7 @@ void G_ReadDemoExtraData(void)
 
 void G_WriteDemoExtraData(void)
 {
-	INT32 i;
+	INT32 i, j;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (demo_extradata[i])
@@ -1352,6 +1371,11 @@ void G_WriteDemoExtraData(void)
 
 			if (demo_extradata[i] & DXD_JOINDATA)
 			{
+				for (j = 0; j < MAXAVAILABILITY; j++)
+				{
+					WRITEUINT8(demobuf.p, players[i].availabilities[i]);
+				}
+
 				WRITEUINT8(demobuf.p, (UINT8)players[i].bot);
 				if (players[i].bot)
 				{
@@ -2821,7 +2845,7 @@ void G_RecordMetal(void)
 
 void G_BeginRecording(void)
 {
-	UINT8 i, p;
+	UINT8 i, j, p;
 	char name[MAXCOLORNAME+1];
 	player_t *player = &players[consoleplayer];
 
@@ -3005,6 +3029,11 @@ void G_BeginRecording(void)
 
 			// And mobjtype_t is best with UINT32 too...
 			WRITEUINT32(demobuf.p, player->followitem);
+
+			for (j = 0; j < MAXAVAILABILITY; j++)
+			{
+				WRITEUINT8(demobuf.p, player->availabilities[j]);
+			}
 		}
 	}
 
@@ -3895,6 +3924,11 @@ void G_DoPlayDemo(char *defdemoname)
 
 		// Followitem
 		player->followitem = plr->followitem;
+
+		for (i = 0; i < MAXAVAILABILITY; i++)
+		{
+			player->availabilities[i] = plr->availabilities[i];
+		}
 	}
 
 	// end of player read (the 0xFF marker)

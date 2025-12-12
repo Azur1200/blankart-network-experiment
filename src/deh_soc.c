@@ -134,6 +134,36 @@ static float searchfvalue(const char *s)
 #endif
 
 // These are for clearing all of various things
+void clear_emblems(void)
+{
+	INT32 i;
+
+	for (i = 0; i < MAXEMBLEMS; ++i)
+	{
+		Z_Free(emblemlocations[i].level);
+		emblemlocations[i].level = NULL;
+
+		Z_Free(emblemlocations[i].stringVar);
+		emblemlocations[i].stringVar = NULL;
+	}
+
+	memset(&emblemlocations, 0, sizeof(emblemlocations));
+	numemblems = 0;
+}
+
+void clear_unlockables(void)
+{
+	INT32 i;
+
+	for (i = 0; i < MAXUNLOCKABLES; ++i)
+	{
+		Z_Free(unlockables[i].stringVar);
+		unlockables[i].stringVar = NULL;
+	}
+
+	memset(&unlockables, 0, sizeof(unlockables));
+}
+
 void clear_conditionsets(void)
 {
 	UINT8 i;
@@ -2679,7 +2709,12 @@ void reademblemdata(MYFILE *f, INT32 num)
 			else if (fastcmp(word, "COLOR"))
 				emblemlocations[num-1].color = get_number(word2);
 			else if (fastcmp(word, "VAR"))
+			{
+				Z_Free(emblemlocations[num-1].stringVar);
+				emblemlocations[num-1].stringVar = Z_StrDup(word2);
+
 				emblemlocations[num-1].var = get_number(word2);
+			}
 			else
 				deh_warning("Emblem %d: unknown word '%s'", num, word);
 		}
@@ -2883,7 +2918,8 @@ void readunlockable(MYFILE *f, INT32 num)
 				}
 				else if (fastcmp(word, "VAR"))
 				{
-					// TODO: different field for level name string
+					Z_Free(unlockables[num].stringVar);
+					unlockables[num].stringVar = Z_StrDup(word2);
 					unlockables[num].variable = (INT16)G_MapNumber(word2);
 				}
 				else

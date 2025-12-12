@@ -147,12 +147,22 @@ void K_SetNameForBot(UINT8 newplayernum, const char *realname)
 --------------------------------------------------*/
 void K_SetBot(UINT8 newplayernum, UINT16 skinnum, UINT8 difficulty, botStyle_e style)
 {
+	INT32 i;
 	CONS_Debug(DBG_NETPLAY, "addbot: %d\n", newplayernum);
 
 	G_AddPlayer(newplayernum, newplayernum);
 
 	if (newplayernum+1 > doomcom->numslots)
 		doomcom->numslots = (INT16)(newplayernum+1);
+
+	// todo find a way to have all auto unlocked for dedicated
+	if (playeringame[0])
+	{
+		for (i = 0; i < MAXAVAILABILITY; i++)
+		{
+			players[newplayernum].availabilities[i] = players[0].availabilities[i];
+		}
+	}
 
 	playernode[newplayernum] = servernode;
 

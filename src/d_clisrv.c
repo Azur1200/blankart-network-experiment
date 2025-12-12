@@ -894,6 +894,9 @@ static boolean CL_SendJoin(void)
 	for (; i < MAXSPLITSCREENPLAYERS; i++)
 		strncpy(netbuffer->u.clientcfg.names[i], va("Player %c", 'A' + i), MAXPLAYERNAME);
 
+	memcpy(&netbuffer->u.clientcfg.availabilities, R_GetSkinAvailabilities(), MAXAVAILABILITY*sizeof(UINT8));
+
+
 	return HSendPacket(servernode, false, 0, sizeof (clientconfig_pak));
 }
 
@@ -3759,8 +3762,8 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 		return;
 	}
 
-	node = (UINT8)READUINT8(*p);
-	newplayernum = (UINT8)READUINT8(*p);
+	node = READUINT8(*p);
+	newplayernum = READUINT8(*p);
 
 	if (newplayernum+1 > doomcom->numslots)
 		doomcom->numslots = (INT16)(newplayernum+1);
@@ -3771,8 +3774,13 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 
 	READSTRINGN(*p, player_names[newplayernum], MAXPLAYERNAME);
 
-	console = (UINT8)READUINT8(*p);
-	splitscreenplayer = (UINT8)READUINT8(*p);
+	console = READUINT8(*p);
+	splitscreenplayer = READUINT8(*p);
+
+	for (i = 0; i < MAXAVAILABILITY; i++)
+	{
+		newplayer->availabilities[i] = READUINT8(*p);
+	}
 
 	G_AddPlayer(newplayernum, console);
 
@@ -3892,10 +3900,10 @@ static void Got_AddBot(UINT8 **p, INT32 playernum)
 	K_SetBot(newplayernum, skinnum, difficulty, style);
 }
 
-static boolean SV_AddWaitingPlayers(SINT8 node, const char *name, const char *name2, const char *name3, const char *name4)
+static boolean SV_AddWaitingPlayers(SINT8 node, UINT8 *availabilities, const char *name, const char *name2, const char *name3, const char *name4)
 {
-	INT32 n, newplayernum;
-	UINT8 buf[4 + MAXPLAYERNAME];
+	INT32 n, newplayernum, i;
+	UINT8 buf[4 + MAXPLAYERNAME + MAXAVAILABILITY];
 	UINT8 *buf_p = buf;
 	boolean newplayer = false;
 
@@ -3977,6 +3985,11 @@ static boolean SV_AddWaitingPlayers(SINT8 node, const char *name, const char *na
 
 			WRITEUINT8(buf_p, nodetoplayer[node]); // consoleplayer
 			WRITEUINT8(buf_p, playerpernode[node]); // splitscreen num
+
+			for (i = 0; i < MAXAVAILABILITY; i++)
+			{
+				WRITEUINT8(buf_p, availabilities[i]);
+			}
 
 			playerpernode[node]++;
 
@@ -4121,9 +4134,11 @@ boolean SV_SpawnServer(void)
 	// strictly speaking, i'm not convinced the following is necessary
 	// but I'm not confident enough to remove it entirely in case it breaks something
 	{
+		UINT8 *availabilitiesbuffer = R_GetSkinAvailabilities();
+
 		SINT8 node = 0;
 		for (; node < MAXNETNODES; node++)
-			result |= SV_AddWaitingPlayers(node, cv_playername[0].zstring, cv_playername[1].zstring, cv_playername[2].zstring, cv_playername[3].zstring);
+			result |= SV_AddWaitingPlayers(node, availabilitiesbuffer, cv_playername[0].zstring, cv_playername[1].zstring, cv_playername[2].zstring, cv_playername[3].zstring);
 	}
 	return result;
 }
@@ -4217,6 +4232,7 @@ static void HandleConnect(SINT8 node)
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	char names[MAXSPLITSCREENPLAYERS][MAXPLAYERNAME + 1];
 	INT32 i;
+	UINT8 availabilitiesbuffer[MAXAVAILABILITY];
 
 	// Sal: Dedicated mode is INCREDIBLY hacked together.
 	// If a server filled out, then it'd overwrite the host and turn everyone into weird husks.....
@@ -4341,6 +4357,8 @@ static void HandleConnect(SINT8 node)
 			}
 		}
 
+		memcpy(availabilitiesbuffer, netbuffer->u.clientcfg.availabilities, sizeof(availabilitiesbuffer));
+
 		// client authorised to join
 		nodewaiting[node] = (UINT8)(netbuffer->u.clientcfg.localplayers - playerpernode[node]);
 		if (!nodeingame[node])
@@ -4375,7 +4393,7 @@ static void HandleConnect(SINT8 node)
 				SV_SendSaveGame(node, false); // send a complete game state
 				DEBFILE("send savegame\n");
 			}
-			SV_AddWaitingPlayers(node, names[0], names[1], names[2], names[3]);
+			SV_AddWaitingPlayers(node, availabilitiesbuffer, names[0], names[1], names[2], names[3]);
 			joindelay += cv_joindelay.value * TICRATE;
 			player_joining = true;
 		}

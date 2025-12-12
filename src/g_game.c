@@ -2713,7 +2713,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	UINT16 skincolor;
 	INT32 skin;
 	UINT16 voice;
-	UINT32 availabilities;
+	UINT8 availabilities[MAXAVAILABILITY];
 
 	tic_t jointime;
 
@@ -2783,7 +2783,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	jitterlegacy = players[player].jitterlegacy;
 
-	availabilities = players[player].availabilities;
+	memcpy(availabilities, players[player].availabilities, sizeof(availabilities));
 
 	charflags = players[player].charflags;
 
@@ -2967,7 +2967,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->kartweight = kartweight;
 	//
 	p->charflags = charflags;
-	p->availabilities = availabilities;
+	memcpy(players[player].availabilities, availabilities, sizeof(availabilities));
 	p->followitem = followitem;
 
 	p->starpostx = starpostx;
