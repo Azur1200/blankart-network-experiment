@@ -1243,7 +1243,7 @@ boolean Y_PlayerIDCanVote(const UINT8 id)
 		return false;
 	}
 
-	if (players[id].bot /*&& !cv_botcanvote.value*/)
+	if (players[id].bot && !cv_botcanvote.value)
 	{
 		// Bots may only vote if the server allows it
 		return false;

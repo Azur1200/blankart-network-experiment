@@ -3181,19 +3181,35 @@ void D_SetupVote(void)
 
 void D_ModifyClientVote(UINT8 player, SINT8 voted)
 {
-	char buf[1];
+	char buf[3];
 	char *p = buf;
+	UINT8 sendPlayer = 0;
 
-	if (player >= MAXSPLITSCREENPLAYERS)
+	if (player >= MAXPLAYERS)
 	{
+		// Can be used for special game votes later.
 		if (!server)
 		{
 			return;
 		}
 	}
 
+	WRITEUINT8(p, player);
+
+	if (player <= MAXPLAYERS)
+	{
+		INT32 i;
+		for (i = 0; i <= splitscreen; i++)
+		{
+			if (g_localplayers[i] == player)
+			{
+				sendPlayer = i;
+			}
+		}
+	}
+
 	WRITESINT8(p, voted);
-	SendNetXCmdForPlayer(player, XD_MODIFYVOTE, &buf, p - buf);
+	SendNetXCmdForPlayer(sendPlayer, XD_MODIFYVOTE, &buf, p - buf);
 }
 
 void D_PickVote(void)
@@ -6150,7 +6166,45 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 
 static void Got_ModifyVotecmd(UINT8 **cp, INT32 playernum)
 {
-	g_votes[playernum] =  READSINT8(*cp);
+	UINT8 targetID = READUINT8(*cp);
+	SINT8 vote = READSINT8(*cp);
+
+	if (targetID >= MAXPLAYERS)
+	{
+		// only the server is allowed to send these
+		if (playernum != serverplayer)
+		{
+			goto fail;
+		}
+	}
+	else if (playeringame[targetID] == true && players[targetID].bot == true)
+	{
+		if (playernum != serverplayer)
+		{
+			goto fail;
+		}
+	}
+	else
+	{
+		if (playernode[targetID] != playernode[playernum])
+		{
+			goto fail;
+		}
+	}
+
+	g_votes[targetID] =  vote;
+	return;
+
+fail:
+	CONS_Alert(CONS_WARNING,
+		M_GetText ("Illegal modify vote command received from %s\n"),
+		player_names[playernum]
+	);
+
+	if (server)
+	{
+		SendKick(playernum, KICK_MSG_CON_FAIL);
+	}
 }
 
 static void Got_PickVotecmd(UINT8 **cp, INT32 playernum)
