@@ -3216,10 +3216,9 @@ void D_PickVote(void)
 		}
 	}
 
-	key = M_RandomKey(numvotes);
-
 	if (numvotes > 0)
 	{
+		key = M_RandomKey(numvotes);
 		WRITESINT8(p, temppicks[key]);
 		WRITESINT8(p, templevels[key]);
 	}

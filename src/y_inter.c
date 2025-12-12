@@ -2011,6 +2011,14 @@ void Y_StartVote(void)
 //
 void Y_EndVote(void)
 {
+	if (nextmap >= NEXTMAP_SPECIAL)
+	{
+		// Don't leave nextmap unset if the vote is ended through
+		// weird means! (such as a dedicated server becoming empty)
+		// If nextmap was left at NEXTMAP_VOTING, we'd crash!
+		Y_VoteStops(0, 0);
+	}
+
 	Y_UnloadVoteData();
 	voteendtic = -1;
 }
