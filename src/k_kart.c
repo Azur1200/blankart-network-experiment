@@ -254,6 +254,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_botcontrol);
 	CV_RegisterVar(&cv_forcerival);
 	CV_RegisterVar(&cv_botcanvote);
+	CV_RegisterVar(&cv_botdrifting);
 	CV_RegisterVar(&cv_karteliminatelast);
 	CV_RegisterVar(&cv_kartusepwrlv);
 	CV_RegisterVar(&cv_votetime);

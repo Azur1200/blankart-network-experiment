@@ -974,6 +974,8 @@ const char *blancredits[] = {
 	"\"luna\"",
 	"\"Super Chris\"",
 	"\"Sunflower\" aka \"AnimeSonic\"",
+	"\"CoolThok\"",
+	"\"Phoenix\"",
 	"",
 	// Anyone who's been directly involved with getting rid of SIGSEGV
 	// culprits gets credited here.

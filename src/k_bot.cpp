@@ -50,6 +50,7 @@ consvar_t cv_forcebots = CVAR_INIT ("kartbot_force", "Off", CV_NETVAR|CV_CHEAT, 
 consvar_t cv_botcontrol = CVAR_INIT ("kartbot_control", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_forcerival = CVAR_INIT ("kartbot_forcerival", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_botcanvote = CVAR_INIT ("kartbot_canvote", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_botdrifting = CVAR_INIT ("kartbot_drift", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 botdata_t botdata[MAXPLAYERS];
 
@@ -1143,6 +1144,9 @@ static void K_BotStartDrift(botdata_t *bd, const player_t* player)
 	fixed_t botDriftSpeed;
 	driftSetting_e driftsetting = DRIFT_NONE;
 	fixed_t speedfactor = FixedDiv(player->speed, K_GetKartSpeed(player, false, false));
+
+	if (cv_botdrifting.value == 0)
+		return; // BOO YOU STINK
 
 	if (speedfactor < FRACUNIT/2)
 	{
