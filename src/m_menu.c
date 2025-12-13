@@ -3233,7 +3233,7 @@ static boolean M_MakeLevelSelectHeader(levelselectrow_t *row, mapheader_t *prev,
 		break;
 	}
 
-	return header != NULL && strcpy(row->header, header);
+	return header != NULL && strlcpy(row->header, header, sizeof(row->header));
 }
 
 //
