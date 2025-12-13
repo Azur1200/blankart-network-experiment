@@ -2032,7 +2032,7 @@ void Y_VoteTicker(void)
 
 					if (G_PlayerInputDown(i, gc_accelerate, false, DEADZONE_BUTTON) && pressed == false)
 					{
-						D_ModifyClientVote(i, voteclient.playerinfo[i].selection);
+						D_ModifyClientVote(g_localplayers[i], voteclient.playerinfo[i].selection);
 						pressed = true;
 					}
 				}
