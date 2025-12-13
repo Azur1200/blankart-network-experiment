@@ -560,6 +560,9 @@ int COM_AddLuaCommand(const char *name)
 	if (fasticmp(name, "respawn"))
 		return -1; // fuck you.
 
+	if (fasticmp(name, "randommap"))
+		return -1;
+
 	// command already exists
 	for (cmd = com_commands; cmd; cmd = cmd->next)
 	{

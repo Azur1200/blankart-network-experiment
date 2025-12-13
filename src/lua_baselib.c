@@ -3329,6 +3329,12 @@ static int Lcheckmapnumber (lua_State *L, int idx, const char *fun)
 static int lib_gBuildMapName(lua_State *L)
 {
 	INT32 map = Lcheckmapnumber(L, 1, "G_BuildMapName");
+
+	if (lua_compatmode) // v1 has undefined behaviour if you return 0, who knew.
+	{
+		map = map == 0 ? G_RandMap(G_TOLFlag(gametype), gamemap-1, 0, 0, NULL) + 1 : map;
+	}
+
 	//HUDSAFE
 	lua_pushstring(L, G_BuildMapName(lua_compatmode ? G_KartMapToNative(map) : map));
 	return 1;
