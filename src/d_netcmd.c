@@ -5447,13 +5447,13 @@ static void Command_LocateLump_f(void)
 	}
 }
 
-#define MAXDOOMEDNUM 4095
+#define MAXDOOMEDNUM 65536
 
 static void Command_ListDoomednums_f(void)
 {
-	INT16 i, j, focusstart = 0, focusend = 0;
+	INT32 i, j, focusstart = 0, focusend = 0;
 	INT32 argc = COM_Argc(), argstart = 0;
-	INT16 table[MAXDOOMEDNUM];
+	INT32 table[MAXDOOMEDNUM];
 	boolean nodoubles = false;
 	UINT8 doubles[(MAXDOOMEDNUM+8/8)];
 
@@ -5558,12 +5558,25 @@ static void Command_ListDoomednums_f(void)
 			continue;
 		}
 		CONS_Printf("	doomednum \x82""%d""\x80 is used by ", i+1);
-		if (table[i] < MT_FIRSTFREESLOT)
+
+		for (j = 0; j < MT_FIRSTFREESLOT+NUMMOBJFREESLOTS; j++)
 		{
-			CONS_Printf("\x87""hardcode MT_%s\n", DEH_MobjtypeName(i));
-			continue;
+			if (mobjinfo[j].doomednum != i+1)
+				continue;
+
+			if (j < MT_FIRSTFREESLOT)
+			{
+				CONS_Printf("\x87""hardcode MT_%s\n", DEH_MobjtypeName(j));
+				continue;
+			}
+			else
+			{
+				CONS_Printf("\x81""freeslot MT_""%s\n", DEH_MobjtypeName(j));
+				continue;
+			}
+
+			CONS_Printf("\x87""?????\n");
 		}
-		CONS_Printf("\x81""freeslot MT_""%s\n", DEH_MobjtypeName(i));
 	}
 }
 
