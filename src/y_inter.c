@@ -1987,7 +1987,7 @@ void Y_VoteTicker(void)
 				if (voteclient.playerinfo[i].delay)
 					voteclient.playerinfo[i].delay--;
 
-				if (Y_PlayerIDCanVote(i)
+				if (Y_PlayerIDCanVote(p)
 						&& !voteclient.playerinfo[i].delay
 						&& g_pickedVote == VOTE_NOT_PICKED && g_votes[p] == VOTE_NOT_PICKED)
 				{
@@ -2032,7 +2032,7 @@ void Y_VoteTicker(void)
 
 					if (G_PlayerInputDown(i, gc_accelerate, false, DEADZONE_BUTTON) && pressed == false)
 					{
-						D_ModifyClientVote(i, voteclient.playerinfo[i].selection);
+						D_ModifyClientVote(g_localplayers[i], voteclient.playerinfo[i].selection);
 						pressed = true;
 					}
 				}
