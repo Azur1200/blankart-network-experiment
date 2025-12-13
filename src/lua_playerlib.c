@@ -300,6 +300,7 @@ enum player_e
 	player_dashpadcooldown,
 	player_boostpower,
 	player_speedboost,
+	player_prevspeedboost,
 	player_accelboost,
 	player_boostangle,
 	player_boostinfo,
@@ -520,6 +521,7 @@ static const char *const player_opt[] = {
 	"dashpadcooldown",
 	"boostpower",
 	"speedboost",
+	"prevspeedboost",
 	"accelboost",
 	"boostangle",
 	"boostinfo",
@@ -905,6 +907,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_speedboost:
 		lua_pushinteger(L, plr->speedboost);
+		break;
+	case player_prevspeedboost:
+		lua_pushinteger(L, plr->prevspeedboost);
 		break;
 	case player_accelboost:
 		lua_pushinteger(L, plr->accelboost);
@@ -1669,6 +1674,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_speedboost:
 		plr->speedboost = luaL_checkinteger(L, 3);
+		break;
+	case player_prevspeedboost:
+		plr->prevspeedboost = luaL_checkinteger(L, 3);
 		break;
 	case player_accelboost:
 		plr->accelboost = luaL_checkinteger(L, 3);
