@@ -8616,7 +8616,9 @@ INT32 MR_SetupControlsMenu(INT32 arg)
 
 	// Set proper gamepad options
 	M_SetItemArgument(MN_OP_CHANGECONTROLS, "SETJOY", arg);
-	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEADZ", &cv_deadzone[arg]);
+	M_SetItemCvar(MN_OP_CHANGECONTROLS, "XDEADZ", &cv_deadzonex[arg]);
+	M_SetItemCvar(MN_OP_CHANGECONTROLS, "YDEADZ", &cv_deadzoney[arg]);
+	M_SetItemCvar(MN_OP_CHANGECONTROLS, "TDEADZ", &cv_deadzonet[arg]);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEAZS", &cv_deadzonestyle[arg]);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "TURNSMOOTHING", &cv_turnsmooth[arg]);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "LITESTEER", &cv_litesteer[arg]);

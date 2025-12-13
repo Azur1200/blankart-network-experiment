@@ -465,11 +465,24 @@ consvar_t cv_jitterlegacy[MAXSPLITSCREENPLAYERS] = {
 };
 
 static CV_PossibleValue_t zerotoone_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
-consvar_t cv_deadzone[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("deadzone", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("deadzone2", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("deadzone3", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("deadzone4", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL)
+consvar_t cv_deadzonex[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("xdeadzone", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("xdeadzone2", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("xdeadzone3", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("xdeadzone4", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL)
+};
+consvar_t cv_deadzoney[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("ydeadzone", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("ydeadzone2", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("ydeadzone3", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("ydeadzone4", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL)
+};
+
+consvar_t cv_deadzonet[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("tdeadzone", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("tdeadzone2", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("tdeadzone3", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("tdeadzone4", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL)
 };
 
 static CV_PossibleValue_t deadzonestyle_cons_t[] = {{0, "Kart"}, {1, "RR"}, {0, NULL}};
@@ -1152,7 +1165,9 @@ void G_FinalClipAimingPitch(INT32 *aiming, player_t *player, boolean skybox)
 // returns true if event's axis is within the deadzone for the given player
 boolean G_AxisInDeadzone(UINT8 p, event_t *ev)
 {
-	return abs(ev->data2) <= (JOYAXISRANGE * cv_deadzone[p].value) / FRACUNIT;
+	fixed_t deadzonetype = G_GetDeadZoneType(p, G_GetAxisTypeForData1(ev->data1));
+	// Lets make button default....
+	return abs(ev->data2) <= (JOYAXISRANGE * deadzonetype) / FRACUNIT;
 }
 
 // check if the given key is bound to the given gamecontrol
@@ -1181,7 +1196,44 @@ bound:
 	return false;
 }
 
-INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital)
+SINT8 G_GetAxisTypeForData1(SINT8 data1)
+{
+	switch (data1)
+	{
+		case 0:
+		case 2:
+			return DEADZONE_X;
+			break;
+		case 1:
+		case 3:
+			return DEADZONE_Y;
+			break;
+		case 4:
+		case 5:
+		default:
+			return DEADZONE_BUTTON;
+			break;
+	}
+}
+
+fixed_t G_GetDeadZoneType(INT32 p, SINT8 type)
+{
+	switch (type)
+	{
+		case DEADZONE_X:
+			return cv_deadzonex[p].value;
+			break;
+		case DEADZONE_Y:
+			return cv_deadzoney[p].value;
+			break;
+		case DEADZONE_BUTTON:
+		default:
+			return cv_deadzonet[p].value;
+			break;
+	}
+}
+
+INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital, SINT8 type)
 {
 	INT32 deviceID;
 	INT32 i;
@@ -1195,7 +1247,9 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital)
 		return 0;
 	}
 
-	deadzone = (JOYAXISRANGE * cv_deadzone[p].value) / FRACUNIT;
+	fixed_t deadzonetype = G_GetDeadZoneType(p,type);
+
+	deadzone = (JOYAXISRANGE * deadzonetype) / FRACUNIT;
 
 	deviceID = I_GetJoystickDeviceIndexForPlayer(p) + 1;
 
@@ -1229,9 +1283,9 @@ retrygetcontrol:
 	return 0;
 }
 
-boolean G_PlayerInputDown(UINT8 p, INT32 gc, boolean digital)
+boolean G_PlayerInputDown(UINT8 p, INT32 gc, boolean digital, SINT8 type)
 {
-	return (G_PlayerInputAnalog(p, gc, digital) != 0);
+	return (G_PlayerInputAnalog(p, gc, digital, type) != 0);
 }
 
 // Take a magnitude of two axes, and adjust it to take out the deadzone
@@ -1260,7 +1314,8 @@ static INT32 G_BasicDeadZoneCalculation(INT32 magnitude, fixed_t deadZone)
 static void G_HandleAxisDeadZone(UINT8 splitnum, joystickvector2_t *joystickvector)
 {
 	INT32 gamepadStyle = Joystick[splitnum].bGamepadStyle;
-	fixed_t deadZone = cv_deadzone[splitnum].value;
+	fixed_t deadZoneX = cv_deadzonex[splitnum].value;
+	fixed_t deadZoneY = cv_deadzoney[splitnum].value;
 	SINT8 deadZoneStyle = cv_deadzonestyle[splitnum].value;
 
 	// When gamepadstyle is "true" the values are just -1, 0, or 1. This is done in the interface code.
@@ -1276,7 +1331,8 @@ static void G_HandleAxisDeadZone(UINT8 splitnum, joystickvector2_t *joystickvect
 		INT32 magnitude = (joystickvector->xaxis * joystickvector->xaxis) + (joystickvector->yaxis * joystickvector->yaxis);
 		INT32 normalisedXAxis;
 		INT32 normalisedYAxis;
-		INT32 normalisedMagnitude;
+		INT32 normalisedMagnitudeX;
+		INT32 normalisedMagnitudeY;
 		double dMagnitude = sqrt((double)magnitude);
 		magnitude = (INT32)dMagnitude;
 
@@ -1285,11 +1341,12 @@ static void G_HandleAxisDeadZone(UINT8 splitnum, joystickvector2_t *joystickvect
 		normalisedYAxis = (joystickvector->yaxis * magnitude) / JOYAXISRANGE;
 
 		// Apply the deadzone to the magnitude to give a correct value between 0 and JOYAXISRANGE
-		normalisedMagnitude = G_BasicDeadZoneCalculation(magnitude, deadZone);
+		normalisedMagnitudeX = G_BasicDeadZoneCalculation(magnitude, deadZoneX);
+		normalisedMagnitudeY = G_BasicDeadZoneCalculation(magnitude, deadZoneY);
 
 		// Apply the deadzone to the xy axes
-		joystickvector->xaxis = (normalisedXAxis * normalisedMagnitude) / JOYAXISRANGE;
-		joystickvector->yaxis = (normalisedYAxis * normalisedMagnitude) / JOYAXISRANGE;
+		joystickvector->xaxis = (normalisedXAxis * normalisedMagnitudeX) / JOYAXISRANGE;
+		joystickvector->yaxis = (normalisedYAxis * normalisedMagnitudeY) / JOYAXISRANGE;
 
 		// Cap the values so they don't go above the correct maximum
 		joystickvector->xaxis = min(joystickvector->xaxis, JOYAXISRANGE);
@@ -1371,7 +1428,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		return;
 	}
 
-	joystickvector.xaxis = G_PlayerInputAnalog(forplayer, gc_turnright, false) - G_PlayerInputAnalog(forplayer, gc_turnleft, false);
+	joystickvector.xaxis = G_PlayerInputAnalog(forplayer, gc_turnright, false, DEADZONE_X) - G_PlayerInputAnalog(forplayer, gc_turnleft, false, DEADZONE_X);
 	joystickvector.yaxis = 0;
 	G_HandleAxisDeadZone(forplayer, &joystickvector);
 
@@ -1379,7 +1436,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// use it for aiming to throw items forward/backward and the vote screen
 	// This mean that the turn axis will still be gradient but up/down will be 0
 	// until the stick is pushed far enough
-	joystickvector.yaxis = G_PlayerInputAnalog(forplayer, gc_aimbackward, false) - G_PlayerInputAnalog(forplayer, gc_aimforward, false);
+	joystickvector.yaxis = G_PlayerInputAnalog(forplayer, gc_aimbackward, false, DEADZONE_Y) - G_PlayerInputAnalog(forplayer, gc_aimforward, false, DEADZONE_Y);
 
 	if (encoremode)
 	{
@@ -1399,7 +1456,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		{
 			// check turn input again, but this time digital only
 			// if it's false, an analog stick is inputting the turn; no smoothing!
-			if (G_PlayerInputDown(forplayer, gc_turnleft, true) || G_PlayerInputDown(forplayer, gc_turnright, true))
+			if (G_PlayerInputDown(forplayer, gc_turnleft, true, DEADZONE_X) || G_PlayerInputDown(forplayer, gc_turnright, true, DEADZONE_X))
 			{
 				I_Assert(cv_turnsmooth[forplayer].value);
 				tspeed /= cv_turnsmooth[forplayer].value * 2;
@@ -1441,12 +1498,12 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 	if (spectating || objectplacing) // SRB2Kart: spectators need special controls
 	{
-		if (G_PlayerInputDown(forplayer, gc_accelerate, false))
+		if (G_PlayerInputDown(forplayer, gc_accelerate, false, DEADZONE_BUTTON))
 		{
 			cmd->buttons |= BT_ACCELERATE;
 		}
 
-		if (G_PlayerInputDown(forplayer, gc_brake, false))
+		if (G_PlayerInputDown(forplayer, gc_brake, false, DEADZONE_BUTTON))
 		{
 			cmd->buttons |= BT_BRAKE;
 		}
@@ -1464,7 +1521,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	else
 	{
 		// forward with key or button // SRB2kart - we use an accel/brake instead of forward/backward.
-		fixed_t value = G_PlayerInputAnalog(forplayer, gc_accelerate, false);
+		fixed_t value = G_PlayerInputAnalog(forplayer, gc_accelerate, false, DEADZONE_BUTTON);
 		if (value != 0)
 		{
 			cmd->buttons |= BT_ACCELERATE;
@@ -1474,7 +1531,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		if (player->sneakertimer)
 			forward = MAXPLMOVE;	// 50
 
-		value = G_PlayerInputAnalog(forplayer, gc_brake, false);
+		value = G_PlayerInputAnalog(forplayer, gc_brake, false, DEADZONE_BUTTON);
 		if (value != 0)
 		{
 			cmd->buttons |= BT_BRAKE;
@@ -1490,33 +1547,33 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	}
 
 	// fire with any button/key
-	if (G_PlayerInputDown(forplayer, gc_fire, false))
+	if (G_PlayerInputDown(forplayer, gc_fire, false, DEADZONE_BUTTON))
 	{
 		cmd->buttons |= BT_ATTACK;
 	}
 
 	// drift with any button/key
-	if (G_PlayerInputDown(forplayer, gc_drift, false))
+	if (G_PlayerInputDown(forplayer, gc_drift, false, DEADZONE_BUTTON))
 	{
 		cmd->buttons |= BT_DRIFT;
 	}
 
 	// rear view with any button/key
-	if (G_PlayerInputDown(forplayer, gc_lookback, false))
+	if (G_PlayerInputDown(forplayer, gc_lookback, false, DEADZONE_BUTTON))
 	{
 		cmd->buttons |= BT_LOOKBACK;
 	}
 
 	// Lua scriptable buttons
-	if (G_PlayerInputDown(forplayer, gc_custom1, false))
+	if (G_PlayerInputDown(forplayer, gc_custom1, false, DEADZONE_BUTTON))
 		cmd->buttons |= BT_CUSTOM1;
-	if (G_PlayerInputDown(forplayer, gc_custom2, false))
+	if (G_PlayerInputDown(forplayer, gc_custom2, false, DEADZONE_BUTTON))
 		cmd->buttons |= BT_CUSTOM2;
-	if (G_PlayerInputDown(forplayer, gc_custom3, false))
+	if (G_PlayerInputDown(forplayer, gc_custom3, false, DEADZONE_BUTTON))
 		cmd->buttons |= BT_CUSTOM3;
 
 	// Reset camera
-	if (G_PlayerInputDown(forplayer, gc_camreset, false))
+	if (G_PlayerInputDown(forplayer, gc_camreset, false, DEADZONE_BUTTON))
 	{
 		if (thiscam->chase && *rd == false)
 			P_ResetCamera(player, thiscam);
@@ -1532,7 +1589,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			 && (!thiscam->chase)) //because chasecam's not inverted
 			 ? -1 : 1; // set to -1 or 1 to multiply
 
-		INT32 axis = G_PlayerInputAnalog(forplayer, gc_lookup, false) - G_PlayerInputAnalog(forplayer, gc_lookdown, false);
+		INT32 axis = G_PlayerInputAnalog(forplayer, gc_lookup, false, DEADZONE_Y) - G_PlayerInputAnalog(forplayer, gc_lookdown, false, DEADZONE_Y);
 
 		// either i allow mouse binds in controls... or i just hardcode it :^)
 		INT32 mousey = gamekeydown[0][KEY_MOUSEMOVE+1] - gamekeydown[0][KEY_MOUSEMOVE+0];
@@ -1541,7 +1598,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		if (axis != 0 && spectating)
 			cmd->aiming += axis/2 * screen_invert; // divide by 2 to match KB_LOOKSPEED
 
-		if (G_PlayerInputDown(forplayer, gc_centerview, false)) // // No need to put a spectator limit on this one though :V
+		if (G_PlayerInputDown(forplayer, gc_centerview, false, DEADZONE_BUTTON)) // // No need to put a spectator limit on this one though :V
 			cmd->aiming = 0;
 	}
 

@@ -1295,7 +1295,9 @@ void D_RegisterClientCommands(void)
 	{
 		CV_RegisterVar(&cv_kickstartaccel[i]);
 		CV_RegisterVar(&cv_shrinkme[i]);
-		CV_RegisterVar(&cv_deadzone[i]);
+		CV_RegisterVar(&cv_deadzonex[i]);
+		CV_RegisterVar(&cv_deadzoney[i]);
+		CV_RegisterVar(&cv_deadzonet[i]);
 		CV_RegisterVar(&cv_deadzonestyle[i]);
 		CV_RegisterVar(&cv_litesteer[i]);
 		CV_RegisterVar(&cv_turnsmooth[i]);

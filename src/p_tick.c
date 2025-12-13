@@ -944,7 +944,7 @@ void P_Ticker(boolean run)
 			G_WriteAllGhostTics();
 
 			if (cv_recordmultiplayerdemos.value && (demo.savemode == DSM_NOTSAVING || demo.savemode == DSM_WILLAUTOSAVE))
-				if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && G_PlayerInputDown(0, gc_lookback, false))
+				if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON))
 					demo.savemode = DSM_TITLEENTRY;
 		}
 		else if (demo.playback) // Use Ghost data for consistency checks.

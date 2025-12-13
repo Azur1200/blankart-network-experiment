@@ -747,7 +747,7 @@ void Y_Ticker(void)
 
 	if (demo.recording)
 	{
-		if (demo.savemode == DSM_NOTSAVING && G_PlayerInputDown(0, gc_lookback, false))
+		if (demo.savemode == DSM_NOTSAVING && G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON))
 			demo.savemode = DSM_TITLEENTRY;
 
 		if (demo.savemode == DSM_WILLSAVE || demo.savemode == DSM_WILLAUTOSAVE)
@@ -1818,13 +1818,13 @@ void Y_VoteTicker(void)
 						&& !voteclient.playerinfo[i].delay
 						&& g_pickedVote == VOTE_NOT_PICKED && g_votes[p] == VOTE_NOT_PICKED)
 				{
-					if (G_PlayerInputDown(i, gc_aimforward, false))
+					if (G_PlayerInputDown(i, gc_aimforward, false, DEADZONE_Y))
 					{
 						voteclient.playerinfo[i].selection--;
 						pressed = true;
 					}
 
-					if (G_PlayerInputDown(i, gc_aimbackward, false) && pressed == false)
+					if (G_PlayerInputDown(i, gc_aimbackward, false, DEADZONE_Y) && pressed == false)
 					{
 						voteclient.playerinfo[i].selection++;
 						pressed = true;
@@ -1833,7 +1833,7 @@ void Y_VoteTicker(void)
 					if (votemax > 1) // only allow side-movements for multi-row selections
 					{
 						// HORRIBLE hack, my GOD
-						if (G_PlayerInputDown(i, gc_turnright, false) && !pressed) // move right
+						if (G_PlayerInputDown(i, gc_turnright, false, DEADZONE_X) && !pressed) // move right
 						{
 							if (voteclient.playerinfo[i].selection <= votewrap)
 								voteclient.playerinfo[i].selection += 4;
@@ -1842,7 +1842,7 @@ void Y_VoteTicker(void)
 							pressed = true;
 						}
 
-						if (G_PlayerInputDown(i, gc_turnleft, false) && !pressed) // move left
+						if (G_PlayerInputDown(i, gc_turnleft, false, DEADZONE_X) && !pressed) // move left
 						{
 							if (voteclient.playerinfo[i].selection > 3)
 								voteclient.playerinfo[i].selection -= 4;
@@ -1857,7 +1857,7 @@ void Y_VoteTicker(void)
 					if (voteclient.playerinfo[i].selection > ((votemax*3)+((votemax > 1) ? (votemax-1) : 0)) )
 						voteclient.playerinfo[i].selection = 0;
 
-					if (G_PlayerInputDown(i, gc_accelerate, false) && pressed == false)
+					if (G_PlayerInputDown(i, gc_accelerate, false, DEADZONE_BUTTON) && pressed == false)
 					{
 						D_ModifyClientVote(i, voteclient.playerinfo[i].selection);
 						pressed = true;

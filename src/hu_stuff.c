@@ -987,7 +987,7 @@ void HU_Ticker(void)
 	hu_emoteanim++;
 	hu_tick &= 7; // currently only to blink chat input cursor
 
-	if (G_PlayerInputDown(0, gc_scores, false))
+	if (G_PlayerInputDown(0, gc_scores, false, DEADZONE_BUTTON))
 		hu_showscores = !chat_on;
 	else
 		hu_showscores = false;
