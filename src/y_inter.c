@@ -689,7 +689,7 @@ void Y_IntermissionDrawer(void)
 				}
 				else if (manyplayers8)
 				{
-					V_DrawThinString(xx, y2 - 1, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+					V_DrawThinString(x+36, y2 - 1, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 					slen = V_ThinStringWidth(strtime, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE);
 				}
 				else
@@ -799,7 +799,7 @@ void Y_IntermissionDrawer(void)
 #undef NUMFORNEWCOLUMN
 		}
 
-		listscroll_length = max(0, x - BASEVIDWIDTH) * FRACUNIT;
+		listscroll_length = max(0, (x - 4) - BASEVIDWIDTH) * FRACUNIT;
 	}
 
 skiptallydrawer:
@@ -1159,8 +1159,8 @@ void Y_StartIntermission(void)
 
 			if (data.itemrolls)
 			{
-				// 5 seconds for 8P and below, 10 for 16P, 15 for 24P onwards.
-				rolltic = (min(15, max(5, (nump >> 3) * 5)) * TICRATE);
+				// 3 seconds for 8P and below, 6 for 16P, 9 for 24P onwards.
+				rolltic = (min(15, max(5, (nump >> 3) * 3)) * TICRATE);
 
 				sorttic += rolltic;
 				timer += rolltic;
