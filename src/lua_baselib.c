@@ -34,6 +34,7 @@
 #include "k_hud.h"
 #include "k_waypoint.h"
 #include "k_items.h"
+#include "k_itemlist.hpp"
 #include "d_netcmd.h" // IsPlayerAdmin
 #include "m_menu.h" // Player Setup menu color stuff
 #include "p_spec.h" // P_StartQuake
@@ -5244,6 +5245,75 @@ static int lib_kSetPlayerItemCooldown(lua_State *L)
 	return 0;
 }
 
+static int lib_kAddItemRollToList(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	kartitemtype_e item_id = (kartitemtype_e)luaL_checkinteger(L, 2);
+	INT32 amt = luaL_checkinteger(L, 3);
+	//HUDSAFE
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	if (item_id < 1 || item_id >= numkartitems)
+		return luaL_error(L, "item number %d out of range (1 - %d)", item_id, numkartitems-1);
+
+	INT32 pid = (INT32)(player - players);
+
+	K_AddItemRollToList(pid, item_id, amt);
+	return 0;
+}
+
+static int lib_kGetItemListSize(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	//HUDSAFE
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	INT32 pid = (INT32)(player - players);
+
+	lua_pushinteger(L, K_GetItemListSize(pid));
+	return 1;
+}
+
+static int lib_kSetItemListEntry(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	kartitemtype_e item_id = (kartitemtype_e)luaL_checkinteger(L, 2);
+	INT32 num = luaL_checkinteger(L, 3);
+	//HUDSAFE
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	if (item_id < 1 || item_id >= numkartitems)
+		return luaL_error(L, "item number %d out of range (1 - %d)", item_id, numkartitems-1);
+
+	INT32 pid = (INT32)(player - players);
+
+	K_SetItemListEntry(pid, item_id, num);
+	return 0;
+}
+
+static int lib_kGetItemListEntry(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	kartitemtype_e item_id = (kartitemtype_e)luaL_checkinteger(L, 2);
+	//HUDSAFE
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	if (item_id < 1 || item_id >= numkartitems)
+		return luaL_error(L, "item number %d out of range (1 - %d)", item_id, numkartitems-1);
+
+	INT32 pid = (INT32)(player - players);
+	lua_pushinteger(L, K_GetItemListEntry(pid, item_id));
+	return 1;
+}
+
 // G_INPUT
 ////////////
 
@@ -5705,6 +5775,12 @@ static luaL_Reg lib[] = {
 
 	// k_items
 	{"K_SetPlayerItemCooldown", lib_kSetPlayerItemCooldown},
+
+	// k_itemlist
+	{"K_AddItemRollToList", lib_kAddItemRollToList},
+	{"K_GetItemListSize", lib_kGetItemListSize},
+	{"K_SetItemListEntry", lib_kSetItemListEntry},
+	{"K_GetItemListEntry", lib_kGetItemListEntry},
 
 	//g_input
 	{"G_SetPlayerGamepadIndicatorColor",lib_gSetPlayerGamepadIndicatorColor},
