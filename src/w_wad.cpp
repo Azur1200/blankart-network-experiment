@@ -62,6 +62,7 @@
 #include "lua_script.h"
 #include "g_game.h" // G_MapNumber
 #include "r_patchrotation.h"
+#include "lua_hook.h"
 
 #include "k_terrain.h"
 
@@ -1116,6 +1117,10 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boole
 	if (refreshdirmenu & REFRESHDIR_GAMEDATA)
 		G_LoadGameData();
 	DEH_UpdateMaxFreeslots();
+
+	lua_lumploading++;
+	LUA_HookVoid(HOOK(AddonLoaded));
+	lua_lumploading--;
 
 	W_InvalidateLumpnumCache();
 	return wadfile->numlumps;
