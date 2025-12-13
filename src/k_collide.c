@@ -363,7 +363,8 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 			else if (P_IsObjectOnGround(t2))
 			{
 				S_StartSound(t2, sfx_cdfm37);
-				t2->momz = 3*t1->scale*P_MobjFlip(t2);
+				// should think of something else for this specific interaction if people want something to happen
+				// t2->momz = 3*t1->scale*P_MobjFlip(t2);
 				K_SpawnEggMineBumpEffect(t1);
 				t1->extravalue1 = 6;
 				return true;
