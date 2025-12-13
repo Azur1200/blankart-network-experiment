@@ -9519,7 +9519,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 		player->invincibilitybottleneck = (UINT16)(-1); // No bottlenecking!
 		return 0;
 	}
-	else if ((pingame > 3) && (pingame < MINCLUSTERPLAYERS))
+	else if ((pingame == 3))
 	{
 		// "Second place" in this case is actually second to last.
 		// In very small lobbies, it's harder for players to cluster together.
@@ -9854,7 +9854,7 @@ static UINT32 K_UndoMapScaling(UINT32 distance)
 // Based on DBSCAN, so it "chain-scans" neighboring players as well for a more accurate result.
 UINT32 clusterid = 0;
 
-static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fixed_t, vector3_t *), vector3_t *out)
+static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fixed_t, playerfilter_f *, UINT32, vector3_t *), vector3_t *out)
 {
     INT32 bestdensity = 0; // Cluster counter
     vector3_t tempclusterpoint;
@@ -9882,7 +9882,7 @@ static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fix
 			continue;
 
         // Find neighbors
-        INT32 N = func(player, eps, &tempclusterpoint);
+        INT32 N = func(player, eps, &K_ClusterFilter_BaseFilter, 0, &tempclusterpoint);
 
         // Double-remove the clusterplayer flag. Bad hack, I know...
         clusterplayer[i] = false;

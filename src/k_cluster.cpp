@@ -39,7 +39,50 @@ static UINT32 K_GetDTFDifference(player_t *source, player_t *destination)
 extern "C" {
 player_t *closesttocluster;
 
-INT32 K_CountNeighboringPlayersByDistance(player_t *sourcePlayer, fixed_t eps, vector3_t *out, void *nodevec)
+boolean K_ClusterFilter_NoFilter(player_t *player, UINT32 fval)
+{
+    // Ignores literally every parameter and returns true.
+    return true;
+}
+
+// Store our last memory of the cluster player (because we're clearing it out for the second cluster).
+static boolean clusterplayer_memory[MAXPLAYERS];
+
+// Filters players based on various factors, such as playercount and position.
+// fval = pingame
+boolean K_ClusterFilter_BaseFilter(player_t *player, UINT32 fval)
+{
+    UINT8 pingame = static_cast<UINT8>(fval & 0xFF);
+
+    if (player->position >= pingame)
+    {
+        return false; // Ignore last place. *They* need help the most!
+    }
+
+    if (pingame > 6)
+    {
+        // FIXME: Double-cluster algorithm.
+        // Can't do it from within this function, or we're going to have too much overhead.
+        // However: at above 18 players, we shouldn't even *consider* double-clustering.
+        if (!K_IsPlayerLosing(player))
+        {
+            return false; // Ignore winning players to prevent sandbagging.
+        }
+    }
+    else if (pingame > 4)
+    {
+        if (player->position <= 1)
+        {
+            return false; // Ignore the frontrunner.
+        }
+    }
+
+    // Nothing to filter.
+
+    return true;
+}
+
+INT32 K_CountNeighboringPlayersByDistance(player_t *sourcePlayer, fixed_t eps, playerfilter_f *cluster_filter, UINT32 filterval, vector3_t *out, void *nodevec)
 {
     INT64 meanx, meany, meanz;
     INT32 N;
@@ -99,11 +142,11 @@ INT32 K_CountNeighboringPlayersByDistance(player_t *sourcePlayer, fixed_t eps, v
 		if (!player->mo)
 			continue;
 
-        if (!K_IsPlayerLosing(player))
-            continue; // Ignore winning players to prevent sandbagging.
-
-        if (player->position >= pingame)
-            continue; // Ignore last place. *They* need help the most!
+        if (cluster_filter)
+        {
+            if (!cluster_filter(player, filterval))
+                continue;
+        }
         
         // Scan all points in the database
         fixed_t dist = K_PlayerDistance3D(sourcePlayer, player);
@@ -121,7 +164,7 @@ INT32 K_CountNeighboringPlayersByDistance(player_t *sourcePlayer, fixed_t eps, v
                 static_cast<std::vector<player_t *> *>(nodevec)->push_back(player);
 
             // Scan our neighbor for any players close to them.
-            K_CountNeighboringPlayersByDistance(player, eps, &neighborvector, nodevec);
+            K_CountNeighboringPlayersByDistance(player, eps, cluster_filter, filterval, &neighborvector, nodevec);
         }
     }
 
@@ -191,17 +234,22 @@ static UINT32 K_GetU32Diff(UINT32 a, UINT32 b)
     return (b > a) ? (b - a) : (a - b);
 }
 
-INT32 K_CountNeighboringPlayersByDTF(player_t *sourcePlayer, fixed_t eps, vector3_t *out)
+INT32 K_CountNeighboringPlayersByDTFEx(player_t *sourcePlayer, fixed_t eps, playerfilter_f *cluster_filter, UINT32 filterval, vector3_t *out, void *nodevec)
 {
     INT64 mean;
     INT32 N = 0;
     vector3_t neighborvector;
 
+    if (!nodevec)
+    {
+        // Nice goddamn try.
+        return 0;
+    }
+
+    std::vector<player_t *> node_dtf = *static_cast<std::vector<player_t *> *>(nodevec);
+
     if (!sourcePlayer->mo)
         return 0;
-
-    if (cleardtf)
-        dtf_vec.clear();
     
     mean = 0;
 
@@ -235,31 +283,34 @@ INT32 K_CountNeighboringPlayersByDTF(player_t *sourcePlayer, fixed_t eps, vector
         {
             //CONS_Printf("%d is less than %d, adding to nodes vector\n", K_GetDTFDifference(sourcePlayer, player), eps);
             clusterplayer[i] = true;
-            dtf_vec.push_back(player); // Add to result
 
-            cleardtf = false;
+            if (nodevec)
+            {
+                // Add to the result.
+                static_cast<std::vector<player_t *> *>(nodevec)->push_back(player);
+            }
 
             // Scan our neighbor for any players close to them.
-            K_CountNeighboringPlayersByDTF(player, eps, &neighborvector);
-
-            cleardtf = true;
+            K_CountNeighboringPlayersByDTFEx(player, eps, cluster_filter, filterval, &neighborvector, nodevec);
         }
     }
 
-    N = dtf_vec.size();
+    N = node_dtf.size();
+
+    CONS_Printf("node count: %d\n", N);
 
     if (N != 0)
     {
         // Return the average center point of this cluster.
         for (i = 0; i < N; i++)
         {
-            if (!dtf_vec[i])
+            if (!node_dtf[i])
                 continue;
 
-            if (!dtf_vec[i]->mo)
+            if (!node_dtf[i]->mo)
                 continue;
 
-            mean += dtf_vec[i]->distancetofinish;
+            mean += node_dtf[i]->distancetofinish;
         }
         mean /= N;
 
@@ -272,11 +323,11 @@ INT32 K_CountNeighboringPlayersByDTF(player_t *sourcePlayer, fixed_t eps, vector
         bestdist = UINT32_MAX;
         for (i = 0; i < N; i++)
         {
-            disttocluster = K_GetU32Diff(dtf_vec[i]->distancetofinish, mean);
+            disttocluster = K_GetU32Diff(node_dtf[i]->distancetofinish, mean);
 
             if (disttocluster < bestdist)
             {
-                closesttocluster = dtf_vec[i];
+                closesttocluster = node_dtf[i];
                 bestdist = disttocluster;
             }
         }
@@ -289,14 +340,22 @@ INT32 K_CountNeighboringPlayersByDTF(player_t *sourcePlayer, fixed_t eps, vector
     return N;
 }
 
-INT32 K_CountNeighboringPlayers(player_t *sourcePlayer, fixed_t eps, vector3_t *out)
+INT32 K_CountNeighboringPlayersByDTF(player_t *sourcePlayer, fixed_t eps, playerfilter_f *cluster_filter, UINT32 filterval, vector3_t *out)
+{
+    if (cleardtf)
+        dtf_vec.clear();
+
+    return K_CountNeighboringPlayersByDTFEx(sourcePlayer, eps, cluster_filter, filterval, out, &dtf_vec);
+}
+
+INT32 K_CountNeighboringPlayers(player_t *sourcePlayer, fixed_t eps, playerfilter_f *cluster_filter, UINT32 filterval, vector3_t *out)
 {
     // Dummy vector so the game doesn't SIGSEGV.
     // Turns out, it's also necessary for this system not to be placebo!
     std::vector<player_t *> dummy = {0};
 
     dummy.clear();
-    INT32 result = K_CountNeighboringPlayersByDistance(sourcePlayer, eps, out, &dummy);
+    INT32 result = K_CountNeighboringPlayersByDistance(sourcePlayer, eps, cluster_filter, filterval, out, &dummy);
 
     return result;
 }

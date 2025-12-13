@@ -1591,7 +1591,7 @@ static void K_DoGrowShrink(player_t *player, boolean shrinking)
 	if (shrinking)
 	{
 		// Find neighbors
-		INT32 n = K_CountNeighboringPlayers(player, ALTSHRINK_EPSILON, &(vector3_t){});
+		INT32 n = K_CountNeighboringPlayers(player, ALTSHRINK_EPSILON, &K_ClusterFilter_NoFilter, 0, &(vector3_t){});
 
 		// For every neighbor, add some iframes for a clean breakaway.
 		UINT32 iframes = BASE_IFRAMES + n * NEIGHBOR_IFRAMES;
