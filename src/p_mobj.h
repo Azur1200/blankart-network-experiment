@@ -622,6 +622,7 @@ extern boolean airthrustactive;
 extern boolean itemlittering;
 extern boolean itempushing;
 extern UINT8   bumpsparkactive;
+extern boolean itemlistactive;
 extern UINT16 bossdisabled;
 extern boolean stoppedclock;
 

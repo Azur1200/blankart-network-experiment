@@ -4365,6 +4365,12 @@ static int lib_kItemLitterActive(lua_State *L)
 	return 1;
 }
 
+static int lib_kItemListActive(lua_State *L)
+{
+	lua_pushboolean(L, K_ItemListActive());
+	return 1;
+}
+
 // Gets the currently active bumpspark type.
 static int lib_kGetBumpSpark(lua_State *L)
 {
@@ -5688,6 +5694,7 @@ static luaL_Reg lib[] = {
 	{"K_DraftingActive",lib_kDraftingActive},
 	{"K_AirDropActive",lib_kAirDropActive},
 	{"K_ItemLitterActive",lib_kItemLitterActive},
+	{"K_ItemListActive", lib_kItemListActive},
 	{"K_GetBumpSpark",lib_kGetBumpSpark},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
 	{"K_DoBoost",lib_kDoBoost},

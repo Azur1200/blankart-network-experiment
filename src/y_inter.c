@@ -101,7 +101,7 @@ static boolean Y_ItemListActive(void)
 		nump++;
 	}
 
-	return ((cv_itemlist.value != 0) && (nump > 1));
+	return ((itemlistactive) && (nump > 1));
 }
 
 static y_data data;

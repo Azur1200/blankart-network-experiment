@@ -10972,6 +10972,17 @@ boolean K_ItemLitterActive(void)
 	return false;
 }
 
+boolean K_ItemListActive(void)
+{
+	if (itemlistactive)
+	{
+		// Item listing is enabled!
+		return true;
+	}
+
+	return false;
+}
+
 boolean K_ItemPushingActive(void)
 {
 	return itempushing;
