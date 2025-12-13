@@ -155,6 +155,7 @@ static int skin_get(lua_State *L)
 		break;
 	case skin_compatmode:
 		lua_pushboolean(L, wadfiles[skin->wadnum]->compatmode);
+		break;
 	}
 	return 1;
 }
