@@ -1166,7 +1166,6 @@ void G_FinalClipAimingPitch(INT32 *aiming, player_t *player, boolean skybox)
 boolean G_AxisInDeadzone(UINT8 p, event_t *ev)
 {
 	fixed_t deadzonetype = G_GetDeadZoneType(p, G_GetAxisTypeForData1(ev->data1));
-	// Lets make button default....
 	return abs(ev->data2) <= (JOYAXISRANGE * deadzonetype) / FRACUNIT;
 }
 
