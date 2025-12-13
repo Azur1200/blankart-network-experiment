@@ -116,10 +116,10 @@ extern "C"
 #define ITEMLOG_SPACE 1
 
     // Draws an item in the player's item list. Draws nothing if the list is empty.
-    void K_DrawItemList(INT32 pid, fixed_t x, fixed_t y)
+    fixed_t K_DrawItemList(INT32 pid, fixed_t x, fixed_t y)
     {
         if (itemcounter[pid].size() < 1)
-            return;
+            return 0;
 
         patch_t* localpatch;
         fixed_t dx = x;
@@ -142,6 +142,9 @@ extern "C"
 
             dx += (6 + std::max(0, (ir_length * 3) - 3) + ITEMLOG_SPACE) * FRACUNIT;
         }
+
+        // Return the overall "width" of the list.
+        return dx - x;
     }
 
 #undef ITEMLOG_SPACE

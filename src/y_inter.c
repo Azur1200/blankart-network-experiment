@@ -122,9 +122,10 @@ static INT32 endtic = -1;
 static INT32 sorttic = -1;
 static INT32 rolltic = -1;
 
+static fixed_t listscroll_length = 0;
 static boolean listscroll_reverse = false;
 static INT32 listscroll_delay = 0;
-fixed_t yscroll = 0;
+static fixed_t xscroll = 0;
 
 intertype_t intertype = int_none;
 intertype_t intermissiontypes[NUMGAMETYPES];
@@ -409,7 +410,7 @@ void Y_CleanupScreenBuffer(void)
 void Y_IntermissionDrawer(void)
 {
 	INT32 i, whiteplayer = MAXPLAYERS, x = 4, hilicol = V_YELLOWMAP; // fallback
-	INT32 xx = x;
+	INT32 xx = x, x_base = x;
 
 	if (intertype == int_none || rendermode == render_none)
 		return;
@@ -497,6 +498,7 @@ void Y_IntermissionDrawer(void)
 #define NUMFORNEWCOLUMN 8
 		INT32 y = 41, gutter = ((data.numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
 		INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
+		fixed_t newlist_xpush = (BASEVIDWIDTH/2) * FRACUNIT;
 		const char *timeheader;
 
 		boolean manyplayers16 = (data.numplayers > NUMFORNEWCOLUMN*2);
@@ -560,6 +562,8 @@ void Y_IntermissionDrawer(void)
 			V_DrawRightAlignedString(x+152, 24, hilicol, timeheader);
 		}
 
+		INT32 xscroll_px = (xscroll / FRACUNIT);
+
 		for (i = 0; i < data.numplayers; i++)
 		{
 			boolean dojitter = data.jitter[data.num[i]];
@@ -575,9 +579,9 @@ void Y_IntermissionDrawer(void)
 				if (displayitemrolls)
 				{
 					if (data.pos[i] < 0 || data.pos[i] > 16)
-						V_DrawPingNum(x+2, y+1, 0, data.pos[i], NULL);
+						V_DrawPingNum(x+2-xscroll_px, y+1, 0, data.pos[i], NULL);
 					else
-						V_DrawScaledPatch(x-5, y+1, 0, kp_facenum[data.pos[i]]);
+						V_DrawScaledPatch(x-5-xscroll_px, y+1, 0, kp_facenum[data.pos[i]]);
 				}
 				else if (manyplayers16)
 				{
@@ -613,7 +617,7 @@ void Y_IntermissionDrawer(void)
 						if (displayitemrolls)
 						{
 							V_DrawFixedPatch(
-								((x+11)*FRACUNIT) + ((facerank->leftoffset) * scale),
+								((x+11-xscroll_px)*FRACUNIT) + ((facerank->leftoffset) * scale),
 								((y+1)*FRACUNIT) + ((facerank->topoffset) * scale),
 								scale,
 								0,
@@ -621,7 +625,13 @@ void Y_IntermissionDrawer(void)
 								colormap
 							);
 
-							xx = (x+11) + 20;
+							if ((x_base - x) == 0)
+							{
+								// Terrible hack to remedy offset woes: Set a "base" value for x to reference.
+								x_base = (x+11) + 20;
+							}
+
+							xx = x + x_base - 4;
 						}
 						else
 						{
@@ -663,7 +673,7 @@ void Y_IntermissionDrawer(void)
 					V_DrawThinString(x+18, y, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 				else if (displayitemrolls)
 				{
-					V_DrawThinString(x + 20, y, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+					V_DrawThinString(x + 20 - xscroll_px, y, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 
 					// Get the longest string size. This is... gross.
 					INT32 ii;
@@ -724,7 +734,8 @@ void Y_IntermissionDrawer(void)
 				}
 				else if (data.itemrolls && (intertic <= rolltic))
 				{
-					K_DrawItemList((INT32)(&players[data.num[i]] - players), (xx+2+slen) * FRACUNIT, ((y+1) * FRACUNIT));
+					const fixed_t itemlistlen = K_DrawItemList((INT32)(data.num[i]), ((xx+2+slen-xscroll_px) * FRACUNIT), ((y+1) * FRACUNIT));
+					newlist_xpush = max(newlist_xpush, ((x_base+9+slen) * FRACUNIT) + itemlistlen);
 				}
 				else
 				{
@@ -780,12 +791,15 @@ void Y_IntermissionDrawer(void)
 				if ((i % 16) == (((displayitemrolls) ? 2 : 1) * NUMFORNEWCOLUMN) - 1)
 				{
 					y = 41;
-					x += BASEVIDWIDTH/2;
+					x += (newlist_xpush / FRACUNIT);
+
+					newlist_xpush = (BASEVIDWIDTH / 2) * FRACUNIT;
 				}
 			}
-
 #undef NUMFORNEWCOLUMN
 		}
+
+		listscroll_length = max(0, x - BASEVIDWIDTH) * FRACUNIT;
 	}
 
 skiptallydrawer:
@@ -866,34 +880,28 @@ void Y_Ticker(void)
 
 	intertic++;
 
-	// Used to scroll the end-of-race item list.
-	UINT16 manyplayers18 = max(0, data.numplayers - 18);
-
-	// Let's precalculate this, so it's not being done in the Big Stupid Player Loop
-	fixed_t listscroll_length = (manyplayers18 * ITEMLIST_PLAYER_YOFFSET * FRACUNIT);
-
 	if (listscroll_length && (intertic > (TICRATE * 2)) && (intertic <= rolltic))
 	{
 
 		if (!listscroll_reverse)
 		{
-			if ((yscroll >= listscroll_length))
+			if ((xscroll >= listscroll_length))
 			{
 				if (!listscroll_delay)
 					listscroll_delay = ITEMLIST_SCROLLDELAY;
 			}
 			else
-				yscroll = min(listscroll_length, yscroll + ITEMLIST_SCROLLSPEED);
+				xscroll = min(listscroll_length, xscroll + ITEMLIST_SCROLLSPEED);
 		}
 		else
 		{
-			if ((yscroll <= 0))
+			if ((xscroll <= 0))
 			{
 				if (!listscroll_delay)
 					listscroll_delay = ITEMLIST_SCROLLDELAY;
 			}
 			else
-				yscroll = max(0, yscroll - ITEMLIST_SCROLLSPEED);
+				xscroll = max(0, xscroll - ITEMLIST_SCROLLSPEED);
 		}
 
 		if (listscroll_delay)
@@ -906,15 +914,16 @@ void Y_Ticker(void)
 	}
 	else
 	{
+		listscroll_length = 0;
 		listscroll_delay = 0;
 		listscroll_reverse = false;
 
-		if (yscroll > 0)
+		if (xscroll > 0)
 		{
 			if (intertic < rolltic)
-				yscroll = max(0, yscroll - ITEMLIST_SCROLLSPEED);
+				xscroll = max(0, xscroll - ITEMLIST_SCROLLSPEED);
 			else
-				yscroll = 0;
+				xscroll = 0;
 		}
 	}
 
@@ -1150,18 +1159,7 @@ void Y_StartIntermission(void)
 
 			if (data.itemrolls)
 			{
-				// Used to scroll the end-of-race item list.
-				UINT16 manyplayers18 = max(0, nump - 18);
-
-				// Let's precalculate this, so it's not being done in the Big Stupid Player Loop
-				fixed_t listscroll_length = (manyplayers18 * ITEMLIST_PLAYER_YOFFSET * FRACUNIT);
-
-				// Same for the time needed
-				// We'll scroll the list up and down 3 times, and have 2 seconds before scrolling happens
-				tic_t timetoscrolllist = (listscroll_length / ITEMLIST_SCROLLSPEED);
-				tic_t listscroll_time = ((ITEMLIST_SCROLLREPEAT * 2) * (ITEMLIST_SCROLLDELAY + timetoscrolllist)) + (TICRATE * 2);
-
-				rolltic = max(15 * TICRATE, listscroll_time);
+				rolltic = (15 * TICRATE);
 
 				sorttic += rolltic;
 				timer += rolltic;

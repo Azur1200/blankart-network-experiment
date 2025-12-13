@@ -8,7 +8,7 @@ extern "C"
 
     void K_ClearItemRollLists(void);
     void K_AddItemRollToList(INT32 pid, kartitemtype_e item, INT32 amount);
-    void K_DrawItemList(INT32 pid, fixed_t x, fixed_t y);
+    fixed_t K_DrawItemList(INT32 pid, fixed_t x, fixed_t y);
     UINT32 K_GetItemListSize(INT32 pid);
 
     // Getter and setter
