@@ -381,7 +381,8 @@ void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, kart
 
 	player->itemamount = amount;
 
-	K_AddItemRollToList((INT32)(player - players), type, amount);
+	if (cv_itemlist.value)
+		K_AddItemRollToList((INT32)(player - players), type, amount);
 }
 
 static void K_AwardPlayerResult(player_t *player, kartresult_t *result, kartitemblink_e blink)
