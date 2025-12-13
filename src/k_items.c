@@ -38,6 +38,7 @@
 #include "k_waypoint.h"
 #include "k_director.h"
 #include "k_cluster.hpp"
+#include "k_itemlist.hpp"
 #include "k_items.h"
 #include "k_collide.h"
 
@@ -379,6 +380,9 @@ void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, kart
 		amount *= 2;
 
 	player->itemamount = amount;
+
+	if (itemlistactive)
+		K_AddItemRollToList((INT32)(player - players), type, amount);
 }
 
 static void K_AwardPlayerResult(player_t *player, kartresult_t *result, kartitemblink_e blink)

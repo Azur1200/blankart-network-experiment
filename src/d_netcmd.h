@@ -221,6 +221,8 @@ extern consvar_t cv_kartlegacyspbdist;
 
 extern consvar_t cv_kartspbrush;
 
+extern consvar_t cv_itemlist;
+
 extern consvar_t cv_encorevotes;
 
 extern consvar_t cv_votetime;

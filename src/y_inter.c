@@ -49,10 +49,17 @@
 #include "k_grandprix.h"
 #include "k_bot.h" // cv_botcanvote
 #include "r_fps.h" // R_GetTimeFrac
+#include "k_hud.h"
+#include "k_itemlist.hpp"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
 #endif
+
+#define ITEMLIST_PLAYER_YOFFSET 9
+#define ITEMLIST_SCROLLSPEED (3 * FRACUNIT / 4)
+#define ITEMLIST_SCROLLDELAY (3 * TICRATE)
+#define ITEMLIST_SCROLLREPEAT 1
 
 typedef struct
 {
@@ -80,8 +87,22 @@ typedef struct
 	UINT8 pos[MAXPLAYERS]; // player positions. used for ties
 
 	boolean rankingsmode; // rankings mode
+	boolean itemrolls;
 	boolean encore; // encore mode
 } y_data;
+
+static boolean Y_ItemListActive(void)
+{
+	UINT8 i = 0, nump = 0;
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator)
+			continue;
+		nump++;
+	}
+
+	return ((itemlistactive) && (nump > 1));
+}
 
 static y_data data;
 
@@ -99,6 +120,12 @@ static UINT8 *y_screenbuffer;
 static INT32 intertic;
 static INT32 endtic = -1;
 static INT32 sorttic = -1;
+static INT32 rolltic = -1;
+
+static fixed_t listscroll_length = 0;
+static boolean listscroll_reverse = false;
+static INT32 listscroll_delay = 0;
+static fixed_t xscroll = 0;
 
 intertype_t intertype = int_none;
 intertype_t intermissiontypes[NUMGAMETYPES];
@@ -253,6 +280,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 		data.levelstring[sizeof data.levelstring - 1] = '\0';
 
 		data.encore = encoremode;
+		data.itemrolls = Y_ItemListActive();
 
 		memset(data.jitter, 0, sizeof (data.jitter));
 	}
@@ -382,9 +410,16 @@ void Y_CleanupScreenBuffer(void)
 void Y_IntermissionDrawer(void)
 {
 	INT32 i, whiteplayer = MAXPLAYERS, x = 4, hilicol = V_YELLOWMAP; // fallback
+	INT32 xx = x, x_base = x;
 
 	if (intertype == int_none || rendermode == render_none)
 		return;
+
+	INT32 w = (vid.width / vid.dupx);
+	INT32 h = (vid.height / vid.dupy);
+
+	const INT32 vidxdiff = (w - BASEVIDWIDTH) / 2;
+	const INT32 vidydiff = (h - BASEVIDHEIGHT) / 2;
 
 	if (!useinterpic && y_screenbuffer == NULL
 #ifdef HWRENDER
@@ -435,7 +470,18 @@ void Y_IntermissionDrawer(void)
 			hilicol = V_YELLOWMAP;
 	}
 
-	if (sorttic != -1 && intertic > sorttic)
+	if (rolltic != -1 && intertic > (rolltic - 8) && (intertic < (rolltic + 8)))
+	{
+		INT32 count = (intertic - (rolltic - 8));
+
+		if (count < 8)
+			x -= ((((count<<FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dupx);
+		else if (count == 8)
+			goto skiptallydrawer;
+		else if (count < 16)
+			x += (((((16 - count)<<FRACBITS) - R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dupx);
+	}
+	else if (sorttic != -1 && intertic > sorttic)
 	{
 		INT32 count = (intertic - sorttic);
 
@@ -452,10 +498,15 @@ void Y_IntermissionDrawer(void)
 #define NUMFORNEWCOLUMN 8
 		INT32 y = 41, gutter = ((data.numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
 		INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
+		fixed_t newlist_xpush = (BASEVIDWIDTH/2) * FRACUNIT;
 		const char *timeheader;
-		
+
 		boolean manyplayers16 = (data.numplayers > NUMFORNEWCOLUMN*2);
 		boolean manyplayers8 = (data.numplayers > NUMFORNEWCOLUMN);
+		boolean displayitemrolls = (data.itemrolls && (intertic <= rolltic));
+
+		if (displayitemrolls)
+			manyplayers16 = manyplayers8 = false;
 
 		int y2;
 
@@ -510,13 +561,8 @@ void Y_IntermissionDrawer(void)
 
 			V_DrawRightAlignedString(x+152, 24, hilicol, timeheader);
 		}
-		else
-		{
-			V_DrawCenteredString(x+6, 24, hilicol, "#");
-			V_DrawString(x+36, 24, hilicol, "NAME");
-	
-			V_DrawRightAlignedString(x+(BASEVIDWIDTH/2)+152, 24, hilicol, timeheader);
-		}
+
+		INT32 xscroll_px = (xscroll / FRACUNIT);
 
 		for (i = 0; i < data.numplayers; i++)
 		{
@@ -530,36 +576,78 @@ void Y_IntermissionDrawer(void)
 				if (dojitter)
 					y--;
 
-				if (manyplayers16)
-					V_DrawPingNum(x+6, y+2, 0, data.pos[i], NULL);
+				if (displayitemrolls)
+				{
+					if (data.pos[i] < 0 || data.pos[i] > 16)
+						V_DrawPingNum(x+2-xscroll_px, y+1, 0, data.pos[i], NULL);
+					else
+						V_DrawScaledPatch(x-5-xscroll_px, y+1, 0, kp_facenum[data.pos[i]]);
+				}
+				else if (manyplayers16)
+				{
+					V_DrawPingNum(x + 6, y + 2, 0, data.pos[i], NULL);
+				}
 				else
 					V_DrawCenteredString(x+6, y, 0, va("%d", data.pos[i]));
 
 				if (data.color[i])
 				{
 					UINT8 *colormap = R_GetTranslationColormap(*data.character[i], *data.color[i], GTC_CACHE);
-					patch_t *facerank = faceprefix[*data.character[i]][FACE_RANK];
+					patch_t *facerank;
+
+					facerank = faceprefix[*data.character[i]][FACE_RANK];
+
+					fixed_t scale = FRACUNIT;
 
 					if (manyplayers16)
 					{
-						// fixed_t scale = K_UseHighResPortraits() ? FRACUNIT/4 : FRACUNIT/2;
-						fixed_t scale = FRACUNIT/2;
+						scale = FRACUNIT / 2;
+
 						V_DrawFixedPatch((x+8)<<FRACBITS, (y+1)<<FRACBITS, scale, 0, facerank, colormap);
 					}
 					else
 					{
-						V_DrawMappedPatch(x+16+facerank->leftoffset, y-4+facerank->topoffset, 0, facerank, colormap);
+						INT32 xoffs, yoffs;
+
+						scale = (displayitemrolls) ? FRACUNIT/2 : FRACUNIT;
+
+						xoffs = FixedMul(16, scale);
+						yoffs = FixedMul(4, scale);
+
+						if (displayitemrolls)
+						{
+							V_DrawFixedPatch(
+								((x+11-xscroll_px)*FRACUNIT) + ((facerank->leftoffset) * scale),
+								((y+1)*FRACUNIT) + ((facerank->topoffset) * scale),
+								scale,
+								0,
+								facerank,
+								colormap
+							);
+
+							if ((x_base - x) == 0)
+							{
+								// Terrible hack to remedy offset woes: Set a "base" value for x to reference.
+								x_base = (x+11) + 20;
+							}
+
+							xx = x + x_base - 4;
+						}
+						else
+						{
+							V_DrawFixedPatch((x+xoffs)<<FRACBITS, ((y-yoffs)<<FRACBITS), scale, 0, facerank, colormap);
+						}
 					}
 				}
 
-				if (data.num[i] == whiteplayer && data.numplayers <= NUMFORNEWCOLUMN*2)
+				if ((!displayitemrolls) && data.num[i] == whiteplayer && data.numplayers <= NUMFORNEWCOLUMN*2)
 				{
 					UINT8 cursorframe = (intertic / 4) % 8;
 					patch_t *highlight = W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE);
 					V_DrawScaledPatch(x+16+highlight->leftoffset, y-4+highlight->topoffset, 0, highlight);
 				}
 
-				if ((players[data.num[i]].pflags & PF_NOCONTEST) && players[data.num[i]].bot)
+				if ((!displayitemrolls) && (players[data.num[i]].pflags & PF_NOCONTEST) && players[data.num[i]].bot)
 				{
 					// RETIRED!!
 					patch_t *retire = W_CachePatchName("K_NOBLNS", PU_CACHE);
@@ -578,10 +666,32 @@ void Y_IntermissionDrawer(void)
 
 				y2 = y;
 
+				INT32 slen = 0;
+				INT32 slen_temp = slen;
+
 				if (manyplayers16)
-					V_DrawThinString(x+18, y, hilicol|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+					V_DrawThinString(x+18, y, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+				else if (displayitemrolls)
+				{
+					V_DrawThinString(x + 20 - xscroll_px, y, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+
+					// Get the longest string size. This is... gross.
+					INT32 ii;
+
+					for (ii = 0; ii < data.numplayers; ii++)
+					{
+						if (data.num[ii] != MAXPLAYERS && playeringame[data.num[ii]] && !players[data.num[ii]].spectator)
+						{
+							slen_temp = V_ThinStringWidth(data.name[ii], ((data.num[ii] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE);
+							slen = ((slen_temp > slen) ? slen_temp : slen);
+						}
+					}
+				}
 				else if (manyplayers8)
-					V_DrawThinString(x+36, y2-1, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+				{
+					V_DrawThinString(xx, y2 - 1, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+					slen = V_ThinStringWidth(strtime, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE);
+				}
 				else
 					V_DrawString(x+36, y2, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE, strtime);
 
@@ -621,6 +731,11 @@ void Y_IntermissionDrawer(void)
 						V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, strtime);
 					else
 						V_DrawRightAlignedString(x+152+gutter, y, 0, strtime);
+				}
+				else if (data.itemrolls && (intertic <= rolltic))
+				{
+					const fixed_t itemlistlen = K_DrawItemList((INT32)(data.num[i]), ((xx+2+slen-xscroll_px) * FRACUNIT), ((y+1) * FRACUNIT));
+					newlist_xpush = max(newlist_xpush, ((x_base+9+slen) * FRACUNIT) + itemlistlen);
 				}
 				else
 				{
@@ -671,17 +786,20 @@ void Y_IntermissionDrawer(void)
 			}
 			else
 			{
-				y += 18;
+				y += (displayitemrolls) ? ITEMLIST_PLAYER_YOFFSET : 18;
 
-				if (i == NUMFORNEWCOLUMN-1)
+				if ((i % 16) == (((displayitemrolls) ? 2 : 1) * NUMFORNEWCOLUMN) - 1)
 				{
 					y = 41;
-					x += BASEVIDWIDTH/2;
+					x += (newlist_xpush / FRACUNIT);
+
+					newlist_xpush = (BASEVIDWIDTH / 2) * FRACUNIT;
 				}
 			}
-
 #undef NUMFORNEWCOLUMN
 		}
+
+		listscroll_length = max(0, x - BASEVIDWIDTH) * FRACUNIT;
 	}
 
 skiptallydrawer:
@@ -761,6 +879,53 @@ void Y_Ticker(void)
 	LUA_HOOK(IntermissionThinker);
 
 	intertic++;
+
+	if (listscroll_length && (intertic > (TICRATE * 2)) && (intertic <= rolltic))
+	{
+
+		if (!listscroll_reverse)
+		{
+			if ((xscroll >= listscroll_length))
+			{
+				if (!listscroll_delay)
+					listscroll_delay = ITEMLIST_SCROLLDELAY;
+			}
+			else
+				xscroll = min(listscroll_length, xscroll + ITEMLIST_SCROLLSPEED);
+		}
+		else
+		{
+			if ((xscroll <= 0))
+			{
+				if (!listscroll_delay)
+					listscroll_delay = ITEMLIST_SCROLLDELAY;
+			}
+			else
+				xscroll = max(0, xscroll - ITEMLIST_SCROLLSPEED);
+		}
+
+		if (listscroll_delay)
+		{
+			listscroll_delay--;
+
+			if (!listscroll_delay)
+				listscroll_reverse = (!listscroll_reverse);
+		}
+	}
+	else
+	{
+		listscroll_length = 0;
+		listscroll_delay = 0;
+		listscroll_reverse = false;
+
+		if (xscroll > 0)
+		{
+			if (intertic < rolltic)
+				xscroll = max(0, xscroll - ITEMLIST_SCROLLSPEED);
+			else
+				xscroll = 0;
+		}
+	}
 
 	// Team scramble code for team match and CTF.
 	// Don't do this if we're going to automatically scramble teams next round.
@@ -942,7 +1107,7 @@ void Y_StartIntermission(void)
 	if (!timer)
 	{
 		// Prevent a weird bug
-		timer = 1; 
+		timer = 1;
 	}
 	else if (nump < 2 && !netgame)
 	{
@@ -991,6 +1156,14 @@ void Y_StartIntermission(void)
 		{
 			// Calculate who won
 			Y_CalculateMatchData(0, Y_CompareTime);
+
+			if (data.itemrolls)
+			{
+				rolltic = (15 * TICRATE);
+
+				sorttic += rolltic;
+				timer += rolltic;
+			}
 			break;
 		}
 
@@ -2152,3 +2325,7 @@ void Y_SetupVoteFinish(SINT8 pick, SINT8 level)
 	g_pickedVote = pick;
 	timer = 0;
 }
+
+#undef ITEMLIST_PLAYER_YOFFSET
+#undef ITEMLIST_SCROLLSPEED
+#undef ITEMLIST_SCROLLDELAY

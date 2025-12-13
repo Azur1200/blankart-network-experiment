@@ -69,6 +69,7 @@
 #include "g_party.h"
 #include "k_specialstage.h"
 #include "k_items.h"
+#include "k_itemlist.hpp"
 
 #define CV_RESTRICT CV_NETVAR
 
@@ -174,6 +175,7 @@ static void KartItemPush_OnChange(void);
 static void KartAntiBump_OnChange(void);
 static void KartItemBreaker_OnChange(void);
 static void KartBumpSpark_OnChange(void);
+static void KartItemList_OnChange(void);
 
 static void Schedule_OnChange(void);
 
@@ -604,6 +606,8 @@ consvar_t cv_kartlegacyspbdist = CVAR_INIT ("kartlegacyspbdist", "2216", CV_NETV
 
 // SPB Rush toggle; toggles on/off the more aggressive "pressure" odds when an SPB is active
 consvar_t cv_kartspbrush = CVAR_INIT ("kartspbrush", "On", CV_NETVAR, CV_OnOff, NULL);
+
+consvar_t cv_itemlist = CVAR_INIT ("kartitemlist", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemList_OnChange);
 
 // Time limit for Alt. Shrink
 static CV_PossibleValue_t altshrinktime_cons_t[] = {{0, "MIN"}, {(INT16_MAX / TICRATE), "MAX"}, {0, NULL}};
@@ -1074,6 +1078,8 @@ void D_RegisterServerCommands(void)
 
 	CV_RegisterVar(&cv_dummyconsvar);
 	CV_RegisterVar(&cv_encorevotes);
+
+	CV_RegisterVar(&cv_itemlist);
 
 #ifdef USE_STUN
 	CV_RegisterVar(&cv_stunserver);
@@ -6527,6 +6533,8 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			}
 			else
 			{
+				K_AddItemRollToList((INT32)(player - players), item, amt);
+
 				CV_CheaterWarning(playernum, va("give item %s x%d", DEH_KartItemName(item), amt));
 			}
 			break;
@@ -8347,6 +8355,39 @@ static void KartBumpSpark_OnChange(void)
 	else
 	{
 		CONS_Printf(M_GetText("Bump spark type will be changed to \"%s\" next round.\n"), cv_kartbumpspark.string);
+	}
+}
+
+static void KartItemList_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_ItemListActive() && cv_itemlist.value)
+	{
+		if (leveltime < starttime)
+		{
+			itemlistactive = true;
+			CONS_Printf(M_GetText("Item rolls will be displayed.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Item rolls will be displayed next round.\n"));
+		}
+	}
+	else if (K_ItemListActive() && !cv_itemlist.value)
+	{
+		if (leveltime < starttime)
+		{
+			itemlistactive = false;
+			CONS_Printf(M_GetText("Item rolls will not be displayed.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Item rolls will not be displayed next round.\n"));
+		}
 	}
 }
 

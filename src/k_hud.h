@@ -66,6 +66,8 @@ extern consvar_t cv_colorizedhudcolor;
 
 extern consvar_t cv_newtabranking;
 
+extern patch_t *kp_facenum[MAXPLAYERS+1];
+
 struct trackingResult_t
 {
 	fixed_t x, y;

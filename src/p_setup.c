@@ -108,6 +108,7 @@
 #include "k_mapuser.h"
 #include "p_deepcopy.h"
 #include "k_specialstage.h"
+#include "k_itemlist.hpp"
 #include "g_input.h"
 
 #include "blan/b_soc.h"
@@ -164,6 +165,7 @@ boolean airthrustactive;
 boolean itemlittering;
 boolean itempushing;
 UINT8   bumpsparkactive;
+boolean itemlistactive;
 UINT16 bossdisabled;
 boolean stoppedclock;
 boolean levelloading;
@@ -8177,6 +8179,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	airthrustactive = false;
 	itemlittering = false;
 	itempushing = false;
+	itemlistactive = false;
 	bumpsparkactive = 0;
 	antibumptime = 0;
 
@@ -8213,9 +8216,14 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	if (cv_kartitempush.value)
 		itempushing = true;
 
+	if (cv_itemlist.value)
+		itemlistactive = true;
+
 	bumpsparkactive = (UINT8)cv_kartbumpspark.value;
 
 	antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
+
+	K_ClearItemRollLists();
 
 	// emerald hunt
 	hunt1 = hunt2 = hunt3 = NULL;
