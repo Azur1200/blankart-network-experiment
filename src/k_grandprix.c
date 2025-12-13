@@ -21,6 +21,7 @@
 #include "m_random.h"
 #include "r_things.h"
 #include "lua_hook.h"
+#include "k_battle.h"
 
 struct grandprixinfo grandprixinfo;
 
@@ -346,7 +347,7 @@ void K_UpdateGrandPrixBots(void)
 
 		players[i].spectator = (grandprixinfo.eventmode != GPEVENT_NONE);
 
-		if (!validbots)
+		if (!validbots || itembreaker)
 		{
 			players[i].spectator = true;
 		}
