@@ -842,8 +842,8 @@ skiptallydrawer:
 		}
 
 	if ((speedscramble != -1) && (speedscramble != gamespeed))
-		V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, hilicol|V_ALLOWLOWERCASE|V_SNAPTOBOTTOM,
-			va(M_GetText("Next race will be %s Speed!"), kartspeed_cons_t[1+speedscramble].strvalue));
+		V_DrawThinString(5, 188, hilicol|V_ALLOWLOWERCASE|V_SNAPTOLEFT|V_6WIDTHSPACE,
+			va(M_GetText("Next race is %s Speed!"), kartspeed_cons_t[1+speedscramble].strvalue));
 
 	if (renderisnewtic)
 	{
