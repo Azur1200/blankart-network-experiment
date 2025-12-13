@@ -355,6 +355,14 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			else
 				player->itemamount += special->movecount;
 
+			// Add the pickup to our roll list
+			if (itemlistactive)
+			{
+				K_AddItemRollToList((INT32)(player - players),
+						    player->itemtype,
+						    player->itemamount);
+			}
+
 			S_StartSound(special, special->info->deathsound);
 
 			P_SetTarget(&special->tracer, toucher);

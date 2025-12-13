@@ -1740,6 +1740,10 @@ static void K_DoHyudoroSteal(player_t *player)
 		player->itemamount = 1;
 		K_UnsetItemOut(player);
 
+		// Add the Sink roll to the list
+		if (itemlistactive)
+			K_AddItemRollToList((INT32)(player - players), KITEM_KITCHENSINK, 1);
+
 		// Woah this could be big, lets get the inside scoop...
 		K_DirectorForceSwitch(player - players, 1);
 		return;
@@ -1760,6 +1764,13 @@ static void K_DoHyudoroSteal(player_t *player)
 		player->itemtype = players[stealplayer].itemtype;
 		player->itemamount = players[stealplayer].itemamount;
 		K_UnsetItemOut(player);
+
+		if (itemlistactive)
+		{
+			K_AddItemRollToList((INT32)(player - players),
+					    players[stealplayer].itemtype,
+					    players[stealplayer].itemamount);
+		}
 
 		players[stealplayer].itemtype = KITEM_NONE;
 		players[stealplayer].itemamount = 0;
