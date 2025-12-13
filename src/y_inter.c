@@ -1159,7 +1159,8 @@ void Y_StartIntermission(void)
 
 			if (data.itemrolls)
 			{
-				rolltic = (15 * TICRATE);
+				// 5 seconds for 8P and below, 10 for 16P, 15 for 24P onwards.
+				rolltic = (min(15, max(5, (nump >> 3) * 5)) * TICRATE);
 
 				sorttic += rolltic;
 				timer += rolltic;
