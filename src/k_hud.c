@@ -1422,13 +1422,21 @@ static void K_drawKartItem(void)
 		INT32 alpha = 0;
 		INT32 shift = tiny ? 16 : 32;
 		fixed_t shiftprog;
+		fixed_t timefracs = (stplyr->playerstate == PST_DEAD) ? 0 : R_GetTimeFrac(RTF_LEVEL);
 
 		INT32 baseitem;
 
-		V_SetClipRect((fx + 8) << FRACBITS, (fy + 8) << FRACBITS, 34 << FRACBITS, 34 << FRACBITS, V_HUDTRANS|fflags);
+		if (tiny)
+		{
+			V_SetClipRect((fx + 15) << FRACBITS, (fy + 14) << FRACBITS, 18 << FRACBITS, 18 << FRACBITS, V_HUDTRANS|fflags);
+		}
+		else
+		{
+			V_SetClipRect((fx + 8) << FRACBITS, (fy + 8) << FRACBITS, 34 << FRACBITS, 34 << FRACBITS, V_HUDTRANS|fflags);
+		}
 		for (int rouletteshift = -1; rouletteshift <= 2; rouletteshift++)
 		{
-			shiftprog = (FRACUNIT * -rouletteshift) + (FixedDiv((stplyr->itemroulette<<FRACBITS)|R_GetTimeFrac(RTF_LEVEL), animlength<<FRACBITS) % FRACUNIT);
+			shiftprog = (FRACUNIT * -rouletteshift) + (FixedDiv((stplyr->itemroulette<<FRACBITS)|timefracs, animlength<<FRACBITS) % FRACUNIT);
 			alpha = (FixedMul((abs(shiftprog) * 10), FixedDiv(hudtrans << FRACBITS, 10 << FRACBITS)) >> FRACBITS)+(10-hudtrans);
 			rfy = (fy<<FRACBITS) + shift*shiftprog;
 			if (0 > alpha) alpha = 0;
