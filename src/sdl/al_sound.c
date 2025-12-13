@@ -250,11 +250,6 @@ static void var_cleanup(void)
 
 	fading_source = fading_target = fading_timer = fading_duration = 0;
 
-	audio.music = INVALID_HANDLE;
-	audio.bufferindex = 0;
-
-	for (size_t i = 0; i < BUFFERCOUNT; i++)
-		audio.musicbuffers[i] = INVALID_HANDLE;
 	audio.loop_point = 0.0f;
 	audio.looping = false;
 	audio.startplay = false;
@@ -304,6 +299,12 @@ void I_StartupSound(void)
 	}
 
 	alcMakeContextCurrent(audio.context);
+
+	audio.music = INVALID_HANDLE;
+	audio.bufferindex = 0;
+
+	for (size_t i = 0; i < BUFFERCOUNT; i++)
+		audio.musicbuffers[i] = INVALID_HANDLE;
 
 	var_cleanup();
 	music_volume = sfx_volume = 0.f;
