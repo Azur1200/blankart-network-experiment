@@ -39,7 +39,8 @@ enum skin {
 	skin_rivals,
 	skin_soundsid,
 	skin_voices,
-	skin_sprites
+	skin_sprites,
+	skin_compatmode
 };
 static const char *const skin_opt[] = {
 	"valid",
@@ -62,6 +63,7 @@ static const char *const skin_opt[] = {
 	"soundsid",
 	"voices",
 	"sprites",
+	"compatmode",
 	NULL
 };
 
@@ -151,6 +153,8 @@ static int skin_get(lua_State *L)
 	case skin_sprites:
 		LUA_PushUserdata(L, skin->sprites, META_SKINSPRITES);
 		break;
+	case skin_compatmode:
+		lua_pushboolean(L, wadfiles[skin->wadnum]->compatmode);
 	}
 	return 1;
 }
