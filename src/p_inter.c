@@ -41,6 +41,7 @@
 #include "k_objects.h"
 #include "k_items.h"
 #include "acs/interface.h"
+#include "k_itemlist.hpp"
 
 // CTF player names
 #define CTFTEAMCODE(pl) pl->ctfteam ? (pl->ctfteam == 1 ? "\x85" : "\x84") : ""
