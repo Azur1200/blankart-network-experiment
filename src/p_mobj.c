@@ -4276,9 +4276,9 @@ boolean P_BossTargetPlayer(mobj_t *actor, boolean closest)
 	// first time init, this allow minimum lastlook changes
 	if (actor->lastlook < 0)
 		actor->lastlook = P_RandomByte();
-	actor->lastlook %= MAXPLAYERS;
+	actor->lastlook %= PLAYERSMASK;
 
-	for( ; ; actor->lastlook = (actor->lastlook+1) % MAXPLAYERS)
+	for( ; ; actor->lastlook = (actor->lastlook+1) % PLAYERSMASK)
 	{
 		// save the first look so we stop next time.
 		if (stop < 0)

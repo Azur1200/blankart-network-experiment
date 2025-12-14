@@ -451,9 +451,9 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround, boolean tracer, fixed
 
 	actor->lastlook %= MAXPLAYERS;
 
-	stop = (actor->lastlook - 1) % MAXPLAYERS;
+	stop = (actor->lastlook - 1) % PLAYERSMASK;
 
-	for (; ; actor->lastlook = (actor->lastlook + 1) % MAXPLAYERS)
+	for (; ; actor->lastlook = (actor->lastlook + 1) % PLAYERSMASK)
 	{
 		// done looking
 		if (actor->lastlook == stop)
