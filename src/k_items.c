@@ -2563,6 +2563,7 @@ void K_SpawnEggMineBumpEffect(mobj_t *mo)
 
 void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 {
+	(void)source;
 	if (inflictor && (inflictor->type == MT_LANDMINE || inflictor->type == MT_EGGMINE))
 	{
 		if (tmo->player)

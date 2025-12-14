@@ -415,11 +415,11 @@ void Y_IntermissionDrawer(void)
 	if (intertype == int_none || rendermode == render_none)
 		return;
 
-	INT32 w = (vid.width / vid.dupx);
-	INT32 h = (vid.height / vid.dupy);
+	//INT32 w = (vid.width / vid.dupx);
+	//INT32 h = (vid.height / vid.dupy);
 
-	const INT32 vidxdiff = (w - BASEVIDWIDTH) / 2;
-	const INT32 vidydiff = (h - BASEVIDHEIGHT) / 2;
+	//const INT32 vidxdiff = (w - BASEVIDWIDTH) / 2;
+	//const INT32 vidydiff = (h - BASEVIDHEIGHT) / 2;
 
 	if (!useinterpic && y_screenbuffer == NULL
 #ifdef HWRENDER
