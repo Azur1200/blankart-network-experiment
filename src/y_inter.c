@@ -1104,6 +1104,7 @@ void Y_StartIntermission(void)
 
 	// determine the tic everybody's scores/PWR starts getting sorted
 	sorttic = -1;
+	rolltic = -1;
 	if (!timer)
 	{
 		// Prevent a weird bug
