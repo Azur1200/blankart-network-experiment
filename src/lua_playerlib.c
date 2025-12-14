@@ -918,7 +918,7 @@ static int player_get(lua_State *L)
 		lua_pushangle(L, plr->boostangle);
 		break;
 	case player_boostinfo:
-		luaL_error(L, "Don't directly read boostinfo. Use speedboost, accelboost and numboosts instead,\n");
+		LUA_PushUserdata(L, &plr->boostinfo, META_BOOSTINFO);
 		break;
 	case player_numsneakers:
 		lua_pushinteger(L, plr->numsneakers);
@@ -1685,7 +1685,7 @@ static int player_set(lua_State *L)
 		plr->boostangle = luaL_checkangle(L, 3);
 		break;
 	case player_boostinfo:
-		NOSET;
+		return NOSET;
 		break;
 	case player_numsneakers:
 		plr->numsneakers = luaL_checkinteger(L, 3);
@@ -2926,6 +2926,7 @@ static int ticcmd_set(lua_State *L)
 }
 
 #undef NOFIELD
+#undef NOSET
 
 enum sonicloopvars {
 	sonicloopvars_radius = 0,
@@ -3084,6 +3085,89 @@ static int sonicloopcamvars_get(lua_State *L)
 	return 1;
 }
 
+#define NOSET luaL_error(L, LUA_QL("boostinfo_t") " field " LUA_QS " should not be set directly.", boostinfo_opt[field])
+#define NOFIELD luaL_error(L, "%s %s", LUA_QL("boostinfo_t"), va("has no field named %ui", field))
+
+enum boostinfo
+{
+	boostinfo_stackspeedboost = 0,
+	boostinfo_nonstackspeedboost,
+	boostinfo_accelboost,
+	boostinfo_grade,
+};
+
+static const char *const boostinfo_opt[] = {
+	"stackspeedboost",
+	"nonstackspeedboost",
+	"accelboost",
+	"grade",
+	NULL,
+};
+
+static int boostinfo_get(lua_State *L)
+{
+	boostinfo_t *boostinfo = *((boostinfo_t **)luaL_checkudata(L, 1, META_BOOSTINFO));
+	enum boostinfo field = luaL_checkoption(L, 2, NULL, boostinfo_opt);
+
+	// This should always be valid.
+	I_Assert(boostinfo != NULL);
+
+	switch (field)
+	{
+		case boostinfo_stackspeedboost:
+			lua_pushfixed(L, boostinfo->stackspeedboost);
+			break;
+		case boostinfo_nonstackspeedboost:
+			lua_pushfixed(L, boostinfo->nonstackspeedboost);
+			break;
+		case boostinfo_accelboost:
+			lua_pushfixed(L, boostinfo->accelboost);
+			break;
+		case boostinfo_grade:
+			lua_pushinteger(L, boostinfo->grade);
+			break;
+	}
+
+	return 1;
+}
+
+static int boostinfo_set(lua_State *L)
+{
+	boostinfo_t *boostinfo = *((boostinfo_t **)luaL_checkudata(L, 1, META_BOOSTINFO));
+	enum boostinfo field = luaL_checkoption(L, 2, boostinfo_opt[0], boostinfo_opt);
+
+	// This is a property that always exists in a player.
+	I_Assert(boostinfo != NULL);
+
+	INLEVEL
+
+	if (hud_running)
+		return luaL_error(L, "Do not alter player_t in HUD rendering code!");
+	if (hook_cmd_running)
+		return luaL_error(L, "Do not alter player_t in CMD building code!");
+
+	switch (field)
+	{
+		case boostinfo_stackspeedboost:
+			boostinfo->stackspeedboost = luaL_checkfixed(L, 3);
+			break;
+		case boostinfo_nonstackspeedboost:
+			boostinfo->nonstackspeedboost = luaL_checkfixed(L, 3);
+			break;
+		case boostinfo_accelboost:
+			boostinfo->accelboost = luaL_checkfixed(L, 3);
+			break;
+		case boostinfo_grade:
+			boostinfo->grade = (UINT8)luaL_checkinteger(L, 3);
+			break;
+	}
+
+	return 0;
+}
+
+#undef NOSET
+#undef NOFIELD
+
 int LUA_PlayerLib(lua_State *L)
 {
 	luaL_newmetatable(L, META_PLAYER);
@@ -3146,6 +3230,14 @@ int LUA_PlayerLib(lua_State *L)
 	luaL_newmetatable(L, META_SONICLOOPCAMVARS);
 		lua_pushcfunction(L, sonicloopcamvars_get);
 		lua_setfield(L, -2, "__index");
+	lua_pop(L,1);
+
+	luaL_newmetatable(L, META_BOOSTINFO);
+		lua_pushcfunction(L, boostinfo_get);
+		lua_setfield(L, -2, "__index");
+
+		lua_pushcfunction(L, boostinfo_set);
+		lua_setfield(L, -2, "__newindex");
 	lua_pop(L,1);
 
 	lua_newuserdata(L, 0);

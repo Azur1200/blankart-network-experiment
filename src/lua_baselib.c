@@ -256,6 +256,7 @@ static const struct {
 	{META_KARTITEM,     "kartitem_t"},
 	{META_KARTRESULT,   "kartresult_t"},
 	{META_KARTITEMGRAPHICS, "kartitemgraphics_t"},
+	{META_BOOSTINFO,	"boostinfo_t"},
 
 	{NULL,              NULL}
 };
