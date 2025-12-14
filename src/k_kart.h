@@ -91,6 +91,9 @@ extern vector3_t clusterpoint, clusterdtf;
 #define INVINMIDTIME CV_Get(&cv_kartinvin_midtime)
 #define INVINMAXTIME CV_Get(&cv_kartinvin_maxtime)
 
+// 1.22 * FRACUNIT
+#define LEGACYALTINVINMUL (122 * FRACUNIT / 100)
+
 // Precalculated constants for stacked boost diminishing
 // *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent
 #define DIMINISHPARAM CV_Get(&cv_kartstacking_diminishparam)

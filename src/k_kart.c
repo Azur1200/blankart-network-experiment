@@ -2479,9 +2479,6 @@ static fixed_t K_InvincibilityEasing(fixed_t x)
         min(FRACUNIT, FixedMul(u - FRACUNIT, FRACUNIT/4)), (INVINMIDTIME/10), (INVINMAXTIME/10));
 }
 
-// 1.22 * FRACUNIT
-#define LEGACYALTINVINMUL 79953
-
 UINT16 K_GetInvincibilityTime(player_t *player)
 {
     UINT32 i, pingame;
@@ -2521,8 +2518,6 @@ UINT16 K_GetInvincibilityTime(player_t *player)
 
     return max(MININVINTIME, invintics);
 }
-
-#undef LEGACYALTINVINMUL
 
 fixed_t K_GetInvincibilitySpeed(UINT16 time)
 {
@@ -9458,7 +9453,7 @@ static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
     return K_Distance3D(source->mo->x,source->mo->y,source->mo->z,destination->mo->x,destination->mo->y,destination->mo->z);
 }*/
 
-#define MINCLUSTERPLAYERS 6
+#define MINCLUSTERPLAYERS 3
 
 // 1.44 * FRACUNIT
 #define LEGACYCLUSTERMUL 94371
@@ -9854,14 +9849,96 @@ static UINT32 K_UndoMapScaling(UINT32 distance)
 // Based on DBSCAN, so it "chain-scans" neighboring players as well for a more accurate result.
 UINT32 clusterid = 0;
 
+#define FARTHESTCLUSDIS (4096)
+
 static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fixed_t, playerfilter_f *, UINT32, vector3_t *), vector3_t *out)
 {
-    INT32 bestdensity = 0; // Cluster counter
+    INT32 density[2] = {0, 0};
+	INT32 bestdensity = 0; // Cluster counter
     vector3_t tempclusterpoint;
+	vector3_t c1, c2;
     player_t *findme;
     player_t *player;
 
     INT32 i, j;
+	INT32 nump = 0;
+
+	boolean doublecluster = false;
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		player = &players[i];
+
+		if (player->spectator)
+			continue; // spectator
+
+		if (!player->mo)
+			continue;
+
+		nump++;
+	}
+
+	if ((nump > 6) && (nump < 18))
+	{
+		// Start double-clustering.
+		doublecluster = true;
+	}
+
+	player_t *generalclusterp;
+
+	if (doublecluster)
+	{
+		// Get the second (general) cluster first.
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
+			// NESTED LOOP to clear clusterplayer flags. GOD.
+			for (j = 0; j < MAXPLAYERS; j++)
+			{
+				clusterplayer[j] = false;
+			}
+
+			if (!playeringame[i])
+				continue;
+
+			player = &players[i];
+
+			if (player->spectator)
+				continue; // spectator
+
+			if (!player->mo)
+				continue;
+
+			// Find neighbors
+			INT32 N2 = func(player, eps, &K_ClusterFilter_NoFilter, 0, &tempclusterpoint);
+
+			// Double-remove the clusterplayer flag. Bad hack, I know...
+			clusterplayer[i] = false;
+
+			// 10/22/2025: Pairs don't count anymore
+			if (N2 < 2)
+			{
+				continue;
+			}
+
+			// Density check
+			if (N2 > density[1])
+			{
+				density[1] = N2;
+
+				generalclusterp = closesttocluster;
+
+				c2.x = tempclusterpoint.x;
+				c2.y = tempclusterpoint.y;
+				c2.z = tempclusterpoint.z;
+				continue;
+			}
+		}
+	}
+
+	// First (losing) cluster.
     for (i = 0; i < MAXPLAYERS; i++)
 	{
 		// NESTED LOOP to clear clusterplayer flags. GOD.
@@ -9882,7 +9959,7 @@ static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fix
 			continue;
 
         // Find neighbors
-        INT32 N = func(player, eps, &K_ClusterFilter_BaseFilter, 0, &tempclusterpoint);
+        INT32 N = func(player, eps, &K_ClusterFilter_BaseFilter, nump, &tempclusterpoint);
 
         // Double-remove the clusterplayer flag. Bad hack, I know...
         clusterplayer[i] = false;
@@ -9894,39 +9971,130 @@ static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fix
 		}
 
         // Density check
-        if (N > bestdensity)
+        if (N > density[0])
         {
-            bestdensity = N;
+            density[0] = N;
 
-            findme = closesttocluster;
+			findme = closesttocluster;
 
-            out->x = tempclusterpoint.x;
-            out->y = tempclusterpoint.y;
-            out->z = tempclusterpoint.z;
+            c1.x = tempclusterpoint.x;
+            c1.y = tempclusterpoint.y;
+            c1.z = tempclusterpoint.z;
             continue;
         }
     }
 
+	bestdensity = density[0] + density[1];
+
 	if (bestdensity)
     {
-		// Only find the cluster player if a cluster's populated.
-		for (i = 0; i < MAXPLAYERS; i++)
+		if (doublecluster && (density[1] > 0))
 		{
-			if (!playeringame[i])
-				continue;
+			// If the general cluster is populated, the output vector is the average point between the two cluster points.
+			// Be biased TOWARDS the general cluster! If the losing player is too far away from the general player, use the general player.
 
-			player = &players[i];
-
-			if (player == findme)
+			if (generalclusterp && (density[0] > 0) && findme)
 			{
-				clusterid = i;
-				break;
+				UINT32 clusdis = 0;
+				if ((generalclusterp != findme) && (findme->position != generalclusterp->position))
+				{
+					if (K_LegacyOddsMode())
+					{
+						clusdis = FixedMul(K_GetCongaLineDistance((findme->position > generalclusterp->position) ? findme : generalclusterp, (findme->position > generalclusterp->position) ? generalclusterp->position : findme->position), LEGACYALTINVINMUL);
+					}
+					else
+					{
+						clusdis = K_GetDTFDifference(findme, generalclusterp);
+					}
+
+					if (clusdis > FARTHESTCLUSDIS)
+					{
+						// The distance between clusters is too far!
+						// Use the general cluster.
+						findme = generalclusterp;
+						out->x = c2.x;
+						out->y = c2.y;
+						out->z = c2.z;
+					}
+					else
+					{
+						// Get the average position between the two clusters.
+						if (K_LegacyOddsMode())
+						{
+							out->x = (fixed_t)(((INT64)c1.x + c2.x) / 2);
+							out->y = (fixed_t)(((INT64)c1.y + c2.y) / 2);
+							out->z = (fixed_t)(((INT64)c1.z + c2.z) / 2);
+						}
+						else
+						{
+							// Only need to do this for the x position; that's where the DtF is
+							out->x = (fixed_t)(((INT64)((UINT32)c1.x) + (INT64)((UINT32)c2.x)) / 2);
+						}
+
+						// Finally, get the closest player to the average position.
+						fixed_t best_pdis = INT32_MAX;
+						for (i = 0; i < MAXPLAYERS; i++)
+						{
+							if (!playeringame[i])
+								continue;
+
+							if (players[i].spectator)
+								continue; // spectator
+
+							if (!players[i].mo)
+								continue;
+
+							if (players[i].position >= nump)
+								continue; // Ignore last place. Last place should *never* be a cluster player.
+
+							fixed_t pdist;
+
+							if (K_LegacyOddsMode())
+							{
+								pdist = K_Distance3D(players[i].mo->x, players[i].mo->y, players[i].mo->z, out->x, out->y, out->z);
+							}
+							else
+							{
+								pdist = (fixed_t)(abs((INT64)((UINT32)players[i].distancetofinish) - (INT64)((UINT32)out->x)));
+							}
+
+							if (pdist < best_pdis)
+							{
+								best_pdis = pdist;
+								findme = &players[i];
+							}
+						}
+					}
+				}
 			}
+			else if (generalclusterp)
+			{
+				// Findme doesn't exist, but the general player does.
+				// Use the general player.
+				findme = generalclusterp;
+				out->x = c2.x;
+				out->y = c2.y;
+				out->z = c2.z;
+			}
+		}
+		else
+		{
+			out->x = c1.x;
+			out->y = c1.y;
+			out->z = c1.z;
+		}
+
+		// Only find the cluster player if a cluster's populated.
+		if (findme)
+		{
+			clusterid = (UINT32)(findme - players);
 		}
 	}
 
     return out;
 }
+
+#undef FARTHESTCLUSDIS
 
 #define CLUSTER_EPSILON (960*FRACUNIT)
 #define CLUSTER_EPSILON_PATHFIND (320*FRACUNIT)

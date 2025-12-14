@@ -10,13 +10,6 @@
 #include "k_cluster.hpp"
 #include <vector>
 
-static fixed_t K_Distance3D(fixed_t x1, fixed_t y1, fixed_t z1, fixed_t x2, fixed_t y2, fixed_t z2)
-{
-    fixed_t dist_xy = R_PointToDist2(x1,y1,x2,y2);
-
-    return R_PointToDist2(0,z1,dist_xy,z2);
-}
-
 static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
 {
     if ((!source->mo) || (!destination->mo))
@@ -25,7 +18,17 @@ static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
     return K_Distance3D(source->mo->x,source->mo->y,source->mo->z,destination->mo->x,destination->mo->y,destination->mo->z);
 }
 
-static UINT32 K_GetDTFDifference(player_t *source, player_t *destination)
+extern "C" {
+player_t *closesttocluster;
+
+fixed_t K_Distance3D(fixed_t x1, fixed_t y1, fixed_t z1, fixed_t x2, fixed_t y2, fixed_t z2)
+{
+    fixed_t dist_xy = R_PointToDist2(x1,y1,x2,y2);
+
+    return R_PointToDist2(0,z1,dist_xy,z2);
+}
+
+UINT32 K_GetDTFDifference(player_t *source, player_t *destination)
 {
     if ((!source->mo) || (!destination->mo))
         return INT16_MAX; // Return a garbage value.
@@ -35,9 +38,6 @@ static UINT32 K_GetDTFDifference(player_t *source, player_t *destination)
 
     return (source->distancetofinish - destination->distancetofinish);
 }
-
-extern "C" {
-player_t *closesttocluster;
 
 boolean K_ClusterFilter_NoFilter(player_t *player, UINT32 fval)
 {
@@ -246,8 +246,6 @@ INT32 K_CountNeighboringPlayersByDTFEx(player_t *sourcePlayer, fixed_t eps, play
         return 0;
     }
 
-    std::vector<player_t *> node_dtf = *static_cast<std::vector<player_t *> *>(nodevec);
-
     if (!sourcePlayer->mo)
         return 0;
     
@@ -275,8 +273,11 @@ INT32 K_CountNeighboringPlayersByDTFEx(player_t *sourcePlayer, fixed_t eps, play
 		if (!player->mo)
 			continue;
 
-        if (!K_IsPlayerLosing(player))
-            continue; // Ignore winning players to prevent sandbagging.
+        if (cluster_filter)
+        {
+            if (!cluster_filter(player, filterval))
+                continue;
+        }
         
         // Scan all points in the database
         if ((fixed_t)K_GetDTFDifference(sourcePlayer, player) <= eps)
@@ -295,22 +296,20 @@ INT32 K_CountNeighboringPlayersByDTFEx(player_t *sourcePlayer, fixed_t eps, play
         }
     }
 
-    N = node_dtf.size();
-
-    CONS_Printf("node count: %d\n", N);
+    N = static_cast<std::vector<player_t *> *>(nodevec)->size();
 
     if (N != 0)
     {
         // Return the average center point of this cluster.
         for (i = 0; i < N; i++)
         {
-            if (!node_dtf[i])
+            if (!static_cast<std::vector<player_t *> *>(nodevec)->at(i))
                 continue;
 
-            if (!node_dtf[i]->mo)
+            if (!static_cast<std::vector<player_t *> *>(nodevec)->at(i)->mo)
                 continue;
 
-            mean += node_dtf[i]->distancetofinish;
+            mean += static_cast<std::vector<player_t *> *>(nodevec)->at(i)->distancetofinish;
         }
         mean /= N;
 
@@ -323,11 +322,11 @@ INT32 K_CountNeighboringPlayersByDTFEx(player_t *sourcePlayer, fixed_t eps, play
         bestdist = UINT32_MAX;
         for (i = 0; i < N; i++)
         {
-            disttocluster = K_GetU32Diff(node_dtf[i]->distancetofinish, mean);
+            disttocluster = K_GetU32Diff(static_cast<std::vector<player_t *> *>(nodevec)->at(i)->distancetofinish, mean);
 
             if (disttocluster < bestdist)
             {
-                closesttocluster = node_dtf[i];
+                closesttocluster = static_cast<std::vector<player_t *> *>(nodevec)->at(i);
                 bestdist = disttocluster;
             }
         }

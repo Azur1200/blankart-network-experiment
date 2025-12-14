@@ -10,6 +10,9 @@ extern "C"
 typedef boolean (playerfilter_f)(player_t *player, UINT32 filter_value);
 extern player_t *closesttocluster;
 
+fixed_t K_Distance3D(fixed_t x1, fixed_t y1, fixed_t z1, fixed_t x2, fixed_t y2, fixed_t z2);
+UINT32 K_GetDTFDifference(player_t *source, player_t *destination);
+
 // Literally allows any player to pass through.
 boolean K_ClusterFilter_NoFilter(player_t *player, UINT32 fval);
 

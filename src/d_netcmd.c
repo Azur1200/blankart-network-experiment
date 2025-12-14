@@ -619,7 +619,7 @@ consvar_t cv_kartinvintheme = CVAR_INIT ("kartinvintheme", "Standard", CV_SAVE, 
 
 // How far the player must be from the cluster to begin frequently rolling Invincibility.
 static CV_PossibleValue_t invindist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "8400", CV_NETVAR|CV_CHEAT|CV_GUARD, invindist_cons_t, NULL);
+consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "6400", CV_NETVAR|CV_CHEAT|CV_GUARD, invindist_cons_t, NULL);
 
 consvar_t cv_kartinvindistmul = CVAR_INIT ("kartinvindistmul", "0.54", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
