@@ -492,7 +492,7 @@ static fixed_t K_BotSpeedScaled(const player_t *player, fixed_t speed)
 		moveFactor = FixedDiv(FRACUNIT, moveFactor);
 
 		// The full value is way too strong, reduce it.
-		moveFactor -= (moveFactor - FRACUNIT)*3/4;
+		// moveFactor -= (moveFactor - FRACUNIT)*3/4;
 
 		result = FixedMul(result, moveFactor);
 	}
