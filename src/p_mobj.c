@@ -10983,6 +10983,8 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_REDFRUIT:
 		case MT_PINKFRUIT:
 		case MT_RANDOMAUDIENCE:
+		case MT_DOOD_BOX:
+		case MT_DOOD_BALLOON:
 		case MT_BLUECRAWLA:
 		case MT_REDCRAWLA:
 		case MT_GFZFISH: // Greenflower Fish
@@ -11073,8 +11075,6 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_THROWNEXPLOSION:
 		case MT_THROWNGRENADE:
 		case MT_EMBLEM:
-		case MT_DOOD_BOX:
-		case MT_DOOD_BALLOON:
 			thing->shadowscale = FRACUNIT/3;
 			break;
 		case MT_SNEAKERPANEL:
