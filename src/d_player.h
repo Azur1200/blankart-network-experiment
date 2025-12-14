@@ -644,6 +644,7 @@ struct player_t
 	UINT8 bubbleblowup;	// Bubble Shield usage blowup
 	UINT8 bubblehealth;	// Bubble Shield health
 	UINT16 bubbleboost; // Bubble shield boost timer
+	tic_t bubblebuffer; // Prevents Bubble Shield from taking damage
 
 	UINT16 flamedash;	 // Flame Shield dash power
 	INT32 flametimer;	 // Flame Shield dash meter left ("fuel")

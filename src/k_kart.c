@@ -5294,6 +5294,12 @@ boolean K_IsBubbleDefending(const player_t *player)
 // Depletes a bubble shield's health, and pops the shield at 0 health.
 void K_RemoveBubbleHealth(player_t *player, INT16 sub)
 {
+	// don't damage if we have some buffer time
+	if (player->bubblebuffer > 0)
+	{
+		return;
+	}
+
 	// experiment: inflated bubble shield applies a direct reduction to all incoming damage
 	if (K_IsBubbleDefending(player))
 	{
@@ -5302,7 +5308,13 @@ void K_RemoveBubbleHealth(player_t *player, INT16 sub)
 	player->bubblehealth = (UINT8)(max(0, (INT16)(player->bubblehealth) - sub));
 
 	if (player->bubblehealth <= 0)
+	{
 		K_PopPlayerShield(player);
+	}
+	else
+	{
+		player->bubblebuffer = 4;
+	}
 }
 
 // Detects type of Mobj for bubble shield chipping
@@ -7269,6 +7281,11 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->bubbleboost)
 	{
 		player->bubbleboost--;
+	}
+
+	if (player->bubblebuffer)
+	{
+		player->bubblebuffer--;
 	}
 
 	if (player->growshrinktimer != 0)
