@@ -18,6 +18,7 @@ extern "C" {
 
 extern boolean usebuffer;
 
+boolean Y_ItemListActive(void);
 void Y_IntermissionDrawer(void);
 void Y_Ticker(void);
 

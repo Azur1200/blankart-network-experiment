@@ -4374,7 +4374,9 @@ static int lib_kItemLitterActive(lua_State *L)
 
 static int lib_kItemListActive(lua_State *L)
 {
-	lua_pushboolean(L, K_ItemListActive());
+	// Use the y_inter version so that Lua scripters don't have to do a
+	// useless player headcount check.
+	lua_pushboolean(L, Y_ItemListActive());
 	return 1;
 }
 

@@ -91,19 +91,6 @@ typedef struct
 	boolean encore; // encore mode
 } y_data;
 
-static boolean Y_ItemListActive(void)
-{
-	UINT8 i = 0, nump = 0;
-	for (i = 0; i < MAXPLAYERS; i++)
-	{
-		if (!playeringame[i] || players[i].spectator)
-			continue;
-		nump++;
-	}
-
-	return ((itemlistactive) && (nump > 1));
-}
-
 static y_data data;
 
 // graphics
@@ -358,6 +345,19 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 
 		data.numplayers++;
 	}
+}
+
+boolean Y_ItemListActive(void)
+{
+	UINT8 i = 0, nump = 0;
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator)
+			continue;
+		nump++;
+	}
+
+	return ((itemlistactive) && (nump > 1));
 }
 
 //
