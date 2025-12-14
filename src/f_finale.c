@@ -902,6 +902,7 @@ const char *blancredits[] = {
 	"\1Item Programming",
 	"\"NepDisk\"",
 	"\"yama\"",
+	"\"minenice\"",
 	"",
 	"\1External Programming",
 	"\"Hanicef\"",
@@ -928,6 +929,7 @@ const char *blancredits[] = {
 	"\"NepDisk\"",
 	"\"yama\"",
 	"\"GenericHeroGuy\"",
+	"\"minenice\"",
 	"",
 	"\1Design Support",
 	"\"Rim Jobless\"",
@@ -942,6 +944,7 @@ const char *blancredits[] = {
 	"\"NepDisk\"",
 	"\"Mayo\"",
 	"\"yama\"",
+	"\"minenice\"",
 	"",
 	"\1New HUD Art",
 	"\"Spee\"",
@@ -979,7 +982,8 @@ const char *blancredits[] = {
 	"",
 	// Anyone who's been directly involved with getting rid of SIGSEGV
 	// culprits gets credited here.
-	"\1Super Special SIGSEGV Search and Smash Squad",
+	"\1Super Special SIGSEGV",
+	"\1Search and Smash Squad",
 	"\"NepDisk\"",
 	"\"GenericHeroGuy\"",
 	"\"yama\"",
@@ -988,6 +992,9 @@ const char *blancredits[] = {
 	"\"Toad The Fungus\"",
 	"\"SkylarDream\"", // Discovered the Cookie Country linedef from hell
 	"\"Tsuko\"",
+	"",
+	"\1\"The Mac Guy\"",
+	"\"LabrysXII\"",
 	"",
 	"\1Testing",
 	"\"NepDisk\"",
