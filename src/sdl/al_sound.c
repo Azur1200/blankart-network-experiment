@@ -96,6 +96,7 @@ static UINT32 fading_timer;
 static UINT32 fading_duration;
 static INT32 fading_id;
 static void (*fading_callback)(void);
+static boolean fading_do_callback;
 static boolean fading_nocleanup;
 
 // any access (read/write) to this struct MUST lock the mutex
@@ -262,6 +263,8 @@ static void var_cleanup(void)
 		fading_callback = NULL;
 	else
 		fading_nocleanup = false; // use it once, set it back immediately
+
+	fading_do_callback = false;
 
 	internal_volume = 1.0f;
 }
@@ -532,6 +535,14 @@ void I_UpdateSound(void)
 #ifndef HAVE_THREADS
 	UpdateSound(&audio);
 #endif
+
+	if (fading_do_callback)
+	{
+		if (fading_callback)
+			(*fading_callback)();
+		fading_callback = NULL;
+		fading_do_callback = false;
+	}
 }
 
 static void AudioThread(void *userdata)
@@ -929,10 +940,8 @@ void I_SetSfxVolume(UINT8 volume)
 
 static void do_fading_callback(void)
 {
-	if (fading_callback)
-		(*fading_callback)();
-
-	fading_callback = NULL;
+	// TODO: Should I use a mutex here or something?
+	fading_do_callback = true;
 }
 
 static UINT32 music_fade(UINT32 interval, void *param)
