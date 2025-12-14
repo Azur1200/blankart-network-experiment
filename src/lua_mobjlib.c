@@ -728,8 +728,9 @@ static int mobj_set(lua_State *L)
 		if (lua_compatmode && mo->sprite == SPR_PLAY)
 		{
 			UINT8 outframe;
-			mo->sprite2 = P_KartFrameToSprite2(mo->skin, luaL_checkinteger(L, 3), &outframe);
-			mo->frame = (mo->frame & ~FF_FRAMEMASK) | outframe;
+			UINT32 newframe = luaL_checkinteger(L, 3);
+			mo->sprite2 = P_KartFrameToSprite2(mo->skin, newframe, &outframe);
+			mo->frame = (newframe & ~FF_FRAMEMASK) | outframe;
 		}
 		else
 			mo->frame = (UINT32)luaL_checkinteger(L, 3);
