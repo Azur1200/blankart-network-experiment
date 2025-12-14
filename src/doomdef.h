@@ -348,8 +348,10 @@ extern int SUBVERSION;
 // abbreviation. Maybe in another 20k commits, more than 8
 // characters will be required! =P
 // P.S. 8 is also what comptime generates
+#ifdef COMMITVERSION
 #define GIT_SHA_ABBREV (4)
 extern UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
+#endif
 
 extern boolean devparm; // development mode (-debug)
 
@@ -544,6 +546,7 @@ extern int compuncommitted;
 #ifdef DEVELOP
 // Easily make it so that overtime works offline
 #define TESTOVERTIMEINFREEPLAY
+#define COMMITVERSION
 #endif
 
 /// FINALLY some real clipping that doesn't make walls dissappear AND speeds the game up

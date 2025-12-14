@@ -1576,7 +1576,16 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 #endif
 
 	// Create a window
-	window = SDL_CreateWindow("SRB2Kart " VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, realwidth, realheight, flags);
+#ifdef COMMITVERSION
+	{
+		char versionstring[256];
+		sprintf(versionstring, "BlanKart Indev %s", comprevision);
+
+		window = SDL_CreateWindow(versionstring, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, realwidth, realheight, flags);
+	}
+#else
+	window = SDL_CreateWindow("BlanKart " VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, realwidth, realheight, flags);
+#endif
 
 	if (window == NULL)
 	{

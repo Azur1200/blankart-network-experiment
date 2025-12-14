@@ -119,7 +119,9 @@
 // Version numbers for netplay :upside_down_face:
 int    VERSION;
 int SUBVERSION;
+#ifdef COMMITVERSION
 UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
+#endif
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
@@ -1389,6 +1391,19 @@ static void IdentifyVersion(void)
 #endif
 }
 
+#ifdef COMMITVERSION
+static void D_AbbrevCommit (void)
+{
+       UINT8 i;
+
+       for (i = 0; i < GIT_SHA_ABBREV; ++i)
+       {
+               sscanf(&comprevision[i * 2], "%2hhx",
+                               &comprevision_abbrev_bin[i]);
+       }
+}
+#endif
+
 static void
 D_ConvertVersionNumbers (void)
 {
@@ -1437,6 +1452,10 @@ void D_SRB2Main(void)
 
 	/* break the version string into version numbers, for netplay */
 	D_ConvertVersionNumbers();
+
+#ifdef COMMITVERSION
+	D_AbbrevCommit();
+#endif
 
 	// Print GPL notice for our console users (Linux)
 	CONS_Printf(

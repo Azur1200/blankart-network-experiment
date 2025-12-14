@@ -5590,10 +5590,10 @@ static void Command_ListDoomednums_f(void)
   */
 static void Command_Version_f(void)
 {
-#ifdef DEVELOP
-	CONS_Printf("SRB2Kart %s-%s (%s %s)\n", D_GetFancyBranchName(), comprevision, compdate, comptime);
+#if (defined DEVELOP) || (defined COMMITVERSION)
+	CONS_Printf("BlanKart %s-%s (%s %s)\n", D_GetFancyBranchName(), comprevision, compdate, comptime);
 #else
-	CONS_Printf("SRB2Kart %s (%s %s %s %s) ", VERSIONSTRING, compdate, comptime, comprevision, D_GetFancyBranchName());
+	CONS_Printf("BlanKart %s (%s %s %s %s) ", VERSIONSTRING, compdate, comptime, comprevision, D_GetFancyBranchName());
 #endif
 
 	// Base library
