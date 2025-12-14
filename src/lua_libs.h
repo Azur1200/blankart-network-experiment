@@ -131,6 +131,7 @@ extern lua_State *gL;
 #define META_KARTITEM "KARTITEM_T*"
 #define META_KARTRESULT "KARTRESULT_T*"
 #define META_KARTITEMGRAPHICS "KARTITEMGRAPHICS_T*"
+#define META_BOOSTINFO "BOOSTINFO_T*"
 
 boolean luaL_checkboolean(lua_State *L, int narg);
 
