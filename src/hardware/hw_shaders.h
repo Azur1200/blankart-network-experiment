@@ -151,26 +151,26 @@
 #define GLSL_PALETTE_RENDERING \
 	"float tex_pal_idx = texture3D(palette_lookup_tex, vec3((texel * 63.0 + 0.5) / 64.0))[0] * 255.0;\n" \
 	"float z = gl_FragCoord.z / gl_FragCoord.w;\n" \
-	"float light_y = clamp(floor(R_DoomColormap(final_lighting, z)), 0.0, 31.0);\n" \
+	"float light_y = clamp(floor(R_DoomColormap(lighting, z)), 0.0, 31.0);\n" \
 	"vec2 lighttable_coord = vec2((tex_pal_idx + 0.5) / 256.0, (light_y + 0.5) / 32.0);\n" \
 	"vec4 final_color = texture2D(lighttable_tex, lighttable_coord);\n" \
 	"final_color.a = texel.a * poly_color.a;\n" \
+	"float brightmap_mix = floor(texture2D(brightmap, gl_TexCoord[0].st).r);\n" \
+	"float light_gain = (255.0 - lighting) * brightmap_mix;\n" \
+	"float final_lighting = lighting + light_gain;\n" \
 	"gl_FragColor = final_color;\n" \
 
 #define GLSL_SOFTWARE_FRAGMENT_SHADER \
 	"#ifdef SRB2_PALETTE_RENDERING\n" \
 	"uniform sampler2D tex;\n" \
 	"uniform sampler2D brightmap;\n" \
-	"uniform vec4 poly_color;\n" \
-	"uniform float lighting;\n" \
 	"uniform sampler3D palette_lookup_tex;\n" \
 	"uniform sampler2D lighttable_tex;\n" \
+	"uniform vec4 poly_color;\n" \
+	"uniform float lighting;\n" \
 	GLSL_DOOM_COLORMAP \
 	"void main(void) {\n" \
 		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
-		"float brightmap_mix = floor(texture2D(brightmap, gl_TexCoord[0].st).r);\n" \
-		"float light_gain = (255.0 - lighting) * brightmap_mix;\n" \
-		"float final_lighting = lighting + light_gain;\n" \
 		GLSL_PALETTE_RENDERING \
 	"}\n" \
 	"#else\n" \
@@ -197,6 +197,30 @@
 		"gl_FragColor = final_color;\n" \
 	"}\n" \
 	"#endif\0"
+	
+#define GLSL_SOFTWARE_FRAGMENT_SHADER_NOPAL \
+	"uniform sampler2D tex;\n" \
+	"uniform sampler2D brightmap;\n" \
+	"uniform vec4 poly_color;\n" \
+	"uniform vec4 tint_color;\n" \
+	"uniform vec4 fade_color;\n" \
+	"uniform float lighting;\n" \
+	"uniform float fade_start;\n" \
+	"uniform float fade_end;\n" \
+	GLSL_DOOM_COLORMAP \
+	GLSL_DOOM_LIGHT_EQUATION \
+	"void main(void) {\n" \
+		"vec4 texel = texture2D(tex, gl_TexCoord[0].st);\n" \
+		"vec4 base_color = texel * poly_color;\n" \
+		"vec4 final_color = base_color;\n" \
+		"float brightmap_mix = floor(texture2D(brightmap, gl_TexCoord[0].st).r);\n" \
+		"float light_gain = (255.0 - lighting) * brightmap_mix;\n" \
+		"float final_lighting = lighting + light_gain;\n" \
+		GLSL_SOFTWARE_TINT_EQUATION \
+		GLSL_SOFTWARE_FADE_EQUATION \
+		"final_color.a = texel.a * poly_color.a;\n" \
+		"gl_FragColor = final_color;\n" \
+	"}\n" \
 
 // hand tuned adjustments for light level calculation
 #define GLSL_FLOOR_FUDGES \
@@ -217,6 +241,14 @@
 	GLSL_WALL_FUDGES \
 	GLSL_SOFTWARE_FRAGMENT_SHADER
 
+#define GLSL_BRIGHTMAP_FLOOR_FRAGMENT_SHADER \
+	GLSL_FLOOR_FUDGES \
+	GLSL_SOFTWARE_FRAGMENT_SHADER_NOPAL
+	
+#define GLSL_BRIGHTMAP_WALL_FRAGMENT_SHADER \
+	GLSL_WALL_FUDGES \
+	GLSL_SOFTWARE_FRAGMENT_SHADER_NOPAL
+
 // same as above but multiplies results with the lighting value from the
 // accompanying vertex shader (stored in gl_Color)
 #define GLSL_SOFTWARE_MODEL_LIGHTING_FRAGMENT_SHADER \
@@ -234,11 +266,7 @@
 	"#ifdef SRB2_MODEL_LIGHTING\n" \
 		"texel *= gl_Color;\n" \
 	"#endif\n" \
-	"float final_lighting = gl_Color.r * 255.0;\n" \
-	"float brightmap_mix = floor(texture2D(brightmap, gl_TexCoord[0].st).r);\n" \
-	"float light_gain = (255.0 - final_lighting) * brightmap_mix;\n" \
-	"final_lighting += light_gain;\n" \
-GLSL_PALETTE_RENDERING \
+	GLSL_PALETTE_RENDERING \
 	"}\n" \
 	"#else\n" \
 	"uniform sampler2D tex;\n" \
@@ -297,9 +325,6 @@ GLSL_PALETTE_RENDERING \
 	GLSL_DOOM_COLORMAP \
 	"void main(void) {\n" \
 		GLSL_WATER_TEXEL \
-		"float brightmap_mix = floor(texture2D(brightmap, gl_TexCoord[0].st).r);\n" \
-		"float light_gain = (255.0 - lighting) * brightmap_mix;\n" \
-		"float final_lighting = lighting + light_gain;\n" \
 		GLSL_PALETTE_RENDERING \
 	"}\n" \
 	"#else\n" \
@@ -327,6 +352,36 @@ GLSL_PALETTE_RENDERING \
 		"gl_FragColor = final_color;\n" \
 	"}\n" \
 	"#endif\0"
+	
+#define GLSL_WATER_FRAGMENT_SHADER_NOPAL \
+	GLSL_FLOOR_FUDGES \
+	"const float freq = 0.025;\n" \
+	"const float amp = 0.025;\n" \
+	"const float speed = 2.0;\n" \
+	"const float pi = 3.14159;\n" \
+	"uniform sampler2D tex;\n" \
+	"uniform sampler2D brightmap;\n" \
+	"uniform vec4 poly_color;\n" \
+	"uniform vec4 tint_color;\n" \
+	"uniform vec4 fade_color;\n" \
+	"uniform float lighting;\n" \
+	"uniform float fade_start;\n" \
+	"uniform float fade_end;\n" \
+	"uniform float leveltime;\n" \
+	GLSL_DOOM_COLORMAP \
+	GLSL_DOOM_LIGHT_EQUATION \
+	"void main(void) {\n" \
+		GLSL_WATER_TEXEL \
+		"vec4 base_color = texel * poly_color;\n" \
+		"vec4 final_color = base_color;\n" \
+		"float brightmap_mix = floor(texture2D(brightmap, gl_TexCoord[0].st).r);\n" \
+		"float light_gain = (255.0 - lighting) * brightmap_mix;\n" \
+		"float final_lighting = lighting + light_gain;\n" \
+		GLSL_SOFTWARE_TINT_EQUATION \
+		GLSL_SOFTWARE_FADE_EQUATION \
+		"final_color.a = texel.a * poly_color.a;\n" \
+		"gl_FragColor = final_color;\n" \
+	"}\n" \
 
 //
 // Fog block shader
