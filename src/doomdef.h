@@ -110,6 +110,10 @@ extern FILE *logstream;
 extern char logfilename[1024];
 #endif
 
+#define BOOTDEVNAG
+
+#define BLANNAME "BlanKart"
+
 /* A mod name to further distinguish versions. */
 #define SRB2APPLICATION "SRB2Kart"
 
