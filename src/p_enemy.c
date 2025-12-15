@@ -442,6 +442,7 @@ void P_NewChaseDir(mobj_t *actor)
 boolean P_LookForPlayers(mobj_t *actor, boolean allaround, boolean tracer, fixed_t dist)
 {
 	INT32 c = 0, stop;
+	INT32 i, pcount = 0;
 	player_t *player;
 	angle_t an;
 
@@ -452,6 +453,18 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround, boolean tracer, fixed
 	actor->lastlook %= MAXPLAYERS;
 
 	stop = (actor->lastlook - 1) % PLAYERSMASK;
+
+	// No players? Don't bother.
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator)
+			continue;
+
+		pcount++;
+	}
+
+	if (!pcount)
+		return false;
 
 	for (; ; actor->lastlook = (actor->lastlook + 1) % PLAYERSMASK)
 	{

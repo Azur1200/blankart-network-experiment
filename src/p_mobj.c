@@ -4270,6 +4270,7 @@ static void P_SpawnItemCapsuleParts(mobj_t *mobj)
 boolean P_BossTargetPlayer(mobj_t *actor, boolean closest)
 {
 	INT32 stop = -1, c = 0;
+	INT32 i, pcount = 0;
 	player_t *player;
 	fixed_t dist, lastdist = 0;
 
@@ -4277,6 +4278,18 @@ boolean P_BossTargetPlayer(mobj_t *actor, boolean closest)
 	if (actor->lastlook < 0)
 		actor->lastlook = P_RandomByte();
 	actor->lastlook %= PLAYERSMASK;
+
+	// No players? Don't bother.
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator)
+			continue;
+
+		pcount++;
+	}
+
+	if (!pcount)
+		return false;
 
 	for( ; ; actor->lastlook = (actor->lastlook+1) % PLAYERSMASK)
 	{
