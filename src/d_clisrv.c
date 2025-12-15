@@ -3227,7 +3227,7 @@ static void Got_KickCmd(UINT8 **p, INT32 playernum)
 			HU_AddChatText(va("\x82*%s left the game (Synch failure)", player_names[pnum]), false);
 			kickreason = KR_SYNCH;
 
-			if (M_CheckParm("-consisdump")) // Helps debugging some problems
+			if ((M_CheckParm("-consisdump")) || (cv_blamecfail.value)) // Helps debugging some problems
 			{
 				INT32 i;
 
@@ -4819,6 +4819,23 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 		}
 		else
 		{
+			if (cv_blamecfail.value)
+			{
+				char cfailrecieved[CONSISTANCYDBGSIZE]; // This one's huge!
+				char cfailexpected[CONSISTANCYDBGSIZE];
+
+				SPrintConsistancy(&cfailrecieved[0], &clientconsistancy);
+				SPrintConsistancy(&cfailexpected[0], &consistancy[realstart%BACKUPTICS]);
+
+				CONS_Printf(M_GetText("Kicking desynching player %d (%s); expected %hd, got %hd\n"),
+					netconsole+1, player_names[netconsole],
+					consistancy[realstart%BACKUPTICS].checksum,
+					SHORT(clientconsistancy.checksum));
+
+				// Extremely elaborate debug!
+				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
+				CONS_Printf(M_GetText("RECIEVED\n%s"), cfailrecieved);
+			}
 			SendKick(netconsole, KICK_MSG_CON_FAIL);
 			DEBFILE(va("player %d kicked (synch failure) [%u] %d!=%d\n",
 						netconsole, realstart, consistancy[realstart%BACKUPTICS].checksum,
