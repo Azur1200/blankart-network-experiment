@@ -170,6 +170,7 @@ static void KartSlopeBoost_OnChange(void);
 static void KartDrafting_OnChange(void);
 static void KartAirDrop_OnChange(void);
 static void KartAirThrust_OnChange(void);
+static void KartWaterSkipLock_OnChange(void);
 static void KartItemLitter_OnChange(void);
 static void KartItemPush_OnChange(void);
 static void KartAntiBump_OnChange(void);
