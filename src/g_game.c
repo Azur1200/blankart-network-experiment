@@ -1090,7 +1090,7 @@ INT32 G_LevelTitleToMapNum(const char * leveltitle)
 INT16 G_KartMapToNative(INT16 mapnum)
 {
 	if (mapnum > 0 && mapnum < NEXTMAP_SPECIAL)
-		return kartmap2native[mapnum-1]+1;
+		return kartmap2native[mapnum-1];
 	return 0;
 }
 

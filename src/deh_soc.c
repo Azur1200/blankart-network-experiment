@@ -860,7 +860,7 @@ void readlevelheader(MYFILE *f, char * name)
 		if (exnum >= NEXTMAP_SPECIAL)
 			I_Error("Ran out of compatibility map slots");
 	}
-	kartmap2native[exnum-1] = num;
+	kartmap2native[exnum-1] = num+1;
 	nativemap2kart[num] = exnum-1;
 
 	if (mapheaderinfo[num]->lumpname == NULL)
