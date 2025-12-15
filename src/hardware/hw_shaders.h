@@ -114,38 +114,43 @@
 		"float fd = fe - fs;\n" \
 		"darkness = clamp((darkness - fs) * (1.0 / fd), 0.0, 1.0);\n" \
 	"}\n" \
-	"float colorBrightness = sqrt((final_color.r * final_color.r) + (final_color.g * final_color.g) + (final_color.b * final_color.b));\n" \
-	"float fogBrightness = sqrt((fade_color.r * fade_color.r) + (fade_color.g * fade_color.g) + (fade_color.b * fade_color.b));\n" \
-	"float colorIntensity = 0.0;\n" \
-	"if (colorBrightness < fogBrightness) {\n" \
-		"colorIntensity = 1.0 - min(final_color.r, min(final_color.g, final_color.b));\n" \
-		"colorIntensity = abs(colorIntensity - (1.0 - max(fade_color.r, max(fade_color.g, fade_color.b))));\n" \
-	"} else {\n" \
-		"colorIntensity = max(final_color.r, max(final_color.g, final_color.b));\n" \
-		"colorIntensity = abs(colorIntensity - min(fade_color.r, min(fade_color.g, fade_color.b)));\n" \
-	"}\n" \
+	"if (newfade)\n" \
+	"{\n" \
+		"float colorBrightness = sqrt((final_color.r * final_color.r) + (final_color.g * final_color.g) + (final_color.b * final_color.b));\n" \
+		"float fogBrightness = sqrt((fade_color.r * fade_color.r) + (fade_color.g * fade_color.g) + (fade_color.b * fade_color.b));\n" \
+		"float colorIntensity = 0.0;\n" \
+		"if (colorBrightness < fogBrightness) {\n" \
+			"colorIntensity = 1.0 - min(final_color.r, min(final_color.g, final_color.b));\n" \
+			"colorIntensity = abs(colorIntensity - (1.0 - max(fade_color.r, max(fade_color.g, fade_color.b))));\n" \
+		"} else {\n" \
+			"colorIntensity = max(final_color.r, max(final_color.g, final_color.b));\n" \
+			"colorIntensity = abs(colorIntensity - min(fade_color.r, min(fade_color.g, fade_color.b)));\n" \
+		"}\n" \
 		"colorIntensity *= darkness;\n" \
 		"colorIntensity *= fade_color.a * 10.0;\n" \
-	"if (abs(final_color.r - fade_color.r) <= colorIntensity) {\n" \
-	"	final_color.r = fade_color.r;\n" \
-	"} else if (final_color.r < fade_color.r) {\n" \
-		"final_color.r += colorIntensity;\n" \
+		"if (abs(final_color.r - fade_color.r) <= colorIntensity) {\n" \
+			"final_color.r = fade_color.r;\n" \
+		"} else if (final_color.r < fade_color.r) {\n" \
+			"final_color.r += colorIntensity;\n" \
+		"} else {\n" \
+			"final_color.r -= colorIntensity;\n" \
+		"}\n" \
+		"if (abs(final_color.g - fade_color.g) <= colorIntensity) {\n" \
+			"final_color.g = fade_color.g;\n" \
+		"} else if (final_color.g < fade_color.g) {\n" \
+			"final_color.g += colorIntensity;\n" \
+		"} else {\n" \
+			"final_color.g -= colorIntensity;\n" \
+		"}\n" \
+		"if (abs(final_color.b - fade_color.b) <= colorIntensity) {\n" \
+			"final_color.b = fade_color.b;\n" \
+		"} else if (final_color.b < fade_color.b) {\n" \
+			"final_color.b += colorIntensity;\n" \
+		"} else {\n" \
+			"final_color.b -= colorIntensity;\n" \
+		"}\n" \
 	"} else {\n" \
-		"final_color.r -= colorIntensity;\n" \
-	"}\n" \
-	"if (abs(final_color.g - fade_color.g) <= colorIntensity) {\n" \
-		"final_color.g = fade_color.g;\n" \
-	"} else if (final_color.g < fade_color.g) {\n" \
-		"final_color.g += colorIntensity;\n" \
-	"} else {\n" \
-		"final_color.g -= colorIntensity;\n" \
-	"}\n" \
-	"if (abs(final_color.b - fade_color.b) <= colorIntensity) {\n" \
-		"final_color.b = fade_color.b;\n" \
-	"} else if (final_color.b < fade_color.b) {\n" \
-		"final_color.b += colorIntensity;\n" \
-	"} else {\n" \
-		"final_color.b -= colorIntensity;\n" \
+		"final_color = mix(final_color, fade_color, darkness);\n" \
 	"}\n"
 
 #define GLSL_PALETTE_RENDERING \
@@ -182,6 +187,7 @@
 	"uniform float lighting;\n" \
 	"uniform float fade_start;\n" \
 	"uniform float fade_end;\n" \
+	"uniform bool newfade;\n" \
 	GLSL_DOOM_COLORMAP \
 	GLSL_DOOM_LIGHT_EQUATION \
 	"void main(void) {\n" \
@@ -238,7 +244,7 @@
 	"float brightmap_mix = floor(texture2D(brightmap, gl_TexCoord[0].st).r);\n" \
 	"float light_gain = (255.0 - final_lighting) * brightmap_mix;\n" \
 	"final_lighting += light_gain;\n" \
-GLSL_PALETTE_RENDERING \
+	GLSL_PALETTE_RENDERING \
 	"}\n" \
 	"#else\n" \
 	"uniform sampler2D tex;\n" \
@@ -248,6 +254,7 @@ GLSL_PALETTE_RENDERING \
 	"uniform vec4 fade_color;\n" \
 	"uniform float fade_start;\n" \
 	"uniform float fade_end;\n" \
+	"uniform bool newfade;\n" \
 	GLSL_DOOM_COLORMAP \
 	GLSL_DOOM_LIGHT_EQUATION \
 	"void main(void) {\n" \
@@ -311,6 +318,7 @@ GLSL_PALETTE_RENDERING \
 	"uniform float lighting;\n" \
 	"uniform float fade_start;\n" \
 	"uniform float fade_end;\n" \
+	"uniform bool newfade;\n" \
 	"uniform float leveltime;\n" \
 	GLSL_DOOM_COLORMAP \
 	GLSL_DOOM_LIGHT_EQUATION \
@@ -344,6 +352,7 @@ GLSL_PALETTE_RENDERING \
 	"uniform float lighting;\n" \
 	"uniform float fade_start;\n" \
 	"uniform float fade_end;\n" \
+	"uniform bool newfade;\n" \
 	GLSL_DOOM_COLORMAP \
 	GLSL_DOOM_LIGHT_EQUATION \
 	"void main(void) {\n" \
