@@ -5546,7 +5546,7 @@ sector_t *P_ThingOnSpecial3DFloor(mobj_t *mo)
 	return NULL;
 }
 
-#define TELEPORTED(mo) (mo->subsector->sector != originalsector)
+#define TELEPORTED(mo) (P_MobjWasRemoved(mo) || mo->subsector->sector != originalsector)
 
 /** Checks if a player is standing on or is inside a 3D floor (e.g. water) and
   * applies any specials.
