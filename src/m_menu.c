@@ -3208,7 +3208,8 @@ static boolean M_UpdateLevelPlatter(void)
 	}
 
 	// check headers for the last map added, too!
-	M_MakeLevelSelectHeader(&levelselect.rows[headerRow], previtermap, NULL);
+	if (previtermap != NULL)
+		M_MakeLevelSelectHeader(&levelselect.rows[headerRow], previtermap, NULL);
 
 	return numsortedmaps > 0;
 }
