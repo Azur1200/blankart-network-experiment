@@ -756,6 +756,7 @@ consvar_t cv_showviewpointtext = CVAR_INIT ("showviewpointtext", "On", CV_SAVE, 
 // Intermission time Tails 04-19-2002
 static CV_PossibleValue_t inttime_cons_t[] = {{0, "MIN"}, {3600, "MAX"}, {0, NULL}};
 consvar_t cv_inttime = CVAR_INIT ("inttime", "10", CV_SAVE|CV_NETVAR, inttime_cons_t, NULL);
+consvar_t cv_rolltime = CVAR_INIT ("rolltime", "10", CV_SAVE|CV_NETVAR, inttime_cons_t, NULL);
 
 static CV_PossibleValue_t advancemap_cons_t[] = {{0, "Same"}, {1, "Next"}, {2, "Random"}, {3, "Vote"}, {0, NULL}};
 consvar_t cv_advancemap = CVAR_INIT ("advancemap", "Vote", CV_NETVAR, advancemap_cons_t, NULL);
@@ -1013,6 +1014,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_scrambleonchange);
 
 	CV_RegisterVar(&cv_inttime);
+	CV_RegisterVar(&cv_rolltime);
 	CV_RegisterVar(&cv_advancemap);
 	CV_RegisterVar(&cv_timelimit);
 	CV_RegisterVar(&cv_playbackspeed);

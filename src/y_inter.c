@@ -1160,8 +1160,14 @@ void Y_StartIntermission(void)
 
 			if (data.itemrolls)
 			{
-				// 3 seconds for 8P and below, 6 for 16P, 9 for 24P onwards.
-				rolltic = (min(9, max(3, (nump >> 3) * 3)) * TICRATE);
+				if (!K_CanChangeRules(false))
+				{
+					rolltic = 10*TICRATE;
+				}
+				else
+				{
+					rolltic = cv_rolltime.value*TICRATE;
+				}
 
 				sorttic += rolltic;
 				timer += rolltic;
