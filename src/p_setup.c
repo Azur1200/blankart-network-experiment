@@ -8834,7 +8834,8 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	{
 		// Reset the palette now all fades have been done
 		if (rendermode != render_none)
-			V_ReloadPalette(); // Set the level palette
+			//V_ReloadPalette(); // Set the level palette
+			V_SetPaletteLump(GetPalette()); // the above does not *set* the screen palette
 
 		if (!(reloadinggamestate || titlemapinaction))
 		{

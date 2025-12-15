@@ -1642,6 +1642,7 @@ void HWR_SetPalette(RGBA_t *palette)
 			// tool or set the palette depth to 24 bits.
 			RGBA_t crushed_palette[256];
 			int i;
+
 			for (i = 0; i < 256; i++)
 			{
 				float fred = (float)(palette[i].s.red >> 3);
@@ -1652,6 +1653,7 @@ void HWR_SetPalette(RGBA_t *palette)
 				crushed_palette[i].s.blue = (UINT8)(fblue / 31.0f * 255.0f);
 				crushed_palette[i].s.alpha = 255;
 			}
+
 			HWD.pfnSetScreenPalette(crushed_palette);
 		}
 		else
@@ -1684,8 +1686,8 @@ static void HWR_SetPaletteLookup(RGBA_t *palette)
 	int r, g, b;
 	UINT8 *lut = Z_Malloc(
 		HWR_PALETTE_LUT_SIZE*HWR_PALETTE_LUT_SIZE*HWR_PALETTE_LUT_SIZE*sizeof(UINT8),
-						  PU_STATIC, NULL);
-	#define STEP_SIZE (256/HWR_PALETTE_LUT_SIZE)
+																	PU_STATIC, NULL);
+#define STEP_SIZE (256/HWR_PALETTE_LUT_SIZE)
 	for (b = 0; b < HWR_PALETTE_LUT_SIZE; b++)
 	{
 		for (g = 0; g < HWR_PALETTE_LUT_SIZE; g++)
@@ -1697,7 +1699,7 @@ static void HWR_SetPaletteLookup(RGBA_t *palette)
 			}
 		}
 	}
-	#undef STEP_SIZE
+#undef STEP_SIZE
 	HWD.pfnSetPaletteLookup(lut);
 	Z_Free(lut);
 }
@@ -1723,8 +1725,10 @@ void HWR_SetMapPalette(void)
 		lumpnum_t lumpnum = W_GetNumForName(GetPalette());
 		size_t palsize = W_LumpLength(lumpnum);
 		UINT8 *RGB_data;
+
 		if (palsize < 768) // 256 * 3
 			I_Error("HWR_SetMapPalette: A programmer assumed palette lumps are at least 768 bytes long, but apparently this was a wrong assumption!\n");
+
 		RGB_data = W_CacheLumpNum(lumpnum, PU_CACHE);
 		// we got the RGB palette now, but we need it in RGBA format.
 		for (i = 0; i < 256; i++)
@@ -1761,10 +1765,12 @@ void HWR_SetMapPalette(void)
 	if (memcmp(mapPalette, palette, sizeof(mapPalette)))
 	{
 		memcpy(mapPalette, palette, sizeof(mapPalette));
+
 		// in palette rendering mode, this means that all rgba textures now have wrong colors
 		// and the lookup table is outdated
 		HWR_SetPaletteLookup(mapPalette);
 		HWD.pfnSetTexturePalette(mapPalette);
+
 		if (patchformat == GL_TEXFMT_RGBA || textureformat == GL_TEXFMT_RGBA)
 		{
 			Z_FreeTag(PU_HWRCACHE);
