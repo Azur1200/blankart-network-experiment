@@ -534,26 +534,12 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 
 	if (color & 0xFF00) // Do COLORMAP fade.
 	{
-		if (HWR_ShouldUsePaletteRendering())
-		{
-			const hwdscreentexture_t scr_tex = HWD_SCREENTEXTURE_GENERIC2;
-
-			Surf.LightTableId = HWR_GetLightTableID(NULL);
-			Surf.LightInfo.light_level = strength;
-			HWD.pfnMakeScreenTexture(scr_tex);
-			HWD.pfnSetShader(HWR_GetShaderFromTarget(SHADER_UI_COLORMAP_FADE));
-			HWD.pfnDrawScreenTexture(scr_tex, &Surf, PF_ColorMapped|PF_NoDepthTest);
-			HWD.pfnUnSetShader();
-
-			return;
-		}
 		Surf.PolyColor.rgba = UINT2RGBA(0x01010160);
 		Surf.PolyColor.s.alpha = (strength*8);
 	}
 	else // Do TRANSMAP** fade.
 	{
-		RGBA_t *palette = HWR_GetTexturePalette();
-		Surf.PolyColor.rgba = palette[color&0xFF].rgba;
+		Surf.PolyColor.rgba = V_GetColor(color).rgba;
 		Surf.PolyColor.s.alpha = softwaretranstogl[strength];
 	}
 	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
@@ -634,8 +620,7 @@ void HWR_DrawFadeFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT16 ac
 	}
 	else // Do TRANSMAP** fade.
 	{
-		RGBA_t *palette = HWR_GetTexturePalette();
-		Surf.PolyColor.rgba = palette[actualcolor&0xFF].rgba;
+		Surf.PolyColor.rgba = V_GetColor(actualcolor).rgba;
 		Surf.PolyColor.s.alpha = softwaretranstogl[strength];
 	}
 	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
@@ -731,9 +716,8 @@ void HWR_drawAMline(const fline_t *fl, INT32 color)
 {
 	F2DCoord v1, v2;
 	RGBA_t color_rgba;
-	RGBA_t *palette = HWR_GetTexturePalette();
 
-	color_rgba = palette[color&0xFF];
+	color_rgba = V_GetColor(color);
 
 	v1.x = ((float)fl->a.x-(vid.width/2.0f))*(2.0f/vid.width);
 	v1.y = ((float)fl->a.y-(vid.height/2.0f))*(2.0f/vid.height);
@@ -928,7 +912,6 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 	float fx, fy, fw, fh;
 	UINT8 alphalevel = ((color & V_ALPHAMASK) >> V_ALPHASHIFT);
 	UINT8 blendmode = ((color & V_BLENDMASK) >> V_BLENDSHIFT);
-	RGBA_t *palette = HWR_GetTexturePalette();
 
 //  3--2
 //  | /|
@@ -944,7 +927,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 	{
 		if (x == 0 && y == 0 && w == BASEVIDWIDTH*FRACUNIT && h == BASEVIDHEIGHT*FRACUNIT)
 		{
-			RGBA_t rgbaColour = palette[color&0xFF];
+			RGBA_t rgbaColour = V_GetColor(color);
 			FRGBAFloat clearColour;
 			clearColour.red = (float)rgbaColour.s.red / 255;
 			clearColour.green = (float)rgbaColour.s.green / 255;
@@ -972,7 +955,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 	v[0].t = v[1].t = 0.0f;
 	v[2].t = v[3].t = 1.0f;
 
-	Surf.PolyColor = palette[color&0xFF];
+	Surf.PolyColor = V_GetColor(color);
 
 	flags = HWR_GetBlendModeFlag(blendmode+1)|PF_Modulated|PF_NoDepthTest|PF_NoTexture;
 
@@ -1061,7 +1044,6 @@ static inline boolean saveTGA(const char *file_name, void *buffer,
 UINT8 *HWR_GetScreenshot(INT32 scale)
 {
 	static UINT8 *buf = NULL;
-	int tex = HWR_ShouldUsePaletteRendering() ? HWD_SCREENTEXTURE_GENERIC3 : HWD_SCREENTEXTURE_GENERIC2;
 
 	buf = realloc(buf, (vid.width/scale)*(vid.height/scale)*3);
 
@@ -1069,7 +1051,7 @@ UINT8 *HWR_GetScreenshot(INT32 scale)
 		return NULL;
 
 	// returns 24bit 888 RGB
-	HWD.pfnReadScreenTexture(tex, (void *)buf, scale);
+	HWD.pfnReadScreenFinalTexture(buf, scale);
 	return buf;
 }
 
