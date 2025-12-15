@@ -543,10 +543,10 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	{
 		if (PolyFlags & PF_Fog)
 			shader = SHADER_FOG;
-		else if ((PolyFlags & PF_Ripple) && levelflat != NULL && levelflat->type == LEVELFLAT_TEXTURE && R_GetTextureBrightmap(levelflat->texture_id) && HWR_ShouldUsePaletteRendering())
-			shader = SHADER_BRIGHTMAP_WATER;
 		else if (PolyFlags & PF_Ripple)
 			shader = SHADER_WATER;
+		else if ((PolyFlags & PF_Ripple) && levelflat != NULL && levelflat->type == LEVELFLAT_TEXTURE && R_GetTextureBrightmap(levelflat->texture_id) && HWR_ShouldUsePaletteRendering())
+			shader = SHADER_BRIGHTMAP_WATER;
 		else if (levelflat != NULL && levelflat->type == LEVELFLAT_TEXTURE && R_GetTextureBrightmap(levelflat->texture_id) && HWR_ShouldUsePaletteRendering())
 			shader = SHADER_BRIGHTMAP_FLOOR;
 		else
