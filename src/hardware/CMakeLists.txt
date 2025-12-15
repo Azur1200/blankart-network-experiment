@@ -11,6 +11,5 @@ target_sources(SRB2SDL2 PRIVATE
 	hw_model.c
 	u_list.c
 	hw_batching.c
-	hw_shaders.c
 	r_opengl/r_opengl.c
 )

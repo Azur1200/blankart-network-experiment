@@ -22,12 +22,6 @@ extern "C" {
 #define ZCLIP_PLANE 4.0f // Used for the actual game drawing
 #define NZCLIP_PLANE 0.9f // Seems to be only used for the HUD and screen textures
 
-// The width/height/depth of the palette lookup table used by palette rendering.
-// Changing this also requires changing the shader code!
-// Also assumed to be a power of two in some parts of the code.
-// 64 seems to work perfectly for the vanilla palette.
-#define HWR_PALETTE_LUT_SIZE 64
-
 // ==========================================================================
 //                                                               SIMPLE TYPES
 // ==========================================================================
@@ -141,30 +135,33 @@ typedef struct
 } FOutVector;
 
 #ifdef GL_SHADERS
-
-// Shader targets used to render specific types of geometry.
-// A shader target is resolved to an actual shader with HWR_GetShaderFromTarget.
-// The shader returned may be a base shader or a custom shader.
+// Predefined shader types
 enum
 {
 	SHADER_NONE = -1,
+	SHADER_DEFAULT = 0,
 
-	SHADER_FLOOR = 0,
+	SHADER_FLOOR,
 	SHADER_WALL,
 	SHADER_SPRITE,
-	SHADER_MODEL,
-	SHADER_MODEL_LIGHTING,
+	SHADER_MODEL, SHADER_MODEL_LIGHTING,
 	SHADER_WATER,
 	SHADER_FOG,
 	SHADER_SKY,
-	SHADER_PALETTE_POSTPROCESS,
-	SHADER_UI_COLORMAP_FADE,
 
-	NUMSHADERTARGETS
+	NUMBASESHADERS,
 };
 
-// Must be at least NUMSHADERTARGETS*2 to fit base and custom shaders for each shader target.
-#define HWR_MAXSHADERS NUMSHADERTARGETS*2
+// Maximum amount of shader programs
+// Must be higher than NUMBASESHADERS
+#define HWR_MAXSHADERS 16
+
+// Shader sources (vertex and fragment)
+typedef struct
+{
+	char *vertex;
+	char *fragment;
+} shadersource_t;
 
 // Custom shader reference table
 typedef struct
@@ -293,7 +290,6 @@ struct FSurfaceInfo
 	RGBA_t			PolyColor;
 	RGBA_t			TintColor;
 	RGBA_t			FadeColor;
-	UINT32			LightTableId;
 	FLightInfo		LightInfo;
 };
 typedef struct FSurfaceInfo FSurfaceInfo;
@@ -301,7 +297,7 @@ typedef struct FSurfaceInfo FSurfaceInfo;
 #define GL_DEFAULTMIX 0x00000000
 #define GL_DEFAULTFOG 0x19000000
 
-// Various settings and states for the rendering backend.
+//Hurdler: added for backward compatibility
 enum hwdsetspecialstate
 {
 	HWD_SET_MODEL_LIGHTING = 1,
@@ -313,13 +309,15 @@ enum hwdsetspecialstate
 };
 typedef enum hwdsetspecialstate hwdspecialstate_t;
 
-enum hwdshaderstage
+// Lactozilla: Shader options
+enum hwdshaderoption
 {
-	HWD_SHADERSTAGE_VERTEX,
-	HWD_SHADERSTAGE_FRAGMENT,
+	HWD_SHADEROPTION_OFF,
+	HWD_SHADEROPTION_ON,
+	HWD_SHADEROPTION_NOCUSTOM,
 };
 
-typedef enum hwdshaderstage hwdshaderstage_t;
+typedef enum hwdshaderoption hwdshaderoption_t;
 
 // Lactozilla: Shader info
 // Generally set at the start of the frame.
@@ -344,20 +342,6 @@ enum hwdfiltermode
 	HWD_SET_TEXTUREFILTER_MIXED2,
 	HWD_SET_TEXTUREFILTER_MIXED3,
 };
-
-// Screen texture slots
-enum hwdscreentexture
-{
-	HWD_SCREENTEXTURE_WIPE_START, // source image for the wipe/fade effect
-	HWD_SCREENTEXTURE_WIPE_END,   // destination image for the wipe/fade effect
-	HWD_SCREENTEXTURE_GENERIC1,   // underwater/heat effect, intermission background
-	HWD_SCREENTEXTURE_GENERIC2,   // palette-based colormap fade, screen before palette rendering's postprocessing
-	HWD_SCREENTEXTURE_GENERIC3,   // screen after palette rendering's postprocessing
-	HWD_SCREENTEXTURE_VHS,
-	NUMSCREENTEXTURES,            // (generic3 is unused if palette rendering is disabled)
-};
-
-typedef enum hwdscreentexture hwdscreentexture_t;
 
 #ifdef __cplusplus
 } // extern "C"
