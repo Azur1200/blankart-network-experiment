@@ -359,6 +359,7 @@ boolean K_SlopeBoostActive(void);
 boolean K_DraftingActive(void);
 boolean K_AirDropActive(void);
 boolean K_AirThrustActive(void);
+boolean K_WaterskipBricksActive(void);
 boolean K_ItemLitterActive(void);
 boolean K_ItemListActive(void);
 boolean K_ItemPushingActive(void);
@@ -383,6 +384,7 @@ typedef enum
 void K_AwardScaledPlayerRings(player_t *player, SINT8 mode);
 
 void K_QuiteSaltyHop(player_t *player);
+boolean K_CheckWaterskipLockout(player_t *player);
 
 typedef enum
 {

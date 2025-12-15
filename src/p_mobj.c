@@ -3443,7 +3443,8 @@ void P_MobjCheckWater(mobj_t *mobj)
 				P_SetScale(splish, mobj->scale);
 
 				// skipping stone!
-				if (p && p->waterskip < 2
+				if (p && K_CheckWaterskipLockout(p)
+					&& p->waterskip < 2
 					&& ((p->speed/3 > abs(mobj->momz)) // Going more forward than horizontal, so you can skip across the water.
 					|| (p->speed > K_GetKartSpeed(p,false,true)/3 && p->waterskip)) // Already skipped once, so you can skip once more!
 					&& ((!(mobj->eflags & MFE_VERTICALFLIP) && thingtop - mobj->momz > mobj->watertop)

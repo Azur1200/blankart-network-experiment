@@ -11225,6 +11225,17 @@ boolean K_AirThrustActive(void)
 	return false;
 }
 
+boolean K_WaterskipBricksActive(void)
+{
+	if (waterskipbricks)
+	{
+		// Water Skip Lock is enabled!
+		return true;
+	}
+
+	return false;
+}
+
 boolean K_ItemLitterActive(void)
 {
 	if (itemlittering)
@@ -11404,6 +11415,18 @@ void K_QuiteSaltyHop(player_t *player)
 		player->salty.zoffset = 0;
 		player->salty.momz = 6*FRACUNIT;
 		S_StartSound(player->mo, sfx_s25a);
+	}
+}
+
+boolean K_CheckWaterskipLockout(player_t *player)
+{
+	if (K_WaterskipBricksActive())
+	{
+		return (player->cmd.buttons & BT_ACCELERATE) == BT_ACCELERATE;
+	}
+	else
+	{
+		return true;
 	}
 }
 

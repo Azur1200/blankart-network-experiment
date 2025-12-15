@@ -162,6 +162,7 @@ boolean slopeboostactive;
 boolean draftingactive;
 boolean airdropactive;
 boolean airthrustactive;
+boolean waterskipbricks;
 boolean itemlittering;
 boolean itempushing;
 UINT8   bumpsparkactive;
@@ -8177,6 +8178,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	draftingactive = false;
 	airdropactive = false;
 	airthrustactive = false;
+	waterskipbricks = false;
 	itemlittering = false;
 	itempushing = false;
 	itemlistactive = false;
@@ -8209,6 +8211,9 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 
 	if (cv_kartairthrust.value)
 		airthrustactive = true;
+
+	if (cv_kartwaterskiplock.value)
+		waterskipbricks = true;
 
 	if (cv_kartitemlitter.value)
 		itemlittering = true;
