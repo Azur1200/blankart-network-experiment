@@ -392,6 +392,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartairthrust_power3);
 	CV_RegisterVar(&cv_kartairthrust_power4);
 
+	CV_RegisterVar(&cv_kartwaterskiplock);
+
 	CV_RegisterVar(&cv_kartslopeboost);
 
 	CV_RegisterVar(&cv_kartaltshrinktime);
