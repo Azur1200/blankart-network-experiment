@@ -1709,7 +1709,7 @@ void HWR_SetMapPalette(void)
 {
 	RGBA_t RGBA_converted[256];
 	RGBA_t *palette;
-	size_t i;
+	int i;
 
 	if (!(gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction)))
 	{
@@ -1734,26 +1734,6 @@ void HWR_SetMapPalette(void)
 			RGBA_converted[i].s.blue = *(RGB_data++);
 			RGBA_converted[i].s.alpha = 255;
 		}
-
-		// remap the palette from 2.1 to 2.2 indices in compatmode
-		RGBA_t *palcopy = NULL;
-		size_t realpalsize = 256;
-
-		if (wadfiles[WADFILENUM(lumpnum)]->compatmode)
-		{
-			palcopy = malloc(sizeof(*palcopy)*realpalsize);
-			memcpy(palcopy, RGBA_converted, sizeof(*palcopy)*realpalsize);
-		}
-
-		for (i = 0; i < realpalsize; i++)
-		{
-			if (palcopy)
-				RGBA_converted[i].rgba = palcopy[R_InvPaletteRemap(i)].rgba;
-		}
-
-		if (palcopy)
-			free(palcopy);
-
 		palette = RGBA_converted;
 	}
 
