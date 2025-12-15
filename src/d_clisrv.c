@@ -4810,7 +4810,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 
 				// Extremely elaborate debug!
 				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
-				CONS_Printf(M_GetText("RECIEVED\n%s"), cfailrecieved);
+				CONS_Printf(M_GetText("RECEIVED\n%s"), cfailrecieved);
 			}
 			DEBFILE(va("Restoring player %d (synch failure) [%update] %d!=%d\n",
 				netconsole, realstart, consistancy[realstart%BACKUPTICS].checksum,
@@ -4834,7 +4834,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 
 				// Extremely elaborate debug!
 				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
-				CONS_Printf(M_GetText("RECIEVED\n%s"), cfailrecieved);
+				CONS_Printf(M_GetText("RECEIVED\n%s"), cfailrecieved);
 			}
 			SendKick(netconsole, KICK_MSG_CON_FAIL);
 			DEBFILE(va("player %d kicked (synch failure) [%u] %d!=%d\n",
