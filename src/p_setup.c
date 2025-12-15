@@ -8429,7 +8429,7 @@ static void P_TryAddGhosts(const char *gpath, boolean all, recordreplay_e which)
 
 static void P_LoadRecordGhosts(void)
 {
-	// see also m_menu.c's Nextmap_OnChange
+	// see also m_menu.c's M_UpdateTimeAttackMenu
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, modeattacking == ATTACKING_ITEMBREAK);
 
 	// Best Time ghost

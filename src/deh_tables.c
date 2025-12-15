@@ -765,7 +765,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "CONNECTIP", &MR_ConnectIP },
 	{ "CONNECTLASTSERVER", &MR_ConnectLastServer },
 	{ "QUITMULTIPLAYERMENU", &MR_QuitMultiPlayerMenu },
-	{ "STARTSERVERMENU", &MR_StartServerMenu },
 	{ "STARTSERVER", &MR_StartServer },
 	{ "CONNECTMENUMODCHECKS", &MR_ConnectMenuModChecks },
 	{ "CANCELCONNECT", &MR_CancelConnect },
@@ -793,7 +792,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "MODEATTACKENDGAME", &MR_ModeAttackEndGame },
 	{ "RETRY", &MR_Retry },
 	{ "ENDGAME", &MR_EndGame },
-	{ "MAPCHANGE", &MR_MapChange },
 	{ "SETUPMULTIPLAYER", &MR_SetupMultiPlayer },
 	{ "CONFIRMSPECTATE", &MR_ConfirmSpectate },
 	{ "CONFIRMENTERGAME", &MR_ConfirmEnterGame },
@@ -825,7 +823,9 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "CAMERASETUP", &MR_CameraSetup },
 	// { "BARCSS", &MR_HandleBarCss },
 	{ "HANDLESETUPMULTIPLAYERMENU", &MR_HandleSetupMultiPlayerMenu },
+	{ "PREPARELEVELPLATTER", &MR_PrepareLevelPlatter },
 	{ "HANDLELEVELPLATTER", &MR_HandleLevelPlatter },
+	{ "LEVELPLATTERRANDOM", &MR_LevelPlatterRandom },
 #ifdef HAVE_DISCORDRPC
 	{ "HANDLEDISCORDREQUESTS", &MR_HandleDiscordRequests },
 #endif
@@ -1050,6 +1050,14 @@ struct int_const_s const INT_CONST[] = {
 	{"LF2_HIDEINSTATS",LF2_HIDEINSTATS},
 	{"LF2_NOTIMEATTACK",LF2_NOTIMEATTACK},
 	{"LF2_VISITNEEDED",LF2_VISITNEEDED},
+
+	// Level list modes
+	{"LLM_CREATESERVER",LLM_CREATESERVER},
+	//{"LLM_LEVELSELECT",LLM_LEVELSELECT},
+	{"LLM_TIMEATTACK",LLM_TIMEATTACK},
+	{"LLM_ITEMBREAKER",LLM_ITEMBREAKER},
+	{"LLM_BOSS",LLM_BOSS},
+	{"LLM__MAX",LLM__MAX},
 
 	// Emeralds
 	{"EMERALD1",EMERALD1},

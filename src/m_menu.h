@@ -115,11 +115,21 @@ M_waiting_mode_t;
 
 extern M_waiting_mode_t m_waiting_mode;
 
+typedef enum
+{
+	LLM_CREATESERVER,
+	//LLM_LEVELSELECT,
+	LLM_TIMEATTACK,
+	LLM_ITEMBREAKER,
+	LLM_BOSS,
+	LLM__MAX,
+} levellistmode_e;
+
 // Called by linux_x/i_video_xshm.c
 void M_QuitResponse(INT32 ch);
 
 // Determines whether to show a level in the list (platter version does not need to be exposed)
-boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
+boolean M_CanShowLevelInList(INT32 mapnum);
 
 typedef enum
 {
@@ -274,7 +284,6 @@ INT32 MR_ReplayStaff(INT32 choice);
 INT32 MR_ConnectIP(INT32 choice);
 INT32 MR_ConnectLastServer(INT32 choice);
 INT32 MR_QuitMultiPlayerMenu(INT32 choice);
-INT32 MR_StartServerMenu(INT32 choice);
 INT32 MR_StartServer(INT32 choice);
 INT32 MR_ConnectMenuModChecks(INT32 choice);
 INT32 MR_CancelConnect(INT32 choice);
@@ -301,7 +310,6 @@ INT32 MR_GoBack(INT32 choice);
 INT32 MR_ModeAttackEndGame(INT32 choice);
 INT32 MR_Retry(INT32 choice);
 INT32 MR_EndGame(INT32 choice);
-INT32 MR_MapChange(INT32 choice);
 INT32 MR_SetupMultiPlayer(INT32 choice);
 INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice);
 INT32 MR_ConfirmSpectate(INT32 choice);
@@ -331,7 +339,9 @@ INT32 MR_EnterViewServer(INT32 choice);
 INT32 MR_QuitViewServer(INT32 choice);
 INT32 MR_HandleViewServer(INT32 choice);
 INT32 MR_CameraSetup(INT32 arg);
+INT32 MR_PrepareLevelPlatter(INT32 choice);
 INT32 MR_HandleLevelPlatter(INT32 choice);
+INT32 MR_LevelPlatterRandom(INT32 choice);
 #ifdef HAVE_DISCORDRPC
 INT32 MR_HandleDiscordRequests(INT32 choice);
 #endif
@@ -400,9 +410,6 @@ extern consvar_t cv_showfocuslost;
 extern consvar_t cv_newgametype, cv_nextmap, cv_chooseskin, cv_serversort, cv_levelsort;
 extern consvar_t cv_dummygpdifficulty, cv_dummygpencore, cv_dummygpcup;
 extern consvar_t cv_dummymenuplayer, cv_dummyteam, cv_dummyspectate, cv_dummyscramble;
-extern consvar_t cv_dummyattackingrings, cv_dummyattackingstacking,  cv_dummyattackingchaining;
-extern consvar_t cv_dummyattackingslipdash, cv_dummyattackingpurpledrift, cv_dummyattackingslopeboost;
-extern consvar_t cv_dummyattackingairdrop, cv_dummyattackingbumpspark;
 extern consvar_t cv_dummystaff;
 extern consvar_t cv_dummymultiplayer, cv_dummyip, cv_dummyname, cv_dummyfollower, cv_dummycolor;
 extern consvar_t cv_dummyserverpage;
@@ -428,9 +435,6 @@ extern INT16 char_on, startchar;
 
 // File name appender for RA gametype+mod reading.
 char *M_AppendGametypeAndModName(void);
-
-// Level select updating
-void Nextmap_OnChange(void);
 
 // Screenshot menu updating
 void Moviemode_mode_Onchange(void);
