@@ -83,7 +83,8 @@
 		"float lightz = clamp(z / 16.0, 0.0, 127.0);\n" \
 		"float startmap = (15.0 - lightnum) * 4.0;\n" \
 		"float scale = 160.0 / (lightz + 1.0);\n" \
-		"return startmap - scale * 0.5;\n" \
+		"float cap = (155.0 - light) * 0.26;\n" \
+		"return max(startmap * STARTMAP_FUDGE - scale * 0.5 * SCALE_FUDGE, cap);\n" \
 	"}\n"
 // lighting cap adjustment:
 // first num (155.0), increase to make it start to go dark sooner
