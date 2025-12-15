@@ -4498,6 +4498,11 @@ mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t mapthing, 
 		}
 		else
 		{
+			if (mapthing == MT_SPB)
+			{
+				// backwards SPBs 🥲
+				dir = 1;
+			}
 			if (dir == -1 && mapthing != MT_SPB)
 			{
 				// Shoot backward
