@@ -3140,9 +3140,9 @@ static int lib_sShowMusicCredit(lua_State *L)
 		if (!player)
 			return LUA_ErrInvalid(L, "player_t");
 	}
-	fixed_t yoffset = luaL_checkfixed(L, 2);
-	UINT16 animtime = lua_isnone(L, 3) ? 5*TICRATE : luaL_checkinteger(L, 3);
-	INT32 snapflags = luaL_checkinteger(L, 4);
+	fixed_t yoffset = luaL_optfixed(L, 2, 0);
+	UINT16 animtime = luaL_optinteger(L, 3, 5*TICRATE);
+	INT32 snapflags = luaL_optinteger(L, 4, 0);
 	if (!player || P_IsLocalPlayer(player))
 		S_ShowMusicCredit(yoffset, animtime, snapflags);
 	return 0;
