@@ -2007,11 +2007,6 @@ static int player_set(lua_State *L)
 		UINT8 laps = (UINT8)luaL_checkinteger(L, 3);
 		if (lua_compatmode)
 		{
-			if (!K_UsingLegacyCheckpoints())
-			{
-				plr->pflags |= PF_TRUSTWAYPOINTS;
-			}
-
 			plr->laps = max(laps +1, 0);
 		}
 		else
