@@ -3479,7 +3479,7 @@ consvar_t cv_discordinvites = CVAR_INIT ("discordinvites", "Everyone", CV_SAVE|C
 
 static CV_PossibleValue_t resynchattempts_cons_t[] = {{1, "MIN"}, {20, "MAX"}, {0, "No"}, {0, NULL}};
 
-consvar_t cv_resynchattempts = CVAR_INIT ("resynchattempts", "2", CV_SAVE, resynchattempts_cons_t, NULL);
+consvar_t cv_resynchattempts = CVAR_INIT ("resynchattempts", "5", CV_SAVE, resynchattempts_cons_t, NULL);
 consvar_t cv_blamecfail = CVAR_INIT ("blamecfail", "Off", CV_SAVE, CV_OnOff, NULL);
 
 // max file size to send to a player (in kilobytes)
