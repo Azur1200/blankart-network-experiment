@@ -5486,6 +5486,96 @@ static void P_EvaluateOldSectorSpecial(player_t *player, sector_t *sector, secto
 				P_ProcessEggCapsule(player, sector);
 			break;
 	}
+
+	// People use special shifting to remap some effects on the fly, we need to support more then on race start.
+	if (mapnamespace == MNS_SRB2KART)
+	{
+		switch (GETSECSPECIAL(sector->special, 3))
+		{
+			case 1: // SRB2kart: Spring Panel
+			{
+				if (!(sector->specialflags & SSF_REDPOGOSPRING) && (roversector || isTouching))
+				{
+					P_ProcessPogoSpring(player, (roversector || isTouching), SSPT_RED);
+				}
+				break;
+			}
+			case 3: // SRB2kart: Spring Panel (capped speed)
+			{
+				if (!(sector->specialflags & SSF_YELLOWPOGOSPRING) && (roversector || isTouching))
+				{
+					P_ProcessPogoSpring(player, (roversector || isTouching), SSPT_YELLOW);
+				}
+				break;
+			}
+			case 5: // Speed pad w/o spin
+			case 6: // Speed pad w/ spin
+			{
+				if (!(sector->specialflags & SSF_SPEEDPAD) && (roversector || isTouching))
+				{
+					P_ProcessSpeedPad(player, sector, roversector, SSPT_YELLOW);
+				}
+				break;
+			}
+		}
+
+		switch (GETSECSPECIAL(sector->special, 4))
+		{
+			case 1: // StarPost Activator
+			{
+				if (!(sector->specialflags & SSF_STARPOSTACTIVATOR))
+				{
+					mobj_t *post = P_GetObjectTypeInSectorNum(MT_STARPOST, sector - sectors);
+					if (!post)
+						break;
+					P_TouchStarPost(post, player, false);
+				}
+				break;
+			}
+			case 5: // Fan sector
+			{
+				if (!(sector->specialflags & SSF_FAN))
+				{
+					player->mo->momz += mobjinfo[MT_FAN].mass/4;
+
+					if (player->mo->momz > mobjinfo[MT_FAN].mass)
+						player->mo->momz = mobjinfo[MT_FAN].mass;
+
+					P_ResetPlayer(player);
+				}
+				break;
+			}
+			case 6: // SRB2kart 190117 - Sneaker Panel
+			{
+				if (!(sector->specialflags & SSF_SNEAKERPANEL) && (roversector || isTouching))
+				{
+					P_ProcessBoostPanel(player, (roversector || isTouching), SBPT_SNEAKER);
+				}
+				break;
+			}
+			case 7: // SRB2kart 190117 - Oil Slick (deprecated)
+			{
+				if (roversector || isTouching)
+				{
+					if (player && player->mo && !player->mo->subsector->sector->damagetype)
+						P_DamageMobj(player->mo, NULL, NULL, 1, DMG_NORMAL);
+				}
+				break;
+			}
+			case 10: // Finish Line
+			{
+				if (!(sector->specialflags & SSF_FINISHLINE))
+				{
+					if (K_UsingLegacyCheckpoints() && (gametyperules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
+					{
+						K_HandleLapIncrement(player);
+						player->pflags |= PF_HITFINISHLINE;
+					}
+				}
+				break;
+			}
+		}
+	}
 }
 
 /** Applies a sector special to a player.

@@ -941,6 +941,15 @@ static fixed_t K_CheckOffroadCollide(mobj_t *mo)
 		if ( ((s->flags & MSF_FLIPSPECIAL_FLOOR) && mo->z == flr)	// floor check
 			|| ((mo->eflags & MFE_VERTICALFLIP && (s->flags & MSF_FLIPSPECIAL_CEILING) && (mo->z + mo->height) == cel)) )	// ceiling check.
 		{
+			if (mapnamespace == MNS_SRB2KART && s->offroad == 0) // some maps remap offroad live so lets account for that.
+			{
+				INT32 i;
+				for (i = 2; i < 5; i++)	// check for sector special
+
+					if (GETSECSPECIAL(s->special, 1) == i)
+						return (i-1)*FRACUNIT;	// return offroad type
+			}
+
 			return s->offroad;
 		}
 
@@ -960,6 +969,15 @@ static fixed_t K_CheckOffroadCollide(mobj_t *mo)
 			if ( ((s2->flags & MSF_FLIPSPECIAL_FLOOR) && mo->z == cel)	// "floor" check
 				|| ((s2->flags & MSF_FLIPSPECIAL_CEILING) && (mo->z + mo->height) == flr) )	// "ceiling" check.
 			{
+				if (mapnamespace == MNS_SRB2KART && s->offroad == 0) // some maps remap offroad live so lets account for that.
+				{
+					INT32 i;
+					for (i = 2; i < 5; i++)	// check for sector special
+
+						if (GETSECSPECIAL(s->special, 1) == i)
+							return (i-1)*FRACUNIT;	// return offroad type
+				}
+
 				return s2->offroad;
 			}
 		}
