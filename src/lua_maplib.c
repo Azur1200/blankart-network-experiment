@@ -52,6 +52,7 @@ enum sector_e {
 	sector_flags,
 	sector_specialflags,
 	sector_damagetype,
+	sector_offroad,
 	sector_triggertag,
 	sector_triggerer,
 	sector_friction,
@@ -87,13 +88,14 @@ static const char *const sector_opt[] = {
 	"flags",
 	"specialflags",
 	"damagetype",
+	"offroad",
 	"triggertag",
 	"triggerer",
 	"friction",
 	"gravity",
 	"botcontroller",
 	"action",
-	"args"
+	"args",
 	"stringargs",
 	"activation",
 	NULL};
@@ -757,6 +759,9 @@ static int sector_get(lua_State *L)
 	case sector_damagetype: // damagetype
 		lua_pushinteger(L, (UINT8)sector->damagetype);
 		return 1;
+	case sector_offroad: // offroad
+		lua_pushfixed(L, sector->offroad);
+		return 1;
 	case sector_triggertag: // triggertag
 		lua_pushinteger(L, (INT16)sector->triggertag);
 		return 1;
@@ -884,6 +889,9 @@ static int sector_set(lua_State *L)
 		break;
 	case sector_damagetype:
 		sector->damagetype = (UINT8)luaL_checkinteger(L, 3);
+		break;
+	case sector_offroad:
+		sector->offroad = luaL_checkfixed(L, 3);
 		break;
 	case sector_triggertag:
 		sector->triggertag = (INT16)luaL_checkinteger(L, 3);
