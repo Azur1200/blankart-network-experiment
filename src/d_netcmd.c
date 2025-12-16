@@ -607,8 +607,8 @@ consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "1050", CV_NE
 
 // SPB distance
 static CV_PossibleValue_t spbdist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "4432", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
-consvar_t cv_kartlegacyspbdist = CVAR_INIT ("kartlegacyspbdist", "2216", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
+consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "5648", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
+consvar_t cv_kartlegacyspbdist = CVAR_INIT ("kartlegacyspbdist", "3324", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
 #undef MAXODDSDIST
 
 // SPB Rush toggle; toggles on/off the more aggressive "pressure" odds when an SPB is active
