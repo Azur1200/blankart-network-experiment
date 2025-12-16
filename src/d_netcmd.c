@@ -270,6 +270,10 @@ static void Command_Schedule_List(void);
 
 static void Command_Automate_Set(void);
 
+static void Command_PlaySound(void);
+
+static void Got_PlaySound(UINT8 **cp, INT32 playernum);
+
 // =========================================================================
 //                           CLIENT VARIABLES
 // =========================================================================
@@ -1112,6 +1116,9 @@ void D_RegisterServerCommands(void)
 #endif
 
 	CV_RegisterVar(&cv_debugmappatch);
+
+	COM_AddCommand("playsound", Command_PlaySound);
+	RegisterNetXCmd(XD_PLAYSOUND, Got_PlaySound);
 }
 
 // =========================================================================
@@ -6582,6 +6589,27 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 	}
 }
 
+static void Got_PlaySound(UINT8 **cp, INT32 playernum)
+{
+	INT32 sound_id = READINT32(*cp);
+
+	if (playernum != serverplayer && !IsPlayerAdmin(playernum)) // hacked client, or disasterous bug
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Illegal playsound received from %s (serverplayer is %s)\n"), player_names[playernum], player_names[serverplayer]);
+		if (server)
+			SendKick(playernum, KICK_MSG_CON_FAIL);
+		return;
+	}
+
+	if (sound_id < 0 || sound_id >= NUMSFX)
+	{
+		// bad sound effect, ignore
+		return;
+	}
+
+	S_StartSound(NULL, sound_id);
+}
+
 static const char *displayplayer_compose_col(int playernum)
 {
 	return va("\x84(%d) \x83%s\x80", playernum, player_names[playernum]);
@@ -7018,6 +7046,50 @@ static void Command_Automate_Set(void)
 	WRITESTRING(buf_p, command);
 
 	SendNetXCmd(XD_AUTOMATE, buf, buf_p - buf);
+}
+
+static void Command_PlaySound(void)
+{
+	const char *sound;
+	const size_t argc = COM_Argc();
+	sfxenum_t sfx = NUMSFX;
+	UINT8 buf[4];
+	UINT8 *buf_p = buf;
+
+	if (argc < 2)
+	{
+		CONS_Printf("playsound <name/num>: Plays a sound effect for the entire server.\n");
+		return;
+	}
+
+	if (client && !IsPlayerAdmin(consoleplayer))
+	{
+		CONS_Printf("This can only be used by the server host.\n");
+		return;
+	}
+
+	sound = COM_Argv(1);
+	if (*sound >= '0' && *sound <= '9')
+	{
+		sfx = atoi(sound);
+	}
+	else
+	{
+		for (sfx = 0; sfx < sfxfree; sfx++)
+		{
+			if (S_sfx[sfx].name && fasticmp(sound, S_sfx[sfx].name))
+				break;
+		}
+	}
+
+	if (sfx < 0 || sfx >= NUMSFX)
+	{
+		CONS_Printf("Could not find sound effect named \"sfx_%s\".\n", sound);
+		return;
+	}
+
+	WRITEINT32(buf_p, sfx);
+	SendNetXCmd(XD_PLAYSOUND, buf, buf_p - buf);
 }
 
 /** Makes a change to ::cv_forceskin take effect immediately.
@@ -8463,6 +8535,8 @@ static void Schedule_OnChange(void)
 		task->timer = task->basetime;
 	}
 }
+
+
 
 void Got_DiscordInfo(UINT8 **p, INT32 playernum)
 {
