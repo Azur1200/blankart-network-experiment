@@ -4159,9 +4159,33 @@ static int lib_kGetItemPatch(lua_State *L)
 {
 	kartitemtype_e item = (kartitemtype_e)luaL_optinteger(L, 1, KITEM_NONE);
 	boolean tiny = lua_optboolean(L, 2);
+	UINT8 index = 0;
 	//HUDSAFE
 
-	// TODO: compatmode KRITEM
+	if (!lua_compatmode)
+		LUA_Deprecated(L, "K_GetItemPatch", "K_GetItemGraphics");
+
+	switch ((UINT8)item) // dualjawz moment
+	{
+	case 17: // KRITEM_TRIPLESNEAKER
+		item = KITEM_SNEAKER;
+		break;
+	case 18: // KRITEM_TRIPLEBANANA
+	case 19: // KRITEM_TENFOLDBANANA
+		item = KITEM_BANANA;
+		break;
+	case 20: // KRITEM_TRIPLEORBINAUT
+	case 21: // KRITEM_QUADORBINAUT
+		index = item - 18;
+		item = KITEM_ORBINAUT;
+		break;
+	case 22: // KRITEM_DUALJAWZ
+		item = KITEM_JAWZ;
+		break;
+	default:
+		break;
+	}
+
 	const char *sad = tiny ? "K_ISSAD" : "K_ITSAD";
 	if (item <= 0 || item >= numkartitems)
 	{
@@ -4170,7 +4194,7 @@ static int lib_kGetItemPatch(lua_State *L)
 	}
 
 	kartitemgraphics_t *graphics = &kartitems[item].graphics[(tiny ? 1 : 0) + (K_IsKartItemAlternate(item) ? 2 : 0)];
-	lua_pushstring(L, graphics->numpatches == 0 ? sad : graphics->patchnames[0]);
+	lua_pushstring(L, index >= graphics->numpatches ? sad : graphics->patchnames[index]);
 	return 1;
 }
 
