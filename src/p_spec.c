@@ -5513,7 +5513,8 @@ static void P_EvaluateOldSectorSpecial(player_t *player, sector_t *sector, secto
 			{
 				if (!(sector->specialflags & SSF_SPEEDPAD) && (roversector || isTouching))
 				{
-					P_ProcessSpeedPad(player, sector, roversector, SSPT_YELLOW);
+					mtag_t sectag = Tag_FGet(&sector->tags);
+					P_ProcessSpeedPad(player, sector, roversector, sectag);
 				}
 				break;
 			}
