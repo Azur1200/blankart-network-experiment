@@ -853,98 +853,95 @@ void S_UpdateSounds(void)
 	I_UpdateMumble(players[consoleplayer].mo, listener[0]);
 #endif
 
+notinlevel:
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
 		c = &channels[cnum];
 
-		if (c->sfxinfo)
+		if (c->sfxinfo == NULL)
+			continue;
+
+		// if channel is allocated but sound has stopped, free it
+		if (!I_SoundIsPlaying(c->handle))
 		{
-			if (I_SoundIsPlaying(c->handle))
+			S_StopChannel(cnum);
+			continue;
+		}
+
+		if (gamestate != GS_LEVEL || c->origin == NULL)
+			continue;
+
+		// check non-local sounds for distance clipping
+		//  or modify their params
+		volume = c->volume; // 8 bits internal volume precision
+		pitch = NORM_PITCH;
+		sep = NORM_SEP;
+		boolean itsUs = false;
+
+		for (i = r_splitscreen; i >= 0; i--)
+		{
+			if (camera[i].freecam)
+				continue;
+
+			if (c->origin != listenmobj[i])
+				continue;
+
+			itsUs = true;
+		}
+
+		if (P_MobjWasRemoved(c->origin))
+		{
+			// origin was removed, stop the music
+			S_StopChannel(cnum);
+		}
+		else if (itsUs == false)
+		{
+			const mobj_t *origin = c->origin;
+
+			i = 0;
+
+			if (r_splitscreen > 0)
 			{
-				// initialize parameters
-				volume = c->volume; // 8 bits internal volume precision
-				pitch = NORM_PITCH;
-				sep = NORM_SEP;
+				fixed_t recdist = INT32_MAX;
+				UINT8 j = 0;
 
-				// check non-local sounds for distance clipping
-				//  or modify their params
-				if (c->origin)
+				for (; j <= r_splitscreen; j++)
 				{
-					boolean itsUs = false;
+					fixed_t thisdist = INT32_MAX;
 
-					for (i = r_splitscreen; i >= 0; i--)
+					if (!listenmobj[j])
 					{
-						if (camera[i].freecam)
-							continue;
-
-						if (c->origin != listenmobj[i])
-							continue;
-
-						itsUs = true;
+						continue;
 					}
 
-					if (P_MobjWasRemoved(c->origin))
+					thisdist = P_AproxDistance(listener[j].x - origin->x, listener[j].y - origin->y);
+
+					if (thisdist >= recdist)
 					{
-						// origin was removed, stop the music
-						S_StopChannel(cnum);
+						continue;
 					}
-					else if (itsUs == false)
-					{
-						const mobj_t *origin = c->origin;
 
-						i = 0;
-
-						if (r_splitscreen > 0)
-						{
-							fixed_t recdist = INT32_MAX;
-							UINT8 j = 0;
-
-							for (; j <= r_splitscreen; j++)
-							{
-								fixed_t thisdist = INT32_MAX;
-
-								if (!listenmobj[j])
-								{
-									continue;
-								}
-
-								thisdist = P_AproxDistance(listener[j].x - origin->x, listener[j].y - origin->y);
-
-								if (thisdist >= recdist)
-								{
-									continue;
-								}
-
-								recdist = thisdist;
-								i = j;
-							}
-						}
-
-						if (listenmobj[i])
-						{
-							audible = S_AdjustSoundParams(
-								listenmobj[i], c->origin,
-								&volume, &sep, &pitch,
-								c->sfxinfo
-							);
-						}
-
-						if (audible)
-							I_UpdateSoundParams(c->handle, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch);
-						else
-							S_StopChannel(cnum);
-					}
+					recdist = thisdist;
+					i = j;
 				}
 			}
-			else
+
+			if (listenmobj[i])
 			{
-				// if channel is allocated but sound has stopped, free it
-				S_StopChannel(cnum);
+				audible = S_AdjustSoundParams(
+					listenmobj[i], c->origin,
+					&volume, &sep, &pitch,
+					c->sfxinfo
+				);
 			}
+
+			if (audible)
+				I_UpdateSoundParams(c->handle, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch);
+			else
+				S_StopChannel(cnum);
 		}
 	}
 
-notinlevel:
 	I_UpdateSound();
 }
 
