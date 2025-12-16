@@ -142,6 +142,13 @@ boolean waitingforluafiletransfer = false;
 boolean waitingforluafilecommand = false;
 char luafiledir[256 + 16] = "luafiles";
 
+enum
+{
+	WILLSEND_YES,
+	WILLSEND_NO,
+	WILLSEND_TOOLARGE
+};
+
 /** Fills a serverinfo packet with information about wad files loaded.
   *
   * \todo Give this function a better name since it is in global scope.
@@ -201,11 +208,11 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 
 		// Store in the upper four bits
 		if (!cv_downloading.value)
-			filestatus += (2 << 4); // Won't send
-		else if (cv_maxsend.value == -1 || (wadfiles[i]->filesize <= (UINT32)cv_maxsend.value * 1024))
-			filestatus += (1 << 4); // Will send if requested
-		// else
-			// filestatus += (0 << 4); -- Won't send, too big
+			filestatus += (WILLSEND_NO << 4); // Won't send
+		else if (cv_maxsend.value == -1 || wadfiles[i]->filesize <= (UINT32)cv_maxsend.value * 1024)
+			filestatus += (WILLSEND_YES << 4); // Will send if requested
+		else
+			filestatus += (WILLSEND_TOOLARGE << 4); // Won't send, too big
 
 		WRITEUINT8(p, filestatus);
 
@@ -272,23 +279,24 @@ void CL_PrepareDownloadSaveGame(const char *tmpsave)
   */
 boolean CL_CheckDownloadable(void)
 {
-	UINT8 i,dlstatus = 0;
+	UINT8 i;
+	UINT8 dlstatus = DLSTATUS_OK;
 
 	for (i = 0; i < fileneedednum; i++)
 		if (fileneeded[i].status != FS_FOUND && fileneeded[i].status != FS_OPEN)
 		{
-			if (fileneeded[i].willsend == 1)
+			if (fileneeded[i].willsend == WILLSEND_YES)
 				continue;
 
-			if (fileneeded[i].willsend == 0)
-				dlstatus = 1;
-			else //if (fileneeded[i].willsend == 2)
-				dlstatus = 2;
+			if (fileneeded[i].willsend == WILLSEND_TOOLARGE)
+				dlstatus = DLSTATUS_TOOLARGE;
+			else //if (fileneeded[i].willsend == WILLSEND_NO)
+				dlstatus = DLSTATUS_WONTSEND;
 		}
 
 	// Downloading locally disabled
 	if (!dlstatus && M_CheckParm("-nodownload"))
-		dlstatus = 3;
+		dlstatus = DLSTATUS_NODOWNLOAD;
 
 	if (!dlstatus)
 		return true;
@@ -310,13 +318,13 @@ boolean CL_CheckDownloadable(void)
 
 	switch (dlstatus)
 	{
-		case 1:
+		case DLSTATUS_TOOLARGE:
 			CONS_Printf(M_GetText("Some files are larger than the server is willing to send.\n"));
 			break;
-		case 2:
+		case DLSTATUS_WONTSEND:
 			CONS_Printf(M_GetText("The server is not allowing download requests.\n"));
 			break;
-		case 3:
+		case DLSTATUS_NODOWNLOAD:
 			CONS_Printf(M_GetText("All files downloadable, but you have chosen to disable downloading locally.\n"));
 			break;
 	}
@@ -381,9 +389,9 @@ boolean CL_SendFileRequest(void)
 	{
 #ifdef PARANOIA
 		if (fileneeded[i].status != FS_FOUND && fileneeded[i].status != FS_OPEN
-			&& (fileneeded[i].willsend == 0 || fileneeded[i].willsend == 2))
+			&& (fileneeded[i].willsend == WILLSEND_TOOLARGE || fileneeded[i].willsend == WILLSEND_NO))
 		{
-			CONS_Printf("Direct download - attempted to download files that were not sendable\n");
+			CONS_Printf("Attempted to download files that were not sendable");
 			return false;
 		}
 #endif
