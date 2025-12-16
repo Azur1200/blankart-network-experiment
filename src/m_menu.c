@@ -446,7 +446,7 @@ static CV_PossibleValue_t levelsort_cons_t[] = {
 	{LEVELSORT_FILE, "Addon"},
 	{0, NULL}
 };
-consvar_t cv_levelsort = CVAR_INIT ("levelsort", "Order Added", CV_HIDEN|CV_CALL|CV_NOINIT, levelsort_cons_t, Levelplatter_OnChange);
+consvar_t cv_levelsort = CVAR_INIT ("levelsort", "Addon", CV_HIDEN|CV_CALL|CV_NOINIT, levelsort_cons_t, Levelplatter_OnChange);
 
 static consvar_t cv_showallmaps = CVAR_INIT ("showallmaps", "No", CV_SAVE, CV_YesNo, NULL);
 
