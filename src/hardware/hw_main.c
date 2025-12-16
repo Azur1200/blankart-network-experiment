@@ -3135,6 +3135,7 @@ static patch_t *shadowpatch = NULL;
 static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 {
 	patch_t *gpatch = NULL;
+	GLPatch_t *hwrpatch;
 	FOutVector shadowVerts[4];
 	FSurfaceInfo sSurf;
 	float fscale; float fx; float fy; float offset;
@@ -3190,8 +3191,17 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	}
 
 	gpatch = shadowpatch;
-	if (!gpatch || !gpatch->hardware || !((GLPatch_t *)gpatch->hardware)->mipmap->format) return;
+
+	if (!gpatch)
+		return;
+
 	HWR_GetPatch(gpatch);
+
+	hwrpatch = (GLPatch_t *)gpatch->hardware;
+
+	// shouldnt ever be the case after HWR_GetPatch
+	if (!hwrpatch || !hwrpatch->mipmap->format) // why do we check for the mipmäp´s format?
+		return;
 
 	scalemul = FixedMul(FRACUNIT - floordiff/640, scale);
 	scalemul = FixedMul(scalemul, (interp.radius*2) / gpatch->height);
@@ -3238,10 +3248,10 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	}
 
 	shadowVerts[0].s = shadowVerts[3].s = 0;
-	shadowVerts[2].s = shadowVerts[1].s = ((GLPatch_t *)gpatch->hardware)->max_s;
+	shadowVerts[2].s = shadowVerts[1].s = hwrpatch->max_s;
 
 	shadowVerts[3].t = shadowVerts[2].t = 0;
-	shadowVerts[0].t = shadowVerts[1].t = ((GLPatch_t *)gpatch->hardware)->max_t;
+	shadowVerts[0].t = shadowVerts[1].t = hwrpatch->max_t;
 
 	if (!(thing->renderflags & RF_NOCOLORMAPS))
 	{
@@ -3326,6 +3336,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 	FOutVector wallVerts[4];
 	FOutVector baseWallVerts[4]; // This is what the verts should end up as
 	patch_t *gpatch;
+	GLPatch_t *hwrpatch;
 	FSurfaceInfo Surf;
 	extracolormap_t *colormap = NULL;
 	INT32 lightlevel;
@@ -3356,6 +3367,8 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 	//Hurdler: 25/04/2000: now support colormap in hardware mode
 	HWR_GetMappedPatch(gpatch, spr->colormap);
 
+	hwrpatch = (GLPatch_t *)gpatch->hardware;
+
 	baseWallVerts[0].x = baseWallVerts[3].x = spr->x1;
 	baseWallVerts[2].x = baseWallVerts[1].x = spr->x2;
 	baseWallVerts[0].z = baseWallVerts[3].z = spr->z1;
@@ -3371,25 +3384,25 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 
 	if (spr->flip)
 	{
-		baseWallVerts[0].s = baseWallVerts[3].s = ((GLPatch_t *)gpatch->hardware)->max_s;
+		baseWallVerts[0].s = baseWallVerts[3].s = hwrpatch->max_s;
 		baseWallVerts[2].s = baseWallVerts[1].s = 0;
 	}
 	else
 	{
 		baseWallVerts[0].s = baseWallVerts[3].s = 0;
-		baseWallVerts[2].s = baseWallVerts[1].s = ((GLPatch_t *)gpatch->hardware)->max_s;
+		baseWallVerts[2].s = baseWallVerts[1].s = hwrpatch->max_s;
 	}
 
 	// flip the texture coords (look familiar?)
 	if (spr->vflip)
 	{
-		baseWallVerts[3].t = baseWallVerts[2].t = ((GLPatch_t *)gpatch->hardware)->max_t;
+		baseWallVerts[3].t = baseWallVerts[2].t = hwrpatch->max_t;
 		baseWallVerts[0].t = baseWallVerts[1].t = 0;
 	}
 	else
 	{
 		baseWallVerts[3].t = baseWallVerts[2].t = 0;
-		baseWallVerts[0].t = baseWallVerts[1].t = ((GLPatch_t *)gpatch->hardware)->max_t;
+		baseWallVerts[0].t = baseWallVerts[1].t = hwrpatch->max_t;
 	}
 
 	// push it toward the camera to mitigate floor-clipping sprites
@@ -3673,13 +3686,11 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 {
 	FOutVector wallVerts[4];
 	patch_t *gpatch;
+	GLPatch_t *hwrpatch;
 	FSurfaceInfo Surf;
 	const boolean splat = R_ThingIsFloorSprite(spr->mobj);
 
-	if (!spr->mobj)
-		return;
-
-	if (!spr->mobj->subsector)
+	if (!spr->mobj || !spr->mobj->subsector)
 		return;
 
 	if (spr->mobj->subsector->sector->numlights
@@ -3836,23 +3847,29 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	//Hurdler: 25/04/2000: now support colormap in hardware mode
 	HWR_GetMappedPatch(gpatch, spr->colormap);
 
+	hwrpatch = (GLPatch_t *)gpatch->hardware;
+
 	if (spr->flip)
 	{
-		wallVerts[0].s = wallVerts[3].s = ((GLPatch_t *)gpatch->hardware)->max_s;
+		wallVerts[0].s = wallVerts[3].s = hwrpatch->max_s;
 		wallVerts[2].s = wallVerts[1].s = 0;
-	}else{
+	}
+	else
+	{
 		wallVerts[0].s = wallVerts[3].s = 0;
-		wallVerts[2].s = wallVerts[1].s = ((GLPatch_t *)gpatch->hardware)->max_s;
+		wallVerts[2].s = wallVerts[1].s = hwrpatch->max_s;
 	}
 
 	// flip the texture coords (look familiar?)
 	if (spr->vflip)
 	{
-		wallVerts[3].t = wallVerts[2].t = ((GLPatch_t *)gpatch->hardware)->max_t;
+		wallVerts[3].t = wallVerts[2].t = hwrpatch->max_t;
 		wallVerts[0].t = wallVerts[1].t = 0;
-	}else{
+	}
+	else
+	{
 		wallVerts[3].t = wallVerts[2].t = 0;
-		wallVerts[0].t = wallVerts[1].t = ((GLPatch_t *)gpatch->hardware)->max_t;
+		wallVerts[0].t = wallVerts[1].t = hwrpatch->max_t;
 	}
 
 	float sprdist = 0.0f, distfact = 0.0f;
@@ -4000,16 +4017,21 @@ static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	FBITFIELD blend = 0;
 	FOutVector wallVerts[4];
 	patch_t *gpatch;
+	GLPatch_t *hwrpatch;
 	FSurfaceInfo Surf;
 
-	if (!spr->mobj)
-		return;
-
-	if (!spr->mobj->subsector)
+	if (!spr->mobj || !spr->mobj->subsector)
 		return;
 
 	// cache sprite graphics
 	gpatch = spr->gpatch;
+
+	// cache the patch in the graphics card memory
+	//12/12/99: Hurdler: same comment as above (for md2)
+	//Hurdler: 25/04/2000: now support colormap in hardware mode
+	HWR_GetMappedPatch(gpatch, spr->colormap);
+
+	hwrpatch = (GLPatch_t *)gpatch->hardware;
 
 	// create the sprite billboard
 	//
@@ -4031,15 +4053,10 @@ static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	HWR_RotateSpritePolyToAim(spr, wallVerts, true);
 
 	wallVerts[0].s = wallVerts[3].s = 0;
-	wallVerts[2].s = wallVerts[1].s = ((GLPatch_t *)gpatch->hardware)->max_s;
+	wallVerts[2].s = wallVerts[1].s = hwrpatch->max_s;
 
 	wallVerts[3].t = wallVerts[2].t = 0;
-	wallVerts[0].t = wallVerts[1].t = ((GLPatch_t *)gpatch->hardware)->max_t;
-
-	// cache the patch in the graphics card memory
-	//12/12/99: Hurdler: same comment as above (for md2)
-	//Hurdler: 25/04/2000: now support colormap in hardware mode
-	HWR_GetMappedPatch(gpatch, spr->colormap);
+	wallVerts[0].t = wallVerts[1].t = hwrpatch->max_t;
 
 	// colormap test
 	{
@@ -6029,7 +6046,7 @@ void HWR_RenderPlayerView(void)
 	if (r_splitscreen == 2 && player == &players[displayplayers[2]]) // No black void please.
 	{
 		// V_DrawPatchFill, but for the fourth screen only
-		patch_t *gpatch = W_CachePatchName("SRB2BACK", PU_CACHE);
+		patch_t *gpatch = (patch_t *)W_CachePatchName("SRB2BACK", PU_CACHE);
 		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
 		INT32 x, y, pw = SHORT(gpatch->width) * dupz, ph = SHORT(gpatch->height) * dupz;
 
