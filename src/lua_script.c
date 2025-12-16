@@ -147,8 +147,11 @@ int LUA_GetErrorMessage(lua_State *L)
 	return 1;
 }
 
-int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex)
+int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, boolean compat)
 {
+	boolean oldcompat = lua_compatmode;
+	lua_compatmode = compat;
+
 	int err = lua_pcall(L, nargs, nresults, errorhandlerindex);
 
 	if (err)
@@ -157,6 +160,7 @@ int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex)
 		lua_pop(L, 1);
 	}
 
+	lua_compatmode = oldcompat;
 	return err;
 }
 

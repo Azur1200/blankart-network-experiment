@@ -328,7 +328,7 @@ void Got_LuaFile(UINT8 **cp, INT32 playernum)
 	lua_pushstring(gL, luafiletransfers->filename);
 
 	// Call the callback
-	LUA_Call(gL, 2, 0, 1);
+	LUA_Call(gL, 2, 0, 1, lua_compatmode); // TODO...? (networked io.open is 2.2+)
 	lua_settop(gL, 0);
 
 	if (success)

@@ -708,7 +708,7 @@ static void A_Lua(mobj_t *actor)
 	LUA_PushUserdata(gL, actor, META_MOBJ);
 	lua_pushinteger(gL, var1);
 	lua_pushinteger(gL, var2);
-	LUA_Call(gL, 3, 0, 1);
+	LUA_Call(gL, 3, 0, 1, lua_compatmode); // TODO
 
 	lua_pop(gL, 1); // pop error handler
 
@@ -903,7 +903,7 @@ boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor)
 	superactions[superstack] = actionpointers[actionnum].name;
 	++superstack;
 
-	LUA_Call(gL, 3, 0, -(2 + 3));
+	LUA_Call(gL, 3, 0, -(2 + 3), lua_compatmode); // TODO
 	lua_pop(gL, -1); // Error handler
 
 	--superstack;
