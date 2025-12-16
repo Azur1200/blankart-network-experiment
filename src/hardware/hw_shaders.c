@@ -34,7 +34,7 @@ static struct {
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
 	// Model shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SOFTWARE_FRAGMENT_SHADER},
+	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
 
 	// Model shader + diffuse lighting from above
 	{GLSL_MODEL_LIGHTING_VERTEX_SHADER, GLSL_SOFTWARE_MODEL_LIGHTING_FRAGMENT_SHADER},
@@ -434,6 +434,7 @@ customshaderxlat_t shaderxlat[] =
 	{"WallTexture", SHADER_WALL},
 	{"Sprite", SHADER_SPRITE},
 	{"Model", SHADER_MODEL},
+	{"ModelLight", SHADER_MODEL_LIGHTING},
 	{"WaterRipple", SHADER_WATER},
 	{"Fog", SHADER_FOG},
 	{"Sky", SHADER_SKY},
@@ -444,11 +445,13 @@ customshaderxlat_t shaderxlat[] =
 
 void HWR_LoadAllCustomShaders(void)
 {
+	/*
 	INT32 i;
 
 	// read every custom shader
-	//for (i = 0; i < numwadfiles; i++)
-	//	HWR_LoadCustomShadersFromFile(i, (type == RET_PK3)));
+	for (i = 0; i < numwadfiles; i++)
+		HWR_LoadCustomShadersFromFile(i, (type == RET_PK3)));
+	*/
 }
 
 void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3)

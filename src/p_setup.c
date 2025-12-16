@@ -8834,7 +8834,8 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	{
 		// Reset the palette now all fades have been done
 		if (rendermode != render_none)
-			V_ReloadPalette(); // Set the level palette
+			//V_ReloadPalette(); // Set the level palette
+			V_SetPaletteLump(GetPalette()); // the above does not *set* the screen palette
 
 		if (!(reloadinggamestate || titlemapinaction))
 		{
@@ -8904,6 +8905,9 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// Free GPU textures before freeing patches.
 	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
 		HWR_ClearAllTextures();
+
+	// Delete light table textures
+	HWR_ClearLightTables();
 #endif
 
 	G_FreeGhosts(); // ghosts are allocated with PU_LEVEL

@@ -32,7 +32,7 @@
 #include "dehacked.h"
 
 #ifdef HWRENDER
-#include "hardware/hw_glob.h"
+#include "hardware/hw_glob.h" // HWR_ClearLightTables
 #endif
 
 // DRRR
