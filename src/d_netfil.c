@@ -387,14 +387,12 @@ boolean CL_SendFileRequest(void)
 
 	for (i = 0; i < fileneedednum; i++)
 	{
-#ifdef PARANOIA
 		if (fileneeded[i].status != FS_FOUND && fileneeded[i].status != FS_OPEN
 			&& (fileneeded[i].willsend == WILLSEND_TOOLARGE || fileneeded[i].willsend == WILLSEND_NO))
 		{
 			CONS_Printf("Attempted to download files that were not sendable");
 			return false;
 		}
-#endif
 		if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_BADHASH || fileneeded[i].status == FS_FALLBACK))
 		{
 			// Error check for the first time around.
