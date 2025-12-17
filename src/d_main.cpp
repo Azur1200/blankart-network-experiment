@@ -1945,6 +1945,8 @@ void D_SRB2Main(void)
 				"To check: edit the BlanKart game configuration in Ultimate Lowee Builder.\n"
 				"Go to the Testing tab and make sure \"Use short paths and file names\" is turned off.\n"
 				"(The option is hidden by default. Check \"Customize parameters\" to show it.)\n"
+				"\n"
+				"If the above correct, make sure you have a SOC file in your resources for this map."
 #endif
 				, word, wadnamemap);
 		}
