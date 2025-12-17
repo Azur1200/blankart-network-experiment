@@ -44,6 +44,7 @@
 #include "k_bot.h" // K_BotTicker
 #include "k_items.h" // ItemBGone
 #include "k_specialstage.h"
+#include "k_grandprix.h"
 
 #ifdef PARANOIA
 #include "deh_tables.h" // MOBJTYPE_LIST
@@ -852,7 +853,7 @@ void P_Ticker(boolean run)
 				{
 					tic_t startingtime = (gametyperules & GTR_NOCOUNTDOWN) ? introtime : starttime;
 					if (leveltime < startingtime) // SRB2Kart
-						S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
+						S_ChangeMusicInternal(((grandprixinfo.roundnum > 0) ? "gpstrt" : (encoremode ? "estart" : "kstart")), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
 					else if (leveltime == startingtime) // The GO! sound stops the level start ambience
 						S_StopMusic();
 					else if (leveltime == startingtime + (TICRATE/2)) // Plays the music after the starting countdown.
