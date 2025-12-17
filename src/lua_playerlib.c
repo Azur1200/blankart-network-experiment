@@ -290,6 +290,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(griefstrikes) \
 	X(splitscreenindex) \
 	X(fovadd) \
+	X(ping) \
 	\
 	X(realmo) \
 	X(oldcmd) \
@@ -445,7 +446,6 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(starpostflip) \
 	X(spectatewait) \
 	X(botvars) \
-	X(ping) \
 	X(packetloss) \
 	X(loop) \
 	X(prevonground) \
