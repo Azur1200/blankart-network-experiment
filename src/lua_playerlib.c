@@ -231,447 +231,240 @@ static int lib_lenLocalplayers(lua_State *L)
 	return 1;
 }
 
+// player_ fields
+// Please add blan-specific fields at the end (or at least after fovadd)
+#define PLAYERFIELDS(X) \
+	X(valid) \
+	X(name) \
+	X(mo) \
+	X(cmd) \
+	X(playerstate) \
+	X(viewz) \
+	X(viewheight) \
+	X(aiming) \
+	X(health) \
+	X(powers) \
+	X(kartstuff) \
+	X(frameangle) \
+	X(pflags) \
+	X(panim) \
+	X(flashcount) \
+	X(flashpal) \
+	X(skincolor) \
+	X(score) \
+	X(kartspeed) \
+	X(kartweight) \
+	X(charflags) \
+	X(lives) \
+	X(xtralife) \
+	X(speed) \
+	X(deadtimer) \
+	X(exiting) \
+	X(cmomx) \
+	X(cmomy) \
+	X(rmomx) \
+	X(rmomy) \
+	X(totalring) \
+	X(realtime) \
+	X(laps) \
+	X(ctfteam) \
+	X(starpostx) \
+	X(starposty) \
+	X(starpostz) \
+	X(starpostnum) \
+	X(starposttime) \
+	X(starpostangle) \
+	X(bumpertime) \
+	X(marescore) \
+	X(lastsidehit) \
+	X(lastlinehit) \
+	X(onconveyor) \
+	X(awayviewmobj) \
+	X(awayviewtics) \
+	X(awayviewaiming) \
+	X(spectator) \
+	X(bot) \
+	X(jointime) \
+	X(spectatorreentry) \
+	X(grieftime) \
+	X(griefstrikes) \
+	X(splitscreenindex) \
+	X(fovadd) \
+	\
+	X(realmo) \
+	X(oldcmd) \
+	X(cameraOffset) \
+	X(viewrollangle) \
+	X(tilt) \
+	X(drawangle) \
+	X(karthud) \
+	X(nocontrol) \
+	X(carry) \
+	X(dye) \
+	X(position) \
+	X(oldposition) \
+	X(positiondelay) \
+	X(prevcheck) \
+	X(nextcheck) \
+	X(distancetofinish) \
+	X(distancetofinishprev) \
+	X(currentwaypoint) \
+	X(nextwaypoint) \
+	X(airtime) \
+	X(bigwaypointgap) \
+	X(flashing) \
+	X(spinouttimer) \
+	X(spinouttype) \
+	X(flipovertimer) \
+	X(flipoverangle) \
+	X(instashield) \
+	X(wipeoutslow) \
+	X(justbumped) \
+	X(itemflags) \
+	X(outrun) \
+	X(outruntime) \
+	X(drift) \
+	X(driftcharge) \
+	X(driftboost) \
+	X(airdriftspeed) \
+	X(boostcharge) \
+	X(slopeboost) \
+	X(prevslopeboost) \
+	X(slopeaccel) \
+	X(startboost) \
+	X(dropdash) \
+	X(respawn) \
+	X(aizdriftstrat) \
+	X(aizdrifttilt) \
+	X(aizdriftturn) \
+	X(slipdashcharge) \
+	X(slipdashdir) \
+	X(offroad) \
+	X(pogospring) \
+	X(brakestop) \
+	X(waterskip) \
+	X(dashpadcooldown) \
+	X(boostpower) \
+	X(speedboost) \
+	X(prevspeedboost) \
+	X(accelboost) \
+	X(boostangle) \
+	X(boostinfo) \
+	X(numsneakers) \
+	X(numpanels) \
+	X(numboosts) \
+	X(draftpower) \
+	X(draftleeway) \
+	X(lastdraft) \
+	X(tripwireState) \
+	X(tripwirePass) \
+	X(tripwireLeniency) \
+	X(tripwireReboundDelay) \
+	X(itemroulette) \
+	X(previtemroulette) \
+	X(itemblink) \
+	X(itemblinkmode) \
+	X(roulettetype) \
+	X(itemtype) \
+	X(itemamount) \
+	X(equippeditem) \
+	X(itemusecooldown) \
+	X(itemusecooldownmax) \
+	X(throwdir) \
+	X(sadtimer) \
+	X(rings) \
+	X(ringmin) \
+	X(ringmax) \
+	X(pickuprings) \
+	X(ringdelay) \
+	X(ringlock) \
+	X(ringboost) \
+	X(ringtime) \
+	X(superring) \
+	X(nextringaward) \
+	X(ringvolume) \
+	X(ringtransparency) \
+	X(airdroptime) \
+	X(ringdrop) \
+	X(shieldtracer) \
+	X(bubblecool) \
+	X(bubbleblowup) \
+	X(bubblehealth) \
+	X(bubbleboost) \
+	X(flamedash) \
+	X(flametimer) \
+	X(flamestore) \
+	X(hyudorotimer) \
+	X(stealingtimer) \
+	X(stolentimer) \
+	X(sneakertimer) \
+	X(realsneakertimer) \
+	X(floorboost) \
+	X(chaintimer) \
+	X(growshrinktimer) \
+	X(growcancel) \
+	X(squishedtimer) \
+	X(arrowbullet) \
+	X(rocketsneakertimer) \
+	X(invincibilitytimer) \
+	X(maxinvincibilitytime) \
+	X(invincibilitybottleneck) \
+	X(invincibilitycancel) \
+	X(invincibilitywarning) \
+	X(eggmanexplode) \
+	X(eggmanblame) \
+	X(bananadrag) \
+	X(lastjawztarget) \
+	X(jawztargetdelay) \
+	X(confirmVictim) \
+	X(confirmVictimDelay) \
+	X(dashRingPullTics) \
+	X(dashRingPushTics) \
+	X(dashRainbowPogo) \
+	X(glanceDir) \
+	X(breathTimer) \
+	X(lastsafelap) \
+	X(lastsafestarpost) \
+	X(interpoints) \
+	X(roundscore) \
+	X(emeralds) \
+	X(bumpers) \
+	X(karmadelay) \
+	X(skin) \
+	X(voice_id) \
+	X(availabilities) \
+	X(followerskin) \
+	X(followerready) \
+	X(followercolor) \
+	X(follower) \
+	X(followitem) \
+	X(followmobj) \
+	X(lastspeed) \
+	X(latestlap) \
+	X(checkskip) \
+	X(starpostflip) \
+	X(spectatewait) \
+	X(botvars) \
+	X(ping) \
+	X(packetloss) \
+	X(loop) \
+	X(prevonground) \
+	X(walltransfered) \
+	X(walltransferboost)
+
 enum player_e
 {
-	player_valid,
-	player_name,
-	player_realmo,
-	player_mo,
-	player_cmd,
-	player_oldcmd,
-	player_playerstate,
-	player_health,
-	player_viewz,
-	player_viewheight,
-	player_cameraOffset,
-	player_viewrollangle,
-	player_tilt,
-	player_aiming,
-	player_drawangle,
-	player_frameangle,
-	player_powers,
-	player_kartstuff,
-	player_karthud,
-	player_nocontrol,
-	player_carry,
-	player_dye,
-	player_position,
-	player_oldposition,
-	player_positiondelay,
-	player_prevcheck,
-	player_nextcheck,
-	player_distancetofinish,
-	player_distancetofinishprev,
-	player_currentwaypoint,
-	player_nextwaypoint,
-	player_airtime,
-	player_bigwaypointgap,
-	player_flashing,
-	player_spinouttimer,
-	player_spinouttype,
-	player_flipovertimer,
-	player_flipoverangle,
-	player_instashield,
-	player_wipeoutslow,
-	player_justbumped,
-	player_itemflags,
-	player_outrun,
-	player_outruntime,
-	player_drift,
-	player_driftcharge,
-	player_driftboost,
-	player_airdriftspeed,
-	player_boostcharge,
-	player_slopeboost,
-	player_prevslopeboost,
-	player_slopeaccel,
-	player_startboost,
-	player_dropdash,
-	player_respawn,
-	player_aizdriftstrat,
-	player_aizdrifttilt,
-	player_aizdriftturn,
-	player_slipdashcharge,
-	player_slipdashdir,
-	player_offroad,
-	player_pogospring,
-	player_brakestop,
-	player_waterskip,
-	player_dashpadcooldown,
-	player_boostpower,
-	player_speedboost,
-	player_prevspeedboost,
-	player_accelboost,
-	player_boostangle,
-	player_boostinfo,
-	player_numsneakers,
-	player_numpanels,
-	player_numboosts,
-	player_draftpower,
-	player_draftleeway,
-	player_lastdraft,
-	player_tripwireState,
-	player_tripwirePass,
-	player_tripwireLeniency,
-	player_tripwireReboundDelay,
-	player_itemroulette,
-	player_previtemroulette,
-	player_itemblink,
-	player_itemblinkmode,
-	player_roulettetype,
-	player_itemtype,
-	player_itemamount,
-	player_equippeditem,
-	player_itemusecooldown,
-	player_itemusecooldownmax,
-	player_throwdir,
-	player_sadtimer,
-	player_rings,
-	player_ringmin,
-	player_ringmax,
-	player_pickuprings,
-	player_ringdelay,
-	player_ringlock,
-	player_ringboost,
-	player_ringtime,
-	player_superring,
-	player_nextringaward,
-	player_ringvolume,
-	player_ringtransparency,
-	player_airdroptime,
-	player_ringdrop,
-	player_shieldtracer,
-	player_bubblecool,
-	player_bubbleblowup,
-	player_bubblehealth,
-	player_bubbleboost,
-	player_flamedash,
-	player_flametimer,
-	player_flamestore,
-	player_hyudorotimer,
-	player_stealingtimer,
-	player_stolentimer,
-	player_sneakertimer,
-	player_realsneakertimer,
-	player_floorboost,
-	player_chaintimer,
-	player_growshrinktimer,
-	player_growcancel,
-	player_squishedtimer,
-	player_arrowbullet,
-	player_rocketsneakertimer,
-	player_invincibilitytimer,
-	player_maxinvincibilitytime,
-	player_invincibilitybottleneck,
-	player_invincibilitycancel,
-	player_invincibilitywarning,
-	player_eggmanexplode,
-	player_eggmanblame,
-	player_bananadrag,
-	player_lastjawztarget,
-	player_jawztargetdelay,
-	player_confirmVictim,
-	player_confirmVictimDelay,
-	player_dashRingPullTics,
-	player_dashRingPushTics,
-	player_dashRainbowPogo,
-	player_glanceDir,
-	player_breathTimer,
-	player_lastsafelap,
-	player_lastsafestarpost,
-	player_interpoints,
-	player_roundscore,
-	player_marescore,
-	player_emeralds,
-	player_bumpers,
-	player_karmadelay,
-	player_pflags,
-	player_panim,
-	player_flashcount,
-	player_flashpal,
-	player_skincolor,
-	player_skin,
-	player_voice_id,
-	player_availabilities,
-	player_score,
-	player_kartspeed,
-	player_kartweight,
-	player_followerskin,
-	player_followerready,
-	player_followercolor,
-	player_follower,
-	player_charflags,
-	player_followitem,
-	player_followmobj,
-	player_lives,
-	player_xtralife,
-	player_speed,
-	player_lastspeed,
-	player_deadtimer,
-	player_exiting,
-	player_cmomx,
-	player_cmomy,
-	player_rmomx,
-	player_rmomy,
-	player_totalring,
-	player_realtime,
-	player_laps,
-	player_latestlap,
-	player_ctfteam,
-	player_checkskip,
-	player_starpostx,
-	player_starposty,
-	player_starpostz,
-	player_starpostangle,
-	player_starpostflip,
-	player_starpostnum,
-	player_starposttime,
-	player_lastsidehit,
-	player_lastlinehit,
-	player_onconveyor,
-	player_awayviewmobj,
-	player_awayviewtics,
-	player_awayviewaiming,
-	player_spectator,
-	player_spectatewait,
-	player_bot,
-	player_botvars,
-	player_jointime,
-	player_spectatorreentry,
-	player_grieftime,
-	player_griefstrikes,
-	player_splitscreenindex,
-	player_bumpertime,
-	player_ping,
-	player_packetloss,
-	player_loop,
-	player_prevonground,
-	player_walltransfered,
-	player_walltransferboost,
-#ifdef HWRENDER
-	player_fovadd,
-#endif
+#define ENUMITEM(name) player_##name,
+	PLAYERFIELDS(ENUMITEM)
+	NUMPLAYERFIELDS,
+
+	// For backward compat
+	player_lastlegacyfield = player_fovadd,
 };
 
 static const char *const player_opt[] = {
-	"valid",
-	"name",
-	"realmo",
-	"mo",
-	"cmd",
-	"oldcmd",
-	"playerstate",
-	"health",
-	"viewz",
-	"viewheight",
-	"cameraOffset",
-	"viewrollangle",
-	"tilt",
-	"aiming",
-	"drawangle",
-	"frameangle",
-	"powers",
-	"kartstuff",
-	"karthud",
-	"nocontrol",
-	"carry",
-	"dye",
-	"position",
-	"oldposition",
-	"positiondelay",
-	"prevcheck",
-	"nextcheck",
-	"distancetofinish",
-	"distancetofinishprev",
-	"currentwaypoint",
-	"nextwaypoint",
-	"airtime",
-	"bigwaypointgap",
-	"flashing",
-	"spinouttimer",
-	"spinouttype",
-	"flipovertimer",
-	"flipoverangle",
-	"instashield",
-	"wipeoutslow",
-	"justbumped",
-	"itemflags",
-	"outrun",
-	"outruntime",
-	"drift",
-	"driftcharge",
-	"driftboost",
-	"airdriftspeed",
-	"boostcharge",
-	"slopeboost",
-	"prevslopeboost",
-	"slopeaccel",
-	"startboost",
-	"dropdash",
-	"respawn",
-	"aizdriftstrat",
-	"aizdrifttilt",
-	"aizdriftturn",
-	"slipdashcharge",
-	"slipdashdir",
-	"offroad",
-	"pogospring",
-	"brakestop",
-	"waterskip",
-	"dashpadcooldown",
-	"boostpower",
-	"speedboost",
-	"prevspeedboost",
-	"accelboost",
-	"boostangle",
-	"boostinfo",
-	"numsneakers",
-	"numpanels",
-	"numboosts",
-	"draftpower",
-	"draftleeway",
-	"lastdraft",
-	"tripwireState",
-	"tripwirePass",
-	"tripwireLeniency",
-	"tripwireReboundDelay",
-	"itemroulette",
-	"previtemroulette",
-	"itemblink",
-	"itemblinkmode",
-	"roulettetype",
-	"itemtype",
-	"itemamount",
-	"equippeditem",
-	"itemusecooldown",
-	"itemusecooldownmax",
-	"throwdir",
-	"sadtimer",
-	"rings",
-	"ringmin",
-	"ringmax",
-	"pickuprings",
-	"ringdelay",
-	"ringlock",
-	"ringboost",
-	"ringtime",
-	"superring",
-	"nextringaward",
-	"ringvolume",
-	"ringtransparency",
-	"airdroptime",
-	"ringdrop",
-	"shieldtracer",
-	"bubblecool",
-	"bubbleblowup",
-	"bubblehealth",
-	"bubbleboost",
-	"flamedash",
-	"flametimer",
-	"flamestore",
-	"hyudorotimer",
-	"stealingtimer",
-	"stolentimer",
-	"sneakertimer",
-	"realsneakertimer",
-	"floorboost",
-	"chaintimer",
-	"growshrinktimer",
-	"growcancel",
-	"squishedtimer",
-	"arrowbullet",
-	"rocketsneakertimer",
-	"invincibilitytimer",
-	"maxinvincibilitytime",
-	"invincibilitybottleneck",
-	"invincibilitycancel",
-	"invincibilitywarning", // This gets cast to a boolean in Lua.
-	"eggmanexplode",
-	"eggmanblame",
-	"bananadrag",
-	"lastjawztarget",
-	"jawztargetdelay",
-	"confirmVictim",
-	"confirmVictimDelay",
-	"dashRingPullTics",
-	"dashRingPushTics",
-	"dashRainbowPogo",
-	"glanceDir",
-	"breathTimer",
-	"lastsafelap",
-	"lastsafestarpost",
-	"interpoints",
-	"roundscore",
-	"marescore",
-	"emeralds",
-	"bumpers",
-	"karmadelay",
-	"pflags",
-	"panim",
-	"flashcount",
-	"flashpal",
-	"skincolor",
-	"skin",
-	"voice_id",
-	"availabilities",
-	"score",
-	"kartspeed",
-	"kartweight",
-	"followerskin",
-	"followerready",
-	"followercolor",
-	"follower",
-	"charflags",
-	"followitem",
-	"followmobj",
-	"lives",
-	"xtralife",
-	"speed",
-	"lastspeed",
-	"deadtimer",
-	"exiting",
-	"cmomx",
-	"cmomy",
-	"rmomx",
-	"rmomy",
-	"totalring",
-	"realtime",
-	"laps",
-	"latestlap",
-	"ctfteam",
-	"checkskip",
-	"starpostx",
-	"starposty",
-	"starpostz",
-	"starpostangle",
-	"starpostflip",
-	"starpostnum",
-	"starposttime",
-	"lastsidehit",
-	"lastlinehit",
-	"onconveyor",
-	"awayviewmobj",
-	"awayviewtics",
-	"awayviewaiming",
-	"spectator",
-	"spectatewait",
-	"bot",
-	"botvars",
-	"jointime",
-	"spectatorreentry",
-	"grieftime",
-	"griefstrikes",
-	"splitscreenindex",
-	"bumpertime",
-	"ping",
-	"packetloss",
-	"loop",
-	"prevonground",
-	"walltransfered",
-	"walltransferboost",
-#ifdef HWRENDER
-	"fovadd",
-#endif
+#define ENUMITEMNAME(name) #name,
+	PLAYERFIELDS(ENUMITEMNAME)
 	NULL,
 };
 
@@ -690,6 +483,10 @@ static int player_get(lua_State *L)
 		}
 		return LUA_ErrInvalid(L, "player_t");
 	}
+
+	// Do not let compatmode scripts access new fields
+	if (lua_compatmode && field > player_lastlegacyfield)
+		field = NUMPLAYERFIELDS;
 
 	switch (field)
 	{
@@ -1413,6 +1210,10 @@ static int player_set(lua_State *L)
 		return luaL_error(L, "Do not alter player_t in HUD rendering code!");
 	if (hook_cmd_running)
 		return luaL_error(L, "Do not alter player_t in CMD building code!");
+
+	// Do not let compatmode scripts access new fields
+	if (lua_compatmode && field > player_lastlegacyfield)
+		field = NUMPLAYERFIELDS;
 
 	switch (field)
 	{
