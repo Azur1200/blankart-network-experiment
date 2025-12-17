@@ -268,6 +268,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(realtime) \
 	X(laps) \
 	X(ctfteam) \
+	X(tossdelay) \
 	X(starpostx) \
 	X(starposty) \
 	X(starpostz) \
@@ -275,7 +276,10 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(starposttime) \
 	X(starpostangle) \
 	X(bumpertime) \
+	X(linkcount) \
+	X(linktimer) \
 	X(marescore) \
+	X(maxlink) \
 	X(lastsidehit) \
 	X(lastlinehit) \
 	X(onconveyor) \
@@ -291,7 +295,6 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(splitscreenindex) \
 	X(fovadd) \
 	X(ping) \
-	X(tossdelay) \
 	\
 	X(realmo) \
 	X(oldcmd) \
@@ -460,7 +463,7 @@ enum player_e
 	NUMPLAYERFIELDS,
 
 	// For backward compat
-	player_lastlegacyfield = player_tossdelay,
+	player_lastlegacyfield = player_ping,
 };
 
 static const char *const player_opt[] = {
@@ -1156,6 +1159,15 @@ static int player_get(lua_State *L)
 		break;
 	case player_bumpertime:
 		lua_pushinteger(L, plr->bumpertime);
+		break;
+	case player_linkcount:
+		lua_pushinteger(L, plr->linkcount);
+		break;
+	case player_linktimer:
+		lua_pushinteger(L, plr->linktimer);
+		break;
+	case player_maxlink:
+		lua_pushinteger(L, plr->maxlink);
 		break;
 	case player_ping:
 		lua_pushinteger(L, playerpingtable[( plr - players )]);
@@ -1907,6 +1919,15 @@ static int player_set(lua_State *L)
 		return NOSET;
 	case player_bumpertime:
 		plr->bumpertime = (tic_t)luaL_checkinteger(L, 3);
+		break;
+	case player_linkcount:
+		plr->linkcount = (INT32)luaL_checkinteger(L, 3);
+		break;
+	case player_linktimer:
+		plr->linktimer = (tic_t)luaL_checkinteger(L, 3);
+		break;
+	case player_maxlink:
+		plr->maxlink = (INT32)luaL_checkinteger(L, 3);
 		break;
 	case player_ping:
 		return NOSET;
