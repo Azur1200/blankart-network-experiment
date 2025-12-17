@@ -675,7 +675,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		if (g_tm.thing->player && g_tm.thing->flags & MF_SHOOTABLE && thing->health > 0)
 		{
 			UINT32 damagetype = (thing->info->mass & DMG_TYPEMASK);
-			if (mapnamespace == MNS_SRB2KART || !damagetype) // OWWWWW!
+			if (thing->info->compatmode || !damagetype) // OWWWWW!
 				damagetype = DMG_NORMAL;
 			P_DamageMobj(g_tm.thing, thing, thing, 1, damagetype);
 		}
@@ -691,7 +691,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		if (thing->player && thing->flags & MF_SHOOTABLE && g_tm.thing->health > 0)
 		{
 			UINT32 damagetype = (g_tm.thing->info->mass & DMG_TYPEMASK);
-			if (mapnamespace == MNS_SRB2KART || !damagetype) // OWWWWW!
+			if (g_tm.thing->info->compatmode || !damagetype) // OWWWWW!
 				damagetype = DMG_NORMAL;
 			P_DamageMobj(thing, g_tm.thing, g_tm.thing, 1, damagetype);
 		}

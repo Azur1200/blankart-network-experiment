@@ -393,6 +393,11 @@ void readthing(MYFILE *f, INT32 num)
 		}
 	} while (!myfeof(f)); // finish when the line is empty
 
+	if (wadfiles[f->wad]->compatmode)
+		mobjinfo[num].compatmode = true;
+	else
+		mobjinfo[num].compatmode = false;
+
 	Z_Free(s);
 }
 
