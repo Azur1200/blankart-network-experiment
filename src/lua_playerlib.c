@@ -232,7 +232,7 @@ static int lib_lenLocalplayers(lua_State *L)
 }
 
 // player_ fields
-// Please add blan-specific fields at the end (or at least after fovadd)
+// Please add blan-specific fields at the end (or at least after tossdelay)
 #define PLAYERFIELDS(X) \
 	X(valid) \
 	X(name) \
@@ -291,10 +291,11 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(splitscreenindex) \
 	X(fovadd) \
 	X(ping) \
+	X(tossdelay) \
 	\
 	X(realmo) \
 	X(oldcmd) \
-	X(cameraOffset) \
+	X(cameraoffset) \
 	X(viewrollangle) \
 	X(tilt) \
 	X(drawangle) \
@@ -357,10 +358,10 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(draftpower) \
 	X(draftleeway) \
 	X(lastdraft) \
-	X(tripwireState) \
-	X(tripwirePass) \
-	X(tripwireLeniency) \
-	X(tripwireReboundDelay) \
+	X(tripwirestate) \
+	X(tripwirepass) \
+	X(tripwireleniency) \
+	X(tripwirerebounddelay) \
 	X(itemroulette) \
 	X(previtemroulette) \
 	X(itemblink) \
@@ -417,13 +418,13 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(bananadrag) \
 	X(lastjawztarget) \
 	X(jawztargetdelay) \
-	X(confirmVictim) \
-	X(confirmVictimDelay) \
-	X(dashRingPullTics) \
-	X(dashRingPushTics) \
-	X(dashRainbowPogo) \
-	X(glanceDir) \
-	X(breathTimer) \
+	X(confirmvictim) \
+	X(confirmvictimdelay) \
+	X(dashringpulltics) \
+	X(dashringpushtics) \
+	X(dashrainbowpogo) \
+	X(glancedir) \
+	X(breathtimer) \
 	X(lastsafelap) \
 	X(lastsafestarpost) \
 	X(interpoints) \
@@ -459,7 +460,7 @@ enum player_e
 	NUMPLAYERFIELDS,
 
 	// For backward compat
-	player_lastlegacyfield = player_fovadd,
+	player_lastlegacyfield = player_tossdelay,
 };
 
 static const char *const player_opt[] = {
@@ -528,7 +529,7 @@ static int player_get(lua_State *L)
 	case player_viewheight:
 		lua_pushfixed(L, plr->viewheight);
 		break;
-	case player_cameraOffset:
+	case player_cameraoffset:
 		lua_pushfixed(L, plr->cameraOffset);
 		break;
 	case player_viewrollangle:
@@ -735,16 +736,16 @@ static int player_get(lua_State *L)
 	case player_lastdraft:
 		lua_pushinteger(L, plr->lastdraft);
 		break;
-	case player_tripwireState:
+	case player_tripwirestate:
 		lua_pushinteger(L, plr->tripwireState);
 		break;
-	case player_tripwirePass:
+	case player_tripwirepass:
 		lua_pushinteger(L, plr->tripwirePass);
 		break;
-	case player_tripwireLeniency:
+	case player_tripwireleniency:
 		lua_pushinteger(L, plr->tripwireLeniency);
 		break;
-	case player_tripwireReboundDelay:
+	case player_tripwirerebounddelay:
 		lua_pushinteger(L, plr->tripwireReboundDelay);
 		break;
 	case player_itemroulette:
@@ -916,25 +917,25 @@ static int player_get(lua_State *L)
 	case player_jawztargetdelay:
 		lua_pushinteger(L, plr->jawztargetdelay);
 		break;
-	case player_confirmVictim:
+	case player_confirmvictim:
 		lua_pushinteger(L, plr->confirmVictim);
 		break;
-	case player_confirmVictimDelay:
+	case player_confirmvictimdelay:
 		lua_pushinteger(L, plr->confirmVictimDelay);
 		break;
-	case player_dashRingPullTics:
+	case player_dashringpulltics:
 		lua_pushinteger(L, plr->dashRingPullTics);
 		break;
-	case player_dashRingPushTics:
+	case player_dashringpushtics:
 		lua_pushinteger(L, plr->dashRingPushTics);
 		break;
-	case player_dashRainbowPogo:
+	case player_dashrainbowpogo:
 		lua_pushinteger(L, plr->dashRainbowPogo);
 		break;
-	case player_glanceDir:
+	case player_glancedir:
 		lua_pushinteger(L, plr->glanceDir);
 		break;
-	case player_breathTimer:
+	case player_breathtimer:
 		lua_pushinteger(L, plr->breathTimer);
 		break;
 	case player_lastsafelap:
@@ -1083,6 +1084,7 @@ static int player_get(lua_State *L)
 	case player_ctfteam:
 		lua_pushinteger(L, plr->ctfteam);
 		break;
+	case player_tossdelay:
 	case player_checkskip:
 		lua_pushinteger(L, plr->checkskip);
 		break;
@@ -1242,7 +1244,7 @@ static int player_set(lua_State *L)
 	case player_viewheight:
 		plr->viewheight = luaL_checkfixed(L, 3);
 		break;
-	case player_cameraOffset:
+	case player_cameraoffset:
 		plr->cameraOffset = luaL_checkfixed(L, 3);
 		break;
 	case player_viewrollangle:
@@ -1506,16 +1508,16 @@ static int player_set(lua_State *L)
 	case player_lastdraft:
 		plr->lastdraft = luaL_checkinteger(L, 3);
 		break;
-	case player_tripwireState:
+	case player_tripwirestate:
 		plr->tripwireState = luaL_checkinteger(L, 3);
 		break;
-	case player_tripwirePass:
+	case player_tripwirepass:
 		plr->tripwirePass = luaL_checkinteger(L, 3);
 		break;
-	case player_tripwireLeniency:
+	case player_tripwireleniency:
 		plr->tripwireLeniency = luaL_checkinteger(L, 3);
 		break;
-	case player_tripwireReboundDelay:
+	case player_tripwirerebounddelay:
 		plr->tripwireReboundDelay = luaL_checkinteger(L, 3);
 		break;
 	case player_itemroulette:
@@ -1692,25 +1694,25 @@ static int player_set(lua_State *L)
 	case player_jawztargetdelay:
 		plr->jawztargetdelay = luaL_checkinteger(L, 3);
 		break;
-	case player_confirmVictim:
+	case player_confirmvictim:
 		plr->confirmVictim = luaL_checkinteger(L, 3);
 		break;
-	case player_confirmVictimDelay:
+	case player_confirmvictimdelay:
 		plr->confirmVictimDelay = luaL_checkinteger(L, 3);
 		break;
-	case player_dashRingPullTics:
+	case player_dashringpulltics:
 		plr->dashRingPullTics = luaL_checkinteger(L, 3);
 		break;
-	case player_dashRingPushTics:
+	case player_dashringpushtics:
 		plr->dashRingPushTics = luaL_checkinteger(L, 3);
 		break;
-	case player_dashRainbowPogo:
+	case player_dashrainbowpogo:
 		plr->dashRainbowPogo = luaL_checkinteger(L, 3);
 		break;
-	case player_glanceDir:
+	case player_glancedir:
 		plr->glanceDir = luaL_checkinteger(L, 3);
 		break;
-	case player_breathTimer:
+	case player_breathtimer:
 		plr->breathTimer = luaL_checkinteger(L, 3);
 		break;
 	case player_lastsafelap:
@@ -1827,6 +1829,7 @@ static int player_set(lua_State *L)
 	case player_ctfteam:
 		plr->ctfteam = (INT32)luaL_checkinteger(L, 3);
 		break;
+	case player_tossdelay:
 	case player_checkskip:
 		plr->checkskip = (INT32)luaL_checkinteger(L, 3);
 		break;
