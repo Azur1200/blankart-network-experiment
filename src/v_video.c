@@ -3849,7 +3849,7 @@ void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors)
 		lut->init = true;
 		memcpy(lut->palette, palette, palsize);
 
-		for (i = 0; i < 0xFFFF; i++)
+		for (i = 0; i < sizeof(lut->table)/sizeof(*lut->table); i++)
 			lut->table[i] = 0xFFFF;
 
 		if (makecolors)

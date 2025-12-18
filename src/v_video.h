@@ -62,7 +62,7 @@ struct colorlookup_t
 {
 	boolean init;
 	RGBA_t palette[256];
-	UINT16 table[0xFFFF];
+	UINT16 table[0xFFFF+1];
 };
 
 void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors);
