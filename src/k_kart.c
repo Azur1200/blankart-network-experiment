@@ -8991,14 +8991,7 @@ UINT8 K_GetKartDriftSparkStageForValue(const player_t *player, INT32 value)
 
 static void K_SpawnDriftEFX(player_t *player,SINT8 level)
 {
-	if (!cv_kartdriftefx.value)
-	{
-		// Not wanted sorry!
-		return;
-	}
-
 	mobj_t *overlay = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BOOSTFLAME);
-	overlay->flags2 |= MF2_DONTSYNC; // No desyncs pls!
 	P_SetMobjState(overlay, S_DRIFTBOOSTFLAME);
 	P_SetTarget(&overlay->target, player->mo);
 	P_SetScale(overlay, (overlay->destscale = player->mo->scale));
@@ -9011,6 +9004,12 @@ static void K_SpawnDriftEFX(player_t *player,SINT8 level)
 		overlay->color = SKINCOLOR_KETCHUP;
 	else if (level == 3)
 		overlay->color = SKINCOLOR_PURPLE;
+
+	if (!cv_kartdriftefx.value)
+	{
+		// Lets hide from sight.
+		overlay->renderflags |= RF_DONTDRAW;
+	}
 }
 
 // Sliptide conditions for Alternative Invincibility.
@@ -9135,7 +9134,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 				case 2:
 					boost = 50;
 					if (cv_kartdriftsounds.value)
-					S_StartSound(player->mo, sfx_kc5b);
+						S_StartSound(player->mo, sfx_kc5b);
 					break;
 				case 3:
 					boost = 80;
