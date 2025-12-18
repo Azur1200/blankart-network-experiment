@@ -7259,14 +7259,28 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			{
 				if (!player->invincibilitywarning)
 				{
-					S_StartSound(player->mo, sfx_cdfm79);
+					S_StartSound(player->mo, sfx_cdfm71);
 					player->invincibilitywarning = 1;
 				}
+			}
+
+			if (((INT16)(player->invincibilitybottleneck) > 127) &&
+			    (!S_SoundPlaying(player->mo, sfx_s3kbes)))
+			{
+				S_StartSound(player->mo, sfx_s3kbes);
 			}
 		}
 		else
 		{
 			player->invincibilitytimer--;
+
+			if (S_SoundPlaying(player->mo, sfx_s3kbes) &&
+			    K_IsKartItemAlternate(KITEM_INVINCIBILITY))
+			{
+				// Shut off the bottlenecker sound.
+				S_StopSoundByID(player->mo, sfx_s3kbes);
+			}
+
 			player->invincibilitybottleneck = 0;
 			player->invincibilitywarning = 0;
 		}
