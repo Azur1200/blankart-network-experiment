@@ -1883,7 +1883,7 @@ static void SendNameAndColor(UINT8 n)
 
 		player->skincolor = cv_playercolor[n].value;
 
-		K_KartResetPlayerColor(player);
+		K_KartResetPlayerColor(player, true);
 
 		// Update follower for local games:
 		if (cv_follower[n].value >= -1)

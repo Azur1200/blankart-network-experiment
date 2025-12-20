@@ -3429,7 +3429,7 @@ void K_RemoveGrowShrink(player_t *player)
 		else if (player->growshrinktimer < 0) // Play Grow noise
 			S_StartSound(player->mo, sfx_kc5a);
 
-		K_KartResetPlayerColor(player);
+		K_KartResetPlayerColor(player, true);
 
 		player->mo->scalespeed = mapobjectscale/TICRATE;
 		player->mo->destscale = mapobjectscale;
@@ -7284,6 +7284,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			player->invincibilitybottleneck = 0;
 			player->invincibilitywarning = 0;
 		}
+
+		if (!player->invincibilitytimer)
+			K_KartResetPlayerColor(player,true);
 	}
 	else
 	{
@@ -7447,7 +7450,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			{
 				mobj_t *eggsexplode;
 
-				K_KartResetPlayerColor(player);
+				K_KartResetPlayerColor(player, true);
 
 				//player->flashing = 0;
 				eggsexplode = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_SPBEXPLOSION);
@@ -7594,7 +7597,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	K_UpdateSPBTimer();
 }
 
-void K_KartResetPlayerColor(player_t *player)
+void K_KartResetPlayerColor(player_t *player, boolean disablecolor)
 {
 	boolean fullbright = false;
 
@@ -7603,13 +7606,8 @@ void K_KartResetPlayerColor(player_t *player)
 
 	if (player->mo->health <= 0 || player->playerstate == PST_DEAD) // Override everything
 	{
-		if (player->dye)
-		{
-			player->mo->colorized = (player->dye != 0);
-			player->mo->color = player->dye;
-		}
-		else
-			player->mo->color = player->skincolor;
+		player->mo->colorized = (player->dye != 0);
+		player->mo->color = player->dye ? player->dye : player->skincolor;
 
 		goto finalise;
 	}
@@ -7678,6 +7676,12 @@ void K_KartResetPlayerColor(player_t *player)
 			fullbright = true;
 			goto finalise;
 		}
+		else
+		{
+			player->mo->colorized = (player->dye != 0);
+			player->mo->color = player->dye ? player->dye : player->skincolor;
+			goto finalise;
+		}
 	}
 
 	if (player->ringboost && (leveltime & 1)) // ring boosting
@@ -7686,10 +7690,11 @@ void K_KartResetPlayerColor(player_t *player)
 		fullbright = true;
 		goto finalise;
 	}
-	else if (player->dye)
+	else if (disablecolor || player->dye)
 	{
 		player->mo->colorized = (player->dye != 0);
-		player->mo->color = player->dye;
+		player->mo->color = player->dye ? player->dye : player->skincolor;
+		goto finalise;
 	}
 
 finalise:
@@ -7712,7 +7717,7 @@ finalise:
 
 void K_KartPlayerAfterThink(player_t *player)
 {
-	K_KartResetPlayerColor(player);
+	K_KartResetPlayerColor(player, false);
 
 	// Move held objects (Bananas, Orbinaut, etc)
 	K_MoveHeldObjects(player);
@@ -10339,7 +10344,7 @@ void K_StripOther(player_t *player)
 		player->eggmanexplode = 0;
 		player->eggmanblame = -1;
 
-		K_KartResetPlayerColor(player);
+		K_KartResetPlayerColor(player, true);
 	}
 }
 

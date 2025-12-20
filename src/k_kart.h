@@ -220,7 +220,7 @@ void K_SpawnInvincibilitySpeedLines(mobj_t *mo);
 void K_SpawnBumpEffect(mobj_t *mo);
 void K_KartMoveAnimation(player_t *player);
 void K_KartPlayerHUDUpdate(player_t *player);
-void K_KartResetPlayerColor(player_t *player);
+void K_KartResetPlayerColor(player_t *player, boolean disablecolor);
 UINT8 K_RaceLapCount(INT16 mapNum);
 void K_KartPlayerThink(player_t *player, ticcmd_t *cmd);
 void K_KartPlayerAfterThink(player_t *player);
