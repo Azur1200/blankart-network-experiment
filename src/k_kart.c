@@ -2557,12 +2557,21 @@ fixed_t K_GetInvincibilityAccel(UINT16 time)
     return Easing_OutCubic(t, 0, INVINACCELBOOSTALT);
 }
 
+fixed_t K_GetInvincibilityHandling(UINT16 time)
+{
+    if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
+        return INVINHANDLEBOOSTCLS;
+
+    fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
+    return Easing_OutCubic(t, 0, INVINHANDLEBOOSTALT);
+}
+
 static fixed_t diminish(fixed_t speedboost)
 {
 	return FixedSqrt(speedboost + DIMINISHPARAM) - FixedSqrt(DIMINISHPARAM);
 }
 
-void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, boolean stack, boolean visible)
+void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, fixed_t handleboost, boolean stack, boolean visible)
 {
 	if (stack && K_StackingActive())
 	{
@@ -2580,6 +2589,8 @@ void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, boolean
 		player->boostinfo.accelboost = max(player->boostinfo.accelboost, accelboost);
 	}
 
+	player->boostinfo.handleboost = max(player->boostinfo.handleboost, handleboost);
+
 	if (visible)
 	{
 		player->boostinfo.grade = CLAMP(player->boostinfo.grade+1, 0, stackingactive ? UINT8_MAX : 1);
@@ -2591,6 +2602,7 @@ void K_ClearBoost(player_t *player)
 	player->boostinfo.stackspeedboost = 0;
 	player->boostinfo.nonstackspeedboost = 0;
 	player->boostinfo.accelboost = 0;
+	player->boostinfo.handleboost = 0;
 	player->boostinfo.grade = 0;
 }
 
@@ -2733,12 +2745,12 @@ static void K_GetKartBoostPower(player_t *player)
 
 		for (i = 0; i < numsneakers; i++)
 		{
-			K_DoBoost(player, sneakerspeedboost, ACCELSTACK ? 0 : SNEAKERACCELBOOST, SNEAKERSTACKABLE, SNEAKERSTACKABLE); // + ???% top speed, + 800% acceleration
+			K_DoBoost(player, sneakerspeedboost, ACCELSTACK ? 0 : SNEAKERACCELBOOST, SNEAKERHANDLEBOOST, SNEAKERSTACKABLE, SNEAKERSTACKABLE); // + ???% top speed, + 800% acceleration
 		}
 
 		if (ACCELSTACK)
 		{
-			K_DoBoost(player, 0, SNEAKERACCELBOOST, true, false); // + 800% acceleration
+			K_DoBoost(player, 0, SNEAKERACCELBOOST, 0, true, false); // + 800% acceleration
 		}
 	}
 
@@ -2746,15 +2758,16 @@ static void K_GetKartBoostPower(player_t *player)
 	{
         fixed_t invspeedboost = K_GetInvincibilitySpeed(player->invincibilitytimer);
         fixed_t invaccelboost = K_GetInvincibilityAccel(player->invincibilitytimer);
+		fixed_t invhandleboost = K_GetInvincibilityHandling(player->invincibilitytimer);
 
 		// Legacy: + 37.5% top speed, + 300% acceleration
 		// Alternative: + ???% top speed, + ???% acceleration
-		K_DoBoost(player, invspeedboost, invaccelboost, INVINSTACKABLE, INVINSTACKABLE);
+		K_DoBoost(player, invspeedboost, invaccelboost, invhandleboost, INVINSTACKABLE, INVINSTACKABLE);
 	}
 
 	if (player->growshrinktimer > 0) // Grow
 	{
-		K_DoBoost(player, GROWSPEEDBOOST, GROWACCELBOOST, GROWSTACKABLE, GROWSTACKABLE); // + 20% top speed, + 0% acceleration
+		K_DoBoost(player, GROWSPEEDBOOST, GROWACCELBOOST, GROWHANDLEBOOST, GROWSTACKABLE, GROWSTACKABLE); // + 20% top speed, + 0% acceleration
 	}
 
 	if (K_IsAltShrunk(player)) // Alt. Shrink
@@ -2764,43 +2777,43 @@ static void K_GetKartBoostPower(player_t *player)
 
 		shrinkspeed = FixedMul(shrinkspeed, boostpower);
 
-		K_DoBoost(player, shrinkspeed, shrinkaccel, SHRINKSTACKABLE, SHRINKSTACKABLE); // + 50% top speed, + 15% acceleration
+		K_DoBoost(player, shrinkspeed, shrinkaccel, SHRINKHANDLEBOOST, SHRINKSTACKABLE, SHRINKSTACKABLE); // + 50% top speed, + 15% acceleration
 	}
 
 	if (player->bubbleboost) // Bubble Shield popping boost
 	{
-		K_DoBoost(player, BUBBLESPEEDBOOST, BUBBLEACCELBOOST, BUBBLESTACKABLE, BUBBLESTACKABLE); // + 35% top speed, + 800% acceleration
+		K_DoBoost(player, BUBBLESPEEDBOOST, BUBBLEACCELBOOST, BUBBLEHANDLEBOOST, BUBBLESTACKABLE, BUBBLESTACKABLE); // + 35% top speed, + 800% acceleration
 	}
 
 	if (player->flamestore) // Flame Shield dash
 	{
 		fixed_t dash = K_FlameShieldDashVar(player->flamedash);
-		K_DoBoost(player, FLAMESPEEDVAL + dash, FLAMEACCELBOOST, FLAMESTACKABLE, FLAMESTACKABLE);
+		K_DoBoost(player, FLAMESPEEDVAL + dash, FLAMEACCELBOOST, FLAMEHANDLEBOOST, FLAMESTACKABLE, FLAMESTACKABLE);
 	}
 
 	if (player->startboost) // Startup Boost
 	{
-		K_DoBoost(player, STARTSPEEDBOOST, STARTACCELBOOST, STARTSTACKABLE, STARTSTACKABLE); // + 25% top speed, + 600% acceleration
+		K_DoBoost(player, STARTSPEEDBOOST, STARTACCELBOOST, STARTHANDLEBOOST, STARTSTACKABLE, STARTSTACKABLE); // + 25% top speed, + 600% acceleration
 	}
 
 	if (player->walltransferboost) // Wall Transfer Boost
 	{
-		K_DoBoost(player, WALLTRANSFERSPEEDBOOST, WALLTRANSFERACCELBOOST, WALLTRANSFERSTACKABLE, WALLTRANSFERSTACKABLE); // + 10% top speed, + 500% acceleration
+		K_DoBoost(player, WALLTRANSFERSPEEDBOOST, WALLTRANSFERACCELBOOST, WALLTRANSFERHANDLEBOOST, WALLTRANSFERSTACKABLE, WALLTRANSFERSTACKABLE); // + 10% top speed, + 500% acceleration
 	}
 
 	if (player->driftboost) // Drift Boost
 	{
-		K_DoBoost(player, DRIFTSPEEDBOOST, DRIFTACCELBOOST, DRIFTSTACKABLE, DRIFTSTACKABLE); // + 25% top speed, + 400% acceleration
+		K_DoBoost(player, DRIFTSPEEDBOOST, DRIFTACCELBOOST, DRIFTHANDLEBOOST, DRIFTSTACKABLE, DRIFTSTACKABLE); // + 25% top speed, + 400% acceleration
 	}
 
 	if (player->ringboost) // Ring Boost
 	{
-		K_DoBoost(player, RINGSPEEDBOOST, RINGACCELBOOST, RINGSTACKABLE, RINGSTACKABLE); // + 20% top speed, + 400% acceleration
+		K_DoBoost(player, RINGSPEEDBOOST, RINGACCELBOOST, RINGHANDLEBOOST, RINGSTACKABLE, RINGSTACKABLE); // + 20% top speed, + 400% acceleration
 	}
 
 	if (player->slopeboost || player->slopeaccel)
 	{
-		K_DoBoost(player, player->slopeboost, player->slopeaccel, SLOPESTACKABLE, false); // + ???% top speed, + 300% acceleration
+		K_DoBoost(player, player->slopeboost, player->slopeaccel, 0, SLOPESTACKABLE, false); // + ???% top speed, + 300% acceleration
 	}
 
 	// This should always remain the last boost before drafting
@@ -8960,12 +8973,17 @@ INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
 		return turnvalue;
 	}
 
+	if (player->boostinfo.handleboost > 0)
+	{
+		turnvalue = FixedMul(turnvalue, FRACUNIT + player->boostinfo.handleboost);
+	}
+
 	turnvalue = FixedMul(turnvalue, adjustangle); // Weight has a small effect on turning
 
 	if (K_SlipdashActive() && K_Sliptiding(player)) // slight handling boost based on weight
 		turnvalue = FixedMul(turnvalue, FRACUNIT + (10 - player->kartweight)*FRACUNIT/48);
 
-	if (player->invincibilitytimer || player->sneakertimer || player->bubbleboost ||
+	if (player->sneakertimer || player->bubbleboost ||
 	    player->growshrinktimer > 0 || K_IsAltShrunk(player))
 	{
 		turnvalue = FixedMul(turnvalue, FixedDiv(5 * FRACUNIT, 4 * FRACUNIT));
@@ -9108,6 +9126,22 @@ boolean K_InterceptArrowBullet(player_t *player)
 	
 	return ((player->invincibilitytimer && !K_IsKartItemAlternate(KITEM_INVINCIBILITY)) || (player->growshrinktimer > 0) || (player->flamestore));
 }
+
+// 1.25 fracunits; the (hardcoded) handleboost of a Sneaker.
+#define HANDLEBOOSTTHRESHOLD (5 * FRACUNIT / 4)
+
+// Generalized sliptide conditions.
+static boolean K_OtherSliptideCondition(player_t* player)
+{
+	if (!player)
+		return false;
+
+	return (
+	    K_AltInvinSliptideCondition(player) || K_AltShrinkSliptideCondition(player) ||
+	    (cv_handleboostslip.value && (player->boostinfo.handleboost >= HANDLEBOOSTTHRESHOLD)));
+}
+
+#undef HANDLEBOOSTTHRESHOLD
 
 static void K_HandleAirDriftDrag(player_t *player, boolean onground)
 {
@@ -9346,7 +9380,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 		player->pflags &= ~(PF_BRAKEDRIFT|PF_GETSPARKS);
 	}
 
-	if ( (!(player->sneakertimer || player->flamestore || player->bubbleboost || K_AltInvinSliptideCondition(player) || K_AltShrinkSliptideCondition(player)))
+	if ( (!(player->sneakertimer || player->flamestore || player->bubbleboost || K_OtherSliptideCondition(player)))
 	|| (!player->cmd.turning)
 	|| (!player->aizdriftstrat)
 	|| (player->cmd.turning > 0) != (player->aizdriftstrat > 0))
@@ -9433,7 +9467,7 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 		S_StopSoundByID(player->mo, sfx_cdfm17);
 		S_StartSoundAtVolume(player->mo, player->slipdashcharge > FRACUNIT/3 ? sfx_cdfm62 : sfx_s23c, driftbonus ? 200 : 255);
 		P_Thrust(player->mo, player->mo->angle, FixedMul(K_GetKartSpeed(player, false, false), 2*player->slipdashcharge/3));
-		K_DoBoost(player, (2*player->slipdashcharge/3)/2, 0, false, false);
+		K_DoBoost(player, (2*player->slipdashcharge/3)/2, 0, 0, false, false);
 
 		for (i = -1; i <= 1; i += 2)
 		{

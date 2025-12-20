@@ -4423,13 +4423,14 @@ static int lib_kDoBoost(lua_State *L)
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	fixed_t speedboost = luaL_checkfixed(L, 2);
 	fixed_t accelboost = luaL_checkfixed(L, 3);
-	boolean stacking = lua_optboolean(L, 4);
-	boolean visible = lua_isnoneornil(L, 5) ? true : luaL_checkboolean(L, 5);
+	fixed_t handleboost = luaL_checkfixed(L, 4);
+	boolean stacking = lua_optboolean(L, 5);
+	boolean visible = lua_isnoneornil(L, 6) ? true : luaL_checkboolean(L, 6);
 
 	//HUDSAFE
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	K_DoBoost(player, speedboost, accelboost, stacking, visible);
+	K_DoBoost(player, speedboost, accelboost, handleboost, stacking, visible);
 	return 0;
 }
 

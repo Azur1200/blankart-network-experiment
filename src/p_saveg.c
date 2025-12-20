@@ -639,6 +639,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].boostinfo.stackspeedboost);
 		SYNC(players[i].boostinfo.nonstackspeedboost);
 		SYNC(players[i].boostinfo.accelboost);
+		SYNC(players[i].boostinfo.handleboost);
 		SYNC(players[i].boostinfo.grade);
 
 		SYNC(players[i].tripwireState);

@@ -2920,6 +2920,7 @@ enum boostinfo
 	boostinfo_stackspeedboost = 0,
 	boostinfo_nonstackspeedboost,
 	boostinfo_accelboost,
+	boostinfo_handleboost,
 	boostinfo_grade,
 };
 
@@ -2927,6 +2928,7 @@ static const char *const boostinfo_opt[] = {
 	"stackspeedboost",
 	"nonstackspeedboost",
 	"accelboost",
+	"handleboost",
 	"grade",
 	NULL,
 };
@@ -2949,6 +2951,9 @@ static int boostinfo_get(lua_State *L)
 			break;
 		case boostinfo_accelboost:
 			lua_pushfixed(L, boostinfo->accelboost);
+			break;
+		case boostinfo_handleboost:
+			lua_pushfixed(L, boostinfo->handleboost);
 			break;
 		case boostinfo_grade:
 			lua_pushinteger(L, boostinfo->grade);
@@ -2983,6 +2988,9 @@ static int boostinfo_set(lua_State *L)
 			break;
 		case boostinfo_accelboost:
 			boostinfo->accelboost = luaL_checkfixed(L, 3);
+			break;
+		case boostinfo_handleboost:
+			boostinfo->handleboost = luaL_checkfixed(L, 3);
 			break;
 		case boostinfo_grade:
 			boostinfo->grade = (UINT8)luaL_checkinteger(L, 3);

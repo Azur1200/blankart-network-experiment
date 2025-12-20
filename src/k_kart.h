@@ -108,6 +108,7 @@ extern vector3_t clusterpoint, clusterdtf;
 #define HARDSNEAKERSPEEDBOOST CV_Get(&cv_kartstacking_sneaker_hardspeedboost)
 #define EXPERTSNEAKERSPEEDBOOST CV_Get(&cv_kartstacking_sneaker_expertspeedboost)
 #define SNEAKERACCELBOOST CV_Get(&cv_kartstacking_sneaker_accelboost)
+#define SNEAKERHANDLEBOOST CV_Get(&cv_kartstacking_sneaker_handleboost)
 #define MAXSNEAKERSTACK CV_Get(&cv_kartstacking_sneaker_maxgrade)
 #define SNEAKERSTACKABLE CV_Get(&cv_kartstacking_sneaker_stackable)
 #define SEPARATEPANELS CV_Get(&cv_kartstacking_panel_separate)
@@ -115,41 +116,51 @@ extern vector3_t clusterpoint, clusterdtf;
 
 #define INVINSPEEDBOOSTCLS CV_Get(&cv_kartstacking_invincibility_classicspeedboost)
 #define INVINACCELBOOSTCLS CV_Get(&cv_kartstacking_invincibility_classicaccelboost)
+#define INVINHANDLEBOOSTCLS CV_Get(&cv_kartstacking_invincibility_classichandleboost)
 #define INVINSPEEDBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternatespeedboost)
 #define INVINACCELBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternateaccelboost)
+#define INVINHANDLEBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternatehandleboost)
 #define INVINSTACKABLE CV_Get(&cv_kartstacking_invincibility_stackable)
 
 #define GROWSPEEDBOOST CV_Get(&cv_kartstacking_grow_speedboost)
 #define GROWACCELBOOST CV_Get(&cv_kartstacking_grow_accelboost)
+#define GROWHANDLEBOOST CV_Get(&cv_kartstacking_grow_handleboost)
 #define GROWSTACKABLE CV_Get(&cv_kartstacking_grow_stackable)
 
 #define BUBBLESPEEDBOOST CV_Get(&cv_kartstacking_bubble_speedboost)
 #define BUBBLEACCELBOOST CV_Get(&cv_kartstacking_bubble_accelboost)
+#define BUBBLEHANDLEBOOST CV_Get(&cv_kartstacking_bubble_handleboost)
 #define BUBBLESTACKABLE CV_Get(&cv_kartstacking_bubble_stackable)
 
 #define FLAMESPEEDVAL CV_Get(&cv_kartstacking_flame_speedval)
 #define FLAMEACCELBOOST CV_Get(&cv_kartstacking_flame_accelboost)
+#define FLAMEHANDLEBOOST CV_Get(&cv_kartstacking_flame_handleboost)
 #define FLAMESTACKABLE CV_Get(&cv_kartstacking_flame_stackable)
 
 #define ALTSHRINKTIME CV_Get(&cv_kartaltshrinktime)
 #define SHRINKSPEEDBOOST CV_Get(&cv_kartstacking_altshrink_speedboost)
 #define SHRINKACCELBOOST CV_Get(&cv_kartstacking_altshrink_accelboost)
+#define SHRINKHANDLEBOOST CV_Get(&cv_kartstacking_altshrink_handleboost)
 #define SHRINKSTACKABLE CV_Get(&cv_kartstacking_altshrink_stackable)
 
 #define STARTSPEEDBOOST CV_Get(&cv_kartstacking_start_speedboost)
 #define STARTACCELBOOST CV_Get(&cv_kartstacking_start_accelboost)
+#define STARTHANDLEBOOST CV_Get(&cv_kartstacking_start_handleboost)
 #define STARTSTACKABLE CV_Get(&cv_kartstacking_start_stackable)
 
 #define WALLTRANSFERSPEEDBOOST CV_Get(&cv_kartstacking_walltransfer_speedboost)
 #define WALLTRANSFERACCELBOOST CV_Get(&cv_kartstacking_walltransfer_accelboost)
+#define WALLTRANSFERHANDLEBOOST CV_Get(&cv_kartstacking_walltransfer_handleboost)
 #define WALLTRANSFERSTACKABLE CV_Get(&cv_kartstacking_walltransfer_stackable)
 
 #define DRIFTSPEEDBOOST CV_Get(&cv_kartstacking_drift_speedboost)
 #define DRIFTACCELBOOST CV_Get(&cv_kartstacking_drift_accelboost)
+#define DRIFTHANDLEBOOST CV_Get(&cv_kartstacking_drift_handleboost)
 #define DRIFTSTACKABLE CV_Get(&cv_kartstacking_drift_stackable)
 
 #define RINGSPEEDBOOST CV_Get(&cv_kartstacking_ring_speedboost)
 #define RINGACCELBOOST CV_Get(&cv_kartstacking_ring_accelboost)
+#define RINGHANDLEBOOST CV_Get(&cv_kartstacking_ring_handleboost)
 #define RINGSTACKABLE CV_Get(&cv_kartstacking_ring_stackable)
 
 #define SLOPEDECAY CV_Get(&cv_kartstacking_slope_decay)
@@ -371,7 +382,7 @@ boolean K_UsingPatchedMap(void);
 INT32 K_CheckpointThreshold(boolean roundup);
 
 fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmin,fixed_t newmax);
-void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, boolean stack, boolean visible);
+void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, fixed_t handleboost, boolean stack, boolean visible);
 void K_ClearBoost(player_t *player);
 
 boolean K_NotFreePlay(void);

@@ -111,6 +111,7 @@ extern consvar_t cv_kartstacking_sneaker_normalspeedboost;
 extern consvar_t cv_kartstacking_sneaker_hardspeedboost;
 extern consvar_t cv_kartstacking_sneaker_expertspeedboost;
 extern consvar_t cv_kartstacking_sneaker_accelboost;
+extern consvar_t cv_kartstacking_sneaker_handleboost;
 extern consvar_t cv_kartstacking_sneaker_maxgrade;
 extern consvar_t cv_kartstacking_sneaker_stackable;
 extern consvar_t cv_kartstacking_panel_separate;
@@ -119,41 +120,51 @@ extern consvar_t cv_kartstacking_panel_maxgrade;
 
 extern consvar_t cv_kartstacking_invincibility_classicspeedboost;
 extern consvar_t cv_kartstacking_invincibility_classicaccelboost;
+extern consvar_t cv_kartstacking_invincibility_classichandleboost;
 extern consvar_t cv_kartstacking_invincibility_alternatespeedboost;
 extern consvar_t cv_kartstacking_invincibility_alternateaccelboost;
+extern consvar_t cv_kartstacking_invincibility_alternatehandleboost;
 extern consvar_t cv_kartstacking_invincibility_stackable;
 
 extern consvar_t cv_kartstacking_flame_speedval;
 extern consvar_t cv_kartstacking_flame_accelboost;
+extern consvar_t cv_kartstacking_flame_handleboost;
 extern consvar_t cv_kartstacking_flame_stackable;
 
 extern consvar_t cv_kartstacking_grow_speedboost;
 extern consvar_t cv_kartstacking_grow_accelboost;
+extern consvar_t cv_kartstacking_grow_handleboost;
 extern consvar_t cv_kartstacking_grow_stackable;
 
 extern consvar_t cv_kartstacking_bubble_speedboost;
 extern consvar_t cv_kartstacking_bubble_accelboost;
+extern consvar_t cv_kartstacking_bubble_handleboost;
 extern consvar_t cv_kartstacking_bubble_stackable;
 
 extern consvar_t cv_kartaltshrinktime;
 extern consvar_t cv_kartstacking_altshrink_speedboost;
 extern consvar_t cv_kartstacking_altshrink_accelboost;
+extern consvar_t cv_kartstacking_altshrink_handleboost;
 extern consvar_t cv_kartstacking_altshrink_stackable;
 
 extern consvar_t cv_kartstacking_start_speedboost;
 extern consvar_t cv_kartstacking_start_accelboost;
+extern consvar_t cv_kartstacking_start_handleboost;
 extern consvar_t cv_kartstacking_start_stackable;
 
 extern consvar_t cv_kartstacking_walltransfer_speedboost;
 extern consvar_t cv_kartstacking_walltransfer_accelboost;
+extern consvar_t cv_kartstacking_walltransfer_handleboost;
 extern consvar_t cv_kartstacking_walltransfer_stackable;
 
 extern consvar_t cv_kartstacking_drift_speedboost;
 extern consvar_t cv_kartstacking_drift_accelboost;
+extern consvar_t cv_kartstacking_drift_handleboost;
 extern consvar_t cv_kartstacking_drift_stackable;
 
 extern consvar_t cv_kartstacking_ring_speedboost;
 extern consvar_t cv_kartstacking_ring_accelboost;
+extern consvar_t cv_kartstacking_ring_handleboost;
 extern consvar_t cv_kartstacking_ring_stackable;
 
 extern consvar_t cv_kartstacking_slope_decay;
@@ -215,6 +226,8 @@ extern consvar_t cv_kartitemlitter, cv_kartitempush;
 extern consvar_t cv_kartantibump;
 
 extern consvar_t cv_kartforcelegacyodds;
+
+extern consvar_t cv_handleboostslip;
 
 extern consvar_t cv_kartoddsdist;
 extern consvar_t cv_kartlegacyoddsdist;

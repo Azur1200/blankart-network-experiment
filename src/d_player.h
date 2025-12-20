@@ -419,6 +419,7 @@ struct boostinfo_t {
   fixed_t stackspeedboost;
   fixed_t nonstackspeedboost;
   fixed_t accelboost;
+  fixed_t handleboost;
   UINT8 grade;
 };
 
