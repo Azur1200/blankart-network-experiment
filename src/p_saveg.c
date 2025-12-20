@@ -626,6 +626,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].speedboost);
 		SYNC(players[i].prevspeedboost);
 		SYNC(players[i].accelboost);
+		SYNC(players[i].handleboost);
 		SYNC(players[i].boostangle);
 		SYNC(players[i].numsneakers);
 		SYNC(players[i].numpanels);

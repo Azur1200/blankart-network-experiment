@@ -353,6 +353,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(speedboost) \
 	X(prevspeedboost) \
 	X(accelboost) \
+	X(handleboost) \
 	X(boostangle) \
 	X(boostinfo) \
 	X(numsneakers) \
@@ -714,6 +715,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_accelboost:
 		lua_pushinteger(L, plr->accelboost);
+		break;
+	case player_handleboost:
+		lua_pushinteger(L, plr->handleboost);
 		break;
 	case player_boostangle:
 		lua_pushangle(L, plr->boostangle);
@@ -1502,6 +1506,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_accelboost:
 		plr->accelboost = luaL_checkinteger(L, 3);
+		break;
+	case player_handleboost:
+		plr->handleboost = luaL_checkinteger(L, 3);
 		break;
 	case player_boostangle:
 		plr->boostangle = luaL_checkangle(L, 3);

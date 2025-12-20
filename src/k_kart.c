@@ -303,6 +303,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_sneaker_hardspeedboost);
 	CV_RegisterVar(&cv_kartstacking_sneaker_expertspeedboost);
 	CV_RegisterVar(&cv_kartstacking_sneaker_accelboost);
+	CV_RegisterVar(&cv_kartstacking_sneaker_handleboost);
 	CV_RegisterVar(&cv_kartstacking_sneaker_maxgrade);
 	CV_RegisterVar(&cv_kartstacking_sneaker_stackable);
 	CV_RegisterVar(&cv_kartstacking_panel_separate);
@@ -310,40 +311,50 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartstacking_invincibility_classicspeedboost);
 	CV_RegisterVar(&cv_kartstacking_invincibility_classicaccelboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_classichandleboost);
     CV_RegisterVar(&cv_kartstacking_invincibility_alternatespeedboost);
 	CV_RegisterVar(&cv_kartstacking_invincibility_alternateaccelboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_alternatehandleboost);
 	CV_RegisterVar(&cv_kartstacking_invincibility_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_grow_speedboost);
 	CV_RegisterVar(&cv_kartstacking_grow_accelboost);
+	CV_RegisterVar(&cv_kartstacking_grow_handleboost);
 	CV_RegisterVar(&cv_kartstacking_grow_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_altshrink_speedboost);
 	CV_RegisterVar(&cv_kartstacking_altshrink_accelboost);
+	CV_RegisterVar(&cv_kartstacking_altshrink_handleboost);
 	CV_RegisterVar(&cv_kartstacking_altshrink_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_bubble_speedboost);
 	CV_RegisterVar(&cv_kartstacking_bubble_accelboost);
+	CV_RegisterVar(&cv_kartstacking_bubble_handleboost);
 	CV_RegisterVar(&cv_kartstacking_bubble_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_flame_speedval);
 	CV_RegisterVar(&cv_kartstacking_flame_accelboost);
+	CV_RegisterVar(&cv_kartstacking_flame_handleboost);
 	CV_RegisterVar(&cv_kartstacking_flame_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_start_speedboost);
 	CV_RegisterVar(&cv_kartstacking_start_accelboost);
+	CV_RegisterVar(&cv_kartstacking_start_handleboost);
 	CV_RegisterVar(&cv_kartstacking_start_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_walltransfer_speedboost);
 	CV_RegisterVar(&cv_kartstacking_walltransfer_accelboost);
+	CV_RegisterVar(&cv_kartstacking_walltransfer_handleboost);
 	CV_RegisterVar(&cv_kartstacking_walltransfer_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_drift_speedboost);
 	CV_RegisterVar(&cv_kartstacking_drift_accelboost);
+	CV_RegisterVar(&cv_kartstacking_drift_handleboost);
 	CV_RegisterVar(&cv_kartstacking_drift_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_ring_speedboost);
 	CV_RegisterVar(&cv_kartstacking_ring_accelboost);
+	CV_RegisterVar(&cv_kartstacking_ring_handleboost);
 	CV_RegisterVar(&cv_kartstacking_ring_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_slope_decay);
@@ -2721,6 +2732,7 @@ static void K_GetKartBoostPower(player_t *player)
 	fixed_t boostpower = FRACUNIT;
 	fixed_t finalspeedboost = 0;
 	fixed_t finalaccelboost = 0;
+	fixed_t finalhandleboost = 0;
 	UINT8 finalgrade = 0;
 
 	if (player->spinouttimer && player->wipeoutslow == 1) // Slow down after you've been bumped
@@ -2854,6 +2866,7 @@ static void K_GetKartBoostPower(player_t *player)
 	// Combine nonstack and stacking boosts here.
 	finalspeedboost = max(player->boostinfo.nonstackspeedboost, diminish(player->boostinfo.stackspeedboost));
 	finalaccelboost = player->boostinfo.accelboost;
+	finalhandleboost = player->boostinfo.handleboost;
 	finalgrade = player->boostinfo.grade;
 
 	// value smoothing
@@ -2863,21 +2876,25 @@ static void K_GetKartBoostPower(player_t *player)
 		{
 			player->speedboost = max(finalspeedboost, player->speedboost)/2;
 			player->accelboost = max(finalaccelboost, player->accelboost)/2;
+			player->handleboost = max(finalhandleboost, player->handleboost)/2;
 		}
 		else if (K_Sliptiding(player) || (K_GetKartButtons(player) & BT_BRAKE))
 		{
 			player->speedboost = max(player->prevspeedboost - SPEEDBOOSTDROPOFF_BRAKE, min(player->speedboost, MAXVANILLABOOST));
 			player->accelboost = finalaccelboost;
+			player->handleboost = finalhandleboost;
 		}
 		else if (finalspeedboost >= player->prevspeedboost)
 		{
 			player->speedboost = max(player->speedboost, finalspeedboost);
 			player->accelboost = max(player->accelboost, finalaccelboost);
+			player->handleboost = max(player->handleboost, finalhandleboost);
 		}
 		else
 		{
 			player->speedboost = max(player->speedboost + (finalspeedboost - player->speedboost) / (TICRATE/2), player->speedboost - SPEEDBOOSTDROPOFF);
 			player->accelboost = finalaccelboost;
+			player->handleboost = finalhandleboost;
 		}
 	}
 	else
@@ -2892,6 +2909,7 @@ static void K_GetKartBoostPower(player_t *player)
 		}
 
 		player->accelboost = finalaccelboost;
+		player->handleboost = finalhandleboost;
 	}
 
 	player->numboosts = finalgrade;
@@ -8970,12 +8988,17 @@ INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
 		else
 			turnvalue = (INT16)(turnvalue + K_GetKartDriftValue(player, FRACUNIT));
 
+		if (player->handleboost > 0)
+		{
+			turnvalue = FixedMul(turnvalue, FRACUNIT + (player->handleboost / 2));
+		}
+
 		return turnvalue;
 	}
 
-	if (player->boostinfo.handleboost > 0)
+	if (player->handleboost > 0)
 	{
-		turnvalue = FixedMul(turnvalue, FRACUNIT + player->boostinfo.handleboost);
+		turnvalue = FixedMul(turnvalue, FRACUNIT + player->handleboost);
 	}
 
 	turnvalue = FixedMul(turnvalue, adjustangle); // Weight has a small effect on turning
@@ -8983,7 +9006,8 @@ INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
 	if (K_SlipdashActive() && K_Sliptiding(player)) // slight handling boost based on weight
 		turnvalue = FixedMul(turnvalue, FRACUNIT + (10 - player->kartweight)*FRACUNIT/48);
 
-	if (player->sneakertimer || player->bubbleboost ||
+	if ((player->invincibilitytimer && (!K_IsKartItemAlternate(KITEM_INVINCIBILITY)))
+	    || player->sneakertimer || player->bubbleboost ||
 	    player->growshrinktimer > 0 || K_IsAltShrunk(player))
 	{
 		turnvalue = FixedMul(turnvalue, FixedDiv(5 * FRACUNIT, 4 * FRACUNIT));
@@ -9127,8 +9151,9 @@ boolean K_InterceptArrowBullet(player_t *player)
 	return ((player->invincibilitytimer && !K_IsKartItemAlternate(KITEM_INVINCIBILITY)) || (player->growshrinktimer > 0) || (player->flamestore));
 }
 
-// 1.25 fracunits; the (hardcoded) handleboost of a Sneaker.
-#define HANDLEBOOSTTHRESHOLD (5 * FRACUNIT / 4)
+// 0.25 fracunits
+// 1 + 0.25 (1.25) is the (hardcoded) handleboost of a Sneaker.
+#define HANDLEBOOSTTHRESHOLD (FRACUNIT / 4)
 
 // Generalized sliptide conditions.
 static boolean K_OtherSliptideCondition(player_t* player)
@@ -9138,7 +9163,7 @@ static boolean K_OtherSliptideCondition(player_t* player)
 
 	return (
 	    K_AltInvinSliptideCondition(player) || K_AltShrinkSliptideCondition(player) ||
-	    (cv_handleboostslip.value && (player->boostinfo.handleboost >= HANDLEBOOSTTHRESHOLD)));
+	    (cv_handleboostslip.value && (player->handleboost >= HANDLEBOOSTTHRESHOLD)));
 }
 
 #undef HANDLEBOOSTTHRESHOLD
@@ -9167,7 +9192,7 @@ static void K_HandleAirDriftDrag(player_t *player, boolean onground)
 static void K_KartDrift(player_t *player, boolean onground)
 {
 	fixed_t minspeed = (10 * player->mo->scale);
-	fixed_t driftadditive = 24;
+	fixed_t driftadditive = FixedMul(24, FRACUNIT + (player->handleboost / 2));
 	const INT32 dsv = K_GetKartDriftSparkValue(player);
 	const UINT8 driftstage = K_GetKartDriftSparkStageForValue(player, player->driftcharge);
 	UINT16 buttons = K_GetKartButtons(player);
