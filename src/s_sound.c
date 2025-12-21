@@ -1097,8 +1097,8 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 			xl = listensource.x - 1024*FRACUNIT;
 			xh = listensource.x + 1024*FRACUNIT;
 			approx_dist = 1024*FRACUNIT;
-			for (y = yl; y <= yh; y += FRACUNIT*64)
-				for (x = xl; x <= xh; x += FRACUNIT*64)
+			for (y = yl; y >= yl && y <= yh; y += FRACUNIT*64)
+				for (x = xl; x >= xl && x <= xh; x += FRACUNIT*64)
 				{
 					if (R_PointInSubsectorFast(x, y)->sector->ceilingpic == skyflatnum)
 					{

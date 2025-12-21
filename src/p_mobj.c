@@ -12215,8 +12215,8 @@ void P_PrecipitationEffects(void)
 
 		closedist = SEARCHRADIUS*2;
 #undef SEARCHRADIUS
-		for (y = yl; y <= yh; y += RADIUSSTEP)
-			for (x = xl; x <= xh; x += RADIUSSTEP)
+		for (y = yl; y >= yl && y <= yh; y += RADIUSSTEP)
+			for (x = xl; x >= xl && x <= xh; x += RADIUSSTEP)
 			{
 				if (R_PointInSubsectorFast((fixed_t)x, (fixed_t)y)->sector->ceilingpic != skyflatnum) // Found the outdoors!
 					continue;
