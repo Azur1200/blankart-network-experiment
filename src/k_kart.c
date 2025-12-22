@@ -518,17 +518,7 @@ static fixed_t K_PlayerWeight(mobj_t* mobj, mobj_t* against)
 		else if ((K_GetShieldFromPlayer(against->player) == KSHIELD_BUBBLE // They have a Bubble Shield
 		 && K_GetShieldFromPlayer(mobj->player) != KSHIELD_BUBBLE)) // and you don't
 		{
-			// Check if the player is defending.
-			if (K_IsBubbleDefending(against->player))
-			{
-				// If they are, don't register a bump.
-				// TODO: Make this scale to speed(?)
-				return 0;
-			}
-			else
-			{
-				bubbleMultiplier = (FRACUNIT / 4); // 25% bump severity for uninflated Bubble Shields.
-			}
+			return 0; // This player does not cause any bump action
 		}
 		else if (invinisalt && against->player->invincibilitytimer)
 		{
