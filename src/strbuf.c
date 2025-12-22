@@ -30,7 +30,7 @@ strbuf_t *strbuf_alloc(void)
 // returns an offset to the newly appended string
 UINT32 strbuf_append(strbuf_t **strbuf, const char *str)
 {
-	return strbuf_write(strbuf, (UINT8 *)str, strlen(str)+1);
+	return strbuf_write(strbuf, (const UINT8 *)str, strlen(str)+1);
 }
 
 // writes a raw block of bytes to the buffer

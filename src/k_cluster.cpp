@@ -54,7 +54,7 @@ extern "C"
 
     // Store our last memory of the cluster player (because we're clearing it out for the second
     // cluster).
-    static boolean clusterplayer_memory[MAXPLAYERS];
+    //static boolean clusterplayer_memory[MAXPLAYERS];
 
     // Filters players based on various factors, such as playercount and position.
     // fval = pingame

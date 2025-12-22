@@ -742,6 +742,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 			/* FALLTHRU */
 		case 0x000D:
 			dubs = false;
+			/* FALLTHRU */
 		case 0x000E:
 			availabilities = false;
 			break;
