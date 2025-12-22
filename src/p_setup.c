@@ -6647,6 +6647,12 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[2] = lines[i].dx >> FRACBITS;
 				lines[i].args[3] = lines[i].dy >> FRACBITS;
 			}
+
+			if (mapnamespace == MNS_SRB2KART && lines[i].special == 502)
+				lines[i].args[5] = 1;
+			else
+				lines[i].args[5] = 0;
+
 			lines[i].args[4] = lines[i].special - 502;
 			lines[i].special = 502;
 			break;

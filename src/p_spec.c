@@ -8512,6 +8512,18 @@ static void P_SpawnPlaneScroller(line_t *l, fixed_t dx, fixed_t dy, INT32 contro
 	}
 }
 
+// Only used for compat with kart v1 maps....
+static void Add_WallScroller(fixed_t dx, fixed_t dy, const line_t *l, INT32 control, INT32 accel)
+{
+	fixed_t x = abs(l->dx), y = abs(l->dy), d;
+	if (y > x)
+		d = x, x = y, y = d;
+	d = FixedDiv(x, FINESINE((tantoangle[FixedDiv(y, x) >> DBITS] + ANGLE_90) >> ANGLETOFINESHIFT));
+	x = -FixedDiv(FixedMul(dy, l->dy) + FixedMul(dx, l->dx), d);
+	y = -FixedDiv(FixedMul(dx, l->dy) - FixedMul(dy, l->dx), d);
+	Add_Scroller(sc_side, x, y, control, *l->sidenum, accel, 0);
+}
+
 /** Initializes the scrollers.
   *
   * \todo Get rid of all the magic numbers.
@@ -8566,10 +8578,18 @@ static void P_SpawnScrollers(void)
 				TAG_ITER_LINES(l->args[0], s)
 					if (s != (INT32)i)
 					{
-						if (l->args[1] != TMSD_BACK)
-							Add_Scroller(sc_side, l->args[2] << (FRACBITS - SCROLL_SHIFT), l->args[3] << (FRACBITS - SCROLL_SHIFT), control, lines[s].sidenum[0], accel, 0);
-						if (l->args[1] != TMSD_FRONT && lines[s].sidenum[1] != 0xffff)
-							Add_Scroller(sc_side, l->args[2] << (FRACBITS - SCROLL_SHIFT), l->args[3] << (FRACBITS - SCROLL_SHIFT), control, lines[s].sidenum[1], accel, 0);
+						if (l->args[5] == 1)
+						{
+							// Legacy v1 support....
+							Add_WallScroller(l->args[2] << (FRACBITS - SCROLL_SHIFT), l->args[3] << (FRACBITS - SCROLL_SHIFT), lines+s, control, accel);
+						}
+						else
+						{
+							if (l->args[1] != TMSD_BACK)
+								Add_Scroller(sc_side, l->args[2] << (FRACBITS - SCROLL_SHIFT), l->args[3] << (FRACBITS - SCROLL_SHIFT), control, lines[s].sidenum[0], accel, 0);
+							if (l->args[1] != TMSD_FRONT && lines[s].sidenum[1] != 0xffff)
+								Add_Scroller(sc_side, l->args[2] << (FRACBITS - SCROLL_SHIFT), l->args[3] << (FRACBITS - SCROLL_SHIFT), control, lines[s].sidenum[1], accel, 0);
+						}
 					}
 				break;
 			}
