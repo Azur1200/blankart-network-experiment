@@ -35,36 +35,14 @@ conditionset_t conditionSets[MAXCONDITIONSETS];
 emblem_t emblemlocations[MAXEMBLEMS] = {0};
 
 // Default Extra Emblems
-extraemblem_t extraemblems[MAXEXTRAEMBLEMS] =
-{
-	{"Novice",    "Play 100 matches",  10, 'C', 0,SKINCOLOR_RED, 0},
-	{"Standard",  "Play 250 matches",  11, 'C', 0,SKINCOLOR_RED, 0},
-	{"Expert",    "Play 500 matches",  12, 'C', 0,SKINCOLOR_RED, 0},
-	{"Master",    "Play 750 matches",  13, 'C', 0,SKINCOLOR_RED, 0},
-	{"Nightmare", "Play 1000 matches", 14, 'C', 0,SKINCOLOR_RED, 0},
-};
+extraemblem_t extraemblems[MAXEXTRAEMBLEMS] = {0};
 
 // Unlockables
-// Default Unlockables
-// TODO: Softcode these or make new objectives even!
-unlockable_t unlockables[MAXUNLOCKABLES] =
-{
-	// Name, Objective, Showing Conditionset, ConditionSet, Unlock Type, Variable, NoCecho, NoChecklist, Unlocked
-	/* 01 */ {"Egg Cup",  "", -1, 1, SECRET_NONE, 0, NULL, false, false, 0},
-	/* 02 */ {"Chao Cup", "", -1, 2, SECRET_NONE, 0, NULL, false, false, 0},
-	/* 03 */ {"SMK Cup",  "",  2, 3, SECRET_NONE, 0, NULL, false, false, 0},
-
-	/* 04 */ {"Hard Game Speed", "", -1, 4, SECRET_HARDSPEED,  0, NULL, false, false, 0},
-	/* 05 */ {"Encore Mode",     "",  4, 5, SECRET_ENCORE,     0, NULL, false, false, 0},
-	/* 06 */ {"Hell Attack",     "",  6, 6, SECRET_HELLATTACK, 0, NULL, false, false, 0},
-
-	/* 07 */ {"Record Attack", "", -1, -1, SECRET_TIMEATTACK, 0, NULL ,true, true, 0},
-	/* 08 */ {"Capsule Attack", "", -1, -1, SECRET_ITEMBREAKER, 0, NULL, true, true, 0},
-};
+unlockable_t unlockables[MAXUNLOCKABLES] = {0};
 
 // Number of emblems and extra emblems
 INT32 numemblems = 0;
-INT32 numextraemblems = 5;
+INT32 numextraemblems = 0;
 
 // DEFAULT CONDITION SETS FOR SRB2KART:
 void M_SetupDefaultConditionSets(void)
