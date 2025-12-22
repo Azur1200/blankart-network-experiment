@@ -6600,7 +6600,6 @@ INT32 MR_ModeAttackEndGame(INT32 choice)
 	M_RestoreMenuStack(false);
 	modeattacking = ATTACKING_MENU;
 
-	M_EnterMenu(MN_SP_TIMEATTACK, true, -1);
 	return true;
 }
 
