@@ -93,7 +93,7 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x5ae5830da34ceb41
+#define ASSET_HASH_MAIN_PK3            0x0bb244e3e53dc163
 #define ASSET_HASH_MAPPATCH_PK3        0x6ad99efcfaafb70f
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
@@ -1663,9 +1663,6 @@ void D_SRB2Main(void)
 	CONS_Printf("I_InitializeTime()...\n");
 	I_InitializeTime();
 	CON_SetLoadingProgress(LOADED_ISTARTUPTIMER);
-
-	// Setup default unlockable conditions
-	M_SetupDefaultConditionSets();
 
 	D_RegisterServerCommands();
 	D_RegisterClientCommands(); // be sure that this is called before D_CheckNetGame

@@ -44,52 +44,6 @@ unlockable_t unlockables[MAXUNLOCKABLES] = {0};
 INT32 numemblems = 0;
 INT32 numextraemblems = 0;
 
-// DEFAULT CONDITION SETS FOR SRB2KART:
-void M_SetupDefaultConditionSets(void)
-{
-	memset(conditionSets, 0, sizeof(conditionSets));
-
-	// UNLOCKABLES
-	// -- 1: Collect 5 medals OR play 25 matches
-	M_AddRawCondition(1, 1, UC_TOTALEMBLEMS, 5, 0, 0);
-	M_AddRawCondition(1, 2, UC_MATCHESPLAYED, 25, 0, 0);
-
-	// -- 2: Collect 15 medals OR play 50 matches
-	M_AddRawCondition(2, 1, UC_TOTALEMBLEMS, 15, 0, 0);
-	M_AddRawCondition(2, 2, UC_MATCHESPLAYED, 50, 0, 0);
-
-	// -- 3: Collect 30 medals OR play 150 matches
-	M_AddRawCondition(3, 1, UC_TOTALEMBLEMS, 30, 0, 0);
-	M_AddRawCondition(3, 2, UC_MATCHESPLAYED, 150, 0, 0);
-
-	// -- 4: Collect 50 medals OR play 200 matches
-	M_AddRawCondition(4, 1, UC_TOTALEMBLEMS, 50, 0, 0);
-	M_AddRawCondition(4, 2, UC_MATCHESPLAYED, 200, 0, 0);
-
-	// -- 5: Collect 70 medals OR play 300 matches
-	M_AddRawCondition(5, 1, UC_TOTALEMBLEMS, 70, 0, 0);
-	M_AddRawCondition(5, 2, UC_MATCHESPLAYED, 300, 0, 0);
-
-	// -- 6: Collect 110 medals ONLY
-	M_AddRawCondition(6, 1, UC_TOTALEMBLEMS, 110, 0, 0);
-
-	// MILESTONES
-	// -- 10: Play 100 matches
-	M_AddRawCondition(10, 1, UC_MATCHESPLAYED, 100, 0, 0);
-
-	// -- 11: Play 250 matches
-	M_AddRawCondition(11, 1, UC_MATCHESPLAYED, 250, 0, 0);
-
-	// -- 12: Play 500 matches
-	M_AddRawCondition(12, 1, UC_MATCHESPLAYED, 500, 0, 0);
-
-	// -- 13: Play 750 matches
-	M_AddRawCondition(13, 1, UC_MATCHESPLAYED, 750, 0, 0);
-
-	// -- 14: Play 1000 matches
-	M_AddRawCondition(14, 1, UC_MATCHESPLAYED, 1000, 0, 0);
-}
-
 void M_AddRawCondition(UINT8 set, UINT8 id, conditiontype_t c, INT32 r, INT16 x1, INT16 x2)
 {
 	condition_t *cond;
