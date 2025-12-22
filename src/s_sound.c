@@ -48,8 +48,6 @@ CV_PossibleValue_t soundvolume_cons_t[] = {{0, "MIN"}, {MAX_VOLUME, "MAX"}, {0, 
 static void SetChannelsNum(void);
 static void Command_Tunes_f(void);
 static void Command_RestartAudio_f(void);
-static void Command_PlaySound(void);
-static void Got_PlaySound(UINT8 **p, INT32 playernum);
 
 // Sound system toggles
 static void GameSounds_OnChange(void);
