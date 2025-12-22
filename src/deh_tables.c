@@ -34,13 +34,13 @@
 #include "k_waypoint.h" // waypoint values (for lua)
 
 #include "deh_tables.h"
-#include "fastcmp.h"
 
 strbuf_t *statenames;
 strbuf_t *mobjnames;
 strbuf_t *skincolornames;
 strbuf_t *menunames;
 strbuf_t *kartitemnames;
+
 UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
 const char *DEH_MobjtypeName(mobjtype_t i)
@@ -763,8 +763,8 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "TIMEATTACKPRESET", &MR_TimeAttackPreset },
 	{ "REPLAYSTAFF", &MR_ReplayStaff },
 	{ "CONNECTIP", &MR_ConnectIP },
+	{ "CONNECTLASTSERVER", &MR_ConnectLastServer },
 	{ "QUITMULTIPLAYERMENU", &MR_QuitMultiPlayerMenu },
-	{ "STARTSERVERMENU", &MR_StartServerMenu },
 	{ "STARTSERVER", &MR_StartServer },
 	{ "CONNECTMENUMODCHECKS", &MR_ConnectMenuModChecks },
 	{ "CANCELCONNECT", &MR_CancelConnect },
@@ -792,7 +792,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "MODEATTACKENDGAME", &MR_ModeAttackEndGame },
 	{ "RETRY", &MR_Retry },
 	{ "ENDGAME", &MR_EndGame },
-	{ "MAPCHANGE", &MR_MapChange },
 	{ "SETUPMULTIPLAYER", &MR_SetupMultiPlayer },
 	{ "CONFIRMSPECTATE", &MR_ConfirmSpectate },
 	{ "CONFIRMENTERGAME", &MR_ConfirmEnterGame },
@@ -824,10 +823,13 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "CAMERASETUP", &MR_CameraSetup },
 	// { "BARCSS", &MR_HandleBarCss },
 	{ "HANDLESETUPMULTIPLAYERMENU", &MR_HandleSetupMultiPlayerMenu },
-
+	{ "PREPARELEVELPLATTER", &MR_PrepareLevelPlatter },
+	{ "HANDLELEVELPLATTER", &MR_HandleLevelPlatter },
+	{ "LEVELPLATTERRANDOM", &MR_LevelPlatterRandom },
 #ifdef HAVE_DISCORDRPC
 	{ "HANDLEDISCORDREQUESTS", &MR_HandleDiscordRequests },
 #endif
+
 	{ NULL, NULL }
 };
 
@@ -852,6 +854,7 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWMONITORTOGGLES", &MD_DrawMonitorToggles },
 	{ "DRAWCONNECTMENU", &MD_DrawConnectMenu },
 	{ "DRAWVIEWSERVER", &MD_DrawViewServer },
+	{ "DRAWLEVELPLATTERMENU", &MD_DrawLevelPlatterMenu },
 #ifdef HAVE_DISCORDRPC
 	{ "DRAWDISCORDREQUESTS", &MD_DrawDiscordRequests },
 #endif
@@ -1048,6 +1051,14 @@ struct int_const_s const INT_CONST[] = {
 	{"LF2_NOTIMEATTACK",LF2_NOTIMEATTACK},
 	{"LF2_VISITNEEDED",LF2_VISITNEEDED},
 
+	// Level list modes
+	{"LLM_CREATESERVER",LLM_CREATESERVER},
+	//{"LLM_LEVELSELECT",LLM_LEVELSELECT},
+	{"LLM_TIMEATTACK",LLM_TIMEATTACK},
+	{"LLM_ITEMBREAKER",LLM_ITEMBREAKER},
+	{"LLM_BOSS",LLM_BOSS},
+	{"LLM__MAX",LLM__MAX},
+
 	// Emeralds
 	{"EMERALD1",EMERALD1},
 	{"EMERALD2",EMERALD2},
@@ -1178,17 +1189,17 @@ struct int_const_s const INT_CONST[] = {
 
 	// Customisable sounds for Skins, from sounds.h
 	// SRB2kart
-	{"SKSKWIN",SKSKWIN}, // Win quote
-	{"SKSKLOSE",SKSKLOSE}, // Lose quote
-	{"SKSKPAN1",SKSKPAN1}, // Pain
-	{"SKSKPAN2",SKSKPAN2},
-	{"SKSKATK1",SKSKATK1}, // Offense item taunt
-	{"SKSKATK2",SKSKATK2},
-	{"SKSKBST1",SKSKBST1}, // Boost item taunt
-	{"SKSKBST2",SKSKBST2},
-	{"SKSKSLOW",SKSKSLOW}, // Overtake taunt
-	{"SKSKHITM",SKSKHITM}, // Hit confirm taunt
-	{"SKSKPOWR",SKSKPOWR}, // Power item taunt
+	{"SKSKWIN",0}, // Win quote
+	{"SKSKLOSE",1}, // Lose quote
+	{"SKSKPAN1",2}, // Pain
+	{"SKSKPAN2",3},
+	{"SKSKATK1",4}, // Offense item taunt
+	{"SKSKATK2",5},
+	{"SKSKBST1",6}, // Boost item taunt
+	{"SKSKBST2",7},
+	{"SKSKSLOW",8}, // Overtake taunt
+	{"SKSKHITM",9}, // Hit confirm taunt
+	{"SKSKPOWR",10}, // Power item taunt
 
 	// 3D Floor/Fake Floor/FOF/whatever flags
 	{"FOF_EXISTS",FOF_EXISTS},                   ///< Always set, to check for validity.
@@ -1547,6 +1558,13 @@ struct int_const_s const INT_CONST[] = {
 	{"KSHIELD_FLAME",KSHIELD_FLAME},
 	{"NUMKARTSHIELDS",NUMKARTSHIELDS},
 
+	// kartitemequip_e
+	{"KITEMEQUIP_NONE",KITEMEQUIP_NONE},
+	{"KITEMEQUIP_ORBIT",KITEMEQUIP_ORBIT},
+	{"KITEMEQUIP_TRAIL",KITEMEQUIP_TRAIL},
+	{"KITEMEQUIP_ROCKETS",KITEMEQUIP_ROCKETS},
+	{"KITEMEQUIP_SHIELD",KITEMEQUIP_SHIELD},
+
 	// kartroulettetype_e
 	{"KROULETTETYPE_NORMAL",KROULETTETYPE_NORMAL},
 	{"KROULETTETYPE_KARMA",KROULETTETYPE_KARMA},
@@ -1721,6 +1739,60 @@ struct int_const_s const INT_CONST[] = {
 	{"PICKUPITEM_ITEM", PICKUPITEM_ITEM},
 	{"PICKUPITEM_EGGMAN", PICKUPITEM_EGGMAN},
 	{"PICKUPITEM_FLOATING", PICKUPITEM_FLOATING},
+
+	// kart_fullturn
+	{"KART_FULLTURN", KART_FULLTURN},
+
+	// invin constants
+	{"KART_NUMINVSPARKLESANIM", KART_NUMINVSPARKLESANIM},
+	{"BASEINVINTIME", BASEINVINTIME},
+	{"MININVINTIME", MININVINTIME},
+
+	// grow/shrink scale
+	{"GROW_SCALE", GROW_SCALE},
+	{"SHRINK_SCALE", SHRINK_SCALE},
+
+	// auto respawn
+	{"AUTORESPAWN_TIME", AUTORESPAWN_TIME},
+	{"AUTORESPAWN_THRESHOLD", AUTORESPAWN_THRESHOLD},
+
+	// flameshield
+	{"FLAMESTOREMAX", FLAMESTOREMAX},
+
+	// k_kart: Flipover
+	{"FLIPOVERDIST", FLIPOVERDIST},
+	{"FLIPOVERTICS", FLIPOVERTICS},
+	{"FLIPOVERHALFTICS", FLIPOVERHALFTICS},
+	{"FLIPOVER_90DEGTIME", FLIPOVER_90DEGTIME},
+	{"FLIPOVER_360DEGTIME", FLIPOVER_360DEGTIME},
+	{"FLIPOVERLIMIT", FLIPOVERLIMIT},
+	{"FLIPOVERANG", FLIPOVERANG},
+	{"FLIPOVERSPEED", FLIPOVERSPEED},
+	{"FLIPOVERHEIGHT", FLIPOVERHEIGHT},
+
+	// bubbleshield
+	//{"MAXBUBBLEHEALTH", MAXBUBBLEHEALTH},
+	//{"BUBBLEBUMPCHIP", BUBBLEBUMPCHIP},
+	//{"BUBBLEITMDAMAGE", BUBBLEITMDAMAGE},
+	{"BUBBLEMINWEIGHT", BUBBLEMINWEIGHT},
+
+	// ring visual/audio stuff
+	{"MAXRINGVOLUME", MAXRINGVOLUME},
+	{"MAXRINGTRANSPARENCY", MAXRINGTRANSPARENCY},
+	{"MINRINGVOLUME", MINRINGVOLUME},
+	{"MINRINGTRANSPARENCY", MINRINGTRANSPARENCY},
+	{"RINGVOLUMECOLLECTPENALTY", RINGVOLUMECOLLECTPENALTY},
+	{"RINGTRANSPARENCYCOLLECTPENALTY", RINGTRANSPARENCYCOLLECTPENALTY},
+	{"RINGVOLUMEUSEPENALTY", RINGVOLUMEUSEPENALTY},
+	{"RINGTRANSPARENCYUSEPENALTY", RINGTRANSPARENCYUSEPENALTY},
+	{"RINGVOLUMEREGEN", RINGVOLUMEREGEN},
+	{"RINGTRANSPARENCYREGEN", RINGTRANSPARENCYREGEN},
+
+	// bumpsparktype_t
+	{"BUMPSPARK_NONE", BUMPSPARK_NONE},
+	{"BUMPSPARK_NOCHARGE", BUMPSPARK_NOCHARGE},
+	{"BUMPSPARK_RESET100", BUMPSPARK_RESET100},
+	{"BUMPSPARK_ALL", BUMPSPARK_ALL},
 
 	{NULL,0}
 };

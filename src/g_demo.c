@@ -54,7 +54,6 @@
 #include "k_color.h"
 #include "k_follower.h"
 #include "k_grandprix.h"
-#include "strbuf.h"
 
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
 consvar_t cv_recordmultiplayerdemos = CVAR_INIT ("netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL);
@@ -111,7 +110,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x000D
+#define DEMOVERSION 0x000F
 #define DEMOHEADER  "\xF0" "BlanReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -222,12 +221,14 @@ typedef struct
 	char color[16+1];
 	char follower[16+1];
 	char followercolor[16+1];
+	char voice[32+1];
 
 	UINT32 score;
 	UINT16 powerlevel;
 	UINT8 kartspeed;
 	UINT8 kartweight;
 	mobjtype_t followitem;
+	UINT8 availabilities[MAXAVAILABILITY];
 } demoplayer_t;
 
 typedef struct
@@ -342,6 +343,7 @@ typedef struct
 
 	// DXD_SKIN
 	char skinname[17];
+	char voicename[33];
 	UINT8 kartspeed;
 	UINT8 kartweight;
 
@@ -549,6 +551,7 @@ static void G_FreeExtraZipTic(ziptic_t *zt)
 
 static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 {
+	INT32 i;
 	UINT8 extradata;
 	extra->playernum = READUINT8(dp);
 	boolean kart = version <= 0x0002;
@@ -590,6 +593,14 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 
 	if (extradata & DXD_JOINDATA)
 	{
+		if (version >= 0x000F)
+		{
+			for (i = 0; i < MAXAVAILABILITY; i++)
+			{
+				players[extra->playernum].availabilities[i] = READUINT8(dp);
+			}
+		}
+
 		extra->joindata.bot = !!(READUINT8(dp));
 		if (extra->joindata.bot)
 		{
@@ -621,9 +632,18 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 		{
 			READMEM(dp, extra->skinname, 16);
 			extra->skinname[16] = '\0';
+
+			extra->voicename[0] = '\0';
 		}
 		else
+		{
 			READSTRINGL(dp, extra->skinname, 16+1);
+
+			if (version > 0x000D)
+				READSTRINGL(dp, extra->voicename, 32+1);
+			else
+				extra->voicename[0] = '\0';
+		}
 		extra->kartspeed = READUINT8(dp);
 		extra->kartweight = READUINT8(dp);
 	}
@@ -682,6 +702,9 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	boolean raflag = false;
 	boolean serverinfo = true;
 	boolean rapreset = true; // + extended serverinfo length
+	boolean dubs = true; // Multiple voices
+	boolean availabilities = true; // Store player availabilities
+	INT32 i;
 
 	// these may not be present in old demo formats, so initialize them
 	// also initialize them so the header can be free'd without issues
@@ -716,6 +739,12 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 		case 0x000C:
 			rapreset = false;
 			raflag = true;
+			/* FALLTHRU */
+		case 0x000D:
+			dubs = false;
+			/* FALLTHRU */
+		case 0x000E:
+			availabilities = false;
 			break;
 
 		default: // too old, cannot support.
@@ -724,8 +753,8 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	}
 	else if (!memcmp(startdp, "\xF0" "KartReplay" "\x0F", 12))
 	{
-		rapreset = raflag = false;
-		serverinfo = false;
+		dubs = rapreset = raflag = false;
+		serverinfo = availabilities = false;
 		switch (header->demoversion)
 		{
 		case 0x0001: // SRB2Kart 1.0.x (only staff ghosts supported)
@@ -818,7 +847,7 @@ readfiles:
 	header->numfiles = READUINT8(dp);
 	if (header->numfiles)
 		header->files = malloc(sizeof(demofile_t) * header->numfiles);
-	for (UINT8 i = 0; i < header->numfiles; i++)
+	for (i = 0; i < header->numfiles; i++)
 	{
 		char filename[MAX_WADPATH];
 		READSTRINGL(dp, filename, MAX_WADPATH);
@@ -877,7 +906,7 @@ skipfiles:
 	header->numcvars = READUINT16(dp);
 	if (header->numcvars)
 		header->cvars = malloc(sizeof(democvar_t) * header->numcvars);
-	for (UINT16 i = 0; i < header->numcvars; i++)
+	for (i = 0; i < header->numcvars; i++)
 	{
 		if (kart)
 		{
@@ -946,6 +975,10 @@ skipfiles:
 			READSTRINGL(dp, plr->name, 21+1);
 			READSTRINGL(dp, plr->skin, 16+1);
 			READSTRINGL(dp, plr->color, 16+1);
+
+			if (dubs)
+				READSTRINGL(dp, plr->voice, 32+1);
+
 			READSTRINGL(dp, plr->follower, 16+1);
 			READSTRINGL(dp, plr->followercolor, 16+1);
 		}
@@ -976,6 +1009,11 @@ skipfiles:
 		plr->kartspeed = READUINT8(dp);
 		plr->kartweight = READUINT8(dp);
 		plr->followitem = !kart ? READUINT32(dp) : MT_NULL;
+
+		for (i = 0; i < MAXAVAILABILITY; i++)
+		{
+			plr->availabilities[i] = availabilities ? READUINT8(dp) : 0;
+		}
 	}
 
 	// Sigh ... it's an empty demo. Again.
@@ -1157,6 +1195,8 @@ void G_ReadDemoExtraData(void)
 		demobuf.p = G_ReadRawExtraData(&extra, demobuf.p, demo.version);
 		p = extra.playernum;
 
+		player_t *player = &players[p];
+
 		if (p == DW_END)
 			break;
 
@@ -1181,42 +1221,42 @@ void G_ReadDemoExtraData(void)
 				G_AddPlayer(extra.playernum, extra.playernum);
 			}
 
-			players[p].bot = extra.joindata.bot;
-			if (players[p].bot)
+			player->bot = extra.joindata.bot;
+			if (player->bot)
 			{
-				players[p].botvars.difficulty = extra.joindata.difficulty;
-				players[p].botvars.diffincrease = extra.joindata.diffincrease; // needed to avoid having to duplicate logic
-				players[p].botvars.rival = extra.joindata.rival;
+				player->botvars.difficulty = extra.joindata.difficulty;
+				player->botvars.diffincrease = extra.joindata.diffincrease; // needed to avoid having to duplicate logic
+				player->botvars.rival = extra.joindata.rival;
 			}
 		}
 		if (extra.flags & DXD_PLAYSTATE)
 		{
 			switch (extra.playstate) {
 			case DXD_PST_PLAYING:
-				if (players[p].spectator == true)
+				if (player->spectator == true)
 				{
-					if (players[p].bot)
+					if (player->bot)
 					{
-						players[p].spectator = false;
+						player->spectator = false;
 					}
 					else
 					{
-						players[p].pflags |= PF_WANTSTOJOIN;
+						player->pflags |= PF_WANTSTOJOIN;
 					}
 				}
 				//CONS_Printf("player %s is despectating on tic %d\n", player_names[p], leveltime);
 				break;
 
 			case DXD_PST_SPECTATING:
-				if (players[p].spectator)
+				if (player->spectator)
 				{
-					players[p].pflags &= ~PF_WANTSTOJOIN;
+					player->pflags &= ~PF_WANTSTOJOIN;
 				}
 				else
 				{
-					if (players[p].mo)
+					if (player->mo)
 					{
-						P_DamageMobj(players[p].mo, NULL, NULL, 1, DMG_SPECTATOR);
+						P_DamageMobj(player->mo, NULL, NULL, 1, DMG_SPECTATOR);
 					}
 					P_SetPlayerSpectator(p);
 				}
@@ -1228,7 +1268,7 @@ void G_ReadDemoExtraData(void)
 				break;
 			}
 
-			G_ResetViews();
+			G_ResetViews(false); // dont reset our freecam pls thx!
 
 			// maybe these are necessary?
 			K_CheckBumpers();
@@ -1244,21 +1284,41 @@ void G_ReadDemoExtraData(void)
 			// Skin
 			SetPlayerSkin(p, extra.skinname);
 
-			if (stricmp(skins[players[p].skin].name, extra.skinname) != 0)
+			if (!fasticmp(skins[player->skin].name, extra.skinname))
 				FindClosestSkinForStats(p, extra.kartspeed, extra.kartweight);
 
-			players[p].kartspeed = extra.kartspeed;
-			players[p].kartweight = extra.kartweight;
+			// Voice
+			const INT32 vce = R_FindIDForVoice(&skins[player->skin], extra.voicename);
+
+			if (vce == MAXSKINVOICES)
+			{
+				// The above function didn't find a voice, so we'll just fall back
+				// to the skin's voice.
+				player->voice_id = 0;
+			}
+			else
+			{
+				player->voice_id = (UINT16)vce;
+			}
+
+			if (!P_MobjWasRemoved(player->mo))
+			{
+				// This player's mobj exists. So, attach the voice to the mobj!
+				player->mo->voice = &skins[player->skin].voices[player->voice_id];
+			}
+
+			player->kartspeed = extra.kartspeed;
+			player->kartweight = extra.kartweight;
 		}
 		if (extra.flags & DXD_COLOR)
 		{
 			// Color
 			for (i = 0; i < numskincolors; i++)
-				if (!stricmp(skincolors[i].name, extra.colorname)) // SRB2kart
+				if (fasticmp(skincolors[i].name, extra.colorname)) // SRB2kart
 				{
-					players[p].skincolor = i;
-					if (players[p].mo)
-						players[p].mo->color = i;
+					player->skincolor = i;
+					if (player->mo)
+						player->mo->color = i;
 					break;
 				}
 		}
@@ -1269,18 +1329,18 @@ void G_ReadDemoExtraData(void)
 
 			// Follower's color
 			for (i = 0; i < numskincolors +2; i++)	// +2 because of Match and Opposite
-				if (!stricmp(Followercolor_cons_t[i].strvalue, extra.followercolor))
+				if (fasticmp(Followercolor_cons_t[i].strvalue, extra.followercolor))
 				{
-					players[p].followercolor = i;
+					player->followercolor = i;
 					break;
 				}
 		}
 		if (extra.flags & DXD_RESPAWN)
 		{
-			if (players[p].mo)
+			if (player->mo)
 			{
 				// Is this how this should work..?
-				P_DamageMobj(players[p].mo, NULL, NULL, 1, DMG_INSTAKILL);
+				P_DamageMobj(player->mo, NULL, NULL, 1, DMG_INSTAKILL);
 			}
 		}
 		if (extra.flags & DXD_WEAPONPREF)
@@ -1302,7 +1362,7 @@ void G_ReadDemoExtraData(void)
 
 void G_WriteDemoExtraData(void)
 {
-	INT32 i;
+	INT32 i, j;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (demo_extradata[i])
@@ -1312,6 +1372,11 @@ void G_WriteDemoExtraData(void)
 
 			if (demo_extradata[i] & DXD_JOINDATA)
 			{
+				for (j = 0; j < MAXAVAILABILITY; j++)
+				{
+					WRITEUINT8(demobuf.p, players[i].availabilities[i]);
+				}
+
 				WRITEUINT8(demobuf.p, (UINT8)players[i].bot);
 				if (players[i].bot)
 				{
@@ -1350,6 +1415,10 @@ void G_WriteDemoExtraData(void)
 				// Skin
 				WRITESTRINGL(demobuf.p, skins[players[i].skin].name, 16+1);
 
+				// Voice
+				WRITESTRINGL(demobuf.p, skins[players[i].skin].voices[players[i].voice_id].name, 32+1);
+
+				// Stats
 				WRITEUINT8(demobuf.p, skins[players[i].skin].kartspeed);
 				WRITEUINT8(demobuf.p, skins[players[i].skin].kartweight);
 
@@ -2055,7 +2124,7 @@ void G_GhostTicker(void)
 				{
 				default:
 				case GHC_RETURNSKIN:
-					g->mo->skin = g->oldmo.skin;
+					R_ApplySkin(g->mo, g->oldmo.skin);
 					/* FALLTHRU */
 				case GHC_NORMAL: // Go back to skin color
 					g->mo->color = g->oldmo.color;
@@ -2116,7 +2185,7 @@ void G_GhostTicker(void)
 					fmo->colorized = true;
 
 				if (zt.followflags & FZT_SKIN)
-					fmo->skin = &skins[zt.follow.skin];
+					R_ApplySkin(fmo, &skins[zt.follow.skin]);
 			}
 			if (fmo)
 			{
@@ -2395,7 +2464,7 @@ void G_ConfirmRewind(tic_t rewindtime)
 	displayplayers[2] = olddp3;
 	displayplayers[3] = olddp4;
 	R_ExecuteSetViewSize();
-	G_ResetViews();
+	G_ResetViews(true);
 
 	for (i = splitscreen; i >= 0; i--)
 		P_ResetCamera(&players[displayplayers[i]], &camera[i]);
@@ -2519,7 +2588,7 @@ void G_ReadMetalTic(mobj_t *metal)
 					follow->colorized = true;
 
 				if (followtic & FZT_SKIN)
-					follow->skin = &skins[READUINT8(metal_p)];
+					R_ApplySkin(follow, &skins[READUINT8(metal_p)]);
 			}
 			if (follow)
 			{
@@ -2777,7 +2846,7 @@ void G_RecordMetal(void)
 
 void G_BeginRecording(void)
 {
-	UINT8 i, p;
+	UINT8 i, j, p;
 	char name[MAXCOLORNAME+1];
 	player_t *player = &players[consoleplayer];
 
@@ -2933,6 +3002,9 @@ void G_BeginRecording(void)
 			// Color
 			WRITESTRINGL(demobuf.p, skincolors[player->skincolor].name, 16+1);
 
+			// Voice
+			WRITESTRINGL(demobuf.p, skins[player->skin].voices[player->voice_id].name, 32+1);
+
 			// Save follower's skin name
 			// PS: We must check for 'follower' to determine if the followerskin is valid. It's going to be 0 if we don't have a follower, but 0 is also absolutely a valid follower!
 			// Doesn't really matter if the follower mobj is valid so long as it exists in a way or another.
@@ -2958,6 +3030,11 @@ void G_BeginRecording(void)
 
 			// And mobjtype_t is best with UINT32 too...
 			WRITEUINT32(demobuf.p, player->followitem);
+
+			for (j = 0; j < MAXAVAILABILITY; j++)
+			{
+				WRITEUINT8(demobuf.p, player->availabilities[j]);
+			}
 		}
 	}
 
@@ -3353,11 +3430,11 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	{
 		if (header.cvars[i].name == NULL)
 			continue;
-		if (!strcmp(header.cvars[i].name, cv_kartspeed.name))
+		if (fastcmp(header.cvars[i].name, cv_kartspeed.name))
 		{
 			UINT8 j;
 			for (j = 0; kartspeed_cons_t[j].strvalue; j++)
-				if (!stricmp(kartspeed_cons_t[j].strvalue, header.cvars[i].value))
+				if (fasticmp(kartspeed_cons_t[j].strvalue, header.cvars[i].value))
 					pdemo->kartspeed = kartspeed_cons_t[j].value;
 		}
 	}
@@ -3394,11 +3471,13 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 			READSTRINGL(extrainfo_p, temp, 16+1);
 		pdemo->standings[count].skin = UINT16_MAX;
 		for (i = 0; i < numskins; i++)
-			if (stricmp(skins[i].name, temp) == 0)
+		{
+			if (fasticmp(skins[i].name, temp))
 			{
 				pdemo->standings[count].skin = i;
 				break;
 			}
+		}
 
 		// Color
 		if (header.demoversion <= 0x000C)
@@ -3410,7 +3489,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 			READSTRINGL(extrainfo_p, temp, 16+1);
 		pdemo->standings[count].color = SKINCOLOR_NONE;
 		for (i = 0; i < numskincolors; i++)
-			if (!stricmp(skincolors[i].name,temp))				// SRB2kart
+			if (fasticmp(skincolors[i].name,temp))				// SRB2kart
 			{
 				pdemo->standings[count].color = i;
 				break;
@@ -3757,36 +3836,38 @@ void G_DoPlayDemo(char *defdemoname)
 	{
 		demoplayer_t *plr = &header.playerdata[pnum];
 		UINT8 p = plr->playernum;
+		player_t *player = &players[p];
+
 
 		if (!playeringame[displayplayers[0]] || players[displayplayers[0]].spectator)
 			displayplayers[0] = consoleplayer = serverplayer = p;
 
 		G_AddPlayer(p, p);
-		players[p].spectator = !!(plr->flags & DEMO_SPECTATOR);
+		player->spectator = !!(plr->flags & DEMO_SPECTATOR);
 
 		if (plr->flags & DEMO_KICKSTART)
-			players[p].pflags |= PF_KICKSTARTACCEL;
+			player->pflags |= PF_KICKSTARTACCEL;
 		else
-			players[p].pflags &= ~PF_KICKSTARTACCEL;
+			player->pflags &= ~PF_KICKSTARTACCEL;
 
 		if (plr->flags & DEMO_SHRINKME)
-			players[p].pflags |= PF_SHRINKME;
+			player->pflags |= PF_SHRINKME;
 		else
-			players[p].pflags &= ~PF_SHRINKME;
+			player->pflags &= ~PF_SHRINKME;
 
-		K_UpdateShrinkCheat(&players[p]);
+		K_UpdateShrinkCheat(player);
 
-		if ((players[p].bot = !!(plr->flags & DEMO_BOT)) == true)
+		if ((player->bot = !!(plr->flags & DEMO_BOT)) == true)
 		{
-			players[p].botvars.difficulty = plr->bot.difficulty;
-			players[p].botvars.diffincrease = plr->bot.diffincrease; // needed to avoid having to duplicate logic
-			players[p].botvars.rival = plr->bot.rival;
+			player->botvars.difficulty = plr->bot.difficulty;
+			player->botvars.diffincrease = plr->bot.diffincrease; // needed to avoid having to duplicate logic
+			player->botvars.rival = plr->bot.rival;
 		}
 
 		// Name
 		strcpy(player_names[p], plr->name);
 
-		/*if (players[p].spectator)
+		/*if (player->spectator)
 		{
 			CONS_Printf("player %s is spectator at start\n", player_names[p]);
 		}*/
@@ -3796,36 +3877,58 @@ void G_DoPlayDemo(char *defdemoname)
 
 		// Color
 		for (i = 0; i < numskincolors; i++)
-			if (!stricmp(skincolors[i].name, plr->color)) // SRB2kart
+			if (fasticmp(skincolors[i].name, plr->color)) // SRB2kart
 			{
-				players[p].skincolor = i;
+				player->skincolor = i;
 				break;
 			}
+
+		// Voice
+		// We'll only assign IDs, since the actual voice assignment happens during
+		// player spawn.
+
+		const INT32 vce = R_FindIDForVoice(&skins[player->skin], plr->voice);
+
+		if (vce == MAXSKINVOICES)
+		{
+			// The above function didn't find a voice, so we'll just fall back to
+			// the skin's voice.
+			player->voice_id = 0;
+		}
+		else
+		{
+			player->voice_id = (UINT16)vce;
+		}
 
 		// Follower
 		K_SetFollowerByName(p, plr->follower);
 
 		// Follower colour
 		for (i = 0; i < numskincolors +2; i++)	// +2 because of Match and Opposite
-			if (!stricmp(Followercolor_cons_t[i].strvalue, plr->followercolor))
+			if (fasticmp(Followercolor_cons_t[i].strvalue, plr->followercolor))
 			{
-				players[p].followercolor = i;
+				player->followercolor = i;
 				break;
 			}
 
 		// Score, since Kart uses this to determine where you start on the map
-		players[p].score = plr->score;
+		player->score = plr->score;
 
 		// Power Levels
 		clientpowerlevels[p][gametype == GT_BATTLE ? PWRLV_BATTLE : PWRLV_RACE] = plr->powerlevel;
 
 		// Kart stats (set later)
 
-		if (stricmp(skins[players[p].skin].name, plr->skin) != 0)
+		if (!fasticmp(skins[player->skin].name, plr->skin))
 			FindClosestSkinForStats(p, plr->kartspeed, plr->kartweight);
 
 		// Followitem
-		players[p].followitem = plr->followitem;
+		player->followitem = plr->followitem;
+
+		for (i = 0; i < MAXAVAILABILITY; i++)
+		{
+			player->availabilities[i] = plr->availabilities[i];
+		}
 	}
 
 	// end of player read (the 0xFF marker)
@@ -3992,7 +4095,7 @@ void G_AddGhost(char *defdemoname)
 	}
 
 	for (i = 0; i < numskins; i++)
-		if (!stricmp(skins[i].name, plr->skin))
+		if (fasticmp(skins[i].name, plr->skin))
 		{
 			ghskin = &skins[i];
 			break;
@@ -4053,12 +4156,13 @@ void G_AddGhost(char *defdemoname)
 	gh->mo->tics = -1;
 
 	// Set skin
-	gh->mo->skin = gh->oldmo.skin = ghskin;
+	R_ApplySkin(&gh->oldmo, ghskin);
+	R_ApplySkin(gh->mo, gh->oldmo.skin);
 
 	// Set color
 	gh->mo->color = ((skin_t*)gh->mo->skin)->prefcolor;
 	for (i = 0; i < numskincolors; i++)
-		if (!stricmp(skincolors[i].name, plr->color))
+		if (fasticmp(skincolors[i].name, plr->color))
 		{
 			gh->mo->color = (UINT16)i;
 			break;
@@ -4362,7 +4466,10 @@ boolean G_CheckDemoStatus(void)
 
 	if (demo.recording && (modeattacking || demo.savemode != DSM_NOTSAVING))
 	{
-		G_SaveDemo();
+		if (demobuf.p)
+		{
+			G_SaveDemo();
+		}
 		return true;
 	}
 

@@ -136,7 +136,7 @@ static patch_t *kp_racefinish[6];
 static patch_t *kp_positionnum[NUMPOSNUMS][NUMPOSFRAMES];
 static patch_t *kp_winnernum[NUMPOSFRAMES];
 
-static patch_t *kp_facenum[MAXPLAYERS+1];
+patch_t *kp_facenum[MAXPLAYERS+1];
 static patch_t *kp_facehighlight[8];
 
 static patch_t *kp_nocontestminimap;
@@ -542,7 +542,9 @@ void K_LoadKartHUDGraphics(void)
 	for (i = 0; i < numkartitems; i++)
 	{
 		kartitem_t *item = &kartitems[i];
-		for (j = 0; j < 2; j++)
+
+		INT32 n = sizeof(item->graphics)/sizeof(*item->graphics);
+		for (j = 0; j < n; j++)
 		{
 			kartitemgraphics_t *graphics = &item->graphics[j];
 			for (INT32 k = 0; k < graphics->numpatches; k++)
@@ -737,6 +739,11 @@ patch_t *K_getItemAltPatch(boolean small, boolean multimode)
 {
 	UINT8 ofs = (small ? 1 : 0) + (multimode ? 2 : 0);
 	return kp_itemalt[ofs];
+}
+
+boolean K_ShowAltItemIcon(kartitemtype_e type, boolean small)
+{
+	return K_GetCachedItemPatchEx(type, small, 0, (SINT8)true) == missingpat;
 }
 
 // This version of the function was prototyped in Lua by Nev3r ... a HUGE thank you goes out to them!
@@ -1330,7 +1337,7 @@ static void K_drawKartItem(void)
 			localpatch = K_GetCachedItemPatch(stplyr->itemtype, tiny, stplyr->itemamount);
 			if (localpatch == NULL)
 				localpatch = kp_nodraw; // diagnose underflows
-			else if (K_IsKartItemAlternate(stplyr->itemtype))
+			else if (K_IsKartItemAlternate(stplyr->itemtype) && K_ShowAltItemIcon(stplyr->itemtype, tiny))
 				isalt = true;
 
 			dark = K_GetItemFlags(stplyr->itemtype) & KIF_DARKBG;
@@ -1391,15 +1398,15 @@ static void K_drawKartItem(void)
 		K_DrawItemCooldown(fx, fy, V_HUDTRANSHALF|fflags, stplyr->itemusecooldown, stplyr->itemusecooldownmax);
 
 		if (isalt)
-		{
 			V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, K_getItemAltPatch(tiny, true), colmap);
-		}
 
 		if (tiny)
+		{
 			if (flipamount) // reminder that this is for 3/4p's right end of the screen.
 				V_DrawString(fx+2, fy+31, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, va("x%d", stplyr->itemamount));
 			else
 				V_DrawString(fx+24, fy+31, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, va("x%d", stplyr->itemamount));
+		}
 		else
 		{
 			V_DrawScaledPatch(fx+28, fy+41, V_HUDTRANS|fflags, kp_itemx);
@@ -1415,13 +1422,21 @@ static void K_drawKartItem(void)
 		INT32 alpha = 0;
 		INT32 shift = tiny ? 16 : 32;
 		fixed_t shiftprog;
+		fixed_t timefracs = (stplyr->playerstate == PST_DEAD) ? 0 : R_GetTimeFrac(RTF_LEVEL);
 
 		INT32 baseitem;
 
-		V_SetClipRect((fx + 8) << FRACBITS, (fy + 8) << FRACBITS, 34 << FRACBITS, 34 << FRACBITS, V_HUDTRANS|fflags);
+		if (tiny)
+		{
+			V_SetClipRect((fx + 15) << FRACBITS, (fy + 14) << FRACBITS, 18 << FRACBITS, 18 << FRACBITS, V_HUDTRANS|fflags);
+		}
+		else
+		{
+			V_SetClipRect((fx + 8) << FRACBITS, (fy + 8) << FRACBITS, 34 << FRACBITS, 34 << FRACBITS, V_HUDTRANS|fflags);
+		}
 		for (int rouletteshift = -1; rouletteshift <= 2; rouletteshift++)
 		{
-			shiftprog = (FRACUNIT * -rouletteshift) + (FixedDiv((stplyr->itemroulette<<FRACBITS)|R_GetTimeFrac(RTF_LEVEL), animlength<<FRACBITS) % FRACUNIT);
+			shiftprog = (FRACUNIT * -rouletteshift) + (FixedDiv((stplyr->itemroulette<<FRACBITS)|timefracs, animlength<<FRACBITS) % FRACUNIT);
 			alpha = (FixedMul((abs(shiftprog) * 10), FixedDiv(hudtrans << FRACBITS, 10 << FRACBITS)) >> FRACBITS)+(10-hudtrans);
 			rfy = (fy<<FRACBITS) + shift*shiftprog;
 			if (0 > alpha) alpha = 0;
@@ -1445,7 +1460,6 @@ static void K_drawKartItem(void)
 		// draw minecraft-style cooldown
 		K_DrawItemCooldown(fx, fy, V_HUDTRANSHALF|fflags, stplyr->itemusecooldown, stplyr->itemusecooldownmax);
 
-		// TODO: Some proper check for if an alt has unique graphics
 		if (isalt)
 			V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, K_getItemAltPatch(tiny, false), colmap);
 	}
@@ -2036,7 +2050,7 @@ static void K_drawBossHealthBar(void)
 	UINT8 i = 0, barstatus = 1, randlen = 0, darken = 0;
 	const INT32 startx = BASEVIDWIDTH - 23;
 	INT32 starty = BASEVIDHEIGHT - 25;
-	INT32 rolrand = 0;
+	INT32 rolrand = 0, randtemp = 0;
 	boolean randsign = false;
 
 	if (bossinfo.barlen <= 1)
@@ -2082,7 +2096,9 @@ static void K_drawBossHealthBar(void)
 		barstatus = 2;
 	}
 
-	randlen = M_RandomKey(bossinfo.visualbar-(bossinfo.visualdiv/(2*FRACUNIT)))+1;
+	randtemp = bossinfo.visualbar-(bossinfo.visualdiv/(2*FRACUNIT));
+	if (randtemp > 0)
+		randlen = M_RandomKey(randtemp)+1;
 	randsign = M_RandomChance(FRACUNIT/2);
 
 	// Right wing.
@@ -2097,7 +2113,9 @@ static void K_drawBossHealthBar(void)
 			randlen--;
 			if (!randlen)
 			{
-				randlen = M_RandomKey(bossinfo.visualbar-(bossinfo.visualdiv/(2*FRACUNIT)))+1;
+				randtemp = bossinfo.visualbar-(bossinfo.visualdiv/(2*FRACUNIT));
+				if (randtemp > 0)
+					randlen = M_RandomKey(randtemp)+1;
 				if (barstatus > 1)
 				{
 					rolrand = M_RandomKey(barstatus)+1;
@@ -2327,7 +2345,7 @@ void K_SetScoreboardModStatus(const char *name, SINT8 active)
 	CONS_Alert(CONS_WARNING, "Server mod '%s' does not exist so status cannot be changed.\n", name);
 }
 
-#define BASEMODS 15
+#define BASEMODS 16
 static void K_DrawServerMods(INT32 x, INT32 y)
 {
 	UINT8 i, j;
@@ -2661,10 +2679,11 @@ static void K_drawKartStatsnLives(void)
 		{
 			INT32 offsetx = 0;
 			INT32 offsety = 0;
+			boolean split = r_splitscreen == 1;
 
-			if (cv_lives_xoffset.value == 0 || cv_lives_yoffset.value == 0)
+			if ((cv_lives_xoffset.value == 0 && cv_lives_yoffset.value == 0) || split)
 			{
-				if ((cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2) && !K_RingsActive())
+				if ((cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2) && !K_RingsActive() && !split)
 				{
 					offsetx = 25;
 					offsety = 15;
@@ -5696,7 +5715,7 @@ static void K_drawDistributionDebugger(void)
 
 			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetCachedItemPatch(result->type, true, 0));
 			if (result->isalt)
-				V_DrawScaledPatch(x+2, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, W_CachePatchName("K_ALTITS", PU_CACHE));
+				V_DrawScaledPatch(x+2, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_getItemAltPatch(true, false));
 			V_DrawThinString(x+11, y+31, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, roulette.forceme[i] ? va("\x85" "FRC(%d)" "\x80 ", roulette.forceme[i]) : va("%d", itemodds[i]));
 			if (result->amount > 1)
 				V_DrawString(x+24, y+31, V_SPLITSCREEN|V_ALLOWLOWERCASE|V_HUDTRANS|V_SNAPTOTOP, va("x%d", result->amount));
@@ -5763,14 +5782,12 @@ static void K_DrawWaypointDebugger(void)
 		return;
 
 	if (stplyr->bigwaypointgap)
-	{
-		V_DrawString(8, 130, 0, va("Auto Respawn Timer: %d", stplyr->bigwaypointgap));
-	}
+		V_DrawString(8, 140, 0, va("Auto Respawn Timer: %d", stplyr->bigwaypointgap));
 
-	V_DrawString(8, 140, 0, va("Current Waypoint ID: %d", K_GetWaypointID(stplyr->currentwaypoint)));
-	V_DrawString(8, 150, 0, va("Next Waypoint ID: %d", K_GetWaypointID(stplyr->nextwaypoint)));
-	V_DrawString(8, 160, 0, va("Finishline Distance: %d", stplyr->distancetofinish));
-	V_DrawString(8, 170, 0, va("Waypoint DtF: %d", stplyr->currentwaypoint ? stplyr->currentwaypoint->distancetofinish : -1));
+	V_DrawString(8, 150, 0, va("Current Waypoint ID: %d", K_GetWaypointID(stplyr->currentwaypoint)));
+	V_DrawString(8, 160, 0, va("Next Waypoint ID: %d", K_GetWaypointID(stplyr->nextwaypoint)));
+	V_DrawString(8, 170, 0, va("Finishline Distance: %d (WP %d)", stplyr->distancetofinish,
+	                        stplyr->currentwaypoint ? stplyr->currentwaypoint->distancetofinish : -1));
 }
 
 static void K_DrawClusterDebugger(void)

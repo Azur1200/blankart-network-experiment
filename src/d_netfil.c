@@ -142,6 +142,13 @@ boolean waitingforluafiletransfer = false;
 boolean waitingforluafilecommand = false;
 char luafiledir[256 + 16] = "luafiles";
 
+enum
+{
+	WILLSEND_YES,
+	WILLSEND_NO,
+	WILLSEND_TOOLARGE
+};
+
 /** Fills a serverinfo packet with information about wad files loaded.
   *
   * \todo Give this function a better name since it is in global scope.
@@ -201,11 +208,11 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 
 		// Store in the upper four bits
 		if (!cv_downloading.value)
-			filestatus += (2 << 4); // Won't send
-		else if (cv_maxsend.value == -1 || (wadfiles[i]->filesize <= (UINT32)cv_maxsend.value * 1024))
-			filestatus += (1 << 4); // Will send if requested
-		// else
-			// filestatus += (0 << 4); -- Won't send, too big
+			filestatus += (WILLSEND_NO << 4); // Won't send
+		else if (cv_maxsend.value == -1 || wadfiles[i]->filesize <= (UINT32)cv_maxsend.value * 1024)
+			filestatus += (WILLSEND_YES << 4); // Will send if requested
+		else
+			filestatus += (WILLSEND_TOOLARGE << 4); // Won't send, too big
 
 		WRITEUINT8(p, filestatus);
 
@@ -272,23 +279,24 @@ void CL_PrepareDownloadSaveGame(const char *tmpsave)
   */
 boolean CL_CheckDownloadable(void)
 {
-	UINT8 i,dlstatus = 0;
+	UINT8 i;
+	UINT8 dlstatus = DLSTATUS_OK;
 
 	for (i = 0; i < fileneedednum; i++)
 		if (fileneeded[i].status != FS_FOUND && fileneeded[i].status != FS_OPEN)
 		{
-			if (fileneeded[i].willsend == 1)
+			if (fileneeded[i].willsend == WILLSEND_YES)
 				continue;
 
-			if (fileneeded[i].willsend == 0)
-				dlstatus = 1;
-			else //if (fileneeded[i].willsend == 2)
-				dlstatus = 2;
+			if (fileneeded[i].willsend == WILLSEND_TOOLARGE)
+				dlstatus = DLSTATUS_TOOLARGE;
+			else //if (fileneeded[i].willsend == WILLSEND_NO)
+				dlstatus = DLSTATUS_WONTSEND;
 		}
 
 	// Downloading locally disabled
 	if (!dlstatus && M_CheckParm("-nodownload"))
-		dlstatus = 3;
+		dlstatus = DLSTATUS_NODOWNLOAD;
 
 	if (!dlstatus)
 		return true;
@@ -310,13 +318,13 @@ boolean CL_CheckDownloadable(void)
 
 	switch (dlstatus)
 	{
-		case 1:
+		case DLSTATUS_TOOLARGE:
 			CONS_Printf(M_GetText("Some files are larger than the server is willing to send.\n"));
 			break;
-		case 2:
+		case DLSTATUS_WONTSEND:
 			CONS_Printf(M_GetText("The server is not allowing download requests.\n"));
 			break;
-		case 3:
+		case DLSTATUS_NODOWNLOAD:
 			CONS_Printf(M_GetText("All files downloadable, but you have chosen to disable downloading locally.\n"));
 			break;
 	}
@@ -332,7 +340,7 @@ boolean CL_CheckDownloadable(void)
 static boolean CL_CanResumeDownload(fileneeded_t *file)
 {
 	return pauseddownload
-		&& !strcmp(pauseddownload->filename, file->filename) // Same name
+		&& fastcmp(pauseddownload->filename, file->filename) // Same name
 		&& pauseddownload->hash == file->hash // Same checksum
 		&& pauseddownload->fragmentsize == file->fragmentsize; // Same fragment size
 }
@@ -379,14 +387,12 @@ boolean CL_SendFileRequest(void)
 
 	for (i = 0; i < fileneedednum; i++)
 	{
-#ifdef PARANOIA
 		if (fileneeded[i].status != FS_FOUND && fileneeded[i].status != FS_OPEN
-			&& (fileneeded[i].willsend == 0 || fileneeded[i].willsend == 2))
+			&& (fileneeded[i].willsend == WILLSEND_TOOLARGE || fileneeded[i].willsend == WILLSEND_NO))
 		{
-			CONS_Printf("Direct download - attempted to download files that were not sendable\n");
+			CONS_Printf("Attempted to download files that were not sendable");
 			return false;
 		}
-#endif
 		if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_BADHASH || fileneeded[i].status == FS_FALLBACK))
 		{
 			// Error check for the first time around.
@@ -622,7 +628,7 @@ INT32 CL_CheckFiles(void)
 		for (; wadfiles[j]; j++)
 		{
 			nameonly(strcpy(wadfilename, wadfiles[j]->filename));
-			if (!stricmp(wadfilename, fileneeded[i].filename) &&
+			if (fasticmp(wadfilename, fileneeded[i].filename) &&
 				wadfiles[j]->hash == fileneeded[i].hash)
 			{
 				CONS_Debug(DBG_NETPLAY, "already loaded\n");
@@ -939,7 +945,7 @@ static boolean AddFileToSendQueue(INT32 node, const char *filename, UINT8 fileid
 	{
 		strlcpy(wadfilename, wadfiles[i]->filename, MAX_WADPATH);
 		nameonly(wadfilename);
-		if (!stricmp(wadfilename, p->id.filename))
+		if (fasticmp(wadfilename, p->id.filename))
 		{
 			// Copy file name with full path
 			strlcpy(p->id.filename, wadfiles[i]->filename, MAX_WADPATH);
@@ -1450,18 +1456,18 @@ void PT_FileFragment(SINT8 node, INT32 netconsole)
 	filename = va("%s", file->filename);
 	nameonly(filename);
 
-	if (!strcmp(filename, SRB2NAME)
-		|| !strcmp(filename, GRAPHICSNAME)
-		|| !strcmp(filename, TEXTURESNAME)
-		|| !strcmp(filename, CHARSNAME)
-		|| !strcmp(filename, MAPSNAME)
-		|| !strcmp(filename, MAINNAME)
-		|| !strcmp(filename, MAPPATCHNAME)
-		|| !strcmp(filename, BONUSCHARSNAME)
-		|| !strcmp(filename, PATCHNAME)
-		|| !strcmp(filename, SOUNDSNAME)
-		|| !strcmp(filename, MUSICNAME)
-		|| !strcmp(filename, BLANMUSICNAME)
+	if (fastcmp(filename, SRB2NAME)
+		|| fastcmp(filename, GRAPHICSNAME)
+		|| fastcmp(filename, TEXTURESNAME)
+		|| fastcmp(filename, CHARSNAME)
+		|| fastcmp(filename, MAPSNAME)
+		|| fastcmp(filename, MAINNAME)
+		|| fastcmp(filename, MAPPATCHNAME)
+		|| fastcmp(filename, BONUSCHARSNAME)
+		|| fastcmp(filename, PATCHNAME)
+		|| fastcmp(filename, SOUNDSNAME)
+		|| fastcmp(filename, MUSICNAME)
+		|| fastcmp(filename, BLANMUSICNAME)
 		)
 	{
 		I_Error("Tried to download base-game file: \"%s\"", filename);
@@ -1763,23 +1769,67 @@ filestatus_t findfile(char *filename, UINT64 wantedhash, boolean completepath)
 	filestatus_t homecheck; // store result of last file search
 	boolean badhash = false; // store whether hash was bad from either of the first two searches (if nothing was found in the third)
 
+	// see IdentifyVersion
+	// Iwads skip findfile due to passing fullpath to W_OpenWadFile
+#if 0
+	// skip for Iwads, as they wont be in there
+	if (!startupiwadcount)
+#endif
+	{
+		if (cv_addons_option.value == 3 && *cv_addons_folder.string != '\0')
+		{
+			// first, check any custom directory if specified
+			homecheck = filesearch(filename, cv_addons_folder.string, wantedhash, completepath, 10);
+
+			if (homecheck == FS_FOUND) // we found the file, so return that we have :)
+				return FS_FOUND;
+			else if (homecheck == FS_BADHASH) // file has a bad hash; move on and look for a file with the right md5
+				badhash = true;
+			// if not found at all, just move on without doing anything
+		}
+
+		// next, check "DOWNLOAD" directory
+		homecheck = filesearch(filename, "DOWNLOAD", wantedhash, completepath, 10);
+
+		if (homecheck == FS_FOUND) // we found the file, so return that we have :)
+			return FS_FOUND;
+		else if (homecheck == FS_BADHASH) // file has a bad md5; move on and look for a file with the right md5
+			badhash = true;
+		// if not found at all, just move on without doing anything
+
+		// next, check "addons" directory
+		homecheck = filesearch(filename, "addons", wantedhash, completepath, 10);
+
+		if (homecheck == FS_FOUND) // we found the file, so return that we have :)
+			return FS_FOUND;
+		else if (homecheck == FS_BADHASH) // file has a bad md5; move on and look for a file with the right md5
+			badhash = true;
+		// if not found at all, just move on without doing anything
+	}
+
 	// first, check SRB2's "home" directory
-	homecheck = filesearch(filename, srb2home, wantedhash, completepath, 10);
+	if (!fastcmp(srb2home, "."))
+	{
+		homecheck = filesearch(filename, srb2home, wantedhash, completepath, 10);
 
-	if (homecheck == FS_FOUND) // we found the file, so return that we have :)
-		return FS_FOUND;
-	else if (homecheck == FS_BADHASH) // file has a bad hash; move on and look for a file with the right hash
-		badhash = true;
-	// if not found at all, just move on without doing anything
+		if (homecheck == FS_FOUND) // we found the file, so return that we have :)
+			return FS_FOUND;
+		else if (homecheck == FS_BADHASH) // file has a bad hash; move on and look for a file with the right hash
+			badhash = true;
+		// if not found at all, just move on without doing anything
+	}
 
-	// next, check SRB2's "path" directory
-	homecheck = filesearch(filename, srb2path, wantedhash, completepath, 10);
+	if (!fastcmp(srb2home, "."))
+	{
+		// next, check SRB2's "path" directory
+		homecheck = filesearch(filename, srb2path, wantedhash, completepath, 10);
 
-	if (homecheck == FS_FOUND) // we found the file, so return that we have :)
-		return FS_FOUND;
-	else if (homecheck == FS_BADHASH) // file has a bad hash; move on and look for a file with the right hash
-		badhash = true;
-	// if not found at all, just move on without doing anything
+		if (homecheck == FS_FOUND) // we found the file, so return that we have :)
+			return FS_FOUND;
+		else if (homecheck == FS_BADHASH) // file has a bad hash; move on and look for a file with the right hash
+			badhash = true;
+		// if not found at all, just move on without doing anything
+	}
 
 	// finally check "." directory
 	homecheck = filesearch(filename, ".", wantedhash, completepath, 10);
@@ -2029,7 +2079,7 @@ CURLGetLogin (const char *url, HTTP_login ***return_prev_next)
 			( login = (*prev_next));
 			prev_next = &login->next
 	){
-		if (strcmp(login->url, url) == 0)
+		if (fastcmp(login->url, url))
 		{
 			if (return_prev_next)
 				(*return_prev_next) = prev_next;

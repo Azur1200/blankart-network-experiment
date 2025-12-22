@@ -145,7 +145,9 @@ static tic_t firstticstosend; // min of the nettics
 static tic_t tictoclear = 0; // optimize d_clearticcmd
 static tic_t maketic;
 
-static INT16 consistancy[BACKUPTICS];
+static consistancy_t consistancy[BACKUPTICS];
+
+#define CONSISTANCYDBGSIZE 4096
 
 static UINT8 player_joining = false;
 UINT8 hu_redownloadinggamestate = 0;
@@ -186,19 +188,22 @@ tic_t firstconnectattempttime = 0;
 // Must be a power of two
 #define TEXTCMD_HASH_SIZE 4
 
-typedef struct textcmdplayer_s
-{
-	INT32 playernum;
-	UINT8 cmd[MAXTEXTCMD];
-	struct textcmdplayer_s *next;
-} textcmdplayer_t;
-
 typedef struct textcmdtic_s
 {
 	tic_t tic;
-	textcmdplayer_t *playercmds[TEXTCMD_HASH_SIZE];
+	UINT8 *playercmds[MAXPLAYERS];
 	struct textcmdtic_s *next;
 } textcmdtic_t;
+
+typedef struct textcmdbuf_s textcmdbuf_t;
+
+struct textcmdbuf_s
+{
+	textcmdbuf_t *next;
+	UINT8 cmd[MAXTEXTCMD];
+};
+
+static textcmdbuf_t *textcmdbuf[MAXSPLITSCREENPLAYERS] = {NULL};
 
 static ticcmd_t playercmds[MAXPLAYERS];
 ticcmd_t netcmds[BACKUPTICS][MAXPLAYERS];
@@ -285,29 +290,63 @@ void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(UINT8 **p, INT32 playernum))
 	listnetxcmd[id] = cmd_f;
 }
 
-void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_t nparam)
+static void WriteNetXCmd(UINT8 *cmd, netxcmd_t id, const void *param, size_t nparam)
 {
-	if (((UINT16*)localtextcmd[playerid])[0]+3+nparam > MAXTEXTCMD)
-	{
-		// for future reference: if (cht_debug) != debug disabled.
-		CONS_Alert(CONS_ERROR, M_GetText("NetXCmd buffer full, cannot add netcmd %d! (size: %d, needed: %s)\n"), id, ((UINT16*)localtextcmd[playerid])[0], sizeu1(nparam));
-		return;
-	}
-
-	((UINT16*)localtextcmd[playerid])[0]++;
-	localtextcmd[playerid][((UINT16*)localtextcmd[playerid])[0] + 1] = (UINT8)id;
-
+	cmd[0]++;
+	cmd[cmd[0]] = (UINT8)id;
 	if (param && nparam)
 	{
-		memcpy(&localtextcmd[playerid][((UINT16*)localtextcmd[playerid])[0] + 2], param, nparam);
-		((UINT16*)localtextcmd[playerid])[0] = ((UINT16*)localtextcmd[playerid])[0] + (UINT8)nparam;
+		memcpy(&cmd[cmd[0]+1], param, nparam);
+		cmd[0] = (UINT8)(cmd[0] + (UINT8)nparam);
 	}
+}
+
+void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_t nparam)
+{
+	if (localtextcmd[playerid][0]+2+nparam > MAXTEXTCMD)
+	{
+		textcmdbuf_t *buf = textcmdbuf[playerid];
+
+		if (2+nparam > MAXTEXTCMD)
+		{
+			CONS_Alert(CONS_ERROR, M_GetText("packet too large to fit NetXCmd, cannot add netcmd %d! (size: %s, max: %d)\n"), id, sizeu1(2+nparam), MAXTEXTCMD);
+			return;
+		}
+
+		// for future reference: if (cv_debug) != debug disabled.
+		CONS_Alert(CONS_NOTICE, M_GetText("NetXCmd buffer full, delaying netcmd %d... (size: %d, needed: %s)\n"), id, localtextcmd[playerid][0], sizeu1(nparam));
+		if (buf == NULL)
+		{
+			textcmdbuf[playerid] = Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
+			textcmdbuf[playerid]->cmd[0] = 0;
+			textcmdbuf[playerid]->next = NULL;
+			WriteNetXCmd(textcmdbuf[playerid]->cmd, id, param, nparam);
+			return;
+		}
+
+		while (buf->next != NULL)
+			buf = buf->next;
+
+		if (buf->cmd[0]+2+nparam > MAXTEXTCMD)
+		{
+			buf->next = Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
+			buf->next->cmd[0] = 0;
+			buf->next->next = NULL;
+			WriteNetXCmd(buf->next->cmd, id, param, nparam);
+		}
+		else
+		{
+			WriteNetXCmd(buf->cmd, id, param, nparam);
+		}
+		return;
+	}
+	WriteNetXCmd(localtextcmd[playerid], id, param, nparam);
 }
 
 UINT8 GetFreeXCmdSize(UINT8 playerid)
 {
-	// -2 for the size and another -1 for the ID.
-	return (UINT8)(localtextcmd[playerid][0] - 3);
+	// -1 for the size and another -1 for the ID.
+	return (UINT8)(localtextcmd[playerid][0] - 2);
 }
 
 // Frees all textcmd memory for the specified tic
@@ -324,22 +363,13 @@ static void D_FreeTextcmd(tic_t tic)
 
 	if (textcmdtic)
 	{
-		INT32 i;
-
 		// Remove this tic from the list.
 		*tctprev = textcmdtic->next;
 
 		// Free all players.
-		for (i = 0; i < TEXTCMD_HASH_SIZE; i++)
+		for (INT32 i = 0; i < MAXPLAYERS; i++)
 		{
-			textcmdplayer_t *textcmdplayer = textcmdtic->playercmds[i];
-
-			while (textcmdplayer)
-			{
-				textcmdplayer_t *tcpnext = textcmdplayer->next;
-				Z_Free(textcmdplayer);
-				textcmdplayer = tcpnext;
-			}
+			Z_Free(textcmdtic->playercmds[i]);
 		}
 
 		// Free this tic's own memory.
@@ -356,10 +386,8 @@ static UINT8* D_GetExistingTextcmd(tic_t tic, INT32 playernum)
 	// Do we have an entry for the tic? If so, look for player.
 	if (textcmdtic)
 	{
-		textcmdplayer_t *textcmdplayer = textcmdtic->playercmds[playernum & (TEXTCMD_HASH_SIZE - 1)];
-		while (textcmdplayer && textcmdplayer->playernum != playernum) textcmdplayer = textcmdplayer->next;
-
-		if (textcmdplayer) return textcmdplayer->cmd;
+		UINT8 *cmd = textcmdtic->playercmds[playernum];
+		if (cmd) return cmd;
 	}
 
 	return NULL;
@@ -370,7 +398,6 @@ static UINT8* D_GetTextcmd(tic_t tic, INT32 playernum)
 {
 	textcmdtic_t *textcmdtic = textcmds[tic & (TEXTCMD_HASH_SIZE - 1)];
 	textcmdtic_t **tctprev = &textcmds[tic & (TEXTCMD_HASH_SIZE - 1)];
-	textcmdplayer_t *textcmdplayer, **tcpprev;
 
 	// Look for the tic.
 	while (textcmdtic && textcmdtic->tic != tic)
@@ -386,24 +413,11 @@ static UINT8* D_GetTextcmd(tic_t tic, INT32 playernum)
 		textcmdtic->tic = tic;
 	}
 
-	tcpprev = &textcmdtic->playercmds[playernum & (TEXTCMD_HASH_SIZE - 1)];
-	textcmdplayer = *tcpprev;
-
-	// Look for the player.
-	while (textcmdplayer && textcmdplayer->playernum != playernum)
-	{
-		tcpprev = &textcmdplayer->next;
-		textcmdplayer = textcmdplayer->next;
-	}
-
 	// If we don't have an entry for the player, make it.
-	if (!textcmdplayer)
-	{
-		textcmdplayer = *tcpprev = Z_Calloc(sizeof (textcmdplayer_t), PU_STATIC, NULL);
-		textcmdplayer->playernum = playernum;
-	}
+	if (!textcmdtic->playercmds[playernum])
+		textcmdtic->playercmds[playernum] = Z_Calloc(MAXTEXTCMD, PU_STATIC, NULL);
 
-	return textcmdplayer->cmd;
+	return textcmdtic->playercmds[playernum];
 }
 
 static boolean ExtraDataTicker(void)
@@ -420,9 +434,9 @@ static boolean ExtraDataTicker(void)
 			if (bufferstart)
 			{
 				UINT8 *curpos = bufferstart;
-				UINT8 *bufferend = &curpos[((UINT16*)curpos)[0]+2];
+				UINT8 *bufferend = &curpos[curpos[0]+1];
 
-				curpos += 2;
+				curpos++;
 				while (curpos < bufferend)
 				{
 					if (*curpos < MAXNETXCMD && listnetxcmd[*curpos])
@@ -559,7 +573,7 @@ void ReadLmpExtraData(UINT8 **demo_pointer, INT32 playernum)
 // end extra data function for lmps
 // -----------------------------------------------------------------
 
-static INT16 Consistancy(void);
+static INT16 Consistancy(consistancy_t *c);
 
 static void GetPackets(void);
 
@@ -698,7 +712,10 @@ static inline void CL_DrawConnectionStatus(void)
 
 			// Loading progress
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32, MENUCAPS|V_YELLOWMAP, "Checking server addons...");
-			totalfileslength = (INT32)((checkednum/(double)(fileneedednum)) * 256);
+			if (checkednum && fileneedednum)
+				totalfileslength = (INT32)((checkednum/(double)(fileneedednum)) * 256);
+			else
+				totalfileslength = 0;
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 96);
@@ -877,6 +894,9 @@ static boolean CL_SendJoin(void)
 	for (; i < MAXSPLITSCREENPLAYERS; i++)
 		strncpy(netbuffer->u.clientcfg.names[i], va("Player %c", 'A' + i), MAXPLAYERNAME);
 
+	memcpy(&netbuffer->u.clientcfg.availabilities, R_GetSkinAvailabilities(), MAXAVAILABILITY*sizeof(UINT8));
+
+
 	return HSendPacket(servernode, false, 0, sizeof (clientconfig_pak));
 }
 
@@ -957,10 +977,13 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 	netbuffer->packettype = PT_SERVERINFO;
 	netbuffer->u.serverinfo._255 = 255;
 	netbuffer->u.serverinfo.packetversion = PACKETVERSION;
-	netbuffer->u.serverinfo.version = VERSION;
-	netbuffer->u.serverinfo.subversion = SUBVERSION;
+#ifdef COMMITVERSION
 	memcpy(netbuffer->u.serverinfo.commit,
 			comprevision_abbrev_bin, GIT_SHA_ABBREV);
+#else
+	netbuffer->u.serverinfo.version = VERSION;
+	netbuffer->u.serverinfo.subversion = SUBVERSION;
+#endif
 	strncpy(netbuffer->u.serverinfo.application, SRB2APPLICATION,
 			sizeof netbuffer->u.serverinfo.application);
 	// return back the time value so client can compute their ping
@@ -1389,7 +1412,7 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 		CONS_Alert(CONS_ERROR, M_GetText("Can't delete %s\n"), tmpsave);
 	}
 
-	consistancy[gametic%BACKUPTICS] = Consistancy();
+	Consistancy(&consistancy[gametic%BACKUPTICS]);
 	CON_ToggleOff();
 
 	// Tell the server we have received and reloaded the gamestate
@@ -1436,7 +1459,8 @@ static void SendAskInfo(INT32 node)
 	if (node != 0 && node != BROADCASTADDR &&
 			cv_rendezvousserver.string[0])
 	{
-		I_NetRequestHolePunch(node);
+		if (node > 0)
+			I_NetRequestHolePunch(node);
 	}
 
 	asktime = I_GetTime();
@@ -1503,13 +1527,15 @@ static void SL_InsertServer(serverinfo_pak* info, SINT8 node)
 		if (info->packetversion != PACKETVERSION)
 			return;/* old new packet format */
 
+#ifndef COMMITVERSION
 		if (info->version != VERSION)
 			return; // Not same version.
 
 		if (info->subversion != SUBVERSION)
 			return; // Close, but no cigar.
+#endif
 
-		if (strcmp(info->application, SRB2APPLICATION))
+		if (!fastcmp(info->application, SRB2APPLICATION))
 			return;/* that's a different mod */
 
 		i = serverlistcount++;
@@ -1537,7 +1563,7 @@ void CL_QueryServerList (msg_server_t *server_list)
 		// thwart nefarious servers who lie to the MS.
 
 		/* lol bruh, that version COMES from the servers */
-		//if (strcmp(version, server_list[i].version) == 0)
+		//if (fastcmp(version, server_list[i].version))
 		{
 			INT32 node = I_NetMakeNodewPort(server_list[i].ip, server_list[i].port);
 			if (node == -1)
@@ -2224,8 +2250,10 @@ static void CL_ConnectToServer(void)
 		CONS_Printf(M_GetText("Connecting to: %s\n"), serverlist[i].info.servername);
 		gametypestr[sizeof serverlist[i].info.gametypename - 1] = '\0';
 		CONS_Printf(M_GetText("Gametype: %s\n"), gametypestr);
+#ifndef COMMITVERSION
 		CONS_Printf(M_GetText("Version: %d.%d\n"),
 		 serverlist[i].info.version, serverlist[i].info.subversion);
+#endif
 	}
 	SL_ClearServerList(servernode);
 
@@ -2577,7 +2605,7 @@ static void Command_connect(void)
 
 	{
 		// used in menu to connect to a server in the list
-		if (netgame && !stricmp(COM_Argv(1), "node"))
+		if (netgame && fasticmp(COM_Argv(1), "node"))
 		{
 			servernode = (SINT8)atoi(COM_Argv(2));
 		}
@@ -2593,7 +2621,7 @@ static void Command_connect(void)
 			netgame = true;
 			multiplayer = true;
 
-			if (!stricmp(COM_Argv(1), "any"))
+			if (fasticmp(COM_Argv(1), "any"))
 				servernode = BROADCASTADDR;
 			else if (I_NetMakeNodewPort)
 			{
@@ -2726,7 +2754,7 @@ void CL_RemovePlayer(INT32 playernum, kickreason_t reason)
 	LUA_InvalidatePlayer(&players[playernum]);
 
 	// don't look through someone's view who isn't there
-	G_ResetViews();
+	G_ResetViews(false);
 
 	K_CheckBumpers();
 	P_CheckRacers();
@@ -2816,7 +2844,7 @@ SINT8 nametonum(const char *name)
 {
 	INT32 playernum, i;
 
-	if (!strcmp(name, "0"))
+	if (fastcmp(name, "0"))
 		return 0;
 
 	playernum = (SINT8)atoi(name);
@@ -2833,7 +2861,7 @@ SINT8 nametonum(const char *name)
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++)
-		if (playeringame[i] && !stricmp(player_names[i], name))
+		if (playeringame[i] && fasticmp(player_names[i], name))
 			return (SINT8)i;
 
 	CONS_Printf(M_GetText("There is no player named \"%s\"\n"), name);
@@ -3185,7 +3213,7 @@ static void Got_KickCmd(UINT8 **p, INT32 playernum)
 			HU_AddChatText(va("\x82*%s left the game (Synch failure)", player_names[pnum]), false);
 			kickreason = KR_SYNCH;
 
-			if (M_CheckParm("-consisdump")) // Helps debugging some problems
+			if ((M_CheckParm("-consisdump")) || (cv_blamecfail.value)) // Helps debugging some problems
 			{
 				INT32 i;
 
@@ -3437,7 +3465,7 @@ consvar_t cv_discordinvites = CVAR_INIT ("discordinvites", "Everyone", CV_SAVE|C
 
 static CV_PossibleValue_t resynchattempts_cons_t[] = {{1, "MIN"}, {20, "MAX"}, {0, "No"}, {0, NULL}};
 
-consvar_t cv_resynchattempts = CVAR_INIT ("resynchattempts", "2", CV_SAVE, resynchattempts_cons_t, NULL);
+consvar_t cv_resynchattempts = CVAR_INIT ("resynchattempts", "5", CV_SAVE, resynchattempts_cons_t, NULL);
 consvar_t cv_blamecfail = CVAR_INIT ("blamecfail", "Off", CV_SAVE, CV_OnOff, NULL);
 
 // max file size to send to a player (in kilobytes)
@@ -3723,8 +3751,8 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 		return;
 	}
 
-	node = (UINT8)READUINT8(*p);
-	newplayernum = (UINT8)READUINT8(*p);
+	node = READUINT8(*p);
+	newplayernum = READUINT8(*p);
 
 	if (newplayernum+1 > doomcom->numslots)
 		doomcom->numslots = (INT16)(newplayernum+1);
@@ -3735,8 +3763,13 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 
 	READSTRINGN(*p, player_names[newplayernum], MAXPLAYERNAME);
 
-	console = (UINT8)READUINT8(*p);
-	splitscreenplayer = (UINT8)READUINT8(*p);
+	console = READUINT8(*p);
+	splitscreenplayer = READUINT8(*p);
+
+	for (i = 0; i < MAXAVAILABILITY; i++)
+	{
+		newplayer->availabilities[i] = READUINT8(*p);
+	}
 
 	G_AddPlayer(newplayernum, console);
 
@@ -3856,10 +3889,10 @@ static void Got_AddBot(UINT8 **p, INT32 playernum)
 	K_SetBot(newplayernum, skinnum, difficulty, style);
 }
 
-static boolean SV_AddWaitingPlayers(SINT8 node, const char *name, const char *name2, const char *name3, const char *name4)
+static boolean SV_AddWaitingPlayers(SINT8 node, UINT8 *availabilities, const char *name, const char *name2, const char *name3, const char *name4)
 {
-	INT32 n, newplayernum;
-	UINT8 buf[4 + MAXPLAYERNAME];
+	INT32 n, newplayernum, i;
+	UINT8 buf[4 + MAXPLAYERNAME + MAXAVAILABILITY];
 	UINT8 *buf_p = buf;
 	boolean newplayer = false;
 
@@ -3941,6 +3974,11 @@ static boolean SV_AddWaitingPlayers(SINT8 node, const char *name, const char *na
 
 			WRITEUINT8(buf_p, nodetoplayer[node]); // consoleplayer
 			WRITEUINT8(buf_p, playerpernode[node]); // splitscreen num
+
+			for (i = 0; i < MAXAVAILABILITY; i++)
+			{
+				WRITEUINT8(buf_p, availabilities[i]);
+			}
 
 			playerpernode[node]++;
 
@@ -4084,10 +4122,15 @@ boolean SV_SpawnServer(void)
 
 	// strictly speaking, i'm not convinced the following is necessary
 	// but I'm not confident enough to remove it entirely in case it breaks something
-	{
+
+	// in a listen server, this sends the local player information to the server so
+	// that the client has players replicated on the server. in dedicated, there is
+	// no local player!
+	if (!dedicated) {
+		UINT8 *availabilitiesbuffer = R_GetSkinAvailabilities();
 		SINT8 node = 0;
 		for (; node < MAXNETNODES; node++)
-			result |= SV_AddWaitingPlayers(node, cv_playername[0].zstring, cv_playername[1].zstring, cv_playername[2].zstring, cv_playername[3].zstring);
+			result |= SV_AddWaitingPlayers(node, availabilitiesbuffer, cv_playername[0].zstring, cv_playername[1].zstring, cv_playername[2].zstring, cv_playername[3].zstring);
 	}
 	return result;
 }
@@ -4104,7 +4147,16 @@ void SV_StopServer(void)
 	P_UnloadLevel();
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-		((UINT16*)localtextcmd[i])[0] = 0;
+	{
+		localtextcmd[i][0] = 0;
+
+		while (textcmdbuf[i] != NULL)
+		{
+			textcmdbuf_t *buf = textcmdbuf[i];
+			textcmdbuf[i] = textcmdbuf[i]->next;
+			Z_Free(buf);
+		}
+	}
 
 	for (i = firstticstosend; i < firstticstosend + BACKUPTICS; i++)
 		D_Clearticcmd(i);
@@ -4156,7 +4208,7 @@ static size_t TotalTextCmdPerTic(tic_t tic)
 	{
 		UINT8 *textcmd = D_GetExistingTextcmd(tic, i);
 		if ((!i || playeringame[i]) && textcmd)
-			total += 3 + ((UINT16*)textcmd)[0]; // "+2" for size and playernum
+			total += 2 + textcmd[0]; // "+2" for size and playernum
 	}
 
 	return total;
@@ -4172,6 +4224,7 @@ static void HandleConnect(SINT8 node)
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	char names[MAXSPLITSCREENPLAYERS][MAXPLAYERNAME + 1];
 	INT32 i;
+	UINT8 availabilitiesbuffer[MAXAVAILABILITY];
 
 	// Sal: Dedicated mode is INCREDIBLY hacked together.
 	// If a server filled out, then it'd overwrite the host and turn everyone into weird husks.....
@@ -4296,6 +4349,8 @@ static void HandleConnect(SINT8 node)
 			}
 		}
 
+		memcpy(availabilitiesbuffer, netbuffer->u.clientcfg.availabilities, sizeof(availabilitiesbuffer));
+
 		// client authorised to join
 		nodewaiting[node] = (UINT8)(netbuffer->u.clientcfg.localplayers - playerpernode[node]);
 		if (!nodeingame[node])
@@ -4330,7 +4385,7 @@ static void HandleConnect(SINT8 node)
 				SV_SendSaveGame(node, false); // send a complete game state
 				DEBFILE("send savegame\n");
 			}
-			SV_AddWaitingPlayers(node, names[0], names[1], names[2], names[3]);
+			SV_AddWaitingPlayers(node, availabilitiesbuffer, names[0], names[1], names[2], names[3]);
 			joindelay += cv_joindelay.value * TICRATE;
 			player_joining = true;
 		}
@@ -4710,9 +4765,11 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 			return;
 	}
 
+	consistancy_t clientconsistancy = netbuffer->u.clientpak.consistancy;
+
 	// Check player consistancy during the level
 	if (realstart <= gametic && realstart + BACKUPTICS - 1 > gametic && gamestate == GS_LEVEL
-		&& consistancy[realstart%BACKUPTICS] != SHORT(netbuffer->u.clientpak.consistancy)
+		&& consistancy[realstart%BACKUPTICS].checksum != SHORT(clientconsistancy.checksum)
 		&& !resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime()
 		&& !SV_ResendingSavegameToAnyone())
 	{
@@ -4725,21 +4782,50 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 			resendingsavegame[node] = true;
 
 			if (cv_blamecfail.value)
+			{
+				char cfailrecieved[CONSISTANCYDBGSIZE]; // This one's huge!
+				char cfailexpected[CONSISTANCYDBGSIZE];
+
+				SPrintConsistancy(&cfailrecieved[0], &clientconsistancy);
+				SPrintConsistancy(&cfailexpected[0], &consistancy[realstart%BACKUPTICS]);
+
 				CONS_Printf(M_GetText("Synch failure for player %d (%s); expected %hd, got %hd\n"),
-							netconsole+1, player_names[netconsole],
-				consistancy[realstart%BACKUPTICS],
-				SHORT(netbuffer->u.clientpak.consistancy));
+					netconsole+1, player_names[netconsole],
+					consistancy[realstart%BACKUPTICS].checksum,
+					SHORT(clientconsistancy.checksum));
+
+				// Extremely elaborate debug!
+				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
+				CONS_Printf(M_GetText("RECEIVED\n%s"), cfailrecieved);
+			}
 			DEBFILE(va("Restoring player %d (synch failure) [%update] %d!=%d\n",
-					   netconsole, realstart, consistancy[realstart%BACKUPTICS],
-			  SHORT(netbuffer->u.clientpak.consistancy)));
+				netconsole, realstart, consistancy[realstart%BACKUPTICS].checksum,
+			SHORT(clientconsistancy.checksum)));
 			return;
 		}
 		else
 		{
+			if (cv_blamecfail.value)
+			{
+				char cfailrecieved[CONSISTANCYDBGSIZE]; // This one's huge!
+				char cfailexpected[CONSISTANCYDBGSIZE];
+
+				SPrintConsistancy(&cfailrecieved[0], &clientconsistancy);
+				SPrintConsistancy(&cfailexpected[0], &consistancy[realstart%BACKUPTICS]);
+
+				CONS_Printf(M_GetText("Kicking desynching player %d (%s); expected %hd, got %hd\n"),
+					netconsole+1, player_names[netconsole],
+					consistancy[realstart%BACKUPTICS].checksum,
+					SHORT(clientconsistancy.checksum));
+
+				// Extremely elaborate debug!
+				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
+				CONS_Printf(M_GetText("RECEIVED\n%s"), cfailrecieved);
+			}
 			SendKick(netconsole, KICK_MSG_CON_FAIL);
 			DEBFILE(va("player %d kicked (synch failure) [%u] %d!=%d\n",
-					   netconsole, realstart, consistancy[realstart%BACKUPTICS],
-			  SHORT(netbuffer->u.clientpak.consistancy)));
+						netconsole, realstart, consistancy[realstart%BACKUPTICS].checksum,
+						SHORT(clientconsistancy.checksum)));
 			return;
 		}
 	}
@@ -4784,17 +4870,9 @@ static void PT_TextCmd(SINT8 node, INT32 netconsole)
 		tic_t tic = maketic;
 		UINT8 *textcmd;
 
-		UINT16 incoming_size;
-
-		{
-			UINT8 *incoming = netbuffer->u.textcmd;
-
-			incoming_size = READUINT16(incoming);
-		}
-
 		// ignore if the textcmd has a reported size of zero
 		// this shouldn't be sent at all
-		if (!incoming_size)
+		if (!netbuffer->u.textcmd[0])
 		{
 			DEBFILE(va("GetPacket: Textcmd with size 0 detected! (node %u, player %d)\n",
 					   node, netconsole));
@@ -4803,11 +4881,11 @@ static void PT_TextCmd(SINT8 node, INT32 netconsole)
 		}
 
 		// ignore if the textcmd size var is actually larger than it should be
-		// BASEPACKETSIZE + 2 (for size) + textcmd[0] should == datalength
-		if (incoming_size > (size_t)doomcom->datalength-BASEPACKETSIZE-2)
+		// BASEPACKETSIZE + 1 (for size) + textcmd[0] should == datalength
+		if (netbuffer->u.textcmd[0] > (size_t)doomcom->datalength-BASEPACKETSIZE-1)
 		{
 			DEBFILE(va("GetPacket: Bad Textcmd packet size! (expected %d, actual %s, node %u, player %d)\n",
-					   incoming_size, sizeu1((size_t)doomcom->datalength-BASEPACKETSIZE-2),
+					   netbuffer->u.textcmd[0], sizeu1((size_t)doomcom->datalength-BASEPACKETSIZE-1),
 					   node, netconsole));
 			Net_UnAcknowledgePacket(node);
 			return;
@@ -4816,12 +4894,12 @@ static void PT_TextCmd(SINT8 node, INT32 netconsole)
 		// check if tic that we are making isn't too large else we cannot send it :(
 		// doomcom->numslots+1 "+1" since doomcom->numslots can change within this time and sent time
 		j = software_MAXPACKETLENGTH
-		- (incoming_size + 3 + BASESERVERTICSSIZE
+		- (netbuffer->u.textcmd[0]+2+BASESERVERTICSSIZE
 		+ (doomcom->numslots+1)*sizeof(ticcmd_t));
 
 		// search a tic that have enougth space in the ticcmd
 		while ((textcmd = D_GetExistingTextcmd(tic, netconsole)),
-			(TotalTextCmdPerTic(tic) > j || incoming_size + (textcmd ? ((UINT16*)textcmd)[0] : 0) > MAXTEXTCMD)
+			(TotalTextCmdPerTic(tic) > j || netbuffer->u.textcmd[0] + (textcmd ? textcmd[0] : 0) > MAXTEXTCMD)
 			&& tic < firstticstosend + BACKUPTICS)
 			tic++;
 
@@ -4838,10 +4916,10 @@ static void PT_TextCmd(SINT8 node, INT32 netconsole)
 		if (!textcmd) textcmd = D_GetTextcmd(tic, netconsole);
 
 		DEBFILE(va("textcmd put in tic %u at position %d (player %d) ftts %u mk %u\n",
-				   tic, ((UINT16*)textcmd)[0]+2, netconsole, firstticstosend, maketic));
+				   tic, textcmd[0]+1, netconsole, firstticstosend, maketic));
 
-		memcpy(&textcmd[((UINT16*)textcmd)[0]+2], netbuffer->u.textcmd+2, incoming_size);
-		((UINT16*)textcmd)[0] += incoming_size;
+		memcpy(&textcmd[textcmd[0]+1], netbuffer->u.textcmd+1, netbuffer->u.textcmd[0]);
+		textcmd[0] += (UINT8)netbuffer->u.textcmd[0];
 	}
 }
 
@@ -5038,11 +5116,17 @@ static void PT_ServerTics(SINT8 node, INT32 netconsole)
 			numtxtpak = *txtpak++;
 			for (j = 0; j < numtxtpak; j++)
 			{
-				INT32 k = *txtpak++; // playernum
-				const size_t txtsize = ((UINT16*)txtpak)[0]+2;
+				INT32 playernum = *txtpak++; // playernum
+				const size_t txtsize = txtpak[0]+1;
+
+				if (playernum < 0 || playernum >= MAXPLAYERS)
+				{
+					CONS_Alert(CONS_WARNING, "Got bogus NetXCmd packet targetting player %d\n", playernum);
+					return;
+				}
 
 				if (i >= gametic) // Don't copy old net commands
-					memcpy(D_GetTextcmd(i, k), txtpak, txtsize);
+					memcpy(D_GetTextcmd(i, playernum), txtpak, txtsize);
 				txtpak += txtsize;
 			}
 		}
@@ -5318,6 +5402,124 @@ static void GetPackets(void)
 	}
 }
 
+static UINT32 GenerateConsistancySum(consistancy_t *c)
+{
+	UINT32 sum = 0;
+
+	// RNG seed
+	sum += c->rngseed;
+
+	// Player data
+	sum += c->playerpos[0];
+	sum += c->playerpos[1];
+	sum += c->itemsum;
+
+	// Object data
+	sum += c->position[0];
+	sum += c->position[1];
+	sum += c->position[2];
+
+	sum += c->momentum[0];
+	sum += c->momentum[1];
+	sum += c->momentum[2];
+
+	sum += c->mobjtype;
+	sum += c->mobjangle;
+	sum += c->mobjflags;
+	sum += c->mobjflags2;
+	sum += c->mobjeflags;
+	sum += c->mobjstate;
+	sum += c->mobjtics;
+	sum += c->mobjsprite;
+	sum += c->mobjframe;
+
+	c->checksum = (INT16)(sum & 0xFFFF);
+
+	return sum;
+}
+
+static void ResetConsistancy(consistancy_t *c)
+{
+	c->checksum = 0;
+
+	c->playerpos[0] = 0;
+	c->playerpos[1] = 0;
+
+	c->position[0] = 0;
+	c->position[1] = 0;
+	c->position[2] = 0;
+
+	c->momentum[0] = 0;
+	c->momentum[1] = 0;
+	c->momentum[2] = 0;
+
+	c->itemsum = 0; // Player item checksum
+
+	c->rngseed = 0;
+
+	// Object data checksum
+	c->mobjtype = 0;
+	c->mobjangle = 0;
+	c->mobjflags = 0;
+	c->mobjflags2 = 0;
+	c->mobjeflags = 0;
+	c->mobjstate = 0;
+	c->mobjtics = 0;
+	c->mobjsprite = 0;
+	c->mobjframe = 0;
+}
+
+// Feeds a consistancy debug print to a string.
+void SPrintConsistancy(char *out, consistancy_t *c)
+{
+	snprintf(out,
+			 CONSISTANCYDBGSIZE,
+			 "------------\nChecksum: %d\nRandomization Seed: %d\n[Player Position] X: %d, Y: %d\nItem Checksum: %d\n[Position] X: %d, Y: %d, Z: %d\n[Speed] X: %d, Y: %d, Z: %d\nObject Type: %d\nAngle: %d\n[Flags] Flags1: %d, Flags2: %d, EFlags: %d\n[Animation] State: %d, Tics %d, Sprite: %d, Frame: %d\n------------\n",
+			 c->checksum,
+			 c->rngseed,
+			 c->playerpos[0], c->playerpos[1],
+			 c->itemsum,
+			 c->position[0], c->position[1], c->position[2],
+			 c->momentum[0], c->momentum[1], c->momentum[2],
+			 c->mobjtype,
+			 c->mobjangle,
+			 c->mobjflags, c->mobjflags2, c->mobjeflags,
+			 c->mobjstate,
+			 c->mobjtics,
+			 c->mobjsprite,
+			 c->mobjframe);
+}
+
+// I'm losing my sanity fast, just do this.
+/*inline static void ConsistancyXOR(consistancy_t *c, INT32 value)
+{
+	c->playerpos[0] ^= value;
+	c->playerpos[1] ^= value;
+
+	c->itemsum ^= value; // Player item checksum
+
+	c->position[0] ^= value;
+	c->position[1] ^= value;
+	c->position[2] ^= value;
+
+	c->momentum[0] ^= value;
+	c->momentum[1] ^= value;
+	c->momentum[2] ^= value;
+
+	c->rngseed ^= value;
+
+	// Object data checksum
+	c->mobjtype ^= value;
+	c->mobjangle ^= value;
+	c->mobjflags ^= value;
+	c->mobjflags2 ^= value;
+	c->mobjeflags ^= value;
+	c->mobjstate ^= value;
+	c->mobjtics ^= value;
+	c->mobjsprite ^= value;
+	c->mobjframe ^= value;
+}*/
+
 //
 // NetUpdate
 // Builds ticcmds for console player,
@@ -5326,7 +5528,7 @@ static void GetPackets(void)
 // no more use random generator, because at very first tic isn't yet synchronized
 // Note: It is called consistAncy on purpose.
 //
-static INT16 Consistancy(void)
+static INT16 Consistancy(consistancy_t *c)
 {
 	INT32 i;
 	UINT32 ret = 0;
@@ -5337,23 +5539,39 @@ static INT16 Consistancy(void)
 
 	DEBFILE(va("TIC %u ", gametic));
 
+	if (!c)
+	{
+		// !?
+		return -1;
+	}
+
+	ResetConsistancy(c);
+
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i])
-			ret ^= 0xCCCC;
+		{
+			c->playerpos[0] ^= 0xCCCC;
+			c->playerpos[1] ^= 0xCCCC;
+			c->itemsum ^= 0xCCCC;
+		}
 		else if (!players[i].mo || gamestate != GS_LEVEL);
 		else
 		{
-			ret += players[i].mo->x;
-			ret -= players[i].mo->y;
-			ret += players[i].itemtype;
-			ret *= i+1;
+			c->playerpos[0] += players[i].mo->x;
+			c->playerpos[1] -= players[i].mo->y;
+			c->itemsum += players[i].itemtype; // powers[pw_shield]
+
+
+			c->playerpos[0] *= i+1;
+			c->playerpos[1] *= i+1;
+			c->itemsum *= i+1;
 		}
 	}
 	// I give up
 	// Coop desynching enemies is painful
 	if (gamestate == GS_LEVEL)
-		ret += P_GetRandSeed();
+		c->rngseed += P_GetRandSeed();
 
 #ifdef MOBJCONSISTANCY
 	if (gamestate == GS_LEVEL)
@@ -5367,106 +5585,108 @@ static INT16 Consistancy(void)
 
 			if (mo->flags & (MF_SPECIAL | MF_SOLID | MF_PUSHABLE | MF_BOSS | MF_MISSILE | MF_SPRING | MF_MONITOR | MF_FIRE | MF_ENEMY | MF_PAIN | MF_STICKY))
 			{
-				ret -= mo->type;
-				ret += mo->x;
-				ret -= mo->y;
-				ret += mo->z;
-				ret -= mo->momx;
-				ret += mo->momy;
-				ret -= mo->momz;
-				ret += mo->angle;
-				ret -= mo->flags;
-				ret += mo->flags2;
-				ret -= mo->eflags;
+				c->mobjtype -= mo->type;
+				c->position[0] += mo->x;
+				c->position[1] -= mo->y;
+				c->position[2] += mo->z;
+				c->momentum[0] -= mo->momx;
+				c->momentum[1] += mo->momy;
+				c->momentum[2] -= mo->momz;
+				c->mobjangle += mo->angle;
+				c->mobjflags -= mo->flags;
+				c->mobjflags2 += mo->flags2;
+				c->mobjeflags -= mo->eflags;
 				if (mo->target)
 				{
-					ret += mo->target->type;
-					ret -= mo->target->x;
-					ret += mo->target->y;
-					ret -= mo->target->z;
-					ret += mo->target->momx;
-					ret -= mo->target->momy;
-					ret += mo->target->momz;
-					ret -= mo->target->angle;
-					ret += mo->target->flags;
-					ret -= mo->target->flags2;
-					ret += mo->target->eflags;
-					ret -= mo->target->state - states;
-					ret += mo->target->tics;
-					ret -= mo->target->sprite;
-					ret += mo->target->frame;
+					c->mobjtype += mo->target->type;
+					c->position[0] -= mo->target->x;
+					c->position[1] += mo->target->y;
+					c->position[2] -= mo->target->z;
+					c->momentum[0] += mo->target->momx;
+					c->momentum[1] -= mo->target->momy;
+					c->momentum[2] += mo->target->momz;
+					c->mobjangle -= mo->target->angle;
+					c->mobjflags += mo->target->flags;
+					c->mobjflags2 -= mo->target->flags2;
+					c->mobjeflags += mo->target->eflags;
+					c->mobjstate -= mo->target->state - states;
+					c->mobjtics += mo->target->tics;
+					c->mobjsprite -= mo->target->sprite;
+					c->mobjframe += mo->target->frame;
 				}
 				else
-					ret ^= 0x3333;
+					ConsistancyXOR(c, 0x3333);
 				if (mo->tracer && mo->tracer->type != MT_OVERLAY)
 				{
-					ret += mo->tracer->type;
-					ret -= mo->tracer->x;
-					ret += mo->tracer->y;
-					ret -= mo->tracer->z;
-					ret += mo->tracer->momx;
-					ret -= mo->tracer->momy;
-					ret += mo->tracer->momz;
-					ret -= mo->tracer->angle;
-					ret += mo->tracer->flags;
-					ret -= mo->tracer->flags2;
-					ret += mo->tracer->eflags;
-					ret -= mo->tracer->state - states;
-					ret += mo->tracer->tics;
-					ret -= mo->tracer->sprite;
-					ret += mo->tracer->frame;
+					c->mobjtype += mo->tracer->type;
+					c->position[0] -= mo->tracer->x;
+					c->position[1] += mo->tracer->y;
+					c->position[2] -= mo->tracer->z;
+					c->momentum[0] += mo->tracer->momx;
+					c->momentum[1] -= mo->tracer->momy;
+					c->momentum[2] += mo->tracer->momz;
+					c->mobjangle -= mo->tracer->angle;
+					c->mobjflags += mo->tracer->flags;
+					c->mobjflags2 -= mo->tracer->flags2;
+					c->mobjeflags += mo->tracer->eflags;
+					c->mobjstate -= mo->tracer->state - states;
+					c->mobjtics += mo->tracer->tics;
+					c->mobjsprite -= mo->tracer->sprite;
+					c->mobjframe += mo->tracer->frame;
 				}
 				else
-					ret ^= 0xAAAA;
+					ConsistancyXOR(c, 0xAAAA);
 				// SRB2Kart: We use hnext & hprev very extensively
 				if (mo->hnext && mo->hnext->type != MT_OVERLAY)
 				{
-					ret += mo->hnext->type;
-					ret -= mo->hnext->x;
-					ret += mo->hnext->y;
-					ret -= mo->hnext->z;
-					ret += mo->hnext->momx;
-					ret -= mo->hnext->momy;
-					ret += mo->hnext->momz;
-					ret -= mo->hnext->angle;
-					ret += mo->hnext->flags;
-					ret -= mo->hnext->flags2;
-					ret += mo->hnext->eflags;
-					ret -= mo->hnext->state - states;
-					ret += mo->hnext->tics;
-					ret -= mo->hnext->sprite;
-					ret += mo->hnext->frame;
+					c->mobjtype += mo->hnext->type;
+					c->position[0] -= mo->hnext->x;
+					c->position[1] += mo->hnext->y;
+					c->position[2] -= mo->hnext->z;
+					c->momentum[0] += mo->hnext->momx;
+					c->momentum[1] -= mo->hnext->momy;
+					c->momentum[2] += mo->hnext->momz;
+					c->mobjangle -= mo->hnext->angle;
+					c->mobjflags += mo->hnext->flags;
+					c->mobjflags2 -= mo->hnext->flags2;
+					c->mobjeflags += mo->hnext->eflags;
+					c->mobjstate -= mo->hnext->state - states;
+					c->mobjtics += mo->hnext->tics;
+					c->mobjsprite -= mo->hnext->sprite;
+					c->mobjframe += mo->hnext->frame;
 				}
 				else
-					ret ^= 0x5555;
+					ConsistancyXOR(c, 0x5555);
 				if (mo->hprev && mo->hprev->type != MT_OVERLAY)
 				{
-					ret += mo->hprev->type;
-					ret -= mo->hprev->x;
-					ret += mo->hprev->y;
-					ret -= mo->hprev->z;
-					ret += mo->hprev->momx;
-					ret -= mo->hprev->momy;
-					ret += mo->hprev->momz;
-					ret -= mo->hprev->angle;
-					ret += mo->hprev->flags;
-					ret -= mo->hprev->flags2;
-					ret += mo->hprev->eflags;
-					ret -= mo->hprev->state - states;
-					ret += mo->hprev->tics;
-					ret -= mo->hprev->sprite;
-					ret += mo->hprev->frame;
+					c->mobjtype += mo->hprev->type;
+					c->position[0] -= mo->hprev->x;
+					c->position[1] += mo->hprev->y;
+					c->position[2] -= mo->hprev->z;
+					c->momentum[0] += mo->hprev->momx;
+					c->momentum[1] -= mo->hprev->momy;
+					c->momentum[2] += mo->hprev->momz;
+					c->mobjangle -= mo->hprev->angle;
+					c->mobjflags += mo->hprev->flags;
+					c->mobjflags2 -= mo->hprev->flags2;
+					c->mobjeflags += mo->hprev->eflags;
+					c->mobjstate -= mo->hprev->state - states;
+					c->mobjtics += mo->hprev->tics;
+					c->mobjsprite -= mo->hprev->sprite;
+					c->mobjframe += mo->hprev->frame;
 				}
 				else
-					ret ^= 0xCCCC;
-				ret -= mo->state - states;
-				ret += mo->tics;
-				ret -= mo->sprite;
-				ret += mo->frame;
+					ConsistancyXOR(c, 0xCCCC);
+				c->mobjstate -= mo->state - states;
+				c->mobjtics += mo->tics;
+				c->mobjsprite -= mo->sprite;
+				c->mobjframe += mo->frame;
 			}
 		}
 	}
 #endif
+
+	ret = GenerateConsistancySum(c);
 
 	DEBFILE(va("Consistancy = %u\n", (ret & 0xFFFF)));
 
@@ -5496,6 +5716,33 @@ static void SV_SendServerKeepAlive(void)
 			HSendPacket(n, false, 0, 0);
 		}
 	}
+}
+
+// Consistancy A gets all of Consistancy B's values.
+#define CloneConsistancy(ca, cb) \
+{ \
+	ca.checksum = cb.checksum; \
+	ca.rngseed = cb.rngseed; \
+	ca.itemsum = cb.itemsum; \
+\
+	ca.playerpos[0] = cb.playerpos[0]; \
+	ca.playerpos[1] = cb.playerpos[1]; \
+\
+	ca.position[0] = cb.position[0]; \
+	ca.position[1] = cb.position[1]; \
+	ca.position[2] = cb.position[2]; \
+	ca.momentum[0] = cb.momentum[0]; \
+	ca.momentum[1] = cb.momentum[1]; \
+	ca.momentum[2] = cb.momentum[2]; \
+	ca.mobjtype = cb.mobjtype; \
+	ca.mobjangle = cb.mobjangle; \
+	ca.mobjflags = cb.mobjflags; \
+	ca.mobjflags2 = cb.mobjflags2; \
+	ca.mobjeflags = cb.mobjeflags; \
+	ca.mobjstate = cb.mobjstate; \
+	ca.mobjtics = cb.mobjtics; \
+	ca.mobjsprite = cb.mobjsprite; \
+	ca.mobjframe = cb.mobjframe; \
 }
 
 // send the client packet to the server
@@ -5535,7 +5782,7 @@ static void CL_SendClientCmd(void)
 
 		packetsize = sizeof (clientcmd_pak);
 		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds[0][lagDelay], 1);
-		netbuffer->u.clientpak.consistancy = SHORT(consistancy[gametic % BACKUPTICS]);
+		CloneConsistancy(netbuffer->u.clientpak.consistancy, consistancy[gametic % BACKUPTICS]);
 
 		if (splitscreen) // Send a special packet with 2 cmd for splitscreen
 		{
@@ -5567,7 +5814,7 @@ static void CL_SendClientCmd(void)
 		// Send extra data if needed
 		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		{
-			if (((UINT16*)localtextcmd[i])[0])
+			if (localtextcmd[i][0])
 			{
 				switch (i)
 				{
@@ -5585,10 +5832,20 @@ static void CL_SendClientCmd(void)
 						break;
 				}
 
-				memcpy(netbuffer->u.textcmd, localtextcmd[i], ((UINT16*)localtextcmd[i])[0]+2);
+				memcpy(netbuffer->u.textcmd, localtextcmd[i], localtextcmd[i][0]+1);
 				// All extra data have been sent
-				if (HSendPacket(servernode, true, 0, ((UINT16*)localtextcmd[i])[0]+2)) // Send can fail...
-					((UINT16*)localtextcmd[i])[0] = 0;
+				if (HSendPacket(servernode, true, 0, localtextcmd[i][0]+1)) // Send can fail...
+				{
+					localtextcmd[i][0] = 0;
+
+					if (textcmdbuf[i] != NULL)
+					{
+						textcmdbuf_t *buf = textcmdbuf[i];
+						memcpy(localtextcmd[i], textcmdbuf[i]->cmd, textcmdbuf[i]->cmd[0]+1);
+						textcmdbuf[i] = textcmdbuf[i]->next;
+						Z_Free(buf);
+					}
+				}
 			}
 		}
 	}
@@ -5686,14 +5943,14 @@ static void SV_SendTics(void)
 				for (j = 0; j < MAXPLAYERS; j++)
 				{
 					UINT8 *textcmd = D_GetExistingTextcmd(i, j);
-					INT32 size = textcmd ? ((UINT16*)textcmd)[0] : 0;
+					INT32 size = textcmd ? textcmd[0] : 0;
 
 					if ((!j || playeringame[j]) && size)
 					{
 						(*ntextcmd)++;
 						WRITEUINT8(bufpos, j);
-						WRITEUINT16(bufpos, ((UINT16*)textcmd)[0]);
-						WRITEMEM(bufpos, &textcmd[2], size);
+						memcpy(bufpos, textcmd, size + 1);
+						bufpos += size + 1;
 					}
 				}
 			}
@@ -5886,7 +6143,7 @@ boolean TryRunTics(tic_t realtics)
 				}
 
 				gametic++;
-				consistancy[gametic % BACKUPTICS] = Consistancy();
+				Consistancy(&consistancy[gametic%BACKUPTICS]);
 
 				ps_tictime = I_GetPreciseTime() - ps_tictime;
 
@@ -6430,6 +6687,8 @@ rewind_t *CL_RewindToTime(tic_t time)
 
 	return rewindhead;
 }
+
+#undef CloneConsistancy
 
 void D_SHA256PasswordPass(const UINT8 *buffer, size_t len, const char *salt, UINT8 dest[static 32])
 {

@@ -38,7 +38,6 @@
 #include "p_local.h"
 #include "p_setup.h"
 #include "st_stuff.h" // hud hiding
-#include "fastcmp.h"
 #include "r_fps.h" // R_GetTimeFrac
 
 #include "lua_hud.h"
@@ -414,7 +413,8 @@ void F_IntroTicker(void)
 			// Need to use M_Random otherwise it always uses the same sound
 			INT32 rskin = M_RandomKey(numskins);
 			UINT8 rtaunt = M_RandomKey(2);
-			sfxenum_t rsound = skins[rskin].soundsid[SKSKBST1+rtaunt];
+
+			sfxenum_t rsound = skins[rskin].voices[0].boost[rtaunt];
 			S_StartSound(NULL, rsound);
 		}
 	}
@@ -443,11 +443,13 @@ void F_IntroTicker(void)
 			// Tails: NepDisk
 			// Chao: Alug
 			// Aiai: GHG
-			// Sakura: Anon
+			// Sakura: Yama
 			// Doomguy: Minenice
 			char chars[6][10] = {"tails", "chao", "aiai", "sakura", "doom"};
 			SINT8 random = M_RandomRange(0, 4);
-			sfxenum_t rsound = skins[R_SkinAvailable(chars[random])].soundsid[SKSKWIN];
+			const INT32 rskin = R_SkinAvailable(chars[random]);
+			
+			sfxenum_t rsound = skins[rskin].voices[0].win;
 			S_StartSound(NULL, sfx_flgcap);
 			S_StartSound(NULL, rsound);
 		}
@@ -894,12 +896,13 @@ const char *blancredits[] = {
 	"\"minenice\"",
 	"",
 	"\1Support Programming",
-	"\"hayaunderscore\" aka \"DeltaKaynx\"",
+	"\"hayaunderscore\" aka \"DeltaKanyx\"",
 	"\"WumboSpasm\"",
 	"",
 	"\1Item Programming",
 	"\"NepDisk\"",
 	"\"yama\"",
+	"\"minenice\"",
 	"",
 	"\1External Programming",
 	"\"Hanicef\"",
@@ -919,13 +922,14 @@ const char *blancredits[] = {
 	"\"JugadorXEI\"",
 	"\"Kimberly\"",
 	"\"Chearii\"",
-	"\"hayaunderscore\" aka \"DeltaKaynx\"",
+	"\"hayaunderscore\" aka \"DeltaKanyx\"",
 	"\"Guilmon35249vr\"",
 	"",
 	"\1Item Design",
 	"\"NepDisk\"",
 	"\"yama\"",
 	"\"GenericHeroGuy\"",
+	"\"minenice\"",
 	"",
 	"\1Design Support",
 	"\"Rim Jobless\"",
@@ -940,16 +944,19 @@ const char *blancredits[] = {
 	"\"NepDisk\"",
 	"\"Mayo\"",
 	"\"yama\"",
+	"\"minenice\"",
 	"",
 	"\1New HUD Art",
 	"\"Spee\"",
 	"\"SuperJustinBros\"",
 	"\"Chearii\"",
-	"\"hayaunderscore\" aka \"DeltaKaynx\"",
+	"\"hayaunderscore\" aka \"DeltaKanyx\"",
 	"\"Achiiro\" aka \"achiiDev\"",
 	"\"Mayo\"",
 	"\"WumboSpasm\"",
 	"\"Miguelius256\"",
+	"\"Toddoesstuff\"",
+	"\"RetroStation\"",
 	"",
 	"\1New Misc Art",
 	"\"scizor300\"",
@@ -967,10 +974,16 @@ const char *blancredits[] = {
 	"\"ArcadeStriker\"",
 	"\"Lugent\"",
 	"\"WumboSpasm\"",
+	"\"luna\"",
+	"\"Super Chris\"",
+	"\"Sunflower\" aka \"AnimeSonic\"",
+	"\"CoolThok\"",
+	"\"Phoenix\"",
 	"",
 	// Anyone who's been directly involved with getting rid of SIGSEGV
 	// culprits gets credited here.
-	"\1Super Special SIGSEGV Search and Smash Squad",
+	"\1Super Special SIGSEGV",
+	"\1Search and Smash Squad",
 	"\"NepDisk\"",
 	"\"GenericHeroGuy\"",
 	"\"yama\"",
@@ -979,6 +992,9 @@ const char *blancredits[] = {
 	"\"Toad The Fungus\"",
 	"\"SkylarDream\"", // Discovered the Cookie Country linedef from hell
 	"\"Tsuko\"",
+	"",
+	"\1\"The Mac Guy\"",
+	"\"LabrysXII\"",
 	"",
 	"\1Testing",
 	"\"NepDisk\"",

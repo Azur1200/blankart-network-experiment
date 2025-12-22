@@ -31,6 +31,15 @@ typedef enum
 
 typedef enum
 {
+	DLSTATUS_OK,
+	DLSTATUS_TOOLARGE,
+	DLSTATUS_WONTSEND,
+	DLSTATUS_NODOWNLOAD,
+	DLSTATUS_FOLDER
+} dlstatus_t;
+
+typedef enum
+{
 	FS_NOTCHECKED,
 	FS_NOTFOUND,
 	FS_FOUND,

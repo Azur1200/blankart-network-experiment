@@ -372,8 +372,11 @@ waypoint_t *K_GetSpawnWaypointForMobj(const mobj_t *mobj)
 	waypoint_t *closestwaypoint = NULL;
 	fixed_t closestdist = INT32_MAX;
 	line_t *finish = P_FindNearestLine(finishline->mobj->x, finishline->mobj->y, nullptr, 2001); // erm... NULL? thanks hanagumi hall
-	INT32 myside = P_PointOnLineSide(mobj->x, mobj->y, finish);
+	INT32 myside = finish != NULL ? P_PointOnLineSide(mobj->x, mobj->y, finish) : 0;
 	I_Assert(mobj != NULL);
+
+	if (finish == NULL)
+		CONS_Alert(CONS_WARNING, "No finish line linedef found!\n");
 
 	for (size_t i = 0; i < numwaypoints; i++)
 	{
@@ -381,7 +384,7 @@ waypoint_t *K_GetSpawnWaypointForMobj(const mobj_t *mobj)
 
 		if (!K_GetWaypointIsEnabled(checkwaypoint)
 		 || checkwaypoint == finishline
-		 || myside != P_PointOnLineSide(checkwaypoint->mobj->x, checkwaypoint->mobj->y, finish))
+		 || (finish != NULL && myside != P_PointOnLineSide(checkwaypoint->mobj->x, checkwaypoint->mobj->y, finish)))
 			continue;
 
 		fixed_t checkdist = P_AproxDistance(
@@ -512,11 +515,11 @@ waypoint_t *K_GetBestWaypointForMobj(mobj_t *const mobj, waypoint_t *const hint)
 					}
 				}
 
-				// Do not consider z height for next/prev waypoints of current waypoint.
+				// Put less weight on z height for next/prev waypoints of current waypoint.
 				// This helps the current waypoint not be behind you when you're taking a jump.
 				if (connectedToHint == true)
 				{
-					zMultiplier = 0;
+					zMultiplier = 1;
 				}
 			}
 

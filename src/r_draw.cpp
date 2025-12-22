@@ -404,7 +404,7 @@ UINT16 R_GetColorByName(const char *name)
 	if (color > 0 && color < numskincolors)
 		return color;
 	for (color = 1; color < numskincolors; color++)
-		if (!stricmp(skincolors[color].name, name))
+		if (fasticmp(skincolors[color].name, name))
 			return color;
 	return SKINCOLOR_NONE;
 }
@@ -415,7 +415,7 @@ UINT16 R_GetSuperColorByName(const char *name)
 	char *realname = static_cast<char *>(Z_Malloc(MAXCOLORNAME+1, PU_STATIC, NULL));
 	snprintf(realname, MAXCOLORNAME+1, "Super %s 1", name);
 	for (i = 1; i < numskincolors; i++)
-		if (!stricmp(skincolors[i].name, realname)) {
+		if (fasticmp(skincolors[i].name, realname)) {
 			color = i;
 			break;
 		}

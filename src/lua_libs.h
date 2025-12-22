@@ -53,6 +53,7 @@ extern lua_State *gL;
 #define META_SOUNDSID "SKIN_T*SOUNDSID"
 #define META_SKINSPRITES "SKIN_T*SPRITES"
 #define META_SKINSPRITESLIST "SKIN_T*SPRITES[]"
+#define META_SKINVOICES "SKIN_T*VOICES"
 
 #define META_VERTEX "VERTEX_T*"
 #define META_LINE "LINE_T*"
@@ -122,6 +123,16 @@ extern lua_State *gL;
 #define META_MATRIX "MATRIX_T"
 #define META_QUATERNION "QUATERNION_T"
 
+#define META_VOICE "KARTVOICE_T*"
+#define META_VOICE_ARRAY "KARTVOICE_T*[]"
+// TODO: kill this one
+#define META_VOICE_ARRAY1 "KARTVOICE_T*[1]"
+
+#define META_KARTITEM "KARTITEM_T*"
+#define META_KARTRESULT "KARTRESULT_T*"
+#define META_KARTITEMGRAPHICS "KARTITEMGRAPHICS_T*"
+#define META_BOOSTINFO "BOOSTINFO_T*"
+
 boolean luaL_checkboolean(lua_State *L, int narg);
 
 int LUA_EnumLib(lua_State *L);
@@ -147,6 +158,8 @@ int LUA_WaypointLib(lua_State *L);
 int LUA_MatrixLib(lua_State *L);
 int LUA_QuaternionLib(lua_State *L);
 int LUA_VectorLib(lua_State *L);
+int LUA_VoiceLib(lua_State* L);
+int LUA_ItemLib(lua_State* L);
 
 #ifdef __cplusplus
 } // extern "C"

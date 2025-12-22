@@ -38,6 +38,7 @@
 #include "k_waypoint.h"
 #include "k_director.h"
 #include "k_cluster.hpp"
+#include "k_itemlist.hpp"
 #include "k_items.h"
 #include "k_collide.h"
 
@@ -136,7 +137,7 @@ kartresult_t *K_GetKartResultAlt(const char *name, boolean alternate)
 {
 	for (UINT8 i = 0; i < numkartresults; i++)
 	{
-		if (!stricmp(name, kartresults[i].cvar->name) && kartresults[i].isalt == alternate)
+		if (fasticmp(name, kartresults[i].cvar->name) && kartresults[i].isalt == alternate)
 			return &kartresults[i];
 	}
 
@@ -184,6 +185,14 @@ kartitemflags_e K_GetItemFlags(kartitemtype_e itemtype)
 	return kartitems[itemtype].flags[K_IsKartItemAlternate(itemtype) ? 1 : 0];
 }
 
+kartitemequip_e K_GetItemEquipStyle(kartitemtype_e itemtype)
+{
+	if (itemtype >= numkartitems)
+		return KITEMEQUIP_NONE;
+
+	return kartitems[itemtype].equipstyle[K_IsKartItemAlternate(itemtype) ? 1 : 0];
+}
+
 UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny)
 {
 	if (type == MAXKARTITEMS)
@@ -194,10 +203,15 @@ UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny)
 	return K_GetItemFlags(type) & KIF_ANIMATED ? 2 : kartitems[type].graphics[tiny ? 1 : 0].numpatches + 1;
 }
 
-patch_t *K_GetCachedItemPatch(kartitemtype_e type, boolean tiny, UINT8 amount)
+patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, boolean tiny, UINT8 amount, SINT8 altmode)
 {
 	kartitem_t *item = &kartitems[type >= numkartresults ? 0 : type];
-	kartitemgraphics_t *graphics = &item->graphics[tiny ? 1 : 0];
+	boolean alt = altmode == -1 ? K_IsKartItemAlternate(type) : !!altmode;
+	kartitemgraphics_t *graphics = &item->graphics[(tiny ? 1 : 0) + (alt ? 2 : 0)];
+
+	// fallback if alt graphics don't exist
+	if (graphics->numpatches == 0 && altmode == -1)
+		graphics = &item->graphics[tiny ? 1 : 0];
 
 	if (graphics->numpatches == 0)
 		return missingpat;
@@ -327,6 +341,19 @@ static boolean K_DontDoubleMyItems(kartitemtype_e type, UINT8 amount)
 	    || type >= KITEM_FIRSTFREESLOT; // TODO: excludes custom items for now
 }
 
+void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags)
+{
+	player->itemflags |= flags;
+	player->equippeditem = itemtype;
+}
+
+void K_UnsetItemOut(player_t *player)
+{
+	player->itemflags &= ~(IF_ITEMOUT|IF_EGGMANOUT|IF_HOLDREADY);
+	player->bananadrag = 0;
+	player->equippeditem = KITEM_NONE;
+}
+
 static sfxenum_t resultfx[] = {
 	[KITEMBLINK_NORMAL] = sfx_itrolf,
 	[KITEMBLINK_MASHED] = sfx_itrolm,
@@ -353,6 +380,9 @@ void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, kart
 		amount *= 2;
 
 	player->itemamount = amount;
+
+	if (itemlistactive)
+		K_AddItemRollToList((INT32)(player - players), type, amount);
 }
 
 static void K_AwardPlayerResult(player_t *player, kartresult_t *result, kartitemblink_e blink)
@@ -1561,7 +1591,7 @@ static void K_DoGrowShrink(player_t *player, boolean shrinking)
 	if (shrinking)
 	{
 		// Find neighbors
-		INT32 n = K_CountNeighboringPlayers(player, ALTSHRINK_EPSILON, &(vector3_t){});
+		INT32 n = K_CountNeighboringPlayers(player, ALTSHRINK_EPSILON, &K_ClusterFilter_NoFilter, 0, &(vector3_t){});
 
 		// For every neighbor, add some iframes for a clean breakaway.
 		UINT32 iframes = BASE_IFRAMES + n * NEIGHBOR_IFRAMES;
@@ -1710,6 +1740,10 @@ static void K_DoHyudoroSteal(player_t *player)
 		player->itemamount = 1;
 		K_UnsetItemOut(player);
 
+		// Add the Sink roll to the list
+		if (itemlistactive)
+			K_AddItemRollToList((INT32)(player - players), KITEM_KITCHENSINK, 1);
+
 		// Woah this could be big, lets get the inside scoop...
 		K_DirectorForceSwitch(player - players, 1);
 		return;
@@ -1730,6 +1764,13 @@ static void K_DoHyudoroSteal(player_t *player)
 		player->itemtype = players[stealplayer].itemtype;
 		player->itemamount = players[stealplayer].itemamount;
 		K_UnsetItemOut(player);
+
+		if (itemlistactive)
+		{
+			K_AddItemRollToList((INT32)(player - players),
+					    players[stealplayer].itemtype,
+					    players[stealplayer].itemamount);
+		}
 
 		players[stealplayer].itemtype = KITEM_NONE;
 		players[stealplayer].itemamount = 0;
@@ -1929,6 +1970,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 
 			player->rocketsneakertimer = (itemtime*3);
 			player->itemamount--;
+			K_SetItemOut(player, KITEM_ROCKETSNEAKER, 0);
 			K_UpdateHnextList(player, true);
 
 			for (moloop = 0; moloop < 2; moloop++)
@@ -1965,7 +2007,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *prev = player->mo;
 
 			//K_PlayAttackTaunt(player->mo);
-			K_SetItemOut(player);
+			K_SetItemOut(player, KITEM_BANANA, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s254);
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
@@ -2001,24 +2043,93 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		}
 		break;
 	case KITEM_EGGMAN:
-		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
+		if (K_IsKartItemAlternate(KITEM_EGGMAN))
 		{
-			mobj_t *mo;
-			player->itemamount--;
-			player->itemflags |= IF_EGGMANOUT;
-			S_StartSound(player->mo, sfx_s254);
-			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EGGMANITEM_SHIELD);
-			if (mo)
+			if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 			{
-				K_FlipFromObject(mo, player->mo);
-				mo->flags |= MF_NOCLIPTHING;
-				mo->threshold = 10;
-				mo->movecount = 1;
-				mo->movedir = 1;
-				P_SetTarget(&mo->target, player->mo);
-				P_SetTarget(&player->mo->hnext, mo);
+				angle_t newangle;
+				INT32 moloop;
+				mobj_t *mo = NULL;
+				mobj_t *prev = player->mo;
+
+				//K_PlayAttackTaunt(player->mo);
+				K_SetItemOut(player, KITEM_EGGMAN, IF_ITEMOUT);
+				S_StartSound(player->mo, sfx_s3k3a);
+
+				for (moloop = 0; moloop < player->itemamount; moloop++)
+				{
+					newangle = (player->mo->angle + ANGLE_157h) + FixedAngle(((360 / player->itemamount) * moloop) << FRACBITS) + ANGLE_90;
+					mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EGGMINE_SHIELD);
+					if (!mo)
+					{
+						player->itemamount = moloop;
+						break;
+					}
+					mo->flags |= MF_NOCLIPTHING;
+					mo->angle = newangle;
+					mo->movecount = player->itemamount;
+					mo->movedir = mo->lastlook = moloop+1;
+
+					P_SetTarget(&mo->target, player->mo);
+					P_SetTarget(&mo->hprev, prev);
+					P_SetTarget(&prev->hnext, mo);
+					prev = mo;
+				}
+				K_BotResetItemConfirm(player, false);
 			}
-			K_BotResetItemConfirm(player, false);
+			else if (ATTACK_IS_DOWN && (player->itemflags & IF_ITEMOUT)) // Egg Mine Thrown
+			{
+				mobj_t *mo;
+				player->itemamount -= 1;
+	
+				if (player->throwdir == 1)
+				{
+					mo = K_ThrowKartItem(player, false, MT_EGGMINE, 1, 0);
+					mo->health = 3;
+					mo->whiteshadow = true;
+					mo->lastlook = 1;
+				}
+				else
+				{
+					mo = K_ThrowKartItem(player, true, MT_EGGMINE, 4, 0);
+					if (player->throwdir == 0)
+					{
+						mo->health = 2;
+						mo->whiteshadow = true;
+					}
+					else
+					{
+						
+						mo->health = 1;
+						mo->whiteshadow = false;
+					}
+					mo->lastlook = 1;
+				}
+				K_UpdateHnextList(player, false);
+				K_PlayAttackTaunt(player->mo);
+			}
+		}
+		else
+		{
+			if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
+			{
+				mobj_t *mo;
+				player->itemamount--;
+				K_SetItemOut(player, KITEM_EGGMAN, IF_EGGMANOUT);
+				S_StartSound(player->mo, sfx_s254);
+				mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EGGMANITEM_SHIELD);
+				if (mo)
+				{
+					K_FlipFromObject(mo, player->mo);
+					mo->flags |= MF_NOCLIPTHING;
+					mo->threshold = 10;
+					mo->movecount = 1;
+					mo->movedir = 1;
+					P_SetTarget(&mo->target, player->mo);
+					P_SetTarget(&player->mo->hnext, mo);
+				}
+				K_BotResetItemConfirm(player, false);
+			}
 		}
 		break;
 	case KITEM_ORBINAUT:
@@ -2030,7 +2141,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *prev = player->mo;
 
 			//K_PlayAttackTaunt(player->mo);
-			K_SetItemOut(player);
+			K_SetItemOut(player, KITEM_ORBINAUT, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s3k3a);
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
@@ -2073,7 +2184,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *prev = player->mo;
 
 			//K_PlayAttackTaunt(player->mo);
-			K_SetItemOut(player);
+			K_SetItemOut(player, KITEM_JAWZ, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s3k3a);
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
@@ -2113,7 +2224,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 		{
 			mobj_t *mo;
-			K_SetItemOut(player);
+			K_SetItemOut(player, KITEM_MINE, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s254);
 			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_SSMINE_SHIELD);
 			if (mo)
@@ -2364,7 +2475,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 		{
 			mobj_t *mo;
-			K_SetItemOut(player);
+			K_SetItemOut(player, KITEM_KITCHENSINK, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s254);
 			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_SINK_SHIELD);
 			if (mo)
@@ -2430,4 +2541,45 @@ void K_AltShrinkPityIncrease(player_t *player)
     shrinktime = min(INT16_MAX, shrinktime + PITY_SHRINKINCREASE_BASE + FixedMul(PITY_SHRINKINCREASE, dimin));
 
     player->growshrinktimer = ((INT16)shrinktime) * -1;
+}
+
+#undef PITY_SHRINKINCREASE_BASE
+#undef PITY_SHRINKINCREASE
+
+void K_SpawnEggMineBumpEffect(mobj_t *mo)
+{
+	mobj_t *fx = P_SpawnMobj(mo->x, mo->y, mo->z, MT_BUMP);
+	if (mo->eflags & MFE_VERTICALFLIP)
+	{
+		fx->eflags |= MFE_VERTICALFLIP;
+	}
+	else
+	{
+		fx->eflags |= ~MFE_VERTICALFLIP;
+	}
+	fx->scale = mo->scale;
+	S_StartSound(mo, sfx_cdfm15);
+}
+
+void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
+{
+	(void)source;
+	if (inflictor && (inflictor->type == MT_LANDMINE || inflictor->type == MT_EGGMINE))
+	{
+		if (tmo->player)
+		{
+			S_StartSound(tmo, sfx_bewar3);
+			K_DropItems(tmo->player);
+
+			tmo->player->itemtype = MAXKARTITEMS;	// aka KITEM_SAD
+			tmo->player->itemamount = 1;
+			
+			if (itemlistactive)
+				K_AddItemRollToList((INT32)(tmo->player - players), MAXKARTITEMS, 1);
+
+			tmo->player->itemblink = TICRATE;
+			tmo->player->itemblinkmode = KITEMBLINK_MASHED;
+			K_SetPlayerItemCooldown(tmo->player, TICRATE, false);
+		}
+	}
 }

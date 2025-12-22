@@ -75,7 +75,7 @@ void S_InitRuntimeSounds (void)
 		if (i >= sfx_freeslot0)
 		{
 			value = (i+1) - sfx_freeslot0;
-			sprintf(soundname, value < 1000 ? "fre%03d" : value < 10000 ? "fr%d" : "f%d", value);
+			sprintf(soundname, "fr%04x", value);
 			strcpy(soundnames[i], soundname);
 		}
 
@@ -86,7 +86,6 @@ void S_InitRuntimeSounds (void)
 		S_sfx[i].volume = -1;
 		S_sfx[i].data = NULL;
 		S_sfx[i].length = 0;
-		S_sfx[i].skinsound = -1;
 		S_sfx[i].usefulness = -1;
 		S_sfx[i].lumpnum = LUMPERROR;
 		//strlcpy(S_sfx[i].caption, "", 1);
@@ -94,53 +93,50 @@ void S_InitRuntimeSounds (void)
 	}
 }
 
-sfxenum_t sfxfree = sfx_freeslot0;
+sfxenum_t sfxfree = sfx_freeslot0, skinsfxfree = sfx_skinsoundslot0;
 
 // Add a new sound fx into a free sfx slot.
 //
-sfxenum_t S_AddSoundFx(const char *name, boolean singular, INT32 flags, boolean skinsound)
+sfxenum_t S_AddSoundFx(const char *name, boolean skinsound)
 {
 	sfxenum_t i;
 
 	if (skinsound)
 	{
-		for (i = sfx_skinsoundslot0; i < NUMSFX; i++)
+		if (skinsfxfree > sfx_lastskinsoundslot)
 		{
-			if (S_sfx[i].priority)
-				continue;
-			break;
+			CONS_Alert(CONS_WARNING, M_GetText("No more free skin sound slots\n"));
+			return sfx_None;
 		}
+		i = skinsfxfree++;
 	}
 	else
-		i = sfxfree;
-
-	if (i < NUMSFX)
 	{
-		strncpy(soundnames[i], name, 6);
-		S_sfx[i].singularity = singular;
-		S_sfx[i].priority = 60;
-		S_sfx[i].flags = flags;
-		S_sfx[i].volume = -1;
-		S_sfx[i].lumpnum = LUMPERROR;
-		S_sfx[i].skinsound = -1;
-		S_sfx[i].usefulness = -1;
-
-		/// \todo if precached load it here
-		S_sfx[i].data = NULL;
-
-		if (!skinsound)
-			sfxfree++;
-
-		return i;
+		if (sfxfree > sfx_lastfreeslot)
+		{
+			CONS_Alert(CONS_WARNING, M_GetText("No more free sound slots\n"));
+			return sfx_None;
+		}
+		i = sfxfree++;
 	}
-	CONS_Alert(CONS_WARNING, M_GetText("No more free sound slots\n"));
-	return 0;
+
+	strncpy(soundnames[i], name, 6);
+	S_sfx[i].singularity = false;
+	S_sfx[i].priority = 60;
+	S_sfx[i].flags = 0;
+	S_sfx[i].volume = -1;
+	S_sfx[i].lumpnum = LUMPERROR;
+	S_sfx[i].usefulness = -1;
+
+	/// \todo if precached load it here
+	S_sfx[i].data = NULL;
+
+	return i;
 }
 
 void S_RemoveSoundFx(sfxenum_t id)
 {
-	if (id >= sfx_freeslot0 && id <= sfx_lastskinsoundslot
-		&& S_sfx[id].priority != 0)
+	if (id >= sfx_freeslot0 && id < NUMSFX && S_sfx[id].priority != 0)
 	{
 		S_sfx[id].lumpnum = LUMPERROR;
 		I_FreeSfx(&S_sfx[id]);

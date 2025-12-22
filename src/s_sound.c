@@ -28,7 +28,6 @@
 #include "d_netfil.h"
 #include "r_sky.h" // skyflatnum
 #include "p_local.h" // camera info
-#include "fastcmp.h"
 #include "m_misc.h" // for tunes command
 #include "m_cond.h" // for conditionsets
 #include "lua_hook.h" // MusicChange hook
@@ -36,6 +35,7 @@
 #include "byteptr.h"
 #include "v_video.h"
 #include "m_menu.h" // M_ChangeMenuMusic
+#include "k_grandprix.h" // grandprixinfo
 
 #ifdef HW3SOUND
 // 3D Sound Interface
@@ -48,8 +48,6 @@ CV_PossibleValue_t soundvolume_cons_t[] = {{0, "MIN"}, {MAX_VOLUME, "MAX"}, {0, 
 static void SetChannelsNum(void);
 static void Command_Tunes_f(void);
 static void Command_RestartAudio_f(void);
-static void Command_PlaySound(void);
-static void Got_PlaySound(UINT8 **p, INT32 playernum);
 
 // Sound system toggles
 static void GameSounds_OnChange(void);
@@ -267,8 +265,6 @@ void S_RegisterSoundStuff(void)
 
 	COM_AddCommand("tunes", Command_Tunes_f);
 	COM_AddCommand("restartaudio", Command_RestartAudio_f);
-	COM_AddCommand("playsound", Command_PlaySound);
-	RegisterNetXCmd(XD_PLAYSOUND, Got_PlaySound);
 }
 
 static void SetChannelsNum(void)
@@ -603,18 +599,19 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		return;
 	}
 
+	if (origin && sfx_id >= sfx_kwin && sfx_id <= sfx_kgloat)
+	{
+		// legacy skinsound remapping
+		kartvoice_t *cur_voice = P_GetMobjVoice(origin);
+		if (cur_voice != NULL)
+			sfx_id = R_GetLegacySkinSound(cur_voice, sfx_id);
+	}
+
 	// check for bogus sound #
 	I_Assert(sfx_id >= 1);
 	I_Assert(sfx_id < NUMSFX);
 
 	sfx = &S_sfx[sfx_id];
-
-	if (sfx->skinsound != -1 && origin && origin->skin)
-	{
-		// redirect player sound to the sound in the skin table
-		sfx_id = ((skin_t *)origin->skin)->soundsid[sfx->skinsound];
-		sfx = &S_sfx[sfx_id];
-	}
 
 	// Initialize sound parameters
 	pitch = NORM_PITCH;
@@ -855,93 +852,95 @@ void S_UpdateSounds(void)
 	I_UpdateMumble(players[consoleplayer].mo, listener[0]);
 #endif
 
+notinlevel:
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
 		c = &channels[cnum];
 
-		if (c->sfxinfo)
+		if (c->sfxinfo == NULL)
+			continue;
+
+		// if channel is allocated but sound has stopped, free it
+		if (!I_SoundIsPlaying(c->handle))
 		{
-			if (I_SoundIsPlaying(c->handle))
+			S_StopChannel(cnum);
+			continue;
+		}
+
+		if (gamestate != GS_LEVEL || c->origin == NULL)
+			continue;
+
+		// check non-local sounds for distance clipping
+		//  or modify their params
+		volume = c->volume; // 8 bits internal volume precision
+		pitch = NORM_PITCH;
+		sep = NORM_SEP;
+		boolean itsUs = false;
+
+		for (i = r_splitscreen; i >= 0; i--)
+		{
+			if (camera[i].freecam)
+				continue;
+
+			if (c->origin != listenmobj[i])
+				continue;
+
+			itsUs = true;
+		}
+
+		if (P_MobjWasRemoved(c->origin))
+		{
+			// origin was removed, stop the music
+			S_StopChannel(cnum);
+		}
+		else if (itsUs == false)
+		{
+			const mobj_t *origin = c->origin;
+
+			i = 0;
+
+			if (r_splitscreen > 0)
 			{
-				// initialize parameters
-				volume = c->volume; // 8 bits internal volume precision
-				pitch = NORM_PITCH;
-				sep = NORM_SEP;
+				fixed_t recdist = INT32_MAX;
+				UINT8 j = 0;
 
-				// check non-local sounds for distance clipping
-				//  or modify their params
-				if (c->origin)
+				for (; j <= r_splitscreen; j++)
 				{
-					boolean itsUs = false;
+					fixed_t thisdist = INT32_MAX;
 
-					for (i = r_splitscreen; i >= 0; i--)
+					if (!listenmobj[j])
 					{
-						if (camera[i].freecam)
-							continue;
-
-						if (c->origin != listenmobj[i])
-							continue;
-
-						itsUs = true;
+						continue;
 					}
 
-					if (itsUs == false)
+					thisdist = P_AproxDistance(listener[j].x - origin->x, listener[j].y - origin->y);
+
+					if (thisdist >= recdist)
 					{
-						const mobj_t *origin = c->origin;
-
-						i = 0;
-
-						if (r_splitscreen > 0)
-						{
-							fixed_t recdist = INT32_MAX;
-							UINT8 j = 0;
-
-							for (; j <= r_splitscreen; j++)
-							{
-								fixed_t thisdist = INT32_MAX;
-
-								if (!listenmobj[j])
-								{
-									continue;
-								}
-
-								thisdist = P_AproxDistance(listener[j].x - origin->x, listener[j].y - origin->y);
-
-								if (thisdist >= recdist)
-								{
-									continue;
-								}
-
-								recdist = thisdist;
-								i = j;
-							}
-						}
-
-						if (listenmobj[i])
-						{
-							audible = S_AdjustSoundParams(
-								listenmobj[i], c->origin,
-								&volume, &sep, &pitch,
-								c->sfxinfo
-							);
-						}
-
-						if (audible)
-							I_UpdateSoundParams(c->handle, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch);
-						else
-							S_StopChannel(cnum);
+						continue;
 					}
+
+					recdist = thisdist;
+					i = j;
 				}
 			}
-			else
+
+			if (listenmobj[i])
 			{
-				// if channel is allocated but sound has stopped, free it
-				S_StopChannel(cnum);
+				audible = S_AdjustSoundParams(
+					listenmobj[i], c->origin,
+					&volume, &sep, &pitch,
+					c->sfxinfo
+				);
 			}
+
+			if (audible)
+				I_UpdateSoundParams(c->handle, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch);
+			else
+				S_StopChannel(cnum);
 		}
 	}
 
-notinlevel:
 	I_UpdateSound();
 }
 
@@ -1248,7 +1247,7 @@ void S_StartSoundName(void *mo, const char *soundname)
 	{
 		if (!S_sfx[i].name)
 			continue;
-		if (!stricmp(S_sfx[i].name, soundname))
+		if (fasticmp(S_sfx[i].name, soundname))
 		{
 			soundnum = i;
 			break;
@@ -1274,7 +1273,7 @@ void S_StartSoundName(void *mo, const char *soundname)
 			return;
 		}
 
-		soundnum = S_AddSoundFx(soundname, false, 0, false);
+		soundnum = S_AddSoundFx(soundname, false);
 		newsounds[i] = soundnum;
 	}
 
@@ -1367,7 +1366,7 @@ musicdef_t *S_FindMusicDef(const char *name, UINT8 *i)
 			if (hash != def->hash[*i])
 				continue;
 
-			if (stricmp(def->name[*i], name))
+			if (!fasticmp(def->name[*i], name))
 				continue;
 
 			return def;
@@ -1414,7 +1413,7 @@ ReadMusicDefFields
 	char *value;
 	char *textline;
 
-	if (!stricmp(stoken, "lump"))
+	if (fasticmp(stoken, "lump"))
 	{
 		value = strtok(NULL, " ,");
 		if (!value)
@@ -1496,41 +1495,41 @@ ReadMusicDefFields
 
 			textline = value;
 
-			if (!stricmp(stoken, "title"))
+			if (fasticmp(stoken, "title"))
 			{
 				Z_Free(def->title);
 				def->title = Z_StrDup(textline);
 				def->legacy = false;
 			}
-			else if (!stricmp(stoken, "author"))
+			else if (fasticmp(stoken, "author"))
 			{
 				Z_Free(def->author);
 				def->author = Z_StrDup(textline);
 				def->legacy = false;
 			}
-			else if (!stricmp(stoken, "source"))
+			else if (fasticmp(stoken, "source"))
 			{
 				Z_Free(def->source);
 				def->source = Z_StrDup(textline);
 			}
-			else if (!stricmp(stoken, "originalcomposers"))
+			else if (fasticmp(stoken, "originalcomposers"))
 			{
 				Z_Free(def->composers);
 				def->composers = Z_StrDup(textline);
 				def->legacy = false;
 			}
-			else if (!stricmp(stoken, "volume"))
+			else if (fasticmp(stoken, "volume"))
 			{
 				def->volume = atoi(textline);
 				def->legacy = false;
 			}
-			else if (!stricmp(stoken, "contentidunsafe"))
+			else if (fasticmp(stoken, "contentidunsafe"))
 			{
 				textline[0] = toupper(textline[0]);
 				def->contentidunsafe = (textline[0] == 'Y' || textline[0] == 'T' || textline[0] == '1');
 				def->legacy = false;
 			}
-			else if (!stricmp(stoken, "usage"))
+			else if (fasticmp(stoken, "usage"))
 			{
 				Z_Free(def->usage);
 				def->usage = Z_StrDup(textline);
@@ -1669,7 +1668,7 @@ void S_InitMusicDefs(void)
 	for (i = 0; i < numwadfiles; i++)
 	{
 		nameonly(tempname = va("%s", wadfiles[i]->filename));
-		if (wadfiles[i]->filename && !stricmp(tempname, MUSICNAME))
+		if (wadfiles[i]->filename && fasticmp(tempname, MUSICNAME))
 		{
 			// Awful hack but what can you do?
 			continue;
@@ -2668,7 +2667,7 @@ void S_InitLevelMusic(boolean fromnetsave)
 
 	S_StopMusic(); // Starting ambience should always be restarted, if playing.
 
-	S_ChangeMusicEx((encoremode ? "estart" : "kstart"), 0, false, mapmusposition, 0, 0);
+	S_ChangeMusicEx(((grandprixinfo.roundnum > 0) ? "gpstrt" : (encoremode ? "estart" : "kstart")), 0, false, mapmusposition, 0, 0);
 
 	S_ResetMusicStack();
 	music_stack_noposition = false;
@@ -2813,71 +2812,6 @@ static void Command_RestartAudio_f(void)
 		P_RestoreMusic(&players[consoleplayer]);
 	else
 		M_ChangeMenuMusic();
-}
-
-static void Command_PlaySound(void)
-{
-	const char *sound;
-	const size_t argc = COM_Argc();
-	sfxenum_t sfx = NUMSFX;
-	UINT8 buf[4];
-	UINT8 *buf_p = buf;
-
-	if (argc < 2)
-	{
-		CONS_Printf("playsound <name/num>: Plays a sound effect for the entire server.\n");
-		return;
-	}
-
-	if (client && !IsPlayerAdmin(consoleplayer))
-	{
-		CONS_Printf("This can only be used by the server host.\n");
-		return;
-	}
-
-	sound = COM_Argv(1);
-	if (*sound >= '0' && *sound <= '9')
-	{
-		sfx = atoi(sound);
-	}
-	else
-	{
-		for (sfx = 0; sfx < sfxfree; sfx++)
-		{
-			if (S_sfx[sfx].name && fasticmp(sound, S_sfx[sfx].name))
-				break;
-		}
-	}
-
-	if (sfx < 0 || sfx >= NUMSFX)
-	{
-		CONS_Printf("Could not find sound effect named \"sfx_%s\".\n", sound);
-		return;
-	}
-
-	WRITEINT32(buf_p, sfx);
-	SendNetXCmd(XD_PLAYSOUND, buf, buf_p - buf);
-}
-
-static void Got_PlaySound(UINT8 **cp, INT32 playernum)
-{
-	INT32 sound_id = READINT32(*cp);
-
-	if (playernum != serverplayer && !IsPlayerAdmin(playernum)) // hacked client, or disasterous bug
-	{
-		CONS_Alert(CONS_WARNING, M_GetText("Illegal playsound received from %s (serverplayer is %s)\n"), player_names[playernum], player_names[serverplayer]);
-		if (server)
-			SendKick(playernum, KICK_MSG_CON_FAIL);
-		return;
-	}
-
-	if (sound_id < 0 || sound_id >= NUMSFX)
-	{
-		// bad sound effect, ignore
-		return;
-	}
-
-	S_StartSound(NULL, sound_id);
 }
 
 void GameSounds_OnChange(void)

@@ -69,6 +69,7 @@
 #include "g_party.h"
 #include "k_specialstage.h"
 #include "k_items.h"
+#include "k_itemlist.hpp"
 
 #define CV_RESTRICT CV_NETVAR
 
@@ -142,6 +143,11 @@ static void Followercolor2_OnChange(void);
 static void Followercolor3_OnChange(void);
 static void Followercolor4_OnChange(void);
 
+static void Voice_OnChange(void);
+static void Voice2_OnChange(void);
+static void Voice3_OnChange(void);
+static void Voice4_OnChange(void);
+
 static void Color_OnChange(void);
 static void Color2_OnChange(void);
 static void Color3_OnChange(void);
@@ -164,11 +170,13 @@ static void KartSlopeBoost_OnChange(void);
 static void KartDrafting_OnChange(void);
 static void KartAirDrop_OnChange(void);
 static void KartAirThrust_OnChange(void);
+static void KartWaterSkipLock_OnChange(void);
 static void KartItemLitter_OnChange(void);
 static void KartItemPush_OnChange(void);
 static void KartAntiBump_OnChange(void);
 static void KartItemBreaker_OnChange(void);
 static void KartBumpSpark_OnChange(void);
+static void KartItemList_OnChange(void);
 
 static void Schedule_OnChange(void);
 
@@ -194,6 +202,7 @@ static void Command_LeaveParty_f(void);
 static void Command_Addfilelocal(void);
 static void Command_Addfile(void);
 static void Command_ListWADS_f(void);
+static void Command_LocateLump_f(void);
 static void Command_ListDoomednums_f(void);
 static void Command_RunSOC(void);
 static void Command_Pause(void);
@@ -202,6 +211,8 @@ static void Command_Respawn(void);
 static void Command_Respawn2(void);
 static void Command_Respawn3(void);
 static void Command_Respawn4(void);
+
+static void Command_ReplayMarker(void);
 
 static void Command_Version_f(void);
 #ifdef UPDATE_ALERT
@@ -244,6 +255,7 @@ static void Command_Isgamemodified_f(void);
 static void Command_Cheats_f(void);
 
 static void Command_ListSkins(void);
+static void Command_ListVoices(void);
 
 #ifdef _DEBUG
 static void Command_Togglemodified_f(void);
@@ -257,6 +269,10 @@ static void Command_Schedule_Clear(void);
 static void Command_Schedule_List(void);
 
 static void Command_Automate_Set(void);
+
+static void Command_PlaySound(void);
+
+static void Got_PlaySound(UINT8 **cp, INT32 playernum);
 
 // =========================================================================
 //                           CLIENT VARIABLES
@@ -345,6 +361,15 @@ consvar_t cv_followercolor[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("followercolor4", "Default", CV_SAVE|CV_CALL|CV_NOINIT, Followercolor_cons_t, Followercolor4_OnChange)
 };
 
+// player's voices...also, uh, saved.
+consvar_t cv_voice[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("voice", "None", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Voice_OnChange),
+	CVAR_INIT ("voice2", "None", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Voice2_OnChange),
+	CVAR_INIT ("voice3", "None", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Voice3_OnChange),
+	CVAR_INIT ("voice4", "None", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Voice4_OnChange)
+};
+
+
 consvar_t cv_skipmapcheck = CVAR_INIT ("skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL);
 
 consvar_t cv_usemouse = CVAR_INIT ("use_mouse", "Off", CV_SAVE|CV_CALL,usemouse_cons_t, I_StartupMouse);
@@ -384,6 +409,7 @@ consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS] = { //Alam: Dummy for save
 #endif
 
 // SRB2kart
+consvar_t cv_lastserver = CVAR_INIT ("lastserver", "", CV_SAVE, NULL, NULL);
 static CV_PossibleValue_t kartminimap_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
 consvar_t cv_kartminimap = CVAR_INIT ("kartminimap", "4", CV_SAVE, kartminimap_cons_t, NULL);
 consvar_t cv_kartcheck = CVAR_INIT ("kartcheck", "Yes", CV_SAVE, CV_YesNo, NULL);
@@ -458,48 +484,64 @@ consvar_t cv_kartstacking_sneaker_normalspeedboost = CVAR_INIT ("vanillaboost_sn
 consvar_t cv_kartstacking_sneaker_hardspeedboost = CVAR_INIT ("vanillaboost_sneaker_hardspeedboost", "0.2756", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_sneaker_expertspeedboost = CVAR_INIT ("vanillaboost_sneaker_expertspeedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_sneaker_accelboost = CVAR_INIT ("vanillaboost_sneaker_accelboost", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_sneaker_handleboost = CVAR_INIT ("vanillaboost_sneaker_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_sneaker_maxgrade = CVAR_INIT ("vanillaboost_sneaker_maxgrade", "3", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Natural, NULL);
 consvar_t cv_kartstacking_sneaker_stackable = CVAR_INIT ("vanillaboost_sneaker_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 consvar_t cv_kartstacking_panel_separate = CVAR_INIT ("vanillaboost_panel_separate", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 consvar_t cv_kartstacking_panel_maxgrade = CVAR_INIT ("vanillaboost_panel_maxgrade", "2", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Natural, NULL);
 
+//
+// Invincibility
+//
 
-consvar_t cv_kartstacking_invincibility_legacyspeedboost = CVAR_INIT ("vanillaboost_invincibility_legacyspeedboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_legacyaccelboost = CVAR_INIT ("vanillaboost_invincibility_legacyaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_alternatespeedboost = CVAR_INIT ("vanillaboost_invincibility_alternatespeedboost", "0.68", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+// Classic boosts
+consvar_t cv_kartstacking_invincibility_classicspeedboost = CVAR_INIT ("vanillaboost_invincibility_classicspeedboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_classicaccelboost = CVAR_INIT ("vanillaboost_invincibility_classicaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_classichandleboost = CVAR_INIT ("vanillaboost_invincibility_classichandleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+// Alternate boosts
+consvar_t cv_kartstacking_invincibility_alternatespeedboost = CVAR_INIT ("vanillaboost_invincibility_alternatespeedboost", "0.67", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_alternateaccelboost = CVAR_INIT ("vanillaboost_invincibility_alternateaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_alternatehandleboost = CVAR_INIT ("vanillaboost_invincibility_alternatehandleboost", "0.75", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_invincibility_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_grow_accelboost = CVAR_INIT ("vanillaboost_grow_accelboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_grow_handleboost = CVAR_INIT ("vanillaboost_grow_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_grow_stackable = CVAR_INIT ("vanillaboost_grow_stackable", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_altshrink_speedboost = CVAR_INIT ("vanillaboost_altshrink_speedboost", "0.50", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_altshrink_accelboost = CVAR_INIT ("vanillaboost_altshrink_accelboost", "0.15", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_altshrink_handleboost = CVAR_INIT ("vanillaboost_altshrink_handleboost", "0.45", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_altshrink_stackable = CVAR_INIT ("vanillaboost_altshrink_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_bubble_speedboost = CVAR_INIT ("vanillaboost_bubble_speedboost", "0.35", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_bubble_accelboost = CVAR_INIT ("vanillaboost_bubble_accelboost", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_bubble_handleboost = CVAR_INIT ("vanillaboost_bubble_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_bubble_stackable = CVAR_INIT ("vanillaboost_bubble_stackable", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_flame_speedval = CVAR_INIT ("vanillaboost_flame_speedval", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_flame_accelboost = CVAR_INIT ("vanillaboost_flame_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_flame_handleboost = CVAR_INIT ("vanillaboost_flame_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_flame_stackable = CVAR_INIT ("vanillaboost_flame_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_start_speedboost = CVAR_INIT ("vanillaboost_start_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_start_accelboost = CVAR_INIT ("vanillaboost_start_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_start_handleboost = CVAR_INIT ("vanillaboost_start_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_start_stackable = CVAR_INIT ("vanillaboost_start_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_walltransfer_speedboost = CVAR_INIT ("vanillaboost_walltransfer_speedboost", "0.10", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_walltransfer_accelboost = CVAR_INIT ("vanillaboost_walltransfer_accelboost", "5.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_walltransfer_handleboost = CVAR_INIT ("vanillaboost_walltransfer_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_walltransfer_stackable = CVAR_INIT ("vanillaboost_walltransfer_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_drift_speedboost = CVAR_INIT ("vanillaboost_drift_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_drift_accelboost = CVAR_INIT ("vanillaboost_drift_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_drift_handleboost = CVAR_INIT ("vanillaboost_drift_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_drift_stackable = CVAR_INIT ("vanillaboost_drift_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_ring_speedboost = CVAR_INIT ("vanillaboost_ring_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_ring_accelboost = CVAR_INIT ("vanillaboost_ring_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_ring_handleboost = CVAR_INIT ("vanillaboost_ring_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_ring_stackable = CVAR_INIT ("vanillaboost_ring_stackable", "On", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_slope_decay = CVAR_INIT ("vanillaboost_slope_decay", "0.004", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
@@ -554,17 +596,21 @@ consvar_t cv_kartdrafting_basedistance = CVAR_INIT ("kartdrafting_basedistance",
 
 consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartAirDrop_OnChange);
 
-consvar_t cv_kartairthrust = CVAR_INIT ("kartairthrust", "Off", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_OnOff, KartAirThrust_OnChange);
+consvar_t cv_kartairthrust = CVAR_INIT ("kartairthrust", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartAirThrust_OnChange);
 consvar_t cv_kartairthrust_reductionrate = CVAR_INIT ("kartairthrust_reductionrate", "0.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power1 = CVAR_INIT ("kartairthrust_power1", "0.2", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power2 = CVAR_INIT ("kartairthrust_power2", "0.35", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power3 = CVAR_INIT ("kartairthrust_power3", "0.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power4 = CVAR_INIT ("kartairthrust_power4", "0.75", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 
+consvar_t cv_kartwaterskiplock = CVAR_INIT ("kartwaterskiplock", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartWaterSkipLock_OnChange);
+
 consvar_t cv_kartitemlitter = CVAR_INIT ("kartitemlitter", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemLitter_OnChange);
 consvar_t cv_kartitempush = CVAR_INIT ("kartitempush", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemPush_OnChange);
 
 consvar_t cv_kartforcelegacyodds = CVAR_INIT ("kartforcelegacyodds", "Off", CV_NETVAR, CV_OnOff, NULL);
+
+consvar_t cv_handleboostslip = CVAR_INIT ("karthandleboostsliptide", "Off", CV_NETVAR, CV_OnOff, NULL);
 
 #define ANTIBUMP_MAX (UINT32_MAX / TICRATE)
 static CV_PossibleValue_t antibump_cons_t[] = {{0, "MIN"}, {ANTIBUMP_MAX, "MAX"}, {0, NULL}};
@@ -579,20 +625,26 @@ consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "1050", CV_NE
 
 // SPB distance
 static CV_PossibleValue_t spbdist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "4432", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
-consvar_t cv_kartlegacyspbdist = CVAR_INIT ("kartlegacyspbdist", "2216", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
+consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "5648", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
+consvar_t cv_kartlegacyspbdist = CVAR_INIT ("kartlegacyspbdist", "3324", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
 #undef MAXODDSDIST
 
 // SPB Rush toggle; toggles on/off the more aggressive "pressure" odds when an SPB is active
 consvar_t cv_kartspbrush = CVAR_INIT ("kartspbrush", "On", CV_NETVAR, CV_OnOff, NULL);
 
+consvar_t cv_itemlist = CVAR_INIT ("kartitemlist", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemList_OnChange);
+
 // Time limit for Alt. Shrink
 static CV_PossibleValue_t altshrinktime_cons_t[] = {{0, "MIN"}, {(INT16_MAX / TICRATE), "MAX"}, {0, NULL}};
 consvar_t cv_kartaltshrinktime = CVAR_INIT ("kartaltshrinktime", "14", CV_NETVAR|CV_CHEAT|CV_GUARD, altshrinktime_cons_t, NULL);
 
+// Toggle Full or Standard Invincibility music
+static CV_PossibleValue_t kartinvintheme_cons_t[] = {{0, "Standard"}, {1, "Full"}, {0, NULL}};
+consvar_t cv_kartinvintheme = CVAR_INIT ("kartinvintheme", "Standard", CV_SAVE, kartinvintheme_cons_t, NULL);
+
 // How far the player must be from the cluster to begin frequently rolling Invincibility.
 static CV_PossibleValue_t invindist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "8400", CV_NETVAR|CV_CHEAT|CV_GUARD, invindist_cons_t, NULL);
+consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "6800", CV_NETVAR|CV_CHEAT|CV_GUARD, invindist_cons_t, NULL);
 
 consvar_t cv_kartinvindistmul = CVAR_INIT ("kartinvindistmul", "0.54", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
@@ -607,6 +659,14 @@ consvar_t cv_kartbubble_boost_allow = CVAR_INIT ("kartbubble_boost_allow", "On",
 consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "Off", CV_NETVAR, CV_OnOff, NULL);
 // we want this to be default now apparently
 consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "On", CV_NETVAR, CV_OnOff, NULL);
+
+// "Arrow Bullet": above a certain speed threshold, an aura in the shape of the Shrink arrow
+// covers you, signaling protection from (most) items and players.
+// Default threshold percentage is currently 166%.
+consvar_t cv_kartaltshrink_arrowbullet = CVAR_INIT ("kart_altshrink_arrowbullet", "On", CV_NETVAR, CV_OnOff, NULL);
+
+static CV_PossibleValue_t altshrink_arrowbullet_threshold_cons_t[] = {{0, "MIN"}, {2 * FRACUNIT, "MAX"}, {0, NULL}};
+consvar_t cv_kartaltshrink_arrowbulletthres = CVAR_INIT ("kart_altshrink_arrowbullet_threshold", "1.66", CV_NETVAR|CV_FLOAT, altshrink_arrowbullet_threshold_cons_t, NULL);
 
 static CV_PossibleValue_t kartairsquish_cons_t[] = {{1, "Squish"}, {2, "Flip-over"}, {0, "None"}, {0, NULL}};
 consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kartairsquish_cons_t, NULL);
@@ -718,6 +778,7 @@ consvar_t cv_showviewpointtext = CVAR_INIT ("showviewpointtext", "On", CV_SAVE, 
 // Intermission time Tails 04-19-2002
 static CV_PossibleValue_t inttime_cons_t[] = {{0, "MIN"}, {3600, "MAX"}, {0, NULL}};
 consvar_t cv_inttime = CVAR_INIT ("inttime", "10", CV_SAVE|CV_NETVAR, inttime_cons_t, NULL);
+consvar_t cv_rolltime = CVAR_INIT ("rolltime", "10", CV_SAVE|CV_NETVAR, inttime_cons_t, NULL);
 
 static CV_PossibleValue_t advancemap_cons_t[] = {{0, "Same"}, {1, "Next"}, {2, "Random"}, {3, "Vote"}, {0, NULL}};
 consvar_t cv_advancemap = CVAR_INIT ("advancemap", "Vote", CV_NETVAR, advancemap_cons_t, NULL);
@@ -916,6 +977,7 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("addfilelocal", Command_Addfilelocal);
 	COM_AddCommand("addfile", Command_Addfile);
 	COM_AddCommand("listwad", Command_ListWADS_f);
+	COM_AddCommand("locatelump", Command_LocateLump_f);
 	COM_AddCommand("listmapthings", Command_ListDoomednums_f);
 
 	COM_AddCommand("runsoc", Command_RunSOC);
@@ -945,6 +1007,8 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("archivetest", Command_Archivetest_f);
 #endif
 
+	COM_AddCommand("replaymarker", Command_ReplayMarker);
+
 	COM_AddCommand("downloads", Command_Downloads_f);
 
 	COM_AddCommand("kartgiveitem", Command_KartGiveItem_f);
@@ -972,6 +1036,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_scrambleonchange);
 
 	CV_RegisterVar(&cv_inttime);
+	CV_RegisterVar(&cv_rolltime);
 	CV_RegisterVar(&cv_advancemap);
 	CV_RegisterVar(&cv_timelimit);
 	CV_RegisterVar(&cv_playbackspeed);
@@ -1041,6 +1106,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_dummyconsvar);
 	CV_RegisterVar(&cv_encorevotes);
 
+	CV_RegisterVar(&cv_itemlist);
+
 #ifdef USE_STUN
 	CV_RegisterVar(&cv_stunserver);
 #endif
@@ -1067,6 +1134,9 @@ void D_RegisterServerCommands(void)
 #endif
 
 	CV_RegisterVar(&cv_debugmappatch);
+
+	COM_AddCommand("playsound", Command_PlaySound);
+	RegisterNetXCmd(XD_PLAYSOUND, Got_PlaySound);
 }
 
 // =========================================================================
@@ -1184,6 +1254,7 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_follower[i]);
 		CV_RegisterVar(&cv_followercolor[i]);
 		CV_RegisterVar(&cv_jitterlegacy[i]);
+		CV_RegisterVar(&cv_voice[i]);
 	}
 
 	// preferred number of players
@@ -1260,7 +1331,9 @@ void D_RegisterClientCommands(void)
 	{
 		CV_RegisterVar(&cv_kickstartaccel[i]);
 		CV_RegisterVar(&cv_shrinkme[i]);
-		CV_RegisterVar(&cv_deadzone[i]);
+		CV_RegisterVar(&cv_deadzonex[i]);
+		CV_RegisterVar(&cv_deadzoney[i]);
+		CV_RegisterVar(&cv_deadzonet[i]);
 		CV_RegisterVar(&cv_deadzonestyle[i]);
 		CV_RegisterVar(&cv_litesteer[i]);
 		CV_RegisterVar(&cv_turnsmooth[i]);
@@ -1325,6 +1398,9 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_resume);
 	CV_RegisterVar(&cv_perfstats);
 
+	//Value used to store last server player has joined
+	CV_RegisterVar(&cv_lastserver);
+
 	CV_RegisterVar(&cv_laglesscam);
 
 	// ingame object placing
@@ -1364,6 +1440,7 @@ void D_RegisterClientCommands(void)
 #endif
 
 	COM_AddCommand("listskins", Command_ListSkins);
+	COM_AddCommand("listvoices", Command_ListVoices);
 
 	CV_RegisterVar(&cv_connectawaittime);
 	CV_RegisterVar(&cv_serverinfoscreen);
@@ -1684,6 +1761,10 @@ UINT8 CanChangeSkin(INT32 playernum)
 static void ForceAllSkins(INT32 forcedskin)
 {
 	INT32 i, j;
+
+	if (demo.playback)
+		return; // DXD_SKIN should handle all changes for us
+
 	for (i = 0; i < MAXPLAYERS; ++i)
 	{
 		if (!playeringame[i])
@@ -1741,15 +1822,20 @@ VaguePartyDescription (int playernum, int size, int default_color)
 static INT32 snacpending[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
 static INT32 chmappending = 0;
 
-// name, color, or skin has changed
+// name, color, skin, or voice has changed
 //
 static void SendNameAndColor(UINT8 n)
 {
 	const INT32 playernum = g_localplayers[n];
 	player_t *player = &players[playernum];
+	kartvoice_t *voice;
+	kartvoice_t *valuevoice;
+	INT32 prevskin;
 
 	char buf[MAXPLAYERNAME+12];
 	char *p;
+
+	UINT16 i = 0;
 
 	if (splitscreen < n)
 		return; // can happen if skin4/color4/name4 changed
@@ -1768,9 +1854,10 @@ static void SendNameAndColor(UINT8 n)
 			CV_StealthSetValue(&cv_playercolor[n], skins[player->skin].prefcolor);
 		else if (skincolors[atoi(cv_playercolor[n].defaultvalue)].accessible)
 			CV_StealthSet(&cv_playercolor[n], cv_playercolor[n].defaultvalue);
-		else {
-			UINT16 i = 0;
-			while (i<numskincolors && !skincolors[i].accessible) i++;
+		else
+		{
+			while (i<numskincolors && !skincolors[i].accessible)
+				i++;
 			CV_StealthSetValue(&cv_playercolor[n], (i != numskincolors) ? i : SKINCOLOR_BLUE);
 		}
 	}
@@ -1783,14 +1870,22 @@ static void SendNameAndColor(UINT8 n)
 	if (cv_follower[n].value >= numfollowers || cv_follower[n].value < -1)
 		CV_StealthSet(&cv_follower[n], "-1");
 
-	if (!strcmp(cv_playername[n].string, player_names[playernum])
-		&& cv_playercolor[n].value == player->skincolor
-		&& !strcmp(cv_skin[n].string, skins[player->skin].name)
-		&& cv_follower[n].value == player->followerskin
-		&& cv_followercolor[n].value == player->followercolor)
-		return;
+	// Check the player's acoustics.
+	voice = P_GetMobjVoice(player->mo);
 
-	player->availabilities = R_GetSkinAvailabilities();
+	if (!voice)
+	{
+		// ...how?!
+		voice = &skins[player->skin].voices[0];
+	}
+
+	if (fastcmp(cv_playername[n].string, player_names[playernum])
+		&& cv_playercolor[n].value == player->skincolor
+		&& fastcmp(cv_skin[n].string, skins[player->skin].name)
+		&& cv_follower[n].value == player->followerskin
+		&& cv_followercolor[n].value == player->followercolor
+		&& fasticmp(cv_voice[n].string, voice->name))
+		return;
 
 	// We'll handle it later if we're not playing.
 	if (!Playing())
@@ -1799,14 +1894,14 @@ static void SendNameAndColor(UINT8 n)
 	// If you're not in a netgame, merely update the skin, color, and name.
 	if (!netgame)
 	{
-		INT32 foundskin;
+		INT32 foundskin, voxid;
 
 		CleanupPlayerName(playernum, cv_playername[n].zstring);
 		strcpy(player_names[playernum], cv_playername[n].zstring);
 
 		player->skincolor = cv_playercolor[n].value;
 
-		K_KartResetPlayerColor(player);
+		K_KartResetPlayerColor(player, true);
 
 		// Update follower for local games:
 		if (cv_follower[n].value >= -1)
@@ -1821,16 +1916,105 @@ static void SendNameAndColor(UINT8 n)
 		}
 		else if ((foundskin = R_SkinAvailable(cv_skin[n].string)) != -1 && R_SkinUsable(playernum, foundskin))
 		{
+			prevskin = cv_skin[n].value;
+
 			cv_skin[n].value = foundskin;
 			SetPlayerSkin(playernum, cv_skin[n].string);
 			CV_StealthSet(&cv_skin[n], skins[cv_skin[n].value].name);
+
+			// Reset the voice.
+			if (prevskin != player->skin)
+			{
+				if (cv_voice[n].string)
+				{
+					voxid = R_FindIDForVoice(&skins[player->skin], cv_voice[n].string);
+
+					if (voxid == MAXSKINVOICES)
+					{
+						// No dice; use the default voice.
+						valuevoice = &skins[player->skin].voices[0];
+					}
+					else
+					{
+
+						valuevoice = &skins[player->skin].voices[voxid];
+					}
+				}
+				else
+				{
+					// NULL string; default to the skin's default.
+					valuevoice = &skins[player->skin].voices[0];
+				}
+
+				CV_StealthSet(&cv_voice[n], valuevoice->name);
+			}
 		}
 		else
 		{
+			prevskin = player->skin;
+
 			cv_skin[n].value = players[playernum].skin;
 			CV_StealthSet(&cv_skin[n], skins[player->skin].name);
 			// will always be same as current
 			SetPlayerSkin(playernum, cv_skin[n].string);
+
+			// Reset the voice.
+			if (prevskin != player->skin)
+			{
+				if (cv_voice[n].string)
+				{
+					voxid = R_FindIDForVoice(&skins[player->skin], cv_voice[n].string);
+
+					if (voxid == MAXSKINVOICES)
+					{
+						// No dice; use the default voice.
+						valuevoice = &skins[player->skin].voices[0];
+					}
+					else
+					{
+
+						valuevoice = &skins[player->skin].voices[voxid];
+					}
+				}
+				else
+				{
+					// NULL string; default to the skin's default.
+					valuevoice = &skins[player->skin].voices[0];
+				}
+
+				CV_StealthSet(&cv_voice[n], valuevoice->name);
+			}
+		}
+
+		// Need to update voices after the fact.
+		if (!cv_voice[n].string)
+		{
+			CV_StealthSet(&cv_voice[n], skins[player->skin].voices[0].name);
+		}
+
+		SetPlayerVoice(playernum, cv_voice[n].string);
+
+		valuevoice = P_GetMobjVoice(player->mo);
+
+		if (valuevoice)
+		{
+			CV_StealthSet(&cv_voice[n], valuevoice->name);
+		}
+		else
+		{
+			// Get the voice from our ID.
+			// No need to compare parents, 
+			valuevoice = &skins[player->skin].voices[player->voice_id];
+
+			if (valuevoice)
+			{
+				CV_StealthSet(&cv_voice[n], valuevoice->name);
+			}
+			else
+			{
+				// ...still nothing?
+				CV_StealthSet(&cv_voice[n], skins[player->skin].voices[0].name);
+			}
 		}
 
 		return;
@@ -1851,7 +2035,15 @@ static void SendNameAndColor(UINT8 n)
 
 	// Don't change skin if the server doesn't want you to.
 	if (!CanChangeSkin(playernum))
+	{
 		CV_StealthSet(&cv_skin[n], skins[player->skin].name);
+
+		if (R_FindIDForVoice(&skins[player->skin], cv_voice[n].string) == MAXSKINVOICES)
+		{
+			// Our voice is no longer valid, set it to that of our skin's.
+			CV_StealthSet(&cv_voice[n], skins[player->skin].voices[0].name);
+		}
+	}
 
 	// check if player has the skin loaded (cv_skin may have
 	// the name of a skin that was available in the previous game)
@@ -1860,15 +2052,65 @@ static void SendNameAndColor(UINT8 n)
 	{
 		CV_StealthSet(&cv_skin[n], DEFAULTSKIN);
 		cv_skin[n].value = 0;
+
+		CV_StealthSet(&cv_voice[n], "sonic_voice");
+		cv_voice[n].value = 0;
+	}
+
+	// Need to update voices after the fact.
+	if (!cv_voice[n].string)
+	{
+		CV_StealthSet(&cv_voice[n], skins[cv_skin[n].value].voices[0].name);
+	}
+
+	if (R_FindIDForVoice(&skins[cv_skin[n].value], cv_voice[n].string) == MAXSKINVOICES)
+	{
+		// In the chance our current voice isn't valid,
+		// rescan our current voice and send that over the network.
+		valuevoice = P_GetMobjVoice(player->mo);
+
+		if (valuevoice)
+		{
+			CV_StealthSet(&cv_voice[n], valuevoice->name);
+		}
+		else
+		{
+			// Get the voice from our ID.
+			// No need to compare parents.
+			valuevoice = &skins[cv_skin[n].value].voices[player->voice_id];
+
+			if (valuevoice)
+			{
+				CV_StealthSet(&cv_voice[n], valuevoice->name);
+			}
+			else
+			{
+				// ...still nothing?
+				CV_StealthSet(&cv_voice[n], skins[cv_skin[n].value].voices[0].name);
+			}
+		}
+	}
+
+	// After EVERYTHING, do one last check on our voice so we can set the value.
+	INT32 cvar_voxid = R_FindIDForVoice(&skins[cv_skin[n].value], cv_voice[n].string);
+
+	if (cvar_voxid == MAXSKINVOICES)
+	{
+		// ...huh?! Reset to the default.
+		cv_voice[n].value = 0;
+	}
+	else
+	{
+		cv_voice[n].value = cvar_voxid;
 	}
 
 	// Finally write out the complete packet and send it off.
 	WRITESTRINGN(p, cv_playername[n].zstring, MAXPLAYERNAME);
-	WRITEUINT32(p, (UINT32)player->availabilities);
 	WRITEUINT16(p, (UINT16)cv_playercolor[n].value);
 	WRITEUINT16(p, (UINT16)cv_skin[n].value);
-	WRITESINT8(p, (SINT8)cv_follower[n].value);
+	WRITEINT32(p, (INT32)cv_follower[n].value);
 	WRITEUINT16(p, (UINT16)cv_followercolor[n].value);
+	WRITEUINT16(p, (UINT16)cv_voice[n].value);
 
 	SendNetXCmdForPlayer(n, XD_NAMEANDCOLOR, buf, p - buf);
 }
@@ -1878,8 +2120,8 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	player_t *p = &players[playernum];
 	char name[MAXPLAYERNAME+1];
 	UINT16 color, followercolor;
-	UINT16 skin;
-	SINT8 follower;
+	UINT16 skin, voice;
+	INT32 follower;
 	SINT8 localplayer = -1;
 	UINT16 i;
 
@@ -1905,11 +2147,11 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	}
 
 	READSTRINGN(*cp, name, MAXPLAYERNAME);
-	p->availabilities = READUINT32(*cp);
 	color = READUINT16(*cp);
 	skin = READUINT16(*cp);
-	follower = READSINT8(*cp);
+	follower = READINT32(*cp);
 	followercolor = READUINT16(*cp);
+	voice = READUINT16(*cp);
 
 	// set name
 	if (player_name_changes[playernum] < MAXNAMECHANGES)
@@ -1942,33 +2184,6 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 		if (skincolors[p->skincolor].accessible == false)
 			kick = true;
 
-		// availabilities
-		for (i = 0; i < MAXSKINS; i++)
-		{
-			UINT32 playerhasunlocked = (p->availabilities & (1 << i));
-			boolean islocked = false;
-			UINT8 j;
-
-			for (j = 0; j < MAXUNLOCKABLES; j++)
-			{
-				if (unlockables[j].type != SECRET_SKIN)
-					continue;
-
-				if (unlockables[j].variable == i)
-				{
-					islocked = true;
-					break;
-				}
-			}
-
-			if (islocked == false && playerhasunlocked == true)
-			{
-				// hacked client that enabled every bit
-				kick = true;
-				break;
-			}
-		}
-
 		if (kick)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Illegal color change received from %s (team: %d), color: %d)\n"), player_names[playernum], p->ctfteam, p->skincolor);
@@ -1978,16 +2193,32 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	}
 
 	// set skin
-	if (cv_forceskin.value >= 0 && (netgame || multiplayer)) // Server wants everyone to use the same player
+	if (cv_forceskin.value >= 0 && K_CanChangeRules(true)) // Server wants everyone to use the same player
 	{
 		const INT32 forcedskin = cv_forceskin.value;
 		SetPlayerSkinByNum(playernum, forcedskin);
 
 		if (localplayer != -1)
+		{
 			CV_StealthSet(&cv_skin[localplayer], skins[forcedskin].name);
+			CV_StealthSet(&cv_voice[localplayer], skins[forcedskin].voices[0].name);
+		}
+
+		// set voice
+		SetPlayerVoiceByNum(playernum, skins[forcedskin].voices[0].id);
 	}
 	else
+	{
 		SetPlayerSkinByNum(playernum, skin);
+
+		// set voice
+		SetPlayerVoiceByNum(playernum, voice);
+
+		if (localplayer != -1)
+		{
+			CV_StealthSet(&cv_voice[localplayer], skins[p->skin].voices[p->voice_id].name);
+		}
+	}
 
 	// set follower colour:
 	// Don't bother doing garbage and kicking if we receive None,
@@ -2772,8 +3003,8 @@ static void Command_Playdemo_f(void)
 
 	CONS_Printf(M_GetText("Playing back demo '%s'.\n"), name);
 
-	demo.loadfiles = strcmp(COM_Argv(2), "-addfiles") == 0;
-	demo.ignorefiles = strcmp(COM_Argv(2), "-force") == 0;
+	demo.loadfiles = fastcmp(COM_Argv(2), "-addfiles");
+	demo.ignorefiles = fastcmp(COM_Argv(2), "-force");
 
 	// Internal if no extension, external if one exists
 	// If external, convert the file name to a path in SRB2's home directory
@@ -2986,17 +3217,37 @@ void D_SetupVote(void)
 	SendNetXCmd(XD_SETUPVOTE, buf, p - buf);
 }
 
-void D_ModifyClientVote(UINT8 player, SINT8 voted, UINT8 splitplayer)
+void D_ModifyClientVote(UINT8 player, SINT8 voted)
 {
-	char buf[2];
+	char buf[3];
 	char *p = buf;
+	UINT8 sendPlayer = 0;
 
-	if (splitplayer > 0)
-		player = g_localplayers[splitplayer];
+	if (player >= MAXPLAYERS)
+	{
+		// Can be used for special game votes later.
+		if (!server)
+		{
+			return;
+		}
+	}
+
+	WRITEUINT8(p, player);
+
+	if (player <= MAXPLAYERS)
+	{
+		INT32 i;
+		for (i = 0; i <= splitscreen; i++)
+		{
+			if (g_localplayers[i] == player)
+			{
+				sendPlayer = i;
+			}
+		}
+	}
 
 	WRITESINT8(p, voted);
-	WRITEUINT8(p, player);
-	SendNetXCmd(XD_MODIFYVOTE, &buf, 2);
+	SendNetXCmdForPlayer(sendPlayer, XD_MODIFYVOTE, &buf, p - buf);
 }
 
 void D_PickVote(void)
@@ -3005,34 +3256,33 @@ void D_PickVote(void)
 	char* p = buf;
 	SINT8 temppicks[MAXPLAYERS];
 	SINT8 templevels[MAXPLAYERS];
-	SINT8 votecompare = -1;
+	SINT8 votecompare = VOTE_NOT_PICKED;
 	UINT8 numvotes = 0, key = 0;
 	INT32 i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
+		if (!Y_PlayerIDCanVote(i))
 			continue;
-		if (votes[i] != -1)
+		if (g_votes[i] != VOTE_NOT_PICKED)
 		{
 			temppicks[numvotes] = i;
-			templevels[numvotes] = votes[i];
+			templevels[numvotes] = g_votes[i];
 			numvotes++;
-			if (votecompare == -1)
-				votecompare = votes[i];
+			if (votecompare == VOTE_NOT_PICKED)
+				votecompare = g_votes[i];
 		}
 	}
 
-	key = M_RandomKey(numvotes);
-
 	if (numvotes > 0)
 	{
+		key = M_RandomKey(numvotes);
 		WRITESINT8(p, temppicks[key]);
 		WRITESINT8(p, templevels[key]);
 	}
 	else
 	{
-		WRITESINT8(p, -1);
+		WRITESINT8(p, VOTE_NOT_PICKED);
 		WRITESINT8(p, 0);
 	}
 
@@ -3617,6 +3867,41 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 
 	I_UpdateMouseGrab();
 	G_ResetAllDeviceRumbles();
+}
+
+static void Command_ReplayMarker(void)
+{
+	if (gamestate != GS_LEVEL)
+	{
+		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
+		return;
+	}
+	if (demo.savemode == DSM_WILLAUTOSAVE)
+	{
+		demo.savemode = DSM_NOTSAVING;
+		CONS_Printf("Replay unmarked.\n");
+	}
+	else
+	{
+		demo.savemode = DSM_WILLAUTOSAVE;
+
+		int adjustedleveltime = leveltime - starttime;
+
+		if (adjustedleveltime < 0)
+			adjustedleveltime = 0;
+
+		char *title = G_BuildMapTitle(gamemap);
+
+		if (title)
+		{
+			snprintf(demo.titlename, 64, "%s [%i:%02d/%.5s]", title, G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
+			Z_Free(title);
+		}
+		else
+			snprintf(demo.titlename, 64, "[%i:%02d/%.5s]", G_TicsToMinutes(adjustedleveltime, false), G_TicsToSeconds(adjustedleveltime), modeattacking ? "Record Attack" : connectedservername);
+
+		CONS_Printf("Replay will be saved!\n");
+	}
 }
 
 // Command for stuck characters in netgames, griefing, etc.
@@ -4936,7 +5221,7 @@ static void Command_Addfile(void)
 		for (ii = 0; ii < numfilesadded; ii++)
 		{
 			// If this is one of them, don't try to add it.
-			if (!strcmp(fn, addedfiles[ii]))
+			if (fastcmp(fn, addedfiles[ii]))
 			{
 				fileadded = true;
 				break;
@@ -5167,19 +5452,44 @@ static void Command_ListWADS_f(void)
 	}
 }
 
-#define MAXDOOMEDNUM 4095
+static void Command_LocateLump_f(void)
+{
+	if (COM_Argc() == 1)
+	{
+		CONS_Printf("Usage: locatelump <lump1>[ <lump2>[ ...]]\n");
+		return;
+	}
+
+	for (size_t i = 1; i < COM_Argc(); ++i)
+	{
+		const char *name = COM_Argv(i);
+
+		lumpnum_t num = W_CheckNumForName(name);
+
+		const char *wadname = "(not found)";
+
+		if (num != LUMPERROR)
+		{
+			wadname = wadfiles[WADFILENUM(num)]->filename;
+		}
+
+		CONS_Printf("%s - %s\n", name, wadname);
+	}
+}
+
+#define MAXDOOMEDNUM 65536
 
 static void Command_ListDoomednums_f(void)
 {
-	INT16 i, j, focusstart = 0, focusend = 0;
+	INT32 i, j, focusstart = 0, focusend = 0;
 	INT32 argc = COM_Argc(), argstart = 0;
-	INT16 table[MAXDOOMEDNUM];
+	INT32 table[MAXDOOMEDNUM];
 	boolean nodoubles = false;
 	UINT8 doubles[(MAXDOOMEDNUM+8/8)];
 
 	if (argc > 1)
 	{
-		nodoubles = (strcmp(COM_Argv(1), "-nodoubles") == 0);
+		nodoubles = (fastcmp(COM_Argv(1), "-nodoubles"));
 		if (nodoubles)
 		{
 			argc--;
@@ -5278,12 +5588,25 @@ static void Command_ListDoomednums_f(void)
 			continue;
 		}
 		CONS_Printf("	doomednum \x82""%d""\x80 is used by ", i+1);
-		if (table[i] < MT_FIRSTFREESLOT)
+
+		for (j = 0; j < MT_FIRSTFREESLOT+NUMMOBJFREESLOTS; j++)
 		{
-			CONS_Printf("\x87""hardcode MT_%s\n", DEH_MobjtypeName(i));
-			continue;
+			if (mobjinfo[j].doomednum != i+1)
+				continue;
+
+			if (j < MT_FIRSTFREESLOT)
+			{
+				CONS_Printf("\x87""hardcode MT_%s\n", DEH_MobjtypeName(j));
+				continue;
+			}
+			else
+			{
+				CONS_Printf("\x81""freeslot MT_""%s\n", DEH_MobjtypeName(j));
+				continue;
+			}
+
+			CONS_Printf("\x87""?????\n");
 		}
-		CONS_Printf("\x81""freeslot MT_""%s\n", DEH_MobjtypeName(i));
 	}
 }
 
@@ -5297,10 +5620,10 @@ static void Command_ListDoomednums_f(void)
   */
 static void Command_Version_f(void)
 {
-#ifdef DEVELOP
-	CONS_Printf("SRB2Kart %s-%s (%s %s)\n", compbranch, comprevision, compdate, comptime);
+#if (defined DEVELOP) || (defined COMMITVERSION)
+	CONS_Printf("BlanKart %s-%s (%s %s)\n", D_GetFancyBranchName(), comprevision, compdate, comptime);
 #else
-	CONS_Printf("SRB2Kart %s (%s %s %s %s) ", VERSIONSTRING, compdate, comptime, comprevision, compbranch);
+	CONS_Printf("BlanKart %s (%s %s %s %s) ", VERSIONSTRING, compdate, comptime, comprevision, D_GetFancyBranchName());
 #endif
 
 	// Base library
@@ -5574,7 +5897,7 @@ void D_GameTypeChanged(INT32 lastgametype)
 static void Gravity_OnChange(void)
 {
 	if (!M_SecretUnlocked(SECRET_PANDORA) && !netgame && !cht_debug
-		&& strcmp(cv_gravity.string, cv_gravity.defaultvalue))
+		&& !fastcmp(cv_gravity.string, cv_gravity.defaultvalue))
 	{
 		CONS_Printf(M_GetText("You haven't earned this yet.\n"));
 		CV_StealthSet(&cv_gravity, cv_gravity.defaultvalue);
@@ -5871,7 +6194,7 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 
 	tempvotelevels[2][1] = secondgt;
 
-	memcpy(votelevels, tempvotelevels, sizeof(votelevels));
+	memcpy(g_voteLevels, tempvotelevels, sizeof(g_voteLevels));
 
 	// If third entry has an illelegal Encore flag... (illelegal!?)
 	if ((secondgt & VOTEMODIFIER_ENCORE)
@@ -5881,12 +6204,12 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 		// Apply it to the second entry instead, gametype permitting!
 		if (gametypedefaultrules[gt] & GTR_CIRCUIT)
 		{
-			votelevels[1][1] |= VOTEMODIFIER_ENCORE;
+			g_voteLevels[1][1] |= VOTEMODIFIER_ENCORE;
 		}
 	}
 
 	// Finally, set third entry's gametype/Encore status.
-	votelevels[2][1] = secondgt;
+	g_voteLevels[2][1] = secondgt;
 
 	G_SetGamestate(GS_VOTING);
 	Y_StartVote();
@@ -5894,11 +6217,45 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 
 static void Got_ModifyVotecmd(UINT8 **cp, INT32 playernum)
 {
-	SINT8 voted = READSINT8(*cp);
-	UINT8 p = READUINT8(*cp);
+	UINT8 targetID = READUINT8(*cp);
+	SINT8 vote = READSINT8(*cp);
 
-	(void)playernum;
-	votes[p] = voted;
+	if (targetID >= MAXPLAYERS)
+	{
+		// only the server is allowed to send these
+		if (playernum != serverplayer)
+		{
+			goto fail;
+		}
+	}
+	else if (playeringame[targetID] == true && players[targetID].bot == true)
+	{
+		if (playernum != serverplayer)
+		{
+			goto fail;
+		}
+	}
+	else
+	{
+		if (playernode[targetID] != playernode[playernum])
+		{
+			goto fail;
+		}
+	}
+
+	g_votes[targetID] =  vote;
+	return;
+
+fail:
+	CONS_Alert(CONS_WARNING,
+		M_GetText ("Illegal modify vote command received from %s\n"),
+		player_names[playernum]
+	);
+
+	if (server)
+	{
+		SendKick(playernum, KICK_MSG_CON_FAIL);
+	}
 }
 
 static void Got_PickVotecmd(UINT8 **cp, INT32 playernum)
@@ -6219,6 +6576,8 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			}
 			else
 			{
+				K_AddItemRollToList((INT32)(player - players), item, amt);
+
 				CV_CheaterWarning(playernum, va("give item %s x%d", DEH_KartItemName(item), amt));
 			}
 			break;
@@ -6246,6 +6605,27 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 		case NUMBER_OF_CHEATS:
 			break;
 	}
+}
+
+static void Got_PlaySound(UINT8 **cp, INT32 playernum)
+{
+	INT32 sound_id = READINT32(*cp);
+
+	if (playernum != serverplayer && !IsPlayerAdmin(playernum)) // hacked client, or disasterous bug
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Illegal playsound received from %s (serverplayer is %s)\n"), player_names[playernum], player_names[serverplayer]);
+		if (server)
+			SendKick(playernum, KICK_MSG_CON_FAIL);
+		return;
+	}
+
+	if (sound_id < 0 || sound_id >= NUMSFX)
+	{
+		// bad sound effect, ignore
+		return;
+	}
+
+	S_StartSound(NULL, sound_id);
 }
 
 static const char *displayplayer_compose_col(int playernum)
@@ -6351,11 +6731,6 @@ void Command_ExitGame_f(void)
 	for (i = 0; i < MAXPLAYERS; i++)
 		CL_ClearPlayer(i);
 
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		players[g_localplayers[i]].availabilities = R_GetSkinAvailabilities();
-	}
-
 	splitscreen = 0;
 	SplitScreen_OnChange();
 
@@ -6433,7 +6808,7 @@ static void Command_Cheats_f(void)
 
 		for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		{
-			if ((cvar->flags & CV_CHEAT) && strcmp(cvar->defaultvalue, cvar->string))
+			if ((cvar->flags & CV_CHEAT) && !fastcmp(cvar->defaultvalue, cvar->string))
 			{
 				CONS_Printf("%s: Default Value: %s Current Value:%s\n", cvar->name, cvar->defaultvalue, cvar->string);
 			}
@@ -6701,6 +7076,50 @@ static void Command_Automate_Set(void)
 	SendNetXCmd(XD_AUTOMATE, buf, buf_p - buf);
 }
 
+static void Command_PlaySound(void)
+{
+	const char *sound;
+	const size_t argc = COM_Argc();
+	sfxenum_t sfx = NUMSFX;
+	UINT8 buf[4];
+	UINT8 *buf_p = buf;
+
+	if (argc < 2)
+	{
+		CONS_Printf("playsound <name/num>: Plays a sound effect for the entire server.\n");
+		return;
+	}
+
+	if (client && !IsPlayerAdmin(consoleplayer))
+	{
+		CONS_Printf("This can only be used by the server host.\n");
+		return;
+	}
+
+	sound = COM_Argv(1);
+	if (*sound >= '0' && *sound <= '9')
+	{
+		sfx = atoi(sound);
+	}
+	else
+	{
+		for (sfx = 0; sfx < sfxfree; sfx++)
+		{
+			if (S_sfx[sfx].name && fasticmp(sound, S_sfx[sfx].name))
+				break;
+		}
+	}
+
+	if (sfx < 0 || sfx >= NUMSFX)
+	{
+		CONS_Printf("Could not find sound effect named \"sfx_%s\".\n", sound);
+		return;
+	}
+
+	WRITEINT32(buf_p, sfx);
+	SendNetXCmd(XD_PLAYSOUND, buf, buf_p - buf);
+}
+
 /** Makes a change to ::cv_forceskin take effect immediately.
   *
   * \sa Command_SetForcedSkin_f, cv_forceskin, forcedskin
@@ -6778,9 +7197,9 @@ static void Follower_OnChange(void)
 	strcpy(str, cv_follower[0].string);
 	strcpy(cpy, cv_follower[0].string);
 	strlwr(str);
-	if (stricmp(cpy,"0") !=0 && !atoi(cpy))	// yep, that's a string alright...
+	if (!fasticmp(cpy,"0") && !atoi(cpy))	// yep, that's a string alright...
 	{
-		if (stricmp(cpy, "None") == 0)
+		if (fasticmp(cpy, "None"))
 		{
 			CV_StealthSet(&cv_follower[0], "-1");
 
@@ -6831,9 +7250,9 @@ static void Follower2_OnChange(void)
 	strcpy(str, cv_follower[1].string);
 	strcpy(cpy, cv_follower[1].string);
 	strlwr(str);
-	if (stricmp(cpy,"0") !=0 && !atoi(cpy))	// yep, that's a string alright...
+	if (!fasticmp(cpy,"0") && !atoi(cpy))	// yep, that's a string alright...
 	{
-		if (stricmp(cpy, "None") == 0)
+		if (fasticmp(cpy, "None"))
 		{
 			CV_StealthSet(&cv_follower[1], "-1");
 
@@ -6881,9 +7300,9 @@ static void Follower3_OnChange(void)
 	strcpy(str, cv_follower[2].string);
 	strcpy(cpy, cv_follower[2].string);
 	strlwr(str);
-	if (stricmp(cpy,"0") !=0 && !atoi(cpy))	// yep, that's a string alright...
+	if (!fasticmp(cpy,"0") && !atoi(cpy))	// yep, that's a string alright...
 	{
-		if (stricmp(cpy, "None") == 0)
+		if (fasticmp(cpy, "None"))
 		{
 			CV_StealthSet(&cv_follower[2], "-1");
 
@@ -6931,9 +7350,9 @@ static void Follower4_OnChange(void)
 	strcpy(str, cv_follower[3].string);
 	strcpy(cpy, cv_follower[3].string);
 	strlwr(str);
-	if (stricmp(cpy,"0") !=0 && !atoi(cpy))	// yep, that's a string alright...
+	if (!fasticmp(cpy,"0") && !atoi(cpy))	// yep, that's a string alright...
 	{
-		if (stricmp(cpy, "None") == 0)
+		if (fasticmp(cpy, "None"))
 		{
 			CV_StealthSet(&cv_follower[3], "-1");
 
@@ -7129,6 +7548,144 @@ static void Command_ListSkins(void)
 	}
 }
 
+static void Command_ListVoices(void)
+{
+	int i;
+	int sid = -1;
+	int pid = 0;
+	int page = 0;
+	int longest_name = 0;
+	boolean searchedskin = false;
+
+	if (COM_Argc() > 1)
+	{
+		if (sscanf(COM_Argv(1), " %d", &pid) == 0)
+		{
+			if (fasticmp(COM_Argv(1), "--help"))
+			{
+				// Anyone who names their skin "--help" can suck it.
+				CONS_Printf(
+				    "Usage: \"listvoices <playernum/skinname> "
+				    "<pagenum>\"\nAlternatively: \"listvoices\" alone\n");
+				return;
+			}
+			// Assume the player is searching by skin name instead.
+			INT32 j = R_SkinAvailable(COM_Argv(1));
+
+			if (j == -1)
+			{
+				CONS_Printf(
+				    "No skin exists with the name %s. \n(TIP: Type \"skin\" in the "
+				    "console to see your current skin!)\n",
+				    COM_Argv(1));
+				return;
+			}
+
+			searchedskin = true;
+			sid = j;
+		}
+		else if (pid > (splitscreen + 1))
+		{
+			CONS_Printf("There %s only %d %s.\n",
+				    (splitscreen) ? "are" : "is",
+				    (splitscreen + 1),
+				    (splitscreen) ? "players" : "player");
+			return;
+		}
+		else if (pid < 0)
+		{
+			CONS_Printf("Player number cannot be negative.\n");
+			return;
+		}
+
+		if (sid == -1)
+		{
+			if (pid != 0)  // What the hell, sure. Let "Player 0" slide.
+				pid--;
+
+			sid = cv_skin[pid].value;
+		}
+	}
+	else
+	{
+		sid = cv_skin[0].value;
+	}
+
+	if (sid == -1)
+		return;
+
+	skin_t* source_skin = &skins[sid];
+
+	int numpages = source_skin->numvoices / 10 + (source_skin->numvoices % 10 ? 1 : 0);
+
+	if (COM_Argc() > 2)
+	{
+		if (sscanf(COM_Argv(2), " %d", &page) == 0)
+		{
+			CONS_Printf("Expected a number.\n");
+			return;
+		}
+		else if (page > numpages)
+		{
+			CONS_Printf("There %s only %d %s.\n",
+				    (numpages != 1) ? "are" : "is",
+				    numpages,
+				    (numpages != 1) ? "pages" : "page");
+			return;
+		}
+		else if (page < 0)
+		{
+			CONS_Printf("Page number cannot be negative.\n");
+			return;
+		}
+		else if (page == 0)
+		{
+			CONS_Printf("There is no 0th page. (What are you a programmer?)\n");
+			return;
+		}
+
+		--page;
+	}
+
+	CONS_Printf("Total %d %s. Page (%d/%d)\n",
+		    source_skin->numvoices,
+		    (source_skin->numvoices != 1) ? "voices" : "voice",
+		    page + 1,
+		    numpages);
+
+	//  Find the longest name and realname in the voices list. (used for alignment)
+	for (i = page * 10; i < source_skin->numvoices && i < (page + 1) * 10; i++)
+	{
+		int length;
+		kartvoice_t* vox = &source_skin->voices[i];
+
+		if ((length = strlen(vox->name)) > longest_name)
+			longest_name = length;
+	}
+
+	for (i = page * 10; i < source_skin->numvoices && i < (page + 1) * 10; i++)
+	{
+		kartvoice_t* vox = &source_skin->voices[i];
+
+		CONS_Printf("[%-*s]\x80 %s\n", longest_name, vox->name, vox->realname);
+	}
+
+	if (page + 1 != numpages)
+	{
+		if (searchedskin)
+			CONS_Printf("Use \"listvoices %s %d\" to see the next page.\n",
+				    source_skin->name,
+				    page + 2);
+		else
+			CONS_Printf(
+			    "Use \"listvoices %d %d\" to see the next page.\n", pid + 1, page + 2);
+	}
+	else
+	{
+		CONS_Printf("There are no more pages.\n");
+	}
+}
+
 /** Sends a color change for the console player, unless that player is moving.
   * \sa cv_playercolor, Color2_OnChange, Skin_OnChange
   * \author Graue <graue@oceanbase.org>
@@ -7234,6 +7791,74 @@ static void Color4_OnChange(void)
 		}
 	}
 	lastgoodcolor[3] = cv_playercolor[3].value;
+}
+
+static void __voice_cvar_func(INT32 pid, UINT8 pnum)
+{
+	if (!numskins)
+	{
+		// There aren't even any skins yet!
+		return;
+	}
+
+	kartvoice_t *myvoice = P_GetMobjVoice(players[pid].mo);
+
+	if (!myvoice)
+	{
+		// ...how?!
+		myvoice = &skins[players[pid].skin].voices[0];
+	}
+
+	if (R_FindIDForVoice(&skins[players[pid].skin], cv_voice[pnum].string) == MAXSKINVOICES)
+	{
+		CONS_Alert(CONS_NOTICE, M_GetText("Voice \"%s\" does not exist for this skin.\n"), cv_voice[pnum].string);
+		CV_StealthSet(&cv_voice[pnum], myvoice->name);
+		return;
+	}
+
+	if (!Playing())
+		return; // do whatever you want
+
+	if (pnum > 0 && !splitscreen)
+		return; // do whatever you want
+
+	if (pnum < 1)
+	{
+		if (!(cht_debug || devparm) && !(multiplayer || netgame) // In single player.
+			&& (gamestate != GS_WAITINGPLAYERS)) // allows command line -warp x +skin y
+		{
+			CV_StealthSet(&cv_voice[pnum], myvoice->name);
+			return;
+		}
+	}
+
+	if (!P_PlayerMoving(pid))
+		SendNameAndColor(pnum);
+	else
+	{
+		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your voice at the moment.\n"));
+		CV_StealthSet(&cv_voice[pnum], myvoice->name);
+	}
+}
+
+static void Voice_OnChange(void)
+{
+	__voice_cvar_func(consoleplayer, 0);
+}
+
+static void Voice2_OnChange(void)
+{
+	__voice_cvar_func(g_localplayers[1], 1);
+}
+
+static void Voice3_OnChange(void)
+{
+	__voice_cvar_func(g_localplayers[2], 2);
+}
+
+static void Voice4_OnChange(void)
+{
+	__voice_cvar_func(g_localplayers[3], 3);
 }
 
 /** Displays the result of the chat being muted or unmuted.
@@ -7721,6 +8346,39 @@ static void KartAirThrust_OnChange(void)
 	}
 }
 
+static void KartWaterSkipLock_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_WaterskipBricksActive() && cv_kartwaterskiplock.value)
+	{
+		if (leveltime < starttime)
+		{
+			waterskipbricks = true;
+			CONS_Printf(M_GetText("Waterskip Lock has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Waterskip Lock will be turned \"On\" Next Round.\n"));
+		}
+	}
+	else if (K_WaterskipBricksActive() && !cv_kartwaterskiplock.value)
+	{
+		if (leveltime < starttime)
+		{
+			waterskipbricks = false;
+			CONS_Printf(M_GetText("Waterskip Lock has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Waterskip Lock will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
 static void KartItemLitter_OnChange(void)
 {
 	if (K_CanChangeRules(false) == false)
@@ -7851,6 +8509,39 @@ static void KartBumpSpark_OnChange(void)
 	}
 }
 
+static void KartItemList_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_ItemListActive() && cv_itemlist.value)
+	{
+		if (leveltime < starttime)
+		{
+			itemlistactive = true;
+			CONS_Printf(M_GetText("Item rolls will be displayed.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Item rolls will be displayed next round.\n"));
+		}
+	}
+	else if (K_ItemListActive() && !cv_itemlist.value)
+	{
+		if (leveltime < starttime)
+		{
+			itemlistactive = false;
+			CONS_Printf(M_GetText("Item rolls will not be displayed.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Item rolls will not be displayed next round.\n"));
+		}
+	}
+}
+
 static void Schedule_OnChange(void)
 {
 	size_t i;
@@ -7872,6 +8563,8 @@ static void Schedule_OnChange(void)
 		task->timer = task->basetime;
 	}
 }
+
+
 
 void Got_DiscordInfo(UINT8 **p, INT32 playernum)
 {

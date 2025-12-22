@@ -52,12 +52,15 @@ typedef enum
 } mainwad_t;
 
 // make sure not to write back the config until it's been correctly loaded
+extern boolean gameconfig_loaded;
 extern tic_t rendergametic;
 
 extern char srb2home[256]; //Alam: My Home
 extern boolean usehome; //Alam: which path?
 extern const char *pandf; //Alam: how to path?
 extern char srb2path[256]; //Alam: SRB2's Home
+
+const char *D_GetFancyBranchName(void);
 
 // the infinite loop of D_SRB2Loop() called from win_main for windows version
 void D_SRB2Loop(void) FUNCNORETURN;

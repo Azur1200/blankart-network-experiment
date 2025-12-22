@@ -459,6 +459,27 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 		}
 		return luaL_error(L, "kartitem '%s' could not be found.\n", word);
 	}
+	else if (fastncmp("KRITEM_", word, 7)) {
+		if (!lua_compatmode)
+			return luaL_error(L, "KRITEM constants are not supported in BlanKart. See the wiki for information about the new item system.\n");
+
+		p = word+7;
+		if (fastcmp(p, "TRIPLESNEAKER"))
+			lua_pushinteger(L, 17);
+		else if (fastcmp(p, "TRIPLEBANANA"))
+			lua_pushinteger(L, 18);
+		else if (fastcmp(p, "TENFOLDBANANA"))
+			lua_pushinteger(L, 19);
+		else if (fastcmp(p, "TRIPLEORBINAUT"))
+			lua_pushinteger(L, 20);
+		else if (fastcmp(p, "QUADORBINAUT"))
+			lua_pushinteger(L, 21);
+		else if (fastcmp(p, "DUALJAWZ"))
+			lua_pushinteger(L, 22);
+		else
+			return 0;
+		return 1;
+	}
 	else if (fastncmp("SKINCOLOR_",word,10)) {
 		p = word+10;
 		i = DEH_FindSkincolor(p);

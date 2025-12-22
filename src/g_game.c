@@ -301,9 +301,9 @@ boolean franticitems; // Frantic items currently enabled?
 boolean comeback; // Battle Mode's karma comeback is on/off
 
 // Voting system
-INT16 votelevels[12][2]; // Levels that were rolled by the host
-SINT8 votes[MAXPLAYERS]; // Each player's vote
-SINT8 pickedvote; // What vote the host rolls
+INT16 g_voteLevels[12][2]; // Levels that were rolled by the host
+SINT8 g_votes[MAXPLAYERS]; // Each player's vote
+SINT8 g_pickedVote; // What vote the host rolls
 
 // Server-sided, synched variables
 SINT8 battlewanted[4]; // WANTED players in battle, worth x2 points
@@ -465,11 +465,24 @@ consvar_t cv_jitterlegacy[MAXSPLITSCREENPLAYERS] = {
 };
 
 static CV_PossibleValue_t zerotoone_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
-consvar_t cv_deadzone[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("deadzone", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("deadzone2", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("deadzone3", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("deadzone4", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL)
+consvar_t cv_deadzonex[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("xdeadzone", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("xdeadzone2", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("xdeadzone3", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("xdeadzone4", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL)
+};
+consvar_t cv_deadzoney[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("ydeadzone", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("ydeadzone2", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("ydeadzone3", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("ydeadzone4", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL)
+};
+
+consvar_t cv_deadzonet[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("tdeadzone", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("tdeadzone2", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("tdeadzone3", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("tdeadzone4", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL)
 };
 
 static CV_PossibleValue_t deadzonestyle_cons_t[] = {{0, "Kart"}, {1, "RR"}, {0, NULL}};
@@ -488,7 +501,7 @@ INT32 player_name_changes[MAXPLAYERS];
 static recordpreset_t *G_GetRecordPreset(const char *name)
 {
 	for (recordpresetnum_e i = 0; i < numrecordpresets; i++)
-		if (!strcmp(recordpresets[i]->name, name))
+		if (fastcmp(recordpresets[i]->name, name))
 			return recordpresets[i];
 	return NULL;
 }
@@ -560,9 +573,9 @@ const char *G_CheckPresetCvars(strbuf_t *pv)
 			const char *value = s;
 			s += strlen(s)+1;
 
-			if (!strcmp(name, cvar->name))
+			if (fastcmp(name, cvar->name))
 			{
-				if (!strcmp(value, cvar->string))
+				if (fastcmp(value, cvar->string))
 					goto next;
 				else
 					return cvar->name;
@@ -570,7 +583,7 @@ const char *G_CheckPresetCvars(strbuf_t *pv)
 		}
 
 		// otherwise, the cvar must be set to its default value
-		if (strcmp(cvar->string, cvar->defaultvalue))
+		if (!fastcmp(cvar->string, cvar->defaultvalue))
 			return cvar->name;
 	next:;
 	}
@@ -596,7 +609,7 @@ void G_SetPresetCvars(strbuf_t *pv)
 maprecord_t *G_GetMapRecord(const char *mapname)
 {
 	for (size_t i = 0; i < nummaprecords; i++)
-		if (!strcmp(maprecords[i]->name, mapname))
+		if (fastcmp(maprecords[i]->name, mapname))
 			return maprecords[i];
 	return NULL;
 }
@@ -617,7 +630,7 @@ maprecord_t *G_AllocateMapRecord(const char *mapname)
 maprecordpreset_t *G_GetMapRecordPreset(maprecord_t *record, const char *presetname)
 {
 	for (UINT16 k = 0; k < record->numpresets; k++)
-		if (!strcmp(record->presets[k].prename, presetname))
+		if (fastcmp(record->presets[k].prename, presetname))
 			return &record->presets[k];
 	return NULL;
 }
@@ -762,7 +775,7 @@ tic_t G_GetBestTime(INT16 map)
 
 	for (UINT16 k = 0; k < record->numpresets; k++)
 	{
-		if (strcmp(record->presets[k].prename, "kart"))
+		if (!fastcmp(record->presets[k].prename, "kart"))
 			continue; // doesn't count
 		if (record->presets[k].besttime < besttime)
 			besttime = record->presets[k].besttime;
@@ -778,7 +791,7 @@ boolean G_CompareRecordPresetVersions(strbuf_t *pre1, strbuf_t *pre2)
 
 boolean G_EmblemsEnabled(void)
 {
-	return !demo.playback && !strcmp(currentrecordpreset, "kart");
+	return !demo.playback && fastcmp(currentrecordpreset, "kart");
 }
 
 char *G_GetRecordReplayFolder(boolean home, boolean breaker)
@@ -1152,7 +1165,8 @@ void G_FinalClipAimingPitch(INT32 *aiming, player_t *player, boolean skybox)
 // returns true if event's axis is within the deadzone for the given player
 boolean G_AxisInDeadzone(UINT8 p, event_t *ev)
 {
-	return abs(ev->data2) <= (JOYAXISRANGE * cv_deadzone[p].value) / FRACUNIT;
+	fixed_t deadzonetype = G_GetDeadZoneType(p, G_GetAxisTypeForData1(ev->data1));
+	return abs(ev->data2) <= (JOYAXISRANGE * deadzonetype) / FRACUNIT;
 }
 
 // check if the given key is bound to the given gamecontrol
@@ -1181,7 +1195,44 @@ bound:
 	return false;
 }
 
-INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital)
+SINT8 G_GetAxisTypeForData1(SINT8 data1)
+{
+	switch (data1)
+	{
+		case 0:
+		case 2:
+			return DEADZONE_X;
+			break;
+		case 1:
+		case 3:
+			return DEADZONE_Y;
+			break;
+		case 4:
+		case 5:
+		default:
+			return DEADZONE_BUTTON;
+			break;
+	}
+}
+
+fixed_t G_GetDeadZoneType(INT32 p, SINT8 type)
+{
+	switch (type)
+	{
+		case DEADZONE_X:
+			return cv_deadzonex[p].value;
+			break;
+		case DEADZONE_Y:
+			return cv_deadzoney[p].value;
+			break;
+		case DEADZONE_BUTTON:
+		default:
+			return cv_deadzonet[p].value;
+			break;
+	}
+}
+
+INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital, SINT8 type)
 {
 	INT32 deviceID;
 	INT32 i;
@@ -1195,7 +1246,9 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital)
 		return 0;
 	}
 
-	deadzone = (JOYAXISRANGE * cv_deadzone[p].value) / FRACUNIT;
+	fixed_t deadzonetype = G_GetDeadZoneType(p,type);
+
+	deadzone = (JOYAXISRANGE * deadzonetype) / FRACUNIT;
 
 	deviceID = I_GetJoystickDeviceIndexForPlayer(p) + 1;
 
@@ -1229,9 +1282,9 @@ retrygetcontrol:
 	return 0;
 }
 
-boolean G_PlayerInputDown(UINT8 p, INT32 gc, boolean digital)
+boolean G_PlayerInputDown(UINT8 p, INT32 gc, boolean digital, SINT8 type)
 {
-	return (G_PlayerInputAnalog(p, gc, digital) != 0);
+	return (G_PlayerInputAnalog(p, gc, digital, type) != 0);
 }
 
 // Take a magnitude of two axes, and adjust it to take out the deadzone
@@ -1260,7 +1313,8 @@ static INT32 G_BasicDeadZoneCalculation(INT32 magnitude, fixed_t deadZone)
 static void G_HandleAxisDeadZone(UINT8 splitnum, joystickvector2_t *joystickvector)
 {
 	INT32 gamepadStyle = Joystick[splitnum].bGamepadStyle;
-	fixed_t deadZone = cv_deadzone[splitnum].value;
+	fixed_t deadZoneX = cv_deadzonex[splitnum].value;
+	fixed_t deadZoneY = cv_deadzoney[splitnum].value;
 	SINT8 deadZoneStyle = cv_deadzonestyle[splitnum].value;
 
 	// When gamepadstyle is "true" the values are just -1, 0, or 1. This is done in the interface code.
@@ -1276,7 +1330,8 @@ static void G_HandleAxisDeadZone(UINT8 splitnum, joystickvector2_t *joystickvect
 		INT32 magnitude = (joystickvector->xaxis * joystickvector->xaxis) + (joystickvector->yaxis * joystickvector->yaxis);
 		INT32 normalisedXAxis;
 		INT32 normalisedYAxis;
-		INT32 normalisedMagnitude;
+		INT32 normalisedMagnitudeX;
+		INT32 normalisedMagnitudeY;
 		double dMagnitude = sqrt((double)magnitude);
 		magnitude = (INT32)dMagnitude;
 
@@ -1285,11 +1340,12 @@ static void G_HandleAxisDeadZone(UINT8 splitnum, joystickvector2_t *joystickvect
 		normalisedYAxis = (joystickvector->yaxis * magnitude) / JOYAXISRANGE;
 
 		// Apply the deadzone to the magnitude to give a correct value between 0 and JOYAXISRANGE
-		normalisedMagnitude = G_BasicDeadZoneCalculation(magnitude, deadZone);
+		normalisedMagnitudeX = G_BasicDeadZoneCalculation(magnitude, deadZoneX);
+		normalisedMagnitudeY = G_BasicDeadZoneCalculation(magnitude, deadZoneY);
 
 		// Apply the deadzone to the xy axes
-		joystickvector->xaxis = (normalisedXAxis * normalisedMagnitude) / JOYAXISRANGE;
-		joystickvector->yaxis = (normalisedYAxis * normalisedMagnitude) / JOYAXISRANGE;
+		joystickvector->xaxis = (normalisedXAxis * normalisedMagnitudeX) / JOYAXISRANGE;
+		joystickvector->yaxis = (normalisedYAxis * normalisedMagnitudeY) / JOYAXISRANGE;
 
 		// Cap the values so they don't go above the correct maximum
 		joystickvector->xaxis = min(joystickvector->xaxis, JOYAXISRANGE);
@@ -1371,7 +1427,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		return;
 	}
 
-	joystickvector.xaxis = G_PlayerInputAnalog(forplayer, gc_turnright, false) - G_PlayerInputAnalog(forplayer, gc_turnleft, false);
+	joystickvector.xaxis = G_PlayerInputAnalog(forplayer, gc_turnright, false, DEADZONE_X) - G_PlayerInputAnalog(forplayer, gc_turnleft, false, DEADZONE_X);
 	joystickvector.yaxis = 0;
 	G_HandleAxisDeadZone(forplayer, &joystickvector);
 
@@ -1379,7 +1435,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// use it for aiming to throw items forward/backward and the vote screen
 	// This mean that the turn axis will still be gradient but up/down will be 0
 	// until the stick is pushed far enough
-	joystickvector.yaxis = G_PlayerInputAnalog(forplayer, gc_aimbackward, false) - G_PlayerInputAnalog(forplayer, gc_aimforward, false);
+	joystickvector.yaxis = G_PlayerInputAnalog(forplayer, gc_aimbackward, false, DEADZONE_Y) - G_PlayerInputAnalog(forplayer, gc_aimforward, false, DEADZONE_Y);
 
 	if (encoremode)
 	{
@@ -1399,7 +1455,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		{
 			// check turn input again, but this time digital only
 			// if it's false, an analog stick is inputting the turn; no smoothing!
-			if (G_PlayerInputDown(forplayer, gc_turnleft, true) || G_PlayerInputDown(forplayer, gc_turnright, true))
+			if (G_PlayerInputDown(forplayer, gc_turnleft, true, DEADZONE_X) || G_PlayerInputDown(forplayer, gc_turnright, true, DEADZONE_X))
 			{
 				I_Assert(cv_turnsmooth[forplayer].value);
 				tspeed /= cv_turnsmooth[forplayer].value * 2;
@@ -1441,12 +1497,12 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 	if (spectating || objectplacing) // SRB2Kart: spectators need special controls
 	{
-		if (G_PlayerInputDown(forplayer, gc_accelerate, false))
+		if (G_PlayerInputDown(forplayer, gc_accelerate, false, DEADZONE_BUTTON))
 		{
 			cmd->buttons |= BT_ACCELERATE;
 		}
 
-		if (G_PlayerInputDown(forplayer, gc_brake, false))
+		if (G_PlayerInputDown(forplayer, gc_brake, false, DEADZONE_BUTTON))
 		{
 			cmd->buttons |= BT_BRAKE;
 		}
@@ -1464,7 +1520,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	else
 	{
 		// forward with key or button // SRB2kart - we use an accel/brake instead of forward/backward.
-		fixed_t value = G_PlayerInputAnalog(forplayer, gc_accelerate, false);
+		fixed_t value = G_PlayerInputAnalog(forplayer, gc_accelerate, false, DEADZONE_BUTTON);
 		if (value != 0)
 		{
 			cmd->buttons |= BT_ACCELERATE;
@@ -1474,7 +1530,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		if (player->sneakertimer)
 			forward = MAXPLMOVE;	// 50
 
-		value = G_PlayerInputAnalog(forplayer, gc_brake, false);
+		value = G_PlayerInputAnalog(forplayer, gc_brake, false, DEADZONE_BUTTON);
 		if (value != 0)
 		{
 			cmd->buttons |= BT_BRAKE;
@@ -1490,33 +1546,33 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	}
 
 	// fire with any button/key
-	if (G_PlayerInputDown(forplayer, gc_fire, false))
+	if (G_PlayerInputDown(forplayer, gc_fire, false, DEADZONE_BUTTON))
 	{
 		cmd->buttons |= BT_ATTACK;
 	}
 
 	// drift with any button/key
-	if (G_PlayerInputDown(forplayer, gc_drift, false))
+	if (G_PlayerInputDown(forplayer, gc_drift, false, DEADZONE_BUTTON))
 	{
 		cmd->buttons |= BT_DRIFT;
 	}
 
 	// rear view with any button/key
-	if (G_PlayerInputDown(forplayer, gc_lookback, false))
+	if (G_PlayerInputDown(forplayer, gc_lookback, false, DEADZONE_BUTTON))
 	{
 		cmd->buttons |= BT_LOOKBACK;
 	}
 
 	// Lua scriptable buttons
-	if (G_PlayerInputDown(forplayer, gc_custom1, false))
+	if (G_PlayerInputDown(forplayer, gc_custom1, false, DEADZONE_BUTTON))
 		cmd->buttons |= BT_CUSTOM1;
-	if (G_PlayerInputDown(forplayer, gc_custom2, false))
+	if (G_PlayerInputDown(forplayer, gc_custom2, false, DEADZONE_BUTTON))
 		cmd->buttons |= BT_CUSTOM2;
-	if (G_PlayerInputDown(forplayer, gc_custom3, false))
+	if (G_PlayerInputDown(forplayer, gc_custom3, false, DEADZONE_BUTTON))
 		cmd->buttons |= BT_CUSTOM3;
 
 	// Reset camera
-	if (G_PlayerInputDown(forplayer, gc_camreset, false))
+	if (G_PlayerInputDown(forplayer, gc_camreset, false, DEADZONE_BUTTON))
 	{
 		if (thiscam->chase && *rd == false)
 			P_ResetCamera(player, thiscam);
@@ -1532,7 +1588,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			 && (!thiscam->chase)) //because chasecam's not inverted
 			 ? -1 : 1; // set to -1 or 1 to multiply
 
-		INT32 axis = G_PlayerInputAnalog(forplayer, gc_lookup, false) - G_PlayerInputAnalog(forplayer, gc_lookdown, false);
+		INT32 axis = G_PlayerInputAnalog(forplayer, gc_lookup, false, DEADZONE_Y) - G_PlayerInputAnalog(forplayer, gc_lookdown, false, DEADZONE_Y);
 
 		// either i allow mouse binds in controls... or i just hardcode it :^)
 		INT32 mousey = gamekeydown[0][KEY_MOUSEMOVE+1] - gamekeydown[0][KEY_MOUSEMOVE+0];
@@ -1541,7 +1597,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		if (axis != 0 && spectating)
 			cmd->aiming += axis/2 * screen_invert; // divide by 2 to match KB_LOOKSPEED
 
-		if (G_PlayerInputDown(forplayer, gc_centerview, false)) // // No need to put a spectator limit on this one though :V
+		if (G_PlayerInputDown(forplayer, gc_centerview, false, DEADZONE_BUTTON)) // // No need to put a spectator limit on this one though :V
 			cmd->aiming = 0;
 	}
 
@@ -1641,22 +1697,26 @@ ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
 
 void weaponPrefChange(void)
 {
-	WeaponPref_Send(0);
+	if (Playing())
+		WeaponPref_Send(0);
 }
 
 void weaponPrefChange2(void)
 {
-	WeaponPref_Send(1);
+	if (Playing())
+		WeaponPref_Send(1);
 }
 
 void weaponPrefChange3(void)
 {
-	WeaponPref_Send(2);
+	if (Playing())
+		WeaponPref_Send(2);
 }
 
 void weaponPrefChange4(void)
 {
-	WeaponPref_Send(3);
+	if (Playing())
+		WeaponPref_Send(3);
 }
 
 //
@@ -2317,11 +2377,16 @@ void G_FixCamera(UINT8 view)
 // Increment a viewpoint by offset from the current player. A negative value
 // decrements.
 //
-void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive)
+void G_AdjustViewEx(UINT8 viewnum, INT32 offset, boolean onlyactive, boolean resetfreecam)
 {
 	INT32 *displayplayerp, oldview;
 	displayplayerp = &displayplayers[viewnum-1];
 	oldview = (*displayplayerp);
+
+	// turn off the freecam
+	if (resetfreecam)
+		camera[viewnum-1].freecam = false;
+
 	G_ResetView(viewnum, ( (*displayplayerp) + offset ), onlyactive);
 
 	// If no other view could be found, go back to what we had.
@@ -2334,7 +2399,7 @@ void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive)
 // Ensures all viewpoints are valid
 // Also demotes splitscreen down to one player.
 //
-void G_ResetViews(void)
+void G_ResetViews(boolean resetfreecam)
 {
 	UINT8 splits;
 	UINT8 viewd;
@@ -2358,7 +2423,7 @@ void G_ResetViews(void)
 	*/
 	for (viewd = 1; viewd <= splits; ++viewd)
 	{
-		G_AdjustView(viewd, 0, false);
+		G_AdjustViewEx(viewd, 0, false, resetfreecam);
 	}
 }
 
@@ -2708,7 +2773,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	UINT8 latestlap;
 	UINT16 skincolor;
 	INT32 skin;
-	UINT32 availabilities;
+	UINT16 voice;
+	UINT8 availabilities[MAXAVAILABILITY];
 
 	tic_t jointime;
 
@@ -2766,6 +2832,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	skincolor = players[player].skincolor;
 	skin = players[player].skin;
+	voice = players[player].voice_id;
 
 	// SRB2kart
 	kartspeed = players[player].kartspeed;
@@ -2777,7 +2844,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	jitterlegacy = players[player].jitterlegacy;
 
-	availabilities = players[player].availabilities;
+	memcpy(availabilities, players[player].availabilities, sizeof(availabilities));
 
 	charflags = players[player].charflags;
 
@@ -2956,11 +3023,12 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	// save player config truth reborn
 	p->skincolor = skincolor;
 	p->skin = skin;
+	p->voice_id = voice;
 	p->kartspeed = kartspeed;
 	p->kartweight = kartweight;
 	//
 	p->charflags = charflags;
-	p->availabilities = availabilities;
+	memcpy(players[player].availabilities, availabilities, sizeof(availabilities));
 	p->followitem = followitem;
 
 	p->starpostx = starpostx;
@@ -3870,7 +3938,7 @@ INT32 G_GetGametypeByName(const char *gametypestr)
 	INT32 i;
 
 	for (i = 0; i < gametypecount; i++)
-		if (!stricmp(gametypestr, Gametype_Names[i]))
+		if (fasticmp(gametypestr, Gametype_Names[i]))
 			return i;
 
 	return -1; // unknown gametype
@@ -4986,7 +5054,7 @@ static void DataCorrupt(UINT8 *corrupted)
 	if (*corrupted)
 	{
 		const char *gdfolder = "the SRB2Kart folder";
-		if (strcmp(srb2home,"."))
+		if (!fastcmp(srb2home,"."))
 			gdfolder = srb2home;
 
 		I_Error(*corrupted == 1
@@ -5348,7 +5416,7 @@ void G_SaveGameData(void)
 			maprecordpreset_t *preset = &record->presets[j];
 
 			for (k = 0; k < knownprecount; k++)
-				if (!strcmp(knownpre[k], preset->prename))
+				if (fastcmp(knownpre[k], preset->prename))
 					break;
 			if (k == knownprecount)
 			{
@@ -5406,7 +5474,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 
 	memset(vcheck, 0, sizeof (vcheck));
 	sprintf(vcheck, (marathonmode ? "back-up %d" : "version %d"), VERSION);
-	if (strcmp((const char *)save.p, (const char *)vcheck))
+	if (!fastcmp((const char *)save.p, (const char *)vcheck))
 	{
 #ifdef SAVEGAME_OTHERVERSIONS
 		M_StartMessage(M_GetText("Save game from different version.\nYou can load this savegame, but\nsaving afterwards will be disabled.\n\nDo you want to continue anyway?\n\n(Press 'Y' to confirm)\n"),
@@ -5556,7 +5624,7 @@ void G_SaveGameOver(UINT32 slot, boolean modifylives)
 		// Version check
 		memset(vcheck, 0, sizeof (vcheck));
 		sprintf(vcheck, (marathonmode ? "back-up %d" : "version %d"), VERSION);
-		if (strcmp((const char *)save.p, (const char *)vcheck)) BADSAVE
+		if (!fastcmp((const char *)save.p, (const char *)vcheck)) BADSAVE
 		save.p += VERSIONSIZE;
 
 		// P_UnArchiveMisc()
@@ -5565,7 +5633,7 @@ void G_SaveGameOver(UINT32 slot, boolean modifylives)
 		(void)READUINT16(save.p); // emeralds
 		CHECKPOS
 		READSTRINGN(save.p, temp, sizeof(temp)); // mod it belongs to
-		if (strcmp(temp, timeattackfolder)) BADSAVE
+		if (!fastcmp(temp, timeattackfolder)) BADSAVE
 
 		// P_UnArchivePlayer()
 		CHECKPOS
@@ -5791,7 +5859,7 @@ char *G_BuildMapTitle(INT32 mapnum)
 	if (!mapnum || mapnum > nummapheaders || !mapheaderinfo[mapnum-1])
 		I_Error("G_BuildMapTitle: Internal map ID %d not found (nummapheaders = %d)", mapnum-1, nummapheaders);
 
-	if (strcmp(mapheaderinfo[mapnum-1]->lvlttl, ""))
+	if (mapheaderinfo[mapnum-1]->lvlttl[0] != '\0')
 	{
 		size_t len = 1;
 		const char *zonetext = NULL;
@@ -5808,9 +5876,11 @@ char *G_BuildMapTitle(INT32 mapnum)
 			zonetext = M_GetText("Zone");
 			len += strlen(zonetext) + 1;	// ' ' + zonetext
 		}
-
-		if (actnum)
-			len += 1 + 11;					// ' ' + INT32
+		if (strlen(mapheaderinfo[mapnum-1]->actnum) > 0)
+		{
+			actnum = M_GetText(mapheaderinfo[mapnum-1]->actnum);
+			len += strlen(actnum) + 1;	// ' ' + actnum
+		}
 
 		title = Z_Malloc(len, PU_STATIC, NULL);
 
@@ -5818,7 +5888,6 @@ char *G_BuildMapTitle(INT32 mapnum)
 			return NULL;
 
 		sprintf(title, "%s", mapheaderinfo[mapnum-1]->lvlttl);
-
 		if (zonetext) sprintf(title + strlen(title), " %s", zonetext);
 		if (actnum) sprintf(title + strlen(title), " %s", actnum);
 	}

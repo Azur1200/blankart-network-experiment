@@ -81,7 +81,9 @@ extern consvar_t cv_kickstartaccel[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_shrinkme[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_jitterlegacy[MAXSPLITSCREENPLAYERS];
 
-extern consvar_t cv_deadzone[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_deadzonex[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_deadzoney[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_deadzonet[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_deadzonestyle[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_guest, cv_ghost_staff;
@@ -123,9 +125,18 @@ void G_FinalClipAimingPitch(INT32 *aiming, player_t *player, boolean skybox);
 extern angle_t localangle[MAXSPLITSCREENPLAYERS];
 extern INT32 localaiming[MAXSPLITSCREENPLAYERS]; // should be an angle_t but signed
 
-INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital);
-boolean G_PlayerInputDown(UINT8 p, INT32 gc, boolean digital);
+typedef enum
+{
+	DEADZONE_X,
+	DEADZONE_Y,
+	DEADZONE_BUTTON,
+} analogdeadzone_e;
+
+fixed_t G_GetDeadZoneType(INT32 p, SINT8 type);
+INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital, SINT8 type);
+boolean G_PlayerInputDown(UINT8 p, INT32 gc, boolean digital, SINT8 type);
 boolean G_ControlBoundToKey(UINT8 p, INT32 gc, INT32 key, boolean defaults);
+SINT8 G_GetAxisTypeForData1(SINT8 data1);
 boolean G_AxisInDeadzone(UINT8 p, event_t *ev);
 
 //
@@ -227,9 +238,10 @@ INT32 G_FindView(INT32 startview, UINT8 viewnum, boolean onlyactive, boolean rev
 INT32 G_CountPlayersPotentiallyViewable(boolean active);
 
 void G_FixCamera(UINT8 view);
-void G_ResetViews(void);
+void G_ResetViews(boolean resetfreecam);
 void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive);
-void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive);
+void G_AdjustViewEx(UINT8 viewnum, INT32 offset, boolean onlyactive, boolean resetfreecam);
+#define G_AdjustView(v,o,oa) G_AdjustViewEx(v,o,oa, true)
 
 void G_AddPlayer(INT32 playernum, INT32 console);
 

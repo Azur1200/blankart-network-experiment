@@ -732,6 +732,9 @@ _(kc6c)
 _(kc6d)
 _(kc6e)
 
+// Mario Kart DS
+_(mds0a)
+
 // SRB2kart
 _(slip)
 _(screec)

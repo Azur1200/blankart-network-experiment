@@ -11,7 +11,6 @@
 /// \brief Lua scripting basics
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "dehacked.h"
 #include "deh_lua.h"
 #include "z_zone.h"
@@ -68,6 +67,8 @@ static lua_CFunction liblist[] = {
 	LUA_VectorLib, // vectors
 	LUA_MatrixLib, // matrices
 	LUA_QuaternionLib, // quaternions
+	LUA_VoiceLib, // kartvoice_t, skinvoices[]
+	LUA_ItemLib, // kartitem_t, kartresult_t, kartitemgraphics_t
 	NULL
 };
 
@@ -146,8 +147,11 @@ int LUA_GetErrorMessage(lua_State *L)
 	return 1;
 }
 
-int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex)
+int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, boolean compat)
 {
+	boolean oldcompat = lua_compatmode;
+	lua_compatmode = compat;
+
 	int err = lua_pcall(L, nargs, nresults, errorhandlerindex);
 
 	if (err)
@@ -156,6 +160,7 @@ int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex)
 		lua_pop(L, 1);
 	}
 
+	lua_compatmode = oldcompat;
 	return err;
 }
 

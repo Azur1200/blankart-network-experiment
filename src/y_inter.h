@@ -18,6 +18,7 @@ extern "C" {
 
 extern boolean usebuffer;
 
+boolean Y_ItemListActive(void);
 void Y_IntermissionDrawer(void);
 void Y_Ticker(void);
 
@@ -65,6 +66,7 @@ typedef struct
 	char luaPrefix[5];              // prefix for lua votescreens
 
 	INT32 currentAnimFrame;         // current animated background frame
+	INT32 timePerAnimFrame;         // time for 1 frame in ticks, 2 by default
 
 	INT32 foundLuaVoteFrames;       // normal lua patch frames
 	INT32 foundLuaVoteWideFrames;   // widescreen lua patch frames
@@ -78,6 +80,13 @@ typedef struct
 	patch_t *rubyicon;              // encore ruby patch
 } votescreen_t;
 extern votescreen_t VoteScreen;
+
+boolean Y_PlayerIDCanVote(const UINT8 id);
+
+typedef enum
+{
+	VOTE_NOT_PICKED = -1,
+} votetype_e;
 
 #ifdef __cplusplus
 } // extern "C"

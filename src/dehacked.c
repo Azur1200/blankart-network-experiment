@@ -219,7 +219,7 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 	if (fastcmp(type, "SFX"))
 	{
 		CONS_Printf("Sound sfx_%s allocated.\n", word);
-		i = S_AddSoundFx(word, false, 0, false);
+		i = S_AddSoundFx(word, false);
 		if (i != sfx_None)
 		{
 			*out = i;
@@ -846,12 +846,13 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 					}
 
 					if (clearall || fastcmp(word2, "UNLOCKABLES"))
-						memset(&unlockables, 0, sizeof(unlockables));
+					{
+						clear_unlockables();
+					}
 
 					if (clearall || fastcmp(word2, "EMBLEMS"))
 					{
-						memset(&emblemlocations, 0, sizeof(emblemlocations));
-						numemblems = 0;
+						clear_emblems();
 					}
 
 					if (clearall || fastcmp(word2, "EXTRAEMBLEMS"))

@@ -66,7 +66,6 @@
 #include "m_misc.h" // screenshot functionality
 #include "deh_tables.h" // Dehacked list test
 #include "m_cond.h" // condition initialization
-#include "fastcmp.h"
 #include "r_fps.h" // Frame interpolation/uncapped
 #include "keys.h"
 #include "filesrch.h" // refreshdirmenu
@@ -94,8 +93,8 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x22734e65763c2939
-#define ASSET_HASH_MAPPATCH_PK3        0x0afd8afc6fc50175
+#define ASSET_HASH_MAIN_PK3            0x6ae176cd227ed0eb
+#define ASSET_HASH_MAPPATCH_PK3        0x6ad99efcfaafb70f
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
 #define ASSET_HASH_PATCH_PK3           0x0000000000000000
@@ -120,7 +119,9 @@
 // Version numbers for netplay :upside_down_face:
 int    VERSION;
 int SUBVERSION;
+#ifdef COMMITVERSION
 UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
+#endif
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
@@ -958,6 +959,17 @@ void D_SRB2Loop(void)
 
 	// Check and print which version is executed.
 	// Use this as the border between setup and the main game loop being entered.
+#ifdef BOOTDEVNAG
+	char bootnag[1024];
+	snprintf(bootnag,
+		sizeof(bootnag),
+		"%s is still in active development. Things may break or crash!\n", BLANNAME
+	);
+
+	CONS_Printf(
+	"===========================================================================\n");
+	CONS_Printf(bootnag);
+#endif
 	CONS_Printf(
 	"===========================================================================\n"
 	"                   We hope you enjoy this game as\n"
@@ -986,6 +998,9 @@ void D_SRB2Loop(void)
 
 	for (;;)
 	{
+		if (I_Interrupted())
+			I_Quit();
+
 		precise_t enterprecise = I_GetPreciseTime();
 
 		memset(&g_dc, 0, sizeof(g_dc));
@@ -1096,9 +1111,9 @@ void D_SRB2Loop(void)
 			}
 			else if (!dedicated && frameskip)
 			{
-				// always update console and hud
-				// otherwise it may take minutes to open it
-				CON_Drawer();
+				// always update console movement
+				// otherwise it will takes literal ages to open
+				CON_MoveConsole();
 			}
 		}
 
@@ -1161,11 +1176,6 @@ void D_ResetGameState(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		CL_ClearPlayer(i);
-
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		players[g_localplayers[i]].availabilities = R_GetSkinAvailabilities();
-	}
 
 	splitscreen = 0;
 	SplitScreen_OnChange();
@@ -1335,17 +1345,23 @@ static void IdentifyVersion(void)
 	srb2waddir = I_LocateWad();
 #endif
 
+	char tempsrb2path[256] = ".";
+	getcwd(tempsrb2path, 256);
+
 	// get the current directory (possible problem on NT with "." as current dir)
-	if (srb2waddir)
+	if (!srb2waddir)
 	{
-		strlcpy(srb2path,srb2waddir,sizeof (srb2path));
-	}
-	else
-	{
-		if (getcwd(srb2path, 256) != NULL)
-			srb2waddir = srb2path;
+		if (tempsrb2path[0])
+			srb2waddir = tempsrb2path;
 		else
-			srb2waddir = ".";
+			srb2waddir = srb2path;
+	}
+
+#if (1) // reduce the amount of findfile by only using full cwd in this func
+	if (!fastcmp(tempsrb2path, srb2waddir))
+#endif
+	{
+		strlcpy(srb2path, srb2waddir, sizeof (srb2path));
 	}
 
 	// Load the IWAD
@@ -1394,6 +1410,19 @@ static void IdentifyVersion(void)
 #endif
 }
 
+#ifdef COMMITVERSION
+static void D_AbbrevCommit (void)
+{
+       UINT8 i;
+
+       for (i = 0; i < GIT_SHA_ABBREV; ++i)
+       {
+               sscanf(&comprevision[i * 2], "%2hhx",
+                               &comprevision_abbrev_bin[i]);
+       }
+}
+#endif
+
 static void
 D_ConvertVersionNumbers (void)
 {
@@ -1402,6 +1431,33 @@ D_ConvertVersionNumbers (void)
 	sscanf(SRB2VERSION, "%d.%d", &VERSION, &SUBVERSION);
 #endif
 }
+
+const char *D_GetFancyBranchName(void)
+{
+	if (compbranch[0] == '\0')
+	{
+		// \x8b = aqua highlight
+		return "\x8b" "detached HEAD" "\x80";
+	}
+
+	return compbranch;
+}
+
+static void Command_assert(void)
+{
+#if !defined(NDEBUG) || defined(PARANOIA)
+	CONS_Printf("Yes, assertions are enabled.\n");
+#else
+	CONS_Printf("No, ssertions are NOT enabled.\n");
+#endif
+}
+
+#ifdef DEVELOP
+static void Command_crash(void)
+{
+	I_Error("The game crashed on PURPOSE, because of the 'crash' command. (This is only enabled in DEVELOP builds.)");
+}
+#endif
 
 //
 // D_SRB2Main
@@ -1415,6 +1471,10 @@ void D_SRB2Main(void)
 
 	/* break the version string into version numbers, for netplay */
 	D_ConvertVersionNumbers();
+
+#ifdef COMMITVERSION
+	D_AbbrevCommit();
+#endif
 
 	// Print GPL notice for our console users (Linux)
 	CONS_Printf(
@@ -1567,6 +1627,11 @@ void D_SRB2Main(void)
 
 	// Do this up here so that WADs loaded through the command line can use ExecCfg
 	COM_Init();
+
+	COM_AddCommand("assert", Command_assert);
+#ifdef DEVELOP
+	COM_AddCommand("crash", Command_crash);
+#endif
 
 	// add any files specified on the command line with -file wadfile
 	// to the wad list
@@ -1881,15 +1946,17 @@ void D_SRB2Main(void)
 		if (WADNAMECHECK(word))
 		{
 			if (!(pstartmap = wadnamemap))
-				I_Error("Bad '%s' level warp; pstartmap (%d) != wadnamemap (%d).\n"
-#if defined (_WIN32)
+				I_Error("Bad '%s' level warp; wadnamemap is %d.\n"
+#if (defined (_WIN32)) || (defined(__linux__))
 				"Are you using MSDOS 8.3 filenames in Zone Builder?\n"
 				"\n"
 				"To check: edit the BlanKart game configuration in Ultimate Lowee Builder.\n"
 				"Go to the Testing tab and make sure \"Use short paths and file names\" is turned off.\n"
 				"(The option is hidden by default. Check \"Customize parameters\" to show it.)\n"
+				"\n"
+				"If the above is correct, make sure you have an SOC file in your resources for this map."
 #endif
-				, word, pstartmap, wadnamemap);
+				, word, wadnamemap);
 		}
 		else
 		{

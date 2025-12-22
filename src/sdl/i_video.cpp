@@ -1025,7 +1025,7 @@ void I_GetEvent(void)
 
 					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 					{
-						if (!strcmp(cv_usejoystick[i].string, "0") || !cv_usejoystick[i].value)
+						if (fastcmp(cv_usejoystick[i].string, "0") || !cv_usejoystick[i].value)
 							cv_usejoystick[i].value = 0;
 						else if (atoi(cv_usejoystick[i].string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
 								 && cv_usejoystick[i].value) // update the cvar ONLY if a device exists
@@ -1096,7 +1096,7 @@ void I_GetEvent(void)
 
 				for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 				{
-					if (!strcmp(cv_usejoystick[i].string, "0"))
+					if (fastcmp(cv_usejoystick[i].string, "0"))
 					{
 						cv_usejoystick[i].value = 0;
 					}
@@ -1318,7 +1318,17 @@ void I_FinishUpdate(void)
 	}
 #ifdef HWRENDER
 	else if (rendermode == render_opengl)
+	{
+		// Final postprocess step of palette rendering, after everything else has been drawn.
+		if (HWR_ShouldUsePaletteRendering())
+		{
+			HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
+			HWD.pfnSetShader(HWR_GetShaderFromTarget(SHADER_PALETTE_POSTPROCESS));
+			HWD.pfnDrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
+			HWD.pfnUnSetShader();
+		}
 		OglSdlFinishUpdate(cv_vidwait.value);
+	}
 #endif
 }
 
@@ -1566,7 +1576,16 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 #endif
 
 	// Create a window
-	window = SDL_CreateWindow("SRB2Kart " VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, realwidth, realheight, flags);
+#ifdef COMMITVERSION
+	{
+		char versionstring[256];
+		sprintf(versionstring, "BlanKart Indev %s", comprevision);
+
+		window = SDL_CreateWindow(versionstring, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, realwidth, realheight, flags);
+	}
+#else
+	window = SDL_CreateWindow("BlanKart " VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, realwidth, realheight, flags);
+#endif
 
 	if (window == NULL)
 	{
@@ -1665,7 +1684,7 @@ void I_StartupGraphics(void)
 		const char *modeparm = M_GetNextParm();
 		while (renderer_list[i].strvalue)
 		{
-			if (!stricmp(modeparm, renderer_list[i].strvalue))
+			if (fasticmp(modeparm, renderer_list[i].strvalue))
 			{
 				chosenrendermode = static_cast<rendermode_t>(renderer_list[i].value);
 				break;
@@ -1748,34 +1767,34 @@ static void Impl_InitOpenGL(void)
 	*(void**)&HWD.pfnSetTexture       = hwSym("SetTexture",NULL);
 	*(void**)&HWD.pfnUpdateTexture    = hwSym("UpdateTexture",NULL);
 	*(void**)&HWD.pfnDeleteTexture    = hwSym("DeleteTexture",NULL);
-	*(void**)&HWD.pfnReadScreenFinalTexture=hwSym("ReadScreenFinalTexture",NULL);
+	*(void**)&HWD.pfnReadScreenTexture= hwSym("ReadScreenTexture",NULL);
 	*(void**)&HWD.pfnGClipRect        = hwSym("GClipRect",NULL);
 	*(void**)&HWD.pfnClearMipMapCache = hwSym("ClearMipMapCache",NULL);
 	*(void**)&HWD.pfnSetSpecialState  = hwSym("SetSpecialState",NULL);
-	*(void**)&HWD.pfnSetPalette       = hwSym("SetPalette",NULL);
+	*(void**)&HWD.pfnSetTexturePalette= hwSym("SetTexturePalette",NULL);
 	*(void**)&HWD.pfnGetTextureUsed   = hwSym("GetTextureUsed",NULL);
 	*(void**)&HWD.pfnDrawModel        = hwSym("DrawModel",NULL);
 	*(void**)&HWD.pfnCreateModelVBOs  = hwSym("CreateModelVBOs",NULL);
 	*(void**)&HWD.pfnSetTransform     = hwSym("SetTransform",NULL);
 	*(void**)&HWD.pfnPostImgRedraw    = hwSym("PostImgRedraw",NULL);
 	*(void**)&HWD.pfnFlushScreenTextures=hwSym("FlushScreenTextures",NULL);
-	*(void**)&HWD.pfnStartScreenWipe  = hwSym("StartScreenWipe",NULL);
-	*(void**)&HWD.pfnEndScreenWipe    = hwSym("EndScreenWipe",NULL);
 	*(void**)&HWD.pfnDoScreenWipe     = hwSym("DoScreenWipe",NULL);
-	*(void**)&HWD.pfnDrawIntermissionBG=hwSym("DrawIntermissionBG",NULL);
-	*(void**)&HWD.pfnMakeIntermissionBG=hwSym("MakeIntermissionBG",NULL);
+	*(void**)&HWD.pfnDrawScreenTexture= hwSym("DrawScreenTexture",NULL);
 	*(void**)&HWD.pfnMakeScreenTexture= hwSym("MakeScreenTexture",NULL);
 	*(void**)&HWD.pfnRenderVhsEffect  = hwSym("RenderVhsEffect",NULL);
-	*(void**)&HWD.pfnMakeScreenFinalTexture=hwSym("MakeScreenFinalTexture",NULL);
 	*(void**)&HWD.pfnDrawScreenFinalTexture=hwSym("DrawScreenFinalTexture",NULL);
 
-	*(void**)&HWD.pfnCompileShaders   = hwSym("CompileShaders",NULL);
-	*(void**)&HWD.pfnCleanShaders     = hwSym("CleanShaders",NULL);
+	*(void**)&HWD.pfnInitShaders      = hwSym("InitShaders",NULL);
+	*(void**)&HWD.pfnLoadShader       = hwSym("LoadShader",NULL);
+	*(void**)&HWD.pfnCompileShader    = hwSym("CompileShader",NULL);
 	*(void**)&HWD.pfnSetShader        = hwSym("SetShader",NULL);
 	*(void**)&HWD.pfnUnSetShader      = hwSym("UnSetShader",NULL);
 
 	*(void**)&HWD.pfnSetShaderInfo    = hwSym("SetShaderInfo",NULL);
-	*(void**)&HWD.pfnLoadCustomShader = hwSym("LoadCustomShader",NULL);
+	*(void**)&HWD.pfnSetPaletteLookup = hwSym("SetPaletteLookup",NULL);
+	*(void**)&HWD.pfnCreateLightTable = hwSym("CreateLightTable",NULL);
+	*(void**)&HWD.pfnClearLightTables = hwSym("ClearLightTables",NULL);
+	*(void**)&HWD.pfnSetScreenPalette = hwSym("SetScreenPalette",NULL);
 
 	if (HWD.pfnInit())
 		vid.glstate = VID_GL_LIBRARY_LOADED;
@@ -1784,6 +1803,7 @@ static void Impl_InitOpenGL(void)
 		vid.glstate = VID_GL_LIBRARY_ERROR;
 
 		CV_StealthSet(&cv_renderer, "Software");
+
 		rendermode = render_soft;
 
 		if (setrenderneeded)
@@ -1819,7 +1839,8 @@ void I_ShutdownGraphics(void)
 		SDL_GL_DeleteContext(sdlglcontext);
 	}
 #endif
-	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	if (SDL_WasInit(SDL_INIT_VIDEO) == SDL_INIT_VIDEO)
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	framebuffer = SDL_FALSE;
 }
 

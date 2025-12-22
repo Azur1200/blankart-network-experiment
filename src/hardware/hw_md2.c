@@ -22,7 +22,6 @@
 #include "../d_main.h"
 #include "../doomdef.h"
 #include "../doomstat.h"
-#include "../fastcmp.h"
 
 #ifdef HWRENDER
 #include "hw_drv.h"
@@ -392,8 +391,6 @@ static void md2_loadTexture(md2_t *model)
 	if (!grPatch->mipmap->downloaded && !grPatch->mipmap->data)
 	{
 		int w = 0, h = 0;
-		UINT32 size;
-		RGBA_t *image;
 
 #ifdef HAVE_PNG
 		grPatch->mipmap->format = PNG_Load(filename, &w, &h, grPatch);
@@ -414,13 +411,19 @@ static void md2_loadTexture(md2_t *model)
 		grPatch->mipmap->width = (UINT16)w;
 		grPatch->mipmap->height = (UINT16)h;
 
-		// Lactozilla: Apply colour cube
-		image = grPatch->mipmap->data;
-		size = w*h;
-		while (size--)
+		// for palette rendering, color cube is applied in post-processing instead of here
+		if (!HWR_ShouldUsePaletteRendering())
 		{
-			V_CubeApply(&image->s.red, &image->s.green, &image->s.blue);
-			image++;
+			UINT32 size;
+			RGBA_t *image;
+			// Lactozilla: Apply colour cube
+			image = grPatch->mipmap->data;
+			size = w*h;
+			while (size--)
+			{
+				V_CubeApply(&image->s.red, &image->s.green, &image->s.blue);
+				image++;
+			}
 		}
 	}
 
@@ -579,7 +582,7 @@ loadmodelfile:
 		{
 			for (i = 0; i < NUMSPRITES; i++)
 			{
-				if (stricmp(name, sprnames[i]) == 0)
+				if (fasticmp(name, sprnames[i]))
 				{
 					md2_models[i].scale = scale;
 					md2_models[i].offset = offset;
@@ -594,7 +597,7 @@ addskinmodel:
 		// add player model
 		for (s = 0; s < MAXSKINS; s++)
 		{
-			if (stricmp(skinname, skins[s].name) == 0)
+			if (fasticmp(skinname, skins[s].name))
 			{
 				boolean iscompatskin = wadfiles[skins[s].wadnum]->compatmode;
 				md2_playermodels[s].skin = s;
@@ -668,7 +671,7 @@ void HWR_AddPlayerModel(int skin) // For skins that were added after startup
 		if (!strnicmp(name, PLAYERMODELPREFIX, prefixlen) && (len > prefixlen))
 			skinname += prefixlen;
 
-		if (stricmp(skinname, skins[skin].name) == 0)
+		if (fasticmp(skinname, skins[skin].name))
 		{
 			boolean iscompatskin = wadfiles[skins[skin].wadnum]->compatmode;
 			md2_playermodels[skin].skin = skin;
@@ -730,7 +733,7 @@ void HWR_AddSpriteModel(size_t spritenum) // For sprites that were added after s
 		if (!strnicmp(name, PLAYERMODELPREFIX, strlen(PLAYERMODELPREFIX)))
 			continue; // that's not a sprite...
 
-		if (stricmp(name, sprnames[spritenum]) == 0)
+		if (fasticmp(name, sprnames[spritenum]))
 		{
 			md2_models[spritenum].scale = scale;
 			md2_models[spritenum].offset = offset;
@@ -1639,7 +1642,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 		p.y = FIXED_TO_FLOAT(interp.y) + md2->offset;
 
 		if (flip)
-			p.z = FIXED_TO_FLOAT(interp.z + spr->mobj->height);
+			p.z = FIXED_TO_FLOAT(interp.z + interp.height);
 		else
 			p.z = FIXED_TO_FLOAT(interp.z);
 
@@ -1690,8 +1693,8 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 				p.roll = true;
 
 				// rotation pivot
-				p.centerx = FIXED_TO_FLOAT(spr->mobj->radius / 2);
-				p.centery = FIXED_TO_FLOAT(spr->mobj->height / 2);
+				p.centerx = FIXED_TO_FLOAT(interp.radius / 2);
+				p.centery = FIXED_TO_FLOAT(interp.height / 2);
 
 				// rotation axes relative to camera
 				pitchR = FINESINE(FixedAngle(camAngleDiff) >> ANGLETOFINESHIFT);
@@ -1715,7 +1718,8 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 		p.flip = atransform.flip;
 		p.mirror = atransform.mirror;
 
-		HWD.pfnSetShader(SHADER_MODEL);	// model shader
+		if (HWR_UseShader())
+			HWD.pfnSetShader(HWR_GetShaderFromTarget(SHADER_MODEL));
 		{
 			float this_scale = FIXED_TO_FLOAT(interp.scale);
 			fixed_t floorClip = spr->mobj->terrain ? spr->mobj->terrain->floorClip : 0;

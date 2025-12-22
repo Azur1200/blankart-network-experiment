@@ -44,6 +44,7 @@
 #include "k_bot.h" // K_BotTicker
 #include "k_items.h" // ItemBGone
 #include "k_specialstage.h"
+#include "k_grandprix.h"
 
 #ifdef PARANOIA
 #include "deh_tables.h" // MOBJTYPE_LIST
@@ -262,7 +263,7 @@ void P_AddThinker(const thinklistnum_t n, thinker_t *thinker)
 }
 
 #ifdef PARANOIA
-static const char *MobjTypeName(const mobj_t *mobj)
+const char *P_MobjTypeName(const mobj_t *mobj)
 {
 	actionf_p1 p1 = mobj->thinker.function;
 
@@ -338,7 +339,7 @@ void P_RemoveThinkerDelayed(thinker_t *thinker)
 			CONS_Printf(
 					"PARANOIA/P_RemoveThinkerDelayed: %p MT_%s references=%d\n",
 					(void*)thinker,
-					MobjTypeName((mobj_t*)thinker),
+					P_MobjTypeName((mobj_t*)thinker),
 					thinker->references
 			);
 
@@ -428,7 +429,7 @@ mobj_t *P_SetTarget2(mobj_t **mop, mobj_t *targ
 			CONS_Printf(
 					"PARANOIA/P_SetTarget: %p MT_%s %s references=%d, references go negative! (%s:%d)\n",
 					(void*)*mop,
-					MobjTypeName(*mop),
+					P_MobjTypeName(*mop),
 					MobjThinkerName(*mop),
 					(*mop)->thinker.references,
 					source_file,
@@ -852,7 +853,7 @@ void P_Ticker(boolean run)
 				{
 					tic_t startingtime = (gametyperules & GTR_NOCOUNTDOWN) ? introtime : starttime;
 					if (leveltime < startingtime) // SRB2Kart
-						S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
+						S_ChangeMusicInternal(((grandprixinfo.roundnum > 0) ? "gpstrt" : (encoremode ? "estart" : "kstart")), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
 					else if (leveltime == startingtime) // The GO! sound stops the level start ambience
 						S_StopMusic();
 					else if (leveltime == startingtime + (TICRATE/2)) // Plays the music after the starting countdown.
@@ -944,7 +945,7 @@ void P_Ticker(boolean run)
 			G_WriteAllGhostTics();
 
 			if (cv_recordmultiplayerdemos.value && (demo.savemode == DSM_NOTSAVING || demo.savemode == DSM_WILLAUTOSAVE))
-				if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && G_PlayerInputDown(0, gc_lookback, false))
+				if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON))
 					demo.savemode = DSM_TITLEENTRY;
 		}
 		else if (demo.playback) // Use Ghost data for consistency checks.

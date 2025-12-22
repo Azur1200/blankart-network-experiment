@@ -81,6 +81,8 @@
 #include <sys/stat.h>
 #include <ctype.h>
 
+#include "fastcmp.h"
+
 #ifdef _WIN32
 #include <io.h>
 #endif
@@ -107,6 +109,10 @@ extern "C" {
 extern FILE *logstream;
 extern char logfilename[1024];
 #endif
+
+#define BOOTDEVNAG
+
+#define BLANNAME "BlanKart"
 
 /* A mod name to further distinguish versions. */
 #define SRB2APPLICATION "SRB2Kart"
@@ -197,6 +203,8 @@ extern char logfilename[1024];
 
 #define MAXSKINS 4096
 #define MAXFOLLOWERS UINT16_MAX
+#define MAXSKINUNAVAILABLE 128
+#define MAXAVAILABILITY MAXSKINUNAVAILABLE/8
 
 #define COLORRAMPSIZE 16
 #define MAXCOLORNAME 32
@@ -344,8 +352,10 @@ extern int SUBVERSION;
 // abbreviation. Maybe in another 20k commits, more than 8
 // characters will be required! =P
 // P.S. 8 is also what comptime generates
+#ifdef COMMITVERSION
 #define GIT_SHA_ABBREV (4)
 extern UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
+#endif
 
 extern boolean devparm; // development mode (-debug)
 
@@ -540,6 +550,7 @@ extern int compuncommitted;
 #ifdef DEVELOP
 // Easily make it so that overtime works offline
 #define TESTOVERTIMEINFREEPLAY
+#define COMMITVERSION
 #endif
 
 /// FINALLY some real clipping that doesn't make walls dissappear AND speeds the game up

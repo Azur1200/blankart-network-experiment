@@ -15,7 +15,6 @@
 #include "doomdata.h"
 #include "doomdef.h"
 #include "doomtype.h"
-#include "fastcmp.h"
 #include "r_textures.h"
 #include "w_wad.h"
 #include "z_zone.h"
@@ -106,7 +105,7 @@ static boolean K_BRIGHTLumpParser(char *data, size_t size)
 	{
 		boolean valid = true;
 
-		if (stricmp(tkn, "texture") == 0)
+		if (fasticmp(tkn, "texture"))
 		{
 			Z_Free(tkn);
 			tkn = M_GetToken(NULL);

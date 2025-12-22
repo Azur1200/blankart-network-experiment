@@ -11,7 +11,6 @@
 /// \brief infotable editing library for Lua scripting
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "info.h"
 #include "dehacked.h"
 #include "deh_tables.h"
@@ -709,7 +708,7 @@ static void A_Lua(mobj_t *actor)
 	LUA_PushUserdata(gL, actor, META_MOBJ);
 	lua_pushinteger(gL, var1);
 	lua_pushinteger(gL, var2);
-	LUA_Call(gL, 3, 0, 1);
+	LUA_Call(gL, 3, 0, 1, lua_compatmode); // TODO
 
 	lua_pop(gL, 1); // pop error handler
 
@@ -904,7 +903,7 @@ boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor)
 	superactions[superstack] = actionpointers[actionnum].name;
 	++superstack;
 
-	LUA_Call(gL, 3, 0, -(2 + 3));
+	LUA_Call(gL, 3, 0, -(2 + 3), lua_compatmode); // TODO
 	lua_pop(gL, -1); // Error handler
 
 	--superstack;
@@ -1477,12 +1476,15 @@ static int sfxinfo_get(lua_State *L)
 		lua_pushstring(L, sfx->caption);
 		return 1;
 	case sfxinfor_skinsound:
-		lua_pushinteger(L, sfx->skinsound);
+		if (!lua_compatmode)
+			goto nope;
+		sfxenum_t sound = sfx - S_sfx;
+		lua_pushinteger(L, sound >= sfx_kwin && sound <= sfx_kgloat ? sound - sfx_kwin : -1);
 		return 1;
-	case sfxinfor_string: {
+	case sfxinfor_string:
 		lua_pushstring(L, sfx->name);
 		return 1;
-	}
+	nope:
 	default:
 		return luaL_error(L, "Field does not exist in sfxinfo_t");
 	}
@@ -1680,7 +1682,7 @@ static int lib_setSkinColor(lua_State *L)
 			if (info->name[0] != '\0') // don't check empty string for dupe
 			{
 				UINT16 dupecheck = R_GetColorByName(info->name);
-				if (!stricmp(info->name, skincolors[SKINCOLOR_NONE].name) || (dupecheck && (dupecheck != info-skincolors)))
+				if (fasticmp(info->name, skincolors[SKINCOLOR_NONE].name) || (dupecheck && (dupecheck != info-skincolors)))
 					CONS_Alert(CONS_WARNING, "skincolor_t field 'name' ('%s') is a duplicate of another skincolor's name.\n", info->name);
 			}
 		} else if (i == 2 || (str && fastcmp(str,"ramp"))) {
@@ -1775,7 +1777,7 @@ static int skincolor_set(lua_State *L)
 		if (info->name[0] != '\0') // don't check empty string for dupe
 		{
 			UINT16 dupecheck = R_GetColorByName(info->name);
-			if (!stricmp(info->name, skincolors[SKINCOLOR_NONE].name) || (dupecheck && (dupecheck != cnum)))
+			if (fasticmp(info->name, skincolors[SKINCOLOR_NONE].name) || (dupecheck && (dupecheck != cnum)))
 				CONS_Alert(CONS_WARNING, "skincolor_t field 'name' ('%s') is a duplicate of another skincolor's name.\n", info->name);
 		}
 	} else if (fastcmp(field,"ramp")) {

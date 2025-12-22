@@ -24,7 +24,6 @@ extern "C" {
 #include "m_misc.h"
 #include "p_local.h"
 #include "st_stuff.h"
-#include "fastcmp.h"
 #include "lua_script.h"
 #include "lua_libs.h"
 #include "k_items.h"

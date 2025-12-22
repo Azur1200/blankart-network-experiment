@@ -53,7 +53,7 @@ void ServerInfoUpdateSend(void);
 // Networking and tick handling related.
 #define BACKUPTICS 512 // more than enough for most timeouts....
 #define CLIENTBACKUPTICS 32
-#define MAXTEXTCMD 512
+#define MAXTEXTCMD 256
 
 // No. of tics your controls can be delayed by.
 
@@ -135,6 +135,33 @@ typedef enum
 	NUMPACKETTYPE
 } packettype_t;
 
+typedef struct consistancy_s
+{
+	INT16 checksum; // Total consistancy checksum
+
+	INT32 playerpos[2];
+	INT32 position[3]; // Position checksum
+
+	INT32 momentum[3]; // Speed checksum
+
+	INT32 itemsum; // Player item checksum
+
+	UINT32 rngseed;
+
+	// Object data checksum
+	INT32 mobjtype;
+	INT32 mobjangle;
+	INT32 mobjflags;
+	INT32 mobjflags2;
+	INT32 mobjeflags;
+	INT32 mobjstate;
+	INT32 mobjtics;
+	INT32 mobjsprite;
+	INT32 mobjframe;
+} consistancy_t;
+
+void SPrintConsistancy(char *out, consistancy_t *c);
+
 #ifdef PACKETDROP
 void Command_Drop(void);
 void Command_Droprate(void);
@@ -148,7 +175,7 @@ struct clientcmd_pak
 {
 	UINT8 client_tic;
 	UINT8 resendfrom;
-	INT16 consistancy;
+	consistancy_t consistancy;
 	ticcmd_t cmd;
 } ATTRPACK;
 
@@ -158,7 +185,7 @@ struct client2cmd_pak
 {
 	UINT8 client_tic;
 	UINT8 resendfrom;
-	INT16 consistancy;
+	consistancy_t consistancy;
 	ticcmd_t cmd, cmd2;
 } ATTRPACK;
 
@@ -168,7 +195,7 @@ struct client3cmd_pak
 {
 	UINT8 client_tic;
 	UINT8 resendfrom;
-	INT16 consistancy;
+	consistancy_t consistancy;
 	ticcmd_t cmd, cmd2, cmd3;
 } ATTRPACK;
 
@@ -178,7 +205,7 @@ struct client4cmd_pak
 {
 	UINT8 client_tic;
 	UINT8 resendfrom;
-	INT16 consistancy;
+	consistancy_t consistancy;
 	ticcmd_t cmd, cmd2, cmd3, cmd4;
 } ATTRPACK;
 
@@ -257,6 +284,7 @@ struct clientconfig_pak
 	UINT8 localplayers;	// number of splitscreen players
 	UINT8 mode;
 	char names[MAXSPLITSCREENPLAYERS][MAXPLAYERNAME];
+	UINT8 availabilities[MAXAVAILABILITY];
 } ATTRPACK;
 
 #define SV_SPEEDMASK 0x03		// used to send kartspeed
@@ -276,9 +304,12 @@ struct serverinfo_pak
 	UINT8 _255;
 	UINT8 packetversion;
 	char  application[MAXAPPLICATION];
+#ifdef COMMITVERSION
+	UINT8 commit[GIT_SHA_ABBREV];
+#else
 	UINT8 version;
 	UINT8 subversion;
-	UINT8 commit[GIT_SHA_ABBREV];
+#endif
 	UINT8 numberofplayer;
 	UINT8 maxplayer;
 	UINT8 refusereason; // 0: joinable, 1: joins disabled, 2: full
@@ -369,7 +400,7 @@ struct doomdata_t
 		client4cmd_pak client4pak;
 		servertics_pak serverpak;
 		serverconfig_pak servercfg;
-		UINT8 textcmd[MAXTEXTCMD+2];
+		UINT8 textcmd[MAXTEXTCMD+1];
 		char filetxpak[sizeof (filetx_pak)];
 		char fileack[sizeof (fileack_pak)];
 		UINT8 filereceived;

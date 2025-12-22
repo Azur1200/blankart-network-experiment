@@ -11,7 +11,6 @@
 /// \brief custom HUD rendering library for Lua scripting
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "r_defs.h"
 #include "r_local.h"
 #include "r_fps.h"
@@ -152,7 +151,8 @@ enum cameraf {
 	camera_momz,
 	camera_pan,
 	camera_pitch,
-	camera_pnum
+	camera_pnum,
+	camera_freecam,
 };
 
 
@@ -174,6 +174,7 @@ static const char *const camera_opt[] = {
 	"pan",
 	"pitch",
 	"pnum",
+	"freecam",
 	NULL};
 
 enum hudpatch {
@@ -332,7 +333,40 @@ static int camera_get(lua_State *L)
 	case camera_pnum:
 		lua_pushinteger(L, camnum);
 		break;
+	case camera_freecam:
+		lua_pushboolean(L, cam->freecam);
+		break;
 	}
+	return 1;
+}
+
+static int lib_getCamera(lua_State *L)
+{
+	// No cameras on dedicated
+	if (dedicated)
+		return 0;
+
+	if (lua_type(L, 2) == LUA_TNUMBER)
+	{
+		int i = lua_tonumber(L, 2);
+
+		if (i < 0 || i > splitscreen)
+			return 0;
+
+		LUA_PushUserdata(L, &camera[i], META_CAMERA);
+		return 1;
+	}
+
+	return 0;
+}
+
+static int lib_lenCamera(lua_State *L)
+{
+	if (dedicated)
+		lua_pushinteger(L, 0);
+	else
+		lua_pushinteger(L, splitscreen+1); // splitscreen == 0 -> 1 active camera, splitscreen == 1 -> 2 cameras and so on
+
 	return 1;
 }
 
@@ -1576,22 +1610,32 @@ static int lib_hudenabled(lua_State *L)
 
 static int lib_hudsetvotebackground(lua_State *L)
 {
+	// Reset to default
 	memset(VoteScreen.luaPrefix, 0, sizeof(VoteScreen.luaPrefix));
+	VoteScreen.timePerAnimFrame = 2;
 
-	if (lua_isnoneornil(L, 1))
+	if (!lua_isnoneornil(L, 1))
 	{
-		return 0;
+		const char *prefix = luaL_checkstring(L, 1);
+
+		if (strlen(prefix) != 4)
+		{
+			return luaL_argerror(L, 1, "prefix should 4 characters wide");
+		}
+
+		strncpy(VoteScreen.luaPrefix, prefix, 4);
+		strupr(VoteScreen.luaPrefix);
 	}
 
-	const char *prefix = luaL_checkstring(L, 1);
-
-	if (strlen(prefix) != 4)
+	if (!lua_isnoneornil(L, 2))
 	{
-		return luaL_argerror(L, 1, "prefix should 4 characters wide");
-	}
+		INT32 time_per_frame = luaL_checkinteger(L, 2);
 
-	strncpy(VoteScreen.luaPrefix, prefix, 4);
-	strupr(VoteScreen.luaPrefix);
+		if (time_per_frame <= 0)
+			return luaL_argerror(L, 2, "time per frame should be 1 or more");
+
+		VoteScreen.timePerAnimFrame = time_per_frame;
+	}
 
 	return 0;
 }
@@ -1670,6 +1714,16 @@ int LUA_HudLib(lua_State *L)
 		lua_pushcfunction(L, camera_get);
 		lua_setfield(L, -2, "__index");
 	lua_pop(L,1);
+
+	lua_newuserdata(L, 0);
+		lua_createtable(L, 0, 2);
+			lua_pushcfunction(L, lib_getCamera);
+			lua_setfield(L, -2, "__index");
+
+			lua_pushcfunction(L, lib_lenCamera);
+			lua_setfield(L, -2, "__len");
+		lua_setmetatable(L, -2);
+	lua_setglobal(L, "cameras");
 
 	luaL_register(L, "hud", lib_hud);
 	return 0;

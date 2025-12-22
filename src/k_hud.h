@@ -15,6 +15,7 @@
 #include "doomtype.h"
 #include "doomstat.h"
 #include "hu_stuff.h"
+#include "k_items.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,6 +67,8 @@ extern consvar_t cv_colorizedhudcolor;
 
 extern consvar_t cv_newtabranking;
 
+extern patch_t *kp_facenum[MAXPLAYERS+1];
+
 struct trackingResult_t
 {
 	fixed_t x, y;
@@ -90,6 +93,7 @@ typedef struct
 patch_t *K_getItemBoxPatch(boolean small, boolean dark);
 patch_t *K_getItemMulPatch(boolean small);
 patch_t *K_getItemAltPatch(boolean small, boolean multimode);
+boolean K_ShowAltItemIcon(kartitemtype_e type, boolean small);
 void K_getItemBoxDrawinfo(drawinfo_t *out);
 void K_getLapsDrawinfo(drawinfo_t *out);
 void K_getRingsDrawinfo(drawinfo_t *out);

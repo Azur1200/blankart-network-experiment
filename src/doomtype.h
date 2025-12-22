@@ -57,9 +57,9 @@ extern "C" {
 	#define strnicmp(x,y,n) strncasecmp(x,y,n)
 #endif
 
-#ifndef __cplusplus
-char *strcasestr(const char *in, const char *what);
-#define stristr strcasestr
+char *nongnu_strcasestr(const char *in, const char *what);
+#ifndef _GNU_SOURCE
+#define strcasestr nongnu_strcasestr
 #endif
 
 #if defined (PC_DOS) || defined (_WIN32) || defined (__HAIKU__)
@@ -199,6 +199,7 @@ typedef int32_t boolean;
 	#if (__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1) // >= GCC 3.1
 		#define FUNCDEAD __attribute__ ((deprecated))
 		#define FUNCINLINE __attribute__((always_inline))
+		#define PUREFUNC __attribute__((pure))
 		#define FUNCNONNULL __attribute__((nonnull))
 	#endif
 
@@ -263,6 +264,9 @@ typedef int32_t boolean;
 #endif
 #ifndef ATTRNOINLINE
 #define ATTRNOINLINE
+#endif
+#ifndef PUREFUNC
+#define PUREFUNC
 #endif
 
 /* Miscellaneous types that don't fit anywhere else (Can this be changed?) */

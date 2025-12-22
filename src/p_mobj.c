@@ -1112,12 +1112,15 @@ static void P_PlayerFlip(mobj_t *mo)
 fixed_t P_GetMobjGravity(mobj_t *mo)
 {
 	fixed_t gravityadd = 0;
+	fixed_t gravitymul = FRACUNIT;
 	sector_t *gravsector = NULL; // Custom gravity
 	boolean goopgravity = false;
 	boolean wasflip;
 
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
+
+	gravitymul = mo->scale;
 
 	wasflip = (mo->eflags & MFE_VERTICALFLIP) != 0;
 	mo->eflags &= ~MFE_VERTICALFLIP;
@@ -1179,6 +1182,11 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 		{
 			gravityadd = 0;
 		}
+
+		if (K_IsAltShrunk(mo->player))
+		{
+			gravitymul = mapobjectscale;
+		}
 	}
 	else
 	{
@@ -1233,7 +1241,7 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 				case MT_EGGMANITEM:
 				case MT_SSMINE:
 				case MT_LANDMINE:
-				// case MT_EGGMINE_CAPSULE:
+				case MT_EGGMINE:
 				case MT_SINK:
 					if (mo->extravalue2 > 0)
 					{
@@ -1263,7 +1271,7 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 	if (goopgravity)
 		gravityadd = -gravityadd/5;
 
-	gravityadd = FixedMul(gravityadd, mo->scale);
+	gravityadd = FixedMul(gravityadd, gravitymul);
 
 	return gravityadd;
 }
@@ -1790,6 +1798,10 @@ void P_XYMovement(mobj_t *mo)
 						else
 							fx->eflags &= ~MFE_VERTICALFLIP;
 						fx->scale = mo->scale;
+					}
+					else if (mo->type == MT_EGGMINE)
+					{
+						K_SpawnEggMineBumpEffect(mo);
 					}
 
 					switch (mo->type)
@@ -3431,7 +3443,8 @@ void P_MobjCheckWater(mobj_t *mobj)
 				P_SetScale(splish, mobj->scale);
 
 				// skipping stone!
-				if (p && p->waterskip < 2
+				if (p && K_CheckWaterskipLockout(p)
+					&& p->waterskip < 2
 					&& ((p->speed/3 > abs(mobj->momz)) // Going more forward than horizontal, so you can skip across the water.
 					|| (p->speed > K_GetKartSpeed(p,false,true)/3 && p->waterskip)) // Already skipped once, so you can skip once more!
 					&& ((!(mobj->eflags & MFE_VERTICALFLIP) && thingtop - mobj->momz > mobj->watertop)
@@ -4258,6 +4271,7 @@ static void P_SpawnItemCapsuleParts(mobj_t *mobj)
 boolean P_BossTargetPlayer(mobj_t *actor, boolean closest)
 {
 	INT32 stop = -1, c = 0;
+	INT32 i, pcount = 0;
 	player_t *player;
 	fixed_t dist, lastdist = 0;
 
@@ -4265,6 +4279,18 @@ boolean P_BossTargetPlayer(mobj_t *actor, boolean closest)
 	if (actor->lastlook < 0)
 		actor->lastlook = P_RandomByte();
 	actor->lastlook %= MAXPLAYERS;
+
+	// No players? Don't bother.
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator)
+			continue;
+
+		pcount++;
+	}
+
+	if (!pcount)
+		return false;
 
 	for( ; ; actor->lastlook = (actor->lastlook+1) % MAXPLAYERS)
 	{
@@ -6500,7 +6526,7 @@ boolean P_IsKartFieldItem(INT32 type)
 		case MT_JAWZ_DUD:
 		case MT_SSMINE:
 		case MT_LANDMINE:
-		// case MT_EGGMINE_CAPSULE:
+		case MT_EGGMINE:
 		case MT_BALLHOG:
 		case MT_BUBBLESHIELDTRAP:
 		case MT_SINK:
@@ -6521,6 +6547,7 @@ boolean P_IsKartItem(INT32 type)
 		case MT_JAWZ_SHIELD:
 		case MT_SSMINE_SHIELD:
 		case MT_SINK_SHIELD:
+		case MT_EGGMINE_SHIELD:
 			return true;
 
 		// Primarily for minimap data, handle with care
@@ -6710,7 +6737,11 @@ void P_RunOverlays(void)
 
 		mo->eflags = (mo->eflags & ~MFE_VERTICALFLIP) | (mo->target->eflags & MFE_VERTICALFLIP);
 		mo->scale = mo->destscale = FixedMul(mo->target->scale, mo->movefactor);
-		mo->angle = (mo->target->player ? mo->target->player->drawangle : mo->target->angle) + mo->movedir;
+
+		if (!(mo->threshold & OV_DONTCOPYANGLE))
+		{
+			mo->angle = (mo->target->player ? mo->target->player->drawangle : mo->target->angle) + mo->movedir;
+		}
 
 		if (!(mo->threshold & OV_DONTSCREENOFFSET))
 		{
@@ -7386,6 +7417,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 	case MT_BANANA_SHIELD:
 	case MT_SSMINE_SHIELD:
 	case MT_EGGMANITEM_SHIELD:
+	case MT_EGGMINE_SHIELD:
 	case MT_SINK_SHIELD:
 		if ((mobj->health > 0
 			&& (!mobj->target || !mobj->target->player || mobj->target->health <= 0 || mobj->target->player->spectator))
@@ -8000,7 +8032,7 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 	case MT_BANANA:
 	case MT_EGGMANITEM:
 	case MT_LANDMINE:
-	// case MT_EGGMINE_CAPSULE:
+	case MT_EGGMINE:
 	case MT_SPB:
 		if (P_IsObjectOnGround(mobj))
 		{
@@ -8009,6 +8041,7 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 		}
 		/* FALLTHRU */
 	case MT_ORBINAUT_SHIELD:
+	case MT_EGGMINE_SHIELD:
 	case MT_BANANA_SHIELD:
 	case MT_EGGMANITEM_SHIELD:
 		mobj->renderflags ^= RF_DONTDRAW;
@@ -8784,10 +8817,50 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		if (mobj->threshold > 0)
 			mobj->threshold--;
 		break;
-	// case MT_EGGMINE_CAPSULE:
-		// todo
-		// decrement fuse while on ground
-		// when fuse runs out pop open and spawn a land mine
+	case MT_EGGMINE:
+		mobj->friction = 95*ORIG_FRICTION/100;
+		if (mobj->momx || mobj->momy)
+		{
+			mobj_t *ghost = P_SpawnGhostMobj(mobj);
+			
+			if (mobj->target && mobj->target->player)
+			{
+				ghost->color = mobj->target->player->skincolor;
+				ghost->colorized = true;
+			}
+		}
+
+		if (P_IsObjectOnGround(mobj)) 
+		{
+			if (mobj->health > 1 && mobj->threshold == 0) 
+			{
+				S_StartSound(mobj, mobj->info->activesound);
+				mobj->health = 1;
+				mobj->whiteshadow = false;
+			}
+			if (!S_SoundPlaying(mobj, sfx_s3kd2l)) 
+			{
+				S_StartSound(mobj, sfx_s3kd2l);
+			}
+			mobj->movefactor -= 1;
+			if (mobj->movefactor <= 0) 
+			{
+				P_KillMobj(mobj, mobj, NULL, DMG_INSTAKILL);
+			}
+		}
+		else if (S_SoundPlaying(mobj, sfx_s3kd2l)) 
+		{
+			S_StopSoundByID(mobj, sfx_s3kd2l);
+		}
+		
+		if (mobj->threshold > 0) 
+		{
+			mobj->threshold -= 1;
+		}
+		if (mobj->extravalue1 > 0) 
+		{
+			mobj->extravalue1 -= 1;
+		}
 		break;
 	case MT_SPBEXPLOSION:
 		mobj->health--;
@@ -10885,8 +10958,8 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_SSMINE:
 		case MT_SSMINE_SHIELD:
 		case MT_LANDMINE:
-		// case MT_EGGMINE_CAPSULE:
-		// case MT_EGGMINE_SHIELD:
+		case MT_EGGMINE:
+		case MT_EGGMINE_SHIELD:
 		case MT_BALLHOG:
 		case MT_SINK:
 		case MT_ROCKETSNEAKER:
@@ -10924,8 +10997,6 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_REDFRUIT:
 		case MT_PINKFRUIT:
 		case MT_RANDOMAUDIENCE:
-		case MT_DOOD_BOX:
-		case MT_DOOD_BALLOON:
 		case MT_BLUECRAWLA:
 		case MT_REDCRAWLA:
 		case MT_GFZFISH: // Greenflower Fish
@@ -11016,6 +11087,8 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_THROWNEXPLOSION:
 		case MT_THROWNGRENADE:
 		case MT_EMBLEM:
+		case MT_DOOD_BOX:
+		case MT_DOOD_BALLOON:
 			thing->shadowscale = FRACUNIT/3;
 			break;
 		case MT_SNEAKERPANEL:
@@ -11306,6 +11379,22 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 				nummaprings++;
 			break;
 		// SRB2Kart
+		case MT_EGGMINE:
+		case MT_EGGMINE_SHIELD:
+		{
+			mobj_t *overlay = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_OVERLAY);
+			P_SetMobjState(overlay, S_EGGMINE_OVERLAY);
+			overlay->destscale = mobj->scale;
+			P_SetScale(overlay, mobj->scale);
+			P_SetTarget(&overlay->target, mobj);
+			P_SetTarget(&overlay->tracer, mobj);
+			overlay->flags2 |= MF2_LINKDRAW;
+			overlay->dispoffset = -1;
+
+			mobj->movefactor = TICRATE;
+			mobj->threshold = 6;
+			break;
+		}
 		case MT_BUBBLESHIELD:
 		{
 			// Spawn in the damage overlay
@@ -12378,8 +12467,16 @@ void P_SpawnPlayer(INT32 playernum)
 	// set 'spritedef' override in mobj for player skins.. (see ProjectSprite)
 	// (usefulness: when body mobj is detached from player (who respawns),
 	// the dead body mobj retains the skin through the 'spritedef' override).
-	mobj->skin = &skins[p->skin];
+	R_ApplySkin(mobj, &skins[p->skin]);
 	P_SetupStateAnimation(mobj, mobj->state);
+
+	if (p->voice_id)
+	{
+		// During respawns, do a quick check on our voice ID to make sure
+		// our skin can use it.
+		// This should prevent bots from always having Sonic's voice.
+		mobj->voice = &skins[p->skin].voices[p->voice_id];
+	}
 
 	mobj->health = 1;
 	p->playerstate = PST_LIVE;
@@ -12635,6 +12732,7 @@ fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mt
 	case MT_YELLOWHORIZ:
 	case MT_REDHORIZ:
 	case MT_BLUEHORIZ:
+	case MT_GRAYHORIZ:
 		offset += mthing->args[0] ? 0 : 16*FRACUNIT;
 		break;
 
@@ -14957,6 +15055,31 @@ fixed_t P_GetMobjZMovement(mobj_t *mo)
 	speed = FixedHypot(mo->momx, mo->momy);
 
 	return P_ReturnThrustY(mo, slope->zangle, P_ReturnThrustX(mo, angDiff, speed));
+}
+
+kartvoice_t *P_GetMobjVoice(const mobj_t *mo)
+{
+	if (P_MobjWasRemoved(mo))
+	{
+		// Nonexistent or NULL object.
+		return NULL;
+	}
+
+	if (mo->voice)
+	{
+		return mo->voice;
+	}
+
+#ifdef PARANOIA
+	// Scream at the idiot that let this happen :^)
+	CONS_Printf(
+		"PARANOIA/P_GetMobjVoice: %p MT_%s passed to function with NULL voice\n",
+		(void*)mo,
+		P_MobjTypeName(mo)
+	);
+#endif
+
+	return NULL;
 }
 
 //

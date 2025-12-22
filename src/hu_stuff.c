@@ -461,7 +461,10 @@ void HU_AddChatText(const char *text, boolean playsound)
 	if (OLDCHAT) // if we're using oldchat, print directly in console
 		CONS_Printf("%s\n", text);
 	else			// if we aren't, still save the message to log.txt
-		CON_LogMessage(va("%s\n", text));
+	{
+		CON_LogMessage(text);
+		CON_LogMessage("\n"); // Add newline. Don't use va for that, since `text` might be refering to va's buffer itself
+	}
 }
 
 
@@ -987,7 +990,7 @@ void HU_Ticker(void)
 	hu_emoteanim++;
 	hu_tick &= 7; // currently only to blink chat input cursor
 
-	if (G_PlayerInputDown(0, gc_scores, false))
+	if (G_PlayerInputDown(0, gc_scores, false, DEADZONE_BUTTON))
 		hu_showscores = !chat_on;
 	else
 		hu_showscores = false;
@@ -1229,9 +1232,9 @@ boolean HU_Responder(event_t *ev)
 		&& !G_ControlBoundToKey(0, gc_talkkey, ev->data1, false))
 			return false;
 
-		M_TextInputHandleEmotes(&w_chat, c, &emote_autocomplete);
-
-		if (c == KEY_ENTER)
+		if (M_TextInputHandleEmotes(&w_chat, c, &emote_autocomplete))
+			; // Do nothing
+		else if (c == KEY_ENTER)
 		{
 			if (!CHAT_MUTE)
 				HU_sendChatMessage();
@@ -1270,8 +1273,6 @@ boolean HU_Responder(event_t *ev)
 //======================================================================
 //                         HEADS UP DRAWING
 //======================================================================
-
-#define HU_DrawEmote(x, y, emote, flags) M_DrawEmote((x), (y), (emote), hu_emoteanim, (flags))
 
 // Precompile a wordwrapped string to any given width.
 // This is a muuuch better method than V_WORDWRAP.
@@ -1478,7 +1479,7 @@ static void HU_drawMiniChat(void)
 				if (cv_chatbacktint.value) // on request of wolfy
 					V_DrawFillConsoleMap(x + dx + 2, y+dy, EMOTEWIDTH, charheight, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 
-				HU_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|transflag);
+				M_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|transflag);
 				dx += EMOTEWIDTH - charwidth;
 
 				j += emotelen;
@@ -1591,7 +1592,7 @@ static void HU_drawChatLog(INT32 offset)
 			{
 				if ((y+dy+2 >= chat_topy) && (y+dy < (chat_bottomy)))
 				{
-					HU_DrawEmote(x+dx+2, y+dy+1, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+					M_DrawEmote(x+dx+2, y+dy+1, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 					dx += EMOTEWIDTH - charwidth;
 				}
 				j += emotelen;
@@ -1739,7 +1740,7 @@ static void HU_DrawChat(void)
 
 		if ((emote = M_VerifyEmote(w_chat_buf+i, &emotelen)))
 		{
-			HU_DrawEmote(chatx + c + 2, y-1, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|t);
+			M_DrawEmote(chatx + c + 2, y-1, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|t);
 			c += EMOTEWIDTH - charwidth;
 			i += emotelen-1;
 			drawwidth = EMOTEWIDTH;
@@ -1776,7 +1777,7 @@ static void HU_DrawChat(void)
 		}
 	}
 
-	if (emote_autocomplete.emotestart != -1 && (emote_autocomplete.complete[0] || (w_chat.cursor - emote_autocomplete.emotestart) > 0))
+	if (emote_autocomplete.emotestart != -1 && (emote_autocomplete.complete[0] || (w_chat.cursor - emote_autocomplete.emotestart) > 1))
 	{
 		emote_t *suggest;
 		int skip = 0;
@@ -1828,7 +1829,7 @@ static void HU_DrawChat(void)
 				hlflag = V_YELLOWMAP;
 
 			V_DrawSmallString(chatx + boxw + 4 + EMOTEWIDTH, suggesty - (7*skip), hlflag|V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, va(":%s:", suggest->name));
-			HU_DrawEmote(chatx + boxw + 2, suggesty - skip*7, suggest, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+			M_DrawEmote(chatx + boxw + 2, suggesty - skip*7, suggest, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
 
 			++skip;
 		}
@@ -1965,15 +1966,15 @@ static void HU_DrawChat_Old(void)
 	i = 0;
 	while (w_chat_buf[i])
 	{
-		if (w_chat.cursor == (i+1) && hu_tick < 4)
-		{
-			INT32 cursorx = (HU_INPUTX+c+charwidth < vid.width) ? (HU_INPUTX + c + charwidth) : (HU_INPUTX); // we may have to go down.
-			INT32 cursory = (cursorx != HU_INPUTX) ? (y) : (y+charheight);
-			V_DrawCharacter(cursorx, cursory+2*con_scalefactor, '_' |cv_constextsize.value | V_NOSCALESTART|t, true);
-		}
+		int emotelen;
+		emote_t *emote;
 
-		//Hurdler: isn't it better like that?
-		if (w_chat_buf[i] >= HU_FONTSTART)
+		if ((emote = M_VerifyEmote(w_chat_buf+i, &emotelen)))
+		{
+			M_DrawScaledEmote((HU_INPUTX + c)<<FRACBITS, (y+con_scalefactor*2)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART | V_NOSCALEPATCH | t);
+			i += emotelen-1;
+		}
+		else if (w_chat_buf[i] >= HU_FONTSTART) //Hurdler: isn't it better like that?
 		{
 			//charwidth = (fontv[HU_FONT].font[w_chat[i]-HU_FONTSTART]->width) * con_scalefactor;
 			V_DrawCharacter(HU_INPUTX + c, y, w_chat_buf[i] | cv_constextsize.value | V_NOSCALESTART | t, true);
@@ -1984,6 +1985,13 @@ static void HU_DrawChat_Old(void)
 			V_DrawFill(HU_INPUTX + c, y, charwidth, charheight, 103|V_TRANSLUCENT|cv_constextsize.value|V_NOSCALESTART|t);
 
 		++i;
+
+		if (w_chat.cursor == i && hu_tick < 4)
+		{
+			INT32 cursorx = (HU_INPUTX+c+charwidth < vid.width) ? (HU_INPUTX + c + charwidth) : (HU_INPUTX); // we may have to go down.
+			INT32 cursory = (cursorx != HU_INPUTX) ? (y) : (y+charheight);
+			V_DrawCharacter(cursorx, cursory+2*con_scalefactor, '_' |cv_constextsize.value | V_NOSCALESTART|t, true);
+		}
 
 		c += charwidth;
 		if (c >= vid.width)

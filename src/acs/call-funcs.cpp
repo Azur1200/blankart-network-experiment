@@ -34,7 +34,6 @@
 #include "../taglist.h"
 #include "../p_local.h"
 #include "../deh_tables.h"
-#include "../fastcmp.h"
 #include "../hu_stuff.h"
 #include "../s_sound.h"
 #include "../r_textures.h"

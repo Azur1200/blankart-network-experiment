@@ -135,6 +135,7 @@ struct mobjinfo_t
 	sfxenum_t activesound;
 	UINT32 flags;
 	statenum_t raisestate;
+	boolean compatmode;
 };
 
 extern mobjinfo_t mobjinfo[NUMMOBJTYPES];

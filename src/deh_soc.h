@@ -33,7 +33,6 @@
 #include "r_picformats.h"
 #include "r_things.h" // R_Char2Frame
 #include "r_sky.h"
-#include "fastcmp.h"
 #include "lua_script.h" // Reluctantly included for LUA_EvalMath
 #include "d_clisrv.h"
 #include "k_items.h"
@@ -87,6 +86,8 @@ void readlight(MYFILE *f, INT32 num);
 void readskincolor(MYFILE *f, INT32 num, boolean mainfile);
 void readthing(MYFILE *f, INT32 num);
 void readfreeslots(MYFILE *f);
+void clear_emblems(void);
+void clear_unlockables(void);
 void clear_levels(void);
 void clear_conditionsets(void);
 

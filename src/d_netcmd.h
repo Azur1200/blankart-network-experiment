@@ -29,6 +29,7 @@ extern consvar_t cv_playercolor[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_skin[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_follower[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_followercolor[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_voice[MAXSPLITSCREENPLAYERS];
 
 // preferred number of players
 extern consvar_t cv_splitplayers;
@@ -72,6 +73,9 @@ extern consvar_t cv_spectatorreentry, cv_antigrief;
 	extern consvar_t cv_debugtraversemax;
 #endif
 
+//Save server ip
+extern consvar_t cv_lastserver;
+
 extern consvar_t cv_kartminimap;
 extern consvar_t cv_kartcheck;
 extern consvar_t cv_kartinvinsfx;
@@ -107,49 +111,60 @@ extern consvar_t cv_kartstacking_sneaker_normalspeedboost;
 extern consvar_t cv_kartstacking_sneaker_hardspeedboost;
 extern consvar_t cv_kartstacking_sneaker_expertspeedboost;
 extern consvar_t cv_kartstacking_sneaker_accelboost;
+extern consvar_t cv_kartstacking_sneaker_handleboost;
 extern consvar_t cv_kartstacking_sneaker_maxgrade;
 extern consvar_t cv_kartstacking_sneaker_stackable;
 extern consvar_t cv_kartstacking_panel_separate;
 extern consvar_t cv_kartstacking_panel_maxgrade;
 
 
-extern consvar_t cv_kartstacking_invincibility_legacyspeedboost;
-extern consvar_t cv_kartstacking_invincibility_legacyaccelboost;
+extern consvar_t cv_kartstacking_invincibility_classicspeedboost;
+extern consvar_t cv_kartstacking_invincibility_classicaccelboost;
+extern consvar_t cv_kartstacking_invincibility_classichandleboost;
 extern consvar_t cv_kartstacking_invincibility_alternatespeedboost;
 extern consvar_t cv_kartstacking_invincibility_alternateaccelboost;
+extern consvar_t cv_kartstacking_invincibility_alternatehandleboost;
 extern consvar_t cv_kartstacking_invincibility_stackable;
 
 extern consvar_t cv_kartstacking_flame_speedval;
 extern consvar_t cv_kartstacking_flame_accelboost;
+extern consvar_t cv_kartstacking_flame_handleboost;
 extern consvar_t cv_kartstacking_flame_stackable;
 
 extern consvar_t cv_kartstacking_grow_speedboost;
 extern consvar_t cv_kartstacking_grow_accelboost;
+extern consvar_t cv_kartstacking_grow_handleboost;
 extern consvar_t cv_kartstacking_grow_stackable;
 
 extern consvar_t cv_kartstacking_bubble_speedboost;
 extern consvar_t cv_kartstacking_bubble_accelboost;
+extern consvar_t cv_kartstacking_bubble_handleboost;
 extern consvar_t cv_kartstacking_bubble_stackable;
 
 extern consvar_t cv_kartaltshrinktime;
 extern consvar_t cv_kartstacking_altshrink_speedboost;
 extern consvar_t cv_kartstacking_altshrink_accelboost;
+extern consvar_t cv_kartstacking_altshrink_handleboost;
 extern consvar_t cv_kartstacking_altshrink_stackable;
 
 extern consvar_t cv_kartstacking_start_speedboost;
 extern consvar_t cv_kartstacking_start_accelboost;
+extern consvar_t cv_kartstacking_start_handleboost;
 extern consvar_t cv_kartstacking_start_stackable;
 
 extern consvar_t cv_kartstacking_walltransfer_speedboost;
 extern consvar_t cv_kartstacking_walltransfer_accelboost;
+extern consvar_t cv_kartstacking_walltransfer_handleboost;
 extern consvar_t cv_kartstacking_walltransfer_stackable;
 
 extern consvar_t cv_kartstacking_drift_speedboost;
 extern consvar_t cv_kartstacking_drift_accelboost;
+extern consvar_t cv_kartstacking_drift_handleboost;
 extern consvar_t cv_kartstacking_drift_stackable;
 
 extern consvar_t cv_kartstacking_ring_speedboost;
 extern consvar_t cv_kartstacking_ring_accelboost;
+extern consvar_t cv_kartstacking_ring_handleboost;
 extern consvar_t cv_kartstacking_ring_stackable;
 
 extern consvar_t cv_kartstacking_slope_decay;
@@ -178,6 +193,7 @@ extern consvar_t cv_kartexplosion_limitlifetime;
 extern consvar_t cv_kartexplosion_limitlifetime_cap;
 extern consvar_t cv_kartslipdash;
 extern consvar_t cv_kartslopeboost;
+extern consvar_t cv_kartinvintheme;
 extern consvar_t cv_kartinvindist;
 extern consvar_t cv_kartinvindistmul;
 extern consvar_t cv_kartinvin_maxtime;
@@ -189,6 +205,8 @@ extern consvar_t cv_kartbubble_defense_damagerate;
 extern consvar_t cv_kartbubble_boost_allow;
 extern consvar_t cv_kartflame_fastfuel;
 extern consvar_t cv_kartflame_offroadburn;
+extern consvar_t cv_kartaltshrink_arrowbullet;
+extern consvar_t cv_kartaltshrink_arrowbulletthres;
 
 extern consvar_t cv_kartairsquish;
 
@@ -201,11 +219,15 @@ extern consvar_t cv_kartairthrust_power2;
 extern consvar_t cv_kartairthrust_power3;
 extern consvar_t cv_kartairthrust_power4;
 
+extern consvar_t cv_kartwaterskiplock;
+
 extern consvar_t cv_kartitemlitter, cv_kartitempush;
 
 extern consvar_t cv_kartantibump;
 
 extern consvar_t cv_kartforcelegacyodds;
+
+extern consvar_t cv_handleboostslip;
 
 extern consvar_t cv_kartoddsdist;
 extern consvar_t cv_kartlegacyoddsdist;
@@ -213,6 +235,8 @@ extern consvar_t cv_kartspbdist;
 extern consvar_t cv_kartlegacyspbdist;
 
 extern consvar_t cv_kartspbrush;
+
+extern consvar_t cv_itemlist;
 
 extern consvar_t cv_encorevotes;
 
@@ -226,7 +250,7 @@ extern consvar_t cv_gptest;
 
 extern consvar_t cv_itemfinder;
 
-extern consvar_t cv_inttime, cv_advancemap;
+extern consvar_t cv_inttime, cv_rolltime, cv_advancemap;
 extern consvar_t cv_overtime;
 extern consvar_t cv_startinglives;
 
@@ -356,7 +380,7 @@ void Command_Retry_f(void);
 void D_GameTypeChanged(INT32 lastgametype); // not a real _OnChange function anymore
 void D_MapChange(INT32 pmapnum, INT32 pgametype, boolean pencoremode, boolean presetplayers, INT32 pdelay, boolean pskipprecutscene, boolean pfromlevelselect);
 void D_SetupVote(void);
-void D_ModifyClientVote(UINT8 player, SINT8 voted, UINT8 splitplayer);
+void D_ModifyClientVote(UINT8 player, SINT8 voted);
 void D_PickVote(void);
 void ObjectPlace_OnChange(void);
 boolean IsPlayerAdmin(INT32 playernum);

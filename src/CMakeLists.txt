@@ -94,7 +94,7 @@ add_executable(SRB2SDL2 MACOSX_BUNDLE WIN32
 	v_video.c
 	s_sound.c
 	sounds.c
-	w_wad.c
+	w_wad.cpp
 	filesrch.c
 	mserv.c
 	http-mserv.c
@@ -124,6 +124,8 @@ add_executable(SRB2SDL2 MACOSX_BUNDLE WIN32
 	lua_vectorlib.c
 	lua_matrixlib.c
 	lua_quaternionlib.c
+	lua_voicelib.c
+	lua_itemlib.c
 	k_kart.c
 	k_collide.c
 	k_color.c
@@ -137,6 +139,7 @@ add_executable(SRB2SDL2 MACOSX_BUNDLE WIN32
 	k_botsearch.cpp
 	k_cluster.cpp
 	k_items.c
+	k_itemlist.cpp
 	k_grandprix.c
 	k_boss.c
 	k_hud.c
@@ -501,17 +504,20 @@ target_compile_options(SRB2SDL2 PRIVATE
 	$<$<AND:$<COMPILE_LANGUAGE:C>,$<OR:$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:Clang>>>:
 		-Wall
 		-Wextra
+		-Wno-error=date-time
 		-Wno-absolute-value
 		-Wno-trigraphs
 		-Wno-error=non-literal-null-conversion
 		-Wno-error=constant-conversion
 		-Wno-unused-but-set-variable
 		-Wno-error=unused-but-set-variable
+		-Wshadow
 	>
 
 	# C++, GNU, Clang and Apple Clang
 	$<$<AND:$<COMPILE_LANGUAGE:CXX>,$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:Clang>>>:
 		-Wall
+		-Wno-error=date-time
 		-Wno-unused-function
 		-Wno-unused-but-set-variable
 		-Wno-unused-private-field

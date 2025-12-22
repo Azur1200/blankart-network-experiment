@@ -419,6 +419,7 @@ struct boostinfo_t {
   fixed_t stackspeedboost;
   fixed_t nonstackspeedboost;
   fixed_t accelboost;
+  fixed_t handleboost;
   UINT8 grade;
 };
 
@@ -497,7 +498,8 @@ struct player_t
 	UINT16 skincolor;
 
 	INT32 skin;
-	UINT32 availabilities;
+	UINT16 voice_id;
+	UINT8 availabilities[MAXAVAILABILITY];
 
 	UINT8 kartspeed; // Kart speed stat between 1 and 9
 	UINT8 kartweight; // Kart weight stat between 1 and 9
@@ -587,6 +589,7 @@ struct player_t
 	fixed_t speedboost;		// Boost value smoothing for max speed
 	fixed_t prevspeedboost;	// Max speed boost value from the last frame
 	fixed_t accelboost;		// Boost value smoothing for acceleration
+	fixed_t handleboost;	// Boost value smoothing for handling
 	angle_t boostangle;		// angle set when not spun out OR boosted to determine what direction you should keep going at if you're spun out and boosted.
 	boostinfo_t boostinfo;	// Stores values used for setting speed and accel boosts.
 	UINT8 numsneakers;		// Number of stacked sneakers
@@ -611,6 +614,7 @@ struct player_t
 	// Item held stuff
 	UINT8 itemtype;				// KITEM_ constant for item number
 	UINT8 itemamount;			// Amount of said item
+	UINT8 equippeditem;			// Item type that is currently "equipped"
 	itemflags_t itemflags; 		// holds IF_flags (see itemstate_t)
 	tic_t itemusecooldown;		// timer for which the player is locked out of using an item or mashing the item roulette (implementation of xItemLib setPlayerItemCooldown)
 	tic_t itemusecooldownmax;	// most recent highest value for itemusecooldown, mainly used for HUD rendering currently
@@ -642,6 +646,7 @@ struct player_t
 	UINT8 bubbleblowup;	// Bubble Shield usage blowup
 	UINT8 bubblehealth;	// Bubble Shield health
 	UINT16 bubbleboost; // Bubble shield boost timer
+	tic_t bubblebuffer; // Prevents Bubble Shield from taking damage
 
 	UINT16 flamedash;	 // Flame Shield dash power
 	INT32 flametimer;	 // Flame Shield dash meter left ("fuel")
@@ -665,9 +670,11 @@ struct player_t
 	fixed_t slopeaccel; // Handle slopeboost accel
 	
 	INT16 growshrinktimer;			// > 0 = Big, < 0 = small
-	INT16 altshrinktimeshit;		// (Alt. Shrink) How many times were you flipped over while shrunk?
 	INT16 growcancel;				// Duration of grow canceling
 	INT16 squishedtimer;			// Duration of being squished
+
+	INT16 altshrinktimeshit;		// (Alt. Shrink) How many times were you flipped over while shrunk?
+	mobj_t *arrowbullet;			// (Alt. Shrink) Arrow Bullet aura visual
 
 	UINT16 rocketsneakertimer;		// Rocket Sneaker duration timer
 

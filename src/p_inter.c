@@ -41,6 +41,7 @@
 #include "k_objects.h"
 #include "k_items.h"
 #include "acs/interface.h"
+#include "k_itemlist.hpp"
 
 // CTF player names
 #define CTFTEAMCODE(pl) pl->ctfteam ? (pl->ctfteam == 1 ? "\x85" : "\x84") : ""
@@ -354,6 +355,14 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				player->itemamount = 255;
 			else
 				player->itemamount += special->movecount;
+
+			// Add the pickup to our roll list
+			if (itemlistactive)
+			{
+				K_AddItemRollToList((INT32)(player - players),
+						    player->itemtype,
+						    player->itemamount);
+			}
 
 			S_StartSound(special, special->info->deathsound);
 
@@ -1432,7 +1441,8 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 					target->target->player->itemamount--;
 			}
 			else if ((target->type == MT_ORBINAUT_SHIELD && target->target->player->itemtype == KITEM_ORBINAUT) // orbit items
-				|| (target->type == MT_JAWZ_SHIELD && target->target->player->itemtype == KITEM_JAWZ))
+				|| (target->type == MT_JAWZ_SHIELD && target->target->player->itemtype == KITEM_JAWZ)
+				|| (target->type == MT_EGGMINE_SHIELD && target->target->player->itemtype == KITEM_EGGMAN && K_IsKartItemAlternate(KITEM_EGGMAN)))
 			{
 				if (target->target->player->itemamount)
 					target->target->player->itemamount--;
@@ -1443,7 +1453,10 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			}
 
 			if (!target->target->player->itemamount)
-				target->target->player->itemflags &= ~IF_ITEMOUT;
+			{
+				K_UnsetItemOut(target->target->player);
+				// target->target->player->itemflags &= ~IF_ITEMOUT;
+			}
 
 			if (target->target->hnext == target)
 				P_SetTarget(&target->target->hnext, NULL);
@@ -2034,7 +2047,7 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 
 	player->carry = CR_NONE;
 
-	K_KartResetPlayerColor(player);
+	K_KartResetPlayerColor(player, true);
 
 	P_ResetPlayer(player);
 
@@ -2125,7 +2138,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	if (damagetype != DMG_SPECTATOR && target->player && target->player->spectator)
 		return false;
 
-	if (source && source->player && source->player->spectator)
+	if (!P_MobjWasRemoved(source) && source->player && source->player->spectator)
 		return false;
 
 	switch (target->type)
@@ -2215,6 +2228,9 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			const boolean explosioncombo = type == DMG_EXPLODE // This damage type can do evil stuff like ALWAYS combo
 			                               && player->bubbleboost == 0; // ...but popping a Bubble Shield protects you!
 
+			// An Arrow Bullet player ran into a player with a stronger power item. Damage them!
+			const boolean intercept = ((!P_MobjWasRemoved(inflictor)) && inflictor->player && K_InterceptArrowBullet(inflictor->player));
+
 			// Check if the player is allowed to be damaged!
 			// If not, then spawn the instashield effect instead.
 			if (!force)
@@ -2249,6 +2265,13 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				if ((explosioncombo == false) && (player->flashing > 0 || player->squishedtimer > 0))
 				{
 					// Post-hit invincibility
+					K_DoInstashield(player);
+					return false;
+				}
+
+				// Alt. Shrink: Tank non-explosion hits, as long as you're in Arrow Bullet mode.
+				if ((explosioncombo == false) && (intercept == false) && (K_AltShrinkArrowBulletCondition(player)))
+				{
 					K_DoInstashield(player);
 					return false;
 				}

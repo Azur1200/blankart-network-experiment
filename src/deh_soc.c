@@ -32,7 +32,6 @@
 #include "r_picformats.h"
 #include "r_things.h" // R_Char2Frame
 #include "r_sky.h"
-#include "fastcmp.h"
 #include "lua_script.h" // Reluctantly included for LUA_EvalMath
 #include "d_clisrv.h"
 #include "v_video.h"
@@ -135,6 +134,36 @@ static float searchfvalue(const char *s)
 #endif
 
 // These are for clearing all of various things
+void clear_emblems(void)
+{
+	INT32 i;
+
+	for (i = 0; i < MAXEMBLEMS; ++i)
+	{
+		Z_Free(emblemlocations[i].level);
+		emblemlocations[i].level = NULL;
+
+		Z_Free(emblemlocations[i].stringVar);
+		emblemlocations[i].stringVar = NULL;
+	}
+
+	memset(&emblemlocations, 0, sizeof(emblemlocations));
+	numemblems = 0;
+}
+
+void clear_unlockables(void)
+{
+	INT32 i;
+
+	for (i = 0; i < MAXUNLOCKABLES; ++i)
+	{
+		Z_Free(unlockables[i].stringVar);
+		unlockables[i].stringVar = NULL;
+	}
+
+	memset(&unlockables, 0, sizeof(unlockables));
+}
+
 void clear_conditionsets(void)
 {
 	UINT8 i;
@@ -364,6 +393,11 @@ void readthing(MYFILE *f, INT32 num)
 		}
 	} while (!myfeof(f)); // finish when the line is empty
 
+	if (wadfiles[f->wad]->compatmode)
+		mobjinfo[num].compatmode = true;
+	else
+		mobjinfo[num].compatmode = false;
+
 	Z_Free(s);
 }
 
@@ -413,7 +447,7 @@ void readskincolor(MYFILE *f, INT32 num, boolean mainfile)
 
 				deh_strlcpy(truncword, word2, namesize, va("Skincolor %d: name", num)); // truncate here to check for dupes
 				dupecheck = R_GetColorByName(truncword);
-				if (truncword[0] != '\0' && (!stricmp(truncword, skincolors[SKINCOLOR_NONE].name) || (dupecheck && dupecheck != num)))
+				if (truncword[0] != '\0' && (fasticmp(truncword, skincolors[SKINCOLOR_NONE].name) || (dupecheck && dupecheck != num)))
 				{
 					size_t lastchar = strlen(truncword);
 					char oldword[lastchar+1];
@@ -868,6 +902,7 @@ void readlevelheader(MYFILE *f, char * name)
 			word2 = tmp + 2;
 			i = atoi(word2); // used for numerical settings
 
+			// The following support mixed/lower case.
 
 			if (fastcmp(word, "LEVELNAME"))
 			{
@@ -875,7 +910,14 @@ void readlevelheader(MYFILE *f, char * name)
 					sizeof(mapheaderinfo[num]->lvlttl), va("Level header %d: levelname", num));
 				continue;
 			}
-			// CHEAP HACK: move this over here for lowercase subtitles
+
+			if (fastcmp(word, "ZONETITLE"))
+			{
+				deh_strlcpy(mapheaderinfo[num]->zonttl, word2,
+					sizeof(mapheaderinfo[num]->zonttl), va("Level header %d: zonetitle", num));
+				continue;
+			}
+
 			if (fastcmp(word, "SUBTITLE"))
 			{
 				deh_strlcpy(mapheaderinfo[num]->subttl, word2,
@@ -1000,11 +1042,6 @@ void readlevelheader(MYFILE *f, char * name)
 			}
 
 			// Strings that can be truncated
-			else if (fastcmp(word, "ZONETITLE"))
-			{
-				deh_strlcpy(mapheaderinfo[num]->zonttl, word2,
-					sizeof(mapheaderinfo[num]->zonttl), va("Level header %d: zonetitle", num));
-			}
 			else if (fastcmp(word, "SCRIPTNAME"))
 			{
 				deh_strlcpy(mapheaderinfo[num]->scriptname, word2,
@@ -1851,14 +1888,6 @@ static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ "DUMMYTEAM", &cv_dummyteam },
 	{ "DUMMYSPECTATE", &cv_dummyspectate },
 	{ "DUMMYSCRAMBLE", &cv_dummyscramble },
-	{ "DUMMYATTACKINGRINGS", &cv_dummyattackingrings },
-	{ "DUMMYATTACKINGSTACKING", &cv_dummyattackingstacking },
-	{ "DUMMYATTACKINGCHAINING", &cv_dummyattackingchaining },
-	{ "DUMMYATTACKINGSLIPDASH", &cv_dummyattackingslipdash },
-	{ "DUMMYATTACKINGPURPLEDRIFT", &cv_dummyattackingpurpledrift },
-	{ "DUMMYATTACKINGSLOPEBOOST", &cv_dummyattackingslopeboost },
-	{ "DUMMYATTACKINGAIRDROP", &cv_dummyattackingairdrop },
-	{ "DUMMYATTACKINGBUMPSPARK", &cv_dummyattackingbumpspark },
 	{ "DUMMYSTAFF", &cv_dummystaff },
 	{ "DUMMYMULTIPLAYER", &cv_dummymultiplayer },
 	{ "DUMMYIP", &cv_dummyip },
@@ -1866,6 +1895,7 @@ static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ "DUMMYFOLLOWER", &cv_dummyfollower },
 	{ "DUMMYCOLOR", &cv_dummycolor },
 	{ "DUMMYSERVERPAGE", &cv_dummyserverpage },
+	{ "LEVELSORT", &cv_levelsort },
 	{ NULL, NULL }
 };
 
@@ -2544,7 +2574,9 @@ void readsound(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "SKINSOUND"))
 			{
-				S_sfx[num].skinsound = get_number(word2);
+				// ignore this for the sake of not needing an asset update
+				// this was only exposed in blan anyway
+				//S_sfx[num].skinsound = get_number(word2);
 			}
 			else if (fastcmp(word, "CAPTION") || fastcmp(word, "DESCRIPTION"))
 			{
@@ -2674,7 +2706,12 @@ void reademblemdata(MYFILE *f, INT32 num)
 			else if (fastcmp(word, "COLOR"))
 				emblemlocations[num-1].color = get_number(word2);
 			else if (fastcmp(word, "VAR"))
+			{
+				Z_Free(emblemlocations[num-1].stringVar);
+				emblemlocations[num-1].stringVar = Z_StrDup(word2);
+
 				emblemlocations[num-1].var = get_number(word2);
+			}
 			else
 				deh_warning("Emblem %d: unknown word '%s'", num, word);
 		}
@@ -2878,7 +2915,8 @@ void readunlockable(MYFILE *f, INT32 num)
 				}
 				else if (fastcmp(word, "VAR"))
 				{
-					// TODO: different field for level name string
+					Z_Free(unlockables[num].stringVar);
+					unlockables[num].stringVar = Z_StrDup(word2);
 					unlockables[num].variable = (INT16)G_MapNumber(word2);
 				}
 				else
@@ -3748,7 +3786,7 @@ void readfollower(MYFILE *f)
 
 			if (fastcmp(word, "NAME"))
 			{
-				strcpy(followers[numfollowers].name, word2);
+				strlcpy(followers[numfollowers].name, word2, SKINNAMESIZE+1);
 				nameset = true;
 			}
 			else if (fastcmp(word, "ICON"))
@@ -3878,13 +3916,13 @@ void readfollower(MYFILE *f)
 	if (!nameset)
 	{
 		// well this is problematic.
-		strcpy(followers[numfollowers].name, va("Follower%d", numfollowers)); // this is lazy, so what
+		strlcpy(followers[numfollowers].name, va("Follower%d", numfollowers), SKINNAMESIZE+1); // this is lazy, so what
 	}
 
 	// set skin name (this is just the follower's name in lowercases):
 	// but before we do, let's... actually check if another follower isn't doing the same shit...
 
-	strcpy(testname, followers[numfollowers].name);
+	strlcpy(testname, followers[numfollowers].name, SKINNAMESIZE+1);
 
 	// lower testname for skin checks...
 	strlwr(testname);
@@ -3899,8 +3937,8 @@ void readfollower(MYFILE *f)
 		// in that case, we'll be very lazy and copy numfollowers to the end of our skin name.
 	}
 
-	strcpy(followers[numfollowers].skinname, testname);
-	strcpy(dname, followers[numfollowers].skinname);	// display name, just used for printing succesful stuff or errors later down the line.
+	strlcpy(followers[numfollowers].skinname, testname, SKINNAMESIZE+1);
+	strlcpy(dname, followers[numfollowers].skinname, SKINNAMESIZE+1);	// display name, just used for printing succesful stuff or errors later down the line.
 
 	// now that the skin name is ready, post process the actual name to turn the underscores into spaces!
 	for (i = 0; followers[numfollowers].name[i]; i++)
@@ -4066,9 +4104,15 @@ void readkartitem(MYFILE *f, kartitem_t *item)
 		word2 = (tmp += 2);
 		strupr(word2);
 
-		if (fastcmp(word, "BIGPATCHES") || fastcmp(word, "SMALLPATCHES"))
+		if (fastcmp(word, "BIGPATCHES") || fastcmp(word, "SMALLPATCHES") ||
+		    fastcmp(word, "BIGALTPATCHES") || fastcmp(word, "SMALLALTPATCHES"))
 		{
-			kartitemgraphics_t *graphics = &item->graphics[word[0] == 'B' ? 0 : 1];
+			UINT8 patch_idx = (word[0] == 'B') ? 0 : 1;
+
+			// Alt. patches are stored in the same array, just in their own slots.
+			patch_idx += (word[3 + (patch_idx << 1)] == 'A') ? 2 : 0;
+
+			kartitemgraphics_t* graphics = &item->graphics[patch_idx];
 
 			if (graphics == &item->graphics[0] && item->spritedef.numframes > 0)
 			{
@@ -4082,17 +4126,22 @@ void readkartitem(MYFILE *f, kartitem_t *item)
 				graphics->patches[i] = NULL;
 			}
 
-			tmp = strtok(word2,",");
+			tmp = strtok(word2, ",");
 			for (graphics->numpatches = 0; graphics->numpatches < MAXITEMPATCHES;)
 			{
 				graphics->patchnames[graphics->numpatches++] = Z_StrDup(tmp);
-				if ((tmp = strtok(NULL,",")) == NULL)
+
+				if ((tmp = strtok(NULL, ",")) == NULL)
 					break;
 			}
 		}
 		else if (fastcmp(word, "FLAGS") || fastcmp(word, "FLAGSALT"))
 		{
 			item->flags[word[5] == 'A' ? 1 : 0] = get_number(word2);
+		}
+		else if (fastcmp(word, "EQUIP") || fastcmp(word, "EQUIPALT"))
+		{
+			item->equipstyle[word[5] == 'A' ? 1 : 0] = get_number(word2);
 		}
 		else
 			WARN("unknown word '%s'", word);
@@ -4317,7 +4366,7 @@ sfxenum_t get_sfx(const char *word)
 		if (S_sfx[i].name && fasticmp(word, S_sfx[i].name))
 			return i;
 	deh_warning("Couldn't find sfx named 'SFX_%s'",word);
-	return -1;
+	return NUMSFX;
 }
 
 menutype_t get_menutype(const char *word)

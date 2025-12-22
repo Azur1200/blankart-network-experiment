@@ -913,7 +913,7 @@ INT32 G_KeyStringtoNum(const char *keystr)
 	}
 
 	for (j = 0; j < NUMKEYNAMES; j++)
-		if (!stricmp(keynames[j].name, keystr))
+		if (fasticmp(keynames[j].name, keystr))
 			return keynames[j].keynum;
 
 	return 0;
@@ -1056,7 +1056,7 @@ static void setcontrol(UINT8 player)
 	namectrl = COM_Argv(1);
 
 	for (numctrl = 0;
-		numctrl < num_gamecontrols && gamecontrolname[numctrl] && stricmp(namectrl, gamecontrolname[numctrl]);
+		numctrl < num_gamecontrols && gamecontrolname[numctrl] && !fasticmp(namectrl, gamecontrolname[numctrl]);
 		numctrl++)
 	{ ; }
 

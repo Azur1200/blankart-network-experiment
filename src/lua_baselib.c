@@ -11,7 +11,6 @@
 /// \brief basic functions for Lua scripting
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "p_local.h"
 #include "p_setup.h" // So we can have P_SetupLevelSky
 #include "p_slopes.h" // P_GetSlopeZAt
@@ -35,6 +34,7 @@
 #include "k_hud.h"
 #include "k_waypoint.h"
 #include "k_items.h"
+#include "k_itemlist.hpp"
 #include "d_netcmd.h" // IsPlayerAdmin
 #include "m_menu.h" // Player Setup menu color stuff
 #include "p_spec.h" // P_StartQuake
@@ -181,6 +181,7 @@ static const struct {
 	{META_SOUNDSID,     "skin_t.soundsid"},
 	{META_SKINSPRITES,  "skin_t.sprites"},
 	{META_SKINSPRITESLIST,  "skin_t.sprites[]"},
+	{META_SKINVOICES, "skin_t.voices"},
 
 	{META_VERTEX,       "vertex_t"},
 	{META_LINE,         "line_t"},
@@ -249,6 +250,13 @@ static const struct {
 	{META_VECTOR3,      "vector3_t"},
 	{META_MATRIX,       "matrix_t"},
 	{META_QUATERNION,   "quaternion_t"},
+	{META_VOICE,        "kartvoice_t"},
+	{META_VOICE_ARRAY,  "kartvoice_t.array[]"},
+	{META_VOICE_ARRAY1, "kartvoice_t.array[1]"},
+	{META_KARTITEM,     "kartitem_t"},
+	{META_KARTRESULT,   "kartresult_t"},
+	{META_KARTITEMGRAPHICS, "kartitemgraphics_t"},
+	{META_BOOSTINFO,	"boostinfo_t"},
 
 	{NULL,              NULL}
 };
@@ -335,7 +343,7 @@ static int lib_userdataMetatable(lua_State *L)
 
 	// Find internal metatable name
 	for (i = 0; meta2utype[i].meta; i++)
-		if (!strcmp(udname, meta2utype[i].utype))
+		if (fastcmp(udname, meta2utype[i].utype))
 		{
 			luaL_getmetatable(L, meta2utype[i].meta);
 			return 1;
@@ -2611,6 +2619,7 @@ static int lib_rGetNameByColor(lua_State *L)
 	return 1;
 }
 
+
 // S_SOUND
 ////////////
 static int GetValidSoundOrigin(lua_State *L, void **origin)
@@ -3131,9 +3140,9 @@ static int lib_sShowMusicCredit(lua_State *L)
 		if (!player)
 			return LUA_ErrInvalid(L, "player_t");
 	}
-	fixed_t yoffset = luaL_checkfixed(L, 2);
-	UINT16 animtime = lua_isnone(L, 3) ? 5*TICRATE : luaL_checkinteger(L, 3);
-	INT32 snapflags = luaL_checkinteger(L, 4);
+	fixed_t yoffset = luaL_optfixed(L, 2, 0);
+	UINT16 animtime = luaL_optinteger(L, 3, 5*TICRATE);
+	INT32 snapflags = luaL_optinteger(L, 4, 0);
 	if (!player || P_IsLocalPlayer(player))
 		S_ShowMusicCredit(yoffset, animtime, snapflags);
 	return 0;
@@ -3321,6 +3330,12 @@ static int Lcheckmapnumber (lua_State *L, int idx, const char *fun)
 static int lib_gBuildMapName(lua_State *L)
 {
 	INT32 map = Lcheckmapnumber(L, 1, "G_BuildMapName");
+
+	if (lua_compatmode && map == 0) // v1 has undefined behaviour if you return 0, who knew.
+	{
+		map = G_NativeMapToKart(G_RandMap(G_TOLFlag(gametype), gamemap-1, 0, 0, NULL) + 1);
+	}
+
 	//HUDSAFE
 	lua_pushstring(L, G_BuildMapName(lua_compatmode ? G_KartMapToNative(map) : map));
 	return 1;
@@ -3679,12 +3694,21 @@ static int lib_kGloatSound(lua_State *L)
 static int lib_kLossSound(lua_State *L)
 {
 	mobj_t *mobj = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));	// let's require a mobj for consistency with the other functions
+	kartvoice_t *mo_voice;
 	sfxenum_t sfx_id;
 	NOHUD
 	if (!mobj->player)
 		return luaL_error(L, "K_PlayLossSound: mobj_t isn't a player object.");
 
-	sfx_id = ((skin_t *)mobj->skin)->soundsid[S_sfx[sfx_klose].skinsound];
+	mo_voice = P_GetMobjVoice(mobj);
+
+	if (!mo_voice)
+	{
+		// No voice!
+		return 0;
+	}
+
+	sfx_id = mo_voice->lose;
 	S_StartSound(mobj, sfx_id);
 	return 0;
 }
@@ -3736,6 +3760,49 @@ static int lib_kMatchGenericExtraFlags(lua_State *L)
 	if (!master)
 		return LUA_ErrInvalid(L, "mobj_t");
 	K_MatchGenericExtraFlags(mo, master);
+	return 0;
+}
+
+static int lib_kGenericExtraFlagsNoZAdjust(lua_State *L)
+{
+	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	mobj_t *master = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+	NOHUD
+	if (!mo)
+		return LUA_ErrInvalid(L, "mobj_t");
+	if (!master)
+		return LUA_ErrInvalid(L, "mobj_t");
+	K_GenericExtraFlagsNoZAdjust(mo, master);
+	return 0;
+}
+
+static int lib_kSpawnDashDustRelease(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_SpawnDashDustRelease(player, true);
+	return 0;
+}
+
+static int lib_kSpawnNormalSpeedLines(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_SpawnNormalSpeedLines(player);
+	return 0;
+}
+
+static int lib_kSpawnBumpEffect(lua_State *L)
+{
+	mobj_t *mobj = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	NOHUD
+	if (!mobj)
+		return LUA_ErrInvalid(L, "mobj_t");
+	K_SpawnBumpEffect(mobj);
 	return 0;
 }
 
@@ -3880,6 +3947,25 @@ static int lib_kDriftDustHandling(lua_State *L)
 	return 0;
 }
 
+static int lib_kThrowKartItem(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	boolean missile = luaL_checkboolean(L, 2);
+	mobjtype_t thingtype = luaL_checkinteger(L, 3);
+	INT32 defaultdir = luaL_optinteger(L, 4, 0);
+	INT32 altthrow = luaL_optinteger(L, 5, 0);
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	mobj_t *mo = K_ThrowKartItem(player, missile, thingtype, defaultdir, altthrow);
+	if (mo)
+		LUA_PushUserdata(L, mo, META_MOBJ);
+	else
+		lua_pushnil(L);
+
+	return 1;
+}
+
 static int lib_kDoSneaker(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -3962,6 +4048,39 @@ static int lib_kKartUpdatePosition(lua_State *L)
 	return 0;
 }
 
+static int lib_kUpdateHnextList(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	boolean clean = lua_optboolean(L, 2);
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_UpdateHnextList(player, clean);
+	return 0;
+}
+
+static int lib_kSetItemOut(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	kartitemtype_e itemtype = luaL_checkint(L, 2);
+	itemflags_t flags = luaL_optint(L, 3, 0);
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_SetItemOut(player, itemtype, flags);
+	return 0;
+}
+
+static int lib_kUnsetItemOut(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_UnsetItemOut(player);
+	return 0;
+}
+
 static int lib_kDropItems(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -4034,13 +4153,39 @@ static int lib_kGetKartFlashing(lua_State *L)
 	return 1;
 }
 
+// this function is for compatibility only; do not add new functionality here
+// see K_GetItemGraphics
 static int lib_kGetItemPatch(lua_State *L)
 {
 	kartitemtype_e item = (kartitemtype_e)luaL_optinteger(L, 1, KITEM_NONE);
 	boolean tiny = lua_optboolean(L, 2);
+	UINT8 index = 0;
 	//HUDSAFE
 
-	// TODO: compatmode KRITEM
+	if (!lua_compatmode)
+		LUA_Deprecated(L, "K_GetItemPatch", "K_GetItemGraphics");
+
+	switch ((UINT8)item) // dualjawz moment
+	{
+	case 17: // KRITEM_TRIPLESNEAKER
+		item = KITEM_SNEAKER;
+		break;
+	case 18: // KRITEM_TRIPLEBANANA
+	case 19: // KRITEM_TENFOLDBANANA
+		item = KITEM_BANANA;
+		break;
+	case 20: // KRITEM_TRIPLEORBINAUT
+	case 21: // KRITEM_QUADORBINAUT
+		index = item - 18;
+		item = KITEM_ORBINAUT;
+		break;
+	case 22: // KRITEM_DUALJAWZ
+		item = KITEM_JAWZ;
+		break;
+	default:
+		break;
+	}
+
 	const char *sad = tiny ? "K_ISSAD" : "K_ITSAD";
 	if (item <= 0 || item >= numkartitems)
 	{
@@ -4048,8 +4193,26 @@ static int lib_kGetItemPatch(lua_State *L)
 		return 1;
 	}
 
-	kartitemgraphics_t *graphics = &kartitems[item].graphics[tiny ? 1 : 0];
-	lua_pushstring(L, graphics->numpatches == 0 ? sad : graphics->patchnames[0]);
+	kartitemgraphics_t *graphics = &kartitems[item].graphics[(tiny ? 1 : 0) + (K_IsKartItemAlternate(item) ? 2 : 0)];
+	lua_pushstring(L, index >= graphics->numpatches ? sad : graphics->patchnames[index]);
+	return 1;
+}
+
+static int lib_kGetItemGraphics(lua_State *L)
+{
+	kartitemtype_e item = luaL_checkinteger(L, 1);
+	boolean tiny = lua_optboolean(L, 2);
+	boolean alt = lua_optboolean(L, 3);
+	//HUDSAFE
+
+	if (item < 1 || item >= numkartitems)
+		return luaL_error(L, "item number %d out of range (1 - %d)", item, numkartitems-1);
+
+	kartitemgraphics_t *graphics = &kartitems[item].graphics[(tiny ? 1 : 0) + (alt ? 2 : 0)];
+	if (graphics->numpatches == 0)
+		return 0;
+
+	LUA_PushUserdata(L, graphics, META_KARTITEMGRAPHICS);
 	return 1;
 }
 
@@ -4233,6 +4396,14 @@ static int lib_kItemLitterActive(lua_State *L)
 	return 1;
 }
 
+static int lib_kItemListActive(lua_State *L)
+{
+	// Use the y_inter version so that Lua scripters don't have to do a
+	// useless player headcount check.
+	lua_pushboolean(L, Y_ItemListActive());
+	return 1;
+}
+
 // Gets the currently active bumpspark type.
 static int lib_kGetBumpSpark(lua_State *L)
 {
@@ -4252,13 +4423,14 @@ static int lib_kDoBoost(lua_State *L)
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	fixed_t speedboost = luaL_checkfixed(L, 2);
 	fixed_t accelboost = luaL_checkfixed(L, 3);
-	boolean stacking = lua_optboolean(L, 4);
-	boolean visible = lua_isnoneornil(L, 5) ? true : luaL_checkboolean(L, 5);
+	fixed_t handleboost = luaL_checkfixed(L, 4);
+	boolean stacking = lua_optboolean(L, 5);
+	boolean visible = lua_isnoneornil(L, 6) ? true : luaL_checkboolean(L, 6);
 
 	//HUDSAFE
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	K_DoBoost(player, speedboost, accelboost, stacking, visible);
+	K_DoBoost(player, speedboost, accelboost, handleboost, stacking, visible);
 	return 0;
 }
 
@@ -4473,6 +4645,17 @@ static int lib_kMomentum3D(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 
 	lua_pushinteger(L, K_Momentum3D(mo));
+	return 1;
+}
+
+static int lib_kMissileOrKartItem(lua_State *L)
+{
+	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	
+	if (!mo)
+		return LUA_ErrInvalid(L, "mobj_t");
+
+	lua_pushboolean(L, K_IsMissileOrKartItem(mo));
 	return 1;
 }
 
@@ -5102,6 +5285,75 @@ static int lib_kSetPlayerItemCooldown(lua_State *L)
 	return 0;
 }
 
+static int lib_kAddItemRollToList(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	kartitemtype_e item_id = (kartitemtype_e)luaL_checkinteger(L, 2);
+	INT32 amt = luaL_checkinteger(L, 3);
+	//HUDSAFE
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	if (item_id < 1 || item_id >= numkartitems)
+		return luaL_error(L, "item number %d out of range (1 - %d)", item_id, numkartitems-1);
+
+	INT32 pid = (INT32)(player - players);
+
+	K_AddItemRollToList(pid, item_id, amt);
+	return 0;
+}
+
+static int lib_kGetItemListSize(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	//HUDSAFE
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	INT32 pid = (INT32)(player - players);
+
+	lua_pushinteger(L, K_GetItemListSize(pid));
+	return 1;
+}
+
+static int lib_kSetItemListEntry(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	kartitemtype_e item_id = (kartitemtype_e)luaL_checkinteger(L, 2);
+	INT32 num = luaL_checkinteger(L, 3);
+	//HUDSAFE
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	if (item_id < 1 || item_id >= numkartitems)
+		return luaL_error(L, "item number %d out of range (1 - %d)", item_id, numkartitems-1);
+
+	INT32 pid = (INT32)(player - players);
+
+	K_SetItemListEntry(pid, item_id, num);
+	return 0;
+}
+
+static int lib_kGetItemListEntry(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	kartitemtype_e item_id = (kartitemtype_e)luaL_checkinteger(L, 2);
+	//HUDSAFE
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	if (item_id < 1 || item_id >= numkartitems)
+		return luaL_error(L, "item number %d out of range (1 - %d)", item_id, numkartitems-1);
+
+	INT32 pid = (INT32)(player - players);
+	lua_pushinteger(L, K_GetItemListEntry(pid, item_id));
+	return 1;
+}
+
 // G_INPUT
 ////////////
 
@@ -5422,6 +5674,10 @@ static luaL_Reg lib[] = {
 	{"K_IsPlayerWanted",lib_kIsPlayerWanted},
 	{"K_KartBouncing",lib_kKartBouncing},
 	{"K_MatchGenericExtraFlags",lib_kMatchGenericExtraFlags},
+	{"K_GenericExtraFlagsNoZAdjust",lib_kGenericExtraFlagsNoZAdjust},
+	{"K_SpawnDashDustRelease",lib_kSpawnDashDustRelease},
+	{"K_SpawnNormalSpeedLines",lib_kSpawnNormalSpeedLines},
+	{"K_SpawnBumpEffect",lib_kSpawnBumpEffect},
 	{"K_DoInstashield",lib_kDoInstashield},
 	{"K_SpawnBattlePoints",lib_kSpawnBattlePoints},
 	{"K_SpinPlayer",lib_kSpinPlayer},
@@ -5433,6 +5689,7 @@ static luaL_Reg lib[] = {
 	{"K_SpawnSparkleTrail",lib_kSpawnSparkleTrail},
 	{"K_SpawnWipeoutTrail",lib_kSpawnWipeoutTrail},
 	{"K_DriftDustHandling",lib_kDriftDustHandling},
+	{"K_ThrowKartItem",lib_kThrowKartItem},
 	{"K_DoSneaker",lib_kDoSneaker},
 	{"K_DoPogoSpring",lib_kDoPogoSpring},
 	{"K_KillBananaChain",lib_kKillBananaChain},
@@ -5440,6 +5697,9 @@ static luaL_Reg lib[] = {
 	{"K_FindJawzTarget",lib_kFindJawzTarget},
 	{"K_GetKartDriftSparkValue",lib_kGetKartDriftSparkValue},
 	{"K_KartUpdatePosition",lib_kKartUpdatePosition},
+	{"K_UpdateHnextList",lib_kUpdateHnextList},
+	{"K_SetItemOut",lib_kSetItemOut},
+	{"K_UnsetItemOut",lib_kUnsetItemOut},
 	{"K_DropItems",lib_kDropItems},
 	{"K_StripItems",lib_kStripItems},
 	{"K_StripOther",lib_kStripOther},
@@ -5448,6 +5708,7 @@ static luaL_Reg lib[] = {
 	{"K_GetKartAccel",lib_kGetKartAccel},
 	{"K_GetKartFlashing",lib_kGetKartFlashing},
 	{"K_GetItemPatch",lib_kGetItemPatch},
+	{"K_GetItemGraphics",lib_kGetItemGraphics},
 	{"K_IsKartItemAlternate",lib_kIsKartItemAlternate},
 	{"K_IsAltShrunk", lib_kIsAltShrunk},
 	{"K_SetRaceCountdown",lib_kSetRaceCountdown},
@@ -5467,6 +5728,7 @@ static luaL_Reg lib[] = {
 	{"K_DraftingActive",lib_kDraftingActive},
 	{"K_AirDropActive",lib_kAirDropActive},
 	{"K_ItemLitterActive",lib_kItemLitterActive},
+	{"K_ItemListActive", lib_kItemListActive},
 	{"K_GetBumpSpark",lib_kGetBumpSpark},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
 	{"K_DoBoost",lib_kDoBoost},
@@ -5489,6 +5751,9 @@ static luaL_Reg lib[] = {
 	{"K_GetShieldFromPlayer", lib_kGetShieldFromPlayer},
 	{"K_PlayerCanPunt", lib_kPlayerCanPunt},
 	{"K_Momentum3D", lib_kMomentum3D},
+
+	// kart stuff that's in other places for some reason
+	{"K_IsMissileOrKartItem", lib_kMissileOrKartItem},
 
 	// k_hud
 	{"K_AddNewScoreboardMod", lib_kAddNewScoreboardMod},
@@ -5551,6 +5816,12 @@ static luaL_Reg lib[] = {
 
 	// k_items
 	{"K_SetPlayerItemCooldown", lib_kSetPlayerItemCooldown},
+
+	// k_itemlist
+	{"K_AddItemRollToList", lib_kAddItemRollToList},
+	{"K_GetItemListSize", lib_kGetItemListSize},
+	{"K_SetItemListEntry", lib_kSetItemListEntry},
+	{"K_GetItemListEntry", lib_kGetItemListEntry},
 
 	//g_input
 	{"G_SetPlayerGamepadIndicatorColor",lib_gSetPlayerGamepadIndicatorColor},

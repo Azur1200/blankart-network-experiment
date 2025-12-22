@@ -46,9 +46,11 @@
 #include "k_waypoint.h"
 #include "k_items.h"
 
-consvar_t cv_forcebots = CVAR_INIT ("kartforcebots", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_botcontrol = CVAR_INIT ("kartbotcontrol", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_forcebots = CVAR_INIT ("kartbot_force", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_botcontrol = CVAR_INIT ("kartbot_control", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_forcerival = CVAR_INIT ("kartbot_forcerival", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_botcanvote = CVAR_INIT ("kartbot_canvote", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_botdrifting = CVAR_INIT ("kartbot_drift", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 botdata_t botdata[MAXPLAYERS];
 
@@ -83,7 +85,7 @@ void K_DrawBotDebugger(const player_t *player)
 	V_DrawThinString(x2, y+32, vflags|(bd->driftlockout ? V_ORANGEMAP : 0), va("driftlockout: %d", bd->driftlockout));
 	V_DrawThinString(x1, y+40, vflags, va("driftturn: %d", bd->driftturn));
 	V_DrawThinString(x2, y+40, vflags, va("drifttime: %d", bd->drifttime));
-	V_DrawThinString(x1, y+48, vflags, va("preditionerror: %d", bd->predictionerror));
+	V_DrawThinString(x1, y+48, vflags, va("predicterr: %.1f", ((double)(INT32)bd->predictionerror)/ANG1));
 	V_DrawThinString(x2, y+48, vflags|(bd->griplockout ? V_ORANGEMAP : 0), va("griplockout: %d", bd->griplockout));
 }
 
@@ -153,6 +155,9 @@ void K_SetBot(UINT8 newplayernum, UINT16 skinnum, UINT8 difficulty, botStyle_e s
 
 	if (newplayernum+1 > doomcom->numslots)
 		doomcom->numslots = (INT16)(newplayernum+1);
+
+	// this will permit unlocks
+	memcpy(&players[newplayernum].availabilities, R_GetSkinAvailabilities(), MAXAVAILABILITY*sizeof(UINT8));
 
 	playernode[newplayernum] = servernode;
 
@@ -487,7 +492,7 @@ static fixed_t K_BotSpeedScaled(const player_t *player, fixed_t speed)
 		moveFactor = FixedDiv(FRACUNIT, moveFactor);
 
 		// The full value is way too strong, reduce it.
-		moveFactor -= (moveFactor - FRACUNIT)*3/4;
+		// moveFactor -= (moveFactor - FRACUNIT)*3/4;
 
 		result = FixedMul(result, moveFactor);
 	}
@@ -1139,6 +1144,9 @@ static void K_BotStartDrift(botdata_t *bd, const player_t* player)
 	fixed_t botDriftSpeed;
 	driftSetting_e driftsetting = DRIFT_NONE;
 	fixed_t speedfactor = FixedDiv(player->speed, K_GetKartSpeed(player, false, false));
+
+	if (cv_botdrifting.value == 0)
+		return; // BOO YOU STINK
 
 	if (speedfactor < FRACUNIT/2)
 	{
@@ -1905,9 +1913,9 @@ void K_BotReborn(const player_t *player)
 	bd->driftskill = FixedMul(MAXDRIFTSKILL, K_BotDetermineDriftSkill(player));
 
 	// drift parameters, just fixed values for now
-	bd->driftmaxdist = 200 + gamespeed*50;
+	bd->driftmaxdist = 300;
 	bd->driftpowerdiv = 40;
-	bd->driftstatedelay = TICRATE/2 - gamespeed*5;
+	bd->driftstatedelay = TICRATE/5;
 }
 
 void K_BotResetItemConfirm(const player_t *player, boolean setdelay)

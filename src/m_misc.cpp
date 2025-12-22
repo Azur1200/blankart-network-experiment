@@ -465,7 +465,7 @@ char configfile[MAX_WADPATH];
 // ==========================================================================
 //                          CONFIGURATION
 // ==========================================================================
-static boolean gameconfig_loaded = false; // true once config.cfg loaded AND executed
+boolean gameconfig_loaded = false; // true once config.cfg loaded AND executed
 
 /** Saves a player's config, possibly to a particular file.
   *
@@ -484,7 +484,7 @@ void Command_SaveConfig_f(void)
 	FIL_ForceExtension(tmpstr, ".cfg");
 
 	M_SaveConfig(tmpstr);
-	if (stricmp(COM_Argv(2), "-silent"))
+	if (!fasticmp(COM_Argv(2), "-silent"))
 		CONS_Printf(M_GetText("config saved as %s\n"), configfile);
 }
 

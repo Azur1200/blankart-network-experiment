@@ -45,6 +45,15 @@ typedef enum
 
 typedef enum
 {
+	KITEMEQUIP_NONE,
+	KITEMEQUIP_ORBIT,	// orbiters (orbi, jawz)
+	KITEMEQUIP_TRAIL,	// dragged items (bananas, mines, sinks)
+	KITEMEQUIP_ROCKETS,	// direct player position with offset (rockets)
+	KITEMEQUIP_SHIELD,	//TODO: spawns a shield when active (currently acts like KITEMEQUIP_NONE)
+} kartitemequip_e;
+
+typedef enum
+{
 	KITEMBLINK_NORMAL,
 	KITEMBLINK_MASHED,
 	KITEMBLINK_KARMA,
@@ -106,16 +115,13 @@ struct kartitemgraphics_t
 struct kartitem_t
 {
 	dehinfo_t info;
+	kartitemequip_e equipstyle[2];
 	kartitemflags_e flags[2];
-	kartitemgraphics_t graphics[2];
+	kartitemgraphics_t graphics[4];
 	spritedef_t spritedef;
 
 	consvar_t *altcvar; // if not NULL, an altitem exists
 	boolean altenabled;
-
-	// note: could be how we do this?
-	// int (*oddsOverrideFunc)(player_t *p, int pos, int mashed, boolean spbrush, fixed_t seconddist, int pingame, int pexiting);
-	// int (*resultOverrideFunc)(player_t *p);
 };
 
 struct kartresult_t
@@ -177,8 +183,13 @@ void K_SetupItemOdds(void);
 boolean K_ItemResultEnabled(const kartresult_t *result);
 boolean K_IsKartItemAlternate(kartitemtype_e itemtype);
 kartitemflags_e K_GetItemFlags(kartitemtype_e itemtype);
+kartitemequip_e K_GetItemEquipStyle(kartitemtype_e mobjtype);
 UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny);
-patch_t *K_GetCachedItemPatch(kartitemtype_e type, boolean tiny, UINT8 amount);
+patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, boolean tiny, UINT8 amount, SINT8 altmode);
+#define K_GetCachedItemPatch(type, tiny, amount) K_GetCachedItemPatchEx(type, tiny, amount, -1)
+
+void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags);
+void K_UnsetItemOut(player_t *player);
 
 void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, kartitemblink_e blink);
 void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCount);
@@ -208,6 +219,9 @@ void K_BreakBubbleShield(player_t* player);
 INT16 K_GetShrinkTime(const player_t *player);
 boolean K_IsAltShrunk(const player_t *player);
 void K_AltShrinkPityIncrease(player_t *player);
+
+void K_SpawnEggMineBumpEffect(mobj_t *mo);
+void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source);
 
 void K_PlayerItemThink(player_t *player, boolean onground);
 

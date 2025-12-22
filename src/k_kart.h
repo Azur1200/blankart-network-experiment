@@ -28,12 +28,11 @@ If states are ever added or removed
 Make sure this matches the actual number of states
 */
 #define KART_NUMINVSPARKLESANIM 12
+#define BASEINVINTIME (10 * TICRATE)
+#define MININVINTIME (7 * TICRATE)
 
 #define GROW_SCALE ((3*FRACUNIT)/2)
 #define SHRINK_SCALE ((6*FRACUNIT)/8)
-
-#define BASEINVINTIME (10 * TICRATE)
-#define MININVINTIME (7 * TICRATE)
 
 #define AUTORESPAWN_TIME (TICRATE/2)
 #define AUTORESPAWN_THRESHOLD (TICRATE/4)
@@ -92,6 +91,9 @@ extern vector3_t clusterpoint, clusterdtf;
 #define INVINMIDTIME CV_Get(&cv_kartinvin_midtime)
 #define INVINMAXTIME CV_Get(&cv_kartinvin_maxtime)
 
+// 1.22 * FRACUNIT
+#define LEGACYALTINVINMUL (122 * FRACUNIT / 100)
+
 // Precalculated constants for stacked boost diminishing
 // *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent
 #define DIMINISHPARAM CV_Get(&cv_kartstacking_diminishparam)
@@ -106,48 +108,59 @@ extern vector3_t clusterpoint, clusterdtf;
 #define HARDSNEAKERSPEEDBOOST CV_Get(&cv_kartstacking_sneaker_hardspeedboost)
 #define EXPERTSNEAKERSPEEDBOOST CV_Get(&cv_kartstacking_sneaker_expertspeedboost)
 #define SNEAKERACCELBOOST CV_Get(&cv_kartstacking_sneaker_accelboost)
+#define SNEAKERHANDLEBOOST CV_Get(&cv_kartstacking_sneaker_handleboost)
 #define MAXSNEAKERSTACK CV_Get(&cv_kartstacking_sneaker_maxgrade)
 #define SNEAKERSTACKABLE CV_Get(&cv_kartstacking_sneaker_stackable)
 #define SEPARATEPANELS CV_Get(&cv_kartstacking_panel_separate)
 #define MAXPANELSTACK CV_Get(&cv_kartstacking_panel_maxgrade)
 
-#define INVINSPEEDBOOSTLGC CV_Get(&cv_kartstacking_invincibility_legacyspeedboost)
-#define INVINACCELBOOSTLGC CV_Get(&cv_kartstacking_invincibility_legacyaccelboost)
+#define INVINSPEEDBOOSTCLS CV_Get(&cv_kartstacking_invincibility_classicspeedboost)
+#define INVINACCELBOOSTCLS CV_Get(&cv_kartstacking_invincibility_classicaccelboost)
+#define INVINHANDLEBOOSTCLS CV_Get(&cv_kartstacking_invincibility_classichandleboost)
 #define INVINSPEEDBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternatespeedboost)
 #define INVINACCELBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternateaccelboost)
+#define INVINHANDLEBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternatehandleboost)
 #define INVINSTACKABLE CV_Get(&cv_kartstacking_invincibility_stackable)
 
 #define GROWSPEEDBOOST CV_Get(&cv_kartstacking_grow_speedboost)
 #define GROWACCELBOOST CV_Get(&cv_kartstacking_grow_accelboost)
+#define GROWHANDLEBOOST CV_Get(&cv_kartstacking_grow_handleboost)
 #define GROWSTACKABLE CV_Get(&cv_kartstacking_grow_stackable)
 
 #define BUBBLESPEEDBOOST CV_Get(&cv_kartstacking_bubble_speedboost)
 #define BUBBLEACCELBOOST CV_Get(&cv_kartstacking_bubble_accelboost)
+#define BUBBLEHANDLEBOOST CV_Get(&cv_kartstacking_bubble_handleboost)
 #define BUBBLESTACKABLE CV_Get(&cv_kartstacking_bubble_stackable)
 
 #define FLAMESPEEDVAL CV_Get(&cv_kartstacking_flame_speedval)
 #define FLAMEACCELBOOST CV_Get(&cv_kartstacking_flame_accelboost)
+#define FLAMEHANDLEBOOST CV_Get(&cv_kartstacking_flame_handleboost)
 #define FLAMESTACKABLE CV_Get(&cv_kartstacking_flame_stackable)
 
 #define ALTSHRINKTIME CV_Get(&cv_kartaltshrinktime)
 #define SHRINKSPEEDBOOST CV_Get(&cv_kartstacking_altshrink_speedboost)
 #define SHRINKACCELBOOST CV_Get(&cv_kartstacking_altshrink_accelboost)
+#define SHRINKHANDLEBOOST CV_Get(&cv_kartstacking_altshrink_handleboost)
 #define SHRINKSTACKABLE CV_Get(&cv_kartstacking_altshrink_stackable)
 
 #define STARTSPEEDBOOST CV_Get(&cv_kartstacking_start_speedboost)
 #define STARTACCELBOOST CV_Get(&cv_kartstacking_start_accelboost)
+#define STARTHANDLEBOOST CV_Get(&cv_kartstacking_start_handleboost)
 #define STARTSTACKABLE CV_Get(&cv_kartstacking_start_stackable)
 
 #define WALLTRANSFERSPEEDBOOST CV_Get(&cv_kartstacking_walltransfer_speedboost)
 #define WALLTRANSFERACCELBOOST CV_Get(&cv_kartstacking_walltransfer_accelboost)
+#define WALLTRANSFERHANDLEBOOST CV_Get(&cv_kartstacking_walltransfer_handleboost)
 #define WALLTRANSFERSTACKABLE CV_Get(&cv_kartstacking_walltransfer_stackable)
 
 #define DRIFTSPEEDBOOST CV_Get(&cv_kartstacking_drift_speedboost)
 #define DRIFTACCELBOOST CV_Get(&cv_kartstacking_drift_accelboost)
+#define DRIFTHANDLEBOOST CV_Get(&cv_kartstacking_drift_handleboost)
 #define DRIFTSTACKABLE CV_Get(&cv_kartstacking_drift_stackable)
 
 #define RINGSPEEDBOOST CV_Get(&cv_kartstacking_ring_speedboost)
 #define RINGACCELBOOST CV_Get(&cv_kartstacking_ring_accelboost)
+#define RINGHANDLEBOOST CV_Get(&cv_kartstacking_ring_handleboost)
 #define RINGSTACKABLE CV_Get(&cv_kartstacking_ring_stackable)
 
 #define SLOPEDECAY CV_Get(&cv_kartstacking_slope_decay)
@@ -211,14 +224,14 @@ void K_KartPainEnergyFling(player_t *player);
 void K_FlipFromObject(mobj_t *mo, mobj_t *master);
 void K_MatchGenericExtraFlags(mobj_t *mo, mobj_t *master);
 void K_GenericExtraFlagsNoZAdjust(mobj_t *mo, mobj_t *master);
-void K_SpawnDashDustRelease(player_t *player);
+void K_SpawnDashDustRelease(player_t *player, boolean force);
 void K_SpawnNormalSpeedLines(player_t *player);
 void K_SpawnDraftSpeedLines(player_t *player, fixed_t scale, skincolornum_t color, boolean translucent);
 void K_SpawnInvincibilitySpeedLines(mobj_t *mo);
 void K_SpawnBumpEffect(mobj_t *mo);
 void K_KartMoveAnimation(player_t *player);
 void K_KartPlayerHUDUpdate(player_t *player);
-void K_KartResetPlayerColor(player_t *player);
+void K_KartResetPlayerColor(player_t *player, boolean disablecolor);
 UINT8 K_RaceLapCount(INT16 mapNum);
 void K_KartPlayerThink(player_t *player, ticcmd_t *cmd);
 void K_KartPlayerAfterThink(player_t *player);
@@ -260,12 +273,20 @@ typedef enum
 void K_DoSneaker(player_t *player, INT32 type);
 
 void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound);
+fixed_t K_GetSpeedPercentage(const player_t *player);
+boolean K_AltShrinkArrowBulletCondition(const player_t *player);
+boolean K_InterceptArrowBullet(player_t *player);
+void K_ResetPogoSpring(player_t *player);
+
+extern boolean forcefullinvintheme;
+boolean K_PlayFullInvinTheme(void);
+void K_DoInvincibility(player_t *player, tic_t time);
 fixed_t K_InvincibilityGradient(UINT16 time);
 UINT16 K_GetInvincibilityTime(player_t *player);
 fixed_t K_GetInvincibilitySpeed(UINT16 time);
 fixed_t K_GetInvincibilityAccel(UINT16 time);
-void K_ResetPogoSpring(player_t *player);
-void K_DoInvincibility(player_t *player, tic_t time);
+fixed_t K_GetInvincibilityHandling(UINT16 time);
+
 void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source);
 void K_UpdateHnextList(player_t *player, boolean clean);
 void K_DropHnextList(player_t *player);
@@ -339,9 +360,6 @@ void K_PlayPowerGloatSound(mobj_t *source);
 INT32 K_GetShieldFromPlayer(const player_t *player);
 INT32 K_GetShieldFromItem(INT32 item);
 
-void K_SetItemOut(player_t *player);
-void K_UnsetItemOut(player_t *player);
-
 boolean K_SafeRespawnPosition(mobj_t * mo);
 
 boolean K_RingsActive(void);
@@ -353,7 +371,9 @@ boolean K_SlopeBoostActive(void);
 boolean K_DraftingActive(void);
 boolean K_AirDropActive(void);
 boolean K_AirThrustActive(void);
+boolean K_WaterskipBricksActive(void);
 boolean K_ItemLitterActive(void);
+boolean K_ItemListActive(void);
 boolean K_ItemPushingActive(void);
 INT32 K_GetBumpSpark(void);
 boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);
@@ -363,7 +383,7 @@ boolean K_UsingPatchedMap(void);
 INT32 K_CheckpointThreshold(boolean roundup);
 
 fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmin,fixed_t newmax);
-void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, boolean stack, boolean visible);
+void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, fixed_t handleboost, boolean stack, boolean visible);
 void K_ClearBoost(player_t *player);
 
 boolean K_NotFreePlay(void);
@@ -376,6 +396,7 @@ typedef enum
 void K_AwardScaledPlayerRings(player_t *player, SINT8 mode);
 
 void K_QuiteSaltyHop(player_t *player);
+boolean K_CheckWaterskipLockout(player_t *player);
 
 typedef enum
 {

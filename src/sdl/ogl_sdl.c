@@ -116,8 +116,8 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 		GL_DBG_Printf("GPU: %s\n", gl_renderer);
 		GL_DBG_Printf("Extensions: %s\n", gl_extensions);
 
-		if (strcmp((const char*)gl_renderer, "GDI Generic") == 0 &&
-			strcmp((const char*)gl_version, "1.1.0") == 0)
+		if (fastcmp((const char*)gl_renderer, "GDI Generic") &&
+			fastcmp((const char*)gl_version, "1.1.0"))
 		{
 			// Oh no... Windows gave us the GDI Generic rasterizer, so something is wrong...
 			// The game will crash later on when unsupported OpenGL commands are encountered.
@@ -192,7 +192,9 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that
 	//			effects that want to take the old screen can do so after this
-	HWR_DrawScreenFinalTexture(realwidth, realheight);
+	// Generic2 has the screen image without palette rendering brightness adjustments.
+	// Using that here will prevent brightness adjustments being applied twice.
+	DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
 }
 
 EXPORT void HWRAPI(OglSdlSetPalette) (RGBA_t *palette)

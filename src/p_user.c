@@ -64,6 +64,8 @@
 #include "k_items.h"
 #include "g_party.h"
 
+#include "m_easing.h" // Arrow Bullet aura
+
 #include "acs/interface.h"
 
 #ifdef HW3SOUND
@@ -867,7 +869,7 @@ void P_RestoreMusic(player_t *player)
 		// Item - Invincibility
 		else if ((wantedmus == 2) && cv_supermusic.value == 1)
 		{
-			S_ChangeMusicInternal("kinvnc", true);
+			S_ChangeMusicInternal(K_PlayFullInvinTheme() ? "kinvnf" : "kinvnc", true);
 			S_SetRestoreMusicFadeInCvar(&cv_invincmusicfade);
 		}
 		// Item - Shrink (Alternative)
@@ -1313,9 +1315,15 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 
 			if (cv_kartvoices.value)
 			{
-				const INT32 sfx_id = (losing ? sfx_klose : sfx_kwin);
+				//const INT32 sfx_id = (losing ? sfx_klose : sfx_kwin);
 				skin_t *playerskin = &skins[player->skin];
-				S_StartSound(player->mo, playerskin->soundsid[S_sfx[sfx_id].skinsound]);
+
+				const kartvoice_t *playervoice = (!P_MobjWasRemoved(player->mo) ? P_GetMobjVoice(player->mo) : &playerskin->voices[0]);
+
+				if (playervoice)
+				{
+					S_StartSound(player->mo, (losing ? playervoice->lose : playervoice->win));
+				}
 			}
 
 			// See Y_StartIntermission timer handling
@@ -1798,7 +1806,7 @@ static void P_CheckInvincibilityTimer(player_t *player)
 	// Resume normal music stuff.
 	if (player->invincibilitytimer == 1 || player->powers[pw_invulnerability] == 1)
 	{
-		//K_KartResetPlayerColor(player); -- this gets called every tic anyways
+		//K_KartResetPlayerColor(player, true); -- this gets called every tic anyways
 		G_GhostAddColor((INT32) (player - players), GHC_NORMAL);
 
 		P_RestoreMusic(player);
@@ -2309,6 +2317,71 @@ void P_MovePlayer(player_t *player)
 		K_SpawnSparkleTrail(player->mo);
 	}
 
+#define MINAURAPCT (cv_kartaltshrink_arrowbulletthres.value - (FRACUNIT / 4))
+#define AURA_DIFF (max(1, (FRACUNIT << 1) - MINAURAPCT))
+	// The Arrow Bullet aura should spawn before you actually enter the Arrow Bullet state.
+	if (cv_kartaltshrink_arrowbullet.value && K_IsAltShrunk(player) && (K_GetSpeedPercentage(player) >= MINAURAPCT))
+	{
+		fixed_t aura_scalar = FixedDiv(min(max(0, K_GetSpeedPercentage(player) - MINAURAPCT), (FRACUNIT << 1)), AURA_DIFF);
+
+		INT32 auravis = 10 - FixedMul(7, Easing_OutCubic(aura_scalar, 0, FRACUNIT));
+		auravis = min(9, max(1, auravis)) << FF_TRANSSHIFT;
+
+		fixed_t aura_scale = Easing_OutCubic(aura_scalar, FRACHALF, FRACUNIT + FRACHALF);
+
+		if ((!player->arrowbullet) || (P_MobjWasRemoved(player->arrowbullet)))
+		{
+			mobj_t *newbullet = P_SpawnMobjFromMobj(player->mo, 0, 0, 0, MT_OVERLAY);
+
+			P_SetMobjState(newbullet, S_ALTSHRINK_ARROWBULLET);
+
+            newbullet->movefactor = aura_scale;
+			newbullet->threshold |= OV_DONTCOPYANGLE;
+
+			P_SetTarget(&newbullet->target, player->mo);
+
+			P_SetTarget(&player->arrowbullet, newbullet);
+
+			player->arrowbullet->angle = K_MomentumAngle(player->mo);
+			player->arrowbullet->sloperoll = player->mo->sloperoll;
+			player->arrowbullet->slopepitch = player->mo->slopepitch;
+
+			player->arrowbullet->frame &= ~FF_TRANSMASK;
+			player->arrowbullet->frame |= auravis;
+
+			player->arrowbullet->dispoffset = min(2, player->mo->dispoffset + 1);
+		}
+		else
+		{
+			player->arrowbullet->angle = K_MomentumAngle(player->mo);
+			player->arrowbullet->sloperoll = player->mo->sloperoll;
+			player->arrowbullet->slopepitch = player->mo->slopepitch;
+
+			player->arrowbullet->movefactor = aura_scale;
+
+			player->arrowbullet->frame &= ~FF_TRANSMASK;
+			player->arrowbullet->frame |= auravis;
+
+			player->arrowbullet->dispoffset = min(2, player->mo->dispoffset + 1);
+		}
+	}
+	else
+	{
+		if ((player->arrowbullet) && (!P_MobjWasRemoved(player->arrowbullet)))
+		{
+			P_SetTarget(&player->arrowbullet->target, NULL);
+			P_RemoveMobj(player->arrowbullet);
+			P_SetTarget(&player->arrowbullet, NULL);
+		}
+	}
+
+	if (K_AltShrinkArrowBulletCondition(player))
+	{
+		K_SpawnNormalSpeedLines(player);
+	}
+#undef MINAURAPCT
+#undef AURA_DIFF
+
 	if (player->wipeoutslow > 1 && (leveltime & 1))
 		K_SpawnWipeoutTrail(player->mo, false);
 
@@ -2629,7 +2702,7 @@ static void P_DeathThink(player_t *player)
 	if (!player->mo)
 		return;
 
-	//K_KartResetPlayerColor(player); -- called at death, don't think we need to re-establish
+	//K_KartResetPlayerColor(player, true); -- called at death, don't think we need to re-establish
 
 	P_CalcHeight(player);
 }
@@ -4328,7 +4401,12 @@ void P_PlayerThink(player_t *player)
 		player->powers[pw_sneakers]--;
 
 	if (player->powers[pw_invulnerability] && player->powers[pw_invulnerability] < UINT16_MAX)
+	{
 		player->powers[pw_invulnerability]--;
+
+		if (!player->powers[pw_invulnerability])
+			K_KartResetPlayerColor(player,true);
+	}
 
 	if (player->flashing && player->flashing < UINT16_MAX &&
 		(player->spectator || player->flashing < K_GetKartFlashing(player)))

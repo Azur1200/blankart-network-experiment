@@ -11,7 +11,6 @@
 /// \brief mobj/thing library for Lua scripting
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "r_skins.h"
 #include "p_local.h"
 #include "g_game.h"
@@ -64,6 +63,7 @@ enum mobj_e {
 	mobj_eflags,
 	mobj_renderflags,
 	mobj_skin,
+	mobj_voice,
 	mobj_color,
 	mobj_bnext,
 	mobj_bprev,
@@ -161,6 +161,7 @@ static const char *const mobj_opt[] = {
 	"eflags",
 	"renderflags",
 	"skin",
+	"voice",
 	"color",
 	"bnext",
 	"bprev",
@@ -426,6 +427,9 @@ static int mobj_get(lua_State *L)
 		if (!mo->skin)
 			return 0;
 		lua_pushstring(L, ((skin_t *)mo->skin)->name);
+		break;
+	case mobj_voice: // just push the struct damnit!
+		LUA_PushUserdata(L, mo->voice, META_VOICE);
 		break;
 	case mobj_color:
 		lua_pushinteger(L, mo->color);
@@ -724,8 +728,9 @@ static int mobj_set(lua_State *L)
 		if (lua_compatmode && mo->sprite == SPR_PLAY)
 		{
 			UINT8 outframe;
-			mo->sprite2 = P_KartFrameToSprite2(mo->skin, luaL_checkinteger(L, 3), &outframe);
-			mo->frame = (mo->frame & ~FF_FRAMEMASK) | outframe;
+			UINT32 newframe = luaL_checkinteger(L, 3);
+			mo->sprite2 = P_KartFrameToSprite2(mo->skin, newframe, &outframe);
+			mo->frame = (newframe & ~FF_FRAMEMASK) | outframe;
 		}
 		else
 			mo->frame = (UINT32)luaL_checkinteger(L, 3);
@@ -894,11 +899,19 @@ static int mobj_set(lua_State *L)
 			if (fastcmp(skins[i].name, skin))
 			{
 				if (!mo->player || R_SkinUsable(mo->player-players, i))
-					mo->skin = &skins[i];
+				{
+					R_ApplySkin(mo, &skins[i]);
+				}
 				return 0;
 			}
 		return luaL_error(L, "mobj.skin '%s' not found!", skin);
 	}
+	case mobj_voice:
+		// as much as i want to allow ironman without overwriting the player's skin,
+		// letting the mobj's voice desync with the skin has some nasty implications at the moment
+		return NOSET;
+		//mo->voice = *((kartvoice_t **)luaL_checkudata(L, 3, META_VOICE));
+		//break;
 	case mobj_color:
 	{
 		UINT16 newcolor = (UINT16)luaL_checkinteger(L,3);

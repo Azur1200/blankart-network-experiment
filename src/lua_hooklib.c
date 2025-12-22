@@ -90,7 +90,7 @@ static int hook_in_list
 
 	for (type = 0; list[type] != NULL; ++type)
 	{
-		if (strcmp(name, list[type]) == 0)
+		if (fastcmp(name, list[type]))
 			break;
 	}
 
@@ -235,7 +235,7 @@ static int lib_addHook(lua_State *L)
 	{
 		add_hook(&hookIds[type]);
 	}
-	else if (strcmp(name, "HUD") == 0)
+	else if (fastcmp(name, "HUD"))
 	{
 		add_hud_hook(L, 3);
 	}
@@ -1417,4 +1417,46 @@ boolean LUA_HookCanPickupItem(player_t *player, UINT8 weapon, boolean *force)
 
 	*force = state.force;
 	return state.override;
+}
+
+typedef struct {
+	mobjtype_t droptype;
+	boolean *orbit;
+	boolean *dropall;
+} KartDropHnextList_State;
+
+static void res_kartdrophnext(Hook_State *hook)
+{
+	KartDropHnextList_State *state = (KartDropHnextList_State*)hook->userdata;
+	if (!lua_isnil(gL, -3))
+	{
+		state->droptype = luaL_checkinteger(gL, -3);
+
+		if (lua_isboolean(gL, -2))
+		{
+			*state->orbit = lua_toboolean(gL, -2);
+		}
+		if (lua_isboolean(gL, -1))
+		{
+			*state->dropall = lua_toboolean(gL, -1);
+		}
+	}
+}
+
+int LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t droptype, boolean *orbit, boolean *dropall)
+{
+	Hook_State hook;
+	KartDropHnextList_State state = {0};
+	state.droptype = droptype;
+	state.orbit = orbit;
+	state.dropall = dropall;
+
+	if (prepare_mobj_hook(&hook, 0, MOBJ_HOOK(DropHnextList), mobj->type))
+	{
+		LUA_PushUserdata(gL, mobj, META_MOBJ);
+		hook.userdata = &state;
+
+		call_hooks(&hook, 3, res_kartdrophnext);
+	}
+	return state.droptype;
 }

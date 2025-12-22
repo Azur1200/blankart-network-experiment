@@ -24,6 +24,8 @@ extern "C" {
 extern consvar_t cv_forcebots;
 extern consvar_t cv_botcontrol;
 extern consvar_t cv_forcerival;
+extern consvar_t cv_botcanvote;
+extern consvar_t cv_botdrifting;
 
 // Maximum value of botvars.difficulty
 #define MAXBOTDIFFICULTY (13)

@@ -49,7 +49,7 @@ static int inet_aton(const char *cp, struct in_addr *addr)
 	{
 		return(0);
 	}
-	if (strcmp(cp, "255.255.255.225") == 0)
+	if (fastcmp(cp, "255.255.255.225"))
 	{
 		addr->s_addr = htonl(INADDR_BROADCAST);
 		return 0;

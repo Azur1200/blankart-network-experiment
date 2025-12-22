@@ -11,7 +11,6 @@
 /// \brief console modifying/etc library for Lua scripting
 
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "p_local.h"
 #include "g_game.h"
 #include "byteptr.h"
@@ -33,7 +32,18 @@ static consvar_t *this_cvar;
 void Got_Luacmd(UINT8 **cp, INT32 playernum)
 {
 	UINT8 i, argc, flags;
+	const char *argv[256];
 	char buf[256];
+	boolean compat;
+
+	argc = READUINT8(*cp);
+	argv[0] = (const char*)*cp;
+	SKIPSTRINGN(*cp, 255);
+	for (i = 1; i < argc; i++)
+	{
+		argv[i] = (const char*)*cp;
+		SKIPSTRINGN(*cp, 255);
+	}
 
 	// don't use I_Assert here, goto the deny code below
 	// to clean up and kick people who try nefarious exploits
@@ -47,8 +57,7 @@ void Got_Luacmd(UINT8 **cp, INT32 playernum)
 	lua_getfield(gL, LUA_REGISTRYINDEX, "COM_Command"); // push COM_Command
 	if (!lua_istable(gL, -1)) goto deny;
 
-	argc = READUINT8(*cp);
-	READSTRINGN(*cp, buf, 255);
+	strlcpy(buf, argv[0], 255);
 	strlwr(buf); // must lowercase buffer
 	lua_getfield(gL, -1, buf); // push command info table
 	if (!lua_istable(gL, -1)) goto deny;
@@ -66,6 +75,10 @@ void Got_Luacmd(UINT8 **cp, INT32 playernum)
 	if ((flags & 1) && playernum != serverplayer && !IsPlayerAdmin(playernum))
 		goto deny;
 
+	lua_rawgeti(gL, -1, 3); // push compatmode from command info table
+	compat = lua_toboolean(gL, -1);
+	lua_pop(gL, 1); // pop compatmode
+
 	lua_rawgeti(gL, -1, 1); // push function from command info table
 
 	// although honestly this should be true anyway
@@ -77,10 +90,10 @@ void Got_Luacmd(UINT8 **cp, INT32 playernum)
 	LUA_PushUserdata(gL, &players[playernum], META_PLAYER);
 	for (i = 1; i < argc; i++)
 	{
-		READSTRINGN(*cp, buf, 255);
+		strlcpy(buf, argv[i], 255);
 		lua_pushstring(gL, buf);
 	}
-	LUA_Call(gL, (int)argc, 0, 1); // argc is 1-based, so this will cover the player we passed too.
+	LUA_Call(gL, (int)argc, 0, 1, compat); // argc is 1-based, so this will cover the player we passed too.
 
 	lua_pop(gL, 1); // Pop LUA_GetErrorMessage (lua_pcall doesn't pop it)
 
@@ -105,6 +118,7 @@ void COM_Lua_f(void)
 	UINT16 flags;
 	UINT8 lpn = 0;
 	INT32 playernum = consoleplayer;
+	boolean compat;
 
 	I_Assert(gL != NULL);
 
@@ -173,6 +187,10 @@ void COM_Lua_f(void)
 		return;
 	}
 
+	lua_rawgeti(gL, -1, 3); // push compatmode from command info table
+	compat = lua_toboolean(gL, -1);
+	lua_pop(gL, 1); // pop compatmode
+
 	// Do the command locally, NetXCmds don't go through outside of GS_LEVEL || GS_INTERMISSION || GS_VOTING
 	lua_rawgeti(gL, -1, 1); // push function from command info table
 	I_Assert(lua_isfunction(gL, -1));
@@ -181,7 +199,7 @@ void COM_Lua_f(void)
 	LUA_PushUserdata(gL, &players[playernum], META_PLAYER);
 	for (i = 1; i < COM_Argc(); i++)
 		lua_pushstring(gL, COM_Argv(i));
-	LUA_Call(gL, (int)COM_Argc(), 0, 1); // COM_Argc is 1-based, so this will cover the player we passed too.
+	LUA_Call(gL, (int)COM_Argc(), 0, 1, compat); // COM_Argc is 1-based, so this will cover the player we passed too.
 
 	lua_pop(gL, 1); // Pop LUA_GetErrorMessage (lua_pcall doesn't pop it)
 }
@@ -227,6 +245,9 @@ static int lib_comAddCommand(lua_State *L)
 
 		lua_pushvalue(L, 3);
 		lua_rawseti(L, -2, 2);
+
+		lua_pushboolean(L, lua_compatmode);
+		lua_rawseti(L, -2, 3);
 	lua_setfield(L, -2, name);
 
 	// Try to add the Lua command
@@ -288,10 +309,18 @@ void LUA_CVarChanged(void *cvar)
 
 static void Lua_OnChange(void)
 {
-	/// \todo Network this! XD_LUAVAR
+	boolean compat;
 
 	lua_pushcfunction(gL, LUA_GetErrorMessage);
 	lua_insert(gL, 1); // Because LUA_Call wants it at index 1.
+
+	// From CV_OnChangeCompat registry field, get the function's compatmode setting.
+	lua_getfield(gL, LUA_REGISTRYINDEX, "CV_OnChangeCompat");
+	I_Assert(lua_istable(gL, -1));
+	lua_pushlightuserdata(gL, this_cvar);
+	lua_rawget(gL, -2);
+	compat = luaL_checkboolean(gL, -1);
+	lua_pop(gL, 2);
 
 	// From CV_OnChange registry field, get the function for this cvar by name.
 	lua_getfield(gL, LUA_REGISTRYINDEX, "CV_OnChange");
@@ -301,7 +330,7 @@ static void Lua_OnChange(void)
 
 	LUA_RawPushUserdata(gL, this_cvar);
 
-	LUA_Call(gL, 1, 0, 1); // call function(cvar)
+	LUA_Call(gL, 1, 0, 1, compat); // call function(cvar)
 	lua_pop(gL, 1); // pop CV_OnChange table
 	lua_remove(gL, 1); // remove LUA_GetErrorMessage
 }
@@ -400,6 +429,14 @@ static int lib_cvRegisterVar(lua_State *L)
 			lua_pushvalue(L, 4);
 			lua_rawset(L, 5);
 			lua_pop(L, 1);
+
+			lua_getfield(L, LUA_REGISTRYINDEX, "CV_OnChangeCompat");
+			I_Assert(lua_istable(L, 5));
+			lua_pushlightuserdata(L, cvar);
+			lua_pushboolean(L, lua_compatmode);
+			lua_rawset(L, 5);
+			lua_pop(L, 1);
+
 			cvar->func = Lua_OnChange;
 		}
 		lua_pop(L, 1);
@@ -438,12 +475,12 @@ static int lib_cvFindVar(lua_State *L)
 	{
 		// cv_numlaps -> numlaps (global, not cvar)
 		// cv_basenumlaps -> cv_numlaps
-		if (!strcmp(name, "numlaps"))
+		if (fastcmp(name, "numlaps"))
 		{
 			LUA_PushUserdata(L, &cv_fakenumlaps, META_CVAR);
 			return 1;
 		}
-		else if (!strcmp(name, "basenumlaps"))
+		else if (fastcmp(name, "basenumlaps"))
 			name = "numlaps";
 	}
 	LUA_PushUserdata(L, CV_FindVar(name), META_CVAR);
@@ -586,6 +623,8 @@ int LUA_ConsoleLib(lua_State *L)
 	lua_setfield(L, LUA_REGISTRYINDEX, "CV_PossibleValue");
 	lua_newtable(L);
 	lua_setfield(L, LUA_REGISTRYINDEX, "CV_OnChange");
+	lua_newtable(L);
+	lua_setfield(L, LUA_REGISTRYINDEX, "CV_OnChangeCompat");
 
 	// Push opaque CV_PossibleValue pointers
 	// Because I don't care enough to bother.

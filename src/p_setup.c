@@ -89,7 +89,6 @@
 
 #include "p_slopes.h"
 
-#include "fastcmp.h" // textmap parsing
 #include "taglist.h"
 
 // SRB2Kart
@@ -109,6 +108,7 @@
 #include "k_mapuser.h"
 #include "p_deepcopy.h"
 #include "k_specialstage.h"
+#include "k_itemlist.hpp"
 #include "g_input.h"
 
 #include "blan/b_soc.h"
@@ -162,9 +162,11 @@ boolean slopeboostactive;
 boolean draftingactive;
 boolean airdropactive;
 boolean airthrustactive;
+boolean waterskipbricks;
 boolean itemlittering;
 boolean itempushing;
 UINT8   bumpsparkactive;
+boolean itemlistactive;
 UINT16 bossdisabled;
 boolean stoppedclock;
 boolean levelloading;
@@ -897,6 +899,7 @@ static void P_LoadVertices(UINT8 *data)
 static void P_InitializeSector(sector_t *ss)
 {
 	memset(&ss->soundorg, 0, sizeof(ss->soundorg));
+	ss->soundorg.thinker.function = (actionf_p1)P_MobjThinker;
 
 	ss->validcount = 0;
 
@@ -7351,10 +7354,14 @@ static void P_ConvertBinaryThingTypes(void)
 		case 556: //Diagonal red spring
 		case 557: //Diagonal blue spring
 		case 558: //Diagonal grey spring
-			if (mapthings[i].options & MTF_OBJECTSPECIAL)
-				mapthings[i].args[0] |= TMSPR_NOGRAVITY;
-			if (mapthings[i].options & MTF_AMBUSH)
-				mapthings[i].args[0] |= TMSPR_ROTATEEXTRA;
+			//if (mapthings[i].options & MTF_OBJECTSPECIAL)
+				//mapthings[i].args[0] |= TMSPR_NOGRAVITY;
+			// Not all springs had rotate extra in v1
+			if (!(mapthings[i].type == 557 || mapthings[i].type == 558))
+			{
+				if (mapthings[i].options & MTF_AMBUSH)
+					mapthings[i].args[0] |= TMSPR_ROTATEEXTRA;
+			}
 			break;
 		case 559: //Horizontal yellow spring
 		case 560: //Horizontal red spring
@@ -8171,8 +8178,10 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	draftingactive = false;
 	airdropactive = false;
 	airthrustactive = false;
+	waterskipbricks = false;
 	itemlittering = false;
 	itempushing = false;
+	itemlistactive = false;
 	bumpsparkactive = 0;
 	antibumptime = 0;
 
@@ -8203,15 +8212,23 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	if (cv_kartairthrust.value)
 		airthrustactive = true;
 
+	if (cv_kartwaterskiplock.value)
+		waterskipbricks = true;
+
 	if (cv_kartitemlitter.value)
 		itemlittering = true;
 
 	if (cv_kartitempush.value)
 		itempushing = true;
 
+	if (cv_itemlist.value)
+		itemlistactive = true;
+
 	bumpsparkactive = (UINT8)cv_kartbumpspark.value;
 
 	antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
+
+	K_ClearItemRollLists();
 
 	// emerald hunt
 	hunt1 = hunt2 = hunt3 = NULL;
@@ -8412,7 +8429,7 @@ static void P_TryAddGhosts(const char *gpath, boolean all, recordreplay_e which)
 
 static void P_LoadRecordGhosts(void)
 {
-	// see also m_menu.c's Nextmap_OnChange
+	// see also m_menu.c's M_UpdateTimeAttackMenu
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, modeattacking == ATTACKING_ITEMBREAK);
 
 	// Best Time ghost
@@ -8855,7 +8872,8 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	{
 		// Reset the palette now all fades have been done
 		if (rendermode != render_none)
-			V_ReloadPalette(); // Set the level palette
+			//V_ReloadPalette(); // Set the level palette
+			V_SetPaletteLump(GetPalette()); // the above does not *set* the screen palette
 
 		if (!(reloadinggamestate || gamestate != GS_LEVEL))
 		{
@@ -9333,7 +9351,7 @@ static lumpinfo_t* FindFolder(const char *folName, UINT16 *start, UINT16 *end, l
 {
 	UINT16 numlumps = *pnumlumps;
 	size_t i = *pi;
-	if (!stricmp(lumpinfo->fullname, folName))
+	if (fasticmp(lumpinfo->fullname, folName))
 	{
 		lumpinfo++;
 		*start = ++i;

@@ -54,7 +54,7 @@ extern INT32 lua_lumploading; // is LUA_LoadLump being called?
 extern boolean lua_compatmode; // compatmode enabled for this lump/hook?
 
 int LUA_GetErrorMessage(lua_State *L);
-int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex);
+int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, boolean compat);
 void LUA_LoadLump(UINT16 wad, UINT16 lump, boolean noresults);
 #ifdef LUA_ALLOW_BYTECODE
 void LUA_DumpFile(const char *filename);
@@ -131,7 +131,7 @@ void COM_Lua_f(void);
 	static UINT8 seen = 0;\
 	if (!seen) {\
 		seen = 1;\
-		CONS_Alert(CONS_WARNING,"\"%s\" is deprecated and will be removed.\nUse \"%s\" instead.\n", this_func, use_instead);\
+		CONS_Alert(CONS_WARNING,"\"%s\" is deprecated in BlanKart.\nUse \"%s\" instead.\n", this_func, use_instead);\
 	}\
 }
 

@@ -254,6 +254,36 @@ static boolean P_SpecialIsLinedefCrossType(line_t *ld)
 	return linedefcrossspecial;
 }
 
+static boolean P_ShouldSpringForceAngle(mobj_t *spring, ticcmd_t *cmd)
+{
+	switch (spring->type)
+	{
+		case MT_YELLOWDIAG:
+		case MT_REDDIAG:
+		case MT_BLUEDIAG:
+		case MT_GRAYDIAG:
+			if (spring->args[0] & TMSPR_FORCEANGLE)
+				return true;
+			break;
+		case MT_YELLOWHORIZ:
+		case MT_REDHORIZ:
+		case MT_BLUEHORIZ:
+		case MT_GRAYHORIZ:
+			if (spring->args[1] & TMSPR_FORCEANGLE)
+				return true;
+			break;
+		default:
+			break;
+	}
+
+	// Not forced or a irregular spring?
+	// Always allow players that release accel to adjust angle.
+	if (cmd->forwardmove == 0 && cmd->sidemove == 0)
+		return true;
+
+	return false;
+}
+
 void
 P_DoSpringEx
 (		mobj_t * object,
@@ -388,7 +418,7 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 	{
 		if (spring->flags & MF_ENEMY) // Spring shells
 			P_SetTarget(&spring->target, object);
-		if (horizspeed && object->player->cmd.forwardmove == 0 && object->player->cmd.sidemove == 0)
+		if (horizspeed && P_ShouldSpringForceAngle(spring, &object->player->cmd))
 		{
 			object->angle = spring->angle;
 			object->player->angleturn = spring->angle;
@@ -644,8 +674,8 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			return BMIT_CONTINUE; // underneath
 		if (g_tm.thing->player && g_tm.thing->flags & MF_SHOOTABLE && thing->health > 0)
 		{
-			UINT32 damagetype = (g_tm.thing->info->mass & DMG_TYPEMASK);
-			if (!damagetype) // OWWWWW!
+			UINT32 damagetype = (thing->info->mass & DMG_TYPEMASK);
+			if (thing->info->compatmode || !damagetype) // OWWWWW!
 				damagetype = DMG_NORMAL;
 			P_DamageMobj(g_tm.thing, thing, thing, 1, damagetype);
 		}
@@ -661,7 +691,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		if (thing->player && thing->flags & MF_SHOOTABLE && g_tm.thing->health > 0)
 		{
 			UINT32 damagetype = (g_tm.thing->info->mass & DMG_TYPEMASK);
-			if (!damagetype) // OWWWWW!
+			if (g_tm.thing->info->compatmode || !damagetype) // OWWWWW!
 				damagetype = DMG_NORMAL;
 			P_DamageMobj(thing, g_tm.thing, g_tm.thing, 1, damagetype);
 		}
@@ -740,6 +770,48 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			return BMIT_CONTINUE; // underneath
 
 		return K_EggItemCollide(thing, g_tm.thing) ? BMIT_CONTINUE : BMIT_ABORT;
+	}
+
+	if (g_tm.thing->type == MT_EGGMINE)
+	{
+		// see if it went over / under
+		if (g_tm.thing->z > thing->z + thing->height)
+			return BMIT_CONTINUE; // overhead
+		if (g_tm.thing->z + g_tm.thing->height < thing->z)
+			return BMIT_CONTINUE; // underneath
+
+		return K_EggMineCollide(g_tm.thing, thing) ? BMIT_CONTINUE : BMIT_ABORT;
+	}
+	else if (thing->type == MT_EGGMINE)
+	{
+		// see if it went over / under
+		if (g_tm.thing->z > thing->z + thing->height)
+			return BMIT_CONTINUE; // overhead
+		if (g_tm.thing->z + g_tm.thing->height < thing->z)
+			return BMIT_CONTINUE; // underneath
+
+		return K_EggMineCollide(thing, g_tm.thing) ? BMIT_CONTINUE : BMIT_ABORT;
+	}
+
+	if (g_tm.thing->type == MT_EGGMINE_SHIELD)
+	{
+		// see if it went over / under
+		if (g_tm.thing->z > thing->z + thing->height)
+			return BMIT_CONTINUE; // overhead
+		if (g_tm.thing->z + g_tm.thing->height < thing->z)
+			return BMIT_CONTINUE; // underneath
+
+		return K_EggMineShieldCollide(g_tm.thing, thing) ? BMIT_CONTINUE : BMIT_ABORT;
+	}
+	else if (thing->type == MT_EGGMINE_SHIELD)
+	{
+		// see if it went over / under
+		if (g_tm.thing->z > thing->z + thing->height)
+			return BMIT_CONTINUE; // overhead
+		if (g_tm.thing->z + g_tm.thing->height < thing->z)
+			return BMIT_CONTINUE; // underneath
+
+		return K_EggMineShieldCollide(thing, g_tm.thing) ? BMIT_CONTINUE : BMIT_ABORT;
 	}
 
 	if (g_tm.thing->type == MT_RANDOMITEM)
@@ -2625,7 +2697,7 @@ increment_move
 	radius = max(radius, mapobjectscale);
 
 	// And Big Large (tm) movements can skip over slopes.
-	radius = min(radius, 8*mapobjectscale);
+	radius = min(radius, 16*mapobjectscale);
 
 	// (This whole "step" system is flawed; it was OK before, but the addition of slopes has
 	// exposed the problems with doing it like this. The right thing to do would be to use
@@ -3740,6 +3812,11 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 	{
 		tmxmove = FixedMul(mmomx, (FRACUNIT - (FRACUNIT>>6) - (FRACUNIT>>5)));
 		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>6) - (FRACUNIT>>5)));
+	}
+	else if (mo->type == MT_EGGMINE)
+	{
+		tmxmove = mmomx/3;
+		tmymove = mmomy/3;
 	}
 	else if (mo->type == MT_THROWNGRENADE || mo->type == MT_CYBRAKDEMON_NAPALM_BOMB_LARGE)
 	{

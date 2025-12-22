@@ -280,7 +280,7 @@ static void DRPC_HandleJoinRequest(const DiscordUser *requestUser)
 		while (append != NULL)
 		{
 			// CHECK FOR DUPES!! Ignore any that already exist from the same user.
-			if (!strcmp(newRequest->userID, append->userID))
+			if (fastcmp(newRequest->userID, append->userID))
 			{
 				Discord_Respond(newRequest->userID, DISCORD_REPLY_IGNORE);
 				DRPC_RemoveRequest(newRequest);
@@ -445,7 +445,7 @@ static const char *DRPC_GetServerIP(void)
 	// If you're connected
 	if (I_GetNodeAddress && (address = I_GetNodeAddress(servernode)) != NULL)
 	{
-		if (strcmp(address, "self"))
+		if (!fastcmp(address, "self"))
 		{
 			// We're not the server, so we could successfully get the IP!
 			// No need to do anything else :)
@@ -728,7 +728,7 @@ void DRPC_UpdatePresence(void)
 			// Map image
 			while (supportedMaps[checkMap] != NULL)
 			{
-				if (!strcmp(mapheaderinfo[gamemap-1]->lumpname, supportedMaps[checkMap]))
+				if (fastcmp(mapheaderinfo[gamemap-1]->lumpname, supportedMaps[checkMap]))
 				{
 					snprintf(mapimg, MAXMAPLUMPNAME+4, "map_%s", mapheaderinfo[gamemap-1]->lumpname);
 					strlwr(mapimg);

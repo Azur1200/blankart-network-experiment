@@ -20,7 +20,6 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "doomtype.h"
-#include "fastcmp.h"
 #include "m_fixed.h"
 #include "m_random.h"
 #include "p_local.h"
@@ -680,7 +679,14 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 				K_MomentumAngle(player->mo), thrustAngle,
 				playerSpeed, thrustSpeed
 			);
+
+			player->mo->angle = player->drawangle = thrustAngle;
 			player->driftlock = TICRATE/8; // seems like a good value so its not noticable and you still get the right angle
+
+			if (!demo.playback)
+				P_ForceLocalAngle(player, player->mo->angle, true);
+
+			player->angleturn = player->mo->angle;
 
 			P_InstaThrust(player->mo, thrustAngle, max(thrustSpeed, 2*playerSpeed));
 
@@ -1325,11 +1331,11 @@ void K_UpdateTerrainOverlay(mobj_t *mo)
 --------------------------------------------------*/
 static void K_FlagBoolean(UINT32 *inputFlags, UINT32 newFlag, char *val)
 {
-	if (stricmp(val, "true") == 0)
+	if (fasticmp(val, "true"))
 	{
 		*inputFlags |= newFlag;
 	}
-	else if (stricmp(val, "false") == 0)
+	else if (fasticmp(val, "false"))
 	{
 		*inputFlags &= ~newFlag;
 	}
@@ -1397,39 +1403,39 @@ static void K_ParseSplashParameter(size_t i, char *param, char *val)
 {
 	t_splash_t *splash = &splashDefs[i];
 
-	if (stricmp(param, "mobjType") == 0)
+	if (fasticmp(param, "mobjType"))
 	{
 		splash->mobjType = get_number(val);
 	}
-	else if (stricmp(param, "sfx") == 0)
+	else if (fasticmp(param, "sfx"))
 	{
 		splash->sfx = get_number(val);
 	}
-	else if (stricmp(param, "scale") == 0)
+	else if (fasticmp(param, "scale"))
 	{
 		splash->scale = FLOAT_TO_FIXED(atof(val));
 	}
-	else if (stricmp(param, "color") == 0)
+	else if (fasticmp(param, "color"))
 	{
 		splash->color = get_number(val);
 	}
-	else if (stricmp(param, "pushH") == 0)
+	else if (fasticmp(param, "pushH"))
 	{
 		splash->pushH = FLOAT_TO_FIXED(atof(val));
 	}
-	else if (stricmp(param, "pushV") == 0)
+	else if (fasticmp(param, "pushV"))
 	{
 		splash->pushV = FLOAT_TO_FIXED(atof(val));
 	}
-	else if (stricmp(param, "spread") == 0)
+	else if (fasticmp(param, "spread"))
 	{
 		splash->spread = FLOAT_TO_FIXED(atof(val));
 	}
-	else if (stricmp(param, "cone") == 0)
+	else if (fasticmp(param, "cone"))
 	{
 		splash->cone = FloatToAngle(atof(val));
 	}
-	else if (stricmp(param, "numParticles") == 0)
+	else if (fasticmp(param, "numParticles"))
 	{
 		splash->numParticles = (UINT8)atoi(val);
 	}
@@ -1499,47 +1505,47 @@ static void K_ParseFootstepParameter(size_t i, char *param, char *val)
 {
 	t_footstep_t *footstep = &footstepDefs[i];
 
-	if (stricmp(param, "mobjType") == 0)
+	if (fasticmp(param, "mobjType"))
 	{
 		footstep->mobjType = get_number(val);
 	}
-	else if (stricmp(param, "sfx") == 0)
+	else if (fasticmp(param, "sfx"))
 	{
 		footstep->sfx = get_number(val);
 	}
-	else if (stricmp(param, "scale") == 0)
+	else if (fasticmp(param, "scale"))
 	{
 		footstep->scale = FLOAT_TO_FIXED(atof(val));
 	}
-	else if (stricmp(param, "color") == 0)
+	else if (fasticmp(param, "color"))
 	{
 		footstep->color = get_number(val);
 	}
-	else if (stricmp(param, "pushH") == 0)
+	else if (fasticmp(param, "pushH"))
 	{
 		footstep->pushH = FLOAT_TO_FIXED(atof(val));
 	}
-	else if (stricmp(param, "pushV") == 0)
+	else if (fasticmp(param, "pushV"))
 	{
 		footstep->pushV = FLOAT_TO_FIXED(atof(val));
 	}
-	else if (stricmp(param, "spread") == 0)
+	else if (fasticmp(param, "spread"))
 	{
 		footstep->spread = FLOAT_TO_FIXED(atof(val));
 	}
-	else if (stricmp(param, "cone") == 0)
+	else if (fasticmp(param, "cone"))
 	{
 		footstep->cone = FloatToAngle(atof(val));
 	}
-	else if (stricmp(param, "sfxFreq") == 0)
+	else if (fasticmp(param, "sfxFreq"))
 	{
 		footstep->sfxFreq = (tic_t)atoi(val);
 	}
-	else if (stricmp(param, "frequency") == 0)
+	else if (fasticmp(param, "frequency"))
 	{
 		footstep->frequency = (tic_t)atoi(val);
 	}
-	else if (stricmp(param, "requiredSpeed") == 0)
+	else if (fasticmp(param, "requiredSpeed"))
 	{
 		footstep->requiredSpeed = FLOAT_TO_FIXED(atof(val));
 	}
@@ -1606,23 +1612,23 @@ static void K_ParseOverlayParameter(size_t i, char *param, char *val)
 {
 	t_overlay_t *overlay = &overlayDefs[i];
 
-	if (stricmp(param, "stillState") == 0)
+	if (fasticmp(param, "stillState"))
 	{
 		overlay->states[TOV_STILL] = get_number(val);
 	}
-	else if (stricmp(param, "movingState") == 0)
+	else if (fasticmp(param, "movingState"))
 	{
 		overlay->states[TOV_MOVING] = get_number(val);
 	}
-	else if (stricmp(param, "scale") == 0)
+	else if (fasticmp(param, "scale"))
 	{
 		overlay->scale = FLOAT_TO_FIXED(atof(val));
 	}
-	else if (stricmp(param, "color") == 0)
+	else if (fasticmp(param, "color"))
 	{
 		overlay->color = get_number(val);
 	}
-	else if (stricmp(param, "speed") == 0)
+	else if (fasticmp(param, "speed"))
 	{
 		overlay->speed = FLOAT_TO_FIXED(atof(val));
 	}
@@ -1719,54 +1725,54 @@ static void K_ParseTerrainParameter(size_t i, char *param, char *val)
 {
 	terrain_t *terrain = &terrainDefs[i];
 
-	if (stricmp(param, "splash") == 0)
+	if (fasticmp(param, "splash"))
 	{
 		t_splash_t *splash = K_GetSplashByName(val);
 		terrain->splashID = K_GetSplashHeapIndex(splash);
 	}
-	else if (stricmp(param, "footstep") == 0)
+	else if (fasticmp(param, "footstep"))
 	{
 		t_footstep_t *footstep = K_GetFootstepByName(val);
 		terrain->footstepID = K_GetFootstepHeapIndex(footstep);
 	}
-	else if (stricmp(param, "overlay") == 0)
+	else if (fasticmp(param, "overlay"))
 	{
 		t_overlay_t *overlay = K_GetOverlayByName(val);
 		terrain->overlayID = K_GetOverlayHeapIndex(overlay);
 	}
-	else if (stricmp(param, "friction") == 0)
+	else if (fasticmp(param, "friction"))
 	{
 		terrain->friction = FLOAT_TO_FIXED(atof(val));
 	}
-	else if (stricmp(param, "offroad") == 0)
+	else if (fasticmp(param, "offroad"))
 	{
 		terrain->offroad = (UINT8)get_number(val); // offroad strength enum?
 	}
-	else if (stricmp(param, "damageType") == 0)
+	else if (fasticmp(param, "damageType"))
 	{
 		terrain->damageType = (INT16)get_number(val);
 	}
-	else if (stricmp(param, "pogoSpring") == 0)
+	else if (fasticmp(param, "pogoSpring"))
 	{
 		terrain->pogoSpring = (UINT8)get_number(val);
 	}
-	else if (stricmp(param, "pogoMinSpeed") == 0 || stricmp(param, "pogoSpringMinSpeed") == 0)
+	else if (fasticmp(param, "pogoMinSpeed") || fasticmp(param, "pogoSpringMinSpeed"))
 	{
 		terrain->pogoSpringMin = (UINT8)get_number(val);
 	}
-	else if (stricmp(param, "pogoMaxSpeed") == 0 || stricmp(param, "pogoSpringMaxSpeed") == 0)
+	else if (fasticmp(param, "pogoMaxSpeed") || fasticmp(param, "pogoSpringMaxSpeed"))
 	{
 		terrain->pogoSpringMax = (UINT8)get_number(val);
 	}
-	else if (stricmp(param, "speedPad") == 0)
+	else if (fasticmp(param, "speedPad"))
 	{
 		terrain->speedPad = FLOAT_TO_FIXED(atof(val));
 	}
-	else if (stricmp(param, "speedPadAngle") == 0)
+	else if (fasticmp(param, "speedPadAngle"))
 	{
 		terrain->speedPadAngle = FixedAngle(FLOAT_TO_FIXED(atof(val)));
 	}
-	else if (stricmp(param, "springStrength") == 0)
+	else if (fasticmp(param, "springStrength"))
 	{
 		const double fval = atof(val);
 
@@ -1783,35 +1789,35 @@ static void K_ParseTerrainParameter(size_t i, char *param, char *val)
 				FLOAT_TO_FIXED(15.625 * pow(1.6, fval));
 		}
 	}
-	else if (stricmp(param, "outrun") == 0 || stricmp(param, "speedIncrease") == 0)
+	else if (fasticmp(param, "outrun") || fasticmp(param, "speedIncrease"))
 	{
 		terrain->outrun = FLOAT_TO_FIXED(atof(val));
 	}
-	else if (stricmp(param, "floorClip") == 0)
+	else if (fasticmp(param, "floorClip"))
 	{
 		terrain->floorClip = FLOAT_TO_FIXED(atof(val));
 	}
-	else if (stricmp(param, "liquid") == 0)
+	else if (fasticmp(param, "liquid"))
 	{
 		K_FlagBoolean(&terrain->flags, TRF_LIQUID, val);
 	}
-	else if (stricmp(param, "sneakerPanel") == 0)
+	else if (fasticmp(param, "sneakerPanel"))
 	{
 		K_FlagBoolean(&terrain->flags, TRF_SNEAKERPANEL, val);
 	}
-	else if (stricmp(param, "waterRunPanel") == 0 || stricmp(param, "waterPanel") == 0)
+	else if (fasticmp(param, "waterRunPanel") || fasticmp(param, "waterPanel"))
 	{
 		K_FlagBoolean(&terrain->flags, TRF_WATERRUNPANEL, val);
 	}
-	else if (stricmp(param, "tripwire") == 0)
+	else if (fasticmp(param, "tripwire"))
 	{
 		K_FlagBoolean(&terrain->flags, TRF_TRIPWIRE, val);
 	}
-	else if (stricmp(param, "remap") == 0)
+	else if (fasticmp(param, "remap"))
 	{
 		K_FlagBoolean(&terrain->flags, TRF_REMAP, val);
 	}
-	else if (stricmp(param, "fricfix") == 0 || stricmp(param, "frictionfix") == 0 || stricmp(param, "boostbypass") == 0)
+	else if (fasticmp(param, "fricfix") || fasticmp(param, "frictionfix") || fasticmp(param, "boostbypass"))
 	{
 		K_FlagBoolean(&terrain->flags, TRF_BYPASSBOOST, val);
 	}
@@ -1913,7 +1919,7 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 			valid = false;
 		}
 		// Check for valid fields.
-		else if (stricmp(tkn, "splash") == 0)
+		else if (fasticmp(tkn, "splash"))
 		{
 			Z_Free(tkn);
 			tkn = M_GetToken(NULL);
@@ -1954,7 +1960,7 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 				valid = false;
 			}
 		}
-		else if (stricmp(tkn, "footstep") == 0)
+		else if (fasticmp(tkn, "footstep"))
 		{
 			Z_Free(tkn);
 			tkn = M_GetToken(NULL);
@@ -1995,7 +2001,7 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 				valid = false;
 			}
 		}
-		else if (stricmp(tkn, "overlay") == 0)
+		else if (fasticmp(tkn, "overlay"))
 		{
 			Z_Free(tkn);
 			tkn = M_GetToken(NULL);
@@ -2036,7 +2042,7 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 				valid = false;
 			}
 		}
-		else if (stricmp(tkn, "terrain") == 0)
+		else if (fasticmp(tkn, "terrain"))
 		{
 			Z_Free(tkn);
 			tkn = M_GetToken(NULL);
@@ -2077,7 +2083,7 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 				valid = false;
 			}
 		}
-		else if (stricmp(tkn, "floor") == 0 || stricmp(tkn, "texture") == 0)
+		else if (fasticmp(tkn, "floor") || fasticmp(tkn, "texture"))
 		{
 			Z_Free(tkn);
 			tkn = M_GetToken(NULL);
@@ -2085,7 +2091,7 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 			
 			if (tkn && pos <= size)
 			{
-				if (stricmp(tkn, "optional") == 0)
+				if (fasticmp(tkn, "optional"))
 				{
 					// "optional" is ZDoom syntax
 					// We don't use it, but we can ignore it.
@@ -2168,7 +2174,7 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 				valid = false;
 			}
 		}
-		else if (stricmp(tkn, "defaultTerrain") == 0)
+		else if (fasticmp(tkn, "defaultTerrain"))
 		{
 			Z_Free(tkn);
 			tkn = M_GetToken(NULL);
@@ -2207,7 +2213,7 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 				valid = false;
 			}
 		}
-		else if (stricmp(tkn, "defaultOffroadFootstep") == 0)
+		else if (fasticmp(tkn, "defaultOffroadFootstep"))
 		{
 			Z_Free(tkn);
 			tkn = M_GetToken(NULL);

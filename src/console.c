@@ -33,6 +33,8 @@
 #include "d_main.h"
 #include "m_menu.h"
 #include "m_textinput.h"
+#include "m_emotes.h"
+#include "i_time.h"
 #include "filesrch.h"
 #include "m_misc.h"
 
@@ -629,11 +631,17 @@ static void CON_ChangeHeight(void)
 
 // Handles Console moves in/out of screen (per frame)
 //
-static void CON_MoveConsole(void)
+void CON_MoveConsole(void)
 {
 	static fixed_t fracmovement = 0;
 
 	Lock_state();
+
+	if (con_curlines == con_destlines)
+	{
+		Unlock_state();
+		return;
+	}
 
 	// instant
 	if (!cons_speed.value)
@@ -1022,7 +1030,7 @@ boolean CON_Responder(event_t *ev)
 		Lock_state();
 
 		// Only add command to history if it differs from previous one
-		if (strcmp(input.buffer, inputlines[(inputline-1) & 31]))
+		if (!fastcmp(input.buffer, inputlines[(inputline-1) & 31]))
 		{
 			inputline = (inputline+1) & 31;
 			M_TextInputInit(&input, inputlines[inputline], CON_MAXPROMPTCHARS);
@@ -1450,7 +1458,18 @@ static void CON_DrawHudlines(void)
 			}
 			if (c >= con_width)
 				break;
-			if (*p < HU_FONTSTART)
+
+			int emotelen;
+			emote_t *emote;
+
+			if ((emote = M_VerifyEmote((const char *)p, &emotelen)))
+			{
+				M_DrawScaledEmote(x<<FRACBITS, (y+2*con_scalefactor)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART|V_NOSCALEPATCH);
+				p += emotelen-1;
+				c += emotelen-1;
+				continue;
+			}
+			else if (*p < HU_FONTSTART)
 				;//charwidth = 4 * con_scalefactor;
 			else
 			{
@@ -1566,6 +1585,17 @@ static void CON_DrawConsole(void)
 				}
 				if (c >= con_width)
 					break;
+
+				int emotelen;
+				emote_t *emote;
+
+				if ((emote = M_VerifyEmote((const char *)p, &emotelen)))
+				{
+					M_DrawScaledEmote(x<<FRACBITS, (y+2*con_scalefactor)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART|V_NOSCALEPATCH);
+					p += emotelen-1;
+					c += emotelen-1;
+					continue;
+				}
 				V_DrawCharacter(x, y, (INT32)(*p) | charflags | cv_constextsize.value | V_NOSCALESTART, true);
 			}
 		}
@@ -1616,8 +1646,7 @@ void CON_Drawer(void)
 	}
 
 	// console movement
-	if (con_curlines != con_destlines)
-		CON_MoveConsole();
+	CON_MoveConsole();
 
 	if (con_curlines > 0)
 		CON_DrawConsole();

@@ -12,7 +12,6 @@
 
 #include "blua/lua.h"
 #include "doomdef.h"
-#include "fastcmp.h"
 #include "p_mobj.h"
 #include "d_player.h"
 #include "g_game.h"
@@ -232,439 +231,245 @@ static int lib_lenLocalplayers(lua_State *L)
 	return 1;
 }
 
+// player_ fields
+// Please add blan-specific fields at the end (or at least after tossdelay)
+#define PLAYERFIELDS(X) \
+	X(valid) \
+	X(name) \
+	X(mo) \
+	X(cmd) \
+	X(playerstate) \
+	X(viewz) \
+	X(viewheight) \
+	X(aiming) \
+	X(health) \
+	X(powers) \
+	X(kartstuff) \
+	X(frameangle) \
+	X(pflags) \
+	X(panim) \
+	X(flashcount) \
+	X(flashpal) \
+	X(skincolor) \
+	X(score) \
+	X(kartspeed) \
+	X(kartweight) \
+	X(charflags) \
+	X(lives) \
+	X(xtralife) \
+	X(speed) \
+	X(deadtimer) \
+	X(exiting) \
+	X(cmomx) \
+	X(cmomy) \
+	X(rmomx) \
+	X(rmomy) \
+	X(totalring) \
+	X(realtime) \
+	X(laps) \
+	X(ctfteam) \
+	X(tossdelay) \
+	X(starpostx) \
+	X(starposty) \
+	X(starpostz) \
+	X(starpostnum) \
+	X(starposttime) \
+	X(starpostangle) \
+	X(bumpertime) \
+	X(linkcount) \
+	X(linktimer) \
+	X(marescore) \
+	X(maxlink) \
+	X(lastsidehit) \
+	X(lastlinehit) \
+	X(onconveyor) \
+	X(awayviewmobj) \
+	X(awayviewtics) \
+	X(awayviewaiming) \
+	X(spectator) \
+	X(bot) \
+	X(jointime) \
+	X(spectatorreentry) \
+	X(grieftime) \
+	X(griefstrikes) \
+	X(splitscreenindex) \
+	X(fovadd) \
+	X(ping) \
+	\
+	X(realmo) \
+	X(oldcmd) \
+	X(cameraoffset) \
+	X(viewrollangle) \
+	X(tilt) \
+	X(drawangle) \
+	X(karthud) \
+	X(nocontrol) \
+	X(carry) \
+	X(dye) \
+	X(position) \
+	X(oldposition) \
+	X(positiondelay) \
+	X(prevcheck) \
+	X(nextcheck) \
+	X(distancetofinish) \
+	X(distancetofinishprev) \
+	X(currentwaypoint) \
+	X(nextwaypoint) \
+	X(airtime) \
+	X(bigwaypointgap) \
+	X(flashing) \
+	X(spinouttimer) \
+	X(spinouttype) \
+	X(flipovertimer) \
+	X(flipoverangle) \
+	X(instashield) \
+	X(wipeoutslow) \
+	X(justbumped) \
+	X(itemflags) \
+	X(outrun) \
+	X(outruntime) \
+	X(drift) \
+	X(driftcharge) \
+	X(driftboost) \
+	X(airdriftspeed) \
+	X(boostcharge) \
+	X(slopeboost) \
+	X(prevslopeboost) \
+	X(slopeaccel) \
+	X(startboost) \
+	X(dropdash) \
+	X(respawn) \
+	X(aizdriftstrat) \
+	X(aizdrifttilt) \
+	X(aizdriftturn) \
+	X(slipdashcharge) \
+	X(slipdashdir) \
+	X(offroad) \
+	X(pogospring) \
+	X(brakestop) \
+	X(waterskip) \
+	X(dashpadcooldown) \
+	X(boostpower) \
+	X(speedboost) \
+	X(prevspeedboost) \
+	X(accelboost) \
+	X(handleboost) \
+	X(boostangle) \
+	X(boostinfo) \
+	X(numsneakers) \
+	X(numpanels) \
+	X(numboosts) \
+	X(draftpower) \
+	X(draftleeway) \
+	X(lastdraft) \
+	X(tripwirestate) \
+	X(tripwirepass) \
+	X(tripwireleniency) \
+	X(tripwirerebounddelay) \
+	X(itemroulette) \
+	X(previtemroulette) \
+	X(itemblink) \
+	X(itemblinkmode) \
+	X(roulettetype) \
+	X(itemtype) \
+	X(itemamount) \
+	X(equippeditem) \
+	X(itemusecooldown) \
+	X(itemusecooldownmax) \
+	X(throwdir) \
+	X(sadtimer) \
+	X(rings) \
+	X(ringmin) \
+	X(ringmax) \
+	X(pickuprings) \
+	X(ringdelay) \
+	X(ringlock) \
+	X(ringboost) \
+	X(ringtime) \
+	X(superring) \
+	X(nextringaward) \
+	X(ringvolume) \
+	X(ringtransparency) \
+	X(airdroptime) \
+	X(ringdrop) \
+	X(shieldtracer) \
+	X(bubblecool) \
+	X(bubbleblowup) \
+	X(bubblehealth) \
+	X(bubbleboost) \
+	X(flamedash) \
+	X(flametimer) \
+	X(flamestore) \
+	X(hyudorotimer) \
+	X(stealingtimer) \
+	X(stolentimer) \
+	X(sneakertimer) \
+	X(realsneakertimer) \
+	X(floorboost) \
+	X(chaintimer) \
+	X(growshrinktimer) \
+	X(growcancel) \
+	X(squishedtimer) \
+	X(arrowbullet) \
+	X(rocketsneakertimer) \
+	X(invincibilitytimer) \
+	X(maxinvincibilitytime) \
+	X(invincibilitybottleneck) \
+	X(invincibilitycancel) \
+	X(invincibilitywarning) \
+	X(eggmanexplode) \
+	X(eggmanblame) \
+	X(bananadrag) \
+	X(lastjawztarget) \
+	X(jawztargetdelay) \
+	X(confirmvictim) \
+	X(confirmvictimdelay) \
+	X(dashringpulltics) \
+	X(dashringpushtics) \
+	X(dashrainbowpogo) \
+	X(glancedir) \
+	X(breathtimer) \
+	X(lastsafelap) \
+	X(lastsafestarpost) \
+	X(interpoints) \
+	X(roundscore) \
+	X(emeralds) \
+	X(bumpers) \
+	X(karmadelay) \
+	X(skin) \
+	X(voice_id) \
+	X(availabilities) \
+	X(followerskin) \
+	X(followerready) \
+	X(followercolor) \
+	X(follower) \
+	X(followitem) \
+	X(followmobj) \
+	X(lastspeed) \
+	X(latestlap) \
+	X(checkskip) \
+	X(starpostflip) \
+	X(spectatewait) \
+	X(botvars) \
+	X(packetloss) \
+	X(loop) \
+	X(prevonground) \
+	X(walltransfered) \
+	X(walltransferboost)
+
 enum player_e
 {
-	player_valid,
-	player_name,
-	player_realmo,
-	player_mo,
-	player_cmd,
-	player_oldcmd,
-	player_playerstate,
-	player_health,
-	player_viewz,
-	player_viewheight,
-	player_cameraOffset,
-	player_viewrollangle,
-	player_tilt,
-	player_aiming,
-	player_drawangle,
-	player_frameangle,
-	player_powers,
-	player_kartstuff,
-	player_karthud,
-	player_nocontrol,
-	player_carry,
-	player_dye,
-	player_position,
-	player_oldposition,
-	player_positiondelay,
-	player_prevcheck,
-	player_nextcheck,
-	player_distancetofinish,
-	player_distancetofinishprev,
-	player_currentwaypoint,
-	player_nextwaypoint,
-	player_airtime,
-	player_bigwaypointgap,
-	player_flashing,
-	player_spinouttimer,
-	player_spinouttype,
-	player_flipovertimer,
-	player_flipoverangle,
-	player_instashield,
-	player_wipeoutslow,
-	player_justbumped,
-	player_itemflags,
-	player_outrun,
-	player_outruntime,
-	player_drift,
-	player_driftcharge,
-	player_driftboost,
-	player_airdriftspeed,
-	player_boostcharge,
-	player_slopeboost,
-	player_prevslopeboost,
-	player_slopeaccel,
-	player_startboost,
-	player_dropdash,
-	player_respawn,
-	player_aizdriftstrat,
-	player_aizdrifttilt,
-	player_aizdriftturn,
-	player_slipdashcharge,
-	player_slipdashdir,
-	player_offroad,
-	player_pogospring,
-	player_brakestop,
-	player_waterskip,
-	player_dashpadcooldown,
-	player_boostpower,
-	player_speedboost,
-	player_accelboost,
-	player_boostangle,
-	player_boostinfo,
-	player_numsneakers,
-	player_numpanels,
-	player_numboosts,
-	player_draftpower,
-	player_draftleeway,
-	player_lastdraft,
-	player_tripwireState,
-	player_tripwirePass,
-	player_tripwireLeniency,
-	player_tripwireReboundDelay,
-	player_itemroulette,
-	player_previtemroulette,
-	player_itemblink,
-	player_itemblinkmode,
-	player_roulettetype,
-	player_itemtype,
-	player_itemamount,
-	player_itemusecooldown,
-	player_itemusecooldownmax,
-	player_throwdir,
-	player_sadtimer,
-	player_rings,
-	player_ringmin,
-	player_ringmax,
-	player_pickuprings,
-	player_ringdelay,
-	player_ringlock,
-	player_ringboost,
-	player_ringtime,
-	player_superring,
-	player_nextringaward,
-	player_ringvolume,
-	player_ringtransparency,
-	player_airdroptime,
-	player_ringdrop,
-	player_shieldtracer,
-	player_bubblecool,
-	player_bubbleblowup,
-	player_bubblehealth,
-	player_bubbleboost,
-	player_flamedash,
-	player_flametimer,
-	player_flamestore,
-	player_hyudorotimer,
-	player_stealingtimer,
-	player_stolentimer,
-	player_sneakertimer,
-	player_realsneakertimer,
-	player_floorboost,
-	player_chaintimer,
-	player_growshrinktimer,
-	player_growcancel,
-	player_squishedtimer,
-	player_rocketsneakertimer,
-	player_invincibilitytimer,
-	player_maxinvincibilitytime,
-	player_invincibilitybottleneck,
-	player_invincibilitycancel,
-	player_invincibilitywarning,
-	player_eggmanexplode,
-	player_eggmanblame,
-	player_bananadrag,
-	player_lastjawztarget,
-	player_jawztargetdelay,
-	player_confirmVictim,
-	player_confirmVictimDelay,
-	player_dashRingPullTics,
-	player_dashRingPushTics,
-	player_dashRainbowPogo,
-	player_glanceDir,
-	player_breathTimer,
-	player_lastsafelap,
-	player_lastsafestarpost,
-	player_interpoints,
-	player_roundscore,
-	player_marescore,
-	player_emeralds,
-	player_bumpers,
-	player_karmadelay,
-	player_pflags,
-	player_panim,
-	player_flashcount,
-	player_flashpal,
-	player_skincolor,
-	player_skin,
-	player_availabilities,
-	player_score,
-	player_kartspeed,
-	player_kartweight,
-	player_followerskin,
-	player_followerready,
-	player_followercolor,
-	player_follower,
-	player_charflags,
-	player_followitem,
-	player_followmobj,
-	player_lives,
-	player_xtralife,
-	player_speed,
-	player_lastspeed,
-	player_deadtimer,
-	player_exiting,
-	player_cmomx,
-	player_cmomy,
-	player_rmomx,
-	player_rmomy,
-	player_totalring,
-	player_realtime,
-	player_laps,
-	player_latestlap,
-	player_ctfteam,
-	player_checkskip,
-	player_starpostx,
-	player_starposty,
-	player_starpostz,
-	player_starpostangle,
-	player_starpostflip,
-	player_starpostnum,
-	player_starposttime,
-	player_lastsidehit,
-	player_lastlinehit,
-	player_onconveyor,
-	player_awayviewmobj,
-	player_awayviewtics,
-	player_awayviewaiming,
-	player_spectator,
-	player_spectatewait,
-	player_bot,
-	player_botvars,
-	player_jointime,
-	player_spectatorreentry,
-	player_grieftime,
-	player_griefstrikes,
-	player_splitscreenindex,
-	player_bumpertime,
-	player_ping,
-	player_packetloss,
-	player_loop,
-	player_prevonground,
-	player_walltransfered,
-	player_walltransferboost,
-#ifdef HWRENDER
-	player_fovadd,
-#endif
+#define ENUMITEM(name) player_##name,
+	PLAYERFIELDS(ENUMITEM)
+	NUMPLAYERFIELDS,
+
+	// For backward compat
+	player_lastlegacyfield = player_ping,
 };
 
 static const char *const player_opt[] = {
-	"valid",
-	"name",
-	"realmo",
-	"mo",
-	"cmd",
-	"oldcmd",
-	"playerstate",
-	"health",
-	"viewz",
-	"viewheight",
-	"cameraOffset",
-	"viewrollangle",
-	"tilt",
-	"aiming",
-	"drawangle",
-	"frameangle",
-	"powers",
-	"kartstuff",
-	"karthud",
-	"nocontrol",
-	"carry",
-	"dye",
-	"position",
-	"oldposition",
-	"positiondelay",
-	"prevcheck",
-	"nextcheck",
-	"distancetofinish",
-	"distancetofinishprev",
-	"currentwaypoint",
-	"nextwaypoint",
-	"airtime",
-	"bigwaypointgap",
-	"flashing",
-	"spinouttimer",
-	"spinouttype",
-	"flipovertimer",
-	"flipoverangle",
-	"instashield",
-	"wipeoutslow",
-	"justbumped",
-	"itemflags",
-	"outrun",
-	"outruntime",
-	"drift",
-	"driftcharge",
-	"driftboost",
-	"airdriftspeed",
-	"boostcharge",
-	"slopeboost",
-	"prevslopeboost",
-	"slopeaccel",
-	"startboost",
-	"dropdash",
-	"respawn",
-	"aizdriftstrat",
-	"aizdrifttilt",
-	"aizdriftturn",
-	"slipdashcharge",
-	"slipdashdir",
-	"offroad",
-	"pogospring",
-	"brakestop",
-	"waterskip",
-	"dashpadcooldown",
-	"boostpower",
-	"speedboost",
-	"accelboost",
-	"boostangle",
-	"boostinfo",
-	"numsneakers",
-	"numpanels",
-	"numboosts",
-	"draftpower",
-	"draftleeway",
-	"lastdraft",
-	"tripwireState",
-	"tripwirePass",
-	"tripwireLeniency",
-	"tripwireReboundDelay",
-	"itemroulette",
-	"previtemroulette",
-	"itemblink",
-	"itemblinkmode",
-	"roulettetype",
-	"itemtype",
-	"itemamount",
-	"itemusecooldown",
-	"itemusecooldownmax",
-	"throwdir",
-	"sadtimer",
-	"rings",
-	"ringmin",
-	"ringmax",
-	"pickuprings",
-	"ringdelay",
-	"ringlock",
-	"ringboost",
-	"ringtime",
-	"superring",
-	"nextringaward",
-	"ringvolume",
-	"ringtransparency",
-	"airdroptime",
-	"ringdrop",
-	"shieldtracer",
-	"bubblecool",
-	"bubbleblowup",
-	"bubblehealth",
-	"bubbleboost",
-	"flamedash",
-	"flametimer",
-	"flamestore",
-	"hyudorotimer",
-	"stealingtimer",
-	"stolentimer",
-	"sneakertimer",
-	"realsneakertimer",
-	"floorboost",
-	"chaintimer",
-	"growshrinktimer",
-	"growcancel",
-	"squishedtimer",
-	"rocketsneakertimer",
-	"invincibilitytimer",
-	"maxinvincibilitytime",
-	"invincibilitybottleneck",
-	"invincibilitycancel",
-	"invincibilitywarning", // This gets cast to a boolean in Lua.
-	"eggmanexplode",
-	"eggmanblame",
-	"bananadrag",
-	"lastjawztarget",
-	"jawztargetdelay",
-	"confirmVictim",
-	"confirmVictimDelay",
-	"dashRingPullTics",
-	"dashRingPushTics",
-	"dashRainbowPogo",
-	"glanceDir",
-	"breathTimer",
-	"lastsafelap",
-	"lastsafestarpost",
-	"interpoints",
-	"roundscore",
-	"marescore",
-	"emeralds",
-	"bumpers",
-	"karmadelay",
-	"pflags",
-	"panim",
-	"flashcount",
-	"flashpal",
-	"skincolor",
-	"skin",
-	"availabilities",
-	"score",
-	"kartspeed",
-	"kartweight",
-	"followerskin",
-	"followerready",
-	"followercolor",
-	"follower",
-	"charflags",
-	"followitem",
-	"followmobj",
-	"lives",
-	"xtralife",
-	"speed",
-	"lastspeed",
-	"deadtimer",
-	"exiting",
-	"cmomx",
-	"cmomy",
-	"rmomx",
-	"rmomy",
-	"totalring",
-	"realtime",
-	"laps",
-	"latestlap",
-	"ctfteam",
-	"checkskip",
-	"starpostx",
-	"starposty",
-	"starpostz",
-	"starpostangle",
-	"starpostflip",
-	"starpostnum",
-	"starposttime",
-	"lastsidehit",
-	"lastlinehit",
-	"onconveyor",
-	"awayviewmobj",
-	"awayviewtics",
-	"awayviewaiming",
-	"spectator",
-	"spectatewait",
-	"bot",
-	"botvars",
-	"jointime",
-	"spectatorreentry",
-	"grieftime",
-	"griefstrikes",
-	"splitscreenindex",
-	"bumpertime",
-	"ping",
-	"packetloss",
-	"loop",
-	"prevonground",
-	"walltransfered",
-	"walltransferboost",
-#ifdef HWRENDER
-	"fovadd",
-#endif
+#define ENUMITEMNAME(name) #name,
+	PLAYERFIELDS(ENUMITEMNAME)
 	NULL,
 };
 
@@ -683,6 +488,10 @@ static int player_get(lua_State *L)
 		}
 		return LUA_ErrInvalid(L, "player_t");
 	}
+
+	// Do not let compatmode scripts access new fields
+	if (lua_compatmode && field > player_lastlegacyfield)
+		field = NUMPLAYERFIELDS;
 
 	switch (field)
 	{
@@ -724,7 +533,7 @@ static int player_get(lua_State *L)
 	case player_viewheight:
 		lua_pushfixed(L, plr->viewheight);
 		break;
-	case player_cameraOffset:
+	case player_cameraoffset:
 		lua_pushfixed(L, plr->cameraOffset);
 		break;
 	case player_viewrollangle:
@@ -901,14 +710,20 @@ static int player_get(lua_State *L)
 	case player_speedboost:
 		lua_pushinteger(L, plr->speedboost);
 		break;
+	case player_prevspeedboost:
+		lua_pushinteger(L, plr->prevspeedboost);
+		break;
 	case player_accelboost:
 		lua_pushinteger(L, plr->accelboost);
+		break;
+	case player_handleboost:
+		lua_pushinteger(L, plr->handleboost);
 		break;
 	case player_boostangle:
 		lua_pushangle(L, plr->boostangle);
 		break;
 	case player_boostinfo:
-		luaL_error(L, "Don't directly read boostinfo. Use speedboost, accelboost and numboosts instead,\n");
+		LUA_PushUserdata(L, &plr->boostinfo, META_BOOSTINFO);
 		break;
 	case player_numsneakers:
 		lua_pushinteger(L, plr->numsneakers);
@@ -928,16 +743,16 @@ static int player_get(lua_State *L)
 	case player_lastdraft:
 		lua_pushinteger(L, plr->lastdraft);
 		break;
-	case player_tripwireState:
+	case player_tripwirestate:
 		lua_pushinteger(L, plr->tripwireState);
 		break;
-	case player_tripwirePass:
+	case player_tripwirepass:
 		lua_pushinteger(L, plr->tripwirePass);
 		break;
-	case player_tripwireLeniency:
+	case player_tripwireleniency:
 		lua_pushinteger(L, plr->tripwireLeniency);
 		break;
-	case player_tripwireReboundDelay:
+	case player_tripwirerebounddelay:
 		lua_pushinteger(L, plr->tripwireReboundDelay);
 		break;
 	case player_itemroulette:
@@ -960,6 +775,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_itemamount:
 		lua_pushinteger(L, plr->itemamount);
+		break;
+	case player_equippeditem:
+		lua_pushinteger(L, plr->equippeditem);
 		break;
 	case player_itemusecooldown:
 		lua_pushinteger(L, plr->itemusecooldown);
@@ -1069,6 +887,9 @@ static int player_get(lua_State *L)
 	case player_squishedtimer:
 		lua_pushinteger(L, plr->squishedtimer);
 		break;
+	case player_arrowbullet:
+		LUA_PushUserdata(L, plr->arrowbullet, META_MOBJ);
+		break;
 	case player_rocketsneakertimer:
 		lua_pushinteger(L, plr->rocketsneakertimer);
 		break;
@@ -1103,25 +924,25 @@ static int player_get(lua_State *L)
 	case player_jawztargetdelay:
 		lua_pushinteger(L, plr->jawztargetdelay);
 		break;
-	case player_confirmVictim:
+	case player_confirmvictim:
 		lua_pushinteger(L, plr->confirmVictim);
 		break;
-	case player_confirmVictimDelay:
+	case player_confirmvictimdelay:
 		lua_pushinteger(L, plr->confirmVictimDelay);
 		break;
-	case player_dashRingPullTics:
+	case player_dashringpulltics:
 		lua_pushinteger(L, plr->dashRingPullTics);
 		break;
-	case player_dashRingPushTics:
+	case player_dashringpushtics:
 		lua_pushinteger(L, plr->dashRingPushTics);
 		break;
-	case player_dashRainbowPogo:
+	case player_dashrainbowpogo:
 		lua_pushinteger(L, plr->dashRainbowPogo);
 		break;
-	case player_glanceDir:
+	case player_glancedir:
 		lua_pushinteger(L, plr->glanceDir);
 		break;
-	case player_breathTimer:
+	case player_breathtimer:
 		lua_pushinteger(L, plr->breathTimer);
 		break;
 	case player_lastsafelap:
@@ -1177,9 +998,12 @@ static int player_get(lua_State *L)
 	case player_skin:
 		lua_pushinteger(L, plr->skin);
 		break;
-	case player_availabilities:
-		lua_pushinteger(L, plr->availabilities);
+	case player_voice_id:
+		lua_pushinteger(L, plr->voice_id);
 		break;
+	/*case player_availabilities:
+		lua_pushinteger(L, plr->availabilities);
+		break;*/
 	case player_score:
 		lua_pushinteger(L, plr->score);
 		break;
@@ -1267,6 +1091,7 @@ static int player_get(lua_State *L)
 	case player_ctfteam:
 		lua_pushinteger(L, plr->ctfteam);
 		break;
+	case player_tossdelay:
 	case player_checkskip:
 		lua_pushinteger(L, plr->checkskip);
 		break;
@@ -1339,6 +1164,15 @@ static int player_get(lua_State *L)
 	case player_bumpertime:
 		lua_pushinteger(L, plr->bumpertime);
 		break;
+	case player_linkcount:
+		lua_pushinteger(L, plr->linkcount);
+		break;
+	case player_linktimer:
+		lua_pushinteger(L, plr->linktimer);
+		break;
+	case player_maxlink:
+		lua_pushinteger(L, plr->maxlink);
+		break;
 	case player_ping:
 		lua_pushinteger(L, playerpingtable[( plr - players )]);
 		break;
@@ -1382,7 +1216,7 @@ static int player_get(lua_State *L)
 	return 1;
 }
 
-#define NOSET luaL_error(L, LUA_QL("player_t") " field " LUA_QS " should not be set directly.", field)
+#define NOSET luaL_error(L, LUA_QL("player_t") " field " LUA_QS " should not be set directly.", player_opt[field])
 static int player_set(lua_State *L)
 {
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -1394,6 +1228,10 @@ static int player_set(lua_State *L)
 		return luaL_error(L, "Do not alter player_t in HUD rendering code!");
 	if (hook_cmd_running)
 		return luaL_error(L, "Do not alter player_t in CMD building code!");
+
+	// Do not let compatmode scripts access new fields
+	if (lua_compatmode && field > player_lastlegacyfield)
+		field = NUMPLAYERFIELDS;
 
 	switch (field)
 	{
@@ -1422,7 +1260,7 @@ static int player_set(lua_State *L)
 	case player_viewheight:
 		plr->viewheight = luaL_checkfixed(L, 3);
 		break;
-	case player_cameraOffset:
+	case player_cameraoffset:
 		plr->cameraOffset = luaL_checkfixed(L, 3);
 		break;
 	case player_viewrollangle:
@@ -1502,8 +1340,10 @@ static int player_set(lua_State *L)
 	}
 	case player_skin:
 		return NOSET;
-	case player_availabilities:
+	case player_voice_id:
 		return NOSET;
+	/*case player_availabilities:
+		return NOSET;*/
 	case player_score:
 		plr->score = luaL_checkinteger(L, 3);
 		break;
@@ -1517,8 +1357,15 @@ static int player_set(lua_State *L)
 		plr->carry = luaL_checkinteger(L, 3);
 		break;
 	case player_dye:
-		plr->dye = luaL_checkinteger(L, 3);
+	{
+		UINT16 dye = luaL_checkinteger(L, 3);
+
+		if (!dye)
+			K_KartResetPlayerColor(plr, true);
+
+		plr->dye = dye;
 		break;
+	}
 	case player_position:
 		plr->position = luaL_checkinteger(L, 3);
 		break;
@@ -1654,14 +1501,20 @@ static int player_set(lua_State *L)
 	case player_speedboost:
 		plr->speedboost = luaL_checkinteger(L, 3);
 		break;
+	case player_prevspeedboost:
+		plr->prevspeedboost = luaL_checkinteger(L, 3);
+		break;
 	case player_accelboost:
 		plr->accelboost = luaL_checkinteger(L, 3);
+		break;
+	case player_handleboost:
+		plr->handleboost = luaL_checkinteger(L, 3);
 		break;
 	case player_boostangle:
 		plr->boostangle = luaL_checkangle(L, 3);
 		break;
 	case player_boostinfo:
-		NOSET;
+		return NOSET;
 		break;
 	case player_numsneakers:
 		plr->numsneakers = luaL_checkinteger(L, 3);
@@ -1681,16 +1534,16 @@ static int player_set(lua_State *L)
 	case player_lastdraft:
 		plr->lastdraft = luaL_checkinteger(L, 3);
 		break;
-	case player_tripwireState:
+	case player_tripwirestate:
 		plr->tripwireState = luaL_checkinteger(L, 3);
 		break;
-	case player_tripwirePass:
+	case player_tripwirepass:
 		plr->tripwirePass = luaL_checkinteger(L, 3);
 		break;
-	case player_tripwireLeniency:
+	case player_tripwireleniency:
 		plr->tripwireLeniency = luaL_checkinteger(L, 3);
 		break;
-	case player_tripwireReboundDelay:
+	case player_tripwirerebounddelay:
 		plr->tripwireReboundDelay = luaL_checkinteger(L, 3);
 		break;
 	case player_itemroulette:
@@ -1829,6 +1682,8 @@ static int player_set(lua_State *L)
 		plr->squishedtimer = squishtimer;
 		break;
 	}
+	case player_arrowbullet:
+		return NOSET;
 	case player_rocketsneakertimer:
 		plr->rocketsneakertimer = luaL_checkinteger(L, 3);
 		break;
@@ -1836,8 +1691,11 @@ static int player_set(lua_State *L)
 		plr->invincibilitytimer = luaL_checkinteger(L, 3);
 		break;
 	case player_maxinvincibilitytime:
-		// For most other cases, I'd just say: "it's your funeral". Not for this one.
-		return NOSET;
+	{
+		UINT16 maxinv = max(1, (UINT16)luaL_checkinteger(L, 3)); // Prevent zero-divides
+		plr->maxinvincibilitytime = maxinv;
+		break;
+	}
 	case player_invincibilitybottleneck:
 		plr->invincibilitybottleneck = (UINT16)luaL_checkinteger(L, 3);
 		break;
@@ -1862,25 +1720,25 @@ static int player_set(lua_State *L)
 	case player_jawztargetdelay:
 		plr->jawztargetdelay = luaL_checkinteger(L, 3);
 		break;
-	case player_confirmVictim:
+	case player_confirmvictim:
 		plr->confirmVictim = luaL_checkinteger(L, 3);
 		break;
-	case player_confirmVictimDelay:
+	case player_confirmvictimdelay:
 		plr->confirmVictimDelay = luaL_checkinteger(L, 3);
 		break;
-	case player_dashRingPullTics:
+	case player_dashringpulltics:
 		plr->dashRingPullTics = luaL_checkinteger(L, 3);
 		break;
-	case player_dashRingPushTics:
+	case player_dashringpushtics:
 		plr->dashRingPushTics = luaL_checkinteger(L, 3);
 		break;
-	case player_dashRainbowPogo:
+	case player_dashrainbowpogo:
 		plr->dashRainbowPogo = luaL_checkinteger(L, 3);
 		break;
-	case player_glanceDir:
+	case player_glancedir:
 		plr->glanceDir = luaL_checkinteger(L, 3);
 		break;
-	case player_breathTimer:
+	case player_breathtimer:
 		plr->breathTimer = luaL_checkinteger(L, 3);
 		break;
 	case player_lastsafelap:
@@ -1978,11 +1836,6 @@ static int player_set(lua_State *L)
 		UINT8 laps = (UINT8)luaL_checkinteger(L, 3);
 		if (lua_compatmode)
 		{
-			if (!K_UsingLegacyCheckpoints())
-			{
-				plr->pflags |= PF_TRUSTWAYPOINTS;
-			}
-
 			plr->laps = max(laps +1, 0);
 		}
 		else
@@ -2002,6 +1855,7 @@ static int player_set(lua_State *L)
 	case player_ctfteam:
 		plr->ctfteam = (INT32)luaL_checkinteger(L, 3);
 		break;
+	case player_tossdelay:
 	case player_checkskip:
 		plr->checkskip = (INT32)luaL_checkinteger(L, 3);
 		break;
@@ -2079,6 +1933,15 @@ static int player_set(lua_State *L)
 		return NOSET;
 	case player_bumpertime:
 		plr->bumpertime = (tic_t)luaL_checkinteger(L, 3);
+		break;
+	case player_linkcount:
+		plr->linkcount = (INT32)luaL_checkinteger(L, 3);
+		break;
+	case player_linktimer:
+		plr->linktimer = (tic_t)luaL_checkinteger(L, 3);
+		break;
+	case player_maxlink:
+		plr->maxlink = (INT32)luaL_checkinteger(L, 3);
 		break;
 	case player_ping:
 		return NOSET;
@@ -2769,8 +2632,8 @@ static int karthud_len(lua_State *L)
 }
 
 // player.cmd get/set
-#define NOFIELD luaL_error(L, LUA_QL("ticcmd_t") " has no field named " LUA_QS, field)
-#define NOSET luaL_error(L, LUA_QL("ticcmd_t") " field " LUA_QS " cannot be set.", field)
+#define NOFIELD luaL_error(L, "%s %s", LUA_QL("ticcmd_t"), va("has no field named %ui", field))
+#define NOSET luaL_error(L, LUA_QL("ticcmd_t") " field " LUA_QS " cannot be set.", ticcmd_opt[field])
 
 enum ticcmd_e
 {
@@ -2897,6 +2760,7 @@ static int ticcmd_set(lua_State *L)
 }
 
 #undef NOFIELD
+#undef NOSET
 
 enum sonicloopvars {
 	sonicloopvars_radius = 0,
@@ -3055,6 +2919,97 @@ static int sonicloopcamvars_get(lua_State *L)
 	return 1;
 }
 
+#define NOSET luaL_error(L, LUA_QL("boostinfo_t") " field " LUA_QS " should not be set directly.", boostinfo_opt[field])
+#define NOFIELD luaL_error(L, "%s %s", LUA_QL("boostinfo_t"), va("has no field named %ui", field))
+
+enum boostinfo
+{
+	boostinfo_stackspeedboost = 0,
+	boostinfo_nonstackspeedboost,
+	boostinfo_accelboost,
+	boostinfo_handleboost,
+	boostinfo_grade,
+};
+
+static const char *const boostinfo_opt[] = {
+	"stackspeedboost",
+	"nonstackspeedboost",
+	"accelboost",
+	"handleboost",
+	"grade",
+	NULL,
+};
+
+static int boostinfo_get(lua_State *L)
+{
+	boostinfo_t *boostinfo = *((boostinfo_t **)luaL_checkudata(L, 1, META_BOOSTINFO));
+	enum boostinfo field = luaL_checkoption(L, 2, NULL, boostinfo_opt);
+
+	// This should always be valid.
+	I_Assert(boostinfo != NULL);
+
+	switch (field)
+	{
+		case boostinfo_stackspeedboost:
+			lua_pushfixed(L, boostinfo->stackspeedboost);
+			break;
+		case boostinfo_nonstackspeedboost:
+			lua_pushfixed(L, boostinfo->nonstackspeedboost);
+			break;
+		case boostinfo_accelboost:
+			lua_pushfixed(L, boostinfo->accelboost);
+			break;
+		case boostinfo_handleboost:
+			lua_pushfixed(L, boostinfo->handleboost);
+			break;
+		case boostinfo_grade:
+			lua_pushinteger(L, boostinfo->grade);
+			break;
+	}
+
+	return 1;
+}
+
+static int boostinfo_set(lua_State *L)
+{
+	boostinfo_t *boostinfo = *((boostinfo_t **)luaL_checkudata(L, 1, META_BOOSTINFO));
+	enum boostinfo field = luaL_checkoption(L, 2, boostinfo_opt[0], boostinfo_opt);
+
+	// This is a property that always exists in a player.
+	I_Assert(boostinfo != NULL);
+
+	INLEVEL
+
+	if (hud_running)
+		return luaL_error(L, "Do not alter player_t in HUD rendering code!");
+	if (hook_cmd_running)
+		return luaL_error(L, "Do not alter player_t in CMD building code!");
+
+	switch (field)
+	{
+		case boostinfo_stackspeedboost:
+			boostinfo->stackspeedboost = luaL_checkfixed(L, 3);
+			break;
+		case boostinfo_nonstackspeedboost:
+			boostinfo->nonstackspeedboost = luaL_checkfixed(L, 3);
+			break;
+		case boostinfo_accelboost:
+			boostinfo->accelboost = luaL_checkfixed(L, 3);
+			break;
+		case boostinfo_handleboost:
+			boostinfo->handleboost = luaL_checkfixed(L, 3);
+			break;
+		case boostinfo_grade:
+			boostinfo->grade = (UINT8)luaL_checkinteger(L, 3);
+			break;
+	}
+
+	return 0;
+}
+
+#undef NOSET
+#undef NOFIELD
+
 int LUA_PlayerLib(lua_State *L)
 {
 	luaL_newmetatable(L, META_PLAYER);
@@ -3117,6 +3072,14 @@ int LUA_PlayerLib(lua_State *L)
 	luaL_newmetatable(L, META_SONICLOOPCAMVARS);
 		lua_pushcfunction(L, sonicloopcamvars_get);
 		lua_setfield(L, -2, "__index");
+	lua_pop(L,1);
+
+	luaL_newmetatable(L, META_BOOSTINFO);
+		lua_pushcfunction(L, boostinfo_get);
+		lua_setfield(L, -2, "__index");
+
+		lua_pushcfunction(L, boostinfo_set);
+		lua_setfield(L, -2, "__newindex");
 	lua_pop(L,1);
 
 	lua_newuserdata(L, 0);

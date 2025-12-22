@@ -254,17 +254,17 @@ void P_ParseANIMDEFSLump(INT32 wadNum, UINT16 lumpnum)
 	animdefsToken = M_GetToken(p);
 	while (animdefsToken != NULL)
 	{
-		if (stricmp(animdefsToken, "TEXTURE") == 0)
+		if (fasticmp(animdefsToken, "TEXTURE"))
 		{
 			Z_Free(animdefsToken);
 			P_ParseAnimationDefintion(1, compat);
 		}
-		else if (stricmp(animdefsToken, "FLAT") == 0)
+		else if (fasticmp(animdefsToken, "FLAT"))
 		{
 			Z_Free(animdefsToken);
 			P_ParseAnimationDefintion(0, compat);
 		}
-		else if (stricmp(animdefsToken, "OSCILLATE") == 0)
+		else if (fasticmp(animdefsToken, "OSCILLATE"))
 		{
 			// This probably came off the tail of an earlier definition. It's technically legal syntax, but we don't support it.
 			I_Error("Error parsing ANIMDEFS lump: Animation definitions utilizing \"OSCILLATE\" (the animation plays in reverse when it reaches the end) are not supported by SRB2");
@@ -296,7 +296,7 @@ void P_ParseAnimationDefintion(SINT8 istexture, boolean compat)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where start texture/flat name should be");
 	}
-	if (stricmp(animdefsToken, "OPTIONAL") == 0)
+	if (fasticmp(animdefsToken, "OPTIONAL"))
 	{
 		// This is meaningful to ZDoom - it tells the program NOT to bomb out
 		// if the textures can't be found - but it's useless in SRB2, so we'll
@@ -308,7 +308,7 @@ void P_ParseAnimationDefintion(SINT8 istexture, boolean compat)
 		{
 			I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where start texture/flat name should be");
 		}
-		else if (stricmp(animdefsToken, "RANGE") == 0)
+		else if (fasticmp(animdefsToken, "RANGE"))
 		{
 			// Oh. Um. Apparently "OPTIONAL" is a texture name. Naughty.
 			// I should probably handle this more gracefully, but right now
@@ -326,7 +326,7 @@ void P_ParseAnimationDefintion(SINT8 istexture, boolean compat)
 	// Search for existing animdef
 	for (i = 0; i < maxanims; i++)
 		if ((compat || animdefs[i].istexture == istexture) // Check if it's the same type!
-		&& stricmp(animdefsToken, animdefs[i].startname) == 0)
+		&& fasticmp(animdefsToken, animdefs[i].startname))
 		{
 			//CONS_Alert(CONS_NOTICE, "Duplicate animation: %s\n", animdefsToken);
 
@@ -357,18 +357,18 @@ void P_ParseAnimationDefintion(SINT8 istexture, boolean compat)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where \"RANGE\" after \"%s\"'s startname should be", animdefs[i].startname);
 	}
-	if (stricmp(animdefsToken, "ALLOWDECALS") == 0)
+	if (fasticmp(animdefsToken, "ALLOWDECALS"))
 	{
 		// Another ZDoom keyword, ho-hum. Skip it, move on to the next token.
 		Z_Free(animdefsToken);
 		animdefsToken = M_GetToken(NULL);
 	}
-	if (stricmp(animdefsToken, "PIC") == 0)
+	if (fasticmp(animdefsToken, "PIC"))
 	{
 		// This is technically legitimate ANIMDEFS syntax, but SRB2 doesn't support it.
 		I_Error("Error parsing ANIMDEFS lump: Animation definitions utilizing \"PIC\" (specific frames instead of a consecutive range) are not supported by SRB2");
 	}
-	if (stricmp(animdefsToken, "RANGE") != 0)
+	if (!fasticmp(animdefsToken, "RANGE"))
 	{
 		I_Error("Error parsing ANIMDEFS lump: Expected \"RANGE\" after \"%s\"'s startname, got \"%s\"", animdefs[i].startname, animdefsToken);
 	}
@@ -394,12 +394,12 @@ void P_ParseAnimationDefintion(SINT8 istexture, boolean compat)
 	{
 		I_Error("Error parsing ANIMDEFS lump: Unexpected end of file where \"%s\"'s \"TICS\" should be", animdefs[i].startname);
 	}
-	if (stricmp(animdefsToken, "RAND") == 0)
+	if (fasticmp(animdefsToken, "RAND"))
 	{
 		// This is technically legitimate ANIMDEFS syntax, but SRB2 doesn't support it.
 		I_Error("Error parsing ANIMDEFS lump: Animation definitions utilizing \"RAND\" (random duration per frame) are not supported by SRB2");
 	}
-	if (stricmp(animdefsToken, "TICS") != 0)
+	if (!fasticmp(animdefsToken, "TICS"))
 	{
 		I_Error("Error parsing ANIMDEFS lump: Expected \"TICS\" in animation definition for \"%s\", got \"%s\"", animdefs[i].startname, animdefsToken);
 	}
@@ -1570,7 +1570,7 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 				return false;
 			if (!triggerline->stringargs[0])
 				return false;
-			if (!(stricmp(triggerline->stringargs[0], skins[actor->player->skin].name) == 0) ^ !!(triggerline->args[1]))
+			if (!(fasticmp(triggerline->stringargs[0], skins[actor->player->skin].name)) ^ !!(triggerline->args[1]))
 				return false;
 			break;
 		case 334: // object dye
@@ -4417,7 +4417,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 				if (waypointcap == NULL)
 				{
 					// No point in trying at all if no waypoints exist.
-					break;
+					return false;
 				}
 
 				TAG_ITER_SECTORS(args[0], secnum)
@@ -5486,6 +5486,97 @@ static void P_EvaluateOldSectorSpecial(player_t *player, sector_t *sector, secto
 				P_ProcessEggCapsule(player, sector);
 			break;
 	}
+
+	// People use special shifting to remap some effects on the fly, we need to support more then on race start.
+	if (mapnamespace == MNS_SRB2KART)
+	{
+		switch (GETSECSPECIAL(sector->special, 3))
+		{
+			case 1: // SRB2kart: Spring Panel
+			{
+				if (!(sector->specialflags & SSF_REDPOGOSPRING) && (roversector || isTouching))
+				{
+					P_ProcessPogoSpring(player, (roversector || isTouching), SSPT_RED);
+				}
+				break;
+			}
+			case 3: // SRB2kart: Spring Panel (capped speed)
+			{
+				if (!(sector->specialflags & SSF_YELLOWPOGOSPRING) && (roversector || isTouching))
+				{
+					P_ProcessPogoSpring(player, (roversector || isTouching), SSPT_YELLOW);
+				}
+				break;
+			}
+			case 5: // Speed pad w/o spin
+			case 6: // Speed pad w/ spin
+			{
+				if (!(sector->specialflags & SSF_SPEEDPAD) && (roversector || isTouching))
+				{
+					mtag_t sectag = Tag_FGet(&sector->tags);
+					P_ProcessSpeedPad(player, sector, roversector, sectag);
+				}
+				break;
+			}
+		}
+
+		switch (GETSECSPECIAL(sector->special, 4))
+		{
+			case 1: // StarPost Activator
+			{
+				if (!(sector->specialflags & SSF_STARPOSTACTIVATOR))
+				{
+					mobj_t *post = P_GetObjectTypeInSectorNum(MT_STARPOST, sector - sectors);
+					if (!post)
+						break;
+					P_TouchStarPost(post, player, false);
+				}
+				break;
+			}
+			case 5: // Fan sector
+			{
+				if (!(sector->specialflags & SSF_FAN))
+				{
+					player->mo->momz += mobjinfo[MT_FAN].mass/4;
+
+					if (player->mo->momz > mobjinfo[MT_FAN].mass)
+						player->mo->momz = mobjinfo[MT_FAN].mass;
+
+					P_ResetPlayer(player);
+				}
+				break;
+			}
+			case 6: // SRB2kart 190117 - Sneaker Panel
+			{
+				if (!(sector->specialflags & SSF_SNEAKERPANEL) && (roversector || isTouching))
+				{
+					P_ProcessBoostPanel(player, (roversector || isTouching), SBPT_SNEAKER);
+				}
+				break;
+			}
+			case 7: // SRB2kart 190117 - Oil Slick (deprecated)
+			{
+				if (roversector || isTouching)
+				{
+					if (player && player->mo && !player->mo->subsector->sector->damagetype)
+						P_DamageMobj(player->mo, NULL, NULL, 1, DMG_NORMAL);
+				}
+				break;
+			}
+			case 10: // Finish Line
+			{
+				if (!(sector->specialflags & SSF_FINISHLINE))
+				{
+					if (K_UsingLegacyCheckpoints() && (gametyperules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
+					{
+						K_HandleLapIncrement(player);
+						player->pflags |= PF_HITFINISHLINE;
+					}
+				}
+				break;
+			}
+		}
+	}
 }
 
 /** Applies a sector special to a player.
@@ -5546,7 +5637,7 @@ sector_t *P_ThingOnSpecial3DFloor(mobj_t *mo)
 	return NULL;
 }
 
-#define TELEPORTED(mo) (mo->subsector->sector != originalsector)
+#define TELEPORTED(mo) (P_MobjWasRemoved(mo) || mo->subsector->sector != originalsector)
 
 /** Checks if a player is standing on or is inside a 3D floor (e.g. water) and
   * applies any specials.

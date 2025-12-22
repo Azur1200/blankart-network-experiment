@@ -60,11 +60,20 @@ struct lumpinfo_t
 	unsigned long position; // filelump_t filepos
 	unsigned long disksize; // filelump_t size
 	char name[9];           // filelump_t name[] e.g. "LongEntr"
-	UINT32 hash;
 	char *longname;         //                   e.g. "LongEntryName"
 	char *fullname;         //                   e.g. "Folder/Subfolder/LongEntryName.extension"
 	size_t size;            // real (uncompressed) size
 	compmethod compression; // lump compression method
+
+	size_t namelength;      // length of name
+	size_t longnamelength;  // length of longname
+	size_t fullnamelength;  // length of fullname
+
+	struct {
+		UINT32 name;        // hash of name
+		UINT32 longname;    // hash of longname
+		UINT32 fullname;    // hash of fullname
+	} hash;
 };
 
 // =========================================================================
@@ -117,6 +126,8 @@ struct wadfile_t
 	lumpcache_t *lumpcache;
 	lumpcache_t *patchcache;
 	lumpcache_t *rotcache;
+	struct FolderCache *startfolders;
+	struct FolderCache *endfolders;
 	UINT16 numlumps; // this wad's number of resources
 	FILE *handle;
 	UINT32 filesize; // for network
@@ -154,6 +165,8 @@ boolean W_MakeFileHash(const char *filename, boolean openwad, UINT64 *ret);
 // so that it stops with a message if a file was not found, but not if all is okay.
 // W_InitMultipleFiles exits if a file was not found, but not if all is okay.
 INT32 W_InitMultipleFiles(char **filenames, boolean addons);
+
+UINT32 W_HashLumpName(const char *name, size_t len);
 
 const char *W_CheckNameForNumPwad(UINT16 wad, UINT16 lump);
 const char *W_CheckNameForNum(lumpnum_t lumpnum);
