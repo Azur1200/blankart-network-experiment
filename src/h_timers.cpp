@@ -208,6 +208,7 @@ void K_DisplayItemTimers(void)
 {
 	if (!cv_itemtimers.value) return;
 	// nooope
+	if (!LUA_HudEnabled(hud_itemtimers)) return;
 	if (stplyr->mo == NULL || P_MobjWasRemoved(stplyr->mo)) return;
 	// I love and hate you C++
 	std::vector<itimer_t> timers = 
