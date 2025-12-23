@@ -490,9 +490,18 @@ consvar_t cv_kartstacking_sneaker_stackable = CVAR_INIT ("vanillaboost_sneaker_s
 consvar_t cv_kartstacking_panel_separate = CVAR_INIT ("vanillaboost_panel_separate", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 consvar_t cv_kartstacking_panel_maxgrade = CVAR_INIT ("vanillaboost_panel_maxgrade", "2", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Natural, NULL);
 
-consvar_t cv_kartstacking_invincibility_speedboost = CVAR_INIT ("vanillaboost_invincibility_speedboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_accelboost = CVAR_INIT ("vanillaboost_invincibility_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_handleboost = CVAR_INIT ("vanillaboost_invincibility_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+//
+// Invincibility
+//
+
+// Classic boosts
+consvar_t cv_kartstacking_invincibility_classicspeedboost = CVAR_INIT ("vanillaboost_invincibility_classicspeedboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_classicaccelboost = CVAR_INIT ("vanillaboost_invincibility_classicaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_classichandleboost = CVAR_INIT ("vanillaboost_invincibility_classichandleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+// Alternate boosts
+consvar_t cv_kartstacking_invincibility_alternatespeedboost = CVAR_INIT ("vanillaboost_invincibility_alternatespeedboost", "0.67", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_alternateaccelboost = CVAR_INIT ("vanillaboost_invincibility_alternateaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_alternatehandleboost = CVAR_INIT ("vanillaboost_invincibility_alternatehandleboost", "0.75", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_invincibility_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
@@ -634,9 +643,13 @@ static CV_PossibleValue_t kartinvintheme_cons_t[] = {{0, "Standard"}, {1, "Full"
 consvar_t cv_kartinvintheme = CVAR_INIT ("kartinvintheme", "Standard", CV_SAVE, kartinvintheme_cons_t, NULL);
 
 // How far the player must be from the cluster to begin frequently rolling Invincibility.
-/*static CV_PossibleValue_t invindist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t invindist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
 consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "6800", CV_NETVAR|CV_CHEAT|CV_GUARD, invindist_cons_t, NULL);
-*/
+
+consvar_t cv_kartinvindistmul = CVAR_INIT ("kartinvindistmul", "0.54", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+
+consvar_t cv_kartinvin_maxtime = CVAR_INIT ("kartinvin_maxtime", "35.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartinvin_midtime = CVAR_INIT ("kartinvin_midtime", "23.333", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
 // opinionated stuff for testing balance tweaks on the shields
 consvar_t cv_kartbubble_defense_canidle = CVAR_INIT ("kartbubble_defense_canidle", "On", CV_NETVAR, CV_OnOff, NULL);

@@ -19,7 +19,7 @@
 #include "d_player.h"
 #include "g_game.h"
 #include "info.h"
-/* include "m_easing.h" */
+#include "m_easing.h"   // Invincibility gradienting
 #include "m_fixed.h"
 #include "m_random.h"
 #include "p_local.h"
@@ -470,7 +470,6 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
 	return distance;
 }
 
-/*
 #define INVODDS 30
 
 // Prevent integer overflows; don't let this go past 16383
@@ -514,7 +513,6 @@ static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
 }
 
 #undef FRAC_95pct
-*/
 
 // updates all result cooldown timers, and sets cooldowns for "unique" items
 void K_UpdateItemCooldown(void)
@@ -1518,9 +1516,8 @@ void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force)
 
 // Unique odds functions, for REAL this time
 
-// Alt. Invin. odds.
-// Leaving this around because it might have the chance to be repurposed in the future.
-/*INT32 KO_AltInvinOdds(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme)
+// Alt. Invin. odds
+INT32 KO_AltInvinOdds(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme)
 {
 	(void)result;
 	odds = K_KartGetInvincibilityOdds(roulette->clusterDist);
@@ -1538,7 +1535,7 @@ void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force)
 	odds *= BASEODDSMUL;
 
 	return odds;
-}*/
+}
 
 // SPB odds
 INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme)
@@ -1994,7 +1991,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		}
 		break;
 	case KITEM_INVINCIBILITY:
-		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO) // Doesn't hold your item slot hostage, so you're free to waste it if you have multiple
+		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO) // Doesn't hold your item slot hostage in Legacy, so you're free to waste it if you have multiple
 		{
 			K_DoInvincibility(player, K_GetInvincibilityTime(player));
 			K_PlayPowerGloatSound(player->mo);

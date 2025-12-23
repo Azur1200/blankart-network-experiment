@@ -2309,7 +2309,10 @@ void P_MovePlayer(player_t *player)
 		&& onground && (leveltime & 1))
 		K_SpawnBoostTrail(player);
 
-	if (player->invincibilitytimer > 0)
+	if ((player->invincibilitytimer > 0) &&
+		(((leveltime %
+		   max(1, 10 - FixedMul(9, K_InvincibilityGradient(player->invincibilitytimer)))) == 0) ||
+		 (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))))
 	{
 		K_SpawnSparkleTrail(player->mo);
 	}

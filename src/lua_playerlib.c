@@ -413,6 +413,10 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(arrowbullet) \
 	X(rocketsneakertimer) \
 	X(invincibilitytimer) \
+	X(maxinvincibilitytime) \
+	X(invincibilitybottleneck) \
+	X(invincibilitycancel) \
+	X(invincibilitywarning) \
 	X(eggmanexplode) \
 	X(eggmanblame) \
 	X(bananadrag) \
@@ -891,6 +895,19 @@ static int player_get(lua_State *L)
 		break;
 	case player_invincibilitytimer:
 		lua_pushinteger(L, plr->invincibilitytimer);
+		break;
+	case player_maxinvincibilitytime:
+		lua_pushinteger(L, plr->maxinvincibilitytime);
+		break;
+	case player_invincibilitybottleneck:
+		// Push as an INT16 due to the negative value signal systems.
+		lua_pushinteger(L, (INT16)plr->invincibilitybottleneck);
+		break;
+	case player_invincibilitycancel:
+		lua_pushinteger(L, plr->invincibilitycancel);
+		break;
+	case player_invincibilitywarning:
+		lua_pushboolean(L, (boolean)plr->invincibilitywarning);
 		break;
 	case player_eggmanexplode:
 		lua_pushinteger(L, plr->eggmanexplode);
@@ -1672,6 +1689,21 @@ static int player_set(lua_State *L)
 		break;
 	case player_invincibilitytimer:
 		plr->invincibilitytimer = luaL_checkinteger(L, 3);
+		break;
+	case player_maxinvincibilitytime:
+	{
+		UINT16 maxinv = max(1, (UINT16)luaL_checkinteger(L, 3)); // Prevent zero-divides
+		plr->maxinvincibilitytime = maxinv;
+		break;
+	}
+	case player_invincibilitybottleneck:
+		plr->invincibilitybottleneck = (UINT16)luaL_checkinteger(L, 3);
+		break;
+	case player_invincibilitycancel:
+		plr->invincibilitycancel = (INT16)luaL_checkinteger(L, 3);
+		break;
+	case player_invincibilitywarning:
+		plr->invincibilitywarning = (UINT8)luaL_checkboolean(L, 3);
 		break;
 	case player_eggmanexplode:
 		plr->eggmanexplode = luaL_checkinteger(L, 3);

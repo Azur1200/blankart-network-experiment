@@ -4483,6 +4483,15 @@ static int lib_kGetNewSpeed(lua_State *L)
 	return 1;
 }
 
+static int lib_kInvincibilityGradient(lua_State *L)
+{
+	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
+	// HUDSAFE
+
+	lua_pushinteger(L, K_InvincibilityGradient(time));
+	return 1;
+}
+
 static int lib_kGetInvincibilitySpeed(lua_State *L)
 {
 	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
@@ -5727,6 +5736,7 @@ static luaL_Reg lib[] = {
 	{"K_BoostChain",lib_kBoostChain},
 	{"K_ChainOrDeincrementTime",lib_kChainOrDeincrementTime},
 	{"K_GetNewSpeed", lib_kGetNewSpeed},
+	{"K_InvincibilityGradient", lib_kInvincibilityGradient},
 	{"K_GetInvincibilitySpeed", lib_kGetInvincibilitySpeed},
 	{"K_GetInvincibilityAccel", lib_kGetInvincibilityAccel},
 	{"K_3dKartMovement", lib_k3dKartMovement},

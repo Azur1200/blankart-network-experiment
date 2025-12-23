@@ -82,6 +82,14 @@ static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer)
 	return rollAngle;
 }
 
+// Hacky boolean to check if we're the rainbow Invincibility overlay
+boolean R_IsOverlayingInvinciblePlayer(mobj_t* mobj)
+{
+	return ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (mobj->type == MT_OVERLAY) &&
+			(mobj->target) && (mobj->extravalue2) && (mobj->target->player) &&
+			(mobj->target->player->invincibilitytimer));
+}
+
 angle_t R_ModelRotationAngle(mobj_t *mobj, player_t *viewPlayer)
 {
 	angle_t rollAngle = mobj->rollangle;
@@ -90,13 +98,26 @@ angle_t R_ModelRotationAngle(mobj_t *mobj, player_t *viewPlayer)
 	{
 		rollAngle += R_PlayerSpriteRotation(mobj->player, viewPlayer);
 	}
+	else if (R_IsOverlayingInvinciblePlayer(mobj))
+	{
+		rollAngle += R_PlayerSpriteRotation(mobj->target->player, viewPlayer);
+	}
 
 	return rollAngle;
 }
 
 angle_t R_SpriteRotationAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_t *interp)
 {
-	angle_t rollOrPitch = R_GetPitchRollAngle(mobj, viewPlayer, interp);
+	angle_t rollOrPitch;
+	
+	if (R_IsOverlayingInvinciblePlayer(mobj))
+	{
+		rollOrPitch = R_GetPitchRollAngle(mobj->target, viewPlayer, interp);
+	}
+	else
+	{
+		rollOrPitch = R_GetPitchRollAngle(mobj, viewPlayer, interp);
+	}
 	return (rollOrPitch + R_ModelRotationAngle(mobj, viewPlayer));
 }
 
