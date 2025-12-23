@@ -3224,6 +3224,9 @@ static INT32 K_GetRaceSplitsToggle(void)
 		return 0;
 	}
 
+	if (!LUA_HudEnabled(hud_lapsplits))
+		return 0;
+
 	// Not taking any chances with this stupid goddamn engine.
 	return max((INT32)(cv_racesplits.value), 1);
 }

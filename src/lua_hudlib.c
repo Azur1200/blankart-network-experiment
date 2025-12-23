@@ -74,6 +74,8 @@ static const char *const hud_disable_options[] = {
 	"lives",
 	"freeplay",
 	"rankings",
+	"lapsplits",
+	"itemtimers",
 
 	"intermissiontally",
 	"intermissionmessages",

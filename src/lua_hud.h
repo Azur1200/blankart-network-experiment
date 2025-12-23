@@ -42,6 +42,8 @@ enum hud {
 	hud_lives,
 	hud_freeplay,
 	hud_rankings,		// Tab rankings
+	hud_lapsplits,
+	hud_itemtimers,
 
 	// Intermission
 	hud_intermissiontally,
