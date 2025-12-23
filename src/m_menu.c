@@ -3433,7 +3433,10 @@ INT32 MR_HandleLevelPlatter(INT32 choice)
 
 	if (vmove != 0 || hmove != 0)
 	{
-		S_StartSound(NULL, levelselect.row ? sfx_s3kb7 : sfx_menu1);
+		if (levelselect.row > 0)
+			S_StartSoundAtVolume(NULL, sfx_s3kb7, 160);
+		else
+			S_StartSound(NULL, sfx_menu1);
 		return true;
 	}
 
