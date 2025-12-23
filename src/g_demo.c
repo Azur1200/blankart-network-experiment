@@ -11,6 +11,8 @@
 /// \file  g_demo.c
 /// \brief Demo recording and playback
 
+#include <errno.h>
+
 // for replay dates
 #include <time.h>
 
