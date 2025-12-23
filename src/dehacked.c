@@ -16,6 +16,7 @@
 #include "deh_lua.h"
 #include "deh_tables.h"
 #include "k_hud.h"
+#include "d_main.h"
 
 boolean gamedataadded = false;
 boolean titlechanged = false;
@@ -900,7 +901,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 	if (deh_num_warning)
 	{
 		CONS_Printf(M_GetText("%d warning%s in the SOC lump\n"), deh_num_warning, deh_num_warning == 1 ? "" : "s");
-		if (devparm || numwadfiles > 1) {
+		if (devparm || (numwadfiles > 1 && numwadfiles < NUMMAINWADS)) {
 			I_Error("%s%s",va(M_GetText("%d warning%s in the SOC lump\n"), deh_num_warning, deh_num_warning == 1 ? "" : "s"), M_GetText("See log.txt for details.\n"));
 			//while (!I_GetKey())
 				//I_OsPolling();
