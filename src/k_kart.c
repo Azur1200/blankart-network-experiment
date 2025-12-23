@@ -7639,7 +7639,8 @@ void K_KartResetPlayerColor(player_t *player, boolean disablecolor)
 		const INT32 flashtime = 4<<(player->eggmanexplode/TICRATE);
 		if (player->eggmanexplode % (flashtime/2) != 0)
 		{
-			;
+			player->mo->colorized = (player->dye != 0);
+			player->mo->color = player->dye ? player->dye : player->skincolor;
 		}
 		else if (player->eggmanexplode % flashtime == 0)
 		{
