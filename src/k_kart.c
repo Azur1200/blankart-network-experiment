@@ -309,12 +309,9 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_panel_separate);
 	CV_RegisterVar(&cv_kartstacking_panel_maxgrade);
 
-	CV_RegisterVar(&cv_kartstacking_invincibility_classicspeedboost);
-	CV_RegisterVar(&cv_kartstacking_invincibility_classicaccelboost);
-	CV_RegisterVar(&cv_kartstacking_invincibility_classichandleboost);
-    CV_RegisterVar(&cv_kartstacking_invincibility_alternatespeedboost);
-	CV_RegisterVar(&cv_kartstacking_invincibility_alternateaccelboost);
-	CV_RegisterVar(&cv_kartstacking_invincibility_alternatehandleboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_speedboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_accelboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_handleboost);
 	CV_RegisterVar(&cv_kartstacking_invincibility_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_grow_speedboost);
@@ -411,12 +408,6 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartinvintheme);
 
-    CV_RegisterVar(&cv_kartinvindist);
-    CV_RegisterVar(&cv_kartinvindistmul);
-
-    CV_RegisterVar(&cv_kartinvin_maxtime);
-    CV_RegisterVar(&cv_kartinvin_midtime);
-
 	// experimental stuff
 	CV_RegisterVar(&cv_kartbubble_defense_canidle);
 	CV_RegisterVar(&cv_kartbubble_defense_damagerate);
@@ -499,12 +490,12 @@ fixed_t K_GetKartGameSpeedScalar(SINT8 value)
 
 #define WORSTINVBUMPPOWER (FRACUNIT / 14)
 #define INVBUMPBOTTLENECK (FRACUNIT - (WORSTINVBUMPPOWER))
+#define BUBBLEBUMPBOTTLENECK (FRACUNIT / 150)
 
 static fixed_t K_PlayerWeight(mobj_t* mobj, mobj_t* against)
 {
 	fixed_t weight = 5 * FRACUNIT;
 	fixed_t bubbleMultiplier = FRACUNIT;
-	const boolean invinisalt = K_IsKartItemAlternate(KITEM_INVINCIBILITY);
 
 	if (!mobj->player)
 		return weight;
@@ -520,12 +511,6 @@ static fixed_t K_PlayerWeight(mobj_t* mobj, mobj_t* against)
 		{
 			return 0; // This player does not cause any bump action
 		}
-		else if (invinisalt && against->player->invincibilitytimer)
-		{
-			// Scale Alt. Invin. weight to their power. At full power, you get shoved
-			// off! Might cause less shitty-feeling bumpcheck moments.
-			return max(0, FRACUNIT - against->player->kartweight * K_InvincibilityGradient(against->player->invincibilitytimer));
-		}
 	}
 
 	// Applies rubberbanding, to prevent rubberbanding bots
@@ -534,36 +519,24 @@ static fixed_t K_PlayerWeight(mobj_t* mobj, mobj_t* against)
 
 	weight = (mobj->player->kartweight) * FRACUNIT;
 
-	if (invinisalt && mobj->player->invincibilitytimer)
-	{
-		// Cap the gradient at 1.0 to prevent exaggerated nonsense.
-		fixed_t mygradient = min(FRACUNIT, K_InvincibilityGradient(mobj->player->invincibilitytimer));
-
-		// Scale Alt. Invin. weight to your power. At full power, they get shoved off!
-		// Might cause less shitty-feeling bumpcheck moments.
-		weight = FixedMul(weight, mygradient);
-
-		// Like the Bubble Shield, nerf bumps a good bit to make them feel less ridiculous.
-		// As your power depletes, this nerf gets less necessary, so scale it to match.
-		weight = FixedMul(weight, FRACUNIT - FixedMul(INVBUMPBOTTLENECK, mygradient));
-	}
-	else if (K_GetShieldFromPlayer(mobj->player) == KSHIELD_BUBBLE && mobj->player->bubblecool == 0)
+	if (K_GetShieldFromPlayer(mobj->player) == KSHIELD_BUBBLE)
 	{
 		weight = max(BUBBLEMINWEIGHT, weight);
-		weight = FixedMul(weight, FRACUNIT / 16);
+		bubbleMultiplier = BUBBLEBUMPBOTTLENECK;
 	}
+
+	if (mobj->player->speed > spd)
+		weight += (mobj->player->speed - spd) / 8;
 
 	if (bubbleMultiplier)
 	{
 		weight = FixedMul(weight, bubbleMultiplier);
 	}
 
-	if (mobj->player->speed > spd)
-		weight += (mobj->player->speed - spd) / 8;
-
 	return weight;
 }
 
+#undef BUBBLEBUMPBOTTLENECK
 #undef INVBUMPBOTTLENECK
 #undef WORSTINVBUMPPOWER
 
@@ -987,15 +960,6 @@ static fixed_t K_CheckOffroadCollide(mobj_t *mo)
 	return 0; // couldn't find any offroad
 }
 
-static fixed_t K_OffroadGradient(player_t *player, fixed_t offroad)
-{
-	// At 50% or lower Invincibility, offroad creeps up on you.
-	fixed_t invinoffroad = (!K_IsKartItemAlternate(KITEM_INVINCIBILITY)) ? ((player->invincibilitytimer) ? FRACUNIT : 0) : min(FRACUNIT, K_InvincibilityGradient(player->invincibilitytimer) << 1);
-	fixed_t fac = CLAMP(FRACUNIT - invinoffroad, 0, FRACUNIT);
-
-	return FixedMul(offroad, fac);
-}
-
 /**	\brief	Updates the Player's offroad value once per frame
 
 	\param	player	player object passed from K_KartPlayerThink
@@ -1016,9 +980,6 @@ static void K_UpdateOffroad(player_t *player)
 	{
 		offroadstrength = K_CheckOffroadCollide(player->mo);
 	}
-
-	// Gradient our offroad strength.
-	offroadstrength = K_OffroadGradient(player, offroadstrength);
 
 	// If you are in offroad, a timer starts.
 	if (offroadstrength)
@@ -2157,7 +2118,7 @@ boolean K_ApplyOffroad(const player_t *player)
 	if (modeattacking != ATTACKING_NONE)
 		sneakertimer = player->sneakertimer > 0;
 
-	if (player->hyudorotimer || sneakertimer)
+	if (player->invincibilitytimer || player->hyudorotimer || sneakertimer)
 		return false;
 	return true;
 }
@@ -2478,93 +2439,24 @@ static inline fixed_t K_GetSneakerBoostSpeed(void)
 	}
 }
 
-// Used to determine the speed and power of Invincibility.
-fixed_t K_InvincibilityGradient(UINT16 time)
-{
-    return (min(936, (fixed_t)time) * FRACUNIT / BASEINVINTIME);
-}
-
-static fixed_t K_InvincibilityEasing(fixed_t x)
-{
-    fixed_t u = max(FRACUNIT / 4, (min(32000, x) * FRACUNIT) / INVINDIST);
-
-    if (x < INVINDIST)
-        return u;
-
-    u = max(0, (u - FRACUNIT));
-
-    if (u < FRACUNIT)
-        return Easing_InCubic(u, FRACUNIT, (INVINMIDTIME/10));
-
-    return Easing_OutCubic(
-        min(FRACUNIT, FixedMul(u - FRACUNIT, FRACUNIT/4)), (INVINMIDTIME/10), (INVINMAXTIME/10));
-}
-
 UINT16 K_GetInvincibilityTime(player_t *player)
 {
-    UINT32 i, pingame;
-	fixed_t distmul = FRACUNIT;
-
-    if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-        return BASEINVINTIME;
-
-    pingame = 0;
-    for (i = 0; i < MAXPLAYERS; i++)
-	{
-		if (!playeringame[i] || players[i].spectator)
-			continue;
-
-		if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
-			pingame++;
-
-        if (pingame > 1) // We only want to see if one player is playing.
-            continue;
-    }
-
-    if (pingame <= 1)
-    {
-		return BASEINVINTIME;
-	}
-
-	if (K_LegacyOddsMode())
-	{
-		// Legacy waypointing is janky and finicky, so tack on a safety-net multiplier.
-		// If an invincible player gets ahead of the cluster player, bottlenecking activates
-		// regardless.
-		distmul = LEGACYALTINVINMUL;
-	}
-
-    fixed_t clustermul = K_InvincibilityEasing(FixedMul(player->distancefromcluster,distmul));
-	UINT16 invintics = FixedMul(BASEINVINTIME, clustermul);
-
-    return max(MININVINTIME, invintics);
+    return BASEINVINTIME;
 }
 
 fixed_t K_GetInvincibilitySpeed(UINT16 time)
 {
-    if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-        return INVINSPEEDBOOSTCLS;
-
-    fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
-    return Easing_OutCubic(t, 0, INVINSPEEDBOOSTALT);
+    return INVINSPEEDBOOST;
 }
 
 fixed_t K_GetInvincibilityAccel(UINT16 time)
 {
-    if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-        return INVINACCELBOOSTCLS;
-
-    fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
-    return Easing_OutCubic(t, 0, INVINACCELBOOSTALT);
+    return INVINACCELBOOST;
 }
 
 fixed_t K_GetInvincibilityHandling(UINT16 time)
 {
-    if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-        return INVINHANDLEBOOSTCLS;
-
-    fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
-    return Easing_OutCubic(t, 0, INVINHANDLEBOOSTALT);
+    return INVINHANDLEBOOST;
 }
 
 static fixed_t diminish(fixed_t speedboost)
@@ -4961,47 +4853,15 @@ boolean K_PlayFullInvinTheme(void)
 
 void K_DoInvincibility(player_t *player, tic_t time)
 {
-	const boolean isalt = K_IsKartItemAlternate(KITEM_INVINCIBILITY);
-
 	if (!player->invincibilitytimer)
 	{
 		mobj_t *overlay = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_INVULNFLASH);
 		P_SetTarget(&overlay->target, player->mo);
 		overlay->destscale = player->mo->scale;
 		P_SetScale(overlay, player->mo->scale);
-
-        if (isalt)
-        {
-            mobj_t *aura = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_OVERLAY);
-            P_SetTarget(&aura->target, player->mo);
-            aura->destscale = player->mo->scale;
-            P_SetScale(aura, player->mo->scale);
-            aura->extravalue2 = 1;
-        }
 	}
 
-    if (isalt)
-    {
-        // Rim suggestion: Don't allow already invincible players to chain.
-        if (K_InvincibilityGradient(player->invincibilitytimer) < (FRACUNIT/2))
-        {
-            // Be nice to players at half-power or less.
-            player->invincibilitytimer = max(player->invincibilitytimer, time);
-        }
-    }
-    else
-    {
-        player->invincibilitytimer = time;
-    }
-
-	player->maxinvincibilitytime = player->invincibilitytimer;
-
-	if (player->maxinvincibilitytime <= MININVINTIME && isalt)
-	{
-		// Merritt suggestion: Kill bottlenecking if you get a short Invincibility.
-		// Anti-bottleneck code 2: Signify to play the warning signal later than usual!
-		player->invincibilitybottleneck = (UINT16)(-2);
-	}
+    player->invincibilitytimer = time;
 
 	if (P_IsLocalPlayer(player) == true)
 	{
@@ -7225,97 +7085,10 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->invincibilitytimer)
 	{
-		INT16 invinfac = 1;
-		if ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) &&
-		    (player->invincibilitytimer > 2))
-		{
-			UINT32 invindist = INVINDIST >> 2;
-
-			// Value to subtract from the Invincibility timer during bottlenecking.
-			INT16 invin_subtrahend = 1;
-
-			if ((INT16)(player->invincibilitybottleneck) >= 0)
-			{
-				if (player->distancefromcluster < invindist)
-				{
-					player->invincibilitybottleneck =
-					    min(256, player->invincibilitybottleneck + 4);
-					invinfac = FixedMul(
-					    8,
-					    max(min(FRACUNIT,
-						    FRACUNIT - (player->distancefromcluster /
-								(INVINDIST >> 2))),
-						0));
-				}
-				else
-				{
-					player->invincibilitybottleneck =
-					    max(0, (INT32)(player->invincibilitybottleneck) - 2);
-				}
-
-				invin_subtrahend =
-				    max(1,
-					FixedMul((UINT16)invinfac,
-						 max(0, player->invincibilitybottleneck) << 8));
-			}
-
-			player->invincibilitytimer = (UINT16)(max(
-			    2, (INT32)(player->invincibilitytimer) - invin_subtrahend));
-
-			const boolean warning_cond_standard =
-			    ((K_InvincibilityGradient(player->invincibilitytimer) <
-			      (FRACHALF * invin_subtrahend)) &&
-			     (player->maxinvincibilitytime >= (BASEINVINTIME - TICRATE)));
-
-			const boolean warning_cond_nobottleneck =
-			    ((K_InvincibilityGradient(player->invincibilitytimer) <
-			      SecsToFixedTens(MININVINTIME / 2)) &&
-			     (player->maxinvincibilitytime >= (MININVINTIME - TICRATE)));
-
-			const boolean warning_cond =
-			    ((INT16)(player->invincibilitybottleneck) == -2)
-				? warning_cond_nobottleneck
-				: warning_cond_standard;
-
-			if (warning_cond)
-			{
-				if (!player->invincibilitywarning)
-				{
-					S_StartSound(player->mo, sfx_cdfm71);
-					player->invincibilitywarning = 1;
-				}
-			}
-
-			if (((INT16)(player->invincibilitybottleneck) > 127) &&
-			    (!S_SoundPlaying(player->mo, sfx_s3kbes)))
-			{
-				S_StartSound(player->mo, sfx_s3kbes);
-			}
-		}
-		else
-		{
-			player->invincibilitytimer--;
-
-			if (S_SoundPlaying(player->mo, sfx_s3kbes) &&
-			    K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-			{
-				// Shut off the bottlenecker sound.
-				S_StopSoundByID(player->mo, sfx_s3kbes);
-			}
-
-			player->invincibilitybottleneck = 0;
-			player->invincibilitywarning = 0;
-		}
+		player->invincibilitytimer--;
 
 		if (!player->invincibilitytimer)
 			K_KartResetPlayerColor(player,true);
-	}
-	else
-	{
-		player->invincibilitybottleneck = 0;  // No need for bottlenecking.
-		player->maxinvincibilitytime = 0;
-		player->invincibilitywarning = 0;
-		player->invincibilitycancel = -1;
 	}
 
 	if (player->checkskip)
@@ -7659,26 +7432,16 @@ void K_KartResetPlayerColor(player_t *player, boolean disablecolor)
 
 	if (player->invincibilitytimer || player->powers[pw_invulnerability]) // You're gonna kiiiiill
 	{
-		boolean skip = false;
+		fullbright = true;
 
-		if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
+		player->mo->color = K_RainbowColor(leveltime / 2);
+
+		if (player->invincibilitytimer)
 		{
-			fullbright = true;
-
-			player->mo->color = K_RainbowColor(leveltime / 2);
-
-			if (player->invincibilitytimer)
-			{
-				player->mo->colorized = true;
-			}
-
-			skip = true;
-        }
-
-		if (skip)
-		{
-			goto finalise;
+			player->mo->colorized = true;
 		}
+
+		goto finalise;
 	}
 
 	if (player->growshrinktimer) // Ditto, for grow/shrink
@@ -8996,9 +8759,9 @@ INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
 	if (K_SlipdashActive() && K_Sliptiding(player)) // slight handling boost based on weight
 		turnvalue = FixedMul(turnvalue, FRACUNIT + (10 - player->kartweight)*FRACUNIT/48);
 
-	if ((player->invincibilitytimer && (!K_IsKartItemAlternate(KITEM_INVINCIBILITY)))
-	    || player->sneakertimer || player->bubbleboost ||
-	    player->growshrinktimer > 0 || K_IsAltShrunk(player))
+	if (player->invincibilitytimer || player->sneakertimer || 
+		player->bubbleboost || player->growshrinktimer > 0
+		|| K_IsAltShrunk(player))
 	{
 		turnvalue = FixedMul(turnvalue, FixedDiv(5 * FRACUNIT, 4 * FRACUNIT));
 	}
@@ -9080,19 +8843,6 @@ static void K_SpawnDriftEFX(player_t *player,SINT8 level)
 	}
 }
 
-// Sliptide conditions for Alternative Invincibility.
-static boolean K_AltInvinSliptideCondition(player_t *player)
-{
-	if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-	{
-		// Not in Alternative, hit the bricks!
-		return false;
-	}
-
-	// Allow sliptides if you're above half power.
-	return (K_InvincibilityGradient(player->invincibilitytimer) > (FRACUNIT/2));
-}
-
 fixed_t K_GetSpeedPercentage(const player_t *player)
 {
 	if (!player)
@@ -9138,7 +8888,7 @@ boolean K_InterceptArrowBullet(player_t *player)
 	if (!player)
 		return false;
 	
-	return ((player->invincibilitytimer && !K_IsKartItemAlternate(KITEM_INVINCIBILITY)) || (player->growshrinktimer > 0) || (player->flamestore));
+	return ((player->invincibilitytimer) || (player->growshrinktimer > 0) || (player->flamestore));
 }
 
 // 0.25 fracunits
@@ -9152,7 +8902,7 @@ static boolean K_OtherSliptideCondition(player_t* player)
 		return false;
 
 	return (
-	    K_AltInvinSliptideCondition(player) || K_AltShrinkSliptideCondition(player) ||
+	    K_AltShrinkSliptideCondition(player) ||
 	    (cv_handleboostslip.value && (player->handleboost >= HANDLEBOOSTTHRESHOLD)));
 }
 
@@ -9655,7 +9405,6 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 	if (pingame <= 1)
 	{
 		// There's only us around.
-		player->invincibilitybottleneck = (UINT16)(-1);  // No bottlenecking!
 		return 0;
 	}
 	else if ((pingame == 3))
@@ -10391,8 +10140,6 @@ void K_StripOther(player_t *player)
 	player->roulettetype = KROULETTETYPE_NORMAL;
 
 	player->invincibilitytimer = 0;
-	player->invincibilitywarning = 0;
-	player->invincibilitycancel = -1;
 
 	if (player->growshrinktimer)
 	{
@@ -10613,14 +10360,6 @@ INT32 K_GetShieldFromItem(INT32 item)
 	}
 }
 
-static boolean K_InvincibilitySlotHogging(player_t *player)
-{
-	if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-		return false;
-
-	return ((player->invincibilitytimer) != 0);
-}
-
 //
 // K_MoveKartPlayer
 //
@@ -10657,7 +10396,6 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			|| player->itemroulette
 			|| player->rocketsneakertimer
 			|| player->eggmanexplode
-			|| ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && player->invincibilitytimer)
 			|| (player->growshrinktimer > 0)
 			|| player->flametimer
 			|| (leveltime < starttime)
@@ -10866,32 +10604,6 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							player->growcancel = -1;
 						else
 							player->growcancel = 0;
-					}
-				}
-				// Invincibility
-				else if (K_InvincibilitySlotHogging(player))
-				{
-					// (Alternate) Cancel Invincibility
-					if (player->invincibilitycancel >= 0)
-					{
-						if (buttons & BT_ATTACK)
-						{
-							player->invincibilitycancel++;
-							if (player->invincibilitycancel > 25)
-							{
-								// Don't fully cancel due to how the music handling works.
-								player->invincibilitytimer = 1;
-							}
-						}
-						else
-							player->invincibilitycancel = 0;
-					}
-					else
-					{
-						if ((buttons & BT_ATTACK) || (player->oldcmd.buttons & BT_ATTACK))
-							player->invincibilitycancel = -1;
-						else
-							player->invincibilitycancel = 0;
 					}
 				}
 				else if (player->itemamount == 0)

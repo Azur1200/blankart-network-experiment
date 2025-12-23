@@ -552,7 +552,7 @@ struct player_t
 	UINT16 spinouttimer;	// Spin-out from a banana peel or oil slick (was "pw_bananacam")
 	UINT8 spinouttype;		// Determines the mode of spinout/wipeout, see kartspinoutflags_t
 
-	UINT16 flipovertimer;   // Flipped over by a player using Invincibility.
+	UINT16 flipovertimer;   // Flipped over by a player.
 	angle_t flipoverangle;  // Movement angle for a flipped-over player.
 
 	UINT8 instashield;		// Instashield no-damage animation timer
@@ -679,10 +679,6 @@ struct player_t
 	UINT16 rocketsneakertimer;		// Rocket Sneaker duration timer
 
 	UINT16 invincibilitytimer;      // Invincibility timer
-	UINT16 maxinvincibilitytime;    // (Alternate) Initial time for Invincibility, used for the item bar.
-	UINT16 invincibilitybottleneck; // (Alternate) Prevents breakaways by gradienting towards a heavier decrement.
-	INT16 invincibilitycancel;      // (Alternate) Duration of Invincibility canceling.
-	UINT8 invincibilitywarning;     // (Alternate) "Timer warning" boolean to signal Alt. Invin. is running out.
 
 	UINT8 eggmanexplode;	// Fake item recieved, explode in a few seconds
 	SINT8 eggmanblame;		// (-1 to 15) - Fake item recieved, who set this fake

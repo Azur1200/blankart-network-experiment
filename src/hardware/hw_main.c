@@ -4772,12 +4772,6 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	interptarg = thing;
 
-	if (R_IsOverlayingInvinciblePlayer(thing))
-	{
-		// Kill overlay misalignment
-		interptarg = thing->target;
-	}
-
 	R_InterpolateMobjState(interptarg, R_GetTimeFrac(RTF_LEVEL), &interp);
 
 	dispoffset = thing->dispoffset;
@@ -5216,8 +5210,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		// New colormap stuff for skins Tails 06-07-2002
 		if (thing->colorized)
 		{
-			vis->colormap = R_GetTranslationColormap(
-			    R_IsOverlayingInvinciblePlayer(thing) ? TC_BLINK : TC_RAINBOW,
+			vis->colormap = R_GetTranslationColormap(TC_RAINBOW,
 			    thing->color,
 			    GTC_CACHE);
 		}

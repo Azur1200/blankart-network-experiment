@@ -29,7 +29,6 @@ Make sure this matches the actual number of states
 */
 #define KART_NUMINVSPARKLESANIM 12
 #define BASEINVINTIME (10 * TICRATE)
-#define MININVINTIME (7 * TICRATE)
 
 #define GROW_SCALE ((3*FRACUNIT)/2)
 #define SHRINK_SCALE ((6*FRACUNIT)/8)
@@ -85,12 +84,6 @@ extern vector3_t clusterpoint, clusterdtf;
 // Bump weight for a Bubble Shield
 #define BUBBLEMINWEIGHT (5 * FRACUNIT)
 
-// Invincibility-related constants
-#define INVINDIST CV_Get(&cv_kartinvindist)
-#define INVINDISTMUL CV_Get(&cv_kartinvindistmul)
-#define INVINMIDTIME CV_Get(&cv_kartinvin_midtime)
-#define INVINMAXTIME CV_Get(&cv_kartinvin_maxtime)
-
 // 1.22 * FRACUNIT
 #define LEGACYALTINVINMUL (122 * FRACUNIT / 100)
 
@@ -114,12 +107,9 @@ extern vector3_t clusterpoint, clusterdtf;
 #define SEPARATEPANELS CV_Get(&cv_kartstacking_panel_separate)
 #define MAXPANELSTACK CV_Get(&cv_kartstacking_panel_maxgrade)
 
-#define INVINSPEEDBOOSTCLS CV_Get(&cv_kartstacking_invincibility_classicspeedboost)
-#define INVINACCELBOOSTCLS CV_Get(&cv_kartstacking_invincibility_classicaccelboost)
-#define INVINHANDLEBOOSTCLS CV_Get(&cv_kartstacking_invincibility_classichandleboost)
-#define INVINSPEEDBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternatespeedboost)
-#define INVINACCELBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternateaccelboost)
-#define INVINHANDLEBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternatehandleboost)
+#define INVINSPEEDBOOST CV_Get(&cv_kartstacking_invincibility_speedboost)
+#define INVINACCELBOOST CV_Get(&cv_kartstacking_invincibility_accelboost)
+#define INVINHANDLEBOOST CV_Get(&cv_kartstacking_invincibility_handleboost)
 #define INVINSTACKABLE CV_Get(&cv_kartstacking_invincibility_stackable)
 
 #define GROWSPEEDBOOST CV_Get(&cv_kartstacking_grow_speedboost)
@@ -281,7 +271,6 @@ void K_ResetPogoSpring(player_t *player);
 extern boolean forcefullinvintheme;
 boolean K_PlayFullInvinTheme(void);
 void K_DoInvincibility(player_t *player, tic_t time);
-fixed_t K_InvincibilityGradient(UINT16 time);
 UINT16 K_GetInvincibilityTime(player_t *player);
 fixed_t K_GetInvincibilitySpeed(UINT16 time);
 fixed_t K_GetInvincibilityAccel(UINT16 time);

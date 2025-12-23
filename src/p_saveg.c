@@ -711,10 +711,6 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].rocketsneakertimer);
 
 		SYNC(players[i].invincibilitytimer);
-		SYNC(players[i].maxinvincibilitytime);
-		SYNC(players[i].invincibilitybottleneck);
-		SYNC(players[i].invincibilitycancel);
-		SYNC(players[i].invincibilitywarning);
 
 		SYNC(players[i].eggmanexplode);
 		SYNC(players[i].eggmanblame);

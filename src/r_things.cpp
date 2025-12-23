@@ -922,7 +922,7 @@ UINT8 *R_GetSpriteTranslation(vissprite_t *vis)
 
 		if (!(vis->cut & SC_PRECIP) && vis->mobj->colorized)
 		{
-			return R_GetTranslationColormap(R_IsOverlayingInvinciblePlayer(vis->mobj) ? TC_BLINK : TC_RAINBOW,
+			return R_GetTranslationColormap(TC_RAINBOW,
 											static_cast<skincolornum_t>(vis->mobj->color),
 											GTC_CACHE);
 		}
@@ -1831,12 +1831,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 	mobj_t *interptarg = thing;
-
-	if (R_IsOverlayingInvinciblePlayer(thing))
-	{
-		// Kill overlay misalignment
-		interptarg = thing->target;
-	}
 
 	// do interpolation
 	R_InterpolateMobjState(interptarg, R_GetTimeFrac(RTF_LEVEL), &interp);

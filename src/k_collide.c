@@ -679,7 +679,7 @@ static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 
 static boolean K_StrongPlayerBump(const player_t *player)
 {
-	return (((!K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (player->invincibilitytimer))
+	return ((player->invincibilitytimer)
 	    || (player->growshrinktimer > 0));
 }
 
@@ -923,15 +923,8 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	const boolean hyudoroT1 = (t1->player->hyudorotimer > 0);
 	const boolean hyudoroT2 = (t2->player->hyudorotimer > 0);
 
-	boolean t1Condition = false;
-	boolean t2Condition = false;
-
-	// Rim suggestion: Flipover damage is negligible at best, just cull it from Invincibility as a whole.
-	if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-	{
-		t1Condition = (t1->player->invincibilitytimer > 0);
-		t2Condition = (t2->player->invincibilitytimer > 0);
-	}
+	boolean t1Condition = (t1->player->invincibilitytimer > 0);
+	boolean t2Condition = (t2->player->invincibilitytimer > 0);
 
 	if ((t1Condition == true || flameT1 == true) && (t2Condition == true || flameT2 == true))
 	{
@@ -939,7 +932,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 		K_DoInstashield(t2->player);
 		return false;
 	}
-	else if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
+	else
 	{
 		if (t1Condition == true && t2Condition == false)
 		{
@@ -952,10 +945,10 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 			return true;
 		}
 	}
-	
+
 	t1Condition = (t1->scale > t2->scale + (mapobjectscale/8));
 	t2Condition = (t2->scale > t1->scale + (mapobjectscale/8));
-	
+
 	if ((t1Condition == true || flameT1 == true) && (t2Condition == true || flameT2 == true))
 	{
 		return false;

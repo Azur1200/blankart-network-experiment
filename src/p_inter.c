@@ -155,7 +155,6 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 				if (player->stealingtimer || player->stolentimer
 					|| player->rocketsneakertimer
 					|| player->eggmanexplode
-					|| ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (player->invincibilitytimer))
 					|| (player->growshrinktimer > 0)
 					|| player->flametimer)
 					return false;
