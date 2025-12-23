@@ -6008,7 +6008,7 @@ static void SV_Maketic(void)
 		}
 	}
 	// Moved here so bots and packetloss indication doesn't break....
-	G_MoveTiccmd(netcmds[maketic % BACKUPTICS], playercmds, MAXPLAYERS);
+	G_CopyTiccmd(netcmds[maketic % BACKUPTICS], playercmds, MAXPLAYERS);
 	maketic++;
 }
 
