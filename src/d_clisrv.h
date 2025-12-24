@@ -73,11 +73,8 @@ typedef enum
 	                  // (must stay 1 for backwards compatibility).
 	                  // This is a positive response to a CLIENTJOIN request.
 	PT_CLIENTCMD,     // Ticcmd of the client.
-	PT_CLIENTMIS,     // Same as above with but saying resend from.
 	PT_CLIENT2CMD,    // 2 cmds in the packet for splitscreen.
-	PT_CLIENT2MIS,    // Same as above with but saying resend from
 	PT_NODEKEEPALIVE, // Same but without ticcmd and consistancy
-	PT_NODEKEEPALIVEMIS,
 	PT_SERVERTICS,    // All cmds for the tic.
 	PT_SERVERREFUSE,  // Server refuses joiner (reason inside).
 	PT_SERVERSHUTDOWN,
@@ -102,9 +99,7 @@ typedef enum
 
 	// Kart-specific packets
 	PT_CLIENT3CMD,    // 3P
-	PT_CLIENT3MIS,
 	PT_CLIENT4CMD,    // 4P
-	PT_CLIENT4MIS,
 	PT_BASICKEEPALIVE,// Keep the network alive during wipes, as tics aren't advanced and NetUpdate isn't called
 
 	PT_CANFAIL,       // This is kind of a priority. Anything bigger than CANFAIL
