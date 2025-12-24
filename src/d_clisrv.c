@@ -5857,7 +5857,7 @@ static void SV_SendTics(void)
 	for (n = 1; n < MAXNETNODES; n++)
 		if (nodeingame[n])
 		{
-			realfirsttic = max(nettics[n], firstticstosend);
+			realfirsttic = nettics[n];
 			lasttictosend = min(maketic, nettics[n] + CLIENTBACKUPTICS);
 
 			if (realfirsttic >= lasttictosend)
