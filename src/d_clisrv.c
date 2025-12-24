@@ -139,7 +139,6 @@ boolean receivedplayerinfo = false;
 
 tic_t servermaxping = 20; // server's max delay, in frames. Defaults to 20
 static tic_t nettics[MAXNETNODES]; // what tic the client have received
-static tic_t supposedtics[MAXNETNODES]; // nettics prevision for smaller packet
 static UINT8 nodewaiting[MAXNETNODES];
 static tic_t firstticstosend; // min of the nettics
 static tic_t tictoclear = 0; // optimize d_clearticcmd
@@ -3570,7 +3569,6 @@ static void ResetNode(INT32 node)
 	nodewaiting[node] = 0;
 
 	nettics[node] = gametic;
-	supposedtics[node] = gametic;
 
 	nodetoplayer[node] = -1;
 	nodetoplayer2[node] = -1;
@@ -3738,7 +3736,6 @@ void D_QuitNetGame(void)
 static inline void SV_AddNode(INT32 node)
 {
 	nettics[node] = gametic;
-	supposedtics[node] = gametic;
 	// little hack because the server connects to itself and puts
 	// nodeingame when connected not here
 	if (node)
@@ -5856,12 +5853,11 @@ static void SV_SendTics(void)
 
 	// send to all client but not to me
 	// for each node create a packet with x tics and send it
-	// x is computed using supposedtics[n], max packet size and maketic
+	// x is computed using nettics[n], max packet size and maketic
 	for (n = 1; n < MAXNETNODES; n++)
 		if (nodeingame[n])
 		{
-			// assert supposedtics[n]>=nettics[n]
-			realfirsttic = max(supposedtics[n], firstticstosend);
+			realfirsttic = max(nettics[n], firstticstosend);
 			lasttictosend = min(maketic, nettics[n] + CLIENTBACKUPTICS);
 
 			if (realfirsttic >= lasttictosend)
@@ -5870,8 +5866,8 @@ static void SV_SendTics(void)
 				// to resent packet that are supposed lost (this is necessary since lost
 				// packet detection work when we have received packet with firsttic > neededtic
 				// (getpacket servertics case)
-				DEBFILE(va("Nothing to send node %u mak=%u sup=%u net=%u \n",
-					n, lasttictosend, supposedtics[n], nettics[n]));
+				DEBFILE(va("Nothing to send node %u mak=%u net=%u \n",
+					n, lasttictosend, nettics[n]));
 				realfirsttic = nettics[n];
 				if (realfirsttic >= lasttictosend || (I_GetTime() + n)&3)
 					// all tic are ok
@@ -5948,16 +5944,10 @@ static void SV_SendTics(void)
 			packsize = bufpos - (UINT8 *)&(netbuffer->u);
 
 			HSendPacket(n, false, 0, packsize);
-			// when tic are too large, only one tic is sent so don't go backward!
-			if (lasttictosend-doomcom->extratics > realfirsttic)
-				supposedtics[n] = lasttictosend-doomcom->extratics;
-			else
-				supposedtics[n] = lasttictosend;
-
-			supposedtics[n] = max(supposedtics[n], nettics[n]);
 		}
+
 	// node 0 is me!
-	supposedtics[0] = maketic;
+	nettics[0] = maketic;
 }
 
 //
