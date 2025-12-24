@@ -19,6 +19,14 @@ extern "C" {
 #include "command.h"
 #include "d_player.h"
 #include "k_hud.h"
+#include "lua_script.h"
+#include "lua_libs.h"
+
+typedef enum timerflags_e
+{
+	TIMER_COUNTER = 0x1,
+	TIMER_BAD     = 0x2,
+} timerflags_t;
 
 extern consvar_t cv_itemtimers;
 extern tic_t spbTimers[MAXPLAYERS];
@@ -27,13 +35,11 @@ void K_UpdateSPBTimer(void);
 // Adds an item timer.
 void K_AddItemTimerEx(
 	const char *name,
-	INT32 *timer,
-	char **patches, char **patches_small,
-	INT32 patches_size, INT32 patches_small_size,
+	lua_Integer timer_func_ref,
+	const char **patches,
+	INT32 patches_size,
 	INT32 anim_duration,
-	INT32 xoffs, INT32 yoffs,
-	INT32 xoffs_small, INT32 yoffs_small,
-	boolean counter, boolean unsorted);
+	UINT8 flags, boolean unsorted);
 void K_DisplayItemTimers(void);
 void K_getTimersDrawinfo(drawinfo_t *out);
 

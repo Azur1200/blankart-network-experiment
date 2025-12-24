@@ -26,6 +26,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "hu_stuff.h"
+#include "h_timers.h"
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -1770,6 +1771,41 @@ static int lib_hudgetoffsets(lua_State *L)
 	return 2;
 }
 
+static int lib_hudaddtimer(lua_State *L)
+{
+	const char *name = luaL_checkstring(L, 1);
+
+	luaL_checktype(L, 2, LUA_TFUNCTION); // We get to it later
+
+	luaL_checktype(L, 3, LUA_TTABLE);
+
+	INT32 patches_size = lua_objlen(L, 3);
+	CLEANUP(pfree) const char **patches = calloc(patches_size, sizeof(const char*));
+	for (INT32 i = 0; i < patches_size; ++i)
+	{
+		lua_rawgeti(L, 3, i);
+		patches[i] = lua_tostring(L, -1);
+		lua_pop(L, 1);
+	}
+
+	INT32 anim_duration = luaL_optinteger(L, 4, 1);
+
+	UINT8 flags = (UINT8)luaL_optinteger(L, 5, 0);
+
+	boolean unsorted = lua_toboolean(L, 6);
+
+	lua_Integer timer_func_ref;
+
+	// Store function into registry
+	lua_getfield(L, LUA_REGISTRYINDEX, LREG_TIMERS);
+	lua_pushvalue(L, 2);
+	timer_func_ref = luaL_ref(L, -2);
+
+	K_AddItemTimerEx(name, timer_func_ref, patches, patches_size, anim_duration, flags, unsorted);
+
+	return 0;
+}
+
 // add a HUD element for rendering
 extern int lib_hudadd(lua_State *L);
 
@@ -1780,6 +1816,7 @@ static luaL_Reg lib_hud[] = {
 	{"add", lib_hudadd},
 	{"setVoteBackground", lib_hudsetvotebackground},
 	{"getOffsets", lib_hudgetoffsets},
+	{"addTimer", lib_hudaddtimer},
 	{NULL, NULL}
 };
 
@@ -1794,6 +1831,9 @@ int LUA_HudLib(lua_State *L)
 	lua_newtable(L);
 	luaL_register(L, NULL, lib_draw);
 	lib_draw_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+	lua_newtable(L);
+	lua_setfield(L, LUA_REGISTRYINDEX, LREG_TIMERS);
 
 	luaL_newmetatable(L, META_COLORMAP);
 		lua_pushcfunction(L, colormap_get);

@@ -32,6 +32,7 @@
 #include "k_kart.h" // awardscaledrings_t
 #include "k_hud.h" // scoreboardmod_e
 #include "k_waypoint.h" // waypoint values (for lua)
+#include "h_timers.h" // timerflags_t
 
 #include "deh_tables.h"
 
@@ -1820,6 +1821,10 @@ struct int_const_s const INT_CONST[] = {
 	{"AIRDROP_LIGHT", AIRDROP_LIGHT},
 	{"AIRDROP_HEAVY", AIRDROP_HEAVY},
 	{"AIRDROP_FUSION", AIRDROP_FUSION},
+
+	// item timer stuff
+	{"TIMER_COUNTER", TIMER_COUNTER},
+	{"TIMER_BAD", TIMER_BAD},
 
 	{NULL,0}
 };
