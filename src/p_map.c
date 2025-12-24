@@ -46,6 +46,8 @@
 
 #include "k_objects.h"
 
+#include "k_items.h"
+
 tm_t g_tm = {0};
 
 void P_RestoreTMStruct(tm_t tmrestore)
@@ -292,8 +294,17 @@ P_DoSpringEx
 		fixed_t horizspeed,
 		angle_t finalAngle)
 {
-	const fixed_t hscale = mapobjectscale + (mapobjectscale - object->scale);
-	const fixed_t vscale = mapobjectscale + (object->scale - mapobjectscale);
+	fixed_t objscale = object->scale;
+
+	if (object->player && K_IsAltShrunk(object->player))
+	{
+		// For Alt. Shrunk players: fudge the scale calculation.
+		// Pretend we're bigger than we actually are, so the game handles springs as such.
+		objscale = max(object->scale, mapobjectscale);
+	}
+
+	const fixed_t hscale = mapobjectscale + (mapobjectscale - objscale);
+	const fixed_t vscale = mapobjectscale + (objscale - mapobjectscale);
 
 	object->standingslope = NULL; // Okay, now we know it's not going to be relevant - no launching off at silly angles for you.
 	object->terrain = NULL;
@@ -335,8 +346,17 @@ P_DoSpringEx
 //
 boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 {
-	const fixed_t hscale = mapobjectscale + (mapobjectscale - object->scale);
-	const fixed_t vscale = mapobjectscale + (object->scale - mapobjectscale);
+	fixed_t objscale = object->scale;
+
+	if (object->player && K_IsAltShrunk(object->player))
+	{
+		// For Alt. Shrunk players: fudge the scale calculation.
+		// Pretend we're bigger than we actually are, so the game handles springs as such.
+		objscale = max(object->scale, mapobjectscale);
+	}
+	
+	const fixed_t hscale = mapobjectscale + (mapobjectscale - objscale);
+	const fixed_t vscale = mapobjectscale + (objscale - mapobjectscale);
 	fixed_t offx, offy;
 	fixed_t vertispeed = spring->info->mass;
 	fixed_t horizspeed = spring->info->damage;
