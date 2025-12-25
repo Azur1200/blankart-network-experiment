@@ -7061,6 +7061,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->driftlock)
 		player->driftlock--;
 
+	K_KartResetPlayerColor(player);
+
 	// DKR style camera for boosting
 	if (player->karthud[khud_boostcam] != 0 || player->karthud[khud_destboostcam] != 0)
 	{
@@ -7629,7 +7631,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	K_UpdateSPBTimer();
 }
 
-void K_KartResetPlayerColor(player_t *player)
+void K_KartResetPlayerFullbright(player_t *player)
 {
 	boolean fullbright = false;
 
@@ -7638,8 +7640,6 @@ void K_KartResetPlayerColor(player_t *player)
 
 	if (player->mo->health <= 0 || player->playerstate == PST_DEAD) // Override everything
 	{
-		player->mo->colorized = (player->dye != 0);
-		player->mo->color = player->dye ? player->dye : player->skincolor;
 		goto finalise;
 	}
 
@@ -7652,15 +7652,11 @@ void K_KartResetPlayerColor(player_t *player)
 		}
 		else if (player->eggmanexplode % flashtime == 0)
 		{
-			player->mo->colorized = true;
-			player->mo->color = SKINCOLOR_BLACK;
 			fullbright = true;
 			goto finalise;
 		}
 		else
 		{
-			player->mo->colorized = true;
-			player->mo->color = SKINCOLOR_CRIMSON;
 			fullbright = true;
 			goto finalise;
 		}
@@ -7668,24 +7664,9 @@ void K_KartResetPlayerColor(player_t *player)
 
 	if (player->invincibilitytimer || player->powers[pw_invulnerability]) // You're gonna kiiiiill
 	{
-		boolean skip = false;
-
 		if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
 		{
 			fullbright = true;
-
-			player->mo->color = K_RainbowColor(leveltime / 2);
-
-			if (player->invincibilitytimer)
-			{
-				player->mo->colorized = true;
-			}
-
-			skip = true;
-        }
-
-		if (skip)
-		{
 			goto finalise;
 		}
 	}
@@ -7711,14 +7692,8 @@ void K_KartResetPlayerColor(player_t *player)
 
 	if (player->ringboost && (leveltime & 1)) // ring boosting
 	{
-		player->mo->colorized = true;
 		fullbright = true;
 		goto finalise;
-	}
-	else
-	{
-		player->mo->colorized = (player->dye != 0);
-		player->mo->color = player->dye ? player->dye : player->skincolor;
 	}
 
 finalise:
@@ -7739,9 +7714,93 @@ finalise:
 	}
 }
 
+void K_KartResetPlayerColor(player_t *player)
+{
+	if (!player->mo || P_MobjWasRemoved(player->mo)) // Can't do anything
+		return;
+
+	if (player->mo->health <= 0 || player->playerstate == PST_DEAD) // Override everything
+	{
+		player->mo->colorized = (player->dye != 0);
+		player->mo->color = player->dye ? player->dye : player->skincolor;
+		return;
+	}
+
+	if (player->eggmanexplode) // You're gonna diiiiie
+	{
+		const INT32 flashtime = 4<<(player->eggmanexplode/TICRATE);
+		if (player->eggmanexplode % (flashtime/2) != 0)
+		{
+			;
+		}
+		else if (player->eggmanexplode % flashtime == 0)
+		{
+			player->mo->colorized = true;
+			player->mo->color = SKINCOLOR_BLACK;
+			return;
+		}
+		else
+		{
+			player->mo->colorized = true;
+			player->mo->color = SKINCOLOR_CRIMSON;
+			return;
+		}
+	}
+
+	if (player->invincibilitytimer || player->powers[pw_invulnerability]) // You're gonna kiiiiill
+	{
+		boolean skip = false;
+
+		if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
+		{
+			player->mo->color = K_RainbowColor(leveltime / 2);
+
+			if (player->invincibilitytimer)
+			{
+				player->mo->colorized = true;
+			}
+
+			skip = true;
+        }
+
+		if (skip)
+		{
+			return;
+		}
+	}
+
+	if (player->growshrinktimer) // Ditto, for grow/shrink
+	{
+		if (K_AltShrinkArrowBulletCondition(player))
+		{
+			// Arrow Bullet!
+			player->mo->colorized = true;
+			player->mo->color = SKINCOLOR_CREAMSICLE;
+			return;
+		}
+		else if (player->growshrinktimer % 5 == 0)
+		{
+			player->mo->colorized = true;
+			player->mo->color = player->growshrinktimer < 0 ? SKINCOLOR_CREAMSICLE : SKINCOLOR_PERIWINKLE;
+			return;
+		}
+	}
+
+	if (player->ringboost && (leveltime & 1)) // ring boosting
+	{
+		player->mo->colorized = true;
+		return;
+	}
+	else
+	{
+		player->mo->colorized = (player->dye != 0);
+		player->mo->color = player->dye ? player->dye : player->skincolor;
+	}
+}
+
 void K_KartPlayerAfterThink(player_t *player)
 {
-	K_KartResetPlayerColor(player);
+	K_KartResetPlayerFullbright(player);
 
 	// Move held objects (Bananas, Orbinaut, etc)
 	K_MoveHeldObjects(player);
