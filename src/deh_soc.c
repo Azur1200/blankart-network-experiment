@@ -4163,6 +4163,8 @@ void readkartitem(MYFILE *f, kartitem_t *item)
 
 #define WARN(str, ...) deh_warning("KartResult %s: " str, result->cvar->name, __VA_ARGS__)
 #define WARN0(str) deh_warning("KartResult %s: " str, result->cvar->name)
+static CV_PossibleValue_t kartrunneraugment_cons_t[] = {{0, "MIN"}, {30000, "MAX"}, {0, NULL}};
+
 void readkartresult(MYFILE *f, kartresult_t *result)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -4223,6 +4225,55 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 		else if (fastcmp(word, "FLAGS"))
 		{
 			result->flags = get_number(word2);
+		}
+		else if (fastncmp(word, "RUNNERDISTANCE", 14))
+		{
+			const UINT8 idx = (fastcmp(word+14, "LEGACY") ? 1 : 0);
+
+			result->baserunneraug[idx] = get_number(word2);
+
+			if (result->augcvar[idx] == NULL)
+			{
+				char *cvname;
+
+				if (idx)
+				{
+					cvname = malloc(strlen(result->cvar->name)+1 + 18);
+					sprintf(cvname, "runnerdist_%s_legacy", result->cvar->name);
+					strlwr(cvname);
+				}
+				else
+				{
+					cvname = malloc(strlen(result->cvar->name)+1 + 11);
+					sprintf(cvname, "runnerdist_%s", result->cvar->name);
+					strlwr(cvname);
+				}
+
+				consvar_t *var = Z_Calloc(sizeof(consvar_t), PU_STATIC, &result->augcvar[idx]);
+				var->name = cvname;
+
+				var->defaultvalue = malloc(strlen(va("%d", result->baserunneraug[idx]))+1);
+				sprintf(var->defaultvalue, "%d", result->baserunneraug[idx]);
+
+				var->value = result->baserunneraug[idx];
+
+				var->flags = CV_NETVAR|CV_CHEAT;
+				var->PossibleValue = kartrunneraugment_cons_t;
+				var->func = NULL;
+				CV_RegisterVar(var);
+
+				//CONS_Printf("Allocated cvar data successfully\n");
+			}
+			else
+			{
+				// Reallocate the data and set a new default value.
+				realloc(result->augcvar[idx]->defaultvalue, strlen(va("%d", result->baserunneraug[idx]))+1);
+				sprintf(result->augcvar[idx]->defaultvalue, "%d", result->baserunneraug[idx]);
+
+				result->augcvar[idx]->value = result->baserunneraug[idx];
+
+				//CONS_Printf("Reallocated cvar data successfully\n");
+			}
 		}
 		else if (fastncmp(word, "ODDS", 4))
 		{

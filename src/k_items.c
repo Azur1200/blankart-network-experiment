@@ -257,16 +257,27 @@ static boolean K_InStartCooldown(void)
 
 // Magic number distance for use with item roulette tiers
 #define ACTIVEDISTVAR (K_LegacyOddsMode() ? DISTVAR_LEGACY : DISTVAR)
-#define ACTIVESPBDIST (K_LegacyOddsMode() ? SPBDISTVAR_LEGACY : SPBDISTVAR)
-
-#define SPBSTARTDIST (ACTIVESPBDIST) // Distance when SPB can start appearing
-#define SPBFORCEDIST (7 * ACTIVESPBDIST / 2) // Distance when SPB is forced onto 2nd place (3.5x SPBDISTVAR)
 
 #define ENDDIST (12*ACTIVEDISTVAR) // Distance when the game stops giving you bananas
 
 static boolean K_RaceForceSPB(SINT8 playerpos, UINT32 pdis)
 {
-	return ((gametyperules & GTR_CIRCUIT) && playerpos == 2 && pdis > (UINT32)SPBFORCEDIST);
+	UINT8 idx = K_LegacyOddsMode() ? 1 : 0;
+
+	kartresult_t *spb_res = K_GetKartResult("selfpropelledbomb");
+
+	if (!spb_res)
+	{
+		return false;
+	}
+
+	if (spb_res->augcvar[idx] == NULL)
+	{
+		// ?!
+		return false;
+	}
+
+	return ((gametyperules & GTR_CIRCUIT) && playerpos == 2 && pdis > (UINT32)(7 * spb_res->augcvar[idx]->value / 2));
 }
 
 // 1/21/2025: I hate tiptoeing around the integer limit.
@@ -773,11 +784,13 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 		return newodds;
 	}
 
-	if (flags & KRF_RUNNERAUGMENT)
+	UINT8 aug_idx = K_LegacyOddsMode() ? 1 : 0;
+
+	if ((flags & KRF_RUNNERAUGMENT) && (result->augcvar[aug_idx] != NULL))
 	{
 		// These odds get stronger as 1st's frontrun increases.
-		const INT32 distFromStart = max(secondToFirst - SPBSTARTDIST, 0);
-		const INT32 distRange = SPBFORCEDIST - SPBSTARTDIST;
+		const INT32 distFromStart = max(secondToFirst - result->augcvar[aug_idx]->value, 0);
+		const INT32 distRange = (7 * result->augcvar[aug_idx]->value / 2) - result->augcvar[aug_idx]->value;
 		const INT32 mulMax = 24;
 
 		INT32 multiplier = (distFromStart * mulMax) / distRange;
