@@ -543,6 +543,7 @@ static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 {
 	fixed_t blockdist;
+	boolean shrinkleeway = false;
 
 	if (g_tm.thing == NULL || P_MobjWasRemoved(g_tm.thing) == true)
 		return BMIT_STOP; // func just popped our g_tm.thing, cannot continue.
@@ -572,6 +573,35 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		g_tm.thing->player->pflags &= ~PF_JUSTFLIPPED;
 
 	blockdist = thing->radius + g_tm.thing->radius;
+
+	if (thing->flags & MF_SPRING)
+	{
+		// Testing a spring object; check if the other object:
+		// * Has a player
+		// * Is smaller than usual
+		// If this is true, fudge collisions for this interaction.
+		if (g_tm.thing->player && (g_tm.thing->scale < mapobjectscale))
+		{
+			const fixed_t radiusrescale = FixedDiv(mapobjectscale, g_tm.thing->scale);
+
+			blockdist = thing->radius + FixedMul(g_tm.thing->radius, radiusrescale);
+			shrinkleeway = true;
+		}
+	}
+	else if (g_tm.thing->flags & MF_SPRING)
+	{
+		// Testing a spring object; check if the other object:
+		// * Has a player
+		// * Is smaller than usual
+		// If this is true, fudge collisions for this interaction.
+		if (thing->player && (thing->scale < mapobjectscale))
+		{
+			const fixed_t radiusrescale = FixedDiv(mapobjectscale, thing->scale);
+
+			blockdist = FixedMul(thing->radius, radiusrescale) + g_tm.thing->radius;
+			shrinkleeway = true;
+		}
+	}
 
 	if (abs(thing->x - g_tm.x) >= blockdist || abs(thing->y - g_tm.y) >= blockdist)
 		return BMIT_CONTINUE; // didn't hit it
@@ -1263,7 +1293,20 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			P_DoFanAndGasJet(thing, g_tm.thing);
 		else if (thing->flags & MF_SPRING)
 		{
-			if ( thing->z <= g_tm.thing->z + g_tm.thing->height
+			fixed_t tm_thing_height = 0;
+
+			if (shrinkleeway)
+			{
+				const fixed_t radiusrescale = FixedDiv(mapobjectscale, g_tm.thing->scale);
+
+				tm_thing_height = FixedMul(g_tm.thing->height, radiusrescale);
+			}
+			else
+			{
+				tm_thing_height = g_tm.thing->height;
+			}
+
+			if ( thing->z <= g_tm.thing->z + tm_thing_height
 			&& g_tm.thing->z <= thing->z + thing->height)
 				if (P_DoSpring(thing, g_tm.thing))
 					return BMIT_ABORT;
