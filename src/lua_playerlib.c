@@ -1357,15 +1357,8 @@ static int player_set(lua_State *L)
 		plr->carry = luaL_checkinteger(L, 3);
 		break;
 	case player_dye:
-	{
-		UINT16 dye = luaL_checkinteger(L, 3);
-
-		if (!dye)
-			K_KartResetPlayerColor(plr, true);
-
-		plr->dye = dye;
+		plr->dye = luaL_checkinteger(L, 3);
 		break;
-	}
 	case player_position:
 		plr->position = luaL_checkinteger(L, 3);
 		break;

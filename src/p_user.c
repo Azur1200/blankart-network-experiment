@@ -1806,7 +1806,7 @@ static void P_CheckInvincibilityTimer(player_t *player)
 	// Resume normal music stuff.
 	if (player->invincibilitytimer == 1 || player->powers[pw_invulnerability] == 1)
 	{
-		//K_KartResetPlayerColor(player, true); -- this gets called every tic anyways
+		//K_KartResetPlayerColor(player); -- this gets called every tic anyways
 		G_GhostAddColor((INT32) (player - players), GHC_NORMAL);
 
 		P_RestoreMusic(player);
@@ -2702,7 +2702,7 @@ static void P_DeathThink(player_t *player)
 	if (!player->mo)
 		return;
 
-	//K_KartResetPlayerColor(player, true); -- called at death, don't think we need to re-establish
+	//K_KartResetPlayerColor(player); -- called at death, don't think we need to re-establish
 
 	P_CalcHeight(player);
 }
@@ -4401,12 +4401,7 @@ void P_PlayerThink(player_t *player)
 		player->powers[pw_sneakers]--;
 
 	if (player->powers[pw_invulnerability] && player->powers[pw_invulnerability] < UINT16_MAX)
-	{
 		player->powers[pw_invulnerability]--;
-
-		if (!player->powers[pw_invulnerability])
-			K_KartResetPlayerColor(player,true);
-	}
 
 	if (player->flashing && player->flashing < UINT16_MAX &&
 		(player->spectator || player->flashing < K_GetKartFlashing(player)))
