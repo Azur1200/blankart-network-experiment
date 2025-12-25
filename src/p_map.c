@@ -296,10 +296,12 @@ P_DoSpringEx
 {
 	fixed_t objscale = object->scale;
 
-	if (object->player && K_IsAltShrunk(object->player))
+	if (object->player)
 	{
-		// For Alt. Shrunk players: fudge the scale calculation.
-		// Pretend we're bigger than we actually are, so the game handles springs as such.
+		// For smaller players: fudge the scale calculation by adding a minimum scale.
+		// In certain cases, the game will pretend they're bigger than they actually are,
+		// so the game handles springs as such.
+		// Alt. Shrink *especially* needs this change!
 		objscale = max(object->scale, mapobjectscale);
 	}
 
@@ -348,10 +350,12 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 {
 	fixed_t objscale = object->scale;
 
-	if (object->player && K_IsAltShrunk(object->player))
+	if (object->player)
 	{
-		// For Alt. Shrunk players: fudge the scale calculation.
-		// Pretend we're bigger than we actually are, so the game handles springs as such.
+		// For smaller players: fudge the scale calculation by adding a minimum scale.
+		// In certain cases, the game will pretend they're bigger than they actually are,
+		// so the game handles springs as such.
+		// Alt. Shrink *especially* needs this change!
 		objscale = max(object->scale, mapobjectscale);
 	}
 	
