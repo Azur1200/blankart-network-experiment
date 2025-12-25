@@ -7175,7 +7175,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	else if (player->ringboost)
 	{
 		K_HandleRingDeincrement(player, chainingactive);
-		K_KartResetPlayerColor(player, true);
 	}
 
 	K_AirDrop(player, cmd);
@@ -7720,23 +7719,13 @@ void K_KartResetPlayerColor(player_t *player, boolean disablecolor)
 		}
 	}
 
-	if (player->ringboost)
+	if (player->ringboost && (leveltime & 1)) // ring boosting
 	{
-		if (leveltime & 1) // ring boosting
-		{
-			player->mo->colorized = true;
-			fullbright = true;
-			goto finalise;
-		}
-		else
-		{
-			player->mo->colorized = (player->dye != 0);
-			player->mo->color = player->dye ? player->dye : player->skincolor;
-			goto finalise;
-		}
+		player->mo->colorized = true;
+		fullbright = true;
+		goto finalise;
 	}
-
-	if (disablecolor || player->dye)
+	else if (disablecolor || player->dye)
 	{
 		player->mo->colorized = (player->dye != 0);
 		player->mo->color = player->dye ? player->dye : player->skincolor;
