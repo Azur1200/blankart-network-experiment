@@ -7638,14 +7638,8 @@ void K_KartResetPlayerColor(player_t *player)
 
 	if (player->mo->health <= 0 || player->playerstate == PST_DEAD) // Override everything
 	{
-		if (player->dye)
-		{
-			player->mo->colorized = (player->dye != 0);
-			player->mo->color = player->dye;
-		}
-		else
-			player->mo->color = player->skincolor;
-
+		player->mo->colorized = (player->dye != 0);
+		player->mo->color = player->dye ? player->dye : player->skincolor;
 		goto finalise;
 	}
 
@@ -7721,10 +7715,10 @@ void K_KartResetPlayerColor(player_t *player)
 		fullbright = true;
 		goto finalise;
 	}
-	else if (player->dye)
+	else
 	{
 		player->mo->colorized = (player->dye != 0);
-		player->mo->color = player->dye;
+		player->mo->color = player->dye ? player->dye : player->skincolor;
 	}
 
 finalise:
