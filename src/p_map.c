@@ -46,6 +46,8 @@
 
 #include "k_objects.h"
 
+#include "k_items.h"
+
 tm_t g_tm = {0};
 
 void P_RestoreTMStruct(tm_t tmrestore)
@@ -292,8 +294,19 @@ P_DoSpringEx
 		fixed_t horizspeed,
 		angle_t finalAngle)
 {
-	const fixed_t hscale = mapobjectscale + (mapobjectscale - object->scale);
-	const fixed_t vscale = mapobjectscale + (object->scale - mapobjectscale);
+	fixed_t objscale = object->scale;
+
+	if (object->player)
+	{
+		// For smaller players: fudge the scale calculation by adding a minimum scale.
+		// In certain cases, the game will pretend they're bigger than they actually are,
+		// so the game handles springs as such.
+		// Alt. Shrink *especially* needs this change!
+		objscale = max(object->scale, mapobjectscale);
+	}
+
+	const fixed_t hscale = mapobjectscale + (mapobjectscale - objscale);
+	const fixed_t vscale = mapobjectscale + (objscale - mapobjectscale);
 
 	object->standingslope = NULL; // Okay, now we know it's not going to be relevant - no launching off at silly angles for you.
 	object->terrain = NULL;
@@ -335,8 +348,19 @@ P_DoSpringEx
 //
 boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 {
-	const fixed_t hscale = mapobjectscale + (mapobjectscale - object->scale);
-	const fixed_t vscale = mapobjectscale + (object->scale - mapobjectscale);
+	fixed_t objscale = object->scale;
+
+	if (object->player)
+	{
+		// For smaller players: fudge the scale calculation by adding a minimum scale.
+		// In certain cases, the game will pretend they're bigger than they actually are,
+		// so the game handles springs as such.
+		// Alt. Shrink *especially* needs this change!
+		objscale = max(object->scale, mapobjectscale);
+	}
+	
+	const fixed_t hscale = mapobjectscale + (mapobjectscale - objscale);
+	const fixed_t vscale = mapobjectscale + (objscale - mapobjectscale);
 	fixed_t offx, offy;
 	fixed_t vertispeed = spring->info->mass;
 	fixed_t horizspeed = spring->info->damage;
@@ -523,6 +547,7 @@ static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 {
 	fixed_t blockdist;
+	boolean shrinkleeway = false;
 
 	if (g_tm.thing == NULL || P_MobjWasRemoved(g_tm.thing) == true)
 		return BMIT_STOP; // func just popped our g_tm.thing, cannot continue.
@@ -552,6 +577,35 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		g_tm.thing->player->pflags &= ~PF_JUSTFLIPPED;
 
 	blockdist = thing->radius + g_tm.thing->radius;
+
+	if (thing->flags & MF_SPRING)
+	{
+		// Testing a spring object; check if the other object:
+		// * Has a player
+		// * Is smaller than usual
+		// If this is true, fudge collisions for this interaction.
+		if (g_tm.thing->player && (g_tm.thing->scale < mapobjectscale))
+		{
+			const fixed_t radiusrescale = FixedDiv(mapobjectscale, g_tm.thing->scale);
+
+			blockdist = thing->radius + FixedMul(g_tm.thing->radius, radiusrescale);
+			shrinkleeway = true;
+		}
+	}
+	else if (g_tm.thing->flags & MF_SPRING)
+	{
+		// Testing a spring object; check if the other object:
+		// * Has a player
+		// * Is smaller than usual
+		// If this is true, fudge collisions for this interaction.
+		if (thing->player && (thing->scale < mapobjectscale))
+		{
+			const fixed_t radiusrescale = FixedDiv(mapobjectscale, thing->scale);
+
+			blockdist = FixedMul(thing->radius, radiusrescale) + g_tm.thing->radius;
+			shrinkleeway = true;
+		}
+	}
 
 	if (abs(thing->x - g_tm.x) >= blockdist || abs(thing->y - g_tm.y) >= blockdist)
 		return BMIT_CONTINUE; // didn't hit it
@@ -1243,7 +1297,20 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			P_DoFanAndGasJet(thing, g_tm.thing);
 		else if (thing->flags & MF_SPRING)
 		{
-			if ( thing->z <= g_tm.thing->z + g_tm.thing->height
+			fixed_t tm_thing_height = 0;
+
+			if (shrinkleeway)
+			{
+				const fixed_t radiusrescale = FixedDiv(mapobjectscale, g_tm.thing->scale);
+
+				tm_thing_height = FixedMul(g_tm.thing->height, radiusrescale);
+			}
+			else
+			{
+				tm_thing_height = g_tm.thing->height;
+			}
+
+			if ( thing->z <= g_tm.thing->z + tm_thing_height
 			&& g_tm.thing->z <= thing->z + thing->height)
 				if (P_DoSpring(thing, g_tm.thing))
 					return BMIT_ABORT;

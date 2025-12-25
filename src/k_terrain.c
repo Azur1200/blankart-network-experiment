@@ -763,7 +763,11 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 	// Pogospring panel
 	if (terrain->pogoSpring > 0 && !(mo->eflags & MFE_SPRUNG))
 	{
-		const fixed_t hscale = mapobjectscale + (mapobjectscale - player->mo->scale);
+		// I'm not including the "minimum scale" rant here again. Look at P_DoSpring for that.
+		// Just know this fixes things with Alt. Shrink.
+		const fixed_t objscale = max(player->mo->scale, mapobjectscale);
+
+		const fixed_t hscale = mapobjectscale + (mapobjectscale - objscale);
 		fixed_t minspeed = terrain->pogoSpringMin*hscale;
 		fixed_t maxspeed = terrain->pogoSpringMax*hscale;
 		angle_t pushangle = FixedHypot(player->mo->momx, player->mo->momy) ? R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy) : player->mo->angle;

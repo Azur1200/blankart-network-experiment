@@ -2523,6 +2523,13 @@ INT16 K_GetShrinkTime(const player_t *player)
 
 boolean K_IsAltShrunk(const player_t *player)
 {
+	if (!player)
+	{
+#ifdef PARANOIA
+		CONS_Printf("K_IsAltShrunk: passed NULL player\n");
+#endif
+		return false;
+	}
 	return player->growshrinktimer < 0 && K_IsKartItemAlternate(KITEM_SHRINK);
 }
 
