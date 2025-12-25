@@ -1428,10 +1428,10 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// SPECIAL CASE No. 6:
 	// In battle, an SPB is forced onto players to target the "most wanted" player
 	if (K_BattleForceSPB(player)
-		&& spbplace == -1 && K_GetKartResult("spb")->cooldown == 0 && !dontforcespb
-		&& K_ItemResultEnabled(K_GetKartResult("spb")))
+		&& spbplace == -1 && K_GetKartResult("selfpropelledbomb")->cooldown == 0 && !dontforcespb
+		&& K_ItemResultEnabled(K_GetKartResult("selfpropelledbomb")))
 	{
-		K_AwardPlayerResult(player, K_GetKartResult("spb"), KITEMBLINK_KARMA);
+		K_AwardPlayerResult(player, K_GetKartResult("selfpropelledbomb"), KITEMBLINK_KARMA);
 		return;
 	}
 
@@ -1556,7 +1556,7 @@ INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresul
 		*forceme = 0;
 	}
 	else if (K_RaceForceSPB(roulette->playerpos, roulette->pdis)
-		&& spbplace == -1 && K_GetKartResult("spb")->cooldown == 0)
+		&& spbplace == -1 && K_GetKartResult("selfpropelledbomb")->cooldown == 0)
 	{
 		// Force SPB onto 2nd if they get too far behind.
 		*forceme = 2;
