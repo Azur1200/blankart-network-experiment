@@ -4891,7 +4891,18 @@ void K_DoSneaker(player_t *player, INT32 type)
 
 void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound)
 {
-	const fixed_t vscale = mapobjectscale + (mo->scale - mapobjectscale);
+	fixed_t objscale = mo->scale;
+
+	if (mo->player)
+	{
+		// For smaller players: fudge the scale calculation by adding a minimum scale.
+		// In certain cases, the game will pretend they're bigger than they actually are,
+		// so the game handles springs as such.
+		// Alt. Shrink *especially* needs this change!
+		objscale = max(mo->scale, mapobjectscale);
+	}
+
+	const fixed_t vscale = mapobjectscale + (objscale - mapobjectscale);
 
 	if (mo->player && mo->player->spectator)
 		return;
