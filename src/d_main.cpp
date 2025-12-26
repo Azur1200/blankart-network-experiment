@@ -991,9 +991,6 @@ void D_SRB2Loop(void)
 
 	for (;;)
 	{
-		if (I_Interrupted())
-			I_Quit();
-
 		precise_t enterprecise = I_GetPreciseTime();
 
 		memset(&g_dc, 0, sizeof(g_dc));
