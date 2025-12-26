@@ -620,8 +620,8 @@ consvar_t cv_kartantibump = CVAR_INIT ("kartantibump", "0", CV_NETVAR|CV_CALL|CV
 // Odds distancing
 #define MAXODDSDIST ((INT32_MAX / FRACUNIT) / 2)
 static CV_PossibleValue_t distvar_cons_t[] = {{1, "MIN"}, {MAXODDSDIST, "MAX"}, {0, NULL}};
-consvar_t cv_kartoddsdist = CVAR_INIT ("kartoddsdist", "1480", CV_NETVAR|CV_CHEAT|CV_GUARD, distvar_cons_t, NULL);
-consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "1050", CV_NETVAR|CV_CHEAT|CV_GUARD, distvar_cons_t, NULL);
+consvar_t cv_kartoddsdist = CVAR_INIT ("kartoddsdist", "1675", CV_NETVAR|CV_CHEAT|CV_GUARD, distvar_cons_t, NULL);
+consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "1500", CV_NETVAR|CV_CHEAT|CV_GUARD, distvar_cons_t, NULL);
 
 // SPB distance
 static CV_PossibleValue_t spbdist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
@@ -644,7 +644,7 @@ consvar_t cv_kartinvintheme = CVAR_INIT ("kartinvintheme", "Standard", CV_SAVE, 
 
 // How far the player must be from the cluster to begin frequently rolling Invincibility.
 static CV_PossibleValue_t invindist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "6800", CV_NETVAR|CV_CHEAT|CV_GUARD, invindist_cons_t, NULL);
+consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "8600", CV_NETVAR|CV_CHEAT|CV_GUARD, invindist_cons_t, NULL);
 
 consvar_t cv_kartinvindistmul = CVAR_INIT ("kartinvindistmul", "0.54", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
