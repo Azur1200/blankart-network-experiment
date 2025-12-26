@@ -4270,7 +4270,7 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 				realloc(result->augcvar[idx]->defaultvalue, strlen(va("%d", result->baserunneraug[idx]))+1);
 				sprintf(result->augcvar[idx]->defaultvalue, "%d", result->baserunneraug[idx]);
 
-				result->augcvar[idx]->value = result->baserunneraug[idx];
+				CV_StealthSet(result->augcvar[idx], result->augcvar[idx]->defaultvalue);
 
 				//CONS_Printf("Reallocated cvar data successfully\n");
 			}
