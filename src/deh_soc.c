@@ -4266,10 +4266,10 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 
 				//CONS_Printf("Allocated cvar data successfully\n");
 			}
-			else
+			else if (result->augcvar[idx]->defaultvalue)
 			{
 				// Reallocate the data and set a new default value.
-				realloc(result->augcvar[idx]->defaultvalue, strlen(va("%d", result->baserunneraug[idx]))+1);
+				result->augcvar[idx]->defaultvalue = realloc(result->augcvar[idx]->defaultvalue, strlen(va("%d", result->baserunneraug[idx]))+1);
 				sprintf(result->augcvar[idx]->defaultvalue, "%d", result->baserunneraug[idx]);
 
 				CV_StealthSet(result->augcvar[idx], result->augcvar[idx]->defaultvalue);
