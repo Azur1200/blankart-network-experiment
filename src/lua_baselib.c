@@ -4164,6 +4164,16 @@ static int lib_kGetKartFlashing(lua_State *L)
 	return 1;
 }
 
+static int lib_kGetSpeedPercentage(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushinteger(L, K_GetSpeedPercentage(player));
+	return 1;
+}
+
 // this function is for compatibility only; do not add new functionality here
 // see K_GetItemGraphics
 static int lib_kGetItemPatch(lua_State *L)
@@ -5719,6 +5729,7 @@ static luaL_Reg lib[] = {
 	{"K_GetKartSpeed",lib_kGetKartSpeed},
 	{"K_GetKartAccel",lib_kGetKartAccel},
 	{"K_GetKartFlashing",lib_kGetKartFlashing},
+	{"K_GetSpeedPercentage", lib_kGetSpeedPercentage},
 	{"K_GetItemPatch",lib_kGetItemPatch},
 	{"K_GetItemGraphics",lib_kGetItemGraphics},
 	{"K_IsKartItemAlternate",lib_kIsKartItemAlternate},
