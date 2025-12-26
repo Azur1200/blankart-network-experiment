@@ -1497,6 +1497,17 @@ static int lib_pNukeEnemies(lua_State *L)
 	return 0;
 }
 
+static int lib_pKartAltShrinkAuraScalar(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	lua_pushinteger(L, P_KartAltShrinkAuraScalar(player));
+	return 1;
+}
+
 // P_MAP
 ///////////
 
@@ -5517,6 +5528,7 @@ static luaL_Reg lib[] = {
 	{"P_ReturnThrustX",lib_pReturnThrustX},
 	{"P_ReturnThrustY",lib_pReturnThrustY},
 	{"P_NukeEnemies",lib_pNukeEnemies},
+	{"P_KartAltShrinkAuraScalar", lib_pKartAltShrinkAuraScalar},
 
 	// p_map
 	{"P_CheckPosition",lib_pCheckPosition},

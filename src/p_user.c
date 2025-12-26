@@ -2181,6 +2181,16 @@ static void P_UpdatePlayerAngle(player_t *player)
 	P_UpdatePlayerAiming(player);
 }
 
+#define MINAURAPCT (cv_kartaltshrink_arrowbulletthres.value - (FRACUNIT / 4))
+#define AURA_DIFF (max(1, (FRACUNIT << 1) - MINAURAPCT))
+fixed_t P_KartAltShrinkAuraScalar(player_t *player)
+{
+	if ((!player) || (!player->mo) || (P_MobjWasRemoved(player->mo)))
+		return 0;
+
+	return FixedDiv(min(max(0, K_GetSpeedPercentage(player) - MINAURAPCT), (FRACUNIT << 1)), AURA_DIFF);
+}
+
 //
 // P_MovePlayer
 void P_MovePlayer(player_t *player)
@@ -2317,12 +2327,10 @@ void P_MovePlayer(player_t *player)
 		K_SpawnSparkleTrail(player->mo);
 	}
 
-#define MINAURAPCT (cv_kartaltshrink_arrowbulletthres.value - (FRACUNIT / 4))
-#define AURA_DIFF (max(1, (FRACUNIT << 1) - MINAURAPCT))
 	// The Arrow Bullet aura should spawn before you actually enter the Arrow Bullet state.
 	if (cv_kartaltshrink_arrowbullet.value && K_IsAltShrunk(player) && (K_GetSpeedPercentage(player) >= MINAURAPCT))
 	{
-		fixed_t aura_scalar = FixedDiv(min(max(0, K_GetSpeedPercentage(player) - MINAURAPCT), (FRACUNIT << 1)), AURA_DIFF);
+		fixed_t aura_scalar = P_KartAltShrinkAuraScalar(player);
 
 		INT32 auravis = 10 - FixedMul(7, Easing_OutCubic(aura_scalar, 0, FRACUNIT));
 		auravis = min(9, max(1, auravis)) << FF_TRANSSHIFT;

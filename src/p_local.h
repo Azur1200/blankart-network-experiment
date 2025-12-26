@@ -215,6 +215,7 @@ void P_HaltPlayerOrbit(player_t *player);
 void P_ExitPlayerOrbit(player_t *player);
 boolean P_PlayerOrbit(player_t *player);
 
+fixed_t P_KartAltShrinkAuraScalar(player_t *player);
 void P_MovePlayer(player_t *player);
 void P_PlayerThink(player_t *player);
 void P_PlayerAfterThink(player_t *player);
