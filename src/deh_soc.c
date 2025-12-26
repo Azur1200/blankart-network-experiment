@@ -4236,16 +4236,18 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 			{
 				char *cvname;
 
+				UINT16 distprefixlen = strlen(result->isalt ? "runnerdistalt" : "runnerdist");
+
 				if (idx)
 				{
-					cvname = malloc(strlen(result->cvar->name)+1 + 18);
-					sprintf(cvname, "runnerdist_%s_legacy", result->cvar->name);
+					cvname = malloc(strlen(result->cvar->name) + 9 + distprefixlen);
+					sprintf(cvname, "%s_%s_legacy", result->isalt ? "runnerdistalt" : "runnerdist", result->cvar->name);
 					strlwr(cvname);
 				}
 				else
 				{
-					cvname = malloc(strlen(result->cvar->name)+1 + 11);
-					sprintf(cvname, "runnerdist_%s", result->cvar->name);
+					cvname = malloc(strlen(result->cvar->name) + 2 + distprefixlen);
+					sprintf(cvname, "%s_%s", result->isalt ? "runnerdistalt" : "runnerdist", result->cvar->name);
 					strlwr(cvname);
 				}
 
