@@ -15074,7 +15074,7 @@ kartvoice_t *P_GetMobjVoice(const mobj_t *mo)
 	// Scream at the idiot that let this happen :^)
 	CONS_Printf(
 		"PARANOIA/P_GetMobjVoice: %p MT_%s passed to function with NULL voice\n",
-		(void*)mo,
+		(const void *)mo,
 		P_MobjTypeName(mo)
 	);
 #endif

@@ -216,7 +216,9 @@ patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, boolean tiny, UINT8 amount,
 	if (graphics->numpatches == 0)
 		return missingpat;
 
-	tic_t timer = G_GamestateUsesLevel() ? leveltime : finalecount;
+	tic_t timer = leveltime;
+	if (!G_GamestateUsesLevel())
+		timer = finalecount;
 
 	if (K_GetItemFlags(type) & KIF_ANIMATED)
 		return graphics->patches[(timer % (graphics->numpatches*3)) / 3];
@@ -1000,12 +1002,12 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 		if (pdis == 0)
 			useodds = disttable[0];
 		else if (pdis > (UINT32)ACTIVEDISTVAR * ((12 * distlen) / sizeof(disttable)))
-			useodds = disttable[max(0, distlen-1)];
+			useodds = disttable[distlen ? distlen - 1 : distlen];
 		else
 		{
 			for (i = 1; i < (sizeof(disttable) - 1); i++)
 			{
-				INT32 distcalc = min(distlen-1, (i * distlen) / sizeof(disttable));
+				INT32 distcalc = min(distlen-1u, (i * distlen) / sizeof(disttable));
 
 				if (pdis <= (UINT32)usedistvar * distcalc)
 				{

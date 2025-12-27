@@ -578,7 +578,7 @@ void Y_IntermissionDrawer(void)
 
 				if (displayitemrolls)
 				{
-					if (data.pos[i] < 0 || data.pos[i] > 16)
+					if (kp_facenum[data.pos[i]] == missingpat)
 						V_DrawPingNum(x+2-xscroll_px, y+1, 0, data.pos[i], NULL);
 					else
 						V_DrawScaledPatch(x-5-xscroll_px, y+1, 0, kp_facenum[data.pos[i]]);

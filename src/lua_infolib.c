@@ -1479,7 +1479,10 @@ static int sfxinfo_get(lua_State *L)
 		if (!lua_compatmode)
 			goto nope;
 		sfxenum_t sound = sfx - S_sfx;
-		lua_pushinteger(L, sound >= sfx_kwin && sound <= sfx_kgloat ? sound - sfx_kwin : -1);
+		if (sound >= sfx_kwin && sound <= sfx_kgloat)
+			lua_pushinteger(L, sound - sfx_kwin);
+		else
+			lua_pushinteger(L, -1);
 		return 1;
 	case sfxinfor_string:
 		lua_pushstring(L, sfx->name);

@@ -5786,8 +5786,8 @@ static void K_DrawWaypointDebugger(void)
 
 	V_DrawString(8, 150, 0, va("Current Waypoint ID: %d", K_GetWaypointID(stplyr->currentwaypoint)));
 	V_DrawString(8, 160, 0, va("Next Waypoint ID: %d", K_GetWaypointID(stplyr->nextwaypoint)));
-	V_DrawString(8, 170, 0, va("Finishline Distance: %d (WP %d)", stplyr->distancetofinish,
-	                        stplyr->currentwaypoint ? stplyr->currentwaypoint->distancetofinish : -1));
+	V_DrawString(8, 170, 0, va("Finishline Distance: %u (WP %u)", stplyr->distancetofinish,
+	                        stplyr->currentwaypoint ? stplyr->currentwaypoint->distancetofinish : 0));
 }
 
 static void K_DrawClusterDebugger(void)
@@ -6519,7 +6519,7 @@ void K_DrawFlamometer(void)
 	// fire animation
 	if (stplyr->flamestore >= FLAMESTOREMAX-1)
 	{
-		UINT8 flamofiretic = CLAMP((leveltime / 3) % MAXFLAMOFIRETICS, 0, MAXFLAMOFIRETICS) + 1;
+		UINT8 flamofiretic = ((leveltime / 3) % MAXFLAMOFIRETICS) + 1;
 
 		if (stplyr->flameoverheat < 3)
 		{

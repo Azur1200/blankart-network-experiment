@@ -141,7 +141,7 @@ static int voice_array_set(lua_State *L)
 	if (i < 0 || i >= VOICEARRAYSIZE)
 		return luaL_error(L, "index %d out of range (0 - %d)", i, VOICEARRAYSIZE-1);
 
-	voice_array[i] = (sfxenum_t)luaL_checkinteger(L, 3);
+	voice_array[i] = luaL_checkinteger(L, 3);
 	return 0;
 }
 
@@ -181,7 +181,7 @@ static int voice_array1_set(lua_State *L)
 	if (i < 0 || i >= 1)
 		return luaL_error(L, "index %d out of range (0 - %d)", i, 1-1);
 
-	voice_array[i] = (sfxenum_t)luaL_checkinteger(L, 3);
+	voice_array[i] = luaL_checkinteger(L, 3);
 	return 0;
 }
 

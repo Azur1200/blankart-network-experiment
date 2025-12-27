@@ -3844,7 +3844,7 @@ void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors)
 
 	if (!lut->init || memcmp(lut->palette, palette, palsize))
 	{
-		INT32 i;
+		size_t i;
 
 		lut->init = true;
 		memcpy(lut->palette, palette, palsize);

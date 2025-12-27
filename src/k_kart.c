@@ -7629,7 +7629,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	K_UpdateSPBTimer();
 }
 
-void K_KartResetPlayerFullbright(player_t *player)
+static void K_KartResetPlayerFullbright(player_t *player)
 {
 	boolean fullbright = false;
 

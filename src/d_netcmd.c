@@ -5144,7 +5144,7 @@ static void Command_Addfilelocal(void)
 	else if (nocompat)
 		compat = WC_OFF;
 
-	if (COM_Argc() != 2 + (docompat || nocompat))
+	if (COM_Argc() != 2u + (docompat || nocompat))
 	{
 		CONS_Printf(M_GetText("addfilelocal [-c|-n] <filename.pk3/wad/lua/soc>: Load local add-on\n"
 									"-c forces compatmode, -n disables it.\n"));
@@ -5189,7 +5189,7 @@ static void Command_Addfile(void)
 	else if (nocompat)
 		compat = WC_OFF;
 
-	if (argc < 2 + (docompat || nocompat))
+	if (argc < 2u + (docompat || nocompat))
 	{
 		CONS_Printf(M_GetText("addfile [-c|-n] <filename.pk3/wad/lua/soc> [filename2...]: Load add-ons\n"
 		                      "-c forces compatmode, -n disables it.\n"));

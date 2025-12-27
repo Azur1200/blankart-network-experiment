@@ -4178,7 +4178,7 @@ static int lib_kGetSpeedPercentage(lua_State *L)
 // see K_GetItemGraphics
 static int lib_kGetItemPatch(lua_State *L)
 {
-	kartitemtype_e item = (kartitemtype_e)luaL_optinteger(L, 1, KITEM_NONE);
+	kartitemtype_e item = luaL_optinteger(L, 1, KITEM_NONE);
 	boolean tiny = lua_optboolean(L, 2);
 	UINT8 index = 0;
 	//HUDSAFE
@@ -4239,7 +4239,7 @@ static int lib_kGetItemGraphics(lua_State *L)
 
 static int lib_kIsKartItemAlternate(lua_State *L)
 {
-	kartitemtype_e item = (kartitemtype_e)luaL_optinteger(L, 1, KITEM_NONE);
+	kartitemtype_e item = luaL_optinteger(L, 1, KITEM_NONE);
 	// HUDSAFE
 
 	if (item <= 0 || item >= numkartitems)
@@ -5309,7 +5309,7 @@ static int lib_kSetPlayerItemCooldown(lua_State *L)
 static int lib_kAddItemRollToList(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
-	kartitemtype_e item_id = (kartitemtype_e)luaL_checkinteger(L, 2);
+	kartitemtype_e item_id = luaL_checkinteger(L, 2);
 	INT32 amt = luaL_checkinteger(L, 3);
 	//HUDSAFE
 
@@ -5342,7 +5342,7 @@ static int lib_kGetItemListSize(lua_State *L)
 static int lib_kSetItemListEntry(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
-	kartitemtype_e item_id = (kartitemtype_e)luaL_checkinteger(L, 2);
+	kartitemtype_e item_id = luaL_checkinteger(L, 2);
 	INT32 num = luaL_checkinteger(L, 3);
 	//HUDSAFE
 
@@ -5361,7 +5361,7 @@ static int lib_kSetItemListEntry(lua_State *L)
 static int lib_kGetItemListEntry(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
-	kartitemtype_e item_id = (kartitemtype_e)luaL_checkinteger(L, 2);
+	kartitemtype_e item_id = luaL_checkinteger(L, 2);
 	//HUDSAFE
 
 	if (!player)
