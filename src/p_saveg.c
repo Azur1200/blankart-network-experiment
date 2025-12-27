@@ -4427,6 +4427,7 @@ static inline boolean P_UnArchiveLuabanksAndConsistency(savebuffer_t *save)
 {
 	TracyCZone(__zone, true);
 
+	boolean ret = true;
 	switch (READUINT8(save->p))
 	{
 		case 0xb7: // luabanks marker
@@ -4435,25 +4436,28 @@ static inline boolean P_UnArchiveLuabanksAndConsistency(savebuffer_t *save)
 				if (banksinuse > NUM_LUABANKS)
 				{
 					CONS_Alert(CONS_ERROR, M_GetText("Corrupt Luabanks! (Too many banks in use)\n"));
-					return false;
+					ret = false;
+					break;
 				}
 				for (i = 0; i < banksinuse; i++)
 					luabanks[i] = READINT32(save->p);
 				if (READUINT8(save->p) != 0x1d) // consistency marker
 				{
 					CONS_Alert(CONS_ERROR, M_GetText("Corrupt Luabanks! (Failed consistency check)\n"));
-					return false;
+					ret = false;
+					break;
 				}
 			}
 		case 0x1d: // consistency marker
 			break;
 		default: // anything else is nonsense
 			CONS_Alert(CONS_ERROR, M_GetText("Failed consistency check (???)\n"));
-			return false;
+			ret = false;
+			break;
 	}
 
 	TracyCZoneEnd(__zone);
-	return true;
+	return ret;
 }
 
 void P_SaveGame(savebuffer_t *save, INT16 mapnum)
@@ -4571,9 +4575,10 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 	// so the thinkers would be deleted later. Therefore, P_SetupLevel will *not* spawn
 	// precipitation when loading a netgame save. Instead, precip has to be spawned here.
 	// This is done in P_NetUnArchiveSpecials now.
+	boolean ret = P_UnArchiveLuabanksAndConsistency(save);
 
 	TracyCZoneEnd(__zone);
-	return P_UnArchiveLuabanksAndConsistency(save);
+	return ret;
 }
 
 boolean P_SaveBufferZAlloc(savebuffer_t *save, size_t alloc_size, INT32 tag, void *user)

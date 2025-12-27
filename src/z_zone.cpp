@@ -166,6 +166,7 @@ void Z_Free2(void *ptr, const char *file, INT32 line)
 #endif
 	block->prev->next = block->next;
 	block->next->prev = block->prev;
+	TracyCFree(block);
 	free(block);
 }
 
