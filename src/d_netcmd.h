@@ -231,8 +231,6 @@ extern consvar_t cv_handleboostslip;
 
 extern consvar_t cv_kartoddsdist;
 extern consvar_t cv_kartlegacyoddsdist;
-extern consvar_t cv_kartspbdist;
-extern consvar_t cv_kartlegacyspbdist;
 
 extern consvar_t cv_kartspbrush;
 
