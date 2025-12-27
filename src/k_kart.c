@@ -430,8 +430,6 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartoddsdist);
 	CV_RegisterVar(&cv_kartlegacyoddsdist);
-	CV_RegisterVar(&cv_kartspbdist);
-	CV_RegisterVar(&cv_kartlegacyspbdist);
 
 	CV_RegisterVar(&cv_kartspbrush);
 
