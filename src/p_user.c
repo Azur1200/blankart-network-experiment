@@ -484,7 +484,9 @@ void P_ResetPlayer(player_t *player)
 {
 	//player->pflags &= ~(PF_);
 
-	player->carry = CR_NONE;
+	// turns out PF_SLIDING is NOT reset by this function!
+	if (mapnamespace != MNS_SRB2KART || player->carry != CR_SLIDING)
+		player->carry = CR_NONE;
 	player->onconveyor = 0;
 
 	player->glanceDir = 0;
@@ -1932,7 +1934,7 @@ static void P_3dMovement(player_t *player)
 	}
 
 	// When sliding, don't allow forward/back
-	if (player->carry & CR_SLIDING)
+	if (player->carry == CR_SLIDING)
 		cmd->forwardmove = 0;
 
 	// Do not let the player control movement if not onground.
@@ -4341,7 +4343,7 @@ void P_PlayerThink(player_t *player)
 		// for a bit after a teleport.
 		player->mo->reactiontime--;
 	}
-	else if (player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
+	else if (player->carry == CR_ZOOMTUBE && player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
 	{
 		P_DoZoomTube(player);
 		player->rmomx = player->rmomy = 0;

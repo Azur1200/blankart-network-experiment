@@ -971,7 +971,7 @@ static int player_get(lua_State *L)
 	{
 		UINT32 pflags = plr->pflags;
 
-		if (lua_compatmode && (plr->carry & CR_SLIDING) == CR_SLIDING)
+		if (lua_compatmode && plr->carry == CR_SLIDING)
 			pflags |= PF_SLIDING;
 
 		if (lua_compatmode && (plr->oldcmd.buttons & BT_ATTACK))
@@ -1303,9 +1303,9 @@ static int player_set(lua_State *L)
 		if (lua_compatmode)
 		{
 			if (pflags & PF_SLIDING)
-				plr->carry |= CR_SLIDING;
-			else
-				plr->carry &= ~CR_SLIDING;
+				plr->carry = CR_SLIDING;
+			else if (plr->carry == CR_SLIDING)
+				plr->carry = CR_NONE;
 
 			if (pflags & PF_ATTACKDOWN)
 				plr->oldcmd.buttons |= BT_ATTACK;

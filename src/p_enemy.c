@@ -11095,7 +11095,7 @@ void A_SPBChase(void *thing)
 				wspeed = (3*defspeed)/2;
 			if (wspeed < 20*actor->tracer->scale)
 				wspeed = 20*actor->tracer->scale;
-			if (actor->tracer->player->carry & CR_SLIDING)
+			if (actor->tracer->player->carry == CR_SLIDING)
 				wspeed = actor->tracer->player->speed/2;
 			//  ^^^^ current section: These are annoying, and grand metropolis in particular needs this.
 
