@@ -8230,7 +8230,9 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	if (cv_itemlist.value)
 		itemlistactive = true;
 
-	bumpsparkactive = (UINT8)cv_kartbumpspark.value;
+	// Lunatics don't need Bump Spark!
+	if (grandprixinfo.lunaticmode == false)
+		bumpsparkactive = (UINT8)cv_kartbumpspark.value;
 
 	antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
 

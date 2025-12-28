@@ -578,6 +578,10 @@ fixed_t K_BotMapModifier(void)
 	// fuck it we ball
 	//return 5*FRACUNIT/10;
 	// ...with a bit of customization
+
+	if (grandprixinfo.lunaticmode == true)
+		return std::max(static_cast<fixed_t>(BASELUNATICSPEEDMOD), K_TrackModifierMax());
+
 	return K_TrackModifierMax();
 
 #if 0
@@ -689,13 +693,12 @@ fixed_t K_BotRubberband(const player_t *player)
 	);
 
 	// +/- x0.35
-	const fixed_t rubberStretchiness = FixedMul(
-		FixedDiv(
-			35 * FRACUNIT / 100,
-			K_GetKartGameSpeedScalar(gamespeed)
-		),
-		K_BotMapModifier()
-	);
+	const fixed_t rubberStretchiness =
+	    FixedMul(FixedDiv(35 * FRACUNIT / 100, K_GetKartGameSpeedScalar(gamespeed)),
+		     ((grandprixinfo.lunaticmode == true) && (player->botvars.rival == true))
+			 ? std::max(BASELUNATICRIVALSPEEDMOD,
+				    K_BotMapModifier())  // The rival is faster on Lunatic mode.
+			 : K_BotMapModifier());
 
 	// Lv.   1: x0.4 min
 	// Lv. MAX: x0.85 min

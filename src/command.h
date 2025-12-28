@@ -187,6 +187,8 @@ extern CV_PossibleValue_t CV_Natural[];
 #define KARTSPEED_EXPERT 3
 #define KARTGP_MASTER 4  // Not a speed setting, gives hard speed with maxed out bots
 #define KARTGP_NIGHTMARE 5 // Not a speed setting, gives expert speed with maxed out bots
+#define KARTGP_LUNATIC 6 // Not a speed setting; Master difficulty with some... modifications.
+#define KARTGP_MANIAC 7 // Not a speed setting; Nightmare difficulty with some... modifications.
 extern CV_PossibleValue_t kartspeed_cons_t[], gpdifficulty_cons_t[];
 
 extern consvar_t cv_execversion;

@@ -1957,6 +1957,7 @@ void D_SRB2Main(void)
 			grandprixinfo.gamespeed = KARTSPEED_HARD;
 			grandprixinfo.encore = false;
 			grandprixinfo.masterbots = false;
+			grandprixinfo.lunaticmode = false;
 
 			grandprixinfo.gp = true;
 			grandprixinfo.roundnum = 0;
@@ -2121,7 +2122,7 @@ void D_SRB2Main(void)
 			if (!gpdifficulty_cons_t[j].strvalue) // reached end of the list with no match
 			{
 				j = atoi(sskill); // assume they gave us a skill number, which is okay too
-				if (j >= KARTSPEED_EASY && j <= KARTGP_NIGHTMARE)
+				if (j >= KARTSPEED_EASY && j <= KARTGP_MANIAC)
 					newskill = (INT16)j;
 			}
 
@@ -2137,6 +2138,18 @@ void D_SRB2Main(void)
 					grandprixinfo.masterbots = true;
 					newskill = KARTSPEED_EXPERT;
 				}
+				else if (newskill == KARTGP_LUNATIC)
+				{
+					grandprixinfo.masterbots = true;
+					grandprixinfo.lunaticmode = true;
+					newskill = KARTSPEED_HARD;
+				}
+				else if (newskill == KARTGP_MANIAC)
+				{
+					grandprixinfo.masterbots = true;
+					grandprixinfo.lunaticmode = true;
+					newskill = KARTSPEED_EXPERT;
+				}
 
 				grandprixinfo.gamespeed = newskill;
 			}
@@ -2145,6 +2158,14 @@ void D_SRB2Main(void)
 				newskill = KARTSPEED_HARD;
 			}
 			else if (newskill == KARTGP_NIGHTMARE)
+			{
+				newskill = KARTSPEED_EXPERT;
+			}
+			else if (newskill == KARTGP_LUNATIC)
+			{
+				newskill = KARTSPEED_HARD;
+			}
+			else if (newskill == KARTGP_MANIAC)
 			{
 				newskill = KARTSPEED_EXPERT;
 			}

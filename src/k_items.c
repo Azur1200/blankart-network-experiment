@@ -37,6 +37,7 @@
 #include "k_kart.h"
 #include "k_waypoint.h"
 #include "k_director.h"
+#include "k_grandprix.h"
 #include "k_cluster.hpp"
 #include "k_itemlist.hpp"
 #include "k_items.h"
@@ -621,6 +622,8 @@ void K_SetIndirectItemCooldown(tic_t cooldown)
 	}
 }
 
+#define LUNATIC_RUNNERAUG_CRUNCHER (29127) // FRACUNIT / 2.25
+
 static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *forceme)
 {
 	INT32 newodds;
@@ -791,8 +794,23 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 	if ((flags & KRF_RUNNERAUGMENT) && (result->augcvar[aug_idx] != NULL))
 	{
 		// These odds get stronger as 1st's frontrun increases.
-		const INT32 distFromStart = max(secondToFirst - result->augcvar[aug_idx]->value, 0);
-		const INT32 distRange = (7 * result->augcvar[aug_idx]->value / 2) - result->augcvar[aug_idx]->value;
+		INT32 runner_distval = result->augcvar[aug_idx]->value;
+
+		if (grandprixinfo.lunaticmode == true)
+		{
+			// Lunatic Mode: Divide this distance by 2.25 for
+			// aggressive frontrun prevention.
+			runner_distval = FixedMul(runner_distval, LUNATIC_RUNNERAUG_CRUNCHER);
+		}
+
+		if (roulette->rival_frontrunner == true)
+		{
+			// The rival is frontrunning. Be *especially* vicious against them!
+			runner_distval = (runner_distval / 2);
+		}
+
+		const INT32 distFromStart = max(secondToFirst - runner_distval, 0);
+		const INT32 distRange = (7 * runner_distval / 2) - runner_distval;
 		const INT32 mulMax = 24;
 
 		INT32 multiplier = (distFromStart * mulMax) / distRange;
@@ -861,6 +879,8 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 	return newodds;
 }
 
+#undef LUNATIC_RUNNERAUG_CRUNCHER
+
 void K_KartGetItemOdds(kartroulette_t *roulette, INT32 outodds[static MAXKARTRESULTS])
 {
 	// Reset forceme
@@ -883,6 +903,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 	UINT8 distlen = 0;
 	boolean oddsvalid[MAXODDS];
 	boolean rivalodds = false;
+	boolean rivalrunner = false;
 
 	// Unused now, oops :V
 	(void)bestbumper;
@@ -891,6 +912,12 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 	{
 		// Rival bots and players using Alt. Shrink get crazier items.
 		rivalodds = true;
+	}
+
+	if (player->bot && player->botvars.rival && player->position <= 1)
+	{
+		// A rival is frontrunning!
+		rivalrunner = true;
 	}
 
 	INT32 itemodds[MAXKARTRESULTS];
@@ -904,6 +931,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 		.spbrush = spbrush,
 		.bot = player->bot,
 		.rival = rivalodds,
+		.rival_frontrunner = rivalrunner,
 		.inBottom = K_IsPlayerLosing(player),
 	};
 
@@ -1466,7 +1494,8 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		.mashed = mashed,
 		.spbrush = spbrush,
 		.bot = player->bot,
-		.rival = player->bot && player->botvars.rival,
+		.rival = ((player->bot && player->botvars.rival) || (K_IsAltShrunk(player))),
+		.rival_frontrunner = ((player->bot && player->botvars.rival) && (player->position <= 1)),
 		.inBottom = K_IsPlayerLosing(player),
 	};
 
@@ -1535,7 +1564,16 @@ void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force)
 INT32 KO_AltInvinOdds(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme)
 {
 	(void)result;
-	odds = K_KartGetInvincibilityOdds(roulette->clusterDist);
+
+	UINT32 cdist = roulette->clusterDist;
+
+	if (grandprixinfo.lunaticmode)
+	{
+		// I'm tired, boss.
+		cdist = (9 * cdist / 5);
+	}
+
+	odds = K_KartGetInvincibilityOdds(cdist);
 
 	// Special case: if you're SERIOUSLY far behind before the cooldown finishes, ignore it and start forcing,
 	if (odds >= INVFORCEODDS)
@@ -1565,12 +1603,26 @@ INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresul
 		odds = 0;
 	}
 
+	UINT32 raceforce_pdis = roulette->pdis;
+
+	if (grandprixinfo.lunaticmode == true)
+	{
+		// Multiply by 2.25
+		raceforce_pdis = FixedMul(raceforce_pdis, 9 * FRACUNIT / 2);
+	}
+
+	if (roulette->rival_frontrunner == true)
+	{
+		// Frontrunning rival? Multiply by 1.5
+		raceforce_pdis = FixedMul(raceforce_pdis, 3 * FRACUNIT / 2);
+	}
+
 	// No forced SPB in 1v1s, it has to be randomly rolled
 	if (roulette->pingame <= 2)
 	{
 		*forceme = 0;
 	}
-	else if (K_RaceForceSPB(roulette->playerpos, roulette->pdis)
+	else if (K_RaceForceSPB(roulette->playerpos, raceforce_pdis)
 		&& spbplace == -1 && K_GetKartResult("selfpropelledbomb")->cooldown == 0)
 	{
 		// Force SPB onto 2nd if they get too far behind.

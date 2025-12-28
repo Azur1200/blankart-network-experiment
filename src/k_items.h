@@ -155,6 +155,7 @@ struct kartroulette_t
 	boolean spbrush;
 	boolean bot;
 	boolean rival;
+	boolean rival_frontrunner; // Is a Rival bot frontrunning?
 	boolean inBottom;
 
 	// output: which results are being forced into a player's item slot for one reason or another. Higher value = higher priority.

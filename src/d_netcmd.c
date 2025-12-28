@@ -3554,6 +3554,7 @@ static void Command_Map_f(void)
 			{
 				grandprixinfo.gamespeed = (cv_kartspeed.value == KARTSPEED_AUTO ? KARTSPEED_NORMAL : cv_kartspeed.value);
 				grandprixinfo.masterbots = false;
+				grandprixinfo.lunaticmode = false;
 
 				if (option_skill)
 				{
@@ -3573,7 +3574,7 @@ static void Command_Map_f(void)
 					if (!gpdifficulty_cons_t[j].strvalue) // reached end of the list with no match
 					{
 						INT32 num = atoi(COM_Argv(option_skill + 1)); // assume they gave us a skill number, which is okay too
-						if (num >= KARTSPEED_EASY && num <= KARTGP_NIGHTMARE)
+						if (num >= KARTSPEED_EASY && num <= KARTGP_MANIAC)
 							newskill = (INT16)num;
 					}
 
@@ -3588,6 +3589,18 @@ static void Command_Map_f(void)
 						{
 							grandprixinfo.gamespeed = KARTSPEED_EXPERT;
 							grandprixinfo.masterbots = true;
+						}
+						else if (newskill == KARTGP_LUNATIC)
+						{
+							grandprixinfo.gamespeed = KARTSPEED_HARD;
+							grandprixinfo.masterbots = true;
+							grandprixinfo.lunaticmode = true;
+						}
+						else if (newskill == KARTGP_MANIAC)
+						{
+							grandprixinfo.gamespeed = KARTSPEED_EXPERT;
+							grandprixinfo.masterbots = true;
+							grandprixinfo.lunaticmode = true;
 						}
 						else
 						{
@@ -8480,6 +8493,13 @@ static void KartBumpSpark_OnChange(void)
 {
 	if (K_CanChangeRules(false) == false)
 	{
+		return;
+	}
+
+	if (grandprixinfo.lunaticmode)
+	{
+		CONS_Printf("No, no - lunatics don't need Bump Spark!\n");
+		bumpsparkactive = 0;
 		return;
 	}
 

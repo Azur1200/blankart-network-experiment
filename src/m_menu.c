@@ -6259,6 +6259,16 @@ INT32 MR_StartGrandPrix(INT32 choice)
 			grandprixinfo.gamespeed = KARTSPEED_EXPERT;
 			grandprixinfo.masterbots = true;
 			break;
+		case KARTGP_LUNATIC:
+			grandprixinfo.gamespeed = KARTSPEED_HARD;
+			grandprixinfo.lunaticmode = true;
+			grandprixinfo.masterbots = true;
+			break;
+		case KARTGP_MANIAC:
+			grandprixinfo.gamespeed = KARTSPEED_EXPERT;
+			grandprixinfo.lunaticmode = true;
+			grandprixinfo.masterbots = true;
+			break;
 		default:
 			CONS_Alert(CONS_WARNING, "Invalid GP difficulty\n");
 			grandprixinfo.gamespeed = KARTSPEED_NORMAL;

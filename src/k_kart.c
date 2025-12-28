@@ -2532,7 +2532,15 @@ UINT16 K_GetInvincibilityTime(player_t *player)
 		distmul = LEGACYALTINVINMUL;
 	}
 
-    fixed_t clustermul = K_InvincibilityEasing(FixedMul(player->distancefromcluster,distmul));
+	UINT32 cdist = player->distancefromcluster;
+
+	if (grandprixinfo.lunaticmode)
+	{
+		// I'm tired, boss.
+		cdist = (9 * cdist / 5);
+	}
+
+    fixed_t clustermul = K_InvincibilityEasing(FixedMul(cdist,distmul));
 	UINT16 invintics = FixedMul(BASEINVINTIME, clustermul);
 
     return max(MININVINTIME, invintics);
