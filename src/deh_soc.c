@@ -4254,27 +4254,21 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 				consvar_t *var = Z_Calloc(sizeof(consvar_t), PU_STATIC, &result->augcvar[idx]);
 				var->name = cvname;
 
-				var->defaultvalue = malloc(strlen(va("%d", result->baserunneraug[idx]))+1);
-				sprintf(var->defaultvalue, "%d", result->baserunneraug[idx]);
-
-				var->value = result->baserunneraug[idx];
+				char *defval = malloc(5+1); // UINT16_MAX + NUL
+				snprintf(defval, 6, "%u", result->baserunneraug[idx]);
+				var->defaultvalue = defval;
 
 				var->flags = CV_NETVAR|CV_CHEAT;
 				var->PossibleValue = kartrunneraugment_cons_t;
 				var->func = NULL;
 				CV_RegisterVar(var);
-
-				//CONS_Printf("Allocated cvar data successfully\n");
 			}
-			else if (result->augcvar[idx]->defaultvalue)
+			else
 			{
-				// Reallocate the data and set a new default value.
-				result->augcvar[idx]->defaultvalue = realloc(result->augcvar[idx]->defaultvalue, strlen(va("%d", result->baserunneraug[idx]))+1);
-				sprintf(result->augcvar[idx]->defaultvalue, "%d", result->baserunneraug[idx]);
-
+				char *defval; // uh oh! const cast!
+				memcpy(&defval, &result->augcvar[idx]->defaultvalue, sizeof(defval));
+				snprintf(defval, 6, "%u", result->baserunneraug[idx]);
 				CV_StealthSet(result->augcvar[idx], result->augcvar[idx]->defaultvalue);
-
-				//CONS_Printf("Reallocated cvar data successfully\n");
 			}
 		}
 		else if (fastncmp(word, "ODDS", 4))

@@ -126,8 +126,6 @@ struct kartresult_t
 {
 	// this block is shared by all item variants
 	consvar_t *cvar; // contains name
-	consvar_t *augcvar[2]; // "Runner Augment" console variable
-	UINT16 baserunneraug[2]; // Base "max distance" value for KRF_RUNNERAUGMENT items
 	kartitemtype_e type;
 	UINT8 amount;
 
@@ -135,6 +133,8 @@ struct kartresult_t
 	boolean isalt; // is alt (i salt)
 	kartresultflags_e flags;
 	UINT8 odds[MAXODDSTABLES][MAXODDS];
+	consvar_t *augcvar[2]; // "Runner Augment" console variable
+	UINT16 baserunneraug[2]; // Base "max distance" value for KRF_RUNNERAUGMENT items
 
 	// Functions that tell the game to use unique means of rolling these items.
 	// If NULL, the functions never execute.

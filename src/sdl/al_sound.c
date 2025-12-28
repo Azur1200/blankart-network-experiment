@@ -595,14 +595,12 @@ static void AudioThread(void *userdata)
 	TracyCZoneEnd(__zone);
 }
 
-static char *ds2chunk(void *stream, size_t *len, size_t *samplerate)
+static char *ds2chunk(const void *stream, size_t *len, size_t *samplerate)
 {
 	UINT16 ver, freq;
 	UINT32 samples, i;
 	UINT8 *sound;
 
-	SINT8 *s;
-	INT16 *d;
 	INT16 o;
 
 	// lump header
@@ -622,8 +620,8 @@ static char *ds2chunk(void *stream, size_t *len, size_t *samplerate)
 
 	sound = Z_Malloc(samples<<2, PU_SOUND, NULL); // samples * frequency shift * bytes per sample * channels
 
-	s = (SINT8 *)stream;
-	d = (INT16 *)sound;
+	const SINT8 *s = stream;
+	UINT8 *d = sound;
 
 	i = 0;
 
@@ -631,11 +629,11 @@ static char *ds2chunk(void *stream, size_t *len, size_t *samplerate)
 	while (i++ < samples)
 	{
 		o = ((INT16)(*s++)+0x80)<<8; // changed signedness and shift up to 16 bits
-		*d++ = o; // left channel
-		*d++ = o; // right channel
+		WRITEINT16(d, o); // left channel
+		WRITEINT16(d, o); // right channel
 	}
 
-	*len = (UINT8 *)d-sound;
+	*len = d - sound;
 	return (char *)sound;
 }
 

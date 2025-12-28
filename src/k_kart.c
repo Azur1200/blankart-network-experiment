@@ -9707,7 +9707,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 		player->invincibilitybottleneck = (UINT16)(-1);  // No bottlenecking!
 		return 0;
 	}
-	else if ((pingame == 3))
+	else if (pingame == 3)
 	{
 		// "Second place" in this case is actually second to last.
 		// In very small lobbies, it's harder for players to cluster together.

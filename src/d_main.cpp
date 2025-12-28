@@ -953,15 +953,9 @@ void D_SRB2Loop(void)
 	// Check and print which version is executed.
 	// Use this as the border between setup and the main game loop being entered.
 #ifdef BOOTDEVNAG
-	char bootnag[1024];
-	snprintf(bootnag,
-		sizeof(bootnag),
-		"%s is still in active development. Things may break or crash!\n", BLANNAME
-	);
-
 	CONS_Printf(
-	"===========================================================================\n");
-	CONS_Printf(bootnag);
+	"===========================================================================\n"
+	BLANNAME " is still in active development. Things may break or crash!\n");
 #endif
 	CONS_Printf(
 	"===========================================================================\n"
