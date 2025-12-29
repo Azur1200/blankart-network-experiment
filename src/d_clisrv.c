@@ -959,7 +959,7 @@ CopyCaretColors (char *p, const char *s, int n)
 		else
 			break;
 	}
-	strncpy(p, s, n);
+	strlcpy(p, s, n);
 }
 
 static void SV_SendServerInfo(INT32 node, tic_t servertime)

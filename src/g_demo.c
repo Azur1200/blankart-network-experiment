@@ -801,7 +801,10 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 			sprintf(header->maptitle, "MAP%c%c", 'A' + (mapnum - 100)/36, ((mapnum - 100) % 36 < 10 ? '0' : 'A'-10) + (mapnum - 100) % 36);
 	}
 	else
-		READSTRINGN(dp, header->maptitle, MAXMAPLUMPNAME);
+	{
+		READSTRINGL(dp, header->maptitle, MAXMAPLUMPNAME);
+		if (dp[-1] != '\0') dp++;
+	}
 
 	header->mapchecksum = READUINT64(dp);
 	if (kart) (void)READUINT64(dp); // not even used anywhere
@@ -824,9 +827,12 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 		size_t maxservercontact  = rapreset ? MAXSERVERCONTACT : 320;
 		size_t maxdescription = rapreset ? MAXSERVERDESCRIPTION : 320;
 
-		READSTRINGN(dp, header->servername, MAXSERVERNAME);
-		READSTRINGN(dp, header->servercontact, maxservercontact);
-		READSTRINGN(dp, header->serverdescription, maxdescription);
+		READSTRINGL(dp, header->servername, MAXSERVERNAME);
+		if (dp[-1] != '\0') dp++;
+		READSTRINGL(dp, header->servercontact, maxservercontact);
+		if (dp[-1] != '\0') dp++;
+		READSTRINGL(dp, header->serverdescription, maxdescription);
+		if (dp[-1] != '\0') dp++;
 	}
 
 	if (oldkart)
@@ -2891,7 +2897,7 @@ void G_BeginRecording(void)
 		char demotitlename[65];
 		char *title = G_BuildMapTitle(gamemap);
 		// Print to a separate temp buffer instead of demo.titlename, so we can use it in M_TextInputSetString
-		snprintf(demotitlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
+		snprintf(demotitlename, sizeof(demotitlename), "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
 
 		// Init just in case it isn't initialized already
 		M_TextInputInit(&demo.titlenameinput, demo.titlename, sizeof(demo.titlename));
@@ -2906,15 +2912,15 @@ void G_BeginRecording(void)
 
 	// game data
 	memcpy(demobuf.p, "PLAY", 4); demobuf.p += 4;
-	WRITESTRINGN(demobuf.p, mapheaderinfo[gamemap-1]->lumpname, MAXMAPLUMPNAME);
+	WRITESTRINGL(demobuf.p, mapheaderinfo[gamemap-1]->lumpname, MAXMAPLUMPNAME);
 	WRITEUINT64(demobuf.p, maphash);
 
 	WRITEUINT8(demobuf.p, demoflags);
 	WRITESTRINGL(demobuf.p, currentrecordpreset, MAXPRESETNAME+1);
 	WRITEUINT8(demobuf.p, currentrecordpresetversion);
-	WRITESTRINGN(demobuf.p, connectedservername, MAXSERVERNAME);
-	WRITESTRINGN(demobuf.p, connectedservercontact, MAXSERVERCONTACT);
-	WRITESTRINGN(demobuf.p, connectedserverdescription, MAXSERVERDESCRIPTION);
+	WRITESTRINGL(demobuf.p, connectedservername, MAXSERVERNAME);
+	WRITESTRINGL(demobuf.p, connectedservercontact, MAXSERVERCONTACT);
+	WRITESTRINGL(demobuf.p, connectedserverdescription, MAXSERVERDESCRIPTION);
 	WRITEUINT8(demobuf.p, gametype & 0xFF);
 	WRITEUINT8(demobuf.p, numlaps);
 
@@ -3413,7 +3419,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		return;
 	}
 
-	memcpy(pdemo->title, header.demotitle, 64);
+	strlcpy(pdemo->title, header.demotitle, sizeof(pdemo->title));
 
 	if (header.version != VERSION || header.subversion != SUBVERSION)
 		pdemo->type = MD_OUTDATED;
@@ -3680,7 +3686,7 @@ void G_DoPlayDemo(char *defdemoname)
 	demo.version = header.demoversion;
 
 	// demo title
-	memcpy(demo.titlename, header.demotitle, 64);
+	strlcpy(demo.titlename, header.demotitle, sizeof(demo.titlename));
 
 	if (demo.title) // Titledemos should always play and ought to always be compatible with whatever wadlist is running.
 		;//G_SkipDemoExtraFiles(&demobuf.p);
