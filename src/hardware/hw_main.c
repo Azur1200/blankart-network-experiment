@@ -3157,6 +3157,10 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 
 	R_InterpolateMobjState(thing, R_GetTimeFrac(RTF_LEVEL), &interp);
 
+	// yes, this can happen. but it only creates exploding shadows in SOME maps. like MAPH9
+	if (interp.radius <= 0)
+		return;
+
 	// sprite offset
 	interp.x += thing->sprxoff;
 	interp.y += thing->spryoff;
