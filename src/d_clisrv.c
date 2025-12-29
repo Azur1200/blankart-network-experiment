@@ -315,7 +315,7 @@ void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_
 		CONS_Alert(CONS_NOTICE, M_GetText("NetXCmd buffer full, delaying netcmd %d... (size: %d, needed: %s)\n"), id, localtextcmd[playerid][0], sizeu1(nparam));
 		if (buf == NULL)
 		{
-			textcmdbuf[playerid] = Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
+			textcmdbuf[playerid] = (textcmdbuf_t*)Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
 			textcmdbuf[playerid]->cmd[0] = 0;
 			textcmdbuf[playerid]->next = NULL;
 			WriteNetXCmd(textcmdbuf[playerid]->cmd, id, param, nparam);
@@ -327,7 +327,7 @@ void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_
 
 		if (buf->cmd[0]+2+nparam > MAXTEXTCMD)
 		{
-			buf->next = Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
+			buf->next = (textcmdbuf_t*)Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
 			buf->next->cmd[0] = 0;
 			buf->next->next = NULL;
 			WriteNetXCmd(buf->next->cmd, id, param, nparam);
@@ -407,13 +407,13 @@ static UINT8* D_GetTextcmd(tic_t tic, INT32 playernum)
 	// If we don't have an entry for the tic, make it.
 	if (!textcmdtic)
 	{
-		textcmdtic = *tctprev = Z_Calloc(sizeof (textcmdtic_t), PU_STATIC, NULL);
+		textcmdtic = *tctprev = (textcmdtic_t*)Z_Calloc(sizeof (textcmdtic_t), PU_STATIC, NULL);
 		textcmdtic->tic = tic;
 	}
 
 	// If we don't have an entry for the player, make it.
 	if (!textcmdtic->playercmds[playernum])
-		textcmdtic->playercmds[playernum] = Z_Calloc(MAXTEXTCMD, PU_STATIC, NULL);
+		textcmdtic->playercmds[playernum] = (UINT8*)Z_Calloc(MAXTEXTCMD, PU_STATIC, NULL);;
 
 	return textcmdtic->playercmds[playernum];
 }
@@ -612,7 +612,7 @@ void ChangeClientMode(INT32 mode)
 //
 // Keep the local client informed of our status.
 //
-static inline void CL_DrawConnectionStatus(void)
+static void CL_DrawConnectionStatus(void)
 {
 	INT32 ccstime = I_GetTime();
 
