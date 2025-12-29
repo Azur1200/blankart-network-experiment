@@ -646,12 +646,13 @@ static inline void CL_DrawConnectionStatus(void)
 				{
 					UINT32 currentsize = fileneeded[lastfilenum].currentsize;
 					UINT32 totalsize = fileneeded[lastfilenum].totalsize;
-					INT32 dldlength;
+					INT32 dldlength = 0;
 
 					cltext = M_GetText("Downloading game state...");
 					Net_GetNetStat();
 
-					dldlength = (INT32)((currentsize/(double)totalsize) * 256);
+					if (totalsize != 0)
+						dldlength = (INT32)((currentsize/(double)totalsize) * 256);
 					if (dldlength > 256)
 						dldlength = 256;
 					V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-16, 256, 8, 111);
@@ -697,50 +698,49 @@ static inline void CL_DrawConnectionStatus(void)
 	{
 		if (cl_mode == CL_CHECKFILES)
 		{
-			INT32 totalfileslength;
+			INT32 totalfileslength = 0;
 			INT32 checkednum = 0;
 			INT32 i;
 
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-24, MENUCAPS|V_YELLOWMAP, "Press ESC to abort");
 
-			//ima just count files here
+			// ima just count files here
 			for (i = 0; i < fileneedednum; i++)
 				if (fileneeded[i].status != FS_NOTCHECKED)
 					checkednum++;
 
 			// Loading progress
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32, MENUCAPS|V_YELLOWMAP, "Checking server addons...");
-			if (checkednum && fileneedednum)
-				totalfileslength = (INT32)((checkednum/(double)(fileneedednum)) * 256);
-			else
-				totalfileslength = 0;
+			if (fileneedednum != 0)
+				totalfileslength = (INT32)((checkednum/(double)fileneedednum) * 256);
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 96);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE,
-				va(" %2u/%2u Files",checkednum,fileneedednum));
+				va(" %2u/%2u Files", checkednum, fileneedednum));
 		}
 		else if (cl_mode == CL_LOADFILES)
 		{
-			INT32 totalfileslength;
+			INT32 totalfileslength = 0;
 			INT32 loadcompletednum = 0;
 			INT32 i;
 
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-24,  MENUCAPS|V_YELLOWMAP, "Press ESC to abort");
 
-			//ima just count files here
+			// ima just count files here
 			for (i = 0; i < fileneedednum; i++)
 				if (fileneeded[i].status == FS_OPEN)
 					loadcompletednum++;
 
 			// Loading progress
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32, MENUCAPS|V_YELLOWMAP, "Loading server addons...");
-			totalfileslength = (INT32)((loadcompletednum/(double)(fileneedednum)) * 256);
+			if (fileneedednum != 0)
+				totalfileslength = (INT32)((loadcompletednum/(double)(fileneedednum)) * 256);
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 96);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, MENUCAPS|V_20TRANS|V_MONOSPACE,
-				va(" %2u/%2u Files",loadcompletednum,fileneedednum));
+				va(" %2u/%2u Files", loadcompletednum,fileneedednum));
 		}
 		else if (cl_mode == CL_VIEWSERVER)
 		{
@@ -752,19 +752,22 @@ static inline void CL_DrawConnectionStatus(void)
 		}
 		else if (lastfilenum != -1)
 		{
-			INT32 dldlength;
-			INT32 totalfileslength;
-			UINT32 totaldldsize;
+			INT32 dldlength = 0;
+			INT32 totalfileslength = 0;
+			UINT32 totaldldsize = 0;
 			static char tempname[28];
 			fileneeded_t *file = &fileneeded[lastfilenum];
 			char *filename = file->filename;
+			UINT32 currentsize = file->currentsize;
+			UINT32 totalsize   = file->totalsize;
 
 			// Draw the bottom box.
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-58-8, 32, 1);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-58-14,  MENUCAPS|V_YELLOWMAP, "Press ESC to abort");
 
 			Net_GetNetStat();
-			dldlength = (INT32)((file->currentsize/(double)file->totalsize) * 256);
+			if (totalsize != 0)
+				dldlength = (INT32)((file->currentsize/(double)file->totalsize) * 256);
 			if (dldlength > 256)
 				dldlength = 256;
 
@@ -796,24 +799,25 @@ static inline void CL_DrawConnectionStatus(void)
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-58-22,  MENUCAPS|V_YELLOWMAP,
 				va(M_GetText("\"%s\""), tempname));
 			V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-58, V_20TRANS|V_MONOSPACE,
-				va(" %4uK/%4uK",fileneeded[lastfilenum].currentsize>>10,file->totalsize>>10));
+				va(" %4uK/%4uK",currentsize>>10,totalsize>>10));
 			V_DrawRightAlignedString(BASEVIDWIDTH/2+128, BASEVIDHEIGHT-58, V_20TRANS|V_MONOSPACE,
-				va("%3.1fK/s ", ((double)getbps)/1024));
+				va("%3.1fK/s ", ((double)getbps)/1024.0));
 
 			// Download progress
 
-			if (fileneeded[lastfilenum].currentsize != fileneeded[lastfilenum].totalsize)
-				totaldldsize = downloadcompletedsize+fileneeded[lastfilenum].currentsize; //Add in single file progress download if applicable
+			if (currentsize != totalsize)
+				totaldldsize = downloadcompletedsize+fileneeded[lastfilenum].currentsize; // Add in single file progress download if applicable
 			else
 				totaldldsize = downloadcompletedsize;
 
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-14,  MENUCAPS|V_YELLOWMAP, "Overall Download Progress");
-			totalfileslength = (INT32)((totaldldsize/(double)totalfilesrequestedsize) * 256);
+			if (filedownload.totalsize != 0)
+				totalfileslength = (INT32)((totaldldsize/(double)totalfilesrequestedsize) * 256);
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 96);
 
-			if (totalfilesrequestedsize>>20 >= 10) //display in MB if over 10MB
+			if (totalfilesrequestedsize>>20 >= 10) // display in MB if over 10MB
 				V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24,  MENUCAPS|V_20TRANS|V_MONOSPACE,
 					va(" %4uM/%4uM",totaldldsize>>20,totalfilesrequestedsize>>20));
 			else
