@@ -796,7 +796,7 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 		// These odds get stronger as 1st's frontrun increases.
 		INT32 runner_distval = result->augcvar[aug_idx]->value;
 
-		if (grandprixinfo.lunaticmode == true)
+		if ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode == true))
 		{
 			// Lunatic Mode: Divide this distance by 2.25 for
 			// aggressive frontrun prevention.
@@ -1567,7 +1567,7 @@ INT32 KO_AltInvinOdds(INT32 odds, const kartroulette_t *roulette, const kartresu
 
 	UINT32 cdist = roulette->clusterDist;
 
-	if (grandprixinfo.lunaticmode)
+	if ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode))
 	{
 		// I'm tired, boss.
 		cdist = (9 * cdist / 5);
@@ -1605,7 +1605,7 @@ INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresul
 
 	UINT32 raceforce_pdis = roulette->pdis;
 
-	if (grandprixinfo.lunaticmode == true)
+	if ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode == true))
 	{
 		// Multiply by 2.25
 		raceforce_pdis = FixedMul(raceforce_pdis, 9 * FRACUNIT / 2);

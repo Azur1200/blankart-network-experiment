@@ -8496,7 +8496,7 @@ static void KartBumpSpark_OnChange(void)
 		return;
 	}
 
-	if (grandprixinfo.lunaticmode)
+	if ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode))
 	{
 		CONS_Printf("No, no - lunatics don't need Bump Spark!\n");
 		bumpsparkactive = 0;

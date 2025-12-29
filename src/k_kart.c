@@ -2534,7 +2534,7 @@ UINT16 K_GetInvincibilityTime(player_t *player)
 
 	UINT32 cdist = player->distancefromcluster;
 
-	if (grandprixinfo.lunaticmode)
+	if ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode))
 	{
 		// I'm tired, boss.
 		cdist = (9 * cdist / 5);
