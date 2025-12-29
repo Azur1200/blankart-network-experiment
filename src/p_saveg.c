@@ -1875,13 +1875,13 @@ enum mobj_diff_t
 	MD__MAX
 };
 
-static mobjtype_t g_doomednum_to_mobjtype[UINT16_MAX];
+static mobjtype_t g_doomednum_to_mobjtype[UINT16_MAX+1];
 
 static void CalculateDoomednumToMobjtype(void)
 {
 	memset(g_doomednum_to_mobjtype, MT_NULL, sizeof(g_doomednum_to_mobjtype));
 
-	for (size_t i = MT_NULL+1; i < NUMMOBJTYPES; i++)
+	for (size_t i = 0; i < NUMMOBJTYPES; i++)
 	{
 		if (mobjinfo[i].doomednum > 0 && mobjinfo[i].doomednum <= UINT16_MAX)
 		{
