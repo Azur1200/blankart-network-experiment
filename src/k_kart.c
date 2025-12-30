@@ -11053,7 +11053,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	{
 		K_SpawnDashDustRelease(player, false);
 		S_StartSound(player->mo, sfx_s23c);
-		player->walltransferboost += 15;
+		player->walltransferboost = 15;
 		player->walltransfered = false;
 	}
 
