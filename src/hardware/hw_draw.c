@@ -265,6 +265,131 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 		HWD.pfnDrawPolygon(NULL, v, 4, flags|PF_Translucent);
 }
 
+void HWR_DrawAffinePatch(patch_t *gpatch, fixed_t x, fixed_t y, const affine_t *transform, INT32 option, const UINT8 *colormap)
+{
+	//const cliprect_t *clip = V_GetClipRect();
+
+	// make patch ready in hardware cache
+	if (!colormap)
+		HWR_GetPatch(gpatch);
+	else
+		HWR_GetMappedPatch(gpatch, colormap);
+
+	// positions of the x, y, are between 0 and vid.width/vid.height now, we need them to be between -1 and 1
+	float fwidth = vid.width;// / vid.dupx;
+	float fheight = vid.height;// / vid.dupy;
+	float cx = -1.0f + (x / (fwidth/2));
+	float cy = 1.0f - (y / (fheight/2));
+
+	float fa = FIXED_TO_FLOAT(transform->a) / vid.dupx;
+	float fd = FIXED_TO_FLOAT(transform->d) / vid.dupx;
+	float fc = FIXED_TO_FLOAT(transform->c) / vid.dupy;
+	float fb = FIXED_TO_FLOAT(transform->b) / vid.dupy;
+	float fx = FIXED_TO_FLOAT(transform->ox);
+	float fy = FIXED_TO_FLOAT(transform->oy);
+
+	// now, the matrix passed to this function maps screen coordinates to texel coordinates...
+	// but to translate this from software to GL, we have to figure out where each corner
+	// (or vertex) of the patch should end up on the screen.
+	// which means we have to map texel coordinates to screen coordinates.
+	// which means we have to invert the matrix.
+	// how do you invert a matrix?
+	// ...
+	// i don't fucking know, i spent a day on this and got absolutely nowhere, but this guy knows:
+	// https://nigeltao.github.io/blog/2021/inverting-3x2-affine-transformation-matrix.html
+	float determinant = fa * fd - fb * fc;
+	if (determinant == 0.0f)
+		return;
+	float ba = fd / determinant;
+	float bb = -fb / determinant;
+	float bc = -fc / determinant;
+	float bd = fa / determinant;
+
+	// set the polygon vertices to the right positions
+	//  3--2
+	//  | /|
+	//  |/ |
+	//  0--1
+	FOutVector v[4] = {
+		[3] = { .x = ba * -fx + bb * -fy + fx,
+		        .y = bc * -fx + bd * -fy + fy },
+		[2] = { .x = ba * (gpatch->width - fx) + bb * -fy + fx,
+		        .y = bc * (gpatch->width - fx) + bd * -fy + fy },
+		[0] = { .x = ba * -fx + bb * (gpatch->height - fy) + fx,
+		        .y = bc * -fx + bd * (gpatch->height - fy) + fy },
+		[1] = { .x = ba * (gpatch->width - fx) + bb * (gpatch->height - fy) + fx,
+		        .y = bc * (gpatch->width - fx) + bd * (gpatch->height - fy) + fy },
+	};
+
+	// normalize to -1,1
+	v[0].x = cx + (v[0].x / fwidth*2);
+	v[1].x = cx + (v[1].x / fwidth*2);
+	v[2].x = cx + (v[2].x / fwidth*2);
+	v[3].x = cx + (v[3].x / fwidth*2);
+	v[0].y = cy - (v[0].y / fheight*2);
+	v[1].y = cy - (v[1].y / fheight*2);
+	v[2].y = cy - (v[2].y / fheight*2);
+	v[3].y = cy - (v[3].y / fheight*2);
+
+	v[0].z = v[1].z = v[2].z = v[3].z = 1.0f;
+
+	const GLPatch_t *hwrPatch = ((GLPatch_t *)gpatch->hardware);
+	float s_min = 0.f, t_min = 0.f;
+	float s_max = hwrPatch->max_s, t_max = hwrPatch->max_t;
+
+	if (option & V_FLIP)
+	{
+		v[0].s = v[3].s = s_max;
+		v[2].s = v[1].s = s_min;
+	}
+	else
+	{
+		v[0].s = v[3].s = s_min;
+		v[2].s = v[1].s = s_max;
+	}
+
+	if (option & V_VFLIP)
+	{
+		v[0].t = v[1].t = t_min;
+		v[2].t = v[3].t = t_max;
+	}
+	else
+	{
+		v[0].t = v[1].t = t_max;
+		v[2].t = v[3].t = t_min;
+	}
+
+	FBITFIELD flags = PF_NoDepthTest;
+
+	// clip it since it is used for bunny scroll in doom I
+	UINT32 alphalevel = (option & V_ALPHAMASK) >> V_ALPHASHIFT;
+	UINT32 blendmode = (option & V_BLENDMASK) >> V_BLENDSHIFT;
+	if (blendmode)
+		blendmode++; // realign to constants
+	if (alphalevel || blendmode)
+	{
+		FSurfaceInfo Surf;
+		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
+
+		flags |= HWR_GetBlendModeFlag(blendmode);
+
+		if (alphalevel == 13)
+			Surf.PolyColor.s.alpha = softwaretranstogl_lo[st_translucency];
+		else if (alphalevel == 14)
+			Surf.PolyColor.s.alpha = softwaretranstogl[st_translucency];
+		else if (alphalevel == 15)
+			Surf.PolyColor.s.alpha = softwaretranstogl_hi[st_translucency];
+		else if (alphalevel < 10)
+			Surf.PolyColor.s.alpha = softwaretranstogl[min(max((10 - alphalevel), 0), 10)];
+		else
+			Surf.PolyColor.s.alpha = 0;
+
+		HWD.pfnDrawPolygon(&Surf, v, 4, flags|PF_Modulated);
+	}
+	else
+		HWD.pfnDrawPolygon(NULL, v, 4, flags|PF_Translucent);
+}
+
 void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, INT32 option, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h)
 {
 	FOutVector v[4];
