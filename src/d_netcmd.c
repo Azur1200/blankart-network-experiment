@@ -8496,13 +8496,6 @@ static void KartBumpSpark_OnChange(void)
 		return;
 	}
 
-	if ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode))
-	{
-		CONS_Printf("No, no - lunatics don't need Bump Spark!\n");
-		bumpsparkactive = 0;
-		return;
-	}
-
 	if (leveltime < starttime)
 	{
 		CONS_Printf(M_GetText("Bump spark type has been changed to \"%s\".\n"), cv_kartbumpspark.string);
