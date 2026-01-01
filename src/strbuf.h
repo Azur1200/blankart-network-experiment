@@ -1,6 +1,6 @@
 // BLANKART
 //-----------------------------------------------------------------------------
-// Copyright (C) 2025 by Team BlanKart.
+// Copyright (C) 2025-2026 by Team BlanKart.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.

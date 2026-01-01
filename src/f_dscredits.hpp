@@ -1,9 +1,9 @@
 // BLANKART
 //-----------------------------------------------------------------------------
-// Copyright (C) 2025 by Vivian "toastergrl" Grannell.
-// Copyright (C) 2025 by Kart Krew.
-// Copyright (C) 2025 by "yama".
-// Copyright (C) 2025 Blankart Team.
+// Copyright (C) 2025-2026 by Vivian "toastergrl" Grannell.
+// Copyright (C) 2025-2026 by Kart Krew.
+// Copyright (C) 2025-2026 by "yama".
+// Copyright (C) 2025-2026 Blankart Team.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.

@@ -1,7 +1,7 @@
 // BLANKART
 //-----------------------------------------------------------------------------
-// Copyright (C) 2025 by NepDisk.
-// Copyright (C) 2025 by Kart Krew.
+// Copyright (C) 2025-2026 by NepDisk.
+// Copyright (C) 2025-2026 by Kart Krew.
 // Copyright (C) 2018 by ZarroTsu.
 //
 // This program is free software distributed under the

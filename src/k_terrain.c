@@ -3,7 +3,7 @@
 // Copyright (C) 1998-2021 by ZDoom + GZDoom teams, and contributors
 // Copyright (C) 2021 by Sally "TehRealSalt" Cochenour
 // Copyright (C) 2021-2024 by Kart Krew
-// Copyright (C) 2025 Blankart Team
+// Copyright (C) 2025-2026 Blankart Team
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.

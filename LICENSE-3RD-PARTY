@@ -21,11 +21,11 @@
           Copyright (c) 2002-2020 Xiph.org Foundation
           https://github.com/xiph/vorbis
         - Tracy
-          Copyright (c) 2017-2025, Bartosz Taudul <wolf@nereid.pl>
+          Copyright (c) 2017-2026, Bartosz Taudul <wolf@nereid.pl>
           All rights reserved.
           https://github.com/wolfpld/tracy
         - OpenMPT
-          Copyright (c) 2004-2025, OpenMPT Project Developers and Contributors
+          Copyright (c) 2004-2026, OpenMPT Project Developers and Contributors
           Copyright (c) 1997-2003, Olivier Lapicque
           All rights reserved.
           https://source.openmpt.org/
@@ -62,7 +62,7 @@ POSSIBILITY OF SUCH DAMAGE.
           Copyright (c) 2012-2023 Yann Collet
           All rights reserved.
         - LZ4 Library
-          Copyright (c) 2011-2025 Yann Collet
+          Copyright (c) 2011-2026 Yann Collet
           All rights reserved.
 
 --------------------------------------------------------------------------------

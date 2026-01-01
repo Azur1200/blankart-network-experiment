@@ -1,6 +1,6 @@
 // BLANKART
 //-----------------------------------------------------------------------------
-// Copyright (C) 2025 by LJ Sonic
+// Copyright (C) 2025-2026 by LJ Sonic
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.

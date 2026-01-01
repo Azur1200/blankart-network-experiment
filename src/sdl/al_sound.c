@@ -1,8 +1,8 @@
 // SONIC ROBO BLAST 2
 //-----------------------------------------------------------------------------
-// Copyright (C) 2025 by Classic Development Team.
+// Copyright (C) 2025-2026 by Classic Development Team.
 // Copyright (C) 2014-2020 by Sonic Team Junior.
-// Copyright (C) 2025 Blankart Team.
+// Copyright (C) 2025-2026 Blankart Team.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
