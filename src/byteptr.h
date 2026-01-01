@@ -1,6 +1,6 @@
 // BLANKART
 //-----------------------------------------------------------------------------
-// Copyright (C) 2025-2026 by Kart Krew.
+// Copyright (C) 2025 by Kart Krew.
 // Copyright (C) 2020 by Sonic Team Junior.
 // Copyright (C) 2000 by DooM Legacy Team.
 //

@@ -1,6 +1,6 @@
 // BlanKart
 //-----------------------------------------------------------------------------
-// Copyright (C) 2024 by NepDisk
+// Copyright (C) 2026 by NepDisk
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.

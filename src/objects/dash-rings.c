@@ -1,8 +1,8 @@
 // BLANKART
 //-----------------------------------------------------------------------------
-// Copyright (C) 2025-2026 by "Lat'"
-// Copyright (C) 2025-2026 by Lachlan "Lach" Wright
-// Copyright (C) 2025-2026 by Kart Krew
+// Copyright (C) 2025 by "Lat'"
+// Copyright (C) 2025 by Lachlan "Lach" Wright
+// Copyright (C) 2025 by Kart Krew
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.

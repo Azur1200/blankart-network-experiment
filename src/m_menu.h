@@ -3,8 +3,8 @@
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 // Copyright (C) 2011-2016 by Matthew "Kaito Sinclaire" Walsh.
-// Copyright (C) 1999-2026 by Sonic Team Junior.
-// Copyright (C) 2025-2026 by Team BlanKart.
+// Copyright (C) 1999-2025 by Sonic Team Junior.
+// Copyright (C) 2026 by Team BlanKart.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.

@@ -1,7 +1,7 @@
 // BLANKART
 //-----------------------------------------------------------------------------
-// Copyright (C) 2025-2026 by haya3218.
-// Copyright (C) 2018-2026 by Kart Krew
+// Copyright (C) 2025 by haya3218.
+// Copyright (C) 2018-2024 by Kart Krew
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
