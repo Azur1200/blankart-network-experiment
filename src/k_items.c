@@ -75,6 +75,10 @@ static CV_PossibleValue_t kartitemvariant_cons_t[] = {{0, "Legacy"}, {1, "Altern
 consvar_t cv_fancyroulette = CVAR_INIT ("fancyroulette", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_fancyroulettespeed = CVAR_INIT ("fancyroulettespeed", "3", CV_SAVE, CV_Natural, NULL);
 
+// Item related CVARs
+consvar_t cv_karteggmine_slotlock = CVAR_INIT ("karteggmine_slotlock", "Off", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
+
+
 void K_RegisterItem(kartitemtype_e itemtype)
 {
 	kartdebugitem_cons_t[itemtype].strvalue = DEH_KartItemName(itemtype);
@@ -2645,15 +2649,19 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 			S_StartSound(tmo, sfx_bewar3);
 			K_DropItems(tmo->player);
 
-			tmo->player->itemtype = MAXKARTITEMS;	// aka KITEM_SAD
-			tmo->player->itemamount = 1;
+
+			if (cv_karteggmine_slotlock.value)
+			{
+				tmo->player->itemtype = MAXKARTITEMS;	// aka KITEM_SAD
+				tmo->player->itemamount = 1;
+				K_SetPlayerItemCooldown(tmo->player, TICRATE, false);
+			}
 			
 			if (itemlistactive)
 				K_AddItemRollToList((INT32)(tmo->player - players), MAXKARTITEMS, 1);
 
 			tmo->player->itemblink = TICRATE;
 			tmo->player->itemblinkmode = KITEMBLINK_MASHED;
-			K_SetPlayerItemCooldown(tmo->player, TICRATE, false);
 		}
 	}
 }

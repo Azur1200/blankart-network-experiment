@@ -448,6 +448,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartexplosion_limitlifetime_cap);
 
 	CV_RegisterVar(&cv_writetextmap_includemappatch);
+
+	CV_RegisterVar(&cv_karteggmine_slotlock);
 }
 
 //}
