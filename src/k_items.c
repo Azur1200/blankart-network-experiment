@@ -77,6 +77,7 @@ consvar_t cv_fancyroulettespeed = CVAR_INIT ("fancyroulettespeed", "3", CV_SAVE,
 
 // Item related CVARs
 consvar_t cv_karteggmine_slotlock = CVAR_INIT ("karteggmine_slotlock", "Off", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
+consvar_t cv_karteggmine_slotbrick = CVAR_INIT ("karteggmine_slotbrick", "Off", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
 
 
 void K_RegisterItem(kartitemtype_e itemtype)
@@ -2649,19 +2650,22 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 			S_StartSound(tmo, sfx_bewar3);
 			K_DropItems(tmo->player);
 
-
 			if (cv_karteggmine_slotlock.value)
+			{
+				K_SetPlayerItemCooldown(tmo->player, TICRATE, false);
+			}
+
+			if (cv_karteggmine_slotbrick.value)
 			{
 				tmo->player->itemtype = MAXKARTITEMS;	// aka KITEM_SAD
 				tmo->player->itemamount = 1;
-				K_SetPlayerItemCooldown(tmo->player, TICRATE, false);
-			}
-			
-			if (itemlistactive)
-				K_AddItemRollToList((INT32)(tmo->player - players), MAXKARTITEMS, 1);
 
-			tmo->player->itemblink = TICRATE;
-			tmo->player->itemblinkmode = KITEMBLINK_MASHED;
+				if (itemlistactive)
+					K_AddItemRollToList((INT32)(tmo->player - players), MAXKARTITEMS, 1);
+
+				tmo->player->itemblink = TICRATE;
+				tmo->player->itemblinkmode = KITEMBLINK_MASHED;
+			}
 		}
 	}
 }
