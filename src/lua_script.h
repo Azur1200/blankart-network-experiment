@@ -54,7 +54,7 @@ extern INT32 lua_lumploading; // is LUA_LoadLump being called?
 extern boolean lua_compatmode; // compatmode enabled for this lump/hook?
 
 int LUA_GetErrorMessage(lua_State *L);
-int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, boolean compat);
+int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, boolean compat, boolean printerror);
 void LUA_LoadLump(UINT16 wad, UINT16 lump, boolean noresults);
 #ifdef LUA_ALLOW_BYTECODE
 void LUA_DumpFile(const char *filename);

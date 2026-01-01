@@ -41,6 +41,7 @@
 #include "m_argv.h"
 
 lua_State *gL = NULL;
+boolean lua_compatmode = false;
 
 // List of internal libraries to load from SRB2
 static lua_CFunction liblist[] = {
@@ -147,7 +148,7 @@ int LUA_GetErrorMessage(lua_State *L)
 	return 1;
 }
 
-int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, boolean compat)
+int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, boolean compat, boolean printerror)
 {
 	boolean oldcompat = lua_compatmode;
 	lua_compatmode = compat;
@@ -156,15 +157,14 @@ int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, boole
 
 	if (err)
 	{
-		CONS_Alert(CONS_WARNING, "%s\n", lua_tostring(L, -1));
+		if (printerror)
+			CONS_Alert(CONS_WARNING, "%s\n", lua_tostring(L, -1));
 		lua_pop(L, 1);
 	}
 
 	lua_compatmode = oldcompat;
 	return err;
 }
-
-boolean lua_compatmode = false;
 
 // Moved here from lib_getenum.
 int LUA_PushGlobals(lua_State *L, const char *word)
@@ -605,6 +605,8 @@ int LUA_WriteGlobals(lua_State *L, const char *word)
 		wantedreduce = (INT32)luaL_checkinteger(L, 2);
 	else if (fastcmp(word, "wantedfrequency"))
 		wantedfrequency = (INT32)luaL_checkinteger(L, 2);
+	else if (fastcmp(word, "compatmode"))
+		lua_compatmode = luaL_checkboolean(L, 2); // you'd BETTER not forget to change it back afterwards!
 	else
 		return 0;
 

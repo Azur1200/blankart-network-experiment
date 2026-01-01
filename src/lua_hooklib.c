@@ -404,7 +404,6 @@ static void init_hook_call
 static void get_hook(Hook_State *hook, const int *ids, int n)
 {
 	hook->id = ids[n];
-	lua_compatmode = in_bit_array(hookCompat, hook->id);
 	lua_getref(gL, hookRefs[hook->id]);
 }
 
@@ -413,13 +412,14 @@ static void get_hook_from_table(Hook_State *hook, int n)
 	lua_rawgeti(gL, -1, n);
 	hook->id = lua_tonumber(gL, -1);
 	lua_pop(gL, 1);
-	lua_compatmode = in_bit_array(hookCompat, hook->id);
 	lua_getref(gL, hookRefs[hook->id]);
 }
 
 static int call_single_hook_no_copy(Hook_State *hook)
 {
-	if (lua_pcall(gL, hook->values, hook->results, EINDEX) == 0)
+	boolean compat = in_bit_array(hookCompat, hook->id);
+	boolean printerror = cht_debug & DBG_LUA || !in_bit_array(hooksErrored, hook->id);
+	if (LUA_Call(gL, hook->values, hook->results, EINDEX, compat, printerror) == 0)
 	{
 		if (hook->results > 0)
 		{
@@ -427,15 +427,9 @@ static int call_single_hook_no_copy(Hook_State *hook)
 			lua_pop(gL, hook->results);
 		}
 	}
-	else
+	else if (printerror)
 	{
-		/* print the error message once */
-		if (cht_debug & DBG_LUA || !in_bit_array(hooksErrored, hook->id))
-		{
-			CONS_Alert(CONS_WARNING, "%s\n", lua_tostring(gL, -1));
-			set_bit_array(hooksErrored, hook->id);
-		}
-		lua_pop(gL, 1);
+		set_bit_array(hooksErrored, hook->id);
 	}
 
 	return 1;
