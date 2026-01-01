@@ -96,7 +96,7 @@ BEGIN
             VALUE "FileDescription", "BlanKart\0"
             VALUE "FileVersion", VERSIONSTRING_RC
             VALUE "InternalName", "blankart\0"
-            VALUE "LegalCopyright", "Copyright 2025-2026 by BlanKart Dev, SRB2Kart Copyright 2018-2020 by Kart Krew\0"
+            VALUE "LegalCopyright", "Copyright 2025 by BlanKart Dev, SRB2Kart Copyright 2018-2020 by Kart Krew\0"
             VALUE "LegalTrademarks", "Sonic the Hedgehog and related characters are trademarks of Sega, SRB2Kart Copyright 2018-2020 by Kart Krew\0"
             VALUE "OriginalFilename", "blankart.exe\0"
             VALUE "PrivateBuild", "\0"
