@@ -49,6 +49,7 @@ extern consvar_t cv_playsoundifunfocused;
 
 extern consvar_t cv_music_resync_threshold;
 extern consvar_t cv_music_resync_powerups_only;
+extern consvar_t cv_altmusic;
 extern consvar_t cv_streamersafemusic;
 
 #ifdef HAVE_OPENMPT

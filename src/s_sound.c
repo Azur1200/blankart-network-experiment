@@ -103,6 +103,22 @@ static CV_PossibleValue_t music_resync_threshold_cons_t[] = {
 consvar_t cv_music_resync_threshold = CVAR_INIT ("music_resync_threshold", "100", CV_SAVE|CV_CALL, music_resync_threshold_cons_t, I_UpdateSongLagThreshold);
 consvar_t cv_music_resync_powerups_only = CVAR_INIT ("music_resync_powerups_only", "No", CV_SAVE|CV_CALL, CV_YesNo, I_UpdateSongLagConditions);
 
+enum altmusic_e
+{
+	ALTMUSIC_OFF = 0,
+	ALTMUSIC_ON,
+	ALTMUSIC_ALTSONLY
+};
+
+static CV_PossibleValue_t altmusic_cons_t[] = {
+	{ALTMUSIC_OFF, "Off"},
+	{ALTMUSIC_ON,   "On"},
+	{ALTMUSIC_ALTSONLY, "Alts Only"},
+	{0, NULL}
+};
+
+consvar_t cv_altmusic = CVAR_INIT ("alternate_music", "On", CV_SAVE, altmusic_cons_t, NULL);
+
 // Window focus sound sytem toggles
 consvar_t cv_playmusicifunfocused = CVAR_INIT ("playmusicifunfocused",  "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, PlayMusicIfUnfocused_OnChange);
 consvar_t cv_playsoundifunfocused = CVAR_INIT ("playsoundifunfocused", "No", CV_SAVE, CV_YesNo, PlaySoundIfUnfocused_OnChange);
@@ -253,6 +269,7 @@ void S_RegisterSoundStuff(void)
 	CV_RegisterVar(&cv_playsoundifunfocused);
 	CV_RegisterVar(&cv_playmusicifunfocused);
 	CV_RegisterVar(&cv_streamersafemusic);
+	CV_RegisterVar(&cv_altmusic);
 	CV_RegisterVar(&cv_gamesounds);
 	CV_RegisterVar(&cv_gamedigimusic);
 
@@ -2628,8 +2645,17 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 //
 void S_InitLevelMusic(boolean fromnetsave)
 {
+	INT16 usemusrng = 0;
+	INT16 altmusonlysize = 0;
+
 	if (mapmusflags & MUSIC_RELOADRESET)
 	{
+
+		if (mapheaderinfo[gamemap-1]->musname_size > 1)
+		{
+			altmusonlysize = max(0, mapheaderinfo[gamemap-1]->musname_size - 1);
+		}
+
 		if (!fromnetsave)
 		{
 			if (demo.playback)
@@ -2648,16 +2674,45 @@ void S_InitLevelMusic(boolean fromnetsave)
 			{
 
 				if (mapheaderinfo[gamemap-1]->musname_size > 1)
+				{
 					mapmusrng = P_RandomKey(mapheaderinfo[gamemap-1]->musname_size);
+				}
 				else
 					mapmusrng = 0;
+			}
+		}
+
+		usemusrng = mapmusrng;
+
+		// In Lunatic Mode GPs, force alternate music on to make them special (sort of).
+		const boolean inlunaticgp = ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode == true));
+
+		if ((cv_altmusic.value == ALTMUSIC_OFF) && (!inlunaticgp))
+		{
+			// No alt music, unless we're in a Lunatic Mode GP.
+			usemusrng = 0;
+		}
+		else if (altmusonlysize > 0)
+		{
+			if ((cv_altmusic.value == ALTMUSIC_ALTSONLY) || (inlunaticgp))
+			{
+				// If we only want to hear alt. music, or we're in a Lunatic Mode GP, use only alt tracks, should they exist.
+				if (altmusonlysize == 1)
+				{
+					// There's only one alt song.
+					usemusrng = altmusonlysize;
+				}
+				else
+				{
+					usemusrng = (usemusrng % altmusonlysize) + 1;
+				}
 			}
 		}
 
 		if (mapheaderinfo[gamemap-1]->musname[0][0] == 0)
 			strncpy(mapmusname, va("%sM", G_BuildMapName(gamemap)), 7);
 		else
-			strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname[mapmusrng], 7);
+			strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname[usemusrng], 7);
 
 		mapmusname[6] = 0;
 		mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
