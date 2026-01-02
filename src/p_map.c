@@ -2764,7 +2764,7 @@ increment_move
 	radius = max(radius, mapobjectscale);
 
 	// And Big Large (tm) movements can skip over slopes.
-	radius = min(radius, 16*mapobjectscale);
+	radius = min(radius, 8*mapobjectscale);
 
 	// (This whole "step" system is flawed; it was OK before, but the addition of slopes has
 	// exposed the problems with doing it like this. The right thing to do would be to use
