@@ -652,14 +652,9 @@ void Y_IntermissionDrawer(void)
 					// RETIRED!!
 					patch_t *retire = W_CachePatchName("K_NOBLNS", PU_CACHE);
 					if (manyplayers16)
-					{
-						fixed_t scale = FRACUNIT/2;
-						V_DrawFixedPatch(x+6, y-3, scale, 0, retire, NULL);
-					}
+						V_DrawSmallScaledPatch(x+6, y-1, 0, retire);
 					else
-					{
 						V_DrawScaledPatch(x+12, y-7, 0, retire);
-					}
 				}
 
 				STRBUFCPY(strtime, data.name[i]);

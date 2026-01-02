@@ -102,7 +102,7 @@ void K_getSlipstreamDrawinfo(drawinfo_t *out);
 void K_getLivesnStatsDrawinfo(drawinfo_t *out);
 void K_ReloadHUDColorCvar(void);
 boolean K_UseColorHud(void);
-UINT8 K_GetHudColor(void);
+skincolornum_t K_GetHudColor(void);
 void K_LoadKartHUDGraphics(void);
 void K_drawKartHUD(void);
 void K_drawKartFreePlay(void);

@@ -5098,7 +5098,7 @@ INT32 MR_HutStartReplay(INT32 choice)
 {
 	(void)choice;
 
-	COM_BufAddText(va("playdemo %s %s",
+	COM_BufAddText(va("playdemo \"%s\" %s",
 	               demolist[dir_on[menudepthleft]].filepath + strlen(srb2home) + 1, // dumb hack
 	               M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWATCH") ? "-addfiles" : "-force"));
 	return true;
@@ -6649,7 +6649,7 @@ INT32 MR_ReplayTimeAttack(INT32 arg)
 
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(false, levellistmode == LLM_ITEMBREAKER);
 	CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, arg);
-	COM_BufAddText(va("playdemo %s -force", demopath));
+	COM_BufAddText(va("playdemo \"%s\" -force", demopath));
 	return true;
 }
 

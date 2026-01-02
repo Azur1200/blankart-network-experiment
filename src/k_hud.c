@@ -711,7 +711,7 @@ boolean K_UseColorHud(void)
 	return cv_colorizedhud.value;
 }
 
-UINT8 K_GetHudColor(void)
+skincolornum_t K_GetHudColor(void)
 {
 	if (cv_colorizedhud.value && cv_colorizedhudcolor.value) return cv_colorizedhudcolor.value;
 
@@ -5135,7 +5135,7 @@ static void K_drawInput(void)
 	INT32 x = (BASEVIDWIDTH - 32)*FRACUNIT, y = (BASEVIDHEIGHT - 24)*FRACUNIT;
 	UINT8 *shadowcolormap = NULL;
 	INT32 offs, col;
-	const UINT8 hudcolor = K_GetHudColor();
+	const skincolornum_t hudcolor = K_GetHudColor();
 	const INT32 accent1 = splitflags | skincolors[hudcolor].ramp[5];
 	const INT32 accent2 = splitflags | skincolors[hudcolor].ramp[9];
 	const UINT8 *hudcolormap = R_GetTranslationColormap(0, hudcolor, GTC_CACHE);
