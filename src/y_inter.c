@@ -824,8 +824,8 @@ skiptallydrawer:
 		{
 			char replaytext[40] = {0};
 			INT32 flags = 0;
-			const char *item1 = gamecontrol[0][gc_fire][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][0]) : NULL;
-			const char *item2 = gamecontrol[0][gc_fire][1] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][1]) : NULL;
+			const char *item1 = gamecontrol[0][gc_lookback][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][0]) : NULL;
+			const char *item2 = gamecontrol[0][gc_lookback][1] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][1]) : NULL;
 
 			if (item1 != NULL && item2 != NULL)
 			{
