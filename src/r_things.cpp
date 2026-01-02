@@ -1902,7 +1902,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	else if (thing->sprite == SPR_ITEM)
 	{
 		sprdef = &kartitems[thing->threshold > 0 && thing->threshold < numkartitems ? thing->threshold : 0].spritedef;
-		sprinfo = &spriteinfo[SPR_UNKN];
+		sprinfo = &spriteinfo[SPR_ITEM];
 
 		if (frame >= sprdef->numframes) {
 			CONS_Alert(CONS_ERROR, M_GetText("R_ProjectSprite: invalid kartitem sprite frame %zu\n"), frame);

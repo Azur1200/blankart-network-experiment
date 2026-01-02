@@ -4846,7 +4846,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	{
 		sprdef = &kartitems[thing->threshold > 0 && thing->threshold < numkartitems ? thing->threshold : 0].spritedef;
 #ifdef ROTSPRITE
-		sprinfo = &spriteinfo[SPR_UNKN];
+		sprinfo = &spriteinfo[SPR_ITEM];
 #endif
 	}
 	else
