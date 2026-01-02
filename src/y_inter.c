@@ -821,8 +821,24 @@ skiptallydrawer:
 		switch (demo.savemode)
 		{
 		case DSM_NOTSAVING:
-			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|hilicol, "Look Backward: Save replay");
+		{
+			char replaytext[40] = {0};
+			INT32 flags = 0;
+			const char *item1 = gamecontrol[0][gc_fire][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][0]) : NULL;
+			const char *item2 = gamecontrol[0][gc_fire][1] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][1]) : NULL;
+
+			if (item1 != NULL && item2 != NULL)
+			{
+				flags |= V_6WIDTHSPACE;
+				snprintf(replaytext, 40, "%s/%s: Save Replay", item1, item2);
+			}
+			else
+				snprintf(replaytext, 40, "%s: Save Replay", item1 != NULL ? item1 : item2 != NULL ? item2 : "Look Backwards");
+
+
+			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|hilicol|flags, replaytext);
 			break;
+		}
 
 		case DSM_SAVED:
 			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|hilicol, "Replay saved!");
