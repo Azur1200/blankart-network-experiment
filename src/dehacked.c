@@ -750,6 +750,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 							deh_strlcpy(cup->name, word2,
 								sizeof(cup->name), va("Cup header %s: name", word2));
 							cup->namehash = hash;
+							cup->wadnum = numwadfiles - 1;
 							if (prev != NULL)
 								prev->next = cup;
 							if (kartcupheaders == NULL)

@@ -345,6 +345,7 @@ struct cupheader_t
 
 	char name[MAXCUPNAME];					///< Cup title
 	UINT32 namehash;						///< Cup title hash
+	UINT16 wadnum;							///< WAD that defined this cup
 
 	char icon[9];							///< Name of the icon patch
 	char *levellist[CUPCACHE_MAX];			///< List of levels that belong to this cup
