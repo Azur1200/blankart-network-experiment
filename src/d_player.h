@@ -506,6 +506,7 @@ struct player_t
 
 	UINT8 kartspeedrestat; // Player's wanted kart speed from restat
 	UINT8 kartweightrestat; // Player's wanted kart weight from restat
+	boolean randomrestat; // Randomly set the restat values of the player every game
 
 	INT32 followerskin;		// Kart: This player's follower "skin"
 	boolean followerready;	// Kart: Used to know when we can have a follower or not. (This is set on the first NameAndColor follower update)

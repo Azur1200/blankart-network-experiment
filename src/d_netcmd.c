@@ -1439,6 +1439,33 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_connectawaittime);
 	CV_RegisterVar(&cv_serverinfoscreen);
+
+	// player restat
+	COM_AddCommand("restat", Command_Restat);
+	COM_AddCommand("restat2", Command_Restat2);
+	COM_AddCommand("restat3", Command_Restat3);
+	COM_AddCommand("restat4", Command_Restat4);
+}
+
+static void RestatForPlayer(UINT32 splitnum, UINT8 speed, UINT8 weight)
+{
+
+}
+
+static void Command_Restat(void)
+{
+}
+
+static void Command_Restat2(void)
+{
+}
+
+static void Command_Restat3(void)
+{
+}
+
+static void Command_Restat4(void)
+{
 }
 
 /**
@@ -2229,7 +2256,8 @@ enum {
 	WP_KICKSTARTACCEL = 1<<0,
 	WP_SHRINKME = 1<<1,
 	WP_FLIPCAM = 1<<2,
-	WP_LEGACYJITTER = 1<<3
+	WP_LEGACYJITTER = 1<<3,
+	WP_RANDOMRESTAT = 1<<4
 };
 
 void WeaponPref_Send(UINT8 ssplayer)
@@ -2284,6 +2312,7 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 
 	player->pflags &= ~(PF_KICKSTARTACCEL|PF_SHRINKME|PF_FLIPCAM);
 	player->jitterlegacy = false;
+	player->randomrestat = false;
 
 	if (prefs & WP_KICKSTARTACCEL)
 		player->pflags |= PF_KICKSTARTACCEL;
@@ -2296,6 +2325,9 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 
 	if (prefs & WP_LEGACYJITTER)
 		player->jitterlegacy = true;
+
+	if (prefs & WP_RANDOMRESTAT)
+		player->randomrestat = true;
 
 	if (leveltime < 2)
 	{
