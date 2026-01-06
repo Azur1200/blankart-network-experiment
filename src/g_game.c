@@ -493,6 +493,9 @@ consvar_t cv_deadzonestyle[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("deadzonestyle4", "Kart", CV_SAVE, deadzonestyle_cons_t, NULL)
 };
 
+// allows players to use restat (server toggle)
+consvar_t cv_restat_allow = CVAR_INIT ("restat_allow", "Yes", CV_NETVAR, CV_YesNo, NULL);
+
 // now automatically allocated in D_RegisterClientCommands
 // so that it doesn't have to be updated depending on the value of MAXPLAYERS
 char player_names[MAXPLAYERS][MAXPLAYERNAME+1];

@@ -504,6 +504,9 @@ struct player_t
 	UINT8 kartspeed; // Kart speed stat between 1 and 9
 	UINT8 kartweight; // Kart weight stat between 1 and 9
 
+	UINT8 kartspeedrestat; // Player's wanted kart speed from restat
+	UINT8 kartweightrestat; // Player's wanted kart weight from restat
+
 	INT32 followerskin;		// Kart: This player's follower "skin"
 	boolean followerready;	// Kart: Used to know when we can have a follower or not. (This is set on the first NameAndColor follower update)
 	UINT16 followercolor;	// Kart: Used to store the follower colour the player wishes to use
