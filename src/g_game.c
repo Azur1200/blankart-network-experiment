@@ -2901,6 +2901,23 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		{
 			laptime[i] = 0;
 		}
+
+		if (players[player].randomrestat)
+		{
+			kartspeed = P_RandomRange(1, 9);
+			kartweight = P_RandomRange(1, 9);
+		}
+		else if (players[player].kartspeedrestat != 0 &&
+				players[player].kartweightrestat != 0)
+		{
+			kartspeed = players[player].kartspeedrestat;
+			kartweight = players[player].kartweightrestat;
+		}
+		else
+		{
+			kartspeed = skins[players[player].skin].kartspeed;
+			kartweight = skins[players[player].skin].kartweight;
+		}
 	}
 	else
 	{
