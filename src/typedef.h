@@ -178,12 +178,12 @@ TYPEDEF (followercategory_t);
 TYPEDEF (trackingResult_t);
 TYPEDEF (servermods_t);
 
-// k_menu.h
+// m_menu.h
 TYPEDEF (menucolor_t);
 TYPEDEF (menuitem_t);
+TYPEDEF (menupaneldef_t);
+TYPEDEF (menupanelinst_t);
 TYPEDEF (menu_t);
-TYPEDEF (menucmd_t);
-TYPEDEF (setup_player_t);
 TYPEDEF (modedesc_t);
 
 // k_pathfind.h

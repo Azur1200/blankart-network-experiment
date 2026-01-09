@@ -144,14 +144,13 @@ typedef enum
 	IT_OFSX      = 1<<6, // X coordinate is relative to current position
 	IT_OFSY      = 1<<7, // ditto
 	IT_TEMPORARY = 1<<8, // with IT_OFS*, offset applies only to this item
-	IT_OVERLAY   = 1<<9, // item is drawn at screen coordinates, without scrolling
 
-	IT_CENTER    = 1<<10, // center the text/patch
-	IT_RIGHT     = 1<<11, // right-align the text/patch
-	IT_SMALL     = 1<<12, // draw at half scale
-	IT_STICKER   = 1<<13, // draw a sticker behind the text
+	IT_CENTER    = 1<<9,  // center the text/patch
+	IT_RIGHT     = 1<<10, // right-align the text/patch
+	IT_SMALL     = 1<<11, // draw at half scale
+	IT_STICKER   = 1<<12, // draw a sticker behind the text
 
-#define sh 14
+#define sh 13
 	ITH_NONE      = 0<<sh, // no highlight
 	ITH_HIGHLIGHT = 1<<sh, // add highlightflags to text/patch
 	ITH_RECOMMEND = 2<<sh, // add recommendedflags to text/patch
@@ -159,7 +158,7 @@ typedef enum
 	ITH_MASK      = 0x3<<sh,
 #undef sh
 
-#define sh 16
+#define sh 15
 	ITF_STANDARD  = 0<<sh, // standard font
 	ITF_HEADER    = 1<<sh, // standard font, with an offset to the left
 	ITF_THIN      = 2<<sh, // thin font
@@ -174,10 +173,9 @@ typedef enum
 	IT_STYLE     = IT_CENTER|IT_RIGHT|IT_SMALL|IT_STICKER|ITH_MASK|ITF_MASK,
 } menuitemflags_t;
 
-#define MAXSTRINGLENGTH 32
-
 typedef INT32 (menufunc_f)(INT32);
-typedef void  (menudrawer_f)(void);
+typedef void  (menudrawer_f)(menupanelinst_t *);
+typedef void  (panelfunc_f)(menupanelinst_t *);
 
 //
 // MENU TYPEDEFS
@@ -197,26 +195,42 @@ struct menuitem_t
 	menuitemflags_t status; // show IT_xxx
 
 	INT32 argument; // passed to routine/submenu, OR step size for cvars
-	INT16 x, y;     // coordinates, see menuitemflags
+	fixed_t x, y;     // coordinates, see menuitemflags
+};
+
+struct menupaneldef_t
+{
+	dehinfo_t     info;
+	INT16         numitems;           // # of menu items
+	menuitem_t   *items;              // menu items
+	menudrawer_f *drawroutine;        // draw routine
+	INT16         scrollheight;       // height of scrolling area
+	INT16         cursoroffset;       // X offset of cursor
+	INT16         lineheight;         // default Y offset to add for each item
+	menufunc_f   *keyhandler;         // called before key press is processed
+	panelfunc_f  *initializer;        // called when panel instance is setup
+};
+
+struct menupanelinst_t
+{
+	char name[16];
+	size_t srcnum; // index in menupanels[]
+	fixed_t x, y;
+	fixed_t scrollheight;
+	fixed_t cursoroffset;
+	UINT16 numitems;
+	menuitem_t *items;
+	UINT16 itemon;
 };
 
 struct menu_t
 {
 	dehinfo_t      info;
 	char          *headerpic;
-	INT16          numitems;           // # of menu items
-	menuitem_t    *menuitems;          // menu items
-	menudrawer_f  *drawroutine;        // draw routine
-	INT16          x, y;               // x, y of menu
-	INT16          scrollheight;       // height of scrolling area
-	INT16          lastOn;             // last item user was on in menu
-	INT16          cursoroffset;       // X offset of cursor
-	INT16          lineheight;         // default Y offset to add for each item
 	menufunc_f    *enterroutine;       // called before enter a menu
 	menufunc_f    *quitroutine;        // called before quit a menu
-	menufunc_f    *keyhandler;         // called before key press is processed
-
-	// MENUPRES STUFF BELOW
+	size_t         numpanels;
+	menupanelinst_t *panels;
 
 	char bgname[8]; // name for background gfx lump; lays over titlemap if this is set
 	SINT8 fadestrength;  // darken background when displaying this menu, strength 0-31 or -1 for undefined
@@ -257,14 +271,21 @@ struct menu_t
 extern menu_t menudefs[MAXMENUTYPES];
 extern UINT16 nummenutypes;
 
+#define MAXMENUPANELS 4096
+extern menupaneldef_t menupanels[MAXMENUPANELS];
+extern size_t nummenupanels;
+
 void M_EnterMenu(menutype_t menu, boolean callexit, INT32 arg);
 void M_ExitMenu(void);
 void M_ClearMenus(boolean callexitmenufunc);
-menuitem_t *M_CheckMenuItem(menutype_t type, const char *name);
-menuitem_t *M_GetMenuItem(menutype_t type, const char *name);
+/*FNONULL*/ menupaneldef_t *M_AllocateMenuPanel(const char *name);
+/*ANONULL*/ menuitem_t *M_CheckMenuItemDef(const menupaneldef_t *pd, const char *name);
+/*FNONULL*/ menuitem_t *M_GetMenuItemDef(const menupaneldef_t *pd, const char *name);
 
-INT32 MR_SinglePlayerMenu(INT32 choice);
-INT32 MR_Options(INT32 choice);
+panelfunc_f
+MP_SinglePlayerMain, MP_Options, MP_GameOptions, MP_SetupControls, MP_CameraSetup,
+MP_ScreenshotOptions, MP_AddonsOptions, MP_SetupMultiPlayer, MP_SetupMonitorToggles
+;
 INT32 MR_Addons(INT32 choice);
 INT32 MR_QuitAddons(INT32 choice);
 INT32 MR_QuitSRB2(INT32 choice);
@@ -298,8 +319,6 @@ INT32 MR_HandleVideoMode(INT32 ch);
 INT32 MR_PlaySound(INT32 choice);
 INT32 MR_MusicTest(INT32 choice);
 INT32 MR_QuitMusicTest(INT32 choice);
-INT32 MR_ScreenshotOptions(INT32 choice);
-INT32 MR_AddonsOptions(INT32 choice);
 INT32 MR_EraseData(INT32 arg);
 INT32 MR_Credits(INT32 choice);
 INT32 MR_BlanCredits(INT32 choice);
@@ -332,13 +351,11 @@ INT32 MR_HandleMusicTest(INT32 choice);
 INT32 MR_ResetControls(INT32 choice);
 INT32 MR_ChangeControl(INT32 arg);
 INT32 MR_AssignJoystick(INT32 arg);
-INT32 MR_SetupMonitorToggles(INT32 choice);
 INT32 MR_HandleMonitorToggles(INT32 choice);
 INT32 MR_RestartAudio(INT32 choice);
 INT32 MR_EnterViewServer(INT32 choice);
 INT32 MR_QuitViewServer(INT32 choice);
 INT32 MR_HandleViewServer(INT32 choice);
-INT32 MR_CameraSetup(INT32 arg);
 INT32 MR_PrepareLevelPlatter(INT32 choice);
 INT32 MR_HandleLevelPlatter(INT32 choice);
 INT32 MR_LevelPlatterRandom(INT32 choice);
@@ -346,32 +363,25 @@ INT32 MR_LevelPlatterRandom(INT32 choice);
 INT32 MR_HandleDiscordRequests(INT32 choice);
 #endif
 
-void MD_DrawGenericMenu(void);
-void MD_DrawChecklist(void);
-void MD_DrawLevelStats(void);
-void MD_DrawReplayHut(void);
-void MD_DrawTimeAttackMenu(void);
-void MD_DrawMPMainMenu(void);
-void MD_DrawSetupMultiPlayerMenu(void);
-void MD_DrawCssStatBacker(void);
-void MD_DrawCssStatBars(void);
-void MD_DrawCssColourBar(void);
-void MD_DrawCssCharacter(void);
-void MD_DrawBarCssSelector(void);
-void MD_DrawGridCssSelector(void);
-void MD_DrawConnectMenu(void);
-void MD_DrawVideoMode(void);
-void MD_DrawAddons(void);
-void MD_DrawReplayStartMenu(void);
-void MD_DrawPlaybackMenu(void);
-void MD_DrawImageDef(void);
-void MD_DrawMusicTest(void);
-void MD_DrawJoystick(void);
-void MD_DrawMonitorToggles(void);
-void MD_DrawViewServer(void);
-void MD_DrawLevelPlatterMenu(void);
+void MD_DrawChecklist(menupanelinst_t *pi);
+void MD_DrawLevelStats(menupanelinst_t *pi);
+void MD_DrawReplayHut(menupanelinst_t *pi);
+void MD_DrawTimeAttackMenu(menupanelinst_t *pi);
+void MD_DrawMPMainMenu(menupanelinst_t *pi);
+void MD_DrawSetupMultiPlayerMenu(menupanelinst_t *pi);
+void MD_DrawConnectMenu(menupanelinst_t *pi);
+void MD_DrawVideoMode(menupanelinst_t *pi);
+void MD_DrawAddons(menupanelinst_t *pi);
+void MD_DrawReplayStartMenu(menupanelinst_t *pi);
+void MD_DrawPlaybackMenu(menupanelinst_t *pi);
+void MD_DrawImageDef(menupanelinst_t *pi);
+void MD_DrawMusicTest(menupanelinst_t *pi);
+void MD_DrawJoystick(menupanelinst_t *pi);
+void MD_DrawMonitorToggles(menupanelinst_t *pi);
+void MD_DrawViewServer(menupanelinst_t *pi);
+void MD_DrawLevelPlatterMenu(menupanelinst_t *pi);
 #ifdef HAVE_DISCORDRPC
-void MD_DrawDiscordRequests(void);
+void MD_DrawDiscordRequests(menupanelinst_t *pi);
 #endif
 
 INT32 MapGridSelectToSkin(INT32 column, INT32 row);
