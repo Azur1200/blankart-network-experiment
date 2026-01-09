@@ -598,6 +598,9 @@ extern int compuncommitted;
 // p_sight.c
 #define TRAVERSE_MAX 8
 
+// m_menu.h
+#define MAXSTRINGLENGTH 32
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

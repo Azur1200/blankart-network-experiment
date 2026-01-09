@@ -26,7 +26,6 @@
 #include "i_time.h"
 #include "i_system.h"
 #include "i_threads.h"
-#include "m_menu.h"
 #include "console.h"
 #include "d_main.h"
 #include "m_misc.h" // movie mode

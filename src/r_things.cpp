@@ -20,7 +20,6 @@
 #include "st_stuff.h"
 #include "w_wad.h"
 #include "z_zone.h"
-#include "m_menu.h" // character select
 #include "m_misc.h"
 #include "info.h" // spr2names
 #include "i_video.h" // rendermode

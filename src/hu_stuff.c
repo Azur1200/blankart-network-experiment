@@ -2542,7 +2542,7 @@ static void HU_DrawRankings(void)
 	else
 	{
 		// draw the current gametype in the lower left
-		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, (modeattacking) ? "Record Attack" : gametype_cons_t[gametype].strvalue);
+		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, (modeattacking) ? "Record Attack" : Gametype_Names[gametype]);
 	}
 
 	if ((gametyperules & (GTR_TIMELIMIT|GTR_POINTLIMIT)) && !bossinfo.boss)
