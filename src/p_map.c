@@ -2231,7 +2231,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 		mobj_t *mo1 = thing, *mo2 = g_tm.hitthing;
 		boolean stomp = false;
 
-		if (mo2->player != NULL)
+		if (mo1->player != NULL && mo2->player != NULL) // bounce when players collide
 		{
 			if (P_IsObjectOnGround(mo2) && mo1->momz < 0)
 			{
