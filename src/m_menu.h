@@ -38,6 +38,8 @@ extern "C" {
 // max size of menu stack
 #define NUMMENULEVELS 8
 
+#define MAXMENUPANELNAME 16
+
 // Menu IDs sectioned by numeric places to signify hierarchy
 typedef enum
 {
@@ -213,14 +215,16 @@ struct menupaneldef_t
 
 struct menupanelinst_t
 {
-	char name[16];
-	size_t srcnum; // index in menupanels[]
+	char name[MAXMENUPANELNAME+1];
+	size_t defnum; // index in menupanels[]
 	fixed_t x, y;
 	fixed_t scrollheight;
 	fixed_t cursoroffset;
 	UINT16 numitems;
 	menuitem_t *items;
-	UINT16 itemon;
+	UINT16 itemon; // currently selected item, OR last selected item for menudef panels
+	INT32 vflags;
+	boolean visible;
 };
 
 struct menu_t
@@ -278,13 +282,14 @@ extern size_t nummenupanels;
 void M_EnterMenu(menutype_t menu, boolean callexit, INT32 arg);
 void M_ExitMenu(void);
 void M_ClearMenus(boolean callexitmenufunc);
-/*FNONULL*/ menupaneldef_t *M_AllocateMenuPanel(const char *name);
+/*FNONULL*/ menupaneldef_t *M_AllocateMenuPanelDef(const char *name);
 /*ANONULL*/ menuitem_t *M_CheckMenuItemDef(const menupaneldef_t *pd, const char *name);
 /*FNONULL*/ menuitem_t *M_GetMenuItemDef(const menupaneldef_t *pd, const char *name);
 
 panelfunc_f
 MP_SinglePlayerMain, MP_Options, MP_GameOptions, MP_SetupControls, MP_CameraSetup,
-MP_ScreenshotOptions, MP_AddonsOptions, MP_SetupMultiPlayer, MP_SetupMonitorToggles
+MP_ScreenshotOptions, MP_AddonsOptions, MP_SetupMultiPlayer, MP_SetupMonitorToggles,
+MP_PrepReplayList, MP_ReplayHutStart
 ;
 INT32 MR_Addons(INT32 choice);
 INT32 MR_QuitAddons(INT32 choice);
@@ -380,6 +385,7 @@ void MD_DrawJoystick(menupanelinst_t *pi);
 void MD_DrawMonitorToggles(menupanelinst_t *pi);
 void MD_DrawViewServer(menupanelinst_t *pi);
 void MD_DrawLevelPlatterMenu(menupanelinst_t *pi);
+void MD_DrawReplayHutReplayInfo(menupanelinst_t *pi);
 #ifdef HAVE_DISCORDRPC
 void MD_DrawDiscordRequests(menupanelinst_t *pi);
 #endif

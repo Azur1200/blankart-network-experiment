@@ -280,7 +280,7 @@ static void Levelplatter_OnChange(void);
 static void Dummymenuplayer_OnChange(void);
 static void Dummystaff_OnChange(void);
 
-/*FNONULL*/ menupaneldef_t *M_AllocateMenuPanel(const char *name)
+/*FNONULL*/ menupaneldef_t *M_AllocateMenuPanelDef(const char *name)
 {
 	menupaneldef_t *pd = &menupanels[nummenupanels++];
 	DEH_Link(name, &pd->info, &menunames);
@@ -302,6 +302,37 @@ static void Dummystaff_OnChange(void);
 	if (pi == NULL)
 		I_Error("Panel instance %s not found", name);
 	return pi;
+}
+
+/*FNONULL*/ static menupaneldef_t *M_GetDefFromInst(const menupanelinst_t *pi)
+{
+	return &menupanels[pi->defnum];
+}
+
+/*ANONULL*/ static menuitem_t *M_AppendMenuItem(menupanelinst_t *pi)
+{
+	pi->items = Z_Realloc(pi->items, sizeof(menuitem_t)*(pi->numitems+1), PU_STATIC, NULL);
+	return &pi->items[pi->numitems++];
+}
+
+/*ANONULL*/ static void M_ClearPanelItems(menupanelinst_t *pi)
+{
+	size_t numitems = pi->numitems;
+	pi->numitems = pi->itemon = 0;
+
+	if (pi->items == NULL)
+		return;
+
+	while (numitems-- > 0)
+	{
+		menuitem_t *item = &pi->items[numitems];
+		Z_Free(item->text);
+		Z_Free(item->patch);
+		Z_Free(item->tooltip);
+	}
+
+	Z_Free(pi->items);
+	pi->items = NULL;
 }
 
 // menus now use short names rather than hardcoded indices to identify menuitems
@@ -345,7 +376,7 @@ static void Dummystaff_OnChange(void);
 {
 	menuitem_t *item = M_CheckMenuItem(pi, name);
 	if (!item)
-		I_Error("Menu panel %s (instance %s) has no item named '%s'", DEH_MenuPanelName(&menupanels[pi->srcnum]), pi->name, name);
+		I_Error("Menu panel %s (instance %s) has no item named '%s'", DEH_MenuPanelName(M_GetDefFromInst(pi)), pi->name, name);
 	return item;
 }
 
@@ -427,20 +458,43 @@ static void M_ChangeItemStatus(menupanelinst_t *pi, const char *name, menuitemfl
 		M_GetMenuItem(pi, name)->status &= ~flag;
 }
 
-static void M_SetItemText(const menupanelinst_t *pi, const char *name, const char *string)
+static void M_SetItemTextRaw(menuitem_t *item, const char *string)
 {
-	menuitem_t *item = M_GetMenuItem(pi, name);
 	if (item->text)
 		Z_Free(item->text);
 	item->text = Z_StrDup(string);
 }
 
-static void M_SetItemPatch(const menupanelinst_t *pi, const char *name, const char *string)
+static void M_SetItemText(const menupanelinst_t *pi, const char *name, const char *string)
 {
 	menuitem_t *item = M_GetMenuItem(pi, name);
+	M_SetItemTextRaw(item, string);
+}
+
+static void M_SetItemPatchRaw(menuitem_t *item, const char *string)
+{
 	if (item->patch)
 		Z_Free(item->patch);
 	item->patch = Z_StrDup(string);
+}
+
+static void M_SetItemPatch(const menupanelinst_t *pi, const char *name, const char *string)
+{
+	menuitem_t *item = M_GetMenuItem(pi, name);
+	M_SetItemPatchRaw(item, string);
+}
+
+static void M_SetItemTooltipRaw(menuitem_t *item, const char *string)
+{
+	if (item->tooltip)
+		Z_Free(item->tooltip);
+	item->tooltip = Z_StrDup(string);
+}
+
+static void M_SetItemTooltip(const menupanelinst_t *pi, const char *name, const char *string)
+{
+	menuitem_t *item = M_GetMenuItem(pi, name);
+	M_SetItemTooltipRaw(item, string);
 }
 
 #define M_SetItemVisible(f, n, c)  M_ChangeItemStatus(f, n, IT_HIDDEN, !(c))
@@ -478,6 +532,9 @@ static const char *CupName(const cupheader_t *cup, boolean suffix)
 // ==========================================================================
 // CONSOLE VARIABLES AND THEIR POSSIBLE VALUES GO HERE.
 // ==========================================================================
+
+static CV_PossibleValue_t debugpanels_cons_t[] = {{0, "Off"}, {1, "No render"}, {2, "No drawroutines"}, {0, NULL}};
+consvar_t cv_debugpanels = CVAR_INIT ("debugpanels", "Off", 0, debugpanels_cons_t, NULL);
 
 consvar_t cv_showfocuslost = CVAR_INIT ("showfocuslost", "Yes", CV_SAVE, CV_YesNo, NULL);
 
@@ -837,8 +894,9 @@ static void Reinitialize(const char *name)
 	if (numcurpanels < 0)
 		return;
 	menupanelinst_t *pi = &curpanels[0];
-	if (fastcmp(DEH_MenuPanelName(&menupanels[pi->srcnum]), name))
-		menupanels[pi->srcnum].initializer(pi);
+	menupaneldef_t *pd = M_GetDefFromInst(pi);
+	if (fastcmp(DEH_MenuPanelName(pd), name))
+		pd->initializer(pi);
 }
 
 void Screenshot_option_Onchange(void)
@@ -1618,7 +1676,7 @@ boolean M_Responder(event_t *ev)
 	// G: nevermind we have combi menuitems now
 	// G: OH DEAR GOD
 	menupanelinst_t *curpi = panelOn < numcurpanels ? &curpanels[panelOn] : NULL;
-	menupaneldef_t *curpd = curpi != NULL ? &menupanels[curpi->srcnum] : NULL;
+	menupaneldef_t *curpd = curpi != NULL ? M_GetDefFromInst(curpi) : NULL;
 	menuitem_t *item = curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;
 
 	// Handle menuitems which need a specific key handling
@@ -2015,6 +2073,22 @@ void M_StartControlPanel(void)
 	CON_ToggleOff(); // move away console
 }
 
+static void M_ClearPanelInstances(void)
+{
+	while (numcurpanels > 0)
+	{
+		menupanelinst_t *pi = &curpanels[--numcurpanels];
+		menupanelinst_t *src = &currentMenu->panels[numcurpanels];
+		if (pi->defnum != src->defnum)
+			I_Error("Mismatched panel defnum, you've got work to do");
+
+		src->itemon = pi->itemon; // save last selected item
+
+		M_ClearPanelItems(pi);
+	}
+	Z_Free(curpanels);
+}
+
 //
 // M_ClearMenus
 //
@@ -2037,9 +2111,9 @@ void M_ClearMenus(boolean callexitmenufunc)
 		}
 	}
 
+	M_ClearPanelInstances();
 	memset(menustack, 0, sizeof(menustack));
 	currentMenu = NULL;
-	numcurpanels = 0;
 	messagebox.active = false;
 	hidetitlemap = false;
 	menu_text_input = false;
@@ -2146,67 +2220,66 @@ static void M_UpdateTimeAttackMenu(void)
 //
 // M_SetupNextMenu
 //
-static void M_SetupNextMenu(menutype_t menunum, boolean callexit)
+static void M_SetupNextMenu(menutype_t menunum)
 {
 	size_t i, j;
 	menu_t *menudef = &menudefs[menunum];
 
-	// If you're going from a menu to itself, why are you running the quitroutine? You're not quitting it! -SH
-	if (callexit && currentMenu && currentMenu != menudef && currentMenu->quitroutine)
-		currentMenu->quitroutine(0);
-
 	M_HandleMenuPresState(menunum);
 
-	for (i = 0; i < numcurpanels; i++)
-	{
-		if (curpanels[i].items != NULL)
-			Z_Free(curpanels[i].items);
-		currentMenu->panels[i].itemon = curpanels[i].itemon;
-	}
+	M_ClearPanelInstances();
 
 	currentMenu = menudef;
 
 	for (i = 0; i < menudef->numpanels; i++)
 	{
 		menupanelinst_t *src = &menudef->panels[i];
-		const menupaneldef_t *pd = &menupanels[src->srcnum];
+		const menupaneldef_t *pd = &menupanels[src->defnum];
 
-		curpanels = Z_Realloc(curpanels, sizeof(*curpanels)*(i + 1), PU_STATIC, NULL);
-		menupanelinst_t *pi = &curpanels[i];
+		Z_Realloc(curpanels, sizeof(*curpanels)*(numcurpanels + 1), PU_STATIC, &curpanels);
+		menupanelinst_t *pi = &curpanels[numcurpanels++];
+
+		memset(pi, 0, sizeof(*pi));
+		pi->visible = true;
 
 		// copy instance stuff
-		strcpy(pi->name, src->name);
+		strlcpy(pi->name, src->name, sizeof(pi->name));
 		pi->x = src->x * FRACUNIT;
 		pi->y = src->y * FRACUNIT;
-		pi->srcnum = src->srcnum;
+		pi->defnum = src->defnum;
 		pi->itemon = src->itemon;
 
-		// copy items from the source panel
+		// copy items from the panel definition (TODO menuitem def/inst)
 		if (pd->numitems > 0)
 		{
 			pi->items = Z_Malloc(sizeof(menuitem_t)*pd->numitems, PU_STATIC, NULL);
 			memcpy(pi->items, pd->items, sizeof(menuitem_t)*pd->numitems);
+			pi->numitems = pd->numitems;
+			for (j = 0; j < pi->numitems; j++)
+			{
+				menuitem_t *item = &pi->items[j];
+				if (item->text != NULL)
+					item->text = Z_StrDup(item->text);
+				if (item->patch != NULL)
+					item->patch = Z_StrDup(item->patch);
+				if (item->tooltip != NULL)
+					item->tooltip = Z_StrDup(item->tooltip);
+				item->x *= FRACUNIT;
+				item->y *= FRACUNIT;
+			}
+			M_RawSetItemOn(pi, pi->itemon);
 		}
 		else
 		{
 			pi->items = NULL;
 		}
-		pi->numitems = pd->numitems;
+
 		pi->scrollheight = pd->scrollheight*FRACUNIT;
 		pi->cursoroffset = pd->cursoroffset*FRACUNIT;
 
-		for (j = 0; j < pi->numitems; j++)
-		{
-			pi->items[j].x *= FRACUNIT;
-			pi->items[j].y *= FRACUNIT;
-		}
-
 		if (pd->initializer != NULL)
 			pd->initializer(pi);
-
-		M_RawSetItemOn(pi, pi->itemon);
 	}
-	numcurpanels = i;
 
 	// TODO navigation between panels
 	panelOn = 0;
@@ -2225,12 +2298,15 @@ void M_ExitMenu(void)
 {
 	size_t i;
 
+	if (currentMenu != NULL && currentMenu->quitroutine != NULL)
+		currentMenu->quitroutine(0);
+
 	for (i = 0; i < NUMMENULEVELS-1; i++)
 		menustack[i] = menustack[i+1];
 	menustack[NUMMENULEVELS-1] = MN_NONE;
 
 	if (menustack[0])
-		M_SetupNextMenu(menustack[0], true);
+		M_SetupNextMenu(menustack[0]);
 	else
 		M_ClearMenus(true);
 }
@@ -2238,6 +2314,7 @@ void M_ExitMenu(void)
 // push a new menu to the stack (if the menu's enterroutine allows it)
 void M_EnterMenu(menutype_t menunum, boolean callexit, INT32 arg)
 {
+	(void)callexit; // quitroutines are only called when exiting menus now, not entering!
 	size_t i;
 
 	if (menustack[NUMMENULEVELS-1])
@@ -2260,7 +2337,7 @@ void M_EnterMenu(menutype_t menunum, boolean callexit, INT32 arg)
 		menustack[0] = menunum; // M_ClearMenus got called, put it back on the stack
 
 	menu_text_input = true;
-	M_SetupNextMenu(menunum, callexit);
+	M_SetupNextMenu(menunum);
 }
 
 // Guess I'll put this here, idk
@@ -2411,6 +2488,8 @@ void M_Init(void)
 
 	CV_RegisterVar(&cv_serversort);
 	CV_RegisterVar(&cv_menucaps);
+
+	CV_RegisterVar(&cv_debugpanels);
 }
 
 // ==========================================================================
@@ -2770,8 +2849,10 @@ static void M_DrawRightString(const menupanelinst_t *pi, menuitem_t *item, INT16
 				V_DrawScaledPatch(204, y - 1, vflags, W_CachePatchName("K_REQUE2", PU_CACHE));
 		}
 #endif
+#if 0
 		else if (item->patch)
 			V_DrawRightAlignedString(BASEVIDWIDTH - x, y, (selected || (item->status & ITH_MASK) == ITH_HIGHLIGHT ? highlightflags : 0)|vflags, item->patch);
+#endif
 	}
 }
 
@@ -2839,7 +2920,7 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 		{
 		case ITF_THUMBNAIL:
 		{
-			INT32 mapnum = G_MapNumber(item->patch);
+			INT32 mapnum = item->patch == NULL ? -1 : G_MapNumber(item->patch);
 			scale = M_GetMapThumbnail(mapnum < nummapheaders ? mapnum : -1, &p)/4;
 			break;
 		}
@@ -2911,6 +2992,7 @@ static fixed_t M_GetItemAbsY(const menupanelinst_t *pi, size_t index)
 {
 	size_t i;
 	fixed_t y = 0;
+	menupaneldef_t *pd = M_GetDefFromInst(pi);
 	for (i = 0; i < pi->numitems; i++)
 	{
 		const menuitem_t *item = &pi->items[i];
@@ -2929,7 +3011,7 @@ static fixed_t M_GetItemAbsY(const menupanelinst_t *pi, size_t index)
 		if (i >= index)
 			break;
 
-		y += menupanels[pi->srcnum].lineheight*FRACUNIT + M_ItemExtraOffset(item);
+		y += pd->lineheight*FRACUNIT + M_ItemExtraOffset(item);
 	}
 
 	return y;
@@ -2937,7 +3019,12 @@ static fixed_t M_GetItemAbsY(const menupanelinst_t *pi, size_t index)
 
 static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 {
-	const menupaneldef_t *pd = &menupanels[pi->srcnum];
+	const menupaneldef_t *pd = M_GetDefFromInst(pi);
+
+	if (cv_debugpanels.value != 2 && pd->drawroutine)
+		pd->drawroutine(pi);
+	if (pi->visible == false || cv_debugpanels.value == 1)
+		return;
 
 	fixed_t scrollx = pi->x, scrolly = pi->y;
 	fixed_t scrollheight = pi->scrollheight;
@@ -3037,9 +3124,6 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 		V_DrawCharacter(x/FRACUNIT, pi->y/FRACUNIT - (skullAnimCounter/5), '\x1A' | highlightflags, false); // up arrow
 	if (clipbot)
 		V_DrawCharacter(x/FRACUNIT, pi->y/FRACUNIT + scrollheight/FRACUNIT + (skullAnimCounter/5), '\x1B' | highlightflags, false); // down arrow
-
-	if (pd->drawroutine)
-		pd->drawroutine(pi);
 }
 
 //
@@ -4632,9 +4716,11 @@ static INT16 replayScrollTitle = 0;
 static INT16 replayScrollTitleOld = 0;
 static SINT8 replayScrollDelay = TICRATE, replayScrollDir = 1;
 
-static void PrepReplayList(void)
+void MP_PrepReplayList(menupanelinst_t *pi)
 {
 	size_t i;
+
+	M_ClearPanelItems(pi);
 
 	if (demolist)
 		Z_Free(demolist);
@@ -4659,7 +4745,18 @@ static void PrepReplayList(void)
 			snprintf(demolist[i].filepath, MAXFILEPATH, "%s%s", menupath, dirmenu[i] + DIR_STRING);
 			sprintf(demolist[i].title, ".....");
 		}
+
+		menuitem_t *item = M_AppendMenuItem(pi);
+		item->status = IT_INTERACT;
+		M_SetItemTextRaw(item, demolist[i].title);
+		M_SetItemPatchRaw(item, dirmenu[i] + DIR_STRING);
+		item->argument = dirmenu[i][DIR_TYPE];
+		if (item->argument != EXT_FOLDER && item->argument != EXT_UP)
+			item->submenu = MN_MISC_REPLAYSTART;
+		item->y = i*10*FRACUNIT;
 	}
+
+	M_RawSetItemOn(pi, dir_on[menudepthleft]);
 }
 
 INT32 MR_ReplayHut(INT32 choice)
@@ -4682,8 +4779,6 @@ INT32 MR_ReplayHut(INT32 choice)
 
 	replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
 
-	PrepReplayList();
-
 	M_ClearMenus(true);
 	G_SetGamestate(GS_TIMEATTACK); // do this before M_SetupNextMenu so that menu meta state knows that we're switching
 	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
@@ -4694,8 +4789,46 @@ INT32 MR_ReplayHut(INT32 choice)
 	return true;
 }
 
+void MP_ReplayHutStart(menupanelinst_t *pi)
+{
+	M_SetItemText(pi, "DEMOTITLE", demolist[dir_on[menudepthleft]].title);
+
+	switch (demolist[dir_on[menudepthleft]].addonstatus)
+	{
+	case DFILE_ERROR_CANNOTLOAD:
+		// Only show "Watch Replay Without Addons"
+		M_SetItemVisible(pi, "LOADWATCH", false);
+		M_SetItemVisible(pi, "NOLOADWATCH", true);
+		M_SetItemVisible(pi, "WATCH", false);
+		M_SetItemOn(pi, "NOLOADWATCH");
+		break;
+
+	case DFILE_ERROR_NOTLOADED:
+	case DFILE_ERROR_INCOMPLETEOUTOFORDER:
+		// Show "Load Addons and Watch Replay" and "Watch Replay Without Addons"
+		M_SetItemVisible(pi, "LOADWATCH", true);
+		M_SetItemVisible(pi, "NOLOADWATCH", true);
+		M_SetItemVisible(pi, "WATCH", false);
+		M_SetItemOn(pi, "LOADWATCH");
+		break;
+
+	case DFILE_ERROR_EXTRAFILES:
+	case DFILE_ERROR_OUTOFORDER:
+	default:
+		// Show "Watch Replay"
+		M_SetItemVisible(pi, "LOADWATCH", false);
+		M_SetItemVisible(pi, "NOLOADWATCH", false);
+		M_SetItemVisible(pi, "WATCH", true);
+		M_SetItemOn(pi, "WATCH");
+		break;
+	}
+}
+
 INT32 MR_HandleReplayHutList(INT32 choice)
 {
+	menupanelinst_t *pi = &curpanels[panelOn];
+	menuitem_t *item = &pi->items[pi->itemon];
+	panelfunc_f *initializer = M_GetDefFromInst(pi)->initializer;
 	switch (choice)
 	{
 	case KEY_UPARROW:
@@ -4707,7 +4840,7 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 		S_StartSound(NULL, sfx_menu1);
 		replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
 		replayScrollTitleOld =0;
-		break;
+		return false;
 
 	case KEY_DOWNARROW:
 		if (dir_on[menudepthleft] < sizedirmenu-1)
@@ -4718,13 +4851,13 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 		S_StartSound(NULL, sfx_menu1);
 		replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
 		replayScrollTitleOld =0;
-		break;
+		return false;
 
 	case KEY_ENTER:
-		switch (dirmenu[dir_on[menudepthleft]][DIR_TYPE])
+		switch (item->argument)
 		{
 			case EXT_FOLDER:
-				strcpy(&menupath[menupathindex[menudepthleft]],dirmenu[dir_on[menudepthleft]]+DIR_STRING);
+				strcpy(&menupath[menupathindex[menudepthleft]], item->patch);
 				if (menudepthleft)
 				{
 					menupathindex[--menudepthleft] = strlen(menupath);
@@ -4746,7 +4879,7 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 					{
 						S_StartSound(NULL, sfx_menu1);
 						dir_on[menudepthleft] = 1;
-						PrepReplayList();
+						initializer(pi);
 					}
 				}
 				else
@@ -4764,45 +4897,12 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 					M_ExitMenu();
 					return true;
 				}
-				PrepReplayList();
+				initializer(pi);
 				break;
 			default:
-				M_EnterMenu(MN_MISC_REPLAYSTART, false, 0); // ReplayDef's quit routine would boot us back to the title screen
-
 				replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
 				replayScrollTitleOld =0;
-
-#if 0
-				switch (demolist[dir_on[menudepthleft]].addonstatus)
-				{
-				case DFILE_ERROR_CANNOTLOAD:
-					// Only show "Watch Replay Without Addons"
-					M_SetItemVisible(MN_MISC_REPLAYSTART, "LOADWATCH", false);
-					M_SetItemVisible(MN_MISC_REPLAYSTART, "NOLOADWATCH", true);
-					M_SetItemVisible(MN_MISC_REPLAYSTART, "WATCH", false);
-					M_SetItemOn(MN_MISC_REPLAYSTART, "NOLOADWATCH");
-					break;
-
-				case DFILE_ERROR_NOTLOADED:
-				case DFILE_ERROR_INCOMPLETEOUTOFORDER:
-					// Show "Load Addons and Watch Replay" and "Watch Replay Without Addons"
-					M_SetItemVisible(MN_MISC_REPLAYSTART, "LOADWATCH", true);
-					M_SetItemVisible(MN_MISC_REPLAYSTART, "NOLOADWATCH", true);
-					M_SetItemVisible(MN_MISC_REPLAYSTART, "WATCH", false);
-					M_SetItemOn(MN_MISC_REPLAYSTART, "LOADWATCH");
-					break;
-
-				case DFILE_ERROR_EXTRAFILES:
-				case DFILE_ERROR_OUTOFORDER:
-				default:
-					// Show "Watch Replay"
-					M_SetItemVisible(MN_MISC_REPLAYSTART, "LOADWATCH", false);
-					M_SetItemVisible(MN_MISC_REPLAYSTART, "NOLOADWATCH", false);
-					M_SetItemVisible(MN_MISC_REPLAYSTART, "WATCH", true);
-					M_SetItemOn(MN_MISC_REPLAYSTART, "WATCH");
-					break;
-				}
-#endif
+				return false;
 		}
 
 		break;
@@ -4813,116 +4913,106 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 	return true;
 }
 
-#define SCALEDVIEWWIDTH (vid.width/vid.dupx)
-#define SCALEDVIEWHEIGHT (vid.height/vid.dupy)
-static void DrawReplayHutReplayInfo(void)
+void MD_DrawReplayHutReplayInfo(menupanelinst_t *pi)
 {
-	patch_t *patch;
-	UINT8 *colormap;
-	INT32 x, y, w, h;
+	menupanelinst_t *bg = M_GetPanel("DEMOINFOBG");
+	menupanelinst_t *fg = pi;//M_GetPanel("DEMOINFOFG");
+
+	fg->visible = false;
+	M_SetItemVisible(fg, "OUTDATED", false);
+	M_SetItemVisible(bg, "CENTERTEXT", false);
 
 	switch (demolist[dir_on[menudepthleft]].type)
 	{
 	case MD_NOTLOADED:
-		V_DrawCenteredString(160, 40, MENUCAPS|V_SNAPTOTOP, "Loading replay information...");
+		M_SetItemVisible(bg, "CENTERTEXT", true);
+		M_SetItemText(bg, "CENTERTEXT", "Loading replay information...");
+		M_GetMenuItem(bg, "CENTERTEXT")->status &= ~ITH_WARNING;
 		break;
 
 	case MD_INVALID:
-		V_DrawCenteredString(160, 40, MENUCAPS|V_SNAPTOTOP|warningflags, "This replay cannot be played.");
+		M_SetItemVisible(bg, "CENTERTEXT", true);
+		M_SetItemText(bg, "CENTERTEXT", "This replay cannot be played.");
+		M_GetMenuItem(bg, "CENTERTEXT")->status |= ITH_WARNING;
 		break;
 
 	case MD_SUBDIR:
 		break; // Can't think of anything to draw here right now
 
 	case MD_OUTDATED:
-		V_DrawThinString(17, 64, V_SNAPTOTOP|V_ALLOWLOWERCASE|V_TRANSLUCENT|highlightflags, "Recorded on an outdated version.");
+		M_SetItemVisible(fg, "OUTDATED", true);
 		/* FALLTHRU */
 	default:
-		// Draw level stuff
-		x = 15; y = 15;
+		fg->visible = true;
 
-		//CONS_Printf("%d %s\n", demolist[dir_on[menudepthleft]].map, G_BuildMapName(demolist[dir_on[menudepthleft]].map));
-		fixed_t scale = M_GetMapThumbnail(demolist[dir_on[menudepthleft]].map, &patch)/4;
-		if (patch == blanklvl && demolist[dir_on[menudepthleft]].map == NEXTMAP_INVALID)
-			patch = nolvl;
-
-		if (!(demolist[dir_on[menudepthleft]].kartspeed & DF_ENCORE))
-			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, V_SNAPTOTOP, patch, NULL);
-		else
+		INT32 mapnum = demolist[dir_on[menudepthleft]].map + 1;
+		char *mapname;
+		if (mapnum <= nummapheaders)
 		{
-			w = FixedMul(SHORT(patch->width), scale);
-			h = FixedMul(SHORT(patch->height), scale);
-			V_DrawFixedPatch((x+(w>>1))<<FRACBITS, y<<FRACBITS, scale, V_SNAPTOTOP|V_FLIP, patch, NULL);
-
-			{
-				static angle_t rubyfloattime = 0;
-				const fixed_t rubyheight = FINESINE(rubyfloattime>>ANGLETOFINESHIFT);
-				V_DrawFixedPatch((x+(w>>2))<<FRACBITS, ((y+(h>>2))<<FRACBITS) - (rubyheight<<1), FRACUNIT, V_SNAPTOTOP, W_CachePatchName("RUBYICON", PU_CACHE), NULL);
-				rubyfloattime += FixedMul(ANGLE_MAX/NEWTICRATE, renderdeltatics);
-			}
+			M_SetItemPatch(fg, "THUMBNAIL", G_BuildMapName(mapnum));
+			mapname = G_BuildMapTitle(mapnum);
+			M_SetItemDisabled(fg, "MAPNAME", false);
 		}
-
-		x += 85;
-
-		if (demolist[dir_on[menudepthleft]].map != NEXTMAP_INVALID)
-			V_DrawString(x, y, MENUCAPS|V_SNAPTOTOP, G_BuildMapTitle(demolist[dir_on[menudepthleft]].map+1));
 		else
-			V_DrawString(x, y, V_SNAPTOTOP|V_ALLOWLOWERCASE|V_TRANSLUCENT, "Level is not loaded.");
-
-		if (demolist[dir_on[menudepthleft]].numlaps)
-			V_DrawThinString(x, y+9, V_SNAPTOTOP|V_ALLOWLOWERCASE, va("(%d laps)", demolist[dir_on[menudepthleft]].numlaps));
-
-		V_DrawString(x, y+20, V_SNAPTOTOP|V_ALLOWLOWERCASE, demolist[dir_on[menudepthleft]].gametype == GT_RACE ?
-			va("Race (%s speed)", kartspeed_cons_t[(demolist[dir_on[menudepthleft]].kartspeed & ~DF_ENCORE) + 1].strvalue) :
-			"Battle Mode");
-
-		if (!demolist[dir_on[menudepthleft]].standings[0].ranking)
 		{
-			// No standings were loaded!
-			V_DrawString(x, y+39, V_SNAPTOTOP|V_ALLOWLOWERCASE|V_TRANSLUCENT, "No standings available.");
+			M_SetItemPatch(fg, "THUMBNAIL", "");
+			mapname = Z_StrDup("Level is not loaded.");
+			M_SetItemDisabled(fg, "MAPNAME", true);
+		}
+		M_SetItemText(fg, "MAPNAME", mapname);
+		Z_Free(mapname);
 
+		INT32 laps = demolist[dir_on[menudepthleft]].numlaps;
+		M_SetItemText(fg, "NUMLAPS", laps ? va("(%d laps)", laps) : "");
 
+		M_SetItemText(fg, "GAMETYPE", demolist[dir_on[menudepthleft]].gametype == GT_RACE
+		                            ? va("Race (%s speed)", kartspeed_cons_t[(demolist[dir_on[menudepthleft]].kartspeed & ~DF_ENCORE) + 1].strvalue)
+		                            : "Battle Mode");
+
+		boolean hidescore = !demolist[dir_on[menudepthleft]].standings[0].ranking;
+		M_SetItemVisible(fg, "NOSTANDINGS", hidescore);
+		M_SetItemVisible(fg, "WINNER", !hidescore);
+		M_SetItemVisible(fg, "WINNERNAME", !hidescore);
+		M_SetItemVisible(fg, "SCORE", !hidescore);
+		M_SetItemVisible(fg, "SCORENAME", !hidescore);
+		M_SetItemVisible(fg, "FACE", !hidescore);
+
+		// No standings were loaded!
+		if (hidescore)
 			break;
-		}
 
-		V_DrawThinString(x, y+29, MENUCAPS|V_SNAPTOTOP|highlightflags, "Winner");
-		V_DrawString(x+38, y+30, V_SNAPTOTOP|V_ALLOWLOWERCASE, demolist[dir_on[menudepthleft]].standings[0].name);
+		M_SetItemText(fg, "WINNERNAME", demolist[dir_on[menudepthleft]].standings[0].name);
 
+		UINT32 score = demolist[dir_on[menudepthleft]].standings[0].timeorscore;
 		if (demolist[dir_on[menudepthleft]].gametype == GT_RACE)
 		{
-			V_DrawThinString(x, y+39, MENUCAPS|V_SNAPTOTOP|highlightflags, "Time");
-			V_DrawRightAlignedString(x+84, y+40, V_SNAPTOTOP, va("%d'%02d\"%02d",
-											G_TicsToMinutes(demolist[dir_on[menudepthleft]].standings[0].timeorscore, true),
-											G_TicsToSeconds(demolist[dir_on[menudepthleft]].standings[0].timeorscore),
-											G_TicsToCentiseconds(demolist[dir_on[menudepthleft]].standings[0].timeorscore)
-			));
+			M_SetItemText(fg, "SCORENAME", "Time");
+			M_SetItemText(fg, "SCORE", va("%d'%02d\"%02d",
+			                              G_TicsToMinutes(score, true),
+			                              G_TicsToSeconds(score),
+			                              G_TicsToCentiseconds(score)));
 		}
 		else
 		{
-			V_DrawThinString(x, y+39, MENUCAPS|V_SNAPTOTOP|highlightflags, "Score");
-			V_DrawString(x+32, y+40, V_SNAPTOTOP, va("%d", demolist[dir_on[menudepthleft]].standings[0].timeorscore));
+			M_SetItemText(fg, "SCORENAME", "Score");
+			M_SetItemText(fg, "SCORE", va("%d", score));
 		}
 
 		// Character face!
-		if (demolist[dir_on[menudepthleft]].standings[0].skin < numskins && W_CheckNumForName(skins[demolist[dir_on[menudepthleft]].standings[0].skin].facewant) != LUMPERROR)
+		INT32 skin = demolist[dir_on[menudepthleft]].standings[0].skin;
+		skincolornum_t color = demolist[dir_on[menudepthleft]].standings[0].color;
+		if (skin < numskins && W_CheckNumForName(skins[skin].facewant) != LUMPERROR)
 		{
-			patch = faceprefix[demolist[dir_on[menudepthleft]].standings[0].skin][FACE_WANTED];
-			colormap = R_GetTranslationColormap(
-				demolist[dir_on[menudepthleft]].standings[0].skin,
-				demolist[dir_on[menudepthleft]].standings[0].color,
-				GTC_MENUCACHE);
+			M_SetItemPatch(fg, "FACE", "M_NOWANT");
+			(void)color;
+			//patch = faceprefix[skin][FACE_WANTED];
+			//colormap = R_GetTranslationColormap(skin, color, GTC_MENUCACHE);
 		}
 		else
 		{
-			patch = W_CachePatchName("M_NOWANT", PU_CACHE);
-			colormap = R_GetTranslationColormap(
-				TC_RAINBOW,
-				demolist[dir_on[menudepthleft]].standings[0].color,
-				GTC_MENUCACHE);
+			M_SetItemPatch(fg, "FACE", "M_NOWANT");
+			//colormap = R_GetTranslationColormap(TC_RAINBOW, color, GTC_MENUCACHE);
 		}
-
-		V_DrawMappedPatch(BASEVIDWIDTH-15 - SHORT(patch->width), y+20, V_SNAPTOTOP, patch, colormap);
-
 		break;
 	}
 }
@@ -4930,6 +5020,8 @@ static void DrawReplayHutReplayInfo(void)
 static fixed_t finalscroll = 0;
 static fixed_t oldfinalscroll = 0;
 
+#define SCALEDVIEWWIDTH (vid.width/vid.dupx)
+#define SCALEDVIEWHEIGHT (vid.height/vid.dupy)
 void MD_DrawReplayHut(menupanelinst_t *pi)
 {
 	INT32 x, y, cursory = 0;
@@ -4974,6 +5066,7 @@ void MD_DrawReplayHut(menupanelinst_t *pi)
 		{
 			processed_one_this_frame = true;
 			G_LoadDemoInfo(&demolist[i]);
+			M_SetItemTextRaw(&pi->items[i], demolist[i].title);
 		}
 
 		if (demolist[i].type == MD_SUBDIR)
@@ -5016,9 +5109,13 @@ void MD_DrawReplayHut(menupanelinst_t *pi)
 			finalscroll = (localx - (replayScrollTitle>>1))*FRACUNIT;
 			oldfinalscroll = (localx - (replayScrollTitleOld>>1))*FRACUNIT;
 			V_DrawStringAtFixed(R_InterpolateFixed(oldfinalscroll, finalscroll), localy*FRACUNIT, V_SNAPTOTOP|V_SNAPTOLEFT|highlightflags|V_ALLOWLOWERCASE, demolist[i].title);
+			pi->items[i].x = -replayScrollTitle*(FRACUNIT/2);
 		}
 		else
+		{
 			V_DrawString(localx, localy, V_SNAPTOTOP|V_SNAPTOLEFT|V_ALLOWLOWERCASE, demolist[i].title);
+			pi->items[i].x = 1; // FIXME
+		}
 	}
 
 	// Draw scrollbar
@@ -5032,68 +5129,75 @@ void MD_DrawReplayHut(menupanelinst_t *pi)
 	// Draw the cursor
 	V_DrawScaledPatch(pi->x/FRACUNIT - 24, cursory, V_SNAPTOTOP|V_SNAPTOLEFT,
 		W_CachePatchName("M_CURSOR", PU_CACHE));
-
-	// Now draw some replay info!
-	V_DrawFill(10, 10, 300, 60, V_SNAPTOTOP|159);
-
-	DrawReplayHutReplayInfo();
 }
 
 void MD_DrawReplayStartMenu(menupanelinst_t *pi)
 {
-	const char *warning;
 	UINT8 i;
-	INT32 xoffs, yoffs;
 
-	//MD_DrawGenericMenu();
-
-#define STARTY 62-(replayScrollTitle>>1)
 	// Draw rankings beyond first
+	pi = M_GetPanel("RANKINGS");
+	M_ClearPanelItems(pi);
+	pi->y = 62*FRACUNIT - replayScrollTitle*(FRACUNIT/2);
 	for (i = 1; i < MAXPLAYERS && demolist[dir_on[menudepthleft]].standings[i].ranking; i++)
 	{
-		xoffs = yoffs = 0;
-		patch_t *patch;
-		UINT8 *colormap;
+		menuitem_t *item;
+		INT32 y = i*20*FRACUNIT;
 
-		V_DrawRightAlignedString(BASEVIDWIDTH-100, STARTY + i*20, MENUCAPS|V_SNAPTOTOP|highlightflags, va("%2d", demolist[dir_on[menudepthleft]].standings[i].ranking));
-		V_DrawThinString(BASEVIDWIDTH-96, STARTY + i*20, V_SNAPTOTOP|V_ALLOWLOWERCASE, demolist[dir_on[menudepthleft]].standings[i].name);
+		item = M_AppendMenuItem(pi);
+		item->x = 1; // FIXME
+		item->y = y;
+		item->status = ITH_HIGHLIGHT|IT_RIGHT;
+		M_SetItemTextRaw(item, va("%2d", demolist[dir_on[menudepthleft]].standings[i].ranking));
 
-		if (demolist[dir_on[menudepthleft]].standings[i].timeorscore == UINT32_MAX-1)
-			V_DrawThinString(BASEVIDWIDTH-92, STARTY + i*20 + 9, MENUCAPS|V_SNAPTOTOP, "No Contest");
+		item = M_AppendMenuItem(pi);
+		item->x = 4*FRACUNIT;
+		item->y = y;
+		item->status = ITF_THIN;
+		M_SetItemTextRaw(item, demolist[dir_on[menudepthleft]].standings[i].name);
+
+		item = M_AppendMenuItem(pi);
+		item->x = 8*FRACUNIT;
+		item->y = y + 9*FRACUNIT;
+		UINT32 score = demolist[dir_on[menudepthleft]].standings[i].timeorscore;
+		if (score == UINT32_MAX-1)
+		{
+			item->status |= ITF_THIN;
+			M_SetItemTextRaw(item, "No Contest");
+		}
 		else if (demolist[dir_on[menudepthleft]].gametype == GT_RACE)
-			V_DrawRightAlignedString(BASEVIDWIDTH-40, STARTY + i*20 + 9, V_SNAPTOTOP, va("%d'%02d\"%02d",
-											G_TicsToMinutes(demolist[dir_on[menudepthleft]].standings[i].timeorscore, true),
-											G_TicsToSeconds(demolist[dir_on[menudepthleft]].standings[i].timeorscore),
-											G_TicsToCentiseconds(demolist[dir_on[menudepthleft]].standings[i].timeorscore)
-			));
+		{
+			M_SetItemTextRaw(item, va("%d'%02d\"%02d",
+			                         G_TicsToMinutes(score, true),
+			                         G_TicsToSeconds(score),
+			                         G_TicsToCentiseconds(score)));
+		}
 		else
-			V_DrawString(BASEVIDWIDTH-92, STARTY + i*20 + 9, V_SNAPTOTOP, va("%d", demolist[dir_on[menudepthleft]].standings[i].timeorscore));
+		{
+			M_SetItemTextRaw(item, va("%d", score));
+		}
 
 		// Character face!
-		if (demolist[dir_on[menudepthleft]].standings[i].skin < numskins && W_CheckNumForName(skins[demolist[dir_on[menudepthleft]].standings[i].skin].facewant) != LUMPERROR)
+		item = M_AppendMenuItem(pi);
+		item->x = 95*FRACUNIT;
+		item->y = y;
+		item->status = ITF_PATCH|IT_RIGHT;
+
+		UINT16 skin = demolist[dir_on[menudepthleft]].standings[i].skin;
+		skincolornum_t color = demolist[dir_on[menudepthleft]].standings[i].color;
+		if (skin < numskins && W_CheckNumForName(skins[skin].facewant) != LUMPERROR)
 		{
-			patch = faceprefix[demolist[dir_on[menudepthleft]].standings[i].skin][FACE_RANK];
-
-			xoffs = SHORT(patch->leftoffset);
-			yoffs = SHORT(patch->topoffset);
-
-			colormap = R_GetTranslationColormap(
-				demolist[dir_on[menudepthleft]].standings[i].skin,
-				demolist[dir_on[menudepthleft]].standings[i].color,
-				GTC_MENUCACHE);
+			M_SetItemPatchRaw(item, "M_NORANK");
+			(void)color;
+			//patch = faceprefix[skin][FACE_RANK];
+			//colormap = R_GetTranslationColormap(skin, color, GTC_MENUCACHE);
 		}
 		else
 		{
-			patch = W_CachePatchName("M_NORANK", PU_CACHE);
-			colormap = R_GetTranslationColormap(
-				TC_RAINBOW,
-				demolist[dir_on[menudepthleft]].standings[i].color,
-				GTC_MENUCACHE);
+			M_SetItemPatchRaw(item, "M_NORANK");
+			//colormap = R_GetTranslationColormap(TC_RAINBOW, color, GTC_MENUCACHE);
 		}
-
-		V_DrawMappedPatch(BASEVIDWIDTH-5 - SHORT(patch->width) + xoffs, STARTY + i*20 + yoffs, V_SNAPTOTOP, patch, colormap);
 	}
-#undef STARTY
 
 	// Handle scrolling rankings
 	if (renderisnewtic)
@@ -5122,12 +5226,8 @@ void MD_DrawReplayStartMenu(menupanelinst_t *pi)
 		}
 	}
 
-	V_DrawFill(10, 10, 300, 60, V_SNAPTOTOP|159);
-	DrawReplayHutReplayInfo();
-
-	V_DrawString(10, 72, V_SNAPTOTOP|highlightflags|V_ALLOWLOWERCASE, demolist[dir_on[menudepthleft]].title);
-
 	// Draw a warning prompt if needed
+	const char *warning;
 	switch (demolist[dir_on[menudepthleft]].addonstatus)
 	{
 	case DFILE_ERROR_CANNOTLOAD:
@@ -5148,10 +5248,12 @@ void MD_DrawReplayStartMenu(menupanelinst_t *pi)
 		break;
 
 	default:
-		return;
+		warning = "";
+		break;
 	}
 
-	V_DrawSmallString(4, BASEVIDHEIGHT-14, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, warning);
+	pi = M_GetPanel("WARNING");
+	M_SetItemText(pi, "WARNING", warning);
 }
 
 INT32 MR_QuitReplayHut(INT32 choice)
@@ -9029,8 +9131,7 @@ void MP_SetupMonitorToggles(menupanelinst_t *pi)
 {
 	const INT32 height = 4;
 
-	if (pi->numitems > 0)
-		I_Error("MP_SetupMonitorToggles: panel must be empty");
+	M_ClearPanelItems(pi);
 
 	for (UINT8 i = 0; i <= numkartresults; i++)
 	{
@@ -9044,16 +9145,16 @@ void MP_SetupMonitorToggles(menupanelinst_t *pi)
 		if (result == NULL)
 		{
 			item->argument = 1;
-			item->patch = "";
+			M_SetItemPatchRaw(item, "");
 		}
 		else
 		{
 			item->argument = 0;
-			item->patch = result->cvar->name;
+			M_SetItemPatchRaw(item, result->cvar->name);
 			if (kartitems[result->type].altcvar != NULL)
-				item->tooltip = "Press BACKSPACE to swap variants.";
+				M_SetItemTooltipRaw(item, "Press BACKSPACE to swap variants.");
 			else if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
-				item->tooltip = "Rings must be enabled in Gameplay Mods!";
+				M_SetItemTooltipRaw(item, "Rings must be enabled in Gameplay Mods!");
 		}
 	}
 
@@ -9063,7 +9164,7 @@ void MP_SetupMonitorToggles(menupanelinst_t *pi)
 		menuitem_t *item = pi->items + pi->numitems++;
 
 		item->argument = 2;
-		item->patch = "";
+		M_SetItemPatchRaw(item, "");
 	}
 
 	pi->x = 136*FRACUNIT - max(0, min((pi->numitems - 1) / height, 7))*TICRATE*FRACUNIT/2;

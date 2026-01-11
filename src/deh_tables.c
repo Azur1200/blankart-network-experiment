@@ -863,6 +863,7 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWCONNECTMENU", &MD_DrawConnectMenu },
 	{ "DRAWVIEWSERVER", &MD_DrawViewServer },
 	{ "DRAWLEVELPLATTERMENU", &MD_DrawLevelPlatterMenu },
+	{ "DRAWREPLAYHUTREPLAYINFO", &MD_DrawReplayHutReplayInfo },
 #ifdef HAVE_DISCORDRPC
 	{ "DRAWDISCORDREQUESTS", &MD_DrawDiscordRequests },
 #endif
@@ -879,6 +880,8 @@ struct panel_func_s const PANEL_FUNCS[] = {
 	{ "ADDONSOPTIONS", &MP_AddonsOptions },
 	{ "SETUPMULTIPLAYER", &MP_SetupMultiPlayer },
 	{ "SETUPMONITORTOGGLES", &MP_SetupMonitorToggles },
+	{ "PREPREPLAYLIST", &MP_PrepReplayList },
+	{ "REPLAYHUTSTART", &MP_ReplayHutStart },
 	{ NULL, NULL }
 };
 

@@ -1931,7 +1931,8 @@ static menuitemflags_t parsestyle(const char *p)
 	else if STYLE("RECOMMENDEDHIGHLIGHT", ITH_RECOMMEND)
 	else if STYLE("WARNINGHIGHLIGHT", ITH_WARNING)
 
-	if STYLE("STICKER", IT_STICKER)
+	if STYLE("STICKER", IT_STICKER) // TODO: delete this
+	else if STYLE("TRANSLUCENT", IT_GRAYEDOUT) // TODO: grayed out???
 
 	return IT_HIDDEN;
 #undef STYLE
@@ -1989,6 +1990,7 @@ static void readmenuitems(MYFILE *f, menupaneldef_t *pd)
 			{
 				Z_Realloc(pd->items, sizeof(menuitem_t)*(pd->numitems+1), PU_STATIC, &pd->items);
 				item = pd->items + pd->numitems++;
+				memset(item, 0, sizeof(*item));
 				DEH_Link(s, &item->info, &menunames);
 			}
 			continue;
@@ -2284,6 +2286,19 @@ static void readmenupanelinstances(MYFILE *f, INT32 num)
 				WARN("invalid character '%c' in panel instance name", *tmp);
 				break;
 			}
+			if (strlen(s) > MAXMENUPANELNAME)
+			{
+				WARN("panel instance name '%s' is longer than %d characters", s, MAXMENUPANELNAME);
+				break;
+			}
+			for (size_t i = 0; i < menudef->numpanels; i++)
+			{
+				if (fastcmp(menudef->panels[i].name, s))
+				{
+					WARN("panel instance name '%s' already exists", s);
+					break;
+				}
+			}
 
 			menupaneldef_t *pd = DEH_FindMenuPanel(srcname);
 			if (pd == NULL)
@@ -2291,10 +2306,11 @@ static void readmenupanelinstances(MYFILE *f, INT32 num)
 				WARN("couldn't find panel named '%s'", srcname);
 				break;
 			}
-			Z_Realloc(menudef->panels, sizeof(menuitem_t)*(menudef->numpanels+1), PU_STATIC, &menudef->panels);
+			Z_Realloc(menudef->panels, sizeof(*menudef->panels)*(menudef->numpanels+1), PU_STATIC, &menudef->panels);
 			pi = menudef->panels + menudef->numpanels++;
+			memset(pi, 0, sizeof(*pi));
 			strlcpy(pi->name, s, sizeof(pi->name));
-			pi->srcnum = pd - menupanels;
+			pi->defnum = pd - menupanels;
 			continue;
 		}
 
@@ -2323,6 +2339,10 @@ static void readmenupanelinstances(MYFILE *f, INT32 num)
 		else if (fastcmp(word, "Y"))
 		{
 			pi->y = get_number(word2);
+		}
+		else if (fastcmp(word, "FLAGS"))
+		{
+			pi->vflags = get_number(word2);
 		}
 		else
 			WARN("unknown word '%s'", word);
@@ -2563,18 +2583,6 @@ void readmenu(MYFILE *f, INT32 num)
 					continue;
 				}
 				menudef->quitroutine = routine;
-			}
-			else if (fastcmp(word, "PANEL"))
-			{
-				menupaneldef_t *pd = DEH_FindMenuPanel(word2);
-				if (pd == NULL)
-				{
-					WARN("unknown panel name '%s'", word2);
-					continue;
-				}
-				Z_Realloc(menudef->panels, ++menudef->numpanels*sizeof(*menudef->panels), PU_STATIC, &menudef->panels);
-				menupanelinst_t *pi = &menudef->panels[menudef->numpanels-1];
-				pi->srcnum = pd - menupanels;
 			}
 			else
 				WARN("unknown word '%s'", word);

@@ -696,7 +696,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 
 					menupaneldef_t *pd = DEH_FindMenuPanel(word2);
 					if (pd == NULL)
-						pd = M_AllocateMenuPanel(word2);
+						pd = M_AllocateMenuPanelDef(word2);
 					readmenupanel(f, pd);
 				}
 				else if (fastcmp(word, "UNLOCKABLE"))
