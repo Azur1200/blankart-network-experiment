@@ -2219,9 +2219,10 @@ boolean K_TripwirePass(const player_t *player)
 
 boolean K_PlayerCanPunt(const player_t *player)
 {
-	return player->invincibilitytimer > 0 || player->growshrinktimer > 0 ||
-	       (player->flamestore > 0 && K_GetShieldFromPlayer(player) == KSHIELD_FLAME) ||
-		   K_AltShrinkArrowBulletCondition(player);
+	return player->invincibilitytimer > 0 || player->growshrinktimer > 0
+	    || (player->flamestore > 0 && K_GetShieldFromPlayer(player) == KSHIELD_FLAME)
+	    || (player->bubbleblowup > 0 && K_GetShieldFromPlayer(player) == KSHIELD_BUBBLE)
+	    || K_AltShrinkArrowBulletCondition(player);
 }
 
 boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item)
