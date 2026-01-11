@@ -1444,8 +1444,9 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_connectawaittime);
 	CV_RegisterVar(&cv_serverinfoscreen);
-
+	
 	// player restat
+	CV_RegisterVar(&cv_allowrestat);
 	COM_AddCommand("restat", Command_Restat);
 	COM_AddCommand("restat2", Command_Restat2);
 	COM_AddCommand("restat3", Command_Restat3);
@@ -1458,48 +1459,13 @@ static void RestatForPlayer(UINT32 ssplayer)
 	int speed;
 	int weight;
 
-	if (!cv_restat_allow.value)
+	if (!cv_allowrestat.value)
 	{
-		CONS_Printf("This command has been disabled by the server host.");
+		CONS_Printf("This command has been disabled by the server host.\n");
 		return;
 	}
 	
-	if (COM_Argc() > 1)
-	{
-		if (fasticmp(COM_Argv(1), "random"))
-		{
-			player->randomrestat = !player->randomrestat;
-			if (player->randomrestat)
-			{
-				CONS_Printf("Random restat is now enabled.");
-				player->kartspeedrestat = 0;
-				player->kartweightrestat = 0;
-			}
-			else
-			{
-				CONS_Printf("Random restat is now disabled.");
-			}
-
-			WeaponPref_Send(ssplayer);
-			return;
-		}
-		else if (fasticmp(COM_Argv(1), "off"))
-		{
-			player->kartspeedrestat = 0;
-			player->kartweightrestat = 0;
-			player->randomrestat = false;
-			WeaponPref_Send(ssplayer);
-			return;
-		}
-		else
-		{
-			CONS_Printf(
-				"Usage: \"restat<playernum> <speed> <weight>\"\n"
-				"Alternatively: \"restat<playernum> random\" to toggle using random stats each round.\n"
-				"or \"restat<playernum> off\" to use your skin's default stats.\n");
-		}
-	}
-	else if (COM_Argc() > 2)
+	if (COM_Argc() > 2)
 	{
 		if (sscanf(COM_Argv(1), " %d", &speed) == 0 || 
 			sscanf(COM_Argv(2), " %d", &weight) == 0)
@@ -1520,11 +1486,46 @@ static void RestatForPlayer(UINT32 ssplayer)
 		player->kartweightrestat = weight;
 		player->randomrestat = false;
 		
-		CONS_Printf("You will be \130 %d speed, %d weight\140 for the next race.", speed, weight);
-		CONS_Printf("Use \135restat off\140 to return to your skin's default stats.");
+		CONS_Printf("You will be %d speed, %d weight for the next race.\n", speed, weight);
+		CONS_Printf("Use \"restat off\" to return to your skin's default stats.\n");
 
 		WeaponPref_Send(ssplayer);
 		return;
+	}
+	else if (COM_Argc() > 1)
+	{
+		if (fasticmp(COM_Argv(1), "random"))
+		{
+			player->randomrestat = !player->randomrestat;
+			if (player->randomrestat)
+			{
+				CONS_Printf("Random restat is now enabled.\n");
+			}
+			else
+			{
+				CONS_Printf("Random restat is now disabled.\n");
+			}
+
+			WeaponPref_Send(ssplayer);
+			return;
+		}
+		else if (fasticmp(COM_Argv(1), "off"))
+		{
+			player->kartspeedrestat = 0;
+			player->kartweightrestat = 0;
+			player->randomrestat = false;
+			WeaponPref_Send(ssplayer);
+			
+			CONS_Printf("Now using skin default stats.\n");
+			return;
+		}
+		else
+		{
+			CONS_Printf(
+				"Usage: \"restat<playernum> <speed> <weight>\"\n"
+				"Alternatively: \"restat<playernum> random\" to toggle the use of random stats each round.\n"
+				"or \"restat<playernum> off\" to use your skin's default stats.\n");
+		}
 	}
 	else
 	{

@@ -494,7 +494,7 @@ consvar_t cv_deadzonestyle[MAXSPLITSCREENPLAYERS] = {
 };
 
 // allows players to use restat (server toggle)
-consvar_t cv_restat_allow = CVAR_INIT ("restat_allow", "Yes", CV_NETVAR, CV_YesNo, NULL);
+consvar_t cv_allowrestat = CVAR_INIT ("allowrestat", "Yes", CV_NETVAR, CV_YesNo, NULL);
 
 // now automatically allocated in D_RegisterClientCommands
 // so that it doesn't have to be updated depending on the value of MAXPLAYERS
@@ -2739,6 +2739,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	UINT8 kartspeed;
 	UINT8 kartweight;
+	UINT8 kartspeedrestat;
+	UINT8 kartweightrestat;
+	boolean randomrestat;
 
 	boolean followerready;
 	INT32 followerskin;
@@ -2836,6 +2839,10 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	kartspeed = players[player].kartspeed;
 	kartweight = players[player].kartweight;
 
+	kartspeedrestat = players[player].kartspeedrestat;
+	kartweightrestat = players[player].kartweightrestat;
+	randomrestat = players[player].randomrestat;
+
 	followerready = players[player].followerready;
 	followercolor = players[player].followercolor;
 	followerskin = players[player].followerskin;
@@ -2902,16 +2909,24 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 			laptime[i] = 0;
 		}
 
-		if (players[player].randomrestat)
+		// might cause issues with weponpref sync?
+		if (!cv_allowrestat.value)
 		{
-			kartspeed = P_RandomRange(1, 9);
-			kartweight = P_RandomRange(1, 9);
+			kartspeedrestat = 0;
+			kartweightrestat = 0;
+			randomrestat = false;
 		}
-		else if (players[player].kartspeedrestat != 0 &&
-				players[player].kartweightrestat != 0)
+
+		if (randomrestat)
 		{
-			kartspeed = players[player].kartspeedrestat;
-			kartweight = players[player].kartweightrestat;
+			kartspeedrestat = P_RandomRange(1, 9);
+			kartweightrestat = P_RandomRange(1, 9);
+		}
+
+		if (kartspeedrestat != 0 && kartweightrestat != 0)
+		{
+			kartspeed = kartspeedrestat;
+			kartweight = kartweightrestat;
 		}
 		else
 		{
@@ -3041,6 +3056,10 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->voice_id = voice;
 	p->kartspeed = kartspeed;
 	p->kartweight = kartweight;
+
+	p->kartspeedrestat = kartspeedrestat;
+	p->kartweightrestat = kartweightrestat;
+	p->randomrestat = randomrestat;
 	//
 	p->charflags = charflags;
 	memcpy(players[player].availabilities, availabilities, sizeof(availabilities));
