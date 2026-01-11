@@ -555,6 +555,10 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].kartspeed);
 		SYNC(players[i].kartweight);
 
+		SYNC(players[i].kartspeedrestat);
+		SYNC(players[i].kartweightrestat);
+		SYNC(players[i].randomrestat);
+
 		for (j = 0; j < MAXPREDICTTICS; j++)
 		{
 			SYNC(players[i].lturn_max[j]);

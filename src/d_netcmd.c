@@ -233,6 +233,11 @@ static void Command_Teamchange2_f(void);
 static void Command_Teamchange3_f(void);
 static void Command_Teamchange4_f(void);
 
+static void Command_Restat(void);
+static void Command_Restat2(void);
+static void Command_Restat3(void);
+static void Command_Restat4(void);
+
 static void Command_ServerTeamChange_f(void);
 
 static void Command_Clearscores_f(void);
