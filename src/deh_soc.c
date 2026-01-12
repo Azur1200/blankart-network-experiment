@@ -1921,6 +1921,7 @@ static menuitemflags_t parsestyle(const char *p)
 	else if STYLE("PATCH", ITF_PATCH)
 	else if STYLE("MAPTHUMBNAIL", ITF_THUMBNAIL)
 	else if STYLE("FILL", ITF_FILL)
+	else if STYLE("SKIN", ITF_SKIN)
 
 	if STYLE("SMALL", IT_SMALL)
 
@@ -2342,7 +2343,9 @@ static void readmenupanelinstances(MYFILE *f, INT32 num)
 		}
 		else if (fastcmp(word, "FLAGS"))
 		{
-			pi->vflags = get_number(word2);
+			UINT32 allow = V_SNAPTOTOP|V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_SNAPTORIGHT
+			              |V_ALLOWLOWERCASE; // overrides menucaps
+			pi->vflags = get_number(word2) & allow;
 		}
 		else
 			WARN("unknown word '%s'", word);

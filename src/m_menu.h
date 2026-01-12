@@ -168,6 +168,7 @@ typedef enum
 	ITF_FILL      = 4<<sh, // call drawfill using parameters in item->patch
 	ITF_PATCH     = 5<<sh, // display a patch instead of text
 	ITF_THUMBNAIL = 6<<sh, // display the thumbnail of the mapname in item->patch
+	ITF_SKIN      = 7<<sh, // display the icon of the skin in item->patch, skincolor in argument
 	ITF_IMAGETYPE = ITF_PATCH,
 	ITF_MASK      = 0x7<<sh,
 #undef sh

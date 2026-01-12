@@ -167,8 +167,7 @@ static size_t numcurpanels;
 static menupanelinst_t *curpanels; // pointers to instantiated menu panels
 static size_t panelOn;
 static INT16 skullAnimCounter = 10; // skull animation counter
-static tic_t followertimer = 0;		// Used for smooth follower floating
-static INT32 alphatimer = 0;
+static tic_t menutimer = 0, movetimer = 0; // tics since menu change/menu movement
 
 static struct
 {
@@ -309,10 +308,14 @@ static void Dummystaff_OnChange(void);
 	return &menupanels[pi->defnum];
 }
 
-/*ANONULL*/ static menuitem_t *M_AppendMenuItem(menupanelinst_t *pi)
+/*FNONULL*/ static menuitem_t *M_AppendMenuItem(menupanelinst_t *pi, fixed_t x, fixed_t y, INT32 status)
 {
 	pi->items = Z_Realloc(pi->items, sizeof(menuitem_t)*(pi->numitems+1), PU_STATIC, NULL);
-	return &pi->items[pi->numitems++];
+	menuitem_t *item = &pi->items[pi->numitems++];
+	item->x = x;
+	item->y = y;
+	item->status = status;
+	return item;
 }
 
 /*ANONULL*/ static void M_ClearPanelItems(menupanelinst_t *pi)
@@ -425,7 +428,7 @@ static void M_RawSetItemOn(menupanelinst_t *pi, INT16 index)
 		return;
 
 	if (old != pi->itemon)
-		alphatimer = 9;
+		movetimer = 0;
 
 	// the curent item can be disabled,
 	// this code go up until an enabled item found
@@ -751,6 +754,8 @@ fixed_t M_GetMapThumbnail(INT16 mapnum, patch_t **out)
 	patch_t *patch = NULL;
 	if (mapnum == -1)
 		patch = randomlvl;
+	else if (mapnum == -2)
+		patch = nolvl;
 	else if (mapnum >= 0 && mapnum < nummapheaders && mapheaderinfo[mapnum])
 		patch = mapheaderinfo[mapnum]->thumbnailPic;
 
@@ -1882,7 +1887,7 @@ boolean M_DemoResponder(event_t *ev)
 }
 
 static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected);
-static void M_DrawMenuTooltips(const char *text);
+static void M_DrawSplitText(const char *text, INT32 x, INT32 y, INT32 option, INT32 alpha);
 
 //
 // M_Drawer
@@ -1951,8 +1956,14 @@ texty -= 10*vid.dupy;\
 		if (numcurpanels > 0)
 		{
 			const menupanelinst_t *pi = &curpanels[panelOn];
-			if (pi->numitems > 0)
-				M_DrawMenuTooltips(pi->items[pi->itemon].tooltip);
+			if (pi->itemon < pi->numitems && pi->items[pi->itemon].tooltip != NULL)
+			{
+				M_DrawSplitText(pi->items[pi->itemon].tooltip,
+				                BASEVIDWIDTH / 2,
+				                BASEVIDHEIGHT-50,
+				                V_SNAPTOBOTTOM|V_6WIDTHSPACE|MENUCAPS,
+				                movetimer <= 9 ? 9 - movetimer : 0);
+			}
 		}
 	}
 
@@ -2226,9 +2237,8 @@ static void M_SetupNextMenu(menutype_t menunum)
 	menu_t *menudef = &menudefs[menunum];
 
 	M_HandleMenuPresState(menunum);
-
 	M_ClearPanelInstances();
-
+	menutimer = movetimer = 0;
 	currentMenu = menudef;
 
 	for (i = 0; i < menudef->numpanels; i++)
@@ -2248,6 +2258,7 @@ static void M_SetupNextMenu(menutype_t menunum)
 		pi->y = src->y * FRACUNIT;
 		pi->defnum = src->defnum;
 		pi->itemon = src->itemon;
+		pi->vflags = src->vflags;
 
 		// copy items from the panel definition (TODO menuitem def/inst)
 		if (pd->numitems > 0)
@@ -2370,7 +2381,8 @@ void M_Ticker(void)
 	if (--skullAnimCounter <= 0)
 		skullAnimCounter = 8;
 
-	followertimer++;
+	menutimer++;
+	movetimer++;
 
 	if (menustack[0] == MN_PLAYBACK)
 	{
@@ -2569,21 +2581,6 @@ static void M_DrawSplitText(const char *text, INT32 x, INT32 y, INT32 option, IN
     }
 
 	free(clines);
-}
-
-//
-// M_DrawMenuTooltips
-//
-// Draw a banner across the bottom of the screen, with a description of the current option displayed
-//
-static void M_DrawMenuTooltips(const char *text)
-{
-	if (text == NULL)
-		return;
-
-	M_DrawSplitText(text, BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_SNAPTOBOTTOM|V_6WIDTHSPACE|MENUCAPS, alphatimer);
-	if (alphatimer > 0 && renderisnewtic)
-		alphatimer--;
 }
 
 //
@@ -2906,7 +2903,7 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 		else if (item->status & IT_RIGHT)
 			width = fillw;
 
-		V_DrawFill(x - width + (results == 5 ? ofsx : 0), y + (results == 5 ? ofsy : 0), fillw, fillh, fillc);
+		V_DrawFill(x - width + (results == 5 ? ofsx : 0), y + (results == 5 ? ofsy : 0), fillw, fillh, fillc|vflags);
 		return 0;
 	}
 
@@ -2915,31 +2912,44 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 	{
 		patch_t *p = NULL;
 		UINT8 *cmap = NULL;
+		INT32 num;
+
+		if (item->patch == NULL)
+			return 0;
 
 		switch (item->status & ITF_MASK)
 		{
 		case ITF_THUMBNAIL:
-		{
-			INT32 mapnum = item->patch == NULL ? -1 : G_MapNumber(item->patch);
-			scale = M_GetMapThumbnail(mapnum < nummapheaders ? mapnum : -1, &p)/4;
+			if (fastcmp(item->patch, "$"))
+				num = -1; // random
+			else if (fastcmp(item->patch, "?"))
+				num = -2; // unknown
+			else
+				num = G_MapNumber(item->patch);
+			scale = M_GetMapThumbnail(num, &p)/4;
 			break;
-		}
-		case ITF_PATCH:
-		{
-			if (!item->patch)
-				return 0;
 
+		case ITF_PATCH:
 			p = W_CachePatchName(item->patch, PU_CACHE);
+			cmap = V_GetStringColormap(colorflag);
 			break;
-		}
+
+		case ITF_SKIN:
+			num = R_SkinAvailable(item->patch);
+			boolean small = item->status & IT_SMALL;
+			scale = FRACUNIT;
+			if (num < 0)
+				p = W_CachePatchName(small ? "M_NORANK" : "M_NOWANT", PU_CACHE);
+			else
+				p = faceprefix[num][small ? FACE_RANK : FACE_WANTED];
+			cmap = R_GetTranslationColormap(num < 0 ? TC_RAINBOW : num, item->argument, GTC_MENUCACHE);
+			break;
 		}
 
 		if (item->status & IT_CENTER)
-			width = SHORT(p->width)/2;
+			width = p->width/2;
 		else if (item->status & IT_RIGHT)
-			width = SHORT(p->width);
-
-		cmap = V_GetStringColormap(colorflag);
+			width = p->width;
 
 		V_DrawFixedPatch((x - width)<<FRACBITS, y<<FRACBITS, scale, vflags & ~V_FLIP, p, cmap);
 		return width*FRACUNIT;
@@ -3020,6 +3030,10 @@ static fixed_t M_GetItemAbsY(const menupanelinst_t *pi, size_t index)
 static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 {
 	const menupaneldef_t *pd = M_GetDefFromInst(pi);
+	INT32 pflags = pi->vflags & ~V_FLIP;
+
+	if (pd->drawroutine == MD_DrawReplayHut && cv_vhseffect.value)
+		V_DrawVhsEffect(false); // FIXME a menudef flag for this!?!?
 
 	if (cv_debugpanels.value != 2 && pd->drawroutine)
 		pd->drawroutine(pi);
@@ -3060,7 +3074,7 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 			fixed_t scale = M_GetMapThumbnail(cv_nextmap.value - 1, &patch);
 			V_DrawSciencePatch(BASEVIDWIDTH*FRACUNIT - patch->width*scale/4 - pi->x,
 			                  scrolly + M_GetItemAbsY(pi, i) + 35*FRACUNIT - patch->height*scale/8,
-			                  0, patch, scale/4);
+			                  pflags, patch, scale/4);
 			break;
 		}
 
@@ -3101,7 +3115,7 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 			goto nodraw;
 		}
 
-		w = M_DrawMenuItem(pi, item, dx, dy, MENUCAPS, !hidecursor && item->status & IT_INTERACT && i == pi->itemon);
+		w = M_DrawMenuItem(pi, item, dx, dy, pi->vflags | MENUCAPS, !hidecursor && item->status & IT_INTERACT && i == pi->itemon);
 
 		if (!hidecursor && i == pi->itemon)
 		{
@@ -3115,15 +3129,34 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 
 	// DRAW THE SKULL CURSOR
 	if (!hidecursor && M_ItemSelectable(&pi->items[pi->itemon]))
-		V_DrawSciencePatch(cursorx, cursory, (noFurtherInput > 0 ? V_TRANSLUCENT : 0), W_CachePatchName("M_CURSOR", PU_CACHE), FRACUNIT);
+		V_DrawSciencePatch(cursorx, cursory, (noFurtherInput > 0 ? V_TRANSLUCENT : 0) | pflags, W_CachePatchName("M_CURSOR", PU_CACHE), FRACUNIT);
 	if (noFurtherInput > 0)
-		V__DrawOneScaleString (cursorx, cursory, FRACUNIT/2, 0, HU_FONT, "WAIT");
+		V__DrawOneScaleString (cursorx, cursory, FRACUNIT/2, pflags, HU_FONT, "WAIT");
 
-	x = pi->x - 20*FRACUNIT + pi->cursoroffset;
-	if (cliptop)
-		V_DrawCharacter(x/FRACUNIT, pi->y/FRACUNIT - (skullAnimCounter/5), '\x1A' | highlightflags, false); // up arrow
-	if (clipbot)
-		V_DrawCharacter(x/FRACUNIT, pi->y/FRACUNIT + scrollheight/FRACUNIT + (skullAnimCounter/5), '\x1B' | highlightflags, false); // down arrow
+	// Draw scrollbar
+	// FIXME make replay hut scrollbar an option?
+	if (pd->drawroutine == MD_DrawReplayHut)
+	{
+		INT32 bh = (vid.height/vid.dupy - 80)*FRACUNIT;
+		x = (BASEVIDWIDTH - 4)*FRACUNIT;
+		y = 75*FRACUNIT;
+		if (boty > bh)
+		{
+			boty += scrollheight + 10*FRACUNIT;
+			V_DrawFixedFill(x, y, 4*FRACUNIT, bh, V_SNAPTOTOP|V_SNAPTORIGHT|159);
+			x += FRACUNIT, y += FRACUNIT;
+			V_DrawFixedFill(x, y + FixedMul(bh, FixedDiv(M_GetItemAbsY(pi, pi->itemon), boty)), 2*FRACUNIT, FixedDiv(FixedMul(bh, bh) - 1, boty) - FRACUNIT, V_SNAPTOTOP|V_SNAPTORIGHT|149);
+		}
+	}
+	else
+	{
+		pflags |= highlightflags;
+		x = pi->x - 20*FRACUNIT + pi->cursoroffset;
+		if (cliptop)
+			V_DrawCharacter(x/FRACUNIT, pi->y/FRACUNIT - (skullAnimCounter/5), '\x1A' | pflags, false); // up arrow
+		if (clipbot)
+			V_DrawCharacter(x/FRACUNIT, pi->y/FRACUNIT + scrollheight/FRACUNIT + (skullAnimCounter/5), '\x1B' | pflags, false); // down arrow
+	}
 }
 
 //
@@ -4712,9 +4745,6 @@ INT32 MR_QuitAddons(INT32 choice)
 menudemo_t *demolist;
 
 #define DF_ENCORE       0x40
-static INT16 replayScrollTitle = 0;
-static INT16 replayScrollTitleOld = 0;
-static SINT8 replayScrollDelay = TICRATE, replayScrollDir = 1;
 
 void MP_PrepReplayList(menupanelinst_t *pi)
 {
@@ -4746,14 +4776,12 @@ void MP_PrepReplayList(menupanelinst_t *pi)
 			sprintf(demolist[i].title, ".....");
 		}
 
-		menuitem_t *item = M_AppendMenuItem(pi);
-		item->status = IT_INTERACT;
+		menuitem_t *item = M_AppendMenuItem(pi, 0, i*10*FRACUNIT, IT_INTERACT);
 		M_SetItemTextRaw(item, demolist[i].title);
 		M_SetItemPatchRaw(item, dirmenu[i] + DIR_STRING);
 		item->argument = dirmenu[i][DIR_TYPE];
 		if (item->argument != EXT_FOLDER && item->argument != EXT_UP)
 			item->submenu = MN_MISC_REPLAYSTART;
-		item->y = i*10*FRACUNIT;
 	}
 
 	M_RawSetItemOn(pi, dir_on[menudepthleft]);
@@ -4777,8 +4805,6 @@ INT32 MR_ReplayHut(INT32 choice)
 		dir_on[menudepthleft] = 0;
 	demo.inreplayhut = true;
 
-	replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
-
 	M_ClearMenus(true);
 	G_SetGamestate(GS_TIMEATTACK); // do this before M_SetupNextMenu so that menu meta state knows that we're switching
 	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
@@ -4791,8 +4817,6 @@ INT32 MR_ReplayHut(INT32 choice)
 
 void MP_ReplayHutStart(menupanelinst_t *pi)
 {
-	M_SetItemText(pi, "DEMOTITLE", demolist[dir_on[menudepthleft]].title);
-
 	switch (demolist[dir_on[menudepthleft]].addonstatus)
 	{
 	case DFILE_ERROR_CANNOTLOAD:
@@ -4838,8 +4862,6 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 			break;
 
 		S_StartSound(NULL, sfx_menu1);
-		replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
-		replayScrollTitleOld =0;
 		return false;
 
 	case KEY_DOWNARROW:
@@ -4849,8 +4871,6 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 			break;
 
 		S_StartSound(NULL, sfx_menu1);
-		replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
-		replayScrollTitleOld =0;
 		return false;
 
 	case KEY_ENTER:
@@ -4900,8 +4920,6 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 				initializer(pi);
 				break;
 			default:
-				replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
-				replayScrollTitleOld =0;
 				return false;
 		}
 
@@ -4922,7 +4940,11 @@ void MD_DrawReplayHutReplayInfo(menupanelinst_t *pi)
 	M_SetItemVisible(fg, "OUTDATED", false);
 	M_SetItemVisible(bg, "CENTERTEXT", false);
 
-	switch (demolist[dir_on[menudepthleft]].type)
+	menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
+	M_SetItemText(fg, "DEMOTITLE", mdemo->title);
+	M_SetItemVisible(fg, "DEMOTITLE", M_CheckPanel("DEMOLIST") == NULL);
+
+	switch (mdemo->type)
 	{
 	case MD_NOTLOADED:
 		M_SetItemVisible(bg, "CENTERTEXT", true);
@@ -4945,7 +4967,7 @@ void MD_DrawReplayHutReplayInfo(menupanelinst_t *pi)
 	default:
 		fg->visible = true;
 
-		INT32 mapnum = demolist[dir_on[menudepthleft]].map + 1;
+		INT32 mapnum = mdemo->map + 1;
 		char *mapname;
 		if (mapnum <= nummapheaders)
 		{
@@ -4955,21 +4977,21 @@ void MD_DrawReplayHutReplayInfo(menupanelinst_t *pi)
 		}
 		else
 		{
-			M_SetItemPatch(fg, "THUMBNAIL", "");
+			M_SetItemPatch(fg, "THUMBNAIL", "?");
 			mapname = Z_StrDup("Level is not loaded.");
 			M_SetItemDisabled(fg, "MAPNAME", true);
 		}
 		M_SetItemText(fg, "MAPNAME", mapname);
 		Z_Free(mapname);
 
-		INT32 laps = demolist[dir_on[menudepthleft]].numlaps;
+		INT32 laps = mdemo->numlaps;
 		M_SetItemText(fg, "NUMLAPS", laps ? va("(%d laps)", laps) : "");
 
-		M_SetItemText(fg, "GAMETYPE", demolist[dir_on[menudepthleft]].gametype == GT_RACE
-		                            ? va("Race (%s speed)", kartspeed_cons_t[(demolist[dir_on[menudepthleft]].kartspeed & ~DF_ENCORE) + 1].strvalue)
+		M_SetItemText(fg, "GAMETYPE", mdemo->gametype == GT_RACE
+		                            ? va("Race (%s speed)", kartspeed_cons_t[(mdemo->kartspeed & ~DF_ENCORE) + 1].strvalue)
 		                            : "Battle Mode");
 
-		boolean hidescore = !demolist[dir_on[menudepthleft]].standings[0].ranking;
+		boolean hidescore = !mdemo->standings[0].ranking;
 		M_SetItemVisible(fg, "NOSTANDINGS", hidescore);
 		M_SetItemVisible(fg, "WINNER", !hidescore);
 		M_SetItemVisible(fg, "WINNERNAME", !hidescore);
@@ -4981,12 +5003,19 @@ void MD_DrawReplayHutReplayInfo(menupanelinst_t *pi)
 		if (hidescore)
 			break;
 
-		M_SetItemText(fg, "WINNERNAME", demolist[dir_on[menudepthleft]].standings[0].name);
+		M_SetItemText(fg, "WINNERNAME", mdemo->standings[0].name);
 
-		UINT32 score = demolist[dir_on[menudepthleft]].standings[0].timeorscore;
-		if (demolist[dir_on[menudepthleft]].gametype == GT_RACE)
+		UINT32 score = mdemo->standings[0].timeorscore;
+		M_SetItemText(fg, "SCORENAME", mdemo->gametype == GT_RACE ? "Time" : "Score");
+
+		M_GetMenuItem(fg, "SCORE")->status &= ~ITF_THIN;
+		if (score == UINT32_MAX-1)
 		{
-			M_SetItemText(fg, "SCORENAME", "Time");
+			M_SetItemText(fg, "SCORE", "No Contest");
+			M_GetMenuItem(fg, "SCORE")->status |= ITF_THIN;
+		}
+		else if (mdemo->gametype == GT_RACE)
+		{
 			M_SetItemText(fg, "SCORE", va("%d'%02d\"%02d",
 			                              G_TicsToMinutes(score, true),
 			                              G_TicsToSeconds(score),
@@ -4994,178 +5023,101 @@ void MD_DrawReplayHutReplayInfo(menupanelinst_t *pi)
 		}
 		else
 		{
-			M_SetItemText(fg, "SCORENAME", "Score");
 			M_SetItemText(fg, "SCORE", va("%d", score));
 		}
 
 		// Character face!
-		INT32 skin = demolist[dir_on[menudepthleft]].standings[0].skin;
-		skincolornum_t color = demolist[dir_on[menudepthleft]].standings[0].color;
-		if (skin < numskins && W_CheckNumForName(skins[skin].facewant) != LUMPERROR)
-		{
-			M_SetItemPatch(fg, "FACE", "M_NOWANT");
-			(void)color;
-			//patch = faceprefix[skin][FACE_WANTED];
-			//colormap = R_GetTranslationColormap(skin, color, GTC_MENUCACHE);
-		}
-		else
-		{
-			M_SetItemPatch(fg, "FACE", "M_NOWANT");
-			//colormap = R_GetTranslationColormap(TC_RAINBOW, color, GTC_MENUCACHE);
-		}
+		INT32 skin = mdemo->standings[0].skin;
+		M_SetItemPatch(fg, "FACE", skin >= 0 && skin < numskins ? skins[skin].name : "");
+		M_SetItemArgument(fg, "FACE", mdemo->standings[0].color);
 		break;
 	}
 }
 
-static fixed_t finalscroll = 0;
-static fixed_t oldfinalscroll = 0;
-
-#define SCALEDVIEWWIDTH (vid.width/vid.dupx)
-#define SCALEDVIEWHEIGHT (vid.height/vid.dupy)
-void MD_DrawReplayHut(menupanelinst_t *pi)
+// TODO: generalize, i can't do math ugh
+static fixed_t M_ReplayHutScroll(fixed_t scrollamt)
 {
-	INT32 x, y, cursory = 0;
-	INT16 i;
-	boolean processed_one_this_frame = false;
-
-	static UINT16 replayhutmenuy = 0;
-
-	if (cv_vhseffect.value)
-		V_DrawVhsEffect(false);
-
-	// Draw menu choices
-	x = pi->x/FRACUNIT;
-	y = pi->y/FRACUNIT;
-
-	INT32 maxy;
-	// Scroll menu items if needed
-	cursory = y + dir_on[menudepthleft]*10;
-	maxy = y + sizedirmenu*10;
-
-	if (cursory > maxy - 20)
-		cursory = maxy - 20;
-
-	if (cursory - replayhutmenuy > SCALEDVIEWHEIGHT-50)
-		replayhutmenuy += (cursory-SCALEDVIEWHEIGHT-replayhutmenuy + 51)/2;
-	else if (cursory - replayhutmenuy < 110)
-		replayhutmenuy += (max(0, cursory-110)-replayhutmenuy - 1)/2;
-
-	y -= replayhutmenuy;
-
-	for (i = 0; i < (INT16)sizedirmenu; i++)
+	fixed_t scrollx = 0;
+	scrollamt *= 2;
+	if (scrollamt > 0)
 	{
-		INT32 localy = y+i*10;
-		INT32 localx = x;
-
-		if (localy < 65)
-			continue;
-		if (localy >= SCALEDVIEWHEIGHT)
-			break;
-
-		if (demolist[i].type == MD_NOTLOADED && !processed_one_this_frame)
+		// scroll the map's name! (hmmm where was this copy pasted from, i wonder)
+		INT32 scrollmax = (scrollamt/FRACUNIT + TICRATE)*2;
+		fixed_t t = ((movetimer % scrollmax) - TICRATE)*FRACUNIT;
+		if (t < scrollmax*FRACUNIT/2)
 		{
-			processed_one_this_frame = true;
-			G_LoadDemoInfo(&demolist[i]);
-			M_SetItemTextRaw(&pi->items[i], demolist[i].title);
-		}
-
-		if (demolist[i].type == MD_SUBDIR)
-		{
-			localx += 8;
-			V_DrawScaledPatch(x - 4, localy, V_SNAPTOTOP|V_SNAPTOLEFT, W_CachePatchName(dirmenu[i][DIR_TYPE] == EXT_UP ? "M_RBACK" : "M_RFLDR", PU_CACHE));
-		}
-
-		if (i == (INT16)dir_on[menudepthleft])
-		{
-			cursory = localy;
-
-			if (renderisnewtic)
-			{
-				if (replayScrollDelay)
-					replayScrollDelay--;
-				else if (replayScrollDir > 0)
-				{
-					if (replayScrollTitle < (V_StringWidth(demolist[i].title, 0) - (SCALEDVIEWWIDTH - (x<<1)))<<1)
-						replayScrollTitle++;
-					else
-					{
-						replayScrollDelay = TICRATE;
-						replayScrollDir = -1;
-					}
-				}
-				else
-				{
-					if (replayScrollTitle > 0)
-						replayScrollTitle--;
-					else
-					{
-						replayScrollDelay = TICRATE;
-						replayScrollDir = 1;
-					}
-				}
-			}
-
-			replayScrollTitleOld = replayScrollTitle;
-			finalscroll = (localx - (replayScrollTitle>>1))*FRACUNIT;
-			oldfinalscroll = (localx - (replayScrollTitleOld>>1))*FRACUNIT;
-			V_DrawStringAtFixed(R_InterpolateFixed(oldfinalscroll, finalscroll), localy*FRACUNIT, V_SNAPTOTOP|V_SNAPTOLEFT|highlightflags|V_ALLOWLOWERCASE, demolist[i].title);
-			pi->items[i].x = -replayScrollTitle*(FRACUNIT/2);
+			scrollx = max(0, min(t, scrollamt));
+			if (t >= 0 && t < scrollamt)
+				scrollx += R_GetTimeFrac(RTF_MENU);
 		}
 		else
 		{
-			V_DrawString(localx, localy, V_SNAPTOTOP|V_SNAPTOLEFT|V_ALLOWLOWERCASE, demolist[i].title);
-			pi->items[i].x = 1; // FIXME
+			t -= scrollmax*FRACUNIT/2;
+			scrollx = scrollamt - max(0, min(t, scrollamt));
+			if (t > 0 && t <= scrollamt)
+				scrollx += FRACUNIT - R_GetTimeFrac(RTF_MENU); // FIXME: hiccup on last tic (1.5 -> 0)
+		}
+	}
+	return scrollx / 2;
+}
+
+void MD_DrawReplayHut(menupanelinst_t *pi)
+{
+	size_t i;
+
+	pi->scrollheight = (vid.height/vid.dupy - 90)*FRACUNIT;
+
+	for (i = 0; i < 50; i++)
+	{
+		size_t demoi = pi->itemon + (i/2 * (i & 1 ? -1 : 1));
+		if (demoi < sizedirmenu && demolist[demoi].type == MD_NOTLOADED)
+		{
+			G_LoadDemoInfo(&demolist[demoi]);
+			M_SetItemTextRaw(&pi->items[demoi], demolist[demoi].title);
+			break;
 		}
 	}
 
-	// Draw scrollbar
-	y = sizedirmenu*10 + 30;
-	if (y > SCALEDVIEWHEIGHT-80)
+	for (i = 0; i < pi->numitems; i++)
 	{
-		V_DrawFill(BASEVIDWIDTH-4, 75, 4, SCALEDVIEWHEIGHT-80, V_SNAPTOTOP|V_SNAPTORIGHT|159);
-		V_DrawFill(BASEVIDWIDTH-3, 76 + (SCALEDVIEWHEIGHT-80) * replayhutmenuy / y, 2, (((SCALEDVIEWHEIGHT-80) * (SCALEDVIEWHEIGHT-80))-1) / y - 1, V_SNAPTOTOP|V_SNAPTORIGHT|149);
-	}
+		pi->items[i].x = 1; // FIXME autolayout...!
 
-	// Draw the cursor
-	V_DrawScaledPatch(pi->x/FRACUNIT - 24, cursory, V_SNAPTOTOP|V_SNAPTOLEFT,
-		W_CachePatchName("M_CURSOR", PU_CACHE));
+		if (demolist[i].type == MD_SUBDIR)
+			pi->items[i].x += 8*FRACUNIT;
+
+		if (i == pi->itemon)
+			pi->items[i].x -= M_ReplayHutScroll((V_StringWidth(demolist[i].title, pi->vflags|MENUCAPS) - vid.width/vid.dupx)*FRACUNIT + pi->x*2);
+	}
 }
 
 void MD_DrawReplayStartMenu(menupanelinst_t *pi)
 {
 	UINT8 i;
+	menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
 
 	// Draw rankings beyond first
 	pi = M_GetPanel("RANKINGS");
 	M_ClearPanelItems(pi);
-	pi->y = 62*FRACUNIT - replayScrollTitle*(FRACUNIT/2);
-	for (i = 1; i < MAXPLAYERS && demolist[dir_on[menudepthleft]].standings[i].ranking; i++)
+
+	for (i = 1; i < MAXPLAYERS && mdemo->standings[i].ranking; i++)
 	{
 		menuitem_t *item;
 		INT32 y = i*20*FRACUNIT;
 
-		item = M_AppendMenuItem(pi);
-		item->x = 1; // FIXME
-		item->y = y;
-		item->status = ITH_HIGHLIGHT|IT_RIGHT;
-		M_SetItemTextRaw(item, va("%2d", demolist[dir_on[menudepthleft]].standings[i].ranking));
+		item = M_AppendMenuItem(pi, 1, y, ITH_HIGHLIGHT|IT_RIGHT);
+		M_SetItemTextRaw(item, va("%2d", mdemo->standings[i].ranking));
 
-		item = M_AppendMenuItem(pi);
-		item->x = 4*FRACUNIT;
-		item->y = y;
-		item->status = ITF_THIN;
-		M_SetItemTextRaw(item, demolist[dir_on[menudepthleft]].standings[i].name);
+		item = M_AppendMenuItem(pi, 4*FRACUNIT, y, ITF_THIN);
+		M_SetItemTextRaw(item, mdemo->standings[i].name);
 
-		item = M_AppendMenuItem(pi);
-		item->x = 8*FRACUNIT;
-		item->y = y + 9*FRACUNIT;
-		UINT32 score = demolist[dir_on[menudepthleft]].standings[i].timeorscore;
+		item = M_AppendMenuItem(pi, 8*FRACUNIT, y + 9*FRACUNIT, 0);
+		UINT32 score = mdemo->standings[i].timeorscore;
 		if (score == UINT32_MAX-1)
 		{
 			item->status |= ITF_THIN;
 			M_SetItemTextRaw(item, "No Contest");
 		}
-		else if (demolist[dir_on[menudepthleft]].gametype == GT_RACE)
+		else if (mdemo->gametype == GT_RACE)
 		{
 			M_SetItemTextRaw(item, va("%d'%02d\"%02d",
 			                         G_TicsToMinutes(score, true),
@@ -5178,57 +5130,17 @@ void MD_DrawReplayStartMenu(menupanelinst_t *pi)
 		}
 
 		// Character face!
-		item = M_AppendMenuItem(pi);
-		item->x = 95*FRACUNIT;
-		item->y = y;
-		item->status = ITF_PATCH|IT_RIGHT;
-
-		UINT16 skin = demolist[dir_on[menudepthleft]].standings[i].skin;
-		skincolornum_t color = demolist[dir_on[menudepthleft]].standings[i].color;
-		if (skin < numskins && W_CheckNumForName(skins[skin].facewant) != LUMPERROR)
-		{
-			M_SetItemPatchRaw(item, "M_NORANK");
-			(void)color;
-			//patch = faceprefix[skin][FACE_RANK];
-			//colormap = R_GetTranslationColormap(skin, color, GTC_MENUCACHE);
-		}
-		else
-		{
-			M_SetItemPatchRaw(item, "M_NORANK");
-			//colormap = R_GetTranslationColormap(TC_RAINBOW, color, GTC_MENUCACHE);
-		}
+		item = M_AppendMenuItem(pi, 95*FRACUNIT, y, ITF_SKIN|IT_SMALL|IT_RIGHT);
+		INT32 skin = mdemo->standings[i].skin;
+		M_SetItemPatchRaw(item, skin >= 0 && skin < numskins ? skins[skin].name : "");
+		item->argument = mdemo->standings[i].color;
 	}
 
-	// Handle scrolling rankings
-	if (renderisnewtic)
-	{
-		if (replayScrollDelay)
-			replayScrollDelay--;
-		else if (replayScrollDir > 0)
-		{
-			if (replayScrollTitle < (i*20 - SCALEDVIEWHEIGHT + 100)<<1)
-				replayScrollTitle++;
-			else
-			{
-				replayScrollDelay = TICRATE;
-				replayScrollDir = -1;
-			}
-		}
-		else
-		{
-			if (replayScrollTitle > 0)
-				replayScrollTitle--;
-			else
-			{
-				replayScrollDelay = TICRATE;
-				replayScrollDir = 1;
-			}
-		}
-	}
+	pi->y = 62*FRACUNIT - M_ReplayHutScroll((i*20 - vid.height/vid.dupy)*FRACUNIT + 100*FRACUNIT);
 
 	// Draw a warning prompt if needed
 	const char *warning;
-	switch (demolist[dir_on[menudepthleft]].addonstatus)
+	switch (mdemo->addonstatus)
 	{
 	case DFILE_ERROR_CANNOTLOAD:
 		warning = "Some addons in this replay cannot be loaded.\nYou can watch anyway, but desyncs may occur.";
@@ -7860,7 +7772,7 @@ static void MD_DrawCssCharacter(menupanelinst_t *pi)
 			bobspeed = FixedDiv(bobspeed*FRACUNIT, fl.bobamp / 6); // rough approximation of bounce speed
 
 		// smooth floating, totally not stolen from rocket sneakers.
-		fixed_t sine = FixedMul(fl.bobamp, FINESINE(((FixedMul(4 * M_TAU_FIXED, bobspeed) * followertimer)>>ANGLETOFINESHIFT) & FINEMASK));
+		fixed_t sine = FixedMul(fl.bobamp, FINESINE(((FixedMul(4 * M_TAU_FIXED, bobspeed) * menutimer)>>ANGLETOFINESHIFT) & FINEMASK));
 
 		follower_tics -= renderdeltatics;
 
@@ -7868,7 +7780,7 @@ static void MD_DrawCssCharacter(menupanelinst_t *pi)
 		if (fl.mode == FOLLOWERMODE_GROUND)
 		{
 			// this sucks
-			fixed_t sine_next = FixedMul(fl.bobamp, FINESINE(((FixedMul(4 * M_TAU_FIXED, bobspeed) * (followertimer + 1))>>ANGLETOFINESHIFT) & FINEMASK));
+			fixed_t sine_next = FixedMul(fl.bobamp, FINESINE(((FixedMul(4 * M_TAU_FIXED, bobspeed) * (menutimer + 1))>>ANGLETOFINESHIFT) & FINEMASK));
 			if ((sine > 0) != (sine_next > 0))
 			{
 				st = fl.followstate;
@@ -8279,8 +8191,6 @@ static void M_GetFollowerState(void)
 	if (cv_dummyfollower.value <= -1) // yikes, there's none!
 		return;
 	// ^ we don't actually need to set anything since it won't be displayed anyway.
-
-	//followertimer = 0;	// reset timer. not like it'll overflow anytime soon but whatever.
 
 	// set follower state
 	follower_state = &states[followers[cv_dummyfollower.value].followstate];
@@ -9383,9 +9293,6 @@ void MD_DrawMonitorToggles(menupanelinst_t *pi)
 
 	V_DrawCenteredStringAtFixed(
 	    BASEVIDWIDTH*FRACUNIT/2, pi->y, MENUCAPS | highlightflags, va("* %s *", displayname));
-
-	if (pi->numitems > 0)
-		M_DrawMenuTooltips(pi->items[pi->itemon].tooltip);
 }
 
 INT32 MR_HandleMonitorToggles(INT32 choice)
