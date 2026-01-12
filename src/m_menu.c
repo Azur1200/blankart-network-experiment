@@ -167,7 +167,7 @@ static size_t numcurpanels;
 static menupanelinst_t *curpanels; // pointers to instantiated menu panels
 static size_t panelOn;
 static INT16 skullAnimCounter = 10; // skull animation counter
-static tic_t menutimer = 0, movetimer = 0; // tics since menu change/menu movement
+static tic_t menutimer = 0, cursortimer = 0; // tics since menu change/menu movement
 
 static struct
 {
@@ -393,6 +393,12 @@ static INT16 M_GetMenuIndex(const menupanelinst_t *pi, const char *name)
 	return M_GetMenuItem(pi, name) - pi->items;
 }
 
+static fixed_t M_ItemWidth(const menupanelinst_t *pi, size_t index)
+{
+	// TODO every other style
+	return V_StringWidth(pi->items[index].text, pi->vflags|MENUCAPS)*FRACUNIT;
+}
+
 static boolean M_ItemSelectable(const menuitem_t *item)
 {
 	return (item->status & IT_INTERACT) && !(item->status & (IT_HIDDEN|IT_GRAYEDOUT|IT_SECRET));
@@ -428,7 +434,7 @@ static void M_RawSetItemOn(menupanelinst_t *pi, INT16 index)
 		return;
 
 	if (old != pi->itemon)
-		movetimer = 0;
+		cursortimer = 0;
 
 	// the curent item can be disabled,
 	// this code go up until an enabled item found
@@ -1962,7 +1968,7 @@ texty -= 10*vid.dupy;\
 				                BASEVIDWIDTH / 2,
 				                BASEVIDHEIGHT-50,
 				                V_SNAPTOBOTTOM|V_6WIDTHSPACE|MENUCAPS,
-				                movetimer <= 9 ? 9 - movetimer : 0);
+				                cursortimer <= 9 ? 9 - cursortimer : 0);
 			}
 		}
 	}
@@ -2238,7 +2244,7 @@ static void M_SetupNextMenu(menutype_t menunum)
 
 	M_HandleMenuPresState(menunum);
 	M_ClearPanelInstances();
-	menutimer = movetimer = 0;
+	menutimer = cursortimer = 0;
 	currentMenu = menudef;
 
 	for (i = 0; i < menudef->numpanels; i++)
@@ -2382,7 +2388,7 @@ void M_Ticker(void)
 		skullAnimCounter = 8;
 
 	menutimer++;
-	movetimer++;
+	cursortimer++;
 
 	if (menustack[0] == MN_PLAYBACK)
 	{
@@ -5035,7 +5041,7 @@ void MD_DrawReplayHutReplayInfo(menupanelinst_t *pi)
 }
 
 // TODO: generalize, i can't do math ugh
-static fixed_t M_ReplayHutScroll(fixed_t scrollamt)
+static fixed_t M_ReplayHutScroll(fixed_t scrollamt, tic_t timer)
 {
 	fixed_t scrollx = 0;
 	scrollamt *= 2;
@@ -5043,7 +5049,7 @@ static fixed_t M_ReplayHutScroll(fixed_t scrollamt)
 	{
 		// scroll the map's name! (hmmm where was this copy pasted from, i wonder)
 		INT32 scrollmax = (scrollamt/FRACUNIT + TICRATE)*2;
-		fixed_t t = ((movetimer % scrollmax) - TICRATE)*FRACUNIT;
+		fixed_t t = ((timer % scrollmax) - TICRATE)*FRACUNIT;
 		if (t < scrollmax*FRACUNIT/2)
 		{
 			scrollx = max(0, min(t, scrollamt));
@@ -5086,7 +5092,7 @@ void MD_DrawReplayHut(menupanelinst_t *pi)
 			pi->items[i].x += 8*FRACUNIT;
 
 		if (i == pi->itemon)
-			pi->items[i].x -= M_ReplayHutScroll((V_StringWidth(demolist[i].title, pi->vflags|MENUCAPS) - vid.width/vid.dupx)*FRACUNIT + pi->x*2);
+			pi->items[i].x -= M_ReplayHutScroll(M_ItemWidth(pi, i) - (vid.width/vid.dupx)*FRACUNIT + pi->x*2, cursortimer);
 	}
 }
 
@@ -5136,7 +5142,7 @@ void MD_DrawReplayStartMenu(menupanelinst_t *pi)
 		item->argument = mdemo->standings[i].color;
 	}
 
-	pi->y = 62*FRACUNIT - M_ReplayHutScroll((i*20 - vid.height/vid.dupy)*FRACUNIT + 100*FRACUNIT);
+	pi->y = 62*FRACUNIT - M_ReplayHutScroll((100 + i*20 - vid.height/vid.dupy)*FRACUNIT, menutimer);
 
 	// Draw a warning prompt if needed
 	const char *warning;
