@@ -2227,6 +2227,10 @@ void readmenupanel(MYFILE *f, menupaneldef_t *pd)
 		{
 			pd->navitemcount = get_number(word2);
 		}
+		else if (fastcmp(word, "HORIZONTAL"))
+		{
+			pd->horizontal = word2[0] == 'T' || word2[0] == 'Y';
+		}
 		else
 			WARN("unknown word '%s'", word);
 	} while (!myfeof(f)); // finish when the line is empty

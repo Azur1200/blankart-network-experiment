@@ -883,6 +883,8 @@ struct panel_func_s const PANEL_FUNCS[] = {
 	{ "PREPREPLAYLIST", &MP_PrepReplayList },
 	{ "REPLAYHUTSTART", &MP_ReplayHutStart },
 	{ "VIDEOMODELIST", &MP_VideoModeList },
+	{ "MULTIPLAYERPAUSE", &MP_MultiplayerPause },
+	{ "PLAYERSPLITSCREEN", &MP_PlayerSplitscreen },
 	{ NULL, NULL }
 };
 

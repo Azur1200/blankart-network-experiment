@@ -214,6 +214,7 @@ struct menupaneldef_t
 	panelfunc_f  *initializer;        // called when panel instance is setup
 	boolean multinav;                 // navigation in two dimensions!? (disables cvar arrows)
 	INT32 navitemcount;               // items per column (or row if horizontal is true)
+	boolean horizontal;               // navigate with left/right instead of up/down
 };
 
 struct menupanelinst_t
@@ -293,7 +294,8 @@ void M_ClearMenus(boolean callexitmenufunc);
 panelfunc_f
 MP_SinglePlayerMain, MP_Options, MP_GameOptions, MP_SetupControls, MP_CameraSetup,
 MP_ScreenshotOptions, MP_AddonsOptions, MP_SetupMultiPlayer, MP_SetupMonitorToggles,
-MP_PrepReplayList, MP_ReplayHutStart, MP_VideoModeList
+MP_PrepReplayList, MP_ReplayHutStart, MP_VideoModeList, MP_MultiplayerPause,
+MP_PlayerSplitscreen
 ;
 INT32 MR_Addons(INT32 choice);
 INT32 MR_QuitAddons(INT32 choice);

@@ -1702,17 +1702,6 @@ boolean M_Responder(event_t *ev)
 	{
 		playback_last_menu_interaction_leveltime = leveltime;
 		M_DemoBinds(ch);
-
-		// Flip left/right with up/down for the playback menu, since it's a horizontal icon row.
-		switch (ch)
-		{
-			case KEY_LEFTARROW: ch = KEY_UPARROW; break;
-			case KEY_UPARROW: ch = KEY_RIGHTARROW; break;
-			case KEY_RIGHTARROW: ch = KEY_DOWNARROW; break;
-			case KEY_DOWNARROW: ch = KEY_LEFTARROW; break;
-
-			default: break;
-		}
 	}
 
 	// binds that don't require an item
@@ -1774,6 +1763,14 @@ boolean M_Responder(event_t *ev)
 		break;
 	}
 
+	// Flip left/right with up/down for the playback menu, since it's a horizontal icon row.
+	if (curpd->horizontal)
+	{
+		INT32 tmp = hmove;
+		hmove = vmove;
+		vmove = tmp;
+	}
+
 	INT16 oldItemOn = curpi->itemon; // prevent infinite loop
 	INT16 newItemOn = curpi->itemon;
 
@@ -1782,8 +1779,22 @@ boolean M_Responder(event_t *ev)
 	{
 		INT32 dir = intsign(vmove);
 		do
-			newItemOn = intmod(newItemOn + dir, curpi->numitems);
-		while ((vmove -= intsign(vmove)) && oldItemOn != newItemOn && !M_ItemSelectable(&curpi->items[newItemOn]));
+		{
+			if (curpd->multinav)
+			{
+				if (newItemOn + dir >= curpi->numitems)
+					newItemOn = curpi->numitems - (curpi->numitems % curpi->navitemcount);
+				else
+					newItemOn = newItemOn - (newItemOn % curpi->navitemcount) + intmod(newItemOn + dir, curpi->navitemcount);
+				newItemOn = min(newItemOn, curpi->numitems - 1);
+			}
+			else
+			{
+				newItemOn += dir;
+			}
+			newItemOn = intmod(newItemOn, curpi->numitems);
+		}
+		while (oldItemOn != newItemOn && ((vmove -= intsign(vmove)) != 0 || !M_ItemSelectable(&curpi->items[newItemOn])));
 
 		M_RawSetItemOn(curpi, newItemOn);
 		S_StartSound(NULL, sfx_menu1);
@@ -2022,6 +2033,67 @@ texty -= 10*vid.dupy;\
 	}
 }
 
+void MP_PlayerSplitscreen(menupanelinst_t *pi)
+{
+	M_SetItemVisible(pi, "PLAYER", splitscreen > 0);
+}
+
+void MP_MultiplayerPause(menupanelinst_t *pi)
+{
+#ifdef HAVE_DISCORDRPC
+	pi->y = 72*FRACUNIT;
+	M_RefreshPauseMenu();
+	M_SetItemVisible(pi, "DISCORDREQUESTS", true);
+#else
+	pi->y = 80*FRACUNIT;
+	M_SetItemVisible(pi, "DISCORDREQUESTS", false);
+#endif
+	Dummymenuplayer_OnChange();
+
+	M_SetItemVisible(pi, "MAPCHANGE", server || IsPlayerAdmin(consoleplayer));
+	M_SetItemVisible(pi, "ADDONS", server || IsPlayerAdmin(consoleplayer));
+	M_SetItemVisible(pi, "SCRAMBLE", (server || IsPlayerAdmin(consoleplayer)) && G_GametypeHasTeams());
+
+	if (!(server || IsPlayerAdmin(consoleplayer)))
+		pi->y += 24*FRACUNIT;
+
+	M_SetItemVisible(pi, "SETUP1", splitscreen > 0);
+	M_SetItemVisible(pi, "SETUP2", splitscreen > 0);
+	M_SetItemVisible(pi, "SETUP3", splitscreen > 1);
+	M_SetItemVisible(pi, "SETUP4", splitscreen > 2);
+	M_SetItemVisible(pi, "PLAYERSETUP", !splitscreen);
+
+	// splitscreen hell! yay!
+	M_SetItemVisible(pi, "SPECTATE", false);
+	M_SetItemDisabled(pi, "SPECTATE", false);
+	M_SetItemVisible(pi, "ENTER", false);
+	M_SetItemVisible(pi, "CANCELJOIN", false);
+	M_SetItemVisible(pi, "TEAMCHANGE", false);
+	M_SetItemVisible(pi, "SPECTATECHANGE", false);
+
+	if (splitscreen && netgame)
+	{
+		if (G_GametypeHasTeams())
+			M_SetItemVisible(pi, "TEAMCHANGE", true);
+		else if (G_GametypeHasSpectators())
+			M_SetItemVisible(pi, "SPECTATECHANGE", true);
+	}
+	else if (!splitscreen)
+	{
+		if (G_GametypeHasTeams())
+			M_SetItemVisible(pi, "TEAMCHANGE", true);
+		else if (G_GametypeHasSpectators())
+			M_SetItemVisible(pi, !players[consoleplayer].spectator ? "SPECTATE" :
+			                            players[consoleplayer].pflags & PF_WANTSTOJOIN ? "CANCELJOIN" :
+			                            "ENTER", true);
+		else // in this odd case, we still want something to be on the menu even if it's useless
+		{
+			M_SetItemVisible(pi, "SPECTATE", true);
+			M_SetItemDisabled(pi, "SPECTATE", true);
+		}
+	}
+}
+
 //
 // M_StartControlPanel
 //
@@ -2067,62 +2139,6 @@ void M_StartControlPanel(void)
 		M_EnterMenu(MN_MPAUSE, true, 0);
 		pi = M_GetPanel("MAIN");
 		M_SetItemOn(pi, "CONTINUE");
-
-#ifdef HAVE_DISCORDRPC
-		pi->y = 72*FRACUNIT;
-		M_RefreshPauseMenu();
-		M_SetItemVisible(pi, "DISCORDREQUESTS", true);
-#else
-		pi->y = 80*FRACUNIT;
-		M_SetItemVisible(pi, "DISCORDREQUESTS", false);
-#endif
-		Dummymenuplayer_OnChange();
-
-		M_SetItemVisible(pi, "MAPCHANGE", server || IsPlayerAdmin(consoleplayer));
-		M_SetItemVisible(pi, "ADDONS", server || IsPlayerAdmin(consoleplayer));
-		M_SetItemVisible(pi, "SCRAMBLE", (server || IsPlayerAdmin(consoleplayer)) && G_GametypeHasTeams());
-
-		if (!(server || IsPlayerAdmin(consoleplayer)))
-			pi->y += 24*FRACUNIT;
-
-		M_SetItemVisible(pi, "SETUP1", splitscreen > 0);
-		M_SetItemVisible(pi, "SETUP2", splitscreen > 0);
-		M_SetItemVisible(pi, "SETUP3", splitscreen > 1);
-		M_SetItemVisible(pi, "SETUP4", splitscreen > 2);
-		M_SetItemVisible(pi, "PLAYERSETUP", !splitscreen);
-		// FIXME
-		//M_SetItemVisible(MN_CHANGETEAM, "PLAYER", splitscreen);
-		//M_SetItemVisible(MN_CHANGESPECTATE, "PLAYER", splitscreen);
-
-		// splitscreen hell! yay!
-		M_SetItemVisible(pi, "SPECTATE", false);
-		M_SetItemDisabled(pi, "SPECTATE", false);
-		M_SetItemVisible(pi, "ENTER", false);
-		M_SetItemVisible(pi, "CANCELJOIN", false);
-		M_SetItemVisible(pi, "TEAMCHANGE", false);
-		M_SetItemVisible(pi, "SPECTATECHANGE", false);
-
-		if (splitscreen && netgame)
-		{
-			if (G_GametypeHasTeams())
-				M_SetItemVisible(pi, "TEAMCHANGE", true);
-			else if (G_GametypeHasSpectators())
-				M_SetItemVisible(pi, "SPECTATECHANGE", true);
-		}
-		else if (!splitscreen)
-		{
-			if (G_GametypeHasTeams())
-				M_SetItemVisible(pi, "TEAMCHANGE", true);
-			else if (G_GametypeHasSpectators())
-				M_SetItemVisible(pi, !players[consoleplayer].spectator ? "SPECTATE" :
-				                            players[consoleplayer].pflags & PF_WANTSTOJOIN ? "CANCELJOIN" :
-				                            "ENTER", true);
-			else // in this odd case, we still want something to be on the menu even if it's useless
-			{
-				M_SetItemVisible(pi, "SPECTATE", true);
-				M_SetItemDisabled(pi, "SPECTATE", true);
-			}
-		}
 	}
 
 	CON_ToggleOff(); // move away console
@@ -3081,7 +3097,7 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 	if (!scrollheight)
 		scrollheight = INT32_MAX;
 
-	boolean hidecursor = !selected || pi->numitems == 0 || (pd->drawroutine == MD_DrawLevelPlatterMenu && levelselect.row > 0);
+	boolean hidecursor = !selected || pi->numitems == 0 || pd->drawroutine == MD_DrawMonitorToggles || (pd->drawroutine == MD_DrawLevelPlatterMenu && levelselect.row > 0);
 
 	fixed_t topy = M_GetItemAbsY(pi, 0);
 	fixed_t boty = M_GetItemAbsY(pi, pi->numitems-1);
@@ -4894,7 +4910,6 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 		else
 			break;
 
-		S_StartSound(NULL, sfx_menu1);
 		return false;
 
 	case KEY_DOWNARROW:
@@ -4903,7 +4918,6 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 		else
 			break;
 
-		S_StartSound(NULL, sfx_menu1);
 		return false;
 
 	case KEY_ENTER:
@@ -5238,6 +5252,8 @@ void MD_DrawPlaybackMenu(menupanelinst_t *pi)
 	UINT32 transmap = max(0, (INT32)(leveltime - playback_last_menu_interaction_leveltime - 4*TICRATE)) / 5;
 	transmap = min(8, transmap) << V_ALPHASHIFT;
 
+	pi->visible = false;
+
 	if (leveltime - playback_last_menu_interaction_leveltime >= 6*TICRATE)
 		playback_last_menu_interaction_leveltime = leveltime - 6*TICRATE;
 
@@ -5278,14 +5294,14 @@ void MD_DrawPlaybackMenu(menupanelinst_t *pi)
 
 	if (modeattacking)
 	{
-		M_SetItemX(pi, "FREECAM", 72);
-		M_SetItemX(pi, "QUIT", 88);
+		M_SetItemX(pi, "FREECAM", 72*FRACUNIT);
+		M_SetItemX(pi, "QUIT", 88*FRACUNIT);
 		pi->x = (BASEVIDWIDTH/2 - 52)*FRACUNIT;
 	}
 	else
 	{
-		M_SetItemX(pi, "FREECAM", 156);
-		M_SetItemX(pi, "QUIT", 172);
+		M_SetItemX(pi, "FREECAM", 156*FRACUNIT);
+		M_SetItemX(pi, "QUIT", 172*FRACUNIT);
 		pi->x = (BASEVIDWIDTH/2 - 88)*FRACUNIT;
 	}
 
@@ -8995,18 +9011,16 @@ static tic_t fliptic[MAXKARTITEMS] = {0};
 
 void MP_SetupMonitorToggles(menupanelinst_t *pi)
 {
-	const INT32 height = 4;
-
+	menuitem_t *item;
 	M_ClearPanelItems(pi);
 
 	for (UINT8 i = 0; i <= numkartresults; i++)
 	{
-		kartresult_t *result = i < 3 ? &kartresults[i] : i == 3 ? NULL : &kartresults[i - 1];
+		kartresult_t *result = i < pi->navitemcount - 1 ? &kartresults[i] : i == pi->navitemcount - 1 ? NULL : &kartresults[i - 1];
 		if (result != NULL && result->isalt)
 			continue;
 
-		pi->items = Z_Realloc(pi->items, sizeof(menuitem_t)*(pi->numitems+1), PU_STATIC, NULL);
-		menuitem_t *item = pi->items + pi->numitems++;
+		item = M_AppendMenuItem(pi, 0, 0, IT_INTERACT);
 
 		if (result == NULL)
 		{
@@ -9024,22 +9038,20 @@ void MP_SetupMonitorToggles(menupanelinst_t *pi)
 		}
 	}
 
-	while (pi->numitems % height != 0)
+	while (pi->numitems % pi->navitemcount != 0)
 	{
-		pi->items = Z_Realloc(pi->items, sizeof(menuitem_t)*(pi->numitems+1), PU_STATIC, NULL);
-		menuitem_t *item = pi->items + pi->numitems++;
-
+		item = M_AppendMenuItem(pi, 0, 0, IT_INTERACT);
 		item->argument = 2;
 		M_SetItemPatchRaw(item, "");
 	}
 
-	pi->x = 136*FRACUNIT - max(0, min((pi->numitems - 1) / height, 7))*TICRATE*FRACUNIT/2;
+	pi->x = 136*FRACUNIT - max(0, min((pi->numitems - 1) / pi->navitemcount, 7))*TICRATE*FRACUNIT/2;
 }
 
 void MD_DrawMonitorToggles(menupanelinst_t *pi)
 {
 	const INT32 edges = 4;
-	const INT32 height = 4;
+	const INT32 height = pi->navitemcount;
 	const INT32 spacing = 35;
 	const INT32 column = pi->itemon / height;
 	// const INT32 row = itemOn%height;
@@ -9098,8 +9110,8 @@ void MD_DrawMonitorToggles(menupanelinst_t *pi)
 				continue;
 			}
 
-			const kartresult_t* result =
-			    K_GetKartResult(pi->items[thisitem].patch);
+			const kartresult_t* result = K_GetKartResult(pi->items[thisitem].patch);
+			const kartitem_t* item = &kartitems[result->type];
 
 			boolean enabled = result->cvar->value == 1;
 
@@ -9113,25 +9125,13 @@ void MD_DrawMonitorToggles(menupanelinst_t *pi)
 			else
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISBGD", PU_CACHE));
 
-			if (result->amount >= K_GetItemNumberDisplayMin(result->type, true))
-			{
+			boolean shownum = result->amount >= K_GetItemNumberDisplayMin(result->type, true);
+			SINT8 showalt = item->altcvar != NULL && !K_ShowAltItemIcon(result->type, false) ? item->altcvar->value : -1;
+			if (shownum)
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISMUL", PU_CACHE));
-				V_DrawScaledPatch(
-				    x,
-				    y,
-				    translucent,
-				    K_GetCachedItemPatch(result->type, true, result->amount));
-				V_DrawString(x + 24,
-					     y + 31,
-					     V_ALLOWLOWERCASE | translucent,
-					     va("x%d", result->amount));
-			}
-			else
-				V_DrawScaledPatch(
-				    x,
-				    y,
-				    translucent,
-				    K_GetCachedItemPatch(result->type, true, result->amount));
+			V_DrawScaledPatch(x, y, translucent, K_GetCachedItemPatchEx(result->type, true, result->amount, showalt));
+			if (shownum)
+				V_DrawString(x + 24, y + 31, V_ALLOWLOWERCASE | translucent, va("x%d", result->amount));
 
 			if (kartitems[result->type].altcvar != NULL && kartitems[result->type].altcvar->value && K_ShowAltItemIcon(result->type, true))
 				V_DrawScaledPatch(x, y, 0, K_getItemAltPatch(true, false));
@@ -9192,38 +9192,28 @@ void MD_DrawMonitorToggles(menupanelinst_t *pi)
 			V_DrawScaledPatch(
 			    onx - 1, ony - 2, 0, W_CachePatchName("K_ITBGD", PU_CACHE));
 
+		boolean shownum = result->amount >= K_GetItemNumberDisplayMin(result->type, true);
 		SINT8 showalt = item->altcvar != NULL && !K_ShowAltItemIcon(result->type, false) ? item->altcvar->value : -1;
 		if (fliptic[result->type] > FLIPTIC_TIME/2)
 			showalt = !showalt;
 
-		if (result->amount >= K_GetItemNumberDisplayMin(result->type, false))
-		{
-			V_DrawScaledPatch(
-			    onx - 1, ony - 2, 0, W_CachePatchName("K_ITMUL", PU_CACHE));
+		if (shownum)
+			V_DrawScaledPatch(onx - 1, ony - 2, 0, W_CachePatchName("K_ITMUL", PU_CACHE));
 
-			V_DrawStretchyFixedPatch(
-			    ((onx - 1) << FRACBITS) + flipoffset,
-			    (ony - 2) << FRACBITS,
-			    fancyflip,
-			    FRACUNIT,
-			    translucent,
-			    K_GetCachedItemPatchEx(result->type, false, result->amount, showalt),
-			    NULL);
+		V_DrawStretchyFixedPatch(
+			((onx - 1) << FRACBITS) + flipoffset,
+			(ony - 2) << FRACBITS,
+			fancyflip,
+			FRACUNIT,
+			translucent,
+			K_GetCachedItemPatchEx(result->type, false, result->amount, showalt),
+			NULL
+		);
 
-			V_DrawScaledPatch(
-			    onx + 27, ony + 39, translucent, W_CachePatchName("K_ITX", PU_CACHE));
-
+		if (shownum)
+			V_DrawScaledPatch(onx + 27, ony + 39, translucent, W_CachePatchName("K_ITX", PU_CACHE));
+		if (shownum)
 			V_DrawKartString(onx + 37, ony + 34, translucent, va("%d", result->amount));
-		}
-		else
-			V_DrawStretchyFixedPatch(
-			    ((onx - 1) << FRACBITS) + flipoffset,
-			    (ony - 2) << FRACBITS,
-			    fancyflip,
-			    FRACUNIT,
-			    translucent,
-			    K_GetCachedItemPatchEx(result->type, false, result->amount, showalt),
-			    NULL);
 
 		if (item->altcvar != NULL && K_ShowAltItemIcon(result->type, false))
 		{
@@ -9254,58 +9244,10 @@ void MD_DrawMonitorToggles(menupanelinst_t *pi)
 INT32 MR_HandleMonitorToggles(INT32 choice)
 {
 	menupanelinst_t *pi = &curpanels[panelOn];
-	const INT32 height = 4;
-	const INT32 width = pi->numitems/height;
-	INT32 column = pi->itemon/height, row = pi->itemon%height;
-	INT16 next;
 	kartresult_t *result = K_GetKartResult(pi->items[pi->itemon].patch);
 
 	switch (choice)
 	{
-		case KEY_RIGHTARROW:
-			S_StartSound(NULL, sfx_menu1);
-			column++;
-			if (((column*height)+row) >= pi->numitems)
-				column = 0;
-			next = min(((column*height)+row), pi->numitems-1);
-			M_RawSetItemOn(pi, next);
-			break;
-
-		case KEY_LEFTARROW:
-			S_StartSound(NULL, sfx_menu1);
-			column--;
-			if (column < 0)
-				column = width;
-			if (((column*height)+row) >= pi->numitems)
-				column--;
-			next = max(((column*height)+row), 0);
-			if (next >= pi->numitems)
-				next = pi->numitems-1;
-			M_RawSetItemOn(pi, next);
-			break;
-
-		case KEY_DOWNARROW:
-			S_StartSound(NULL, sfx_menu1);
-			row = (row+1) % height;
-			if (((column*height)+row) >= pi->numitems)
-				row = 0;
-			next = min(((column*height)+row), pi->numitems-1);
-			M_RawSetItemOn(pi, next);
-			break;
-
-		case KEY_UPARROW:
-			S_StartSound(NULL, sfx_menu1);
-			row = (row-1) % height;
-			if (row < 0)
-				row = height-1;
-			if (((column*height)+row) >= pi->numitems)
-				row--;
-			next = max(((column*height)+row), 0);
-			if (next >= pi->numitems)
-				next = pi->numitems-1;
-			M_RawSetItemOn(pi, next);
-			break;
-
 		case KEY_ENTER:
 			if (pi->items[pi->itemon].argument == 2)
 			{
