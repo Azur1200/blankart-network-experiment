@@ -787,7 +787,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "SETUPCONTROLSMENU", &MR_SetupControlsMenu },
 	{ "REFRESH", &MR_Refresh },
 	{ "CONNECT", &MR_Connect },
-	{ "VIDEOMODEMENU", &MR_VideoModeMenu },
+	{ "SETVIDEOMODE", &MR_SetVideoMode },
 #ifdef HWRENDER
 	{ "OPENGLOPTIONSMENU", &MR_OpenGLOptionsMenu },
 #endif
@@ -882,6 +882,7 @@ struct panel_func_s const PANEL_FUNCS[] = {
 	{ "SETUPMONITORTOGGLES", &MP_SetupMonitorToggles },
 	{ "PREPREPLAYLIST", &MP_PrepReplayList },
 	{ "REPLAYHUTSTART", &MP_ReplayHutStart },
+	{ "VIDEOMODELIST", &MP_VideoModeList },
 	{ NULL, NULL }
 };
 

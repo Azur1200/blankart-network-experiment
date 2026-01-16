@@ -212,6 +212,8 @@ struct menupaneldef_t
 	INT16         lineheight;         // default Y offset to add for each item
 	menufunc_f   *keyhandler;         // called before key press is processed
 	panelfunc_f  *initializer;        // called when panel instance is setup
+	boolean multinav;                 // navigation in two dimensions!? (disables cvar arrows)
+	INT32 navitemcount;               // items per column (or row if horizontal is true)
 };
 
 struct menupanelinst_t
@@ -226,6 +228,7 @@ struct menupanelinst_t
 	UINT16 itemon; // currently selected item, OR last selected item for menudef panels
 	INT32 vflags;
 	boolean visible;
+	INT32 navitemcount;
 };
 
 struct menu_t
@@ -290,7 +293,7 @@ void M_ClearMenus(boolean callexitmenufunc);
 panelfunc_f
 MP_SinglePlayerMain, MP_Options, MP_GameOptions, MP_SetupControls, MP_CameraSetup,
 MP_ScreenshotOptions, MP_AddonsOptions, MP_SetupMultiPlayer, MP_SetupMonitorToggles,
-MP_PrepReplayList, MP_ReplayHutStart
+MP_PrepReplayList, MP_ReplayHutStart, MP_VideoModeList
 ;
 INT32 MR_Addons(INT32 choice);
 INT32 MR_QuitAddons(INT32 choice);
@@ -317,7 +320,7 @@ INT32 MR_CancelConnect(INT32 choice);
 INT32 MR_SetupControlsMenu(INT32 arg);
 INT32 MR_Refresh(INT32 choice);
 INT32 MR_Connect(INT32 arg);
-INT32 MR_VideoModeMenu(INT32 choice);
+INT32 MR_SetVideoMode(INT32 choice);
 #ifdef HWRENDER
 INT32 MR_OpenGLOptionsMenu(INT32 choice);
 #endif
@@ -402,14 +405,6 @@ extern I_mutex m_menu_mutex;
 
 // Call upon joystick hotplug
 INT32 MR_SetupJoystickMenu(INT32 arg);
-
-// mode descriptions for video mode menu
-struct modedesc_t
-{
-	INT32 modenum; // video mode number in the vidmodes list
-	const char *desc;  // XXXxYYY
-	UINT8 goodratio; // aspect correct if 1
-};
 
 // savegame struct for save game menu
 typedef struct

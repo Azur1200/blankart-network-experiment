@@ -190,9 +190,6 @@ static  INT32   (*setupcontrols)[MAXINPUTMAPPING];  // pointer to the gamecontro
 // shhh... what am I doing... nooooo!
 static INT32 vidm_testingmode = 0;
 static INT32 vidm_previousmode;
-static INT32 vidm_selected = 0;
-static INT32 vidm_nummodes;
-static INT32 vidm_column_size;
 
 // Prototyping is fun, innit?
 // ==========================================================================
@@ -1756,32 +1753,70 @@ boolean M_Responder(event_t *ev)
 		}
 	}
 
+	// HMMM WHERE WAS THIS COPY PASTED FROM, I WONDER
+	INT32 hmove = 0, vmove = 0;
+
+	switch (ch)
+	{
+	case KEY_UPARROW:
+	case KEY_DOWNARROW:
+		vmove = ch == KEY_UPARROW ? -1 : 1;
+		break;
+
+	case KEY_PGUP:
+	case KEY_PGDN:
+		vmove = ch == KEY_PGUP ? -3 : 3;
+		break;
+
+	case KEY_LEFTARROW:
+	case KEY_RIGHTARROW:
+		hmove = ch == KEY_LEFTARROW ? -1 : 1;
+		break;
+	}
+
 	INT16 oldItemOn = curpi->itemon; // prevent infinite loop
 	INT16 newItemOn = curpi->itemon;
 
 	// Keys usable within menu
-	switch (ch)
+	if (vmove != 0)
 	{
-		case KEY_DOWNARROW:
-			do if (++newItemOn >= curpi->numitems)
-				newItemOn = 0;
+		INT32 dir = intsign(vmove);
+		do
+			newItemOn = intmod(newItemOn + dir, curpi->numitems);
+		while ((vmove -= intsign(vmove)) && oldItemOn != newItemOn && !M_ItemSelectable(&curpi->items[newItemOn]));
+
+		M_RawSetItemOn(curpi, newItemOn);
+		S_StartSound(NULL, sfx_menu1);
+		return true;
+	}
+	else if (hmove != 0)
+	{
+		if (curpd->multinav)
+		{
+			INT32 dir = intsign(hmove) * curpi->navitemcount;
+			do
+			{
+				newItemOn += dir;
+				if (newItemOn >= curpi->numitems)
+				{
+					newItemOn %= curpi->navitemcount;
+				}
+				else if (newItemOn < 0)
+				{
+					newItemOn = curpi->numitems - (curpi->numitems % curpi->navitemcount) + curpi->navitemcount + newItemOn;
+					if (newItemOn >= curpi->numitems) // wrap around properly if the last column isn't full
+						newItemOn -= curpi->navitemcount;
+				}
+				newItemOn = CLAMP(newItemOn, 0, curpi->numitems - 1);
+			}
 			while (oldItemOn != newItemOn && !M_ItemSelectable(&curpi->items[newItemOn]));
 
 			M_RawSetItemOn(curpi, newItemOn);
 			S_StartSound(NULL, sfx_menu1);
 			return true;
-
-		case KEY_UPARROW:
-			do if (--newItemOn < 0)
-				newItemOn = curpi->numitems - 1;
-			while (oldItemOn != newItemOn && !M_ItemSelectable(&curpi->items[newItemOn]));
-
-			M_RawSetItemOn(curpi, newItemOn);
-			S_StartSound(NULL, sfx_menu1);
-			return true;
-
-		case KEY_LEFTARROW:
-		case KEY_RIGHTARROW:
+		}
+		else
+		{
 			if (!(item->cvar || item->status & IT_ARROWS) || item->cvar == &cv_nextmap || item->cvar == &cv_nextcup)
 				return true;
 
@@ -1792,12 +1827,15 @@ boolean M_Responder(event_t *ev)
 				S_StartSound(NULL, sfx_menu1);
 
 			if (item->cvar)
-				M_ChangeCvar(item, ch == KEY_RIGHTARROW ? 1 : -1);
+				M_ChangeCvar(item, hmove);
 			else
-				item->routine(ch == KEY_RIGHTARROW ? 1 : 0);
+				item->routine(hmove > 0 ? 1 : 0);
 
 			return true;
-
+		}
+	}
+	else switch (ch)
+	{
 		case KEY_ENTER:
 			noFurtherInput = -1;
 
@@ -2293,6 +2331,7 @@ static void M_SetupNextMenu(menutype_t menunum)
 
 		pi->scrollheight = pd->scrollheight*FRACUNIT;
 		pi->cursoroffset = pd->cursoroffset*FRACUNIT;
+		pi->navitemcount = pd->navitemcount;
 
 		if (pd->initializer != NULL)
 			pd->initializer(pi);
@@ -2597,15 +2636,6 @@ void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines)
 {
 	// Solid color textbox.
 	V_DrawFill(x+5, y+5, width*8+6, boxlines*8+6, 159);
-}
-
-// horizontally centered text
-static void M_CentreText(INT32 y, const char *string)
-{
-	INT32 x;
-	//added : 02-02-98 : centre on 320, because V_DrawString centers on vid.width...
-	x = (BASEVIDWIDTH - V_StringWidth(string,  MENUCAPS|V_OLDSPACING))>>1;
-	V_DrawString(x,y, MENUCAPS|V_OLDSPACING,string);
 }
 
 //
@@ -3644,9 +3674,6 @@ INT32 MR_PrepareLevelPlatter(INT32 choice)
 	return true;
 }
 
-// this ought to go in doomtype
-#define mod(x, y) (((x) % (y) + (y)) % (y))
-
 static void M_MoveLevelPlatter(INT32 vmove)
 {
 	vmove %= levelselect.numrows;
@@ -3658,7 +3685,7 @@ static void M_MoveLevelPlatter(INT32 vmove)
 	{
 		if (vmove < 0)
 			levelselect.offsety -= lsvseperation(levelselect.row) * FRACUNIT;
-		levelselect.row = mod(levelselect.row + intsign(vmove), levelselect.numrows);
+		levelselect.row = intmod(levelselect.row + intsign(vmove), levelselect.numrows);
 		if (vmove > 0)
 			levelselect.offsety += lsvseperation(levelselect.row) * FRACUNIT;
 	}
@@ -3811,7 +3838,7 @@ INT32 MR_HandleLevelPlatter(INT32 choice)
 		if (levelselect.rows[levelselect.row].wide)
 			return levelselect.row > 0;
 		levelselect.namescroll = 0;
-		levelselect.column = mod(levelselect.column + hmove, MAPSPERROW);
+		levelselect.column = intmod(levelselect.column + hmove, MAPSPERROW);
 		levelselect.offsetx = lshseperation * -hmove * FRACUNIT;
 	}
 
@@ -8807,218 +8834,141 @@ INT32 MR_RestartAudio(INT32 choice)
 // VIDEO MODE MENU
 // ===============
 
-//added : 30-01-98:
-#define MAXCOLUMNMODES   12     //max modes displayed in one column
-#define MAXMODEDESCS     (MAXCOLUMNMODES*3)
-
-static modedesc_t modedescs[MAXMODEDESCS];
-
-INT32 MR_VideoModeMenu(INT32 choice)
+void MP_VideoModeList(menupanelinst_t *pi)
 {
-	INT32 i, j, vdup, nummodes;
+	INT32 i, j, nummodes;
 	UINT32 width, height;
-	const char *desc;
-
-	(void)choice;
-
-	memset(modedescs, 0, sizeof(modedescs));
 
 	VID_PrepareModeList(); // FIXME: hack
-
-	vidm_nummodes = 0;
-	vidm_selected = 0;
+	M_ClearPanelItems(pi);
 	nummodes = VID_NumModes();
 
 	// DOS does not skip mode 0, because mode 0 is ALWAYS present
-	i = 0;
-	for (; i < nummodes && vidm_nummodes < MAXMODEDESCS; i++)
+	for (i = 0; i < nummodes; i++)
 	{
-		desc = VID_GetModeName(i);
-		if (desc)
+		const char *desc = VID_GetModeName(i);
+		if (desc == NULL)
+			continue;
+
+		// when a resolution exists both under VGA and VESA, keep the
+		// VESA mode, which is always a higher modenum
+		for (j = 0; j < pi->numitems; j++)
 		{
-			vdup = 0;
-
-			// when a resolution exists both under VGA and VESA, keep the
-			// VESA mode, which is always a higher modenum
-			for (j = 0; j < vidm_nummodes; j++)
+			if (fastcmp(pi->items[j].text, desc))
 			{
-				if (fastcmp(modedescs[j].desc, desc))
+				// mode(0): 320x200 is always standard VGA, not vesa
+				if (pi->items[j].argument != 0)
 				{
-					// mode(0): 320x200 is always standard VGA, not vesa
-					if (modedescs[j].modenum)
-					{
-						modedescs[j].modenum = i;
-						vdup = 1;
-
-						if (i == vid.modenum)
-							vidm_selected = j;
-					}
-					else
-						vdup = 1;
-
-					break;
+					pi->items[j].argument = i;
+					if (i == vid.modenum)
+						M_RawSetItemOn(pi, j);
 				}
-			}
-
-			if (!vdup)
-			{
-				modedescs[vidm_nummodes].modenum = i;
-				modedescs[vidm_nummodes].desc = desc;
-
-				if (i == vid.modenum)
-					vidm_selected = vidm_nummodes;
-
-				// Pull out the width and height
-				sscanf(desc, "%u%*c%u", &width, &height);
-
-				// Show multiples of 320x200 as green.
-				if (SCR_IsAspectCorrect(width, height))
-					modedescs[vidm_nummodes].goodratio = 1;
-
-				vidm_nummodes++;
+				goto duped;
 			}
 		}
+
+		menuitem_t *item = M_AppendMenuItem(pi, 0, 0, IT_INTERACT);
+		item->argument = i;
+		item->routine = MR_SetVideoMode;
+		M_SetItemTextRaw(item, desc);
+
+		if (i == vid.modenum)
+			M_RawSetItemOn(pi, pi->numitems - 1);
+
+		// Pull out the width and height
+		sscanf(desc, "%u%*c%u", &width, &height);
+
+		// Show multiples of 320x200 as green.
+		if (SCR_IsAspectCorrect(width, height))
+			item->status |= ITH_RECOMMEND;
+
+	duped:
+		continue;
 	}
 
-	vidm_column_size = (vidm_nummodes+2) / 3;
-	return true;
+	pi->navitemcount = (pi->numitems+2) / 3;
+	for (i = 0; i < pi->numitems; i++)
+	{
+		pi->items[i].x = (i / pi->navitemcount) * 91*FRACUNIT;
+		pi->items[i].x++; // AAAACK AUTOLAYOUUUUT
+		pi->items[i].y = (i % pi->navitemcount) * 8*FRACUNIT;
+		pi->items[i].y++; // AAAACK AUTOLAYOUUUUT
+	}
 }
 
 // Draw the video modes list, a-la-Quake
 void MD_DrawVideoMode(menupanelinst_t *pi)
 {
-	INT32 i, j, row, col;
-
-	// draw title
-	M_DrawMenuTitle();
-
-	V_DrawCenteredString(BASEVIDWIDTH/2, pi->y/FRACUNIT,
-		MENUCAPS|highlightflags, "Choose mode, reselect to change default");
-
-	row = 41;
-	col = pi->y/FRACUNIT + 14;
-	for (i = 0; i < vidm_nummodes; i++)
+	boolean testing = vidm_testingmode > 0;
+	menupanelinst_t *ptesting = M_GetPanel("TESTING");
+	menupanelinst_t *pinfo = M_GetPanel("INFO");
+	if (testing)
 	{
-		if (i == vidm_selected)
-			V_DrawString(row, col, MENUCAPS|highlightflags, modedescs[i].desc);
-		// Show multiples of 320x200 as green.
-		else
-			V_DrawString(row, col, MENUCAPS|((modedescs[i].goodratio) ? recommendedflags : 0), modedescs[i].desc);
-
-		col += 8;
-		if ((i % vidm_column_size) == (vidm_column_size-1))
-		{
-			row += 7*13;
-			col = pi->y/FRACUNIT + 14;
-		}
-	}
-
-	if (vidm_testingmode > 0)
-	{
-		INT32 testtime = (vidm_testingmode/TICRATE) + 1;
-
-		M_CentreText(pi->y/FRACUNIT + 116,
-			va("Previewing mode %c%dx%d",
-				(SCR_IsAspectCorrect(vid.width, vid.height)) ? 0x83 : 0x80,
-				vid.width, vid.height));
-		M_CentreText(pi->y/FRACUNIT + 138,
-			"Press ENTER again to keep this mode");
-		M_CentreText(pi->y/FRACUNIT + 150,
-			va("Wait %d second%s", testtime, (testtime > 1) ? "s" : ""));
-		M_CentreText(pi->y/FRACUNIT + 158,
-			"or press ESC to return");
-
+		ptesting->visible = true;
+		pinfo->visible = false;
+		pi = ptesting;
 	}
 	else
 	{
-		M_CentreText(pi->y/FRACUNIT + 116,
-			va("Current mode is %c%dx%d",
-				(SCR_IsAspectCorrect(vid.width, vid.height)) ? 0x83 : 0x80,
-				vid.width, vid.height));
-		M_CentreText(pi->y/FRACUNIT + 124,
-			va("Default mode is %c%dx%d",
-				(SCR_IsAspectCorrect(cv_scr_width.value, cv_scr_height.value)) ? 0x83 : 0x80,
-				cv_scr_width.value, cv_scr_height.value));
-
-		V_DrawCenteredString(BASEVIDWIDTH/2, pi->y/FRACUNIT + 138,
-			MENUCAPS|recommendedflags, "Marked modes are recommended.");
-		V_DrawCenteredString(BASEVIDWIDTH/2, pi->y/FRACUNIT + 146,
-			MENUCAPS|highlightflags, "Other modes may have visual errors.");
-		V_DrawCenteredString(BASEVIDWIDTH/2, pi->y/FRACUNIT + 158,
-			MENUCAPS|highlightflags, "Larger modes may have performance issues.");
+		ptesting->visible = false;
+		pinfo->visible = true;
+		pi = pinfo;
 	}
 
-	// Draw the cursor for the VidMode menu
-	i = 41 - 10 + ((vidm_selected / vidm_column_size)*7*13);
-	j = pi->y/FRACUNIT + 14 + ((vidm_selected % vidm_column_size)*8);
+	M_SetItemText(pi, "CURRENTMODE",
+		va(testing ? "Previewing mode %c%dx%d" : "Current mode is %c%dx%d",
+		   0x80 | ((SCR_IsAspectCorrect(vid.width, vid.height) ? recommendedflags : 0) >> V_CHARCOLORSHIFT),
+		   vid.width, vid.height)
+	);
 
-	V_DrawScaledPatch(i - 8, j, 0,
-		W_CachePatchName("M_CURSOR", PU_CACHE));
+	if (testing)
+	{
+		INT32 testtime = (vidm_testingmode/TICRATE) + 1;
+		M_SetItemText(pi, "WAITTIME", va("Wait %d second%s", testtime, (testtime > 1) ? "s" : ""));
+	}
+	else
+	{
+		M_SetItemText(pi, "DEFAULTMODE",
+			va("Default mode is %c%dx%d",
+			   0x80 | ((SCR_IsAspectCorrect(cv_scr_width.value, cv_scr_height.value) ? recommendedflags : 0) >> V_CHARCOLORSHIFT),
+			   cv_scr_width.value, cv_scr_height.value)
+		);
+	}
+}
+
+INT32 MR_SetVideoMode(INT32 choice)
+{
+	if (vid.modenum == choice)
+	{
+		SCR_SetDefaultMode();
+	}
+	else
+	{
+		vidm_testingmode = 15*TICRATE;
+		vidm_previousmode = vid.modenum;
+		if (!setmodeneeded) // in case the previous setmode was not finished
+			setmodeneeded = choice + 1;
+	}
+	return true;
 }
 
 // special menuitem key handler for video mode list
 INT32 MR_HandleVideoMode(INT32 ch)
 {
-	if (vidm_testingmode > 0) switch (ch)
+	if (vidm_testingmode <= 0)
+		return false;
+
+	switch (ch)
 	{
-		// change back to the previous mode quickly
-		case KEY_ESCAPE:
-			setmodeneeded = vidm_previousmode + 1;
-			vidm_testingmode = 0;
-			break;
-
-		case KEY_ENTER:
-			S_StartSound(NULL, sfx_menu1);
-			vidm_testingmode = 0; // stop testing
-	}
-
-	else switch (ch)
-	{
-		case KEY_DOWNARROW:
-			S_StartSound(NULL, sfx_menu1);
-			if (++vidm_selected >= vidm_nummodes)
-				vidm_selected = 0;
-			break;
-
-		case KEY_UPARROW:
-			S_StartSound(NULL, sfx_menu1);
-			if (--vidm_selected < 0)
-				vidm_selected = vidm_nummodes - 1;
-			break;
-
-		case KEY_LEFTARROW:
-			S_StartSound(NULL, sfx_menu1);
-			vidm_selected -= vidm_column_size;
-			if (vidm_selected < 0)
-				vidm_selected = (vidm_column_size*3) + vidm_selected;
-			if (vidm_selected >= vidm_nummodes)
-				vidm_selected = vidm_nummodes - 1;
-			break;
-
-		case KEY_RIGHTARROW:
-			S_StartSound(NULL, sfx_menu1);
-			vidm_selected += vidm_column_size;
-			if (vidm_selected >= (vidm_column_size*3))
-				vidm_selected %= vidm_column_size;
-			if (vidm_selected >= vidm_nummodes)
-				vidm_selected = vidm_nummodes - 1;
-			break;
-
-		case KEY_ENTER:
-			S_StartSound(NULL, sfx_menu1);
-			if (vid.modenum == modedescs[vidm_selected].modenum)
-				SCR_SetDefaultMode();
-			else
-			{
-				vidm_testingmode = 15*TICRATE;
-				vidm_previousmode = vid.modenum;
-				if (!setmodeneeded) // in case the previous setmode was not finished
-					setmodeneeded = modedescs[vidm_selected].modenum + 1;
-			}
-			break;
-
-		default:
-			return false;
+	// change back to the previous mode quickly
+	case KEY_ESCAPE:
+		setmodeneeded = vidm_previousmode + 1;
+		vidm_testingmode = 0;
+		break;
+	case KEY_ENTER:
+		S_StartSound(NULL, sfx_menu1);
+		vidm_testingmode = 0; // stop testing
+		break;
 	}
 	return true;
 }

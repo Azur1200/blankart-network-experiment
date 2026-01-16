@@ -2219,6 +2219,14 @@ void readmenupanel(MYFILE *f, menupaneldef_t *pd)
 			}
 			pd->keyhandler = routine;
 		}
+		else if (fastcmp(word, "MULTINAV"))
+		{
+			pd->multinav = word2[0] == 'T' || word2[0] == 'Y';
+		}
+		else if (fastcmp(word, "NAVITEMCOUNT"))
+		{
+			pd->navitemcount = get_number(word2);
+		}
 		else
 			WARN("unknown word '%s'", word);
 	} while (!myfeof(f)); // finish when the line is empty

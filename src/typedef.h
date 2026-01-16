@@ -184,7 +184,6 @@ TYPEDEF (menuitem_t);
 TYPEDEF (menupaneldef_t);
 TYPEDEF (menupanelinst_t);
 TYPEDEF (menu_t);
-TYPEDEF (modedesc_t);
 
 // k_pathfind.h
 TYPEDEF (pathfindnode_t);
