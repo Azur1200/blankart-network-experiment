@@ -237,18 +237,18 @@ static struct levelselect_t
 	levelselectrow_t *rows;
 } levelselect = {0};
 
-#define lsmapwidth 80
-#define lsmapheight 50
-#define lsmapnameheight 8
-#define lshseperation (lsmapwidth - 25)
-#define lshseperationcup (lsmapwidth/2 + 2)
-#define lsbasevseperation (3*(lsmapheight + lsmapnameheight)/4 + 1)
-#define lsheadingheight 28
+#define lsmapwidth (80*FRACUNIT)
+#define lsmapheight (50*FRACUNIT)
+#define lsmapnameheight (8*FRACUNIT)
+#define lshseperation (lsmapwidth - 25*FRACUNIT)
+#define lshseperationcup (lsmapwidth/2 + 2*FRACUNIT)
+#define lsbasevseperation (3*(lsmapheight + lsmapnameheight)/4 + FRACUNIT)
+#define lsheadingheight (28*FRACUNIT)
 #define getheadingoffset(row) (levelselect.rows[row].header[0] ? lsheadingheight : 0)
 #define lsvseperation(row) (lsbasevseperation + getheadingoffset(row))
 
-#define lsbasex (BASEVIDWIDTH/2 - lshseperation*(MAPSPERROW-1)/2)
-#define lsbasey (BASEVIDHEIGHT/2 - 2)
+#define lsbasex (BASEVIDWIDTH*FRACUNIT/2 - lshseperation*(MAPSPERROW-1)/2)
+#define lsbasey (BASEVIDHEIGHT*FRACUNIT/2 - 2*FRACUNIT)
 
 // Sky Room
 static char *M_GetConditionString(condition_t cond);
@@ -2726,35 +2726,33 @@ static void M_DrawMenuTitle(void)
 }
 
 #define SLIDER_RANGE (10*8)
-static void M_DrawSliderCursor(INT16 x, INT16 y, INT32 vflags, consvar_t *cv, INT32 value)
+static void M_DrawSliderCursor(fixed_t x, fixed_t y, INT32 vflags, consvar_t *cv, INT32 value)
 {
 	fixed_t range = FixedDiv(value - cv->PossibleValue[0].value, cv->PossibleValue[1].value - cv->PossibleValue[0].value);
-	V_DrawFixedPatch((x - 4)*FRACUNIT + (SLIDER_RANGE+4)*range, y*FRACUNIT, FRACUNIT, vflags, W_CachePatchName("M_SLIDEC", PU_CACHE), NULL);
+	V_DrawSciencePatch(x - 4*FRACUNIT + (SLIDER_RANGE+4)*range, y, vflags, W_CachePatchName("M_SLIDEC", PU_CACHE), FRACUNIT);
 }
 
-static void M_DrawRightString(const menupanelinst_t *pi, menuitem_t *item, INT16 x, INT16 y, INT32 vflags, boolean selected)
+static void M_DrawRightString(const menupanelinst_t *pi, menuitem_t *item, fixed_t x, fixed_t y, INT32 vflags, boolean selected)
 {
-	INT16 w;
-
+	fixed_t w;
 	if (item->cvar)
 	{
 		consvar_t *cv = item->cvar;
 		if (!cv->PossibleValue) // string cvar?
 		{
-			if (pi->scrollheight && y + 12 > pi->y + pi->scrollheight/FRACUNIT)
+			if (pi->scrollheight && y + 12*FRACUNIT > pi->y + pi->scrollheight)
 				return;
 
 			// see M_ItemExtraOffset
 			boolean side = cv == &cv_dummyname || cv == &cv_playername[0];
-			INT32 xofs = side ? 32 : 0;
-			INT32 yofs = side ? -8 : 4;
-			w = M_StringCvarLength(cv);
+			INT32 xofs = side ? 32*FRACUNIT : 0;
+			INT32 yofs = side ? -8*FRACUNIT : 4*FRACUNIT;
 
-			M_DrawTextBox(x + xofs, y + yofs, w, 1);
+			M_DrawTextBox((x + xofs)/FRACUNIT, (y + yofs)/FRACUNIT, M_StringCvarLength(cv), 1);
 			if (selected)
-				M_DrawTextInput(x + xofs + 8, y + yofs + 8, &menuinput, vflags|V_ALLOWLOWERCASE);
+				M_DrawTextInput((x + xofs)/FRACUNIT + 8, (y + yofs)/FRACUNIT + 8, &menuinput, vflags|V_ALLOWLOWERCASE);
 			else
-				V_DrawString(x + xofs + 8, y + yofs + 8, vflags|V_ALLOWLOWERCASE, cv->string);
+				V_DrawStringAtFixed(x + xofs + 8*FRACUNIT, y + yofs + 8*FRACUNIT, vflags|V_ALLOWLOWERCASE, cv->string);
 		}
 		else if (item->status & IT_SLIDER)
 		{
@@ -2762,13 +2760,13 @@ static void M_DrawRightString(const menupanelinst_t *pi, menuitem_t *item, INT16
 			patch_t *p;
 
 			vflags &= ~(V_FLIP|V_PARAMMASK);
-			x = BASEVIDWIDTH - x - SLIDER_RANGE - 6;
+			x = BASEVIDWIDTH*FRACUNIT - x - SLIDER_RANGE*FRACUNIT - 6*FRACUNIT;
 
 			if (selected)
 			{
-				V_DrawCharacter(x - 16 - (skullAnimCounter/5), y,
+				V_DrawFixedCharacter(x - 16*FRACUNIT - (skullAnimCounter/5)*FRACUNIT, y,
 					'\x1C' | highlightflags | vflags, false); // left arrow
-				V_DrawCharacter(x + SLIDER_RANGE + 8 + (skullAnimCounter/5), y,
+				V_DrawFixedCharacter(x + SLIDER_RANGE*FRACUNIT + 8*FRACUNIT + (skullAnimCounter/5)*FRACUNIT, y,
 					'\x1D' | highlightflags | vflags, false); // right arrow
 			}
 
@@ -2776,35 +2774,21 @@ static void M_DrawRightString(const menupanelinst_t *pi, menuitem_t *item, INT16
 				M_DrawSliderCursor(x, y, vflags, cv, atoi(cv->defaultvalue));
 
 			p = W_CachePatchName("M_SLIDEL", PU_CACHE);
-			V_DrawScaledPatch(x - 8, y, vflags, p);
+			V_DrawSciencePatch(x - 8*FRACUNIT, y, vflags, p, FRACUNIT);
 
 			p = W_CachePatchName("M_SLIDEM", PU_CACHE);
 			for (i = 0; i < SLIDER_RANGE; i += 8)
-				V_DrawScaledPatch (x + i, y, vflags, p);
+				V_DrawSciencePatch(x + i*FRACUNIT, y, vflags, p, FRACUNIT);
 
 			p = W_CachePatchName("M_SLIDER", PU_CACHE);
-			V_DrawScaledPatch(x + i, y, vflags, p);
+			V_DrawSciencePatch(x + i*FRACUNIT, y, vflags, p, FRACUNIT);
 
 			M_DrawSliderCursor(x, y, vflags, cv, cv->value);
 		}
 		else
 		{
 			const char *str = cv->string;
-			INT32 soffset = 0;
 			boolean warning = (cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv);
-
-			// special cvar value offsets for time attack!
-			// i don't feel like adding an extra flag for this...
-			/*
-			if (y < 78) for (w = 0; w < NUMMENULEVELS; w++)
-			{
-				if (menustack[w] == MN_SP_TIMEATTACK)
-				{
-					soffset = 40;
-					break;
-				}
-			}
-			*/
 
 			if (cv == &cv_chooseskin)
 				str = skins[cv_chooseskin.value].realname;
@@ -2817,7 +2801,7 @@ static void M_DrawRightString(const menupanelinst_t *pi, menuitem_t *item, INT16
 			else if (cv == &cv_dummyserverpage)
 				str = va("%d of %d", cv->value + 1, dummyserverpage_cons_t[1].value + 1);
 			else if (cv == &cv_soundtest && cv_soundtest.value)
-				V_DrawRightAlignedString(BASEVIDWIDTH - x - soffset, y + 8, highlightflags|vflags, S_sfx[cv_soundtest.value].name);
+				V_DrawRightAlignedStringAtFixed(BASEVIDWIDTH*FRACUNIT - x, y + 8*FRACUNIT, highlightflags|vflags, S_sfx[cv_soundtest.value].name);
 			else if (cv == &cv_gamesounds)
 			{
 				str = sound_disabled ? "Off" : "On";
@@ -2834,15 +2818,15 @@ static void M_DrawRightString(const menupanelinst_t *pi, menuitem_t *item, INT16
 			if (menustack[0] == MN_MP_PLAYERSETUP)
 				vflags |= V_ALLOWLOWERCASE;
 
-			w = V_StringWidth(str, vflags);
-			V_DrawString(BASEVIDWIDTH - x - soffset - w, y, (warning ? warningflags : highlightflags)|vflags, str);
+			w = V_StringWidth(str, vflags)*FRACUNIT;
+			V_DrawStringAtFixed(BASEVIDWIDTH*FRACUNIT - x - w, y, (warning ? warningflags : highlightflags)|vflags, str);
 
 			if (selected && cv != &cv_nextmap && cv != &cv_nextcup)
 			{
 				vflags &= ~(V_FLIP|V_PARAMMASK);
-				V_DrawCharacter(BASEVIDWIDTH - x - soffset - 10 - w - (skullAnimCounter/5), y,
+				V_DrawFixedCharacter(BASEVIDWIDTH*FRACUNIT - x - 10*FRACUNIT - w - (skullAnimCounter/5)*FRACUNIT, y,
 					'\x1C' | highlightflags | vflags, false); // left arrow
-				V_DrawCharacter(BASEVIDWIDTH - x - soffset + 2 + (skullAnimCounter/5), y,
+				V_DrawFixedCharacter(BASEVIDWIDTH*FRACUNIT - x + 2*FRACUNIT + (skullAnimCounter/5)*FRACUNIT, y,
 					'\x1D' | highlightflags | vflags, false); // right arrow
 			}
 		}
@@ -2869,14 +2853,14 @@ static void M_DrawRightString(const menupanelinst_t *pi, menuitem_t *item, INT16
 			strcpy(tmp, "---");
 
 		w = V_StringWidth(tmp, vflags);
-		(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
-			(BASEVIDWIDTH-(pi->x)/FRACUNIT, y, vflags|highlightflags, tmp);
+		(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinStringAtFixed : V_DrawRightAlignedStringAtFixed)
+			(BASEVIDWIDTH*FRACUNIT - pi->x, y, vflags|highlightflags, tmp);
 	}
 	else
 	{
 		if (item->submenu == MN_OP_VIDEOMODE) // show current resolution
 		{
-			V_DrawRightAlignedString(BASEVIDWIDTH - x, y,
+			V_DrawRightAlignedStringAtFixed(BASEVIDWIDTH*FRACUNIT - x, y,
 				(SCR_IsAspectCorrect(vid.width, vid.height) ? recommendedflags : highlightflags)|vflags,
 				va("%dx%d", vid.width, vid.height));
 		}
@@ -2886,8 +2870,8 @@ static void M_DrawRightString(const menupanelinst_t *pi, menuitem_t *item, INT16
 			const char *name = stick == 0 ? "None" : I_GetJoyName(stick);
 			if (!name) name = "?";
 			w = V_StringWidth(name, vflags);
-			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
-				(BASEVIDWIDTH - x, y, vflags|highlightflags, name);
+			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinStringAtFixed : V_DrawRightAlignedStringAtFixed)
+				(BASEVIDWIDTH*FRACUNIT - x, y, vflags|highlightflags, name);
 		}
 #ifdef HAVE_DISCORDRPC
 		else if (item->submenu == MN_MISC_DISCORDREQUESTS)
@@ -2910,9 +2894,7 @@ static void M_DrawSticker(INT32 x, INT32 y, INT32 width, INT32 flags, boolean is
 // draws a menu item, returns cursor offset
 static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed_t x, fixed_t y, INT32 vflags, boolean selected)
 {
-	x /= FRACUNIT;
-	y /= FRACUNIT;
-	INT32 width = 0;
+	fixed_t width = 0;
 	const char *string = item->text ? item->text : "";
 	fixed_t scale = item->status & IT_SMALL ? FRACUNIT/2 : FRACUNIT;
 	int font;
@@ -2942,20 +2924,25 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 	// color a dinosaur?
 	if ((item->status & ITF_MASK) == ITF_FILL)
 	{
-		UINT16 fillw, fillh;
+		fixed_t fillw, fillh;
 		UINT8 fillc;
-		INT16 ofsx, ofsy;
+		fixed_t ofsx, ofsy;
 		// TODO: these can overflow, reimplement sscanf to fix i guess
-		int results = sscanf(item->patch, "%hux%hu,%hhu,%hd,%hd", &fillw, &fillh, &fillc, &ofsx, &ofsy);
+		int results = sscanf(item->patch, "%dx%d,%hhu,%d,%d", &fillw, &fillh, &fillc, &ofsx, &ofsy);
 		if (results != 3 && results != 5)
 			return 0;
+
+		fillw *= FRACUNIT;
+		fillh *= FRACUNIT;
+		ofsx *= FRACUNIT;
+		ofsy *= FRACUNIT;
 
 		if (item->status & IT_CENTER)
 			width = fillw/2;
 		else if (item->status & IT_RIGHT)
 			width = fillw;
 
-		V_DrawFill(x - width + (results == 5 ? ofsx : 0), y + (results == 5 ? ofsy : 0), fillw, fillh, fillc|vflags);
+		V_DrawFixedFill(x - width + (results == 5 ? ofsx : 0), y + (results == 5 ? ofsy : 0), fillw, fillh, fillc|vflags);
 		return 0;
 	}
 
@@ -2999,12 +2986,12 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 		}
 
 		if (item->status & IT_CENTER)
-			width = p->width/2;
+			width = p->width*FRACUNIT/2;
 		else if (item->status & IT_RIGHT)
-			width = p->width;
+			width = p->width*FRACUNIT;
 
-		V_DrawFixedPatch((x - width)<<FRACBITS, y<<FRACBITS, scale, vflags & ~V_FLIP, p, cmap);
-		return width*FRACUNIT;
+		V_DrawFixedPatch(x - width, y, scale, vflags & ~V_FLIP, p, cmap);
+		return width;
 	}
 
 	switch (item->status & ITF_MASK)
@@ -3017,7 +3004,7 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 		break;
 
 	case ITF_HEADER:
-		x -= 16; // FALLTHRU
+		x -= 16*FRACUNIT; // FALLTHRU
 	default:
 		font = HU_FONT;
 		widthfunc = V_SubStringWidth;
@@ -3025,19 +3012,19 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 	}
 
 	if (item->status & IT_CENTER)
-		width = widthfunc(string, -1, vflags)/2;
+		width = widthfunc(string, -1, vflags)*FRACUNIT/2;
 	else if (item->status & IT_RIGHT)
-		width = widthfunc(string, -1, vflags);
+		width = widthfunc(string, -1, vflags)*FRACUNIT;
 
 	if (item->status & IT_STICKER)
-		M_DrawSticker(x -width, y + 2, widthfunc(string, -1, vflags), vflags & ~V_FLIP, true);
+		M_DrawSticker((x - width)/FRACUNIT, y*FRACUNIT + 2, widthfunc(string, -1, vflags), vflags & ~V_FLIP, true);
 
-	V_DrawStringScaled((x - width)<<FRACBITS, y<<FRACBITS, scale, FRACUNIT, FRACUNIT, (selected ? highlightflags : colorflag)|vflags, font, string);
+	V_DrawStringScaled(x - width, y, scale, FRACUNIT, FRACUNIT, (selected ? highlightflags : colorflag)|vflags, font, string);
 
 	if (!(item->status & (IT_SECRET|IT_GRAYEDOUT)))
 		M_DrawRightString(pi, item, x, y, vflags, selected);
 
-	return width*FRACUNIT;
+	return width;
 }
 
 // returns 16 if this item draws a cvar string input. yep, that's it!
@@ -3700,10 +3687,10 @@ static void M_MoveLevelPlatter(INT32 vmove)
 	for (INT32 count = abs(vmove); count > 0; count--)
 	{
 		if (vmove < 0)
-			levelselect.offsety -= lsvseperation(levelselect.row) * FRACUNIT;
+			levelselect.offsety -= lsvseperation(levelselect.row);
 		levelselect.row = intmod(levelselect.row + intsign(vmove), levelselect.numrows);
 		if (vmove > 0)
-			levelselect.offsety += lsvseperation(levelselect.row) * FRACUNIT;
+			levelselect.offsety += lsvseperation(levelselect.row);
 	}
 
 	// update highlighted header
@@ -3855,7 +3842,7 @@ INT32 MR_HandleLevelPlatter(INT32 choice)
 			return levelselect.row > 0;
 		levelselect.namescroll = 0;
 		levelselect.column = intmod(levelselect.column + hmove, MAPSPERROW);
-		levelselect.offsetx = lshseperation * -hmove * FRACUNIT;
+		levelselect.offsetx = lshseperation * -hmove;
 	}
 
 	if (vmove != 0 || hmove != 0)
@@ -3870,24 +3857,24 @@ INT32 MR_HandleLevelPlatter(INT32 choice)
 	return false;
 }
 
-static void M_DrawLevelPlatterHeader(INT32 y, const char *header, boolean headerhighlight, boolean allowlowercase)
+static void M_DrawLevelPlatterHeader(fixed_t y, const char *header, boolean headerhighlight, boolean allowlowercase)
 {
-	y -= (lsmapheight + lsmapnameheight + 1)/2;
-	y += lsheadingheight - 12;
-	V_DrawString(19, y, (headerhighlight ? V_YELLOWMAP : 0)|(allowlowercase ? V_ALLOWLOWERCASE : 0), header);
-	y += 9;
-	V_DrawFill(19, y, 281, 1, (headerhighlight ? yellowmap[3] : 3));
-	V_DrawFill(300, y, 1, 1, 26);
-	y++;
-	V_DrawFill(19, y, 282, 1, 26);
+	y -= (lsmapheight + lsmapnameheight + FRACUNIT)/2;
+	y += lsheadingheight - 12*FRACUNIT;
+	V_DrawStringAtFixed(19*FRACUNIT, y, (headerhighlight ? V_YELLOWMAP : 0)|(allowlowercase ? V_ALLOWLOWERCASE : 0), header);
+	y += 9*FRACUNIT;
+	V_DrawFixedFill(19*FRACUNIT, y, 281*FRACUNIT, FRACUNIT, (headerhighlight ? yellowmap[3] : 3));
+	V_DrawFixedFill(300*FRACUNIT, y, FRACUNIT, FRACUNIT, 26);
+	y += FRACUNIT;
+	V_DrawFixedFill(19*FRACUNIT, y, 282*FRACUNIT, FRACUNIT, 26);
 }
 
 // draws a map CENTERED around the given coordinates
-static void M_DrawLevelPlatterMap(const levelselectmap_t *lsmap, INT32 x, INT32 y, boolean highlight, boolean wide)
+static void M_DrawLevelPlatterMap(const levelselectmap_t *lsmap, fixed_t x, fixed_t y, boolean highlight, boolean wide)
 {
 	fixed_t scale = highlight ? FRACUNIT : FRACUNIT/2;
-	fixed_t width = wide ? 282*FRACUNIT : lsmapwidth*scale;
-	fixed_t height = (lsmapheight + lsmapnameheight)*scale;
+	fixed_t width = wide ? 282*FRACUNIT : FixedMul(lsmapwidth, scale);
+	fixed_t height = FixedMul(lsmapheight + lsmapnameheight, scale);
 
 	// wide thumbnails? mmm... i dunno... maybe...
 	patch_t *patch;
@@ -3895,8 +3882,8 @@ static void M_DrawLevelPlatterMap(const levelselectmap_t *lsmap, INT32 x, INT32 
 	fixed_t thumbscale = M_GetMapThumbnail(lsmap->available ? lsmap->mapnum : -1, &patch);
 	thumbscale = FixedMul(thumbscale/4, scale);
 
-	V_DrawSciencePatch(x*FRACUNIT - patch->width*thumbscale/2 + (encore ? patch->width*thumbscale : 0),
-	                   y*FRACUNIT - patch->height*thumbscale/2 - lsmapnameheight*scale/2,
+	V_DrawSciencePatch(x - patch->width*thumbscale/2 + (encore ? patch->width*thumbscale : 0),
+	                   y - patch->height*thumbscale/2 - FixedMul(lsmapnameheight, scale/2),
 	                   encore ? V_FLIP : 0, patch, thumbscale);
 	//if (!lsmap->available)
 		//M_DrawStaticBox(x, y, V_80TRANS, wide ? 282 : 80, 50);
@@ -3905,13 +3892,13 @@ static void M_DrawLevelPlatterMap(const levelselectmap_t *lsmap, INT32 x, INT32 
 	{
 		static angle_t rubyfloattime = 0;
 		const fixed_t rubyheight = FSIN(rubyfloattime)*2;
-		V_DrawSciencePatch(x*FRACUNIT, y*FRACUNIT - rubyheight, 0, W_CachePatchName("RUBYICON", PU_CACHE), FRACUNIT);
+		V_DrawSciencePatch(x, y - lsmapnameheight/2 - rubyheight, 0, W_CachePatchName("RUBYICON", PU_CACHE), FRACUNIT);
 		rubyfloattime += FixedMul(ANGLE_MAX/NEWTICRATE, renderdeltatics);
 	}
 
-	x = x*FRACUNIT - width/2;
-	y = y*FRACUNIT + height/2 - lsmapnameheight*scale;
-	V_SetClipRect(x, y, width, (lsmapnameheight / (wide || highlight ? 1 : 2))*FRACUNIT, 0);
+	x -= width/2;
+	y += height/2 - FixedMul(lsmapnameheight, scale);
+	V_SetClipRect(x, y, width, lsmapnameheight / (wide || highlight ? 1 : 2), 0);
 
 	V_DrawFill(-9999, -9999, 22222, 22222, V_NOSCALESTART|lsmap->color);
 	if (wide || highlight)
@@ -3942,7 +3929,7 @@ static void M_DrawLevelPlatterMap(const levelselectmap_t *lsmap, INT32 x, INT32 
 	V_ClearClipRect();
 }
 
-static void M_DrawLevelPlatterRow(UINT8 row, INT32 y)
+static void M_DrawLevelPlatterRow(UINT8 row, fixed_t y)
 {
 	const boolean rowhighlight = (row == levelselect.row);
 	const levelselectrow_t *lsrow = &levelselect.rows[row];
@@ -3956,8 +3943,9 @@ static void M_DrawLevelPlatterRow(UINT8 row, INT32 y)
 	if (row == 0)
 	{
 		menupanelinst_t *options = M_GetPanel("OPTIONS");
-		options->y = (y - lsmapheight/2 + 2)*FRACUNIT;
-		V_SetClipRect(0, (y - lsmapheight/2)*FRACUNIT, 320*FRACUNIT, options->scrollheight + 12*FRACUNIT, 0);
+		options->visible = true;
+		options->y = y + 3*FRACUNIT - lsmapheight/2;
+		V_SetClipRect(0, y - lsmapheight/2, 320*FRACUNIT, options->scrollheight + 12*FRACUNIT, 0);
 		V_DrawFill((BASEVIDWIDTH - 282)/2, -9999, 282, 22222, 27);
 		//MD_DrawGenericMenu();
 		V_ClearClipRect();
@@ -3974,13 +3962,13 @@ static void M_DrawLevelPlatterRow(UINT8 row, INT32 y)
 				break;
 
 		//V_DrawScaledPatch(lsbasex - 14, y - 16, 0, W_CachePatchName(cup->icon, PU_CACHE));
-		V_DrawCenteredString(lsbasex + 2, y - 4, MENUCAPS|(rowhighlight ? V_YELLOWMAP : 0), CupName(cup, false));
+		V_DrawCenteredStringAtFixed(lsbasex + 2*FRACUNIT, y - 4*FRACUNIT, MENUCAPS|(rowhighlight ? V_YELLOWMAP : 0), CupName(cup, false));
 	}
 
 	for (UINT8 col = 0; col < lsrow->numcolumns; col++)
 	{
 		if (levellistmode == LLM_CUPSELECT)
-			M_DrawLevelPlatterMap(&lsrow->maps[col], lsbasex + 70 + col*lshseperationcup, y, false, false);
+			M_DrawLevelPlatterMap(&lsrow->maps[col], lsbasex + 70*FRACUNIT + col*lshseperationcup, y, false, false);
 		else if (!rowhighlight || col != levelselect.column)
 			M_DrawLevelPlatterMap(&lsrow->maps[col], lsbasex + col*lshseperation, y, false, lsrow->wide);
 	}
@@ -3989,10 +3977,12 @@ static void M_DrawLevelPlatterRow(UINT8 row, INT32 y)
 void MD_DrawLevelPlatterMenu(menupanelinst_t *pi)
 {
 	UINT8 row = levelselect.row;
-	INT32 y = lsbasey + FixedInt(levelselect.offsety) - getheadingoffset(row);
+	INT32 y = lsbasey + levelselect.offsety - getheadingoffset(row);
 	INT32 hiliy = INT32_MIN;
-	INT32 minrows = (vid.height/vid.dupy + lsbasevseperation/2)/lsbasevseperation;
+	INT32 minrows = (vid.height*FRACUNIT/vid.dupy + lsbasevseperation)/lsbasevseperation;
 	INT32 cursorx = levelselect.rows[row].wide ? 0 : levelselect.column * lshseperation;
+
+	pi->visible = false;
 
 	// finds row at top of the screen
 	while (y >= -lsbasevseperation/2)
@@ -4008,7 +3998,7 @@ void MD_DrawLevelPlatterMenu(menupanelinst_t *pi)
 	}
 
 	// draw from top to bottom
-	while (y <= (vid.height/vid.dupy) + lsbasevseperation/2)
+	while (y <= vid.height*FRACUNIT/vid.dupy + lsbasevseperation/2)
 	{
 		M_DrawLevelPlatterRow(row, y);
 		if (row == levelselect.row)
@@ -4030,10 +4020,10 @@ void MD_DrawLevelPlatterMenu(menupanelinst_t *pi)
 		if (!lsrow->wide && levelselect.column < lsrow->numcolumns)
 			M_DrawLevelPlatterMap(&lsrow->maps[levelselect.column], lsbasex + cursorx, hiliy, true, lsrow->wide);
 
-		fixed_t fx = (lsbasex + cursorx - lsmapwidth/2)*FRACUNIT + levelselect.offsetx;
-		fixed_t fy = hiliy*FRACUNIT - (lsmapheight + (levellistmode == LLM_CUPSELECT ? 0 : lsmapnameheight))*FRACUNIT/2;
-		fixed_t width = (lsrow->wide ? 300 : lsmapwidth)*FRACUNIT;
-		fixed_t height = lsmapheight*FRACUNIT;
+		fixed_t fx = lsbasex + cursorx - lsmapwidth/2 + levelselect.offsetx;
+		fixed_t fy = hiliy - (lsmapheight + (levellistmode == LLM_CUPSELECT ? 0 : lsmapnameheight))/2;
+		fixed_t width = lsrow->wide ? 300*FRACUNIT : lsmapwidth;
+		fixed_t height = lsmapheight;
 		INT32 trans = 0;
 		if (levelselect.selectdelay > 0 ? skullAnimCounter & 1 : skullAnimCounter < 4)
 			trans = V_GetStringColormap(highlightflags)[0];
@@ -4046,7 +4036,7 @@ void MD_DrawLevelPlatterMenu(menupanelinst_t *pi)
 
 	// handle movement of cursor box
 	fixed_t cursormovefrac = FixedDiv(2, 3);
-	if (abs(levelselect.offsety) > FRACUNIT/2)
+	if (abs(levelselect.offsety) > FRACUNIT/4)
 	{
 		fixed_t offs = levelselect.offsety;
 		fixed_t newoffs = FixedMul(offs, cursormovefrac);
