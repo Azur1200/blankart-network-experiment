@@ -66,7 +66,7 @@ static INT32 rebound_head, rebound_tail;
 INT32 net_bandwidth;
 
 /// \brief max length per packet
-INT16 hardware_MAXPACKETLENGTH;
+INT16 hardware_MAXPACKETLENGTH = 0;
 
 boolean (*I_NetGet)(void) = NULL;
 void (*I_NetSend)(void) = NULL;
@@ -106,7 +106,7 @@ INT32 ticruned = 0, ticmiss = 0;
 
 // globals
 INT32 getbps, sendbps;
-float lostpercent, duppercent, gamelostpercent;
+float lostpercent = 0.0f, duppercent = 0.0f, gamelostpercent = 0.0f;
 INT32 packetheaderlength;
 
 boolean Net_GetNetStat(void)

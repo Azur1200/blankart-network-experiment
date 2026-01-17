@@ -819,7 +819,7 @@ boolean forceresetplayers = false;
 boolean deferencoremode = false;
 UINT8 splitscreen = 0;
 boolean circuitmap = false;
-INT32 adminplayers[MAXPLAYERS];
+INT32 adminplayers[MAXPLAYERS] = {};
 
 #define VOTEROWS ((cv_votemaxrows.value*3) + ((cv_votemaxrows.value > 1) ? (cv_votemaxrows.value - 1) : 0))
 #define VOTEROWSADDSONE ((cv_votemaxrows.value*3) + 1 + ((cv_votemaxrows.value > 1) ? (cv_votemaxrows.value - 1) : 0))
@@ -3284,8 +3284,7 @@ void D_PickVote(void)
 	SendNetXCmd(XD_PICKVOTE, &buf, 2);
 }
 
-static char *
-ConcatCommandArgv (int start, int end)
+static char *ConcatCommandArgv (int start, int end)
 {
 	char *final;
 

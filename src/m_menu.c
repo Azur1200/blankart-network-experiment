@@ -4553,7 +4553,7 @@ INT32 MR_QuitAddons(INT32 choice)
 }
 
 // ---- REPLAY HUT -----
-menudemo_t *demolist;
+menudemo_t *demolist = NULL;
 
 #define DF_ENCORE       0x40
 static INT16 replayScrollTitle = 0;
@@ -5578,7 +5578,7 @@ void M_RefreshPauseMenu(void)
 // SKY ROOM
 // ========
 
-UINT8 skyRoomMenuTranslations[MAXUNLOCKABLES];
+UINT8 skyRoomMenuTranslations[MAXUNLOCKABLES] = {};
 
 static char *M_GetConditionString(condition_t cond)
 {

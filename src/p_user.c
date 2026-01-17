@@ -2721,7 +2721,7 @@ static void P_DeathThink(player_t *player)
 // P_MoveCamera: make sure the camera is not outside the world and looks at the player avatar
 //
 
-camera_t camera[MAXSPLITSCREENPLAYERS]; // Four cameras, three for splitscreen
+camera_t camera[MAXSPLITSCREENPLAYERS] = {}; // Four cameras, three for splitscreen
 
 static void CV_CamRotate_OnChange(void)
 {
