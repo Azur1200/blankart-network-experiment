@@ -2033,7 +2033,7 @@ static void P_3dMovement(player_t *player)
 	// If "no" to 1, we're not reaching any limits yet, so ignore this entirely!
 	// -Shadow Hog
 	newMagnitude = R_PointToDist2(player->mo->momx - player->cmomx, player->mo->momy - player->cmomy, 0, 0);
-	if (player->offroad > 0 || !player->outruntime)
+	if (player->offroad > 0 || player->loop.radius == 0 || player->outruntime == 0)
 	{
 		if (newMagnitude > K_GetKartSpeed(player, true, true)) //topspeed)
 		{
