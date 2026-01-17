@@ -153,14 +153,12 @@ static textinput_t menuinput;
 
 static levellistmode_e levellistmode = LLM_CREATESERVER;
 
-static char joystickInfo[MAXGAMEPADS+1][29];
-
-INT16 startmap; // Mario, NiGHTS, or just a plain old normal game?
-
 menu_t menudefs[MAXMENUTYPES]; // array of all menudefs
 UINT16 nummenutypes;
 menupaneldef_t menupanels[MAXMENUPANELS];
 size_t nummenupanels;
+menuitemstyle_t menuitemstyles[MAXMENUITEMSTYLES];
+size_t nummenuitemstyles;
 menutype_t menustack[NUMMENULEVELS]; // stack of active menus, [0] == current menu
 static menu_t *currentMenu; // current menudef
 static size_t numcurpanels;
@@ -248,7 +246,7 @@ static struct levelselect_t
 #define lsvseperation(row) (lsbasevseperation + getheadingoffset(row))
 
 #define lsbasex (BASEVIDWIDTH*FRACUNIT/2 - lshseperation*(MAPSPERROW-1)/2)
-#define lsbasey (BASEVIDHEIGHT*FRACUNIT/2 - 2*FRACUNIT)
+#define lsbasey (BASEVIDHEIGHT*FRACUNIT/2 - 4*FRACUNIT)
 
 // Sky Room
 static char *M_GetConditionString(condition_t cond);
@@ -281,6 +279,13 @@ static void Dummystaff_OnChange(void);
 	menupaneldef_t *pd = &menupanels[nummenupanels++];
 	DEH_Link(name, &pd->info, &menunames);
 	return pd;
+}
+
+/*FNONULL*/ menuitemstyle_t *M_AllocateMenuItemStyle(const char *name)
+{
+	menuitemstyle_t *style = &menuitemstyles[nummenuitemstyles++];
+	DEH_Link(name, &style->info, &menunames);
+	return style;
 }
 
 /*ANONULL*/ static menupanelinst_t *M_CheckPanel(const char *name)
@@ -329,6 +334,7 @@ static void Dummystaff_OnChange(void);
 		Z_Free(item->text);
 		Z_Free(item->patch);
 		Z_Free(item->tooltip);
+		Z_Free(item->extra);
 	}
 
 	Z_Free(pi->items);
@@ -497,10 +503,23 @@ static void M_SetItemTooltipRaw(menuitem_t *item, const char *string)
 	item->tooltip = Z_StrDup(string);
 }
 
-static void M_SetItemTooltip(const menupanelinst_t *pi, const char *name, const char *string)
+/* static void M_SetItemTooltip(const menupanelinst_t *pi, const char *name, const char *string)
 {
 	menuitem_t *item = M_GetMenuItem(pi, name);
 	M_SetItemTooltipRaw(item, string);
+} */
+
+static void M_SetItemExtraRaw(menuitem_t *item, const char *string)
+{
+	if (item->extra)
+		Z_Free(item->extra);
+	item->extra = Z_StrDup(string);
+}
+
+static void M_SetItemExtra(const menupanelinst_t *pi, const char *name, const char *string)
+{
+	menuitem_t *item = M_GetMenuItem(pi, name);
+	M_SetItemExtraRaw(item, string);
 }
 
 #define M_SetItemVisible(f, n, c)  M_ChangeItemStatus(f, n, IT_HIDDEN, !(c))
@@ -896,30 +915,30 @@ static void Levelplatter_OnChange(void)
 	M_UpdateLevelPlatter();
 }
 
-static void Reinitialize(const char *name)
+static void Reinitialize(void)
 {
 	// FIXME this is ass
 	if (numcurpanels < 0)
 		return;
 	menupanelinst_t *pi = &curpanels[0];
 	menupaneldef_t *pd = M_GetDefFromInst(pi);
-	if (fastcmp(DEH_MenuPanelName(pd), name))
+	if (pd->initializer != NULL)
 		pd->initializer(pi);
 }
 
 void Screenshot_option_Onchange(void)
 {
-	Reinitialize("OP_SCREENSHOTS");
+	Reinitialize();
 }
 
 void Moviemode_mode_Onchange(void)
 {
-	Reinitialize("OP_SCREENSHOTS");
+	Reinitialize();
 }
 
 void Addons_option_Onchange(void)
 {
-	Reinitialize("OP_ADDONS");
+	Reinitialize();
 }
 
 void Moviemode_option_Onchange(void)
@@ -949,7 +968,7 @@ void Skinsort_option_Onchange(void)
 
 void Skinselectstyle_option_Onchange(void)
 {
-	Reinitialize("MP_PLAYERSETUP");
+	Reinitialize();
 	Skinsort_option_Onchange();
 }
 
@@ -2335,6 +2354,8 @@ static void M_SetupNextMenu(menutype_t menunum)
 					item->patch = Z_StrDup(item->patch);
 				if (item->tooltip != NULL)
 					item->tooltip = Z_StrDup(item->tooltip);
+				if (item->extra != NULL)
+					item->extra = Z_StrDup(item->extra);
 				item->x *= FRACUNIT;
 				item->y *= FRACUNIT;
 			}
@@ -2732,16 +2753,175 @@ static void M_DrawSliderCursor(fixed_t x, fixed_t y, INT32 vflags, consvar_t *cv
 	V_DrawSciencePatch(x - 4*FRACUNIT + (SLIDER_RANGE+4)*range, y, vflags, W_CachePatchName("M_SLIDEC", PU_CACHE), FRACUNIT);
 }
 
-static void M_DrawRightString(const menupanelinst_t *pi, menuitem_t *item, fixed_t x, fixed_t y, INT32 vflags, boolean selected)
+static void M_DrawSticker(INT32 x, INT32 y, INT32 width, INT32 flags, boolean isSmall);
+
+static fixed_t M_GetAlignment(const menupanelinst_t *pi, const menuitempart_t *part, fixed_t width)
 {
-	fixed_t w;
-	if (item->cvar)
+	switch (part->align)
+	{
+	case ITA_LEFT:
+		return 0;
+	case ITA_CENTER:
+		return width/2;
+	case ITA_RIGHT:
+		return width;
+	case ITA_EDGE:
+		return width - (BASEVIDWIDTH*FRACUNIT - pi->x*2);
+	}
+}
+
+static const menuitemstyle_t defaultstyle = { .partenabled = { true } };
+
+// draws a menu item, returns cursor offset
+static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed_t x, fixed_t y, INT32 vflags, boolean selected)
+{
+	fixed_t width = 0;
+	fixed_t retwidth = 0;
+	const menuitemstyle_t *style = item->style;
+	if (style == NULL)
+		style = &defaultstyle;
+
+	for (size_t i = 0; i < MAXMENUITEMPARTS; i++)
+	{
+		if (style->partenabled[i] == false)
+			continue;
+
+		const menuitempart_t *part = &style->parts[i];
+		const char *string;
+		switch (part->source)
+		{
+		case ITS_TEXT:
+			string = item->text; break;
+		case ITS_PATCH:
+			string = item->patch; break;
+		case ITS_EXTRA:
+			string = item->extra; break;
+		case ITS_FIXED:
+			string = part->fixedstring; break;
+		}
+
+		if (string == NULL)
+			continue;
+
+		fixed_t scale = part->small ? FRACUNIT/2 : FRACUNIT;
+		INT32 colorflag;
+		INT32 (*widthfunc)(const char *string, INT32 length, INT32 option);
+
+		if (item->status & IT_SECRET)
+		{
+			string = M_CreateSecretMenuOption(string);
+			vflags |= V_TRANSLUCENT|V_OLDSPACING;
+		}
+		else if (item->status & IT_GRAYEDOUT || part->translucent)
+			vflags |= V_TRANSLUCENT;
+
+		if (selected && !part->nohighlight)
+		{
+			colorflag = highlightflags;
+		}
+		else switch (part->highlight)
+		{
+		case ITH_NONE:
+			colorflag = 0; break;
+		case ITH_HIGHLIGHT:
+			colorflag = highlightflags; break;
+		case ITH_RECOMMENDED:
+			colorflag = recommendedflags; break;
+		case ITH_WARNING:
+			colorflag = warningflags; break;
+		}
+
+		patch_t *p = NULL;
+		UINT8 *cmap = NULL;
+		INT32 num;
+
+		switch (part->type)
+		{
+		case ITT_STRING:
+			switch (part->font)
+			{
+			case HU_FONT:
+				widthfunc = V_SubStringWidth;
+				break;
+			case TINY_FONT:
+				widthfunc = V_ThinSubStringWidth;
+				break;
+			default:
+				I_Error("unknown font %d", part->font);
+				break;
+			}
+
+			if (part->fontalt)
+				vflags |= V_6WIDTHSPACE;
+
+			width = M_GetAlignment(pi, part, widthfunc(string, -1, vflags)*FRACUNIT);
+
+			//if (part->flags & IT_STICKER)
+				//M_DrawSticker((x - width)/FRACUNIT, y/FRACUNIT + 2, widthfunc(string, -1, vflags), vflags & ~V_FLIP, true);
+
+			V_DrawStringScaled(x - width + part->xofs, y + part->yofs, scale, FRACUNIT, FRACUNIT, colorflag|vflags, part->font, string);
+			retwidth = max(retwidth, width);
+			break;
+
+		case ITT_FILL:
+			;
+			fixed_t fillw, fillh;
+			UINT8 fillc;
+			// TODO: these can overflow, reimplement sscanf to fix i guess
+			int results = sscanf(string, "%dx%d,%hhu", &fillw, &fillh, &fillc);
+			if (results != 3)
+				break;
+
+			fillw *= FRACUNIT;
+			fillh *= FRACUNIT;
+
+			width = M_GetAlignment(pi, part, fillw);
+			V_DrawFixedFill(x - width + part->xofs, y + part->yofs, fillw, fillh, fillc|vflags);
+			retwidth = max(retwidth, width);
+			break;
+
+		case ITT_PATCH:
+			p = W_CachePatchName(string, PU_CACHE);
+			cmap = V_GetStringColormap(colorflag);
+		drawpatch:
+			width = M_GetAlignment(pi, part, p->width*FRACUNIT);
+			V_DrawFixedPatch(x - width + part->xofs, y + part->yofs, scale, vflags & ~V_FLIP, p, cmap);
+			retwidth = max(retwidth, width);
+			break;
+
+		case ITT_THUMBNAIL:
+			if (fastcmp(string, "$"))
+				num = -1; // random
+			else if (fastcmp(string, "?"))
+				num = -2; // unknown
+			else
+				num = G_MapNumber(string);
+			scale = M_GetMapThumbnail(num, &p)/4;
+			goto drawpatch;
+
+		case ITT_SKINICON:
+			num = R_SkinAvailable(string);
+			scale = FRACUNIT;
+			if (num < 0)
+				p = W_CachePatchName(part->small ? "M_NORANK" : "M_NOWANT", PU_CACHE);
+			else
+				p = faceprefix[num][part->small ? FACE_RANK : FACE_WANTED];
+			skincolornum_t color = item->extra != NULL ? DEH_FindSkincolor(item->extra) : MAXSKINCOLORS;
+			if (color == MAXSKINCOLORS)
+				color = 0;
+			cmap = R_GetTranslationColormap(num < 0 ? TC_RAINBOW : num, color, GTC_MENUCACHE);
+			goto drawpatch;
+		}
+	}
+
+	// TODO: this really should be part of the style... somehow?
+	if (item->cvar != NULL && !(item->status & (IT_SECRET|IT_GRAYEDOUT)))
 	{
 		consvar_t *cv = item->cvar;
 		if (!cv->PossibleValue) // string cvar?
 		{
 			if (pi->scrollheight && y + 12*FRACUNIT > pi->y + pi->scrollheight)
-				return;
+				return retwidth;
 
 			// see M_ItemExtraOffset
 			boolean side = cv == &cv_dummyname || cv == &cv_playername[0];
@@ -2813,12 +2993,12 @@ static void M_DrawRightString(const menupanelinst_t *pi, menuitem_t *item, fixed
 				warning = digital_disabled;
 			}
 			else if (cv == &cv_dummymultiplayer)
-				return;
+				return retwidth;
 
 			if (menustack[0] == MN_MP_PLAYERSETUP)
 				vflags |= V_ALLOWLOWERCASE;
 
-			w = V_StringWidth(str, vflags)*FRACUNIT;
+			fixed_t w = V_StringWidth(str, vflags)*FRACUNIT;
 			V_DrawStringAtFixed(BASEVIDWIDTH*FRACUNIT - x - w, y, (warning ? warningflags : highlightflags)|vflags, str);
 
 			if (selected && cv != &cv_nextmap && cv != &cv_nextcup)
@@ -2831,200 +3011,8 @@ static void M_DrawRightString(const menupanelinst_t *pi, menuitem_t *item, fixed
 			}
 		}
 	}
-	else if (item->routine)
-	{
-		char tmp[32*MAXINPUTMAPPING]; // should be enough :^)
-		INT32 key;
-		if (item->routine != MR_ChangeControl)
-			return;
 
-		tmp[0] ='\0';
-		for (w = 0; w < MAXINPUTMAPPING; w++)
-		{
-			key = setupcontrols[item->argument][w];
-			if (key != KEY_NULL)
-			{
-				if (tmp[0] != '\0')
-					strcat(tmp, ", ");
-				strcat(tmp, G_KeynumToString(key));
-			}
-		}
-		if (tmp[0] == '\0')
-			strcpy(tmp, "---");
-
-		w = V_StringWidth(tmp, vflags);
-		(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinStringAtFixed : V_DrawRightAlignedStringAtFixed)
-			(BASEVIDWIDTH*FRACUNIT - pi->x, y, vflags|highlightflags, tmp);
-	}
-	else
-	{
-		if (item->submenu == MN_OP_VIDEOMODE) // show current resolution
-		{
-			V_DrawRightAlignedStringAtFixed(BASEVIDWIDTH*FRACUNIT - x, y,
-				(SCR_IsAspectCorrect(vid.width, vid.height) ? recommendedflags : highlightflags)|vflags,
-				va("%dx%d", vid.width, vid.height));
-		}
-		else if (item->submenu == MN_OP_JOYSTICKSET) // gamepad select
-		{
-			INT32 stick = cv_usejoystick[setupcontrolplayer-1].value;
-			const char *name = stick == 0 ? "None" : I_GetJoyName(stick);
-			if (!name) name = "?";
-			w = V_StringWidth(name, vflags);
-			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinStringAtFixed : V_DrawRightAlignedStringAtFixed)
-				(BASEVIDWIDTH*FRACUNIT - x, y, vflags|highlightflags, name);
-		}
-#ifdef HAVE_DISCORDRPC
-		else if (item->submenu == MN_MISC_DISCORDREQUESTS)
-		{
-			vflags &= ~(V_FLIP|V_PARAMMASK);
-			const tic_t freq = TICRATE/2;
-			if ((leveltime % freq) >= freq/2)
-				V_DrawScaledPatch(204, y - 1, vflags, W_CachePatchName("K_REQUE2", PU_CACHE));
-		}
-#endif
-#if 0
-		else if (item->patch)
-			V_DrawRightAlignedString(BASEVIDWIDTH - x, y, (selected || (item->status & ITH_MASK) == ITH_HIGHLIGHT ? highlightflags : 0)|vflags, item->patch);
-#endif
-	}
-}
-
-static void M_DrawSticker(INT32 x, INT32 y, INT32 width, INT32 flags, boolean isSmall);
-
-// draws a menu item, returns cursor offset
-static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed_t x, fixed_t y, INT32 vflags, boolean selected)
-{
-	fixed_t width = 0;
-	const char *string = item->text ? item->text : "";
-	fixed_t scale = item->status & IT_SMALL ? FRACUNIT/2 : FRACUNIT;
-	int font;
-	INT32 colorflag;
-	INT32 (*widthfunc)(const char *string, INT32 length, INT32 option);
-
-	if (item->status & IT_SECRET)
-	{
-		string = M_CreateSecretMenuOption(string);
-		vflags |= V_TRANSLUCENT|V_OLDSPACING;
-	}
-	else if (item->status & IT_GRAYEDOUT)
-		vflags |= V_TRANSLUCENT;
-
-	switch (item->status & ITH_MASK)
-	{
-	case ITH_HIGHLIGHT:
-		colorflag = highlightflags; break;
-	case ITH_RECOMMEND:
-		colorflag = recommendedflags; break;
-	case ITH_WARNING:
-		colorflag = warningflags; break;
-	default:
-		colorflag = 0; break;
-	}
-
-	// color a dinosaur?
-	if ((item->status & ITF_MASK) == ITF_FILL)
-	{
-		fixed_t fillw, fillh;
-		UINT8 fillc;
-		fixed_t ofsx, ofsy;
-		// TODO: these can overflow, reimplement sscanf to fix i guess
-		int results = sscanf(item->patch, "%dx%d,%hhu,%d,%d", &fillw, &fillh, &fillc, &ofsx, &ofsy);
-		if (results != 3 && results != 5)
-			return 0;
-
-		fillw *= FRACUNIT;
-		fillh *= FRACUNIT;
-		ofsx *= FRACUNIT;
-		ofsy *= FRACUNIT;
-
-		if (item->status & IT_CENTER)
-			width = fillw/2;
-		else if (item->status & IT_RIGHT)
-			width = fillw;
-
-		V_DrawFixedFill(x - width + (results == 5 ? ofsx : 0), y + (results == 5 ? ofsy : 0), fillw, fillh, fillc|vflags);
-		return 0;
-	}
-
-	// draw a patch or map thumbnail instead of a string?
-	if ((item->status & ITF_MASK) >= ITF_IMAGETYPE)
-	{
-		patch_t *p = NULL;
-		UINT8 *cmap = NULL;
-		INT32 num;
-
-		if (item->patch == NULL)
-			return 0;
-
-		switch (item->status & ITF_MASK)
-		{
-		case ITF_THUMBNAIL:
-			if (fastcmp(item->patch, "$"))
-				num = -1; // random
-			else if (fastcmp(item->patch, "?"))
-				num = -2; // unknown
-			else
-				num = G_MapNumber(item->patch);
-			scale = M_GetMapThumbnail(num, &p)/4;
-			break;
-
-		case ITF_PATCH:
-			p = W_CachePatchName(item->patch, PU_CACHE);
-			cmap = V_GetStringColormap(colorflag);
-			break;
-
-		case ITF_SKIN:
-			num = R_SkinAvailable(item->patch);
-			boolean small = item->status & IT_SMALL;
-			scale = FRACUNIT;
-			if (num < 0)
-				p = W_CachePatchName(small ? "M_NORANK" : "M_NOWANT", PU_CACHE);
-			else
-				p = faceprefix[num][small ? FACE_RANK : FACE_WANTED];
-			cmap = R_GetTranslationColormap(num < 0 ? TC_RAINBOW : num, item->argument, GTC_MENUCACHE);
-			break;
-		}
-
-		if (item->status & IT_CENTER)
-			width = p->width*FRACUNIT/2;
-		else if (item->status & IT_RIGHT)
-			width = p->width*FRACUNIT;
-
-		V_DrawFixedPatch(x - width, y, scale, vflags & ~V_FLIP, p, cmap);
-		return width;
-	}
-
-	switch (item->status & ITF_MASK)
-	{
-	case ITF_THIN2:
-		vflags |= V_6WIDTHSPACE; // FALLTHRU
-	case ITF_THIN:
-		font = TINY_FONT;
-		widthfunc = V_ThinSubStringWidth;
-		break;
-
-	case ITF_HEADER:
-		x -= 16*FRACUNIT; // FALLTHRU
-	default:
-		font = HU_FONT;
-		widthfunc = V_SubStringWidth;
-		break;
-	}
-
-	if (item->status & IT_CENTER)
-		width = widthfunc(string, -1, vflags)*FRACUNIT/2;
-	else if (item->status & IT_RIGHT)
-		width = widthfunc(string, -1, vflags)*FRACUNIT;
-
-	if (item->status & IT_STICKER)
-		M_DrawSticker((x - width)/FRACUNIT, y*FRACUNIT + 2, widthfunc(string, -1, vflags), vflags & ~V_FLIP, true);
-
-	V_DrawStringScaled(x - width, y, scale, FRACUNIT, FRACUNIT, (selected ? highlightflags : colorflag)|vflags, font, string);
-
-	if (!(item->status & (IT_SECRET|IT_GRAYEDOUT)))
-		M_DrawRightString(pi, item, x, y, vflags, selected);
-
-	return width;
+	return retwidth;
 }
 
 // returns 16 if this item draws a cvar string input. yep, that's it!
@@ -3064,6 +3052,39 @@ static fixed_t M_GetItemAbsY(const menupanelinst_t *pi, size_t index)
 	}
 
 	return y;
+}
+
+static void M_UpdateStyleFixedStrings(void)
+{
+	menuitemstyle_t *style;
+
+	style = DEH_FindMenuItemStyle("VIDEOMODE");
+	if (style != NULL)
+	{
+		Z_Free(style->parts[1].fixedstring);
+		style->parts[1].fixedstring = Z_StrDup(va("%dx%d", vid.width, vid.height));
+		style->parts[1].highlight = SCR_IsAspectCorrect(vid.width, vid.height) ? ITH_RECOMMENDED : ITH_HIGHLIGHT;
+	}
+
+	style = DEH_FindMenuItemStyle("JOYSTICKNAME");
+	if (style != NULL && setupcontrolplayer > 0)
+	{
+		INT32 stick = cv_usejoystick[setupcontrolplayer-1].value;
+		const char *name = stick == 0 ? "None" : I_GetJoyName(stick);
+		if (!name) name = "?";
+		Z_Free(style->parts[1].fixedstring);
+		style->parts[1].fixedstring = Z_StrDup(name);
+		style->parts[1].font = V_StringWidth(name, 0) > BASEVIDWIDTH/2 - 4 ? TINY_FONT : HU_FONT;
+	}
+
+#ifdef HAVE_DISCORDRPC
+	style = DEH_FindMenuItemStyle("DISCORDREQUEST");
+	if (style != NULL)
+	{
+		const tic_t freq = TICRATE/2;
+		style->partenabled[1] = discordRequestList != NULL && (menutimer % freq) >= freq/2;
+	}
+#endif
 }
 
 static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
@@ -3116,6 +3137,37 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 			                  pflags, patch, scale/4);
 			break;
 		}
+
+	// FIXME: yep, control update is shoved here
+	// binds can change at any time, and the controls menu doesn't have a drawroutine, so...
+	for (i = 0; i < pi->numitems; i++)
+	{
+		menuitem_t *item = &pi->items[i];
+		if (item->routine != MR_ChangeControl)
+			continue;
+
+		char tmp[32*MAXINPUTMAPPING]; // should be enough :^)
+		INT32 key;
+
+		tmp[0] ='\0';
+		for (INT32 j = 0; j < MAXINPUTMAPPING; j++)
+		{
+			key = setupcontrols[item->argument][j];
+			if (key != KEY_NULL)
+			{
+				if (tmp[0] != '\0')
+					strcat(tmp, ", ");
+				strcat(tmp, G_KeynumToString(key));
+			}
+		}
+		if (tmp[0] == '\0')
+			strcpy(tmp, "---");
+
+		item->style = DEH_FindMenuItemStyle(V_StringWidth(tmp, 0) > BASEVIDWIDTH/2 - 4 ? "CHANGECONTROLNAMELONG" : "CHANGECONTROLNAME");
+		M_SetItemPatchRaw(item, tmp); // the fragmentation is INSANE, look at the reserved bytes :face_holding_back_tears:
+	}
+
+	M_UpdateStyleFixedStrings();
 
 	for (i = 0; i < pi->numitems; i++)
 	{
@@ -4817,10 +4869,16 @@ void MP_PrepReplayList(menupanelinst_t *pi)
 
 		menuitem_t *item = M_AppendMenuItem(pi, 0, i*10*FRACUNIT, IT_INTERACT);
 		M_SetItemTextRaw(item, demolist[i].title);
-		M_SetItemPatchRaw(item, dirmenu[i] + DIR_STRING);
+		M_SetItemExtraRaw(item, dirmenu[i] + DIR_STRING);
 		item->argument = dirmenu[i][DIR_TYPE];
 		if (item->argument != EXT_FOLDER && item->argument != EXT_UP)
 			item->submenu = MN_MISC_REPLAYSTART;
+
+		if (demolist[i].type == MD_SUBDIR)
+		{
+			item->style = DEH_FindMenuItemStyle("REPLAYSUBDIR");
+			M_SetItemPatchRaw(item, item->argument == EXT_UP ? "M_RBACK" : "M_RFLDR");
+		}
 	}
 
 	M_RawSetItemOn(pi, dir_on[menudepthleft]);
@@ -4914,7 +4972,7 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 		switch (item->argument)
 		{
 			case EXT_FOLDER:
-				strcpy(&menupath[menupathindex[menudepthleft]], item->patch);
+				strcpy(&menupath[menupathindex[menudepthleft]], item->extra);
 				if (menudepthleft)
 				{
 					menupathindex[--menudepthleft] = strlen(menupath);
@@ -5045,11 +5103,11 @@ void MD_DrawReplayHutReplayInfo(menupanelinst_t *pi)
 		UINT32 score = mdemo->standings[0].timeorscore;
 		M_SetItemText(fg, "SCORENAME", mdemo->gametype == GT_RACE ? "Time" : "Score");
 
-		M_GetMenuItem(fg, "SCORE")->status &= ~ITF_THIN;
+		M_GetMenuItem(fg, "SCORE")->style = NULL;
 		if (score == UINT32_MAX-1)
 		{
 			M_SetItemText(fg, "SCORE", "No Contest");
-			M_GetMenuItem(fg, "SCORE")->status |= ITF_THIN;
+			M_GetMenuItem(fg, "SCORE")->style = DEH_FindMenuItemStyle("THIN");
 		}
 		else if (mdemo->gametype == GT_RACE)
 		{
@@ -5065,8 +5123,9 @@ void MD_DrawReplayHutReplayInfo(menupanelinst_t *pi)
 
 		// Character face!
 		INT32 skin = mdemo->standings[0].skin;
+		skincolornum_t color = mdemo->standings[0].color;
 		M_SetItemPatch(fg, "FACE", skin >= 0 && skin < numskins ? skins[skin].name : "");
-		M_SetItemArgument(fg, "FACE", mdemo->standings[0].color);
+		M_SetItemExtra(fg, "FACE", color >= 0 && color < numskincolors ? DEH_SkincolorName(color) : "");
 		break;
 	}
 }
@@ -5115,15 +5174,21 @@ void MD_DrawReplayHut(menupanelinst_t *pi)
 		}
 	}
 
+	menuitemstyle_t *style = DEH_FindMenuItemStyle("REPLAYSELECT");
+	if (style == NULL)
+		return;
+
+	style->parts[0].xofs = 0;
 	for (i = 0; i < pi->numitems; i++)
 	{
-		pi->items[i].x = 1; // FIXME autolayout...!
+		if (pi->items[i].style == style)
+			pi->items[i].style = NULL;
 
-		if (demolist[i].type == MD_SUBDIR)
-			pi->items[i].x += 8*FRACUNIT;
+		if (i != pi->itemon || demolist[i].type == MD_SUBDIR)
+			continue;
 
-		if (i == pi->itemon)
-			pi->items[i].x -= M_ReplayHutScroll(M_ItemWidth(pi, i) - (vid.width/vid.dupx)*FRACUNIT + pi->x*2, cursortimer);
+		pi->items[i].style = style;
+		style->parts[0].xofs = -M_ReplayHutScroll(M_ItemWidth(pi, i) - (vid.width/vid.dupx)*FRACUNIT + pi->x*2, cursortimer);
 	}
 }
 
@@ -5140,37 +5205,30 @@ void MD_DrawReplayStartMenu(menupanelinst_t *pi)
 	{
 		menuitem_t *item;
 		INT32 y = i*20*FRACUNIT;
-
-		item = M_AppendMenuItem(pi, 1, y, ITH_HIGHLIGHT|IT_RIGHT);
-		M_SetItemTextRaw(item, va("%2d", mdemo->standings[i].ranking));
-
-		item = M_AppendMenuItem(pi, 4*FRACUNIT, y, ITF_THIN);
-		M_SetItemTextRaw(item, mdemo->standings[i].name);
-
-		item = M_AppendMenuItem(pi, 8*FRACUNIT, y + 9*FRACUNIT, 0);
 		UINT32 score = mdemo->standings[i].timeorscore;
+
+		item = M_AppendMenuItem(pi, 1, y, 0);
+		item->style = DEH_FindMenuItemStyle(score == UINT32_MAX-1 ? "REPLAYRANKINGTHIN" : "REPLAYRANKING");
+		M_SetItemTextRaw(item, va("%2d", mdemo->standings[i].ranking));
+		M_SetItemPatchRaw(item, mdemo->standings[i].name);
+
 		if (score == UINT32_MAX-1)
-		{
-			item->status |= ITF_THIN;
-			M_SetItemTextRaw(item, "No Contest");
-		}
+			M_SetItemExtraRaw(item, "No Contest");
 		else if (mdemo->gametype == GT_RACE)
-		{
-			M_SetItemTextRaw(item, va("%d'%02d\"%02d",
+			M_SetItemExtraRaw(item, va("%d'%02d\"%02d",
 			                         G_TicsToMinutes(score, true),
 			                         G_TicsToSeconds(score),
 			                         G_TicsToCentiseconds(score)));
-		}
 		else
-		{
-			M_SetItemTextRaw(item, va("%d", score));
-		}
+			M_SetItemExtraRaw(item, va("%d", score));
 
 		// Character face!
-		item = M_AppendMenuItem(pi, 95*FRACUNIT, y, ITF_SKIN|IT_SMALL|IT_RIGHT);
+		item = M_AppendMenuItem(pi, 95*FRACUNIT, y, 0);
+		item->style = DEH_FindMenuItemStyle("REPLAYRANKINGICON");
 		INT32 skin = mdemo->standings[i].skin;
+		skincolornum_t color = mdemo->standings[i].color;
 		M_SetItemPatchRaw(item, skin >= 0 && skin < numskins ? skins[skin].name : "");
-		item->argument = mdemo->standings[i].color;
+		M_SetItemExtraRaw(item, color >= 0 && color < numskincolors ? DEH_SkincolorName(color) : "");
 	}
 
 	pi->y = 62*FRACUNIT - M_ReplayHutScroll((100 + i*20 - vid.height/vid.dupy)*FRACUNIT, menutimer);
@@ -8561,31 +8619,25 @@ void MD_DrawJoystick(menupanelinst_t *pi)
 #endif
 			compareval = cv_usejoystick[setupcontrolplayer-1].value;
 
-		V_DrawStringAtFixed(pi->x, pi->y + 16*i*FRACUNIT, ((i == compareval) ? V_GREENMAP : 0)|MENUCAPS, joystickInfo[i]);
+		pi->items[i].style = DEH_FindMenuItemStyle(i == compareval ? "JOYSTICKLISTSET" : "JOYSTICKLIST");
 	}
 }
 
-INT32 MR_SetupJoystickMenu(INT32 arg)
+void MP_SetupJoystick(menupanelinst_t *pi)
 {
-	const char *joyNA = "Unavailable";
 	const INT32 n = numcontrollers;
 
 	INT32 i = 0;
 	INT32 j;
 
-	if (arg < 0 || arg >= MAXSPLITSCREENPLAYERS)
-		return false;
+	M_SetItemText(pi, "JOY1", "None");
 
-	setupcontrolplayer = arg + 1;
-
-	strcpy(joystickInfo[i], "None");
-
-	for (i = 1; i <= MAXGAMEPADS; i++)
+	for (i = 1; i <= MAXGAMEPADS && i < pi->numitems; i++)
 	{
 		if (i <= n && (I_GetJoyName(i)) != NULL)
-			strncpy(joystickInfo[i], I_GetJoyName(i), 28);
+			M_SetItemTextRaw(&pi->items[i], I_GetJoyName(i));
 		else
-			strcpy(joystickInfo[i], joyNA);
+			M_SetItemTextRaw(&pi->items[i], "Unavailable");
 
 #ifdef JOYSTICK_HOTPLUG
 		// We use cv_usejoystick.string as the USER-SET var
@@ -8603,8 +8655,13 @@ INT32 MR_SetupJoystickMenu(INT32 arg)
 		}
 #endif
 	}
+}
 
-	return true;
+void M_UpdateJoystickMenu(void)
+{
+	for (size_t i = 0; i < numcurpanels; i++)
+		if (M_GetDefFromInst(&curpanels[i])->initializer == MP_SetupJoystick)
+			MP_SetupJoystick(&curpanels[i]);
 }
 
 INT32 MR_AssignJoystick(INT32 arg)
@@ -8886,7 +8943,7 @@ void MP_VideoModeList(menupanelinst_t *pi)
 
 		// Show multiples of 320x200 as green.
 		if (SCR_IsAspectCorrect(width, height))
-			item->status |= ITH_RECOMMEND;
+			item->style = DEH_FindMenuItemStyle("RECOMMENDEDHIGHLIGHT");
 
 	duped:
 		continue;

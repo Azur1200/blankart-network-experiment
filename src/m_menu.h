@@ -40,6 +40,8 @@ extern "C" {
 
 #define MAXMENUPANELNAME 16
 
+#define MAXMENUITEMPARTS 4
+
 // Menu IDs sectioned by numeric places to signify hierarchy
 typedef enum
 {
@@ -146,35 +148,40 @@ typedef enum
 	IT_OFSX      = 1<<6, // X coordinate is relative to current position
 	IT_OFSY      = 1<<7, // ditto
 	IT_TEMPORARY = 1<<8, // with IT_OFS*, offset applies only to this item
-
-	IT_CENTER    = 1<<9,  // center the text/patch
-	IT_RIGHT     = 1<<10, // right-align the text/patch
-	IT_SMALL     = 1<<11, // draw at half scale
-	IT_STICKER   = 1<<12, // draw a sticker behind the text
-
-#define sh 13
-	ITH_NONE      = 0<<sh, // no highlight
-	ITH_HIGHLIGHT = 1<<sh, // add highlightflags to text/patch
-	ITH_RECOMMEND = 2<<sh, // add recommendedflags to text/patch
-	ITH_WARNING   = 3<<sh, // add warningflags to text/patch
-	ITH_MASK      = 0x3<<sh,
-#undef sh
-
-#define sh 15
-	ITF_STANDARD  = 0<<sh, // standard font
-	ITF_HEADER    = 1<<sh, // standard font, with an offset to the left
-	ITF_THIN      = 2<<sh, // thin font
-	ITF_THIN2     = 3<<sh, // thin font with tighter spacing
-	ITF_FILL      = 4<<sh, // call drawfill using parameters in item->patch
-	ITF_PATCH     = 5<<sh, // display a patch instead of text
-	ITF_THUMBNAIL = 6<<sh, // display the thumbnail of the mapname in item->patch
-	ITF_SKIN      = 7<<sh, // display the icon of the skin in item->patch, skincolor in argument
-	ITF_IMAGETYPE = ITF_PATCH,
-	ITF_MASK      = 0x7<<sh,
-#undef sh
-
-	IT_STYLE     = IT_CENTER|IT_RIGHT|IT_SMALL|IT_STICKER|ITH_MASK|ITF_MASK,
 } menuitemflags_t;
+
+typedef enum
+{
+	ITT_STRING,     // draws the text source directly using the font in part->font
+	ITT_FILL,       // parses the text source and calls drawfill
+	ITT_PATCH,      // draws a patch named by the text source
+	ITT_THUMBNAIL,  // draws the thumbnail of the named map
+	ITT_SKINICON,   // draws the icon of the skin in the text source, with skincolor in extra
+} ATTRPACK itemparttype_e;
+
+typedef enum
+{
+	ITH_NONE,        // no highlight
+	ITH_HIGHLIGHT,   // highlightflags
+	ITH_RECOMMENDED, // recommendedflags
+	ITH_WARNING,     // warningflags
+} ATTRPACK itemparthighlight_e;
+
+typedef enum
+{
+	ITA_LEFT,     // align to left
+	ITA_CENTER,   // align to center
+	ITA_RIGHT,    // align to right
+	ITA_EDGE,     // align to right edge of panel
+} ATTRPACK itempartalign_e;
+
+typedef enum
+{
+	ITS_TEXT,    // item->text
+	ITS_PATCH,   // item->patch
+	ITS_EXTRA,   // item->extra
+	ITS_FIXED,   // part->fixedstring
+} ATTRPACK itempartsource_e;
 
 typedef INT32 (menufunc_f)(INT32);
 typedef void  (menudrawer_f)(menupanelinst_t *);
@@ -183,19 +190,44 @@ typedef void  (panelfunc_f)(menupanelinst_t *);
 //
 // MENU TYPEDEFS
 //
+struct menuitempart_t
+{
+	itemparttype_e type;
+	itemparthighlight_e highlight;
+	itempartalign_e align;
+	itempartsource_e source;
+
+	UINT8 font;
+	boolean fontalt; // V_6WIDTHSPACE
+	boolean small;
+	boolean translucent;
+	boolean nohighlight;
+	fixed_t xofs, yofs;
+	char *fixedstring;
+};
+
+struct menuitemstyle_t
+{
+	dehinfo_t info;
+	menuitempart_t parts[MAXMENUITEMPARTS];
+	boolean partenabled[MAXMENUITEMPARTS];
+};
+
 struct menuitem_t
 {
 	dehinfo_t info;
 
-	char *text;    // left-side string
-	char *patch;   // name of patch lump to draw, OR right-side string
+	char *text;
+	char *patch;
 	char *tooltip; // help text displayed at bottom
+	char *extra;   // used by some styles
 
 	consvar_t *cvar;     // console variable to modify
 	menufunc_f *routine; // menu routine to call
 	menutype_t submenu;  // navigate to another menu
 
 	menuitemflags_t status; // show IT_xxx
+	const menuitemstyle_t *style;
 
 	INT32 argument; // passed to routine/submenu, OR step size for cvars
 	fixed_t x, y;     // coordinates, see menuitemflags
@@ -284,10 +316,15 @@ extern UINT16 nummenutypes;
 extern menupaneldef_t menupanels[MAXMENUPANELS];
 extern size_t nummenupanels;
 
+#define MAXMENUITEMSTYLES 256
+extern menuitemstyle_t menuitemstyles[MAXMENUITEMSTYLES];
+extern size_t nummenuitemstyles;
+
 void M_EnterMenu(menutype_t menu, boolean callexit, INT32 arg);
 void M_ExitMenu(void);
 void M_ClearMenus(boolean callexitmenufunc);
 /*FNONULL*/ menupaneldef_t *M_AllocateMenuPanelDef(const char *name);
+/*FNONULL*/ menuitemstyle_t *M_AllocateMenuItemStyle(const char *name);
 /*ANONULL*/ menuitem_t *M_CheckMenuItemDef(const menupaneldef_t *pd, const char *name);
 /*FNONULL*/ menuitem_t *M_GetMenuItemDef(const menupaneldef_t *pd, const char *name);
 
@@ -295,7 +332,7 @@ panelfunc_f
 MP_SinglePlayerMain, MP_Options, MP_GameOptions, MP_SetupControls, MP_CameraSetup,
 MP_ScreenshotOptions, MP_AddonsOptions, MP_SetupMultiPlayer, MP_SetupMonitorToggles,
 MP_PrepReplayList, MP_ReplayHutStart, MP_VideoModeList, MP_MultiplayerPause,
-MP_PlayerSplitscreen
+MP_PlayerSplitscreen, MP_SetupJoystick
 ;
 INT32 MR_Addons(INT32 choice);
 INT32 MR_QuitAddons(INT32 choice);
@@ -406,7 +443,7 @@ extern I_mutex m_menu_mutex;
 #endif
 
 // Call upon joystick hotplug
-INT32 MR_SetupJoystickMenu(INT32 arg);
+void M_UpdateJoystickMenu(void);
 
 // savegame struct for save game menu
 typedef struct

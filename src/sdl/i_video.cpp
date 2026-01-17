@@ -1051,10 +1051,8 @@ void I_GetEvent(void)
 						CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
 
 					// update the menu
-					if (menustack[0] == MN_OP_JOYSTICKSET)
-						MR_SetupJoystickMenu(0);
-
 					numcontrollers = I_NumJoys();
+					M_UpdateJoystickMenu();
 
 					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 					{
@@ -1113,9 +1111,8 @@ void I_GetEvent(void)
 					CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
 
 				// update the menu
-				if (menustack[0] == MN_OP_JOYSTICKSET)
-					MR_SetupJoystickMenu(0);
 				numcontrollers = I_NumJoys();
+				M_UpdateJoystickMenu();
 				break;
 			case SDL_DROPFILE:
 				dropped_filedir = evt.drop.file;

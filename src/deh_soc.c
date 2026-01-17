@@ -217,6 +217,32 @@ void clear_levels(void)
 		COM_BufAddText("exitgame"); // Command_ExitGame_f() but delayed
 }
 
+// TODO: use this everywhere PLEASE!
+static char *parsesocline(char *s)
+{
+	// First remove trailing newline, if there is one
+	char *tmp = strchr(s, '\n');
+	if (tmp)
+		*tmp = '\0';
+
+	tmp = strchr(s, '#');
+	if (tmp)
+		*tmp = '\0';
+	if (s == tmp)
+		return tmp; // Skip comment lines, but don't break.
+
+	// Get the part before the " = "
+	tmp = strchr(s, '=');
+	if (tmp)
+		*(tmp-1) = '\0';
+	else
+		return NULL;
+	strupr(s);
+
+	// Now get the part after
+	return tmp + 2;
+}
+
 // TODO: Figure out how to do undolines for this....
 // TODO: Warnings for running out of freeslots
 void readfreeslots(MYFILE *f)
@@ -1899,46 +1925,6 @@ static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ NULL, NULL }
 };
 
-// parses an item style in the form of "<font>-SMALL-<align>-<highlight>-STICKER"
-// each component is optional, and the style cannot be written in arbitrary order
-// returns IT_HIDDEN if style is invalid
-static menuitemflags_t parsestyle(const char *p)
-{
-	menuitemflags_t style = 0;
-
-	// yeah yeah, macro hell, but it's more economical than 100 entries in a table
-#define STYLE(string, flag) \
-	(!strncmp(p, string, sizeof(string)-1)) { \
-		style |= flag; \
-		p += sizeof(string)-1; \
-		if (*p == '\0') return style; \
-		if (*p++ != '-') return IT_HIDDEN; \
-	}
-
-	if STYLE("THIN2", ITF_THIN2)
-	else if STYLE("THIN", ITF_THIN)
-	else if STYLE("HEADER", ITF_HEADER|ITH_HIGHLIGHT)
-	else if STYLE("PATCH", ITF_PATCH)
-	else if STYLE("MAPTHUMBNAIL", ITF_THUMBNAIL)
-	else if STYLE("FILL", ITF_FILL)
-	else if STYLE("SKIN", ITF_SKIN)
-
-	if STYLE("SMALL", IT_SMALL)
-
-	if STYLE("CENTER", IT_CENTER)
-	else if STYLE("RIGHT", IT_RIGHT)
-
-	if STYLE("HIGHLIGHT", ITH_HIGHLIGHT)
-	else if STYLE("RECOMMENDEDHIGHLIGHT", ITH_RECOMMEND)
-	else if STYLE("WARNINGHIGHLIGHT", ITH_WARNING)
-
-	if STYLE("STICKER", IT_STICKER) // TODO: delete this
-	else if STYLE("TRANSLUCENT", IT_GRAYEDOUT) // TODO: grayed out???
-
-	return IT_HIDDEN;
-#undef STYLE
-}
-
 #define WARN(str, ...) deh_warning("MenuItem %s: " str, strbuf_get(menunames, item->info.nameofs), __VA_ARGS__)
 #define WARN0(str) deh_warning("MenuItem %s: " str, strbuf_get(menunames, item->info.nameofs))
 static void readmenuitems(MYFILE *f, menupaneldef_t *pd)
@@ -2059,20 +2045,22 @@ static void readmenuitems(MYFILE *f, menupaneldef_t *pd)
 				Z_Free(item->tooltip);
 			item->tooltip = Z_StrDup(word2);
 		}
+		else if (fastcmp(word, "EXTRA"))
+		{
+			if (item->extra)
+				Z_Free(item->extra);
+			item->extra = Z_StrDup(word2);
+		}
 		else if (fastcmp(word, "STYLE"))
 		{
-			menuitemflags_t style = 0;
-			if (status & IT_STYLE)
+			strupr(word2);
+			menuitemstyle_t *style = DEH_FindMenuItemStyle(word2);
+			if (style == NULL)
 			{
-				WARN0("style already set!");
+				WARN("unknown style %s", word2);
 				continue;
 			}
-			strupr(word2);
-			style = parsestyle(word2);
-			if (style == IT_HIDDEN)
-				WARN("unknown style '%s'", word2);
-			else
-				status |= style;
+			item->style = style;
 		}
 		else if (fastcmp(word, "CVAR") || fastcmp(word, "SLIDER"))
 		{
@@ -2127,6 +2115,153 @@ static void readmenuitems(MYFILE *f, menupaneldef_t *pd)
 		item->status = status;
 
 	Z_Free(s);
+}
+#undef WARN
+#undef WARN0
+
+#define WARN(str, ...) deh_warning("Menu style %s: " str, strbuf_get(menunames, style->info.nameofs), __VA_ARGS__)
+#define WARN0(str) deh_warning("Menu style %s: " str, strbuf_get(menunames, style->info.nameofs))
+void readmenuitemstyle(MYFILE *f, menuitemstyle_t *style)
+{
+	CLEANUP(Z_Pfree) char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
+	char *word = s;
+	char *word2;
+	menuitempart_t *part = NULL;
+
+	do if (myfgets(s, MAXLINELEN, f))
+	{
+		if (s[0] == '\n')
+			break;
+
+		word2 = parsesocline(s);
+		if (word2 == s)
+		{
+			continue;
+		}
+		else if (word2 == NULL && !strnicmp(s, "PART ", 5))
+		{
+			INT32 index = atoi(s + 5);
+			if (index < 0 || index >= MAXMENUITEMPARTS)
+			{
+				deh_warning("Part index out of range");
+				break;
+			}
+			part = &style->parts[index];
+			style->partenabled[index] = true;
+			continue;
+		}
+		else if (word2 == NULL)
+		{
+			break;
+		}
+
+		// Remove leading indentation (no longer an unique feature)
+		word = s;
+		while (isspace(*word))
+			word++;
+		strupr(word2);
+
+		if (part == NULL)
+		{
+			WARN("cannot use %s without selecting a part", word);
+			break;
+		}
+
+		if (fastcmp(word, "X"))
+		{
+			part->xofs = get_number(word2);
+		}
+		else if (fastcmp(word, "Y"))
+		{
+			part->yofs = get_number(word2);
+		}
+		else if (fastcmp(word, "FIXEDSTRING"))
+		{
+			Z_Free(part->fixedstring);
+			part->fixedstring = Z_StrDup(word2);
+		}
+		else if (fastcmp(word, "SMALL"))
+		{
+			part->small = word2[0] == 'T' || word2[0] == 'Y';
+		}
+		else if (fastcmp(word, "TRANSLUCENT"))
+		{
+			part->translucent = word2[0] == 'T' || word2[0] == 'Y';
+		}
+		else if (fastcmp(word, "NOHIGHLIGHT"))
+		{
+			part->nohighlight = word2[0] == 'T' || word2[0] == 'Y';
+		}
+		else if (fastcmp(word, "FONT") || fastcmp(word, "FONTALT"))
+		{
+			if (fastcmp(word2, "HU"))
+				part->font = HU_FONT;
+			else if (fastcmp(word2, "TINY"))
+				part->font = TINY_FONT;
+			else
+				WARN("unknown font '%s'", word2);
+
+			part->fontalt = word[4] == 'A';
+		}
+		else if (fastcmp(word, "TYPE"))
+		{
+			if (fastcmp(word2, "STRING"))
+				part->type = ITT_STRING;
+			else if (fastcmp(word2, "FILL"))
+				part->type = ITT_FILL;
+			else if (fastcmp(word2, "PATCH"))
+				part->type = ITT_PATCH;
+			else if (fastcmp(word2, "THUMBNAIL"))
+				part->type = ITT_THUMBNAIL;
+			else if (fastcmp(word2, "SKINICON"))
+				part->type = ITT_SKINICON;
+			else
+				WARN("unknown type '%s'", word2);
+		}
+		else if (fastcmp(word, "HIGHLIGHT"))
+		{
+			if (fastcmp(word2, "NONE"))
+				part->highlight = ITH_NONE;
+			else if (fastcmp(word2, "HIGHLIGHT"))
+				part->highlight = ITH_HIGHLIGHT;
+			else if (fastcmp(word2, "RECOMMENDED"))
+				part->highlight = ITH_RECOMMENDED;
+			else if (fastcmp(word2, "WARNING"))
+				part->highlight = ITH_WARNING;
+			else
+				WARN("unknown highlight '%s'", word2);
+		}
+		else if (fastcmp(word, "ALIGN"))
+		{
+			if (fastcmp(word2, "LEFT"))
+				part->align = ITA_LEFT;
+			else if (fastcmp(word2, "CENTER"))
+				part->align = ITA_CENTER;
+			else if (fastcmp(word2, "RIGHT"))
+				part->align = ITA_RIGHT;
+			else if (fastcmp(word2, "EDGE"))
+				part->align = ITA_EDGE;
+			else
+				WARN("unknown alignment '%s'", word2);
+		}
+
+		else if (fastcmp(word, "SOURCE"))
+		{
+			if (fastcmp(word2, "TEXT"))
+				part->source = ITS_TEXT;
+			else if (fastcmp(word2, "PATCH"))
+				part->source = ITS_PATCH;
+			else if (fastcmp(word2, "EXTRA"))
+				part->source = ITS_EXTRA;
+			else if (fastcmp(word2, "FIXED"))
+				part->source = ITS_FIXED;
+			else
+				WARN("unknown source '%s'", word2);
+		}
+		else
+			WARN("unknown word '%s'", word);
+	}
+	while (!myfeof(f)); // finish when the line is empty
 }
 #undef WARN
 #undef WARN0

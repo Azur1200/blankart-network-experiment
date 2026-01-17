@@ -180,6 +180,8 @@ TYPEDEF (servermods_t);
 
 // m_menu.h
 TYPEDEF (menucolor_t);
+TYPEDEF (menuitempart_t);
+TYPEDEF (menuitemstyle_t);
 TYPEDEF (menuitem_t);
 TYPEDEF (menupaneldef_t);
 TYPEDEF (menupanelinst_t);

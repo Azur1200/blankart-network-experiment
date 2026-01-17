@@ -68,6 +68,11 @@ const char *DEH_MenuPanelName(const menupaneldef_t *pd)
 	return strbuf_get(menunames, pd->info.nameofs);
 }
 
+const char *DEH_MenuItemStyleName(const menuitemstyle_t *style)
+{
+	return strbuf_get(menunames, style->info.nameofs);
+}
+
 const char *DEH_KartItemName(kartitemtype_e i)
 {
 	return strbuf_get(kartitemnames, kartitems[i].info.nameofs);
@@ -134,6 +139,19 @@ menupaneldef_t *DEH_FindMenuPanel(const char *word)
 			continue;
 		if (fastcmp(word, DEH_MenuPanelName(pd)))
 			return pd;
+	}
+	return NULL;
+}
+
+menuitemstyle_t *DEH_FindMenuItemStyle(const char *word)
+{
+	UINT32 hash = HASH32(word, strlen(word));
+	for (size_t i = 0; i < nummenuitemstyles; i++) {
+		menuitemstyle_t *style = &menuitemstyles[i];
+		if (hash != style->info.namehash)
+			continue;
+		if (fastcmp(word, DEH_MenuItemStyleName(style)))
+			return style;
 	}
 	return NULL;
 }
@@ -824,7 +842,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "PLAYBACKQUIT", &MR_PlaybackQuit },
 	{ "HANDLEIMAGEDEF", &MR_HandleImageDef },
 	{ "HANDLEMUSICTEST", &MR_HandleMusicTest },
-	{ "SETUPJOYSTICKMENU", &MR_SetupJoystickMenu },
 	{ "RESETCONTROLS", &MR_ResetControls },
 	{ "CHANGECONTROL", &MR_ChangeControl },
 	{ "ASSIGNJOYSTICK", &MR_AssignJoystick },
@@ -885,6 +902,7 @@ struct panel_func_s const PANEL_FUNCS[] = {
 	{ "VIDEOMODELIST", &MP_VideoModeList },
 	{ "MULTIPLAYERPAUSE", &MP_MultiplayerPause },
 	{ "PLAYERSPLITSCREEN", &MP_PlayerSplitscreen },
+	{ "SETUPJOYSTICK", &MP_SetupJoystick },
 	{ NULL, NULL }
 };
 

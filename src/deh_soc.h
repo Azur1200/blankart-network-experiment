@@ -77,6 +77,7 @@ void readframe(MYFILE *f, INT32 num);
 void readhuditem(MYFILE *f, INT32 num);
 void readmenu(MYFILE *f, INT32 num);
 void readmenupanel(MYFILE *f, menupaneldef_t *pd);
+void readmenuitemstyle(MYFILE *f, menuitemstyle_t *style);
 void readtextprompt(MYFILE *f, INT32 num);
 void readcutscene(MYFILE *f, INT32 num);
 void readlevelheader(MYFILE *f, char * name);

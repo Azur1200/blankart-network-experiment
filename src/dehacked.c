@@ -699,6 +699,19 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 						pd = M_AllocateMenuPanelDef(word2);
 					readmenupanel(f, pd);
 				}
+				else if (fastcmp(word, "MENUITEMSTYLE"))
+				{
+					if (dedicated)
+					{
+						ignoremenulines(f);
+						continue; // dedis don't need menus, silly!
+					}
+
+					menuitemstyle_t *style = DEH_FindMenuItemStyle(word2);
+					if (style == NULL)
+						style = M_AllocateMenuItemStyle(word2);
+					readmenuitemstyle(f, style);
+				}
 				else if (fastcmp(word, "UNLOCKABLE"))
 				{
 					if (!mainfile && !gamedataadded)

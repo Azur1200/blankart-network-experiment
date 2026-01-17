@@ -40,6 +40,7 @@ const char *DEH_StateName(statenum_t i);
 const char *DEH_SkincolorName(skincolornum_t i);
 const char *DEH_MenutypeName(menutype_t i);
 const char *DEH_MenuPanelName(const menupaneldef_t *pd);
+const char *DEH_MenuItemStyleName(const menuitemstyle_t *style);
 const char *DEH_KartItemName(kartitemtype_e i);
 
 mobjtype_t DEH_FindMobjtype(const char *word);
@@ -47,6 +48,7 @@ statenum_t DEH_FindState(const char *word);
 skincolornum_t DEH_FindSkincolor(const char *word);
 menutype_t DEH_FindMenutype(const char *word);
 menupaneldef_t *DEH_FindMenuPanel(const char *word);
+menuitemstyle_t *DEH_FindMenuItemStyle(const char *word);
 kartitemtype_e DEH_FindKartItem(const char *word);
 
 struct flickytypes_s {
