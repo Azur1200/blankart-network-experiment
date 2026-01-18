@@ -709,7 +709,7 @@ consvar_t cv_rollingdemos = CVAR_INIT ("rollingdemos", "On", CV_SAVE, CV_OnOff, 
 static CV_PossibleValue_t pointlimit_cons_t[] = {{1, "MIN"}, {MAXSCORE, "MAX"}, {0, "None"}, {0, NULL}};
 consvar_t cv_pointlimit = CVAR_INIT ("pointlimit", "None", CV_NETVAR|CV_CALL|CV_NOINIT, pointlimit_cons_t, PointLimit_OnChange);
 static CV_PossibleValue_t timelimit_cons_t[] = {{1, "MIN"}, {99999, "MAX"}, {0, "None"}, {0, NULL}};
-consvar_t cv_timelimit = CVAR_INIT ("timelimit", "None", CV_NETVAR|CV_CALL|CV_NOINIT, timelimit_cons_t, TimeLimit_OnChange);
+consvar_t cv_timelimit = CVAR_INIT ("timelimit", "2", CV_NETVAR|CV_CALL|CV_NOINIT, timelimit_cons_t, TimeLimit_OnChange);
 
 static CV_PossibleValue_t numlaps_cons_t[] = {{0, "MIN"}, {MAX_LAPS, "MAX"}, {-1, "Map default"}, {0, NULL}};
 consvar_t cv_numlaps = CVAR_INIT ("numlaps", "Map default", CV_NETVAR|CV_CALL|CV_CHEAT, numlaps_cons_t, NumLaps_OnChange);
