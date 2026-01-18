@@ -1151,6 +1151,9 @@ void D_SRB2Loop(void)
 //
 void D_StartTitle(void)
 {
+	if (dedicated)
+		I_Error("D_StartTitle is called on dedicated server");
+
 	INT32 i;
 
 	S_StopMusic();
