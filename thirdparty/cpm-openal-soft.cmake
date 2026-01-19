@@ -1,7 +1,7 @@
 CPMAddPackage(
 	NAME openal-soft
-	VERSION 0.6.3
-	URL "https://github.com/kcat/openal-soft/archive/refs/tags/1.24.3.zip"
+	VERSION 1.25.0
+	URL "https://github.com/kcat/openal-soft/archive/refs/tags/1.25.0.zip"
 	EXCLUDE_FROM_ALL ON
 	OPTIONS
 		"AL_LIBTYPE_STATIC ON"

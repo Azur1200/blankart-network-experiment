@@ -49,7 +49,7 @@ size_t menupathindex[menudepth];
 size_t menudepthleft = menudepth;
 
 char menusearchbuf[MAXSTRINGLENGTH+1];
-textinput_t menusearch;
+textinput_t menusearch = {};
 
 char **dirmenu, **coredirmenu; // core only local for this file
 size_t sizedirmenu, sizecoredirmenu; // ditto
@@ -237,10 +237,13 @@ static boolean filemenucmp(char *haystack, char *needle)
 {
 	static char localhaystack[128];
 	strlcpy(localhaystack, haystack, 128);
+
 	if (!cv_addons_search_case.value)
 		strupr(localhaystack);
+
 	if (cv_addons_search_type.value)
-		return (strstr(localhaystack, needle) != 0);
+		return (strstr(localhaystack, needle) != NULL);
+
 	return (!strncmp(localhaystack, needle, menusearch.length));
 }
 

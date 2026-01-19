@@ -1,8 +1,8 @@
 // BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2018-2025 by Kart Krew.
-// Copyright (C) 2025 by "yama".
-// Copyright (C) 2025 Blankart Team.
+// Copyright (C) 2026 by "yama".
+// Copyright (C) 2026 Blankart Team.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -28,8 +28,6 @@ extern "C" {
 // Distance variables
 #define DISTVAR CV_Get(&cv_kartoddsdist)
 #define DISTVAR_LEGACY CV_Get(&cv_kartlegacyoddsdist)
-#define SPBDISTVAR CV_Get(&cv_kartspbdist)
-#define SPBDISTVAR_LEGACY CV_Get(&cv_kartlegacyspbdist)
 
 typedef enum
 {
@@ -135,6 +133,8 @@ struct kartresult_t
 	boolean isalt; // is alt (i salt)
 	kartresultflags_e flags;
 	UINT8 odds[MAXODDSTABLES][MAXODDS];
+	consvar_t *augcvar[2]; // "Runner Augment" console variable
+	UINT16 baserunneraug[2]; // Base "max distance" value for KRF_RUNNERAUGMENT items
 
 	// Functions that tell the game to use unique means of rolling these items.
 	// If NULL, the functions never execute.
@@ -155,6 +155,7 @@ struct kartroulette_t
 	boolean spbrush;
 	boolean bot;
 	boolean rival;
+	boolean rival_frontrunner; // Is a Rival bot frontrunning?
 	boolean inBottom;
 
 	// output: which results are being forced into a player's item slot for one reason or another. Higher value = higher priority.
@@ -224,6 +225,9 @@ void K_SpawnEggMineBumpEffect(mobj_t *mo);
 void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source);
 
 void K_PlayerItemThink(player_t *player, boolean onground);
+
+extern consvar_t cv_karteggmine_slotlock;
+extern consvar_t cv_karteggmine_slotbrick;
 
 #ifdef __cplusplus
 } // extern "C"

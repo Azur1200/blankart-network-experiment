@@ -93,8 +93,8 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x6ae176cd227ed0eb
-#define ASSET_HASH_MAPPATCH_PK3        0x6ad99efcfaafb70f
+#define ASSET_HASH_MAIN_PK3            0x45e00f9adfbf9f75
+#define ASSET_HASH_MAPPATCH_PK3        0xbbc2c6a7a685da3a
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
 #define ASSET_HASH_PATCH_PK3           0x0000000000000000
@@ -960,15 +960,9 @@ void D_SRB2Loop(void)
 	// Check and print which version is executed.
 	// Use this as the border between setup and the main game loop being entered.
 #ifdef BOOTDEVNAG
-	char bootnag[1024];
-	snprintf(bootnag,
-		sizeof(bootnag),
-		"%s is still in active development. Things may break or crash!\n", BLANNAME
-	);
-
 	CONS_Printf(
-	"===========================================================================\n");
-	CONS_Printf(bootnag);
+	"===========================================================================\n"
+	BLANNAME " is still in active development. Things may break or crash!\n");
 #endif
 	CONS_Printf(
 	"===========================================================================\n"
@@ -1164,6 +1158,9 @@ void D_SRB2Loop(void)
 //
 void D_ResetGameState(void)
 {
+	if (dedicated)
+		I_Error("D_StartTitle is called on dedicated server");
+
 	INT32 i;
 
 	// okay, stop now
@@ -1346,15 +1343,13 @@ static void IdentifyVersion(void)
 #endif
 
 	char tempsrb2path[256] = ".";
-	getcwd(tempsrb2path, 256);
+	if (getcwd(tempsrb2path, 256) == NULL)
+		strcpy(tempsrb2path, ".");
 
 	// get the current directory (possible problem on NT with "." as current dir)
 	if (!srb2waddir)
 	{
-		if (tempsrb2path[0])
-			srb2waddir = tempsrb2path;
-		else
-			srb2waddir = srb2path;
+		srb2waddir = tempsrb2path;
 	}
 
 #if (1) // reduce the amount of findfile by only using full cwd in this func
@@ -1672,9 +1667,6 @@ void D_SRB2Main(void)
 	I_InitializeTime();
 	CON_SetLoadingProgress(LOADED_ISTARTUPTIMER);
 
-	// Setup default unlockable conditions
-	M_SetupDefaultConditionSets();
-
 	D_RegisterServerCommands();
 	D_RegisterClientCommands(); // be sure that this is called before D_CheckNetGame
 	R_RegisterEngineStuff();
@@ -1974,6 +1966,7 @@ void D_SRB2Main(void)
 			grandprixinfo.gamespeed = KARTSPEED_HARD;
 			grandprixinfo.encore = false;
 			grandprixinfo.masterbots = false;
+			grandprixinfo.lunaticmode = false;
 
 			grandprixinfo.gp = true;
 			grandprixinfo.roundnum = 0;
@@ -2138,7 +2131,7 @@ void D_SRB2Main(void)
 			if (!gpdifficulty_cons_t[j].strvalue) // reached end of the list with no match
 			{
 				j = atoi(sskill); // assume they gave us a skill number, which is okay too
-				if (j >= KARTSPEED_EASY && j <= KARTGP_NIGHTMARE)
+				if (j >= KARTSPEED_EASY && j <= KARTGP_MANIAC)
 					newskill = (INT16)j;
 			}
 
@@ -2154,6 +2147,18 @@ void D_SRB2Main(void)
 					grandprixinfo.masterbots = true;
 					newskill = KARTSPEED_EXPERT;
 				}
+				else if (newskill == KARTGP_LUNATIC)
+				{
+					grandprixinfo.masterbots = true;
+					grandprixinfo.lunaticmode = true;
+					newskill = KARTSPEED_HARD;
+				}
+				else if (newskill == KARTGP_MANIAC)
+				{
+					grandprixinfo.masterbots = true;
+					grandprixinfo.lunaticmode = true;
+					newskill = KARTSPEED_EXPERT;
+				}
 
 				grandprixinfo.gamespeed = newskill;
 			}
@@ -2162,6 +2167,14 @@ void D_SRB2Main(void)
 				newskill = KARTSPEED_HARD;
 			}
 			else if (newskill == KARTGP_NIGHTMARE)
+			{
+				newskill = KARTSPEED_EXPERT;
+			}
+			else if (newskill == KARTGP_LUNATIC)
+			{
+				newskill = KARTSPEED_HARD;
+			}
+			else if (newskill == KARTGP_MANIAC)
 			{
 				newskill = KARTSPEED_EXPERT;
 			}

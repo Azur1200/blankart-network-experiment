@@ -4,7 +4,7 @@
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 // Copyright (C) 2011-2016 by Matthew "Kaito Sinclaire" Walsh.
 // Copyright (C) 1999-2025 by Sonic Team Junior.
-// Copyright (C) 2025 by Team BlanKart.
+// Copyright (C) 2026 by Team BlanKart.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -119,7 +119,7 @@ extern M_waiting_mode_t m_waiting_mode;
 typedef enum
 {
 	LLM_CREATESERVER,
-	//LLM_LEVELSELECT,
+	LLM_CUPSELECT,
 	LLM_TIMEATTACK,
 	LLM_ITEMBREAKER,
 	LLM_BOSS,
@@ -413,8 +413,8 @@ typedef struct
 } saveinfo_t;
 
 extern consvar_t cv_showfocuslost;
-extern consvar_t cv_newgametype, cv_nextmap, cv_chooseskin, cv_serversort, cv_levelsort;
-extern consvar_t cv_dummygpdifficulty, cv_dummygpencore, cv_dummygpcup;
+extern consvar_t cv_newgametype, cv_nextmap, cv_nextcup, cv_chooseskin, cv_serversort, cv_levelsort;
+extern consvar_t cv_dummygpdifficulty, cv_dummygpencore;
 extern consvar_t cv_dummymenuplayer, cv_dummyteam, cv_dummyspectate, cv_dummyscramble;
 extern consvar_t cv_dummystaff;
 extern consvar_t cv_dummymultiplayer, cv_dummyip, cv_dummyname, cv_dummyfollower, cv_dummycolor;

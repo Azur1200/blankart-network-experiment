@@ -135,11 +135,11 @@ static void led_off_handle4(void)
 
 // current state of the keys
 // JOYAXISRANGE for fully pressed, 0 for not pressed
-INT32 gamekeydown[MAXDEVICES][NUMINPUTS];
-boolean deviceResponding[MAXDEVICES];
+INT32 gamekeydown[MAXDEVICES][NUMINPUTS] = {};
+boolean deviceResponding[MAXDEVICES] = {false};
 
 // several key codes (or virtual key) per game control
-INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][MAXINPUTMAPPING];
+INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][MAXINPUTMAPPING] = {};
 
 INT32 gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING] = {
 	[gc_aimforward ] = {KEY_UPARROW,    KEY_AXIS1+2             }, // Left Y-

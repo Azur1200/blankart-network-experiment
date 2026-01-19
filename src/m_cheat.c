@@ -713,7 +713,7 @@ void Command_Resetemeralds_f(void)
 // Devmode
 //
 
-UINT32 cht_debug;
+UINT32 cht_debug = 0;
 
 struct debugFlagNames_s const debug_flag_names[] =
 {

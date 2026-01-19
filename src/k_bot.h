@@ -57,6 +57,12 @@ extern consvar_t cv_botdrifting;
 
 #define MAXDRIFTSKILL (FRACUNIT/2)
 
+// Minimum bot complexity for Lunatic mode.
+#define BASELUNATICSPEEDMOD (2 * FRACUNIT)
+
+// 2.5
+#define BASELUNATICRIVALSPEEDMOD (5 * FRACUNIT / 2)
+
 typedef enum
 {
 	DRIFTSTATE_AUTO,

@@ -484,7 +484,9 @@ void P_ResetPlayer(player_t *player)
 {
 	//player->pflags &= ~(PF_);
 
-	player->carry = CR_NONE;
+	// turns out PF_SLIDING is NOT reset by this function!
+	if (mapnamespace != MNS_SRB2KART || player->carry != CR_SLIDING)
+		player->carry = CR_NONE;
 	player->onconveyor = 0;
 
 	player->glanceDir = 0;
@@ -1806,7 +1808,7 @@ static void P_CheckInvincibilityTimer(player_t *player)
 	// Resume normal music stuff.
 	if (player->invincibilitytimer == 1 || player->powers[pw_invulnerability] == 1)
 	{
-		//K_KartResetPlayerColor(player, true); -- this gets called every tic anyways
+		//K_KartResetPlayerColor(player); -- this gets called every tic anyways
 		G_GhostAddColor((INT32) (player - players), GHC_NORMAL);
 
 		P_RestoreMusic(player);
@@ -1932,7 +1934,7 @@ static void P_3dMovement(player_t *player)
 	}
 
 	// When sliding, don't allow forward/back
-	if (player->carry & CR_SLIDING)
+	if (player->carry == CR_SLIDING)
 		cmd->forwardmove = 0;
 
 	// Do not let the player control movement if not onground.
@@ -2031,7 +2033,7 @@ static void P_3dMovement(player_t *player)
 	// If "no" to 1, we're not reaching any limits yet, so ignore this entirely!
 	// -Shadow Hog
 	newMagnitude = R_PointToDist2(player->mo->momx - player->cmomx, player->mo->momy - player->cmomy, 0, 0);
-	if (player->offroad > 0 || !player->outruntime)
+	if (player->offroad > 0 || player->loop.radius == 0 || player->outruntime == 0)
 	{
 		if (newMagnitude > K_GetKartSpeed(player, true, true)) //topspeed)
 		{
@@ -2181,6 +2183,16 @@ static void P_UpdatePlayerAngle(player_t *player)
 	P_UpdatePlayerAiming(player);
 }
 
+#define MINAURAPCT (cv_kartaltshrink_arrowbulletthres.value - (FRACUNIT / 4))
+#define AURA_DIFF (max(1, (FRACUNIT << 1) - MINAURAPCT))
+fixed_t P_KartAltShrinkAuraScalar(player_t *player)
+{
+	if ((!player) || (!player->mo) || (P_MobjWasRemoved(player->mo)))
+		return 0;
+
+	return FixedDiv(min(max(0, K_GetSpeedPercentage(player) - MINAURAPCT), (FRACUNIT << 1)), AURA_DIFF);
+}
+
 //
 // P_MovePlayer
 void P_MovePlayer(player_t *player)
@@ -2317,12 +2329,10 @@ void P_MovePlayer(player_t *player)
 		K_SpawnSparkleTrail(player->mo);
 	}
 
-#define MINAURAPCT (cv_kartaltshrink_arrowbulletthres.value - (FRACUNIT / 4))
-#define AURA_DIFF (max(1, (FRACUNIT << 1) - MINAURAPCT))
 	// The Arrow Bullet aura should spawn before you actually enter the Arrow Bullet state.
 	if (cv_kartaltshrink_arrowbullet.value && K_IsAltShrunk(player) && (K_GetSpeedPercentage(player) >= MINAURAPCT))
 	{
-		fixed_t aura_scalar = FixedDiv(min(max(0, K_GetSpeedPercentage(player) - MINAURAPCT), (FRACUNIT << 1)), AURA_DIFF);
+		fixed_t aura_scalar = P_KartAltShrinkAuraScalar(player);
 
 		INT32 auravis = 10 - FixedMul(7, Easing_OutCubic(aura_scalar, 0, FRACUNIT));
 		auravis = min(9, max(1, auravis)) << FF_TRANSSHIFT;
@@ -2702,7 +2712,7 @@ static void P_DeathThink(player_t *player)
 	if (!player->mo)
 		return;
 
-	//K_KartResetPlayerColor(player, true); -- called at death, don't think we need to re-establish
+	//K_KartResetPlayerColor(player); -- called at death, don't think we need to re-establish
 
 	P_CalcHeight(player);
 }
@@ -2711,7 +2721,7 @@ static void P_DeathThink(player_t *player)
 // P_MoveCamera: make sure the camera is not outside the world and looks at the player avatar
 //
 
-camera_t camera[MAXSPLITSCREENPLAYERS]; // Four cameras, three for splitscreen
+camera_t camera[MAXSPLITSCREENPLAYERS] = {}; // Four cameras, three for splitscreen
 
 static void CV_CamRotate_OnChange(void)
 {
@@ -4333,7 +4343,7 @@ void P_PlayerThink(player_t *player)
 		// for a bit after a teleport.
 		player->mo->reactiontime--;
 	}
-	else if (player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
+	else if (player->carry == CR_ZOOMTUBE && player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
 	{
 		P_DoZoomTube(player);
 		player->rmomx = player->rmomy = 0;
@@ -4401,12 +4411,7 @@ void P_PlayerThink(player_t *player)
 		player->powers[pw_sneakers]--;
 
 	if (player->powers[pw_invulnerability] && player->powers[pw_invulnerability] < UINT16_MAX)
-	{
 		player->powers[pw_invulnerability]--;
-
-		if (!player->powers[pw_invulnerability])
-			K_KartResetPlayerColor(player,true);
-	}
 
 	if (player->flashing && player->flashing < UINT16_MAX &&
 		(player->spectator || player->flashing < K_GetKartFlashing(player)))

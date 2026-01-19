@@ -631,7 +631,7 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 			}
 
 			player->skincolor = newcolor = skin->prefcolor;
-			K_KartResetPlayerColor(player, true);
+			K_KartResetPlayerColor(player);
 		}
 #endif
 

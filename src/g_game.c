@@ -174,13 +174,13 @@ UINT16 skincolor_bluering = SKINCOLOR_PERIWINKLE;
 
 boolean exitfadestarted = false;
 
-cutscene_t *cutscenes[128];
+cutscene_t *cutscenes[128] = {};
 textprompt_t *textprompts[MAX_PROMPTS];
 
 INT16 nextmapoverride;
 UINT8 skipstats;
 
-struct quake quake;
+struct quake quake = {};
 
 // Map Header Information
 mapheader_t** mapheaderinfo = {NULL};
@@ -280,7 +280,7 @@ exitcondition_t g_exit;
 fixed_t gravity;
 fixed_t mapobjectscale;
 
-struct maplighting maplighting;
+struct maplighting maplighting = {};
 
 INT16 autobalance; //for CTF team balance
 INT16 teamscramble; //for CTF team scramble
@@ -1090,7 +1090,7 @@ INT32 G_LevelTitleToMapNum(const char * leveltitle)
 INT16 G_KartMapToNative(INT16 mapnum)
 {
 	if (mapnum > 0 && mapnum < NEXTMAP_SPECIAL)
-		return kartmap2native[mapnum-1]+1;
+		return kartmap2native[mapnum-1];
 	return 0;
 }
 

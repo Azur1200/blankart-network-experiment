@@ -324,6 +324,12 @@ patch_t *Patch_GetRotatedSprite(
 		//BP: we cannot use special tric in hardware mode because feet in ground caused by z-buffer
 		if (adjustfeet)
 			((patch_t *)rotsprite->patches[idx])->topoffset += FEETADJUST>>FRACBITS;
+
+		if (sprinfo == &spriteinfo[SPR_ITEM]) // easier than funneling this into dorotation...
+		{
+			((patch_t *)rotsprite->patches[idx])->leftoffset += 25;
+			((patch_t *)rotsprite->patches[idx])->topoffset += 50;
+		}
 	}
 
 	return rotsprite->patches[idx];

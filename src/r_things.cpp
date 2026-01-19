@@ -793,7 +793,7 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t *bright
 	dc->texturemid = basetexturemid;
 }
 
-INT32 lengthcol; // column->length : for flipped column function pointers and multi-patch on 2sided wall = texture->height
+INT32 lengthcol = 0; // column->length : for flipped column function pointers and multi-patch on 2sided wall = texture->height
 
 void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t *brightmap, INT32 baseclip)
 {
@@ -1902,7 +1902,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	else if (thing->sprite == SPR_ITEM)
 	{
 		sprdef = &kartitems[thing->threshold > 0 && thing->threshold < numkartitems ? thing->threshold : 0].spritedef;
-		sprinfo = &spriteinfo[SPR_UNKN];
+		sprinfo = &spriteinfo[SPR_ITEM];
 
 		if (frame >= sprdef->numframes) {
 			CONS_Alert(CONS_ERROR, M_GetText("R_ProjectSprite: invalid kartitem sprite frame %zu\n"), frame);
@@ -3992,7 +3992,7 @@ static void R_DrawMaskedList (drawnode_t* head)
 void R_DrawMasked(maskcount_t* masks, INT32 nummasks)
 {
 	ZoneScoped;
-	drawnode_t *heads;	/**< Drawnode lists; as many as number of views/portals. */
+	drawnode_t *heads = NULL;	/**< Drawnode lists; as many as number of views/portals. */
 	INT32 i;
 
 	heads = static_cast<drawnode_t*>(calloc(nummasks, sizeof(drawnode_t)));

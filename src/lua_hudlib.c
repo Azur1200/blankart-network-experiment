@@ -74,6 +74,8 @@ static const char *const hud_disable_options[] = {
 	"lives",
 	"freeplay",
 	"rankings",
+	"lapsplits",
+	"itemtimers",
 
 	"intermissiontally",
 	"intermissionmessages",
@@ -700,6 +702,57 @@ static int libd_drawStretched(lua_State *L)
 		LUA_HUD_AddDrawStretched(list, x, y, hscale, vscale, patch, flags, colormap);
 	else
 		V_DrawStretchyFixedPatch(x, y, hscale, vscale, flags, patch, colormap);
+	return 0;
+}
+
+static int libd_drawAffine(lua_State *L)
+{
+	HUDONLY
+	fixed_t x = luaL_checkfixed(L, 1);
+	fixed_t y = luaL_checkfixed(L, 2);
+	affine_t transform = {};
+	luaL_checktype(L, 3, LUA_TTABLE);
+	patch_t *patch = *((patch_t **)luaL_checkudata(L, 4, META_PATCH));
+	INT32 flags = luaL_optinteger(L, 5, 0);
+	UINT8 *colormap = NULL;
+	if (!lua_isnoneornil(L, 6))
+		colormap = *((UINT8 **)luaL_checkudata(L, 6, META_COLORMAP));
+
+	lua_pushnil(L);
+	while (lua_next(L, 3))
+	{
+		INT32 i = 0;
+		const char *k = NULL;
+		if (lua_isnumber(L, -2))
+			i = lua_tointeger(L, -2);
+		else if (lua_isstring(L, -2))
+			k = lua_tostring(L, -2);
+
+		if (i == 1 || (k && fasticmp(k, "a")))
+			transform.a = luaL_checkfixed(L, -1);
+		else if (i == 2 || (k && fasticmp(k, "b")))
+			transform.b = luaL_checkfixed(L, -1);
+		else if (i == 3 || (k && fasticmp(k, "c")))
+			transform.c = luaL_checkfixed(L, -1);
+		else if (i == 4 || (k && fasticmp(k, "d")))
+			transform.d = luaL_checkfixed(L, -1);
+		else if (i == 5 || (k && fasticmp(k, "ox")))
+			transform.ox = luaL_checkfixed(L, -1);
+		else if (i == 6 || (k && fasticmp(k, "oy")))
+			transform.oy = luaL_checkfixed(L, -1);
+
+		lua_pop(L, 1);
+	}
+	lua_pop(L, 1);
+
+	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
+	huddrawlist_h list = lua_touserdata(L, -1);
+	lua_pop(L, 1);
+
+	//if (LUA_HUD_IsDrawListValid(list))
+		//LUA_HUD_AddDrawStretched(list, x, y, hscale, vscale, patch, flags, colormap);
+	//else
+		V_DrawAffinePatch(x, y, &transform, flags, patch, colormap);
 	return 0;
 }
 
@@ -1534,6 +1587,7 @@ static luaL_Reg lib_draw[] = {
 	{"draw", libd_draw},
 	{"drawScaled", libd_drawScaled},
 	{"drawStretched", libd_drawStretched},
+	{"drawAffine", libd_drawAffine},
 	{"drawNum", libd_drawNum},
 	{"drawPaddedNum", libd_drawPaddedNum},
 	{"drawPingNum", libd_drawPingNum},

@@ -139,7 +139,6 @@ boolean receivedplayerinfo = false;
 
 tic_t servermaxping = 20; // server's max delay, in frames. Defaults to 20
 static tic_t nettics[MAXNETNODES]; // what tic the client have received
-static tic_t supposedtics[MAXNETNODES]; // nettics prevision for smaller packet
 static UINT8 nodewaiting[MAXNETNODES];
 static tic_t firstticstosend; // min of the nettics
 static tic_t tictoclear = 0; // optimize d_clearticcmd
@@ -162,7 +161,6 @@ static char adminsalt[MAXNETNODES][9];
 
 // Client specific
 static ticcmd_t localcmds[MAXSPLITSCREENPLAYERS][MAXGENTLEMENDELAY];
-static boolean cl_packetmissed;
 // here it is for the secondary local player (splitscreen)
 static UINT8 mynode; // my address pointofview server
 static boolean cl_redownloadinggamestate = false;
@@ -648,12 +646,13 @@ static inline void CL_DrawConnectionStatus(void)
 				{
 					UINT32 currentsize = fileneeded[lastfilenum].currentsize;
 					UINT32 totalsize = fileneeded[lastfilenum].totalsize;
-					INT32 dldlength;
+					INT32 dldlength = 0;
 
 					cltext = M_GetText("Downloading game state...");
 					Net_GetNetStat();
 
-					dldlength = (INT32)((currentsize/(double)totalsize) * 256);
+					if (totalsize != 0)
+						dldlength = (INT32)((currentsize/(double)totalsize) * 256);
 					if (dldlength > 256)
 						dldlength = 256;
 					V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-16, 256, 8, 111);
@@ -699,50 +698,49 @@ static inline void CL_DrawConnectionStatus(void)
 	{
 		if (cl_mode == CL_CHECKFILES)
 		{
-			INT32 totalfileslength;
+			INT32 totalfileslength = 0;
 			INT32 checkednum = 0;
 			INT32 i;
 
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-24, MENUCAPS|V_YELLOWMAP, "Press ESC to abort");
 
-			//ima just count files here
+			// ima just count files here
 			for (i = 0; i < fileneedednum; i++)
 				if (fileneeded[i].status != FS_NOTCHECKED)
 					checkednum++;
 
 			// Loading progress
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32, MENUCAPS|V_YELLOWMAP, "Checking server addons...");
-			if (checkednum && fileneedednum)
-				totalfileslength = (INT32)((checkednum/(double)(fileneedednum)) * 256);
-			else
-				totalfileslength = 0;
+			if (fileneedednum != 0)
+				totalfileslength = (INT32)((checkednum/(double)fileneedednum) * 256);
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 96);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE,
-				va(" %2u/%2u Files",checkednum,fileneedednum));
+				va(" %2u/%2u Files", checkednum, fileneedednum));
 		}
 		else if (cl_mode == CL_LOADFILES)
 		{
-			INT32 totalfileslength;
+			INT32 totalfileslength = 0;
 			INT32 loadcompletednum = 0;
 			INT32 i;
 
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-24,  MENUCAPS|V_YELLOWMAP, "Press ESC to abort");
 
-			//ima just count files here
+			// ima just count files here
 			for (i = 0; i < fileneedednum; i++)
 				if (fileneeded[i].status == FS_OPEN)
 					loadcompletednum++;
 
 			// Loading progress
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32, MENUCAPS|V_YELLOWMAP, "Loading server addons...");
-			totalfileslength = (INT32)((loadcompletednum/(double)(fileneedednum)) * 256);
+			if (fileneedednum != 0)
+				totalfileslength = (INT32)((loadcompletednum/(double)(fileneedednum)) * 256);
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 96);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, MENUCAPS|V_20TRANS|V_MONOSPACE,
-				va(" %2u/%2u Files",loadcompletednum,fileneedednum));
+				va(" %2u/%2u Files", loadcompletednum,fileneedednum));
 		}
 		else if (cl_mode == CL_VIEWSERVER)
 		{
@@ -754,19 +752,22 @@ static inline void CL_DrawConnectionStatus(void)
 		}
 		else if (lastfilenum != -1)
 		{
-			INT32 dldlength;
-			INT32 totalfileslength;
-			UINT32 totaldldsize;
+			INT32 dldlength = 0;
+			INT32 totalfileslength = 0;
+			UINT32 totaldldsize = 0;
 			static char tempname[28];
 			fileneeded_t *file = &fileneeded[lastfilenum];
 			char *filename = file->filename;
+			UINT32 currentsize = file->currentsize;
+			UINT32 totalsize   = file->totalsize;
 
 			// Draw the bottom box.
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-58-8, 32, 1);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-58-14,  MENUCAPS|V_YELLOWMAP, "Press ESC to abort");
 
 			Net_GetNetStat();
-			dldlength = (INT32)((file->currentsize/(double)file->totalsize) * 256);
+			if (totalsize != 0)
+				dldlength = (INT32)((file->currentsize/(double)file->totalsize) * 256);
 			if (dldlength > 256)
 				dldlength = 256;
 
@@ -798,24 +799,25 @@ static inline void CL_DrawConnectionStatus(void)
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-58-22,  MENUCAPS|V_YELLOWMAP,
 				va(M_GetText("\"%s\""), tempname));
 			V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-58, V_20TRANS|V_MONOSPACE,
-				va(" %4uK/%4uK",fileneeded[lastfilenum].currentsize>>10,file->totalsize>>10));
+				va(" %4uK/%4uK",currentsize>>10,totalsize>>10));
 			V_DrawRightAlignedString(BASEVIDWIDTH/2+128, BASEVIDHEIGHT-58, V_20TRANS|V_MONOSPACE,
-				va("%3.1fK/s ", ((double)getbps)/1024));
+				va("%3.1fK/s ", ((double)getbps)/1024.0));
 
 			// Download progress
 
-			if (fileneeded[lastfilenum].currentsize != fileneeded[lastfilenum].totalsize)
-				totaldldsize = downloadcompletedsize+fileneeded[lastfilenum].currentsize; //Add in single file progress download if applicable
+			if (currentsize != totalsize)
+				totaldldsize = downloadcompletedsize+fileneeded[lastfilenum].currentsize; // Add in single file progress download if applicable
 			else
 				totaldldsize = downloadcompletedsize;
 
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-14,  MENUCAPS|V_YELLOWMAP, "Overall Download Progress");
-			totalfileslength = (INT32)((totaldldsize/(double)totalfilesrequestedsize) * 256);
+			if (totaldldsize != 0)
+				totalfileslength = (INT32)((totaldldsize/(double)totalfilesrequestedsize) * 256);
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 96);
 
-			if (totalfilesrequestedsize>>20 >= 10) //display in MB if over 10MB
+			if (totalfilesrequestedsize>>20 >= 10) // display in MB if over 10MB
 				V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24,  MENUCAPS|V_20TRANS|V_MONOSPACE,
 					va(" %4uM/%4uM",totaldldsize>>20,totalfilesrequestedsize>>20));
 			else
@@ -961,7 +963,7 @@ CopyCaretColors (char *p, const char *s, int n)
 		else
 			break;
 	}
-	strncpy(p, s, n);
+	strlcpy(p, s, n);
 }
 
 static void SV_SendServerInfo(INT32 node, tic_t servertime)
@@ -3557,7 +3559,6 @@ static void ResetNode(INT32 node)
 	nodewaiting[node] = 0;
 
 	nettics[node] = gametic;
-	supposedtics[node] = gametic;
 
 	nodetoplayer[node] = -1;
 	nodetoplayer2[node] = -1;
@@ -3615,7 +3616,6 @@ void SV_ResetServer(void)
 	memset(player_name_changes, 0, sizeof player_name_changes);
 
 	mynode = 0;
-	cl_packetmissed = false;
 	cl_redownloadinggamestate = false;
 
 	if (dedicated)
@@ -3726,7 +3726,6 @@ void D_QuitNetGame(void)
 static inline void SV_AddNode(INT32 node)
 {
 	nettics[node] = gametic;
-	supposedtics[node] = gametic;
 	// little hack because the server connects to itself and puts
 	// nodeingame when connected not here
 	if (node)
@@ -4696,13 +4695,6 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 	realstart = ExpandTics(netbuffer->u.clientpak.client_tic, nettics[node]);
 	realend = ExpandTics(netbuffer->u.clientpak.resendfrom, nettics[node]);
 
-	if (netbuffer->packettype == PT_CLIENTMIS || netbuffer->packettype == PT_CLIENT2MIS
-		|| netbuffer->packettype == PT_CLIENT3MIS || netbuffer->packettype == PT_CLIENT4MIS
-		|| netbuffer->packettype == PT_NODEKEEPALIVEMIS
-		|| supposedtics[node] < realend)
-	{
-		supposedtics[node] = realend;
-	}
 	// Discard out of order packet
 	if (nettics[node] > realend)
 	{
@@ -4723,8 +4715,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 
 	// Don't do anything for packets of type NODEKEEPALIVE?
 	// Sryder 2018/07/01: Update the freezetimeout still!
-	if (netbuffer->packettype == PT_NODEKEEPALIVE
-		|| netbuffer->packettype == PT_NODEKEEPALIVEMIS)
+	if (netbuffer->packettype == PT_NODEKEEPALIVE)
 		return;
 
 	// store it in an internal buffer so the last packet takes precedence, which minimizes input lag
@@ -4735,9 +4726,9 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 		return;
 
 	// Splitscreen cmd
-	if (((netbuffer->packettype == PT_CLIENT2CMD || netbuffer->packettype == PT_CLIENT2MIS)
-		|| (netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
-		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
+	if ((netbuffer->packettype == PT_CLIENT2CMD
+		|| netbuffer->packettype == PT_CLIENT3CMD
+		|| netbuffer->packettype == PT_CLIENT4CMD)
 		&& (nodetoplayer2[node] >= 0))
 	{
 		G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer2[node]], &netbuffer->u.client2pak.cmd2, 1);
@@ -4746,8 +4737,8 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 			return;
 	}
 
-	if (((netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
-		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
+	if ((netbuffer->packettype == PT_CLIENT3CMD
+		|| netbuffer->packettype == PT_CLIENT4CMD)
 		&& (nodetoplayer3[node] >= 0))
 	{
 		G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer3[node]], &netbuffer->u.client3pak.cmd3, 1);
@@ -4756,7 +4747,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 			return;
 	}
 
-	if ((netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)
+	if (netbuffer->packettype == PT_CLIENT4CMD
 		&& (nodetoplayer4[node] >= 0))
 	{
 		G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer4[node]], &netbuffer->u.client4pak.cmd4, 1);
@@ -5096,7 +5087,6 @@ static void PT_ServerTics(SINT8 node, INT32 netconsole)
 
 	if (realend > gametic + CLIENTBACKUPTICS)
 		realend = gametic + CLIENTBACKUPTICS;
-	cl_packetmissed = realstart > neededtic;
 
 	if (realstart <= neededtic && realend > neededtic)
 	{
@@ -5313,12 +5303,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_CLIENT2CMD         : PT_ClientCmd          (node, netconsole); break;
 		case PT_CLIENT3CMD         : PT_ClientCmd          (node, netconsole); break;
 		case PT_CLIENT4CMD         : PT_ClientCmd          (node, netconsole); break;
-		case PT_CLIENTMIS          : PT_ClientCmd          (node, netconsole); break;
-		case PT_CLIENT2MIS         : PT_ClientCmd          (node, netconsole); break;
-		case PT_CLIENT3MIS         : PT_ClientCmd          (node, netconsole); break;
-		case PT_CLIENT4MIS         : PT_ClientCmd          (node, netconsole); break;
 		case PT_NODEKEEPALIVE      : PT_ClientCmd          (node, netconsole); break;
-		case PT_NODEKEEPALIVEMIS   : PT_ClientCmd          (node, netconsole); break;
 		case PT_BASICKEEPALIVE     : PT_BasicKeepAlive     (node, netconsole); break;
 		case PT_TEXTCMD            : PT_TextCmd            (node, netconsole); break;
 		case PT_TEXTCMD2           : PT_TextCmd            (node, netconsole); break;
@@ -5750,15 +5735,8 @@ static void CL_SendClientCmd(void)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	size_t packetsize = 0;
-	boolean mis = false;
 
 	netbuffer->packettype = PT_CLIENTCMD;
-
-	if (cl_packetmissed)
-	{
-		netbuffer->packettype = PT_CLIENTMIS;
-		mis = true;
-	}
 
 	netbuffer->u.clientpak.resendfrom = (UINT8)(neededtic & UINT8_MAX);
 	netbuffer->u.clientpak.client_tic = (UINT8)(gametic & UINT8_MAX);
@@ -5766,7 +5744,7 @@ static void CL_SendClientCmd(void)
 	if (gamestate == GS_WAITINGPLAYERS)
 	{
 		// Send PT_NODEKEEPALIVE packet
-		netbuffer->packettype = (mis ? PT_NODEKEEPALIVEMIS : PT_NODEKEEPALIVE);
+		netbuffer->packettype = PT_NODEKEEPALIVE;
 		packetsize = sizeof (clientcmd_pak) - sizeof (ticcmd_t) - sizeof (INT16);
 		HSendPacket(servernode, false, 0, packetsize);
 	}
@@ -5786,19 +5764,19 @@ static void CL_SendClientCmd(void)
 
 		if (splitscreen) // Send a special packet with 2 cmd for splitscreen
 		{
-			netbuffer->packettype = (mis ? PT_CLIENT2MIS : PT_CLIENT2CMD);
+			netbuffer->packettype = PT_CLIENT2CMD;
 			packetsize = sizeof (client2cmd_pak);
 			G_MoveTiccmd(&netbuffer->u.client2pak.cmd2, &localcmds[1][lagDelay], 1);
 
 			if (splitscreen > 1)
 			{
-				netbuffer->packettype = (mis ? PT_CLIENT3MIS : PT_CLIENT3CMD);
+				netbuffer->packettype = PT_CLIENT3CMD;
 				packetsize = sizeof (client3cmd_pak);
 				G_MoveTiccmd(&netbuffer->u.client3pak.cmd3, &localcmds[2][lagDelay], 1);
 
 				if (splitscreen > 2)
 				{
-					netbuffer->packettype = (mis ? PT_CLIENT4MIS : PT_CLIENT4CMD);
+					netbuffer->packettype = PT_CLIENT4CMD;
 					packetsize = sizeof (client4cmd_pak);
 					G_MoveTiccmd(&netbuffer->u.client4pak.cmd4, &localcmds[3][lagDelay], 1);
 				}
@@ -5865,12 +5843,11 @@ static void SV_SendTics(void)
 
 	// send to all client but not to me
 	// for each node create a packet with x tics and send it
-	// x is computed using supposedtics[n], max packet size and maketic
+	// x is computed using nettics[n], max packet size and maketic
 	for (n = 1; n < MAXNETNODES; n++)
 		if (nodeingame[n])
 		{
-			// assert supposedtics[n]>=nettics[n]
-			realfirsttic = max(supposedtics[n], firstticstosend);
+			realfirsttic = nettics[n];
 			lasttictosend = min(maketic, nettics[n] + CLIENTBACKUPTICS);
 
 			if (realfirsttic >= lasttictosend)
@@ -5879,8 +5856,8 @@ static void SV_SendTics(void)
 				// to resent packet that are supposed lost (this is necessary since lost
 				// packet detection work when we have received packet with firsttic > neededtic
 				// (getpacket servertics case)
-				DEBFILE(va("Nothing to send node %u mak=%u sup=%u net=%u \n",
-					n, lasttictosend, supposedtics[n], nettics[n]));
+				DEBFILE(va("Nothing to send node %u mak=%u net=%u \n",
+					n, lasttictosend, nettics[n]));
 				realfirsttic = nettics[n];
 				if (realfirsttic >= lasttictosend || (I_GetTime() + n)&3)
 					// all tic are ok
@@ -5957,16 +5934,10 @@ static void SV_SendTics(void)
 			packsize = bufpos - (UINT8 *)&(netbuffer->u);
 
 			HSendPacket(n, false, 0, packsize);
-			// when tic are too large, only one tic is sent so don't go backward!
-			if (lasttictosend-doomcom->extratics > realfirsttic)
-				supposedtics[n] = lasttictosend-doomcom->extratics;
-			else
-				supposedtics[n] = lasttictosend;
-
-			supposedtics[n] = max(supposedtics[n], nettics[n]);
 		}
+
 	// node 0 is me!
-	supposedtics[0] = maketic;
+	nettics[0] = maketic;
 }
 
 //
@@ -6027,7 +5998,7 @@ static void SV_Maketic(void)
 		}
 	}
 	// Moved here so bots and packetloss indication doesn't break....
-	G_MoveTiccmd(netcmds[maketic % BACKUPTICS], playercmds, MAXPLAYERS);
+	G_CopyTiccmd(netcmds[maketic % BACKUPTICS], playercmds, MAXPLAYERS);
 	maketic++;
 }
 

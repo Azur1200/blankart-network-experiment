@@ -136,7 +136,7 @@ static patch_t *kp_racefinish[6];
 static patch_t *kp_positionnum[NUMPOSNUMS][NUMPOSFRAMES];
 static patch_t *kp_winnernum[NUMPOSFRAMES];
 
-patch_t *kp_facenum[MAXPLAYERS+1];
+patch_t *kp_facenum[MAXPLAYERS+1] = {};
 static patch_t *kp_facehighlight[8];
 
 static patch_t *kp_nocontestminimap;
@@ -711,7 +711,7 @@ boolean K_UseColorHud(void)
 	return cv_colorizedhud.value;
 }
 
-UINT8 K_GetHudColor(void)
+skincolornum_t K_GetHudColor(void)
 {
 	if (cv_colorizedhud.value && cv_colorizedhudcolor.value) return cv_colorizedhudcolor.value;
 
@@ -5135,7 +5135,7 @@ static void K_drawInput(void)
 	INT32 x = (BASEVIDWIDTH - 32)*FRACUNIT, y = (BASEVIDHEIGHT - 24)*FRACUNIT;
 	UINT8 *shadowcolormap = NULL;
 	INT32 offs, col;
-	const UINT8 hudcolor = K_GetHudColor();
+	const skincolornum_t hudcolor = K_GetHudColor();
 	const INT32 accent1 = splitflags | skincolors[hudcolor].ramp[5];
 	const INT32 accent2 = splitflags | skincolors[hudcolor].ramp[9];
 	const UINT8 *hudcolormap = R_GetTranslationColormap(0, hudcolor, GTC_CACHE);
@@ -5786,8 +5786,8 @@ static void K_DrawWaypointDebugger(void)
 
 	V_DrawString(8, 150, 0, va("Current Waypoint ID: %d", K_GetWaypointID(stplyr->currentwaypoint)));
 	V_DrawString(8, 160, 0, va("Next Waypoint ID: %d", K_GetWaypointID(stplyr->nextwaypoint)));
-	V_DrawString(8, 170, 0, va("Finishline Distance: %d (WP %d)", stplyr->distancetofinish,
-	                        stplyr->currentwaypoint ? stplyr->currentwaypoint->distancetofinish : -1));
+	V_DrawString(8, 170, 0, va("Finishline Distance: %u (WP %u)", stplyr->distancetofinish,
+	                        stplyr->currentwaypoint ? stplyr->currentwaypoint->distancetofinish : 0));
 }
 
 static void K_DrawClusterDebugger(void)
@@ -6519,7 +6519,7 @@ void K_DrawFlamometer(void)
 	// fire animation
 	if (stplyr->flamestore >= FLAMESTOREMAX-1)
 	{
-		UINT8 flamofiretic = CLAMP((leveltime / 3) % MAXFLAMOFIRETICS, 0, MAXFLAMOFIRETICS) + 1;
+		UINT8 flamofiretic = ((leveltime / 3) % MAXFLAMOFIRETICS) + 1;
 
 		if (stplyr->flameoverheat < 3)
 		{

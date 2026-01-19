@@ -110,7 +110,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x000F
+#define DEMOVERSION 0x0010
 #define DEMOHEADER  "\xF0" "BlanReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -268,6 +268,7 @@ typedef struct
 	struct // DF_GRANDPRIX
 	{
 		boolean masterbots;
+		boolean lunaticmode;
 		UINT8 gamespeed;
 		UINT8 eventmode;
 	} grandprix;
@@ -704,6 +705,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	boolean rapreset = true; // + extended serverinfo length
 	boolean dubs = true; // Multiple voices
 	boolean availabilities = true; // Store player availabilities
+	boolean gplunatic = true; // Grand Prix: Lunatic mode
 	INT32 i;
 
 	// these may not be present in old demo formats, so initialize them
@@ -745,6 +747,9 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 			/* FALLTHRU */
 		case 0x000E:
 			availabilities = false;
+			/* FALLTHRU */
+		case 0x000F:
+			gplunatic = false;
 			break;
 
 		default: // too old, cannot support.
@@ -754,7 +759,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	else if (!memcmp(startdp, "\xF0" "KartReplay" "\x0F", 12))
 	{
 		dubs = rapreset = raflag = false;
-		serverinfo = availabilities = false;
+		gplunatic = serverinfo = availabilities = false;
 		switch (header->demoversion)
 		{
 		case 0x0001: // SRB2Kart 1.0.x (only staff ghosts supported)
@@ -796,7 +801,10 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 			sprintf(header->maptitle, "MAP%c%c", 'A' + (mapnum - 100)/36, ((mapnum - 100) % 36 < 10 ? '0' : 'A'-10) + (mapnum - 100) % 36);
 	}
 	else
-		READSTRINGN(dp, header->maptitle, MAXMAPLUMPNAME);
+	{
+		READSTRINGL(dp, header->maptitle, MAXMAPLUMPNAME);
+		if (dp[-1] != '\0') dp++;
+	}
 
 	header->mapchecksum = READUINT64(dp);
 	if (kart) (void)READUINT64(dp); // not even used anywhere
@@ -819,9 +827,12 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 		size_t maxservercontact  = rapreset ? MAXSERVERCONTACT : 320;
 		size_t maxdescription = rapreset ? MAXSERVERDESCRIPTION : 320;
 
-		READSTRINGN(dp, header->servername, MAXSERVERNAME);
-		READSTRINGN(dp, header->servercontact, maxservercontact);
-		READSTRINGN(dp, header->serverdescription, maxdescription);
+		READSTRINGL(dp, header->servername, MAXSERVERNAME);
+		if (dp[-1] != '\0') dp++;
+		READSTRINGL(dp, header->servercontact, maxservercontact);
+		if (dp[-1] != '\0') dp++;
+		READSTRINGL(dp, header->serverdescription, maxdescription);
+		if (dp[-1] != '\0') dp++;
 	}
 
 	if (oldkart)
@@ -929,6 +940,10 @@ skipfiles:
 	{
 		header->grandprix.gamespeed = READUINT8(dp);
 		header->grandprix.masterbots = READUINT8(dp) != 0;
+
+		if (gplunatic)
+			header->grandprix.lunaticmode = READUINT8(dp) != 0;
+
 		header->grandprix.eventmode = READUINT8(dp);
 	}
 
@@ -2882,7 +2897,7 @@ void G_BeginRecording(void)
 		char demotitlename[65];
 		char *title = G_BuildMapTitle(gamemap);
 		// Print to a separate temp buffer instead of demo.titlename, so we can use it in M_TextInputSetString
-		snprintf(demotitlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
+		snprintf(demotitlename, sizeof(demotitlename), "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
 
 		// Init just in case it isn't initialized already
 		M_TextInputInit(&demo.titlenameinput, demo.titlename, sizeof(demo.titlename));
@@ -2897,15 +2912,15 @@ void G_BeginRecording(void)
 
 	// game data
 	memcpy(demobuf.p, "PLAY", 4); demobuf.p += 4;
-	WRITESTRINGN(demobuf.p, mapheaderinfo[gamemap-1]->lumpname, MAXMAPLUMPNAME);
+	WRITESTRINGL(demobuf.p, mapheaderinfo[gamemap-1]->lumpname, MAXMAPLUMPNAME);
 	WRITEUINT64(demobuf.p, maphash);
 
 	WRITEUINT8(demobuf.p, demoflags);
 	WRITESTRINGL(demobuf.p, currentrecordpreset, MAXPRESETNAME+1);
 	WRITEUINT8(demobuf.p, currentrecordpresetversion);
-	WRITESTRINGN(demobuf.p, connectedservername, MAXSERVERNAME);
-	WRITESTRINGN(demobuf.p, connectedservercontact, MAXSERVERCONTACT);
-	WRITESTRINGN(demobuf.p, connectedserverdescription, MAXSERVERDESCRIPTION);
+	WRITESTRINGL(demobuf.p, connectedservername, MAXSERVERNAME);
+	WRITESTRINGL(demobuf.p, connectedservercontact, MAXSERVERCONTACT);
+	WRITESTRINGL(demobuf.p, connectedserverdescription, MAXSERVERDESCRIPTION);
 	WRITEUINT8(demobuf.p, gametype & 0xFF);
 	WRITEUINT8(demobuf.p, numlaps);
 
@@ -2957,6 +2972,7 @@ void G_BeginRecording(void)
 	{
 		WRITEUINT8(demobuf.p, grandprixinfo.gamespeed);
 		WRITEUINT8(demobuf.p, grandprixinfo.masterbots == true);
+		WRITEUINT8(demobuf.p, grandprixinfo.lunaticmode == true);
 		WRITEUINT8(demobuf.p, grandprixinfo.eventmode);
 	}
 
@@ -3403,7 +3419,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		return;
 	}
 
-	memcpy(pdemo->title, header.demotitle, 64);
+	strlcpy(pdemo->title, header.demotitle, sizeof(pdemo->title));
 
 	if (header.version != VERSION || header.subversion != SUBVERSION)
 		pdemo->type = MD_OUTDATED;
@@ -3669,7 +3685,7 @@ void G_DoPlayDemo(char *defdemoname)
 	demo.version = header.demoversion;
 
 	// demo title
-	memcpy(demo.titlename, header.demotitle, 64);
+	strlcpy(demo.titlename, header.demotitle, sizeof(demo.titlename));
 
 	if (demo.title) // Titledemos should always play and ought to always be compatible with whatever wadlist is running.
 		;//G_SkipDemoExtraFiles(&demobuf.p);
@@ -3799,6 +3815,7 @@ void G_DoPlayDemo(char *defdemoname)
 		grandprixinfo.gp = true;
 		grandprixinfo.gamespeed = header.grandprix.gamespeed;
 		grandprixinfo.masterbots = header.grandprix.masterbots;
+		grandprixinfo.lunaticmode = header.grandprix.lunaticmode;
 		grandprixinfo.eventmode = header.grandprix.eventmode;
 	}
 

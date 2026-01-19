@@ -35,82 +35,14 @@ conditionset_t conditionSets[MAXCONDITIONSETS];
 emblem_t emblemlocations[MAXEMBLEMS] = {0};
 
 // Default Extra Emblems
-extraemblem_t extraemblems[MAXEXTRAEMBLEMS] =
-{
-	{"Novice",    "Play 100 matches",  10, 'C', 0,SKINCOLOR_RED, 0},
-	{"Standard",  "Play 250 matches",  11, 'C', 0,SKINCOLOR_RED, 0},
-	{"Expert",    "Play 500 matches",  12, 'C', 0,SKINCOLOR_RED, 0},
-	{"Master",    "Play 750 matches",  13, 'C', 0,SKINCOLOR_RED, 0},
-	{"Nightmare", "Play 1000 matches", 14, 'C', 0,SKINCOLOR_RED, 0},
-};
+extraemblem_t extraemblems[MAXEXTRAEMBLEMS] = {0};
 
 // Unlockables
-// Default Unlockables
-// TODO: Softcode these or make new objectives even!
-unlockable_t unlockables[MAXUNLOCKABLES] =
-{
-	// Name, Objective, Showing Conditionset, ConditionSet, Unlock Type, Variable, NoCecho, NoChecklist, Unlocked
-	/* 01 */ {"Egg Cup",  "", -1, 1, SECRET_NONE, 0, NULL, false, false, 0},
-	/* 02 */ {"Chao Cup", "", -1, 2, SECRET_NONE, 0, NULL, false, false, 0},
-	/* 03 */ {"SMK Cup",  "",  2, 3, SECRET_NONE, 0, NULL, false, false, 0},
-
-	/* 04 */ {"Hard Game Speed", "", -1, 4, SECRET_HARDSPEED,  0, NULL, false, false, 0},
-	/* 05 */ {"Encore Mode",     "",  4, 5, SECRET_ENCORE,     0, NULL, false, false, 0},
-	/* 06 */ {"Hell Attack",     "",  6, 6, SECRET_HELLATTACK, 0, NULL, false, false, 0},
-
-	/* 07 */ {"Record Attack", "", -1, -1, SECRET_TIMEATTACK, 0, NULL ,true, true, 0},
-	/* 08 */ {"Capsule Attack", "", -1, -1, SECRET_ITEMBREAKER, 0, NULL, true, true, 0},
-};
+unlockable_t unlockables[MAXUNLOCKABLES] = {0};
 
 // Number of emblems and extra emblems
 INT32 numemblems = 0;
-INT32 numextraemblems = 5;
-
-// DEFAULT CONDITION SETS FOR SRB2KART:
-void M_SetupDefaultConditionSets(void)
-{
-	memset(conditionSets, 0, sizeof(conditionSets));
-
-	// UNLOCKABLES
-	// -- 1: Collect 5 medals OR play 25 matches
-	M_AddRawCondition(1, 1, UC_TOTALEMBLEMS, 5, 0, 0);
-	M_AddRawCondition(1, 2, UC_MATCHESPLAYED, 25, 0, 0);
-
-	// -- 2: Collect 15 medals OR play 50 matches
-	M_AddRawCondition(2, 1, UC_TOTALEMBLEMS, 15, 0, 0);
-	M_AddRawCondition(2, 2, UC_MATCHESPLAYED, 50, 0, 0);
-
-	// -- 3: Collect 30 medals OR play 150 matches
-	M_AddRawCondition(3, 1, UC_TOTALEMBLEMS, 30, 0, 0);
-	M_AddRawCondition(3, 2, UC_MATCHESPLAYED, 150, 0, 0);
-
-	// -- 4: Collect 50 medals OR play 200 matches
-	M_AddRawCondition(4, 1, UC_TOTALEMBLEMS, 50, 0, 0);
-	M_AddRawCondition(4, 2, UC_MATCHESPLAYED, 200, 0, 0);
-
-	// -- 5: Collect 70 medals OR play 300 matches
-	M_AddRawCondition(5, 1, UC_TOTALEMBLEMS, 70, 0, 0);
-	M_AddRawCondition(5, 2, UC_MATCHESPLAYED, 300, 0, 0);
-
-	// -- 6: Collect 110 medals ONLY
-	M_AddRawCondition(6, 1, UC_TOTALEMBLEMS, 110, 0, 0);
-
-	// MILESTONES
-	// -- 10: Play 100 matches
-	M_AddRawCondition(10, 1, UC_MATCHESPLAYED, 100, 0, 0);
-
-	// -- 11: Play 250 matches
-	M_AddRawCondition(11, 1, UC_MATCHESPLAYED, 250, 0, 0);
-
-	// -- 12: Play 500 matches
-	M_AddRawCondition(12, 1, UC_MATCHESPLAYED, 500, 0, 0);
-
-	// -- 13: Play 750 matches
-	M_AddRawCondition(13, 1, UC_MATCHESPLAYED, 750, 0, 0);
-
-	// -- 14: Play 1000 matches
-	M_AddRawCondition(14, 1, UC_MATCHESPLAYED, 1000, 0, 0);
-}
+INT32 numextraemblems = 0;
 
 void M_AddRawCondition(UINT8 set, UINT8 id, conditiontype_t c, INT32 r, INT16 x1, INT16 x2)
 {

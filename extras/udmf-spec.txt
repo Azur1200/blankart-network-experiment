@@ -3,7 +3,7 @@ Universal Doom Map Format - BlanKart extensions v1.0 - 08.02.2025
 
 	Copyright (c) 2024 Sally Cochenour.
 	Copyright (c) 2024 Kart Krew Dev.
-	Copyright (c) 2025 NepDisk.
+	Copyright (c) 2026 NepDisk.
 
 	Permission is granted to copy, distribute and/or modify this document
 	under the terms of the GNU Free Documentation License, Version 1.2

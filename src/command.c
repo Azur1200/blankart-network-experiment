@@ -97,6 +97,8 @@ CV_PossibleValue_t gpdifficulty_cons_t[] = {
 	{KARTSPEED_EXPERT, "Expert"},
 	{KARTGP_MASTER, "Master"},
 	{KARTGP_NIGHTMARE, "Nightmare"},
+	{KARTGP_LUNATIC, "Lunatic"},
+	{KARTGP_MANIAC, "Maniac"},
 	{0, NULL}
 };
 

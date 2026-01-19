@@ -93,7 +93,7 @@ void Got_Luacmd(UINT8 **cp, INT32 playernum)
 		strlcpy(buf, argv[i], 255);
 		lua_pushstring(gL, buf);
 	}
-	LUA_Call(gL, (int)argc, 0, 1, compat); // argc is 1-based, so this will cover the player we passed too.
+	LUA_Call(gL, (int)argc, 0, 1, compat, true); // argc is 1-based, so this will cover the player we passed too.
 
 	lua_pop(gL, 1); // Pop LUA_GetErrorMessage (lua_pcall doesn't pop it)
 
@@ -199,7 +199,7 @@ void COM_Lua_f(void)
 	LUA_PushUserdata(gL, &players[playernum], META_PLAYER);
 	for (i = 1; i < COM_Argc(); i++)
 		lua_pushstring(gL, COM_Argv(i));
-	LUA_Call(gL, (int)COM_Argc(), 0, 1, compat); // COM_Argc is 1-based, so this will cover the player we passed too.
+	LUA_Call(gL, (int)COM_Argc(), 0, 1, compat, true); // COM_Argc is 1-based, so this will cover the player we passed too.
 
 	lua_pop(gL, 1); // Pop LUA_GetErrorMessage (lua_pcall doesn't pop it)
 }
@@ -330,7 +330,7 @@ static void Lua_OnChange(void)
 
 	LUA_RawPushUserdata(gL, this_cvar);
 
-	LUA_Call(gL, 1, 0, 1, compat); // call function(cvar)
+	LUA_Call(gL, 1, 0, 1, compat, true); // call function(cvar)
 	lua_pop(gL, 1); // pop CV_OnChange table
 	lua_remove(gL, 1); // remove LUA_GetErrorMessage
 }

@@ -312,6 +312,12 @@ static int mobj_get(lua_State *L)
 	case mobj_roll:
 		lua_pushangle(L, mo->roll);
 		break;
+	case mobj_slopepitch:
+		lua_pushangle(L, mo->slopepitch);
+		break;
+	case mobj_sloperoll:
+		lua_pushangle(L, mo->sloperoll);
+		break;
 	case mobj_rollangle:
 		lua_pushangle(L, mo->rollangle);
 		break;
@@ -700,6 +706,12 @@ static int mobj_set(lua_State *L)
 		break;
 	case mobj_roll:
 		mo->roll = luaL_checkangle(L, 3);
+		break;
+	case mobj_slopepitch:
+		mo->slopepitch = luaL_checkangle(L, 3);
+		break;
+	case mobj_sloperoll:
+		mo->sloperoll = luaL_checkangle(L, 3);
 		break;
 	case mobj_rollangle:
 		mo->rollangle = luaL_checkangle(L, 3);

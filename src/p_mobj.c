@@ -11772,9 +11772,9 @@ void P_RemoveFloorSpriteSlope(mobj_t *mobj)
 //
 // P_RemoveMobj
 //
-mapthing_t *itemrespawnque[ITEMQUESIZE];
-tic_t itemrespawntime[ITEMQUESIZE];
-size_t iquehead, iquetail;
+mapthing_t *itemrespawnque[ITEMQUESIZE] = {};
+tic_t itemrespawntime[ITEMQUESIZE] = {};
+size_t iquehead = 0, iquetail = 0;
 
 #ifdef PARANOIA
 //#define SCRAMBLE_REMOVED // Force debug build to crash when Removed mobj is accessed
@@ -12215,8 +12215,8 @@ void P_PrecipitationEffects(void)
 
 		closedist = SEARCHRADIUS*2;
 #undef SEARCHRADIUS
-		for (y = yl; y <= yh; y += RADIUSSTEP)
-			for (x = xl; x <= xh; x += RADIUSSTEP)
+		for (y = yl; y >= yl && y <= yh; y += RADIUSSTEP)
+			for (x = xl; x >= xl && x <= xh; x += RADIUSSTEP)
 			{
 				if (R_PointInSubsectorFast((fixed_t)x, (fixed_t)y)->sector->ceilingpic != skyflatnum) // Found the outdoors!
 					continue;
@@ -15074,7 +15074,7 @@ kartvoice_t *P_GetMobjVoice(const mobj_t *mo)
 	// Scream at the idiot that let this happen :^)
 	CONS_Printf(
 		"PARANOIA/P_GetMobjVoice: %p MT_%s passed to function with NULL voice\n",
-		(void*)mo,
+		(const void *)mo,
 		P_MobjTypeName(mo)
 	);
 #endif

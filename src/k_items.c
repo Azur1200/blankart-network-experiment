@@ -1,8 +1,8 @@
 // BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2018-2025 by Kart Krew.
-// Copyright (C) 2025 by "yama".
-// Copyright (C) 2025 Blankart Team.
+// Copyright (C) 2026 by "yama".
+// Copyright (C) 2026 Blankart Team.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -37,6 +37,7 @@
 #include "k_kart.h"
 #include "k_waypoint.h"
 #include "k_director.h"
+#include "k_grandprix.h"
 #include "k_cluster.hpp"
 #include "k_itemlist.hpp"
 #include "k_items.h"
@@ -73,6 +74,11 @@ static CV_PossibleValue_t kartitemvariant_cons_t[] = {{0, "Legacy"}, {1, "Altern
 
 consvar_t cv_fancyroulette = CVAR_INIT ("fancyroulette", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_fancyroulettespeed = CVAR_INIT ("fancyroulettespeed", "3", CV_SAVE, CV_Natural, NULL);
+
+// Item related CVARs
+consvar_t cv_karteggmine_slotlock = CVAR_INIT ("karteggmine_slotlock", "Off", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
+consvar_t cv_karteggmine_slotbrick = CVAR_INIT ("karteggmine_slotbrick", "Off", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
+
 
 void K_RegisterItem(kartitemtype_e itemtype)
 {
@@ -216,7 +222,9 @@ patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, boolean tiny, UINT8 amount,
 	if (graphics->numpatches == 0)
 		return missingpat;
 
-	tic_t timer = G_GamestateUsesLevel() ? leveltime : finalecount;
+	tic_t timer = leveltime;
+	if (!G_GamestateUsesLevel())
+		timer = finalecount;
 
 	if (K_GetItemFlags(type) & KIF_ANIMATED)
 		return graphics->patches[(timer % (graphics->numpatches*3)) / 3];
@@ -257,16 +265,27 @@ static boolean K_InStartCooldown(void)
 
 // Magic number distance for use with item roulette tiers
 #define ACTIVEDISTVAR (K_LegacyOddsMode() ? DISTVAR_LEGACY : DISTVAR)
-#define ACTIVESPBDIST (K_LegacyOddsMode() ? SPBDISTVAR_LEGACY : SPBDISTVAR)
-
-#define SPBSTARTDIST (ACTIVESPBDIST) // Distance when SPB can start appearing
-#define SPBFORCEDIST (7 * ACTIVESPBDIST / 2) // Distance when SPB is forced onto 2nd place (3.5x SPBDISTVAR)
 
 #define ENDDIST (12*ACTIVEDISTVAR) // Distance when the game stops giving you bananas
 
 static boolean K_RaceForceSPB(SINT8 playerpos, UINT32 pdis)
 {
-	return ((gametyperules & GTR_CIRCUIT) && playerpos == 2 && pdis > (UINT32)SPBFORCEDIST);
+	UINT8 idx = K_LegacyOddsMode() ? 1 : 0;
+
+	kartresult_t *spb_res = K_GetKartResult("selfpropelledbomb");
+
+	if (!spb_res)
+	{
+		return false;
+	}
+
+	if (spb_res->augcvar[idx] == NULL)
+	{
+		// ?!
+		return false;
+	}
+
+	return ((gametyperules & GTR_CIRCUIT) && playerpos == 2 && pdis > (UINT32)(7 * spb_res->augcvar[idx]->value / 2));
 }
 
 // 1/21/2025: I hate tiptoeing around the integer limit.
@@ -608,6 +627,8 @@ void K_SetIndirectItemCooldown(tic_t cooldown)
 	}
 }
 
+#define LUNATIC_RUNNERAUG_CRUNCHER (29127) // FRACUNIT / 2.25
+
 static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *forceme)
 {
 	INT32 newodds;
@@ -773,11 +794,28 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 		return newodds;
 	}
 
-	if (flags & KRF_RUNNERAUGMENT)
+	UINT8 aug_idx = K_LegacyOddsMode() ? 1 : 0;
+
+	if ((flags & KRF_RUNNERAUGMENT) && (result->augcvar[aug_idx] != NULL))
 	{
 		// These odds get stronger as 1st's frontrun increases.
-		const INT32 distFromStart = max(secondToFirst - SPBSTARTDIST, 0);
-		const INT32 distRange = SPBFORCEDIST - SPBSTARTDIST;
+		INT32 runner_distval = result->augcvar[aug_idx]->value;
+
+		if ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode == true))
+		{
+			// Lunatic Mode: Divide this distance by 2.25 for
+			// aggressive frontrun prevention.
+			runner_distval = FixedMul(runner_distval, LUNATIC_RUNNERAUG_CRUNCHER);
+		}
+
+		if (roulette->rival_frontrunner == true)
+		{
+			// The rival is frontrunning. Be *especially* vicious against them!
+			runner_distval = (runner_distval / 2);
+		}
+
+		const INT32 distFromStart = max(secondToFirst - runner_distval, 0);
+		const INT32 distRange = (7 * runner_distval / 2) - runner_distval;
 		const INT32 mulMax = 24;
 
 		INT32 multiplier = (distFromStart * mulMax) / distRange;
@@ -846,6 +884,8 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 	return newodds;
 }
 
+#undef LUNATIC_RUNNERAUG_CRUNCHER
+
 void K_KartGetItemOdds(kartroulette_t *roulette, INT32 outodds[static MAXKARTRESULTS])
 {
 	// Reset forceme
@@ -868,6 +908,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 	UINT8 distlen = 0;
 	boolean oddsvalid[MAXODDS];
 	boolean rivalodds = false;
+	boolean rivalrunner = false;
 
 	// Unused now, oops :V
 	(void)bestbumper;
@@ -876,6 +917,12 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 	{
 		// Rival bots and players using Alt. Shrink get crazier items.
 		rivalodds = true;
+	}
+
+	if (player->bot && player->botvars.rival && player->position <= 1)
+	{
+		// A rival is frontrunning!
+		rivalrunner = true;
 	}
 
 	INT32 itemodds[MAXKARTRESULTS];
@@ -889,6 +936,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 		.spbrush = spbrush,
 		.bot = player->bot,
 		.rival = rivalodds,
+		.rival_frontrunner = rivalrunner,
 		.inBottom = K_IsPlayerLosing(player),
 	};
 
@@ -987,12 +1035,12 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 		if (pdis == 0)
 			useodds = disttable[0];
 		else if (pdis > (UINT32)ACTIVEDISTVAR * ((12 * distlen) / sizeof(disttable)))
-			useodds = disttable[max(0, distlen-1)];
+			useodds = disttable[distlen ? distlen - 1 : distlen];
 		else
 		{
 			for (i = 1; i < (sizeof(disttable) - 1); i++)
 			{
-				INT32 distcalc = min(distlen-1, (i * distlen) / sizeof(disttable));
+				INT32 distcalc = min(distlen-1u, (i * distlen) / sizeof(disttable));
 
 				if (pdis <= (UINT32)usedistvar * distcalc)
 				{
@@ -1428,10 +1476,10 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// SPECIAL CASE No. 6:
 	// In battle, an SPB is forced onto players to target the "most wanted" player
 	if (K_BattleForceSPB(player)
-		&& spbplace == -1 && K_GetKartResult("spb")->cooldown == 0 && !dontforcespb
-		&& K_ItemResultEnabled(K_GetKartResult("spb")))
+		&& spbplace == -1 && K_GetKartResult("selfpropelledbomb")->cooldown == 0 && !dontforcespb
+		&& K_ItemResultEnabled(K_GetKartResult("selfpropelledbomb")))
 	{
-		K_AwardPlayerResult(player, K_GetKartResult("spb"), KITEMBLINK_KARMA);
+		K_AwardPlayerResult(player, K_GetKartResult("selfpropelledbomb"), KITEMBLINK_KARMA);
 		return;
 	}
 
@@ -1451,7 +1499,8 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		.mashed = mashed,
 		.spbrush = spbrush,
 		.bot = player->bot,
-		.rival = player->bot && player->botvars.rival,
+		.rival = ((player->bot && player->botvars.rival) || (K_IsAltShrunk(player))),
+		.rival_frontrunner = ((player->bot && player->botvars.rival) && (player->position <= 1)),
 		.inBottom = K_IsPlayerLosing(player),
 	};
 
@@ -1520,7 +1569,16 @@ void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force)
 INT32 KO_AltInvinOdds(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme)
 {
 	(void)result;
-	odds = K_KartGetInvincibilityOdds(roulette->clusterDist);
+
+	UINT32 cdist = roulette->clusterDist;
+
+	if ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode))
+	{
+		// I'm tired, boss.
+		cdist = (9 * cdist / 5);
+	}
+
+	odds = K_KartGetInvincibilityOdds(cdist);
 
 	// Special case: if you're SERIOUSLY far behind before the cooldown finishes, ignore it and start forcing,
 	if (odds >= INVFORCEODDS)
@@ -1550,13 +1608,27 @@ INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresul
 		odds = 0;
 	}
 
+	UINT32 raceforce_pdis = roulette->pdis;
+
+	if ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode == true))
+	{
+		// Multiply by 2.25
+		raceforce_pdis = FixedMul(raceforce_pdis, 9 * FRACUNIT / 2);
+	}
+
+	if (roulette->rival_frontrunner == true)
+	{
+		// Frontrunning rival? Multiply by 1.5
+		raceforce_pdis = FixedMul(raceforce_pdis, 3 * FRACUNIT / 2);
+	}
+
 	// No forced SPB in 1v1s, it has to be randomly rolled
 	if (roulette->pingame <= 2)
 	{
 		*forceme = 0;
 	}
-	else if (K_RaceForceSPB(roulette->playerpos, roulette->pdis)
-		&& spbplace == -1 && K_GetKartResult("spb")->cooldown == 0)
+	else if (K_RaceForceSPB(roulette->playerpos, raceforce_pdis)
+		&& spbplace == -1 && K_GetKartResult("selfpropelledbomb")->cooldown == 0)
 	{
 		// Force SPB onto 2nd if they get too far behind.
 		*forceme = 2;
@@ -2523,6 +2595,13 @@ INT16 K_GetShrinkTime(const player_t *player)
 
 boolean K_IsAltShrunk(const player_t *player)
 {
+	if (!player)
+	{
+#ifdef PARANOIA
+		CONS_Printf("K_IsAltShrunk: passed NULL player\n");
+#endif
+		return false;
+	}
 	return player->growshrinktimer < 0 && K_IsKartItemAlternate(KITEM_SHRINK);
 }
 
@@ -2571,15 +2650,22 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 			S_StartSound(tmo, sfx_bewar3);
 			K_DropItems(tmo->player);
 
-			tmo->player->itemtype = MAXKARTITEMS;	// aka KITEM_SAD
-			tmo->player->itemamount = 1;
-			
-			if (itemlistactive)
-				K_AddItemRollToList((INT32)(tmo->player - players), MAXKARTITEMS, 1);
+			if (cv_karteggmine_slotlock.value)
+			{
+				K_SetPlayerItemCooldown(tmo->player, TICRATE, false);
+			}
 
-			tmo->player->itemblink = TICRATE;
-			tmo->player->itemblinkmode = KITEMBLINK_MASHED;
-			K_SetPlayerItemCooldown(tmo->player, TICRATE, false);
+			if (cv_karteggmine_slotbrick.value)
+			{
+				tmo->player->itemtype = MAXKARTITEMS;	// aka KITEM_SAD
+				tmo->player->itemamount = 1;
+
+				if (itemlistactive)
+					K_AddItemRollToList((INT32)(tmo->player - players), MAXKARTITEMS, 1);
+
+				tmo->player->itemblink = TICRATE;
+				tmo->player->itemblinkmode = KITEMBLINK_MASHED;
+			}
 		}
 	}
 }

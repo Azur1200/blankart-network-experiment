@@ -708,7 +708,7 @@ static void A_Lua(mobj_t *actor)
 	LUA_PushUserdata(gL, actor, META_MOBJ);
 	lua_pushinteger(gL, var1);
 	lua_pushinteger(gL, var2);
-	LUA_Call(gL, 3, 0, 1, lua_compatmode); // TODO
+	LUA_Call(gL, 3, 0, 1, lua_compatmode, true); // TODO
 
 	lua_pop(gL, 1); // pop error handler
 
@@ -903,7 +903,7 @@ boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor)
 	superactions[superstack] = actionpointers[actionnum].name;
 	++superstack;
 
-	LUA_Call(gL, 3, 0, -(2 + 3), lua_compatmode); // TODO
+	LUA_Call(gL, 3, 0, -(2 + 3), lua_compatmode, true); // TODO
 	lua_pop(gL, -1); // Error handler
 
 	--superstack;
@@ -1479,7 +1479,10 @@ static int sfxinfo_get(lua_State *L)
 		if (!lua_compatmode)
 			goto nope;
 		sfxenum_t sound = sfx - S_sfx;
-		lua_pushinteger(L, sound >= sfx_kwin && sound <= sfx_kgloat ? sound - sfx_kwin : -1);
+		if (sound >= sfx_kwin && sound <= sfx_kgloat)
+			lua_pushinteger(L, sound - sfx_kwin);
+		else
+			lua_pushinteger(L, -1);
 		return 1;
 	case sfxinfor_string:
 		lua_pushstring(L, sfx->name);

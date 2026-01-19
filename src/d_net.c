@@ -66,7 +66,7 @@ static INT32 rebound_head, rebound_tail;
 INT32 net_bandwidth;
 
 /// \brief max length per packet
-INT16 hardware_MAXPACKETLENGTH;
+INT16 hardware_MAXPACKETLENGTH = 0;
 
 boolean (*I_NetGet)(void) = NULL;
 void (*I_NetSend)(void) = NULL;
@@ -106,7 +106,7 @@ INT32 ticruned = 0, ticmiss = 0;
 
 // globals
 INT32 getbps, sendbps;
-float lostpercent, duppercent, gamelostpercent;
+float lostpercent = 0.0f, duppercent = 0.0f, gamelostpercent = 0.0f;
 INT32 packetheaderlength;
 
 boolean Net_GetNetStat(void)
@@ -609,9 +609,7 @@ static const char *packettypename[NUMPACKETTYPE] =
 	"NOTHING",
 	"SERVERCFG",
 	"CLIENTCMD",
-	"CLIENTMIS",
 	"CLIENT2CMD",
-	"CLIENT2MIS",
 	"NODEKEEPALIVE",
 	"NODEKEEPALIVEMIS",
 	"SERVERTICS",
@@ -634,9 +632,7 @@ static const char *packettypename[NUMPACKETTYPE] =
 	"HASLUAFILE",
 
 	"CLIENT3CMD",
-	"CLIENT3MIS",
 	"CLIENT4CMD",
-	"CLIENT4MIS",
 	"BASICKEEPALIVE",
 
 	"FILEFRAGMENT",
@@ -696,12 +692,7 @@ static void DebugPrintpacket(const char *header)
 		case PT_CLIENT2CMD:
 		case PT_CLIENT3CMD:
 		case PT_CLIENT4CMD:
-		case PT_CLIENTMIS:
-		case PT_CLIENT2MIS:
-		case PT_CLIENT3MIS:
-		case PT_CLIENT4MIS:
 		case PT_NODEKEEPALIVE:
-		case PT_NODEKEEPALIVEMIS:
 			fprintf(debugfile, "    tic %4u resendfrom %u\n",
 				(UINT32)netbuffer->u.clientpak.client_tic,
 				(UINT32)netbuffer->u.clientpak.resendfrom);

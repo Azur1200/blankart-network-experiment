@@ -31,6 +31,7 @@
 #include "m_random.h"
 #include "doomstat.h"
 #include "r_fps.h"
+#include "qs22j.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_glob.h"
@@ -796,6 +797,173 @@ static const UINT8 *v_translevel = NULL;
 #define MAPPEDDRAW 2
 #define TRANSLUCENTDRAW 3
 #define TRANSMAPPEDDRAW 4
+
+/*
+static int sortcoords(const void *a, const void *b)
+{
+	return *(const fixed_t *)a - *(const fixed_t *)b;
+}
+*/
+
+void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, INT32 scrn, patch_t *patch, const UINT8 *colormap)
+{
+	if (rendermode == render_none)
+		return;
+
+	INT32 dupx, dupy;
+	switch (scrn & V_SCALEPATCHMASK)
+	{
+	case V_NOSCALEPATCH:
+		dupx = dupy = 1;
+		break;
+	case V_SMALLSCALEPATCH:
+		dupx = vid.smalldupx;
+		dupy = vid.smalldupy;
+		break;
+	case V_MEDSCALEPATCH:
+		dupx = vid.meddupx;
+		dupy = vid.meddupy;
+		break;
+	default:
+		dupx = vid.dupx;
+		dupy = vid.dupy;
+		break;
+	}
+
+	if (scrn & V_NOSCALESTART)
+	{
+		x >>= FRACBITS;
+		y >>= FRACBITS;
+	}
+	else
+	{
+		x = FixedMul(x,dupx<<FRACBITS);
+		y = FixedMul(y,dupy<<FRACBITS);
+		x += transform->ox * (dupx-1);
+		y += transform->oy * (dupy-1);
+		x >>= FRACBITS;
+		y >>= FRACBITS;
+
+		if (!(scrn & V_SCALEPATCHMASK)) // Center it if necessary
+			V_AdjustXYWithSnap(&x, &y, scrn, dupx, dupy);
+	}
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+	{
+		HWR_DrawAffinePatch(patch, x, y, transform, scrn, colormap);
+		return;
+	}
+#endif
+
+	Patch_GenerateFlat(patch, 0);
+	const UINT16 *src = patch->flats[0];
+	if (src == NULL)
+		return;
+
+	const fixed_t a = transform->a / dupx;
+	const fixed_t b = transform->b / dupx;
+	const fixed_t c = transform->c / dupy;
+	const fixed_t d = transform->d / dupy;
+	const fixed_t cx = transform->ox;
+	const fixed_t cy = transform->oy;
+
+	const INT32 scrwidth = vid.width;
+	const INT32 pw = patch->width, ph = patch->height;
+
+	/*
+	fixed_t determinant = FixedMul(a, d) - FixedMul(b, c);
+	if (determinant == 0)
+		return;
+	fixed_t ba = FixedDiv(d, determinant);
+	fixed_t bb = FixedDiv(-b, determinant);
+	fixed_t bc = FixedDiv(-c, determinant);
+	fixed_t bd = FixedDiv(a, determinant);
+
+	fixed_t x1 = FixedMul(ba, -cx)     + FixedMul(bb, -cy) + cx;
+	fixed_t y1 = FixedMul(bc, -cx)     + FixedMul(bd, -cy) + cy;
+	fixed_t x2 = FixedMul(ba, pw*FRACUNIT - cx) + FixedMul(bb, -cy) + cx;
+	fixed_t y2 = FixedMul(bc, pw*FRACUNIT - cx) + FixedMul(bd, -cy) + cy;
+	fixed_t x3 = FixedMul(ba, -cx)     + FixedMul(bb, ph*FRACUNIT - cy) + cx;
+	fixed_t y3 = FixedMul(bc, -cx)     + FixedMul(bd, ph*FRACUNIT - cy) + cy;
+	fixed_t x4 = FixedMul(ba, pw*FRACUNIT - cx) + FixedMul(bb, ph*FRACUNIT - cy) + cx;
+	fixed_t y4 = FixedMul(bc, pw*FRACUNIT - cx) + FixedMul(bd, ph*FRACUNIT - cy) + cy;
+	*/
+
+	UINT8 * const destbase = vid.screens[0] + y * vid.width + x;
+	INT32 dx = 0, dy = 0;
+
+	for (dy = 0; dy < ph; dy++)
+	{
+		// yoinked from NovaSquirrel's mode 7 preview
+		// ...which is in turn yoinked from Mesen's S-PPU code
+		// i can't do matrix math to save my life :face_holding_back_tears:
+		// (m7xofs and m7yofs are already factored in by destbase)
+		fixed_t ux = FixedMul(a, -cx) + FixedMul(b, -cy) + b*dy + cx;
+		fixed_t uy = FixedMul(c, -cx) + FixedMul(d, -cy) + d*dy + cy;
+		UINT8 *dest = destbase + dy * scrwidth;
+
+		for (dx = 0; dx < pw; dx++, dest++)
+		{
+			const INT32 srcx = ux >> FRACBITS;
+			const INT32 srcy = uy >> FRACBITS;
+			ux += a;
+			uy += c;
+
+			if (srcx < 0 || srcx >= pw || srcy < 0 || srcy >= ph)
+				continue;
+
+			const UINT16 pixel = src[srcy * pw + srcx];
+			if (pixel < 0xff00)
+				continue;
+
+			if (colormap != NULL)
+				*dest = colormap[pixel & 0xff];
+			else
+				*dest = (UINT8)(pixel & 0xff);
+		}
+	}
+
+	/*
+	fixed_t xsort[4] = { x1, x2, x3, x4 };
+	fixed_t ysort[4] = { y1, y2, y3, y4 };
+	qs22j(xsort, 4, sizeof(*xsort), sortcoords);
+	qs22j(ysort, 4, sizeof(*ysort), sortcoords);
+	fixed_t dx1, dx2;
+	dx1 = FixedDiv(x1 - x2, y2 - y1);
+	dx2 = FixedDiv(x1 - x3, y3 - y1);
+	fixed_t px1 = x*FRACUNIT + x1;
+	fixed_t px2 = x*FRACUNIT + x2;
+	fixed_t py = y*FRACUNIT + y1;
+	for (UINT32 i = 0; i < 10; i++)
+	{
+		for (fixed_t A = px1; A < px2; A += FRACUNIT)
+			V_DrawFixedFill(A, py + i*FRACUNIT, FRACUNIT, FRACUNIT, V_NOSCALESTART | (leveltime&0xff));
+		px1 += dx1;
+		px2 += dx2;
+	}
+	V_DrawFixedFill(x*FRACUNIT + x1, y*FRACUNIT + y1, FRACUNIT, FRACUNIT, V_NOSCALESTART | (leveltime&0xff));
+	V_DrawFixedFill(x*FRACUNIT + x2, y*FRACUNIT + y2, FRACUNIT, FRACUNIT, V_NOSCALESTART | (leveltime&0xff));
+	V_DrawFixedFill(x*FRACUNIT + x3, y*FRACUNIT + y3, FRACUNIT, FRACUNIT, V_NOSCALESTART | (leveltime&0xff));
+	V_DrawFixedFill(x*FRACUNIT + x4, y*FRACUNIT + y4, FRACUNIT, FRACUNIT, V_NOSCALESTART | (leveltime&0xff));
+	*/
+};
+
+// draws a patch rotated counter-clockwise by angle degrees
+// note that scaling is applied BEFORE rotation!
+void V_DrawRotatedPatch(fixed_t x, fixed_t y, angle_t angle, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap)
+{
+	fixed_t sa = FSIN(angle), ca = FCOS(angle);
+	affine_t t = {
+		.a = FixedDiv(ca, pscale),
+		.b = FixedDiv(-sa, pscale),
+		.c = FixedDiv(sa, vscale),
+		.d = FixedDiv(ca, vscale),
+		.ox = (patch->pivot.x + patch->leftoffset) * FRACUNIT,
+		.oy = (patch->pivot.y + patch->topoffset) * FRACUNIT,
+	};
+	V_DrawAffinePatch(x, y, &t, scrn, patch, colormap);
+}
 
 // Draws a patch scaled to arbitrary size.
 void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap)
@@ -3451,6 +3619,9 @@ INT32 V_SubStringWidth(const char *string, INT32 length, INT32 option)
 		if ((UINT8)c & 0x80) //color parsing! -Inuyasha 2.16.09
 			continue;
 
+		if (c < HU_FONTSTART)
+			continue; // this is not a proper character.
+
 		c = toupper(c) - HU_FONTSTART;
 		if (c < 0 || c >= HU_FONTSIZE || !fontv[HU_FONT].font[c])
 			lw += spacewidth;
@@ -3504,6 +3675,9 @@ INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option)
 		if ((UINT8)c & 0x80) //color parsing! -Inuyasha 2.16.09
 			continue;
 
+		if (c < HU_FONTSTART)
+			continue; // this is not a proper character.
+
 		c = toupper(c) - HU_FONTSTART;
 		if (c < 0 || c >= HU_FONTSIZE || !fontv[HU_FONT].font[c])
 			lw += spacewidth;
@@ -3555,6 +3729,9 @@ INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option)
 
 		if ((UINT8)c & 0x80) //color parsing! -Inuyasha 2.16.09
 			continue;
+
+		if (c < HU_FONTSTART)
+			continue; // this is not a proper character.
 
 		if (!lowercase || !fontv[TINY_FONT].font[c-HU_FONTSTART])
 			c = toupper(c);
@@ -3844,7 +4021,7 @@ void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors)
 
 	if (!lut->init || memcmp(lut->palette, palette, palsize))
 	{
-		INT32 i;
+		size_t i;
 
 		lut->init = true;
 		memcpy(lut->palette, palette, palsize);

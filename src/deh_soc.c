@@ -860,7 +860,7 @@ void readlevelheader(MYFILE *f, char * name)
 		if (exnum >= NEXTMAP_SPECIAL)
 			I_Error("Ran out of compatibility map slots");
 	}
-	kartmap2native[exnum-1] = num;
+	kartmap2native[exnum-1] = num+1;
 	nativemap2kart[num] = exnum-1;
 
 	if (mapheaderinfo[num]->lumpname == NULL)
@@ -1881,8 +1881,8 @@ static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ "CHOOSESKIN", &cv_chooseskin },
 	{ "DUMMYGPDIFFICULTY", &cv_dummygpdifficulty },
 	{ "DUMMYGPENCORE", &cv_dummygpencore },
-	{ "DUMMYGPCUP", &cv_dummygpcup },
 	{ "NEXTMAP", &cv_nextmap },
+	{ "NEXTCUP", &cv_nextcup },
 	{ "NEWGAMETYPE", &cv_newgametype },
 	{ "DUMMYMENUPLAYER", &cv_dummymenuplayer },
 	{ "DUMMYTEAM", &cv_dummyteam },
@@ -4155,6 +4155,8 @@ void readkartitem(MYFILE *f, kartitem_t *item)
 
 #define WARN(str, ...) deh_warning("KartResult %s: " str, result->cvar->name, __VA_ARGS__)
 #define WARN0(str) deh_warning("KartResult %s: " str, result->cvar->name)
+static CV_PossibleValue_t kartrunneraugment_cons_t[] = {{0, "MIN"}, {30000, "MAX"}, {0, NULL}};
+
 void readkartresult(MYFILE *f, kartresult_t *result)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -4215,6 +4217,51 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 		else if (fastcmp(word, "FLAGS"))
 		{
 			result->flags = get_number(word2);
+		}
+		else if (fastncmp(word, "RUNNERDISTANCE", 14))
+		{
+			const UINT8 idx = (fastcmp(word+14, "LEGACY") ? 1 : 0);
+
+			result->baserunneraug[idx] = get_number(word2);
+
+			if (result->augcvar[idx] == NULL)
+			{
+				char *cvname;
+
+				UINT16 distprefixlen = strlen(result->isalt ? "runnerdistalt" : "runnerdist");
+
+				if (idx)
+				{
+					cvname = malloc(strlen(result->cvar->name) + 9 + distprefixlen);
+					sprintf(cvname, "%s_%s_legacy", result->isalt ? "runnerdistalt" : "runnerdist", result->cvar->name);
+					strlwr(cvname);
+				}
+				else
+				{
+					cvname = malloc(strlen(result->cvar->name) + 2 + distprefixlen);
+					sprintf(cvname, "%s_%s", result->isalt ? "runnerdistalt" : "runnerdist", result->cvar->name);
+					strlwr(cvname);
+				}
+
+				consvar_t *var = Z_Calloc(sizeof(consvar_t), PU_STATIC, &result->augcvar[idx]);
+				var->name = cvname;
+
+				char *defval = malloc(5+1); // UINT16_MAX + NUL
+				snprintf(defval, 6, "%u", result->baserunneraug[idx]);
+				var->defaultvalue = defval;
+
+				var->flags = CV_NETVAR|CV_CHEAT;
+				var->PossibleValue = kartrunneraugment_cons_t;
+				var->func = NULL;
+				CV_RegisterVar(var);
+			}
+			else
+			{
+				char *defval; // uh oh! const cast!
+				memcpy(&defval, &result->augcvar[idx]->defaultvalue, sizeof(defval));
+				snprintf(defval, 6, "%u", result->baserunneraug[idx]);
+				CV_StealthSet(result->augcvar[idx], result->augcvar[idx]->defaultvalue);
+			}
 		}
 		else if (fastncmp(word, "ODDS", 4))
 		{

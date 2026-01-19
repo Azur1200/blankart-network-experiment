@@ -501,7 +501,7 @@ consvar_t cv_kartstacking_invincibility_classichandleboost = CVAR_INIT ("vanilla
 // Alternate boosts
 consvar_t cv_kartstacking_invincibility_alternatespeedboost = CVAR_INIT ("vanillaboost_invincibility_alternatespeedboost", "0.67", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_alternateaccelboost = CVAR_INIT ("vanillaboost_invincibility_alternateaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_alternatehandleboost = CVAR_INIT ("vanillaboost_invincibility_alternatehandleboost", "0.75", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_alternatehandleboost = CVAR_INIT ("vanillaboost_invincibility_alternatehandleboost", "0.45", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_invincibility_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
@@ -620,13 +620,8 @@ consvar_t cv_kartantibump = CVAR_INIT ("kartantibump", "0", CV_NETVAR|CV_CALL|CV
 // Odds distancing
 #define MAXODDSDIST ((INT32_MAX / FRACUNIT) / 2)
 static CV_PossibleValue_t distvar_cons_t[] = {{1, "MIN"}, {MAXODDSDIST, "MAX"}, {0, NULL}};
-consvar_t cv_kartoddsdist = CVAR_INIT ("kartoddsdist", "1480", CV_NETVAR|CV_CHEAT|CV_GUARD, distvar_cons_t, NULL);
-consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "1050", CV_NETVAR|CV_CHEAT|CV_GUARD, distvar_cons_t, NULL);
-
-// SPB distance
-static CV_PossibleValue_t spbdist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "5648", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
-consvar_t cv_kartlegacyspbdist = CVAR_INIT ("kartlegacyspbdist", "3324", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
+consvar_t cv_kartoddsdist = CVAR_INIT ("kartoddsdist", "1675", CV_NETVAR|CV_CHEAT|CV_GUARD, distvar_cons_t, NULL);
+consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "1500", CV_NETVAR|CV_CHEAT|CV_GUARD, distvar_cons_t, NULL);
 #undef MAXODDSDIST
 
 // SPB Rush toggle; toggles on/off the more aggressive "pressure" odds when an SPB is active
@@ -644,7 +639,7 @@ consvar_t cv_kartinvintheme = CVAR_INIT ("kartinvintheme", "Standard", CV_SAVE, 
 
 // How far the player must be from the cluster to begin frequently rolling Invincibility.
 static CV_PossibleValue_t invindist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "6800", CV_NETVAR|CV_CHEAT|CV_GUARD, invindist_cons_t, NULL);
+consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "8600", CV_NETVAR|CV_CHEAT|CV_GUARD, invindist_cons_t, NULL);
 
 consvar_t cv_kartinvindistmul = CVAR_INIT ("kartinvindistmul", "0.54", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
@@ -714,7 +709,7 @@ consvar_t cv_rollingdemos = CVAR_INIT ("rollingdemos", "On", CV_SAVE, CV_OnOff, 
 static CV_PossibleValue_t pointlimit_cons_t[] = {{1, "MIN"}, {MAXSCORE, "MAX"}, {0, "None"}, {0, NULL}};
 consvar_t cv_pointlimit = CVAR_INIT ("pointlimit", "None", CV_NETVAR|CV_CALL|CV_NOINIT, pointlimit_cons_t, PointLimit_OnChange);
 static CV_PossibleValue_t timelimit_cons_t[] = {{1, "MIN"}, {99999, "MAX"}, {0, "None"}, {0, NULL}};
-consvar_t cv_timelimit = CVAR_INIT ("timelimit", "None", CV_NETVAR|CV_CALL|CV_NOINIT, timelimit_cons_t, TimeLimit_OnChange);
+consvar_t cv_timelimit = CVAR_INIT ("timelimit", "2", CV_NETVAR|CV_CALL|CV_NOINIT, timelimit_cons_t, TimeLimit_OnChange);
 
 static CV_PossibleValue_t numlaps_cons_t[] = {{0, "MIN"}, {MAX_LAPS, "MAX"}, {-1, "Map default"}, {0, NULL}};
 consvar_t cv_numlaps = CVAR_INIT ("numlaps", "Map default", CV_NETVAR|CV_CALL|CV_CHEAT, numlaps_cons_t, NumLaps_OnChange);
@@ -824,7 +819,7 @@ boolean forceresetplayers = false;
 boolean deferencoremode = false;
 UINT8 splitscreen = 0;
 boolean circuitmap = false;
-INT32 adminplayers[MAXPLAYERS];
+INT32 adminplayers[MAXPLAYERS] = {};
 
 #define VOTEROWS ((cv_votemaxrows.value*3) + ((cv_votemaxrows.value > 1) ? (cv_votemaxrows.value - 1) : 0))
 #define VOTEROWSADDSONE ((cv_votemaxrows.value*3) + 1 + ((cv_votemaxrows.value > 1) ? (cv_votemaxrows.value - 1) : 0))
@@ -1901,7 +1896,7 @@ static void SendNameAndColor(UINT8 n)
 
 		player->skincolor = cv_playercolor[n].value;
 
-		K_KartResetPlayerColor(player, true);
+		K_KartResetPlayerColor(player);
 
 		// Update follower for local games:
 		if (cv_follower[n].value >= -1)
@@ -3289,8 +3284,7 @@ void D_PickVote(void)
 	SendNetXCmd(XD_PICKVOTE, &buf, 2);
 }
 
-static char *
-ConcatCommandArgv (int start, int end)
+static char *ConcatCommandArgv (int start, int end)
 {
 	char *final;
 
@@ -3559,6 +3553,7 @@ static void Command_Map_f(void)
 			{
 				grandprixinfo.gamespeed = (cv_kartspeed.value == KARTSPEED_AUTO ? KARTSPEED_NORMAL : cv_kartspeed.value);
 				grandprixinfo.masterbots = false;
+				grandprixinfo.lunaticmode = false;
 
 				if (option_skill)
 				{
@@ -3578,7 +3573,7 @@ static void Command_Map_f(void)
 					if (!gpdifficulty_cons_t[j].strvalue) // reached end of the list with no match
 					{
 						INT32 num = atoi(COM_Argv(option_skill + 1)); // assume they gave us a skill number, which is okay too
-						if (num >= KARTSPEED_EASY && num <= KARTGP_NIGHTMARE)
+						if (num >= KARTSPEED_EASY && num <= KARTGP_MANIAC)
 							newskill = (INT16)num;
 					}
 
@@ -3593,6 +3588,18 @@ static void Command_Map_f(void)
 						{
 							grandprixinfo.gamespeed = KARTSPEED_EXPERT;
 							grandprixinfo.masterbots = true;
+						}
+						else if (newskill == KARTGP_LUNATIC)
+						{
+							grandprixinfo.gamespeed = KARTSPEED_HARD;
+							grandprixinfo.masterbots = true;
+							grandprixinfo.lunaticmode = true;
+						}
+						else if (newskill == KARTGP_MANIAC)
+						{
+							grandprixinfo.gamespeed = KARTSPEED_EXPERT;
+							grandprixinfo.masterbots = true;
+							grandprixinfo.lunaticmode = true;
 						}
 						else
 						{
@@ -5149,7 +5156,7 @@ static void Command_Addfilelocal(void)
 	else if (nocompat)
 		compat = WC_OFF;
 
-	if (COM_Argc() != 2 + (docompat || nocompat))
+	if (COM_Argc() != 2u + (docompat || nocompat))
 	{
 		CONS_Printf(M_GetText("addfilelocal [-c|-n] <filename.pk3/wad/lua/soc>: Load local add-on\n"
 									"-c forces compatmode, -n disables it.\n"));
@@ -5194,7 +5201,7 @@ static void Command_Addfile(void)
 	else if (nocompat)
 		compat = WC_OFF;
 
-	if (argc < 2 + (docompat || nocompat))
+	if (argc < 2u + (docompat || nocompat))
 	{
 		CONS_Printf(M_GetText("addfile [-c|-n] <filename.pk3/wad/lua/soc> [filename2...]: Load add-ons\n"
 		                      "-c forces compatmode, -n disables it.\n"));

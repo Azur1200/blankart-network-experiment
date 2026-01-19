@@ -1,6 +1,6 @@
 // BLANKART
 //-----------------------------------------------------------------------------
-// Copyright (C) 2025 by NepDisk.
+// Copyright (C) 2026 by NepDisk.
 // Copyright (C) 2025 by Kart Krew.
 // Copyright (C) 2018 by ZarroTsu.
 //
@@ -430,8 +430,6 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartoddsdist);
 	CV_RegisterVar(&cv_kartlegacyoddsdist);
-	CV_RegisterVar(&cv_kartspbdist);
-	CV_RegisterVar(&cv_kartlegacyspbdist);
 
 	CV_RegisterVar(&cv_kartspbrush);
 
@@ -450,6 +448,9 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartexplosion_limitlifetime_cap);
 
 	CV_RegisterVar(&cv_writetextmap_includemappatch);
+
+	CV_RegisterVar(&cv_karteggmine_slotlock);
+	CV_RegisterVar(&cv_karteggmine_slotbrick);
 }
 
 //}
@@ -518,17 +519,7 @@ static fixed_t K_PlayerWeight(mobj_t* mobj, mobj_t* against)
 		else if ((K_GetShieldFromPlayer(against->player) == KSHIELD_BUBBLE // They have a Bubble Shield
 		 && K_GetShieldFromPlayer(mobj->player) != KSHIELD_BUBBLE)) // and you don't
 		{
-			// Check if the player is defending.
-			if (K_IsBubbleDefending(against->player))
-			{
-				// If they are, don't register a bump.
-				// TODO: Make this scale to speed(?)
-				return 0;
-			}
-			else
-			{
-				bubbleMultiplier = (FRACUNIT / 4); // 25% bump severity for uninflated Bubble Shields.
-			}
+			return 0; // This player does not cause any bump action
 		}
 		else if (invinisalt && against->player->invincibilitytimer)
 		{
@@ -2228,9 +2219,10 @@ boolean K_TripwirePass(const player_t *player)
 
 boolean K_PlayerCanPunt(const player_t *player)
 {
-	return player->invincibilitytimer > 0 || player->growshrinktimer > 0 ||
-	       (player->flamestore > 0 && K_GetShieldFromPlayer(player) == KSHIELD_FLAME) ||
-		   K_AltShrinkArrowBulletCondition(player);
+	return player->invincibilitytimer > 0 || player->growshrinktimer > 0
+	    || (player->flamestore > 0 && K_GetShieldFromPlayer(player) == KSHIELD_FLAME)
+	    || (player->bubbleblowup > 0 && K_GetShieldFromPlayer(player) == KSHIELD_BUBBLE)
+	    || K_AltShrinkArrowBulletCondition(player);
 }
 
 boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item)
@@ -2544,7 +2536,15 @@ UINT16 K_GetInvincibilityTime(player_t *player)
 		distmul = LEGACYALTINVINMUL;
 	}
 
-    fixed_t clustermul = K_InvincibilityEasing(FixedMul(player->distancefromcluster,distmul));
+	UINT32 cdist = player->distancefromcluster;
+
+	if ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode))
+	{
+		// I'm tired, boss.
+		cdist = (9 * cdist / 5);
+	}
+
+    fixed_t clustermul = K_InvincibilityEasing(FixedMul(cdist,distmul));
 	UINT16 invintics = FixedMul(BASEINVINTIME, clustermul);
 
     return max(MININVINTIME, invintics);
@@ -3234,6 +3234,9 @@ static INT32 K_GetRaceSplitsToggle(void)
 		return 0;
 	}
 
+	if (!LUA_HudEnabled(hud_lapsplits))
+		return 0;
+
 	// Not taking any chances with this stupid goddamn engine.
 	return max((INT32)(cv_racesplits.value), 1);
 }
@@ -3460,7 +3463,7 @@ void K_RemoveGrowShrink(player_t *player)
 		else if (player->growshrinktimer < 0) // Play Grow noise
 			S_StartSound(player->mo, sfx_kc5a);
 
-		K_KartResetPlayerColor(player, true);
+		K_KartResetPlayerColor(player);
 
 		player->mo->scalespeed = mapobjectscale/TICRATE;
 		player->mo->destscale = mapobjectscale;
@@ -4898,7 +4901,18 @@ void K_DoSneaker(player_t *player, INT32 type)
 
 void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound)
 {
-	const fixed_t vscale = mapobjectscale + (mo->scale - mapobjectscale);
+	fixed_t objscale = mo->scale;
+
+	if (mo->player)
+	{
+		// For smaller players: fudge the scale calculation by adding a minimum scale.
+		// In certain cases, the game will pretend they're bigger than they actually are,
+		// so the game handles springs as such.
+		// Alt. Shrink *especially* needs this change!
+		objscale = max(mo->scale, mapobjectscale);
+	}
+
+	const fixed_t vscale = mapobjectscale + (objscale - mapobjectscale);
 
 	if (mo->player && mo->player->spectator)
 		return;
@@ -7057,6 +7071,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->driftlock)
 		player->driftlock--;
 
+	K_KartResetPlayerColor(player);
+
 	// DKR style camera for boosting
 	if (player->karthud[khud_boostcam] != 0 || player->karthud[khud_destboostcam] != 0)
 	{
@@ -7171,7 +7187,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	else if (player->ringboost)
 	{
 		K_HandleRingDeincrement(player, chainingactive);
-		K_KartResetPlayerColor(player, true);
 	}
 
 	K_AirDrop(player, cmd);
@@ -7316,9 +7331,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			player->invincibilitybottleneck = 0;
 			player->invincibilitywarning = 0;
 		}
-
-		if (!player->invincibilitytimer)
-			K_KartResetPlayerColor(player,true);
 	}
 	else
 	{
@@ -7482,7 +7494,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			{
 				mobj_t *eggsexplode;
 
-				K_KartResetPlayerColor(player, true);
+				K_KartResetPlayerColor(player);
 
 				//player->flashing = 0;
 				eggsexplode = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_SPBEXPLOSION);
@@ -7629,7 +7641,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	K_UpdateSPBTimer();
 }
 
-void K_KartResetPlayerColor(player_t *player, boolean disablecolor)
+static void K_KartResetPlayerFullbright(player_t *player)
 {
 	boolean fullbright = false;
 
@@ -7638,9 +7650,6 @@ void K_KartResetPlayerColor(player_t *player, boolean disablecolor)
 
 	if (player->mo->health <= 0 || player->playerstate == PST_DEAD) // Override everything
 	{
-		player->mo->colorized = (player->dye != 0);
-		player->mo->color = player->dye ? player->dye : player->skincolor;
-
 		goto finalise;
 	}
 
@@ -7653,15 +7662,11 @@ void K_KartResetPlayerColor(player_t *player, boolean disablecolor)
 		}
 		else if (player->eggmanexplode % flashtime == 0)
 		{
-			player->mo->colorized = true;
-			player->mo->color = SKINCOLOR_BLACK;
 			fullbright = true;
 			goto finalise;
 		}
 		else
 		{
-			player->mo->colorized = true;
-			player->mo->color = SKINCOLOR_CRIMSON;
 			fullbright = true;
 			goto finalise;
 		}
@@ -7669,24 +7674,9 @@ void K_KartResetPlayerColor(player_t *player, boolean disablecolor)
 
 	if (player->invincibilitytimer || player->powers[pw_invulnerability]) // You're gonna kiiiiill
 	{
-		boolean skip = false;
-
 		if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
 		{
 			fullbright = true;
-
-			player->mo->color = K_RainbowColor(leveltime / 2);
-
-			if (player->invincibilitytimer)
-			{
-				player->mo->colorized = true;
-			}
-
-			skip = true;
-        }
-
-		if (skip)
-		{
 			goto finalise;
 		}
 	}
@@ -7708,34 +7698,11 @@ void K_KartResetPlayerColor(player_t *player, boolean disablecolor)
 			fullbright = true;
 			goto finalise;
 		}
-		else
-		{
-			player->mo->colorized = (player->dye != 0);
-			player->mo->color = player->dye ? player->dye : player->skincolor;
-			goto finalise;
-		}
 	}
 
-	if (player->ringboost)
+	if (player->ringboost && (leveltime & 1)) // ring boosting
 	{
-		if (leveltime & 1) // ring boosting
-		{
-			player->mo->colorized = true;
-			fullbright = true;
-			goto finalise;
-		}
-		else
-		{
-			player->mo->colorized = (player->dye != 0);
-			player->mo->color = player->dye ? player->dye : player->skincolor;
-			goto finalise;
-		}
-	}
-
-	if (disablecolor || player->dye)
-	{
-		player->mo->colorized = (player->dye != 0);
-		player->mo->color = player->dye ? player->dye : player->skincolor;
+		fullbright = true;
 		goto finalise;
 	}
 
@@ -7757,9 +7724,93 @@ finalise:
 	}
 }
 
+void K_KartResetPlayerColor(player_t *player)
+{
+	if (!player->mo || P_MobjWasRemoved(player->mo)) // Can't do anything
+		return;
+
+	if (player->mo->health <= 0 || player->playerstate == PST_DEAD) // Override everything
+	{
+		player->mo->colorized = (player->dye != 0);
+		player->mo->color = player->dye ? player->dye : player->skincolor;
+		return;
+	}
+
+	if (player->eggmanexplode) // You're gonna diiiiie
+	{
+		const INT32 flashtime = 4<<(player->eggmanexplode/TICRATE);
+		if (player->eggmanexplode % (flashtime/2) != 0)
+		{
+			;
+		}
+		else if (player->eggmanexplode % flashtime == 0)
+		{
+			player->mo->colorized = true;
+			player->mo->color = SKINCOLOR_BLACK;
+			return;
+		}
+		else
+		{
+			player->mo->colorized = true;
+			player->mo->color = SKINCOLOR_CRIMSON;
+			return;
+		}
+	}
+
+	if (player->invincibilitytimer || player->powers[pw_invulnerability]) // You're gonna kiiiiill
+	{
+		boolean skip = false;
+
+		if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
+		{
+			player->mo->color = K_RainbowColor(leveltime / 2);
+
+			if (player->invincibilitytimer)
+			{
+				player->mo->colorized = true;
+			}
+
+			skip = true;
+        }
+
+		if (skip)
+		{
+			return;
+		}
+	}
+
+	if (player->growshrinktimer) // Ditto, for grow/shrink
+	{
+		if (K_AltShrinkArrowBulletCondition(player))
+		{
+			// Arrow Bullet!
+			player->mo->colorized = true;
+			player->mo->color = SKINCOLOR_CREAMSICLE;
+			return;
+		}
+		else if (player->growshrinktimer % 5 == 0)
+		{
+			player->mo->colorized = true;
+			player->mo->color = player->growshrinktimer < 0 ? SKINCOLOR_CREAMSICLE : SKINCOLOR_PERIWINKLE;
+			return;
+		}
+	}
+
+	if (player->ringboost && (leveltime & 1)) // ring boosting
+	{
+		player->mo->colorized = true;
+		return;
+	}
+	else
+	{
+		player->mo->colorized = (player->dye != 0);
+		player->mo->color = player->dye ? player->dye : player->skincolor;
+	}
+}
+
 void K_KartPlayerAfterThink(player_t *player)
 {
-	K_KartResetPlayerColor(player, false);
+	K_KartResetPlayerFullbright(player);
 
 	// Move held objects (Bananas, Orbinaut, etc)
 	K_MoveHeldObjects(player);
@@ -9668,7 +9719,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 		player->invincibilitybottleneck = (UINT16)(-1);  // No bottlenecking!
 		return 0;
 	}
-	else if ((pingame == 3))
+	else if (pingame == 3)
 	{
 		// "Second place" in this case is actually second to last.
 		// In very small lobbies, it's harder for players to cluster together.
@@ -10414,7 +10465,7 @@ void K_StripOther(player_t *player)
 		player->eggmanexplode = 0;
 		player->eggmanblame = -1;
 
-		K_KartResetPlayerColor(player, true);
+		K_KartResetPlayerColor(player);
 	}
 }
 
@@ -11006,7 +11057,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	{
 		K_SpawnDashDustRelease(player, false);
 		S_StartSound(player->mo, sfx_s23c);
-		player->walltransferboost += 15;
+		player->walltransferboost = 15;
 		player->walltransfered = false;
 	}
 

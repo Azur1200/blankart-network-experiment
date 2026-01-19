@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Copyright (C) 2025 by Classic Development Team.
 // Copyright (C) 2014-2020 by Sonic Team Junior.
-// Copyright (C) 2025 Blankart Team.
+// Copyright (C) 2026 Blankart Team.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -12,6 +12,8 @@
 /// \brief OpenAL interface for sound
 
 #ifdef HAVE_OPENAL
+
+#include <tracy/tracy/TracyC.h>
 
 #ifdef HAVE_GME
 #ifdef HAVE_ZLIB
@@ -389,6 +391,7 @@ static sf_count_t SecondsToSamples(float seconds, int sampleRate) {
 
 static boolean I_QueueNextSample(boolean unqueue)
 {
+	TracyCZone(__zone, true);
 	static INT16 *stream = NULL;
 	ALenum format = AL_FORMAT_MONO16;
 
@@ -462,17 +465,27 @@ static boolean I_QueueNextSample(boolean unqueue)
 	else
 	{
 		CONS_Alert(CONS_ERROR, "Music is active, but no source is available\n");
+		TracyCZoneEnd(__zone);
 		return false;
 	}
 
 	if (unqueue && !TRY(alSourceUnqueueBuffers, audio.music, 1, &audio.musicbuffers[audio.bufferindex]))
+	{
+		TracyCZoneEnd(__zone);
 		return false;
+	}
 
 	if (!TRY(alBufferData, audio.musicbuffers[audio.bufferindex], format, stream, count, samplerate))
+	{
+		TracyCZoneEnd(__zone);
 		return false;
+	}
 
 	if (!TRY(alSourceQueueBuffers, audio.music, 1, &audio.musicbuffers[audio.bufferindex]))
+	{
+		TracyCZoneEnd(__zone);
 		return false;
+	}
 
 	audio.bufferindex = (audio.bufferindex + 1) % BUFFERCOUNT;
 
@@ -480,14 +493,17 @@ static boolean I_QueueNextSample(boolean unqueue)
 	if (count == 0 && !audio.looping)
 	{
 		I_StopSong();
+		TracyCZoneEnd(__zone);
 		return false;
 	}
 
+	TracyCZoneEnd(__zone);
 	return true;
 }
 
 static void UpdateSound(audiostate_t *aud)
 {
+	TracyCZone(__zone, true);
 	if (aud->music != INVALID_HANDLE)
 	{
 		ALint processed;
@@ -501,6 +517,7 @@ static void UpdateSound(audiostate_t *aud)
 				if (!I_QueueNextSample(false))
 				{
 					I_UnloadSong();
+					TracyCZoneEnd(__zone);
 					return;
 				}
 			}
@@ -508,14 +525,21 @@ static void UpdateSound(audiostate_t *aud)
 			TRY(alSourcePlay, aud->music);
 
 			aud->startplay = false;
+			TracyCZoneEnd(__zone);
 			return;
 		}
 
 		if (!TRY(alGetSourcei, aud->music, AL_BUFFERS_PROCESSED, &processed))
+		{
+			TracyCZoneEnd(__zone);
 			return;
+		}
 
 		if (!TRY(alGetSourcei, aud->music, AL_BUFFERS_QUEUED, &queued))
+		{
+			TracyCZoneEnd(__zone);
 			return;
+		}
 
 		// semi-hack because this is sometimes not called for a longer period of time
 		boolean need_restart = processed == BUFFERCOUNT;
@@ -528,6 +552,7 @@ static void UpdateSound(audiostate_t *aud)
 		if (need_restart)
 			TRY(alSourcePlay, aud->music);
 	}
+	TracyCZoneEnd(__zone);
 }
 
 void I_UpdateSound(void)
@@ -547,7 +572,9 @@ void I_UpdateSound(void)
 
 static void AudioThread(void *userdata)
 {
+	TracyCZone(__zone, true);
 	(void)userdata;
+
 
 	while (true)
 	{
@@ -559,21 +586,21 @@ static void AudioThread(void *userdata)
 			if (audio.shutdown)
 			{
 				audio.shutdown = false;
+				TracyCZoneEnd(__zone);
 				return;
 			}
 			UpdateSound(&audio);
 		}
 	}
+	TracyCZoneEnd(__zone);
 }
 
-static char *ds2chunk(void *stream, size_t *len, size_t *samplerate)
+static char *ds2chunk(const void *stream, size_t *len, size_t *samplerate)
 {
 	UINT16 ver, freq;
 	UINT32 samples, i;
 	UINT8 *sound;
 
-	SINT8 *s;
-	INT16 *d;
 	INT16 o;
 
 	// lump header
@@ -593,8 +620,8 @@ static char *ds2chunk(void *stream, size_t *len, size_t *samplerate)
 
 	sound = Z_Malloc(samples<<2, PU_SOUND, NULL); // samples * frequency shift * bytes per sample * channels
 
-	s = (SINT8 *)stream;
-	d = (INT16 *)sound;
+	const SINT8 *s = stream;
+	UINT8 *d = sound;
 
 	i = 0;
 
@@ -602,11 +629,11 @@ static char *ds2chunk(void *stream, size_t *len, size_t *samplerate)
 	while (i++ < samples)
 	{
 		o = ((INT16)(*s++)+0x80)<<8; // changed signedness and shift up to 16 bits
-		*d++ = o; // left channel
-		*d++ = o; // right channel
+		WRITEINT16(d, o); // left channel
+		WRITEINT16(d, o); // right channel
 	}
 
-	*len = (UINT8 *)d-sound;
+	*len = d - sound;
 	return (char *)sound;
 }
 

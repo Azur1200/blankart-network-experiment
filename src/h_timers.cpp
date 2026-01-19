@@ -208,6 +208,7 @@ void K_DisplayItemTimers(void)
 {
 	if (!cv_itemtimers.value) return;
 	// nooope
+	if (!LUA_HudEnabled(hud_itemtimers)) return;
 	if (stplyr->mo == NULL || P_MobjWasRemoved(stplyr->mo)) return;
 	// I love and hate you C++
 	std::vector<itimer_t> timers = 
@@ -371,7 +372,7 @@ void K_DisplayItemTimers(void)
 		INT32 itemx = 0, itemy = 0;
 		INT32 flags = 0;
 		INT32 stepx = 25;
-		INT32 viewnum = R_GetViewNumber();
+		//INT32 viewnum = R_GetViewNumber();
 
 		drawinfo_t info;
 		K_getTimersDrawinfo(&info);
@@ -380,8 +381,8 @@ void K_DisplayItemTimers(void)
 		flags = info.flags;
 
 		// Move it up to account for viewpoint text
-		if (cv_showviewpointtext.value && !demo.title && !P_IsLocalPlayer(stplyr) && !camera[viewnum].freecam && !r_splitscreen)
-			itemy -= 12;
+		//if (cv_showviewpointtext.value && !demo.title && !P_IsLocalPlayer(stplyr) && !camera[viewnum].freecam && !r_splitscreen)
+			//itemy -= 12;
 
 		// flags |= V_HUDTRANS;
 

@@ -419,6 +419,7 @@ TYPEDEF (taggroup_t);
 // v_video.h
 TYPEDEF (colorlookup_t);
 TYPEDEF (cliprect_t);
+TYPEDEF (affine_t);
 
 // w_wad.h
 TYPEDEF (filelump_t);

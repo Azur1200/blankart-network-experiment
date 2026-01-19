@@ -32,6 +32,7 @@ extern struct grandprixinfo
 	UINT8 gamespeed;		///< Copy of gamespeed, just to make sure you can't cheat it with cvars
 	boolean encore;			///< Ditto, but for encore mode
 	boolean masterbots;		///< If true, all bots should be max difficulty (Master Mode)
+	boolean lunaticmode;	///< If true, make this GP especially difficult (Lunatic Mode)
 	boolean initalize;		///< If true, we need to initialize a new session.
 	boolean wonround;		///< If false, then we retry the map instead of going to the next.
 	UINT8 eventmode;		///< See GPEVENT_ constants

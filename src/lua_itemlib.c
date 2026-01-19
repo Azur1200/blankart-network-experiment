@@ -1,6 +1,6 @@
 // BLANKART
 //-----------------------------------------------------------------------------
-// Copyright (C) 2025 by BlanKart Team.
+// Copyright (C) 2026 by BlanKart Team.
 // Copyright (C) 2014-2025 by Sonic Team Junior.
 // Copyright (C) 2016 by John "JTE" Muniz.
 //

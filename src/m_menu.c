@@ -4,7 +4,7 @@
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 // Copyright (C) 2011-2016 by Matthew "Kaito Sinclaire" Walsh.
 // Copyright (C) 1999-2025 by Sonic Team Junior.
-// Copyright (C) 2025 by Team BlanKart.
+// Copyright (C) 2026 by Team BlanKart.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -215,6 +215,7 @@ typedef struct
 {
 	char header[MAXMAPNAME];
 	boolean wide;
+	UINT16 cupid;
 	UINT8 numcolumns;
 	levelselectmap_t maps[MAPSPERROW];
 } levelselectrow_t;
@@ -225,24 +226,29 @@ static struct levelselect_t
 	UINT8 column;
 	UINT8 highlight;
 	INT32 namescroll;
+	fixed_t offsetx, offsety;
 
+	INT16 randomrow, randomcol;
+	INT16 returnto;
 	INT16 firstmenuitem, lastmenuitem;
+	tic_t selectdelay;
 
 	UINT8 numrows;
 	levelselectrow_t *rows;
 } levelselect = {0};
 
-static fixed_t lsoffsx, lsoffsy;
-
-#define lshwidth 80
-#define lshseperation (lshwidth - 25)
-#define lsbasevseperation 48
+#define lsmapwidth 80
+#define lsmapheight 50
+#define lsmapnameheight 8
+#define lshseperation (lsmapwidth - 25)
+#define lshseperationcup (lsmapwidth/2 + 2)
+#define lsbasevseperation (3*(lsmapheight + lsmapnameheight)/4 + 1)
 #define lsheadingheight 28
 #define getheadingoffset(row) (levelselect.rows[row].header[0] ? lsheadingheight : 0)
 #define lsvseperation(row) (lsbasevseperation + getheadingoffset(row))
 
-#define lsbasex (160 - (lshwidth + lshseperation*(MAPSPERROW-1))/2)
-#define lsbasey (44+lsheadingheight)
+#define lsbasex (BASEVIDWIDTH/2 - lshseperation*(MAPSPERROW-1)/2)
+#define lsbasey (BASEVIDHEIGHT/2 - 2)
 
 // Sky Room
 static char *M_GetConditionString(condition_t cond);
@@ -265,6 +271,7 @@ static void M_ChangecontrolResponse(event_t *ev);
 
 // Consvar onchange functions
 static void Nextmap_OnChange(void);
+static void Nextcup_OnChange(void);
 static void Levelplatter_OnChange(void);
 static void Dummymenuplayer_OnChange(void);
 static void Dummystaff_OnChange(void);
@@ -397,18 +404,32 @@ static UINT32 M_ServersPerPage(void)
 	return (UINT32)spp;
 }
 
+// TODO: port cup->realname
+static const char *CupName(const cupheader_t *cup, boolean suffix)
+{
+	const char *name = strchr(cup->name, '_');
+	if (name != NULL)
+		name++;
+	else
+		name = cup->name;
+
+	// extra cursed so you really want to remove this hack!
+	char *s = va("%s", name);
+	char *ret = s;
+	while (*s++ != '\0')
+		if (*s == '_')
+			*s = ' ';
+	return suffix ? strcat(ret, " Cup") : ret;
+}
+
 // ==========================================================================
 // CONSOLE VARIABLES AND THEIR POSSIBLE VALUES GO HERE.
 // ==========================================================================
 
 consvar_t cv_showfocuslost = CVAR_INIT ("showfocuslost", "Yes", CV_SAVE, CV_YesNo, NULL);
 
-static CV_PossibleValue_t map_cons_t[] = {
-	{0,"MIN"},
-	{NEXTMAP_SPECIAL, "MAX"}, // TODO: kill nextmap (can't do that i'm afraid!)
-	{0, NULL}
-};
-consvar_t cv_nextmap = CVAR_INIT ("nextmap", "0", CV_HIDEN|CV_CALL|CV_NOINIT, map_cons_t, Nextmap_OnChange);
+consvar_t cv_nextmap = CVAR_INIT ("nextmap", "0", CV_HIDEN|CV_CALL|CV_NOINIT, CV_Unsigned, Nextmap_OnChange);
+consvar_t cv_nextcup = CVAR_INIT ("nextcup", "0", CV_HIDEN|CV_CALL|CV_NOINIT, CV_Unsigned, Nextcup_OnChange);
 
 static CV_PossibleValue_t skins_cons_t[] = {{0, "MIN"}, {MAXSKINS, "MAX"}, {0, NULL}};
 consvar_t cv_chooseskin = CVAR_INIT ("chooseskin", "0", CV_HIDEN, skins_cons_t, NULL);
@@ -435,16 +456,16 @@ CV_PossibleValue_t gametype_cons_t[NUMGAMETYPES+1];
 consvar_t cv_newgametype = CVAR_INIT ("newgametype", "Race", CV_HIDEN|CV_CALL|CV_NOINIT, gametype_cons_t, Levelplatter_OnChange);
 
 enum {
-	LEVELSORT_ID,
-	LEVELSORT_NAME,
-	LEVELSORT_CUP,
 	LEVELSORT_FILE,
+	LEVELSORT_NAME,
+	LEVELSORT_ID,
+	LEVELSORT_CUP, // MUST BE LAST because of hack in MR_PrepareLevelPlatter
 };
 static CV_PossibleValue_t levelsort_cons_t[] = {
-	{LEVELSORT_ID,   "Order Added"},
-	{LEVELSORT_NAME, "Name"},
-	{LEVELSORT_CUP,  "Cup"},
 	{LEVELSORT_FILE, "Addon"},
+	{LEVELSORT_NAME, "Name"},
+	{LEVELSORT_ID,   "Order Added"},
+	{LEVELSORT_CUP,  "Cup"},
 	{0, NULL}
 };
 consvar_t cv_levelsort = CVAR_INIT ("levelsort", "Addon", CV_HIDEN|CV_CALL|CV_NOINIT, levelsort_cons_t, Levelplatter_OnChange);
@@ -496,11 +517,8 @@ consvar_t cv_dummyspectate = CVAR_INIT ("dummyspectate", "Spectator", CV_HIDEN, 
 consvar_t cv_dummyscramble = CVAR_INIT ("dummyscramble", "Random", CV_HIDEN, dummyscramble_cons_t, NULL);
 consvar_t cv_dummystaff = CVAR_INIT ("dummystaff", "0", CV_HIDEN|CV_CALL, dummystaff_cons_t, Dummystaff_OnChange);
 
-static CV_PossibleValue_t dummygpcup_cons_t[500] = {{1, "TEMP"}}; // A REALLY BIG NUMBER, SINCE THIS IS TEMP UNTIL NEW MENUS
-
 consvar_t cv_dummygpdifficulty = CVAR_INIT ("dummygpdifficulty", "Normal", CV_HIDEN, gpdifficulty_cons_t, NULL);
 consvar_t cv_dummygpencore = CVAR_INIT ("dummygpencore", "Off", CV_HIDEN, CV_OnOff, NULL);
-consvar_t cv_dummygpcup = CVAR_INIT ("dummygpcup", "TEMP", CV_HIDEN, dummygpcup_cons_t, NULL);
 
 static CV_PossibleValue_t dummymultiplayer_cons_t[] = {{0, "MIN"}, {3, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t dummyfollower_cons_t[] = {{-1, "MIN"}, {MAXFOLLOWERS, "MAX"}, {0, NULL}};
@@ -579,7 +597,7 @@ inline static void M_GetGametypeColor(void)
 			break;
 		}
 
-	if (usenewgametype)
+	if (usenewgametype && levellistmode != LLM_CUPSELECT)
 		gt = cv_newgametype.value;
 	else if (!Playing())
 	{
@@ -661,7 +679,7 @@ void M_UpdateNumServerPages(void)
 // (there's only a couple anyway)
 
 // Prototypes
-static boolean M_UpdateLevelPlatter(void);
+static void M_UpdateLevelPlatter(void);
 
 #define ADD(cv, str) \
 if (cv.value) \
@@ -694,6 +712,18 @@ static void Nextmap_OnChange(void)
 	// Update the string in the consvar.
 	Z_Free(cv_nextmap.zstring);
 	cv_nextmap.string = cv_nextmap.zstring = cv_nextmap.value ? G_BuildMapTitle(cv_nextmap.value) : Z_StrDup("Random");
+}
+
+static void Nextcup_OnChange(void)
+{
+	cupheader_t *cup;
+	for (cup = kartcupheaders; cup != NULL; cup = cup->next)
+		if (cup->id == cv_nextcup.value-1)
+			break;
+
+	// Update the string in the consvar.
+	Z_Free(cv_nextcup.zstring);
+	cv_nextcup.string = cv_nextcup.zstring = cv_nextcup.value ? Z_StrDup(CupName(cup, true)) : Z_StrDup("Random");
 }
 
 static void Dummymenuplayer_OnChange(void)
@@ -1631,7 +1661,7 @@ boolean M_Responder(event_t *ev)
 
 		case KEY_LEFTARROW:
 		case KEY_RIGHTARROW:
-			if (!item || !(item->cvar || item->status & IT_ARROWS) || item->cvar == &cv_nextmap)
+			if (!item || !(item->cvar || item->status & IT_ARROWS) || item->cvar == &cv_nextmap || item->cvar == &cv_nextcup)
 				return true;
 
 			if (M_WipeBuffer(ch, item->cvar ? (item->cvar->flags & CV_CALL ? MR_Dummy : NULL) : item->routine))
@@ -1663,7 +1693,7 @@ boolean M_Responder(event_t *ev)
 			}
 
 			INT32 argument = item->argument;
-			if (item->cvar && item->cvar != &cv_nextmap)
+			if (item->cvar && item->cvar != &cv_nextmap && item->cvar != &cv_nextcup)
 				argument = item->cvar->value;
 
 			if (item->submenu)
@@ -1682,6 +1712,8 @@ boolean M_Responder(event_t *ev)
 			}
 			else if (item->cvar && item->cvar->PossibleValue) // not for string cvars!
 			{
+				if (item->cvar == &cv_nextmap || item->cvar == &cv_nextcup)
+					return true;
 				if (item->cvar->flags & CV_CALL && M_WipeBuffer(ch, MR_Dummy))
 					return true;
 				S_StartSound(NULL, sfx_menu1);
@@ -1720,6 +1752,7 @@ boolean M_Responder(event_t *ev)
 			 || item->cvar == &cv_chooseskin
 			 || item->cvar == &cv_dummystaff
 			 || item->cvar == &cv_nextmap
+			 || item->cvar == &cv_nextcup
 			 || item->cvar == &cv_newgametype
 			 || item->cvar == &cv_dummymultiplayer)
 				return true;
@@ -1995,6 +2028,27 @@ static boolean M_CheckNextMap(menutype_t menunum)
 	return true;
 }
 
+// ditto, but for cv_nextcup
+static boolean M_CheckNextCup(menutype_t menunum)
+{
+	INT32 i;
+	menu_t *menudef = &menudefs[menunum];
+	for (i = 0; i < menudef->numitems; i++)
+		if (menudef->menuitems[i].cvar == &cv_nextcup)
+			break;
+
+	if (i == menudef->numitems)
+		return true;
+
+	if (kartcupheaders == NULL)
+		return false;
+
+	if (cv_nextcup.value == 0)
+		CV_SetValue(&cv_nextcup, kartcupheaders->id + 1);
+
+	return true;
+}
+
 static void M_UpdateTimeAttackMenu(void)
 {
 	// see also p_setup.c's P_LoadRecordGhosts
@@ -2070,6 +2124,7 @@ static void M_SetupNextMenu(menutype_t menunum, boolean callexit)
 		M_UpdateTimeAttackMenu();
 
 	M_CheckNextMap(menunum);
+	M_CheckNextCup(menunum);
 }
 
 // pop the active menu from the stack
@@ -2211,6 +2266,15 @@ void M_Ticker(void)
 #endif
 
 	levelselect.namescroll++;
+	if (levelselect.selectdelay > 0 && --levelselect.selectdelay == 0)
+	{
+		if (menustack[1] == MN_MPAUSE)
+			MR_ChangeLevel(0);
+		else if (menustack[1] == MN_SP_GRANDPRIX)
+			MR_StartGrandPrix(0);
+		else
+			M_ExitMenu();
+	}
 
 	CL_TimeoutServerList();
 }
@@ -2221,6 +2285,7 @@ void M_Ticker(void)
 void M_Init(void)
 {
 	CV_RegisterVar(&cv_nextmap);
+	CV_RegisterVar(&cv_nextcup);
 	CV_RegisterVar(&cv_newgametype);
 	CV_RegisterVar(&cv_levelsort);
 	CV_RegisterVar(&cv_chooseskin);
@@ -2244,7 +2309,6 @@ void M_Init(void)
 
 	CV_RegisterVar(&cv_dummygpdifficulty);
 	CV_RegisterVar(&cv_dummygpencore);
-	CV_RegisterVar(&cv_dummygpcup);
 
 	CV_RegisterVar(&cv_dummymultiplayer);
 	CV_RegisterVar(&cv_dummyip);
@@ -2585,7 +2649,7 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 			w = V_StringWidth(str, vflags);
 			V_DrawString(BASEVIDWIDTH - x - soffset - w, y, (warning ? warningflags : highlightflags)|vflags, str);
 
-			if (selected && cv != &cv_nextmap)
+			if (selected && cv != &cv_nextmap && cv != &cv_nextcup)
 			{
 				vflags &= ~(V_FLIP|V_PARAMMASK);
 				V_DrawCharacter(BASEVIDWIDTH - x - soffset - 10 - w - (skullAnimCounter/5), y,
@@ -2843,7 +2907,9 @@ void MD_DrawGenericMenu(void)
 		{
 			patch_t *patch;
 			fixed_t scale = M_GetMapThumbnail(cv_nextmap.value - 1, &patch);
-			V_DrawSciencePatch((BASEVIDWIDTH - 80 - currentMenu->x)*FRACUNIT, (10 + scrolly + M_GetItemAbsY(currentMenu, i))*FRACUNIT, 0, patch, scale/4);
+			V_DrawSciencePatch((BASEVIDWIDTH - FixedMul(patch->width, scale/4) - currentMenu->x)*FRACUNIT,
+			                  (scrolly + M_GetItemAbsY(currentMenu, i) + 35 - FixedMul(patch->height, scale/8))*FRACUNIT,
+			                  0, patch, scale/4);
 			break;
 		}
 
@@ -2990,40 +3056,6 @@ static void M_PatchSkinNameTable(void)
 	return;
 }
 
-//
-// M_PrepareCupList
-//
-static boolean M_PrepareCupList(void)
-{
-	cupheader_t *cup = kartcupheaders;
-	INT32 i = 0;
-
-	memset(dummygpcup_cons_t, 0, sizeof (dummygpcup_cons_t));
-
-	if (cup == NULL)
-		return false;
-
-	while (cup != NULL)
-	{
-		dummygpcup_cons_t[i].strvalue = cup->name;
-		dummygpcup_cons_t[i].value = i+1;
-		// this will probably crash or do something stupid at over 50 cups,
-		// but this is all behavior that gets completely overwritten in new-menus, so I'm not worried
-		i++;
-		cup = cup->next;
-	}
-
-	for (; i < 50; i++)
-	{
-		dummygpcup_cons_t[i].strvalue = NULL;
-		dummygpcup_cons_t[i].value = 0;
-	}
-
-	CV_SetValue(&cv_dummygpcup, 1); // This causes crash sometimes?!
-
-	return true;
-}
-
 static INT32 M_GetLevelListTOL(void)
 {
 	switch (levellistmode)
@@ -3081,6 +3113,9 @@ static boolean M_CanShowLevelOnPlatter(INT32 mapnum)
 
 			return true;
 
+		case LLM_CUPSELECT:
+			return true;
+
 		case LLM_TIMEATTACK:
 		case LLM_ITEMBREAKER:
 			if (mapheaderinfo[mapnum]->menuflags & LF2_NOTIMEATTACK)
@@ -3107,6 +3142,12 @@ static boolean M_CanShowLevelOnPlatter(INT32 mapnum)
 		default:
 			return false;
 	}
+}
+
+static boolean M_CanShowCupOnPlatter(const cupheader_t *cup)
+{
+	(void)cup;
+	return true;
 }
 
 typedef int (qsort_f)(const void *, const void *);
@@ -3156,6 +3197,22 @@ static int Levelsort_File(const void *a, const void *b)
 	return mapheaderinfo[m1]->lumpnum - mapheaderinfo[m2]->lumpnum;
 }
 
+static int Cupsort_Name(const void *a, const void *b)
+{
+	const cupheader_t *c1 = *(const cupheader_t **)a, *c2 = *(const cupheader_t **)b;
+	CLEANUP(pfree) char *name1 = strdup(CupName(c1, false)), *name2 = strdup(CupName(c2, false));
+	int c = strcmp(name1, name2);
+	return c != 0 ? c : c1->id - c2->id;
+}
+
+static int Cupsort_File(const void *a, const void *b)
+{
+	const cupheader_t *c1 = *(const cupheader_t **)a, *c2 = *(const cupheader_t **)b;
+	// can't get the full lump number from within dehacked.c, this will do...
+	int w = c1->wadnum - c2->wadnum;
+	return w != 0 ? w : c1->id - c2->id;
+}
+
 static qsort_f *levelsortfuncs[] = {
 	[LEVELSORT_ID] = NULL,
 	[LEVELSORT_NAME] = Levelsort_Name,
@@ -3163,22 +3220,11 @@ static qsort_f *levelsortfuncs[] = {
 	[LEVELSORT_FILE] = Levelsort_File,
 };
 
-// TODO: port cup->realname
-static const char *CupName(cupheader_t *cup)
-{
-	char *name = strchr(cup->name, '_');
-	if (name != NULL)
-		name++;
-	else
-		name = cup->name;
-
-	// extra cursed so you really want to remove this hack!
-	char *s = name = va("%s", name);
-	while (*s++ != '\0')
-		if (*s == '_')
-			*s = ' ';
-	return strcat(name, " Cup");
-}
+static qsort_f *cupsortfuncs[] = {
+	[LEVELSORT_ID] = NULL,
+	[LEVELSORT_NAME] = Cupsort_Name,
+	[LEVELSORT_FILE] = Cupsort_File,
+};
 
 static boolean M_MakeLevelSelectHeader(levelselectrow_t *row, mapheader_t *prev, mapheader_t *iter)
 {
@@ -3188,7 +3234,7 @@ static boolean M_MakeLevelSelectHeader(levelselectrow_t *row, mapheader_t *prev,
 	{
 	case LEVELSORT_CUP:
 		if (iter == NULL || prev->cup != iter->cup)
-			header = prev->cup == NULL ? "Unsorted" : CupName(prev->cup);
+			header = prev->cup == NULL ? "Unsorted" : CupName(prev->cup, true);
 		break;
 	case LEVELSORT_FILE:
 		if (iter == NULL || WADFILENUM(prev->lumpnum) != WADFILENUM(iter->lumpnum))
@@ -3208,33 +3254,131 @@ static boolean M_MakeLevelSelectHeader(levelselectrow_t *row, mapheader_t *prev,
 	return header != NULL && strlcpy(row->header, header, sizeof(row->header));
 }
 
+// a nice cup of tea, perhaps?
+static void M_UpdateLevelPlatterCups(void)
+{
+	INT32 i, j;
+	cupheader_t *cup;
+	levelselectrow_t *lsrow;
+	cupheader_t *sortedcups[UINT16_MAX]; // cope!
+	UINT16 numsortedcups = 0;
+
+	for (cup = kartcupheaders; cup != NULL; cup = cup->next)
+		if (M_CanShowCupOnPlatter(cup))
+			sortedcups[numsortedcups++] = cup;
+
+	if (cupsortfuncs[cv_levelsort.value] != NULL)
+		qs22j(sortedcups, numsortedcups, sizeof(*sortedcups), cupsortfuncs[cv_levelsort.value]);
+
+	for (i = 0; i < numsortedcups; i++)
+	{
+		cup = sortedcups[i];
+		levelselect.rows = Z_Realloc(levelselect.rows, ++levelselect.numrows*sizeof(levelselectrow_t), PU_STATIC, NULL);
+		lsrow = &levelselect.rows[levelselect.numrows-1];
+		memset(lsrow, 0, sizeof(*lsrow));
+
+		lsrow->cupid = cup->id;
+		lsrow->wide = true;
+
+		if (cv_levelsort.value == LEVELSORT_FILE && (i == 0 || cup->wadnum != sortedcups[i-1]->wadnum))
+		{
+			const char *wadname = wadfiles[cup->wadnum]->filename;
+			const char *header = strrchr(wadname, *PATHSEP);
+			if (header != NULL)
+				header++;
+			else
+				header = wadname;
+			strlcpy(lsrow->header, header, sizeof(lsrow->header));
+		}
+
+		for (j = 0; j < cup->numlevels; j++)
+		{
+			if (lsrow->numcolumns >= MAPSPERROW)
+				break;
+
+			levelselectmap_t *lsmap = &lsrow->maps[lsrow->numcolumns++];
+			INT16 mapnum = cup->cachedlevels[j];
+
+			lsmap->mapnum = mapnum; // putting the map on the platter
+			lsmap->available = M_LevelAvailableOnPlatter(mapnum);
+			lsmap->color = 159;
+
+			// individual map name
+			if (lsmap->available)
+			{
+				char* mapname = G_BuildMapTitle(mapnum+1);
+				strcpy(lsmap->mapname, mapname);
+				Z_Free(mapname);
+			}
+			else
+			{
+				strcpy(lsmap->mapname, "???");
+			}
+		}
+	}
+
+	if (levelselect.row >= levelselect.numrows)
+		levelselect.row = levelselect.numrows - 1;
+
+	// dumbass hack until menu frames
+	levelselect.firstmenuitem = 0;
+	for (i = 0; i < menudefs[MN_CHANGELEVEL].numitems; i++)
+	{
+		if (!M_ItemSelectable(&menudefs[MN_CHANGELEVEL].menuitems[i]))
+			continue;
+		levelselect.firstmenuitem = i;
+		break;
+	}
+	levelselect.lastmenuitem = menudefs[MN_CHANGELEVEL].numitems-1;
+	for (i = menudefs[MN_CHANGELEVEL].numitems - 1; i >= 0; i--)
+	{
+		if (!M_ItemSelectable(&menudefs[MN_CHANGELEVEL].menuitems[i]))
+			continue;
+		levelselect.lastmenuitem = i;
+		break;
+	}
+}
+
 // refresh the level list while the platter is active
-static boolean M_UpdateLevelPlatter(void)
+static void M_UpdateLevelPlatter(void)
 {
 	INT32 i, row = 0, headerRow = -1;
 	mapheader_t *previtermap = NULL; // prevmap AND lastmap are taken...!
 	boolean forceNewRow = true;
 	INT16 sortedmaps[INT16_MAX];
 	INT16 numsortedmaps = 0;
+	INT16 randommap = -3; // need at least 2 available maps to safely randomize
+
+	levelselect.numrows = 1;
+	levelselect.rows = Z_Realloc(levelselect.rows, levelselect.numrows*sizeof(levelselectrow_t), PU_STATIC, NULL);
+	memset(&levelselect.rows[0], 0, sizeof(levelselectrow_t));
+	strcpy(levelselect.rows[0].header, "Options");
+	levelselect.rows[0].wide = true;
+
+	if (levellistmode == LLM_CUPSELECT)
+	{
+		M_UpdateLevelPlatterCups();
+		return;
+	}
 
 	for (i = 0; i < nummapheaders; i++)
+	{
 		if (M_CanShowLevelOnPlatter(i))
+		{
 			sortedmaps[numsortedmaps++] = i;
+			if (M_LevelAvailableOnPlatter(i) && randommap < -1)
+				randommap++;
+		}
+	}
 
 	if (levelsortfuncs[cv_levelsort.value] != NULL)
 		qs22j(sortedmaps, numsortedmaps, sizeof(*sortedmaps), levelsortfuncs[cv_levelsort.value]);
 
-	if (levelselect.rows != NULL)
-		Z_Free(levelselect.rows);
+	if (randommap == -1)
+		while (randommap == -1 || !M_LevelAvailableOnPlatter(randommap) || randommap == cv_nextmap.value - 1)
+			randommap = sortedmaps[M_RandomKey(numsortedmaps)];
 
-	// done here so lsrow and lscol can be set if cv_nextmap is on the platter
-	levelselect.row = levelselect.column = levelselect.highlight = levelselect.namescroll = 0;
-	lsoffsy = lsoffsx = 0;
-
-	levelselect.numrows = 1;
-	levelselect.rows = Z_Calloc(levelselect.numrows*sizeof(levelselectrow_t), PU_STATIC, NULL);
-	strcpy(levelselect.rows[0].header, "Options");
-	levelselect.rows[0].wide = true;
+	M_SetItemDisabled(MN_CHANGELEVEL, "RANDOM", randommap < 0);
 
 	for (i = 0; i < numsortedmaps; i++)
 	{
@@ -3255,8 +3399,15 @@ static boolean M_UpdateLevelPlatter(void)
 			{
 				levelselect.numrows = row+1;
 				levelselect.rows = Z_Realloc(levelselect.rows, levelselect.numrows*sizeof(levelselectrow_t), PU_STATIC, NULL);
+				memset(&levelselect.rows[row], 0, sizeof(levelselectrow_t));
 				levelselect.rows[row].wide = wide;
 			}
+		}
+
+		if (mapnum == randommap)
+		{
+			levelselect.randomrow = row;
+			levelselect.randomcol = levelselect.rows[row].numcolumns;
 		}
 
 		levelselectmap_t *lsmap = &levelselect.rows[row].maps[levelselect.rows[row].numcolumns++];
@@ -3288,27 +3439,8 @@ static boolean M_UpdateLevelPlatter(void)
 	if (previtermap != NULL)
 		M_MakeLevelSelectHeader(&levelselect.rows[headerRow], previtermap, NULL);
 
-	return numsortedmaps > 0;
-}
-
-//
-// MR_PrepareLevelPlatter
-//
-// Prepares a tasty dish of zones and acts!
-// Call before any attempt to access a level platter.
-//
-INT32 MR_PrepareLevelPlatter(INT32 choice)
-{
-	INT32 i;
-
-	if (choice < 0 || choice >= LLM__MAX)
-		return false;
-
-	if (gamestate == GS_LEVEL)
-		CV_SetValue(&cv_newgametype, gametype);
-
-	M_SetItemVisible(MN_CHANGELEVEL, "GAMETYPE", levellistmode == LLM_CREATESERVER);
-	M_SetItemVisible(MN_CHANGELEVEL, "ENCORE", levellistmode == LLM_CREATESERVER && M_SecretUnlocked(SECRET_ENCORE));
+	if (levelselect.row >= levelselect.numrows)
+		levelselect.row = levelselect.numrows - 1;
 
 	// dumbass hack until menu frames
 	levelselect.firstmenuitem = 0;
@@ -3327,35 +3459,147 @@ INT32 MR_PrepareLevelPlatter(INT32 choice)
 		levelselect.lastmenuitem = i;
 		break;
 	}
+}
+
+// finds a map/cup on the platter
+// returns row in low 16 bits, column in upper 16 bits
+static INT32 M_FindOnPlatter(INT32 which)
+{
+	for (INT32 row = 0; row < levelselect.numrows; row++)
+	{
+		if (levellistmode == LLM_CUPSELECT)
+		{
+			if (row > 0 && levelselect.rows[row].cupid == which)
+			{
+				return row;
+			}
+		}
+		else for (INT32 col = 0; col < levelselect.rows[row].numcolumns; col++)
+		{
+			levelselectmap_t *lsmap = &levelselect.rows[row].maps[col];
+			if (lsmap->mapnum == which)
+			{
+				return row | (col << 16);
+			}
+		}
+	}
+	return -1;
+}
+
+//
+// MR_PrepareLevelPlatter
+//
+// Prepares a tasty dish of zones and acts!
+// Call before any attempt to access a level platter.
+//
+INT32 MR_PrepareLevelPlatter(INT32 choice)
+{
+	if (choice < 0 || choice >= LLM__MAX)
+		return false;
+
+	levellistmode = choice;
+
+	if (gamestate == GS_LEVEL)
+		CV_SetValue(&cv_newgametype, gametype);
+
+	M_SetItemVisible(MN_CHANGELEVEL, "GAMETYPE", levellistmode == LLM_CREATESERVER);
+	M_SetItemVisible(MN_CHANGELEVEL, "ENCORE", levellistmode == LLM_CREATESERVER && M_SecretUnlocked(SECRET_ENCORE));
+	M_SetItemVisible(MN_CHANGELEVEL, "RANDOM", levellistmode != LLM_CUPSELECT);
+
+	levelsort_cons_t[LEVELSORT_CUP].strvalue = levellistmode == LLM_CUPSELECT ? NULL : "Cup"; // bruh
+
+	if (levelselect.rows != NULL)
+		Z_Free(levelselect.rows);
+
+	memset(&levelselect, 0, sizeof(levelselect));
 
 	M_UpdateLevelPlatter();
 
 	// start on nextmap for convenience
-	for (INT32 row = 0; row < levelselect.numrows; row++)
+	INT32 found = M_FindOnPlatter(levellistmode == LLM_CUPSELECT ? cv_nextcup.value - 1 : cv_nextmap.value - 1);
+	if (found != -1)
 	{
-		for (INT32 col = 0; col < levelselect.rows[row].numcolumns; col++)
-		{
-			levelselectmap_t *lsmap = &levelselect.rows[row].maps[col];
-			if (cv_nextmap.value - 1 == lsmap->mapnum)
-			{
-				levelselect.row = row;
-				levelselect.column = col;
-				return true;
-			}
-		}
+		levelselect.row = found & 0xffff;
+		levelselect.column = found >> 16;
 	}
 
 	return true;
 }
 
+// this ought to go in doomtype
+#define mod(x, y) (((x) % (y) + (y)) % (y))
+
+static void M_MoveLevelPlatter(INT32 vmove)
+{
+	vmove %= levelselect.numrows;
+	if (abs(vmove) > levelselect.numrows/2)
+		vmove -= levelselect.numrows * intsign(vmove);
+
+	levelselect.offsety = 0;
+	for (INT32 count = abs(vmove); count > 0; count--)
+	{
+		if (vmove < 0)
+			levelselect.offsety -= lsvseperation(levelselect.row) * FRACUNIT;
+		levelselect.row = mod(levelselect.row + intsign(vmove), levelselect.numrows);
+		if (vmove > 0)
+			levelselect.offsety += lsvseperation(levelselect.row) * FRACUNIT;
+	}
+
+	// update highlighted header
+	INT32 iter = levelselect.row;
+	while (levelselect.rows[iter].header[0] == '\0')
+	{
+		iter = (iter - 1) % levelselect.numrows;
+		if (iter == levelselect.row)
+			break;
+	}
+	levelselect.highlight = iter;
+
+	levelselect.namescroll = 0;
+}
+
+static void M_LevelPlatterSelect(boolean delay)
+{
+	if (levellistmode == LLM_CUPSELECT)
+	{
+		CV_SetValue(&cv_nextcup, levelselect.rows[levelselect.row].cupid + 1);
+		S_StartSound(NULL, sfx_s221);
+		if (menustack[1] == MN_SP_GRANDPRIX)
+		{
+			levelselect.selectdelay = 3*TICRATE;
+			S_StartSound(NULL, sfx_s25f);
+			S_FadeMusicFromVolume(0, -1, 1000); // le epic fadeout
+		}
+		else
+		{
+			levelselect.selectdelay = TICRATE/3;
+		}
+		return;
+	}
+
+	const levelselectmap_t *lsmap = &levelselect.rows[levelselect.row].maps[levelselect.column];
+	if (lsmap->available)
+	{
+		CV_SetValue(&cv_nextmap, lsmap->mapnum + 1);
+		levelselect.selectdelay = delay ? 6*TICRATE/7 : TICRATE/3;
+		S_StartSound(NULL, sfx_s221);
+	}
+	else if (levelselect.offsety == 0) // prevent sound spam
+	{
+		levelselect.offsety = -8 * FRACUNIT;
+		S_StartSound(NULL, sfx_s3kb2);
+	}
+}
+
 INT32 MR_LevelPlatterRandom(INT32 choice)
 {
 	(void)choice;
-	CV_SetValue(&cv_nextmap, G_RandMap(M_GetLevelListTOL(), cv_nextmap.value - 1, 0, 0, NULL) + 1);
-	if (levellistmode != LLM_CREATESERVER || menustack[1] != MN_MPAUSE)
-		M_ExitMenu();
-	else
-		MR_ChangeLevel(0);
+	M_MoveLevelPlatter(levelselect.randomrow - levelselect.row);
+	levelselect.row = levelselect.randomrow;
+	levelselect.column = levelselect.randomcol;
+	S_StopSoundByNum(sfx_menu1); // oh boy
+	M_LevelPlatterSelect(true);
+
 	return true;
 }
 
@@ -3366,113 +3610,98 @@ INT32 MR_LevelPlatterRandom(INT32 choice)
 //
 INT32 MR_HandleLevelPlatter(INT32 choice)
 {
-	UINT8 iter;
+	INT32 hmove = 0, vmove = 0;
 
-	if (choice == KEY_DOWNARROW || choice == KEY_UPARROW || choice == KEY_LEFTARROW || choice == KEY_RIGHTARROW)
-		levelselect.namescroll = 0;
+	if (levelselect.selectdelay > 0)
+		return choice != KEY_CONSOLE; // let me open the console at least lol
 
 	switch (choice)
 	{
-	case KEY_DOWNARROW:
-		if (levelselect.row == 0 && itemOn < levelselect.lastmenuitem)
-			return false;
-		else if (levelselect.row == levelselect.numrows-1)
-			itemOn = levelselect.firstmenuitem;
-
-		if (levelselect.row++ == levelselect.numrows - 1)
-			levelselect.row = 0;
-		lsoffsy = lsvseperation(levelselect.row) * FRACUNIT;
-
-		if (levelselect.rows[levelselect.row].header[0])
-			levelselect.highlight = levelselect.row;
-		// no else needed - headerless lines associate upwards, so moving down to a row without a header is identity
-
-		S_StartSound(NULL, levelselect.row ? sfx_s3kb7 : sfx_menu1);
-		return true;
-
 	case KEY_UPARROW:
-		if (levelselect.row == 0 && itemOn > levelselect.firstmenuitem)
-			return false;
-		else if (levelselect.row == 1)
-			itemOn = levelselect.lastmenuitem;
+	case KEY_DOWNARROW:
+		vmove = choice == KEY_UPARROW ? -1 : 1;
+		break;
 
-		lsoffsy = -lsvseperation(levelselect.row) * FRACUNIT;
-		if (levelselect.row-- == 0)
-			levelselect.row = levelselect.numrows - 1;
-
-		if (levelselect.rows[levelselect.row].header[0])
-			levelselect.highlight = levelselect.row;
-		else
-		{
-			iter = levelselect.row;
-			do
-				iter = ((iter == 0) ? levelselect.numrows-1 : iter-1);
-			while ((iter != levelselect.row) && !(levelselect.rows[iter].header[0]));
-			levelselect.highlight = iter;
-		}
-
-		S_StartSound(NULL, levelselect.row ? sfx_s3kb7 : sfx_menu1);
-		return true;
-
-	case KEY_ENTER:
-		if (levelselect.row > 0)
-		{
-			levelselectmap_t *lsmap = &levelselect.rows[levelselect.row].maps[levelselect.column];
-			if (lsmap->available)
-			{
-				CV_SetValue(&cv_nextmap, lsmap->mapnum + 1);
-				lsoffsy = lsoffsx = 0;
-				S_StartSound(NULL,sfx_menu1);
-				if (levellistmode != LLM_CREATESERVER || menustack[1] != MN_MPAUSE)
-					M_ExitMenu();
-				else
-					MR_ChangeLevel(0);
-			}
-			else if (!lsoffsy) // prevent sound spam
-			{
-				lsoffsy = -8 * FRACUNIT;
-				S_StartSound(NULL,sfx_s3kb2);
-			}
-			return true;
-		}
-		/* FALLTHRU */
-	case KEY_RIGHTARROW:
-		if (levelselect.row == 0)
-			return false;
-		if (levelselect.rows[levelselect.row].wide)
-			return true;
-
-		if (levelselect.column++ == MAPSPERROW - 1)
-			levelselect.column = 0;
-
-		lsoffsx = -lshseperation * FRACUNIT;
-		S_StartSound(NULL, sfx_s3kb7);
-		return true;
+	case KEY_PGUP:
+	case KEY_PGDN:
+		vmove = choice == KEY_PGUP ? -3 : 3;
+		break;
 
 	case KEY_LEFTARROW:
-		if (levelselect.row == 0)
-			return false;
-		if (levelselect.rows[levelselect.row].wide)
-			return true;
-
-		if (levelselect.column-- == 0)
-			levelselect.column = MAPSPERROW - 1;
-
-		lsoffsx = lshseperation*FRACUNIT;
-		S_StartSound(NULL, sfx_s3kb7);
-		return true;
+	case KEY_RIGHTARROW:
+		hmove = choice == KEY_LEFTARROW ? -1 : 1;
+		break;
 
 	case KEY_BACKSPACE: // return to home
+	{
+		INT32 dest;
 		if (levelselect.row > 0)
 		{
-			INT32 dir = levelselect.row >= levelselect.numrows/2 ? 1 : -1;
-			for (iter = levelselect.row; iter > 0 && iter < levelselect.numrows; iter += dir)
-				lsoffsy += lsvseperation(iter)*FRACUNIT*dir;
-			levelselect.row = levelselect.column = 0;
-			S_StartSound(NULL, sfx_menu1);
-			return true;
+			levelselectrow_t *lsrow = &levelselect.rows[levelselect.row];
+			if (levellistmode == LLM_CUPSELECT)
+				levelselect.returnto = lsrow->cupid;
+			else
+				levelselect.returnto = lsrow->maps[levelselect.column].mapnum;
+			dest = 0;
 		}
+		else
+		{
+			INT32 found = M_FindOnPlatter(levelselect.returnto);
+			if (found == -1)
+				return false;
+			dest = found & 0xffff;
+			levelselect.column = found >> 16;
+		}
+
+		if (abs(levelselect.row - dest) > levelselect.numrows/2)
+			vmove = dest - levelselect.numrows - levelselect.row;
+		else
+			vmove = dest - levelselect.row;
 		break;
+	}
+
+	case KEY_ENTER:
+		if (levelselect.row == 0)
+			return false;
+
+		M_LevelPlatterSelect(false);
+		return true;
+	}
+
+	// move out of the options list only if you're at the top/bottom, or if pressing pgup/pgdn
+	if (levelselect.row == 0 && (choice == KEY_UPARROW || choice == KEY_DOWNARROW)
+	 && (vmove > 0 ? itemOn < levelselect.lastmenuitem : itemOn > levelselect.firstmenuitem))
+		vmove = 0;
+
+	// ...or if there's no other rows to move to???
+	if (levelselect.numrows <= 1)
+		vmove = 0;
+
+	if (vmove != 0)
+	{
+		M_MoveLevelPlatter(vmove);
+
+		// reset itemOn when moving into the options list
+		if (choice != KEY_BACKSPACE && levelselect.row == (vmove > 0 ? levelselect.numrows : 0) - vmove)
+			itemOn = vmove > 0 ? levelselect.firstmenuitem : levelselect.lastmenuitem;
+	}
+
+	if (hmove != 0)
+	{
+		if (levelselect.rows[levelselect.row].wide)
+			return levelselect.row > 0;
+		levelselect.namescroll = 0;
+		levelselect.column = mod(levelselect.column + hmove, MAPSPERROW);
+		levelselect.offsetx = lshseperation * -hmove * FRACUNIT;
+	}
+
+	if (vmove != 0 || hmove != 0)
+	{
+		if (levelselect.row > 0)
+			S_StartSoundAtVolume(NULL, sfx_s3kb7, 160);
+		else
+			S_StartSound(NULL, sfx_menu1);
+		return true;
 	}
 
 	return false;
@@ -3480,6 +3709,7 @@ INT32 MR_HandleLevelPlatter(INT32 choice)
 
 static void M_DrawLevelPlatterHeader(INT32 y, const char *header, boolean headerhighlight, boolean allowlowercase)
 {
+	y -= (lsmapheight + lsmapnameheight + 1)/2;
 	y += lsheadingheight - 12;
 	V_DrawString(19, y, (headerhighlight ? V_YELLOWMAP : 0)|(allowlowercase ? V_ALLOWLOWERCASE : 0), header);
 	y += 9;
@@ -3489,23 +3719,22 @@ static void M_DrawLevelPlatterHeader(INT32 y, const char *header, boolean header
 	V_DrawFill(19, y, 282, 1, 26);
 }
 
-static void M_DrawLevelPlatterMap(levelselectmap_t *lsmap, INT32 x, INT32 y, boolean highlight, boolean wide)
+// draws a map CENTERED around the given coordinates
+static void M_DrawLevelPlatterMap(const levelselectmap_t *lsmap, INT32 x, INT32 y, boolean highlight, boolean wide)
 {
 	fixed_t scale = highlight ? FRACUNIT : FRACUNIT/2;
-	INT32 width = wide ? 282*FRACUNIT : lshwidth*scale;
-
-	if (!highlight)
-	{
-		x += lshwidth/4;
-		y += 50/4;
-	}
+	fixed_t width = wide ? 282*FRACUNIT : lsmapwidth*scale;
+	fixed_t height = (lsmapheight + lsmapnameheight)*scale;
 
 	// wide thumbnails? mmm... i dunno... maybe...
 	patch_t *patch;
 	boolean encore = cv_kartencore.value == 1 && levellistmode == LLM_CREATESERVER && cv_newgametype.value == GT_RACE;
 	fixed_t thumbscale = M_GetMapThumbnail(lsmap->available ? lsmap->mapnum : -1, &patch);
+	thumbscale = FixedMul(thumbscale/4, scale);
 
-	V_DrawSciencePatch(x*FRACUNIT + (encore ? width : 0), y*FRACUNIT, encore ? V_FLIP : 0, patch, FixedMul(thumbscale/4, scale));
+	V_DrawSciencePatch(x*FRACUNIT - patch->width*thumbscale/2 + (encore ? patch->width*thumbscale : 0),
+	                   y*FRACUNIT - patch->height*thumbscale/2 - lsmapnameheight*scale/2,
+	                   encore ? V_FLIP : 0, patch, thumbscale);
 	//if (!lsmap->available)
 		//M_DrawStaticBox(x, y, V_80TRANS, wide ? 282 : 80, 50);
 
@@ -3513,26 +3742,38 @@ static void M_DrawLevelPlatterMap(levelselectmap_t *lsmap, INT32 x, INT32 y, boo
 	{
 		static angle_t rubyfloattime = 0;
 		const fixed_t rubyheight = FSIN(rubyfloattime)*2;
-		V_DrawSciencePatch(x*FRACUNIT + width/2, y*FRACUNIT + 25*scale - rubyheight, 0, W_CachePatchName("RUBYICON", PU_CACHE), FRACUNIT);
+		V_DrawSciencePatch(x*FRACUNIT, y*FRACUNIT - rubyheight, 0, W_CachePatchName("RUBYICON", PU_CACHE), FRACUNIT);
 		rubyfloattime += FixedMul(ANGLE_MAX/NEWTICRATE, renderdeltatics);
 	}
 
-	y += (50*scale)>>FRACBITS;
-	V_SetClipRect(x*FRACUNIT, y*FRACUNIT, width, (wide || highlight ? 9 : 4)*FRACUNIT, 0);
+	x = x*FRACUNIT - width/2;
+	y = y*FRACUNIT + height/2 - lsmapnameheight*scale;
+	V_SetClipRect(x, y, width, (lsmapnameheight / (wide || highlight ? 1 : 2))*FRACUNIT, 0);
 
 	V_DrawFill(-9999, -9999, 22222, 22222, V_NOSCALESTART|lsmap->color);
 	if (wide || highlight)
 	{
-		INT32 scrollamt = V_ThinStringWidth(lsmap->mapname, MENUCAPS|V_6WIDTHSPACE) - width/FRACUNIT;
+		INT32 scrollamt = V_ThinStringWidth(lsmap->mapname, MENUCAPS|V_6WIDTHSPACE)*FRACUNIT - width;
 		if (scrollamt > 0)
-			x -= max(0, min((levelselect.namescroll % (scrollamt + TICRATE*2)) - TICRATE, scrollamt));
+		{
+			// scroll the map's name!
+			INT32 t = ((levelselect.namescroll % (scrollamt/FRACUNIT + TICRATE*2)) - TICRATE)*FRACUNIT;
+			x -= max(0, min(t, scrollamt));
+			if (t > 0 && t <= scrollamt)
+				x = x + FRACUNIT - R_GetTimeFrac(RTF_MENU);
+		}
 		else
+		{
 			x -= scrollamt/2; // center it instead!
-		V_DrawThinString(x, y, MENUCAPS|V_6WIDTHSPACE|(highlight ? highlightflags : 0), lsmap->mapname);
+		}
+		V_DrawThinStringAtFixed(x, y - FRACUNIT/2, MENUCAPS|V_6WIDTHSPACE|(highlight ? highlightflags : 0), lsmap->mapname);
 	}
 	else
 	{
-		V_DrawSmallString(x, y, MENUCAPS, lsmap->mapname);
+		INT32 scrollamt = V_SmallStringWidth(lsmap->mapname, MENUCAPS)*FRACUNIT - width;
+
+		// screw adding more string drawing macros
+		V__DrawOneScaleString(x - min(0, scrollamt/2), y, FRACUNIT/2, MENUCAPS, HU_FONT, lsmap->mapname);
 	}
 
 	V_ClearClipRect();
@@ -3540,45 +3781,61 @@ static void M_DrawLevelPlatterMap(levelselectmap_t *lsmap, INT32 x, INT32 y, boo
 
 static void M_DrawLevelPlatterRow(UINT8 row, INT32 y)
 {
-	UINT8 col;
 	const boolean rowhighlight = (row == levelselect.row);
-	if (levelselect.rows[row].header[0])
+	const levelselectrow_t *lsrow = &levelselect.rows[row];
+
+	if (lsrow->header[0])
 	{
-		M_DrawLevelPlatterHeader(y, levelselect.rows[row].header, (rowhighlight || (row == levelselect.highlight)), false);
+		M_DrawLevelPlatterHeader(y, lsrow->header, (rowhighlight || (row == levelselect.highlight)), false);
 		y += lsheadingheight;
 	}
 
 	if (row == 0)
 	{
-		currentMenu->y = y+2;
-		V_SetClipRect(0, y*FRACUNIT, 320*FRACUNIT, (currentMenu->scrollheight+12)*FRACUNIT, 0);
+		currentMenu->y = y - lsmapheight/2 + 2;
+		V_SetClipRect(0, (y - lsmapheight/2)*FRACUNIT, 320*FRACUNIT, (currentMenu->scrollheight+12)*FRACUNIT, 0);
 		V_DrawFill((BASEVIDWIDTH - 282)/2, -9999, 282, 22222, 27);
 		MD_DrawGenericMenu();
 		V_ClearClipRect();
+		return;
 	}
-	else
+
+	if (levellistmode == LLM_CUPSELECT)
 	{
-		levelselectrow_t *lsrow = &levelselect.rows[row];
-		for (col = 0; col < lsrow->numcolumns; col++)
-			if (!rowhighlight || col != levelselect.column)
-				M_DrawLevelPlatterMap(&lsrow->maps[col], lsbasex + col*lshseperation, y, false, lsrow->wide);
-		if (rowhighlight && levelselect.column < lsrow->numcolumns)
-			M_DrawLevelPlatterMap(&lsrow->maps[levelselect.column], lsbasex + levelselect.column*lshseperation, y, true, lsrow->wide);
+		cupheader_t *cup;
+
+		// relax, we're only doing this 7 times per frame at most...
+		for (cup = kartcupheaders; cup != NULL; cup = cup->next)
+			if (cup->id == lsrow->cupid)
+				break;
+
+		//V_DrawScaledPatch(lsbasex - 14, y - 16, 0, W_CachePatchName(cup->icon, PU_CACHE));
+		V_DrawCenteredString(lsbasex + 2, y - 4, MENUCAPS|(rowhighlight ? V_YELLOWMAP : 0), CupName(cup, false));
+	}
+
+	for (UINT8 col = 0; col < lsrow->numcolumns; col++)
+	{
+		if (levellistmode == LLM_CUPSELECT)
+			M_DrawLevelPlatterMap(&lsrow->maps[col], lsbasex + 70 + col*lshseperationcup, y, false, false);
+		else if (!rowhighlight || col != levelselect.column)
+			M_DrawLevelPlatterMap(&lsrow->maps[col], lsbasex + col*lshseperation, y, false, lsrow->wide);
 	}
 }
 
 void MD_DrawLevelPlatterMenu(void)
 {
 	UINT8 row = levelselect.row;
-	INT32 y = lsbasey + FixedInt(lsoffsy) - getheadingoffset(row);
+	INT32 y = lsbasey + FixedInt(levelselect.offsety) - getheadingoffset(row);
+	INT32 hiliy = INT32_MIN;
+	INT32 minrows = (vid.height/vid.dupy + lsbasevseperation/2)/lsbasevseperation;
 	INT32 cursorx = levelselect.rows[row].wide ? 0 : levelselect.column * lshseperation;
 
 	// finds row at top of the screen
-	while (y > -8)
+	while (y >= -lsbasevseperation/2)
 	{
 		if (row == 0)
 		{
-			if (levelselect.numrows < 3)
+			if (levelselect.numrows < minrows)
 				break;
 			row = levelselect.numrows;
 		}
@@ -3587,13 +3844,15 @@ void MD_DrawLevelPlatterMenu(void)
 	}
 
 	// draw from top to bottom
-	while (y < (vid.height/vid.dupy))
+	while (y <= (vid.height/vid.dupy) + lsbasevseperation/2)
 	{
 		M_DrawLevelPlatterRow(row, y);
+		if (row == levelselect.row)
+			hiliy = y + getheadingoffset(row);
 		y += lsvseperation(row);
 		if (row == levelselect.numrows-1)
 		{
-			if (levelselect.numrows < 3)
+			if (levelselect.numrows < minrows)
 				break;
 			row = UINT8_MAX;
 		}
@@ -3601,41 +3860,49 @@ void MD_DrawLevelPlatterMenu(void)
 	}
 
 	// draw cursor box
-	if (levelselect.row > 0)
+	if (levelselect.row > 0 && hiliy != INT32_MIN)
 	{
-		fixed_t fx = lsbasex + cursorx + FixedInt(lsoffsx);
-		fixed_t fy = lsbasey+FixedInt(lsoffsy);
-		INT32 trans = skullAnimCounter < 4 ? 0 : V_GetStringColormap(highlightflags)[0];
+		levelselectrow_t *lsrow = &levelselect.rows[levelselect.row];
+		if (!lsrow->wide && levelselect.column < lsrow->numcolumns)
+			M_DrawLevelPlatterMap(&lsrow->maps[levelselect.column], lsbasex + cursorx, hiliy, true, lsrow->wide);
 
-		V_DrawFill(fx, fy, 80, 1, trans); // variable reuse... wait, is it?
-		V_DrawFill(fx, fy+49, 80, 1, trans);
-		V_DrawFill(fx, fy+1, 1, 48, trans);
-		V_DrawFill(fx+79, fy+1, 1, 48, trans);
+		fixed_t fx = (lsbasex + cursorx - lsmapwidth/2)*FRACUNIT + levelselect.offsetx;
+		fixed_t fy = hiliy*FRACUNIT - (lsmapheight + (levellistmode == LLM_CUPSELECT ? 0 : lsmapnameheight))*FRACUNIT/2;
+		fixed_t width = (lsrow->wide ? 300 : lsmapwidth)*FRACUNIT;
+		fixed_t height = lsmapheight*FRACUNIT;
+		INT32 trans = 0;
+		if (levelselect.selectdelay > 0 ? skullAnimCounter & 1 : skullAnimCounter < 4)
+			trans = V_GetStringColormap(highlightflags)[0];
+
+		V_DrawFixedFill(fx, fy,                               width, FRACUNIT, trans);
+		V_DrawFixedFill(fx, fy + height - FRACUNIT,           width, FRACUNIT, trans);
+		V_DrawFixedFill(fx, fy + FRACUNIT,                    FRACUNIT, height - 2*FRACUNIT, trans);
+		V_DrawFixedFill(fx + width - FRACUNIT, fy + FRACUNIT, FRACUNIT, height - 2*FRACUNIT, trans);
 	}
 
 	// handle movement of cursor box
 	fixed_t cursormovefrac = FixedDiv(2, 3);
-	if (lsoffsy > FRACUNIT || lsoffsy < -FRACUNIT)
+	if (abs(levelselect.offsety) > FRACUNIT/2)
 	{
-		fixed_t offs = lsoffsy;
+		fixed_t offs = levelselect.offsety;
 		fixed_t newoffs = FixedMul(offs, cursormovefrac);
 		fixed_t deltaoffs = newoffs - offs;
 		newoffs = offs + FixedMul(deltaoffs, renderdeltatics);
-		lsoffsy = newoffs;
+		levelselect.offsety = newoffs;
 	}
 	else
-		lsoffsy = 0;
+		levelselect.offsety = 0;
 
-	if (lsoffsx > FRACUNIT || lsoffsx < -FRACUNIT)
+	if (abs(levelselect.offsetx) > FRACUNIT/4)
 	{
-		fixed_t offs = lsoffsx;
+		fixed_t offs = levelselect.offsetx;
 		fixed_t newoffs = FixedMul(offs, cursormovefrac);
 		fixed_t deltaoffs = newoffs - offs;
 		newoffs = offs + FixedMul(deltaoffs, renderdeltatics);
-		lsoffsx = newoffs;
+		levelselect.offsetx = newoffs;
 	}
 	else
-		lsoffsx = 0;
+		levelselect.offsetx = 0;
 
 	M_DrawMenuTitle();
 }
@@ -4363,7 +4630,7 @@ INT32 MR_QuitAddons(INT32 choice)
 }
 
 // ---- REPLAY HUT -----
-menudemo_t *demolist;
+menudemo_t *demolist = NULL;
 
 #define DF_ENCORE       0x40
 static INT16 replayScrollTitle = 0;
@@ -4912,7 +5179,7 @@ INT32 MR_HutStartReplay(INT32 choice)
 	(void)choice;
 
 	M_RestoreMenuStack(true);
-	COM_BufAddText(va("playdemo %s %s",
+	COM_BufAddText(va("playdemo \"%s\" %s",
 	               demolist[dir_on[menudepthleft]].filepath + strlen(srb2home) + 1, // dumb hack
 	               M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWATCH") ? "-addfiles" : "-force"));
 	return true;
@@ -5398,7 +5665,7 @@ void M_RefreshPauseMenu(void)
 // SKY ROOM
 // ========
 
-UINT8 skyRoomMenuTranslations[MAXUNLOCKABLES];
+UINT8 skyRoomMenuTranslations[MAXUNLOCKABLES] = {};
 
 static char *M_GetConditionString(condition_t cond)
 {
@@ -6242,7 +6509,7 @@ INT32 MR_HandleLevelStats(INT32 choice)
 INT32 MR_GrandPrixTemp(INT32 choice)
 {
 	(void)choice;
-	if (!M_PrepareCupList())
+	if (!M_CheckNextCup(menustack[0]))
 	{
 		M_StartMessage(M_GetText("No cups found for Grand Prix.\n"),NULL,MM_NOTHING);
 		return false;
@@ -6254,17 +6521,10 @@ INT32 MR_GrandPrixTemp(INT32 choice)
 // Start Grand Prix!
 INT32 MR_StartGrandPrix(INT32 choice)
 {
-	cupheader_t *gpcup = kartcupheaders;
+	cupheader_t *gpcup;
 	INT32 levelNum;
 
 	(void)choice;
-
-	if (gpcup == NULL)
-	{
-		// welp
-		I_Error("No cup definitions for GP\n");
-		return false;
-	}
 
 	M_RestoreMenuStack(true);
 	M_ClearMenusEx(true, true);
@@ -6287,6 +6547,16 @@ INT32 MR_StartGrandPrix(INT32 choice)
 			grandprixinfo.gamespeed = KARTSPEED_EXPERT;
 			grandprixinfo.masterbots = true;
 			break;
+		case KARTGP_LUNATIC:
+			grandprixinfo.gamespeed = KARTSPEED_HARD;
+			grandprixinfo.lunaticmode = true;
+			grandprixinfo.masterbots = true;
+			break;
+		case KARTGP_MANIAC:
+			grandprixinfo.gamespeed = KARTSPEED_EXPERT;
+			grandprixinfo.lunaticmode = true;
+			grandprixinfo.masterbots = true;
+			break;
 		default:
 			CONS_Alert(CONS_WARNING, "Invalid GP difficulty\n");
 			grandprixinfo.gamespeed = KARTSPEED_NORMAL;
@@ -6295,16 +6565,13 @@ INT32 MR_StartGrandPrix(INT32 choice)
 
 	grandprixinfo.encore = (boolean)(cv_dummygpencore.value);
 
-	while (gpcup != NULL && gpcup->id != cv_dummygpcup.value-1)
+	for (gpcup = kartcupheaders; gpcup != NULL; gpcup = gpcup->next)
 	{
-		gpcup = gpcup->next;
+		if (gpcup->id == cv_nextcup.value-1)
+			break;
 	}
 
-	if (gpcup == NULL)
-	{
-		gpcup = kartcupheaders;
-	}
-
+	I_Assert(gpcup != NULL);
 	grandprixinfo.cup = gpcup;
 
 	grandprixinfo.gp = true;
@@ -6497,8 +6764,7 @@ INT32 MR_ReplayTimeAttack(INT32 arg)
 	CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, arg);
 
 	M_RestoreMenuStack(true);
-	COM_BufAddText(va("playdemo %s -force", demopath));
-
+	COM_BufAddText(va("playdemo \"%s\" -force", demopath));
 	return true;
 }
 

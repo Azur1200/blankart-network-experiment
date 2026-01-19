@@ -537,9 +537,9 @@ void P_AllocMapHeader(INT16 i)
 //
 #define MAXLEVELFLATS 256
 
-size_t nummaxflats;
-size_t numlevelflats;
-levelflat_t *levelflats;
+size_t nummaxflats = 0;
+size_t numlevelflats = 0;
+levelflat_t *levelflats = NULL;
 
 //SoM: Other files want this info.
 size_t P_PrecacheLevelFlats(void)
@@ -6647,6 +6647,12 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[2] = lines[i].dx >> FRACBITS;
 				lines[i].args[3] = lines[i].dy >> FRACBITS;
 			}
+
+			if (mapnamespace == MNS_SRB2KART && lines[i].special == 502)
+				lines[i].args[5] = 1;
+			else
+				lines[i].args[5] = 0;
+
 			lines[i].args[4] = lines[i].special - 502;
 			lines[i].special = 502;
 			break;
@@ -8142,8 +8148,8 @@ void P_SetupLevelSky(const char *skytexname, boolean global)
 	R_SetupSkyDraw();
 }
 
-static const char *maplumpname;
-lumpnum_t lastloadedmaplumpnum; // for comparative savegame
+static const char *maplumpname = NULL;
+lumpnum_t lastloadedmaplumpnum = LUMPERROR; // for comparative savegame
 
 //
 // P_LevelInitStuff
@@ -8592,7 +8598,7 @@ static void P_InitGametype(void)
 
 	// Start recording replay in multiplayer with a temp filename
 	//@TODO I'd like to fix dedis crashing when recording replays for the future too...
-	if (gamestate == GS_LEVEL && !demo.playback && multiplayer && !dedicated)
+	if (gamestate == GS_LEVEL && !demo.playback && (multiplayer || grandprixinfo.gp) && !dedicated)
 	{
 		char buf[MAX_WADPATH];
 		char ver[128];
@@ -8613,7 +8619,7 @@ static void P_InitGametype(void)
 	}
 }
 
-struct minimapinfo minimapinfo;
+struct minimapinfo minimapinfo = {};
 
 static void P_InitMinimapInfo(void)
 {
