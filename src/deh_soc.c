@@ -13,6 +13,7 @@
 #include "doomdef.h"
 #include "d_main.h" // for srb2home
 #include "g_game.h"
+#include "hu_stuff.h"
 #include "sounds.h"
 #include "info.h"
 #include "d_think.h"
@@ -2198,6 +2199,14 @@ void readmenuitemstyle(MYFILE *f, menuitemstyle_t *style)
 				part->font = HU_FONT;
 			else if (fastcmp(word2, "TINY"))
 				part->font = TINY_FONT;
+			else if (fastcmp(word2, "KART"))
+				part->font = KART_FONT;
+			else if (fastcmp(word2, "CRED"))
+				part->font = CRED_FONT;
+			else if (fastcmp(word2, "GTOL"))
+				part->font = GTOL_FONT;
+			else if (fastcmp(word2, "GTFN"))
+				part->font = GTFN_FONT;
 			else
 				WARN("unknown font '%s'", word2);
 
