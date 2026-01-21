@@ -852,7 +852,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "HANDLEVIEWSERVER", &MR_HandleViewServer },
 	// { "BARCSS", &MR_HandleBarCss },
 	{ "HANDLESETUPMULTIPLAYERMENU", &MR_HandleSetupMultiPlayerMenu },
-	{ "PREPARELEVELPLATTER", &MR_PrepareLevelPlatter },
+	{ "SETLEVELLISTMODE", &MR_SetLevelListMode },
 	{ "HANDLELEVELPLATTER", &MR_HandleLevelPlatter },
 	{ "LEVELPLATTERRANDOM", &MR_LevelPlatterRandom },
 #ifdef HAVE_DISCORDRPC
@@ -903,6 +903,8 @@ struct panel_func_s const PANEL_FUNCS[] = {
 	{ "MULTIPLAYERPAUSE", &MP_MultiplayerPause },
 	{ "PLAYERSPLITSCREEN", &MP_PlayerSplitscreen },
 	{ "SETUPJOYSTICK", &MP_SetupJoystick },
+	{ "PREPARELEVELPLATTER", &MP_PrepareLevelPlatter },
+	{ "LEVELPLATTEROPTIONS", &MP_LevelPlatterOptions },
 	{ NULL, NULL }
 };
 

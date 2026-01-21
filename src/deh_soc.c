@@ -2160,13 +2160,21 @@ void readmenuitemstyle(MYFILE *f, menuitemstyle_t *style)
 		word = s;
 		while (isspace(*word))
 			word++;
-		strupr(word2);
 
 		if (part == NULL)
 		{
 			WARN("cannot use %s without selecting a part", word);
 			break;
 		}
+
+		if (fastcmp(word, "FIXEDSTRING"))
+		{
+			Z_Free(part->fixedstring);
+			part->fixedstring = Z_StrDup(word2);
+			continue;
+		}
+
+		strupr(word2);
 
 		if (fastcmp(word, "X"))
 		{
@@ -2175,11 +2183,6 @@ void readmenuitemstyle(MYFILE *f, menuitemstyle_t *style)
 		else if (fastcmp(word, "Y"))
 		{
 			part->yofs = get_number(word2);
-		}
-		else if (fastcmp(word, "FIXEDSTRING"))
-		{
-			Z_Free(part->fixedstring);
-			part->fixedstring = Z_StrDup(word2);
 		}
 		else if (fastcmp(word, "SMALL"))
 		{

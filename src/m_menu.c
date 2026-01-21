@@ -228,7 +228,6 @@ static struct levelselect_t
 
 	INT16 randomrow, randomcol;
 	INT16 returnto;
-	INT16 firstmenuitem, lastmenuitem;
 	tic_t selectdelay;
 
 	UINT8 numrows;
@@ -692,9 +691,10 @@ static tic_t playback_last_menu_interaction_leveltime = 0;
 
 static INT32 highlightflags, recommendedflags, warningflags;
 
-inline static void M_GetGametypeColor(menupanelinst_t *pi)
+inline static void M_GetGametypeColor(void)
 {
-	INT16 gt, i;
+	INT16 gt;
+	size_t i, j;
 	boolean usenewgametype = false;
 
 	warningflags = V_REDMAP;
@@ -726,12 +726,13 @@ inline static void M_GetGametypeColor(menupanelinst_t *pi)
 		return;
 	}
 
-	if (pi != NULL) for (i = 0; i < pi->numitems; i++)
-		if (pi->items[i].cvar == &cv_newgametype)
-		{
-			usenewgametype = true;
-			break;
-		}
+	for (i = 0; i < numcurpanels; i++)
+		for (j = 0; j < curpanels[i].numitems; j++)
+			if (curpanels[i].items[j].cvar == &cv_newgametype)
+			{
+				usenewgametype = true;
+				break;
+			}
 
 	if (usenewgametype && levellistmode != LLM_CUPSELECT)
 		gt = cv_newgametype.value;
@@ -767,7 +768,7 @@ inline static void M_GetGametypeColor(menupanelinst_t *pi)
 // excuse me but I'm extremely lazy:
 INT32 HU_GetHighlightColor(void)
 {
-	M_GetGametypeColor(NULL);	// update flag colour reguardless of the menu being opened or not.
+	M_GetGametypeColor();	// update flag colour reguardless of the menu being opened or not.
 	return highlightflags;
 }
 
@@ -1431,7 +1432,7 @@ static boolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
 	 || routine == MR_SetupMultiPlayer
 	 || routine == MR_SetupControlsMenu
 	 || routine == MR_ChangeControl
-	 || routine == MR_PrepareLevelPlatter
+	 || routine == MR_SetLevelListMode
 	 || routine == MR_HandleLevelPlatter
 	)
 		return false;
@@ -1790,6 +1791,8 @@ boolean M_Responder(event_t *ev)
 		vmove = tmp;
 	}
 
+	INT16 oldPanelOn = panelOn;
+	INT16 newPanelOn = panelOn;
 	INT16 oldItemOn = curpi->itemon; // prevent infinite loop
 	INT16 newItemOn = curpi->itemon;
 
@@ -1811,12 +1814,29 @@ boolean M_Responder(event_t *ev)
 			{
 				newItemOn += dir;
 			}
-			newItemOn = intmod(newItemOn, curpi->numitems);
-		}
-		while (oldItemOn != newItemOn && ((vmove -= intsign(vmove)) != 0 || !M_ItemSelectable(&curpi->items[newItemOn])));
 
+			if (newItemOn >= curpi->numitems)
+			{
+				newPanelOn = intmod(newPanelOn + 1, numcurpanels);
+				newItemOn -= curpi->numitems == 0 ? newItemOn : curpi->numitems;
+			}
+			else if (newItemOn < 0)
+			{
+				newPanelOn = intmod(newPanelOn - 1, numcurpanels);
+			}
+			curpi = &curpanels[newPanelOn];
+			curpd = M_GetDefFromInst(curpi);
+			newItemOn = curpi->numitems == 0 ? 0 : intmod(newItemOn, curpi->numitems);
+		}
+		while (!(oldPanelOn == newPanelOn && oldItemOn == newItemOn)
+		       && (curpi->numitems == 0 || !M_ItemSelectable(&curpi->items[newItemOn]) || (vmove -= intsign(vmove)) != 0));
+
+		panelOn = newPanelOn;
 		M_RawSetItemOn(curpi, newItemOn);
-		S_StartSound(NULL, sfx_menu1);
+		if (curpd->keyhandler == MR_HandleLevelPlatter)
+			return curpd->keyhandler(ch); // dumb hack until i figure this out
+		else
+			S_StartSound(NULL, sfx_menu1);
 		return true;
 	}
 	else if (hmove != 0)
@@ -1993,11 +2013,9 @@ void M_Drawer(void)
 	else
 	{
 		size_t i;
+		M_GetGametypeColor();
 		for (i = 0; i < numcurpanels; i++)
-		{
-			M_GetGametypeColor(&curpanels[i]);
 			M_DrawMenuPanel(&curpanels[i], panelOn == i);
-		}
 
 		if (menustack[0] == MN_MAIN)
 		{
@@ -3105,7 +3123,7 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 	if (!scrollheight)
 		scrollheight = INT32_MAX;
 
-	boolean hidecursor = !selected || pi->numitems == 0 || pd->drawroutine == MD_DrawMonitorToggles || (pd->drawroutine == MD_DrawLevelPlatterMenu && levelselect.row > 0);
+	boolean hidecursor = !selected || pi->numitems == 0 || pd->drawroutine == MD_DrawMonitorToggles || pd->drawroutine == MD_DrawLevelPlatterMenu;
 
 	fixed_t topy = M_GetItemAbsY(pi, 0);
 	fixed_t boty = M_GetItemAbsY(pi, pi->numitems-1);
@@ -3596,8 +3614,9 @@ static void M_UpdateLevelPlatter(void)
 		while (randommap == -1 || !M_LevelAvailableOnPlatter(randommap) || randommap == cv_nextmap.value - 1)
 			randommap = sortedmaps[M_RandomKey(numsortedmaps)];
 
-	// FIXME
-	//M_SetItemDisabled(M_GetPanel("OPTIONS"), "RANDOM", randommap < 0);
+	menupanelinst_t *pi = M_CheckPanel("OPTIONS");
+	if (pi != NULL)
+		M_SetItemDisabled(pi, "RANDOM", randommap < 0);
 
 	for (i = 0; i < numsortedmaps; i++)
 	{
@@ -3687,27 +3706,33 @@ static INT32 M_FindOnPlatter(INT32 which)
 	return -1;
 }
 
+INT32 MR_SetLevelListMode(INT32 choice)
+{
+	if (choice < 0 || choice >= LLM__MAX)
+		return false;
+
+	levellistmode = choice;
+	return true;
+}
+
+void MP_LevelPlatterOptions(menupanelinst_t *pi)
+{
+	M_SetItemVisible(pi, "GAMETYPE", levellistmode == LLM_CREATESERVER);
+	M_SetItemVisible(pi, "ENCORE", levellistmode == LLM_CREATESERVER && M_SecretUnlocked(SECRET_ENCORE));
+	M_SetItemVisible(pi, "RANDOM", levellistmode != LLM_CUPSELECT);
+}
+
 //
 // MR_PrepareLevelPlatter
 //
 // Prepares a tasty dish of zones and acts!
 // Call before any attempt to access a level platter.
 //
-INT32 MR_PrepareLevelPlatter(INT32 choice)
+void MP_PrepareLevelPlatter(menupanelinst_t *pi)
 {
-	if (choice < 0 || choice >= LLM__MAX)
-		return false;
-
-	levellistmode = choice;
-
+	(void)pi;
 	if (gamestate == GS_LEVEL)
 		CV_SetValue(&cv_newgametype, gametype);
-
-#if 0
-	M_SetItemVisible(MN_CHANGELEVEL, "GAMETYPE", levellistmode == LLM_CREATESERVER);
-	M_SetItemVisible(MN_CHANGELEVEL, "ENCORE", levellistmode == LLM_CREATESERVER && M_SecretUnlocked(SECRET_ENCORE));
-	M_SetItemVisible(MN_CHANGELEVEL, "RANDOM", levellistmode != LLM_CUPSELECT);
-#endif
 
 	levelsort_cons_t[LEVELSORT_CUP].strvalue = levellistmode == LLM_CUPSELECT ? NULL : "Cup"; // bruh
 
@@ -3725,8 +3750,6 @@ INT32 MR_PrepareLevelPlatter(INT32 choice)
 		levelselect.row = found & 0xffff;
 		levelselect.column = found >> 16;
 	}
-
-	return true;
 }
 
 static void M_MoveLevelPlatter(INT32 vmove)
@@ -3857,6 +3880,8 @@ INT32 MR_HandleLevelPlatter(INT32 choice)
 			vmove = dest - levelselect.numrows - levelselect.row;
 		else
 			vmove = dest - levelselect.row;
+
+		panelOn = M_GetPanel("OPTIONS") - curpanels;
 		break;
 	}
 
@@ -3868,25 +3893,11 @@ INT32 MR_HandleLevelPlatter(INT32 choice)
 		return true;
 	}
 
-	menupanelinst_t *pi = M_GetPanel("OPTIONS");
-
-	// move out of the options list only if you're at the top/bottom, or if pressing pgup/pgdn
-	if (levelselect.row == 0 && (choice == KEY_UPARROW || choice == KEY_DOWNARROW)
-	 && (vmove > 0 ? pi->itemon < levelselect.lastmenuitem : pi->itemon > levelselect.firstmenuitem))
-		vmove = 0;
-
-	// ...or if there's no other rows to move to???
 	if (levelselect.numrows <= 1)
 		vmove = 0;
 
 	if (vmove != 0)
-	{
 		M_MoveLevelPlatter(vmove);
-
-		// reset itemOn when moving into the options list
-		if (choice != KEY_BACKSPACE && levelselect.row == (vmove > 0 ? levelselect.numrows : 0) - vmove)
-			pi->itemon = vmove > 0 ? levelselect.firstmenuitem : levelselect.lastmenuitem;
-	}
 
 	if (hmove != 0)
 	{
@@ -3897,12 +3908,9 @@ INT32 MR_HandleLevelPlatter(INT32 choice)
 		levelselect.offsetx = lshseperation * -hmove;
 	}
 
-	if (vmove != 0 || hmove != 0)
+	if (levelselect.row > 0 && (vmove != 0 || hmove != 0))
 	{
-		if (levelselect.row > 0)
-			S_StartSoundAtVolume(NULL, sfx_s3kb7, 160);
-		else
-			S_StartSound(NULL, sfx_menu1);
+		S_StartSoundAtVolume(NULL, sfx_s3kb7, 160);
 		return true;
 	}
 
@@ -3997,10 +4005,6 @@ static void M_DrawLevelPlatterRow(UINT8 row, fixed_t y)
 		menupanelinst_t *options = M_GetPanel("OPTIONS");
 		options->visible = true;
 		options->y = y + 3*FRACUNIT - lsmapheight/2;
-		V_SetClipRect(0, y - lsmapheight/2, 320*FRACUNIT, options->scrollheight + 12*FRACUNIT, 0);
-		V_DrawFill((BASEVIDWIDTH - 282)/2, -9999, 282, 22222, 27);
-		//MD_DrawGenericMenu();
-		V_ClearClipRect();
 		return;
 	}
 
@@ -4034,7 +4038,7 @@ void MD_DrawLevelPlatterMenu(menupanelinst_t *pi)
 	INT32 minrows = (vid.height*FRACUNIT/vid.dupy + lsbasevseperation)/lsbasevseperation;
 	INT32 cursorx = levelselect.rows[row].wide ? 0 : levelselect.column * lshseperation;
 
-	pi->visible = false;
+	M_GetPanel("OPTIONS")->visible = false;
 
 	// finds row at top of the screen
 	while (y >= -lsbasevseperation/2)

@@ -332,7 +332,7 @@ panelfunc_f
 MP_SinglePlayerMain, MP_Options, MP_GameOptions, MP_SetupControls, MP_CameraSetup,
 MP_ScreenshotOptions, MP_AddonsOptions, MP_SetupMultiPlayer, MP_SetupMonitorToggles,
 MP_PrepReplayList, MP_ReplayHutStart, MP_VideoModeList, MP_MultiplayerPause,
-MP_PlayerSplitscreen, MP_SetupJoystick
+MP_PlayerSplitscreen, MP_SetupJoystick, MP_PrepareLevelPlatter, MP_LevelPlatterOptions
 ;
 INT32 MR_Addons(INT32 choice);
 INT32 MR_QuitAddons(INT32 choice);
@@ -404,7 +404,7 @@ INT32 MR_RestartAudio(INT32 choice);
 INT32 MR_EnterViewServer(INT32 choice);
 INT32 MR_QuitViewServer(INT32 choice);
 INT32 MR_HandleViewServer(INT32 choice);
-INT32 MR_PrepareLevelPlatter(INT32 choice);
+INT32 MR_SetLevelListMode(INT32 choice);
 INT32 MR_HandleLevelPlatter(INT32 choice);
 INT32 MR_LevelPlatterRandom(INT32 choice);
 #ifdef HAVE_DISCORDRPC
