@@ -571,8 +571,9 @@ void K_HandleFollower(player_t *player)
 		// hurt or dead
 		if (P_PlayerInPain(player) == true || player->mo->state == &states[S_KART_SPINOUT] || player->mo->health <= 0)
 		{
-			// cancel hit confirm.
+			// cancel hit confirm / horn
 			player->follower->movecount = 0;
+			player->follower->reactiontime = 0;
 
 			// spin out
 			player->follower->angle = player->drawangle;
@@ -603,6 +604,11 @@ void K_HandleFollower(player_t *player)
 		{
 			K_UpdateFollowerState(player->follower, fl.hitconfirmstate, FOLLOWERSTATE_HITCONFIRM);
 			player->follower->movecount--;
+		}
+		else if (player->follower->reactiontime)
+		{
+			K_UpdateFollowerState(player->follower, fl.hornstate, FOLLOWERSTATE_HORN);
+			player->follower->reactiontime--;
 		}
 		else if (player->speed > 10*player->mo->scale) // animation for moving fast enough
 		{
@@ -725,6 +731,7 @@ void K_FollowerHornTaunt(player_t *taunter, player_t *victim)
 			P_SetScale(honk, (11*desiredscale)/10);
 			honk->fuse = TICRATE/2;
 			honk->renderflags |= RF_DONTDRAW;
+			taunter->follower->reactiontime = fl->horntime; // reactiontime is used to play the horn animation for followers.
 
 			S_StartSound(taunter->follower, fl->hornsound);
 

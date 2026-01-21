@@ -43,6 +43,8 @@ enum follower {
 	follower_losestate,
 	follower_hitconfirmstate,
 	follower_hitconfirmtime,
+	follower_hornstate,
+	follower_horntime,
 	//
 };
 static const char *const follower_opt[] = {
@@ -69,6 +71,8 @@ static const char *const follower_opt[] = {
 	"losestate",
 	"hitconfirmstate",
 	"hitconfirmtime",
+	"hornstate",
+	"horntime",
 	//
 	NULL
 };
@@ -150,6 +154,12 @@ static int follower_get(lua_State *L)
 		break;
 	case follower_hitconfirmtime:
 		lua_pushinteger(L, follower->hitconfirmtime);
+		break;
+	case follower_hornstate:
+		lua_pushinteger(L, follower->hornstate);
+		break;
+	case follower_horntime:
+		lua_pushinteger(L, follower->horntime);
 		break;
 	}
 	return 1;
