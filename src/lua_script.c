@@ -356,10 +356,16 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 		lua_pushinteger(L, gravity);
 		return 1;
 	} else if (fastcmp(word,"VERSION")) {
-		lua_pushinteger(L, VERSION);
+		if (lua_compatmode)
+			lua_pushinteger(L, 1);
+		else
+			lua_pushinteger(L, VERSION);
 		return 1;
 	} else if (fastcmp(word,"SUBVERSION")) {
-		lua_pushinteger(L, SUBVERSION);
+		if (lua_compatmode)
+			lua_pushinteger(L, 6);
+		else
+			lua_pushinteger(L, SUBVERSION);
 		return 1;
 	} else if (fastcmp(word,"VERSIONSTRING")) {
 		lua_pushstring(L, VERSIONSTRING);
