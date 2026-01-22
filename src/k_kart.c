@@ -421,6 +421,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbubble_defense_canidle);
 	CV_RegisterVar(&cv_kartbubble_defense_damagerate);
 	CV_RegisterVar(&cv_kartbubble_boost_allow);
+	CV_RegisterVar(&cv_kartbubble_boost_offroadignore);
 	CV_RegisterVar(&cv_kartflame_fastfuel);
 	CV_RegisterVar(&cv_kartflame_offroadburn);
 	CV_RegisterVar(&cv_kartaltshrink_arrowbullet);
@@ -2158,7 +2159,7 @@ boolean K_ApplyOffroad(const player_t *player)
 	if (modeattacking != ATTACKING_NONE)
 		sneakertimer = player->sneakertimer > 0;
 
-	if (player->hyudorotimer || sneakertimer)
+	if (player->hyudorotimer || sneakertimer || (cv_kartbubble_boost_offroadignore.value && player->bubbleboost))
 		return false;
 	return true;
 }

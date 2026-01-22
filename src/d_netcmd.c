@@ -651,6 +651,7 @@ consvar_t cv_kartbubble_defense_canidle = CVAR_INIT ("kartbubble_defense_canidle
 static CV_PossibleValue_t bubble_defense_damagerate_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_kartbubble_defense_damagerate = CVAR_INIT ("kartbubble_defense_damagerate", "1.0", CV_NETVAR|CV_FLOAT, bubble_defense_damagerate_cons_t, NULL);
 consvar_t cv_kartbubble_boost_allow = CVAR_INIT ("kartbubble_boost_allow", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartbubble_boost_offroadignore = CVAR_INIT ("kartbubble_boost_offroadignore", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "Off", CV_NETVAR, CV_OnOff, NULL);
 // we want this to be default now apparently
 consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "On", CV_NETVAR, CV_OnOff, NULL);

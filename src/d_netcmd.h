@@ -203,6 +203,7 @@ extern consvar_t cv_kartinvin_midtime;
 extern consvar_t cv_kartbubble_defense_canidle;
 extern consvar_t cv_kartbubble_defense_damagerate;
 extern consvar_t cv_kartbubble_boost_allow;
+extern consvar_t cv_kartbubble_boost_offroadignore;
 extern consvar_t cv_kartflame_fastfuel;
 extern consvar_t cv_kartflame_offroadburn;
 extern consvar_t cv_kartaltshrink_arrowbullet;
