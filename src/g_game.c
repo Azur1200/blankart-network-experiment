@@ -2927,11 +2927,29 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		{
 			kartspeed = kartspeedrestat;
 			kartweight = kartweightrestat;
+
+			if (player == consoleplayer)
+			{
+				HU_AddChatText(va("You are now %d speed, %d weight.", kartspeed, kartweight), true);
+			}
+			else
+			{
+				HU_AddChatText(va("%s is now %d speed, %d weight.", player_names[player], kartspeed, kartweight), true);
+			}
 		}
 		else
 		{
 			kartspeed = skins[players[player].skin].kartspeed;
 			kartweight = skins[players[player].skin].kartweight;
+
+			if (player == consoleplayer)
+			{
+				HU_AddChatText(va("You are now using your skin's default stats."), true);
+			}
+			else
+			{
+				HU_AddChatText(va("%s is now using their skin's default stats.", player_names[player]), true);
+			}
 		}
 	}
 	else
