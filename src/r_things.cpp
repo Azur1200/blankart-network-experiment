@@ -100,7 +100,7 @@ static const char *spritename;
 
 typedef struct drawseg_xrange_item_s
 {
-	INT16 x1, x2;
+	INT32 x1, x2;
 	drawseg_t *user;
 } drawseg_xrange_item_t;
 
