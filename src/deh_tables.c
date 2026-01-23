@@ -905,6 +905,8 @@ struct panel_func_s const PANEL_FUNCS[] = {
 	{ "SETUPJOYSTICK", &MP_SetupJoystick },
 	{ "PREPARELEVELPLATTER", &MP_PrepareLevelPlatter },
 	{ "LEVELPLATTEROPTIONS", &MP_LevelPlatterOptions },
+	{ "TIMEATTACKMENU", &MP_TimeAttackMenu },
+	{ "TIMEATTACKPRESETS", &MP_TimeAttackPresets },
 	{ NULL, NULL }
 };
 

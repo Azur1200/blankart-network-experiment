@@ -277,6 +277,7 @@ static void Dummystaff_OnChange(void);
 {
 	menupaneldef_t *pd = &menupanels[nummenupanels++];
 	DEH_Link(name, &pd->info, &menunames);
+	pd->lineheight = 8;
 	return pd;
 }
 
@@ -1815,23 +1816,27 @@ boolean M_Responder(event_t *ev)
 				newItemOn += dir;
 			}
 
+			newPanelOn = panelOn;
 			if (newItemOn >= curpi->numitems)
 			{
-				newPanelOn = intmod(newPanelOn + 1, numcurpanels);
+				do
+					panelOn = intmod(panelOn + 1, numcurpanels);
+				while (panelOn != newPanelOn && curpanels[panelOn].disabled);
 				newItemOn -= curpi->numitems == 0 ? newItemOn : curpi->numitems;
 			}
 			else if (newItemOn < 0)
 			{
-				newPanelOn = intmod(newPanelOn - 1, numcurpanels);
+				do
+					panelOn = intmod(panelOn - 1, numcurpanels);
+				while (panelOn != newPanelOn && curpanels[panelOn].disabled);
 			}
-			curpi = &curpanels[newPanelOn];
+			curpi = &curpanels[panelOn];
 			curpd = M_GetDefFromInst(curpi);
 			newItemOn = curpi->numitems == 0 ? 0 : intmod(newItemOn, curpi->numitems);
 		}
-		while (!(oldPanelOn == newPanelOn && oldItemOn == newItemOn)
+		while (!(oldPanelOn == panelOn && oldItemOn == newItemOn)
 		       && (curpi->numitems == 0 || !M_ItemSelectable(&curpi->items[newItemOn]) || (vmove -= intsign(vmove)) != 0));
 
-		panelOn = newPanelOn;
 		M_RawSetItemOn(curpi, newItemOn);
 		if (curpd->keyhandler == MR_HandleLevelPlatter)
 			return curpd->keyhandler(ch); // dumb hack until i figure this out
@@ -2233,19 +2238,20 @@ void M_ClearMenus(boolean callexitmenufunc)
 
 // corrects the value of cv_nextmap if it can't show its current map
 // returns false if there's no map to show
-static boolean M_CheckNextMap(void)
+static boolean M_CheckNextMap(const menupanelinst_t *pi)
 {
-	size_t i, j;
-	for (i = 0; i < numcurpanels; i++)
-		for (j = 0; j < curpanels[i].numitems; j++)
-			if (curpanels[i].items[j].cvar == &cv_nextmap)
-				goto found;
+	size_t i;
 
-found:
-	if (i == numcurpanels)
-		return true;
+	if (pi != NULL)
+	{
+		for (i = 0; i < pi->numitems; i++)
+			if (pi->items[i].cvar == &cv_nextmap)
+				break;
+		if (i == pi->numitems)
+			return true;
 
-	levellistmode = curpanels[i].items[j].argument;
+		levellistmode = pi->items[i].argument;
+	}
 
 	if (!M_CanShowLevelInList(cv_nextmap.value - 1))
 	{
@@ -2259,8 +2265,10 @@ found:
 }
 
 // ditto, but for cv_nextcup
-static boolean M_CheckNextCup(void)
+static boolean M_CheckNextCup(const menupanelinst_t *pi)
 {
+	(void)pi;
+
 	if (kartcupheaders == NULL)
 		return false;
 
@@ -2270,59 +2278,16 @@ static boolean M_CheckNextCup(void)
 	return true;
 }
 
-static void M_UpdateTimeAttackMenu(void)
+static void M_MaybeSetItemVisible(menupanelinst_t *pi, const char *name, boolean cond)
 {
-#if 0
-	// see also p_setup.c's P_LoadRecordGhosts
-	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
+	menuitem_t *item = M_CheckMenuItem(pi, name);
+	if (item == NULL)
+		return;
 
-	boolean visible;
-	boolean showreplay = false, showguest = false;
-
-	// best time
-	visible = G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_BESTTIME);
-	M_SetItemVisible(MN_SP_REPLAY, "REPLAYTIME", visible);
-	M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVETIME", visible);
-	if (visible)
-		showreplay = showguest = true;
-
-	// best lap
-	visible = levellistmode != LLM_ITEMBREAKER && G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_BESTLAP);
-	M_SetItemVisible(MN_SP_REPLAY, "REPLAYLAP", visible);
-	M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVELAP", visible);
-	if (visible)
-		showreplay = showguest = true;
-
-	// last
-	visible = G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_LAST);
-	M_SetItemVisible(MN_SP_REPLAY, "REPLAYLAST", visible);
-	M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVELAST", visible);
-	if (visible)
-		showreplay = showguest = true;
-
-	// guest
-	visible = G_CheckRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, REPLAY_GUEST);;
-	M_SetItemVisible(MN_SP_REPLAY, "REPLAYGUEST", visible);
-	M_SetItemVisible(MN_SP_GUESTREPLAY, "DELETE", visible);
-	M_SetItemVisible(MN_SP_GHOST, "GUEST", visible);
-	if (visible)
-		showreplay = showguest = true;
-
-	// staff
-	CV_StealthSetValue(&cv_dummystaff, 0);
-	CV_SetValue(&cv_dummystaff, 1);
-	visible = cv_dummystaff.value != 0;
-	M_SetItemVisible(MN_SP_REPLAY, "REPLAYSTAFF", visible);
-	M_SetItemVisible(MN_SP_GHOST, "STAFF", visible);
-	if (visible)
-	{
-		CV_StealthSetValue(&cv_dummystaff, 1);
-		showreplay = true;
-	}
-
-	M_SetItemVisible(MN_SP_TIMEATTACK, "REPLAY", showreplay);
-	M_SetItemVisible(MN_SP_TIMEATTACK, "GUEST", showguest);
-#endif
+	if (cond)
+		item->status &= ~IT_HIDDEN;
+	else
+		item->status |= IT_HIDDEN;
 }
 
 //
@@ -2356,6 +2321,7 @@ static void M_SetupNextMenu(menutype_t menunum)
 		pi->defnum = src->defnum;
 		pi->itemon = src->itemon;
 		pi->vflags = src->vflags;
+		pi->disabled = src->disabled;
 
 		// copy items from the panel definition (TODO menuitem def/inst)
 		if (pd->numitems > 0)
@@ -2377,7 +2343,6 @@ static void M_SetupNextMenu(menutype_t menunum)
 				item->x *= FRACUNIT;
 				item->y *= FRACUNIT;
 			}
-			M_RawSetItemOn(pi, pi->itemon);
 		}
 		else
 		{
@@ -2388,20 +2353,19 @@ static void M_SetupNextMenu(menutype_t menunum)
 		pi->cursoroffset = pd->cursoroffset*FRACUNIT;
 		pi->navitemcount = pd->navitemcount;
 
+		M_CheckNextMap(pi);
+		M_CheckNextCup(pi);
+
 		if (pd->initializer != NULL)
 			pd->initializer(pi);
+
+		M_RawSetItemOn(pi, pi->itemon);
 	}
 
 	// TODO navigation between panels
 	panelOn = 0;
 
 	hidetitlemap = false;
-
-	if (menunum == MN_SP_TIMEATTACK)
-		M_UpdateTimeAttackMenu();
-
-	M_CheckNextMap();
-	M_CheckNextCup();
 }
 
 // pop the active menu from the stack
@@ -6607,7 +6571,7 @@ INT32 MR_HandleLevelStats(INT32 choice)
 INT32 MR_GrandPrixTemp(INT32 choice)
 {
 	(void)choice;
-	if (!M_CheckNextCup())
+	if (!M_CheckNextCup(NULL))
 	{
 		M_StartMessage(M_GetText("No cups found for Grand Prix.\n"),NULL,MM_NOTHING);
 		return false;
@@ -6693,6 +6657,78 @@ INT32 MR_StartGrandPrix(INT32 choice)
 // MODE ATTACK
 // ===========
 
+void MP_TimeAttackMenu(menupanelinst_t *pi)
+{
+	// see also p_setup.c's P_LoadRecordGhosts
+	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
+
+	boolean visible;
+	boolean showreplay = false, showguest = false;
+
+	// best time
+	visible = G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_BESTTIME);
+	M_MaybeSetItemVisible(pi, "REPLAYTIME", visible);
+	if (visible)
+		showreplay = showguest = true;
+
+	// best lap
+	visible = levellistmode != LLM_ITEMBREAKER && G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_BESTLAP);
+	M_MaybeSetItemVisible(pi, "REPLAYLAP", visible);
+	if (visible)
+		showreplay = showguest = true;
+
+	// last
+	visible = G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_LAST);
+	M_MaybeSetItemVisible(pi, "REPLAYLAST", visible);
+	if (visible)
+		showreplay = showguest = true;
+
+	// guest
+	visible = G_CheckRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, REPLAY_GUEST);
+	M_MaybeSetItemVisible(pi, "REPLAYGUEST", visible);
+	if (visible)
+		showreplay = showguest = true;
+
+	// staff
+	CV_StealthSetValue(&cv_dummystaff, 0);
+	CV_SetValue(&cv_dummystaff, 1);
+	visible = cv_dummystaff.value != 0;
+	M_MaybeSetItemVisible(pi, "REPLAYSTAFF", visible);
+	if (visible)
+	{
+		CV_StealthSetValue(&cv_dummystaff, 1);
+		showreplay = true;
+	}
+
+	// show the actual replay/guest options, for the main TA menu
+	M_MaybeSetItemVisible(pi, "SHOWREPLAY", showreplay);
+	M_MaybeSetItemVisible(pi, "SHOWGUEST", showguest);
+
+	// ugh, what do i do...
+	menuitem_t *item = M_CheckMenuItem(pi, "LEVEL");
+	if (item != NULL)
+		item->argument = levellistmode;
+}
+
+void MP_TimeAttackPresets(menupanelinst_t *pi)
+{
+	M_ClearPanelItems(pi);
+
+	menuitem_t *item;
+	for (size_t i = 0; i < numrecordpresets; i++)
+	{
+		item = M_AppendMenuItem(pi, 0, 0, IT_INTERACT);
+		item->routine = MR_TimeAttackPreset;
+		item->argument = i;
+		item->style = DEH_FindMenuItemStyle("HIGHLIGHT");
+		M_SetItemTextRaw(item, recordpresets[i]->realname);
+	}
+	item = M_AppendMenuItem(pi, 0, 6*FRACUNIT, IT_INTERACT|IT_OFSY);
+	item->routine = MR_GoBack;
+	item->style = DEH_FindMenuItemStyle("HIGHLIGHT");
+	M_SetItemTextRaw(item, "Back");
+}
+
 // Drawing function for Time Attack
 void MD_DrawTimeAttackMenu(menupanelinst_t *pi)
 {
@@ -6702,10 +6738,8 @@ void MD_DrawTimeAttackMenu(menupanelinst_t *pi)
 		preset = G_GetMapRecordPreset(record, currentrecordpreset);
 
 	// Character face!
-	{
-		UINT8 *colormap = R_GetTranslationColormap(cv_chooseskin.value, cv_playercolor[0].value, GTC_MENUCACHE);
-		V_DrawMappedPatch(BASEVIDWIDTH - pi->x/FRACUNIT - faceprefix[cv_chooseskin.value][FACE_WANTED]->width, pi->y/FRACUNIT, 0, faceprefix[cv_chooseskin.value][FACE_WANTED], colormap);
-	}
+	M_SetItemPatch(pi, "PLAYERICON", skins[cv_chooseskin.value].name);
+	M_SetItemExtra(pi, "PLAYERICON", DEH_SkincolorName(cv_playercolor[0].value));
 
 	// Level record list
 	if (cv_nextmap.value)
@@ -6736,10 +6770,7 @@ INT32 MR_TimeAttack(INT32 arg)
 	if (arg >= 0)
 	{
 		levellistmode = arg;
-		// FIXME
-		//M_SetItemArgument(menustack[0], "LEVEL", arg); // Don't be dependent on cv_newgametype
-
-		if (!M_CheckNextMap())
+		if (!M_CheckNextMap(NULL))
 		{
 			M_StartMessage(M_GetText(va("No levels found for %s.\n", arg == LLM_ITEMBREAKER ? "Item Breaker" : "Time Attack")), NULL, MM_NOTHING);
 			return false;

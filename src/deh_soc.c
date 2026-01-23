@@ -2382,10 +2382,6 @@ void readmenupanel(MYFILE *f, menupaneldef_t *pd)
 			WARN("unknown word '%s'", word);
 	} while (!myfeof(f)); // finish when the line is empty
 
-	// default line height
-	if (!pd->lineheight)
-		pd->lineheight = 8;
-
 	Z_Free(s);
 }
 #undef WARN
@@ -2503,8 +2499,13 @@ static void readmenupanelinstances(MYFILE *f, INT32 num)
 		else if (fastcmp(word, "FLAGS"))
 		{
 			UINT32 allow = V_SNAPTOTOP|V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_SNAPTORIGHT
-			              |V_ALLOWLOWERCASE; // overrides menucaps
+			              |V_ALLOWLOWERCASE // overrides menucaps
+			              |V_ALPHAMASK; // woah, transparency!
 			pi->vflags = get_number(word2) & allow;
+		}
+		else if (fastcmp(word, "DISABLED"))
+		{
+			pi->disabled = word2[0] == 'T' || word2[0] == 'Y';;
 		}
 		else
 			WARN("unknown word '%s'", word);

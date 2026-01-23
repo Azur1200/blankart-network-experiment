@@ -262,6 +262,7 @@ struct menupanelinst_t
 	INT32 vflags;
 	boolean visible;
 	INT32 navitemcount;
+	boolean disabled; // can't be selected
 };
 
 struct menu_t
@@ -332,7 +333,8 @@ panelfunc_f
 MP_SinglePlayerMain, MP_Options, MP_GameOptions, MP_SetupControls, MP_CameraSetup,
 MP_ScreenshotOptions, MP_AddonsOptions, MP_SetupMultiPlayer, MP_SetupMonitorToggles,
 MP_PrepReplayList, MP_ReplayHutStart, MP_VideoModeList, MP_MultiplayerPause,
-MP_PlayerSplitscreen, MP_SetupJoystick, MP_PrepareLevelPlatter, MP_LevelPlatterOptions
+MP_PlayerSplitscreen, MP_SetupJoystick, MP_PrepareLevelPlatter, MP_LevelPlatterOptions,
+MP_TimeAttackMenu, MP_TimeAttackPresets
 ;
 INT32 MR_Addons(INT32 choice);
 INT32 MR_QuitAddons(INT32 choice);
