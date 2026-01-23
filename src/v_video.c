@@ -3619,6 +3619,9 @@ INT32 V_SubStringWidth(const char *string, INT32 length, INT32 option)
 		if ((UINT8)c & 0x80) //color parsing! -Inuyasha 2.16.09
 			continue;
 
+		if (c < HU_FONTSTART)
+			continue; // this is not a proper character.
+
 		c = toupper(c) - HU_FONTSTART;
 		if (c < 0 || c >= HU_FONTSIZE || !fontv[HU_FONT].font[c])
 			lw += spacewidth;
@@ -3672,6 +3675,9 @@ INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option)
 		if ((UINT8)c & 0x80) //color parsing! -Inuyasha 2.16.09
 			continue;
 
+		if (c < HU_FONTSTART)
+			continue; // this is not a proper character.
+
 		c = toupper(c) - HU_FONTSTART;
 		if (c < 0 || c >= HU_FONTSIZE || !fontv[HU_FONT].font[c])
 			lw += spacewidth;
@@ -3723,6 +3729,9 @@ INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option)
 
 		if ((UINT8)c & 0x80) //color parsing! -Inuyasha 2.16.09
 			continue;
+
+		if (c < HU_FONTSTART)
+			continue; // this is not a proper character.
 
 		if (!lowercase || !fontv[TINY_FONT].font[c-HU_FONTSTART])
 			c = toupper(c);

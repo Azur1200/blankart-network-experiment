@@ -229,6 +229,8 @@ void K_PlayerItemThink(player_t *player, boolean onground);
 extern consvar_t cv_karteggmine_slotlock;
 extern consvar_t cv_karteggmine_slotbrick;
 
+#define BUBBLEBOOSTTIME (7 * sneakertime / 10)
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

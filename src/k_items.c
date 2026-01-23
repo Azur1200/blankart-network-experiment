@@ -2466,7 +2466,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 					// experiment: don't boost, just give invulnerability
 					if (cv_kartbubble_boost_allow.value)
 					{
-						player->bubbleboost = 7 * sneakertime / 10;
+						player->bubbleboost = BUBBLEBOOSTTIME;
 					}
 					player->flashing = 4*TICRATE/7;
 				}

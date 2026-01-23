@@ -2002,7 +2002,8 @@ void CURLGetFile(void)
 				e = m->easy_handle;
 				easyres = m->data.result;
 
-				char *filename = Z_StrDup(curl_realname);
+				char *filename = malloc(strlen(curl_realname)+1);
+				strcpy(filename, curl_realname);
 				nameonly(filename);
 
 				if (easyres != CURLE_OK)
@@ -2040,7 +2041,7 @@ void CURLGetFile(void)
 					}
 				}
 
-				Z_Free(filename);
+				free(filename);
 				curl_curfile->file = NULL;
 #ifndef HAVE_THREADS
 				curl_running = false;

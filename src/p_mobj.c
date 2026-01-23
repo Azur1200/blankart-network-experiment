@@ -11772,9 +11772,9 @@ void P_RemoveFloorSpriteSlope(mobj_t *mobj)
 //
 // P_RemoveMobj
 //
-mapthing_t *itemrespawnque[ITEMQUESIZE];
-tic_t itemrespawntime[ITEMQUESIZE];
-size_t iquehead, iquetail;
+mapthing_t *itemrespawnque[ITEMQUESIZE] = {};
+tic_t itemrespawntime[ITEMQUESIZE] = {};
+size_t iquehead = 0, iquetail = 0;
 
 #ifdef PARANOIA
 //#define SCRAMBLE_REMOVED // Force debug build to crash when Removed mobj is accessed

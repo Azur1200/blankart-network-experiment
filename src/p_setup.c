@@ -537,9 +537,9 @@ void P_AllocMapHeader(INT16 i)
 //
 #define MAXLEVELFLATS 256
 
-size_t nummaxflats;
-size_t numlevelflats;
-levelflat_t *levelflats;
+size_t nummaxflats = 0;
+size_t numlevelflats = 0;
+levelflat_t *levelflats = NULL;
 
 //SoM: Other files want this info.
 size_t P_PrecacheLevelFlats(void)
@@ -8148,8 +8148,8 @@ void P_SetupLevelSky(const char *skytexname, boolean global)
 	R_SetupSkyDraw();
 }
 
-static const char *maplumpname;
-lumpnum_t lastloadedmaplumpnum; // for comparative savegame
+static const char *maplumpname = NULL;
+lumpnum_t lastloadedmaplumpnum = LUMPERROR; // for comparative savegame
 
 //
 // P_LevelInitStuff
@@ -8619,7 +8619,7 @@ static void P_InitGametype(void)
 	}
 }
 
-struct minimapinfo minimapinfo;
+struct minimapinfo minimapinfo = {};
 
 static void P_InitMinimapInfo(void)
 {
