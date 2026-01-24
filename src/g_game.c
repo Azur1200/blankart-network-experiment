@@ -2743,7 +2743,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	UINT8 kartspeedrestat;
 	UINT8 kartweightrestat;
 	boolean randomrestat;
-	boolean notifyrestat = false;
+	boolean notifyrestat;
 
 	boolean followerready;
 	INT32 followerskin;
@@ -2870,7 +2870,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	pflags = (players[player].pflags & (PF_WANTSTOJOIN|PF_KICKSTARTACCEL|PF_SHRINKME|PF_SHRINKACTIVE|PF_FLIPCAM));
 
 	// SRB2kart
-	if ((betweenmaps || leveltime <= starttime || spectator == true) && players[player].jointime)
+	if (betweenmaps || leveltime <= starttime || spectator == true || players[player].jointime == 0)
 	{
 		itemroulette = 0;
 		previtemroulette = 0;
@@ -2896,7 +2896,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		exiting = 0;
 		khudfinish = 0;
 		khudcardanimation = 0;
-		starpostx =0;
+		starpostx = 0;
 		starposty = 0;
 		starpostz = 0;
 		starpostangle = 0;
@@ -2925,57 +2925,26 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 			kartweightrestat = P_RandomRange(1, 9);
 		}
 
-		// this is horrible 🥹
-		notifyrestat = (
-			(
-				(kartspeedrestat == 0 || kartweightrestat == 0) &&
-				(
-					players[player].kartspeed != skins[players[player].skin].kartspeed ||
-					players[player].kartweight != skins[players[player].skin].kartweight
-				)
-			) ||
-			(
-				(
-					randomrestat ||
-					kartspeedrestat != players[player].kartspeed || 
-					kartweightrestat != players[player].kartweight
-				) && (kartspeedrestat != 0 || kartweightrestat != 0)
-			)
-		) && cv_notifyrestat.value;
-
 		if (kartspeedrestat != 0 && kartweightrestat != 0)
 		{
 			kartspeed = kartspeedrestat;
 			kartweight = kartweightrestat;
 
-			if (playeringame[player] && notifyrestat)
-			{
-				if ((splitscreen && player == consoleplayer) || player != consoleplayer)
-				{
-					HU_AddChatText(va("%s is now %d speed, %d weight.", player_names[player], kartspeed, kartweight), true);
-				}
-				else
-				{
-					HU_AddChatText(va("You are now %d speed, %d weight.", kartspeed, kartweight), true);
-				}
-			}
+			notifyrestat = (
+				randomrestat ||
+				kartspeedrestat != players[player].kartspeed || 
+				kartweightrestat != players[player].kartweight
+			) && cv_notifyrestat.value;
 		}
 		else
 		{
 			kartspeed = skins[players[player].skin].kartspeed;
 			kartweight = skins[players[player].skin].kartweight;
 			
-			if (playeringame[player] && notifyrestat)
-			{
-				if ((splitscreen && player == consoleplayer) || player != consoleplayer)
-				{
-					HU_AddChatText(va("%s is now using their skin's default stats.", player_names[player]), true);
-				}
-				else
-				{
-					HU_AddChatText(va("You are now using your skin's default stats."), true);
-				}
-			}
+			notifyrestat = (
+				players[player].kartspeed != skins[players[player].skin].kartspeed ||
+				players[player].kartweight != skins[players[player].skin].kartweight
+			) && cv_notifyrestat.value;
 		}
 	}
 	else
@@ -3069,6 +3038,38 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	else
 	{
 		follower = NULL;
+
+		if (players[player].jointime > 0)
+		{
+			if (kartspeedrestat != 0 && kartweightrestat != 0)
+			{
+				if (playeringame[player] && notifyrestat)
+				{
+					if ((splitscreen && player == consoleplayer) || player != consoleplayer)
+					{
+						HU_AddChatText(va("%s is now %d speed, %d weight.", player_names[player], kartspeed, kartweight), true);
+					}
+					else
+					{
+						HU_AddChatText(va("You are now %d speed, %d weight.", kartspeed, kartweight), true);
+					}
+				}
+			}
+			else
+			{			
+				if (playeringame[player] && notifyrestat)
+				{
+					if ((splitscreen && player == consoleplayer) || player != consoleplayer)
+					{
+						HU_AddChatText(va("%s is now using their skin's default stats.", player_names[player]), true);
+					}
+					else
+					{
+						HU_AddChatText(va("You are now using your skin's default stats."), true);
+					}
+				}
+			}
+		}
 	}
 
 	spectatorreentry = (betweenmaps ? 0 : players[player].spectatorreentry);
