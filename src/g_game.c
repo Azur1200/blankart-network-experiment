@@ -2870,7 +2870,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	pflags = (players[player].pflags & (PF_WANTSTOJOIN|PF_KICKSTARTACCEL|PF_SHRINKME|PF_SHRINKACTIVE|PF_FLIPCAM));
 
 	// SRB2kart
-	if (betweenmaps || leveltime <= starttime || spectator == true)
+	if ((betweenmaps || leveltime <= starttime || spectator == true) && players[player].jointime)
 	{
 		itemroulette = 0;
 		previtemroulette = 0;
