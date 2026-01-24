@@ -2087,8 +2087,8 @@ void K_TryHurtSoundExchange(mobj_t *victim, mobj_t *attacker)
 		return;
 	}
 
-	attacker->player->confirmVictim = (victim->player - players);
-	attacker->player->confirmVictimDelay = TICRATE/2;
+	attacker->player->karthud[khud_confirmvictim] = (victim->player - players);
+	attacker->player->karthud[khud_confirmvictimdelay] = TICRATE/2;
 
 	if (attacker->player->follower != NULL)
 	{
@@ -2109,20 +2109,20 @@ void K_PlayPowerGloatSound(mobj_t *source)
 
 static void K_HandleDelayedHitByEm(player_t *player)
 {
-	if (player->confirmVictimDelay == 0)
+	if (player->karthud[khud_confirmvictimdelay] == 0)
 	{
 		return;
 	}
 
-	player->confirmVictimDelay--;
+	player->karthud[khud_confirmvictimdelay]--;
 
-	if (player->confirmVictimDelay == 0)
+	if (player->karthud[khud_confirmvictimdelay] == 0)
 	{
 		mobj_t *victim = NULL;
 
-		if (player->confirmVictim < MAXPLAYERS && playeringame[player->confirmVictim])
+		if (player->karthud[khud_confirmvictim] < MAXPLAYERS && playeringame[player->karthud[khud_confirmvictim]])
 		{
-			player_t *victimPlayer = &players[player->confirmVictim];
+			player_t *victimPlayer = &players[player->karthud[khud_confirmvictim]];
 
 			if (victimPlayer != NULL && victimPlayer->spectator == false)
 			{

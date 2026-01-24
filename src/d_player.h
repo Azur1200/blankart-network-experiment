@@ -203,6 +203,8 @@ typedef enum
 	khud_enginesnd,		// Engine sound offset this player is using.
 	khud_voices,		// Used to stop the player saying more voices than it should
 	khud_tauntvoices,	// Used to specifically stop taunt voice spam
+	khud_confirmvictim,		// Player ID that you dealt damage to
+	khud_confirmvictimdelay,	// Delay before playing the sound
 
 	// Battle
 	khud_cardanimation,	// Used to determine the position of some full-screen Battle Mode graphics
@@ -695,9 +697,6 @@ struct player_t
 
 	SINT8 lastjawztarget;	// (-1 to 15) - Last person you target with jawz, for playing the target switch sfx
 	UINT8 jawztargetdelay;	// (0 to 5) - Delay for Jawz target switching, to make it less twitchy
-
-	UINT8 confirmVictim;		// Player ID that you dealt damage to
-	UINT8 confirmVictimDelay;	// Delay before playing the sound
 
 	UINT8 dashRingPullTics; // Timer during which the player is pulled towards a dash ring
 	UINT8 dashRingPushTics; // Timer during which the player displays effects and has no gravity after being thrust by a dash ring
