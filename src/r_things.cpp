@@ -940,6 +940,12 @@ UINT8 *R_GetSpriteTranslation(vissprite_t *vis)
 	return NULL;
 }
 
+// Based off of R_GetLinedefTransTable
+UINT32 R_GetThingTransTable(fixed_t alpha, UINT32 transmap)
+{
+	return (20*(FRACUNIT - ((alpha * (10 - transmap))/10) - 1) + FRACUNIT) >> (FRACBITS+1);
+}
+
 //
 // R_DrawVisSprite
 //  mfloorclip and mceilingclip should also be set.
@@ -2373,6 +2379,8 @@ static void R_ProjectSprite(mobj_t *thing)
 			cut = static_cast<spritecut_e>(cut | SC_SHEAR);
 		}
 	}
+
+	trans = R_GetThingTransTable(R_GetThingFade(oldthing), trans);
 
 	if (!shadowskew)
 	{
@@ -3860,6 +3868,31 @@ boolean R_ThingWithinDist (mobj_t *thing, fixed_t limit_dist)
 	}
 
 	return true;
+}
+
+fixed_t R_GetThingFade(mobj_t *thing)
+{
+	fixed_t fadealpha = FRACUNIT;
+
+	if (!cv_playerfade.value || leveltime < starttime-(3*TICRATE) || !thing->player || thing->player == viewplayer)
+		return fadealpha;
+
+	const INT32 playerdist     = (FixedMul((thing->x - viewx), viewcos) + FixedMul((thing->y - viewy), viewsin)) >> FRACBITS;
+	const INT32 viewplayerdist = (FixedMul((viewplayer->mo->x - viewx), viewcos) + FixedMul((viewplayer->mo->y - viewy), viewsin)) >> FRACBITS;
+
+	if (playerdist < viewplayerdist)
+	{
+		if (playerdist < viewplayerdist / 2) // stronger fade when very close
+		{
+			fadealpha = (playerdist * FRACUNIT) / (viewplayerdist / 2) / 3;
+		}
+		else
+		{
+			fadealpha = (playerdist * FRACUNIT) / viewplayerdist;
+		}
+	}
+
+	return fadealpha;
 }
 
 /* Check if precipitation may be drawn from our current view. */

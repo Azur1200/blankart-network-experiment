@@ -1441,6 +1441,8 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 			Surf.PolyFlags = HWR_SurfaceBlend(blendmode, trans, &Surf);
 		}
 
+		Surf.PolyColor.s.alpha = FixedMul(R_GetThingFade(spr->mobj), Surf.PolyColor.s.alpha);
+
 		// don't forget to enable the depth test because we can't do this
 		// like before: model polygons are not sorted
 
@@ -1489,6 +1491,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 
 		if (md2->error)
 			return false; // we already failed loading this before :(
+
 		if (!md2->model)
 		{
 			//CONS_Debug(DBG_RENDER, "Loading model... (%s)", sprnames[spr->mobj->sprite]);

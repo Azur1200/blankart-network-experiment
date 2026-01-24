@@ -811,7 +811,7 @@ void HWR_EncoreInvertScreen(void)
 
 	Surf.PolyColor.rgba = 0xFFFFFFFF;
 
-	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Invert|PF_NoDepthTest);
+	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_NoDepthTest);
 }
 
 // Very similar to HWR_DrawConsoleBack, except we draw from the middle(-ish) of the screen to the bottom.

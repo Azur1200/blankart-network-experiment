@@ -173,6 +173,8 @@ consvar_t cv_translucenthud = CVAR_INIT ("translucenthud", "10", CV_SAVE, transl
 consvar_t cv_drawdist = CVAR_INIT ("drawdist", "8192", CV_SAVE, drawdist_cons_t, NULL);
 consvar_t cv_drawdist_precip = CVAR_INIT ("drawdist_precip", "1024", CV_SAVE, drawdist_precip_cons_t, NULL);
 
+consvar_t cv_playerfade = CVAR_INIT ("playerfade", "Off", CV_SAVE, CV_OnOff, NULL);
+
 consvar_t cv_fov[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("fov", "90", CV_FLOAT|CV_CALL|CV_SAVE, fov_cons_t, Fov_OnChange),
 	CVAR_INIT ("fov2", "90", CV_FLOAT|CV_CALL|CV_SAVE, fov_cons_t, Fov_OnChange),
@@ -1807,6 +1809,8 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_translucenthud);
 
 	CV_RegisterVar(&cv_maxportals);
+
+	CV_RegisterVar(&cv_playerfade);
 
 	CV_RegisterVar(&cv_movebob);
 

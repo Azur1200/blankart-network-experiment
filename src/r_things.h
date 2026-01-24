@@ -82,6 +82,8 @@ boolean R_ThingVisible (mobj_t *thing);
 boolean R_ThingWithinDist (mobj_t *thing,
 		fixed_t        draw_dist);
 
+fixed_t R_GetThingFade(mobj_t *thing);
+
 boolean R_PrecipThingVisible (precipmobj_t *precipthing);
 
 boolean R_ThingHorizontallyFlipped (mobj_t *thing);
