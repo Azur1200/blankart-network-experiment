@@ -1448,6 +1448,7 @@ void D_RegisterClientCommands(void)
 	
 	// player restat
 	CV_RegisterVar(&cv_allowrestat);
+	CV_RegisterVar(&cv_notifyrestat);
 	COM_AddCommand("restat", Command_Restat);
 	COM_AddCommand("restat2", Command_Restat2);
 	COM_AddCommand("restat3", Command_Restat3);

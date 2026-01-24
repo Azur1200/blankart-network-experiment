@@ -495,6 +495,7 @@ consvar_t cv_deadzonestyle[MAXSPLITSCREENPLAYERS] = {
 
 // allows players to use restat (server toggle)
 consvar_t cv_allowrestat = CVAR_INIT ("allowrestat", "Yes", CV_NETVAR, CV_YesNo, NULL);
+consvar_t cv_notifyrestat = CVAR_INIT ("notifyrestat", "Yes", CV_NETVAR, CV_YesNo, NULL);
 
 // now automatically allocated in D_RegisterClientCommands
 // so that it doesn't have to be updated depending on the value of MAXPLAYERS
@@ -2742,6 +2743,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	UINT8 kartspeedrestat;
 	UINT8 kartweightrestat;
 	boolean randomrestat;
+	boolean notifyrestat = false;
 
 	boolean followerready;
 	INT32 followerskin;
@@ -2923,20 +2925,38 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 			kartweightrestat = P_RandomRange(1, 9);
 		}
 
+		// this is horrible 🥹
+		notifyrestat = (
+			(
+				(kartspeedrestat == 0 || kartweightrestat == 0) &&
+				(
+					players[player].kartspeed != skins[players[player].skin].kartspeed ||
+					players[player].kartweight != skins[players[player].skin].kartweight
+				)
+			) ||
+			(
+				(
+					randomrestat ||
+					kartspeedrestat != players[player].kartspeed || 
+					kartweightrestat != players[player].kartweight
+				) && (kartspeedrestat != 0 || kartweightrestat != 0)
+			)
+		) && cv_notifyrestat.value;
+
 		if (kartspeedrestat != 0 && kartweightrestat != 0)
 		{
 			kartspeed = kartspeedrestat;
 			kartweight = kartweightrestat;
 
-			if (playeringame[player])
+			if (playeringame[player] && notifyrestat)
 			{
-				if (player == consoleplayer)
+				if ((splitscreen && player == consoleplayer) || player != consoleplayer)
 				{
-					HU_AddChatText(va("You are now %d speed, %d weight.", kartspeed, kartweight), true);
+					HU_AddChatText(va("%s is now %d speed, %d weight.", player_names[player], kartspeed, kartweight), true);
 				}
 				else
 				{
-					HU_AddChatText(va("%s is now %d speed, %d weight.", player_names[player], kartspeed, kartweight), true);
+					HU_AddChatText(va("You are now %d speed, %d weight.", kartspeed, kartweight), true);
 				}
 			}
 		}
@@ -2945,15 +2965,15 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 			kartspeed = skins[players[player].skin].kartspeed;
 			kartweight = skins[players[player].skin].kartweight;
 			
-			if (playeringame[player])
+			if (playeringame[player] && notifyrestat)
 			{
-				if (player == consoleplayer)
+				if ((splitscreen && player == consoleplayer) || player != consoleplayer)
 				{
-					HU_AddChatText(va("You are now using your skin's default stats."), true);
+					HU_AddChatText(va("%s is now using their skin's default stats.", player_names[player]), true);
 				}
 				else
 				{
-					HU_AddChatText(va("%s is now using their skin's default stats.", player_names[player]), true);
+					HU_AddChatText(va("You are now using your skin's default stats."), true);
 				}
 			}
 		}
