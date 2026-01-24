@@ -233,6 +233,11 @@ static void Command_Teamchange2_f(void);
 static void Command_Teamchange3_f(void);
 static void Command_Teamchange4_f(void);
 
+static void Command_Restat(void);
+static void Command_Restat2(void);
+static void Command_Restat3(void);
+static void Command_Restat4(void);
+
 static void Command_ServerTeamChange_f(void);
 
 static void Command_Clearscores_f(void);
@@ -1440,6 +1445,117 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_connectawaittime);
 	CV_RegisterVar(&cv_serverinfoscreen);
+	
+	// player restat
+	CV_RegisterVar(&cv_allowrestat);
+	CV_RegisterVar(&cv_notifyrestat);
+	COM_AddCommand("restat", Command_Restat);
+	COM_AddCommand("restat2", Command_Restat2);
+	COM_AddCommand("restat3", Command_Restat3);
+	COM_AddCommand("restat4", Command_Restat4);
+}
+
+static void RestatForPlayer(UINT32 ssplayer)
+{
+	player_t* player = &players[g_localplayers[ssplayer]];
+	int speed;
+	int weight;
+
+	if (!cv_allowrestat.value)
+	{
+		CONS_Printf("This command has been disabled by the server host.\n");
+		return;
+	}
+	
+	if (COM_Argc() > 2)
+	{
+		if (sscanf(COM_Argv(1), " %d", &speed) == 0 || 
+			sscanf(COM_Argv(2), " %d", &weight) == 0)
+		{
+			CONS_Printf("Expected two numbers (<speed> <weight>) in the range of 1-9.\n");
+			return;
+		}
+		// range checking
+		if (speed < 1 || speed > 9 ||
+			weight < 1 || weight > 9)
+		{
+			CONS_Printf("Expected two numbers (<speed> <weight>) in the range of 1-9.\n");
+			return;	
+		}
+
+		// should be good now 🥲
+		player->kartspeedrestat = speed;
+		player->kartweightrestat = weight;
+		player->randomrestat = false;
+		
+		CONS_Printf("You will be %d speed, %d weight for the next race.\n", speed, weight);
+		CONS_Printf("Use \"restat off\" to return to your skin's default stats.\n");
+
+		WeaponPref_Send(ssplayer);
+		return;
+	}
+	else if (COM_Argc() > 1)
+	{
+		if (fasticmp(COM_Argv(1), "random"))
+		{
+			player->randomrestat = !player->randomrestat;
+			if (player->randomrestat)
+			{
+				CONS_Printf("Random restat is now enabled.\n");
+			}
+			else
+			{
+				CONS_Printf("Random restat is now disabled.\n");
+			}
+
+			WeaponPref_Send(ssplayer);
+			return;
+		}
+		else if (fasticmp(COM_Argv(1), "off"))
+		{
+			player->kartspeedrestat = 0;
+			player->kartweightrestat = 0;
+			player->randomrestat = false;
+			WeaponPref_Send(ssplayer);
+			
+			CONS_Printf("Now using skin default stats.\n");
+			return;
+		}
+		else
+		{
+			CONS_Printf(
+				"Usage: \"restat<playernum> <speed> <weight>\"\n"
+				"Alternatively: \"restat<playernum> random\" to toggle the use of random stats each round.\n"
+				"or \"restat<playernum> off\" to use your skin's default stats.\n");
+		}
+	}
+	else
+	{
+		CONS_Printf(
+			"Usage: \"restat<playernum> <speed> <weight>\"\n"
+			"Alternatively: \"restat<playernum> random\" to use random stats each round.\n"
+			"or \"restat<playernum> off\" to use your skin's default stats.\n");
+	}
+}
+
+static void Command_Restat(void)
+{
+	RestatForPlayer(0);
+}
+
+static void Command_Restat2(void)
+{
+	RestatForPlayer(1);
+}
+
+static void Command_Restat3(void)
+{
+	RestatForPlayer(2);
+}
+
+static void Command_Restat4(void)
+{
+	RestatForPlayer(3);
 }
 
 /**
@@ -2230,11 +2346,13 @@ enum {
 	WP_KICKSTARTACCEL = 1<<0,
 	WP_SHRINKME = 1<<1,
 	WP_FLIPCAM = 1<<2,
-	WP_LEGACYJITTER = 1<<3
+	WP_LEGACYJITTER = 1<<3,
+	WP_RANDOMRESTAT = 1<<4
 };
 
 void WeaponPref_Send(UINT8 ssplayer)
 {
+	player_t* player = &players[g_localplayers[ssplayer]];
 	UINT8 prefs = 0;
 
 	if (cv_kickstartaccel[ssplayer].value)
@@ -2248,10 +2366,15 @@ void WeaponPref_Send(UINT8 ssplayer)
 
 	if (!(cv_jitterlegacy[ssplayer].value))
 		prefs |= WP_LEGACYJITTER;
+	
+	if (player->randomrestat)
+		prefs |= WP_RANDOMRESTAT;
 
-	UINT8 buf[2];
+	UINT8 buf[4];
 	buf[0] = prefs;
 	buf[1] = cv_mindelay.value;
+	buf[2] = player->kartspeedrestat;
+	buf[3] = player->kartweightrestat;
 
 	SendNetXCmdForPlayer(ssplayer, XD_WEAPONPREF, buf, sizeof buf);
 }
@@ -2274,6 +2397,9 @@ void WeaponPref_Save(UINT8 **cp, INT32 playernum)
 	if (player->jitterlegacy)
 		prefs |= WP_LEGACYJITTER;
 
+	if (player->randomrestat)
+		prefs |= WP_RANDOMRESTAT;
+
 	WRITEUINT8(*cp, prefs);
 }
 
@@ -2285,6 +2411,7 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 
 	player->pflags &= ~(PF_KICKSTARTACCEL|PF_SHRINKME|PF_FLIPCAM);
 	player->jitterlegacy = false;
+	player->randomrestat = false;
 
 	if (prefs & WP_KICKSTARTACCEL)
 		player->pflags |= PF_KICKSTARTACCEL;
@@ -2298,6 +2425,9 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 	if (prefs & WP_LEGACYJITTER)
 		player->jitterlegacy = true;
 
+	if (prefs & WP_RANDOMRESTAT)
+		player->randomrestat = true;
+
 	if (leveltime < 2)
 	{
 		// BAD HACK: No other place I tried to slot this in
@@ -2309,14 +2439,28 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 
 static void Got_WeaponPref(UINT8 **cp,INT32 playernum)
 {
+	player_t *player = &players[playernum];
+
 	WeaponPref_Parse(cp, playernum);
 
 	UINT8 mindelay = READUINT8(*cp);
 	if (server)
 	{
 		for (UINT8 i = 0; i < G_LocalSplitscreenPartySize(playernum); ++i)
-			playerdelaytable[G_LocalSplitscreenPartyMember(playernum, i)] = mindelay;
+		playerdelaytable[G_LocalSplitscreenPartyMember(playernum, i)] = mindelay;
 	}
+	UINT8 kartspeedrestat = READUINT8(*cp);
+	UINT8 kartweightrestat = READUINT8(*cp);
+	if (kartspeedrestat < 0 || kartspeedrestat > 9 ||
+		kartweightrestat < 0 || kartweightrestat > 9)
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Illegal restat values received from %s\n"), player_names[playernum]);
+		if (server)
+			SendKick(playernum, KICK_MSG_CON_FAIL);
+		return;
+	}
+	player->kartspeedrestat = kartspeedrestat;
+	player->kartweightrestat = kartweightrestat;
 
 	// SEE ALSO g_demo.c
 	demo_extradata[playernum] |= DXD_WEAPONPREF;

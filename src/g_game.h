@@ -96,6 +96,8 @@ extern consvar_t cv_resetspecialmusic;
 
 extern consvar_t cv_resume;
 
+extern consvar_t cv_allowrestat, cv_notifyrestat;
+
 void weaponPrefChange(void);
 void weaponPrefChange2(void);
 void weaponPrefChange3(void);
