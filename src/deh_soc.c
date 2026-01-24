@@ -1969,6 +1969,7 @@ static void readmenuitems(MYFILE *f, menupaneldef_t *pd)
 				deh_warning("Syntax error in menuitem name");
 				break;
 			}
+			strupr(s);
 
 			if (item != NULL && status != 0)
 				item->status = status;

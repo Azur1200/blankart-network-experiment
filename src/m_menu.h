@@ -263,6 +263,7 @@ struct menupanelinst_t
 	boolean visible;
 	INT32 navitemcount;
 	boolean disabled; // can't be selected
+	boolean altscroll; // viewserver hell (list scrolling, usually paired with disabled = true)
 };
 
 struct menu_t
@@ -334,7 +335,8 @@ MP_SinglePlayerMain, MP_Options, MP_GameOptions, MP_SetupControls, MP_CameraSetu
 MP_ScreenshotOptions, MP_AddonsOptions, MP_SetupMultiPlayer, MP_SetupMonitorToggles,
 MP_PrepReplayList, MP_ReplayHutStart, MP_VideoModeList, MP_MultiplayerPause,
 MP_PlayerSplitscreen, MP_SetupJoystick, MP_PrepareLevelPlatter, MP_LevelPlatterOptions,
-MP_TimeAttackMenu, MP_TimeAttackPresets
+MP_TimeAttackMenu, MP_TimeAttackPresets, MP_SetupViewServer, MP_ViewServerPlayers,
+MP_ViewServerAddons
 ;
 INT32 MR_Addons(INT32 choice);
 INT32 MR_QuitAddons(INT32 choice);
@@ -403,7 +405,6 @@ INT32 MR_ChangeControl(INT32 arg);
 INT32 MR_AssignJoystick(INT32 arg);
 INT32 MR_HandleMonitorToggles(INT32 choice);
 INT32 MR_RestartAudio(INT32 choice);
-INT32 MR_EnterViewServer(INT32 choice);
 INT32 MR_QuitViewServer(INT32 choice);
 INT32 MR_HandleViewServer(INT32 choice);
 INT32 MR_SetLevelListMode(INT32 choice);

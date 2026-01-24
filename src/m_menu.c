@@ -1792,8 +1792,8 @@ boolean M_Responder(event_t *ev)
 		vmove = tmp;
 	}
 
-	INT16 oldPanelOn = panelOn;
-	INT16 newPanelOn = panelOn;
+	size_t oldPanelOn = panelOn;
+	size_t newPanelOn = panelOn;
 	INT16 oldItemOn = curpi->itemon; // prevent infinite loop
 	INT16 newItemOn = curpi->itemon;
 
@@ -1813,21 +1813,28 @@ boolean M_Responder(event_t *ev)
 			}
 			else
 			{
+				// i don't care anymore, get me out of this hell already
+				if (menustack[0] == MN_VIEWSERVER && (newItemOn + dir < 0 || newItemOn + dir > fileneedednum-21))
+					break;
 				newItemOn += dir;
 			}
 
 			newPanelOn = panelOn;
-			if (newItemOn >= curpi->numitems)
+			if (curpi->disabled)
+			{
+				// can't change panels here or we'll get stuck in an infinite loop...
+			}
+			else if (newItemOn >= curpi->numitems)
 			{
 				do
-					panelOn = intmod(panelOn + 1, numcurpanels);
+					if (++panelOn == numcurpanels) panelOn = 0;
 				while (panelOn != newPanelOn && curpanels[panelOn].disabled);
 				newItemOn -= curpi->numitems == 0 ? newItemOn : curpi->numitems;
 			}
 			else if (newItemOn < 0)
 			{
 				do
-					panelOn = intmod(panelOn - 1, numcurpanels);
+					if (panelOn-- == 0) panelOn = numcurpanels - 1;
 				while (panelOn != newPanelOn && curpanels[panelOn].disabled);
 			}
 			curpi = &curpanels[panelOn];
@@ -1835,12 +1842,14 @@ boolean M_Responder(event_t *ev)
 			newItemOn = curpi->numitems == 0 ? 0 : intmod(newItemOn, curpi->numitems);
 		}
 		while (!(oldPanelOn == panelOn && oldItemOn == newItemOn)
-		       && (curpi->numitems == 0 || !M_ItemSelectable(&curpi->items[newItemOn]) || (vmove -= intsign(vmove)) != 0));
+		       && (curpi->numitems == 0
+		         || (curpi->altscroll ? curpi->items[oldItemOn].y == curpi->items[newItemOn].y : !M_ItemSelectable(&curpi->items[newItemOn]))
+		         || (vmove -= intsign(vmove)) != 0));
 
 		M_RawSetItemOn(curpi, newItemOn);
 		if (curpd->keyhandler == MR_HandleLevelPlatter)
 			return curpd->keyhandler(ch); // dumb hack until i figure this out
-		else
+		else if (oldPanelOn != panelOn || oldItemOn != newItemOn)
 			S_StartSound(NULL, sfx_menu1);
 		return true;
 	}
@@ -2020,7 +2029,7 @@ void M_Drawer(void)
 		size_t i;
 		M_GetGametypeColor();
 		for (i = 0; i < numcurpanels; i++)
-			M_DrawMenuPanel(&curpanels[i], panelOn == i);
+			M_DrawMenuPanel(&curpanels[i], panelOn == i && !curpanels[i].disabled);
 
 		if (menustack[0] == MN_MAIN)
 		{
@@ -2737,7 +2746,7 @@ static void M_DrawSliderCursor(fixed_t x, fixed_t y, INT32 vflags, consvar_t *cv
 
 static void M_DrawSticker(INT32 x, INT32 y, INT32 width, INT32 flags, boolean isSmall);
 
-static fixed_t M_GetAlignment(const menupanelinst_t *pi, const menuitempart_t *part, fixed_t width)
+static fixed_t M_GetAlignment(const menuitempart_t *part, fixed_t x, fixed_t width)
 {
 	switch (part->align)
 	{
@@ -2748,7 +2757,7 @@ static fixed_t M_GetAlignment(const menupanelinst_t *pi, const menuitempart_t *p
 	case ITA_RIGHT:
 		return width;
 	case ITA_EDGE:
-		return width - (BASEVIDWIDTH*FRACUNIT - pi->x*2);
+		return width - (BASEVIDWIDTH*FRACUNIT - x*2);
 	}
 }
 
@@ -2836,7 +2845,7 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 			if (part->fontalt)
 				vflags |= V_6WIDTHSPACE;
 
-			width = M_GetAlignment(pi, part, widthfunc(string, -1, vflags)*FRACUNIT);
+			width = M_GetAlignment(part, x, widthfunc(string, -1, vflags)*FRACUNIT);
 
 			//if (part->flags & IT_STICKER)
 				//M_DrawSticker((x - width)/FRACUNIT, y/FRACUNIT + 2, widthfunc(string, -1, vflags), vflags & ~V_FLIP, true);
@@ -2857,7 +2866,7 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 			fillw *= FRACUNIT;
 			fillh *= FRACUNIT;
 
-			width = M_GetAlignment(pi, part, fillw);
+			width = M_GetAlignment(part, x, fillw);
 			V_DrawFixedFill(x - width + part->xofs, y + part->yofs, fillw, fillh, fillc|vflags);
 			retwidth = max(retwidth, width);
 			break;
@@ -2866,7 +2875,7 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 			p = W_CachePatchName(string, PU_CACHE);
 			cmap = V_GetStringColormap(colorflag);
 		drawpatch:
-			width = M_GetAlignment(pi, part, p->width*FRACUNIT);
+			width = M_GetAlignment(part, x, p->width*FRACUNIT);
 			V_DrawFixedPatch(x - width + part->xofs, y + part->yofs, scale, vflags & ~V_FLIP, p, cmap);
 			retwidth = max(retwidth, width);
 			break;
@@ -2888,10 +2897,21 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 				p = W_CachePatchName(part->small ? "M_NORANK" : "M_NOWANT", PU_CACHE);
 			else
 				p = faceprefix[num][part->small ? FACE_RANK : FACE_WANTED];
-			skincolornum_t color = item->extra != NULL ? DEH_FindSkincolor(item->extra) : MAXSKINCOLORS;
-			if (color == MAXSKINCOLORS)
-				color = 0;
-			cmap = R_GetTranslationColormap(num < 0 ? TC_RAINBOW : num, color, GTC_MENUCACHE);
+
+			if (item->status & IT_GRAYEDOUT)
+			{
+				// viewserver...
+				cmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_GREY, GTC_MENUCACHE);
+			}
+			else
+			{
+				// replay hut...
+				skincolornum_t color = item->extra != NULL ? DEH_FindSkincolor(item->extra) : MAXSKINCOLORS;
+				if (color == MAXSKINCOLORS)
+					color = 0;
+				cmap = R_GetTranslationColormap(num < 0 ? TC_RAINBOW : num, color, GTC_MENUCACHE);
+			}
+
 			goto drawpatch;
 		}
 	}
@@ -3092,10 +3112,12 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 	fixed_t topy = M_GetItemAbsY(pi, 0);
 	fixed_t boty = M_GetItemAbsY(pi, pi->numitems-1);
 
-	if (selected && boty - topy > scrollheight)
+	if (pi->altscroll || (selected && boty - topy > scrollheight))
 	{
-		scrolly = scrolly - M_GetItemAbsY(pi, pi->itemon) + scrollheight/2;
-		if (scrolly > pi->y - topy)
+		scrolly -= M_GetItemAbsY(pi, pi->itemon) - (pi->altscroll ? 0 : scrollheight/2);
+		if (pi->altscroll)
+			;
+		else if (scrolly > pi->y - topy)
 			scrolly = pi->y - topy;
 		else if (scrolly < pi->y - boty + scrollheight)
 			scrolly = pi->y - boty + scrollheight;
@@ -9387,9 +9409,8 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 	return true;
 }
 
-INT32 MR_EnterViewServer(INT32 choice)
+void MP_SetupViewServer(menupanelinst_t *pi)
 {
-	(void)choice;
 	char *servermap = serverlist[joinnode].info.maptitle;
 	char *servername = serverlist[joinnode].info.servername;
 	const char *speedstring = "Auto";
@@ -9413,40 +9434,64 @@ INT32 MR_EnterViewServer(INT32 choice)
 	}
 
 	const char *mapname = G_BuildMapName(G_LevelTitleToMapNum(serverlist[joinnode].info.maptitle)+1);
-#if 0
-	M_SetItemPatch(MN_VIEWSERVER, "THUMBNAIL", mapname ? mapname : "");
-	M_SetItemText(MN_VIEWSERVER, "SERVERNAME", servername);
-	M_SetItemText(MN_VIEWSERVER, "SERVERPING", va("Ping: %c%ums", ping < 128 ? '\x83' : ping < 256 ? '\x82' : '\x85', ping));
-	M_SetItemText(MN_VIEWSERVER, "SERVERMAP", servermap);
-	M_SetItemText(MN_VIEWSERVER, "SERVERGAMETYPE", va("%s: %s", serverlist[joinnode].info.gametypename, speedstring));
+	M_SetItemPatch(pi, "THUMBNAIL", mapname ? mapname : "");
+	M_SetItemText(pi, "SERVERNAME", servername);
+	M_SetItemText(pi, "SERVERPING", va("Ping: %c%ums", ping < 128 ? '\x83' : ping < 256 ? '\x82' : '\x85', ping));
+	M_SetItemText(pi, "SERVERMAP", servermap);
+	M_SetItemText(pi, "SERVERGAMETYPE", va("%s: %s", serverlist[joinnode].info.gametypename, speedstring));
 
 	if (fileneedednum > 0)
 	{
-		M_SetItemText(MN_VIEWSERVER, "SERVERADDON", va("\x82%d Addon%s", fileneedednum, fileneedednum > 1 ? "s" : ""));
+		M_SetItemText(pi, "SERVERADDON", va("\x82%d Addon%s", fileneedednum, fileneedednum > 1 ? "s" : ""));
 	}
 	else
 	{
-		M_SetItemText(MN_VIEWSERVER, "SERVERADDON", "Vanilla");
+		M_SetItemText(pi, "SERVERADDON", "Vanilla");
 	}
 
 	if (serverlist[joinnode].info.cheatsenabled)
 	{
-		M_SetItemText(MN_VIEWSERVER, "SERVERCHEATS", "Cheats");
+		M_SetItemText(pi, "SERVERCHEATS", "Cheats");
 	}
 
-	M_SetItemVisible(MN_VIEWSERVER, "SERVERCHEATS", serverlist[joinnode].info.cheatsenabled);
+	M_SetItemVisible(pi, "SERVERCHEATS", serverlist[joinnode].info.cheatsenabled);
 
 	if (kartvars & SV_DEDICATED)
 	{
-		M_SetItemText(MN_VIEWSERVER, "SERVERDEDICATED", "Dedicated Server");
+		M_SetItemText(pi, "SERVERDEDICATED", "Dedicated Server");
 	}
 	else
 	{
-		M_SetItemText(MN_VIEWSERVER, "SERVERDEDICATED", "Listen Server");
+		M_SetItemText(pi, "SERVERDEDICATED", "Listen Server");
 	}
-#endif
 
-	return true;
+	M_SetItemText(pi, "PLAYERSCOUNT", va("%i / %i",
+	                                     serverlist[joinnode].info.numberofplayer,
+	                                     serverlist[joinnode].info.maxplayer));
+
+	{
+		double totalsize = 0.0;
+		const char *unit = "b";
+
+		for (INT32 j = 0; j < fileneedednum; j++)
+			totalsize += fileneeded[j].totalsize;
+
+		//in megabytes
+		if (totalsize >= 1024.0 * 1024.0)
+		{
+			unit = "mb";
+			totalsize /= 1024.0 * 1024.0;
+		}
+		// KB
+		else if (totalsize >= 1024.0)
+		{
+			unit = "kb";
+			totalsize /= 1024.0;
+		}
+
+		M_SetItemText(pi, "ADDONSCOUNT", va("~%.1f%s total", totalsize, unit));
+	}
+
 }
 
 INT32 MR_QuitViewServer(INT32 choice)
@@ -9458,8 +9503,6 @@ INT32 MR_QuitViewServer(INT32 choice)
 }
 
 static boolean viewserver_showaddons = false;
-static INT32 viewserver_scroll = 0;
-static INT16 viewserver_animcount = 8;
 
 INT32 MR_HandleViewServer(INT32 choice)
 {
@@ -9468,31 +9511,14 @@ INT32 MR_HandleViewServer(INT32 choice)
 		case KEY_ENTER:
 			S_StartSound(NULL, sfx_menu1);
 			ChangeClientMode(CL_CHECKFILES);
-			ChangeServMusic(SERVMUS_2, true,true);
+			ChangeServMusic(SERVMUS_2, true, true);
 			M_ClearMenus(false);
 			return true;
-			break;
 
 		case KEY_SPACE:
 			S_StartSound(NULL, sfx_menu1);
 			viewserver_showaddons = !viewserver_showaddons;
 			return true;
-			break;
-
-		case KEY_UPARROW:
-		case KEY_DOWNARROW:
-			if (viewserver_showaddons && fileneedednum > 22)
-			{
-				if (choice == KEY_UPARROW)
-					viewserver_scroll -= 1;
-				else if (choice == KEY_DOWNARROW)
-					viewserver_scroll += 1;
-				S_StartSound(NULL, sfx_menu1);
-				if (viewserver_scroll < 0) viewserver_scroll = 0;
-				if (viewserver_scroll >= fileneedednum - 22) viewserver_scroll = fileneedednum -22;
-				return true;
-			}
-			break;
 
 		default:
 			break;
@@ -9501,223 +9527,163 @@ INT32 MR_HandleViewServer(INT32 choice)
 	return false;
 }
 
-void MD_DrawViewServer(menupanelinst_t *pi)
+void MP_ViewServerPlayers(menupanelinst_t *pi)
 {
-	//MD_DrawGenericMenu();
+	INT32 i;
+	INT32 count = 0;
+	fixed_t x = 1, y = 1; // FIXME auto
 
-	if (!viewserver_showaddons)
+	M_ClearPanelItems(pi);
+
+	for (i = 0; i < MAXPLAYERINFO; i++)
 	{
-		INT32 i;
-		INT32 count = 0;
-		INT32 x = 14;
-		INT32 y = 84;
-		char player_name[MAXPLAYERNAME+1];
-		UINT8 playeramount = serverlist[joinnode].info.numberofplayer;
-		UINT8 maxplayer = serverlist[joinnode].info.maxplayer;
+		if (playerinfo[i].num == 255)
+			continue;
 
-		V_DrawString(12, 74, V_ALLOWLOWERCASE|highlightflags, "Players");
-		V_DrawRightAlignedString(BASEVIDWIDTH - 12, 74, V_ALLOWLOWERCASE|highlightflags, va("%i / %i", playeramount, maxplayer));
-
-		if (playeramount > 0)
+		menuitem_t *item = M_AppendMenuItem(pi, x, y, 0);
+		M_SetItemTextRaw(item, va("%.11s", playerinfo[i].name));
+		UINT8 statuscolor = 1;
+		switch (playerinfo[i].team)
 		{
-			for (i = 0; i < MAXPLAYERINFO; i++)
+			case 0: statuscolor = 112; break; // playing
+			case 1: statuscolor = 35; break; // ctf red team
+			case 2: statuscolor = 152; break; // ctf blue team
+			case 255: statuscolor = 16; break; // spectator or non-team
+		}
+
+		if (serverlist[joinnode].info.numberofplayer <= 16)
+		{
+			UINT16 skinum = playerinfo[i].skin;
+
+			if (playerinfo[i].team == 255)
+				item->status |= IT_GRAYEDOUT;
+
+			if (R_SkinAvailable(skins[skinum].name) == -1)
 			{
-				if (playerinfo[i].num < 255)
-				{
-					if (playeramount <= 16)
-					{
-						UINT16 skinum = playerinfo[i].skin;
-						INT32 flags = 0;
+				item->style = DEH_FindMenuItemStyle("VIEWSERVER_PLAYER_MISSING");
+				M_SetItemPatchRaw(item, va("16x16,%u", statuscolor));
+			}
+			else
+			{
+				item->style = DEH_FindMenuItemStyle("VIEWSERVER_PLAYER");
+				M_SetItemPatchRaw(item, skins[skinum].name);
+			}
 
-						if (R_SkinAvailable(skins[skinum].name) == -1)
-						{
-							INT32 statuscolor = 1;
+			M_SetItemExtraRaw(item, DEH_SkincolorName(skins[skinum].prefcolor));
 
-							if (playerinfo[i].team == 0) { statuscolor = 112; } // playing
-							if (playerinfo[i].team == 1) { statuscolor = 35; } // ctf red team
-							if (playerinfo[i].team == 2) { statuscolor = 152; } // ctf blue team
-							if (playerinfo[i].team == 255) { statuscolor = 16; flags |= V_40TRANS; } // spectator or non-team
+			y += 22*FRACUNIT;
+			if (++count % 4 == 0)
+			{
+				x += 74*FRACUNIT;
+				y = 1;
+			}
+		}
+		else
+		{
+			item->style = DEH_FindMenuItemStyle("VIEWSERVER_PLAYER_SMALL");
+			M_SetItemPatchRaw(item, va("6x6,%u", statuscolor));
 
-							V_DrawFill(x, y+5, 16, 16, statuscolor);
-						}
-						else
-						{
-							patch_t *facerank = faceprefix[skinum][FACE_RANK];
-							UINT8 *colormap = R_GetTranslationColormap(skinum, skins[skinum].prefcolor, GTC_MENUCACHE);
-
-							if (playerinfo[i].team == 255)
-							{
-								colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_GREY, GTC_MENUCACHE);
-								flags |= V_40TRANS;
-							}
-
-
-							V_DrawFixedPatch((x + facerank->leftoffset)<<FRACBITS, (y + 5 + facerank->topoffset)<<FRACBITS, FRACUNIT, flags, facerank, colormap);
-						}
-
-						strlcpy(player_name, playerinfo[i].name, 12);
-						V_DrawThinString(x + 20, y + 3 + 5, flags|V_ALLOWLOWERCASE|V_6WIDTHSPACE, player_name);
-
-						y += 22;
-						count++;
-						if ((count == 4) || (count == 8) || (count == 12))
-						{
-							x += 74;
-							y = 84;
-						}
-					}
-					else
-					{
-						INT32 statuscolor = 1;
-
-						strlcpy(player_name, playerinfo[i].name, 12);
-						V_DrawThinString(x + 10, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE, player_name);
-
-						if (playerinfo[i].team == 0) { statuscolor = 112; } // playing
-						if (playerinfo[i].team == 1) { statuscolor = 35; } // ctf red team
-						if (playerinfo[i].team == 2) { statuscolor = 152; } // ctf blue team
-						if (playerinfo[i].team == 255) { statuscolor = 16; } // spectator or non-team
-
-						V_DrawFill(x, y, 7, 7, 31);
-						V_DrawFill(x, y, 6, 6, statuscolor);
-
-						y += 9;
-						count++;
-						if ((count == 11) || (count == 22))
-						{
-							x += 104;
-							y = 84;
-						}
-					}
-				}
+			y += 9*FRACUNIT;
+			if (++count % 11 == 0)
+			{
+				x += 104*FRACUNIT;
+				y = 1;
 			}
 		}
 	}
-	else
-	{
-		INT32 i;
-		INT32 count = 0;
-		INT32 x = 14;
-		INT32 y = 84;
-		boolean small_mode = fileneedednum <= 11;
-		char file_name[MAX_WADPATH+1];
+}
 
-		V_DrawString(12, 74, V_ALLOWLOWERCASE|highlightflags, "Addons");
+void MP_ViewServerAddons(menupanelinst_t *pi)
+{
+	INT32 i;
+	INT32 count = 0;
+	fixed_t x = 1, y = 1; // FIXME auto
+	boolean small_mode = fileneedednum <= 11;
+
+	M_ClearPanelItems(pi);
 
 #define maxcharlen (20 + 3) // 3 for the 3 dots
 #define charsonside 10
 
-		for (i = viewserver_scroll; i < fileneedednum; i++)
-		{
-			if (i & 1)
-				V_DrawFill(x,y-1,
-					(small_mode) ? 292 : 146, 9,
-					156
-				);
+	for (i = 0; i < fileneedednum; i++)
+	{
+		menuitem_t *item = M_AppendMenuItem(pi, x, y, 0);
+		item->style = DEH_FindMenuItemStyle(va("VIEWSERVER_ADDON%s%s",
+		                                       small_mode ? "_SMALL" : "",
+		                                       (small_mode ? i & 1 : !(i & 1) != !(i & 2)) ? "_BACK" : ""));
 
-			fileneeded_t addon_file = fileneeded[i];
-			strncpy(file_name, addon_file.filename, MAX_WADPATH);
-			if ((UINT8)(strlen(file_name)+1) > maxcharlen && !small_mode)
-				V_DrawThinString(x, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE,
-					va("\x82[#%d]\x80: %.*s...%s",i+1, charsonside, file_name, file_name+strlen(file_name)-((charsonside+1)))
-				);
+		fileneeded_t addon_file = fileneeded[i];
+		size_t namelen = strlen(addon_file.filename);
+		if (namelen >= maxcharlen && !small_mode)
+			M_SetItemTextRaw(item, va("\x82[#%d]\x80: %." TOSTR2(charsonside) "s...%s",
+			                          i+1,
+			                          addon_file.filename,
+			                          addon_file.filename + namelen - (charsonside + 1)));
+		else
+			M_SetItemTextRaw(item, va("\x82[#%d]\x80: %s", i+1, addon_file.filename));
+
+		double file_size = addon_file.totalsize;
+		const char *unit = "b";
+		//in megabytes
+		if (file_size >= 1024.0 * 1024.0)
+		{
+			unit = "mb";
+			file_size /= 1024.0 * 1024.0;
+		}
+		// KB
+		else if (file_size >= 1024.0)
+		{
+			unit = "kb";
+			file_size /= 1024.0;
+		}
+
+		// "~" since its approx this size, we mightve lost some
+		// accuracy from only having 4 bytes carry the size
+		M_SetItemExtraRaw(item, va("(~%.1f%s)", file_size, unit));
+
+		count++;
+		if (small_mode)
+		{
+			y += 9*FRACUNIT;
+		}
+		else
+		{
+			if (count & 1)
+			{
+				x += 146*FRACUNIT;
+			}
 			else
 			{
-				V_DrawThinString(x, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE,
-					va("\x82[#%d]\x80: %s",i+1, file_name)
-				);
-
-				// make sure we have the space
-				if (small_mode)
-				{
-					float file_size = ((float)addon_file.totalsize);
-					UINT8 size_mode = 0; // regular bytes
-					//in megabytes
-					if (file_size >= (1024.0f * 1024.0f))
-					{
-						size_mode = 1;
-						file_size /= (1024.0f * 1024.0f);
-					}
-					// KB
-					else if (file_size >= 1024.0f)
-					{
-						size_mode = 2;
-						file_size /= 1024.0f;
-					}
-
-					V_DrawRightAlignedThinString(x + 292,
-						y, highlightflags|V_ALLOWLOWERCASE,
-						// "~" since its approx this size, we mightve lost some
-						// accuracy from only having 4 bytes carry the size
-						va("(~%.1f%s)", file_size, size_mode == 0 ? "b" : (size_mode == 2 ? "kb" : "mb"))
-					);
-				}
+				x -= 146*FRACUNIT;
+				y += 9*FRACUNIT;
 			}
-
-			y += 9;
-			count++;
-			if (count == 11)
-			{
-				x = BASEVIDWIDTH/2;
-				y = 84;
-			}
-			// Cannot draw any more
-			if (count == 22)
-				break;
-		}
-
-		// reiterate again!!! Yes!!! Yay!!!
-		{
-			UINT32 totalsize = 0;
-			UINT8 size_mode = 0; // regular bytes
-
-			for (INT32 j = 0; j < fileneedednum; j++)
-				totalsize += fileneeded[j].totalsize;
-			totalsize = (float)totalsize;
-
-			//in megabytes
-			if (totalsize >= (1024.0f * 1024.0f))
-			{
-				size_mode = 1;
-				totalsize /= (1024.0f * 1024.0f);
-			}
-			// KB
-			else if (totalsize >= 1024.0f)
-			{
-				size_mode = 2;
-				totalsize /= 1024.0f;
-			}
-
-			V_DrawRightAlignedThinString(BASEVIDWIDTH - 22, 74,
-				V_ALLOWLOWERCASE|highlightflags,
-				va("~%.1f%s total", (float)totalsize, size_mode == 0 ? "b" : (size_mode == 2 ? "kb" : "mb"))
-			);
-		}
-
-		// draw the little arrows
-		if (fileneedednum >= 22)
-		{
-			// up arrow
-			if (viewserver_scroll)
-				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12,
-					74 - (viewserver_animcount/5), highlightflags,
-					"\x1A"
-				);
-
-			if (viewserver_scroll != fileneedednum-22)
-				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12,
-					y-9 + (viewserver_animcount/5), highlightflags,
-					"\x1B"
-				);
 		}
 	}
 
 #undef maxcharlen
 #undef charsonside
+}
 
+void MD_DrawViewServer(menupanelinst_t *pi)
+{
 	// Buttons
 	M_SetItemVisible(pi, "TOGGLEBUTTON1", viewserver_showaddons);
 	M_SetItemVisible(pi, "TOGGLEBUTTON2", !viewserver_showaddons);
+
+	M_SetItemVisible(pi, "PLAYERSHEADING", !viewserver_showaddons);
+	M_SetItemVisible(pi, "PLAYERSCOUNT", !viewserver_showaddons);
+	M_SetItemVisible(pi, "ADDONSHEADING", viewserver_showaddons);
+	M_SetItemVisible(pi, "ADDONSCOUNT", viewserver_showaddons);
+
+	menupanelinst_t *pplayers = M_GetPanel("PLAYERS");
+	menupanelinst_t *paddons = M_GetPanel("ADDONS");
+	pplayers->visible = !viewserver_showaddons;
+	pplayers->disabled = true;
+	paddons->visible = viewserver_showaddons;
+	paddons->disabled = true;
+	paddons->altscroll = true;
+
+	panelOn = (viewserver_showaddons ? paddons : pplayers) - curpanels;
 }
 
 // =========

@@ -847,7 +847,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "ASSIGNJOYSTICK", &MR_AssignJoystick },
 	{ "HANDLEMONITORTOGGLES", &MR_HandleMonitorToggles },
 	{ "RESTARTAUDIO", &MR_RestartAudio },
-	{ "ENTERVIEWSERVER", &MR_EnterViewServer },
 	{ "QUITVIEWSERVER", &MR_QuitViewServer },
 	{ "HANDLEVIEWSERVER", &MR_HandleViewServer },
 	// { "BARCSS", &MR_HandleBarCss },
@@ -907,6 +906,9 @@ struct panel_func_s const PANEL_FUNCS[] = {
 	{ "LEVELPLATTEROPTIONS", &MP_LevelPlatterOptions },
 	{ "TIMEATTACKMENU", &MP_TimeAttackMenu },
 	{ "TIMEATTACKPRESETS", &MP_TimeAttackPresets },
+	{ "SETUPVIEWSERVER", &MP_SetupViewServer },
+	{ "VIEWSERVERPLAYERS", &MP_ViewServerPlayers },
+	{ "VIEWSERVERADDONS", &MP_ViewServerAddons },
 	{ NULL, NULL }
 };
 
