@@ -379,7 +379,7 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 	if (!Cubeapply)
 		return;
 
-	linear = (*red/255.0);
+	linear = (*red/255.0f);
 #define dolerp(e1, e2) ((1 - linear)*e1 + linear*e2)
 	for (q = 0; q < 3; q++)
 	{
@@ -388,20 +388,20 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 		working[2][q] = dolerp(Cubepal[0][0][1][q], Cubepal[1][0][1][q]);
 		working[3][q] = dolerp(Cubepal[0][1][1][q], Cubepal[1][1][1][q]);
 	}
-	linear = (*green/255.0);
+	linear = (*green/255.0f);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = dolerp(working[0][q], working[1][q]);
 		working[1][q] = dolerp(working[2][q], working[3][q]);
 	}
-	linear = (*blue/255.0);
+	linear = (*blue/255.0f);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = 255*dolerp(working[0][q], working[1][q]);
-		if (working[0][q] > 255.0)
-			working[0][q] = 255.0;
-		else if (working[0][q]  < 0.0)
-			working[0][q] = 0.0;
+		if (working[0][q] > 255.0f)
+			working[0][q] = 255.0f;
+		else if (working[0][q]  < 0.0f)
+			working[0][q] = 0.0f;
 	}
 #undef dolerp
 

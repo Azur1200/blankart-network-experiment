@@ -100,7 +100,7 @@ static const char *spritename;
 
 typedef struct drawseg_xrange_item_s
 {
-	INT16 x1, x2;
+	INT32 x1, x2;
 	drawseg_t *user;
 } drawseg_xrange_item_t;
 
@@ -642,8 +642,8 @@ void R_InitSprites(void)
 	for (angle = 1; angle < ROTANGLES; angle++)
 	{
 		fa = ANG2RAD(FixedAngle((ROTANGDIFF * angle)<<FRACBITS));
-		rollcosang[angle] = FLOAT_TO_FIXED(cos(-fa));
-		rollsinang[angle] = FLOAT_TO_FIXED(sin(-fa));
+		rollcosang[angle] = FLOAT_TO_FIXED(cosf(-fa));
+		rollsinang[angle] = FLOAT_TO_FIXED(sinf(-fa));
 	}
 #endif
 
