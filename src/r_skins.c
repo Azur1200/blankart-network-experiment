@@ -616,8 +616,16 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 
 		player->followitem = skin->followitem;
 
-		player->kartspeed = skin->kartspeed;
-		player->kartweight = skin->kartweight;
+		if (player->kartspeedrestat != 0 || player->kartweightrestat != 0)
+		{
+			player->kartspeed = player->kartspeedrestat;
+			player->kartweight = player->kartweightrestat;
+		}
+		else
+		{
+			player->kartspeed = skin->kartspeed;
+			player->kartweight = skin->kartweight;
+		}
 
 #if 0
 		if (!(cht_debug || devparm) && !(netgame || multiplayer || demo.playback))

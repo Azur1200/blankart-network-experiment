@@ -331,6 +331,8 @@ void V_DrawRightAlignedString(INT32 x, INT32 y, INT32 option, const char *string
 // draw a string using the hu_font, 0.5x scale
 #define V_DrawSmallString( x,y,option,string ) \
 	V__DrawDupxString (x,y,FRACUNIT>>1,option,HU_FONT,string)
+#define V_DrawSmallStringAtFixed( x,y,option,string ) \
+	V__DrawOneScaleString (x,y,FRACUNIT>>1,option,HU_FONT,string)
 void V_DrawCenteredSmallString(INT32 x, INT32 y, INT32 option, const char *string);
 void V_DrawCenteredSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
 void V_DrawRightAlignedSmallString(INT32 x, INT32 y, INT32 option, const char *string);

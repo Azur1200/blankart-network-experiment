@@ -3874,8 +3874,28 @@ fixed_t R_GetThingFade(mobj_t *thing)
 {
 	fixed_t fadealpha = FRACUNIT;
 
-	if (!cv_playerfade.value || leveltime < starttime-(3*TICRATE) || !thing->player || thing->player == viewplayer)
+	if (!cv_playerfade.value || leveltime < starttime-(3*TICRATE))
 		return fadealpha;
+
+	if (thing->type == MT_PLAYER)
+	{
+		if (!thing->player || thing->player == viewplayer)
+			return fadealpha;
+	}
+	else
+	{
+		switch (thing->type)
+		{
+			case MT_FOLLOWER:
+			case MT_FOLLOWERBUBBLE_BACK:
+			case MT_FOLLOWERBUBBLE_FRONT:
+				break;
+
+			default:
+				return fadealpha;
+				break;
+		}
+	}
 
 	const INT32 playerdist     = (FixedMul((thing->x - viewx), viewcos) + FixedMul((thing->y - viewy), viewsin)) >> FRACBITS;
 	const INT32 viewplayerdist = (FixedMul((viewplayer->mo->x - viewx), viewcos) + FixedMul((viewplayer->mo->y - viewy), viewsin)) >> FRACBITS;
