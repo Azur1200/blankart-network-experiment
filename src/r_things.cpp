@@ -3882,9 +3882,19 @@ fixed_t R_GetThingFade(mobj_t *thing)
 		if (!thing->player || thing->player == viewplayer)
 			return fadealpha;
 	}
-	else if (thing->type != MT_FOLLOWER && thing->type != MT_FOLLOWERBUBBLE_BACK && thing->type != MT_FOLLOWERBUBBLE_FRONT)
+	else
 	{
-		return fadealpha;
+		switch (thing->type)
+		{
+			case MT_FOLLOWER:
+			case MT_FOLLOWERBUBBLE_BACK:
+			case MT_FOLLOWERBUBBLE_FRONT:
+				break;
+
+			default:
+				return fadealpha;
+				break;
+		}
 	}
 
 	const INT32 playerdist     = (FixedMul((thing->x - viewx), viewcos) + FixedMul((thing->y - viewy), viewsin)) >> FRACBITS;
