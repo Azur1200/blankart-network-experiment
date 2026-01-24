@@ -2088,7 +2088,15 @@ void K_TryHurtSoundExchange(mobj_t *victim, mobj_t *attacker)
 	}
 
 	attacker->player->karthud[khud_confirmvictim] = (victim->player - players);
-	attacker->player->karthud[khud_confirmvictimdelay] = TICRATE/2;
+
+	if (cv_karthitemdialog.value)
+	{
+		attacker->player->karthud[khud_confirmvictimdelay] = TICRATE/2;
+	}
+	else
+	{
+		K_PlayHitEmSound(attacker->player->mo, victim);
+	}
 
 	if (attacker->player->follower != NULL)
 	{
