@@ -674,6 +674,8 @@ consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kart
 
 consvar_t cv_kartdebugshrink = CVAR_INIT ("kartdebugshrink", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
+consvar_t cv_kartdrift_snapshot = CVAR_INIT ("kartdriftsnapshot", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+
 consvar_t cv_kartdebugdistribution = CVAR_INIT ("kartdebugdistribution", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_kartdebughuddrop = CVAR_INIT ("kartdebughuddrop", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 static CV_PossibleValue_t kartdebugwaypoint_cons_t[] = {{0, "Off"}, {1, "Forwards"}, {2, "Backwards"}, {0, NULL}};
