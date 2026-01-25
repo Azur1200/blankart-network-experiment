@@ -2726,6 +2726,60 @@ static inline void G_PlayerFinishLevel(INT32 player)
 	}
 }
 
+typedef struct {
+	INT32 player;
+	boolean notifyrestat;
+	UINT8 kartspeed, kartweight, kartspeedrestat, kartweightrestat;
+} restatmessage_t;
+
+static void G_HandleRestatMessage(restatmessage_t *rm)
+{
+	if (players[rm->player].jointime == 0)
+		return;
+
+	UINT16 chatcolor = skincolors[players[rm->player].skincolor].chatcolor;
+	char color_prefix[2] = {};
+
+	if (chatcolor > V_TANMAP)
+	{
+		sprintf(color_prefix, "%c", '\x80');
+	}
+	else
+	{
+		sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+	}
+
+
+	if (rm->kartspeedrestat != 0 && rm->kartweightrestat != 0)
+	{
+		if (playeringame[rm->player] && rm->notifyrestat)
+		{
+			if ((splitscreen && rm->player == consoleplayer) || rm->player != consoleplayer)
+			{
+				HU_AddChatText(va("%s%s\x82 is now \x84%d speed\x82, \x87%d weight\x82.", color_prefix, player_names[rm->player], rm->kartspeed, rm->kartweight), true);
+			}
+			else
+			{
+				HU_AddChatText(va("%sYou\x82 are now \x84%d speed\x82, \x87%d weight\x82.", color_prefix, rm->kartspeed, rm->kartweight), true);
+			}
+		}
+	}
+	else
+	{
+		if (playeringame[rm->player] && rm->notifyrestat)
+		{
+			if ((splitscreen && rm->player == consoleplayer) || rm->player != consoleplayer)
+			{
+				HU_AddChatText(va("%s%s\x82 is now using their skin's default stats.", color_prefix, player_names[rm->player]), true);
+			}
+			else
+			{
+				HU_AddChatText(va("%sYou\x82 are now using your skin's default stats.", color_prefix), true);
+			}
+		}
+	}
+}
+
 //
 // G_PlayerReborn
 // Called after a player dies. Almost everything is cleared and initialized.
@@ -3039,37 +3093,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	{
 		follower = NULL;
 
-		if (players[player].jointime > 0)
-		{
-			if (kartspeedrestat != 0 && kartweightrestat != 0)
-			{
-				if (playeringame[player] && notifyrestat)
-				{
-					if ((splitscreen && player == consoleplayer) || player != consoleplayer)
-					{
-						HU_AddChatText(va("%s is now %d speed, %d weight.", player_names[player], kartspeed, kartweight), true);
-					}
-					else
-					{
-						HU_AddChatText(va("You are now %d speed, %d weight.", kartspeed, kartweight), true);
-					}
-				}
-			}
-			else
-			{			
-				if (playeringame[player] && notifyrestat)
-				{
-					if ((splitscreen && player == consoleplayer) || player != consoleplayer)
-					{
-						HU_AddChatText(va("%s is now using their skin's default stats.", player_names[player]), true);
-					}
-					else
-					{
-						HU_AddChatText(va("You are now using your skin's default stats."), true);
-					}
-				}
-			}
-		}
+		// Nice and Tidy.
+		restatmessage_t rm = {player, notifyrestat, kartspeed, kartweight, kartspeedrestat, kartweightrestat};
+		G_HandleRestatMessage(&rm);
 	}
 
 	spectatorreentry = (betweenmaps ? 0 : players[player].spectatorreentry);
