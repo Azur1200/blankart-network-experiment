@@ -674,7 +674,7 @@ consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kart
 
 consvar_t cv_kartdebugshrink = CVAR_INIT ("kartdebugshrink", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
-consvar_t cv_kartdrift_snapshot = CVAR_INIT ("kartdriftsnapshot", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_kartdrift_operationorder = CVAR_INIT ("kartdriftoperationorder", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 consvar_t cv_kartdebugdistribution = CVAR_INIT ("kartdebugdistribution", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_kartdebughuddrop = CVAR_INIT ("kartdebughuddrop", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);

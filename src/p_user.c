@@ -4298,6 +4298,19 @@ void P_PlayerThink(player_t *player)
 	}
 
 	player->pflags &= ~PF_HITFINISHLINE;
+	
+	// experiment: process the drift input *before* player movement instead of after
+	if (cv_kartdrift_operationorder.value)
+	{
+		if (cmd->buttons & BT_DRIFT)
+		{
+			player->pflags |= PF_DRIFTINPUT;
+		}
+		else
+		{
+			player->pflags &= ~PF_DRIFTINPUT;
+		}
+	}
 
 	// check water content, set stuff in mobj
 	P_MobjCheckWater(player->mo);

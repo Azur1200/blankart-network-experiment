@@ -453,7 +453,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_karteggmine_slotlock);
 	CV_RegisterVar(&cv_karteggmine_slotbrick);
 
-	CV_RegisterVar(&cv_kartdrift_snapshot);
+	CV_RegisterVar(&cv_kartdrift_operationorder);
 }
 
 //}
@@ -7572,17 +7572,16 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->flamecamtime -= 1;
 	}
 
-	if (cmd->buttons & BT_DRIFT)
+	if (!cv_kartdrift_operationorder.value)
 	{
-		player->pflags |= PF_DRIFTINPUT;
-
-		player->driftturnsnapshot = player->cmd.turning;
-	}
-	else
-	{
-		player->pflags &= ~PF_DRIFTINPUT;
-
-		player->driftturnsnapshot = 0;
+		if (cmd->buttons & BT_DRIFT)
+		{
+			player->pflags |= PF_DRIFTINPUT;
+		}
+		else
+		{
+			player->pflags &= ~PF_DRIFTINPUT;
+		}
 	}
 
 	// Respawn Checker
@@ -9369,19 +9368,14 @@ static void K_KartDrift(player_t *player, boolean onground)
 			player->driftcharge = 0;
 	}
 
-	// experiment disabled, drop the snapshot and use the turning value from this tick
-	if (!cv_kartdrift_snapshot.value)
-	{
-		player->driftturnsnapshot = player->cmd.turning;
-	}
 	// Drifting: left or right?
-	if ((player->driftturnsnapshot > 0) && player->speed > minspeed && (player->pflags & PF_DRIFTINPUT) && (player->drift == 0 || (player->pflags & PF_DRIFTEND)))
+	if ((player->cmd.turning > 0) && player->speed > minspeed && (player->pflags & PF_DRIFTINPUT) && (player->drift == 0 || (player->pflags & PF_DRIFTEND)))
 	{
 		// Starting left drift
 		player->drift = 1;
 		player->pflags &= ~PF_DRIFTEND;
 	}
-	else if ((player->driftturnsnapshot < 0) && player->speed > minspeed && (player->pflags & PF_DRIFTINPUT) && (player->drift == 0 || (player->pflags & PF_DRIFTEND)))
+	else if ((player->cmd.turning < 0) && player->speed > minspeed && (player->pflags & PF_DRIFTINPUT) && (player->drift == 0 || (player->pflags & PF_DRIFTEND)))
 	{
 		// Starting right drift
 		player->drift = -1;

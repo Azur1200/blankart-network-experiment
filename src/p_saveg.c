@@ -607,7 +607,6 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNCBOOLEAN(players[i].noclip);
 
 		SYNC(players[i].drift);
-		SYNC(players[i].driftturnsnapshot);
 		SYNC(players[i].driftlock);
 		SYNC(players[i].driftcharge);
 		SYNC(players[i].driftboost);
