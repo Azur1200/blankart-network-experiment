@@ -1138,6 +1138,14 @@ void D_RegisterServerCommands(void)
 
 	COM_AddCommand("playsound", Command_PlaySound);
 	RegisterNetXCmd(XD_PLAYSOUND, Got_PlaySound);
+
+	// player restat
+	CV_RegisterVar(&cv_allowrestat);
+	CV_RegisterVar(&cv_notifyrestat);
+	COM_AddCommand("restat", Command_Restat);
+	COM_AddCommand("restat2", Command_Restat2);
+	COM_AddCommand("restat3", Command_Restat3);
+	COM_AddCommand("restat4", Command_Restat4);
 }
 
 // =========================================================================
@@ -1445,14 +1453,6 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_connectawaittime);
 	CV_RegisterVar(&cv_serverinfoscreen);
-	
-	// player restat
-	CV_RegisterVar(&cv_allowrestat);
-	CV_RegisterVar(&cv_notifyrestat);
-	COM_AddCommand("restat", Command_Restat);
-	COM_AddCommand("restat2", Command_Restat2);
-	COM_AddCommand("restat3", Command_Restat3);
-	COM_AddCommand("restat4", Command_Restat4);
 }
 
 static void RestatForPlayer(UINT32 ssplayer)
