@@ -909,6 +909,7 @@ struct panel_func_s const PANEL_FUNCS[] = {
 	{ "SETUPVIEWSERVER", &MP_SetupViewServer },
 	{ "VIEWSERVERPLAYERS", &MP_ViewServerPlayers },
 	{ "VIEWSERVERADDONS", &MP_ViewServerAddons },
+	{ "PREPADDONLIST", &MP_PrepAddonList },
 	{ NULL, NULL }
 };
 

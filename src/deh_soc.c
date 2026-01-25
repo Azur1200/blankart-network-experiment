@@ -2508,6 +2508,10 @@ static void readmenupanelinstances(MYFILE *f, INT32 num)
 		{
 			pi->disabled = word2[0] == 'T' || word2[0] == 'Y';;
 		}
+		else if (fastcmp(word, "LAYER"))
+		{
+			pi->layer = get_number(word2);
+		}
 		else
 			WARN("unknown word '%s'", word);
 	} while (!myfeof(f)); // finish when the line is empty

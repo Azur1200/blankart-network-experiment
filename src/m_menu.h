@@ -264,6 +264,7 @@ struct menupanelinst_t
 	INT32 navitemcount;
 	boolean disabled; // can't be selected
 	boolean altscroll; // viewserver hell (list scrolling, usually paired with disabled = true)
+	INT32 layer; // higher number draws on top
 };
 
 struct menu_t
@@ -336,7 +337,7 @@ MP_ScreenshotOptions, MP_AddonsOptions, MP_SetupMultiPlayer, MP_SetupMonitorTogg
 MP_PrepReplayList, MP_ReplayHutStart, MP_VideoModeList, MP_MultiplayerPause,
 MP_PlayerSplitscreen, MP_SetupJoystick, MP_PrepareLevelPlatter, MP_LevelPlatterOptions,
 MP_TimeAttackMenu, MP_TimeAttackPresets, MP_SetupViewServer, MP_ViewServerPlayers,
-MP_ViewServerAddons
+MP_ViewServerAddons, MP_PrepAddonList
 ;
 INT32 MR_Addons(INT32 choice);
 INT32 MR_QuitAddons(INT32 choice);

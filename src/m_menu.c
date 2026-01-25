@@ -920,7 +920,7 @@ static void Levelplatter_OnChange(void)
 static void Reinitialize(void)
 {
 	// FIXME this is ass
-	if (numcurpanels < 0)
+	if (numcurpanels == 0)
 		return;
 	menupanelinst_t *pi = &curpanels[0];
 	menupaneldef_t *pd = M_GetDefFromInst(pi);
@@ -1997,6 +1997,13 @@ boolean M_DemoResponder(event_t *ev)
 static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected);
 static void M_DrawSplitText(const char *text, INT32 x, INT32 y, INT32 option, INT32 alpha);
 
+static int SortPanels(const void *a, const void *b)
+{
+	const menupanelinst_t *p1 = &curpanels[*(const UINT16 *)a], *p2 = &curpanels[*(const UINT16 *)b];
+	int c = p1->layer - p2->layer;
+	return c != 0 ? c : p1 - p2;
+}
+
 //
 // M_Drawer
 // Called after the view has been rendered,
@@ -2027,9 +2034,16 @@ void M_Drawer(void)
 	else
 	{
 		size_t i;
+		UINT16 sortedpanels[UINT16_MAX];
+		if (numcurpanels >= UINT16_MAX)
+			I_Error("You have way too many panels, man!");
+		for (i = 0; i < numcurpanels; i++)
+			sortedpanels[i] = i;
+		qs22j(sortedpanels, numcurpanels, sizeof(*sortedpanels), SortPanels);
+
 		M_GetGametypeColor();
 		for (i = 0; i < numcurpanels; i++)
-			M_DrawMenuPanel(&curpanels[i], panelOn == i && !curpanels[i].disabled);
+			M_DrawMenuPanel(&curpanels[sortedpanels[i]], panelOn == sortedpanels[i] && !curpanels[sortedpanels[i]].disabled);
 
 		if (menustack[0] == MN_MAIN)
 		{
@@ -2331,6 +2345,7 @@ static void M_SetupNextMenu(menutype_t menunum)
 		pi->itemon = src->itemon;
 		pi->vflags = src->vflags;
 		pi->disabled = src->disabled;
+		pi->layer = src->layer;
 
 		// copy items from the panel definition (TODO menuitem def/inst)
 		if (pd->numitems > 0)
@@ -2806,7 +2821,7 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 		else if (item->status & IT_GRAYEDOUT || part->translucent)
 			vflags |= V_TRANSLUCENT;
 
-		if (selected && !part->nohighlight)
+		if (selected && part->type == ITT_STRING && !part->nohighlight)
 		{
 			colorflag = highlightflags;
 		}
@@ -2865,6 +2880,9 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 
 			fillw *= FRACUNIT;
 			fillh *= FRACUNIT;
+
+			if (colorflag != 0)
+				fillc = V_GetStringColormap(colorflag)[fillc];
 
 			width = M_GetAlignment(part, x, fillw);
 			V_DrawFixedFill(x - width + part->xofs, y + part->yofs, fillw, fillh, fillc|vflags);
@@ -3097,10 +3115,8 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 	if (pd->drawroutine == MD_DrawReplayHut && cv_vhseffect.value)
 		V_DrawVhsEffect(false); // FIXME a menudef flag for this!?!?
 
-	if (cv_debugpanels.value != 2 && pd->drawroutine)
-		pd->drawroutine(pi);
 	if (pi->visible == false || cv_debugpanels.value == 1)
-		return;
+		goto justdrawroutine;
 
 	fixed_t scrollx = pi->x, scrolly = pi->y;
 	fixed_t scrollheight = pi->scrollheight;
@@ -3199,7 +3215,7 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 				y = dy;
 		}
 
-		if (dy < pi->y)
+		if (scrollheight != INT32_MAX && dy < pi->y)
 		{
 			cliptop = true;
 			goto nodraw;
@@ -3224,9 +3240,22 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 
 	// DRAW THE SKULL CURSOR
 	if (!hidecursor && M_ItemSelectable(&pi->items[pi->itemon]))
-		V_DrawSciencePatch(cursorx, cursory, (noFurtherInput > 0 ? V_TRANSLUCENT : 0) | pflags, W_CachePatchName("M_CURSOR", PU_CACHE), FRACUNIT);
+	{
+		const char *pname = "M_CURSOR";
+		UINT8 *cmap = NULL;
+		fixed_t scale = FRACUNIT;
+		if (pd->drawroutine == MD_DrawAddons)
+		{
+			pname = "M_FSEL";
+			cursorx += 15*FRACUNIT;
+			scale /= 2;
+			if (skullAnimCounter < 4)
+				cmap = V_GetStringColormap(highlightflags);
+		}
+		V_DrawFixedPatch(cursorx, cursory, scale, (noFurtherInput > 0 ? V_TRANSLUCENT : 0) | pflags, W_CachePatchName(pname, PU_CACHE), cmap);
+	}
 	if (noFurtherInput > 0)
-		V__DrawOneScaleString (cursorx, cursory, FRACUNIT/2, pflags, HU_FONT, "WAIT");
+		V__DrawOneScaleString(cursorx, cursory + 3*FRACUNIT, FRACUNIT/2, pflags, HU_FONT, "WAIT");
 
 	// Draw scrollbar
 	// FIXME make replay hut scrollbar an option?
@@ -3251,7 +3280,32 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 			V_DrawCharacter(x/FRACUNIT, pi->y/FRACUNIT - (skullAnimCounter/5), '\x1A' | pflags, false); // up arrow
 		if (clipbot)
 			V_DrawCharacter(x/FRACUNIT, pi->y/FRACUNIT + scrollheight/FRACUNIT + (skullAnimCounter/5), '\x1B' | pflags, false); // down arrow
+
+		// i hate custom scrollbars
+		if (pd->drawroutine == MD_DrawAddons)
+		{
+			fixed_t m = BASEVIDHEIGHT*FRACUNIT - (pi->y - FRACUNIT)*2;
+			if (pi->numitems <= (2*numaddonsshown + 1))
+				i = 0;
+			else
+			{
+				fixed_t q = m;
+				m = ((2*numaddonsshown + 1) * m)/pi->numitems;
+				if (pi->itemon <= numaddonsshown) // all the way up
+					i = 0;
+				else if (pi->numitems <= (pi->itemon + numaddonsshown + 1)) // all the way down
+					i = q-m;
+				else
+					i = ((pi->itemon - numaddonsshown) * (q-m))/(pi->numitems - (2*numaddonsshown + 1));
+			}
+
+			V_DrawFixedFill(pi->x + (MAXSTRINGLENGTH*8+5 - 21)*FRACUNIT, (pi->y - FRACUNIT) + i, FRACUNIT, m, V_GetStringColormap(highlightflags)[0]);
+		}
 	}
+
+justdrawroutine:
+	if (cv_debugpanels.value != 2 && pd->drawroutine)
+		pd->drawroutine(pi);
 }
 
 //
@@ -4486,14 +4540,21 @@ static void M_AddonsClearName(INT32 choice)
 // returns whether to do message draw
 static boolean M_AddonsRefresh(void)
 {
-	if ((refreshdirmenu & REFRESHDIR_NORMAL) && !preparefilemenu(true, false))
+	if (refreshdirmenu & REFRESHDIR_NORMAL)
 	{
-		UNEXIST;
-		if (refreshdirname)
+		if (preparefilemenu(true, false))
 		{
-			CLEARNAME;
+			Reinitialize();
 		}
-		return true;
+		else
+		{
+			UNEXIST;
+			if (refreshdirname)
+			{
+				CLEARNAME;
+			}
+			return true;
+		}
 	}
 
 #ifdef DEVELOP
@@ -4543,21 +4604,9 @@ static boolean M_AddonsRefresh(void)
 void MD_DrawAddons(menupanelinst_t *pi)
 {
 	INT32 x, y;
-	ssize_t i, m;
-	const UINT8 *flashcol = NULL;
-	UINT8 hilicol;
 
 	// hack - need to refresh at end of frame to handle addfile...
-	if (refreshdirmenu & M_AddonsRefresh())
-	{
-		M_DrawMessageMenu();
-		return;
-	}
-
-	if (Playing())
-		V_DrawCenteredString(BASEVIDWIDTH/2, 5, MENUCAPS|warningflags, "Adding files mid-game may cause problems.");
-	else
-		V_DrawCenteredString(BASEVIDWIDTH/2, 5, MENUCAPS, (recommendedflags == V_SKYMAP ? LOCATIONSTRING2 : LOCATIONSTRING1));
+	M_AddonsRefresh();
 
 	if (numwadfiles <= NUMMAINWADS)
 		y = 0;
@@ -4574,91 +4623,7 @@ void MD_DrawAddons(menupanelinst_t *pi)
 
 	// DRAW MENU
 	x = pi->x/FRACUNIT;
-	y = pi->y/FRACUNIT + 1;
-
-	hilicol = V_GetStringColormap(highlightflags)[0];
-
-	V_DrawString(x-21, (y - 16) + 4, MENUCAPS|highlightflags|V_ALLOWLOWERCASE, M_AddonsHeaderPath());
-	V_DrawFill(x-21, (y - 16) + 13, MAXSTRINGLENGTH*8+6, 1, hilicol);
-	V_DrawFill(x-21, (y - 16) + 14, MAXSTRINGLENGTH*8+6, 1, 30);
-
-	m = (BASEVIDHEIGHT - pi->y/FRACUNIT + 2) - (y - 1);
-	V_DrawFill(x - 21, y - 1, MAXSTRINGLENGTH*8+6, m, 159);
-
-	// scrollbar!
-	if (sizedirmenu <= (2*numaddonsshown + 1))
-		i = 0;
-	else
-	{
-		ssize_t q = m;
-		m = ((2*numaddonsshown + 1) * m)/sizedirmenu;
-		if (dir_on[menudepthleft] <= numaddonsshown) // all the way up
-			i = 0;
-		else if (sizedirmenu <= (dir_on[menudepthleft] + numaddonsshown + 1)) // all the way down
-			i = q-m;
-		else
-			i = ((dir_on[menudepthleft] - numaddonsshown) * (q-m))/(sizedirmenu - (2*numaddonsshown + 1));
-	}
-
-	V_DrawFill(x + MAXSTRINGLENGTH*8+5 - 21, (y - 1) + i, 1, m, hilicol);
-
-	// get bottom...
-	m = dir_on[menudepthleft] + numaddonsshown + 1;
-	if (m > (ssize_t)sizedirmenu)
-		m = sizedirmenu;
-
-	// then compute top and adjust bottom if needed!
-	if (m < (2*numaddonsshown + 1))
-	{
-		m = min(sizedirmenu, 2*numaddonsshown + 1);
-		i = 0;
-	}
-	else
-		i = m - (2*numaddonsshown + 1);
-
-	if (i != 0)
-		V_DrawString(19, y+4 - (skullAnimCounter/5), MENUCAPS|highlightflags, "\x1A");
-
-	if (skullAnimCounter < 4)
-		flashcol = V_GetStringColormap(highlightflags);
-
-	for (; i < m; i++)
-	{
-		UINT32 flags = V_ALLOWLOWERCASE;
-		if (y > BASEVIDHEIGHT) break;
-		if (dirmenu[i])
-#define type (UINT8)(dirmenu[i][DIR_TYPE])
-		{
-			if (type & EXT_LOADED)
-			{
-				flags |= V_TRANSLUCENT;
-				V_DrawSmallScaledPatch(x-(16+4), y, V_TRANSLUCENT, addonsp[(type & ~EXT_LOADED)]);
-				V_DrawSmallScaledPatch(x-(16+4), y, 0, addonsp[NUM_EXT+2]);
-			}
-			else
-				V_DrawSmallScaledPatch(x-(16+4), y, 0, addonsp[(type & ~EXT_LOADED)]);
-
-			if ((size_t)i == dir_on[menudepthleft])
-			{
-				V_DrawFixedPatch((x-(16+4))<<FRACBITS, (y)<<FRACBITS, FRACUNIT/2, 0, addonsp[NUM_EXT+1], flashcol);
-				flags = V_ALLOWLOWERCASE|highlightflags;
-			}
-
-#define charsonside 14
-			if (dirmenu[i][DIR_LEN] > (charsonside*2 + 3))
-				V_DrawString(x, y+4, flags, va("%.*s...%s", charsonside, dirmenu[i]+DIR_STRING, dirmenu[i]+DIR_STRING+dirmenu[i][DIR_LEN]-(charsonside+1)));
-#undef charsonside
-			else
-				V_DrawString(x, y+4, flags, dirmenu[i]+DIR_STRING);
-		}
-#undef type
-		y += 16;
-	}
-
-	if (m != (ssize_t)sizedirmenu)
-		V_DrawString(19, y-12 + (skullAnimCounter/5), MENUCAPS|highlightflags, "\x1B");
-
-	y = BASEVIDHEIGHT - pi->y/FRACUNIT + 1;
+	y = BASEVIDHEIGHT - pi->y/FRACUNIT;
 
 	M_DrawTextBox(x - (21 + 5), y, MAXSTRINGLENGTH, 1);
 
@@ -4667,14 +4632,16 @@ void MD_DrawAddons(menupanelinst_t *pi)
 	else
 		V_DrawString(x - 18, y + 8, V_ALLOWLOWERCASE|V_TRANSLUCENT, "Type to search...");
 
-	x -= (21 + 5 + 16);
-	V_DrawSmallScaledPatch(x, y + 4, (menusearch.length ? 0 : V_TRANSLUCENT), addonsp[NUM_EXT+3]);
+	pi = M_GetPanel("URL");
+	M_SetItemVisible(pi, "LOCATION1", !Playing());
+	M_SetItemVisible(pi, "LOCATION2", !Playing());
+	M_SetItemVisible(pi, "MIDGAME", Playing());
 
-	x = BASEVIDWIDTH - x - 16;
-	V_DrawSmallScaledPatch(x, y + 4, ((!majormods) ? 0 : V_TRANSLUCENT), addonsp[NUM_EXT+4]);
-
-	if (modifiedgame)
-		V_DrawSmallScaledPatch(x, y + 4, 0, addonsp[NUM_EXT+2]);
+	pi = M_GetPanel("BACK");
+	M_SetItemText(pi, "HEADERPATH", M_AddonsHeaderPath());
+	M_SetItemDisabled(pi, "SEARCHICON", menusearch.length == 0);
+	M_SetItemDisabled(pi, "DISKICON", majormods);
+	M_SetItemVisible(pi, "ADDONSLOADED", modifiedgame);
 }
 
 static void M_AddonExec(INT32 ch)
@@ -4683,18 +4650,64 @@ static void M_AddonExec(INT32 ch)
 		return;
 
 	S_StartSound(NULL, sfx_zoom);
-	COM_BufAddText(va("exec \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
+	COM_BufAddText(va("exec \"%s%s\"", menupath, curpanels[panelOn].items[curpanels[panelOn].itemon].extra));
+}
+
+static const char *addonpatches[] = {
+	[EXT_FOLDER] = "M_FFLDR",
+	[EXT_UP] = "M_FBACK",
+	[EXT_NORESULTS] = "M_FNOPE",
+	[EXT_TXT] = "M_FTXT",
+	[EXT_CFG] = "M_FCFG",
+	[EXT_WAD] = "M_FWAD",
+#ifdef USE_KART
+	[EXT_KART] = "M_FKART",
+#endif
+	[EXT_PK3] = "M_FPK3",
+	[EXT_SOC] = "M_FSOC",
+	[EXT_LUA] = "M_FLUA",
+	[NUM_EXT] = "M_FUNKN",
+	[NUM_EXT+1] = "M_FSEL",
+	[NUM_EXT+2] = "M_FLOAD",
+	[NUM_EXT+3] = "M_FSRCH",
+	[NUM_EXT+4] = "M_FSAVE",
+};
+
+void MP_PrepAddonList(menupanelinst_t *pi)
+{
+	size_t i;
+
+	M_ClearPanelItems(pi);
+
+	for (i = 0; i < sizedirmenu; i++)
+	{
+		menuitem_t *item = M_AppendMenuItem(pi, 0, 0, IT_INTERACT);
+		UINT8 type = dirmenu[i][DIR_TYPE];
+		item->style = DEH_FindMenuItemStyle(type & EXT_LOADED ? "ADDONLOADED" : "ADDON");
+		M_SetItemPatchRaw(item, addonpatches[type & ~EXT_LOADED]);
+
+#define charsonside 14
+		if (dirmenu[i][DIR_LEN] > (charsonside*2 + 3))
+			M_SetItemTextRaw(item, va("%." TOSTR2(charsonside) "s...%s", dirmenu[i]+DIR_STRING, dirmenu[i]+DIR_STRING+dirmenu[i][DIR_LEN]-(charsonside+1)));
+#undef charsonside
+		else
+			M_SetItemTextRaw(item, dirmenu[i]+DIR_STRING);
+
+		M_SetItemExtraRaw(item, dirmenu[i]+DIR_STRING);
+	}
+
+	M_RawSetItemOn(pi, dir_on[menudepthleft]);
 }
 
 INT32 MR_HandleAddons(INT32 choice)
 {
+	const char *filename = curpanels[panelOn].items[curpanels[panelOn].itemon].extra;
+
 	if (M_TextInputHandle(&menusearch, choice))
 	{
 		S_StartSound(NULL,sfx_menu1);
 
-		char *tempname = NULL;
-		if (dirmenu && dirmenu[dir_on[menudepthleft]])
-			tempname = Z_StrDup(dirmenu[dir_on[menudepthleft]]+DIR_STRING); // don't need to I_Error if can't make - not important, just QoL
+		char *tempname = Z_StrDup(filename);
 #if 0 // much slower
 		if (!preparefilemenu(true, false))
 		{
@@ -4704,113 +4717,121 @@ INT32 MR_HandleAddons(INT32 choice)
 #else // streamlined
 		searchfilemenu(tempname);
 #endif
+		Reinitialize();
 		return true;
 	}
 
 	switch (choice)
 	{
-		case KEY_DOWNARROW:
-			if (dir_on[menudepthleft] < sizedirmenu-1)
+	case KEY_DOWNARROW:
+		if (dir_on[menudepthleft] < sizedirmenu-1)
+			dir_on[menudepthleft]++;
+		else
+			break;
+
+		return false;
+
+	case KEY_UPARROW:
+		if (dir_on[menudepthleft])
+			dir_on[menudepthleft]--;
+		else
+			break;
+
+		return false;
+
+	case KEY_PGDN:
+		{
+			UINT8 i;
+			for (i = numaddonsshown; i && (dir_on[menudepthleft] < sizedirmenu-1); i--)
 				dir_on[menudepthleft]++;
-			S_StartSound(NULL, sfx_menu1);
-			break;
-		case KEY_UPARROW:
-			if (dir_on[menudepthleft])
+		}
+		S_StartSound(NULL, sfx_menu1);
+		break;
+
+	case KEY_PGUP:
+		{
+			UINT8 i;
+			for (i = numaddonsshown; i && (dir_on[menudepthleft]); i--)
 				dir_on[menudepthleft]--;
-			S_StartSound(NULL, sfx_menu1);
+		}
+		S_StartSound(NULL, sfx_menu1);
+		break;
+
+	case KEY_ENTER:
+		if (!dirmenu[dir_on[menudepthleft]])
+		{
+			refreshdirmenu |= REFRESHDIR_NORMAL;
+			S_StartSound(NULL, FILENOTADDSFX);
 			break;
-		case KEY_PGDN:
+		}
+
+		switch (dirmenu[dir_on[menudepthleft]][DIR_TYPE])
+		{
+		case EXT_FOLDER:
+			strcpy(&menupath[menupathindex[menudepthleft]],filename);
+			if (menudepthleft)
 			{
-				UINT8 i;
-				for (i = numaddonsshown; i && (dir_on[menudepthleft] < sizedirmenu-1); i--)
-					dir_on[menudepthleft]++;
-			}
-			S_StartSound(NULL, sfx_menu1);
-			break;
-		case KEY_PGUP:
-			{
-				UINT8 i;
-				for (i = numaddonsshown; i && (dir_on[menudepthleft]); i--)
-					dir_on[menudepthleft]--;
-			}
-			S_StartSound(NULL, sfx_menu1);
-			break;
-		case KEY_ENTER:
-			{
-				boolean refresh = true;
-				if (!dirmenu[dir_on[menudepthleft]])
-					S_StartSound(NULL, FILENOTADDSFX);
-				else
+				menupathindex[--menudepthleft] = strlen(menupath);
+				menupath[menupathindex[menudepthleft]] = 0;
+
+				if (!preparefilemenu(false, false))
 				{
-					switch (dirmenu[dir_on[menudepthleft]][DIR_TYPE])
+					S_StartSound(NULL, FILEERRORSFX);
+					M_StartMessage(va("%c%s\x80\nThis folder is empty.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING);
+					menupath[menupathindex[++menudepthleft]] = 0;
+
+					if (!preparefilemenu(true, false))
 					{
-						case EXT_FOLDER:
-							strcpy(&menupath[menupathindex[menudepthleft]],dirmenu[dir_on[menudepthleft]]+DIR_STRING);
-							if (menudepthleft)
-							{
-								menupathindex[--menudepthleft] = strlen(menupath);
-								menupath[menupathindex[menudepthleft]] = 0;
-
-								if (!preparefilemenu(false, false))
-								{
-									S_StartSound(NULL, FILEERRORSFX);
-									M_StartMessage(va("%c%s\x80\nThis folder is empty.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING);
-									menupath[menupathindex[++menudepthleft]] = 0;
-
-									if (!preparefilemenu(true, false))
-									{
-										UNEXIST;
-										return true;
-									}
-								}
-								else
-								{
-									S_StartSound(NULL, sfx_menu1);
-									dir_on[menudepthleft] = 1;
-								}
-								refresh = false;
-							}
-							else
-							{
-								S_StartSound(NULL, FILENOTADDSFX);
-								M_StartMessage(va("%c%s\x80\nThis folder is too deep to navigate to!\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING);
-								menupath[menupathindex[menudepthleft]] = 0;
-							}
-							break;
-						case EXT_UP:
-							S_StartSound(NULL, sfx_menu1);
-							menupath[menupathindex[++menudepthleft]] = 0;
-							if (!preparefilemenu(false, false))
-							{
-								UNEXIST;
-								return true;
-							}
-							break;
-						case EXT_TXT:
-							M_StartMessage(va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways? \n\n(Press 'Y' to confirm)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING), M_AddonExec ,MM_YESNO);
-							break;
-						case EXT_CFG:
-							M_AddonExec(KEY_ENTER);
-							break;
-						case EXT_LUA:
-						case EXT_SOC:
-						case EXT_WAD:
-#ifdef USE_KART
-						case EXT_KART:
-#endif
-						case EXT_PK3:
-							COM_BufAddText(va("addfile \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
-							break;
-						default:
-							S_StartSound(NULL, FILENOTADDSFX);
+						UNEXIST;
+						return true;
 					}
 				}
-				if (refresh)
-					refreshdirmenu |= REFRESHDIR_NORMAL;
+				else
+				{
+					S_StartSound(NULL, sfx_menu1);
+					dir_on[menudepthleft] = 1;
+				}
+				Reinitialize();
+			}
+			else
+			{
+				S_StartSound(NULL, FILENOTADDSFX);
+				M_StartMessage(va("%c%s\x80\nThis folder is too deep to navigate to!\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING);
+				menupath[menupathindex[menudepthleft]] = 0;
 			}
 			break;
+		case EXT_UP:
+			S_StartSound(NULL, sfx_menu1);
+			menupath[menupathindex[++menudepthleft]] = 0;
+			if (!preparefilemenu(false, false))
+			{
+				UNEXIST;
+				return true;
+			}
+			Reinitialize();
+			break;
+		case EXT_TXT:
+			M_StartMessage(va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways? \n\n(Press 'Y' to confirm)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), filename), M_AddonExec ,MM_YESNO);
+			break;
+		case EXT_CFG:
+			M_AddonExec(KEY_ENTER);
+			break;
+		case EXT_LUA:
+		case EXT_SOC:
+		case EXT_WAD:
+#ifdef USE_KART
+		case EXT_KART:
+#endif
+		case EXT_PK3:
+			COM_BufAddText(va("addfile \"%s%s\"", menupath, filename));
+			break;
 		default:
-			return false;
+			S_StartSound(NULL, FILENOTADDSFX);
+		}
+		break;
+
+	default:
+		return false;
 	}
 	return true;
 }
