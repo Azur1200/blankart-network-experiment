@@ -9461,8 +9461,15 @@ static void K_KartDrift(player_t *player, boolean onground)
 
 	if (P_PlayerInPain(player) || player->speed < minspeed)
 	{
-		player->drift = player->driftcharge = player->aizdriftstrat = 0;
-		player->pflags &= ~(PF_BRAKEDRIFT|PF_GETSPARKS);
+		if (player->flipovertimer == 0)
+		{
+			player->drift = player->driftcharge = player->aizdriftstrat = 0;
+			player->pflags &= ~(PF_BRAKEDRIFT|PF_GETSPARKS);
+		}
+		else
+		{
+			player->driftcharge = player->aizdriftstrat = 0;
+		}
 	}
 
 	if ( (!(player->sneakertimer || player->flamestore || player->bubbleboost || K_OtherSliptideCondition(player)))
