@@ -924,12 +924,6 @@ static int player_get(lua_State *L)
 	case player_jawztargetdelay:
 		lua_pushinteger(L, plr->jawztargetdelay);
 		break;
-	case player_confirmvictim:
-		lua_pushinteger(L, plr->confirmVictim);
-		break;
-	case player_confirmvictimdelay:
-		lua_pushinteger(L, plr->confirmVictimDelay);
-		break;
 	case player_dashringpulltics:
 		lua_pushinteger(L, plr->dashRingPullTics);
 		break;
@@ -1712,12 +1706,6 @@ static int player_set(lua_State *L)
 		break;
 	case player_jawztargetdelay:
 		plr->jawztargetdelay = luaL_checkinteger(L, 3);
-		break;
-	case player_confirmvictim:
-		plr->confirmVictim = luaL_checkinteger(L, 3);
-		break;
-	case player_confirmvictimdelay:
-		plr->confirmVictimDelay = luaL_checkinteger(L, 3);
 		break;
 	case player_dashringpulltics:
 		plr->dashRingPullTics = luaL_checkinteger(L, 3);

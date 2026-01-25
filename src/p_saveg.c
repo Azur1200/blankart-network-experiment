@@ -728,9 +728,6 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].lastjawztarget);
 		SYNC(players[i].jawztargetdelay);
 
-		SYNC(players[i].confirmVictim);
-		SYNC(players[i].confirmVictimDelay);
-
 		SYNC(players[i].interpoints);
 		SYNC(players[i].roundscore);
 		SYNC(players[i].emeralds);
