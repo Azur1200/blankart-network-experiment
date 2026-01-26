@@ -104,7 +104,10 @@ extern consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS];
 // current state of the keys: JOYAXISRANGE or 0 when boolean.
 // Or anything inbetween for analog values
 #define MAXDEVICES (MAXGAMEPADS + 1) // Gamepads + keyboard & mouse
-extern INT32 gamekeydown[MAXDEVICES][NUMINPUTS];
+
+typedef INT32 inputpoll_t[MAXDEVICES][NUMINPUTS];
+extern inputpoll_t gamekeydown, gamekeydown_msec;
+
 extern boolean deviceResponding[MAXDEVICES];
 
 // several key codes (or virtual key) per game control

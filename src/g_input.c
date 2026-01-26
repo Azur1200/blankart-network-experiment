@@ -137,7 +137,8 @@ static void led_off_handle4(void)
 
 // current state of the keys
 // JOYAXISRANGE for fully pressed, 0 for not pressed
-INT32 gamekeydown[MAXDEVICES][NUMINPUTS] = {};
+inputpoll_t gamekeydown = {};
+inputpoll_t gamekeydown_msec = {};
 boolean deviceResponding[MAXDEVICES] = {false};
 
 // several key codes (or virtual key) per game control
