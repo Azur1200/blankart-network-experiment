@@ -170,6 +170,8 @@ struct kartroulette_t
 extern consvar_t cv_fancyroulette;
 extern consvar_t cv_fancyroulettespeed;
 
+extern consvar_t cv_huditemamount;
+
 extern kartitem_t kartitems[MAXKARTITEMS];
 extern UINT8 numkartitems;
 extern kartresult_t kartresults[MAXKARTRESULTS];

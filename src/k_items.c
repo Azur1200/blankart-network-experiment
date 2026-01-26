@@ -75,6 +75,9 @@ static CV_PossibleValue_t kartitemvariant_cons_t[] = {{0, "Legacy"}, {1, "Altern
 consvar_t cv_fancyroulette = CVAR_INIT ("fancyroulette", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_fancyroulettespeed = CVAR_INIT ("fancyroulettespeed", "3", CV_SAVE, CV_Natural, NULL);
 
+static CV_PossibleValue_t huditemamount_cons_t[] = {{0, "Vanilla"}, {1, "Always"}, {2, "Multiple"},{0, NULL}};
+consvar_t cv_huditemamount = CVAR_INIT ("showitemamountnumber", "Vanilla", CV_SAVE, huditemamount_cons_t, NULL);
+
 // Item related CVARs
 consvar_t cv_karteggmine_slotlock = CVAR_INIT ("karteggmine_slotlock", "Off", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
 consvar_t cv_karteggmine_slotbrick = CVAR_INIT ("karteggmine_slotbrick", "Off", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
@@ -205,6 +208,9 @@ UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny)
 		type = 0; // KITEM_SAD displays like normal
 	if (type >= numkartitems)
 		return 1; // actually broken items show x1 to let you know
+	
+	if (cv_huditemamount.value > 0) 
+		return cv_huditemamount.value;
 
 	return K_GetItemFlags(type) & KIF_ANIMATED ? 2 : kartitems[type].graphics[tiny ? 1 : 0].numpatches + 1;
 }
