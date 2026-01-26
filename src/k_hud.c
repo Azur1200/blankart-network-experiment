@@ -263,6 +263,7 @@ void K_RegisterKartHUDStuff(void)
 	// k_items.c
 	CV_RegisterVar(&cv_fancyroulette);
 	CV_RegisterVar(&cv_fancyroulettespeed);
+	CV_RegisterVar(&cv_huditemamount);
 }
 
 void K_LoadKartHUDGraphics(void)
