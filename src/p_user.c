@@ -4300,7 +4300,7 @@ void P_PlayerThink(player_t *player)
 	player->pflags &= ~PF_HITFINISHLINE;
 	
 	// experiment: process the drift input *before* player movement instead of after
-	if (cv_kartdrift_operationorder.value)
+	if (player->driftmode == DRIFTMODE_INSTANT)
 	{
 		if (cmd->buttons & BT_DRIFT)
 		{
