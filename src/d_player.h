@@ -436,13 +436,19 @@ struct saltyhop_t
 };
 
 // this WILL conflict with a future commit I just need this to proto
+// yama: Nah, I'mma do my own thing
 typedef enum
 {
-	DRIFTMODE_CLASSIC = 0,
-	DRIFTMODE_SNAPSHOT,
-	DRIFTMODE_INSTANT,
+	DRIFTMODE_CLASSIC = 0,  // SRB2Kart drifting; no changes
+	DRIFTMODE_SNAPSHOT,     // AKA "Runahead" - Use a prediction system to reduce the chances of a wrongdrift
+	DRIFTMODE_INSTANT,      // Instantly decide your drift on the tic it happens
+	DRIFTMODE_DELAY,        // Delay the time before a drift is decided
 	NUMDRIFTMODES
 } driftmode_e;
+
+// (12 frames / 60fps) * 35tps
+// Delay-drift: Time the game is given to predict a "wanted" drift
+#define DRIFT_DELAY_TIME (7)
 
 // enum for saved lap times
 typedef enum
@@ -585,6 +591,12 @@ struct player_t
 	tic_t driftsparkGrowTimer;	// CLIENT ONLY -
 	tic_t driftelapsed;     	// CLIENT ONLY - Elapsed time spent during a drift.
 	SINT8 driftlevel; 			// CLIENT ONLY - handles controller rumble and air thrust power, cleared at the start of every tick.
+
+	INT32 drift_wannaturn;  // Turn values the game uses to determine the direction you want to drift.
+
+	// (Delay-drift) - Delay in tics before the final drift angle is determined.
+	// Potentially influenced by player lag.
+	tic_t driftdelay;
 
 	fixed_t spinoutrot;     // When a player spins out, this value increments modulus 360.
 
