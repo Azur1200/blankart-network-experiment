@@ -567,6 +567,7 @@ struct player_t
 	boolean noclip;			// Fix Grow breaking the "noclip" cheat. Also applies noclip as a bonus.
 
 	SINT8 drift;			// (-5 to 5) - Drifting Left or Right, plus a bigger counter = sharper turn
+	INT16 driftturnsnapshot;
 	SINT8 driftlock;		// Prevents you from using drift angle for x tics. Used for zipper fix.
 	fixed_t driftcharge;	// Charge your drift so you can release a burst of speed
 	UINT8 driftboost;		// (0 to 125) - Boost you get from drifting
