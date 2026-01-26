@@ -80,6 +80,7 @@ extern consvar_t cv_invertmouse;
 extern consvar_t cv_kickstartaccel[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_shrinkme[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_jitterlegacy[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_driftmode[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_deadzonex[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_deadzoney[MAXSPLITSCREENPLAYERS];

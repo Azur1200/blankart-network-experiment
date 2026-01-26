@@ -435,6 +435,15 @@ struct saltyhop_t
 	fixed_t momz, zoffset; // erm... the mechanism....
 };
 
+// this WILL conflict with a future commit I just need this to proto
+typedef enum
+{
+	DRIFTMODE_CLASSIC = 0,
+	DRIFTMODE_SNAPSHOT,
+	DRIFTMODE_INSTANT,
+	NUMDRIFTMODES
+} driftmode_e;
+
 // enum for saved lap times
 typedef enum
 {
@@ -566,6 +575,7 @@ struct player_t
 	UINT8 justbumped;		// Prevent players from endlessly bumping into each other
 	boolean noclip;			// Fix Grow breaking the "noclip" cheat. Also applies noclip as a bonus.
 
+	driftmode_e driftmode;
 	SINT8 drift;			// (-5 to 5) - Drifting Left or Right, plus a bigger counter = sharper turn
 	INT16 driftturnsnapshot;
 	SINT8 driftlock;		// Prevents you from using drift angle for x tics. Used for zipper fix.

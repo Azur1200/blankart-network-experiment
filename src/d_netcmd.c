@@ -674,9 +674,6 @@ consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kart
 
 consvar_t cv_kartdebugshrink = CVAR_INIT ("kartdebugshrink", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
-consvar_t cv_kartdrift_operationorder = CVAR_INIT ("kartdriftoperationorder", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_kartdrift_snapshot = CVAR_INIT ("kartdriftsnapshot", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-
 consvar_t cv_kartdebugdistribution = CVAR_INIT ("kartdebugdistribution", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_kartdebughuddrop = CVAR_INIT ("kartdebughuddrop", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 static CV_PossibleValue_t kartdebugwaypoint_cons_t[] = {{0, "Off"}, {1, "Forwards"}, {2, "Backwards"}, {0, NULL}};
@@ -2373,11 +2370,12 @@ void WeaponPref_Send(UINT8 ssplayer)
 	if (player->randomrestat)
 		prefs |= WP_RANDOMRESTAT;
 
-	UINT8 buf[4];
+	UINT8 buf[5];
 	buf[0] = prefs;
 	buf[1] = cv_mindelay.value;
 	buf[2] = player->kartspeedrestat;
 	buf[3] = player->kartweightrestat;
+	buf[4] = cv_driftmode[ssplayer].value;
 
 	SendNetXCmdForPlayer(ssplayer, XD_WEAPONPREF, buf, sizeof buf);
 }
@@ -2464,6 +2462,16 @@ static void Got_WeaponPref(UINT8 **cp,INT32 playernum)
 	}
 	player->kartspeedrestat = kartspeedrestat;
 	player->kartweightrestat = kartweightrestat;
+
+	UINT8 driftmode = READUINT8(*cp);
+	if (driftmode >= NUMDRIFTMODES)
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Illegal drift mode received from %s\n"), player_names[playernum]);
+		if (server)
+			SendKick(playernum, KICK_MSG_CON_FAIL);
+		return;
+	}
+	player->driftmode = driftmode;
 
 	// SEE ALSO g_demo.c
 	demo_extradata[playernum] |= DXD_WEAPONPREF;

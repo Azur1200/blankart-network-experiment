@@ -7573,7 +7573,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->flamecamtime -= 1;
 	}
 
-	if (!cv_kartdrift_operationorder.value)
+	if (player->driftmode != DRIFTMODE_INSTANT)
 	{
 		if (cmd->buttons & BT_DRIFT)
 		{
@@ -9372,7 +9372,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 	}
 
 	// drift-turn snapshot experiment disabled, drop the snapshot and use the turning value from this tick
-	if (!cv_kartdrift_snapshot.value)
+	if (player->driftmode != DRIFTMODE_SNAPSHOT)
 	{
 		player->driftturnsnapshot = player->cmd.turning;
 	}

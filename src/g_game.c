@@ -464,6 +464,15 @@ consvar_t cv_jitterlegacy[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("driftjitter4", "Ring Racers", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, weaponPrefChange)
 };
 
+
+static CV_PossibleValue_t driftmode_cons_t[] = {{DRIFTMODE_CLASSIC, "Classic"}, {DRIFTMODE_SNAPSHOT, "Snapshot"}, {DRIFTMODE_INSTANT, "Instant"}, {0, NULL}};
+consvar_t cv_driftmode[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("driftmode", "Classic", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, weaponPrefChange),
+	CVAR_INIT ("driftmode2", "Classic", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, weaponPrefChange),
+	CVAR_INIT ("driftmode3", "Classic", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, weaponPrefChange),
+	CVAR_INIT ("driftmode4", "Classic", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, weaponPrefChange)
+};
+
 static CV_PossibleValue_t zerotoone_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_deadzonex[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("xdeadzone", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
