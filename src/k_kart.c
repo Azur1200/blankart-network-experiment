@@ -452,9 +452,6 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_karteggmine_slotlock);
 	CV_RegisterVar(&cv_karteggmine_slotbrick);
-
-	CV_RegisterVar(&cv_kartdrift_operationorder);
-	CV_RegisterVar(&cv_kartdrift_snapshot);
 }
 
 //}
