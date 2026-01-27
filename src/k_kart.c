@@ -357,6 +357,10 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_ring_handleboost);
 	CV_RegisterVar(&cv_kartstacking_ring_stackable);
 
+	CV_RegisterVar(&cv_kartstacking_ssmt_speedboost);
+	CV_RegisterVar(&cv_kartstacking_ssmt_accelboost);
+	CV_RegisterVar(&cv_kartstacking_ssmt_handleboost);
+
 	CV_RegisterVar(&cv_kartstacking_slope_decay);
 	CV_RegisterVar(&cv_kartstacking_slope_brakemod);
 	CV_RegisterVar(&cv_kartstacking_slope_speedboost_max);
@@ -1049,11 +1053,6 @@ static void K_UpdateOffroad(player_t *player)
 					// it doesn't suffer the offroad speedboost cut; increase offroadstrength to compensate
 					offroadstrength *= 2;
 				}
-			}
-			else if (player->pflags & PF_CHARGINGSSMT)
-			{
-				offroad = offroad/2;
-				offroadstrength = offroadstrength/2;
 			}
 
 			player->offroad += offroad;
@@ -2174,7 +2173,7 @@ boolean K_ApplyOffroad(const player_t *player)
 
 	if (player->hyudorotimer || sneakertimer ||
 		(cv_kartbubble_boost_offroadignore.value && player->bubbleboost) ||
-		player->ssmtboost)
+		player->ssmtboost || (player->pflags & PF_CHARGINGSSMT))
 		return false;
 	return true;
 }
@@ -3108,7 +3107,7 @@ SINT8 K_GetForwardMove(const player_t *player)
 		player->flipovertimer) // pw_introcam?
 	{
 		forwardmove = 0;
-		if (player->sneakertimer || player->ssmtboost)
+		if (player->sneakertimer)
 			forwardmove = MAXPLMOVE;
 	}
 
@@ -9632,14 +9631,18 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 
 static void K_StandStillMiniTurbo(player_t *player, boolean onground)
 {
-	if (player->speed <= 8*player->mo->scale && onground)
+	if (player->speed <= 12*player->mo->scale && onground && leveltime > starttime)
 	{
-		if (player->cmd.buttons & BT_ACCELERATE|BT_BRAKE)
+		if ((player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE))
 		{
 			player->pflags |= PF_CHARGINGSSMT;
-			player->forcedtopspeed = 8*FRACUNIT;
+			player->forcedtopspeed = 12*FRACUNIT;
 			player->ssmtcharge += 1;
-			K_SpawnDashDustRelease(player, true);
+			if (leveltime % 8 == 0)
+			{
+				K_SpawnDashDustRelease(player, true);
+				S_StartSound(player->mo, sfx_s224);
+			}
 			if (player->ssmtcharge >= 3*TICRATE/2)
 			{
 				K_SpawnBoostTrail(player);
@@ -9653,7 +9656,10 @@ static void K_StandStillMiniTurbo(player_t *player, boolean onground)
 			player->forcedtopspeed = 0;
 			if (player->ssmtcharge >= 3*TICRATE/2)
 			{
-				player->ssmtboost = TICRATE;
+				player->outruntime = TICRATE/4;
+				player->ssmtboost = TICRATE/2;
+				player->tiregrease = TICRATE;
+				S_StartSound(player->mo, sfx_s23c);
 			}
 			player->ssmtcharge = 0;
 
@@ -11117,7 +11123,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	// Quick Turning
 	// You can't turn your kart when you're not moving.
 	// So now it's time to burn some rubber!
-	if (player->speed < 2 && leveltime > starttime && (player->cmd.buttons & BT_ACCELERATE|BT_BRAKE) && player->cmd.turning != 0)
+	if (player->speed < 2 && leveltime > starttime && (player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE) && player->cmd.turning != 0)
 	{
 		if (leveltime % 8 == 0)
 			S_StartSound(player->mo, sfx_s224);
