@@ -2838,9 +2838,14 @@ static void K_GetKartBoostPower(player_t *player)
 		K_DoBoost(player, RINGSPEEDBOOST, RINGACCELBOOST, RINGHANDLEBOOST, RINGSTACKABLE, RINGSTACKABLE); // + 20% top speed, + 400% acceleration
 	}
 
-	if (player->ssmtboost) // Ring Boost
+	if (player->ssmtboost) // SSMT Boost
 	{
-		K_DoBoost(player, SSMTSPEEDBOOST, SSMTACCELBOOST, SSMTHANDLEBOOST, false, true); // + 10% top speed, + ♾️% acceleration
+		K_DoBoost(player, SSMTSPEEDBOOST, SSMTACCELBOOST, SSMTHANDLEBOOST, false, true); // + 10% top speed, + ?% acceleration
+	}
+
+	if (player->pflags & PF_CHARGINGSSMT)
+	{
+		K_DoBoost(player, 0, 2*FRACUNIT, FRACUNIT/2, false, false); //+ 200% acceleration
 	}
 
 	if (player->slopeboost || player->slopeaccel)
@@ -9658,19 +9663,19 @@ static void K_StandStillMiniTurbo(player_t *player, boolean onground)
 			if ((player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE))
 			{
 				player->ssmtcharge += 1;
-				player->forcedtopspeed = FixedMul(K_GetKartSpeedFromStat(player->kartspeed, false) + 2, player->mo->scale) / 3;
+				player->forcedtopspeed = FixedMul(K_GetKartSpeedFromStat(player->kartspeed, false) + 4, player->mo->scale) / 3;
 				K_SpawnWipeoutTrail(player->mo, (player->ssmtcharge < 3*TICRATE/2));
 
 				if (leveltime % 6 == 0)
 				{
-					if (player->ssmtcharge < 3*TICRATE/2)
+					if (player->ssmtcharge < 2*TICRATE)
 					{
 						S_StartSound(player->mo, sfx_s225);
 					}
 				}
-				if (player->ssmtcharge >= 3*TICRATE/2)
+				if (player->ssmtcharge >= 2*TICRATE)
 				{
-					if (player->ssmtcharge == 3*TICRATE/2)
+					if (player->ssmtcharge == 2*TICRATE)
 					{
 						S_StartSound(player->mo, sfx_s3ka2);
 					}
@@ -9703,11 +9708,10 @@ static void K_StandStillMiniTurbo(player_t *player, boolean onground)
 			{
 				player->pflags &= ~PF_CHARGINGSSMT;
 				player->forcedtopspeed = 0;
-				if (player->ssmtcharge >= 3*TICRATE/2)
+				if (player->ssmtcharge >= 2*TICRATE)
 				{
-					player->outruntime = TICRATE/3;
-					player->ssmtboost = TICRATE/2;
-					player->tiregrease = TICRATE;
+					player->ssmtboost = TICRATE;
+					player->tiregrease = 2*TICRATE;
 					S_StartSound(player->mo, sfx_s23c);
 					K_SpawnDashDustRelease(player, true);
 				}
