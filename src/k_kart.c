@@ -2832,6 +2832,11 @@ static void K_GetKartBoostPower(player_t *player)
 		K_DoBoost(player, RINGSPEEDBOOST, RINGACCELBOOST, RINGHANDLEBOOST, RINGSTACKABLE, RINGSTACKABLE); // + 20% top speed, + 400% acceleration
 	}
 
+	if (player->ssmtboost) // Ring Boost
+	{
+		K_DoBoost(player, SSMTSPEEDBOOST, SSMTACCELBOOST, SSMTHANDLEBOOST, false, true); // + 10% top speed, + ♾️% acceleration
+	}
+
 	if (player->slopeboost || player->slopeaccel)
 	{
 		K_DoBoost(player, player->slopeboost, player->slopeaccel, 0, SLOPESTACKABLE, false); // + ???% top speed, + 300% acceleration
@@ -2964,6 +2969,9 @@ fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dor
 	boolean karmabomb = ((gametyperules & GTR_BUMPERS) && player->bumper <= 0);
 	fixed_t finalspeed;
 
+	if (player->forcedtopspeed > 0)
+		return FixedMul(player->forcedtopspeed, player->mo->scale);
+
 	if (doboostpower && !player->pogospring && !P_IsObjectOnGround(player->mo) && (player->airdriftspeed == 0))
 		return (75*mapobjectscale); // air speed cap
 
@@ -3093,7 +3101,7 @@ SINT8 K_GetForwardMove(const player_t *player)
 		player->flipovertimer) // pw_introcam?
 	{
 		forwardmove = 0;
-		if (player->sneakertimer)
+		if (player->sneakertimer || player->ssmtboost)
 			forwardmove = MAXPLMOVE;
 	}
 
@@ -7041,6 +7049,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			// Speed lines
 			if (player->sneakertimer || player->ringboost
 				|| player->driftboost || player->startboost
+				|| player->ssmtboost
 				|| player->walltransferboost
 				|| player->bubbleboost)
 			{
@@ -7238,6 +7247,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->realsneakertimer)
 		player->realsneakertimer--;
+
+	if (player->ssmtboost)
+		player->ssmtboost--;
 
 	if (player->sneakertimer && player->wipeoutslow > 0 && player->wipeoutslow < wipeoutslowtime+1)
 		player->wipeoutslow = wipeoutslowtime+1;
@@ -9611,6 +9623,41 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 	}
 }
 
+static void K_StandStillMiniTurbo(player_t *player, boolean onground)
+{
+	if (player->speed <= 8*player->mo->scale && onground)
+	{
+		if (player->cmd.buttons & BT_ACCELERATE|BT_BRAKE)
+		{
+			player->pflags |= PF_CHARGINGSSMT;
+			player->forcedtopspeed = 8*FRACUNIT;
+			player->ssmtcharge += 1;
+			K_SpawnDashDustRelease(player, true);
+			if (player->ssmtcharge >= 3*TICRATE/2)
+			{
+				K_SpawnBoostTrail(player);
+			}
+
+			return;
+		}
+		else if (player->pflags & PF_CHARGINGSSMT)
+		{
+			player->pflags &= ~PF_CHARGINGSSMT;
+			player->forcedtopspeed = 0;
+			if (player->ssmtcharge >= 3*TICRATE/2)
+			{
+				player->ssmtboost = TICRATE;
+			}
+			player->ssmtcharge = 0;
+
+			return;
+		}
+	}
+	player->pflags &= ~PF_CHARGINGSSMT;
+	player->forcedtopspeed = 0;
+	player->ssmtcharge = 0;
+}
+
 INT32 K_GetDriftAngleOffset(player_t *player)
 {
 	INT32 a = 0;
@@ -11058,10 +11105,12 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 	K_KartSlipdash(player, onground);
 
+	K_StandStillMiniTurbo(player, onground);
+
 	// Quick Turning
 	// You can't turn your kart when you're not moving.
 	// So now it's time to burn some rubber!
-	if (player->speed < 2 && leveltime > starttime && player->cmd.buttons & BT_ACCELERATE && player->cmd.buttons & BT_BRAKE && player->cmd.turning != 0)
+	if (player->speed < 2 && leveltime > starttime && (player->cmd.buttons & BT_ACCELERATE|BT_BRAKE) && player->cmd.turning != 0)
 	{
 		if (leveltime % 8 == 0)
 			S_StartSound(player->mo, sfx_s224);

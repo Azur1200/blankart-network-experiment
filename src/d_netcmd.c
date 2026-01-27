@@ -549,6 +549,10 @@ consvar_t cv_kartstacking_ring_accelboost = CVAR_INIT ("vanillaboost_ring_accelb
 consvar_t cv_kartstacking_ring_handleboost = CVAR_INIT ("vanillaboost_ring_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_ring_stackable = CVAR_INIT ("vanillaboost_ring_stackable", "On", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
 
+consvar_t cv_kartstacking_ssmt_speedboost = CVAR_INIT ("vanillaboost_ssmt_speedboost", "0.1", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_ssmt_accelboost = CVAR_INIT ("vanillaboost_ssmt_accelboost", "65535.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_ssmt_handleboost = CVAR_INIT ("vanillaboost_ssmt_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+
 consvar_t cv_kartstacking_slope_decay = CVAR_INIT ("vanillaboost_slope_decay", "0.004", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_slope_brakemod = CVAR_INIT ("vanillaboost_slope_brakemod", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_slope_speedboost_max = CVAR_INIT ("vanillaboost_slope_speedboost_max", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
