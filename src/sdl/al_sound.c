@@ -78,6 +78,7 @@ typedef enum
 #include "../w_wad.h"
 #include "../i_threads.h"
 #include "../i_system.h" // I_Sleep
+#include "../fastcmp.h"
 
 #include <SDL.h>
 
@@ -346,10 +347,22 @@ void I_StartupSound(void)
 
 	alcMakeContextCurrent(audio.context);
 
-	if(!alcIsExtensionPresent(alcGetContextsDevice(alcGetCurrentContext()), "ALC_EXT_EFX"))
+	const char *vendor = alGetString(AL_VENDOR);
+	const char *renderer = alGetString(AL_RENDERER);
+	CONS_Printf("OpenAL Vendor: %s\n", vendor);
+	CONS_Printf("OpenAL Renderer: %s\n", renderer);
+
+
+	if (!fastcmp("OpenAL Soft", renderer))
 	{
 		I_ShutdownSound();
 		I_Error("OpenAL: You do not seem to be using OpenAL-Soft.\n");
+	}
+
+	if(!alcIsExtensionPresent(alcGetContextsDevice(alcGetCurrentContext()), "ALC_EXT_EFX"))
+	{
+		I_ShutdownSound();
+		I_Error("OpenAL: Your OpenAL version does not seem to support EFX .\n");
 	}
 
 #define LOAD_PROC(T, x)  ((x) = FUNCTION_CAST(T, alGetProcAddress(#x)))
