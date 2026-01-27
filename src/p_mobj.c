@@ -8923,7 +8923,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			if (p)
 			{
-				if (mobj->extravalue1)
+				if (mobj->extravalue1 > 0)
 				{
 					if (p->driftboost > mobj->movecount)
 					{

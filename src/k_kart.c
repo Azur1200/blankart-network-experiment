@@ -9150,7 +9150,7 @@ UINT8 K_GetKartDriftSparkStageForValue(const player_t *player, INT32 value)
 	}
 }
 
-static void K_SpawnDriftEFX(player_t *player,SINT8 level)
+static void K_SpawnDriftEFX(player_t *player, SINT8 level)
 {
 	mobj_t *overlay = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BOOSTFLAME);
 	P_SetMobjState(overlay, S_DRIFTBOOSTFLAME);
@@ -9285,6 +9285,10 @@ static void K_KartDrift(player_t *player, boolean onground)
 	// This fixes this problem.
 	if (player->pogospring == 2 && player->mo->scale > mapobjectscale)
 		minspeed = FixedMul(10<<FRACBITS, mapobjectscale);
+	
+	// horrible
+	if (player->pflags & PF_CHARGINGSSMT)
+		minspeed = (player->speed+1);
 
 	// air thrust drag
 	if (K_AirThrustActive())
@@ -9482,7 +9486,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 	// Stop drifting
 	// experiment: wall transfers should allow zero speed
 	// reasoning: when driving right into a half pipe face-on, there is no h-speed for the entire launch
-	if (player->walltransfered || player->dashRingPullTics || player->dashRingPushTics)
+	if ((player->walltransfered || player->dashRingPullTics || player->dashRingPushTics) && !(player->pflags & PF_CHARGINGSSMT))
 	{
 		minspeed = 0;
 	}
@@ -9629,46 +9633,94 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 	}
 }
 
+static boolean K_PlayerCanStartSsmt(player_t *player)
+{
+	return (player->speed <= 12*player->mo->scale && (!(player->pflags & PF_CHARGINGSSMT)) &&
+			(player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE));
+}
+
+static boolean K_PlayerCanChargeSsmt(player_t *player)
+{
+	return (P_IsObjectOnGround(player->mo) && leveltime > starttime);
+}
+
 static void K_StandStillMiniTurbo(player_t *player, boolean onground)
 {
-	if (player->speed <= 12*player->mo->scale && onground && leveltime > starttime)
+	if (K_PlayerCanChargeSsmt(player))
 	{
-		if ((player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE))
+		if (K_PlayerCanStartSsmt(player))
 		{
 			player->pflags |= PF_CHARGINGSSMT;
-			player->forcedtopspeed = 12*FRACUNIT;
-			player->ssmtcharge += 1;
-			if (leveltime % 8 == 0)
-			{
-				K_SpawnDashDustRelease(player, true);
-				S_StartSound(player->mo, sfx_s224);
-			}
-			if (player->ssmtcharge >= 3*TICRATE/2)
-			{
-				K_SpawnBoostTrail(player);
-			}
-
-			return;
+			S_StartSound(player->mo, sfx_cdfm20);
 		}
-		else if (player->pflags & PF_CHARGINGSSMT)
+		if (player->pflags & PF_CHARGINGSSMT)
 		{
-			player->pflags &= ~PF_CHARGINGSSMT;
-			player->forcedtopspeed = 0;
-			if (player->ssmtcharge >= 3*TICRATE/2)
+			if ((player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE))
 			{
-				player->outruntime = TICRATE/4;
-				player->ssmtboost = TICRATE/2;
-				player->tiregrease = TICRATE;
-				S_StartSound(player->mo, sfx_s23c);
-			}
-			player->ssmtcharge = 0;
+				player->ssmtcharge += 1;
+				player->forcedtopspeed = FixedMul(K_GetKartSpeedFromStat(player->kartspeed, false) + 2, player->mo->scale) / 3;
+				K_SpawnWipeoutTrail(player->mo, (player->ssmtcharge < 3*TICRATE/2));
 
-			return;
+				if (leveltime % 6 == 0)
+				{
+					if (player->ssmtcharge < 3*TICRATE/2)
+					{
+						S_StartSound(player->mo, sfx_s225);
+					}
+				}
+				if (player->ssmtcharge >= 3*TICRATE/2)
+				{
+					if (player->ssmtcharge == 3*TICRATE/2)
+					{
+						S_StartSound(player->mo, sfx_s3ka2);
+					}
+					if (leveltime & 1)
+					{
+						fixed_t newx;
+						fixed_t newy;
+						mobj_t *spark;
+						angle_t travelangle;
+						travelangle = player->mo->angle;
+						for (INT32 i = 0; i < 2; i++)
+						{
+							newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
+							newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
+							spark = P_SpawnMobj(newx, newy, player->mo->z, MT_DRIFTSPARK);
+							spark->momx = player->mo->momx/2;
+							spark->momy = player->mo->momy/2;
+
+							P_SetTarget(&spark->target, player->mo);
+							spark->angle = travelangle;
+							spark->color = SKINCOLOR_WHITE;
+
+							P_SetMobjState(spark, S_DRIFTSPARK_A1);
+							K_MatchGenericExtraFlags(spark, player->mo);
+						}
+					}
+				}
+			}
+			else
+			{
+				player->pflags &= ~PF_CHARGINGSSMT;
+				player->forcedtopspeed = 0;
+				if (player->ssmtcharge >= 3*TICRATE/2)
+				{
+					player->outruntime = TICRATE/3;
+					player->ssmtboost = TICRATE/2;
+					player->tiregrease = TICRATE;
+					S_StartSound(player->mo, sfx_s23c);
+					K_SpawnDashDustRelease(player, true);
+				}
+				player->ssmtcharge = 0;
+			}
 		}
 	}
-	player->pflags &= ~PF_CHARGINGSSMT;
-	player->forcedtopspeed = 0;
-	player->ssmtcharge = 0;
+	else
+	{
+		player->pflags &= ~PF_CHARGINGSSMT;
+		player->forcedtopspeed = 0;
+		player->ssmtcharge = 0;
+	}
 }
 
 INT32 K_GetDriftAngleOffset(player_t *player)
@@ -10676,6 +10728,13 @@ static void K_AdjustPlayerFriction(player_t *player)
 	}
 
 	player->mo->friction = prevfriction;
+
+	if (player->pflags & PF_CHARGINGSSMT)
+	{
+		player->mo->friction += 1280;
+
+		K_RecalculateMovefactor(player->mo);
+	}
 
 	// Reduce friction after exiting a loop.
 	if (player->tiregrease)
