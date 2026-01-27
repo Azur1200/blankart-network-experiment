@@ -1050,6 +1050,11 @@ static void K_UpdateOffroad(player_t *player)
 					offroadstrength *= 2;
 				}
 			}
+			else if (player->pflags & PF_CHARGINGSSMT)
+			{
+				offroad = offroad/2;
+				offroadstrength = offroadstrength/2;
+			}
 
 			player->offroad += offroad;
 		}
@@ -2167,7 +2172,9 @@ boolean K_ApplyOffroad(const player_t *player)
 	if (modeattacking != ATTACKING_NONE)
 		sneakertimer = player->sneakertimer > 0;
 
-	if (player->hyudorotimer || sneakertimer || (cv_kartbubble_boost_offroadignore.value && player->bubbleboost))
+	if (player->hyudorotimer || sneakertimer ||
+		(cv_kartbubble_boost_offroadignore.value && player->bubbleboost) ||
+		player->ssmtboost)
 		return false;
 	return true;
 }
