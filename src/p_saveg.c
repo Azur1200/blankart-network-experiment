@@ -4241,6 +4241,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(draftingactive);
 	SYNCBOOLEAN(airdropactive);
 	SYNCBOOLEAN(airthrustactive);
+	SYNCBOOLEAN(recoverydashactive);
 	SYNCBOOLEAN(waterskipbricks);
 	SYNCBOOLEAN(itemlittering);
 	SYNCBOOLEAN(itempushing);
