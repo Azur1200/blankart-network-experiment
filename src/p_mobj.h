@@ -619,6 +619,7 @@ extern boolean slopeboostactive;
 extern boolean draftingactive;
 extern boolean airdropactive;
 extern boolean airthrustactive;
+extern boolean recoverydashactive;
 extern boolean waterskipbricks;
 extern boolean itemlittering;
 extern boolean itempushing;

@@ -162,6 +162,7 @@ boolean slopeboostactive;
 boolean draftingactive;
 boolean airdropactive;
 boolean airthrustactive;
+boolean recoverydashactive;
 boolean waterskipbricks;
 boolean itemlittering;
 boolean itempushing;

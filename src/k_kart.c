@@ -361,6 +361,13 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_ssmt_accelboost);
 	CV_RegisterVar(&cv_kartstacking_ssmt_handleboost);
 
+	CV_RegisterVar(&cv_kartstacking_recspin_speedboost_lo);
+	CV_RegisterVar(&cv_kartstacking_recspin_accelboost_lo);
+	CV_RegisterVar(&cv_kartstacking_recspin_handleboost_lo);
+	CV_RegisterVar(&cv_kartstacking_recspin_speedboost_hi);
+	CV_RegisterVar(&cv_kartstacking_recspin_accelboost_hi);
+	CV_RegisterVar(&cv_kartstacking_recspin_handleboost_hi);
+
 	CV_RegisterVar(&cv_kartstacking_slope_decay);
 	CV_RegisterVar(&cv_kartstacking_slope_brakemod);
 	CV_RegisterVar(&cv_kartstacking_slope_speedboost_max);
@@ -410,6 +417,9 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartwaterskiplock);
 
 	CV_RegisterVar(&cv_kartslopeboost);
+
+	CV_RegisterVar(&cv_kartrecoverydash);
+	CV_RegisterVar(&cv_kartrecoverydash_spinspeed);
 
 	CV_RegisterVar(&cv_kartaltshrinktime);
 
@@ -2847,11 +2857,11 @@ static void K_GetKartBoostPower(player_t *player)
 	{
 		if (player->flashing || player->recoverydashcharge >= TICRATE)
 		{
-			K_DoBoost(player, 1, 4*FRACUNIT, FRACUNIT/4, false, false); // + 400% acceleration, + 25% handling
+			K_DoBoost(player, RECSPINSPEEDBOOSTHI, RECSPINACCELBOOSTHI, RECSPINHANDLEBOOSTHI, false, false); // + 500% acceleration, + 25% handling
 		}
 		else
 		{
-			K_DoBoost(player, 1, 2*FRACUNIT, FRACUNIT/4, false, false);// + 200% acceleration, + 25% handling
+			K_DoBoost(player, RECSPINSPEEDBOOSTLO, RECSPINACCELBOOSTLO, RECSPINHANDLEBOOSTLO, false, false);// + 200% acceleration, + 25% handling
 		}
 	}
 
@@ -9647,17 +9657,18 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 
 static boolean K_PlayerCanStartSsmt(player_t *player)
 {
-	return (P_IsObjectOnGround(player->mo) && player->speed <= 10*player->mo->scale && (!(player->pflags & PF_CHARGINGSSMT)) &&
+	return (K_RecoveryDashActive() && P_IsObjectOnGround(player->mo) &&
+			player->speed <= 12*player->mo->scale && (!(player->pflags & PF_CHARGINGSSMT)) &&
 			(player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE));
 }
 
 static boolean K_PlayerCanChargeSsmt(player_t *player)
 {
-	return (leveltime > starttime && 
+	return (K_RecoveryDashActive() && leveltime > starttime && 
 		!(player->sneakertimer || K_IsPlayerDamaged(player) || player->squishedtimer || player->exiting));
 }
 
-static void K_StandStillMiniTurbo(player_t *player, boolean onground)
+static void K_StandStillMiniTurbo(player_t *player)
 {
 	if (K_PlayerCanChargeSsmt(player))
 	{
@@ -9670,7 +9681,7 @@ static void K_StandStillMiniTurbo(player_t *player, boolean onground)
 		{
 			if ((player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE))
 			{
-				player->forcedtopspeed = 22*FRACUNIT;
+				player->forcedtopspeed = cv_kartrecoverydash_spinspeed.value;
 				if (P_IsObjectOnGround(player->mo))
 				{
 					player->recoverydashcharge += 1;
@@ -9695,8 +9706,9 @@ static void K_StandStillMiniTurbo(player_t *player, boolean onground)
 						fixed_t newx;
 						fixed_t newy;
 						mobj_t *spark;
-						angle_t travelangle;
+						angle_t travelangle, sparkangle;
 						travelangle = player->mo->angle;
+						sparkangle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
 						for (INT32 i = 0; i < 2; i++)
 						{
 							newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
@@ -9706,10 +9718,17 @@ static void K_StandStillMiniTurbo(player_t *player, boolean onground)
 							spark->momy = player->mo->momy/2;
 
 							P_SetTarget(&spark->target, player->mo);
-							spark->angle = travelangle;
+							spark->angle = sparkangle;
 							spark->color = SKINCOLOR_WHITE;
 
-							P_SetMobjState(spark, S_DRIFTSPARK_A1);
+							if (player->recoverydashcharge >= 2*TICRATE + TICRATE/4)
+							{
+								P_SetMobjState(spark, S_DRIFTSPARK_B1);
+							}
+							else
+							{
+								P_SetMobjState(spark, S_DRIFTSPARK_A1);
+							}
 							K_MatchGenericExtraFlags(spark, player->mo);
 						}
 					}
@@ -11193,7 +11212,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 	K_KartSlipdash(player, onground);
 
-	K_StandStillMiniTurbo(player, onground);
+	K_StandStillMiniTurbo(player);
 
 	// Quick Turning
 	// You can't turn your kart when you're not moving.
@@ -11552,6 +11571,17 @@ boolean K_AirThrustActive(void)
 	if (airthrustactive)
 	{
 		// Air Thrust is enabled!
+		return true;
+	}
+
+	return false;
+}
+
+boolean K_RecoveryDashActive(void)
+{
+	if (recoverydashactive)
+	{
+		// Recovery Dash is enabled!
 		return true;
 	}
 
