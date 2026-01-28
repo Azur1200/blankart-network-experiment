@@ -2183,7 +2183,7 @@ boolean K_ApplyOffroad(const player_t *player)
 
 	if (player->hyudorotimer || sneakertimer ||
 		(cv_kartbubble_boost_offroadignore.value && player->bubbleboost) ||
-		player->recoverydash || (player->pflags & PF_CHARGINGSSMT))
+		player->recoverydash || (player->pflags & PF_RECOVERYSPIN))
 		return false;
 	return true;
 }
@@ -2853,7 +2853,7 @@ static void K_GetKartBoostPower(player_t *player)
 		K_DoBoost(player, SSMTSPEEDBOOST, SSMTACCELBOOST, SSMTHANDLEBOOST, false, true); // + 10% top speed, + ?% acceleration
 	}
 
-	if ((player->pflags & PF_CHARGINGSSMT))
+	if ((player->pflags & PF_RECOVERYSPIN))
 	{
 		if (player->flashing || player->recoverydashcharge >= TICRATE)
 		{
@@ -9309,7 +9309,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 		minspeed = FixedMul(10<<FRACBITS, mapobjectscale);
 	
 	// horrible
-	if (player->pflags & PF_CHARGINGSSMT)
+	if (player->pflags & PF_RECOVERYSPIN)
 		minspeed = (player->speed+1);
 
 	// air thrust drag
@@ -9508,7 +9508,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 	// Stop drifting
 	// experiment: wall transfers should allow zero speed
 	// reasoning: when driving right into a half pipe face-on, there is no h-speed for the entire launch
-	if ((player->walltransfered || player->dashRingPullTics || player->dashRingPushTics) && !(player->pflags & PF_CHARGINGSSMT))
+	if ((player->walltransfered || player->dashRingPullTics || player->dashRingPushTics) && !(player->pflags & PF_RECOVERYSPIN))
 	{
 		minspeed = 0;
 	}
@@ -9655,33 +9655,33 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 	}
 }
 
-static boolean K_PlayerCanStartSsmt(player_t *player)
+static boolean K_PlayerCanStartRecoverySpin(player_t *player)
 {
-	return (K_RecoveryDashActive() && P_IsObjectOnGround(player->mo) &&
-			player->speed <= 12*player->mo->scale && (!(player->pflags & PF_CHARGINGSSMT)) &&
-			(player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE));
+	return (K_RecoveryDashActive() && P_IsObjectOnGround(player->mo) && (!(player->pflags & PF_STASIS)) && (player->carry == CR_NONE) &&
+			player->speed <= 12*player->mo->scale && (!(player->pflags & PF_RECOVERYSPIN)) &&
+			(player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE) && !(player->cmd.buttons & BT_DRIFT));
 }
 
-static boolean K_PlayerCanChargeSsmt(player_t *player)
+static boolean K_PlayerCanRecoverySpin(player_t *player)
 {
-	return (K_RecoveryDashActive() && leveltime > starttime && 
+	return (K_RecoveryDashActive() && leveltime > starttime && (!(player->pflags & PF_STASIS)) && (player->carry == CR_NONE) &&
 		!(player->sneakertimer || K_IsPlayerDamaged(player) || player->squishedtimer || player->exiting));
 }
 
-static void K_StandStillMiniTurbo(player_t *player)
+static void K_RecoveryDash(player_t *player)
 {
-	if (K_PlayerCanChargeSsmt(player))
+	if (K_PlayerCanRecoverySpin(player))
 	{
-		if (K_PlayerCanStartSsmt(player))
+		if (K_PlayerCanStartRecoverySpin(player))
 		{
-			player->pflags |= PF_CHARGINGSSMT;
+			player->pflags |= PF_RECOVERYSPIN;
 			S_StartSound(player->mo, sfx_cdfm20);
 		}
-		if (player->pflags & PF_CHARGINGSSMT)
+		if (player->pflags & PF_RECOVERYSPIN)
 		{
 			if ((player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE))
 			{
-				player->forcedtopspeed = cv_kartrecoverydash_spinspeed.value;
+				player->forcedtopspeed = cv_kartrecoverydash_spinspeed.value + 1;
 				if (P_IsObjectOnGround(player->mo))
 				{
 					player->recoverydashcharge += 1;
@@ -9736,7 +9736,7 @@ static void K_StandStillMiniTurbo(player_t *player)
 			}
 			else
 			{
-				player->pflags &= ~PF_CHARGINGSSMT;
+				player->pflags &= ~PF_RECOVERYSPIN;
 				player->forcedtopspeed = 0;
 				player->tiregrease = 2*TICRATE;
 				if (player->recoverydashcharge >= 2*TICRATE && (player->cmd.buttons & BT_ACCELERATE))
@@ -9753,7 +9753,7 @@ static void K_StandStillMiniTurbo(player_t *player)
 	}
 	else
 	{
-		player->pflags &= ~PF_CHARGINGSSMT;
+		player->pflags &= ~PF_RECOVERYSPIN;
 		player->forcedtopspeed = 0;
 		player->recoverydashcharge = 0;
 	}
@@ -10765,7 +10765,7 @@ static void K_AdjustPlayerFriction(player_t *player)
 
 	player->mo->friction = prevfriction;
 
-	if (player->pflags & PF_CHARGINGSSMT)
+	if (player->pflags & PF_RECOVERYSPIN)
 	{
 		player->mo->friction += 1500;
 		K_RecalculateMovefactor(player->mo);
@@ -11212,12 +11212,12 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 	K_KartSlipdash(player, onground);
 
-	K_StandStillMiniTurbo(player);
+	K_RecoveryDash(player);
 
 	// Quick Turning
 	// You can't turn your kart when you're not moving.
 	// So now it's time to burn some rubber!
-	if (player->speed < 2 && leveltime > starttime && (player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE) && player->cmd.turning != 0)
+	if (player->speed < 2 && leveltime > starttime && player->cmd.buttons & BT_ACCELERATE && player->cmd.buttons & BT_BRAKE && player->cmd.turning != 0)
 	{
 		if (leveltime % 8 == 0)
 			S_StartSound(player->mo, sfx_s224);

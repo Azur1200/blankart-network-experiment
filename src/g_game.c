@@ -1547,7 +1547,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		if (value != 0)
 		{
 			cmd->buttons |= BT_BRAKE;
-			if (!(player->pflags & PF_CHARGINGSSMT))
+			if (!(player->pflags & PF_RECOVERYSPIN))
 			{
 				forward -= (value * 25) / JOYAXISRANGE;
 			}

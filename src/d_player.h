@@ -104,7 +104,7 @@ typedef enum
 
 	PF_JUSTFLIPPED      = 1<<27, // Just got flipped over, handle the bump interaction.
 	
-	PF_CHARGINGSSMT     = 1<<28, // Player was charging SSMT last tick
+	PF_RECOVERYSPIN     = 1<<28, // Player was charging SSMT last tick
 
 	PF_USEDOWN			= 1<<29, // For lua compat, don't use!
 	PF_ATTACKDOWN		= 1<<30, // For lua compat, don't use!
