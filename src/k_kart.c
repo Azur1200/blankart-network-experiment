@@ -9658,14 +9658,14 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 static boolean K_PlayerCanStartRecoverySpin(player_t *player)
 {
 	return (K_RecoveryDashActive() && P_IsObjectOnGround(player->mo) && (!(player->pflags & PF_STASIS)) && (player->carry == CR_NONE) &&
-			player->speed <= 12*player->mo->scale && (!(player->pflags & PF_RECOVERYSPIN)) &&
+			player->speed < 10*player->mo->scale && (!(player->pflags & PF_RECOVERYSPIN)) &&
 			(player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE) && !(player->cmd.buttons & BT_DRIFT));
 }
 
 static boolean K_PlayerCanRecoverySpin(player_t *player)
 {
-	return (K_RecoveryDashActive() && leveltime > starttime && (!(player->pflags & PF_STASIS)) && (player->carry == CR_NONE) &&
-		!(player->sneakertimer || K_IsPlayerDamaged(player) || player->squishedtimer || player->exiting));
+	return (K_RecoveryDashActive() && leveltime > starttime && (player->carry == CR_NONE) &&
+		!(player->sneakertimer || K_IsPlayerDamaged(player) || player->squishedtimer || player->exiting || (player->pflags & PF_STASIS)));
 }
 
 static void K_RecoveryDash(player_t *player)
@@ -9681,7 +9681,7 @@ static void K_RecoveryDash(player_t *player)
 		{
 			if ((player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE))
 			{
-				player->forcedtopspeed = cv_kartrecoverydash_spinspeed.value + 1;
+				player->forcedtopspeed = cv_kartrecoverydash_spinspeed.value + 8;
 				if (P_IsObjectOnGround(player->mo))
 				{
 					player->recoverydashcharge += 1;
@@ -10767,7 +10767,10 @@ static void K_AdjustPlayerFriction(player_t *player)
 
 	if (player->pflags & PF_RECOVERYSPIN)
 	{
-		player->mo->friction += 1500;
+		if (player->cmd.turning)
+			player->mo->friction += 2048;
+		else
+			player->mo->friction += 1228;
 		K_RecalculateMovefactor(player->mo);
 	}
 

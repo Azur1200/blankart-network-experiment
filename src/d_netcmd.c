@@ -631,7 +631,7 @@ consvar_t cv_kartforcelegacyodds = CVAR_INIT ("kartforcelegacyodds", "Off", CV_N
 consvar_t cv_handleboostslip = CVAR_INIT ("karthandleboostsliptide", "Off", CV_NETVAR, CV_OnOff, NULL);
 
 consvar_t cv_kartrecoverydash = CVAR_INIT ("kartrecoverydash", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartRecoveryDash_OnChange);
-consvar_t cv_kartrecoverydash_spinspeed = CVAR_INIT ("kartrecoverydash_spinspeed", "22.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartrecoverydash_spinspeed = CVAR_INIT ("kartrecoverydash_spinspeed", "24.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 
 #define ANTIBUMP_MAX (UINT32_MAX / TICRATE)
 static CV_PossibleValue_t antibump_cons_t[] = {{0, "MIN"}, {ANTIBUMP_MAX, "MAX"}, {0, NULL}};
