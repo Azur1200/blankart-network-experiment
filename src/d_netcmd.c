@@ -559,8 +559,8 @@ consvar_t cv_kartstacking_recspin_accelboost_lo = CVAR_INIT ("vanillaboost_recsp
 consvar_t cv_kartstacking_recspin_handleboost_lo = CVAR_INIT ("vanillaboost_recspin_handleboost_lo", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
 consvar_t cv_kartstacking_recspin_speedboost_hi = CVAR_INIT ("vanillaboost_recspin_speedboost_hi", "0.0001", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_recspin_accelboost_hi = CVAR_INIT ("vanillaboost_recspin_accelboost_hi", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_recspin_handleboost_hi = CVAR_INIT ("vanillaboost_recspin_handleboost_hi", "0.3", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_recspin_accelboost_hi = CVAR_INIT ("vanillaboost_recspin_accelboost_hi", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_recspin_handleboost_hi = CVAR_INIT ("vanillaboost_recspin_handleboost_hi", "0.5", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
 consvar_t cv_kartstacking_slope_decay = CVAR_INIT ("vanillaboost_slope_decay", "0.004", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_slope_brakemod = CVAR_INIT ("vanillaboost_slope_brakemod", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);

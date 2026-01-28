@@ -9665,7 +9665,10 @@ static boolean K_PlayerCanStartRecoverySpin(player_t *player)
 static boolean K_PlayerCanRecoverySpin(player_t *player)
 {
 	return (K_RecoveryDashActive() && leveltime > starttime && (player->carry == CR_NONE) &&
-		!(player->sneakertimer || K_IsPlayerDamaged(player) || player->squishedtimer || player->exiting || (player->pflags & PF_STASIS)));
+		!(player->sneakertimer || K_IsPlayerDamaged(player) || player->squishedtimer ||
+			player->exiting || (player->pflags & PF_STASIS) || player->dashpadcooldown ||
+			player->walltransferboost || player->loop.radius
+		));
 }
 
 static void K_RecoveryDash(player_t *player)
@@ -10765,10 +10768,10 @@ static void K_AdjustPlayerFriction(player_t *player)
 
 	player->mo->friction = prevfriction;
 
-	if (player->pflags & PF_RECOVERYSPIN)
+	if ((player->pflags & PF_RECOVERYSPIN) && player->speed < K_GetKartSpeedFromStat(player->kartspeed, false))
 	{
 		if (player->cmd.turning)
-			player->mo->friction += 2048;
+			player->mo->friction += 1800;
 		else
 			player->mo->friction += 1228;
 		K_RecalculateMovefactor(player->mo);
