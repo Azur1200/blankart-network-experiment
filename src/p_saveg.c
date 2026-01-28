@@ -614,6 +614,9 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].driftboost);
 		SYNC(players[i].airdriftspeed);
 
+		SYNC(players[i].recoverydashcharge);
+		SYNC(players[i].recoverydash);
+
 		SYNC(players[i].aizdriftstrat);
 		SYNC(players[i].aizdrifttilt);
 		SYNC(players[i].aizdriftturn);
