@@ -2173,7 +2173,7 @@ boolean K_ApplyOffroad(const player_t *player)
 
 	if (player->hyudorotimer || sneakertimer ||
 		(cv_kartbubble_boost_offroadignore.value && player->bubbleboost) ||
-		player->ssmtboost || (player->pflags & PF_CHARGINGSSMT))
+		player->recoverydash || (player->pflags & PF_CHARGINGSSMT))
 		return false;
 	return true;
 }
@@ -2838,14 +2838,21 @@ static void K_GetKartBoostPower(player_t *player)
 		K_DoBoost(player, RINGSPEEDBOOST, RINGACCELBOOST, RINGHANDLEBOOST, RINGSTACKABLE, RINGSTACKABLE); // + 20% top speed, + 400% acceleration
 	}
 
-	if (player->ssmtboost) // SSMT Boost
+	if (player->recoverydash) // SSMT Boost
 	{
 		K_DoBoost(player, SSMTSPEEDBOOST, SSMTACCELBOOST, SSMTHANDLEBOOST, false, true); // + 10% top speed, + ?% acceleration
 	}
 
-	if (player->pflags & PF_CHARGINGSSMT)
+	if ((player->pflags & PF_CHARGINGSSMT))
 	{
-		K_DoBoost(player, 0, 2*FRACUNIT, FRACUNIT/2, false, false); //+ 200% acceleration
+		if (player->flashing || player->recoverydashcharge >= TICRATE)
+		{
+			K_DoBoost(player, 1, 4*FRACUNIT, FRACUNIT/4, false, false); // + 400% acceleration, + 25% handling
+		}
+		else
+		{
+			K_DoBoost(player, 1, 2*FRACUNIT, FRACUNIT/4, false, false);// + 200% acceleration, + 25% handling
+		}
 	}
 
 	if (player->slopeboost || player->slopeaccel)
@@ -7060,7 +7067,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			// Speed lines
 			if (player->sneakertimer || player->ringboost
 				|| player->driftboost || player->startboost
-				|| player->ssmtboost
+				|| player->recoverydash
 				|| player->walltransferboost
 				|| player->bubbleboost)
 			{
@@ -7259,8 +7266,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->realsneakertimer)
 		player->realsneakertimer--;
 
-	if (player->ssmtboost)
-		player->ssmtboost--;
+	if (player->recoverydash)
+		player->recoverydash--;
 
 	if (player->sneakertimer && player->wipeoutslow > 0 && player->wipeoutslow < wipeoutslowtime+1)
 		player->wipeoutslow = wipeoutslowtime+1;
@@ -9640,13 +9647,14 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 
 static boolean K_PlayerCanStartSsmt(player_t *player)
 {
-	return (player->speed <= 12*player->mo->scale && (!(player->pflags & PF_CHARGINGSSMT)) &&
+	return (P_IsObjectOnGround(player->mo) && player->speed <= 10*player->mo->scale && (!(player->pflags & PF_CHARGINGSSMT)) &&
 			(player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE));
 }
 
 static boolean K_PlayerCanChargeSsmt(player_t *player)
 {
-	return (P_IsObjectOnGround(player->mo) && leveltime > starttime);
+	return (leveltime > starttime && 
+		!(player->sneakertimer || K_IsPlayerDamaged(player) || player->squishedtimer || player->exiting));
 }
 
 static void K_StandStillMiniTurbo(player_t *player, boolean onground)
@@ -9662,20 +9670,23 @@ static void K_StandStillMiniTurbo(player_t *player, boolean onground)
 		{
 			if ((player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE))
 			{
-				player->ssmtcharge += 1;
-				player->forcedtopspeed = FixedMul(K_GetKartSpeedFromStat(player->kartspeed, false) + 4, player->mo->scale) / 3;
-				K_SpawnWipeoutTrail(player->mo, (player->ssmtcharge < 3*TICRATE/2));
-
-				if (leveltime % 6 == 0)
+				player->forcedtopspeed = 22*FRACUNIT;
+				if (P_IsObjectOnGround(player->mo))
 				{
-					if (player->ssmtcharge < 2*TICRATE)
+					player->recoverydashcharge += 1;
+					K_SpawnWipeoutTrail(player->mo, (player->recoverydashcharge < 3*TICRATE/2));
+					
+					if (leveltime % 6 == 0)
 					{
-						S_StartSound(player->mo, sfx_s225);
+						if (player->recoverydashcharge < 2*TICRATE)
+						{
+							S_StartSound(player->mo, sfx_s225);
+						}
 					}
 				}
-				if (player->ssmtcharge >= 2*TICRATE)
+				if (player->recoverydashcharge >= 2*TICRATE)
 				{
-					if (player->ssmtcharge == 2*TICRATE)
+					if (player->recoverydashcharge == 2*TICRATE)
 					{
 						S_StartSound(player->mo, sfx_s3ka2);
 					}
@@ -9708,14 +9719,16 @@ static void K_StandStillMiniTurbo(player_t *player, boolean onground)
 			{
 				player->pflags &= ~PF_CHARGINGSSMT;
 				player->forcedtopspeed = 0;
-				if (player->ssmtcharge >= 2*TICRATE)
+				player->tiregrease = 2*TICRATE;
+				if (player->recoverydashcharge >= 2*TICRATE && (player->cmd.buttons & BT_ACCELERATE))
 				{
-					player->ssmtboost = TICRATE;
-					player->tiregrease = 2*TICRATE;
+					player->outrun = TICRATE/4;
+					player->recoverydash = TICRATE;
+					player->flashing = 0;
 					S_StartSound(player->mo, sfx_s23c);
 					K_SpawnDashDustRelease(player, true);
 				}
-				player->ssmtcharge = 0;
+				player->recoverydashcharge = 0;
 			}
 		}
 	}
@@ -9723,7 +9736,7 @@ static void K_StandStillMiniTurbo(player_t *player, boolean onground)
 	{
 		player->pflags &= ~PF_CHARGINGSSMT;
 		player->forcedtopspeed = 0;
-		player->ssmtcharge = 0;
+		player->recoverydashcharge = 0;
 	}
 }
 
@@ -10735,8 +10748,7 @@ static void K_AdjustPlayerFriction(player_t *player)
 
 	if (player->pflags & PF_CHARGINGSSMT)
 	{
-		player->mo->friction += 1280;
-
+		player->mo->friction += 1500;
 		K_RecalculateMovefactor(player->mo);
 	}
 

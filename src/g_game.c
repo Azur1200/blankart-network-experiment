@@ -1540,7 +1540,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			forward += (value * MAXPLMOVE) / JOYAXISRANGE;
 		}
 
-		if (player->sneakertimer || player->ssmtboost)
+		if (player->sneakertimer || player->recoverydash)
 			forward = MAXPLMOVE;	// 50
 
 		value = G_PlayerInputAnalog(forplayer, gc_brake, false, DEADZONE_BUTTON);

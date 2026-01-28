@@ -599,8 +599,8 @@ struct player_t
 	// Potentially influenced by player lag.
 	tic_t driftdelay;
 
-	tic_t ssmtcharge;		// Time spent charging SSMT
-	UINT16 ssmtboost;		// SSMT boost timer (weak boost that ignores offroad)
+	tic_t recoverydashcharge;		// Time spent charging SSMT
+	UINT16 recoverydash;		// SSMT boost timer (weak boost that ignores offroad)
 
 	fixed_t spinoutrot;     // When a player spins out, this value increments modulus 360.
 
