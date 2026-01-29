@@ -9697,6 +9697,43 @@ static void K_RecoveryDash(player_t *player)
 							S_StartSound(player->mo, sfx_s225);
 						}
 					}
+					if (leveltime % 4 == 0)
+					{
+						fixed_t newx;
+						fixed_t newy;
+						mobj_t *skid;
+						angle_t travelangle;
+						travelangle = player->mo->angle;
+						for (INT32 i = 0; i < 2; i++)
+						{
+							newx = P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(28*FRACUNIT, player->mo->scale));
+							newy = P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(28*FRACUNIT, player->mo->scale));
+							skid = P_SpawnMobjFromMobj(player->mo, newx, newy, (10*player->mo->scale), MT_OVERLAY);
+							P_SetTarget(&skid->target, player->mo);
+							skid->sprxoff = newx;
+							skid->spryoff = newy;
+							skid->sprzoff = (10*player->mo->scale);
+							
+							P_SetScale(skid, player->mo->scale);
+							skid->destscale = player->mo->destscale;
+							skid->scalespeed = player->mo->scalespeed;
+							skid->movefactor = FRACUNIT;
+							skid->angle = travelangle;
+							
+
+							P_SetMobjState(skid, S_RECSPIN_SKID);
+							K_MatchGenericExtraFlags(skid, player->mo);
+							if (player->recoverydashcharge >= 2*TICRATE)
+							{
+								skid->renderflags |= RF_TRANS20;
+							}
+							else
+							{
+								skid->renderflags |= RF_TRANS40;
+							}
+							if (i) skid->renderflags |= RF_HORIZONTALFLIP;
+						}
+					}
 				}
 				if (player->recoverydashcharge >= 2*TICRATE)
 				{
@@ -10771,9 +10808,9 @@ static void K_AdjustPlayerFriction(player_t *player)
 	if ((player->pflags & PF_RECOVERYSPIN) && player->speed < K_GetKartSpeedFromStat(player->kartspeed, false))
 	{
 		if (player->cmd.turning)
-			player->mo->friction += 1800;
+			player->mo->friction += 1880;
 		else
-			player->mo->friction += 1228;
+			player->mo->friction += 1280;
 		K_RecalculateMovefactor(player->mo);
 	}
 
