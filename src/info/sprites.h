@@ -653,5 +653,8 @@ _(SSWG)
 // Arrow Bullet
 _(AWBT)
 
+// Recovery Spin Skid
+_(RCSP)
+
 // First person view sprites; this is a sprite so that it can be replaced by a specialized MD2 draw later
 _(VIEW)

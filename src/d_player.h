@@ -103,8 +103,9 @@ typedef enum
 	PF_SHRINKACTIVE		= 1<<26, // "Shrink me" cheat is in effect. (Can't be disabled mid-race)
 
 	PF_JUSTFLIPPED      = 1<<27, // Just got flipped over, handle the bump interaction.
+	
+	PF_RECOVERYSPIN     = 1<<28, // Player was charging SSMT last tick
 
-	// up to 1<<28 is free
 	PF_USEDOWN			= 1<<29, // For lua compat, don't use!
 	PF_ATTACKDOWN		= 1<<30, // For lua compat, don't use!
 	PF_SLIDING			= 1<<31, // For lua compat, don't use!
@@ -598,6 +599,9 @@ struct player_t
 	// Potentially influenced by player lag.
 	tic_t driftdelay;
 
+	tic_t recoverydashcharge;		// Time spent charging SSMT
+	UINT16 recoverydash;		// SSMT boost timer (weak boost that ignores offroad)
+
 	fixed_t spinoutrot;     // When a player spins out, this value increments modulus 360.
 
 	SINT8 aizdriftstrat;	// (-1 to 1) - Let go of your drift while boosting? Helper for the SICK STRATZ (sliptiding!) you have just unlocked
@@ -619,6 +623,7 @@ struct player_t
 	fixed_t prevspeedboost;	// Max speed boost value from the last frame
 	fixed_t accelboost;		// Boost value smoothing for acceleration
 	fixed_t handleboost;	// Boost value smoothing for handling
+	fixed_t forcedtopspeed; // Force this top speed while charging SSMT
 	angle_t boostangle;		// angle set when not spun out OR boosted to determine what direction you should keep going at if you're spun out and boosted.
 	boostinfo_t boostinfo;	// Stores values used for setting speed and accel boosts.
 	UINT8 numsneakers;		// Number of stacked sneakers

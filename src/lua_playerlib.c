@@ -455,7 +455,9 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(loop) \
 	X(prevonground) \
 	X(walltransfered) \
-	X(walltransferboost)
+	X(walltransferboost) \
+	X(recoverydashcharge) \
+	X(recoverydash)
 
 enum player_e
 {
@@ -1184,6 +1186,12 @@ static int player_get(lua_State *L)
 		break;
 	case player_walltransferboost:
 		lua_pushinteger(L, plr->walltransferboost);
+		break;
+	case player_recoverydashcharge:
+		lua_pushinteger(L, plr->recoverydashcharge);
+		break;
+	case player_recoverydash:
+		lua_pushinteger(L, plr->recoverydash);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:
@@ -1936,7 +1944,13 @@ static int player_set(lua_State *L)
 		plr->walltransfered = lua_toboolean(L, 3);
 		break;
 	case player_walltransferboost:
-		plr->walltransferboost= lua_tointeger(L, 3);
+		plr->walltransferboost = lua_tointeger(L, 3);
+		break;
+	case player_recoverydashcharge:
+		plr->recoverydashcharge = lua_tointeger(L, 3);
+		break;
+	case player_recoverydash:
+		plr->recoverydash = lua_tointeger(L, 3);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:

@@ -1540,14 +1540,17 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			forward += (value * MAXPLMOVE) / JOYAXISRANGE;
 		}
 
-		if (player->sneakertimer)
+		if (player->sneakertimer || player->recoverydash)
 			forward = MAXPLMOVE;	// 50
 
 		value = G_PlayerInputAnalog(forplayer, gc_brake, false, DEADZONE_BUTTON);
 		if (value != 0)
 		{
 			cmd->buttons |= BT_BRAKE;
-			forward -= (value * 25) / JOYAXISRANGE;
+			if (!(player->pflags & PF_RECOVERYSPIN))
+			{
+				forward -= (value * 25) / JOYAXISRANGE;
+			}
 		}
 
 		// But forward/backward IS used for aiming.

@@ -163,6 +163,18 @@ extern vector3_t clusterpoint, clusterdtf;
 #define RINGHANDLEBOOST CV_Get(&cv_kartstacking_ring_handleboost)
 #define RINGSTACKABLE CV_Get(&cv_kartstacking_ring_stackable)
 
+#define SSMTSPEEDBOOST CV_Get(&cv_kartstacking_ssmt_speedboost)
+#define SSMTACCELBOOST CV_Get(&cv_kartstacking_ssmt_accelboost)
+#define SSMTHANDLEBOOST CV_Get(&cv_kartstacking_ssmt_handleboost)
+
+#define RECSPINSPEEDBOOSTLO CV_Get(&cv_kartstacking_recspin_speedboost_lo)
+#define RECSPINACCELBOOSTLO CV_Get(&cv_kartstacking_recspin_accelboost_lo)
+#define RECSPINHANDLEBOOSTLO CV_Get(&cv_kartstacking_recspin_handleboost_lo)
+
+#define RECSPINSPEEDBOOSTHI CV_Get(&cv_kartstacking_recspin_speedboost_hi)
+#define RECSPINACCELBOOSTHI CV_Get(&cv_kartstacking_recspin_accelboost_hi)
+#define RECSPINHANDLEBOOSTHI CV_Get(&cv_kartstacking_recspin_handleboost_hi)
+
 #define SLOPEDECAY CV_Get(&cv_kartstacking_slope_decay)
 #define SLOPEBRAKEMOD CV_Get(&cv_kartstacking_slope_brakemod)
 #define SLOPESPEEDBOOSTMAX CV_Get(&cv_kartstacking_slope_speedboost_max)
@@ -371,6 +383,7 @@ boolean K_SlopeBoostActive(void);
 boolean K_DraftingActive(void);
 boolean K_AirDropActive(void);
 boolean K_AirThrustActive(void);
+boolean K_RecoveryDashActive(void);
 boolean K_WaterskipBricksActive(void);
 boolean K_ItemLitterActive(void);
 boolean K_ItemListActive(void);

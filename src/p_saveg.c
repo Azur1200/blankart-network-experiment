@@ -614,6 +614,9 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].driftboost);
 		SYNC(players[i].airdriftspeed);
 
+		SYNC(players[i].recoverydashcharge);
+		SYNC(players[i].recoverydash);
+
 		SYNC(players[i].aizdriftstrat);
 		SYNC(players[i].aizdrifttilt);
 		SYNC(players[i].aizdriftturn);
@@ -633,6 +636,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].prevspeedboost);
 		SYNC(players[i].accelboost);
 		SYNC(players[i].handleboost);
+		SYNC(players[i].forcedtopspeed);
 		SYNC(players[i].boostangle);
 		SYNC(players[i].numsneakers);
 		SYNC(players[i].numpanels);
@@ -4237,6 +4241,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(draftingactive);
 	SYNCBOOLEAN(airdropactive);
 	SYNCBOOLEAN(airthrustactive);
+	SYNCBOOLEAN(recoverydashactive);
 	SYNCBOOLEAN(waterskipbricks);
 	SYNCBOOLEAN(itemlittering);
 	SYNCBOOLEAN(itempushing);
