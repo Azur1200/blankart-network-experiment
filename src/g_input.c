@@ -154,6 +154,7 @@ INT32 gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING] = {
 	[gc_brake      ] = {'d',            KEY_JOY1+1              }, // B
 	[gc_fire       ] = {KEY_SPACE,      KEY_JOY1+9,  KEY_AXIS1+8}, // LB, LT
 	[gc_lookback   ] = {KEY_LSHIFT,     KEY_JOY1+2              }, // X
+	[gc_horncode   ] = {'r',            KEY_JOY1+8              }, // R-Stick Click
 
 	[gc_pause      ] = {KEY_PAUSE,      KEY_JOY1+4 }, // Back
 	[gc_systemmenu ] = {                KEY_JOY1+6 }, // Start
@@ -509,6 +510,7 @@ static const char *gamecontrolname[num_gamecontrols] =
 	"custom3",
 	"respawn",
 	"director",
+	"horncode",
 };
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))

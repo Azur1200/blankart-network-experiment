@@ -1542,7 +1542,45 @@ void K_SpawnBumpEffect(mobj_t *mo)
 	S_StartSound(mo, sfx_s3k49);
 }
 
-static SINT8 K_GlanceAtPlayers(player_t *glancePlayer, boolean horn)
+static void K_HonkFollowerHorn(player_t *honkPlayer)
+{
+	const boolean tasteful = (honkPlayer->karthud[khud_taunthorns] == 0);
+
+	UINT8 i;
+
+	// Loop through all players and make them hear your honking!
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		player_t *p;
+
+		if (!playeringame[i])
+		{
+			// Invalid player
+			continue;
+		}
+
+		p = &players[i];
+
+		if (!p->mo || P_MobjWasRemoved(p->mo))
+		{
+			// Invalid mobj
+			continue;
+		}
+
+		if (p->spectator)
+		{
+			// Not playing
+			continue;
+		}
+
+		K_FollowerHornTaunt(honkPlayer, p);
+	}
+
+	if (tasteful && honkPlayer->karthud[khud_taunthorns] < 2*TICRATE)
+		honkPlayer->karthud[khud_taunthorns] = 2*TICRATE;
+}
+
+static SINT8 K_GlanceAtPlayers(player_t *glancePlayer)
 {
 	const fixed_t maxdistance = FixedMul(1280 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
 	const angle_t blindSpotSize = ANG10; // ANG5
@@ -1624,22 +1662,7 @@ static SINT8 K_GlanceAtPlayers(player_t *glancePlayer, boolean horn)
 			// That poses a limitation if there's an equal number of targets on both sides...
 			// In that case, we'll pick the last chosen glance direction.
 			lastValidGlance = dir;
-
-			if (horn == true)
-			{
-				K_FollowerHornTaunt(glancePlayer, p);
-			}
 		}
-	}
-
-	if (horn == true && lastValidGlance != 0)
-	{
-		const boolean tasteful = (glancePlayer->karthud[khud_taunthorns] == 0);
-
-		K_FollowerHornTaunt(glancePlayer, glancePlayer);
-
-		if (tasteful && glancePlayer->karthud[khud_taunthorns] < 2*TICRATE)
-			glancePlayer->karthud[khud_taunthorns] = 2*TICRATE;
 	}
 
 	if (glanceDir > 0)
@@ -1799,8 +1822,7 @@ void K_KartMoveAnimation(player_t *player)
 	{
 		// Only try glancing if you're driving straight.
 		// This avoids all-players loops when we don't need it.
-		const boolean horn = lookback && !(player->pflags & PF_GAINAX);
-		destGlanceDir = K_GlanceAtPlayers(player, horn);
+		destGlanceDir = K_GlanceAtPlayers(player);
 
 		if (lookback == true)
 		{
@@ -7708,6 +7730,14 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	// Do a funny hop!
 	K_QuiteSaltyHop(player);
+
+	// Honk your horn. Beep beep!
+	const boolean honking = ((cmd->buttons & BT_HORN) == BT_HORN);
+
+	if (honking)
+	{
+		K_HonkFollowerHorn(player);
+	}
 
 	player->prevonground = P_IsObjectOnGround(player->mo);
 
