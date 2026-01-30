@@ -3885,9 +3885,13 @@ fixed_t R_GetThingFade(mobj_t *thing)
 		case MT_FOLLOWERBUBBLE_FRONT:
 			break;
 		case MT_PLAYER:
-			if (!thing->player || thing->player == viewplayer || thing->player->exiting)
+		{
+			UINT8 viewnum = R_GetViewNumber();
+			camera_t *thiscam = &camera[viewnum];
+			if (!thing->player || thing->player == viewplayer || thing->player->exiting || thiscam->freecam)
 				return fadealpha;
 			break;
+		}
 
 		default:
 			return fadealpha;
