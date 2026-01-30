@@ -337,12 +337,12 @@ MP_ScreenshotOptions, MP_AddonsOptions, MP_SetupMultiPlayer, MP_SetupMonitorTogg
 MP_PrepReplayList, MP_ReplayHutStart, MP_VideoModeList, MP_MultiplayerPause,
 MP_PlayerSplitscreen, MP_SetupJoystick, MP_PrepareLevelPlatter, MP_LevelPlatterOptions,
 MP_TimeAttackMenu, MP_TimeAttackPresets, MP_SetupViewServer, MP_ViewServerPlayers,
-MP_ViewServerAddons, MP_PrepAddonList
+MP_ViewServerAddons, MP_PrepAddonList, MP_StatsRecords, MP_StatsRecordsBG,
+MP_StatsPlaytime, MP_StatsExtra
 ;
 INT32 MR_Addons(INT32 choice);
 INT32 MR_QuitAddons(INT32 choice);
 INT32 MR_QuitSRB2(INT32 choice);
-INT32 MR_Statistics(INT32 choice);
 INT32 MR_HandleLevelStats(INT32 choice);
 INT32 MR_QuitReplayHut(INT32 choice);
 INT32 MR_HandleReplayHutList(INT32 choice);

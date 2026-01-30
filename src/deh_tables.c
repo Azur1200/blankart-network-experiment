@@ -782,7 +782,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "ADDONS", &MR_Addons },
 	{ "QUITADDONS", &MR_QuitAddons },
 	{ "QUITSRB2", &MR_QuitSRB2 },
-	{ "STATISTICS", &MR_Statistics },
 	{ "HANDLELEVELSTATS", &MR_HandleLevelStats },
 	{ "REPLAYHUT", &MR_ReplayHut },
 	{ "QUITREPLAYHUT", &MR_QuitReplayHut },
@@ -910,6 +909,10 @@ struct panel_func_s const PANEL_FUNCS[] = {
 	{ "VIEWSERVERPLAYERS", &MP_ViewServerPlayers },
 	{ "VIEWSERVERADDONS", &MP_ViewServerAddons },
 	{ "PREPADDONLIST", &MP_PrepAddonList },
+	{ "STATSRECORDS", &MP_StatsRecords },
+	{ "STATSRECORDSBG", &MP_StatsRecordsBG },
+	{ "STATSPLAYTIME", &MP_StatsPlaytime },
+	{ "STATSEXTRA", &MP_StatsExtra },
 	{ NULL, NULL }
 };
 

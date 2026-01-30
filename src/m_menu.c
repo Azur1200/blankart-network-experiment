@@ -1816,6 +1816,8 @@ boolean M_Responder(event_t *ev)
 				// i don't care anymore, get me out of this hell already
 				if (menustack[0] == MN_VIEWSERVER && (newItemOn + dir < 0 || newItemOn + dir > fileneedednum-21))
 					break;
+				if (menustack[0] == MN_SP_LEVELSTATS && (newItemOn + dir < 0 || newItemOn + dir > curpi->numitems-13-numextraemblems))
+					break;
 				newItemOn += dir;
 			}
 
@@ -2679,44 +2681,6 @@ void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines)
 {
 	// Solid color textbox.
 	V_DrawFill(x+5, y+5, width*8+6, boxlines*8+6, 159);
-}
-
-//
-// M_DrawMapEmblems
-//
-// used by pause & statistics to draw a row of emblems for a map
-//
-static void M_DrawMapEmblems(INT32 mapnum, INT32 x, INT32 y)
-{
-	UINT8 lasttype = UINT8_MAX, curtype;
-	emblem_t *emblem = M_GetLevelEmblems(mapnum);
-
-	while (emblem)
-	{
-		switch (emblem->type)
-		{
-			case ET_TIME: //case ET_SCORE: case ET_RINGS:
-				curtype = 1; break;
-			/*case ET_NGRADE: case ET_NTIME:
-				curtype = 2; break;*/
-			default:
-				curtype = 0; break;
-		}
-
-		// Shift over if emblem is of a different discipline
-		if (lasttype != UINT8_MAX && lasttype != curtype)
-			x -= 4;
-		lasttype = curtype;
-
-		if (emblem->collected)
-			V_DrawSmallMappedPatch(x, y, 0, W_CachePatchName(M_GetEmblemPatch(emblem, false), PU_CACHE),
-			                       R_GetTranslationColormap(TC_DEFAULT, M_GetEmblemColor(emblem), GTC_MENUCACHE));
-		else
-			V_DrawSmallScaledPatch(x, y, 0, W_CachePatchName("NEEDIT", PU_CACHE));
-
-		emblem = M_GetLevelEmblems(-1);
-		x -= 8;
-	}
 }
 
 static void M_DrawMenuTitle(void)
@@ -6259,41 +6223,15 @@ void MP_SinglePlayerMain(menupanelinst_t *pi)
 // STATISTICS MENU
 // ===============
 
-static void M_DrawStatsMaps(menupanelinst_t *pi);
-static void M_DrawStatsPlaytime(menupanelinst_t *pi);
-static void M_DrawStatsExtra(menupanelinst_t *pi); // dunno how to name this one
-
-static INT32 statsLocation;
-static INT32 statsMax;
-static INT16 *statsMapList = NULL;
-static INT16 statsMapListLen;
-static UINT8 statsCurrentPage = 0;
-
-typedef struct statpage_s {
-	const char *title;
-	menudrawer_f *drawer;
-} statpage_t;
-
-static statpage_t statsPages[] = {
-	{ "Play Time Statistics", M_DrawStatsPlaytime, },
-	{ "Level Statistics", M_DrawStatsMaps, },
-	{ "Extra Statistics", M_DrawStatsExtra, },
-};
-
-#define LENSTATSPAGES (sizeof(statsPages)/sizeof(statsPages[0]))
-#define NUMSTATSPAGES (kartstats.vanilla ? 2 : LENSTATSPAGES)
-
-INT32 MR_Statistics(INT32 choice)
+void MP_StatsRecords(menupanelinst_t *pi)
 {
-	INT16 i, j = 0;
+	menuitem_t *item;
+	fixed_t y = 0;
+	INT32 i;
+	boolean showemblems = G_EmblemsEnabled();
 
-	(void)choice;
-
-	if (!statsMapList || nummapheaders != statsMapListLen)
-	{
-		statsMapList = Z_Realloc(statsMapList, nummapheaders * sizeof(*statsMapList), PU_STATIC, NULL);
-		statsMapListLen = nummapheaders;
-	}
+	CLEANUP(pfree) INT16 *statsMapList = malloc(nummapheaders * sizeof(*statsMapList));
+	INT16 statsMapListLen = 0;
 
 	for (i = 0; i < nummapheaders; i++)
 	{
@@ -6306,41 +6244,118 @@ INT32 MR_Statistics(INT32 choice)
 		if (M_MapLocked(i+1)) // !mapvisited[i]
 			continue;
 
-		statsMapList[j++] = i;
+		statsMapList[statsMapListLen++] = i;
 	}
-	statsMapList[j] = -1;
-	statsMax = j - 11 + numextraemblems;
-	statsLocation = 0;
-	statsCurrentPage = 0;
 
-	if (statsMax < 0)
-		statsMax = 0;
+	M_ClearPanelItems(pi);
+	pi->altscroll = true;
 
-	return true;
-}
-
-static void M_DrawStatsMaps(menupanelinst_t *pi)
-{
-	char beststr[40];
-	tic_t besttime = 0;
-	INT32 mapsfinished = 0;
-
-	int location = statsLocation;
-	INT32 y = 62, i = -1;
-	INT16 mnum;
-	extraemblem_t *exemblem;
-	boolean dotopname = true, dobottomarrow = (location < statsMax);
-
-	const char *realname = G_GetRecordPresetName(currentrecordpreset);
-	V_DrawThinString(0, 0, V_ALLOWLOWERCASE, realname ? realname : currentrecordpreset); // temporary
-	V_DrawThinString(0, 8, MENUCAPS|V_GRAYMAP|V_6WIDTHSPACE, "(BKSP to change)");
-
-	for (INT32 j = 0; j < nummapheaders; j++)
+	for (i = -1; i < statsMapListLen; i++, y += 8*FRACUNIT)
 	{
-		if (!mapheaderinfo[j] || (mapheaderinfo[j]->menuflags & LF2_NOTIMEATTACK))
+		item = M_AppendMenuItem(pi, 1, y, 0); // FIXME autolayout
+
+		if (i == -1)
+		{
+			item->style = DEH_FindMenuItemStyle("STATSMAPHEADING");
+			M_SetItemTextRaw(item, "Level Name");
+			M_SetItemPatchRaw(item, "Best");
+			M_SetItemExtraRaw(item, "Play");
+			//V_DrawString(256, y, MENUCAPS|highlightflags, "Medals");
+			continue;
+		}
+
+		item->style = DEH_FindMenuItemStyle("STATSMAP");
+
+		INT16 mnum = statsMapList[i];
+		maprecord_t *record = G_GetMapRecord(G_BuildMapName(mnum+1));
+		maprecordpreset_t *preset = record ? G_GetMapRecordPreset(record, currentrecordpreset) : NULL;
+		CLEANUP(Z_Pfree) char *maptitle = G_BuildMapTitle(mnum+1);
+
+		M_SetItemTextRaw(item, maptitle);
+		M_SetItemPatchRaw(item, preset == NULL || preset->besttime == UINT32_MAX ? "--'--\"--" :
+			va("%02d'%02d\"%02d",
+			G_TicsToMinutes(preset->besttime, true),
+			G_TicsToSeconds(preset->besttime),
+			G_TicsToCentiseconds(preset->besttime)));
+		M_SetItemExtraRaw(item, preset == NULL || preset->playtime == 0 ? "" :
+			va("%d:%02d:%02d",
+			G_TicsToHours(preset->playtime),
+			G_TicsToMinutes(preset->playtime, false),
+			G_TicsToSeconds(preset->playtime)));
+
+		if (!showemblems)
 			continue;
 
-		maprecord_t *record = G_GetMapRecord(G_BuildMapName(j+1));
+		fixed_t x = 275*FRACUNIT;
+		UINT8 lasttype = UINT8_MAX, curtype;
+		emblem_t *emblem = M_GetLevelEmblems(mnum);
+		for (; emblem != NULL; emblem = M_GetLevelEmblems(-1), x -= 8*FRACUNIT)
+		{
+			menuitem_t *itemblem = M_AppendMenuItem(pi, x, y, 0);
+			itemblem->style = DEH_FindMenuItemStyle("PATCH-SMALL");
+
+			switch (emblem->type)
+			{
+				case ET_TIME: //case ET_SCORE: case ET_RINGS:
+					curtype = 1; break;
+				/*case ET_NGRADE: case ET_NTIME:
+					curtype = 2; break;*/
+				default:
+					curtype = 0; break;
+			}
+
+			// Shift over if emblem is of a different discipline
+			if (lasttype != UINT8_MAX && lasttype != curtype)
+				x -= 4*FRACUNIT;
+			lasttype = curtype;
+
+			if (emblem->collected)
+				M_SetItemPatchRaw(itemblem, M_GetEmblemPatch(emblem, false));
+				// FIXME R_GetTranslationColormap(TC_DEFAULT, M_GetEmblemColor(emblem), GTC_MENUCACHE));
+			else
+				M_SetItemPatchRaw(itemblem, "NEEDIT");
+		}
+	}
+
+	// Extra Emblems
+	for (i = -2; i < numextraemblems; i++, y += 8*FRACUNIT)
+	{
+		item = M_AppendMenuItem(pi, 1, y, 0); // FIXME autolayout
+		if (i < 0)
+		{
+			if (i == -1)
+			{
+				item->style = DEH_FindMenuItemStyle("STATSMAPHEADING");
+				M_SetItemTextRaw(item, "Extra Medals");
+			}
+			continue;
+		}
+
+		extraemblem_t *exemblem = &extraemblems[i];
+
+		item->style = DEH_FindMenuItemStyle("STATSMAP");
+		M_SetItemTextRaw(item, va("%s", exemblem->description));
+
+		menuitem_t *itemblem = M_AppendMenuItem(pi, 275*FRACUNIT, y, 0);
+		itemblem->style = DEH_FindMenuItemStyle("PATCH-SMALL");
+		if (exemblem->collected)
+			M_SetItemPatchRaw(itemblem, M_GetExtraEmblemPatch(exemblem, false));
+			// FIXME R_GetTranslationColormap(TC_DEFAULT, M_GetExtraEmblemColor(exemblem), GTC_MENUCACHE));
+		else
+			M_SetItemPatchRaw(itemblem, "NEEDIT");
+	}
+}
+
+void MP_StatsRecordsBG(menupanelinst_t *pi)
+{
+	tic_t besttime = 0;
+	INT32 mapsfinished = 0;
+	for (INT32 i = 0; i < nummapheaders; i++)
+	{
+		if (!mapheaderinfo[i] || (mapheaderinfo[i]->menuflags & LF2_NOTIMEATTACK))
+			continue;
+
+		maprecord_t *record = G_GetMapRecord(G_BuildMapName(i+1));
 		if (record == NULL)
 			continue;
 
@@ -6352,191 +6367,98 @@ static void M_DrawStatsMaps(menupanelinst_t *pi)
 		mapsfinished++;
 	}
 
-	V_DrawString(20, 42, MENUCAPS|highlightflags, "Combined time records:");
-
-	sprintf(beststr, "%dh %dm %ds", G_TicsToHours(besttime), G_TicsToMinutes(besttime, false), G_TicsToSeconds(besttime));
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, MENUCAPS|(mapsfinished != nummapheaders ? warningflags : 0), beststr);
-
+	char *beststr = va("%dh %dm %ds", G_TicsToHours(besttime), G_TicsToMinutes(besttime, false), G_TicsToSeconds(besttime));
+	M_SetItemText(pi, "TOTALTIME", beststr);
+	M_GetMenuItem(pi, "TOTALTIME")->style = DEH_FindMenuItemStyle(mapsfinished != nummapheaders ? "EDGE-WARNINGHIGHLIGHT" : "EDGE");
 	if (mapsfinished != nummapheaders)
-		V_DrawRightAlignedString(BASEVIDWIDTH-16, 50, MENUCAPS|warningflags, va("(%d unfinished)", nummapheaders - mapsfinished));
+	{
+		M_SetItemText(pi, "MAPSFINISHED", va("(%d unfinished)", nummapheaders - mapsfinished));
+		M_GetMenuItem(pi, "MAPSFINISHED")->style = DEH_FindMenuItemStyle("EDGE-WARNINGHIGHLIGHT");
+	}
 	else
-		V_DrawRightAlignedString(BASEVIDWIDTH-16, 50, MENUCAPS|recommendedflags, "(complete)");
-
-	if (G_EmblemsEnabled())
 	{
-		V_DrawString(32, 50, 0, va("x %d/%d", M_CountEmblems(), numemblems+numextraemblems));
-		V_DrawSmallScaledPatch(20, 50, 0, W_CachePatchName("GOTITA", PU_STATIC));
+		M_SetItemText(pi, "MAPSFINISHED", "(complete)");
+		M_GetMenuItem(pi, "MAPSFINISHED")->style = DEH_FindMenuItemStyle("EDGE-RECOMMENDEDHIGHLIGHT");
 	}
 
-	if (location)
-		V_DrawCharacter(10, y-(skullAnimCounter/5),
-			'\x1A' | highlightflags, false); // up arrow
+	boolean showemblems = G_EmblemsEnabled();
+	M_SetItemText(pi, "EMBLEMCOUNT", va("x %d/%d", M_CountEmblems(), numemblems+numextraemblems));
+	M_SetItemVisible(pi, "EMBLEMCOUNT", showemblems);
+	M_SetItemVisible(pi, "GOTIT", showemblems);
 
-	while (statsMapList[++i] != -1)
-	{
-		if (location)
-		{
-			--location;
-			continue;
-		}
-		else if (dotopname)
-		{
-			V_DrawString(20,  y, MENUCAPS|highlightflags, "Level Name");
-			V_DrawString(160, y, MENUCAPS|highlightflags, "Best");
-			V_DrawString(224, y, MENUCAPS|highlightflags, "Play");
-			//V_DrawString(256, y, MENUCAPS|highlightflags, "Medals");
-			y += 8;
-			dotopname = false;
-		}
-
-		mnum = statsMapList[i];
-		if (G_EmblemsEnabled())
-			M_DrawMapEmblems(mnum, 295, y);
-
-		maprecord_t *record = G_GetMapRecord(G_BuildMapName(mnum+1));
-		maprecordpreset_t *preset = record ? G_GetMapRecordPreset(record, currentrecordpreset) : NULL;
-		CLEANUP(Z_Pfree) char *maptitle = G_BuildMapTitle(mnum+1);
-
-		V_DrawThinString(20, y, MENUCAPS, maptitle);
-		V_DrawThinString(160, y, MENUCAPS, preset == NULL || preset->besttime == UINT32_MAX ? "--'--\"--" :
-			va("%02d'%02d\"%02d",
-			G_TicsToMinutes(preset->besttime, true),
-			G_TicsToSeconds(preset->besttime),
-			G_TicsToCentiseconds(preset->besttime)));
-		V_DrawThinString(224, y, MENUCAPS, preset == NULL || preset->playtime == 0 ? "" :
-			va("%d:%02d:%02d",
-			G_TicsToHours(preset->playtime),
-			G_TicsToMinutes(preset->playtime, false),
-			G_TicsToSeconds(preset->playtime)));
-
-		y += 8;
-
-		if (y >= BASEVIDHEIGHT-8)
-			goto bottomarrow;
-	}
-	if (dotopname && !location)
-	{
-		V_DrawString(20,  y, MENUCAPS|highlightflags, "Level Name");
-		V_DrawString(256, y, MENUCAPS|highlightflags, "Medals");
-		y += 8;
-	}
-	else if (location)
-		--location;
-
-	// Extra Emblems
-	for (i = -2; i < numextraemblems; ++i)
-	{
-		if (i == -1)
-		{
-			V_DrawString(20, y, MENUCAPS|highlightflags, "Extra Medals");
-			if (location)
-			{
-				y += 8;
-				location++;
-			}
-		}
-		if (location)
-		{
-			--location;
-			continue;
-		}
-
-		if (i >= 0)
-		{
-			exemblem = &extraemblems[i];
-
-			if (exemblem->collected)
-				V_DrawSmallMappedPatch(295, y, 0, W_CachePatchName(M_GetExtraEmblemPatch(exemblem, false), PU_CACHE),
-				                       R_GetTranslationColormap(TC_DEFAULT, M_GetExtraEmblemColor(exemblem), GTC_MENUCACHE));
-			else
-				V_DrawSmallScaledPatch(295, y, 0, W_CachePatchName("NEEDIT", PU_CACHE));
-
-			V_DrawString(20, y, MENUCAPS, va("%s", exemblem->description));
-		}
-
-		y += 8;
-
-		if (y >= BASEVIDHEIGHT-8)
-			goto bottomarrow;
-	}
-bottomarrow:
-	if (dobottomarrow)
-		V_DrawCharacter(10, y-8 + (skullAnimCounter/5),
-			'\x1B' | highlightflags, false); // down arrow
+	const char *realname = G_GetRecordPresetName(currentrecordpreset);
+	M_SetItemText(pi, "MODE", realname ? realname : currentrecordpreset);
 }
 
-#define DRAWTIMESTAT(y, title, field) { \
-		char timebuf[80]; \
-		V_DrawString(20, (y), MENUCAPS|highlightflags, title); \
-		tic_t timeval = kartstats.field; \
-		snprintf(timebuf, 80, "%02i:%02i:%02i", G_TicsToHours(timeval), G_TicsToMinutes(timeval, false), G_TicsToSeconds(timeval)); \
-		V_DrawRightAlignedString(BASEVIDWIDTH-16, (y), MENUCAPS, timebuf); \
+#define TIMESTAT(title, field) { \
+		tic_t t = kartstats.field; \
+		M_SetItemPatch(pi, title, va("%02i:%02i:%02i", G_TicsToHours(t), G_TicsToMinutes(t, false), G_TicsToSeconds(t))); \
 	}
 
-#define DRAWAMOUNTSTAT(y, title, field) { \
-		V_DrawString(20, (y), highlightflags, title); \
-		unsigned amountval = kartstats.field; \
-		V_DrawRightAlignedString(BASEVIDWIDTH-16, (y), MENUCAPS, va("%u", amountval)); \
+#define AMOUNTSTAT(title, field) { \
+		unsigned t = kartstats.field; \
+		M_SetItemPatch(pi, title, va("%u", t)); \
 	}
 
-static void M_DrawStatsPlaytime(menupanelinst_t *pi)
+void MP_StatsPlaytime(menupanelinst_t *pi)
 {
-	V_DrawString(20, 42, MENUCAPS|highlightflags, "Total Play Time:");
-	V_DrawCenteredString(BASEVIDWIDTH/2, 52, MENUCAPS, va("%i hours, %i minutes, %i seconds",
+	M_SetItemText(pi, "PLAYTIME", va("%i hours, %i minutes, %i seconds",
 	                         G_TicsToHours(kartstats.totalplaytime),
 	                         G_TicsToMinutes(kartstats.totalplaytime, false),
 	                         G_TicsToSeconds(kartstats.totalplaytime)));
-	V_DrawString(20, 62, MENUCAPS|highlightflags, "Total Matches:");
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 62, MENUCAPS, va("%i played", kartstats.matchesplayed));
+	M_SetItemText(pi, "MATCHES", va("%i played", kartstats.matchesplayed));
 
-	V_DrawString(20, 82, MENUCAPS|highlightflags, "Online Power Level:");
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 92, MENUCAPS, va("Race: %i", vspowerlevel[PWRLV_RACE]));
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 102, MENUCAPS, va("Battle: %i", vspowerlevel[PWRLV_BATTLE]));
+	M_SetItemText(pi, "RACEPWRLV", va("Race: %i", vspowerlevel[PWRLV_RACE]));
+	M_SetItemText(pi, "BATTLEPWRLV", va("Battle: %i", vspowerlevel[PWRLV_BATTLE]));
 
-	// Nothing else to draw
-	if (kartstats.vanilla)
-		return;
+	TIMESTAT("RAPLAYTIME", raplaytime);
+	TIMESTAT("ONLINEPLAYTIME", onlineplaytime);
+	TIMESTAT("RACEPLAYTIME", raceplaytime);
+	TIMESTAT("BATTLEPLAYTIME", battleplaytime);
 
-	DRAWTIMESTAT(122, "RA Play Time:", raplaytime);
-	DRAWTIMESTAT(132, "Online Play Time:", onlineplaytime);
-	DRAWTIMESTAT(142, "Race Play Time:", raceplaytime);
-	DRAWTIMESTAT(152, "Battle Play Time:", battleplaytime);
+	M_SetItemVisible(pi, "RAPLAYTIME", !kartstats.vanilla);
+	M_SetItemVisible(pi, "ONLINEPLAYTIME", !kartstats.vanilla);
+	M_SetItemVisible(pi, "RACEPLAYTIME", !kartstats.vanilla);
+	M_SetItemVisible(pi, "BATTLEPLAYTIME", !kartstats.vanilla);
 }
 
 // Note: only available with non-vanilla stats loaded, so it doesn't check for that
-static void M_DrawStatsExtra(menupanelinst_t *pi)
+void MP_StatsExtra(menupanelinst_t *pi)
 {
-	DRAWTIMESTAT(42, "Time being SPB target:", spbtargettime);
-	DRAWTIMESTAT(52, "Time spent in spinout:", spinouttime);
-
-	DRAWAMOUNTSTAT(72, "Total wins:", totalwins);
-	DRAWAMOUNTSTAT(82, "Total podium (2nd/3rd place):", totalpodium);
-
-	DRAWAMOUNTSTAT(102, "Hits landed:", hits);
-	DRAWAMOUNTSTAT(112, "Self-hits landed:", selfhits);
-
-	DRAWAMOUNTSTAT(132, "Sinks landed:", sinks);
-	DRAWAMOUNTSTAT(142, "Times hit by sink:", sinked);
-
-	DRAWAMOUNTSTAT(162, "Total respawns:", respawns);
+	TIMESTAT("SPBTARGETTIME", spbtargettime);
+	TIMESTAT("SPINOUTTIME", spinouttime);
+	AMOUNTSTAT("TOTALWINS", totalwins);
+	AMOUNTSTAT("TOTALPODIUM", totalpodium);
+	AMOUNTSTAT("HITS", hits);
+	AMOUNTSTAT("SELFHITS", selfhits);
+	AMOUNTSTAT("SINKS", sinks);
+	AMOUNTSTAT("SINKED", sinked);
+	AMOUNTSTAT("RESPAWNS", respawns);
 }
-
-#undef DRAWAMOUNTSTAT
-#undef DRAWTIMESTAT
 
 void MD_DrawLevelStats(menupanelinst_t *pi)
 {
-	M_DrawMenuTitle();
+	// cursoroffset != 0 means the panel can be navigated to
+	// yup!
+	M_GetPanel("EXTRA")->cursoroffset = kartstats.vanilla ? 0 : 3*FRACUNIT;
 
-	V_DrawCenteredString(BASEVIDWIDTH/2, 28, MENUCAPS|highlightflags, statsPages[statsCurrentPage].title);
-
-	INT32 w = V_StringWidth(statsPages[statsCurrentPage].title, highlightflags);
+	// FIXME
+	//title = "Play Time Statistics"; break;
+	//title = "Level Statistics"; break;
+	//title = "Extra Statistics"; break;
+	M_SetItemText(pi, "HEADING", curpanels[panelOn].name);
+	INT32 w = V_StringWidth(curpanels[panelOn].name, highlightflags);
 	V_DrawCharacter(BASEVIDWIDTH/2 - w/2 - 10 - (skullAnimCounter/5), 28,
 			'\x1C' | highlightflags, false); // left arrow
 	V_DrawCharacter(BASEVIDWIDTH/2 + w/2 + 2 + (skullAnimCounter/5), 28,
 			'\x1D' | highlightflags, false); // right arrow
 
-	statsPages[statsCurrentPage].drawer(pi);
+	for (size_t i = 0; i < numcurpanels; i++)
+		if (i != (size_t)(pi - curpanels))
+			curpanels[i].visible = i == panelOn;
+
+	if (M_CheckPanel("RECORDS") == &curpanels[panelOn])
+		M_GetPanel("RECORDSBG")->visible = true; // ugh
 }
 
 // Handle statistics.
@@ -6544,53 +6466,27 @@ INT32 MR_HandleLevelStats(INT32 choice)
 {
 	switch (choice)
 	{
-		case KEY_DOWNARROW:
-			if (statsCurrentPage != 1) // Must be on level stats page
-				break;
-			S_StartSound(NULL, sfx_menu1);
-			if (statsLocation < statsMax)
-				++statsLocation;
-			break;
-
-		case KEY_UPARROW:
-			if (statsCurrentPage != 1) // Must be on level stats page
-				break;
-			S_StartSound(NULL, sfx_menu1);
-			if (statsLocation)
-				--statsLocation;
-			break;
-
 		case KEY_RIGHTARROW:
 			S_StartSound(NULL, sfx_menu1);
-			statsCurrentPage++;
-			if (statsCurrentPage >= NUMSTATSPAGES)
-				statsCurrentPage = 0;
+			do
+				panelOn = intmod(panelOn + 1, numcurpanels);
+			while (curpanels[panelOn].cursoroffset == 0);
 			break;
 
 		case KEY_LEFTARROW:
 			S_StartSound(NULL, sfx_menu1);
-			if (statsCurrentPage == 0)
-				statsCurrentPage = NUMSTATSPAGES-1;
-			else
-				--statsCurrentPage;
+			do
+				// sadly, panelOn is size_t, which means integer promotion does not
+				// convert it from unsigned to signed, which means this line doesn't work:
+				//panelOn = intmod(panelOn - 1, numcurpanels);
+				// fuck this chud ass language
+				if (panelOn-- == 0) panelOn = numcurpanels-1;
+			while (curpanels[panelOn].cursoroffset == 0);
 			break;
 
-		case KEY_PGDN:
-			if (statsCurrentPage != 1) // Must be on level stats page
-				break;
-			S_StartSound(NULL, sfx_menu1);
-			statsLocation += (statsLocation+13 >= statsMax) ? statsMax-statsLocation : 13;
-			break;
-
-		case KEY_PGUP:
-			if (statsCurrentPage != 1) // Must be on level stats page
-				break;
-			S_StartSound(NULL, sfx_menu1);
-			statsLocation -= (statsLocation < 13) ? statsLocation : 13;
-			break;
-
-		case KEY_BACKSPACE:
-			if (statsCurrentPage != 1)
+		case KEY_BACKSPACE:;
+			menupanelinst_t *maps = M_CheckPanel("RECORDS");
+			if (&curpanels[panelOn] != maps)
 				break;
 			S_StartSound(NULL, sfx_menu1);
 			recordpresetnum_e i, j;
@@ -6603,6 +6499,8 @@ INT32 MR_HandleLevelStats(INT32 choice)
 					G_SetCurrentRecordPreset(recordpresets[i]);
 					break;
 				}
+			M_GetDefFromInst(maps)->initializer(maps);
+			M_GetDefFromInst(M_GetPanel("RECORDSBG"))->initializer(M_GetPanel("RECORDSBG"));
 			break;
 
 		default:
