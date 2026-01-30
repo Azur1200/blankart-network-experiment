@@ -103,8 +103,9 @@ typedef enum
 	PF_SHRINKACTIVE		= 1<<26, // "Shrink me" cheat is in effect. (Can't be disabled mid-race)
 
 	PF_JUSTFLIPPED      = 1<<27, // Just got flipped over, handle the bump interaction.
+	
+	PF_RECOVERYSPIN     = 1<<28, // Player was charging SSMT last tick
 
-	// up to 1<<28 is free
 	PF_USEDOWN			= 1<<29, // For lua compat, don't use!
 	PF_ATTACKDOWN		= 1<<30, // For lua compat, don't use!
 	PF_SLIDING			= 1<<31, // For lua compat, don't use!
@@ -203,6 +204,8 @@ typedef enum
 	khud_enginesnd,		// Engine sound offset this player is using.
 	khud_voices,		// Used to stop the player saying more voices than it should
 	khud_tauntvoices,	// Used to specifically stop taunt voice spam
+	khud_confirmvictim,		// Player ID that you dealt damage to
+	khud_confirmvictimdelay,	// Delay before playing the sound
 
 	// Battle
 	khud_cardanimation,	// Used to determine the position of some full-screen Battle Mode graphics
@@ -433,6 +436,21 @@ struct saltyhop_t
 	fixed_t momz, zoffset; // erm... the mechanism....
 };
 
+// this WILL conflict with a future commit I just need this to proto
+// yama: Nah, I'mma do my own thing
+typedef enum
+{
+	DRIFTMODE_CLASSIC = 0,  // SRB2Kart drifting; no changes
+	DRIFTMODE_SNAPSHOT,     // AKA "Runahead" - Use a prediction system to reduce the chances of a wrongdrift
+	DRIFTMODE_INSTANT,      // Instantly decide your drift on the tic it happens
+	DRIFTMODE_DELAY,        // Delay the time before a drift is decided
+	NUMDRIFTMODES
+} driftmode_e;
+
+// (12 frames / 60fps) * 35tps
+// Delay-drift: Time the game is given to predict a "wanted" drift
+#define DRIFT_DELAY_TIME (7)
+
 // enum for saved lap times
 typedef enum
 {
@@ -504,6 +522,10 @@ struct player_t
 	UINT8 kartspeed; // Kart speed stat between 1 and 9
 	UINT8 kartweight; // Kart weight stat between 1 and 9
 
+	UINT8 kartspeedrestat; // Player's wanted kart speed from restat
+	UINT8 kartweightrestat; // Player's wanted kart weight from restat
+	boolean randomrestat; // Randomly set the restat values of the player every game
+
 	INT32 followerskin;		// Kart: This player's follower "skin"
 	boolean followerready;	// Kart: Used to know when we can have a follower or not. (This is set on the first NameAndColor follower update)
 	UINT16 followercolor;	// Kart: Used to store the follower colour the player wishes to use
@@ -560,7 +582,9 @@ struct player_t
 	UINT8 justbumped;		// Prevent players from endlessly bumping into each other
 	boolean noclip;			// Fix Grow breaking the "noclip" cheat. Also applies noclip as a bonus.
 
+	driftmode_e driftmode;
 	SINT8 drift;			// (-5 to 5) - Drifting Left or Right, plus a bigger counter = sharper turn
+	INT16 driftturnsnapshot;
 	SINT8 driftlock;		// Prevents you from using drift angle for x tics. Used for zipper fix.
 	fixed_t driftcharge;	// Charge your drift so you can release a burst of speed
 	UINT8 driftboost;		// (0 to 125) - Boost you get from drifting
@@ -568,6 +592,15 @@ struct player_t
 	tic_t driftsparkGrowTimer;	// CLIENT ONLY -
 	tic_t driftelapsed;     	// CLIENT ONLY - Elapsed time spent during a drift.
 	SINT8 driftlevel; 			// CLIENT ONLY - handles controller rumble and air thrust power, cleared at the start of every tick.
+
+	INT32 drift_wannaturn;  // Turn values the game uses to determine the direction you want to drift.
+
+	// (Delay-drift) - Delay in tics before the final drift angle is determined.
+	// Potentially influenced by player lag.
+	tic_t driftdelay;
+
+	tic_t recoverydashcharge;		// Time spent charging SSMT
+	UINT16 recoverydash;		// SSMT boost timer (weak boost that ignores offroad)
 
 	fixed_t spinoutrot;     // When a player spins out, this value increments modulus 360.
 
@@ -590,6 +623,7 @@ struct player_t
 	fixed_t prevspeedboost;	// Max speed boost value from the last frame
 	fixed_t accelboost;		// Boost value smoothing for acceleration
 	fixed_t handleboost;	// Boost value smoothing for handling
+	fixed_t forcedtopspeed; // Force this top speed while charging SSMT
 	angle_t boostangle;		// angle set when not spun out OR boosted to determine what direction you should keep going at if you're spun out and boosted.
 	boostinfo_t boostinfo;	// Stores values used for setting speed and accel boosts.
 	UINT8 numsneakers;		// Number of stacked sneakers
@@ -691,9 +725,6 @@ struct player_t
 
 	SINT8 lastjawztarget;	// (-1 to 15) - Last person you target with jawz, for playing the target switch sfx
 	UINT8 jawztargetdelay;	// (0 to 5) - Delay for Jawz target switching, to make it less twitchy
-
-	UINT8 confirmVictim;		// Player ID that you dealt damage to
-	UINT8 confirmVictimDelay;	// Delay before playing the sound
 
 	UINT8 dashRingPullTics; // Timer during which the player is pulled towards a dash ring
 	UINT8 dashRingPushTics; // Timer during which the player displays effects and has no gravity after being thrust by a dash ring

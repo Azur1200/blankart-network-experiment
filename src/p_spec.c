@@ -9336,6 +9336,7 @@ boolean P_AllowFriction(mobj_t *mobj)
 	if (mobj->player->invincibilitytimer
 		|| mobj->player->hyudorotimer
 		|| mobj->player->sneakertimer
+		|| (cv_kartbubble_boost_offroadignore.value && mobj->player->bubbleboost)
 		|| mobj->player->growshrinktimer > 0
 		|| K_IsAltShrunk(mobj->player))
 		return false;

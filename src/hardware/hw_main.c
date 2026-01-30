@@ -15,6 +15,7 @@
 #include "../doomstat.h"
 
 #include "../qs22j.h"
+#include "hw_defs.h"
 
 #ifdef HWRENDER
 #include "hw_clip.h"
@@ -705,7 +706,7 @@ FBITFIELD HWR_SurfaceBlend(INT32 style, INT32 transtablenum, FSurfaceInfo *pSurf
 		return PF_Multiplicative;
 
 	if (!transtablenum && !style)
-		return PF_Masked;
+		return PF_Translucent;
 
 	pSurf->PolyColor.s.alpha = HWR_GetTranstableAlpha(transtablenum);
 	return HWR_GetBlendModeFlag(style);
@@ -3535,6 +3536,8 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 		}
 	}
 
+	Surf.PolyColor.s.alpha = FixedMul(R_GetThingFade(spr->mobj), Surf.PolyColor.s.alpha);
+
 	if (HWR_UseShader())
 	{
 		shader = SHADER_SPRITE;
@@ -4053,6 +4056,8 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 			blend = PF_Translucent|occlusion;
 			if (!occlusion) use_linkdraw_hack = true;
 		}
+
+		Surf.PolyColor.s.alpha = FixedMul(R_GetThingFade(spr->mobj), Surf.PolyColor.s.alpha);
 
 		if (HWR_UseShader())
 		{
@@ -4824,6 +4829,9 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 	mobj_t *interptarg;
+
+	if (G_GamestateUsesLevel() == false)
+		return;
 
 	if (!thing)
 		return;

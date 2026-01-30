@@ -170,6 +170,8 @@ struct kartroulette_t
 extern consvar_t cv_fancyroulette;
 extern consvar_t cv_fancyroulettespeed;
 
+extern consvar_t cv_huditemamount;
+
 extern kartitem_t kartitems[MAXKARTITEMS];
 extern UINT8 numkartitems;
 extern kartresult_t kartresults[MAXKARTRESULTS];
@@ -228,6 +230,8 @@ void K_PlayerItemThink(player_t *player, boolean onground);
 
 extern consvar_t cv_karteggmine_slotlock;
 extern consvar_t cv_karteggmine_slotbrick;
+
+#define BUBBLEBOOSTTIME (7 * sneakertime / 10)
 
 #ifdef __cplusplus
 } // extern "C"

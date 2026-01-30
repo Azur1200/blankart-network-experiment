@@ -6764,6 +6764,8 @@ void P_RunOverlays(void)
 
 		if (!(mo->threshold & OV_DONTROLL))
 		{
+			mo->slopepitch = mo->target->slopepitch;
+			mo->sloperoll = mo->target->sloperoll;
 			mo->rollangle = mo->target->rollangle;
 			mo->pitch = mo->target->pitch;
 			mo->roll = mo->target->roll;
@@ -8923,7 +8925,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			if (p)
 			{
-				if (mobj->extravalue1)
+				if (mobj->extravalue1 > 0)
 				{
 					if (p->driftboost > mobj->movecount)
 					{

@@ -170,6 +170,7 @@ static void KartSlopeBoost_OnChange(void);
 static void KartDrafting_OnChange(void);
 static void KartAirDrop_OnChange(void);
 static void KartAirThrust_OnChange(void);
+static void KartRecoveryDash_OnChange(void);
 static void KartWaterSkipLock_OnChange(void);
 static void KartItemLitter_OnChange(void);
 static void KartItemPush_OnChange(void);
@@ -232,6 +233,11 @@ static void Command_Teamchange_f(void);
 static void Command_Teamchange2_f(void);
 static void Command_Teamchange3_f(void);
 static void Command_Teamchange4_f(void);
+
+static void Command_Restat(void);
+static void Command_Restat2(void);
+static void Command_Restat3(void);
+static void Command_Restat4(void);
 
 static void Command_ServerTeamChange_f(void);
 
@@ -544,6 +550,18 @@ consvar_t cv_kartstacking_ring_accelboost = CVAR_INIT ("vanillaboost_ring_accelb
 consvar_t cv_kartstacking_ring_handleboost = CVAR_INIT ("vanillaboost_ring_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_ring_stackable = CVAR_INIT ("vanillaboost_ring_stackable", "On", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
 
+consvar_t cv_kartstacking_ssmt_speedboost = CVAR_INIT ("vanillaboost_ssmt_speedboost", "0.1", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_ssmt_accelboost = CVAR_INIT ("vanillaboost_ssmt_accelboost", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_ssmt_handleboost = CVAR_INIT ("vanillaboost_ssmt_handleboost", "0.1", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+
+consvar_t cv_kartstacking_recspin_speedboost_lo = CVAR_INIT ("vanillaboost_recspin_speedboost_lo", "0.0001", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_recspin_accelboost_lo = CVAR_INIT ("vanillaboost_recspin_accelboost_lo", "2.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_recspin_handleboost_lo = CVAR_INIT ("vanillaboost_recspin_handleboost_lo", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+
+consvar_t cv_kartstacking_recspin_speedboost_hi = CVAR_INIT ("vanillaboost_recspin_speedboost_hi", "0.0001", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_recspin_accelboost_hi = CVAR_INIT ("vanillaboost_recspin_accelboost_hi", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_recspin_handleboost_hi = CVAR_INIT ("vanillaboost_recspin_handleboost_hi", "0.5", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+
 consvar_t cv_kartstacking_slope_decay = CVAR_INIT ("vanillaboost_slope_decay", "0.004", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_slope_brakemod = CVAR_INIT ("vanillaboost_slope_brakemod", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_slope_speedboost_max = CVAR_INIT ("vanillaboost_slope_speedboost_max", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
@@ -612,6 +630,9 @@ consvar_t cv_kartforcelegacyodds = CVAR_INIT ("kartforcelegacyodds", "Off", CV_N
 
 consvar_t cv_handleboostslip = CVAR_INIT ("karthandleboostsliptide", "Off", CV_NETVAR, CV_OnOff, NULL);
 
+consvar_t cv_kartrecoverydash = CVAR_INIT ("kartrecoverydash", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartRecoveryDash_OnChange);
+consvar_t cv_kartrecoverydash_spinspeed = CVAR_INIT ("kartrecoverydash_spinspeed", "24.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+
 #define ANTIBUMP_MAX (UINT32_MAX / TICRATE)
 static CV_PossibleValue_t antibump_cons_t[] = {{0, "MIN"}, {ANTIBUMP_MAX, "MAX"}, {0, NULL}};
 consvar_t cv_kartantibump = CVAR_INIT ("kartantibump", "0", CV_NETVAR|CV_CALL|CV_NOINIT, antibump_cons_t, KartAntiBump_OnChange);
@@ -651,6 +672,7 @@ consvar_t cv_kartbubble_defense_canidle = CVAR_INIT ("kartbubble_defense_canidle
 static CV_PossibleValue_t bubble_defense_damagerate_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_kartbubble_defense_damagerate = CVAR_INIT ("kartbubble_defense_damagerate", "1.0", CV_NETVAR|CV_FLOAT, bubble_defense_damagerate_cons_t, NULL);
 consvar_t cv_kartbubble_boost_allow = CVAR_INIT ("kartbubble_boost_allow", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartbubble_boost_offroadignore = CVAR_INIT ("kartbubble_boost_offroadignore", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "Off", CV_NETVAR, CV_OnOff, NULL);
 // we want this to be default now apparently
 consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "On", CV_NETVAR, CV_OnOff, NULL);
@@ -1132,6 +1154,14 @@ void D_RegisterServerCommands(void)
 
 	COM_AddCommand("playsound", Command_PlaySound);
 	RegisterNetXCmd(XD_PLAYSOUND, Got_PlaySound);
+
+	// player restat
+	CV_RegisterVar(&cv_allowrestat);
+	CV_RegisterVar(&cv_notifyrestat);
+	COM_AddCommand("restat", Command_Restat);
+	COM_AddCommand("restat2", Command_Restat2);
+	COM_AddCommand("restat3", Command_Restat3);
+	COM_AddCommand("restat4", Command_Restat4);
 }
 
 // =========================================================================
@@ -1249,6 +1279,7 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_follower[i]);
 		CV_RegisterVar(&cv_followercolor[i]);
 		CV_RegisterVar(&cv_jitterlegacy[i]);
+		CV_RegisterVar(&cv_driftmode[i]);
 		CV_RegisterVar(&cv_voice[i]);
 	}
 
@@ -1439,6 +1470,109 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_connectawaittime);
 	CV_RegisterVar(&cv_serverinfoscreen);
+}
+
+static void RestatForPlayer(UINT32 ssplayer)
+{
+	player_t* player = &players[g_localplayers[ssplayer]];
+	int speed;
+	int weight;
+
+	if (!cv_allowrestat.value)
+	{
+		CONS_Printf("This command has been disabled by the server host.\n");
+		return;
+	}
+	
+	if (COM_Argc() > 2)
+	{
+		if (sscanf(COM_Argv(1), " %d", &speed) == 0 || 
+			sscanf(COM_Argv(2), " %d", &weight) == 0)
+		{
+			CONS_Printf("Expected two numbers (<speed> <weight>) in the range of 1-9.\n");
+			return;
+		}
+		// range checking
+		if (speed < 1 || speed > 9 ||
+			weight < 1 || weight > 9)
+		{
+			CONS_Printf("Expected two numbers (<speed> <weight>) in the range of 1-9.\n");
+			return;	
+		}
+
+		// should be good now 🥲
+		player->kartspeedrestat = speed;
+		player->kartweightrestat = weight;
+		player->randomrestat = false;
+		
+		CONS_Printf("You will be %d speed, %d weight for the next race.\n", speed, weight);
+		CONS_Printf("Use \"restat off\" to return to your skin's default stats.\n");
+
+		WeaponPref_Send(ssplayer);
+		return;
+	}
+	else if (COM_Argc() > 1)
+	{
+		if (fasticmp(COM_Argv(1), "random"))
+		{
+			player->randomrestat = !player->randomrestat;
+			if (player->randomrestat)
+			{
+				CONS_Printf("Random restat is now enabled.\n");
+			}
+			else
+			{
+				CONS_Printf("Random restat is now disabled.\n");
+			}
+
+			WeaponPref_Send(ssplayer);
+			return;
+		}
+		else if (fasticmp(COM_Argv(1), "off"))
+		{
+			player->kartspeedrestat = 0;
+			player->kartweightrestat = 0;
+			player->randomrestat = false;
+			WeaponPref_Send(ssplayer);
+			
+			CONS_Printf("Now using skin default stats.\n");
+			return;
+		}
+		else
+		{
+			CONS_Printf(
+				"Usage: \"restat<playernum> <speed> <weight>\"\n"
+				"Alternatively: \"restat<playernum> random\" to toggle the use of random stats each round.\n"
+				"or \"restat<playernum> off\" to use your skin's default stats.\n");
+		}
+	}
+	else
+	{
+		CONS_Printf(
+			"Usage: \"restat<playernum> <speed> <weight>\"\n"
+			"Alternatively: \"restat<playernum> random\" to use random stats each round.\n"
+			"or \"restat<playernum> off\" to use your skin's default stats.\n");
+	}
+}
+
+static void Command_Restat(void)
+{
+	RestatForPlayer(0);
+}
+
+static void Command_Restat2(void)
+{
+	RestatForPlayer(1);
+}
+
+static void Command_Restat3(void)
+{
+	RestatForPlayer(2);
+}
+
+static void Command_Restat4(void)
+{
+	RestatForPlayer(3);
 }
 
 /**
@@ -2229,11 +2363,13 @@ enum {
 	WP_KICKSTARTACCEL = 1<<0,
 	WP_SHRINKME = 1<<1,
 	WP_FLIPCAM = 1<<2,
-	WP_LEGACYJITTER = 1<<3
+	WP_LEGACYJITTER = 1<<3,
+	WP_RANDOMRESTAT = 1<<4
 };
 
 void WeaponPref_Send(UINT8 ssplayer)
 {
+	player_t* player = &players[g_localplayers[ssplayer]];
 	UINT8 prefs = 0;
 
 	if (cv_kickstartaccel[ssplayer].value)
@@ -2247,10 +2383,16 @@ void WeaponPref_Send(UINT8 ssplayer)
 
 	if (!(cv_jitterlegacy[ssplayer].value))
 		prefs |= WP_LEGACYJITTER;
+	
+	if (player->randomrestat)
+		prefs |= WP_RANDOMRESTAT;
 
-	UINT8 buf[2];
+	UINT8 buf[5];
 	buf[0] = prefs;
 	buf[1] = cv_mindelay.value;
+	buf[2] = player->kartspeedrestat;
+	buf[3] = player->kartweightrestat;
+	buf[4] = cv_driftmode[ssplayer].value;
 
 	SendNetXCmdForPlayer(ssplayer, XD_WEAPONPREF, buf, sizeof buf);
 }
@@ -2273,6 +2415,9 @@ void WeaponPref_Save(UINT8 **cp, INT32 playernum)
 	if (player->jitterlegacy)
 		prefs |= WP_LEGACYJITTER;
 
+	if (player->randomrestat)
+		prefs |= WP_RANDOMRESTAT;
+
 	WRITEUINT8(*cp, prefs);
 }
 
@@ -2284,6 +2429,7 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 
 	player->pflags &= ~(PF_KICKSTARTACCEL|PF_SHRINKME|PF_FLIPCAM);
 	player->jitterlegacy = false;
+	player->randomrestat = false;
 
 	if (prefs & WP_KICKSTARTACCEL)
 		player->pflags |= PF_KICKSTARTACCEL;
@@ -2297,6 +2443,9 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 	if (prefs & WP_LEGACYJITTER)
 		player->jitterlegacy = true;
 
+	if (prefs & WP_RANDOMRESTAT)
+		player->randomrestat = true;
+
 	if (leveltime < 2)
 	{
 		// BAD HACK: No other place I tried to slot this in
@@ -2308,14 +2457,38 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 
 static void Got_WeaponPref(UINT8 **cp,INT32 playernum)
 {
+	player_t *player = &players[playernum];
+
 	WeaponPref_Parse(cp, playernum);
 
 	UINT8 mindelay = READUINT8(*cp);
 	if (server)
 	{
 		for (UINT8 i = 0; i < G_LocalSplitscreenPartySize(playernum); ++i)
-			playerdelaytable[G_LocalSplitscreenPartyMember(playernum, i)] = mindelay;
+		playerdelaytable[G_LocalSplitscreenPartyMember(playernum, i)] = mindelay;
 	}
+	UINT8 kartspeedrestat = READUINT8(*cp);
+	UINT8 kartweightrestat = READUINT8(*cp);
+	if (kartspeedrestat < 0 || kartspeedrestat > 9 ||
+		kartweightrestat < 0 || kartweightrestat > 9)
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Illegal restat values received from %s\n"), player_names[playernum]);
+		if (server)
+			SendKick(playernum, KICK_MSG_CON_FAIL);
+		return;
+	}
+	player->kartspeedrestat = kartspeedrestat;
+	player->kartweightrestat = kartweightrestat;
+
+	UINT8 driftmode = READUINT8(*cp);
+	if (driftmode >= NUMDRIFTMODES)
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Illegal drift mode received from %s\n"), player_names[playernum]);
+		if (server)
+			SendKick(playernum, KICK_MSG_CON_FAIL);
+		return;
+	}
+	player->driftmode = driftmode;
 
 	// SEE ALSO g_demo.c
 	demo_extradata[playernum] |= DXD_WEAPONPREF;
@@ -8349,6 +8522,39 @@ static void KartAirThrust_OnChange(void)
 		else
 		{
 			CONS_Printf(M_GetText("Air Thrust will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
+static void KartRecoveryDash_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_RecoveryDashActive() && cv_kartrecoverydash.value)
+	{
+		if (leveltime < starttime)
+		{
+			recoverydashactive = true;
+			CONS_Printf(M_GetText("Recovery Dash has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Recovery Dash will be turned \"On\" Next Round.\n"));
+		}
+	}
+	else if (K_RecoveryDashActive() && !cv_kartrecoverydash.value)
+	{
+		if (leveltime < starttime)
+		{
+			recoverydashactive = false;
+			CONS_Printf(M_GetText("Recovery Dash has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Recovery Dash will be turned \"Off\" next round.\n"));
 		}
 	}
 }

@@ -263,6 +263,7 @@ void K_RegisterKartHUDStuff(void)
 	// k_items.c
 	CV_RegisterVar(&cv_fancyroulette);
 	CV_RegisterVar(&cv_fancyroulettespeed);
+	CV_RegisterVar(&cv_huditemamount);
 }
 
 void K_LoadKartHUDGraphics(void)
@@ -2707,6 +2708,13 @@ static void K_drawKartStatsnLives(void)
 				UINT8 *colormapstat = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUE, GTC_CACHE);
 				UINT8 *colormapstat2 = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_ORANGE, GTC_CACHE);
 
+				if (stplyr->kartspeed != skins[stplyr->skin].kartspeed
+					|| stplyr->kartweight != skins[stplyr->skin].kartweight)
+				{
+					colormapstat = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE);
+					colormapstat2 = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MUSTARD, GTC_CACHE);
+				}
+
 				V_DrawFixedPatch((fx+56+offsetx+facerank->leftoffset)<< FRACBITS, (fy-19+offsety+facerank->topoffset)<< FRACBITS, FRACUNIT, V_HUDTRANS|splitflags, kp_facenum[(stplyr->kartspeed % 10)], colormapstat);
 				V_DrawFixedPatch((fx+69+offsetx+facerank->leftoffset)<< FRACBITS, (fy-4+offsety+facerank->topoffset)<< FRACBITS, FRACUNIT, V_HUDTRANS|splitflags, kp_facenum[(stplyr->kartweight % 10)], colormapstat2);
 			}
@@ -3451,6 +3459,14 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p)
 
 	// Draw the name itself
 	V_DrawThinStringAtFixed(x + (5*FRACUNIT), y - (26*FRACUNIT), vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+
+	// Also draw stats of restated players.
+	if (p->kartspeed != skins[p->skin].kartspeed
+		|| p->kartweight != skins[p->skin].kartweight)
+	{
+		V_DrawSmallStringAtFixed(x + (5*FRACUNIT), y - (31*FRACUNIT), vflags, va("\x84S%d ", p->kartspeed));
+		V_DrawSmallStringAtFixed(x + (15*FRACUNIT), y - (31*FRACUNIT), vflags, va("\x87W%d ", p->kartweight));
+	}
 }
 
 typedef struct weakspotdraw_t

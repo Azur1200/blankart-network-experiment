@@ -357,6 +357,17 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_ring_handleboost);
 	CV_RegisterVar(&cv_kartstacking_ring_stackable);
 
+	CV_RegisterVar(&cv_kartstacking_ssmt_speedboost);
+	CV_RegisterVar(&cv_kartstacking_ssmt_accelboost);
+	CV_RegisterVar(&cv_kartstacking_ssmt_handleboost);
+
+	CV_RegisterVar(&cv_kartstacking_recspin_speedboost_lo);
+	CV_RegisterVar(&cv_kartstacking_recspin_accelboost_lo);
+	CV_RegisterVar(&cv_kartstacking_recspin_handleboost_lo);
+	CV_RegisterVar(&cv_kartstacking_recspin_speedboost_hi);
+	CV_RegisterVar(&cv_kartstacking_recspin_accelboost_hi);
+	CV_RegisterVar(&cv_kartstacking_recspin_handleboost_hi);
+
 	CV_RegisterVar(&cv_kartstacking_slope_decay);
 	CV_RegisterVar(&cv_kartstacking_slope_brakemod);
 	CV_RegisterVar(&cv_kartstacking_slope_speedboost_max);
@@ -407,6 +418,9 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartslopeboost);
 
+	CV_RegisterVar(&cv_kartrecoverydash);
+	CV_RegisterVar(&cv_kartrecoverydash_spinspeed);
+
 	CV_RegisterVar(&cv_kartaltshrinktime);
 
 	CV_RegisterVar(&cv_kartinvintheme);
@@ -421,6 +435,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbubble_defense_canidle);
 	CV_RegisterVar(&cv_kartbubble_defense_damagerate);
 	CV_RegisterVar(&cv_kartbubble_boost_allow);
+	CV_RegisterVar(&cv_kartbubble_boost_offroadignore);
 	CV_RegisterVar(&cv_kartflame_fastfuel);
 	CV_RegisterVar(&cv_kartflame_offroadburn);
 	CV_RegisterVar(&cv_kartaltshrink_arrowbullet);
@@ -2086,8 +2101,16 @@ void K_TryHurtSoundExchange(mobj_t *victim, mobj_t *attacker)
 		return;
 	}
 
-	attacker->player->confirmVictim = (victim->player - players);
-	attacker->player->confirmVictimDelay = TICRATE/2;
+	attacker->player->karthud[khud_confirmvictim] = (victim->player - players);
+
+	if (cv_karthitemdialog.value)
+	{
+		attacker->player->karthud[khud_confirmvictimdelay] = TICRATE/2;
+	}
+	else
+	{
+		K_PlayHitEmSound(attacker->player->mo, victim);
+	}
 
 	if (attacker->player->follower != NULL)
 	{
@@ -2108,20 +2131,20 @@ void K_PlayPowerGloatSound(mobj_t *source)
 
 static void K_HandleDelayedHitByEm(player_t *player)
 {
-	if (player->confirmVictimDelay == 0)
+	if (player->karthud[khud_confirmvictimdelay] == 0)
 	{
 		return;
 	}
 
-	player->confirmVictimDelay--;
+	player->karthud[khud_confirmvictimdelay]--;
 
-	if (player->confirmVictimDelay == 0)
+	if (player->karthud[khud_confirmvictimdelay] == 0)
 	{
 		mobj_t *victim = NULL;
 
-		if (player->confirmVictim < MAXPLAYERS && playeringame[player->confirmVictim])
+		if (player->karthud[khud_confirmvictim] < MAXPLAYERS && playeringame[player->karthud[khud_confirmvictim]])
 		{
-			player_t *victimPlayer = &players[player->confirmVictim];
+			player_t *victimPlayer = &players[player->karthud[khud_confirmvictim]];
 
 			if (victimPlayer != NULL && victimPlayer->spectator == false)
 			{
@@ -2158,7 +2181,9 @@ boolean K_ApplyOffroad(const player_t *player)
 	if (modeattacking != ATTACKING_NONE)
 		sneakertimer = player->sneakertimer > 0;
 
-	if (player->hyudorotimer || sneakertimer)
+	if (player->hyudorotimer || sneakertimer ||
+		(cv_kartbubble_boost_offroadignore.value && player->bubbleboost) ||
+		player->recoverydash || (player->pflags & PF_RECOVERYSPIN))
 		return false;
 	return true;
 }
@@ -2823,6 +2848,23 @@ static void K_GetKartBoostPower(player_t *player)
 		K_DoBoost(player, RINGSPEEDBOOST, RINGACCELBOOST, RINGHANDLEBOOST, RINGSTACKABLE, RINGSTACKABLE); // + 20% top speed, + 400% acceleration
 	}
 
+	if (player->recoverydash) // SSMT Boost
+	{
+		K_DoBoost(player, SSMTSPEEDBOOST, SSMTACCELBOOST, SSMTHANDLEBOOST, false, true); // + 10% top speed, + ?% acceleration
+	}
+
+	if ((player->pflags & PF_RECOVERYSPIN))
+	{
+		if (player->flashing || player->recoverydashcharge >= TICRATE)
+		{
+			K_DoBoost(player, RECSPINSPEEDBOOSTHI, RECSPINACCELBOOSTHI, RECSPINHANDLEBOOSTHI, false, false); // + 500% acceleration, + 25% handling
+		}
+		else
+		{
+			K_DoBoost(player, RECSPINSPEEDBOOSTLO, RECSPINACCELBOOSTLO, RECSPINHANDLEBOOSTLO, false, false);// + 200% acceleration, + 25% handling
+		}
+	}
+
 	if (player->slopeboost || player->slopeaccel)
 	{
 		K_DoBoost(player, player->slopeboost, player->slopeaccel, 0, SLOPESTACKABLE, false); // + ???% top speed, + 300% acceleration
@@ -2954,6 +2996,9 @@ fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dor
 {
 	boolean karmabomb = ((gametyperules & GTR_BUMPERS) && player->bumper <= 0);
 	fixed_t finalspeed;
+
+	if (player->forcedtopspeed > 0)
+		return FixedMul(player->forcedtopspeed, player->mo->scale);
 
 	if (doboostpower && !player->pogospring && !P_IsObjectOnGround(player->mo) && (player->airdriftspeed == 0))
 		return (75*mapobjectscale); // air speed cap
@@ -7032,6 +7077,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			// Speed lines
 			if (player->sneakertimer || player->ringboost
 				|| player->driftboost || player->startboost
+				|| player->recoverydash
 				|| player->walltransferboost
 				|| player->bubbleboost)
 			{
@@ -7229,6 +7275,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->realsneakertimer)
 		player->realsneakertimer--;
+
+	if (player->recoverydash)
+		player->recoverydash--;
 
 	if (player->sneakertimer && player->wipeoutslow > 0 && player->wipeoutslow < wipeoutslowtime+1)
 		player->wipeoutslow = wipeoutslowtime+1;
@@ -7561,13 +7610,18 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->flamecamtime -= 1;
 	}
 
-	if (cmd->buttons & BT_DRIFT)
+	if (player->driftmode != DRIFTMODE_INSTANT)
 	{
-		player->pflags |= PF_DRIFTINPUT;
-	}
-	else
-	{
-		player->pflags &= ~PF_DRIFTINPUT;
+		if (cmd->buttons & BT_DRIFT)
+		{
+			player->pflags |= PF_DRIFTINPUT;
+			player->driftturnsnapshot = player->cmd.turning;
+		}
+		else
+		{
+			player->pflags &= ~PF_DRIFTINPUT;
+			player->driftturnsnapshot = player->cmd.turning;
+		}
 	}
 
 	// Respawn Checker
@@ -9118,7 +9172,7 @@ UINT8 K_GetKartDriftSparkStageForValue(const player_t *player, INT32 value)
 	}
 }
 
-static void K_SpawnDriftEFX(player_t *player,SINT8 level)
+static void K_SpawnDriftEFX(player_t *player, SINT8 level)
 {
 	mobj_t *overlay = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BOOSTFLAME);
 	P_SetMobjState(overlay, S_DRIFTBOOSTFLAME);
@@ -9253,6 +9307,10 @@ static void K_KartDrift(player_t *player, boolean onground)
 	// This fixes this problem.
 	if (player->pogospring == 2 && player->mo->scale > mapobjectscale)
 		minspeed = FixedMul(10<<FRACBITS, mapobjectscale);
+	
+	// horrible
+	if (player->pflags & PF_RECOVERYSPIN)
+		minspeed = (player->speed+1);
 
 	// air thrust drag
 	if (K_AirThrustActive())
@@ -9354,14 +9412,19 @@ static void K_KartDrift(player_t *player, boolean onground)
 			player->driftcharge = 0;
 	}
 
+	// drift-turn snapshot experiment disabled, drop the snapshot and use the turning value from this tick
+	if (player->driftmode != DRIFTMODE_SNAPSHOT)
+	{
+		player->driftturnsnapshot = player->cmd.turning;
+	}
 	// Drifting: left or right?
-	if ((player->cmd.turning > 0) && player->speed > minspeed && (player->pflags & PF_DRIFTINPUT) && (player->drift == 0 || (player->pflags & PF_DRIFTEND)))
+	if ((player->driftturnsnapshot > 0) && player->speed > minspeed && (player->pflags & PF_DRIFTINPUT) && (player->drift == 0 || (player->pflags & PF_DRIFTEND)))
 	{
 		// Starting left drift
 		player->drift = 1;
 		player->pflags &= ~PF_DRIFTEND;
 	}
-	else if ((player->cmd.turning < 0) && player->speed > minspeed && (player->pflags & PF_DRIFTINPUT) && (player->drift == 0 || (player->pflags & PF_DRIFTEND)))
+	else if ((player->driftturnsnapshot < 0) && player->speed > minspeed && (player->pflags & PF_DRIFTINPUT) && (player->drift == 0 || (player->pflags & PF_DRIFTEND)))
 	{
 		// Starting right drift
 		player->drift = -1;
@@ -9445,15 +9508,22 @@ static void K_KartDrift(player_t *player, boolean onground)
 	// Stop drifting
 	// experiment: wall transfers should allow zero speed
 	// reasoning: when driving right into a half pipe face-on, there is no h-speed for the entire launch
-	if (player->walltransfered || player->dashRingPullTics || player->dashRingPushTics)
+	if ((player->walltransfered || player->dashRingPullTics || player->dashRingPushTics) && !(player->pflags & PF_RECOVERYSPIN))
 	{
 		minspeed = 0;
 	}
 
 	if (P_PlayerInPain(player) || player->speed < minspeed)
 	{
-		player->drift = player->driftcharge = player->aizdriftstrat = 0;
-		player->pflags &= ~(PF_BRAKEDRIFT|PF_GETSPARKS);
+		if (player->flipovertimer == 0)
+		{
+			player->drift = player->driftcharge = player->aizdriftstrat = 0;
+			player->pflags &= ~(PF_BRAKEDRIFT|PF_GETSPARKS);
+		}
+		else
+		{
+			player->driftcharge = player->aizdriftstrat = 0;
+		}
 	}
 
 	if ( (!(player->sneakertimer || player->flamestore || player->bubbleboost || K_OtherSliptideCondition(player)))
@@ -9582,6 +9652,150 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 		P_InstaThrust(spark, player->mo->angle, 2*player->speed/3);
 		spark->momz = player->mo->z - player->mo->old_z;
 		spark->z += spark->momz;
+	}
+}
+
+static boolean K_PlayerCanStartRecoverySpin(player_t *player)
+{
+	return (K_RecoveryDashActive() && P_IsObjectOnGround(player->mo) && (!(player->pflags & PF_STASIS)) && (player->carry == CR_NONE) &&
+			player->speed < 10*player->mo->scale && (!(player->pflags & PF_RECOVERYSPIN)) &&
+			(player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE) && !(player->cmd.buttons & BT_DRIFT));
+}
+
+static boolean K_PlayerCanRecoverySpin(player_t *player)
+{
+	return (K_RecoveryDashActive() && leveltime > starttime && (player->carry == CR_NONE) &&
+		!(player->sneakertimer || K_IsPlayerDamaged(player) || player->squishedtimer ||
+			player->exiting || (player->pflags & PF_STASIS) || player->dashpadcooldown ||
+			player->walltransferboost || player->loop.radius
+		));
+}
+
+static void K_RecoveryDash(player_t *player)
+{
+	if (K_PlayerCanRecoverySpin(player))
+	{
+		if (K_PlayerCanStartRecoverySpin(player))
+		{
+			player->pflags |= PF_RECOVERYSPIN;
+			S_StartSound(player->mo, sfx_cdfm20);
+		}
+		if (player->pflags & PF_RECOVERYSPIN)
+		{
+			if ((player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE))
+			{
+				player->forcedtopspeed = cv_kartrecoverydash_spinspeed.value + 8;
+				if (P_IsObjectOnGround(player->mo))
+				{
+					player->recoverydashcharge += 1;
+					K_SpawnWipeoutTrail(player->mo, (player->recoverydashcharge < 3*TICRATE/2));
+					
+					if (leveltime % 6 == 0)
+					{
+						if (player->recoverydashcharge < 2*TICRATE)
+						{
+							S_StartSound(player->mo, sfx_s225);
+						}
+					}
+					if (leveltime % 4 == 0)
+					{
+						fixed_t newx;
+						fixed_t newy;
+						mobj_t *skid;
+						angle_t travelangle;
+						travelangle = player->mo->angle;
+						for (INT32 i = 0; i < 2; i++)
+						{
+							newx = P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(28*FRACUNIT, player->mo->scale));
+							newy = P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(28*FRACUNIT, player->mo->scale));
+							skid = P_SpawnMobjFromMobj(player->mo, newx, newy, (10*player->mo->scale), MT_OVERLAY);
+							P_SetTarget(&skid->target, player->mo);
+							skid->sprxoff = newx;
+							skid->spryoff = newy;
+							skid->sprzoff = (10*player->mo->scale);
+							
+							P_SetScale(skid, player->mo->scale);
+							skid->destscale = player->mo->destscale;
+							skid->scalespeed = player->mo->scalespeed;
+							skid->movefactor = FRACUNIT;
+							skid->angle = travelangle;
+							
+
+							P_SetMobjState(skid, S_RECSPIN_SKID);
+							K_MatchGenericExtraFlags(skid, player->mo);
+							if (player->recoverydashcharge >= 2*TICRATE)
+							{
+								skid->renderflags |= RF_TRANS20;
+							}
+							else
+							{
+								skid->renderflags |= RF_TRANS40;
+							}
+							if (i) skid->renderflags |= RF_HORIZONTALFLIP;
+						}
+					}
+				}
+				if (player->recoverydashcharge >= 2*TICRATE)
+				{
+					if (player->recoverydashcharge == 2*TICRATE)
+					{
+						S_StartSound(player->mo, sfx_s3ka2);
+					}
+					if (leveltime & 1)
+					{
+						fixed_t newx;
+						fixed_t newy;
+						mobj_t *spark;
+						angle_t travelangle, sparkangle;
+						travelangle = player->mo->angle;
+						sparkangle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
+						for (INT32 i = 0; i < 2; i++)
+						{
+							newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
+							newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
+							spark = P_SpawnMobj(newx, newy, player->mo->z, MT_DRIFTSPARK);
+							spark->momx = player->mo->momx/2;
+							spark->momy = player->mo->momy/2;
+
+							P_SetTarget(&spark->target, player->mo);
+							spark->angle = sparkangle;
+							spark->color = SKINCOLOR_WHITE;
+
+							if (player->recoverydashcharge >= 2*TICRATE + TICRATE/4)
+							{
+								P_SetMobjState(spark, S_DRIFTSPARK_B1);
+							}
+							else
+							{
+								P_SetMobjState(spark, S_DRIFTSPARK_A1);
+							}
+							K_MatchGenericExtraFlags(spark, player->mo);
+						}
+					}
+				}
+			}
+			else
+			{
+				player->pflags &= ~PF_RECOVERYSPIN;
+				player->forcedtopspeed = 0;
+				player->tiregrease = 2*TICRATE;
+				if (player->recoverydashcharge >= 2*TICRATE && (player->cmd.buttons & BT_ACCELERATE))
+				{
+					player->outrun = TICRATE/4;
+					player->recoverydash = TICRATE;
+					player->flashing = 0;
+					S_StartSound(player->mo, sfx_s23c);
+					K_SpawnDashDustRelease(player, true);
+				}
+				player->recoverydashcharge = 0;
+			}
+		}
+	}
+	else
+	{
+		player->pflags &= ~PF_RECOVERYSPIN;
+		player->forcedtopspeed = 0;
+		player->recoverydashcharge = 0;
 	}
 }
 
@@ -10591,6 +10805,15 @@ static void K_AdjustPlayerFriction(player_t *player)
 
 	player->mo->friction = prevfriction;
 
+	if ((player->pflags & PF_RECOVERYSPIN) && player->speed < K_GetKartSpeedFromStat(player->kartspeed, false))
+	{
+		if (player->cmd.turning)
+			player->mo->friction += 1880;
+		else
+			player->mo->friction += 1280;
+		K_RecalculateMovefactor(player->mo);
+	}
+
 	// Reduce friction after exiting a loop.
 	if (player->tiregrease)
 	{
@@ -11032,6 +11255,8 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 	K_KartSlipdash(player, onground);
 
+	K_RecoveryDash(player);
+
 	// Quick Turning
 	// You can't turn your kart when you're not moving.
 	// So now it's time to burn some rubber!
@@ -11389,6 +11614,17 @@ boolean K_AirThrustActive(void)
 	if (airthrustactive)
 	{
 		// Air Thrust is enabled!
+		return true;
+	}
+
+	return false;
+}
+
+boolean K_RecoveryDashActive(void)
+{
+	if (recoverydashactive)
+	{
+		// Recovery Dash is enabled!
 		return true;
 	}
 

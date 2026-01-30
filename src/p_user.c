@@ -2296,13 +2296,13 @@ void P_MovePlayer(player_t *player)
 
 	// Drifting sound
 	// Start looping the sound now.
-	if (leveltime % 50 == 0 && onground && player->drift != 0)
+	if (leveltime % 50 == 0 && onground && (player->drift != 0 || (player->pflags & PF_RECOVERYSPIN)))
 		S_StartSound(player->mo, sfx_drift);
 	// Leveltime being 50 might take a while at times. We'll start it up once, isntantly.
-	else if (!S_SoundPlaying(player->mo, sfx_drift) && onground && player->drift != 0)
+	else if (!S_SoundPlaying(player->mo, sfx_drift) && onground && (player->drift != 0 || (player->pflags & PF_RECOVERYSPIN)))
 		S_StartSound(player->mo, sfx_drift);
 	// Ok, we'll stop now.
-	else if (player->drift == 0 || !onground)
+	else if ((player->drift == 0 && !(player->pflags & PF_RECOVERYSPIN)) || (!onground))
 		S_StopSoundByID(player->mo, sfx_drift);
 
 	K_MoveKartPlayer(player, onground);
@@ -4298,6 +4298,19 @@ void P_PlayerThink(player_t *player)
 	}
 
 	player->pflags &= ~PF_HITFINISHLINE;
+	
+	// experiment: process the drift input *before* player movement instead of after
+	if (player->driftmode == DRIFTMODE_INSTANT)
+	{
+		if (cmd->buttons & BT_DRIFT)
+		{
+			player->pflags |= PF_DRIFTINPUT;
+		}
+		else
+		{
+			player->pflags &= ~PF_DRIFTINPUT;
+		}
+	}
 
 	// check water content, set stuff in mobj
 	P_MobjCheckWater(player->mo);

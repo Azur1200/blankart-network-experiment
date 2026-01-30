@@ -455,7 +455,9 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(loop) \
 	X(prevonground) \
 	X(walltransfered) \
-	X(walltransferboost)
+	X(walltransferboost) \
+	X(recoverydashcharge) \
+	X(recoverydash)
 
 enum player_e
 {
@@ -924,12 +926,6 @@ static int player_get(lua_State *L)
 	case player_jawztargetdelay:
 		lua_pushinteger(L, plr->jawztargetdelay);
 		break;
-	case player_confirmvictim:
-		lua_pushinteger(L, plr->confirmVictim);
-		break;
-	case player_confirmvictimdelay:
-		lua_pushinteger(L, plr->confirmVictimDelay);
-		break;
 	case player_dashringpulltics:
 		lua_pushinteger(L, plr->dashRingPullTics);
 		break;
@@ -1190,6 +1186,12 @@ static int player_get(lua_State *L)
 		break;
 	case player_walltransferboost:
 		lua_pushinteger(L, plr->walltransferboost);
+		break;
+	case player_recoverydashcharge:
+		lua_pushinteger(L, plr->recoverydashcharge);
+		break;
+	case player_recoverydash:
+		lua_pushinteger(L, plr->recoverydash);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:
@@ -1713,12 +1715,6 @@ static int player_set(lua_State *L)
 	case player_jawztargetdelay:
 		plr->jawztargetdelay = luaL_checkinteger(L, 3);
 		break;
-	case player_confirmvictim:
-		plr->confirmVictim = luaL_checkinteger(L, 3);
-		break;
-	case player_confirmvictimdelay:
-		plr->confirmVictimDelay = luaL_checkinteger(L, 3);
-		break;
 	case player_dashringpulltics:
 		plr->dashRingPullTics = luaL_checkinteger(L, 3);
 		break;
@@ -1948,7 +1944,13 @@ static int player_set(lua_State *L)
 		plr->walltransfered = lua_toboolean(L, 3);
 		break;
 	case player_walltransferboost:
-		plr->walltransferboost= lua_tointeger(L, 3);
+		plr->walltransferboost = lua_tointeger(L, 3);
+		break;
+	case player_recoverydashcharge:
+		plr->recoverydashcharge = lua_tointeger(L, 3);
+		break;
+	case player_recoverydash:
+		plr->recoverydash = lua_tointeger(L, 3);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:

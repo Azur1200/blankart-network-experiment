@@ -464,6 +464,15 @@ consvar_t cv_jitterlegacy[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("driftjitter4", "Ring Racers", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, weaponPrefChange)
 };
 
+
+static CV_PossibleValue_t driftmode_cons_t[] = {{DRIFTMODE_CLASSIC, "Classic"}, {DRIFTMODE_SNAPSHOT, "Snapshot"}, {DRIFTMODE_INSTANT, "Instant"}, {0, NULL}};
+consvar_t cv_driftmode[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("driftmode", "Classic", CV_SAVE|CV_CALL|CV_NOINIT, driftmode_cons_t, weaponPrefChange),
+	CVAR_INIT ("driftmode2", "Classic", CV_SAVE|CV_CALL|CV_NOINIT, driftmode_cons_t, weaponPrefChange),
+	CVAR_INIT ("driftmode3", "Classic", CV_SAVE|CV_CALL|CV_NOINIT, driftmode_cons_t, weaponPrefChange),
+	CVAR_INIT ("driftmode4", "Classic", CV_SAVE|CV_CALL|CV_NOINIT, driftmode_cons_t, weaponPrefChange)
+};
+
 static CV_PossibleValue_t zerotoone_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_deadzonex[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("xdeadzone", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
@@ -492,6 +501,10 @@ consvar_t cv_deadzonestyle[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("deadzonestyle3", "Kart", CV_SAVE, deadzonestyle_cons_t, NULL),
 	CVAR_INIT ("deadzonestyle4", "Kart", CV_SAVE, deadzonestyle_cons_t, NULL)
 };
+
+// allows players to use restat (server toggle)
+consvar_t cv_allowrestat = CVAR_INIT ("allowrestat", "Yes", CV_NETVAR, CV_YesNo, NULL);
+consvar_t cv_notifyrestat = CVAR_INIT ("notifyrestat", "Yes", CV_NETVAR, CV_YesNo, NULL);
 
 // now automatically allocated in D_RegisterClientCommands
 // so that it doesn't have to be updated depending on the value of MAXPLAYERS
@@ -1527,14 +1540,17 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			forward += (value * MAXPLMOVE) / JOYAXISRANGE;
 		}
 
-		if (player->sneakertimer)
+		if (player->sneakertimer || player->recoverydash)
 			forward = MAXPLMOVE;	// 50
 
 		value = G_PlayerInputAnalog(forplayer, gc_brake, false, DEADZONE_BUTTON);
 		if (value != 0)
 		{
 			cmd->buttons |= BT_BRAKE;
-			forward -= (value * 25) / JOYAXISRANGE;
+			if (!(player->pflags & PF_RECOVERYSPIN))
+			{
+				forward -= (value * 25) / JOYAXISRANGE;
+			}
 		}
 
 		// But forward/backward IS used for aiming.
@@ -2727,6 +2743,60 @@ static inline void G_PlayerFinishLevel(INT32 player)
 	}
 }
 
+typedef struct {
+	INT32 player;
+	boolean notifyrestat;
+	UINT8 kartspeed, kartweight, kartspeedrestat, kartweightrestat;
+} restatmessage_t;
+
+static void G_HandleRestatMessage(restatmessage_t *rm)
+{
+	if (players[rm->player].jointime == 0)
+		return;
+
+	UINT16 chatcolor = skincolors[players[rm->player].skincolor].chatcolor;
+	char color_prefix[2] = {};
+
+	if (chatcolor > V_TANMAP)
+	{
+		sprintf(color_prefix, "%c", '\x80');
+	}
+	else
+	{
+		sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+	}
+
+
+	if (rm->kartspeedrestat != 0 && rm->kartweightrestat != 0)
+	{
+		if (playeringame[rm->player] && rm->notifyrestat)
+		{
+			if ((splitscreen && rm->player == consoleplayer) || rm->player != consoleplayer)
+			{
+				HU_AddChatText(va("%s%s\x82 is now \x84%d speed\x82, \x87%d weight\x82.", color_prefix, player_names[rm->player], rm->kartspeed, rm->kartweight), true);
+			}
+			else
+			{
+				HU_AddChatText(va("%sYou\x82 are now \x84%d speed\x82, \x87%d weight\x82.", color_prefix, rm->kartspeed, rm->kartweight), true);
+			}
+		}
+	}
+	else
+	{
+		if (playeringame[rm->player] && rm->notifyrestat)
+		{
+			if ((splitscreen && rm->player == consoleplayer) || rm->player != consoleplayer)
+			{
+				HU_AddChatText(va("%s%s\x82 is now using their skin's default stats.", color_prefix, player_names[rm->player]), true);
+			}
+			else
+			{
+				HU_AddChatText(va("%sYou\x82 are now using your skin's default stats.", color_prefix), true);
+			}
+		}
+	}
+}
+
 //
 // G_PlayerReborn
 // Called after a player dies. Almost everything is cleared and initialized.
@@ -2741,6 +2811,10 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	UINT8 kartspeed;
 	UINT8 kartweight;
+	UINT8 kartspeedrestat;
+	UINT8 kartweightrestat;
+	boolean randomrestat;
+	boolean notifyrestat;
 
 	boolean followerready;
 	INT32 followerskin;
@@ -2838,6 +2912,10 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	kartspeed = players[player].kartspeed;
 	kartweight = players[player].kartweight;
 
+	kartspeedrestat = players[player].kartspeedrestat;
+	kartweightrestat = players[player].kartweightrestat;
+	randomrestat = players[player].randomrestat;
+
 	followerready = players[player].followerready;
 	followercolor = players[player].followercolor;
 	followerskin = players[player].followerskin;
@@ -2863,7 +2941,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	pflags = (players[player].pflags & (PF_WANTSTOJOIN|PF_KICKSTARTACCEL|PF_SHRINKME|PF_SHRINKACTIVE|PF_FLIPCAM));
 
 	// SRB2kart
-	if (betweenmaps || leveltime <= starttime || spectator == true)
+	if (betweenmaps || leveltime <= starttime || spectator == true || players[player].jointime == 0)
 	{
 		itemroulette = 0;
 		previtemroulette = 0;
@@ -2889,7 +2967,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		exiting = 0;
 		khudfinish = 0;
 		khudcardanimation = 0;
-		starpostx =0;
+		starpostx = 0;
 		starposty = 0;
 		starpostz = 0;
 		starpostangle = 0;
@@ -2902,6 +2980,42 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		for (i = 0; i < LAP__MAX; i++)
 		{
 			laptime[i] = 0;
+		}
+
+		// might cause issues with weponpref sync?
+		if (!cv_allowrestat.value)
+		{
+			kartspeedrestat = 0;
+			kartweightrestat = 0;
+			randomrestat = false;
+		}
+
+		if (randomrestat)
+		{
+			kartspeedrestat = P_RandomRange(1, 9);
+			kartweightrestat = P_RandomRange(1, 9);
+		}
+
+		if (kartspeedrestat != 0 && kartweightrestat != 0)
+		{
+			kartspeed = kartspeedrestat;
+			kartweight = kartweightrestat;
+
+			notifyrestat = (
+				randomrestat ||
+				kartspeedrestat != players[player].kartspeed || 
+				kartweightrestat != players[player].kartweight
+			) && cv_notifyrestat.value;
+		}
+		else
+		{
+			kartspeed = skins[players[player].skin].kartspeed;
+			kartweight = skins[players[player].skin].kartweight;
+			
+			notifyrestat = (
+				players[player].kartspeed != skins[players[player].skin].kartspeed ||
+				players[player].kartweight != skins[players[player].skin].kartweight
+			) && cv_notifyrestat.value;
 		}
 	}
 	else
@@ -2995,6 +3109,10 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	else
 	{
 		follower = NULL;
+
+		// Nice and Tidy.
+		restatmessage_t rm = {player, notifyrestat, kartspeed, kartweight, kartspeedrestat, kartweightrestat};
+		G_HandleRestatMessage(&rm);
 	}
 
 	spectatorreentry = (betweenmaps ? 0 : players[player].spectatorreentry);
@@ -3026,6 +3144,10 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->voice_id = voice;
 	p->kartspeed = kartspeed;
 	p->kartweight = kartweight;
+
+	p->kartspeedrestat = kartspeedrestat;
+	p->kartweightrestat = kartweightrestat;
+	p->randomrestat = randomrestat;
 	//
 	p->charflags = charflags;
 	memcpy(players[player].availabilities, availabilities, sizeof(availabilities));

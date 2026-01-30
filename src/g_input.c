@@ -15,6 +15,7 @@
 #include "doomstat.h"
 #include "g_input.h"
 #include "i_system.h"
+#include "k_items.h"
 #include "keys.h"
 #include "hu_stuff.h" // need HUFONT start & end
 #include "d_net.h"
@@ -25,6 +26,7 @@
 #include "g_game.h"
 #include "v_video.h"
 #include "p_local.h"
+#include "k_kart.h"
 
 #define MAXMOUSESENSITIVITY 100 // sensitivity steps
 
@@ -135,7 +137,8 @@ static void led_off_handle4(void)
 
 // current state of the keys
 // JOYAXISRANGE for fully pressed, 0 for not pressed
-INT32 gamekeydown[MAXDEVICES][NUMINPUTS] = {};
+inputpoll_t gamekeydown = {};
+inputpoll_t gamekeydown_msec = {};
 boolean deviceResponding[MAXDEVICES] = {false};
 
 // several key codes (or virtual key) per game control
@@ -693,7 +696,12 @@ void G_DeviceRumbleTick(void)
 			//low = high = FRACUNIT / 6;
 			low = high = FixedMul((RUMBLE_VERYSTRONG), (FixedDiv(player->spinouttimer, (3*TICRATE / 2)))); // try do some some kinda fadeout, 3*TICRATE / 2 is the "default" spinout time
 		}
-		else if (player->sneakertimer > (sneakertime-(TICRATE/2)))
+		else if (player->flamestore && !player->offroad)
+		{
+			high = (player->flamestore * RUMBLE_MODERATE) / FLAMESTOREMAX;
+			lenght = 32;
+		}
+		else if (player->sneakertimer > (sneakertime-(TICRATE/2)) || player->bubbleboost > (BUBBLEBOOSTTIME-(TICRATE/2)))
 		{
 			low = high = RUMBLE_STRONG;
 		}
@@ -705,6 +713,10 @@ void G_DeviceRumbleTick(void)
 			if (player->hyudorotimer)
 			{
 				high = RUMBLE_WEAK;
+			}
+			else if (player->flameoverheat)
+			{
+				low = RUMBLE_MODERATE;
 			}
 			else if (player->invincibilitytimer)
 			{

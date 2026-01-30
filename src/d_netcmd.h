@@ -167,6 +167,18 @@ extern consvar_t cv_kartstacking_ring_accelboost;
 extern consvar_t cv_kartstacking_ring_handleboost;
 extern consvar_t cv_kartstacking_ring_stackable;
 
+extern consvar_t cv_kartstacking_ssmt_speedboost;
+extern consvar_t cv_kartstacking_ssmt_accelboost;
+extern consvar_t cv_kartstacking_ssmt_handleboost;
+
+extern consvar_t cv_kartstacking_recspin_speedboost_lo;
+extern consvar_t cv_kartstacking_recspin_accelboost_lo;
+extern consvar_t cv_kartstacking_recspin_handleboost_lo;
+
+extern consvar_t cv_kartstacking_recspin_speedboost_hi;
+extern consvar_t cv_kartstacking_recspin_accelboost_hi;
+extern consvar_t cv_kartstacking_recspin_handleboost_hi;
+
 extern consvar_t cv_kartstacking_slope_decay;
 extern consvar_t cv_kartstacking_slope_brakemod;
 extern consvar_t cv_kartstacking_slope_speedboost_max;
@@ -203,6 +215,7 @@ extern consvar_t cv_kartinvin_midtime;
 extern consvar_t cv_kartbubble_defense_canidle;
 extern consvar_t cv_kartbubble_defense_damagerate;
 extern consvar_t cv_kartbubble_boost_allow;
+extern consvar_t cv_kartbubble_boost_offroadignore;
 extern consvar_t cv_kartflame_fastfuel;
 extern consvar_t cv_kartflame_offroadburn;
 extern consvar_t cv_kartaltshrink_arrowbullet;
@@ -228,6 +241,9 @@ extern consvar_t cv_kartantibump;
 extern consvar_t cv_kartforcelegacyodds;
 
 extern consvar_t cv_handleboostslip;
+
+extern consvar_t cv_kartrecoverydash;
+extern consvar_t cv_kartrecoverydash_spinspeed;
 
 extern consvar_t cv_kartoddsdist;
 extern consvar_t cv_kartlegacyoddsdist;

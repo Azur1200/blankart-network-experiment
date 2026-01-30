@@ -555,6 +555,10 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].kartspeed);
 		SYNC(players[i].kartweight);
 
+		SYNC(players[i].kartspeedrestat);
+		SYNC(players[i].kartweightrestat);
+		SYNC(players[i].randomrestat);
+
 		for (j = 0; j < MAXPREDICTTICS; j++)
 		{
 			SYNC(players[i].lturn_max[j]);
@@ -602,11 +606,16 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].justbumped);
 		SYNCBOOLEAN(players[i].noclip);
 
+		SYNC(players[i].driftmode);
 		SYNC(players[i].drift);
+		SYNC(players[i].driftturnsnapshot);
 		SYNC(players[i].driftlock);
 		SYNC(players[i].driftcharge);
 		SYNC(players[i].driftboost);
 		SYNC(players[i].airdriftspeed);
+
+		SYNC(players[i].recoverydashcharge);
+		SYNC(players[i].recoverydash);
 
 		SYNC(players[i].aizdriftstrat);
 		SYNC(players[i].aizdrifttilt);
@@ -627,6 +636,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].prevspeedboost);
 		SYNC(players[i].accelboost);
 		SYNC(players[i].handleboost);
+		SYNC(players[i].forcedtopspeed);
 		SYNC(players[i].boostangle);
 		SYNC(players[i].numsneakers);
 		SYNC(players[i].numpanels);
@@ -723,9 +733,6 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		SYNC(players[i].lastjawztarget);
 		SYNC(players[i].jawztargetdelay);
-
-		SYNC(players[i].confirmVictim);
-		SYNC(players[i].confirmVictimDelay);
 
 		SYNC(players[i].interpoints);
 		SYNC(players[i].roundscore);
@@ -4234,6 +4241,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(draftingactive);
 	SYNCBOOLEAN(airdropactive);
 	SYNCBOOLEAN(airthrustactive);
+	SYNCBOOLEAN(recoverydashactive);
 	SYNCBOOLEAN(waterskipbricks);
 	SYNCBOOLEAN(itemlittering);
 	SYNCBOOLEAN(itempushing);

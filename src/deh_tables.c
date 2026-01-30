@@ -1794,5 +1794,7 @@ struct int_const_s const INT_CONST[] = {
 	{"BUMPSPARK_RESET100", BUMPSPARK_RESET100},
 	{"BUMPSPARK_ALL", BUMPSPARK_ALL},
 
+	{"BLANKART", 1},
+
 	{NULL,0}
 };
