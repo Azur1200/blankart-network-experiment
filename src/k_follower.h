@@ -89,6 +89,8 @@ struct follower_t
 	statenum_t losestate;		// state when the player has lost
 	statenum_t hitconfirmstate;	// state for hit confirm
 	tic_t hitconfirmtime;		// time to keep the above playing for
+
+	sfxenum_t hornsound;		// Press (B) to announce you are pressing (B)
 };
 
 extern INT32 numfollowers;
@@ -178,6 +180,21 @@ UINT16 K_GetEffectiveFollowerColor(UINT16 followercolor, follower_t *follower, U
 --------------------------------------------------*/
 
 void K_HandleFollower(player_t *player);
+
+/*--------------------------------------------------
+	void K_FollowerHornTaunt(player_t *taunter, player_t *victim)
+
+		Plays horn and spawns object (MOSTLY non-netsynced)
+
+	Input Arguments:-
+		taunter - Source player with a follower
+		victim - Player that hears and sees the honk
+
+	Return:-
+		None
+--------------------------------------------------*/
+
+void K_FollowerHornTaunt(player_t *taunter, player_t *victim);
 
 #ifdef __cplusplus
 } // extern "C"

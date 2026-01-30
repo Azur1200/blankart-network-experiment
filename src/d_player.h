@@ -206,6 +206,7 @@ typedef enum
 	khud_tauntvoices,	// Used to specifically stop taunt voice spam
 	khud_confirmvictim,		// Player ID that you dealt damage to
 	khud_confirmvictimdelay,	// Delay before playing the sound
+	khud_taunthorns,	// Used to specifically stop taunt horn spam
 
 	// Battle
 	khud_cardanimation,	// Used to determine the position of some full-screen Battle Mode graphics

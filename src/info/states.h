@@ -3624,3 +3624,5 @@ _(ALTSHRINK_ARROWBULLET)
 // Recovery Spin Skid
 _(RECSPIN_SKID)
 
+// Horncode
+_(HORNCODE)

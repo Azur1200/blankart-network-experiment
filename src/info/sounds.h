@@ -1017,3 +1017,6 @@ _(sysmsg)
 // Dash Rings
 _(dashr)
 _(rainbr)
+
+// Horncode
+_(horn00)

@@ -246,6 +246,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartspeedometer);
 	CV_RegisterVar(&cv_kartvoices);
 	CV_RegisterVar(&cv_karthitemdialog);
+	CV_RegisterVar(&cv_karthorns);
 	CV_RegisterVar(&cv_kartbot);
 	CV_RegisterVar(&cv_kartbot_cap);
 	CV_RegisterVar(&cv_kartbot_modifiermax);
@@ -1541,7 +1542,7 @@ void K_SpawnBumpEffect(mobj_t *mo)
 	S_StartSound(mo, sfx_s3k49);
 }
 
-static SINT8 K_GlanceAtPlayers(player_t *glancePlayer)
+static SINT8 K_GlanceAtPlayers(player_t *glancePlayer, boolean horn)
 {
 	const fixed_t maxdistance = FixedMul(1280 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
 	const angle_t blindSpotSize = ANG10; // ANG5
@@ -1623,7 +1624,22 @@ static SINT8 K_GlanceAtPlayers(player_t *glancePlayer)
 			// That poses a limitation if there's an equal number of targets on both sides...
 			// In that case, we'll pick the last chosen glance direction.
 			lastValidGlance = dir;
+
+			if (horn == true)
+			{
+				K_FollowerHornTaunt(glancePlayer, p);
+			}
 		}
+	}
+
+	if (horn == true && lastValidGlance != 0)
+	{
+		const boolean tasteful = (glancePlayer->karthud[khud_taunthorns] == 0);
+
+		K_FollowerHornTaunt(glancePlayer, glancePlayer);
+
+		if (tasteful && glancePlayer->karthud[khud_taunthorns] < 2*TICRATE)
+			glancePlayer->karthud[khud_taunthorns] = 2*TICRATE;
 	}
 
 	if (glanceDir > 0)
@@ -1783,7 +1799,8 @@ void K_KartMoveAnimation(player_t *player)
 	{
 		// Only try glancing if you're driving straight.
 		// This avoids all-players loops when we don't need it.
-		destGlanceDir = K_GlanceAtPlayers(player);
+		const boolean horn = lookback && !(player->pflags & PF_GAINAX);
+		destGlanceDir = K_GlanceAtPlayers(player, horn);
 
 		if (lookback == true)
 		{
@@ -6399,6 +6416,9 @@ void K_KartPlayerHUDUpdate(player_t *player)
 
 	if (player->karthud[khud_tauntvoices])
 		player->karthud[khud_tauntvoices]--;
+
+	if (player->karthud[khud_taunthorns])
+		player->karthud[khud_taunthorns]--;
 
 	if (gametyperules & GTR_RINGS)
 	{

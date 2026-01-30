@@ -3763,6 +3763,7 @@ void readfollower(MYFILE *f)
 	followers[numfollowers].bobamp = 4*FRACUNIT;
 	followers[numfollowers].hitconfirmtime = TICRATE;
 	followers[numfollowers].defaultcolor = FOLLOWERCOLOR_MATCH;
+	followers[numfollowers].hornsound = sfx_horn00;
 	strcpy(followers[numfollowers].icon, "MISSING");
 
 	do
@@ -3828,6 +3829,10 @@ void readfollower(MYFILE *f)
 					skincolornum_t color = get_skincolor(word2);
 					followers[numfollowers].defaultcolor = color == MAXSKINCOLORS ? SKINCOLOR_GREEN : color;
 				}
+			}
+			else if (fastcmp(word, "HORNSOUND"))
+			{
+				followers[numfollowers].hornsound = get_number(word2);
 			}
 			else if (fastcmp(word, "SCALE"))
 			{

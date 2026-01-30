@@ -4499,7 +4499,9 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 			mobj = (mobj_t *)th;
 			if (UNLIKELY(mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER
 				// MT_SPARK: used for debug stuff
-				|| mobj->type == MT_SPARK || mobj->flags2 & MF2_DONTSYNC))
+				|| mobj->type == MT_SPARK
+				// MT_FOLLOWERHORN: So it turns out hornmod is fundamentally incompatible with netsync
+				|| mobj->type == MT_FOLLOWERHORN || mobj->flags2 & MF2_DONTSYNC))
 				continue;
 			mobj->mobjnum = i++;
 		}
