@@ -35,6 +35,7 @@ enum follower {
 	follower_anglelag,
 	follower_bobamp,
 	follower_bobspeed,
+	follower_hornsound,
 	// states
 	follower_idlestate,
 	follower_followstate,
@@ -63,6 +64,7 @@ static const char *const follower_opt[] = {
 	"anglelag",
 	"bobamp",
 	"bobspeed",
+	"hornsound",
 	// states
 	"idlestate",
 	"followstate",
@@ -133,6 +135,9 @@ static int follower_get(lua_State *L)
 		break;
 	case follower_bobspeed:
 		lua_pushinteger(L, follower->bobspeed);
+		break;
+	case follower_hornsound:
+		lua_pushinteger(L, follower->hornsound);
 		break;
 	case follower_idlestate:
 		lua_pushinteger(L, follower->idlestate);
