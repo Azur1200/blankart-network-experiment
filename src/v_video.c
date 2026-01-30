@@ -363,7 +363,7 @@ static void LoadPalette(const char *lumpname)
 		RGBA_t pGCP = pGammaCorrectedPalette[i];
 
 		V_CubeApply(&pGCP.s.red,&pGCP.s.green,&pGCP.s.blue);
-		pLocalPalette[i].rgba = V_GammaEncode(pGammaCorrectedPalette[i].rgba);
+		pLocalPalette[i].rgba = V_GammaEncode(pGCP.rgba);
 	}
 
 	if (palcopy)
