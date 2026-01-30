@@ -4830,6 +4830,9 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	interpmobjstate_t interp = {0};
 	mobj_t *interptarg;
 
+	if (G_GamestateUsesLevel() == false)
+		return;
+
 	if (!thing)
 		return;
 
