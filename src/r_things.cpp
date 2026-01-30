@@ -3885,7 +3885,7 @@ fixed_t R_GetThingFade(mobj_t *thing)
 		case MT_FOLLOWERBUBBLE_FRONT:
 			break;
 		case MT_PLAYER:
-			if (!thing->player || thing->player == viewplayer)
+			if (!thing->player || thing->player == viewplayer || thing->player->exiting)
 				return fadealpha;
 			break;
 
