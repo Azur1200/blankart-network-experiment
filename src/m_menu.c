@@ -278,10 +278,23 @@ static void Dummystaff_OnChange(void);
 	return pd;
 }
 
-/*FNONULL*/ menuitemstyle_t *M_AllocateMenuItemStyle(const char *name)
+/*RNONULL INONULL1(1)*/ menuitemstyle_t *M_AllocateMenuItemStyle(const char *name, const menuitemstyle_t *parent)
 {
 	menuitemstyle_t *style = &menuitemstyles[nummenuitemstyles++];
 	DEH_Link(name, &style->info, &menunames);
+
+	if (parent != NULL)
+	{
+		style->parent = parent - menuitemstyles;
+		memcpy(style->parts, parent->parts, sizeof(style->parts));
+		memcpy(style->partenabled, parent->partenabled, sizeof(style->partenabled));
+		for (size_t i = 0; i < MAXMENUITEMPARTS; i++)
+		{
+			style->parts[i].fixedstring = style->parts[i].fixedstring2 = NULL; // not my memory!
+			style->parts[i].source = style->parts[i].source2 = ITS_DERIVED;
+		}
+	}
+
 	return style;
 }
 
@@ -945,7 +958,6 @@ void Moviemode_option_Onchange(void)
 	;
 }
 
-
 //width now 9 so we can make moe's "2D" grid just an option in the normal grid
 #define SKINGRIDWIDTH 9
 #define SKINGRIDHEIGHT 6
@@ -1465,7 +1477,6 @@ boolean M_Responder(event_t *ev)
 
 	if (CON_Ready() && gamestate != GS_WAITINGPLAYERS)
 		return false;
-
 
 	if (noFurtherInput)
 	{
@@ -2743,6 +2754,25 @@ static fixed_t M_GetAlignment(const menuitempart_t *part, fixed_t x, fixed_t wid
 	}
 }
 
+static const char *M_GetPartString(const menuitempart_t *part, const menuitem_t *item, itempartsource_e source)
+{
+	switch (source)
+	{
+	case ITS_TEXT:
+		return item->text;
+	case ITS_PATCH:
+		return item->patch;
+	case ITS_EXTRA:
+		return item->extra;
+	case ITS_FIXED:
+		return part->fixedstring;
+	case ITS_FIXED2:
+		return part->fixedstring2;
+	case ITS_DERIVED:
+		I_Error("ITS_DERIVED is the caller's problem, silly");
+	}
+}
+
 static const menuitemstyle_t defaultstyle = { .partenabled = { true } };
 
 // draws a menu item, returns cursor offset
@@ -2760,17 +2790,15 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 			continue;
 
 		const menuitempart_t *part = &style->parts[i];
-		const char *string;
-		switch (part->source)
+		const menuitempart_t *parent = &menuitemstyles[style->parent].parts[i];
+		const char *string, *string2;
+
 		{
-		case ITS_TEXT:
-			string = item->text; break;
-		case ITS_PATCH:
-			string = item->patch; break;
-		case ITS_EXTRA:
-			string = item->extra; break;
-		case ITS_FIXED:
-			string = part->fixedstring; break;
+			const menuitempart_t *which;
+			which = part->source == ITS_DERIVED ? parent : part;
+			string = M_GetPartString(which, item, which->source);
+			which = part->source2 == ITS_DERIVED ? parent : part;
+			string2 = M_GetPartString(which, item, which->source2);
 		}
 
 		if (string == NULL)
@@ -2863,6 +2891,11 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 			width = M_GetAlignment(part, x, p->width*FRACUNIT);
 			V_DrawFixedPatch(x - width + part->xofs, y + part->yofs, scale, vflags & ~V_FLIP, p, cmap);
 			retwidth = max(retwidth, width);
+			if (part->type == ITT_SKINICON && part->highlight == ITH_HIGHLIGHT)
+			{
+				p = W_CachePatchName(va("K_%cHILI%d", part->small ? 'C' : 'B', (menutimer/4 % 8) + 1), PU_CACHE);
+				V_DrawSciencePatch(x - width + part->xofs, y + part->yofs, vflags & ~V_FLIP, p, FRACUNIT);
+			}
 			break;
 
 		case ITT_THUMBNAIL:
@@ -2891,7 +2924,7 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 			else
 			{
 				// replay hut...
-				skincolornum_t color = item->extra != NULL ? DEH_FindSkincolor(item->extra) : MAXSKINCOLORS;
+				skincolornum_t color = string2 != NULL ? DEH_FindSkincolor(string2) : MAXSKINCOLORS;
 				if (color == MAXSKINCOLORS)
 					color = 0;
 				cmap = R_GetTranslationColormap(num < 0 ? TC_RAINBOW : num, color, GTC_MENUCACHE);
@@ -3044,6 +3077,7 @@ static fixed_t M_GetItemAbsY(const menupanelinst_t *pi, size_t index)
 static void M_UpdateStyleFixedStrings(void)
 {
 	menuitemstyle_t *style;
+	menupanelinst_t *curpi = &curpanels[panelOn];
 
 	style = DEH_FindMenuItemStyle("VIDEOMODE");
 	if (style != NULL)
@@ -3072,6 +3106,26 @@ static void M_UpdateStyleFixedStrings(void)
 		style->partenabled[1] = discordRequestList != NULL && (menutimer % freq) >= freq/2;
 	}
 #endif
+
+	for (INT32 i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		style = DEH_FindMenuItemStyle(va("P%cWANTED", i + '1'));
+		if (style == NULL)
+			continue;
+
+		Z_Free(style->parts[0].fixedstring);
+		style->parts[0].fixedstring = Z_StrDup(R_SkinAvailable(cv_skin[i].string) != -1 ? cv_skin[i].string : "sonic");
+		Z_Free(style->parts[0].fixedstring2);
+		style->parts[0].fixedstring2 = Z_StrDup(DEH_SkincolorName(cv_playercolor[i].value));
+
+		style = DEH_FindMenuItemStyle(va("P%cMULTIPLAYER", i + '1'));
+		if (style == NULL)
+			continue;
+
+		menuitem_t *psetup = M_CheckMenuItem(curpi, "PLAYERSETUP");
+		style->parts[0].translucent = i >= cv_splitplayers.value;
+		style->parts[0].highlight = psetup != NULL && curpi->itemon == psetup - curpi->items && i == cv_dummymultiplayer.value ? ITH_HIGHLIGHT : ITH_NONE;
+	}
 }
 
 static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
@@ -7440,59 +7494,6 @@ INT32 MR_StartServer(INT32 choice)
 // CONNECT VIA IP
 // ==============
 
-// Draw the funky Connect IP menu. Tails 11-19-2002
-// So much work for such a little thing!
-void MD_DrawMPMainMenu(menupanelinst_t *pi)
-{
-	// use generic drawer for cursor, items and title
-	//MD_DrawGenericMenu();
-
-	// character bar, ripped off the color bar :V
-	{
-#define iconwidth (32*FRACUNIT)
-#define spacingwidth (32*FRACUNIT)
-#define incrwidth (iconwidth + spacingwidth)
-		UINT16 i = 0, pskin, pcol;
-		// player arrangement width, but there's also a chance i'm a furry, shhhhhh
-		const fixed_t paw = iconwidth + 3*incrwidth;
-		INT32 trans = 0;
-		UINT8 *colmap;
-		fixed_t x = BASEVIDWIDTH*FRACUNIT/2 - paw/2;
-		fixed_t y = pi->y + 32*FRACUNIT;
-
-		while (++i <= 4)
-		{
-			pskin = R_SkinAvailable(cv_skin[i-1].string);
-			pcol = cv_playercolor[i-1].value;
-
-			if (pskin >= MAXSKINS)
-				pskin = 0;
-
-			if (!trans && i > cv_splitplayers.value)
-				trans = V_TRANSLUCENT;
-
-			colmap = R_GetTranslationColormap(pskin, pcol, GTC_MENUCACHE);
-
-			V_DrawFixedPatch(x, y, FRACUNIT, trans, faceprefix[pskin][FACE_WANTED], colmap);
-
-			if (M_IsItemOn(&curpanels[panelOn], "PLAYERSETUP") && i == cv_dummymultiplayer.value+1)
-			{
-				static fixed_t cursorframe = 0;
-
-				cursorframe += renderdeltatics / 4;
-				for (; cursorframe > 7 * FRACUNIT; cursorframe -= 7 * FRACUNIT) {}
-
-				V_DrawFixedPatch(x, y, FRACUNIT, 0, W_CachePatchName(va("K_BHILI%d", (cursorframe >> FRACBITS) + 1), PU_CACHE), NULL);
-			}
-
-			x += incrwidth;
-		}
-#undef incrwidth
-#undef spacingwidth
-#undef iconwidth
-	}
-}
-
 static void Splitplayers_OnChange(void)
 {
 	if (cv_splitplayers.value <= cv_dummymultiplayer.value)
@@ -7501,8 +7502,6 @@ static void Splitplayers_OnChange(void)
 	// anything to avoid a keyhandler :^)
 	dummymultiplayer_cons_t[1].value = cv_splitplayers.value - 1;
 }
-
-
 
 // Tails 11-19-2002
 INT32 MR_ConnectIP(INT32 choice)
@@ -7529,7 +7528,6 @@ INT32 MR_ConnectIP(INT32 choice)
 		I_FinishUpdate(); // page flip or blit buffer
 	return true;
 }
-
 
 //Join Last server
 INT32 MR_ConnectLastServer(INT32 choice)
@@ -8060,7 +8058,6 @@ static void MD_DrawGridCssSelector(menupanelinst_t *pi)
 		face = faceprefix[skintodisplay][FACE_WANTED];
 		colmap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
 		V_DrawFixedPatch((cursorx * FRACUNIT) - (face->width * FRACUNIT/4), (cursory * FRACUNIT) - (face->height * FRACUNIT/4), FRACUNIT, 0, face, colmap);
-
 
 		cursorframe += renderdeltatics / 4;
 		for (; cursorframe > 7 * FRACUNIT; cursorframe -= 7 * FRACUNIT) {}

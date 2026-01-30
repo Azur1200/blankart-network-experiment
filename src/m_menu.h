@@ -181,6 +181,8 @@ typedef enum
 	ITS_PATCH,   // item->patch
 	ITS_EXTRA,   // item->extra
 	ITS_FIXED,   // part->fixedstring
+	ITS_FIXED2,  // part->fixedstring2
+	ITS_DERIVED, // (parent style's source)
 } ATTRPACK itempartsource_e;
 
 typedef INT32 (menufunc_f)(INT32);
@@ -195,7 +197,7 @@ struct menuitempart_t
 	itemparttype_e type;
 	itemparthighlight_e highlight;
 	itempartalign_e align;
-	itempartsource_e source;
+	itempartsource_e source, source2;
 
 	UINT8 font;
 	boolean fontalt; // V_6WIDTHSPACE
@@ -203,12 +205,13 @@ struct menuitempart_t
 	boolean translucent;
 	boolean nohighlight;
 	fixed_t xofs, yofs;
-	char *fixedstring;
+	char *fixedstring, *fixedstring2;
 };
 
 struct menuitemstyle_t
 {
 	dehinfo_t info;
+	size_t parent;
 	menuitempart_t parts[MAXMENUITEMPARTS];
 	boolean partenabled[MAXMENUITEMPARTS];
 };
@@ -327,7 +330,7 @@ void M_EnterMenu(menutype_t menu, boolean callexit, INT32 arg);
 void M_ExitMenu(void);
 void M_ClearMenus(boolean callexitmenufunc);
 /*FNONULL*/ menupaneldef_t *M_AllocateMenuPanelDef(const char *name);
-/*FNONULL*/ menuitemstyle_t *M_AllocateMenuItemStyle(const char *name);
+/*RNONULL INONULL1(1)*/ menuitemstyle_t *M_AllocateMenuItemStyle(const char *name, const menuitemstyle_t *parent);
 /*ANONULL*/ menuitem_t *M_CheckMenuItemDef(const menupaneldef_t *pd, const char *name);
 /*FNONULL*/ menuitem_t *M_GetMenuItemDef(const menupaneldef_t *pd, const char *name);
 
@@ -418,7 +421,6 @@ INT32 MR_HandleDiscordRequests(INT32 choice);
 void MD_DrawLevelStats(menupanelinst_t *pi);
 void MD_DrawReplayHut(menupanelinst_t *pi);
 void MD_DrawTimeAttackMenu(menupanelinst_t *pi);
-void MD_DrawMPMainMenu(menupanelinst_t *pi);
 void MD_DrawSetupMultiPlayerMenu(menupanelinst_t *pi);
 void MD_DrawConnectMenu(menupanelinst_t *pi);
 void MD_DrawVideoMode(menupanelinst_t *pi);

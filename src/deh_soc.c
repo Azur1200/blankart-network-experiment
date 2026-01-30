@@ -2174,6 +2174,12 @@ void readmenuitemstyle(MYFILE *f, menuitemstyle_t *style)
 			part->fixedstring = Z_StrDup(word2);
 			continue;
 		}
+		else if (fastcmp(word, "FIXEDSTRING2"))
+		{
+			Z_Free(part->fixedstring2);
+			part->fixedstring2 = Z_StrDup(word2);
+			continue;
+		}
 
 		strupr(word2);
 
@@ -2258,18 +2264,28 @@ void readmenuitemstyle(MYFILE *f, menuitemstyle_t *style)
 				WARN("unknown alignment '%s'", word2);
 		}
 
-		else if (fastcmp(word, "SOURCE"))
+		else if (fastcmp(word, "SOURCE") || fastcmp(word, "SOURCE2"))
 		{
+			itempartsource_e source;
 			if (fastcmp(word2, "TEXT"))
-				part->source = ITS_TEXT;
+				source = ITS_TEXT;
 			else if (fastcmp(word2, "PATCH"))
-				part->source = ITS_PATCH;
+				source = ITS_PATCH;
 			else if (fastcmp(word2, "EXTRA"))
-				part->source = ITS_EXTRA;
+				source = ITS_EXTRA;
 			else if (fastcmp(word2, "FIXED"))
-				part->source = ITS_FIXED;
+				source = ITS_FIXED;
+			else if (fastcmp(word2, "FIXED2"))
+				source = ITS_FIXED2;
 			else
+			{
 				WARN("unknown source '%s'", word2);
+				continue;
+			}
+			if (word[6] == '2')
+				part->source2 = source;
+			else
+				part->source = source;
 		}
 		else
 			WARN("unknown word '%s'", word);

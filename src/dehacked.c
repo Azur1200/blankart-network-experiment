@@ -403,6 +403,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 	char textline[MAXLINELEN];
 	char *word;
 	char *word2;
+	char *word3;
 	INT32 i;
 
 	deh_num_warning = 0;
@@ -462,6 +463,13 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 			}
 			else
 				i = 0;
+
+			word3 = strtok(NULL, " : ");
+			if (word3) {
+				strupr(word3);
+				if (word3[strlen(word3) - 1] == '\n')
+					word3[strlen(word3) - 1] = '\0';
+			}
 
 			if (fastcmp(word, "EMBLEM"))
 			{
@@ -709,7 +717,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 
 					menuitemstyle_t *style = DEH_FindMenuItemStyle(word2);
 					if (style == NULL)
-						style = M_AllocateMenuItemStyle(word2);
+						style = M_AllocateMenuItemStyle(word2, word3 != NULL ? DEH_FindMenuItemStyle(word3) : NULL);
 					readmenuitemstyle(f, style);
 				}
 				else if (fastcmp(word, "UNLOCKABLE"))

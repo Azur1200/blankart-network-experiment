@@ -864,7 +864,6 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWLEVELSTATS", &MD_DrawLevelStats },
 	{ "DRAWREPLAYHUT", &MD_DrawReplayHut },
 	{ "DRAWTIMEATTACKMENU", &MD_DrawTimeAttackMenu },
-	{ "DRAWMPMAINMENU", &MD_DrawMPMainMenu },
 	{ "DRAWSETUPMULTIPLAYERMENU", &MD_DrawSetupMultiPlayerMenu },
 	{ "DRAWVIDEOMODE", &MD_DrawVideoMode },
 	{ "DRAWADDONS", &MD_DrawAddons },
