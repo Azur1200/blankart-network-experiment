@@ -557,6 +557,7 @@ const char *const SD_LIST[] = {
 	"LAVA",
 	"DEATHPIT",
 	"INSTAKILL",
+	"FLIPOVER",
 	NULL
 };
 
