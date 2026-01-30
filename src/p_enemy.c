@@ -3230,14 +3230,14 @@ void A_AttractChase(void *thing)
 			if (actor->extravalue1 >= 21)
 			{
 
-				if (actor->extravalue3 && !P_IsObjectOnGround(actor->target))
+				/*if (actor->extravalue3 && !P_IsObjectOnGround(actor->target))
 				{
 					actor->target->momz -= (FixedMul(gravity, mapobjectscale))*P_MobjFlip(actor->target);
 					actor->target->player->ringboost += 7;
 					actor->target->player->ringtime += 7;
 					actor->target->player->ringdrop = true;
 				}
-				else
+				else*/
 				{
 					// Base add is 4 tics for 9,9, adds 1 tic for each point closer to the 1,1 end
 					actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true);

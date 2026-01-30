@@ -832,9 +832,9 @@ static int player_get(lua_State *L)
 	case player_airdroptime:
 		lua_pushinteger(L, plr->airdroptime);
 		break;
-	case player_ringdrop:
+	/*case player_ringdrop:
 		lua_pushinteger(L, plr->ringdrop);
-		break;
+		break;*/
 	case player_shieldtracer:
 		LUA_PushUserdata(L, plr->shieldtracer, META_MOBJ);
 		break;
@@ -1613,9 +1613,9 @@ static int player_set(lua_State *L)
 	case player_airdroptime:
 		plr->airdroptime = luaL_checkinteger(L, 3);
 		break;
-	case player_ringdrop:
+	/*case player_ringdrop:
 		plr->ringdrop = luaL_checkinteger(L, 3);
-		break;
+		break;*/
 	case player_shieldtracer:
 		return NOSET;
 	case player_bubblecool:

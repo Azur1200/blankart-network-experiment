@@ -672,7 +672,7 @@ struct player_t
 	UINT8 ringtransparency; // When consuming lots of rings, fade out the rings again.
 
 	UINT8 airdroptime;		// Tracks how long airdrop has been active, used for delay before airdrop kicks in.
-	boolean ringdrop;		// Set when having ringdrop applied.
+	//boolean ringdrop;		// Set when having ringdrop applied.
 
 	mobj_t *shieldtracer;	// Blankart: Shield mobj
 

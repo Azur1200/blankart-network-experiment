@@ -6944,7 +6944,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 	{
 		// Conditions!
 		player->airdroptime = 0;
-		player->ringdrop = false;
+		//player->ringdrop = false;
 		return;
 	}
 
@@ -6953,16 +6953,16 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		SINT8 airbrakedelay = TICRATE/3;
 		if (player->airdroptime < airbrakedelay)
 		{
-			if (player->rings > 0)
+			/*if (player->rings > 0)
 			{
 				player->ringlock = 6;
 			}
 
-			player->ringdrop = false;
+			player->ringdrop = false;*/
 		}
 		else
 		{
-			if (!player->ringdelay && player->rings > 0)
+			/*if (!player->ringdelay && player->rings > 0)
 			{
 				mobj_t *ring = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_RING);
 				P_SetMobjState(ring, S_FASTRING1);
@@ -6985,9 +6985,9 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 			if (player->rings <= 0)
 			{
 				player->ringdrop = false;
-			}
+			}*/
 
-			K_SpawnFallLines(player, player->ringdrop);
+			K_SpawnFallLines(player, /*player->ringdrop*/ false);
 			K_SpawnAirdropTrail(player);
 			player->mo->momz -= FixedMul(gravity, mapobjectscale)*P_MobjFlip(player->mo);
 		}
