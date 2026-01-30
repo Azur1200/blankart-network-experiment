@@ -861,7 +861,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 };
 
 struct menu_drawer_s const MENU_DRAWERS[] = {
-	{ "DRAWCHECKLIST", &MD_DrawChecklist },
 	{ "DRAWLEVELSTATS", &MD_DrawLevelStats },
 	{ "DRAWREPLAYHUT", &MD_DrawReplayHut },
 	{ "DRAWTIMEATTACKMENU", &MD_DrawTimeAttackMenu },
@@ -913,6 +912,7 @@ struct panel_func_s const PANEL_FUNCS[] = {
 	{ "STATSRECORDSBG", &MP_StatsRecordsBG },
 	{ "STATSPLAYTIME", &MP_StatsPlaytime },
 	{ "STATSEXTRA", &MP_StatsExtra },
+	{ "UNLOCKABLESCHECKLIST", &MP_UnlockablesChecklist },
 	{ NULL, NULL }
 };
 

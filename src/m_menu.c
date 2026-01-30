@@ -247,9 +247,6 @@ static struct levelselect_t
 #define lsbasex (BASEVIDWIDTH*FRACUNIT/2 - lshseperation*(MAPSPERROW-1)/2)
 #define lsbasey (BASEVIDHEIGHT*FRACUNIT/2 - 4*FRACUNIT)
 
-// Sky Room
-static char *M_GetConditionString(condition_t cond);
-
 // Multiplayer
 static void M_ConnectMenu(INT32 choice);
 
@@ -1446,6 +1443,8 @@ static boolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
 // use this when routine being NULL isn't a free pass
 static INT32 MR_Dummy(INT32 ch) { (void)ch; return true; }
 
+static fixed_t M_GetItemAbsY(const menupanelinst_t *pi, size_t index);
+
 //
 // M_Responder
 //
@@ -1796,6 +1795,7 @@ boolean M_Responder(event_t *ev)
 	size_t newPanelOn = panelOn;
 	INT16 oldItemOn = curpi->itemon; // prevent infinite loop
 	INT16 newItemOn = curpi->itemon;
+	INT16 altScrollOn;
 
 	// Keys usable within menu
 	if (vmove != 0)
@@ -1814,10 +1814,13 @@ boolean M_Responder(event_t *ev)
 			else
 			{
 				// i don't care anymore, get me out of this hell already
-				if (menustack[0] == MN_VIEWSERVER && (newItemOn + dir < 0 || newItemOn + dir > fileneedednum-21))
-					break;
-				if (menustack[0] == MN_SP_LEVELSTATS && (newItemOn + dir < 0 || newItemOn + dir > curpi->numitems-13-numextraemblems))
-					break;
+				// ...WOAH! i decided to use my brain for five seconds and look, scroll stops aren't broken now!
+				if (curpi->altscroll)
+				{
+					altScrollOn = newItemOn;
+					if (newItemOn + dir < 0 || (dir > 0 && M_GetItemAbsY(curpi, curpi->numitems-1) - M_GetItemAbsY(curpi, newItemOn) <= curpi->scrollheight))
+						break;
+				}
 				newItemOn += dir;
 			}
 
@@ -1845,7 +1848,7 @@ boolean M_Responder(event_t *ev)
 		}
 		while (!(oldPanelOn == panelOn && oldItemOn == newItemOn)
 		       && (curpi->numitems == 0
-		         || (curpi->altscroll ? curpi->items[oldItemOn].y == curpi->items[newItemOn].y : !M_ItemSelectable(&curpi->items[newItemOn]))
+		         || (curpi->altscroll ? M_GetItemAbsY(curpi, altScrollOn) == M_GetItemAbsY(curpi, newItemOn) : !M_ItemSelectable(&curpi->items[newItemOn]))
 		         || (vmove -= intsign(vmove)) != 0));
 
 		M_RawSetItemOn(curpi, newItemOn);
@@ -5738,111 +5741,89 @@ void M_RefreshPauseMenu(void)
 
 UINT8 skyRoomMenuTranslations[MAXUNLOCKABLES];
 
-static char *M_GetConditionString(condition_t cond)
+static char *M_GetConditionString(const condition_t *cond)
 {
-	switch(cond.type)
+	switch (cond->type)
 	{
 		case UC_PLAYTIME:
 			return va("Play for %i:%02i:%02i",
-				G_TicsToHours(cond.requirement),
-				G_TicsToMinutes(cond.requirement, false),
-				G_TicsToSeconds(cond.requirement));
+			          G_TicsToHours(cond->requirement),
+			          G_TicsToMinutes(cond->requirement, false),
+			          G_TicsToSeconds(cond->requirement));
 		case UC_MATCHESPLAYED:
-			return va("Play %d matches", cond.requirement);
+			return va("Play %d matches", cond->requirement);
 		case UC_POWERLEVEL:
-			return va("Reach power level %d in %s", cond.requirement, (cond.extrainfo1 == PWRLV_BATTLE ? "Battle" : "Race"));
+			return va("Reach power level %d in %s", cond->requirement, (cond->extrainfo1 == PWRLV_BATTLE ? "Battle" : "Race"));
 		case UC_GAMECLEAR:
-			if (cond.requirement > 1)
-				return va("Beat game %d times", cond.requirement);
+			if (cond->requirement > 1)
+				return va("Beat game %d times", cond->requirement);
 			else
 				return va("Beat the game");
 		case UC_OVERALLTIME:
 			return va("Get overall Time Attack of %i:%02i:%02i",
-				G_TicsToHours(cond.requirement),
-				G_TicsToMinutes(cond.requirement, false),
-				G_TicsToSeconds(cond.requirement));
+			          G_TicsToHours(cond->requirement),
+			          G_TicsToMinutes(cond->requirement, false),
+			          G_TicsToSeconds(cond->requirement));
 		case UC_MAPVISITED:
-			return va("Visit %s", G_BuildMapTitle(cond.requirement-1));
+			return va("Visit %s", G_BuildMapTitle(cond->requirement-1));
 		case UC_MAPBEATEN:
-			return va("Beat %s", G_BuildMapTitle(cond.requirement-1));
+			return va("Beat %s", G_BuildMapTitle(cond->requirement-1));
 		case UC_MAPENCORE:
-			return va("Beat %s in Encore Mode", G_BuildMapTitle(cond.requirement-1));
+			return va("Beat %s in Encore Mode", G_BuildMapTitle(cond->requirement-1));
 		case UC_MAPTIME:
-			return va("Beat %s in %i:%02i.%02i", G_BuildMapTitle(cond.extrainfo1-1),
-				G_TicsToMinutes(cond.requirement, true),
-				G_TicsToSeconds(cond.requirement),
-				G_TicsToCentiseconds(cond.requirement));
+			return va("Beat %s in %i:%02i.%02i", G_BuildMapTitle(cond->extrainfo1-1),
+			          G_TicsToMinutes(cond->requirement, true),
+			          G_TicsToSeconds(cond->requirement),
+			          G_TicsToCentiseconds(cond->requirement));
 		case UC_TOTALEMBLEMS:
-			return va("Get %d medals", cond.requirement);
+			return va("Get %d medals", cond->requirement);
 		case UC_EXTRAEMBLEM:
-			return va("Get \"%s\" medal", extraemblems[cond.requirement-1].name);
+			return va("Get \"%s\" medal", extraemblems[cond->requirement-1].name);
 		default:
 			return NULL;
 	}
 }
 
-#define NUMCHECKLIST 23
-void MD_DrawChecklist(menupanelinst_t *pi)
+void MP_UnlockablesChecklist(menupanelinst_t *pi)
 {
-	UINT32 i, line = 0, c;
-	INT32 lastid;
-	boolean secret = false;
+	M_ClearPanelItems(pi);
+	pi->altscroll = true;
 
-	for (i = 0; i < MAXUNLOCKABLES; i++)
+	for (UINT32 i = 0; i < MAXUNLOCKABLES; i++)
 	{
-		const char *secretname;
-
-		secret = (!M_Achieved(unlockables[i].showconditionset - 1) && !unlockables[i].unlocked);
+		boolean secret = !M_Achieved(unlockables[i].showconditionset - 1) && !unlockables[i].unlocked;
 
 		if (unlockables[i].name[0] == 0 || unlockables[i].nochecklist
 		|| !unlockables[i].conditionset || unlockables[i].conditionset > MAXCONDITIONSETS
 		|| (unlockables[i].type == SECRET_HELLATTACK && secret)) // TODO: turn this into an unlockable setting instead of tying it to Hell Attack
 			continue;
 
-		++line;
-		secretname = M_CreateSecretMenuOption(unlockables[i].name);
+		menuitem_t *item = M_AppendMenuItem(pi, 1, 8*FRACUNIT, IT_OFSY); // FIXME autolayout
+		M_SetItemTextRaw(item, secret ? M_CreateSecretMenuOption(unlockables[i].name) : unlockables[i].name);
+		item->style = DEH_FindMenuItemStyle(unlockables[i].unlocked ? "RECOMMENDEDHIGHLIGHT" : "WARNINGHIGHLIGHT");
 
-		V_DrawString(8, (line*8), (unlockables[i].unlocked ? recommendedflags : warningflags)|MENUCAPS, (secret ? secretname : unlockables[i].name));
-
-		if (conditionSets[unlockables[i].conditionset - 1].numconditions)
+		UINT32 lastid = UINT32_MAX;
+		for (UINT32 c = 0; c < conditionSets[unlockables[i].conditionset - 1].numconditions; c++)
 		{
-			c = 0;
-			lastid = -1;
+			const condition_t *cond = &conditionSets[unlockables[i].conditionset - 1].condition[c];
+			CLEANUP(pfree) char *str = strdup(M_GetConditionString(cond)); // va moment
 
-			for (c = 0; c < conditionSets[unlockables[i].conditionset - 1].numconditions; c++)
-			{
-				condition_t cond = conditionSets[unlockables[i].conditionset - 1].condition[c];
-				UINT8 achieved = M_CheckCondition(&cond);
-				char *str = M_GetConditionString(cond);
-				const char *secretstr = M_CreateSecretMenuOption(str);
+			if (str == NULL)
+				continue;
 
-				if (!str)
-					continue;
+			item = M_AppendMenuItem(pi, 8*FRACUNIT, 0, 0);
+			const char *bullet = "*";
+			if (lastid != UINT32_MAX && cond->id == lastid)
+				bullet = secret ? "   ?" : "   &";
 
-				++line;
+			M_SetItemTextRaw(item, va("%s %s", bullet, secret ? M_CreateSecretMenuOption(str) : str));
+			if (M_CheckCondition(cond))
+				item->style = DEH_FindMenuItemStyle("HIGHLIGHT");
 
-				if (lastid == -1 || cond.id != (UINT32)lastid)
-				{
-					V_DrawString(16, (line*8), V_MONOSPACE|V_ALLOWLOWERCASE|(achieved ? highlightflags : 0), "*");
-					V_DrawString(32, (line*8), V_MONOSPACE|V_ALLOWLOWERCASE|(achieved ? highlightflags : 0), (secret ? secretstr : str));
-				}
-				else
-				{
-					V_DrawString(32, (line*8), V_MONOSPACE|V_ALLOWLOWERCASE|(achieved ? highlightflags : 0), (secret ? "?" : "&"));
-					V_DrawString(48, (line*8), V_MONOSPACE|V_ALLOWLOWERCASE|(achieved ? highlightflags : 0), (secret ? secretstr : str));
-				}
-
-				lastid = cond.id;
-			}
+			lastid = cond->id;
 		}
-
-		++line;
-
-		if (line >= NUMCHECKLIST)
-			break;
 	}
 }
-#undef NUMCHECKLIST
 
 INT32 MR_PlaySound(INT32 arg)
 {

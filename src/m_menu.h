@@ -338,7 +338,7 @@ MP_PrepReplayList, MP_ReplayHutStart, MP_VideoModeList, MP_MultiplayerPause,
 MP_PlayerSplitscreen, MP_SetupJoystick, MP_PrepareLevelPlatter, MP_LevelPlatterOptions,
 MP_TimeAttackMenu, MP_TimeAttackPresets, MP_SetupViewServer, MP_ViewServerPlayers,
 MP_ViewServerAddons, MP_PrepAddonList, MP_StatsRecords, MP_StatsRecordsBG,
-MP_StatsPlaytime, MP_StatsExtra
+MP_StatsPlaytime, MP_StatsExtra, MP_UnlockablesChecklist
 ;
 INT32 MR_Addons(INT32 choice);
 INT32 MR_QuitAddons(INT32 choice);
@@ -415,7 +415,6 @@ INT32 MR_LevelPlatterRandom(INT32 choice);
 INT32 MR_HandleDiscordRequests(INT32 choice);
 #endif
 
-void MD_DrawChecklist(menupanelinst_t *pi);
 void MD_DrawLevelStats(menupanelinst_t *pi);
 void MD_DrawReplayHut(menupanelinst_t *pi);
 void MD_DrawTimeAttackMenu(menupanelinst_t *pi);
