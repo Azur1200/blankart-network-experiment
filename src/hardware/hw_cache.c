@@ -620,7 +620,6 @@ void HWR_MakePatch (const patch_t *patch, GLPatch_t *grPatch, GLMipmap_t *grMipm
 static size_t gl_numtextures = 0; // Texture count
 static GLMapTexture_t *gl_textures; // For all textures
 static GLMapTexture_t *gl_flats; // For all (texture) flats, as normal flats don't need to be cached
-boolean gl_maptexturesloaded = false;
 
 void HWR_FreeTextureData(patch_t *patch)
 {
@@ -748,7 +747,6 @@ void HWR_InitMapTextures(void)
 {
 	gl_textures = NULL;
 	gl_flats = NULL;
-	gl_maptexturesloaded = false;
 }
 
 static void FreeMapTexture(GLMapTexture_t *tex)
@@ -778,7 +776,6 @@ void HWR_FreeMapTextures(void)
 	gl_textures = NULL;
 	gl_flats = NULL;
 	gl_numtextures = 0;
-	gl_maptexturesloaded = false;
 }
 
 static void HWR_PrecacheLevelFlats(void)
@@ -1025,8 +1022,6 @@ void HWR_LoadMapTextures(size_t pnumtextures)
 
 	if (gl_textures == NULL || gl_flats == NULL)
 		I_Error("HWR_LoadMapTextures: ran out of memory for OpenGL textures");
-
-	gl_maptexturesloaded = true;
 }
 
 // --------------------------------------------------------------------------

@@ -6519,8 +6519,7 @@ void HWR_Switch(void)
 	HWD.pfnSetSpecialState(HWD_SET_TEXTUREANISOTROPICMODE, cv_glanisotropicmode.value);
 
 	// Load textures
-	if (!gl_maptexturesloaded)
-		HWR_LoadMapTextures(numtextures);
+	HWR_LoadMapTextures(numtextures);
 
 	// Create plane polygons
 	if (!gl_maploaded && levelloaded)

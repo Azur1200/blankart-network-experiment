@@ -88,7 +88,6 @@ enum
 extern viddef_t vid;
 extern INT32 setmodeneeded; // mode number to set if needed, or 0
 extern UINT8 setrenderneeded;
-extern boolean cansetrender;
 
 extern double averageFPS;
 

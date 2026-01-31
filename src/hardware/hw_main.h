@@ -147,7 +147,6 @@ extern precise_t ps_hw_batchdrawtime;
 
 extern boolean gl_init;
 extern boolean gl_maploaded;
-extern boolean gl_maptexturesloaded;
 extern boolean gl_sessioncommandsadded;
 extern boolean gl_shadersavailable;
 

@@ -595,14 +595,11 @@ static void D_Display(void)
 	// STUPID race condition...
 	{
 		wipegamestate = gamestate;
-		cansetrender = true;
 
 		// clean up border stuff
 		// see if the border needs to be initially drawn
 		if (gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction && curbghide && (!hidetitlemap)))
 		{
-			// Rendering a level; don't allow renderer changes!
-			cansetrender = false;
 
 			D_RenderLevel();
 
