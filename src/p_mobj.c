@@ -12264,8 +12264,8 @@ void P_PrecipitationEffects(void)
  */
 mobjtype_t P_GetMobjtype(UINT16 mthingtype)
 {
-	INT32 i;
-	for (i = NUMMOBJTYPES-1; i >= 0; i--)
+	mobjtype_t i;
+	for (i = 0; i < NUMMOBJTYPES; i++)
 		if (mthingtype == mobjinfo[i].doomednum)
 			return i;
 	return MT_UNKNOWN;
