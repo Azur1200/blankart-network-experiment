@@ -9731,9 +9731,9 @@ static void K_RecoveryDash(player_t *player)
 	{
 		player->wipeoutslow = player->spinouttimer;
 	}
-	if (K_PlayerWantsRecoverySpin(player) && K_PlayerCanRecoverySpin(player))
+	if (K_PlayerCanRecoverySpin(player))
 	{
-		if (K_PlayerCanStartRecoverySpin(player))
+		if (K_PlayerWantsRecoverySpin(player) && K_PlayerCanStartRecoverySpin(player))
 		{
 			player->pflags |= PF_RECOVERYSPIN;
 			S_StartSound(player->mo, sfx_cdfm20);
