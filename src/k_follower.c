@@ -246,6 +246,32 @@ static void K_UpdateFollowerState(mobj_t *f, statenum_t state, followerstate_t t
 }
 
 /*--------------------------------------------------
+	static void K_UpdateFollowerMood(mobj_t *f, followermood_t mood, tic_t time)
+
+		Sets a follower object's mood and time before returning to a normal mood.
+
+	Input Arguments:-
+		f - The follower's mobj_t.
+		mood - The mood to set.
+		time - The mood's duration.
+
+	Return:-
+		None
+--------------------------------------------------*/
+static void K_UpdateFollowerMood(mobj_t *f, followermood_t mood, tic_t time)
+{
+	if (f == NULL || P_MobjWasRemoved(f) == true)
+	{
+		// safety net
+		return;
+	}
+
+
+	f->extravalue3 = mood;
+	f->cvmem = (INT32)(time);
+}
+
+/*--------------------------------------------------
 	void K_HandleFollower(player_t *player)
 
 		See header file for description.
@@ -567,6 +593,20 @@ void K_HandleFollower(player_t *player)
 
 		// However with how the code is factored, this is just a special case of S_INVISBLE to avoid having to add other player variables.
 
+		// Mood system
+		// For now, all this does is change the VFX generated when you honk your horn.
+		if (player->follower->cvmem && (player->follower->extravalue3 != FOLLOWERMOOD_NORMAL))
+		{
+			// Tick down the mood timer
+			player->follower->cvmem--;
+
+			// Return to our normal mood
+			if (player->follower->cvmem == 0)
+			{
+				player->follower->extravalue3 = FOLLOWERMOOD_NORMAL;
+			}
+		}
+
 		// handle follower animations. Could probably be better...
 		// hurt or dead
 		if (P_PlayerInPain(player) == true || player->mo->state == &states[S_KART_SPINOUT] || player->mo->health <= 0)
@@ -584,6 +624,11 @@ void K_HandleFollower(player_t *player)
 			{
 				// if dead, follow the player's z momentum exactly so they both look like they die at the same speed.
 				player->follower->momz = player->mo->momz;
+			}
+			else
+			{
+				// Not dead; get mad on the player's behalf.
+				K_UpdateFollowerMood(player->follower, FOLLOWERMOOD_ANGRY, (3 * TICRATE / 2));
 			}
 		}
 		else if (player->exiting)
@@ -603,6 +648,7 @@ void K_HandleFollower(player_t *player)
 		else if (player->follower->movecount)
 		{
 			K_UpdateFollowerState(player->follower, fl.hitconfirmstate, FOLLOWERSTATE_HITCONFIRM);
+			K_UpdateFollowerMood(player->follower, FOLLOWERMOOD_HAPPY, (3 * TICRATE / 2));
 			player->follower->movecount--;
 		}
 		else if (player->follower->reactiontime)
@@ -702,11 +748,20 @@ void K_FollowerHornTaunt(player_t *taunter, player_t *victim)
 				MT_FOLLOWERHORN
 			);
 
-			// TODO (yama): Honk icons based on a follower's "emotion"
-			// (♪ for hitconfirm honks, 💢 for mid-damage honks)
-
 			if (P_MobjWasRemoved(honk) == true)
 				return; // Permit lua override of horn production
+
+			// Set the horn icon based on the follower's mood.
+			switch (taunter->follower->extravalue3)
+			{
+				case FOLLOWERMOOD_ANGRY:
+					P_SetMobjState(honk, S_HORNCODE_ANGRY);
+					break;
+				case FOLLOWERMOOD_HAPPY:
+					P_SetMobjState(honk, S_HORNCODE_HAPPY);
+				default:
+					break;
+			}
 
 			P_SetTarget(&taunter->follower->hprev, honk);
 			P_SetTarget(&honk->target, taunter->follower);

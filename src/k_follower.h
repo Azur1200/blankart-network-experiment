@@ -49,6 +49,14 @@ typedef enum
 	FOLLOWERSTATE__MAX
 } followerstate_t;
 
+typedef enum
+{
+	FOLLOWERMOOD_NORMAL, // Default mood, produces a ++ symbol when you honk.
+	FOLLOWERMOOD_HAPPY, // Happy mood (recent hitconfirm, won race), produces a ♪ symbol when you honk.
+	FOLLOWERMOOD_ANGRY, // Angry/upset mood (taking damage, recently took damage), produces a 💢 symbol when you honk.
+	FOLLOWERMOOD__MAX
+} followermood_t;
+
 //
 // We'll define these here because they're really just a mobj that'll follow some rules behind a player
 //
