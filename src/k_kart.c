@@ -9705,11 +9705,15 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 	}
 }
 
+static boolean K_PlayerWantsRecoverySpin(player_t *player)
+{
+	return ((player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE) && !(player->cmd.buttons & BT_DRIFT));
+}
+
 static boolean K_PlayerCanStartRecoverySpin(player_t *player)
 {
 	return (K_RecoveryDashActive() && P_IsObjectOnGround(player->mo) && (!(player->pflags & PF_STASIS)) && (player->carry == CR_NONE) &&
-			player->speed < 10*player->mo->scale && (!(player->pflags & PF_RECOVERYSPIN)) &&
-			(player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE) && !(player->cmd.buttons & BT_DRIFT));
+			player->speed < 10*player->mo->scale && (!(player->pflags & PF_RECOVERYSPIN)));
 }
 
 static boolean K_PlayerCanRecoverySpin(player_t *player)
@@ -9723,7 +9727,12 @@ static boolean K_PlayerCanRecoverySpin(player_t *player)
 
 static void K_RecoveryDash(player_t *player)
 {
-	if (K_PlayerCanRecoverySpin(player))
+	if (K_PlayerWantsRecoverySpin(player) && (player->spinouttimer > 0))
+	{
+		player->wipeoutslow = wipeoutslowtime+1;
+		player->spinouttimer = max(wipeoutslowtime+1, player->spinouttimer);
+	}
+	if (K_PlayerWantsRecoverySpin(player) && K_PlayerCanRecoverySpin(player))
 	{
 		if (K_PlayerCanStartRecoverySpin(player))
 		{
