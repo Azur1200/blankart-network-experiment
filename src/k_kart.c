@@ -9003,7 +9003,7 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 		player->lastsafestarpost = player->starpostnum;
 
 		// Check if respawn is safe. If not then goto next spawnpoint and respawn there.
-		if (K_SafeRespawnPosition(player->mo))
+		/*if (K_SafeRespawnPosition(player->mo))
 		{
 			// Set time, z, flip and angle first.
 			player->starposttime = player->realtime;
@@ -9015,7 +9015,7 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 			player->starpostx = player->mo->x;
 			player->starposty = player->mo->y;
 		}
-		else
+		else*/
 		{
 			// Now a clean function! Neat, eh?
 			K_SetRespawnAtNextWaypoint(player);
