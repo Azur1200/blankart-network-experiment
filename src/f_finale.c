@@ -924,6 +924,10 @@ const char *blancredits[] = {
 	"\"Chearii\"",
 	"\"hayaunderscore\" aka \"DeltaKanyx\"",
 	"\"Guilmon35249vr\"",
+	"Vivian \"toaster\" Grannell", // Horncode
+	"AJ \"Tyron\" Martinez", // Horncode
+	"\"Superstarxalien\"", // Horncode
+	"\"Freaky Mutant Man\"", // Color profiles menu
 	"",
 	"\1Item Design",
 	"\"NepDisk\"",
@@ -937,6 +941,9 @@ const char *blancredits[] = {
 	"\"luna\"",
 	"\"White Mage (guy who picked up controller)\"",
 	"\"minenice\"",
+	"\"StarrydustNova\"",
+	"\"merritt\"",
+	"\"Sunflower\" aka \"AnimeSonic\"",
 	"",
 	"\1New Item Art",
 	"\"Spee\"",
@@ -957,9 +964,13 @@ const char *blancredits[] = {
 	"\"Miguelius256\"",
 	"\"Toddoesstuff\"",
 	"\"RetroStation\"",
+	"\"StarrydustNova\"",
+	"\"joshyflip\"",
 	"",
 	"\1New Misc Art",
 	"\"scizor300\"",
+	"\"StarrydustNova\"", // Per some indev talks. Can't reveal the secrets yet!
+	"\"joshyflip\"", // Per some indev talks. Can't reveal the secrets yet!
 	"",
 	"\1Additional Assets",
 	"Sonic Team Jr.",
@@ -1030,11 +1041,14 @@ const char *blancredits[] = {
 	"\"PX8916\"",
 	"\"Tom\"",
 	"\"Phoenix\"",
+	"\"StarrydustNova\"",
+	"\"Prada\"",
 	"",
 	"\1Special Thanks",
 	"\"merritt\"",
 	"\"luna\"",
 	"\"Sunflower\" aka \"AnimeSonic\"",
+	"\"StarrydustNova\"",
 	"Sunflower's Garden",
 	"The Moe Mansion and Birdhouse Team",
 	"SRB2Kart Saturn Contributors",

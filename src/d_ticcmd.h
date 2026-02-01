@@ -33,8 +33,9 @@ typedef enum
 	BT_FORWARD		  = 1<<5,	// Aim Item Forward
 	BT_BACKWARD		  = 1<<6,	// Aim Item Backward
 	BT_LOOKBACK		  = 1<<7,	// Look Backward
+	BT_HORN           = 1<<8,   // Honk your (follower's) horn
 
-	// free: 1<<8 to 1<<12
+	// free: 1<<9 to 1<<12
 
 	// Lua garbage
 	BT_CUSTOM1		= 1<<13,

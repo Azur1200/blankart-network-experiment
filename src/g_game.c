@@ -1579,6 +1579,12 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->buttons |= BT_LOOKBACK;
 	}
 
+	// horn with any button/key
+	if (G_PlayerInputDown(forplayer, gc_horncode, false, DEADZONE_BUTTON))
+	{
+		cmd->buttons |= BT_HORN;
+	}
+
 	// Lua scriptable buttons
 	if (G_PlayerInputDown(forplayer, gc_custom1, false, DEADZONE_BUTTON))
 		cmd->buttons |= BT_CUSTOM1;

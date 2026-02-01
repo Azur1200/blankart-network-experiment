@@ -1370,6 +1370,7 @@ struct int_const_s const INT_CONST[] = {
 	{"BT_FORWARD",BT_FORWARD},
 	{"BT_BACKWARD",BT_BACKWARD},
 	{"BT_LOOKBACK",BT_LOOKBACK},
+	{"BT_HORN",BT_HORN},
 	{"BT_CUSTOM1",BT_CUSTOM1}, // Lua customizable
 	{"BT_CUSTOM2",BT_CUSTOM2}, // Lua customizable
 	{"BT_CUSTOM3",BT_CUSTOM3}, // Lua customizable
@@ -1545,6 +1546,7 @@ struct int_const_s const INT_CONST[] = {
 	{"GC_CUSTOM3",gc_custom3},
 	{"GC_RESPAWN",gc_respawn},
 	{"GC_DIRECTOR",gc_director},
+	{"GC_HORNCODE",gc_horncode},
 	{"NUM_GAMECONTROLS",num_gamecontrols},
 
 	// screen.h constants

@@ -246,6 +246,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartspeedometer);
 	CV_RegisterVar(&cv_kartvoices);
 	CV_RegisterVar(&cv_karthitemdialog);
+	CV_RegisterVar(&cv_karthorns);
 	CV_RegisterVar(&cv_kartbot);
 	CV_RegisterVar(&cv_kartbot_cap);
 	CV_RegisterVar(&cv_kartbot_modifiermax);
@@ -1539,6 +1540,44 @@ void K_SpawnBumpEffect(mobj_t *mo)
 	fx->scale = mo->scale;
 
 	S_StartSound(mo, sfx_s3k49);
+}
+
+static void K_HonkFollowerHorn(player_t *honkPlayer)
+{
+	const boolean tasteful = (honkPlayer->karthud[khud_taunthorns] == 0);
+
+	UINT8 i;
+
+	// Loop through all players and make them hear your honking!
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		player_t *p;
+
+		if (!playeringame[i])
+		{
+			// Invalid player
+			continue;
+		}
+
+		p = &players[i];
+
+		if (!p->mo || P_MobjWasRemoved(p->mo))
+		{
+			// Invalid mobj
+			continue;
+		}
+
+		if (p->spectator)
+		{
+			// Not playing
+			continue;
+		}
+
+		K_FollowerHornTaunt(honkPlayer, p);
+	}
+
+	if (tasteful && honkPlayer->karthud[khud_taunthorns] < 2*TICRATE)
+		honkPlayer->karthud[khud_taunthorns] = 2*TICRATE;
 }
 
 static SINT8 K_GlanceAtPlayers(player_t *glancePlayer)
@@ -6400,6 +6439,9 @@ void K_KartPlayerHUDUpdate(player_t *player)
 	if (player->karthud[khud_tauntvoices])
 		player->karthud[khud_tauntvoices]--;
 
+	if (player->karthud[khud_taunthorns])
+		player->karthud[khud_taunthorns]--;
+
 	if (gametyperules & GTR_RINGS)
 	{
 		if ((K_RingsActive() == true))
@@ -7688,6 +7730,14 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	// Do a funny hop!
 	K_QuiteSaltyHop(player);
+
+	// Honk your horn. Beep beep!
+	const boolean honking = ((cmd->buttons & BT_HORN) == BT_HORN);
+
+	if (honking)
+	{
+		K_HonkFollowerHorn(player);
+	}
 
 	player->prevonground = P_IsObjectOnGround(player->mo);
 
