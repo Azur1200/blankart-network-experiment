@@ -19,7 +19,7 @@
 #ifdef HWRENDER
 #include "hw_main.h"
 #include "hw_glob.h"
-#include "hw_drv.h"
+#include "hw_gpu.h"
 
 #include "../r_draw.h" //viewborderlump
 #include "../r_main.h"
@@ -259,10 +259,10 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 		else
 			Surf.PolyColor.s.alpha = 0;
 
-		HWD.pfnDrawPolygon(&Surf, v, 4, flags|PF_Modulated);
+		GL_DrawPolygon(&Surf, v, 4, flags|PF_Modulated);
 	}
 	else
-		HWD.pfnDrawPolygon(NULL, v, 4, flags|PF_Translucent);
+		GL_DrawPolygon(NULL, v, 4, flags|PF_Translucent);
 }
 
 void HWR_DrawAffinePatch(patch_t *gpatch, fixed_t x, fixed_t y, const affine_t *transform, INT32 option, const UINT8 *colormap)
@@ -384,10 +384,10 @@ void HWR_DrawAffinePatch(patch_t *gpatch, fixed_t x, fixed_t y, const affine_t *
 		else
 			Surf.PolyColor.s.alpha = 0;
 
-		HWD.pfnDrawPolygon(&Surf, v, 4, flags|PF_Modulated);
+		GL_DrawPolygon(&Surf, v, 4, flags|PF_Modulated);
 	}
 	else
-		HWD.pfnDrawPolygon(NULL, v, 4, flags|PF_Translucent);
+		GL_DrawPolygon(NULL, v, 4, flags|PF_Translucent);
 }
 
 void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, INT32 option, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h)
@@ -540,10 +540,10 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 		else
 			Surf.PolyColor.s.alpha = 0;
 
-		HWD.pfnDrawPolygon(&Surf, v, 4, flags|PF_Modulated);
+		GL_DrawPolygon(&Surf, v, 4, flags|PF_Modulated);
 	}
 	else
-		HWD.pfnDrawPolygon(NULL, v, 4, flags|PF_Translucent);
+		GL_DrawPolygon(NULL, v, 4, flags|PF_Translucent);
 }
 
 void HWR_DrawPic(INT32 x, INT32 y, lumpnum_t lumpnum)
@@ -578,7 +578,7 @@ void HWR_DrawPic(INT32 x, INT32 y, lumpnum_t lumpnum)
 	// But then, the question is: why not 0 instead of PF_Masked ?
 	// or maybe PF_Environment ??? (like what I said above)
 	// BP: PF_Environment don't change anything ! and 0 is undifined
-	HWD.pfnDrawPolygon(NULL, v, 4, PF_Translucent | PF_NoDepthTest);
+	GL_DrawPolygon(NULL, v, 4, PF_Translucent | PF_NoDepthTest);
 }
 
 // ==========================================================================
@@ -630,7 +630,7 @@ void HWR_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum)
 	// BTW, I see we put 0 for PFs, and If I'm right, that
 	// means we take the previous PFs as default
 	// how can we be sure they are ok?
-	HWD.pfnDrawPolygon(NULL, v, 4, PF_NoDepthTest); //PF_Translucent);
+	GL_DrawPolygon(NULL, v, 4, PF_NoDepthTest); //PF_Translucent);
 }
 
 
@@ -665,10 +665,10 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 
 			Surf.LightTableId = HWR_GetLightTableID(NULL);
 			Surf.LightInfo.light_level = strength;
-			HWD.pfnMakeScreenTexture(scr_tex);
-			HWD.pfnSetShader(HWR_GetShaderFromTarget(SHADER_UI_COLORMAP_FADE));
-			HWD.pfnDrawScreenTexture(scr_tex, &Surf, PF_ColorMapped|PF_NoDepthTest);
-			HWD.pfnUnSetShader();
+			GL_MakeScreenTexture(scr_tex);
+			GL_SetShader(HWR_GetShaderFromTarget(SHADER_UI_COLORMAP_FADE));
+			GL_DrawScreenTexture(scr_tex, &Surf, PF_ColorMapped|PF_NoDepthTest);
+			GL_UnSetShader();
 
 			return;
 		}
@@ -681,7 +681,7 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 		Surf.PolyColor.rgba = palette[color&0xFF].rgba;
 		Surf.PolyColor.s.alpha = softwaretranstogl[strength];
 	}
-	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
+	GL_DrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
 }
 
 // -----------------+
@@ -763,7 +763,7 @@ void HWR_DrawFadeFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT16 ac
 		Surf.PolyColor.rgba = palette[actualcolor&0xFF].rgba;
 		Surf.PolyColor.s.alpha = softwaretranstogl[strength];
 	}
-	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
+	GL_DrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
 }
 
 // Draw the console background with translucency support
@@ -790,7 +790,7 @@ void HWR_DrawConsoleBack(UINT32 color, INT32 height)
 	Surf.PolyColor.rgba = UINT2RGBA(color);
 	Surf.PolyColor.s.alpha = 0x80;
 
-	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
+	GL_DrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
 }
 
 void HWR_EncoreInvertScreen(void)
@@ -811,7 +811,7 @@ void HWR_EncoreInvertScreen(void)
 
 	Surf.PolyColor.rgba = 0xFFFFFFFF;
 
-	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_NoDepthTest);
+	GL_DrawPolygon(&Surf, v, 4, PF_NoTexture|PF_NoDepthTest);
 }
 
 // Very similar to HWR_DrawConsoleBack, except we draw from the middle(-ish) of the screen to the bottom.
@@ -841,7 +841,7 @@ void HWR_DrawTutorialBack(UINT32 color, INT32 boxheight)
 	Surf.PolyColor.rgba = UINT2RGBA(color);
 	Surf.PolyColor.s.alpha = (color == 0 ? 0xC0 : 0x80); // make black darker, like software
 
-	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
+	GL_DrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
 }
 
 // ==========================================================================
@@ -866,7 +866,7 @@ void HWR_drawAMline(const fline_t *fl, INT32 color)
 	v2.x = ((float)fl->b.x-(vid.width/2.0f))*(2.0f/vid.width);
 	v2.y = ((float)fl->b.y-(vid.height/2.0f))*(2.0f/vid.height);
 
-	HWD.pfnDraw2DLine(&v1, &v2, color_rgba);
+	GL_Draw2DLine(&v1, &v2, color_rgba);
 }
 
 // -----------------+
@@ -959,7 +959,7 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 
 	Surf.PolyColor = V_GetColor(color);
 
-	HWD.pfnDrawPolygon(&Surf, v, 4,
+	GL_DrawPolygon(&Surf, v, 4,
 		PF_Modulated|PF_NoTexture|PF_NoDepthTest);
 }
 
@@ -1039,7 +1039,7 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT32
 	Surf.PolyColor.rgba = UINT2RGBA(actualcolor);
 	Surf.PolyColor.s.alpha = 0x80;
 
-	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
+	GL_DrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
 }
 
 // -----------------+
@@ -1075,7 +1075,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 			clearColour.green = (float)rgbaColour.s.green / 255;
 			clearColour.blue = (float)rgbaColour.s.blue / 255;
 			clearColour.alpha = 1;
-			HWD.pfnClearBuffer(true, false, &clearColour);
+			GL_ClearBuffer(true, false, &clearColour);
 			return;
 		}
 	}
@@ -1110,7 +1110,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 		else Surf.PolyColor.s.alpha = 0;
 	}
 
-	HWD.pfnDrawPolygon(&Surf, v, 4,
+	GL_DrawPolygon(&Surf, v, 4,
 		flags);
 }
 
@@ -1194,7 +1194,7 @@ UINT8 *HWR_GetScreenshot(INT32 scale)
 		return NULL;
 
 	// returns 24bit 888 RGB
-	HWD.pfnReadScreenTexture(tex, (void *)buf, scale);
+	GL_ReadScreenTexture(tex, (void *)buf, scale);
 	return buf;
 }
 
