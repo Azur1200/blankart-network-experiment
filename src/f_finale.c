@@ -928,6 +928,7 @@ const char *blancredits[] = {
 	"AJ \"Tyron\" Martinez", // Horncode
 	"\"Superstarxalien\"", // Horncode
 	"\"Freaky Mutant Man\"", // Color profiles menu
+	"\"blondedradio\"", // Screen-tracking item roulette, lifted near-directly from RadioRacers
 	"",
 	"\1Item Design",
 	"\"NepDisk\"",

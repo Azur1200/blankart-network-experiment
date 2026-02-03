@@ -1052,17 +1052,101 @@ static void K_initKartHUD(void)
 	}
 }
 
-void K_getItemBoxDrawinfo(drawinfo_t *out)
+// RadioRacers
+static trackingResult_t K_getRoulettePositionForTrackingPlayer(void)
+{
+	trackingResult_t result;
+
+	// No player object? Not bothering.
+	const boolean doesPlayerHaveMo = !((stplyr->mo == NULL || P_MobjWasRemoved(stplyr->mo)));
+	if (!doesPlayerHaveMo)
+		return result;
+
+	vector3_t v = {
+		R_InterpolateFixed(stplyr->mo->old_x, stplyr->mo->x) + stplyr->mo->sprxoff,
+		R_InterpolateFixed(stplyr->mo->old_y, stplyr->mo->y) + stplyr->mo->spryoff,
+		R_InterpolateFixed(stplyr->mo->old_z, stplyr->mo->z) + stplyr->mo->sprzoff + (stplyr->mo->height >> 1),
+	};
+
+	vector3_t v2 = {
+		0, 
+		0, 
+		64 * stplyr->mo->scale * P_MobjFlip(stplyr->mo)
+	};
+
+	FV3_Add(&v,&v2);
+	
+	K_ObjectTracking(&result, &v, false);
+
+	return result;
+}
+
+void K_getItemBoxDrawinfo(drawinfo_t *out, rouletteinfo_t *rinfo)
 {
 	INT32 fx, fy, fflags;
 	boolean flipamount = false;
+	fixed_t baseHudScale = FRACUNIT;
+	float baseHudScaleFloat = (float)((float)(baseHudScale) / (FRACUNIT));
+
+	fflags = V_HUDTRANS;
 
 	// pain and suffering defined below
 	if (r_splitscreen < 2) // don't change shit for THIS splitscreen.
 	{
 		fx = ITEM_X;
 		fy = ITEM_Y;
-		fflags = V_SNAPTOTOP|V_SNAPTOLEFT|V_SPLITSCREEN;
+
+		// We are NOT supporting this for splitscreen, the vanilla layout is easier to read.
+		if (cv_rouletteonplayer.value && r_splitscreen == 0)
+		{
+			trackingResult_t result = K_getRoulettePositionForTrackingPlayer();
+
+			if(result.x != 0 && result.y != 0)
+			{
+				fflags = 0;
+				rinfo->flags |= (RINFO_DRAWONPLAYER|RINFO_USECROP);
+				/**
+				 * This solution WILL obscure the player's view.
+				 * The item roulette background is transparent .. but some items are pretty loud visually (e.g. flame shield)
+				 * Making it scale any smaller than 75% is unreasonable (it spins pretty fast towards the end of a race)..
+				 * so we'll just make it a bit translucent.
+				 */
+				baseHudScale = (3*FRACUNIT)/5; // 60%
+				baseHudScaleFloat = (float)((float)(baseHudScale) / (FRACUNIT));
+
+				rinfo->crop.x = rinfo->crop.y = (int)(8 * baseHudScaleFloat);
+
+				// Upside down?
+				const boolean isupsidedown = (stplyr->mo->eflags & MFE_VERTICALFLIP);	
+
+				/**
+				 * Offset it horizontally so it's closer to the center of the player.
+				 * Offset it vertically so it's floating above the player.
+				 */
+				INT32 base_x = 22;
+				INT32 base_y = 18;
+				INT32 baseUpsideDown_y = 18;
+
+				base_x = (int) (22 * baseHudScaleFloat);
+				base_y = (int) ((35 * baseHudScaleFloat) + 2);
+				baseUpsideDown_y = (int) ((18 * baseHudScaleFloat) + 2);
+
+				fx = (result.x / FRACUNIT) - base_x; // 18 (+2)
+				fy = (result.y / FRACUNIT) - (isupsidedown ? baseUpsideDown_y : base_y); // 15, 28
+
+				// In case I forget the math..
+				// ROULETTE_SPACING (36) * baseHudScale
+				// If we're drawing the item box at 75% scale, then it's 36 * 75%;
+				rinfo->intSpacing = (INT32)((((float)(ROULETTE_SPACING)) * baseHudScaleFloat));
+				rinfo->spacing = (rinfo->intSpacing << FRACBITS);
+				rinfo->offset = FixedMul(rinfo->offset, FixedDiv(rinfo->spacing, ROULETTE_SPACING_FIXED));
+
+				if (stplyr->exiting)
+					fflags = V_HUDTRANS;
+			}
+		} else {
+			fflags = V_SNAPTOTOP|V_SNAPTOLEFT|V_SPLITSCREEN;
+		}
 	}
 	else // now we're having a fun game.
 	{
@@ -1085,6 +1169,8 @@ void K_getItemBoxDrawinfo(drawinfo_t *out)
 	out->y = fy;
 	out->flags = fflags;
 	out->flipamount = flipamount;
+	out->hudScale = baseHudScale;
+	out->hudScaleFloat = baseHudScaleFloat;
 }
 
 void K_getLapsDrawinfo(drawinfo_t *out)
@@ -1163,44 +1249,47 @@ void K_getMinimapDrawinfo(drawinfo_t *out)
 	out->flags = fflags;
 }
 
-static void K_DrawItemBar(INT32 fx, INT32 fy, INT32 fflags, fixed_t itembar, UINT8 colors[static 3])
+static void K_DrawItemBar(INT32 fx, INT32 fy, fixed_t scale, INT32 fflags, fixed_t itembar, UINT8 colors[static 3])
 {
 	const boolean fourp = r_splitscreen > 1;
-	const INT32 barlength = (fourp ? 12 : 26)*FRACUNIT;
+	const INT32 barlength = (fourp ? 12 : 26)*scale;
 	const INT32 length = min(barlength, FixedMul(itembar, barlength));
-	const INT32 height = (fourp ? 1 : 2)*FRACUNIT;
-	const INT32 x = (fx + (fourp ? 17 : 11)) * FRACUNIT, y = (fy + (fourp ? 27 : 35)) * FRACUNIT;
+	const INT32 height = (fourp ? 1 : 2)*scale;
+	const INT32 x = ((fx * FRACUNIT) + ((fourp ? 17 : 11) * scale)), y = ((fy  * FRACUNIT) + ((fourp ? 27 : 35) * scale));
 
-	V_DrawSciencePatch(x, y, V_HUDTRANS|fflags, kp_itemtimer[fourp ? 1 : 0], FRACUNIT);
-	V_DrawFixedFill(x+FRACUNIT, y+FRACUNIT, min(FRACUNIT, length), height, colors[2]|fflags); // the left edge
-	V_DrawFixedFill(x+max(FRACUNIT, length), y+FRACUNIT, min(FRACUNIT, length), height, colors[2]|fflags); // the right edge
+	V_DrawSciencePatch(x, y, V_HUDTRANS|fflags, kp_itemtimer[fourp ? 1 : 0], scale);
+	V_DrawFixedFill(x+scale, y+scale, min(scale, length), height, colors[2]|fflags); // the left edge
+	V_DrawFixedFill(x+max(scale, length), y+scale, min(FRACUNIT, length), height, colors[2]|fflags); // the right edge
 	if (!fourp)
-		V_DrawFixedFill(x+2*FRACUNIT, y+2*FRACUNIT, max(0, length - 2*FRACUNIT), FRACUNIT, colors[1]|fflags); // the dulled underside
-	V_DrawFixedFill(x+2*FRACUNIT, y+FRACUNIT, max(0, length - 2*FRACUNIT), FRACUNIT, colors[0]|fflags); // the shine
+		V_DrawFixedFill(x+2*scale, y+2*scale, max(0, length - 2*scale), scale, colors[1]|fflags); // the dulled underside
+	V_DrawFixedFill(x+2*scale, y+scale, max(0, length - 2*scale), scale, colors[0]|fflags); // the shine
 }
 
 // TODO: use an actual patch overlay and clip it instead of using a rect, now that an actual patch can be added for this
-static void K_DrawItemCooldown(INT32 fx, INT32 fy, INT32 fflags, tic_t timer, tic_t maxtimer)
+static void K_DrawItemCooldown(INT32 fx, INT32 fy, INT32 fflags, tic_t timer, tic_t maxtimer, fixed_t scale)
 {
 	const boolean fourp = r_splitscreen > 1;
-	const INT32 rectTopFour = 13*FRACUNIT;
-	INT32 rectTop = 10*FRACUNIT;
-	INT32 rectSize = 40*FRACUNIT;
+	const INT32 rectTopFour = 13*scale;
+	INT32 rectLeft = 5*scale;
+	INT32 rectTop = 6*scale;
+	INT32 rectSize = 40*scale;
 	fixed_t prog = FixedDiv(timer, maxtimer);
 	INT32 length = min(rectSize, FixedMul(rectSize, prog));
 	if (timer > 0 && maxtimer > 0)
 	{
 		if (fourp)
 		{
-			rectTop = 14*FRACUNIT;
-			rectSize = 20*FRACUNIT;
+			rectLeft = 14*scale;
+			rectTop = 14*scale;
+
+			rectSize = 20*scale;
 			length = min(rectSize, FixedMul(rectSize, prog));
 
-			V_DrawFixedFill(fx + rectTop, fy + rectTopFour + (rectSize - length), rectSize, length, 2|fflags);
+			V_DrawFixedFill((fx << FRACBITS) + rectLeft, (fy << FRACBITS) + rectTopFour + (rectSize - length), rectSize, length, 2|fflags);
 		}
 		else
 		{
-			V_DrawFixedFill(fx + rectTop, fy + rectTop + (rectSize - length), rectSize, length, 2|fflags);
+			V_DrawFixedFill((fx << FRACBITS) + rectLeft, (fy << FRACBITS) + rectTop + (rectSize - length), rectSize, length, 2|fflags);
 		}
 	}
 }
@@ -1225,6 +1314,9 @@ static void K_drawKartItem(void)
 	UINT8 *colormap = NULL;
 	boolean flipamount = false;	// Used for 3P/4P splitscreen to flip item amount stuff
 	boolean isalt = false;
+
+	// RadioRacers
+	boolean shouldDrawOnPlayer = false;
 
 	if (stplyr->itemroulette)
 	{
@@ -1369,11 +1461,86 @@ static void K_drawKartItem(void)
 
 	localbg = K_getItemBoxPatch(tiny, dark);
 	drawinfo_t info;
-	K_getItemBoxDrawinfo(&info);
+	rouletteinfo_t rinfo;
+
+	info.hudScale = FRACUNIT;
+	info.hudScaleFloat = 1.0f;
+
+	rinfo.crop.x = 8;
+	rinfo.crop.y = 8;
+
+	rinfo.offset = 0;
+	rinfo.flags = 0;
+	rinfo.offset = 0;
+	rinfo.spacing = ROULETTE_SPACING_FIXED;
+	rinfo.intSpacing = ROULETTE_SPACING;
+
+	K_getItemBoxDrawinfo(&info, &rinfo);
+	shouldDrawOnPlayer = ((rinfo.flags & RINFO_DRAWONPLAYER) == RINFO_DRAWONPLAYER);
+
+	if ((shouldDrawOnPlayer) && (stplyr->flametimer > 1))
+	{
+		// Flamometer exists. You REALLY do not need this.
+		itembar = -1;
+		flamebar = -1;
+	}
+
+	INT32 hudtrans = V_GetHudTrans();
+	INT32 transflag = V_HUDTRANS;
+	INT32 transmul = FRACUNIT - (hudtrans * FRACUNIT / 10);
+
+	if (hudtrans > 9)
+	{
+		// Vamoose
+		return;
+	}
+
+	// Let the player pick and choose their visibility level.
+	INT32 roulettetrans = cv_rouletteplayertrans.value;
+
+	// RadioRacers
+	if (shouldDrawOnPlayer)
+	{
+		boolean rocketinvinbar = ((stplyr->rocketsneakertimer > 1) || ((stplyr->invincibilitytimer) && (K_IsKartItemAlternate(KITEM_INVINCIBILITY))));
+
+		/**
+		 * RadioRacers
+		 *
+		 * Flame Shield and Eggman Fakes get unique exceptions.
+		 * This is because there are other visual elements that are more important than just the item icon.
+		 *
+		 * For Eggman Fakes, it's the impending timer.
+		 * For Flame shields, it's the flame meter (more on that below).
+		 * For rocket sneakers, it's the duration bar.
+		 */
+
+		// For Blan, Alt. Invincibility also needs duration visibility, so we dim the icon there, too.
+		// Nice-to-have: some way for custom items to have this feature? Not sure yet.
+
+		if (stplyr->itemtype == KITEM_FLAMESHIELD || stplyr->eggmanexplode > 1 || (rocketinvinbar)) {
+			roulettetrans = (INT32)((float)(roulettetrans) * 0.57143f);
+		}
+
+		if (stplyr->exiting)
+			roulettetrans = -1;
+
+		if (roulettetrans > -1)
+		{
+			transflag = max(0, min(9, 10 - FixedMul(roulettetrans, transmul))) << V_ALPHASHIFT;
+		}
+		else
+		{
+			transflag = V_HUDTRANS;
+		}
+	}
+
 	fx = info.x;
 	fy = info.y;
 	fflags = info.flags;
 	flipamount = info.flipamount;
+
+	INT32 localpatchflags = (transflag|fflags);
+
 	if (localcolor != SKINCOLOR_NONE)
 	{
 		colmap = R_GetTranslationColormap(colormode, localcolor, GTC_CACHE);
@@ -1386,20 +1553,20 @@ static void K_drawKartItem(void)
 	if (K_UseColorHud())
 		colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 
-	V_DrawMappedPatch(fx, fy, V_HUDTRANS|fflags, localbg, colormap);
+	V_DrawFixedPatch(fx << FRACBITS, fy << FRACBITS, info.hudScale, V_HUDTRANS|fflags, localbg, colormap);
 
 	// Then, the numbers:
 	if (stplyr->itemamount >= K_GetItemNumberDisplayMin(stplyr->itemtype, tiny) && !stplyr->itemroulette)
 	{
 		localbg = K_getItemMulPatch(tiny);
-		V_DrawMappedPatch(fx + (flipamount ? 48 : 0), fy, V_HUDTRANS|fflags|(flipamount ? V_FLIP : 0), localbg, colormap); // flip this graphic for p2 and p4 in split and shift it.
-		V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, localpatch, colmap);
+		V_DrawFixedPatch((fx + (flipamount ? 48 : 0))<<FRACBITS, (fy<<FRACBITS), info.hudScale, V_HUDTRANS|fflags|(flipamount ? V_FLIP : 0), localbg, colormap); // flip this graphic for p2 and p4 in split and shift it.
+		V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, info.hudScale, localpatchflags, localpatch, colmap);
 
 		// draw minecraft-style cooldown
-		K_DrawItemCooldown(fx, fy, V_HUDTRANSHALF|fflags, stplyr->itemusecooldown, stplyr->itemusecooldownmax);
+		K_DrawItemCooldown(fx, fy, info.hudScale, V_HUDTRANSHALF|fflags, stplyr->itemusecooldown, stplyr->itemusecooldownmax);
 
 		if (isalt)
-			V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, K_getItemAltPatch(tiny, true), colmap);
+			V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, info.hudScale, localpatchflags, K_getItemAltPatch(tiny, true), colmap);
 
 		if (tiny)
 		{
@@ -1410,8 +1577,13 @@ static void K_drawKartItem(void)
 		}
 		else
 		{
-			V_DrawScaledPatch(fx+28, fy+41, V_HUDTRANS|fflags, kp_itemx);
-			V_DrawKartString(fx+38, fy+36, V_HUDTRANS|fflags, va("%d", stplyr->itemamount));
+			INT32 itemAmountFlags = V_HUDTRANS;
+
+			if (shouldDrawOnPlayer)
+				itemAmountFlags = (stplyr->exiting) ? V_HUDTRANS : V_30TRANS;
+
+			V_DrawSciencePatch((fx << FRACBITS) + (28 * info.hudScale), (fy << FRACBITS) + (41 * info.hudScale), itemAmountFlags|fflags, kp_itemx, info.hudScale);
+			V_DrawScalingKartStringAtFixed((fx << FRACBITS) + (38 * info.hudScale), (fy << FRACBITS) + (36 * info.hudScale), info.hudScale, itemAmountFlags|fflags, va("%d", stplyr->itemamount));
 		}
 	}
 	else if (cv_fancyroulette.value && stplyr->itemroulette)// xitem-next styled animated roulette
@@ -1433,13 +1605,13 @@ static void K_drawKartItem(void)
 		}
 		else
 		{
-			V_SetClipRect((fx + 8) << FRACBITS, (fy + 8) << FRACBITS, 34 << FRACBITS, 34 << FRACBITS, V_HUDTRANS|fflags);
+			V_SetClipRect((fx + rinfo.crop.x) << FRACBITS, (fy + rinfo.crop.y) << FRACBITS, rinfo.spacing, rinfo.spacing, V_HUDTRANS|fflags);
 		}
 		for (int rouletteshift = -1; rouletteshift <= 2; rouletteshift++)
 		{
 			shiftprog = (FRACUNIT * -rouletteshift) + (FixedDiv((stplyr->itemroulette<<FRACBITS)|timefracs, animlength<<FRACBITS) % FRACUNIT);
 			alpha = (FixedMul((abs(shiftprog) * 10), FixedDiv(hudtrans << FRACBITS, 10 << FRACBITS)) >> FRACBITS)+(10-hudtrans);
-			rfy = (fy<<FRACBITS) + shift*shiftprog;
+			rfy = (fy<<FRACBITS) + FixedMul(shift*shiftprog, info.hudScale);
 			if (0 > alpha) alpha = 0;
 			if (alpha >= 10) alpha = 10;
 			fancyflags = (alpha<<V_ALPHASHIFT)|fflags;
@@ -1447,35 +1619,40 @@ static void K_drawKartItem(void)
 			baseitem = K_GetRollingRouletteItemOffset(stplyr, rouletteshift, animlength);
 			localpatch = K_GetCachedItemPatch(baseitem, tiny, 0);
 
-			V_DrawFixedPatch(fx<<FRACBITS, rfy, FRACUNIT, fancyflags, localpatch, colmap);
+			V_DrawFixedPatch(fx<<FRACBITS, rfy, info.hudScale, fancyflags, localpatch, colmap);
 		}
 		V_ClearClipRect();
 
 		// draw minecraft-style cooldown
-		K_DrawItemCooldown(fx, fy, V_HUDTRANSHALF|fflags, stplyr->itemusecooldown, stplyr->itemusecooldownmax);
+		K_DrawItemCooldown(fx, fy, V_HUDTRANSHALF|fflags, stplyr->itemusecooldown, stplyr->itemusecooldownmax, info.hudScale);
 	}
 	else
 	{
-		V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, localpatch, colmap);
+		V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, info.hudScale, localpatchflags, localpatch, colmap);
 		
 		// draw minecraft-style cooldown
-		K_DrawItemCooldown(fx, fy, V_HUDTRANSHALF|fflags, stplyr->itemusecooldown, stplyr->itemusecooldownmax);
+		K_DrawItemCooldown(fx, fy, V_HUDTRANSHALF|fflags, stplyr->itemusecooldown, stplyr->itemusecooldownmax, info.hudScale);
 
 		if (isalt)
-			V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, K_getItemAltPatch(tiny, false), colmap);
+			V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, info.hudScale, localpatchflags, K_getItemAltPatch(tiny, false), colmap);
 	}
 
 	// Extensible meter, currently used by Invincibilty, Grow, Rocket Sneakers and Flame Shield
 	// ...aren't you forgetting something?
 	if (itembar != -1)
-		K_DrawItemBar(fx, fy, fflags|V_HUDTRANS, itembar, (UINT8 []){0, 8, 12});
+		K_DrawItemBar(fx, fy, info.hudScale, fflags|V_HUDTRANS, itembar, (UINT8 []){0, 8, 12});
 
 	if (flamebar != -1)
-		K_DrawItemBar(fx, fy - 8, fflags|V_HUDTRANS, flamebar, (UINT8 []){51, 36, 55});
+		K_DrawItemBar(fx, fy - FixedMul(8, info.hudScale), info.hudScale, fflags|V_HUDTRANS, flamebar, (UINT8 []){51, 36, 55});
 
 	// Quick Eggman numbers
 	if (stplyr->eggmanexplode > 1)
-		V_DrawScaledPatch(fx+17, fy+13-(tiny ? 1 : 0), V_HUDTRANS|fflags, kp_eggnum[min(3, G_TicsToSeconds(stplyr->eggmanexplode))]);
+	{
+		V_DrawSciencePatch((fx<<FRACBITS) + (17 * info.hudScale),
+				   (fy<<FRACBITS) + (13 * info.hudScale) - (tiny ? FRACUNIT : 0),
+				   V_HUDTRANS|fflags, kp_eggnum[min(3, G_TicsToSeconds(stplyr->eggmanexplode))],
+				   info.hudScale);
+	}
 }
 
 void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UINT8 mode)

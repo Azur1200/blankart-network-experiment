@@ -1505,9 +1505,10 @@ static int libd_getDrawInfo(lua_State *L)
 	HUDONLY
 	enum huddrawinfo option = luaL_checkoption(L, 1, NULL, hud_drawinfo_options);
 	drawinfo_t info;
+	rouletteinfo_t rinfo;
 
 	switch(option) {
-		case huddrawinfo_item:          K_getItemBoxDrawinfo(&info);		break;
+		case huddrawinfo_item:          K_getItemBoxDrawinfo(&info, &rinfo);break;
 		case huddrawinfo_gametypeinfo:  K_getLapsDrawinfo(&info);			break;
 		case huddrawinfo_rings:         K_getRingsDrawinfo(&info);			break;
 		case huddrawinfo_minimap:       K_getMinimapDrawinfo(&info);		break;
