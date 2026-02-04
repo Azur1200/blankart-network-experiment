@@ -52,15 +52,15 @@ consvar_t cv_parallelsoftware = CVAR_INIT ("parallelsoftware", "On", CV_SAVE, CV
 
 //SoM: 3/23/2000: Use Boom visplane hashing.
 
-visplane_t *visplanes[MAXVISPLANES];
+visplane_t *visplanes[MAXVISPLANES] = {};
 static visplane_t *freetail;
 static visplane_t **freehead = &freetail;
 
 visplane_t *floorplane;
 visplane_t *ceilingplane;
 
-visffloor_t ffloor[MAXFFLOORS];
-INT32 numffloors;
+visffloor_t ffloor[MAXFFLOORS] ={};
+INT32 numffloors = 0;
 
 //SoM: 3/23/2000: Boom visplane hashing routine.
 #define visplane_hash(picnum,lightlevel,height) \
@@ -92,7 +92,7 @@ static INT32 spanstart[MAXVIDHEIGHT];
 //                (when mouselookin', yslope is moving into yslopetab)
 //                Check R_SetupFrame, R_SetViewSize for more...
 fixed_t yslopetab[MAXSPLITSCREENPLAYERS][MAXVIDHEIGHT*16];
-fixed_t *yslope;
+fixed_t *yslope = NULL;
 
 //
 // R_InitPlanes

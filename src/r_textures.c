@@ -53,11 +53,11 @@ UINT32 **texturecolumnofs; // column offset lookup table for each texture
 UINT8 **texturecache; // graphics data for each generated full-size texture
 UINT8 **texturebrightmapcache; // graphics data for brightmap converted for use with a specific texture
 
-INT32 *texturewidth;
-fixed_t *textureheight; // needed for texture pegging
+INT32 *texturewidth = NULL;
+fixed_t *textureheight = NULL; // needed for texture pegging
 
-INT32 *texturetranslation;
-INT32 *texturebrightmaps;
+INT32 *texturetranslation = NULL;
+INT32 *texturebrightmaps = NULL;
 
 INT32 g_texturenum_dbgline;
 
