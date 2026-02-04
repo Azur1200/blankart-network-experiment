@@ -6991,62 +6991,65 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 	{
 		if ((player->pflags & PF_AIRDROP))
 		{
-			if (airdropactive == AIRDROP_BOUNCY)
+			if (airdropactive == AIRDROP_HEAVY)
 			{
-				const fixed_t maxBounce = mapobjectscale * 10;
-				const fixed_t minBounce = mapobjectscale;
-				fixed_t bounce = 2 * abs(player->airdroptime) / 3;
-
-				// Lose speed on bad bounce.
-				// Slow down more as horizontal momentum shrinks
-				// compared to vertical momentum.
-				angle_t a = R_PointToAngle2(0, 0, 4 * maxBounce, player->speed);
-				fixed_t f = FSIN(a);
-				player->mo->momx = FixedMul(player->mo->momx, f);
-				player->mo->momy = FixedMul(player->mo->momy, f);
-				if (bounce > maxBounce)
+				if (player->pflags & PF_BOUNCYAIRDROP)
 				{
-					bounce = maxBounce;
+					const fixed_t maxBounce = mapobjectscale * 10;
+					const fixed_t minBounce = mapobjectscale;
+					fixed_t bounce = 2 * abs(player->airdroptime) / 3;
+
+					// Lose speed on bad bounce.
+					// Slow down more as horizontal momentum shrinks
+					// compared to vertical momentum.
+					angle_t a = R_PointToAngle2(0, 0, 4 * maxBounce, player->speed);
+					fixed_t f = FSIN(a);
+					player->mo->momx = FixedMul(player->mo->momx, f);
+					player->mo->momy = FixedMul(player->mo->momy, f);
+					if (bounce > maxBounce)
+					{
+						bounce = maxBounce;
+					}
+					else if (bounce < minBounce)
+					{
+						bounce = minBounce;
+					}
+
+					if (player->mo->eflags & MFE_UNDERWATER)
+						bounce = (117 * bounce) / 200;
+
+					// Nudge the player in their facing angle, and provide a little starting momentum if they need it.
+					// The bounce is already a strong tradeoff, so this allows it to be used for saves and get you back into flow.
+					angle_t momangle = K_MomentumAngle(player->mo);
+					fixed_t minspeed = K_GetKartSpeed(player, false, false)/2;
+					fixed_t returnspeed = max(FixedHypot(player->mo->momx, player->mo->momy), minspeed);
+
+					// Initial momentum set uses real speed to avoid some weird twitchy behavior at low XY speed
+					P_InstaThrust(player->mo, momangle, FixedHypot(player->mo->momx, player->mo->momy)/2);
+					P_Thrust(player->mo, player->mo->angle, returnspeed/2);
+					
+					player->mo->z += P_MobjFlip(player->mo);
+					player->mo->momz = bounce * P_MobjFlip(player->mo);
+
+					if (S_SoundPlaying(player->mo, sfx_s3kd9l))
+					{
+						S_StopSoundByID(player->mo, sfx_s3kd9l);
+					}
+
+					// POOMP!
+					S_StartSound(player->mo, sfx_vclgna);
 				}
-				else if (bounce < minBounce)
+				else
 				{
-					bounce = minBounce;
+					if (player->rings > 0)
+					{
+						P_PlayerRingBurst(player, min(2, player->rings));
+					}
+					player->startboost = TICRATE/2;
+
+					// POOMP!
+					S_StartSound(player->mo, sfx_vclgna);
 				}
-
-				if (player->mo->eflags & MFE_UNDERWATER)
-					bounce = (117 * bounce) / 200;
-
-				// Nudge the player in their facing angle, and provide a little starting momentum if they need it.
-				// The bounce is already a strong tradeoff, so this allows it to be used for saves and get you back into flow.
-				angle_t momangle = K_MomentumAngle(player->mo);
-				fixed_t minspeed = K_GetKartSpeed(player, false, false)/2;
-				fixed_t returnspeed = max(FixedHypot(player->mo->momx, player->mo->momy), minspeed);
-
-				// Initial momentum set uses real speed to avoid some weird twitchy behavior at low XY speed
-				P_InstaThrust(player->mo, momangle, FixedHypot(player->mo->momx, player->mo->momy)/2);
-				P_Thrust(player->mo, player->mo->angle, returnspeed/2);
-				
-				player->mo->z += P_MobjFlip(player->mo);
-				player->mo->momz = bounce * P_MobjFlip(player->mo);
-
-				if (S_SoundPlaying(player->mo, sfx_s3kd9l))
-				{
-					S_StopSoundByID(player->mo, sfx_s3kd9l);
-				}
-
-				// POOMP!
-				S_StartSound(player->mo, sfx_vclgna);
-			}
-			else if (airdropactive == AIRDROP_HEAVY)
-			{
-				if (player->rings > 0)
-				{
-					P_PlayerRingBurst(player, min(2, player->rings));
-				}
-				player->startboost = TICRATE/2;
-
-				// POOMP!
-				S_StartSound(player->mo, sfx_vclgna);
 			}
 		}
 		player->airdroptime = 0;
@@ -7056,7 +7059,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 
 	if ((cmd->buttons & BT_BRAKE) && !(player->pflags & PF_WANTSAIRDROP))
 	{
-		if (airdropactive == AIRDROP_HEAVY && !(player->pflags & PF_AIRDROP))
+		if (airdropactive == AIRDROP_HEAVY && !(player->pflags & (PF_AIRDROP|PF_BOUNCYAIRDROP)))
 		{
 			// TODO: heavy air drop should allow keeping current boost stack
 			S_StartSound(player->mo, sfx_cdfm01);
@@ -7079,33 +7082,41 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		
 		K_SpawnFallLines(player, false);
 
-		if (airdropactive == AIRDROP_BOUNCY)
+		if (airdropactive == AIRDROP_HEAVY)
 		{
-			player->airdroptime = player->mo->momz;
-			if (!S_SoundPlaying(player->mo, sfx_s3kd9l))
+			if (player->pflags & PF_BOUNCYAIRDROP)
 			{
-				S_StartSound(player->mo, sfx_s3kd9l);
+				player->airdroptime = player->mo->momz;
+				if (!S_SoundPlaying(player->mo, sfx_s3kd9l))
+				{
+					S_StartSound(player->mo, sfx_s3kd9l);
+				}
+
+				player->mo->momz -= FixedMul(2*gravity, mapobjectscale)*P_MobjFlip(player->mo);
 			}
-		}
-		else
-		{
-			if (player->airdroptime < UINT8_MAX)
-				player->airdroptime++;
-		}
-		
-		if (airdropactive == AIRDROP_HEAVY && player->airdroptime <= TICRATE/4)
-		{
-			player->mo->momz -= FixedMul(4*gravity, mapobjectscale)*P_MobjFlip(player->mo);
-			K_SpawnAirdropTrail(player);
+			else
+			{
+				if (player->airdroptime < UINT8_MAX)
+					player->airdroptime++;
+
+				if (player->airdroptime <= TICRATE/4)
+				{
+					player->mo->momz -= FixedMul(4*gravity, mapobjectscale)*P_MobjFlip(player->mo);
+					K_SpawnAirdropTrail(player);
+				}
+			}
 		}
 		else if (airdropactive == AIRDROP_LIGHT)
 		{
-			player->mo->momz -= FixedMul(gravity, mapobjectscale)*P_MobjFlip(player->mo);
-			K_SpawnAirdropTrail(player);
-		}
-		else
-		{
-			player->mo->momz -= FixedMul(2*gravity, mapobjectscale)*P_MobjFlip(player->mo);
+			SINT8 airbrakedelay = TICRATE/3;
+			if (player->airdroptime >= airbrakedelay)
+			{
+				player->mo->momz -= FixedMul(gravity, mapobjectscale)*P_MobjFlip(player->mo);
+				K_SpawnAirdropTrail(player);
+			}
+
+			if (player->airdroptime < UINT8_MAX)
+				player->airdroptime++;
 		}
 	}
 }

@@ -65,7 +65,8 @@ typedef enum
 {
 	PF_GODMODE			= 1<<0, // Immortal.
 
-	// free: 1<<1 and 1<<2
+	// free: 1<<1
+	PF_BOUNCYAIRDROP    = 1<<2, // Enables bouncy (RR) air-drop for players.
 
 	// Look back VFX has been spawned
 	// TODO: Is there a better way to track this?

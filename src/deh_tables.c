@@ -336,7 +336,7 @@ const char *const PLAYERFLAG_LIST[] = {
 	"GODMODE",			 // Immortal.
 
 	"\x01",
-	"\x01",
+	"BOUNCYAIRDROP",     // Makes Heavy Air-Drop act like Ring Racers.
 
 	// Look back VFX has been spawned
 	// TODO: Is there a better way to track this?
