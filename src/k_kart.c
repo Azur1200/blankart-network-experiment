@@ -7044,6 +7044,9 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 					P_PlayerRingBurst(player, min(2, player->rings));
 				}
 				player->startboost = TICRATE/2;
+
+				// POOMP!
+				S_StartSound(player->mo, sfx_vclgna);
 			}
 		}
 		player->airdroptime = 0;
@@ -7067,7 +7070,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 	}
 	else
 	{
-		if (airdropactive == AIRDROP_LIGHT)
+		if (airdropactive == AIRDROP_LIGHT && !(cmd->buttons & BT_BRAKE))
 			player->pflags &= ~PF_AIRDROP;
 	}
 
