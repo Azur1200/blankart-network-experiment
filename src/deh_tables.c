@@ -336,7 +336,7 @@ const char *const PLAYERFLAG_LIST[] = {
 	"GODMODE",			 // Immortal.
 
 	"\x01",
-	"BOUNCYAIRDROP",     // Makes Heavy Air-Drop act like Ring Racers.
+	"\x01",
 
 	// Look back VFX has been spawned
 	// TODO: Is there a better way to track this?
@@ -423,6 +423,14 @@ struct int_const_s const PLAYERFLAG_ALIASES[] = {
 	{"TAGIT", 0},
 
 	{ NULL, 0 }
+};
+
+const char *const AIRDROPFLAG_LIST[] = {
+	"WANTSAIRDROP", // Wants air drop (active while holding down brake, used for bouncy air drop)
+	"AIRDROP", // Is in Air Drop (activation / deactivation criteria change if light or heavy)
+	"BOUNCYAIRDROP", // Enables bouncy (Ring Racers) air-drop for players.
+
+	NULL // stop loop here.
 };
 
 const char *const ITEMFLAG_LIST[] = {

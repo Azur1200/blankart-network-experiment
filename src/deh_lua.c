@@ -178,6 +178,18 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 		if (mathlib) return luaL_error(L, "playerflag '%s' could not be found.\n", word);
 		return 0;
 	}
+	else if (fastncmp("PAF_", word, 4)) {
+		p = word+4;
+		for (i = 0; AIRDROPFLAG_LIST[i]; i++)
+		{
+			if (fastcmp(p, AIRDROPFLAG_LIST[i])) {
+				CacheAndPushConstant(L, word, ((lua_Integer)1<<i));
+				return 1;
+			}
+		}
+		if (mathlib) return luaL_error(L, "airdropflag '%s' could not be found.\n", word);
+		return 0;
+	}
 	else if (fastncmp("IF_", word, 3)) {
 		p = word+3;
 		for (i = 0; ITEMFLAG_LIST[i]; i++)
