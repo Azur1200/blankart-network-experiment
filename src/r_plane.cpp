@@ -59,7 +59,7 @@ static visplane_t **freehead = &freetail;
 visplane_t *floorplane = NULL;
 visplane_t *ceilingplane = NULL;
 
-visffloor_t ffloor[MAXFFLOORS] ={};
+visffloor_t visffloor[MAXFFLOORS] ={};
 INT32 numffloors = 0;
 
 //SoM: 3/23/2000: Boom visplane hashing routine.
@@ -273,7 +273,7 @@ void R_ClearFFloorClips(void)
 	// opening / clipping determination
 	for (p = 0; p < MAXFFLOORS; p++)
 	{
-		visffloor_t *fffloor = &ffloor[p];
+		visffloor_t *fffloor = &visffloor[p];
 		std::fill(fffloor->f_clip, fffloor->f_clip + viewwidth, static_cast<INT16>(viewheight));
 		std::fill(fffloor->c_clip, fffloor->c_clip + viewwidth, static_cast<INT16>(-1));
 	}
