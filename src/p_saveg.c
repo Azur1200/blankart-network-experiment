@@ -117,6 +117,28 @@ static INT32 P_SyncINT32(savebuffer_t *save, INT32 v)
 		return READINT32(save->p);
 }
 
+static UINT64 P_SyncUINT64(savebuffer_t *save, UINT32 v)
+{
+	if (save->write)
+	{
+		WRITEUINT64(save->p, v);
+		return v;
+	}
+	else
+		return READUINT64(save->p);
+}
+
+static INT64 P_SyncINT64(savebuffer_t *save, INT32 v)
+{
+	if (save->write)
+	{
+		WRITEINT64(save->p, v);
+		return v;
+	}
+	else
+		return READINT64(save->p);
+}
+
 /*
 static char P_SyncChar(savebuffer_t *save, char v)
 {
@@ -362,9 +384,11 @@ static void P_RelinkWaypoint(savebuffer_t *save, waypoint_t **ptr)
 	SINT8: P_SyncSINT8, \
 	INT16: P_SyncINT16, \
 	INT32: P_SyncINT32, \
+	INT64: P_SyncINT64, \
 	UINT8: P_SyncUINT8, \
 	UINT16: P_SyncUINT16, \
 	UINT32: P_SyncUINT32, \
+	UINT64: P_SyncUINT64, \
 	player_t *: P_SyncPlayer, \
 	state_t *: P_SyncState, \
 	ffloor_t *: P_SyncFFloor, \
