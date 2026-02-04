@@ -7033,6 +7033,9 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 				{
 					S_StopSoundByID(player->mo, sfx_s3kd9l);
 				}
+
+				// POOMP!
+				S_StartSound(player->mo, sfx_vclgna);
 			}
 			else if (airdropactive == AIRDROP_HEAVY)
 			{
