@@ -71,8 +71,9 @@ typedef enum
 	// TODO: Is there a better way to track this?
 	PF_GAINAX			= 1<<3,
 	PF_KICKSTARTACCEL	= 1<<4, // Accessibility feature: Is accelerate in kickstart mode?
-	// 1<<5 free
-	// 1<<6 free
+	
+	PF_WANTSAIRDROP		= 1<<5, // Wants air drop (active while holding down brake, used for bouncy air drop)
+	PF_AIRDROP			= 1<<6, // Is in Air Drop (activation / deactivation criteria change if light or heavy)
 
 	PF_WANTSTOJOIN		= 1<<7, // Spectator that wants to join
 
@@ -672,7 +673,7 @@ struct player_t
 	UINT8 ringvolume;		// When consuming lots of rings, lower the sound a little.
 	UINT8 ringtransparency; // When consuming lots of rings, fade out the rings again.
 
-	UINT8 airdroptime;		// Tracks how long airdrop has been active, used for delay before airdrop kicks in.
+	fixed_t airdroptime;	// Tracks how long airdrop has been active, used for delay before airdrop kicks in.
 	//boolean ringdrop;		// Set when having ringdrop applied.
 
 	mobj_t *shieldtracer;	// Blankart: Shield mobj

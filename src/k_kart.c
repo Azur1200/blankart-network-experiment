@@ -6978,65 +6978,130 @@ static void K_SpawnFallLines(player_t *player, boolean ringdrop)
 
 static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 {
+	if (!(cmd->buttons & BT_BRAKE))
+	{
+		player->pflags &= ~PF_WANTSAIRDROP;
+	}
+
 	if (!K_AirDropActive() || P_IsObjectOnGround(player->mo)
 		|| P_PlayerInPain(player) || player->loop.radius
 		|| (player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
 		|| player->respawn
 	)
 	{
-		// Conditions!
+		if ((player->pflags & PF_AIRDROP))
+		{
+			if (airdropactive == AIRDROP_BOUNCY)
+			{
+				const fixed_t maxBounce = mapobjectscale * 10;
+				const fixed_t minBounce = mapobjectscale;
+				fixed_t bounce = 2 * abs(player->airdroptime) / 3;
+
+				// Lose speed on bad bounce.
+				// Slow down more as horizontal momentum shrinks
+				// compared to vertical momentum.
+				angle_t a = R_PointToAngle2(0, 0, 4 * maxBounce, player->speed);
+				fixed_t f = FSIN(a);
+				player->mo->momx = FixedMul(player->mo->momx, f);
+				player->mo->momy = FixedMul(player->mo->momy, f);
+				if (bounce > maxBounce)
+				{
+					bounce = maxBounce;
+				}
+				else if (bounce < minBounce)
+				{
+					bounce = minBounce;
+				}
+
+				if (player->mo->eflags & MFE_UNDERWATER)
+					bounce = (117 * bounce) / 200;
+
+				// Nudge the player in their facing angle, and provide a little starting momentum if they need it.
+				// The bounce is already a strong tradeoff, so this allows it to be used for saves and get you back into flow.
+				angle_t momangle = K_MomentumAngle(player->mo);
+				fixed_t minspeed = K_GetKartSpeed(player, false, false)/2;
+				fixed_t returnspeed = max(FixedHypot(player->mo->momx, player->mo->momy), minspeed);
+
+				// Initial momentum set uses real speed to avoid some weird twitchy behavior at low XY speed
+				P_InstaThrust(player->mo, momangle, FixedHypot(player->mo->momx, player->mo->momy)/2);
+				P_Thrust(player->mo, player->mo->angle, returnspeed/2);
+				
+				player->mo->z += P_MobjFlip(player->mo);
+				player->mo->momz = bounce * P_MobjFlip(player->mo);
+
+				if (S_SoundPlaying(player->mo, sfx_s3kd9l))
+				{
+					S_StopSoundByID(player->mo, sfx_s3kd9l);
+				}
+			}
+			else if (airdropactive == AIRDROP_HEAVY)
+			{
+				if (player->rings > 0)
+				{
+					P_PlayerRingBurst(player, min(2, player->rings));
+				}
+				player->startboost = TICRATE/2;
+			}
+		}
 		player->airdroptime = 0;
-		//player->ringdrop = false;
+		player->pflags &= ~PF_AIRDROP;
 		return;
 	}
 
-	if (cmd->buttons & BT_BRAKE)
+	if ((cmd->buttons & BT_BRAKE) && !(player->pflags & PF_WANTSAIRDROP))
 	{
-		SINT8 airbrakedelay = TICRATE/3;
-		if (player->airdroptime < airbrakedelay)
+		if (airdropactive == AIRDROP_HEAVY && !(player->pflags & PF_AIRDROP))
 		{
-			/*if (player->rings > 0)
-			{
-				player->ringlock = 6;
-			}
+			// TODO: heavy air drop should allow keeping current boost stack
+			S_StartSound(player->mo, sfx_cdfm01);
+			S_StartSound(player->mo, sfx_s3k51);
 
-			player->ringdrop = false;*/
+			player->mo->momx = FixedMul(player->mo->momx, 90*FRACUNIT/100);
+			player->mo->momy = FixedMul(player->mo->momy, 90*FRACUNIT/100);
+			player->mo->momz -= 8*P_MobjFlip(player->mo)*mapobjectscale;
+		}
+		player->pflags |= PF_AIRDROP|PF_WANTSAIRDROP;
+	}
+	else
+	{
+		if (airdropactive == AIRDROP_LIGHT)
+			player->pflags &= ~PF_AIRDROP;
+	}
+
+	if (player->pflags & PF_AIRDROP)
+	{
+		
+		K_SpawnFallLines(player, false);
+
+		if (airdropactive == AIRDROP_BOUNCY)
+		{
+			player->airdroptime = player->mo->momz;
+			if (!S_SoundPlaying(player->mo, sfx_s3kd9l))
+			{
+				S_StartSound(player->mo, sfx_s3kd9l);
+			}
 		}
 		else
 		{
-			/*if (!player->ringdelay && player->rings > 0)
-			{
-				mobj_t *ring = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_RING);
-				P_SetMobjState(ring, S_FASTRING1);
-
-				ring->renderflags |= RF_ADD;
-				ring->renderflags |= RF_TRANS60;
-				ring->colorized = true;
-				ring->color = SKINCOLOR_SILVER;
-
-				ring->extravalue1 = 17; // Ring use animation timer
-				ring->extravalue2 = 1; // Ring use animation flag
-				ring->extravalue3 = 1; // Ring airdrop use flag
-				ring->shadowscale = 0;
-				P_SetTarget(&ring->target, player->mo); // user
-				player->rings--;
-				player->ringdelay = 7;
-				player->ringlock = 6;
-			}
-
-			if (player->rings <= 0)
-			{
-				player->ringdrop = false;
-			}*/
-
-			K_SpawnFallLines(player, /*player->ringdrop*/ false);
+			if (player->airdroptime < UINT8_MAX)
+				player->airdroptime++;
+		}
+		
+		if (airdropactive == AIRDROP_HEAVY && player->airdroptime <= TICRATE/4)
+		{
+			player->mo->momz -= FixedMul(4*gravity, mapobjectscale)*P_MobjFlip(player->mo);
 			K_SpawnAirdropTrail(player);
+		}
+		else if (airdropactive == AIRDROP_LIGHT)
+		{
 			player->mo->momz -= FixedMul(gravity, mapobjectscale)*P_MobjFlip(player->mo);
+			K_SpawnAirdropTrail(player);
+		}
+		else
+		{
+			player->mo->momz -= FixedMul(2*gravity, mapobjectscale)*P_MobjFlip(player->mo);
 		}
 	}
-
-	if (player->airdroptime < UINT8_MAX)
-		player->airdroptime++;
 }
 
 // Returns the bumpspark value as an enum.

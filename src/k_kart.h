@@ -419,6 +419,14 @@ typedef enum
 	BUMPSPARK_ALL
 } bumpsparktype_t;
 
+typedef enum
+{
+	AIRDROP_NONE = 0,
+	AIRDROP_LIGHT,
+	AIRDROP_HEAVY,
+	AIRDROP_BOUNCY,
+} airdroptype_t;
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

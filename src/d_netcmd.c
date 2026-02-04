@@ -613,7 +613,12 @@ consvar_t cv_kartdrafting_closedraft = CVAR_INIT ("kartdrafting_closedraft", "Of
 consvar_t cv_kartdrafting_closedeadzone = CVAR_INIT ("kartdrafting_closedeadzone", "640", CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
 consvar_t cv_kartdrafting_basedistance = CVAR_INIT ("kartdrafting_basedistance", "2560", CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
 
-consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartAirDrop_OnChange);
+static CV_PossibleValue_t airdrop_cons_t[] = {{AIRDROP_NONE, "Off"},
+						{AIRDROP_LIGHT, "Light"},
+						{AIRDROP_BOUNCY, "Bouncy"},
+						{AIRDROP_HEAVY, "Heavy"},
+						{0, NULL}};
+consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "Off", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, airdrop_cons_t, KartAirDrop_OnChange);
 
 consvar_t cv_kartairthrust = CVAR_INIT ("kartairthrust", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartAirThrust_OnChange);
 consvar_t cv_kartairthrust_reductionrate = CVAR_INIT ("kartairthrust_reductionrate", "0.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
@@ -8473,24 +8478,11 @@ static void KartAirDrop_OnChange(void)
 	{
 		if (leveltime < starttime)
 		{
-			airdropactive = true;
-			CONS_Printf(M_GetText("Air Drop has been turned \"On\".\n"));
+			CONS_Printf(M_GetText("Air Drop has been set to \"%s\".\n"), cv_kartairdrop.string);
 		}
 		else
 		{
-			CONS_Printf(M_GetText("Air Drop will be turned \"On\" Next Round.\n"));
-		}
-	}
-	else if (K_AirDropActive() && !cv_kartairdrop.value)
-	{
-		if (leveltime < starttime)
-		{
-			airdropactive = false;
-			CONS_Printf(M_GetText("Air Drop has been turned \"Off\".\n"));
-		}
-		else
-		{
-			CONS_Printf(M_GetText("Air Drop will be turned \"Off\" next round.\n"));
+			CONS_Printf(M_GetText("Air Drop will be set to \"%s\" Next Round.\n"), cv_kartairdrop.string);
 		}
 	}
 }

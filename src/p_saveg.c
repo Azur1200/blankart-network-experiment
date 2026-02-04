@@ -4239,13 +4239,13 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(purpledriftactive);
 	SYNCBOOLEAN(slopeboostactive);
 	SYNCBOOLEAN(draftingactive);
-	SYNCBOOLEAN(airdropactive);
 	SYNCBOOLEAN(airthrustactive);
 	SYNCBOOLEAN(recoverydashactive);
 	SYNCBOOLEAN(waterskipbricks);
 	SYNCBOOLEAN(itemlittering);
 	SYNCBOOLEAN(itempushing);
 	SYNCBOOLEAN(itemlistactive);
+	SYNC(airdropactive);
 	SYNC(bumpsparkactive);
 	SYNC(antibumptime);
 
