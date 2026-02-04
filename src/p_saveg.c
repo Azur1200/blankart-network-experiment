@@ -501,6 +501,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		SYNC(players[i].playerstate);
 		SYNC(players[i].pflags);
+		SYNC(players[i].airdropflags);
 		SYNC(players[i].panim);
 		SYNCBOOLEAN(players[i].spectator);
 		SYNC(players[i].spectatewait);

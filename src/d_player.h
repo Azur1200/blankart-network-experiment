@@ -65,16 +65,14 @@ typedef enum
 {
 	PF_GODMODE			= 1<<0, // Immortal.
 
-	// free: 1<<1
-	PF_BOUNCYAIRDROP    = 1<<2, // Enables bouncy (RR) air-drop for players.
+	// free: 1<<1 and 1<<2
 
 	// Look back VFX has been spawned
 	// TODO: Is there a better way to track this?
 	PF_GAINAX			= 1<<3,
 	PF_KICKSTARTACCEL	= 1<<4, // Accessibility feature: Is accelerate in kickstart mode?
-	
-	PF_WANTSAIRDROP		= 1<<5, // Wants air drop (active while holding down brake, used for bouncy air drop)
-	PF_AIRDROP			= 1<<6, // Is in Air Drop (activation / deactivation criteria change if light or heavy)
+
+	// free: 1<<5 and 1<<6
 
 	PF_WANTSTOJOIN		= 1<<7, // Spectator that wants to join
 
@@ -112,6 +110,13 @@ typedef enum
 	PF_ATTACKDOWN		= 1<<30, // For lua compat, don't use!
 	PF_SLIDING			= 1<<31, // For lua compat, don't use!
 } pflags_t;
+
+typedef enum
+{
+	PAF_WANTSAIRDROP	= 1<<0, // Wants air drop (active while holding down brake, used for bouncy air drop)
+	PAF_AIRDROP			= 1<<1, // Is in Air Drop (activation / deactivation criteria change if light or heavy)
+	PAF_BOUNCYAIRDROP   = 1<<2, // Enables bouncy (Ring Racers) air-drop for players.
+} p_airdropflags_t;
 
 typedef enum
 {
@@ -507,6 +512,9 @@ struct player_t
 	// Bit flags.
 	// See pflags_t, above.
 	pflags_t pflags;
+
+	// Airdrop-exclusive bitflags.
+	p_airdropflags_t airdropflags;
 
 	// playing animation.
 	panim_t panim;

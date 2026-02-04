@@ -6980,7 +6980,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 {
 	if (!(cmd->buttons & BT_BRAKE))
 	{
-		player->pflags &= ~PF_WANTSAIRDROP;
+		player->airdropflags &= ~PAF_WANTSAIRDROP;
 	}
 
 	if (!K_AirDropActive() || P_IsObjectOnGround(player->mo)
@@ -6989,11 +6989,11 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		|| player->respawn
 	)
 	{
-		if ((player->pflags & PF_AIRDROP))
+		if ((player->airdropflags & PAF_AIRDROP))
 		{
 			if (airdropactive == AIRDROP_HEAVY)
 			{
-				if (player->pflags & PF_BOUNCYAIRDROP)
+				if (player->airdropflags & PAF_BOUNCYAIRDROP)
 				{
 					const fixed_t maxBounce = mapobjectscale * 10;
 					const fixed_t minBounce = mapobjectscale;
@@ -7053,13 +7053,13 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 			}
 		}
 		player->airdroptime = 0;
-		player->pflags &= ~PF_AIRDROP;
+		player->airdropflags &= ~PAF_AIRDROP;
 		return;
 	}
 
-	if ((cmd->buttons & BT_BRAKE) && !(player->pflags & PF_WANTSAIRDROP))
+	if ((cmd->buttons & BT_BRAKE) && !(player->airdropflags & PAF_WANTSAIRDROP))
 	{
-		if (airdropactive == AIRDROP_HEAVY && !(player->pflags & (PF_AIRDROP|PF_BOUNCYAIRDROP)))
+		if (airdropactive == AIRDROP_HEAVY && !(player->airdropflags & (PAF_AIRDROP|PAF_BOUNCYAIRDROP)))
 		{
 			// TODO: heavy air drop should allow keeping current boost stack
 			S_StartSound(player->mo, sfx_cdfm01);
@@ -7069,22 +7069,22 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 			player->mo->momy = FixedMul(player->mo->momy, 90*FRACUNIT/100);
 			player->mo->momz -= 8*P_MobjFlip(player->mo)*mapobjectscale;
 		}
-		player->pflags |= PF_AIRDROP|PF_WANTSAIRDROP;
+		player->airdropflags |= PAF_AIRDROP|PAF_WANTSAIRDROP;
 	}
 	else
 	{
 		if (airdropactive == AIRDROP_LIGHT && !(cmd->buttons & BT_BRAKE))
-			player->pflags &= ~PF_AIRDROP;
+			player->airdropflags &= ~PAF_AIRDROP;
 	}
 
-	if (player->pflags & PF_AIRDROP)
+	if (player->airdropflags & PAF_AIRDROP)
 	{
 		
 		K_SpawnFallLines(player, false);
 
 		if (airdropactive == AIRDROP_HEAVY)
 		{
-			if (player->pflags & PF_BOUNCYAIRDROP)
+			if (player->airdropflags & PAF_BOUNCYAIRDROP)
 			{
 				player->airdroptime = player->mo->momz;
 				if (!S_SoundPlaying(player->mo, sfx_s3kd9l))

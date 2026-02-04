@@ -1190,6 +1190,7 @@ void Command_ObjectPlace_f(void)
 			// Remove ALL flags and motion.
 			P_UnsetThingPosition(players[0].mo);
 			players[0].pflags = 0;
+			players[0].airdropflags = 0;
 			players[0].mo->flags2 = 0;
 			players[0].mo->eflags = 0;
 			players[0].mo->flags = (MF_NOCLIP|MF_NOGRAVITY|MF_NOBLOCKMAP);
