@@ -1441,8 +1441,8 @@ void R_UpdateTextureBrightmap(INT32 tx, INT32 bm)
 
 static INT32 R_DefineTextures(INT32 i, UINT16 w)
 {
-	i = Rloadflats(i, w);
-	return Rloadtextures(i, w);
+	i = Rloadtextures(i, w);
+	return Rloadflats(i, w);
 }
 
 static void R_FinishLoadingTextures(INT32 add)
