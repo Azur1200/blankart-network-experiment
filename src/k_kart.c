@@ -7036,6 +7036,28 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 						S_StopSoundByID(player->mo, sfx_s3kd9l);
 					}
 
+					if (player->rings > 0)
+					{
+						// Spill some rings with every bounce. Ring Drop lives!
+
+						// Convert the bounce data to floats. It's goddamned 2026.
+						float fbounce, fmaxbounce;
+
+						fbounce = FIXED_TO_FLOAT(max(0, bounce - minBounce));
+						fmaxbounce = FIXED_TO_FLOAT(maxBounce - minBounce);
+
+						fbounce /= fmaxbounce;
+
+						INT32 ringloss = (INT32)(3.0f * fbounce);
+
+						// Better bounces means more rings lost.
+						if (ringloss)
+						{
+							P_PlayerRingBurst(player, min(ringloss, player->rings));
+						}
+					}
+
+
 					// POOMP!
 					S_StartSound(player->mo, sfx_vclgna);
 				}
@@ -7046,6 +7068,9 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 						P_PlayerRingBurst(player, min(2, player->rings));
 					}
 					player->startboost = TICRATE/2;
+
+					// Take off!
+					S_StartSound(player->mo, sfx_s3k81);
 
 					// POOMP!
 					S_StartSound(player->mo, sfx_vclgna);
@@ -7062,7 +7087,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		if (airdropactive == AIRDROP_HEAVY && !(player->airdropflags & (PAF_AIRDROP|PAF_BOUNCYAIRDROP)))
 		{
 			// TODO: heavy air drop should allow keeping current boost stack
-			S_StartSound(player->mo, sfx_cdfm01);
+			S_StartSound(player->mo, sfx_s3k66);
 			S_StartSound(player->mo, sfx_s3k51);
 
 			player->mo->momx = FixedMul(player->mo->momx, 90*FRACUNIT/100);
