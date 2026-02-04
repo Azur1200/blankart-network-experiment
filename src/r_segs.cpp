@@ -1353,6 +1353,13 @@ static void R_RenderSegLoop (drawcolumndata_t* dc)
 	INT32     bottom;
 	INT32     i;
 
+	if (midtexture)
+		R_CheckTextureCache(midtexture);
+	if (toptexture)
+		R_CheckTextureCache(toptexture);
+	if (bottomtexture)
+		R_CheckTextureCache(bottomtexture);
+
 	for (; rw_x < rw_stopx; rw_x++)
 	{
 		// mark floor / ceiling areas

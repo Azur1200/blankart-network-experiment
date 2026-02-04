@@ -663,10 +663,12 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 //
 static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc)(drawcolumndata_t*), boolean allow_parallel)
 {
+	ZoneScoped;
+
 	INT32 x;
 	drawcolumndata_t dc {0};
+	const INT32 texture = texturetranslation[skytexture];
 
-	ZoneScoped;
 
 	if (mapnamespace == MNS_SRB2KART && !newview->sky)
 	{
@@ -696,17 +698,13 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc)(drawcolumndata_t*), bo
 	}
 	dc.lightmap = colormaps;
 	dc.texturemid = skytexturemid;
-	dc.texheight = textureheight[skytexture]
-		>>FRACBITS;
+	dc.texheight = textureheight[texture] >>FRACBITS;
 	dc.sourcelength = dc.texheight;
 
 	x = pl->minx;
 
 	// Precache the texture so we don't corrupt the zoned heap off-main thread
-	if (!texturecache[texturetranslation[skytexture]])
-	{
-		R_GenerateTexture(texturetranslation[skytexture]);
-	}
+	R_CheckTextureCache(texture);
 
 	while (x <= pl->maxx)
 	{
@@ -731,8 +729,7 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc)(drawcolumndata_t*), bo
 				dc.iscale = FixedMul(skyscale[viewssnum], FINECOSINE(xtoviewangle[viewssnum][x + i]>>ANGLETOFINESHIFT));
 				dc.x = x + i;
 				dc.source =
-					R_GetColumn(texturetranslation[skytexture],
-						-angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
+					R_GetColumn(texture, -angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
 				dc.brightmap = NULL;
 
 				colfunc(&dc);

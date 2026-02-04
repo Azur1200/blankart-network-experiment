@@ -937,9 +937,6 @@ static inline INT32 wrap_column(fixed_t tex, INT32 col)
 //
 UINT8 *R_GetColumn(fixed_t tex, INT32 col)
 {
-	if (!texturecache[tex])
-		R_GenerateTexture(tex);
-
 	return texturecache[tex] + LONG(texturecolumnofs[tex][wrap_column(tex, col)]);
 }
 
