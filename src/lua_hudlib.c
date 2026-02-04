@@ -1507,6 +1507,17 @@ static int libd_getDrawInfo(lua_State *L)
 	drawinfo_t info;
 	rouletteinfo_t rinfo;
 
+	// Initialize the extra values that might not get used.
+	info.hudScale = 0;
+	info.hudScaleFloat = 0.0f;
+
+	rinfo.crop.x = 0;
+	rinfo.crop.y = 0;
+	rinfo.flags = 0;
+	rinfo.offset = 0;
+	rinfo.spacing = 0;
+	rinfo.intSpacing = 0;
+
 	switch(option) {
 		case huddrawinfo_item:          K_getItemBoxDrawinfo(&info, &rinfo);break;
 		case huddrawinfo_gametypeinfo:  K_getLapsDrawinfo(&info);			break;
@@ -1519,11 +1530,50 @@ static int libd_getDrawInfo(lua_State *L)
 			return 0; // unreachable
 	}
 
+	// There's no easy solution to pushing temporary metadata to Lua,
+	// so to avoid memory leaks, I'm making a massive table with all the data. Sue me.
+
+	lua_createtable(L, 0, 5);
+
 	lua_pushinteger(L, info.x);
+	lua_setfield(L, -2, "x");
+
 	lua_pushinteger(L, info.y);
+	lua_setfield(L, -2, "y");
+
 	lua_pushinteger(L, info.flags);
+	lua_setfield(L, -2, "flags");
+
 	lua_pushinteger(L, info.flipamount);
-	return 4;
+	lua_setfield(L, -2, "flipamount");
+
+	lua_pushinteger(L, FLOAT_TO_FIXED(info.hudScaleFloat)); // Can't use floats in BLUA
+	lua_setfield(L, -2, "hudscale");
+
+	lua_createtable(L, 0, 5);
+
+		lua_createtable(L, 0, 2);
+			lua_pushinteger(L, rinfo.crop.x);
+			lua_setfield(L, -2, "x");
+
+			lua_pushinteger(L, rinfo.crop.y);
+			lua_setfield(L, -2, "y");
+		lua_setfield(L, -2, "crop");
+
+		lua_pushinteger(L, rinfo.offset);
+		lua_setfield(L, -2, "offset");
+
+		lua_pushinteger(L, rinfo.spacing);
+		lua_setfield(L, -2, "spacing");
+
+		lua_pushinteger(L, rinfo.intSpacing);
+		lua_setfield(L, -2, "intspacing");
+
+		lua_pushinteger(L, rinfo.flags);
+		lua_setfield(L, -2, "flags");
+	lua_setfield(L, -2, "roulette");
+
+	return 1;
 }
 
 // Get cv_translucenthud's value for HUD rendering as a normal V_xxTRANS int
