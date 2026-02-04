@@ -8473,17 +8473,14 @@ static void KartAirDrop_OnChange(void)
 		return;
 	}
 
-	if (!K_AirDropActive() && cv_kartairdrop.value)
+	if (leveltime < starttime)
 	{
-		if (leveltime < starttime)
-		{
-			CONS_Printf(M_GetText("Air Drop has been set to \"%s\".\n"), cv_kartairdrop.string);
-			airdropactive = (UINT8)cv_kartairdrop.value;
-		}
-		else
-		{
-			CONS_Printf(M_GetText("Air Drop will be set to \"%s\" next round.\n"), cv_kartairdrop.string);
-		}
+		CONS_Printf(M_GetText("Air Drop has been set to \"%s\".\n"), cv_kartairdrop.string);
+		airdropactive = (UINT8)cv_kartairdrop.value;
+	}
+	else
+	{
+		CONS_Printf(M_GetText("Air Drop will be set to \"%s\" next round.\n"), cv_kartairdrop.string);
 	}
 }
 
