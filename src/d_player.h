@@ -115,7 +115,6 @@ typedef enum
 {
 	PAF_WANTSAIRDROP	= 1<<0, // Wants air drop (active while holding down brake, used for bouncy air drop)
 	PAF_AIRDROP			= 1<<1, // Is in Air Drop (activation / deactivation criteria change if light or heavy)
-	PAF_BOUNCYAIRDROP   = 1<<2, // Enables bouncy (Ring Racers) air-drop for players.
 } p_airdropflags_t;
 
 typedef enum

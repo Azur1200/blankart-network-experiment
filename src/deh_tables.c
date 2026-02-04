@@ -428,7 +428,6 @@ struct int_const_s const PLAYERFLAG_ALIASES[] = {
 const char *const AIRDROPFLAG_LIST[] = {
 	"WANTSAIRDROP", // Wants air drop (active while holding down brake, used for bouncy air drop)
 	"AIRDROP", // Is in Air Drop (activation / deactivation criteria change if light or heavy)
-	"BOUNCYAIRDROP", // Enables bouncy (Ring Racers) air-drop for players.
 
 	NULL // stop loop here.
 };
