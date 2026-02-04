@@ -2532,6 +2532,7 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 
 	servermods_t basemods[BASEMODS] =
 	{
+		{"Restat", 0, &cv_allowrestat, -1, true},
 		{"Item Litter", 0, NULL, K_ItemLitterActive() > 0, true},
 		{"Rings", 0, NULL, K_RingsActive() > 0, true},
 		{"4-Tier Drift", 0, NULL, K_PurpleDriftActive() > 0, true},
@@ -2543,12 +2544,13 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 		{"Drafting", 0, NULL, K_DraftingActive() > 0, true},
 		{"Air Drop", 0, NULL, K_AirDropActive() > 0, true},
 		{"Air Thrust", 0, NULL, K_AirThrustActive() > 0, true},
+		{"Recovery Dash", 0, NULL, K_RecoveryDashActive() > 0, true},
 		{"Bump Spark", 0, &cv_kartbumpspark, -1, true},
 		{"Bump Drift", 0, NULL, K_GetBumpSpark() > 0, true},
 		{"Bump Spark", 0, NULL, K_GetBumpSpark() > BUMPSPARK_NOCHARGE, true},
-		{"Bump Spring", 0, &cv_kartbumpspring, -1, true},
+		{"Bump Spring", 0, &cv_kartbumpspring, -1, true}
 		//TODO: separate drawer that enumerates item changes?
-		{"Alt. Invin.", 0, NULL, K_IsKartItemAlternate(KITEM_INVINCIBILITY), true}
+		// {"Alt. Invin.", 0, NULL, K_IsKartItemAlternate(KITEM_INVINCIBILITY), true}
 	};
 
 	for (j = 0; j < 2; j++)
