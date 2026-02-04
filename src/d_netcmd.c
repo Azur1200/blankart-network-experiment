@@ -615,9 +615,7 @@ consvar_t cv_kartdrafting_basedistance = CVAR_INIT ("kartdrafting_basedistance",
 
 static CV_PossibleValue_t airdrop_cons_t[] = {{AIRDROP_NONE, "Off"},
 						{AIRDROP_LIGHT, "Light"},
-#if 0
 						{AIRDROP_BOUNCY, "Bouncy"},
-#endif
 						{AIRDROP_HEAVY, "Heavy"},
 						{0, NULL}};
 consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "Off", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, airdrop_cons_t, KartAirDrop_OnChange);

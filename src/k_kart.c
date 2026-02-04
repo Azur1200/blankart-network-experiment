@@ -6991,7 +6991,6 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 	{
 		if ((player->pflags & PF_AIRDROP))
 		{
-#if 0
 			if (airdropactive == AIRDROP_BOUNCY)
 			{
 				const fixed_t maxBounce = mapobjectscale * 10;
@@ -7039,17 +7038,12 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 				S_StartSound(player->mo, sfx_vclgna);
 			}
 			else if (airdropactive == AIRDROP_HEAVY)
-#endif
-			if (airdropactive == AIRDROP_HEAVY)
 			{
 				if (player->rings > 0)
 				{
 					P_PlayerRingBurst(player, min(2, player->rings));
 				}
 				player->startboost = TICRATE/2;
-
-				// POOMP!
-				S_StartSound(player->mo, sfx_vclgna);
 			}
 		}
 		player->airdroptime = 0;
@@ -7073,7 +7067,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 	}
 	else
 	{
-		if (airdropactive == AIRDROP_LIGHT && !(cmd->buttons & BT_BRAKE))
+		if (airdropactive == AIRDROP_LIGHT)
 			player->pflags &= ~PF_AIRDROP;
 	}
 
@@ -7082,7 +7076,6 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		
 		K_SpawnFallLines(player, false);
 
-#if 0
 		if (airdropactive == AIRDROP_BOUNCY)
 		{
 			player->airdroptime = player->mo->momz;
@@ -7092,7 +7085,6 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 			}
 		}
 		else
-#endif
 		{
 			if (player->airdroptime < UINT8_MAX)
 				player->airdroptime++;
@@ -7103,13 +7095,11 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 			player->mo->momz -= FixedMul(4*gravity, mapobjectscale)*P_MobjFlip(player->mo);
 			K_SpawnAirdropTrail(player);
 		}
-#if 0
 		else if (airdropactive == AIRDROP_LIGHT)
 		{
 			player->mo->momz -= FixedMul(gravity, mapobjectscale)*P_MobjFlip(player->mo);
 			K_SpawnAirdropTrail(player);
 		}
-#endif
 		else
 		{
 			player->mo->momz -= FixedMul(2*gravity, mapobjectscale)*P_MobjFlip(player->mo);

@@ -424,7 +424,7 @@ typedef enum
 	AIRDROP_NONE = 0,
 	AIRDROP_LIGHT,
 	AIRDROP_HEAVY,
-	// AIRDROP_BOUNCY,
+	AIRDROP_BOUNCY,
 } airdroptype_t;
 
 #ifdef __cplusplus
