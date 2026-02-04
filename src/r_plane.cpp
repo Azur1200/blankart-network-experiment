@@ -56,8 +56,8 @@ visplane_t *visplanes[MAXVISPLANES] = {};
 static visplane_t *freetail;
 static visplane_t **freehead = &freetail;
 
-visplane_t *floorplane;
-visplane_t *ceilingplane;
+visplane_t *floorplane = NULL;
+visplane_t *ceilingplane = NULL;
 
 visffloor_t ffloor[MAXFFLOORS] ={};
 INT32 numffloors = 0;
