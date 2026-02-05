@@ -4128,6 +4128,16 @@ void V_Recalc(void)
 #endif
 		vid.fdupx = vid.fdupy = (vid.fdupx < vid.fdupy ? vid.fdupx : vid.fdupy);
 
+	I_OutputMsg("width: %d, height: %d\n", vid.width, vid.height);
+
+	if (loaded_config // this could use a better name, since it is more and indicator that early startup is done and its safe to do sketchy shit now :chaosleep:
+	&& (vid.width > 720) && (vid.height > 1280)) // ehhhh well this thing has so many issues, so ill lock it to higher resolutions instead
+	{
+
+		vid.dupx = vid.dupy = FixedDiv(vid.dupy, cv_highreshudscale.value);
+		vid.fdupx = vid.fdupy = FixedDiv(vid.fdupy, cv_highreshudscale.value);
+	}
+
 	vid.meddupx = (UINT8)(vid.dupx >> 1) + 1;
 	vid.meddupy = (UINT8)(vid.dupy >> 1) + 1;
 

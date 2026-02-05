@@ -96,6 +96,7 @@ void SCR_ChangeRenderer(void);
 extern CV_PossibleValue_t cv_renderer_t[];
 
 extern consvar_t cv_scr_width, cv_scr_height, cv_scr_depth, cv_renderview, cv_renderer, cv_renderhitbox, cv_fullscreen;
+extern consvar_t cv_highreshudscale;
 extern consvar_t cv_vhseffect, cv_shittyscreen, cv_votebgscaling;
 extern consvar_t cv_parallelsoftware;
 extern consvar_t cv_accuratefps;

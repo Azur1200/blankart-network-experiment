@@ -1666,6 +1666,7 @@ void D_SRB2Main(void)
 	M_Init();
 	if (!dedicated)
 	{
+		CV_RegisterVar(&cv_highreshudscale);
 		CV_RegisterVar(&cv_ticrate);
 		CV_RegisterVar(&cv_accuratefps);
 		CV_RegisterVar(&cv_constextsize);
