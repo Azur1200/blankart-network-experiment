@@ -205,6 +205,8 @@ typedef enum
 	khud_boostcam,		// Camera push forward on boost
 	khud_destboostcam,	// Ditto
 	khud_timeovercam,	// Camera timer for leaving behind or not
+	khud_heavydropcam,	// Camera timer for heavy air drop
+	khud_postdropcam,	// Camera timer for landing after heavy air drop (both timers superposition for feel)
 
 	// Sounds
 	khud_enginesnd,		// Engine sound offset this player is using.
@@ -512,9 +514,6 @@ struct player_t
 	// See pflags_t, above.
 	pflags_t pflags;
 
-	// Airdrop-exclusive bitflags.
-	p_airdropflags_t airdropflags;
-
 	// playing animation.
 	panim_t panim;
 
@@ -681,8 +680,8 @@ struct player_t
 	UINT8 ringvolume;		// When consuming lots of rings, lower the sound a little.
 	UINT8 ringtransparency; // When consuming lots of rings, fade out the rings again.
 
-	fixed_t airdroptime;	// Tracks how long airdrop has been active, used for delay before airdrop kicks in.
-	//boolean ringdrop;		// Set when having ringdrop applied.
+	tic_t airdroptime;				// Tracks how long airdrop has been active, used for delay before airdrop kicks in.
+	p_airdropflags_t airdropflags;	// Airdrop-exclusive bitflags.
 
 	mobj_t *shieldtracer;	// Blankart: Shield mobj
 
