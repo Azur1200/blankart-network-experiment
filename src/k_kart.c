@@ -7082,7 +7082,8 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		if (airdropactive == AIRDROP_LIGHT || airdropactive == AIRDROP_FUSION)
 		{
 			player->airdropflags &= ~PAF_AIRDROP_LIGHT;
-			player->airdroptime = 0;
+			if (!(player->airdropflags & PAF_AIRDROP_HEAVY))
+				player->airdroptime = 0;
 		}
 	}
 
