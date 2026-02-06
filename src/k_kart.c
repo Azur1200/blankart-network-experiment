@@ -6978,7 +6978,7 @@ static void K_SpawnFallLines(player_t *player, boolean ringdrop)
 
 static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 {
-	const tic_t airbrakedelay = TICRATE/3;
+	const INT32 airbrakedelay = TICRATE/3;
 
 	if (player->airdropbuffer > 0)
 	{
@@ -7030,7 +7030,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 			}
 			if (player->airdroptime > 1)
 			{
-				player->dropdash = TICRATE/4 + min(TICRATE, ((FixedDiv(player->airdroptime, TICRATE) * TICRATE) / FRACUNIT));
+				player->startboost = TICRATE/4 + min(TICRATE, ((FixedDiv(player->airdroptime, TICRATE) * TICRATE) / FRACUNIT));
 				
 				// Take off!
 				S_StartSound(player->mo, sfx_shrpgo);
@@ -7097,20 +7097,21 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 			player->mo->momz -= FixedMul(2*gravity, mapobjectscale)*P_MobjFlip(player->mo);
 		}
 
-		player->airdroptime++;
 		if (player->karthud[khud_heavydropcam] < TICRATE)
 			player->karthud[khud_heavydropcam]++;
 	}
 	else if (player->airdropflags & PAF_AIRDROP_LIGHT)
 	{
-		K_SpawnFallLines(player, false);
 		if (player->airdroptime >= airbrakedelay)
 		{
 			player->mo->momz -= FixedMul(gravity, mapobjectscale)*P_MobjFlip(player->mo);
+			K_SpawnFallLines(player, false);
 			K_SpawnAirdropTrail(player);
 		}
-		player->airdroptime++;
 	}
+
+	if (K_AirDropActive() && !P_IsObjectOnGround(player->mo))
+		player->airdroptime++;
 }
 
 // Returns the bumpspark value as an enum.
