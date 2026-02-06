@@ -11961,6 +11961,11 @@ void K_QuiteSaltyHop(player_t *player)
 
 boolean K_CheckWaterskipLockout(player_t *player)
 {
+	if (player->airdropflags & PAF_AIRDROP_HEAVY)
+	{
+		return false;
+	}
+
 	if (K_WaterskipBricksActive())
 	{
 		return (player->cmd.buttons & BT_ACCELERATE) == BT_ACCELERATE;
