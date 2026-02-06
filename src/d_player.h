@@ -608,6 +608,10 @@ struct player_t
 
 	INT32 drift_wannaturn;  // Turn values the game uses to determine the direction you want to drift.
 
+	INT32 nulldrift;        // When you drift without accelerating, this value ticks up/down depending on your drift's angle.
+	INT32 nulldrifttilt;    // Sliptide-like kart tilting! (Can be toggled off)
+	tic_t nulldrifttime;
+
 	// (Delay-drift) - Delay in tics before the final drift angle is determined.
 	// Potentially influenced by player lag.
 	tic_t driftdelay;

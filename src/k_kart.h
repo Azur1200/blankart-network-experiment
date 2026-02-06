@@ -427,6 +427,8 @@ typedef enum
 	AIRDROP_FUSION,
 } airdroptype_t;
 
+boolean K_NullDriftTiltEnalbed();
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -9052,10 +9052,14 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
 		break;
 	case MT_BRAKEDRIFT:
+
+		// Letting go of accel functions about the same as brake-drifting
+		boolean nullDrift = (!(K_GetKartButtons(mobj->target->player) & BT_ACCELERATE));
+
 		if ((!mobj->target || !mobj->target->health || !mobj->target->player || !P_IsObjectOnGround(mobj->target))
 			|| !mobj->target->player->drift || !(mobj->target->player->pflags & PF_BRAKEDRIFT)
 			|| !((mobj->target->player->cmd.buttons & BT_BRAKE)
-			|| !(K_GetKartButtons(mobj->target->player) & BT_ACCELERATE))) // Letting go of accel functions about the same as brake-drifting
+			|| nullDrift))
 		{
 			P_RemoveMobj(mobj);
 			return false;
@@ -9080,8 +9084,27 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			else
 				mobj->color = SKINCOLOR_SILVER;
 
-			if (!S_SoundPlaying(mobj, sfx_cdfm17))
-				S_StartSound(mobj, sfx_cdfm17);
+			if (nullDrift)
+			{
+				if (cv_nulldriftefx.value)
+				{
+					// Play a harsher sound when you null-drift.
+					if (mobj->target->player->nulldrifttime % 4 == 0)
+						S_StartSound(mobj, sfx_s3k67);
+				}
+				else if (!S_SoundPlaying(mobj, sfx_cdfm17))
+				{
+					S_StartSound(mobj, sfx_cdfm17);
+				}
+
+				// Set the player's nulldrift variables for any relevant VFX.
+				mobj->target->player->nulldrift = intsign(mobj->target->player->drift);
+			}
+			else
+			{
+				if (!S_SoundPlaying(mobj, sfx_cdfm17))
+					S_StartSound(mobj, sfx_cdfm17);
+			}
 
 			K_MatchGenericExtraFlags(mobj, mobj->target);
 			if (leveltime & 1)
