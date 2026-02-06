@@ -7037,7 +7037,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 			}
 
 			// POOMP!
-			S_StartSound(player->mo, sfx_vclgna);
+			S_StartSound(player->mo, sfx_doord2);
 
 			player->karthud[khud_postdropcam] = min(2*player->karthud[khud_heavydropcam], TICRATE/4);
 		}
