@@ -11739,15 +11739,9 @@ boolean K_DraftingActive(void)
 	return false;
 }
 
-boolean K_AirDropActive(void)
+SINT8 K_AirDropActive(void)
 {
-	if (airdropactive > AIRDROP_NONE)
-	{
-		// Air Drop is enabled!
-		return true;
-	}
-
-	return false;
+	return airdropactive;
 }
 
 boolean K_AirThrustActive(void)

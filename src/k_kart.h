@@ -381,7 +381,7 @@ boolean K_ChainingActive(void);
 boolean K_SlipdashActive(void);
 boolean K_SlopeBoostActive(void);
 boolean K_DraftingActive(void);
-boolean K_AirDropActive(void);
+SINT8 K_AirDropActive(void);
 boolean K_AirThrustActive(void);
 boolean K_RecoveryDashActive(void);
 boolean K_WaterskipBricksActive(void);
