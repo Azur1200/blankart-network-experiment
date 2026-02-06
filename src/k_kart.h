@@ -419,6 +419,8 @@ typedef enum
 	BUMPSPARK_ALL
 } bumpsparktype_t;
 
+boolean K_NullDriftTiltEnalbed();
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

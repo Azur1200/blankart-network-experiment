@@ -159,6 +159,7 @@ extern consvar_t cv_secbright;
 
 extern consvar_t cv_sloperoll;
 extern consvar_t cv_sliptidetilt;
+extern consvar_t cv_nulldriftefx, cv_nulldrifttilt;
 
 // debugging
 

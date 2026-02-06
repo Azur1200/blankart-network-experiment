@@ -9605,6 +9605,30 @@ static void K_KartDrift(player_t *player, boolean onground)
 		}
 	}
 
+	if (player->nulldrift)
+	{
+		if (abs(player->nulldrifttilt) < ANGLE_11hh)
+		{
+			player->nulldrifttilt = (abs(player->nulldrifttilt) + (ANGLE_11hh / 8)) * player->nulldrift;
+		}
+
+		// Increment nulldrift timer.
+		player->nulldrifttime++;
+
+		// Let's have some faith that the driftspark thinker will set this value again
+		player->nulldrift = 0;
+	}
+	else
+	{
+		player->nulldrifttime = 0;
+		player->nulldrifttilt -= player->nulldrifttilt / 4;
+
+		if (abs(player->nulldrifttilt) < (ANGLE_11hh / 4))
+		{
+			player->nulldrifttilt = 0;
+		}
+	}
+
 	if (!K_Sliptiding(player))
 	{
 		player->aizdrifttilt -= player->aizdrifttilt / 4;
@@ -11892,6 +11916,12 @@ boolean K_CheckWaterskipLockout(player_t *player)
 	{
 		return true;
 	}
+}
+
+// Check to render the tilt VFX for null-drifts.
+boolean K_NullDriftTiltEnalbed()
+{
+	return ((cv_nulldriftefx.value) && (cv_nulldrifttilt.value));
 }
 
 //}
