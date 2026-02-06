@@ -426,8 +426,12 @@ struct int_const_s const PLAYERFLAG_ALIASES[] = {
 };
 
 const char *const AIRDROPFLAG_LIST[] = {
-	"WANTSAIRDROP", // Wants air drop (active while holding down brake, used for bouncy air drop)
-	"AIRDROP", // Is in Air Drop (activation / deactivation criteria change if light or heavy)
+	"AIRDROPINPUT", // Wants air drop (active while holding down brake, used for bouncy air drop)
+	"WANTSAIRDROP", // Is in Air Drop (activation / deactivation criteria change if light or heavy)
+	"AIRDROP_LIGHT", // Is in Light Air Drop
+	"AIRDROP_HEAVY", // Is in Heavy Air Drop
+
+	"AIRDROP_MASK", // Is in any Air Drop state
 
 	NULL // stop loop here.
 };
@@ -1805,6 +1809,12 @@ struct int_const_s const INT_CONST[] = {
 	{"BUMPSPARK_ALL", BUMPSPARK_ALL},
 
 	{"BLANKART", 1},
+
+	// airdroptype_t
+	{"AIRDROP_NONE", AIRDROP_NONE},
+	{"AIRDROP_LIGHT", AIRDROP_LIGHT},
+	{"AIRDROP_HEAVY", AIRDROP_HEAVY},
+	{"AIRDROP_FUSION", AIRDROP_FUSION},
 
 	{NULL,0}
 };
