@@ -390,7 +390,9 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(nextringaward) \
 	X(ringvolume) \
 	X(ringtransparency) \
+	X(airdroppredelay) \
 	X(airdroptime) \
+	X(airdropbuffer) \
 	X(airdropflags) \
 	X(ringdrop) \
 	X(shieldtracer) \
@@ -830,8 +832,14 @@ static int player_get(lua_State *L)
 	case player_ringtransparency:
 		lua_pushinteger(L, plr->ringtransparency);
 		break;
+	case player_airdroppredelay:
+		lua_pushinteger(L, plr->airdroppredelay);
+		break;
 	case player_airdroptime:
 		lua_pushinteger(L, plr->airdroptime);
+		break;
+	case player_airdropbuffer:
+		lua_pushinteger(L, plr->airdropbuffer);
 		break;
 	case player_airdropflags:
 		lua_pushinteger(L, plr->airdropflags);
@@ -1614,8 +1622,14 @@ static int player_set(lua_State *L)
 	case player_ringtransparency:
 		plr->ringtransparency = luaL_checkinteger(L, 3);
 		break;
+	case player_airdroppredelay:
+		plr->airdroppredelay = luaL_checkinteger(L, 3);
+		break;
 	case player_airdroptime:
 		plr->airdroptime = luaL_checkinteger(L, 3);
+		break;
+	case player_airdropbuffer:
+		plr->airdropbuffer = luaL_checkinteger(L, 3);
 		break;
 	case player_airdropflags:
 		plr->airdropflags = luaL_checkinteger(L, 3);
