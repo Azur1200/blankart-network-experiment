@@ -6978,6 +6978,7 @@ static void K_SpawnFallLines(player_t *player, boolean ringdrop)
 
 static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 {
+	const INT32 heavydrophi = TICRATE/3;
 	const INT32 airbrakedelay = TICRATE/3;
 
 	if (player->airdropbuffer > 0)
@@ -7050,6 +7051,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 	)
 	{
 		player->airdroptime = 0;
+		player->airdroppredelay = 0;
 		player->airdropflags &= ~PAF_AIRDROP_MASK;
 		return;
 	}
@@ -7080,6 +7082,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		if (airdropactive == AIRDROP_LIGHT || airdropactive == AIRDROP_FUSION)
 		{
 			player->airdropflags &= ~PAF_AIRDROP_LIGHT;
+			player->airdroptime = 0;
 		}
 	}
 
@@ -7087,7 +7090,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 	if (player->airdropflags & PAF_AIRDROP_HEAVY)
 	{
 		K_SpawnFallLines(player, false);
-		if (player->airdroptime <= airbrakedelay)
+		if (player->airdroptime <= heavydrophi)
 		{
 			player->mo->momz -= FixedMul(5*gravity, mapobjectscale)*P_MobjFlip(player->mo);
 			K_SpawnAirdropTrail(player);
@@ -7099,19 +7102,23 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 
 		if (player->karthud[khud_heavydropcam] < TICRATE)
 			player->karthud[khud_heavydropcam]++;
+
+		player->airdroptime++;
 	}
 	else if (player->airdropflags & PAF_AIRDROP_LIGHT)
 	{
-		if (player->airdroptime >= airbrakedelay)
+		if (player->airdroppredelay >= airbrakedelay)
 		{
 			player->mo->momz -= FixedMul(gravity, mapobjectscale)*P_MobjFlip(player->mo);
 			K_SpawnFallLines(player, false);
 			K_SpawnAirdropTrail(player);
 		}
+
+		player->airdroptime++;
 	}
 
 	if (K_AirDropActive() && !P_IsObjectOnGround(player->mo))
-		player->airdroptime++;
+		player->airdroppredelay++;
 }
 
 // Returns the bumpspark value as an enum.

@@ -684,7 +684,8 @@ struct player_t
 	UINT8 ringvolume;		// When consuming lots of rings, lower the sound a little.
 	UINT8 ringtransparency; // When consuming lots of rings, fade out the rings again.
 
-	INT32 airdroptime;				// Tracks how long the player has been in airdrop. In light airdrop, handles the delay before it kicks in.
+	INT32 airdroppredelay;			// In light airdrop, handles the delay before it can be activated once going airborne.
+	INT32 airdroptime;				// Tracks how long the player has been in airdrop.
 	INT32 airdropbuffer;			// Time during which heavy air drop will instantly trigger upon going airborne.
 	p_airdropflags_t airdropflags;	// Airdrop-exclusive bitflags.
 

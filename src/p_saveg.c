@@ -709,6 +709,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].ringvolume);
 		SYNC(players[i].ringtransparency);
 
+		SYNC(players[i].airdroppredelay);
 		SYNC(players[i].airdroptime);
 		SYNC(players[i].airdropbuffer);
 		SYNC(players[i].airdropflags);
