@@ -113,9 +113,12 @@ typedef enum
 
 typedef enum
 {
-	PAF_WANTSAIRDROP	= 1<<0, // Wants Air drop (input pressed and buffered)
-	PAF_AIRDROP			= 1<<1, // Is in Air Drop (activation / deactivation criteria change if light or heavy)
-	PAF_AIRDROPINPUT	= 1<<2, // Air drop input held
+	PAF_AIRDROPINPUT	= 1<<0, // Air drop input held
+	PAF_WANTSAIRDROP	= 1<<1, // Wants Air drop (input pressed and buffered)
+	PAF_AIRDROP_LIGHT	= 1<<2, // Is in Light Air Drop
+	PAF_AIRDROP_HEAVY	= 1<<3, // Is in Heavy Air Drop
+
+	PAF_AIRDROP_MASK	= (PAF_AIRDROP_LIGHT|PAF_AIRDROP_HEAVY), // Is in any Air Drop state
 } p_airdropflags_t;
 
 typedef enum
