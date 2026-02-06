@@ -7030,7 +7030,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 			}
 			if (player->airdroptime > 1)
 			{
-				player->startboost = TICRATE/2;
+				player->dropdash = TICRATE/4 + min(TICRATE, ((FixedDiv(player->airdroptime, TICRATE) * TICRATE) / FRACUNIT));
 				
 				// Take off!
 				S_StartSound(player->mo, sfx_shrpgo);
