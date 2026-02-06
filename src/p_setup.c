@@ -18,6 +18,7 @@
 #include "byteptr.h"
 #include "g_game.h"
 
+#include "info.h"
 #include "p_local.h"
 #include "p_setup.h"
 #include "p_spec.h"
@@ -7324,7 +7325,7 @@ static void P_ConvertBinaryThingTypes(void)
 				mapthings[i].args[0] = (mapthings[i].angle/360);
 			mapthings[i].args[1] = !!(mapthings[i].options & MTF_OBJECTSPECIAL);
 			break;
-		case 522: //Wall spike
+		case 5022: //Wall spike
 			if (mapthings[i].options & MTF_OBJECTSPECIAL)
 			{
 				mapthings[i].args[0] = mobjinfo[MT_WALLSPIKE].speed + mapthings[i].angle/360;
@@ -7966,7 +7967,7 @@ static void P_RemapDoomedNum(boolean mappatch)
 	if (mapthings && mapthings[i].type == doomed) \
 	{ \
 		if (mapnamespace == MNS_BLANKART || mappatch)\
-			CONS_Alert(CONS_WARNING, "Doomednum %d has move to %d, please update your map/map patch accordingly.\n", doomed, mobjinfo[mobjtype].doomednum);\
+			CONS_Alert(CONS_WARNING, "Doomednum %d has moved to %d, please update your map/map patch accordingly.\n", doomed, mobjinfo[mobjtype].doomednum);\
 		else\
 			CONS_Alert(CONS_NOTICE, "Converting RR doomednum %d to %d.\n", doomed, mobjinfo[mobjtype].doomednum);\
 		mapthings[i].type = mobjinfo[mobjtype].doomednum; \
@@ -8002,6 +8003,7 @@ static void P_RemapDoomedNum(boolean mappatch)
 		TYPECONVERT(MT_LOOPENDPOINT, 2020)
 		TYPECONVERT(MT_LOOPCENTERPOINT, 2021)
 		TYPECONVERT(MT_SCRIPT_THING, 4096)
+		TYPECONVERT(MT_WALLSPIKE, 522)
 	}
 #undef TYPECONVERT
 }
