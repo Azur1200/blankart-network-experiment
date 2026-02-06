@@ -55,6 +55,8 @@ typedef enum
 extern boolean gameconfig_loaded;
 extern tic_t rendergametic;
 
+extern boolean loaded_config;
+
 extern char srb2home[256]; //Alam: My Home
 extern boolean usehome; //Alam: which path?
 extern const char *pandf; //Alam: how to path?

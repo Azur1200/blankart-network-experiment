@@ -68,6 +68,15 @@ consvar_t cv_shittyscreen = CVAR_INIT ("televisionsignal", "Okay", 0, shittyscre
 static CV_PossibleValue_t votescale_cons_t[] = {{0, "Vanilla"}, {1, "Adaptive"}, {2, "VerticalFill"}, {3, "HorizontalFill"}, {0, NULL}};
 consvar_t cv_votebgscaling = CVAR_INIT ("votebgscaling", "Adaptive", CV_SAVE, votescale_cons_t, NULL);
 
+static void Highreshudscale_OnChange(void);
+static CV_PossibleValue_t highreshudscale_cons_t[] = {{4*FRACUNIT/5, "MIN"}, {6*FRACUNIT/5, "MAX"}, {0, NULL}};
+consvar_t cv_highreshudscale = CVAR_INIT ("highreshudscale", "1", CV_SAVE|CV_FLOAT|CV_CALL|CV_NOINIT|CV_NOSHOWHELP, highreshudscale_cons_t, Highreshudscale_OnChange);
+
+static void Highreshudscale_OnChange(void)
+{
+	SCR_Recalc();
+}
+
 CV_PossibleValue_t cv_renderer_t[] = {
 	{1, "Software"},
 #ifdef HWRENDER

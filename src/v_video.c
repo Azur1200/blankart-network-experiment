@@ -15,6 +15,7 @@
 
 #include "doomdef.h"
 #include "doomtype.h"
+#include "d_main.h"
 #include "r_local.h"
 #include "p_local.h" // stplyr
 #include "g_game.h" // players
@@ -135,7 +136,7 @@ static boolean InitCube(void)
 	float globalgammamul, globalgammaoffs;
 	boolean doinggamma;
 
-	if (con_startup_loadprogress < LOADED_CONFIG)
+	if (loaded_config == false)
 		return false;
 
 #define diffcons(cv) (cv.value != atoi(cv.defaultvalue))
@@ -491,6 +492,8 @@ void V_SetPaletteLump(const char *pal)
 
 static void CV_palette_OnChange(void)
 {
+	if (loaded_config == false)
+		return;
 	// recalculate Color Cube
 	V_ReloadPalette();
 	V_SetPalette(0);
@@ -4124,6 +4127,14 @@ void V_Recalc(void)
 	// -- Monster Iestyn
 #endif
 		vid.fdupx = vid.fdupy = (vid.fdupx < vid.fdupy ? vid.fdupx : vid.fdupy);
+
+	if (loaded_config // this could use a better name, since it is more and indicator that early startup is done and its safe to do sketchy shit now :chaosleep:
+	&& (vid.width > 720) && (vid.height > 1280)) // ehhhh well this thing has so many issues, so ill lock it to higher resolutions instead
+	{
+
+		vid.dupx = vid.dupy = FixedDiv(vid.dupy, cv_highreshudscale.value);
+		vid.fdupx = vid.fdupy = FixedDiv(vid.fdupy, cv_highreshudscale.value);
+	}
 
 	vid.meddupx = (UINT8)(vid.dupx >> 1) + 1;
 	vid.meddupy = (UINT8)(vid.dupy >> 1) + 1;
