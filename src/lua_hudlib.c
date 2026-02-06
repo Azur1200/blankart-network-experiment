@@ -1504,8 +1504,8 @@ static int libd_getDrawInfo(lua_State *L)
 {
 	HUDONLY
 	enum huddrawinfo option = luaL_checkoption(L, 1, NULL, hud_drawinfo_options);
-	drawinfo_t info;
-	rouletteinfo_t rinfo;
+	drawinfo_t info = {0};
+	rouletteinfo_t rinfo = {0};
 
 	// Initialize the extra values that might not get used.
 	info.hudScale = 0;

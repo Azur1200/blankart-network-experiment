@@ -53,11 +53,11 @@ UINT32 **texturecolumnofs; // column offset lookup table for each texture
 UINT8 **texturecache; // graphics data for each generated full-size texture
 UINT8 **texturebrightmapcache; // graphics data for brightmap converted for use with a specific texture
 
-INT32 *texturewidth;
-fixed_t *textureheight; // needed for texture pegging
+INT32 *texturewidth = NULL;
+fixed_t *textureheight = NULL; // needed for texture pegging
 
-INT32 *texturetranslation;
-INT32 *texturebrightmaps;
+INT32 *texturetranslation = NULL;
+INT32 *texturebrightmaps = NULL;
 
 INT32 g_texturenum_dbgline;
 
@@ -937,9 +937,6 @@ static inline INT32 wrap_column(fixed_t tex, INT32 col)
 //
 UINT8 *R_GetColumn(fixed_t tex, INT32 col)
 {
-	if (!texturecache[tex])
-		R_GenerateTexture(tex);
-
 	return texturecache[tex] + LONG(texturecolumnofs[tex][wrap_column(tex, col)]);
 }
 
@@ -1444,8 +1441,8 @@ void R_UpdateTextureBrightmap(INT32 tx, INT32 bm)
 
 static INT32 R_DefineTextures(INT32 i, UINT16 w)
 {
-	i = Rloadflats(i, w);
-	return Rloadtextures(i, w);
+	i = Rloadtextures(i, w);
+	return Rloadflats(i, w);
 }
 
 static void R_FinishLoadingTextures(INT32 add)

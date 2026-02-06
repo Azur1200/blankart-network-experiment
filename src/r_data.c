@@ -49,10 +49,10 @@
 size_t numspritelumps, max_spritelumps;
 
 // needed for pre rendering
-sprcache_t *spritecachedinfo;
+sprcache_t *spritecachedinfo = NULL;
 
-lighttable_t *colormaps;
-UINT8 *encoremap;
+lighttable_t *colormaps = NULL;
+UINT8 *encoremap = NULL;
 
 // for debugging/info purposes
 size_t flatmemory, spritememory, texturememory;

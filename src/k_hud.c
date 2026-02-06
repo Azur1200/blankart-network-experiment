@@ -1055,7 +1055,7 @@ static void K_initKartHUD(void)
 // RadioRacers
 static trackingResult_t K_getRoulettePositionForTrackingPlayer(void)
 {
-	trackingResult_t result;
+	trackingResult_t result = {0};
 
 	// No player object? Not bothering.
 	const boolean doesPlayerHaveMo = !((stplyr->mo == NULL || P_MobjWasRemoved(stplyr->mo)));
@@ -1069,13 +1069,13 @@ static trackingResult_t K_getRoulettePositionForTrackingPlayer(void)
 	};
 
 	vector3_t v2 = {
-		0, 
-		0, 
+		0,
+		0,
 		64 * stplyr->mo->scale * P_MobjFlip(stplyr->mo)
 	};
 
 	FV3_Add(&v,&v2);
-	
+
 	K_ObjectTracking(&result, &v, false);
 
 	return result;
@@ -1590,7 +1590,7 @@ static void K_drawKartItem(void)
 	{
 		fixed_t rfy = fy<<FRACBITS;
 		INT32 fancyflags = V_HUDTRANS|fflags;
-		INT32 hudtrans = cv_translucenthud.value;
+		INT32 cvarhudtrans = cv_translucenthud.value;
 		INT32 animlength = cv_fancyroulettespeed.value;
 		INT32 alpha = 0;
 		INT32 shift = tiny ? 16 : 32;
@@ -1610,7 +1610,7 @@ static void K_drawKartItem(void)
 		for (int rouletteshift = -1; rouletteshift <= 2; rouletteshift++)
 		{
 			shiftprog = (FRACUNIT * -rouletteshift) + (FixedDiv((stplyr->itemroulette<<FRACBITS)|timefracs, animlength<<FRACBITS) % FRACUNIT);
-			alpha = (FixedMul((abs(shiftprog) * 10), FixedDiv(hudtrans << FRACBITS, 10 << FRACBITS)) >> FRACBITS)+(10-hudtrans);
+			alpha = (FixedMul((abs(shiftprog) * 10), FixedDiv(cvarhudtrans << FRACBITS, 10 << FRACBITS)) >> FRACBITS)+(10-cvarhudtrans);
 			rfy = (fy<<FRACBITS) + FixedMul(shift*shiftprog, info.hudScale);
 			if (0 > alpha) alpha = 0;
 			if (alpha >= 10) alpha = 10;
