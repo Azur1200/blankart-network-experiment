@@ -6978,10 +6978,34 @@ static void K_SpawnFallLines(player_t *player, boolean ringdrop)
 
 static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 {
-	if (!(cmd->buttons & BT_BRAKE))
+	if (player->airdropbuffer > 0)
+	{
+		player->airdropbuffer--;
+	}
+
+	if ((cmd->buttons & BT_BRAKE))
+	{
+		if (!(player->airdropflags & PAF_AIRDROPINPUT))
+		{
+			player->airdropflags |= PAF_WANTSAIRDROP|PAF_AIRDROPINPUT;
+			if (P_IsObjectOnGround(player->mo))
+				player->airdropbuffer = 2;
+		}
+	}
+	else
+	{
+		player->airdropflags &= ~PAF_AIRDROPINPUT;
+		if (airdropactive == AIRDROP_LIGHT)
+		{
+			player->airdropflags &= ~PAF_WANTSAIRDROP;
+		}
+	}
+	
+	if (P_IsObjectOnGround(player->mo) && player->airdropbuffer == 0)
 	{
 		player->airdropflags &= ~PAF_WANTSAIRDROP;
 	}
+
 	if (!(player->airdropflags & PAF_AIRDROP))
 	{
 		if (player->karthud[khud_heavydropcam] > 0)
@@ -7031,10 +7055,12 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		return;
 	}
 
-	if ((cmd->buttons & BT_BRAKE) && !(player->airdropflags & PAF_WANTSAIRDROP))
+	if (player->airdropflags & PAF_WANTSAIRDROP)
 	{
 		if (airdropactive == AIRDROP_HEAVY && !(player->airdropflags & (PAF_AIRDROP)))
 		{
+			player->airdropbuffer = 0;
+
 			// TODO: heavy air drop should allow keeping current boost stack
 			S_StartSound(player->mo, sfx_s3k77);
 			S_StartSound(player->mo, sfx_s3k51);
@@ -7043,22 +7069,22 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 			player->mo->momy = FixedMul(player->mo->momy, 90*FRACUNIT/100);
 			player->mo->momz -= 8*P_MobjFlip(player->mo)*mapobjectscale;
 		}
-		player->airdropflags |= PAF_AIRDROP|PAF_WANTSAIRDROP;
+		player->airdropflags |= PAF_AIRDROP;
 	}
 	else
 	{
-		if (airdropactive == AIRDROP_LIGHT && !(cmd->buttons & BT_BRAKE))
+		if (airdropactive == AIRDROP_LIGHT)
 			player->airdropflags &= ~PAF_AIRDROP;
 	}
 
 	if (player->airdropflags & PAF_AIRDROP)
 	{
-		
+		tic_t airbrakedelay = TICRATE/3;
 		K_SpawnFallLines(player, false);
 
 		if (airdropactive == AIRDROP_HEAVY)
 		{
-			if (player->airdroptime <= TICRATE/4)
+			if (player->airdroptime <= airbrakedelay)
 			{
 				player->mo->momz -= FixedMul(4*gravity, mapobjectscale)*P_MobjFlip(player->mo);
 				K_SpawnAirdropTrail(player);
@@ -7073,15 +7099,13 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		}
 		else if (airdropactive == AIRDROP_LIGHT)
 		{
-			SINT8 airbrakedelay = TICRATE/3;
 			if (player->airdroptime >= airbrakedelay)
 			{
 				player->mo->momz -= FixedMul(gravity, mapobjectscale)*P_MobjFlip(player->mo);
 				K_SpawnAirdropTrail(player);
 			}
 		}
-		if (player->airdroptime < UINT8_MAX)
-			player->airdroptime++;
+		player->airdroptime++;
 	}
 }
 

@@ -113,8 +113,9 @@ typedef enum
 
 typedef enum
 {
-	PAF_WANTSAIRDROP	= 1<<0, // Wants air drop (active while holding down brake, used for bouncy air drop)
+	PAF_WANTSAIRDROP	= 1<<0, // Wants Air drop (input pressed and buffered)
 	PAF_AIRDROP			= 1<<1, // Is in Air Drop (activation / deactivation criteria change if light or heavy)
+	PAF_AIRDROPINPUT	= 1<<2, // Air drop input held
 } p_airdropflags_t;
 
 typedef enum
@@ -680,7 +681,8 @@ struct player_t
 	UINT8 ringvolume;		// When consuming lots of rings, lower the sound a little.
 	UINT8 ringtransparency; // When consuming lots of rings, fade out the rings again.
 
-	tic_t airdroptime;				// Tracks how long airdrop has been active, used for delay before airdrop kicks in.
+	tic_t airdroptime;				// Tracks how long the player has been in airdrop. In light airdrop, handles the delay before it kicks in.
+	tic_t airdropbuffer;			// Time during which heavy air drop will instantly trigger upon going airborne.
 	p_airdropflags_t airdropflags;	// Airdrop-exclusive bitflags.
 
 	mobj_t *shieldtracer;	// Blankart: Shield mobj

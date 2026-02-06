@@ -710,7 +710,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].ringtransparency);
 
 		SYNC(players[i].airdroptime);
-		//SYNCBOOLEAN(players[i].ringdrop);
+		SYNC(players[i].airdropbuffer);
+		SYNC(players[i].airdropflags);
 
 		RSYNC(players[i].shieldtracer);
 
