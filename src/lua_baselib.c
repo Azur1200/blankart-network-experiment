@@ -10,6 +10,7 @@
 /// \file  lua_baselib.c
 /// \brief basic functions for Lua scripting
 
+#include "blua/lua.h"
 #include "doomdef.h"
 #include "p_local.h"
 #include "p_setup.h" // So we can have P_SetupLevelSky
@@ -4406,7 +4407,7 @@ static int lib_kDraftingActive(lua_State *L)
 // Checks if Air Drop is active.
 static int lib_kAirDropActive(lua_State *L)
 {
-	lua_pushboolean(L, K_AirDropActive());
+	lua_pushinteger(L, K_AirDropActive());
 	return 1;
 }
 

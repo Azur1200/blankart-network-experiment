@@ -3364,6 +3364,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	}
 
 	z += player->cameraOffset;
+	z -= 2*(player->karthud[khud_heavydropcam] + player->karthud[khud_postdropcam])*FRACUNIT*P_MobjFlip(mo);
 
 	// point viewed by the camera
 	// this point is just 64 unit forward the player
@@ -3415,13 +3416,13 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (mo->eflags & MFE_VERTICALFLIP)
 	{
-		angle = R_PointToAngle2(0, thiscam->z + thiscam->height, dist, mo->z + mo->height - player->mo->height + player->cameraOffset);
+		angle = R_PointToAngle2(0, thiscam->z + thiscam->height, dist, mo->z + mo->height - player->mo->height + player->cameraOffset + 2*player->karthud[khud_heavydropcam]*FRACUNIT);
 		if (thiscam->pitch < ANGLE_180 && thiscam->pitch > angle)
 			angle += (thiscam->pitch - angle)/2;
 	}
 	else
 	{
-		angle = R_PointToAngle2(0, thiscam->z, dist, mo->z + player->mo->height + player->cameraOffset);
+		angle = R_PointToAngle2(0, thiscam->z, dist, mo->z + player->mo->height + player->cameraOffset - 2*player->karthud[khud_heavydropcam]*FRACUNIT);
 		if (thiscam->pitch >= ANGLE_180 && thiscam->pitch < angle)
 			angle -= (angle - thiscam->pitch)/2;
 	}

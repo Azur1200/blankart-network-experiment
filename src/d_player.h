@@ -71,8 +71,8 @@ typedef enum
 	// TODO: Is there a better way to track this?
 	PF_GAINAX			= 1<<3,
 	PF_KICKSTARTACCEL	= 1<<4, // Accessibility feature: Is accelerate in kickstart mode?
-	// 1<<5 free
-	// 1<<6 free
+
+	// free: 1<<5 and 1<<6
 
 	PF_WANTSTOJOIN		= 1<<7, // Spectator that wants to join
 
@@ -110,6 +110,16 @@ typedef enum
 	PF_ATTACKDOWN		= 1<<30, // For lua compat, don't use!
 	PF_SLIDING			= 1<<31, // For lua compat, don't use!
 } pflags_t;
+
+typedef enum
+{
+	PAF_AIRDROPINPUT	= 1<<0, // Air drop input held
+	PAF_WANTSAIRDROP	= 1<<1, // Wants Air drop (input pressed and buffered)
+	PAF_AIRDROP_LIGHT	= 1<<2, // Is in Light Air Drop
+	PAF_AIRDROP_HEAVY	= 1<<3, // Is in Heavy Air Drop
+
+	PAF_AIRDROP_MASK	= (PAF_AIRDROP_LIGHT|PAF_AIRDROP_HEAVY), // Is in any Air Drop state
+} p_airdropflags_t;
 
 typedef enum
 {
@@ -199,6 +209,8 @@ typedef enum
 	khud_boostcam,		// Camera push forward on boost
 	khud_destboostcam,	// Ditto
 	khud_timeovercam,	// Camera timer for leaving behind or not
+	khud_heavydropcam,	// Camera timer for heavy air drop
+	khud_postdropcam,	// Camera timer for landing after heavy air drop (both timers superposition for feel)
 
 	// Sounds
 	khud_enginesnd,		// Engine sound offset this player is using.
@@ -676,8 +688,10 @@ struct player_t
 	UINT8 ringvolume;		// When consuming lots of rings, lower the sound a little.
 	UINT8 ringtransparency; // When consuming lots of rings, fade out the rings again.
 
-	UINT8 airdroptime;		// Tracks how long airdrop has been active, used for delay before airdrop kicks in.
-	//boolean ringdrop;		// Set when having ringdrop applied.
+	INT32 airdroppredelay;			// In light airdrop, handles the delay before it can be activated once going airborne.
+	INT32 airdroptime;				// Tracks how long the player has been in airdrop.
+	INT32 airdropbuffer;			// Time during which heavy air drop will instantly trigger upon going airborne.
+	p_airdropflags_t airdropflags;	// Airdrop-exclusive bitflags.
 
 	mobj_t *shieldtracer;	// Blankart: Shield mobj
 

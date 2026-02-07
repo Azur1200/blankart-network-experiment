@@ -1020,3 +1020,6 @@ _(rainbr)
 
 // Horncode
 _(horn00)
+
+// Fastfall bounce
+_(vclgna)

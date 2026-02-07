@@ -501,6 +501,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		SYNC(players[i].playerstate);
 		SYNC(players[i].pflags);
+		SYNC(players[i].airdropflags);
 		SYNC(players[i].panim);
 		SYNCBOOLEAN(players[i].spectator);
 		SYNC(players[i].spectatewait);
@@ -711,8 +712,10 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].ringvolume);
 		SYNC(players[i].ringtransparency);
 
+		SYNC(players[i].airdroppredelay);
 		SYNC(players[i].airdroptime);
-		//SYNCBOOLEAN(players[i].ringdrop);
+		SYNC(players[i].airdropbuffer);
+		SYNC(players[i].airdropflags);
 
 		RSYNC(players[i].shieldtracer);
 
@@ -4266,13 +4269,13 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(purpledriftactive);
 	SYNCBOOLEAN(slopeboostactive);
 	SYNCBOOLEAN(draftingactive);
-	SYNCBOOLEAN(airdropactive);
 	SYNCBOOLEAN(airthrustactive);
 	SYNCBOOLEAN(recoverydashactive);
 	SYNCBOOLEAN(waterskipbricks);
 	SYNCBOOLEAN(itemlittering);
 	SYNCBOOLEAN(itempushing);
 	SYNCBOOLEAN(itemlistactive);
+	SYNC(airdropactive);
 	SYNC(bumpsparkactive);
 	SYNC(antibumptime);
 

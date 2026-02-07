@@ -381,7 +381,7 @@ boolean K_ChainingActive(void);
 boolean K_SlipdashActive(void);
 boolean K_SlopeBoostActive(void);
 boolean K_DraftingActive(void);
-boolean K_AirDropActive(void);
+SINT8 K_AirDropActive(void);
 boolean K_AirThrustActive(void);
 boolean K_RecoveryDashActive(void);
 boolean K_WaterskipBricksActive(void);
@@ -418,6 +418,14 @@ typedef enum
 	BUMPSPARK_RESET100, // Reset to 100 (blue); the Sunflower's Garden system
 	BUMPSPARK_ALL
 } bumpsparktype_t;
+
+typedef enum
+{
+	AIRDROP_NONE = 0,
+	AIRDROP_LIGHT,
+	AIRDROP_HEAVY,
+	AIRDROP_FUSION,
+} airdroptype_t;
 
 boolean K_NullDriftTiltEnalbed();
 

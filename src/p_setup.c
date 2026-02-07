@@ -161,7 +161,7 @@ boolean slipdashactive;
 boolean purpledriftactive;
 boolean slopeboostactive;
 boolean draftingactive;
-boolean airdropactive;
+UINT8	airdropactive;
 boolean airthrustactive;
 boolean recoverydashactive;
 boolean waterskipbricks;
@@ -8185,7 +8185,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	purpledriftactive = false;
 	slopeboostactive = false;
 	draftingactive = false;
-	airdropactive = false;
+	airdropactive = 0;
 	airthrustactive = false;
 	recoverydashactive = false;
 	waterskipbricks = false;
@@ -8216,8 +8216,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	if (cv_kartdrafting.value)
 		draftingactive = true;
 
-	if (cv_kartairdrop.value)
-		airdropactive = true;
+	airdropactive = (UINT8)cv_kartairdrop.value;
 
 	if (cv_kartairthrust.value)
 		airthrustactive = true;
