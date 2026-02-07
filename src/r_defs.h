@@ -1090,6 +1090,27 @@ struct spritedef_t
 	spriteframe_t *spriteframes;
 };
 
+// Affine transformation bounding positions, in pixels. Used for Software to determine
+// the dimensions of an affine patch.
+struct affine_bounding_t
+{
+	INT32 l; // Leftmost bounding
+	INT32 r; // Rightmost bounding
+
+	INT32 t; // Highest bounding
+	INT32 b; // Lowest bounding
+};
+
+// an affine transformation matrix. maps screen coordinates to texture coordinates
+struct affine_t
+{
+	fixed_t a; // horizontal step per pixel (M7A)
+	fixed_t b; // horizontal step per scanline (M7B)
+	fixed_t c; // vertical step per pixel (M7C)
+	fixed_t d; // vertical step per scanline (M7D)
+	fixed_t ox, oy; // transform origin in texture coordinates (M7X/M7Y)
+};
+
 // Column and span drawing data bundles
 
 typedef struct
@@ -1123,6 +1144,9 @@ typedef struct
 	INT32 sourcelength;
 
 	UINT8 r8_flatcolor;
+
+	affine_bounding_t affinebound;
+	affine_t affine;
 } drawcolumndata_t;
 
 extern drawcolumndata_t g_dc;

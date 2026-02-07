@@ -358,6 +358,8 @@ TYPEDEF (msecnode_t);
 TYPEDEF (mprecipsecnode_t);
 TYPEDEF (lightmap_t);
 TYPEDEF (seg_t);
+TYPEDEF (affine_t);
+TYPEDEF (affine_bounding_t);
 
 // r_fps.h
 TYPEDEF (viewvars_t);
@@ -419,7 +421,6 @@ TYPEDEF (taggroup_t);
 // v_video.h
 TYPEDEF (colorlookup_t);
 TYPEDEF (cliprect_t);
-TYPEDEF (affine_t);
 
 // w_wad.h
 TYPEDEF (filelump_t);
