@@ -1921,10 +1921,12 @@ void K_KartMoveAnimation(player_t *player)
 
 	if (onground && drift)
 	{
+		INT16 reversejitter = 0;
+		INT16 nullrolloffset = 0;
 		if ((player->jitterlegacy) && (!skincompat))
 		{
 			// Make RR characters imitate legacy jitters.
-			player->mo->rollingxoffset = ((player->driftelapsed & 1) * 2) * -intsign(drift);
+			reversejitter = ((player->driftelapsed & 1) * 2) * -intsign(drift);
 		}
 		else
 		{
@@ -1936,6 +1938,15 @@ void K_KartMoveAnimation(player_t *player)
 			else if (turndir == 1)
 				spr2 += 1; // Outwards drift
 		}
+
+		if (abs(player->nulldrifttilt) > 0)
+		{
+			//todo: a way for skins(?) to define the tyre offset
+			nullrolloffset = intsign(drift) * ((36 * FINESINE(abs(player->nulldrifttilt)>>ANGLETOFINESHIFT))/FRACUNIT);
+			player->mo->rollingyoffset = ((18 * FINESINE(abs(player->nulldrifttilt)>>ANGLETOFINESHIFT))/FRACUNIT);
+		}
+
+		player->mo->rollingxoffset = reversejitter - nullrolloffset;
 	}
 	else if (glanceofs)
 		spr2 += glanceofs+1;
@@ -4197,6 +4208,12 @@ static void K_SpawnDriftSparks(player_t *player)
 	for (i = 0; i < 2; i++)
 	{
 		fixed_t driftExtraScale = 0;
+		if (player->nulldrifttilt && 
+			((player->drift < 0 && (i & 1)) || (player->drift > 0 && !(i & 1))))
+		{
+			// when tilting during a null-drift don't spawn the sparks for the front tyre
+			continue;
+		}
 		newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
 		newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
 		spark = P_SpawnMobj(newx, newy, player->mo->z, MT_DRIFTSPARK);
@@ -9473,12 +9490,14 @@ static void K_KartDrift(player_t *player, boolean onground)
 		// Starting left drift
 		player->drift = 1;
 		player->pflags &= ~PF_DRIFTEND;
+		player->nulldrifttime = 0;
 	}
 	else if ((player->driftturnsnapshot < 0) && player->speed > minspeed && (player->pflags & PF_DRIFTINPUT) && (player->drift == 0 || (player->pflags & PF_DRIFTEND)))
 	{
 		// Starting right drift
 		player->drift = -1;
 		player->pflags &= ~PF_DRIFTEND;
+		player->nulldrifttime = 0;
 	}
 	else if (!(player->pflags & PF_DRIFTINPUT))
 	{
@@ -9607,9 +9626,29 @@ static void K_KartDrift(player_t *player, boolean onground)
 
 	if (player->nulldrift)
 	{
-		if (abs(player->nulldrifttilt) < ANGLE_11hh)
+		if (player->nulldrifttime <= 3*TICRATE/4)
 		{
-			player->nulldrifttilt = (abs(player->nulldrifttilt) + (ANGLE_11hh / 8)) * player->nulldrift;
+			angle_t tilt;
+			fixed_t dot;
+			vector2_t fwd = {P_ReturnThrustX(player->mo, player->mo->angle, FRACUNIT), P_ReturnThrustY(player->mo, player->mo->angle, FRACUNIT)};
+			vector2_t mov = {player->mo->momx, player->mo->momy};
+			
+			FV2_Normalize(&mov);
+			dot = FRACUNIT - abs(FV2_Dot(&fwd, &mov));
+			tilt = FixedAngle(FixedMul(AngleFixed(ANG20), dot));
+			
+			if (abs(player->nulldrifttilt) < tilt)
+			{
+				player->nulldrifttilt = (abs(player->nulldrifttilt) + tilt/10) * -player->nulldrift;
+			}
+		}
+		else if (player->nulldrifttilt)
+		{
+			player->nulldrifttilt -= (CLAMP(ANG20 - abs(player->nulldrifttilt), ANG1, abs(player->nulldrifttilt))/3) * intsign(player->nulldrifttilt);
+			if (abs(player->nulldrifttilt) < (ANGLE_11hh / 4))
+			{
+				player->nulldrifttilt = 0;
+			}
 		}
 
 		// Increment nulldrift timer.
@@ -9618,11 +9657,9 @@ static void K_KartDrift(player_t *player, boolean onground)
 		// Let's have some faith that the driftspark thinker will set this value again
 		player->nulldrift = 0;
 	}
-	else
+	else if (player->nulldrifttilt)
 	{
-		player->nulldrifttime = 0;
-		player->nulldrifttilt -= player->nulldrifttilt / 4;
-
+		player->nulldrifttilt -= (CLAMP(ANG20 - abs(player->nulldrifttilt), ANG1, abs(player->nulldrifttilt))/3) * intsign(player->nulldrifttilt);
 		if (abs(player->nulldrifttilt) < (ANGLE_11hh / 4))
 		{
 			player->nulldrifttilt = 0;
@@ -9650,7 +9687,10 @@ static void K_KartDrift(player_t *player, boolean onground)
 		player->pflags |= PF_BRAKEDRIFT;
 	}
 	else
+	{
 		player->pflags &= ~PF_BRAKEDRIFT;
+		player->nulldrifttime = 0;
+	}
 }
 
 static void K_KartSlipdash(player_t *player, boolean onground)
