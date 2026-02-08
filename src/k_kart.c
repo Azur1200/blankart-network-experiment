@@ -5003,6 +5003,7 @@ void K_DoSneaker(player_t *player, INT32 type)
 void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound)
 {
 	fixed_t objscale = mo->scale;
+	boolean airdropbounce = false;
 
 	if (mo->player)
 	{
@@ -5011,6 +5012,9 @@ void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound)
 		// so the game handles springs as such.
 		// Alt. Shrink *especially* needs this change!
 		objscale = max(mo->scale, mapobjectscale);
+
+		// sproing!
+		airdropbounce = mo->player->airdropflags & PAF_AIRDROP_HEAVY;
 	}
 
 	const fixed_t vscale = mapobjectscale + (objscale - mapobjectscale);
@@ -5048,6 +5052,8 @@ void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound)
 				else if (mo->player->flamestore)
 					thrust = FixedMul(thrust, 9*FRACUNIT/8);
 			}
+			if (airdropbounce)
+				thrust *= 2;
 		}
 		else
 		{
@@ -5067,7 +5073,7 @@ void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound)
 		mo->momz = (117 * mo->momz) / 200;
 
 	if (sound)
-		S_StartSound(mo, (sound == 1 ? sfx_kc2f : sfx_kpogos));
+		S_StartSound(mo, sound == 1 ? (airdropbounce ? sfx_sprong : sfx_kc2f) : sfx_kpogos);
 }
 
 void K_ResetPogoSpring(player_t *player)
@@ -6998,32 +7004,18 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 	const INT32 heavydrophi = TICRATE/3;
 	const INT32 airbrakedelay = TICRATE/3;
 
-	if (player->airdropbuffer > 0)
-	{
-		player->airdropbuffer--;
-	}
-
 	if ((cmd->buttons & BT_BRAKE))
 	{
-		if (!(player->airdropflags & PAF_AIRDROPINPUT))
-		{
-			player->airdropflags |= PAF_WANTSAIRDROP|PAF_AIRDROPINPUT;
-			if (P_IsObjectOnGround(player->mo))
-				player->airdropbuffer = 2;
-		}
+		// don't buffer heavy airdrops on the ground to prevent silly mistakes
+		if ((!P_IsObjectOnGround(player->mo) && !(player->airdropflags & PAF_AIRDROPINPUT))
+		 || (airdropactive != AIRDROP_HEAVY && !(airdropactive == AIRDROP_FUSION && !(cmd->buttons & BT_ACCELERATE))))
+			player->airdropflags |= PAF_WANTSAIRDROP;
+
+		player->airdropflags |= PAF_AIRDROPINPUT;
 	}
 	else
 	{
-		player->airdropflags &= ~PAF_AIRDROPINPUT;
-		if (airdropactive == AIRDROP_LIGHT || airdropactive == AIRDROP_FUSION)
-		{
-			player->airdropflags &= ~PAF_WANTSAIRDROP;
-		}
-	}
-	
-	if (P_IsObjectOnGround(player->mo) && player->airdropbuffer == 0)
-	{
-		player->airdropflags &= ~PAF_WANTSAIRDROP;
+		player->airdropflags &= ~(PAF_WANTSAIRDROP|PAF_AIRDROPINPUT);
 	}
 
 	if (!(player->airdropflags & PAF_AIRDROP_HEAVY))
@@ -7038,21 +7030,11 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		player->karthud[khud_postdropcam]--;
 	}
 
-	if (K_AirDropActive() && P_IsObjectOnGround(player->mo))
+	if (K_AirDropActive() && P_IsObjectOnGround(player->mo) && player->pogospring == 0)
 	{
 		if ((player->airdropflags & PAF_AIRDROP_HEAVY))
 		{
-			if (player->rings > 0 && player->airdroptime > TICRATE/4)
-			{
-				P_PlayerRingBurst(player, min(2, player->rings));
-			}
-			if (player->airdroptime > 1)
-			{
-				player->startboost = TICRATE/4 + min(TICRATE, ((FixedDiv(player->airdroptime, TICRATE) * TICRATE) / FRACUNIT));
-				
-				// Take off!
-				S_StartSound(player->mo, sfx_shrpgo);
-			}
+			P_PlayerRingBurst(player, CLAMP(player->rings, 0, 3));
 
 			// POOMP!
 			S_StartSound(player->mo, sfx_doord2);
@@ -7063,7 +7045,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 
 	if (!K_AirDropActive() || P_IsObjectOnGround(player->mo)
 		|| P_PlayerInPain(player) || player->loop.radius
-		|| (player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
+		|| player->carry == CR_ZOOMTUBE
 		|| player->respawn
 	)
 	{
@@ -7075,7 +7057,10 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 
 	if (player->airdropflags & PAF_WANTSAIRDROP)
 	{
-		if ((airdropactive == AIRDROP_LIGHT) || (airdropactive == AIRDROP_FUSION && (cmd->buttons & BT_ACCELERATE)))
+		if (player->airdroppredelay < airbrakedelay)
+		{
+		}
+		else if ((airdropactive == AIRDROP_LIGHT) || (airdropactive == AIRDROP_FUSION && (cmd->buttons & BT_ACCELERATE)))
 		{
 			player->airdropflags |= PAF_AIRDROP_LIGHT;
 		}
@@ -7083,7 +7068,6 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		{
 			player->airdropflags |= PAF_AIRDROP_HEAVY;
 			player->airdroptime = 0;
-			player->airdropbuffer = 0;
 
 			// TODO: heavy air drop should allow keeping current boost stack
 			S_StartSound(player->mo, sfx_s3k77);
@@ -7091,47 +7075,38 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 
 			player->mo->momx = FixedMul(player->mo->momx, 90*FRACUNIT/100);
 			player->mo->momy = FixedMul(player->mo->momy, 90*FRACUNIT/100);
-			player->mo->momz -= 12*P_MobjFlip(player->mo)*mapobjectscale;
+			player->mo->momz -= 8*P_MobjFlip(player->mo)*mapobjectscale;
 		}
 	}
 	else
 	{
-		if (airdropactive == AIRDROP_LIGHT || airdropactive == AIRDROP_FUSION)
-		{
-			player->airdropflags &= ~PAF_AIRDROP_LIGHT;
-			if (!(player->airdropflags & PAF_AIRDROP_HEAVY))
-				player->airdroptime = 0;
-		}
+		player->airdropflags &= ~PAF_AIRDROP_LIGHT;
+		if (!(player->airdropflags & PAF_AIRDROP_HEAVY))
+			player->airdroptime = 0;
 	}
 
 	// heavy air drop always overrides light air drop
 	if (player->airdropflags & PAF_AIRDROP_HEAVY)
 	{
-		K_SpawnFallLines(player, false);
-		if (player->airdroptime <= heavydrophi)
-		{
-			player->mo->momz -= FixedMul(5*gravity, mapobjectscale)*P_MobjFlip(player->mo);
-			K_SpawnAirdropTrail(player);
-		}
-		else
-		{
-			player->mo->momz -= FixedMul(2*gravity, mapobjectscale)*P_MobjFlip(player->mo);
-		}
+		const boolean high = player->airdroptime <= heavydrophi/* && player->airdropflags & PAF_AIRDROPINPUT*/;
+		player->mo->momx = FixedMul(player->mo->momx, (high ? 98 : 99)*FRACUNIT/100);
+		player->mo->momy = FixedMul(player->mo->momy, (high ? 98 : 99)*FRACUNIT/100);
+		player->mo->momz -= FixedMul((high ? 4 : 2)*gravity, mapobjectscale)*P_MobjFlip(player->mo);
+		K_SpawnFallLines(player, high);
 
 		if (player->karthud[khud_heavydropcam] < TICRATE)
 			player->karthud[khud_heavydropcam]++;
 
+		K_SpawnAirdropTrail(player);
 		player->airdroptime++;
 	}
 	else if (player->airdropflags & PAF_AIRDROP_LIGHT)
 	{
-		if (player->airdroppredelay >= airbrakedelay)
-		{
-			player->mo->momz -= FixedMul(gravity, mapobjectscale)*P_MobjFlip(player->mo);
-			K_SpawnFallLines(player, false);
-			K_SpawnAirdropTrail(player);
-		}
+		player->mo->momz -= FixedMul(gravity, mapobjectscale)*P_MobjFlip(player->mo);
+		K_SpawnFallLines(player, false);
 
+		if (leveltime & 1)
+			K_SpawnAirdropTrail(player);
 		player->airdroptime++;
 	}
 
