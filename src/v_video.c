@@ -2071,33 +2071,45 @@ void V_DrawHorizontallyScaledFullScreenPatch(patch_t *patch)
 
 void V_DrawVhsEffect(boolean rewind)
 {
+	fixed_t uby, dby;
+	// upbary is the bar going from top to bottom for some reason
 	static fixed_t upbary = 100*FRACUNIT, downbary = 150*FRACUNIT;
 
-	UINT8 *buf = vid.screens[0], *tmp = vid.screens[4];
-	UINT16 y;
-	UINT32 x, pos = 0;
+	UINT8 barsize, updistort, downdistort;
 
-	UINT8 *normalmapstart = ((UINT8 *)transtables + (8<<FF_TRANSSHIFT|(19<<8)));
+	UINT16 y;
+	UINT32 x, pos;
+
+	UINT8 *buf, *tmp;
+	UINT8 *normalmapstart, *thismapstart;
 #ifdef HQ_VHS
-	UINT8 *tmapstart = ((UINT8 *)transtables + (6<<FF_TRANSSHIFT));
+	UINT8 *tmapstart;
 #endif
-	UINT8 *thismapstart;
 	SINT8 offs;
 
-	UINT8 barsize = vid.dupy<<5;
-	UINT8 updistort = vid.dupx<<(rewind ? 5 : 3);
-	UINT8 downdistort = updistort>>1;
+	const INT32 dup = min(vid.width / BASEVIDWIDTH, vid.height / BASEVIDHEIGHT);
+
+	barsize = dup << 5;
+	updistort = dup << (rewind ? 5 : 3);
+	downdistort = updistort >> 1;
 
 	if (rewind)
 		V_DrawVhsEffect(false); // experimentation
 
-	upbary -= renderdeltatics * (vid.dupy * (rewind ? 3 : 1.8f));
-	downbary += renderdeltatics * (vid.dupy * (rewind ? 2 : 1));
+	upbary -= renderdeltatics * (fixed_t)(dup * (rewind ? 3 : 1.8f));
+	downbary += renderdeltatics * (dup * (rewind ? 2 : 1));
 
-	if (upbary < -barsize*FRACUNIT) upbary = vid.height<<FRACBITS;
-	if (downbary > vid.height<<FRACBITS) downbary = -barsize*FRACUNIT;
+	if (upbary < -barsize*FRACUNIT)
+		upbary = vid.height << FRACBITS;
+	if (upbary > vid.height << FRACBITS)
+		upbary = -barsize*FRACUNIT;
+	if (downbary > vid.height << FRACBITS)
+		downbary = -barsize*FRACUNIT;
+	if (downbary < -barsize*FRACUNIT)
+		downbary = vid.height << FRACBITS;
 
-	fixed_t uby = upbary>>FRACBITS, dby = downbary>>FRACBITS;
+	uby = upbary >> FRACBITS;
+	dby = downbary >> FRACBITS;
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
@@ -2106,6 +2118,16 @@ void V_DrawVhsEffect(boolean rewind)
 		return;
 	}
 #endif
+
+	buf = vid.screens[0];
+	tmp = vid.screens[4];
+
+	normalmapstart = ((UINT8 *)transtables + (8<<FF_TRANSSHIFT|(19<<8)));
+#ifdef HQ_VHS
+	tmapstart = ((UINT8 *)transtables + (6<<FF_TRANSSHIFT));
+#endif
+
+	pos = 0;
 
 	for (y = 0; y < vid.height; y+=2)
 	{
@@ -2117,18 +2139,20 @@ void V_DrawVhsEffect(boolean rewind)
 			thismapstart -= (2<<FF_TRANSSHIFT) - (5<<8);
 			offs += updistort * 2.0f * min(y-uby, uby+barsize-y) / barsize;
 		}
+
 		if (y >= dby && y < dby+barsize)
 		{
 			thismapstart -= (2<<FF_TRANSSHIFT) - (5<<8);
 			offs -= downdistort * 2.0f * min(y-dby, dby+barsize-y) / barsize;
 		}
+
 		offs += M_RandomKey(vid.dupx<<1);
 
 		// lazy way to avoid crashes
-		if (y == 0 && offs < 0) offs = 0;
-		else if (y >= vid.height-2 && offs > 0) offs = 0;
+		if ((y == 0 && offs < 0) || (y >= vid.height-2 && offs > 0))
+			offs = 0;
 
-		for (x = pos+vid.rowbytes*2; pos < x; pos++)
+		for (x = min(pos+(size_t)vid.width*2, (size_t)vid.width*vid.height); pos < x; pos++)
 		{
 			tmp[pos] = thismapstart[buf[pos+offs]];
 #ifdef HQ_VHS
@@ -2137,7 +2161,7 @@ void V_DrawVhsEffect(boolean rewind)
 		}
 	}
 
-	memcpy(buf, tmp, vid.rowbytes*vid.height);
+	memcpy(buf, tmp, vid.width*vid.height);
 }
 
 //

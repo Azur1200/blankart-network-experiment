@@ -51,7 +51,7 @@ void GL_FlushScreenTextures(void);
 void GL_DoScreenWipe(int wipeStart, int wipeEnd);
 void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags);
 void GL_MakeScreenTexture(int tex);
-void GL_RenderVhsEffect(INT16 upbary, INT16 downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
+void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
 void GL_DrawScreenFinalTexture(int tex, int width, int height);
 
 #define SCREENVERTS 10

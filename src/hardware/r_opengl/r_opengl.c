@@ -3217,7 +3217,7 @@ void GL_MakeScreenTexture(int tex)
 	tex_downloaded = screenTextures[tex];
 }
 
-void GL_RenderVhsEffect(INT16 upbary, INT16 downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
+void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
 {
 	float xfix, yfix;
 	float fix[8];
@@ -3233,22 +3233,31 @@ void GL_RenderVhsEffect(INT16 upbary, INT16 downbary, UINT8 updistort, UINT8 dow
 		1.0f, -1.0f, 1.0f
 	};
 
-	xfix = 1/((float)(texsize)/((float)((screen_width))));
-	yfix = 1/((float)(texsize)/((float)((screen_height))));
-
 	const GLfloat scrwf = (float)screen_width;
 	const GLfloat scrwh = (float)screen_height;
 
+	xfix = 1/((float)(texsize)/((float)((scrwf))));
+	yfix = 1/((float)(texsize)/((float)((scrwh))));
+
+	GL_SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
+
 	// Slight fuzziness
 	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	GL_SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
-	const float stride = 2.f/scrwh;
+	uint32_t r = rand();
 
-	for (i = 0; i < 1; i += stride)
+	const float dup = min(scrwf / BASEVIDWIDTH, scrwh / BASEVIDHEIGHT);
+	const float ystep = 2.f/scrwh * dup/4.f;
+
+	for (i = 0; i < 1; i += ystep)
 	{
-		fix[2] = (float)(rand() % 128) / -22000.f * xfix;
+		// avoid calling rand thousands of times
+		r ^= r >> 13;
+		r ^= r >> 11;
+		r ^= r << 21;
+
+		fix[2] = (float)(r & 127) / -22000.f * xfix;
 		fix[0] = fix[2];
 		fix[6] = fix[0] + xfix;
 		fix[4] = fix[2] + xfix;
@@ -3266,8 +3275,8 @@ void GL_RenderVhsEffect(INT16 upbary, INT16 downbary, UINT8 updistort, UINT8 dow
 	}
 
 	// Upward bar
-	//GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	//pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
 	color[0] = color[1] = color[2] = 190;
 	color[3] = 250;
@@ -3290,13 +3299,14 @@ void GL_RenderVhsEffect(INT16 upbary, INT16 downbary, UINT8 updistort, UINT8 dow
 
 	fix[1] = fix[7] += (fix[3] - fix[7])*2;
 	screenVerts[1] = screenVerts[10] += (screenVerts[4] - screenVerts[1])*2;
+
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 	// Downward bar
-	//GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
-	//pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_VHS);
+	pglBindTexture(GL_TEXTURE_2D, screenTextures[HWD_SCREENTEXTURE_VHS]);
 
 	fix[0] = 0.0f;
 	fix[6] = xfix;
@@ -3315,6 +3325,7 @@ void GL_RenderVhsEffect(INT16 upbary, INT16 downbary, UINT8 updistort, UINT8 dow
 
 	fix[1] = fix[7] += (fix[3] - fix[7])*2;
 	screenVerts[1] = screenVerts[10] += (screenVerts[4] - screenVerts[1])*2;
+
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
 	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);

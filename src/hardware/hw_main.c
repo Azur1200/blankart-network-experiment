@@ -6780,7 +6780,7 @@ void HWR_DoTintedWipe(UINT8 wipenum, UINT8 scrnnum)
 	HWR_DoWipe(wipenum, scrnnum);
 }
 
-void HWR_RenderVhsEffect(INT16 upbary, INT16 downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
+void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
 {
 	GL_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
 }
