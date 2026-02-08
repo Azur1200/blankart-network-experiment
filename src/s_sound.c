@@ -796,6 +796,7 @@ void S_UpdateSounds(void)
 		S_SetDigMusicVolume (cv_digmusicvolume.value);
 
 	memset(listener, 0, sizeof(listener));
+	memset(listenmobj, 0, sizeof(listenmobj));
 
 	// We're done now, if we're not in a level.
 	if (gamestate != GS_LEVEL)
@@ -814,8 +815,6 @@ void S_UpdateSounds(void)
 	for (i = 0; i <= r_splitscreen; i++)
 	{
 		player_t *player = &players[displayplayers[i]];
-
-		listenmobj[i] = NULL;
 
 		if (!player)
 		{

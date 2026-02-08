@@ -436,6 +436,7 @@ static void HU_removeChatText_Log(void)
 	for(i=0;i<chat_nummsg_log-1;i++) {
 		strcpy(chat_log[i], chat_log[i+1]);
 	}
+
 	chat_nummsg_log--; // lost 1 msg.
 }
 

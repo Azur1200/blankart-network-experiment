@@ -597,7 +597,7 @@ static void res_force(Hook_State *hook)
 
 int LUA_HookMobj(mobj_t *mobj, int hook_type)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_mobj_hook(&hook, false, hook_type, mobj->type))
 	{
 		LUA_PushUserdata(gL, mobj, META_MOBJ);
@@ -608,7 +608,7 @@ int LUA_HookMobj(mobj_t *mobj, int hook_type)
 
 int LUA_Hook2Mobj(mobj_t *t1, mobj_t *t2, int hook_type)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_mobj_hook(&hook, 0, hook_type, t1->type))
 	{
 		LUA_PushUserdata(gL, t1, META_MOBJ);
@@ -620,14 +620,14 @@ int LUA_Hook2Mobj(mobj_t *t1, mobj_t *t2, int hook_type)
 
 void LUA_HookVoid(int type)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, 0, type))
 		call_hooks(&hook, 0, res_none);
 }
 
 void LUA_HookInt(INT32 number, int hook_type)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, 0, hook_type))
 	{
 		lua_pushinteger(gL, number);
@@ -637,7 +637,7 @@ void LUA_HookInt(INT32 number, int hook_type)
 
 void LUA_HookGamemap(int hook_type)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, 0, hook_type))
 	{
 		lua_pushinteger(gL, gamemap);
@@ -651,7 +651,7 @@ void LUA_HookGamemap(int hook_type)
 
 void LUA_HookBool(boolean value, int hook_type)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, 0, hook_type))
 	{
 		lua_pushboolean(gL, value);
@@ -661,7 +661,7 @@ void LUA_HookBool(boolean value, int hook_type)
 
 int LUA_HookPlayer(player_t *player, int hook_type)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, false, hook_type))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
@@ -672,7 +672,7 @@ int LUA_HookPlayer(player_t *player, int hook_type)
 
 int LUA_HookPlayerForceResults(player_t *player, int hook_type)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, 0, hook_type))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
@@ -683,7 +683,7 @@ int LUA_HookPlayerForceResults(player_t *player, int hook_type)
 
 int LUA_HookTiccmd(player_t *player, ticcmd_t *cmd, int hook_type)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, false, hook_type))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
@@ -703,7 +703,7 @@ int LUA_HookTiccmd(player_t *player, ticcmd_t *cmd, int hook_type)
 void LUA_HookHUD(huddrawlist_h list, int hook_type)
 {
 	const hook_t * map = &hudHookIds[hook_type];
-	Hook_State hook;
+	Hook_State hook = {};
 	if (map->numHooks > 0)
 	{
 		start_hook_stack();
@@ -733,7 +733,7 @@ void LUA_HookThinkFrame(void)
 	int hook_index = 0;
 	precise_t time_taken = 0;
 
-	Hook_State hook;
+	Hook_State hook = {};
 
 	const hook_t * map = &hookIds[type];
 	int k;
@@ -770,7 +770,7 @@ void LUA_HookThinkFrame(void)
 
 int LUA_HookMobjLineCollide(mobj_t *mobj, line_t *line)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_mobj_hook(&hook, 0, MOBJ_HOOK(MobjLineCollide), mobj->type))
 	{
 		LUA_PushUserdata(gL, mobj, META_MOBJ);
@@ -782,7 +782,7 @@ int LUA_HookMobjLineCollide(mobj_t *mobj, line_t *line)
 
 int LUA_HookTouchSpecial(mobj_t *special, mobj_t *toucher)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_mobj_hook(&hook, false, MOBJ_HOOK(TouchSpecial), special->type))
 	{
 		LUA_PushUserdata(gL, special, META_MOBJ);
@@ -802,7 +802,7 @@ static int damage_hook
 		int     hook_type,
 		Hook_Callback results_handler
 ){
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_mobj_hook(&hook, 0, hook_type, target->type))
 	{
 		LUA_PushUserdata(gL, target, META_MOBJ);
@@ -828,7 +828,7 @@ static int playerdamage_hook
 ){
 	(void)damage;
 	(void)damagetype;
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_mobj_hook(&hook, 0, hook_type, target->type))
 	{
 		LUA_PushUserdata(gL, target->player, META_PLAYER);
@@ -895,7 +895,7 @@ int LUA_HookMobjDeath(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 d
 
 int LUA_HookMobjMoveBlocked(mobj_t *t1, mobj_t *t2, line_t *line)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_mobj_hook(&hook, 0, MOBJ_HOOK(MobjMoveBlocked), t1->type))
 	{
 		LUA_PushUserdata(gL, t1, META_MOBJ);
@@ -909,7 +909,7 @@ int LUA_HookMobjMoveBlocked(mobj_t *t1, mobj_t *t2, line_t *line)
 // Backwards Compatability For older scripts
 void LUA_HookLinedefExecute(line_t *line, mobj_t *mo, sector_t *sector)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_string_hook
 		(&hook, 0, STRING_HOOK(LinedefExecute), line->stringargs[0]))
 	{
@@ -927,7 +927,7 @@ void LUA_HookLinedefExecute(line_t *line, mobj_t *mo, sector_t *sector)
 
 void LUA_HookSpecialExecute(activator_t *activator, INT32 *args, char **stringargs)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 
 	if (activator->line)
 	{
@@ -952,7 +952,7 @@ void LUA_HookSpecialExecute(activator_t *activator, INT32 *args, char **stringar
 
 int LUA_HookPlayerMsg(int source, int target, int flags, char *msg, int mute)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(PlayerMsg)))
 	{
 		LUA_PushUserdata(gL, &players[source], META_PLAYER); // Source player
@@ -979,7 +979,7 @@ int LUA_HookPlayerMsg(int source, int target, int flags, char *msg, int mute)
 
 int LUA_HookHurtMsg(player_t *player, mobj_t *inflictor, mobj_t *source, UINT8 damagetype)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(HurtMsg)))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
@@ -994,7 +994,7 @@ int LUA_HookHurtMsg(player_t *player, mobj_t *inflictor, mobj_t *source, UINT8 d
 void LUA_HookNetArchive(lua_CFunction archFunc, savebuffer_t *save)
 {
 	const hook_t * map = &hookIds[HOOK(NetVars)];
-	Hook_State hook;
+	Hook_State hook = {};
 	/* this is a remarkable case where the stack isn't reset */
 	if (map->numHooks > 0)
 	{
@@ -1024,7 +1024,7 @@ void LUA_HookNetArchive(lua_CFunction archFunc, savebuffer_t *save)
 
 int LUA_HookMapThingSpawn(mobj_t *mobj, mapthing_t *mthing)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_mobj_hook(&hook, false, MOBJ_HOOK(MapThingSpawn), mobj->type))
 	{
 		LUA_PushUserdata(gL, mobj, META_MOBJ);
@@ -1036,7 +1036,7 @@ int LUA_HookMapThingSpawn(mobj_t *mobj, mapthing_t *mthing)
 
 int LUA_HookFollowMobj(player_t *player, mobj_t *mobj)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_mobj_hook(&hook, false, MOBJ_HOOK(FollowMobj), mobj->type))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
@@ -1048,7 +1048,7 @@ int LUA_HookFollowMobj(player_t *player, mobj_t *mobj)
 
 int LUA_HookPlayerCanDamage(player_t *player, mobj_t *mobj)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, 0, HOOK(PlayerCanDamage)))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
@@ -1060,7 +1060,7 @@ int LUA_HookPlayerCanDamage(player_t *player, mobj_t *mobj)
 
 void LUA_HookPlayerQuit(player_t *plr, kickreason_t reason)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, 0, HOOK(PlayerQuit)))
 	{
 		LUA_PushUserdata(gL, plr, META_PLAYER); // Player that quit
@@ -1071,7 +1071,7 @@ void LUA_HookPlayerQuit(player_t *plr, kickreason_t reason)
 
 int LUA_HookNameChange(player_t *plr, const char *name)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, true, HOOK(NameChange)))
 	{
 		LUA_PushUserdata(gL, plr, META_PLAYER); // Player that changed name
@@ -1083,7 +1083,7 @@ int LUA_HookNameChange(player_t *plr, const char *name)
 
 int LUA_HookTeamSwitch(player_t *player, int newteam, boolean fromspectators, boolean tryingautobalance, boolean tryingscramble)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, true, HOOK(TeamSwitch)))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
@@ -1098,7 +1098,7 @@ int LUA_HookTeamSwitch(player_t *player, int newteam, boolean fromspectators, bo
 
 int LUA_HookViewpointSwitch(player_t *player, player_t *newdisplayplayer, boolean forced)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, 0, HOOK(ViewpointSwitch)))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
@@ -1114,7 +1114,7 @@ int LUA_HookViewpointSwitch(player_t *player, player_t *newdisplayplayer, boolea
 
 int LUA_HookSeenPlayer(player_t *player, player_t *seenfriend)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, true, HOOK(SeenPlayer)))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
@@ -1129,7 +1129,7 @@ int LUA_HookSeenPlayer(player_t *player, player_t *seenfriend)
 
 int LUA_HookShouldJingleContinue(player_t *player, const char *musname)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_string_hook
 			(&hook, false, STRING_HOOK(ShouldJingleContinue), musname))
 	{
@@ -1155,7 +1155,7 @@ static void res_gprankpoints(Hook_State *hook)
 
 int LUA_HookGPRankPoints(UINT8 position, UINT8 numplayers, INT16 *points)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, 0, HOOK(GPRankPoints)))
 	{
 		hook.userdata = points;
@@ -1221,7 +1221,7 @@ int LUA_HookMusicChange(const char *oldname, struct MusicChange *param)
 	const int type = HOOK(MusicChange);
 	const hook_t * map = &hookIds[type];
 
-	Hook_State hook;
+	Hook_State hook = {};
 
 	int k;
 
@@ -1275,7 +1275,7 @@ static void res_trueforce(Hook_State *hook)
 
 boolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, boolean wasHoldingItem, boolean *force)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	TrueForce_State state = {0};
 
 	if (prepare_hook(&hook, 0, HOOK(PlayerItem)))
@@ -1316,7 +1316,7 @@ static void res_karthyudoro(Hook_State *hook)
 
 boolean LUA_HookKartHyudoro(player_t *player, INT32 *target, boolean sink)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	KartHyudoro_State state = {0};
 	state.target = target;
 
@@ -1340,7 +1340,7 @@ boolean LUA_HookKartHyudoro(player_t *player, INT32 *target, boolean sink)
 
 boolean LUA_HookMobjScaleChange(mobj_t *target, fixed_t newscale, fixed_t oldscale)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_mobj_hook(&hook, false, MOBJ_HOOK(MobjScaleChange), target->type))
 	{
 		LUA_PushUserdata(gL, target, META_MOBJ);
@@ -1354,7 +1354,7 @@ boolean LUA_HookMobjScaleChange(mobj_t *target, fixed_t newscale, fixed_t oldsca
 
 boolean LUA_HookKartSneaker(player_t *player, int type)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(KartSneaker)))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
@@ -1369,7 +1369,7 @@ boolean LUA_HookKartSneaker(player_t *player, int type)
 
 boolean LUA_HookKartStripItems(player_t* player, UINT8 item)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(KartStripItems)))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
@@ -1383,7 +1383,7 @@ boolean LUA_HookKartStripItems(player_t* player, UINT8 item)
 
 boolean LUA_HookKartStripOther(player_t* player)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(KartStripOther)))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
@@ -1396,7 +1396,7 @@ boolean LUA_HookKartStripOther(player_t* player)
 
 boolean LUA_HookCanPickupItem(player_t *player, UINT8 weapon, boolean *force)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	TrueForce_State state = {0};
 
 	if (prepare_hook(&hook, 0, HOOK(CanPickupItem)))
@@ -1439,7 +1439,7 @@ static void res_kartdrophnext(Hook_State *hook)
 
 int LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t droptype, boolean *orbit, boolean *dropall)
 {
-	Hook_State hook;
+	Hook_State hook = {};
 	KartDropHnextList_State state = {0};
 	state.droptype = droptype;
 	state.orbit = orbit;
