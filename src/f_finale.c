@@ -1811,9 +1811,7 @@ void F_StartWaitingPlayers(void)
 #ifdef NOWAY
 	randskin = M_RandomKey(numskins);
 
-	if (waitcolormap)
-		Z_Free(waitcolormap);
-
+	Z_Free(waitcolormap);
 	waitcolormap = R_GetTranslationColormap(randskin, skins[randskin].prefcolor, 0);
 
 	sprdef = &skins[randskin].sprites[P_GetSkinSprite2(&skins[randskin], SPR2_FSTN, NULL)];

@@ -8076,8 +8076,7 @@ void P_SpawnSpecials(boolean fromnetsave)
 
 	// Allocate each list
 	for (i = 0; i < numsectors; i++)
-		if(secthinkers[i].thinkers)
-			Z_Free(secthinkers[i].thinkers);
+		Z_Free(secthinkers[i].thinkers);
 
 	Z_Free(secthinkers);
 }

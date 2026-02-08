@@ -1025,13 +1025,9 @@ void R_ExecuteSetViewSize(void)
 	// planes
 	if (rendermode == render_soft)
 	{
-		if (ds_su)
-			Z_Free(ds_su);
-		if (ds_sv)
-			Z_Free(ds_sv);
-		if (ds_sz)
-			Z_Free(ds_sz);
-
+		Z_Free(ds_su);
+		Z_Free(ds_sv);
+		Z_Free(ds_sz);
 		ds_su = ds_sv = ds_sz = NULL;
 	}
 
