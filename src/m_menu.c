@@ -2909,10 +2909,10 @@ void MD_DrawGenericMenu(void)
 
 	if (menustack[0] == MN_MAIN)
 	{
-		INT32 texty = vid.height - 10*vid.dupy;
+		INT32 texty = vid.height - 10*vid.dup;
 #define addtext(f, str) {\
-V_DrawThinString(vid.dupx, texty, MENUCAPS|V_NOSCALESTART|f, str);\
-texty -= 10*vid.dupy;\
+V_DrawThinString(vid.dup, texty, MENUCAPS|V_NOSCALESTART|f, str);\
+texty -= 10*vid.dup;\
 }
 		if (customversionstring[0] != '\0')
 		{
@@ -3750,7 +3750,7 @@ void MD_DrawLevelPlatterMenu(void)
 	UINT8 row = levelselect.row;
 	INT32 y = lsbasey + FixedInt(levelselect.offsety) - getheadingoffset(row);
 	INT32 hiliy = INT32_MIN;
-	INT32 minrows = (vid.height/vid.dupy + lsbasevseperation/2)/lsbasevseperation;
+	INT32 minrows = (vid.scaledheight + lsbasevseperation/2)/lsbasevseperation;
 	INT32 cursorx = levelselect.rows[row].wide ? 0 : levelselect.column * lshseperation;
 
 	// finds row at top of the screen
@@ -3767,7 +3767,7 @@ void MD_DrawLevelPlatterMenu(void)
 	}
 
 	// draw from top to bottom
-	while (y <= (vid.height/vid.dupy) + lsbasevseperation/2)
+	while (y <= (vid.scaledheight) + lsbasevseperation/2)
 	{
 		M_DrawLevelPlatterRow(row, y);
 		if (row == levelselect.row)
@@ -4740,8 +4740,8 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 	return true;
 }
 
-#define SCALEDVIEWWIDTH (vid.width/vid.dupx)
-#define SCALEDVIEWHEIGHT (vid.height/vid.dupy)
+#define SCALEDVIEWWIDTH (vid.scaledwidth)
+#define SCALEDVIEWHEIGHT (vid.scaledheight)
 static void DrawReplayHutReplayInfo(void)
 {
 	patch_t *patch;
@@ -5740,9 +5740,9 @@ void MD_DrawMusicTest(void)
 	x = 90<<FRACBITS;
 	y = (BASEVIDHEIGHT-32)<<FRACBITS;
 
-	y = (BASEVIDWIDTH-(vid.width/vid.dupx))/2;
+	y = (BASEVIDWIDTH-(vid.scaledwidth))/2;
 
-	V_DrawFill(y-1, 20, vid.width/vid.dupx+1, 24, 159);
+	V_DrawFill(y-1, 20, vid.scaledwidth+1, 24, 159);
 	{
 		static fixed_t st_scroll = -FRACUNIT;
 		const char* titl;
@@ -5786,9 +5786,9 @@ void MD_DrawMusicTest(void)
 		if (curplaying)
 		{
 			if (!curplaying->usage || !curplaying->usage[0])
-				V_DrawString(vid.dupx, vid.height - 10*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s", &curplaying->name[0][0]));
+				V_DrawString(vid.dup, vid.height - 10*vid.dup, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s", &curplaying->name[0][0]));
 			else {
-				V_DrawSmallString(vid.dupx, vid.height - 5*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s - %.255s\n", &curplaying->name[0][0], curplaying->usage));
+				V_DrawSmallString(vid.dup, vid.height - 5*vid.dup, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s - %.255s\n", &curplaying->name[0][0], curplaying->usage));
 			}
 		}
 	}
@@ -6527,7 +6527,7 @@ void MD_DrawTimeAttackMenu(void)
 	// Level record list
 	if (cv_nextmap.value)
 	{
-		INT32 dupadjust = (vid.width/vid.dupx);
+		INT32 dupadjust = (vid.scaledwidth);
 		V_DrawFill((BASEVIDWIDTH - dupadjust)>>1, 78, dupadjust, 36, 159);
 
 		if (levellistmode != LLM_ITEMBREAKER)

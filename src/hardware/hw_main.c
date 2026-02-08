@@ -6112,8 +6112,7 @@ void HWR_RenderPlayerView(void)
 	{
 		// V_DrawPatchFill, but for the fourth screen only
 		patch_t *gpatch = (patch_t *)W_CachePatchName("SRB2BACK", PU_CACHE);
-		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-		INT32 x, y, pw = SHORT(gpatch->width) * dupz, ph = SHORT(gpatch->height) * dupz;
+		INT32 x, y, pw = SHORT(gpatch->width) * vid.dup, ph = SHORT(gpatch->height) * vid.dup;
 
 		for (x = vid.width>>1; x < vid.width; x += pw)
 		{

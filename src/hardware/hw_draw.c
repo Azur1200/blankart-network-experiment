@@ -65,7 +65,7 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 //  | /|
 //  |/ |
 //  0--1
-	float dupx, dupy, fscalew, fscaleh, fwidth, fheight;
+	float dup, fscalew, fscaleh, fwidth, fheight;
 
 	const cliprect_t *clip = V_GetClipRect();
 
@@ -80,25 +80,21 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 
 	hwrPatch = ((GLPatch_t *)gpatch->hardware);
 
-	dupx = (float)vid.dupx;
-	dupy = (float)vid.dupy;
+	dup = (float)vid.dup;
 
 	switch (option & V_SCALEPATCHMASK)
 	{
-	case V_NOSCALEPATCH:
-		dupx = dupy = 1.0f;
-		break;
-	case V_SMALLSCALEPATCH:
-		dupx = (float)vid.smalldupx;
-		dupy = (float)vid.smalldupy;
-		break;
-	case V_MEDSCALEPATCH:
-		dupx = (float)vid.meddupx;
-		dupy = (float)vid.meddupy;
-		break;
+		case V_NOSCALEPATCH:
+			dup = 1.0f;
+			break;
+		case V_SMALLSCALEPATCH:
+			dup = (float)vid.smalldup;
+			break;
+		case V_MEDSCALEPATCH:
+			dup = (float)vid.meddup;
+			break;
 	}
 
-	dupx = dupy = (dupx < dupy ? dupx : dupy);
 	fscalew = fscaleh = FIXED_TO_FLOAT(pscale);
 	if (vscale != pscale)
 		fscaleh = FIXED_TO_FLOAT(vscale);
@@ -126,15 +122,15 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 
 	if (!(option & V_NOSCALESTART))
 	{
-		cx = cx * dupx;
-		cy = cy * dupy;
+		cx = cx * dup;
+		cy = cy * dup;
 
 		if (!(option & V_SCALEPATCHMASK))
 		{
 			INT32 intx, inty;
 			intx = (INT32)cx;
 			inty = (INT32)cy;
-			V_AdjustXYWithSnap(&intx, &inty, option, dupx, dupy);
+			V_AdjustXYWithSnap(&intx, &inty, option, dup);
 			cx = (float)intx;
 			cy = (float)inty;
 		}
@@ -142,13 +138,13 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 
 	if (pscale != FRACUNIT || (r_splitscreen && option & V_SPLITSCREEN))
 	{
-		fwidth = (float)(gpatch->width) * fscalew * dupx;
-		fheight = (float)(gpatch->height) * fscaleh * dupy;
+		fwidth = (float)(gpatch->width) * fscalew * dup;
+		fheight = (float)(gpatch->height) * fscaleh * dup;
 	}
 	else
 	{
-		fwidth = (float)(gpatch->width) * dupx;
-		fheight = (float)(gpatch->height) * dupy;
+		fwidth = (float)(gpatch->width) * dup;
+		fheight = (float)(gpatch->height) * dup;
 	}
 
 	s_min = t_min = 0.0f;
@@ -276,15 +272,15 @@ void HWR_DrawAffinePatch(patch_t *gpatch, fixed_t x, fixed_t y, const affine_t *
 		HWR_GetMappedPatch(gpatch, colormap);
 
 	// positions of the x, y, are between 0 and vid.width/vid.height now, we need them to be between -1 and 1
-	float fwidth = vid.width;// / vid.dupx;
-	float fheight = vid.height;// / vid.dupy;
+	float fwidth = vid.width;// / vid.dup;
+	float fheight = vid.height;// / vid.dup;
 	float cx = -1.0f + (x / (fwidth/2));
 	float cy = 1.0f - (y / (fheight/2));
 
-	float fa = FIXED_TO_FLOAT(transform->a) / vid.dupx;
-	float fd = FIXED_TO_FLOAT(transform->d) / vid.dupx;
-	float fc = FIXED_TO_FLOAT(transform->c) / vid.dupy;
-	float fb = FIXED_TO_FLOAT(transform->b) / vid.dupy;
+	float fa = FIXED_TO_FLOAT(transform->a) / vid.dup;
+	float fd = FIXED_TO_FLOAT(transform->d) / vid.dup;
+	float fc = FIXED_TO_FLOAT(transform->c) / vid.dup;
+	float fb = FIXED_TO_FLOAT(transform->b) / vid.dup;
 	float fx = FIXED_TO_FLOAT(transform->ox);
 	float fy = FIXED_TO_FLOAT(transform->oy);
 
@@ -403,31 +399,27 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 //  | /|
 //  |/ |
 //  0--1
-	float dupx, dupy, fscale, fwidth, fheight;
+	float dup, fscale, fwidth, fheight;
 
 	// make patch ready in hardware cache
 	HWR_GetPatch(gpatch);
 	hwrPatch = ((GLPatch_t *)gpatch->hardware);
 
-	dupx = (float)vid.dupx;
-	dupy = (float)vid.dupy;
+	dup = (float)vid.dup;
 
 	switch (option & V_SCALEPATCHMASK)
 	{
-	case V_NOSCALEPATCH:
-		dupx = dupy = 1.0f;
-		break;
-	case V_SMALLSCALEPATCH:
-		dupx = (float)vid.smalldupx;
-		dupy = (float)vid.smalldupy;
-		break;
-	case V_MEDSCALEPATCH:
-		dupx = (float)vid.meddupx;
-		dupy = (float)vid.meddupy;
-		break;
+		case V_NOSCALEPATCH:
+			dup = 1.0f;
+			break;
+		case V_SMALLSCALEPATCH:
+			dup = (float)vid.smalldup;
+			break;
+		case V_MEDSCALEPATCH:
+			dup = (float)vid.meddup;
+			break;
 	}
 
-	dupx = dupy = (dupx < dupy ? dupx : dupy);
 	fscale = FIXED_TO_FLOAT(pscale);
 
 	// fuck it, no GL support for croppedpatch V_SPLITSCREEN right now. it's not like it's accessible to Lua or anything, and we only use it for menus...
@@ -437,8 +429,8 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 
 	if (!(option & V_NOSCALESTART))
 	{
-		cx = cx * dupx;
-		cy = cy * dupy;
+		cx = cx * dup;
+		cy = cy * dup;
 
 		if (!(option & V_SCALEPATCHMASK))
 		{
@@ -446,19 +438,19 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 			// no the patch is cropped do not do this ever
 
 			// centre screen
-			if (fabsf((float)vid.width - (float)BASEVIDWIDTH * dupx) > 1.0E-36f)
+			if (fabsf((float)vid.width - (float)BASEVIDWIDTH * dup) > 1.0E-36f)
 			{
 				if (option & V_SNAPTORIGHT)
-					cx += ((float)vid.width - ((float)BASEVIDWIDTH * dupx));
+					cx += ((float)vid.width - ((float)BASEVIDWIDTH * dup));
 				else if (!(option & V_SNAPTOLEFT))
-					cx += ((float)vid.width - ((float)BASEVIDWIDTH * dupx))/2;
+					cx += ((float)vid.width - ((float)BASEVIDWIDTH * dup))/2;
 			}
-			if (fabsf((float)vid.height - (float)BASEVIDHEIGHT * dupy) > 1.0E-36f)
+			if (fabsf((float)vid.height - (float)BASEVIDHEIGHT * dup) > 1.0E-36f)
 			{
 				if (option & V_SNAPTOBOTTOM)
-					cy += ((float)vid.height - ((float)BASEVIDHEIGHT * dupy));
+					cy += ((float)vid.height - ((float)BASEVIDHEIGHT * dup));
 				else if (!(option & V_SNAPTOTOP))
-					cy += ((float)vid.height - ((float)BASEVIDHEIGHT * dupy))/2;
+					cy += ((float)vid.height - ((float)BASEVIDHEIGHT * dup))/2;
 			}
 		}
 	}
@@ -474,13 +466,13 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 
 	if (pscale != FRACUNIT)
 	{
-		fwidth *=  fscale * dupx;
-		fheight *=  fscale * dupy;
+		fwidth *=  fscale * dup;
+		fheight *=  fscale * dup;
 	}
 	else
 	{
-		fwidth *= dupx;
-		fheight *= dupy;
+		fwidth *= dup;
+		fheight *= dup;
 	}
 
 	// positions of the cx, cy, are between 0 and vid.width/vid.height now, we need them to be between -1 and 1
@@ -560,9 +552,9 @@ void HWR_DrawPic(INT32 x, INT32 y, lumpnum_t lumpnum)
 //  0--1
 
 	v[0].x = v[3].x = 2.0f * (float)x/vid.width - 1;
-	v[2].x = v[1].x = 2.0f * (float)(x + patch->width*FIXED_TO_FLOAT(vid.fdupx))/vid.width - 1;
+	v[2].x = v[1].x = 2.0f * (float)(x + patch->width*FIXED_TO_FLOAT(vid.fdup))/vid.width - 1;
 	v[0].y = v[1].y = 1.0f - 2.0f * (float)y/vid.height;
-	v[2].y = v[3].y = 1.0f - 2.0f * (float)(y + patch->height*FIXED_TO_FLOAT(vid.fdupy))/vid.height;
+	v[2].y = v[3].y = 1.0f - 2.0f * (float)(y + patch->height*FIXED_TO_FLOAT(vid.fdup))/vid.height;
 
 	v[0].z = v[1].z = v[2].z = v[3].z = 1.0f;
 
@@ -705,12 +697,12 @@ void HWR_DrawFadeFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT16 ac
 
 	if (!(color & V_NOSCALESTART))
 	{
-		float dupx = (float)vid.dupx, dupy = (float)vid.dupy;
+		float dup = (float)vid.dup;
 
-		fx *= dupx;
-		fy *= dupy;
-		fw *= dupx;
-		fh *= dupy;
+		fx *= dup;
+		fy *= dup;
+		fw *= dup;
+		fh *= dup;
 
 		// adjustxy
 	}
@@ -892,27 +884,27 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 
 	if (!(color & V_NOSCALESTART))
 	{
-		float dupx = (float)vid.dupx, dupy = (float)vid.dupy;
+		float dup = (float)vid.dup;
 
-		fx *= dupx;
-		fy *= dupy;
-		fw *= dupx;
-		fh *= dupy;
+		fx *= dup;
+		fy *= dup;
+		fw *= dup;
+		fh *= dup;
 
-		if (fabsf((float)vid.width - ((float)BASEVIDWIDTH * dupx)) > 1.0E-36f)
+		if (fabsf((float)vid.width - ((float)BASEVIDWIDTH * dup)) > 1.0E-36f)
 		{
 			if (color & V_SNAPTORIGHT)
-				fx += ((float)vid.width - ((float)BASEVIDWIDTH * dupx));
+				fx += ((float)vid.width - ((float)BASEVIDWIDTH * dup));
 			else if (!(color & V_SNAPTOLEFT))
-				fx += ((float)vid.width - ((float)BASEVIDWIDTH * dupx)) / 2;
+				fx += ((float)vid.width - ((float)BASEVIDWIDTH * dup)) / 2;
 		}
-		if (fabsf((float)vid.height - ((float)BASEVIDHEIGHT * dupy)) > 1.0E-36f)
+		if (fabsf((float)vid.height - ((float)BASEVIDHEIGHT * dup)) > 1.0E-36f)
 		{
 			// same thing here
 			if (color & V_SNAPTOBOTTOM)
-				fy += ((float)vid.height - ((float)BASEVIDHEIGHT * dupy));
+				fy += ((float)vid.height - ((float)BASEVIDHEIGHT * dup));
 			else if (!(color & V_SNAPTOTOP))
-				fy += ((float)vid.height - ((float)BASEVIDHEIGHT * dupy)) / 2;
+				fy += ((float)vid.height - ((float)BASEVIDHEIGHT * dup)) / 2;
 		}
 	}
 
@@ -984,17 +976,17 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT32
 
 	if (!(color & V_NOSCALESTART))
 	{
-		float dupx = (float)vid.dupx, dupy = (float)vid.dupy;
+		float dup = (float)vid.dup;
 		INT32 intx, inty;
 
-		fx *= dupx;
-		fy *= dupy;
-		fw *= dupx;
-		fh *= dupy;
+		fx *= dup;
+		fy *= dup;
+		fw *= dup;
+		fh *= dup;
 
 		intx = (INT32)fx;
 		inty = (INT32)fy;
-		V_AdjustXYWithSnap(&intx, &inty, color, dupx, dupy);
+		V_AdjustXYWithSnap(&intx, &inty, color, dup);
 		fx = (float)intx;
 		fy = (float)inty;
 	}

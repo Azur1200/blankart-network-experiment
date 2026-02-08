@@ -626,7 +626,7 @@ static int libd_draw(lua_State *L)
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -660,7 +660,7 @@ static int libd_drawScaled(lua_State *L)
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -695,7 +695,7 @@ static int libd_drawStretched(lua_State *L)
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -879,7 +879,7 @@ static int libd_drawOnMinimap(lua_State *L)
 
 	// and NOW we can FINALLY DRAW OUR GOD DAMN PATCH :V
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (cv_minihead.value)
@@ -905,7 +905,7 @@ static int libd_drawNum(lua_State *L)
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -929,7 +929,7 @@ static int libd_drawPaddedNum(lua_State *L)
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -954,7 +954,7 @@ static int libd_drawPingNum(lua_State *L)
 		colormap = *((UINT8 **)luaL_checkudata(L, 5, META_COLORMAP));
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -979,7 +979,7 @@ static int libd_drawFill(lua_State *L)
 		c = (c & ~0xff) | R_GetPaletteRemap(c & 0xff);
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -1008,7 +1008,7 @@ static int libd_fadeScreen(lua_State *L)
 		color = R_GetPaletteRemap(color);
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (strength == maxstrength) // Allow as a shortcut for drawfill...
@@ -1041,7 +1041,7 @@ static int libd_drawString(lua_State *L)
 	HUDONLY
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	// okay, sorry, this is kind of ugly
@@ -1100,7 +1100,7 @@ static int libd_drawTitleCardString(lua_State *L)
 
 	HUDONLY
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -1122,7 +1122,7 @@ static int libd_drawKartString(lua_State *L)
 
 	HUDONLY
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -1145,7 +1145,7 @@ static int libd_setClipRect(lua_State *L)
 
 	HUDONLY
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 	cliprectenabled = true;
 
@@ -1162,7 +1162,7 @@ static int libd_clearClipRect(lua_State *L)
 
 	HUDONLY
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 	cliprectenabled = false;
 
@@ -1383,19 +1383,11 @@ static int libd_height(lua_State *L)
 	return 1;
 }
 
-static int libd_dupx(lua_State *L)
+static int libd_dup(lua_State *L)
 {
 	HUDONLY
-	lua_pushinteger(L, vid.dupx); // push integral scale (patch scale)
-	lua_pushfixed(L, vid.fdupx); // push fixed point scale (position scale)
-	return 2;
-}
-
-static int libd_dupy(lua_State *L)
-{
-	HUDONLY
-	lua_pushinteger(L, vid.dupy); // push integral scale (patch scale)
-	lua_pushfixed(L, vid.fdupy); // push fixed point scale (position scale)
+	lua_pushinteger(L, vid.dup); // push integral scale (patch scale)
+	lua_pushfixed(L, vid.fdup); // push fixed point scale (position scale)
 	return 2;
 }
 
@@ -1662,8 +1654,9 @@ static luaL_Reg lib_draw[] = {
 	// properties
 	{"width", libd_width},
 	{"height", libd_height},
-	{"dupx", libd_dupx},
-	{"dupy", libd_dupy},
+	{"dup", libd_dup},
+	{"dupx", libd_dup},
+	{"dupy", libd_dup},
 	{"renderer", libd_renderer},
 	{"localTransFlag", libd_getlocaltransflag},
 	{"drawOnMinimap", libd_drawOnMinimap},

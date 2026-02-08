@@ -90,10 +90,10 @@ void R_SetupSkyDraw(void)
 */
 void R_SetSkyScale(void)
 {
-	fixed_t difference = vid.fdupx-(vid.dupx<<FRACBITS);
+	fixed_t difference = vid.fdup-(vid.dup<<FRACBITS);
 	int i;
 	for (i = 0; i <= r_splitscreen; ++i)
 	{
-		skyscale[i] = FixedDiv(fovtan[i], vid.fdupx+difference);
+		skyscale[i] = FixedDiv(fovtan[i], vid.fdup+difference);
 	}
 }

@@ -51,8 +51,6 @@ extern "C" {
 // global video state
 struct viddef_t
 {
-	INT32 modenum; // vidmode num indexes videomodes list
-
 	// Each screen is [vid.width*vid.height];
 	UINT8 *screens[5];
 	// screens[0] = main display window
@@ -64,12 +62,16 @@ struct viddef_t
 	size_t rowbytes; // bytes per scanline of the VIDEO mode
 	INT32 width; // PIXELS per scanline
 	INT32 height;
+	INT32 modenum; // vidmode num indexes videomodes list
 	boolean recalc; // if true, recalc vid-based stuff
-	INT32 dupx, dupy; // scale 1, 2, 3 value for menus & overlays
-	INT32/*fixed_t*/ fdupx, fdupy; // same as dupx, dupy, but exact value when aspect ratio isn't 320/200
 
-	UINT8 smalldupx, smalldupy; // factor for a little bit of scaling
-	UINT8 meddupx, meddupy; // factor for moderate, but not full, scaling
+	INT32 dup; // scale 1, 2, 3 value for menus & overlays
+	INT32 fdup; // same as dup, but exact value when aspect ratio isn't 320/200
+	UINT8 smalldup; // factor for a little bit of scaling
+	UINT8 meddup; // factor for moderate, but not full, scaling
+
+	INT32 scaledwidth; // width / dup
+	INT32 scaledheight; // height / dup
 #ifdef HWRENDER
 	INT32 glstate;
 #endif

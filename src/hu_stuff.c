@@ -2443,7 +2443,7 @@ static inline void HU_DrawSpectatorTicker(void)
 	INT32 i;
 	INT32 length = 0, height = 174;
 	INT32 totallength = 0, templength = -8;
-	INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
+	INT32 dupadjust = vid.scaledwidth, duptweak = (dupadjust - BASEVIDWIDTH)/2;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		if (playeringame[i] && players[i].spectator)

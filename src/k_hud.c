@@ -789,8 +789,8 @@ void K_ObjectTracking(trackingResult_t *result, const vector3_t *point, boolean 
 	}
 
 	// Calculate screen size adjustments.
-	screenWidth = vid.width/vid.dupx;
-	screenHeight = vid.height/vid.dupy;
+	screenWidth = vid.scaledwidth;
+	screenHeight = vid.scaledheight;
 
 	if (r_splitscreen >= 2)
 	{
@@ -878,8 +878,8 @@ void K_ObjectTracking(trackingResult_t *result, const vector3_t *point, boolean 
 	}
 
 	// adjust to non-green-resolution screen coordinates
-	result->x -= ((vid.width/vid.dupx) - BASEVIDWIDTH)<<(FRACBITS-((r_splitscreen >= 2) ? 2 : 1));
-	result->y -= ((vid.height/vid.dupy) - BASEVIDHEIGHT)<<(FRACBITS-((r_splitscreen >= 1) ? 2 : 1));
+	result->x -= ((vid.scaledwidth) - BASEVIDWIDTH)<<(FRACBITS-((r_splitscreen >= 2) ? 2 : 1));
+	result->y -= ((vid.scaledheight) - BASEVIDHEIGHT)<<(FRACBITS-((r_splitscreen >= 1) ? 2 : 1));
 
 	return;
 
@@ -2367,7 +2367,7 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 	INT32 i, rightoffset = split ? 160 - 6: BASEVIDWIDTH - 6;
 	const UINT8 *colormap = NULL;
 	UINT16 hightlightcolor = 0;
-	INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
+	INT32 dupadjust = (vid.scaledwidth), duptweak = (dupadjust - BASEVIDWIDTH)/2;
 	INT32 y2, x2;
 	// INT32 basey = y, basex = x;
 
@@ -2633,7 +2633,7 @@ void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, IN
 	INT32 i, rightoffset = 240;
 	UINT8 *colormap = NULL;
 	UINT16 hightlightcolor = 0;
-	INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
+	INT32 dupadjust = (vid.scaledwidth), duptweak = (dupadjust - BASEVIDWIDTH)/2;
 	int basey = y, basex = x, y2;
 	(void)hilicol;
 
@@ -4989,7 +4989,7 @@ static void K_drawKartFinish(void)
 	{
 		INT32 x, xval, ox, interpx, pwidth;
 
-		x = ((vid.width<<FRACBITS)/vid.dupx);
+		x = ((vid.width<<FRACBITS)/vid.dup);
 		xval = (SHORT(kptodraw[pnum]->width)<<FRACBITS);
 
 		pwidth = max(xval, x);
@@ -5266,7 +5266,7 @@ static void K_drawKartFirstPerson(void)
 	if (r_splitscreen == 1)
 	{
 		scale = (2*FRACUNIT)/3;
-		y += FRACUNIT/(vid.dupx < vid.dupy ? vid.dupx : vid.dupy); // correct a one-pixel gap on the screen view (not the basevid view)
+		y += FRACUNIT/vid.dup; // correct a one-pixel gap on the screen view (not the basevid view)
 	}
 	else if (r_splitscreen)
 		scale = FRACUNIT/2;
