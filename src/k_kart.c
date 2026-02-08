@@ -2934,8 +2934,7 @@ static void K_GetKartBoostPower(player_t *player)
 	{
 		K_DoBoost(player, SSMTSPEEDBOOST, SSMTACCELBOOST, SSMTHANDLEBOOST, false, true); // + 10% top speed, + ?% acceleration
 	}
-
-	if ((player->pflags & PF_RECOVERYSPIN))
+	else if (player->pflags & PF_RECOVERYSPIN)
 	{
 		if (player->flashing || player->recoverydashcharge >= TICRATE)
 		{
@@ -9907,7 +9906,7 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 
 static boolean K_PlayerWantsRecoverySpin(player_t *player)
 {
-	return ((player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE) && !(player->cmd.buttons & BT_DRIFT));
+	return ((player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE) && (!(player->cmd.buttons & BT_DRIFT)));
 }
 
 static boolean K_PlayerCanStartRecoverySpin(player_t *player)
@@ -9931,112 +9930,29 @@ static void K_RecoveryDash(player_t *player)
 	{
 		player->wipeoutslow = player->spinouttimer;
 	}
+
+	if ((player->pflags & PF_RECOVERYSPIN) && player->forcedtopspeed == 0 && player->speed >= 10*player->mo->scale)
+	{
+		player->pflags &= ~PF_RECOVERYSPIN;
+		player->forcedtopspeed = 0;
+		player->recoverydashcharge = 0;
+	}
+
 	if (K_PlayerCanRecoverySpin(player))
 	{
 		if (K_PlayerWantsRecoverySpin(player) && K_PlayerCanStartRecoverySpin(player))
 		{
 			player->pflags |= PF_RECOVERYSPIN;
+			player->forcedtopspeed = cv_kartrecoverydash_spinspeed.value + 8;
 			S_StartSound(player->mo, sfx_cdfm20);
 		}
+
 		if (player->pflags & PF_RECOVERYSPIN)
 		{
-			if ((player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE))
-			{
-				player->forcedtopspeed = cv_kartrecoverydash_spinspeed.value + 8;
-				if (P_IsObjectOnGround(player->mo))
-				{
-					player->recoverydashcharge += 1;
-					K_SpawnWipeoutTrail(player->mo, (player->recoverydashcharge < 3*TICRATE/2));
-					
-					if (leveltime % 6 == 0)
-					{
-						if (player->recoverydashcharge < 2*TICRATE)
-						{
-							S_StartSound(player->mo, sfx_s225);
-						}
-					}
-					if (leveltime % 4 == 0)
-					{
-						fixed_t newx;
-						fixed_t newy;
-						mobj_t *skid;
-						angle_t travelangle;
-						travelangle = player->mo->angle;
-						for (INT32 i = 0; i < 2; i++)
-						{
-							newx = P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(28*FRACUNIT, player->mo->scale));
-							newy = P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(28*FRACUNIT, player->mo->scale));
-							skid = P_SpawnMobjFromMobj(player->mo, newx, newy, (10*player->mo->scale), MT_OVERLAY);
-							P_SetTarget(&skid->target, player->mo);
-							skid->sprxoff = newx;
-							skid->spryoff = newy;
-							skid->sprzoff = (10*player->mo->scale);
-							
-							P_SetScale(skid, player->mo->scale);
-							skid->destscale = player->mo->destscale;
-							skid->scalespeed = player->mo->scalespeed;
-							skid->movefactor = FRACUNIT;
-							skid->angle = travelangle;
-							
-
-							P_SetMobjState(skid, S_RECSPIN_SKID);
-							K_MatchGenericExtraFlags(skid, player->mo);
-							if (player->recoverydashcharge >= 2*TICRATE)
-							{
-								skid->renderflags |= RF_TRANS20;
-							}
-							else
-							{
-								skid->renderflags |= RF_TRANS40;
-							}
-							if (i) skid->renderflags |= RF_HORIZONTALFLIP;
-						}
-					}
-				}
-				if (player->recoverydashcharge >= 2*TICRATE)
-				{
-					if (player->recoverydashcharge == 2*TICRATE)
-					{
-						S_StartSound(player->mo, sfx_s3ka2);
-					}
-					if (leveltime & 1)
-					{
-						fixed_t newx;
-						fixed_t newy;
-						mobj_t *spark;
-						angle_t travelangle, sparkangle;
-						travelangle = player->mo->angle;
-						sparkangle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
-						for (INT32 i = 0; i < 2; i++)
-						{
-							newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
-							newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
-							spark = P_SpawnMobj(newx, newy, player->mo->z, MT_DRIFTSPARK);
-							spark->momx = player->mo->momx/2;
-							spark->momy = player->mo->momy/2;
-
-							P_SetTarget(&spark->target, player->mo);
-							spark->angle = sparkangle;
-							spark->color = SKINCOLOR_WHITE;
-
-							if (player->recoverydashcharge >= 2*TICRATE + TICRATE/4)
-							{
-								P_SetMobjState(spark, S_DRIFTSPARK_B1);
-							}
-							else
-							{
-								P_SetMobjState(spark, S_DRIFTSPARK_A1);
-							}
-							K_MatchGenericExtraFlags(spark, player->mo);
-						}
-					}
-				}
-			}
-			else
+			if (!((player->cmd.buttons & BT_ACCELERATE) && (player->cmd.buttons & BT_BRAKE)))
 			{
 				player->pflags &= ~PF_RECOVERYSPIN;
 				player->forcedtopspeed = 0;
-				player->tiregrease = 2*TICRATE;
 				if (player->recoverydashcharge >= 2*TICRATE && (player->cmd.buttons & BT_ACCELERATE))
 				{
 					player->outrun = TICRATE/4;
@@ -10046,6 +9962,97 @@ static void K_RecoveryDash(player_t *player)
 					K_SpawnDashDustRelease(player, true);
 				}
 				player->recoverydashcharge = 0;
+				return;
+			}
+
+			player->forcedtopspeed = cv_kartrecoverydash_spinspeed.value + 8;
+			if (P_IsObjectOnGround(player->mo))
+			{
+				player->recoverydashcharge += 1;
+				K_SpawnWipeoutTrail(player->mo, (player->recoverydashcharge < 3*TICRATE/2));
+				
+				if (leveltime % 6 == 0)
+				{
+					if (player->recoverydashcharge < 2*TICRATE)
+					{
+						S_StartSound(player->mo, sfx_s225);
+					}
+				}
+				if (leveltime % 4 == 0)
+				{
+					fixed_t newx;
+					fixed_t newy;
+					mobj_t *skid;
+					angle_t travelangle;
+					travelangle = player->mo->angle;
+					for (INT32 i = 0; i < 2; i++)
+					{
+						newx = P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(28*FRACUNIT, player->mo->scale));
+						newy = P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(28*FRACUNIT, player->mo->scale));
+						skid = P_SpawnMobjFromMobj(player->mo, newx, newy, (10*player->mo->scale), MT_OVERLAY);
+						P_SetTarget(&skid->target, player->mo);
+						skid->sprxoff = newx;
+						skid->spryoff = newy;
+						skid->sprzoff = (10*player->mo->scale);
+						
+						P_SetScale(skid, player->mo->scale);
+						skid->destscale = player->mo->destscale;
+						skid->scalespeed = player->mo->scalespeed;
+						skid->movefactor = FRACUNIT;
+						skid->angle = travelangle;
+						
+
+						P_SetMobjState(skid, S_RECSPIN_SKID);
+						K_MatchGenericExtraFlags(skid, player->mo);
+						if (player->recoverydashcharge >= 2*TICRATE)
+						{
+							skid->renderflags |= RF_TRANS20;
+						}
+						else
+						{
+							skid->renderflags |= RF_TRANS40;
+						}
+						if (i) skid->renderflags |= RF_HORIZONTALFLIP;
+					}
+				}
+			}
+
+			if (player->recoverydashcharge >= 2*TICRATE)
+			{
+				if (player->recoverydashcharge == 2*TICRATE)
+					S_StartSound(player->mo, sfx_s3ka2);
+
+				if (leveltime & 1)
+				{
+					fixed_t newx;
+					fixed_t newy;
+					mobj_t *spark;
+					angle_t travelangle, sparkangle;
+					travelangle = player->mo->angle;
+					sparkangle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
+					for (INT32 i = 0; i < 2; i++)
+					{
+						newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
+						newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
+						spark = P_SpawnMobj(newx, newy, player->mo->z, MT_DRIFTSPARK);
+						spark->momx = player->mo->momx/2;
+						spark->momy = player->mo->momy/2;
+
+						P_SetTarget(&spark->target, player->mo);
+						spark->angle = sparkangle;
+						spark->color = SKINCOLOR_WHITE;
+
+						if (player->recoverydashcharge >= 2*TICRATE + TICRATE/4)
+						{
+							P_SetMobjState(spark, S_DRIFTSPARK_B1);
+						}
+						else
+						{
+							P_SetMobjState(spark, S_DRIFTSPARK_A1);
+						}
+						K_MatchGenericExtraFlags(spark, player->mo);
+					}
+				}
 			}
 		}
 	}
