@@ -168,6 +168,12 @@ extern consvar_t cv_kartstacking_ring_accelboost;
 extern consvar_t cv_kartstacking_ring_handleboost;
 extern consvar_t cv_kartstacking_ring_stackable;
 
+extern consvar_t cv_kartstacking_heavydrop_speedboost;
+extern consvar_t cv_kartstacking_heavydrop_accelboost;
+extern consvar_t cv_kartstacking_heavydrop_handleboost;
+extern consvar_t cv_kartstacking_heavydrop_stackable;
+extern consvar_t cv_kartstacking_heavydrop_uniform;
+
 extern consvar_t cv_kartstacking_ssmt_speedboost;
 extern consvar_t cv_kartstacking_ssmt_accelboost;
 extern consvar_t cv_kartstacking_ssmt_handleboost;

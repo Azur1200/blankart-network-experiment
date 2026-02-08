@@ -715,6 +715,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		SYNC(players[i].airdroppredelay);
 		SYNC(players[i].airdroptime);
+		SYNC(players[i].airdropbuffer);
+		SYNC(players[i].airdropheavydash);
 		SYNC(players[i].airdropflags);
 
 		RSYNC(players[i].shieldtracer);

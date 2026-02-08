@@ -691,6 +691,8 @@ struct player_t
 
 	INT32 airdroppredelay;			// Handles the delay before airdrop can be activated once going airborne.
 	INT32 airdroptime;				// Tracks how long the player has been in airdrop.
+	INT32 airdropbuffer;			// Mercy time for when heavy air drop will instantly activate once the pre-delay is over.
+	INT32 airdropheavydash;		// Heavy Air Drop acceleration assist time
 	p_airdropflags_t airdropflags;	// Airdrop-exclusive bitflags.
 
 	mobj_t *shieldtracer;	// Blankart: Shield mobj

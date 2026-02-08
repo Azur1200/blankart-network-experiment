@@ -163,6 +163,11 @@ extern vector3_t clusterpoint, clusterdtf;
 #define RINGHANDLEBOOST CV_Get(&cv_kartstacking_ring_handleboost)
 #define RINGSTACKABLE CV_Get(&cv_kartstacking_ring_stackable)
 
+#define HEAVYDROPSPEEDBOOST CV_Get(&cv_kartstacking_heavydrop_speedboost)
+#define HEAVYDROPACCELBOOST CV_Get(&cv_kartstacking_heavydrop_accelboost)
+#define HEAVYDROPHANDLEBOOST CV_Get(&cv_kartstacking_heavydrop_handleboost)
+#define HEAVYDROPSTACKABLE CV_Get(&cv_kartstacking_heavydrop_stackable)
+
 #define SSMTSPEEDBOOST CV_Get(&cv_kartstacking_ssmt_speedboost)
 #define SSMTACCELBOOST CV_Get(&cv_kartstacking_ssmt_accelboost)
 #define SSMTHANDLEBOOST CV_Get(&cv_kartstacking_ssmt_handleboost)
