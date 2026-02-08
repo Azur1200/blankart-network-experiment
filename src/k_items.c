@@ -2580,6 +2580,15 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			K_BotResetItemConfirm(player, false);
 		}
 		break;
+	case KITEM_EGGBRICK:
+		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO
+			&& !player->bricktimer)
+		{
+			player->bricktimer = stealtime;
+			player->itemamount--;
+			K_BotResetItemConfirm(player, false);
+		}
+		break;
 	case MAXKARTITEMS: // aka KITEM_SAD
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO
 			&& !player->sadtimer)
@@ -2651,7 +2660,7 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 	(void)source;
 	if (inflictor && (inflictor->type == MT_LANDMINE || inflictor->type == MT_EGGMINE))
 	{
-		if (tmo->player)
+		if (tmo->player && P_CanPickupItem(tmo->player, PICKUPITEM_EGGMAN))
 		{
 			S_StartSound(tmo, sfx_bewar3);
 			K_DropItems(tmo->player);
@@ -2663,11 +2672,11 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 
 			if (cv_karteggmine_slotbrick.value)
 			{
-				tmo->player->itemtype = MAXKARTITEMS;	// aka KITEM_SAD
+				tmo->player->itemtype = KITEM_EGGBRICK;
 				tmo->player->itemamount = 1;
 
 				if (itemlistactive)
-					K_AddItemRollToList((INT32)(tmo->player - players), MAXKARTITEMS, 1);
+					K_AddItemRollToList((INT32)(tmo->player - players), KITEM_EGGBRICK, 1);
 
 				tmo->player->itemblink = TICRATE;
 				tmo->player->itemblinkmode = KITEMBLINK_MASHED;

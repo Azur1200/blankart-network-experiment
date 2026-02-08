@@ -1415,6 +1415,13 @@ static void K_drawKartItem(void)
 
 			itembar = FixedDiv(stplyr->bubblehealth, MAXBUBBLEHEALTH);
 		}
+		else if (stplyr->bricktimer > 0)
+		{
+			if (leveltime & 2)
+				localpatch = K_GetCachedItemPatch(KITEM_EGGBRICK, tiny, 0);
+			else
+				localpatch = kp_nodraw;
+		}
 		else if (stplyr->sadtimer > 0)
 		{
 			if (leveltime & 2)

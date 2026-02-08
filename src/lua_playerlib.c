@@ -378,6 +378,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(itemusecooldownmax) \
 	X(throwdir) \
 	X(sadtimer) \
+	X(bricktimer) \
 	X(rings) \
 	X(ringmin) \
 	X(ringmax) \
@@ -793,6 +794,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_sadtimer:
 		lua_pushinteger(L, plr->sadtimer);
+		break;
+	case player_bricktimer:
+		lua_pushinteger(L, plr->bricktimer);
 		break;
 	case player_rings:
 		lua_pushinteger(L, plr->rings);
@@ -1577,6 +1581,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_sadtimer:
 		plr->sadtimer = luaL_checkinteger(L, 3);
+		break;
+	case player_bricktimer:
+		plr->bricktimer = luaL_checkinteger(L, 3);
 		break;
 	case player_rings:
 		plr->rings = luaL_checkinteger(L, 3);

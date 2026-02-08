@@ -673,6 +673,7 @@ struct player_t
 	SINT8 throwdir; 	// Held dir of controls; 1 = forward, 0 = none, -1 = backward (was "player->heldDir")
 
 	UINT8 sadtimer;		// How long you've been sad
+	UINT8 bricktimer;		// How long you've been brick'ed up
 
 	// player's ring count
 	SINT8 rings;

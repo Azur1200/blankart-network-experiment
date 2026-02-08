@@ -698,6 +698,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].throwdir);
 
 		SYNC(players[i].sadtimer);
+		SYNC(players[i].bricktimer);
 
 		SYNC(players[i].rings);
 		SYNC(players[i].ringmin);

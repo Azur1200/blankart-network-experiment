@@ -7598,6 +7598,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->sadtimer)
 		player->sadtimer--;
 
+	if (player->bricktimer)
+		player->bricktimer--;
+
 	if (player->stealingtimer)
 		player->stealingtimer--;
 
@@ -10833,6 +10836,7 @@ void K_StripItems(player_t *player)
 	player->flametimer = 0;
 
 	player->sadtimer = 0;
+	player->bricktimer = 0;
 
 	K_UpdateHnextList(player, true);
 }
