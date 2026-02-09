@@ -757,17 +757,16 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 	GLPatch_t *hwrBlendPatch = blendgpatch->hardware;
 	UINT16 w = gpatch->width, h = gpatch->height;
 	UINT32 size = w*h;
-	RGBA_t *image, *blendimage, *cur, blendcolor;
-	UINT8 translation[17]; // First the color index
-	UINT8 cutoff[17]; // Brightness cutoff before using the next color
+	RGBA_t *image, *blendimage, *cur;
+	RGBA_t blendcolor = {};
+	UINT8 translation[17] = {}; // First the color index
+	UINT8 cutoff[17] = {}; // Brightness cutoff before using the next color
 	UINT8 translen = 0;
 	UINT8 i;
-	UINT8 colorbrightnesses[17];
-	UINT8 color_match_lookup[256]; // optimization attempt
+	UINT8 colorbrightnesses[17] = {};
+	UINT8 color_match_lookup[256] = {}; // optimization attempt
 
 	blendcolor = V_GetColor(0); // initialize
-	memset(translation, 0, sizeof(translation));
-	memset(cutoff, 0, sizeof(cutoff));
 
 	if (grMipmap->width == 0)
 	{
@@ -781,14 +780,10 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 		grMipmap->format = GL_TEXFMT_RGBA;
 	}
 
-	if (grMipmap->data)
-	{
-		Z_Free(grMipmap->data);
-		grMipmap->data = NULL;
-	}
+	Z_Free(grMipmap->data);
+	grMipmap->data = NULL;
 
-	cur = Z_Malloc(size*4, PU_HWRMODELTEXTURE, &grMipmap->data);
-	memset(cur, 0x00, size*4);
+	cur = Z_Calloc(size*4, PU_HWRMODELTEXTURE, &grMipmap->data);
 
 	image = hwrPatch->mipmap->data;
 	blendimage = hwrBlendPatch->mipmap->data;
