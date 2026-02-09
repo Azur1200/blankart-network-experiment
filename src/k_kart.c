@@ -9956,7 +9956,7 @@ static void K_RecoveryDash(player_t *player)
 			{
 				player->pflags &= ~PF_RECOVERYSPIN;
 				player->forcedtopspeed = 0;
-				if (player->recoverydashcharge >= 2*TICRATE && (player->cmd.buttons & BT_ACCELERATE))
+				if (player->recoverydashcharge >= RECOVERYDASHCHARGETIME && (player->cmd.buttons & BT_ACCELERATE))
 				{
 					player->outrun = TICRATE/4;
 					player->recoverydash = TICRATE;
@@ -9972,11 +9972,11 @@ static void K_RecoveryDash(player_t *player)
 			if (P_IsObjectOnGround(player->mo))
 			{
 				player->recoverydashcharge += 1;
-				K_SpawnWipeoutTrail(player->mo, (player->recoverydashcharge < 3*TICRATE/2));
+				K_SpawnWipeoutTrail(player->mo, (player->recoverydashcharge < RECOVERYDASHWIPETIME));
 				
 				if (leveltime % 6 == 0)
 				{
-					if (player->recoverydashcharge < 2*TICRATE)
+					if (player->recoverydashcharge < RECOVERYDASHCHARGETIME)
 					{
 						S_StartSound(player->mo, sfx_s225);
 					}
@@ -10007,7 +10007,7 @@ static void K_RecoveryDash(player_t *player)
 
 						P_SetMobjState(skid, S_RECSPIN_SKID);
 						K_MatchGenericExtraFlags(skid, player->mo);
-						if (player->recoverydashcharge >= 2*TICRATE)
+						if (player->recoverydashcharge >= RECOVERYDASHCHARGETIME)
 						{
 							skid->renderflags |= RF_TRANS20;
 						}
@@ -10020,9 +10020,9 @@ static void K_RecoveryDash(player_t *player)
 				}
 			}
 
-			if (player->recoverydashcharge >= 2*TICRATE)
+			if (player->recoverydashcharge >= RECOVERYDASHCHARGETIME)
 			{
-				if (player->recoverydashcharge == 2*TICRATE)
+				if (player->recoverydashcharge == RECOVERYDASHCHARGETIME)
 					S_StartSound(player->mo, sfx_s3ka2);
 
 				if (leveltime & 1)
@@ -10045,7 +10045,7 @@ static void K_RecoveryDash(player_t *player)
 						spark->angle = sparkangle;
 						spark->color = SKINCOLOR_WHITE;
 
-						if (player->recoverydashcharge >= 2*TICRATE + TICRATE/4)
+						if (player->recoverydashcharge >= RECOVERYDASHCHARGETIME + TICRATE/4)
 						{
 							P_SetMobjState(spark, S_DRIFTSPARK_B1);
 						}

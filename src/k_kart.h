@@ -434,6 +434,12 @@ typedef enum
 
 boolean K_NullDriftTiltEnalbed();
 
+#define RECOVERYDASHADD (TICRATE/3)
+//og val 2*TICRATE
+#define RECOVERYDASHCHARGETIME (TICRATE+RECOVERYDASHADD)
+//og val 3*TICRATE/2
+#define RECOVERYDASHWIPETIME ((2*TICRATE/2)+RECOVERYDASHADD)
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
