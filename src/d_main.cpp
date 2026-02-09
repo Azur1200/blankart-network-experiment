@@ -1063,11 +1063,6 @@ void D_SRB2Loop(void)
 			}
 
 			renderisnewtic = true;
-
-			if (!dedicated)
-			{
-				G_DeviceLEDTick();
-			}
 		}
 		else
 		{
@@ -1107,6 +1102,11 @@ void D_SRB2Loop(void)
 			M_SaveFrame();
 		if (takescreenshot)
 			M_DoScreenShot();
+
+		if (!dedicated)
+		{
+			G_DeviceLEDTick();
+		}
 
 		// consoleplayer -> displayplayers (hear sounds from viewpoint)
 		S_UpdateSounds(); // move positional sounds
