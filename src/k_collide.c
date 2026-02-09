@@ -99,6 +99,9 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 			// Melt item
 			S_StartSound(t2, sfx_s3k43);
 			damageitem = true;
+			// and cut temperature and fuel by 10% of max
+			t2->player->flamestore -= min(FLAMESTOREMAX/10, t2->player->flamestore);
+			t2->player->flametimer -= min((itemtime*3)/10, t2->player->flametimer - 1);
 		}
 		else
 		{
@@ -188,6 +191,9 @@ boolean K_BananaBallhogCollide(mobj_t *t1, mobj_t *t2)
 		{
 			// Melt item
 			S_StartSound(t2, sfx_s3k43);
+			// and cut temperature and fuel by 10% of max
+			t2->player->flamestore -= min(FLAMESTOREMAX/10, t2->player->flamestore);
+			t2->player->flametimer -= min((itemtime*3)/10, t2->player->flametimer - 1);
 		}
 		else
 		{
@@ -261,6 +267,9 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 			// Melt item
 			S_StartSound(t2, sfx_s3k43);
 			P_KillMobj(t1, t2, t2, DMG_NORMAL);
+			// and cut temperature and fuel by 10% of max
+			t2->player->flamestore -= min(FLAMESTOREMAX/10, t2->player->flamestore);
+			t2->player->flametimer -= min((itemtime*3)/10, t2->player->flametimer - 1);
 			return true;
 		}
 		else
@@ -347,6 +356,9 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 		{
 			// Melt item
 			S_StartSound(t2, sfx_s3k43);
+			// and cut temperature and fuel by 10% of max
+			t2->player->flamestore -= min(FLAMESTOREMAX/10, t2->player->flamestore);
+			t2->player->flametimer -= min((itemtime*3)/10, t2->player->flametimer - 1);
 			return true;
 		}
 
@@ -510,6 +522,9 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 		{
 			// Melt item
 			S_StartSound(t2, sfx_s3k43);
+			// and cut temperature and fuel by 10% of max
+			t2->player->flamestore -= min(FLAMESTOREMAX/10, t2->player->flamestore);
+			t2->player->flametimer -= min((itemtime*3)/10, t2->player->flametimer - 1);
 		}
 		else
 		{
