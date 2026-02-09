@@ -7764,7 +7764,10 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->flamestore)
 	{
 		if (--player->flamestore == 0)
+		{
 			S_StopSoundByID(player->mo, sfx_s3kd3l);
+			player->flamedash = 0;
+		}
 	}
 
 	if (player->flametimer > 0)

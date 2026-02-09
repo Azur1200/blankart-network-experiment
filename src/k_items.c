@@ -2515,6 +2515,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		{
 			player->itemamount--;
 			player->flametimer = (itemtime*3);
+			player->flamedash = 0;
 			mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_FLAMESHIELD);
 			P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
 			P_SetTarget(&shield->target, player->mo);
