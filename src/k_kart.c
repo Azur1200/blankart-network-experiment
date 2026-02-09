@@ -2881,6 +2881,11 @@ static void K_GetKartBoostPower(player_t *player)
 	if (player->flamestore) // Flame Shield dash
 	{
 		fixed_t dash = K_FlameShieldDashVar(player->flamedash);
+
+		// Once the shield burns out, lessen its power.
+		if (player->flamestore && player->flametimer == 0 && dash > 0)
+			dash /= 3;
+
 		K_DoBoost(player, FLAMESPEEDVAL + dash, FLAMEACCELBOOST, FLAMEHANDLEBOOST, FLAMESTACKABLE, FLAMESTACKABLE);
 	}
 
