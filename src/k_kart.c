@@ -11345,9 +11345,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							// experiment: uses fuel faster, but raises temperature faster
 							if (cv_kartflame_fastfuel.value)
 							{
-								incr = incr * 3 / 2;
-								metincr = metincr * 3 / 2;
-								comincr = comincr * 3 / 2;
+								incr = incr * 2;
+								metincr = metincr * 2;
+								comincr = comincr * 2;
 							}
 
 							if (onground)
