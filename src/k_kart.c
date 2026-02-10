@@ -8162,7 +8162,7 @@ static int clostVal(fixed_t arr[], int N, fixed_t K)
 	return res;
 }
 
-static boolean safesector(sector_t *sector, boolean flip)
+static boolean safesector(sector_t *sector, boolean flip, boolean otherdanger)
 {
 	// does the sector special even affect us?
 	if (sector->flags & MSF_FLIPSPECIAL_FLOOR && !(sector->flags & MSF_TRIGGERSPECIAL_HEADBUMP || !flip))
@@ -8176,6 +8176,7 @@ static boolean safesector(sector_t *sector, boolean flip)
 		case SD_DEATHPIT:
 		case SD_INSTAKILL:
 		case SD_LAVA:
+		case SD_FLIPOVER:
 		{
 			//CONS_Printf("Dangerous sector!!!!\n");
 			return false;
@@ -8190,85 +8191,105 @@ static boolean safesector(sector_t *sector, boolean flip)
 		return false;
 	}
 
+	if (otherdanger)
+	{
+		//CONS_Printf("Other Danger!!!!\n");
+		return false;
+	}
+
 	//CONS_Printf("Sector safe, allow respawn!!!!\n");
 	return true;
 }
 
+// Used for respawning checks.
+typedef struct respawnresult_s
+{
+	sector_t *cursec;
+	ffloor_t *bestfof;
+	polyobj_t *bestpo;
+
+	fixed_t bestsectorheight;
+	fixed_t bestfofheight;
+	fixed_t bestpoheight;
+
+	fixed_t finaldistances[3];
+
+	SINT8 type;
+} respawnresult_t;
+
+typedef enum
+{
+	RESPAWNRS_SECTOR,
+	RESPAWNRS_FOF,
+	RESPAWNRS_PO,
+} respawnresult_e;
+
 // Decides if respawning at this position is safe, used for nu waypoints.
-boolean K_SafeRespawnPosition(mobj_t * mo)
+boolean K_SafeRespawnPositionEx(fixed_t x, fixed_t y, fixed_t z, boolean flip)
 {
 	respawnresult_t result;
-	const boolean flip = (mo->eflags & MFE_VERTICALFLIP) ? true : false;
-	fixed_t mobjx = mo->x;
-	fixed_t mobjy = mo->y;
-	fixed_t mobjz = mo->z;
+	fixed_t curheight = INT32_MAX;
+	fixed_t curbest = INT32_MAX;
+	fixed_t closestvalue = INT32_MAX;
+	fixed_t heightcompare[2] = {INT32_MAX};
 
-	result.cursec = R_PointInSubsector(mobjx, mobjy)->sector;
+	result.cursec = R_PointInSubsector(x, y)->sector;
 	result.bestfofheight = INT32_MAX;
 	result.bestpoheight = INT32_MAX;
-	result.bestrover = NULL;
+	result.bestfof = NULL;
 	result.bestpo = NULL;
 
 	if (!result.cursec) // How tf do you do this?????
 		return false;
 
-	if (flip)
-		result.bestsectorheight = P_GetSectorCeilingZAt(result.cursec,mobjx,mobjy);
-	else
-		result.bestsectorheight = P_GetSectorFloorZAt(result.cursec,mobjx,mobjy);
+	result.bestsectorheight = flip ? P_GetSectorCeilingZAt(result.cursec, x, y) : P_GetSectorFloorZAt(result.cursec, x, y);
 
 	if (result.cursec->ffloors)
 	{
 		ffloor_t *rover;
-		fixed_t curbest = INT32_MAX;
+
 		for (rover = result.cursec->ffloors; rover; rover = rover->next)
 		{
-			fixed_t compareheight;
-			fixed_t valuecompare[2];
 			if (!(rover->fofflags & FOF_EXISTS))
 				continue;
 			if (!(rover->fofflags & FOF_SOLID))
 				continue;
-			if (!(rover->fofflags & FOF_BLOCKPLAYER)
-				&& (rover->fofflags & FOF_BLOCKOTHERS))
+			if (!(rover->fofflags & FOF_BLOCKPLAYER))
 				continue;
 
-			if (flip)
-				compareheight = P_GetFFloorBottomZAt(rover,mobjx,mobjy);
-			else
-				compareheight = P_GetFFloorTopZAt(rover,mobjx,mobjy);
+			curheight = flip ? P_GetFFloorBottomZAt(rover, x, y) : P_GetFFloorTopZAt(rover, x, y);
 
 			if (curbest == INT32_MAX)
-				curbest = compareheight;
+				curbest = curheight;
 
-			valuecompare[0] = curbest;
-			valuecompare[1] = compareheight;
+			heightcompare[0] = curbest;
+			heightcompare[1] = curheight;
 
-			// compareheight is closer then curbest
-			// probably should consider flip
+			closestvalue = clostVal(heightcompare, 2, z);
+
+			if (closestvalue == heightcompare[1])
 			{
-				int N = sizeof(valuecompare) / sizeof(valuecompare[0]);
-				fixed_t closetvalue = clostVal(valuecompare, N, mobjz);
-
-				if (closetvalue == valuecompare[1])
-				{
-					curbest = compareheight;
-					result.bestrover = rover;
-				}
+				curbest = curheight;
+				result.bestfof = rover;
 			}
 		}
+
 		result.bestfofheight = curbest;
 	}
 
+	curheight = INT32_MAX;
+	curbest = INT32_MAX;
+	heightcompare[0] = INT32_MAX;
+	heightcompare[1] = INT32_MAX;
+
 	if (numPolyObjects)
 	{
-		fixed_t curbest = INT32_MAX;
 		INT32 xl, xh, yl, yh, bx, by;
 
-		yh = (unsigned)(mobjy - bmaporgy)>>MAPBLOCKSHIFT;
-		yl = (unsigned)(mobjy - bmaporgy)>>MAPBLOCKSHIFT;
-		xh = (unsigned)(mobjx - bmaporgx)>>MAPBLOCKSHIFT;
-		xl = (unsigned)(mobjx - bmaporgx)>>MAPBLOCKSHIFT;
+		yh = (unsigned)(y - bmaporgy)>>MAPBLOCKSHIFT;
+		yl = (unsigned)(y - bmaporgy)>>MAPBLOCKSHIFT;
+		xh = (unsigned)(x - bmaporgx)>>MAPBLOCKSHIFT;
+		xl = (unsigned)(x - bmaporgx)>>MAPBLOCKSHIFT;
 
 		BMBOUNDFIX(xl, xh, yl, yh);
 
@@ -8298,8 +8319,6 @@ boolean K_SafeRespawnPosition(mobj_t * mo)
 						if (po->validcount != validcount) // if polyobj hasn't been checked
 						{
 							sector_t *polysec;
-							fixed_t compareheight;
-							fixed_t valuecompare[2];
 
 							po->validcount = validcount;
 
@@ -8319,28 +8338,20 @@ boolean K_SafeRespawnPosition(mobj_t * mo)
 							// We're inside it! Yess...
 							polysec = po->lines[0]->backsector;
 
-							if (flip)
-								compareheight = polysec->ceilingheight;
-							else
-								compareheight = polysec->floorheight;
+							curheight = flip ? polysec->ceilingheight : polysec->floorheight;
 
 							if (curbest == INT32_MAX)
-								curbest = compareheight;
+								curbest = curheight;
 
-							valuecompare[0] = curbest;
-							valuecompare[1] = compareheight;
+							heightcompare[0] = curbest;
+							heightcompare[1] = curheight;
 
-							// compareheight is closer then curbest
-							// probably should consider flip
+							closestvalue = clostVal(heightcompare, 2, z);
+
+							if (closestvalue == heightcompare[1])
 							{
-								int N = sizeof(valuecompare) / sizeof(valuecompare[0]);
-								fixed_t closetvalue = clostVal(valuecompare, N, mobjz);
-
-								if (closetvalue == valuecompare[1])
-								{
-									curbest = compareheight;
-									result.bestpo = plink->po;
-								}
+								curbest = curheight;
+								result.bestpo = plink->po;
 							}
 						}
 
@@ -8356,40 +8367,37 @@ boolean K_SafeRespawnPosition(mobj_t * mo)
 	result.finaldistances[1] = result.bestfofheight;
 	result.finaldistances[2] = result.bestpoheight;
 
-	{
-		int N = sizeof(result.finaldistances) / sizeof(result.finaldistances[0]);
+	closestvalue = clostVal(result.finaldistances, 3, z);
 
-		fixed_t closetvalue = clostVal(result.finaldistances, N, mobjz);
-		if (closetvalue == result.bestfofheight && (result.bestfofheight != INT32_MAX))
-			result.result = RESPAWNRS_ROVER;
-		else if (closetvalue == result.bestpoheight && (result.bestpoheight != INT32_MAX))
-			result.result = RESPAWNRS_PO;
-		else
-			result.result = RESPAWNRS_SECTOR;
-	}
+	if (closestvalue == result.bestfofheight && (result.bestfofheight != INT32_MAX))
+		result.type = RESPAWNRS_FOF;
+	else if (closestvalue == result.bestpoheight && (result.bestpoheight != INT32_MAX))
+		result.type = RESPAWNRS_PO;
+	else
+		result.type = RESPAWNRS_SECTOR;
 
 	// if rover is valid and bestfofheight is closer then bestsectorheight and bestpoheight
-	if (result.result == RESPAWNRS_ROVER)
+	if (result.type == RESPAWNRS_FOF)
 	{
 		// Check if rover is bad based on both its terrain, and sector specials.
-		if (result.bestrover)
+		if (result.type)
 		{
-			return safesector(result.bestrover->master->frontsector, flip);
+			return safesector(result.bestfof->master->frontsector, flip, (result.bestfof->fofflags & FOF_QUICKSAND));
 		}
 		else
 		{
-			//CONS_Printf("Nep Fucked up, yell at him! NO ROVER IN FOF CHECK\n");
+			//CONS_Printf("Nep Fucked up, yell at him! NO FOF IN FOF CHECK\n");
 			return false;
 		}
 
 	}
 	// if po is valid and bestpoheight is closer then bestsectorheight and bestpoheight
-	else if (result.result == RESPAWNRS_PO)
+	else if (result.type == RESPAWNRS_PO)
 	{
 		// Check if po is bad based on both its terrain, and sector specials.
 		if (result.bestpo)
 		{
-			return safesector(result.bestpo->lines[0]->backsector, flip);
+			return safesector(result.bestpo->lines[0]->backsector, flip, false);
 		}
 		else
 		{
@@ -8398,14 +8406,13 @@ boolean K_SafeRespawnPosition(mobj_t * mo)
 		}
 	}
 	// if everything else is not closest check sector
-	else if (result.result == RESPAWNRS_SECTOR)
+	else if (result.type == RESPAWNRS_SECTOR)
 	{
-		return safesector(result.cursec, flip);
+		return safesector(result.cursec, flip, false);
 	}
 
 	CONS_Printf("Nep Fucked up, yell at him! BYPASSED ALL\n");
 	return false; // fallback if I fuck up.
-
 }
 
 /*--------------------------------------------------
@@ -8886,11 +8893,31 @@ static void K_FudgeRespawn(player_t *player, const waypoint_t *const waypoint)
 	player->starposty += FixedMul(16, FINESINE(from));
 }
 
-void K_SetRespawnAtNextWaypoint(player_t * player)
+static boolean K_SafeRespawnWaypoint(waypoint_t *waypoint)
 {
-	waypoint_t *currentwaypoint = NULL;
-	waypoint_t *safewaypoint = NULL;
-	angle_t respawnangle;
+	if (!waypoint || !waypoint->mobj)
+		return false;
+
+	if (!K_GetWaypointIsEnabled(waypoint))
+		return false;
+
+	if (K_GetWaypointIsShortcut(waypoint))
+		return false;
+
+	if (!K_GetWaypointIsSpawnpoint(waypoint))
+		return false;
+
+	if (!K_SafeRespawnPosition(waypoint->mobj))
+		return false;
+
+	return true;
+}
+
+void K_SetRespawnAtNextWaypoint(player_t *player)
+{
+	waypoint_t *previouswp = NULL;
+	waypoint_t *nextwp = NULL;
+	angle_t angle;
 	size_t i;
 
 	if (K_UsingLegacyCheckpoints())
@@ -8899,182 +8926,122 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 		return;
 	}
 
-	if ((player != NULL) && (player->mo != NULL) && (P_MobjWasRemoved(player->mo) == false))
+	if (!player || !player->mo || P_MobjWasRemoved(player->mo))
 	{
-		// Safety :P
-		if (!player->currentwaypoint || !player->nextwaypoint || !K_SafeRespawnPosition(player->nextwaypoint->mobj))
+		CONS_Alert(CONS_WARNING, "Tried to set respawn for invalid player!\n");
+		return;
+	}
+
+	// If the player's next waypoint is safe, carry on as usual
+	if (player->currentwaypoint &&
+		player->nextwaypoint &&
+		player->nextwaypoint->mobj &&
+		K_SafeRespawnPosition(player->nextwaypoint->mobj)
+	)
+	{
+		previouswp = player->currentwaypoint;
+		nextwp   = player->nextwaypoint;
+	}
+	else // Find the next waypoint
+	{
+		waypoint_t *oopsiepoint = player->nextwaypoint ? player->nextwaypoint : K_GetBestWaypointForMobj(player->mo, player->currentwaypoint);
+
+		if (!oopsiepoint || !oopsiepoint->mobj)
 		{
-			waypoint_t *oopisepoint = NULL;
-
-			if (player->nextwaypoint)
-			{
-				oopisepoint = player->nextwaypoint;
-			}
-			else
-			{
-				oopisepoint = K_GetBestWaypointForMobj(player->mo, NULL);
-			}
-
-			if (!oopisepoint || !oopisepoint->mobj)
-			{
-				oopisepoint = K_GetClosestWaypointToMobj(player->mo);
-			}
-
-			if (oopisepoint && oopisepoint->numnextwaypoints > 0)
-			{
-				for (i = 0; i < oopisepoint->numnextwaypoints; i++)
-				{
-					if (!K_GetWaypointIsEnabled(oopisepoint->nextwaypoints[i]))
-					{
-						// Waypoint is not enabled.
-						continue;
-					}
-
-					if (K_GetWaypointIsShortcut(oopisepoint->nextwaypoints[i]))
-					{
-						// Respawning into offroad/tripwire path would suck.
-						continue;
-					}
-
-					if (!K_GetWaypointIsSpawnpoint(oopisepoint->nextwaypoints[i]))
-					{
-						// We can't spawn at these anyway.
-						continue;
-					}
-
-					if (!oopisepoint->nextwaypoints[i]->mobj)
-					{
-						// No mobj? No Dice.
-						continue;
-					}
-
-					if (!K_SafeRespawnPosition(oopisepoint->nextwaypoints[i]->mobj))
-					{
-						// This waypoint is not safe.
-						continue;
-					}
-
-					if (K_GetWaypointIsFinishline(oopisepoint->nextwaypoints[i]))
-					{
-						// Please don't spawn over the line.
-						safewaypoint = oopisepoint->nextwaypoints[i];
-						break;
-					}
-
-					safewaypoint = oopisepoint->nextwaypoints[i];
-					break;
-				}
-
-				if (safewaypoint)
-				{
-					oopisepoint = safewaypoint;
-				}
-				else
-				{
-					if (player->nextwaypoint)
-					{
-						oopisepoint = player->nextwaypoint;
-					}
-				}
-			}
-
-			if (oopisepoint && oopisepoint->numprevwaypoints > 0)
-			{
-				for (i = 0; i < oopisepoint->numprevwaypoints; i++)
-				{
-					if (!K_GetWaypointIsEnabled(oopisepoint->prevwaypoints[i]))
-					{
-						// Waypoint is not enabled.
-						continue;
-					}
-
-					if (K_GetWaypointIsShortcut(oopisepoint->prevwaypoints[i]))
-					{
-						// Respawning into offroad/tripwire path would suck.
-						continue;
-					}
-
-					if (!K_GetWaypointIsSpawnpoint(oopisepoint->prevwaypoints[i]))
-					{
-						// We can't spawn at these anyway.
-						continue;
-					}
-
-					if (!oopisepoint->prevwaypoints[i]->mobj)
-					{
-						// No mobj? No Dice.
-						continue;
-					}
-
-					currentwaypoint = oopisepoint->prevwaypoints[i];
-					break;
-				}
-			}
-
-			CONS_Debug(DBG_GAMELOGIC, M_GetText("Tried to respawn at invalid waypoint! Setting respawn to closest waypoint\n"));
-		}
-		else
-		{
-			currentwaypoint = player->currentwaypoint;
-			safewaypoint = player->nextwaypoint;
+			oopsiepoint = K_GetClosestWaypointToMobj(player->mo);
 		}
 
-		// Better safe then sorry.
-		if (!safewaypoint)
+		// Look forward for good waypoints
+		if (oopsiepoint && oopsiepoint->numnextwaypoints)
 		{
-
-			if (player->nextwaypoint)
+			for (i = 0; i < oopsiepoint->numnextwaypoints; i++)
 			{
-				safewaypoint = player->nextwaypoint;
+				waypoint_t *searchwp = oopsiepoint->nextwaypoints[i];
+
+				if (!K_SafeRespawnWaypoint(searchwp))
+					continue;
+
+				nextwp = searchwp;
+				if (K_GetWaypointIsFinishline(searchwp))
+					break; // Prefer finish-line safety
+				break;
 			}
-			else
+
+			if (nextwp)
+				oopsiepoint = nextwp;
+		}
+
+		// Then look backwards for respawn angle and safety
+		if (oopsiepoint && oopsiepoint->numprevwaypoints)
+		{
+			for (i = 0; i < oopsiepoint->numprevwaypoints; i++)
 			{
-				// Oh shit, oh fuck.....
-				CONS_Alert(CONS_WARNING, M_GetText("Tried to respawn at invalid waypoint!\n"));
+				waypoint_t *searchwp = oopsiepoint->prevwaypoints[i];
+
+				if (!K_SafeRespawnWaypoint(searchwp))
+					continue;
+
+				previouswp = searchwp;
+				break;
 			}
-
-			return;
 		}
 
-		if (!currentwaypoint)
+		if (!nextwp)
 		{
-			respawnangle = R_PointToAngle2(player->mo->x, player->mo->y, safewaypoint->mobj->x, safewaypoint->mobj->y);
+			CONS_Debug(DBG_GAMELOGIC, "Tried to set respawn at invalid waypoint! Setting respawn to closest waypoint\n");
+
+			nextwp = player->nextwaypoint;
 		}
-		else
-		{
-			respawnangle = R_PointToAngle2(currentwaypoint->mobj->x, currentwaypoint->mobj->y, safewaypoint->mobj->x, safewaypoint->mobj->y);
-		}
+	}
 
-		if (currentwaypoint && K_GetWaypointIsFinishline(safewaypoint))
-		{
-			// Please don't spawn after the line.
-			player->pflags |= PF_TRUSTWAYPOINTS;
-			player->starposttime = player->realtime;
-			player->starpostz = currentwaypoint->mobj->z;
-			player->starpostflip = (currentwaypoint->mobj->flags2 & MF2_OBJECTFLIP);
-			player->starpostangle = player->mo->angle;
+	if (!nextwp || !nextwp->mobj)
+	{
+		CONS_Alert(CONS_WARNING, "Tried to set respawn at invalid waypoint!\n");
+		return;
+	}
 
-			// Then do x and y
-			player->starpostx = currentwaypoint->mobj->x;
-			player->starposty = currentwaypoint->mobj->y;
-			return;
-		}
-
-		player->pflags |= PF_TRUSTWAYPOINTS;
-		player->starposttime = player->realtime;
-		player->starpostz = safewaypoint->mobj->z;
-		player->starpostflip = (safewaypoint->mobj->flags2 & MF2_OBJECTFLIP);
-		player->starpostangle = respawnangle;
-
-		// Then do x and y
-		player->starpostx = safewaypoint->mobj->x;
-		player->starposty = safewaypoint->mobj->y;
+	// Get respawn angle.
+	if (previouswp && previouswp->mobj)
+	{
+		angle = R_PointToAngle2(
+			previouswp->mobj->x, previouswp->mobj->y,
+			nextwp->mobj->x,   nextwp->mobj->y);
 	}
 	else
 	{
-		CONS_Alert(CONS_WARNING, M_GetText("Tried to respawn invalid player or player mobj!\n"));
+		angle = R_PointToAngle2(
+			player->mo->x, player->mo->y,
+			nextwp->mobj->x,   nextwp->mobj->y);
+	}
+
+	//player->pflags |= PF_TRUSTWAYPOINTS;
+	player->starposttime = player->realtime;
+
+	// Never spawn past the finish line
+	if (previouswp && previouswp->mobj && K_GetWaypointIsFinishline(nextwp))
+	{
+		player->starpostx = previouswp->mobj->x;
+		player->starposty = previouswp->mobj->y;
+		player->starpostz = previouswp->mobj->z;
+		player->starpostflip = (previouswp->mobj->flags2 & MF2_OBJECTFLIP);
+		player->starpostangle = player->mo->angle;
 		return;
 	}
+	else if ((!previouswp || !previouswp->mobj) && K_GetWaypointIsFinishline(nextwp))
+	{
+		player->starpostx = player->mo->x;
+		player->starposty = player->mo->y;
+		player->starpostz = player->mo->z;
+		player->starpostflip = (player->mo->eflags & MFE_VERTICALFLIP);
+		player->starpostangle = player->mo->angle;
+		return;
+	}
+
+	player->starpostx = nextwp->mobj->x;
+	player->starposty = nextwp->mobj->y;
+	player->starpostz = nextwp->mobj->z;
+	player->starpostflip = (nextwp->mobj->flags2 & MF2_OBJECTFLIP);
+	player->starpostangle = angle;
 }
 
 /*--------------------------------------------------
@@ -9166,25 +9133,7 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 
 		player->lastsafelap = player->laps;
 		player->lastsafestarpost = player->starpostnum;
-
-		// Check if respawn is safe. If not then goto next spawnpoint and respawn there.
-		/*if (K_SafeRespawnPosition(player->mo))
-		{
-			// Set time, z, flip and angle first.
-			player->starposttime = player->realtime;
-			player->starpostz = player->mo->z;
-			player->starpostflip = (player->mo->eflags & MFE_VERTICALFLIP) ? true : false;
-			player->starpostangle = player->mo->angle;
-
-			// Then do x and y
-			player->starpostx = player->mo->x;
-			player->starposty = player->mo->y;
-		}
-		else*/
-		{
-			// Now a clean function! Neat, eh?
-			K_SetRespawnAtNextWaypoint(player);
-		}
+		K_SetRespawnAtNextWaypoint(player);
 
 		if (player->nextwaypoint->onaline)
 		{

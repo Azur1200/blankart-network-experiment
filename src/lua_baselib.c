@@ -4355,6 +4355,19 @@ static int lib_kSafeRespawnPosition(lua_State *L)
 	return 1;
 }
 
+// Checks if the floor closet floor under an object would be safe to respawn/land on.
+static int lib_kSafeRespawnPositionEx(lua_State *L)
+{
+	fixed_t x = luaL_checkfixed(L, 1);
+	fixed_t y = luaL_checkfixed(L, 2);
+	fixed_t z = luaL_checkfixed(L, 3);
+	boolean flip = lua_optboolean(L, 4);
+
+	//HUDSAFE
+	lua_pushboolean(L, K_SafeRespawnPositionEx(x, y, z , flip));
+	return 1;
+}
+
 // Checks if Rings are applicable.
 static int lib_kRingsActive(lua_State *L)
 {
@@ -5740,6 +5753,7 @@ static luaL_Reg lib[] = {
 	{"K_SetIndirectItemCooldown",lib_kSetIndirectItemCountdown},
 	{"K_SetHyudoroCooldown",lib_kSetHyuCountdown},
 	{"K_SafeRespawnPosition",lib_kSafeRespawnPosition},
+	{"K_SafeRespawnPositionEx",lib_kSafeRespawnPositionEx},
 
 	{"K_GetCollideAngle",lib_kGetCollideAngle},
 

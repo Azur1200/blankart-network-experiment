@@ -192,28 +192,6 @@ extern vector3_t clusterpoint, clusterdtf;
 
 #define CANTCHAINOFFROAD (cv_kartchaining.value && !cv_kartchainingoffroad.value)
 
-// Used for respawning checks.
-
-typedef struct respawnresult_s
-{
-	sector_t *cursec;
-	fixed_t bestsectorheight;
-	fixed_t bestfofheight;
-	ffloor_t *bestrover;
-	fixed_t bestpoheight;
-	polyobj_t *bestpo;
-	fixed_t finaldistances[3];
-
-	SINT8 result;
-} respawnresult_t;
-
-typedef enum
-{
-	RESPAWNRS_SECTOR,
-	RESPAWNRS_ROVER,
-	RESPAWNRS_PO,
-} respawnresult_e;
-
 #define MAXRINGVOLUME 255
 #define MAXRINGTRANSPARENCY 255
 #define MINRINGVOLUME 100
@@ -377,7 +355,8 @@ void K_PlayPowerGloatSound(mobj_t *source);
 INT32 K_GetShieldFromPlayer(const player_t *player);
 INT32 K_GetShieldFromItem(INT32 item);
 
-boolean K_SafeRespawnPosition(mobj_t * mo);
+boolean K_SafeRespawnPositionEx(fixed_t x, fixed_t y, fixed_t z, boolean flip);
+#define K_SafeRespawnPosition(mobj) K_SafeRespawnPositionEx(mobj->x, mobj->y, mobj->z, (mobj->eflags & MFE_VERTICALFLIP) ? true : false)
 
 boolean K_RingsActive(void);
 boolean K_PurpleDriftActive(void);
