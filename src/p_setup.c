@@ -8533,9 +8533,6 @@ static void P_InitPlayers(void)
 
 		players[i].mo = NULL;
 
-		if (players[i].bot && itembreaker)
-			continue;
-
 		if (!(gametyperules & GTR_CIRCUIT))
 		{
 			G_DoReborn(i);
@@ -9220,6 +9217,11 @@ void P_PostLoadLevel(void)
 	TracyCZone(__zone, true);
 	P_MapStart(); // g_tm.thing can be used starting from this point
 
+	if (G_GametypeHasSpectators())
+	{
+		K_CheckSpectateStatus(false);
+	}
+
 	if (demo.playback)
 		;
 	else if (grandprixinfo.gp == true)
@@ -9239,11 +9241,6 @@ void P_PostLoadLevel(void)
 	{
 		// We're in a Match Race, use simplistic randomized bots.
 		K_UpdateMatchRaceBots();
-	}
-
-	if (G_GametypeHasSpectators())
-	{
-		K_CheckSpectateStatus(false);
 	}
 
 	K_TimerInit();
