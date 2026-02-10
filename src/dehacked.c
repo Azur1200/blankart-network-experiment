@@ -726,7 +726,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 					{
 						cupheader_t *cup = kartcupheaders;
 						cupheader_t *prev = NULL;
-						UINT32 hash = quickncasehash(word2, MAXCUPNAME);
+						UINT32 hash = FNV1a_QuickCaseHash(word2, MAXCUPNAME);
 
 						while (cup)
 						{

@@ -1373,7 +1373,7 @@ musicdef_t *S_FindMusicDef(const char *name, UINT8 *i)
 	if (!name || !name[0])
 		return NULL;
 
-	hash = quickncasehash (name, 6);
+	hash = FNV1a_QuickCaseHash (name, 6);
 
 	for (def = musicdefstart; def; def = def->next)
 	{
@@ -1454,7 +1454,7 @@ ReadMusicDefFields
 						break;
 					STRBUFCPY(def->name[i], value);
 					strlwr(def->name[i]);
-					def->hash[i] = quickncasehash (def->name[i], 6);
+					def->hash[i] = FNV1a_QuickCaseHash (def->name[i], 6);
 					i++;
 				} while ((value = strtok(NULL," ,")) != NULL);
 

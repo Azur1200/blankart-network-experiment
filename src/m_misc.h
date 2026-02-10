@@ -123,6 +123,9 @@ const char * M_Ftrim (double);
 // counting bits, for weapon ammo code, usually
 FUNCMATH UINT8 M_CountBits(UINT32 num, UINT8 size);
 
+// Hashes some message using FNV-1a
+UINT32 FNV1a_QuickCaseHash(const char *message, size_t size);
+
 #include "w_wad.h"
 extern char configfile[MAX_WADPATH];
 

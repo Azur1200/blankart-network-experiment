@@ -2537,3 +2537,22 @@ const char * M_Ftrim (double f)
 		return &dig[1];/* skip the 0 */
 	}
 }
+
+#define FNV1A_OFFSET_BASIS 0x811C9DC5
+#define FNV1A_PRIME        0x01000193
+
+// Behaves like the old quickncasehash
+// Stops either if it encounters null terminator
+// or reaches size
+UINT32 FNV1a_QuickCaseHash(const char *message, size_t size)
+{
+	UINT32 hash = FNV1A_OFFSET_BASIS;
+
+	for (size_t i = 0; i < size && message[i]; i++)
+	{
+		hash ^= tolower(message[i]);
+		hash *= FNV1A_PRIME;
+	}
+
+	return hash;
+}

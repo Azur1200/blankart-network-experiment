@@ -1160,7 +1160,7 @@ Rloadflats (INT32 i, INT32 w)
 
 			// Set texture properties.
 			memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
-			texture->hash = quickncasehash(texture->name, 8);
+			texture->hash = FNV1a_QuickCaseHash(texture->name, 8);
 
 #ifndef NO_PNG_LUMPS
 			W_ReadLumpHeaderPwad(wadnum, lumpnum, header, sizeof header, 0);
@@ -1261,7 +1261,7 @@ Rloadtextures (INT32 i, INT32 w)
 
 			// Set texture properties.
 			memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
-			texture->hash = quickncasehash(texture->name, 8);
+			texture->hash = FNV1a_QuickCaseHash(texture->name, 8);
 
 #ifndef NO_PNG_LUMPS
 			if (Picture_IsLumpPNG((UINT8 *)&patchlump, lumplength))
@@ -1800,7 +1800,7 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 			// Allocate memory for a zero-patch texture. Obviously, we'll be adding patches momentarily.
 			resultTexture = (texture_t *)Z_Calloc(sizeof(texture_t),PU_STATIC,NULL);
 			memcpy(resultTexture->name, newTextureName, 8);
-			resultTexture->hash = quickncasehash(newTextureName, 8);
+			resultTexture->hash = FNV1a_QuickCaseHash(newTextureName, 8);
 			resultTexture->width = newTextureWidth;
 			resultTexture->height = newTextureHeight;
 			resultTexture->type = TEXTURETYPE_TEXTURE;
@@ -2014,7 +2014,7 @@ INT32 R_CheckTextureNumForName(const char *name, UINT8 type)
 
 	PaletteTextureHack(&name);
 
-	hash = quickncasehash(name, 8);
+	hash = FNV1a_QuickCaseHash(name, 8);
 
 	for (i = 0; i < tidcachelen; i++)
 		if (tidcache[i].type == type && tidcache[i].hash == hash && !strncasecmp(tidcache[i].name, name, 8))

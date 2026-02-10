@@ -22,6 +22,7 @@
 #include "doomtype.h"
 #include "m_fixed.h"
 #include "m_random.h"
+#include "m_misc.h"
 #include "p_local.h"
 #include "p_mobj.h"
 #include "r_textures.h"
@@ -98,7 +99,7 @@ t_splash_t *K_GetSplashByIndex(size_t checkIndex)
 --------------------------------------------------*/
 t_splash_t *K_GetSplashByName(const char *checkName)
 {
-	UINT32 checkHash = quickncasehash(checkName, TERRAIN_NAME_LEN);
+	UINT32 checkHash = FNV1a_QuickCaseHash(checkName, TERRAIN_NAME_LEN);
 	size_t i;
 
 	if (numSplashDefs == 0)
@@ -167,7 +168,7 @@ t_footstep_t *K_GetFootstepByIndex(size_t checkIndex)
 --------------------------------------------------*/
 t_footstep_t *K_GetFootstepByName(const char *checkName)
 {
-	UINT32 checkHash = quickncasehash(checkName, TERRAIN_NAME_LEN);
+	UINT32 checkHash = FNV1a_QuickCaseHash(checkName, TERRAIN_NAME_LEN);
 	size_t i;
 
 	if (numFootstepDefs == 0)
@@ -236,7 +237,7 @@ t_overlay_t *K_GetOverlayByIndex(size_t checkIndex)
 --------------------------------------------------*/
 t_overlay_t *K_GetOverlayByName(const char *checkName)
 {
-	UINT32 checkHash = quickncasehash(checkName, TERRAIN_NAME_LEN);
+	UINT32 checkHash = FNV1a_QuickCaseHash(checkName, TERRAIN_NAME_LEN);
 	size_t i;
 
 	if (numOverlayDefs == 0)
@@ -305,7 +306,7 @@ terrain_t *K_GetTerrainByIndex(size_t checkIndex)
 --------------------------------------------------*/
 terrain_t *K_GetTerrainByName(const char *checkName)
 {
-	UINT32 checkHash = quickncasehash(checkName, TERRAIN_NAME_LEN);
+	UINT32 checkHash = FNV1a_QuickCaseHash(checkName, TERRAIN_NAME_LEN);
 	size_t i;
 
 	if (numTerrainDefs > 0)
@@ -352,7 +353,7 @@ size_t K_GetDefaultTerrainID(void)
 --------------------------------------------------*/
 terrain_t *K_GetTerrainForTextureName(const char *checkName)
 {
-	UINT32 checkHash = quickncasehash(checkName, 8);
+	UINT32 checkHash = FNV1a_QuickCaseHash(checkName, 8);
 	size_t i;
 
 	if (numTerrainFloorDefs > 0)
@@ -380,7 +381,7 @@ terrain_t *K_GetTerrainForTextureName(const char *checkName)
 --------------------------------------------------*/
 size_t K_GetTerrainIDForTextureName(const char *checkName)
 {
-	UINT32 checkHash = quickncasehash(checkName, 8);
+	UINT32 checkHash = FNV1a_QuickCaseHash(checkName, 8);
 	size_t i;
 
 	if (numTerrainFloorDefs > 0)
@@ -1933,7 +1934,7 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 			{
 				t_splash_t *s = NULL;
 
-				tknHash = quickncasehash(tkn, TERRAIN_NAME_LEN);
+				tknHash = FNV1a_QuickCaseHash(tkn, TERRAIN_NAME_LEN);
 
 				for (i = 0; i < numSplashDefs; i++)
 				{
@@ -1974,7 +1975,7 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 			{
 				t_footstep_t *fs = NULL;
 
-				tknHash = quickncasehash(tkn, TERRAIN_NAME_LEN);
+				tknHash = FNV1a_QuickCaseHash(tkn, TERRAIN_NAME_LEN);
 
 				for (i = 0; i < numFootstepDefs; i++)
 				{
@@ -2015,7 +2016,7 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 			{
 				t_overlay_t *o = NULL;
 
-				tknHash = quickncasehash(tkn, TERRAIN_NAME_LEN);
+				tknHash = FNV1a_QuickCaseHash(tkn, TERRAIN_NAME_LEN);
 
 				for (i = 0; i < numOverlayDefs; i++)
 				{
@@ -2056,7 +2057,7 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 			{
 				terrain_t *t = NULL;
 
-				tknHash = quickncasehash(tkn, TERRAIN_NAME_LEN);
+				tknHash = FNV1a_QuickCaseHash(tkn, TERRAIN_NAME_LEN);
 
 				for (i = 0; i < numTerrainDefs; i++)
 				{
@@ -2108,7 +2109,7 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 				{
 					t_floor_t *f = NULL;
 
-					tknHash = quickncasehash(tkn, 8);
+					tknHash = FNV1a_QuickCaseHash(tkn, 8);
 
 					for (i = 0; i < numTerrainFloorDefs; i++)
 					{
@@ -2188,7 +2189,7 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 			{
 				terrain_t *t = NULL;
 
-				tknHash = quickncasehash(tkn, TERRAIN_NAME_LEN);
+				tknHash = FNV1a_QuickCaseHash(tkn, TERRAIN_NAME_LEN);
 
 				for (i = 0; i < numTerrainDefs; i++)
 				{
@@ -2227,7 +2228,7 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 			{
 				t_footstep_t *fs = NULL;
 
-				tknHash = quickncasehash(tkn, TERRAIN_NAME_LEN);
+				tknHash = FNV1a_QuickCaseHash(tkn, TERRAIN_NAME_LEN);
 
 				for (i = 0; i < numFootstepDefs; i++)
 				{

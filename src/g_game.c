@@ -1028,7 +1028,7 @@ INT32 G_MapNumber(const char * name)
 #endif
 	{
 		INT32 map;
-		UINT32 hash = quickncasehash(name, MAXMAPLUMPNAME);
+		UINT32 hash = FNV1a_QuickCaseHash(name, MAXMAPLUMPNAME);
 
 		for (map = 0; map < nummapheaders; ++map)
 		{
