@@ -9384,15 +9384,17 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 	case MT_FLAMESHIELD:
 		{
 			statenum_t curstate;
+			UINT8 flamestore = mobj->target->player->flamestore;
 			if (!mobj->target || !mobj->target->health || !mobj->target->player
 				|| K_GetShieldFromPlayer(mobj->target->player) != KSHIELD_FLAME)
 			{
 				P_RemoveMobj(mobj);
 				return false;
 			}
-			P_SetScale(mobj, (mobj->destscale = (5*mobj->target->scale)>>2));
+			// P_SetScale(mobj, (mobj->destscale = ((flamestore >= FLAMESTOREMAX-1) ? (2*mobj->target->scale) : (5*mobj->target->scale)>>2)));
+			mobj->destscale = ((flamestore >= FLAMESTOREMAX-1) ? (7*mobj->target->scale/4) : (5*mobj->target->scale)>>2);
 			curstate = ((mobj->tics == 1) ? (mobj->state->nextstate) : ((statenum_t)(mobj->state-states)));
-			if (mobj->target->player->flamestore)
+			if (flamestore)
 			{
 				if (curstate != S_FLAMESHIELDDASH)
 					P_SetMobjState(mobj, S_FLAMESHIELDDASH);
@@ -9403,6 +9405,15 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				if (curstate == S_FLAMESHIELDDASH)
 					P_SetMobjState(mobj, S_FLAMESHIELD1);
 				mobj->renderflags &= ~RF_DONTDRAW;
+			}
+			
+			if (flamestore >= FLAMESTOREMAX-1)
+			{
+				mobj->renderflags |= RF_ADD;
+			}
+			else
+			{
+				mobj->renderflags &= ~RF_ADD;
 			}
 
 			// Don't sloperoll Shields

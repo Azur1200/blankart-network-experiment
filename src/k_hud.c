@@ -6713,7 +6713,7 @@ void K_DrawFlamometer(void)
 
 	K_ObjectTracking(&res, &pos, false);
 	basex = res.x + (16<<FRACBITS);
-	basey = res.y - (48<<FRACBITS);
+	basey = res.y - (52<<FRACBITS);
 
 	if (K_UseColorHud())
 	{

@@ -211,6 +211,7 @@ typedef enum
 	khud_timeovercam,	// Camera timer for leaving behind or not
 	khud_heavydropcam,	// Camera timer for heavy air drop
 	khud_postdropcam,	// Camera timer for landing after heavy air drop (both timers superposition for feel)
+	khud_flamecamtime,  // Timer for flame shield usage camera effect
 
 	// Sounds
 	khud_enginesnd,		// Engine sound offset this player is using.
@@ -706,8 +707,8 @@ struct player_t
 	UINT16 flamedash;	 // Flame Shield dash power
 	INT32 flametimer;	 // Flame Shield dash meter left ("fuel")
 	UINT8 flamestore;	 // Flame Shield reserve boost ("temperature")
+	UINT8 flameburnstop; // Time Flame Shield can't increase temperature for
 	tic_t flameoverheat; // Time the Flame Shield spends overheating
-	tic_t flamecamtime;  // Timer for flame shield usage camera effect
 
 	UINT16 hyudorotimer;	// Duration of the Hyudoro offroad effect itself
 	SINT8 stealingtimer;	// you are stealing

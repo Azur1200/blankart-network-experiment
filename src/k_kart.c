@@ -7792,6 +7792,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			player->flameoverheat -= 1;
 		}
 
+		if (player->flameburnstop)
+			player->flameburnstop--;
+
 		if (player->stealingtimer == 0 && player->stolentimer == 0)
 			player->flametimer--;
 
@@ -7801,15 +7804,17 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	else
 	{
 		player->flameoverheat = 0;
+		player->flameburnstop = 0;
 
 		if (player->flamestore)
 			K_FlameDashLeftoverSmoke(player->mo);
 	}
 
-	if (player->flamecamtime > 0)
+
+	if (player->karthud[khud_flamecamtime] > 0)
 	{
-		player->karthud[khud_destboostcam] = FixedMul(FRACUNIT*3/4, FixedDiv(player->flamecamtime, TICRATE/2));
-		player->flamecamtime -= 1;
+		player->karthud[khud_destboostcam] = FixedMul(FRACUNIT*3/4, FixedDiv(player->karthud[khud_flamecamtime], TICRATE/2));
+		player->karthud[khud_flamecamtime] -= 1;
 	}
 
 	if (player->driftmode != DRIFTMODE_INSTANT)
@@ -9463,7 +9468,7 @@ boolean K_InterceptArrowBullet(player_t *player)
 	if (!player)
 		return false;
 	
-	return ((player->invincibilitytimer && !K_IsKartItemAlternate(KITEM_INVINCIBILITY)) || (player->growshrinktimer > 0) || (player->flamestore));
+	return ((player->invincibilitytimer && !K_IsKartItemAlternate(KITEM_INVINCIBILITY)) || (player->growshrinktimer > 0) || (player->flamestore >= FLAMESTOREMAX-1));
 }
 
 // 0.25 fracunits
@@ -11350,13 +11355,17 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							SINT8 metincr = (gametyperules & GTR_CLOSERPLAYERS) ? 4 : 3;
 							SINT8 comincr = (gametyperules & GTR_CLOSERPLAYERS) ? 10 : 4;
 
-							// experiment: uses fuel faster, but raises temperature faster
-							if (cv_kartflame_fastfuel.value)
+							// uses fuel faster, but raises temperature faster
+							if (cv_kartflame_fastfuel.value && (!player->flameburnstop))
 							{
 								incr = incr * 2;
-								metincr = metincr * 2;
 								comincr = comincr * 2;
+								metincr = metincr * 3 / 2;
 							}
+							
+							// burning a trap / missile stops you from raising temperature for a tiny bit
+							if (player->flameburnstop)
+								metincr = 0;
 
 							if (onground)
 							{
@@ -11365,28 +11374,18 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 									S_StartSound(player->mo, sfx_s3k9b);
 									K_PlayBoostTaunt(player->mo);
 
-									if (player->flamecamtime == 0)
-										player->flamecamtime = TICRATE/2;
+									if (player->karthud[khud_flamecamtime] == 0)
+										player->karthud[khud_flamecamtime] = TICRATE/2;
 
 									if (!S_SoundPlaying(player->mo, sfx_s3kd3l))
 										S_StartSound(player->mo, sfx_s3kd3l);
 								}
 
 								player->flamedash += incr;
-								player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
-								player->flametimer -= comincr;
 							}
-							/*else
-							{
-								player->flamedash += incr;
-								player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
-								player->flametimer -= comincr;
-
-								P_Thrust(
-								player->mo, player->mo->angle,
-								FixedMul(player->mo->scale, K_GetKartGameSpeedScalar(gamespeed))/4
-								);
-							}*/
+							// allow burning in the air
+							player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
+							player->flametimer -= comincr;
 
 							if (player->flametimer <= 0)
 								K_PopPlayerShield(player);

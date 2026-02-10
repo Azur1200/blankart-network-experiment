@@ -102,6 +102,7 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 			// and cut temperature and fuel by 10% of max
 			t2->player->flamestore -= min(FLAMESTOREMAX/10, t2->player->flamestore);
 			t2->player->flametimer -= min((itemtime*3)/10, t2->player->flametimer - 1);
+			t2->player->flameburnstop = TICRATE/4;
 		}
 		else
 		{
@@ -194,6 +195,7 @@ boolean K_BananaBallhogCollide(mobj_t *t1, mobj_t *t2)
 			// and cut temperature and fuel by 10% of max
 			t2->player->flamestore -= min(FLAMESTOREMAX/10, t2->player->flamestore);
 			t2->player->flametimer -= min((itemtime*3)/10, t2->player->flametimer - 1);
+			t2->player->flameburnstop = TICRATE/4;
 		}
 		else
 		{
@@ -270,6 +272,7 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 			// and cut temperature and fuel by 10% of max
 			t2->player->flamestore -= min(FLAMESTOREMAX/10, t2->player->flamestore);
 			t2->player->flametimer -= min((itemtime*3)/10, t2->player->flametimer - 1);
+			t2->player->flameburnstop = TICRATE/4;
 			return true;
 		}
 		else
@@ -359,6 +362,7 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 			// and cut temperature and fuel by 10% of max
 			t2->player->flamestore -= min(FLAMESTOREMAX/10, t2->player->flamestore);
 			t2->player->flametimer -= min((itemtime*3)/10, t2->player->flametimer - 1);
+			t2->player->flameburnstop = TICRATE/4;
 			return true;
 		}
 
@@ -525,6 +529,7 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 			// and cut temperature and fuel by 10% of max
 			t2->player->flamestore -= min(FLAMESTOREMAX/10, t2->player->flamestore);
 			t2->player->flametimer -= min((itemtime*3)/10, t2->player->flametimer - 1);
+			t2->player->flameburnstop = TICRATE/4;
 		}
 		else
 		{
@@ -933,8 +938,8 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	if (P_MobjWasRemoved(t1) || P_MobjWasRemoved(t2) || !t1->player || !t2->player)
 		return false;
 
-	const boolean flameT1 = ((t1->player->flamestore > 0) && (t1->player->flametimer > 0));
-	const boolean flameT2 = ((t2->player->flamestore > 0) && (t2->player->flametimer > 0));
+	const boolean flameT1 = ((t1->player->flamestore >= FLAMESTOREMAX-1) && (t1->player->flametimer > 0));
+	const boolean flameT2 = ((t2->player->flamestore >= FLAMESTOREMAX-1) && (t2->player->flametimer > 0));
 	const boolean hyudoroT1 = (t1->player->hyudorotimer > 0);
 	const boolean hyudoroT2 = (t2->player->hyudorotimer > 0);
 

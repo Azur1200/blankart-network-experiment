@@ -730,6 +730,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].flamedash);
 		SYNC(players[i].flametimer);
 		SYNC(players[i].flamestore);
+		SYNC(players[i].flameburnstop);
+		SYNC(players[i].flameoverheat);
 
 		SYNC(players[i].hyudorotimer);
 		SYNC(players[i].stealingtimer);
