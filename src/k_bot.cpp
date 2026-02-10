@@ -1342,7 +1342,7 @@ static INT32 K_HandleBotTrack(botdata_t *bd, const player_t *player, angle_t des
 		bd->brakedown = false;
 
 		// Additional grip for turns.
-		if ((player->speed > K_GetKartSpeed(player, false, false)/2) && !bd->griplockout)//35*FRACUNIT
+		if (player->mo && P_IsObjectOnGround(player->mo) && (player->speed > K_GetKartSpeed(player, false, false)/2) && !bd->griplockout)//35*FRACUNIT
 		{
 			const angle_t MAXERROR = ANGLE_45;
 			const angle_t MIDERROR = ANGLE_22h;
