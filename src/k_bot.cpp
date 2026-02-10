@@ -43,6 +43,7 @@
 #include "i_net.h" // doomcom
 #include "blan/b_soc.h"
 #include "v_video.h" // for debugging
+#include "k_battle.h" // item breaker
 #include "k_waypoint.h"
 #include "k_items.h"
 
@@ -263,6 +264,10 @@ void K_UpdateMatchRaceBots(void)
 		difficulty = 0;
 	}
 	else if ((gametyperules & GTR_BOTS) == 0 && !cv_forcebots.value)
+	{
+		difficulty = 0;
+	}
+	else if (itembreaker && !cv_forcebots.value)
 	{
 		difficulty = 0;
 	}
