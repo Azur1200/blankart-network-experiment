@@ -640,7 +640,8 @@ void LUA_HookGamemap(int hook_type)
 	Hook_State hook = {};
 	if (prepare_hook(&hook, 0, hook_type))
 	{
-		lua_pushinteger(gL, lua_compatmode ? G_NativeMapToKart(gamemap) : gamemap);
+		lua_pushinteger(gL, gamemap);
+		lua_pushinteger(gL, G_NativeMapToKart(gamemap));
 		init_hook_call(&hook, 0, res_none);
 		hook.values = 1;
 		call_mapped_gamemap(&hook, &hookIds[hook.hook_type]);
