@@ -12416,16 +12416,16 @@ void P_SpawnPlayer(INT32 playernum)
 	}
 	else if (p->bot)
 	{
-		/*
-		if (bonusgame || specialstage || boss)
+		if (itembreaker)
 		{
 			// Bots should avoid
-			p->spectator = true;
+			P_SetPlayerSpectator(playernum);
 		}
-		*/
+		else if (p->spectator)
 		{
 			// No point in a spectating bot!
 			p->spectator = false;
+			p->pflags |= PF_WANTSTOJOIN;
 		}
 	}
 	else if (netgame && p->jointime <= 1 && pcount)

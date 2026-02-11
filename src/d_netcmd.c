@@ -3890,6 +3890,20 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 
 	mapnumber = READINT16(*cp);
 
+	if (grandprixinfo.gp)
+	{
+		boolean caughtretry = (gametype == lastgametype
+				&& mapnumber == gamemap);
+		if (gametype != GT_RACE)
+		{
+			grandprixinfo.eventmode = GPEVENT_CHALLENGE;
+		}
+		else
+		{
+			grandprixinfo.eventmode = GPEVENT_NONE;
+		}
+	}
+
 	if (netgame)
 		P_SetRandSeed(READUINT32(*cp));
 

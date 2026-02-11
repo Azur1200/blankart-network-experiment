@@ -4653,7 +4653,7 @@ static INT16 G_GetNextMap(boolean advancemap)
 					if (cupLevelNum < nummapheaders && mapheaderinfo[cupLevelNum]
 						&& mapheaderinfo[cupLevelNum]->typeoflevel & (TOL_BOSS|TOL_BATTLE))
 					{
-						grandprixinfo.eventmode = GPEVENT_BONUS;
+						grandprixinfo.eventmode = GPEVENT_CHALLENGE;
 						newmap = cupLevelNum;
 					}
 				}
