@@ -9734,7 +9734,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 			dot = FRACUNIT - abs(FV2_Dot(&fwd, &mov));
 			tilt = FixedAngle(FixedMul(AngleFixed(ANG20), dot));
 			
-			if (abs(player->nulldrifttilt) < tilt)
+			if ((angle_t)abs(player->nulldrifttilt) < tilt)
 			{
 				player->nulldrifttilt = (abs(player->nulldrifttilt) + tilt/10) * -player->nulldrift;
 			}

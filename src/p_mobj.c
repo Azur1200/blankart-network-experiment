@@ -9052,7 +9052,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
 		break;
 	case MT_BRAKEDRIFT:
-
+	{
 		// Letting go of accel functions about the same as brake-drifting
 		boolean nullDrift = (!(K_GetKartButtons(mobj->target->player) & BT_ACCELERATE));
 
@@ -9111,6 +9111,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				mobj->renderflags |= RF_DONTDRAW;
 		}
 		break;
+	}
 	case MT_PLAYERRETICULE:
 		if (!mobj->target || !mobj->target->health)
 		{
