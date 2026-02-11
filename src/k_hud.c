@@ -6703,6 +6703,9 @@ void K_DrawFlamometer(void)
 	if (stplyr->playerstate != PST_LIVE)
 		return;
 
+	if (stplyr->exiting)
+		return;
+
 	if (stplyr->flametimer <= 0)
 		return;
 
