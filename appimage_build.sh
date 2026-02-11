@@ -27,6 +27,7 @@ url="https://github.com/AppImage/AppImageKit/releases/download/continuous/appima
 # A whitelist of libraries to include into BlanKart's AppImage if BlanKart is dynamically linked.
 # please don't add a newline at the end of this or i will cry :(
 libraryWhitelist="
+libSDL2
 libopenal
 libgme
 libopenmpt
