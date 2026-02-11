@@ -1434,7 +1434,15 @@ static void K_drawKartItem(void)
 			if (stplyr->itemamount <= 0 && stplyr->itemusecooldown <= 0)
 				return;
 
-			localpatch = K_GetCachedItemPatch(stplyr->itemtype, tiny, stplyr->itemamount);
+			if (stplyr->itemtype == 0 && stplyr->itemusecooldown <= 0)
+				return;
+
+			if (stplyr->itemtype >= numkartitems && stplyr->itemtype != MAXKARTITEMS)
+				return;
+
+			if (stplyr->itemtype > 0 && stplyr->itemamount > 0)
+				localpatch = K_GetCachedItemPatch(stplyr->itemtype, tiny, stplyr->itemamount);
+
 			if (localpatch == NULL)
 				localpatch = kp_nodraw; // diagnose underflows
 			else if (K_IsKartItemAlternate(stplyr->itemtype) && K_ShowAltItemIcon(stplyr->itemtype, tiny))
