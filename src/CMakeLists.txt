@@ -176,6 +176,19 @@ endif()
 set(SRB2_CONFIG_STD23 OFF CACHE BOOL
 	"Compiles the game under c23 and cxx23 instead c11 and cxx17.")
 
+set(SRB2_CONFIG_COMPILEAPPIMAGE OFF CACHE BOOL
+	"Compiles the game then attempts turning it into an appimage.")
+
+if(SRB2_CONFIG_COMPILEAPPIMAGE AND "${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
+message("-- Generating Appimage at build time.")
+add_custom_command(
+	TARGET SRB2SDL2
+	POST_BUILD
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin/
+	COMMAND ${CMAKE_SOURCE_DIR}/appimage_build.sh -s
+)
+endif()
+
 if(SRB2_CONFIG_STD23)
 	message("-- Compiling game with C23 and CXX23.")
 	target_compile_features(SRB2SDL2 PRIVATE c_std_23 cxx_std_23)
