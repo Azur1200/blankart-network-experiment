@@ -54,6 +54,7 @@
 #include "k_objects.h"
 #include "k_items.h"
 #include "k_waypoint.h"
+#include "k_grandprix.h"
 
 // BlanKart
 #include "blan/b_soc.h"
@@ -12416,10 +12417,11 @@ void P_SpawnPlayer(INT32 playernum)
 	}
 	else if (p->bot)
 	{
-		if (itembreaker)
+		if (K_BotDefaultSpectator())
 		{
 			// Bots should avoid
-			P_SetPlayerSpectator(playernum);
+			p->spectator = true;
+			p->pflags &= ~PF_WANTSTOJOIN;
 		}
 		else if (p->spectator)
 		{

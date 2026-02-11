@@ -2681,6 +2681,10 @@ static void P_DeathThink(player_t *player)
 			playerGone = true;
 		}
 	}
+	else if (player->bot && K_BotDefaultSpectator())
+	{
+		playerGone = true;
+	}
 
 	if (playerGone == false)
 	{
