@@ -8781,8 +8781,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			ghost->colorized = true; // already has color!
 		}
 
-		if (P_IsObjectOnGround(mobj) && (mobj->momz * P_MobjFlip(mobj)) <= 0
-		&& (mobj->state == &states[S_SSMINE_AIR1] || mobj->state == &states[S_SSMINE_AIR2]))
+		if (P_IsObjectOnGround(mobj) && (mobj->state == &states[S_SSMINE_AIR1] || mobj->state == &states[S_SSMINE_AIR2]))
 		{
 			if (mobj->extravalue1 > 0)
 				mobj->extravalue1--;
