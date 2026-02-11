@@ -176,7 +176,7 @@ void K_SetBot(UINT8 newplayernum, UINT16 skinnum, UINT8 difficulty, botStyle_e s
 
 	// The bot may immediately become a spectator AT THE START of a GP.
 	// For each subsequent round of GP, K_UpdateGrandPrixBots will handle this.
-	players[newplayernum].spectator = grandprixinfo.gp && grandprixinfo.initalize;
+	players[newplayernum].spectator = grandprixinfo.gp && grandprixinfo.initalize && K_BotDefaultSpectator();
 
 	skincolornum_t color = static_cast<skincolornum_t>(skins[skinnum].prefcolor);
 	const char *realname = skins[skinnum].realname;

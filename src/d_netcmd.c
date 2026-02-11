@@ -3892,8 +3892,6 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 
 	if (grandprixinfo.gp)
 	{
-		boolean caughtretry = (gametype == lastgametype
-				&& mapnumber == gamemap);
 		if (gametype != GT_RACE)
 		{
 			grandprixinfo.eventmode = GPEVENT_CHALLENGE;

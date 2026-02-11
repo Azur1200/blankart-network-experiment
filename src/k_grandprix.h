@@ -186,6 +186,15 @@ void K_PlayerLoseLife(player_t *player);
 
 boolean K_CanChangeRules(boolean allowdemos);
 
+/*--------------------------------------------------
+	boolean K_BotDefaultSpectator(void)
+
+		Check whether bots should spectate this round.
+--------------------------------------------------*/
+
+boolean K_BotDefaultSpectator(void);
+
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
