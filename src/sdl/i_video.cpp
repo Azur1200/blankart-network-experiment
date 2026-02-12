@@ -1167,8 +1167,13 @@ void I_StartupMouse(void)
 {
 	static SDL_bool firsttimeonmouse = SDL_TRUE;
 
+	disable_mouse = static_cast<SDL_bool>(M_CheckParm("-nomouse"));
+
 	if (disable_mouse)
+	{
+		CONS_Printf("Mouse Input Disabled.\n");
 		return;
+	}
 
 	if (!firsttimeonmouse)
 	{
