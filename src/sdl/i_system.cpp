@@ -1201,6 +1201,7 @@ void I_ShutdownJoystick(UINT8 index)
 static int joy_open(int playerIndex, int joyID)
 {
 	SDL_Gamepad *newdev = NULL;
+	SDL_JoystickID *joystick_list = NULL;
 	int num_joy = 0;
 
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == 0)
@@ -1217,15 +1218,24 @@ static int joy_open(int playerIndex, int joyID)
 	if (joyID <= 0)
 		return -1;
 
-	SDL_GetJoysticks(&num_joy);
+	joystick_list = SDL_GetJoysticks(&num_joy);
 
-	if (num_joy == 0)
+	if (!joystick_list || num_joy == 0)
 	{
 		CONS_Printf("%s", M_GetText("Found no joysticks on this system\n"));
 		return -1;
 	}
 
-	newdev = SDL_OpenGamepad(joyID-1);
+	if (joyID > num_joy)
+	{
+		SDL_free(joystick_list);
+		return -1;
+	}
+
+	SDL_JoystickID joystick_id = joystick_list[joyID - 1];
+	SDL_free(joystick_list);
+
+	newdev = SDL_OpenGamepad(joystick_id);
 
 	// Handle the edge case where the device <-> joystick index assignment can change due to hotplugging
 	// This indexing is SDL's responsibility and there's not much we can do about it.
@@ -1251,7 +1261,7 @@ static int joy_open(int playerIndex, int joyID)
 	}
 
 	JoyInfo[playerIndex].dev = newdev;
-	JoyInfo[playerIndex].id = I_GetJoystickID(JoyInfo[playerIndex].dev);
+	JoyInfo[playerIndex].id = joystick_id;;
 
 	if (JoyInfo[playerIndex].dev == NULL)
 	{
@@ -1279,6 +1289,8 @@ static int joy_open(int playerIndex, int joyID)
 void I_InitJoystick(UINT8 index)
 {
 	SDL_Gamepad *newcontroller = NULL;
+	SDL_JoystickID *joystick_list = NULL;
+	int num_joy = 0;
 	UINT8 i;
 
 	//I_ShutdownJoystick();
@@ -1333,8 +1345,16 @@ void I_InitJoystick(UINT8 index)
 		}
 	}
 
-	if (cv_usejoystick[index].value)
-		newcontroller = SDL_OpenGamepad(cv_usejoystick[index].value-1);
+	joystick_list = SDL_GetJoysticks(&num_joy);
+
+	if (joystick_list && cv_usejoystick[index].value > 0 && cv_usejoystick[index].value <= num_joy)
+	{
+		SDL_JoystickID joystick_id = joystick_list[cv_usejoystick[index].value - 1];
+		newcontroller = SDL_OpenGamepad(joystick_id);
+	}
+
+	if (joystick_list)
+		SDL_free(joystick_list);
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
@@ -1438,11 +1458,29 @@ static char joyname[255]; // joystick name is straight from the driver
 const char *I_GetJoyName(INT32 joyid)
 {
 	const char *tempname = NULL;
+	SDL_JoystickID *joystick_list = NULL;
+	int num_joy = 0;
+
 	joyname[0] = 0;
-	joyid--; //SDL's Joystick System starts at 0, not 1
+
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == SDL_INIT_JOYSTICK)
 	{
-		tempname = SDL_GetJoystickNameForID(joyid);
+		if (joyid <= 0)
+			return joyname;
+
+		joystick_list = SDL_GetJoysticks(&num_joy);
+
+		if (!joystick_list || joyid > num_joy)
+		{
+			if (joystick_list)
+				SDL_free(joystick_list);
+			return joyname;
+		}
+
+		SDL_JoystickID joystick_id = joystick_list[joyid - 1];
+		SDL_free(joystick_list);
+
+		tempname = SDL_GetJoystickNameForID(joystick_id);
 		if (tempname)
 		{
 			strncpy(joyname, tempname, 254);

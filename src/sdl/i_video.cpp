@@ -935,10 +935,11 @@ static void Impl_HandleControllerButtonEvent(SDL_GamepadButtonEvent evt, Uint32 
 static void Impl_HandleControllerAddEvent(SDL_Event evt)
 {
 	UINT8 i;
+	SDL_JoystickID joystick_id = evt.gdevice.which;
 
-	SDL_Gamepad *newcontroller = SDL_OpenGamepad(evt.gdevice.which);
+	SDL_Gamepad *newcontroller = SDL_OpenGamepad(joystick_id);
 
-	CONS_Debug(DBG_GAMELOGIC, "Controller device index %d added\n", evt.gdevice.which + 1);
+	CONS_Debug(DBG_GAMELOGIC, "Controller device index %d added\n", joystick_id + 1);
 
 	// Because SDL's device index is unstable, we're going to cheat here a bit:
 	// For the first joystick setting that is NOT active:
@@ -966,7 +967,7 @@ static void Impl_HandleControllerAddEvent(SDL_Event evt)
 			if (j == MAXSPLITSCREENPLAYERS)
 			{
 				// ensures we aren't overriding a currently active device
-				cv_usejoystick[i].value = evt.gdevice.which + 1;
+				cv_usejoystick[i].value = joystick_id + 1;
 				I_UpdateJoystickDeviceIndices(0);
 			}
 		}
@@ -1014,12 +1015,13 @@ static void Impl_HandleControllerAddEvent(SDL_Event evt)
 static void Impl_HandleControllerRemoveEvent(SDL_Event evt)
 {
 	UINT8 i;
+	SDL_JoystickID joystick_id = evt.gdevice.which;
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		if (JoyInfo[i].dev && !SDL_GamepadConnected(JoyInfo[i].dev))
+		if (JoyInfo[i].dev && JoyInfo[i].id == joystick_id && !SDL_GamepadConnected(JoyInfo[i].dev))
 		{
-			CONS_Debug(DBG_GAMELOGIC, "Joystick%d removed, device index: %d\n", i+1, JoyInfo[i].oldjoy);
+			CONS_Debug(DBG_GAMELOGIC, "Joystick%d removed, device index: %d\n", i+1, joystick_id);
 			I_ShutdownJoystick(i);
 		}
 	}
