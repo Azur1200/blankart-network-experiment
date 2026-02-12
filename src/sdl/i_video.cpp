@@ -295,6 +295,7 @@ static void Impl_VideoSetupSurfaces(int width, int height)
 {
 	if (texture == NULL)
 		texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, width, height);
+	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 }
 
 static SDL_FRect src_rect = { 0, 0, 0, 0 };
