@@ -515,6 +515,9 @@ static boolean IgnoreMouse(void)
 
 static void SDLdoGrabMouse(void)
 {
+	if (disable_mouse)
+		return;
+
 	SDL_ShowCursor(SDL_DISABLE);
 	SDL_SetWindowGrab(window, SDL_TRUE);
 	if (SDL_SetRelativeMouseMode(SDL_TRUE) == 0) // already warps mouse if successful
@@ -523,6 +526,8 @@ static void SDLdoGrabMouse(void)
 
 static void SDLdoUngrabMouse(void)
 {
+	if (disable_mouse)
+		return;
 	SDL_ShowCursor(SDL_ENABLE);
 	SDL_SetWindowGrab(window, SDL_FALSE);
 	wrapmouseok = SDL_FALSE;
@@ -531,12 +536,18 @@ static void SDLdoUngrabMouse(void)
 
 void SDLforceUngrabMouse(void)
 {
+	if (disable_mouse)
+		return;
+
 	if (SDL_WasInit(SDL_INIT_VIDEO)==SDL_INIT_VIDEO && window != NULL)
 		SDLdoUngrabMouse();
 }
 
 void I_UpdateMouseGrab(void)
 {
+	if (disable_mouse)
+		return;
+
 	if (SDL_WasInit(SDL_INIT_VIDEO) == SDL_INIT_VIDEO && window != NULL
 	&& SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window
 	&& USE_MOUSEINPUT && !IgnoreMouse())
