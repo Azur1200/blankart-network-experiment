@@ -464,7 +464,7 @@ FUNCINLINE static ATTRINLINE UINT32 W_HashLumpName(const char *name, size_t len)
 {
 	char *uname = (char *)alloca(len + 1);
 	strlcpy(uname, name, len + 1);
-	strupr(uname);
+	strlwr(uname);
 	return HASH32(uname, len);
 }
 
