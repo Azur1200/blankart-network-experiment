@@ -127,7 +127,7 @@ static      INT32        mousemovex = 0, mousemovey = 0;
 static      UINT32    localPalette[256];
 static      bool    wrapmouseok = false;
 #define HalfWarpMouse(x,y) if (wrapmouseok) SDL_WarpMouseInWindow(window, (Uint16)(x/2),(Uint16)(y/2))
-static       bool    usesdl2soft = false;
+static       bool    usesdlsoft = false;
 static       bool    borderlesswindow = false;
 
 Uint16      realwidth = BASEVIDWIDTH;
@@ -210,7 +210,7 @@ static bool Impl_RenderContextCreate(void)
 				VIDEO_INIT_ERROR("Couldn't create rendering properties: %s");
 				return false;
 			}
-			if (usesdl2soft)
+			if (usesdlsoft)
 				SDL_SetStringProperty(props, SDL_PROP_RENDERER_CREATE_NAME_STRING, "SDL_SOFTWARE_RENDERER");
 			SDL_SetNumberProperty(props, SDL_PROP_RENDERER_CREATE_PRESENT_VSYNC_NUMBER, cv_vidwait.value);
 			SDL_SetPointerProperty(props, SDL_PROP_RENDERER_CREATE_WINDOW_POINTER, window);
@@ -1427,7 +1427,7 @@ INT32 VID_GetModeForSize(INT32 w, INT32 h)
 
 void VID_PrepareModeList(void)
 {
-	// Under SDL2, we just use the windowed modes list, and scale in windowed fullscreen.
+	// Under SDL, we just use the windowed modes list, and scale in windowed fullscreen.
 	allow_fullscreen = true;
 }
 
@@ -1721,7 +1721,7 @@ void I_StartupGraphics(void)
 	if (chosenrendermode != render_none)
 		rendermode = chosenrendermode;
 
-	usesdl2soft = M_CheckParm("-softblit") ? true : false;
+	usesdlsoft = M_CheckParm("-softblit") ? true : false;
 	borderlesswindow = M_CheckParm("-borderless") ? true : false;
 
 #ifdef HWRENDER
