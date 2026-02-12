@@ -130,9 +130,6 @@ static      bool    wrapmouseok = false;
 static       bool    usesdlsoft = false;
 static       bool    borderlesswindow = false;
 
-Uint16      realwidth = BASEVIDWIDTH;
-Uint16      realheight = BASEVIDHEIGHT;
-
 SDL_Window   *window = NULL;
 SDL_Renderer *renderer = NULL;
 static SDL_Texture  *texture = NULL;
@@ -265,15 +262,15 @@ static bool Impl_RenderContextReset(void)
 		SDL_GL_MakeCurrent(window, sdlglcontext);
 		SDL_GL_SetSwapInterval(cv_vidwait.value);
 
-		OglSdlSurface(realwidth, realheight);
+		OglSdlSurface(vid.width, vid.height);
 		HWR_Startup();
 	}
 	else
 #endif
 	{
 		SDL_RenderClear(renderer);
-		SDL_SetRenderLogicalPresentation(renderer, realwidth, realheight, SDL_LOGICAL_PRESENTATION_LETTERBOX);
-		Impl_VideoSetupSurfaces(realwidth, realheight);
+		SDL_SetRenderLogicalPresentation(renderer, vid.width, vid.height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+		Impl_VideoSetupSurfaces(vid.width, vid.height);
 	}
 
 	return true;
@@ -305,8 +302,8 @@ static bool SDLSetMode(INT32 width, INT32 height, bool fullscreen, bool repositi
 	static bool wasfullscreen = false;
 	int fullscreen_type = SDL_WINDOW_FULLSCREEN;
 
-	src_rect.w = realwidth = width;
-	src_rect.h = realheight = height;
+	src_rect.w = vid.width = width;
+	src_rect.h = vid.height = height;
 
 	if (window)
 	{
@@ -748,7 +745,7 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 
 		// If the event is from warping the pointer to middle
 		// of the screen then ignore it.
-		if (((int)evt.x == realwidth/2) && ((int)evt.y == realheight/2))
+		if (((int)evt.x == vid.width/2) && ((int)evt.y == vid.height/2))
 		{
 			firstmove = false;
 			return;
@@ -1120,8 +1117,8 @@ void I_GetEvent(void)
 		event.type = ev_mouse;
 		event.device = 0; // TODO device
 		event.data1 = 0;
-		event.data2 = (INT32)lround(mousemovex * ((float)wwidth / (float)realwidth));
-		event.data3 = (INT32)lround(mousemovey * ((float)wheight / (float)realheight));
+		event.data2 = (INT32)lround(mousemovex * ((float)wwidth / (float)vid.width));
+		event.data3 = (INT32)lround(mousemovey * ((float)wheight / (float)vid.height));
 		D_PostEvent(&event);
 	}
 
@@ -1147,7 +1144,7 @@ void I_StartupMouse(void)
 
 	if (!firsttimeonmouse)
 	{
-		HalfWarpMouse(realwidth, realheight); // warp to center
+		HalfWarpMouse(vid.width, vid.height); // warp to center
 	}
 	else
 		firsttimeonmouse = false;
@@ -1572,10 +1569,10 @@ static bool Impl_CreateWindow(bool fullscreen)
 		char versionstring[256];
 		sprintf(versionstring, "BlanKart Indev %s", comprevision);
 
-		window = SDL_CreateWindow(versionstring, realwidth, realheight, flags);
+		window = SDL_CreateWindow(versionstring, vid.width, vid.height, flags);
 	}
 #else
-	window = SDL_CreateWindow("BlanKart " VERSIONSTRING, realwidth, realheight, flags);
+	window = SDL_CreateWindow("BlanKart " VERSIONSTRING, vid.width, vid.height, flags);
 #endif
 
 	if (window == NULL)
