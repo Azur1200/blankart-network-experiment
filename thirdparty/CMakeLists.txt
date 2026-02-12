@@ -10,7 +10,7 @@ endmacro()
 #endif()
 
 if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}")
-	include("cpm-sdl2.cmake")
+	include("cpm-sdl3.cmake")
 	include("cpm-zlib-ng.cmake")
 	include("cpm-png.cmake")
 	include("cpm-curl.cmake")

@@ -39,7 +39,7 @@ This is still in active development and things are going to change. If you find 
 - Recovery Dash
 
 ## Dependencies
-- SDL2 (Linux/OS X only)
+- SDL3 (Linux/OS X only)
 - libsndfile (Linux/OS X only)
 - OpenAL-Soft (Linux/OS X only)
 - libupnp (Linux/OS X only)
