@@ -139,7 +139,7 @@ static UINT32 refresh_rate;
 
 static boolean video_init = false;
 
-static bool Impl_CreateWindow(bool fullscreen);
+static SDL_Window *Impl_CreateWindow(void);
 
 static void Impl_VideoSetupSurfaces(int width, int height);
 
@@ -336,13 +336,19 @@ static bool SDLSetMode(INT32 width, INT32 height, bool fullscreen, bool repositi
 	}
 	else
 	{
-		if (Impl_CreateWindow(fullscreen) == false)
+		SDL_Window *win = Impl_CreateWindow();
+		if (win == NULL)
 			return false;
 
 		wasfullscreen = fullscreen;
-		SDL_SetWindowSize(window, width, height);
+		SDL_SetWindowSize(win, width, height);
 		if (fullscreen)
-			SDL_SetWindowFullscreen(window, fullscreen_type);
+			SDL_SetWindowFullscreen(win, fullscreen_type);
+
+		SDL_SyncWindow(win);
+
+		// set the window variable here, so asynchronous events don't break resolution
+		window = win;
 	}
 
 	if (Impl_RenderContextReset() == false)
@@ -1541,15 +1547,12 @@ INT32 VID_SetMode(INT32 modeNum)
 	return true;
 }
 
-static bool Impl_CreateWindow(bool fullscreen)
+static SDL_Window *Impl_CreateWindow(void)
 {
 	int flags = 0;
 
 	if (window != NULL)
-		return true;
-
-	if (fullscreen)
-		flags |= SDL_WINDOW_FULLSCREEN;
+		return window;
 
 	if (borderlesswindow)
 		flags |= SDL_WINDOW_BORDERLESS;
@@ -1563,33 +1566,33 @@ static bool Impl_CreateWindow(bool fullscreen)
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 #endif
 
+	SDL_Window *win = NULL;
 	// Create a window
 #ifdef COMMITVERSION
 	{
 		char versionstring[256];
 		sprintf(versionstring, "BlanKart Indev %s", comprevision);
 
-		window = SDL_CreateWindow(versionstring, vid.width, vid.height, flags);
+		win = SDL_CreateWindow(versionstring, vid.width, vid.height, flags);
 	}
 #else
-	window = SDL_CreateWindow("BlanKart " VERSIONSTRING, vid.width, vid.height, flags);
+	win = SDL_CreateWindow("BlanKart " VERSIONSTRING, vid.width, vid.height, flags);
 #endif
 
-	if (window == NULL)
+	if (win == NULL)
 	{
 		VIDEO_INIT_ERROR("Couldn't create window: %s");
-		return false;
+		return NULL;
 	}
 
-	SDL_SetWindowMinimumSize(window, BASEVIDWIDTH, BASEVIDHEIGHT);
-	SDL_SetWindowMaximumSize(window, MAXVIDWIDTH, MAXVIDHEIGHT);
+	SDL_SetWindowMinimumSize(win, BASEVIDWIDTH, BASEVIDHEIGHT);
+	SDL_SetWindowMaximumSize(win, MAXVIDWIDTH, MAXVIDHEIGHT);
 
 #ifdef USE_WINDOW_ICON
 	Impl_SetWindowIcon();
 #endif
 
-	return true;
-
+	return win;
 }
 
 #ifdef USE_WINDOW_ICON
