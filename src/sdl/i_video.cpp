@@ -975,9 +975,9 @@ void I_GetEvent(void)
 				{
 					// OH BOY are you in for a good time! #abominationstation
 
-					SDL_Gamepad *newcontroller = SDL_OpenGamepad(evt.cdevice.which);
+					SDL_Gamepad *newcontroller = SDL_OpenGamepad(evt.gdevice.which);
 
-					CONS_Debug(DBG_GAMELOGIC, "Controller device index %d added\n", evt.cdevice.which + 1);
+					CONS_Debug(DBG_GAMELOGIC, "Controller device index %d added\n", evt.gdevice.which + 1);
 
 					////////////////////////////////////////////////////////////
 					// Because SDL's device index is unstable, we're going to cheat here a bit:
@@ -1008,7 +1008,7 @@ void I_GetEvent(void)
 							if (j == MAXSPLITSCREENPLAYERS)
 							{
 								// ensures we aren't overriding a currently active device
-								cv_usejoystick[i].value = evt.cdevice.which + 1;
+								cv_usejoystick[i].value = evt.gdevice.which + 1;
 								I_UpdateJoystickDeviceIndices(0);
 							}
 						}
