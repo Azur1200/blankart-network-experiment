@@ -78,7 +78,7 @@ void I_GetConsoleEvents(void);
 void I_ShutdownJoystick(UINT8 index);
 
 // Cheat to get the device index for a game controller handle
-INT32 I_GetJoystickDeviceIndex(SDL_Gamepad *dev);
+INT32 I_GetJoystickID(SDL_Gamepad *dev);
 
 // Quick thing to make SDL_JOYDEVICEADDED events less of an abomination
 void I_UpdateJoystickDeviceIndex(UINT8 player);

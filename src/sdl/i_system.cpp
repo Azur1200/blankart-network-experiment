@@ -1068,7 +1068,7 @@ void I_JoyScale4(void)
 }
 
 // Cheat to get the device index for a game controller handle
-INT32 I_GetJoystickDeviceIndex(SDL_Gamepad *dev)
+INT32 I_GetJoystickID(SDL_Gamepad *dev)
 {
 	SDL_Joystick *joystick = NULL;
 
@@ -1082,7 +1082,7 @@ INT32 I_GetJoystickDeviceIndex(SDL_Gamepad *dev)
 	return -1;
 }
 
-INT32 I_GetJoystickDeviceIndexForPlayer(UINT8 pnum)
+INT32 I_GetJoystickIDForPlayer(UINT8 pnum)
 {
 	SDL_Joystick *joystick = NULL;
 
@@ -1164,7 +1164,7 @@ void I_ShutdownJoystick(UINT8 index)
 	INT32 i;
 	event_t event;
 
-	event.device = I_GetJoystickDeviceIndex(JoyInfo[index].dev);
+	event.device = I_GetJoystickID(JoyInfo[index].dev);
 	event.type = ev_keyup;
 	event.data2 = 0;
 	event.data3 = 0;
@@ -1198,7 +1198,7 @@ void I_ShutdownJoystick(UINT8 index)
 
 
 */
-static int joy_open(int playerIndex, int joyIndex)
+static int joy_open(int playerIndex, int joyID)
 {
 	SDL_Gamepad *newdev = NULL;
 	int num_joy = 0;
@@ -1214,7 +1214,7 @@ static int joy_open(int playerIndex, int joyIndex)
 		return -1;
 	}
 
-	if (joyIndex <= 0)
+	if (joyID <= 0)
 		return -1;
 
 	SDL_GetJoysticks(&num_joy);
@@ -1225,7 +1225,7 @@ static int joy_open(int playerIndex, int joyIndex)
 		return -1;
 	}
 
-	newdev = SDL_OpenGamepad(joyIndex-1);
+	newdev = SDL_OpenGamepad(joyID-1);
 
 	// Handle the edge case where the device <-> joystick index assignment can change due to hotplugging
 	// This indexing is SDL's responsibility and there's not much we can do about it.
@@ -1251,7 +1251,7 @@ static int joy_open(int playerIndex, int joyIndex)
 	}
 
 	JoyInfo[playerIndex].dev = newdev;
-	JoyInfo[playerIndex].id = I_GetJoystickDeviceIndex(JoyInfo[playerIndex].dev);
+	JoyInfo[playerIndex].id = I_GetJoystickID(JoyInfo[playerIndex].dev);
 
 	if (JoyInfo[playerIndex].dev == NULL)
 	{
@@ -1345,7 +1345,7 @@ void I_InitJoystick(UINT8 index)
 			break;
 	}
 
-	JoyInfo[index].id = I_GetJoystickDeviceIndex(JoyInfo[index].dev);
+	JoyInfo[index].id = I_GetJoystickID(JoyInfo[index].dev);
 
 	if (newcontroller && i < MAXSPLITSCREENPLAYERS) // don't override an active device
 	{
@@ -1435,14 +1435,14 @@ INT32 I_NumJoys(void)
 
 static char joyname[255]; // joystick name is straight from the driver
 
-const char *I_GetJoyName(INT32 joyindex)
+const char *I_GetJoyName(INT32 joyid)
 {
 	const char *tempname = NULL;
 	joyname[0] = 0;
-	joyindex--; //SDL's Joystick System starts at 0, not 1
+	joyid--; //SDL's Joystick System starts at 0, not 1
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == SDL_INIT_JOYSTICK)
 	{
-		tempname = SDL_GetJoystickNameForID(joyindex);
+		tempname = SDL_GetJoystickNameForID(joyid);
 		if (tempname)
 		{
 			strncpy(joyname, tempname, 254);

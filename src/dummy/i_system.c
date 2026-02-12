@@ -71,9 +71,9 @@ INT32 I_NumJoys(void)
 	return 0;
 }
 
-const char *I_GetJoyName(INT32 joyindex)
+const char *I_GetJoyName(INT32 joyid)
 {
-	(void)joyindex;
+	(void)joyid;
 	return NULL;
 }
 

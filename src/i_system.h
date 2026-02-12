@@ -235,11 +235,11 @@ extern INT32 numcontrollers;
 
 /**	\brief	The *I_GetJoyName function
 
-	\param	joyindex	which joystick
+	\param	joyid	which joystick
 
 	\return	joystick name
 */
-const char *I_GetJoyName(INT32 joyindex);
+const char *I_GetJoyName(INT32 joyid);
 
 void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
 void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 blue);
@@ -320,7 +320,7 @@ const char *I_LocateWad(void);
 */
 void I_GetJoystickEvents(UINT8 index);
 
-INT32 I_GetJoystickDeviceIndexForPlayer(UINT8 pnum);
+INT32 I_GetJoystickIDForPlayer(UINT8 pnum);
 
 /**	\brief Checks if the mouse needs to be grabbed
 */

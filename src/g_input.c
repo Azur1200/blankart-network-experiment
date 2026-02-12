@@ -202,7 +202,7 @@ INT32 G_GetDevicePlayer(INT32 deviceID)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		if (deviceID == I_GetJoystickDeviceIndexForPlayer(i) + 1)
+		if (deviceID == I_GetJoystickIDForPlayer(i) + 1)
 		{
 			return i;
 		}

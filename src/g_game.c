@@ -1263,7 +1263,7 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital, SINT8 type)
 
 	deadzone = (JOYAXISRANGE * deadzonetype) / FRACUNIT;
 
-	deviceID = I_GetJoystickDeviceIndexForPlayer(p) + 1;
+	deviceID = I_GetJoystickIDForPlayer(p) + 1;
 
 retrygetcontrol:
 	for (i = 0; i < MAXINPUTMAPPING; i++)
