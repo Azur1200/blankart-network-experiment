@@ -1,4 +1,4 @@
-target_sources(SRB2SDL2 PRIVATE
+target_sources(BLANKART PRIVATE
 	hw_bsp.c
 	hw_draw.c
 	hw_light.c

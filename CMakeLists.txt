@@ -177,8 +177,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 # Set EXE names so the assets CMakeLists can refer to its target
-set(SRB2_SDL2_EXE_NAME "" CACHE STRING "Override executable binary output name")
-set(SRB2_SDL2_EXE_SUFFIX "" CACHE STRING "Optional executable suffix, separated by an underscore")
+set(BLANKART_EXE_NAME "" CACHE STRING "Override executable binary output name")
+set(BLANKART_EXE_SUFFIX "" CACHE STRING "Optional executable suffix, separated by an underscore")
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/src)
 
@@ -197,7 +197,7 @@ set(SRB2_COMP_REVISION "${SRB2_COMP_COMMIT}")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/src/config.h)
 
 
-if("${SRB2_SDL2_EXE_NAME}" STREQUAL "")
+if("${BLANKART_EXE_NAME}" STREQUAL "")
 	list(APPEND EXE_NAME_PARTS "blankart")
 
 	if(NOT "${SRB2_GIT_BRANCH}" STREQUAL "master" AND NOT SRB2_CONFIG_COMPILEAPPIMAGE)
@@ -208,10 +208,10 @@ if("${SRB2_SDL2_EXE_NAME}" STREQUAL "")
 		list(APPEND EXE_NAME_PARTS "appimagebuild")
 	endif()
 else()
-	list(APPEND EXE_NAME_PARTS ${SRB2_SDL2_EXE_NAME})
+	list(APPEND EXE_NAME_PARTS ${BLANKART_EXE_NAME})
 endif()
 
-list(APPEND EXE_NAME_PARTS ${SRB2_SDL2_EXE_SUFFIX})
+list(APPEND EXE_NAME_PARTS ${BLANKART_EXE_SUFFIX})
 
 list(JOIN EXE_NAME_PARTS "_" EXE_NAME)
-set_target_properties(SRB2SDL2 PROPERTIES OUTPUT_NAME ${EXE_NAME})
+set_target_properties(BLANKART PROPERTIES OUTPUT_NAME ${EXE_NAME})
