@@ -1,4 +1,4 @@
-# Declare SDL2 interface sources
+# Declare SDL3 interface sources
 
 target_sources(BLANKART PRIVATE
 	ogl_sdl.c
@@ -75,28 +75,15 @@ target_compile_definitions(BLANKART PRIVATE -DHAVE_SDL)
 
 find_package(OpenAL CONFIG QUIET)
 find_package(OpenAL QUIET)
-if(${SRB2_CONFIG_USE_OPENAL})
-	target_link_libraries(BLANKART PRIVATE sndfile)
-	target_compile_definitions(BLANKART PRIVATE -DHAVE_OPENAL)
-	target_link_libraries(BLANKART PRIVATE OpenAL::OpenAL)
-	target_sources(BLANKART PRIVATE al_sound.c)
-	if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}" AND NOT "${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}")
-		target_link_libraries(BLANKART PRIVATE SDL2::SDL2-static)
-	else()
-		target_link_libraries(BLANKART PRIVATE SDL2::SDL2)
-	endif()
+
+target_link_libraries(BLANKART PRIVATE sndfile)
+target_compile_definitions(BLANKART PRIVATE -DHAVE_OPENAL)
+target_link_libraries(BLANKART PRIVATE OpenAL::OpenAL)
+target_sources(BLANKART PRIVATE al_sound.c)
+if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}" AND NOT "${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}")
+	target_link_libraries(BLANKART PRIVATE SDL2::SDL2-static)
 else()
-	if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}" AND NOT "${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}")
-		target_link_libraries(BLANKART PRIVATE SDL2::SDL2-static SDL2_mixer::SDL2_mixer-static)
-	else()
-		target_link_libraries(BLANKART PRIVATE SDL2::SDL2 SDL2_mixer::SDL2_mixer)
-	endif()
-
-	if(TARGET SDL2_mixer_ext::SDL2_mixer_ext OR TARGET SDL2_mixer_ext::SDL2_mixer_ext_Static OR TARGET SDL2_mixer::SDL2_mixer OR TARGET SDL2_mixer::SDL2_mixer-static)
-		target_sources(BLANKART PRIVATE mixer_sound.c)
-	endif()
-
-	target_compile_definitions(BLANKART PRIVATE -DHAVE_MIXER -DSOUND=SOUND_MIXER)
+	target_link_libraries(BLANKART PRIVATE SDL2::SDL2)
 endif()
 
 if(TARGET SDL2::SDL2)
@@ -113,16 +100,8 @@ endif()
 
 if(TARGET OpenAL::OpenAL)
 	message(STATUS "OpenAL Found")
-elseif(TARGET SDL2_mixer_ext::SDL2_mixer_ext OR TARGET SDL2_mixer_ext::SDL2_mixer_ext_Static)
-	message(STATUS "SDL2_mixer_ext Found")
-elseif(TARGET SDL2_mixer::SDL2_mixer OR TARGET SDL2_mixer::SDL2_mixer-static)
-	message(STATUS "SDL2_mixer found")
 else()
-	if(${SRB2_CONFIG_USE_OPENAL})
-		message(FATAL_ERROR "no OpenAL Found")
-	else()
-		message(FATAL_ERROR "no SDL2_mixer_ext or SDL2_mixer Found")
-	endif()
+	message(FATAL_ERROR "no OpenAL Found")
 endif()
 
 #### Installation ####

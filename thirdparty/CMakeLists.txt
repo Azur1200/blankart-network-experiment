@@ -11,20 +11,13 @@ endmacro()
 
 if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}")
 	include("cpm-sdl2.cmake")
-
-if (NOT "${SRB2_CONFIG_USE_OPENAL}")
-	include("cpm-sdl2_mixer.cmake")
-endif()
 	include("cpm-zlib-ng.cmake")
 	include("cpm-png.cmake")
 	include("cpm-curl.cmake")
 	include("cpm-openmpt.cmake")
 	include("cpm-libgme.cmake")
-if ("${SRB2_CONFIG_USE_OPENAL}")
 	include("cpm-openal-soft.cmake")
 	include("cpm-libsndfile.cmake")
-endif()
-
 endif()
 
 if(SRB2_CONFIG_ENABLE_DISCORDRPC)
