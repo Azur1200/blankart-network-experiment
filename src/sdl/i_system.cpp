@@ -23,6 +23,8 @@
 /// \file
 /// \brief SRB2 system stuff for SDL
 
+#include <SDL3/SDL_gamepad.h>
+#include <SDL3/SDL_joystick.h>
 #include <thread>
 
 #ifdef CMAKECONFIG
@@ -70,7 +72,7 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 
 #ifdef HAVE_SDL
 #define _MATH_DEFINES_DEFINED
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #ifdef HAVE_TTF
 #include "i_ttf.h"
@@ -219,12 +221,12 @@ static char returnWadPath[256];
 
 static std::thread::id g_main_thread_id;
 
-void I_StoreExJoystick(SDL_GameController *dev)
+void I_StoreExJoystick(SDL_Gamepad *dev)
 {
 	// ExJoystick is a massive hack to avoid needing to completely
 	// rewrite pretty much all of the controller support from scratch...
 
-	// Used in favor of most instances of SDL_GameControllerClose.
+	// Used in favor of most instances of SDL_CloseGamepad.
 	// If a joystick would've been discarded, then save it in an array,
 	// because we want it have it for the joystick input screen.
 
@@ -236,12 +238,12 @@ void I_StoreExJoystick(SDL_GameController *dev)
 		return;
 	}
 
-	index = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(dev));
+	index = SDL_GetJoystickID(SDL_GetGamepadJoystick(dev));
 
 	if (index >= MAXGAMEPADS || index < 0)
 	{
 		// Not enough space to save this joystick, completely discard.
-		SDL_GameControllerClose(dev);
+		SDL_CloseGamepad(dev);
 		return;
 	}
 
@@ -254,7 +256,7 @@ void I_StoreExJoystick(SDL_GameController *dev)
 	if (ExJoystick[index] != NULL)
 	{
 		// Discard joystick in the old slot.
-		SDL_GameControllerClose(ExJoystick[index]);
+		SDL_CloseGamepad(ExJoystick[index]);
 	}
 
 	// Keep for safe-keeping.
@@ -287,10 +289,10 @@ static INT32 joystick_started[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
 */
 SDLJoyInfo_t JoyInfo[MAXSPLITSCREENPLAYERS];
 INT32 numcontrollers = 0;
-SDL_GameController *ExJoystick[MAXGAMEPADS];
+SDL_Gamepad *ExJoystick[MAXGAMEPADS];
 
-SDL_bool consolevent = SDL_FALSE;
-SDL_bool framebuffer = SDL_FALSE;
+bool consolevent = false;
+bool framebuffer = false;
 
 UINT8 keyboard_started = false;
 boolean g_in_exiting_signal_handler = false;
@@ -542,7 +544,7 @@ static void quit_handler(int num)
 
 #ifdef HAVE_TERMIOS
 // TERMIOS console code from Quake3: thank you!
-SDL_bool stdin_active = SDL_TRUE;
+bool stdin_active = true;
 
 typedef struct
 {
@@ -648,7 +650,7 @@ static void I_ShutdownConsole(void)
 	if (consolevent)
 	{
 		I_OutputMsg("Shutdown tty console\n");
-		consolevent = SDL_FALSE;
+		consolevent = false;
 		tcsetattr (STDIN_FILENO, TCSADRAIN, &tty_tc);
 	}
 }
@@ -663,18 +665,18 @@ static void I_StartupConsole(void)
 	signal(SIGTTIN, SIG_IGN);
 	signal(SIGTTOU, SIG_IGN);
 
-	consolevent = static_cast<SDL_bool>(!M_CheckParm("-noconsole"));
-	framebuffer = static_cast<SDL_bool>(M_CheckParm("-framebuffer"));
+	consolevent = static_cast<bool>(!M_CheckParm("-noconsole"));
+	framebuffer = static_cast<bool>(M_CheckParm("-framebuffer"));
 
 	if (framebuffer)
-		consolevent = SDL_FALSE;
+		consolevent = false;
 
 	if (!consolevent) return;
 
 	if (isatty(STDIN_FILENO)!=1)
 	{
 		I_OutputMsg("stdin is not a tty, tty console mode failed\n");
-		consolevent = SDL_FALSE;
+		consolevent = false;
 		return;
 	}
 	memset(&tty_con, 0x00, sizeof(tty_con));
@@ -852,7 +854,7 @@ static void I_StartupConsole(void)
 	if (gotConsole)
 	{
 		SetConsoleTitleA("SRB2Kart Console");
-		consolevent = SDL_TRUE;
+		consolevent = true;
 	}
 
 	//Let get the real console HANDLE, because Mingw's Bash is bad!
@@ -885,7 +887,7 @@ static inline void I_StartupConsole(void)
 	framebuffer = M_CheckParm("-framebuffer");
 
 	if (framebuffer)
-		consolevent = SDL_FALSE;
+		consolevent = false;
 }
 static inline void I_ShutdownConsole(void){}
 #endif
@@ -1108,15 +1110,15 @@ void I_JoyScale4(void)
 }
 
 // Cheat to get the device index for a game controller handle
-INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev)
+INT32 I_GetJoystickDeviceIndex(SDL_Gamepad *dev)
 {
 	SDL_Joystick *joystick = NULL;
 
-	joystick = SDL_GameControllerGetJoystick(dev);
+	joystick = SDL_GetGamepadJoystick(dev);
 
 	if (joystick)
 	{
-		return SDL_JoystickInstanceID(joystick);
+		return SDL_GetJoystickID(joystick);
 	}
 
 	return -1;
@@ -1126,11 +1128,11 @@ INT32 I_GetJoystickDeviceIndexForPlayer(UINT8 pnum)
 {
 	SDL_Joystick *joystick = NULL;
 
-	joystick = SDL_GameControllerGetJoystick(JoyInfo[pnum].dev);
+	joystick = SDL_GetGamepadJoystick(JoyInfo[pnum].dev);
 
 	if (joystick)
 	{
-		return SDL_JoystickInstanceID(joystick);
+		return SDL_GetJoystickID(joystick);
 	}
 
 	return -1;
@@ -1240,7 +1242,7 @@ void I_ShutdownJoystick(UINT8 index)
 */
 static int joy_open(int playerIndex, int joyIndex)
 {
-	SDL_GameController *newdev = NULL;
+	SDL_Gamepad *newdev = NULL;
 	int num_joy = 0;
 
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == 0)
@@ -1248,14 +1250,7 @@ static int joy_open(int playerIndex, int joyIndex)
 		CONS_Printf(M_GetText("Joystick subsystem not started\n"));
 		return -1;
 	}
-	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
-	{
-		CONS_Printf(M_GetText("Game Controller subsystem not started\n"));
-		return -1;
-	}
-
-
-	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
+	if (SDL_WasInit(SDL_INIT_GAMEPAD) == 0)
 	{
 		CONS_Printf(M_GetText("Game Controller subsystem not started\n"));
 		return -1;
@@ -1264,7 +1259,7 @@ static int joy_open(int playerIndex, int joyIndex)
 	if (joyIndex <= 0)
 		return -1;
 
-	num_joy = SDL_NumJoysticks();
+	SDL_GetJoysticks(&num_joy);
 
 	if (num_joy == 0)
 	{
@@ -1272,7 +1267,7 @@ static int joy_open(int playerIndex, int joyIndex)
 		return -1;
 	}
 
-	newdev = SDL_GameControllerOpen(joyIndex-1);
+	newdev = SDL_OpenGamepad(joyIndex-1);
 
 	// Handle the edge case where the device <-> joystick index assignment can change due to hotplugging
 	// This indexing is SDL's responsibility and there's not much we can do about it.
@@ -1287,9 +1282,9 @@ static int joy_open(int playerIndex, int joyIndex)
 	if (JoyInfo[playerIndex].dev)
 	{
 		if (JoyInfo[playerIndex].dev == newdev // same device, nothing to do
-			|| (newdev == NULL && SDL_GameControllerGetAttached(JoyInfo[playerIndex].dev))) // we failed, but already have a working device
+			|| (newdev == NULL && SDL_GamepadConnected(JoyInfo[playerIndex].dev))) // we failed, but already have a working device
 		{
-			return SDL_CONTROLLER_AXIS_MAX;
+			return SDL_GAMEPAD_AXIS_COUNT;
 		}
 
 		// Else, we're changing devices, so send neutral joy events
@@ -1306,10 +1301,10 @@ static int joy_open(int playerIndex, int joyIndex)
 	}
 	else
 	{
-		CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick%d: %s\n"), playerIndex+1, SDL_GameControllerName(JoyInfo[playerIndex].dev));
+		CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick%d: %s\n"), playerIndex+1, SDL_GetGamepadName(JoyInfo[playerIndex].dev));
 
-		JoyInfo[playerIndex].axises = SDL_CONTROLLER_AXIS_MAX;
-		JoyInfo[playerIndex].buttons = SDL_CONTROLLER_BUTTON_MAX;
+		JoyInfo[playerIndex].axises = SDL_GAMEPAD_AXIS_COUNT;
+		JoyInfo[playerIndex].buttons = SDL_GAMEPAD_BUTTON_COUNT;
 		JoyInfo[playerIndex].hats = 1;
 		JoyInfo[playerIndex].balls = 0;
 
@@ -1324,7 +1319,7 @@ static int joy_open(int playerIndex, int joyIndex)
 //
 void I_InitJoystick(UINT8 index)
 {
-	SDL_GameController *newcontroller = NULL;
+	SDL_Gamepad *newcontroller = NULL;
 	UINT8 i;
 
 	//I_ShutdownJoystick();
@@ -1335,13 +1330,13 @@ void I_InitJoystick(UINT8 index)
 	{
 		char dbpath[1024];
 		sprintf(dbpath, "%s" PATHSEP "gamecontrollerdb.txt", srb2path);
-		SDL_GameControllerAddMappingsFromFile(dbpath);
+		SDL_AddGamepadMappingsFromFile(dbpath);
 	}
 
 	{
 		char dbpath[1024];
 		sprintf(dbpath, "%s" PATHSEP "gamecontrollerdb_user.txt", srb2home);
-		SDL_GameControllerAddMappingsFromFile(dbpath);
+		SDL_AddGamepadMappingsFromFile(dbpath);
 	}
 
 	if (M_CheckParm("-noxinput"))
@@ -1354,15 +1349,15 @@ void I_InitJoystick(UINT8 index)
 	{
 		CONS_Printf("I_InitJoystick()...\n");
 
-		if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) == -1)
+		if (!SDL_InitSubSystem(SDL_INIT_JOYSTICK))
 		{
 			CONS_Printf(M_GetText("Couldn't initialize joystick: %s\n"), SDL_GetError());
 			return;
 		}
 	}
-	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
+	if (SDL_WasInit(SDL_INIT_GAMEPAD) == 0)
 	{
-		if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER) == -1)
+		if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD))
 		{
 			CONS_Printf(M_GetText("Couldn't initialize gamepads: %s\n"), SDL_GetError());
 			return;
@@ -1370,9 +1365,9 @@ void I_InitJoystick(UINT8 index)
 	}
 
 
-	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
+	if (SDL_WasInit(SDL_INIT_GAMEPAD) == 0)
 	{
-		if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER) == -1)
+		if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD))
 		{
 			CONS_Printf(M_GetText("Couldn't initialize gamepads: %s\n"), SDL_GetError());
 			return;
@@ -1380,7 +1375,7 @@ void I_InitJoystick(UINT8 index)
 	}
 
 	if (cv_usejoystick[index].value)
-		newcontroller = SDL_GameControllerOpen(cv_usejoystick[index].value-1);
+		newcontroller = SDL_OpenGamepad(cv_usejoystick[index].value-1);
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
@@ -1454,10 +1449,10 @@ static void I_ShutdownInput(void)
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		I_ShutdownJoystick(i);
 
-	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == SDL_INIT_GAMECONTROLLER)
+	if (SDL_WasInit(SDL_INIT_GAMEPAD) == SDL_INIT_GAMEPAD)
 	{
 		CONS_Printf("Shutting down gamecontroller system\n");
-		SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
+		SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
 		I_OutputMsg("I_Joystick: SDL's Game Controller system has been shutdown\n");
 	}
 
@@ -1471,10 +1466,10 @@ static void I_ShutdownInput(void)
 
 INT32 I_NumJoys(void)
 {
-	INT32 numjoy = 0;
+	INT32 num_joy = 0;
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == SDL_INIT_JOYSTICK)
-		numjoy = SDL_NumJoysticks();
-	return numjoy;
+		SDL_GetJoysticks(&num_joy);
+	return num_joy;
 }
 
 static char joyname[255]; // joystick name is straight from the driver
@@ -1486,7 +1481,7 @@ const char *I_GetJoyName(INT32 joyindex)
 	joyindex--; //SDL's Joystick System starts at 0, not 1
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == SDL_INIT_JOYSTICK)
 	{
-		tempname = SDL_JoystickNameForIndex(joyindex);
+		tempname = SDL_GetJoystickNameForID(joyindex);
 		if (tempname)
 		{
 			strncpy(joyname, tempname, 254);
@@ -1504,14 +1499,14 @@ void I_GamepadRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength,
 	(void)high_strength;
 	(void)duration;
 #else
-	SDL_GameController *controller = JoyInfo[playernum].dev;
+	SDL_Gamepad *controller = JoyInfo[playernum].dev;
 
 	if (controller == NULL)
 	{
 		return;
 	}
 
-	SDL_GameControllerRumble(controller, low_strength, high_strength, duration);
+	SDL_RumbleGamepad(controller, low_strength, high_strength, duration);
 #endif
 }
 
@@ -1523,14 +1518,14 @@ void I_SetGamepadIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 b
 	(void)green;
 	(void)blue;
 #else
-	SDL_GameController *controller = JoyInfo[playernum].dev;
+	SDL_Gamepad *controller = JoyInfo[playernum].dev;
 
 	if (controller == NULL)
 	{
 		return;
 	}
 
-	SDL_GameControllerSetLED(controller, red, green, blue);
+	SDL_SetGamepadLED(controller, red, green, blue);
 #endif
 }
 
@@ -1927,10 +1922,7 @@ static void I_Fork(void)
 
 INT32 I_StartupSystem(void)
 {
-	SDL_version SDLcompiled;
-	SDL_version SDLlinked;
-	SDL_VERSION(&SDLcompiled)
-	SDL_GetVersion(&SDLlinked);
+	int SDLlinked = SDL_GetVersion();
 	I_StartupConsole();
 #ifdef NEWSIGNALHANDLER
 	// This is useful when debugging. It lets GDB attach to
@@ -1946,13 +1938,13 @@ INT32 I_StartupSystem(void)
 #endif
 	I_RegisterSignals();
 	I_OutputMsg("Compiled for SDL version: %d.%d.%d\n",
-	 SDLcompiled.major, SDLcompiled.minor, SDLcompiled.patch);
+	 SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_MICRO_VERSION);
 	I_OutputMsg("Linked with SDL version: %d.%d.%d\n",
-	 SDLlinked.major, SDLlinked.minor, SDLlinked.patch);
+	  SDL_VERSIONNUM_MAJOR(SDLlinked), SDL_VERSIONNUM_MINOR(SDLlinked), SDL_VERSIONNUM_MICRO(SDLlinked));
 #if SDL_VERSION_ATLEAST(2,0,22)
 	SDL_SetHint(SDL_HINT_APP_NAME, "BlanKart");
 #endif
-	if (SDL_Init(0) < 0)
+	if (!SDL_Init(0))
 		I_Error("SRB2Kart: SDL System Error: %s", SDL_GetError()); //Alam: Oh no....
 #ifndef NOMUMBLE
 	I_SetupMumble();

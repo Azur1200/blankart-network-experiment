@@ -21,7 +21,7 @@
 #ifdef HAVE_SDL
 #define _MATH_DEFINES_DEFINED
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #include "sdlmain.h"
 
@@ -78,7 +78,7 @@ boolean LoadGL(void)
 	if (M_CheckParm("-OGLlib") && M_IsNextParm())
 		OGLLibname = M_GetNextParm();
 
-	if (SDL_GL_LoadLibrary(OGLLibname) != 0)
+	if (!SDL_GL_LoadLibrary(OGLLibname))
 	{
 		CONS_Alert(CONS_ERROR, "Could not load OpenGL Library: %s\n"
 					"Falling back to Software mode.\n", SDL_GetError());
@@ -153,7 +153,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 	glanisotropicmode_cons_t[1].value = maximumAnisotropy;
 
-	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
+	SDL_GL_SetSwapInterval(cv_vidwait.value);
 
 	SetModelView(w, h);
 	SetStates();
@@ -177,7 +177,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	int sdlw, sdlh;
 	if (oldwaitvbl != waitvbl)
 	{
-		SDL_GL_SetSwapInterval(waitvbl ? 1 : 0);
+		SDL_GL_SetSwapInterval(waitvbl);
 	}
 
 	oldwaitvbl = waitvbl;
