@@ -932,14 +932,12 @@ static void Impl_HandleControllerButtonEvent(SDL_GamepadButtonEvent evt, Uint32 
 
 static void Impl_HandleControllerAddEvent(SDL_Event evt)
 {
-	INT32 i;
-	// OH BOY are you in for a good time! #abominationstation
+	UINT8 i;
 
 	SDL_Gamepad *newcontroller = SDL_OpenGamepad(evt.gdevice.which);
 
 	CONS_Debug(DBG_GAMELOGIC, "Controller device index %d added\n", evt.gdevice.which + 1);
 
-	////////////////////////////////////////////////////////////
 	// Because SDL's device index is unstable, we're going to cheat here a bit:
 	// For the first joystick setting that is NOT active:
 	//
@@ -948,8 +946,6 @@ static void Impl_HandleControllerAddEvent(SDL_Event evt)
 	// 2. Set OTHERS' cv_usejoystickX.value to THEIR new device index, because it likely changed
 	//    * If device doesn't exist, switch cv_usejoystick back to default value (.string)
 	//      * BUT: If that default index is being occupied, use ANOTHER cv_usejoystick's default value!
-	////////////////////////////////////////////////////////////
-
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		if (newcontroller && (!JoyInfo[i].dev || !SDL_GamepadConnected(JoyInfo[i].dev)))
@@ -974,10 +970,7 @@ static void Impl_HandleControllerAddEvent(SDL_Event evt)
 		}
 	}
 
-	////////////////////////////////////////////////////////////
 	// Was cv_usejoystick disabled in settings?
-	////////////////////////////////////////////////////////////
-
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		if (fastcmp(cv_usejoystick[i].string, "0") || !cv_usejoystick[i].value)
@@ -987,20 +980,15 @@ static void Impl_HandleControllerAddEvent(SDL_Event evt)
 		CV_SetValue(&cv_usejoystick[i], cv_usejoystick[i].value);
 	}
 
-	////////////////////////////////////////////////////////////
 	// Update all joysticks' init states
 	// This is a little wasteful since cv_usejoystick already calls this, but
 	// we need to do this in case CV_SetValue did nothing because the string was already same.
 	// if the device is already active, this should do nothing, effectively.
-	////////////////////////////////////////////////////////////
-
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		I_InitJoystick(i);
 		G_SetPlayerGamepadIndicatorColor(i, SKINCOLOR_NONE); // gotta update the controller led again on reconnect
 	}
-
-	////////////////////////////////////////////////////////////
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
@@ -1023,7 +1011,7 @@ static void Impl_HandleControllerAddEvent(SDL_Event evt)
 
 static void Impl_HandleControllerRemoveEvent(SDL_Event evt)
 {
-	INT32 i;
+	UINT8 i;
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
@@ -1034,21 +1022,15 @@ static void Impl_HandleControllerRemoveEvent(SDL_Event evt)
 		}
 	}
 
-	////////////////////////////////////////////////////////////
 	// Update the device indexes, because they likely changed
 	// * If device doesn't exist, switch cv_usejoystick back to default value (.string)
 	//   * BUT: If that default index is being occupied, use ANOTHER cv_usejoystick's default value!
-	////////////////////////////////////////////////////////////
-
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		I_UpdateJoystickDeviceIndex(i);
 	}
 
-	////////////////////////////////////////////////////////////
 	// Was cv_usejoystick disabled in settings?
-	////////////////////////////////////////////////////////////
-
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		if (fastcmp(cv_usejoystick[i].string, "0"))
@@ -1061,8 +1043,6 @@ static void Impl_HandleControllerRemoveEvent(SDL_Event evt)
 			CV_SetValue(&cv_usejoystick[i], cv_usejoystick[i].value);
 		}
 	}
-
-	////////////////////////////////////////////////////////////
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
