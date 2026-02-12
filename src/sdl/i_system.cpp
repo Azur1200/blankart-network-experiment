@@ -221,48 +221,6 @@ static char returnWadPath[256];
 
 static std::thread::id g_main_thread_id;
 
-void I_StoreExJoystick(SDL_Gamepad *dev)
-{
-	// ExJoystick is a massive hack to avoid needing to completely
-	// rewrite pretty much all of the controller support from scratch...
-
-	// Used in favor of most instances of SDL_CloseGamepad.
-	// If a joystick would've been discarded, then save it in an array,
-	// because we want it have it for the joystick input screen.
-
-	int index = 0;
-
-	if (dev == NULL)
-	{
-		// No joystick?
-		return;
-	}
-
-	index = SDL_GetJoystickID(SDL_GetGamepadJoystick(dev));
-
-	if (index >= MAXGAMEPADS || index < 0)
-	{
-		// Not enough space to save this joystick, completely discard.
-		SDL_CloseGamepad(dev);
-		return;
-	}
-
-	if (ExJoystick[index] == dev)
-	{
-		// No need to do anything else.
-		return;
-	}
-
-	if (ExJoystick[index] != NULL)
-	{
-		// Discard joystick in the old slot.
-		SDL_CloseGamepad(ExJoystick[index]);
-	}
-
-	// Keep for safe-keeping.
-	ExJoystick[index] = dev;
-}
-
 /**	\brief	The JoyReset function
 
 	\param	JoySet	Joystick info to reset
@@ -273,11 +231,11 @@ static void JoyReset(SDLJoyInfo_t *JoySet)
 {
 	if (JoySet->dev)
 	{
-		I_StoreExJoystick(JoySet->dev);
+		SDL_CloseGamepad(JoySet->dev);
 	}
 	JoySet->dev = NULL;
+	JoySet->id = -1;
 	JoySet->oldjoy = -1;
-	JoySet->axises = JoySet->buttons = JoySet->hats = JoySet->balls = 0;
 	//JoySet->scale
 }
 
@@ -1146,7 +1104,7 @@ void I_UpdateJoystickDeviceIndex(UINT8 player)
 
 	if (JoyInfo[player].dev)
 	{
-		cv_usejoystick[player].value = I_GetJoystickDeviceIndex(JoyInfo[player].dev) + 1;
+		cv_usejoystick[player].value = JoyInfo[player].id + 1;
 	}
 	else
 	{
@@ -1293,6 +1251,7 @@ static int joy_open(int playerIndex, int joyIndex)
 	}
 
 	JoyInfo[playerIndex].dev = newdev;
+	JoyInfo[playerIndex].id = I_GetJoystickDeviceIndex(JoyInfo[playerIndex].dev);
 
 	if (JoyInfo[playerIndex].dev == NULL)
 	{
@@ -1386,15 +1345,17 @@ void I_InitJoystick(UINT8 index)
 			break;
 	}
 
+	JoyInfo[index].id = I_GetJoystickDeviceIndex(JoyInfo[index].dev);
+
 	if (newcontroller && i < MAXSPLITSCREENPLAYERS) // don't override an active device
 	{
-		cv_usejoystick[index].value = I_GetJoystickDeviceIndex(JoyInfo[index].dev) + 1;
+		cv_usejoystick[index].value = JoyInfo[index].id + 1;
 	}
 	else if (newcontroller && joy_open(index, cv_usejoystick[index].value) != -1)
 	{
 		// SDL's device indexes are unstable, so cv_usejoystick may not match
 		// the actual device index. So let's cheat a bit and find the device's current index.
-		JoyInfo[index].oldjoy = I_GetJoystickDeviceIndex(JoyInfo[index].dev) + 1;
+		JoyInfo[index].oldjoy = JoyInfo[index].id + 1;
 		joystick_started[index] = 1;
 	}
 	else
@@ -1414,7 +1375,7 @@ void I_InitJoystick(UINT8 index)
 	if (i == MAXSPLITSCREENPLAYERS)
 	{
 		// Joystick didn't end up being used
-		I_StoreExJoystick(newcontroller);
+		SDL_CloseGamepad(newcontroller);
 	}
 }
 

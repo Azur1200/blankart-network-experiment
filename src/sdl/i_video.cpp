@@ -1058,7 +1058,7 @@ void I_GetEvent(void)
 					}
 
 					if (i == MAXSPLITSCREENPLAYERS)
-						I_StoreExJoystick(newcontroller);
+						SDL_CloseGamepad(newcontroller);
 				}
 				break;
 
