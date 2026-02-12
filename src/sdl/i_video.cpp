@@ -1606,7 +1606,9 @@ static void Impl_InitVideoSubSystem(void)
 {
 	if (video_init)
 		return;
-
+#if defined (__linux__)
+	SDL_SetHint("SDL_VIDEO_WAYLAND_SCALE_TO_DISPLAY", "1");
+#endif
 	if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
 	{
 		CONS_Printf(M_GetText("Couldn't initialize SDL's Video System: %s\n"), SDL_GetError());
