@@ -1313,6 +1313,9 @@ void I_InitJoystick(UINT8 index)
 	if (M_CheckParm("-nohidapi"))
 		SDL_SetHintWithPriority("SDL_JOYSTICK_HIDAPI", "0", SDL_HINT_OVERRIDE);
 
+	if (M_CheckParm("-nolibusb"))
+		SDL_SetHintWithPriority("SDL_HIDAPI_LIBUSB", "0", SDL_HINT_OVERRIDE);
+
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == 0)
 	{
 		CONS_Printf("I_InitJoystick()...\n");
@@ -1333,14 +1336,14 @@ void I_InitJoystick(UINT8 index)
 	}
 
 
-	if (SDL_WasInit(SDL_INIT_GAMEPAD) == 0)
-	{
-		if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD))
-		{
-			CONS_Printf(M_GetText("Couldn't initialize gamepads: %s\n"), SDL_GetError());
-			return;
-		}
-	}
+	// if (SDL_WasInit(SDL_INIT_GAMEPAD) == 0)
+	// {
+	// 	if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD))
+	// 	{
+	// 		CONS_Printf(M_GetText("Couldn't initialize gamepads: %s\n"), SDL_GetError());
+	// 		return;
+	// 	}
+	// }
 
 	joystick_list = SDL_GetJoysticks(&num_joy);
 
