@@ -9987,7 +9987,7 @@ static void K_RecoveryDash(player_t *player)
 
 			if (player->recoverydashcharge >= RECOVERYDASHCHARGETIME)
 			{
-				if (player->recoverydashcharge == RECOVERYDASHCHARGETIME)
+				if (player->recoverydashcharge == RECOVERYDASHCHARGETIME && P_IsObjectOnGround(player->mo))
 					S_StartSound(player->mo, sfx_s3ka2);
 
 				if (leveltime & 1)
