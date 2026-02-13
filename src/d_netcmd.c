@@ -557,7 +557,7 @@ consvar_t cv_kartstacking_heavydrop_handleboost = CVAR_INIT ("vanillaboost_heavy
 consvar_t cv_kartstacking_heavydrop_stackable = CVAR_INIT ("vanillaboost_heavydrop_stackable", "On", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
 consvar_t cv_kartstacking_heavydrop_uniform = CVAR_INIT ("vanillaboost_heavydrop_uniform", "No", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_YesNo, NULL);
 
-consvar_t cv_kartstacking_ssmt_speedboost = CVAR_INIT ("vanillaboost_ssmt_speedboost", "0.125", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_ssmt_speedboost = CVAR_INIT ("vanillaboost_ssmt_speedboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_ssmt_accelboost = CVAR_INIT ("vanillaboost_ssmt_accelboost", "10.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_ssmt_handleboost = CVAR_INIT ("vanillaboost_ssmt_handleboost", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
