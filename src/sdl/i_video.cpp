@@ -49,10 +49,6 @@
 
 #include "../doomdef.h"
 
-#ifdef _WIN32
-#include "SDL_syswm.h"
-#endif
-
 #include "../doomstat.h"
 #include "../p_setup.h"
 #include "../i_system.h"

@@ -78,9 +78,6 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include "i_ttf.h"
 #endif
 
-#include "SDL_cpuinfo.h"
-#define HAVE_SDLCPUINFO
-
 #if defined (__unix__) || defined(__APPLE__) || (defined (UNIXCOMMON) && !defined (__HAIKU__))
 #if defined (__linux__)
 #include <sys/vfs.h>
