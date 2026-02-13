@@ -2937,7 +2937,7 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->recoverydash) // SSMT Boost
 	{
-		K_DoBoost(player, SSMTSPEEDBOOST, SSMTACCELBOOST, SSMTHANDLEBOOST, false, true); // + 10% top speed, + ?% acceleration
+		K_DoBoost(player, SSMTSPEEDBOOST, SSMTACCELBOOST, SSMTHANDLEBOOST, false, false); // + 10% top speed, + ?% acceleration
 	}
 	else if (player->pflags & PF_RECOVERYSPIN)
 	{
