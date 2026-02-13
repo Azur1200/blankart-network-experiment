@@ -84,8 +84,8 @@ UINT8 ultimatemode = false;
 JoyType_t Joystick[MAXSPLITSCREENPLAYERS];
 
 // SRB2kart
-char gamedatafilename[64] = "kartdata.dat";
-char timeattackfolder[64] = "kart";
+char gamedatafilename[64] = "blandata.dat";
+char timeattackfolder[64] = "blan";
 char customversionstring[32] = "\0";
 
 static void G_DoCompleted(void);
@@ -942,7 +942,7 @@ static void G_SetSaveGameModified(void)
 
 	savemoddata = true;
 
-	strlcpy(gamedatafilename, "modkartdata.dat", sizeof (gamedatafilename));
+	strlcpy(gamedatafilename, "modblandata.dat", sizeof (gamedatafilename));
 	strlwr(gamedatafilename);
 
 	// Also save a time attack folder
