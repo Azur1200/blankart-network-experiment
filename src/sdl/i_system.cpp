@@ -1326,6 +1326,7 @@ void I_InitJoystick(UINT8 index)
 			return;
 		}
 	}
+
 	if (SDL_WasInit(SDL_INIT_GAMEPAD) == 0)
 	{
 		if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD))
@@ -1334,16 +1335,6 @@ void I_InitJoystick(UINT8 index)
 			return;
 		}
 	}
-
-
-	// if (SDL_WasInit(SDL_INIT_GAMEPAD) == 0)
-	// {
-	// 	if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD))
-	// 	{
-	// 		CONS_Printf(M_GetText("Couldn't initialize gamepads: %s\n"), SDL_GetError());
-	// 		return;
-	// 	}
-	// }
 
 	joystick_list = SDL_GetJoysticks(&num_joy);
 
