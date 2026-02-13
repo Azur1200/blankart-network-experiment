@@ -9907,6 +9907,11 @@ static void K_RecoveryDash(player_t *player)
 			player->pflags |= PF_RECOVERYSPIN;
 			player->forcedtopspeed = cv_kartrecoverydash_spinspeed.value + 8;
 			S_StartSound(player->mo, sfx_cdfm20);
+
+			player->driftboost = 0;
+			player->sneakertimer = 0;
+			player->ringboost = 0;
+			player->startboost = 0;
 		}
 
 		if (player->pflags & PF_RECOVERYSPIN)
@@ -9930,7 +9935,8 @@ static void K_RecoveryDash(player_t *player)
 			player->forcedtopspeed = cv_kartrecoverydash_spinspeed.value + 8;
 			if (P_IsObjectOnGround(player->mo))
 			{
-				player->recoverydashcharge += 1;
+				player->recoverydashcharge += player->flashing ? 2 : 1;
+
 				K_SpawnWipeoutTrail(player->mo, (player->recoverydashcharge < RECOVERYDASHWIPETIME));
 				
 				if (leveltime % 6 == 0)
