@@ -1067,13 +1067,9 @@ void I_JoyScale4(void)
 // Cheat to get the device index for a game controller handle
 INT32 I_GetJoystickID(SDL_Gamepad *dev)
 {
-	SDL_Joystick *joystick = NULL;
-
-	joystick = SDL_GetGamepadJoystick(dev);
-
-	if (joystick)
+	if (dev)
 	{
-		return SDL_GetJoystickID(joystick);
+		return SDL_GetGamepadID(dev);
 	}
 
 	return -1;
@@ -1081,13 +1077,9 @@ INT32 I_GetJoystickID(SDL_Gamepad *dev)
 
 INT32 I_GetJoystickIDForPlayer(UINT8 pnum)
 {
-	SDL_Joystick *joystick = NULL;
-
-	joystick = SDL_GetGamepadJoystick(JoyInfo[pnum].dev);
-
-	if (joystick)
+	if (JoyInfo[pnum].dev)
 	{
-		return SDL_GetJoystickID(joystick);
+		return SDL_GetGamepadID(JoyInfo[pnum].dev);
 	}
 
 	return -1;
@@ -1215,7 +1207,7 @@ static int joy_open(int playerIndex, int joyID)
 	if (joyID <= 0)
 		return -1;
 
-	joystick_list = SDL_GetJoysticks(&num_joy);
+	joystick_list = SDL_GetGamepads(&num_joy);
 
 	if (!joystick_list || num_joy == 0)
 	{
@@ -1336,7 +1328,7 @@ void I_InitJoystick(UINT8 index)
 		}
 	}
 
-	joystick_list = SDL_GetJoysticks(&num_joy);
+	joystick_list = SDL_GetGamepads(&num_joy);
 
 	if (joystick_list && cv_usejoystick[index].value > 0 && cv_usejoystick[index].value <= num_joy)
 	{
@@ -1439,8 +1431,8 @@ static void I_ShutdownInput(void)
 INT32 I_NumJoys(void)
 {
 	INT32 num_joy = 0;
-	if (SDL_WasInit(SDL_INIT_JOYSTICK) == SDL_INIT_JOYSTICK)
-		SDL_GetJoysticks(&num_joy);
+	if (SDL_WasInit(SDL_INIT_GAMEPAD) == SDL_INIT_GAMEPAD)
+		SDL_GetGamepads(&num_joy);
 	return num_joy;
 }
 
@@ -1454,12 +1446,12 @@ const char *I_GetJoyName(INT32 joyid)
 
 	joyname[0] = 0;
 
-	if (SDL_WasInit(SDL_INIT_JOYSTICK) == SDL_INIT_JOYSTICK)
+	if (SDL_WasInit(SDL_INIT_GAMEPAD) == SDL_INIT_GAMEPAD)
 	{
 		if (joyid <= 0)
 			return joyname;
 
-		joystick_list = SDL_GetJoysticks(&num_joy);
+		joystick_list = SDL_GetGamepads(&num_joy);
 
 		if (!joystick_list || joyid > num_joy)
 		{
@@ -1471,7 +1463,7 @@ const char *I_GetJoyName(INT32 joyid)
 		SDL_JoystickID joystick_id = joystick_list[joyid - 1];
 		SDL_free(joystick_list);
 
-		tempname = SDL_GetJoystickNameForID(joystick_id);
+		tempname = SDL_GetGamepadNameForID(joystick_id);
 		if (tempname)
 		{
 			strncpy(joyname, tempname, 254);
