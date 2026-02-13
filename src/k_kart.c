@@ -2941,13 +2941,13 @@ static void K_GetKartBoostPower(player_t *player)
 	}
 	else if (player->pflags & PF_RECOVERYSPIN)
 	{
-		if (player->flashing || player->recoverydashcharge >= TICRATE)
+		if (player->flashing || player->recoverydashcharge >= RECOVERYDASHCHARGETIME)
 		{
-			K_DoBoost(player, RECSPINSPEEDBOOSTHI, RECSPINACCELBOOSTHI, RECSPINHANDLEBOOSTHI, false, false); // + 500% acceleration, + 25% handling
+			K_DoBoost(player, RECSPINSPEEDBOOSTHI, RECSPINACCELBOOSTHI, RECSPINHANDLEBOOSTHI, false, false);
 		}
 		else
 		{
-			K_DoBoost(player, RECSPINSPEEDBOOSTLO, RECSPINACCELBOOSTLO, RECSPINHANDLEBOOSTLO, false, false);// + 200% acceleration, + 25% handling
+			K_DoBoost(player, RECSPINSPEEDBOOSTLO, RECSPINACCELBOOSTLO, RECSPINHANDLEBOOSTLO, false, false);
 		}
 	}
 
