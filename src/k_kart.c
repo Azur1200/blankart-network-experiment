@@ -9936,7 +9936,7 @@ static void K_RecoveryDash(player_t *player)
 			player->forcedtopspeed = cv_kartrecoverydash_spinspeed.value + 8;
 			if (P_IsObjectOnGround(player->mo))
 			{
-				player->recoverydashcharge += player->flashing ? 2 : 1;
+				player->recoverydashcharge += player->flashing ? ((leveltime & 1) + 1) : 1;
 
 				K_SpawnWipeoutTrail(player->mo, (player->recoverydashcharge < RECOVERYDASHWIPETIME));
 				
