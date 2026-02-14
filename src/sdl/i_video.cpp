@@ -366,7 +366,7 @@ static UINT32 VID_GetRefreshRate(void)
 		return 0;
 	}
 
-	m = SDL_GetCurrentDisplayMode(index);
+	m = SDL_GetDesktopDisplayMode(index);
 	if (m == NULL)
 	{
 		// Error has occurred.
