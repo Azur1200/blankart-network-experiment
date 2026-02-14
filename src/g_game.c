@@ -4992,7 +4992,7 @@ void G_NextLevel(void)
 	}
 
 	forceresetplayers = false;
-	if (cv_kartencore.value)
+	if (cv_kartencore.value == 1)
 		deferencoremode = true;
 
 	gameaction = ga_worlddone;
