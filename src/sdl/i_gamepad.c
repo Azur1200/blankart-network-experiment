@@ -352,7 +352,7 @@ const char *I_GetControllerName(INT32 joyid)
 {
 	if (SDL_WasInit(SDL_INIT_GAMEPAD) == SDL_INIT_GAMEPAD)
 	{
-		if (joyid <= 0)
+		if (joyid <= 0 || joyid > numcontrollers)
 			return NULL;
 
 		if (!controllerlist)

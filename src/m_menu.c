@@ -2619,7 +2619,7 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 		{
 			INT32 stick = cv_usecontroller[setupcontrolplayer-1].value;
 			const char *name = stick == 0 ? "None" : I_GetControllerName(stick);
-			if (!name) name = "?";
+			if (!name) name = "Unavailable";
 			w = V_StringWidth(name, vflags);
 			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
 				(BASEVIDWIDTH - x, y, vflags|highlightflags, name);
@@ -8443,7 +8443,6 @@ INT32 MR_SetupJoystickMenu(INT32 arg)
 	const INT32 numcontrollers = I_NumControllers();
 
 	INT32 i = 0;
-	INT32 j;
 
 	if (arg < 0 || arg >= MAXSPLITSCREENPLAYERS)
 		return false;
@@ -8468,7 +8467,7 @@ INT32 MR_SetupJoystickMenu(INT32 arg)
 		//
 		// Update cv_usecontroller.string here so that the user can
 		// properly change this value.
-		for (j = 0; j < MAXSPLITSCREENPLAYERS; j++)
+		for (INT32 j = 0; j < MAXSPLITSCREENPLAYERS; j++)
 		{
 			if (i == cv_usecontroller[j].value)
 				CV_SetValue(&cv_usecontroller[j], i);
