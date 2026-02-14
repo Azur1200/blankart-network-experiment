@@ -29,7 +29,9 @@ extern "C" {
 
 #define MOUSEBUTTONS 8
 
-#define JOYBUTTONS	SDL_GAMEPAD_BUTTON_COUNT // 26 buttons, to match SDL_GameControllerButton
+#define JOYBUTTONS	26 // 26 buttons, to match SDL_GameControllerButton
+#define JOY_DPAD_UP 11
+
 #define JOYANALOGS	4 // 4 analog stick axes (2 sticks * 2 axes)
 #define JOYTRIGGERS	2 // 2 trigger axes, positive only
 #define JOYAXISES	(JOYANALOGS + JOYTRIGGERS)
@@ -43,7 +45,7 @@ extern "C" {
 typedef enum
 {
 	KEY_JOY1 = NUMKEYS,
-	KEY_HAT1 = KEY_JOY1 + SDL_GAMEPAD_BUTTON_DPAD_UP, // macro for SDL_CONTROLLER_BUTTON_DPAD_UP
+	KEY_HAT1 = KEY_JOY1 + JOY_DPAD_UP,
 	KEY_AXIS1 = KEY_JOY1 + JOYBUTTONS,
 	JOYINPUTEND = KEY_AXIS1 + JOYAXISKEYS,
 
@@ -98,18 +100,18 @@ extern consvar_t cv_mousesens2, cv_mouseysens2;
 extern consvar_t cv_controlperkey;
 extern consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS];
-extern consvar_t cv_rumble[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_controllerrumble[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_rumblestrength[MAXSPLITSCREENPLAYERS];
-extern consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_controllerled[MAXSPLITSCREENPLAYERS];
 
 // current state of the keys: JOYAXISRANGE or 0 when boolean.
 // Or anything inbetween for analog values
-#define MAXDEVICES (MAXGAMEPADS + 1) // Gamepads + keyboard & mouse
+#define MAXDEVICES (MAXGAMEPADS + 10) // Gamepads + keyboard & mouse
+// the above is horrid since device tracks the gamepad id for whatever godawful reason
+// the gamepad instance id may be alot larger than (MAXGAMEPADS + 1)/"9"
 
 typedef INT32 inputpoll_t[MAXDEVICES][NUMINPUTS];
 extern inputpoll_t gamekeydown, gamekeydown_msec;
-
-extern boolean deviceResponding[MAXDEVICES];
 
 // several key codes (or virtual key) per game control
 extern INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][MAXINPUTMAPPING];
@@ -134,13 +136,16 @@ extern const INT32 gcl_full[num_gcl_full];
 // peace to my little coder fingers!
 // check a gamecontrol being active or not
 
-skincolornum_t G_GetSkinColorForGamepad(INT32 playernum);
-void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color);
-void G_DeviceLEDTick(void);
-void G_ResetDeviceLED(void);
-void G_ResetAllDeviceRumbles(void);
-void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
-void G_DeviceRumbleTick(void);
+#define INVALID_DEVICE -1
+#define KEYBOARD_MOUSE_DEVICE 0
+
+skincolornum_t G_GetSkinColorForController(INT32 playernum);
+void G_SetPlayerControllerIndicatorColor(INT32 playernum, UINT16 color);
+void G_ControllerLEDTick(void);
+void G_ResetControllerLED(void);
+void G_ResetAllControllerRumbles(void);
+void G_PlayerControllerRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
+void G_ControllerRumbleTick(void);
 
 INT32 G_GetDevicePlayer(INT32 deviceID);
 

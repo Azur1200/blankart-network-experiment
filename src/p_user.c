@@ -34,7 +34,7 @@
 #include "m_random.h"
 #include "m_misc.h"
 #include "i_video.h"
-#include "i_joy.h"
+#include "i_gamepad.h"
 #include "p_slopes.h"
 #include "p_spec.h"
 #include "r_splats.h"

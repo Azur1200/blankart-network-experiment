@@ -18,6 +18,7 @@
 #include "console.h"
 #include "command.h"
 #include "i_time.h"
+#include "i_gamepad.h"
 #include "i_system.h"
 #include "g_game.h"
 #include "hu_stuff.h"
@@ -382,31 +383,22 @@ consvar_t cv_usemouse = CVAR_INIT ("use_mouse", "Off", CV_SAVE|CV_CALL,usemouse_
 
 consvar_t cv_laglesscam = CVAR_INIT ("laglesscamera", "Off", CV_SAVE,CV_OnOff, NULL);
 
-consvar_t cv_usejoystick[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("use_joystick", "1", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick1),
-	CVAR_INIT ("use_joystick2", "2", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick2),
-	CVAR_INIT ("use_joystick3", "3", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick3),
-	CVAR_INIT ("use_joystick4", "4", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick4)
+consvar_t cv_usecontroller[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("use_joystick", "1", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitController1),
+	CVAR_INIT ("use_joystick2", "2", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitController2),
+	CVAR_INIT ("use_joystick3", "3", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitController3),
+	CVAR_INIT ("use_joystick4", "4", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitController4)
 };
 
 #if (defined (LJOYSTICK) || defined (HAVE_SDL))
-consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("padscale", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale),
-	CVAR_INIT ("padscale2", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale2),
-	CVAR_INIT ("padscale3", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale3),
-	CVAR_INIT ("padscale4", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale4)
+consvar_t cv_controllerscale[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("padscale", "1", CV_SAVE|CV_CALL, NULL, I_ControllerScale),
+	CVAR_INIT ("padscale2", "1", CV_SAVE|CV_CALL, NULL, I_ControllerScale2),
+	CVAR_INIT ("padscale3", "1", CV_SAVE|CV_CALL, NULL, I_ControllerScale3),
+	CVAR_INIT ("padscale4", "1", CV_SAVE|CV_CALL, NULL, I_ControllerScale4)
 };
-
-#ifdef LJOYSTICK
-consvar_t cv_joyport[MAXSPLITSCREENPLAYERS] = { //Alam: for later
-	CVAR_INIT ("padport", "/dev/js0", CV_SAVE, joyport_cons_t, NULL),
-	CVAR_INIT ("padport2", "/dev/js0", CV_SAVE, joyport_cons_t, NULL),
-	CVAR_INIT ("padport3", "/dev/js0", CV_SAVE, joyport_cons_t, NULL),
-	CVAR_INIT ("padport4", "/dev/js0", CV_SAVE, joyport_cons_t, NULL)
-};
-#endif
 #else
-consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS] = { //Alam: Dummy for save
+consvar_t cv_controllerscale[MAXSPLITSCREENPLAYERS] = { //Alam: Dummy for save
 	CVAR_INIT ("padscale", "1", CV_SAVE|CV_HIDEN, NULL, NULL),
 	CVAR_INIT ("padscale2", "1", CV_SAVE|CV_HIDEN, NULL, NULL),
 	CVAR_INIT ("padscale3", "1", CV_SAVE|CV_HIDEN, NULL, NULL),
@@ -1385,9 +1377,9 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_deadzonestyle[i]);
 		CV_RegisterVar(&cv_litesteer[i]);
 		CV_RegisterVar(&cv_turnsmooth[i]);
-		CV_RegisterVar(&cv_rumble[i]);
+		CV_RegisterVar(&cv_controllerrumble[i]);
 		CV_RegisterVar(&cv_rumblestrength[i]);
-		CV_RegisterVar(&cv_gamepadled[i]);
+		CV_RegisterVar(&cv_controllerled[i]);
 	}
 
 	// filesrch.c
@@ -1408,11 +1400,8 @@ void D_RegisterClientCommands(void)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		CV_RegisterVar(&cv_usejoystick[i]);
-		CV_RegisterVar(&cv_joyscale[i]);
-#ifdef LJOYSTICK
-		CV_RegisterVar(&cv_joyport[i]);
-#endif
+		CV_RegisterVar(&cv_usecontroller[i]);
+		CV_RegisterVar(&cv_controllerscale[i]);
 	}
 
 	// s_sound.c
@@ -4080,7 +4069,7 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 	}
 
 	I_UpdateMouseGrab();
-	G_ResetAllDeviceRumbles();
+	G_ResetAllControllerRumbles();
 }
 
 static void Command_ReplayMarker(void)

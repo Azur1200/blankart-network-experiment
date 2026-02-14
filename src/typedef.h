@@ -138,7 +138,7 @@ TYPEDEF (mapsearchfreq_t);
 // hu_stuff.h
 TYPEDEF (playersort_t);
 
-// i_joy.h
+// i_gamepad.h
 TYPEDEF (JoyType_t);
 
 // i_net.h

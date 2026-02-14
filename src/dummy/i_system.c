@@ -58,20 +58,20 @@ void I_Tactile2(FFType Type, const JoyFF_t *Effect)
 	(void)Effect;
 }
 
-void I_JoyScale(void){}
+void I_ControllerScale(void){}
 
-void I_JoyScale2(void){}
+void I_ControllerScale2(void){}
 
-void I_InitJoystick(void){}
+void I_InitController(void){}
 
-void I_InitJoystick2(void){}
+void I_InitController2(void){}
 
-INT32 I_NumJoys(void)
+INT32 I_NumControllers(void)
 {
 	return 0;
 }
 
-const char *I_GetJoyName(INT32 joyid)
+const char *I_GetControllerName(INT32 joyid)
 {
 	(void)joyid;
 	return NULL;

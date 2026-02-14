@@ -4,6 +4,7 @@ target_sources(BLANKART PRIVATE
 	ogl_sdl.c
 	i_threads.c
 	i_net.c
+	i_gamepad.c
 	i_system.cpp
 	i_main.c
 	i_video.cpp

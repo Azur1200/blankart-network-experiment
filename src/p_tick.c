@@ -796,7 +796,7 @@ void P_Ticker(boolean run)
 		// Apply rumble to local players
 		if (!demo.playback)
 		{
-			G_DeviceRumbleTick();
+			G_ControllerRumbleTick();
 		}
 
 		// run all the bot tickers

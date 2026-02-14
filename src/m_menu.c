@@ -78,7 +78,7 @@
 #include "r_fps.h"
 #include "m_easing.h"
 
-#include "i_joy.h" // for joystick menu controls
+#include "i_gamepad.h" // for joystick menu controls
 
 // Condition Sets
 #include "m_cond.h"
@@ -531,7 +531,7 @@ consvar_t cv_dummyfollower = CVAR_INIT ("dummyfollower", "-1", CV_HIDEN, dummyfo
 SINT8 dummycolorplayer = 0;
 static void SetDummyColorPlayer(void)
 {
-	G_SetPlayerGamepadIndicatorColor(dummycolorplayer, (UINT16)cv_dummycolor.value);
+	G_SetPlayerControllerIndicatorColor(dummycolorplayer, (UINT16)cv_dummycolor.value);
 }
 
 consvar_t cv_dummycolor = CVAR_INIT ("dummycolor", "0", CV_HIDEN|CV_CALL|CV_NOINIT, dummycolor_cons_t, SetDummyColorPlayer);
@@ -2617,8 +2617,8 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 		}
 		else if (item->submenu == MN_OP_JOYSTICKSET) // gamepad select
 		{
-			INT32 stick = cv_usejoystick[setupcontrolplayer-1].value;
-			const char *name = stick == 0 ? "None" : I_GetJoyName(stick);
+			INT32 stick = cv_usecontroller[setupcontrolplayer-1].value;
+			const char *name = stick == 0 ? "None" : I_GetControllerName(stick);
 			if (!name) name = "?";
 			w = V_StringWidth(name, vflags);
 			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
@@ -8148,7 +8148,7 @@ INT32 MR_SetupMultiPlayer(INT32 arg)
 	gridcss_skinmemory = cv_chooseskin.value;
 	CV_SetValue(&cv_dummyfollower, cv_follower[arg].value);
 	CV_SetValue(&cv_dummycolor, cv_playercolor[arg].value);
-	G_SetPlayerGamepadIndicatorColor(arg, cv_playercolor[arg].value);
+	G_SetPlayerControllerIndicatorColor(arg, cv_playercolor[arg].value);
 	dummycolorplayer = arg;
 
 	Skinsort_option_Onchange();
@@ -8419,17 +8419,19 @@ void MD_DrawJoystick(void)
 {
 	INT32 i;
 	INT32 compareval;
-
+#ifdef JOYSTICK_HOTPLUG
+	const INT32 numcontrollers = I_NumControllers();
+#endif
 	MD_DrawGenericMenu();
 
 	for (i = 0; i <= MAXGAMEPADS; i++)
 	{
 #ifdef JOYSTICK_HOTPLUG
-		if (atoi(cv_usejoystick[setupcontrolplayer-1].string) > numcontrollers)
-			compareval = atoi(cv_usejoystick[setupcontrolplayer-1].string);
+		if (atoi(cv_usecontroller[setupcontrolplayer-1].string) > numcontrollers)
+			compareval = atoi(cv_usecontroller[setupcontrolplayer-1].string);
 		else
 #endif
-			compareval = cv_usejoystick[setupcontrolplayer-1].value;
+			compareval = cv_usecontroller[setupcontrolplayer-1].value;
 
 		V_DrawString(menudefs[MN_OP_JOYSTICKSET].x, menudefs[MN_OP_JOYSTICKSET].y + 16*i, ((i == compareval) ? V_GREENMAP : 0)|MENUCAPS, joystickInfo[i]);
 	}
@@ -8438,7 +8440,7 @@ void MD_DrawJoystick(void)
 INT32 MR_SetupJoystickMenu(INT32 arg)
 {
 	const char *joyNA = "Unavailable";
-	const INT32 n = numcontrollers;
+	const INT32 numcontrollers = I_NumControllers();
 
 	INT32 i = 0;
 	INT32 j;
@@ -8452,24 +8454,24 @@ INT32 MR_SetupJoystickMenu(INT32 arg)
 
 	for (i = 1; i <= MAXGAMEPADS; i++)
 	{
-		if (i <= n && (I_GetJoyName(i)) != NULL)
-			strncpy(joystickInfo[i], I_GetJoyName(i), 28);
+		if (i <= numcontrollers && (I_GetControllerName(i)) != NULL)
+			strncpy(joystickInfo[i], I_GetControllerName(i), 28);
 		else
 			strcpy(joystickInfo[i], joyNA);
 
 #ifdef JOYSTICK_HOTPLUG
-		// We use cv_usejoystick.string as the USER-SET var
-		// and cv_usejoystick.value as the INTERNAL var
+		// We use cv_usecontroller.string as the USER-SET var
+		// and cv_usecontroller.value as the INTERNAL var
 		//
-		// In practice, if cv_usejoystick.string == 0, this overrides
-		// cv_usejoystick.value and always disables
+		// In practice, if cv_usecontroller.string == 0, this overrides
+		// cv_usecontroller.value and always disables
 		//
-		// Update cv_usejoystick.string here so that the user can
+		// Update cv_usecontroller.string here so that the user can
 		// properly change this value.
 		for (j = 0; j < MAXSPLITSCREENPLAYERS; j++)
 		{
-			if (i == cv_usejoystick[j].value)
-				CV_SetValue(&cv_usejoystick[j], i);
+			if (i == cv_usecontroller[j].value)
+				CV_SetValue(&cv_usecontroller[j], i);
 		}
 #endif
 	}
@@ -8483,29 +8485,29 @@ INT32 MR_AssignJoystick(INT32 arg)
 
 #ifdef JOYSTICK_HOTPLUG
 	INT32 oldchoice, oldstringchoice;
-	INT32 numjoys = numcontrollers;
+	const INT32 numcontrollers = I_NumControllers();
 
-	oldchoice = oldstringchoice = atoi(cv_usejoystick[p].string) > numjoys ? atoi(cv_usejoystick[p].string) : cv_usejoystick[p].value;
-	CV_SetValue(&cv_usejoystick[p], arg);
+	oldchoice = oldstringchoice = atoi(cv_usecontroller[p].string) > numcontrollers ? atoi(cv_usecontroller[p].string) : cv_usecontroller[p].value;
+	CV_SetValue(&cv_usecontroller[p], arg);
 
-	// Just in case last-minute changes were made to cv_usejoystick.value,
+	// Just in case last-minute changes were made to cv_usecontroller.value,
 	// update the string too
-	// But don't do this if we're intentionally setting higher than numjoys
-	if (arg <= numjoys)
+	// But don't do this if we're intentionally setting higher than numcontrollers
+	if (arg <= numcontrollers)
 	{
-		CV_SetValue(&cv_usejoystick[p], cv_usejoystick[p].value);
+		CV_SetValue(&cv_usecontroller[p], cv_usecontroller[p].value);
 
 		// reset this so the comparison is valid
-		if (oldchoice > numjoys)
-			oldchoice = cv_usejoystick[p].value;
+		if (oldchoice > numcontrollers)
+			oldchoice = cv_usecontroller[p].value;
 
 		if (oldchoice != arg)
 		{
-			if (arg && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
-				CV_SetValue(&cv_usejoystick[p], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
+			if (arg && oldstringchoice > numcontrollers) // if we did not select "None", we likely selected a used device
+				CV_SetValue(&cv_usecontroller[p], (oldstringchoice > numcontrollers ? oldstringchoice : oldchoice));
 
 			if (oldstringchoice ==
-				(atoi(cv_usejoystick[p].string) > numjoys ? atoi(cv_usejoystick[p].string) : cv_usejoystick[p].value))
+				(atoi(cv_usecontroller[p].string) > numcontrollers ? atoi(cv_usecontroller[p].string) : cv_usecontroller[p].value))
 				M_StartMessage("This joystick is used by another\n"
 							   "player. Reset the joystick\n"
 							   "for that player first.\n\n"
@@ -8513,7 +8515,7 @@ INT32 MR_AssignJoystick(INT32 arg)
 		}
 	}
 #else
-	CV_SetValue(&cv_usejoystick[p], arg);
+	CV_SetValue(&cv_usecontroller[p], arg);
 #endif
 	return true;
 }
@@ -8540,8 +8542,8 @@ INT32 MR_SetupControlsMenu(INT32 arg)
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEAZS", &cv_deadzonestyle[arg]);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "TURNSMOOTHING", &cv_turnsmooth[arg]);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "LITESTEER", &cv_litesteer[arg]);
-	M_SetItemCvar(MN_OP_CHANGECONTROLS, "LEDCOLOR", &cv_gamepadled[arg]);
-	M_SetItemCvar(MN_OP_CHANGECONTROLS, "RUMBLE", &cv_rumble[arg]);
+	M_SetItemCvar(MN_OP_CHANGECONTROLS, "LEDCOLOR", &cv_controllerled[arg]);
+	M_SetItemCvar(MN_OP_CHANGECONTROLS, "RUMBLE", &cv_controllerrumble[arg]);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "RUMBLESTR", &cv_rumblestrength[arg]);
 
 	M_SetItemVisible(MN_OP_CHANGECONTROLS, "TALK", player1); // Chat
@@ -8683,7 +8685,7 @@ static void M_ResetControlsResponse(INT32 ch)
 	G_ResetControls(p);
 
 	// Setup gamepad option defaults (yucky)
-	CV_StealthSet(&cv_usejoystick[p], cv_usejoystick[p].defaultvalue);
+	CV_StealthSet(&cv_usecontroller[p], cv_usecontroller[p].defaultvalue);
 
 	S_StartSound(NULL, sfx_s224);
 }

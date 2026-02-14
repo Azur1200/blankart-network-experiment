@@ -1793,8 +1793,8 @@
 		841777A5085A1200000C01D8 = {
 			fileEncoding = 30;
 			isa = PBXFileReference;
-			name = i_joy.h;
-			path = ../../i_joy.h;
+			name = i_gamepad.h;
+			path = ../../i_gamepad.h;
 			refType = 2;
 		};
 		841777A6085A1200000C01D8 = {

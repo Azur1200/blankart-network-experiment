@@ -58,7 +58,7 @@
 #include "../d_main.h"
 #include "../s_sound.h"
 #include "../i_sound.h"  	// midi pause/unpause
-#include "../i_joy.h"
+#include "../i_gamepad.h"
 #include "../st_stuff.h"
 #include "../hu_stuff.h"
 #include "../g_game.h"
@@ -601,11 +601,6 @@ static void Impl_SetFocused(boolean focused)
 	}
 }
 
-static inline void SDLJoyRemap(event_t *event)
-{
-	(void)event;
-}
-
 static INT32 SDLJoyAxis(const Sint16 axis, UINT8 pid)
 {
 	// -32768 to 32767
@@ -623,12 +618,7 @@ static INT32 SDLJoyAxis(const Sint16 axis, UINT8 pid)
 	}
 	else
 	{
-		raxis = (abs(JoyInfo[pid].scale) > 1) ? ((raxis / JoyInfo[pid].scale) * JoyInfo[pid].scale) : raxis;
-
-#ifdef SDL_JDEADZONE
-		if (-SDL_JDEADZONE <= raxis && raxis <= SDL_JDEADZONE)
-			raxis = 0;
-#endif
+		raxis = (abs(controllerInfo[pid].scale) > 1) ? ((raxis / controllerInfo[pid].scale) * controllerInfo[pid].scale) : raxis;
 	}
 
 	return raxis;
@@ -844,6 +834,61 @@ static void Impl_HandleMouseWheelEvent(SDL_MouseWheelEvent evt)
 	}
 }
 
+// ill put this here if blan wants this
+// allows controller dpads to scroll through menus
+/*
+static UINT8 hatrepeattimer[MAXSPLITSCREENPLAYERS];
+#define HATREPEATDELAY 19
+
+void I_HandleControllerHatRepeat(void)
+{
+	// why bother if theres no controllers?
+	if (numcontrollers == 0)
+		return;
+
+	event_t event = {ev_keydown, 0, 0, 0};
+
+	static const SDL_GameControllerButton hatbutt[4] =
+	{
+		SDL_CONTROLLER_BUTTON_DPAD_UP,
+		SDL_CONTROLLER_BUTTON_DPAD_DOWN,
+		SDL_CONTROLLER_BUTTON_DPAD_LEFT,
+		SDL_CONTROLLER_BUTTON_DPAD_RIGHT
+	};
+
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		if (!cv_usejoystick[i].value)
+			continue;
+
+		SDL_GameController *controller = JoyInfo[i].dev;
+
+		if (!controller)
+			continue;
+
+		for (UINT8 h = 0; h < JOYHATS; h++)
+		{
+			if (SDL_GameControllerGetButton(controller, hatbutt[h]))
+			{
+				if (hatrepeattimer[i] < HATREPEATDELAY)
+				{
+					hatrepeattimer[i]++;
+				}
+				else if (hatrepeattimer[i] == HATREPEATDELAY)
+				{
+					event.data1 = KEY_HAT1 + (i * JOYHATS) + h;
+					D_PostEvent(&event);
+				}
+
+				return;
+			}
+		}
+
+		hatrepeattimer[i] = 0;
+	}
+}
+*/
+
 static void Impl_HandleControllerAxisEvent(SDL_GamepadAxisEvent evt)
 {
 	event_t event;
@@ -884,7 +929,7 @@ static void Impl_HandleControllerAxisEvent(SDL_GamepadAxisEvent evt)
 	}
 
 	//value
-	event.data2 = SDLJoyAxis(evt.value, evt.which);
+	event.data2 = SDLJoyAxis(evt.value, G_GetDevicePlayer(event.device));
 
 	D_PostEvent(&event);
 }
@@ -924,8 +969,6 @@ static void Impl_HandleControllerButtonEvent(SDL_GamepadButtonEvent evt, Uint32 
 		return;
 	}
 
-	SDLJoyRemap(&event);
-
 	if (event.type != ev_console)
 	{
 		D_PostEvent(&event);
@@ -937,79 +980,25 @@ static void Impl_HandleControllerAddEvent(SDL_Event evt)
 	UINT8 i;
 	SDL_JoystickID joystick_id = evt.gdevice.which;
 
-	SDL_Gamepad *newcontroller = SDL_OpenGamepad(joystick_id);
-
-	CONS_Debug(DBG_GAMELOGIC, "Controller device index %d added\n", joystick_id + 1);
-
-	// Because SDL's device index is unstable, we're going to cheat here a bit:
-	// For the first joystick setting that is NOT active:
-	//
-	// 1. Set cv_usejoystickX.value to the new device index (this does not change what is written to config.cfg)
-	//
-	// 2. Set OTHERS' cv_usejoystickX.value to THEIR new device index, because it likely changed
-	//    * If device doesn't exist, switch cv_usejoystick back to default value (.string)
-	//      * BUT: If that default index is being occupied, use ANOTHER cv_usejoystick's default value!
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	if (joystick_id == 0)
 	{
-		if (newcontroller && (!JoyInfo[i].dev || !SDL_GamepadConnected(JoyInfo[i].dev)))
-		{
-			UINT8 j;
-
-			for (j = 0; j < MAXSPLITSCREENPLAYERS; j++)
-			{
-				if (i == j)
-					continue;
-
-				if (JoyInfo[j].dev == newcontroller)
-					break;
-			}
-
-			if (j == MAXSPLITSCREENPLAYERS)
-			{
-				// ensures we aren't overriding a currently active device
-				cv_usejoystick[i].value = joystick_id + 1;
-				I_UpdateJoystickDeviceIndices(0);
-			}
-		}
-	}
-
-	// Was cv_usejoystick disabled in settings?
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		if (fastcmp(cv_usejoystick[i].string, "0") || !cv_usejoystick[i].value)
-			cv_usejoystick[i].value = 0;
-		else if (atoi(cv_usejoystick[i].string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-			&& cv_usejoystick[i].value) // update the cvar ONLY if a device exists
-		CV_SetValue(&cv_usejoystick[i], cv_usejoystick[i].value);
-	}
-
-	// Update all joysticks' init states
-	// This is a little wasteful since cv_usejoystick already calls this, but
-	// we need to do this in case CV_SetValue did nothing because the string was already same.
-	// if the device is already active, this should do nothing, effectively.
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		I_InitJoystick(i);
-		G_SetPlayerGamepadIndicatorColor(i, SKINCOLOR_NONE); // gotta update the controller led again on reconnect
+		CONS_Debug(DBG_GAMELOGIC, "Invalid Controller: %s\n", SDL_GetError());
+		return;
 	}
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-		CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
+	{
+		I_InitController(i);
+		G_SetPlayerControllerIndicatorColor(i, SKINCOLOR_NONE); // gotta update the controller led again on reconnect
+	}
+
+	I_UpdateControllerList();
 
 	// update the menu
 	if (menustack[0] == MN_OP_JOYSTICKSET)
 		MR_SetupJoystickMenu(0);
 
-	numcontrollers = I_NumJoys();
-
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		if (JoyInfo[i].dev == newcontroller)
-			break;
-	}
-
-	if (i == MAXSPLITSCREENPLAYERS)
-		SDL_CloseGamepad(newcontroller);
+	CONS_Debug(DBG_GAMELOGIC, "Controller device index %d added\n", joystick_id);
 }
 
 static void Impl_HandleControllerRemoveEvent(SDL_Event evt)
@@ -1017,44 +1006,26 @@ static void Impl_HandleControllerRemoveEvent(SDL_Event evt)
 	UINT8 i;
 	SDL_JoystickID joystick_id = evt.gdevice.which;
 
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	if (joystick_id == 0)
 	{
-		if (JoyInfo[i].dev && JoyInfo[i].id == joystick_id && !SDL_GamepadConnected(JoyInfo[i].dev))
-		{
-			CONS_Debug(DBG_GAMELOGIC, "Joystick%d removed, device index: %d\n", i+1, joystick_id);
-			I_ShutdownJoystick(i);
-		}
-	}
-
-	// Update the device indexes, because they likely changed
-	// * If device doesn't exist, switch cv_usejoystick back to default value (.string)
-	//   * BUT: If that default index is being occupied, use ANOTHER cv_usejoystick's default value!
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		I_UpdateJoystickDeviceIndex(i);
-	}
-
-	// Was cv_usejoystick disabled in settings?
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		if (fastcmp(cv_usejoystick[i].string, "0"))
-		{
-			cv_usejoystick[i].value = 0;
-		}
-		else if (atoi(cv_usejoystick[i].string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-			&& cv_usejoystick[i].value) // update the cvar ONLY if a device exists
-		{
-			CV_SetValue(&cv_usejoystick[i], cv_usejoystick[i].value);
-		}
+		CONS_Debug(DBG_GAMELOGIC, "Invalid Controller: %s\n", SDL_GetError());
+		return;
 	}
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-		CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
+	{
+		if (controllerInfo[i].dev && (controllerInfo[i].id == (INT32)joystick_id) && !SDL_GamepadConnected(controllerInfo[i].dev))
+		{
+			CONS_Debug(DBG_GAMELOGIC, "Controller for Player %d removed, device index: %d\n", i+1, joystick_id);
+			I_ShutdownController(i);
+		}
+	}
+
+	I_UpdateControllerList();
 
 	// update the menu
 	if (menustack[0] == MN_OP_JOYSTICKSET)
 		MR_SetupJoystickMenu(0);
-	numcontrollers = I_NumJoys();
 }
 
 void I_GetEvent(void)
