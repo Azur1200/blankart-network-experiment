@@ -56,6 +56,8 @@ typedef struct SDLJoyInfo_s
 	boolean hasrumble;
 	// RGB LED Support
 	boolean hasrgbled;
+	// you can pry my nintendo button layout out of my cold dead hands, SDL3
+	boolean flipbuttons;
 } controllerinfo_t;
 
 /**	\brief SDL info about controllers

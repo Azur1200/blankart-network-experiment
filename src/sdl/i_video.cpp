@@ -969,6 +969,25 @@ static void Impl_HandleControllerButtonEvent(SDL_GamepadButtonEvent evt, Uint32 
 		return;
 	}
 
+	switch (evt.button)
+	{
+	case SDL_GAMEPAD_BUTTON_SOUTH:
+	case SDL_GAMEPAD_BUTTON_EAST:
+	case SDL_GAMEPAD_BUTTON_WEST:
+	case SDL_GAMEPAD_BUTTON_NORTH:
+		for (INT32 i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		{
+			if (controllerInfo[i].dev != NULL && controllerInfo[i].id == evt.which && controllerInfo[i].flipbuttons)
+			{
+				event.data1 ^= 1; // lol
+				break;
+			}
+		}
+		break;
+	default:
+		break;
+	}
+
 	if (event.type != ev_console)
 	{
 		D_PostEvent(&event);

@@ -218,6 +218,7 @@ void I_InitController(UINT8 playernum)
 	SDL_PropertiesID controllerproperties = SDL_GetGamepadProperties(newcontroller);
 	controller->hasrumble = SDL_GetBooleanProperty(controllerproperties, SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN, false);
 	controller->hasrgbled = SDL_GetBooleanProperty(controllerproperties, SDL_PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN, false);
+	controller->flipbuttons = SDL_GetGamepadButtonLabel(newcontroller, SDL_GAMEPAD_BUTTON_SOUTH) == SDL_GAMEPAD_BUTTON_LABEL_B;
 }
 
 void I_InitController1(void)
