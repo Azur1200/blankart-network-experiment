@@ -106,7 +106,7 @@ extern consvar_t cv_controllerled[MAXSPLITSCREENPLAYERS];
 
 // current state of the keys: JOYAXISRANGE or 0 when boolean.
 // Or anything inbetween for analog values
-#define MAXDEVICES (MAXGAMEPADS + 10) // Gamepads + keyboard & mouse
+#define MAXDEVICES (MAXGAMEPADS + 1) // Gamepads + keyboard & mouse
 // the above is horrid since device tracks the gamepad id for whatever godawful reason
 // the gamepad instance id may be alot larger than (MAXGAMEPADS + 1)/"9"
 
