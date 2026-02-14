@@ -1790,7 +1790,7 @@ static int lib_hudaddtimer(lua_State *L)
 
 	INT32 anim_duration = luaL_optinteger(L, 4, 1);
 
-	UINT8 flags = (UINT8)luaL_optinteger(L, 5, 0);
+	UINT32 flags = luaL_optinteger(L, 5, 0);
 
 	boolean unsorted = lua_toboolean(L, 6);
 

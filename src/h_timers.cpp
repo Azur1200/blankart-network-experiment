@@ -44,7 +44,7 @@ typedef struct itimer_s
 	INT32 timer;							// current time
 	std::vector<patch_t*> patches;	// timer graphics (small)
 	INT32 anim_frames = 1;					// tic duration for each graphic
-	UINT8 flags = 0;						// settings for timer
+	UINT32 flags = 0;						// settings for timer
 	lua_Integer timer_func_ref = LUA_NOREF; // if set, calls a function from registry to get timer value
 	boolean timer_func_error = false;       // don't print error every frame
 } itimer_t;
@@ -143,7 +143,7 @@ void K_AddItemTimerEx(
 	const char **patches,
 	INT32 patches_size,
 	INT32 anim_duration,
-	UINT8 flags, boolean unsorted)
+	UINT32 flags, boolean unsorted)
 {
 	itimer_t t; // woo yeah baby
 
@@ -307,7 +307,7 @@ void K_DisplayItemTimers(void)
 			std::max<UINT16>(stplyr->spinouttimer, stplyr->wipeoutslow),
 			{qche("K_TISPN1"), qche("K_TISPN2"), qche("K_TISPN3"), qche("K_TISPN4")},
 			3,
-			TIMER_BAD,
+			TIMER_RED,
 		}
 	);
 	timers.push_back(
@@ -316,7 +316,7 @@ void K_DisplayItemTimers(void)
 			std::max<INT16>(0, -stplyr->growshrinktimer),
 			{qche("K_TISHRK")},
 			1,
-			TIMER_BAD,
+			static_cast<uint32_t>((K_IsAltShrunk(stplyr) ? 0 : TIMER_RED)),
 		}
 	);
 	timers.push_back(
@@ -325,7 +325,7 @@ void K_DisplayItemTimers(void)
 			(INT32)spbTimers[stplyr-players],
 			{qche("K_TISPB")},
 			1,
-			(UINT8)((stplyr->position == K_GetBestRank()) ? TIMER_BAD : 0),
+			static_cast<uint32_t>((stplyr->position == K_GetBestRank()) ? TIMER_RED : 0),
 		}
 	);
 	// Same with boost stacks
@@ -335,7 +335,7 @@ void K_DisplayItemTimers(void)
 			K_StackingActive() ? stplyr->numboosts : 0,
 			{qche("K_TISRK1"), qche("K_TISRK2")},
 			2,
-			TIMER_BAD,
+			TIMER_GREEN|TIMER_COUNTER,
 		}
 	);
 	timers.push_back(
@@ -411,11 +411,6 @@ void K_DisplayItemTimers(void)
 				textcmap = cmap;
 			}
 
-			if (fastcmp(t.name, "boosts"))
-			{
-				flags |= V_GREENMAP;
-			}
-
 			if (t.flags & TIMER_COUNTER) // don't show up as time
 			{
 				str = va("%d", timer);
@@ -423,27 +418,46 @@ void K_DisplayItemTimers(void)
 			}
 			INT32 width = V_StringScaledWidth(FRACUNIT, FRACUNIT, FRACUNIT, flags|V_MONOSPACE, font, str) >> FRACBITS;
 
-			// very bad!
-			if (t.flags & TIMER_BAD)
-			{
-				flags |= V_REDMAP;
-				//textcmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_CRIMSON, GTC_CACHE);
-			}
+#define COLORTIMER(color) \
+	if (t.flags & TIMER_##color) \
+		flags |= V_##color##MAP\
+
+			// Color timers!
+			COLORTIMER(RED);
+			COLORTIMER(PURPLE);
+			COLORTIMER(YELLOW);
+			COLORTIMER(GREEN);
+			COLORTIMER(BLUE);
+			COLORTIMER(RED);
+			COLORTIMER(GRAY);
+			COLORTIMER(ORANGE);
+			COLORTIMER(SKY);
+			COLORTIMER(LAVENDER);
+			COLORTIMER(GOLD);
+			COLORTIMER(AQUA);
+			COLORTIMER(MAGENTA);
+			COLORTIMER(PINK);
+			COLORTIMER(BROWN);
+			COLORTIMER(TAN);
 
 			patch_t *item = t.patches[patchnum];
 			V_DrawFixedPatch((itemx - (item->width/2))<<FRACBITS, (itemy - 2)<<FRACBITS, FRACUNIT, flags, t.patches[patchnum], cmap);
-			V_DrawStringScaledEx(
-				(itemx - (width/2) - item->leftoffset) << FRACBITS,
-				(itemy + 12) << FRACBITS,
-				FRACUNIT,
-				FRACUNIT,
-				FRACUNIT,
-				FRACUNIT,
-				flags|V_MONOSPACE,
-				textcmap,
-				font,
-				str
-			);
+
+			if (!(t.flags & TIMER_NONUMBER))
+			{
+				V_DrawStringScaledEx(
+					(itemx - (width/2) - item->leftoffset) << FRACBITS,
+					(itemy + 12) << FRACBITS,
+					FRACUNIT,
+					FRACUNIT,
+					FRACUNIT,
+					FRACUNIT,
+					flags|V_MONOSPACE,
+					textcmap,
+					font,
+					str
+				);
+			}
 
 			itemx += stepx;
 		}
