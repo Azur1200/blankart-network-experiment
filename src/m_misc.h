@@ -44,7 +44,7 @@ void M_SaveFrame(void);
 void M_StopMovie(void);
 
 // the file where game vars and settings are saved
-#define CONFIGFILENAME "kartconfig.cfg"
+#define CONFIGFILENAME "blanconfig.cfg"
 
 boolean FIL_WriteFile(char const *name, const void *source, size_t length);
 size_t FIL_ReadFileTag(char const *name, UINT8 **buffer, INT32 tag);
