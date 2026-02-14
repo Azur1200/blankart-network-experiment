@@ -2192,7 +2192,7 @@ void Y_StartVote(void)
 	for (i = 0; i < (rowval + 1); i++)
 	{
 		// set up the encore
-		levelinfo[i].encore = (g_voteLevels[i][1] & VOTEMODIFIER_ENCORE);
+		levelinfo[i].encore = (g_voteLevels[i][1] & VOTEMODIFIER_ENCORE) ? true : false;
 		g_voteLevels[i][1] &= ~VOTEMODIFIER_ENCORE;
 
 		// set up the levelstring
