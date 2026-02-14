@@ -187,7 +187,7 @@ void K_getTimersDrawinfo(drawinfo_t *out)
 	if (r_splitscreen > 0)
 	{
 		flags &= ~V_HUDTRANS;
-		flags |= V_30TRANS;
+		flags |= V_HUDTRANSHALF;
 	}
 
 	out->x = fx;
