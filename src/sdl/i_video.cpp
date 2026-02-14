@@ -208,6 +208,10 @@ static bool Impl_RenderContextCreate(void)
 			}
 			if (usesdlsoft)
 				SDL_SetStringProperty(props, SDL_PROP_RENDERER_CREATE_NAME_STRING, "SDL_SOFTWARE_RENDERER");
+#ifdef _WIN32
+			else
+				SDL_SetStringProperty(props, SDL_PROP_RENDERER_CREATE_NAME_STRING, "direct3d11");
+#endif
 			SDL_SetNumberProperty(props, SDL_PROP_RENDERER_CREATE_PRESENT_VSYNC_NUMBER, cv_vidwait.value);
 			SDL_SetPointerProperty(props, SDL_PROP_RENDERER_CREATE_WINDOW_POINTER, window);
 			renderer = SDL_CreateRendererWithProperties(props);
