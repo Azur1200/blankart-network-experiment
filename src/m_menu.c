@@ -1387,27 +1387,27 @@ boolean M_Responder(event_t *ev)
 		// (but still allow shift keyup so caps doesn't get stuck)
 		return false;
 	}
+	else if (ev->type == ev_keydown)
+	{
+		ch = ev->data1;
+
+		// added 5-2-98 remap virtual keys (mouse buttons)
+		switch (ch)
+		{
+			case KEY_MOUSE1:
+				ch = KEY_ENTER;
+				break;
+			case KEY_MOUSE1 + 1:
+				ch = KEY_ESCAPE;
+				break;
+			default:
+				ch = RemapGamepadButton(ev);
+				break;
+		}
+	}
 	else if (menustack[0])
 	{
-		if (ev->type == ev_keydown)
-		{
-			ch = ev->data1;
-	
-			// added 5-2-98 remap virtual keys (mouse buttons)
-			switch (ch)
-			{
-				case KEY_MOUSE1:
-					ch = KEY_ENTER;
-					break;
-				case KEY_MOUSE1 + 1:
-					ch = KEY_ESCAPE;
-					break;
-				default:
-					ch = RemapGamepadButton(ev);
-					break;
-			}
-		}
-		else if (ev->type == ev_joystick && deviceplayer == 0 && joywait < I_GetTime())
+		if (ev->type == ev_joystick && deviceplayer == 0 && joywait < I_GetTime())
 		{
 			if (ev->data1 == 1)
 			{
