@@ -372,7 +372,7 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	else if (fastncmp("sfx_",word,4)) {
 		p = word+4;
 		for (i = 0; i < NUMSFX; i++)
-			if (S_sfx[i].name && fastcmp(p, S_sfx[i].name)) {
+			if (S_sfx[i].name && fasticmp(p, S_sfx[i].name)) {
 				CacheAndPushConstant(L, word, i);
 				return 1;
 			}
