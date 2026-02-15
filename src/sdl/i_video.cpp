@@ -832,61 +832,6 @@ static void Impl_HandleMouseWheelEvent(SDL_MouseWheelEvent evt)
 	}
 }
 
-// ill put this here if blan wants this
-// allows controller dpads to scroll through menus
-/*
-static UINT8 hatrepeattimer[MAXSPLITSCREENPLAYERS];
-#define HATREPEATDELAY 19
-
-void I_HandleControllerHatRepeat(void)
-{
-	// why bother if theres no controllers?
-	if (numcontrollers == 0)
-		return;
-
-	event_t event = {ev_keydown, 0, 0, 0};
-
-	static const SDL_GameControllerButton hatbutt[4] =
-	{
-		SDL_CONTROLLER_BUTTON_DPAD_UP,
-		SDL_CONTROLLER_BUTTON_DPAD_DOWN,
-		SDL_CONTROLLER_BUTTON_DPAD_LEFT,
-		SDL_CONTROLLER_BUTTON_DPAD_RIGHT
-	};
-
-	for (int i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		if (!cv_usejoystick[i].value)
-			continue;
-
-		SDL_GameController *controller = JoyInfo[i].dev;
-
-		if (!controller)
-			continue;
-
-		for (UINT8 h = 0; h < JOYHATS; h++)
-		{
-			if (SDL_GameControllerGetButton(controller, hatbutt[h]))
-			{
-				if (hatrepeattimer[i] < HATREPEATDELAY)
-				{
-					hatrepeattimer[i]++;
-				}
-				else if (hatrepeattimer[i] == HATREPEATDELAY)
-				{
-					event.data1 = KEY_HAT1 + (i * JOYHATS) + h;
-					D_PostEvent(&event);
-				}
-
-				return;
-			}
-		}
-
-		hatrepeattimer[i] = 0;
-	}
-}
-*/
-
 static void Impl_HandleControllerAxisEvent(SDL_GamepadAxisEvent evt)
 {
 	event_t event;
@@ -1031,7 +976,7 @@ static void Impl_HandleControllerRemoveEvent(SDL_Event evt)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		if (controllerInfo[i].dev && (controllerInfo[i].id == (INT32)joystick_id) && !SDL_GamepadConnected(controllerInfo[i].dev))
+		if (controllerInfo[i].dev && (controllerInfo[i].id == joystick_id) && !SDL_GamepadConnected(controllerInfo[i].dev))
 		{
 			CONS_Debug(DBG_GAMELOGIC, "Controller for Player %d removed, device index: %d\n", i+1, joystick_id);
 			I_ShutdownController(i);

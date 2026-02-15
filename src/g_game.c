@@ -19,6 +19,7 @@
 #include "d_clisrv.h"
 #include "f_finale.h"
 #include "filesrch.h" // for refreshdirmenu
+#include "g_input.h"
 #include "m_fixed.h"
 #include "p_setup.h"
 #include "p_saveg.h"
@@ -1267,8 +1268,13 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital, SINT8 type)
 	deadzone = (JOYAXISRANGE * deadzonetype) / FRACUNIT;
 
 	deviceID = I_GetControllerSlotfromID(I_GetControllerIDForPlayer(p));
-	if (deviceID == INVALID_DEVICE)
+	if (deviceID >= MAXDEVICES)
 		return 0;
+
+	// not a controller?
+	// then its a keyboard or mouse
+	if (deviceID == INVALID_DEVICE)
+		deviceID = KEYBOARD_MOUSE_DEVICE;
 
 retrygetcontrol:
 	for (i = 0; i < MAXINPUTMAPPING; i++)

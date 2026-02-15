@@ -230,18 +230,13 @@ void G_MapEventsToControls(event_t *ev)
 
 	INT32 device = ev->device;
 
-	// invalid
-	if (device < KEYBOARD_MOUSE_DEVICE || device >= UINT32_MAX)
-		return;
-
 	// not a keyboard?
 	// try to see if its a controller in use
 	if (device > KEYBOARD_MOUSE_DEVICE)
 		device = I_GetControllerSlotfromID(device-1);
 
-	// nope no controller thats used
-	// so ignore it
-	if (device == INVALID_DEVICE)
+	// invalid device
+	if (device < KEYBOARD_MOUSE_DEVICE || device >= MAXDEVICES)
 		return;
 
 	switch (ev->type)

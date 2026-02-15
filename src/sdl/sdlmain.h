@@ -47,7 +47,7 @@ typedef struct SDLJoyInfo_s
 	/// Joystick handle
 	//SDL_Joystick *joydev;
 	/// Controller index
-	INT32 id; // SDL_JoystickID
+	SDL_JoystickID id;
 	/// name of controller
 	//const char *name;
 	/// scale of axises

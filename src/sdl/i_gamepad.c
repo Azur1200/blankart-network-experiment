@@ -304,6 +304,9 @@ INT32 I_GetControllerID(SDL_Gamepad *dev)
 
 INT32 I_GetControllerSlotfromID(INT32 id)
 {
+	if (id < 0)
+		return -1;
+
 	if (!controllerlist)
 	{
 		CONS_Debug(DBG_GAMELOGIC, "Failed to fetch Controller list: %s\n", SDL_GetError());
