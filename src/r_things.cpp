@@ -1010,10 +1010,14 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	dc.fullbright = colormaps;
 	dc.translation = R_GetSpriteTranslation(vis);
 
+	if (vis->cut & SC_AFFINE)
+	{
+		R_SetColumnFunc(COLDRAWFUNC_AFFINE, false);
+	}
 	// Hack: Use a special column function for drop shadows that bypasses
 	// invalid memory access crashes caused by R_ProjectDropShadow putting wrong values
 	// in dc_texturemid and dc_iscale when the shadow is sloped.
-	if (vis->cut & SC_SHADOW)
+	else if (vis->cut & SC_SHADOW)
 	{
 		R_SetColumnFunc(COLDRAWFUNC_DROPSHADOW, false);
 		dc.transmap = vis->transmap;
@@ -1112,8 +1116,74 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	localcolfunc = (vis->cut & SC_VFLIP) ? R_DrawFlippedMaskedColumn : R_DrawMaskedColumn;
 	lengthcol = patch->height;
 
+	if (vis->cut & SC_AFFINE)
+	{
+		Patch_GenerateFlat(patch, static_cast<pictureflags_t>(0));
+		dc.source = static_cast<UINT8 *>(patch->flats[0]);
+		dc.sourcelength = patch->width;
+
+		// Non-paper drawing loop
+		for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, frac += vis->xiscale, sprtopscreen += vis->shear.tan)
+		{
+			//texturecolumn = std::clamp<fixed_t>(frac >> FRACBITS, 0, patch->width - 1);
+
+			//column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
+
+			//if (bmpatch)
+				//bmcol = (column_t *)((UINT8 *)bmpatch->columns + (bmpatch->columnofs[texturecolumn]));
+
+			dc.yl = (sprtopscreen+FRACUNIT-1)>>FRACBITS;
+			dc.yh = ((sprtopscreen + spryscale*patch->height)-1)>>FRACBITS;
+
+			INT32 topscreen = sprtopscreen + spryscale*0;
+			INT32  bottomscreen = topscreen + spryscale*patch->height;
+
+				dc.yl = (topscreen+FRACUNIT-1)>>FRACBITS;
+				dc.yh = (bottomscreen-1)>>FRACBITS;
+
+				if (windowtop != INT32_MAX && windowbottom != INT32_MAX)
+				{
+					if (windowtop > topscreen)
+						dc.yl = (windowtop + FRACUNIT - 1)>>FRACBITS;
+					if (windowbottom < bottomscreen)
+						dc.yh = (windowbottom - 1)>>FRACBITS;
+				}
+		
+				if (dc.yh >= mfloorclip[dc.x])
+					dc.yh = mfloorclip[dc.x]-1;
+				if (dc.yl <= mceilingclip[dc.x])
+					dc.yl = mceilingclip[dc.x]+1;
+		
+				if (dc.yl < 0)
+					dc.yl = 0;
+				if (dc.yh >= vid.height) // dc_yl must be < vid.height, so reduces number of checks in tight loop
+					dc.yh = vid.height - 1;
+		
+				if (dc.yh >= baseclip && baseclip != -1)
+					dc.yh = baseclip;
+
+			dc.affine.a = FRACUNIT;
+			dc.affine.b = 0;
+			dc.affine.c = 0;
+			dc.affine.d = FRACUNIT;
+			dc.affine.ox = 0;
+			dc.affine.oy = 0;
+			dc.frac = frac;
+
+			angle_t angle = leveltime*ANG2;
+			fixed_t sa = FSIN(angle), ca = FCOS(angle);
+			dc.affine.a = FixedDiv(ca, FRACUNIT);
+			dc.affine.b = FixedDiv(-sa, FRACUNIT);
+			dc.affine.c = FixedDiv(sa, FRACUNIT);
+			dc.affine.d = FixedDiv(ca, FRACUNIT);
+			dc.affine.ox = (patch->pivot.x + patch->leftoffset) * FRACUNIT;
+			dc.affine.oy = (patch->pivot.y + patch->topoffset) * FRACUNIT;
+
+			R_DrawAffineColumn(&dc);
+		}
+	}
 	// Split drawing loops for paper and non-paper to reduce conditional checks per sprite
-	if (vis->scalestep)
+	else if (vis->scalestep)
 	{
 		fixed_t horzscale = FixedMul(vis->spritexscale, this_scale);
 		fixed_t scalestep = FixedMul(vis->scalestep, vis->spriteyscale);
@@ -1162,40 +1232,38 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 	else
 	{
-
-		#if 0
+#if 0
 		if (vis->x1test && vis->x2test)
 		{
-		INT32 x1test = vis->x1test;
-		INT32 x2test = vis->x2test;
+			INT32 x1test = vis->x1test;
+			INT32 x2test = vis->x2test;
 
-		if (x1test < 0)
-			x1test = 0;
+			if (x1test < 0)
+				x1test = 0;
 
-		if (x2test >= vidwidth)
-			x2test = vidwidth-1;
+			if (x2test >= vidwidth)
+				x2test = vidwidth-1;
 
-		const INT32 t = (vis->startfrac + (vis->xiscale * (x2test - x1test))) >> FRACBITS;
+			const INT32 t = (vis->startfrac + (vis->xiscale * (x2test - x1test))) >> FRACBITS;
 
-		if (x1test <= x2test && (t < 0 || t >= patch->width))
+			if (x1test <= x2test && (t < 0 || t >= patch->width))
+			{
+				CONS_Printf("THE GAME WOULD HAVE CRASHED, %d (old) vs %d (new)\n", (x2test - x1test), (vis->x2 - vis->x1));
+			}
+		}
+#endif
+		// Non-paper drawing loop
+		for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, frac += vis->xiscale, sprtopscreen += vis->shear.tan)
 		{
-		CONS_Printf("THE GAME WOULD HAVE CRASHED, %d (old) vs %d (new)\n", (x2test - x1test), (vis->x2 - vis->x1));
-	}
-	}
-	#endif
+			texturecolumn = std::clamp<fixed_t>(frac >> FRACBITS, 0, patch->width - 1);
 
-	// Non-paper drawing loop
-	for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, frac += vis->xiscale, sprtopscreen += vis->shear.tan)
-	{
-		texturecolumn = std::clamp<fixed_t>(frac >> FRACBITS, 0, patch->width - 1);
+			column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
 
-		column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
+			if (bmpatch)
+				bmcol = (column_t *)((UINT8 *)bmpatch->columns + (bmpatch->columnofs[texturecolumn]));
 
-		if (bmpatch)
-			bmcol = (column_t *)((UINT8 *)bmpatch->columns + (bmpatch->columnofs[texturecolumn]));
-
-		localcolfunc (&dc, column, bmcol, baseclip);
-	}
+			localcolfunc (&dc, column, bmcol, baseclip);
+		}
 	}
 
 	R_SetColumnFunc(BASEDRAWFUNC, false);
@@ -2632,6 +2700,8 @@ static void R_ProjectSprite(mobj_t *thing)
 		vis->cut = static_cast<spritecut_e>(vis->cut | SC_VFLIP);
 	if (splat)
 		vis->cut = static_cast<spritecut_e>(vis->cut | SC_SPLAT); // I like ya cut g
+	if (thing->player != NULL)
+		vis->cut = static_cast<spritecut_e>(vis->cut | SC_AFFINE); // *smack* AIEEEEEEEEEEEE
 
 	vis->patch = patch;
 	vis->bright = R_CacheSpriteBrightMap(sprinfo, frame);

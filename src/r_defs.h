@@ -1155,6 +1155,7 @@ typedef struct
 
 	affine_bounding_t affinebound;
 	affine_t affine;
+	fixed_t frac;
 } drawcolumndata_t;
 
 extern drawcolumndata_t g_dc;

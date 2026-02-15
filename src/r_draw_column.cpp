@@ -483,3 +483,92 @@ void R_DrawColumn_Flat(drawcolumndata_t *dc)
 	}
 	while (--count);
 }
+
+void R_DrawAffineColumn(drawcolumndata_t *dc)
+{
+	INT32 count;
+	const INT32 vidheight = vid.height;
+
+	// leban 1/17/99:
+	// removed the + 1 here, adjusted the if test, and added an increment
+	// later.  this helps a compiler pipeline a bit better.  the x86
+	// assembler also does this.
+	count = dc->yh - dc->yl;
+
+	// leban 1/17/99:
+	// this case isn't executed too often.  depending on how many instructions
+	// there are between here and the second if test below, this case could
+	// be moved down and might save instructions overall.  since there are
+	// probably different wads that favor one way or the other, i'll leave
+	// this alone for now.
+	if (count < 0) // Zero length, column does not exceed a pixel.
+	{
+		return;
+	}
+
+	if ((unsigned)dc->x >= (unsigned)vid.width || dc->yl < 0 || dc->yh >= vidheight)
+	{
+		return;
+	}
+
+	{
+		// Inner loop that does the actual texture mapping,
+		//  e.g. a DDA-lile scaling.
+		// This is as fast as it gets.       (Yeah, right!!! -- killough)
+		//
+		// killough 2/1/98: more performance tuning
+
+		intptr_t frac;
+		// Looks familiar.
+		const intptr_t fracstep = dc->iscale;
+		const intptr_t heightmask = dc->sourcelength-1; // CPhipps - specify type
+		constexpr INT32 npow2min = -1;
+		const INT32 npow2max = dc->sourcelength;
+
+		// Framebuffer destination address.
+		// SoM: MAGIC
+		UINT8 *restrict dest = R_Address(dc->x, dc->yl);
+
+		const INT32 stride = vid.width; // SoM: Oh, Oh it's MAGIC! You know...
+
+		count++;
+
+		// Determine scaling, which is the only mapping to be done.
+		frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep));
+
+		const affine_t *transform = &dc->affine;
+
+		const fixed_t a = transform->a;
+		const fixed_t b = transform->b;
+		const fixed_t c = transform->c;
+		const fixed_t d = transform->d;
+		fixed_t cx = transform->ox;
+		fixed_t cy = transform->oy;
+
+		const INT32 pw = dc->sourcelength, ph = dc->texheight;
+
+		// yoinked from NovaSquirrel's mode 7 preview
+		// ...which is in turn yoinked from Mesen's S-PPU code
+		// i can't do matrix math to save my life :face_holding_back_tears:
+		// (m7xofs and m7yofs are already factored in by destbase)
+		fixed_t ux = FixedMul(b, -cx) + FixedMul(a, -cy) + FixedMul(a, dc->frac) + cx;
+		fixed_t uy = FixedMul(d, -cx) + FixedMul(c, -cy) + FixedMul(c, dc->frac) + cy;
+
+		for (; count > 0; dest += stride, --count)
+		{
+			const INT32 srcx = ux >> FRACBITS;
+			const INT32 srcy = uy >> FRACBITS;
+			ux += b;
+			uy += d;
+
+			if (srcx < 0 || srcx >= pw || srcy < 0 || srcy >= ph)
+				continue;
+
+			const UINT16 pixel = reinterpret_cast<UINT16 *>(dc->source)[srcy * pw + srcx];
+			if (pixel < 0xff00)
+				continue;
+
+			*dest = (UINT8)(pixel & 0xff);
+		}
+	}
+}

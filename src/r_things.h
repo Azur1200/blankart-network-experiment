@@ -159,6 +159,7 @@ typedef enum
 	SC_SEMIBRIGHT = 1<<12,
 	SC_BBOX       = 1<<13,
 	SC_CULL       = 1<<14,
+	SC_AFFINE     = 1<<15,
 	// masks
 	SC_CUTMASK    = SC_TOP|SC_BOTTOM,
 	SC_FLAGMASK   = ~SC_CUTMASK

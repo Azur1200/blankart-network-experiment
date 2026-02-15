@@ -74,6 +74,7 @@ enum
 	COLDRAWFUNC_TWOSMULTIPATCHTRANS,
 	COLDRAWFUNC_FOG,
 	COLDRAWFUNC_DROPSHADOW,
+	COLDRAWFUNC_AFFINE,
 
 	COLDRAWFUNC_MAX
 };
@@ -201,6 +202,7 @@ void R_Draw2sMultiPatchTranslucentColumn_Flush(drawcolumndata_t* dc);
 
 void R_DrawFogColumn(drawcolumndata_t* dc);
 void R_DrawColumnShadowed(drawcolumndata_t* dc);
+void R_DrawAffineColumn(drawcolumndata_t* dc);
 
 void R_DrawColumn_Brightmap(drawcolumndata_t* dc);
 void R_DrawTranslucentColumn_Brightmap(drawcolumndata_t* dc);

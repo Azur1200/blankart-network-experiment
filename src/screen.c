@@ -132,6 +132,7 @@ void SCR_SetDrawFuncs(enum columncontext_e _columncontext)
 
 	colfuncs[COLDRAWFUNC_FOG] = R_DrawFogColumn;
 	colfuncs[COLDRAWFUNC_DROPSHADOW] = R_DrawDropShadowColumn;
+	colfuncs[COLDRAWFUNC_AFFINE] = R_DrawAffineColumn;
 
 	colfuncs_bm[BASEDRAWFUNC] = R_DrawColumn_Brightmap;
 	colfuncs_bm[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumn_Brightmap;
@@ -142,6 +143,7 @@ void SCR_SetDrawFuncs(enum columncontext_e _columncontext)
 	colfuncs_bm[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn_Brightmap;
 	colfuncs_bm[COLDRAWFUNC_FOG] = NULL; // Not needed
 	colfuncs_bm[COLDRAWFUNC_DROPSHADOW] = NULL; // Not needed
+	colfuncs_bm[COLDRAWFUNC_AFFINE] = NULL; // Is needed but I don't care
 
 	spanfuncs[BASEDRAWFUNC] = R_DrawSpan;
 	spanfuncs[SPANDRAWFUNC_TRANS] = R_DrawTranslucentSpan;
