@@ -1094,11 +1094,19 @@ struct spritedef_t
 // the dimensions of an affine patch.
 struct affine_bounding_t
 {
-	INT32 l; // Leftmost bounding
-	INT32 r; // Rightmost bounding
+	vector2_t pivot;
 
-	INT32 t; // Highest bounding
-	INT32 b; // Lowest bounding
+	// Differences between the "pivot" of the bound and each corner position.
+	INT32 xleft, yup, xright, ydown;
+
+	// General length between each bounding position
+	INT32 xlen, ylen;
+
+	INT32 l;  // Leftmost bounding
+	INT32 r;  // Rightmost bounding
+
+	INT32 t;  // Highest bounding
+	INT32 b;  // Lowest bounding
 };
 
 // an affine transformation matrix. maps screen coordinates to texture coordinates
