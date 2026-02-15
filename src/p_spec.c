@@ -2993,28 +2993,8 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 			break;
 
 		case 414: // Play SFX
-		{
-			// I'm so sorry with this garbage
-			// I cannot be bothered to fix evalmath right now...
-			char *upstr = NULL;
-			if (stringargs[0])
-			{
-				size_t strsize = strlen(stringargs[0]);
-
-				upstr = malloc(strsize);
-
-				if (!upstr)
-					I_Error("Play SFX: Ran out of memory\n");
-
-				strncpy(upstr, stringargs[0], strsize);
-				strupr(upstr);
-			}
-
-			P_PlaySFX(upstr ? get_sfx(upstr) : sfx_None, mo, callsec, args[2], args[0], args[1]);
-			if (upstr)
-				free(upstr);
+			P_PlaySFX(stringargs[0] ? get_number(stringargs[0]) : sfx_None, mo, callsec, args[2], args[0], args[1]);
 			break;
-		}
 
 		case 415: // Run a script
 			if (cv_runscripts.value)
