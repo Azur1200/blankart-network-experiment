@@ -4934,7 +4934,7 @@ static void K_FlameDashLeftoverSmoke(mobj_t *src)
 }
 
 // Handle these else where to reduce code duplication between panels and sneakers
-static void K_SneakerPanelStackSound(player_t *player)
+static void K_SneakerPanelStackSound(player_t *player, INT32 type)
 {
 	const sfxenum_t normalsfx = sfx_cdfm01;
 	const sfxenum_t smallsfx = sfx_cdfm40;
@@ -4948,7 +4948,10 @@ static void K_SneakerPanelStackSound(player_t *player)
 
 	S_StopSoundByID(player->mo, normalsfx);
 	S_StopSoundByID(player->mo, smallsfx);
+	S_StopSoundByID(player->mo, sfx_kc3c);
 	S_StartSound(player->mo, sfx);
+	if (type == SNEAKERTYPE_WATERPANEL)
+		S_StartSound(player->mo, sfx_kc3c);
 }
 
 static void K_SneakerPanelEffect(player_t *player, INT32 type)
@@ -4994,7 +4997,7 @@ void K_DoSneaker(player_t *player, INT32 type)
 
 	if (player->floorboost == 0 || player->floorboost == 3)
 	{
-		K_SneakerPanelStackSound(player);
+		K_SneakerPanelStackSound(player, type);
 		K_SpawnDashDustRelease(player, false);
 		if (intendedboost > player->speedboost)
 			player->karthud[khud_destboostcam] = FixedMul(FRACUNIT, FixedDiv((intendedboost - player->speedboost), intendedboost));
