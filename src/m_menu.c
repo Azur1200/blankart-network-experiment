@@ -1311,6 +1311,53 @@ static boolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
 // use this when routine being NULL isn't a free pass
 static INT32 MR_Dummy(INT32 ch) { (void)ch; return true; }
 
+static INT32 RemapGamepadButton(event_t *ev)
+{
+	// remap to keyboard keys if needed
+	if (ev->data1 < KEY_JOY1 || ev->data1 >= JOYINPUTEND)
+		return ev->data1;
+
+	static INT32 joyremap[][2] = {
+		{ gc_accelerate,  KEY_ENTER      }, // these two first
+		{ gc_brake,       KEY_ESCAPE     }, // in case of conflicts
+		{ gc_fire,        KEY_BACKSPACE  },
+		{ gc_drift,       KEY_SPACE      },
+		{ gc_systemmenu,  KEY_ESCAPE     },
+		{ gc_aimforward,  KEY_UPARROW    },
+		{ gc_aimbackward, KEY_DOWNARROW  },
+		{ gc_turnleft,    KEY_LEFTARROW  },
+		{ gc_turnright,   KEY_RIGHTARROW },
+		{ gc_horncode,	  KEY_TAB },
+	};
+
+	for (size_t r = 0; r < sizeof(joyremap)/sizeof(*joyremap); r++)
+	{
+		INT32 gc = joyremap[r][0];
+		if (gc == gc_brake && !menustack[0])
+			continue; // don't open the menu with brake!
+
+		if (G_ControlBoundToKey(0, gc, ev->data1, true))
+		{
+			return joyremap[r][1];
+		}
+	}
+
+	// remap the hats too
+	switch (ev->data1)
+	{
+		case KEY_HAT1+0:
+			return KEY_UPARROW;
+		case KEY_HAT1+1:
+			return KEY_DOWNARROW;
+		case KEY_HAT1+2:
+			return KEY_LEFTARROW;
+		case KEY_HAT1+3:
+			return KEY_RIGHTARROW;
+	}
+	return ev->data1;
+}
+
+
 //
 // M_Responder
 //
@@ -1318,6 +1365,7 @@ boolean M_Responder(event_t *ev)
 {
 	INT32 ch = -1;
 	static tic_t joywait = 0, mousewait = 0;
+	static INT32 pjoyx = 0, pjoyy = 0;
 	static INT32 pmousex = 0, pmousey = 0;
 	static INT32 lastx = 0, lasty = 0;
 	INT32 deviceplayer = G_GetDevicePlayer(ev->device);
@@ -1339,63 +1387,68 @@ boolean M_Responder(event_t *ev)
 		// (but still allow shift keyup so caps doesn't get stuck)
 		return false;
 	}
-	else if (ev->type == ev_keydown)
-	{
-		ch = ev->data1;
-
-		// added 5-2-98 remap virtual keys (mouse & joystick buttons)
-		switch (ch)
-		{
-			case KEY_MOUSE1:
-				ch = KEY_ENTER;
-				break;
-			case KEY_MOUSE1 + 1:
-				ch = KEY_BACKSPACE;
-				break;
-			case KEY_HAT1:
-				if (deviceplayer == 0)
-					ch = KEY_UPARROW;
-				break;
-			case KEY_HAT1 + 1:
-				if (deviceplayer == 0)
-					ch = KEY_DOWNARROW;
-				break;
-			case KEY_HAT1 + 2:
-				if (deviceplayer == 0)
-					ch = KEY_LEFTARROW;
-				break;
-			case KEY_HAT1 + 3:
-				if (deviceplayer == 0)
-					ch = KEY_RIGHTARROW;
-				break;
-			default:
-				break;
-		}
-	}
 	else if (menustack[0])
 	{
-		if (ev->type == ev_joystick && deviceplayer == 0)
+		if (ev->type == ev_keydown)
 		{
-			static INT32 lastjoy[JOYAXISES] = {0};
-
-			if (G_AxisInDeadzone(deviceplayer, ev))
+			ch = ev->data1;
+	
+			// added 5-2-98 remap virtual keys (mouse buttons)
+			switch (ch)
 			{
-				lastjoy[ev->data1] = 0;
-				return false;
+				case KEY_MOUSE1:
+					ch = KEY_ENTER;
+					break;
+				case KEY_MOUSE1 + 1:
+					ch = KEY_ESCAPE;
+					break;
+				default:
+					ch = RemapGamepadButton(ev);
+					break;
 			}
-
-			tic_t thistime = I_GetTime();
-
-			// no previous direction OR change direction
-			if (joywait < thistime && (lastjoy[ev->data1] == 0 || (ev->data2 < 0) != (lastjoy[ev->data1] < 0)))
+		}
+		else if (ev->type == ev_joystick && deviceplayer == 0 && joywait < I_GetTime())
+		{
+			if (ev->data1 == 1)
 			{
-				ch = G_AxisToKey(ev);
-				joywait = thistime + NEWTICRATE/7;
+				if (abs(ev->data2) > (JOYAXISRANGE/4))
+				{
+					if (ev->data2 > 0 && pjoyy <= 0)
+					{
+						ch = KEY_DOWNARROW;
+						joywait = I_GetTime() + NEWTICRATE/10;
+					}
+					else if (ev->data2 < 0 && pjoyy >= 0)
+					{
+						ch = KEY_UPARROW;
+						joywait = I_GetTime() + NEWTICRATE/10;
+					}
+				}
+				else
+				{
+					pjoyy = 0;
+				}
 			}
-			else
-				ch = 0;
-
-			lastjoy[ev->data1] = ev->data2;
+			else if (ev->data1 == 0)
+			{
+				if (abs(ev->data2) > (JOYAXISRANGE/4))
+				{
+					if (ev->data2 > 0 && pjoyx <= 0)
+					{
+						ch = KEY_RIGHTARROW;
+						joywait = I_GetTime() + NEWTICRATE/10;
+					}
+					else if (ev->data2 < 0 && pjoyx >= 0)
+					{
+						ch = KEY_LEFTARROW;
+						joywait = I_GetTime() + NEWTICRATE/10;
+					}
+				}
+				else
+				{
+					pjoyx = 0;
+				}
+			}
 		}
 		// pass through other joysticks
 		else if (ev->type == ev_joystick)
@@ -1433,35 +1486,6 @@ boolean M_Responder(event_t *ev)
 				ch = KEY_RIGHTARROW;
 				mousewait = I_GetTime() + NEWTICRATE/7;
 				pmousex = lastx += 30;
-			}
-		}
-	}
-
-	// remap to keyboard keys if needed
-	if (deviceplayer == 0 && ch >= NUMKEYS)
-	{
-		static INT32 joyremap[][2] = {
-			{ gc_accelerate,  KEY_ENTER      }, // these two first
-			{ gc_brake,       KEY_ESCAPE     }, // in case of conflicts
-			{ gc_fire,        KEY_BACKSPACE  },
-			{ gc_drift,       KEY_SPACE      },
-			{ gc_systemmenu,  KEY_ESCAPE     },
-			{ gc_aimforward,  KEY_UPARROW    },
-			{ gc_aimbackward, KEY_DOWNARROW  },
-			{ gc_turnleft,    KEY_LEFTARROW  },
-			{ gc_turnright,   KEY_RIGHTARROW },
-		};
-
-		for (size_t r = 0; r < sizeof(joyremap)/sizeof(*joyremap); r++)
-		{
-			INT32 gc = joyremap[r][0];
-			if (gc == gc_brake && !menustack[0])
-				continue; // don't open the menu with brake!
-
-			if (G_ControlBoundToKey(0, gc, ch, true))
-			{
-				ch = joyremap[r][1];
-				break;
 			}
 		}
 	}
