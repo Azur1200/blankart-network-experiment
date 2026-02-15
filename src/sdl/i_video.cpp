@@ -212,7 +212,7 @@ static bool Impl_RenderContextCreate(void)
 				SDL_SetStringProperty(props, SDL_PROP_RENDERER_CREATE_NAME_STRING, "SDL_SOFTWARE_RENDERER");
 #ifdef _WIN32
 			else
-				SDL_SetStringProperty(props, SDL_PROP_RENDERER_CREATE_NAME_STRING, "direct3d11");
+				SDL_SetStringProperty(props, SDL_PROP_RENDERER_CREATE_NAME_STRING, "opengl");
 #endif
 			SDL_SetNumberProperty(props, SDL_PROP_RENDERER_CREATE_PRESENT_VSYNC_NUMBER, cv_vidwait.value);
 			SDL_SetPointerProperty(props, SDL_PROP_RENDERER_CREATE_WINDOW_POINTER, window);
