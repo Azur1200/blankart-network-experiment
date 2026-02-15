@@ -88,7 +88,7 @@ static int action_call(lua_State *L)
 
 // Hardcoded A_Action name to call for super() or NULL if super() would be invalid.
 // Set in lua_infolib.
-const char *superactions[MAXRECURSION];
+const char *superactions[MAXRECURSION] = {};
 UINT8 superstack = 0;
 
 static int lib_dummysuper(lua_State *L)
