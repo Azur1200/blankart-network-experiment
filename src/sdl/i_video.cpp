@@ -248,10 +248,7 @@ static bool Impl_RenderContextReset(void)
 	if (renderer)
 	{
 		SDL_DestroyRenderer(renderer);
-// Thanks Debian....
-#if SDL_VERSION_ATLEAST(2,28,0)
 		SDL_DestroyWindowSurface(window); // workaround for a bug in sdl
-#endif
 		texture = NULL; // Destroying a renderer also destroys all of its textures
 	}
 	renderer = NULL;
@@ -315,7 +312,6 @@ static bool SDLSetMode(INT32 width, INT32 height, bool fullscreen, bool repositi
 		{
 			wasfullscreen = true;
 			SDL_SetWindowFullscreen(window, fullscreen_type);
-			I_SetBorderlessWindow();
 		}
 		else // windowed mode
 		{
@@ -323,8 +319,8 @@ static bool SDLSetMode(INT32 width, INT32 height, bool fullscreen, bool repositi
 			{
 				wasfullscreen = false;
 				SDL_SetWindowFullscreen(window, 0);
+				I_SetBorderlessWindow();
 			}
-			// Reposition window only in windowed mode
 
 			SDL_SetWindowSize(window, width, height);
 
@@ -1551,6 +1547,17 @@ static SDL_Window *Impl_CreateWindow(void)
 #ifdef HWRENDER
 	flags |= SDL_WINDOW_OPENGL;
 
+	if (M_CheckParm("-msaa") && M_IsNextParm())
+	{
+		unsigned int value;
+		const char* str = M_GetNextParm();
+		if (sscanf(str, "%u", &value))
+		{
+			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, value);
+		}
+	}
+
 	// Without a 24-bit depth buffer many visuals are ruined by z-fighting.
 	// Some GPU drivers may give us a 16-bit depth buffer since the
 	// default value for SDL_GL_DEPTH_SIZE is 16.
@@ -1801,8 +1808,8 @@ UINT32 I_GetRefreshRate(void)
 
 void I_SetBorderlessWindow(void)
 {
-	bool borderless = (cv_fullscreen.value == 2) ? false : true;
-	SDL_SetWindowBordered(window, borderless);
+	bool bordered = cv_fullscreen.value != 2;
+	SDL_SetWindowBordered(window, bordered);
 }
 #endif
 
