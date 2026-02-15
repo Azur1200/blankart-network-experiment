@@ -248,10 +248,6 @@ static bool Impl_RenderContextReset(void)
 	if (renderer)
 	{
 		SDL_DestroyRenderer(renderer);
-// Thanks Debian....
-#if SDL_VERSION_ATLEAST(2,28,0)
-		SDL_DestroyWindowSurface(window); // workaround for a bug in sdl
-#endif
 		texture = NULL; // Destroying a renderer also destroys all of its textures
 	}
 	renderer = NULL;
@@ -293,8 +289,19 @@ static void Impl_SetSoftwareVsync(int vsync)
 
 static void Impl_VideoSetupSurfaces(int width, int height)
 {
-	if (texture == NULL)
-		texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, width, height);
+	if (texture)
+	{
+		SDL_DestroyTexture(texture);
+		texture = NULL;
+	}
+
+	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, width, height);
+
+	if (!texture)
+	{
+		I_Error("Failed to setup video surface");
+	}
+
 	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 }
 
