@@ -2180,6 +2180,12 @@ boolean G_Responder(event_t *ev)
 		case ev_joystick:
 			return true; // eat events
 
+		case ev_accelerometer:
+			return true; // eat events
+
+		case ev_gyroscope:
+			return true; // eat events
+
 		default:
 			break;
 	}

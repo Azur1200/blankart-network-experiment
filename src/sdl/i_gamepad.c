@@ -90,6 +90,24 @@ void I_ShutdownController(UINT8 index)
 		D_PostEvent(&event);
 	}
 
+	// reset sensors
+	event.type = ev_accelerometer;
+	for (i = 0; i < 3; i++)
+	{
+		event.data1 = 0;
+		event.data2 = 0;
+		event.data3 = 0;
+		D_PostEvent(&event);
+	}
+	event.type = ev_gyroscope;
+	for (i = 0; i < 3; i++)
+	{
+		event.data1 = 0;
+		event.data2 = 0;
+		event.data3 = 0;
+		D_PostEvent(&event);
+	}
+
 	I_ControllerReset(&controllerInfo[index]);
 }
 

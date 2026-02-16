@@ -941,8 +941,6 @@ static void Impl_HandleControllerSensorEvent(SDL_GamepadSensorEvent evt)
 {
 	event_t event;
 
-	event.type = ev_sensor;
-
 	event.device = 1 + evt.which;
 
 	event.data1 = event.data2 = event.data3 = INT32_MAX;
@@ -958,16 +956,18 @@ static void Impl_HandleControllerSensorEvent(SDL_GamepadSensorEvent evt)
 		// data[1]: y acceleration in m/s
 		// data[2]: z acceleration in m/s
 		case SDL_SENSOR_ACCEL:
+			event.type = ev_accelerometer;
 			event.data1 = FLOAT_TO_FIXED(evt.data[0]);
 			event.data2 = FLOAT_TO_FIXED(evt.data[1]);
 			event.data3 = FLOAT_TO_FIXED(evt.data[2]);
 			break;
 			
-		// data[0]: delta pitch in rad/s
-		// data[1]: delta yaw in rad/s
-		// data[2]: delta roll in rad/s
-		case SDL_SENSOR_GYRO:
+			// data[0]: delta pitch in rad/s
+			// data[1]: delta yaw in rad/s
+			// data[2]: delta roll in rad/s
+case SDL_SENSOR_GYRO:
 #define RAD2DEG 57.295779513f
+			event.type = ev_gyroscope;
 			event.data1 = FixedAngle(FLOAT_TO_FIXED(RAD2DEG * evt.data[0]));
 			event.data2 = FixedAngle(FLOAT_TO_FIXED(RAD2DEG * evt.data[1]));
 			event.data3 = FixedAngle(FLOAT_TO_FIXED(RAD2DEG * evt.data[2]));
