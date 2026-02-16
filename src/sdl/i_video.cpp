@@ -937,6 +937,50 @@ static void Impl_HandleControllerButtonEvent(SDL_GamepadButtonEvent evt, Uint32 
 	}
 }
 
+static void Impl_HandleControllerSensorEvent(SDL_GamepadSensorEvent evt)
+{
+	event_t event;
+
+	event.type = ev_sensor;
+
+	event.device = 1 + evt.which;
+
+	event.data1 = event.data2 = event.data3 = INT32_MAX;
+
+	if (event.device == INT32_MAX)
+	{
+		return;
+	}
+
+	switch (evt.sensor)
+	{
+		// data[0]: x acceleration in m/s
+		// data[1]: y acceleration in m/s
+		// data[2]: z acceleration in m/s
+		case SDL_SENSOR_ACCEL:
+			event.data1 = FLOAT_TO_FIXED(evt.data[0]);
+			event.data2 = FLOAT_TO_FIXED(evt.data[1]);
+			event.data3 = FLOAT_TO_FIXED(evt.data[2]);
+			break;
+			
+		// data[0]: delta pitch in rad/s
+		// data[1]: delta yaw in rad/s
+		// data[2]: delta roll in rad/s
+		case SDL_SENSOR_GYRO:
+#define RAD2DEG 57.295779513f
+			event.data1 = FixedAngle(FLOAT_TO_FIXED(RAD2DEG * evt.data[0]));
+			event.data2 = FixedAngle(FLOAT_TO_FIXED(RAD2DEG * evt.data[1]));
+			event.data3 = FixedAngle(FLOAT_TO_FIXED(RAD2DEG * evt.data[2]));
+#undef RAD2DEG
+			break;
+
+		default:
+			break;
+	}
+
+	D_PostEvent(&event);
+}
+
 static void Impl_HandleControllerAddEvent(SDL_Event evt)
 {
 	UINT8 i;
@@ -1026,6 +1070,9 @@ void I_GetEvent(void)
 			case SDL_EVENT_GAMEPAD_BUTTON_UP:
 			case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
 				Impl_HandleControllerButtonEvent(evt.gbutton, evt.type);
+				break;
+			case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
+				Impl_HandleControllerSensorEvent(evt.gsensor);
 				break;
 			case SDL_EVENT_GAMEPAD_ADDED:
 				Impl_HandleControllerAddEvent(evt);

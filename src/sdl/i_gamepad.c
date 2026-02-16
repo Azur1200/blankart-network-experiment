@@ -54,7 +54,12 @@ static void I_ControllerReset(controllerinfo_t *controller)
 	controller->id   = -1;
 	//controller->name = NULL;
 	controller->hasrumble = false;
+	controller->hasmonoled = false;
 	controller->hasrgbled = false;
+	controller->hasplayerled = false;
+	controller->hasaccelerometer = false;
+	controller->hasgyro = false;
+	controller->flipbuttons = false;
 }
 
 //
@@ -218,6 +223,12 @@ void I_InitController(UINT8 playernum)
 	SDL_PropertiesID controllerproperties = SDL_GetGamepadProperties(newcontroller);
 	controller->hasrumble = SDL_GetBooleanProperty(controllerproperties, SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN, false);
 	controller->hasrgbled = SDL_GetBooleanProperty(controllerproperties, SDL_PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN, false);
+	controller->hasmonoled = SDL_GetBooleanProperty(controllerproperties, SDL_PROP_GAMEPAD_CAP_MONO_LED_BOOLEAN, false) && (!controller->hasrgbled);
+	controller->hasplayerled = SDL_GetBooleanProperty(controllerproperties, SDL_PROP_GAMEPAD_CAP_PLAYER_LED_BOOLEAN, false);
+
+	controller->hasaccelerometer = SDL_GamepadHasSensor(newcontroller, SDL_SENSOR_ACCEL);
+	controller->hasgyro = SDL_GamepadHasSensor(newcontroller, SDL_SENSOR_GYRO);
+
 	controller->flipbuttons = SDL_GetGamepadButtonLabel(newcontroller, SDL_GAMEPAD_BUTTON_SOUTH) == SDL_GAMEPAD_BUTTON_LABEL_B;
 }
 
@@ -378,9 +389,29 @@ boolean I_ControllerSupportsRumble(INT32 playernum)
 	return (controllerInfo[playernum].dev && controllerInfo[playernum].hasrumble);
 }
 
+boolean I_ControllerSupportsIndicatorMono(INT32 playernum)
+{
+	return (controllerInfo[playernum].dev && controllerInfo[playernum].hasmonoled);
+}
+
 boolean I_ControllerSupportsIndicatorColor(INT32 playernum)
 {
 	return (controllerInfo[playernum].dev && controllerInfo[playernum].hasrgbled);
+}
+
+boolean I_ControllerSupportsIndicatorPlayer(INT32 playernum)
+{
+	return (controllerInfo[playernum].dev && controllerInfo[playernum].hasplayerled);
+}
+
+boolean I_ControllerSupportsSensorAccelerometer(INT32 playernum)
+{
+	return (controllerInfo[playernum].dev && controllerInfo[playernum].hasaccelerometer);
+}
+
+boolean I_ControllerSupportsSensorGyro(INT32 playernum)
+{
+	return (controllerInfo[playernum].dev && controllerInfo[playernum].hasgyro);
 }
 
 void I_ControllerRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
@@ -405,6 +436,30 @@ void I_SetControllerIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT
 	}
 
 	SDL_SetGamepadLED(controller, red, green, blue);
+}
+
+void I_SetControllerIndicatorMonochrome(INT32 playernum, UINT8 brightness)
+{
+	SDL_Gamepad *controller = controllerInfo[playernum].dev;
+
+	if (controller == NULL || !I_ControllerSupportsIndicatorMono(playernum))
+	{
+		return;
+	}
+
+	SDL_SetGamepadLED(controller, brightness, 0, 0);
+}
+
+void I_SetControllerPlayerNumber(INT32 playernum, INT32 number)
+{
+	SDL_Gamepad *controller = controllerInfo[playernum].dev;
+
+	if (controller == NULL || !I_ControllerSupportsIndicatorPlayer(playernum))
+	{
+		return;
+	}
+
+	SDL_SetGamepadPlayerIndex(controller, number);
 }
 
 #endif
