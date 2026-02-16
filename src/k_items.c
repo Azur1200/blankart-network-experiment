@@ -755,6 +755,12 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 		}
 	}
 
+	if (result->type == KITEM_SUPERRING && !K_RingsActive())
+	{
+		// Don't roll Super Ring when rings are generally off.
+		newodds = 0;
+	}
+
 	if (result->unique_odds[oddstable])
 	{
 		// This item has unique odds!
