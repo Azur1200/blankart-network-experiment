@@ -221,7 +221,6 @@ void D_ProcessEvents(void)
 	for (size_t i = 0; i < 4; i++)
 		gamekeydown[0][KEY_MOUSEMOVE + i] = 0;
 
-	memset(deviceResponding, false, sizeof (deviceResponding));
 	for (; eventtail != eventhead; eventtail = (eventtail+1) & (MAXEVENTS-1))
 	{
 		ev = &events[eventtail];
@@ -1105,7 +1104,7 @@ void D_SRB2Loop(void)
 
 		if (!dedicated)
 		{
-			G_DeviceLEDTick();
+			G_ControllerLEDTick();
 		}
 
 		// consoleplayer -> displayplayers (hear sounds from viewpoint)
@@ -1222,7 +1221,6 @@ void D_StartTitle(void)
 
 	// clear cmd building stuff
 	memset(gamekeydown, 0, sizeof(gamekeydown));
-	memset(deviceResponding, false, sizeof (deviceResponding));
 
 	F_StartTitleScreen();
 
@@ -1230,13 +1228,13 @@ void D_StartTitle(void)
 	if (rendermode != render_none)
 		V_SetPaletteLump("PLAYPAL");
 
-	G_ResetAllDeviceRumbles();
+	G_ResetAllControllerRumbles();
 
 	// The title screen is obviously not a tutorial! (Unless I'm mistaken)
 	tutorialmode = false;
 
 	// map palettes affect this
-	G_ResetDeviceLED();
+	G_ResetControllerLED();
 }
 
 //

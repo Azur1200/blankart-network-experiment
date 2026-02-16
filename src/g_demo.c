@@ -33,7 +33,7 @@
 #include "z_zone.h"
 #include "i_video.h"
 #include "byteptr.h"
-#include "i_joy.h"
+#include "i_gamepad.h"
 #include "r_local.h"
 #include "r_skins.h"
 #include "y_inter.h"

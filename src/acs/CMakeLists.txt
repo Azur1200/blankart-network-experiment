@@ -1,5 +1,5 @@
 add_subdirectory(ACSVM)
-target_sources(SRB2SDL2 PRIVATE
+target_sources(BLANKART PRIVATE
 	environment.cpp
 	environment.hpp
 	thread.cpp

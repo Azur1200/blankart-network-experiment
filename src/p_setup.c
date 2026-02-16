@@ -9118,7 +9118,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	G_AddMapToBuffer(gamemap-1);
 
-	G_ResetDeviceLED();
+	G_ResetControllerLED();
 
 	P_MapEnd(); // g_tm.thing is no longer needed from this point onwards
 

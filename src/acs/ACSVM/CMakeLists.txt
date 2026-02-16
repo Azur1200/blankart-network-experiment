@@ -1,4 +1,4 @@
-target_sources(SRB2SDL2 PRIVATE
+target_sources(BLANKART PRIVATE
 	ACSVM/Action.cpp
 	ACSVM/Array.cpp
 	ACSVM/BinaryIO.cpp

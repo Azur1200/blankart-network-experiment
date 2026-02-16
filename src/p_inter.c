@@ -47,62 +47,6 @@
 #define CTFTEAMCODE(pl) pl->ctfteam ? (pl->ctfteam == 1 ? "\x85" : "\x84") : ""
 #define CTFTEAMENDCODE(pl) pl->ctfteam ? "\x80" : ""
 
-void P_ForceFeed(const player_t *player, INT32 attack, INT32 fade, tic_t duration, INT32 period)
-{
-	BasicFF_t Basicfeed;
-	if (!player)
-		return;
-	Basicfeed.Duration = (UINT32)(duration * (100L/TICRATE));
-	Basicfeed.ForceX = Basicfeed.ForceY = 1;
-	Basicfeed.Gain = 25000;
-	Basicfeed.Magnitude = period*10;
-	Basicfeed.player = player;
-	/// \todo test FFB
-	P_RampConstant(&Basicfeed, attack, fade);
-}
-
-void P_ForceConstant(const BasicFF_t *FFInfo)
-{
-	JoyFF_t ConstantQuake;
-	if (!FFInfo || !FFInfo->player)
-		return;
-	ConstantQuake.ForceX    = FFInfo->ForceX;
-	ConstantQuake.ForceY    = FFInfo->ForceY;
-	ConstantQuake.Duration  = FFInfo->Duration;
-	ConstantQuake.Gain      = FFInfo->Gain;
-	ConstantQuake.Magnitude = FFInfo->Magnitude;
-	if (FFInfo->player == &players[consoleplayer])
-		I_Tactile(ConstantForce, &ConstantQuake);
-	else if (splitscreen && FFInfo->player == &players[g_localplayers[1]])
-		I_Tactile2(ConstantForce, &ConstantQuake);
-	else if (splitscreen > 1 && FFInfo->player == &players[g_localplayers[2]])
-		I_Tactile3(ConstantForce, &ConstantQuake);
-	else if (splitscreen > 2 && FFInfo->player == &players[g_localplayers[3]])
-		I_Tactile4(ConstantForce, &ConstantQuake);
-}
-void P_RampConstant(const BasicFF_t *FFInfo, INT32 Start, INT32 End)
-{
-	JoyFF_t RampQuake;
-	if (!FFInfo || !FFInfo->player)
-		return;
-	RampQuake.ForceX    = FFInfo->ForceX;
-	RampQuake.ForceY    = FFInfo->ForceY;
-	RampQuake.Duration  = FFInfo->Duration;
-	RampQuake.Gain      = FFInfo->Gain;
-	RampQuake.Magnitude = FFInfo->Magnitude;
-	RampQuake.Start     = Start;
-	RampQuake.End       = End;
-	if (FFInfo->player == &players[consoleplayer])
-		I_Tactile(ConstantForce, &RampQuake);
-	else if (splitscreen && FFInfo->player == &players[g_localplayers[1]])
-		I_Tactile2(ConstantForce, &RampQuake);
-	else if (splitscreen > 1 && FFInfo->player == &players[g_localplayers[2]])
-		I_Tactile3(ConstantForce, &RampQuake);
-	else if (splitscreen > 2 && FFInfo->player == &players[g_localplayers[3]])
-		I_Tactile4(ConstantForce, &RampQuake);
-}
-
-
 //
 // GET STUFF
 //

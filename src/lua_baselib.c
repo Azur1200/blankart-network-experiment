@@ -5392,7 +5392,7 @@ static int lib_kGetItemListEntry(lua_State *L)
 // G_INPUT
 ////////////
 
-static int lib_gSetPlayerGamepadIndicatorColor(lua_State *L)
+static int lib_gSetPlayerControllerIndicatorColor(lua_State *L)
 {
 	INT32 player = -1;
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
@@ -5417,12 +5417,12 @@ static int lib_gSetPlayerGamepadIndicatorColor(lua_State *L)
 	if (player == -1) return 0;
 
 	// pls update with color 0 when youre done with changing led stuff so it can get player color again
-	G_SetPlayerGamepadIndicatorColor(player, color);
+	G_SetPlayerControllerIndicatorColor(player, color);
 
 	return 0;
 }
 
-static int lib_gPlayerDeviceRumble(lua_State *L)
+static int lib_gPlayerControllerRumble(lua_State *L)
 {
 	INT32 player = -1;
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
@@ -5445,7 +5445,7 @@ static int lib_gPlayerDeviceRumble(lua_State *L)
 	// Not a local player
 	if (player == -1) return 0;
 
-	G_PlayerDeviceRumble(player, low_strength, high_strength, duration);
+	G_PlayerControllerRumble(player, low_strength, high_strength, duration);
 
 	return 0;
 }
@@ -5862,8 +5862,11 @@ static luaL_Reg lib[] = {
 	{"K_GetItemListEntry", lib_kGetItemListEntry},
 
 	//g_input
-	{"G_SetPlayerGamepadIndicatorColor",lib_gSetPlayerGamepadIndicatorColor},
-	{"G_PlayerDeviceRumble",lib_gPlayerDeviceRumble},
+	//{"G_SetPlayerControllerIndicatorColor", lib_gSetPlayerControllerIndicatorColor},
+	//{"G_PlayerControllerRumble", lib_gPlayerControllerRumble},
+	// gotta keep backwards compat :chaosleep:
+	{"G_SetPlayerGamepadIndicatorColor", lib_gSetPlayerControllerIndicatorColor},
+	{"G_PlayerDeviceRumble", lib_gPlayerControllerRumble},
 
 	{NULL, NULL}
 };

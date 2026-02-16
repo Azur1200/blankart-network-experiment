@@ -78,7 +78,7 @@
 #include "r_fps.h"
 #include "m_easing.h"
 
-#include "i_joy.h" // for joystick menu controls
+#include "i_gamepad.h" // for joystick menu controls
 
 // Condition Sets
 #include "m_cond.h"
@@ -89,9 +89,9 @@
 #include "deh_tables.h" // menunames
 
 #if defined(HAVE_SDL)
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #if SDL_VERSION_ATLEAST(2,0,0)
-#include "sdl/sdlmain.h" // JOYSTICK_HOTPLUG
+#include <SDL3/SDL_main.h> // JOYSTICK_HOTPLUG
 #endif
 #endif
 
@@ -531,7 +531,7 @@ consvar_t cv_dummyfollower = CVAR_INIT ("dummyfollower", "-1", CV_HIDEN, dummyfo
 SINT8 dummycolorplayer = 0;
 static void SetDummyColorPlayer(void)
 {
-	G_SetPlayerGamepadIndicatorColor(dummycolorplayer, (UINT16)cv_dummycolor.value);
+	G_SetPlayerControllerIndicatorColor(dummycolorplayer, (UINT16)cv_dummycolor.value);
 }
 
 consvar_t cv_dummycolor = CVAR_INIT ("dummycolor", "0", CV_HIDEN|CV_CALL|CV_NOINIT, dummycolor_cons_t, SetDummyColorPlayer);
@@ -1311,13 +1311,61 @@ static boolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
 // use this when routine being NULL isn't a free pass
 static INT32 MR_Dummy(INT32 ch) { (void)ch; return true; }
 
+static INT32 RemapGamepadButton(event_t *ev)
+{
+	// remap to keyboard keys if needed
+	if (ev->data1 < KEY_JOY1 || ev->data1 >= JOYINPUTEND)
+		return ev->data1;
+
+	static INT32 joyremap[][2] = {
+		{ gc_accelerate,  KEY_ENTER      }, // these two first
+		{ gc_brake,       KEY_ESCAPE     }, // in case of conflicts
+		{ gc_fire,        KEY_BACKSPACE  },
+		{ gc_drift,       KEY_SPACE      },
+		{ gc_systemmenu,  KEY_ESCAPE     },
+		{ gc_aimforward,  KEY_UPARROW    },
+		{ gc_aimbackward, KEY_DOWNARROW  },
+		{ gc_turnleft,    KEY_LEFTARROW  },
+		{ gc_turnright,   KEY_RIGHTARROW },
+		{ gc_lookback,	  KEY_TAB },
+	};
+
+	for (size_t r = 0; r < sizeof(joyremap)/sizeof(*joyremap); r++)
+	{
+		INT32 gc = joyremap[r][0];
+		if (gc == gc_brake && !menustack[0])
+			continue; // don't open the menu with brake!
+
+		if (G_ControlBoundToKey(0, gc, ev->data1, true))
+		{
+			return joyremap[r][1];
+		}
+	}
+
+	// remap the hats too
+	switch (ev->data1)
+	{
+		case KEY_HAT1+0:
+			return KEY_UPARROW;
+		case KEY_HAT1+1:
+			return KEY_DOWNARROW;
+		case KEY_HAT1+2:
+			return KEY_LEFTARROW;
+		case KEY_HAT1+3:
+			return KEY_RIGHTARROW;
+	}
+	return ev->data1;
+}
+
+
 //
 // M_Responder
 //
 boolean M_Responder(event_t *ev)
 {
 	INT32 ch = -1;
-	static tic_t joywait = 0, mousewait = 0;
+	static tic_t mousewait = 0, joyxwait = 0, joyywait = 0;
+	static INT32 pjoyx = 0, pjoyy = 0;
 	static INT32 pmousex = 0, pmousey = 0;
 	static INT32 lastx = 0, lasty = 0;
 	INT32 deviceplayer = G_GetDevicePlayer(ev->device);
@@ -1343,32 +1391,17 @@ boolean M_Responder(event_t *ev)
 	{
 		ch = ev->data1;
 
-		// added 5-2-98 remap virtual keys (mouse & joystick buttons)
+		// added 5-2-98 remap virtual keys (mouse buttons)
 		switch (ch)
 		{
 			case KEY_MOUSE1:
 				ch = KEY_ENTER;
 				break;
 			case KEY_MOUSE1 + 1:
-				ch = KEY_BACKSPACE;
-				break;
-			case KEY_HAT1:
-				if (deviceplayer == 0)
-					ch = KEY_UPARROW;
-				break;
-			case KEY_HAT1 + 1:
-				if (deviceplayer == 0)
-					ch = KEY_DOWNARROW;
-				break;
-			case KEY_HAT1 + 2:
-				if (deviceplayer == 0)
-					ch = KEY_LEFTARROW;
-				break;
-			case KEY_HAT1 + 3:
-				if (deviceplayer == 0)
-					ch = KEY_RIGHTARROW;
+				ch = KEY_ESCAPE;
 				break;
 			default:
+				ch = RemapGamepadButton(ev);
 				break;
 		}
 	}
@@ -1376,26 +1409,66 @@ boolean M_Responder(event_t *ev)
 	{
 		if (ev->type == ev_joystick && deviceplayer == 0)
 		{
-			static INT32 lastjoy[JOYAXISES] = {0};
+			fixed_t rate = 0;
+			UINT32 repeat = 0;
 
-			if (G_AxisInDeadzone(deviceplayer, ev))
+			if ((ev->data1 == 1))
 			{
-				lastjoy[ev->data1] = 0;
-				return false;
-			}
-
-			tic_t thistime = I_GetTime();
-
-			// no previous direction OR change direction
-			if (joywait < thistime && (lastjoy[ev->data1] == 0 || (ev->data2 < 0) != (lastjoy[ev->data1] < 0)))
-			{
-				ch = G_AxisToKey(ev);
-				joywait = thistime + NEWTICRATE/7;
+				pjoyy = (abs(ev->data2) > JOYAXISRANGE/4) ? ev->data2 : 0;
 			}
 			else
-				ch = 0;
-
-			lastjoy[ev->data1] = ev->data2;
+			{
+				pjoyx = (abs(ev->data2) > JOYAXISRANGE/4) ? ev->data2 : 0;
+			}
+			
+			if (pjoyx == 0 && pjoyy == 0)
+			{
+				joyywait = 0;
+			}
+			else if (abs(pjoyy) > abs(pjoyx))
+			{
+				rate = FixedDiv(abs(pjoyy), JOYAXISRANGE);
+				repeat = (FixedMul(2*FRACUNIT, rate) + FixedMul(FRACUNIT - rate, (NEWTICRATE/2)*FRACUNIT))/FRACUNIT;
+			
+				if (pjoyy > 0)
+				{
+					if (joyywait < I_GetTime())
+					{
+						ch = KEY_DOWNARROW;
+						joyywait = I_GetTime() + repeat;
+					}
+				}
+				else if (pjoyy < 0)
+				{
+					if (joyywait < I_GetTime())
+					{
+						ch = KEY_UPARROW;
+						joyywait = I_GetTime() + repeat;
+					}
+				}
+			}
+			else
+			{
+				rate = FixedDiv(abs(pjoyx), JOYAXISRANGE);
+				repeat = (FixedMul(2*FRACUNIT, rate) + FixedMul(FRACUNIT - rate, (NEWTICRATE/2)*FRACUNIT))/FRACUNIT;
+				
+				if (pjoyx > 0)
+				{
+					if (joyxwait < I_GetTime())
+					{
+						ch = KEY_RIGHTARROW;
+						joyxwait = I_GetTime() + repeat;
+					}
+				}
+				else if (pjoyx < 0)
+				{
+					if (joyxwait < I_GetTime())
+					{
+						ch = KEY_LEFTARROW;
+						joyxwait = I_GetTime() + repeat;
+					}
+				}
+			}
 		}
 		// pass through other joysticks
 		else if (ev->type == ev_joystick)
@@ -1433,35 +1506,6 @@ boolean M_Responder(event_t *ev)
 				ch = KEY_RIGHTARROW;
 				mousewait = I_GetTime() + NEWTICRATE/7;
 				pmousex = lastx += 30;
-			}
-		}
-	}
-
-	// remap to keyboard keys if needed
-	if (deviceplayer == 0 && ch >= NUMKEYS)
-	{
-		static INT32 joyremap[][2] = {
-			{ gc_accelerate,  KEY_ENTER      }, // these two first
-			{ gc_brake,       KEY_ESCAPE     }, // in case of conflicts
-			{ gc_fire,        KEY_BACKSPACE  },
-			{ gc_drift,       KEY_SPACE      },
-			{ gc_systemmenu,  KEY_ESCAPE     },
-			{ gc_aimforward,  KEY_UPARROW    },
-			{ gc_aimbackward, KEY_DOWNARROW  },
-			{ gc_turnleft,    KEY_LEFTARROW  },
-			{ gc_turnright,   KEY_RIGHTARROW },
-		};
-
-		for (size_t r = 0; r < sizeof(joyremap)/sizeof(*joyremap); r++)
-		{
-			INT32 gc = joyremap[r][0];
-			if (gc == gc_brake && !menustack[0])
-				continue; // don't open the menu with brake!
-
-			if (G_ControlBoundToKey(0, gc, ch, true))
-			{
-				ch = joyremap[r][1];
-				break;
 			}
 		}
 	}
@@ -2617,9 +2661,9 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 		}
 		else if (item->submenu == MN_OP_JOYSTICKSET) // gamepad select
 		{
-			INT32 stick = cv_usejoystick[setupcontrolplayer-1].value;
-			const char *name = stick == 0 ? "None" : I_GetJoyName(stick);
-			if (!name) name = "?";
+			INT32 stick = cv_usecontroller[setupcontrolplayer-1].value;
+			const char *name = stick == 0 ? "None" : I_GetControllerName(stick);
+			if (!name) name = "Unavailable";
 			w = V_StringWidth(name, vflags);
 			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
 				(BASEVIDWIDTH - x, y, vflags|highlightflags, name);
@@ -8148,7 +8192,7 @@ INT32 MR_SetupMultiPlayer(INT32 arg)
 	gridcss_skinmemory = cv_chooseskin.value;
 	CV_SetValue(&cv_dummyfollower, cv_follower[arg].value);
 	CV_SetValue(&cv_dummycolor, cv_playercolor[arg].value);
-	G_SetPlayerGamepadIndicatorColor(arg, cv_playercolor[arg].value);
+	G_SetPlayerControllerIndicatorColor(arg, cv_playercolor[arg].value);
 	dummycolorplayer = arg;
 
 	Skinsort_option_Onchange();
@@ -8419,17 +8463,19 @@ void MD_DrawJoystick(void)
 {
 	INT32 i;
 	INT32 compareval;
-
+#ifdef JOYSTICK_HOTPLUG
+	const INT32 numcontrollers = I_NumControllers();
+#endif
 	MD_DrawGenericMenu();
 
 	for (i = 0; i <= MAXGAMEPADS; i++)
 	{
 #ifdef JOYSTICK_HOTPLUG
-		if (atoi(cv_usejoystick[setupcontrolplayer-1].string) > numcontrollers)
-			compareval = atoi(cv_usejoystick[setupcontrolplayer-1].string);
+		if (atoi(cv_usecontroller[setupcontrolplayer-1].string) > numcontrollers)
+			compareval = atoi(cv_usecontroller[setupcontrolplayer-1].string);
 		else
 #endif
-			compareval = cv_usejoystick[setupcontrolplayer-1].value;
+			compareval = cv_usecontroller[setupcontrolplayer-1].value;
 
 		V_DrawString(menudefs[MN_OP_JOYSTICKSET].x, menudefs[MN_OP_JOYSTICKSET].y + 16*i, ((i == compareval) ? V_GREENMAP : 0)|MENUCAPS, joystickInfo[i]);
 	}
@@ -8438,10 +8484,9 @@ void MD_DrawJoystick(void)
 INT32 MR_SetupJoystickMenu(INT32 arg)
 {
 	const char *joyNA = "Unavailable";
-	const INT32 n = numcontrollers;
+	const INT32 numcontrollers = I_NumControllers();
 
 	INT32 i = 0;
-	INT32 j;
 
 	if (arg < 0 || arg >= MAXSPLITSCREENPLAYERS)
 		return false;
@@ -8452,24 +8497,24 @@ INT32 MR_SetupJoystickMenu(INT32 arg)
 
 	for (i = 1; i <= MAXGAMEPADS; i++)
 	{
-		if (i <= n && (I_GetJoyName(i)) != NULL)
-			strncpy(joystickInfo[i], I_GetJoyName(i), 28);
+		if (i <= numcontrollers && (I_GetControllerName(i)) != NULL)
+			strncpy(joystickInfo[i], I_GetControllerName(i), 28);
 		else
 			strcpy(joystickInfo[i], joyNA);
 
 #ifdef JOYSTICK_HOTPLUG
-		// We use cv_usejoystick.string as the USER-SET var
-		// and cv_usejoystick.value as the INTERNAL var
+		// We use cv_usecontroller.string as the USER-SET var
+		// and cv_usecontroller.value as the INTERNAL var
 		//
-		// In practice, if cv_usejoystick.string == 0, this overrides
-		// cv_usejoystick.value and always disables
+		// In practice, if cv_usecontroller.string == 0, this overrides
+		// cv_usecontroller.value and always disables
 		//
-		// Update cv_usejoystick.string here so that the user can
+		// Update cv_usecontroller.string here so that the user can
 		// properly change this value.
-		for (j = 0; j < MAXSPLITSCREENPLAYERS; j++)
+		for (INT32 j = 0; j < MAXSPLITSCREENPLAYERS; j++)
 		{
-			if (i == cv_usejoystick[j].value)
-				CV_SetValue(&cv_usejoystick[j], i);
+			if (i == cv_usecontroller[j].value)
+				CV_SetValue(&cv_usecontroller[j], i);
 		}
 #endif
 	}
@@ -8483,29 +8528,29 @@ INT32 MR_AssignJoystick(INT32 arg)
 
 #ifdef JOYSTICK_HOTPLUG
 	INT32 oldchoice, oldstringchoice;
-	INT32 numjoys = numcontrollers;
+	const INT32 numcontrollers = I_NumControllers();
 
-	oldchoice = oldstringchoice = atoi(cv_usejoystick[p].string) > numjoys ? atoi(cv_usejoystick[p].string) : cv_usejoystick[p].value;
-	CV_SetValue(&cv_usejoystick[p], arg);
+	oldchoice = oldstringchoice = atoi(cv_usecontroller[p].string) > numcontrollers ? atoi(cv_usecontroller[p].string) : cv_usecontroller[p].value;
+	CV_SetValue(&cv_usecontroller[p], arg);
 
-	// Just in case last-minute changes were made to cv_usejoystick.value,
+	// Just in case last-minute changes were made to cv_usecontroller.value,
 	// update the string too
-	// But don't do this if we're intentionally setting higher than numjoys
-	if (arg <= numjoys)
+	// But don't do this if we're intentionally setting higher than numcontrollers
+	if (arg <= numcontrollers)
 	{
-		CV_SetValue(&cv_usejoystick[p], cv_usejoystick[p].value);
+		CV_SetValue(&cv_usecontroller[p], cv_usecontroller[p].value);
 
 		// reset this so the comparison is valid
-		if (oldchoice > numjoys)
-			oldchoice = cv_usejoystick[p].value;
+		if (oldchoice > numcontrollers)
+			oldchoice = cv_usecontroller[p].value;
 
 		if (oldchoice != arg)
 		{
-			if (arg && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
-				CV_SetValue(&cv_usejoystick[p], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
+			if (arg && oldstringchoice > numcontrollers) // if we did not select "None", we likely selected a used device
+				CV_SetValue(&cv_usecontroller[p], (oldstringchoice > numcontrollers ? oldstringchoice : oldchoice));
 
 			if (oldstringchoice ==
-				(atoi(cv_usejoystick[p].string) > numjoys ? atoi(cv_usejoystick[p].string) : cv_usejoystick[p].value))
+				(atoi(cv_usecontroller[p].string) > numcontrollers ? atoi(cv_usecontroller[p].string) : cv_usecontroller[p].value))
 				M_StartMessage("This joystick is used by another\n"
 							   "player. Reset the joystick\n"
 							   "for that player first.\n\n"
@@ -8513,7 +8558,7 @@ INT32 MR_AssignJoystick(INT32 arg)
 		}
 	}
 #else
-	CV_SetValue(&cv_usejoystick[p], arg);
+	CV_SetValue(&cv_usecontroller[p], arg);
 #endif
 	return true;
 }
@@ -8540,8 +8585,8 @@ INT32 MR_SetupControlsMenu(INT32 arg)
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEAZS", &cv_deadzonestyle[arg]);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "TURNSMOOTHING", &cv_turnsmooth[arg]);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "LITESTEER", &cv_litesteer[arg]);
-	M_SetItemCvar(MN_OP_CHANGECONTROLS, "LEDCOLOR", &cv_gamepadled[arg]);
-	M_SetItemCvar(MN_OP_CHANGECONTROLS, "RUMBLE", &cv_rumble[arg]);
+	M_SetItemCvar(MN_OP_CHANGECONTROLS, "LEDCOLOR", &cv_controllerled[arg]);
+	M_SetItemCvar(MN_OP_CHANGECONTROLS, "RUMBLE", &cv_controllerrumble[arg]);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "RUMBLESTR", &cv_rumblestrength[arg]);
 
 	M_SetItemVisible(MN_OP_CHANGECONTROLS, "TALK", player1); // Chat
@@ -8683,7 +8728,7 @@ static void M_ResetControlsResponse(INT32 ch)
 	G_ResetControls(p);
 
 	// Setup gamepad option defaults (yucky)
-	CV_StealthSet(&cv_usejoystick[p], cv_usejoystick[p].defaultvalue);
+	CV_StealthSet(&cv_usecontroller[p], cv_usecontroller[p].defaultvalue);
 
 	S_StartSound(NULL, sfx_s224);
 }

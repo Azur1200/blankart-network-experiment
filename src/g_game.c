@@ -19,6 +19,7 @@
 #include "d_clisrv.h"
 #include "f_finale.h"
 #include "filesrch.h" // for refreshdirmenu
+#include "g_input.h"
 #include "m_fixed.h"
 #include "p_setup.h"
 #include "p_saveg.h"
@@ -41,7 +42,7 @@
 #include "z_zone.h"
 #include "i_video.h"
 #include "byteptr.h"
-#include "i_joy.h"
+#include "i_gamepad.h"
 #include "r_local.h"
 #include "r_skins.h"
 #include "y_inter.h"
@@ -1186,6 +1187,7 @@ boolean G_AxisInDeadzone(UINT8 p, event_t *ev)
 // if defaults is true, also check default controls if the gamecontrol has no binds
 boolean G_ControlBoundToKey(UINT8 p, INT32 gc, INT32 key, boolean defaults)
 {
+	INT32 deviceID;
 	INT32 i;
 	INT32 (*map)[MAXINPUTMAPPING] = &gamecontrol[p][gc];
 
@@ -1194,9 +1196,11 @@ boolean G_ControlBoundToKey(UINT8 p, INT32 gc, INT32 key, boolean defaults)
 
 	if (defaults)
 	{
+		deviceID = I_GetControllerSlotfromID(I_GetControllerIDForPlayer(p));
 		for (i = 0; i < MAXINPUTMAPPING; i++)
-			if (G_KeyIsAvailable((*map)[i], cv_usejoystick[p].value, false))
+			if (G_KeyIsAvailable((*map)[i], deviceID, false))
 				goto bound;
+
 		map = &gamecontroldefault[gc];
 	}
 bound:
@@ -1259,11 +1263,18 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital, SINT8 type)
 		return 0;
 	}
 
-	fixed_t deadzonetype = G_GetDeadZoneType(p,type);
+	fixed_t deadzonetype = G_GetDeadZoneType(p, type);
 
 	deadzone = (JOYAXISRANGE * deadzonetype) / FRACUNIT;
 
-	deviceID = I_GetJoystickDeviceIndexForPlayer(p) + 1;
+	deviceID = I_GetControllerSlotfromID(I_GetControllerIDForPlayer(p));
+	if (deviceID >= MAXDEVICES)
+		return 0;
+
+	// not a controller?
+	// then its a keyboard or mouse
+	if (deviceID == INVALID_DEVICE)
+		deviceID = KEYBOARD_MOUSE_DEVICE;
 
 retrygetcontrol:
 	for (i = 0; i < MAXINPUTMAPPING; i++)
@@ -1812,14 +1823,13 @@ void G_DoLoadLevel(boolean resetplayer)
 
 	// clear cmd building stuff
 	memset(gamekeydown, 0, sizeof (gamekeydown));
-	memset(deviceResponding, false, sizeof (deviceResponding));
 
 	// clear hud messages remains (usually from game startup)
 	CON_ClearHUD();
 
 	server_lagless = cv_lagless.value;
 
-	G_ResetAllDeviceRumbles();
+	G_ResetAllControllerRumbles();
 
 	if (doAutomate == true)
 	{
@@ -3783,7 +3793,7 @@ void G_FinishExitLevel(void)
 {
 	if (gamestate == GS_LEVEL)
 	{
-		G_ResetAllDeviceRumbles();
+		G_ResetAllControllerRumbles();
 
 		if (g_exit.retry)
 		{

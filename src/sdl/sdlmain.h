@@ -19,8 +19,8 @@
 #ifndef __sdlmain__
 #define __sdlmain__
 
-extern SDL_bool consolevent;
-extern SDL_bool framebuffer;
+extern bool consolevent;
+extern bool framebuffer;
 
 #include "../m_fixed.h"
 #include "../doomdef.h"
@@ -29,10 +29,11 @@ extern SDL_bool framebuffer;
 extern "C" {
 #endif
 
-// SDL2 stub macro
-#define SDL2STUB() CONS_Printf("SDL2: stubbed: %s:%d\n", __func__, __LINE__)
+// SDL3 stub macro
+#define SDL3STUB() CONS_Printf("SDL3: stubbed: %s:%d\n", __func__, __LINE__)
 
-// So m_menu knows whether to store cv_usejoystick value or string
+
+// So m_menu knows whether to store cv_usecontroller value or string
 #define JOYSTICK_HOTPLUG
 
 /**	\brief	The JoyInfo_s struct
@@ -41,46 +42,49 @@ extern "C" {
 */
 typedef struct SDLJoyInfo_s
 {
-	/// Controller handle
-	SDL_GameController *dev;
-	/// number of old joystick
-	int oldjoy;
-	/// number of axies
-	int axises;
+	/// Gamepad handle
+	SDL_Gamepad *dev;
+	/// Joystick handle
+	//SDL_Joystick *joydev;
+	/// Controller index
+	SDL_JoystickID id;
+	/// name of controller
+	//const char *name;
 	/// scale of axises
 	INT32 scale;
-	/// number of buttons
-	int buttons;
-	/// number of hats
-	int hats;
-	/// number of balls
-	int balls;
 
-} SDLJoyInfo_t;
+	// Rumble Support
+	boolean hasrumble;
+	// Mono LED Support
+	boolean hasmonoled;
+	// RGB LED Support
+	boolean hasrgbled;
+	// Player LED Support
+	boolean hasplayerled;
+
+	// Accelerometer Support
+	boolean hasaccelerometer;
+	// Gyroscope Support
+	boolean hasgyro;
+
+	// you can pry my nintendo button layout out of my cold dead hands, SDL3
+	boolean flipbuttons;
+} controllerinfo_t;
 
 /**	\brief SDL info about controllers
 */
-extern SDLJoyInfo_t JoyInfo[MAXSPLITSCREENPLAYERS];
-extern SDL_GameController *ExJoystick[MAXGAMEPADS];
+extern controllerinfo_t controllerInfo[MAXSPLITSCREENPLAYERS];
 
-void I_StoreExJoystick(SDL_GameController *dev);
-
-/**	\brief joystick axis deadzone
-*/
-#define SDL_JDEADZONE 153
-#undef SDL_JDEADZONE
-
-void I_GetConsoleEvents(void);
+void I_ShutdownControllerSystem(void);
 
 // So we can call this from i_video event loop
-void I_ShutdownJoystick(UINT8 index);
+void I_ShutdownController(UINT8 index);
 
 // Cheat to get the device index for a game controller handle
-INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev);
+INT32 I_GetControllerID(SDL_Gamepad *dev);
 
-// Quick thing to make SDL_JOYDEVICEADDED events less of an abomination
-void I_UpdateJoystickDeviceIndex(UINT8 player);
-void I_UpdateJoystickDeviceIndices(UINT8 excludePlayer);
+void I_UpdateControllerList(void);
+
 
 void I_GetConsoleEvents(void);
 

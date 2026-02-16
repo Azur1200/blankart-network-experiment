@@ -34,8 +34,6 @@ void OglSdlFinishUpdate(boolean vidwait);
 
 extern SDL_Renderer *renderer;
 extern SDL_GLContext sdlglcontext;
-extern Uint16      realwidth;
-extern Uint16      realheight;
 
 #ifdef __cplusplus
 } // extern "C"
