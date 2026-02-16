@@ -258,7 +258,7 @@ void K_DisplayItemTimers(void)
 			{qche("K_TIINV1"), qche("K_TIINV2"), qche("K_TIINV3"), qche("K_TIINV4"), qche("K_TIINV5"), qche("K_TIINV6")},
 			3,
 			// Hide the timer until it's necessary
-			((stplyr->invincibilitytimer >= MININVINTIME) && K_IsKartItemAlternate(KITEM_INVINCIBILITY)) ? TIMER_NONUMBER : 0,
+			static_cast<uint32_t>(((stplyr->invincibilitytimer >= MININVINTIME) && K_IsKartItemAlternate(KITEM_INVINCIBILITY)) ? TIMER_NONUMBER : 0),
 		},
 		{ // grow
 			"grow",
