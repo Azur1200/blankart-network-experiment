@@ -11632,6 +11632,7 @@ void A_RandomShadowFrame(void *thing)
 	{
 		if (actor->target && !actor->target->player->flashing
 		&& !actor->target->player->invincibilitytimer
+		&& !actor->target->player->smonitortimer
 		&& !actor->target->player->growshrinktimer
 		&& !K_IsPlayerDamaged(actor->target->player)
 		&& P_IsObjectOnGround(actor->target)
@@ -11678,6 +11679,7 @@ void A_RoamingShadowThinker(void *thing)
 		{
 			if (actor->target && !actor->target->player->flashing
 			&& !actor->target->player->invincibilitytimer
+			&& !actor->target->player->smonitortimer
 			&& !actor->target->player->growshrinktimer
 			&& !K_IsPlayerDamaged(actor->target->player))
 			{
@@ -11936,6 +11938,7 @@ void A_ReaperThinker(void *thing)
 			{
 				if (!(actor->target == targetplayermo && actor->target && !actor->target->player->flashing
 				&& !actor->target->player->invincibilitytimer
+				&& !actor->target->player->smonitortimer
 				&& !actor->target->player->growshrinktimer
 				&& !K_IsPlayerDamaged(actor->target->player)))
 					P_SetTarget(&actor->target, actor->hnext);

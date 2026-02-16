@@ -8,23 +8,7 @@ Alternative items are secondary versions of existing SRB2Kart items that **reint
 
 To toggle on/off these alternate versions, you can do so with the following commands:
 
-- ``altitem_invincibility`` (for Invincibility)
 - ``altitem_shrink`` (for Shrink)
-
-### Alt. Invincibility (Power: Occupies Slot)
-Invincibility, in its normal form, is a power item that appears in the lower ranks, letting players cut through offroad and spin out opponents with prejudice. **Alt. Invincibility** works significantly different, trading its aggression for speed and optimized recovery.
-
-To begin, Alt. Invincibility's item odds work as an inversion of the Self-Propelled Bomb's: Like how the S.P.B. only appears when first is extremely far ahead of the pack, Alt. Invincibility only reveals itself to players who are **extremely far behind the pack**. In some extreme cases, Alt. Invincibilty will override the race-start cooldown to power-up players already left in the dust.
-
-Unlike the standard Invincibility, **you can't damage players with Alt. Invincibility**, instead bumping them like you would normally.
-
-Its time limit (and power) is directly tied to your distance from the "cluster player", the player closest to the largest collection on the map of (losing) players. If you notice yourself falling super far behind on the minimap, you're likely to roll Alt. Invincibility. **The further the distance, the stronger your invincibility**, and the faster you'll go. Think of it like a non-autopilot version of Mario Kart's Bullet Bill, or Sonic Racing's Drill Wisp. _Make huge comebacks, and don't lose hope!_
-
-Do note, though: Alt. Invincibility is designed as a "gap closer", and not traditional catchup. Once you pass the cluster player, the timer **decreases at an exponentially fast rate**; don't count on it to let you steal wins from the leader!
-
-As you run out of power (your Invincibility drops below 5 seconds), **offroad will gradually begin to affect you again**. A warning signal usually sounds as your invincibility is about to run out, as well. Be careful when you see the rainbow color begin to fade!
-
-If you want something else, or your invincibility is running low, hold ITEM to cancel your Invincibility; the same as you would Grow.
 
 ### Alt. Shrink (Power)
 Shrink, in its normal form, functions much like Mario Kart's Lightning item. Most servers keep it off due to how frequent and disruptive it is to races.
@@ -60,5 +44,15 @@ If you overcharge the Flame Shield, the Flamometer **catches fire**, and you'll 
 
 If you run into players while charging your Flame Shield, **you'll flip them over**, making them lose a significant amount of speed. You however, rush right through them.
 
-### Land Mine (Drop Behind)
-This is an item exclusive to first. Drop a discreet mine onto the track; anyone who runs into it **flips over and loses speed**.
+### S-Monitor (Power: Occupies Slot)
+The **S-Monitor** is a special power item that works significantly different from most others, trading aggression for speed and optimized recovery.
+
+To begin, the S-Monitor's item odds work as an inversion of the Self-Propelled Bomb's: Like how the S.P.B. only appears when first is extremely far ahead of the pack, the S-Monitor only reveals itself to players who are **extremely far behind the pack**. In some extreme cases, the S-Monitor will override the race-start cooldown to power-up players already left in the dust.
+
+Its time limit (and power) is directly tied to your distance from the "cluster player", the player closest to the largest collection on the map of (losing) players. If you notice yourself falling super far behind on the minimap, you're likely to roll an S-Monitor. **The further the distance, the stronger your invincibility**, and the faster you'll go. Your invincibility under the effects of the S-Monitor won't run out until you pass the cluster player. Think of it like a non-autopilot version of Mario Kart's Bullet Bill, or Sonic Racing's Drill Wisp. _Make huge comebacks, and don't lose hope!_
+
+Do note, though: the S-Monitor is designed as a "gap closer", and not traditional catchup. Once you pass the cluster player, your power **will decay at a very fast rate**; don't count on it to let you steal wins from the leader!
+
+As you run out of power, **offroad will gradually begin to affect you again**. A warning signal usually sounds as your invincibility is about to run out, as well. Be careful when you see the rainbow color begin to fade!
+
+If you want something else, hold ITEM to cancel the S-Monitor; the same as you would Grow.

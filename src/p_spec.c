@@ -9338,7 +9338,8 @@ boolean P_AllowFriction(mobj_t *mobj)
 		|| (cv_kartbubble_boost_offroadignore.value && mobj->player->bubbleboost)
 		|| mobj->player->growshrinktimer > 0
 		|| mobj->player->flamestore
-		|| K_IsAltShrunk(mobj->player))
+		|| K_IsAltShrunk(mobj->player)
+		|| mobj->player->smonitortimer)
 		return false;
 
 	return true;

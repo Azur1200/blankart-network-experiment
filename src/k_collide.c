@@ -721,7 +721,7 @@ static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 
 static boolean K_StrongPlayerBump(const player_t *player)
 {
-	return (((!K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (player->invincibilitytimer))
+	return ((player->invincibilitytimer)
 	    || (player->growshrinktimer > 0));
 }
 
@@ -968,12 +968,10 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	boolean t1Condition = false;
 	boolean t2Condition = false;
 
-	// Rim suggestion: Flipover damage is negligible at best, just cull it from Invincibility as a whole.
-	if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-	{
-		t1Condition = (t1->player->invincibilitytimer > 0);
-		t2Condition = (t2->player->invincibilitytimer > 0);
-	}
+	t1Condition = (t1->player->invincibilitytimer > 0);
+	t2Condition = (t2->player->invincibilitytimer > 0);
+
+	UINT8 invindamage = DMG_WIPEOUT; // TODO: make this a cvar value
 
 	if ((t1Condition == true || flameT1 == true) && (t2Condition == true || flameT2 == true))
 	{
@@ -981,16 +979,16 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 		K_DoInstashield(t2->player);
 		return false;
 	}
-	else if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
+	else
 	{
 		if (t1Condition == true && t2Condition == false)
 		{
-			P_DamageMobj(t2, t1, t1, 1, DMG_WIPEOUT);
+			P_DamageMobj(t2, t1, t1, 1, invindamage);
 			return true;
 		}
 		else if (t1Condition == false && t2Condition == true)
 		{
-			P_DamageMobj(t1, t2, t2, 1, DMG_WIPEOUT);
+			P_DamageMobj(t1, t2, t2, 1, invindamage);
 			return true;
 		}
 	}

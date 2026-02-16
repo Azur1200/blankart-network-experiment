@@ -415,10 +415,11 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(arrowbullet) \
 	X(rocketsneakertimer) \
 	X(invincibilitytimer) \
-	X(maxinvincibilitytime) \
-	X(invincibilitybottleneck) \
-	X(invincibilitycancel) \
-	X(invincibilitywarning) \
+	X(smonitortimer) \
+	X(maxsmonitortime) \
+	X(smonitorexpiring) \
+	X(smonitorcancel) \
+	X(smonitorwarning) \
 	X(eggmanexplode) \
 	X(eggmanblame) \
 	X(bananadrag) \
@@ -906,18 +907,21 @@ static int player_get(lua_State *L)
 	case player_invincibilitytimer:
 		lua_pushinteger(L, plr->invincibilitytimer);
 		break;
-	case player_maxinvincibilitytime:
-		lua_pushinteger(L, plr->maxinvincibilitytime);
+	case player_smonitortimer:
+		lua_pushinteger(L, plr->smonitortimer);
 		break;
-	case player_invincibilitybottleneck:
+	case player_maxsmonitortime:
+		lua_pushinteger(L, plr->maxsmonitortime);
+		break;
+	case player_smonitorexpiring:
 		// Push as an INT16 due to the negative value signal systems.
-		lua_pushinteger(L, (INT16)plr->invincibilitybottleneck);
+		lua_pushinteger(L, (INT16)plr->smonitorexpiring);
 		break;
-	case player_invincibilitycancel:
-		lua_pushinteger(L, plr->invincibilitycancel);
+	case player_smonitorcancel:
+		lua_pushinteger(L, plr->smonitorcancel);
 		break;
-	case player_invincibilitywarning:
-		lua_pushboolean(L, (boolean)plr->invincibilitywarning);
+	case player_smonitorwarning:
+		lua_pushboolean(L, (boolean)plr->smonitorwarning);
 		break;
 	case player_eggmanexplode:
 		lua_pushinteger(L, plr->eggmanexplode);
@@ -1699,20 +1703,23 @@ static int player_set(lua_State *L)
 	case player_invincibilitytimer:
 		plr->invincibilitytimer = luaL_checkinteger(L, 3);
 		break;
-	case player_maxinvincibilitytime:
+	case player_smonitortimer:
+		plr->smonitortimer = luaL_checkinteger(L, 3);
+		break;
+	case player_maxsmonitortime:
 	{
 		UINT16 maxinv = max(1, (UINT16)luaL_checkinteger(L, 3)); // Prevent zero-divides
-		plr->maxinvincibilitytime = maxinv;
+		plr->maxsmonitortime = maxinv;
 		break;
 	}
-	case player_invincibilitybottleneck:
-		plr->invincibilitybottleneck = (UINT16)luaL_checkinteger(L, 3);
+	case player_smonitorexpiring:
+		plr->smonitorexpiring = (UINT16)luaL_checkinteger(L, 3);
 		break;
-	case player_invincibilitycancel:
-		plr->invincibilitycancel = (INT16)luaL_checkinteger(L, 3);
+	case player_smonitorcancel:
+		plr->smonitorcancel = (INT16)luaL_checkinteger(L, 3);
 		break;
-	case player_invincibilitywarning:
-		plr->invincibilitywarning = (UINT8)luaL_checkboolean(L, 3);
+	case player_smonitorwarning:
+		plr->smonitorwarning = (UINT8)luaL_checkboolean(L, 3);
 		break;
 	case player_eggmanexplode:
 		plr->eggmanexplode = luaL_checkinteger(L, 3);

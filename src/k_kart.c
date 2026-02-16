@@ -310,13 +310,15 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_panel_separate);
 	CV_RegisterVar(&cv_kartstacking_panel_maxgrade);
 
-	CV_RegisterVar(&cv_kartstacking_invincibility_classicspeedboost);
-	CV_RegisterVar(&cv_kartstacking_invincibility_classicaccelboost);
-	CV_RegisterVar(&cv_kartstacking_invincibility_classichandleboost);
-    CV_RegisterVar(&cv_kartstacking_invincibility_alternatespeedboost);
-	CV_RegisterVar(&cv_kartstacking_invincibility_alternateaccelboost);
-	CV_RegisterVar(&cv_kartstacking_invincibility_alternatehandleboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_speedboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_accelboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_handleboost);
 	CV_RegisterVar(&cv_kartstacking_invincibility_stackable);
+
+    CV_RegisterVar(&cv_kartstacking_smonitor_speedboost);
+	CV_RegisterVar(&cv_kartstacking_smonitor_accelboost);
+	CV_RegisterVar(&cv_kartstacking_smonitor_handleboost);
+	CV_RegisterVar(&cv_kartstacking_smonitor_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_grow_speedboost);
 	CV_RegisterVar(&cv_kartstacking_grow_accelboost);
@@ -432,11 +434,7 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartinvintheme);
 
-    CV_RegisterVar(&cv_kartinvindist);
-    CV_RegisterVar(&cv_kartinvindistmul);
-
-    CV_RegisterVar(&cv_kartinvin_maxtime);
-    CV_RegisterVar(&cv_kartinvin_midtime);
+    CV_RegisterVar(&cv_kartsmonitordist);
 
 	// experimental stuff
 	CV_RegisterVar(&cv_kartbubble_defense_canidle);
@@ -527,7 +525,6 @@ static fixed_t K_PlayerWeight(mobj_t* mobj, mobj_t* against)
 {
 	fixed_t weight = 5 * FRACUNIT;
 	fixed_t bubbleMultiplier = FRACUNIT;
-	const boolean invinisalt = K_IsKartItemAlternate(KITEM_INVINCIBILITY);
 
 	if (!mobj->player)
 		return weight;
@@ -543,11 +540,12 @@ static fixed_t K_PlayerWeight(mobj_t* mobj, mobj_t* against)
 		{
 			return 0; // This player does not cause any bump action
 		}
-		else if (invinisalt && against->player->invincibilitytimer)
+		else if (against->player->smonitortimer)
 		{
-			// Scale Alt. Invin. weight to their power. At full power, you get shoved
-			// off! Might cause less shitty-feeling bumpcheck moments.
-			return max(0, FRACUNIT - against->player->kartweight * K_InvincibilityGradient(against->player->invincibilitytimer));
+			// Scale S-Monitor weight to their power. At full power, you get shoved off!
+			// Might cause less shitty-feeling bumpcheck moments.
+			return max(0, FRACUNIT - against->player->kartweight *
+				K_SMonitorGradient(against->player->smonitortimer));
 		}
 	}
 
@@ -557,12 +555,12 @@ static fixed_t K_PlayerWeight(mobj_t* mobj, mobj_t* against)
 
 	weight = (mobj->player->kartweight) * FRACUNIT;
 
-	if (invinisalt && mobj->player->invincibilitytimer)
+	if (mobj->player->smonitortimer)
 	{
 		// Cap the gradient at 1.0 to prevent exaggerated nonsense.
-		fixed_t mygradient = min(FRACUNIT, K_InvincibilityGradient(mobj->player->invincibilitytimer));
+		fixed_t mygradient = min(FRACUNIT, K_SMonitorGradient(mobj->player->smonitortimer));
 
-		// Scale Alt. Invin. weight to your power. At full power, they get shoved off!
+		// Scale S-Monitor weight weight to your power. At full power, they get shoved off!
 		// Might cause less shitty-feeling bumpcheck moments.
 		weight = FixedMul(weight, mygradient);
 
@@ -617,7 +615,7 @@ fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against)
 		case MT_FALLINGROCK:
 			if (against->player)
 			{
-				if (against->player->invincibilitytimer || against->player->growshrinktimer > 0 || (K_GetShieldFromPlayer(against->player) == KSHIELD_BUBBLE))
+				if (against->player->invincibilitytimer || against->player->smonitortimer || against->player->growshrinktimer > 0 || (K_GetShieldFromPlayer(against->player) == KSHIELD_BUBBLE))
 					weight = 0;
 				else
 					weight = K_PlayerWeight(against, NULL);
@@ -1010,11 +1008,17 @@ static fixed_t K_CheckOffroadCollide(mobj_t *mo)
 	return 0; // couldn't find any offroad
 }
 
-static fixed_t K_OffroadGradient(player_t *player, fixed_t offroad)
+static fixed_t K_OffroadGradient(player_t* player, fixed_t offroad)
 {
-	// At 50% or lower Invincibility, offroad creeps up on you.
-	fixed_t invinoffroad = (!K_IsKartItemAlternate(KITEM_INVINCIBILITY)) ? ((player->invincibilitytimer) ? FRACUNIT : 0) : min(FRACUNIT, K_InvincibilityGradient(player->invincibilitytimer));
-	fixed_t fac = CLAMP(FRACUNIT - invinoffroad, 0, FRACUNIT);
+	// Invincibility: Just ignore everything.
+	fixed_t invinoffroad = (player->invincibilitytimer) ? FRACUNIT : 0;
+
+	// S-Monitor: At 50% or lower power, offroad creeps up on you.
+	fixed_t smonitoroffroad = min(FRACUNIT, K_SMonitorGradient(player->smonitortimer));
+
+	fixed_t subtrahend = FixedMul(smonitoroffroad, invinoffroad);
+
+	fixed_t fac = CLAMP(FRACUNIT - subtrahend, 0, FRACUNIT);
 
 	return FixedMul(offroad, fac);
 }
@@ -1450,6 +1454,11 @@ void K_SpawnNormalSpeedLines(player_t *player)
 		{
 			fast->color = SKINCOLOR_INVINCFLASH;
 		}
+		fast->colorized = true;
+	}
+	else if (player->smonitortimer)
+	{
+		fast->color = K_SMonitorColor(player->smonitortimer);
 		fast->colorized = true;
 	}
 	else if (player->tripwireLeniency)
@@ -2272,6 +2281,7 @@ tripwirepass_t K_TripwirePassConditions(const player_t *player)
 {
 	if (
 			player->invincibilitytimer ||
+			player->smonitortimer ||
 			player->bubbleboost ||
 			K_IsAltShrunk(player) ||
 			(player->sneakertimer && player->realsneakertimer)
@@ -2300,7 +2310,8 @@ boolean K_TripwirePass(const player_t *player)
 
 boolean K_PlayerCanPunt(const player_t *player)
 {
-	return player->invincibilitytimer > 0 || player->growshrinktimer > 0
+	return player->invincibilitytimer > 0 || player->smonitortimer > 0
+		|| player->growshrinktimer > 0
 	    || (player->flamestore > 0 && K_GetShieldFromPlayer(player) == KSHIELD_FLAME)
 	    || (player->bubbleblowup > 0 && K_GetShieldFromPlayer(player) == KSHIELD_BUBBLE)
 	    || K_AltShrinkArrowBulletCondition(player);
@@ -2562,41 +2573,27 @@ static inline fixed_t K_GetSneakerBoostSpeed(void)
 }
 
 // Used to determine the speed and power of Invincibility.
-fixed_t K_InvincibilityGradient(UINT16 time)
+fixed_t K_SMonitorGradient(UINT16 time)
 {
     return (min(936, (fixed_t)time) * FRACUNIT / (6 * TICRATE));
 }
 
-UINT16 K_GetInvincibilityTime(player_t *player)
+fixed_t K_GetSMonitorSpeed(UINT16 time)
 {
-    return (!K_IsKartItemAlternate(KITEM_INVINCIBILITY)) ? BASEINVINTIME : MININVINTIME;
+    fixed_t t = min(FRACUNIT, K_SMonitorGradient(time));
+    return Easing_OutCubic(t, 0, SMNTRSPEEDBOOST);
 }
 
-fixed_t K_GetInvincibilitySpeed(UINT16 time)
+fixed_t K_GetSMonitorAccel(UINT16 time)
 {
-    if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-        return INVINSPEEDBOOSTCLS;
-
-    fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
-    return Easing_OutCubic(t, 0, INVINSPEEDBOOSTALT);
+    fixed_t t = min(FRACUNIT, K_SMonitorGradient(time));
+    return Easing_OutCubic(t, 0, SMNTRACCELBOOST);
 }
 
-fixed_t K_GetInvincibilityAccel(UINT16 time)
+fixed_t K_GetSMonitorHandling(UINT16 time)
 {
-    if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-        return INVINACCELBOOSTCLS;
-
-    fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
-    return Easing_OutCubic(t, 0, INVINACCELBOOSTALT);
-}
-
-fixed_t K_GetInvincibilityHandling(UINT16 time)
-{
-    if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-        return INVINHANDLEBOOSTCLS;
-
-    fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
-    return Easing_OutCubic(t, 0, INVINHANDLEBOOSTALT);
+    fixed_t t = min(FRACUNIT, K_SMonitorGradient(time));
+    return Easing_OutCubic(t, 0, SMNTRHANDLEBOOST);
 }
 
 static fixed_t diminish(fixed_t speedboost)
@@ -2790,13 +2787,18 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->invincibilitytimer) // Invincibility
 	{
-        fixed_t invspeedboost = K_GetInvincibilitySpeed(player->invincibilitytimer);
-        fixed_t invaccelboost = K_GetInvincibilityAccel(player->invincibilitytimer);
-		fixed_t invhandleboost = K_GetInvincibilityHandling(player->invincibilitytimer);
+		// + 37.5% top speed, + 300% acceleration
+		K_DoBoost(player, INVINSPEEDBOOST, INVINACCELBOOST, INVINHANDLEBOOST, INVINSTACKABLE, INVINSTACKABLE);
+	}
 
-		// Legacy: + 37.5% top speed, + 300% acceleration
-		// Alternative: + ???% top speed, + ???% acceleration
-		K_DoBoost(player, invspeedboost, invaccelboost, invhandleboost, INVINSTACKABLE, INVINSTACKABLE);
+	if (player->smonitortimer) // S-Monitor
+	{
+        fixed_t smntrspeedboost = K_GetSMonitorSpeed(player->smonitortimer);
+        fixed_t smntraccelboost = K_GetSMonitorAccel(player->smonitortimer);
+		fixed_t smntrhandleboost = K_GetSMonitorHandling(player->smonitortimer);
+
+		// + ???% top speed, + ???% acceleration
+		K_DoBoost(player, smntrspeedboost, smntraccelboost, smntrhandleboost, SMNTRSTACKABLE, SMNTRSTACKABLE);
 	}
 
 	if (player->growshrinktimer > 0) // Grow
@@ -5029,6 +5031,8 @@ void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound)
 					thrust = FixedMul(thrust, 5*FRACUNIT/4);
 				else if (mo->player->invincibilitytimer)
 					thrust = FixedMul(thrust, 9*FRACUNIT/8);
+				else if (mo->player->smonitortimer)
+					thrust = FixedMul(thrust, 9*FRACUNIT/8);
 				else if (mo->player->flamestore)
 					thrust = FixedMul(thrust, 9*FRACUNIT/8);
 			}
@@ -5072,42 +5076,49 @@ boolean K_PlayFullInvinTheme(void)
 
 void K_DoInvincibility(player_t *player, tic_t time)
 {
-	const boolean isalt = K_IsKartItemAlternate(KITEM_INVINCIBILITY);
-
 	if (!player->invincibilitytimer)
 	{
 		mobj_t *overlay = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_INVULNFLASH);
 		P_SetTarget(&overlay->target, player->mo);
 		overlay->destscale = player->mo->scale;
 		P_SetScale(overlay, player->mo->scale);
-
-        if (isalt)
-        {
-            mobj_t *aura = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_OVERLAY);
-            P_SetTarget(&aura->target, player->mo);
-            aura->destscale = player->mo->scale;
-            P_SetScale(aura, player->mo->scale);
-            aura->extravalue2 = 1;
-        }
 	}
 
-    if (isalt)
+    player->invincibilitytimer = time;
+
+	if (P_IsLocalPlayer(player) == true)
+	{
+		S_ChangeMusicSpecial(K_PlayFullInvinTheme() ? "kinvnf" : "kinvnc");
+	}
+	else //used to be "if (P_IsDisplayPlayer(player) == false)"
+	{
+		S_StartSound(player->mo, (cv_kartinvinsfx.value ? sfx_alarmi : sfx_kinvnc));
+	}
+
+	P_RestoreMusic(player);
+}
+
+void K_DoSMonitor(player_t *player, tic_t time)
+{
+	if (!player->smonitortimer)
+	{
+        mobj_t *aura = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_OVERLAY);
+        P_SetTarget(&aura->target, player->mo);
+        aura->destscale = player->mo->scale;
+        P_SetScale(aura, player->mo->scale);
+        aura->extravalue2 = 1;
+	}
+
+    // Rim suggestion: Don't allow already invincible players to chain.
+    if (K_SMonitorGradient(player->smonitortimer) < (FRACUNIT/2))
     {
-        // Rim suggestion: Don't allow already invincible players to chain.
-        if (K_InvincibilityGradient(player->invincibilitytimer) < (FRACUNIT/2))
-        {
-            // Be nice to players at half-power or less.
-            player->invincibilitytimer = max(player->invincibilitytimer, time);
-        }
-    }
-    else
-    {
-        player->invincibilitytimer = time;
+        // Be nice to players at half-power or less.
+        player->smonitortimer = max(player->smonitortimer, time);
     }
 
-	player->maxinvincibilitytime = player->invincibilitytimer;
-	player->invincibilitybottleneck = 0;
-	player->invincibilitywarning = 0;
+	player->maxsmonitortime = player->smonitortimer;
+	player->smonitorexpiring = 0;
+	player->smonitorwarning = 0;
 
 	if (P_IsLocalPlayer(player) == true)
 	{
@@ -6391,9 +6402,13 @@ static void K_UpdateInvincibilitySounds(player_t *player)
 
 	if (player->mo->health > 0)
 	{
+		const boolean invinsound =
+		    ((player->invincibilitytimer) ||
+		     ((player->smonitortimer > 0) && (!player->smonitorwarning)));
+
 		if (player->growshrinktimer > 0 && (!localplayer || cv_growmusic.value == 2)) // Prioritize Grow
 			sfxnum = cv_kartinvinsfx.value ? sfx_alarmg : sfx_kgrow;
-		else if ((player->invincibilitytimer > 0) && (!player->invincibilitywarning) && (!localplayer || cv_supermusic.value == 2))
+		else if (invinsound && (!localplayer || cv_supermusic.value == 2))
 			sfxnum = cv_kartinvinsfx.value ? sfx_alarmi : sfx_kinvnc;
 		// FIXME: Does Alt. Shrink need an alarm?
 	}
@@ -7433,10 +7448,11 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->dashRainbowPogo--;
 
 	if (player->invincibilitytimer)
+		player->invincibilitytimer--;
+
+	if (player->smonitortimer)
 	{
-		INT16 invinfac = 1;
-		if ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) &&
-		    (player->invincibilitytimer > 2))
+		if (player->smonitortimer > 2)
 		{
 			INT16 pingame = 0;
 			INT32 i;
@@ -7452,46 +7468,44 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 					continue;
 			}
 
-			// Value to subtract from the Invincibility timer.
-			INT16 invin_subtrahend = (pingame > 1) ? 2 : 1;
+			// Value to subtract from the S-Monitor timer.
+			INT16 smonitor_subtrahend = (pingame > 1) ? 2 : 1;
 
-			if ((player->distancefromcluster > 0) && (!player->invincibilitybottleneck) && (pingame > 1))
+			if ((player->distancefromcluster > 0) && (!player->smonitorexpiring) && (pingame > 1))
 			{
 				// Don't subtract shit until we get past the cluster player.
-				invin_subtrahend = 0;
+				smonitor_subtrahend = 0;
 			}
 
-			player->invincibilitytimer = (UINT16)(max(
-			    2, (INT32)(player->invincibilitytimer) - invin_subtrahend));
+			player->smonitortimer = (UINT16)(max(
+			    2, (INT32)(player->smonitortimer) - smonitor_subtrahend));
 
-			const boolean warning_cond_standard =
-			    (K_InvincibilityGradient(player->invincibilitytimer) < INVINWARNINGTIME);
-
-			const boolean warning_cond = warning_cond_standard;
+			const boolean warning_cond =
+			    (K_SMonitorGradient(player->smonitortimer) < SMONITORWARNINGTIME);
 
 			if (warning_cond)
 			{
-				if (!player->invincibilitywarning)
+				if (!player->smonitorwarning)
 				{
 					S_StartSound(player->mo, sfx_cdfm71);
-					player->invincibilitywarning = 1;
-					player->invincibilitybottleneck = 1;
+					player->smonitorwarning = 1;
+					player->smonitorexpiring = 1;
 				}
 			}
 		}
 		else
 		{
-			player->invincibilitytimer--;
-			player->invincibilitybottleneck = 0;
-			player->invincibilitywarning = 0;
+			player->smonitortimer--;
+			player->smonitorexpiring = 0;
+			player->smonitorwarning = 0;
 		}
 	}
 	else
 	{
-		player->invincibilitybottleneck = 0;  // No need for bottlenecking.
-		player->maxinvincibilitytime = 0;
-		player->invincibilitywarning = 0;
-		player->invincibilitycancel = -1;
+		player->smonitorexpiring = 0;  // No need for bottlenecking.
+		player->maxsmonitortime = 0;
+		player->smonitorwarning = 0;
+		player->smonitorcancel = -1;
 	}
 
 	if (player->checkskip)
@@ -7852,11 +7866,8 @@ static void K_KartResetPlayerFullbright(player_t *player)
 
 	if (player->invincibilitytimer || player->powers[pw_invulnerability]) // You're gonna kiiiiill
 	{
-		if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-		{
-			fullbright = true;
-			goto finalise;
-		}
+		fullbright = true;
+		goto finalise;
 	}
 
 	if (player->growshrinktimer) // Ditto, for grow/shrink
@@ -7937,24 +7948,14 @@ void K_KartResetPlayerColor(player_t *player)
 
 	if (player->invincibilitytimer || player->powers[pw_invulnerability]) // You're gonna kiiiiill
 	{
-		boolean skip = false;
+		player->mo->color = K_RainbowColor(leveltime / 2);
 
-		if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
+		if (player->invincibilitytimer)
 		{
-			player->mo->color = K_RainbowColor(leveltime / 2);
-
-			if (player->invincibilitytimer)
-			{
-				player->mo->colorized = true;
-			}
-
-			skip = true;
-        }
-
-		if (skip)
-		{
-			return;
+			player->mo->colorized = true;
 		}
+
+		return;
 	}
 
 	if (player->growshrinktimer) // Ditto, for grow/shrink
@@ -9184,7 +9185,7 @@ INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
 	if (K_SlipdashActive() && K_Sliptiding(player)) // slight handling boost based on weight
 		turnvalue = FixedMul(turnvalue, FRACUNIT + (10 - player->kartweight)*FRACUNIT/48);
 
-	if ((player->invincibilitytimer && (!K_IsKartItemAlternate(KITEM_INVINCIBILITY)))
+	if (player->invincibilitytimer
 	    || player->sneakertimer || player->bubbleboost ||
 	    player->growshrinktimer > 0 || K_IsAltShrunk(player))
 	{
@@ -9268,17 +9269,11 @@ static void K_SpawnDriftEFX(player_t *player, SINT8 level)
 	}
 }
 
-// Sliptide conditions for Alternative Invincibility.
-static boolean K_AltInvinSliptideCondition(player_t *player)
+// Sliptide conditions for the S-Monitor.
+static boolean K_SMonitorSliptideCondition(player_t *player)
 {
-	if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-	{
-		// Not in Alternative, hit the bricks!
-		return false;
-	}
-
 	// Allow sliptides if you're above half power.
-	return (K_InvincibilityGradient(player->invincibilitytimer) > (FRACUNIT/2));
+	return (K_SMonitorGradient(player->smonitortimer) > (FRACUNIT/2));
 }
 
 fixed_t K_GetSpeedPercentage(const player_t *player)
@@ -9326,7 +9321,7 @@ boolean K_InterceptArrowBullet(player_t *player)
 	if (!player)
 		return false;
 	
-	return ((player->invincibilitytimer && !K_IsKartItemAlternate(KITEM_INVINCIBILITY)) || (player->growshrinktimer > 0) || (player->flamestore >= FLAMESTOREMAX-1));
+	return ((player->invincibilitytimer) || (player->growshrinktimer > 0) || (player->flamestore >= FLAMESTOREMAX-1));
 }
 
 // 0.25 fracunits
@@ -9340,7 +9335,7 @@ static boolean K_OtherSliptideCondition(player_t* player)
 		return false;
 
 	return (
-	    K_AltInvinSliptideCondition(player) || K_AltShrinkSliptideCondition(player) ||
+	    K_SMonitorSliptideCondition(player) || K_AltShrinkSliptideCondition(player) ||
 	    (cv_handleboostslip.value && (player->handleboost >= HANDLEBOOSTTHRESHOLD)));
 }
 
@@ -10610,8 +10605,10 @@ void K_StripOther(player_t *player)
 	player->roulettetype = KROULETTETYPE_NORMAL;
 
 	player->invincibilitytimer = 0;
-	player->invincibilitywarning = 0;
-	player->invincibilitycancel = -1;
+
+	player->smonitortimer = 0;
+	player->smonitorwarning = 0;
+	player->smonitorcancel = -1;
 
 	if (player->growshrinktimer)
 	{
@@ -10841,12 +10838,9 @@ INT32 K_GetShieldFromItem(INT32 item)
 	}
 }
 
-static boolean K_InvincibilitySlotHogging(player_t *player)
+static boolean K_SMonitorSlotHogging(player_t *player)
 {
-	if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-		return false;
-
-	return ((player->invincibilitytimer) != 0);
+	return ((player->smonitortimer) != 0);
 }
 
 //
@@ -10885,7 +10879,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			|| player->itemroulette
 			|| player->rocketsneakertimer
 			|| player->eggmanexplode
-			|| ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && player->invincibilitytimer)
+			|| player->smonitortimer
 			|| (player->growshrinktimer > 0)
 			|| player->flametimer
 			|| (leveltime < starttime)
@@ -11090,30 +11084,30 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							player->growcancel = 0;
 					}
 				}
-				// Invincibility
-				else if (K_InvincibilitySlotHogging(player))
+				// S-Monitor
+				else if (K_SMonitorSlotHogging(player))
 				{
-					// (Alternate) Cancel Invincibility
-					if (player->invincibilitycancel >= 0)
+					// Cancel the S-Monitor
+					if (player->smonitorcancel >= 0)
 					{
 						if (buttons & BT_ATTACK)
 						{
-							player->invincibilitycancel++;
-							if (player->invincibilitycancel > 25)
+							player->smonitorcancel++;
+							if (player->smonitorcancel > 25)
 							{
 								// Don't fully cancel due to how the music handling works.
-								player->invincibilitytimer = 1;
+								player->smonitortimer = 1;
 							}
 						}
 						else
-							player->invincibilitycancel = 0;
+							player->smonitorcancel = 0;
 					}
 					else
 					{
 						if ((buttons & BT_ATTACK) || (player->oldcmd.buttons & BT_ATTACK))
-							player->invincibilitycancel = -1;
+							player->smonitorcancel = -1;
 						else
-							player->invincibilitycancel = 0;
+							player->smonitorcancel = 0;
 					}
 				}
 				else if (player->itemamount == 0)

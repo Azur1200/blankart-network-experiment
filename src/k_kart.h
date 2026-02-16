@@ -28,8 +28,8 @@ If states are ever added or removed
 Make sure this matches the actual number of states
 */
 #define KART_NUMINVSPARKLESANIM 12
-#define BASEINVINTIME (10 * TICRATE)
-#define MININVINTIME (7 * TICRATE)
+#define INVINTIME (10 * TICRATE)
+#define SMONITORTIME (7 * TICRATE)
 
 #define GROW_SCALE ((3*FRACUNIT)/2)
 #define SHRINK_SCALE ((6*FRACUNIT)/8)
@@ -85,14 +85,8 @@ extern vector3_t clusterpoint, clusterdtf;
 // Bump weight for a Bubble Shield
 #define BUBBLEMINWEIGHT (5 * FRACUNIT)
 
-// Invincibility-related constants
-#define INVINDIST CV_Get(&cv_kartinvindist)
-#define INVINDISTMUL CV_Get(&cv_kartinvindistmul)
-#define INVINMIDTIME CV_Get(&cv_kartinvin_midtime)
-#define INVINMAXTIME CV_Get(&cv_kartinvin_maxtime)
-
-// 1.22 * FRACUNIT
-#define LEGACYALTINVINMUL (122 * FRACUNIT / 100)
+// S-Monitor distance value
+#define SMONITORDIST CV_Get(&cv_kartsmonitordist)
 
 // Precalculated constants for stacked boost diminishing
 // *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent
@@ -114,13 +108,15 @@ extern vector3_t clusterpoint, clusterdtf;
 #define SEPARATEPANELS CV_Get(&cv_kartstacking_panel_separate)
 #define MAXPANELSTACK CV_Get(&cv_kartstacking_panel_maxgrade)
 
-#define INVINSPEEDBOOSTCLS CV_Get(&cv_kartstacking_invincibility_classicspeedboost)
-#define INVINACCELBOOSTCLS CV_Get(&cv_kartstacking_invincibility_classicaccelboost)
-#define INVINHANDLEBOOSTCLS CV_Get(&cv_kartstacking_invincibility_classichandleboost)
-#define INVINSPEEDBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternatespeedboost)
-#define INVINACCELBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternateaccelboost)
-#define INVINHANDLEBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternatehandleboost)
+#define INVINSPEEDBOOST CV_Get(&cv_kartstacking_invincibility_speedboost)
+#define INVINACCELBOOST CV_Get(&cv_kartstacking_invincibility_accelboost)
+#define INVINHANDLEBOOST CV_Get(&cv_kartstacking_invincibility_handleboost)
 #define INVINSTACKABLE CV_Get(&cv_kartstacking_invincibility_stackable)
+
+#define SMNTRSPEEDBOOST CV_Get(&cv_kartstacking_smonitor_speedboost)
+#define SMNTRACCELBOOST CV_Get(&cv_kartstacking_smonitor_accelboost)
+#define SMNTRHANDLEBOOST CV_Get(&cv_kartstacking_smonitor_handleboost)
+#define SMNTRSTACKABLE CV_Get(&cv_kartstacking_smonitor_stackable)
 
 #define GROWSPEEDBOOST CV_Get(&cv_kartstacking_grow_speedboost)
 #define GROWACCELBOOST CV_Get(&cv_kartstacking_grow_accelboost)
@@ -276,12 +272,12 @@ void K_ResetPogoSpring(player_t *player);
 extern boolean forcefullinvintheme;
 boolean K_PlayFullInvinTheme(void);
 void K_DoInvincibility(player_t *player, tic_t time);
-#define INVINWARNINGTIME (fixed_t)(0.833333333f * (float)(FRACUNIT))
-fixed_t K_InvincibilityGradient(UINT16 time);
-UINT16 K_GetInvincibilityTime(player_t *player);
-fixed_t K_GetInvincibilitySpeed(UINT16 time);
-fixed_t K_GetInvincibilityAccel(UINT16 time);
-fixed_t K_GetInvincibilityHandling(UINT16 time);
+void K_DoSMonitor(player_t *player, tic_t time);
+#define SMONITORWARNINGTIME (fixed_t)(0.833333333f * (float)(FRACUNIT))
+fixed_t K_SMonitorGradient(UINT16 time);
+fixed_t K_GetSMonitorSpeed(UINT16 time);
+fixed_t K_GetSMonitorAccel(UINT16 time);
+fixed_t K_GetSMonitorHandling(UINT16 time);
 
 void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source);
 void K_UpdateHnextList(player_t *player, boolean clean);

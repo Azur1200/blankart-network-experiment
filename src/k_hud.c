@@ -161,8 +161,8 @@ static patch_t *kp_flamefire[18];
 // Frames of animation for the fire
 #define MAXFLAMOFIRETICS 8
 
-// Rotating Alt. Invin. sparkles
-static patch_t *kp_altinvinsparkle;
+// Rotating S-Monitor sparkles
+static patch_t *kp_smonitorsparkle;
 
 static patch_t *kp_rankbumper;
 static patch_t *kp_tinybumper[2];
@@ -421,12 +421,12 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_driftgaugeparts[3], "K_WDGM4");
 	HU_UpdatePatch(&kp_driftgaugeparts[4], "K_DGAU3M");
 
-	// Alt. Invin. Sparkles
-	HU_UpdatePatch(&kp_altinvinsparkle, "ALTISPRK");
+	// S-Monitor. Sparkles
+	HU_UpdatePatch(&kp_smonitorsparkle, "ALTISPRK");
 
-	kp_altinvinsparkle->pivot.x = kp_altinvinsparkle->width / 2;
-	kp_altinvinsparkle->pivot.y = kp_altinvinsparkle->height / 2;
-	kp_altinvinsparkle->alignflags |= PATCHALIGN_USEPIVOTS;
+	kp_smonitorsparkle->pivot.x = kp_smonitorsparkle->width / 2;
+	kp_smonitorsparkle->pivot.y = kp_smonitorsparkle->height / 2;
+	kp_smonitorsparkle->alignflags |= PATCHALIGN_USEPIVOTS;
 	
 	// Flamometer UI Elements
 	HU_UpdatePatch(&kp_flamometer[0], "THERMOBACK");
@@ -1387,17 +1387,17 @@ static void K_drawKartItem(void)
 			else
 				localpatch = kp_nodraw;
 		}
-		else if ((stplyr->invincibilitytimer) && (K_IsKartItemAlternate(KITEM_INVINCIBILITY)))
+		else if (stplyr->smonitortimer)
 		{
-			if (stplyr->invincibilitytimer < MININVINTIME)
-				itembar = FixedDiv(stplyr->invincibilitytimer, max(1, stplyr->maxinvincibilitytime));
+			if (stplyr->smonitortimer < SMONITORTIME)
+				itembar = FixedDiv(stplyr->smonitortimer, max(1, stplyr->maxsmonitortime));
 
-			if (stplyr->invincibilitycancel > 0)
-				flamebar = FixedDiv(stplyr->invincibilitycancel, 26);
+			if (stplyr->smonitorcancel > 0)
+				flamebar = FixedDiv(stplyr->smonitorcancel, 26);
 
 			if (leveltime & 1)
 			{
-				localpatch = K_GetCachedItemPatch(KITEM_INVINCIBILITY, tiny, 0);
+				localpatch = K_GetCachedItemPatch(KITEM_S_MONITOR, tiny, 0);
 				isalt = true;
 			}
 			else
@@ -1517,7 +1517,7 @@ static void K_drawKartItem(void)
 	// RadioRacers
 	if (shouldDrawOnPlayer)
 	{
-		boolean rocketinvinbar = ((stplyr->rocketsneakertimer > 1) || ((stplyr->invincibilitytimer) && (K_IsKartItemAlternate(KITEM_INVINCIBILITY))));
+		boolean rocketsmonitorbar = ((stplyr->rocketsneakertimer > 1) || (stplyr->smonitortimer));
 
 		/**
 		 * RadioRacers
@@ -1530,10 +1530,10 @@ static void K_drawKartItem(void)
 		 * For rocket sneakers, it's the duration bar.
 		 */
 
-		// For Blan, Alt. Invincibility also needs duration visibility, so we dim the icon there, too.
+		// For Blan, the S-Monitor also needs duration visibility, so we dim the icon there, too.
 		// Nice-to-have: some way for custom items to have this feature? Not sure yet.
 
-		if (stplyr->itemtype == KITEM_FLAMESHIELD || stplyr->eggmanexplode > 1 || (rocketinvinbar)) {
+		if (stplyr->itemtype == KITEM_FLAMESHIELD || stplyr->eggmanexplode > 1 || (rocketsmonitorbar)) {
 			roulettetrans = (INT32)((float)(roulettetrans) * 0.57143f);
 		}
 
@@ -1653,7 +1653,7 @@ static void K_drawKartItem(void)
 			V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, info.hudScale, localpatchflags, K_getItemAltPatch(tiny, false), colmap);
 	}
 
-	// Extensible meter, currently used by Invincibilty, Grow, Rocket Sneakers and Flame Shield
+	// Extensible meter, currently used by Grow, Rocket Sneakers, Flame Shield, and the S-Monitor
 	// ...aren't you forgetting something?
 	if (itembar != -1)
 		K_DrawItemBar(fx, fy, info.hudScale, fflags|V_HUDTRANS, itembar, (UINT8 []){0, 8, 12});
@@ -2020,11 +2020,11 @@ static void K_DrawKartPositionNum(INT32 num)
 	}
 }
 
-static UINT32 K_InvincibilityHUDVisibility(UINT16 t)
+static UINT32 K_SMonitorHUDVisibility(UINT16 t)
 {
 	UINT32 alphalevel = st_translucency;
 
-	alphalevel = min(10, FixedMul(alphalevel, K_InvincibilityGradient(t)));
+	alphalevel = min(10, FixedMul(alphalevel, K_SMonitorGradient(t)));
 
 	return min(9, 10 - alphalevel)<<V_ALPHASHIFT;
 }
@@ -2050,7 +2050,7 @@ static boolean K_drawKartPositionFaces(void)
 	INT32 rankplayer[MAXPLAYERS];
 	INT32 bumperx, numplayersingame = 0;
 	UINT8 *colormap;
-	UINT32 invinchudtrans;
+	UINT32 smntrhudtrans;
 	vector2_t offsets;
 
 #ifdef ROTSPRITE
@@ -2172,12 +2172,12 @@ static boolean K_drawKartPositionFaces(void)
 
 			V_DrawMappedPatch(FACE_X + offsets.x, Y + offsets.y, V_HUDTRANS|V_SNAPTOLEFT, facerank, colormap);
 
-			if ((players[rankplayer[i]].invincibilitytimer) && (K_IsKartItemAlternate(KITEM_INVINCIBILITY)))
+			if (players[rankplayer[i]].smonitortimer)
 			{
-				colormap = R_GetTranslationColormap(TC_BLINK, K_AltInvincibilityColor(leveltime / 2), GTC_CACHE);
-				invinchudtrans = K_InvincibilityHUDVisibility(players[rankplayer[i]].invincibilitytimer);
+				colormap = R_GetTranslationColormap(TC_BLINK, K_SMonitorColor(leveltime / 2), GTC_CACHE);
+				smntrhudtrans = K_SMonitorHUDVisibility(players[rankplayer[i]].smonitortimer);
 
-				V_DrawMappedPatch(FACE_X + offsets.x, Y + offsets.y, invinchudtrans|V_SNAPTOLEFT|V_ADD, facerank, colormap);
+				V_DrawMappedPatch(FACE_X + offsets.x, Y + offsets.y, smntrhudtrans|V_SNAPTOLEFT|V_ADD, facerank, colormap);
 			}
 
 			if (LUA_HudEnabled(hud_battlebumpers))
@@ -2568,7 +2568,6 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 		{"Bump Spark", 0, NULL, K_GetBumpSpark() > BUMPSPARK_NOCHARGE, true},
 		{"Bump Spring", 0, &cv_kartbumpspring, -1, true}
 		//TODO: separate drawer that enumerates item changes?
-		// {"Alt. Invin.", 0, NULL, K_IsKartItemAlternate(KITEM_INVINCIBILITY), true}
 	};
 
 	for (j = 0; j < 2; j++)
@@ -3499,7 +3498,7 @@ static void K_drawKartPlayerCheck(void)
 			continue;
 		}
 
-		if ((checkplayer->invincibilitytimer <= 0) && (leveltime & 2))
+		if ((checkplayer->invincibilitytimer <= 0) && (checkplayer->smonitortimer <= 0) && (leveltime & 2))
 		{
 			pnum++; // white frames
 		}
@@ -3518,6 +3517,11 @@ static void K_drawKartPlayerCheck(void)
 		}
 		else if (checkplayer->itemtype == KITEM_INVINCIBILITY || checkplayer->invincibilitytimer)
 		{
+			pnum += 2;
+		}
+		else if (checkplayer->itemtype == KITEM_S_MONITOR || checkplayer->smonitortimer)
+		{
+			// FIXME: Separate "CHECK" icon(?)
 			pnum += 2;
 		}
 
@@ -4216,7 +4220,7 @@ static void K_drawKartMinimap(void)
 	spbdraw_t spb;
 	UINT16 usecolor;
 	boolean colorizeplayer;
-	fixed_t invingradient = 0;
+	fixed_t smntrgradient = 0;
 
 #ifdef ROTSPRITE
 	angle_t rollangle = 0;
@@ -4225,7 +4229,7 @@ static void K_drawKartMinimap(void)
 	patch_t *rotsparkle;
 	boolean halftrans = false;
 	fixed_t transmul = 0;
-	UINT32 invintrans = 0;
+	UINT32 smonitortrans = 0;
 #endif
 
 	vector2_t iconoffsets;
@@ -4439,11 +4443,16 @@ static void K_drawKartMinimap(void)
 
 				colorizeplayer = mobj->colorized;
 
-				invingradient = K_InvincibilityGradient(players[i].invincibilitytimer);
+				smntrgradient = K_SMonitorGradient(players[i].smonitortimer);
 
-				if ((players[i].invincibilitytimer) && ((invingradient > (FRACUNIT/2)) || (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))))
+				if (players[i].invincibilitytimer)
 				{
-					usecolor = ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) ? K_AltInvincibilityColor(leveltime / 2) : K_RainbowColor(leveltime / 2));
+					usecolor = (K_RainbowColor(leveltime / 2));
+					colorizeplayer = true;
+				}
+				else if ((players[i].smonitortimer) && (smntrgradient > (FRACUNIT/2)))
+				{
+					usecolor = (K_SMonitorColor(leveltime / 2));
 					colorizeplayer = true;
 				}
 				else
@@ -4476,14 +4485,13 @@ static void K_drawKartMinimap(void)
 				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, &iconoffsets);
 
 #ifdef ROTSPRITE
-				if ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) &&
-				    (players[i].invincibilitytimer) && (invingradient))
+				if ((players[i].smonitortimer) && (smntrgradient))
 				{
-					// Draw Alt. Invin. sparkles
+					// Draw S-Monitor sparkles
 					halftrans =
 					    ((splitflags & V_HUDTRANSHALF) == V_HUDTRANSHALF);
 					transmul = 0;
-					invintrans = 0;
+					smonitortrans = 0;
 
 					sparkleflags =
 					    splitflags & (~(V_HUDTRANS | V_HUDTRANSHALF));
@@ -4499,52 +4507,52 @@ static void K_drawKartMinimap(void)
 						    FRACUNIT - (V_GetHudTrans() * FRACUNIT / 10);
 					}
 
-					invintrans =
+					smonitortrans =
 					    max(0,
 						min(9,
-						    10 - FixedMul(FixedMul(10, invingradient),
+						    10 - FixedMul(FixedMul(10, smntrgradient),
 								  transmul)))
 					    << V_ALPHASHIFT;
-					sparkleflags |= invintrans;
+					sparkleflags |= smonitortrans;
 
-					if (kp_altinvinsparkle)
+					if (kp_smonitorsparkle)
 					{
 						rot = R_GetRollAngle(-TICTOANGLE(leveltime));
 
 						if (rot)
 						{
 							rotsparkle = Patch_GetRotated(
-							    kp_altinvinsparkle, rot, false);
+							    kp_smonitorsparkle, rot, false);
 						}
 						else
 						{
-							rotsparkle = kp_altinvinsparkle;
+							rotsparkle = kp_smonitorsparkle;
 						}
 
 						if (rotsparkle)
 						{
-							widthhalf = ((kp_altinvinsparkle->width) / 2);
-							heighthalf = ((kp_altinvinsparkle->height) / 2);
+							widthhalf = ((kp_smonitorsparkle->width) / 2);
+							heighthalf = ((kp_smonitorsparkle->height) / 2);
 
 							if (cv_minihead.value)
 							{
 								adjustx = FixedMul(
 								    4,
 								    (widthhalf -
-								     kp_altinvinsparkle->leftoffset) *
+								     kp_smonitorsparkle->leftoffset) *
 									FRACUNIT / widthhalf);
 								adjusty = FixedMul(
 								    4,
 								    (heighthalf -
-								     kp_altinvinsparkle->topoffset) *
+								     kp_smonitorsparkle->topoffset) *
 									FRACUNIT / heighthalf);
 							}
 
 							iconoffsets.x = widthhalf -
-									kp_altinvinsparkle->leftoffset -
+									kp_smonitorsparkle->leftoffset -
 									adjustx;
 							iconoffsets.y = heighthalf -
-									kp_altinvinsparkle->topoffset -
+									kp_smonitorsparkle->topoffset -
 									adjusty;
 
 							K_drawKartMinimapIcon(interpx,
@@ -4763,15 +4771,19 @@ static void K_drawKartMinimap(void)
 #endif
 
 			colorizeplayer = mobj->colorized;
-			invingradient =
-				K_InvincibilityGradient(
-					players[localplayers[i]].invincibilitytimer);
+			smntrgradient =
+				K_SMonitorGradient(
+					players[localplayers[i]].smonitortimer);
 
-			if ((players[localplayers[i]].invincibilitytimer) &&
-				((invingradient > (FRACUNIT / 2)) ||
-					(!K_IsKartItemAlternate(KITEM_INVINCIBILITY))))
+			if (players[localplayers[i]].invincibilitytimer)
 			{
 				usecolor = (K_RainbowColor(leveltime / 2));
+				colorizeplayer = true;
+			}
+			else if ((players[localplayers[i]].smonitortimer)
+				&& ((smntrgradient > (FRACUNIT / 2))))
+			{
+				usecolor = (K_SMonitorColor(leveltime / 2));
 				colorizeplayer = true;
 			}
 			else
@@ -4839,13 +4851,12 @@ static void K_drawKartMinimap(void)
 			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, &iconoffsets);
 
 #ifdef ROTSPRITE
-			if ((!nocontest) && (K_IsKartItemAlternate(KITEM_INVINCIBILITY)) &&
-			    (players[localplayers[i]].invincibilitytimer) && (invingradient))
+			if ((!nocontest) && (players[localplayers[i]].smonitortimer) && (smntrgradient))
 			{
-				// Draw Alt. Invin. sparkles
+				// Draw S-Monitor sparkles
 				halftrans = ((splitflags & V_HUDTRANSHALF) == V_HUDTRANSHALF);
 				transmul = 0;
-				invintrans = 0;
+				smonitortrans = 0;
 
 				sparkleflags = splitflags & (~(V_HUDTRANS | V_HUDTRANSHALF));
 
@@ -4860,48 +4871,48 @@ static void K_drawKartMinimap(void)
 
 				transmul *= 2;
 
-				invintrans =
+				smonitortrans =
 				    max(0,
 					min(9,
-					    10 - FixedMul(FixedMul(10, invingradient), transmul)))
+					    10 - FixedMul(FixedMul(10, smntrgradient), transmul)))
 				    << V_ALPHASHIFT;
-				sparkleflags |= invintrans;
+				sparkleflags |= smonitortrans;
 
-				if (kp_altinvinsparkle)
+				if (kp_smonitorsparkle)
 				{
 					rot = R_GetRollAngle(-TICTOANGLE(leveltime));
 
 					if (rot)
 					{
 						rotsparkle = Patch_GetRotated(
-						    kp_altinvinsparkle, rot, false);
+						    kp_smonitorsparkle, rot, false);
 					}
 					else
 					{
-						rotsparkle = kp_altinvinsparkle;
+						rotsparkle = kp_smonitorsparkle;
 					}
 
 					if (rotsparkle)
 					{
-						widthhalf = ((kp_altinvinsparkle->width) / 2);
-						heighthalf = ((kp_altinvinsparkle->height) / 2);
+						widthhalf = ((kp_smonitorsparkle->width) / 2);
+						heighthalf = ((kp_smonitorsparkle->height) / 2);
 
 						if (cv_minihead.value)
 						{
 							adjustx = FixedMul(
 							    4,
-							    (widthhalf - kp_altinvinsparkle->leftoffset) *
+							    (widthhalf - kp_smonitorsparkle->leftoffset) *
 								FRACUNIT / widthhalf);
 							adjusty = FixedMul(
 							    4,
-							    (heighthalf - kp_altinvinsparkle->topoffset) *
+							    (heighthalf - kp_smonitorsparkle->topoffset) *
 								FRACUNIT / heighthalf);
 						}
 
 						iconoffsets.x =
-						    widthhalf - kp_altinvinsparkle->leftoffset - adjustx;
+						    widthhalf - kp_smonitorsparkle->leftoffset - adjustx;
 						iconoffsets.y =
-						    heighthalf - kp_altinvinsparkle->topoffset - adjusty;
+						    heighthalf - kp_smonitorsparkle->topoffset - adjusty;
 
 						K_drawKartMinimapIcon(interpx,
 								      interpy,

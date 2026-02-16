@@ -4837,7 +4837,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	interptarg = thing;
 
-	if (R_IsOverlayingInvinciblePlayer(thing))
+	if (R_IsOverlayingSMonitorPlayer(thing))
 	{
 		// Kill overlay misalignment
 		interptarg = thing->target;
@@ -5282,7 +5282,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		if (thing->colorized)
 		{
 			vis->colormap = R_GetTranslationColormap(
-			    R_IsOverlayingInvinciblePlayer(thing) ? TC_BLINK : TC_RAINBOW,
+			    R_IsOverlayingSMonitorPlayer(thing) ? TC_BLINK : TC_RAINBOW,
 			    thing->color,
 			    GTC_CACHE);
 		}

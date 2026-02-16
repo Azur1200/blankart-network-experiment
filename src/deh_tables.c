@@ -875,7 +875,7 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 };
 
 struct odds_func_s const USEODDS_FUNCS[] = {
-	{ "ALTINVINODDS", &KO_AltInvinOdds },
+	{ "SMONITORODDS", &KO_SMonitorOdds },
 	{ "SPBRACEODDS", &KO_SPBRaceOdds },
 	{ NULL, NULL }
 };
@@ -1760,8 +1760,8 @@ struct int_const_s const INT_CONST[] = {
 
 	// invin constants
 	{"KART_NUMINVSPARKLESANIM", KART_NUMINVSPARKLESANIM},
-	{"BASEINVINTIME", BASEINVINTIME},
-	{"MININVINTIME", MININVINTIME},
+	{"INVINTIME", INVINTIME},
+	{"SMONITORTIME", SMONITORTIME},
 
 	// grow/shrink scale
 	{"GROW_SCALE", GROW_SCALE},

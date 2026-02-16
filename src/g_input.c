@@ -748,6 +748,10 @@ void G_ControllerRumbleTick(void)
 			{
 				high = RUMBLE_MODERATE;
 			}
+			else if (player->smonitortimer)
+			{
+				high = RUMBLE_MODERATE;
+			}
 			else
 			{
 				low = high = RUMBLE_MODERATE;

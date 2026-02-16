@@ -214,7 +214,7 @@ void K_StartRoulette(player_t *player, kartroulettetype_e roulettetype);
 
 void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force);
 
-useoddsfunc_f KO_AltInvinOdds;
+useoddsfunc_f KO_SMonitorOdds;
 useoddsfunc_f KO_SPBRaceOdds;
 
 void K_DoThunderShield(player_t *player);

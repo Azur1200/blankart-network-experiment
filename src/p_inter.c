@@ -83,6 +83,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 					|| K_IsPlayerDamaged(player)
 					|| player->squishedtimer > 0
 					|| player->invincibilitytimer > 0
+					|| player->smonitortimer > 0
 					|| player->growshrinktimer > 0
 					|| player->hyudorotimer > 0
 					|| player->flametimer > 0)
@@ -99,7 +100,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 				if (player->stealingtimer || player->stolentimer
 					|| player->rocketsneakertimer
 					|| player->eggmanexplode
-					|| ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (player->invincibilitytimer))
+					|| player->smonitortimer
 					|| (player->growshrinktimer > 0)
 					|| player->flametimer)
 					return false;
@@ -491,7 +492,10 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 					return;
 				}
 
-				if (player->invincibilitytimer > 0 || player->growshrinktimer > 0 || player->hyudorotimer > 0)
+				if (player->invincibilitytimer > 0 ||
+					player->smonitortimer > 0 ||
+					player->growshrinktimer > 0 ||
+					player->hyudorotimer > 0)
 				{
 					//player->flashing = 0;
 					K_DropHnextList(player);
@@ -2199,7 +2203,10 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					}
 				}
 
-				if (player->invincibilitytimer > 0 || player->growshrinktimer > 0 || player->hyudorotimer > 0)
+				if (player->invincibilitytimer > 0 ||
+					player->smonitortimer > 0 ||
+					player->growshrinktimer > 0 ||
+					player->hyudorotimer > 0)
 				{
 					// Full invulnerability
 					K_DoInstashield(player);

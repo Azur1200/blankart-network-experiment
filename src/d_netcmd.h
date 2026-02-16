@@ -116,13 +116,15 @@ extern consvar_t cv_kartstacking_panel_separate;
 extern consvar_t cv_kartstacking_panel_maxgrade;
 
 
-extern consvar_t cv_kartstacking_invincibility_classicspeedboost;
-extern consvar_t cv_kartstacking_invincibility_classicaccelboost;
-extern consvar_t cv_kartstacking_invincibility_classichandleboost;
-extern consvar_t cv_kartstacking_invincibility_alternatespeedboost;
-extern consvar_t cv_kartstacking_invincibility_alternateaccelboost;
-extern consvar_t cv_kartstacking_invincibility_alternatehandleboost;
+extern consvar_t cv_kartstacking_invincibility_speedboost;
+extern consvar_t cv_kartstacking_invincibility_accelboost;
+extern consvar_t cv_kartstacking_invincibility_handleboost;
 extern consvar_t cv_kartstacking_invincibility_stackable;
+
+extern consvar_t cv_kartstacking_smonitor_speedboost;
+extern consvar_t cv_kartstacking_smonitor_accelboost;
+extern consvar_t cv_kartstacking_smonitor_handleboost;
+extern consvar_t cv_kartstacking_smonitor_stackable;
 
 extern consvar_t cv_kartstacking_flame_speedval;
 extern consvar_t cv_kartstacking_flame_accelboost;
@@ -210,10 +212,7 @@ extern consvar_t cv_kartexplosion_limitlifetime_cap;
 extern consvar_t cv_kartslipdash;
 extern consvar_t cv_kartslopeboost;
 extern consvar_t cv_kartinvintheme;
-extern consvar_t cv_kartinvindist;
-extern consvar_t cv_kartinvindistmul;
-extern consvar_t cv_kartinvin_maxtime;
-extern consvar_t cv_kartinvin_midtime;
+extern consvar_t cv_kartsmonitordist;
 
 // opinionated stuff for testing
 extern consvar_t cv_kartbubble_defense_canidle;

@@ -833,8 +833,10 @@ void P_RestoreMusic(player_t *player)
 	{ \
 		if (players[p].growshrinktimer > bestlocaltimer) \
 		{ wantedmus = 1; bestlocaltimer = players[p].growshrinktimer; } \
-		else if ((players[p].invincibilitytimer > bestlocaltimer) && (!players[p].invincibilitywarning))\
+		else if (players[p].invincibilitytimer > bestlocaltimer) \
 		{ wantedmus = 2; bestlocaltimer = players[p].invincibilitytimer; } \
+		else if ((players[p].smonitortimer > bestlocaltimer) && (!players[p].smonitorwarning))\
+		{ wantedmus = 2; bestlocaltimer = players[p].smonitortimer; } \
 		else if ((K_IsKartItemAlternate(KITEM_SHRINK)) && \
 		    (K_GetShrinkTime(&players[p]) > bestlocaltimer)) \
 		{ wantedmus = 3; bestlocaltimer = K_GetShrinkTime(&players[p]); } \
@@ -853,7 +855,9 @@ void P_RestoreMusic(player_t *player)
 			{
 				if (player->growshrinktimer > 1)
 					wantedmus = 1;
-				else if ((player->invincibilitytimer > 1) && (!player->invincibilitywarning))
+				else if (player->invincibilitytimer)
+					wantedmus = 2;
+				else if (((player->smonitortimer > 1) && (!player->smonitorwarning)))
 					wantedmus = 2;
 				else if ((K_IsKartItemAlternate(KITEM_SHRINK)) &&
 				    (K_GetShrinkTime(player) > 1))
@@ -1802,12 +1806,16 @@ static void P_CheckQuicksand(player_t *player)
 //
 static void P_CheckInvincibilityTimer(player_t *player)
 {
-	if (!player->powers[pw_invulnerability] && !player->invincibilitytimer)
+	if (!player->powers[pw_invulnerability] && !player->invincibilitytimer && !player->smonitortimer)
 		return;
 
 	// Resume normal music stuff.
-	if (player->invincibilitytimer == 1 || player->powers[pw_invulnerability] == 1)
+	if (player->invincibilitytimer == 1
+		|| player->powers[pw_invulnerability] == 1
+		|| (player->smonitorwarning == 1))
 	{
+		player->smonitorwarning = 2; // Don't attempt to restore music again.
+
 		//K_KartResetPlayerColor(player); -- this gets called every tic anyways
 		G_GhostAddColor((INT32) (player - players), GHC_NORMAL);
 
@@ -2321,10 +2329,10 @@ void P_MovePlayer(player_t *player)
 		&& onground && (leveltime & 1))
 		K_SpawnBoostTrail(player);
 
-	if ((player->invincibilitytimer > 0) &&
-		(((leveltime %
-		   max(1, 10 - FixedMul(9, K_InvincibilityGradient(player->invincibilitytimer)))) == 0) ||
-		 (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))))
+	if (((player->invincibilitytimer) ||
+	     ((player->smonitortimer > 0) &&
+	      (((leveltime %
+		 max(1, 10 - FixedMul(9, K_SMonitorGradient(player->smonitortimer)))) == 0)))))
 	{
 		K_SpawnSparkleTrail(player->mo);
 	}
@@ -4392,7 +4400,13 @@ void P_PlayerThink(player_t *player)
 	P_CheckInvincibilityTimer(player); // Spawn Invincibility Sparkles
 	
 	// "Blur" a bit when you have speed shoes and are going fast enough
-	if ((player->powers[pw_super] || player->powers[pw_sneakers] || player->driftboost || player->sneakertimer || player->startboost || player->ringboost) && !player->invincibilitytimer // SRB2kart
+	if ((player->powers[pw_super]
+		|| player->powers[pw_sneakers]
+		|| player->driftboost
+		|| player->sneakertimer
+		|| player->startboost
+		|| player->ringboost)
+		&& !(player->invincibilitytimer || player->smonitortimer) // SRB2kart
 		&& (player->speed + abs(player->mo->momz)) > FixedMul(20*FRACUNIT,player->mo->scale))
 	{
 		UINT8 i;
@@ -4652,7 +4666,7 @@ void P_ForceLocalAngle(player_t *player, angle_t angle, boolean interp)
 
 boolean P_PlayerFullbright(player_t *player)
 {
-	return (player->invincibilitytimer > 0);
+	return (player->invincibilitytimer > 0) || (player->smonitortimer > 0);
 }
 
 void P_ResetPlayerCheats(void)

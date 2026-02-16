@@ -1263,6 +1263,7 @@ void K_BotItemUsage(botdata_t *bd, const player_t *player)
 		case KITEM_GROW:
 		case KITEM_SHRINK:
 		case KITEM_SUPERRING:
+		case KITEM_S_MONITOR:
 			K_BotItemGenericTap(bd);
 			break;
 		case KITEM_ROCKETSNEAKER:

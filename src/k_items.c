@@ -358,7 +358,7 @@ static boolean K_DontDoubleMyItems(kartitemtype_e type, UINT8 amount)
 	    || type == KITEM_INVINCIBILITY || type == KITEM_GROW
 	    || type == KITEM_BUBBLESHIELD || type == KITEM_FLAMESHIELD
 	    || type == KITEM_ROCKETSNEAKER || type == KITEM_SHRINK
-	    || type == KITEM_HYUDORO
+	    || type == KITEM_HYUDORO || type == KITEM_S_MONITOR
 	    || (type == KITEM_BANANA && amount >= 4)
 	    || (type == KITEM_ORBINAUT && amount >= 3)
 	    || (type == KITEM_SNEAKER && amount >= 3)
@@ -498,24 +498,24 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
 #define INVODDS 30
 
 // Prevent integer overflows; don't let this go past 16383
-#define INVINDESPERATION 4
-#define MAXINVODDS ((MAXPROBABILITY * 2) * INVINDESPERATION)
+#define SMONITOR_DESPERATION 4
+#define MAXSMONITORODDS ((MAXPROBABILITY * 2) * SMONITOR_DESPERATION)
 
-// Odds value for Alt. Invin. to force itself on trailing players.
-#define INVFORCEODDS (MAXINVODDS / 2)
+// Odds value for the S-Monitor to force itself on trailing players.
+#define SMONITOR_FORCEODDS (MAXSMONITORODDS / 2)
 
-static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
+static INT32 K_KartGetSMonitorOdds(UINT32 dist)
 {
 	// I'm tired; use floating-point distances for this fuckshit.
-	INT32 invdist = INVINDIST;
+	INT32 monitordist = SMONITORDIST;
 
-	float fac_f = (float)(dist) / ((float)(invdist));
+	float fac_f = (float)(dist) / ((float)(monitordist));
 
 	if (fac_f < 1.0f)
 		return 0;
 
 	// If you're far enough for this to be in your item slot, you're far enough to SERIOUSLY need this.
-	return MAXINVODDS;
+	return MAXSMONITORODDS;
 }
 
 // updates all result cooldown timers, and sets cooldowns for "unique" items
@@ -1556,8 +1556,8 @@ void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force)
 
 // Unique odds functions, for REAL this time
 
-// Alt. Invin. odds
-INT32 KO_AltInvinOdds(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme)
+// S-Monitor odds 
+INT32 KO_SMonitorOdds(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme)
 {
 	(void)result;
 
@@ -1569,10 +1569,10 @@ INT32 KO_AltInvinOdds(INT32 odds, const kartroulette_t *roulette, const kartresu
 		cdist = (9 * cdist / 5);
 	}
 
-	odds = K_KartGetInvincibilityOdds(cdist);
+	odds = K_KartGetSMonitorOdds(cdist);
 
 	// Special case: if you're SERIOUSLY far behind before the cooldown finishes, ignore it and start forcing,
-	if (odds >= INVFORCEODDS)
+	if (odds >= SMONITOR_FORCEODDS)
 	{
 		*forceme = 3; // Take priority over SPBs
 	}
@@ -1664,6 +1664,10 @@ static void K_DoGrowShrink(player_t *player, boolean shrinking)
 	if (player->invincibilitytimer > 0)
 	{
 		; // invincibility has priority in P_RestoreMusic, no point in starting here
+	}
+	else if (player->smonitortimer > 0)
+	{
+		; // Ditto for S-Monitor
 	}
 	else if (P_IsLocalPlayer(player) == true)
 	{
@@ -2054,9 +2058,18 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		}
 		break;
 	case KITEM_INVINCIBILITY:
-		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO) // Doesn't hold your item slot hostage in Legacy, so you're free to waste it if you have multiple
+		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO) // Doesn't hold your item slot hostage, so you're free to waste it if you have multiple
 		{
-			K_DoInvincibility(player, K_GetInvincibilityTime(player));
+			K_DoInvincibility(player, INVINTIME);
+			K_PlayPowerGloatSound(player->mo);
+			player->itemamount--;
+			K_BotResetItemConfirm(player, false);
+		}
+		break;
+	case KITEM_S_MONITOR:
+		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
+		{
+			K_DoSMonitor(player, SMONITORTIME);
 			K_PlayPowerGloatSound(player->mo);
 			player->itemamount--;
 			K_BotResetItemConfirm(player, false);

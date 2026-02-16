@@ -735,10 +735,12 @@ struct player_t
 	UINT16 rocketsneakertimer;		// Rocket Sneaker duration timer
 
 	UINT16 invincibilitytimer;      // Invincibility timer
-	UINT16 maxinvincibilitytime;    // (Alternate) Initial time for Invincibility, used for the item bar.
-	UINT16 invincibilitybottleneck; // (Alternate) Prevents breakaways by gradienting towards a heavier decrement.
-	INT16 invincibilitycancel;      // (Alternate) Duration of Invincibility canceling.
-	UINT8 invincibilitywarning;     // (Alternate) "Timer warning" boolean to signal Alt. Invin. is running out.
+
+	UINT16 smonitortimer;			// S-Monitor timer
+	UINT16 maxsmonitortime;    		// Initial time for the S-Monitor, used for the item bar.
+	UINT16 smonitorexpiring; 		// Once you pass the cluster player, this starts the time limit for your S-Monitor invincibility.
+	INT16 smonitorcancel;           // Duration of S-Monitor canceling.
+	UINT8 smonitorwarning;          // "Timer warning" boolean to signal the S-Monitor is running out.
 
 	UINT8 eggmanexplode;	// Fake item recieved, explode in a few seconds
 	SINT8 eggmanblame;		// (-1 to 15) - Fake item recieved, who set this fake

@@ -4518,30 +4518,39 @@ static int lib_kGetNewSpeed(lua_State *L)
 	return 1;
 }
 
-static int lib_kInvincibilityGradient(lua_State *L)
+static int lib_kSMonitorGradient(lua_State *L)
 {
 	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
 	// HUDSAFE
 
-	lua_pushinteger(L, K_InvincibilityGradient(time));
+	lua_pushinteger(L, K_SMonitorGradient(time));
 	return 1;
 }
 
-static int lib_kGetInvincibilitySpeed(lua_State *L)
+static int lib_kGetSMonitorSpeed(lua_State *L)
 {
 	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
 	// HUDSAFE
 
-	lua_pushinteger(L, K_GetInvincibilitySpeed(time));
+	lua_pushinteger(L, K_GetSMonitorSpeed(time));
 	return 1;
 }
 
-static int lib_kGetInvincibilityAccel(lua_State *L)
+static int lib_kGetSMonitorAccel(lua_State *L)
 {
 	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
 	// HUDSAFE
 
-	lua_pushinteger(L, K_GetInvincibilityAccel(time));
+	lua_pushinteger(L, K_GetSMonitorAccel(time));
+	return 1;
+}
+
+static int lib_kGetSMonitorHandling(lua_State *L)
+{
+	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
+	// HUDSAFE
+
+	lua_pushinteger(L, K_GetSMonitorHandling(time));
 	return 1;
 }
 
@@ -5774,9 +5783,10 @@ static luaL_Reg lib[] = {
 	{"K_BoostChain",lib_kBoostChain},
 	{"K_ChainOrDeincrementTime",lib_kChainOrDeincrementTime},
 	{"K_GetNewSpeed", lib_kGetNewSpeed},
-	{"K_InvincibilityGradient", lib_kInvincibilityGradient},
-	{"K_GetInvincibilitySpeed", lib_kGetInvincibilitySpeed},
-	{"K_GetInvincibilityAccel", lib_kGetInvincibilityAccel},
+	{"K_SMonitorGradient", lib_kSMonitorGradient},
+	{"K_GetSMonitorSpeed", lib_kGetSMonitorSpeed},
+	{"K_GetSMonitorAccel", lib_kGetSMonitorAccel},
+	{"K_GetSMonitorHandling", lib_kGetSMonitorHandling},
 	{"K_3dKartMovement", lib_k3dKartMovement},
 	{"K_MomentumAngle", lib_kMomentumAngle},
 	{"K_GetKartSpeedFromStat", lib_kGetKartSpeedFromStat},

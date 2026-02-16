@@ -6863,7 +6863,7 @@ static void P_RemoveOverlay(mobj_t *thing)
 	}
 }
 
-static UINT32 P_GetTranslucencyForInvincibility(mobj_t *mo)
+static UINT32 P_GetTranslucencyForSMonitor(mobj_t *mo)
 {
 	if (!mo->player)
 	{
@@ -6871,16 +6871,16 @@ static UINT32 P_GetTranslucencyForInvincibility(mobj_t *mo)
 		return 0;
 	}
 
-	return max(0, min(9, 10 - FixedMul(10, K_InvincibilityGradient(mo->player->invincibilitytimer))))<<RF_TRANSSHIFT;
+	return max(0, min(9, 10 - FixedMul(10, K_SMonitorGradient(mo->player->smonitortimer))))<<RF_TRANSSHIFT;
 }
 
 // Called only when MT_OVERLAY thinks.
-static void P_PlayerInvincibilityOverlay(mobj_t *thing)
+static void P_PlayerSMonitorOverlay(mobj_t *thing)
 {
 	I_Assert(thing->target != NULL);
 	I_Assert(thing->target->player != NULL);
 
-	if (!thing->target->player->invincibilitytimer)
+	if (!thing->target->player->smonitortimer)
 	{
 		P_SetTarget(&thing->target, NULL);
 
@@ -6896,7 +6896,7 @@ static void P_PlayerInvincibilityOverlay(mobj_t *thing)
 		thing->z += thing->target->height - thing->height;
 	}
 
-	thing->color = K_AltInvincibilityColor(leveltime / 2);
+	thing->color = K_SMonitorColor(leveltime / 2);
 	thing->colorized = true;
 	thing->dispoffset = min(2, thing->target->dispoffset + 1);
 
@@ -6908,7 +6908,7 @@ static void P_PlayerInvincibilityOverlay(mobj_t *thing)
 	thing->sprite2 = thing->target->sprite2;
 	thing->frame = thing->target->frame | FF_FULLBRIGHT | FF_ADD;
 	thing->tics = -1;
-	thing->renderflags = (thing->target->renderflags & ~RF_TRANSMASK)|P_GetTranslucencyForInvincibility(thing->target);
+	thing->renderflags = (thing->target->renderflags & ~RF_TRANSMASK)|P_GetTranslucencyForSMonitor(thing->target);
 	thing->skin = thing->target->skin;
 	thing->standingslope = thing->target->standingslope;
 
@@ -7275,8 +7275,8 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 			P_AddOverlay(mobj);
 			if ((mobj->extravalue2) && (mobj->target->player))
 			{
-				// Could be overlaying an invincible player.
-				P_PlayerInvincibilityOverlay(mobj);
+				// Could be overlaying a player using an S-Monitor.
+				P_PlayerSMonitorOverlay(mobj);
 			}
 		}
 		break;
@@ -8501,7 +8501,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			K_UpdateMobjItemOverlay(part, mobj->threshold, mobj->movecount);
 
-			if (mobj->threshold == KITEM_INVINCIBILITY)
+			if ((mobj->threshold == KITEM_INVINCIBILITY) || (mobj->threshold == KITEM_S_MONITOR))
 				mobj->color = K_RainbowColor(leveltime);
 		}
 		break;
@@ -9043,7 +9043,11 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		mobj->colorized = mobj->target->colorized;
 		break;
 	case MT_INVULNFLASH:
-		if (!mobj->target || !mobj->target->health || (mobj->target->player && !mobj->target->player->invincibilitytimer))
+		if (!mobj->target ||
+			!mobj->target->health ||
+			(mobj->target->player &&
+				!(mobj->target->player->invincibilitytimer ||
+					mobj->target->player->smonitortimer)))
 		{
 			P_RemoveMobj(mobj);
 			return false;
