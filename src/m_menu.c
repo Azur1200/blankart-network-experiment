@@ -1327,7 +1327,7 @@ static INT32 RemapGamepadButton(event_t *ev)
 		{ gc_aimbackward, KEY_DOWNARROW  },
 		{ gc_turnleft,    KEY_LEFTARROW  },
 		{ gc_turnright,   KEY_RIGHTARROW },
-		{ gc_horncode,	  KEY_TAB },
+		{ gc_lookback,	  KEY_TAB },
 	};
 
 	for (size_t r = 0; r < sizeof(joyremap)/sizeof(*joyremap); r++)
@@ -1364,7 +1364,7 @@ static INT32 RemapGamepadButton(event_t *ev)
 boolean M_Responder(event_t *ev)
 {
 	INT32 ch = -1;
-	static tic_t joywait = 0, mousewait = 0;
+	static tic_t mousewait = 0, joyxwait = 0, joyywait = 0;
 	static INT32 pjoyx = 0, pjoyy = 0;
 	static INT32 pmousex = 0, pmousey = 0;
 	static INT32 lastx = 0, lasty = 0;
@@ -1407,46 +1407,66 @@ boolean M_Responder(event_t *ev)
 	}
 	else if (menustack[0])
 	{
-		if (ev->type == ev_joystick && deviceplayer == 0 && joywait < I_GetTime())
+		if (ev->type == ev_joystick && deviceplayer == 0)
 		{
-			if (ev->data1 == 1)
+			fixed_t rate = 0;
+			UINT32 repeat = 0;
+
+			if ((ev->data1 == 1))
 			{
-				if (abs(ev->data2) > (JOYAXISRANGE/4))
+				pjoyy = (abs(ev->data2) > JOYAXISRANGE/4) ? ev->data2 : 0;
+			}
+			else
+			{
+				pjoyx = (abs(ev->data2) > JOYAXISRANGE/4) ? ev->data2 : 0;
+			}
+			
+			if (pjoyx == 0 && pjoyy == 0)
+			{
+				joyywait = 0;
+			}
+			else if (abs(pjoyy) > abs(pjoyx))
+			{
+				rate = FixedDiv(abs(pjoyy), JOYAXISRANGE);
+				repeat = (FixedMul(2*FRACUNIT, rate) + FixedMul(FRACUNIT - rate, (NEWTICRATE/2)*FRACUNIT))/FRACUNIT;
+			
+				if (pjoyy > 0)
 				{
-					if (ev->data2 > 0 && pjoyy <= 0)
+					if (joyywait < I_GetTime())
 					{
 						ch = KEY_DOWNARROW;
-						joywait = I_GetTime() + NEWTICRATE/10;
+						joyywait = I_GetTime() + repeat;
 					}
-					else if (ev->data2 < 0 && pjoyy >= 0)
+				}
+				else if (pjoyy < 0)
+				{
+					if (joyywait < I_GetTime())
 					{
 						ch = KEY_UPARROW;
-						joywait = I_GetTime() + NEWTICRATE/10;
+						joyywait = I_GetTime() + repeat;
 					}
-				}
-				else
-				{
-					pjoyy = 0;
 				}
 			}
-			else if (ev->data1 == 0)
+			else
 			{
-				if (abs(ev->data2) > (JOYAXISRANGE/4))
+				rate = FixedDiv(abs(pjoyx), JOYAXISRANGE);
+				repeat = (FixedMul(2*FRACUNIT, rate) + FixedMul(FRACUNIT - rate, (NEWTICRATE/2)*FRACUNIT))/FRACUNIT;
+				
+				if (pjoyx > 0)
 				{
-					if (ev->data2 > 0 && pjoyx <= 0)
+					if (joyxwait < I_GetTime())
 					{
 						ch = KEY_RIGHTARROW;
-						joywait = I_GetTime() + NEWTICRATE/10;
-					}
-					else if (ev->data2 < 0 && pjoyx >= 0)
-					{
-						ch = KEY_LEFTARROW;
-						joywait = I_GetTime() + NEWTICRATE/10;
+						joyxwait = I_GetTime() + repeat;
 					}
 				}
-				else
+				else if (pjoyx < 0)
 				{
-					pjoyx = 0;
+					if (joyxwait < I_GetTime())
+					{
+						ch = KEY_LEFTARROW;
+						joyxwait = I_GetTime() + repeat;
+					}
 				}
 			}
 		}
