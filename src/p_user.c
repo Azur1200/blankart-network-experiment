@@ -833,7 +833,7 @@ void P_RestoreMusic(player_t *player)
 	{ \
 		if (players[p].growshrinktimer > bestlocaltimer) \
 		{ wantedmus = 1; bestlocaltimer = players[p].growshrinktimer; } \
-		else if (players[p].invincibilitytimer > bestlocaltimer) \
+		else if ((players[p].invincibilitytimer > bestlocaltimer) && (!players[p].invincibilitywarning))\
 		{ wantedmus = 2; bestlocaltimer = players[p].invincibilitytimer; } \
 		else if ((K_IsKartItemAlternate(KITEM_SHRINK)) && \
 		    (K_GetShrinkTime(&players[p]) > bestlocaltimer)) \
@@ -853,7 +853,7 @@ void P_RestoreMusic(player_t *player)
 			{
 				if (player->growshrinktimer > 1)
 					wantedmus = 1;
-				else if (player->invincibilitytimer > 1)
+				else if ((player->invincibilitytimer > 1) && (!player->invincibilitywarning))
 					wantedmus = 2;
 				else if ((K_IsKartItemAlternate(KITEM_SHRINK)) &&
 				    (K_GetShrinkTime(player) > 1))

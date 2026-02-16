@@ -504,40 +504,19 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
 // Odds value for Alt. Invin. to force itself on trailing players.
 #define INVFORCEODDS (MAXINVODDS / 2)
 
-#define FRAC_95pct (95 * FRACUNIT / 100)
-
 static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
 {
-	UINT32 invindist = INVINDIST/2;
+	// I'm tired; use floating-point distances for this fuckshit.
+	INT32 invdist = INVINDIST;
 
-	if (dist < invindist)
+	float fac_f = (float)(dist) / ((float)(invdist));
+
+	if (fac_f < 1.0f)
 		return 0;
 
-	INT32 finodds = 0;
-	fixed_t fac = (min(32000, (fixed_t)dist) * FRACUNIT) / (INVINDIST);
-
-	if (fac > FRACUNIT)
-	{
-		// Desperation! Climb exponentially until Invincibility is practically guaranteed.
-		fac = (((min(32000, (fixed_t)dist) * FRACUNIT) / (INVINDIST)) - FRACUNIT) >> 1;
-		finodds = Easing_InCubic(fac, INVODDS, MAXINVODDS);
-	}
-	else
-	{
-		if (fac <= FRAC_95pct)
-		{
-			// Invincibility is practically useless at lower distances.
-			// Only let it appear at or above 95%.
-			return 0;
-		}
-		// Basic linear climb to "reasonable" odds.
-		finodds = FixedMul(INVODDS, fac);
-	}
-
-	return min(MAXINVODDS, finodds);
+	// If you're far enough for this to be in your item slot, you're far enough to SERIOUSLY need this.
+	return MAXINVODDS;
 }
-
-#undef FRAC_95pct
 
 // updates all result cooldown timers, and sets cooldowns for "unique" items
 void K_UpdateItemCooldown(void)

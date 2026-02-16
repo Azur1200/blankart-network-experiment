@@ -276,6 +276,7 @@ void K_ResetPogoSpring(player_t *player);
 extern boolean forcefullinvintheme;
 boolean K_PlayFullInvinTheme(void);
 void K_DoInvincibility(player_t *player, tic_t time);
+#define INVINWARNINGTIME (fixed_t)(0.833333333f * (float)(FRACUNIT))
 fixed_t K_InvincibilityGradient(UINT16 time);
 UINT16 K_GetInvincibilityTime(player_t *player);
 fixed_t K_GetInvincibilitySpeed(UINT16 time);

@@ -1389,7 +1389,8 @@ static void K_drawKartItem(void)
 		}
 		else if ((stplyr->invincibilitytimer) && (K_IsKartItemAlternate(KITEM_INVINCIBILITY)))
 		{
-			itembar = FixedDiv(stplyr->invincibilitytimer, max(1, stplyr->maxinvincibilitytime));
+			if (stplyr->invincibilitytimer < MININVINTIME)
+				itembar = FixedDiv(stplyr->invincibilitytimer, max(1, stplyr->maxinvincibilitytime));
 
 			if (stplyr->invincibilitycancel > 0)
 				flamebar = FixedDiv(stplyr->invincibilitycancel, 26);
@@ -4497,8 +4498,6 @@ static void K_drawKartMinimap(void)
 						transmul =
 						    FRACUNIT - (V_GetHudTrans() * FRACUNIT / 10);
 					}
-
-					transmul *= 2;
 
 					invintrans =
 					    max(0,

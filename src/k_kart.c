@@ -1013,7 +1013,7 @@ static fixed_t K_CheckOffroadCollide(mobj_t *mo)
 static fixed_t K_OffroadGradient(player_t *player, fixed_t offroad)
 {
 	// At 50% or lower Invincibility, offroad creeps up on you.
-	fixed_t invinoffroad = (!K_IsKartItemAlternate(KITEM_INVINCIBILITY)) ? ((player->invincibilitytimer) ? FRACUNIT : 0) : min(FRACUNIT, K_InvincibilityGradient(player->invincibilitytimer) << 1);
+	fixed_t invinoffroad = (!K_IsKartItemAlternate(KITEM_INVINCIBILITY)) ? ((player->invincibilitytimer) ? FRACUNIT : 0) : min(FRACUNIT, K_InvincibilityGradient(player->invincibilitytimer));
 	fixed_t fac = CLAMP(FRACUNIT - invinoffroad, 0, FRACUNIT);
 
 	return FixedMul(offroad, fac);
@@ -2564,71 +2564,12 @@ static inline fixed_t K_GetSneakerBoostSpeed(void)
 // Used to determine the speed and power of Invincibility.
 fixed_t K_InvincibilityGradient(UINT16 time)
 {
-    return (min(936, (fixed_t)time) * FRACUNIT / BASEINVINTIME);
-}
-
-static fixed_t K_InvincibilityEasing(fixed_t x)
-{
-    fixed_t u = max(FRACUNIT / 4, (min(32000, x) * FRACUNIT) / INVINDIST);
-
-    if (x < INVINDIST)
-        return u;
-
-    u = max(0, (u - FRACUNIT));
-
-    if (u < FRACUNIT)
-        return Easing_InCubic(u, FRACUNIT, (INVINMIDTIME/10));
-
-    return Easing_OutCubic(
-        min(FRACUNIT, FixedMul(u - FRACUNIT, FRACUNIT/4)), (INVINMIDTIME/10), (INVINMAXTIME/10));
+    return (min(936, (fixed_t)time) * FRACUNIT / (6 * TICRATE));
 }
 
 UINT16 K_GetInvincibilityTime(player_t *player)
 {
-    UINT32 i, pingame;
-	fixed_t distmul = FRACUNIT;
-
-    if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-        return BASEINVINTIME;
-
-    pingame = 0;
-    for (i = 0; i < MAXPLAYERS; i++)
-	{
-		if (!playeringame[i] || players[i].spectator)
-			continue;
-
-		if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
-			pingame++;
-
-        if (pingame > 1) // We only want to see if one player is playing.
-            continue;
-    }
-
-    if (pingame <= 1)
-    {
-		return BASEINVINTIME;
-	}
-
-	if (K_LegacyOddsMode())
-	{
-		// Legacy waypointing is janky and finicky, so tack on a safety-net multiplier.
-		// If an invincible player gets ahead of the cluster player, bottlenecking activates
-		// regardless.
-		distmul = LEGACYALTINVINMUL;
-	}
-
-	UINT32 cdist = player->distancefromcluster;
-
-	if ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode))
-	{
-		// I'm tired, boss.
-		cdist = (9 * cdist / 5);
-	}
-
-    fixed_t clustermul = K_InvincibilityEasing(FixedMul(cdist,distmul));
-	UINT16 invintics = FixedMul(BASEINVINTIME, clustermul);
-
-    return max(MININVINTIME, invintics);
+    return (!K_IsKartItemAlternate(KITEM_INVINCIBILITY)) ? BASEINVINTIME : MININVINTIME;
 }
 
 fixed_t K_GetInvincibilitySpeed(UINT16 time)
@@ -5165,13 +5106,8 @@ void K_DoInvincibility(player_t *player, tic_t time)
     }
 
 	player->maxinvincibilitytime = player->invincibilitytimer;
-
-	if (player->maxinvincibilitytime <= MININVINTIME && isalt)
-	{
-		// Merritt suggestion: Kill bottlenecking if you get a short Invincibility.
-		// Anti-bottleneck code 2: Signify to play the warning signal later than usual!
-		player->invincibilitybottleneck = (UINT16)(-2);
-	}
+	player->invincibilitybottleneck = 0;
+	player->invincibilitywarning = 0;
 
 	if (P_IsLocalPlayer(player) == true)
 	{
@@ -6457,7 +6393,7 @@ static void K_UpdateInvincibilitySounds(player_t *player)
 	{
 		if (player->growshrinktimer > 0 && (!localplayer || cv_growmusic.value == 2)) // Prioritize Grow
 			sfxnum = cv_kartinvinsfx.value ? sfx_alarmg : sfx_kgrow;
-		else if (player->invincibilitytimer > 0 && (!localplayer || cv_supermusic.value == 2))
+		else if ((player->invincibilitytimer > 0) && (!player->invincibilitywarning) && (!localplayer || cv_supermusic.value == 2))
 			sfxnum = cv_kartinvinsfx.value ? sfx_alarmi : sfx_kinvnc;
 		// FIXME: Does Alt. Shrink need an alarm?
 	}
@@ -7502,53 +7438,36 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		if ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) &&
 		    (player->invincibilitytimer > 2))
 		{
-			UINT32 invindist = INVINDIST >> 2;
-
-			// Value to subtract from the Invincibility timer during bottlenecking.
-			INT16 invin_subtrahend = 1;
-
-			if ((INT16)(player->invincibilitybottleneck) >= 0)
+			INT16 pingame = 0;
+			INT32 i;
+			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				if (player->distancefromcluster < invindist)
-				{
-					player->invincibilitybottleneck =
-					    min(256, player->invincibilitybottleneck + 4);
-					invinfac = FixedMul(
-					    8,
-					    max(min(FRACUNIT,
-						    FRACUNIT - (player->distancefromcluster /
-								(INVINDIST >> 2))),
-						0));
-				}
-				else
-				{
-					player->invincibilitybottleneck =
-					    max(0, (INT32)(player->invincibilitybottleneck) - 2);
-				}
+				if (!playeringame[i] || players[i].spectator)
+					continue;
 
-				invin_subtrahend =
-				    max(1,
-					FixedMul((UINT16)invinfac,
-						 max(0, player->invincibilitybottleneck) << 8));
+				if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
+					pingame++;
+
+				if (pingame > 1) // We only want to see if one player is playing.
+					continue;
+			}
+
+			// Value to subtract from the Invincibility timer.
+			INT16 invin_subtrahend = (pingame > 1) ? 2 : 1;
+
+			if ((player->distancefromcluster > 0) && (!player->invincibilitybottleneck) && (pingame > 1))
+			{
+				// Don't subtract shit until we get past the cluster player.
+				invin_subtrahend = 0;
 			}
 
 			player->invincibilitytimer = (UINT16)(max(
 			    2, (INT32)(player->invincibilitytimer) - invin_subtrahend));
 
 			const boolean warning_cond_standard =
-			    ((K_InvincibilityGradient(player->invincibilitytimer) <
-			      (FRACHALF * invin_subtrahend)) &&
-			     (player->maxinvincibilitytime >= (BASEINVINTIME - TICRATE)));
+			    (K_InvincibilityGradient(player->invincibilitytimer) < INVINWARNINGTIME);
 
-			const boolean warning_cond_nobottleneck =
-			    ((K_InvincibilityGradient(player->invincibilitytimer) <
-			      SecsToFixedTens(MININVINTIME / 2)) &&
-			     (player->maxinvincibilitytime >= (MININVINTIME - TICRATE)));
-
-			const boolean warning_cond =
-			    ((INT16)(player->invincibilitybottleneck) == -2)
-				? warning_cond_nobottleneck
-				: warning_cond_standard;
+			const boolean warning_cond = warning_cond_standard;
 
 			if (warning_cond)
 			{
@@ -7556,26 +7475,13 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 				{
 					S_StartSound(player->mo, sfx_cdfm71);
 					player->invincibilitywarning = 1;
+					player->invincibilitybottleneck = 1;
 				}
-			}
-
-			if (((INT16)(player->invincibilitybottleneck) > 127) &&
-			    (!S_SoundPlaying(player->mo, sfx_s3kbes)))
-			{
-				S_StartSound(player->mo, sfx_s3kbes);
 			}
 		}
 		else
 		{
 			player->invincibilitytimer--;
-
-			if (S_SoundPlaying(player->mo, sfx_s3kbes) &&
-			    K_IsKartItemAlternate(KITEM_INVINCIBILITY))
-			{
-				// Shut off the bottlenecker sound.
-				S_StopSoundByID(player->mo, sfx_s3kbes);
-			}
-
 			player->invincibilitybottleneck = 0;
 			player->invincibilitywarning = 0;
 		}
@@ -10081,18 +9987,11 @@ static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
 
 static boolean K_CheckBestRankForCluster(player_t *player, UINT32 pingame)
 {
-	if (pingame > 17)
+	if (pingame > 6)
 	{
 		if (!K_IsPlayerLosing(player))
 		{
 			return false; // Ignore winning players to prevent sandbagging.
-		}
-	}
-	else if (pingame > 6)
-	{
-		if (player->position <= 3)
-		{
-			return false; // Ignore podium players to prevent sandbagging.
 		}
 	}
 	else if (pingame > 4)
@@ -10167,7 +10066,6 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 	if (pingame <= 1)
 	{
 		// There's only us around.
-		player->invincibilitybottleneck = (UINT16)(-1);  // No bottlenecking!
 		return 0;
 	}
 	else if (pingame == 3)
@@ -10504,30 +10402,48 @@ static UINT32 K_UndoMapScaling(UINT32 distance)
 	return distance;
 }
 
-
-
 UINT32 clusterid = 0;
 
 #define FARTHESTCLUSDIS (4096)
 
-// Brute-force finds the area on the course with the highest player density in a given radius.
-// Based on DBSCAN, so it "chain-scans" neighboring players as well for a more accurate result.
-static vector3_t* K_FindPlayerCluster(
-    fixed_t eps,
-    INT32 (*func)(player_t*, fixed_t, playerfilter_f*, UINT32, vector3_t*),
-    vector3_t* out)
+// Uses distance averaging to find a player cluster.
+static vector3_t* K_FindPlayerCluster(vector3_t* out)
 {
-	INT32 density[2] = {0, 0};
-	INT32 bestdensity = 0;  // Cluster counter
-	vector3_t tempclusterpoint;
-	vector3_t c1 = {0}, c2 = {0};
-	player_t* findme;
-	player_t* player;
+	INT32 i;
+	player_t *player, *leader;
 
-	INT32 i, j;
 	INT32 nump = 0;
+	INT64 distavg = 0;
 
-	boolean doublecluster = false;
+	out->x = 0;
+	out->y = 0;
+	out->z = 0;
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		player = &players[i];
+
+		if (player->spectator)
+			continue;  // spectator
+
+		if (!player->mo)
+			continue;
+
+		if (player->position <= 1)
+		{
+			// Leader
+			leader = player;
+		}
+	}
+
+	// No leader? No point.
+	if (!leader)
+	{
+		return out;
+	}
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -10543,75 +10459,28 @@ static vector3_t* K_FindPlayerCluster(
 			continue;
 
 		nump++;
-	}
 
-	if ((nump > 6) && (nump < 18))
-	{
-		// Start double-clustering.
-		doublecluster = true;
-	}
-
-	player_t* generalclusterp;
-
-	if (doublecluster)
-	{
-		// Get the second (general) cluster first.
-		for (i = 0; i < MAXPLAYERS; i++)
+		if (K_LegacyOddsMode())
 		{
-			// NESTED LOOP to clear clusterplayer flags. GOD.
-			for (j = 0; j < MAXPLAYERS; j++)
-			{
-				clusterplayer[j] = false;
-			}
-
-			if (!playeringame[i])
-				continue;
-
-			player = &players[i];
-
-			if (player->spectator)
-				continue;  // spectator
-
-			if (!player->mo)
-				continue;
-
-			// Find neighbors
-			INT32 N2 =
-			    func(player, eps, &K_ClusterFilter_NoFilter, 0, &tempclusterpoint);
-
-			// Double-remove the clusterplayer flag. Bad hack, I know...
-			clusterplayer[i] = false;
-
-			// 10/22/2025: Pairs don't count anymore
-			if (N2 < 2)
-			{
-				continue;
-			}
-
-			// Density check
-			if (N2 > density[1])
-			{
-				density[1] = N2;
-
-				generalclusterp = closesttocluster;
-
-				c2.x = tempclusterpoint.x;
-				c2.y = tempclusterpoint.y;
-				c2.z = tempclusterpoint.z;
-				continue;
-			}
+			distavg += (INT64)(K_GetCongaLineDistance(player, 1));
+		}
+		else
+		{
+			distavg += max(0, (INT64)(player->distancetofinish) - (INT64)(leader->distancetofinish));
 		}
 	}
 
-	// First (losing) cluster.
+	if (nump)
+	{
+		distavg /= nump;
+	}
+
+	INT64 distsample = 0;
+	INT64 bestsample = INT64_MAX;
+
+	// Find the player closest to the sample.
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		// NESTED LOOP to clear clusterplayer flags. GOD.
-		for (j = 0; j < MAXPLAYERS; j++)
-		{
-			clusterplayer[j] = false;
-		}
-
 		if (!playeringame[i])
 			continue;
 
@@ -10623,171 +10492,23 @@ static vector3_t* K_FindPlayerCluster(
 		if (!player->mo)
 			continue;
 
-		// Find neighbors
-		INT32 N = func(player, eps, &K_ClusterFilter_BaseFilter, nump, &tempclusterpoint);
-
-		// Double-remove the clusterplayer flag. Bad hack, I know...
-		clusterplayer[i] = false;
-
-		// 10/22/2025: Pairs don't count anymore
-		if (N < 2)
+		if (K_LegacyOddsMode())
 		{
-			continue;
-		}
-
-		// Density check
-		if (N > density[0])
-		{
-			density[0] = N;
-
-			findme = closesttocluster;
-
-			c1.x = tempclusterpoint.x;
-			c1.y = tempclusterpoint.y;
-			c1.z = tempclusterpoint.z;
-			continue;
-		}
-	}
-
-	bestdensity = density[0] + density[1];
-
-	if (bestdensity)
-	{
-		if (doublecluster && (density[1] > 0))
-		{
-			// If the general cluster is populated, the output vector is the average
-			// point between the two cluster points. Be biased TOWARDS the general
-			// cluster! If the losing player is too far away from the general player,
-			// use the general player.
-
-			if (generalclusterp && (density[0] > 0) && findme)
-			{
-				UINT32 clusdis = 0;
-				if ((generalclusterp != findme) &&
-				    (findme->position != generalclusterp->position))
-				{
-					if (K_LegacyOddsMode())
-					{
-						clusdis =
-						    FixedMul(K_GetCongaLineDistance(
-								 (findme->position >
-								  generalclusterp->position)
-								     ? findme
-								     : generalclusterp,
-								 (findme->position >
-								  generalclusterp->position)
-								     ? generalclusterp->position
-								     : findme->position),
-							     LEGACYALTINVINMUL);
-					}
-					else
-					{
-						clusdis =
-						    K_GetDTFDifference(findme, generalclusterp);
-					}
-
-					if (clusdis > FARTHESTCLUSDIS)
-					{
-						// The distance between clusters is too far!
-						// Use the general cluster.
-						findme = generalclusterp;
-						out->x = c2.x;
-						out->y = c2.y;
-						out->z = c2.z;
-					}
-					else
-					{
-						// Get the average position between the two
-						// clusters.
-						if (K_LegacyOddsMode())
-						{
-							out->x =
-							    (fixed_t)(((INT64)c1.x + c2.x) / 2);
-							out->y =
-							    (fixed_t)(((INT64)c1.y + c2.y) / 2);
-							out->z =
-							    (fixed_t)(((INT64)c1.z + c2.z) / 2);
-						}
-						else
-						{
-							// Only need to do this for the x position;
-							// that's where the DtF is
-							out->x = (fixed_t)(((INT64)((UINT32)c1.x) +
-									    (INT64)((UINT32)c2.x)) /
-									   2);
-						}
-
-						// Finally, get the closest player to the average
-						// position.
-						fixed_t best_pdis = INT32_MAX;
-						for (i = 0; i < MAXPLAYERS; i++)
-						{
-							if (!playeringame[i])
-								continue;
-
-							if (players[i].spectator)
-								continue;  // spectator
-
-							if (!players[i].mo)
-								continue;
-
-							if (players[i].position >= nump)
-								continue;  // Ignore last place.
-									   // Last place should
-									   // *never* be a cluster
-									   // player.
-
-							fixed_t pdist;
-
-							if (K_LegacyOddsMode())
-							{
-								pdist =
-								    K_Distance3D(players[i].mo->x,
-										 players[i].mo->y,
-										 players[i].mo->z,
-										 out->x,
-										 out->y,
-										 out->z);
-							}
-							else
-							{
-								pdist = (fixed_t)(abs(
-									(INT32)((INT64)((UINT32)players[i]
-										       .distancetofinish) -
-									   (INT64)((UINT32)
-										       out->x))));
-							}
-
-							if (pdist < best_pdis)
-							{
-								best_pdis = pdist;
-								findme = &players[i];
-							}
-						}
-					}
-				}
-			}
-			else if (generalclusterp)
-			{
-				// Findme doesn't exist, but the general player does.
-				// Use the general player.
-				findme = generalclusterp;
-				out->x = c2.x;
-				out->y = c2.y;
-				out->z = c2.z;
-			}
+			distsample = (INT64)(K_GetCongaLineDistance(player, 1)) - distavg;
 		}
 		else
 		{
-			out->x = c1.x;
-			out->y = c1.y;
-			out->z = c1.z;
+			distsample = max(0, (INT64)(player->distancetofinish) - (INT64)(leader->distancetofinish)) - distavg;
 		}
 
-		// Only find the cluster player if a cluster's populated.
-		if (findme)
+		if ((distsample < bestsample))
 		{
-			clusterid = (UINT32)(findme - players);
+			bestsample = distsample;
+			clusterid = i;
+
+			out->x = player->mo->x;
+			out->y = player->mo->y;
+			out->z = player->mo->z;
 		}
 	}
 
@@ -10802,25 +10523,10 @@ static vector3_t* K_FindPlayerCluster(
 #define CLUSTER_ACTIVE_EPSILON (K_LegacyOddsMode() ? CLUSTER_EPSILON : CLUSTER_EPSILON_PATHFIND)
 #define USECLUSEPS (FixedMul(FixedMul(CLUSTER_ACTIVE_EPSILON, K_GetKartGameSpeedScalar(gamespeed)), mapobjectscale))
 
-#define K_FindPlayerClusterLegacy() (K_FindPlayerCluster(USECLUSEPS, K_CountNeighboringPlayers, &clusterpoint))
-#define K_FindPlayerClusterDTF() (K_FindPlayerCluster((USECLUSEPS / FRACUNIT), K_CountNeighboringPlayersByDTF, &clusterdtf))
-
 void K_UpdateClusterPoints(void)
 {
     // Get the player cluster.
-    if (K_LegacyOddsMode())
-    {
-        K_FindPlayerClusterLegacy();
-    }
-    else
-    {
-        /*if (cv_kartdebugcluster.value)
-        {
-            K_FindPlayerClusterLegacy();
-        }*/
-
-        K_FindPlayerClusterDTF();
-    }
+	K_FindPlayerCluster(&clusterpoint);
 }
 
 void K_UpdateAllPlayerPositions(void)

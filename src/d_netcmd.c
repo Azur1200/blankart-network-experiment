@@ -506,9 +506,9 @@ consvar_t cv_kartstacking_invincibility_classicspeedboost = CVAR_INIT ("vanillab
 consvar_t cv_kartstacking_invincibility_classicaccelboost = CVAR_INIT ("vanillaboost_invincibility_classicaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_classichandleboost = CVAR_INIT ("vanillaboost_invincibility_classichandleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 // Alternate boosts
-consvar_t cv_kartstacking_invincibility_alternatespeedboost = CVAR_INIT ("vanillaboost_invincibility_alternatespeedboost", "0.67", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_alternatespeedboost = CVAR_INIT ("vanillaboost_invincibility_alternatespeedboost", "0.75", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_alternateaccelboost = CVAR_INIT ("vanillaboost_invincibility_alternateaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_alternatehandleboost = CVAR_INIT ("vanillaboost_invincibility_alternatehandleboost", "0.45", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_alternatehandleboost = CVAR_INIT ("vanillaboost_invincibility_alternatehandleboost", "0.48", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_invincibility_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
@@ -672,7 +672,7 @@ consvar_t cv_kartinvintheme = CVAR_INIT ("kartinvintheme", "Standard", CV_SAVE, 
 
 // How far the player must be from the cluster to begin frequently rolling Invincibility.
 static CV_PossibleValue_t invindist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "8600", CV_NETVAR|CV_CHEAT|CV_GUARD, invindist_cons_t, NULL);
+consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "17000", CV_NETVAR|CV_CHEAT|CV_GUARD, invindist_cons_t, NULL);
 
 consvar_t cv_kartinvindistmul = CVAR_INIT ("kartinvindistmul", "0.54", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
