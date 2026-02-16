@@ -8821,7 +8821,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		break;
 	case MT_EGGMINE:
 		mobj->friction = 95*ORIG_FRICTION/100;
-		if (mobj->momx || mobj->momy)
+		if (mobj->threshold > 0 || FixedHypot(mobj->momx, mobj->momy) >= 12*mobj->scale)
 		{
 			mobj_t *ghost = P_SpawnGhostMobj(mobj);
 			
@@ -8834,9 +8834,8 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		if (P_IsObjectOnGround(mobj)) 
 		{
-			if (mobj->health > 1 && mobj->threshold == 0) 
+			if (mobj->threshold == 0 && mobj->health > 1 && FixedHypot(mobj->momx, mobj->momy) < 12*mobj->scale)
 			{
-				S_StartSound(mobj, mobj->info->activesound);
 				mobj->health = 1;
 				mobj->whiteshadow = false;
 			}
@@ -8855,13 +8854,13 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			S_StopSoundByID(mobj, sfx_s3kd2l);
 		}
 		
-		if (mobj->threshold > 0) 
+		if (mobj->threshold > 0)
 		{
-			mobj->threshold -= 1;
+			mobj->threshold--;
 		}
 		if (mobj->extravalue1 > 0) 
 		{
-			mobj->extravalue1 -= 1;
+			mobj->extravalue1--;
 		}
 		break;
 	case MT_SPBEXPLOSION:

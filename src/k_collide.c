@@ -318,9 +318,9 @@ void K_EggMineBounce(mobj_t *t1, mobj_t *t2)
 	fixed_t localspacey = t1->y - pointy;
 	angle_t impulseangle = R_PointToAngle2(0, 0, (localspacex + t2->momx)/2, (localspacey + t2->momy)/2);
 	P_InstaThrust(t1, impulseangle, impulse);
-	zimpulse = (P_MobjFlip(t1) * min((P_AproxDistance(t2->momx, t2->momy) + P_AproxDistance(t1->momx, t1->momy)), 28*mapobjectscale)) + t2->momz/2;
+	zimpulse = (P_MobjFlip(t1) * min((P_AproxDistance(t2->momx, t2->momy) + P_AproxDistance(t1->momx, t1->momy)), 32*mapobjectscale)) + t2->momz/2;
 
-	if (t2->type == MT_EGGMINE)
+	if (t2->type != MT_PLAYER)
 	{
 		fixed_t zdiff = (t1->z + (t1->height*P_MobjFlip(t1)/2)) - (t2->z + (t2->height*P_MobjFlip(t2))/2);
 		zimpulse /= 2;
@@ -330,12 +330,11 @@ void K_EggMineBounce(mobj_t *t1, mobj_t *t2)
 		}
 	}
 	// doesn't this look familiar
+	t1->z += 1;
 	t1->momz = zimpulse;
-	t1->z += t1->momz;
 
 	if (t1->extravalue1 == 0)
 	{
-
 		K_SpawnEggMineBumpEffect(t1);
 		t1->extravalue1 = 6;
 	}
@@ -343,6 +342,7 @@ void K_EggMineBounce(mobj_t *t1, mobj_t *t2)
 
 boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 {
+	boolean damageitem = false;
 	boolean sprung = false;
 
 	if (t1->health <= 0 || t2->health <= 0)
@@ -353,6 +353,11 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 		if ((t2 == t1->target || t2->target == t1->target) && t1->threshold > 0)
 		{
 			return true;
+		}
+		
+		if (t2->player && t2->player->hyudorotimer)
+		{
+			return true; // no interaction
 		}
 
 		if (t2->player && t2->player->flamestore && (K_GetShieldFromPlayer(t2->player) == KSHIELD_FLAME))
@@ -365,8 +370,7 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 			t2->player->flameburnstop = TICRATE/4;
 			return true;
 		}
-
-		if (t2->type == MT_PLAYER && t1->health > 1)
+		else if (t2->type == MT_PLAYER && t1->health > 1)
 		{
 			if (t1->health > 2)
 			{
@@ -379,8 +383,6 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 			else if (P_IsObjectOnGround(t2))
 			{
 				S_StartSound(t2, sfx_cdfm37);
-				// should think of something else for this specific interaction if people want something to happen
-				// t2->momz = 3*t1->scale*P_MobjFlip(t2);
 				K_SpawnEggMineBumpEffect(t1);
 				t1->extravalue1 = 6;
 				return true;
@@ -393,26 +395,46 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 		// Let thrown items hit springs!
 		sprung = P_DoSpring(t2, t1);
 	}
-	else if (K_IsMissileOrKartItem(t2))
+	else if (t2->type == MT_SSMINE_SHIELD || t2->type == MT_SSMINE || t2->type == MT_LANDMINE)
+	{
+		if (t1->health > 1)
+		{
+			t1->z += 1;
+			t1->momz += 12*mapobjectscale;
+			t1->momx /= 2;
+			t1->momy /= 2;
+		}
+
+		damageitem = true;
+		// Bomb death
+		P_KillMobj(t2, t1, t1->target, DMG_NORMAL);
+	}
+	else if (P_IsKartItem(t2->type))
 	{
 		// eggmines don't kill eachother
 		if (!(t2->type == MT_SPB || t2->type == MT_EGGMINE || t2->type == MT_EGGMINE_SHIELD))
 		{
-			P_KillMobj(t2, t1, t1->target, DMG_INSTAKILL);
+			K_ItemDamage(t2, t1, true);
+			if (!(t2->type == MT_SPB)) damageitem = true;
 		}
-		P_KillMobj(t1, t2, t2->target, DMG_INSTAKILL);
 	}
 	
 	if (sprung)
 	{
 		return false;
 	}
+	
+	if (damageitem && t1->health <= 1)
+		P_KillMobj(t1, t2, t2->target, DMG_INSTAKILL);
 	return true;
 }
 
 boolean K_EggMineShieldCollide(mobj_t *t1, mobj_t *t2)
 {
 	if (t1->health <= 0 || t2->health <= 0)
+		return true;
+	
+	if (t2->type == MT_SPB)
 		return true;
 
 	if (K_IsMissileOrKartItem(t2))
@@ -421,8 +443,8 @@ boolean K_EggMineShieldCollide(mobj_t *t1, mobj_t *t2)
 		if (!(t2->type == MT_SPB || t2->type == MT_EGGMINE || t2->type == MT_EGGMINE_SHIELD))
 		{
 			P_KillMobj(t2, t1, t1->target, DMG_INSTAKILL);
+			if (!(t2->type == MT_SPB)) P_KillMobj(t1, t2, t2->target, DMG_INSTAKILL);
 		}
-		P_KillMobj(t1, t2, t2->target, DMG_INSTAKILL);
 		return true;
 	}
 		
