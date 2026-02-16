@@ -1779,8 +1779,14 @@ static void K_DoHyudoroSteal(player_t *player)
 			&& !(players[i].itemflags & IF_ITEMOUT)
 			&& !players[i].itemblink))
 		{
-			playerswappable[numplayers] = i;
-			numplayers++;
+			kartitemflags_e flags = K_GetItemFlags(players[i].itemtype);
+
+			// I'd have liked for this to be a result-based thing, but that'd need a rework in of itself.
+			if ((flags & KIF_HYUCANTSTEAL) != KIF_HYUCANTSTEAL)
+			{
+				playerswappable[numplayers] = i;
+				numplayers++;
+			}
 		}
 	}
 

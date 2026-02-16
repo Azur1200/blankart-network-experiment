@@ -84,6 +84,7 @@ typedef enum
 	KIF_DARKBG = 1<<3,           // use dark item roulette BG
 	KIF_COLPATCH2PLAYER = 1<<4,  // colourize patch to player
 	KIF_HIDEFROMROULETTE = 1<<5, // don't show this item in the roulette (inversion of xItem's showInRoulette item flag)
+	KIF_HYUCANTSTEAL = 1<<7,     // Prevents the item from being stolen by a Hyudoro
 } ATTRPACK kartitemflags_e;
 
 // result flags relevant to the roulette
