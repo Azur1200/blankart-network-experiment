@@ -712,7 +712,12 @@ void G_ControllerRumbleTick(void)
 			continue;
 		}
 
-		if (player->spinouttimer)
+		if  (player->mo->eflags & MFE_JUSTBOUNCEDWALL)
+		{
+			high = RUMBLE_STRONG;
+			low = RUMBLE_MODERATE;
+		}
+		else if (player->spinouttimer)
 		{
 			//low = high = FRACUNIT / 6;
 			low = high = FixedMul((RUMBLE_VERYSTRONG), (FixedDiv(player->spinouttimer, (3*TICRATE / 2)))); // try do some some kinda fadeout, 3*TICRATE / 2 is the "default" spinout time
