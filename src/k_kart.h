@@ -278,6 +278,7 @@ fixed_t K_SMonitorGradient(UINT16 time);
 fixed_t K_GetSMonitorSpeed(UINT16 time);
 fixed_t K_GetSMonitorAccel(UINT16 time);
 fixed_t K_GetSMonitorHandling(UINT16 time);
+boolean K_SMonitorSlotHogging(player_t *player);
 
 void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source);
 void K_UpdateHnextList(player_t *player, boolean clean);

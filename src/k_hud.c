@@ -1314,6 +1314,7 @@ static void K_drawKartItem(void)
 	UINT8 *colormap = NULL;
 	boolean flipamount = false;	// Used for 3P/4P splitscreen to flip item amount stuff
 	boolean isalt = false;
+	boolean fade = false;
 
 	// RadioRacers
 	boolean shouldDrawOnPlayer = false;
@@ -1329,6 +1330,18 @@ static void K_drawKartItem(void)
 	}
 	else
 	{
+		// S-Monitor nonsense necessitates we do this ahead of time
+		boolean candrawitemstatus = true;
+
+		if (stplyr->itemamount <= 0 && stplyr->itemusecooldown <= 0)
+			candrawitemstatus = false;
+
+		if (stplyr->itemtype == 0 && stplyr->itemusecooldown <= 0)
+			candrawitemstatus = false;
+
+		if (stplyr->itemtype >= numkartitems && stplyr->itemtype != MAXKARTITEMS)
+			candrawitemstatus = false;
+
 		// I'm doing this a little weird and drawing mostly in reverse order
 		// The only actual reason is to make sneakers line up this way in the code below
 		// This shouldn't have any actual baring over how it functions
@@ -1387,7 +1400,7 @@ static void K_drawKartItem(void)
 			else
 				localpatch = kp_nodraw;
 		}
-		else if (stplyr->smonitortimer)
+		else if (stplyr->smonitortimer && (!candrawitemstatus))
 		{
 			if (stplyr->smonitortimer < SMONITORTIME)
 				itembar = FixedDiv(stplyr->smonitortimer, max(1, stplyr->maxsmonitortime));
@@ -1397,11 +1410,15 @@ static void K_drawKartItem(void)
 
 			if (leveltime & 1)
 			{
-				localpatch = K_GetCachedItemPatch(KITEM_S_MONITOR, tiny, 0);
-				isalt = true;
+				localpatch = K_GetCachedItemPatch(KITEM_SMONITOR, tiny, 0);
 			}
 			else
 				localpatch = kp_nodraw;
+
+			if (!K_SMonitorSlotHogging(stplyr))
+			{
+				fade = true;
+			}
 		}
 		else if (K_GetShieldFromPlayer(stplyr) == KSHIELD_BUBBLE)
 		{
@@ -1432,13 +1449,7 @@ static void K_drawKartItem(void)
 		}
 		else
 		{
-			if (stplyr->itemamount <= 0 && stplyr->itemusecooldown <= 0)
-				return;
-
-			if (stplyr->itemtype == 0 && stplyr->itemusecooldown <= 0)
-				return;
-
-			if (stplyr->itemtype >= numkartitems && stplyr->itemtype != MAXKARTITEMS)
+			if (!candrawitemstatus)
 				return;
 
 			if (stplyr->itemtype > 0 && stplyr->itemamount > 0)
@@ -1502,7 +1513,7 @@ static void K_drawKartItem(void)
 	}
 
 	INT32 hudtrans = V_GetHudTrans();
-	INT32 transflag = V_HUDTRANS;
+	INT32 transflag = (fade) ? V_HUDTRANSHALF : V_HUDTRANS;
 	INT32 transmul = FRACUNIT - (hudtrans * FRACUNIT / 10);
 
 	if (hudtrans > 9)
@@ -1534,7 +1545,7 @@ static void K_drawKartItem(void)
 		// Nice-to-have: some way for custom items to have this feature? Not sure yet.
 
 		if (stplyr->itemtype == KITEM_FLAMESHIELD || stplyr->eggmanexplode > 1 || (rocketsmonitorbar)) {
-			roulettetrans = (INT32)((float)(roulettetrans) * 0.57143f);
+			roulettetrans = (INT32)((float)(roulettetrans) * (0.57143f * ((fade) ? 0.5f : 1.0f)));
 		}
 
 		if (stplyr->exiting)
@@ -1546,9 +1557,10 @@ static void K_drawKartItem(void)
 		}
 		else
 		{
-			transflag = V_HUDTRANS;
+			transflag = (fade) ? V_HUDTRANSHALF : V_HUDTRANS;
 		}
 	}
+
 
 	fx = info.x;
 	fy = info.y;
@@ -3519,7 +3531,7 @@ static void K_drawKartPlayerCheck(void)
 		{
 			pnum += 2;
 		}
-		else if (checkplayer->itemtype == KITEM_S_MONITOR || checkplayer->smonitortimer)
+		else if (checkplayer->itemtype == KITEM_SMONITOR || checkplayer->smonitortimer)
 		{
 			// FIXME: Separate "CHECK" icon(?)
 			pnum += 2;

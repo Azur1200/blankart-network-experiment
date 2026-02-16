@@ -1016,7 +1016,7 @@ static fixed_t K_OffroadGradient(player_t* player, fixed_t offroad)
 	// S-Monitor: At 50% or lower power, offroad creeps up on you.
 	fixed_t smonitoroffroad = min(FRACUNIT, K_SMonitorGradient(player->smonitortimer));
 
-	fixed_t subtrahend = FixedMul(smonitoroffroad, invinoffroad);
+	fixed_t subtrahend = (smonitoroffroad + invinoffroad);
 
 	fixed_t fac = CLAMP(FRACUNIT - subtrahend, 0, FRACUNIT);
 
@@ -10838,9 +10838,9 @@ INT32 K_GetShieldFromItem(INT32 item)
 	}
 }
 
-static boolean K_SMonitorSlotHogging(player_t *player)
+boolean K_SMonitorSlotHogging(player_t *player)
 {
-	return ((player->smonitortimer) != 0);
+	return (K_SMonitorGradient(player->smonitortimer) >= FRACUNIT);
 }
 
 //

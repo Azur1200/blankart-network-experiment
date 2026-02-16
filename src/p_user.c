@@ -1812,7 +1812,8 @@ static void P_CheckInvincibilityTimer(player_t *player)
 	// Resume normal music stuff.
 	if (player->invincibilitytimer == 1
 		|| player->powers[pw_invulnerability] == 1
-		|| (player->smonitorwarning == 1))
+		|| (player->smonitorwarning == 1)
+		|| player->smonitortimer == 1)
 	{
 		player->smonitorwarning = 2; // Don't attempt to restore music again.
 

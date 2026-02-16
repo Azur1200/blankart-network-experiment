@@ -100,7 +100,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 				if (player->stealingtimer || player->stolentimer
 					|| player->rocketsneakertimer
 					|| player->eggmanexplode
-					|| player->smonitortimer
+					|| K_SMonitorSlotHogging(player)
 					|| (player->growshrinktimer > 0)
 					|| player->flametimer)
 					return false;
