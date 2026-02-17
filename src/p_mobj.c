@@ -8501,7 +8501,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			K_UpdateMobjItemOverlay(part, mobj->threshold, mobj->movecount);
 
-			if ((mobj->threshold == KITEM_INVINCIBILITY) || (mobj->threshold == KITEM_SMONITOR))
+			if (mobj->threshold == KITEM_INVINCIBILITY)
 				mobj->color = K_RainbowColor(leveltime);
 		}
 		break;

@@ -358,7 +358,7 @@ static boolean K_DontDoubleMyItems(kartitemtype_e type, UINT8 amount)
 	    || type == KITEM_INVINCIBILITY || type == KITEM_GROW
 	    || type == KITEM_BUBBLESHIELD || type == KITEM_FLAMESHIELD
 	    || type == KITEM_ROCKETSNEAKER || type == KITEM_SHRINK
-	    || type == KITEM_HYUDORO || type == KITEM_SMONITOR
+	    || type == KITEM_HYUDORO
 	    || (type == KITEM_BANANA && amount >= 4)
 	    || (type == KITEM_ORBINAUT && amount >= 3)
 	    || (type == KITEM_SNEAKER && amount >= 3)
@@ -2066,16 +2066,10 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 	case KITEM_INVINCIBILITY:
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO) // Doesn't hold your item slot hostage, so you're free to waste it if you have multiple
 		{
-			K_DoInvincibility(player, INVINTIME);
-			K_PlayPowerGloatSound(player->mo);
-			player->itemamount--;
-			K_BotResetItemConfirm(player, false);
-		}
-		break;
-	case KITEM_SMONITOR:
-		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
-		{
-			K_DoSMonitor(player, SMONITORTIME);
+			if (K_IsKartItemAlternate(KITEM_INVINCIBILITY))
+				K_DoSMonitor(player, SMONITORTIME);
+			else
+				K_DoInvincibility(player, INVINTIME);
 			K_PlayPowerGloatSound(player->mo);
 			player->itemamount--;
 			K_BotResetItemConfirm(player, false);

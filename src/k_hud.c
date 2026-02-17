@@ -1410,7 +1410,7 @@ static void K_drawKartItem(void)
 
 			if (leveltime & 1)
 			{
-				localpatch = K_GetCachedItemPatch(KITEM_SMONITOR, tiny, 0);
+				localpatch = K_GetCachedItemPatchEx(KITEM_INVINCIBILITY, tiny, 0, K_IsKartItemAlternate(KITEM_INVINCIBILITY));
 			}
 			else
 				localpatch = kp_nodraw;
@@ -3527,11 +3527,11 @@ static void K_drawKartPlayerCheck(void)
 		{
 			pnum += 4;
 		}
-		else if (checkplayer->itemtype == KITEM_INVINCIBILITY || checkplayer->invincibilitytimer)
+		else if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY) && (checkplayer->itemtype == KITEM_INVINCIBILITY || checkplayer->invincibilitytimer))
 		{
 			pnum += 2;
 		}
-		else if (checkplayer->itemtype == KITEM_SMONITOR || checkplayer->smonitortimer)
+		else if (K_IsKartItemAlternate(KITEM_INVINCIBILITY) && (checkplayer->itemtype == KITEM_INVINCIBILITY || checkplayer->smonitortimer))
 		{
 			// FIXME: Separate "CHECK" icon(?)
 			pnum += 2;
