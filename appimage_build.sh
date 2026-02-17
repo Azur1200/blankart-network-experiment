@@ -38,9 +38,10 @@ libmpg123
 libmp3lame
 libogg
 libvorbis
+libvorbisfile
+libvorbisenc
 libopus
 libsndfile
-libvorbisenc
 libjson
 libreadline
 libwrap
