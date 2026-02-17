@@ -3029,7 +3029,7 @@ fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dor
 	boolean karmabomb = ((gametyperules & GTR_BUMPERS) && player->bumper <= 0);
 	fixed_t finalspeed;
 
-	if (player->forcedtopspeed > 0)
+	if (doboostpower && player->forcedtopspeed > 0)
 		return FixedMul(player->forcedtopspeed, player->mo->scale);
 
 	if (doboostpower && !player->pogospring && !P_IsObjectOnGround(player->mo) && (player->airdriftspeed == 0))
