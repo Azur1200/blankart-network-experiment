@@ -968,10 +968,13 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	boolean t1Condition = false;
 	boolean t2Condition = false;
 
-	t1Condition = (t1->player->invincibilitytimer > 0);
-	t2Condition = (t2->player->invincibilitytimer > 0);
+	UINT8 invindamage = INVINDAMAGE;
 
-	UINT8 invindamage = DMG_WIPEOUT; // TODO: make this a cvar value
+	if (invindamage)
+	{
+		t1Condition = (t1->player->invincibilitytimer > 0);
+		t2Condition = (t2->player->invincibilitytimer > 0);
+	}
 
 	if ((t1Condition == true || flameT1 == true) && (t2Condition == true || flameT2 == true))
 	{

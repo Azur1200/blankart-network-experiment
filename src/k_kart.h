@@ -85,8 +85,12 @@ extern vector3_t clusterpoint, clusterdtf;
 // Bump weight for a Bubble Shield
 #define BUBBLEMINWEIGHT (5 * FRACUNIT)
 
+// Invincibility damage value
+#define INVINDAMAGE CV_Get(&cv_kartinvindamage)
+
 // S-Monitor distance value
 #define SMONITORDIST CV_Get(&cv_kartsmonitordist)
+#define SMONITORDECAYDIST CV_Get(&cv_kartsmonitor_decaydist)
 
 // Precalculated constants for stacked boost diminishing
 // *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent

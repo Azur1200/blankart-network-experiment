@@ -432,9 +432,11 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartaltshrinktime);
 
+	CV_RegisterVar(&cv_kartinvindamage);
 	CV_RegisterVar(&cv_kartinvintheme);
 
     CV_RegisterVar(&cv_kartsmonitordist);
+	CV_RegisterVar(&cv_kartsmonitor_decaydist);
 
 	// experimental stuff
 	CV_RegisterVar(&cv_kartbubble_defense_canidle);
@@ -7469,12 +7471,20 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			}
 
 			// Value to subtract from the S-Monitor timer.
-			INT16 smonitor_subtrahend = (pingame > 1) ? 2 : 1;
+			INT16 smonitor_subtrahend = (pingame > 1) ? 3 : 1;
 
-			if ((player->distancefromcluster > 0) && (!player->smonitorexpiring) && (pingame > 1))
+			if (player->distancefromcluster > SMONITORDECAYDIST)
 			{
-				// Don't subtract shit until we get past the cluster player.
-				smonitor_subtrahend = 0;
+				if ((!player->smonitorexpiring) && (pingame > 1))
+				{
+					// Don't subtract shit until we get near or past the cluster player.
+					smonitor_subtrahend = 0;
+				}
+			}
+			else
+			{
+				// Getting close; expire the timer!
+				player->smonitorexpiring = 1;
 			}
 
 			player->smonitortimer = (UINT16)(max(
