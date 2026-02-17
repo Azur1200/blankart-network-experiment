@@ -9836,13 +9836,13 @@ static void K_RecoveryDash(player_t *player)
 				player->pflags &= ~PF_RECOVERYSPIN;
 				if (player->recoverydashcharge >= RECOVERYDASHCHARGETIME && (player->cmd.buttons & BT_ACCELERATE))
 				{
+					K_SetTireGrease(player, 2*TICRATE);
 					player->outrun = TICRATE/4;
 					player->recoverydash = TICRATE;
 					player->flashing = 0;
 					S_StartSound(player->mo, sfx_s23c);
 					K_SpawnDashDustRelease(player, true);
 				}
-				player->tiregrease = 2*TICRATE;
 				player->recoverydashcharge = 0;
 				player->forcedtopspeed = 0;
 				return;

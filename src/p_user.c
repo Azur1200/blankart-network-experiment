@@ -855,7 +855,7 @@ void P_RestoreMusic(player_t *player)
 			{
 				if (player->growshrinktimer > 1)
 					wantedmus = 1;
-				else if (player->invincibilitytimer)
+				else if (player->invincibilitytimer > 1)
 					wantedmus = 2;
 				else if (((player->smonitortimer > 1) && (!player->smonitorwarning)))
 					wantedmus = 2;
