@@ -51,13 +51,6 @@ typedef struct itimer_s
 
 static bool sorttimers(itimer_t a, itimer_t b)
 {
-	const bool enda = (a.flags & TIMER_END);
-	const bool endb = (b.flags & TIMER_END);
-
-	// Check if timer should always be at the end?
-	if (enda != endb)
-		return !enda;
-
 	// Just sort by time please.
 	return a.timer < b.timer;
 }
