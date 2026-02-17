@@ -80,7 +80,7 @@ consvar_t cv_huditemamount = CVAR_INIT ("showitemamountnumber", "Vanilla", CV_SA
 
 // Item related CVARs
 consvar_t cv_karteggmine_slotlock = CVAR_INIT ("karteggmine_slotlock", "Off", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
-consvar_t cv_karteggmine_slotbrick = CVAR_INIT ("karteggmine_slotbrick", "Off", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
+consvar_t cv_karteggmine_slotbrick = CVAR_INIT ("karteggmine_slotbrick", "On", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
 
 
 void K_RegisterItem(kartitemtype_e itemtype)
