@@ -502,7 +502,8 @@ static int call_mapped_gamemap(Hook_State *hook, const hook_t *map)
 	for (k = 0; k < map->numHooks; ++k)
 	{
 		get_hook(hook, map->ids, k);
-		lua_pushvalue(gL, hook->top - !lua_compatmode);
+		boolean compat = in_bit_array(hookCompat, hook->id);
+		lua_pushvalue(gL, hook->top - !compat);
 		call_single_hook_no_copy(hook);
 	}
 
