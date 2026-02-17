@@ -672,8 +672,11 @@ consvar_t cv_kartinvindamage = CVAR_INIT ("kartinvindamage", "Flip-over", CV_NET
 
 // How far the player must be from the cluster to roll an S-Monitor.
 static CV_PossibleValue_t smonitordist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartsmonitordist = CVAR_INIT ("smonitordist", "17000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
-consvar_t cv_kartsmonitor_decaydist = CVAR_INIT ("smonitor_decaydist", "2500", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
+consvar_t cv_kartsmonitordist = CVAR_INIT ("smonitor_startdist", "17000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
+consvar_t cv_kartsmonitor_decaydist = CVAR_INIT ("smonitor_decaydist", "3600", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
+
+static CV_PossibleValue_t smonitordecaytime_cons_t[] = {{1, "MIN"}, {6, "MAX"}, {0, NULL}};
+consvar_t cv_kartsmonitor_decaytime = CVAR_INIT ("smonitor_decaytime", "2", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordecaytime_cons_t, NULL);
 
 // opinionated stuff for testing balance tweaks on the shields
 consvar_t cv_kartbubble_defense_canidle = CVAR_INIT ("kartbubble_defense_canidle", "On", CV_NETVAR, CV_OnOff, NULL);

@@ -215,6 +215,7 @@ extern consvar_t cv_kartinvintheme;
 extern consvar_t cv_kartinvindamage;
 extern consvar_t cv_kartsmonitordist;
 extern consvar_t cv_kartsmonitor_decaydist;
+extern consvar_t cv_kartsmonitor_decaytime;
 
 // opinionated stuff for testing
 extern consvar_t cv_kartbubble_defense_canidle;

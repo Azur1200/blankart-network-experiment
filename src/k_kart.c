@@ -437,6 +437,7 @@ void K_RegisterKartStuff(void)
 
     CV_RegisterVar(&cv_kartsmonitordist);
 	CV_RegisterVar(&cv_kartsmonitor_decaydist);
+	CV_RegisterVar(&cv_kartsmonitor_decaytime);
 
 	// experimental stuff
 	CV_RegisterVar(&cv_kartbubble_defense_canidle);
@@ -7471,7 +7472,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			}
 
 			// Value to subtract from the S-Monitor timer.
-			INT16 smonitor_subtrahend = (pingame > 1) ? 3 : 1;
+			INT16 smonitor_subtrahend = (pingame > 1) ? SMONITORDECAYTIME : 1;
 
 			if (player->distancefromcluster > SMONITORDECAYDIST)
 			{

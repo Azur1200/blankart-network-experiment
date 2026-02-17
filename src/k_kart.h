@@ -91,6 +91,7 @@ extern vector3_t clusterpoint, clusterdtf;
 // S-Monitor distance value
 #define SMONITORDIST CV_Get(&cv_kartsmonitordist)
 #define SMONITORDECAYDIST CV_Get(&cv_kartsmonitor_decaydist)
+#define SMONITORDECAYTIME CV_Get(&cv_kartsmonitor_decaytime)
 
 // Precalculated constants for stacked boost diminishing
 // *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent
