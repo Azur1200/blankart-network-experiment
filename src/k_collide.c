@@ -714,6 +714,10 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, INT16 d
 
 static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 {
+	// slow orbis are traps
+	if ((t->type == MT_ORBINAUT) && (FixedHypot(t->momx, t->momy) < 24*mapobjectscale))
+		return true;
+
 	return t->type == MT_BANANA || (t->type == MT_ORBINAUT && t->flags2 & MF2_AMBUSH) || t->type == MT_JAWZ_DUD ||
 	       t->type == MT_EGGMANITEM || t->type == MT_SSMINE || t->type == MT_SSMINE_SHIELD || t->type == MT_LANDMINE ||
 		   t->type == MT_EGGMINE;
@@ -753,7 +757,7 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 			t2->angle = angle;
 	}
 
-	if (K_BubbleReflectingTrapItem(t2))
+	if (K_BubbleReflectingTrapItem(t2) && (t2->momz * P_MobjFlip(t2) <= 8*t2->scale))
 	{
 		// Stupid hack: Toss trap/dud items into the air
 		t2->momz += (24*t2->scale) * P_MobjFlip(t2);
@@ -765,10 +769,7 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 		if (t2->type == MT_JAWZ)
 			P_SetTarget(&t2->tracer, t2->target); // Back to the source!
 		P_SetTarget(&t2->target, owner); // Let the source reflect it back again!
-		if ((t2->type == MT_ORBINAUT && t2->flags2 & MF2_AMBUSH) || t2->type == MT_JAWZ_DUD)
-			t2->flags |= MF_NOCLIPTHING;
-		else
-			t2->threshold = 10;
+		t2->threshold = 10;
 	}
 
 	S_StartSound(t1, sfx_s3k44);
@@ -792,8 +793,7 @@ static INT16 K_GetBubbleDamage(mobj_t* itm)
 	}
 
 	INT16 dmg = BUBBLEITMDAMAGE;
-	fixed_t momentum_epsilon =
-	    FixedMul(FixedMul(itm->radius, itm->scale), K_GetKartGameSpeedScalar(gamespeed));
+	fixed_t momentum_epsilon = 32*mapobjectscale;
 
 	switch (itm->type)
 	{
@@ -817,7 +817,7 @@ static INT16 K_GetBubbleDamage(mobj_t* itm)
 		/*FALLTHRU*/
 	case MT_ORBINAUT:
 	{
-		fixed_t momentum = K_Momentum3D(itm);
+		fixed_t momentum = K_Momentum2D(itm);
 
 		// Reward players on the offensive by letting fast Orbinauts shatter Bubble Shields.
 		// Same thing for Banana snipes.
