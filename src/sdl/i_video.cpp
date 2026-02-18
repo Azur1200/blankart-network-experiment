@@ -196,8 +196,6 @@ static const char *fallback_resolution_name = "Fallback";
 
 static bool Impl_RenderContextCreate(void)
 {
-	SDL_GL_ResetAttributes();
-
 	if (rendermode != render_opengl)
 	{
 		if (!renderer)
