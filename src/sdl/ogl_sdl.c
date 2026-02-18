@@ -182,7 +182,7 @@ void OglSdlFinishUpdate(boolean waitvbl)
 
 	oldwaitvbl = waitvbl;
 
-	SDL_GetWindowSizeInPixels(window, &sdlw, &sdlh);
+	SDL_GetWindowSize(window, &sdlw, &sdlh);
 
 	HWR_MakeScreenFinalTexture();
 	HWR_DrawScreenFinalTexture(sdlw, sdlh);
