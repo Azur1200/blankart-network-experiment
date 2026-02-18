@@ -82,6 +82,8 @@ consvar_t cv_huditemamount = CVAR_INIT ("showitemamountnumber", "Vanilla", CV_SA
 consvar_t cv_karteggmine_slotlock = CVAR_INIT ("karteggmine_slotlock", "Off", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
 consvar_t cv_karteggmine_slotbrick = CVAR_INIT ("karteggmine_slotbrick", "On", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
 
+consvar_t cv_kartthunder_radius = CVAR_INIT ("kartthunder_radius", "320", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Natural, NULL);
+
 
 void K_RegisterItem(kartitemtype_e itemtype)
 {
@@ -1854,8 +1856,6 @@ static void K_DoHyudoroSteal(player_t *player)
 	}
 }
 
-#define THUNDERRADIUS 320
-
 // Rough size of the outer-rim sprites, after scaling.
 // (The hitbox is already pretty strict due to only 1 active frame,
 // we don't need to have it disjointedly small too...)
@@ -1870,7 +1870,7 @@ void K_DoThunderShield(player_t *player)
 	angle_t an;
 
 	S_StartSound(player->mo, sfx_zio3);
-	K_ThunderShieldAttack(player->mo, (THUNDERRADIUS + THUNDERSPRITE) * FRACUNIT);
+	K_ThunderShieldAttack(player->mo, (cv_kartthunder_radius.value + THUNDERSPRITE) * FRACUNIT);
 
 	// spawn vertical bolt
 	mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
@@ -1899,18 +1899,17 @@ void K_DoThunderShield(player_t *player)
 	an = ANGLE_22h;
 	for (i=0; i<15; i++)
 	{
-		sx = player->mo->x + FixedMul((player->mo->scale*THUNDERRADIUS), FINECOSINE((an*i)>>ANGLETOFINESHIFT));
-		sy = player->mo->y + FixedMul((player->mo->scale*THUNDERRADIUS), FINESINE((an*i)>>ANGLETOFINESHIFT));
+		sx = player->mo->x + FixedMul((player->mo->scale*cv_kartthunder_radius.value), FINECOSINE((an*i)>>ANGLETOFINESHIFT));
+		sy = player->mo->y + FixedMul((player->mo->scale*cv_kartthunder_radius.value), FINESINE((an*i)>>ANGLETOFINESHIFT));
 		mo = P_SpawnMobj(sx, sy, player->mo->z, MT_THOK);
 		mo->angle = an*i;
-		mo->extravalue1 = THUNDERRADIUS;	// Used to know whether we should teleport by radius or something.
+		mo->extravalue1 = cv_kartthunder_radius.value;	// Used to know whether we should teleport by radius or something.
 		mo->scale = player->mo->scale*3;
 		P_SetTarget(&mo->target, player->mo);
 		P_SetMobjState(mo, S_KSPARK1);
 	}
 }
 
-#undef THUNDERRADIUS
 #undef THUNDERSPRITE
 
 #define MAXSHARDCOUNT 40

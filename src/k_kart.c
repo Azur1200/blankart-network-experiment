@@ -474,6 +474,8 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_karteggmine_slotlock);
 	CV_RegisterVar(&cv_karteggmine_slotbrick);
+
+	CV_RegisterVar(&cv_kartthunder_radius);
 }
 
 //}
