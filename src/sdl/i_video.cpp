@@ -198,24 +198,6 @@ static bool Impl_RenderContextCreate(void)
 {
 	SDL_GL_ResetAttributes();
 
-	if (M_CheckParm("-skipsrgb"))
-	{
-		CONS_Printf("Skipping srgb SDL call\n");
-		SDL_SetHint("SDL_HINT_OPENGL_FORCE_SRGB_FRAMEBUFFER", "skip");
-	}
-	else if (M_CheckParm("-forcergb"))
-	{
-		CONS_Printf("Forcing rgb SDL call\n");
-		SDL_SetHint("SDL_HINT_OPENGL_FORCE_SRGB_FRAMEBUFFER", "0");
-		//SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 0);
-	}
-	else if (M_CheckParm("-forcesrgb"))
-	{
-		CONS_Printf("Forcing srgb SDL call\n");
-		SDL_SetHint("SDL_HINT_OPENGL_FORCE_SRGB_FRAMEBUFFER", "1");
-		//SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
-	}
-
 	if (rendermode != render_opengl)
 	{
 		if (!renderer)
