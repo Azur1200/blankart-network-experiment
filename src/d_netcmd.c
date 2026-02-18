@@ -1328,7 +1328,10 @@ void D_RegisterClientCommands(void)
 	COM_AddCommand("displayplayer", Command_Displayplayer_f);
 
 	// FIXME: not to be here.. but needs be done for config loading
+#ifdef BACKWARDSCOMPATCORRECTION
 	CV_RegisterVar(&cv_globalgamma);
+#endif
+	CV_RegisterVar(&cv_globalbrightness);
 	CV_RegisterVar(&cv_globalsaturation);
 
 	CV_RegisterVar(&cv_rhue);
@@ -1338,12 +1341,12 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_bhue);
 	CV_RegisterVar(&cv_mhue);
 
-	CV_RegisterVar(&cv_rgamma);
-	CV_RegisterVar(&cv_ygamma);
-	CV_RegisterVar(&cv_ggamma);
-	CV_RegisterVar(&cv_cgamma);
-	CV_RegisterVar(&cv_bgamma);
-	CV_RegisterVar(&cv_mgamma);
+	CV_RegisterVar(&cv_rbrightness);
+	CV_RegisterVar(&cv_ybrightness);
+	CV_RegisterVar(&cv_gbrightness);
+	CV_RegisterVar(&cv_cbrightness);
+	CV_RegisterVar(&cv_bbrightness);
+	CV_RegisterVar(&cv_mbrightness);
 
 	CV_RegisterVar(&cv_rsaturation);
 	CV_RegisterVar(&cv_ysaturation);

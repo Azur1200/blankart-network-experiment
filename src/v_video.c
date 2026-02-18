@@ -48,8 +48,13 @@ consvar_t cv_ticrate = CVAR_INIT ("showfps", "No", CV_SAVE, fps_cons_t, NULL);
 
 static void CV_palette_OnChange(void);
 
+#ifdef BACKWARDSCOMPATCORRECTION
 static CV_PossibleValue_t gamma_cons_t[] = {{-15, "MIN"}, {5, "MAX"}, {0, NULL}};
 consvar_t cv_globalgamma = CVAR_INIT ("gamma", "0", CV_SAVE|CV_CALL|CV_NOINIT, gamma_cons_t, CV_palette_OnChange);
+#endif
+
+static CV_PossibleValue_t brightness_cons_t[] = {{-15, "MIN"}, {5, "MAX"}, {0, NULL}};
+consvar_t cv_globalbrightness = CVAR_INIT ("brightness", "0", CV_SAVE|CV_CALL, brightness_cons_t, CV_palette_OnChange);
 
 static CV_PossibleValue_t saturation_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
 consvar_t cv_globalsaturation = CVAR_INIT ("saturation", "10", CV_SAVE|CV_CALL|CV_NOINIT, saturation_cons_t, CV_palette_OnChange);
@@ -64,12 +69,12 @@ consvar_t cv_chue = CVAR_INIT ("chue", "12", CV_SAVE|CV_CALL|CV_NOINIT, hue_cons
 consvar_t cv_bhue = CVAR_INIT ("bhue", "16", CV_SAVE|CV_CALL|CV_NOINIT, hue_cons_t, CV_palette_OnChange);
 consvar_t cv_mhue = CVAR_INIT ("mhue", "20", CV_SAVE|CV_CALL|CV_NOINIT, hue_cons_t, CV_palette_OnChange);
 
-consvar_t cv_rgamma = CVAR_INIT ("rgamma", "0", CV_SAVE|CV_CALL|CV_NOINIT, gamma_cons_t, CV_palette_OnChange);
-consvar_t cv_ygamma = CVAR_INIT ("ygamma", "0", CV_SAVE|CV_CALL|CV_NOINIT, gamma_cons_t, CV_palette_OnChange);
-consvar_t cv_ggamma = CVAR_INIT ("ggamma", "0", CV_SAVE|CV_CALL|CV_NOINIT, gamma_cons_t, CV_palette_OnChange);
-consvar_t cv_cgamma = CVAR_INIT ("cgamma", "0", CV_SAVE|CV_CALL|CV_NOINIT, gamma_cons_t, CV_palette_OnChange);
-consvar_t cv_bgamma = CVAR_INIT ("bgamma", "0", CV_SAVE|CV_CALL|CV_NOINIT, gamma_cons_t, CV_palette_OnChange);
-consvar_t cv_mgamma = CVAR_INIT ("mgamma", "0", CV_SAVE|CV_CALL|CV_NOINIT, gamma_cons_t, CV_palette_OnChange);
+consvar_t cv_rbrightness = CVAR_INIT ("rbrightness", "0", CV_SAVE|CV_CALL|CV_NOINIT, brightness_cons_t, CV_palette_OnChange);
+consvar_t cv_ybrightness = CVAR_INIT ("ybrightness", "0", CV_SAVE|CV_CALL|CV_NOINIT, brightness_cons_t, CV_palette_OnChange);
+consvar_t cv_gbrightness = CVAR_INIT ("gbrightness", "0", CV_SAVE|CV_CALL|CV_NOINIT, brightness_cons_t, CV_palette_OnChange);
+consvar_t cv_cbrightness = CVAR_INIT ("cbrightness", "0", CV_SAVE|CV_CALL|CV_NOINIT, brightness_cons_t, CV_palette_OnChange);
+consvar_t cv_bbrightness = CVAR_INIT ("bbrightness", "0", CV_SAVE|CV_CALL|CV_NOINIT, brightness_cons_t, CV_palette_OnChange);
+consvar_t cv_mbrightness = CVAR_INIT ("mbrightness", "0", CV_SAVE|CV_CALL|CV_NOINIT, brightness_cons_t, CV_palette_OnChange);
 
 consvar_t cv_rsaturation = CVAR_INIT ("rsaturation", "10", CV_SAVE|CV_CALL|CV_NOINIT, saturation_cons_t, CV_palette_OnChange);
 consvar_t cv_ysaturation = CVAR_INIT ("ysaturation", "10", CV_SAVE|CV_CALL|CV_NOINIT, saturation_cons_t, CV_palette_OnChange);
@@ -141,11 +146,11 @@ static boolean InitCube(void)
 
 #define diffcons(cv) (cv.value != atoi(cv.defaultvalue))
 
-	doinggamma = diffcons(cv_globalgamma);
+	doinggamma = diffcons(cv_globalbrightness);
 
 #define gammascale 8
-	globalgammamul = (cv_globalgamma.value ? ((255 - (gammascale*abs(cv_globalgamma.value)))/255.0) : 1.0);
-	globalgammaoffs = ((cv_globalgamma.value > 0) ? ((gammascale*cv_globalgamma.value)/255.0) : 0.0);
+	globalgammamul = (cv_globalbrightness.value ? ((255.0f - (gammascale*abs(cv_globalbrightness.value))) / 255.0f) : 1.0f);
+	globalgammaoffs = ((cv_globalbrightness.value > 0) ? ((gammascale*cv_globalbrightness.value) / 255.0f) : 0.0f);
 	desatur[0] = desatur[1] = desatur[2] = globalgammaoffs + (0.33*globalgammamul);
 
 	if (doinggamma
@@ -155,12 +160,12 @@ static boolean InitCube(void)
 		|| diffcons(cv_chue)
 		|| diffcons(cv_bhue)
 		|| diffcons(cv_mhue)
-		|| diffcons(cv_rgamma)
-		|| diffcons(cv_ygamma)
-		|| diffcons(cv_ggamma)
-		|| diffcons(cv_cgamma)
-		|| diffcons(cv_bgamma)
-		|| diffcons(cv_mgamma)) // set the gamma'd/hued positions (saturation is done later)
+		|| diffcons(cv_rbrightness)
+		|| diffcons(cv_ybrightness)
+		|| diffcons(cv_gbrightness)
+		|| diffcons(cv_cbrightness)
+		|| diffcons(cv_bbrightness)
+		|| diffcons(cv_mbrightness)) // set the gamma'd/hued positions (saturation is done later)
 	{
 		float mod, tempgammamul, tempgammaoffs;
 
@@ -207,12 +212,12 @@ static boolean InitCube(void)
 				loc[2] = tempgammaoffs+tempgammamul-mod;\
 				break;\
 		}
-		dohue(cv_rhue.value, cv_rgamma.value, working[1][0][0]);
-		dohue(cv_yhue.value, cv_ygamma.value, working[1][1][0]);
-		dohue(cv_ghue.value, cv_ggamma.value, working[0][1][0]);
-		dohue(cv_chue.value, cv_cgamma.value, working[0][1][1]);
-		dohue(cv_bhue.value, cv_bgamma.value, working[0][0][1]);
-		dohue(cv_mhue.value, cv_mgamma.value, working[1][0][1]);
+		dohue(cv_rhue.value, cv_rbrightness.value, working[1][0][0]);
+		dohue(cv_yhue.value, cv_ybrightness.value, working[1][1][0]);
+		dohue(cv_ghue.value, cv_gbrightness.value, working[0][1][0]);
+		dohue(cv_chue.value, cv_cbrightness.value, working[0][1][1]);
+		dohue(cv_bhue.value, cv_bbrightness.value, working[0][0][1]);
+		dohue(cv_mhue.value, cv_mbrightness.value, working[1][0][1]);
 #undef dohue
 	}
 
@@ -234,12 +239,12 @@ static boolean InitCube(void)
 			dosaturation(working[r][g][b][q], (tempgammaoffs+(desatur[q]*mod*tempgammamul)));\
 	}
 
-	docvsat(cv_rsaturation, cv_rhue.value, cv_rgamma.value, 1, 0, 0);
-	docvsat(cv_ysaturation, cv_yhue.value, cv_ygamma.value, 1, 1, 0);
-	docvsat(cv_gsaturation, cv_ghue.value, cv_ggamma.value, 0, 1, 0);
-	docvsat(cv_csaturation, cv_chue.value, cv_cgamma.value, 0, 1, 1);
-	docvsat(cv_bsaturation, cv_bhue.value, cv_bgamma.value, 0, 0, 1);
-	docvsat(cv_msaturation, cv_mhue.value, cv_mgamma.value, 1, 0, 1);
+	docvsat(cv_rsaturation, cv_rhue.value, cv_rbrightness.value, 1, 0, 0);
+	docvsat(cv_ysaturation, cv_yhue.value, cv_ybrightness.value, 1, 1, 0);
+	docvsat(cv_gsaturation, cv_ghue.value, cv_gbrightness.value, 0, 1, 0);
+	docvsat(cv_csaturation, cv_chue.value, cv_cbrightness.value, 0, 1, 1);
+	docvsat(cv_bsaturation, cv_bhue.value, cv_bbrightness.value, 0, 0, 1);
+	docvsat(cv_msaturation, cv_mhue.value, cv_mbrightness.value, 1, 0, 1);
 
 #undef gammascale
 
@@ -363,7 +368,7 @@ static void LoadPalette(const char *lumpname)
 		// Short hand this so its easier to type
 		RGBA_t pGCP = pGammaCorrectedPalette[i];
 
-		V_CubeApply(&pGCP.s.red,&pGCP.s.green,&pGCP.s.blue);
+		V_CubeApply(&pGCP);
 		pLocalPalette[i].rgba = V_GammaEncode(pGCP.rgba);
 	}
 
@@ -371,7 +376,7 @@ static void LoadPalette(const char *lumpname)
 		free(palcopy);
 }
 
-void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
+void V_CubeApply(RGBA_t *input)
 {
 	float working[4][3];
 	float linear;
@@ -380,7 +385,7 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 	if (!Cubeapply)
 		return;
 
-	linear = (*red/255.0f);
+	linear = ((*input).s.red/255.0);
 #define dolerp(e1, e2) ((1 - linear)*e1 + linear*e2)
 	for (q = 0; q < 3; q++)
 	{
@@ -389,26 +394,28 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 		working[2][q] = dolerp(Cubepal[0][0][1][q], Cubepal[1][0][1][q]);
 		working[3][q] = dolerp(Cubepal[0][1][1][q], Cubepal[1][1][1][q]);
 	}
-	linear = (*green/255.0f);
+
+	linear = ((*input).s.green/255.0);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = dolerp(working[0][q], working[1][q]);
 		working[1][q] = dolerp(working[2][q], working[3][q]);
 	}
-	linear = (*blue/255.0f);
+
+	linear = ((*input).s.blue/255.0);
 	for (q = 0; q < 3; q++)
 	{
 		working[0][q] = 255*dolerp(working[0][q], working[1][q]);
 		if (working[0][q] > 255.0f)
 			working[0][q] = 255.0f;
-		else if (working[0][q]  < 0.0f)
-			working[0][q] = 0.0f;
+		else if (working[0][q] < 0.0f)
+			working[0][q] = 0.0;
 	}
 #undef dolerp
 
-	*red = (UINT8)(working[0][0]);
-	*green = (UINT8)(working[0][1]);
-	*blue = (UINT8)(working[0][2]);
+	(*input).s.red = (UINT8)(working[0][0]);
+	(*input).s.green = (UINT8)(working[0][1]);
+	(*input).s.blue = (UINT8)(working[0][2]);
 }
 
 const char *R_GetPalname(UINT16 num)
@@ -1605,34 +1612,35 @@ fillscreen:
 // This is now a function since it's otherwise repeated 2 times and honestly looks retarded:
 static UINT32 V_GetHWConsBackColor(void)
 {
-	UINT8 r, g, b;
+	RGBA_t output;
+
 	switch (cons_backcolor.value)
 	{
-		case 0:		r = 0xff; g = 0xff; b = 0xff;	break; 	// White
-		case 1:		r = 0x80; g = 0x80; b = 0x80;	break; 	// Black
-		case 2:		r = 0xde; g = 0xb8; b = 0x87;	break;	// Sepia
-		case 3:		r = 0x40; g = 0x20; b = 0x10;	break; 	// Brown
-		case 4:		r = 0xfa; g = 0x80; b = 0x72;	break; 	// Pink
-		case 5:		r = 0xff; g = 0x69; b = 0xb4;	break; 	// Raspberry
-		case 6:		r = 0xff; g = 0x00; b = 0x00;	break; 	// Red
-		case 7:		r = 0xff; g = 0xd6; b = 0x83;	break;	// Creamsicle
-		case 8:		r = 0xff; g = 0x80; b = 0x00;	break; 	// Orange
-		case 9:		r = 0xda; g = 0xa5; b = 0x20;	break; 	// Gold
-		case 10:	r = 0x80; g = 0x80; b = 0x00;	break; 	// Yellow
-		case 11:	r = 0x00; g = 0xff; b = 0x00;	break; 	// Emerald
-		case 12:	r = 0x00; g = 0x80; b = 0x00;	break; 	// Green
-		case 13:	r = 0x40; g = 0x80; b = 0xff;	break; 	// Cyan
-		case 14:	r = 0x46; g = 0x82; b = 0xb4;	break; 	// Steel
-		case 15:	r = 0x1e; g = 0x90; b = 0xff;	break;	// Periwinkle
-		case 16:	r = 0x00; g = 0x00; b = 0xff;	break; 	// Blue
-		case 17:	r = 0xff; g = 0x00; b = 0xff;	break; 	// Purple
-		case 18:	r = 0xee; g = 0x82; b = 0xee;	break; 	// Lavender
+		case 0:		output.s.red = 0xff; output.s.green = 0xff; output.s.blue = 0xff;	break; 	// White
+		case 1:		output.s.red = 0x80; output.s.green = 0x80; output.s.blue = 0x80;	break; 	// Black
+		case 2:		output.s.red = 0xde; output.s.green = 0xb8; output.s.blue = 0x87;	break;	// Sepia
+		case 3:		output.s.red = 0x40; output.s.green = 0x20; output.s.blue = 0x10;	break; 	// Brown
+		case 4:		output.s.red = 0xfa; output.s.green = 0x80; output.s.blue = 0x72;	break; 	// Pink
+		case 5:		output.s.red = 0xff; output.s.green = 0x69; output.s.blue = 0xb4;	break; 	// Raspberry
+		case 6:		output.s.red = 0xff; output.s.green = 0x00; output.s.blue = 0x00;	break; 	// Red
+		case 7:		output.s.red = 0xff; output.s.green = 0xd6; output.s.blue = 0x83;	break;	// Creamsicle
+		case 8:		output.s.red = 0xff; output.s.green = 0x80; output.s.blue = 0x00;	break; 	// Orange
+		case 9:		output.s.red = 0xda; output.s.green = 0xa5; output.s.blue = 0x20;	break; 	// Gold
+		case 10:	output.s.red = 0x80; output.s.green = 0x80; output.s.blue = 0x00;	break; 	// Yellow
+		case 11:	output.s.red = 0x00; output.s.green = 0xff; output.s.blue = 0x00;	break; 	// Emerald
+		case 12:	output.s.red = 0x00; output.s.green = 0x80; output.s.blue = 0x00;	break; 	// Green
+		case 13:	output.s.red = 0x40; output.s.green = 0x80; output.s.blue = 0xff;	break; 	// Cyan
+		case 14:	output.s.red = 0x46; output.s.green = 0x82; output.s.blue = 0xb4;	break; 	// Steel
+		case 15:	output.s.red = 0x1e; output.s.green = 0x90; output.s.blue = 0xff;	break;	// Periwinkle
+		case 16:	output.s.red = 0x00; output.s.green = 0x00; output.s.blue = 0xff;	break; 	// Blue
+		case 17:	output.s.red = 0xff; output.s.green = 0x00; output.s.blue = 0xff;	break; 	// Purple
+		case 18:	output.s.red = 0xee; output.s.green = 0x82; output.s.blue = 0xee;	break; 	// Lavender
 		// Default green
-		default:	r = 0x00; g = 0x80; b = 0x00;	break;
+		default:	output.s.red = 0x00; output.s.green = 0x80; output.s.blue = 0x00;	break;
 	}
 
-	V_CubeApply(&r, &g, &b);
-	return (r << 24) | (g << 16) | (b << 8);
+	V_CubeApply(&output);
+	return (output.s.red << 24) | (output.s.green << 16) | (output.s.blue << 8);
 }
 #endif
 
@@ -2306,33 +2314,35 @@ void V_DrawPromptBack(INT32 boxheight, INT32 color)
 	if (rendermode == render_opengl)
 	{
 		UINT32 hwcolor;
-		UINT8 r, g, b;
+		RGBA_t output;
+
 		switch (color)
 		{
-			case 0:		r = 0xff; g = 0xff; b = 0xff;	break; 	// White
-			case 1:		r = 0x00; g = 0x00; b = 0x00;	break; 	// Black
-			case 2:		r = 0xde; g = 0xb8; b = 0x87;	break;	// Sepia
-			case 3:		r = 0x40; g = 0x20; b = 0x10;	break; 	// Brown
-			case 4:		r = 0xfa; g = 0x80; b = 0x72;	break; 	// Pink
-			case 5:		r = 0xff; g = 0x69; b = 0xb4;	break; 	// Raspberry
-			case 6:		r = 0xff; g = 0x00; b = 0x00;	break; 	// Red
-			case 7:		r = 0xff; g = 0xd6; b = 0x83;	break;	// Creamsicle
-			case 8:		r = 0xff; g = 0x80; b = 0x00;	break; 	// Orange
-			case 9:		r = 0xda; g = 0xa5; b = 0x20;	break; 	// Gold
-			case 10:	r = 0x80; g = 0x80; b = 0x00;	break; 	// Yellow
-			case 11:	r = 0x00; g = 0xff; b = 0x00;	break; 	// Emerald
-			case 12:	r = 0x00; g = 0x80; b = 0x00;	break; 	// Green
-			case 13:	r = 0x40; g = 0x80; b = 0xff;	break; 	// Cyan
-			case 14:	r = 0x46; g = 0x82; b = 0xb4;	break; 	// Steel
-			case 15:	r = 0x1e; g = 0x90; b = 0xff;	break;	// Periwinkle
-			case 16:	r = 0x00; g = 0x00; b = 0xff;	break; 	// Blue
-			case 17:	r = 0xff; g = 0x00; b = 0xff;	break; 	// Purple
-			case 18:	r = 0xee; g = 0x82; b = 0xee;	break; 	// Lavender
+			case 0:		output.s.red = 0xff; output.s.green = 0xff; output.s.blue = 0xff;	break; 	// White
+			case 1:		output.s.red = 0x80; output.s.green = 0x80; output.s.blue = 0x80;	break; 	// Black
+			case 2:		output.s.red = 0xde; output.s.green = 0xb8; output.s.blue = 0x87;	break;	// Sepia
+			case 3:		output.s.red = 0x40; output.s.green = 0x20; output.s.blue = 0x10;	break; 	// Brown
+			case 4:		output.s.red = 0xfa; output.s.green = 0x80; output.s.blue = 0x72;	break; 	// Pink
+			case 5:		output.s.red = 0xff; output.s.green = 0x69; output.s.blue = 0xb4;	break; 	// Raspberry
+			case 6:		output.s.red = 0xff; output.s.green = 0x00; output.s.blue = 0x00;	break; 	// Red
+			case 7:		output.s.red = 0xff; output.s.green = 0xd6; output.s.blue = 0x83;	break;	// Creamsicle
+			case 8:		output.s.red = 0xff; output.s.green = 0x80; output.s.blue = 0x00;	break; 	// Orange
+			case 9:		output.s.red = 0xda; output.s.green = 0xa5; output.s.blue = 0x20;	break; 	// Gold
+			case 10:	output.s.red = 0x80; output.s.green = 0x80; output.s.blue = 0x00;	break; 	// Yellow
+			case 11:	output.s.red = 0x00; output.s.green = 0xff; output.s.blue = 0x00;	break; 	// Emerald
+			case 12:	output.s.red = 0x00; output.s.green = 0x80; output.s.blue = 0x00;	break; 	// Green
+			case 13:	output.s.red = 0x40; output.s.green = 0x80; output.s.blue = 0xff;	break; 	// Cyan
+			case 14:	output.s.red = 0x46; output.s.green = 0x82; output.s.blue = 0xb4;	break; 	// Steel
+			case 15:	output.s.red = 0x1e; output.s.green = 0x90; output.s.blue = 0xff;	break;	// Periwinkle
+			case 16:	output.s.red = 0x00; output.s.green = 0x00; output.s.blue = 0xff;	break; 	// Blue
+			case 17:	output.s.red = 0xff; output.s.green = 0x00; output.s.blue = 0xff;	break; 	// Purple
+			case 18:	output.s.red = 0xee; output.s.green = 0x82; output.s.blue = 0xee;	break; 	// Lavender
 			// Default green
-			default:	r = 0x00; g = 0x80; b = 0x00;	break;
+			default:	output.s.red = 0x00; output.s.green = 0x80; output.s.blue = 0x00;	break;
 		}
-		V_CubeApply(&r, &g, &b);
-		hwcolor = (((r << 24) | (g << 16) | (b << 8)));
+
+		V_CubeApply(&output);
+		hwcolor = (output.s.red << 24) | (output.s.green << 16) | (output.s.blue << 8);
 		HWR_DrawTutorialBack(hwcolor, boxheight);
 		return;
 	}
