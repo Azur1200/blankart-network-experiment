@@ -1068,9 +1068,8 @@ static void K_UpdateOffroad(player_t *player)
 			{
 				if (cv_kartflame_offroadburn.value && player->flameoverheat)
 				{
-					// experiment: allow overheating flame shield to cut thru offroad
 					offroad = offroad/2;
-					offroadstrength = 0;
+					offroadstrength = 1;
 				}
 				else
 				{
@@ -2828,11 +2827,15 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->flamestore) // Flame Shield dash
 	{
-		fixed_t dash = K_FlameShieldDashVar(player->flamedash);
-
-		// Once the shield burns out, lessen its power.
-		if (player->flamestore && player->flametimer == 0 && dash > 0)
-			dash /= 3;
+		fixed_t dash = 0;
+		
+		if (!player->offroad)
+		{
+			dash = K_FlameShieldDashVar(player->flamedash);
+			// Once the shield burns out, lessen its power.
+			if (player->flamestore && player->flametimer == 0 && dash > 0)
+				dash /= 3;
+		}
 
 		K_DoBoost(player, FLAMESPEEDVAL + dash, FLAMEACCELBOOST, FLAMEHANDLEBOOST, FLAMESTACKABLE, FLAMESTACKABLE);
 	}
