@@ -9561,7 +9561,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 
 		// Disable drift-sparks until you're going fast enough
 		if (!(player->pflags & PF_GETSPARKS)
-			|| (player->offroad && K_ApplyOffroad(player)))
+			|| (player->offroad && K_ApplyOffroad(player) && !(cv_kartflame_offroadburn.value && player->flameoverheat)))
 			driftadditive = 0;
 
 		if (player->speed > minspeed*2)
