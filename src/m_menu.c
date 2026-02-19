@@ -1412,7 +1412,7 @@ boolean M_Responder(event_t *ev)
 			fixed_t rate = 0;
 			UINT32 repeat = 0;
 
-			if ((ev->data1 == 1))
+			if (ev->data1 == 1)
 			{
 				pjoyy = (abs(ev->data2) > JOYAXISRANGE/4) ? ev->data2 : 0;
 			}
