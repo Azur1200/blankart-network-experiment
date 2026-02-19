@@ -1064,13 +1064,13 @@ static void K_UpdateOffroad(player_t *player)
 
 			offroad = offroadstrength / (TICRATE/2);
 
-			if (player->flamestore)
+			if (player->flametimer)
 			{
 				if (cv_kartflame_offroadburn.value && player->flameoverheat)
 				{
-					// experiment: allow overheating flame shield to cut thru offroad a bit better
+					// experiment: allow overheating flame shield to cut thru offroad
 					offroad = offroad/2;
-					offroadstrength = offroadstrength/2;
+					offroadstrength = 0;
 				}
 				else
 				{

@@ -962,9 +962,9 @@ static void Impl_HandleControllerSensorEvent(SDL_GamepadSensorEvent evt)
 			event.data3 = FLOAT_TO_FIXED(evt.data[2]);
 			break;
 			
-			// data[0]: delta pitch in rad/s
-			// data[1]: delta yaw in rad/s
-			// data[2]: delta roll in rad/s
+		// data[0]: delta pitch in rad/s
+		// data[1]: delta yaw in rad/s
+		// data[2]: delta roll in rad/s
 		case SDL_SENSOR_GYRO:
 #define RAD2DEG 57.295779513f
 			event.type = ev_gyroscope;
