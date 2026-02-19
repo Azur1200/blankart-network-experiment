@@ -9794,7 +9794,7 @@ static boolean K_PlayerWantsRecoverySpin(player_t *player)
 static boolean K_PlayerCanStartRecoverySpin(player_t *player)
 {
 	return (K_RecoveryDashActive() && P_IsObjectOnGround(player->mo) && (!(player->pflags & PF_STASIS)) && (player->carry == CR_NONE) &&
-			player->speed < 10*player->mo->scale && (!(player->pflags & PF_RECOVERYSPIN)));
+			(player->speed < 10*player->mo->scale || player->wipeoutslow) && (!(player->pflags & PF_RECOVERYSPIN)));
 }
 
 static boolean K_PlayerCanRecoverySpin(player_t *player)
@@ -9808,9 +9808,9 @@ static boolean K_PlayerCanRecoverySpin(player_t *player)
 
 static void K_RecoveryDash(player_t *player)
 {
-	if (K_PlayerWantsRecoverySpin(player) && (player->spinouttimer > 0) && (!player->wipeoutslow))
+	if (K_PlayerWantsRecoverySpin(player) && (player->spinouttimer > 0 || player->flipovertimer > 0) && (!player->wipeoutslow))
 	{
-		player->wipeoutslow = player->spinouttimer;
+		player->wipeoutslow = max(wipeoutslowtime + 1, player->spinouttimer + 4);
 	}
 
 	if ((player->pflags & PF_RECOVERYSPIN) && player->forcedtopspeed == 0 && player->speed >= 10*player->mo->scale)
@@ -9827,6 +9827,9 @@ static void K_RecoveryDash(player_t *player)
 			player->pflags |= PF_RECOVERYSPIN;
 			player->forcedtopspeed = cv_kartrecoverydash_spinspeed.value + 8;
 			S_StartSound(player->mo, sfx_cdfm20);
+
+			player->mo->momx = min(10*player->mo->scale, abs(player->mo->momx/2)) * intsign(player->mo->momx);
+			player->mo->momy = min(10*player->mo->scale, abs(player->mo->momy/2)) * intsign(player->mo->momy);
 
 			player->driftboost = 0;
 			player->sneakertimer = 0;
