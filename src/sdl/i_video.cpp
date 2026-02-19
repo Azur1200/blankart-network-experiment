@@ -975,7 +975,7 @@ static void Impl_HandleControllerSensorEvent(SDL_GamepadSensorEvent evt)
 			break;
 
 		default:
-			break;
+			return;
 	}
 
 	D_PostEvent(&event);
