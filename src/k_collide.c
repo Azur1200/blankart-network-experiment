@@ -372,11 +372,10 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 		}
 		else if (t2->type == MT_PLAYER && t1->health > 1)
 		{
-			if (t1->health > 2)
+			if (t1->health > 2 && P_DamageMobj(t2, t1, t1->target, 1, DMG_FLIPOVER))
 			{
 				K_DoEggMineStrip(t2, t1, t1->target);
 				S_StartSound(t2, sfx_bsnipe);
-				P_DamageMobj(t2, t1, t1->target, 1, DMG_FLIPOVER);
 				P_RemoveMobj(t1);
 				return true;
 			}
@@ -555,10 +554,12 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 		}
 		else
 		{
-			// these can only come from eggmines now
-			K_DoEggMineStrip(t2, t1, t1->target);
 			// Player Damage
-			P_DamageMobj(t2, t1, t1->target, 1, DMG_FLIPOVER);
+			if (P_DamageMobj(t2, t1, t1->target, 1, DMG_FLIPOVER))
+			{
+				// these can only come from eggmines now
+				K_DoEggMineStrip(t2, t1, t1->target);
+			}
 		}
 
 		P_SpawnMobj(t1->x, t1->y, t1->z, MT_MINEEXPLOSIONSOUND);
