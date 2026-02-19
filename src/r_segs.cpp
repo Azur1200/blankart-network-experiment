@@ -14,7 +14,7 @@
 
 #include <limits>
 
-#include <tracy/tracy/Tracy.hpp>
+#include <tracy/Tracy.hpp>
 
 #include "command.h"
 #include "doomdef.h"

@@ -2,3 +2,9 @@
 [submodule "thirdparty/miniupnp"]
 	path = thirdparty/miniupnp
 	url = https://github.com/miniupnp/miniupnp.git
+[submodule "thirdparty/tracy"]
+	path = thirdparty/tracy
+	url = https://github.com/wolfpld/tracy.git
+[submodule "thirdparty/libbacktrace"]
+	path = thirdparty/libbacktrace
+	url = https://github.com/ianlancetaylor/libbacktrace.git

@@ -85,7 +85,7 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
-#include <tracy/tracy/Tracy.hpp>
+#include <tracy/Tracy.hpp>
 
 // Put hashes here to get them out of header hell.
 #define ASSET_HASH_SRB2_SRB            0xf3ec1ea4d0eca4a9

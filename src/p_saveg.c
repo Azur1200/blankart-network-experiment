@@ -47,7 +47,7 @@
 #include "k_waypoint.h"
 #include "k_itemlist.hpp"
 
-#include <tracy/tracy/TracyC.h>
+#include <tracy/TracyC.h>
 
 savedata_t savedata;
 

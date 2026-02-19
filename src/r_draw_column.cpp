@@ -22,7 +22,7 @@
 //
 
 #include "r_draw.h"
-#include <tracy/tracy/Tracy.hpp>
+#include <tracy/Tracy.hpp>
 
 
 #include "r_draw_flush.cpp"

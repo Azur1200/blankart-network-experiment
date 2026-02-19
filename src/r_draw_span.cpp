@@ -14,7 +14,7 @@
 /// \note  no includes because this is included as part of r_draw.cpp
 
 #include "r_draw.h"
-#include <tracy/tracy/Tracy.hpp>
+#include <tracy/Tracy.hpp>
 
 using namespace libdivide;
 
