@@ -118,10 +118,10 @@ typedef union
 } mysockaddr_t;
 
 #ifdef HAVE_MINIUPNPC
-	#include "miniwget.h"
-	#include "miniupnpc.h"
-	#include "upnpcommands.h"
-	static UINT8 UPNP_support = TRUE;
+	#include "miniupnpc/miniwget.h"
+	#include "miniupnpc/miniupnpc.h"
+	#include "miniupnpc/upnpcommands.h"
+	static UINT8 UPNP_support = true;
 #endif // HAVE_MINIUPNC
 
 #include "i_system.h"

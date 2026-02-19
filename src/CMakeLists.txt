@@ -306,6 +306,11 @@ target_link_libraries(BLANKART PRIVATE Opus::opus)
 target_link_libraries(BLANKART PRIVATE Ogg::ogg)
 endif()
 
+if(SRB2_CONFIG_UPNP)
+	target_compile_definitions(BLANKART PRIVATE -DHAVE_MINIUPNPC)
+	target_link_libraries(BLANKART PRIVATE miniupnpc)
+endif()
+
 target_link_libraries(BLANKART PRIVATE xxHash::xxhash)
 
 target_compile_definitions(BLANKART PRIVATE -DUSE_STUN)

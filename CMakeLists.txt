@@ -95,6 +95,7 @@ option(SRB2_CONFIG_NOVERIFYIWADS "Compile with IWAD verification turned off." OF
 set(SRB2_CONFIG_ASSET_DIRECTORY "" CACHE PATH "Path to directory that contains all asset files for the installer. If set, assets will be part of installation and cpack.")
 option(SRB2_CONFIG_LTO "Enable link time optimizations, improves performance at the cost of longer link times." ON)
 option(SRB2_CONFIG_TIDY "Enable clang tiny, checks compiled code for issues at the cost of longer compile times." OFF)
+option(SRB2_CONFIG_UPNP "Enable UPnP support for networking." ON)
 
 if(SRB2_CONFIG_ENABLE_TESTS)
 	# https://github.com/catchorg/Catch2
@@ -184,7 +185,6 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/src)
 
 add_subdirectory(src)
 add_subdirectory(assets)
-
 
 ## config.h generation
 set(GIT_EXECUTABLE "git" CACHE FILEPATH "Path to git binary")
