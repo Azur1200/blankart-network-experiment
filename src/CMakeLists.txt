@@ -294,6 +294,11 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
 	target_compile_definitions(BLANKART PRIVATE -DMACOSX)
 endif()
 
+if("${CMAKE_SYSTEM_NAME}" MATCHES "FreeBSD")
+	target_compile_definitions(BLANKART PRIVATE -DFREEBSD)
+	target_link_libraries(BLANKART PRIVATE execinfo)
+endif()
+
 if("${SRB2_CONFIG_USE_GME}")
 	target_link_libraries(BLANKART PRIVATE gme)
 	target_compile_definitions(BLANKART PRIVATE -DHAVE_GME)
