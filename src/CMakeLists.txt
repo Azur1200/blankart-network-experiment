@@ -235,8 +235,8 @@ add_custom_target(_SRB2_reconf ALL
 add_dependencies(BLANKART _SRB2_reconf)
 
 if(SRB2_CONFIG_ASAN)
-	target_compile_options(BLANKART PRIVATE -fsanitize=address)
-	target_link_options(BLANKART PRIVATE -fsanitize=address)
+	target_compile_options(BLANKART PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+	target_link_options(BLANKART PRIVATE -fsanitize=address -fno-omit-frame-pointer)
 endif()
 
 if(SRB2_CONFIG_UBSAN)
@@ -255,8 +255,8 @@ if(SRB2_CONFIG_TSAN)
 endif()
 
 if(SRB2_CONFIG_MSAN)
-	target_compile_options(BLANKART PRIVATE -fsanitize=memory)
-	target_link_options(BLANKART PRIVATE -fsanitize=memory)
+	target_compile_options(BLANKART PRIVATE -fsanitize=memory -fPIE -fno-omit-frame-pointer)
+	target_link_options(BLANKART PRIVATE -fsanitize=memory -fPIE -pie -fno-omit-frame-pointer)
 endif()
 
 if(SRB2_CONFIG_TIDY)
