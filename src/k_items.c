@@ -2584,6 +2584,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO
 			&& !player->bricktimer)
 		{
+			S_StartSound(player->mo, sfx_egrbhe);
 			player->bricktimer = stealtime;
 			player->itemamount--;
 			K_BotResetItemConfirm(player, false);
@@ -2662,7 +2663,7 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 	{
 		if (tmo->player && P_CanPickupItem(tmo->player, PICKUPITEM_EGGMAN))
 		{
-			S_StartSound(tmo, sfx_bewar3);
+			S_StartSound(tmo, sfx_egrbhe);
 			K_DropItems(tmo->player);
 
 			if (cv_karteggmine_slotlock.value)

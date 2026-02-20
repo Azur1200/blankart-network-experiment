@@ -1023,3 +1023,8 @@ _(horn00)
 
 // Fastfall bounce
 _(vclgna)
+
+// Items
+// Egg mine
+_(bckuse)
+_(egrbhe)
