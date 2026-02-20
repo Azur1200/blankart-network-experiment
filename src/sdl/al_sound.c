@@ -1792,6 +1792,8 @@ boolean I_SetSongTrack(INT32 track)
 
 			return false;
 		}
+#endif
+#ifdef HAVE_GME
 	}
 #endif
 
