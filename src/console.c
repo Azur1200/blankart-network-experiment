@@ -727,6 +727,8 @@ void CON_ToggleOff(void)
 
 	I_UpdateMouseGrab();
 
+	I_SetTextInput(false);
+
 	Unlock_state();
 }
 
@@ -767,17 +769,24 @@ void CON_Ticker(void)
 			con_destlines = 0;
 			CON_ClearHUD();
 			I_UpdateMouseGrab();
+			I_SetTextInput(false);
 		}
 		else
+		{
 			CON_ChangeHeight();
+			I_SetTextInput(true);
+		}
 	}
 
 	// check if console ready for prompt
 	if (con_destlines >= minheight)
+	{
 		consoleready = true;
+	}
 	else
+	{
 		consoleready = false;
-
+	}
 	// make overlay messages disappear after a while
 	for (i = 0; i < con_hudlines; i++)
 	{

@@ -1155,6 +1155,7 @@ void HU_clearChatChars(void)
 	chat_on = false;
 
 	I_UpdateMouseGrab();
+	I_SetTextInput(false);
 }
 
 //
@@ -1200,6 +1201,7 @@ boolean HU_Responder(event_t *ev)
 			teamtalk = false;
 			chat_scrollmedown = true;
 			typelines = 1;
+			I_SetTextInput(true);
 			return true;
 		}
 		if (G_ControlBoundToKey(0, gc_teamkey, ev->data1, false)
@@ -1212,6 +1214,7 @@ boolean HU_Responder(event_t *ev)
 			teamtalk = G_GametypeHasTeams();	// Don't teamtalk if we don't have teams.
 			chat_scrollmedown = true;
 			typelines = 1;
+			I_SetTextInput(true);
 			return true;
 		}
 	}
@@ -1241,6 +1244,7 @@ boolean HU_Responder(event_t *ev)
 
 			chat_on = false;
 			chat_scrollmedown = true; // you hit enter, so you might wanna autoscroll to see what you just sent. :)
+			I_SetTextInput(false);
 			I_UpdateMouseGrab();
 		}
 		else if (c == KEY_ESCAPE
@@ -1249,6 +1253,7 @@ boolean HU_Responder(event_t *ev)
 			&& c >= NUMKEYS)) // If it's not a keyboard key, then the chat button is used as a toggle.
 		{
 			chat_on = false;
+			I_SetTextInput(false);
 			I_UpdateMouseGrab();
 		}
 		else if ((c == KEY_UPARROW || c == KEY_MOUSEWHEELUP) && chat_scroll > 0 && !OLDCHAT) // CHAT SCROLLING YAYS!

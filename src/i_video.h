@@ -20,6 +20,9 @@
 extern "C" {
 #endif
 
+boolean I_UseNativeKeyboard(void);
+void I_SetTextInput(boolean enable);
+
 typedef enum
 {
 	/// Software
@@ -152,8 +155,6 @@ void I_BeginRead(void);
 void I_EndRead(void);
 
 UINT32 I_GetRefreshRate(void);
-
-boolean I_UseNativeKeyboard(void);
 
 extern consvar_t cv_keyboardlayout;
 

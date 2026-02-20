@@ -147,7 +147,6 @@ const char *quitmsg[NUM_QUITMESSAGES];
 
 boolean fromlevelselect = false;
 
-boolean menu_text_input = false;
 static char menu_text_input_buf[MAXSTRINGLENGTH];
 static textinput_t menuinput;
 
@@ -363,6 +362,11 @@ static void M_RawSetItemOn(menu_t *menu, INT16 index)
 	{
 		M_TextInputInit(&menuinput, menu_text_input_buf, M_StringCvarLength(cv));
 		M_TextInputSetString(&menuinput, cv->string);
+		I_SetTextInput(true);
+	}
+	else
+	{
+		I_SetTextInput(false);
 	}
 }
 
@@ -1970,6 +1974,8 @@ void M_StartControlPanel(void)
 //
 void M_ClearMenus(boolean callexitmenufunc)
 {
+	I_SetTextInput(false);
+
 	if (currentMenu)
 	{
 		if (currentMenu->quitroutine && callexitmenufunc)
@@ -1991,7 +1997,6 @@ void M_ClearMenus(boolean callexitmenufunc)
 	currentMenu = NULL;
 	messagebox.active = false;
 	hidetitlemap = false;
-	menu_text_input = false;
 
 	// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
 	if (gamestate == GS_TIMEATTACK)
@@ -2161,7 +2166,6 @@ void M_EnterMenu(menutype_t menunum, boolean callexit, INT32 arg)
 	if (menustack[0] == MN_NONE)
 		menustack[0] = menunum; // M_ClearMenus got called, put it back on the stack
 
-	menu_text_input = true;
 	M_SetupNextMenu(menunum, callexit);
 }
 
