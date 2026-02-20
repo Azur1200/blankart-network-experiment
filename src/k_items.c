@@ -1820,7 +1820,8 @@ static void K_DoHyudoroSteal(player_t *player)
 			K_AddItemRollToList((INT32)(player - players), KITEM_KITCHENSINK, 1);
 
 		// Woah this could be big, lets get the inside scoop...
-		K_DirectorForceSwitch(player - players, 1);
+		if (!player->exiting)
+			K_DirectorForceSwitch(player - players, 1);
 		return;
 	}
 	else if ((gametype == GT_RACE && player->position == 1) || numplayers == 0) // No-one can be stolen from? Oh well...
@@ -2566,7 +2567,8 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			K_BotResetItemConfirm(player, false);
 
 			// Woah this could be big, lets get the inside scoop...
-			K_DirectorForceSwitch(player - players, 1);
+			if (!player->exiting)
+				K_DirectorForceSwitch(player - players, 1);
 		}
 		else if (ATTACK_IS_DOWN && HOLDING_ITEM && (player->itemflags & IF_ITEMOUT)) // Sink thrown
 		{
