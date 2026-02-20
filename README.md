@@ -53,7 +53,7 @@ MSVC is unsupported, so please use GCC, Clang or Zig as your compiler.
 
 Linux:
 ```
-git clone https://codeberg.org/NepDisk/blankart.git
+git clone --recursive https://codeberg.org/NepDisk/blankart.git
 cd blankart
 mkdir build
 cd build
@@ -64,7 +64,7 @@ make -j$(nproc)
 Windows MSYS2:
 
 ```
-git clone https://codeberg.org/NepDisk/blankart.git
+git clone --recursive https://codeberg.org/NepDisk/blankart.git
 cd blankart
 mkdir build
 cd build
