@@ -244,6 +244,11 @@ if(SRB2_CONFIG_UBSAN)
 	target_link_options(BLANKART PRIVATE -fsanitize=undefined)
 endif()
 
+if(SRB2_CONFIG_LSAN)
+	target_compile_options(BLANKART PRIVATE -fsanitize=leak)
+	target_link_options(BLANKART PRIVATE -fsanitize=leak)
+endif()
+
 if(SRB2_CONFIG_TIDY)
 	set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=*")
 endif()
