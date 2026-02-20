@@ -249,6 +249,16 @@ if(SRB2_CONFIG_LSAN)
 	target_link_options(BLANKART PRIVATE -fsanitize=leak)
 endif()
 
+if(SRB2_CONFIG_TSAN)
+	target_compile_options(BLANKART PRIVATE -fsanitize=thread)
+	target_link_options(BLANKART PRIVATE -fsanitize=thread)
+endif()
+
+if(SRB2_CONFIG_MSAN)
+	target_compile_options(BLANKART PRIVATE -fsanitize=memory)
+	target_link_options(BLANKART PRIVATE -fsanitize=memory)
+endif()
+
 if(SRB2_CONFIG_TIDY)
 	set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=*")
 endif()
