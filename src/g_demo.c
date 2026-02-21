@@ -357,6 +357,9 @@ typedef struct
 
 	// DXD_WEAPONPREF
 	UINT8 weaponpref;
+	UINT8 kartspeedrestat;
+	UINT8 kartweightrestat;
+	UINT8 driftmode;
 } extradata_t;
 
 typedef enum
@@ -688,6 +691,9 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 	if (extradata & DXD_WEAPONPREF)
 	{
 		extra->weaponpref = READUINT8(dp);
+		extra->kartspeedrestat = READUINT8(dp);
+		extra->kartweightrestat = READUINT8(dp);
+		extra->driftmode = READUINT8(dp);
 	}
 
 	return dp;
@@ -1363,6 +1369,10 @@ void G_ReadDemoExtraData(void)
 			UINT8 *bruh = &extra.weaponpref;
 			WeaponPref_Parse(&bruh, p);
 
+			player->kartspeedrestat = extra.kartspeedrestat;
+			player->kartweightrestat = extra.kartweightrestat;
+			player->driftmode = extra.driftmode;
+
 			//CONS_Printf("weaponpref is %d for player %d\n", i, p);
 		}
 	}
@@ -1459,6 +1469,9 @@ void G_WriteDemoExtraData(void)
 			if (demo_extradata[i] & DXD_WEAPONPREF)
 			{
 				WeaponPref_Save(&demobuf.p, i);
+				WRITEUINT8(demobuf.p, players[i].kartspeedrestat);
+				WRITEUINT8(demobuf.p, players[i].kartweightrestat);
+				WRITEUINT8(demobuf.p, players[i].driftmode);
 			}
 		}
 
