@@ -7479,7 +7479,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			// Value to subtract from the S-Monitor timer.
 			INT16 smonitor_subtrahend = (pingame > 1) ? SMONITORDECAYTIME : 1;
 
-			if (player->distancefromcluster > SMONITORDECAYDIST)
+			if (player->distancefromcluster > (UINT32)SMONITORDECAYDIST)
 			{
 				if ((!player->smonitorexpiring) && (pingame > 1))
 				{
