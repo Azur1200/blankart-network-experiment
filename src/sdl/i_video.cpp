@@ -1064,7 +1064,8 @@ static void Impl_HandleControllerSensorEvent(SDL_GamepadSensorEvent evt)
 			event.data1 = FLOAT_TO_FIXED(evt.data[0]);
 			event.data2 = FLOAT_TO_FIXED(evt.data[1]);
 			event.data3 = FLOAT_TO_FIXED(evt.data[2]);
-			break;
+			D_PostEvent(&event);
+			return;
 			
 		// data[0]: delta pitch in rad/s
 		// data[1]: delta yaw in rad/s
@@ -1076,13 +1077,12 @@ static void Impl_HandleControllerSensorEvent(SDL_GamepadSensorEvent evt)
 			event.data2 = FixedAngle(FLOAT_TO_FIXED(RAD2DEG * evt.data[1]));
 			event.data3 = FixedAngle(FLOAT_TO_FIXED(RAD2DEG * evt.data[2]));
 #undef RAD2DEG
-			break;
+			D_PostEvent(&event);
+			return;
 
 		default:
 			return;
 	}
-
-	D_PostEvent(&event);
 }
 
 static void Impl_HandleControllerAddEvent(SDL_Event evt)
