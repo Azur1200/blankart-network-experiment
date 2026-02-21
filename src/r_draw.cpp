@@ -36,7 +36,7 @@
 #include "hardware/hw_main.h"
 #endif
 
-#include <tracy/Tracy.hpp>
+#include <tracy/tracy/Tracy.hpp>
 
 // --------------------------------------------
 // assembly or c drawer routines for 8bpp/16bpp

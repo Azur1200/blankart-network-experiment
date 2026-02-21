@@ -18,7 +18,7 @@
 #include <system_error>
 
 #include <fmt/format.h>
-#include <tracy/Tracy.hpp>
+#include <tracy/tracy/Tracy.hpp>
 
 #include "../cxxutil.hpp"
 #include "../m_argv.h"

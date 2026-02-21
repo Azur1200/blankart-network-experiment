@@ -12,7 +12,7 @@
 
 #include <algorithm>
 
-#include <tracy/Tracy.hpp>
+#include <tracy/tracy/Tracy.hpp>
 
 #include "cxxutil.hpp"
 

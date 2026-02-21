@@ -13,7 +13,7 @@
 
 #ifdef HAVE_OPENAL
 
-#include <tracy/TracyC.h>
+#include <tracy/tracy/TracyC.h>
 
 #ifdef HAVE_GME
 #ifdef HAVE_ZLIB

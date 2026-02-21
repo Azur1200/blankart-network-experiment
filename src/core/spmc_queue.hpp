@@ -19,7 +19,7 @@
 #include <memory>
 #include <optional>
 
-#include <tracy/Tracy.hpp>
+#include <tracy/tracy/Tracy.hpp>
 
 #include "../cxxutil.hpp"
 

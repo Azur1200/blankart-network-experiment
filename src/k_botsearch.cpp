@@ -12,7 +12,7 @@
 
 #include <algorithm>
 
-#include <tracy/Tracy.hpp>
+#include <tracy/tracy/Tracy.hpp>
 
 #include "doomdef.h"
 #include "d_player.h"

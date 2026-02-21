@@ -114,7 +114,7 @@
 
 #include "blan/b_soc.h"
 
-#include <tracy/TracyC.h>
+#include <tracy/tracy/TracyC.h>
 
 // Replay names have time
 #if !defined (UNDER_CE)

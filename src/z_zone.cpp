@@ -28,7 +28,7 @@
 #include <stddef.h>
 #include <stdalign.h>
 
-//#include <tracy/TracyC.h>
+//#include <tracy/tracy/TracyC.h>
 
 #include "core/memory.h"
 #include "doomdef.h"
@@ -40,7 +40,7 @@
 #include "z_zone.h"
 #include "lua_script.h"
 
-#include <tracy/TracyC.h>
+#include <tracy/tracy/TracyC.h>
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h" // For hardware memory info

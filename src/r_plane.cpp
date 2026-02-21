@@ -14,7 +14,7 @@
 ///        while maintaining a per column clipping list only.
 ///        Moreover, the sky areas have to be determined.
 
-#include <tracy/Tracy.hpp>
+#include <tracy/tracy/Tracy.hpp>
 
 #include "command.h"
 #include "doomdef.h"
