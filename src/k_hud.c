@@ -1899,7 +1899,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	patch_t *localpatch = kp_positionnum[0][0];
 	INT32 fx = 0, fy = 0, fflags = 0;
 	INT32 xoffs = (cv_showinput.value > 0) ? -48 : 0;
-	INT32 addOrSub = V_ADD;
+	INT32 addOrSub = 0;
 	boolean flipdraw = false;	// flip the order we draw it in for MORE splitscreen bs. fun.
 	boolean flipvdraw = false;	// used only for 2p splitscreen so overtaking doesn't make 1P's position fly off the screen.
 	boolean overtake = false;
