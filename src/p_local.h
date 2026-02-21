@@ -610,6 +610,7 @@ typedef enum
 	PICKUPITEM_ITEM,
 	PICKUPITEM_EGGMAN,
 	PICKUPITEM_FLOATING,
+	PICKUPITEM_EGGMINE,
 } pickupitem_e;
 
 boolean P_CanPickupItem(player_t *player, UINT8 weapon);

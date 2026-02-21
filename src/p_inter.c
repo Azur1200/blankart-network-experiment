@@ -76,7 +76,11 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 		if (weapon)
 		{
 			// Item slot already taken up
-			if (weapon == 2)
+			if (weapon == PICKUPITEM_EGGMINE)
+			{
+				return (player->itemtype != KITEM_EGGBRICK || player->itemamount == 0);
+			}
+			else if (weapon == PICKUPITEM_EGGMAN)
 			{
 				// Invulnerable
 				if (player->flashing > 0
@@ -107,7 +111,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 
 				// Item slot already taken up
 				if (player->itemroulette
-					|| (weapon != 3 && player->itemamount)
+					|| (weapon != PICKUPITEM_FLOATING && player->itemamount)
 					|| (player->itemflags & IF_ITEMOUT))
 					return false;
 
