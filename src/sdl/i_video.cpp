@@ -869,8 +869,6 @@ static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 {
 	event_t event;
 
-	SDL_memset(&event, 0, sizeof(event_t));
-
 	// Ignore the event if the mouse is not actually focused on the window.
 	// This can happen if you used the mouse to restore keyboard focus;
 	// this apparently makes a mouse button down event but not a mouse button up event,
@@ -913,8 +911,6 @@ static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 static void Impl_HandleMouseWheelEvent(SDL_MouseWheelEvent evt)
 {
 	event_t event;
-
-	SDL_memset(&event, 0, sizeof(event_t));
 
 	event.device = 0;
 
@@ -1208,7 +1204,6 @@ void I_GetEvent(void)
 		event_t event;
 		int wwidth, wheight;
 		SDL_GetWindowSize(window, &wwidth, &wheight);
-		//SDL_memset(&event, 0, sizeof(event_t));
 		event.type = ev_mouse;
 		event.device = 0; // TODO device
 		event.data1 = 0;
