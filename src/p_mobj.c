@@ -13,6 +13,7 @@
 
 #include "p_mobj.h"
 #include "d_netcmd.h"
+#include "d_player.h"
 #include "d_think.h"
 #include "dehacked.h"
 #include "deh_tables.h"
@@ -3403,6 +3404,14 @@ void P_MobjCheckWater(mobj_t *mobj)
 		{
 			if (P_MobjFlip(mobj)*mobj->momz < 0) // You are entering the goo?
 				mobj->momz = FixedMul(mobj->momz, FixedDiv(2*FRACUNIT, 5*FRACUNIT)); // kill momentum significantly, to make the goo feel thick.
+
+			// Kill heavy airdrop too so you don't get softlocked.
+			if (mobj->player && (mobj->player->airdropflags & PAF_AIRDROP_HEAVY))
+			{
+				mobj->player->airdroptime = 0;
+				mobj->player->airdroppredelay = 0;
+				mobj->player->airdropflags &= ~PAF_AIRDROP_MASK;
+			}
 		}
 		else if (wasinwater && P_MobjFlip(mobj) * mobj->momz > 0)
 		{
