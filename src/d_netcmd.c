@@ -376,6 +376,26 @@ consvar_t cv_voice[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("voice4", "None", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Voice4_OnChange)
 };
 
+static CV_PossibleValue_t restatvalue_cons_t[] = {{0, "MIN"}, {9, "MAX"}, {0, NULL}};
+consvar_t cv_dummyrestatspeed[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("restatspeed", "0", 0, restatvalue_cons_t, NULL),
+	CVAR_INIT ("restatspeed2", "0", 0, restatvalue_cons_t, NULL),
+	CVAR_INIT ("restatspeed3", "0", 0, restatvalue_cons_t, NULL),
+	CVAR_INIT ("restatspeed4", "0", 0, restatvalue_cons_t, NULL)
+};
+consvar_t cv_dummyrestatweight[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("restatweight", "0", 0, restatvalue_cons_t, NULL),
+	CVAR_INIT ("restatweight2", "0", 0, restatvalue_cons_t, NULL),
+	CVAR_INIT ("restatweight3", "0", 0, restatvalue_cons_t, NULL),
+	CVAR_INIT ("restatweight4", "0", 0, restatvalue_cons_t, NULL)
+};
+
+consvar_t cv_dummyrestatrandom[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("restatrandom", "No", 0, CV_YesNo, NULL),
+	CVAR_INIT ("restatrandom2", "No", 0, CV_YesNo, NULL),
+	CVAR_INIT ("restatrandom3", "No", 0, CV_YesNo, NULL),
+	CVAR_INIT ("restatrandom4", "No", 0, CV_YesNo, NULL)
+};
 
 consvar_t cv_skipmapcheck = CVAR_INIT ("skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL);
 
@@ -1179,10 +1199,6 @@ void D_RegisterServerCommands(void)
 	// player restat
 	CV_RegisterVar(&cv_allowrestat);
 	CV_RegisterVar(&cv_notifyrestat);
-	COM_AddCommand("restat", Command_Restat);
-	COM_AddCommand("restat2", Command_Restat2);
-	COM_AddCommand("restat3", Command_Restat3);
-	COM_AddCommand("restat4", Command_Restat4);
 }
 
 // =========================================================================
@@ -1303,6 +1319,11 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_driftmode[i]);
 		CV_RegisterVar(&cv_voice[i]);
 	}
+
+	COM_AddCommand("restat", Command_Restat);
+	COM_AddCommand("restat2", Command_Restat2);
+	COM_AddCommand("restat3", Command_Restat3);
+	COM_AddCommand("restat4", Command_Restat4);
 
 	// preferred number of players
 	CV_RegisterVar(&cv_splitplayers);
@@ -1495,18 +1516,17 @@ void D_RegisterClientCommands(void)
 
 static void RestatForPlayer(UINT32 ssplayer)
 {
-	player_t* player = &players[g_localplayers[ssplayer]];
-	int speed;
-	int weight;
-
 	if (!cv_allowrestat.value)
 	{
 		CONS_Printf("This command has been disabled by the server host.\n");
 		return;
 	}
-	
+
 	if (COM_Argc() > 2)
 	{
+		int speed;
+		int weight;
+
 		if (sscanf(COM_Argv(1), " %d", &speed) == 0 || 
 			sscanf(COM_Argv(2), " %d", &weight) == 0)
 		{
@@ -1522,22 +1542,45 @@ static void RestatForPlayer(UINT32 ssplayer)
 		}
 
 		// should be good now 🥲
-		player->kartspeedrestat = speed;
-		player->kartweightrestat = weight;
-		player->randomrestat = false;
-		
-		CONS_Printf("You will be %d speed, %d weight for the next race.\n", speed, weight);
+		CONS_Printf("You will be %d speed, %d weight for your next race.\n", speed, weight);
 		CONS_Printf("Use \"restat off\" to return to your skin's default stats.\n");
+		CV_StealthSetValue(&cv_dummyrestatspeed[ssplayer], speed);
+		CV_StealthSetValue(&cv_dummyrestatweight[ssplayer], weight);
+		CV_StealthSetValue(&cv_dummyrestatrandom[ssplayer], false);
+
+		// We'll handle it later if we're not playing.
+		if (!Playing())
+			return;
+
+		if (ssplayer > 0 && !splitscreen)
+			return;
 
 		WeaponPref_Send(ssplayer);
 		return;
 	}
 	else if (COM_Argc() > 1)
 	{
-		if (fasticmp(COM_Argv(1), "random"))
+		if (fasticmp(COM_Argv(1), "off"))
 		{
-			player->randomrestat = !player->randomrestat;
-			if (player->randomrestat)
+			CONS_Printf("Now using skin default stats.\n");
+			CV_StealthSetValue(&cv_dummyrestatspeed[ssplayer], 0);
+			CV_StealthSetValue(&cv_dummyrestatweight[ssplayer], 0);
+			CV_StealthSetValue(&cv_dummyrestatrandom[ssplayer], false);
+
+			// We'll handle it later if we're not playing.
+			if (!Playing())
+				return;
+
+			if (ssplayer > 0 && !splitscreen)
+				return;
+
+			WeaponPref_Send(ssplayer);
+			return;
+		}
+		else if (fasticmp(COM_Argv(1), "random"))
+		{
+			CV_StealthSetValue(&cv_dummyrestatrandom[ssplayer], !cv_dummyrestatrandom[ssplayer].value);
+			if (cv_dummyrestatrandom[ssplayer].value)
 			{
 				CONS_Printf("Random restat is now enabled.\n");
 			}
@@ -1546,17 +1589,14 @@ static void RestatForPlayer(UINT32 ssplayer)
 				CONS_Printf("Random restat is now disabled.\n");
 			}
 
+			// We'll handle it later if we're not playing.
+			if (!Playing())
+				return;
+
+			if (ssplayer > 0 && !splitscreen)
+				return;
+
 			WeaponPref_Send(ssplayer);
-			return;
-		}
-		else if (fasticmp(COM_Argv(1), "off"))
-		{
-			player->kartspeedrestat = 0;
-			player->kartweightrestat = 0;
-			player->randomrestat = false;
-			WeaponPref_Send(ssplayer);
-			
-			CONS_Printf("Now using skin default stats.\n");
 			return;
 		}
 		else
@@ -2392,6 +2432,15 @@ void WeaponPref_Send(UINT8 ssplayer)
 {
 	player_t* player = &players[g_localplayers[ssplayer]];
 	UINT8 prefs = 0;
+
+	if (cv_dummyrestatspeed[ssplayer].value > 9 || cv_dummyrestatspeed[ssplayer].value < 0)
+		CV_StealthSetValue(&cv_dummyrestatspeed[ssplayer], 0);
+	if (cv_dummyrestatweight[ssplayer].value > 9 || cv_dummyrestatweight[ssplayer].value < 0)
+		CV_StealthSetValue(&cv_dummyrestatweight[ssplayer], 0);
+
+	player->kartspeedrestat = cv_dummyrestatspeed[ssplayer].value;
+	player->kartweightrestat = cv_dummyrestatweight[ssplayer].value;
+	player->randomrestat = cv_dummyrestatrandom[ssplayer].value;
 
 	if (cv_kickstartaccel[ssplayer].value)
 		prefs |= WP_KICKSTARTACCEL;
