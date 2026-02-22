@@ -149,7 +149,7 @@ void COM_Lua_f(void)
 
 		if (splitscreen < lpn)
 		{
-			lua_pop(gL, 1); // pop command info table
+			lua_pop(gL, 2); // pop command info table and LUA_GetErrorMessage
 			return; // can't execute splitscreen command without the player being in-game!
 		}
 
@@ -199,8 +199,10 @@ void COM_Lua_f(void)
 	if (!lua_checkstack(gL, COM_Argc() + 1))
 	{
 		CONS_Alert(CONS_WARNING, "lua command stack overflow (%d, need %s more)\n", lua_gettop(gL), sizeu1(COM_Argc() + 1));
+		lua_pop(gL, 2); // pop function and LUA_GetErrorMessage
 		return;
 	}
+
 	LUA_PushUserdata(gL, &players[playernum], META_PLAYER);
 	for (i = 1; i < COM_Argc(); i++)
 		lua_pushstring(gL, COM_Argv(i));
