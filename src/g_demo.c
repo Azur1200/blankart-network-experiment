@@ -110,7 +110,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x0010
+#define DEMOVERSION 0x0011
 #define DEMOHEADER  "\xF0" "BlanReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -357,8 +357,6 @@ typedef struct
 
 	// DXD_WEAPONPREF
 	UINT8 weaponpref;
-	UINT8 kartspeedrestat;
-	UINT8 kartweightrestat;
 	UINT8 driftmode;
 } extradata_t;
 
@@ -691,8 +689,6 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 	if (extradata & DXD_WEAPONPREF)
 	{
 		extra->weaponpref = READUINT8(dp);
-		extra->kartspeedrestat = READUINT8(dp);
-		extra->kartweightrestat = READUINT8(dp);
 		extra->driftmode = READUINT8(dp);
 	}
 
@@ -756,6 +752,9 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 			/* FALLTHRU */
 		case 0x000F:
 			gplunatic = false;
+			break;
+		case 0x0010:
+			// no header changes (yet), just DXD_WEAPONPREF
 			break;
 
 		default: // too old, cannot support.
@@ -1368,11 +1367,6 @@ void G_ReadDemoExtraData(void)
 		{
 			UINT8 *bruh = &extra.weaponpref;
 			WeaponPref_Parse(&bruh, p);
-
-			player->kartspeedrestat = extra.kartspeedrestat;
-			player->kartweightrestat = extra.kartweightrestat;
-			player->driftmode = extra.driftmode;
-
 			//CONS_Printf("weaponpref is %d for player %d\n", i, p);
 		}
 	}
@@ -1444,8 +1438,8 @@ void G_WriteDemoExtraData(void)
 				WRITESTRINGL(demobuf.p, skins[players[i].skin].voices[players[i].voice_id].name, 32+1);
 
 				// Stats
-				WRITEUINT8(demobuf.p, skins[players[i].skin].kartspeed);
-				WRITEUINT8(demobuf.p, skins[players[i].skin].kartweight);
+				WRITEUINT8(demobuf.p, players[i].kartspeed);
+				WRITEUINT8(demobuf.p, players[i].kartweight);
 
 			}
 			if (demo_extradata[i] & DXD_COLOR)
@@ -1469,9 +1463,6 @@ void G_WriteDemoExtraData(void)
 			if (demo_extradata[i] & DXD_WEAPONPREF)
 			{
 				WeaponPref_Save(&demobuf.p, i);
-				WRITEUINT8(demobuf.p, players[i].kartspeedrestat);
-				WRITEUINT8(demobuf.p, players[i].kartweightrestat);
-				WRITEUINT8(demobuf.p, players[i].driftmode);
 			}
 		}
 
@@ -3054,8 +3045,8 @@ void G_BeginRecording(void)
 			WRITEUINT16(demobuf.p, clientpowerlevels[p][gametype == GT_BATTLE ? PWRLV_BATTLE : PWRLV_RACE]);
 
 			// Kart speed and weight
-			WRITEUINT8(demobuf.p, skins[player->skin].kartspeed);
-			WRITEUINT8(demobuf.p, skins[player->skin].kartweight);
+			WRITEUINT8(demobuf.p, player->kartspeed);
+			WRITEUINT8(demobuf.p, player->kartweight);
 
 			// And mobjtype_t is best with UINT32 too...
 			WRITEUINT32(demobuf.p, player->followitem);

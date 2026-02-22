@@ -2442,15 +2442,6 @@ void WeaponPref_Send(UINT8 ssplayer)
 	if (cv_dummyrestatweight[ssplayer].value > 9 || cv_dummyrestatweight[ssplayer].value < 0)
 		CV_StealthSetValue(&cv_dummyrestatweight[ssplayer], 0);
 
-	if (!netgame)
-	{
-		player->kartspeedrestat = cv_dummyrestatspeed[ssplayer].value;
-		player->kartweightrestat = cv_dummyrestatweight[ssplayer].value;
-		player->randomrestat = cv_dummyrestatrandom[ssplayer].value;
-
-		return;
-	}
-
 	if (cv_kickstartaccel[ssplayer].value)
 		prefs |= WP_KICKSTARTACCEL;
 
@@ -2498,6 +2489,7 @@ void WeaponPref_Save(UINT8 **cp, INT32 playernum)
 		prefs |= WP_RANDOMRESTAT;
 
 	WRITEUINT8(*cp, prefs);
+	WRITEUINT8(*cp, player->driftmode);
 }
 
 void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
@@ -2524,6 +2516,8 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 
 	if (prefs & WP_RANDOMRESTAT)
 		player->randomrestat = true;
+
+	player->driftmode = READUINT8(*cp);
 
 	if (leveltime < 2)
 	{
