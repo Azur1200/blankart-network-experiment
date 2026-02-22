@@ -1191,8 +1191,11 @@ void Y_StartIntermission(void)
 			break;
 	}
 
-	LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
-	luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
+	if (rendermode != render_none)
+	{
+		LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
+		luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
+	}
 
 	if (powertype != PWRLV_DISABLED)
 	{

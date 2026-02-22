@@ -169,7 +169,7 @@ static INT32 cechoflags = 0;
 
 static tic_t resynch_ticker = 0;
 
-static huddrawlist_h luahuddrawlist_scores;
+static huddrawlist_h luahuddrawlist_scores = NULL;
 
 //======================================================================
 //                          HEADS UP INIT
@@ -306,6 +306,9 @@ void HU_Init(void)
 #undef  ADMIN
 #undef  DIM
 	}
+
+	if (dedicated || rendermode == render_none)
+		return;
 
 	HU_LoadGraphics();
 
