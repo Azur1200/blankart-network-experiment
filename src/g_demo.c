@@ -1215,8 +1215,6 @@ void G_ReadDemoExtraData(void)
 		demobuf.p = G_ReadRawExtraData(&extra, demobuf.p, demo.version);
 		p = extra.playernum;
 
-		player_t *player = &players[p];
-
 		if (p == DW_END)
 			break;
 
@@ -1233,6 +1231,8 @@ void G_ReadDemoExtraData(void)
 			}
 			continue;
 		}
+
+		player_t *player = &players[p];
 
 		if (extra.flags & DXD_JOINDATA)
 		{
@@ -1367,6 +1367,7 @@ void G_ReadDemoExtraData(void)
 		{
 			UINT8 *bruh = &extra.weaponpref;
 			WeaponPref_Parse(&bruh, p);
+			player->driftmode = extra.driftmode;
 			//CONS_Printf("weaponpref is %d for player %d\n", i, p);
 		}
 	}
@@ -1463,6 +1464,7 @@ void G_WriteDemoExtraData(void)
 			if (demo_extradata[i] & DXD_WEAPONPREF)
 			{
 				WeaponPref_Save(&demobuf.p, i);
+				WRITEUINT8(demobuf.p, players[i].driftmode);
 			}
 		}
 
