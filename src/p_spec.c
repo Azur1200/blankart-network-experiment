@@ -9647,6 +9647,13 @@ void T_Pusher(void *thinker)
 			thing->player->cmomy += yspeed;
 			thing->player->cmomx = FixedMul(thing->player->cmomx, ORIG_FRICTION);
 			thing->player->cmomy = FixedMul(thing->player->cmomy, ORIG_FRICTION);
+
+			if (zspeed > 0 && (thing->player->airdropflags & PAF_AIRDROP_HEAVY))
+			{
+				thing->player->airdroptime = 0;
+				thing->player->airdroppredelay = 0;
+				thing->player->airdropflags &= ~PAF_AIRDROP_MASK;
+			}
 		}
 
 		// Tumbleweeds bounce a bit...
