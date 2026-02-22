@@ -207,6 +207,12 @@ struct vissprite_t
 		INT32 offset; // The center of the shearing location offset from x1
 	} shear;
 
+	struct {
+		angle_t rollangle; // Affine rotation angle
+		affine_t transform; // The actual affine transformation.
+		affine_bounding_t bounds; // The "bounding box" (draw area) of the affine sprite.
+	} affine;
+
 	fixed_t texturemid;
 	patch_t *patch;
 	patch_t *bright;

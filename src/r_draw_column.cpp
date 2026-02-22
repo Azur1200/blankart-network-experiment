@@ -484,6 +484,9 @@ void R_DrawColumn_Flat(drawcolumndata_t *dc)
 	while (--count);
 }
 
+// Purely for debug; fills all columns in the drawing area with a pair of "background colors"
+#define FILL_DRAW_AREA
+
 void R_DrawAffineColumn(drawcolumndata_t *dc)
 {
 	INT32 count;
@@ -537,22 +540,35 @@ void R_DrawAffineColumn(drawcolumndata_t *dc)
 		frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep));
 
 		const affine_t *transform = &dc->affine;
+		const affine_bounding_t *bounds = &dc->affinebound;
 
 		const fixed_t a = transform->a;
 		const fixed_t b = transform->b;
 		const fixed_t c = transform->c;
 		const fixed_t d = transform->d;
-		fixed_t cx = transform->ox;
-		fixed_t cy = transform->oy;
+		fixed_t cx = (bounds->xlen * FRACHALF); //transform->ox;
+		fixed_t cy = (bounds->ylen * FRACHALF); //transform->oy;
 
 		const INT32 pw = dc->sourcelength, ph = dc->texheight;
 
-		// yoinked from NovaSquirrel's mode 7 preview
+		INT32 ydiff = (bounds->yup - (transform->oy >> FRACBITS));
+		INT32 xdiff = (bounds->xleft - (transform->ox >> FRACBITS));
+
+		vector2_t centering;
+
+		centering.x = (bounds->xlen * FRACHALF);
+		centering.y = (bounds->ylen * FRACHALF);
+
+		// Offset our X and Y positions by the bounding differences.
+		fixed_t cxx = (xdiff * FRACUNIT);
+		fixed_t cyy = 0; //+ (ydiff * FRACUNIT);
+
+		// yoinked from NovaSquirrel's mode 7 0preview
 		// ...which is in turn yoinked from Mesen's S-PPU code
 		// i can't do matrix math to save my life :face_holding_back_tears:
 		// (m7xofs and m7yofs are already factored in by destbase)
-		fixed_t ux = FixedMul(b, -cx) + FixedMul(a, -cy) + FixedMul(a, dc->frac) + cx;
-		fixed_t uy = FixedMul(d, -cx) + FixedMul(c, -cy) + FixedMul(c, dc->frac) + cy;
+		fixed_t ux = FixedMul(b, -cxx) + FixedMul(a, -cyy) + FixedMul(a, dc->frac);// + cx;
+		fixed_t uy = FixedMul(d, -cxx) + FixedMul(c, -cyy) + FixedMul(c, dc->frac) + cy;
 
 		for (; count > 0; dest += stride, --count)
 		{
@@ -561,12 +577,30 @@ void R_DrawAffineColumn(drawcolumndata_t *dc)
 			ux += b;
 			uy += d;
 
-			if (srcx < 0 || srcx >= pw || srcy < 0 || srcy >= ph)
-				continue;
+#ifdef FILL_DRAW_AREA
+			UINT16 pixel;
+#endif
 
+			if (srcx < 0 || srcx >= pw || srcy < 0 || srcy >= ph)
+			{
+#ifdef FILL_DRAW_AREA
+				pixel = 65461;
+				*dest = (UINT8)(pixel & 0xff);
+#endif
+				continue;
+			}
+
+#ifdef FILL_DRAW_AREA
+			pixel = reinterpret_cast<UINT16 *>(dc->source)[srcy * pw + srcx];
+			if (pixel < 0xff00)
+			{
+				pixel = 65315; // Uhhhhhhhh
+			}
+#else
 			const UINT16 pixel = reinterpret_cast<UINT16 *>(dc->source)[srcy * pw + srcx];
 			if (pixel < 0xff00)
 				continue;
+#endif
 
 			*dest = (UINT8)(pixel & 0xff);
 		}

@@ -812,6 +812,7 @@ static int sortcoords(const void *a, const void *b)
 
 affine_bounding_t* V_GetAffineBounds(const affine_t* transform,
 				     patch_t* patch,
+					 fixed_t divisor,
 				     affine_bounding_t* out)
 {
 	// A decent chunk of this code is just fixedpointizing stuff
@@ -825,10 +826,10 @@ affine_bounding_t* V_GetAffineBounds(const affine_t* transform,
 	out->r = INT32_MIN;
 	out->b = INT32_MIN;
 
-	fixed_t fa = (transform->a / vid.dup);
-	fixed_t fd = (transform->d / vid.dup);
-	fixed_t fc = (transform->c / vid.dup);
-	fixed_t fb = (transform->b / vid.dup);
+	fixed_t fa = FixedDiv(transform->a, divisor);
+	fixed_t fd = FixedDiv(transform->d, divisor);
+	fixed_t fc = FixedDiv(transform->c, divisor);
+	fixed_t fb = FixedDiv(transform->b, divisor);
 	fixed_t fx = (transform->ox);
 	fixed_t fy = (transform->oy);
 
@@ -959,7 +960,7 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, INT32 sc
 #endif
 
 	affine_bounding_t bounds = {0};
-	V_GetAffineBounds(transform, patch, &bounds);
+	V_GetAffineBounds(transform, patch, vid.dup * FRACUNIT, &bounds);
 
 	Patch_GenerateFlat(patch, 0);
 	const UINT16 *src = patch->flats[0];

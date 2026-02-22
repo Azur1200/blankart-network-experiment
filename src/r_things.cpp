@@ -39,6 +39,7 @@
 #include "d_netfil.h" // blargh. for nameonly().
 #include "m_cheat.h" // objectplace
 #include "p_local.h" // stplyr
+#include "v_video.h" // V_GetAffineBounds
 #include "core/thread_pool.h"
 #ifdef HWRENDER
 #include "hardware/hw_md2.h"
@@ -946,6 +947,25 @@ UINT32 R_GetThingTransTable(fixed_t alpha, UINT32 transmap)
 	return (20*(FRACUNIT - ((alpha * (10 - transmap))/10) - 1) + FRACUNIT) >> (FRACBITS+1);
 }
 
+static void R_CopyAffineBounds(affine_bounding_t *src, affine_bounding_t *dest)
+{
+	// Bounding points
+	dest->l = src->l;
+	dest->r = src->r;
+	dest->t = src->t;
+	dest->b = src->b;
+
+	// Differences from pivot point
+	dest->xleft = src->xleft;
+	dest->xright = src->xright;
+	dest->yup = src->yup;
+	dest->ydown = src->ydown;
+
+	// Length values
+	dest->xlen = src->xlen;
+	dest->ylen = src->ylen;
+}
+
 //
 // R_DrawVisSprite
 //  mfloorclip and mceilingclip should also be set.
@@ -1122,8 +1142,19 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		dc.source = static_cast<UINT8 *>(patch->flats[0]);
 		dc.sourcelength = patch->width;
 
+		dc.affine.a = vis->affine.transform.a;
+		dc.affine.b = vis->affine.transform.b;
+		dc.affine.c = vis->affine.transform.c;
+		dc.affine.d = vis->affine.transform.d;
+		dc.affine.ox = vis->affine.transform.ox;
+		dc.affine.oy = vis->affine.transform.oy;
+
+		R_CopyAffineBounds(&vis->affine.bounds, &dc.affinebound);
+
+		fixed_t xstep = intsign(vis->xiscale) * FRACUNIT;
+
 		// Non-paper drawing loop
-		for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, frac += vis->xiscale, sprtopscreen += vis->shear.tan)
+		for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, frac += xstep, sprtopscreen += vis->shear.tan)
 		{
 			//texturecolumn = std::clamp<fixed_t>(frac >> FRACBITS, 0, patch->width - 1);
 
@@ -1133,51 +1164,36 @@ static void R_DrawVisSprite(vissprite_t *vis)
 				//bmcol = (column_t *)((UINT8 *)bmpatch->columns + (bmpatch->columnofs[texturecolumn]));
 
 			dc.yl = (sprtopscreen+FRACUNIT-1)>>FRACBITS;
-			dc.yh = ((sprtopscreen + spryscale*patch->height)-1)>>FRACBITS;
+			dc.yh = ((sprtopscreen + spryscale*dc.affinebound.ylen)-1)>>FRACBITS;
 
 			INT32 topscreen = sprtopscreen + spryscale*0;
-			INT32  bottomscreen = topscreen + spryscale*patch->height;
+			INT32  bottomscreen = topscreen + spryscale*dc.affinebound.ylen;
 
-				dc.yl = (topscreen+FRACUNIT-1)>>FRACBITS;
-				dc.yh = (bottomscreen-1)>>FRACBITS;
+			dc.yl = (topscreen+FRACUNIT-1)>>FRACBITS;
+			dc.yh = (bottomscreen-1)>>FRACBITS;
 
-				if (windowtop != INT32_MAX && windowbottom != INT32_MAX)
-				{
-					if (windowtop > topscreen)
-						dc.yl = (windowtop + FRACUNIT - 1)>>FRACBITS;
-					if (windowbottom < bottomscreen)
-						dc.yh = (windowbottom - 1)>>FRACBITS;
-				}
+			if (windowtop != INT32_MAX && windowbottom != INT32_MAX)
+			{
+				if (windowtop > topscreen)
+					dc.yl = (windowtop + FRACUNIT - 1)>>FRACBITS;
+				if (windowbottom < bottomscreen)
+					dc.yh = (windowbottom - 1)>>FRACBITS;
+			}
 		
-				if (dc.yh >= mfloorclip[dc.x])
-					dc.yh = mfloorclip[dc.x]-1;
-				if (dc.yl <= mceilingclip[dc.x])
-					dc.yl = mceilingclip[dc.x]+1;
+			if (dc.yh >= mfloorclip[dc.x])
+				dc.yh = mfloorclip[dc.x]-1;
+			if (dc.yl <= mceilingclip[dc.x])
+				dc.yl = mceilingclip[dc.x]+1;
 		
-				if (dc.yl < 0)
-					dc.yl = 0;
-				if (dc.yh >= vid.height) // dc_yl must be < vid.height, so reduces number of checks in tight loop
-					dc.yh = vid.height - 1;
+			if (dc.yl < 0)
+				dc.yl = 0;
+			if (dc.yh >= vid.height) // dc_yl must be < vid.height, so reduces number of checks in tight loop
+				dc.yh = vid.height - 1;
 		
-				if (dc.yh >= baseclip && baseclip != -1)
-					dc.yh = baseclip;
+			if (dc.yh >= baseclip && baseclip != -1)
+				dc.yh = baseclip;
 
-			dc.affine.a = FRACUNIT;
-			dc.affine.b = 0;
-			dc.affine.c = 0;
-			dc.affine.d = FRACUNIT;
-			dc.affine.ox = 0;
-			dc.affine.oy = 0;
 			dc.frac = frac;
-
-			angle_t angle = leveltime*ANG2;
-			fixed_t sa = FSIN(angle), ca = FCOS(angle);
-			dc.affine.a = FixedDiv(ca, FRACUNIT);
-			dc.affine.b = FixedDiv(-sa, FRACUNIT);
-			dc.affine.c = FixedDiv(sa, FRACUNIT);
-			dc.affine.d = FixedDiv(ca, FRACUNIT);
-			dc.affine.ox = (patch->pivot.x + patch->leftoffset) * FRACUNIT;
-			dc.affine.oy = (patch->pivot.y + patch->topoffset) * FRACUNIT;
 
 			R_DrawAffineColumn(&dc);
 		}
@@ -1906,6 +1922,12 @@ static void R_ProjectSprite(mobj_t *thing)
 	interpmobjstate_t interp = {0};
 	mobj_t *interptarg = thing;
 
+	// Affines
+	boolean affinesprite = (thing->player != NULL);
+	affine_t affine_transform = {0};
+	affine_bounding_t affine_bounds = {0};
+	vector2_t affine_scale = {0};
+
 	if (R_IsOverlayingSMonitorPlayer(thing))
 	{
 		// Kill overlay misalignment
@@ -1944,8 +1966,22 @@ static void R_ProjectSprite(mobj_t *thing)
 		return;
 
 	// aspect ratio stuff
-	xscale = FixedDiv(projection[viewssnum], tz);
-	sortscale = FixedDiv(projectiony[viewssnum], tz);
+	
+
+	if (affinesprite)
+	{
+		xscale = FRACUNIT;
+		sortscale = FRACUNIT;
+
+		affine_scale.x = FixedDiv(projection[viewssnum], tz);
+		affine_scale.y = FixedDiv(projectiony[viewssnum], tz);
+	}
+	else
+	{
+		xscale = FixedDiv(projection[viewssnum], tz);
+		sortscale = FixedDiv(projectiony[viewssnum], tz);
+	}
+	
 
 	// decide which patch to use for sprite relative to player
 #ifdef RANGECHECK
@@ -2071,7 +2107,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	spriterotangle = R_SpriteRotationAngle(thing, NULL, &interp);
 
 	if (spriterotangle
-	&& !(splat && !(thing->renderflags & RF_NOSPLATROLLANGLE)))
+	&& !(splat && !(thing->renderflags & RF_NOSPLATROLLANGLE))
+	&& (!affinesprite)) // Affines are capable of rotation; this is redundant
 	{
 		if ((papersprite && ang >= ANGLE_180) != vflip)
 		{
@@ -2184,8 +2221,37 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 #endif
 
-	offset = FixedMul(offset, FixedMul(spritexscale, this_scale));
-	offset2 = FixedMul(spr_width, FixedMul(spritexscale, this_scale));
+	if (affinesprite)
+	{
+		affine_scale.x = FixedMul(affine_scale.x, FixedMul(spritexscale, this_scale));
+
+		angle_t angle = spriterotangle; //leveltime*ANG2;
+		fixed_t sa = FSIN(angle), ca = FCOS(angle);
+		affine_transform.a = FixedDiv(ca, FRACUNIT);
+		affine_transform.b = FixedDiv(-sa, FRACUNIT);
+		affine_transform.c = FixedDiv(sa, FRACUNIT);
+		affine_transform.d = FixedDiv(ca, FRACUNIT);
+		affine_transform.ox = (patch->pivot.x + patch->leftoffset) * FRACUNIT;
+		affine_transform.oy = (patch->pivot.y + patch->topoffset) * FRACUNIT;
+
+		V_GetAffineBounds(&affine_transform, patch, FRACUNIT, &affine_bounds);
+
+		spr_width = (affine_bounds.xlen * FRACUNIT);
+		spr_height = (affine_bounds.ylen * FRACUNIT);
+
+		INT32 xdiff = (affine_bounds.xleft - (affine_transform.ox >> FRACBITS));
+
+		offset -= (xdiff * FRACUNIT);
+		offset2 = spr_width;
+
+		spritexscale = FRACUNIT;
+		spriteyscale = FRACUNIT;
+	}
+	else
+	{
+		offset = FixedMul(offset, FixedMul(spritexscale, this_scale));
+		offset2 = FixedMul(spr_width, FixedMul(spritexscale, this_scale));
+	}
 
 	if (papersprite)
 	{
@@ -2607,6 +2673,22 @@ static void R_ProjectSprite(mobj_t *thing)
 	vis->viewpoint.z = viewz;
 	vis->viewpoint.angle = viewangle;
 
+	vis->affine = {0};
+
+	if (affinesprite)
+	{
+		vis->affine.rollangle = spriterotangle;
+
+		vis->affine.transform.a = affine_transform.a;
+		vis->affine.transform.b = affine_transform.b;
+		vis->affine.transform.c = affine_transform.c;
+		vis->affine.transform.d = affine_transform.d;
+		vis->affine.transform.ox = affine_transform.ox;
+		vis->affine.transform.oy = affine_transform.oy;
+
+		R_CopyAffineBounds(&affine_bounds, &vis->affine.bounds);
+	}
+
 	vis->mobj = thing; // Easy access! Tails 06-07-2002
 
 	vis->x1 = x1 < portalclipstart ? portalclipstart : x1;
@@ -2700,7 +2782,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		vis->cut = static_cast<spritecut_e>(vis->cut | SC_VFLIP);
 	if (splat)
 		vis->cut = static_cast<spritecut_e>(vis->cut | SC_SPLAT); // I like ya cut g
-	if (thing->player != NULL)
+	if (affinesprite)
 		vis->cut = static_cast<spritecut_e>(vis->cut | SC_AFFINE); // *smack* AIEEEEEEEEEEEE
 
 	vis->patch = patch;
