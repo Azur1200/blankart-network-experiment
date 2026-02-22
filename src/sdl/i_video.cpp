@@ -87,8 +87,18 @@
 rendermode_t rendermode = render_soft;
 rendermode_t chosenrendermode = render_none; // set by command line arguments
 
+static void KeyboardLayout_OnChange(void)
+{
+	if (!window)
+		return;
+
+	if (cv_keyboardlayout.value != 2)
+		SDL_StopTextInput(window);
+	HU_Shiftform();
+}
+
 static CV_PossibleValue_t keyboardlayout_cons_t[] = {{1,"Default US"}, {2, "Native"}, {3, "AZERTY"}, {0, NULL}};
-consvar_t cv_keyboardlayout = CVAR_INIT ("keyboardlayout", "Default US", CV_SAVE, keyboardlayout_cons_t, NULL);
+consvar_t cv_keyboardlayout = CVAR_INIT ("keyboardlayout", "Default US", CV_SAVE, keyboardlayout_cons_t, KeyboardLayout_OnChange);
 
 boolean highcolor = false;
 

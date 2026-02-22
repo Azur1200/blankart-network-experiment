@@ -75,6 +75,8 @@ extern UINT8 *consolebgmap;
 extern UINT8 *promptbgmap;
 
 INT32 CON_ShiftChar(INT32 ch);
+INT32 CON_ShitAndAltGrChar(INT32 ch);
+
 void CON_SetupBackColormapEx(INT32 color, boolean prompt);
 void CON_SetupBackColormap(void);
 void CON_ClearHUD(void); // clear heads up messages

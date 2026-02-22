@@ -3,6 +3,7 @@
 #include "v_video.h"
 #include "r_main.h" // renderisnewtic
 #include "i_system.h"
+#include "i_video.h"
 #include "keys.h"
 #include "console.h"
 
@@ -235,8 +236,8 @@ void M_TextInputSetString(textinput_t *input, const char *c)
 static boolean M_TextInputHandleBase(textinput_t *input, INT32 key, boolean emotes)
 {
 	if (key == KEY_LSHIFT || key == KEY_RSHIFT
-		|| key == KEY_LCTRL || key == KEY_RCTRL
-		|| key == KEY_LALT || key == KEY_RALT)
+	 || key == KEY_LCTRL || key == KEY_RCTRL
+	 || key == KEY_LALT || key == KEY_RALT)
 		return false;
 
 	if (shiftdown && key == KEY_INS)
@@ -245,8 +246,7 @@ static boolean M_TextInputHandleBase(textinput_t *input, INT32 key, boolean emot
 		return true;
 	}
 
-	//if ((cv_keyboardlayout.value != 3 && ctrldown) || (cv_keyboardlayout.value == 3 && ctrldown && !altdown))
-	if (ctrldown)
+	if ((cv_keyboardlayout.value != 3 && ctrldown) || (cv_keyboardlayout.value == 3 && ctrldown && !altdown))
 	{
 		if (key == 'x' || key == 'X')
 		{
@@ -372,17 +372,17 @@ static boolean M_TextInputHandleBase(textinput_t *input, INT32 key, boolean emot
 	if (key >= KEY_KEYPAD7 && key <= KEY_KPADDEL)
 	{
 		char keypad_translation[] = {'7','8','9','-',
-			'4','5','6','+',
-			'1','2','3',
-			'0','.'};
+		                             '4','5','6','+',
+		                             '1','2','3',
+		                             '0','.'};
 
-			key = keypad_translation[key - KEY_KEYPAD7];
+		key = keypad_translation[key - KEY_KEYPAD7];
 	}
 	else if (key == KEY_KPADSLASH)
 		key = '/';
 
 	// same capslock code as hu_stuff.c's HU_responder. Check there for details.
-	key = CON_ShiftChar(key);
+	key = cv_keyboardlayout.value == 3 ? CON_ShitAndAltGrChar(key) : CON_ShiftChar(key);
 
 	// enter a char into the command prompt
 	if (key < 32 || key > 127)
