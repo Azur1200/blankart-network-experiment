@@ -457,7 +457,7 @@ typedef enum
 	DRIFTMODE_CLASSIC = 0,  // SRB2Kart drifting; no changes
 	DRIFTMODE_SNAPSHOT,     // AKA "Runahead" - Use a prediction system to reduce the chances of a wrongdrift
 	DRIFTMODE_INSTANT,      // Instantly decide your drift on the tic it happens
-	DRIFTMODE_DELAY,        // Delay the time before a drift is decided
+	// DRIFTMODE_DELAY,        // Delay the time before a drift is decided
 	NUMDRIFTMODES
 } driftmode_e;
 

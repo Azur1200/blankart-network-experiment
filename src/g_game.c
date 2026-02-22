@@ -2760,13 +2760,7 @@ static inline void G_PlayerFinishLevel(INT32 player)
 	}
 }
 
-typedef struct {
-	INT32 player;
-	boolean notifyrestat;
-	UINT8 kartspeed, kartweight, kartspeedrestat, kartweightrestat;
-} restatmessage_t;
-
-static void G_HandleRestatMessage(restatmessage_t *rm)
+void G_HandleRestatMessage(restatmessage_t *rm)
 {
 	if (players[rm->player].jointime == 0)
 		return;

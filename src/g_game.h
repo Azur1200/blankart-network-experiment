@@ -364,6 +364,14 @@ INT16 G_GetFirstMapOfGametype(UINT8 pgametype);
 INT16 G_RandMap(UINT32 tolflags, INT16 pprevmap, UINT8 ignorebuffer, UINT8 maphell, INT16 *extbuffer);
 void G_AddMapToBuffer(INT16 map);
 
+typedef struct 
+{
+	INT32 player;
+	boolean notifyrestat;
+	UINT8 kartspeed, kartweight, kartspeedrestat, kartweightrestat;
+} restatmessage_t;
+void G_HandleRestatMessage(restatmessage_t *rm);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

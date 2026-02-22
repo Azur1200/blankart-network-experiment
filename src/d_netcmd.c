@@ -2442,9 +2442,14 @@ void WeaponPref_Send(UINT8 ssplayer)
 	if (cv_dummyrestatweight[ssplayer].value > 9 || cv_dummyrestatweight[ssplayer].value < 0)
 		CV_StealthSetValue(&cv_dummyrestatweight[ssplayer], 0);
 
-	player->kartspeedrestat = cv_dummyrestatspeed[ssplayer].value;
-	player->kartweightrestat = cv_dummyrestatweight[ssplayer].value;
-	player->randomrestat = cv_dummyrestatrandom[ssplayer].value;
+	if (!netgame)
+	{
+		player->kartspeedrestat = cv_dummyrestatspeed[ssplayer].value;
+		player->kartweightrestat = cv_dummyrestatweight[ssplayer].value;
+		player->randomrestat = cv_dummyrestatrandom[ssplayer].value;
+
+		return;
+	}
 
 	if (cv_kickstartaccel[ssplayer].value)
 		prefs |= WP_KICKSTARTACCEL;
@@ -2458,14 +2463,14 @@ void WeaponPref_Send(UINT8 ssplayer)
 	if (!(cv_jitterlegacy[ssplayer].value))
 		prefs |= WP_LEGACYJITTER;
 	
-	if (player->randomrestat)
+	if (cv_dummyrestatrandom[ssplayer].value)
 		prefs |= WP_RANDOMRESTAT;
 
 	UINT8 buf[5];
 	buf[0] = prefs;
 	buf[1] = cv_mindelay.value;
-	buf[2] = player->kartspeedrestat;
-	buf[3] = player->kartweightrestat;
+	buf[2] = cv_dummyrestatspeed[ssplayer].value;
+	buf[3] = cv_dummyrestatweight[ssplayer].value;
 	buf[4] = cv_driftmode[ssplayer].value;
 
 	SendNetXCmdForPlayer(ssplayer, XD_WEAPONPREF, buf, sizeof buf);
