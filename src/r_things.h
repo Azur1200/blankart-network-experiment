@@ -186,6 +186,7 @@ struct vissprite_t
 
 	fixed_t startfrac; // horizontal position of x1
 	fixed_t xscale, scale; // projected horizontal and vertical scales
+	fixed_t ypush_scale; // Scale for downwards Y movement. Likely only relevant for affines.
 	fixed_t thingscale; // the object's scale
 	fixed_t sortscale; // sortscale only differs from scale for paper sprites and floor sprites
 	fixed_t sortsplat; // the sortscale from behind the floor sprite
@@ -208,6 +209,7 @@ struct vissprite_t
 	} shear;
 
 	struct {
+		vector2_t scaling; // Affine scaling
 		angle_t rollangle; // Affine rotation angle
 		affine_t transform; // The actual affine transformation.
 		affine_bounding_t bounds; // The "bounding box" (draw area) of the affine sprite.

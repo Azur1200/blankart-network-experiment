@@ -197,6 +197,14 @@ consvar_t cv_sliptidetilt = CVAR_INIT ("sliptidetilt", "On", CV_SAVE, CV_OnOff, 
 consvar_t cv_nulldriftefx = CVAR_INIT ("nulldriftefx", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_nulldrifttilt = CVAR_INIT ("nulldrifttilt", "On", CV_SAVE, CV_OnOff, NULL);
 
+static CV_PossibleValue_t affineangle_cons_t[] = {{0, "MIN"}, {360 * FRACUNIT, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t affinetest_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Auto"}, {0, NULL}};
+
+#ifdef AFFINEROT_TESTER
+consvar_t cv_affineangle = CVAR_INIT ("affineangle", "0", CV_FLOAT, affineangle_cons_t, NULL);
+consvar_t cv_affinerottest = CVAR_INIT ("affinerottest", "Off", CV_FLOAT, affinetest_cons_t, NULL);
+#endif
+
 void SplitScreen_OnChange(void)
 {
 	UINT8 i;
@@ -1811,6 +1819,11 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_maxportals);
 
 	CV_RegisterVar(&cv_playerfade);
+
+#ifdef AFFINEROT_TESTER
+	CV_RegisterVar(&cv_affineangle);
+	CV_RegisterVar(&cv_affinerottest);
+#endif
 
 	CV_RegisterVar(&cv_movebob);
 

@@ -21,6 +21,7 @@
 // a has a constant z depth from top to bottom.
 //
 
+#include "r_main.h"
 #include "r_draw.h"
 #include <tracy/tracy/Tracy.hpp>
 
@@ -546,29 +547,29 @@ void R_DrawAffineColumn(drawcolumndata_t *dc)
 		const fixed_t b = transform->b;
 		const fixed_t c = transform->c;
 		const fixed_t d = transform->d;
-		fixed_t cx = (bounds->xlen * FRACHALF); //transform->ox;
-		fixed_t cy = (bounds->ylen * FRACHALF); //transform->oy;
+		fixed_t cx = transform->ox;
+		fixed_t cy = transform->oy;
 
 		const INT32 pw = dc->sourcelength, ph = dc->texheight;
 
-		INT32 ydiff = (bounds->yup - (transform->oy >> FRACBITS));
-		INT32 xdiff = (bounds->xleft - (transform->ox >> FRACBITS));
+		fixed_t ydiff = (bounds->yup * FRACUNIT) - cy;
+		fixed_t xdiff = (bounds->xleft * FRACUNIT) - cx;
 
-		vector2_t centering;
-
-		centering.x = (bounds->xlen * FRACHALF);
-		centering.y = (bounds->ylen * FRACHALF);
+		xdiff -= (xdiff ? FRACUNIT : 0);
+		ydiff -= (ydiff ? FRACUNIT : 0);
 
 		// Offset our X and Y positions by the bounding differences.
-		fixed_t cxx = (xdiff * FRACUNIT);
-		fixed_t cyy = 0; //+ (ydiff * FRACUNIT);
+		fixed_t cxx = cx + xdiff;
+		fixed_t cyy = cy + ydiff;
+
+		//I_OutputMsg("xdiff: %f, ydiff: %f\n", FIXED_TO_FLOAT(xdiff), FIXED_TO_FLOAT(ydiff));
 
 		// yoinked from NovaSquirrel's mode 7 0preview
 		// ...which is in turn yoinked from Mesen's S-PPU code
 		// i can't do matrix math to save my life :face_holding_back_tears:
 		// (m7xofs and m7yofs are already factored in by destbase)
-		fixed_t ux = FixedMul(b, -cxx) + FixedMul(a, -cyy) + FixedMul(a, dc->frac);// + cx;
-		fixed_t uy = FixedMul(d, -cxx) + FixedMul(c, -cyy) + FixedMul(c, dc->frac) + cy;
+		fixed_t ux = FixedMul(b, -cyy) + FixedMul(a, -cxx) + FixedMul(a, dc->frac) + cx;
+		fixed_t uy = FixedMul(d, -cyy) + FixedMul(c, -cxx) + FixedMul(c, dc->frac) + cy;
 
 		for (; count > 0; dest += stride, --count)
 		{

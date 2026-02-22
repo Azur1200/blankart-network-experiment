@@ -161,6 +161,10 @@ extern consvar_t cv_sloperoll;
 extern consvar_t cv_sliptidetilt;
 extern consvar_t cv_nulldriftefx, cv_nulldrifttilt;
 
+#ifdef AFFINEROT_TESTER
+extern consvar_t cv_affineangle, cv_affinerottest;
+#endif
+
 // debugging
 
 typedef enum {
