@@ -1008,33 +1008,31 @@ static void Impl_HandleControllerButtonEvent(SDL_GamepadButtonEvent evt, Uint32 
 		return;
 	}
 
-	if (evt.button < JOYBUTTONS)
-	{
-		event.data1 = KEY_JOY1 + evt.button;
-	}
-	else
-	{
+	UINT8 button = evt.button;
+	if (button >= JOYBUTTONS)
 		return;
-	}
 
-	switch (evt.button)
+	for (INT32 i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-	case SDL_GAMEPAD_BUTTON_SOUTH:
-	case SDL_GAMEPAD_BUTTON_EAST:
-	case SDL_GAMEPAD_BUTTON_WEST:
-	case SDL_GAMEPAD_BUTTON_NORTH:
-		for (INT32 i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		if (controllerInfo[i].dev == NULL || controllerInfo[i].id != evt.which)
+			continue;
+
+		if (controllerInfo[i].flipbuttons) switch (evt.button)
 		{
-			if (controllerInfo[i].dev != NULL && controllerInfo[i].id == evt.which && controllerInfo[i].flipbuttons)
-			{
-				event.data1 ^= 1; // lol
-				break;
-			}
+			case SDL_GAMEPAD_BUTTON_SOUTH: button = SDL_GAMEPAD_BUTTON_EAST; break;
+			case SDL_GAMEPAD_BUTTON_EAST: button = SDL_GAMEPAD_BUTTON_SOUTH; break;
+			case SDL_GAMEPAD_BUTTON_WEST: button = SDL_GAMEPAD_BUTTON_NORTH; break;
+			case SDL_GAMEPAD_BUTTON_NORTH: button = SDL_GAMEPAD_BUTTON_WEST; break;
+		}
+		else if (controllerInfo[i].flipgc) switch (evt.button)
+		{
+			case SDL_GAMEPAD_BUTTON_EAST: button = SDL_GAMEPAD_BUTTON_WEST; break;
+			case SDL_GAMEPAD_BUTTON_WEST: button = SDL_GAMEPAD_BUTTON_EAST; break;
 		}
 		break;
-	default:
-		break;
 	}
+
+	event.data1 = KEY_JOY1 + button;
 
 	if (event.type != ev_console)
 	{

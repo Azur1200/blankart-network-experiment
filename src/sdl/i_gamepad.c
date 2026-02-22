@@ -248,6 +248,8 @@ void I_InitController(UINT8 playernum)
 	controller->hasgyro = SDL_GamepadHasSensor(newcontroller, SDL_SENSOR_GYRO);
 
 	controller->flipbuttons = SDL_GetGamepadButtonLabel(newcontroller, SDL_GAMEPAD_BUTTON_SOUTH) == SDL_GAMEPAD_BUTTON_LABEL_B;
+	controller->flipgc = SDL_GetGamepadButtonLabel(newcontroller, SDL_GAMEPAD_BUTTON_WEST) == SDL_GAMEPAD_BUTTON_LABEL_B
+	                  && SDL_GetGamepadButtonLabel(newcontroller, SDL_GAMEPAD_BUTTON_EAST) == SDL_GAMEPAD_BUTTON_LABEL_X;
 }
 
 void I_InitController1(void)
