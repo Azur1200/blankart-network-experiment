@@ -87,7 +87,7 @@
 rendermode_t rendermode = render_soft;
 rendermode_t chosenrendermode = render_none; // set by command line arguments
 
-static CV_PossibleValue_t keyboardlayout_cons_t[] = {{1,"Default US"}, {2, "Native"}, {3, "AZERTY"}, {0, NULL}};
+static CV_PossibleValue_t keyboardlayout_cons_t[] = {{1,"Default US"}, {2, "Native"}, {0, NULL}};
 consvar_t cv_keyboardlayout = CVAR_INIT ("keyboardlayout", "Default US", CV_SAVE, keyboardlayout_cons_t, NULL);
 
 boolean highcolor = false;
@@ -806,9 +806,6 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 	{
 		case 2: // "native"
 			event.data1 = GetTypedChar(evt);
-			break;
-		case 3: // AZERTY
-			event.data1 = Impl_SDL_Keysym_To_Keycode(evt);
 			break;
 		default:
 			event.data1 = Impl_SDL_Scancode_To_Keycode(evt.scancode);

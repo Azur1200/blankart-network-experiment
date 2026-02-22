@@ -245,7 +245,6 @@ static boolean M_TextInputHandleBase(textinput_t *input, INT32 key, boolean emot
 		return true;
 	}
 
-	//if ((cv_keyboardlayout.value != 3 && ctrldown) || (cv_keyboardlayout.value == 3 && ctrldown && !altdown))
 	if (ctrldown)
 	{
 		if (key == 'x' || key == 'X')
