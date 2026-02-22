@@ -5045,7 +5045,7 @@ void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound)
 					thrust = FixedMul(thrust, 9*FRACUNIT/8);
 			}
 			if (airdropbounce)
-				thrust *= 2;
+				thrust = FixedMul(thrust, FRACUNIT + FRACUNIT/3);
 		}
 		else
 		{
