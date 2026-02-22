@@ -1318,6 +1318,10 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_jitterlegacy[i]);
 		CV_RegisterVar(&cv_driftmode[i]);
 		CV_RegisterVar(&cv_voice[i]);
+		
+		CV_RegisterVar(&cv_dummyrestatspeed[i]);
+		CV_RegisterVar(&cv_dummyrestatweight[i]);
+		CV_RegisterVar(&cv_dummyrestatrandom[i]);
 	}
 
 	COM_AddCommand("restat", Command_Restat);
