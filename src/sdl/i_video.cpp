@@ -192,6 +192,7 @@ static const char *fallback_resolution_name = "Fallback";
 static bool Impl_RenderContextCreate(void)
 {
 	SDL_GL_ResetAttributes();
+	SDL_SetHint("SDL_HINT_OPENGL_FORCE_SRGB_FRAMEBUFFER", "0");
 
 	if (rendermode != render_opengl)
 	{
