@@ -688,7 +688,7 @@ consvar_t cv_kartinvintheme = CVAR_INIT ("kartinvintheme", "Standard", CV_SAVE, 
 static CV_PossibleValue_t kartinvindmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {0, NULL}};
 
 // Experiment: Let's default to flip-over for now.
-consvar_t cv_kartinvindamage = CVAR_INIT ("kartinvindamage", "Flip-over", CV_NETVAR|CV_CHEAT|CV_GUARD, kartinvindmg_cons_t, NULL);
+consvar_t cv_kartinvindamage = CVAR_INIT ("kartinvindamage", "Wipe-out", CV_NETVAR|CV_CHEAT|CV_GUARD, kartinvindmg_cons_t, NULL);
 
 // How far the player must be from the cluster to roll an S-Monitor.
 static CV_PossibleValue_t smonitordist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
