@@ -953,6 +953,7 @@ const char *blancredits[] = {
 	"\"Mayo\"",
 	"\"yama\"",
 	"\"minenice\"",
+	"\"Mompi\"",
 	"",
 	"\1New HUD Art",
 	"\"Spee\"",
