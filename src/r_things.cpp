@@ -2548,12 +2548,16 @@ static void R_ProjectSprite(mobj_t *thing)
 			// I'm writing this after pulling an all nighter and trying tons of other solutions;
 			// I cannot be assed to care about how elegant a solution is.
 
+			// spriteyscale is only ever 1.0 with affines; we have to recursively find the true
+			// spriteyscale by doing this.
+			fixed_t rawyscale = FixedDiv(affine_scale.y, FixedMul(this_scale, sortscale));
+
 			const float affineyscale = FIXED_TO_FLOAT(affine_scale.y);
 			const fixed_t real_topoffset = FLOAT_TO_FIXED(static_cast<float>(affine_bounds.yup) / affineyscale);
 			const fixed_t real_height = FLOAT_TO_FIXED(static_cast<float>(affine_bounds.ylen) / affineyscale);
 
-			useoffset = FixedMul(real_topoffset, FixedMul(spriteyscale, this_scale));
-			useheight = FixedMul(real_height, FixedMul(spriteyscale, this_scale));
+			useoffset = FixedMul(real_topoffset, FixedMul(rawyscale, this_scale));
+			useheight = FixedMul(real_height, FixedMul(rawyscale, this_scale));
 		}
 		else
 		{
