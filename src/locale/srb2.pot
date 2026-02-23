@@ -4062,7 +4062,7 @@ msgid "Set the use_joystick variable to one of the enumerated joystick numbers\n
 msgstr ""
 
 #: win32/win_sys.c:2004
-msgid "I_InitJoystick: SetCooperativeLevel FAILED"
+msgid "I_InitController: SetCooperativeLevel FAILED"
 msgstr ""
 
 #: win32/win_sys.c:2008 win32/win_sys.c:2375
@@ -4078,7 +4078,7 @@ msgid "Set the use_joystick2 variable to one of the enumerated joysticks number\
 msgstr ""
 
 #: win32/win_sys.c:2366
-msgid "I_InitJoystick2: SetCooperativeLevel FAILED"
+msgid "I_InitController2: SetCooperativeLevel FAILED"
 msgstr ""
 
 #: win32/win_sys.c:3468

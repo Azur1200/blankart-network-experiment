@@ -28,8 +28,8 @@ If states are ever added or removed
 Make sure this matches the actual number of states
 */
 #define KART_NUMINVSPARKLESANIM 12
-#define BASEINVINTIME (10 * TICRATE)
-#define MININVINTIME (7 * TICRATE)
+#define INVINTIME (10 * TICRATE)
+#define SMONITORTIME (7 * TICRATE)
 
 #define GROW_SCALE ((3*FRACUNIT)/2)
 #define SHRINK_SCALE ((6*FRACUNIT)/8)
@@ -85,14 +85,13 @@ extern vector3_t clusterpoint, clusterdtf;
 // Bump weight for a Bubble Shield
 #define BUBBLEMINWEIGHT (5 * FRACUNIT)
 
-// Invincibility-related constants
-#define INVINDIST CV_Get(&cv_kartinvindist)
-#define INVINDISTMUL CV_Get(&cv_kartinvindistmul)
-#define INVINMIDTIME CV_Get(&cv_kartinvin_midtime)
-#define INVINMAXTIME CV_Get(&cv_kartinvin_maxtime)
+// Invincibility damage value
+#define INVINDAMAGE CV_Get(&cv_kartinvindamage)
 
-// 1.22 * FRACUNIT
-#define LEGACYALTINVINMUL (122 * FRACUNIT / 100)
+// S-Monitor distance value
+#define SMONITORDIST CV_Get(&cv_kartsmonitordist)
+#define SMONITORDECAYDIST CV_Get(&cv_kartsmonitor_decaydist)
+#define SMONITORDECAYTIME CV_Get(&cv_kartsmonitor_decaytime)
 
 // Precalculated constants for stacked boost diminishing
 // *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent
@@ -114,13 +113,15 @@ extern vector3_t clusterpoint, clusterdtf;
 #define SEPARATEPANELS CV_Get(&cv_kartstacking_panel_separate)
 #define MAXPANELSTACK CV_Get(&cv_kartstacking_panel_maxgrade)
 
-#define INVINSPEEDBOOSTCLS CV_Get(&cv_kartstacking_invincibility_classicspeedboost)
-#define INVINACCELBOOSTCLS CV_Get(&cv_kartstacking_invincibility_classicaccelboost)
-#define INVINHANDLEBOOSTCLS CV_Get(&cv_kartstacking_invincibility_classichandleboost)
-#define INVINSPEEDBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternatespeedboost)
-#define INVINACCELBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternateaccelboost)
-#define INVINHANDLEBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternatehandleboost)
+#define INVINSPEEDBOOST CV_Get(&cv_kartstacking_invincibility_speedboost)
+#define INVINACCELBOOST CV_Get(&cv_kartstacking_invincibility_accelboost)
+#define INVINHANDLEBOOST CV_Get(&cv_kartstacking_invincibility_handleboost)
 #define INVINSTACKABLE CV_Get(&cv_kartstacking_invincibility_stackable)
+
+#define SMNTRSPEEDBOOST CV_Get(&cv_kartstacking_smonitor_speedboost)
+#define SMNTRACCELBOOST CV_Get(&cv_kartstacking_smonitor_accelboost)
+#define SMNTRHANDLEBOOST CV_Get(&cv_kartstacking_smonitor_handleboost)
+#define SMNTRSTACKABLE CV_Get(&cv_kartstacking_smonitor_stackable)
 
 #define GROWSPEEDBOOST CV_Get(&cv_kartstacking_grow_speedboost)
 #define GROWACCELBOOST CV_Get(&cv_kartstacking_grow_accelboost)
@@ -163,6 +164,23 @@ extern vector3_t clusterpoint, clusterdtf;
 #define RINGHANDLEBOOST CV_Get(&cv_kartstacking_ring_handleboost)
 #define RINGSTACKABLE CV_Get(&cv_kartstacking_ring_stackable)
 
+#define HEAVYDROPSPEEDBOOST CV_Get(&cv_kartstacking_heavydrop_speedboost)
+#define HEAVYDROPACCELBOOST CV_Get(&cv_kartstacking_heavydrop_accelboost)
+#define HEAVYDROPHANDLEBOOST CV_Get(&cv_kartstacking_heavydrop_handleboost)
+#define HEAVYDROPSTACKABLE CV_Get(&cv_kartstacking_heavydrop_stackable)
+
+#define SSMTSPEEDBOOST CV_Get(&cv_kartstacking_ssmt_speedboost)
+#define SSMTACCELBOOST CV_Get(&cv_kartstacking_ssmt_accelboost)
+#define SSMTHANDLEBOOST CV_Get(&cv_kartstacking_ssmt_handleboost)
+
+#define RECSPINSPEEDBOOSTLO CV_Get(&cv_kartstacking_recspin_speedboost_lo)
+#define RECSPINACCELBOOSTLO CV_Get(&cv_kartstacking_recspin_accelboost_lo)
+#define RECSPINHANDLEBOOSTLO CV_Get(&cv_kartstacking_recspin_handleboost_lo)
+
+#define RECSPINSPEEDBOOSTHI CV_Get(&cv_kartstacking_recspin_speedboost_hi)
+#define RECSPINACCELBOOSTHI CV_Get(&cv_kartstacking_recspin_accelboost_hi)
+#define RECSPINHANDLEBOOSTHI CV_Get(&cv_kartstacking_recspin_handleboost_hi)
+
 #define SLOPEDECAY CV_Get(&cv_kartstacking_slope_decay)
 #define SLOPEBRAKEMOD CV_Get(&cv_kartstacking_slope_brakemod)
 #define SLOPESPEEDBOOSTMAX CV_Get(&cv_kartstacking_slope_speedboost_max)
@@ -174,28 +192,6 @@ extern vector3_t clusterpoint, clusterdtf;
 #define DRAFTMAXSPEED CV_Get(&cv_kartstacking_drafting_maxspeed)
 
 #define CANTCHAINOFFROAD (cv_kartchaining.value && !cv_kartchainingoffroad.value)
-
-// Used for respawning checks.
-
-typedef struct respawnresult_s
-{
-	sector_t *cursec;
-	fixed_t bestsectorheight;
-	fixed_t bestfofheight;
-	ffloor_t *bestrover;
-	fixed_t bestpoheight;
-	polyobj_t *bestpo;
-	fixed_t finaldistances[3];
-
-	SINT8 result;
-} respawnresult_t;
-
-typedef enum
-{
-	RESPAWNRS_SECTOR,
-	RESPAWNRS_ROVER,
-	RESPAWNRS_PO,
-} respawnresult_e;
 
 #define MAXRINGVOLUME 255
 #define MAXRINGTRANSPARENCY 255
@@ -281,11 +277,13 @@ void K_ResetPogoSpring(player_t *player);
 extern boolean forcefullinvintheme;
 boolean K_PlayFullInvinTheme(void);
 void K_DoInvincibility(player_t *player, tic_t time);
-fixed_t K_InvincibilityGradient(UINT16 time);
-UINT16 K_GetInvincibilityTime(player_t *player);
-fixed_t K_GetInvincibilitySpeed(UINT16 time);
-fixed_t K_GetInvincibilityAccel(UINT16 time);
-fixed_t K_GetInvincibilityHandling(UINT16 time);
+void K_DoSMonitor(player_t *player, tic_t time);
+#define SMONITORWARNINGTIME (fixed_t)(0.833333333f * (float)(FRACUNIT))
+fixed_t K_SMonitorGradient(UINT16 time);
+fixed_t K_GetSMonitorSpeed(UINT16 time);
+fixed_t K_GetSMonitorAccel(UINT16 time);
+fixed_t K_GetSMonitorHandling(UINT16 time);
+boolean K_SMonitorSlotHogging(player_t *player);
 
 void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source);
 void K_UpdateHnextList(player_t *player, boolean clean);
@@ -360,7 +358,8 @@ void K_PlayPowerGloatSound(mobj_t *source);
 INT32 K_GetShieldFromPlayer(const player_t *player);
 INT32 K_GetShieldFromItem(INT32 item);
 
-boolean K_SafeRespawnPosition(mobj_t * mo);
+boolean K_SafeRespawnPositionEx(fixed_t x, fixed_t y, fixed_t z, boolean flip);
+#define K_SafeRespawnPosition(mobj) K_SafeRespawnPositionEx(mobj->x, mobj->y, mobj->z, (mobj->eflags & MFE_VERTICALFLIP) ? true : false)
 
 boolean K_RingsActive(void);
 boolean K_PurpleDriftActive(void);
@@ -369,8 +368,9 @@ boolean K_ChainingActive(void);
 boolean K_SlipdashActive(void);
 boolean K_SlopeBoostActive(void);
 boolean K_DraftingActive(void);
-boolean K_AirDropActive(void);
+SINT8 K_AirDropActive(void);
 boolean K_AirThrustActive(void);
+boolean K_RecoveryDashActive(void);
 boolean K_WaterskipBricksActive(void);
 boolean K_ItemLitterActive(void);
 boolean K_ItemListActive(void);
@@ -405,6 +405,22 @@ typedef enum
 	BUMPSPARK_RESET100, // Reset to 100 (blue); the Sunflower's Garden system
 	BUMPSPARK_ALL
 } bumpsparktype_t;
+
+typedef enum
+{
+	AIRDROP_NONE = 0,
+	AIRDROP_LIGHT,
+	AIRDROP_HEAVY,
+	AIRDROP_FUSION,
+} airdroptype_t;
+
+boolean K_NullDriftTiltEnalbed();
+
+#define RECOVERYDASHADD (TICRATE/2)
+//og val 2*TICRATE
+#define RECOVERYDASHCHARGETIME (3*TICRATE/2)
+//og val 3*TICRATE/2
+#define RECOVERYDASHWIPETIME (RECOVERYDASHCHARGETIME - RECOVERYDASHADD)
 
 #ifdef __cplusplus
 } // extern "C"

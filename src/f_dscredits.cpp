@@ -651,8 +651,8 @@ void F_SecretCreditsTicker(void)
 
     dscreditsticks++;
 
-    INT32 w = (vid.width / vid.dupx);
-    INT32 h = (vid.height / vid.dupy);
+    INT32 w = vid.scaledwidth;
+    INT32 h = (vid.height / vid.dup);
 
     const INT32 vidxdiff = (w - BASEVIDWIDTH) / 2;
     const INT32 vidydiff = (h - BASEVIDHEIGHT) / 2;
@@ -1132,7 +1132,7 @@ void F_SecretCreditsTicker(void)
                 case 1: y += 30<<FRACBITS; break;
                 default: y += 12<<FRACBITS; break;
             }
-            if (FixedMul(y,vid.dupy) > vid.height)
+            if (FixedMul(y,vid.dup) > vid.height)
                 break;
         }
     }
@@ -1159,7 +1159,7 @@ void F_SecretCreditsTicker(void)
 // Repeats horizontally until it reaches across the screen.
 static void F_DrawBannerPatch(fixed_t x, fixed_t y, fixed_t scale, INT32 scrn, patch_t *patch, const UINT8 *colormap)
 {
-    fixed_t w = (vid.width / vid.dupx);
+    fixed_t w = vid.scaledwidth;
     fixed_t vidxdiff = ((w - BASEVIDWIDTH) << FRACBITS) / 2;
     fixed_t pw = (static_cast<fixed_t>(SHORT(patch->width)) * scale);
 
@@ -1320,8 +1320,8 @@ static void F_FakeTitleScreen(tic_t count)
 {
     INT32 w, h;
 
-    w = (vid.width / vid.dupx);
-    h = (vid.height / vid.dupy);
+    w = vid.scaledwidth;
+    h = (vid.height / vid.dup);
 
     const INT32 vidxdiff = (w - BASEVIDWIDTH) / 2;
     const INT32 vidydiff = (h - BASEVIDHEIGHT) / 2;
@@ -1369,8 +1369,8 @@ void F_SecretCreditsDrawer(void)
     INT32 w, h;
     UINT8 bgcolor = 31;
 
-    w = (vid.width / vid.dupx);
-    h = (vid.height / vid.dupy);
+    w = vid.scaledwidth;
+    h = (vid.height / vid.dup);
 
     const INT32 vidxdiff = (w - BASEVIDWIDTH) / 2;
     const INT32 vidydiff = (h - BASEVIDHEIGHT) / 2;
@@ -1473,7 +1473,7 @@ void F_SecretCreditsDrawer(void)
                 y += 20<<FRACBITS;
                 break;
             }
-            if (((y>>FRACBITS) * vid.dupy) > vid.height)
+            if (((y>>FRACBITS) * vid.dup) > vid.height)
                 break;
         }
     }
@@ -1501,7 +1501,7 @@ void F_SecretCreditsDrawer(void)
                 y += 20<<FRACBITS;
                 break;
             }
-            if (((y>>FRACBITS) * vid.dupy) > vid.height)
+            if (((y>>FRACBITS) * vid.dup) > vid.height)
                 break;
         }
     }

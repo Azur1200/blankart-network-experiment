@@ -150,6 +150,7 @@ extern consvar_t cv_flipcam[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_shadow;
 extern consvar_t cv_ffloorclip;
 extern consvar_t cv_drawdist, cv_drawdist_precip;
+extern consvar_t cv_playerfade;
 extern consvar_t cv_fov[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;
@@ -158,6 +159,7 @@ extern consvar_t cv_secbright;
 
 extern consvar_t cv_sloperoll;
 extern consvar_t cv_sliptidetilt;
+extern consvar_t cv_nulldriftefx, cv_nulldrifttilt;
 
 // debugging
 

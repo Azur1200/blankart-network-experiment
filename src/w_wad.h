@@ -166,8 +166,6 @@ boolean W_MakeFileHash(const char *filename, boolean openwad, UINT64 *ret);
 // W_InitMultipleFiles exits if a file was not found, but not if all is okay.
 INT32 W_InitMultipleFiles(char **filenames, boolean addons);
 
-UINT32 W_HashLumpName(const char *name, size_t len);
-
 const char *W_CheckNameForNumPwad(UINT16 wad, UINT16 lump);
 const char *W_CheckNameForNum(lumpnum_t lumpnum);
 

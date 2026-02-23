@@ -1075,9 +1075,9 @@ static void R_Subsector(size_t num)
 		ceilingplane = NULL;
 
 	numffloors = 0;
-	ffloor[numffloors].slope = NULL;
-	ffloor[numffloors].plane = NULL;
-	ffloor[numffloors].polyobj = NULL;
+	visffloor[numffloors].slope = NULL;
+	visffloor[numffloors].plane = NULL;
+	visffloor[numffloors].polyobj = NULL;
 	if (frontsector->ffloors)
 	{
 		fixed_t heightcheck, planecenterz;
@@ -1107,8 +1107,8 @@ static void R_Subsector(size_t num)
 				}
 			}
 
-			ffloor[numffloors].plane = NULL;
-			ffloor[numffloors].polyobj = NULL;
+			visffloor[numffloors].plane = NULL;
+			visffloor[numffloors].polyobj = NULL;
 
 			heightcheck = P_GetFFloorBottomZAt(rover, viewx, viewy);
 
@@ -1129,7 +1129,7 @@ static void R_Subsector(size_t num)
 				light = R_GetPlaneLight(frontsector, planecenterz,
 					viewz < heightcheck);
 
-				ffloor[numffloors].plane = R_FindPlane(
+				visffloor[numffloors].plane = R_FindPlane(
 					*rover->bottomheight, *rover->bottompic,
 					*frontsector->lightlist[light].lightlevel, *rover->bottomxoffs,
 					*rover->bottomyoffs, *rover->bottomangle, *frontsector->lightlist[light].extra_colormap, rover, NULL, *rover->b_slope,
@@ -1138,20 +1138,20 @@ static void R_Subsector(size_t num)
 					true, frontsector, damage
 				);
 
-				ffloor[numffloors].slope = *rover->b_slope;
+				visffloor[numffloors].slope = *rover->b_slope;
 
 				// Tell the renderer this sector has slopes in it.
-				if (ffloor[numffloors].slope)
+				if (visffloor[numffloors].slope)
 					frontsector->hasslope = true;
 
-				ffloor[numffloors].height = heightcheck;
-				ffloor[numffloors].ffloor = rover;
+				visffloor[numffloors].height = heightcheck;
+				visffloor[numffloors].ffloor = rover;
 				numffloors++;
 			}
 			if (numffloors >= MAXFFLOORS)
 				break;
-			ffloor[numffloors].plane = NULL;
-			ffloor[numffloors].polyobj = NULL;
+			visffloor[numffloors].plane = NULL;
+			visffloor[numffloors].polyobj = NULL;
 
 			heightcheck = P_GetFFloorTopZAt(rover, viewx, viewy);
 
@@ -1171,7 +1171,7 @@ static void R_Subsector(size_t num)
 
 				light = R_GetPlaneLight(frontsector, planecenterz, viewz < heightcheck);
 
-				ffloor[numffloors].plane = R_FindPlane(
+				visffloor[numffloors].plane = R_FindPlane(
 					*rover->topheight, *rover->toppic,
 					*frontsector->lightlist[light].lightlevel, *rover->topxoffs, *rover->topyoffs, *rover->topangle,
 					*frontsector->lightlist[light].extra_colormap, rover, NULL, *rover->t_slope,
@@ -1180,14 +1180,14 @@ static void R_Subsector(size_t num)
 					false, frontsector, damage
 				);
 
-				ffloor[numffloors].slope = *rover->t_slope;
+				visffloor[numffloors].slope = *rover->t_slope;
 
 				// Tell the renderer this sector has slopes in it.
-				if (ffloor[numffloors].slope)
+				if (visffloor[numffloors].slope)
 					frontsector->hasslope = true;
 
-				ffloor[numffloors].height = heightcheck;
-				ffloor[numffloors].ffloor = rover;
+				visffloor[numffloors].height = heightcheck;
+				visffloor[numffloors].ffloor = rover;
 				numffloors++;
 			}
 		}
@@ -1215,7 +1215,7 @@ static void R_Subsector(size_t num)
 			}
 
 			polysec = po->lines[0]->backsector;
-			ffloor[numffloors].plane = NULL;
+			visffloor[numffloors].plane = NULL;
 
 			if (polysec->floorheight <= ceilingcenterz
 				&& polysec->floorheight >= floorcenterz
@@ -1223,7 +1223,7 @@ static void R_Subsector(size_t num)
 			{
 				light = R_GetPlaneLight(frontsector, polysec->floorheight, viewz < polysec->floorheight);
 
-				ffloor[numffloors].plane = R_FindPlane(
+				visffloor[numffloors].plane = R_FindPlane(
 					polysec->floorheight, polysec->floorpic,
 					(light == -1 ? frontsector->lightlevel : *frontsector->lightlist[light].lightlevel), polysec->floor_xoffs, polysec->floor_yoffs,
 					polysec->floorpic_angle-po->angle,
@@ -1234,18 +1234,18 @@ static void R_Subsector(size_t num)
 					true, frontsector, poly_bottom_damage()
 				);
 
-				ffloor[numffloors].height = polysec->floorheight;
-				ffloor[numffloors].polyobj = po;
-				ffloor[numffloors].slope = NULL;
-				//ffloor[numffloors].ffloor = rover;
-				po->visplane = ffloor[numffloors].plane;
+				visffloor[numffloors].height = polysec->floorheight;
+				visffloor[numffloors].polyobj = po;
+				visffloor[numffloors].slope = NULL;
+				//visffloor[numffloors].ffloor = rover;
+				po->visplane = visffloor[numffloors].plane;
 				numffloors++;
 			}
 
 			if (numffloors >= MAXFFLOORS)
 				break;
 
-			ffloor[numffloors].plane = NULL;
+			visffloor[numffloors].plane = NULL;
 
 			if (polysec->ceilingheight >= floorcenterz
 				&& polysec->ceilingheight <= ceilingcenterz
@@ -1253,7 +1253,7 @@ static void R_Subsector(size_t num)
 			{
 				light = R_GetPlaneLight(frontsector, polysec->floorheight, viewz < polysec->floorheight);
 
-				ffloor[numffloors].plane = R_FindPlane(
+				visffloor[numffloors].plane = R_FindPlane(
 					polysec->ceilingheight, polysec->ceilingpic,
 					(light == -1 ? frontsector->lightlevel : *frontsector->lightlist[light].lightlevel), polysec->ceiling_xoffs, polysec->ceiling_yoffs, polysec->ceilingpic_angle-po->angle,
 					(light == -1 ? frontsector->extra_colormap : *frontsector->lightlist[light].extra_colormap), NULL, po,
@@ -1263,11 +1263,11 @@ static void R_Subsector(size_t num)
 					false, frontsector, poly_top_damage()
 				);
 
-				ffloor[numffloors].polyobj = po;
-				ffloor[numffloors].height = polysec->ceilingheight;
-				ffloor[numffloors].slope = NULL;
-				//ffloor[numffloors].ffloor = rover;
-				po->visplane = ffloor[numffloors].plane;
+				visffloor[numffloors].polyobj = po;
+				visffloor[numffloors].height = polysec->ceilingheight;
+				visffloor[numffloors].slope = NULL;
+				//visffloor[numffloors].ffloor = rover;
+				po->visplane = visffloor[numffloors].plane;
 				numffloors++;
 			}
 

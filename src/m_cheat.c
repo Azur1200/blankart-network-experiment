@@ -297,7 +297,7 @@ void Command_CheatGod_f(void)
 void Command_Scale_f(void)
 {
 	const double scaled = atof(COM_Argv(1));
-	fixed_t scale = FLOAT_TO_FIXED(scaled);
+	fixed_t scale = DoubleToFixed(scaled);
 
 	REQUIRE_DEVMODE;
 	REQUIRE_INLEVEL;
@@ -713,7 +713,7 @@ void Command_Resetemeralds_f(void)
 // Devmode
 //
 
-UINT32 cht_debug;
+UINT32 cht_debug = 0;
 
 struct debugFlagNames_s const debug_flag_names[] =
 {
@@ -1190,6 +1190,7 @@ void Command_ObjectPlace_f(void)
 			// Remove ALL flags and motion.
 			P_UnsetThingPosition(players[0].mo);
 			players[0].pflags = 0;
+			players[0].airdropflags = 0;
 			players[0].mo->flags2 = 0;
 			players[0].mo->eflags = 0;
 			players[0].mo->flags = (MF_NOCLIP|MF_NOGRAVITY|MF_NOBLOCKMAP);

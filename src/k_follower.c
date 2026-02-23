@@ -11,6 +11,8 @@
 #include "r_skins.h"
 #include "p_local.h"
 #include "p_mobj.h"
+#include "s_sound.h"
+#include "m_cond.h"
 
 INT32 numfollowers = 0;
 follower_t followers[MAXSKINS];
@@ -241,6 +243,32 @@ static void K_UpdateFollowerState(mobj_t *f, statenum_t state, followerstate_t t
 		K_SetFollowerState(f, state);
 		f->extravalue1 = type;
 	}
+}
+
+/*--------------------------------------------------
+	static void K_UpdateFollowerMood(mobj_t *f, followermood_t mood, tic_t time)
+
+		Sets a follower object's mood and time before returning to a normal mood.
+
+	Input Arguments:-
+		f - The follower's mobj_t.
+		mood - The mood to set.
+		time - The mood's duration.
+
+	Return:-
+		None
+--------------------------------------------------*/
+static void K_UpdateFollowerMood(mobj_t *f, followermood_t mood, tic_t time)
+{
+	if (f == NULL || P_MobjWasRemoved(f) == true)
+	{
+		// safety net
+		return;
+	}
+
+
+	f->extravalue3 = mood;
+	f->cvmem = (INT32)(time);
 }
 
 /*--------------------------------------------------
@@ -565,12 +593,27 @@ void K_HandleFollower(player_t *player)
 
 		// However with how the code is factored, this is just a special case of S_INVISBLE to avoid having to add other player variables.
 
+		// Mood system
+		// For now, all this does is change the VFX generated when you honk your horn.
+		if (player->follower->cvmem && (player->follower->extravalue3 != FOLLOWERMOOD_NORMAL))
+		{
+			// Tick down the mood timer
+			player->follower->cvmem--;
+
+			// Return to our normal mood
+			if (player->follower->cvmem == 0)
+			{
+				player->follower->extravalue3 = FOLLOWERMOOD_NORMAL;
+			}
+		}
+
 		// handle follower animations. Could probably be better...
 		// hurt or dead
 		if (P_PlayerInPain(player) == true || player->mo->state == &states[S_KART_SPINOUT] || player->mo->health <= 0)
 		{
-			// cancel hit confirm.
+			// cancel hit confirm / horn
 			player->follower->movecount = 0;
+			player->follower->reactiontime = 0;
 
 			// spin out
 			player->follower->angle = player->drawangle;
@@ -581,6 +624,11 @@ void K_HandleFollower(player_t *player)
 			{
 				// if dead, follow the player's z momentum exactly so they both look like they die at the same speed.
 				player->follower->momz = player->mo->momz;
+			}
+			else
+			{
+				// Not dead; get mad on the player's behalf.
+				K_UpdateFollowerMood(player->follower, FOLLOWERMOOD_ANGRY, (3 * TICRATE / 2));
 			}
 		}
 		else if (player->exiting)
@@ -600,7 +648,13 @@ void K_HandleFollower(player_t *player)
 		else if (player->follower->movecount)
 		{
 			K_UpdateFollowerState(player->follower, fl.hitconfirmstate, FOLLOWERSTATE_HITCONFIRM);
+			K_UpdateFollowerMood(player->follower, FOLLOWERMOOD_HAPPY, (3 * TICRATE / 2));
 			player->follower->movecount--;
+		}
+		else if (player->follower->reactiontime)
+		{
+			K_UpdateFollowerState(player->follower, fl.hornstate, FOLLOWERSTATE_HORN);
+			player->follower->reactiontime--;
 		}
 		else if (player->speed > 10*player->mo->scale) // animation for moving fast enough
 		{
@@ -610,5 +664,135 @@ void K_HandleFollower(player_t *player)
 		{
 			K_UpdateFollowerState(player->follower, fl.idlestate, FOLLOWERSTATE_IDLE);
 		}
+
+		// Horncode
+		if (P_MobjWasRemoved(player->follower->hprev) == false)
+		{
+			mobj_t *honk = player->follower->hprev;
+
+			honk->flags2 &= ~MF2_AMBUSH;
+
+			honk->color = player->skincolor;
+
+			P_MoveOrigin(
+				honk,
+				player->follower->x,
+				player->follower->y,
+				player->follower->z + player->follower->height
+			);
+
+			K_FlipFromObject(honk, player->follower);
+
+			honk->angle = R_PointToAngle2(
+				player->mo->x,
+				player->mo->y,
+				player->follower->x,
+				player->follower->y
+			);
+
+			honk->destscale = (2*player->mo->scale)/3;
+
+			fixed_t offsetamount = 0;
+			if (honk->fuse > 1)
+			{
+				offsetamount = (honk->fuse-1)*honk->destscale/2;
+				if (leveltime & 1)
+					offsetamount = -offsetamount;
+			}
+			else if (S_SoundPlaying(honk, fl.hornsound))
+			{
+				honk->fuse++;
+			}
+
+			honk->sprxoff = P_ReturnThrustX(honk, honk->angle, offsetamount);
+			honk->spryoff = P_ReturnThrustY(honk, honk->angle, offsetamount);
+			honk->sprzoff = -honk->sprxoff;
+		}
+	}
+}
+
+/*--------------------------------------------------
+	void K_FollowerHornTaunt(player_t *taunter, player_t *victim)
+
+		See header file for description.
+--------------------------------------------------*/
+void K_FollowerHornTaunt(player_t *taunter, player_t *victim)
+{
+	if (
+		(cv_karthorns.value == 0)
+		|| taunter == NULL
+		|| victim == NULL
+		|| taunter->followerskin < 0
+		|| taunter->followerskin >= numfollowers
+		|| (P_IsLocalPlayer(victim) == false && cv_karthorns.value != 2)
+		|| P_MobjWasRemoved(taunter->mo) == true
+		|| P_MobjWasRemoved(taunter->follower) == true
+	)
+		return;
+
+	const follower_t *fl = &followers[taunter->followerskin];
+
+	const boolean tasteful = (taunter->karthud[khud_taunthorns] == 0);
+
+	if (tasteful || cv_karthorns.value == 2)
+	{
+		mobj_t *honk = taunter->follower->hprev;
+		const fixed_t desiredscale = (2*taunter->mo->scale)/3;
+
+		if (P_MobjWasRemoved(honk) == true)
+		{
+			honk = P_SpawnMobj(
+				taunter->follower->x,
+				taunter->follower->y,
+				taunter->follower->z + taunter->follower->height,
+				MT_FOLLOWERHORN
+			);
+
+			if (P_MobjWasRemoved(honk) == true)
+				return; // Permit lua override of horn production
+
+			// Set the horn icon based on the follower's mood.
+			switch (taunter->follower->extravalue3)
+			{
+				case FOLLOWERMOOD_ANGRY:
+					P_SetMobjState(honk, S_HORNCODE_ANGRY);
+					break;
+				case FOLLOWERMOOD_HAPPY:
+					P_SetMobjState(honk, S_HORNCODE_HAPPY);
+				default:
+					break;
+			}
+
+			P_SetTarget(&taunter->follower->hprev, honk);
+			P_SetTarget(&honk->target, taunter->follower);
+
+			K_FlipFromObject(honk, taunter->follower);
+
+			honk->color = taunter->skincolor;
+
+			honk->angle = honk->old_angle = R_PointToAngle2(
+				taunter->mo->x,
+				taunter->mo->y,
+				taunter->follower->x,
+				taunter->follower->y
+			);
+		}
+
+		// Only do for the first activation this tic.
+		if (!(honk->flags2 & MF2_AMBUSH))
+		{
+			honk->destscale = desiredscale;
+
+			P_SetScale(honk, (11*desiredscale)/10);
+			honk->fuse = TICRATE/2;
+			honk->renderflags |= RF_DONTDRAW;
+			taunter->follower->reactiontime = fl->horntime; // reactiontime is used to play the horn animation for followers.
+
+			S_StartSound(taunter->follower, fl->hornsound);
+
+			honk->flags2 |= MF2_AMBUSH;
+		}
+
+		honk->renderflags &= ~K_GetPlayerDontDrawFlag(victim);
 	}
 }

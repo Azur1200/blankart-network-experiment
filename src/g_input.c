@@ -14,17 +14,18 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "g_input.h"
-#include "i_system.h"
+#include "k_items.h"
 #include "keys.h"
 #include "hu_stuff.h" // need HUFONT start & end
 #include "d_net.h"
 #include "console.h"
-#include "i_joy.h" // JOYAXISRANGE
+#include "i_gamepad.h" // JOYAXISRANGE
 #include "m_menu.h" // menustack
 #include "i_system.h"
 #include "g_game.h"
 #include "v_video.h"
 #include "p_local.h"
+#include "k_kart.h"
 
 #define MAXMOUSESENSITIVITY 100 // sensitivity steps
 
@@ -53,19 +54,19 @@ consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("turnsmoothing4", "Off", CV_SAVE, turnsmooth_cons_t, NULL)
 };
 
-static void G_ResetPlayerDeviceRumble(INT32 player);
+static void G_ResetPlayerControllerRumble(INT32 player);
 static void rumble_off_handle(void);
 static void rumble_off_handle2(void);
 static void rumble_off_handle3(void);
 static void rumble_off_handle4(void);
 
-static void G_ResetPlayerGamepadIndicatorColor(INT32 player);
+static void G_ResetPlayerControllerIndicatorColor(INT32 player);
 static void led_off_handle(void);
 static void led_off_handle2(void);
 static void led_off_handle3(void);
 static void led_off_handle4(void);
 
-consvar_t cv_rumble[MAXSPLITSCREENPLAYERS] = {
+consvar_t cv_controllerrumble[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("rumble", "On", CV_SAVE, CV_OnOff, rumble_off_handle),
 	CVAR_INIT ("rumble2", "On", CV_SAVE, CV_OnOff, rumble_off_handle2),
 	CVAR_INIT ("rumble3", "On", CV_SAVE, CV_OnOff, rumble_off_handle3),
@@ -81,83 +82,84 @@ consvar_t cv_rumblestrength[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("rumblestrength4", "1.0", CV_SAVE|CV_FLOAT, rumblestrength_cons_t, NULL)
 };
 
-static CV_PossibleValue_t gamepadled_cons_t[] = {{0, "Off"}, {1, "Skincolor"}, {2, "Mobjcolor"}, {0, NULL}};
-consvar_t cv_gamepadled[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("gamepadled",  "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle),
-	CVAR_INIT ("gamepadled2", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle2),
-	CVAR_INIT ("gamepadled3", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle3),
-	CVAR_INIT ("gamepadled4", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, gamepadled_cons_t, led_off_handle4)
+static CV_PossibleValue_t controllerled_cons_t[] = {{0, "Off"}, {1, "Skincolor"}, {2, "Mobjcolor"}, {0, NULL}};
+consvar_t cv_controllerled[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("gamepadled",  "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, controllerled_cons_t, led_off_handle),
+	CVAR_INIT ("gamepadled2", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, controllerled_cons_t, led_off_handle2),
+	CVAR_INIT ("gamepadled3", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, controllerled_cons_t, led_off_handle3),
+	CVAR_INIT ("gamepadled4", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, controllerled_cons_t, led_off_handle4)
 };
 
 static void rumble_off_handle(void)
 {
-	if (cv_rumble[0].value == 0)
-		G_ResetPlayerDeviceRumble(0);
+	if (cv_controllerrumble[0].value == 0)
+		G_ResetPlayerControllerRumble(0);
 }
 
 static void rumble_off_handle2(void)
 {
-	if (cv_rumble[1].value == 0)
-		G_ResetPlayerDeviceRumble(1);
+	if (cv_controllerrumble[1].value == 0)
+		G_ResetPlayerControllerRumble(1);
 }
 
 static void rumble_off_handle3(void)
 {
-	if (cv_rumble[2].value == 0)
-		G_ResetPlayerDeviceRumble(2);
+	if (cv_controllerrumble[2].value == 0)
+		G_ResetPlayerControllerRumble(2);
 }
 
 static void rumble_off_handle4(void)
 {
-	if (cv_rumble[3].value == 0)
-		G_ResetPlayerDeviceRumble(3);
+	if (cv_controllerrumble[3].value == 0)
+		G_ResetPlayerControllerRumble(3);
 }
 
 static void led_off_handle(void)
 {
-	G_ResetPlayerGamepadIndicatorColor(0);
+	G_ResetPlayerControllerIndicatorColor(0);
 }
 
 static void led_off_handle2(void)
 {
-	G_ResetPlayerGamepadIndicatorColor(1);
+	G_ResetPlayerControllerIndicatorColor(1);
 }
 
 static void led_off_handle3(void)
 {
-	G_ResetPlayerGamepadIndicatorColor(2);
+	G_ResetPlayerControllerIndicatorColor(2);
 }
 
 static void led_off_handle4(void)
 {
-	G_ResetPlayerGamepadIndicatorColor(3);
+	G_ResetPlayerControllerIndicatorColor(3);
 }
 
 // current state of the keys
 // JOYAXISRANGE for fully pressed, 0 for not pressed
-INT32 gamekeydown[MAXDEVICES][NUMINPUTS];
-boolean deviceResponding[MAXDEVICES];
+inputpoll_t gamekeydown = {};
+inputpoll_t gamekeydown_msec = {};
 
 // several key codes (or virtual key) per game control
-INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][MAXINPUTMAPPING];
+INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][MAXINPUTMAPPING] = {};
 
 INT32 gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING] = {
 	[gc_aimforward ] = {KEY_UPARROW,    KEY_AXIS1+2             }, // Left Y-
 	[gc_aimbackward] = {KEY_DOWNARROW,  KEY_AXIS1+3             }, // Left Y+
 	[gc_turnleft   ] = {KEY_LEFTARROW,  KEY_AXIS1+0             }, // Left X-
 	[gc_turnright  ] = {KEY_RIGHTARROW, KEY_AXIS1+1             }, // Left X+
-	[gc_accelerate ] = {'a',            KEY_JOY1+0              }, // A
+	[gc_accelerate ] = {'a',            KEY_JOY1+0              }, // East
 	[gc_drift      ] = {'s',            KEY_JOY1+10, KEY_AXIS1+9}, // RB, RT
-	[gc_brake      ] = {'d',            KEY_JOY1+1              }, // B
+	[gc_brake      ] = {'d',            KEY_JOY1+1              }, // South
 	[gc_fire       ] = {KEY_SPACE,      KEY_JOY1+9,  KEY_AXIS1+8}, // LB, LT
-	[gc_lookback   ] = {KEY_LSHIFT,     KEY_JOY1+2              }, // X
+	[gc_lookback   ] = {KEY_LSHIFT,     KEY_JOY1+2              }, // North
+	[gc_horncode   ] = {'r',            KEY_JOY1+8              }, // R-Stick Click
 
 	[gc_pause      ] = {KEY_PAUSE,      KEY_JOY1+4 }, // Back
 	[gc_systemmenu ] = {                KEY_JOY1+6 }, // Start
 	[gc_console    ] = {KEY_CONSOLE                },
 	[gc_screenshot ] = {KEY_F8                     },
 	[gc_recordgif  ] = {KEY_F9                     },
-	[gc_viewpoint  ] = {KEY_F12,        KEY_JOY1+3 }, // Y
+	[gc_viewpoint  ] = {KEY_F12,        KEY_JOY1+3 }, // West
 	[gc_talkkey    ] = {'t',            KEY_HAT1+1 }, // D-Pad Down
 	//[gc_teamkey    ] = {'y'                        },
 	[gc_scores     ] = {KEY_TAB,        KEY_HAT1+0 }, // D-Pad Up
@@ -198,7 +200,7 @@ INT32 G_GetDevicePlayer(INT32 deviceID)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		if (deviceID == I_GetJoystickDeviceIndexForPlayer(i) + 1)
+		if (deviceID == I_GetControllerIDForPlayer(i) + 1)
 		{
 			return i;
 		}
@@ -211,8 +213,8 @@ INT32 G_GetDevicePlayer(INT32 deviceID)
 INT32 G_AxisToKey(event_t *ev)
 {
 	return KEY_AXIS1 + (ev->data1 >= JOYANALOGS
-	                    ? ev->data1 + JOYANALOGS // triggers
-	                    : ev->data1*2 + (ev->data2 >= 0)); // analog sticks
+						? ev->data1 + JOYANALOGS // triggers
+						: ev->data1*2 + (ev->data2 >= 0)); // analog sticks
 }
 
 //
@@ -226,32 +228,23 @@ void G_MapEventsToControls(event_t *ev)
 {
 	INT32 i;
 
-	if (ev->device >= 0 && ev->device < MAXDEVICES)
-	{
-		switch (ev->type)
-		{
-			case ev_keydown:
-			//case ev_keyup:
-			//case ev_mouse:
-			//case ev_joystick:
-				deviceResponding[ev->device] = true;
-				break;
+	INT32 device = ev->device;
 
-			default:
-				break;
-		}
-	}
-	else
-	{
+	// not a keyboard?
+	// try to see if its a controller in use
+	if (device > KEYBOARD_MOUSE_DEVICE)
+		device = I_GetControllerSlotfromID(device-1);
+
+	// invalid device
+	if (device < KEYBOARD_MOUSE_DEVICE || device >= MAXDEVICES)
 		return;
-	}
 
 	switch (ev->type)
 	{
 		case ev_keydown:
 			if (ev->data1 < NUMINPUTS)
 			{
-				gamekeydown[ev->device][ev->data1] = JOYAXISRANGE;
+				gamekeydown[device][ev->data1] = JOYAXISRANGE;
 			}
 #ifdef PARANOIA
 			else
@@ -264,7 +257,7 @@ void G_MapEventsToControls(event_t *ev)
 		case ev_keyup:
 			if (ev->data1 < NUMINPUTS)
 			{
-				gamekeydown[ev->device][ev->data1] = 0;
+				gamekeydown[device][ev->data1] = 0;
 			}
 #ifdef PARANOIA
 			else
@@ -284,28 +277,28 @@ void G_MapEventsToControls(event_t *ev)
 			if (ev->data2 < 0)
 			{
 				// Left
-				gamekeydown[ev->device][KEY_MOUSEMOVE + 2] = abs(ev->data2);
-				gamekeydown[ev->device][KEY_MOUSEMOVE + 3] = 0;
+				gamekeydown[device][KEY_MOUSEMOVE + 2] = abs(ev->data2);
+				gamekeydown[device][KEY_MOUSEMOVE + 3] = 0;
 			}
 			else
 			{
 				// Right
-				gamekeydown[ev->device][KEY_MOUSEMOVE + 2] = 0;
-				gamekeydown[ev->device][KEY_MOUSEMOVE + 3] = abs(ev->data2);
+				gamekeydown[device][KEY_MOUSEMOVE + 2] = 0;
+				gamekeydown[device][KEY_MOUSEMOVE + 3] = abs(ev->data2);
 			}
 
 			// Y axis
 			if (ev->data3 < 0)
 			{
 				// Up
-				gamekeydown[ev->device][KEY_MOUSEMOVE] = abs(ev->data3);
-				gamekeydown[ev->device][KEY_MOUSEMOVE + 1] = 0;
+				gamekeydown[device][KEY_MOUSEMOVE] = abs(ev->data3);
+				gamekeydown[device][KEY_MOUSEMOVE + 1] = 0;
 			}
 			else
 			{
 				// Down
-				gamekeydown[ev->device][KEY_MOUSEMOVE] = 0;
-				gamekeydown[ev->device][KEY_MOUSEMOVE + 1] = abs(ev->data3);
+				gamekeydown[device][KEY_MOUSEMOVE] = 0;
+				gamekeydown[device][KEY_MOUSEMOVE + 1] = abs(ev->data3);
 			}
 			break;
 
@@ -323,6 +316,7 @@ void G_MapEventsToControls(event_t *ev)
 				break;
 			}
 
+			// tf is this for?
 			if (G_GetDevicePlayer(ev->device) == 0)
 			{
 				if (CON_Ready() || chat_on)
@@ -334,9 +328,9 @@ void G_MapEventsToControls(event_t *ev)
 			{
 				// analog stick axes have a negative and positive keydown
 				i -= ev->data2 >= 0;
-				gamekeydown[ev->device][i++] = max(0, -ev->data2);
+				gamekeydown[device][i++] = max(0, -ev->data2);
 			}
-			gamekeydown[ev->device][i] = max(0, ev->data2);
+			gamekeydown[device][i] = max(0, ev->data2);
 
 			break;
 
@@ -455,12 +449,17 @@ static keyname_t keynames[] =
 	{KEY_JOY1+12, "D-PAD DOWN"},
 	{KEY_JOY1+13, "D-PAD LEFT"},
 	{KEY_JOY1+14, "D-PAD RIGHT"},
-	{KEY_JOY1+15, "MISC. BUTTON"},
-	{KEY_JOY1+16, "PADDLE1 BUTTON"},
-	{KEY_JOY1+17, "PADDLE2 BUTTON"},
-	{KEY_JOY1+18, "PADDLE3 BUTTON"},
-	{KEY_JOY1+19, "PADDLE4 BUTTON"},
+	{KEY_JOY1+15, "MISC. BUTTON 1"},
+	{KEY_JOY1+16, "PADDLE BUTTON 1"},
+	{KEY_JOY1+17, "PADDLE BUTTON 2"},
+	{KEY_JOY1+18, "PADDLE BUTTON 3"},
+	{KEY_JOY1+19, "PADDLE BUTTON 4"},
 	{KEY_JOY1+20, "TOUCHPAD"},
+	{KEY_JOY1+21, "MISC. BUTTON 2"},
+	{KEY_JOY1+22, "MISC. BUTTON 3"},
+	{KEY_JOY1+23, "MISC. BUTTON 4"},
+	{KEY_JOY1+24, "MISC. BUTTON 5"},
+	{KEY_JOY1+25, "MISC. BUTTON 6"},
 
 	{KEY_AXIS1+0, "L-STICK LEFT"},
 	{KEY_AXIS1+1, "L-STICK RIGHT"},
@@ -472,6 +471,20 @@ static keyname_t keynames[] =
 	{KEY_AXIS1+7, "R-STICK DOWN"},
 	{KEY_AXIS1+8, "L TRIGGER"},
 	{KEY_AXIS1+9, "R TRIGGER"},
+
+	{KEY_ACCELEROMETER1+0, "TILT -X"},
+	{KEY_ACCELEROMETER1+1, "TILT +X"},
+	{KEY_ACCELEROMETER1+2, "TILT -Y"},
+	{KEY_ACCELEROMETER1+3, "TILT +Y"},
+	{KEY_ACCELEROMETER1+4, "TILT -Z"},
+	{KEY_ACCELEROMETER1+5, "TILT +Z"},
+
+	{KEY_GYROSCOPE1+0, "ROTATE -X"},
+	{KEY_GYROSCOPE1+1, "ROTATE +X"},
+	{KEY_GYROSCOPE1+2, "ROTATE -Y"},
+	{KEY_GYROSCOPE1+3, "ROTATE +Y"},
+	{KEY_GYROSCOPE1+4, "ROTATE -Z"},
+	{KEY_GYROSCOPE1+5, "ROTATE +Z"},
 };
 
 static const char *gamecontrolname[num_gamecontrols] =
@@ -506,11 +519,12 @@ static const char *gamecontrolname[num_gamecontrols] =
 	"custom3",
 	"respawn",
 	"director",
+	"horncode",
 };
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))
 
-skincolornum_t G_GetSkinColorForGamepad(INT32 playernum)
+skincolornum_t G_GetSkinColorForController(INT32 playernum)
 {
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
@@ -521,7 +535,7 @@ skincolornum_t G_GetSkinColorForGamepad(INT32 playernum)
 		if (player)
 		{
 			// make rgb rainbow vomit when invul or flash blue when grow
-			if ((cv_gamepadled[playernum].value == 2) && player->mo && player->mo->color)
+			if ((cv_controllerled[playernum].value == 2) && player->mo && player->mo->color)
 				return (skincolornum_t)player->mo->color;
 
 			// take actual player skincolour when ingame
@@ -536,45 +550,46 @@ skincolornum_t G_GetSkinColorForGamepad(INT32 playernum)
 
 // Sets the Indicator LED on supported gamepads to a desired skincolor
 // pass SKINCOLOR_NONE/0 to set the players skin color
-void G_SetPlayerGamepadIndicatorColor(INT32 playernum, UINT16 color)
+void G_SetPlayerControllerIndicatorColor(INT32 playernum, UINT16 color)
 {
 	skincolornum_t skincolor;
 	byteColor_t byte_color;
 
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
-	if (cv_gamepadled[playernum].value == 0)
+	if (cv_controllerled[playernum].value == 0)
 	{
 		return;
 	}
 
 	// so we can override this
-	skincolor = color ? color : G_GetSkinColorForGamepad(playernum);
+	skincolor = color ? color : G_GetSkinColorForController(playernum);
 	byte_color = V_GetColor(skincolors[skincolor].ramp[8]).s;
 
-	I_SetGamepadIndicatorColor(playernum, byte_color.red, byte_color.green, byte_color.blue);
+	I_SetControllerIndicatorColor(playernum, byte_color.red, byte_color.green, byte_color.blue);
 }
 
-static void G_ResetPlayerGamepadIndicatorColor(INT32 playernum)
+static void G_ResetPlayerControllerIndicatorColor(INT32 playernum)
 {
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
-	if (cv_gamepadled[playernum].value == 0)
+	if (cv_controllerled[playernum].value == 0)
 	{
-		I_SetGamepadIndicatorColor(playernum, 0, 0, 255);
+		I_SetControllerIndicatorColor(playernum, 0, 0, 255);
 	}
 	else
 	{
-		G_SetPlayerGamepadIndicatorColor(playernum, 0);
+		G_SetPlayerControllerIndicatorColor(playernum, 0);
 	}
 }
 
 static skincolornum_t curcolor[MAXSPLITSCREENPLAYERS] = {};
 
-void G_DeviceLEDTick(void)
+void G_ControllerLEDTick(void)
 {
 	UINT8 i;
 	static skincolornum_t newcolor = SKINCOLOR_NONE;
+	const INT32 numcontrollers = I_NumControllers();
 
 	if (numcontrollers == 0)
 	{
@@ -583,44 +598,48 @@ void G_DeviceLEDTick(void)
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		if (!cv_usejoystick[i].value || !cv_gamepadled[i].value)
+		if (!cv_usecontroller[i].value || !cv_controllerled[i].value)
 			continue;
 
-		newcolor = G_GetSkinColorForGamepad(i);
+		// Players controller does not have an addressable rbg light, bummer!
+		if (!I_ControllerSupportsIndicatorColor(i))
+			continue;
+
+		newcolor = G_GetSkinColorForController(i);
 
 		if (curcolor[i] == newcolor) // dont update if same colour
 			continue;
 
-		G_SetPlayerGamepadIndicatorColor(i, newcolor);
+		G_SetPlayerControllerIndicatorColor(i, newcolor);
 		curcolor[i] = newcolor;
 	}
 }
 
-void G_ResetDeviceLED(void)
+void G_ResetControllerLED(void)
 {
 	memset(curcolor, 0, sizeof(curcolor));
 }
 
-static void G_ResetPlayerDeviceRumble(INT32 playernum)
+static void G_ResetPlayerControllerRumble(INT32 playernum)
 {
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
-	I_GamepadRumble(playernum, 0, 0, 0);
+	I_ControllerRumble(playernum, 0, 0, 0);
 }
 
-void G_ResetAllDeviceRumbles(void)
+void G_ResetAllControllerRumbles(void)
 {
 	for (int i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		I_GamepadRumble(i, 0, 0, 0);
+		I_ControllerRumble(i, 0, 0, 0);
 	}
 }
 
-void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
+void G_PlayerControllerRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
 {
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
-	if (cv_rumble[playernum].value == 0)
+	if (cv_controllerrumble[playernum].value == 0)
 	{
 		return;
 	}
@@ -631,7 +650,7 @@ void G_PlayerDeviceRumble(INT32 playernum, UINT16 low_strength, UINT16 high_stre
 	low_strength = (UINT16)min(FixedMul(low_strength, cv_rumblestrength[playernum].value), UINT16_MAX);
 	high_strength = (UINT16)min(FixedMul(high_strength, cv_rumblestrength[playernum].value), UINT16_MAX);
 
-	I_GamepadRumble(playernum, low_strength, high_strength, duration);
+	I_ControllerRumble(playernum, low_strength, high_strength, duration);
 }
 
 // rumble strengths
@@ -647,9 +666,10 @@ enum
 // Controller rumble!
 // this keeps track of a bunch of things
 // and makes your controller rumble accordingly
-void G_DeviceRumbleTick(void)
+void G_ControllerRumbleTick(void)
 {
 	UINT8 i;
+	const INT32 numcontrollers = I_NumControllers();
 
 	if (dedicated || numcontrollers == 0 || gamestate != GS_LEVEL)
 	{
@@ -658,10 +678,14 @@ void G_DeviceRumbleTick(void)
 
 	for (i = 0; i <= splitscreen; i++)
 	{
-		if (!cv_usejoystick[i].value || !cv_rumble[i].value)
+		if (!cv_usecontroller[i].value || !cv_controllerrumble[i].value)
 		{
 			continue;
 		}
+
+		// Players controller does not support rumble, bummer!
+		if (!I_ControllerSupportsRumble(i))
+			continue;
 
 		if (camera[i].freecam)
 		{
@@ -684,16 +708,26 @@ void G_DeviceRumbleTick(void)
 			player->playerstate == PST_DEAD ||
 			player->respawn > 1)
 		{
-			G_PlayerDeviceRumble(i, low, high, 0);
+			G_PlayerControllerRumble(i, low, high, 0);
 			continue;
 		}
 
-		if (player->spinouttimer)
+		if  (player->mo->eflags & MFE_JUSTBOUNCEDWALL)
+		{
+			high = RUMBLE_STRONG;
+			low = RUMBLE_MODERATE;
+		}
+		else if (player->spinouttimer)
 		{
 			//low = high = FRACUNIT / 6;
 			low = high = FixedMul((RUMBLE_VERYSTRONG), (FixedDiv(player->spinouttimer, (3*TICRATE / 2)))); // try do some some kinda fadeout, 3*TICRATE / 2 is the "default" spinout time
 		}
-		else if (player->sneakertimer > (sneakertime-(TICRATE/2)))
+		else if (player->flamestore && !player->offroad)
+		{
+			high = (player->flamestore * RUMBLE_MODERATE) / FLAMESTOREMAX;
+			lenght = 32;
+		}
+		else if (player->sneakertimer > (sneakertime-(TICRATE/2)) || player->bubbleboost > (BUBBLEBOOSTTIME-(TICRATE/2)))
 		{
 			low = high = RUMBLE_STRONG;
 		}
@@ -706,7 +740,15 @@ void G_DeviceRumbleTick(void)
 			{
 				high = RUMBLE_WEAK;
 			}
+			else if (player->flameoverheat)
+			{
+				low = RUMBLE_MODERATE;
+			}
 			else if (player->invincibilitytimer)
+			{
+				high = RUMBLE_MODERATE;
+			}
+			else if (player->smonitortimer)
 			{
 				high = RUMBLE_MODERATE;
 			}
@@ -780,7 +822,7 @@ void G_DeviceRumbleTick(void)
 			continue;
 		}
 
-		G_PlayerDeviceRumble(i, low, high, lenght);
+		G_PlayerControllerRumble(i, low, high, lenght);
 	}
 }
 

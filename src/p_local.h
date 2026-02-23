@@ -570,17 +570,6 @@ extern struct minimapinfo
 //
 // P_INTER
 //
-struct BasicFF_t
-{
-	INT32 ForceX; ///< The X of the Force's Vel
-	INT32 ForceY; ///< The Y of the Force's Vel
-	const player_t *player; ///< Player of Rumble
-	//All
-	UINT32 Duration; ///< The total duration of the effect, in microseconds
-	INT32 Gain; ///< /The gain to be applied to the effect, in the range from 0 through 10,000.
-	//All, CONSTANTFORCE �10,000 to 10,000
-	INT32 Magnitude; ///< Magnitude of the effect, in the range from 0 through 10,000.
-};
 
 /* Damage/death types, for P_DamageMobj and related */
 //// Damage types
@@ -604,9 +593,6 @@ struct BasicFF_t
 #define DMG_DEATHMASK    DMG_INSTAKILL // if bit 7 is set, this is a death type instead of a damage type
 #define DMG_TYPEMASK     0x0F // Get type without any flags
 
-void P_ForceFeed(const player_t *player, INT32 attack, INT32 fade, tic_t duration, INT32 period);
-void P_ForceConstant(const BasicFF_t *FFInfo);
-void P_RampConstant(const BasicFF_t *FFInfo, INT32 Start, INT32 End);
 void P_SpecialStageDamage(player_t *player, mobj_t *inflictor, mobj_t *source);
 boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
 void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damagetype);
@@ -624,6 +610,7 @@ typedef enum
 	PICKUPITEM_ITEM,
 	PICKUPITEM_EGGMAN,
 	PICKUPITEM_FLOATING,
+	PICKUPITEM_EGGMINE,
 } pickupitem_e;
 
 boolean P_CanPickupItem(player_t *player, UINT8 weapon);

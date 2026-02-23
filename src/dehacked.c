@@ -34,7 +34,7 @@ FUNCPRINTF void deh_warning(const char *first, ...)
 	vsnprintf(buf, 1000, first, argptr); // sizeof only returned 4 here. it didn't like that pointer.
 	va_end(argptr);
 
-	if(dbg_line == -1) // Not in a SOC, line number unknown.
+	if (dbg_line == -1) // Not in a SOC, line number unknown.
 		CONS_Alert(CONS_WARNING, "%s\n", buf);
 	else
 		CONS_Alert(CONS_WARNING, "Line %u: %s\n", dbg_line, buf);
@@ -760,7 +760,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 					{
 						cupheader_t *cup = kartcupheaders;
 						cupheader_t *prev = NULL;
-						UINT32 hash = quickncasehash(word2, MAXCUPNAME);
+						UINT32 hash = FNV1a_QuickCaseHash(word2, MAXCUPNAME);
 
 						while (cup)
 						{

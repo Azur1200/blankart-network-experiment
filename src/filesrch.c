@@ -49,7 +49,7 @@ size_t menupathindex[menudepth];
 size_t menudepthleft = menudepth;
 
 char menusearchbuf[MAXSTRINGLENGTH+1];
-textinput_t menusearch;
+textinput_t menusearch = {};
 
 char **dirmenu, **coredirmenu; // core only local for this file
 size_t sizedirmenu, sizecoredirmenu; // ditto
@@ -237,10 +237,13 @@ static boolean filemenucmp(char *haystack, char *needle)
 {
 	static char localhaystack[128];
 	strlcpy(localhaystack, haystack, 128);
+
 	if (!cv_addons_search_case.value)
 		strupr(localhaystack);
+
 	if (cv_addons_search_type.value)
-		return (strstr(localhaystack, needle) != 0);
+		return (strstr(localhaystack, needle) != NULL);
+
 	return (!strncmp(localhaystack, needle, menusearch.length));
 }
 
@@ -280,8 +283,7 @@ void closefilemenu(boolean validsize)
 		coredirmenu = NULL;
 	}
 
-	if (refreshdirname)
-		Z_Free(refreshdirname);
+	Z_Free(refreshdirname);
 	refreshdirname = NULL;
 }
 
@@ -309,8 +311,7 @@ void searchfilemenu(char *tempname)
 
 	if (!menusearch.length)
 	{
-		if (dirmenu)
-			Z_Free(dirmenu);
+		Z_Free(dirmenu);
 		dirmenu = coredirmenu;
 		sizedirmenu = sizecoredirmenu;
 
@@ -352,8 +353,8 @@ void searchfilemenu(char *tempname)
 				I_Error("searchfilemenu(): could not create \"No results...\".");
 		sizedirmenu = 1;
 		dir_on[menudepthleft] = 0;
-		if (tempname)
-			Z_Free(tempname);
+		Z_Free(tempname);
+
 		return;
 	}
 
@@ -477,8 +478,8 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 	{
 		closedir(dirhandle);
 		closefilemenu(false);
-		if (tempname)
-			Z_Free(tempname);
+		Z_Free(tempname);
+
 		return false;
 	}
 

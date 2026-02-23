@@ -3229,27 +3229,11 @@ void A_AttractChase(void *thing)
 
 			if (actor->extravalue1 >= 21)
 			{
-
-				if (actor->extravalue3 && !P_IsObjectOnGround(actor->target))
-				{
-					actor->target->momz -= (FixedMul(gravity, mapobjectscale))*P_MobjFlip(actor->target);
-					actor->target->player->ringboost += 7;
-					actor->target->player->ringtime += 7;
-					actor->target->player->ringdrop = true;
-				}
-				else
-				{
-					// Base add is 4 tics for 9,9, adds 1 tic for each point closer to the 1,1 end
-					actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true);
-					actor->target->player->ringtime += K_GetKartRingPower(actor->target->player, true);
-				}
+				// Base add is 4 tics for 9,9, adds 1 tic for each point closer to the 1,1 end
+				actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true);
+				actor->target->player->ringtime += K_GetKartRingPower(actor->target->player, true);
 
 				S_StartSoundAtVolume(actor->target, sfx_s1b5, actor->target->player->ringvolume);
-
-				if (actor->extravalue3 && !P_IsObjectOnGround(actor->target))
-				{
-					actor->target->momz -= (FixedMul(gravity, mapobjectscale)/2 + FixedMul(gravity, mapobjectscale)/4)*P_MobjFlip(actor->target);
-				}
 
 				if (actor->target->player->rings <= 10)
 				{
@@ -11648,6 +11632,7 @@ void A_RandomShadowFrame(void *thing)
 	{
 		if (actor->target && !actor->target->player->flashing
 		&& !actor->target->player->invincibilitytimer
+		&& !actor->target->player->smonitortimer
 		&& !actor->target->player->growshrinktimer
 		&& !K_IsPlayerDamaged(actor->target->player)
 		&& P_IsObjectOnGround(actor->target)
@@ -11694,6 +11679,7 @@ void A_RoamingShadowThinker(void *thing)
 		{
 			if (actor->target && !actor->target->player->flashing
 			&& !actor->target->player->invincibilitytimer
+			&& !actor->target->player->smonitortimer
 			&& !actor->target->player->growshrinktimer
 			&& !K_IsPlayerDamaged(actor->target->player))
 			{
@@ -11952,6 +11938,7 @@ void A_ReaperThinker(void *thing)
 			{
 				if (!(actor->target == targetplayermo && actor->target && !actor->target->player->flashing
 				&& !actor->target->player->invincibilitytimer
+				&& !actor->target->player->smonitortimer
 				&& !actor->target->player->growshrinktimer
 				&& !K_IsPlayerDamaged(actor->target->player)))
 					P_SetTarget(&actor->target, actor->hnext);

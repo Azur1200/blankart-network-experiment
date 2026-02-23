@@ -43,7 +43,7 @@ set(SRB2_ASSETS ${SRB2_ASSET_DOCS} ${SRB2_ASSETS_GAME})
 # Installation
 
 if(${CMAKE_SYSTEM} MATCHES Darwin)
-	get_target_property(outname SRB2SDL2 OUTPUT_NAME)
+	get_target_property(outname BLANKART OUTPUT_NAME)
 	install(FILES ${SRB2_ASSETS} DESTINATION "${outname}.app/Contents/Resources")
 	install(DIRECTORY "${SRB2_ASSET_DIRECTORY_ABSOLUTE}/models" DESTINATION "${outname}.app/Contents/Resources")
 	install(FILES ${SRB2_ASSETS_DOCS} DESTINATION .)

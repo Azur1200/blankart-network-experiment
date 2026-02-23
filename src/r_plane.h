@@ -127,7 +127,7 @@ struct visffloor_t
 	polyobj_t *polyobj;
 };
 
-extern visffloor_t ffloor[MAXFFLOORS];
+extern visffloor_t visffloor[MAXFFLOORS];
 extern INT32 numffloors;
 
 #ifdef __cplusplus

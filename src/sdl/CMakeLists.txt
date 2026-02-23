@@ -1,9 +1,10 @@
-# Declare SDL2 interface sources
+# Declare SDL3 interface sources
 
-target_sources(SRB2SDL2 PRIVATE
+target_sources(BLANKART PRIVATE
 	ogl_sdl.c
 	i_threads.c
 	i_net.c
+	i_gamepad.c
 	i_system.cpp
 	i_main.c
 	i_video.cpp
@@ -13,7 +14,7 @@ target_sources(SRB2SDL2 PRIVATE
 )
 
 if("${CMAKE_SYSTEM_NAME}" MATCHES Windows)
-	target_sources(SRB2SDL2 PRIVATE
+	target_sources(BLANKART PRIVATE
 		../win32/win_dbg.c
 		../win32/Srb2win.rc)
 endif()
@@ -21,7 +22,7 @@ endif()
 if("${CMAKE_SYSTEM_NAME}" MATCHES Darwin)
 	set(MACOSX_BUNDLE_ICON_FILE Srb2mac.icns)
 	set_source_files_properties(macosx/Srb2mac.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-	target_sources(SRB2SDL2 PRIVATE
+	target_sources(BLANKART PRIVATE
 		macosx/mac_alert.c
 		macosx/mac_alert.h
 		macosx/mac_resources.c
@@ -32,16 +33,16 @@ endif()
 
 if("${CMAKE_SYSTEM_NAME}" MATCHES Darwin)
 	find_library(CORE_FOUNDATION_LIBRARY "CoreFoundation")
-	target_link_libraries(SRB2SDL2 PRIVATE
+	target_link_libraries(BLANKART PRIVATE
 		${CORE_FOUNDATION_LIBRARY}
 	)
 
-	#target_link_libraries(SRB2SDL2 PRIVATE SRB2Core)
-	set_target_properties(SRB2SDL2 PROPERTIES OUTPUT_NAME "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
+	#target_link_libraries(BLANKART PRIVATE SRB2Core)
+	set_target_properties(BLANKART PROPERTIES OUTPUT_NAME "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
 
 	# Configure the app bundle icon and plist properties
-	target_sources(SRB2SDL2 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/macosx/Srb2mac.icns")
-	set_target_properties(SRB2SDL2 PROPERTIES
+	target_sources(BLANKART PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/macosx/Srb2mac.icns")
+	set_target_properties(BLANKART PROPERTIES
 		MACOSX_BUNDLE_ICON_FILE "Srb2mac"
 		MACOSX_BUNDLE_BUNDLE_NAME "SRB2Kart V2"
 		MACOSX_BUNDLE_BUNDLE_VERSION ${SRB2_VERSION}
@@ -51,94 +52,73 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES Darwin)
 endif()
 
 if("${CMAKE_SYSTEM_NAME}" MATCHES Linux)
-	target_link_libraries(SRB2SDL2 PRIVATE m rt)
+	target_link_libraries(BLANKART PRIVATE m rt)
 endif()
 
 if("${CMAKE_SYSTEM_NAME}" MATCHES Windows)
-	target_link_libraries(SRB2SDL2 PRIVATE
+	target_link_libraries(BLANKART PRIVATE
 		ws2_32
 	)
-	target_compile_options(SRB2SDL2 PRIVATE
+	target_compile_options(BLANKART PRIVATE
 		-U_WINDOWS
 	)
 endif()
 
-find_package(SDL2 CONFIG REQUIRED)
-find_package(SDL2 REQUIRED)
-target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2)
-if(TARGET SDL2main)
-	target_link_libraries(SRB2SDL2 PRIVATE SDL2main)
+find_package(SDL3 CONFIG REQUIRED)
+find_package(SDL3 REQUIRED)
+target_link_libraries(BLANKART PRIVATE SDL3::SDL3)
+if(TARGET SDL3main)
+	target_link_libraries(BLANKART PRIVATE SDL3main)
 endif()
-target_compile_definitions(SRB2SDL2 PRIVATE -DDIRECTFULLSCREEN)
-target_include_directories(SRB2SDL2 PRIVATE ${SDL2_INCLUDE_DIR})
-target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_SDL)
+target_compile_definitions(BLANKART PRIVATE -DDIRECTFULLSCREEN)
+target_include_directories(BLANKART PRIVATE ${SDL3_INCLUDE_DIR})
+target_compile_definitions(BLANKART PRIVATE -DHAVE_SDL)
 
 find_package(OpenAL CONFIG QUIET)
 find_package(OpenAL QUIET)
-if(${SRB2_CONFIG_USE_OPENAL})
-	target_link_libraries(SRB2SDL2 PRIVATE sndfile)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_OPENAL)
-	target_link_libraries(SRB2SDL2 PRIVATE OpenAL::OpenAL)
-	target_sources(SRB2SDL2 PRIVATE al_sound.c)
-	if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}" AND NOT "${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}")
-		target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2-static)
-	else()
-		target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2)
-	endif()
+
+target_link_libraries(BLANKART PRIVATE sndfile)
+target_compile_definitions(BLANKART PRIVATE -DHAVE_OPENAL)
+target_link_libraries(BLANKART PRIVATE OpenAL::OpenAL)
+target_sources(BLANKART PRIVATE al_sound.c)
+if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}" AND NOT "${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}")
+	target_link_libraries(BLANKART PRIVATE SDL3::SDL3-static)
 else()
-	if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}" AND NOT "${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}")
-		target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2-static SDL2_mixer::SDL2_mixer-static)
-	else()
-		target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2 SDL2_mixer::SDL2_mixer)
-	endif()
-
-	if(TARGET SDL2_mixer_ext::SDL2_mixer_ext OR TARGET SDL2_mixer_ext::SDL2_mixer_ext_Static OR TARGET SDL2_mixer::SDL2_mixer OR TARGET SDL2_mixer::SDL2_mixer-static)
-		target_sources(SRB2SDL2 PRIVATE mixer_sound.c)
-	endif()
-
-	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_MIXER -DSOUND=SOUND_MIXER)
+	target_link_libraries(BLANKART PRIVATE SDL3::SDL3)
 endif()
 
-if(TARGET SDL2::SDL2)
-	message(STATUS "SDL2 Found")
+if(TARGET SDL3::SDL3)
+	message(STATUS "SDL3 Found")
 else()
-	message(STATUS "no SDL2 Found")
+	message(STATUS "no SDL3 Found")
 endif()
 
-if(TARGET SDL2::SDL2main)
-	message(STATUS "SDL2main Found")
+if(TARGET SDL3::SDL3main)
+	message(STATUS "SDL3main Found")
 else()
-	message(STATUS "No SDL2main Found")
+	message(STATUS "No SDL3main Found")
 endif()
 
 if(TARGET OpenAL::OpenAL)
 	message(STATUS "OpenAL Found")
-elseif(TARGET SDL2_mixer_ext::SDL2_mixer_ext OR TARGET SDL2_mixer_ext::SDL2_mixer_ext_Static)
-	message(STATUS "SDL2_mixer_ext Found")
-elseif(TARGET SDL2_mixer::SDL2_mixer OR TARGET SDL2_mixer::SDL2_mixer-static)
-	message(STATUS "SDL2_mixer found")
 else()
-	if(${SRB2_CONFIG_USE_OPENAL})
-		message(FATAL_ERROR "no OpenAL Found")
-	else()
-		message(FATAL_ERROR "no SDL2_mixer_ext or SDL2_mixer Found")
-	endif()
+	message(FATAL_ERROR "no OpenAL Found")
 endif()
 
 #### Installation ####
 if("${CMAKE_SYSTEM_NAME}" MATCHES Darwin)
-	install(TARGETS SRB2SDL2
+	install(TARGETS BLANKART
 		BUNDLE DESTINATION .
 	)
-	set_property(TARGET SRB2SDL2 PROPERTY INSTALL_RPATH_USE_LINK_PATH ON)
+	set_property(TARGET BLANKART PROPERTY INSTALL_RPATH_USE_LINK_PATH ON)
 else()
-	install(TARGETS SRB2SDL2 SRB2SDL2
+	install(TARGETS BLANKART BLANKART
 		RUNTIME DESTINATION .
 	)
 	if ((${CMAKE_BUILD_TYPE} MATCHES Debug) OR (${CMAKE_BUILD_TYPE} MATCHES RelWithDebInfo))
 		set(SRB2_DEBUG_INSTALL OFF CACHE BOOL "Insert *.debug file into the install directory or package.")
 		if (${SRB2_DEBUG_INSTALL})
-			install(FILES $<TARGET_FILE:SRB2SDL2>.debug
+			install(FILES $<TARGET_FILE:BLANKART>.debug
 				DESTINATION .
 				OPTIONAL
 			)
@@ -166,4 +146,4 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES Darwin)
 	)
 endif()
 
-set(SRB2_SDL2_AVAILABLE YES PARENT_SCOPE)
+set(BLANKART_AVAILABLE YES PARENT_SCOPE)

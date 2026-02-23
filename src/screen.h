@@ -51,8 +51,6 @@ extern "C" {
 // global video state
 struct viddef_t
 {
-	INT32 modenum; // vidmode num indexes videomodes list
-
 	// Each screen is [vid.width*vid.height];
 	UINT8 *screens[5];
 	// screens[0] = main display window
@@ -64,12 +62,17 @@ struct viddef_t
 	size_t rowbytes; // bytes per scanline of the VIDEO mode
 	INT32 width; // PIXELS per scanline
 	INT32 height;
+	INT32 modenum; // vidmode num indexes videomodes list
 	boolean recalc; // if true, recalc vid-based stuff
-	INT32 dupx, dupy; // scale 1, 2, 3 value for menus & overlays
-	INT32/*fixed_t*/ fdupx, fdupy; // same as dupx, dupy, but exact value when aspect ratio isn't 320/200
 
-	UINT8 smalldupx, smalldupy; // factor for a little bit of scaling
-	UINT8 meddupx, meddupy; // factor for moderate, but not full, scaling
+	INT32 dup; // scale 1, 2, 3 value for menus & overlays
+	INT32 fdup; // same as dup, but exact value when aspect ratio isn't 320/200
+	INT32 udup;        // same as dup but does not account for highreshudscale
+	UINT8 smalldup; // factor for a little bit of scaling
+	UINT8 meddup; // factor for moderate, but not full, scaling
+
+	INT32 scaledwidth; // width / dup
+	INT32 scaledheight; // height / dup
 #ifdef HWRENDER
 	INT32 glstate;
 #endif
@@ -88,7 +91,6 @@ enum
 extern viddef_t vid;
 extern INT32 setmodeneeded; // mode number to set if needed, or 0
 extern UINT8 setrenderneeded;
-extern boolean cansetrender;
 
 extern double averageFPS;
 
@@ -97,6 +99,7 @@ void SCR_ChangeRenderer(void);
 extern CV_PossibleValue_t cv_renderer_t[];
 
 extern consvar_t cv_scr_width, cv_scr_height, cv_scr_depth, cv_renderview, cv_renderer, cv_renderhitbox, cv_fullscreen;
+extern consvar_t cv_highreshudscale;
 extern consvar_t cv_vhseffect, cv_shittyscreen, cv_votebgscaling;
 extern consvar_t cv_parallelsoftware;
 extern consvar_t cv_accuratefps;

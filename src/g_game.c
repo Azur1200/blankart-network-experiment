@@ -19,6 +19,7 @@
 #include "d_clisrv.h"
 #include "f_finale.h"
 #include "filesrch.h" // for refreshdirmenu
+#include "g_input.h"
 #include "m_fixed.h"
 #include "p_setup.h"
 #include "p_saveg.h"
@@ -41,7 +42,7 @@
 #include "z_zone.h"
 #include "i_video.h"
 #include "byteptr.h"
-#include "i_joy.h"
+#include "i_gamepad.h"
 #include "r_local.h"
 #include "r_skins.h"
 #include "y_inter.h"
@@ -84,8 +85,8 @@ UINT8 ultimatemode = false;
 JoyType_t Joystick[MAXSPLITSCREENPLAYERS];
 
 // SRB2kart
-char gamedatafilename[64] = "kartdata.dat";
-char timeattackfolder[64] = "kart";
+char gamedatafilename[64] = "blandata.dat";
+char timeattackfolder[64] = "blan";
 char customversionstring[32] = "\0";
 
 static void G_DoCompleted(void);
@@ -174,13 +175,13 @@ UINT16 skincolor_bluering = SKINCOLOR_PERIWINKLE;
 
 boolean exitfadestarted = false;
 
-cutscene_t *cutscenes[128];
+cutscene_t *cutscenes[128] = {};
 textprompt_t *textprompts[MAX_PROMPTS];
 
 INT16 nextmapoverride;
 UINT8 skipstats;
 
-struct quake quake;
+struct quake quake = {};
 
 // Map Header Information
 mapheader_t** mapheaderinfo = {NULL};
@@ -280,7 +281,7 @@ exitcondition_t g_exit;
 fixed_t gravity;
 fixed_t mapobjectscale;
 
-struct maplighting maplighting;
+struct maplighting maplighting = {};
 
 INT16 autobalance; //for CTF team balance
 INT16 teamscramble; //for CTF team scramble
@@ -464,6 +465,15 @@ consvar_t cv_jitterlegacy[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("driftjitter4", "Ring Racers", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, weaponPrefChange)
 };
 
+
+static CV_PossibleValue_t driftmode_cons_t[] = {{DRIFTMODE_CLASSIC, "Classic"}, {DRIFTMODE_SNAPSHOT, "Snapshot"}, {DRIFTMODE_INSTANT, "Instant"}, {0, NULL}};
+consvar_t cv_driftmode[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("driftmode", "Classic", CV_SAVE|CV_CALL|CV_NOINIT, driftmode_cons_t, weaponPrefChange),
+	CVAR_INIT ("driftmode2", "Classic", CV_SAVE|CV_CALL|CV_NOINIT, driftmode_cons_t, weaponPrefChange),
+	CVAR_INIT ("driftmode3", "Classic", CV_SAVE|CV_CALL|CV_NOINIT, driftmode_cons_t, weaponPrefChange),
+	CVAR_INIT ("driftmode4", "Classic", CV_SAVE|CV_CALL|CV_NOINIT, driftmode_cons_t, weaponPrefChange)
+};
+
 static CV_PossibleValue_t zerotoone_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_deadzonex[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("xdeadzone", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
@@ -492,6 +502,10 @@ consvar_t cv_deadzonestyle[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("deadzonestyle3", "Kart", CV_SAVE, deadzonestyle_cons_t, NULL),
 	CVAR_INIT ("deadzonestyle4", "Kart", CV_SAVE, deadzonestyle_cons_t, NULL)
 };
+
+// allows players to use restat (server toggle)
+consvar_t cv_allowrestat = CVAR_INIT ("allowrestat", "Yes", CV_NETVAR, CV_YesNo, NULL);
+consvar_t cv_notifyrestat = CVAR_INIT ("notifyrestat", "Yes", CV_NETVAR, CV_YesNo, NULL);
 
 // now automatically allocated in D_RegisterClientCommands
 // so that it doesn't have to be updated depending on the value of MAXPLAYERS
@@ -929,7 +943,7 @@ static void G_SetSaveGameModified(void)
 
 	savemoddata = true;
 
-	strlcpy(gamedatafilename, "modkartdata.dat", sizeof (gamedatafilename));
+	strlcpy(gamedatafilename, "modblandata.dat", sizeof (gamedatafilename));
 	strlwr(gamedatafilename);
 
 	// Also save a time attack folder
@@ -1015,7 +1029,7 @@ INT32 G_MapNumber(const char * name)
 #endif
 	{
 		INT32 map;
-		UINT32 hash = quickncasehash(name, MAXMAPLUMPNAME);
+		UINT32 hash = FNV1a_QuickCaseHash(name, MAXMAPLUMPNAME);
 
 		for (map = 0; map < nummapheaders; ++map)
 		{
@@ -1090,7 +1104,7 @@ INT32 G_LevelTitleToMapNum(const char * leveltitle)
 INT16 G_KartMapToNative(INT16 mapnum)
 {
 	if (mapnum > 0 && mapnum < NEXTMAP_SPECIAL)
-		return kartmap2native[mapnum-1]+1;
+		return kartmap2native[mapnum-1];
 	return 0;
 }
 
@@ -1173,6 +1187,7 @@ boolean G_AxisInDeadzone(UINT8 p, event_t *ev)
 // if defaults is true, also check default controls if the gamecontrol has no binds
 boolean G_ControlBoundToKey(UINT8 p, INT32 gc, INT32 key, boolean defaults)
 {
+	INT32 deviceID;
 	INT32 i;
 	INT32 (*map)[MAXINPUTMAPPING] = &gamecontrol[p][gc];
 
@@ -1181,9 +1196,11 @@ boolean G_ControlBoundToKey(UINT8 p, INT32 gc, INT32 key, boolean defaults)
 
 	if (defaults)
 	{
+		deviceID = I_GetControllerSlotfromID(I_GetControllerIDForPlayer(p));
 		for (i = 0; i < MAXINPUTMAPPING; i++)
-			if (G_KeyIsAvailable((*map)[i], cv_usejoystick[p].value, false))
+			if (G_KeyIsAvailable((*map)[i], deviceID, false))
 				goto bound;
+
 		map = &gamecontroldefault[gc];
 	}
 bound:
@@ -1246,11 +1263,18 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital, SINT8 type)
 		return 0;
 	}
 
-	fixed_t deadzonetype = G_GetDeadZoneType(p,type);
+	fixed_t deadzonetype = G_GetDeadZoneType(p, type);
 
 	deadzone = (JOYAXISRANGE * deadzonetype) / FRACUNIT;
 
-	deviceID = I_GetJoystickDeviceIndexForPlayer(p) + 1;
+	deviceID = I_GetControllerSlotfromID(I_GetControllerIDForPlayer(p));
+	if (deviceID >= MAXDEVICES)
+		return 0;
+
+	// not a controller?
+	// then its a keyboard or mouse
+	if (deviceID == INVALID_DEVICE)
+		deviceID = KEYBOARD_MOUSE_DEVICE;
 
 retrygetcontrol:
 	for (i = 0; i < MAXINPUTMAPPING; i++)
@@ -1527,14 +1551,17 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			forward += (value * MAXPLMOVE) / JOYAXISRANGE;
 		}
 
-		if (player->sneakertimer)
+		if (player->sneakertimer || player->recoverydash)
 			forward = MAXPLMOVE;	// 50
 
 		value = G_PlayerInputAnalog(forplayer, gc_brake, false, DEADZONE_BUTTON);
 		if (value != 0)
 		{
 			cmd->buttons |= BT_BRAKE;
-			forward -= (value * 25) / JOYAXISRANGE;
+			if (!(player->pflags & PF_RECOVERYSPIN))
+			{
+				forward -= (value * 25) / JOYAXISRANGE;
+			}
 		}
 
 		// But forward/backward IS used for aiming.
@@ -1561,6 +1588,12 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (G_PlayerInputDown(forplayer, gc_lookback, false, DEADZONE_BUTTON))
 	{
 		cmd->buttons |= BT_LOOKBACK;
+	}
+
+	// horn with any button/key
+	if (G_PlayerInputDown(forplayer, gc_horncode, false, DEADZONE_BUTTON))
+	{
+		cmd->buttons |= BT_HORN;
 	}
 
 	// Lua scriptable buttons
@@ -1790,14 +1823,13 @@ void G_DoLoadLevel(boolean resetplayer)
 
 	// clear cmd building stuff
 	memset(gamekeydown, 0, sizeof (gamekeydown));
-	memset(deviceResponding, false, sizeof (deviceResponding));
 
 	// clear hud messages remains (usually from game startup)
 	CON_ClearHUD();
 
 	server_lagless = cv_lagless.value;
 
-	G_ResetAllDeviceRumbles();
+	G_ResetAllControllerRumbles();
 
 	if (doAutomate == true)
 	{
@@ -2146,6 +2178,12 @@ boolean G_Responder(event_t *ev)
 			return true; // eat events
 
 		case ev_joystick:
+			return true; // eat events
+
+		case ev_accelerometer:
+			return true; // eat events
+
+		case ev_gyroscope:
 			return true; // eat events
 
 		default:
@@ -2722,6 +2760,54 @@ static inline void G_PlayerFinishLevel(INT32 player)
 	}
 }
 
+void G_HandleRestatMessage(restatmessage_t *rm)
+{
+	if (players[rm->player].jointime == 0)
+		return;
+
+	UINT16 chatcolor = skincolors[players[rm->player].skincolor].chatcolor;
+	char color_prefix[2] = {};
+
+	if (chatcolor > V_TANMAP)
+	{
+		sprintf(color_prefix, "%c", '\x80');
+	}
+	else
+	{
+		sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+	}
+
+
+	if (rm->kartspeedrestat != 0 && rm->kartweightrestat != 0)
+	{
+		if (playeringame[rm->player] && rm->notifyrestat)
+		{
+			if ((splitscreen && rm->player == consoleplayer) || rm->player != consoleplayer)
+			{
+				HU_AddChatText(va("%s%s\x82 is now \x84%d speed\x82, \x87%d weight\x82.", color_prefix, player_names[rm->player], rm->kartspeed, rm->kartweight), true);
+			}
+			else
+			{
+				HU_AddChatText(va("%sYou\x82 are now \x84%d speed\x82, \x87%d weight\x82.", color_prefix, rm->kartspeed, rm->kartweight), true);
+			}
+		}
+	}
+	else
+	{
+		if (playeringame[rm->player] && rm->notifyrestat)
+		{
+			if ((splitscreen && rm->player == consoleplayer) || rm->player != consoleplayer)
+			{
+				HU_AddChatText(va("%s%s\x82 is now using their skin's default stats.", color_prefix, player_names[rm->player]), true);
+			}
+			else
+			{
+				HU_AddChatText(va("%sYou\x82 are now using your skin's default stats.", color_prefix), true);
+			}
+		}
+	}
+}
+
 //
 // G_PlayerReborn
 // Called after a player dies. Almost everything is cleared and initialized.
@@ -2736,6 +2822,10 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	UINT8 kartspeed;
 	UINT8 kartweight;
+	UINT8 kartspeedrestat;
+	UINT8 kartweightrestat;
+	boolean randomrestat;
+	boolean notifyrestat;
 
 	boolean followerready;
 	INT32 followerskin;
@@ -2833,6 +2923,10 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	kartspeed = players[player].kartspeed;
 	kartweight = players[player].kartweight;
 
+	kartspeedrestat = players[player].kartspeedrestat;
+	kartweightrestat = players[player].kartweightrestat;
+	randomrestat = players[player].randomrestat;
+
 	followerready = players[player].followerready;
 	followercolor = players[player].followercolor;
 	followerskin = players[player].followerskin;
@@ -2858,7 +2952,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	pflags = (players[player].pflags & (PF_WANTSTOJOIN|PF_KICKSTARTACCEL|PF_SHRINKME|PF_SHRINKACTIVE|PF_FLIPCAM));
 
 	// SRB2kart
-	if (betweenmaps || leveltime <= starttime || spectator == true)
+	if (betweenmaps || leveltime <= starttime || spectator == true || players[player].jointime == 0)
 	{
 		itemroulette = 0;
 		previtemroulette = 0;
@@ -2884,7 +2978,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		exiting = 0;
 		khudfinish = 0;
 		khudcardanimation = 0;
-		starpostx =0;
+		starpostx = 0;
 		starposty = 0;
 		starpostz = 0;
 		starpostangle = 0;
@@ -2897,6 +2991,42 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		for (i = 0; i < LAP__MAX; i++)
 		{
 			laptime[i] = 0;
+		}
+
+		// might cause issues with weponpref sync?
+		if (!cv_allowrestat.value)
+		{
+			kartspeedrestat = 0;
+			kartweightrestat = 0;
+			randomrestat = false;
+		}
+
+		if (randomrestat)
+		{
+			kartspeedrestat = P_RandomRange(1, 9);
+			kartweightrestat = P_RandomRange(1, 9);
+		}
+
+		if (kartspeedrestat != 0 && kartweightrestat != 0)
+		{
+			kartspeed = kartspeedrestat;
+			kartweight = kartweightrestat;
+
+			notifyrestat = (
+				randomrestat ||
+				kartspeedrestat != players[player].kartspeed || 
+				kartweightrestat != players[player].kartweight
+			) && cv_notifyrestat.value;
+		}
+		else
+		{
+			kartspeed = skins[players[player].skin].kartspeed;
+			kartweight = skins[players[player].skin].kartweight;
+			
+			notifyrestat = (
+				players[player].kartspeed != skins[players[player].skin].kartspeed ||
+				players[player].kartweight != skins[players[player].skin].kartweight
+			) && cv_notifyrestat.value;
 		}
 	}
 	else
@@ -2990,6 +3120,10 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	else
 	{
 		follower = NULL;
+
+		// Nice and Tidy.
+		restatmessage_t rm = {player, notifyrestat, kartspeed, kartweight, kartspeedrestat, kartweightrestat};
+		G_HandleRestatMessage(&rm);
 	}
 
 	spectatorreentry = (betweenmaps ? 0 : players[player].spectatorreentry);
@@ -3021,6 +3155,10 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->voice_id = voice;
 	p->kartspeed = kartspeed;
 	p->kartweight = kartweight;
+
+	p->kartspeedrestat = kartspeedrestat;
+	p->kartweightrestat = kartweightrestat;
+	p->randomrestat = randomrestat;
 	//
 	p->charflags = charflags;
 	memcpy(players[player].availabilities, availabilities, sizeof(availabilities));
@@ -3655,7 +3793,7 @@ void G_FinishExitLevel(void)
 {
 	if (gamestate == GS_LEVEL)
 	{
-		G_ResetAllDeviceRumbles();
+		G_ResetAllControllerRumbles();
 
 		if (g_exit.retry)
 		{
@@ -4525,7 +4663,7 @@ static INT16 G_GetNextMap(boolean advancemap)
 					if (cupLevelNum < nummapheaders && mapheaderinfo[cupLevelNum]
 						&& mapheaderinfo[cupLevelNum]->typeoflevel & (TOL_BOSS|TOL_BATTLE))
 					{
-						grandprixinfo.eventmode = GPEVENT_BONUS;
+						grandprixinfo.eventmode = GPEVENT_CHALLENGE;
 						newmap = cupLevelNum;
 					}
 				}
@@ -4864,7 +5002,8 @@ void G_NextLevel(void)
 	}
 
 	forceresetplayers = false;
-	deferencoremode = (cv_kartencore.value == 1);
+	if (cv_kartencore.value == 1)
+		deferencoremode = true;
 
 	gameaction = ga_worlddone;
 }

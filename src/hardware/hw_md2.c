@@ -24,7 +24,7 @@
 #include "../doomstat.h"
 
 #ifdef HWRENDER
-#include "hw_drv.h"
+#include "hw_gpu.h"
 #include "hw_light.h"
 #include "hw_md2.h"
 #include "../d_main.h"
@@ -421,13 +421,13 @@ static void md2_loadTexture(md2_t *model)
 			size = w*h;
 			while (size--)
 			{
-				V_CubeApply(&image->s.red, &image->s.green, &image->s.blue);
+				V_CubeApply(image);
 				image++;
 			}
 		}
 	}
 
-	HWD.pfnSetTexture(grPatch->mipmap);
+	GL_SetTexture(grPatch->mipmap);
 }
 
 // -----------------+
@@ -482,7 +482,7 @@ static void md2_loadBlendTexture(md2_t *model)
 		grPatch->mipmap->height = (UINT16)h;
 	}
 
-	HWD.pfnSetTexture(grPatch->mipmap); // We do need to do this so that it can be cleared and knows to recreate it when necessary
+	GL_SetTexture(grPatch->mipmap); // We do need to do this so that it can be cleared and knows to recreate it when necessary
 
 	Z_Free(filename);
 }
@@ -757,17 +757,16 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 	GLPatch_t *hwrBlendPatch = blendgpatch->hardware;
 	UINT16 w = gpatch->width, h = gpatch->height;
 	UINT32 size = w*h;
-	RGBA_t *image, *blendimage, *cur, blendcolor;
-	UINT8 translation[17]; // First the color index
-	UINT8 cutoff[17]; // Brightness cutoff before using the next color
+	RGBA_t *image, *blendimage, *cur;
+	RGBA_t blendcolor = {};
+	UINT8 translation[17] = {}; // First the color index
+	UINT8 cutoff[17] = {}; // Brightness cutoff before using the next color
 	UINT8 translen = 0;
 	UINT8 i;
-	UINT8 colorbrightnesses[17];
-	UINT8 color_match_lookup[256]; // optimization attempt
+	UINT8 colorbrightnesses[17] = {};
+	UINT8 color_match_lookup[256] = {}; // optimization attempt
 
 	blendcolor = V_GetColor(0); // initialize
-	memset(translation, 0, sizeof(translation));
-	memset(cutoff, 0, sizeof(cutoff));
 
 	if (grMipmap->width == 0)
 	{
@@ -781,14 +780,10 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 		grMipmap->format = GL_TEXFMT_RGBA;
 	}
 
-	if (grMipmap->data)
-	{
-		Z_Free(grMipmap->data);
-		grMipmap->data = NULL;
-	}
+	Z_Free(grMipmap->data);
+	grMipmap->data = NULL;
 
-	cur = Z_Malloc(size*4, PU_HWRMODELTEXTURE, &grMipmap->data);
-	memset(cur, 0x00, size*4);
+	cur = Z_Calloc(size*4, PU_HWRMODELTEXTURE, &grMipmap->data);
 
 	image = hwrPatch->mipmap->data;
 	blendimage = hwrBlendPatch->mipmap->data;
@@ -1153,7 +1148,7 @@ static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendpatch, INT32 ski
 	if (blendpatch == NULL || colormap == colormaps || colormap == NULL)
 	{
 		// Don't do any blending
-		HWD.pfnSetTexture(grPatch->mipmap);
+		GL_SetTexture(grPatch->mipmap);
 		return;
 	}
 
@@ -1161,7 +1156,7 @@ static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendpatch, INT32 ski
 		&& (patch->width != blendpatch->width || patch->height != blendpatch->height))
 	{
 		// Blend image exists, but it's bad.
-		HWD.pfnSetTexture(grPatch->mipmap);
+		GL_SetTexture(grPatch->mipmap);
 		return;
 	}
 
@@ -1178,10 +1173,10 @@ static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendpatch, INT32 ski
 				{
 					memcpy(grMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
 					HWR_CreateBlendedTexture(patch, blendpatch, grMipmap, skinnum, color);
-					HWD.pfnUpdateTexture(grMipmap);
+					GL_UpdateTexture(grMipmap);
 				}
 				else
-					HWD.pfnSetTexture(grMipmap); // found the colormap, set it to the correct texture
+					GL_SetTexture(grMipmap); // found the colormap, set it to the correct texture
 
 				Z_ChangeTag(grMipmap->data, PU_HWRMODELTEXTURE_UNLOCKED);
 				return;
@@ -1207,7 +1202,7 @@ static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendpatch, INT32 ski
 
 	HWR_CreateBlendedTexture(patch, blendpatch, newMipmap, skinnum, color);
 
-	HWD.pfnSetTexture(newMipmap);
+	GL_SetTexture(newMipmap);
 	Z_ChangeTag(newMipmap->data, PU_HWRMODELTEXTURE_UNLOCKED);
 }
 
@@ -1441,6 +1436,8 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 			Surf.PolyFlags = HWR_SurfaceBlend(blendmode, trans, &Surf);
 		}
 
+		Surf.PolyColor.s.alpha = FixedMul(R_GetThingFade(spr->mobj), Surf.PolyColor.s.alpha);
+
 		// don't forget to enable the depth test because we can't do this
 		// like before: model polygons are not sorted
 
@@ -1489,6 +1486,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 
 		if (md2->error)
 			return false; // we already failed loading this before :(
+
 		if (!md2->model)
 		{
 			//CONS_Debug(DBG_RENDER, "Loading model... (%s)", sprnames[spr->mobj->sprite]);
@@ -1505,7 +1503,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 				// note down the max_s and max_t that end up in the VBO
 				md2->model->vbo_max_s = md2->model->max_s;
 				md2->model->vbo_max_t = md2->model->max_t;
-				HWD.pfnCreateModelVBOs(md2->model);
+				GL_CreateModelVBOs(md2->model);
 			}
 			else
 			{
@@ -1515,7 +1513,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 			}
 		}
 
-		//HWD.pfnSetBlend(blend); // This seems to actually break translucency?
+		//GL_SetBlend(blend); // This seems to actually break translucency?
 		//Hurdler: arf, I don't like that implementation at all... too much crappy
 
 		if (gpatch && hwrPatch && hwrPatch->mipmap->format) // else if meant that if a texture couldn't be loaded, it would just end up using something else's texture
@@ -1723,7 +1721,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 		p.mirror = atransform.mirror;
 
 		if (HWR_UseShader())
-			HWD.pfnSetShader(HWR_GetShaderFromTarget(SHADER_MODEL));
+			GL_SetShader(HWR_GetShaderFromTarget(SHADER_MODEL));
 		{
 			float this_scale = FIXED_TO_FLOAT(interp.scale);
 			fixed_t floorClip = spr->mobj->terrain ? spr->mobj->terrain->floorClip : 0;
@@ -1832,7 +1830,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 				p.y += yx + zy + ypiv;
 			}
 
-			HWD.pfnDrawModel(md2->model, frame, durs, tics, nextFrame, &p, md2->scale * xs, md2->scale * ys, flip, hflip, &Surf);
+			GL_DrawModel(md2->model, frame, durs, tics, nextFrame, &p, md2->scale * xs, md2->scale * ys, flip, hflip, &Surf);
 		}
 	}
 

@@ -335,7 +335,6 @@ void K_UpdateGrandPrixBots(void)
 	player_t *oldrival = NULL;
 	player_t *newrival = NULL;
 	UINT16 newrivalscore = 0;
-	boolean validbots = (K_UsingLegacyCheckpoints() == false);
 	UINT8 i;
 
 	for (i = 0; i < MAXGPPLAYERS; i++)
@@ -344,13 +343,8 @@ void K_UpdateGrandPrixBots(void)
 		{
 			continue;
 		}
-
-		players[i].spectator = (grandprixinfo.eventmode != GPEVENT_NONE);
-
-		if (!validbots || itembreaker)
-		{
-			players[i].spectator = true;
-		}
+		
+		players[i].spectator = K_BotDefaultSpectator();
 	}
 
 	// Find the rival.
@@ -430,11 +424,10 @@ void K_UpdateGrandPrixBots(void)
 		newrival->botvars.rival = true;
 	}
 
-	if (!validbots)
+	if (K_UsingLegacyCheckpoints() && !K_BotDefaultSpectator())
 	{
 		CONS_Alert(CONS_ERROR, "This map does not use waypoints so bot functionality will not work.\nConsider adding new waypoints directly or via map patching for bot support.\n");
 	}
-
 }
 
 /*--------------------------------------------------
@@ -782,4 +775,36 @@ boolean K_CanChangeRules(boolean allowdemos)
 	}
 
 	return true;
+}
+
+/*--------------------------------------------------
+	boolean K_BotDefaultSpectator(player_t *player);
+
+		See header file for description.
+--------------------------------------------------*/
+boolean K_BotDefaultSpectator(void)
+{
+	if (cv_forcebots.value)
+	{
+		return false;
+	}
+
+	if (!(gametyperules & GTR_BOTS))
+	{
+		// This gametype does not support bots.
+		return true;
+	}
+
+	if (grandprixinfo.eventmode != GPEVENT_NONE)
+	{
+		// This is a special round of GP, so bots must spectate.
+		return true;
+	}
+
+	if (K_UsingLegacyCheckpoints())
+	{
+		return true;
+	}
+
+	return false;
 }

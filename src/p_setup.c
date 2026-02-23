@@ -18,6 +18,7 @@
 #include "byteptr.h"
 #include "g_game.h"
 
+#include "info.h"
 #include "p_local.h"
 #include "p_setup.h"
 #include "p_spec.h"
@@ -160,8 +161,9 @@ boolean slipdashactive;
 boolean purpledriftactive;
 boolean slopeboostactive;
 boolean draftingactive;
-boolean airdropactive;
+UINT8	airdropactive;
 boolean airthrustactive;
+boolean recoverydashactive;
 boolean waterskipbricks;
 boolean itemlittering;
 boolean itempushing;
@@ -537,9 +539,9 @@ void P_AllocMapHeader(INT16 i)
 //
 #define MAXLEVELFLATS 256
 
-size_t nummaxflats;
-size_t numlevelflats;
-levelflat_t *levelflats;
+size_t nummaxflats = 0;
+size_t numlevelflats = 0;
+levelflat_t *levelflats = NULL;
 
 //SoM: Other files want this info.
 size_t P_PrecacheLevelFlats(void)
@@ -7323,7 +7325,7 @@ static void P_ConvertBinaryThingTypes(void)
 				mapthings[i].args[0] = (mapthings[i].angle/360);
 			mapthings[i].args[1] = !!(mapthings[i].options & MTF_OBJECTSPECIAL);
 			break;
-		case 522: //Wall spike
+		case 5022: //Wall spike
 			if (mapthings[i].options & MTF_OBJECTSPECIAL)
 			{
 				mapthings[i].args[0] = mobjinfo[MT_WALLSPIKE].speed + mapthings[i].angle/360;
@@ -7965,7 +7967,7 @@ static void P_RemapDoomedNum(boolean mappatch)
 	if (mapthings && mapthings[i].type == doomed) \
 	{ \
 		if (mapnamespace == MNS_BLANKART || mappatch)\
-			CONS_Alert(CONS_WARNING, "Doomednum %d has move to %d, please update your map/map patch accordingly.\n", doomed, mobjinfo[mobjtype].doomednum);\
+			CONS_Alert(CONS_WARNING, "Doomednum %d has moved to %d, please update your map/map patch accordingly.\n", doomed, mobjinfo[mobjtype].doomednum);\
 		else\
 			CONS_Alert(CONS_NOTICE, "Converting RR doomednum %d to %d.\n", doomed, mobjinfo[mobjtype].doomednum);\
 		mapthings[i].type = mobjinfo[mobjtype].doomednum; \
@@ -8001,6 +8003,7 @@ static void P_RemapDoomedNum(boolean mappatch)
 		TYPECONVERT(MT_LOOPENDPOINT, 2020)
 		TYPECONVERT(MT_LOOPCENTERPOINT, 2021)
 		TYPECONVERT(MT_SCRIPT_THING, 4096)
+		TYPECONVERT(MT_WALLSPIKE, 522)
 	}
 #undef TYPECONVERT
 }
@@ -8148,8 +8151,8 @@ void P_SetupLevelSky(const char *skytexname, boolean global)
 	R_SetupSkyDraw();
 }
 
-static const char *maplumpname;
-lumpnum_t lastloadedmaplumpnum; // for comparative savegame
+static const char *maplumpname = NULL;
+lumpnum_t lastloadedmaplumpnum = LUMPERROR; // for comparative savegame
 
 //
 // P_LevelInitStuff
@@ -8182,8 +8185,9 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	purpledriftactive = false;
 	slopeboostactive = false;
 	draftingactive = false;
-	airdropactive = false;
+	airdropactive = 0;
 	airthrustactive = false;
+	recoverydashactive = false;
 	waterskipbricks = false;
 	itemlittering = false;
 	itempushing = false;
@@ -8212,11 +8216,13 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	if (cv_kartdrafting.value)
 		draftingactive = true;
 
-	if (cv_kartairdrop.value)
-		airdropactive = true;
+	airdropactive = (UINT8)cv_kartairdrop.value;
 
 	if (cv_kartairthrust.value)
 		airthrustactive = true;
+
+	if (cv_kartrecoverydash.value)
+		recoverydashactive = true;
 
 	if (cv_kartwaterskiplock.value)
 		waterskipbricks = true;
@@ -8619,7 +8625,7 @@ static void P_InitGametype(void)
 	}
 }
 
-struct minimapinfo minimapinfo;
+struct minimapinfo minimapinfo = {};
 
 static void P_InitMinimapInfo(void)
 {
@@ -9112,7 +9118,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	G_AddMapToBuffer(gamemap-1);
 
-	G_ResetDeviceLED();
+	G_ResetControllerLED();
 
 	P_MapEnd(); // g_tm.thing is no longer needed from this point onwards
 
@@ -9225,7 +9231,7 @@ void P_PostLoadLevel(void)
 			K_InitGrandPrixBots();
 			grandprixinfo.initalize = false;
 		}
-		else if (grandprixinfo.wonround == true)
+		else// if (grandprixinfo.wonround == true)
 		{
 			K_UpdateGrandPrixBots();
 			grandprixinfo.wonround = false;

@@ -75,9 +75,14 @@ static CV_PossibleValue_t kartitemvariant_cons_t[] = {{0, "Legacy"}, {1, "Altern
 consvar_t cv_fancyroulette = CVAR_INIT ("fancyroulette", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_fancyroulettespeed = CVAR_INIT ("fancyroulettespeed", "3", CV_SAVE, CV_Natural, NULL);
 
+static CV_PossibleValue_t huditemamount_cons_t[] = {{0, "Vanilla"}, {1, "Always"}, {2, "Multiple"},{0, NULL}};
+consvar_t cv_huditemamount = CVAR_INIT ("showitemamountnumber", "Vanilla", CV_SAVE, huditemamount_cons_t, NULL);
+
 // Item related CVARs
 consvar_t cv_karteggmine_slotlock = CVAR_INIT ("karteggmine_slotlock", "Off", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
-consvar_t cv_karteggmine_slotbrick = CVAR_INIT ("karteggmine_slotbrick", "Off", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
+consvar_t cv_karteggmine_slotbrick = CVAR_INIT ("karteggmine_slotbrick", "On", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
+
+consvar_t cv_kartthunder_radius = CVAR_INIT ("kartthunder_radius", "320", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Natural, NULL);
 
 
 void K_RegisterItem(kartitemtype_e itemtype)
@@ -205,6 +210,9 @@ UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny)
 		type = 0; // KITEM_SAD displays like normal
 	if (type >= numkartitems)
 		return 1; // actually broken items show x1 to let you know
+	
+	if (cv_huditemamount.value > 0) 
+		return cv_huditemamount.value;
 
 	return K_GetItemFlags(type) & KIF_ANIMATED ? 2 : kartitems[type].graphics[tiny ? 1 : 0].numpatches + 1;
 }
@@ -492,46 +500,25 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
 #define INVODDS 30
 
 // Prevent integer overflows; don't let this go past 16383
-#define INVINDESPERATION 4
-#define MAXINVODDS ((MAXPROBABILITY * 2) * INVINDESPERATION)
+#define SMONITOR_DESPERATION 4
+#define MAXSMONITORODDS ((MAXPROBABILITY * 2) * SMONITOR_DESPERATION)
 
-// Odds value for Alt. Invin. to force itself on trailing players.
-#define INVFORCEODDS (MAXINVODDS / 2)
+// Odds value for the S-Monitor to force itself on trailing players.
+#define SMONITOR_FORCEODDS (MAXSMONITORODDS / 2)
 
-#define FRAC_95pct (95 * FRACUNIT / 100)
-
-static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
+static INT32 K_KartGetSMonitorOdds(UINT32 dist)
 {
-	UINT32 invindist = INVINDIST/2;
+	// I'm tired; use floating-point distances for this fuckshit.
+	INT32 monitordist = SMONITORDIST;
 
-	if (dist < invindist)
+	float fac_f = (float)(dist) / ((float)(monitordist));
+
+	if (fac_f < 1.0f)
 		return 0;
 
-	INT32 finodds = 0;
-	fixed_t fac = (min(32000, (fixed_t)dist) * FRACUNIT) / (INVINDIST);
-
-	if (fac > FRACUNIT)
-	{
-		// Desperation! Climb exponentially until Invincibility is practically guaranteed.
-		fac = (((min(32000, (fixed_t)dist) * FRACUNIT) / (INVINDIST)) - FRACUNIT) >> 1;
-		finodds = Easing_InCubic(fac, INVODDS, MAXINVODDS);
-	}
-	else
-	{
-		if (fac <= FRAC_95pct)
-		{
-			// Invincibility is practically useless at lower distances.
-			// Only let it appear at or above 95%.
-			return 0;
-		}
-		// Basic linear climb to "reasonable" odds.
-		finodds = FixedMul(INVODDS, fac);
-	}
-
-	return min(MAXINVODDS, finodds);
+	// If you're far enough for this to be in your item slot, you're far enough to SERIOUSLY need this.
+	return MAXSMONITORODDS;
 }
-
-#undef FRAC_95pct
 
 // updates all result cooldown timers, and sets cooldowns for "unique" items
 void K_UpdateItemCooldown(void)
@@ -768,6 +755,12 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 				newodds = 0;
 			}
 		}
+	}
+
+	if (result->type == KITEM_SUPERRING && !K_RingsActive())
+	{
+		// Don't roll Super Ring when rings are generally off.
+		newodds = 0;
 	}
 
 	if (result->unique_odds[oddstable])
@@ -1565,8 +1558,8 @@ void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force)
 
 // Unique odds functions, for REAL this time
 
-// Alt. Invin. odds
-INT32 KO_AltInvinOdds(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme)
+// S-Monitor odds 
+INT32 KO_SMonitorOdds(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme)
 {
 	(void)result;
 
@@ -1578,10 +1571,10 @@ INT32 KO_AltInvinOdds(INT32 odds, const kartroulette_t *roulette, const kartresu
 		cdist = (9 * cdist / 5);
 	}
 
-	odds = K_KartGetInvincibilityOdds(cdist);
+	odds = K_KartGetSMonitorOdds(cdist);
 
 	// Special case: if you're SERIOUSLY far behind before the cooldown finishes, ignore it and start forcing,
-	if (odds >= INVFORCEODDS)
+	if (odds >= SMONITOR_FORCEODDS)
 	{
 		*forceme = 3; // Take priority over SPBs
 	}
@@ -1673,6 +1666,10 @@ static void K_DoGrowShrink(player_t *player, boolean shrinking)
 	if (player->invincibilitytimer > 0)
 	{
 		; // invincibility has priority in P_RestoreMusic, no point in starting here
+	}
+	else if (player->smonitortimer > 0)
+	{
+		; // Ditto for S-Monitor
 	}
 	else if (P_IsLocalPlayer(player) == true)
 	{
@@ -1784,8 +1781,14 @@ static void K_DoHyudoroSteal(player_t *player)
 			&& !(players[i].itemflags & IF_ITEMOUT)
 			&& !players[i].itemblink))
 		{
-			playerswappable[numplayers] = i;
-			numplayers++;
+			kartitemflags_e flags = K_GetItemFlags(players[i].itemtype);
+
+			// I'd have liked for this to be a result-based thing, but that'd need a rework in of itself.
+			if ((flags & KIF_HYUCANTSTEAL) != KIF_HYUCANTSTEAL)
+			{
+				playerswappable[numplayers] = i;
+				numplayers++;
+			}
 		}
 	}
 
@@ -1817,7 +1820,8 @@ static void K_DoHyudoroSteal(player_t *player)
 			K_AddItemRollToList((INT32)(player - players), KITEM_KITCHENSINK, 1);
 
 		// Woah this could be big, lets get the inside scoop...
-		K_DirectorForceSwitch(player - players, 1);
+		if (!player->exiting)
+			K_DirectorForceSwitch(player - players, 1);
 		return;
 	}
 	else if ((gametype == GT_RACE && player->position == 1) || numplayers == 0) // No-one can be stolen from? Oh well...
@@ -1853,8 +1857,6 @@ static void K_DoHyudoroSteal(player_t *player)
 	}
 }
 
-#define THUNDERRADIUS 320
-
 // Rough size of the outer-rim sprites, after scaling.
 // (The hitbox is already pretty strict due to only 1 active frame,
 // we don't need to have it disjointedly small too...)
@@ -1869,7 +1871,7 @@ void K_DoThunderShield(player_t *player)
 	angle_t an;
 
 	S_StartSound(player->mo, sfx_zio3);
-	K_ThunderShieldAttack(player->mo, (THUNDERRADIUS + THUNDERSPRITE) * FRACUNIT);
+	K_ThunderShieldAttack(player->mo, (cv_kartthunder_radius.value + THUNDERSPRITE) * FRACUNIT);
 
 	// spawn vertical bolt
 	mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
@@ -1898,18 +1900,17 @@ void K_DoThunderShield(player_t *player)
 	an = ANGLE_22h;
 	for (i=0; i<15; i++)
 	{
-		sx = player->mo->x + FixedMul((player->mo->scale*THUNDERRADIUS), FINECOSINE((an*i)>>ANGLETOFINESHIFT));
-		sy = player->mo->y + FixedMul((player->mo->scale*THUNDERRADIUS), FINESINE((an*i)>>ANGLETOFINESHIFT));
+		sx = player->mo->x + FixedMul((player->mo->scale*cv_kartthunder_radius.value), FINECOSINE((an*i)>>ANGLETOFINESHIFT));
+		sy = player->mo->y + FixedMul((player->mo->scale*cv_kartthunder_radius.value), FINESINE((an*i)>>ANGLETOFINESHIFT));
 		mo = P_SpawnMobj(sx, sy, player->mo->z, MT_THOK);
 		mo->angle = an*i;
-		mo->extravalue1 = THUNDERRADIUS;	// Used to know whether we should teleport by radius or something.
+		mo->extravalue1 = cv_kartthunder_radius.value;	// Used to know whether we should teleport by radius or something.
 		mo->scale = player->mo->scale*3;
 		P_SetTarget(&mo->target, player->mo);
 		P_SetMobjState(mo, S_KSPARK1);
 	}
 }
 
-#undef THUNDERRADIUS
 #undef THUNDERSPRITE
 
 #define MAXSHARDCOUNT 40
@@ -2063,9 +2064,12 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		}
 		break;
 	case KITEM_INVINCIBILITY:
-		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO) // Doesn't hold your item slot hostage in Legacy, so you're free to waste it if you have multiple
+		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO) // Doesn't hold your item slot hostage, so you're free to waste it if you have multiple
 		{
-			K_DoInvincibility(player, K_GetInvincibilityTime(player));
+			if (K_IsKartItemAlternate(KITEM_INVINCIBILITY))
+				K_DoSMonitor(player, SMONITORTIME);
+			else
+				K_DoInvincibility(player, INVINTIME);
 			K_PlayPowerGloatSound(player->mo);
 			player->itemamount--;
 			K_BotResetItemConfirm(player, false);
@@ -2466,7 +2470,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 					// experiment: don't boost, just give invulnerability
 					if (cv_kartbubble_boost_allow.value)
 					{
-						player->bubbleboost = 7 * sneakertime / 10;
+						player->bubbleboost = BUBBLEBOOSTTIME;
 					}
 					player->flashing = 4*TICRATE/7;
 				}
@@ -2509,6 +2513,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		{
 			player->itemamount--;
 			player->flametimer = (itemtime*3);
+			player->flamedash = 0;
 			mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_FLAMESHIELD);
 			P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
 			P_SetTarget(&shield->target, player->mo);
@@ -2562,7 +2567,8 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			K_BotResetItemConfirm(player, false);
 
 			// Woah this could be big, lets get the inside scoop...
-			K_DirectorForceSwitch(player - players, 1);
+			if (!player->exiting)
+				K_DirectorForceSwitch(player - players, 1);
 		}
 		else if (ATTACK_IS_DOWN && HOLDING_ITEM && (player->itemflags & IF_ITEMOUT)) // Sink thrown
 		{
@@ -2571,6 +2577,16 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			K_PlayAttackTaunt(player->mo);
 			player->itemflags &= ~IF_ITEMOUT;
 			K_UpdateHnextList(player, true);
+			K_BotResetItemConfirm(player, false);
+		}
+		break;
+	case KITEM_EGGBRICK:
+		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO
+			&& !player->bricktimer)
+		{
+			S_StartSound(player->mo, sfx_bckuse);
+			player->bricktimer = stealtime;
+			player->itemamount--;
 			K_BotResetItemConfirm(player, false);
 		}
 		break;
@@ -2645,9 +2661,9 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 	(void)source;
 	if (inflictor && (inflictor->type == MT_LANDMINE || inflictor->type == MT_EGGMINE))
 	{
-		if (tmo->player)
+		if (tmo->player && P_CanPickupItem(tmo->player, PICKUPITEM_EGGMINE))
 		{
-			S_StartSound(tmo, sfx_bewar3);
+			S_StartSound(tmo, sfx_egrbhe);
 			K_DropItems(tmo->player);
 
 			if (cv_karteggmine_slotlock.value)
@@ -2657,11 +2673,11 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 
 			if (cv_karteggmine_slotbrick.value)
 			{
-				tmo->player->itemtype = MAXKARTITEMS;	// aka KITEM_SAD
+				tmo->player->itemtype = KITEM_EGGBRICK;
 				tmo->player->itemamount = 1;
 
 				if (itemlistactive)
-					K_AddItemRollToList((INT32)(tmo->player - players), MAXKARTITEMS, 1);
+					K_AddItemRollToList((INT32)(tmo->player - players), KITEM_EGGBRICK, 1);
 
 				tmo->player->itemblink = TICRATE;
 				tmo->player->itemblinkmode = KITEMBLINK_MASHED;

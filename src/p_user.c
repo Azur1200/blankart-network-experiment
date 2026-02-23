@@ -34,7 +34,7 @@
 #include "m_random.h"
 #include "m_misc.h"
 #include "i_video.h"
-#include "i_joy.h"
+#include "i_gamepad.h"
 #include "p_slopes.h"
 #include "p_spec.h"
 #include "r_splats.h"
@@ -835,6 +835,8 @@ void P_RestoreMusic(player_t *player)
 		{ wantedmus = 1; bestlocaltimer = players[p].growshrinktimer; } \
 		else if (players[p].invincibilitytimer > bestlocaltimer) \
 		{ wantedmus = 2; bestlocaltimer = players[p].invincibilitytimer; } \
+		else if ((players[p].smonitortimer > bestlocaltimer) && (!players[p].smonitorwarning))\
+		{ wantedmus = 2; bestlocaltimer = players[p].smonitortimer; } \
 		else if ((K_IsKartItemAlternate(KITEM_SHRINK)) && \
 		    (K_GetShrinkTime(&players[p]) > bestlocaltimer)) \
 		{ wantedmus = 3; bestlocaltimer = K_GetShrinkTime(&players[p]); } \
@@ -854,6 +856,8 @@ void P_RestoreMusic(player_t *player)
 				if (player->growshrinktimer > 1)
 					wantedmus = 1;
 				else if (player->invincibilitytimer > 1)
+					wantedmus = 2;
+				else if (((player->smonitortimer > 1) && (!player->smonitorwarning)))
 					wantedmus = 2;
 				else if ((K_IsKartItemAlternate(KITEM_SHRINK)) &&
 				    (K_GetShrinkTime(player) > 1))
@@ -1802,12 +1806,17 @@ static void P_CheckQuicksand(player_t *player)
 //
 static void P_CheckInvincibilityTimer(player_t *player)
 {
-	if (!player->powers[pw_invulnerability] && !player->invincibilitytimer)
+	if (!player->powers[pw_invulnerability] && !player->invincibilitytimer && !player->smonitortimer)
 		return;
 
 	// Resume normal music stuff.
-	if (player->invincibilitytimer == 1 || player->powers[pw_invulnerability] == 1)
+	if (player->invincibilitytimer == 1
+		|| player->powers[pw_invulnerability] == 1
+		|| (player->smonitorwarning == 1)
+		|| player->smonitortimer == 1)
 	{
+		player->smonitorwarning = 2; // Don't attempt to restore music again.
+
 		//K_KartResetPlayerColor(player); -- this gets called every tic anyways
 		G_GhostAddColor((INT32) (player - players), GHC_NORMAL);
 
@@ -2033,7 +2042,7 @@ static void P_3dMovement(player_t *player)
 	// If "no" to 1, we're not reaching any limits yet, so ignore this entirely!
 	// -Shadow Hog
 	newMagnitude = R_PointToDist2(player->mo->momx - player->cmomx, player->mo->momy - player->cmomy, 0, 0);
-	if (player->offroad > 0 || !player->outruntime)
+	if (player->offroad > 0 || (player->loop.radius == 0 && player->outruntime == 0))
 	{
 		if (newMagnitude > K_GetKartSpeed(player, true, true)) //topspeed)
 		{
@@ -2296,13 +2305,13 @@ void P_MovePlayer(player_t *player)
 
 	// Drifting sound
 	// Start looping the sound now.
-	if (leveltime % 50 == 0 && onground && player->drift != 0)
+	if (leveltime % 50 == 0 && onground && (player->drift != 0 || (player->pflags & PF_RECOVERYSPIN)))
 		S_StartSound(player->mo, sfx_drift);
 	// Leveltime being 50 might take a while at times. We'll start it up once, isntantly.
-	else if (!S_SoundPlaying(player->mo, sfx_drift) && onground && player->drift != 0)
+	else if (!S_SoundPlaying(player->mo, sfx_drift) && onground && (player->drift != 0 || (player->pflags & PF_RECOVERYSPIN)))
 		S_StartSound(player->mo, sfx_drift);
 	// Ok, we'll stop now.
-	else if (player->drift == 0 || !onground)
+	else if ((player->drift == 0 && !(player->pflags & PF_RECOVERYSPIN)) || (!onground))
 		S_StopSoundByID(player->mo, sfx_drift);
 
 	K_MoveKartPlayer(player, onground);
@@ -2321,10 +2330,10 @@ void P_MovePlayer(player_t *player)
 		&& onground && (leveltime & 1))
 		K_SpawnBoostTrail(player);
 
-	if ((player->invincibilitytimer > 0) &&
-		(((leveltime %
-		   max(1, 10 - FixedMul(9, K_InvincibilityGradient(player->invincibilitytimer)))) == 0) ||
-		 (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))))
+	if (((player->invincibilitytimer) ||
+	     ((player->smonitortimer > 0) &&
+	      (((leveltime %
+		 max(1, 10 - FixedMul(9, K_SMonitorGradient(player->smonitortimer)))) == 0)))))
 	{
 		K_SpawnSparkleTrail(player->mo);
 	}
@@ -2681,6 +2690,10 @@ static void P_DeathThink(player_t *player)
 			playerGone = true;
 		}
 	}
+	else if (player->bot && K_BotDefaultSpectator())
+	{
+		playerGone = true;
+	}
 
 	if (playerGone == false)
 	{
@@ -2721,7 +2734,7 @@ static void P_DeathThink(player_t *player)
 // P_MoveCamera: make sure the camera is not outside the world and looks at the player avatar
 //
 
-camera_t camera[MAXSPLITSCREENPLAYERS]; // Four cameras, three for splitscreen
+camera_t camera[MAXSPLITSCREENPLAYERS] = {}; // Four cameras, three for splitscreen
 
 static void CV_CamRotate_OnChange(void)
 {
@@ -3364,6 +3377,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	}
 
 	z += player->cameraOffset;
+	z -= 2*(player->karthud[khud_heavydropcam] + player->karthud[khud_postdropcam])*FRACUNIT*P_MobjFlip(mo);
 
 	// point viewed by the camera
 	// this point is just 64 unit forward the player
@@ -3415,13 +3429,13 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (mo->eflags & MFE_VERTICALFLIP)
 	{
-		angle = R_PointToAngle2(0, thiscam->z + thiscam->height, dist, mo->z + mo->height - player->mo->height + player->cameraOffset);
+		angle = R_PointToAngle2(0, thiscam->z + thiscam->height, dist, mo->z + mo->height - player->mo->height + player->cameraOffset + 2*player->karthud[khud_heavydropcam]*FRACUNIT);
 		if (thiscam->pitch < ANGLE_180 && thiscam->pitch > angle)
 			angle += (thiscam->pitch - angle)/2;
 	}
 	else
 	{
-		angle = R_PointToAngle2(0, thiscam->z, dist, mo->z + player->mo->height + player->cameraOffset);
+		angle = R_PointToAngle2(0, thiscam->z, dist, mo->z + player->mo->height + player->cameraOffset - 2*player->karthud[khud_heavydropcam]*FRACUNIT);
 		if (thiscam->pitch >= ANGLE_180 && thiscam->pitch < angle)
 			angle -= (angle - thiscam->pitch)/2;
 	}
@@ -4298,6 +4312,19 @@ void P_PlayerThink(player_t *player)
 	}
 
 	player->pflags &= ~PF_HITFINISHLINE;
+	
+	// experiment: process the drift input *before* player movement instead of after
+	if (player->driftmode == DRIFTMODE_INSTANT)
+	{
+		if (cmd->buttons & BT_DRIFT)
+		{
+			player->pflags |= PF_DRIFTINPUT;
+		}
+		else
+		{
+			player->pflags &= ~PF_DRIFTINPUT;
+		}
+	}
 
 	// check water content, set stuff in mobj
 	P_MobjCheckWater(player->mo);
@@ -4374,7 +4401,13 @@ void P_PlayerThink(player_t *player)
 	P_CheckInvincibilityTimer(player); // Spawn Invincibility Sparkles
 	
 	// "Blur" a bit when you have speed shoes and are going fast enough
-	if ((player->powers[pw_super] || player->powers[pw_sneakers] || player->driftboost || player->sneakertimer || player->startboost || player->ringboost) && !player->invincibilitytimer // SRB2kart
+	if ((player->powers[pw_super]
+		|| player->powers[pw_sneakers]
+		|| player->driftboost
+		|| player->sneakertimer
+		|| player->startboost
+		|| player->ringboost)
+		&& !(player->invincibilitytimer || player->smonitortimer) // SRB2kart
 		&& (player->speed + abs(player->mo->momz)) > FixedMul(20*FRACUNIT,player->mo->scale))
 	{
 		UINT8 i;
@@ -4634,7 +4667,7 @@ void P_ForceLocalAngle(player_t *player, angle_t angle, boolean interp)
 
 boolean P_PlayerFullbright(player_t *player)
 {
-	return (player->invincibilitytimer > 0);
+	return (player->invincibilitytimer > 0) || (player->smonitortimer > 0);
 }
 
 void P_ResetPlayerCheats(void)

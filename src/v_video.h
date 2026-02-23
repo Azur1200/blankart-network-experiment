@@ -43,16 +43,19 @@ extern "C" {
 //
 
 extern consvar_t cv_ticrate, cv_constextsize,
-cv_globalgamma, cv_globalsaturation,
+#ifdef BACKWARDSCOMPATCORRECTION
+cv_globalgamma,
+#endif
+cv_globalbrightness, cv_globalsaturation,
 cv_rhue, cv_yhue, cv_ghue, cv_chue, cv_bhue, cv_mhue,
-cv_rgamma, cv_ygamma, cv_ggamma, cv_cgamma, cv_bgamma, cv_mgamma,
+cv_rbrightness, cv_ybrightness, cv_gbrightness, cv_cbrightness, cv_bbrightness, cv_mbrightness,
 cv_rsaturation, cv_ysaturation, cv_gsaturation, cv_csaturation, cv_bsaturation, cv_msaturation,
 cv_palette, cv_palettenum;
 
 // Allocates buffer screens, call before R_Init.
 void V_Init(void);
 
-// Recalculates the viddef (dupx, dupy, etc.) according to the current screen resolution.
+// Recalculates the viddef (dup, etc.) according to the current screen resolution.
 void V_Recalc(void);
 
 // Color look-up table
@@ -88,7 +91,7 @@ UINT32 V_GammaCorrect(UINT32 input, double power);
 #define V_GammaDecode(input) V_GammaCorrect(input, 2.2f)
 #define V_GammaEncode(input) V_GammaCorrect(input, (1/2.2f))
 
-void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue);
+void V_CubeApply(RGBA_t *input);
 
 // Retrieve the ARGB value from a palette color index
 #define V_GetColor(color) (pLocalPalette[color&0xFF])
@@ -182,7 +185,7 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue);
 #define V_NOSCALESTART       0x40000000 // don't scale x, y, start coords
 #define V_SPLITSCREEN        0x80000000 // Add half of screen width or height automatically depending on player number
 
-void V_AdjustXYWithSnap(INT32 *x, INT32 *y, UINT32 options, INT32 dupx, INT32 dupy);
+void V_AdjustXYWithSnap(INT32 *x, INT32 *y, UINT32 options, INT32 dup);
 
 struct cliprect_t
 {
@@ -270,7 +273,7 @@ void V_DrawPromptBack(INT32 boxheight, INT32 color);
 	V_DrawStringScaledEx(x,y,scale,scale,space_scale,linefeed_scale,option,NULL,font,string)
 #define V__DrawOneScaleString( x,y,scale,option,font,string ) \
 	V_DrawStringScaled(x,y,scale,FRACUNIT,FRACUNIT,option,font,string)
-#define V__DrawDupxString( x,y,scale,option,font,string )\
+#define V__DrawDupString( x,y,scale,option,font,string )\
 	V__DrawOneScaleString ((x)<<FRACBITS,(y)<<FRACBITS,scale,option,font,string)
 
 INT32 V_DanceYOffset(INT32 counter);
@@ -284,7 +287,7 @@ void V_DrawChatCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed, UI
 UINT8 *V_GetStringColormap(INT32 colorflags);
 
 #define V_DrawLevelTitle( x,y,option,string ) \
-	V__DrawDupxString (x,y,FRACUNIT,option,LT_FONT,string)
+	V__DrawDupString (x,y,FRACUNIT,option,LT_FONT,string)
 
 // wordwrap a string using the hu_font
 char *V_WordWrap(INT32 x, INT32 w, INT32 option, const char *string);
@@ -321,18 +324,24 @@ char * V_ScaledWordWrap(
 
 // draw a string using the hu_font
 #define V_DrawString( x,y,option,string ) \
-	V__DrawDupxString (x,y,FRACUNIT,option,HU_FONT,string)
+	V__DrawDupString (x,y,FRACUNIT,option,HU_FONT,string)
 #define V_DrawKartString( x,y,option,string ) \
-	V__DrawDupxString (x,y,FRACUNIT,option,KART_FONT,string)
+	V__DrawDupString (x,y,FRACUNIT,option,KART_FONT,string)
+#define V_DrawScalingKartString( x,y,sc,option,string ) \
+	V__DrawDupString (x,y,sc,option,KART_FONT,string)
 #define V_DrawKartStringAtFixed( x,y,option,string ) \
 	V__DrawOneScaleString (x,y,FRACUNIT,option,KART_FONT,string)
+#define V_DrawScalingKartStringAtFixed( x,y,sc,option,string ) \
+	V__DrawOneScaleString (x,y,sc,option,KART_FONT,string)
 void V_DrawCenteredString(INT32 x, INT32 y, INT32 option, const char *string);
 void V_DrawRightAlignedString(INT32 x, INT32 y, INT32 option, const char *string);
 void V_DrawRightAlignedStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
 
 // draw a string using the hu_font, 0.5x scale
 #define V_DrawSmallString( x,y,option,string ) \
-	V__DrawDupxString (x,y,FRACUNIT>>1,option,HU_FONT,string)
+	V__DrawDupString (x,y,FRACUNIT>>1,option,HU_FONT,string)
+#define V_DrawSmallStringAtFixed( x,y,option,string ) \
+	V__DrawOneScaleString (x,y,FRACUNIT>>1,option,HU_FONT,string)
 void V_DrawCenteredSmallString(INT32 x, INT32 y, INT32 option, const char *string);
 void V_DrawCenteredSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
 void V_DrawRightAlignedSmallString(INT32 x, INT32 y, INT32 option, const char *string);
@@ -342,7 +351,7 @@ void V_DrawCenteredStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char 
 
 // draw a string using the tny_font
 #define V_DrawThinString( x,y,option,string ) \
-	V__DrawDupxString (x,y,FRACUNIT,option,TINY_FONT,string)
+	V__DrawDupString (x,y,FRACUNIT,option,TINY_FONT,string)
 void V_DrawCenteredThinString(INT32 x, INT32 y, INT32 option, const char *string);
 void V_DrawRightAlignedThinString(INT32 x, INT32 y, INT32 option, const char *string);
 

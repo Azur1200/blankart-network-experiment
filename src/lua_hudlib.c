@@ -26,6 +26,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "hu_stuff.h"
+#include "h_timers.h"
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -626,7 +627,7 @@ static int libd_draw(lua_State *L)
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -660,7 +661,7 @@ static int libd_drawScaled(lua_State *L)
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -695,7 +696,7 @@ static int libd_drawStretched(lua_State *L)
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -879,7 +880,7 @@ static int libd_drawOnMinimap(lua_State *L)
 
 	// and NOW we can FINALLY DRAW OUR GOD DAMN PATCH :V
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (cv_minihead.value)
@@ -905,7 +906,7 @@ static int libd_drawNum(lua_State *L)
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -929,7 +930,7 @@ static int libd_drawPaddedNum(lua_State *L)
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -954,7 +955,7 @@ static int libd_drawPingNum(lua_State *L)
 		colormap = *((UINT8 **)luaL_checkudata(L, 5, META_COLORMAP));
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -979,7 +980,7 @@ static int libd_drawFill(lua_State *L)
 		c = (c & ~0xff) | R_GetPaletteRemap(c & 0xff);
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -1008,7 +1009,7 @@ static int libd_fadeScreen(lua_State *L)
 		color = R_GetPaletteRemap(color);
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (strength == maxstrength) // Allow as a shortcut for drawfill...
@@ -1041,7 +1042,7 @@ static int libd_drawString(lua_State *L)
 	HUDONLY
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	// okay, sorry, this is kind of ugly
@@ -1100,7 +1101,7 @@ static int libd_drawTitleCardString(lua_State *L)
 
 	HUDONLY
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -1122,7 +1123,7 @@ static int libd_drawKartString(lua_State *L)
 
 	HUDONLY
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 
 	if (LUA_HUD_IsDrawListValid(list))
@@ -1145,7 +1146,7 @@ static int libd_setClipRect(lua_State *L)
 
 	HUDONLY
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 	cliprectenabled = true;
 
@@ -1162,7 +1163,7 @@ static int libd_clearClipRect(lua_State *L)
 
 	HUDONLY
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
-	list = (huddrawlist_h) lua_touserdata(L, -1);
+	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
 	cliprectenabled = false;
 
@@ -1383,19 +1384,11 @@ static int libd_height(lua_State *L)
 	return 1;
 }
 
-static int libd_dupx(lua_State *L)
+static int libd_dup(lua_State *L)
 {
 	HUDONLY
-	lua_pushinteger(L, vid.dupx); // push integral scale (patch scale)
-	lua_pushfixed(L, vid.fdupx); // push fixed point scale (position scale)
-	return 2;
-}
-
-static int libd_dupy(lua_State *L)
-{
-	HUDONLY
-	lua_pushinteger(L, vid.dupy); // push integral scale (patch scale)
-	lua_pushfixed(L, vid.fdupy); // push fixed point scale (position scale)
+	lua_pushinteger(L, vid.dup); // push integral scale (patch scale)
+	lua_pushfixed(L, vid.fdup); // push fixed point scale (position scale)
 	return 2;
 }
 
@@ -1504,10 +1497,22 @@ static int libd_getDrawInfo(lua_State *L)
 {
 	HUDONLY
 	enum huddrawinfo option = luaL_checkoption(L, 1, NULL, hud_drawinfo_options);
-	drawinfo_t info;
+	drawinfo_t info = {0};
+	rouletteinfo_t rinfo = {0};
+
+	// Initialize the extra values that might not get used.
+	info.hudScale = 0;
+	info.hudScaleFloat = 0.0f;
+
+	rinfo.crop.x = 0;
+	rinfo.crop.y = 0;
+	rinfo.flags = 0;
+	rinfo.offset = 0;
+	rinfo.spacing = 0;
+	rinfo.intSpacing = 0;
 
 	switch(option) {
-		case huddrawinfo_item:          K_getItemBoxDrawinfo(&info);		break;
+		case huddrawinfo_item:          K_getItemBoxDrawinfo(&info, &rinfo);break;
 		case huddrawinfo_gametypeinfo:  K_getLapsDrawinfo(&info);			break;
 		case huddrawinfo_rings:         K_getRingsDrawinfo(&info);			break;
 		case huddrawinfo_minimap:       K_getMinimapDrawinfo(&info);		break;
@@ -1518,11 +1523,50 @@ static int libd_getDrawInfo(lua_State *L)
 			return 0; // unreachable
 	}
 
+	// There's no easy solution to pushing temporary metadata to Lua,
+	// so to avoid memory leaks, I'm making a massive table with all the data. Sue me.
+
+	lua_createtable(L, 0, 5);
+
 	lua_pushinteger(L, info.x);
+	lua_setfield(L, -2, "x");
+
 	lua_pushinteger(L, info.y);
+	lua_setfield(L, -2, "y");
+
 	lua_pushinteger(L, info.flags);
+	lua_setfield(L, -2, "flags");
+
 	lua_pushinteger(L, info.flipamount);
-	return 4;
+	lua_setfield(L, -2, "flipamount");
+
+	lua_pushinteger(L, FLOAT_TO_FIXED(info.hudScaleFloat)); // Can't use floats in BLUA
+	lua_setfield(L, -2, "hudscale");
+
+	lua_createtable(L, 0, 5);
+
+		lua_createtable(L, 0, 2);
+			lua_pushinteger(L, rinfo.crop.x);
+			lua_setfield(L, -2, "x");
+
+			lua_pushinteger(L, rinfo.crop.y);
+			lua_setfield(L, -2, "y");
+		lua_setfield(L, -2, "crop");
+
+		lua_pushinteger(L, rinfo.offset);
+		lua_setfield(L, -2, "offset");
+
+		lua_pushinteger(L, rinfo.spacing);
+		lua_setfield(L, -2, "spacing");
+
+		lua_pushinteger(L, rinfo.intSpacing);
+		lua_setfield(L, -2, "intspacing");
+
+		lua_pushinteger(L, rinfo.flags);
+		lua_setfield(L, -2, "flags");
+	lua_setfield(L, -2, "roulette");
+
+	return 1;
 }
 
 // Get cv_translucenthud's value for HUD rendering as a normal V_xxTRANS int
@@ -1611,8 +1655,9 @@ static luaL_Reg lib_draw[] = {
 	// properties
 	{"width", libd_width},
 	{"height", libd_height},
-	{"dupx", libd_dupx},
-	{"dupy", libd_dupy},
+	{"dup", libd_dup},
+	{"dupx", libd_dup},
+	{"dupy", libd_dup},
 	{"renderer", libd_renderer},
 	{"localTransFlag", libd_getlocaltransflag},
 	{"drawOnMinimap", libd_drawOnMinimap},
@@ -1726,6 +1771,41 @@ static int lib_hudgetoffsets(lua_State *L)
 	return 2;
 }
 
+static int lib_hudaddtimer(lua_State *L)
+{
+	const char *name = luaL_checkstring(L, 1);
+
+	luaL_checktype(L, 2, LUA_TFUNCTION); // We get to it later
+
+	luaL_checktype(L, 3, LUA_TTABLE);
+
+	INT32 patches_size = lua_objlen(L, 3);
+	CLEANUP(pfree) const char **patches = calloc(patches_size, sizeof(const char*));
+	for (INT32 i = 0; i < patches_size; ++i)
+	{
+		lua_rawgeti(L, 3, i);
+		patches[i] = lua_tostring(L, -1);
+		lua_pop(L, 1);
+	}
+
+	INT32 anim_duration = luaL_optinteger(L, 4, 1);
+
+	UINT32 flags = luaL_optinteger(L, 5, 0);
+
+	boolean unsorted = lua_toboolean(L, 6);
+
+	lua_Integer timer_func_ref;
+
+	// Store function into registry
+	lua_getfield(L, LUA_REGISTRYINDEX, LREG_TIMERS);
+	lua_pushvalue(L, 2);
+	timer_func_ref = luaL_ref(L, -2);
+
+	K_AddItemTimerEx(name, timer_func_ref, patches, patches_size, anim_duration, flags, unsorted);
+
+	return 0;
+}
+
 // add a HUD element for rendering
 extern int lib_hudadd(lua_State *L);
 
@@ -1736,6 +1816,7 @@ static luaL_Reg lib_hud[] = {
 	{"add", lib_hudadd},
 	{"setVoteBackground", lib_hudsetvotebackground},
 	{"getOffsets", lib_hudgetoffsets},
+	{"addTimer", lib_hudaddtimer},
 	{NULL, NULL}
 };
 
@@ -1750,6 +1831,9 @@ int LUA_HudLib(lua_State *L)
 	lua_newtable(L);
 	luaL_register(L, NULL, lib_draw);
 	lib_draw_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+
+	lua_newtable(L);
+	lua_setfield(L, LUA_REGISTRYINDEX, LREG_TIMERS);
 
 	luaL_newmetatable(L, META_COLORMAP);
 		lua_pushcfunction(L, colormap_get);

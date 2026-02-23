@@ -53,11 +53,11 @@ UINT32 **texturecolumnofs; // column offset lookup table for each texture
 UINT8 **texturecache; // graphics data for each generated full-size texture
 UINT8 **texturebrightmapcache; // graphics data for brightmap converted for use with a specific texture
 
-INT32 *texturewidth;
-fixed_t *textureheight; // needed for texture pegging
+INT32 *texturewidth = NULL;
+fixed_t *textureheight = NULL; // needed for texture pegging
 
-INT32 *texturetranslation;
-INT32 *texturebrightmaps;
+INT32 *texturetranslation = NULL;
+INT32 *texturebrightmaps = NULL;
 
 INT32 g_texturenum_dbgline;
 
@@ -937,9 +937,6 @@ static inline INT32 wrap_column(fixed_t tex, INT32 col)
 //
 UINT8 *R_GetColumn(fixed_t tex, INT32 col)
 {
-	if (!texturecache[tex])
-		R_GenerateTexture(tex);
-
 	return texturecache[tex] + LONG(texturecolumnofs[tex][wrap_column(tex, col)]);
 }
 
@@ -1163,7 +1160,7 @@ Rloadflats (INT32 i, INT32 w)
 
 			// Set texture properties.
 			memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
-			texture->hash = quickncasehash(texture->name, 8);
+			texture->hash = FNV1a_QuickCaseHash(texture->name, 8);
 
 #ifndef NO_PNG_LUMPS
 			W_ReadLumpHeaderPwad(wadnum, lumpnum, header, sizeof header, 0);
@@ -1264,7 +1261,7 @@ Rloadtextures (INT32 i, INT32 w)
 
 			// Set texture properties.
 			memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
-			texture->hash = quickncasehash(texture->name, 8);
+			texture->hash = FNV1a_QuickCaseHash(texture->name, 8);
 
 #ifndef NO_PNG_LUMPS
 			if (Picture_IsLumpPNG((UINT8 *)&patchlump, lumplength))
@@ -1444,8 +1441,8 @@ void R_UpdateTextureBrightmap(INT32 tx, INT32 bm)
 
 static INT32 R_DefineTextures(INT32 i, UINT16 w)
 {
-	i = Rloadflats(i, w);
-	return Rloadtextures(i, w);
+	i = Rloadtextures(i, w);
+	return Rloadflats(i, w);
 }
 
 static void R_FinishLoadingTextures(INT32 add)
@@ -1803,7 +1800,7 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 			// Allocate memory for a zero-patch texture. Obviously, we'll be adding patches momentarily.
 			resultTexture = (texture_t *)Z_Calloc(sizeof(texture_t),PU_STATIC,NULL);
 			memcpy(resultTexture->name, newTextureName, 8);
-			resultTexture->hash = quickncasehash(newTextureName, 8);
+			resultTexture->hash = FNV1a_QuickCaseHash(newTextureName, 8);
 			resultTexture->width = newTextureWidth;
 			resultTexture->height = newTextureHeight;
 			resultTexture->type = TEXTURETYPE_TEXTURE;
@@ -1980,8 +1977,7 @@ static void PaletteTextureHack(const char **name)
 
 void R_ClearTextureNumCache(boolean btell)
 {
-	if (tidcache)
-		Z_Free(tidcache);
+	Z_Free(tidcache);
 	tidcache = NULL;
 	if (btell)
 		CONS_Debug(DBG_SETUP, "Fun Fact: There are %d textures used in this map.\n", tidcachelen);
@@ -2018,7 +2014,7 @@ INT32 R_CheckTextureNumForName(const char *name, UINT8 type)
 
 	PaletteTextureHack(&name);
 
-	hash = quickncasehash(name, 8);
+	hash = FNV1a_QuickCaseHash(name, 8);
 
 	for (i = 0; i < tidcachelen; i++)
 		if (tidcache[i].type == type && tidcache[i].hash == hash && !strncasecmp(tidcache[i].name, name, 8))

@@ -10,6 +10,7 @@
 /// \file  lua_baselib.c
 /// \brief basic functions for Lua scripting
 
+#include "blua/lua.h"
 #include "doomdef.h"
 #include "p_local.h"
 #include "p_setup.h" // So we can have P_SetupLevelSky
@@ -62,27 +63,33 @@ boolean luaL_checkboolean(lua_State *L, int narg) {
 // String concatination
 static int lib_concat(lua_State *L)
 {
-  int n = lua_gettop(L);  /* number of arguments */
-  int i;
-  char *r = NULL;
-  size_t rl = 0,sl;
-  lua_getglobal(L, "tostring");
-  for (i=1; i<=n; i++) {
-    const char *s;
-    lua_pushvalue(L, -1);  /* function to be called */
-    lua_pushvalue(L, i);   /* value to print */
-    lua_call(L, 1, 1);
-    s = lua_tolstring(L, -1, &sl);  /* get result */
-    if (s == NULL)
-      return luaL_error(L, LUA_QL("tostring") " must return a string to "
-													 LUA_QL("__add"));
+	int n = lua_gettop(L);  /* number of arguments */
+	int i;
+	char *r = NULL;
+	size_t rl = 0, sl;
+	lua_getglobal(L, "tostring");
+	for (i=1; i<=n; i++) {
+		const char *s;
+		lua_pushvalue(L, -1);  /* function to be called */
+		lua_pushvalue(L, i);   /* value to print */
+		lua_call(L, 1, 1);
+		s = lua_tolstring(L, -1, &sl);  /* get result */
+
+		if (sl == 0) {
+			lua_pop(L, 1);  /* pop result */
+			continue;
+		}
+
+		if (s == NULL)
+			return luaL_error(L, LUA_QL("tostring") " must return a string to "
+															LUA_QL("__add"));
 		r = Z_Realloc(r, rl+sl, PU_STATIC, NULL);
 		memcpy(r+rl, s, sl);
 		rl += sl;
-    lua_pop(L, 1);  /* pop result */
-  }
-  lua_pushlstring(L, r, rl);
-  Z_Free(r);
+		lua_pop(L, 1);  /* pop result */
+	}
+	lua_pushlstring(L, r, rl);
+	Z_Free(r);
 	return 1;
 }
 
@@ -90,23 +97,24 @@ static int lib_concat(lua_State *L)
 // Copied from base Lua code
 static int lib_print(lua_State *L)
 {
-  int n = lua_gettop(L);  /* number of arguments */
-  int i;
-  //HUDSAFE
-  lua_getglobal(L, "tostring");
-  for (i=1; i<=n; i++) {
-    const char *s;
-    lua_pushvalue(L, -1);  /* function to be called */
-    lua_pushvalue(L, i);   /* value to print */
-    lua_call(L, 1, 1);
-    s = lua_tostring(L, -1);  /* get result */
-    if (s == NULL)
-      return luaL_error(L, LUA_QL("tostring") " must return a string to "
-													 LUA_QL("print"));
-    if (i>1) CONS_Printf("\n");
-    CONS_Printf("%s", s);
-    lua_pop(L, 1);  /* pop result */
-  }
+	int n = lua_gettop(L);  /* number of arguments */
+	int i;
+	//HUDSAFE
+	lua_getglobal(L, "tostring");
+	for (i=1; i<=n; i++) {
+		const char *s;
+		lua_pushvalue(L, -1);  /* function to be called */
+		lua_pushvalue(L, i);   /* value to print */
+		lua_call(L, 1, 1);
+		s = lua_tostring(L, -1);  /* get result */
+
+		if (s == NULL)
+			return luaL_error(L, LUA_QL("tostring") " must return a string to "
+															LUA_QL("print"));
+		if (i>1) CONS_Printf("\n");
+		CONS_Printf("%s", s);
+		lua_pop(L, 1);  /* pop result */
+	}
 	CONS_Printf("\n");
 	return 0;
 }
@@ -4354,6 +4362,19 @@ static int lib_kSafeRespawnPosition(lua_State *L)
 	return 1;
 }
 
+// Checks if the floor closet floor under an object would be safe to respawn/land on.
+static int lib_kSafeRespawnPositionEx(lua_State *L)
+{
+	fixed_t x = luaL_checkfixed(L, 1);
+	fixed_t y = luaL_checkfixed(L, 2);
+	fixed_t z = luaL_checkfixed(L, 3);
+	boolean flip = lua_optboolean(L, 4);
+
+	//HUDSAFE
+	lua_pushboolean(L, K_SafeRespawnPositionEx(x, y, z , flip));
+	return 1;
+}
+
 // Checks if Rings are applicable.
 static int lib_kRingsActive(lua_State *L)
 {
@@ -4406,7 +4427,7 @@ static int lib_kDraftingActive(lua_State *L)
 // Checks if Air Drop is active.
 static int lib_kAirDropActive(lua_State *L)
 {
-	lua_pushboolean(L, K_AirDropActive());
+	lua_pushinteger(L, K_AirDropActive());
 	return 1;
 }
 
@@ -4504,30 +4525,39 @@ static int lib_kGetNewSpeed(lua_State *L)
 	return 1;
 }
 
-static int lib_kInvincibilityGradient(lua_State *L)
+static int lib_kSMonitorGradient(lua_State *L)
 {
 	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
 	// HUDSAFE
 
-	lua_pushinteger(L, K_InvincibilityGradient(time));
+	lua_pushinteger(L, K_SMonitorGradient(time));
 	return 1;
 }
 
-static int lib_kGetInvincibilitySpeed(lua_State *L)
+static int lib_kGetSMonitorSpeed(lua_State *L)
 {
 	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
 	// HUDSAFE
 
-	lua_pushinteger(L, K_GetInvincibilitySpeed(time));
+	lua_pushinteger(L, K_GetSMonitorSpeed(time));
 	return 1;
 }
 
-static int lib_kGetInvincibilityAccel(lua_State *L)
+static int lib_kGetSMonitorAccel(lua_State *L)
 {
 	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
 	// HUDSAFE
 
-	lua_pushinteger(L, K_GetInvincibilityAccel(time));
+	lua_pushinteger(L, K_GetSMonitorAccel(time));
+	return 1;
+}
+
+static int lib_kGetSMonitorHandling(lua_State *L)
+{
+	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
+	// HUDSAFE
+
+	lua_pushinteger(L, K_GetSMonitorHandling(time));
 	return 1;
 }
 
@@ -5378,7 +5408,7 @@ static int lib_kGetItemListEntry(lua_State *L)
 // G_INPUT
 ////////////
 
-static int lib_gSetPlayerGamepadIndicatorColor(lua_State *L)
+static int lib_gSetPlayerControllerIndicatorColor(lua_State *L)
 {
 	INT32 player = -1;
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
@@ -5403,12 +5433,12 @@ static int lib_gSetPlayerGamepadIndicatorColor(lua_State *L)
 	if (player == -1) return 0;
 
 	// pls update with color 0 when youre done with changing led stuff so it can get player color again
-	G_SetPlayerGamepadIndicatorColor(player, color);
+	G_SetPlayerControllerIndicatorColor(player, color);
 
 	return 0;
 }
 
-static int lib_gPlayerDeviceRumble(lua_State *L)
+static int lib_gPlayerControllerRumble(lua_State *L)
 {
 	INT32 player = -1;
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));    // retrieve player
@@ -5431,7 +5461,7 @@ static int lib_gPlayerDeviceRumble(lua_State *L)
 	// Not a local player
 	if (player == -1) return 0;
 
-	G_PlayerDeviceRumble(player, low_strength, high_strength, duration);
+	G_PlayerControllerRumble(player, low_strength, high_strength, duration);
 
 	return 0;
 }
@@ -5739,6 +5769,7 @@ static luaL_Reg lib[] = {
 	{"K_SetIndirectItemCooldown",lib_kSetIndirectItemCountdown},
 	{"K_SetHyudoroCooldown",lib_kSetHyuCountdown},
 	{"K_SafeRespawnPosition",lib_kSafeRespawnPosition},
+	{"K_SafeRespawnPositionEx",lib_kSafeRespawnPositionEx},
 
 	{"K_GetCollideAngle",lib_kGetCollideAngle},
 
@@ -5759,9 +5790,10 @@ static luaL_Reg lib[] = {
 	{"K_BoostChain",lib_kBoostChain},
 	{"K_ChainOrDeincrementTime",lib_kChainOrDeincrementTime},
 	{"K_GetNewSpeed", lib_kGetNewSpeed},
-	{"K_InvincibilityGradient", lib_kInvincibilityGradient},
-	{"K_GetInvincibilitySpeed", lib_kGetInvincibilitySpeed},
-	{"K_GetInvincibilityAccel", lib_kGetInvincibilityAccel},
+	{"K_SMonitorGradient", lib_kSMonitorGradient},
+	{"K_GetSMonitorSpeed", lib_kGetSMonitorSpeed},
+	{"K_GetSMonitorAccel", lib_kGetSMonitorAccel},
+	{"K_GetSMonitorHandling", lib_kGetSMonitorHandling},
 	{"K_3dKartMovement", lib_k3dKartMovement},
 	{"K_MomentumAngle", lib_kMomentumAngle},
 	{"K_GetKartSpeedFromStat", lib_kGetKartSpeedFromStat},
@@ -5847,8 +5879,11 @@ static luaL_Reg lib[] = {
 	{"K_GetItemListEntry", lib_kGetItemListEntry},
 
 	//g_input
-	{"G_SetPlayerGamepadIndicatorColor",lib_gSetPlayerGamepadIndicatorColor},
-	{"G_PlayerDeviceRumble",lib_gPlayerDeviceRumble},
+	//{"G_SetPlayerControllerIndicatorColor", lib_gSetPlayerControllerIndicatorColor},
+	//{"G_PlayerControllerRumble", lib_gPlayerControllerRumble},
+	// gotta keep backwards compat :chaosleep:
+	{"G_SetPlayerGamepadIndicatorColor", lib_gSetPlayerControllerIndicatorColor},
+	{"G_PlayerDeviceRumble", lib_gPlayerControllerRumble},
 
 	{NULL, NULL}
 };

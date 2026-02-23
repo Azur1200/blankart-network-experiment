@@ -15,12 +15,13 @@
 #include "../doomstat.h"
 
 #include "../qs22j.h"
+#include "hw_defs.h"
 
 #ifdef HWRENDER
 #include "hw_clip.h"
 #include "hw_glob.h"
 #include "hw_light.h"
-#include "hw_drv.h"
+#include "hw_gpu.h"
 #include "hw_batching.h"
 
 #include "../i_video.h" // for rendermode == render_glide
@@ -58,7 +59,6 @@
 // ==========================================================================
 // the hardware driver object
 // ==========================================================================
-struct hwdriver_s hwdriver;
 
 // ==========================================================================
 //                                                                     PROTOS
@@ -307,8 +307,8 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	// Clamp the light level, since it can sometimes go out of the 0-255 range from animations
 	light_level = min(max(light_level, cv_secbright.value), 255);
 
-	V_CubeApply(&tint_color.s.red, &tint_color.s.green, &tint_color.s.blue);
-	V_CubeApply(&fade_color.s.red, &fade_color.s.green, &fade_color.s.blue);
+	V_CubeApply(&tint_color);
+	V_CubeApply(&fade_color);
 	Surface->PolyColor.rgba = poly_color.rgba;
 	Surface->TintColor.rgba = tint_color.rgba;
 	Surface->FadeColor.rgba = fade_color.rgba;
@@ -705,7 +705,7 @@ FBITFIELD HWR_SurfaceBlend(INT32 style, INT32 transtablenum, FSurfaceInfo *pSurf
 		return PF_Multiplicative;
 
 	if (!transtablenum && !style)
-		return PF_Masked;
+		return PF_Translucent;
 
 	pSurf->PolyColor.s.alpha = HWR_GetTranstableAlpha(transtablenum);
 	return HWR_GetBlendModeFlag(style);
@@ -1694,6 +1694,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 		// Used for height comparisons and etc across FOFs and slopes
 		fixed_t high1, highslope1, low1, lowslope1;
+		fixed_t high2, highslope2, low2, lowslope2;
 
 		INT32 texnum;
 		line_t * newline = NULL; // Multi-Property FOF
@@ -1707,18 +1708,6 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		{
 			for (rover = gl_backsector->ffloors; rover; rover = rover->next)
 			{
-				boolean bothsides = false;
-				// Skip if it exists on both sectors.
-				ffloor_t * r2;
-				for (r2 = gl_frontsector->ffloors; r2; r2 = r2->next)
-					if (rover->master == r2->master)
-					{
-						bothsides = true;
-						break;
-					}
-
-				if (bothsides) continue;
-
 				if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_RENDERSIDES))
 					continue;
 				if (!(rover->fofflags & FOF_ALLSIDES) && rover->fofflags & FOF_INVERTSIDES)
@@ -1728,6 +1717,45 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
 
 				if ((high1 < lowcut || highslope1 < lowcutslope) || (low1 > highcut || lowslope1 > highcutslope))
+					continue;
+
+				ffloor_t * r2;
+				for (r2 = gl_frontsector->ffloors; r2; r2 = r2->next)
+				{
+					if (r2->master == rover->master) // Skip if same control line.
+						break;
+
+					const ffloortype_e r2flags = r2->fofflags;
+
+					if (!(r2flags & FOF_EXISTS) || !(r2flags & FOF_RENDERSIDES))
+						continue;
+
+					if (rover->fofflags & FOF_EXTRA)
+					{
+						if (!(r2flags & FOF_CUTEXTRA))
+							continue;
+
+						if (r2flags & FOF_EXTRA && (r2flags & (FOF_TRANSLUCENT|FOF_FOG)) != (rover->fofflags & (FOF_TRANSLUCENT|FOF_FOG)))
+							continue;
+					}
+					else
+					{
+						if (!(r2flags & FOF_CUTSOLIDS))
+							continue;
+					}
+
+					SLOPEPARAMS(*r2->t_slope, high2, highslope2, *r2->topheight)
+					SLOPEPARAMS(*r2->b_slope, low2,  lowslope2,  *r2->bottomheight)
+
+					if ((high2 < lowcut || highslope2 < lowcutslope) || (low2 > highcut || lowslope2 > highcutslope))
+						continue;
+					if ((high1 > high2 || highslope1 > highslope2) || (low1 < low2 || lowslope1 < lowslope2))
+						continue;
+
+					break;
+				}
+
+				if (r2)
 					continue;
 
 				texnum = R_GetTextureNum(sides[rover->master->sidenum[0]].midtexture);
@@ -1867,18 +1895,6 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		{
 			for (rover = gl_frontsector->ffloors; rover; rover = rover->next)
 			{
-				boolean bothsides = false;
-				// Skip if it exists on both sectors.
-				ffloor_t * r2;
-				for (r2 = gl_backsector->ffloors; r2; r2 = r2->next)
-					if (rover->master == r2->master)
-					{
-						bothsides = true;
-						break;
-					}
-
-				if (bothsides) continue;
-
 				if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_RENDERSIDES))
 					continue;
 				if (!(rover->fofflags & FOF_ALLSIDES || rover->fofflags & FOF_INVERTSIDES))
@@ -1888,6 +1904,44 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
 
 				if ((high1 < lowcut || highslope1 < lowcutslope) || (low1 > highcut || lowslope1 > highcutslope))
+					continue;
+
+				ffloor_t * r2;
+				for (r2 = gl_backsector->ffloors; r2; r2 = r2->next)
+				{
+					if (r2->master == rover->master) // Skip if same control line.
+						break;
+
+					const ffloortype_e r2flags = r2->fofflags;
+
+					if (!(r2flags & FOF_EXISTS) || !(r2flags & FOF_RENDERSIDES))
+						continue;
+
+					if (rover->fofflags & FOF_EXTRA)
+					{
+						if (!(r2flags & FOF_CUTEXTRA))
+							continue;
+
+						if (r2flags & FOF_EXTRA && (r2flags & (FOF_TRANSLUCENT|FOF_FOG)) != (rover->fofflags & (FOF_TRANSLUCENT|FOF_FOG)))
+							continue;
+					}
+					else
+					{
+						if (!(r2flags & FOF_CUTSOLIDS))
+							continue;
+					}
+
+					SLOPEPARAMS(*r2->t_slope, high2, highslope2, *r2->topheight)
+					SLOPEPARAMS(*r2->b_slope, low2,  lowslope2,  *r2->bottomheight)
+
+					if ((high2 < lowcut || highslope2 < lowcutslope) || (low2 > highcut || lowslope2 > highcutslope))
+						continue;
+					if ((high1 > high2 || highslope1 > highslope2) || (low1 < low2 || lowslope1 < lowslope2))
+						continue;
+
+					break;
+				}
+				if (r2)
 					continue;
 
 				texnum = R_GetTextureNum(sides[rover->master->sidenum[0]].midtexture);
@@ -3481,6 +3535,8 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 		}
 	}
 
+	Surf.PolyColor.s.alpha = FixedMul(R_GetThingFade(spr->mobj), Surf.PolyColor.s.alpha);
+
 	if (HWR_UseShader())
 	{
 		shader = SHADER_SPRITE;
@@ -4000,6 +4056,8 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 			if (!occlusion) use_linkdraw_hack = true;
 		}
 
+		Surf.PolyColor.s.alpha = FixedMul(R_GetThingFade(spr->mobj), Surf.PolyColor.s.alpha);
+
 		if (HWR_UseShader())
 		{
 			shader = SHADER_SPRITE;
@@ -4503,7 +4561,7 @@ static void HWR_CreateDrawNodes(void)
 	ps_hw_nodedrawtime = I_GetPreciseTime();
 
 	// Okay! Let's draw it all! Woo!
-	HWD.pfnSetTransform(&atransform);
+	GL_SetTransform(&atransform);
 
 	for (i = 0; i < p; i++)
 	{
@@ -4558,9 +4616,9 @@ static void HWR_DrawSprites(void)
 	boolean skipshadow = false; // skip shadow if it was drawn already for a linkdraw sprite encountered earlier in the list
 
 #ifdef BAD_MODEL_OPTIONS
-	HWD.pfnSetSpecialState(HWD_SET_MODEL_LIGHTING, cv_glmodellighting.value);
+	GL_SetSpecialState(HWD_SET_MODEL_LIGHTING, cv_glmodellighting.value);
 #else
-	HWD.pfnSetSpecialState(HWD_SET_MODEL_LIGHTING, 1);
+	GL_SetSpecialState(HWD_SET_MODEL_LIGHTING, 1);
 #endif
 
 	for (i = 0; i < gl_visspritecount; i++)
@@ -4623,7 +4681,7 @@ static void HWR_DrawSprites(void)
 			}
 		}
 	}
-	HWD.pfnSetSpecialState(HWD_SET_MODEL_LIGHTING, 0);
+	GL_SetSpecialState(HWD_SET_MODEL_LIGHTING, 0);
 
 	// At the end of sprite drawing, draw shapes of linkdraw sprites to z-buffer, so they
 	// don't get drawn over by transparent surfaces.
@@ -4633,7 +4691,7 @@ static void HWR_DrawSprites(void)
 	// (Other states probably don't matter. Here I left them same as in LinkDrawHackFinish)
 	// Without this workaround the rest of the draw calls in this frame (including UI, screen texture)
 	// can get drawn using an incorrect glBlendFunc, resulting in a occasional black screen.
-	HWD.pfnSetBlend(PF_Translucent|PF_Occlude|PF_Masked);
+	GL_SetBlend(PF_Translucent|PF_Occlude|PF_Masked);
 }
 
 // --------------------------------------------------------------------------
@@ -4771,12 +4829,15 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	interpmobjstate_t interp = {0};
 	mobj_t *interptarg;
 
+	if (G_GamestateUsesLevel() == false)
+		return;
+
 	if (!thing)
 		return;
 
 	interptarg = thing;
 
-	if (R_IsOverlayingInvinciblePlayer(thing))
+	if (R_IsOverlayingSMonitorPlayer(thing))
 	{
 		// Kill overlay misalignment
 		interptarg = thing->target;
@@ -5221,7 +5282,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		if (thing->colorized)
 		{
 			vis->colormap = R_GetTranslationColormap(
-			    R_IsOverlayingInvinciblePlayer(thing) ? TC_BLINK : TC_RAINBOW,
+			    R_IsOverlayingSMonitorPlayer(thing) ? TC_BLINK : TC_RAINBOW,
 			    thing->color,
 			    GTC_CACHE);
 		}
@@ -5578,7 +5639,7 @@ static void HWR_DrawSkyBackground(player_t *player)
 {
 	UINT8 viewnum = R_GetViewNumber();
 	camera_t *thiscam = &camera[viewnum];
-	HWD.pfnSetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
+	GL_SetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
 
 	if (cv_glskydome.value)
 	{
@@ -5621,10 +5682,10 @@ static void HWR_DrawSkyBackground(player_t *player)
 		}
 
 		if (HWR_UseShader())
-			HWD.pfnSetShader(HWR_GetShaderFromTarget(SHADER_SKY));
+			GL_SetShader(HWR_GetShaderFromTarget(SHADER_SKY));
 
-		HWD.pfnSetTransform(&dometransform);
-		HWD.pfnRenderSkyDome(&gl_sky);
+		GL_SetTransform(&dometransform);
+		GL_RenderSkyDome(&gl_sky);
 	}
 	else
 	{
@@ -5705,8 +5766,8 @@ static void HWR_DrawSkyBackground(player_t *player)
 			v[0].t = v[1].t -= ((float) angle / angleturn);
 		}
 
-		HWD.pfnUnSetShader();
-		HWD.pfnDrawPolygon(NULL, v, 4, 0);
+		GL_UnSetShader();
+		GL_DrawPolygon(NULL, v, 4, 0);
 	}
 }
 
@@ -5723,16 +5784,16 @@ static inline void HWR_ClearView(void)
 
 	/// \bug faB - enable depth mask, disable color mask
 
-	HWD.pfnGClipRect((INT32)gl_viewwindowx,
+	GL_GClipRect((INT32)gl_viewwindowx,
 	                 (INT32)gl_viewwindowy,
 	                 (INT32)(gl_viewwindowx + gl_viewwidth),
 	                 (INT32)(gl_viewwindowy + gl_viewheight),
 	                 ZCLIP_PLANE);
-	HWD.pfnClearBuffer(false, true, 0);
+	GL_ClearBuffer(false, true, 0);
 
 	//disable clip window - set to full size
 	// rem by Hurdler
-	// HWD.pfnGClipRect(0, 0, vid.width, vid.height);
+	// GL_GClipRect(0, 0, vid.width, vid.height);
 }
 
 
@@ -5767,7 +5828,7 @@ void HWR_SetViewSize(void)
 	gl_pspritexscale = gl_viewwidth / BASEVIDWIDTH;
 	gl_pspriteyscale = ((vid.height*gl_pspritexscale*BASEVIDWIDTH)/BASEVIDHEIGHT)/vid.width;
 
-	HWD.pfnFlushScreenTextures();
+	GL_FlushScreenTextures();
 }
 
 // -------------------+
@@ -5823,7 +5884,7 @@ static void HWR_SetTransformAiming(FTransform *trans, player_t *player, boolean 
 //
 static void HWR_SetShaderState(void)
 {
-	HWD.pfnSetSpecialState(HWD_SET_SHADERS, (INT32)HWR_UseShader());
+	GL_SetSpecialState(HWD_SET_SHADERS, (INT32)HWR_UseShader());
 }
 
 static void HWR_ClearClipper(void)
@@ -5925,7 +5986,7 @@ void HWR_RenderSkyboxView(player_t *player)
 
 	//04/01/2000: Hurdler: added for T&L
 	//                     Actually it only works on Walls and Planes
-	HWD.pfnSetTransform(&atransform);
+	GL_SetTransform(&atransform);
 
 	HWR_ClearClipper();
 
@@ -5969,15 +6030,15 @@ void HWR_RenderSkyboxView(player_t *player)
 		HWR_CreateDrawNodes();
 	}
 
-	HWD.pfnSetTransform(NULL);
-	HWD.pfnUnSetShader();
+	GL_SetTransform(NULL);
+	GL_UnSetShader();
 
 	// Check for new console commands.
 	NetUpdate();
 
 	// added by Hurdler for correct splitscreen
 	// moved here by hurdler so it works with the new near clipping plane
-	HWD.pfnGClipRect(0, 0, vid.width, vid.height, NZCLIP_PLANE);
+	GL_GClipRect(0, 0, vid.width, vid.height, NZCLIP_PLANE);
 }
 
 // ==========================================================================
@@ -6013,10 +6074,10 @@ void HWR_RenderPlayerView(void)
 	ClearColor.alpha = 1.0f;
 
 	if (cv_glshaders.value)
-		HWD.pfnSetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
+		GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
 
 	if (viewssnum == 0) // Only do it if it's the first screen being rendered
-		HWD.pfnClearBuffer(true, false, &ClearColor); // Clear the Color Buffer, stops HOMs. Also seems to fix the skybox issue on Intel GPUs.
+		GL_ClearBuffer(true, false, &ClearColor); // Clear the Color Buffer, stops HOMs. Also seems to fix the skybox issue on Intel GPUs.
 
 	ps_hw_skyboxtime = I_GetPreciseTime();
 	if (skybox) // If there's a skybox and we should be drawing the sky, draw the skybox
@@ -6051,8 +6112,7 @@ void HWR_RenderPlayerView(void)
 	{
 		// V_DrawPatchFill, but for the fourth screen only
 		patch_t *gpatch = (patch_t *)W_CachePatchName("SRB2BACK", PU_CACHE);
-		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-		INT32 x, y, pw = SHORT(gpatch->width) * dupz, ph = SHORT(gpatch->height) * dupz;
+		INT32 x, y, pw = SHORT(gpatch->width) * vid.dup, ph = SHORT(gpatch->height) * vid.dup;
 
 		for (x = vid.width>>1; x < vid.width; x += pw)
 		{
@@ -6118,7 +6178,7 @@ void HWR_RenderPlayerView(void)
 
 	//04/01/2000: Hurdler: added for T&L
 	//                     Actually it only works on Walls and Planes
-	HWD.pfnSetTransform(&atransform);
+	GL_SetTransform(&atransform);
 
 	HWR_ClearClipper();
 
@@ -6176,8 +6236,8 @@ void HWR_RenderPlayerView(void)
 		HWR_CreateDrawNodes();
 	}
 
-	HWD.pfnSetTransform(NULL);
-	HWD.pfnUnSetShader();
+	GL_SetTransform(NULL);
+	GL_UnSetShader();
 
 	HWR_DoPostProcessor(player);
 
@@ -6186,7 +6246,7 @@ void HWR_RenderPlayerView(void)
 
 	// added by Hurdler for correct splitscreen
 	// moved here by hurdler so it works with the new near clipping plane
-	HWD.pfnGClipRect(0, 0, vid.width, vid.height, NZCLIP_PLANE);
+	GL_GClipRect(0, 0, vid.width, vid.height, NZCLIP_PLANE);
 }
 
 // Returns whether palette rendering is "actually enabled."
@@ -6322,13 +6382,13 @@ consvar_t cv_glpalettedepth = CVAR_INIT ("gr_palettedepth", "16 bits", CV_SAVE|C
 static void CV_glfiltermode_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
-	HWD.pfnSetSpecialState(HWD_SET_TEXTUREFILTERMODE, cv_glfiltermode.value);
+	GL_SetSpecialState(HWD_SET_TEXTUREFILTERMODE, cv_glfiltermode.value);
 }
 
 static void CV_glanisotropic_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
-	HWD.pfnSetSpecialState(HWD_SET_TEXTUREANISOTROPICMODE, cv_glanisotropicmode.value);
+	GL_SetSpecialState(HWD_SET_TEXTUREANISOTROPICMODE, cv_glanisotropicmode.value);
 }
 
 void CV_glmodellighting_OnChange(void);
@@ -6453,12 +6513,11 @@ void HWR_Switch(void)
 		HWR_AddSessionCommands();
 
 	// Set special states from CVARs
-	HWD.pfnSetSpecialState(HWD_SET_TEXTUREFILTERMODE, cv_glfiltermode.value);
-	HWD.pfnSetSpecialState(HWD_SET_TEXTUREANISOTROPICMODE, cv_glanisotropicmode.value);
+	GL_SetSpecialState(HWD_SET_TEXTUREFILTERMODE, cv_glfiltermode.value);
+	GL_SetSpecialState(HWD_SET_TEXTUREANISOTROPICMODE, cv_glanisotropicmode.value);
 
 	// Load textures
-	if (!gl_maptexturesloaded)
-		HWR_LoadMapTextures(numtextures);
+	HWR_LoadMapTextures(numtextures);
 
 	// Create plane polygons
 	if (!gl_maploaded && levelloaded)
@@ -6477,7 +6536,7 @@ void HWR_Shutdown(void)
 	HWR_FreeExtraSubsectors();
 	HWR_FreePolyPool();
 	HWR_FreeMapTextures();
-	HWD.pfnFlushScreenTextures();
+	GL_FlushScreenTextures();
 }
 
 void transform(float *cx, float *cy, float *cz)
@@ -6563,12 +6622,12 @@ void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend,
 
 INT32 HWR_GetTextureUsed(void)
 {
-	return HWD.pfnGetTextureUsed();
+	return GL_GetTextureUsed();
 }
 
 void HWR_DoPostProcessor(player_t *player)
 {
-	HWD.pfnUnSetShader();
+	GL_UnSetShader();
 
 	// Armageddon Blast Flash!
 	// Could this even be considered postprocessor?
@@ -6592,14 +6651,14 @@ void HWR_DoPostProcessor(player_t *player)
 
 		Surf.PolyColor.s.alpha = 0xc0; // match software mode
 
-		V_CubeApply(&Surf.PolyColor.s.red, &Surf.PolyColor.s.green, &Surf.PolyColor.s.blue);
+		V_CubeApply(&Surf.PolyColor);
 
-		HWD.pfnDrawPolygon(&Surf, v, 4, PF_Modulated|PF_Additive|PF_NoTexture|PF_NoDepthTest);
+		GL_DrawPolygon(&Surf, v, 4, PF_Modulated|PF_Additive|PF_NoTexture|PF_NoDepthTest);
 	}
 
 	// Capture the screen for intermission and screen waving
 	if (gamestate != GS_INTERMISSION)
-		HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+		GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 
 	if (r_splitscreen) // Not supported in splitscreen - someone want to add support?
 		return;
@@ -6643,11 +6702,11 @@ void HWR_DoPostProcessor(player_t *player)
 				v[x][y][1] = (y/((float)(SCREENVERTS-1.0f)/9.0f))-4.5f;
 			}
 		}
-		HWD.pfnPostImgRedraw(v);
+		GL_PostImgRedraw(v);
 
 		// Capture the screen again for screen waving on the intermission
 		if (gamestate != GS_INTERMISSION)
-			HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
+			GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC1);
 	}
 	// Flipping of the screen isn't done here anymore
 }
@@ -6655,18 +6714,18 @@ void HWR_DoPostProcessor(player_t *player)
 void HWR_StartScreenWipe(void)
 {
 	//CONS_Debug(DBG_RENDER, "In HWR_StartScreenWipe()\n");
-	HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_WIPE_START);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_WIPE_START);
 }
 
 void HWR_EndScreenWipe(void)
 {
 	//CONS_Debug(DBG_RENDER, "In HWR_EndScreenWipe()\n");
-	HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_WIPE_END);
+	GL_MakeScreenTexture(HWD_SCREENTEXTURE_WIPE_END);
 }
 
 void HWR_DrawIntermissionBG(void)
 {
-	HWD.pfnDrawScreenTexture(HWD_SCREENTEXTURE_GENERIC1, NULL, 0);
+	GL_DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC1, NULL, 0);
 }
 
 //
@@ -6711,7 +6770,7 @@ void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
 		return;
 
 	HWR_GetFadeMask(wipelumpnum);
-	HWD.pfnDoScreenWipe(HWD_SCREENTEXTURE_WIPE_START, HWD_SCREENTEXTURE_WIPE_END);
+	GL_DoScreenWipe(HWD_SCREENTEXTURE_WIPE_START, HWD_SCREENTEXTURE_WIPE_END);
 }
 
 void HWR_DoTintedWipe(UINT8 wipenum, UINT8 scrnnum)
@@ -6720,21 +6779,21 @@ void HWR_DoTintedWipe(UINT8 wipenum, UINT8 scrnnum)
 	HWR_DoWipe(wipenum, scrnnum);
 }
 
-void HWR_RenderVhsEffect(INT16 upbary, INT16 downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
+void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
 {
-	HWD.pfnRenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
+	GL_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
 }
 
 void HWR_MakeScreenFinalTexture(void)
 {
 	int tex = HWR_ShouldUsePaletteRendering() ? HWD_SCREENTEXTURE_GENERIC3 : HWD_SCREENTEXTURE_GENERIC2;
-	HWD.pfnMakeScreenTexture(tex);
+	GL_MakeScreenTexture(tex);
 }
 
 void HWR_DrawScreenFinalTexture(int width, int height)
 {
 	int tex = HWR_ShouldUsePaletteRendering() ? HWD_SCREENTEXTURE_GENERIC3 : HWD_SCREENTEXTURE_GENERIC2;
-	HWD.pfnDrawScreenFinalTexture(tex, width, height);
+	GL_DrawScreenFinalTexture(tex, width, height);
 }
 
 #endif // HWRENDER

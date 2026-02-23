@@ -17,7 +17,7 @@
 /// \brief SDL_ttf interface code. Necessary for platforms with no framebuffer console systems.
 
 #if defined(HAVE_SDL) && defined(HAVE_TTF)
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include "SDL_ttf.h"
 #include "../doomdef.h"
 #include "../doomstat.h"
@@ -42,10 +42,10 @@
 SDL_Surface *TTFSurface = NULL;
 SDL_Surface *TTFRendSurface = NULL;
 // Text box.
-SDL_Rect TTFRect;
+SDL_FRect TTFRect;
 // Temporary storage for the new TTFRect, used to check for
 // line wrapping.
-SDL_Rect TTFRectCheck;
+SDL_FRect TTFRectCheck;
 // Text rendering resolution.
 videoResolution res;
 // Text storage buffer, the contents get printed to the SDL surface.
@@ -236,7 +236,7 @@ void I_StartupTTF(UINT32 fontpointsize, Uint32 initflags, Uint32 vidmodeflags)
 
 	// what's the point of trying to display an error?
 	// SDL_ttf is not started, can't display anything to screen (presumably)...
-	if (SDL_InitSubSystem(initflags) < 0)
+	if (!SDL_InitSubSystem(initflags))
 		I_Error("Couldn't initialize SDL: %s\n", SDL_GetError());
 
 	TTFSurface = SDL_SetVideoMode(res.width, res.height, bitsperpixel, vidmodeflags);
@@ -324,7 +324,7 @@ void I_ShutdownTTF(void)
 	TTF_Quit();
 
 	// Free TTF rendering surfaces.
-	SDL_FreeSurface(TTFSurface);
-	SDL_FreeSurface(TTFRendSurface);
+	SDL_DestroySurface(TTFSurface);
+	SDL_DestroySurface(TTFRendSurface);
 }
 #endif

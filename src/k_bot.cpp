@@ -43,6 +43,7 @@
 #include "i_net.h" // doomcom
 #include "blan/b_soc.h"
 #include "v_video.h" // for debugging
+#include "k_battle.h" // item breaker
 #include "k_waypoint.h"
 #include "k_items.h"
 
@@ -175,7 +176,7 @@ void K_SetBot(UINT8 newplayernum, UINT16 skinnum, UINT8 difficulty, botStyle_e s
 
 	// The bot may immediately become a spectator AT THE START of a GP.
 	// For each subsequent round of GP, K_UpdateGrandPrixBots will handle this.
-	players[newplayernum].spectator = grandprixinfo.gp && grandprixinfo.initalize;
+	players[newplayernum].spectator = grandprixinfo.gp && grandprixinfo.initalize && K_BotDefaultSpectator();
 
 	skincolornum_t color = static_cast<skincolornum_t>(skins[skinnum].prefcolor);
 	const char *realname = skins[skinnum].realname;
@@ -263,6 +264,10 @@ void K_UpdateMatchRaceBots(void)
 		difficulty = 0;
 	}
 	else if ((gametyperules & GTR_BOTS) == 0 && !cv_forcebots.value)
+	{
+		difficulty = 0;
+	}
+	else if (itembreaker && !cv_forcebots.value)
 	{
 		difficulty = 0;
 	}
@@ -1342,7 +1347,7 @@ static INT32 K_HandleBotTrack(botdata_t *bd, const player_t *player, angle_t des
 		bd->brakedown = false;
 
 		// Additional grip for turns.
-		if ((player->speed > K_GetKartSpeed(player, false, false)/2) && !bd->griplockout)//35*FRACUNIT
+		if (player->mo && P_IsObjectOnGround(player->mo) && (player->speed > K_GetKartSpeed(player, false, false)/2) && !bd->griplockout)//35*FRACUNIT
 		{
 			const angle_t MAXERROR = ANGLE_45;
 			const angle_t MIDERROR = ANGLE_22h;

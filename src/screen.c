@@ -51,7 +51,6 @@
 viddef_t vid;
 INT32 setmodeneeded; //video mode change needed if > 0 (the mode number to set + 1)
 UINT8 setrenderneeded = 0;
-boolean cansetrender = true;
 
 //added : 03-02-98: default screen mode, as loaded/saved in config
 consvar_t cv_scr_width = CVAR_INIT ("scr_width", "640", CV_SAVE, CV_Unsigned, NULL);
@@ -68,6 +67,15 @@ consvar_t cv_shittyscreen = CVAR_INIT ("televisionsignal", "Okay", 0, shittyscre
 
 static CV_PossibleValue_t votescale_cons_t[] = {{0, "Vanilla"}, {1, "Adaptive"}, {2, "VerticalFill"}, {3, "HorizontalFill"}, {0, NULL}};
 consvar_t cv_votebgscaling = CVAR_INIT ("votebgscaling", "Adaptive", CV_SAVE, votescale_cons_t, NULL);
+
+static void Highreshudscale_OnChange(void);
+static CV_PossibleValue_t highreshudscale_cons_t[] = {{4*FRACUNIT/5, "MIN"}, {6*FRACUNIT/5, "MAX"}, {0, NULL}};
+consvar_t cv_highreshudscale = CVAR_INIT ("highreshudscale", "1", CV_SAVE|CV_FLOAT|CV_CALL|CV_NOINIT|CV_NOSHOWHELP, highreshudscale_cons_t, Highreshudscale_OnChange);
+
+static void Highreshudscale_OnChange(void)
+{
+	SCR_Recalc();
+}
 
 CV_PossibleValue_t cv_renderer_t[] = {
 	{1, "Software"},
@@ -497,13 +505,6 @@ void SCR_ChangeRenderer(void)
 	|| (signed)rendermode == cv_renderer.value)
 		return;
 
-	if (!cansetrender)
-	{
-		CONS_Alert(CONS_NOTICE, "You cannot change renderers at the moment.\n");
-		CV_SetValue(&cv_renderer, (signed)rendermode);
-		return;
-	}
-
 #ifdef HWRENDER
 	// Check if OpenGL loaded successfully (or wasn't disabled) before switching to it.
 	if ((vid.glstate == VID_GL_LIBRARY_ERROR)
@@ -802,9 +803,9 @@ void SCR_DisplayMarathonInfo(void)
 #define PRIMEV1 13
 #define PRIMEV2 17 // I can't believe it! I'm on TV!
 		antisplice[0] += (entertic - oldentertics)*PRIMEV2;
-		antisplice[0] %= PRIMEV1*((vid.width/vid.dupx)+1);
+		antisplice[0] %= PRIMEV1*((vid.scaledwidth)+1);
 		antisplice[1] += (entertic - oldentertics)*PRIMEV1;
-		antisplice[1] %= PRIMEV1*((vid.width/vid.dupx)+1);
+		antisplice[1] %= PRIMEV1*((vid.scaledwidth)+1);
 		str = va("%i:%02i:%02i.%02i",
 			G_TicsToHours(marathontime),
 			G_TicsToMinutes(marathontime, false),

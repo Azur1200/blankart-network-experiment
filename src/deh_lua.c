@@ -88,7 +88,7 @@ static int action_call(lua_State *L)
 
 // Hardcoded A_Action name to call for super() or NULL if super() would be invalid.
 // Set in lua_infolib.
-const char *superactions[MAXRECURSION];
+const char *superactions[MAXRECURSION] = {};
 UINT8 superstack = 0;
 
 static int lib_dummysuper(lua_State *L)
@@ -176,6 +176,18 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 					return 1;
 				}
 		if (mathlib) return luaL_error(L, "playerflag '%s' could not be found.\n", word);
+		return 0;
+	}
+	else if (fastncmp("PAF_", word, 4)) {
+		p = word+4;
+		for (i = 0; AIRDROPFLAG_LIST[i]; i++)
+		{
+			if (fastcmp(p, AIRDROPFLAG_LIST[i])) {
+				CacheAndPushConstant(L, word, ((lua_Integer)1<<i));
+				return 1;
+			}
+		}
+		if (mathlib) return luaL_error(L, "airdropflag '%s' could not be found.\n", word);
 		return 0;
 	}
 	else if (fastncmp("IF_", word, 3)) {
@@ -360,7 +372,7 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	else if (fastncmp("sfx_",word,4)) {
 		p = word+4;
 		for (i = 0; i < NUMSFX; i++)
-			if (S_sfx[i].name && fastcmp(p, S_sfx[i].name)) {
+			if (S_sfx[i].name && fasticmp(p, S_sfx[i].name)) {
 				CacheAndPushConstant(L, word, i);
 				return 1;
 			}

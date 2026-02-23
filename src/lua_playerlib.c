@@ -378,6 +378,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(itemusecooldownmax) \
 	X(throwdir) \
 	X(sadtimer) \
+	X(bricktimer) \
 	X(rings) \
 	X(ringmin) \
 	X(ringmax) \
@@ -390,8 +391,9 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(nextringaward) \
 	X(ringvolume) \
 	X(ringtransparency) \
+	X(airdroppredelay) \
 	X(airdroptime) \
-	X(ringdrop) \
+	X(airdropflags) \
 	X(shieldtracer) \
 	X(bubblecool) \
 	X(bubbleblowup) \
@@ -413,10 +415,11 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(arrowbullet) \
 	X(rocketsneakertimer) \
 	X(invincibilitytimer) \
-	X(maxinvincibilitytime) \
-	X(invincibilitybottleneck) \
-	X(invincibilitycancel) \
-	X(invincibilitywarning) \
+	X(smonitortimer) \
+	X(maxsmonitortime) \
+	X(smonitorexpiring) \
+	X(smonitorcancel) \
+	X(smonitorwarning) \
 	X(eggmanexplode) \
 	X(eggmanblame) \
 	X(bananadrag) \
@@ -455,7 +458,9 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(loop) \
 	X(prevonground) \
 	X(walltransfered) \
-	X(walltransferboost)
+	X(walltransferboost) \
+	X(recoverydashcharge) \
+	X(recoverydash)
 
 enum player_e
 {
@@ -791,6 +796,9 @@ static int player_get(lua_State *L)
 	case player_sadtimer:
 		lua_pushinteger(L, plr->sadtimer);
 		break;
+	case player_bricktimer:
+		lua_pushinteger(L, plr->bricktimer);
+		break;
 	case player_rings:
 		lua_pushinteger(L, plr->rings);
 		break;
@@ -827,11 +835,14 @@ static int player_get(lua_State *L)
 	case player_ringtransparency:
 		lua_pushinteger(L, plr->ringtransparency);
 		break;
+	case player_airdroppredelay:
+		lua_pushinteger(L, plr->airdroppredelay);
+		break;
 	case player_airdroptime:
 		lua_pushinteger(L, plr->airdroptime);
 		break;
-	case player_ringdrop:
-		lua_pushinteger(L, plr->ringdrop);
+	case player_airdropflags:
+		lua_pushinteger(L, plr->airdropflags);
 		break;
 	case player_shieldtracer:
 		LUA_PushUserdata(L, plr->shieldtracer, META_MOBJ);
@@ -896,18 +907,21 @@ static int player_get(lua_State *L)
 	case player_invincibilitytimer:
 		lua_pushinteger(L, plr->invincibilitytimer);
 		break;
-	case player_maxinvincibilitytime:
-		lua_pushinteger(L, plr->maxinvincibilitytime);
+	case player_smonitortimer:
+		lua_pushinteger(L, plr->smonitortimer);
 		break;
-	case player_invincibilitybottleneck:
+	case player_maxsmonitortime:
+		lua_pushinteger(L, plr->maxsmonitortime);
+		break;
+	case player_smonitorexpiring:
 		// Push as an INT16 due to the negative value signal systems.
-		lua_pushinteger(L, (INT16)plr->invincibilitybottleneck);
+		lua_pushinteger(L, (INT16)plr->smonitorexpiring);
 		break;
-	case player_invincibilitycancel:
-		lua_pushinteger(L, plr->invincibilitycancel);
+	case player_smonitorcancel:
+		lua_pushinteger(L, plr->smonitorcancel);
 		break;
-	case player_invincibilitywarning:
-		lua_pushboolean(L, (boolean)plr->invincibilitywarning);
+	case player_smonitorwarning:
+		lua_pushboolean(L, (boolean)plr->smonitorwarning);
 		break;
 	case player_eggmanexplode:
 		lua_pushinteger(L, plr->eggmanexplode);
@@ -923,12 +937,6 @@ static int player_get(lua_State *L)
 		break;
 	case player_jawztargetdelay:
 		lua_pushinteger(L, plr->jawztargetdelay);
-		break;
-	case player_confirmvictim:
-		lua_pushinteger(L, plr->confirmVictim);
-		break;
-	case player_confirmvictimdelay:
-		lua_pushinteger(L, plr->confirmVictimDelay);
 		break;
 	case player_dashringpulltics:
 		lua_pushinteger(L, plr->dashRingPullTics);
@@ -1190,6 +1198,12 @@ static int player_get(lua_State *L)
 		break;
 	case player_walltransferboost:
 		lua_pushinteger(L, plr->walltransferboost);
+		break;
+	case player_recoverydashcharge:
+		lua_pushinteger(L, plr->recoverydashcharge);
+		break;
+	case player_recoverydash:
+		lua_pushinteger(L, plr->recoverydash);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:
@@ -1572,6 +1586,9 @@ static int player_set(lua_State *L)
 	case player_sadtimer:
 		plr->sadtimer = luaL_checkinteger(L, 3);
 		break;
+	case player_bricktimer:
+		plr->bricktimer = luaL_checkinteger(L, 3);
+		break;
 	case player_rings:
 		plr->rings = luaL_checkinteger(L, 3);
 		break;
@@ -1608,11 +1625,14 @@ static int player_set(lua_State *L)
 	case player_ringtransparency:
 		plr->ringtransparency = luaL_checkinteger(L, 3);
 		break;
+	case player_airdroppredelay:
+		plr->airdroppredelay = luaL_checkinteger(L, 3);
+		break;
 	case player_airdroptime:
 		plr->airdroptime = luaL_checkinteger(L, 3);
 		break;
-	case player_ringdrop:
-		plr->ringdrop = luaL_checkinteger(L, 3);
+	case player_airdropflags:
+		plr->airdropflags = luaL_checkinteger(L, 3);
 		break;
 	case player_shieldtracer:
 		return NOSET;
@@ -1683,20 +1703,23 @@ static int player_set(lua_State *L)
 	case player_invincibilitytimer:
 		plr->invincibilitytimer = luaL_checkinteger(L, 3);
 		break;
-	case player_maxinvincibilitytime:
+	case player_smonitortimer:
+		plr->smonitortimer = luaL_checkinteger(L, 3);
+		break;
+	case player_maxsmonitortime:
 	{
 		UINT16 maxinv = max(1, (UINT16)luaL_checkinteger(L, 3)); // Prevent zero-divides
-		plr->maxinvincibilitytime = maxinv;
+		plr->maxsmonitortime = maxinv;
 		break;
 	}
-	case player_invincibilitybottleneck:
-		plr->invincibilitybottleneck = (UINT16)luaL_checkinteger(L, 3);
+	case player_smonitorexpiring:
+		plr->smonitorexpiring = (UINT16)luaL_checkinteger(L, 3);
 		break;
-	case player_invincibilitycancel:
-		plr->invincibilitycancel = (INT16)luaL_checkinteger(L, 3);
+	case player_smonitorcancel:
+		plr->smonitorcancel = (INT16)luaL_checkinteger(L, 3);
 		break;
-	case player_invincibilitywarning:
-		plr->invincibilitywarning = (UINT8)luaL_checkboolean(L, 3);
+	case player_smonitorwarning:
+		plr->smonitorwarning = (UINT8)luaL_checkboolean(L, 3);
 		break;
 	case player_eggmanexplode:
 		plr->eggmanexplode = luaL_checkinteger(L, 3);
@@ -1712,12 +1735,6 @@ static int player_set(lua_State *L)
 		break;
 	case player_jawztargetdelay:
 		plr->jawztargetdelay = luaL_checkinteger(L, 3);
-		break;
-	case player_confirmvictim:
-		plr->confirmVictim = luaL_checkinteger(L, 3);
-		break;
-	case player_confirmvictimdelay:
-		plr->confirmVictimDelay = luaL_checkinteger(L, 3);
 		break;
 	case player_dashringpulltics:
 		plr->dashRingPullTics = luaL_checkinteger(L, 3);
@@ -1948,7 +1965,13 @@ static int player_set(lua_State *L)
 		plr->walltransfered = lua_toboolean(L, 3);
 		break;
 	case player_walltransferboost:
-		plr->walltransferboost= lua_tointeger(L, 3);
+		plr->walltransferboost = lua_tointeger(L, 3);
+		break;
+	case player_recoverydashcharge:
+		plr->recoverydashcharge = lua_tointeger(L, 3);
+		break;
+	case player_recoverydash:
+		plr->recoverydash = lua_tointeger(L, 3);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:

@@ -1490,7 +1490,7 @@ boolean P_BlockThingsIterator(INT32 x, INT32 y, BlockItReturn_t (*func)(mobj_t *
 static intercept_t *intercepts = NULL;
 static intercept_t *intercept_p = NULL;
 
-divline_t g_trace;
+divline_t g_trace = {};
 
 //SoM: 4/6/2000: Remove limit on intercepts.
 static void P_CheckIntercepts(void)

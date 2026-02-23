@@ -17,7 +17,7 @@
 #include "r_things.h"
 #include "v_video.h"
 
-UINT16 altinvinccolors[16] = {
+UINT16 smonitorcolors[16] = {
     SKINCOLOR_BLOODCELL,   // 0
     SKINCOLOR_FUCHSIA,     // 1
     SKINCOLOR_MOON,        // 2
@@ -69,14 +69,14 @@ UINT16 K_RainbowColor(tic_t time)
 }
 
 /*--------------------------------------------------
-	UINT16 K_AltInvincibilityColor(tic_t time)
+	UINT16 K_SMonitorColor(tic_t time)
 
 		See header file for description.
 --------------------------------------------------*/
 
-UINT16 K_AltInvincibilityColor(tic_t time)
+UINT16 K_SMonitorColor(tic_t time)
 {
-	return (UINT16)(altinvinccolors[(time) & 15]);
+	return (UINT16)(smonitorcolors[(time) & 15]);
 }
 
 /*--------------------------------------------------

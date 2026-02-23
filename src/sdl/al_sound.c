@@ -35,9 +35,11 @@
 #endif // HAVE_ZLIB
 #endif // HAVE_GME
 
-#include <alc.h>
-#include <al.h>
-#include <alext.h>
+#include "AL/al.h"
+#include "AL/alc.h"
+#include "AL/alext.h"
+#include "AL/efx.h"
+#include "AL/efx-presets.h"
 
 #include <sndfile.h>
 
@@ -76,8 +78,9 @@ typedef enum
 #include "../w_wad.h"
 #include "../i_threads.h"
 #include "../i_system.h" // I_Sleep
+#include "../fastcmp.h"
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 typedef struct
 {
@@ -89,6 +92,45 @@ typedef struct
 UINT8 sound_started = false;
 
 static float music_volume, sfx_volume, internal_volume = 1.0f;
+
+/* C doesn't allow casting between function and non-function pointer types, so
+ * with C99 we need to use a union to reinterpret the pointer type. Pre-C99
+ * still needs to use a normal cast and live with the warning (C++ is fine with
+ * a regular reinterpret_cast).
+ */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+#define FUNCTION_CAST(T, ptr) (union{void *p; T f;}){ptr}.f
+#elif defined(__cplusplus)
+#define FUNCTION_CAST(T, ptr) reinterpret_cast<T>(ptr)
+#else
+#define FUNCTION_CAST(T, ptr) (T)(ptr)
+#endif
+
+// EFX
+static LPALGENEFFECTS alGenEffects;
+static LPALDELETEEFFECTS alDeleteEffects;
+static LPALISEFFECT alIsEffect;
+static LPALEFFECTI alEffecti;
+static LPALEFFECTIV alEffectiv;
+static LPALEFFECTF alEffectf;
+static LPALEFFECTFV alEffectfv;
+static LPALGETEFFECTI alGetEffecti;
+static LPALGETEFFECTIV alGetEffectiv;
+static LPALGETEFFECTF alGetEffectf;
+static LPALGETEFFECTFV alGetEffectfv;
+
+/* Auxiliary Effect Slot object functions */
+static LPALGENAUXILIARYEFFECTSLOTS alGenAuxiliaryEffectSlots;
+static LPALDELETEAUXILIARYEFFECTSLOTS alDeleteAuxiliaryEffectSlots;
+static LPALISAUXILIARYEFFECTSLOT alIsAuxiliaryEffectSlot;
+static LPALAUXILIARYEFFECTSLOTI alAuxiliaryEffectSloti;
+static LPALAUXILIARYEFFECTSLOTIV alAuxiliaryEffectSlotiv;
+static LPALAUXILIARYEFFECTSLOTF alAuxiliaryEffectSlotf;
+static LPALAUXILIARYEFFECTSLOTFV alAuxiliaryEffectSlotfv;
+static LPALGETAUXILIARYEFFECTSLOTI alGetAuxiliaryEffectSloti;
+static LPALGETAUXILIARYEFFECTSLOTIV alGetAuxiliaryEffectSlotiv;
+static LPALGETAUXILIARYEFFECTSLOTF alGetAuxiliaryEffectSlotf;
+static LPALGETAUXILIARYEFFECTSLOTFV alGetAuxiliaryEffectSlotfv;
 
 // fading
 static boolean is_fading;
@@ -304,6 +346,58 @@ void I_StartupSound(void)
 	}
 
 	alcMakeContextCurrent(audio.context);
+
+	const char *vendor = alGetString(AL_VENDOR);
+	const char *renderer = alGetString(AL_RENDERER);
+	CONS_Printf("OpenAL Vendor: %s\n", vendor);
+	CONS_Printf("OpenAL Renderer: %s\n", renderer);
+
+
+	if (!fastcmp("OpenAL Soft", renderer))
+	{
+		I_ShutdownSound();
+		I_Error("OpenAL: You do not seem to be using OpenAL-Soft.\n");
+	}
+
+	if(!alcIsExtensionPresent(alcGetContextsDevice(alcGetCurrentContext()), "ALC_EXT_EFX"))
+	{
+		I_ShutdownSound();
+		I_Error("OpenAL: Your OpenAL version does not seem to support EFX .\n");
+	}
+
+#define LOAD_PROC(T, x)  ((x) = FUNCTION_CAST(T, alGetProcAddress(#x)))
+    LOAD_PROC(LPALGENEFFECTS, alGenEffects);
+    LOAD_PROC(LPALDELETEEFFECTS, alDeleteEffects);
+    LOAD_PROC(LPALISEFFECT, alIsEffect);
+    LOAD_PROC(LPALEFFECTI, alEffecti);
+    LOAD_PROC(LPALEFFECTIV, alEffectiv);
+    LOAD_PROC(LPALEFFECTF, alEffectf);
+    LOAD_PROC(LPALEFFECTFV, alEffectfv);
+    LOAD_PROC(LPALGETEFFECTI, alGetEffecti);
+    LOAD_PROC(LPALGETEFFECTIV, alGetEffectiv);
+    LOAD_PROC(LPALGETEFFECTF, alGetEffectf);
+    LOAD_PROC(LPALGETEFFECTFV, alGetEffectfv);
+
+    LOAD_PROC(LPALGENAUXILIARYEFFECTSLOTS, alGenAuxiliaryEffectSlots);
+    LOAD_PROC(LPALDELETEAUXILIARYEFFECTSLOTS, alDeleteAuxiliaryEffectSlots);
+    LOAD_PROC(LPALISAUXILIARYEFFECTSLOT, alIsAuxiliaryEffectSlot);
+    LOAD_PROC(LPALAUXILIARYEFFECTSLOTI, alAuxiliaryEffectSloti);
+    LOAD_PROC(LPALAUXILIARYEFFECTSLOTIV, alAuxiliaryEffectSlotiv);
+    LOAD_PROC(LPALAUXILIARYEFFECTSLOTF, alAuxiliaryEffectSlotf);
+    LOAD_PROC(LPALAUXILIARYEFFECTSLOTFV, alAuxiliaryEffectSlotfv);
+    LOAD_PROC(LPALGETAUXILIARYEFFECTSLOTI, alGetAuxiliaryEffectSloti);
+    LOAD_PROC(LPALGETAUXILIARYEFFECTSLOTIV, alGetAuxiliaryEffectSlotiv);
+    LOAD_PROC(LPALGETAUXILIARYEFFECTSLOTF, alGetAuxiliaryEffectSlotf);
+    LOAD_PROC(LPALGETAUXILIARYEFFECTSLOTFV, alGetAuxiliaryEffectSlotfv);
+#undef LOAD_PROC
+
+	// Start EFX
+	// TODO: Discuss and see if we even want EFX flags for sounds and implement system if so.
+	//alGenEffects(1, &audio.effect);
+	//TRY(alEffecti, audio.effect, AL_EFFECT_TYPE, AL_EFFECT_DISTORTION);
+	//TRY(alEffectf, audio.effect, AL_DISTORTION_EDGE, AL_DISTORTION_MAX_EDGE);
+	//alGenAuxiliaryEffectSlots(1, &audio.effectslot);
+	//alAuxiliaryEffectSloti(audio.effectslot, AL_EFFECTSLOT_EFFECT, audio.effect);
 
 	audio.music = INVALID_HANDLE;
 	audio.bufferindex = 0;
@@ -971,9 +1065,10 @@ static void do_fading_callback(void)
 	fading_do_callback = true;
 }
 
-static UINT32 music_fade(UINT32 interval, void *param)
+static UINT32 music_fade(void *userdata, SDL_TimerID timerID, Uint32 interval)
 {
-	(void)param;
+	(void)userdata;
+	(void)timerID;
 
 	if (!is_fading
 		|| fabs(internal_volume - fading_target) < FLOATEP // EQUALS I love floats I love floats
@@ -1697,6 +1792,8 @@ boolean I_SetSongTrack(INT32 track)
 
 			return false;
 		}
+#endif
+#ifdef HAVE_GME
 	}
 #endif
 

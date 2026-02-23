@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 #define GPEVENT_NONE 0
-#define GPEVENT_BONUS 1
+#define GPEVENT_CHALLENGE 1
 #define GPEVENT_SPECIAL 2
 
 extern struct grandprixinfo
@@ -185,6 +185,15 @@ void K_PlayerLoseLife(player_t *player);
 --------------------------------------------------*/
 
 boolean K_CanChangeRules(boolean allowdemos);
+
+/*--------------------------------------------------
+	boolean K_BotDefaultSpectator(void)
+
+		Check whether bots should spectate this round.
+--------------------------------------------------*/
+
+boolean K_BotDefaultSpectator(void);
+
 
 #ifdef __cplusplus
 } // extern "C"

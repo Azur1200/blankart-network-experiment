@@ -448,6 +448,8 @@ struct mobj_t
 	INT32 script_args[NUM_SCRIPT_ARGS];
 	char *script_stringargs[NUM_SCRIPT_STRINGARGS];
 
+	INT32 po_movecount; // Polyobject carrying (NOT savegame, NOT Lua)
+
 	// WARNING: New fields must be added separately to savegame and Lua.
 };
 
@@ -617,8 +619,9 @@ extern boolean slipdashactive;
 extern boolean purpledriftactive;
 extern boolean slopeboostactive;
 extern boolean draftingactive;
-extern boolean airdropactive;
+extern UINT8 airdropactive;
 extern boolean airthrustactive;
+extern boolean recoverydashactive;
 extern boolean waterskipbricks;
 extern boolean itemlittering;
 extern boolean itempushing;

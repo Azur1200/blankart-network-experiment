@@ -107,8 +107,8 @@ struct LumpnumStringEquals
 {
 	bool operator()(const std::string& str1, const std::string& str2) const
 	{
-		// fasticmp should be plenty fast and ignores case
-		return fasticmp(str1.c_str(), str2.c_str());
+		//return fastcmp(str1.c_str(), str2.c_str());
+		return str1 == str2;
 	}
 };
 
@@ -455,16 +455,16 @@ boolean W_MakeFileHash(const char *filename, boolean openwad, UINT64 *ret)
 }
 
 // Invalidates the cache of lump numbers. Call this whenever a wad is added.
-static void W_InvalidateLumpnumCache(void)
+FUNCINLINE static ATTRINLINE void W_InvalidateLumpnumCache(void)
 {
 	lumpnumcache.clear();
 }
 
-UINT32 W_HashLumpName(const char *name, size_t len)
+FUNCINLINE static ATTRINLINE UINT32 W_HashLumpName(const char *name, size_t len)
 {
-	char uname[len + 1];
+	char *uname = (char *)alloca(len + 1);
 	strlcpy(uname, name, len + 1);
-	strupr(uname);
+	strlwr(uname);
 	return HASH32(uname, len);
 }
 
@@ -1456,7 +1456,7 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump)
 	return INT16_MAX;
 }
 
-static lumpnum_t CheckLumpInCache(const char *name)
+FUNCINLINE static ATTRINLINE lumpnum_t CheckLumpInCache(const char *name)
 {
 	auto it = lumpnumcache.find(name);
 	if (it != lumpnumcache.end())
@@ -1465,9 +1465,9 @@ static lumpnum_t CheckLumpInCache(const char *name)
 	return LUMPERROR;
 }
 
-static void AddLumpToCache(lumpnum_t lumpnum, const char *name)
+FUNCINLINE static ATTRINLINE void AddLumpToCache(lumpnum_t lumpnum, const char *name)
 {
-	lumpnumcache.insert({name, lumpnum});
+	lumpnumcache.emplace(name, lumpnum);
 }
 
 //
@@ -1709,21 +1709,10 @@ UINT8 W_LumpExists(const char *name)
 	UINT32 hash;
 	size_t namelen;
 
+	// Check the lumpnumcache first.
 	lumpnum_t cachenum = CheckLumpInCache(name);
 	if (cachenum != LUMPERROR)
-	{
-		// ok ok, we did find a lump in our lumpcache BUTT
-		// the lumpcache map is case insensitive
-		// extract the lumpinfo out of the lumpnum
-		// so we can do one more extra case ~sensitive~ name compare
-		// otherwise we gotta fall through to our manual lump search below
-		// lumpnum == (i << 16) | check
-		UINT16 wadnum = (cachenum >> 16) & 0xFFFF;
-		UINT16 lumpid = cachenum & 0xFFFF;
-		lumpinfo_t *lump_p = &wadfiles[wadnum]->lumpinfo[lumpid];
-		if (fastcmp(lump_p->longname, name))
-			return true;
-	}
+		return cachenum;
 
 	namelen = strlen(name);
 	hash = W_HashLumpName(name, namelen);
@@ -2801,10 +2790,7 @@ void vres_Free(virtres_t* vres)
 
 	while (vres->numlumps--)
 	{
-		if (vres->vlumps[vres->numlumps].data)
-		{
-			Z_Free(vres->vlumps[vres->numlumps].data);
-		}
+		Z_Free(vres->vlumps[vres->numlumps].data);
 	}
 	Z_Free(vres->vlumps);
 	Z_Free(vres);

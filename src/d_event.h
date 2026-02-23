@@ -29,6 +29,8 @@ typedef enum
 	ev_console,
 	ev_mouse,
 	ev_joystick,
+	ev_accelerometer,
+	ev_gyroscope,
 } evtype_t;
 
 // Event structure.
@@ -44,7 +46,7 @@ struct event_t
 //
 // GLOBAL VARIABLES
 //
-#define MAXEVENTS 128
+#define MAXEVENTS 256
 
 extern event_t events[MAXEVENTS];
 extern INT32 eventhead, eventtail;

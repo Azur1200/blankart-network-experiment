@@ -19,6 +19,9 @@
 /// \file i_video.cpp
 /// \brief SRB2 graphics stuff for SDL
 
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_gamepad.h>
+#include <SDL3/SDL_video.h>
 #include <stdlib.h>
 #include <errno.h>
 
@@ -26,7 +29,7 @@
 
 #ifdef HAVE_SDL
 #define _MATH_DEFINES_DEFINED
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #ifdef HAVE_TTF
 #include "i_ttf.h"
@@ -46,10 +49,6 @@
 
 #include "../doomdef.h"
 
-#ifdef _WIN32
-#include "SDL_syswm.h"
-#endif
-
 #include "../doomstat.h"
 #include "../p_setup.h"
 #include "../i_system.h"
@@ -59,7 +58,7 @@
 #include "../d_main.h"
 #include "../s_sound.h"
 #include "../i_sound.h"  	// midi pause/unpause
-#include "../i_joy.h"
+#include "../i_gamepad.h"
 #include "../st_stuff.h"
 #include "../hu_stuff.h"
 #include "../g_game.h"
@@ -73,7 +72,7 @@
 #include "../i_system.h"
 #ifdef HWRENDER
 #include "../hardware/hw_main.h"
-#include "../hardware/hw_drv.h"
+#include "../hardware/hw_gpu.h"
 #include "hwsym_sdl.h"
 #include "ogl_sdl.h"
 #endif
@@ -87,11 +86,6 @@
 
 rendermode_t rendermode = render_soft;
 rendermode_t chosenrendermode = render_none; // set by command line arguments
-
-boolean I_UseNativeKeyboard(void)
-{
-	return cv_keyboardlayout.value == 2 && (chat_on || CON_Ready() || (menu_text_input && menustack[0]));
-}
 
 static CV_PossibleValue_t keyboardlayout_cons_t[] = {{1,"Default US"}, {2, "Native"}, {0, NULL}};
 consvar_t cv_keyboardlayout = CVAR_INIT ("keyboardlayout", "Default US", CV_SAVE, keyboardlayout_cons_t, NULL);
@@ -108,11 +102,14 @@ UINT8 graphics_started = 0; // Is used in console.c and screen.c
 
 // To disable fullscreen at startup; is set in VID_PrepareModeList
 boolean allow_fullscreen = false;
-static SDL_bool disable_fullscreen = SDL_FALSE;
+static bool disable_fullscreen = false;
 
-#define USE_FULLSCREEN (disable_fullscreen||!allow_fullscreen)?static_cast<SDL_bool>(0):static_cast<SDL_bool>(cv_fullscreen.value == 1)
+// hack to avoid resolution being forced back to 320x200 on entering fullscreen
+static bool just_switched;
 
-static SDL_bool disable_mouse = SDL_FALSE;
+#define USE_FULLSCREEN (disable_fullscreen||!allow_fullscreen)?static_cast<bool>(0):static_cast<bool>(cv_fullscreen.value == 1)
+
+static bool disable_mouse = false;
 #define USE_MOUSEINPUT (!disable_mouse && cv_usemouse.value && havefocus)
 #define MOUSE_MENU false //(!disable_mouse && cv_usemouse.value && menustack[0] && !USE_FULLSCREEN)
 #define MOUSEBUTTONS_MAX MOUSEBUTTONS
@@ -122,24 +119,21 @@ static      INT32        mousemovex = 0, mousemovey = 0;
 
 // SDL vars
 static      UINT32    localPalette[256];
-static       SDL_bool    wrapmouseok = SDL_FALSE;
+static      bool    wrapmouseok = false;
 #define HalfWarpMouse(x,y) if (wrapmouseok) SDL_WarpMouseInWindow(window, (Uint16)(x/2),(Uint16)(y/2))
-static       SDL_bool    usesdl2soft = SDL_FALSE;
-static       SDL_bool    borderlesswindow = SDL_FALSE;
-
-Uint16      realwidth = BASEVIDWIDTH;
-Uint16      realheight = BASEVIDHEIGHT;
+static       bool    usesdlsoft = false;
+static       bool    borderlesswindow = false;
 
 SDL_Window   *window = NULL;
 SDL_Renderer *renderer = NULL;
 static SDL_Texture  *texture = NULL;
-static SDL_bool      havefocus = SDL_TRUE;
+static bool      havefocus = true;
 
 static UINT32 refresh_rate;
 
 static boolean video_init = false;
 
-static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
+static SDL_Window *Impl_CreateWindow(void);
 
 static void Impl_VideoSetupSurfaces(int width, int height);
 
@@ -195,37 +189,36 @@ static const char *fallback_resolution_name = "Fallback";
 		CONS_Printf(str "\n", SDL_GetError()); \
 }
 
-static SDL_bool Impl_RenderContextCreate(void)
+static bool Impl_RenderContextCreate(void)
 {
+	SDL_GL_ResetAttributes();
+	SDL_SetHint("SDL_HINT_OPENGL_FORCE_SRGB_FRAMEBUFFER", "0");
+
 	if (rendermode != render_opengl)
 	{
-		int flags = 0; // Use this to set SDL_RENDERER_* flags now
-
-		if (usesdl2soft)
-			flags |= SDL_RENDERER_SOFTWARE;
-		else if (cv_vidwait.value)
-		{
-#if SDL_VERSION_ATLEAST(2, 0, 18)
-			// If SDL is new enough, we can turn off vsync later.
-			flags |= SDL_RENDERER_PRESENTVSYNC;
-#else
-			// However, if it isn't, we should just silently turn vid_wait off
-			// This is because the renderer will be created before the config
-			// is read and vid_wait is set from the user's preferences, and thus
-			// vid_wait will have no effect.
-			CV_StealthSetValue(&cv_vidwait, 0);
-#endif
-		}
-
-		SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
-
 		if (!renderer)
-			renderer = SDL_CreateRenderer(window, -1, flags);
+		{
+			SDL_PropertiesID props = SDL_CreateProperties();
+			if (props == 0)
+			{
+				VIDEO_INIT_ERROR("Couldn't create rendering properties: %s");
+				return false;
+			}
+			if (usesdlsoft)
+				SDL_SetStringProperty(props, SDL_PROP_RENDERER_CREATE_NAME_STRING, "SDL_SOFTWARE_RENDERER");
+#ifdef _WIN32
+			else
+				SDL_SetStringProperty(props, SDL_PROP_RENDERER_CREATE_NAME_STRING, "opengl");
+#endif
+			SDL_SetNumberProperty(props, SDL_PROP_RENDERER_CREATE_PRESENT_VSYNC_NUMBER, cv_vidwait.value);
+			SDL_SetPointerProperty(props, SDL_PROP_RENDERER_CREATE_WINDOW_POINTER, window);
+			renderer = SDL_CreateRendererWithProperties(props);
+		}
 
 		if (renderer == NULL)
 		{
 			VIDEO_INIT_ERROR("Couldn't create rendering context: %s");
-			return SDL_FALSE;
+			return false;
 		}
 	}
 
@@ -239,49 +232,46 @@ static SDL_bool Impl_RenderContextCreate(void)
 			if (sdlglcontext == NULL)
 			{
 				VIDEO_INIT_ERROR("Couldn't create OpenGL context: %s");
-				return SDL_FALSE;
+				return false;
 			}
 		}
 	}
 #endif
 
-	return SDL_TRUE;
+	return true;
 }
 
-static SDL_bool Impl_RenderContextReset(void)
+static bool Impl_RenderContextReset(void)
 {
 	if (renderer)
 	{
 		SDL_DestroyRenderer(renderer);
-// Thanks Debian....
-#if SDL_VERSION_ATLEAST(2,28,0)
 		SDL_DestroyWindowSurface(window); // workaround for a bug in sdl
-#endif
 		texture = NULL; // Destroying a renderer also destroys all of its textures
 	}
 	renderer = NULL;
 
-	if (Impl_RenderContextCreate() == SDL_FALSE)
-		return SDL_FALSE;
+	if (Impl_RenderContextCreate() == false)
+		return false;
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
 		SDL_GL_MakeCurrent(window, sdlglcontext);
-		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
+		SDL_GL_SetSwapInterval(cv_vidwait.value);
 
-		OglSdlSurface(realwidth, realheight);
+		OglSdlSurface(vid.width, vid.height);
 		HWR_Startup();
 	}
 	else
 #endif
 	{
 		SDL_RenderClear(renderer);
-		SDL_RenderSetLogicalSize(renderer, realwidth, realheight);
-		Impl_VideoSetupSurfaces(realwidth, realheight);
+		SDL_SetRenderLogicalPresentation(renderer, vid.width, vid.height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+		Impl_VideoSetupSurfaces(vid.width, vid.height);
 	}
 
-	return SDL_TRUE;
+	return true;
 }
 
 static void Impl_SetSoftwareVsync(int vsync)
@@ -290,7 +280,7 @@ static void Impl_SetSoftwareVsync(int vsync)
 #if SDL_VERSION_ATLEAST(2,0,18)
 	if (oldvsync != vsync)
 	{
-		SDL_RenderSetVSync(renderer, vsync);
+		SDL_SetRenderVSync(renderer, vsync);
 	}
 	oldvsync = vsync;
 #endif
@@ -298,38 +288,37 @@ static void Impl_SetSoftwareVsync(int vsync)
 
 static void Impl_VideoSetupSurfaces(int width, int height)
 {
-	int sw_texture_format = SDL_PIXELFORMAT_ABGR8888;
-
 	if (texture == NULL)
-		texture = SDL_CreateTexture(renderer, sw_texture_format, SDL_TEXTUREACCESS_STREAMING, width, height);
+		texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, width, height);
+	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 }
 
-static SDL_Rect src_rect = { 0, 0, 0, 0 };
+static SDL_FRect src_rect = { 0, 0, 0, 0 };
 
-static SDL_bool SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen, SDL_bool reposition)
+static bool SDLSetMode(INT32 width, INT32 height, bool fullscreen, bool reposition)
 {
-	static SDL_bool wasfullscreen = SDL_FALSE;
-	int fullscreen_type = SDL_WINDOW_FULLSCREEN_DESKTOP;
+	static bool wasfullscreen = false;
+	int fullscreen_type = SDL_WINDOW_FULLSCREEN;
+	just_switched = true;
 
-	src_rect.w = realwidth = width;
-	src_rect.h = realheight = height;
+	src_rect.w = vid.width = width;
+	src_rect.h = vid.height = height;
 
 	if (window)
 	{
 		if (fullscreen)
 		{
-			wasfullscreen = SDL_TRUE;
+			wasfullscreen = true;
 			SDL_SetWindowFullscreen(window, fullscreen_type);
-			I_SetBorderlessWindow();
 		}
 		else // windowed mode
 		{
 			if (wasfullscreen)
 			{
-				wasfullscreen = SDL_FALSE;
+				wasfullscreen = false;
 				SDL_SetWindowFullscreen(window, 0);
+				I_SetBorderlessWindow();
 			}
-			// Reposition window only in windowed mode
 
 			SDL_SetWindowSize(window, width, height);
 
@@ -337,33 +326,33 @@ static SDL_bool SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen, SDL_b
 			{
 				// Reposition window only in windowed mode
 				SDL_SetWindowPosition(window,
-					SDL_WINDOWPOS_CENTERED_DISPLAY(SDL_GetWindowDisplayIndex(window)),
-					SDL_WINDOWPOS_CENTERED_DISPLAY(SDL_GetWindowDisplayIndex(window))
+					SDL_WINDOWPOS_CENTERED_DISPLAY(SDL_GetDisplayForWindow(window)),
+					SDL_WINDOWPOS_CENTERED_DISPLAY(SDL_GetDisplayForWindow(window))
 				);
 			}
 		}
 	}
 	else
 	{
-		if (Impl_CreateWindow(fullscreen) == SDL_FALSE)
-			return SDL_FALSE;
+		window = Impl_CreateWindow();
+		if (window == NULL)
+			return false;
 
 		wasfullscreen = fullscreen;
-		SDL_SetWindowSize(window, width, height);
 		if (fullscreen)
 			SDL_SetWindowFullscreen(window, fullscreen_type);
 	}
 
-	if (Impl_RenderContextReset() == SDL_FALSE)
+	if (Impl_RenderContextReset() == false)
 		I_Error("Couldn't create or reset rendering context");
 
-	return SDL_TRUE;
+	return true;
 }
 
 static UINT32 VID_GetRefreshRate(void)
 {
-	int index = SDL_GetWindowDisplayIndex(window);
-	SDL_DisplayMode m;
+	int index = SDL_GetDisplayForWindow(window);
+	const SDL_DisplayMode *m;
 
 	if (SDL_WasInit(SDL_INIT_VIDEO) == 0)
 	{
@@ -371,13 +360,14 @@ static UINT32 VID_GetRefreshRate(void)
 		return 0;
 	}
 
-	if (SDL_GetDesktopDisplayMode(index, &m) != 0)
+	m = SDL_GetDesktopDisplayMode(index);
+	if (m == NULL)
 	{
 		// Error has occurred.
 		return 0;
 	}
 
-	return m.refresh_rate;
+	return m->refresh_rate;
 }
 
 static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
@@ -470,35 +460,6 @@ static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 	return 0;
 }
 
-// Get the equivalent ASCII (Unicode?) character for a keypress.
-static INT32 GetTypedChar(SDL_Keysym keysym)
-{
-	SDL_Event next_event;
-	SDL_Keycode keycode = keysym.sym;
-	SDL_Scancode scancode = keysym.scancode;
-	const boolean Text_Input_Only = (chat_on || CON_Ready() || (menu_text_input && menustack[0])); // only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
-
-	// Special cases, where we always return a fixed value.
-	switch (keycode)
-	{
-		case SDLK_BACKSPACE: return KEY_BACKSPACE;
-		case SDLK_RETURN:    return KEY_ENTER;
-		default:
-			break;
-	}
-
-	if (Text_Input_Only)
-	{
-		if (SDL_PeepEvents(&next_event, 1, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) == 1 && next_event.type == SDL_TEXTINPUT)
-		{
-			if (next_event.text.text[1] == '\0') // limit to ASCII
-				return next_event.text.text[0];
-		}
-	}
-
-	return Impl_SDL_Scancode_To_Keycode(scancode); // fallback
-}
-
 static boolean IgnoreMouse(void)
 {
 	if (cv_alwaysgrabmouse.value)
@@ -515,28 +476,40 @@ static boolean IgnoreMouse(void)
 
 static void SDLdoGrabMouse(void)
 {
-	SDL_ShowCursor(SDL_DISABLE);
-	SDL_SetWindowGrab(window, SDL_TRUE);
-	if (SDL_SetRelativeMouseMode(SDL_TRUE) == 0) // already warps mouse if successful
-		wrapmouseok = SDL_TRUE; // TODO: is wrapmouseok or HalfWarpMouse needed anymore?
+	if (disable_mouse)
+		return;
+
+	SDL_HideCursor();
+	SDL_SetWindowMouseGrab(window, true);
+	if (SDL_SetWindowRelativeMouseMode(window, true)) // already warps mouse if successful
+		wrapmouseok = true; // TODO: is wrapmouseok or HalfWarpMouse needed anymore?
 }
 
 static void SDLdoUngrabMouse(void)
 {
-	SDL_ShowCursor(SDL_ENABLE);
-	SDL_SetWindowGrab(window, SDL_FALSE);
-	wrapmouseok = SDL_FALSE;
-	SDL_SetRelativeMouseMode(SDL_FALSE);
+	if (disable_mouse)
+		return;
+
+	SDL_ShowCursor();
+	SDL_SetWindowMouseGrab(window, false);
+	wrapmouseok = false;
+	SDL_SetWindowRelativeMouseMode(window, false);
 }
 
 void SDLforceUngrabMouse(void)
 {
+	if (disable_mouse)
+		return;
+
 	if (SDL_WasInit(SDL_INIT_VIDEO)==SDL_INIT_VIDEO && window != NULL)
 		SDLdoUngrabMouse();
 }
 
 void I_UpdateMouseGrab(void)
 {
+	if (disable_mouse)
+		return;
+
 	if (SDL_WasInit(SDL_INIT_VIDEO) == SDL_INIT_VIDEO && window != NULL
 	&& SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window
 	&& USE_MOUSEINPUT && !IgnoreMouse())
@@ -593,11 +566,6 @@ static void Impl_SetFocused(boolean focused)
 	}
 }
 
-static inline void SDLJoyRemap(event_t *event)
-{
-	(void)event;
-}
-
 static INT32 SDLJoyAxis(const Sint16 axis, UINT8 pid)
 {
 	// -32768 to 32767
@@ -615,12 +583,7 @@ static INT32 SDLJoyAxis(const Sint16 axis, UINT8 pid)
 	}
 	else
 	{
-		raxis = (abs(JoyInfo[pid].scale) > 1) ? ((raxis / JoyInfo[pid].scale) * JoyInfo[pid].scale) : raxis;
-
-#ifdef SDL_JDEADZONE
-		if (-SDL_JDEADZONE <= raxis && raxis <= SDL_JDEADZONE)
-			raxis = 0;
-#endif
+		raxis = (abs(controllerInfo[pid].scale) > 1) ? ((raxis / controllerInfo[pid].scale) * controllerInfo[pid].scale) : raxis;
 	}
 
 	return raxis;
@@ -628,30 +591,33 @@ static INT32 SDLJoyAxis(const Sint16 axis, UINT8 pid)
 
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
-	static SDL_bool firsttimeonmouse = SDL_TRUE;
-	static SDL_bool mousefocus = SDL_TRUE;
-	static SDL_bool kbfocus = SDL_TRUE;
+	static bool firsttimeonmouse = true;
+	static bool mousefocus = true;
+	static bool kbfocus = true;
 
-	switch (evt.event)
+	switch (evt.type)
 	{
-		case SDL_WINDOWEVENT_ENTER:
-			mousefocus = SDL_TRUE;
+		case SDL_EVENT_WINDOW_MOUSE_ENTER:
+			mousefocus = true;
 			break;
-		case SDL_WINDOWEVENT_LEAVE:
-			mousefocus = SDL_FALSE;
+		case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+			mousefocus = false;
 			break;
-		case SDL_WINDOWEVENT_FOCUS_GAINED:
-			kbfocus = SDL_TRUE;
-			mousefocus = SDL_TRUE;
+		case SDL_EVENT_WINDOW_FOCUS_GAINED:
+			kbfocus = true;
+			mousefocus = true;
 			break;
-		case SDL_WINDOWEVENT_FOCUS_LOST:
-			kbfocus = SDL_FALSE;
-			mousefocus = SDL_FALSE;
+		case SDL_EVENT_WINDOW_FOCUS_LOST:
+			kbfocus = false;
+			mousefocus = false;
 			break;
-		case SDL_WINDOWEVENT_MAXIMIZED:
+		case SDL_EVENT_WINDOW_MAXIMIZED:
+		case SDL_EVENT_WINDOW_RESIZED:
+		case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+			just_switched = false;
 			break;
-		case SDL_WINDOWEVENT_SIZE_CHANGED:
-			break;
+		default:
+			return;
 	}
 
 	if (mousefocus && kbfocus)
@@ -678,17 +644,156 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 	}
 }
 
+static INT32 Impl_SDL_Keysym_To_Keycode(SDL_KeyboardEvent evt)
+{
+	SDL_Keycode keycode = evt.key;
+	SDL_Scancode scancode = evt.scancode;
+
+	if (keycode >= SDLK_A && keycode <= SDLK_Z)
+	{
+		// get lowercase ASCII
+		return keycode;
+	}
+	if (keycode >= SDLK_F1 && keycode <= SDLK_F10)
+	{
+		return KEY_F1 + (keycode - SDLK_F1);
+	}
+
+	switch (scancode)
+	{
+		case SDL_SCANCODE_APOSTROPHE:    return KEY_FR_U_GRAVE;
+		case SDL_SCANCODE_LEFTBRACKET:   return '^';
+		default:               break;
+	}
+
+	switch (keycode)
+	{
+		// F11 and F12 are separated from the rest of the function keys
+		case SDLK_F11: return KEY_F11;
+		case SDLK_F12: return KEY_F12;
+
+		case SDLK_RETURN:         return KEY_ENTER;
+		case SDLK_ESCAPE:         return KEY_ESCAPE;
+		case SDLK_BACKSPACE:      return KEY_BACKSPACE;
+		case SDLK_TAB:            return KEY_TAB;
+		case SDLK_SPACE:          return KEY_SPACE;
+		case SDLK_EQUALS:         return KEY_EQUALS;
+		case SDLK_SEMICOLON:      return ';';
+		case SDLK_COMMA:          return ',';
+		case SDLK_COLON:          return ':';
+		case SDLK_EXCLAIM:        return '!';
+		case SDLK_DOLLAR:         return '$';
+		case SDLK_ASTERISK:       return '*';
+		case SDLK_PERCENT:        return '%';
+		case SDLK_0:              return KEY_FR_A_GRAVE;
+		case SDLK_1:
+		case SDLK_AMPERSAND:      return '&';
+		case SDLK_2:              return KEY_FR_E_AIGUE;
+		case SDLK_3:
+		case SDLK_DBLAPOSTROPHE:  return '"';
+		case SDLK_4:		      return '\'';
+		case SDLK_5:
+		case SDLK_LEFTPAREN:      return '(';
+		case SDLK_6:
+		case SDLK_MINUS:          return KEY_MINUS;
+		case SDLK_7:              return KEY_FR_E_GRAVE;
+		case SDLK_8:
+		case SDLK_UNDERSCORE:     return '_';
+		case SDLK_9:              return KEY_FR_C_CEDILLE;
+		case SDLK_RIGHTPAREN:     return ')';
+		case SDLK_SLASH:          return '/';
+		case SDLK_LESS:           return '<';
+
+
+		case SDLK_KP_0: return KEY_KEYPAD0;
+		case SDLK_KP_1: return KEY_KEYPAD1;
+		case SDLK_KP_2: return KEY_KEYPAD2;
+		case SDLK_KP_3: return KEY_KEYPAD3;
+		case SDLK_KP_4: return KEY_KEYPAD4;
+		case SDLK_KP_5: return KEY_KEYPAD5;
+		case SDLK_KP_6: return KEY_KEYPAD6;
+		case SDLK_KP_7: return KEY_KEYPAD7;
+		case SDLK_KP_8: return KEY_KEYPAD8;
+		case SDLK_KP_9: return KEY_KEYPAD9;
+
+		default:                  break;
+	}
+
+	return Impl_SDL_Scancode_To_Keycode(scancode);
+}
+
+static boolean native_input_active = false;
+
+// used to supress the games shift/alt handling
+boolean I_UseNativeKeyboard(void)
+{
+	return (cv_keyboardlayout.value == 2 && native_input_active);
+}
+
+void I_SetTextInput(boolean enable)
+{
+	if (!window)
+		return;
+
+	if (enable && !native_input_active)
+	{
+		SDL_StartTextInput(window);
+		native_input_active = true;
+	}
+	else if (!enable && native_input_active)
+	{
+		SDL_StopTextInput(window);
+		native_input_active = false;
+	}
+}
+
+// Get the equivalent ASCII (Unicode?) character for a keypress.
+static INT32 GetTypedChar(SDL_KeyboardEvent evt)
+{
+	SDL_Event next_event;
+	SDL_Keycode keycode = evt.key;
+	SDL_Scancode scancode = evt.scancode;
+
+	// only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
+	if (native_input_active)
+	{
+		// Special cases, where we always return a fixed value.
+		switch (keycode)
+		{
+			case SDLK_BACKSPACE: return KEY_BACKSPACE;
+			case SDLK_RETURN:    return KEY_ENTER;
+			default:
+				break;
+		}
+
+		// Special case for console key
+		if (scancode == SDL_SCANCODE_GRAVE)
+			return '`';
+
+		if (SDL_PeepEvents(&next_event, 1, SDL_PEEKEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST) == 1 && next_event.type == SDL_EVENT_TEXT_INPUT)
+		{
+			if (next_event.text.text[1] == '\0') // limit to ASCII
+			{
+				return next_event.text.text[0];
+			}
+		}
+	}
+
+	// otherwise fallback to scancodes
+	return Impl_SDL_Scancode_To_Keycode(scancode);
+}
+
 static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 {
 	event_t event;
 
 	event.device = 0;
 
-	if (type == SDL_KEYUP)
+	if (type == SDL_EVENT_KEY_UP)
 	{
 		event.type = ev_keyup;
 	}
-	else if (type == SDL_KEYDOWN)
+	else if (type == SDL_EVENT_KEY_DOWN)
 	{
 		event.type = ev_keydown;
 	}
@@ -700,10 +805,10 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 	switch (cv_keyboardlayout.value)
 	{
 		case 2: // "native"
-			event.data1 = GetTypedChar(evt.keysym);
+			event.data1 = GetTypedChar(evt);
 			break;
 		default:
-			event.data1 = Impl_SDL_Scancode_To_Keycode(evt.keysym.scancode);
+			event.data1 = Impl_SDL_Scancode_To_Keycode(evt.scancode);
 			break;
 	}
 
@@ -725,13 +830,13 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 
 		// If using relative mouse mode, don't post an event_t just now,
 		// add on the offsets so we can make an overall event later.
-		if (SDL_GetRelativeMouseMode())
+		if (SDL_GetWindowRelativeMouseMode(window))
 		{
 			if (SDL_GetMouseFocus() == window && SDL_GetKeyboardFocus() == window)
 			{
 				mousemovex +=  evt.xrel;
 				mousemovey += -evt.yrel;
-				SDL_SetWindowGrab(window, SDL_TRUE);
+				SDL_SetWindowMouseGrab(window, true);
 			}
 			firstmove = false;
 			return;
@@ -739,7 +844,7 @@ static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 
 		// If the event is from warping the pointer to middle
 		// of the screen then ignore it.
-		if ((evt.x == realwidth/2) && (evt.y == realheight/2))
+		if (((int)evt.x == vid.width/2) && ((int)evt.y == vid.height/2))
 		{
 			firstmove = false;
 			return;
@@ -762,8 +867,6 @@ static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 {
 	event_t event;
 
-	SDL_memset(&event, 0, sizeof(event_t));
-
 	// Ignore the event if the mouse is not actually focused on the window.
 	// This can happen if you used the mouse to restore keyboard focus;
 	// this apparently makes a mouse button down event but not a mouse button up event,
@@ -777,11 +880,11 @@ static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 	{
 		event.device = 0;
 
-		if (type == SDL_MOUSEBUTTONUP)
+		if (type == SDL_EVENT_MOUSE_BUTTON_UP)
 		{
 			event.type = ev_keyup;
 		}
-		else if (type == SDL_MOUSEBUTTONDOWN)
+		else if (type == SDL_EVENT_MOUSE_BUTTON_DOWN)
 		{
 			event.type = ev_keydown;
 		}
@@ -807,21 +910,20 @@ static void Impl_HandleMouseWheelEvent(SDL_MouseWheelEvent evt)
 {
 	event_t event;
 
-	SDL_memset(&event, 0, sizeof(event_t));
-
 	event.device = 0;
 
-	if (evt.y > 0)
+	int y = evt.y;
+	if (y > 0)
 	{
 		event.data1 = KEY_MOUSEWHEELUP;
 		event.type = ev_keydown;
 	}
-	if (evt.y < 0)
+	else if (y < 0)
 	{
 		event.data1 = KEY_MOUSEWHEELDOWN;
 		event.type = ev_keydown;
 	}
-	if (evt.y == 0)
+	else if (y == 0)
 	{
 		event.data1 = 0;
 		event.type = ev_keyup;
@@ -832,7 +934,7 @@ static void Impl_HandleMouseWheelEvent(SDL_MouseWheelEvent evt)
 	}
 }
 
-static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
+static void Impl_HandleControllerAxisEvent(SDL_GamepadAxisEvent evt)
 {
 	event_t event;
 
@@ -849,22 +951,22 @@ static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 	//axis
 	switch (evt.axis)
 	{
-		case SDL_CONTROLLER_AXIS_LEFTX:
+		case SDL_GAMEPAD_AXIS_LEFTX:
 			event.data1 = 0;
 			break;
-		case SDL_CONTROLLER_AXIS_LEFTY:
+		case SDL_GAMEPAD_AXIS_LEFTY:
 			event.data1 = 1;
 			break;
-		case SDL_CONTROLLER_AXIS_RIGHTX:
+		case SDL_GAMEPAD_AXIS_RIGHTX:
 			event.data1 = 2;
 			break;
-		case SDL_CONTROLLER_AXIS_RIGHTY:
+		case SDL_GAMEPAD_AXIS_RIGHTY:
 			event.data1 = 3;
 			break;
-		case SDL_CONTROLLER_AXIS_TRIGGERLEFT:
+		case SDL_GAMEPAD_AXIS_LEFT_TRIGGER:
 			event.data1 = 4;
 			break;
-		case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
+		case SDL_GAMEPAD_AXIS_RIGHT_TRIGGER:
 			event.data1 = 5;
 			break;
 		default:
@@ -872,12 +974,12 @@ static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 	}
 
 	//value
-	event.data2 = SDLJoyAxis(evt.value, evt.which);
+	event.data2 = SDLJoyAxis(evt.value, G_GetDevicePlayer(event.device));
 
 	D_PostEvent(&event);
 }
 
-static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint32 type)
+static void Impl_HandleControllerButtonEvent(SDL_GamepadButtonEvent evt, Uint32 type)
 {
 	event_t event;
 
@@ -890,11 +992,11 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 		return;
 	}
 
-	if (type == SDL_CONTROLLERBUTTONUP)
+	if (type == SDL_EVENT_GAMEPAD_BUTTON_UP)
 	{
 		event.type = ev_keyup;
 	}
-	else if (type == SDL_CONTROLLERBUTTONDOWN)
+	else if (type == SDL_EVENT_GAMEPAD_BUTTON_DOWN)
 	{
 		event.type = ev_keydown;
 	}
@@ -903,16 +1005,31 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 		return;
 	}
 
-	if (evt.button < JOYBUTTONS)
-	{
-		event.data1 = KEY_JOY1 + evt.button;
-	}
-	else
-	{
+	UINT8 button = evt.button;
+	if (button >= JOYBUTTONS)
 		return;
+
+	for (INT32 i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		if (controllerInfo[i].dev == NULL || controllerInfo[i].id != evt.which)
+			continue;
+
+		if (controllerInfo[i].flipbuttons) switch (evt.button)
+		{
+			case SDL_GAMEPAD_BUTTON_SOUTH: button = SDL_GAMEPAD_BUTTON_EAST; break;
+			case SDL_GAMEPAD_BUTTON_EAST: button = SDL_GAMEPAD_BUTTON_SOUTH; break;
+			case SDL_GAMEPAD_BUTTON_WEST: button = SDL_GAMEPAD_BUTTON_NORTH; break;
+			case SDL_GAMEPAD_BUTTON_NORTH: button = SDL_GAMEPAD_BUTTON_WEST; break;
+		}
+		else if (controllerInfo[i].flipgc) switch (evt.button)
+		{
+			case SDL_GAMEPAD_BUTTON_EAST: button = SDL_GAMEPAD_BUTTON_WEST; break;
+			case SDL_GAMEPAD_BUTTON_WEST: button = SDL_GAMEPAD_BUTTON_EAST; break;
+		}
+		break;
 	}
 
-	SDLJoyRemap(&event);
+	event.data1 = KEY_JOY1 + button;
 
 	if (event.type != ev_console)
 	{
@@ -920,22 +1037,105 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 	}
 }
 
-static void Impl_HandleVideoEvent(SDL_Event *evt)
+static void Impl_HandleControllerSensorEvent(SDL_GamepadSensorEvent evt)
 {
-	switch (evt->type)
+	event_t event;
+
+	event.device = 1 + evt.which;
+
+	event.data1 = event.data2 = event.data3 = INT32_MAX;
+
+	if (event.device == INT32_MAX)
 	{
-		case SDL_WINDOWEVENT:
-			Impl_HandleWindowEvent(evt->window);
-			break;
-		default:
-			break;
+		return;
 	}
+
+	switch (evt.sensor)
+	{
+		// data[0]: x acceleration in m/s
+		// data[1]: y acceleration in m/s
+		// data[2]: z acceleration in m/s
+		case SDL_SENSOR_ACCEL:
+			event.type = ev_accelerometer;
+			event.data1 = FLOAT_TO_FIXED(evt.data[0]);
+			event.data2 = FLOAT_TO_FIXED(evt.data[1]);
+			event.data3 = FLOAT_TO_FIXED(evt.data[2]);
+			D_PostEvent(&event);
+			return;
+			
+		// data[0]: delta pitch in rad/s
+		// data[1]: delta yaw in rad/s
+		// data[2]: delta roll in rad/s
+		case SDL_SENSOR_GYRO:
+#define RAD2DEG 57.295779513f
+			event.type = ev_gyroscope;
+			event.data1 = FixedAngle(FLOAT_TO_FIXED(RAD2DEG * evt.data[0]));
+			event.data2 = FixedAngle(FLOAT_TO_FIXED(RAD2DEG * evt.data[1]));
+			event.data3 = FixedAngle(FLOAT_TO_FIXED(RAD2DEG * evt.data[2]));
+#undef RAD2DEG
+			D_PostEvent(&event);
+			return;
+
+		default:
+			return;
+	}
+}
+
+static void Impl_HandleControllerAddEvent(SDL_Event evt)
+{
+	UINT8 i;
+	SDL_JoystickID joystick_id = evt.gdevice.which;
+
+	if (joystick_id == 0)
+	{
+		CONS_Debug(DBG_GAMELOGIC, "Invalid Controller: %s\n", SDL_GetError());
+		return;
+	}
+
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		I_InitController(i);
+		G_SetPlayerControllerIndicatorColor(i, SKINCOLOR_NONE); // gotta update the controller led again on reconnect
+	}
+
+	I_UpdateControllerList();
+
+	// update the menu
+	M_UpdateJoystickMenu();
+
+	CONS_Debug(DBG_GAMELOGIC, "Controller device index %d added\n", joystick_id);
+}
+
+static void Impl_HandleControllerRemoveEvent(SDL_Event evt)
+{
+	UINT8 i;
+	SDL_JoystickID joystick_id = evt.gdevice.which;
+
+	if (joystick_id == 0)
+	{
+		CONS_Debug(DBG_GAMELOGIC, "Invalid Controller: %s\n", SDL_GetError());
+		return;
+	}
+
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		if (controllerInfo[i].dev && (controllerInfo[i].id == joystick_id) && !SDL_GamepadConnected(controllerInfo[i].dev))
+		{
+			CONS_Debug(DBG_GAMELOGIC, "Controller for Player %d removed, device index: %d\n", i+1, joystick_id);
+			I_ShutdownController(i);
+		}
+	}
+
+	I_UpdateControllerList();
+
+	// update the menu
+	M_UpdateJoystickMenu();
 }
 
 void I_GetEvent(void)
 {
 	SDL_Event evt;
-	char* dropped_filedir;
+	const char* dropped_filedir;
 
 	UINT8 i;
 
@@ -945,183 +1145,49 @@ void I_GetEvent(void)
 	{
 		switch (evt.type)
 		{
-			default:
-				Impl_HandleVideoEvent(&evt);
-				break;
 			// TODO: Move input code out of this file, desperately
-			case SDL_KEYUP:
-			case SDL_KEYDOWN:
+			case SDL_EVENT_KEY_UP:
+			case SDL_EVENT_KEY_DOWN:
 				Impl_HandleKeyboardEvent(evt.key, evt.type);
 				break;
-			case SDL_MOUSEMOTION:
+			case SDL_EVENT_MOUSE_MOTION:
 				//if (!mouseMotionOnce)
 				Impl_HandleMouseMotionEvent(evt.motion);
 				//mouseMotionOnce = 1;
 				break;
-			case SDL_MOUSEBUTTONUP:
-			case SDL_MOUSEBUTTONDOWN:
+			case SDL_EVENT_MOUSE_BUTTON_UP:
+			case SDL_EVENT_MOUSE_BUTTON_DOWN:
 				Impl_HandleMouseButtonEvent(evt.button, evt.type);
 				break;
-			case SDL_MOUSEWHEEL:
+			case SDL_EVENT_MOUSE_WHEEL:
 				Impl_HandleMouseWheelEvent(evt.wheel);
 				break;
-			case SDL_CONTROLLERAXISMOTION:
-				Impl_HandleControllerAxisEvent(evt.caxis);
+			case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+				Impl_HandleControllerAxisEvent(evt.gaxis);
 				break;
-			case SDL_CONTROLLERBUTTONUP:
-			case SDL_CONTROLLERBUTTONDOWN:
-				Impl_HandleControllerButtonEvent(evt.cbutton, evt.type);
+			case SDL_EVENT_GAMEPAD_BUTTON_UP:
+			case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+				Impl_HandleControllerButtonEvent(evt.gbutton, evt.type);
 				break;
-
-
-			////////////////////////////////////////////////////////////
-
-			case SDL_CONTROLLERDEVICEADDED:
-				{
-					// OH BOY are you in for a good time! #abominationstation
-
-					SDL_GameController *newcontroller = SDL_GameControllerOpen(evt.cdevice.which);
-
-					CONS_Debug(DBG_GAMELOGIC, "Controller device index %d added\n", evt.cdevice.which + 1);
-
-					////////////////////////////////////////////////////////////
-					// Because SDL's device index is unstable, we're going to cheat here a bit:
-					// For the first joystick setting that is NOT active:
-					//
-					// 1. Set cv_usejoystickX.value to the new device index (this does not change what is written to config.cfg)
-					//
-					// 2. Set OTHERS' cv_usejoystickX.value to THEIR new device index, because it likely changed
-					//    * If device doesn't exist, switch cv_usejoystick back to default value (.string)
-					//      * BUT: If that default index is being occupied, use ANOTHER cv_usejoystick's default value!
-					////////////////////////////////////////////////////////////
-
-					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-					{
-						if (newcontroller && (!JoyInfo[i].dev || !SDL_GameControllerGetAttached(JoyInfo[i].dev)))
-						{
-							UINT8 j;
-
-							for (j = 0; j < MAXSPLITSCREENPLAYERS; j++)
-							{
-								if (i == j)
-									continue;
-
-								if (JoyInfo[j].dev == newcontroller)
-									break;
-							}
-
-							if (j == MAXSPLITSCREENPLAYERS)
-							{
-								// ensures we aren't overriding a currently active device
-								cv_usejoystick[i].value = evt.cdevice.which + 1;
-								I_UpdateJoystickDeviceIndices(0);
-							}
-						}
-					}
-
-					////////////////////////////////////////////////////////////
-					// Was cv_usejoystick disabled in settings?
-					////////////////////////////////////////////////////////////
-
-					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-					{
-						if (fastcmp(cv_usejoystick[i].string, "0") || !cv_usejoystick[i].value)
-							cv_usejoystick[i].value = 0;
-						else if (atoi(cv_usejoystick[i].string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-								 && cv_usejoystick[i].value) // update the cvar ONLY if a device exists
-							CV_SetValue(&cv_usejoystick[i], cv_usejoystick[i].value);
-					}
-
-					////////////////////////////////////////////////////////////
-					// Update all joysticks' init states
-					// This is a little wasteful since cv_usejoystick already calls this, but
-					// we need to do this in case CV_SetValue did nothing because the string was already same.
-					// if the device is already active, this should do nothing, effectively.
-					////////////////////////////////////////////////////////////
-
-					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-					{
-						I_InitJoystick(i);
-						G_SetPlayerGamepadIndicatorColor(i, SKINCOLOR_NONE); // gotta update the controller led again on reconnect
-					}
-
-					////////////////////////////////////////////////////////////
-
-					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-						CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
-
-					// update the menu
-					numcontrollers = I_NumJoys();
-					M_UpdateJoystickMenu();
-
-					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-					{
-						if (JoyInfo[i].dev == newcontroller)
-							break;
-					}
-
-					if (i == MAXSPLITSCREENPLAYERS)
-						I_StoreExJoystick(newcontroller);
-				}
+			case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
+				Impl_HandleControllerSensorEvent(evt.gsensor);
 				break;
-
-			////////////////////////////////////////////////////////////
-
-			case SDL_CONTROLLERDEVICEREMOVED:
-				for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-				{
-					if (JoyInfo[i].dev && !SDL_GameControllerGetAttached(JoyInfo[i].dev))
-					{
-						CONS_Debug(DBG_GAMELOGIC, "Joystick%d removed, device index: %d\n", i+1, JoyInfo[i].oldjoy);
-						I_ShutdownJoystick(i);
-					}
-				}
-
-				////////////////////////////////////////////////////////////
-				// Update the device indexes, because they likely changed
-				// * If device doesn't exist, switch cv_usejoystick back to default value (.string)
-				//   * BUT: If that default index is being occupied, use ANOTHER cv_usejoystick's default value!
-				////////////////////////////////////////////////////////////
-
-				for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-				{
-					I_UpdateJoystickDeviceIndex(i);
-				}
-
-				////////////////////////////////////////////////////////////
-				// Was cv_usejoystick disabled in settings?
-				////////////////////////////////////////////////////////////
-
-				for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-				{
-					if (fastcmp(cv_usejoystick[i].string, "0"))
-					{
-						cv_usejoystick[i].value = 0;
-					}
-					else if (atoi(cv_usejoystick[i].string) <= I_NumJoys() // don't mess if we intentionally set higher than NumJoys
-						&& cv_usejoystick[i].value) // update the cvar ONLY if a device exists
-					{
-						CV_SetValue(&cv_usejoystick[i], cv_usejoystick[i].value);
-					}
-				}
-
-				////////////////////////////////////////////////////////////
-
-				for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-					CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
-
-				// update the menu
-				numcontrollers = I_NumJoys();
-				M_UpdateJoystickMenu();
+			case SDL_EVENT_GAMEPAD_ADDED:
+				Impl_HandleControllerAddEvent(evt);
 				break;
-			case SDL_DROPFILE:
-				dropped_filedir = evt.drop.file;
-				P_AddWadFile(dropped_filedir, WC_AUTO, false);
-				SDL_free(dropped_filedir);    // Free dropped_filedir memory
+			case SDL_EVENT_GAMEPAD_REMOVED:
+				Impl_HandleControllerRemoveEvent(evt);
 				break;
-			case SDL_QUIT:
+			case SDL_EVENT_DROP_FILE:
+				dropped_filedir = evt.drop.data;
+				COM_BufInsertText(va("addfile \"%s\"", dropped_filedir));
+				break;
+			case SDL_EVENT_QUIT:
 				LUA_HookBool(true, HOOK(GameQuit));
 				I_Quit();
+				break;
+			default:
+				Impl_HandleWindowEvent(evt.window);
 				break;
 		}
 	}
@@ -1132,12 +1198,11 @@ void I_GetEvent(void)
 		event_t event;
 		int wwidth, wheight;
 		SDL_GetWindowSize(window, &wwidth, &wheight);
-		//SDL_memset(&event, 0, sizeof(event_t));
 		event.type = ev_mouse;
 		event.device = 0; // TODO device
 		event.data1 = 0;
-		event.data2 = (INT32)lround(mousemovex * ((float)wwidth / (float)realwidth));
-		event.data3 = (INT32)lround(mousemovey * ((float)wheight / (float)realheight));
+		event.data2 = (INT32)lround(mousemovex * ((float)wwidth / (float)vid.width));
+		event.data3 = (INT32)lround(mousemovey * ((float)wheight / (float)vid.height));
 		D_PostEvent(&event);
 	}
 
@@ -1151,17 +1216,22 @@ void I_GetEvent(void)
 
 void I_StartupMouse(void)
 {
-	static SDL_bool firsttimeonmouse = SDL_TRUE;
+	static bool firsttimeonmouse = true;
+
+	disable_mouse = static_cast<bool>(M_CheckParm("-nomouse"));
 
 	if (disable_mouse)
+	{
+		CONS_Printf("Mouse Input Disabled.\n");
 		return;
+	}
 
 	if (!firsttimeonmouse)
 	{
-		HalfWarpMouse(realwidth, realheight); // warp to center
+		HalfWarpMouse(vid.width, vid.height); // warp to center
 	}
 	else
-		firsttimeonmouse = SDL_FALSE;
+		firsttimeonmouse = false;
 	if (cv_usemouse.value && !IgnoreMouse())
 		SDLdoGrabMouse();
 	else
@@ -1178,8 +1248,8 @@ void I_OsPolling(void)
 	if (consolevent)
 		I_GetConsoleEvents();
 
-	if (SDL_WasInit(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) == (SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER))
-		SDL_GameControllerUpdate();
+	if (SDL_WasInit(SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD) == (SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD))
+		SDL_UpdateGamepads();
 
 	I_GetEvent();
 
@@ -1187,13 +1257,13 @@ void I_OsPolling(void)
 	/* Handle here so that our state is always synched with the system. */
 	shiftdown = ctrldown = altdown = 0;
 	capslock = false;
-	if (mod & KMOD_LSHIFT) shiftdown |= 1;
-	if (mod & KMOD_RSHIFT) shiftdown |= 2;
-	if (mod & KMOD_LCTRL)   ctrldown |= 1;
-	if (mod & KMOD_RCTRL)   ctrldown |= 2;
-	if (mod & KMOD_LALT)     altdown |= 1;
-	if (mod & KMOD_RALT)     altdown |= 2;
-	if (mod & KMOD_CAPS) capslock = true;
+	if (mod & SDL_KMOD_LSHIFT) shiftdown |= 1;
+	if (mod & SDL_KMOD_RSHIFT) shiftdown |= 2;
+	if (mod & SDL_KMOD_LCTRL)   ctrldown |= 1;
+	if (mod & SDL_KMOD_RCTRL)   ctrldown |= 2;
+	if (mod & SDL_KMOD_LALT)     altdown |= 1;
+	if (mod & SDL_KMOD_RALT)     altdown |= 2;
+	if (mod & SDL_KMOD_CAPS) capslock = true;
 }
 
 //
@@ -1309,7 +1379,7 @@ void I_FinishUpdate(void)
 		SDL_UnlockTexture(texture);
 
 		SDL_RenderClear(renderer);
-		SDL_RenderCopy(renderer, texture, &src_rect, NULL);
+		SDL_RenderTexture(renderer, texture, &src_rect, NULL);
 		SDL_RenderPresent(renderer);
 		Impl_SetSoftwareVsync(cv_vidwait.value);
 	}
@@ -1319,10 +1389,10 @@ void I_FinishUpdate(void)
 		// Final postprocess step of palette rendering, after everything else has been drawn.
 		if (HWR_ShouldUsePaletteRendering())
 		{
-			HWD.pfnMakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
-			HWD.pfnSetShader(HWR_GetShaderFromTarget(SHADER_PALETTE_POSTPROCESS));
-			HWD.pfnDrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
-			HWD.pfnUnSetShader();
+			GL_MakeScreenTexture(HWD_SCREENTEXTURE_GENERIC2);
+			GL_SetShader(HWR_GetShaderFromTarget(SHADER_PALETTE_POSTPROCESS));
+			GL_DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
+			GL_UnSetShader();
 		}
 		OglSdlFinishUpdate(cv_vidwait.value);
 	}
@@ -1422,7 +1492,7 @@ INT32 VID_GetModeForSize(INT32 w, INT32 h)
 
 void VID_PrepareModeList(void)
 {
-	// Under SDL2, we just use the windowed modes list, and scale in windowed fullscreen.
+	// Under SDL, we just use the windowed modes list, and scale in windowed fullscreen.
 	allow_fullscreen = true;
 }
 
@@ -1478,9 +1548,9 @@ boolean VID_CheckRenderer(void)
 		setrenderneeded = 0;
 	}
 
-	SDL_bool center = setmodeneeded ? SDL_TRUE : SDL_FALSE;
+	bool center = setmodeneeded ? true : false;
 
-	if (SDLSetMode(vid.width, vid.height, USE_FULLSCREEN, center) == SDL_FALSE)
+	if (SDLSetMode(vid.width, vid.height, USE_FULLSCREEN, center) == false)
 	{
 		if (!graphics_started)
 		{
@@ -1535,35 +1605,32 @@ INT32 VID_SetMode(INT32 modeNum)
 	else
 	{
 		// just set the desktop resolution as a fallback
-		SDL_DisplayMode mode;
-		SDL_GetWindowDisplayMode(window, &mode);
-		if (mode.w >= 2048)
+		const SDL_DisplayMode *mode;
+		mode = SDL_GetWindowFullscreenMode(window);
+		if (mode->w >= 2048)
 		{
 			vid.width = 1920;
 			vid.height = 1200;
 		}
 		else
 		{
-			vid.width = mode.w;
-			vid.height = mode.h;
+			vid.width = mode->w;
+			vid.height = mode->h;
 		}
 		vid.modenum = -1;
 	}
 
 	VID_CheckRenderer();
 
-	return SDL_TRUE;
+	return true;
 }
 
-static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
+static SDL_Window *Impl_CreateWindow(void)
 {
 	int flags = 0;
 
 	if (window != NULL)
-		return SDL_TRUE;
-
-	if (fullscreen)
-		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+		return window;
 
 	if (borderlesswindow)
 		flags |= SDL_WINDOW_BORDERLESS;
@@ -1571,39 +1638,50 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 #ifdef HWRENDER
 	flags |= SDL_WINDOW_OPENGL;
 
+	if (M_CheckParm("-msaa") && M_IsNextParm())
+	{
+		unsigned int value;
+		const char* str = M_GetNextParm();
+		if (sscanf(str, "%u", &value))
+		{
+			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, value);
+		}
+	}
+
 	// Without a 24-bit depth buffer many visuals are ruined by z-fighting.
 	// Some GPU drivers may give us a 16-bit depth buffer since the
 	// default value for SDL_GL_DEPTH_SIZE is 16.
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 #endif
 
+	SDL_Window *win = NULL;
 	// Create a window
 #ifdef COMMITVERSION
 	{
 		char versionstring[256];
 		sprintf(versionstring, "BlanKart Indev %s", comprevision);
 
-		window = SDL_CreateWindow(versionstring, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, realwidth, realheight, flags);
+		win = SDL_CreateWindow(versionstring, vid.width, vid.height, flags);
 	}
 #else
-	window = SDL_CreateWindow("BlanKart " VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, realwidth, realheight, flags);
+	win = SDL_CreateWindow("BlanKart " VERSIONSTRING, vid.width, vid.height, flags);
 #endif
 
-	if (window == NULL)
+	if (win == NULL)
 	{
 		VIDEO_INIT_ERROR("Couldn't create window: %s");
-		return SDL_FALSE;
+		return NULL;
 	}
 
-	SDL_SetWindowMinimumSize(window, BASEVIDWIDTH, BASEVIDHEIGHT);
-	SDL_SetWindowMaximumSize(window, MAXVIDWIDTH, MAXVIDHEIGHT);
+	SDL_SetWindowMinimumSize(win, BASEVIDWIDTH, BASEVIDHEIGHT);
+	SDL_SetWindowMaximumSize(win, MAXVIDWIDTH, MAXVIDHEIGHT);
 
 #ifdef USE_WINDOW_ICON
 	Impl_SetWindowIcon();
 #endif
 
-	return SDL_TRUE;
-
+	return win;
 }
 
 #ifdef USE_WINDOW_ICON
@@ -1618,8 +1696,10 @@ static void Impl_InitVideoSubSystem(void)
 {
 	if (video_init)
 		return;
-
-	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+#if defined (__linux__)
+	SDL_SetHint("SDL_VIDEO_WAYLAND_SCALE_TO_DISPLAY", "1");
+#endif
+	if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
 	{
 		CONS_Printf(M_GetText("Couldn't initialize SDL's Video System: %s\n"), SDL_GetError());
 		return;
@@ -1652,8 +1732,8 @@ void I_StartupGraphics(void)
 	if (graphics_started)
 		return;
 
-	disable_mouse = static_cast<SDL_bool>(M_CheckParm("-nomouse"));
-	disable_fullscreen = M_CheckParm("-win") ? SDL_TRUE : SDL_FALSE;
+	disable_mouse = static_cast<bool>(M_CheckParm("-nomouse"));
+	disable_fullscreen = M_CheckParm("-win") ? true : false;
 
 	keyboard_started = true;
 
@@ -1672,7 +1752,7 @@ void I_StartupGraphics(void)
 			strncasecmp(vd, "wii", 4) == 0 ||
 			strncasecmp(vd, "psl1ght", 8) == 0
 		)
-			framebuffer = SDL_TRUE;
+			framebuffer = true;
 	}
 
 	rendermode = render_soft;
@@ -1716,8 +1796,8 @@ void I_StartupGraphics(void)
 	if (chosenrendermode != render_none)
 		rendermode = chosenrendermode;
 
-	usesdl2soft = M_CheckParm("-softblit") ? SDL_TRUE : SDL_FALSE;
-	borderlesswindow = M_CheckParm("-borderless") ? SDL_TRUE : SDL_FALSE;
+	usesdlsoft = M_CheckParm("-softblit") ? true : false;
+	borderlesswindow = M_CheckParm("-borderless") ? true : false;
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
@@ -1758,47 +1838,8 @@ static void Impl_InitOpenGL(void)
 		return;
 
 	CONS_Printf("VID_StartupOpenGL()...\n");
-	*(void**)&HWD.pfnInit             = hwSym("Init",NULL);
-	*(void**)&HWD.pfnFinishUpdate     = NULL;
-	*(void**)&HWD.pfnDraw2DLine       = hwSym("Draw2DLine",NULL);
-	*(void**)&HWD.pfnDrawPolygon      = hwSym("DrawPolygon",NULL);
-	*(void**)&HWD.pfnDrawIndexedTriangles = hwSym("DrawIndexedTriangles",NULL);
-	*(void**)&HWD.pfnRenderSkyDome    = hwSym("RenderSkyDome",NULL);
-	*(void**)&HWD.pfnSetBlend         = hwSym("SetBlend",NULL);
-	*(void**)&HWD.pfnClearBuffer      = hwSym("ClearBuffer",NULL);
-	*(void**)&HWD.pfnSetTexture       = hwSym("SetTexture",NULL);
-	*(void**)&HWD.pfnUpdateTexture    = hwSym("UpdateTexture",NULL);
-	*(void**)&HWD.pfnDeleteTexture    = hwSym("DeleteTexture",NULL);
-	*(void**)&HWD.pfnReadScreenTexture= hwSym("ReadScreenTexture",NULL);
-	*(void**)&HWD.pfnGClipRect        = hwSym("GClipRect",NULL);
-	*(void**)&HWD.pfnClearMipMapCache = hwSym("ClearMipMapCache",NULL);
-	*(void**)&HWD.pfnSetSpecialState  = hwSym("SetSpecialState",NULL);
-	*(void**)&HWD.pfnSetTexturePalette= hwSym("SetTexturePalette",NULL);
-	*(void**)&HWD.pfnGetTextureUsed   = hwSym("GetTextureUsed",NULL);
-	*(void**)&HWD.pfnDrawModel        = hwSym("DrawModel",NULL);
-	*(void**)&HWD.pfnCreateModelVBOs  = hwSym("CreateModelVBOs",NULL);
-	*(void**)&HWD.pfnSetTransform     = hwSym("SetTransform",NULL);
-	*(void**)&HWD.pfnPostImgRedraw    = hwSym("PostImgRedraw",NULL);
-	*(void**)&HWD.pfnFlushScreenTextures=hwSym("FlushScreenTextures",NULL);
-	*(void**)&HWD.pfnDoScreenWipe     = hwSym("DoScreenWipe",NULL);
-	*(void**)&HWD.pfnDrawScreenTexture= hwSym("DrawScreenTexture",NULL);
-	*(void**)&HWD.pfnMakeScreenTexture= hwSym("MakeScreenTexture",NULL);
-	*(void**)&HWD.pfnRenderVhsEffect  = hwSym("RenderVhsEffect",NULL);
-	*(void**)&HWD.pfnDrawScreenFinalTexture=hwSym("DrawScreenFinalTexture",NULL);
 
-	*(void**)&HWD.pfnInitShaders      = hwSym("InitShaders",NULL);
-	*(void**)&HWD.pfnLoadShader       = hwSym("LoadShader",NULL);
-	*(void**)&HWD.pfnCompileShader    = hwSym("CompileShader",NULL);
-	*(void**)&HWD.pfnSetShader        = hwSym("SetShader",NULL);
-	*(void**)&HWD.pfnUnSetShader      = hwSym("UnSetShader",NULL);
-
-	*(void**)&HWD.pfnSetShaderInfo    = hwSym("SetShaderInfo",NULL);
-	*(void**)&HWD.pfnSetPaletteLookup = hwSym("SetPaletteLookup",NULL);
-	*(void**)&HWD.pfnCreateLightTable = hwSym("CreateLightTable",NULL);
-	*(void**)&HWD.pfnClearLightTables = hwSym("ClearLightTables",NULL);
-	*(void**)&HWD.pfnSetScreenPalette = hwSym("SetScreenPalette",NULL);
-
-	if (HWD.pfnInit())
+	if (GL_Init())
 		vid.glstate = VID_GL_LIBRARY_LOADED;
 	else
 	{
@@ -1818,7 +1859,7 @@ void I_ShutdownGraphics(void)
 {
 #ifdef USE_WINDOW_ICON
 	if (icoSurface)
-		SDL_FreeSurface(icoSurface);
+		SDL_DestroySurface(icoSurface);
 	icoSurface = NULL;
 #endif
 
@@ -1838,12 +1879,12 @@ void I_ShutdownGraphics(void)
 #ifdef HWRENDER
 	if (sdlglcontext)
 	{
-		SDL_GL_DeleteContext(sdlglcontext);
+		SDL_GL_DestroyContext(sdlglcontext);
 	}
 #endif
 	if (SDL_WasInit(SDL_INIT_VIDEO) == SDL_INIT_VIDEO)
 		SDL_QuitSubSystem(SDL_INIT_VIDEO);
-	framebuffer = SDL_FALSE;
+	framebuffer = false;
 }
 
 UINT32 I_GetRefreshRate(void)
@@ -1858,8 +1899,8 @@ UINT32 I_GetRefreshRate(void)
 
 void I_SetBorderlessWindow(void)
 {
-	SDL_bool borderless = (cv_fullscreen.value == 2) ? SDL_FALSE : SDL_TRUE;
-	SDL_SetWindowBordered(window, borderless);
+	bool bordered = cv_fullscreen.value != 2;
+	SDL_SetWindowBordered(window, bordered);
 }
 #endif
 

@@ -457,7 +457,7 @@ static void GIF_headwrite(void)
 	// Image width/height
 	if (gif_downscale)
 	{
-		scrbuf_downscaleamt = vid.dupx;
+		scrbuf_downscaleamt = vid.dup;
 		scrbuf_width = (vid.width / scrbuf_downscaleamt);
 		scrbuf_height = (vid.height / scrbuf_downscaleamt);
 	}
@@ -745,16 +745,13 @@ INT32 GIF_close(void)
 	fclose(gif_out);
 	gif_out = NULL;
 
-	if (gifbwr_buf)
-		Z_Free(gifbwr_buf);
+	Z_Free(gifbwr_buf);
 	gifbwr_buf = gifbwr_cur = NULL;
 
-	if (gifframe_data)
-		Z_Free(gifframe_data);
+	Z_Free(gifframe_data);
 	gifframe_data = NULL;
 
-	if (giflzw_hashTable)
-		Z_Free(giflzw_hashTable);
+	Z_Free(giflzw_hashTable);
 	giflzw_hashTable = NULL;
 
 	Z_Free(scrbuf_screens);

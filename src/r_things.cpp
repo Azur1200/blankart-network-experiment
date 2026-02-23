@@ -43,7 +43,7 @@
 #include "hardware/hw_md2.h"
 #include "hardware/hw_glob.h"
 #include "hardware/hw_light.h"
-#include "hardware/hw_drv.h"
+#include "hardware/hw_gpu.h"
 #endif
 
 // SRB2kart
@@ -99,7 +99,7 @@ static const char *spritename;
 
 typedef struct drawseg_xrange_item_s
 {
-	INT16 x1, x2;
+	INT32 x1, x2;
 	drawseg_t *user;
 } drawseg_xrange_item_t;
 
@@ -641,8 +641,8 @@ void R_InitSprites(void)
 	for (angle = 1; angle < ROTANGLES; angle++)
 	{
 		fa = ANG2RAD(FixedAngle((ROTANGDIFF * angle)<<FRACBITS));
-		rollcosang[angle] = FLOAT_TO_FIXED(cos(-fa));
-		rollsinang[angle] = FLOAT_TO_FIXED(sin(-fa));
+		rollcosang[angle] = FLOAT_TO_FIXED(cosf(-fa));
+		rollsinang[angle] = FLOAT_TO_FIXED(sinf(-fa));
 	}
 #endif
 
@@ -792,7 +792,7 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t *bright
 	dc->texturemid = basetexturemid;
 }
 
-INT32 lengthcol; // column->length : for flipped column function pointers and multi-patch on 2sided wall = texture->height
+INT32 lengthcol = 0; // column->length : for flipped column function pointers and multi-patch on 2sided wall = texture->height
 
 void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t *brightmap, INT32 baseclip)
 {
@@ -921,7 +921,7 @@ UINT8 *R_GetSpriteTranslation(vissprite_t *vis)
 
 		if (!(vis->cut & SC_PRECIP) && vis->mobj->colorized)
 		{
-			return R_GetTranslationColormap(R_IsOverlayingInvinciblePlayer(vis->mobj) ? TC_BLINK : TC_RAINBOW,
+			return R_GetTranslationColormap(R_IsOverlayingSMonitorPlayer(vis->mobj) ? TC_BLINK : TC_RAINBOW,
 											static_cast<skincolornum_t>(vis->mobj->color),
 											GTC_CACHE);
 		}
@@ -937,6 +937,12 @@ UINT8 *R_GetSpriteTranslation(vissprite_t *vis)
 		return R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_BLUE, GTC_CACHE);
 
 	return NULL;
+}
+
+// Based off of R_GetLinedefTransTable
+UINT32 R_GetThingTransTable(fixed_t alpha, UINT32 transmap)
+{
+	return (20*(FRACUNIT - ((alpha * (10 - transmap))/10) - 1) + FRACUNIT) >> (FRACBITS+1);
 }
 
 //
@@ -1831,7 +1837,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	interpmobjstate_t interp = {0};
 	mobj_t *interptarg = thing;
 
-	if (R_IsOverlayingInvinciblePlayer(thing))
+	if (R_IsOverlayingSMonitorPlayer(thing))
 	{
 		// Kill overlay misalignment
 		interptarg = thing->target;
@@ -2372,6 +2378,8 @@ static void R_ProjectSprite(mobj_t *thing)
 			cut = static_cast<spritecut_e>(cut | SC_SHEAR);
 		}
 	}
+
+	trans = R_GetThingTransTable(R_GetThingFade(oldthing), trans);
 
 	if (!shadowskew)
 	{
@@ -3861,6 +3869,52 @@ boolean R_ThingWithinDist (mobj_t *thing, fixed_t limit_dist)
 	return true;
 }
 
+fixed_t R_GetThingFade(mobj_t *thing)
+{
+	fixed_t fadealpha = FRACUNIT;
+
+	if (!cv_playerfade.value || leveltime < starttime-(3*TICRATE))
+		return fadealpha;
+
+
+	switch (thing->type)
+	{
+		case MT_FOLLOWER:
+		case MT_FOLLOWERBUBBLE_BACK:
+		case MT_FOLLOWERBUBBLE_FRONT:
+			break;
+		case MT_PLAYER:
+		{
+			UINT8 viewnum = R_GetViewNumber();
+			camera_t *thiscam = &camera[viewnum];
+			if (!thing->player || thing->player == viewplayer || thing->player->exiting || thiscam->freecam)
+				return fadealpha;
+			break;
+		}
+
+		default:
+			return fadealpha;
+			break;
+	}
+
+	const INT32 playerdist     = (FixedMul((thing->x - viewx), viewcos) + FixedMul((thing->y - viewy), viewsin)) >> FRACBITS;
+	const INT32 viewplayerdist = (FixedMul((viewplayer->mo->x - viewx), viewcos) + FixedMul((viewplayer->mo->y - viewy), viewsin)) >> FRACBITS;
+
+	if (playerdist < viewplayerdist)
+	{
+		if (playerdist < viewplayerdist / 2) // stronger fade when very close
+		{
+			fadealpha = (playerdist * FRACUNIT) / (viewplayerdist / 2) / 3;
+		}
+		else
+		{
+			fadealpha = (playerdist * FRACUNIT) / viewplayerdist;
+		}
+	}
+
+	return fadealpha;
+}
+
 /* Check if precipitation may be drawn from our current view. */
 boolean R_PrecipThingVisible (precipmobj_t *precipthing)
 {
@@ -3991,7 +4045,7 @@ static void R_DrawMaskedList (drawnode_t* head)
 void R_DrawMasked(maskcount_t* masks, INT32 nummasks)
 {
 	ZoneScoped;
-	drawnode_t *heads;	/**< Drawnode lists; as many as number of views/portals. */
+	drawnode_t *heads = NULL;	/**< Drawnode lists; as many as number of views/portals. */
 	INT32 i;
 
 	heads = static_cast<drawnode_t*>(calloc(nummasks, sizeof(drawnode_t)));

@@ -99,6 +99,10 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 			// Melt item
 			S_StartSound(t2, sfx_s3k43);
 			damageitem = true;
+			// and cut temperature and fuel by 10% of max
+			t2->player->flamestore -= min(FLAMESTOREMAX/10, t2->player->flamestore);
+			t2->player->flametimer -= min((itemtime*3)/10, t2->player->flametimer - 1);
+			t2->player->flameburnstop = TICRATE/4;
 		}
 		else
 		{
@@ -188,6 +192,10 @@ boolean K_BananaBallhogCollide(mobj_t *t1, mobj_t *t2)
 		{
 			// Melt item
 			S_StartSound(t2, sfx_s3k43);
+			// and cut temperature and fuel by 10% of max
+			t2->player->flamestore -= min(FLAMESTOREMAX/10, t2->player->flamestore);
+			t2->player->flametimer -= min((itemtime*3)/10, t2->player->flametimer - 1);
+			t2->player->flameburnstop = TICRATE/4;
 		}
 		else
 		{
@@ -261,6 +269,10 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 			// Melt item
 			S_StartSound(t2, sfx_s3k43);
 			P_KillMobj(t1, t2, t2, DMG_NORMAL);
+			// and cut temperature and fuel by 10% of max
+			t2->player->flamestore -= min(FLAMESTOREMAX/10, t2->player->flamestore);
+			t2->player->flametimer -= min((itemtime*3)/10, t2->player->flametimer - 1);
+			t2->player->flameburnstop = TICRATE/4;
 			return true;
 		}
 		else
@@ -306,9 +318,9 @@ void K_EggMineBounce(mobj_t *t1, mobj_t *t2)
 	fixed_t localspacey = t1->y - pointy;
 	angle_t impulseangle = R_PointToAngle2(0, 0, (localspacex + t2->momx)/2, (localspacey + t2->momy)/2);
 	P_InstaThrust(t1, impulseangle, impulse);
-	zimpulse = (P_MobjFlip(t1) * min((P_AproxDistance(t2->momx, t2->momy) + P_AproxDistance(t1->momx, t1->momy)), 28*mapobjectscale)) + t2->momz/2;
+	zimpulse = (P_MobjFlip(t1) * min((P_AproxDistance(t2->momx, t2->momy) + P_AproxDistance(t1->momx, t1->momy)), 32*mapobjectscale)) + t2->momz/2;
 
-	if (t2->type == MT_EGGMINE)
+	if (t2->type != MT_PLAYER)
 	{
 		fixed_t zdiff = (t1->z + (t1->height*P_MobjFlip(t1)/2)) - (t2->z + (t2->height*P_MobjFlip(t2))/2);
 		zimpulse /= 2;
@@ -318,12 +330,11 @@ void K_EggMineBounce(mobj_t *t1, mobj_t *t2)
 		}
 	}
 	// doesn't this look familiar
+	t1->z += 1;
 	t1->momz = zimpulse;
-	t1->z += t1->momz;
 
 	if (t1->extravalue1 == 0)
 	{
-
 		K_SpawnEggMineBumpEffect(t1);
 		t1->extravalue1 = 6;
 	}
@@ -331,6 +342,7 @@ void K_EggMineBounce(mobj_t *t1, mobj_t *t2)
 
 boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 {
+	boolean damageitem = false;
 	boolean sprung = false;
 
 	if (t1->health <= 0 || t2->health <= 0)
@@ -342,29 +354,34 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 		{
 			return true;
 		}
+		
+		if (t2->player && t2->player->hyudorotimer)
+		{
+			return true; // no interaction
+		}
 
 		if (t2->player && t2->player->flamestore && (K_GetShieldFromPlayer(t2->player) == KSHIELD_FLAME))
 		{
 			// Melt item
 			S_StartSound(t2, sfx_s3k43);
+			// and cut temperature and fuel by 10% of max
+			t2->player->flamestore -= min(FLAMESTOREMAX/10, t2->player->flamestore);
+			t2->player->flametimer -= min((itemtime*3)/10, t2->player->flametimer - 1);
+			t2->player->flameburnstop = TICRATE/4;
 			return true;
 		}
-
-		if (t2->type == MT_PLAYER && t1->health > 1)
+		else if (t2->type == MT_PLAYER && t1->health > 1)
 		{
-			if (t1->health > 2)
+			if (t1->health > 2 && (P_DamageMobj(t2, t1, t1->target, 1, DMG_FLIPOVER)))
 			{
 				K_DoEggMineStrip(t2, t1, t1->target);
 				S_StartSound(t2, sfx_bsnipe);
-				P_DamageMobj(t2, t1, t1->target, 1, DMG_FLIPOVER);
 				P_RemoveMobj(t1);
 				return true;
 			}
 			else if (P_IsObjectOnGround(t2))
 			{
 				S_StartSound(t2, sfx_cdfm37);
-				// should think of something else for this specific interaction if people want something to happen
-				// t2->momz = 3*t1->scale*P_MobjFlip(t2);
 				K_SpawnEggMineBumpEffect(t1);
 				t1->extravalue1 = 6;
 				return true;
@@ -377,26 +394,46 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 		// Let thrown items hit springs!
 		sprung = P_DoSpring(t2, t1);
 	}
-	else if (K_IsMissileOrKartItem(t2))
+	else if (t2->type == MT_SSMINE_SHIELD || t2->type == MT_SSMINE || t2->type == MT_LANDMINE)
+	{
+		if (t1->health > 1)
+		{
+			t1->z += 1;
+			t1->momz += 12*mapobjectscale;
+			t1->momx /= 2;
+			t1->momy /= 2;
+		}
+
+		damageitem = true;
+		// Bomb death
+		P_KillMobj(t2, t1, t1->target, DMG_NORMAL);
+	}
+	else if (P_IsKartItem(t2->type))
 	{
 		// eggmines don't kill eachother
 		if (!(t2->type == MT_SPB || t2->type == MT_EGGMINE || t2->type == MT_EGGMINE_SHIELD))
 		{
-			P_KillMobj(t2, t1, t1->target, DMG_INSTAKILL);
+			K_ItemDamage(t2, t1, true);
+			if (!(t2->type == MT_SPB)) damageitem = true;
 		}
-		P_KillMobj(t1, t2, t2->target, DMG_INSTAKILL);
 	}
 	
 	if (sprung)
 	{
 		return false;
 	}
+	
+	if (damageitem && t1->health <= 1)
+		P_KillMobj(t1, t2, t2->target, DMG_INSTAKILL);
 	return true;
 }
 
 boolean K_EggMineShieldCollide(mobj_t *t1, mobj_t *t2)
 {
 	if (t1->health <= 0 || t2->health <= 0)
+		return true;
+	
+	if (t2->type == MT_SPB)
 		return true;
 
 	if (K_IsMissileOrKartItem(t2))
@@ -405,8 +442,8 @@ boolean K_EggMineShieldCollide(mobj_t *t1, mobj_t *t2)
 		if (!(t2->type == MT_SPB || t2->type == MT_EGGMINE || t2->type == MT_EGGMINE_SHIELD))
 		{
 			P_KillMobj(t2, t1, t1->target, DMG_INSTAKILL);
+			if (!(t2->type == MT_SPB)) P_KillMobj(t1, t2, t2->target, DMG_INSTAKILL);
 		}
-		P_KillMobj(t1, t2, t2->target, DMG_INSTAKILL);
 		return true;
 	}
 		
@@ -510,13 +547,19 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 		{
 			// Melt item
 			S_StartSound(t2, sfx_s3k43);
+			// and cut temperature and fuel by 10% of max
+			t2->player->flamestore -= min(FLAMESTOREMAX/10, t2->player->flamestore);
+			t2->player->flametimer -= min((itemtime*3)/10, t2->player->flametimer - 1);
+			t2->player->flameburnstop = TICRATE/4;
 		}
 		else
 		{
-			// these can only come from eggmines now
-			K_DoEggMineStrip(t2, t1, t1->target);
 			// Player Damage
-			P_DamageMobj(t2, t1, t1->target, 1, DMG_FLIPOVER);
+			if (P_DamageMobj(t2, t1, t1->target, 1, DMG_FLIPOVER))
+			{
+				// these can only come from eggmines now
+				K_DoEggMineStrip(t2, t1, t1->target);
+			}
 		}
 
 		P_SpawnMobj(t1->x, t1->y, t1->z, MT_MINEEXPLOSIONSOUND);
@@ -672,6 +715,10 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, INT16 d
 
 static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 {
+	// slow orbis are traps
+	if ((t->type == MT_ORBINAUT) && (FixedHypot(t->momx, t->momy) < 24*mapobjectscale))
+		return true;
+
 	return t->type == MT_BANANA || (t->type == MT_ORBINAUT && t->flags2 & MF2_AMBUSH) || t->type == MT_JAWZ_DUD ||
 	       t->type == MT_EGGMANITEM || t->type == MT_SSMINE || t->type == MT_SSMINE_SHIELD || t->type == MT_LANDMINE ||
 		   t->type == MT_EGGMINE;
@@ -679,7 +726,7 @@ static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 
 static boolean K_StrongPlayerBump(const player_t *player)
 {
-	return (((!K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (player->invincibilitytimer))
+	return ((player->invincibilitytimer)
 	    || (player->growshrinktimer > 0));
 }
 
@@ -711,7 +758,7 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 			t2->angle = angle;
 	}
 
-	if (K_BubbleReflectingTrapItem(t2))
+	if (K_BubbleReflectingTrapItem(t2) && (t2->momz * P_MobjFlip(t2) <= 8*t2->scale))
 	{
 		// Stupid hack: Toss trap/dud items into the air
 		t2->momz += (24*t2->scale) * P_MobjFlip(t2);
@@ -723,10 +770,7 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 		if (t2->type == MT_JAWZ)
 			P_SetTarget(&t2->tracer, t2->target); // Back to the source!
 		P_SetTarget(&t2->target, owner); // Let the source reflect it back again!
-		if ((t2->type == MT_ORBINAUT && t2->flags2 & MF2_AMBUSH) || t2->type == MT_JAWZ_DUD)
-			t2->flags |= MF_NOCLIPTHING;
-		else
-			t2->threshold = 10;
+		t2->threshold = 10;
 	}
 
 	S_StartSound(t1, sfx_s3k44);
@@ -750,8 +794,7 @@ static INT16 K_GetBubbleDamage(mobj_t* itm)
 	}
 
 	INT16 dmg = BUBBLEITMDAMAGE;
-	fixed_t momentum_epsilon =
-	    FixedMul(FixedMul(itm->radius, itm->scale), K_GetKartGameSpeedScalar(gamespeed));
+	fixed_t momentum_epsilon = 32*mapobjectscale;
 
 	switch (itm->type)
 	{
@@ -775,7 +818,7 @@ static INT16 K_GetBubbleDamage(mobj_t* itm)
 		/*FALLTHRU*/
 	case MT_ORBINAUT:
 	{
-		fixed_t momentum = K_Momentum3D(itm);
+		fixed_t momentum = K_Momentum2D(itm);
 
 		// Reward players on the offensive by letting fast Orbinauts shatter Bubble Shields.
 		// Same thing for Banana snipes.
@@ -918,16 +961,17 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	if (P_MobjWasRemoved(t1) || P_MobjWasRemoved(t2) || !t1->player || !t2->player)
 		return false;
 
-	const boolean flameT1 = ((t1->player->flamestore > 0) && (t1->player->flametimer > 0));
-	const boolean flameT2 = ((t2->player->flamestore > 0) && (t2->player->flametimer > 0));
+	const boolean flameT1 = ((t1->player->flamestore >= FLAMESTOREMAX-1) && (t1->player->flametimer > 0));
+	const boolean flameT2 = ((t2->player->flamestore >= FLAMESTOREMAX-1) && (t2->player->flametimer > 0));
 	const boolean hyudoroT1 = (t1->player->hyudorotimer > 0);
 	const boolean hyudoroT2 = (t2->player->hyudorotimer > 0);
 
 	boolean t1Condition = false;
 	boolean t2Condition = false;
 
-	// Rim suggestion: Flipover damage is negligible at best, just cull it from Invincibility as a whole.
-	if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
+	UINT8 invindamage = INVINDAMAGE;
+
+	if (invindamage)
 	{
 		t1Condition = (t1->player->invincibilitytimer > 0);
 		t2Condition = (t2->player->invincibilitytimer > 0);
@@ -939,16 +983,16 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 		K_DoInstashield(t2->player);
 		return false;
 	}
-	else if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
+	else
 	{
 		if (t1Condition == true && t2Condition == false)
 		{
-			P_DamageMobj(t2, t1, t1, 1, DMG_WIPEOUT);
+			P_DamageMobj(t2, t1, t1, 1, invindamage);
 			return true;
 		}
 		else if (t1Condition == false && t2Condition == true)
 		{
-			P_DamageMobj(t1, t2, t2, 1, DMG_WIPEOUT);
+			P_DamageMobj(t1, t2, t2, 1, invindamage);
 			return true;
 		}
 	}

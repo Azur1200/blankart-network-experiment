@@ -85,7 +85,7 @@ void Z_Init(void);
 // Zone memory allocation
 //
 
-// Z_Free and alloc with alignment
+// Z_Free and alloc with alignment, automatically checks for NULL.
 #define Z_Free(p)                 Z_Free2(p, __FILE__, __LINE__)
 #define Z_MallocAlign(s,t,u,a)    Z_Malloc2(s, t, u, a, __FILE__, __LINE__)
 #define Z_CallocAlign(s,t,u,a)    Z_Calloc2(s, t, u, a, __FILE__, __LINE__)

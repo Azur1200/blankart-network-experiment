@@ -307,7 +307,7 @@ static ALvoid ALSetPan(ALuint sid, INT32 sep)
  * Initialise driver and listener
  *
  *****************************************************************************/
-EXPORT INT32 HWRAPI( Startup ) (I_Error_t FatalErrorFunction, snddev_t *snd_dev)
+EXPORT INT32 GL_(I_Error_t FatalErrorFunction, snddev_t *snd_dev)
 {
 	ALenum          model      = AL_INVERSE_DISTANCE_CLAMPED;
 	ALCboolean      inited     = ALC_FALSE;
@@ -412,7 +412,7 @@ EXPORT INT32 HWRAPI( Startup ) (I_Error_t FatalErrorFunction, snddev_t *snd_dev)
  * Shutdown 3D Sound
  *
  ******************************************************************************/
-EXPORT void HWRAPI( Shutdown ) ( void )
+EXPORT void GL_( void )
 {
 	ALsizei i;
 

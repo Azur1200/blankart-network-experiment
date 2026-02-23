@@ -19,6 +19,29 @@ extern "C" {
 #include "command.h"
 #include "d_player.h"
 #include "k_hud.h"
+#include "lua_script.h"
+#include "lua_libs.h"
+
+typedef enum timerflags_e
+{
+	TIMER_COUNTER	= 1,
+	TIMER_NONUMBER	= 1<<1,
+	TIMER_PURPLE	= 1<<2,
+	TIMER_YELLOW	= 1<<3,
+	TIMER_GREEN		= 1<<4,
+	TIMER_BLUE		= 1<<5,
+	TIMER_RED		= 1<<6,
+	TIMER_GRAY		= 1<<7,
+	TIMER_ORANGE	= 1<<8,
+	TIMER_SKY		= 1<<9,
+	TIMER_LAVENDER	= 1<<10,
+	TIMER_GOLD		= 1<<11,
+	TIMER_AQUA		= 1<<12,
+	TIMER_MAGENTA	= 1<<13,
+	TIMER_PINK		= 1<<14,
+	TIMER_BROWN		= 1<<15,
+	TIMER_TAN		= 1<<16,
+} timerflags_t;
 
 extern consvar_t cv_itemtimers;
 extern tic_t spbTimers[MAXPLAYERS];
@@ -27,13 +50,11 @@ void K_UpdateSPBTimer(void);
 // Adds an item timer.
 void K_AddItemTimerEx(
 	const char *name,
-	INT32 *timer,
-	char **patches, char **patches_small,
-	INT32 patches_size, INT32 patches_small_size,
+	lua_Integer timer_func_ref,
+	const char **patches,
+	INT32 patches_size,
 	INT32 anim_duration,
-	INT32 xoffs, INT32 yoffs,
-	INT32 xoffs_small, INT32 yoffs_small,
-	boolean counter, boolean unsorted);
+	UINT32 flags, boolean unsorted);
 void K_DisplayItemTimers(void);
 void K_getTimersDrawinfo(drawinfo_t *out);
 
