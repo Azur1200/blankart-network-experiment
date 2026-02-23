@@ -1112,11 +1112,9 @@ static void R_DrawVisSprite(vissprite_t *vis)
 
 	spryscale = vis->scale;
 
-	fixed_t ymovescale = (vis->cut & SC_AFFINE) ? vis->affine.scaling.y : spryscale;
-
 	if (!(vis->scalestep))
 	{
-		sprtopscreen = centeryfrac - FixedMul(dc.texturemid, ymovescale);
+		sprtopscreen = centeryfrac - FixedMul(dc.texturemid, spryscale);
 		sprtopscreen += vis->shear.tan * vis->shear.offset;
 		dc.iscale = FixedDiv(FRACUNIT, vis->scale);
 	}
@@ -1174,10 +1172,10 @@ static void R_DrawVisSprite(vissprite_t *vis)
 				//bmcol = (column_t *)((UINT8 *)bmpatch->columns + (bmpatch->columnofs[texturecolumn]));
 
 			dc.yl = (sprtopscreen+FRACUNIT-1)>>FRACBITS;
-			dc.yh = ((sprtopscreen + spryscale*dc.affinebound.ylen)-1)>>FRACBITS;
+			dc.yh = ((sprtopscreen + FRACUNIT*dc.affinebound.ylen)-1)>>FRACBITS;
 
 			INT32 topscreen = sprtopscreen + spryscale*0;
-			INT32  bottomscreen = topscreen + spryscale*dc.affinebound.ylen;
+			INT32  bottomscreen = topscreen + FRACUNIT*dc.affinebound.ylen;
 
 			dc.yl = (topscreen+FRACUNIT-1)>>FRACBITS;
 			dc.yh = (bottomscreen-1)>>FRACBITS;
@@ -2375,18 +2373,18 @@ static void R_ProjectSprite(mobj_t *thing)
 	else
 	{
 		scalestep = 0;
-		yscale = (affinesprite) ? FRACUNIT : sortscale;
+		yscale = sortscale;
 
 		// This is, frankly, a ridiculous solution to a problem that never existed until I touched the renderer
 		// We blow up the scale of the offsets so that the RESCALED positions are still 1:1
-		tx += (affinesprite) ? FixedDiv(offset,xscale) : offset;
+		tx += (affinesprite) ? FixedDiv(offset,FixedMul(xscale, this_scale)) : offset;
 		x1 = (centerxfrac + FixedMul(tx,xscale))>>FRACBITS;
 
 		// off the right side?
 		if (x1 > viewwidth)
 			return;
 
-		tx += (affinesprite) ? FixedDiv(offset2,xscale) : offset2;
+		tx += (affinesprite) ? FixedDiv(offset2,FixedMul(xscale, this_scale)) : offset2;
 		x2 = ((centerxfrac + FixedMul(tx,xscale))>>FRACBITS); x2--;
 
 		// off the left side
@@ -2541,18 +2539,40 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (!shadowskew)
 	{
 		//SoM: 3/17/2000: Disregard sprites that are out of view..
+
+		fixed_t useoffset = 0, useheight = 0;
+
+		if (affinesprite)
+		{
+			// This is an equally terrible hack, but it gets the job done with alignment.
+			// I'm writing this after pulling an all nighter and trying tons of other solutions;
+			// I cannot be assed to care about how elegant a solution is.
+
+			const float affineyscale = FIXED_TO_FLOAT(affine_scale.y);
+			const fixed_t real_topoffset = FLOAT_TO_FIXED(static_cast<float>(affine_bounds.yup) / affineyscale);
+			const fixed_t real_height = FLOAT_TO_FIXED(static_cast<float>(affine_bounds.ylen) / affineyscale);
+
+			useoffset = FixedMul(real_topoffset, FixedMul(spriteyscale, this_scale));
+			useheight = FixedMul(real_height, FixedMul(spriteyscale, this_scale));
+		}
+		else
+		{
+			useoffset = FixedMul(spr_topoffset, FixedMul(spriteyscale, this_scale));
+			useheight = FixedMul(spr_height, FixedMul(spriteyscale, this_scale));
+		}
+
 		if (vflip)
 		{
 			// When vertical flipped, draw sprites from the top down, at least as far as offsets are concerned.
 			// sprite height - sprite topoffset is the proper inverse of the vertical offset, of course.
 			// remember gz and gzt should be seperated by sprite height, not thing height - thing height can be shorter than the sprite itself sometimes!
-			gz = interp.z + interp.height - FixedMul(spr_topoffset, FixedMul(spriteyscale, this_scale));
-			gzt = gz + FixedMul(spr_height, FixedMul(spriteyscale, this_scale));
+			gz = interp.z + interp.height - useoffset;
+			gzt = gz + useheight;
 		}
 		else
 		{
-			gzt = interp.z + FixedMul(spr_topoffset, FixedMul(spriteyscale, this_scale));
-			gz = gzt - FixedMul(spr_height, FixedMul(spriteyscale, this_scale));
+			gzt = interp.z + useoffset;
+			gz = gzt - useheight;
 		}
 	}
 
