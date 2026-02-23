@@ -486,7 +486,7 @@ void R_DrawColumn_Flat(drawcolumndata_t *dc)
 }
 
 // Purely for debug; fills all columns in the drawing area with a pair of "background colors"
-#define FILL_DRAW_AREA
+//#define FILL_DRAW_AREA
 
 void R_DrawAffineColumn(drawcolumndata_t *dc)
 {
