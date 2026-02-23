@@ -687,7 +687,7 @@ consvar_t cv_kartinvintheme = CVAR_INIT ("kartinvintheme", "Standard", CV_SAVE, 
 // Invincibility damage toggles
 static CV_PossibleValue_t kartinvindmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {0, NULL}};
 
-// Experiment: Let's default to flip-over for now.
+// Experiment: Let's allow changing the damage type
 consvar_t cv_kartinvindamage = CVAR_INIT ("kartinvindamage", "Wipe-out", CV_NETVAR|CV_CHEAT|CV_GUARD, kartinvindmg_cons_t, NULL);
 
 // How far the player must be from the cluster to roll an S-Monitor.
