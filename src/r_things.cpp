@@ -1983,7 +1983,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		affine_scale.x = FixedDiv(projection[viewssnum], tz);
 		affine_scale.y = FixedDiv(projectiony[viewssnum], tz);
 
-		xscale = FRACUNIT;
+		xscale = affine_scale.x;
 		sortscale = affine_scale.y;
 	}
 	else
@@ -2376,14 +2376,17 @@ static void R_ProjectSprite(mobj_t *thing)
 	{
 		scalestep = 0;
 		yscale = (affinesprite) ? FRACUNIT : sortscale;
-		tx += offset;
+
+		// This is, frankly, a ridiculous solution to a problem that never existed until I touched the renderer
+		// We blow up the scale of the offsets so that the RESCALED positions are still 1:1
+		tx += (affinesprite) ? FixedDiv(offset,xscale) : offset;
 		x1 = (centerxfrac + FixedMul(tx,xscale))>>FRACBITS;
 
 		// off the right side?
 		if (x1 > viewwidth)
 			return;
 
-		tx += offset2;
+		tx += (affinesprite) ? FixedDiv(offset2,xscale) : offset2;
 		x2 = ((centerxfrac + FixedMul(tx,xscale))>>FRACBITS); x2--;
 
 		// off the left side
