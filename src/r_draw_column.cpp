@@ -488,7 +488,8 @@ void R_DrawColumn_Flat(drawcolumndata_t *dc)
 // Purely for debug; fills all columns in the drawing area with a pair of "background colors"
 //#define FILL_DRAW_AREA
 
-void R_DrawAffineColumn(drawcolumndata_t *dc)
+template<DrawColumnType Type>
+static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 {
 	INT32 count;
 	const INT32 vidheight = vid.height;
@@ -531,7 +532,19 @@ void R_DrawAffineColumn(drawcolumndata_t *dc)
 
 		// Framebuffer destination address.
 		// SoM: MAGIC
-		UINT8 *restrict dest = R_Address(dc->x, dc->yl);
+		UINT8 * restrict dest;
+
+		if constexpr (Type & DrawColumnType::DC_DIRECT)
+			dest = R_Address(dc->x, dc->yl);
+		else if constexpr ((Type & (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
+			== (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
+			dest = R_GetBufferColormapTrans(dc);
+		else if constexpr (Type & DrawColumnType::DC_TRANSMAP)
+			dest = R_GetBufferTrans(dc);
+		else if constexpr (Type & DrawColumnType::DC_COLORMAP)
+			dest = R_GetBufferColormap(dc);
+		else
+			dest = R_GetBufferOpaque(dc);
 
 		const INT32 stride = vid.width; // SoM: Oh, Oh it's MAGIC! You know...
 
@@ -607,3 +620,22 @@ void R_DrawAffineColumn(drawcolumndata_t *dc)
 		}
 	}
 }
+
+#define DEFINE_AFFINE_COLUMN_FUNC(name, flags) \
+	void name(drawcolumndata_t *dc) \
+	{ \
+		ZoneScoped; \
+		constexpr DrawColumnType opt = static_cast<DrawColumnType>(flags); \
+		R_DrawAffineColumnTemplate<opt>(dc); \
+	}
+
+#define DEFINE_AFFINE_COLUMN_COMBO(name, flags) \
+	DEFINE_AFFINE_COLUMN_FUNC(name, flags|DC_DIRECT) \
+	DEFINE_AFFINE_COLUMN_FUNC(name ## _Brightmap, flags|DC_DIRECT|DC_BRIGHTMAP) \
+	DEFINE_AFFINE_COLUMN_FUNC(name ## _Flush, flags)
+
+// Replace with DEFINE_AFFINE_COLUMN_COMBO down the line
+#define DEFINE_AFFINE_COLUMN_SETUP(name, flags) \
+	DEFINE_AFFINE_COLUMN_FUNC(name, flags|DC_DIRECT)
+
+DEFINE_AFFINE_COLUMN_SETUP(R_DrawAffineColumn, DC_BASIC);
