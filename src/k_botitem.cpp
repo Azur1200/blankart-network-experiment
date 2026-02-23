@@ -1141,7 +1141,7 @@ static void K_BotItemRouletteMash(botdata_t *bd, const player_t *player)
 	{
 		useodds = K_BotCalculateUseodds(player);
 
-		if (useodds >= 2 && useodds < 4)
+		if (useodds >= 4 && useodds < 8)
 		{
 			// Around 25% chance to mash
 			if (M_RandomChance(FRACUNIT/4))
@@ -1149,7 +1149,7 @@ static void K_BotItemRouletteMash(botdata_t *bd, const player_t *player)
 				mash = true;
 			}
 		}
-		else if (useodds >= 4 && useodds < 6)
+		else if (useodds >= 8 && useodds < 12)
 		{
 			// Around 50% chance to mash
 			if (M_RandomChance(FRACUNIT/2))
@@ -1157,7 +1157,7 @@ static void K_BotItemRouletteMash(botdata_t *bd, const player_t *player)
 				mash = true;
 			}
 		}
-		else if (useodds >= 6)
+		else if (useodds >= 12)
 		{
 			// We are too far back!
 			mash = true;
