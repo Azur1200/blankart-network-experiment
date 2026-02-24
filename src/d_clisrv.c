@@ -2100,6 +2100,11 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 	// Call it only once by tic
 	if (*oldtic != I_GetTime())
 	{
+		if (I_Interrupted())
+		{
+			I_Quit();
+		}
+
 		I_OsPolling();
 
 		// Needs to be updated here for M_DrawEggaChannel

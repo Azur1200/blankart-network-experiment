@@ -220,7 +220,7 @@ bool consolevent = false;
 bool framebuffer = false;
 
 UINT8 keyboard_started = false;
-boolean g_in_exiting_signal_handler = false;
+static volatile sig_atomic_t g_in_exiting_signal_handler = false;
 
 #ifdef UNIXBACKTRACE
 #define STDERR_WRITE(string) if (fd != -1) I_OutputMsg("%s", string)
@@ -428,6 +428,11 @@ static void I_ReportSignal(int num, int coredumped)
 	);
 }
 
+boolean I_In_Exiting_Signal_Handler(void)
+{
+	return g_in_exiting_signal_handler;
+}
+
 #ifndef NEWSIGNALHANDLER
 static ATTRNORETURN void signal_handler(INT32 num)
 {
@@ -452,7 +457,7 @@ static ATTRNORETURN void signal_handler(INT32 num)
 }
 #endif
 
-static volatile sig_atomic_t interrupted = 0;
+static volatile sig_atomic_t interrupted = false;
 
 boolean I_Interrupted(void)
 {
@@ -461,9 +466,7 @@ boolean I_Interrupted(void)
 
 static void quit_handler(int num)
 {
-	signal(num, SIG_DFL); //default signal action
-	raise(num);
-	//I_Quit();
+	(void)num;
 	interrupted = true;
 }
 

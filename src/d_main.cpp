@@ -879,6 +879,11 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 #ifndef NOWIPE
 		if (type == WIPELOOP_RUNWIPE)
 		{
+			if (I_Interrupted())
+			{
+				I_Quit();
+			}
+
 			// get fademask first so we can tell if it exists or not
 			fmask = F_GetFadeMask(wipetype, wipeframe);
 			if (!fmask)
