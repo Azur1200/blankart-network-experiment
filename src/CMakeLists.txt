@@ -94,7 +94,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	v_video.c
 	s_sound.c
 	sounds.c
-	w_wad.cpp
+	w_wad.c
 	filesrch.c
 	mserv.c
 	http-mserv.c
