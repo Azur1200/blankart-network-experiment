@@ -1068,7 +1068,7 @@ static void K_BotItemRings(botdata_t *bd, const player_t *player)
 			|| ((player->driftboost > 0) && player->driftboost <= 20))
 		{
 			// Chain your boost with some rings for extra fun.
-			saferingsval -= 5;
+			saferingsval -= 3;
 		}
 		else if ((player->startboost > 0) && player->startboost <= 20)
 		{
