@@ -442,7 +442,7 @@ static void K_BotItemSneaker(botdata_t *bd, const player_t *player)
 		|| K_GetWaypointIsShortcut(player->nextwaypoint) == true // Going toward a shortcut!
 		|| player->speed < K_GetKartSpeed(player, false, true) / 2 // Being slowed down too much
 		|| (!stack && player->speedboost > (FRACUNIT/8)) // Have another type of boost (drafting)
-		|| (stack && player->sneakertimer < stacktime && player->sneakertimer > 0) // Stack them sneakers!
+		|| (stack && player->sneakertimer < stacktime && player->sneakertimer > 0 && (bd->acceldown && !bd->brakedown)) // Stack them sneakers!
 		|| bd->itemconfirm > 4*TICRATE) // Held onto it for too long
 	{
 		if (((stack && player->sneakertimer < stacktime) || player->sneakertimer == 0) && !bd->itemwasdown)
