@@ -1129,39 +1129,10 @@ static UINT32 K_BotCalculateUseodds(const player_t *player)
 static void K_BotItemRouletteMash(botdata_t *bd, const player_t *player)
 {
 	boolean mash = false;
-	UINT32 useodds = 0;
 
 	if (bd->itemwasdown)
 	{
 		return;
-	}
-
-	// Mash based on useodds to approximate bots in the back mashing like players would.
-	if (player->position > 1)
-	{
-		useodds = K_BotCalculateUseodds(player);
-
-		if (useodds >= 4 && useodds < 8)
-		{
-			// Around 25% chance to mash
-			if (M_RandomChance(FRACUNIT/4))
-			{
-				mash = true;
-			}
-		}
-		else if (useodds >= 8 && useodds < 12)
-		{
-			// Around 50% chance to mash
-			if (M_RandomChance(FRACUNIT/2))
-			{
-				mash = true;
-			}
-		}
-		else if (useodds >= 12)
-		{
-			// We are too far back!
-			mash = true;
-		}
 	}
 
 	if (player->rings < 0 && K_ItemResultEnabled(K_GetKartResult("superring")))
@@ -1169,6 +1140,24 @@ static void K_BotItemRouletteMash(botdata_t *bd, const player_t *player)
 		// Uh oh, we need a loan!
 		// It'll be better in the long run for bots to lose an item set for 5-15 free rings.
 		mash = true;
+	}
+
+	// Mash based on useodds to approximate bots in the back mashing like players would.
+	if (mash == false)
+	{
+		const fixed_t minuseodds = 4*FRACUNIT;
+		const fixed_t maxuseodds = 15*FRACUNIT;
+		fixed_t useodds = K_BotCalculateUseodds(player)*FRACUNIT;
+
+		if (useodds > minuseodds)
+		{
+			fixed_t chance = CLAMP(FixedDiv(useodds - minuseodds, maxuseodds - minuseodds), 0, FRACUNIT);
+
+			chance = Easing_InSine(chance, 0, FRACUNIT);
+
+			if (M_RandomChance(chance))
+				mash = true;
+		}
 	}
 
 	if (mash == true)
