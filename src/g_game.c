@@ -1410,10 +1410,12 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 	static INT32 turnheld[MAXSPLITSCREENPLAYERS]; // for accelerative turning
 	static boolean resetdown[MAXSPLITSCREENPLAYERS]; // don't cam reset every frame
+	static boolean joystickactive[MAXSPLITSCREENPLAYERS]; // don't use accelerometer tilt if we're alrady turning with stick
 
 	INT32 forward, side, tspeed;
 
 	joystickvector2_t joystickvector;
+	INT16 accelerometertilt;
 
 	// you'd BETTER not touch the player while freecamming...
 	player_t *player = &players[g_localplayers[forplayer]];
@@ -1455,6 +1457,15 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	joystickvector.yaxis = 0;
 	G_HandleAxisDeadZone(forplayer, &joystickvector);
 
+	if (joystickvector.xaxis != 0)
+	{
+		joystickactive[ssplayer] = true;
+	}
+	else if (!joystickactive[ssplayer])
+	{
+
+	}
+
 	// For kart, I've turned the aim axis into a digital axis because we only
 	// use it for aiming to throw items forward/backward and the vote screen
 	// This mean that the turn axis will still be gradient but up/down will be 0
@@ -1464,6 +1475,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (encoremode)
 	{
 		joystickvector.xaxis = -joystickvector.xaxis;
+		accelerometertilt = -accelerometertilt;
 	}
 
 	forward = side = 0;
@@ -1487,7 +1499,10 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		}
 	}
 	else
+	{
 		turnheld[forplayer] = 0;
+		joystickactive[ssplayer] = false;
+	}
 
 	cmd->turning = 0;
 

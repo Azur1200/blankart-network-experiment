@@ -67,6 +67,7 @@ struct ticcmd_t
 	INT16 angle; // Predicted angle, use me if you can!
 	INT16 throwdir; // Aiming direction
 	INT16 aiming; // vertical aiming, see G_BuildTicCmd
+	INT16 tilt; // controller tilt
 	UINT16 buttons;
 	UINT8 latency; // Netgames: how many tics ago was this ticcmd generated from this player's end?
 	UINT8 flags;

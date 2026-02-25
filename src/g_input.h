@@ -94,7 +94,7 @@ typedef enum
 	gc_respawn,
 	gc_director,
 	gc_horncode,
-	num_gamecontrols
+	gc_gamepadtilt,
 } gamecontrols_e;
 
 // mouse values are used once
