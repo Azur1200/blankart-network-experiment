@@ -331,7 +331,7 @@ boolean st_overlay;
 /*
 static INT32 SCZ(INT32 z)
 {
-	return FixedInt(FixedMul(z<<FRACBITS, vid.fdupy));
+	return FixedInt(FixedMul(z<<FRACBITS, vid.fdup));
 }
 */
 
@@ -386,7 +386,7 @@ static INT32 SPLITFLAGS(INT32 f)
 /*
 static INT32 SCX(INT32 x)
 {
-	return FixedInt(FixedMul(x<<FRACBITS, vid.fdupx));
+	return FixedInt(FixedMul(x<<FRACBITS, vid.fdup));
 }
 */
 
@@ -397,14 +397,14 @@ static INT32 SCR(INT32 r)
 		//31/10/99: fixed by Hurdler so it _works_ also in hardware mode
 	// do not scale to resolution for hardware accelerated
 	// because these modes always scale by default
-	y = FixedMul(r*FRACUNIT, vid.fdupy); // scale to resolution
+	y = FixedMul(r*FRACUNIT, vid.fdup); // scale to resolution
 	if (splitscreen)
 	{
 		y >>= 1;
 		if (stplyrnum != 0)
 			y += vid.height / 2;
 	}
-	return FixedInt(FixedDiv(y, vid.fdupy));
+	return FixedInt(FixedDiv(y, vid.fdup));
 }
 #endif
 
@@ -670,7 +670,7 @@ void ST_drawTitleCard(void)
 	INT32 lvlttlxpos;
 	INT32 ttlnumxpos;
 	INT32 zonexpos;
-	INT32 dupcalc = (vid.width/vid.dupx);
+	INT32 dupcalc = (vid.scaledwidth);
 	UINT8 gtc = G_GetGametypeColor(gametype);
 	INT32 sub = 0;
 	INT32 bary = (r_splitscreen)
@@ -855,7 +855,7 @@ static void ST_overlayDrawer(void)
 				}
 				else if (r_splitscreen)
 				{
-					V_DrawCenteredThinString((vid.width/vid.dupx)/4, BASEVIDHEIGHT/2 - 12, V_HUDTRANSHALF|V_ALLOWLOWERCASE|V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_SPLITSCREEN, player_names[stplyr-players]);
+					V_DrawCenteredThinString((vid.scaledwidth)/4, BASEVIDHEIGHT/2 - 12, V_HUDTRANSHALF|V_ALLOWLOWERCASE|V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_SPLITSCREEN, player_names[stplyr-players]);
 				}
 			}
 		}

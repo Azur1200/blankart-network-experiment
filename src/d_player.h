@@ -71,8 +71,8 @@ typedef enum
 	// TODO: Is there a better way to track this?
 	PF_GAINAX			= 1<<3,
 	PF_KICKSTARTACCEL	= 1<<4, // Accessibility feature: Is accelerate in kickstart mode?
-	// 1<<5 free
-	// 1<<6 free
+
+	// free: 1<<5 and 1<<6
 
 	PF_WANTSTOJOIN		= 1<<7, // Spectator that wants to join
 
@@ -110,6 +110,16 @@ typedef enum
 	PF_ATTACKDOWN		= 1<<30, // For lua compat, don't use!
 	PF_SLIDING			= 1<<31, // For lua compat, don't use!
 } pflags_t;
+
+typedef enum
+{
+	PAF_AIRDROPINPUT	= 1<<0, // Air drop input held
+	PAF_WANTSAIRDROP	= 1<<1, // Wants Air drop (input pressed and buffered)
+	PAF_AIRDROP_LIGHT	= 1<<2, // Is in Light Air Drop
+	PAF_AIRDROP_HEAVY	= 1<<3, // Is in Heavy Air Drop
+
+	PAF_AIRDROP_MASK	= (PAF_AIRDROP_LIGHT|PAF_AIRDROP_HEAVY), // Is in any Air Drop state
+} p_airdropflags_t;
 
 typedef enum
 {
@@ -199,6 +209,9 @@ typedef enum
 	khud_boostcam,		// Camera push forward on boost
 	khud_destboostcam,	// Ditto
 	khud_timeovercam,	// Camera timer for leaving behind or not
+	khud_heavydropcam,	// Camera timer for heavy air drop
+	khud_postdropcam,	// Camera timer for landing after heavy air drop (both timers superposition for feel)
+	khud_flamecamtime,  // Timer for flame shield usage camera effect
 
 	// Sounds
 	khud_enginesnd,		// Engine sound offset this player is using.
@@ -206,6 +219,7 @@ typedef enum
 	khud_tauntvoices,	// Used to specifically stop taunt voice spam
 	khud_confirmvictim,		// Player ID that you dealt damage to
 	khud_confirmvictimdelay,	// Delay before playing the sound
+	khud_taunthorns,	// Used to specifically stop taunt horn spam
 
 	// Battle
 	khud_cardanimation,	// Used to determine the position of some full-screen Battle Mode graphics
@@ -443,7 +457,7 @@ typedef enum
 	DRIFTMODE_CLASSIC = 0,  // SRB2Kart drifting; no changes
 	DRIFTMODE_SNAPSHOT,     // AKA "Runahead" - Use a prediction system to reduce the chances of a wrongdrift
 	DRIFTMODE_INSTANT,      // Instantly decide your drift on the tic it happens
-	DRIFTMODE_DELAY,        // Delay the time before a drift is decided
+	// DRIFTMODE_DELAY,        // Delay the time before a drift is decided
 	NUMDRIFTMODES
 } driftmode_e;
 
@@ -595,6 +609,10 @@ struct player_t
 
 	INT32 drift_wannaturn;  // Turn values the game uses to determine the direction you want to drift.
 
+	INT32 nulldrift;        // When you drift without accelerating, this value ticks up/down depending on your drift's angle.
+	INT32 nulldrifttilt;    // Sliptide-like kart tilting! (Can be toggled off)
+	tic_t nulldrifttime;
+
 	// (Delay-drift) - Delay in tics before the final drift angle is determined.
 	// Potentially influenced by player lag.
 	tic_t driftdelay;
@@ -656,6 +674,7 @@ struct player_t
 	SINT8 throwdir; 	// Held dir of controls; 1 = forward, 0 = none, -1 = backward (was "player->heldDir")
 
 	UINT8 sadtimer;		// How long you've been sad
+	UINT8 bricktimer;		// How long you've been brick'ed up
 
 	// player's ring count
 	SINT8 rings;
@@ -671,8 +690,11 @@ struct player_t
 	UINT8 ringvolume;		// When consuming lots of rings, lower the sound a little.
 	UINT8 ringtransparency; // When consuming lots of rings, fade out the rings again.
 
-	UINT8 airdroptime;		// Tracks how long airdrop has been active, used for delay before airdrop kicks in.
-	boolean ringdrop;		// Set when having ringdrop applied.
+	INT32 airdroppredelay;			// Handles the delay before airdrop can be activated once going airborne.
+	INT32 airdroptime;				// Tracks how long the player has been in airdrop.
+	INT32 airdropbuffer;			// Mercy time for when heavy air drop will instantly activate once the pre-delay is over.
+	INT32 airdropheavydash;		// Heavy Air Drop acceleration assist time
+	p_airdropflags_t airdropflags;	// Airdrop-exclusive bitflags.
 
 	mobj_t *shieldtracer;	// Blankart: Shield mobj
 
@@ -685,8 +707,8 @@ struct player_t
 	UINT16 flamedash;	 // Flame Shield dash power
 	INT32 flametimer;	 // Flame Shield dash meter left ("fuel")
 	UINT8 flamestore;	 // Flame Shield reserve boost ("temperature")
+	UINT8 flameburnstop; // Time Flame Shield can't increase temperature for
 	tic_t flameoverheat; // Time the Flame Shield spends overheating
-	tic_t flamecamtime;  // Timer for flame shield usage camera effect
 
 	UINT16 hyudorotimer;	// Duration of the Hyudoro offroad effect itself
 	SINT8 stealingtimer;	// you are stealing
@@ -713,10 +735,12 @@ struct player_t
 	UINT16 rocketsneakertimer;		// Rocket Sneaker duration timer
 
 	UINT16 invincibilitytimer;      // Invincibility timer
-	UINT16 maxinvincibilitytime;    // (Alternate) Initial time for Invincibility, used for the item bar.
-	UINT16 invincibilitybottleneck; // (Alternate) Prevents breakaways by gradienting towards a heavier decrement.
-	INT16 invincibilitycancel;      // (Alternate) Duration of Invincibility canceling.
-	UINT8 invincibilitywarning;     // (Alternate) "Timer warning" boolean to signal Alt. Invin. is running out.
+
+	UINT16 smonitortimer;			// S-Monitor timer
+	UINT16 maxsmonitortime;    		// Initial time for the S-Monitor, used for the item bar.
+	UINT16 smonitorexpiring; 		// Once you pass the cluster player, this starts the time limit for your S-Monitor invincibility.
+	INT16 smonitorcancel;           // Duration of S-Monitor canceling.
+	UINT8 smonitorwarning;          // "Timer warning" boolean to signal the S-Monitor is running out.
 
 	UINT8 eggmanexplode;	// Fake item recieved, explode in a few seconds
 	SINT8 eggmanblame;		// (-1 to 15) - Fake item recieved, who set this fake

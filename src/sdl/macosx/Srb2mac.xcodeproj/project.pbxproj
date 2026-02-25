@@ -179,7 +179,7 @@
 		1E44AE630B67CC2B00BAD059 /* hw3sound.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = hw3sound.c; path = ../../hardware/hw3sound.c; sourceTree = SOURCE_ROOT; };
 		1E44AE640B67CC2B00BAD059 /* hw_cache.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = hw_cache.c; path = ../../hardware/hw_cache.c; sourceTree = SOURCE_ROOT; };
 		1E44AE650B67CC2B00BAD059 /* hw_dll.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = hw_dll.h; path = ../../hardware/hw_dll.h; sourceTree = SOURCE_ROOT; };
-		1E44AE660B67CC2B00BAD059 /* hw_drv.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = hw_drv.h; path = ../../hardware/hw_drv.h; sourceTree = SOURCE_ROOT; };
+		1E44AE660B67CC2B00BAD059 /* hw_gpu.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = hw_gpu.h; path = ../../hardware/hw_gpu.h; sourceTree = SOURCE_ROOT; };
 		1E44AE680B67CC2B00BAD059 /* hw_light.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = hw_light.c; path = ../../hardware/hw_light.c; sourceTree = SOURCE_ROOT; };
 		1E44AE690B67CC2B00BAD059 /* hw_light.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = hw_light.h; path = ../../hardware/hw_light.h; sourceTree = SOURCE_ROOT; };
 		1E44AE6A0B67CC2B00BAD059 /* hw3sound.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = hw3sound.h; path = ../../hardware/hw3sound.h; sourceTree = SOURCE_ROOT; };
@@ -228,7 +228,7 @@
 		1E44AED60B67CD1200BAD059 /* i_tcp.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = i_tcp.h; path = ../../i_tcp.h; sourceTree = SOURCE_ROOT; };
 		1E44AED70B67CD1200BAD059 /* i_system.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = i_system.h; path = ../../i_system.h; sourceTree = SOURCE_ROOT; };
 		1E44AED80B67CD1200BAD059 /* i_video.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = i_video.h; path = ../../i_video.h; sourceTree = SOURCE_ROOT; };
-		1E44AED90B67CD1300BAD059 /* i_joy.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = i_joy.h; path = ../../i_joy.h; sourceTree = SOURCE_ROOT; };
+		1E44AED90B67CD1300BAD059 /* i_gamepad.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = i_gamepad.h; path = ../../i_gamepad.h; sourceTree = SOURCE_ROOT; };
 		1E44AEE10B67CD2B00BAD059 /* am_map.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; name = am_map.c; path = ../../am_map.c; sourceTree = SOURCE_ROOT; };
 		1E44AEE20B67CD2B00BAD059 /* am_map.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = am_map.h; path = ../../am_map.h; sourceTree = SOURCE_ROOT; };
 		1E44AEE50B67CD3200BAD059 /* byteptr.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = byteptr.h; path = ../../byteptr.h; sourceTree = SOURCE_ROOT; };
@@ -531,7 +531,7 @@
 				1E44AE630B67CC2B00BAD059 /* hw3sound.c */,
 				1E44AE640B67CC2B00BAD059 /* hw_cache.c */,
 				1E44AE650B67CC2B00BAD059 /* hw_dll.h */,
-				1E44AE660B67CC2B00BAD059 /* hw_drv.h */,
+				1E44AE660B67CC2B00BAD059 /* hw_gpu.h */,
 				1E44AE680B67CC2B00BAD059 /* hw_light.c */,
 				1E44AE690B67CC2B00BAD059 /* hw_light.h */,
 				1E44AE6A0B67CC2B00BAD059 /* hw3sound.h */,
@@ -651,7 +651,7 @@
 				1E44AED60B67CD1200BAD059 /* i_tcp.h */,
 				1E44AED70B67CD1200BAD059 /* i_system.h */,
 				1E44AED80B67CD1200BAD059 /* i_video.h */,
-				1E44AED90B67CD1300BAD059 /* i_joy.h */,
+				1E44AED90B67CD1300BAD059 /* i_gamepad.h */,
 				1E44AEF50B67CD9F00BAD059 /* keys.h */,
 				1E44AF200B67CE4100BAD059 /* mserv.c */,
 				1E44AF210B67CE4100BAD059 /* mserv.h */,

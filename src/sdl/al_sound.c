@@ -80,7 +80,7 @@ typedef enum
 #include "../i_system.h" // I_Sleep
 #include "../fastcmp.h"
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 typedef struct
 {
@@ -1065,9 +1065,10 @@ static void do_fading_callback(void)
 	fading_do_callback = true;
 }
 
-static UINT32 music_fade(UINT32 interval, void *param)
+static UINT32 music_fade(void *userdata, SDL_TimerID timerID, Uint32 interval)
 {
-	(void)param;
+	(void)userdata;
+	(void)timerID;
 
 	if (!is_fading
 		|| fabs(internal_volume - fading_target) < FLOATEP // EQUALS I love floats I love floats
@@ -1791,6 +1792,8 @@ boolean I_SetSongTrack(INT32 track)
 
 			return false;
 		}
+#endif
+#ifdef HAVE_GME
 	}
 #endif
 

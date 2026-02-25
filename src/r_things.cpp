@@ -44,7 +44,7 @@
 #include "hardware/hw_md2.h"
 #include "hardware/hw_glob.h"
 #include "hardware/hw_light.h"
-#include "hardware/hw_drv.h"
+#include "hardware/hw_gpu.h"
 #endif
 
 // SRB2kart
@@ -922,7 +922,7 @@ UINT8 *R_GetSpriteTranslation(vissprite_t *vis)
 
 		if (!(vis->cut & SC_PRECIP) && vis->mobj->colorized)
 		{
-			return R_GetTranslationColormap(R_IsOverlayingInvinciblePlayer(vis->mobj) ? TC_BLINK : TC_RAINBOW,
+			return R_GetTranslationColormap(R_IsOverlayingSMonitorPlayer(vis->mobj) ? TC_BLINK : TC_RAINBOW,
 											static_cast<skincolornum_t>(vis->mobj->color),
 											GTC_CACHE);
 		}
@@ -1838,7 +1838,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	interpmobjstate_t interp = {0};
 	mobj_t *interptarg = thing;
 
-	if (R_IsOverlayingInvinciblePlayer(thing))
+	if (R_IsOverlayingSMonitorPlayer(thing))
 	{
 		// Kill overlay misalignment
 		interptarg = thing->target;

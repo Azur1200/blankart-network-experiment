@@ -93,8 +93,8 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x6a399991c4467fe6
-#define ASSET_HASH_MAPPATCH_PK3        0xbbc2c6a7a685da3a
+#define ASSET_HASH_MAIN_PK3            0x348af552ccc104d2
+#define ASSET_HASH_MAPPATCH_PK3        0x1745690024efbaf8
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
 #define ASSET_HASH_PATCH_PK3           0x0000000000000000
@@ -181,6 +181,8 @@ INT32 eventhead, eventtail;
 
 boolean dedicated = false;
 
+boolean loaded_config = false;
+
 //
 // D_PostEvent
 // Called by the I/O functions when input is detected
@@ -219,7 +221,6 @@ void D_ProcessEvents(void)
 	for (size_t i = 0; i < 4; i++)
 		gamekeydown[0][KEY_MOUSEMOVE + i] = 0;
 
-	memset(deviceResponding, false, sizeof (deviceResponding));
 	for (; eventtail != eventhead; eventtail = (eventtail+1) & (MAXEVENTS-1))
 	{
 		ev = &events[eventtail];
@@ -319,8 +320,7 @@ boolean D_RenderLevel(void)
 		{
 			// V_DrawPatchFill, but for the fourth screen only
 			patch_t *pat = static_cast<patch_t*>(W_CachePatchName("SRB2BACK", PU_CACHE));
-			INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-			INT32 x, y, pw = SHORT(pat->width) * dupz, ph = SHORT(pat->height) * dupz;
+			INT32 x, y, pw = SHORT(pat->width) * vid.dup, ph = SHORT(pat->height) * vid.dup;
 
 			for (x = vid.width>>1; x < vid.width; x += pw)
 			{
@@ -595,14 +595,11 @@ static void D_Display(void)
 	// STUPID race condition...
 	{
 		wipegamestate = gamestate;
-		cansetrender = true;
 
 		// clean up border stuff
 		// see if the border needs to be initially drawn
 		if (G_GamestateUsesLevel() == true || (gamestate == GS_TITLESCREEN && titlemapinaction && curbghide && (!hidetitlemap)))
 		{
-			// Rendering a level; don't allow renderer changes!
-			cansetrender = false;
 
 			D_RenderLevel();
 
@@ -889,6 +886,11 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 #ifndef NOWIPE
 		if (type == WIPELOOP_RUNWIPE)
 		{
+			if (I_Interrupted())
+			{
+				I_Quit();
+			}
+
 			// get fademask first so we can tell if it exists or not
 			fmask = F_GetFadeMask(wipetype, wipeframe);
 			if (!fmask)
@@ -1072,11 +1074,6 @@ void D_SRB2Loop(void)
 			}
 
 			renderisnewtic = true;
-
-			if (!dedicated)
-			{
-				G_DeviceLEDTick();
-			}
 		}
 		else
 		{
@@ -1116,6 +1113,11 @@ void D_SRB2Loop(void)
 			M_SaveFrame();
 		if (takescreenshot)
 			M_DoScreenShot();
+
+		if (!dedicated)
+		{
+			G_ControllerLEDTick();
+		}
 
 		// consoleplayer -> displayplayers (hear sounds from viewpoint)
 		S_UpdateSounds(); // move positional sounds
@@ -1214,16 +1216,15 @@ void D_ResetGameState(void)
 
 	// clear cmd building stuff
 	memset(gamekeydown, 0, sizeof(gamekeydown));
-	memset(deviceResponding, false, sizeof (deviceResponding));
 
 	// Reset the palette
 	if (rendermode != render_none)
 		V_SetPaletteLump("PLAYPAL");
 
-	G_ResetAllDeviceRumbles();
+	G_ResetAllControllerRumbles();
 
 	// map palettes affect this
-	G_ResetDeviceLED();
+	G_ResetControllerLED();
 
 	// The title screen is obviously not a tutorial! (Unless I'm mistaken)
 	tutorialmode = false;
@@ -1675,6 +1676,7 @@ void D_SRB2Main(void)
 	M_Init();
 	if (!dedicated)
 	{
+		CV_RegisterVar(&cv_highreshudscale);
 		CV_RegisterVar(&cv_ticrate);
 		CV_RegisterVar(&cv_accuratefps);
 		CV_RegisterVar(&cv_constextsize);
@@ -1803,6 +1805,8 @@ void D_SRB2Main(void)
 	wipegamestate = gamestate;
 
 	savedata.lives = 0; // flag this as not-used
+
+	loaded_config = true; // so pallettechange doesent get called 500 times at startup lol
 
 	CON_SetLoadingProgress(LOADED_CONFIG);
 
@@ -2015,9 +2019,9 @@ void D_SRB2Main(void)
 
 	// user settings come before "+" parameters.
 	if (dedicated)
-		COM_ImmedExecute(va("exec \"%s" PATHSEP "kartserv.cfg\"\n", srb2home));
+		COM_ImmedExecute(va("exec \"%s" PATHSEP "blanserv.cfg\"\n", srb2home));
 	else
-		COM_ImmedExecute(va("exec \"%s" PATHSEP "kartexec.cfg\" -noerror\n", srb2home));
+		COM_ImmedExecute(va("exec \"%s" PATHSEP "blanexec.cfg\" -noerror\n", srb2home));
 
 	if (!autostart)
 		M_PushSpecialParameters(); // push all "+" parameters at the command buffer

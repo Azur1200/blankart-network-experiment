@@ -18,6 +18,7 @@
 #include "console.h"
 #include "command.h"
 #include "i_time.h"
+#include "i_gamepad.h"
 #include "i_system.h"
 #include "g_game.h"
 #include "hu_stuff.h"
@@ -375,6 +376,26 @@ consvar_t cv_voice[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("voice4", "None", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Voice4_OnChange)
 };
 
+static CV_PossibleValue_t restatvalue_cons_t[] = {{0, "MIN"}, {9, "MAX"}, {0, NULL}};
+consvar_t cv_dummyrestatspeed[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("restatspeed", "0", 0, restatvalue_cons_t, NULL),
+	CVAR_INIT ("restatspeed2", "0", 0, restatvalue_cons_t, NULL),
+	CVAR_INIT ("restatspeed3", "0", 0, restatvalue_cons_t, NULL),
+	CVAR_INIT ("restatspeed4", "0", 0, restatvalue_cons_t, NULL)
+};
+consvar_t cv_dummyrestatweight[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("restatweight", "0", 0, restatvalue_cons_t, NULL),
+	CVAR_INIT ("restatweight2", "0", 0, restatvalue_cons_t, NULL),
+	CVAR_INIT ("restatweight3", "0", 0, restatvalue_cons_t, NULL),
+	CVAR_INIT ("restatweight4", "0", 0, restatvalue_cons_t, NULL)
+};
+
+consvar_t cv_dummyrestatrandom[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("restatrandom", "No", 0, CV_YesNo, NULL),
+	CVAR_INIT ("restatrandom2", "No", 0, CV_YesNo, NULL),
+	CVAR_INIT ("restatrandom3", "No", 0, CV_YesNo, NULL),
+	CVAR_INIT ("restatrandom4", "No", 0, CV_YesNo, NULL)
+};
 
 consvar_t cv_skipmapcheck = CVAR_INIT ("skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL);
 
@@ -382,31 +403,22 @@ consvar_t cv_usemouse = CVAR_INIT ("use_mouse", "Off", CV_SAVE|CV_CALL,usemouse_
 
 consvar_t cv_laglesscam = CVAR_INIT ("laglesscamera", "Off", CV_SAVE,CV_OnOff, NULL);
 
-consvar_t cv_usejoystick[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("use_joystick", "1", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick1),
-	CVAR_INIT ("use_joystick2", "2", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick2),
-	CVAR_INIT ("use_joystick3", "3", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick3),
-	CVAR_INIT ("use_joystick4", "4", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick4)
+consvar_t cv_usecontroller[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("use_joystick", "1", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitController1),
+	CVAR_INIT ("use_joystick2", "2", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitController2),
+	CVAR_INIT ("use_joystick3", "3", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitController3),
+	CVAR_INIT ("use_joystick4", "4", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitController4)
 };
 
 #if (defined (LJOYSTICK) || defined (HAVE_SDL))
-consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("padscale", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale),
-	CVAR_INIT ("padscale2", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale2),
-	CVAR_INIT ("padscale3", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale3),
-	CVAR_INIT ("padscale4", "1", CV_SAVE|CV_CALL, NULL, I_JoyScale4)
+consvar_t cv_controllerscale[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("padscale", "1", CV_SAVE|CV_CALL, NULL, I_ControllerScale),
+	CVAR_INIT ("padscale2", "1", CV_SAVE|CV_CALL, NULL, I_ControllerScale2),
+	CVAR_INIT ("padscale3", "1", CV_SAVE|CV_CALL, NULL, I_ControllerScale3),
+	CVAR_INIT ("padscale4", "1", CV_SAVE|CV_CALL, NULL, I_ControllerScale4)
 };
-
-#ifdef LJOYSTICK
-consvar_t cv_joyport[MAXSPLITSCREENPLAYERS] = { //Alam: for later
-	CVAR_INIT ("padport", "/dev/js0", CV_SAVE, joyport_cons_t, NULL),
-	CVAR_INIT ("padport2", "/dev/js0", CV_SAVE, joyport_cons_t, NULL),
-	CVAR_INIT ("padport3", "/dev/js0", CV_SAVE, joyport_cons_t, NULL),
-	CVAR_INIT ("padport4", "/dev/js0", CV_SAVE, joyport_cons_t, NULL)
-};
-#endif
 #else
-consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS] = { //Alam: Dummy for save
+consvar_t cv_controllerscale[MAXSPLITSCREENPLAYERS] = { //Alam: Dummy for save
 	CVAR_INIT ("padscale", "1", CV_SAVE|CV_HIDEN, NULL, NULL),
 	CVAR_INIT ("padscale2", "1", CV_SAVE|CV_HIDEN, NULL, NULL),
 	CVAR_INIT ("padscale3", "1", CV_SAVE|CV_HIDEN, NULL, NULL),
@@ -437,6 +449,7 @@ static CV_PossibleValue_t kartspeedometer_cons_t[] = {{0, "Off"}, {1, "Kilometer
 consvar_t cv_kartspeedometer = CVAR_INIT ("kartdisplayspeed", "Percentage", CV_SAVE, kartspeedometer_cons_t, NULL); // use tics in display
 static CV_PossibleValue_t kartvoices_cons_t[] = {{0, "Never"}, {1, "Tasteful"}, {2, "Meme"}, {0, NULL}};
 consvar_t cv_kartvoices = CVAR_INIT ("kartvoices", "Tasteful", CV_SAVE, kartvoices_cons_t, NULL);
+consvar_t cv_karthorns = CVAR_INIT ("taunthorns", "Tasteful", CV_SAVE, kartvoices_cons_t, NULL);
 
 static CV_PossibleValue_t kartbot_cons_t[] = {
 	{0, "Off"},
@@ -499,16 +512,18 @@ consvar_t cv_kartstacking_panel_maxgrade = CVAR_INIT ("vanillaboost_panel_maxgra
 //
 // Invincibility
 //
-
-// Classic boosts
-consvar_t cv_kartstacking_invincibility_classicspeedboost = CVAR_INIT ("vanillaboost_invincibility_classicspeedboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_classicaccelboost = CVAR_INIT ("vanillaboost_invincibility_classicaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_classichandleboost = CVAR_INIT ("vanillaboost_invincibility_classichandleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-// Alternate boosts
-consvar_t cv_kartstacking_invincibility_alternatespeedboost = CVAR_INIT ("vanillaboost_invincibility_alternatespeedboost", "0.67", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_alternateaccelboost = CVAR_INIT ("vanillaboost_invincibility_alternateaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_alternatehandleboost = CVAR_INIT ("vanillaboost_invincibility_alternatehandleboost", "0.45", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_speedboost = CVAR_INIT ("vanillaboost_invincibility_speedboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_accelboost = CVAR_INIT ("vanillaboost_invincibility_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_handleboost = CVAR_INIT ("vanillaboost_invincibility_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_invincibility_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
+
+//
+// S-Monitor
+//
+consvar_t cv_kartstacking_smonitor_speedboost = CVAR_INIT ("vanillaboost_smonitor_speedboost", "0.75", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_smonitor_accelboost = CVAR_INIT ("vanillaboost_smonitor_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_smonitor_handleboost = CVAR_INIT ("vanillaboost_smonitor_handleboost", "0.48", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_smonitor_stackable = CVAR_INIT ("vanillaboost_smonitor_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_grow_accelboost = CVAR_INIT ("vanillaboost_grow_accelboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
@@ -525,7 +540,7 @@ consvar_t cv_kartstacking_bubble_accelboost = CVAR_INIT ("vanillaboost_bubble_ac
 consvar_t cv_kartstacking_bubble_handleboost = CVAR_INIT ("vanillaboost_bubble_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_bubble_stackable = CVAR_INIT ("vanillaboost_bubble_stackable", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_flame_speedval = CVAR_INIT ("vanillaboost_flame_speedval", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_flame_speedval = CVAR_INIT ("vanillaboost_flame_speedval", "0.14", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_flame_accelboost = CVAR_INIT ("vanillaboost_flame_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_flame_handleboost = CVAR_INIT ("vanillaboost_flame_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_flame_stackable = CVAR_INIT ("vanillaboost_flame_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
@@ -550,15 +565,21 @@ consvar_t cv_kartstacking_ring_accelboost = CVAR_INIT ("vanillaboost_ring_accelb
 consvar_t cv_kartstacking_ring_handleboost = CVAR_INIT ("vanillaboost_ring_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_ring_stackable = CVAR_INIT ("vanillaboost_ring_stackable", "On", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_ssmt_speedboost = CVAR_INIT ("vanillaboost_ssmt_speedboost", "0.1", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_ssmt_accelboost = CVAR_INIT ("vanillaboost_ssmt_accelboost", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_ssmt_handleboost = CVAR_INIT ("vanillaboost_ssmt_handleboost", "0.1", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_heavydrop_speedboost = CVAR_INIT ("vanillaboost_heavydrop_speedboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_heavydrop_accelboost = CVAR_INIT ("vanillaboost_heavydrop_accelboost", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_heavydrop_handleboost = CVAR_INIT ("vanillaboost_heavydrop_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_heavydrop_stackable = CVAR_INIT ("vanillaboost_heavydrop_stackable", "On", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
+consvar_t cv_kartstacking_heavydrop_uniform = CVAR_INIT ("vanillaboost_heavydrop_uniform", "No", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_YesNo, NULL);
 
-consvar_t cv_kartstacking_recspin_speedboost_lo = CVAR_INIT ("vanillaboost_recspin_speedboost_lo", "0.0001", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_recspin_accelboost_lo = CVAR_INIT ("vanillaboost_recspin_accelboost_lo", "2.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_ssmt_speedboost = CVAR_INIT ("vanillaboost_ssmt_speedboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_ssmt_accelboost = CVAR_INIT ("vanillaboost_ssmt_accelboost", "10.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_ssmt_handleboost = CVAR_INIT ("vanillaboost_ssmt_handleboost", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+
+consvar_t cv_kartstacking_recspin_speedboost_lo = CVAR_INIT ("vanillaboost_recspin_speedboost_lo", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_recspin_accelboost_lo = CVAR_INIT ("vanillaboost_recspin_accelboost_lo", "0.5", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_recspin_handleboost_lo = CVAR_INIT ("vanillaboost_recspin_handleboost_lo", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
-consvar_t cv_kartstacking_recspin_speedboost_hi = CVAR_INIT ("vanillaboost_recspin_speedboost_hi", "0.0001", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_recspin_speedboost_hi = CVAR_INIT ("vanillaboost_recspin_speedboost_hi", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_recspin_accelboost_hi = CVAR_INIT ("vanillaboost_recspin_accelboost_hi", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_recspin_handleboost_hi = CVAR_INIT ("vanillaboost_recspin_handleboost_hi", "0.5", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
@@ -612,7 +633,12 @@ consvar_t cv_kartdrafting_closedraft = CVAR_INIT ("kartdrafting_closedraft", "Of
 consvar_t cv_kartdrafting_closedeadzone = CVAR_INIT ("kartdrafting_closedeadzone", "640", CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
 consvar_t cv_kartdrafting_basedistance = CVAR_INIT ("kartdrafting_basedistance", "2560", CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
 
-consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartAirDrop_OnChange);
+static CV_PossibleValue_t airdrop_cons_t[] = {{AIRDROP_NONE, "Off"},
+						{AIRDROP_LIGHT, "Light"},
+						{AIRDROP_HEAVY, "Heavy"},
+						{AIRDROP_FUSION, "Fusion"},
+						{0, NULL}};
+consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "Off", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, airdrop_cons_t, KartAirDrop_OnChange);
 
 consvar_t cv_kartairthrust = CVAR_INIT ("kartairthrust", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartAirThrust_OnChange);
 consvar_t cv_kartairthrust_reductionrate = CVAR_INIT ("kartairthrust_reductionrate", "0.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
@@ -621,7 +647,7 @@ consvar_t cv_kartairthrust_power2 = CVAR_INIT ("kartairthrust_power2", "0.35", C
 consvar_t cv_kartairthrust_power3 = CVAR_INIT ("kartairthrust_power3", "0.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power4 = CVAR_INIT ("kartairthrust_power4", "0.75", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 
-consvar_t cv_kartwaterskiplock = CVAR_INIT ("kartwaterskiplock", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartWaterSkipLock_OnChange);
+consvar_t cv_kartwaterskiplock = CVAR_INIT ("kartwaterskiplock", "Yes", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartWaterSkipLock_OnChange);
 
 consvar_t cv_kartitemlitter = CVAR_INIT ("kartitemlitter", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemLitter_OnChange);
 consvar_t cv_kartitempush = CVAR_INIT ("kartitempush", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemPush_OnChange);
@@ -658,14 +684,19 @@ consvar_t cv_kartaltshrinktime = CVAR_INIT ("kartaltshrinktime", "14", CV_NETVAR
 static CV_PossibleValue_t kartinvintheme_cons_t[] = {{0, "Standard"}, {1, "Full"}, {0, NULL}};
 consvar_t cv_kartinvintheme = CVAR_INIT ("kartinvintheme", "Standard", CV_SAVE, kartinvintheme_cons_t, NULL);
 
-// How far the player must be from the cluster to begin frequently rolling Invincibility.
-static CV_PossibleValue_t invindist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "8600", CV_NETVAR|CV_CHEAT|CV_GUARD, invindist_cons_t, NULL);
+// Invincibility damage toggles
+static CV_PossibleValue_t kartinvindmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {0, NULL}};
 
-consvar_t cv_kartinvindistmul = CVAR_INIT ("kartinvindistmul", "0.54", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+// Experiment: Let's allow changing the damage type
+consvar_t cv_kartinvindamage = CVAR_INIT ("kartinvindamage", "Wipe-out", CV_NETVAR|CV_CHEAT|CV_GUARD, kartinvindmg_cons_t, NULL);
 
-consvar_t cv_kartinvin_maxtime = CVAR_INIT ("kartinvin_maxtime", "35.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartinvin_midtime = CVAR_INIT ("kartinvin_midtime", "23.333", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+// How far the player must be from the cluster to roll an S-Monitor.
+static CV_PossibleValue_t smonitordist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
+consvar_t cv_kartsmonitordist = CVAR_INIT ("smonitor_startdist", "12000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
+consvar_t cv_kartsmonitor_decaydist = CVAR_INIT ("smonitor_decaydist", "3600", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
+
+static CV_PossibleValue_t smonitordecaytime_cons_t[] = {{1, "MIN"}, {6, "MAX"}, {0, NULL}};
+consvar_t cv_kartsmonitor_decaytime = CVAR_INIT ("smonitor_decaytime", "2", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordecaytime_cons_t, NULL);
 
 // opinionated stuff for testing balance tweaks on the shields
 consvar_t cv_kartbubble_defense_canidle = CVAR_INIT ("kartbubble_defense_canidle", "On", CV_NETVAR, CV_OnOff, NULL);
@@ -673,8 +704,7 @@ static CV_PossibleValue_t bubble_defense_damagerate_cons_t[] = {{0, "MIN"}, {FRA
 consvar_t cv_kartbubble_defense_damagerate = CVAR_INIT ("kartbubble_defense_damagerate", "1.0", CV_NETVAR|CV_FLOAT, bubble_defense_damagerate_cons_t, NULL);
 consvar_t cv_kartbubble_boost_allow = CVAR_INIT ("kartbubble_boost_allow", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartbubble_boost_offroadignore = CVAR_INIT ("kartbubble_boost_offroadignore", "On", CV_NETVAR, CV_OnOff, NULL);
-consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "Off", CV_NETVAR, CV_OnOff, NULL);
-// we want this to be default now apparently
+consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "On", CV_NETVAR, CV_OnOff, NULL);
 
 // "Arrow Bullet": above a certain speed threshold, an aura in the shape of the Shrink arrow
@@ -726,7 +756,7 @@ consvar_t cv_itemfinder = CVAR_INIT ("itemfinder", "Off", CV_CALL|CV_NOSHOWHELP,
 // Scoring type options
 consvar_t cv_overtime = CVAR_INIT ("overtime", "Yes", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
 
-consvar_t cv_rollingdemos = CVAR_INIT ("rollingdemos", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_rollingdemos = CVAR_INIT ("rollingdemos", "Off", CV_SAVE, CV_OnOff, NULL);
 
 static CV_PossibleValue_t pointlimit_cons_t[] = {{1, "MIN"}, {MAXSCORE, "MAX"}, {0, "None"}, {0, NULL}};
 consvar_t cv_pointlimit = CVAR_INIT ("pointlimit", "None", CV_NETVAR|CV_CALL|CV_NOINIT, pointlimit_cons_t, PointLimit_OnChange);
@@ -789,6 +819,15 @@ consvar_t cv_minihead = CVAR_INIT ("smallminimapplayers", "Off", CV_SAVE, CV_OnO
 
 static CV_PossibleValue_t spinoutroll_cons_t[] = {{0, "Off"}, {1, "Minimap Only"}, {2, "Rankings Only"}, {3, "Minimap+Rankings"}, {0, NULL}};
 consvar_t cv_spinoutroll = CVAR_INIT ("spinoutroll", "Minimap+Rankings", CV_SAVE, spinoutroll_cons_t, NULL);
+
+// Item/Ringbox Roulette drawn on player, from RadioRacers
+consvar_t cv_rouletteonplayer = CVAR_INIT ("rouletteonplayer", "Off", CV_SAVE, CV_OnOff, NULL);
+
+static CV_PossibleValue_t rlplrtrans_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
+
+// Controllable visibility for the player-tracking roulette icons.
+// Default is 7 (70% visible; V_30TRANS)
+consvar_t cv_rouletteplayertrans = CVAR_INIT ("rouletteonplayertrans", "7", CV_SAVE, rlplrtrans_cons_t, NULL);
 
 consvar_t cv_showviewpointtext = CVAR_INIT ("showviewpointtext", "On", CV_SAVE, CV_OnOff, NULL);
 
@@ -1112,6 +1151,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_showminimapangle);
 	CV_RegisterVar(&cv_minihead);
 	CV_RegisterVar(&cv_spinoutroll);
+	CV_RegisterVar(&cv_rouletteonplayer);
+	CV_RegisterVar(&cv_rouletteplayertrans);
 	CV_RegisterVar(&cv_showlapemblem);
 	CV_RegisterVar(&cv_lapemblemmode);
 	CV_RegisterVar(&cv_racesplits);
@@ -1158,10 +1199,6 @@ void D_RegisterServerCommands(void)
 	// player restat
 	CV_RegisterVar(&cv_allowrestat);
 	CV_RegisterVar(&cv_notifyrestat);
-	COM_AddCommand("restat", Command_Restat);
-	COM_AddCommand("restat2", Command_Restat2);
-	COM_AddCommand("restat3", Command_Restat3);
-	COM_AddCommand("restat4", Command_Restat4);
 }
 
 // =========================================================================
@@ -1281,7 +1318,16 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_jitterlegacy[i]);
 		CV_RegisterVar(&cv_driftmode[i]);
 		CV_RegisterVar(&cv_voice[i]);
+		
+		CV_RegisterVar(&cv_dummyrestatspeed[i]);
+		CV_RegisterVar(&cv_dummyrestatweight[i]);
+		CV_RegisterVar(&cv_dummyrestatrandom[i]);
 	}
+
+	COM_AddCommand("restat", Command_Restat);
+	COM_AddCommand("restat2", Command_Restat2);
+	COM_AddCommand("restat3", Command_Restat3);
+	COM_AddCommand("restat4", Command_Restat4);
 
 	// preferred number of players
 	CV_RegisterVar(&cv_splitplayers);
@@ -1307,7 +1353,10 @@ void D_RegisterClientCommands(void)
 	COM_AddCommand("displayplayer", Command_Displayplayer_f);
 
 	// FIXME: not to be here.. but needs be done for config loading
+#ifdef BACKWARDSCOMPATCORRECTION
 	CV_RegisterVar(&cv_globalgamma);
+#endif
+	CV_RegisterVar(&cv_globalbrightness);
 	CV_RegisterVar(&cv_globalsaturation);
 
 	CV_RegisterVar(&cv_rhue);
@@ -1317,12 +1366,12 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_bhue);
 	CV_RegisterVar(&cv_mhue);
 
-	CV_RegisterVar(&cv_rgamma);
-	CV_RegisterVar(&cv_ygamma);
-	CV_RegisterVar(&cv_ggamma);
-	CV_RegisterVar(&cv_cgamma);
-	CV_RegisterVar(&cv_bgamma);
-	CV_RegisterVar(&cv_mgamma);
+	CV_RegisterVar(&cv_rbrightness);
+	CV_RegisterVar(&cv_ybrightness);
+	CV_RegisterVar(&cv_gbrightness);
+	CV_RegisterVar(&cv_cbrightness);
+	CV_RegisterVar(&cv_bbrightness);
+	CV_RegisterVar(&cv_mbrightness);
 
 	CV_RegisterVar(&cv_rsaturation);
 	CV_RegisterVar(&cv_ysaturation);
@@ -1363,9 +1412,9 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_deadzonestyle[i]);
 		CV_RegisterVar(&cv_litesteer[i]);
 		CV_RegisterVar(&cv_turnsmooth[i]);
-		CV_RegisterVar(&cv_rumble[i]);
+		CV_RegisterVar(&cv_controllerrumble[i]);
 		CV_RegisterVar(&cv_rumblestrength[i]);
-		CV_RegisterVar(&cv_gamepadled[i]);
+		CV_RegisterVar(&cv_controllerled[i]);
 	}
 
 	// filesrch.c
@@ -1386,11 +1435,8 @@ void D_RegisterClientCommands(void)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		CV_RegisterVar(&cv_usejoystick[i]);
-		CV_RegisterVar(&cv_joyscale[i]);
-#ifdef LJOYSTICK
-		CV_RegisterVar(&cv_joyport[i]);
-#endif
+		CV_RegisterVar(&cv_usecontroller[i]);
+		CV_RegisterVar(&cv_controllerscale[i]);
 	}
 
 	// s_sound.c
@@ -1474,18 +1520,17 @@ void D_RegisterClientCommands(void)
 
 static void RestatForPlayer(UINT32 ssplayer)
 {
-	player_t* player = &players[g_localplayers[ssplayer]];
-	int speed;
-	int weight;
-
 	if (!cv_allowrestat.value)
 	{
 		CONS_Printf("This command has been disabled by the server host.\n");
 		return;
 	}
-	
+
 	if (COM_Argc() > 2)
 	{
+		int speed;
+		int weight;
+
 		if (sscanf(COM_Argv(1), " %d", &speed) == 0 || 
 			sscanf(COM_Argv(2), " %d", &weight) == 0)
 		{
@@ -1501,22 +1546,45 @@ static void RestatForPlayer(UINT32 ssplayer)
 		}
 
 		// should be good now 🥲
-		player->kartspeedrestat = speed;
-		player->kartweightrestat = weight;
-		player->randomrestat = false;
-		
-		CONS_Printf("You will be %d speed, %d weight for the next race.\n", speed, weight);
+		CONS_Printf("You will be %d speed, %d weight for your next race.\n", speed, weight);
 		CONS_Printf("Use \"restat off\" to return to your skin's default stats.\n");
+		CV_StealthSetValue(&cv_dummyrestatspeed[ssplayer], speed);
+		CV_StealthSetValue(&cv_dummyrestatweight[ssplayer], weight);
+		CV_StealthSetValue(&cv_dummyrestatrandom[ssplayer], false);
+
+		// We'll handle it later if we're not playing.
+		if (!Playing())
+			return;
+
+		if (ssplayer > 0 && !splitscreen)
+			return;
 
 		WeaponPref_Send(ssplayer);
 		return;
 	}
 	else if (COM_Argc() > 1)
 	{
-		if (fasticmp(COM_Argv(1), "random"))
+		if (fasticmp(COM_Argv(1), "off"))
 		{
-			player->randomrestat = !player->randomrestat;
-			if (player->randomrestat)
+			CONS_Printf("Now using skin default stats.\n");
+			CV_StealthSetValue(&cv_dummyrestatspeed[ssplayer], 0);
+			CV_StealthSetValue(&cv_dummyrestatweight[ssplayer], 0);
+			CV_StealthSetValue(&cv_dummyrestatrandom[ssplayer], false);
+
+			// We'll handle it later if we're not playing.
+			if (!Playing())
+				return;
+
+			if (ssplayer > 0 && !splitscreen)
+				return;
+
+			WeaponPref_Send(ssplayer);
+			return;
+		}
+		else if (fasticmp(COM_Argv(1), "random"))
+		{
+			CV_StealthSetValue(&cv_dummyrestatrandom[ssplayer], !cv_dummyrestatrandom[ssplayer].value);
+			if (cv_dummyrestatrandom[ssplayer].value)
 			{
 				CONS_Printf("Random restat is now enabled.\n");
 			}
@@ -1525,17 +1593,14 @@ static void RestatForPlayer(UINT32 ssplayer)
 				CONS_Printf("Random restat is now disabled.\n");
 			}
 
+			// We'll handle it later if we're not playing.
+			if (!Playing())
+				return;
+
+			if (ssplayer > 0 && !splitscreen)
+				return;
+
 			WeaponPref_Send(ssplayer);
-			return;
-		}
-		else if (fasticmp(COM_Argv(1), "off"))
-		{
-			player->kartspeedrestat = 0;
-			player->kartweightrestat = 0;
-			player->randomrestat = false;
-			WeaponPref_Send(ssplayer);
-			
-			CONS_Printf("Now using skin default stats.\n");
 			return;
 		}
 		else
@@ -2369,8 +2434,12 @@ enum {
 
 void WeaponPref_Send(UINT8 ssplayer)
 {
-	player_t* player = &players[g_localplayers[ssplayer]];
 	UINT8 prefs = 0;
+
+	if (cv_dummyrestatspeed[ssplayer].value > 9 || cv_dummyrestatspeed[ssplayer].value < 0)
+		CV_StealthSetValue(&cv_dummyrestatspeed[ssplayer], 0);
+	if (cv_dummyrestatweight[ssplayer].value > 9 || cv_dummyrestatweight[ssplayer].value < 0)
+		CV_StealthSetValue(&cv_dummyrestatweight[ssplayer], 0);
 
 	if (cv_kickstartaccel[ssplayer].value)
 		prefs |= WP_KICKSTARTACCEL;
@@ -2384,14 +2453,14 @@ void WeaponPref_Send(UINT8 ssplayer)
 	if (!(cv_jitterlegacy[ssplayer].value))
 		prefs |= WP_LEGACYJITTER;
 	
-	if (player->randomrestat)
+	if (cv_dummyrestatrandom[ssplayer].value)
 		prefs |= WP_RANDOMRESTAT;
 
 	UINT8 buf[5];
 	buf[0] = prefs;
 	buf[1] = cv_mindelay.value;
-	buf[2] = player->kartspeedrestat;
-	buf[3] = player->kartweightrestat;
+	buf[2] = cv_dummyrestatspeed[ssplayer].value;
+	buf[3] = cv_dummyrestatweight[ssplayer].value;
 	buf[4] = cv_driftmode[ssplayer].value;
 
 	SendNetXCmdForPlayer(ssplayer, XD_WEAPONPREF, buf, sizeof buf);
@@ -3868,6 +3937,18 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 
 	mapnumber = READINT16(*cp);
 
+	if (grandprixinfo.gp)
+	{
+		if (gametype != GT_RACE)
+		{
+			grandprixinfo.eventmode = GPEVENT_CHALLENGE;
+		}
+		else
+		{
+			grandprixinfo.eventmode = GPEVENT_NONE;
+		}
+	}
+
 	if (netgame)
 		P_SetRandSeed(READUINT32(*cp));
 
@@ -4046,7 +4127,7 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 	}
 
 	I_UpdateMouseGrab();
-	G_ResetAllDeviceRumbles();
+	G_ResetAllControllerRumbles();
 }
 
 static void Command_ReplayMarker(void)
@@ -8467,29 +8548,14 @@ static void KartAirDrop_OnChange(void)
 		return;
 	}
 
-	if (!K_AirDropActive() && cv_kartairdrop.value)
+	if (leveltime < starttime)
 	{
-		if (leveltime < starttime)
-		{
-			airdropactive = true;
-			CONS_Printf(M_GetText("Air Drop has been turned \"On\".\n"));
-		}
-		else
-		{
-			CONS_Printf(M_GetText("Air Drop will be turned \"On\" Next Round.\n"));
-		}
+		CONS_Printf(M_GetText("Air Drop has been set to \"%s\".\n"), cv_kartairdrop.string);
+		airdropactive = (UINT8)cv_kartairdrop.value;
 	}
-	else if (K_AirDropActive() && !cv_kartairdrop.value)
+	else
 	{
-		if (leveltime < starttime)
-		{
-			airdropactive = false;
-			CONS_Printf(M_GetText("Air Drop has been turned \"Off\".\n"));
-		}
-		else
-		{
-			CONS_Printf(M_GetText("Air Drop will be turned \"Off\" next round.\n"));
-		}
+		CONS_Printf(M_GetText("Air Drop will be set to \"%s\" next round.\n"), cv_kartairdrop.string);
 	}
 }
 

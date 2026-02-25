@@ -117,6 +117,28 @@ static INT32 P_SyncINT32(savebuffer_t *save, INT32 v)
 		return READINT32(save->p);
 }
 
+static UINT64 P_SyncUINT64(savebuffer_t *save, UINT32 v)
+{
+	if (save->write)
+	{
+		WRITEUINT64(save->p, v);
+		return v;
+	}
+	else
+		return READUINT64(save->p);
+}
+
+static INT64 P_SyncINT64(savebuffer_t *save, INT32 v)
+{
+	if (save->write)
+	{
+		WRITEINT64(save->p, v);
+		return v;
+	}
+	else
+		return READINT64(save->p);
+}
+
 /*
 static char P_SyncChar(savebuffer_t *save, char v)
 {
@@ -362,9 +384,11 @@ static void P_RelinkWaypoint(savebuffer_t *save, waypoint_t **ptr)
 	SINT8: P_SyncSINT8, \
 	INT16: P_SyncINT16, \
 	INT32: P_SyncINT32, \
+	INT64: P_SyncINT64, \
 	UINT8: P_SyncUINT8, \
 	UINT16: P_SyncUINT16, \
 	UINT32: P_SyncUINT32, \
+	UINT64: P_SyncUINT64, \
 	player_t *: P_SyncPlayer, \
 	state_t *: P_SyncState, \
 	ffloor_t *: P_SyncFFloor, \
@@ -477,6 +501,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		SYNC(players[i].playerstate);
 		SYNC(players[i].pflags);
+		SYNC(players[i].airdropflags);
 		SYNC(players[i].panim);
 		SYNCBOOLEAN(players[i].spectator);
 		SYNC(players[i].spectatewait);
@@ -613,6 +638,9 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].driftcharge);
 		SYNC(players[i].driftboost);
 		SYNC(players[i].airdriftspeed);
+		SYNC(players[i].nulldrift);
+		SYNC(players[i].nulldrifttilt);
+		SYNC(players[i].nulldrifttime);
 
 		SYNC(players[i].recoverydashcharge);
 		SYNC(players[i].recoverydash);
@@ -670,6 +698,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].throwdir);
 
 		SYNC(players[i].sadtimer);
+		SYNC(players[i].bricktimer);
 
 		SYNC(players[i].rings);
 		SYNC(players[i].ringmin);
@@ -684,8 +713,11 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].ringvolume);
 		SYNC(players[i].ringtransparency);
 
+		SYNC(players[i].airdroppredelay);
 		SYNC(players[i].airdroptime);
-		SYNCBOOLEAN(players[i].ringdrop);
+		SYNC(players[i].airdropbuffer);
+		SYNC(players[i].airdropheavydash);
+		SYNC(players[i].airdropflags);
 
 		RSYNC(players[i].shieldtracer);
 
@@ -698,6 +730,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].flamedash);
 		SYNC(players[i].flametimer);
 		SYNC(players[i].flamestore);
+		SYNC(players[i].flameburnstop);
+		SYNC(players[i].flameoverheat);
 
 		SYNC(players[i].hyudorotimer);
 		SYNC(players[i].stealingtimer);
@@ -721,10 +755,11 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].rocketsneakertimer);
 
 		SYNC(players[i].invincibilitytimer);
-		SYNC(players[i].maxinvincibilitytime);
-		SYNC(players[i].invincibilitybottleneck);
-		SYNC(players[i].invincibilitycancel);
-		SYNC(players[i].invincibilitywarning);
+		SYNC(players[i].smonitortimer);
+		SYNC(players[i].maxsmonitortime);
+		SYNC(players[i].smonitorexpiring);
+		SYNC(players[i].smonitorcancel);
+		SYNC(players[i].smonitorwarning);
 
 		SYNC(players[i].eggmanexplode);
 		SYNC(players[i].eggmanblame);
@@ -4239,13 +4274,13 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(purpledriftactive);
 	SYNCBOOLEAN(slopeboostactive);
 	SYNCBOOLEAN(draftingactive);
-	SYNCBOOLEAN(airdropactive);
 	SYNCBOOLEAN(airthrustactive);
 	SYNCBOOLEAN(recoverydashactive);
 	SYNCBOOLEAN(waterskipbricks);
 	SYNCBOOLEAN(itemlittering);
 	SYNCBOOLEAN(itempushing);
 	SYNCBOOLEAN(itemlistactive);
+	SYNC(airdropactive);
 	SYNC(bumpsparkactive);
 	SYNC(antibumptime);
 
@@ -4499,7 +4534,9 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 			mobj = (mobj_t *)th;
 			if (UNLIKELY(mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER
 				// MT_SPARK: used for debug stuff
-				|| mobj->type == MT_SPARK || mobj->flags2 & MF2_DONTSYNC))
+				|| mobj->type == MT_SPARK
+				// MT_FOLLOWERHORN: So it turns out hornmod is fundamentally incompatible with netsync
+				|| mobj->type == MT_FOLLOWERHORN || mobj->flags2 & MF2_DONTSYNC))
 				continue;
 			mobj->mobjnum = i++;
 		}

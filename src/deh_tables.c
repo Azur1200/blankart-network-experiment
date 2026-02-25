@@ -32,6 +32,7 @@
 #include "k_kart.h" // awardscaledrings_t
 #include "k_hud.h" // scoreboardmod_e
 #include "k_waypoint.h" // waypoint values (for lua)
+#include "h_timers.h" // timerflags_t
 
 #include "deh_tables.h"
 
@@ -425,6 +426,17 @@ struct int_const_s const PLAYERFLAG_ALIASES[] = {
 	{ NULL, 0 }
 };
 
+const char *const AIRDROPFLAG_LIST[] = {
+	"AIRDROPINPUT", // Wants air drop (active while holding down brake, used for bouncy air drop)
+	"WANTSAIRDROP", // Is in Air Drop (activation / deactivation criteria change if light or heavy)
+	"AIRDROP_LIGHT", // Is in Light Air Drop
+	"AIRDROP_HEAVY", // Is in Heavy Air Drop
+
+	"AIRDROP_MASK", // Is in any Air Drop state
+
+	NULL // stop loop here.
+};
+
 const char *const ITEMFLAG_LIST[] = {
 	"USERINGS",
 	"ITEMOUT",
@@ -557,6 +569,7 @@ const char *const SD_LIST[] = {
 	"LAVA",
 	"DEATHPIT",
 	"INSTAKILL",
+	"FLIPOVER",
 	NULL
 };
 
@@ -862,7 +875,7 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 };
 
 struct odds_func_s const USEODDS_FUNCS[] = {
-	{ "ALTINVINODDS", &KO_AltInvinOdds },
+	{ "SMONITORODDS", &KO_SMonitorOdds },
 	{ "SPBRACEODDS", &KO_SPBRaceOdds },
 	{ NULL, NULL }
 };
@@ -1369,6 +1382,7 @@ struct int_const_s const INT_CONST[] = {
 	{"BT_FORWARD",BT_FORWARD},
 	{"BT_BACKWARD",BT_BACKWARD},
 	{"BT_LOOKBACK",BT_LOOKBACK},
+	{"BT_HORN",BT_HORN},
 	{"BT_CUSTOM1",BT_CUSTOM1}, // Lua customizable
 	{"BT_CUSTOM2",BT_CUSTOM2}, // Lua customizable
 	{"BT_CUSTOM3",BT_CUSTOM3}, // Lua customizable
@@ -1544,6 +1558,7 @@ struct int_const_s const INT_CONST[] = {
 	{"GC_CUSTOM3",gc_custom3},
 	{"GC_RESPAWN",gc_respawn},
 	{"GC_DIRECTOR",gc_director},
+	{"GC_HORNCODE",gc_horncode},
 	{"NUM_GAMECONTROLS",num_gamecontrols},
 
 	// screen.h constants
@@ -1584,6 +1599,7 @@ struct int_const_s const INT_CONST[] = {
 	{"KIF_DARKBG",KIF_DARKBG},
 	{"KIF_COLPATCH2PLAYER",KIF_COLPATCH2PLAYER},
 	{"KIF_HIDEFROMROULETTE",KIF_HIDEFROMROULETTE},
+	{"KIF_HYUCANTSTEAL",KIF_HYUCANTSTEAL},
 
 	// kartresultflags_e
 	{"KRF_INDIRECTITEM",KRF_INDIRECTITEM},
@@ -1739,14 +1755,15 @@ struct int_const_s const INT_CONST[] = {
 	{"PICKUPITEM_ITEM", PICKUPITEM_ITEM},
 	{"PICKUPITEM_EGGMAN", PICKUPITEM_EGGMAN},
 	{"PICKUPITEM_FLOATING", PICKUPITEM_FLOATING},
+	{"PICKUPITEM_EGGMINE", PICKUPITEM_EGGMINE},
 
 	// kart_fullturn
 	{"KART_FULLTURN", KART_FULLTURN},
 
 	// invin constants
 	{"KART_NUMINVSPARKLESANIM", KART_NUMINVSPARKLESANIM},
-	{"BASEINVINTIME", BASEINVINTIME},
-	{"MININVINTIME", MININVINTIME},
+	{"INVINTIME", INVINTIME},
+	{"SMONITORTIME", SMONITORTIME},
 
 	// grow/shrink scale
 	{"GROW_SCALE", GROW_SCALE},
@@ -1795,6 +1812,36 @@ struct int_const_s const INT_CONST[] = {
 	{"BUMPSPARK_ALL", BUMPSPARK_ALL},
 
 	{"BLANKART", 1},
+
+	// recoverydash stuff
+	{"RECOVERYDASHADD", RECOVERYDASHADD},
+	{"RECOVERYDASHCHARGETIME", RECOVERYDASHCHARGETIME},
+	{"RECOVERYDASHWIPETIME", RECOVERYDASHWIPETIME},
+
+	// airdroptype_t
+	{"AIRDROP_NONE", AIRDROP_NONE},
+	{"AIRDROP_LIGHT", AIRDROP_LIGHT},
+	{"AIRDROP_HEAVY", AIRDROP_HEAVY},
+	{"AIRDROP_FUSION", AIRDROP_FUSION},
+
+	// item timer stuff
+	{"TIMER_COUNTER", TIMER_COUNTER},
+	{"TIMER_NONUMBER",TIMER_NONUMBER},
+	{"TIMER_PURPLE", TIMER_PURPLE},
+	{"TIMER_YELLOW", TIMER_YELLOW},
+	{"TIMER_GREEN", TIMER_GREEN},
+	{"TIMER_BLUE", TIMER_BLUE},
+	{"TIMER_RED", TIMER_RED},
+	{"TIMER_GRAY", TIMER_GRAY},
+	{"TIMER_ORANGE", TIMER_ORANGE},
+	{"TIMER_SKY",	TIMER_SKY},
+	{"TIMER_LAVENDER", TIMER_LAVENDER},
+	{"TIMER_GOLD", TIMER_GOLD},
+	{"TIMER_AQUA", TIMER_AQUA},
+	{"TIMER_MAGENTA", TIMER_MAGENTA},
+	{"TIMER_PINK", TIMER_PINK},
+	{"TIMER_BROWN", TIMER_BROWN},
+	{"TIMER_TAN", TIMER_TAN},
 
 	{NULL,0}
 };

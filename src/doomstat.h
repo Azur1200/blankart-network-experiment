@@ -368,7 +368,7 @@ struct mapheader_t
 {
 	// Core game information, not user-modifiable directly
 	char *lumpname;								///< Lump name can be really long
-	UINT32 lumpnamehash;						///< quickncasehash(->lumpname, MAXMAPLUMPNAME)
+	UINT32 lumpnamehash;						///< FNV1a_QuickCaseHash(->lumpname, MAXMAPLUMPNAME)
 	lumpnum_t lumpnum;							///< Lump number for the map, used by vres_GetMap
 
 	void *thumbnailPic;							///< Lump data for the level select thumbnail.

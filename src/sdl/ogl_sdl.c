@@ -21,7 +21,7 @@
 #ifdef HAVE_SDL
 #define _MATH_DEFINES_DEFINED
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #include "sdlmain.h"
 
@@ -78,7 +78,7 @@ boolean LoadGL(void)
 	if (M_CheckParm("-OGLlib") && M_IsNextParm())
 		OGLLibname = M_GetNextParm();
 
-	if (SDL_GL_LoadLibrary(OGLLibname) != 0)
+	if (!SDL_GL_LoadLibrary(OGLLibname))
 	{
 		CONS_Alert(CONS_ERROR, "Could not load OpenGL Library: %s\n"
 					"Falling back to Software mode.\n", SDL_GetError());
@@ -153,7 +153,7 @@ boolean OglSdlSurface(INT32 w, INT32 h)
 
 	glanisotropicmode_cons_t[1].value = maximumAnisotropy;
 
-	SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
+	SDL_GL_SetSwapInterval(cv_vidwait.value);
 
 	SetModelView(w, h);
 	SetStates();
@@ -177,35 +177,24 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	int sdlw, sdlh;
 	if (oldwaitvbl != waitvbl)
 	{
-		SDL_GL_SetSwapInterval(waitvbl ? 1 : 0);
+		SDL_GL_SetSwapInterval(waitvbl);
 	}
 
 	oldwaitvbl = waitvbl;
 
-	SDL_GetWindowSize(window, &sdlw, &sdlh);
+	SDL_GetWindowSizeInPixels(window, &sdlw, &sdlh);
 
 	HWR_MakeScreenFinalTexture();
 	HWR_DrawScreenFinalTexture(sdlw, sdlh);
 	SDL_GL_SwapWindow(window);
 
-	GClipRect(0, 0, realwidth, realheight, NZCLIP_PLANE);
+	GL_GClipRect(0, 0, vid.width, vid.height, NZCLIP_PLANE);
 
 	// Sryder:	We need to draw the final screen texture again into the other buffer in the original position so that
 	//			effects that want to take the old screen can do so after this
 	// Generic2 has the screen image without palette rendering brightness adjustments.
 	// Using that here will prevent brightness adjustments being applied twice.
-	DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
-}
-
-EXPORT void HWRAPI(OglSdlSetPalette) (RGBA_t *palette)
-{
-	size_t palsize = (sizeof(RGBA_t) * 256);
-	// on a palette change, you have to reload all of the textures
-	if (memcmp(&myPaletteData, palette, palsize))
-	{
-		memcpy(&myPaletteData, palette, palsize);
-		Flush();
-	}
+	GL_DrawScreenTexture(HWD_SCREENTEXTURE_GENERIC2, NULL, 0);
 }
 
 #endif //HWRENDER

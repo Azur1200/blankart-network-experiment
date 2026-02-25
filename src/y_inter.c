@@ -415,8 +415,8 @@ void Y_IntermissionDrawer(void)
 	if (intertype == int_none || rendermode == render_none)
 		return;
 
-	//INT32 w = (vid.width / vid.dupx);
-	//INT32 h = (vid.height / vid.dupy);
+	//INT32 w = vid.scaledwidth;
+	//INT32 h = (vid.height / vid.dup);
 
 	//const INT32 vidxdiff = (w - BASEVIDWIDTH) / 2;
 	//const INT32 vidydiff = (h - BASEVIDHEIGHT) / 2;
@@ -475,29 +475,29 @@ void Y_IntermissionDrawer(void)
 		INT32 count = (intertic - (rolltic - 8));
 
 		if (count < 8)
-			x -= ((((count<<FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dupx);
+			x -= ((((count<<FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dup);
 		else if (count == 8)
 			goto skiptallydrawer;
 		else if (count < 16)
-			x += (((((16 - count)<<FRACBITS) - R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dupx);
+			x += (((((16 - count)<<FRACBITS) - R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dup);
 	}
 	else if (sorttic != -1 && intertic > sorttic)
 	{
 		INT32 count = (intertic - sorttic);
 
 		if (count < 8)
-			x -= ((((count<<FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dupx);
+			x -= ((((count<<FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dup);
 		else if (count == 8)
 			goto skiptallydrawer;
 		else if (count < 16)
-			x += (((((16 - count)<<FRACBITS) - R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dupx);
+			x += (((((16 - count)<<FRACBITS) - R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dup);
 	}
 
 	if (intertype == int_race || intertype == int_battle || intertype == int_battletime)
 	{
 #define NUMFORNEWCOLUMN 8
 		INT32 y = 41, gutter = ((data.numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
-		INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
+		INT32 dupadjust = (vid.scaledwidth), duptweak = (dupadjust - BASEVIDWIDTH)/2;
 		fixed_t newlist_xpush = (BASEVIDWIDTH/2) * FRACUNIT;
 		const char *timeheader;
 
@@ -1191,8 +1191,11 @@ void Y_StartIntermission(void)
 			break;
 	}
 
-	LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
-	luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
+	if (rendermode != render_none)
+	{
+		LUA_HUD_DestroyDrawList(luahuddrawlist_intermission);
+		luahuddrawlist_intermission = LUA_HUD_CreateDrawList();
+	}
 
 	if (powertype != PWRLV_DISABLED)
 	{
@@ -1329,8 +1332,8 @@ static void Y_VoteBackgroundDrawer(patch_t *patch)
 			break;
 		case 0: // vanilla
 		default:
-			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (patch->width/2),
-							  (vid.height / vid.dupy) - patch->height,
+			V_DrawScaledPatch(((vid.width/2) / vid.dup) - (patch->width/2),
+							  (vid.height / vid.dup) - patch->height,
 							  V_SNAPTOTOP|V_SNAPTOLEFT, patch);
 			break;
 	}
@@ -1382,7 +1385,7 @@ static void Y_DrawLuaVoteScreenPatch(boolean widePatch)
 static void Y_DrawVoteScreenPatch(void)
 {
 	patch_t *votebg = NULL;
-	const boolean widescreen = (vid.width / vid.dupx > 320);
+	const boolean widescreen = (vid.scaledwidth > 320);
 
 	if (VoteScreen.foundLuaVoteWideFrames || VoteScreen.foundLuaVoteFrames)
 	{
@@ -1460,8 +1463,8 @@ void Y_VoteDrawer(void)
 	fixed_t picwidth = 160;
 
 	// CEP: scale by screen hypotenuse for extra voting rows
-	INT32 vidx = ((vid.width) / vid.dupx);
-	INT32 vidy = ((vid.height) / vid.dupy);
+	INT32 vidx = vid.scaledwidth;
+	INT32 vidy = ((vid.height) / vid.dup);
 	fixed_t hypotf = 0;
 	INT32 hypoti = 0;
 
@@ -2192,7 +2195,7 @@ void Y_StartVote(void)
 	for (i = 0; i < (rowval + 1); i++)
 	{
 		// set up the encore
-		levelinfo[i].encore = (g_voteLevels[i][1] & VOTEMODIFIER_ENCORE);
+		levelinfo[i].encore = (g_voteLevels[i][1] & VOTEMODIFIER_ENCORE) ? true : false;
 		g_voteLevels[i][1] &= ~VOTEMODIFIER_ENCORE;
 
 		// set up the levelstring

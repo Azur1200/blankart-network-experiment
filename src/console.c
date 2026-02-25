@@ -47,12 +47,12 @@
 #ifdef HAVE_THREADS
 I_mutex con_mutex;
 
-// g_in_exiting_signal_handler is an evil hack
+// I_In_Exiting_Signal_Handler is an evil hack
 // to avoid infinite SIGABRT recursion in the signal handler
 // due to poisoned locks or mach-o kernel not supporting locks in signals
 // or something like that. idk
-#  define Lock_state()    if (!g_in_exiting_signal_handler) { I_lock_mutex(&con_mutex); }
-#  define Unlock_state()  if (!g_in_exiting_signal_handler) { I_unlock_mutex(con_mutex); }
+#  define Lock_state()    if (!I_In_Exiting_Signal_Handler) { I_lock_mutex(&con_mutex); }
+#  define Unlock_state()  if (!I_In_Exiting_Signal_Handler) { I_unlock_mutex(con_mutex); }
 #else/*HAVE_THREADS*/
 #  define Lock_state()
 #  define Unlock_state()
@@ -518,18 +518,18 @@ static void CON_RecalcSize(void)
 
 	switch (cv_constextsize.value)
 	{
-	case V_NOSCALEPATCH:
-		con_scalefactor = 1;
-		break;
-	case V_SMALLSCALEPATCH:
-		con_scalefactor = vid.smalldupx;
-		break;
-	case V_MEDSCALEPATCH:
-		con_scalefactor = vid.meddupx;
-		break;
-	default:	// Full scaling
-		con_scalefactor = vid.dupx;
-		break;
+		case V_NOSCALEPATCH:
+			con_scalefactor = 1;
+			break;
+		case V_SMALLSCALEPATCH:
+			con_scalefactor = vid.smalldup;
+			break;
+		case V_MEDSCALEPATCH:
+			con_scalefactor = vid.meddup;
+			break;
+		default:	// Full scaling
+			con_scalefactor = vid.dup;
+			break;
 	}
 
 	con_recalc = false;
@@ -652,7 +652,7 @@ void CON_MoveConsole(void)
 	}
 
 	// Not instant - Increment fracmovement fractionally
-	fracmovement += FixedMul(cons_speed.value*vid.fdupy, renderdeltatics);
+	fracmovement += FixedMul(cons_speed.value*vid.fdup, renderdeltatics);
 
 	if (con_curlines < con_destlines) // Move the console downwards
 	{
@@ -727,6 +727,8 @@ void CON_ToggleOff(void)
 
 	I_UpdateMouseGrab();
 
+	I_SetTextInput(false);
+
 	Unlock_state();
 }
 
@@ -767,17 +769,24 @@ void CON_Ticker(void)
 			con_destlines = 0;
 			CON_ClearHUD();
 			I_UpdateMouseGrab();
+			I_SetTextInput(false);
 		}
 		else
+		{
 			CON_ChangeHeight();
+			I_SetTextInput(true);
+		}
 	}
 
 	// check if console ready for prompt
 	if (con_destlines >= minheight)
+	{
 		consoleready = true;
+	}
 	else
+	{
 		consoleready = false;
-
+	}
 	// make overlay messages disappear after a while
 	for (i = 0; i < con_hudlines; i++)
 	{
@@ -1503,9 +1512,9 @@ static void CON_DrawBackpic(void)
 	con_backpic = W_CachePatchNum(piclump, PU_PATCH);
 
 	// Center the backpic, and draw a vertically cropped patch.
-	w = (BASEVIDWIDTH * vid.dupx);
+	w = (BASEVIDWIDTH * vid.dup);
 	x = (vid.width / 2) - (w / 2);
-	h = con_curlines/vid.dupy;
+	h = con_curlines/vid.dup;
 
 	// If the patch doesn't fill the entire screen,
 	// then fill the sides with a solid color.

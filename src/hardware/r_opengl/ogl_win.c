@@ -392,7 +392,7 @@ static void UnSetRes(void)
 // Returns          : pvidmodes   - points to list of detected OpenGL video modes
 //                  : numvidmodes - number of detected OpenGL video modes
 // -----------------+
-EXPORT void HWRAPI(GetModeList) (vmode_t** pvidmodes, INT32 *numvidmodes)
+void GL_GetModeList(vmode_t** pvidmodes, INT32 *numvidmodes)
 {
 	INT32  i;
 
@@ -497,7 +497,7 @@ EXPORT void HWRAPI(GetModeList) (vmode_t** pvidmodes, INT32 *numvidmodes)
 // -----------------+
 // Shutdown         : Shutdown OpenGL, restore the display mode
 // -----------------+
-EXPORT void HWRAPI(Shutdown) (void)
+void GL_Shutdown(void)
 {
 #ifdef DEBUG_TO_FILE
 	long nb_centiemes;
@@ -526,7 +526,7 @@ EXPORT void HWRAPI(Shutdown) (void)
 // -----------------+
 // FinishUpdate     : Swap front and back buffers
 // -----------------+
-EXPORT void HWRAPI(FinishUpdate) (INT32 waitvbl)
+void GL_FinishUpdate(INT32 waitvbl)
 {
 #ifdef USE_WGL_SWAP
 	static INT32 oldwaitvbl = 0;
@@ -554,13 +554,13 @@ EXPORT void HWRAPI(FinishUpdate) (INT32 waitvbl)
 //                  : in OpenGL, we store values for conversion of paletted graphics when
 //                  : they are downloaded to the 3D card.
 // -----------------+
-EXPORT void HWRAPI(SetPalette) (RGBA_t *pal)
+void GL_SetPalette(RGBA_t *palette)
 {
 	size_t palsize = (sizeof(RGBA_t) * 256);
 	// on a palette change, you have to reload all of the textures
-	if (memcmp(&myPaletteData, pal, palsize))
+	if (memcmp(&myPaletteData, palette, palsize))
 	{
-		memcpy(&myPaletteData, pal, palsize);
+		memcpy(&myPaletteData, palette, palsize);
 		Flush();
 	}
 }

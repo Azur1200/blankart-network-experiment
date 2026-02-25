@@ -602,7 +602,7 @@ void M_FirstLoadConfig(void)
 void M_SaveConfig(const char *filename)
 {
 	FILE *f;
-	char *filepath;
+	CLEANUP(Z_Pfree) char *filepath = NULL;
 	char backupfile[MAX_WADPATH+4];
 
 	// make sure not to write back the config until it's been correctly loaded
@@ -637,7 +637,7 @@ void M_SaveConfig(const char *filename)
 		// append srb2home to beginning of filename
 		// but check if srb2home isn't already there, first
 		if (!strstr(filename, srb2home))
-			filepath = va(pandf,srb2home, filename);
+			filepath = Z_StrDup(va(pandf, srb2home, filename));
 		else
 			filepath = Z_StrDup(filename);
 
@@ -707,7 +707,7 @@ static void M_CreateScreenShotPalette(void)
 #if NUMSCREENS > 2
 static const char *Newsnapshotfile(const char *pathname, const char *ext)
 {
-	static char freename[13] = "kartXXXX.ext";
+	static char freename[13] = "blanXXXX.ext";
 	int i = 5000; // start in the middle: num screenshots divided by 2
 	int add = i; // how much to add or subtract if wrong; gets divided by 2 each time
 	int result; // -1 = guess too high, 0 = correct, 1 = guess too low
@@ -1010,7 +1010,7 @@ static inline boolean M_PNGLib(void)
 
 static void M_PNGFrame(png_structp png_ptr, png_infop png_info_ptr, png_bytep png_buf)
 {
-	png_uint_16 downscale = apng_downscale ? vid.dupx : 1;
+	png_uint_16 downscale = apng_downscale ? vid.dup : 1;
 
 	png_uint_32 pitch = png_get_rowbytes(png_ptr, png_info_ptr);
 	PNG_CONST png_uint_32 width = vid.width / downscale;
@@ -1076,7 +1076,7 @@ static boolean M_SetupaPNG(png_const_charp filename, png_bytep pal)
 
 	apng_downscale = (!!cv_apng_downscale.value);
 
-	downscale = apng_downscale ? vid.dupx : 1;
+	downscale = apng_downscale ? vid.dup : 1;
 
 	apng_FILE = fopen(filename,"wb+"); // + mode for reading
 	if (!apng_FILE)
@@ -2536,4 +2536,23 @@ const char * M_Ftrim (double f)
 		dig[i + 1] = '\0';
 		return &dig[1];/* skip the 0 */
 	}
+}
+
+#define FNV1A_OFFSET_BASIS 0x811C9DC5
+#define FNV1A_PRIME        0x01000193
+
+// Behaves like the old quickncasehash
+// Stops either if it encounters null terminator
+// or reaches size
+UINT32 FNV1a_QuickCaseHash(const char *message, size_t size)
+{
+	UINT32 hash = FNV1A_OFFSET_BASIS;
+
+	for (size_t i = 0; i < size && message[i]; i++)
+	{
+		hash ^= tolower(message[i]);
+		hash *= FNV1A_PRIME;
+	}
+
+	return hash;
 }

@@ -1,3 +1,3 @@
-target_sources(SRB2SDL2 PRIVATE
+target_sources(BLANKART PRIVATE
 	internal/b_soc.c
 )

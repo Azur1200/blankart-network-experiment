@@ -169,7 +169,7 @@ static INT32 cechoflags = 0;
 
 static tic_t resynch_ticker = 0;
 
-static huddrawlist_h luahuddrawlist_scores;
+static huddrawlist_h luahuddrawlist_scores = NULL;
 
 //======================================================================
 //                          HEADS UP INIT
@@ -307,6 +307,9 @@ void HU_Init(void)
 #undef  DIM
 	}
 
+	if (dedicated || rendermode == render_none)
+		return;
+
 	HU_LoadGraphics();
 
 	luahuddrawlist_scores = LUA_HUD_CreateDrawList();
@@ -436,6 +439,7 @@ static void HU_removeChatText_Log(void)
 	for(i=0;i<chat_nummsg_log-1;i++) {
 		strcpy(chat_log[i], chat_log[i+1]);
 	}
+
 	chat_nummsg_log--; // lost 1 msg.
 }
 
@@ -915,8 +919,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 		if ((cv_chatnotifications.value) && (flags & HU_SHOUT))
 			S_StartSound(NULL, sfx_sysmsg);
 
-		if (tempchar)
-			Z_Free(tempchar);
+		Z_Free(tempchar);
 	}
 #ifdef _DEBUG
 	// I just want to point out while I'm here that because the data is still
@@ -1155,6 +1158,7 @@ void HU_clearChatChars(void)
 	chat_on = false;
 
 	I_UpdateMouseGrab();
+	I_SetTextInput(false);
 }
 
 //
@@ -1200,6 +1204,7 @@ boolean HU_Responder(event_t *ev)
 			teamtalk = false;
 			chat_scrollmedown = true;
 			typelines = 1;
+			I_SetTextInput(true);
 			return true;
 		}
 		if (G_ControlBoundToKey(0, gc_teamkey, ev->data1, false)
@@ -1212,6 +1217,7 @@ boolean HU_Responder(event_t *ev)
 			teamtalk = G_GametypeHasTeams();	// Don't teamtalk if we don't have teams.
 			chat_scrollmedown = true;
 			typelines = 1;
+			I_SetTextInput(true);
 			return true;
 		}
 	}
@@ -1241,6 +1247,7 @@ boolean HU_Responder(event_t *ev)
 
 			chat_on = false;
 			chat_scrollmedown = true; // you hit enter, so you might wanna autoscroll to see what you just sent. :)
+			I_SetTextInput(false);
 			I_UpdateMouseGrab();
 		}
 		else if (c == KEY_ESCAPE
@@ -1249,6 +1256,7 @@ boolean HU_Responder(event_t *ev)
 			&& c >= NUMKEYS)) // If it's not a keyboard key, then the chat button is used as a toggle.
 		{
 			chat_on = false;
+			I_SetTextInput(false);
 			I_UpdateMouseGrab();
 		}
 		else if ((c == KEY_UPARROW || c == KEY_MOUSEWHEELUP) && chat_scroll > 0 && !OLDCHAT) // CHAT SCROLLING YAYS!
@@ -1332,6 +1340,7 @@ static char *CHAT_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 			x = 0;
 		}
 	}
+
 	return newstring;
 }
 
@@ -1370,7 +1379,7 @@ static void HU_drawMiniChat(void)
 		emote_t *emote = NULL;
 		int emotelen = 0;
 
-		while(msg[j]) // iterate through msg
+		while (msg[j]) // iterate through msg
 		{
 			if (msg[j] < HU_FONTSTART) // don't draw
 			{
@@ -1402,20 +1411,21 @@ static void HU_drawMiniChat(void)
 			{
 				j++;
 			}
+
 			prev_linereturn = false;
 			dx += charwidth;
+
 			if (dx >= boxw)
 			{
 				dx = 0;
 				linescount += 1;
 			}
 		}
+
 		dy = 0;
 		dx = 0;
 		msglines += linescount+1;
-
-		if (msg)
-			Z_Free(msg);
+		Z_Free(msg);
 	}
 
 	y = chaty - charheight*(msglines+1);
@@ -1449,7 +1459,7 @@ static void HU_drawMiniChat(void)
 		emote_t *emote = NULL;
 		int emotelen = 0;
 
-		while(msg[j]) // iterate through msg
+		while (msg[j]) // iterate through msg
 		{
 			if (msg[j] < HU_FONTSTART) // don't draw
 			{
@@ -1494,17 +1504,17 @@ static void HU_drawMiniChat(void)
 
 			dx += charwidth;
 			prev_linereturn = false;
+
 			if (dx >= boxw)
 			{
 				dx = 0;
 				dy += charheight;
 			}
 		}
+
 		dy += charheight;
 		dx = 0;
-
-		if (msg)
-			Z_Free(msg);
+		Z_Free(msg);
 	}
 
 	// decrement addy and make that shit smooth:
@@ -1558,7 +1568,7 @@ static void HU_drawChatLog(INT32 offset)
 
 	V_DrawFillConsoleMap(chatx, chat_topy, boxw, boxh*charheight +2, 159|V_SNAPTOBOTTOM|V_SNAPTOLEFT); // log box
 
-	for (i=0; i<chat_nummsg_log; i++) // iterate through our chatlog
+	for (i = 0; i < chat_nummsg_log; i++) // iterate through our chatlog
 	{
 		INT32 clrflag = 0;
 		INT32 j = 0;
@@ -1567,7 +1577,7 @@ static void HU_drawChatLog(INT32 offset)
 		emote_t *emote = NULL;
 		int emotelen = 0;
 
-		while(msg[j]) // iterate through msg
+		while (msg[j]) // iterate through msg
 		{
 			if (msg[j] < HU_FONTSTART) // don't draw
 			{
@@ -1612,11 +1622,10 @@ static void HU_drawChatLog(INT32 offset)
 				dy += charheight;
 			}
 		}
+
 		dy += charheight;
 		dx = 0;
-
-		if (msg)
-			Z_Free(msg);
+		Z_Free(msg);
 	}
 
 
@@ -2442,7 +2451,7 @@ static inline void HU_DrawSpectatorTicker(void)
 	INT32 i;
 	INT32 length = 0, height = 174;
 	INT32 totallength = 0, templength = -8;
-	INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
+	INT32 dupadjust = vid.scaledwidth, duptweak = (dupadjust - BASEVIDWIDTH)/2;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		if (playeringame[i] && players[i].spectator)

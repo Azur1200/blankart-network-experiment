@@ -30,6 +30,9 @@ extern consvar_t cv_skin[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_follower[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_followercolor[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_voice[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_dummyrestatspeed[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_dummyrestatweight[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_dummyrestatrandom[MAXSPLITSCREENPLAYERS];
 
 // preferred number of players
 extern consvar_t cv_splitplayers;
@@ -37,11 +40,8 @@ extern consvar_t cv_splitplayers;
 extern consvar_t cv_seenames;
 extern consvar_t cv_usemouse;
 extern consvar_t cv_laglesscam;
-extern consvar_t cv_usejoystick[MAXSPLITSCREENPLAYERS];
-extern consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS];
-#ifdef LJOYSTICK
-extern consvar_t cv_joyport[MAXSPLITSCREENPLAYERS];
-#endif
+extern consvar_t cv_usecontroller[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_controllerscale[MAXSPLITSCREENPLAYERS];
 
 // normally in p_mobj but the .h is not read
 extern consvar_t cv_itemrespawntime;
@@ -88,6 +88,7 @@ extern consvar_t cv_kartvoterulechanges;
 extern consvar_t cv_kartgametypepreference;
 extern consvar_t cv_kartspeedometer;
 extern consvar_t cv_kartvoices;
+extern consvar_t cv_karthorns;
 extern consvar_t cv_kartbot;
 extern consvar_t cv_kartbot_cap;
 extern consvar_t cv_kartbot_modifiermax;
@@ -118,13 +119,15 @@ extern consvar_t cv_kartstacking_panel_separate;
 extern consvar_t cv_kartstacking_panel_maxgrade;
 
 
-extern consvar_t cv_kartstacking_invincibility_classicspeedboost;
-extern consvar_t cv_kartstacking_invincibility_classicaccelboost;
-extern consvar_t cv_kartstacking_invincibility_classichandleboost;
-extern consvar_t cv_kartstacking_invincibility_alternatespeedboost;
-extern consvar_t cv_kartstacking_invincibility_alternateaccelboost;
-extern consvar_t cv_kartstacking_invincibility_alternatehandleboost;
+extern consvar_t cv_kartstacking_invincibility_speedboost;
+extern consvar_t cv_kartstacking_invincibility_accelboost;
+extern consvar_t cv_kartstacking_invincibility_handleboost;
 extern consvar_t cv_kartstacking_invincibility_stackable;
+
+extern consvar_t cv_kartstacking_smonitor_speedboost;
+extern consvar_t cv_kartstacking_smonitor_accelboost;
+extern consvar_t cv_kartstacking_smonitor_handleboost;
+extern consvar_t cv_kartstacking_smonitor_stackable;
 
 extern consvar_t cv_kartstacking_flame_speedval;
 extern consvar_t cv_kartstacking_flame_accelboost;
@@ -167,6 +170,12 @@ extern consvar_t cv_kartstacking_ring_accelboost;
 extern consvar_t cv_kartstacking_ring_handleboost;
 extern consvar_t cv_kartstacking_ring_stackable;
 
+extern consvar_t cv_kartstacking_heavydrop_speedboost;
+extern consvar_t cv_kartstacking_heavydrop_accelboost;
+extern consvar_t cv_kartstacking_heavydrop_handleboost;
+extern consvar_t cv_kartstacking_heavydrop_stackable;
+extern consvar_t cv_kartstacking_heavydrop_uniform;
+
 extern consvar_t cv_kartstacking_ssmt_speedboost;
 extern consvar_t cv_kartstacking_ssmt_accelboost;
 extern consvar_t cv_kartstacking_ssmt_handleboost;
@@ -206,10 +215,10 @@ extern consvar_t cv_kartexplosion_limitlifetime_cap;
 extern consvar_t cv_kartslipdash;
 extern consvar_t cv_kartslopeboost;
 extern consvar_t cv_kartinvintheme;
-extern consvar_t cv_kartinvindist;
-extern consvar_t cv_kartinvindistmul;
-extern consvar_t cv_kartinvin_maxtime;
-extern consvar_t cv_kartinvin_midtime;
+extern consvar_t cv_kartinvindamage;
+extern consvar_t cv_kartsmonitordist;
+extern consvar_t cv_kartsmonitor_decaydist;
+extern consvar_t cv_kartsmonitor_decaytime;
 
 // opinionated stuff for testing
 extern consvar_t cv_kartbubble_defense_canidle;
@@ -290,6 +299,8 @@ extern consvar_t cv_showlapemblem;
 extern consvar_t cv_lapemblemmode;
 extern consvar_t cv_racesplits;
 extern consvar_t cv_showviewpointtext;
+extern consvar_t cv_rouletteonplayer;
+extern consvar_t cv_rouletteplayertrans;
 
 extern consvar_t cv_skipmapcheck;
 

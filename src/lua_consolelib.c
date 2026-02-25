@@ -29,6 +29,12 @@ return luaL_error(L, "HUD rendering code should not call this function!");
 
 static consvar_t *this_cvar;
 
+static void clear_lua_stack(void)
+{
+	if (gL) // check if Lua is actually turned on first, you dummmy -- Monster Iestyn 04/07/18
+		lua_settop(gL, 0); // clear stack
+}
+
 void Got_Luacmd(UINT8 **cp, INT32 playernum)
 {
 	UINT8 i, argc, flags;
@@ -87,6 +93,13 @@ void Got_Luacmd(UINT8 **cp, INT32 playernum)
 
 	lua_remove(gL, -2); // pop command info table
 
+	if (!lua_checkstack(gL, argc)) // player + command arguments
+	{
+		clear_lua_stack();
+		CONS_Alert(CONS_WARNING, "lua command stack overflow from %s (%d, need %d more)\n", player_names[playernum], lua_gettop(gL), argc);
+		return;
+	}
+
 	LUA_PushUserdata(gL, &players[playernum], META_PLAYER);
 	for (i = 1; i < argc; i++)
 	{
@@ -101,8 +114,7 @@ void Got_Luacmd(UINT8 **cp, INT32 playernum)
 
 deny:
 	//must be hacked/buggy client
-	if (gL) // check if Lua is actually turned on first, you dummmy -- Monster Iestyn 04/07/18
-		lua_settop(gL, 0); // clear stack
+	clear_lua_stack();
 
 	CONS_Alert(CONS_WARNING, M_GetText("Illegal lua command received from %s\n"), player_names[playernum]);
 	if (server)
@@ -149,7 +161,7 @@ void COM_Lua_f(void)
 
 		if (splitscreen < lpn)
 		{
-			lua_pop(gL, 1); // pop command info table
+			lua_pop(gL, 2); // pop command info table and LUA_GetErrorMessage
 			return; // can't execute splitscreen command without the player being in-game!
 		}
 
@@ -195,6 +207,13 @@ void COM_Lua_f(void)
 	lua_rawgeti(gL, -1, 1); // push function from command info table
 	I_Assert(lua_isfunction(gL, -1));
 	lua_remove(gL, -2); // pop command info table
+
+	if (!lua_checkstack(gL, COM_Argc() + 1))
+	{
+		CONS_Alert(CONS_WARNING, "lua command stack overflow (%d, need %s more)\n", lua_gettop(gL), sizeu1(COM_Argc() + 1));
+		lua_pop(gL, 2); // pop function and LUA_GetErrorMessage
+		return;
+	}
 
 	LUA_PushUserdata(gL, &players[playernum], META_PLAYER);
 	for (i = 1; i < COM_Argc(); i++)

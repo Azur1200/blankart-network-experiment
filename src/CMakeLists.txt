@@ -1,4 +1,4 @@
-add_executable(SRB2SDL2 MACOSX_BUNDLE WIN32
+add_executable(BLANKART MACOSX_BUNDLE WIN32
 	comptime.c
 	config.h.in
 	cxxutil.hpp
@@ -94,7 +94,7 @@ add_executable(SRB2SDL2 MACOSX_BUNDLE WIN32
 	v_video.c
 	s_sound.c
 	sounds.c
-	w_wad.cpp
+	w_wad.c
 	filesrch.c
 	mserv.c
 	http-mserv.c
@@ -156,36 +156,49 @@ add_executable(SRB2SDL2 MACOSX_BUNDLE WIN32
 )
 
 if(("${CMAKE_COMPILER_IS_GNUCC}" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
-	target_link_options(SRB2SDL2 PRIVATE "-Wl,--disable-dynamicbase")
+	target_link_options(BLANKART PRIVATE "-Wl,--disable-dynamicbase")
 	if("${SRB2_CONFIG_STATIC_STDLIB}")
 		# On MinGW with internal libraries, link the standard library statically
 		if(CMAKE_LINKER_TYPE STREQUAL "LLD")
-			target_link_options(SRB2SDL2 PRIVATE -Wl, -static-libgcc -static-libstdc++ -static -lpthread)
+			target_link_options(BLANKART PRIVATE -Wl, -static-libgcc -static-libstdc++ -static -lpthread)
 		else()
-			target_link_options(SRB2SDL2 PRIVATE -Wl,--add-stdcall-alias -static-libgcc -static-libstdc++ -static -lpthread)
+			target_link_options(BLANKART PRIVATE -Wl,--add-stdcall-alias -static-libgcc -static-libstdc++ -static -lpthread)
 		endif()
 		set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 		find_package(Threads REQUIRED)
-		target_link_libraries(SRB2SDL2 PRIVATE Threads::Threads)
+		target_link_libraries(BLANKART PRIVATE Threads::Threads)
 	endif()
 	if(CMAKE_SIZEOF_VOID_P EQUAL 4)
-		target_link_options(SRB2SDL2 PRIVATE "-Wl,--large-address-aware")
+		target_link_options(BLANKART PRIVATE "-Wl,--large-address-aware")
 	endif()
 endif()
 
 set(SRB2_CONFIG_STD23 OFF CACHE BOOL
 	"Compiles the game under c23 and cxx23 instead c11 and cxx17.")
 
+set(SRB2_CONFIG_COMPILEAPPIMAGE OFF CACHE BOOL
+	"Compiles the game then attempts turning it into an appimage.")
+
+if(SRB2_CONFIG_COMPILEAPPIMAGE AND "${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
+message("-- Generating Appimage at build time.")
+add_custom_command(
+	TARGET BLANKART
+	POST_BUILD
+	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin/
+	COMMAND ${CMAKE_SOURCE_DIR}/appimage_build.sh -s
+)
+endif()
+
 if(SRB2_CONFIG_STD23)
 	message("-- Compiling game with C23 and CXX23.")
-	target_compile_features(SRB2SDL2 PRIVATE c_std_23 cxx_std_23)
-	set_property(TARGET SRB2SDL2 PROPERTY C_STANDARD 23)
-	set_property(TARGET SRB2SDL2 PROPERTY CXX_STANDARD 23)
+	target_compile_features(BLANKART PRIVATE c_std_23 cxx_std_23)
+	set_property(TARGET BLANKART PROPERTY C_STANDARD 23)
+	set_property(TARGET BLANKART PROPERTY CXX_STANDARD 23)
 else()
 	message("-- Compiling game with C11 and CXX17.")
-	target_compile_features(SRB2SDL2 PRIVATE c_std_11 cxx_std_17)
-	set_property(TARGET SRB2SDL2 PROPERTY C_STANDARD 11)
-	set_property(TARGET SRB2SDL2 PROPERTY CXX_STANDARD 17)
+	target_compile_features(BLANKART PRIVATE c_std_11 cxx_std_17)
+	set_property(TARGET BLANKART PROPERTY C_STANDARD 11)
+	set_property(TARGET BLANKART PROPERTY CXX_STANDARD 17)
 endif()
 
 ### Configuration
@@ -208,7 +221,7 @@ if(NOT SRB2_CONFIG_SKIP_COMPTIME)
 	# information known at build time, must be told to rebuild
 	# before that information can be ascertained.
 	add_custom_command(
-		TARGET SRB2SDL2
+		TARGET BLANKART
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E touch_nocreate ${CMAKE_CURRENT_SOURCE_DIR}/comptime.c
 	)
@@ -219,16 +232,31 @@ add_custom_target(_SRB2_reconf ALL
 	COMMAND ${CMAKE_COMMAND} -DGIT_EXECUTABLE=${GIT_EXECUTABLE} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DBINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}/.. -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Comptime.cmake
 	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
 )
-add_dependencies(SRB2SDL2 _SRB2_reconf)
+add_dependencies(BLANKART _SRB2_reconf)
 
 if(SRB2_CONFIG_ASAN)
-	target_compile_options(SRB2SDL2 PRIVATE -fsanitize=address)
-	target_link_options(SRB2SDL2 PRIVATE -fsanitize=address)
+	target_compile_options(BLANKART PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+	target_link_options(BLANKART PRIVATE -fsanitize=address -fno-omit-frame-pointer)
 endif()
 
 if(SRB2_CONFIG_UBSAN)
-	target_compile_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
-	target_link_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
+	target_compile_options(BLANKART PRIVATE -fsanitize=undefined)
+	target_link_options(BLANKART PRIVATE -fsanitize=undefined)
+endif()
+
+if(SRB2_CONFIG_LSAN)
+	target_compile_options(BLANKART PRIVATE -fsanitize=leak)
+	target_link_options(BLANKART PRIVATE -fsanitize=leak)
+endif()
+
+if(SRB2_CONFIG_TSAN)
+	target_compile_options(BLANKART PRIVATE -fsanitize=thread)
+	target_link_options(BLANKART PRIVATE -fsanitize=thread)
+endif()
+
+if(SRB2_CONFIG_MSAN)
+	target_compile_options(BLANKART PRIVATE -fsanitize=memory -fPIE -fno-omit-frame-pointer)
+	target_link_options(BLANKART PRIVATE -fsanitize=memory -fPIE -pie -fno-omit-frame-pointer)
 endif()
 
 if(SRB2_CONFIG_TIDY)
@@ -236,7 +264,7 @@ if(SRB2_CONFIG_TIDY)
 endif()
 
 if(SRB2_CONFIG_NOVERIFYIWADS)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DNOVERIFYIWADS)
+	target_compile_definitions(BLANKART PRIVATE -DNOVERIFYIWADS)
 endif()
 
 add_subdirectory(blua)
@@ -248,7 +276,7 @@ add_subdirectory(acs)
 
 # OS macros
 if (UNIX)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DUNIXCOMMON)
+	target_compile_definitions(BLANKART PRIVATE -DUNIXCOMMON)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCC)
@@ -256,54 +284,68 @@ if(CMAKE_COMPILER_IS_GNUCC)
 endif()
 
 if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
-	target_compile_definitions(SRB2SDL2 PRIVATE -DLINUX)
+	target_compile_definitions(BLANKART PRIVATE -DLINUX)
 	if(${SRB2_SYSTEM_BITS} EQUAL 64)
-		target_compile_definitions(SRB2SDL2 PRIVATE -DLINUX64)
+		target_compile_definitions(BLANKART PRIVATE -DLINUX64)
 	endif()
 endif()
 
 if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
-	target_compile_definitions(SRB2SDL2 PRIVATE -DMACOSX)
+	target_compile_definitions(BLANKART PRIVATE -DMACOSX)
+endif()
+
+if("${CMAKE_SYSTEM_NAME}" MATCHES "FreeBSD")
+	target_compile_definitions(BLANKART PRIVATE -DFREEBSD)
+	target_link_libraries(BLANKART PRIVATE execinfo)
 endif()
 
 if("${SRB2_CONFIG_USE_GME}")
-	target_link_libraries(SRB2SDL2 PRIVATE gme)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_GME)
+	target_link_libraries(BLANKART PRIVATE gme)
+	target_compile_definitions(BLANKART PRIVATE -DHAVE_GME)
 	if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}")
 		# this sucks but gme doesn't use modern cmake to delineate public headers
-		target_include_directories(SRB2SDL2 PRIVATE "${libgme_SOURCE_DIR}")
+		target_include_directories(BLANKART PRIVATE "${libgme_SOURCE_DIR}")
 	endif()
 endif()
 
-target_link_libraries(SRB2SDL2 PRIVATE openmpt)
-target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_OPENMPT)
+target_link_libraries(BLANKART PRIVATE openmpt)
+target_compile_definitions(BLANKART PRIVATE -DHAVE_OPENMPT)
 
-target_link_libraries(SRB2SDL2 PRIVATE ZLIB::ZLIB PNG::PNG CURL::libcurl)
-target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_ZLIB -DHAVE_PNG -DHAVE_CURL -D_LARGEFILE64_SOURCE)
-target_sources(SRB2SDL2 PRIVATE apng.c)
+target_link_libraries(BLANKART PRIVATE ZLIB::ZLIB PNG::PNG CURL::libcurl)
+target_compile_definitions(BLANKART PRIVATE -DHAVE_ZLIB -DHAVE_PNG -DHAVE_CURL -D_LARGEFILE64_SOURCE)
+target_sources(BLANKART PRIVATE apng.c)
 
-target_link_libraries(SRB2SDL2 PRIVATE tcbrindle::span)
-target_link_libraries(SRB2SDL2 PRIVATE fmt::fmt-header-only)
-target_link_libraries(SRB2SDL2 PRIVATE Tracy::TracyClient)
+target_link_libraries(BLANKART PRIVATE tcbrindle::span)
+target_link_libraries(BLANKART PRIVATE fmt::fmt-header-only)
+target_link_libraries(BLANKART PRIVATE Tracy::TracyClient)
 
 if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}")
-target_link_libraries(SRB2SDL2 PRIVATE sndfile)
-target_link_libraries(SRB2SDL2 PRIVATE Vorbis::vorbis Vorbis::vorbisenc)
-target_link_libraries(SRB2SDL2 PRIVATE Opus::opus)
-target_link_libraries(SRB2SDL2 PRIVATE Ogg::ogg)
+target_link_libraries(BLANKART PRIVATE sndfile)
+target_link_libraries(BLANKART PRIVATE Vorbis::vorbis Vorbis::vorbisenc)
+target_link_libraries(BLANKART PRIVATE Opus::opus)
+target_link_libraries(BLANKART PRIVATE Ogg::ogg)
 endif()
 
-target_link_libraries(SRB2SDL2 PRIVATE xxHash::xxhash)
+if(SRB2_CONFIG_UPNP)
+	target_compile_definitions(BLANKART PRIVATE -DHAVE_MINIUPNPC)
+	target_link_libraries(BLANKART PRIVATE miniupnpc)
+	if (WIN32)
+		target_compile_definitions(BLANKART PRIVATE -DMINIUPNP_STATICLIB)
+		target_link_libraries(BLANKART PRIVATE iphlpapi)
+	endif()
+endif()
 
-target_compile_definitions(SRB2SDL2 PRIVATE -DUSE_STUN)
+target_link_libraries(BLANKART PRIVATE xxHash::xxhash)
+
+target_compile_definitions(BLANKART PRIVATE -DUSE_STUN)
 if(SRB2_CONFIG_ENABLE_DISCORDRPC)
-	target_link_libraries(SRB2SDL2 PRIVATE DiscordRPC::DiscordRPC)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_DISCORDRPC)
-	target_sources(SRB2SDL2 PRIVATE discord.c)
+	target_link_libraries(BLANKART PRIVATE DiscordRPC::DiscordRPC)
+	target_compile_definitions(BLANKART PRIVATE -DHAVE_DISCORDRPC)
+	target_sources(BLANKART PRIVATE discord.c)
 endif()
 
 set(SRB2_HAVE_THREADS ON)
-target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_THREADS)
+target_compile_definitions(BLANKART PRIVATE -DHAVE_THREADS)
 
 if(${SRB2_CONFIG_HAVE_ZLIB})
 	if(${SRB2_CONFIG_USE_INTERNAL_LIBRARIES})
@@ -321,7 +363,7 @@ if(${SRB2_CONFIG_HAVE_ZLIB})
 	endif()
 	if(${ZLIB_FOUND})
 		set(SRB2_HAVE_ZLIB ON)
-		target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_ZLIB)
+		target_compile_definitions(BLANKART PRIVATE -DHAVE_ZLIB)
 	else()
 		message(WARNING "You have specified that ZLIB is available but it was not found. BlanKart may not compile correctly.")
 	endif()
@@ -342,9 +384,9 @@ if(${SRB2_CONFIG_HAVE_PNG} AND ${SRB2_CONFIG_HAVE_ZLIB})
 		endif()
 		if(${PNG_FOUND})
 			set(SRB2_HAVE_PNG ON)
-			target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_PNG)
-			target_compile_definitions(SRB2SDL2 PRIVATE -D_LARGEFILE64_SOURCE)
-			target_sources(SRB2SDL2 PRIVATE apng.c)
+			target_compile_definitions(BLANKART PRIVATE -DHAVE_PNG)
+			target_compile_definitions(BLANKART PRIVATE -D_LARGEFILE64_SOURCE)
+			target_sources(BLANKART PRIVATE apng.c)
 		else()
 			message(WARNING "You have specified that PNG is available but it was not found. BlanKart may not compile correctly.")
 		endif()
@@ -352,13 +394,13 @@ if(${SRB2_CONFIG_HAVE_PNG} AND ${SRB2_CONFIG_HAVE_ZLIB})
 endif()
 
 if("${SRB2_CONFIG_HWRENDER}")
-	target_compile_definitions(SRB2SDL2 PRIVATE -DHWRENDER)
+	target_compile_definitions(BLANKART PRIVATE -DHWRENDER)
 	add_subdirectory(hardware)
 
 	if("${SRB2_CONFIG_STATIC_OPENGL}")
 		find_package(OpenGL)
 		if(${OPENGL_FOUND})
-			target_compile_definitions(SRB2SDL2 PRIVATE -DSTATIC_OPENGL)
+			target_compile_definitions(BLANKART PRIVATE -DSTATIC_OPENGL)
 		else()
 			message(WARNING "You have specified static opengl but opengl was not found. Not setting HWRENDER.")
 		endif()
@@ -367,11 +409,11 @@ endif()
 
 # TODO: build this with the game
 if(${CMAKE_SYSTEM} MATCHES Windows AND ${CMAKE_C_COMPILER_ID} MATCHES "GNU" AND ${SRB2_SYSTEM_BITS} EQUAL 32)
-	target_link_libraries(SRB2SDL2 PRIVATE
+	target_link_libraries(BLANKART PRIVATE
 		"${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/drmingw/lib/win32/libexchndl.a"
 		"${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/drmingw/lib/win32/libmgwhelp.a"
 	)
-	target_include_directories(SRB2SDL2 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/drmingw/include")
+	target_include_directories(BLANKART PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/drmingw/include")
 endif()
 
 # Targets
@@ -400,20 +442,20 @@ endif()
 # Compatibility flag with later versions of GCC
 # We should really fix our code to not need this
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	target_compile_options(SRB2SDL2 PRIVATE -mno-ms-bitfields)
+	target_compile_options(BLANKART PRIVATE -mno-ms-bitfields)
 endif()
 
 # TODO: fix prng and P_CreateBlockmap overflow at some point
-target_compile_options(SRB2SDL2 PRIVATE -fwrapv)
+target_compile_options(BLANKART PRIVATE -fwrapv)
 
 if (${CMAKE_BUILD_TYPE} MATCHES Debug)
-	target_compile_options(SRB2SDL2 PRIVATE -O0)
+	target_compile_options(BLANKART PRIVATE -O0)
 else()
-	target_compile_options(SRB2SDL2 PRIVATE -O3)
+	target_compile_options(BLANKART PRIVATE -O3)
 endif()
 
 # Compiler warnings configuration
-target_compile_options(SRB2SDL2 PRIVATE
+target_compile_options(BLANKART PRIVATE
 	# Using generator expressions to handle per-language compile options
 
 	# C, GNU
@@ -529,7 +571,7 @@ target_compile_options(SRB2SDL2 PRIVATE
 	>
 )
 if(SRB2_CONFIG_ERRORMODE)
-	target_compile_options(SRB2SDL2 PRIVATE
+	target_compile_options(BLANKART PRIVATE
 		$<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:Clang>>:
 			-Werror
 		>
@@ -537,37 +579,37 @@ if(SRB2_CONFIG_ERRORMODE)
 endif()
 
 # Link warnings configuration
-target_link_options(SRB2SDL2 PRIVATE
+target_link_options(BLANKART PRIVATE
 	$<$<C_COMPILER_ID:GNU>:
 		# -Wl,--as-needed   - Was controlled by NOLDWARNING
 	>
 )
 
 if(${SRB2_CONFIG_DEV_BUILD})
-	target_compile_definitions(SRB2SDL2 PRIVATE -DDEVELOP)
+	target_compile_definitions(BLANKART PRIVATE -DDEVELOP)
 endif()
-target_compile_definitions(SRB2SDL2 PRIVATE -DCMAKECONFIG)
+target_compile_definitions(BLANKART PRIVATE -DCMAKECONFIG)
 
 # Misc. build options from Makefiles
 if(SRB2_CONFIG_DEBUGMODE)
-	target_compile_definitions(SRB2SDL2 PRIVATE -D_DEBUG -DZDEBUG -DPARANOIA -DRANGECHECK -DPACKETDROP)
+	target_compile_definitions(BLANKART PRIVATE -D_DEBUG -DZDEBUG -DPARANOIA -DRANGECHECK -DPACKETDROP)
 endif()
 if(SRB2_CONFIG_MOBJCONSISTANCY)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DMOBJCONSISTANCY)
+	target_compile_definitions(BLANKART PRIVATE -DMOBJCONSISTANCY)
 endif()
 if(SRB2_CONFIG_PACKETDROP)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DPACKETDROP)
+	target_compile_definitions(BLANKART PRIVATE -DPACKETDROP)
 endif()
 if(SRB2_CONFIG_ZDEBUG)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DZDEBUG)
+	target_compile_definitions(BLANKART PRIVATE -DZDEBUG)
 endif()
 if(SRB2_CONFIG_PROFILEMODE AND "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
-	target_compile_options(SRB2SDL2 PRIVATE -pg)
-	target_link_options(SRB2SDL2 PRIVATE -pg)
+	target_compile_options(BLANKART PRIVATE -pg)
+	target_link_options(BLANKART PRIVATE -pg)
 endif()
 
 if(SRB2_CONFIG_LTO AND NOT SRB2_CONFIG_DEBUGMODE)
-	set_property(TARGET SRB2SDL2 PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+	set_property(TARGET BLANKART PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
 # strip debug symbols into separate file when using gcc or clang.
@@ -578,11 +620,11 @@ if((CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")  AND NOT 
 			set(OBJCOPY_ONLY_KEEP_DEBUG "--only-keep-debug")
 		endif()
 		message(STATUS "Will make separate debug symbols in *.debug")
-		add_custom_command(TARGET SRB2SDL2 POST_BUILD
-			COMMAND ${CMAKE_OBJCOPY} ${OBJCOPY_ONLY_KEEP_DEBUG} $<TARGET_FILE:SRB2SDL2> $<TARGET_FILE:SRB2SDL2>.debug
+		add_custom_command(TARGET BLANKART POST_BUILD
+			COMMAND ${CMAKE_OBJCOPY} ${OBJCOPY_ONLY_KEEP_DEBUG} $<TARGET_FILE:BLANKART> $<TARGET_FILE:BLANKART>.debug
 			# mold linker: .gnu_debuglink is present by default, so --add-gnu-debuglink would fail
-			COMMAND ${CMAKE_OBJCOPY} --strip-debug --remove-section=.gnu_debuglink $<TARGET_FILE:SRB2SDL2>
-			COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=$<TARGET_FILE:SRB2SDL2>.debug $<TARGET_FILE:SRB2SDL2>
+			COMMAND ${CMAKE_OBJCOPY} --strip-debug --remove-section=.gnu_debuglink $<TARGET_FILE:BLANKART>
+			COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=$<TARGET_FILE:BLANKART>.debug $<TARGET_FILE:BLANKART>
 		)
 	endif()
 endif()
@@ -608,12 +650,12 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL Windows AND NOT "${SRB2_CONFIG_INTERNAL_LIBRA
 		endif()
 		list(TRANSFORM ADDITIONAL_DLLS PREPEND "${MINGW_BIN_PATH}/")
 	endif()
-	add_custom_command(TARGET SRB2SDL2 POST_BUILD
+	add_custom_command(TARGET BLANKART POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different
-			$<TARGET_RUNTIME_DLLS:SRB2SDL2>
+			$<TARGET_RUNTIME_DLLS:BLANKART>
 			${ADDITIONAL_DLLS}
 
-			$<TARGET_FILE_DIR:SRB2SDL2>
+			$<TARGET_FILE_DIR:BLANKART>
 		COMMAND_EXPAND_LISTS
 		COMMENT "Copying runtime DLLs"
 	)

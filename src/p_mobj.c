@@ -13,6 +13,7 @@
 
 #include "p_mobj.h"
 #include "d_netcmd.h"
+#include "d_player.h"
 #include "d_think.h"
 #include "dehacked.h"
 #include "deh_tables.h"
@@ -54,6 +55,7 @@
 #include "k_objects.h"
 #include "k_items.h"
 #include "k_waypoint.h"
+#include "k_grandprix.h"
 
 // BlanKart
 #include "blan/b_soc.h"
@@ -3402,6 +3404,14 @@ void P_MobjCheckWater(mobj_t *mobj)
 		{
 			if (P_MobjFlip(mobj)*mobj->momz < 0) // You are entering the goo?
 				mobj->momz = FixedMul(mobj->momz, FixedDiv(2*FRACUNIT, 5*FRACUNIT)); // kill momentum significantly, to make the goo feel thick.
+
+			// Kill heavy airdrop too so you don't get softlocked.
+			if (mobj->player && (mobj->player->airdropflags & PAF_AIRDROP_HEAVY))
+			{
+				mobj->player->airdroptime = 0;
+				mobj->player->airdroppredelay = 0;
+				mobj->player->airdropflags &= ~PAF_AIRDROP_MASK;
+			}
 		}
 		else if (wasinwater && P_MobjFlip(mobj) * mobj->momz > 0)
 		{
@@ -6862,7 +6872,7 @@ static void P_RemoveOverlay(mobj_t *thing)
 	}
 }
 
-static UINT32 P_GetTranslucencyForInvincibility(mobj_t *mo)
+static UINT32 P_GetTranslucencyForSMonitor(mobj_t *mo)
 {
 	if (!mo->player)
 	{
@@ -6870,16 +6880,16 @@ static UINT32 P_GetTranslucencyForInvincibility(mobj_t *mo)
 		return 0;
 	}
 
-	return max(0, min(9, 10 - FixedMul(10, K_InvincibilityGradient(mo->player->invincibilitytimer))))<<RF_TRANSSHIFT;
+	return max(0, min(9, 10 - FixedMul(10, K_SMonitorGradient(mo->player->smonitortimer))))<<RF_TRANSSHIFT;
 }
 
 // Called only when MT_OVERLAY thinks.
-static void P_PlayerInvincibilityOverlay(mobj_t *thing)
+static void P_PlayerSMonitorOverlay(mobj_t *thing)
 {
 	I_Assert(thing->target != NULL);
 	I_Assert(thing->target->player != NULL);
 
-	if (!thing->target->player->invincibilitytimer)
+	if (!thing->target->player->smonitortimer)
 	{
 		P_SetTarget(&thing->target, NULL);
 
@@ -6895,7 +6905,7 @@ static void P_PlayerInvincibilityOverlay(mobj_t *thing)
 		thing->z += thing->target->height - thing->height;
 	}
 
-	thing->color = K_AltInvincibilityColor(leveltime / 2);
+	thing->color = K_SMonitorColor(leveltime / 2);
 	thing->colorized = true;
 	thing->dispoffset = min(2, thing->target->dispoffset + 1);
 
@@ -6907,7 +6917,7 @@ static void P_PlayerInvincibilityOverlay(mobj_t *thing)
 	thing->sprite2 = thing->target->sprite2;
 	thing->frame = thing->target->frame | FF_FULLBRIGHT | FF_ADD;
 	thing->tics = -1;
-	thing->renderflags = (thing->target->renderflags & ~RF_TRANSMASK)|P_GetTranslucencyForInvincibility(thing->target);
+	thing->renderflags = (thing->target->renderflags & ~RF_TRANSMASK)|P_GetTranslucencyForSMonitor(thing->target);
 	thing->skin = thing->target->skin;
 	thing->standingslope = thing->target->standingslope;
 
@@ -7274,8 +7284,8 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 			P_AddOverlay(mobj);
 			if ((mobj->extravalue2) && (mobj->target->player))
 			{
-				// Could be overlaying an invincible player.
-				P_PlayerInvincibilityOverlay(mobj);
+				// Could be overlaying a player using an S-Monitor.
+				P_PlayerSMonitorOverlay(mobj);
 			}
 		}
 		break;
@@ -8780,8 +8790,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			ghost->colorized = true; // already has color!
 		}
 
-		if (P_IsObjectOnGround(mobj) && (mobj->momz * P_MobjFlip(mobj)) <= 0
-		&& (mobj->state == &states[S_SSMINE_AIR1] || mobj->state == &states[S_SSMINE_AIR2]))
+		if (P_IsObjectOnGround(mobj) && (mobj->state == &states[S_SSMINE_AIR1] || mobj->state == &states[S_SSMINE_AIR2]))
 		{
 			if (mobj->extravalue1 > 0)
 				mobj->extravalue1--;
@@ -8821,7 +8830,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		break;
 	case MT_EGGMINE:
 		mobj->friction = 95*ORIG_FRICTION/100;
-		if (mobj->momx || mobj->momy)
+		if (mobj->threshold > 0 || FixedHypot(mobj->momx, mobj->momy) >= 12*mobj->scale)
 		{
 			mobj_t *ghost = P_SpawnGhostMobj(mobj);
 			
@@ -8834,9 +8843,8 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		if (P_IsObjectOnGround(mobj)) 
 		{
-			if (mobj->health > 1 && mobj->threshold == 0) 
+			if (mobj->threshold == 0 && mobj->health > 1 && FixedHypot(mobj->momx, mobj->momy) < 12*mobj->scale)
 			{
-				S_StartSound(mobj, mobj->info->activesound);
 				mobj->health = 1;
 				mobj->whiteshadow = false;
 			}
@@ -8855,13 +8863,13 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			S_StopSoundByID(mobj, sfx_s3kd2l);
 		}
 		
-		if (mobj->threshold > 0) 
+		if (mobj->threshold > 0)
 		{
-			mobj->threshold -= 1;
+			mobj->threshold--;
 		}
 		if (mobj->extravalue1 > 0) 
 		{
-			mobj->extravalue1 -= 1;
+			mobj->extravalue1--;
 		}
 		break;
 	case MT_SPBEXPLOSION:
@@ -9044,7 +9052,11 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		mobj->colorized = mobj->target->colorized;
 		break;
 	case MT_INVULNFLASH:
-		if (!mobj->target || !mobj->target->health || (mobj->target->player && !mobj->target->player->invincibilitytimer))
+		if (!mobj->target ||
+			!mobj->target->health ||
+			(mobj->target->player &&
+				!(mobj->target->player->invincibilitytimer ||
+					mobj->target->player->smonitortimer)))
 		{
 			P_RemoveMobj(mobj);
 			return false;
@@ -9052,10 +9064,14 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
 		break;
 	case MT_BRAKEDRIFT:
+	{
+		// Letting go of accel functions about the same as brake-drifting
+		boolean nullDrift = (!(K_GetKartButtons(mobj->target->player) & BT_ACCELERATE));
+
 		if ((!mobj->target || !mobj->target->health || !mobj->target->player || !P_IsObjectOnGround(mobj->target))
 			|| !mobj->target->player->drift || !(mobj->target->player->pflags & PF_BRAKEDRIFT)
 			|| !((mobj->target->player->cmd.buttons & BT_BRAKE)
-			|| (K_GetKartButtons(mobj->target->player) & BT_ACCELERATE))) // Letting go of accel functions about the same as brake-drifting
+			|| nullDrift))
 		{
 			P_RemoveMobj(mobj);
 			return false;
@@ -9080,14 +9096,34 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			else
 				mobj->color = SKINCOLOR_SILVER;
 
-			if (!S_SoundPlaying(mobj, sfx_cdfm17))
-				S_StartSound(mobj, sfx_cdfm17);
+			if (nullDrift)
+			{
+				if (cv_nulldriftefx.value)
+				{
+					// Play a harsher sound when you null-drift.
+					if (mobj->target->player->nulldrifttime % 4 == 0)
+						S_StartSound(mobj, sfx_s3k67);
+				}
+				else if (!S_SoundPlaying(mobj, sfx_cdfm17))
+				{
+					S_StartSound(mobj, sfx_cdfm17);
+				}
+
+				// Set the player's nulldrift variables for any relevant VFX.
+				mobj->target->player->nulldrift = intsign(mobj->target->player->drift);
+			}
+			else
+			{
+				if (!S_SoundPlaying(mobj, sfx_cdfm17))
+					S_StartSound(mobj, sfx_cdfm17);
+			}
 
 			K_MatchGenericExtraFlags(mobj, mobj->target);
 			if (leveltime & 1)
 				mobj->renderflags |= RF_DONTDRAW;
 		}
 		break;
+	}
 	case MT_PLAYERRETICULE:
 		if (!mobj->target || !mobj->target->health)
 		{
@@ -9361,15 +9397,17 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 	case MT_FLAMESHIELD:
 		{
 			statenum_t curstate;
+			UINT8 flamestore = mobj->target->player->flamestore;
 			if (!mobj->target || !mobj->target->health || !mobj->target->player
 				|| K_GetShieldFromPlayer(mobj->target->player) != KSHIELD_FLAME)
 			{
 				P_RemoveMobj(mobj);
 				return false;
 			}
-			P_SetScale(mobj, (mobj->destscale = (5*mobj->target->scale)>>2));
+			// P_SetScale(mobj, (mobj->destscale = ((flamestore >= FLAMESTOREMAX-1) ? (2*mobj->target->scale) : (5*mobj->target->scale)>>2)));
+			mobj->destscale = ((flamestore >= FLAMESTOREMAX-1) ? (7*mobj->target->scale/4) : (5*mobj->target->scale)>>2);
 			curstate = ((mobj->tics == 1) ? (mobj->state->nextstate) : ((statenum_t)(mobj->state-states)));
-			if (mobj->target->player->flamestore)
+			if (flamestore)
 			{
 				if (curstate != S_FLAMESHIELDDASH)
 					P_SetMobjState(mobj, S_FLAMESHIELDDASH);
@@ -9380,6 +9418,15 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				if (curstate == S_FLAMESHIELDDASH)
 					P_SetMobjState(mobj, S_FLAMESHIELD1);
 				mobj->renderflags &= ~RF_DONTDRAW;
+			}
+			
+			if (flamestore >= FLAMESTOREMAX-1)
+			{
+				mobj->renderflags |= RF_ADD;
+			}
+			else
+			{
+				mobj->renderflags &= ~RF_ADD;
 			}
 
 			// Don't sloperoll Shields
@@ -12264,8 +12311,8 @@ void P_PrecipitationEffects(void)
  */
 mobjtype_t P_GetMobjtype(UINT16 mthingtype)
 {
-	INT32 i;
-	for (i = NUMMOBJTYPES-1; i >= 0; i--)
+	mobjtype_t i;
+	for (i = 0; i < NUMMOBJTYPES; i++)
 		if (mthingtype == mobjinfo[i].doomednum)
 			return i;
 	return MT_UNKNOWN;
@@ -12382,16 +12429,17 @@ void P_SpawnPlayer(INT32 playernum)
 	}
 	else if (p->bot)
 	{
-		/*
-		if (bonusgame || specialstage || boss)
+		if (K_BotDefaultSpectator())
 		{
 			// Bots should avoid
 			p->spectator = true;
+			p->pflags &= ~PF_WANTSTOJOIN;
 		}
-		*/
+		else if (p->spectator)
 		{
 			// No point in a spectating bot!
 			p->spectator = false;
+			p->pflags |= PF_WANTSTOJOIN;
 		}
 	}
 	else if (netgame && p->jointime <= 1 && pcount)

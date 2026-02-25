@@ -8076,8 +8076,7 @@ void P_SpawnSpecials(boolean fromnetsave)
 
 	// Allocate each list
 	for (i = 0; i < numsectors; i++)
-		if(secthinkers[i].thinkers)
-			Z_Free(secthinkers[i].thinkers);
+		Z_Free(secthinkers[i].thinkers);
 
 	Z_Free(secthinkers);
 }
@@ -9338,7 +9337,9 @@ boolean P_AllowFriction(mobj_t *mobj)
 		|| mobj->player->sneakertimer
 		|| (cv_kartbubble_boost_offroadignore.value && mobj->player->bubbleboost)
 		|| mobj->player->growshrinktimer > 0
-		|| K_IsAltShrunk(mobj->player))
+		|| mobj->player->flamestore
+		|| K_IsAltShrunk(mobj->player)
+		|| mobj->player->smonitortimer)
 		return false;
 
 	return true;
@@ -9646,6 +9647,13 @@ void T_Pusher(void *thinker)
 			thing->player->cmomy += yspeed;
 			thing->player->cmomx = FixedMul(thing->player->cmomx, ORIG_FRICTION);
 			thing->player->cmomy = FixedMul(thing->player->cmomy, ORIG_FRICTION);
+
+			if ((zspeed * P_MobjFlip(thing) > 0) && (thing->player->airdropflags & PAF_AIRDROP_HEAVY))
+			{
+				thing->player->airdroptime = 0;
+				thing->player->airdroppredelay = 0;
+				thing->player->airdropflags &= ~PAF_AIRDROP_MASK;
+			}
 		}
 
 		// Tumbleweeds bounce a bit...

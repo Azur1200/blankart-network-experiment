@@ -152,6 +152,7 @@ extern wadfile_t *wadfiles[MAX_WADFILES];
 
 // =========================================================================
 
+void W_Startup(void);
 void W_Shutdown(void);
 
 // Opens a WAD file. Returns the FILE * handle for the file, or NULL if not found or could not be opened
@@ -165,8 +166,6 @@ boolean W_MakeFileHash(const char *filename, boolean openwad, UINT64 *ret);
 // so that it stops with a message if a file was not found, but not if all is okay.
 // W_InitMultipleFiles exits if a file was not found, but not if all is okay.
 INT32 W_InitMultipleFiles(char **filenames, boolean addons);
-
-UINT32 W_HashLumpName(const char *name, size_t len);
 
 const char *W_CheckNameForNumPwad(UINT16 wad, UINT16 lump);
 const char *W_CheckNameForNum(lumpnum_t lumpnum);

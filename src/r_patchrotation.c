@@ -61,11 +61,18 @@ static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer)
 	angle_t viewingAngle = R_PointToAnglePlayer(viewPlayer, player->mo->x, player->mo->y);
 	angle_t angleDelta = (viewingAngle - player->mo->angle);
 
-	angle_t sliptideLift = player->aizdrifttilt;
+	INT32 nulltilt = (K_NullDriftTiltEnalbed()) ? player->nulldrifttilt : 0;
+	INT32 aiztilt = (cv_sliptidetilt.value) ? player->aizdrifttilt : 0;
+
+	boolean nullBeforeSlip = (abs(aiztilt) < abs(nulltilt));
+	INT32 liftsign = ((nullBeforeSlip) ? intsign(nulltilt) : intsign(aiztilt));
+
+	// Sliptide tilt: Nulldrifts take priority if and ONLY if they're the larger value compared to sliptides.
+	angle_t sliptideLift = max(abs(aiztilt), abs(nulltilt)) * liftsign;
 
 	angle_t rollAngle = 0;
 
-	if (sliptideLift && cv_sliptidetilt.value)
+	if (sliptideLift)
 	{
 		/* (from side) tilt downward if turning
 		   toward camera, upward if away. */
@@ -82,12 +89,12 @@ static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer)
 	return rollAngle;
 }
 
-// Hacky boolean to check if we're the rainbow Invincibility overlay
-boolean R_IsOverlayingInvinciblePlayer(mobj_t* mobj)
+// Hacky boolean to check if we're the rainbow S-Monitor overlay
+boolean R_IsOverlayingSMonitorPlayer(mobj_t* mobj)
 {
-	return ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (mobj->type == MT_OVERLAY) &&
+	return ((mobj->type == MT_OVERLAY) &&
 			(mobj->target) && (mobj->extravalue2) && (mobj->target->player) &&
-			(mobj->target->player->invincibilitytimer));
+			(mobj->target->player->smonitortimer));
 }
 
 angle_t R_ModelRotationAngle(mobj_t *mobj, player_t *viewPlayer)
@@ -98,7 +105,7 @@ angle_t R_ModelRotationAngle(mobj_t *mobj, player_t *viewPlayer)
 	{
 		rollAngle += R_PlayerSpriteRotation(mobj->player, viewPlayer);
 	}
-	else if (R_IsOverlayingInvinciblePlayer(mobj))
+	else if (R_IsOverlayingSMonitorPlayer(mobj))
 	{
 		rollAngle += R_PlayerSpriteRotation(mobj->target->player, viewPlayer);
 	}
@@ -110,7 +117,7 @@ angle_t R_SpriteRotationAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstat
 {
 	angle_t rollOrPitch;
 	
-	if (R_IsOverlayingInvinciblePlayer(mobj))
+	if (R_IsOverlayingSMonitorPlayer(mobj))
 	{
 		rollOrPitch = R_GetPitchRollAngle(mobj->target, viewPlayer, interp);
 	}

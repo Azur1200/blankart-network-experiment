@@ -84,6 +84,7 @@ typedef enum
 	KIF_DARKBG = 1<<3,           // use dark item roulette BG
 	KIF_COLPATCH2PLAYER = 1<<4,  // colourize patch to player
 	KIF_HIDEFROMROULETTE = 1<<5, // don't show this item in the roulette (inversion of xItem's showInRoulette item flag)
+	KIF_HYUCANTSTEAL = 1<<7,     // Prevents the item from being stolen by a Hyudoro
 } ATTRPACK kartitemflags_e;
 
 // result flags relevant to the roulette
@@ -214,7 +215,7 @@ void K_StartRoulette(player_t *player, kartroulettetype_e roulettetype);
 
 void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force);
 
-useoddsfunc_f KO_AltInvinOdds;
+useoddsfunc_f KO_SMonitorOdds;
 useoddsfunc_f KO_SPBRaceOdds;
 
 void K_DoThunderShield(player_t *player);
@@ -230,6 +231,8 @@ void K_PlayerItemThink(player_t *player, boolean onground);
 
 extern consvar_t cv_karteggmine_slotlock;
 extern consvar_t cv_karteggmine_slotbrick;
+
+extern consvar_t cv_kartthunder_radius;
 
 #define BUBBLEBOOSTTIME (7 * sneakertime / 10)
 

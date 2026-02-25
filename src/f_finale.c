@@ -235,7 +235,7 @@ static void F_TitleBGScroll(INT32 scrollspeed)
 	pat = W_CachePatchName("TITLEBG1", PU_CACHE);
 	pat2 = W_CachePatchName("TITLEBG2", PU_CACHE);
 
-	w = (vid.width / vid.dupx)<<FRACBITS;
+	w = (vid.scaledwidth << FRACBITS);
 
 	// The scroll offset MUST be clamped before shifting by FRACBITS, or else it'll overflow in about 3 minutes
 	animtimer = ((((finalecount * scrollspeed) % (SHORT(pat->width)*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
@@ -777,7 +777,7 @@ void F_CreditDrawer(void)
 			y += 12<<FRACBITS;
 			break;
 		}
-		if (((y>>FRACBITS) * vid.dupy) > vid.height)
+		if (((y>>FRACBITS) * vid.dup) > vid.height)
 			break;
 	}
 }
@@ -797,7 +797,7 @@ void F_CreditTicker(void)
 			case 1: y += 30<<FRACBITS; break;
 			default: y += 12<<FRACBITS; break;
 		}
-		if (FixedMul(y,vid.dupy) > vid.height)
+		if (FixedMul(y,vid.dup) > vid.height)
 			break;
 	}
 
@@ -924,6 +924,11 @@ const char *blancredits[] = {
 	"\"Chearii\"",
 	"\"hayaunderscore\" aka \"DeltaKanyx\"",
 	"\"Guilmon35249vr\"",
+	"Vivian \"toaster\" Grannell", // Horncode
+	"AJ \"Tyron\" Martinez", // Horncode
+	"\"Superstarxalien\"", // Horncode
+	"\"Freaky Mutant Man\"", // Color profiles menu
+	"\"blondedradio\"", // Screen-tracking item roulette, lifted near-directly from RadioRacers
 	"",
 	"\1Item Design",
 	"\"NepDisk\"",
@@ -937,6 +942,9 @@ const char *blancredits[] = {
 	"\"luna\"",
 	"\"White Mage (guy who picked up controller)\"",
 	"\"minenice\"",
+	"\"StarrydustNova\"",
+	"\"merritt\"",
+	"\"Sunflower\" aka \"AnimeSonic\"",
 	"",
 	"\1New Item Art",
 	"\"Spee\"",
@@ -945,6 +953,7 @@ const char *blancredits[] = {
 	"\"Mayo\"",
 	"\"yama\"",
 	"\"minenice\"",
+	"\"Mompi\"",
 	"",
 	"\1New HUD Art",
 	"\"Spee\"",
@@ -957,9 +966,13 @@ const char *blancredits[] = {
 	"\"Miguelius256\"",
 	"\"Toddoesstuff\"",
 	"\"RetroStation\"",
+	"\"StarrydustNova\"",
+	"\"joshyflip\"",
 	"",
 	"\1New Misc Art",
 	"\"scizor300\"",
+	"\"StarrydustNova\"", // Per some indev talks. Can't reveal the secrets yet!
+	"\"joshyflip\"", // Per some indev talks. Can't reveal the secrets yet!
 	"",
 	"\1Additional Assets",
 	"Sonic Team Jr.",
@@ -1030,11 +1043,14 @@ const char *blancredits[] = {
 	"\"PX8916\"",
 	"\"Tom\"",
 	"\"Phoenix\"",
+	"\"StarrydustNova\"",
+	"\"Prada\"",
 	"",
 	"\1Special Thanks",
 	"\"merritt\"",
 	"\"luna\"",
 	"\"Sunflower\" aka \"AnimeSonic\"",
+	"\"StarrydustNova\"",
 	"Sunflower's Garden",
 	"The Moe Mansion and Birdhouse Team",
 	"SRB2Kart Saturn Contributors",
@@ -1149,7 +1165,7 @@ void F_BlanCreditDrawer(void)
 		}
 		F_DrawDiagCubes();
 
-		if (((y>>FRACBITS) * vid.dupy) > vid.height)
+		if (((y>>FRACBITS) * vid.dup) > vid.height)
 			break;
 	}
 }
@@ -1169,7 +1185,7 @@ void F_BlanCreditTicker(void)
 			case 1: y += 20<<FRACBITS; break;
 			default: y += 12<<FRACBITS; break;
 		}
-		if (FixedMul(y,vid.dupy) > vid.height)
+		if (FixedMul(y,vid.dup) > vid.height)
 			break;
 	}
 
@@ -1291,9 +1307,8 @@ void F_SkyScroll(INT32 scrollxspeed, INT32 scrollyspeed, const char *patchname)
 	INT32 xscrolled, x, xneg = (scrollxspeed > 0) - (scrollxspeed < 0), tilex;
 	INT32 yscrolled, y, yneg = (scrollyspeed > 0) - (scrollyspeed < 0), tiley;
 	boolean xispos = (scrollxspeed >= 0), yispos = (scrollyspeed >= 0);
-	INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
 	INT16 patwidth, patheight;
-	INT32 pw, ph; // scaled by dupz
+	INT32 pw, ph; // scaled by vid.dup
 	patch_t *pat;
 	INT32 i, j;
 	fixed_t fracmenuanimtimer, xscrolltimer, yscrolltimer;
@@ -1318,8 +1333,8 @@ void F_SkyScroll(INT32 scrollxspeed, INT32 scrollyspeed, const char *patchname)
 
 	patwidth = pat->width;
 	patheight = pat->height;
-	pw = patwidth * dupz;
-	ph = patheight * dupz;
+	pw = patwidth * vid.dup;
+	ph = patheight * vid.dup;
 
 	tilex = max(FixedCeil(FixedDiv(vid.width, pw)) >> FRACBITS, 1)+2; // one tile on both sides of center
 	tiley = max(FixedCeil(FixedDiv(vid.height, ph)) >> FRACBITS, 1)+2;
@@ -1329,8 +1344,8 @@ void F_SkyScroll(INT32 scrollxspeed, INT32 scrollyspeed, const char *patchname)
 	yscrolltimer = ((fracmenuanimtimer*scrollyspeed)/16 + patheight*yneg*FRACUNIT) % (patheight * FRACUNIT);
 
 	// coordinate offsets
-	xscrolled = FixedInt(xscrolltimer * dupz);
-	yscrolled = FixedInt(yscrolltimer * dupz);
+	xscrolled = FixedInt(xscrolltimer * vid.dup);
+	yscrolled = FixedInt(yscrolltimer * vid.dup);
 
 	for (x = (xispos) ? -pw*(tilex-1)+pw : 0, i = 0;
 		i < tilex;
@@ -1801,9 +1816,7 @@ void F_StartWaitingPlayers(void)
 #ifdef NOWAY
 	randskin = M_RandomKey(numskins);
 
-	if (waitcolormap)
-		Z_Free(waitcolormap);
-
+	Z_Free(waitcolormap);
 	waitcolormap = R_GetTranslationColormap(randskin, skins[randskin].prefcolor, 0);
 
 	sprdef = &skins[randskin].sprites[P_GetSkinSprite2(&skins[randskin], SPR2_FSTN, NULL)];
@@ -2105,7 +2118,7 @@ static fixed_t F_GetPromptHideHudBound(void)
 	F_GetPageTextGeometry(&pagelines, &rightside, &boxh, &texth, &texty, &namey, &chevrony, &textx, &textr);
 
 	// calc boxheight (see V_DrawPromptBack)
-	boxh *= vid.dupy;
+	boxh *= vid.dup;
 	boxh = (boxh * 4) + (boxh/2)*5; // 4 lines of space plus gaps between and some leeway
 
 	// return a coordinate to check

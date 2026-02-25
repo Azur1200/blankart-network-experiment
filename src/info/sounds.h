@@ -1017,3 +1017,14 @@ _(sysmsg)
 // Dash Rings
 _(dashr)
 _(rainbr)
+
+// Horncode
+_(horn00)
+
+// Fastfall bounce
+_(vclgna)
+
+// Items
+// Egg mine
+_(bckuse)
+_(egrbhe)

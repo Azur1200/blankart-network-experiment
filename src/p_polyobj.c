@@ -882,14 +882,10 @@ static void Polyobj_carryThings(polyobj_t *po, fixed_t dx, fixed_t dy)
 
 			for (; mo; mo = mo->bnext)
 			{
-				// lastlook is used by the SPB to determine targets, do not let it affect it
-				if (mo->type == MT_SPB)
+				if (mo->po_movecount == pomovecount)
 					continue;
 
-				if (mo->lastlook == pomovecount)
-					continue;
-
-				mo->lastlook = pomovecount;
+				mo->po_movecount = pomovecount;
 
 				// Don't scroll objects that aren't affected by gravity
 				if (mo->flags & MF_NOGRAVITY)
@@ -1118,14 +1114,10 @@ static void Polyobj_rotateThings(polyobj_t *po, vector2_t origin, angle_t delta,
 
 			for (; mo; mo = mo->bnext)
 			{
-				// lastlook is used by the SPB to determine targets, do not let it affect it
-				if (mo->type == MT_SPB)
+				if (mo->po_movecount == pomovecount)
 					continue;
 
-				if (mo->lastlook == pomovecount)
-					continue;
-
-				mo->lastlook = pomovecount;
+				mo->po_movecount = pomovecount;
 
 				// Don't scroll objects that aren't affected by gravity
 				if (mo->flags & MF_NOGRAVITY)

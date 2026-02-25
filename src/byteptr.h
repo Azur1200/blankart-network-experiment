@@ -32,6 +32,7 @@ extern "C" {
 #define WRITEUINT16(p,b)    do {  UINT16 *p_tmp = ( UINT16 *)p; const  UINT16 tv = ( UINT16)(b); memcpy(p, &tv, sizeof( UINT16)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
 #define WRITEINT32(p,b)     do {   INT32 *p_tmp = (  INT32 *)p; const   INT32 tv = (  INT32)(b); memcpy(p, &tv, sizeof(  INT32)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
 #define WRITEUINT32(p,b)    do {  UINT32 *p_tmp = ( UINT32 *)p; const  UINT32 tv = ( UINT32)(b); memcpy(p, &tv, sizeof( UINT32)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
+#define WRITEINT64(p,b)     do {   INT64 *p_tmp = (  INT64 *)p; const   INT64 tv = (  INT64)(b); memcpy(p, &tv, sizeof(  INT64)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
 #define WRITEUINT64(p,b)    do {  UINT64 *p_tmp = ( UINT64 *)p; const  UINT64 tv = ( UINT64)(b); memcpy(p, &tv, sizeof( UINT64)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
 #define WRITECHAR(p,b)      do {    char *p_tmp = (   char *)p; const    char tv = (   char)(b); memcpy(p, &tv, sizeof(   char)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
 #define WRITEFIXED(p,b)     do { fixed_t *p_tmp = (fixed_t *)p; const fixed_t tv = (fixed_t)(b); memcpy(p, &tv, sizeof(fixed_t)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
@@ -45,6 +46,7 @@ extern "C" {
 #define READUINT16(p)       ({  const UINT16 *p_tmp = (const UINT16  *)p;  UINT16 b; memcpy(&b, p, sizeof( UINT16)); p_tmp++; *(const void**)(&(p)) = (const void *)p_tmp; b; })
 #define READINT32(p)        ({   const INT32 *p_tmp = (const INT32   *)p;   INT32 b; memcpy(&b, p, sizeof(  INT32)); p_tmp++; *(const void**)(&(p)) = (const void *)p_tmp; b; })
 #define READUINT32(p)       ({  const UINT32 *p_tmp = (const UINT32  *)p;  UINT32 b; memcpy(&b, p, sizeof( UINT32)); p_tmp++; *(const void**)(&(p)) = (const void *)p_tmp; b; })
+#define READINT64(p)        ({  const  INT64 *p_tmp = (const INT64   *)p;   INT64 b; memcpy(&b, p, sizeof(  INT64)); p_tmp++; *(const void**)(&(p)) = (const void *)p_tmp; b; })
 #define READUINT64(p)       ({  const UINT64 *p_tmp = (const UINT64  *)p;  UINT64 b; memcpy(&b, p, sizeof( UINT64)); p_tmp++; *(const void**)(&(p)) = (const void *)p_tmp; b; })
 #define READCHAR(p)         ({    const char *p_tmp = (const char    *)p;    char b; memcpy(&b, p, sizeof(   char)); p_tmp++; *(const void**)(&(p)) = (const void *)p_tmp; b; })
 #define READFIXED(p)        ({ const fixed_t *p_tmp = (const fixed_t *)p; fixed_t b; memcpy(&b, p, sizeof(fixed_t)); p_tmp++; *(const void**)(&(p)) = (const void *)p_tmp; b; })
@@ -56,6 +58,7 @@ extern "C" {
 #define READUINT16(p)       ((const UINT16*) (*(const void**)(&(p)) = (const void*)&((const UINT16*) (p))[1]))[-1]
 #define READINT32(p)        ((const INT32*)  (*(const void**)(&(p)) = (const void*)&((const INT32*)  (p))[1]))[-1]
 #define READUINT32(p)       ((const UINT32*) (*(const void**)(&(p)) = (const void*)&((const UINT32*) (p))[1]))[-1]
+#define READINT64(p)        ((const INT64*)  (*(const void**)(&(p)) = (const void*)&((const INT64*)  (p))[1]))[-1]
 #define READUINT64(p)       ((const UINT64*) (*(const void**)(&(p)) = (const void*)&((const UINT64*) (p))[1]))[-1]
 #define READCHAR(p)         ((const char*)   (*(const void**)(&(p)) = (const void*)&((const char*)   (p))[1]))[-1]
 #define READFIXED(p)        ((const fixed_t*)(*(const void**)(&(p)) = (const void*)&((const fixed_t*)(p))[1]))[-1]

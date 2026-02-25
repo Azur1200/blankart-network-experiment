@@ -14,6 +14,7 @@
 
 #include <tracy/tracy/Tracy.hpp>
 
+#include "d_netcmd.h"
 #include "doomdef.h"
 #include "d_player.h"
 #include "g_game.h"
@@ -414,6 +415,15 @@ static void K_BotItemGenericOrbitShield(botdata_t *bd, const player_t *player)
 	K_BotGenericPressItem(bd, 0);
 }
 
+// Less skilled bots stack wastefully, low enough bots don't stack at all.
+static SINT8 K_BotSneakerStackThreshold(SINT8 difficulty)
+{
+	if (difficulty < 5)
+		return 0;
+
+	return 10 - ((difficulty-1)*5) / 13 + 1;
+}
+
 // Item usage for sneakers.
 static void K_BotItemSneaker(botdata_t *bd, const player_t *player)
 {
@@ -425,13 +435,17 @@ static void K_BotItemSneaker(botdata_t *bd, const player_t *player)
 		return;
 	}
 
+	boolean stack = K_StackingActive() && (cv_kartstacking_sneaker_maxgrade.value > 1);
+	const SINT8 stacktime = K_BotSneakerStackThreshold(player->botvars.difficulty);
+
 	if ((player->offroad && K_ApplyOffroad(player)) // Stuck in offroad, use it NOW
 		|| K_GetWaypointIsShortcut(player->nextwaypoint) == true // Going toward a shortcut!
 		|| player->speed < K_GetKartSpeed(player, false, true) / 2 // Being slowed down too much
-		|| player->speedboost > (FRACUNIT/8) // Have another type of boost (tethering)
+		|| (!stack && player->speedboost > (FRACUNIT/8)) // Have another type of boost (drafting)
+		|| (stack && player->sneakertimer < stacktime && player->sneakertimer > 0 && (bd->acceldown && !bd->brakedown)) // Stack them sneakers!
 		|| bd->itemconfirm > 4*TICRATE) // Held onto it for too long
 	{
-		if (player->sneakertimer == 0 && !bd->itemwasdown)
+		if (((stack && player->sneakertimer < stacktime) || player->sneakertimer == 0) && !bd->itemwasdown)
 		{
 			bd->itemdown = true;
 			//bd->itemconfirm = 2*TICRATE;
@@ -456,10 +470,17 @@ static void K_BotItemRocketSneaker(botdata_t *bd, const player_t *player)
 
 	if (bd->itemconfirm > TICRATE)
 	{
-		if (player->sneakertimer == 0 && !bd->itemwasdown)
+		if (player->sneakertimer > 0 && K_StackingActive())
 		{
-			bd->itemdown = true;
-			//bd->itemconfirm = 0;
+			K_BotItemSneaker(bd, player);
+		}
+		else
+		{
+			if (player->sneakertimer == 0 && !bd->itemwasdown)
+			{
+				bd->itemdown = true;
+				//bd->itemconfirm = 0;
+			}
 		}
 	}
 	else
@@ -1047,7 +1068,7 @@ static void K_BotItemRings(botdata_t *bd, const player_t *player)
 			|| ((player->driftboost > 0) && player->driftboost <= 20))
 		{
 			// Chain your boost with some rings for extra fun.
-			saferingsval -= 5;
+			saferingsval -= 3;
 		}
 		else if ((player->startboost > 0) && player->startboost <= 20)
 		{
@@ -1129,39 +1150,10 @@ static UINT32 K_BotCalculateUseodds(const player_t *player)
 static void K_BotItemRouletteMash(botdata_t *bd, const player_t *player)
 {
 	boolean mash = false;
-	UINT32 useodds = 0;
 
 	if (bd->itemwasdown)
 	{
 		return;
-	}
-
-	// Mash based on useodds to approximate bots in the back mashing like players would.
-	if (player->position > 1)
-	{
-		useodds = K_BotCalculateUseodds(player);
-
-		if (useodds >= 2 && useodds < 4)
-		{
-			// Around 25% chance to mash
-			if (M_RandomChance(FRACUNIT/4))
-			{
-				mash = true;
-			}
-		}
-		else if (useodds >= 4 && useodds < 6)
-		{
-			// Around 50% chance to mash
-			if (M_RandomChance(FRACUNIT/2))
-			{
-				mash = true;
-			}
-		}
-		else if (useodds >= 6)
-		{
-			// We are too far back!
-			mash = true;
-		}
 	}
 
 	if (player->rings < 0 && K_ItemResultEnabled(K_GetKartResult("superring")))
@@ -1169,6 +1161,24 @@ static void K_BotItemRouletteMash(botdata_t *bd, const player_t *player)
 		// Uh oh, we need a loan!
 		// It'll be better in the long run for bots to lose an item set for 5-15 free rings.
 		mash = true;
+	}
+
+	// Mash based on useodds to approximate bots in the back mashing like players would.
+	if (mash == false)
+	{
+		const fixed_t minuseodds = 4*FRACUNIT;
+		const fixed_t maxuseodds = 15*FRACUNIT;
+		fixed_t useodds = K_BotCalculateUseodds(player)*FRACUNIT;
+
+		if (useodds > minuseodds)
+		{
+			fixed_t chance = CLAMP(FixedDiv(useodds - minuseodds, maxuseodds - minuseodds), 0, FRACUNIT);
+
+			chance = Easing_InSine(chance, 0, FRACUNIT);
+
+			if (M_RandomChance(chance))
+				mash = true;
+		}
 	}
 
 	if (mash == true)

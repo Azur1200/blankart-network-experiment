@@ -44,7 +44,7 @@ void M_SaveFrame(void);
 void M_StopMovie(void);
 
 // the file where game vars and settings are saved
-#define CONFIGFILENAME "kartconfig.cfg"
+#define CONFIGFILENAME "blanconfig.cfg"
 
 boolean FIL_WriteFile(char const *name, const void *source, size_t length);
 size_t FIL_ReadFileTag(char const *name, UINT8 **buffer, INT32 tag);
@@ -122,6 +122,9 @@ const char * M_Ftrim (double);
 
 // counting bits, for weapon ammo code, usually
 FUNCMATH UINT8 M_CountBits(UINT32 num, UINT8 size);
+
+// Hashes some message using FNV-1a
+UINT32 FNV1a_QuickCaseHash(const char *message, size_t size);
 
 #include "w_wad.h"
 extern char configfile[MAX_WADPATH];

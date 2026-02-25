@@ -16,6 +16,7 @@
 #include "doomdef.h"
 #include "doomtype.h"
 #include "r_textures.h"
+#include "m_misc.h"
 #include "w_wad.h"
 #include "z_zone.h"
 
@@ -62,7 +63,7 @@ static brightmapStorage_t *K_GetBrightmapStorageByIndex(size_t checkIndex)
 --------------------------------------------------*/
 static brightmapStorage_t *K_GetBrightmapStorageByTextureName(const char *checkName)
 {
-	UINT32 checkHash = quickncasehash(checkName, 8);
+	UINT32 checkHash = FNV1a_QuickCaseHash(checkName, 8);
 	size_t i;
 
 	if (maxBrightmapStorage == 0)
@@ -119,7 +120,7 @@ static boolean K_BRIGHTLumpParser(char *data, size_t size)
 				{
 					bms = K_NewBrightmap();
 					strncpy(bms->textureName, tkn, 8);
-					bms->textureHash = quickncasehash(tkn, 8);
+					bms->textureHash = FNV1a_QuickCaseHash(tkn, 8);
 				}
 
 				Z_Free(tkn);
@@ -129,7 +130,7 @@ static boolean K_BRIGHTLumpParser(char *data, size_t size)
 				if (tkn && pos <= size)
 				{
 					strncpy(bms->brightmapName, tkn, 8);
-					bms->brightmapHash = quickncasehash(tkn, 8);
+					bms->brightmapHash = FNV1a_QuickCaseHash(tkn, 8);
 				}
 				else
 				{

@@ -19,6 +19,7 @@
 #include "d_clisrv.h"
 #include "f_finale.h"
 #include "filesrch.h" // for refreshdirmenu
+#include "g_input.h"
 #include "m_fixed.h"
 #include "p_setup.h"
 #include "p_saveg.h"
@@ -41,7 +42,7 @@
 #include "z_zone.h"
 #include "i_video.h"
 #include "byteptr.h"
-#include "i_joy.h"
+#include "i_gamepad.h"
 #include "r_local.h"
 #include "r_skins.h"
 #include "y_inter.h"
@@ -84,8 +85,8 @@ UINT8 ultimatemode = false;
 JoyType_t Joystick[MAXSPLITSCREENPLAYERS];
 
 // SRB2kart
-char gamedatafilename[64] = "kartdata.dat";
-char timeattackfolder[64] = "kart";
+char gamedatafilename[64] = "blandata.dat";
+char timeattackfolder[64] = "blan";
 char customversionstring[32] = "\0";
 
 static void G_DoCompleted(void);
@@ -942,7 +943,7 @@ static void G_SetSaveGameModified(void)
 
 	savemoddata = true;
 
-	strlcpy(gamedatafilename, "modkartdata.dat", sizeof (gamedatafilename));
+	strlcpy(gamedatafilename, "modblandata.dat", sizeof (gamedatafilename));
 	strlwr(gamedatafilename);
 
 	// Also save a time attack folder
@@ -1028,7 +1029,7 @@ INT32 G_MapNumber(const char * name)
 #endif
 	{
 		INT32 map;
-		UINT32 hash = quickncasehash(name, MAXMAPLUMPNAME);
+		UINT32 hash = FNV1a_QuickCaseHash(name, MAXMAPLUMPNAME);
 
 		for (map = 0; map < nummapheaders; ++map)
 		{
@@ -1186,6 +1187,7 @@ boolean G_AxisInDeadzone(UINT8 p, event_t *ev)
 // if defaults is true, also check default controls if the gamecontrol has no binds
 boolean G_ControlBoundToKey(UINT8 p, INT32 gc, INT32 key, boolean defaults)
 {
+	INT32 deviceID;
 	INT32 i;
 	INT32 (*map)[MAXINPUTMAPPING] = &gamecontrol[p][gc];
 
@@ -1194,9 +1196,11 @@ boolean G_ControlBoundToKey(UINT8 p, INT32 gc, INT32 key, boolean defaults)
 
 	if (defaults)
 	{
+		deviceID = I_GetControllerSlotfromID(I_GetControllerIDForPlayer(p));
 		for (i = 0; i < MAXINPUTMAPPING; i++)
-			if (G_KeyIsAvailable((*map)[i], cv_usejoystick[p].value, false))
+			if (G_KeyIsAvailable((*map)[i], deviceID, false))
 				goto bound;
+
 		map = &gamecontroldefault[gc];
 	}
 bound:
@@ -1259,11 +1263,18 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital, SINT8 type)
 		return 0;
 	}
 
-	fixed_t deadzonetype = G_GetDeadZoneType(p,type);
+	fixed_t deadzonetype = G_GetDeadZoneType(p, type);
 
 	deadzone = (JOYAXISRANGE * deadzonetype) / FRACUNIT;
 
-	deviceID = I_GetJoystickDeviceIndexForPlayer(p) + 1;
+	deviceID = I_GetControllerSlotfromID(I_GetControllerIDForPlayer(p));
+	if (deviceID >= MAXDEVICES)
+		return 0;
+
+	// not a controller?
+	// then its a keyboard or mouse
+	if (deviceID == INVALID_DEVICE)
+		deviceID = KEYBOARD_MOUSE_DEVICE;
 
 retrygetcontrol:
 	for (i = 0; i < MAXINPUTMAPPING; i++)
@@ -1579,6 +1590,12 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->buttons |= BT_LOOKBACK;
 	}
 
+	// horn with any button/key
+	if (G_PlayerInputDown(forplayer, gc_horncode, false, DEADZONE_BUTTON))
+	{
+		cmd->buttons |= BT_HORN;
+	}
+
 	// Lua scriptable buttons
 	if (G_PlayerInputDown(forplayer, gc_custom1, false, DEADZONE_BUTTON))
 		cmd->buttons |= BT_CUSTOM1;
@@ -1806,14 +1823,13 @@ void G_DoLoadLevelEx(boolean resetplayer, gamestate_t newstate)
 
 	// clear cmd building stuff
 	memset(gamekeydown, 0, sizeof (gamekeydown));
-	memset(deviceResponding, false, sizeof (deviceResponding));
 
 	// clear hud messages remains (usually from game startup)
 	CON_ClearHUD();
 
 	server_lagless = cv_lagless.value;
 
-	G_ResetAllDeviceRumbles();
+	G_ResetAllControllerRumbles();
 
 	if (doAutomate == true)
 	{
@@ -2167,6 +2183,12 @@ boolean G_Responder(event_t *ev)
 			return true; // eat events
 
 		case ev_joystick:
+			return true; // eat events
+
+		case ev_accelerometer:
+			return true; // eat events
+
+		case ev_gyroscope:
 			return true; // eat events
 
 		default:
@@ -2743,13 +2765,7 @@ static inline void G_PlayerFinishLevel(INT32 player)
 	}
 }
 
-typedef struct {
-	INT32 player;
-	boolean notifyrestat;
-	UINT8 kartspeed, kartweight, kartspeedrestat, kartweightrestat;
-} restatmessage_t;
-
-static void G_HandleRestatMessage(restatmessage_t *rm)
+void G_HandleRestatMessage(restatmessage_t *rm)
 {
 	if (players[rm->player].jointime == 0)
 		return;
@@ -3782,7 +3798,7 @@ void G_FinishExitLevel(void)
 {
 	if (gamestate == GS_LEVEL)
 	{
-		G_ResetAllDeviceRumbles();
+		G_ResetAllControllerRumbles();
 
 		if (g_exit.retry)
 		{
@@ -4651,7 +4667,7 @@ static INT16 G_GetNextMap(boolean advancemap)
 					if (cupLevelNum < nummapheaders && mapheaderinfo[cupLevelNum]
 						&& mapheaderinfo[cupLevelNum]->typeoflevel & (TOL_BOSS|TOL_BATTLE))
 					{
-						grandprixinfo.eventmode = GPEVENT_BONUS;
+						grandprixinfo.eventmode = GPEVENT_CHALLENGE;
 						newmap = cupLevelNum;
 					}
 				}
@@ -4997,7 +5013,8 @@ void G_NextLevel(void)
 	}
 
 	forceresetplayers = false;
-	deferencoremode = (cv_kartencore.value == 1);
+	if (cv_kartencore.value == 1)
+		deferencoremode = true;
 
 	gameaction = ga_worlddone;
 }

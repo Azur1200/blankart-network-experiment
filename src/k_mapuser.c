@@ -58,7 +58,7 @@ void K_UserPropertyPush(mapUserProperties_t *user, const char *key, mapUserPrope
 	memcpy(prop->key, key, keyLength + 1);
 	prop->key[keyLength] = '\0';
 
-	prop->hash = quickncasehash(prop->key, keyLength);
+	prop->hash = FNV1a_QuickCaseHash(prop->key, keyLength);
 
 	prop->type = type;
 	switch (type)
@@ -101,7 +101,7 @@ void K_UserPropertyPush(mapUserProperties_t *user, const char *key, mapUserPrope
 mapUserProperty_t *K_UserPropertyFind(mapUserProperties_t *user, const char *key)
 {
 	const size_t keyLength = strlen(key);
-	const UINT32 hash = quickncasehash(key, keyLength);
+	const UINT32 hash = FNV1a_QuickCaseHash(key, keyLength);
 	size_t i;
 
 	if (user->length == 0)

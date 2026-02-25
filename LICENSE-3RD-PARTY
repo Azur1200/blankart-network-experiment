@@ -1621,10 +1621,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --------------------------------------------------------------------------------
                   Public Domain
         applies to:
-        - win_iconv
-          Yukihiro Nakadaira <yukihiro.nakadaira@gmail.com>
-          win_iconv is placed in the public domain.
-          https://github.com/win-iconv/win-iconv
 
         - libmodplug
           ModPlug-XMMS and libmodplug are now in the public domain.
@@ -1635,12 +1631,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                         zlib License
         applies to:
         - Simple DirectMedia Layer
-          Copyright (C) 1997-2018 Sam Lantinga <slouken@libsdl.org>
+          Copyright (C) 1997-2025 Sam Lantinga <slouken@libsdl.org>
           https://www.libsdl.org/hg.php
-
-        - SDL_mixer:  An audio mixer library based on the SDL library
-          Copyright (C) 1997-2018 Sam Lantinga <slouken@libsdl.org>
-          https://www.libsdl.org/projects/SDL_mixer/
 
         - zlib-ng
           Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler
@@ -1675,6 +1667,10 @@ freely, subject to the following restrictions:
         - stb_vorbis + stb_rect_pack
           Copyright (c) 2017 Sean Barrett
           https://github.com/nothings/stb
+        - Verstable
+           Copyright (c) 2026 Jackson Allan
+           https://github.com/JacksonAllan/Verstable
+
 --------------------------------------------------------------------------------
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

@@ -125,6 +125,7 @@ void Z_Init(void)
   *
   * \param ptr A pointer to allocated memory,
   *             assumed to have been allocated with Z_Malloc/Z_Calloc.
+  * 			These free functions also automatically check for NULL!
   * \sa Z_FreeTags
   */
 void Z_Free2(void *ptr, const char *file, INT32 line)

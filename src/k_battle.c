@@ -493,6 +493,12 @@ void K_BattleInit(boolean singleplayercontext)
 	{
 		if (!(K_CanChangeRules(true) && !cv_kartitembreaker.value))
 			itembreaker = true;
+		
+		for (int i = 0; i < MAXPLAYERS; i++)
+		{
+			if (players[i].bot == true)
+				P_SetPlayerSpectator(i);
+		}
 	}
 
 	if (gametyperules & GTR_BUMPERS)

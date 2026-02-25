@@ -88,13 +88,34 @@ typedef struct
 	INT32 y;
 	INT32 flags;
 	boolean flipamount;
+	fixed_t hudScale;
+	float hudScaleFloat;
 } drawinfo_t;
+
+#define ROULETTE_SPACING (34)
+#define ROULETTE_SPACING_FIXED (ROULETTE_SPACING << FRACBITS)
+
+typedef enum
+{
+	RINFO_DRAWONPLAYER = (1<<0),
+	RINFO_USECROP = (1<<1),
+	/* free: 2 through 31 */
+} rinfoflags_t;
+
+typedef struct
+{
+	fixed_t offset;
+	fixed_t spacing;
+	fixed_t intSpacing;
+	vector2_t crop;
+	rinfoflags_t flags;
+} rouletteinfo_t;
 
 patch_t *K_getItemBoxPatch(boolean small, boolean dark);
 patch_t *K_getItemMulPatch(boolean small);
 patch_t *K_getItemAltPatch(boolean small, boolean multimode);
 boolean K_ShowAltItemIcon(kartitemtype_e type, boolean small);
-void K_getItemBoxDrawinfo(drawinfo_t *out);
+void K_getItemBoxDrawinfo(drawinfo_t *out, rouletteinfo_t *rinfo);
 void K_getLapsDrawinfo(drawinfo_t *out);
 void K_getRingsDrawinfo(drawinfo_t *out);
 void K_getMinimapDrawinfo(drawinfo_t *out);

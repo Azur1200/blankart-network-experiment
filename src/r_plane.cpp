@@ -52,15 +52,15 @@ consvar_t cv_parallelsoftware = CVAR_INIT ("parallelsoftware", "On", CV_SAVE, CV
 
 //SoM: 3/23/2000: Use Boom visplane hashing.
 
-visplane_t *visplanes[MAXVISPLANES];
+visplane_t *visplanes[MAXVISPLANES] = {};
 static visplane_t *freetail;
 static visplane_t **freehead = &freetail;
 
-visplane_t *floorplane;
-visplane_t *ceilingplane;
+visplane_t *floorplane = NULL;
+visplane_t *ceilingplane = NULL;
 
-visffloor_t ffloor[MAXFFLOORS];
-INT32 numffloors;
+visffloor_t visffloor[MAXFFLOORS] ={};
+INT32 numffloors = 0;
 
 //SoM: 3/23/2000: Boom visplane hashing routine.
 #define visplane_hash(picnum,lightlevel,height) \
@@ -92,7 +92,7 @@ static INT32 spanstart[MAXVIDHEIGHT];
 //                (when mouselookin', yslope is moving into yslopetab)
 //                Check R_SetupFrame, R_SetViewSize for more...
 fixed_t yslopetab[MAXSPLITSCREENPLAYERS][MAXVIDHEIGHT*16];
-fixed_t *yslope;
+fixed_t *yslope = NULL;
 
 //
 // R_InitPlanes
@@ -273,7 +273,7 @@ void R_ClearFFloorClips(void)
 	// opening / clipping determination
 	for (p = 0; p < MAXFFLOORS; p++)
 	{
-		visffloor_t *fffloor = &ffloor[p];
+		visffloor_t *fffloor = &visffloor[p];
 		std::fill(fffloor->f_clip, fffloor->f_clip + viewwidth, static_cast<INT16>(viewheight));
 		std::fill(fffloor->c_clip, fffloor->c_clip + viewwidth, static_cast<INT16>(-1));
 	}
@@ -568,14 +568,13 @@ void R_ExpandPlane(visplane_t *pl, INT32 start, INT32 stop)
 static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(drawspandata_t*), INT32, INT32, INT32, boolean), spandrawfunc_t* spanfunc, drawspandata_t* ds, INT32 x, INT32 t1, INT32 b1, INT32 t2, INT32 b2, boolean allow_parallel)
 {
 	ZoneScoped;
-	const INT32 vidheight = vid.height;
-	const INT32 vidwidth = vid.width;
+
 	//    Alam: from r_splats's R_RasterizeFloorSplat
-	if (t1 >= vidheight) t1 = vidheight-1;
-	if (b1 >= vidheight) b1 = vidheight-1;
-	if (t2 >= vidheight) t2 = vidheight-1;
-	if (b2 >= vidheight) b2 = vidheight-1;
-	if (x-1 >= vidwidth) x  = vidwidth;
+	if (t1 >= viewheight) t1 = viewheight-1;
+	if (b1 >= viewheight) b1 = viewheight-1;
+	if (t2 >= viewheight) t2 = viewheight-1;
+	if (b2 >= viewheight) b2 = viewheight-1;
+	if (x-1 >= viewwidth) x  = viewwidth;
 
 	// We want to draw N spans per subtask to ensure the work is
 	// coarse enough to not be too slow due to task scheduling overhead.
@@ -663,10 +662,12 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 //
 static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc)(drawcolumndata_t*), boolean allow_parallel)
 {
+	ZoneScoped;
+
 	INT32 x;
 	drawcolumndata_t dc {0};
+	const INT32 texture = texturetranslation[skytexture];
 
-	ZoneScoped;
 
 	if (mapnamespace == MNS_SRB2KART && !newview->sky)
 	{
@@ -696,17 +697,13 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc)(drawcolumndata_t*), bo
 	}
 	dc.lightmap = colormaps;
 	dc.texturemid = skytexturemid;
-	dc.texheight = textureheight[skytexture]
-		>>FRACBITS;
+	dc.texheight = textureheight[texture] >>FRACBITS;
 	dc.sourcelength = dc.texheight;
 
 	x = pl->minx;
 
 	// Precache the texture so we don't corrupt the zoned heap off-main thread
-	if (!texturecache[texturetranslation[skytexture]])
-	{
-		R_GenerateTexture(texturetranslation[skytexture]);
-	}
+	R_CheckTextureCache(texture);
 
 	while (x <= pl->maxx)
 	{
@@ -731,8 +728,7 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc)(drawcolumndata_t*), bo
 				dc.iscale = FixedMul(skyscale[viewssnum], FINECOSINE(xtoviewangle[viewssnum][x + i]>>ANGLETOFINESHIFT));
 				dc.x = x + i;
 				dc.source =
-					R_GetColumn(texturetranslation[skytexture],
-						-angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
+					R_GetColumn(texture, -angle); // get negative of angle for each column to display sky correct way round! --Monster Iestyn 27/01/18
 				dc.brightmap = NULL;
 
 				colfunc(&dc);
