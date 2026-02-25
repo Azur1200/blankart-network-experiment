@@ -7088,7 +7088,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		{
 			player->airdropflags |= PAF_AIRDROP_LIGHT;
 		}
-		else if (player->airdroppredelay >= (airdropactive == AIRDROP_FUSION ? airbrakedelay_light : airbrakedelay_heavy) &&
+		else if ((airdropactive == AIRDROP_HEAVY || airdropactive == AIRDROP_FUSION) && player->airdroppredelay >= (airdropactive == AIRDROP_FUSION ? airbrakedelay_light : airbrakedelay_heavy) &&
 			!(player->airdropflags & (PAF_AIRDROP_HEAVY)) && !(player->mo->eflags & MFE_GOOWATER)) // in fusion, fires if brake is held but not accel, and has the same delay as light airdrop (this makes it feel really really stiff but we're sacking feel for balance with light drop here 🥲)
 		{
 			player->airdropflags |= PAF_AIRDROP_HEAVY;
