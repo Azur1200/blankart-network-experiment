@@ -1450,6 +1450,16 @@ static vector3_t *QuaternionMulVec3(vector3_t *out, vector3_t *a, vector4_t *b)
 	return out;
 }
 
+static fixed_t FV3_LengthSquared(const vector3_t *vec)
+{
+	return FixedMul(vec->x, vec->x) + FixedMul(vec->y, vec->y) + FixedMul(vec->z, vec->z);
+}
+
+static fixed_t FV3_Length(const vector3_t *vec)
+{
+	return FixedSqrt(FV3_LengthSquared(vec));
+}
+
 static vector4_t *QuaternionInvert(vector4_t *out)
 {
 	FV4_Load(out,
@@ -1483,113 +1493,135 @@ inline static vector4_t AngleAxis(fixed_t angle, fixed_t x, fixed_t y, fixed_t z
 
 // math sourced from this article
 // http://gyrowiki.jibbsmart.com/blog:finding-gravity-with-sensor-fusion
-#define Interpolator (FRACUNIT/4)
+// state
+vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
+void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
+{
+	vector3_t invAccel = {-accel.x, -accel.y, -accel.z};
+	fixed_t angleRate = FixedMul(FV3_Length(&gyro), FRACUNIT/TICRATE);
+	vector4_t invRotation = AngleAxis(
+		angleRate,
+		-gyro.x, 
+		-gyro.y, 
+		-gyro.z
+	);
+
+	// update gravity by rotation
+	QuaternionMulVec3(&localgravityvectors[p], &localgravityvectors[p], &invRotation);
+
+	// nudge towards gravity according to current acceleration
+	FV3_Load(&localgravityvectors[p],
+		localgravityvectors[p].x + FixedMul(invAccel.x - localgravityvectors[p].x, FRACUNIT/10),
+		localgravityvectors[p].y + FixedMul(invAccel.y - localgravityvectors[p].y, FRACUNIT/10),
+		localgravityvectors[p].z + FixedMul(invAccel.z - localgravityvectors[p].z, FRACUNIT/10)
+	);
+}
+
+#if 0
 // thresholds of trust for accel shakiness. less shakiness = more trust
-#define ShakinessMaxThreshold (4*FRACUNIT/10)
+#define ShakinessMaxThreshold (9*FRACUNIT/10)
 #define ShakinessMinThreshold (FRACUNIT/10)
 // when we trust the accel a lot (the controller is "still"), how quickly do we correct our gravity vector?
 #define CorrectionStillRate (FRACUNIT)
 // when we don't trust the accel (the controller is "shaky"), how quickly do we correct our gravity vector?
 #define CorrectionShakyRate (FRACUNIT/10)
 // if our old gravity vector is close enough to our new one, limit further corrections to this proportion of the rotation speed
-#define CorrectionGyroFactor (FRACUNIT/10)
+#define CorrectionGyroFactor (FRACUNIT/5)
 // thresholds for what's considered "close enough"
 #define CorrectionGyroMinThreshold (5*FRACUNIT/100)
 #define CorrectionGyroMaxThreshold (FRACUNIT/4)
 // no matter what, always apply a minimum of this much correction to our gravity vector
 #define CorrectionMinimumSpeed (FRACUNIT/10)
 
-// state
 fixed_t localshakinessfac[MAXSPLITSCREENPLAYERS];
 vector3_t localsmoothedaccel[MAXSPLITSCREENPLAYERS];
-vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
 void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 {
 	// convert gyro input to reverse rotation
-	const vector3_t invAccel = {-accel.x, -accel.y, -accel.z};
-	fixed_t correctionRate = CorrectionMinimumSpeed;
-	fixed_t correctionMagnitude, gravityDeltaMagnitude, angleRate, correctionLimit;
+	const fixed_t smoothFactor = 924*FRACUNIT/1000;
+	vector3_t invAccelNorm = {-accel.x, -accel.y, -accel.z};
+	fixed_t gravCorrectionRate = 0;
+	fixed_t angleRate;
+	fixed_t correctionLimit;
 	vector4_t invRotation = AngleAxis(
+		FixedMul(FV3_Length(&gyro), FRACUNIT/TICRATE),
 		-gyro.x, 
 		-gyro.y, 
-		-gyro.z,
-		FixedMul(FV3_Magnitude(&gyro), FRACUNIT/TICRATE)
+		-gyro.z
 	);
-	vector3_t gravityDelta = {0};
-	vector3_t gravityDeltaDirection = {0};
+	vector3_t gravityToAccel = {0};
+	vector3_t gravityToAccelDirection = {0};
 	vector3_t fv3_temp = {0};
-	
-	// rotate gravity vector
-	QuaternionMulVec3(&localgravityvectors[p], &localgravityvectors[p], &invRotation);
-	QuaternionMulVec3(&localsmoothedaccel[p], &localsmoothedaccel[p], &invRotation);
-	FV3_SubEx(&accel, &localsmoothedaccel[p], &fv3_temp);
-	localshakinessfac[p] = max(
-		FixedMul(localshakinessfac[p], Interpolator), 
-		FV3_Magnitude(&fv3_temp)
-	);
-	FV3_Load(&localsmoothedaccel[p],
-		Easing_Linear(Interpolator, accel.x, localsmoothedaccel[p].x),
-		Easing_Linear(Interpolator, accel.y, localsmoothedaccel[p].y),
-		Easing_Linear(Interpolator, accel.z, localsmoothedaccel[p].z)
-	);
 
-	FV3_SubEx(&invAccel, &localgravityvectors[p], &gravityDelta);
-	FV3_NormalizeEx(&gravityDelta, &gravityDeltaDirection);
+	if (FV3_Length(&accel) <= 0)
+	{
+		QuaternionMulVec3(&localgravityvectors[p], &localgravityvectors[p], &invRotation);
+		return;
+	}
+
+	// rotate gravity vector
+	QuaternionMulVec3(&localsmoothedaccel[p], &localsmoothedaccel[p], &invRotation);
+	localshakinessfac[p] = FixedMul(localshakinessfac[p], smoothFactor), 
+	FV3_SubEx(&accel, &localsmoothedaccel[p], &fv3_temp);
+	localshakinessfac[p] = max(localshakinessfac[p], FV3_Length(&fv3_temp));
+	FV3_Load(&localsmoothedaccel[p],
+		Easing_Linear(smoothFactor, accel.x, localsmoothedaccel[p].x),
+		Easing_Linear(smoothFactor, accel.y, localsmoothedaccel[p].y),
+		Easing_Linear(smoothFactor, accel.z, localsmoothedaccel[p].z)
+	);
+	
+	CONS_Debug(DBG_IMU, "Shakiness: %4.2f\n", FixedToFloat(localshakinessfac[p]));
+
+	// update gravity by rotation
+	QuaternionMulVec3(&localgravityvectors[p], &localgravityvectors[p], &invRotation);
+	FV3_SubEx(&invAccelNorm, &localgravityvectors[p], &gravityToAccel);
+	FV3_NormalizeEx(&gravityToAccel, &gravityToAccelDirection);
 
 	if (ShakinessMaxThreshold > ShakinessMinThreshold)
 	{
 		fixed_t stillness = CLAMP(FixedDiv((localshakinessfac[p] - ShakinessMinThreshold), (ShakinessMaxThreshold - ShakinessMinThreshold)), 0, FRACUNIT);
-		correctionRate = CorrectionStillRate + FixedMul(stillness, (CorrectionShakyRate - CorrectionStillRate));
-	}
-	else if (localshakinessfac[p] > ShakinessMaxThreshold)
-	{
-		correctionRate = CorrectionShakyRate;
+		gravCorrectionRate = CorrectionStillRate + FixedMul((CorrectionShakyRate - CorrectionStillRate), stillness);
 	}
 	else
 	{
-		correctionRate = CorrectionStillRate;
+		gravCorrectionRate = localshakinessfac[p] < ShakinessMaxThreshold ? CorrectionStillRate : CorrectionShakyRate;
 	}
 	
 	// limit in proportion to rotation rate
-	angleRate = FixedMul(FV3_Magnitude(&gyro), M_PI_FIXED)/180;
-	correctionLimit = FixedMul(FixedMul(angleRate, FV3_Magnitude(&localgravityvectors[p])), CorrectionGyroFactor);
-	if (correctionRate > correctionLimit) {
+	angleRate = FixedMul(FixedMul(FV3_Length(&gyro), M_PI_FIXED)/180, FRACUNIT/TICRATE);
+	correctionLimit = max(FixedMul(angleRate, CorrectionGyroFactor), CorrectionMinimumSpeed);
+	if (gravCorrectionRate > correctionLimit) {
 		fixed_t closeEnoughFactor;
 		if (CorrectionGyroMaxThreshold > CorrectionGyroMinThreshold)
 		{
-			closeEnoughFactor = CLAMP(FixedDiv((FV3_Magnitude(&gravityDelta) - CorrectionGyroMinThreshold), (CorrectionGyroMaxThreshold - CorrectionGyroMinThreshold)), 0, FRACUNIT);
-		} 
-		else if (FV3_Magnitude(&gravityDelta) > CorrectionGyroMaxThreshold)
-		{
-			closeEnoughFactor = FRACUNIT;
-		} 
+			closeEnoughFactor = CLAMP(FixedDiv((FV3_Length(&gravityToAccel) - CorrectionGyroMinThreshold), (CorrectionGyroMaxThreshold - CorrectionGyroMinThreshold)), 0, FRACUNIT);
+		}
 		else
 		{
-			closeEnoughFactor = 0;
+			closeEnoughFactor = FV3_Length(&gravityToAccel) < CorrectionGyroMaxThreshold ? 0 : FRACUNIT;
 		}
-		correctionRate = correctionRate + FixedMul((correctionLimit - correctionRate), closeEnoughFactor);
+		gravCorrectionRate = correctionLimit + FixedMul((gravCorrectionRate - correctionLimit), closeEnoughFactor);
 	}
+	
+	CONS_Debug(DBG_IMU, "Correction Rate: %4.2f\n", FixedToFloat(gravCorrectionRate));
 
-	// finally, let's always allow a little bit of correction
-	correctionRate = max(correctionRate, CorrectionMinimumSpeed);
-
-	FV3_Load(&gravityDeltaDirection,
-		FixedMul(FixedMul(correctionRate, FRACUNIT/TICRATE), gravityDeltaDirection.x),
-		FixedMul(FixedMul(correctionRate, FRACUNIT/TICRATE), gravityDeltaDirection.y),
-		FixedMul(FixedMul(correctionRate, FRACUNIT/TICRATE), gravityDeltaDirection.z)
+	FV3_Load(&fv3_temp,
+		FixedMul(gravityToAccelDirection.x, FixedMul(gravCorrectionRate, FRACUNIT/TICRATE)),
+		FixedMul(gravityToAccelDirection.y, FixedMul(gravCorrectionRate, FRACUNIT/TICRATE)),
+		FixedMul(gravityToAccelDirection.z, FixedMul(gravCorrectionRate, FRACUNIT/TICRATE))
 	);
 	
-	correctionMagnitude = FV3_Magnitude(&gravityDeltaDirection);
-	gravityDeltaMagnitude = FV3_Magnitude(&gravityDelta);
-	if (FixedMul(correctionMagnitude, correctionMagnitude) > FixedMul(gravityDeltaMagnitude, gravityDeltaMagnitude))
+	if (FV3_LengthSquared(&fv3_temp) < FV3_LengthSquared(&gravityToAccel))
 	{
-		FV3_Add(&localgravityvectors[p], &gravityDeltaDirection);
+		FV3_Add(&localgravityvectors[p], &fv3_temp);
 	}
 	else
 	{
-		FV3_Add(&localgravityvectors[p], &gravityDelta);
+		FV3_Normalize(&invAccelNorm);
+		FV3_Add(&localgravityvectors[p], &invAccelNorm);
 	}
 }
+#endif
 
 #define TILTRANGE 35*FRACUNIT
 fixed_t G_GetGamepadTilt(INT32 p)

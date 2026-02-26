@@ -1070,7 +1070,7 @@ static void Impl_HandleControllerSensorEvent(SDL_GamepadSensorEvent evt)
 		// data[2]: delta roll in rad/s
 		// we convert to degrees per second before passing it to the event
 		case SDL_SENSOR_GYRO:
-#define RAD2DEG 57.295779513f
+#define RAD2DEG -57.295779513f
 			// CONS_Debug(DBG_IMU, "Got Gyro event %4.2f %4.2f %4.2f\n", RAD2DEG * evt.data[0], RAD2DEG * evt.data[1], RAD2DEG * evt.data[2]);
 			event.type = ev_gyroscope;
 			event.data1 = FLOAT_TO_FIXED(RAD2DEG * evt.data[0]);
