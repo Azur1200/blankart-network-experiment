@@ -2035,7 +2035,7 @@ INT32 R_CheckTextureNumForName(const char *name, UINT8 type)
 //
 // Calls R_CheckTextureNumForName. Returns REDWALL if not found.
 //
-INT32 R_TextureNumForName(const char *name)
+INT32 R_TextureNumForNameEx(const char *name, boolean lua)
 {
 	INT32 i = R_CheckTextureNumForName(name, TEXTURETYPE_TEXTURE);
 
@@ -2053,7 +2053,7 @@ INT32 R_TextureNumForName(const char *name)
 		if (redwall == -2)
 		{
 			redwall = R_CheckTextureNumForName(MISSING_TEXTURE, TEXTURETYPE_TEXTURE);
-			if (redwall <= 256)
+			if (redwall <= 256 && !lua)
 				// see P_SetBinaryFOFAlpha
 				I_Error(MISSING_TEXTURE " resolved to ID <= 256. Shit's fucked man");
 		}

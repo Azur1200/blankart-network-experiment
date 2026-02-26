@@ -2605,7 +2605,7 @@ static int lib_rTextureNumForName(lua_State *L)
 {
 	const char *name = luaL_checkstring(L, 1);
 	//HUDSAFE
-	lua_pushinteger(L, R_TextureNumForName(name));
+	lua_pushinteger(L, R_TextureNumForNameEx(name, true));
 	return 1;
 }
 
