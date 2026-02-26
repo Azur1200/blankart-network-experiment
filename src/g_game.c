@@ -51,6 +51,7 @@
 #include "m_cond.h" // condition sets
 #include "r_fps.h" // frame interpolation/uncapped
 #include "lua_hud.h"
+#include "m_easing.h"
 
 // SRB2kart
 #include "k_kart.h"
@@ -1334,12 +1335,14 @@ vector3_t G_PlayerInputSensor(UINT8 p, motionsensortype_e sensor)
 				gamekeydown[deviceID][KEY_ACCELEROMETER1+1],
 				gamekeydown[deviceID][KEY_ACCELEROMETER1+2]
 			);
+			break;
 		case GYROSCOPE:
 			FV3_Load(&out,
 				gamekeydown[deviceID][KEY_GYROSCOPE1+0],
 				gamekeydown[deviceID][KEY_GYROSCOPE1+1],
 				gamekeydown[deviceID][KEY_GYROSCOPE1+2]
 			);
+			break;
 	}
 	return out;
 }
@@ -1417,20 +1420,61 @@ static void G_HandleAxisDeadZone(UINT8 splitnum, joystickvector2_t *joystickvect
 	}
 }
 
-// copy/pasted from the lua version of this routine
-inline static vector4_t AngleAxis(angle_t angle, vector3_t *axis)
+// copy/pasted from the lua version of these routines
+static vector4_t *QuaternionMul(vector4_t *out, vector4_t *a, vector4_t *b)
 {
-	fixed_t cosangle = FINECOSINE(((angle / 2) >> ANGLETOFINESHIFT) & FINEMASK);
-	fixed_t sinangle = FINESINE(((angle / 2) >> ANGLETOFINESHIFT) & FINEMASK);
-	vector4_t result;
-	vector3_t normaxis;
+	fixed_t ax = a->x, ay = a->y, az = a->z, aw = a->a;
+	fixed_t bx = b->x, by = b->y, bz = b->z, bw = b->a;
 
-	FV3_NormalizeEx(axis, &normaxis);
+	FV4_NormalizeEx(out, FV4_Load(out,
+		FixedMul(aw, bx) + FixedMul(ax, bw) + FixedMul(ay, bz) - FixedMul(az, by),
+		FixedMul(aw, by) - FixedMul(ax, bz) + FixedMul(ay, bw) + FixedMul(az, bx),
+		FixedMul(aw, bz) + FixedMul(ax, by) - FixedMul(ay, bx) + FixedMul(az, bw),
+		FixedMul(aw, bw) - FixedMul(ax, bx) - FixedMul(ay, by) - FixedMul(az, bz)
+	));
+
+	return out;
+}
+
+static vector3_t *QuaternionMulVec3(vector3_t *out, vector3_t *a, vector4_t *b)
+{
+	fixed_t ax = a->x, ay = a->y, az = a->z, aw = 0;
+	fixed_t bx = b->x, by = b->y, bz = b->z, bw = b->a;
+
+	FV3_NormalizeEx(out, FV3_Load(out,
+		FixedMul(aw, bx) + FixedMul(ax, bw) + FixedMul(ay, bz) - FixedMul(az, by),
+		FixedMul(aw, by) - FixedMul(ax, bz) + FixedMul(ay, bw) + FixedMul(az, bx),
+		FixedMul(aw, bz) + FixedMul(ax, by) - FixedMul(ay, bx) + FixedMul(az, bw)
+	));
+
+	return out;
+}
+
+static vector4_t *QuaternionInvert(vector4_t *out)
+{
+	FV4_Load(out,
+		-out->x,
+		-out->y,
+		-out->z,
+		out->a
+	);
+
+	return out;
+}
+
+inline static vector4_t AngleAxis(fixed_t angle, fixed_t x, fixed_t y, fixed_t z)
+{
+	fixed_t sinangle = FINESINE(FixedAngle(angle/2) >> ANGLETOFINESHIFT);
+	fixed_t cosangle = FINECOSINE(FixedAngle(angle/2) >> ANGLETOFINESHIFT);
+	vector3_t axis = {x, y, z};
+	vector4_t result;
+
+	FV3_Normalize(&axis);
 
 	FV4_Load(&result,
-		FixedMul(normaxis.x, sinangle),
-		FixedMul(normaxis.y, sinangle),
-		FixedMul(normaxis.z, sinangle),
+		FixedMul(axis.x, sinangle),
+		FixedMul(axis.y, sinangle),
+		FixedMul(axis.z, sinangle),
 		cosangle
 	);
 
@@ -1439,31 +1483,176 @@ inline static vector4_t AngleAxis(angle_t angle, vector3_t *axis)
 
 // math sourced from this article
 // http://gyrowiki.jibbsmart.com/blog:finding-gravity-with-sensor-fusion
+#define Interpolator (FRACUNIT/4)
+// thresholds of trust for accel shakiness. less shakiness = more trust
+#define ShakinessMaxThreshold (4*FRACUNIT/10)
+#define ShakinessMinThreshold (FRACUNIT/10)
+// when we trust the accel a lot (the controller is "still"), how quickly do we correct our gravity vector?
+#define CorrectionStillRate (FRACUNIT)
+// when we don't trust the accel (the controller is "shaky"), how quickly do we correct our gravity vector?
+#define CorrectionShakyRate (FRACUNIT/10)
+// if our old gravity vector is close enough to our new one, limit further corrections to this proportion of the rotation speed
+#define CorrectionGyroFactor (FRACUNIT/10)
+// thresholds for what's considered "close enough"
+#define CorrectionGyroMinThreshold (5*FRACUNIT/100)
+#define CorrectionGyroMaxThreshold (FRACUNIT/4)
+// no matter what, always apply a minimum of this much correction to our gravity vector
+#define CorrectionMinimumSpeed (FRACUNIT/10)
+
+// state
+fixed_t localshakinessfac[MAXSPLITSCREENPLAYERS];
+vector3_t localsmoothedaccel[MAXSPLITSCREENPLAYERS];
 vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
-vector3_t G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
+void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 {
-	const vector3_t invGyro = {-gyro.x, -gyro.y, -gyro.z};
-	const vector3_t newGravity = {-accel.x, -accel.y, -accel.z};
-	const vector4_t invRotation = AngleAxis(FixedMul(FV3_Magnitude(&gyro), FRACUNIT/TICRATE), &invGyro);
-	const fixed_t correctionRate = FRACUNIT/8;
-	vector3_t gravityDelta;
-	
-	FV3_Mul(&localgravityvectors[p], &invRotation);
-	FV3_SubEx(&gravityDelta, &newGravity, &localgravityvectors[p]);
-	FV3_Load(&localgravityvectors[p],
-		FixedMul(gravityDelta.x, correctionRate),
-		FixedMul(gravityDelta.y, correctionRate),
-		FixedMul(gravityDelta.z, correctionRate)
+	// convert gyro input to reverse rotation
+	const vector3_t invAccel = {-accel.x, -accel.y, -accel.z};
+	fixed_t correctionRate = CorrectionMinimumSpeed;
+	fixed_t correctionMagnitude, gravityDeltaMagnitude, angleRate, correctionLimit;
+	vector4_t invRotation = AngleAxis(
+		-gyro.x, 
+		-gyro.y, 
+		-gyro.z,
+		FixedMul(FV3_Magnitude(&gyro), FRACUNIT/TICRATE)
 	);
+	vector3_t gravityDelta = {0};
+	vector3_t gravityDeltaDirection = {0};
+	vector3_t fv3_temp = {0};
+	
+	// rotate gravity vector
+	QuaternionMulVec3(&localgravityvectors[p], &localgravityvectors[p], &invRotation);
+	QuaternionMulVec3(&localsmoothedaccel[p], &localsmoothedaccel[p], &invRotation);
+	FV3_SubEx(&accel, &localsmoothedaccel[p], &fv3_temp);
+	localshakinessfac[p] = max(
+		FixedMul(localshakinessfac[p], Interpolator), 
+		FV3_Magnitude(&fv3_temp)
+	);
+	FV3_Load(&localsmoothedaccel[p],
+		Easing_Linear(Interpolator, accel.x, localsmoothedaccel[p].x),
+		Easing_Linear(Interpolator, accel.y, localsmoothedaccel[p].y),
+		Easing_Linear(Interpolator, accel.z, localsmoothedaccel[p].z)
+	);
+
+	FV3_SubEx(&invAccel, &localgravityvectors[p], &gravityDelta);
+	FV3_NormalizeEx(&gravityDelta, &gravityDeltaDirection);
+
+	if (ShakinessMaxThreshold > ShakinessMinThreshold)
+	{
+		fixed_t stillness = CLAMP(FixedDiv((localshakinessfac[p] - ShakinessMinThreshold), (ShakinessMaxThreshold - ShakinessMinThreshold)), 0, FRACUNIT);
+		correctionRate = CorrectionStillRate + FixedMul(stillness, (CorrectionShakyRate - CorrectionStillRate));
+	}
+	else if (localshakinessfac[p] > ShakinessMaxThreshold)
+	{
+		correctionRate = CorrectionShakyRate;
+	}
+	else
+	{
+		correctionRate = CorrectionStillRate;
+	}
+	
+	// limit in proportion to rotation rate
+	angleRate = FixedMul(FV3_Magnitude(&gyro), M_PI_FIXED)/180;
+	correctionLimit = FixedMul(FixedMul(angleRate, FV3_Magnitude(&localgravityvectors[p])), CorrectionGyroFactor);
+	if (correctionRate > correctionLimit) {
+		fixed_t closeEnoughFactor;
+		if (CorrectionGyroMaxThreshold > CorrectionGyroMinThreshold)
+		{
+			closeEnoughFactor = CLAMP(FixedDiv((FV3_Magnitude(&gravityDelta) - CorrectionGyroMinThreshold), (CorrectionGyroMaxThreshold - CorrectionGyroMinThreshold)), 0, FRACUNIT);
+		} 
+		else if (FV3_Magnitude(&gravityDelta) > CorrectionGyroMaxThreshold)
+		{
+			closeEnoughFactor = FRACUNIT;
+		} 
+		else
+		{
+			closeEnoughFactor = 0;
+		}
+		correctionRate = correctionRate + FixedMul((correctionLimit - correctionRate), closeEnoughFactor);
+	}
+
+	// finally, let's always allow a little bit of correction
+	correctionRate = max(correctionRate, CorrectionMinimumSpeed);
+
+	FV3_Load(&gravityDeltaDirection,
+		FixedMul(FixedMul(correctionRate, FRACUNIT/TICRATE), gravityDeltaDirection.x),
+		FixedMul(FixedMul(correctionRate, FRACUNIT/TICRATE), gravityDeltaDirection.y),
+		FixedMul(FixedMul(correctionRate, FRACUNIT/TICRATE), gravityDeltaDirection.z)
+	);
+	
+	correctionMagnitude = FV3_Magnitude(&gravityDeltaDirection);
+	gravityDeltaMagnitude = FV3_Magnitude(&gravityDelta);
+	if (FixedMul(correctionMagnitude, correctionMagnitude) > FixedMul(gravityDeltaMagnitude, gravityDeltaMagnitude))
+	{
+		FV3_Add(&localgravityvectors[p], &gravityDeltaDirection);
+	}
+	else
+	{
+		FV3_Add(&localgravityvectors[p], &gravityDelta);
+	}
+}
+
+#define TILTRANGE 35*FRACUNIT
+fixed_t G_GetGamepadTilt(INT32 p)
+{	
+	fixed_t tilt;
+	fixed_t axis;
+	if (p >= MAXSPLITSCREENPLAYERS)
+	{
+#ifdef PARANOIA
+		CONS_Debug(DBG_GAMELOGIC, "G_PlayerInputAnalog: Invalid player ID %d\n", p);
+#endif
+		return 0;
+	}
+
+	tilt = CLAMP(G_GetGamepadGravity(p).x, -TILTRANGE, TILTRANGE);
+	//TODO: this is really dumb, pinch towards 0 and towards the farthest we can tilt comfortably
+	axis = Easing_Linear(FixedDiv(tilt + TILTRANGE, (2*TILTRANGE)), -32768, 32767);
+	return axis;
+}
+#undef TILTRANGE
+
+vector3_t G_GetGamepadGravity(INT32 p)
+{
+	const vector3_t zero = {0};
+	
+	if (p >= MAXSPLITSCREENPLAYERS)
+	{
+#ifdef PARANOIA
+		CONS_Debug(DBG_GAMELOGIC, "G_PlayerInputAnalog: Invalid player ID %d\n", p);
+#endif
+		return zero;
+	}
 
 	return localgravityvectors[p];
 }
 
-vector3_t G_GetGamepadTilt(INT32 p, vector3_t gravity)
+vector3_t G_GetGamepadShake(INT32 p)
 {
-	vector3_t out;
-	return out;
+	const vector3_t zero = {0};
+	vector3_t accel;
+	
+	if (p >= MAXSPLITSCREENPLAYERS)
+	{
+#ifdef PARANOIA
+		CONS_Debug(DBG_GAMELOGIC, "G_PlayerInputAnalog: Invalid player ID %d\n", p);
+#endif
+		return zero;
+	}
+
+	accel = G_PlayerInputSensor(p, ACCELEROMETER);
+	FV3_Add(&accel, &localgravityvectors[p]);
+	return accel;
 }
+
+#undef Interpolator
+#undef ShakinessMaxThreshold
+#undef ShakinessMinThreshold
+#undef CorrectionStillRate
+#undef CorrectionShakyRate
+#undef CorrectionGyroFactor
+#undef CorrectionGyroMinThreshold
+#undef CorrectionGyroMaxThreshold
+#undef CorrectionMinimumSpeed
 
 //
 // G_BuildTiccmd
@@ -1501,8 +1690,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	INT32 forward, side, tspeed;
 
 	joystickvector2_t joystickvector;
-
-	vector3_t gravity = {0};
 	INT16 accelerometertilt;
 
 	// you'd BETTER not touch the player while freecamming...
@@ -1528,25 +1715,25 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			break;
 	}
 
-	if (K_PlayerUsesBotMovement(player))
-	{
-		// Bot ticcmd is generated by K_BuildBotTiccmd
-		return;
-	}
-
 	// update our gamepad gravity when applicable
 	// this should always execute so we have an accurate state
 	if (true) //todo: check if gamepad supports accel or accel and gyro
 	{
 		vector3_t accel = G_PlayerInputSensor(forplayer, ACCELEROMETER);
 		vector3_t gyro = G_PlayerInputSensor(forplayer, GYROSCOPE);
-		gravity = G_UpdateGamepadGravity(forplayer, gyro, accel);
+		G_UpdateGamepadGravity(forplayer, gyro, accel);
 	}
 
 	// why build a ticcmd if we're paused?
 	// Or, for that matter, if we're being reborn.
 	if (!thiscam->freecam && (paused || P_AutoPause() || (gamestate == GS_LEVEL && player->playerstate == PST_REBORN)))
 	{
+		return;
+	}
+
+	if (K_PlayerUsesBotMovement(player))
+	{
+		// Bot ticcmd is generated by K_BuildBotTiccmd
 		return;
 	}
 
@@ -1557,10 +1744,11 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (joystickvector.xaxis != 0)
 	{
 		joystickactive[forplayer] = true;
+		accelerometertilt = 0;
 	}
 	else if (!joystickactive[forplayer])
 	{
-
+		accelerometertilt = G_GetGamepadTilt(forplayer);
 	}
 
 	// For kart, I've turned the aim axis into a digital axis because we only
@@ -1576,7 +1764,14 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	}
 
 	forward = side = 0;
-	tspeed = joystickvector.xaxis;
+	if (joystickactive[forplayer])
+	{
+		tspeed = joystickvector.xaxis;
+	}
+	else
+	{
+		tspeed = accelerometertilt;
+	}
 
 	// use two stage accelerative turning
 	// on the keyboard and (NOT!) joystick
@@ -1608,6 +1803,12 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		side += (joystickvector.xaxis * 4) / JOYAXISRANGE;
+	}
+	else if (accelerometertilt != 0)
+	{
+		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
+		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
+		side += (accelerometertilt * 4) / JOYAXISRANGE;
 	}
 
 	// Specator mouse turning

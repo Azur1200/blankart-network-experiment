@@ -143,8 +143,11 @@ typedef enum
 
 #define MAXGAMEPADTILT (ANG30)
 #define ACCEL_GRAVITY (FLOAT_TO_FIXED(9.80665f))
-vector3_t G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel);
-vector3_t G_GetGamepadTilt(INT32 p, vector3_t gravity);
+void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel);
+vector3_t G_GetGamepadGravity(INT32 p);
+vector3_t G_GetGamepadShake(INT32 p);
+fixed_t G_GetGamepadTilt(INT32 p);
+vector3_t G_PlayerInputSensor(UINT8 p, motionsensortype_e sensor);
 
 fixed_t G_GetDeadZoneType(INT32 p, SINT8 type);
 INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital, SINT8 type);

@@ -474,6 +474,32 @@ static void ST_drawMusicDebug(INT32 *height)
 	ST_pushDebugString(height, va("    Song: %8s", mname));
 }
 
+static INT32 ST_getFixedFrac(fixed_t val)
+{
+	return ((abs(val) * 100)>>FRACBITS) % 100;
+}
+
+static void ST_drawImuDebug(INT32 *height)
+{
+	INT32 pnum = stplyrnum;
+	vector3_t accel, gyro, grav, shake;
+	if (demo.playback || (!P_IsMachineLocalPlayer(stplyr)))
+	{
+		ST_pushDebugString(height, va("Only for local player!!"));
+		return;
+	}
+
+	accel = G_PlayerInputSensor(pnum, ACCELEROMETER);
+	gyro =  G_PlayerInputSensor(pnum, GYROSCOPE);
+	grav =  G_GetGamepadGravity(pnum);
+	shake = G_GetGamepadShake(pnum);
+
+	ST_pushDebugString(height, va(" Gyro :%4.2f, %4.2f,%4.2f", FixedToFloat(gyro.x), FixedToFloat(gyro.y), FixedToFloat(gyro.z)));
+	ST_pushDebugString(height, va("Accel :%4.2f, %4.2f,%4.2f", FixedToFloat(accel.x), FixedToFloat(accel.y), FixedToFloat(accel.z)));
+	ST_pushDebugString(height, va("Shake :%4.2f, %4.2f,%4.2f", FixedToFloat(shake.x), FixedToFloat(shake.y), FixedToFloat(shake.z)));
+	ST_pushDebugString(height, va(" Grav :%4.2f, %4.2f,%4.2f", FixedToFloat(grav.x), FixedToFloat(grav.y), FixedToFloat(grav.z)));
+}
+
 static void ST_drawRenderDebug(INT32 *height)
 {
 	const struct RenderStats *i = &g_renderstats;
@@ -567,6 +593,11 @@ static void ST_drawDebugInfo(void)
 		V_DrawRightAlignedString(320, height,      V_MONOSPACE, va("==  : %08x", peekres));
 
 		height -= 32;
+	}
+
+	if (cht_debug & DBG_IMU)
+	{
+		ST_drawImuDebug(&height);
 	}
 
 	if (cht_debug & DBG_MUSIC)

@@ -95,7 +95,7 @@ void I_ShutdownController(UINT8 index)
 	for (i = 0; i < 3; i++)
 	{
 		event.data1 = 0;
-		event.data2 = 0;
+		event.data2 = FLOAT_TO_FIXED(9.80665f);
 		event.data3 = 0;
 		D_PostEvent(&event);
 	}
@@ -250,6 +250,18 @@ void I_InitController(UINT8 playernum)
 	controller->flipbuttons = SDL_GetGamepadButtonLabel(newcontroller, SDL_GAMEPAD_BUTTON_SOUTH) == SDL_GAMEPAD_BUTTON_LABEL_B;
 	controller->flipgc = SDL_GetGamepadButtonLabel(newcontroller, SDL_GAMEPAD_BUTTON_WEST) == SDL_GAMEPAD_BUTTON_LABEL_B
 	                  && SDL_GetGamepadButtonLabel(newcontroller, SDL_GAMEPAD_BUTTON_EAST) == SDL_GAMEPAD_BUTTON_LABEL_X;
+	
+	if (controller->hasaccelerometer)
+	{
+		CONS_Debug(DBG_GAMELOGIC, "Enabling accelerometer for controller %d\n", joystick_id);
+		SDL_SetGamepadSensorEnabled(controller->dev, SDL_SENSOR_ACCEL, true);
+	}
+
+	if (controller->hasgyro)
+	{
+		CONS_Debug(DBG_GAMELOGIC, "Enabling gyro for controller %d\n", joystick_id);
+		SDL_SetGamepadSensorEnabled(controller->dev, SDL_SENSOR_GYRO, true);
+	}
 }
 
 void I_InitController1(void)
