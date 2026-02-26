@@ -94,7 +94,7 @@ typedef enum
 	gc_respawn,
 	gc_director,
 	gc_horncode,
-	gc_gamepadtilt,
+	num_gamecontrols
 } gamecontrols_e;
 
 // mouse values are used once
@@ -106,6 +106,7 @@ extern consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_controllerrumble[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_rumblestrength[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_controllerled[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_tiltcontrol[MAXSPLITSCREENPLAYERS];
 
 // current state of the keys: JOYAXISRANGE or 0 when boolean.
 // Or anything inbetween for analog values

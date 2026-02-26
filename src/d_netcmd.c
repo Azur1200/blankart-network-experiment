@@ -1415,6 +1415,7 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_controllerrumble[i]);
 		CV_RegisterVar(&cv_rumblestrength[i]);
 		CV_RegisterVar(&cv_controllerled[i]);
+		CV_RegisterVar(&cv_tiltcontrol[i]);
 	}
 
 	// filesrch.c

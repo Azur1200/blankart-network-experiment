@@ -90,6 +90,13 @@ consvar_t cv_controllerled[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("gamepadled4", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, controllerled_cons_t, led_off_handle4)
 };
 
+consvar_t cv_tiltcontrol[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("tiltcontrol",  "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, NULL),
+	CVAR_INIT ("tiltcontrol2", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, NULL),
+	CVAR_INIT ("tiltcontrol3", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, NULL),
+	CVAR_INIT ("tiltcontrol4", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, NULL)
+};
+
 static void rumble_off_handle(void)
 {
 	if (cv_controllerrumble[0].value == 0)
@@ -332,6 +339,18 @@ void G_MapEventsToControls(event_t *ev)
 			}
 			gamekeydown[device][i] = max(0, ev->data2);
 
+			break;
+		
+		case ev_accelerometer:
+			gamekeydown[device][KEY_ACCELEROMETER1+0] = ev->data1;
+			gamekeydown[device][KEY_ACCELEROMETER1+1] = ev->data2;
+			gamekeydown[device][KEY_ACCELEROMETER1+2] = ev->data3;
+			break;
+			
+		case ev_gyroscope:
+			gamekeydown[device][KEY_GYROSCOPE1+0] = ev->data1;
+			gamekeydown[device][KEY_GYROSCOPE1+1] = ev->data2;
+			gamekeydown[device][KEY_GYROSCOPE1+2] = ev->data3;
 			break;
 
 		default:

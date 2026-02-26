@@ -58,6 +58,7 @@ typedef enum
 #define TICCMD_RECEIVED		(0x01) /* Actual tic recieved from client */
 #define TICCMD_TYPING		(0x02) /* chat window or console open */
 #define TICCMD_KEYSTROKE	(0x04) /* chat character input */
+#define TICCMD_EXCESSTILT	(0x08) /* player tilting controller too far */
 
 struct ticcmd_t
 {
