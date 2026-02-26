@@ -1445,15 +1445,15 @@ vector3_t G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 	const vector3_t invGyro = {-gyro.x, -gyro.y, -gyro.z};
 	const vector3_t newGravity = {-accel.x, -accel.y, -accel.z};
 	const vector4_t invRotation = AngleAxis(FixedMul(FV3_Magnitude(&gyro), FRACUNIT/TICRATE), &invGyro);
+	const fixed_t correctionRate = FRACUNIT/8;
 	vector3_t gravityDelta;
-	fixed_t correctionRate = FRACUNIT/8;
 	
 	FV3_Mul(&localgravityvectors[p], &invRotation);
 	FV3_SubEx(&gravityDelta, &newGravity, &localgravityvectors[p]);
 	FV3_Load(&localgravityvectors[p],
-		FixedMul(gravityDelta.x, FRACUNIT/8),
-		FixedMul(gravityDelta.y, FRACUNIT/8),
-		FixedMul(gravityDelta.z, FRACUNIT/8)
+		FixedMul(gravityDelta.x, correctionRate),
+		FixedMul(gravityDelta.y, correctionRate),
+		FixedMul(gravityDelta.z, correctionRate)
 	);
 
 	return localgravityvectors[p];
