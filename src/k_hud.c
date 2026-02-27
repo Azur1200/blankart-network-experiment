@@ -5464,44 +5464,25 @@ static void K_drawInput(void)
 	}
 	else if (cv_showinput.value == 1)
 	{
-		if (!stplyr->cmd.turning) // no turn
-			target = 0;
-		else // turning of multiple strengths!
+		patch_t *workingPic = kp_inputwheel[0];
+		INT16 turning = encoremode ? -stplyr->cmd.turning : stplyr->cmd.turning;
+		angle_t rotate = FixedAngle(45 * FixedDiv(abs(turning), 1024) * intsign(turning));
+		INT32 rot = R_GetRollAngle(rotate);
+		
+		if (rot)
 		{
-			target = ((abs(stplyr->cmd.turning) - 1)/200)+1; // was 125, do we need another toggle for this? Zzz...
-			if (target > 4)
-				target = 4;
-			if (stplyr->cmd.turning < 0)
-				target = -target;
+			workingPic = Patch_GetRotated(workingPic, rot, false);
 		}
-
-		if (pn != target)
-		{
-			if (abs(pn - target) == 1)
-				pn = target;
-			else if (pn < target)
-				pn += 2;
-			else //if (pn > target)
-				pn -= 2;
-		}
-
-		if (pn < 0)
-		{
-			splitflags |= V_FLIP; // right turn
-			x -= FRACUNIT;
-		}
-
-		target = abs(pn);
-		if (target > 4)
-			target = 4;
 
 		if (!K_GetHudColor())
-			V_DrawFixedPatch(x, y, FRACUNIT, splitflags, kp_inputwheel[target], NULL);
+		{
+			V_DrawFixedPatch(x, y, FRACUNIT, splitflags, workingPic, NULL);
+		}
 		else
 		{
 			UINT8 *colormap;
 			colormap = R_GetTranslationColormap(0, K_GetHudColor(), GTC_CACHE);
-			V_DrawFixedPatch(x, y, FRACUNIT, splitflags, kp_inputwheel[target], colormap);
+			V_DrawFixedPatch(x, y, FRACUNIT, splitflags, workingPic, colormap);
 		}
 	}
 }
