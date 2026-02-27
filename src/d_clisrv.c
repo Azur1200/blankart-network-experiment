@@ -162,6 +162,7 @@ static char adminsalt[MAXNETNODES][9];
 
 // Client specific
 static ticcmd_t localcmds[MAXSPLITSCREENPLAYERS][MAXGENTLEMENDELAY];
+static boolean cl_packetmissed;
 // here it is for the secondary local player (splitscreen)
 static UINT8 mynode; // my address pointofview server
 static boolean cl_redownloadinggamestate = false;
@@ -3635,6 +3636,7 @@ void SV_ResetServer(void)
 	memset(player_name_changes, 0, sizeof player_name_changes);
 
 	mynode = 0;
+	cl_packetmissed = false;
 	cl_redownloadinggamestate = false;
 
 	if (dedicated)
@@ -4715,6 +4717,13 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 	realstart = ExpandTics(netbuffer->u.clientpak.client_tic, nettics[node]);
 	realend = ExpandTics(netbuffer->u.clientpak.resendfrom, nettics[node]);
 
+	if (netbuffer->packettype == PT_CLIENTMIS || netbuffer->packettype == PT_CLIENT2MIS
+		|| netbuffer->packettype == PT_CLIENT3MIS || netbuffer->packettype == PT_CLIENT4MIS
+		|| netbuffer->packettype == PT_NODEKEEPALIVEMIS
+		|| supposedtics[node] < realend)
+	{
+		supposedtics[node] = realend;
+	}
 	// Discard out of order packet
 	if (nettics[node] > realend)
 	{
@@ -4735,7 +4744,8 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 
 	// Don't do anything for packets of type NODEKEEPALIVE?
 	// Sryder 2018/07/01: Update the freezetimeout still!
-	if (netbuffer->packettype == PT_NODEKEEPALIVE)
+	if (netbuffer->packettype == PT_NODEKEEPALIVE
+		|| netbuffer->packettype == PT_NODEKEEPALIVEMIS)
 		return;
 
 	// store it in an internal buffer so the last packet takes precedence, which minimizes input lag
@@ -4746,9 +4756,9 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 		return;
 
 	// Splitscreen cmd
-	if ((netbuffer->packettype == PT_CLIENT2CMD
-		|| netbuffer->packettype == PT_CLIENT3CMD
-		|| netbuffer->packettype == PT_CLIENT4CMD)
+	if (((netbuffer->packettype == PT_CLIENT2CMD || netbuffer->packettype == PT_CLIENT2MIS)
+		|| (netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
+		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
 		&& (nodetoplayer2[node] >= 0))
 	{
 		G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer2[node]], &netbuffer->u.client2pak.cmd2, 1);
@@ -4757,8 +4767,8 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 			return;
 	}
 
-	if ((netbuffer->packettype == PT_CLIENT3CMD
-		|| netbuffer->packettype == PT_CLIENT4CMD)
+	if (((netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
+		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
 		&& (nodetoplayer3[node] >= 0))
 	{
 		G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer3[node]], &netbuffer->u.client3pak.cmd3, 1);
@@ -4767,7 +4777,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 			return;
 	}
 
-	if (netbuffer->packettype == PT_CLIENT4CMD
+	if ((netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)
 		&& (nodetoplayer4[node] >= 0))
 	{
 		G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer4[node]], &netbuffer->u.client4pak.cmd4, 1);
@@ -5107,6 +5117,7 @@ static void PT_ServerTics(SINT8 node, INT32 netconsole)
 
 	if (realend > gametic + CLIENTBACKUPTICS)
 		realend = gametic + CLIENTBACKUPTICS;
+	cl_packetmissed = realstart > neededtic;
 
 	if (realstart <= neededtic && realend > neededtic)
 	{
@@ -5323,7 +5334,12 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_CLIENT2CMD         : PT_ClientCmd          (node, netconsole); break;
 		case PT_CLIENT3CMD         : PT_ClientCmd          (node, netconsole); break;
 		case PT_CLIENT4CMD         : PT_ClientCmd          (node, netconsole); break;
+		case PT_CLIENTMIS          : PT_ClientCmd          (node, netconsole); break;
+		case PT_CLIENT2MIS         : PT_ClientCmd          (node, netconsole); break;
+		case PT_CLIENT3MIS         : PT_ClientCmd          (node, netconsole); break;
+		case PT_CLIENT4MIS         : PT_ClientCmd          (node, netconsole); break;
 		case PT_NODEKEEPALIVE      : PT_ClientCmd          (node, netconsole); break;
+		case PT_NODEKEEPALIVEMIS   : PT_ClientCmd          (node, netconsole); break;
 		case PT_BASICKEEPALIVE     : PT_BasicKeepAlive     (node, netconsole); break;
 		case PT_TEXTCMD            : PT_TextCmd            (node, netconsole); break;
 		case PT_TEXTCMD2           : PT_TextCmd            (node, netconsole); break;
@@ -5755,8 +5771,15 @@ static void CL_SendClientCmd(void)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	size_t packetsize = 0;
+	boolean mis = false;
 
 	netbuffer->packettype = PT_CLIENTCMD;
+
+	if (cl_packetmissed)
+	{
+		netbuffer->packettype = PT_CLIENTMIS;
+		mis = true;
+	}
 
 	netbuffer->u.clientpak.resendfrom = (UINT8)(neededtic & UINT8_MAX);
 	netbuffer->u.clientpak.client_tic = (UINT8)(gametic & UINT8_MAX);
@@ -5764,7 +5787,7 @@ static void CL_SendClientCmd(void)
 	if (gamestate == GS_WAITINGPLAYERS)
 	{
 		// Send PT_NODEKEEPALIVE packet
-		netbuffer->packettype = PT_NODEKEEPALIVE;
+		netbuffer->packettype = (mis ? PT_NODEKEEPALIVEMIS : PT_NODEKEEPALIVE);
 		packetsize = sizeof (clientcmd_pak) - sizeof (ticcmd_t) - sizeof (INT16);
 		HSendPacket(servernode, false, 0, packetsize);
 	}
@@ -5784,19 +5807,19 @@ static void CL_SendClientCmd(void)
 
 		if (splitscreen) // Send a special packet with 2 cmd for splitscreen
 		{
-			netbuffer->packettype = PT_CLIENT2CMD;
+			netbuffer->packettype = (mis ? PT_CLIENT2MIS : PT_CLIENT2CMD);
 			packetsize = sizeof (client2cmd_pak);
 			G_MoveTiccmd(&netbuffer->u.client2pak.cmd2, &localcmds[1][lagDelay], 1);
 
 			if (splitscreen > 1)
 			{
-				netbuffer->packettype = PT_CLIENT3CMD;
+				netbuffer->packettype = (mis ? PT_CLIENT3MIS : PT_CLIENT3CMD);
 				packetsize = sizeof (client3cmd_pak);
 				G_MoveTiccmd(&netbuffer->u.client3pak.cmd3, &localcmds[2][lagDelay], 1);
 
 				if (splitscreen > 2)
 				{
-					netbuffer->packettype = PT_CLIENT4CMD;
+					netbuffer->packettype = (mis ? PT_CLIENT4MIS : PT_CLIENT4CMD);
 					packetsize = sizeof (client4cmd_pak);
 					G_MoveTiccmd(&netbuffer->u.client4pak.cmd4, &localcmds[3][lagDelay], 1);
 				}
