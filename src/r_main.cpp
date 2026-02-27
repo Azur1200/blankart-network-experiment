@@ -202,6 +202,7 @@ static CV_PossibleValue_t affinetest_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Aut
 
 #ifdef AFFINEROT_TESTER
 consvar_t cv_affineangle = CVAR_INIT ("affineangle", "0", CV_FLOAT, affineangle_cons_t, NULL);
+consvar_t cv_affinecuttest = CVAR_INIT ("affinecuttest", "8.0", CV_FLOAT, CV_Signed, NULL);
 consvar_t cv_affinerottest = CVAR_INIT ("affinerottest", "Off", CV_FLOAT, affinetest_cons_t, NULL);
 #endif
 
@@ -1822,6 +1823,7 @@ void R_RegisterEngineStuff(void)
 
 #ifdef AFFINEROT_TESTER
 	CV_RegisterVar(&cv_affineangle);
+	CV_RegisterVar(&cv_affinecuttest);
 	CV_RegisterVar(&cv_affinerottest);
 #endif
 

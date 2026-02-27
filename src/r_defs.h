@@ -1160,6 +1160,7 @@ typedef struct
 
 	affine_bounding_t affinebound;
 	affine_t affine;
+	vector2_t affineoffset;
 	fixed_t frac;
 } drawcolumndata_t;
 

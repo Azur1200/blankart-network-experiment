@@ -101,7 +101,7 @@ FUNCINLINE static ATTRINLINE constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t*
 	return R_GetColumnTranslucent<Type>(dc, dest, bit, col);
 }
 
-// Function flow: Translation -> Brightmap -> Translucency
+// Function flow: Translation -> Brightmap -> Colormap -> Translucency
 // "Why are these in nested functions for standard columns?" Uhhhhhh iunno lol
 // I make-a da code-a
 
@@ -123,13 +123,21 @@ FUNCINLINE static ATTRINLINE constexpr UINT8 R_DrawColumnAffinePixel(drawcolumnd
 		col = dc->translation[col];
 	}
 
+	boolean was_brightmapped = false;
+
 	if constexpr (Type & DrawColumnType::DC_BRIGHTMAP)
 	{
 		if (dc->brightmap[bit] == BRIGHTPIXEL)
 		{
 			// Pixel is part of the brightmap
 			col = dc->fullbright[col];
+			was_brightmapped = true;
 		}
+	}
+
+	if (!was_brightmapped)
+	{
+		col = dc->colormap[col];
 	}
 
 	if constexpr (Type & DrawColumnType::DC_TRANSMAP)
@@ -612,8 +620,8 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 		ydiff -= (ydiff ? FRACUNIT : 0);
 
 		// Offset our X and Y positions by the bounding differences.
-		fixed_t cxx = cx + xdiff;
-		fixed_t cyy = cy + ydiff;
+		fixed_t cxx = cx + xdiff + dc->affineoffset.x;
+		fixed_t cyy = cy + ydiff + dc->affineoffset.y;
 
 		//I_OutputMsg("xdiff: %f, ydiff: %f\n", FIXED_TO_FLOAT(xdiff), FIXED_TO_FLOAT(ydiff));
 

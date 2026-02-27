@@ -1178,6 +1178,8 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		dc.affine.d = vis->affine.transform.d;
 		dc.affine.ox = vis->affine.transform.ox;
 		dc.affine.oy = vis->affine.transform.oy;
+		dc.affineoffset.x = vis->affine.offset.x;
+		dc.affineoffset.y = vis->affine.offset.y;
 
 		R_CopyAffineBounds(&vis->affine.bounds, &dc.affinebound);
 
@@ -1433,6 +1435,14 @@ static void R_SplitSprite(vissprite_t *sprite)
 		sprite->gz = testheight;
 
 		newsprite->gzt = sprite->gz;
+
+		if (sprite->cut & SC_AFFINE)
+		{
+			// Affines: Fix splitting alignment errors by applying a pixel offset
+			fixed_t szt_diff = (newsprite->sz - cutfrac + 9) << FRACBITS;
+			newsprite->affine.offset.y = -((sprite->affine.bounds.ylen * FRACUNIT) - szt_diff);
+		}
+
 
 		sprite->sz = cutfrac;
 		newsprite->szt = (INT16)(sprite->sz - 1);
