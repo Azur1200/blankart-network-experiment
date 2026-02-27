@@ -101,6 +101,46 @@ FUNCINLINE static ATTRINLINE constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t*
 	return R_GetColumnTranslucent<Type>(dc, dest, bit, col);
 }
 
+// Function flow: Translation -> Brightmap -> Translucency
+// "Why are these in nested functions for standard columns?" Uhhhhhh iunno lol
+// I make-a da code-a
+
+template<DrawColumnType Type>
+FUNCINLINE static ATTRINLINE constexpr UINT8 R_DrawColumnAffinePixel(drawcolumndata_t* dc, UINT8 *dest, INT32 bit)
+{
+	const UINT16 pixel = reinterpret_cast<UINT16 *>(dc->source)[bit];
+
+	if (pixel < 0xff00)
+	{
+		return TRANSPARENTPIXEL;
+	}
+
+	UINT8 col = (UINT8)(pixel & 0xff);
+
+	if constexpr (Type & DrawColumnType::DC_COLORMAP)
+	{
+		// Remap to the current translation
+		col = dc->translation[col];
+	}
+
+	if constexpr (Type & DrawColumnType::DC_BRIGHTMAP)
+	{
+		if (dc->brightmap[bit] == BRIGHTPIXEL)
+		{
+			// Pixel is part of the brightmap
+			col = dc->fullbright[col];
+		}
+	}
+
+	if constexpr (Type & DrawColumnType::DC_TRANSMAP)
+	{
+		// Pixel is translucent
+		col = *(dc->transmap + (col << 8) + (*dest));
+	}
+
+	return col;
+}
+
 /**	\brief The R_DrawColumn function
 	Experiment to make software go faster. Taken from the Boom source
 */
@@ -611,12 +651,13 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 				pixel = 65315; // Uhhhhhhhh
 			}
 #else
-			const UINT16 pixel = reinterpret_cast<UINT16 *>(dc->source)[srcy * pw + srcx];
-			if (pixel < 0xff00)
+			const UINT8 pixel = R_DrawColumnAffinePixel<Type>(dc, dest, srcy * pw + srcx);
+
+			if (pixel == TRANSPARENTPIXEL)
 				continue;
 #endif
 
-			*dest = (UINT8)(pixel & 0xff);
+			*dest = pixel;
 		}
 	}
 }
@@ -639,3 +680,4 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 	DEFINE_AFFINE_COLUMN_FUNC(name, flags|DC_DIRECT)
 
 DEFINE_AFFINE_COLUMN_SETUP(R_DrawAffineColumn, DC_BASIC);
+DEFINE_AFFINE_COLUMN_SETUP(R_DrawTranslatedAffineColumn, DC_COLORMAP);

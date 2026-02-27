@@ -1040,7 +1040,12 @@ static void R_DrawVisSprite(vissprite_t *vis)
 
 	if (vis->cut & SC_AFFINE)
 	{
-		R_SetColumnFunc(COLDRAWFUNC_AFFINE, false);
+		// Specialized affine drawing functions, primarily for player sprites.
+
+		if (dc.translation) // translate green skin to another color
+			R_SetColumnFunc(COLDRAWFUNC_AFFINETRANS, false);
+		else
+			R_SetColumnFunc(COLDRAWFUNC_AFFINE, false);
 	}
 	// Hack: Use a special column function for drop shadows that bypasses
 	// invalid memory access crashes caused by R_ProjectDropShadow putting wrong values
@@ -1203,7 +1208,9 @@ static void R_DrawVisSprite(vissprite_t *vis)
 
 			dc.frac = frac;
 
-			R_DrawAffineColumn(&dc);
+			drawcolumndata_t dc_copy = dc;
+			coldrawfunc_t* colfunccopy = colfunc;
+			colfunccopy(&dc);
 		}
 	}
 	// Split drawing loops for paper and non-paper to reduce conditional checks per sprite
