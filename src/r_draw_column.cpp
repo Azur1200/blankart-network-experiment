@@ -681,3 +681,5 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 
 DEFINE_AFFINE_COLUMN_SETUP(R_DrawAffineColumn, DC_BASIC);
 DEFINE_AFFINE_COLUMN_SETUP(R_DrawTranslatedAffineColumn, DC_COLORMAP);
+DEFINE_AFFINE_COLUMN_SETUP(R_DrawTranslucentAffineColumn, DC_TRANSMAP);
+DEFINE_AFFINE_COLUMN_SETUP(R_DrawTranslatedTranslucentAffineColumn, DC_COLORMAP|DC_TRANSMAP);

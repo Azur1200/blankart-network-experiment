@@ -76,6 +76,8 @@ enum
 	COLDRAWFUNC_DROPSHADOW,
 	COLDRAWFUNC_AFFINE,
 	COLDRAWFUNC_AFFINETRANS,
+	COLDRAWFUNC_AFFINEFUZZY,
+	COLDRAWFUNC_AFFINETRANSTRANS,
 
 	COLDRAWFUNC_MAX
 };
@@ -205,6 +207,8 @@ void R_DrawFogColumn(drawcolumndata_t* dc);
 void R_DrawColumnShadowed(drawcolumndata_t* dc);
 void R_DrawAffineColumn(drawcolumndata_t* dc);
 void R_DrawTranslatedAffineColumn(drawcolumndata_t* dc);
+void R_DrawTranslucentAffineColumn(drawcolumndata_t* dc);
+void R_DrawTranslatedTranslucentAffineColumn(drawcolumndata_t* dc);
 
 void R_DrawColumn_Brightmap(drawcolumndata_t* dc);
 void R_DrawTranslucentColumn_Brightmap(drawcolumndata_t* dc);

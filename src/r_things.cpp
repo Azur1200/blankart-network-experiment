@@ -1043,9 +1043,26 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		// Specialized affine drawing functions, primarily for player sprites.
 
 		if (dc.translation) // translate green skin to another color
-			R_SetColumnFunc(COLDRAWFUNC_AFFINETRANS, false);
+		{
+			if (vis->transmap)
+			{
+				R_SetColumnFunc(COLDRAWFUNC_AFFINETRANSTRANS, false);
+				dc.transmap = vis->transmap;
+			}
+			else
+			{
+				R_SetColumnFunc(COLDRAWFUNC_AFFINETRANS, false);
+			}
+		}
+		else if (vis->transmap)
+		{
+			R_SetColumnFunc(COLDRAWFUNC_AFFINEFUZZY, false);
+			dc.transmap = vis->transmap;
+		}
 		else
+		{
 			R_SetColumnFunc(COLDRAWFUNC_AFFINE, false);
+		}
 	}
 	// Hack: Use a special column function for drop shadows that bypasses
 	// invalid memory access crashes caused by R_ProjectDropShadow putting wrong values
