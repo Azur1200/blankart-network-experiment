@@ -987,26 +987,15 @@ static void K_BotItemFlame(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
+	boolean forceoverheat = ((player->offroad && K_ApplyOffroad(player)) || (K_GetWaypointIsShortcut(player->nextwaypoint) == true));
+
 	// if we're smart enough, allow overheating the flame shield if we want to go off-road
-	if (player->flametimer >= (itemtime*3)-5 && !(K_ApplyOffroad(player) && player->botvars.difficulty >= 6))
+	if (player->flametimer >= (itemtime*3)-5 && !(forceoverheat && player->botvars.difficulty >= 6))
 	{
 		bd->itemdelay = 5;
 	}
 
-	if (P_IsObjectOnGround(player->mo) == false)
-	{
-		// Drain itemdelay as needed so theres no delay when landing.
-		if (bd->itemdelay)
-		{
-			bd->itemdelay--;
-			bd->itemconfirm = 0;
-		}
-
-		// Don't use while mid-air.
-		return;
-	}
-
-	if (player->botvars.difficulty < 6 || player->flametimer <= 2*TICRATE)
+	if (player->botvars.difficulty < 6 || player->flametimer <= 2*TICRATE || forceoverheat)
 	{
 		// We aren't smart enough to use this properly.
 		// ...or we are doing the finishing blow.
