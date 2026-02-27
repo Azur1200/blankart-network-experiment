@@ -1494,28 +1494,9 @@ inline static vector4_t AngleAxis(fixed_t angle, fixed_t x, fixed_t y, fixed_t z
 // math sourced from this article
 // http://gyrowiki.jibbsmart.com/blog:finding-gravity-with-sensor-fusion
 // state
+fixed_t localshakinessfac[MAXSPLITSCREENPLAYERS];
+vector3_t localsmoothedaccel[MAXSPLITSCREENPLAYERS];
 vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
-// void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
-// {
-// 	vector3_t invAccel = {-accel.x, -accel.y, -accel.z};
-// 	fixed_t angleRate = FixedMul(FV3_Length(&gyro), FRACUNIT/TICRATE);
-// 	vector4_t invRotation = AngleAxis(
-// 		angleRate,
-// 		-gyro.x, 
-// 		-gyro.y, 
-// 		-gyro.z
-// 	);
-
-// 	// update gravity by rotation
-// 	QuaternionMulVec3(&localgravityvectors[p], &localgravityvectors[p], &invRotation);
-
-// 	// nudge towards gravity according to current acceleration
-// 	FV3_Load(&localgravityvectors[p],
-// 		localgravityvectors[p].x + FixedMul(invAccel.x - localgravityvectors[p].x, FRACUNIT/4),
-// 		localgravityvectors[p].y + FixedMul(invAccel.y - localgravityvectors[p].y, FRACUNIT/4),
-// 		localgravityvectors[p].z + FixedMul(invAccel.z - localgravityvectors[p].z, FRACUNIT/4)
-// 	);
-// }
 
 // thresholds of trust for accel shakiness. less shakiness = more trust
 #define ShakinessMaxThreshold (4*FRACUNIT/10)
@@ -1530,10 +1511,8 @@ vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
 #define CorrectionGyroMinThreshold (5*FRACUNIT/100)
 #define CorrectionGyroMaxThreshold (FRACUNIT/4)
 // no matter what, always apply a minimum of this much correction to our gravity vector
-#define CorrectionMinimumSpeed (FRACUNIT/10)
+#define CorrectionMinimumSpeed (FRACUNIT/8)
 
-fixed_t localshakinessfac[MAXSPLITSCREENPLAYERS];
-vector3_t localsmoothedaccel[MAXSPLITSCREENPLAYERS];
 void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 {
 	// convert gyro input to reverse rotation
@@ -1615,11 +1594,11 @@ void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 	}
 }
 
-#define TILTRANGE 35*FRACUNIT
+#define TILTRANGE (35*FRACUNIT/100)
 fixed_t G_GetGamepadTilt(INT32 p)
 {	
 	fixed_t tilt;
-	fixed_t axis;
+	fixed_t curve;
 	if (p >= MAXSPLITSCREENPLAYERS)
 	{
 #ifdef PARANOIA
@@ -1628,10 +1607,16 @@ fixed_t G_GetGamepadTilt(INT32 p)
 		return 0;
 	}
 
-	tilt = CLAMP(G_GetGamepadGravity(p).x, -TILTRANGE, TILTRANGE);
-	//TODO: this is really dumb, pinch towards 0 and towards the farthest we can tilt comfortably
-	axis = Easing_Linear(FixedDiv(tilt + TILTRANGE, (2*TILTRANGE)), -32768, 32767);
-	return axis;
+	tilt = CLAMP(FixedDiv(G_GetGamepadGravity(p).x + TILTRANGE, (TILTRANGE + TILTRANGE)), 0, FRACUNIT);
+	CONS_Debug(DBG_IMU, "Tilt: %4.2f\n", FixedToFloat(tilt));
+	return Easing_Linear(tilt, -JOYAXISRANGE, JOYAXISRANGE);
+	
+	// curve = FRACUNIT - FINECOSINE(FixedAngle(180*(tilt-FRACUNIT/2))>>ANGLETOFINESHIFT);
+	// curve = FixedMul(curve, curve);
+	// tilt = ((FixedMul(curve, FRACUNIT-curve) + curve) * intsign(G_GetGamepadGravity(p).x));
+	// CONS_Debug(DBG_IMU, "Pinched Tilt: %4.2f\n", FixedToFloat(tilt));
+	
+	// return (JOYAXISRANGE * tilt)/FRACUNIT;
 }
 #undef TILTRANGE
 
