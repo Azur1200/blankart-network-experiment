@@ -1755,10 +1755,15 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		joystickactive[forplayer] = true;
 		accelerometertilt = 0;
 	}
+
+	if (!cv_tiltcontrol[forplayer].value)
+	{
+		accelerometertilt = 0;
+	}
 	else if (!joystickactive[forplayer])
 	{
 		accelerometertilt = G_GetGamepadTilt(forplayer);
-	}
+	} 
 
 	// For kart, I've turned the aim axis into a digital axis because we only
 	// use it for aiming to throw items forward/backward and the vote screen
