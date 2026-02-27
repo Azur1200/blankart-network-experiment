@@ -1511,7 +1511,7 @@ vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
 #define CorrectionGyroMinThreshold (5*FRACUNIT/100)
 #define CorrectionGyroMaxThreshold (FRACUNIT/4)
 // no matter what, always apply a minimum of this much correction to our gravity vector
-#define CorrectionMinimumSpeed (FRACUNIT/8)
+#define CorrectionMinimumSpeed (FRACUNIT/6)
 
 void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 {
