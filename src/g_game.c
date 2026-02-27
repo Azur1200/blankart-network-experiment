@@ -1594,7 +1594,7 @@ void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 	}
 }
 
-#define TILTRANGE (35*FRACUNIT/100)
+#define TILTRANGE (40*FRACUNIT/100)
 fixed_t G_GetGamepadTilt(INT32 p)
 {	
 	fixed_t tilt;
@@ -1609,14 +1609,11 @@ fixed_t G_GetGamepadTilt(INT32 p)
 
 	tilt = CLAMP(FixedDiv(G_GetGamepadGravity(p).x + TILTRANGE, (TILTRANGE + TILTRANGE)), 0, FRACUNIT);
 	CONS_Debug(DBG_IMU, "Tilt: %4.2f\n", FixedToFloat(tilt));
-	return Easing_Linear(tilt, -JOYAXISRANGE, JOYAXISRANGE);
 	
-	// curve = FRACUNIT - FINECOSINE(FixedAngle(180*(tilt-FRACUNIT/2))>>ANGLETOFINESHIFT);
-	// curve = FixedMul(curve, curve);
-	// tilt = ((FixedMul(curve, FRACUNIT-curve) + curve) * intsign(G_GetGamepadGravity(p).x));
-	// CONS_Debug(DBG_IMU, "Pinched Tilt: %4.2f\n", FixedToFloat(tilt));
+	curve = FINESINE(FixedAngle(180*(tilt-FRACUNIT/2))>>ANGLETOFINESHIFT);
+	CONS_Debug(DBG_IMU, "Pinched Tilt: %4.2f\n", FixedToFloat(curve));
 	
-	// return (JOYAXISRANGE * tilt)/FRACUNIT;
+	return (JOYAXISRANGE * curve)/FRACUNIT;
 }
 #undef TILTRANGE
 

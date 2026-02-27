@@ -91,10 +91,10 @@ consvar_t cv_controllerled[MAXSPLITSCREENPLAYERS] = {
 };
 
 consvar_t cv_tiltcontrol[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("tiltcontrol",  "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, NULL),
-	CVAR_INIT ("tiltcontrol2", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, NULL),
-	CVAR_INIT ("tiltcontrol3", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, NULL),
-	CVAR_INIT ("tiltcontrol4", "Off", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, NULL)
+	CVAR_INIT ("tiltcontrol",  "Off", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("tiltcontrol2", "Off", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("tiltcontrol3", "Off", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("tiltcontrol4", "Off", CV_SAVE, CV_OnOff, NULL)
 };
 
 static void rumble_off_handle(void)
