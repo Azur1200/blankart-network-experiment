@@ -1038,6 +1038,11 @@ typedef enum
 
 typedef enum
 {
+	RF2_AFFINE          = 0x00000001,  // Affine sprite; draws scaling and rotation using a Mode 7 matrix
+} renderflags2_t;
+
+typedef enum
+{
 	SRF_SINGLE      = 0,   // 0-angle for all rotations
 	SRF_3D          = 1,   // Angles 1-8
 	SRF_3DGE        = 2,   // 3DGE, ZDoom and Doom Legacy all have 16-angle support. Why not us?

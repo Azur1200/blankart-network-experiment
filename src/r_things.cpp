@@ -1955,7 +1955,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	mobj_t *interptarg = thing;
 
 	// Affines
-	boolean affinesprite = (thing->player != NULL);
+	boolean affinesprite = ((thing->player != NULL) || ((thing->renderflags2 & RF2_AFFINE) == RF2_AFFINE));
 	affine_t affine_transform = {0};
 	affine_bounding_t affine_bounds = {0};
 	vector2_t affine_scale = {0};
