@@ -1506,7 +1506,7 @@ vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
 // when we don't trust the accel (the controller is "shaky"), how quickly do we correct our gravity vector?
 #define CorrectionShakyRate (FRACUNIT/10)
 // if our old gravity vector is close enough to our new one, limit further corrections to this proportion of the rotation speed
-#define CorrectionGyroFactor (FRACUNIT/10)
+#define CorrectionGyroFactor (FRACUNIT/4)
 // thresholds for what's considered "close enough"
 #define CorrectionGyroMinThreshold (5*FRACUNIT/100)
 #define CorrectionGyroMaxThreshold (FRACUNIT/4)
@@ -1594,7 +1594,7 @@ void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 	}
 }
 
-#define TILTRANGE (40*FRACUNIT/100)
+#define TILTRANGE (45*FRACUNIT/100)
 fixed_t G_GetGamepadTilt(INT32 p)
 {	
 	fixed_t tilt;
