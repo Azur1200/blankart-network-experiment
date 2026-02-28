@@ -190,7 +190,8 @@ static patch_t *kp_check[11];
 static patch_t *kp_eggnum[4];
 
 static patch_t *kp_fpview[3];
-static patch_t *kp_inputwheel[5];
+static patch_t *kp_inputwheel;
+static patch_t *kp_inputwheel_shadow;
 
 static patch_t *kp_challenger[25];
 
@@ -592,12 +593,21 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&joyshadow, "JOYSHD");
 
 	// Input UI Wheel
-	sprintf(buffer, "K_WHEELx");
-	for (i = 0; i < 5; i++)
-	{
-		buffer[7] = '0'+i;
-		HU_UpdatePatch(&kp_inputwheel[i], "%s", buffer);
-	}
+	HU_UpdatePatch(&kp_inputwheel, "K_WHEEL0");
+	kp_inputwheel->pivot.x = 
+		(kp_inputwheel->width / 2) + kp_inputwheel->leftoffset;
+	kp_inputwheel->pivot.y = 
+		(kp_inputwheel->height / 2) + kp_inputwheel->topoffset;
+	kp_inputwheel->alignflags |=
+		(PATCHALIGN_AUTOCENTER | PATCHALIGN_USEPIVOTS);
+
+	HU_UpdatePatch(&kp_inputwheel_shadow, "K_WHEEL1");
+	kp_inputwheel_shadow->pivot.x = 
+		(kp_inputwheel_shadow->width / 2) + kp_inputwheel_shadow->leftoffset;
+	kp_inputwheel_shadow->pivot.y = 
+		(kp_inputwheel_shadow->height / 2) + kp_inputwheel_shadow->topoffset;
+	kp_inputwheel_shadow->alignflags |=
+		(PATCHALIGN_AUTOCENTER | PATCHALIGN_USEPIVOTS);
 
 	// HERE COMES A NEW CHALLENGER
 	sprintf(buffer, "K_CHALxx");
@@ -5464,25 +5474,29 @@ static void K_drawInput(void)
 	}
 	else if (cv_showinput.value == 1)
 	{
-		patch_t *workingPic = kp_inputwheel[0];
+		patch_t *workingPic = kp_inputwheel;
+		patch_t *shadowPic = kp_inputwheel_shadow;
 		INT16 turning = encoremode ? -stplyr->cmd.turning : stplyr->cmd.turning;
-		angle_t rotate = FixedAngle(45 * FixedDiv(abs(turning), 1024) * intsign(turning));
+		angle_t rotate = FixedAngle(60 * FixedDiv(abs(turning), 1024) * intsign(turning));
 		INT32 rot = R_GetRollAngle(rotate);
 		
 		if (rot)
 		{
 			workingPic = Patch_GetRotated(workingPic, rot, false);
+			shadowPic = Patch_GetRotated(shadowPic, rot, false);
 		}
 
 		if (!K_GetHudColor())
 		{
-			V_DrawFixedPatch(x, y, FRACUNIT, splitflags, workingPic, NULL);
+			V_DrawFixedPatch(x-(17*FRACUNIT), y-(38*FRACUNIT)+(FRACUNIT*2), FRACUNIT/3, splitflags|V_SUBTRACT|V_10TRANS, shadowPic, NULL);
+			V_DrawFixedPatch(x-(17*FRACUNIT), y-(38*FRACUNIT), FRACUNIT/3, splitflags, workingPic, NULL);
 		}
 		else
 		{
 			UINT8 *colormap;
 			colormap = R_GetTranslationColormap(0, K_GetHudColor(), GTC_CACHE);
-			V_DrawFixedPatch(x, y, FRACUNIT, splitflags, workingPic, colormap);
+			V_DrawFixedPatch(x-(17*FRACUNIT), y-(38*FRACUNIT)+(FRACUNIT*2), FRACUNIT/3, splitflags|V_SUBTRACT|V_10TRANS, shadowPic, colormap);
+			V_DrawFixedPatch(x-(17*FRACUNIT), y-(38*FRACUNIT), FRACUNIT/3, splitflags, workingPic, colormap);
 		}
 	}
 }
