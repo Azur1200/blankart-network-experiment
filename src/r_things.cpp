@@ -1440,7 +1440,7 @@ static void R_SplitSprite(vissprite_t *sprite)
 		{
 			// Affines: Fix splitting alignment errors by applying a pixel offset
 			fixed_t szt_diff = (newsprite->sz - cutfrac + 9) << FRACBITS;
-			newsprite->affine.offset.y += -((sprite->affine.bounds.ylen * FRACUNIT) - szt_diff);
+			newsprite->affine.offset.y = std::min(0, -((sprite->affine.bounds.ylen * FRACUNIT) - szt_diff));
 		}
 
 
@@ -1969,7 +1969,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	affine_t affine_transform = {0};
 	affine_bounding_t affine_bounds = {0};
 	vector2_t affine_scale = {0};
-	vector2_t affine_offset = {0};
 
 	if (R_IsOverlayingSMonitorPlayer(thing))
 	{
@@ -2754,28 +2753,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	vis->viewpoint.z = viewz;
 	vis->viewpoint.angle = viewangle;
 
-	vis->mobj = thing; // Easy access! Tails 06-07-2002
-
-	const boolean cliptoleft = (x1 < portalclipstart);
-
-	vis->x1 = x1 < portalclipstart ? portalclipstart : x1;
-	vis->x2 = x2 >= portalclipend ? portalclipend-1 : x2;
-
-
-	if (affinesprite && cliptoleft)
-	{
-		// If our draw length is shorter than usual, push the sprite to the left by that much.
-		const INT32 _xlen = (vis->x2 - vis->x1);
-		affine_offset.x = (affine_bounds.xlen - _xlen);
-	}
-
-	vis->sector = thing->subsector->sector;
-
-	// Using linkscale here improves cut detection for LINKDRAW.
-	vis->szt = (INT16)((centeryfrac - FixedMul(vis->gzt - viewz, linkscale))>>FRACBITS);
-	vis->sz = (INT16)((centeryfrac - FixedMul(vis->gz - viewz, linkscale))>>FRACBITS);
-	vis->cut = cut;
-
 	vis->affine = {0};
 
 	if (affinesprite)
@@ -2791,11 +2768,20 @@ static void R_ProjectSprite(mobj_t *thing)
 		vis->affine.transform.ox = affine_transform.ox;
 		vis->affine.transform.oy = affine_transform.oy;
 
-		vis->affine.offset.x = affine_offset.x;
-		vis->affine.offset.y = affine_offset.y;
-
 		R_CopyAffineBounds(&affine_bounds, &vis->affine.bounds);
 	}
+
+	vis->mobj = thing; // Easy access! Tails 06-07-2002
+
+	vis->x1 = x1 < portalclipstart ? portalclipstart : x1;
+	vis->x2 = x2 >= portalclipend ? portalclipend-1 : x2;
+
+	vis->sector = thing->subsector->sector;
+
+	// Using linkscale here improves cut detection for LINKDRAW.
+	vis->szt = (INT16)((centeryfrac - FixedMul(vis->gzt - viewz, linkscale))>>FRACBITS);
+	vis->sz = (INT16)((centeryfrac - FixedMul(vis->gz - viewz, linkscale))>>FRACBITS);
+	vis->cut = cut;
 
 	if (thing->subsector->sector->numlights)
 		vis->extra_colormap = *thing->subsector->sector->lightlist[light].extra_colormap;
@@ -2835,7 +2821,16 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	if (vis->x1 > x1)
 	{
-		vis->startfrac += FixedDiv(vis->xiscale, this_scale) * (vis->x1 - x1);
+		fixed_t xpush = FixedDiv(vis->xiscale, this_scale);
+
+		if (affinesprite)
+		{
+			// Affines are, code-wise, "1-to-1 scale", so we always move in whole movements for them.
+			xpush = intsign(vis->xiscale) * FRACUNIT;
+		}
+
+
+		vis->startfrac += xpush * (vis->x1 - x1);
 		vis->scale += FixedMul(scalestep, spriteyscale) * (vis->x1 - x1);
 	}
 

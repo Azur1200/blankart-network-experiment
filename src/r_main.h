@@ -164,7 +164,7 @@ extern consvar_t cv_nulldriftefx, cv_nulldrifttilt;
 #define AFFINEROT_TESTER
 
 #ifdef AFFINEROT_TESTER
-extern consvar_t cv_affineangle, cv_affinecuttest, cv_affinerottest;
+extern consvar_t cv_affineangle, cv_affinecuttest, cv_affinedebugx, cv_affinerottest;
 #endif
 
 // debugging
