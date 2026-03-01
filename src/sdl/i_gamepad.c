@@ -172,6 +172,10 @@ void I_InitController(UINT8 playernum)
 
 	if (M_CheckParm("-nolibusb"))
 		SDL_SetHintWithPriority("SDL_HIDAPI_LIBUSB", "0", SDL_HINT_OVERRIDE);
+	
+	// need to figure out how to get it to recognize Motion Plus
+	// if (!M_CheckParm("-nohidapiwii"))
+	// 	SDL_SetHintWithPriority("SDL_JOYSTICK_HIDAPI_WII", "1", SDL_HINT_OVERRIDE);
 
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == 0)
 	{

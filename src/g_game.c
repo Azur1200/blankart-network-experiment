@@ -1421,22 +1421,7 @@ static void G_HandleAxisDeadZone(UINT8 splitnum, joystickvector2_t *joystickvect
 }
 
 // copy/pasted from the lua version of these routines
-static vector4_t *QuaternionMul(vector4_t *out, vector4_t *a, vector4_t *b)
-{
-	fixed_t ax = a->x, ay = a->y, az = a->z, aw = a->a;
-	fixed_t bx = b->x, by = b->y, bz = b->z, bw = b->a;
-
-	FV4_NormalizeEx(out, FV4_Load(out,
-		FixedMul(aw, bx) + FixedMul(ax, bw) + FixedMul(ay, bz) - FixedMul(az, by),
-		FixedMul(aw, by) - FixedMul(ax, bz) + FixedMul(ay, bw) + FixedMul(az, bx),
-		FixedMul(aw, bz) + FixedMul(ax, by) - FixedMul(ay, bx) + FixedMul(az, bw),
-		FixedMul(aw, bw) - FixedMul(ax, bx) - FixedMul(ay, by) - FixedMul(az, bz)
-	));
-
-	return out;
-}
-
-static vector3_t *QuaternionMulVec3(vector3_t *out, vector3_t *a, vector4_t *b)
+inline static vector3_t *QuaternionMulVec3(vector3_t *out, vector3_t *a, vector4_t *b)
 {
 	fixed_t ax = a->x, ay = a->y, az = a->z, aw = 0;
 	fixed_t bx = b->x, by = b->y, bz = b->z, bw = b->a;
@@ -1450,26 +1435,14 @@ static vector3_t *QuaternionMulVec3(vector3_t *out, vector3_t *a, vector4_t *b)
 	return out;
 }
 
-static fixed_t FV3_LengthSquared(const vector3_t *vec)
+inline static fixed_t FV3_LengthSquared(const vector3_t *vec)
 {
 	return FixedMul(vec->x, vec->x) + FixedMul(vec->y, vec->y) + FixedMul(vec->z, vec->z);
 }
 
-static fixed_t FV3_Length(const vector3_t *vec)
+inline static fixed_t FV3_Length(const vector3_t *vec)
 {
 	return FixedSqrt(FV3_LengthSquared(vec));
-}
-
-static vector4_t *QuaternionInvert(vector4_t *out)
-{
-	FV4_Load(out,
-		-out->x,
-		-out->y,
-		-out->z,
-		out->a
-	);
-
-	return out;
 }
 
 inline static vector4_t AngleAxis(fixed_t angle, fixed_t x, fixed_t y, fixed_t z)
@@ -1530,6 +1503,8 @@ void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 	vector3_t gravityToAccel = {0};
 	vector3_t gravityToAccelDirection = {0};
 	vector3_t correction = {0};
+
+	if (!G_GetGamepadCanUseTilt(p)) return;
 
 	// rotate gravity vector
 	QuaternionMulVec3(&localgravityvectors[p], &localgravityvectors[p], &invRotation);
@@ -1594,20 +1569,12 @@ void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 	}
 }
 
-#define TILTRANGE (45*FRACUNIT/100)
-fixed_t G_GetGamepadTilt(INT32 p)
+INT32 G_GetGamepadTilt(INT32 p)
 {	
 	fixed_t tilt;
 	fixed_t curve;
-	if (p >= MAXSPLITSCREENPLAYERS)
-	{
-#ifdef PARANOIA
-		CONS_Debug(DBG_GAMELOGIC, "G_PlayerInputAnalog: Invalid player ID %d\n", p);
-#endif
-		return 0;
-	}
-
-	tilt = CLAMP(FixedDiv(G_GetGamepadGravity(p).x + TILTRANGE, (TILTRANGE + TILTRANGE)), 0, FRACUNIT);
+	if (!G_GetGamepadCanUseTilt(p)) return 0;
+	tilt = CLAMP(FixedDiv(G_GetGamepadGravity(p).x + MAXGAMEPADTILT, 2*MAXGAMEPADTILT), 0, FRACUNIT);
 	CONS_Debug(DBG_IMU, "Tilt: %4.2f\n", FixedToFloat(tilt));
 	
 	curve = FINESINE(FixedAngle(180*(tilt-FRACUNIT/2))>>ANGLETOFINESHIFT);
@@ -1615,39 +1582,35 @@ fixed_t G_GetGamepadTilt(INT32 p)
 	
 	return (JOYAXISRANGE * curve)/FRACUNIT;
 }
-#undef TILTRANGE
 
 vector3_t G_GetGamepadGravity(INT32 p)
 {
-	const vector3_t zero = {0};
-	
-	if (p >= MAXSPLITSCREENPLAYERS)
-	{
-#ifdef PARANOIA
-		CONS_Debug(DBG_GAMELOGIC, "G_PlayerInputAnalog: Invalid player ID %d\n", p);
-#endif
-		return zero;
-	}
-
+	const vector3_t zero = {0, -ACCELEROMETERGRAVITY, 0};
+	if (!G_GetGamepadCanUseTilt(p)) return zero;
 	return localgravityvectors[p];
 }
 
 vector3_t G_GetGamepadShake(INT32 p)
 {
-	const vector3_t zero = {0};
-	vector3_t accel;
-	
+	vector3_t accel = {0};
+	if (!G_GetGamepadCanUseTilt(p)) return accel;
+	accel = G_PlayerInputSensor(p, ACCELEROMETER);
+	FV3_Add(&accel, &localgravityvectors[p]);
+
+	return accel;
+}
+
+boolean G_GetGamepadCanUseTilt(INT32 p)
+{
 	if (p >= MAXSPLITSCREENPLAYERS)
 	{
 #ifdef PARANOIA
-		CONS_Debug(DBG_GAMELOGIC, "G_PlayerInputAnalog: Invalid player ID %d\n", p);
+		CONS_Debug(DBG_GAMELOGIC, "G_GetGamepadCanUseTilt: Invalid player ID %d\n", p);
 #endif
-		return zero;
+		return false;
 	}
 
-	accel = G_PlayerInputSensor(p, ACCELEROMETER);
-	FV3_Add(&accel, &localgravityvectors[p]);
-	return accel;
+	return (I_ControllerSupportsSensorAccelerometer(p) && I_ControllerSupportsSensorGyro(p));
 }
 
 #undef Interpolator
@@ -1696,7 +1659,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	INT32 forward, side, tspeed;
 
 	joystickvector2_t joystickvector;
-	INT16 accelerometertilt;
+	INT32 accelerometertilt;
 
 	// you'd BETTER not touch the player while freecamming...
 	player_t *player = &players[g_localplayers[forplayer]];
@@ -1723,7 +1686,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 	// update our gamepad gravity when applicable
 	// this should always execute so we have an accurate state
-	if (true) //todo: check if gamepad supports accel or accel and gyro
+	if (G_GetGamepadCanUseTilt(forplayer))
 	{
 		vector3_t accel = G_PlayerInputSensor(forplayer, ACCELEROMETER);
 		vector3_t gyro = G_PlayerInputSensor(forplayer, GYROSCOPE);
@@ -1753,7 +1716,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		accelerometertilt = 0;
 	}
 
-	if (!cv_tiltcontrol[forplayer].value)
+	if (cv_tiltcontrol[forplayer].value != 1)
 	{
 		accelerometertilt = 0;
 	}
@@ -1920,6 +1883,17 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->buttons |= BT_HORN;
 	}
 
+	// shaking controller shakes
+	if (G_GetGamepadCanUseTilt(forplayer) && cv_tiltcontrol[forplayer].value > 0)
+	{
+		vector3_t shake = G_GetGamepadShake(forplayer);
+		CONS_Debug(DBG_IMU, "Shake: %4.2f\n", FixedToFloat(FV3_Length(&shake)));
+		if (FV3_Length(&shake) >= FRACUNIT)
+		{
+			cmd->buttons |= BT_SHAKE;
+		}
+	}
+
 	// Lua scriptable buttons
 	if (G_PlayerInputDown(forplayer, gc_custom1, false, DEADZONE_BUTTON))
 		cmd->buttons |= BT_CUSTOM1;
@@ -1970,6 +1944,11 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		{
 			cmd->flags |= TICCMD_KEYSTROKE;
 		}
+	}
+
+	if (G_GetGamepadCanUseTilt(forplayer) && (cv_tiltcontrol[forplayer].value == 1))
+	{
+		cmd->flags |= TICCMD_USINGTILT;
 	}
 
 	/* 	Lua: Allow this hook to overwrite ticcmd.

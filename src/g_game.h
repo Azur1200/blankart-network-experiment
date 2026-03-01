@@ -141,12 +141,13 @@ typedef enum
 	GYROSCOPE,
 } motionsensortype_e;
 
-#define MAXGAMEPADTILT (ANG30)
-#define ACCEL_GRAVITY (FLOAT_TO_FIXED(9.80665f))
+#define MAXGAMEPADTILT (45*FRACUNIT/100)
+#define ACCELEROMETERGRAVITY FLOAT_TO_FIXED(9.80665f)
+boolean G_GetGamepadCanUseTilt(INT32 p);
 void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel);
-vector3_t G_GetGamepadGravity(INT32 p);
+INT32 G_GetGamepadTilt(INT32 p);
 vector3_t G_GetGamepadShake(INT32 p);
-fixed_t G_GetGamepadTilt(INT32 p);
+vector3_t G_GetGamepadGravity(INT32 p);
 vector3_t G_PlayerInputSensor(UINT8 p, motionsensortype_e sensor);
 
 fixed_t G_GetDeadZoneType(INT32 p, SINT8 type);

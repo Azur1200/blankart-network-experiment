@@ -10036,6 +10036,24 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				mobj->lastlook = player->cmd.turning;
 			}
 
+			if (player->cmd.buttons & BT_SHAKE)
+			{
+				if (mobj->extravalue3 == 0) mobj->extravalue3 = 1;
+				
+				if (mobj->extravalue2 == 0)
+				{
+					mobj->movecount += (TICRATE/2);
+					mobj->threshold = 16*mobj->extravalue3;
+					S_StartSound(mobj, sfx_s1ab);
+				}
+				mobj->extravalue2 = 1;
+				mobj->extravalue3 *= -1;
+			}
+			else
+			{
+				mobj->extravalue2 = 0;
+			}
+
 			mobj->movecount++;
 		}
 		else if (mobj->extravalue1) // lost your player somehow, DIE
