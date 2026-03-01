@@ -2049,8 +2049,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	R_InterpolateMobjState(interptarg, R_GetTimeFrac(RTF_LEVEL), &interp);
 
 	this_scale = interp.scale;
-	if (thing->skin && ((skin_t *)thing->skin)->highresscale != FRACUNIT)
-		this_scale = FixedMul(this_scale, ((skin_t *)thing->skin)->highresscale);
 
 	// sprite offset
 	interp.x += thing->sprxoff;
@@ -2263,8 +2261,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (thing->skin && ((skin_t *)thing->skin)->highresscale != FRACUNIT)
 	{
 		fixed_t high_res = ((skin_t *)thing->skin)->highresscale;
-		spritexscale = FixedMul(spritexscale, high_res);
-		spriteyscale = FixedMul(spriteyscale, high_res);
+		this_scale = FixedMul(this_scale, high_res);
 		highresscale = high_res;
 	}
 	else
