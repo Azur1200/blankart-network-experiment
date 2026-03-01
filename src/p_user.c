@@ -1261,12 +1261,18 @@ mobj_t *P_SpawnGhostMobjEX(mobj_t *mobj, boolean legacy)
 	if (!(mobj->flags & MF_DONTENCOREMAP))
 		ghost->flags &= ~MF_DONTENCOREMAP;
 
-	if (mobj->player && mobj->player->followmobj)
+	if (mobj->player)
 	{
-		mobj_t *ghost2 = P_SpawnGhostMobj(mobj->player->followmobj);
-		P_SetTarget(&ghost2->tracer, ghost);
-		P_SetTarget(&ghost->tracer, ghost2);
-		ghost2->flags2 |= (mobj->player->followmobj->flags2 & MF2_LINKDRAW);
+		// Players use affine rendering, so match that
+		ghost->renderflags2 |= RF2_AFFINE;
+
+		if(mobj->player->followmobj)
+		{
+			mobj_t *ghost2 = P_SpawnGhostMobj(mobj->player->followmobj);
+			P_SetTarget(&ghost2->tracer, ghost);
+			P_SetTarget(&ghost->tracer, ghost2);
+			ghost2->flags2 |= (mobj->player->followmobj->flags2 & MF2_LINKDRAW);
+		}
 	}
 
 	// Copy interpolation data :)
