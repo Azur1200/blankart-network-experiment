@@ -613,6 +613,8 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 
 		const INT32 pw = dc->sourcelength, ph = dc->texheight;
 
+		const fixed_t ystep_delta = dc->affineystep;
+
 		fixed_t ydiff = (bounds->yup * FRACUNIT) - cy;
 		fixed_t xdiff = (bounds->xleft * FRACUNIT) - cx;
 
@@ -636,8 +638,8 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 		{
 			const INT32 srcx = ux >> FRACBITS;
 			const INT32 srcy = uy >> FRACBITS;
-			ux += b;
-			uy += d;
+			ux += FixedMul(b, ystep_delta);
+			uy += FixedMul(d, ystep_delta);
 
 #ifdef FILL_DRAW_AREA
 			UINT16 pixel;

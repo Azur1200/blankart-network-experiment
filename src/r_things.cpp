@@ -1185,52 +1185,120 @@ static void R_DrawVisSprite(vissprite_t *vis)
 
 		fixed_t xstep = intsign(vis->xiscale) * FRACUNIT;
 
-		// Non-paper drawing loop
-		for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, frac += xstep, sprtopscreen += vis->shear.tan)
+		dc.affineystep = FRACUNIT;
+
+		if (vis->scalestep)
 		{
-			//texturecolumn = std::clamp<fixed_t>(frac >> FRACBITS, 0, patch->width - 1);
+			// Convert these to floats, and feed them into the affine drawer
+			float f_yscale_const = FIXED_TO_FLOAT(spryscale);
+			float f_yscale = FIXED_TO_FLOAT(spryscale);
+			float f_scalestep = FIXED_TO_FLOAT(FixedMul(vis->scalestep, vis->spriteyscale));
 
-			//column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
-
-			//if (bmpatch)
-				//bmcol = (column_t *)((UINT8 *)bmpatch->columns + (bmpatch->columnofs[texturecolumn]));
-
-			dc.yl = (sprtopscreen+FRACUNIT-1)>>FRACBITS;
-			dc.yh = ((sprtopscreen + FRACUNIT*dc.affinebound.ylen)-1)>>FRACBITS;
-
-			INT32 topscreen = sprtopscreen + spryscale*0;
-			INT32  bottomscreen = topscreen + FRACUNIT*dc.affinebound.ylen;
-
-			dc.yl = (topscreen+FRACUNIT-1)>>FRACBITS;
-			dc.yh = (bottomscreen-1)>>FRACBITS;
-
-			if (windowtop != INT32_MAX && windowbottom != INT32_MAX)
+			// Papersprite drawing loop
+			for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, f_yscale += f_scalestep)
 			{
-				if (windowtop > topscreen)
-					dc.yl = (windowtop + FRACUNIT - 1)>>FRACBITS;
-				if (windowbottom < bottomscreen)
-					dc.yh = (windowbottom - 1)>>FRACBITS;
+				float _ysc = (f_yscale / f_yscale_const);
+
+				if (_ysc < 0.001f)
+				{
+					continue;
+				}
+
+				dc.affineystep = FLOAT_TO_FIXED(1.0f / _ysc);
+
+				angle_t angle = ((vis->centerangle + xtoviewangle[viewssnum][dc.x]) >> ANGLETOFINESHIFT) & 0xFFF;
+				dc.frac = FixedMul((vis->paperoffset - FixedMul(FINETANGENT(angle), vis->paperdistance)),
+								   vis->affine.distscale.x);
+
+				sprtopscreen = (centeryfrac - FixedMul(dc.texturemid, FLOAT_TO_FIXED(f_yscale)));
+				float f_ylen = static_cast<float>(dc.affinebound.ylen);
+
+				dc.yl = (sprtopscreen+FRACUNIT-1)>>FRACBITS;
+				dc.yh = ((sprtopscreen + FLOAT_TO_FIXED(f_ylen * _ysc))-1)>>FRACBITS;
+
+				INT32 topscreen = sprtopscreen + spryscale*0;
+				INT32  bottomscreen = topscreen + FLOAT_TO_FIXED(f_ylen * _ysc);
+
+				dc.yl = (topscreen+FRACUNIT-1)>>FRACBITS;
+				dc.yh = (bottomscreen-1)>>FRACBITS;
+
+				if (windowtop != INT32_MAX && windowbottom != INT32_MAX)
+				{
+					if (windowtop > topscreen)
+						dc.yl = (windowtop + FRACUNIT - 1)>>FRACBITS;
+					if (windowbottom < bottomscreen)
+						dc.yh = (windowbottom - 1)>>FRACBITS;
+				}
+			
+				if (dc.yh >= mfloorclip[dc.x])
+					dc.yh = mfloorclip[dc.x]-1;
+				if (dc.yl <= mceilingclip[dc.x])
+					dc.yl = mceilingclip[dc.x]+1;
+			
+				if (dc.yl < 0)
+					dc.yl = 0;
+				if (dc.yh >= vid.height) // dc_yl must be < vid.height, so reduces number of checks in tight loop
+					dc.yh = vid.height - 1;
+			
+				if (dc.yh >= baseclip && baseclip != -1)
+					dc.yh = baseclip;
+
+				drawcolumndata_t dc_copy = dc;
+				coldrawfunc_t* colfunccopy = colfunc;
+				colfunccopy(&dc);
 			}
-		
-			if (dc.yh >= mfloorclip[dc.x])
-				dc.yh = mfloorclip[dc.x]-1;
-			if (dc.yl <= mceilingclip[dc.x])
-				dc.yl = mceilingclip[dc.x]+1;
-		
-			if (dc.yl < 0)
-				dc.yl = 0;
-			if (dc.yh >= vid.height) // dc_yl must be < vid.height, so reduces number of checks in tight loop
-				dc.yh = vid.height - 1;
-		
-			if (dc.yh >= baseclip && baseclip != -1)
-				dc.yh = baseclip;
-
-			dc.frac = frac;
-
-			drawcolumndata_t dc_copy = dc;
-			coldrawfunc_t* colfunccopy = colfunc;
-			colfunccopy(&dc);
 		}
+		else
+		{
+			// Non-paper drawing loop
+			for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, frac += xstep, sprtopscreen += vis->shear.tan)
+			{
+				//texturecolumn = std::clamp<fixed_t>(frac >> FRACBITS, 0, patch->width - 1);
+
+				//column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
+
+				//if (bmpatch)
+					//bmcol = (column_t *)((UINT8 *)bmpatch->columns + (bmpatch->columnofs[texturecolumn]));
+
+				dc.yl = (sprtopscreen+FRACUNIT-1)>>FRACBITS;
+				dc.yh = ((sprtopscreen + FRACUNIT*dc.affinebound.ylen)-1)>>FRACBITS;
+
+				INT32 topscreen = sprtopscreen + spryscale*0;
+				INT32  bottomscreen = topscreen + FRACUNIT*dc.affinebound.ylen;
+
+				dc.yl = (topscreen+FRACUNIT-1)>>FRACBITS;
+				dc.yh = (bottomscreen-1)>>FRACBITS;
+
+				if (windowtop != INT32_MAX && windowbottom != INT32_MAX)
+				{
+					if (windowtop > topscreen)
+						dc.yl = (windowtop + FRACUNIT - 1)>>FRACBITS;
+					if (windowbottom < bottomscreen)
+						dc.yh = (windowbottom - 1)>>FRACBITS;
+				}
+			
+				if (dc.yh >= mfloorclip[dc.x])
+					dc.yh = mfloorclip[dc.x]-1;
+				if (dc.yl <= mceilingclip[dc.x])
+					dc.yl = mceilingclip[dc.x]+1;
+			
+				if (dc.yl < 0)
+					dc.yl = 0;
+				if (dc.yh >= vid.height) // dc_yl must be < vid.height, so reduces number of checks in tight loop
+					dc.yh = vid.height - 1;
+			
+				if (dc.yh >= baseclip && baseclip != -1)
+					dc.yh = baseclip;
+
+				dc.frac = frac;
+
+				drawcolumndata_t dc_copy = dc;
+				coldrawfunc_t* colfunccopy = colfunc;
+				colfunccopy(&dc);
+			}
+		}
+
+		
 	}
 	// Split drawing loops for paper and non-paper to reduce conditional checks per sprite
 	else if (vis->scalestep)
@@ -1965,10 +2033,11 @@ static void R_ProjectSprite(mobj_t *thing)
 	mobj_t *interptarg = thing;
 
 	// Affines
-	boolean affinesprite = ((thing->player != NULL) || ((thing->renderflags2 & RF2_AFFINE) == RF2_AFFINE));
+	boolean affinesprite = ((thing->player != NULL) || R_ThingIsAffineSprite(thing));
 	affine_t affine_transform = {0};
 	affine_bounding_t affine_bounds = {0};
 	vector2_t affine_scale = {0};
+	vector2_t affine_distscale = {0};
 
 	if (R_IsOverlayingSMonitorPlayer(thing))
 	{
@@ -2012,8 +2081,8 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	if (affinesprite)
 	{
-		affine_scale.x = FixedDiv(projection[viewssnum], tz);
-		affine_scale.y = FixedDiv(projectiony[viewssnum], tz);
+		affine_distscale.x = affine_scale.x = FixedDiv(projection[viewssnum], tz);
+		affine_distscale.y = affine_scale.y = FixedDiv(projectiony[viewssnum], tz);
 
 		xscale = affine_scale.x;
 		sortscale = affine_scale.y;
@@ -2177,6 +2246,12 @@ static void R_ProjectSprite(mobj_t *thing)
 			flip = 0;
 		}
 	}
+
+	if (affinesprite && ((papersprite && ang >= ANGLE_180) != vflip))
+	{
+		// Parity with the standard rollangle system
+		spriterotangle = InvAngle(spriterotangle);
+	}
 #endif
 
 	flip = !flip != !hflip;
@@ -2309,6 +2384,12 @@ static void R_ProjectSprite(mobj_t *thing)
 		fixed_t xscale2, yscale2, cosmul, sinmul, tx2, tz2;
 		INT32 range;
 
+		if (affinesprite)
+		{
+			offset = FixedDiv(offset, xscale);
+			offset2 = FixedDiv(offset2, xscale);
+		}
+
 		if (ang >= ANGLE_180)
 		{
 			offset *= -1;
@@ -2320,6 +2401,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		tr_x += FixedMul(offset, cosmul);
 		tr_y += FixedMul(offset, sinmul);
+
 		tz = FixedMul(tr_x, viewcos) + FixedMul(tr_y, viewsin);
 
 		tx = FixedMul(tr_x, viewsin) - FixedMul(tr_y, viewcos);
@@ -2336,6 +2418,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		tr_x += FixedMul(offset2, cosmul);
 		tr_y += FixedMul(offset2, sinmul);
+
 		tz2 = FixedMul(tr_x, viewcos) + FixedMul(tr_y, viewsin);
 
 		tx2 = FixedMul(tr_x, viewsin) - FixedMul(tr_y, viewcos);
@@ -2759,6 +2842,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	{
 		vis->affine.scaling.x = affine_scale.x;
 		vis->affine.scaling.y = affine_scale.y;
+		vis->affine.distscale.x = affine_distscale.x;
+		vis->affine.distscale.y = affine_distscale.y;
 		vis->affine.rollangle = spriterotangle;
 
 		vis->affine.transform.a = affine_transform.a;
@@ -4180,6 +4265,11 @@ boolean R_ThingVerticallyFlipped(mobj_t *thing)
 boolean R_ThingIsPaperSprite(mobj_t *thing)
 {
 	return (thing->frame & FF_PAPERSPRITE || thing->renderflags & RF_PAPERSPRITE);
+}
+
+boolean R_ThingIsAffineSprite(mobj_t *thing)
+{
+	return (thing->frame & FF_AFFINESPRITE || thing->renderflags2 & RF2_AFFINE);
 }
 
 boolean R_ThingIsFloorSprite(mobj_t *thing)
