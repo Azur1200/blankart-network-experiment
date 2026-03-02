@@ -5476,9 +5476,12 @@ static void K_drawInput(void)
 	{
 		patch_t *workingPic = kp_inputwheel;
 		patch_t *shadowPic = kp_inputwheel_shadow;
+
 		INT16 turning = encoremode ? -stplyr->cmd.turning : stplyr->cmd.turning;
+		SINT8 tilt =  encoremode ? -stplyr->cmd.tilt : stplyr->cmd.tilt;
 		angle_t rotate = FixedAngle(60 * FixedDiv(abs(turning), 1024) * intsign(turning));
 		INT32 rot = R_GetRollAngle(rotate);
+		UINT8 *colormap;
 		
 		if (rot)
 		{
@@ -5493,10 +5496,28 @@ static void K_drawInput(void)
 		}
 		else
 		{
-			UINT8 *colormap;
 			colormap = R_GetTranslationColormap(0, K_GetHudColor(), GTC_CACHE);
 			V_DrawFixedPatch(x-(17*FRACUNIT), y-(38*FRACUNIT)+(FRACUNIT*2), FRACUNIT/3, splitflags|V_SUBTRACT|V_10TRANS, shadowPic, colormap);
 			V_DrawFixedPatch(x-(17*FRACUNIT), y-(38*FRACUNIT), FRACUNIT/3, splitflags, workingPic, colormap);
+		}
+
+		// a la GT7
+		if (stplyr->cmd.flags & TICCMD_USINGTILT)
+		{
+			rot = FixedAngle(60 * ((tilt < 0) ? FixedDiv(-tilt, -(50*INT8_MIN/100)) : FixedDiv(tilt, (50*INT8_MAX/100))));
+			x += 17*FINESINE(rot>>ANGLETOFINESHIFT) * intsign(tilt);
+			y -= 17*FINECOSINE(rot>>ANGLETOFINESHIFT);
+			splitflags |= (((leveltime % 3 == 0) && (stplyr->cmd.flags & TICCMD_EXCESSTILT)) ? V_ADD|V_20TRANS : 0);
+
+			if (!K_GetHudColor())
+			{
+				V_DrawFixedPatch(x-(2*FRACUNIT)-(FRACUNIT/2), y-(23*FRACUNIT), FRACUNIT, splitflags, kp_minimapdot, NULL);
+			}
+			else
+			{
+				colormap = R_GetTranslationColormap(0, K_GetHudColor(), GTC_CACHE);
+				V_DrawFixedPatch(x-(2*FRACUNIT)-(FRACUNIT/2), y-(23*FRACUNIT), FRACUNIT, splitflags, kp_minimapdot, colormap);
+			}
 		}
 	}
 }

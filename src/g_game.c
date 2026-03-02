@@ -1472,19 +1472,19 @@ vector3_t localsmoothedaccel[MAXSPLITSCREENPLAYERS];
 vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
 
 // thresholds of trust for accel shakiness. less shakiness = more trust
-#define ShakinessMaxThreshold (4*FRACUNIT/10)
+#define ShakinessMaxThreshold (6*FRACUNIT/10)
 #define ShakinessMinThreshold (1*FRACUNIT/100)
 // when we trust the accel a lot (the controller is "still"), how quickly do we correct our gravity vector?
 #define CorrectionStillRate (FRACUNIT)
 // when we don't trust the accel (the controller is "shaky"), how quickly do we correct our gravity vector?
 #define CorrectionShakyRate (FRACUNIT/10)
 // if our old gravity vector is close enough to our new one, limit further corrections to this proportion of the rotation speed
-#define CorrectionGyroFactor (FRACUNIT/4)
+#define CorrectionGyroFactor (FRACUNIT/6)
 // thresholds for what's considered "close enough"
 #define CorrectionGyroMinThreshold (5*FRACUNIT/100)
 #define CorrectionGyroMaxThreshold (FRACUNIT/4)
 // no matter what, always apply a minimum of this much correction to our gravity vector
-#define CorrectionMinimumSpeed (FRACUNIT/6)
+#define CorrectionMinimumSpeed (FRACUNIT/100)
 
 void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 {
@@ -1686,6 +1686,9 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 	// update our gamepad gravity when applicable
 	// this should always execute so we have an accurate state
+	// interesting minutae:
+	// while every IMU event is sent to our event system only the last one before a tick is run seems to be the sample used
+	// seems OK for now, may be an issue later? could look into averaging out samples later if we need to improve feel
 	if (G_GetGamepadCanUseTilt(forplayer))
 	{
 		vector3_t accel = G_PlayerInputSensor(forplayer, ACCELEROMETER);
@@ -1883,17 +1886,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->buttons |= BT_HORN;
 	}
 
-	// shaking controller shakes
-	if (G_GetGamepadCanUseTilt(forplayer) && cv_tiltcontrol[forplayer].value > 0)
-	{
-		vector3_t shake = G_GetGamepadShake(forplayer);
-		CONS_Debug(DBG_IMU, "Shake: %4.2f\n", FixedToFloat(FV3_Length(&shake)));
-		if (FV3_Length(&shake) >= FRACUNIT)
-		{
-			cmd->buttons |= BT_SHAKE;
-		}
-	}
-
 	// Lua scriptable buttons
 	if (G_PlayerInputDown(forplayer, gc_custom1, false, DEADZONE_BUTTON))
 		cmd->buttons |= BT_CUSTOM1;
@@ -1946,11 +1938,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		}
 	}
 
-	if (G_GetGamepadCanUseTilt(forplayer) && (cv_tiltcontrol[forplayer].value == 1))
-	{
-		cmd->flags |= TICCMD_USINGTILT;
-	}
-
 	/* 	Lua: Allow this hook to overwrite ticcmd.
 		We check if we're actually in a level because for some reason this Hook would run in menus and on the titlescreen otherwise.
 		Be aware that within this hook, nothing but this player's cmd can be edited (otherwise we'd run in some pretty bad synching problems since this is clientsided, or something)
@@ -1995,6 +1982,27 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	else if (cmd->throwdir < -KART_FULLTURN)
 		cmd->throwdir = -KART_FULLTURN;
 
+	if (G_GetGamepadCanUseTilt(forplayer) && cv_tiltcontrol[forplayer].value)
+	{
+		fixed_t tilt = G_GetGamepadGravity(forplayer).x;
+		vector3_t shake = G_GetGamepadShake(forplayer);
+
+		if (cv_tiltcontrol[forplayer].value == 1)
+		{
+			cmd->tilt = INT8_MAX*tilt/FRACUNIT;
+
+			if (!joystickactive[forplayer])
+				cmd->flags |= TICCMD_USINGTILT;
+			if (abs(tilt) > MAXGAMEPADTILT)
+				cmd->flags |= TICCMD_EXCESSTILT;
+		}
+
+		CONS_Debug(DBG_IMU, "Shake: %4.2f\n", FixedToFloat(FV3_Length(&shake)));
+		cmd->shake = CLAMP((GAMEPADSHAKETHRESHOLD*FV3_Length(&shake))/FRACUNIT, 0, UINT8_MAX);
+
+		CONS_Debug(DBG_IMU, "CMD Tilt: %d, Shake: %d\n", cmd->tilt, cmd->shake);
+	}
+
 	G_DoCameraTurn(cmd, realtics, ssplayer, player);
 
 	// Reset away view if a command is given.
@@ -2027,6 +2035,8 @@ ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
 		dest[i].buttons = (UINT16)SHORT(src[i].buttons);
 		dest[i].latency = src[i].latency;
 		dest[i].flags = src[i].flags;
+		dest[i].tilt = src[i].tilt;
+		dest[i].shake = src[i].shake;
 	}
 	return dest;
 }

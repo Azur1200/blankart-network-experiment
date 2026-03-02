@@ -10036,7 +10036,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				mobj->lastlook = player->cmd.turning;
 			}
 
-			if (player->cmd.buttons & BT_SHAKE)
+			if (player->cmd.shake > GAMEPADSHAKETHRESHOLD)
 			{
 				if (mobj->extravalue3 == 0) mobj->extravalue3 = 1;
 				

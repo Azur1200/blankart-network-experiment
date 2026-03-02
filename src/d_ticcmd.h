@@ -34,9 +34,8 @@ typedef enum
 	BT_BACKWARD		  = 1<<6,	// Aim Item Backward
 	BT_LOOKBACK		  = 1<<7,	// Look Backward
 	BT_HORN           = 1<<8,   // Honk your (follower's) horn
-	BT_SHAKE          = 1<<9,   // Shake controller (if using IMU)
 
-	// free: 1<<10 to 1<<12
+	// free: 1<<9 to 1<<12
 
 	// Lua garbage
 	BT_CUSTOM1		= 1<<13,
@@ -59,8 +58,10 @@ typedef enum
 #define TICCMD_RECEIVED		(0x01) /* Actual tic recieved from client */
 #define TICCMD_TYPING		(0x02) /* chat window or console open */
 #define TICCMD_KEYSTROKE	(0x04) /* chat character input */
-#define TICCMD_USINGTILT	(0x08) /* player is using tilt control */
+#define TICCMD_USINGTILT	(0x08) /* player is using tilt control instead of the stick/buttons to turn */
+#define TICCMD_EXCESSTILT	(0x10) /* player is tilting gamepad farther than the max range */
 
+// 16 bytes long now!
 struct ticcmd_t
 {
 	SINT8 forwardmove; // -MAXPLMOVE to MAXPLMOVE (50)
@@ -72,6 +73,8 @@ struct ticcmd_t
 	UINT16 buttons;
 	UINT8 latency; // Netgames: how many tics ago was this ticcmd generated from this player's end?
 	UINT8 flags;
+	SINT8 tilt;
+	UINT8 shake;
 } ATTRPACK;
 
 #ifdef __cplusplus
