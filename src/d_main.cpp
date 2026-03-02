@@ -221,12 +221,15 @@ void D_ProcessEvents(void)
 	for (size_t i = 0; i < 4; i++)
 		gamekeydown[0][KEY_MOUSEMOVE + i] = 0;
 	
-	// for (size_t dev = 0; dev < MAXDEVICES; dev++)
-	// {
-	// 	gamekeydown[dev][KEY_GYROSCOPE1+0] = 0;
-	// 	gamekeydown[dev][KEY_GYROSCOPE1+1] = 0;
-	// 	gamekeydown[dev][KEY_GYROSCOPE1+2] = 0;
-	// }
+	for (size_t dev = 0; dev < MAXDEVICES; dev++)
+	{
+		gamekeydown[dev][KEY_ACCELEROMETER1+0] = 0;
+		gamekeydown[dev][KEY_ACCELEROMETER1+1] = 0;
+		gamekeydown[dev][KEY_ACCELEROMETER1+2] = 0;
+		gamekeydown[dev][KEY_GYROSCOPE1+0] = 0;
+		gamekeydown[dev][KEY_GYROSCOPE1+1] = 0;
+		gamekeydown[dev][KEY_GYROSCOPE1+2] = 0;
+	}
 
 	for (; eventtail != eventhead; eventtail = (eventtail+1) & (MAXEVENTS-1))
 	{

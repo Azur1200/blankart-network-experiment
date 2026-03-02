@@ -343,15 +343,17 @@ void G_MapEventsToControls(event_t *ev)
 			break;
 		
 		case ev_accelerometer:
-			gamekeydown[device][KEY_ACCELEROMETER1+0] = ev->data1;
-			gamekeydown[device][KEY_ACCELEROMETER1+1] = ev->data2;
-			gamekeydown[device][KEY_ACCELEROMETER1+2] = ev->data3;
+			// average out accel events recieved for this tick (favouring the newer data)
+			gamekeydown[device][KEY_ACCELEROMETER1+0] = (gamekeydown[device][KEY_ACCELEROMETER1+0] + (3*ev->data1))/4;
+			gamekeydown[device][KEY_ACCELEROMETER1+1] = (gamekeydown[device][KEY_ACCELEROMETER1+1] + (3*ev->data2))/4;
+			gamekeydown[device][KEY_ACCELEROMETER1+2] = (gamekeydown[device][KEY_ACCELEROMETER1+2] + (3*ev->data3))/4;
 			break;
 			
 		case ev_gyroscope:
-			gamekeydown[device][KEY_GYROSCOPE1+0] = ev->data1;
-			gamekeydown[device][KEY_GYROSCOPE1+1] = ev->data2;
-			gamekeydown[device][KEY_GYROSCOPE1+2] = ev->data3;
+			// average out gyro events recieved for this tick
+			gamekeydown[device][KEY_GYROSCOPE1+0] = (gamekeydown[device][KEY_GYROSCOPE1+0] + ev->data1)/2;
+			gamekeydown[device][KEY_GYROSCOPE1+1] = (gamekeydown[device][KEY_GYROSCOPE1+1] + ev->data2)/2;
+			gamekeydown[device][KEY_GYROSCOPE1+2] = (gamekeydown[device][KEY_GYROSCOPE1+2] + ev->data3)/2;
 			break;
 
 		default:

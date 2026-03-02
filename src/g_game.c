@@ -1472,19 +1472,19 @@ vector3_t localsmoothedaccel[MAXSPLITSCREENPLAYERS];
 vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
 
 // thresholds of trust for accel shakiness. less shakiness = more trust
-#define ShakinessMaxThreshold (6*FRACUNIT/10)
-#define ShakinessMinThreshold (1*FRACUNIT/100)
+#define ShakinessMaxThreshold (80*FRACUNIT/100)
+#define ShakinessMinThreshold (32*FRACUNIT/100)
 // when we trust the accel a lot (the controller is "still"), how quickly do we correct our gravity vector?
 #define CorrectionStillRate (FRACUNIT)
 // when we don't trust the accel (the controller is "shaky"), how quickly do we correct our gravity vector?
-#define CorrectionShakyRate (FRACUNIT/10)
+#define CorrectionShakyRate (FRACUNIT/8)
 // if our old gravity vector is close enough to our new one, limit further corrections to this proportion of the rotation speed
-#define CorrectionGyroFactor (FRACUNIT/6)
+#define CorrectionGyroFactor (FRACUNIT/5)
 // thresholds for what's considered "close enough"
-#define CorrectionGyroMinThreshold (5*FRACUNIT/100)
+#define CorrectionGyroMinThreshold (2*FRACUNIT/100)
 #define CorrectionGyroMaxThreshold (FRACUNIT/4)
 // no matter what, always apply a minimum of this much correction to our gravity vector
-#define CorrectionMinimumSpeed (FRACUNIT/100)
+#define CorrectionMinimumSpeed (9*FRACUNIT/100)
 
 void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 {
@@ -1612,8 +1612,6 @@ boolean G_GetGamepadCanUseTilt(INT32 p)
 
 	return (I_ControllerSupportsSensorAccelerometer(p) && I_ControllerSupportsSensorGyro(p));
 }
-
-#undef Interpolator
 #undef ShakinessMaxThreshold
 #undef ShakinessMinThreshold
 #undef CorrectionStillRate
@@ -1686,9 +1684,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 	// update our gamepad gravity when applicable
 	// this should always execute so we have an accurate state
-	// interesting minutae:
-	// while every IMU event is sent to our event system only the last one before a tick is run seems to be the sample used
-	// seems OK for now, may be an issue later? could look into averaging out samples later if we need to improve feel
 	if (G_GetGamepadCanUseTilt(forplayer))
 	{
 		vector3_t accel = G_PlayerInputSensor(forplayer, ACCELEROMETER);
