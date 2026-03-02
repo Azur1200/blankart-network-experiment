@@ -4992,7 +4992,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	spr_topoffset = spritecachedinfo[lumpoff].topoffset;
 
 #ifdef ROTSPRITE
-	spriterotangle = R_SpriteRotationAngle(thing, NULL, &interp);
+	spriterotangle = R_SpriteRotationAngle(thing, NULL, &interp, false);
 
 	if (spriterotangle != 0
 	&& !(splat && !(thing->renderflags & RF_NOSPLATROLLANGLE)))
@@ -5027,6 +5027,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		R_RotateSpriteOffsetsByPitchRoll(interptarg,
 										 vflip,
 										 hflip,
+										 false,
 										 &interp,
 										 &visoffs,
 										 &rotoffset);

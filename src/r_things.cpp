@@ -1178,14 +1178,27 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		dc.affine.d = vis->affine.transform.d;
 		dc.affine.ox = vis->affine.transform.ox;
 		dc.affine.oy = vis->affine.transform.oy;
+#ifdef AFFINEROT_TESTER
+		dc.affineoffset.x = vis->affine.offset.x + cv_affinedebugx.value;
+#else
 		dc.affineoffset.x = vis->affine.offset.x;
+#endif
 		dc.affineoffset.y = vis->affine.offset.y;
 
 		R_CopyAffineBounds(&vis->affine.bounds, &dc.affinebound);
 
+		fixed_t fixed_ylen = (FRACUNIT*dc.affinebound.ylen);
+
+		if (vis->floorclip)
+		{
+			sprbotscreen = sprtopscreen + fixed_ylen;
+		}
+
 		fixed_t xstep = intsign(vis->xiscale) * FRACUNIT;
 
-		dc.affineystep = FRACUNIT;
+		dc.affineystep = (vis->cut & SC_VFLIP) ? -FRACUNIT : FRACUNIT;
+
+		const fixed_t beforeloopoffset = dc.affineoffset.y;
 
 		if (vis->scalestep)
 		{
@@ -1193,6 +1206,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 			float f_yscale_const = FIXED_TO_FLOAT(spryscale);
 			float f_yscale = FIXED_TO_FLOAT(spryscale);
 			float f_scalestep = FIXED_TO_FLOAT(FixedMul(vis->scalestep, vis->spriteyscale));
+			float f_pixel = (vis->cut & SC_VFLIP) ? -1.0f : 1.0f;
 
 			// Papersprite drawing loop
 			for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, f_yscale += f_scalestep)
@@ -1204,7 +1218,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 					continue;
 				}
 
-				dc.affineystep = FLOAT_TO_FIXED(1.0f / _ysc);
+				dc.affineystep = FLOAT_TO_FIXED(f_pixel / _ysc);
 
 				angle_t angle = ((vis->centerangle + xtoviewangle[viewssnum][dc.x]) >> ANGLETOFINESHIFT) & 0xFFF;
 				dc.frac = FixedMul((vis->paperoffset - FixedMul(FINETANGENT(angle), vis->paperdistance)),
@@ -1216,8 +1230,9 @@ static void R_DrawVisSprite(vissprite_t *vis)
 				dc.yl = (sprtopscreen+FRACUNIT-1)>>FRACBITS;
 				dc.yh = ((sprtopscreen + FLOAT_TO_FIXED(f_ylen * _ysc))-1)>>FRACBITS;
 
-				INT32 topscreen = sprtopscreen + spryscale*0;
-				INT32  bottomscreen = topscreen + FLOAT_TO_FIXED(f_ylen * _ysc);
+				INT32 topscreen = sprtopscreen;
+				INT32 bottomscreen = sprbotscreen == INT32_MAX ? topscreen + FLOAT_TO_FIXED(f_ylen * _ysc)
+		                                      : sprbotscreen + FLOAT_TO_FIXED(f_ylen * _ysc);
 
 				dc.yl = (topscreen+FRACUNIT-1)>>FRACBITS;
 				dc.yh = (bottomscreen-1)>>FRACBITS;
@@ -1233,7 +1248,16 @@ static void R_DrawVisSprite(vissprite_t *vis)
 				if (dc.yh >= mfloorclip[dc.x])
 					dc.yh = mfloorclip[dc.x]-1;
 				if (dc.yl <= mceilingclip[dc.x])
-					dc.yl = mceilingclip[dc.x]+1;
+				{
+					// Prevent nasty shearing by getting the difference between yl and the ceiling clip.
+					const INT32 clipdiff = (mceilingclip[dc.x]+1) - dc.yl;
+					dc.yl += clipdiff;
+					dc.affineoffset.y = beforeloopoffset - (clipdiff * dc.affineystep);
+				}
+				else
+				{
+					dc.affineoffset.y = beforeloopoffset;
+				}
 			
 				if (dc.yl < 0)
 					dc.yl = 0;
@@ -1253,18 +1277,9 @@ static void R_DrawVisSprite(vissprite_t *vis)
 			// Non-paper drawing loop
 			for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, frac += xstep, sprtopscreen += vis->shear.tan)
 			{
-				//texturecolumn = std::clamp<fixed_t>(frac >> FRACBITS, 0, patch->width - 1);
-
-				//column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
-
-				//if (bmpatch)
-					//bmcol = (column_t *)((UINT8 *)bmpatch->columns + (bmpatch->columnofs[texturecolumn]));
-
-				dc.yl = (sprtopscreen+FRACUNIT-1)>>FRACBITS;
-				dc.yh = ((sprtopscreen + FRACUNIT*dc.affinebound.ylen)-1)>>FRACBITS;
-
 				INT32 topscreen = sprtopscreen + spryscale*0;
-				INT32  bottomscreen = topscreen + FRACUNIT*dc.affinebound.ylen;
+				INT32 bottomscreen = sprbotscreen == INT32_MAX ? topscreen + fixed_ylen
+		                                      : sprbotscreen + fixed_ylen;
 
 				dc.yl = (topscreen+FRACUNIT-1)>>FRACBITS;
 				dc.yh = (bottomscreen-1)>>FRACBITS;
@@ -1280,7 +1295,16 @@ static void R_DrawVisSprite(vissprite_t *vis)
 				if (dc.yh >= mfloorclip[dc.x])
 					dc.yh = mfloorclip[dc.x]-1;
 				if (dc.yl <= mceilingclip[dc.x])
-					dc.yl = mceilingclip[dc.x]+1;
+				{
+					// Prevent nasty shearing by getting the difference between yl and the ceiling clip.
+					const INT32 clipdiff = (mceilingclip[dc.x]+1) - dc.yl;
+					dc.yl += clipdiff;
+					dc.affineoffset.y = beforeloopoffset - (clipdiff * FRACUNIT);
+				}
+				else
+				{
+					dc.affineoffset.y = beforeloopoffset;
+				}
 			
 				if (dc.yl < 0)
 					dc.yl = 0;
@@ -1290,11 +1314,14 @@ static void R_DrawVisSprite(vissprite_t *vis)
 				if (dc.yh >= baseclip && baseclip != -1)
 					dc.yh = baseclip;
 
-				dc.frac = frac;
+				if (dc.yl <= dc.yh && dc.yh > 0 && fixed_ylen != 0)
+				{
+					dc.frac = frac;
 
-				drawcolumndata_t dc_copy = dc;
-				coldrawfunc_t* colfunccopy = colfunc;
-				colfunccopy(&dc);
+					drawcolumndata_t dc_copy = dc;
+					coldrawfunc_t* colfunccopy = colfunc;
+					colfunccopy(&dc);
+				}
 			}
 		}
 
@@ -1504,12 +1531,12 @@ static void R_SplitSprite(vissprite_t *sprite)
 
 		newsprite->gzt = sprite->gz;
 
-		if (sprite->cut & SC_AFFINE)
+		/*if (sprite->cut & SC_AFFINE)
 		{
 			// Affines: Fix splitting alignment errors by applying a pixel offset
 			fixed_t szt_diff = (newsprite->sz - cutfrac + 9) << FRACBITS;
 			newsprite->affine.offset.y = std::min(0, -((sprite->affine.bounds.ylen * FRACUNIT) - szt_diff));
-		}
+		}*/
 
 
 		sprite->sz = cutfrac;
@@ -1797,8 +1824,6 @@ static void R_ProjectDropShadow(mobj_t *thing, vissprite_t *vis, fixed_t scale, 
 	shadow->gzt = (isflipped ? shadow->pzt : shadow->pz) + patch->height * shadowyscale / 2;
 	shadow->gz = shadow->gzt - patch->height * shadowyscale;
 	shadow->texturemid = FixedMul(interp.scale, FixedDiv(shadow->gzt - viewz, shadowyscale));
-	if (thing->skin && ((skin_t *)thing->skin)->highresscale != FRACUNIT)
-		shadow->texturemid = FixedMul(shadow->texturemid, ((skin_t *)thing->skin)->highresscale);
 	shadow->scalestep = 0;
 	shadow->shear.tan = shadowskew; // repurposed variable
 
@@ -2213,7 +2238,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	patch = static_cast<patch_t*>(W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE));
 
 #ifdef ROTSPRITE
-	spriterotangle = R_SpriteRotationAngle(thing, NULL, &interp);
+	spriterotangle = R_SpriteRotationAngle(thing, NULL, &interp, (affinesprite && vflip));
 
 	if (spriterotangle
 	&& !(splat && !(thing->renderflags & RF_NOSPLATROLLANGLE))
@@ -2248,7 +2273,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (affinesprite && ((papersprite && ang >= ANGLE_180) != vflip))
 	{
 		// Parity with the standard rollangle system
-		spriterotangle = InvAngle(spriterotangle);
+		//spriterotangle = InvAngle(spriterotangle);
 	}
 #endif
 
@@ -2279,6 +2304,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	rotoffset.x = 0;
 	rotoffset.y = 0;
 
+	const fixed_t visoffs_xsc = (affinesprite) ? xscale : FixedDiv(FRACUNIT, mapobjectscale);
+
 	const fixed_t visoffymul = (vflip ? -FRACUNIT : FRACUNIT);
 
 	if (R_ThingIsUsingBakedOffsets(interptarg))
@@ -2286,6 +2313,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		R_RotateSpriteOffsetsByPitchRoll(interptarg,
 										 vflip,
 										 hflip,
+										 affinesprite,
 										 &interp,
 										 &visoffs,
 										 &rotoffset);
@@ -2312,13 +2340,23 @@ static void R_ProjectSprite(mobj_t *thing)
 		angle = spriterotangle * flipsign;
 #endif
 
+		const fixed_t rolloffs_x = FixedDiv(interptarg->rollingxoffset, highresscale) * (((thing->renderflags & RF_FLIPOFFSETS) && flip) ? -1 : 1);
+		const fixed_t rolloffs_y = FixedDiv(interptarg->rollingyoffset, highresscale);
+		fixed_t y_piv = ((patch->pivot.y + patch->topoffset) * FRACUNIT);
+
+		if (vflip)
+		{
+			// Flip the upper offset, and use *that* as the pivot
+			y_piv = (patch->height * FRACUNIT) - y_piv;
+		}
+
 		fixed_t sa = FSIN(angle), ca = FCOS(angle);
 		affine_transform.a = FixedDiv(ca, affine_scale.x);
 		affine_transform.b = FixedDiv(-sa, affine_scale.x);
 		affine_transform.c = FixedDiv(sa, affine_scale.y);
 		affine_transform.d = FixedDiv(ca, affine_scale.y);
-		affine_transform.ox = (patch->pivot.x + patch->leftoffset) * FRACUNIT;
-		affine_transform.oy = (patch->pivot.y + patch->topoffset) * FRACUNIT;
+		affine_transform.ox = ((patch->pivot.x + patch->leftoffset) * FRACUNIT) - rolloffs_x;
+		affine_transform.oy = y_piv - rolloffs_y;
 
 		V_GetAffineBounds(&affine_transform, patch, FRACUNIT, &affine_bounds);
 
@@ -2332,11 +2370,13 @@ static void R_ProjectSprite(mobj_t *thing)
 		spriteyscale = FRACUNIT;
 	}
 
+	fixed_t thingyoffset = (FixedDiv(interp.spriteyoffset, highresscale) + FixedDiv((visoffs.y * visoffymul), mapobjectscale) + ((affinesprite) ? 0 : (rotoffset.y * visoffymul)));
+
 	if (thing->renderflags & RF_ABSOLUTEOFFSETS)
 	{
 		spr_offset = FixedDiv(interp.spritexoffset, highresscale);
 #ifdef ROTSPRITE
-		spr_topoffset = (FixedDiv(interp.spriteyoffset, highresscale) + FixedDiv((visoffs.y * visoffymul), mapobjectscale) + (rotoffset.y * visoffymul));
+		spr_topoffset = thingyoffset;
 #else
 		spr_topoffset = FixedDiv(interp.spriteyoffset, highresscale);
 #endif
@@ -2350,7 +2390,12 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		spr_offset += FixedDiv(interp.spritexoffset, highresscale) * flipoffset;
 #ifdef ROTSPRITE
-		spr_topoffset += (FixedDiv(interp.spriteyoffset, highresscale) + FixedDiv((visoffs.y * visoffymul), mapobjectscale) + (rotoffset.y * visoffymul)) * flipoffset;
+		thingyoffset *= flipoffset;
+
+		if (vflip && affinesprite)
+			thingyoffset *= -1;
+
+		spr_topoffset += thingyoffset;
 #else
 		spr_topoffset += FixedDiv(interp.spriteyoffset, highresscale) * flipoffset;
 #endif
@@ -2364,10 +2409,10 @@ static void R_ProjectSprite(mobj_t *thing)
 #ifdef ROTSPRITE
 	if (visoffs.x)
 	{
-		offset -= FixedDiv((visoffs.x * FRACUNIT), mapobjectscale);
+		offset -= (visoffs.x * visoffs_xsc);
 	}
 
-	if (rotoffset.x)
+	if ((rotoffset.x) && (!affinesprite))
 	{
 		offset -= rotoffset.x;
 	}
@@ -2667,7 +2712,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			fixed_t rawyscale = FixedDiv(affine_scale.y, FixedMul(this_scale, sortscale));
 
 			const float affineyscale = FIXED_TO_FLOAT(affine_scale.y);
-			const fixed_t real_topoffset = FLOAT_TO_FIXED(static_cast<float>(affine_bounds.yup) / affineyscale);
+			const fixed_t real_topoffset = FLOAT_TO_FIXED(static_cast<float>(affine_bounds.yup) / affineyscale) + thingyoffset;
 			const fixed_t real_height = FLOAT_TO_FIXED(static_cast<float>(affine_bounds.ylen) / affineyscale);
 
 			useoffset = FixedMul(real_topoffset, FixedMul(rawyscale, this_scale));
@@ -2679,7 +2724,9 @@ static void R_ProjectSprite(mobj_t *thing)
 			useheight = FixedMul(spr_height, FixedMul(spriteyscale, this_scale));
 		}
 
-		if (vflip)
+		const boolean vflipaffine = (vflip && (affinesprite));
+
+		if (vflip && (!affinesprite))
 		{
 			// When vertical flipped, draw sprites from the top down, at least as far as offsets are concerned.
 			// sprite height - sprite topoffset is the proper inverse of the vertical offset, of course.
@@ -2689,7 +2736,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		}
 		else
 		{
-			gzt = interp.z + useoffset;
+			gzt = interp.z + useoffset + ((vflipaffine) ? interp.height : 0);
 			gz = gzt - useheight;
 		}
 	}
