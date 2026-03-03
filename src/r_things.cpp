@@ -2339,10 +2339,23 @@ static void R_ProjectSprite(mobj_t *thing)
 		}
 
 		fixed_t sa = FSIN(angle), ca = FCOS(angle);
-		affine_transform.a = FixedDiv(ca, affine_scale.x);
-		affine_transform.b = FixedDiv(-sa, affine_scale.x);
-		affine_transform.c = FixedDiv(sa, affine_scale.y);
-		affine_transform.d = FixedDiv(ca, affine_scale.y);
+
+		if (R_AffinePreScale(interptarg))
+		{
+			affine_transform.a = FixedDiv(ca, affine_scale.x);
+			affine_transform.b = FixedDiv(-sa, affine_scale.x);
+			affine_transform.c = FixedDiv(sa, affine_scale.y);
+			affine_transform.d = FixedDiv(ca, affine_scale.y);
+		}
+		else
+		{
+			// Simulate shitty SRB2 "scale after rotate" nonsense
+			affine_transform.a = FixedDiv(ca, affine_scale.x);
+			affine_transform.b = FixedDiv(-sa, affine_scale.y);
+			affine_transform.c = FixedDiv(sa, affine_scale.x);
+			affine_transform.d = FixedDiv(ca, affine_scale.y);
+		}
+
 		affine_transform.ox = ((patch->pivot.x + patch->leftoffset) * FRACUNIT) - rolloffs_x;
 		affine_transform.oy = y_piv - rolloffs_y;
 
@@ -4338,6 +4351,11 @@ boolean R_ThingIsFullDark(mobj_t *thing)
 	if (thing->renderflags & RF_BRIGHTMASK)
 		return ((thing->renderflags & RF_BRIGHTMASK) == RF_FULLDARK);
 	return ((thing->frame & FF_BRIGHTMASK) == FF_FULLDARK);
+}
+
+boolean R_AffinePreScale(mobj_t *thing)
+{
+	return (cv_affineprescale.value || thing->renderflags2 & RF2_AFFINEPRESCALE);
 }
 
 //

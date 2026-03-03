@@ -96,6 +96,7 @@ boolean R_ThingIsAffineSprite (mobj_t *thing);
 boolean R_ThingIsFullBright (mobj_t *thing);
 boolean R_ThingIsSemiBright (mobj_t *thing);
 boolean R_ThingIsFullDark (mobj_t *thing);
+boolean R_AffinePreScale (mobj_t *thing);
 
 boolean R_ThingIsFlashing(mobj_t *thing);
 

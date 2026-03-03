@@ -5156,10 +5156,23 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		}
 
 		fixed_t sa = FSIN(angle), ca = FCOS(angle);
-		affine_transform.a = FixedDiv(ca, affine_scale.x);
-		affine_transform.b = FixedDiv(-sa, affine_scale.x);
-		affine_transform.c = FixedDiv(sa, affine_scale.y);
-		affine_transform.d = FixedDiv(ca, affine_scale.y);
+
+		if (R_AffinePreScale(interptarg))
+		{
+			affine_transform.a = FixedDiv(ca, affine_scale.x);
+			affine_transform.b = FixedDiv(-sa, affine_scale.x);
+			affine_transform.c = FixedDiv(sa, affine_scale.y);
+			affine_transform.d = FixedDiv(ca, affine_scale.y);
+		}
+		else
+		{
+			// Simulate shitty SRB2 "scale after rotate" nonsense
+			affine_transform.a = FixedDiv(ca, affine_scale.x);
+			affine_transform.b = FixedDiv(-sa, affine_scale.y);
+			affine_transform.c = FixedDiv(sa, affine_scale.x);
+			affine_transform.d = FixedDiv(ca, affine_scale.y);
+		}
+
 		affine_transform.ox = spr_offset - rolloffs_x;
 		affine_transform.oy = y_piv - rolloffs_y;
 

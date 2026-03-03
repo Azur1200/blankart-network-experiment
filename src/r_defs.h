@@ -1040,6 +1040,7 @@ typedef enum
 {
 	RF2_NOAFFINE          = 0x00000001,  // Disables affine drawing for this sprite
 	RF2_AFFINEPAPER       = 0x00000002,  // Enables "affine papersprites"
+	RF2_AFFINEPRESCALE    = 0x00000004,  // Makes affines scale before rotating, instead of rotating before scaling
 } renderflags2_t;
 
 typedef enum
