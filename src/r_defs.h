@@ -1001,6 +1001,9 @@ typedef enum
 
 	RF_ABSOLUTELIGHTLEVEL = 0x00010000, //  mobj_t.lightlevel is absolute instead of relative
 	RF_HIDEINSKYBOX       = 0x00020000, //  do not render in skybox
+#ifdef HWRENDER
+	RF_NOMODEL            = 0x00040000, // do not draw a model for this mobj in opengl, use its sprite instead
+#endif
 
 	RF_HIDESHIFT        = (20),
 	RF_DONTDRAW         = 0x0F << RF_HIDESHIFT,   // --Don't generate a vissprite

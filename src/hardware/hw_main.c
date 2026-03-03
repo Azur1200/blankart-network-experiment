@@ -4659,7 +4659,7 @@ static void HWR_DrawSprites(void)
 
 			if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 			{
-				if (LIKELY(!cv_glmodels.value || md2_playermodels[(skin_t*)spr->mobj->skin-skins].notfound || md2_playermodels[(skin_t*)spr->mobj->skin-skins].scale < 0.0f))
+				if (LIKELY(!cv_glmodels.value || md2_playermodels[(skin_t*)spr->mobj->skin-skins].notfound || md2_playermodels[(skin_t*)spr->mobj->skin-skins].scale < 0.0f || (spr->renderflags & RF_NOMODEL)))
 					HWR_DrawSprite(spr);
 				else
 				{
@@ -4669,7 +4669,7 @@ static void HWR_DrawSprites(void)
 			}
 			else
 			{
-				if (LIKELY(!cv_glmodels.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f))
+				if (LIKELY(!cv_glmodels.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f || (spr->renderflags & RF_NOMODEL)))
 					HWR_DrawSprite(spr);
 				else
 				{
