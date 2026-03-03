@@ -929,6 +929,7 @@ const char *blancredits[] = {
 	"\"Superstarxalien\"", // Horncode
 	"\"Freaky Mutant Man\"", // Color profiles menu
 	"\"blondedradio\"", // Screen-tracking item roulette, lifted near-directly from RadioRacers
+	"\"Antoine De Grandpré\"", // Zero Deadzone fix
 	"",
 	"\1Item Design",
 	"\"NepDisk\"",
