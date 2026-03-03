@@ -1076,7 +1076,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	FUINT lightnum = 255;
 	extracolormap_t *colormap = gl_frontsector->extra_colormap;
 
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	Surf.PolyColor.s.alpha = 255;
 
 	tripwire = P_IsLineTripWire(gl_linedef);
@@ -2427,7 +2427,7 @@ static void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, 
 									FBITFIELD blendmode, UINT8 lightlevel, levelflat_t *levelflat, sector_t *FOFsector,
 									UINT8 alpha, extracolormap_t *planecolormap)
 {
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	FOutVector *v3d;
 	INT32 shader = SHADER_NONE;
 
@@ -2576,9 +2576,8 @@ static void HWR_AddPolyObjectPlanes(void)
 			light = R_GetPlaneLight(gl_frontsector, polyobjsector->floorheight, true);
 			if (po_ptrs[i]->translucency > 0)
 			{
-				FSurfaceInfo Surf;
+				FSurfaceInfo Surf = {};
 				FBITFIELD blendmode;
-				memset(&Surf, 0x00, sizeof(Surf));
 				blendmode = HWR_TranstableToAlpha(po_ptrs[i]->translucency, &Surf);
 				HWR_AddTransparentPolyobjectFloor(&levelflats[polyobjsector->floorpic], po_ptrs[i], false, polyobjsector->floorheight,
 													(light == -1 ? gl_frontsector->lightlevel : *gl_frontsector->lightlist[light].lightlevel), Surf.PolyColor.s.alpha, polyobjsector, blendmode, (light == -1 ? gl_frontsector->extra_colormap : *gl_frontsector->lightlist[light].extra_colormap));
@@ -2599,9 +2598,8 @@ static void HWR_AddPolyObjectPlanes(void)
 			light = R_GetPlaneLight(gl_frontsector, polyobjsector->ceilingheight, true);
 			if (po_ptrs[i]->translucency > 0)
 			{
-				FSurfaceInfo Surf;
+				FSurfaceInfo Surf = {};
 				FBITFIELD blendmode;
-				memset(&Surf, 0x00, sizeof(Surf));
 				blendmode = HWR_TranstableToAlpha(po_ptrs[i]->translucency, &Surf);
 				HWR_AddTransparentPolyobjectFloor(&levelflats[polyobjsector->ceilingpic], po_ptrs[i], true, polyobjsector->ceilingheight,
 				                                  (light == -1 ? gl_frontsector->lightlevel : *gl_frontsector->lightlist[light].lightlevel), Surf.PolyColor.s.alpha, polyobjsector, blendmode, (light == -1 ? gl_frontsector->extra_colormap : *gl_frontsector->lightlist[light].extra_colormap));
@@ -3126,7 +3124,7 @@ static void HWR_LinkDrawHackAdd(FOutVector *verts, gl_vissprite_t *spr)
 static void HWR_LinkDrawHackFinish(void)
 {
 	UINT32 i;
-	FSurfaceInfo surf;
+	FSurfaceInfo surf = {};
 	surf.PolyColor.rgba = 0xFFFFFFFF;
 	surf.TintColor.rgba = 0xFFFFFFFF;
 	surf.FadeColor.rgba = 0xFFFFFFFF;
@@ -3395,7 +3393,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 	FOutVector baseWallVerts[4]; // This is what the verts should end up as
 	patch_t *gpatch;
 	GLPatch_t *hwrpatch;
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	extracolormap_t *colormap = NULL;
 	INT32 lightlevel;
 	boolean lightset = true;
@@ -3747,7 +3745,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	FOutVector wallVerts[4];
 	patch_t *gpatch;
 	GLPatch_t *hwrpatch;
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	const boolean splat = R_ThingIsFloorSprite(spr->mobj);
 
 	if (!spr->mobj || !spr->mobj->subsector)
@@ -4080,7 +4078,7 @@ static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	FOutVector wallVerts[4];
 	patch_t *gpatch;
 	GLPatch_t *hwrpatch;
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 
 	if (!spr->mobj || !spr->mobj->subsector)
 		return;
@@ -6634,7 +6632,7 @@ void HWR_DoPostProcessor(player_t *player)
 	if (player->flashcount && !HWR_ShouldUsePaletteRendering())
 	{
 		FOutVector      v[4];
-		FSurfaceInfo Surf;
+		FSurfaceInfo Surf = {};
 
 		v[0].x = v[2].y = v[3].x = v[3].y = -4.0f;
 		v[0].y = v[1].x = v[1].y = v[2].x = 4.0f;
