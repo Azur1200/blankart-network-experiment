@@ -1263,9 +1263,6 @@ mobj_t *P_SpawnGhostMobjEX(mobj_t *mobj, boolean legacy)
 
 	if (mobj->player)
 	{
-		// Players use affine rendering, so match that
-		ghost->renderflags2 |= RF2_AFFINE;
-
 		if(mobj->player->followmobj)
 		{
 			mobj_t *ghost2 = P_SpawnGhostMobj(mobj->player->followmobj);

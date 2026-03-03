@@ -1038,7 +1038,7 @@ typedef enum
 
 typedef enum
 {
-	RF2_AFFINE          = 0x00000001,  // Affine sprite; draws scaling and rotation using a Mode 7 matrix
+	RF2_NOAFFINE          = 0x00000001,  // Disables affine drawing for this sprite
 } renderflags2_t;
 
 typedef enum

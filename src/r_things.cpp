@@ -4301,7 +4301,7 @@ boolean R_ThingIsPaperSprite(mobj_t *thing)
 
 boolean R_ThingIsAffineSprite(mobj_t *thing)
 {
-	return (thing->frame & FF_AFFINESPRITE || thing->renderflags2 & RF2_AFFINE);
+	return (!(thing->frame & FF_NOAFFINE || thing->renderflags2 & RF2_NOAFFINE));
 }
 
 boolean R_ThingIsFloorSprite(mobj_t *thing)
