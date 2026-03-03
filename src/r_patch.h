@@ -58,6 +58,7 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 	interpmobjstate_t *interp, 
 	vector2_t* out,
 	vector2_t* rolloffs);
+angle_t R_ConvToRollAngle(angle_t ang);
 #endif
 
 #ifdef __cplusplus

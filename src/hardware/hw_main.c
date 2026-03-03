@@ -5143,7 +5143,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 		INT32 flipsign = ((flip && papersprite) ? -1 : 1); // Flip OGL affine papersprites for Software parity
 
-		angle = spriterotangle * flipsign;
+		angle = R_ConvToRollAngle(spriterotangle) * flipsign;
 
 		const fixed_t rolloffs_x = FixedDiv(interptarg->rollingxoffset, highresscale) * (((thing->renderflags & RF_FLIPOFFSETS) && flip) ? -1 : 1);
 		const fixed_t rolloffs_y = FixedDiv(interptarg->rollingyoffset, highresscale);

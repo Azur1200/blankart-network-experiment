@@ -2326,7 +2326,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		INT32 flipsign = ((flip) ? -1 : 1);
 
-		angle = spriterotangle * flipsign;
+		angle = R_ConvToRollAngle(spriterotangle) * flipsign;
 
 		const fixed_t rolloffs_x = FixedDiv(interptarg->rollingxoffset, highresscale) * (((thing->renderflags & RF_FLIPOFFSETS) && flip) ? -1 : 1);
 		const fixed_t rolloffs_y = FixedDiv(interptarg->rollingyoffset, highresscale);

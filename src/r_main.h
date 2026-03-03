@@ -161,6 +161,8 @@ extern consvar_t cv_sloperoll;
 extern consvar_t cv_sliptidetilt;
 extern consvar_t cv_nulldriftefx, cv_nulldrifttilt;
 
+extern consvar_t cv_fakerollangle;
+
 // debugging
 
 typedef enum {
