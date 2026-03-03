@@ -1039,6 +1039,7 @@ typedef enum
 typedef enum
 {
 	RF2_NOAFFINE          = 0x00000001,  // Disables affine drawing for this sprite
+	RF2_AFFINEPAPER       = 0x00000002,  // Enables "affine papersprites"
 } renderflags2_t;
 
 typedef enum

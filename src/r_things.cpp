@@ -4296,12 +4296,22 @@ boolean R_ThingVerticallyFlipped(mobj_t *thing)
 
 boolean R_ThingIsPaperSprite(mobj_t *thing)
 {
-	return (thing->frame & FF_PAPERSPRITE || thing->renderflags & RF_PAPERSPRITE);
+	boolean affinepaper = (thing->frame & FF_AFFINEPAPER || thing->renderflags2 & RF2_AFFINEPAPER);
+
+	return (thing->frame & FF_PAPERSPRITE || thing->renderflags & RF_PAPERSPRITE || affinepaper);
 }
 
 boolean R_ThingIsAffineSprite(mobj_t *thing)
 {
-	return (!(thing->frame & FF_NOAFFINE || thing->renderflags2 & RF2_NOAFFINE));
+	boolean affinepaper = (thing->frame & FF_AFFINEPAPER || thing->renderflags2 & RF2_AFFINEPAPER);
+
+	// Affine papersprites are messy in software rendering; let modders enable them at their own discretion.
+	// Yes, I'm lazy; I've been at this for TWO WEEKS.
+	boolean papersprite = (R_ThingIsPaperSprite(thing) && !affinepaper);
+
+	boolean notaffine = ((thing->frame & FF_NOAFFINE || thing->renderflags2 & RF2_NOAFFINE) || papersprite);
+
+	return (!notaffine);
 }
 
 boolean R_ThingIsFloorSprite(mobj_t *thing)
