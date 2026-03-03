@@ -2100,8 +2100,6 @@ static void R_ProjectSprite(mobj_t *thing)
 		return;
 
 	// aspect ratio stuff
-	
-
 	if (affinesprite)
 	{
 		affine_distscale.x = affine_scale.x = FixedDiv(projection[viewssnum], tz);
