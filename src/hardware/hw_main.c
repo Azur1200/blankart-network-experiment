@@ -4914,6 +4914,8 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	boolean affinesprite = ((thing->player != NULL) || R_ThingIsAffineSprite(thing));
 	affine_t affine_transform = {0};
 	vector2_t affine_scale = {0};
+	f_vector2_t affine_pivotoffsetdiff = {0};
+
 	polyvertex_t affine_rootpoint = {0};
 	f_vector2_t affine_point[4] = {0};
 	float leftbound = 0, backbound = 0, topbound = 0;
@@ -5136,6 +5138,18 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	if (affinesprite)
 	{
+		vector2_t affine_pivot = {0};
+
+		vector2_t patch_defaultpivot = {.x = spr_offset, .y = (spr_height / 2)};
+
+		R_GetPivotVectorFromSpriteInfo(&affine_pivot,
+									   &patch_defaultpivot,
+									   sprinfo,
+									   (thing->frame & FF_FRAMEMASK));
+
+		affine_pivotoffsetdiff.x = FIXED_TO_FLOAT(affine_pivot.x - spr_offset);
+		affine_pivotoffsetdiff.y = FIXED_TO_FLOAT(affine_pivot.y - spr_topoffset);
+
 		affine_scale.x = FLOAT_TO_FIXED(spritexscale * this_scale);
 		affine_scale.y = FLOAT_TO_FIXED(spriteyscale * this_scale);
 
@@ -5147,7 +5161,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 		const fixed_t rolloffs_x = FixedDiv(interptarg->rollingxoffset, highresscale) * (((thing->renderflags & RF_FLIPOFFSETS) && flip) ? -1 : 1);
 		const fixed_t rolloffs_y = FixedDiv(interptarg->rollingyoffset, highresscale);
-		fixed_t y_piv = spr_topoffset;
+		fixed_t y_piv = affine_pivot.y;
 
 		if (vflip)
 		{
@@ -5173,11 +5187,11 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			affine_transform.d = FixedDiv(ca, affine_scale.y);
 		}
 
-		affine_transform.ox = spr_offset - rolloffs_x;
+		affine_transform.ox = affine_pivot.x - rolloffs_x;
 		affine_transform.oy = y_piv - rolloffs_y;
 
 		spritexscale = 1.0;
-		spriteyscale = 1,0;
+		spriteyscale = 1.0;
 	}
 
 	if (thing->renderflags & RF_ABSOLUTEOFFSETS)
@@ -5328,10 +5342,18 @@ static void HWR_ProjectSprite(mobj_t *thing)
 				// loops take more processing time. If we can help it, it's better to just cut corners.
 				float f_left = 0;
 				float f_bottom = 0;
+				float f_right = 0;
+				float f_top = 0;
+				float f_xlen = 0;
+				float f_ylen = 0;
 #define BOUNDCHECK(i)                                     \
 	{                                                 \
 		f_left = min(affine_point[i].x, f_left); \
 		f_bottom =  max(affine_point[i].y, f_bottom); \
+		f_top =  min(affine_point[i].y, f_top); \
+		f_right =  max(affine_point[i].x, f_right); \
+		f_xlen = (f_right - f_left); \
+		f_ylen = (f_bottom - f_top); \
 	}
 
 				BOUNDCHECK(0);
@@ -5353,6 +5375,16 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 				affine_rootpoint.x = tr_x;
 				affine_rootpoint.z = tr_y;
+
+				// Rescale X and Y so we can multiply the pivot offset differences by them.
+				const float f_affinexscale = f_xlen / (FIXED_TO_FLOAT(spr_width));
+				const float f_affineyscale = f_ylen / (FIXED_TO_FLOAT(spr_height));
+
+				affine_pivotoffsetdiff.x *= f_affinexscale;
+				affine_pivotoffsetdiff.y *= f_affineyscale;
+
+				affine_rootpoint.x -= (affine_pivotoffsetdiff.x * rightcos);
+				affine_rootpoint.z -= (affine_pivotoffsetdiff.x * rightsin);
 
 #ifdef ROTSPRITE
 				const float xrescale = this_xscale / FIXED_TO_FLOAT(mapobjectscale);
@@ -5422,15 +5454,15 @@ nodeterminant:
 
 		affine_rootpoint.y = 0;
 
-		const float f_topoffs = FIXED_TO_FLOAT(spr_topoffset);
+		const float f_topoffs = (FIXED_TO_FLOAT(spr_topoffset));
 
 		if (vflip)
 		{
-			affine_rootpoint.y = FIXED_TO_FLOAT(interp.z + thing->height) - (f_topoffs * this_yscale);
+			affine_rootpoint.y = (FIXED_TO_FLOAT(interp.z + thing->height) + affine_pivotoffsetdiff.y) - (f_topoffs * this_yscale);
 		}
 		else
 		{
-			affine_rootpoint.y = FIXED_TO_FLOAT(interp.z) + (f_topoffs * this_yscale);
+			affine_rootpoint.y = (FIXED_TO_FLOAT(interp.z) - affine_pivotoffsetdiff.y) + (f_topoffs * this_yscale);
 		}
 
 		if (!affinesprite)

@@ -91,12 +91,18 @@ boolean R_ThingVerticallyFlipped (mobj_t *thing);
 
 boolean R_ThingIsPaperSprite (mobj_t *thing);
 boolean R_ThingIsFloorSprite (mobj_t *thing);
-boolean R_ThingIsAffineSprite (mobj_t *thing);
+
 
 boolean R_ThingIsFullBright (mobj_t *thing);
 boolean R_ThingIsSemiBright (mobj_t *thing);
 boolean R_ThingIsFullDark (mobj_t *thing);
+
+boolean R_ThingIsAffineSprite (mobj_t *thing);
 boolean R_AffinePreScale (mobj_t *thing);
+void R_GetPivotVectorFromSpriteInfo(vector2_t* out,
+				    vector2_t* defaultpiv,
+				    spriteinfo_t* sprinfo,
+				    size_t frame);
 
 boolean R_ThingIsFlashing(mobj_t *thing);
 

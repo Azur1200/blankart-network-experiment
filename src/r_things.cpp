@@ -1971,6 +1971,28 @@ fixed_t R_GetSpriteDirectionalLighting(angle_t angle)
 	return extralight;
 }
 
+void R_GetPivotVectorFromSpriteInfo(vector2_t* out,
+				    vector2_t* defaultpiv,
+				    spriteinfo_t* sprinfo,
+				    size_t frame)
+{
+	if (in_bit_array(sprinfo->available, frame))
+	{
+		out->x = (sprinfo->pivot[frame].x * FRACUNIT);
+		out->y = (sprinfo->pivot[frame].y * FRACUNIT);
+	}
+	else if (in_bit_array(sprinfo->available, SPRINFO_DEFAULT_PIVOT))
+	{
+		out->x = (sprinfo->pivot[SPRINFO_DEFAULT_PIVOT].x * FRACUNIT);
+		out->y = (sprinfo->pivot[SPRINFO_DEFAULT_PIVOT].y * FRACUNIT);
+	}
+	else
+	{
+		out->x = defaultpiv->x;
+		out->y = defaultpiv->y;
+	}
+}
+
 //
 // R_ProjectSprite
 // Generates a vissprite for a thing
@@ -2060,6 +2082,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	affine_bounding_t affine_bounds = {0};
 	vector2_t affine_scale = {0};
 	vector2_t affine_distscale = {0};
+	vector2_t affine_pivotoffsetdiff = {0};
 
 	if (R_IsOverlayingSMonitorPlayer(thing))
 	{
@@ -2319,6 +2342,18 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	if (affinesprite)
 	{
+		vector2_t affine_pivot = {0};
+
+		vector2_t patch_defaultpivot = {.x = (patch->leftoffset * FRACUNIT), .y = (patch->height * FRACHALF)};
+
+		R_GetPivotVectorFromSpriteInfo(&affine_pivot,
+									   &patch_defaultpivot,
+									   sprinfo,
+									   (thing->frame & FF_FRAMEMASK));
+
+		affine_pivotoffsetdiff.x = affine_pivot.x - (patch->leftoffset * FRACUNIT);
+		affine_pivotoffsetdiff.y = affine_pivot.y - (patch->topoffset * FRACUNIT);
+
 		affine_scale.x = FixedMul(affine_scale.x, FixedMul(spritexscale, this_scale));
 		affine_scale.y = FixedMul(affine_scale.y, FixedMul(spriteyscale, this_scale));
 
@@ -2330,7 +2365,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		const fixed_t rolloffs_x = FixedDiv(interptarg->rollingxoffset, highresscale) * (((thing->renderflags & RF_FLIPOFFSETS) && flip) ? -1 : 1);
 		const fixed_t rolloffs_y = FixedDiv(interptarg->rollingyoffset, highresscale);
-		fixed_t y_piv = ((patch->pivot.y + patch->topoffset) * FRACUNIT);
+		fixed_t y_piv = affine_pivot.y;
 
 		if (vflip)
 		{
@@ -2356,13 +2391,20 @@ static void R_ProjectSprite(mobj_t *thing)
 			affine_transform.d = FixedDiv(ca, affine_scale.y);
 		}
 
-		affine_transform.ox = ((patch->pivot.x + patch->leftoffset) * FRACUNIT) - rolloffs_x;
+		affine_transform.ox = affine_pivot.x - rolloffs_x;
 		affine_transform.oy = y_piv - rolloffs_y;
 
 		V_GetAffineBounds(&affine_transform, patch, FRACUNIT, &affine_bounds);
 
+		// Rescale X and Y so we can multiply the pivot offset differences by them.
+		const fixed_t _affinexscale = FixedDiv(affine_bounds.xlen * FRACUNIT, patch->width * FRACUNIT);
+		const fixed_t _affineyscale = FixedDiv(affine_bounds.ylen * FRACUNIT, patch->height * FRACUNIT);
+
+		affine_pivotoffsetdiff.x = FixedMul(affine_pivotoffsetdiff.x, _affinexscale);
+		affine_pivotoffsetdiff.y = FixedMul(affine_pivotoffsetdiff.y, _affineyscale);
+
 		spr_width = (affine_bounds.xlen * FRACUNIT);
-		spr_offset = (affine_bounds.xleft * FRACUNIT);
+		spr_offset = (affine_bounds.xleft * FRACUNIT) - affine_pivotoffsetdiff.x;
 
 		//spr_height = (affine_bounds.ylen * FRACUNIT);
 		//spr_topoffset = (affine_bounds.yup * FRACUNIT);
@@ -2713,7 +2755,8 @@ static void R_ProjectSprite(mobj_t *thing)
 			fixed_t rawyscale = FixedDiv(affine_scale.y, FixedMul(this_scale, sortscale));
 
 			const float affineyscale = FIXED_TO_FLOAT(affine_scale.y);
-			const fixed_t real_topoffset = FLOAT_TO_FIXED(static_cast<float>(affine_bounds.yup) / affineyscale) + thingyoffset;
+			const float pivydiff = FIXED_TO_FLOAT(affine_pivotoffsetdiff.y) * ((vflip) ? -1.0f : 1.0f);
+			const fixed_t real_topoffset = FLOAT_TO_FIXED(static_cast<float>(affine_bounds.yup - pivydiff) / affineyscale) + thingyoffset;
 			const fixed_t real_height = FLOAT_TO_FIXED(static_cast<float>(affine_bounds.ylen) / affineyscale);
 
 			useoffset = FixedMul(real_topoffset, FixedMul(rawyscale, this_scale));
