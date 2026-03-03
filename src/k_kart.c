@@ -5115,6 +5115,7 @@ void K_DoSMonitor(player_t *player, tic_t time)
         aura->destscale = player->mo->scale;
         P_SetScale(aura, player->mo->scale);
         aura->extravalue2 = 1;
+        aura->renderflags2 |= RF2_AFFINE;
 	}
 
     // Rim suggestion: Don't allow already invincible players to chain.
