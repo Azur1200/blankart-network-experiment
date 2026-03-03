@@ -1178,11 +1178,8 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		dc.affine.d = vis->affine.transform.d;
 		dc.affine.ox = vis->affine.transform.ox;
 		dc.affine.oy = vis->affine.transform.oy;
-#ifdef AFFINEROT_TESTER
-		dc.affineoffset.x = vis->affine.offset.x + cv_affinedebugx.value;
-#else
+
 		dc.affineoffset.x = vis->affine.offset.x;
-#endif
 		dc.affineoffset.y = vis->affine.offset.y;
 
 		R_CopyAffineBounds(&vis->affine.bounds, &dc.affinebound);
@@ -2329,14 +2326,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		INT32 flipsign = ((flip) ? -1 : 1);
 
-#ifdef AFFINEROT_TESTER
-		if (!cv_affinerottest.value)
-			angle = spriterotangle * flipsign;
-		else
-			angle = FixedAngle(cv_affineangle.value);
-#else
 		angle = spriterotangle * flipsign;
-#endif
 
 		const fixed_t rolloffs_x = FixedDiv(interptarg->rollingxoffset, highresscale) * (((thing->renderflags & RF_FLIPOFFSETS) && flip) ? -1 : 1);
 		const fixed_t rolloffs_y = FixedDiv(interptarg->rollingyoffset, highresscale);

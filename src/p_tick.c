@@ -884,14 +884,6 @@ void P_Ticker(boolean run)
 	{
 		leveltime++;
 
-#ifdef AFFINEROT_TESTER
-		if (cv_affinerottest.value == 2)
-		{
-			fixed_t newaffineangle = (cv_affineangle.value + (FRACUNIT)) % (360 * FRACUNIT);
-			CV_StealthSet(&cv_affineangle, va("%f", FIXED_TO_FLOAT(newaffineangle)));
-		}
-#endif
-
 		if (starttime > introtime && leveltime == starttime)
 		{
 			ACS_RunRaceStartScript();

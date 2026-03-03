@@ -533,9 +533,6 @@ void R_DrawColumn_Flat(drawcolumndata_t *dc)
 	while (--count);
 }
 
-// Purely for debug; fills all columns in the drawing area with a pair of "background colors"
-//#define FILL_DRAW_AREA
-
 template<DrawColumnType Type>
 static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 {
@@ -642,31 +639,14 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 			ux += FixedMul(b, ystep_delta);
 			uy += FixedMul(d, ystep_delta);
 
-#ifdef FILL_DRAW_AREA
-			UINT16 pixel;
-#endif
-
 			if (srcx < 0 || srcx >= pw || srcy < 0 || srcy >= ph)
 			{
-#ifdef FILL_DRAW_AREA
-				pixel = 65461;
-				*dest = (UINT8)(pixel & 0xff);
-#endif
 				continue;
 			}
-
-#ifdef FILL_DRAW_AREA
-			pixel = reinterpret_cast<UINT16 *>(dc->source)[srcy * pw + srcx];
-			if (pixel < 0xff00)
-			{
-				pixel = 65315; // Uhhhhhhhh
-			}
-#else
 			const UINT8 pixel = R_DrawColumnAffinePixel<Type>(dc, dest, srcy * pw + srcx);
 
 			if (pixel == TRANSPARENTPIXEL)
 				continue;
-#endif
 
 			*dest = pixel;
 		}
