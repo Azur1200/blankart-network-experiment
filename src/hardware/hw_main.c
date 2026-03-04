@@ -3189,7 +3189,7 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	patch_t *gpatch = NULL;
 	GLPatch_t *hwrpatch;
 	FOutVector shadowVerts[4];
-	FSurfaceInfo sSurf;
+	FSurfaceInfo sSurf = {};
 	float fscale; float fx; float fy; float offset;
 	extracolormap_t *colormap = NULL;
 	FBITFIELD blendmode = PF_ReverseSubtract;

@@ -239,7 +239,7 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 		blendmode++; // realign to constants
 	if ((alphalevel = ((option & V_ALPHAMASK) >> V_ALPHASHIFT)) || blendmode)
 	{
-		FSurfaceInfo Surf;
+		FSurfaceInfo Surf = {};
 		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
 
 		flags |= HWR_GetBlendModeFlag(blendmode);
@@ -364,7 +364,7 @@ void HWR_DrawAffinePatch(patch_t *gpatch, fixed_t x, fixed_t y, const affine_t *
 		blendmode++; // realign to constants
 	if (alphalevel || blendmode)
 	{
-		FSurfaceInfo Surf;
+		FSurfaceInfo Surf = {};
 		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
 
 		flags |= HWR_GetBlendModeFlag(blendmode);
@@ -516,7 +516,7 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 		blendmode++; // realign to constants
 	if ((alphalevel = ((option & V_ALPHAMASK) >> V_ALPHASHIFT)) || blendmode)
 	{
-		FSurfaceInfo Surf;
+		FSurfaceInfo Surf = {};
 		Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
 
 		flags |= HWR_GetBlendModeFlag(blendmode);
@@ -636,7 +636,7 @@ void HWR_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum)
 void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 {
 	FOutVector  v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 
 	v[0].x = v[3].x = -1.0f;
 	v[2].x = v[1].x =  1.0f;
@@ -682,7 +682,7 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 void HWR_DrawFadeFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT16 actualcolor, UINT8 strength)
 {
 	FOutVector v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	float fx, fy, fw, fh;
 
 //  3--2
@@ -762,7 +762,7 @@ void HWR_DrawFadeFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT16 ac
 void HWR_DrawConsoleBack(UINT32 color, INT32 height)
 {
 	FOutVector  v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 
 	// setup some neat-o translucency effect
 	if (!height) //cool hack 0 height is full height
@@ -788,7 +788,7 @@ void HWR_DrawConsoleBack(UINT32 color, INT32 height)
 void HWR_EncoreInvertScreen(void)
 {
 	FOutVector v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 
 	v[0].x = v[3].x = -1.0f;
 	v[2].x = v[1].x =  1.0f;
@@ -810,7 +810,7 @@ void HWR_EncoreInvertScreen(void)
 void HWR_DrawTutorialBack(UINT32 color, INT32 boxheight)
 {
 	FOutVector  v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	INT32 height;
 	if (boxheight < 0)
 		height = -boxheight;
@@ -867,7 +867,7 @@ void HWR_drawAMline(const fline_t *fl, INT32 color)
 void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 {
 	FOutVector v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	float fx, fy, fw, fh, fwait = 0;
 
 	if (wh < 0)
@@ -961,7 +961,7 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT32 actualcolor)
 {
 	FOutVector v[4];
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	float fx, fy, fw, fh;
 
 //  3--2
@@ -1041,7 +1041,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 {
 	FOutVector v[4];
 	FBITFIELD flags;
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 	float fx, fy, fw, fh;
 	UINT8 alphalevel = ((color & V_ALPHAMASK) >> V_ALPHASHIFT);
 	UINT8 blendmode = ((color & V_BLENDMASK) >> V_BLENDSHIFT);

@@ -1342,7 +1342,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 	INT32 nextFrame = -1;
 	UINT8 spr2 = 0;
 	FTransform p;
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 
 	if (!cv_glmodels.value || spr->precip)
 		return false;
