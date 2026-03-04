@@ -110,12 +110,20 @@ FUNCINLINE static ATTRINLINE constexpr UINT8 R_DrawColumnAffinePixel(drawcolumnd
 {
 	const UINT16 pixel = reinterpret_cast<UINT16 *>(dc->source)[bit];
 
-	if (pixel < 0xff00)
+	UINT8 col = (UINT8)(pixel & 0xff);
+
+	if constexpr (Type & DrawColumnType::DC_HOLES)
 	{
-		return TRANSPARENTPIXEL;
+		if (col == TRANSPARENTPIXEL)
+		{
+			return *dest;
+		}
 	}
 
-	UINT8 col = (UINT8)(pixel & 0xff);
+	if (pixel < 0xff00)
+	{
+		return *dest;
+	}
 
 	if constexpr (Type & DrawColumnType::DC_COLORMAP)
 	{
@@ -643,10 +651,8 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 			{
 				continue;
 			}
-			const UINT8 pixel = R_DrawColumnAffinePixel<Type>(dc, dest, srcy * pw + srcx);
 
-			if (pixel == TRANSPARENTPIXEL)
-				continue;
+			const UINT8 pixel = R_DrawColumnAffinePixel<Type>(dc, dest, srcy * pw + srcx);
 
 			*dest = pixel;
 		}
