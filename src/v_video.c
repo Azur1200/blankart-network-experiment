@@ -813,7 +813,8 @@ static int sortcoords(const void *a, const void *b)
 affine_bounding_t* V_GetAffineBounds(const affine_t* transform,
 				     patch_t* patch,
 					 fixed_t divisor,
-				     affine_bounding_t* out)
+				     affine_bounding_t* out,
+					 boolean unrestrict_bound)
 {
 	// A decent chunk of this code is just fixedpointizing stuff
 	// from HWR_GetAffinePatch; That system's near flawless, why fix what isn't broken?
@@ -877,8 +878,14 @@ affine_bounding_t* V_GetAffineBounds(const affine_t* transform,
 	};
 
 	// Get the leftmost and uppermost bounds of the current resolution.
-	const INT32 vw = vid.width, vh = vid.height;
-	const INT32 leftmost = ((BASEVIDWIDTH - vw) / 2), uppermost = ((BASEVIDHEIGHT - vh) / 2);
+	INT32 vw = vid.width, vh = vid.height;
+	INT32 leftmost = ((BASEVIDWIDTH - vw) / 2), uppermost = ((BASEVIDHEIGHT - vh) / 2);
+
+	if (unrestrict_bound)
+	{
+		vw = vh = INT32_MAX;
+		leftmost = uppermost = INT32_MIN;
+	}
 
 	// ...okay, now comb through all four vertices and set the output bounds based on this.
 	// "Why not a loop?" According to SM64 programming wizard Kaze Emanuar,
@@ -960,7 +967,7 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, INT32 sc
 #endif
 
 	affine_bounding_t bounds = {0};
-	V_GetAffineBounds(transform, patch, vid.dup * FRACUNIT, &bounds);
+	V_GetAffineBounds(transform, patch, vid.dup * FRACUNIT, &bounds, false);
 
 	Patch_GenerateFlat(patch, 0);
 	const UINT16 *src = patch->flats[0];

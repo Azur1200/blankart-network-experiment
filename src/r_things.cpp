@@ -2394,7 +2394,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		affine_transform.ox = affine_pivot.x - rolloffs_x;
 		affine_transform.oy = y_piv - rolloffs_y;
 
-		V_GetAffineBounds(&affine_transform, patch, FRACUNIT, &affine_bounds);
+		V_GetAffineBounds(&affine_transform, patch, FRACUNIT, &affine_bounds, true);
 
 		// Rescale X and Y so we can multiply the pivot offset differences by them.
 		const fixed_t _affinexscale = FixedDiv(affine_bounds.xlen * FRACUNIT, patch->width * FRACUNIT);

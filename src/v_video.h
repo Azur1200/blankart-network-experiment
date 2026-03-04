@@ -221,7 +221,8 @@ void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_
 affine_bounding_t* V_GetAffineBounds(const affine_t* transform,
 				     patch_t* patch,
 					 fixed_t divisor,
-				     affine_bounding_t* out);
+				     affine_bounding_t* out,
+					 boolean unrestrict_bound);
 void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, INT32 scrn, patch_t *patch, const UINT8 *colormap);
 void V_DrawRotatedPatch(fixed_t x, fixed_t y, angle_t angle, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap);
 
