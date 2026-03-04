@@ -130,7 +130,7 @@ struct unlockable_t
 #define SECRET_EMBLEMHINTS	10 // Enables Emblem Hints
 
 #define SECRET_ENCORE		11 // Enables Encore mode cvar
-#define SECRET_HARDSPEED	12 // Enables Hard gamespeed
+#define SECRET_EXPERTSPEED	12 // Enables Expert gamespeed
 #define SECRET_HELLATTACK	13 // Map Hell in record attack
 
 #define SECRET_PANDORA		14 // Enables Pandora's Box

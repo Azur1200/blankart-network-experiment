@@ -8326,7 +8326,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 		else
 		{
 			if (cv_kartspeed.value == KARTSPEED_AUTO)
-				gamespeed = ((speedscramble == -1) ? KARTSPEED_NORMAL : (UINT8)speedscramble);
+				gamespeed = ((speedscramble == -1) ? KARTSPEED_DEFAULT : (UINT8)speedscramble);
 			else
 				gamespeed = (UINT8)cv_kartspeed.value;
 		}

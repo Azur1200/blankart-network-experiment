@@ -2904,8 +2904,8 @@ void readunlockable(MYFILE *f, INT32 num)
 						unlockables[num].type = SECRET_EMBLEMHINTS;
 					else if (fastcmp(word2, "ENCORE"))
 						unlockables[num].type = SECRET_ENCORE;
-					else if (fastcmp(word2, "HARDSPEED"))
-						unlockables[num].type = SECRET_HARDSPEED;
+					else if (fastcmp(word2, "EXPERTSPEED"))
+						unlockables[num].type = SECRET_EXPERTSPEED;
 					else if (fastcmp(word2, "HELLATTACK"))
 						unlockables[num].type = SECRET_HELLATTACK;
 					else if (fastcmp(word2, "PANDORA"))
