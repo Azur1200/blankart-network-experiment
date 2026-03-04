@@ -1291,7 +1291,7 @@ retrygetcontrol:
 
 		value = gamekeydown[deviceID][key];
 
-		if (value >= deadzone)
+		if (value > deadzone)
 		{
 			return value;
 		}
@@ -1704,8 +1704,17 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		return;
 	}
 
+	fixed_t deadZoneY = cv_deadzoney[forplayer].value;
+	const double deadZoneYDecimal = (double) deadZoneY / FRACUNIT;
 	joystickvector.xaxis = G_PlayerInputAnalog(forplayer, gc_turnright, false, DEADZONE_X) - G_PlayerInputAnalog(forplayer, gc_turnleft, false, DEADZONE_X);
-	joystickvector.yaxis = 0;
+	if (deadZoneYDecimal <= 0)
+	{
+		joystickvector.yaxis = G_PlayerInputAnalog(forplayer, gc_aimbackward, false, DEADZONE_Y) - G_PlayerInputAnalog(forplayer, gc_aimforward, false, DEADZONE_Y);
+	}
+	else
+	{
+		joystickvector.yaxis = 0;
+	}
 	G_HandleAxisDeadZone(forplayer, &joystickvector);
 
 	if (joystickvector.xaxis != 0)
@@ -1727,7 +1736,12 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// use it for aiming to throw items forward/backward and the vote screen
 	// This mean that the turn axis will still be gradient but up/down will be 0
 	// until the stick is pushed far enough
-	joystickvector.yaxis = G_PlayerInputAnalog(forplayer, gc_aimbackward, false, DEADZONE_Y) - G_PlayerInputAnalog(forplayer, gc_aimforward, false, DEADZONE_Y);
+	//
+	// When the deadzone is set to 0 or lower, the aim axis returns to analog to avoid breaking the chasecam and freecam controls
+	if (deadZoneYDecimal > 0)
+	{
+		joystickvector.yaxis = G_PlayerInputAnalog(forplayer, gc_aimbackward, false, DEADZONE_Y) - G_PlayerInputAnalog(forplayer, gc_aimforward, false, DEADZONE_Y);
+	}
 
 	if (encoremode)
 	{

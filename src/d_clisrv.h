@@ -437,6 +437,7 @@ extern consvar_t cv_httpsource;
 extern consvar_t cv_kicktime;
 
 extern consvar_t cv_showjoinaddress;
+extern consvar_t cv_shownodeip;
 extern consvar_t cv_playbackspeed;
 
 extern consvar_t cv_connectawaittime;

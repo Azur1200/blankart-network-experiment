@@ -349,8 +349,8 @@ void I_StartupSound(void)
 
 	const char *vendor = alGetString(AL_VENDOR);
 	const char *renderer = alGetString(AL_RENDERER);
-	CONS_Printf("OpenAL Vendor: %s\n", vendor);
-	CONS_Printf("OpenAL Renderer: %s\n", renderer);
+	I_OutputMsg("OpenAL Vendor: %s\n", vendor);
+	I_OutputMsg("OpenAL Renderer: %s\n", renderer);
 
 
 	if (!fastcmp("OpenAL Soft", renderer))
@@ -409,8 +409,13 @@ void I_StartupSound(void)
 	music_volume = sfx_volume = 0.f;
 
 #ifdef HAVE_OPENMPT
-	CONS_Printf("libopenmpt version: %s\n", openmpt_get_string("library_version"));
-	CONS_Printf("libopenmpt build date: %s\n", openmpt_get_string("build"));
+	const char *openmptstr;
+	openmptstr = openmpt_get_string("library_version");
+	I_OutputMsg("libopenmpt version: %s\n", openmptstr);
+	openmpt_free_string(openmptstr);
+	openmptstr = openmpt_get_string("build");
+	I_OutputMsg("libopenmpt build date: %s\n", openmptstr);
+	openmpt_free_string(openmptstr);
 #endif
 
 #ifdef HAVE_THREADS
