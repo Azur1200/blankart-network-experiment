@@ -162,7 +162,7 @@ extern consvar_t cv_sliptidetilt;
 extern consvar_t cv_nulldriftefx, cv_nulldrifttilt;
 
 extern consvar_t cv_fakerollangle;
-extern consvar_t cv_affineprescale;
+extern consvar_t cv_affineprescale, cv_affinemosaic;
 
 // debugging
 

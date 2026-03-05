@@ -43,12 +43,6 @@ typedef struct
 	float z;
 } polyvertex_t;
 
-typedef struct
-{
-	float x;
-	float y;
-} f_vector2_t;
-
 // a convex 'plane' polygon, clockwise order
 typedef struct
 {

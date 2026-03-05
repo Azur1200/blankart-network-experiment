@@ -635,19 +635,50 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 
 		//I_OutputMsg("xdiff: %f, ydiff: %f\n", FIXED_TO_FLOAT(xdiff), FIXED_TO_FLOAT(ydiff));
 
+		// If we're smaller than usual, mosaic isn't necessary.
+
+		const float y_mosaic = std::max(1.0f, dc->affinemosaic.y);
+		const float x_mosaic = std::max(1.0f, dc->affinemosaic.x);
+
+		const boolean mosaic_on = cv_affinemosaic.value;
+		const boolean xmosaic_on = (FLOAT_TO_FIXED(x_mosaic) > FRACUNIT);
+		const boolean ymosaic_on = (FLOAT_TO_FIXED(y_mosaic) > FRACUNIT);
+
+		fixed_t usefrac = dc->frac;
+
+		if (mosaic_on && xmosaic_on)
+		{
+			usefrac = FLOAT_TO_FIXED(static_cast<INT32>(FIXED_TO_FLOAT(dc->frac) / x_mosaic) * x_mosaic);
+		}
+
+		float ypx = 0.0f;
+
 		// yoinked from NovaSquirrel's mode 7 0preview
 		// ...which is in turn yoinked from Mesen's S-PPU code
 		// i can't do matrix math to save my life :face_holding_back_tears:
 		// (m7xofs and m7yofs are already factored in by destbase)
-		fixed_t ux = FixedMul(b, -cyy) + FixedMul(a, -cxx) + FixedMul(a, dc->frac) + cx;
-		fixed_t uy = FixedMul(d, -cyy) + FixedMul(c, -cxx) + FixedMul(c, dc->frac) + cy;
+		fixed_t ux = FixedMul(b, -cyy) + FixedMul(a, -cxx) + FixedMul(a, usefrac) + cx;
+		fixed_t uy = FixedMul(d, -cyy) + FixedMul(c, -cxx) + FixedMul(c, usefrac) + cy;
+		float ux_base = FIXED_TO_FLOAT(ux);
+		float uy_base = FIXED_TO_FLOAT(uy);
+		float f_b = FIXED_TO_FLOAT(FixedMul(b, ystep_delta));
+		float f_d = FIXED_TO_FLOAT(FixedMul(d, ystep_delta));
 
 		for (; count > 0; dest += stride, --count)
 		{
+			ypx += 1.0f;
+
 			const INT32 srcx = ux >> FRACBITS;
 			const INT32 srcy = (vflip) ? (ph - (uy >> FRACBITS)) : (uy >> FRACBITS);
-			ux += FixedMul(b, ystep_delta);
-			uy += FixedMul(d, ystep_delta);
+			INT32 y_real = static_cast<INT32>(ypx);
+
+			if (mosaic_on && ymosaic_on)
+			{
+				y_real = (static_cast<INT32>(ypx / y_mosaic) * y_mosaic);
+			}
+
+			ux = FLOAT_TO_FIXED(ux_base + (f_b * y_real));
+			uy = FLOAT_TO_FIXED(uy_base + (f_d * y_real));
 
 			if (srcx < 0 || srcx >= pw || srcy < 0 || srcy >= ph)
 			{

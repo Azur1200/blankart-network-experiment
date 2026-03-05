@@ -1168,6 +1168,7 @@ typedef struct
 	affine_t affine;
 	vector2_t affineoffset;
 	fixed_t affineystep;
+	f_vector2_t affinemosaic; // Truncates how columndrawers "move" across the screen
 	fixed_t frac;
 } drawcolumndata_t;
 

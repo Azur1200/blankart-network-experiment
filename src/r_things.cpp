@@ -1182,6 +1182,9 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		dc.affineoffset.x = vis->affine.offset.x;
 		dc.affineoffset.y = vis->affine.offset.y;
 
+		dc.affinemosaic.x = vis->affine.mosaic.x;
+		dc.affinemosaic.y = vis->affine.mosaic.y;
+
 		R_CopyAffineBounds(&vis->affine.bounds, &dc.affinebound);
 
 		fixed_t fixed_ylen = (FRACUNIT*dc.affinebound.ylen);
@@ -2081,6 +2084,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	vector2_t affine_scale = {0};
 	vector2_t affine_distscale = {0};
 	vector2_t affine_pivotoffsetdiff = {0};
+	f_vector2_t affine_mosaic = {.x = 1.0f, .y = 1.0f};
 
 	if (R_IsOverlayingSMonitorPlayer(thing))
 	{
@@ -2354,6 +2358,9 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		affine_scale.x = FixedMul(affine_scale.x, FixedMul(spritexscale, this_scale));
 		affine_scale.y = FixedMul(affine_scale.y, FixedMul(spriteyscale, this_scale));
+
+		affine_mosaic.x = FIXED_TO_FLOAT(FixedMul(affine_distscale.x, this_scale));
+		affine_mosaic.y = FIXED_TO_FLOAT(FixedMul(affine_distscale.y, this_scale));
 
 		angle_t angle;
 
@@ -2939,6 +2946,9 @@ static void R_ProjectSprite(mobj_t *thing)
 		vis->affine.transform.d = affine_transform.d;
 		vis->affine.transform.ox = affine_transform.ox;
 		vis->affine.transform.oy = affine_transform.oy;
+
+		vis->affine.mosaic.x = affine_mosaic.x;
+		vis->affine.mosaic.y = affine_mosaic.y;
 
 		R_CopyAffineBounds(&affine_bounds, &vis->affine.bounds);
 	}
