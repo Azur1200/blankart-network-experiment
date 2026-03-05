@@ -1264,7 +1264,6 @@ static void R_DrawVisSprite(vissprite_t *vis)
 				if (dc.yh >= baseclip && baseclip != -1)
 					dc.yh = baseclip;
 
-				drawcolumndata_t dc_copy = dc;
 				coldrawfunc_t* colfunccopy = colfunc;
 				colfunccopy(&dc);
 			}
@@ -1315,7 +1314,6 @@ static void R_DrawVisSprite(vissprite_t *vis)
 				{
 					dc.frac = frac;
 
-					drawcolumndata_t dc_copy = dc;
 					coldrawfunc_t* colfunccopy = colfunc;
 					colfunccopy(&dc);
 				}
@@ -2363,8 +2361,9 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		angle = R_ConvToRollAngle(spriterotangle) * flipsign;
 
-		const fixed_t rolloffs_x = FixedDiv(interptarg->rollingxoffset * FRACUNIT, highresscale) * (((thing->renderflags & RF_FLIPOFFSETS) && flip) ? -1 : 1);
-		const fixed_t rolloffs_y = FixedDiv(interptarg->rollingyoffset * FRACUNIT, highresscale);
+		const boolean renderflip = ((thing->renderflags & RF_FLIPOFFSETS) == RF_FLIPOFFSETS);
+		const fixed_t rolloffs_x = FixedDiv(interptarg->rollingxoffset * FRACUNIT, highresscale) * (((!renderflip) && flip) ? -1 : 1);
+		const fixed_t rolloffs_y = FixedDiv(interptarg->rollingyoffset * FRACUNIT, highresscale) * (((!renderflip) && vflip) ? -1 : 1);
 		fixed_t y_piv = affine_pivot.y;
 
 		if (vflip)
