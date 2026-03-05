@@ -2083,7 +2083,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	affine_bounding_t affine_bounds = {0};
 	vector2_t affine_scale = {0};
 	vector2_t affine_distscale = {0};
-	vector2_t affine_pivotoffsetdiff = {0};
+	f_vector2_t affine_pivotoffsetdiff = {0};
 	f_vector2_t affine_mosaic = {.x = 1.0f, .y = 1.0f};
 
 	if (R_IsOverlayingSMonitorPlayer(thing))
@@ -2346,15 +2346,15 @@ static void R_ProjectSprite(mobj_t *thing)
 	{
 		vector2_t affine_pivot = {0};
 
-		vector2_t patch_defaultpivot = {.x = (patch->leftoffset * FRACUNIT), .y = (patch->height * FRACHALF)};
+		vector2_t patch_defaultpivot = {.x = spr_offset, .y = (spr_height / 2)};
 
 		R_GetPivotVectorFromSpriteInfo(&affine_pivot,
 									   &patch_defaultpivot,
 									   sprinfo,
 									   (thing->frame & FF_FRAMEMASK));
 
-		affine_pivotoffsetdiff.x = affine_pivot.x - (patch->leftoffset * FRACUNIT);
-		affine_pivotoffsetdiff.y = affine_pivot.y - (patch->topoffset * FRACUNIT);
+		affine_pivotoffsetdiff.x = FIXED_TO_FLOAT(affine_pivot.x - spr_offset);
+		affine_pivotoffsetdiff.y = FIXED_TO_FLOAT(affine_pivot.y - spr_topoffset);
 
 		affine_scale.x = FixedMul(affine_scale.x, FixedMul(spritexscale, this_scale));
 		affine_scale.y = FixedMul(affine_scale.y, FixedMul(spriteyscale, this_scale));
@@ -2403,14 +2403,14 @@ static void R_ProjectSprite(mobj_t *thing)
 		V_GetAffineBounds(&affine_transform, patch, FRACUNIT, &affine_bounds, true);
 
 		// Rescale X and Y so we can multiply the pivot offset differences by them.
-		const fixed_t _affinexscale = FixedDiv(affine_bounds.xlen * FRACUNIT, patch->width * FRACUNIT);
-		const fixed_t _affineyscale = FixedDiv(affine_bounds.ylen * FRACUNIT, patch->height * FRACUNIT);
+		const float f_affinexscale = static_cast<float>(affine_bounds.xlen) /  static_cast<float>(patch->width);
+		const float f_affineyscale = static_cast<float>(affine_bounds.ylen) /  static_cast<float>(patch->height);
 
-		affine_pivotoffsetdiff.x = FixedMul(affine_pivotoffsetdiff.x, _affinexscale);
-		affine_pivotoffsetdiff.y = FixedMul(affine_pivotoffsetdiff.y, _affineyscale);
+		affine_pivotoffsetdiff.x *= f_affinexscale;
+		affine_pivotoffsetdiff.y *= f_affineyscale;
 
 		spr_width = (affine_bounds.xlen * FRACUNIT);
-		spr_offset = (affine_bounds.xleft * FRACUNIT) - affine_pivotoffsetdiff.x;
+		spr_offset = (affine_bounds.xleft * FRACUNIT) - FLOAT_TO_FIXED(affine_pivotoffsetdiff.x);
 
 		//spr_height = (affine_bounds.ylen * FRACUNIT);
 		//spr_topoffset = (affine_bounds.yup * FRACUNIT);
@@ -2761,8 +2761,8 @@ static void R_ProjectSprite(mobj_t *thing)
 			fixed_t rawyscale = FixedDiv(affine_scale.y, FixedMul(this_scale, sortscale));
 
 			const float affineyscale = FIXED_TO_FLOAT(affine_scale.y);
-			const float pivydiff = FIXED_TO_FLOAT(affine_pivotoffsetdiff.y) * ((vflip) ? -1.0f : 1.0f);
-			const fixed_t real_topoffset = FLOAT_TO_FIXED(static_cast<float>(affine_bounds.yup - pivydiff) / affineyscale) + thingyoffset;
+			const float pivydiff = affine_pivotoffsetdiff.y * ((vflip) ? -1.0f : 1.0f);
+			const fixed_t real_topoffset = FLOAT_TO_FIXED((static_cast<float>(affine_bounds.yup) - pivydiff) / affineyscale) + thingyoffset;
 			const fixed_t real_height = FLOAT_TO_FIXED(static_cast<float>(affine_bounds.ylen) / affineyscale);
 
 			useoffset = FixedMul(real_topoffset, FixedMul(rawyscale, this_scale));
