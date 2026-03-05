@@ -11787,7 +11787,7 @@ boolean K_CheckWaterskipLockout(player_t *player)
 }
 
 // Check to render the tilt VFX for null-drifts.
-boolean K_NullDriftTiltEnalbed()
+boolean K_NullDriftTiltEnabled(void)
 {
 	return ((cv_nulldriftefx.value) && (cv_nulldrifttilt.value));
 }
