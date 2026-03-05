@@ -4352,20 +4352,16 @@ boolean R_ThingVerticallyFlipped(mobj_t *thing)
 
 boolean R_ThingIsPaperSprite(mobj_t *thing)
 {
-	boolean affinepaper = (thing->frame & FF_AFFINEPAPER || thing->renderflags2 & RF2_AFFINEPAPER);
-
-	return (thing->frame & FF_PAPERSPRITE || thing->renderflags & RF_PAPERSPRITE || affinepaper);
+	return (thing->frame & FF_PAPERSPRITE || thing->renderflags & RF_PAPERSPRITE);
 }
 
 boolean R_ThingIsAffineSprite(mobj_t *thing)
 {
-	boolean affinepaper = (thing->frame & FF_AFFINEPAPER || thing->renderflags2 & RF2_AFFINEPAPER);
-
-	// Affine papersprites are messy in software rendering; let modders enable them at their own discretion.
+	// Affine papersprites are messy in software rendering.
 	// Yes, I'm lazy; I've been at this for TWO WEEKS.
-	boolean papersprite = (R_ThingIsPaperSprite(thing) && !affinepaper);
+	boolean papersprite = (R_ThingIsPaperSprite(thing));
 
-	boolean notaffine = ((thing->frame & FF_NOAFFINE || thing->renderflags2 & RF2_NOAFFINE) || papersprite);
+	boolean notaffine = ((thing->frame & FF_NOAFFINE || thing->renderflags & RF_NOAFFINE) || papersprite);
 
 	return (!notaffine);
 }
@@ -4398,7 +4394,7 @@ boolean R_ThingIsFullDark(mobj_t *thing)
 
 boolean R_AffinePreScale(mobj_t *thing)
 {
-	return (cv_affineprescale.value || thing->renderflags2 & RF2_AFFINEPRESCALE);
+	return (cv_affineprescale.value || thing->renderflags & RF_AFFINEPRESCALE);
 }
 
 //

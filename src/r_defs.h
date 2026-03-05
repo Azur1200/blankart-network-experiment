@@ -1004,6 +1004,7 @@ typedef enum
 #ifdef HWRENDER
 	RF_NOMODEL            = 0x00040000, // do not draw a model for this mobj in opengl, use its sprite instead
 #endif
+	RF_NOAFFINE           = 0x00080000,  // Disables affine drawing for this sprite
 
 	RF_HIDESHIFT        = (20),
 	RF_DONTDRAW         = 0x0F << RF_HIDESHIFT,   // --Don't generate a vissprite
@@ -1021,6 +1022,8 @@ typedef enum
 	RF_MODULATE			= ((AST_MODULATE-1)<<RF_BLENDSHIFT),
 	RF_OVERLAY			= ((AST_OVERLAY-1)<<RF_BLENDSHIFT),
 
+	RF_AFFINEPRESCALE    = 0x08000000,  // Makes affines scale before rotating, instead of rotating before scaling
+
 	RF_TRANSMASK       	= (INT32)0xF0000000,   // --Transparency override
 	RF_TRANSSHIFT		= (7*4),
 	RF_TRANS10       	= (1<<RF_TRANSSHIFT),   // 10%
@@ -1036,12 +1039,13 @@ typedef enum
 	RF_GHOSTLYMASK		= (RF_TRANSMASK | RF_FULLBRIGHT),
 } renderflags_t;
 
+#if 0
 typedef enum
 {
 	RF2_NOAFFINE          = 0x00000001,  // Disables affine drawing for this sprite
-	RF2_AFFINEPAPER       = 0x00000002,  // Enables "affine papersprites"
-	RF2_AFFINEPRESCALE    = 0x00000004,  // Makes affines scale before rotating, instead of rotating before scaling
+	RF2_AFFINEPRESCALE    = 0x00000002,  // Makes affines scale before rotating, instead of rotating before scaling
 } renderflags2_t;
+#endif
 
 typedef enum
 {
