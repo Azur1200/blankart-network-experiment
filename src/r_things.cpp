@@ -1041,27 +1041,28 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	if (vis->cut & SC_AFFINE)
 	{
 		// Specialized affine drawing functions, primarily for player sprites.
+		boolean affinebrightmap = (bmpatch != NULL);
 
 		if (dc.translation) // translate green skin to another color
 		{
 			if (vis->transmap)
 			{
-				R_SetColumnFunc(COLDRAWFUNC_AFFINETRANSTRANS, false);
+				R_SetColumnFunc(COLDRAWFUNC_AFFINETRANSTRANS, affinebrightmap);
 				dc.transmap = vis->transmap;
 			}
 			else
 			{
-				R_SetColumnFunc(COLDRAWFUNC_AFFINETRANS, false);
+				R_SetColumnFunc(COLDRAWFUNC_AFFINETRANS, affinebrightmap);
 			}
 		}
 		else if (vis->transmap)
 		{
-			R_SetColumnFunc(COLDRAWFUNC_AFFINEFUZZY, false);
+			R_SetColumnFunc(COLDRAWFUNC_AFFINEFUZZY, affinebrightmap);
 			dc.transmap = vis->transmap;
 		}
 		else
 		{
-			R_SetColumnFunc(COLDRAWFUNC_AFFINE, false);
+			R_SetColumnFunc(COLDRAWFUNC_AFFINE, affinebrightmap);
 		}
 	}
 	// Hack: Use a special column function for drop shadows that bypasses
@@ -1171,6 +1172,14 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		Patch_GenerateFlat(patch, static_cast<pictureflags_t>(0));
 		dc.source = static_cast<UINT8 *>(patch->flats[0]);
 		dc.sourcelength = patch->width;
+
+		if (bmpatch)
+		{
+			Patch_GenerateFlat(bmpatch, static_cast<pictureflags_t>(0));
+
+			// The column is a flat because fuck you
+			dc.brightmap = static_cast<UINT8 *>(bmpatch->flats[0]);
+		}
 
 		dc.affine.a = vis->affine.transform.a;
 		dc.affine.b = vis->affine.transform.b;

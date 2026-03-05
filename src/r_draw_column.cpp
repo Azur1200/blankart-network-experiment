@@ -135,11 +135,19 @@ FUNCINLINE static ATTRINLINE constexpr UINT16 R_DrawColumnAffinePixel(drawcolumn
 
 	if constexpr (Type & DrawColumnType::DC_BRIGHTMAP)
 	{
-		if (dc->brightmap[bit] == BRIGHTPIXEL)
+		// For affine drawers, dc->brightmap points to a *flat*, and not a *column*.
+		// Keep that in mind before you do something that causes a bunch of segfaults!
+
+		if (dc->brightmap)
 		{
-			// Pixel is part of the brightmap
-			col = dc->fullbright[col];
-			was_brightmapped = true;
+			const UINT16 bmpixel = reinterpret_cast<UINT16 *>(dc->brightmap)[bit];
+
+			if ((bmpixel & 0xff) == BRIGHTPIXEL)
+			{
+				// Pixel is part of the brightmap
+				col = dc->fullbright[col];
+				was_brightmapped = true;
+			}
 		}
 	}
 
@@ -703,7 +711,8 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 
 // Replace with DEFINE_AFFINE_COLUMN_COMBO down the line
 #define DEFINE_AFFINE_COLUMN_SETUP(name, flags) \
-	DEFINE_AFFINE_COLUMN_FUNC(name, flags|DC_DIRECT)
+	DEFINE_AFFINE_COLUMN_FUNC(name, flags|DC_DIRECT) \
+	DEFINE_AFFINE_COLUMN_FUNC(name ## _Brightmap, flags|DC_DIRECT|DC_BRIGHTMAP)
 
 DEFINE_AFFINE_COLUMN_SETUP(R_DrawAffineColumn, DC_BASIC);
 DEFINE_AFFINE_COLUMN_SETUP(R_DrawTranslatedAffineColumn, DC_COLORMAP);

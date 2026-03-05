@@ -153,10 +153,10 @@ void SCR_SetDrawFuncs(enum columncontext_e _columncontext)
 
 	// Affine brightmap functions; needed but I don't care at the moment
 
-	colfuncs_bm[COLDRAWFUNC_AFFINE] = NULL;
-	colfuncs_bm[COLDRAWFUNC_AFFINETRANS] = NULL;
-	colfuncs_bm[COLDRAWFUNC_AFFINEFUZZY] = NULL;
-	colfuncs_bm[COLDRAWFUNC_AFFINETRANSTRANS] = NULL;
+	colfuncs_bm[COLDRAWFUNC_AFFINE] = R_DrawAffineColumn_Brightmap;
+	colfuncs_bm[COLDRAWFUNC_AFFINETRANS] = R_DrawTranslatedAffineColumn_Brightmap;
+	colfuncs_bm[COLDRAWFUNC_AFFINEFUZZY] = R_DrawTranslucentAffineColumn_Brightmap;
+	colfuncs_bm[COLDRAWFUNC_AFFINETRANSTRANS] = R_DrawTranslatedTranslucentAffineColumn_Brightmap;
 
 	spanfuncs[BASEDRAWFUNC] = R_DrawSpan;
 	spanfuncs[SPANDRAWFUNC_TRANS] = R_DrawTranslucentSpan;

@@ -210,6 +210,11 @@ void R_DrawTranslatedAffineColumn(drawcolumndata_t* dc);
 void R_DrawTranslucentAffineColumn(drawcolumndata_t* dc);
 void R_DrawTranslatedTranslucentAffineColumn(drawcolumndata_t* dc);
 
+void R_DrawAffineColumn_Brightmap(drawcolumndata_t* dc);
+void R_DrawTranslatedAffineColumn_Brightmap(drawcolumndata_t* dc);
+void R_DrawTranslucentAffineColumn_Brightmap(drawcolumndata_t* dc);
+void R_DrawTranslatedTranslucentAffineColumn_Brightmap(drawcolumndata_t* dc);
+
 void R_DrawColumn_Brightmap(drawcolumndata_t* dc);
 void R_DrawTranslucentColumn_Brightmap(drawcolumndata_t* dc);
 void R_DrawTranslatedColumn_Brightmap(drawcolumndata_t* dc);
