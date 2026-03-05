@@ -101,28 +101,28 @@ FUNCINLINE static ATTRINLINE constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t*
 	return R_GetColumnTranslucent<Type>(dc, dest, bit, col);
 }
 
-// Function flow: Translation -> Brightmap -> Colormap -> Translucency
+// Function flow: Holes -> Translation -> Brightmap -> Colormap -> Translucency
 // "Why are these in nested functions for standard columns?" Uhhhhhh iunno lol
 // I make-a da code-a
 
 template<DrawColumnType Type>
-FUNCINLINE static ATTRINLINE constexpr UINT8 R_DrawColumnAffinePixel(drawcolumndata_t* dc, UINT8 *dest, INT32 bit)
+FUNCINLINE static ATTRINLINE constexpr UINT16 R_DrawColumnAffinePixel(drawcolumndata_t* dc, UINT8 *dest, INT32 bit)
 {
 	const UINT16 pixel = reinterpret_cast<UINT16 *>(dc->source)[bit];
 
 	UINT8 col = (UINT8)(pixel & 0xff);
 
+	if (pixel < 0xff00)
+	{
+		return 0;
+	}
+
 	if constexpr (Type & DrawColumnType::DC_HOLES)
 	{
 		if (col == TRANSPARENTPIXEL)
 		{
-			return *dest;
+			return 0;
 		}
-	}
-
-	if (pixel < 0xff00)
-	{
-		return *dest;
 	}
 
 	if constexpr (Type & DrawColumnType::DC_COLORMAP)
@@ -154,7 +154,9 @@ FUNCINLINE static ATTRINLINE constexpr UINT8 R_DrawColumnAffinePixel(drawcolumnd
 		col = *(dc->transmap + (col << 8) + (*dest));
 	}
 
-	return col;
+	*dest = col;
+
+	return (0xff00 | col);
 }
 
 /**	\brief The R_DrawColumn function
@@ -652,9 +654,7 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 				continue;
 			}
 
-			const UINT8 pixel = R_DrawColumnAffinePixel<Type>(dc, dest, srcy * pw + srcx);
-
-			*dest = pixel;
+			R_DrawColumnAffinePixel<Type>(dc, dest, srcy * pw + srcx);
 		}
 	}
 }
