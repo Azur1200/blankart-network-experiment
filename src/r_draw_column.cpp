@@ -633,8 +633,6 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 		fixed_t cxx = cx + xdiff + dc->affineoffset.x;
 		fixed_t cyy = cy + ydiff + dc->affineoffset.y;
 
-		//I_OutputMsg("xdiff: %f, ydiff: %f\n", FIXED_TO_FLOAT(xdiff), FIXED_TO_FLOAT(ydiff));
-
 		// If we're smaller than usual, mosaic isn't necessary.
 
 		const float y_mosaic = std::max(1.0f, dc->affinemosaic.y);
