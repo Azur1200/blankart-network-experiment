@@ -81,8 +81,6 @@ FBITFIELD HWR_GetBlendModeFlag(INT32 ast);
 FBITFIELD HWR_SurfaceBlend(INT32 style, INT32 transtablenum, FSurfaceInfo *pSurf);
 FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf);
 
-void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
-
 boolean HWR_ShouldUsePaletteRendering(void);
 
 extern CV_PossibleValue_t glanisotropicmode_cons_t[];
@@ -142,28 +140,6 @@ extern float gl_viewx, gl_viewy, gl_viewz;
 extern float gl_viewsin, gl_viewcos;
 
 extern float gl_viewludsin, gl_viewludcos;
-
-extern INT32 drawcount;
-
-// A drawnode is something that points to a 3D floor, 3D side, or masked
-// middle texture. This is used for sorting with sprites.
-typedef struct
-{
-	FOutVector    wallVerts[4];
-	FSurfaceInfo  Surf;
-	INT32         texnum;
-	FBITFIELD     blend;
-	INT32         drawcount;
-	boolean fogwall;
-	boolean noencore;
-	INT32 lightlevel;
-	extracolormap_t *wallcolormap; // Doing the lighting in HWR_RenderWall now for correct fog after sorting
-} wallinfo_t;
-
-extern wallinfo_t *wallinfo;
-extern size_t numwalls; // a list of transparent walls to be drawn
-
-#define MAX_TRANSPARENTWALL 256
 
 // Render stats
 extern precise_t ps_hw_skyboxtime;

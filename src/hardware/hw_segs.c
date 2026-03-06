@@ -33,32 +33,6 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg)
     return (FUINT)finallight;
 }
 
-void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
-{
-	static size_t allocedwalls = 0;
-
-	// Force realloc if buffer has been freed
-	if (!wallinfo)
-		allocedwalls = 0;
-
-	if (allocedwalls < numwalls + 1)
-	{
-		allocedwalls += MAX_TRANSPARENTWALL;
-		Z_Realloc(wallinfo, allocedwalls * sizeof (*wallinfo), PU_LEVEL, &wallinfo);
-	}
-
-	memcpy(wallinfo[numwalls].wallVerts, wallVerts, sizeof (wallinfo[numwalls].wallVerts));
-	memcpy(&wallinfo[numwalls].Surf, pSurf, sizeof (FSurfaceInfo));
-	wallinfo[numwalls].texnum = texnum;
-	wallinfo[numwalls].blend = blend;
-	wallinfo[numwalls].noencore = noencore;
-	wallinfo[numwalls].drawcount = drawcount++;
-	wallinfo[numwalls].fogwall = fogwall;
-	wallinfo[numwalls].lightlevel = lightlevel;
-	wallinfo[numwalls].wallcolormap = wallcolormap;
-	numwalls++;
-}
-
 void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
 {
 	FBITFIELD blendmode = blend;

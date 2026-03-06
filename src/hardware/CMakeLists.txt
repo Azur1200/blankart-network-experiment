@@ -13,6 +13,7 @@ target_sources(BLANKART PRIVATE
 	hw_model.c
 	u_list.c
 	hw_batching.c
+	hw_drawnodes.c
 	hw_plane.c
 	hw_segs.c
 	hw_shaders.c
