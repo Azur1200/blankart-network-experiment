@@ -4,6 +4,7 @@ target_sources(BLANKART PRIVATE
 	hw_light.c
 	hw_main.c
 	hw_sky.c
+	hw_things.c
 	hw_clip.c
 	hw_md2.c
 	hw_cache.c

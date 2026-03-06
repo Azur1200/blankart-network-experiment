@@ -189,6 +189,17 @@ void HWR_ClearSkyDome(void);
 void HWR_BuildSkyDome(void);
 void HWR_DrawSkyBackground(player_t *player);
 
+// --------
+// hw_things.c
+// --------
+extern UINT32 gl_visspritecount;
+
+void HWR_ClearSprites(void);
+void HWR_AddSprites(sector_t *sec);
+void HWR_AddPrecipitationSprites(void);
+void HWR_SortVisSprites(void);
+void HWR_DrawSprites(void);
+void HWR_ProjectBoundingBox(mobj_t *thing);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -127,6 +127,10 @@ extern float gl_viewsin, gl_viewcos;
 
 extern angle_t dup_viewangle;
 
+extern float gl_viewx, gl_viewy, gl_viewz;
+extern float gl_viewsin, gl_viewcos;
+
+extern float gl_viewludsin, gl_viewludcos;
 
 // Render stats
 extern precise_t ps_hw_skyboxtime;
