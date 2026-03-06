@@ -163,6 +163,11 @@ UINT32 HWR_GetLightTableID(extracolormap_t *colormap);
 void HWR_ClearLightTables(void);
 
 // --------
+// hw_bsp.c
+// --------
+void HWR_RenderBSPNode(INT32 bspnum);
+
+// --------
 // hw_draw.c
 // --------
 extern INT32 patchformat;
