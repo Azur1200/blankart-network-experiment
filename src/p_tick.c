@@ -776,11 +776,6 @@ void P_Ticker(boolean run)
 	// Keep track of how long they've been playing!
 	K_StatTicker();
 
-	// formality so kitemcap gets updated properly each frame.
-	P_RunKartItems();
-
-	P_RunMiscCap();
-
 	if (run)
 	{
 		ps_thinkertime = I_GetPreciseTime();
