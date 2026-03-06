@@ -1538,14 +1538,6 @@ static void R_SplitSprite(vissprite_t *sprite)
 
 		newsprite->gzt = sprite->gz;
 
-		/*if (sprite->cut & SC_AFFINE)
-		{
-			// Affines: Fix splitting alignment errors by applying a pixel offset
-			fixed_t szt_diff = (newsprite->sz - cutfrac + 9) << FRACBITS;
-			newsprite->affine.offset.y = std::min(0, -((sprite->affine.bounds.ylen * FRACUNIT) - szt_diff));
-		}*/
-
-
 		sprite->sz = cutfrac;
 		newsprite->szt = (INT16)(sprite->sz - 1);
 
@@ -2420,9 +2412,6 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		spr_width = (affine_bounds.xlen * FRACUNIT);
 		spr_offset = (affine_bounds.xleft * FRACUNIT) - FLOAT_TO_FIXED(affine_pivotoffsetdiff.x);
-
-		//spr_height = (affine_bounds.ylen * FRACUNIT);
-		//spr_topoffset = (affine_bounds.yup * FRACUNIT);
 
 		spritexscale = FRACUNIT;
 		spriteyscale = FRACUNIT;

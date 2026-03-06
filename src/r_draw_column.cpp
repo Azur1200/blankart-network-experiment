@@ -704,12 +704,6 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 		R_DrawAffineColumnTemplate<opt>(dc); \
 	}
 
-#define DEFINE_AFFINE_COLUMN_COMBO(name, flags) \
-	DEFINE_AFFINE_COLUMN_FUNC(name, flags|DC_DIRECT) \
-	DEFINE_AFFINE_COLUMN_FUNC(name ## _Brightmap, flags|DC_DIRECT|DC_BRIGHTMAP) \
-	DEFINE_AFFINE_COLUMN_FUNC(name ## _Flush, flags)
-
-// Replace with DEFINE_AFFINE_COLUMN_COMBO down the line
 #define DEFINE_AFFINE_COLUMN_SETUP(name, flags) \
 	DEFINE_AFFINE_COLUMN_FUNC(name, flags|DC_DIRECT) \
 	DEFINE_AFFINE_COLUMN_FUNC(name ## _Brightmap, flags|DC_DIRECT|DC_BRIGHTMAP)
