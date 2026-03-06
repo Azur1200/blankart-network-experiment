@@ -40,6 +40,7 @@ void HWR_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum)
 void HWR_SetViewSize(void);
 void HWR_SetTransformAiming(FTransform *trans, player_t *player, boolean skybox);
 void HWR_RollTransform(FTransform *tr, angle_t roll);
+boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf);
 void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap);
 void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t scale, INT32 option, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h);
 void HWR_DrawAffinePatch(patch_t *gpatch, fixed_t x, fixed_t y, const affine_t *transform, INT32 option, const UINT8 *colormap);
@@ -79,6 +80,8 @@ UINT8 HWR_GetTranstableAlpha(INT32 transtablenum);
 FBITFIELD HWR_GetBlendModeFlag(INT32 ast);
 FBITFIELD HWR_SurfaceBlend(INT32 style, INT32 transtablenum, FSurfaceInfo *pSurf);
 FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf);
+
+void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
 
 boolean HWR_ShouldUsePaletteRendering(void);
 
@@ -122,6 +125,10 @@ extern float gl_viewwidth, gl_viewheight, gl_baseviewwindowy;
 
 extern float gl_viewwindowx, gl_basewindowcentery;
 
+extern seg_t *gl_curline;
+extern side_t *gl_sidedef;
+extern line_t *gl_linedef;
+
 extern sector_t *gl_frontsector;
 extern sector_t *gl_backsector;
 
@@ -135,6 +142,28 @@ extern float gl_viewx, gl_viewy, gl_viewz;
 extern float gl_viewsin, gl_viewcos;
 
 extern float gl_viewludsin, gl_viewludcos;
+
+extern INT32 drawcount;
+
+// A drawnode is something that points to a 3D floor, 3D side, or masked
+// middle texture. This is used for sorting with sprites.
+typedef struct
+{
+	FOutVector    wallVerts[4];
+	FSurfaceInfo  Surf;
+	INT32         texnum;
+	FBITFIELD     blend;
+	INT32         drawcount;
+	boolean fogwall;
+	boolean noencore;
+	INT32 lightlevel;
+	extracolormap_t *wallcolormap; // Doing the lighting in HWR_RenderWall now for correct fog after sorting
+} wallinfo_t;
+
+extern wallinfo_t *wallinfo;
+extern size_t numwalls; // a list of transparent walls to be drawn
+
+#define MAX_TRANSPARENTWALL 256
 
 // Render stats
 extern precise_t ps_hw_skyboxtime;

@@ -14,6 +14,7 @@ target_sources(BLANKART PRIVATE
 	u_list.c
 	hw_batching.c
 	hw_plane.c
+	hw_segs.c
 	hw_shaders.c
 	r_opengl/r_opengl.c
 )
