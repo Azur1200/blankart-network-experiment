@@ -165,64 +165,6 @@ extern size_t numwalls; // a list of transparent walls to be drawn
 
 #define MAX_TRANSPARENTWALL 256
 
-// a vertex of a Doom 'plane' polygon
-typedef struct
-{
-    float x;
-    float y;
-    float z;
-} polyvertex_t;
-
-// a convex 'plane' polygon, clockwise order
-typedef struct
-{
-    INT32 numpts;
-    polyvertex_t pts[];
-} poly_t;
-
-// holds extra info for 3D render, for each subsector in subsectors[]
-typedef struct
-{
-    poly_t *planepoly;  // the generated convex polygon
-} extrasubsector_t;
-
-typedef struct
-{
-    extrasubsector_t *xsub;
-    boolean isceiling;
-    fixed_t fixedheight;
-    INT32 lightlevel;
-    levelflat_t *levelflat;
-    INT32 alpha;
-    sector_t *FOFSector;
-    FBITFIELD blend;
-    boolean fogplane;
-    extracolormap_t *planecolormap;
-    INT32 drawcount;
-} planeinfo_t;
-
-extern size_t numplanes; // a list of transparent floors to be drawn
-extern planeinfo_t *planeinfo;
-
-#define MAX_TRANSPARENTFLOOR 512
-
-typedef struct
-{
-    polyobj_t *polysector;
-    boolean isceiling;
-    fixed_t fixedheight;
-    INT32 lightlevel;
-    levelflat_t *levelflat;
-    INT32 alpha;
-    sector_t *FOFSector;
-    FBITFIELD blend;
-    extracolormap_t *planecolormap;
-    INT32 drawcount;
-} polyplaneinfo_t;
-
-extern size_t numpolyplanes; // a list of transparent poyobject floors to be drawn
-extern polyplaneinfo_t *polyplaneinfo;
-
 // Render stats
 extern precise_t ps_hw_skyboxtime;
 extern precise_t ps_hw_nodesorttime;
