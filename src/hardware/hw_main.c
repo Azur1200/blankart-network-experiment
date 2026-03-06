@@ -622,8 +622,6 @@ void HWR_RenderSkyboxView(player_t *player)
 
 	HWR_ClearSprites();
 
-	drawcount = 0;
-
 	//04/01/2000: Hurdler: added for T&L
 	//                     Actually it only works on Walls and Planes
 	GL_SetTransform(&atransform);
@@ -663,9 +661,9 @@ void HWR_RenderSkyboxView(player_t *player)
 	HWR_DrawCoronas();
 #endif
 
-	if (numplanes || numpolyplanes || numwalls) //Hurdler: render 3D water and transparent walls after everything
+	if (numdrawnodes) //Hurdler: render 3D water and transparent walls after everything
 	{
-		HWR_CreateDrawNodes();
+		HWR_RenderDrawNodes();
 	}
 
 	GL_SetTransform(NULL);
@@ -812,8 +810,6 @@ void HWR_RenderPlayerView(void)
 
 	HWR_ClearSprites();
 
-	drawcount = 0;
-
 	//04/01/2000: Hurdler: added for T&L
 	//                     Actually it only works on Walls and Planes
 	GL_SetTransform(&atransform);
@@ -867,9 +863,9 @@ void HWR_RenderPlayerView(void)
 	ps_numdrawnodes = 0;
 	ps_hw_nodesorttime = 0;
 	ps_hw_nodedrawtime = 0;
-	if (numplanes || numpolyplanes || numwalls) //Hurdler: render 3D water and transparent walls after everything
+	if (numdrawnodes) //Hurdler: render 3D water and transparent walls after everything
 	{
-		HWR_CreateDrawNodes();
+		HWR_RenderDrawNodes();
 	}
 
 	GL_SetTransform(NULL);

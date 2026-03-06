@@ -188,11 +188,8 @@ void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 te
 void HWR_AddTransparentFloor(levelflat_t *levelflat, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
 void HWR_AddTransparentPolyobjectFloor(levelflat_t *levelflat, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight,
 									   INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
-void HWR_CreateDrawNodes(void);
-extern INT32 drawcount;
-extern size_t numplanes;
-extern size_t numwalls;
-extern size_t numpolyplanes;
+void HWR_RenderDrawNodes(void);
+extern INT32 numdrawnodes;
 
 // --------
 // hw_segs.c
