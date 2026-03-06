@@ -53,9 +53,6 @@
 #include "../r_plane.h" // R_FlatDimensionsFromLumpSize
 #include "../k_items.h"
 
-#define R_FAKEFLOORS
-#define HWPRECIP
-
 // ==========================================================================
 // the hardware driver object
 // ==========================================================================
@@ -67,10 +64,8 @@
 
 static void HWR_AddSprites(sector_t *sec);
 static void HWR_ProjectSprite(mobj_t *thing);
-#ifdef HWPRECIP
 static void HWR_AddPrecipitationSprites(void);
 static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing);
-#endif
 static void HWR_ProjectBoundingBox(mobj_t *thing);
 static void HWR_RollTransform(FTransform *tr, angle_t roll);
 
@@ -101,13 +96,6 @@ static angle_t gl_xtoviewangle[MAXVIDWIDTH+1];
 // ==========================================================================
 //                                                                    GLOBALS
 // ==========================================================================
-
-// uncomment to remove the plane rendering
-#define DOPLANES
-//#define DOWALLS
-
-// test change fov when looking up/down but bsp projection messup :(
-//#define NOCRAPPYMLOOK
 
 // base values set at SetViewSize
 static float gl_basecentery;
@@ -390,8 +378,6 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t 
 //                                   FLOOR/CEILING GENERATION FROM SUBSECTORS
 // ==========================================================================
 
-#ifdef DOPLANES
-
 // -----------------+
 // HWR_RenderPlane  : Render a floor or ceiling convex polygon
 // -----------------+
@@ -651,8 +637,6 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	HWR_PlaneLighting(planeVerts, nrPlaneVerts);
 #endif
 }
-
-#endif //doplanes
 
 FBITFIELD HWR_GetBlendModeFlag(INT32 ast)
 {
@@ -2735,7 +2719,6 @@ static void HWR_Subsector(size_t num)
 	sub->sector->extra_colormap = gl_frontsector->extra_colormap;
 
 	// render floor ?
-#ifdef DOPLANES
 	// yeah, easy backface cull! :)
 	if (cullFloorHeight < dup_viewz)
 	{
@@ -2771,7 +2754,6 @@ static void HWR_Subsector(size_t num)
 		}
 	}
 
-#ifdef R_FAKEFLOORS
 	if (gl_frontsector->ffloors)
 	{
 		/// \todo fix light, xoffs, yoffs, extracolormap ?
@@ -2882,8 +2864,6 @@ static void HWR_Subsector(size_t num)
 			}
 		}
 	}
-#endif
-#endif //doplanes
 
 	// Draw all the polyobjects in this subsector
 	if (sub->polyList)
@@ -4156,7 +4136,6 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	}
 }
 
-#ifdef HWPRECIP
 // Sprite drawer for precipitation
 static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 {
@@ -4278,7 +4257,6 @@ static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	HWR_ProcessPolygon(&Surf, wallVerts, 4, blend|PF_Modulated, shader, false);
 }
-#endif
 
 // --------------------------------------------------------------------------
 // Sort vissprites by distance
@@ -4712,11 +4690,9 @@ static void HWR_DrawSprites(void)
 		if (spr->bbox)
 			HWR_DrawBoundingBox(spr);
 		else
-#ifdef HWPRECIP
 		if (spr->precip)
 			HWR_DrawPrecipitationSprite(spr);
 		else
-#endif
 		{
 			if (spr->mobj && spr->mobj->shadowscale && cv_shadow.value && !skipshadow)
 			{
@@ -4819,7 +4795,6 @@ static void HWR_AddSprites(sector_t *sec)
 	}
 }
 
-#ifdef HWPRECIP
 // --------------------------------------------------------------------------
 // HWR_AddPrecipitationSprites
 // This renders through the blockmap instead of BSP to avoid
@@ -4861,7 +4836,6 @@ static void HWR_AddPrecipitationSprites(void)
 		}
 	}
 }
-#endif
 
 // --------------------------------------------------------------------------
 // HWR_ProjectSprite
@@ -5687,7 +5661,6 @@ nodeterminant:
 	vis->angle = interp.angle;
 }
 
-#ifdef HWPRECIP
 // Precipitation projector for hardware mode
 static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 {
@@ -5813,7 +5786,6 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	vis->precip = true;
 	vis->bbox = false;
 }
-#endif
 
 static void HWR_ProjectBoundingBox(mobj_t *thing)
 {
@@ -6366,9 +6338,7 @@ void HWR_RenderSkyboxView(player_t *player)
 	if (LIKELY(cv_glbatching.value))
 		HWR_StartBatching();
 
-#ifdef HWPRECIP
 	HWR_AddPrecipitationSprites();
-#endif
 
 	HWR_RenderBSPNode((INT32)numnodes-1);
 
@@ -6562,9 +6532,7 @@ void HWR_RenderPlayerView(void)
 	if (cv_glbatching.value)
 		HWR_StartBatching();
 
-#ifdef HWPRECIP
 	HWR_AddPrecipitationSprites();
-#endif
 
 	HWR_RenderBSPNode((INT32)numnodes-1);
 
