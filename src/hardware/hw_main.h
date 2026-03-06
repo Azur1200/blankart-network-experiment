@@ -122,9 +122,13 @@ extern float gl_viewwidth, gl_viewheight, gl_baseviewwindowy;
 
 extern float gl_viewwindowx, gl_basewindowcentery;
 
+extern sector_t *gl_frontsector;
+extern sector_t *gl_backsector;
+
 extern FTransform atransform;
 extern float gl_viewsin, gl_viewcos;
 
+extern fixed_t dup_viewx, dup_viewy, dup_viewz;
 extern angle_t dup_viewangle;
 
 extern float gl_viewx, gl_viewy, gl_viewz;
