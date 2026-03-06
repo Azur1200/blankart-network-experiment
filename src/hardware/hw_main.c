@@ -694,10 +694,7 @@ static void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolea
 		ps_hw_nodedrawtime = 0;
 	}
 
-	if (numdrawnodes) //Hurdler: render 3D water and transparent walls after everything
-	{
-		HWR_RenderDrawNodes();
-	}
+	HWR_RenderDrawNodes(); //Hurdler: render 3D water and transparent walls after everything
 
 	GL_SetTransform(NULL);
 	GL_UnSetShader();
