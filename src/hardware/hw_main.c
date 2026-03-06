@@ -57,14 +57,6 @@
 // the hardware driver object
 // ==========================================================================
 
-// ==========================================================================
-//                                                                     PROTOS
-// ==========================================================================
-
-void HWR_AddTransparentFloor(levelflat_t *levelflat, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
-void HWR_AddTransparentPolyobjectFloor(levelflat_t *levelflat, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight,
-                             INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
-
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 
 // ==========================================================================
@@ -1225,40 +1217,11 @@ static void HWR_RenderBSPNode(INT32 bspnum)
 wallinfo_t *wallinfo = NULL;
 size_t numwalls = 0; // a list of transparent walls to be drawn
 
-typedef struct
-{
-	extrasubsector_t *xsub;
-	boolean isceiling;
-	fixed_t fixedheight;
-	INT32 lightlevel;
-	levelflat_t *levelflat;
-	INT32 alpha;
-	sector_t *FOFSector;
-	FBITFIELD blend;
-	boolean fogplane;
-	extracolormap_t *planecolormap;
-	INT32 drawcount;
-} planeinfo_t;
+size_t numplanes = 0; // a list of transparent floors to be drawn
+planeinfo_t *planeinfo = NULL;
 
-static size_t numplanes = 0; // a list of transparent floors to be drawn
-static planeinfo_t *planeinfo = NULL;
-
-typedef struct
-{
-	polyobj_t *polysector;
-	boolean isceiling;
-	fixed_t fixedheight;
-	INT32 lightlevel;
-	levelflat_t *levelflat;
-	INT32 alpha;
-	sector_t *FOFSector;
-	FBITFIELD blend;
-	extracolormap_t *planecolormap;
-	INT32 drawcount;
-} polyplaneinfo_t;
-
-static size_t numpolyplanes = 0; // a list of transparent poyobject floors to be drawn
-static polyplaneinfo_t *polyplaneinfo = NULL;
+size_t numpolyplanes = 0; // a list of transparent poyobject floors to be drawn
+polyplaneinfo_t *polyplaneinfo = NULL;
 
 //Hurdler: 3D water sutffs
 typedef struct gl_drawnode_s
@@ -1273,67 +1236,6 @@ typedef struct gl_drawnode_s
 } gl_drawnode_t;
 
 INT32 drawcount = 0;
-
-#define MAX_TRANSPARENTFLOOR 512
-
-// This will likely turn into a copy of HWR_Add3DWater and replace it.
-void HWR_AddTransparentFloor(levelflat_t *levelflat, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap)
-{
-	static size_t allocedplanes = 0;
-
-	// Force realloc if buffer has been freed
-	if (!planeinfo)
-		allocedplanes = 0;
-
-	if (allocedplanes < numplanes + 1)
-	{
-		allocedplanes += MAX_TRANSPARENTFLOOR;
-		Z_Realloc(planeinfo, allocedplanes * sizeof (*planeinfo), PU_LEVEL, &planeinfo);
-	}
-
-	planeinfo[numplanes].isceiling = isceiling;
-	planeinfo[numplanes].fixedheight = fixedheight;
-	planeinfo[numplanes].lightlevel = ((planecolormap && (planecolormap->flags & CMF_FOG)) || mapnamespace == MNS_SRB2KART) ? lightlevel : 255;
-	planeinfo[numplanes].levelflat = levelflat;
-	planeinfo[numplanes].xsub = xsub;
-	planeinfo[numplanes].alpha = alpha;
-	planeinfo[numplanes].FOFSector = FOFSector;
-	planeinfo[numplanes].blend = blend;
-	planeinfo[numplanes].fogplane = fogplane;
-	planeinfo[numplanes].planecolormap = planecolormap;
-	planeinfo[numplanes].drawcount = drawcount++;
-
-	numplanes++;
-}
-
-// Adding this for now until I can create extrasubsector info for polyobjects
-// When that happens it'll just be done through HWR_AddTransparentFloor and HWR_RenderPlane
-void HWR_AddTransparentPolyobjectFloor(levelflat_t *levelflat, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap)
-{
-	static size_t allocedpolyplanes = 0;
-
-	// Force realloc if buffer has been freed
-	if (!polyplaneinfo)
-		allocedpolyplanes = 0;
-
-	if (allocedpolyplanes < numpolyplanes + 1)
-	{
-		allocedpolyplanes += MAX_TRANSPARENTFLOOR;
-		Z_Realloc(polyplaneinfo, allocedpolyplanes * sizeof (*polyplaneinfo), PU_LEVEL, &polyplaneinfo);
-	}
-
-	polyplaneinfo[numpolyplanes].isceiling = isceiling;
-	polyplaneinfo[numpolyplanes].fixedheight = fixedheight;
-	polyplaneinfo[numpolyplanes].lightlevel = ((planecolormap && (planecolormap->flags & CMF_FOG)) || mapnamespace == MNS_SRB2KART) ? lightlevel : 255;
-	polyplaneinfo[numpolyplanes].levelflat = levelflat;
-	polyplaneinfo[numpolyplanes].polysector = polysector;
-	polyplaneinfo[numpolyplanes].alpha = alpha;
-	polyplaneinfo[numpolyplanes].FOFSector = FOFSector;
-	polyplaneinfo[numpolyplanes].blend = blend;
-	polyplaneinfo[numpolyplanes].planecolormap = planecolormap;
-	polyplaneinfo[numpolyplanes].drawcount = drawcount++;
-	numpolyplanes++;
-}
 
 // putting sortindex and sortnode here so the comparator function can see them
 gl_drawnode_t *sortnode;

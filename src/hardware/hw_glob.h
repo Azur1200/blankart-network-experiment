@@ -31,31 +31,6 @@ extern "C" {
 
 // SRB2Kart
 
-// -----------
-// structures
-// -----------
-
-// a vertex of a Doom 'plane' polygon
-typedef struct
-{
-	float x;
-	float y;
-	float z;
-} polyvertex_t;
-
-// a convex 'plane' polygon, clockwise order
-typedef struct
-{
-	INT32 numpts;
-	polyvertex_t pts[];
-} poly_t;
-
-// holds extra info for 3D render, for each subsector in subsectors[]
-typedef struct
-{
-	poly_t *planepoly;  // the generated convex polygon
-} extrasubsector_t;
-
 // needed for sprite rendering
 // equivalent of the software renderer's vissprites
 typedef struct gl_vissprite_s
@@ -175,6 +150,10 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isc
 void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t fixedheight,
 							   FBITFIELD blendmode, UINT8 lightlevel, levelflat_t *levelflat, sector_t *FOFsector,
 							   UINT8 alpha, extracolormap_t *planecolormap);
+
+void HWR_AddTransparentFloor(levelflat_t *levelflat, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
+void HWR_AddTransparentPolyobjectFloor(levelflat_t *levelflat, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight,
+									   INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
 // --------
 // hw_segs.c
 // --------
