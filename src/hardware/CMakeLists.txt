@@ -1,5 +1,5 @@
 target_sources(BLANKART PRIVATE
-	hw_bsp.c
+	hw_map.c
 	hw_draw.c
 	hw_light.c
 	hw_main.c
