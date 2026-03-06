@@ -133,6 +133,14 @@ void SCR_SetDrawFuncs(enum columncontext_e _columncontext)
 	colfuncs[COLDRAWFUNC_FOG] = R_DrawFogColumn;
 	colfuncs[COLDRAWFUNC_DROPSHADOW] = R_DrawDropShadowColumn;
 
+	// Affine functions; the ones here are only relevant for sprites.
+	// We can't rotate texture columns normally, can we?
+
+	colfuncs[COLDRAWFUNC_AFFINE] = R_DrawAffineColumn;
+	colfuncs[COLDRAWFUNC_AFFINETRANS] = R_DrawTranslatedAffineColumn;
+	colfuncs[COLDRAWFUNC_AFFINEFUZZY] = R_DrawTranslucentAffineColumn;
+	colfuncs[COLDRAWFUNC_AFFINETRANSTRANS] = R_DrawTranslatedTranslucentAffineColumn;
+
 	colfuncs_bm[BASEDRAWFUNC] = R_DrawColumn_Brightmap;
 	colfuncs_bm[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumn_Brightmap;
 	colfuncs_bm[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn_Brightmap;
@@ -142,6 +150,13 @@ void SCR_SetDrawFuncs(enum columncontext_e _columncontext)
 	colfuncs_bm[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn_Brightmap;
 	colfuncs_bm[COLDRAWFUNC_FOG] = NULL; // Not needed
 	colfuncs_bm[COLDRAWFUNC_DROPSHADOW] = NULL; // Not needed
+
+	// Affine brightmap functions; needed but I don't care at the moment
+
+	colfuncs_bm[COLDRAWFUNC_AFFINE] = R_DrawAffineColumn_Brightmap;
+	colfuncs_bm[COLDRAWFUNC_AFFINETRANS] = R_DrawTranslatedAffineColumn_Brightmap;
+	colfuncs_bm[COLDRAWFUNC_AFFINEFUZZY] = R_DrawTranslucentAffineColumn_Brightmap;
+	colfuncs_bm[COLDRAWFUNC_AFFINETRANSTRANS] = R_DrawTranslatedTranslucentAffineColumn_Brightmap;
 
 	spanfuncs[BASEDRAWFUNC] = R_DrawSpan;
 	spanfuncs[SPANDRAWFUNC_TRANS] = R_DrawTranslucentSpan;

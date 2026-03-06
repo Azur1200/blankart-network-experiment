@@ -197,6 +197,14 @@ consvar_t cv_sliptidetilt = CVAR_INIT ("sliptidetilt", "On", CV_SAVE, CV_OnOff, 
 consvar_t cv_nulldriftefx = CVAR_INIT ("nulldriftefx", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_nulldrifttilt = CVAR_INIT ("nulldrifttilt", "On", CV_SAVE, CV_OnOff, NULL);
 
+consvar_t cv_fakerollangle = CVAR_INIT ("fakerollangle", "Off", CV_SAVE, CV_OnOff, NULL);
+
+consvar_t cv_affineprescale = CVAR_INIT ("affineprescale", "Off", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_affinemosaic = CVAR_INIT ("affinemosaic", "Off", CV_SAVE, CV_OnOff, NULL);
+
+static CV_PossibleValue_t affineangle_cons_t[] = {{0, "MIN"}, {360 * FRACUNIT, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t affinetest_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Auto"}, {0, NULL}};
+
 void SplitScreen_OnChange(void)
 {
 	UINT8 i;
@@ -1804,6 +1812,9 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_sliptidetilt);
 	CV_RegisterVar(&cv_nulldriftefx);
 	CV_RegisterVar(&cv_nulldrifttilt);
+	CV_RegisterVar(&cv_fakerollangle);
+	CV_RegisterVar(&cv_affineprescale);
+	CV_RegisterVar(&cv_affinemosaic);
 
 	CV_RegisterVar(&cv_showhud);
 	CV_RegisterVar(&cv_translucenthud);

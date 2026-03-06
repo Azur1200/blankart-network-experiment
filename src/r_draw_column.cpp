@@ -21,6 +21,7 @@
 // a has a constant z depth from top to bottom.
 //
 
+#include "r_main.h"
 #include "r_draw.h"
 #include <tracy/tracy/Tracy.hpp>
 
@@ -98,6 +99,72 @@ FUNCINLINE static ATTRINLINE constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t*
 
 	// if we dont buffer our columns, we need to handle translucency again
 	return R_GetColumnTranslucent<Type>(dc, dest, bit, col);
+}
+
+// Function flow: Holes -> Translation -> Brightmap -> Colormap -> Translucency
+// "Why are these in nested functions for standard columns?" Uhhhhhh iunno lol
+// I make-a da code-a
+
+template<DrawColumnType Type>
+FUNCINLINE static ATTRINLINE constexpr UINT16 R_DrawColumnAffinePixel(drawcolumndata_t* dc, UINT8 *dest, INT32 bit)
+{
+	const UINT16 pixel = reinterpret_cast<UINT16 *>(dc->source)[bit];
+
+	UINT8 col = (UINT8)(pixel & 0xff);
+
+	if (pixel < 0xff00)
+	{
+		return 0;
+	}
+
+	if constexpr (Type & DrawColumnType::DC_HOLES)
+	{
+		if (col == TRANSPARENTPIXEL)
+		{
+			return 0;
+		}
+	}
+
+	if constexpr (Type & DrawColumnType::DC_COLORMAP)
+	{
+		// Remap to the current translation
+		col = dc->translation[col];
+	}
+
+	boolean was_brightmapped = false;
+
+	if constexpr (Type & DrawColumnType::DC_BRIGHTMAP)
+	{
+		// For affine drawers, dc->brightmap points to a *flat*, and not a *column*.
+		// Keep that in mind before you do something that causes a bunch of segfaults!
+
+		if (dc->brightmap)
+		{
+			const UINT16 bmpixel = reinterpret_cast<UINT16 *>(dc->brightmap)[bit];
+
+			if ((bmpixel & 0xff) == BRIGHTPIXEL)
+			{
+				// Pixel is part of the brightmap
+				col = dc->fullbright[col];
+				was_brightmapped = true;
+			}
+		}
+	}
+
+	if (!was_brightmapped)
+	{
+		col = dc->colormap[col];
+	}
+
+	if constexpr (Type & DrawColumnType::DC_TRANSMAP)
+	{
+		// Pixel is translucent
+		col = *(dc->transmap + (col << 8) + (*dest));
+	}
+
+	*dest = col;
+
+	return (0xff00 | col);
 }
 
 /**	\brief The R_DrawColumn function
@@ -483,3 +550,165 @@ void R_DrawColumn_Flat(drawcolumndata_t *dc)
 	}
 	while (--count);
 }
+
+template<DrawColumnType Type>
+static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
+{
+	INT32 count;
+	const INT32 vidheight = vid.height;
+
+	// leban 1/17/99:
+	// removed the + 1 here, adjusted the if test, and added an increment
+	// later.  this helps a compiler pipeline a bit better.  the x86
+	// assembler also does this.
+	count = dc->yh - dc->yl;
+
+	// leban 1/17/99:
+	// this case isn't executed too often.  depending on how many instructions
+	// there are between here and the second if test below, this case could
+	// be moved down and might save instructions overall.  since there are
+	// probably different wads that favor one way or the other, i'll leave
+	// this alone for now.
+	if (count < 0) // Zero length, column does not exceed a pixel.
+	{
+		return;
+	}
+
+	if ((unsigned)dc->x >= (unsigned)vid.width || dc->yl < 0 || dc->yh >= vidheight)
+	{
+		return;
+	}
+
+	{
+		// Inner loop that does the actual texture mapping,
+		//  e.g. a DDA-lile scaling.
+		// This is as fast as it gets.       (Yeah, right!!! -- killough)
+		//
+		// killough 2/1/98: more performance tuning
+
+		intptr_t frac;
+		// Looks familiar.
+		const intptr_t fracstep = dc->iscale;
+		const intptr_t heightmask = dc->sourcelength-1; // CPhipps - specify type
+		constexpr INT32 npow2min = -1;
+		const INT32 npow2max = dc->sourcelength;
+
+		// Framebuffer destination address.
+		// SoM: MAGIC
+		UINT8 * restrict dest;
+
+		if constexpr (Type & DrawColumnType::DC_DIRECT)
+			dest = R_Address(dc->x, dc->yl);
+		else if constexpr ((Type & (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
+			== (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
+			dest = R_GetBufferColormapTrans(dc);
+		else if constexpr (Type & DrawColumnType::DC_TRANSMAP)
+			dest = R_GetBufferTrans(dc);
+		else if constexpr (Type & DrawColumnType::DC_COLORMAP)
+			dest = R_GetBufferColormap(dc);
+		else
+			dest = R_GetBufferOpaque(dc);
+
+		const INT32 stride = vid.width; // SoM: Oh, Oh it's MAGIC! You know...
+
+		count++;
+
+		// Determine scaling, which is the only mapping to be done.
+		frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep));
+
+		const affine_t *transform = &dc->affine;
+		const affine_bounding_t *bounds = &dc->affinebound;
+
+		const fixed_t a = transform->a;
+		const fixed_t b = transform->b;
+		const fixed_t c = transform->c;
+		const fixed_t d = transform->d;
+		fixed_t cx = transform->ox;
+		fixed_t cy = transform->oy;
+
+		const INT32 pw = dc->sourcelength, ph = dc->texheight;
+
+		const boolean vflip = (dc->affineystep < 0);
+		const fixed_t ystep_delta = abs(dc->affineystep);
+
+		fixed_t ydiff = (bounds->yup * FRACUNIT) - cy;
+		fixed_t xdiff = (bounds->xleft * FRACUNIT) - cx;
+
+		xdiff -= (xdiff ? FRACUNIT : 0);
+		ydiff -= (ydiff ? FRACUNIT : 0);
+
+		// Offset our X and Y positions by the bounding differences.
+		fixed_t cxx = cx + xdiff + dc->affineoffset.x;
+		fixed_t cyy = cy + ydiff + dc->affineoffset.y;
+
+		// If we're smaller than usual, mosaic isn't necessary.
+
+		const float y_mosaic = std::max(1.0f, dc->affinemosaic.y);
+		const float x_mosaic = std::max(1.0f, dc->affinemosaic.x);
+
+		const boolean mosaic_on = cv_affinemosaic.value;
+		const boolean xmosaic_on = (FLOAT_TO_FIXED(x_mosaic) > FRACUNIT);
+		const boolean ymosaic_on = (FLOAT_TO_FIXED(y_mosaic) > FRACUNIT);
+
+		fixed_t usefrac = dc->frac;
+
+		if (mosaic_on && xmosaic_on)
+		{
+			usefrac = FLOAT_TO_FIXED(static_cast<INT32>(FIXED_TO_FLOAT(dc->frac) / x_mosaic) * x_mosaic);
+		}
+
+		float ypx = 0.0f;
+
+		// yoinked from NovaSquirrel's mode 7 0preview
+		// ...which is in turn yoinked from Mesen's S-PPU code
+		// i can't do matrix math to save my life :face_holding_back_tears:
+		// (m7xofs and m7yofs are already factored in by destbase)
+		fixed_t ux = FixedMul(b, -cyy) + FixedMul(a, -cxx) + FixedMul(a, usefrac) + cx;
+		fixed_t uy = FixedMul(d, -cyy) + FixedMul(c, -cxx) + FixedMul(c, usefrac) + cy;
+		float ux_base = FIXED_TO_FLOAT(ux);
+		float uy_base = FIXED_TO_FLOAT(uy);
+		float f_b = FIXED_TO_FLOAT(FixedMul(b, ystep_delta));
+		float f_d = FIXED_TO_FLOAT(FixedMul(d, ystep_delta));
+
+		for (; count > 0; dest += stride, --count)
+		{
+			ypx += 1.0f;
+
+			const INT32 srcx = ux >> FRACBITS;
+			const INT32 srcy = (vflip) ? (ph - (uy >> FRACBITS)) : (uy >> FRACBITS);
+			INT32 y_real = static_cast<INT32>(ypx);
+
+			if (mosaic_on && ymosaic_on)
+			{
+				y_real = (static_cast<INT32>(ypx / y_mosaic) * y_mosaic);
+			}
+
+			ux = FLOAT_TO_FIXED(ux_base + (f_b * y_real));
+			uy = FLOAT_TO_FIXED(uy_base + (f_d * y_real));
+
+			if (srcx < 0 || srcx >= pw || srcy < 0 || srcy >= ph)
+			{
+				continue;
+			}
+
+			R_DrawColumnAffinePixel<Type>(dc, dest, srcy * pw + srcx);
+		}
+	}
+}
+
+#define DEFINE_AFFINE_COLUMN_FUNC(name, flags) \
+	void name(drawcolumndata_t *dc) \
+	{ \
+		ZoneScoped; \
+		constexpr DrawColumnType opt = static_cast<DrawColumnType>(flags); \
+		R_DrawAffineColumnTemplate<opt>(dc); \
+	}
+
+#define DEFINE_AFFINE_COLUMN_SETUP(name, flags) \
+	DEFINE_AFFINE_COLUMN_FUNC(name, flags|DC_DIRECT) \
+	DEFINE_AFFINE_COLUMN_FUNC(name ## _Brightmap, flags|DC_DIRECT|DC_BRIGHTMAP)
+
+DEFINE_AFFINE_COLUMN_SETUP(R_DrawAffineColumn, DC_BASIC);
+DEFINE_AFFINE_COLUMN_SETUP(R_DrawTranslatedAffineColumn, DC_COLORMAP);
+DEFINE_AFFINE_COLUMN_SETUP(R_DrawTranslucentAffineColumn, DC_TRANSMAP);
+DEFINE_AFFINE_COLUMN_SETUP(R_DrawTranslatedTranslucentAffineColumn, DC_COLORMAP|DC_TRANSMAP);

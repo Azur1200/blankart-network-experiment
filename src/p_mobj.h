@@ -306,6 +306,9 @@ struct mobj_t
 	UINT16 anim_duration; // for FF_ANIMATE states
 
 	UINT32 renderflags; // render flags
+#if 0
+	UINT32 renderflags2; // More render flags
+#endif
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;
@@ -495,6 +498,9 @@ struct precipmobj_t
 	UINT16 anim_duration; // for FF_ANIMATE states
 
 	UINT32 renderflags; // render flags
+#if 0
+	UINT32 renderflags2; // More render flags
+#endif
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;

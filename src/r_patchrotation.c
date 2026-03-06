@@ -56,7 +56,7 @@ angle_t R_GetPitchRollAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_
 	return rollOrPitch;
 }
 
-static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer)
+static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer, boolean fliptilt)
 {
 	angle_t viewingAngle = R_PointToAnglePlayer(viewPlayer, player->mo->x, player->mo->y);
 	angle_t angleDelta = (viewingAngle - player->mo->angle);
@@ -69,6 +69,12 @@ static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer)
 
 	// Sliptide tilt: Nulldrifts take priority if and ONLY if they're the larger value compared to sliptides.
 	angle_t sliptideLift = max(abs(aiztilt), abs(nulltilt)) * liftsign;
+
+	if (fliptilt)
+	{
+		// Vertical flip affine hack: invert the angle so it still looks right.
+		sliptideLift *= -1;
+	}
 
 	angle_t rollAngle = 0;
 
@@ -97,23 +103,23 @@ boolean R_IsOverlayingSMonitorPlayer(mobj_t* mobj)
 			(mobj->target->player->smonitortimer));
 }
 
-angle_t R_ModelRotationAngle(mobj_t *mobj, player_t *viewPlayer)
+angle_t R_ModelRotationAngle(mobj_t *mobj, player_t *viewPlayer, boolean fliptilt)
 {
 	angle_t rollAngle = mobj->rollangle;
 
 	if (mobj->player)
 	{
-		rollAngle += R_PlayerSpriteRotation(mobj->player, viewPlayer);
+		rollAngle += R_PlayerSpriteRotation(mobj->player, viewPlayer, fliptilt);
 	}
 	else if (R_IsOverlayingSMonitorPlayer(mobj))
 	{
-		rollAngle += R_PlayerSpriteRotation(mobj->target->player, viewPlayer);
+		rollAngle += R_PlayerSpriteRotation(mobj->target->player, viewPlayer, fliptilt);
 	}
 
 	return rollAngle;
 }
 
-angle_t R_SpriteRotationAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_t *interp)
+angle_t R_SpriteRotationAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_t *interp, boolean fliptilt)
 {
 	angle_t rollOrPitch;
 	
@@ -125,7 +131,7 @@ angle_t R_SpriteRotationAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstat
 	{
 		rollOrPitch = R_GetPitchRollAngle(mobj, viewPlayer, interp);
 	}
-	return (rollOrPitch + R_ModelRotationAngle(mobj, viewPlayer));
+	return (rollOrPitch + R_ModelRotationAngle(mobj, viewPlayer, fliptilt));
 }
 
 INT32 R_GetRollAngle(angle_t rollangle)
@@ -141,10 +147,17 @@ INT32 R_GetRollAngle(angle_t rollangle)
 
 #define VISROTMUL (ANG1 * ROTANGDIFF)
 
+// Simulates "rollangle" angling
+angle_t R_ConvToRollAngle(angle_t ang)
+{
+	return (cv_fakerollangle.value) ? (R_GetRollAngle(ang) * VISROTMUL) : ang;
+}
+
 vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 	mobj_t* mobj,
 	boolean vflip,
 	boolean hflip,
+	boolean affine,
 	interpmobjstate_t *interp,
 	vector2_t* out,
 	vector2_t* rolloffs)
@@ -166,7 +179,13 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 	angle_t viewingAngle = R_PointToAngle(mobj->x, mobj->y);
 
 	// rotate ourselves entirely by the sprite's own rotation angle
-	angle_t visrot = R_SpriteRotationAngle(mobj, NULL, interp);
+	angle_t visrot = R_SpriteRotationAngle(mobj, NULL, interp, false);
+
+	if (vflip)
+	{
+		// Invert the angle for vertically flipped sprites.
+		visrot = InvAngle(visrot);
+	}
 
 	// xoffs = (-cos(xoff) + sin(yoff))
 	xoffs =
