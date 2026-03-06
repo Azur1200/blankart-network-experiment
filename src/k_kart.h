@@ -414,7 +414,7 @@ typedef enum
 	AIRDROP_FUSION,
 } airdroptype_t;
 
-boolean K_NullDriftTiltEnalbed();
+boolean K_NullDriftTiltEnabled(void);
 
 #define RECOVERYDASHADD (TICRATE/2)
 //og val 2*TICRATE

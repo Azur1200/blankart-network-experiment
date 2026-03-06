@@ -3795,7 +3795,7 @@ static void Command_Map_f(void)
 			}
 			else // default GP
 			{
-				grandprixinfo.gamespeed = (cv_kartspeed.value == KARTSPEED_AUTO ? KARTSPEED_NORMAL : cv_kartspeed.value);
+				grandprixinfo.gamespeed = (cv_kartspeed.value == KARTSPEED_AUTO ? KARTSPEED_DEFAULT : cv_kartspeed.value);
 				grandprixinfo.masterbots = false;
 				grandprixinfo.lunaticmode = false;
 
@@ -8262,7 +8262,7 @@ static void KartSpeed_OnChange(void)
 
 static void KartBattleSpeed_OnChange(void)
 {
-	if (!M_SecretUnlocked(SECRET_HARDSPEED) && ((cv_kartbattlespeed.value == KARTSPEED_HARD) || (cv_kartbattlespeed.value == KARTSPEED_EXPERT)))
+	if (!M_SecretUnlocked(SECRET_EXPERTSPEED) && ((cv_kartbattlespeed.value == KARTSPEED_EXPERT)))
 	{
 		CONS_Printf(M_GetText("You haven't earned this yet.\n"));
 		CV_StealthSet(&cv_kartspeed, cv_kartspeed.defaultvalue);

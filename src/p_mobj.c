@@ -6632,20 +6632,6 @@ static void P_RemoveKartItem(mobj_t *thing)
 	}
 }
 
-// Doesn't actually do anything since items have their own thinkers,
-// but this is necessary for the sole purpose of updating kitemcap
-void P_RunKartItems(void)
-{
-	mobj_t *mobj, *next;
-
-	for (mobj = kitemcap; mobj; mobj = next)
-	{
-		next = mobj->itnext;
-		P_SetTarget(&mobj->itnext, NULL);
-	}
-	P_SetTarget(&kitemcap, NULL);
-}
-
 static boolean P_IsMiscCapObject(INT32 type)
 {
 	switch (type)
@@ -6658,9 +6644,11 @@ static boolean P_IsMiscCapObject(INT32 type)
 			break;
 
 		case MT_RANDOMITEM:
-			if (itembreaker)
 				return true;
 			break;
+
+		case MT_PLAYER:
+				return true;
 
 		default:
 			break;
@@ -6703,20 +6691,6 @@ static void P_RemoveMiscCap(mobj_t *thing)
 		P_SetTarget(&thing->itnext, NULL);
 		return;
 	}
-}
-
-// Doesn't actually do anything since objects can have their own thinkers,
-// but this is necessary for the sole purpose of updating misccap
-void P_RunMiscCap(void)
-{
-	mobj_t *mobj, *next;
-
-	for (mobj = misccap; mobj; mobj = next)
-	{
-		next = mobj->itnext;
-		P_SetTarget(&mobj->itnext, NULL);
-	}
-	P_SetTarget(&misccap, NULL);
 }
 
 void P_RunOverlays(void)
@@ -7197,9 +7171,6 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 		return;
 	if (P_MobjWasRemoved(mobj))
 		return;
-
-	if (P_IsMiscCapObject(mobj->type)) // mobj is object we want on the list:
-		P_AddMiscCap(mobj);			   // add to misccap list
 
 	switch (mobj->type)
 	{
@@ -8420,9 +8391,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		// No need to check water. Who cares?
 		P_RingThinker(mobj);
 
-		if (cv_kartdebugrings.value)
-			P_AddMiscCap(mobj);
-
 		A_AttractChase(mobj);
 		return false;
 		// Flung items
@@ -8833,7 +8801,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		if (mobj->threshold > 0 || FixedHypot(mobj->momx, mobj->momy) >= 12*mobj->scale)
 		{
 			mobj_t *ghost = P_SpawnGhostMobj(mobj);
-			
+
 			if (mobj->target && mobj->target->player)
 			{
 				ghost->color = mobj->target->player->skincolor;
@@ -8841,33 +8809,33 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 		}
 
-		if (P_IsObjectOnGround(mobj)) 
+		if (P_IsObjectOnGround(mobj))
 		{
 			if (mobj->threshold == 0 && mobj->health > 1 && FixedHypot(mobj->momx, mobj->momy) < 12*mobj->scale)
 			{
 				mobj->health = 1;
 				mobj->whiteshadow = false;
 			}
-			if (!S_SoundPlaying(mobj, sfx_s3kd2l)) 
+			if (!S_SoundPlaying(mobj, sfx_s3kd2l))
 			{
 				S_StartSound(mobj, sfx_s3kd2l);
 			}
 			mobj->movefactor -= 1;
-			if (mobj->movefactor <= 0) 
+			if (mobj->movefactor <= 0)
 			{
 				P_KillMobj(mobj, mobj, NULL, DMG_INSTAKILL);
 			}
 		}
-		else if (S_SoundPlaying(mobj, sfx_s3kd2l)) 
+		else if (S_SoundPlaying(mobj, sfx_s3kd2l))
 		{
 			S_StopSoundByID(mobj, sfx_s3kd2l);
 		}
-		
+
 		if (mobj->threshold > 0)
 		{
 			mobj->threshold--;
 		}
-		if (mobj->extravalue1 > 0) 
+		if (mobj->extravalue1 > 0)
 		{
 			mobj->extravalue1--;
 		}
@@ -9419,7 +9387,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 					P_SetMobjState(mobj, S_FLAMESHIELD1);
 				mobj->renderflags &= ~RF_DONTDRAW;
 			}
-			
+
 			if (flamestore >= FLAMESTOREMAX-1)
 			{
 				mobj->renderflags |= RF_ADD;
@@ -10782,12 +10750,6 @@ void P_MobjThinker(mobj_t *mobj)
 	if (P_MobjWasRemoved(mobj))
 		return; // obligatory paranoia check
 
-	if (P_IsKartItem(mobj->type))	// mobj is a kart item we want on the list:
-		P_AddKartItem(mobj);		// add to kitem list
-
-	if (P_IsMiscCapObject(mobj->type)) // mobj is object we want on the list:
-		P_AddMiscCap(mobj);			   // add to misccap list
-
 	// Can end up here if a player dies.
 	if (mobj->player)
 		P_CyclePlayerMobjState(mobj);
@@ -11744,6 +11706,12 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		P_CheckGravity(mobj, false);
 
 	R_AddMobjInterpolator(mobj);
+
+	if (P_IsKartItem(mobj->type))	// mobj is a kart item we want on the list:
+		P_AddKartItem(mobj);		// add to kitem list
+
+	if (P_IsMiscCapObject(mobj->type)) // mobj is object we want on the list:
+		P_AddMiscCap(mobj);			   // add to misccap list
 
 	return mobj;
 }

@@ -67,7 +67,11 @@ extern consvar_t cv_colorizedhudcolor;
 
 extern consvar_t cv_newtabranking;
 
+extern consvar_t cv_kartdebughudtracker;
+
 extern patch_t *kp_facenum[MAXPLAYERS+1];
+extern patch_t *kp_itemboxminimap;
+extern patch_t *kp_minimapdot;
 
 struct trackingResult_t
 {
@@ -160,6 +164,27 @@ void K_DrawServerDescrption(INT32 x, INT32 y);
 void K_DrawDriftGauge(void);
 void K_DrawFlamometer(void);
 void K_ResetAfterImageValues(void);
+
+typedef enum
+{
+	PLAYERTAG_NONE,
+	PLAYERTAG_LOCAL,
+	PLAYERTAG_CPU,
+	PLAYERTAG_RIVAL,
+	PLAYERTAG_NAME,
+}
+playertagtype_t;
+
+playertagtype_t K_WhichPlayerTag(player_t *p);
+void K_DrawPlayerTag(fixed_t x, fixed_t y, player_t *p, playertagtype_t type, boolean foreground);
+void K_drawTargetHUD(const vector3_t *origin, player_t *player);
+
+extern patch_t *kp_itemtarget_arrow[2][2];
+extern patch_t *kp_itemtarget_icon[2];
+extern patch_t *kp_itemtarget_far[2][2];
+extern patch_t *kp_itemtarget_far_text[2];
+extern patch_t *kp_itemtarget_near[2][8];
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

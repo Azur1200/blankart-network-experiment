@@ -6519,7 +6519,7 @@ INT32 MR_StartGrandPrix(INT32 choice)
 			break;
 		default:
 			CONS_Alert(CONS_WARNING, "Invalid GP difficulty\n");
-			grandprixinfo.gamespeed = KARTSPEED_NORMAL;
+			grandprixinfo.gamespeed = KARTSPEED_DEFAULT;
 			break;
 	}
 

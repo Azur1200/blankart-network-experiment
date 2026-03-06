@@ -2119,9 +2119,9 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 			return;
 		}
 
-		if (var == &cv_kartspeed && !M_SecretUnlocked(SECRET_HARDSPEED))
+		if (var == &cv_kartspeed && !M_SecretUnlocked(SECRET_EXPERTSPEED))
 		{
-			if (fasticmp(value, "Hard") || fasticmp(value, "Expert") || atoi(value) >= KARTSPEED_HARD)
+			if (fasticmp(value, "Expert") || atoi(value) >= KARTSPEED_HARDERTHANDEFAULT)
 			{
 				CONS_Printf(M_GetText("You haven't unlocked this yet!\n"));
 				return;
@@ -2335,9 +2335,9 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 
 			if (var->PossibleValue == kartspeed_cons_t || var->PossibleValue == gpdifficulty_cons_t)
 			{
-				if (!M_SecretUnlocked(SECRET_HARDSPEED))
+				if (!M_SecretUnlocked(SECRET_EXPERTSPEED))
 				{
-					max = KARTSPEED_NORMAL+1;
+					max = KARTSPEED_DEFAULT+1;
 					if (var->PossibleValue == kartspeed_cons_t)
 						max++; // Accommodate KARTSPEED_AUTO
 				}

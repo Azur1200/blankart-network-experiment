@@ -140,7 +140,7 @@ patch_t *kp_facenum[MAXPLAYERS+1] = {};
 static patch_t *kp_facehighlight[8];
 
 static patch_t *kp_nocontestminimap;
-static patch_t *kp_itemboxminimap;
+patch_t *kp_itemboxminimap;
 
 static patch_t *kp_ringsticker[5];
 static patch_t *kp_ringsplitscreen;
@@ -167,7 +167,6 @@ static patch_t *kp_smonitorsparkle;
 static patch_t *kp_rankbumper;
 static patch_t *kp_tinybumper[2];
 static patch_t *kp_ranknobumpers;
-static patch_t *kp_rankcapsule;
 
 static patch_t *kp_battlewin;
 static patch_t *kp_battlecool;
@@ -177,7 +176,7 @@ static patch_t *kp_battleinfo;
 static patch_t *kp_wanted;
 static patch_t *kp_wantedsplit;
 static patch_t *kp_wantedreticle;
-static patch_t *kp_minimapdot;
+patch_t *kp_minimapdot;
 
 static patch_t *kp_itembg[8];
 static patch_t *kp_itemalt[4];
@@ -209,6 +208,12 @@ static patch_t *kp_bossret[4];
 static patch_t *joybacking;
 static patch_t *joyknob;
 static patch_t *joyshadow;
+
+patch_t *kp_itemtarget_arrow[2][2];
+patch_t *kp_itemtarget_icon[2];
+patch_t *kp_itemtarget_far[2][2];
+patch_t *kp_itemtarget_far_text[2];
+patch_t *kp_itemtarget_near[2][8];
 
 void K_RegisterKartHUDStuff(void)
 {
@@ -265,6 +270,9 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_fancyroulette);
 	CV_RegisterVar(&cv_fancyroulettespeed);
 	CV_RegisterVar(&cv_huditemamount);
+
+	// k_hud_track.cpp
+	CV_RegisterVar(&cv_kartdebughudtracker);
 }
 
 void K_LoadKartHUDGraphics(void)
@@ -673,6 +681,60 @@ void K_LoadKartHUDGraphics(void)
 	{
 		buffer[7] = '0'+((i+1)%10);
 		HU_UpdatePatch(&kp_bossret[i], "%s", buffer);
+	}
+
+	sprintf(buffer, "HITEARxx");
+	for (i = 0; i < 2; i++)
+	{
+		buffer[6] = 'A'+i;
+
+		for (j = 0; j < 2; j++)
+		{
+			buffer[7] = '0'+j;
+			HU_UpdatePatch(&kp_itemtarget_arrow[i][j], "%s", buffer);
+		}
+	}
+
+	sprintf(buffer, "HUDITEDx");
+	for (i = 0; i < 2; i++)
+	{
+		buffer[7] = '0'+i;
+		HU_UpdatePatch(&kp_itemtarget_far_text[i], "%s", buffer);
+	}
+
+	sprintf(buffer, "HUDITECx");
+	for (i = 0; i < 2; i++)
+	{
+		buffer[7] = '0'+i;
+		HU_UpdatePatch(&kp_itemtarget_icon[i], "%s", buffer);
+	}
+
+	sprintf(buffer, "HUDITEBx");
+	for (i = 0; i < 2; i++)
+	{
+		buffer[7] = '0'+i;
+		HU_UpdatePatch(&kp_itemtarget_far[0][i], "%s", buffer);
+	}
+
+	sprintf(buffer, "HUDI4PBx");
+	for (i = 0; i < 2; i++)
+	{
+		buffer[7] = '0'+i;
+		HU_UpdatePatch(&kp_itemtarget_far[1][i], "%s", buffer);
+	}
+
+	sprintf(buffer, "HUDITEAx");
+	for (i = 0; i < 8; i++)
+	{
+		buffer[7] = '0'+i;
+		HU_UpdatePatch(&kp_itemtarget_near[0][i], "%s", buffer);
+	}
+
+	sprintf(buffer, "HUDI4PAx");
+	for (i = 0; i < 8; i++)
+	{
+		buffer[7] = '0'+i;
+		HU_UpdatePatch(&kp_itemtarget_near[1][i], "%s", buffer);
 	}
 }
 
@@ -3275,7 +3337,7 @@ static void K_drawKartBumpersOrKarma(void)
 
 		if (itembreaker)
 		{
-			V_DrawMappedPatch(fx+1, fy-2, V_HUDTRANS|splitflags, kp_rankcapsule, NULL);
+			V_DrawMappedPatch(fx+1, fy-2, V_HUDTRANS|splitflags, kp_itemboxminimap, NULL);
 
 			if (numtargets > 9 || nummapboxes > 9)
 			{
@@ -3588,37 +3650,37 @@ static boolean K_ShowPlayerNametag(player_t *p)
 	return true;
 }
 
-static void K_DrawLocalTagForPlayer(fixed_t x, fixed_t y, player_t *p, UINT8 id)
+static void K_DrawLocalTagForPlayer(fixed_t x, fixed_t y, player_t *p, UINT8 id, UINT8 flags)
 {
 	UINT16 chatcolor = skincolors[p->skincolor].chatcolor;
 
-	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|V_SPLITSCREEN|chatcolor, va("P%d", id+1));
+	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|chatcolor|flags, va("P%d", id+1));
 }
 
-static void K_DrawRivalTagForPlayer(fixed_t x, fixed_t y)
+static void K_DrawRivalTagForPlayer(fixed_t x, fixed_t y, UINT8 flags)
 {
 	UINT8 blinkstates[4] = {SKINCOLOR_RED, SKINCOLOR_ORANGE, SKINCOLOR_YELLOW, SKINCOLOR_ORANGE};
 	UINT16 chatcolor = skincolors[blinkstates[(leveltime / 3) % 4]].chatcolor;
 
-	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|V_SPLITSCREEN|chatcolor, "RIVAL");
+	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|chatcolor|flags, "RIVAL");
 }
 
-static const char *K_StringTypingDot(player_t *p)
+static const char *K_StringTypingDot(UINT8 duration)
 {
 	static const char *dots = "...";
 
-	return dots + CLAMP(3 - p->typing_duration/16, 0, 3);
+	return dots + CLAMP(3 - duration/16, 0, 3);
 }
 
-static void K_DrawTypingNotifier(fixed_t x, fixed_t y, player_t *p)
+static void K_DrawTypingNotifier(fixed_t x, fixed_t y, player_t *p, UINT8 flags)
 {
 	if (p->cmd.flags & TICCMD_TYPING)
 	{
-		V_DrawCenteredSmallStringAtFixed(x, y, V_SPLITSCREEN, va("Typing%s",K_StringTypingDot(p)));
+		V_DrawCenteredSmallStringAtFixed(x, y, V_SPLITSCREEN|flags, va("Typing%s",K_StringTypingDot(p->typing_duration)));
 	}
 }
 
-static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p)
+static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p, UINT8 flags)
 {
 	const INT32 clr = skincolors[p->skincolor].chatcolor;
 	const INT32 namelen = V_ThinStringWidth(player_names[p - players], V_6WIDTHSPACE|V_ALLOWLOWERCASE);
@@ -3626,7 +3688,7 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p)
 	UINT8 *colormap = V_GetStringColormap(clr);
 	INT32 barx = x + 6*FRACUNIT, bary = y - 16*FRACUNIT, barw = namelen*FRACUNIT;
 	UINT8 backcolor = colormap ? colormap[31] : 31, frontcolor = colormap ? colormap[0] : 0;
-	INT32 vflags = V_SPLITSCREEN;
+	INT32 vflags = V_SPLITSCREEN|flags;
 
 	// Lat: 10/06/2020: colormap can be NULL on the frame you join a game, just arbitrarily use palette indexes 31 and 0 instead of whatever the colormap would give us instead to avoid crashes.
 
@@ -3692,6 +3754,73 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p)
 	}
 }
 
+playertagtype_t K_WhichPlayerTag(player_t *p)
+{
+	const UINT8 cnum = R_GetViewNumber();
+
+	if (!(demo.playback == true && camera[cnum].freecam == true) && P_IsDisplayPlayer(p) &&
+		p != &players[displayplayers[cnum]])
+	{
+		return PLAYERTAG_LOCAL;
+	}
+	else if (p->bot)
+	{
+		if ((p->botvars.rival == true || cv_forcebots.value))
+		{
+			return PLAYERTAG_RIVAL;
+		}
+		/*else if (K_ShowPlayerNametag(p) == true)
+		{
+			return PLAYERTAG_CPU;
+		}*/
+	}
+	else if (netgame || demo.playback)
+	{
+		if (K_ShowPlayerNametag(p) == true)
+		{
+			return PLAYERTAG_NAME;
+		}
+	}
+
+	return PLAYERTAG_NONE;
+}
+
+void K_DrawPlayerTag(fixed_t x, fixed_t y, player_t *p, playertagtype_t type, boolean foreground)
+{
+	INT32 flags = 0;
+
+	switch (type)
+	{
+		case PLAYERTAG_LOCAL:
+			flags |= V_SPLITSCREEN;
+			K_DrawLocalTagForPlayer(x, y, p, G_PartyPosition(p - players), flags);
+			break;
+
+		case PLAYERTAG_RIVAL:
+			flags |= V_SPLITSCREEN;
+			flags |= foreground ? 0 : V_60TRANS;
+			K_DrawRivalTagForPlayer(x, y, flags);
+			break;
+
+			// FALLTHRU
+		/*case PLAYERTAG_CPU:
+			flags |= V_SPLITSCREEN;
+			flags |= foreground ? 0 : V_60TRANS;
+			K_DrawCPUTagForPlayer(x, y, p, flags);
+			break;*/
+
+		case PLAYERTAG_NAME:
+			flags |= foreground ? 0 : V_60TRANS;
+			K_DrawNameTagForPlayer(x, y, p, flags);
+			break;
+
+		default:
+			break;
+	}
+
+	K_DrawTypingNotifier(x, y, p, flags);
+}
+
 typedef struct weakspotdraw_t
 {
 	UINT8 i;
@@ -3731,13 +3860,9 @@ static void K_DrawWeakSpot(weakspotdraw_t *ws)
 
 static void K_drawKartNameTags(void)
 {
-	const fixed_t maxdistance = 8192*mapobjectscale;
 	vector3_t c;
-	UINT8 cnum = R_GetViewNumber();
-	UINT8 tobesorted[MAXPLAYERS];
-	fixed_t sortdist[MAXPLAYERS];
-	UINT8 sortlen = 0;
-	UINT8 i, j;
+	const UINT8 cnum = R_GetViewNumber();
+	size_t i, j;
 
 	if (stplyr == NULL || stplyr->mo == NULL || P_MobjWasRemoved(stplyr->mo))
 	{
@@ -3831,157 +3956,7 @@ static void K_drawKartNameTags(void)
 		}
 	}
 
-	for (i = 0; i < MAXPLAYERS; i++)
-	{
-		player_t *ntplayer = &players[i];
-		fixed_t distance = maxdistance+1;
-		vector3_t v;
-
-		if (!playeringame[i] || ntplayer->spectator)
-		{
-			// Not in-game
-			continue;
-		}
-
-		if (ntplayer->mo == NULL || P_MobjWasRemoved(ntplayer->mo))
-		{
-			// No object
-			continue;
-		}
-
-		if (ntplayer->mo->renderflags & K_GetPlayerDontDrawFlag(stplyr))
-		{
-			// Invisible on this screen
-			continue;
-		}
-
-		if ((gametyperules & GTR_BUMPERS) && (ntplayer->bumper <= 0))
-		{
-			// Dead in Battle
-			continue;
-		}
-
-		if (!P_CheckSight(stplyr->mo, ntplayer->mo))
-		{
-			// Can't see
-			continue;
-		}
-
-		v.x = R_InterpolateFixed(ntplayer->mo->old_x, ntplayer->mo->x);
-		v.y = R_InterpolateFixed(ntplayer->mo->old_y, ntplayer->mo->y);
-		v.z = R_InterpolateFixed(ntplayer->mo->old_z, ntplayer->mo->z);
-
-		if (!(ntplayer->mo->eflags & MFE_VERTICALFLIP))
-		{
-			v.z += ntplayer->mo->height;
-		}
-
-		distance = R_PointToDist2(c.x, c.y, v.x, v.y);
-
-		if (distance > maxdistance)
-		{
-			// Too far away
-			continue;
-		}
-
-		tobesorted[sortlen] = ntplayer - players;
-		sortdist[sortlen] = distance;
-		sortlen++;
-	}
-
-	if (sortlen > 0)
-	{
-		UINT8 sortedplayers[sortlen];
-
-		for (i = 0; i < sortlen; i++)
-		{
-			UINT8 pos = 0;
-
-			for (j = 0; j < sortlen; j++)
-			{
-				if (j == i)
-				{
-					continue;
-				}
-
-				if (sortdist[i] < sortdist[j]
-				|| (sortdist[i] == sortdist[j] && i > j))
-				{
-					pos++;
-				}
-			}
-
-			sortedplayers[pos] = tobesorted[i];
-		}
-
-		for (i = 0; i < sortlen; i++)
-		{
-			trackingResult_t result;
-			player_t *ntplayer = &players[sortedplayers[i]];
-
-			fixed_t headOffset = 36*ntplayer->mo->scale;
-
-			SINT8 localindicator = -1;
-			vector3_t v;
-
-			v.x = R_InterpolateFixed(ntplayer->mo->old_x, ntplayer->mo->x);
-			v.y = R_InterpolateFixed(ntplayer->mo->old_y, ntplayer->mo->y);
-			v.z = R_InterpolateFixed(ntplayer->mo->old_z, ntplayer->mo->z);
-
-			v.z += (ntplayer->mo->height / 2);
-
-			if (stplyr->mo->eflags & MFE_VERTICALFLIP)
-			{
-				v.z -= headOffset;
-			}
-			else
-			{
-				v.z += headOffset;
-			}
-
-			K_ObjectTracking(&result, &v, false);
-
-			if (result.onScreen == true)
-			{
-				if (!(demo.playback == true && camera[cnum].freecam == true))
-				{
-					for (j = 0; j <= r_splitscreen; j++)
-					{
-						if (ntplayer == &players[displayplayers[j]])
-						{
-							break;
-						}
-					}
-
-					if (j <= r_splitscreen && j != cnum)
-					{
-						localindicator = j;
-					}
-				}
-
-				if (cv_seenames.value && localindicator >= 0)
-				{
-					K_DrawLocalTagForPlayer(result.x, result.y, ntplayer, localindicator);
-				}
-				else if (ntplayer->bot)
-				{
-					if (ntplayer->botvars.rival == true)
-					{
-						K_DrawRivalTagForPlayer(result.x, result.y);
-					}
-				}
-				else if (netgame || demo.playback)
-				{
-					if (K_ShowPlayerNametag(ntplayer) == true)
-					{
-						K_DrawNameTagForPlayer(result.x, result.y, ntplayer);
-					}
-
-					K_DrawTypingNotifier(result.x, result.y, ntplayer);
-				}
-			}
-		}
-	}
+	K_drawTargetHUD(&c, stplyr);
 
 	V_ClearClipRect();
 }

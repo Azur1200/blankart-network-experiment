@@ -84,6 +84,28 @@ typedef struct gl_vissprite_s
 
 	angle_t angle; // for splats
 
+	// Affine nonsense
+	struct {
+		// Vertex points for the affine sprite to be drawn to.
+		//
+		//  4--3
+		//  | /|
+		//  |/ |
+		//  1--2
+		f_vector2_t p1, p2, p3, p4;
+
+		// The "root", or center, of the affine sprite
+		polyvertex_t root;
+
+		// Bounding point (leftmost and highest point), to resolve clipping
+		polyvertex_t bounding_point;
+
+		// Sine/cosine multiplier, used for billboarding.
+		float patchsin, patchcos;
+
+		affine_t transform; // The actual affine transformation.
+	} affine;
+
 	//Hurdler: 25/04/2000: now support colormap in hardware mode
 	UINT8 *colormap;
 	INT32 dispoffset; // copy of info->dispoffset, affects ordering but not drawing
@@ -141,10 +163,39 @@ UINT32 HWR_GetLightTableID(extracolormap_t *colormap);
 void HWR_ClearLightTables(void);
 
 // --------
+// hw_bsp.c
+// --------
+void HWR_RenderBSPNode(INT32 bspnum);
+
+// --------
 // hw_draw.c
 // --------
 extern INT32 patchformat;
 extern INT32 textureformat;
+
+// --------
+// hw_plane.c
+// --------
+void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, levelflat_t *levelflat, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap);
+void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t fixedheight,
+							   FBITFIELD blendmode, UINT8 lightlevel, levelflat_t *levelflat, sector_t *FOFsector,
+							   UINT8 alpha, extracolormap_t *planecolormap);
+
+// --------
+// hw_drawnodes.c
+// --------
+void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
+void HWR_AddTransparentFloor(levelflat_t *levelflat, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
+void HWR_AddTransparentPolyobjectFloor(levelflat_t *levelflat, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight,
+									   INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
+void HWR_RenderDrawNodes(void);
+extern INT32 numdrawnodes;
+
+// --------
+// hw_segs.c
+// --------
+void HWR_ProcessSeg(void);
+void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
 
 // --------
 // hw_shaders.c
@@ -159,6 +210,25 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3);
 const char *HWR_GetShaderName(INT32 shader);
 
 extern customshaderxlat_t shaderxlat[];
+
+// --------
+// hw_sky.c
+// --------
+void HWR_ClearSkyDome(void);
+void HWR_BuildSkyDome(void);
+void HWR_DrawSkyBackground(player_t *player);
+
+// --------
+// hw_things.c
+// --------
+extern UINT32 gl_visspritecount;
+
+void HWR_ClearSprites(void);
+void HWR_AddSprites(sector_t *sec);
+void HWR_AddPrecipitationSprites(void);
+void HWR_SortVisSprites(void);
+void HWR_DrawSprites(void);
+void HWR_ProjectBoundingBox(mobj_t *thing);
 
 #ifdef __cplusplus
 } // extern "C"

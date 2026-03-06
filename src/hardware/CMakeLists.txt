@@ -1,8 +1,11 @@
 target_sources(BLANKART PRIVATE
+	hw_map.c
 	hw_bsp.c
 	hw_draw.c
 	hw_light.c
 	hw_main.c
+	hw_sky.c
+	hw_things.c
 	hw_clip.c
 	hw_md2.c
 	hw_cache.c
@@ -11,6 +14,9 @@ target_sources(BLANKART PRIVATE
 	hw_model.c
 	u_list.c
 	hw_batching.c
+	hw_drawnodes.c
+	hw_plane.c
+	hw_segs.c
 	hw_shaders.c
 	r_opengl/r_opengl.c
 )
