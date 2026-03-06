@@ -36,10 +36,10 @@ void HWR_EncoreInvertScreen(void);
 void HWR_DrawTutorialBack(UINT32 color, INT32 boxheight);
 void HWR_RenderSkyboxView(player_t *player);
 void HWR_RenderPlayerView(void);
-void HWR_ClearSkyDome(void);
-void HWR_BuildSkyDome(void);
 void HWR_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum);
 void HWR_SetViewSize(void);
+void HWR_SetTransformAiming(FTransform *trans, player_t *player, boolean skybox);
+void HWR_RollTransform(FTransform *tr, angle_t roll);
 void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap);
 void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t scale, INT32 option, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h);
 void HWR_DrawAffinePatch(patch_t *gpatch, fixed_t x, fixed_t y, const affine_t *transform, INT32 option, const UINT8 *colormap);
@@ -124,6 +124,8 @@ extern float gl_viewwindowx, gl_basewindowcentery;
 
 extern FTransform atransform;
 extern float gl_viewsin, gl_viewcos;
+
+extern angle_t dup_viewangle;
 
 
 // Render stats

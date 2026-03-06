@@ -182,6 +182,14 @@ const char *HWR_GetShaderName(INT32 shader);
 
 extern customshaderxlat_t shaderxlat[];
 
+// --------
+// hw_sky.c
+// --------
+void HWR_ClearSkyDome(void);
+void HWR_BuildSkyDome(void);
+void HWR_DrawSkyBackground(player_t *player);
+
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
