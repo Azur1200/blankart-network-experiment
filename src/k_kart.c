@@ -7076,6 +7076,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		|| P_PlayerInPain(player) || player->loop.radius
 		|| player->carry == CR_ZOOMTUBE
 		|| player->respawn
+		|| player->bumpertime
 	)
 	{
 		player->airdroptime = 0;
