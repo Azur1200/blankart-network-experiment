@@ -841,6 +841,7 @@ static void HWR_RenderPortal(gl_portal_t *portal, gl_portal_t *rootportal, playe
 		R_SetupFrame(viewssnum, is_skybox);
 	HWR_PrepareTransform(player, is_skybox);
 	GL_SetTransform(&atransform);
+	HWR_ResetClipper();
 
 	if (!gl_debugportal)
 	{
@@ -861,8 +862,6 @@ static void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolea
 	HWR_PrepareTransform(player, is_skybox);
 
 	HWR_ClearSprites();
-
-	HWR_ResetClipper();
 
 	if (rootportal)
 		HWR_PortalClipping(rootportal);
@@ -908,21 +907,25 @@ static void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolea
 			//if (gl_printportals)
 			//	CONS_Printf("drawing a skybox\n");
 			R_SkyboxFrame(viewssnum);
+
 			// render skybox while keeping batches, sprites and drawnodes
 			// from the regular viewpoint stashed in the state stacks
 			HWR_EnterSkyboxState();
 			HWR_RenderViewpoint(player, true, true, false, rootportal);
 			HWR_LeaveSkyboxState();
+
 			// restore (=clear) z-buffer, but only in the portal window
 			if (rootportal)
 				HWR_RenderDepthEraser(false);
 			else
 				GL_ClearBuffer(false, true, false, 0);
+
 			// restore transform
 			if (rootportal)
 				HWR_PortalFrame(rootportal, false);
 			else
 				R_SetupFrame(viewssnum, is_skybox);
+
 			HWR_PrepareTransform(player, is_skybox);
 		}
 		else
@@ -936,6 +939,7 @@ static void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolea
 
 	// apply transform to backend now when we're actually drawing to the screen
 	GL_SetTransform(&atransform);
+	HWR_ResetClipper();
 
 	HWR_RenderBatches();
 
