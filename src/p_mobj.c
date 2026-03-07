@@ -9365,13 +9365,14 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 	case MT_FLAMESHIELD:
 		{
 			statenum_t curstate;
-			UINT8 flamestore = mobj->target->player->flamestore;
+			UINT8 flamestore = 0;
 			if (!mobj->target || !mobj->target->health || !mobj->target->player
 				|| K_GetShieldFromPlayer(mobj->target->player) != KSHIELD_FLAME)
 			{
 				P_RemoveMobj(mobj);
 				return false;
 			}
+			flamestore = mobj->target->player->flamestore;
 			// P_SetScale(mobj, (mobj->destscale = ((flamestore >= FLAMESTOREMAX-1) ? (2*mobj->target->scale) : (5*mobj->target->scale)>>2)));
 			mobj->destscale = ((flamestore >= FLAMESTOREMAX-1) ? (7*mobj->target->scale/4) : (5*mobj->target->scale)>>2);
 			curstate = ((mobj->tics == 1) ? (mobj->state->nextstate) : ((statenum_t)(mobj->state-states)));
