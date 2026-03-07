@@ -309,9 +309,7 @@ enum hwdsetspecialstate
 	HWD_SET_SHADERS,
 	HWD_SET_TEXTUREFILTERMODE,
 	HWD_SET_TEXTUREANISOTROPICMODE,
-	HWD_SET_STENCIL_MODE,
-	HWD_SET_STENCIL_LEVEL, // must set mode afterwards for level to come into effect
-	HWD_NUMSTATE //           (TODO could create separate stencil function in r_opengl.c to avoid hacky behaviour like this)
+	HWD_NUMSTATE
 };
 typedef enum hwdsetspecialstate hwdspecialstate_t;
 
@@ -323,14 +321,16 @@ enum hwdshaderstage
 
 typedef enum hwdshaderstage hwdshaderstage_t;
 
-// stencil modes
-enum
+// Modes for SetStencilMode
+enum hwdstencilmode
 {
 	HWD_STENCIL_INACTIVE,
 	HWD_STENCIL_PORTAL_BEGIN,
 	HWD_STENCIL_PORTAL_INSIDE,
 	HWD_STENCIL_PORTAL_FINISH
 };
+
+typedef enum hwdstencilmode hwdstencilmode_t;
 
 // Lactozilla: Shader info
 // Generally set at the start of the frame.

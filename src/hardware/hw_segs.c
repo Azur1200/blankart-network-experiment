@@ -479,9 +479,9 @@ static void HWR_ProcessTwoSidedSegMiddle(FOutVector *wallVerts, FSurfaceInfo *Su
 	sector_t *front, *back;
 	fixed_t h, l; // 2s middle textures
 	fixed_t hS, lS;
-	fixed_t  popentop, popenbottom, polytop, polybottom, lowcut, highcut;
+	fixed_t popentop, popenbottom, polytop, polybottom, lowcut, highcut;
 	fixed_t popentopslope, popenbottomslope, polytopslope, polybottomslope, lowcutslope, highcutslope;
-	fixed_t     texturevpeg = 0;
+	fixed_t texturevpeg = 0;
 	INT32 repeats;
 	fixed_t midtexheight = 0;
 	fixed_t texturevpegslope = 0;

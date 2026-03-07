@@ -40,6 +40,7 @@ void GL_GClipRect(INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip
 void GL_ClearMipMapCache(void);
 
 void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value);
+void GL_SetStencilMode(hwdstencilmode_t mode, INT32 ref);
 
 // Hurdler: added for new development
 void GL_DrawModel(model_t *model, INT32 frameIndex, float duration, float tics, INT32 nextFrameIndex, FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface);
