@@ -576,6 +576,14 @@ static void HWR_ProcessTwoSidedSegMiddle(FOutVector *wallVerts, FSurfaceInfo *Su
 			polybottomslope = polytopslope - midtexheight;
 		}
 	}
+	else
+	{
+		// portal stencil twosided midtexture, fills entire space
+		polytop = popentop;
+		polybottom = popenbottom;
+		polytopslope = popentopslope;
+		polybottomslope = polytopslope;
+	}
 
 	// CB
 	// NOTE: With polyobjects, whenever you need to check the properties of the polyobject sector it belongs to,
