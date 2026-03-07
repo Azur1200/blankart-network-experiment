@@ -2079,7 +2079,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	mobj_t *interptarg = thing;
 
 	// Affines
-	boolean affinesprite = ((thing->player != NULL) || R_ThingIsAffineSprite(thing));
+	boolean affinesprite = (((thing->player != NULL) || R_ThingIsAffineSprite(thing)) && (!splat));
 	affine_t affine_transform = {0};
 	affine_bounding_t affine_bounds = {0};
 	vector2_t affine_scale = {0};
@@ -2583,14 +2583,14 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		// This is, frankly, a ridiculous solution to a problem that never existed until I touched the renderer
 		// We blow up the scale of the offsets so that the RESCALED positions are still 1:1
-		tx += (affinesprite) ? FixedDiv(offset,FixedMul(xscale, this_scale)) : offset;
+		tx += (affinesprite && (!splat)) ? FixedDiv(offset,FixedMul(xscale, this_scale)) : offset;
 		x1 = (centerxfrac + FixedMul(tx,xscale))>>FRACBITS;
 
 		// off the right side?
 		if (x1 > viewwidth)
 			return;
 
-		tx += (affinesprite) ? FixedDiv(offset2,FixedMul(xscale, this_scale)) : offset2;
+		tx += (affinesprite && (!splat)) ? FixedDiv(offset2,FixedMul(xscale, this_scale)) : offset2;
 		x2 = ((centerxfrac + FixedMul(tx,xscale))>>FRACBITS); x2--;
 
 		// off the left side

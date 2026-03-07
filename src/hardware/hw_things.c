@@ -748,7 +748,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	patch_t *gpatch;
 	GLPatch_t *hwrpatch;
 	FSurfaceInfo Surf = {};
-	const boolean affine = ((spr->mobj && !P_MobjWasRemoved(spr->mobj)) && ((spr->mobj->player != NULL) || R_ThingIsAffineSprite(spr->mobj)));
+	const boolean affine = ((spr->mobj && !P_MobjWasRemoved(spr->mobj)) && ((spr->mobj->player != NULL) || R_ThingIsAffineSprite(spr->mobj)) && (!R_ThingIsFloorSprite(spr->mobj)));
 	const boolean splat = R_ThingIsFloorSprite(spr->mobj);
 
 	if (!spr->mobj || !spr->mobj->subsector)
@@ -1579,7 +1579,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #endif
 
 	// Affines
-	boolean affinesprite = ((thing->player != NULL) || R_ThingIsAffineSprite(thing));
+	boolean affinesprite = (((thing->player != NULL) || R_ThingIsAffineSprite(thing)) && (!splat));
 	affine_t affine_transform = {0};
 	vector2_t affine_scale = {0};
 	f_vector2_t affine_pivotoffsetdiff = {0};
