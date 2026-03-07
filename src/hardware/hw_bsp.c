@@ -18,8 +18,6 @@
 #include "../r_local.h"
 #include "../z_zone.h"
 
-boolean gl_sky_found = true;
-
 // From PrBoom:
 //
 // e6y: Check whether the player can look beyond this line
@@ -689,11 +687,6 @@ static void HWR_Subsector(size_t num)
 			}
 		}
 	}
-
-	// Moved here because before, when above the ceiling and the floor does not have the sky flat, it doesn't draw the sky
-	if (gl_frontsector->ceilingpic == skyflatnum || gl_frontsector->floorpic == skyflatnum)
-		gl_sky_found = true;
-
 
 	if (gl_frontsector->ffloors)
 	{

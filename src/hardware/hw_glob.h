@@ -166,7 +166,6 @@ void HWR_ClearLightTables(void);
 // hw_bsp.c
 // --------
 void HWR_RenderBSPNode(INT32 bspnum);
-extern boolean gl_sky_found;
 
 // --------
 // hw_draw.c

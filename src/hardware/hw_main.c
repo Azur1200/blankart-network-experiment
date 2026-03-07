@@ -878,7 +878,6 @@ static void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolea
 	}
 
 	validcount++;
-	gl_sky_found = false;
 
 	HWR_StartBatching();
 
@@ -900,7 +899,6 @@ static void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolea
 	//if (gl_printportals)
 	//	CONS_Printf("%d bsp calls\n", ps_numbspcalls);
 
-	if (gl_sky_found)
 	{
 		// HWR_DrawSkyBackground is not able to set the texture without
 		// pausing batching first
