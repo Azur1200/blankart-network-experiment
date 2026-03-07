@@ -3600,6 +3600,8 @@ void K_ApplyTripWire(player_t *player, tripwirestate_t state)
 	}
 
 	player->tripwireState = state;
+
+	player->tripwireUnstuck += 10;
 }
 
 INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source) // A bit of a hack, we just throw the player up higher here and extend their spinout timer
@@ -7527,6 +7529,17 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->checkskip)
 		player->checkskip--;
 
+	UINT8 unstuckthreshold = (P_IsObjectOnGround(player->mo)) ? 80 : 40;
+
+	if (player->tripwireUnstuck > unstuckthreshold)
+	{
+		player->tripwireUnstuck = 0;
+		P_KillMobj(player->mo, NULL, NULL, DMG_INSTAKILL);
+	}
+
+	if (player->tripwireUnstuck)
+		player->tripwireUnstuck--;
+
 	if (player->bigwaypointgap && (player->bigwaypointgap > AUTORESPAWN_THRESHOLD || !P_PlayerInPain(player)))
 	{
 		player->bigwaypointgap--;
@@ -7597,6 +7610,16 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->hyudorotimer)
 		player->hyudorotimer--;
+
+	if (player->bumpUnstuck > 30*5)
+	{
+		player->bumpUnstuck = 0;
+		P_KillMobj(player->mo, NULL, NULL, DMG_INSTAKILL);
+	}
+	else if (player->bumpUnstuck && !player->squishedtimer)
+	{
+		player->bumpUnstuck--;
+	}
 
 	if (player->ringvolume < MINRINGVOLUME)
 		player->ringvolume = MINRINGVOLUME;

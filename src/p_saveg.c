@@ -789,6 +789,9 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].lastsafelap);
 		SYNC(players[i].lastsafestarpost);
 
+		SYNC(players[i].tripwireUnstuck);
+		SYNC(players[i].bumpUnstuck);
+
 		SYNC(players[i].typing_timer);
 		SYNC(players[i].typing_duration);
 
