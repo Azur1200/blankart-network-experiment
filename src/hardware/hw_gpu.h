@@ -31,7 +31,7 @@ void GL_DrawPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, F
 void GL_DrawIndexedTriangles(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, UINT32 *IndexArray);
 void GL_RenderSkyDome(gl_sky_t *sky);
 void GL_SetBlend(FBITFIELD PolyFlags);
-void GL_ClearBuffer(FBOOLEAN ColorMask, FBOOLEAN DepthMask, FRGBAFloat *ClearColor);
+void GL_ClearBuffer(FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask, FRGBAFloat *ClearColor);
 void GL_SetTexture(GLMipmap_t *pTexInfo);
 void GL_UpdateTexture(GLMipmap_t *pTexInfo);
 void GL_DeleteTexture(GLMipmap_t *pTexInfo);

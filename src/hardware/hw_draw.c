@@ -1067,7 +1067,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 			clearColour.green = (float)rgbaColour.s.green / 255;
 			clearColour.blue = (float)rgbaColour.s.blue / 255;
 			clearColour.alpha = 1;
-			GL_ClearBuffer(true, false, &clearColour);
+			GL_ClearBuffer(true, false, false, &clearColour);
 			return;
 		}
 	}

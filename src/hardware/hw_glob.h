@@ -166,6 +166,7 @@ void HWR_ClearLightTables(void);
 // hw_bsp.c
 // --------
 void HWR_RenderBSPNode(INT32 bspnum);
+extern boolean gl_sky_found;
 
 // --------
 // hw_draw.c
@@ -188,6 +189,8 @@ void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 te
 void HWR_AddTransparentFloor(levelflat_t *levelflat, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
 void HWR_AddTransparentPolyobjectFloor(levelflat_t *levelflat, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight,
 									   INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
+void HWR_PushDrawNodeState(void);
+void HWR_PopDrawNodeState(void);
 void HWR_RenderDrawNodes(void);
 
 // --------
@@ -220,12 +223,13 @@ void HWR_DrawSkyBackground(player_t *player);
 // --------
 // hw_things.c
 // --------
-extern UINT32 gl_visspritecount;
 
 void HWR_ClearSprites(void);
+void HWR_PushSpriteState(void);
+void HWR_PopSpriteState(void);
 void HWR_AddSprites(sector_t *sec);
 void HWR_AddPrecipitationSprites(void);
-void HWR_SortVisSprites(void);
+UINT32 HWR_SortVisSprites(void);
 void HWR_DrawSprites(void);
 void HWR_ProjectBoundingBox(mobj_t *thing);
 
