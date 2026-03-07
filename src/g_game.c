@@ -1652,7 +1652,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 	static INT32 turnheld[MAXSPLITSCREENPLAYERS]; // for accelerative turning
 	static boolean resetdown[MAXSPLITSCREENPLAYERS]; // don't cam reset every frame
-	static boolean joystickactive[MAXSPLITSCREENPLAYERS]; // don't use accelerometer tilt if we're alrady turning with stick
 
 	INT32 forward, side, tspeed;
 
@@ -1717,19 +1716,15 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	}
 	G_HandleAxisDeadZone(forplayer, &joystickvector);
 
-	if (joystickvector.xaxis != 0)
+	// tilt control never has deadzone
+	// if stick input is used gradually cancel out tilt based on stick intensity
+	if (cv_tiltcontrol[forplayer].value == 1)
 	{
-		joystickactive[forplayer] = true;
-		accelerometertilt = 0;
-	}
-
-	if (cv_tiltcontrol[forplayer].value != 1)
-	{
-		accelerometertilt = 0;
-	}
-	else if (!joystickactive[forplayer])
-	{
-		accelerometertilt = G_GetGamepadTilt(forplayer);
+		accelerometertilt = joystickvector.xaxis +
+			FixedMul(
+				FRACUNIT-FixedDiv(joystickvector.xaxis, JOYAXISRANGE),
+				G_GetGamepadTilt(forplayer)*FRACUNIT
+			)/FRACUNIT;
 	} 
 
 	// For kart, I've turned the aim axis into a digital axis because we only
@@ -1750,13 +1745,13 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	}
 
 	forward = side = 0;
-	if (joystickactive[forplayer])
+	if (cv_tiltcontrol[forplayer].value == 1)
 	{
-		tspeed = joystickvector.xaxis;
+		tspeed = accelerometertilt;
 	}
 	else
 	{
-		tspeed = accelerometertilt;
+		tspeed = joystickvector.xaxis;
 	}
 
 	// use two stage accelerative turning
@@ -1779,22 +1774,21 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	else
 	{
 		turnheld[forplayer] = 0;
-		joystickactive[forplayer] = false;
 	}
 
 	cmd->turning = 0;
 
-	if (joystickvector.xaxis != 0)
-	{
-		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
-		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
-		side += (joystickvector.xaxis * 4) / JOYAXISRANGE;
-	}
-	else if (accelerometertilt != 0)
+	if (cv_tiltcontrol[forplayer].value == 1)
 	{
 		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		side += (accelerometertilt * 4) / JOYAXISRANGE;
+	}
+	else if (joystickvector.xaxis != 0)
+	{
+		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
+		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
+		side += (joystickvector.xaxis * 4) / JOYAXISRANGE;
 	}
 
 	// Specator mouse turning
@@ -2000,8 +1994,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		{
 			cmd->tilt = INT8_MAX*tilt/FRACUNIT;
 
-			if (!joystickactive[forplayer])
-				cmd->flags |= TICCMD_USINGTILT;
+			cmd->flags |= TICCMD_USINGTILT;
 			if (abs(tilt) > MAXGAMEPADTILT)
 				cmd->flags |= TICCMD_EXCESSTILT;
 		}
