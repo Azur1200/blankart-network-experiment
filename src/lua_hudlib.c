@@ -748,6 +748,7 @@ static int libd_drawAffine(lua_State *L)
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 	huddrawlist_h list = lua_touserdata(L, -1);
+	(void)list;
 	lua_pop(L, 1);
 
 	//if (LUA_HUD_IsDrawListValid(list))

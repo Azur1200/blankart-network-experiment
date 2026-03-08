@@ -164,6 +164,7 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 {
 	fixed_t rotcos, rotsin, finx, finy;
 	vector2_t xvec, yvec;
+	(void)affine;
 
 	// input offsets
 	fixed_t xoffs, yoffs, xpiv, ypiv;

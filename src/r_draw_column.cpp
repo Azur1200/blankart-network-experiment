@@ -589,9 +589,9 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 		intptr_t frac;
 		// Looks familiar.
 		const intptr_t fracstep = dc->iscale;
-		const intptr_t heightmask = dc->sourcelength-1; // CPhipps - specify type
-		constexpr INT32 npow2min = -1;
-		const INT32 npow2max = dc->sourcelength;
+		//const intptr_t heightmask = dc->sourcelength-1; // CPhipps - specify type
+		//constexpr INT32 npow2min = -1;
+		//const INT32 npow2max = dc->sourcelength;
 
 		// Framebuffer destination address.
 		// SoM: MAGIC
