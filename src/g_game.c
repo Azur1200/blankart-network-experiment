@@ -1720,12 +1720,11 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// if stick input is used gradually cancel out tilt based on stick intensity
 	if (cv_tiltcontrol[forplayer].value == 1)
 	{
-		accelerometertilt = joystickvector.xaxis +
-			FixedMul(
-				FRACUNIT-FixedDiv(joystickvector.xaxis, JOYAXISRANGE),
-				G_GetGamepadTilt(forplayer)*FRACUNIT
-			)/FRACUNIT;
-	} 
+		fixed_t rate = FixedDiv(abs(joystickvector.xaxis), JOYAXISRANGE);
+		accelerometertilt = 
+			(FixedMul(rate, joystickvector.xaxis*FRACUNIT)/FRACUNIT) +
+			(FixedMul(FRACUNIT-rate, G_GetGamepadTilt(forplayer)*FRACUNIT)/FRACUNIT);
+	}
 
 	// For kart, I've turned the aim axis into a digital axis because we only
 	// use it for aiming to throw items forward/backward and the vote screen
