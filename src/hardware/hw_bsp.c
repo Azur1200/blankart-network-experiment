@@ -134,7 +134,9 @@ static boolean CheckClip(seg_t * seg, sector_t * afrontsector, sector_t * abacks
 	{
 		// not in vanilla kart, but this makes noclipcam alot more bearable when its stuck in walls
 		// otherwise it may cull half your view which is not really desirable
-		if (afrontsector == viewsector || abacksector == viewsector)
+		// using this check with portals causes weird culling issues on ante-station
+		if (!gl_portalclipline &&
+			(afrontsector == viewsector || abacksector == viewsector))
 		{
 			fixed_t viewf1, viewf2, viewc1, viewc2;
 			if (afrontsector == viewsector)
@@ -164,7 +166,7 @@ static boolean CheckClip(seg_t * seg, sector_t * afrontsector, sector_t * abacks
 		if (backc1 <= frontf1 && backc2 <= frontf2)
 		{
 			checkforemptylines = false;
-			return true;
+			return !gl_portalclipline; // during portal rendering view position may cause undesired culling and the above code has some wrong side effects
 		}
 
 		// here we're talking about floors higher than ceilings, don't even bother either.
@@ -293,31 +295,36 @@ static void HWR_AddLine(seg_t * line)
 	}
 
 	// Portal line
-	if (line->linedef->special == 40 && line->side == 0)
+	if (line->linedef->special == 40)
 	{
-		size_t p;
-		mtag_t tag = Tag_FGet(&line->linedef->tags);
-		INT32 li1 = line->linedef-lines;
-		INT32 li2;
-
-		for (p = 0; (li2 = Tag_Iterate_Lines(tag, p)) >= 0; p++)
+		if (line->side == 0)
 		{
-			// Skip invalid lines.
-			if ((tag != Tag_FGet(&lines[li2].tags)) || (lines[li1].special != lines[li2].special) || (li1 == li2))
-				continue;
+			mtag_t tag = Tag_FGet(&line->linedef->tags);
+			INT32 li1 = line->linedef-lines;
+			INT32 li2;
 
-			// call will bail and return false if recursion limit is reached
-			if (HWR_AddPortal(&lines[li1], &lines[li2], line))
+			// Find the other side!
+			li2 = P_FindSpecialLineFromTag(40, tag, -1);
+
+			if (line->linedef == &lines[li2])
+				li2 = P_FindSpecialLineFromTag(40, tag, li2);
+
+			if (li2 >= 0) // found it!
 			{
-				skipseg = true; // TODO could this cause unintentional disappearing of some walls?
-				if (gl_printportals && !gl_portal_level && !gl_rendering_skybox)
+				if (HWR_AddPortal(&lines[li1], &lines[li2], line))
 				{
-					// print some info about first level portals
-					CONS_Printf("line %d -> line %d\n", li1, li2);
+					skipseg = true; // TODO could this cause unintentional disappearing of some walls?
+					if (gl_printportals && !gl_portal_level && !gl_rendering_skybox)
+					{
+						// print some info about first level portals
+						CONS_Printf("line %d -> line %d\n", li1, li2);
+					}
 				}
 			}
 		}
-	}
+		else
+			return;// dont do anything with the other side i guess?
+ 	}
 
 	if (!line->backsector)
 	{

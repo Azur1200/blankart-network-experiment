@@ -860,8 +860,9 @@ static void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolea
 	gl_portal_array_t *portal_array;
 
 	HWR_PrepareTransform(player, is_skybox);
-
+	GL_SetTransform(&atransform);
 	HWR_ClearSprites();
+	HWR_ResetClipper();
 
 	if (rootportal)
 		HWR_PortalClipping(rootportal);
