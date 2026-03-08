@@ -4375,6 +4375,18 @@ static int lib_kSafeRespawnPositionEx(lua_State *L)
 	return 1;
 }
 
+static int lib_kKillAirDrop(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	p_airdropflags_t airdropflags = luaL_checkinteger(L, 2);
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	K_KillAirDrop(player, airdropflags);
+	return 0;
+}
+
 // Checks if Rings are applicable.
 static int lib_kRingsActive(lua_State *L)
 {
@@ -5770,6 +5782,7 @@ static luaL_Reg lib[] = {
 	{"K_SetHyudoroCooldown",lib_kSetHyuCountdown},
 	{"K_SafeRespawnPosition",lib_kSafeRespawnPosition},
 	{"K_SafeRespawnPositionEx",lib_kSafeRespawnPositionEx},
+	{"K_KillAirDrop", lib_kKillAirDrop},
 
 	{"K_GetCollideAngle",lib_kGetCollideAngle},
 

@@ -7155,6 +7155,19 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		player->airdroppredelay++;
 }
 
+void K_KillAirDrop(player_t *player, p_airdropflags_t airdropflags)
+{
+	if (!player)
+		return;
+
+	if (player->airdropflags & airdropflags)
+	{
+		player->airdroptime = 0;
+		player->airdroppredelay = 0;
+		player->airdropflags &= ~PAF_AIRDROP_MASK;
+	}
+}
+
 // Returns the bumpspark value as an enum.
 INT32 K_GetBumpSpark(void)
 {

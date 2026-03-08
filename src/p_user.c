@@ -1692,6 +1692,9 @@ static void P_CheckBouncySectors(player_t *player)
 			{
 				player->mo->momx = -FixedMul(player->mo->momx,rover->bouncestrength);
 				player->mo->momy = -FixedMul(player->mo->momy,rover->bouncestrength);
+
+				// Kill heavy airdrop too so you don't get softlocked.
+				K_KillAirDrop(player, PAF_AIRDROP_HEAVY);
 			}
 			else
 			{
@@ -1731,6 +1734,10 @@ static void P_CheckBouncySectors(player_t *player)
 				player->mo->momx = momentum.x;
 				player->mo->momy = momentum.y;
 				player->mo->momz = momentum.z;
+
+				// Kill heavy airdrop too so you don't get softlocked.
+				K_KillAirDrop(player, PAF_AIRDROP_HEAVY);
+
 			}
 			goto bouncydone;
 		}
