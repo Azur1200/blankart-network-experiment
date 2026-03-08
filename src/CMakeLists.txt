@@ -118,6 +118,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	lua_botvarslib.c
 	lua_hudlib.c
 	lua_hudlib_drawlist.c
+	lua_colorlib.c
 	lua_followerlib.c
 	lua_terrainlib.c
 	lua_waypointslib.c

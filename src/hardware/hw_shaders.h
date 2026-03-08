@@ -101,7 +101,7 @@
 #define GLSL_SOFTWARE_TINT_EQUATION \
 	"if (mix(tint_color.a, 0.0, brightmap_mix) > 0.0) {\n" \
 		"float color_bright = sqrt((base_color.r * base_color.r) + (base_color.g * base_color.g) + (base_color.b * base_color.b));\n" \
-		"float strength = sqrt(9.0 * mix(tint_color.a, 0.0, brightmap_mix));\n" \
+		"float strength = sqrt(mix(tint_color.a, 0.0, brightmap_mix));\n" \
 		"final_color.r = clamp((color_bright * (tint_color.r * strength)) + (base_color.r * (1.0 - strength)), 0.0, 1.0);\n" \
 		"final_color.g = clamp((color_bright * (tint_color.g * strength)) + (base_color.g * (1.0 - strength)), 0.0, 1.0);\n" \
 		"final_color.b = clamp((color_bright * (tint_color.b * strength)) + (base_color.b * (1.0 - strength)), 0.0, 1.0);\n" \
