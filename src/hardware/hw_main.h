@@ -38,7 +38,7 @@ void HWR_RenderSkyboxView(player_t *player);
 void HWR_RenderPlayerView(void);
 void HWR_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum);
 void HWR_SetViewSize(void);
-void HWR_SetTransformAiming(FTransform *trans, player_t *player, boolean skybox);
+void HWR_SetTransformAiming(FTransform *trans, player_t *player, boolean skybox, boolean side_effect);
 void HWR_RollTransform(FTransform *tr, angle_t roll);
 boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf);
 void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap);
@@ -118,6 +118,9 @@ extern consvar_t cv_glskydome;
 extern consvar_t cv_glbatching;
 extern consvar_t cv_glpaletterendering;
 extern consvar_t cv_glpalettedepth;
+extern consvar_t cv_gldebugportal;
+
+extern consvar_t cv_glskydebug;
 
 extern float gl_viewwidth, gl_viewheight, gl_baseviewwindowy;
 
@@ -132,9 +135,6 @@ extern sector_t *gl_backsector;
 
 extern FTransform atransform;
 extern float gl_viewsin, gl_viewcos;
-
-extern fixed_t dup_viewx, dup_viewy, dup_viewz;
-extern angle_t dup_viewangle;
 
 extern float gl_viewx, gl_viewy, gl_viewz;
 extern float gl_viewsin, gl_viewcos;
@@ -163,6 +163,23 @@ extern boolean gl_init;
 extern boolean gl_maploaded;
 extern boolean gl_sessioncommandsadded;
 extern boolean gl_shadersavailable;
+
+extern boolean gl_rendering_skybox;
+
+/* Portal stuff */
+
+// TODO probably put this to a separate file?
+
+boolean HWR_AddPortal(line_t *start, line_t *dest, seg_t *seg);
+
+extern INT32 gl_portal_level;
+
+extern boolean gl_drawing_stencil;
+extern sector_t *gl_portalcullsector;
+extern line_t *gl_portalclipline;
+
+extern boolean gl_printportals;
+extern INT32 gl_debugportal;
 
 #ifdef __cplusplus
 } // extern "C"

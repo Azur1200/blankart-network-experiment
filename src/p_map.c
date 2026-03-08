@@ -3822,6 +3822,9 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	P_PlayerHitBounceLine(result->line, &result->normal);
 	mo->eflags |= MFE_JUSTBOUNCEDWALL;
 
+	if (mo->player)
+		mo->player->bumpUnstuck += 5;
+
 	mo->momx = tmxmove;
 	mo->momy = tmymove;
 	mo->player->cmomx = tmxmove;

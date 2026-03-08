@@ -2440,9 +2440,6 @@ void P_MovePlayer(player_t *player)
 	// Look for Quicksand!
 	if (CheckForQuicksand)
 		P_CheckQuicksand(player);
-
-	if (P_IsObjectOnGround(player->mo))
-		player->mo->pmomz = 0;
 }
 
 static void P_DoZoomTube(player_t *player)
@@ -3098,6 +3095,11 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	{
 		focusangle = mo->angle;
 		focusaiming = player->aiming;
+	}
+
+	if (abs(thiscam->dpad_y_held) >= 2*TICRATE)
+	{
+		focusaiming += ANGLE_45 * intsign(thiscam->dpad_y_held) * P_MobjFlip(mo);
 	}
 
 	if (P_CameraThinker(player, thiscam, resetcalled))
@@ -4570,9 +4572,6 @@ void P_PlayerAfterThink(player_t *player)
 		player->mo->flags |= MF_NOGRAVITY;
 	}
 
-	if (P_IsObjectOnGround(player->mo))
-		player->mo->pmomz = 0;
-
 	K_KartPlayerAfterThink(player);
 
 	if (player->followmobj && (player->spectator || player->mo->health <= 0 || player->followmobj->type != player->followitem))
@@ -4617,11 +4616,19 @@ void P_PlayerAfterThink(player_t *player)
 	// so a lag value of 1 is exactly attached to the player.
 	K_HandleFollower(player);
 
-
 	if (K_PlayerUsesBotMovement(player))
 	{
 		K_UpdateBotGameplayVars(player);
 	}
+
+	if (thiscam)
+	{
+		// Store before it gets 0'd out
+		thiscam->pmomz = player->mo->pmomz;
+	}
+
+	if (P_IsObjectOnGround(player->mo))
+		player->mo->pmomz = 0;
 }
 
 void P_SetPlayerAngle(player_t *player, angle_t angle)

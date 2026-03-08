@@ -3721,10 +3721,10 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 	thiscam->floorz = g_tm.floorz;
 	thiscam->ceilingz = g_tm.ceilingz;
 
-	if (thiscam->momz || player->mo->pmomz)
+	if (thiscam->momz || thiscam->pmomz)
 	{
 		// adjust height
-		thiscam->z += thiscam->momz + player->mo->pmomz;
+		thiscam->z += thiscam->momz + thiscam->pmomz;
 	}
 
 	if (thiscam->ceilingz - thiscam->z < thiscam->height
@@ -9365,13 +9365,14 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 	case MT_FLAMESHIELD:
 		{
 			statenum_t curstate;
-			UINT8 flamestore = mobj->target->player->flamestore;
+			UINT8 flamestore = 0;
 			if (!mobj->target || !mobj->target->health || !mobj->target->player
 				|| K_GetShieldFromPlayer(mobj->target->player) != KSHIELD_FLAME)
 			{
 				P_RemoveMobj(mobj);
 				return false;
 			}
+			flamestore = mobj->target->player->flamestore;
 			// P_SetScale(mobj, (mobj->destscale = ((flamestore >= FLAMESTOREMAX-1) ? (2*mobj->target->scale) : (5*mobj->target->scale)>>2)));
 			mobj->destscale = ((flamestore >= FLAMESTOREMAX-1) ? (7*mobj->target->scale/4) : (5*mobj->target->scale)>>2);
 			curstate = ((mobj->tics == 1) ? (mobj->state->nextstate) : ((statenum_t)(mobj->state-states)));

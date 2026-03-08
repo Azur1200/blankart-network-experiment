@@ -773,6 +773,9 @@ struct player_t
 	tic_t splits[MAXRACESPLITS]; // Times we crossed checkpoint
 	INT32 pace; // Last split delta, used for checking whether gaining or losing time
 
+	UINT8 tripwireUnstuck;
+	UINT8 bumpUnstuck;
+
 	//
 
 	SINT8 lives;

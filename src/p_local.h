@@ -125,6 +125,7 @@ struct camera_t
 
 	// Momentums, used to update position.
 	fixed_t momx, momy, momz;
+	fixed_t pmomz;
 
 	// SRB2Kart: camera pans while drifting
 	fixed_t pan;
@@ -135,6 +136,9 @@ struct camera_t
 	UINT8 button_a_held;
 
 	boolean reset_aiming;	// camera aiming needs to be reset from chase camera
+
+	// Hold up/down to pan the camera vertically
+	SINT8 dpad_y_held;
 
 	// Interpolation data
 	fixed_t old_x, old_y, old_z;
