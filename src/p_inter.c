@@ -629,12 +629,16 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (special->extravalue1)
 				return;
 
-			// No picking up rings while SPB is targetting you
+			// No picking up rings while your rings are locked.
 			if (player->pflags & PF_RINGLOCK)
 				return;
 
 			// Don't immediately pick up spilled rings
 			if (special->threshold > 0 || P_PlayerInPain(player))
+				return;
+
+			// Don't pick up SPB rings in first.
+			if (special->extravalue3 && player->position == 1)
 				return;
 
 			if (!(P_CanPickupItem(player, PICKUPITEM_RING)))
