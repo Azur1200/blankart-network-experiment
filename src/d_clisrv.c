@@ -5705,6 +5705,9 @@ static INT16 Consistancy(consistancy_t *c)
 
 			mo = (mobj_t *)th;
 
+			if (!MobjIsNetSynced(mo))
+				continue;
+
 			if (mo->flags & (MF_SPECIAL | MF_SOLID | MF_PUSHABLE | MF_BOSS | MF_MISSILE | MF_SPRING | MF_MONITOR | MF_FIRE | MF_ENEMY | MF_PAIN | MF_STICKY))
 			{
 				c->mobjtype -= mo->type;
@@ -5734,11 +5737,11 @@ static INT16 Consistancy(consistancy_t *c)
 					c->mobjstate -= mo->target->state - states;
 					c->mobjtics += mo->target->tics;
 					c->mobjsprite -= mo->target->sprite;
-					c->mobjframe += mo->target->frame;
+					//c->mobjframe += mo->target->frame;
 				}
 				else
 					ConsistancyXOR(c, 0x3333);
-				if (mo->tracer && mo->tracer->type != MT_OVERLAY)
+				if (mo->tracer && MobjIsNetSynced(mo->tracer))
 				{
 					c->mobjtype += mo->tracer->type;
 					c->position[0] -= mo->tracer->x;
@@ -5754,12 +5757,12 @@ static INT16 Consistancy(consistancy_t *c)
 					c->mobjstate -= mo->tracer->state - states;
 					c->mobjtics += mo->tracer->tics;
 					c->mobjsprite -= mo->tracer->sprite;
-					c->mobjframe += mo->tracer->frame;
+					//c->mobjframe += mo->tracer->frame;
 				}
 				else
 					ConsistancyXOR(c, 0xAAAA);
 				// SRB2Kart: We use hnext & hprev very extensively
-				if (mo->hnext && mo->hnext->type != MT_OVERLAY)
+				if (mo->hnext && MobjIsNetSynced(mo->hnext))
 				{
 					c->mobjtype += mo->hnext->type;
 					c->position[0] -= mo->hnext->x;
@@ -5775,11 +5778,11 @@ static INT16 Consistancy(consistancy_t *c)
 					c->mobjstate -= mo->hnext->state - states;
 					c->mobjtics += mo->hnext->tics;
 					c->mobjsprite -= mo->hnext->sprite;
-					c->mobjframe += mo->hnext->frame;
+					//c->mobjframe += mo->hnext->frame;
 				}
 				else
 					ConsistancyXOR(c, 0x5555);
-				if (mo->hprev && mo->hprev->type != MT_OVERLAY)
+				if (mo->hprev && MobjIsNetSynced(mo->hprev))
 				{
 					c->mobjtype += mo->hprev->type;
 					c->position[0] -= mo->hprev->x;
@@ -5795,14 +5798,14 @@ static INT16 Consistancy(consistancy_t *c)
 					c->mobjstate -= mo->hprev->state - states;
 					c->mobjtics += mo->hprev->tics;
 					c->mobjsprite -= mo->hprev->sprite;
-					c->mobjframe += mo->hprev->frame;
+					//c->mobjframe += mo->hprev->frame;
 				}
 				else
 					ConsistancyXOR(c, 0xCCCC);
 				c->mobjstate -= mo->state - states;
 				c->mobjtics += mo->tics;
 				c->mobjsprite -= mo->sprite;
-				c->mobjframe += mo->frame;
+				//c->mobjframe += mo->frame;
 			}
 		}
 	}

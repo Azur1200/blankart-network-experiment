@@ -2081,6 +2081,35 @@ static void DiffMobj(const mobj_t *mobj, UINT32 diff[])
 	DIFF(mobj->voice, MD3_VOICE);
 }
 
+boolean MobjIsNetSynced(mobj_t *mobj)
+{
+	// Ignore stationary hoops - these will be respawned from mapthings.
+	if (mobj->type == MT_HOOP)
+		return false;
+
+	// These are NEVER saved.
+	if (mobj->type == MT_HOOPCOLLIDE)
+		return false;
+
+	// This hoop has already been collected.
+	if (mobj->type == MT_HOOPCENTER && mobj->threshold == 4242)
+		return false;
+
+	// MT_SPARK: used for debug stuff
+	if (mobj->type == MT_SPARK)
+		return false;
+
+	// MT_FOLLOWERHORN: So it turns out hornmod is fundamentally incompatible with netsync
+	if (mobj->type == MT_FOLLOWERHORN)
+		return false;
+
+	// This is a non-synched visual effect mobj
+	if (mobj->flags2 & MF2_DONTSYNC)
+		return false;
+
+	return true;
+}
+
 static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
 	mobj_t *mobj = (mobj_t *)th;
@@ -2089,24 +2118,7 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 
 	if (save->write)
 	{
-		// Ignore stationary hoops - these will be respawned from mapthings.
-		if (mobj->type == MT_HOOP)
-			return th;
-
-		// These are NEVER saved.
-		if (mobj->type == MT_HOOPCOLLIDE)
-			return th;
-
-		// This hoop has already been collected.
-		if (mobj->type == MT_HOOPCENTER && mobj->threshold == 4242)
-			return th;
-
-		// MT_SPARK: used for debug stuff
-		if (mobj->type == MT_SPARK)
-			return th;
-
-		// This is a non-synched visual effect mobj
-		if (mobj->flags2 & MF2_DONTSYNC)
+		if (!MobjIsNetSynced(mobj))
 			return th;
 
 		// Scrap all of that. If we're a hoop center, this is ALL we're saving.
@@ -3822,9 +3834,7 @@ static void P_RelinkPointers(savebuffer_t *save)
 
 		mobj = (mobj_t *)currentthinker;
 
-		if (UNLIKELY(mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER
-			// MT_SPARK: used for debug stuff
-			|| mobj->type == MT_SPARK))
+		if (!MobjIsNetSynced(mobj))
 			continue;
 
 		RELINK(&mobj->tracer);
@@ -4538,11 +4548,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 				continue;
 
 			mobj = (mobj_t *)th;
-			if (UNLIKELY(mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER
-				// MT_SPARK: used for debug stuff
-				|| mobj->type == MT_SPARK
-				// MT_FOLLOWERHORN: So it turns out hornmod is fundamentally incompatible with netsync
-				|| mobj->type == MT_FOLLOWERHORN || mobj->flags2 & MF2_DONTSYNC))
+			if (!MobjIsNetSynced(mobj))
 				continue;
 			mobj->mobjnum = i++;
 		}

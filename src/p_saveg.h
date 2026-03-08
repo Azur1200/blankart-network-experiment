@@ -61,6 +61,8 @@ boolean P_SaveBufferFromLump(savebuffer_t *save, lumpnum_t lump);
 size_t P_SaveBufferFromFile(savebuffer_t *save, char const *name);
 void P_SaveBufferFree(savebuffer_t *save);
 
+boolean MobjIsNetSynced(mobj_t *mobj);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
