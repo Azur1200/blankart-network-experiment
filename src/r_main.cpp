@@ -148,8 +148,6 @@ static CV_PossibleValue_t secbright_cons_t[] = {{0, "MIN"}, {255, "MAX"}, {0, NU
 
 static void Fov_OnChange(void);
 
-consvar_t cv_tailspickup = CVAR_INIT ("tailspickup", "On", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL);
-
 // if enabled, load all graphics at level load
 consvar_t cv_precachetextures = CVAR_INIT ("precachetextures", "On", CV_SAVE, CV_OnOff, NULL);
 
@@ -1797,7 +1795,6 @@ void R_RegisterEngineStuff(void)
 	UINT8 i;
 
 	CV_RegisterVar(&cv_gravity);
-	CV_RegisterVar(&cv_tailspickup);
 	CV_RegisterVar(&cv_allowmlook);
 	CV_RegisterVar(&cv_homremoval);
 
