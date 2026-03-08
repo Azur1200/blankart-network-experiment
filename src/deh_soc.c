@@ -2063,6 +2063,17 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		}
 		else if (fastcmp(word, "SUBMENU"))
 		{
+#ifndef HAVE_DISCORDRPC
+			{
+				const char *testname = word2;
+				if (fastncmp("MN_", testname, 3))
+					testname += 3;
+				if (fastcmp(testname, "OP_DISCORD") || fastcmp(testname, "MISC_DISCORDREQUESTS"))
+				{
+					continue;
+				}
+			}
+#endif
 			menutype_t mn = get_menutype(word2);
 			if (mn == MAXMENUTYPES)
 			{
