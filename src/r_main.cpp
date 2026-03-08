@@ -14,6 +14,7 @@
 ///        See tables.c, too.
 
 #include <algorithm>
+#include <cmath>
 
 #include "doomdef.h"
 #include "g_game.h"
@@ -50,6 +51,9 @@ extern consvar_t cv_debugrender_freezebsp;
 
 // Fineangles in the SCREENWIDTH wide window.
 #define FIELDOFVIEW 2048
+
+// Double-precision Pi value
+#define DOUBLE_PI 3.141592653589793
 
 // increment every time a check is made
 size_t validcount = 1;
@@ -386,6 +390,29 @@ angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 		ANGLE_270-tantoangle[SlopeDiv(x,y)] :                          // octant 5
 		0;
 }
+
+#define ANGLE_180_DOUBLE (static_cast<double>(ANGLE_180))
+#define ANGLE_360_DOUBLE (ANGLE_180_DOUBLE * 2)
+
+// For absolute accuracy. Please don't use this outside of renderers.
+angle_t R_PointToAngleFloat2(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
+{
+	double deltax = FixedToDouble(x2 - x1);
+	double deltay = FixedToDouble(y2 - y1);
+
+	// Converted to degrees
+	double _arctan = (atan2(deltay, deltax) * ANGLE_180_DOUBLE) / DOUBLE_PI;
+
+	while (_arctan < 0)
+	{
+		_arctan += ANGLE_360_DOUBLE;
+	}
+
+	return static_cast<angle_t>(_arctan);
+}
+
+#undef ANGLE_180_DOUBLE
+#undef ANGLE_360_DOUBLE
 
 //
 // R_ScaleFromGlobalAngle

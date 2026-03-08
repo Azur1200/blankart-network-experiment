@@ -38,8 +38,8 @@ angle_t R_GetPitchRollAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_
 	}
 	else
 	{
-		// Regular Mobjs don't air tilt.
-		viewingAngle = mobj->angle;
+		// For regular objects, use the camera; just not the *player's* camera.
+		viewingAngle = R_PointToAngleFloat(mobj->x, mobj->y);
 	}
 
 	pitchMul = -FINESINE(viewingAngle >> ANGLETOFINESHIFT);
