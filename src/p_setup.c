@@ -9051,21 +9051,20 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// Load the ccheckpoints and waypoints please!
 	if (gametyperules & GTR_CIRCUIT && gamestate != GS_TITLESCREEN)
 	{
-
-			if ((K_SetupWaypointList() == false))
+		if ((K_SetupWaypointList() == false))
+		{
+			if (!K_UsingLegacyCheckpoints())
 			{
-				if (!K_UsingLegacyCheckpoints())
-				{
-					CONS_Alert(CONS_ERROR, "Waypoints were not able to be setup and legacy checkpoints do not exist! Player positions will not work correctly.\n");
-				}
+				CONS_Alert(CONS_ERROR, "Waypoints were not able to be setup and legacy checkpoints do not exist! Player positions will not work correctly.\n");
 			}
+		}
 	}
 
 #ifdef HWRENDER // not win32 only 19990829 by Kin
 	gl_maploaded = false;
 
-	// Lactozilla: Free extrasubsectors regardless of renderer.
-	HWR_FreeExtraSubsectors();
+	// Lactozilla: Free poly_subsectors regardless of renderer.
+	HWR_FreePolyPool();
 
 	// Create plane polygons.
 	if (rendermode == render_opengl)

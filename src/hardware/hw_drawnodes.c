@@ -37,7 +37,7 @@ typedef struct
 
 typedef struct
 {
-	extrasubsector_t *xsub;
+	poly_subsector_t *xsub;
 	boolean isceiling;
 	fixed_t fixedheight;
 	INT32 lightlevel;
@@ -143,7 +143,7 @@ void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 te
 }
 
 // This will likely turn into a copy of HWR_Add3DWater and replace it.
-void HWR_AddTransparentFloor(levelflat_t *levelflat, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap)
+void HWR_AddTransparentFloor(levelflat_t *levelflat, poly_subsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap)
 {
 	planeinfo_t *planeinfo = HWR_CreateDrawNode(DRAWNODE_PLANE);
 
