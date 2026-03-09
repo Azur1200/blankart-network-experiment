@@ -2205,7 +2205,7 @@ static void HWR_WalkBSPNode(INT32 bspnum, wpoly_t* poly, UINT16 *leafnode, fixed
 	return;
 
 bad_subsector:
-	I_Error("HWR_WalkBSPNode : bad secnum %i, numsectors=%lu -1\n",
+	I_Error("HWR_WalkBSPNode : bad secnum %lu, numsectors=%lu -1\n",
 			subsecnum, numsubsectors);
 
 bad_node:
