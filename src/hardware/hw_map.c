@@ -2056,7 +2056,7 @@ static void HWR_WalkBSPNode(INT32 bspnum, wpoly_t* poly, UINT16 *leafnode, fixed
 	wpoly_t frontpoly;
 	fdivline_t fdivline;
 	polyvertex_t *pt;
-	INT32 subsecnum;  // subsector index
+	size_t subsecnum;  // subsector index
 	INT32 i;
 
 	(void)leafnode; // unused
@@ -2073,7 +2073,7 @@ static void HWR_WalkBSPNode(INT32 bspnum, wpoly_t* poly, UINT16 *leafnode, fixed
 	{
 		// Subsector leaf: bspnum is a subsector number.
 		subsecnum = bspnum & ~NF_SUBSECTOR;
-		if ((size_t)subsecnum >= numsubsectors)
+		if (subsecnum >= numsubsectors)
 			goto bad_subsector;
 
 #ifdef DEBUG_TRACE
@@ -2121,7 +2121,7 @@ static void HWR_WalkBSPNode(INT32 bspnum, wpoly_t* poly, UINT16 *leafnode, fixed
 	}
 
 	// Node reference: bspnum is another node of the tree.
-	if ((size_t)bspnum >= numnodes)
+	if (bspnum >= (INT32)numnodes)
 		goto bad_node;
 
 	bsp = &nodes[bspnum];
@@ -2444,7 +2444,7 @@ static void SolveTProblem(void)
 	// For every subsector
 	for (ssnum = 0; ssnum < num_poly_subsector; ssnum++)
 	{
-		wp = & wpoly_subsectors[ssnum];
+		wp = &wpoly_subsectors[ssnum];
 		if (wp->numpts == 0)
 			continue;
 
@@ -2487,7 +2487,8 @@ static void SolveTProblem(void)
 			splitt.after = wp->ppts[j];
 
 			// Check added polyvertex due to SplitPoly.
-			SearchSegInBSP(numnodes-1, & splitt);
+			// lug: handle "degenerate" case so bspnum is never -1 here either
+			SearchSegInBSP(((numnodes > 0) ? numnodes-1 : (0 | NF_SUBSECTOR)), &splitt);
 		}
 	}
 #ifdef DEBUG_HWBSP
