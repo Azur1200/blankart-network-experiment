@@ -14,6 +14,7 @@
 ///        See tables.c, too.
 
 #include <algorithm>
+#include <cmath>
 
 #include "doomdef.h"
 #include "g_game.h"
@@ -50,6 +51,9 @@ extern consvar_t cv_debugrender_freezebsp;
 
 // Fineangles in the SCREENWIDTH wide window.
 #define FIELDOFVIEW 2048
+
+// Double-precision Pi value
+#define DOUBLE_PI 3.141592653589793
 
 // increment every time a check is made
 size_t validcount = 1;
@@ -144,8 +148,6 @@ static CV_PossibleValue_t secbright_cons_t[] = {{0, "MIN"}, {255, "MAX"}, {0, NU
 
 static void Fov_OnChange(void);
 
-consvar_t cv_tailspickup = CVAR_INIT ("tailspickup", "On", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL);
-
 // if enabled, load all graphics at level load
 consvar_t cv_precachetextures = CVAR_INIT ("precachetextures", "On", CV_SAVE, CV_OnOff, NULL);
 
@@ -201,9 +203,6 @@ consvar_t cv_fakerollangle = CVAR_INIT ("fakerollangle", "Off", CV_SAVE, CV_OnOf
 
 consvar_t cv_affineprescale = CVAR_INIT ("affineprescale", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_affinemosaic = CVAR_INIT ("affinemosaic", "Off", CV_SAVE, CV_OnOff, NULL);
-
-static CV_PossibleValue_t affineangle_cons_t[] = {{0, "MIN"}, {360 * FRACUNIT, "MAX"}, {0, NULL}};
-static CV_PossibleValue_t affinetest_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Auto"}, {0, NULL}};
 
 void SplitScreen_OnChange(void)
 {
@@ -389,6 +388,29 @@ angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 		ANGLE_270-tantoangle[SlopeDiv(x,y)] :                          // octant 5
 		0;
 }
+
+#define ANGLE_180_DOUBLE (static_cast<double>(ANGLE_180))
+#define ANGLE_360_DOUBLE (ANGLE_180_DOUBLE * 2)
+
+// For absolute accuracy. Please don't use this outside of renderers.
+angle_t R_PointToAngleFloat2(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
+{
+	double deltax = FixedToDouble(x2 - x1);
+	double deltay = FixedToDouble(y2 - y1);
+
+	// Converted to degrees
+	double _arctan = (atan2(deltay, deltax) * ANGLE_180_DOUBLE) / DOUBLE_PI;
+
+	while (_arctan < 0)
+	{
+		_arctan += ANGLE_360_DOUBLE;
+	}
+
+	return static_cast<angle_t>(_arctan);
+}
+
+#undef ANGLE_180_DOUBLE
+#undef ANGLE_360_DOUBLE
 
 //
 // R_ScaleFromGlobalAngle
@@ -1773,7 +1795,6 @@ void R_RegisterEngineStuff(void)
 	UINT8 i;
 
 	CV_RegisterVar(&cv_gravity);
-	CV_RegisterVar(&cv_tailspickup);
 	CV_RegisterVar(&cv_allowmlook);
 	CV_RegisterVar(&cv_homremoval);
 

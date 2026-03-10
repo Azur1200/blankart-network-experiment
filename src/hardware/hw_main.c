@@ -398,8 +398,8 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	RGBA_t poly_color, tint_color, fade_color;
 
 	poly_color.rgba = 0xFFFFFFFF;
-	tint_color.rgba = (colormap != NULL) ? (UINT32)colormap->rgba : GL_DEFAULTMIX;
-	fade_color.rgba = (colormap != NULL) ? (UINT32)colormap->fadergba : GL_DEFAULTFOG;
+	tint_color.rgba = (colormap != NULL) ? (UINT32)colormap->rgba : 0x00000000;
+	fade_color.rgba = (colormap != NULL) ? (UINT32)colormap->fadergba : 0xFF000000;
 
 	// Crappy backup coloring if you can't do shaders
 	if (!HWR_UseShader())
@@ -413,7 +413,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 		blue = (float)poly_color.s.blue;
 
 		// 48 is just an arbritrary value that looked relatively okay.
-		tint_alpha = (float)(sqrt(tint_color.s.alpha) * 48) / 255.0f;
+		tint_alpha = (float)(sqrt((float)tint_color.s.alpha / 10.2) * 48) / 255.0f;
 
 		// 8 is roughly the brightness of the "close" color in Software, and 16 the brightness of the "far" color.
 		// 8 is too bright for dark levels, and 16 is too dark for bright levels.
@@ -469,7 +469,7 @@ UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if 
 	RGBA_t realcolor, surfcolor;
 	INT32 alpha;
 
-	realcolor.rgba = (colormap != NULL) ? colormap->rgba : GL_DEFAULTMIX;
+	realcolor.rgba = (colormap != NULL) ? colormap->rgba : 0x00000000;
 
 	if (HWR_UseShader())
 	{
@@ -1255,6 +1255,17 @@ consvar_t cv_glanisotropicmode = CVAR_INIT ("gr_anisotropicmode", "1", CV_SAVE|C
 
 consvar_t cv_glsolvetjoin = CVAR_INIT ("gr_solvetjoin", "On", 0, CV_OnOff, NULL);
 
+consvar_t cv_glpolytile = CVAR_INIT ("gr_polytile", "On", 0, CV_OnOff, NULL);
+
+CV_PossibleValue_t grpolyshape_cons_t[] = {
+	{0, "Subsector"},
+	{1, "Fat"},
+	{2, "Trim"},
+	{3, "NotConvex"},
+	{0, NULL}
+};
+consvar_t cv_glpolyshape = CVAR_INIT ("gr_polygon_shape", "Trim", CV_SAVE, grpolyshape_cons_t, NULL);
+
 consvar_t cv_glbatching = CVAR_INIT ("gr_batching", "On", 0, CV_OnOff, NULL);
 
 CV_PossibleValue_t glpalettedepth_cons_t[] = {{16, "16 bits"}, {24, "24 bits"}, {0, NULL}};
@@ -1365,7 +1376,10 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_glallowshaders);
 
 	CV_RegisterVar(&cv_glfiltermode);
+
 	CV_RegisterVar(&cv_glsolvetjoin);
+	CV_RegisterVar(&cv_glpolytile);
+	CV_RegisterVar(&cv_glpolyshape);
 
 	CV_RegisterVar(&cv_glbatching);
 
@@ -1399,6 +1413,7 @@ void HWR_Startup(void)
 		textureformat = patchformat = GL_TEXFMT_RGBA;
 
 		HWR_InitPolyPool();
+
 		HWR_AddSessionCommands();
 		HWR_InitMapTextures();
 		HWR_InitModels();
@@ -1445,7 +1460,6 @@ void HWR_Switch(void)
 void HWR_Shutdown(void)
 {
 	CONS_Printf("HWR_Shutdown()\n");
-	HWR_FreeExtraSubsectors();
 	HWR_FreePolyPool();
 	HWR_FreeMapTextures();
 	GL_FlushScreenTextures();

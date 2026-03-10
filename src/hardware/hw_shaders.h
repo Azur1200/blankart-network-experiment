@@ -101,7 +101,7 @@
 #define GLSL_SOFTWARE_TINT_EQUATION \
 	"if (mix(tint_color.a, 0.0, brightmap_mix) > 0.0) {\n" \
 		"float color_bright = sqrt((base_color.r * base_color.r) + (base_color.g * base_color.g) + (base_color.b * base_color.b));\n" \
-		"float strength = sqrt(9.0 * mix(tint_color.a, 0.0, brightmap_mix));\n" \
+		"float strength = sqrt(mix(tint_color.a, 0.0, brightmap_mix));\n" \
 		"final_color.r = clamp((color_bright * (tint_color.r * strength)) + (base_color.r * (1.0 - strength)), 0.0, 1.0);\n" \
 		"final_color.g = clamp((color_bright * (tint_color.g * strength)) + (base_color.g * (1.0 - strength)), 0.0, 1.0);\n" \
 		"final_color.b = clamp((color_bright * (tint_color.b * strength)) + (base_color.b * (1.0 - strength)), 0.0, 1.0);\n" \
@@ -283,16 +283,16 @@
 #define GLSL_WATER_TEXEL \
 	"float water_z = (gl_FragCoord.z / gl_FragCoord.w) / 2.0;\n" \
 	"float a = -pi * (water_z * freq) + (leveltime * speed);\n" \
-	"float sdistort = sin(a) * amp;\n" \
-	"float cdistort = cos(a) * amp;\n" \
+	"float sdistort = sin(a) * amp * 1.5;\n" \
+	"float cdistort = cos(a) * amp * 2.2;\n" \
 	"vec4 texel = texture2D(tex, vec2(gl_TexCoord[0].s - sdistort, gl_TexCoord[0].t - cdistort));\n"
 
 #define GLSL_WATER_FRAGMENT_SHADER \
 	"#version 120\n" \
 	GLSL_FLOOR_FUDGES \
-	"const float freq = 0.025;\n" \
+	"const float freq = 0.03;\n" \
 	"const float amp = 0.025;\n" \
-	"const float speed = 2.0;\n" \
+	"const float speed = 1.6;\n" \
 	"const float pi = 3.14159;\n" \
 	"#ifdef SRB2_PALETTE_RENDERING\n" \
 	"uniform sampler2D tex;\n" \

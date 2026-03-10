@@ -414,6 +414,8 @@ typedef enum
 	AIRDROP_FUSION,
 } airdroptype_t;
 
+void K_KillAirDrop(player_t *player, p_airdropflags_t airdropflags);
+
 boolean K_NullDriftTiltEnabled(void);
 
 #define RECOVERYDASHADD (TICRATE/2)

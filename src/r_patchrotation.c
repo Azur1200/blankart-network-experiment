@@ -38,8 +38,12 @@ angle_t R_GetPitchRollAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_
 	}
 	else
 	{
-		// Regular Mobjs don't air tilt.
-		viewingAngle = mobj->angle;
+		// For regular objects, use the camera; just not the *player's* camera.
+		//... Unless you are a Nights bumber...
+		if (mobj->type == MT_NIGHTSBUMPER)
+			viewingAngle = mobj->angle;
+		else
+			viewingAngle = R_PointToAngleFloat(mobj->x, mobj->y);
 	}
 
 	pitchMul = -FINESINE(viewingAngle >> ANGLETOFINESHIFT);
@@ -164,6 +168,7 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 {
 	fixed_t rotcos, rotsin, finx, finy;
 	vector2_t xvec, yvec;
+	(void)affine;
 
 	// input offsets
 	fixed_t xoffs, yoffs, xpiv, ypiv;

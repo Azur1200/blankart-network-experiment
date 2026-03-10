@@ -49,6 +49,7 @@ enum sector_e {
 	sector_ffloors,
 	sector_fslope,
 	sector_cslope,
+	sector_colormap,
 	sector_flags,
 	sector_specialflags,
 	sector_damagetype,
@@ -85,6 +86,7 @@ static const char *const sector_opt[] = {
 	"ffloors",
 	"f_slope",
 	"c_slope",
+	"colormap",
 	"flags",
 	"specialflags",
 	"damagetype",
@@ -749,6 +751,9 @@ static int sector_get(lua_State *L)
 		return 1;
 	case sector_cslope: // c_slope
 		LUA_PushUserdata(L, sector->c_slope, META_SLOPE);
+		return 1;
+	case sector_colormap: // extra_colormap
+		LUA_PushUserdata(L, sector->extra_colormap, META_EXTRACOLORMAP);
 		return 1;
 	case sector_flags: // flags
 		lua_pushinteger(L, sector->flags);

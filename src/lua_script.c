@@ -61,6 +61,7 @@ static lua_CFunction liblist[] = {
 	LUA_PolyObjLib, 	// polyobj_t
 	LUA_BlockmapLib,	// blockmap stuff
 	LUA_HudLib, 		// HUD stuff
+	LUA_ColorLib, 		// general color functions
 	LUA_FollowerLib, 	// follower_t, followers[]
 	LUA_BotVarsLib, 	// botvars_t
 	LUA_TerrainLib, 	// t_splash_t, t_footstep_t, t_overlay_t, terrain_t

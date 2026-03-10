@@ -299,9 +299,6 @@ struct FSurfaceInfo
 };
 typedef struct FSurfaceInfo FSurfaceInfo;
 
-#define GL_DEFAULTMIX 0x00000000
-#define GL_DEFAULTFOG 0x19000000
-
 // Various settings and states for the rendering backend.
 enum hwdsetspecialstate
 {

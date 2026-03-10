@@ -232,6 +232,8 @@ static const struct {
 
 	{META_PATCH,        "patch_t"},
 	{META_COLORMAP,     "colormap"},
+	{META_EXTRACOLORMAP,"extracolormap_t"},
+	{META_LIGHTTABLE,   "lighttable_t"},
 	{META_CAMERA,       "camera_t"},
 
 	{META_ACTION,       "action"},
@@ -1793,7 +1795,6 @@ static int lib_pGetSectorLightLevelAt(lua_State *L)
 	return 1;
 }
 
-/* Maybe color lib someday....
 static int lib_pGetSectorColormapAt(lua_State *L)
 {
 	boolean has_sector = false;
@@ -1817,7 +1818,6 @@ static int lib_pGetSectorColormapAt(lua_State *L)
 	LUA_PushUserdata(L, exc, META_EXTRACOLORMAP);
 	return 1;
 }
-*/
 
 static int lib_pDoSpring(lua_State *L)
 {
@@ -4375,6 +4375,18 @@ static int lib_kSafeRespawnPositionEx(lua_State *L)
 	return 1;
 }
 
+static int lib_kKillAirDrop(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	p_airdropflags_t airdropflags = luaL_checkinteger(L, 2);
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	K_KillAirDrop(player, airdropflags);
+	return 0;
+}
+
 // Checks if Rings are applicable.
 static int lib_kRingsActive(lua_State *L)
 {
@@ -5589,7 +5601,7 @@ static luaL_Reg lib[] = {
 	{"P_FloorzAtPos",lib_pFloorzAtPos},
 	{"P_CeilingzAtPos",lib_pCeilingzAtPos},
 	{"P_GetSectorLightLevelAt",lib_pGetSectorLightLevelAt},
-	//{"P_GetSectorColormapAt",lib_pGetSectorColormapAt},
+	{"P_GetSectorColormapAt",lib_pGetSectorColormapAt},
 	{"P_DoSpring",lib_pDoSpring},
 
 	// p_inter
@@ -5770,6 +5782,7 @@ static luaL_Reg lib[] = {
 	{"K_SetHyudoroCooldown",lib_kSetHyuCountdown},
 	{"K_SafeRespawnPosition",lib_kSafeRespawnPosition},
 	{"K_SafeRespawnPositionEx",lib_kSafeRespawnPositionEx},
+	{"K_KillAirDrop", lib_kKillAirDrop},
 
 	{"K_GetCollideAngle",lib_kGetCollideAngle},
 

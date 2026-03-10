@@ -3406,12 +3406,7 @@ void P_MobjCheckWater(mobj_t *mobj)
 				mobj->momz = FixedMul(mobj->momz, FixedDiv(2*FRACUNIT, 5*FRACUNIT)); // kill momentum significantly, to make the goo feel thick.
 
 			// Kill heavy airdrop too so you don't get softlocked.
-			if (mobj->player && (mobj->player->airdropflags & PAF_AIRDROP_HEAVY))
-			{
-				mobj->player->airdroptime = 0;
-				mobj->player->airdroppredelay = 0;
-				mobj->player->airdropflags &= ~PAF_AIRDROP_MASK;
-			}
+			K_KillAirDrop(mobj->player, PAF_AIRDROP_HEAVY);
 		}
 		else if (wasinwater && P_MobjFlip(mobj) * mobj->momz > 0)
 		{

@@ -54,7 +54,7 @@ typedef struct
 typedef struct
 {
 	poly_t *planepoly;  // the generated convex polygon
-} extrasubsector_t;
+} poly_subsector_t;
 
 // needed for sprite rendering
 // equivalent of the software renderer's vissprites
@@ -117,15 +117,13 @@ typedef struct gl_vissprite_s
 void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model);
 
 // --------
-// hw_bsp.c
+// hw_map.c
 // --------
-extern extrasubsector_t *extrasubsectors;
-extern size_t addsubsector;
+extern poly_subsector_t *poly_subsectors;
+extern size_t num_poly_subsector;
 
 void HWR_InitPolyPool(void);
 void HWR_FreePolyPool(void);
-
-void HWR_FreeExtraSubsectors(void);
 
 // --------
 // hw_cache.c
@@ -176,7 +174,7 @@ extern INT32 textureformat;
 // --------
 // hw_plane.c
 // --------
-void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, levelflat_t *levelflat, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap);
+void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, levelflat_t *levelflat, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap);
 void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t fixedheight,
 							   FBITFIELD blendmode, UINT8 lightlevel, levelflat_t *levelflat, sector_t *FOFsector,
 							   UINT8 alpha, extracolormap_t *planecolormap);
@@ -185,7 +183,7 @@ void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t
 // hw_drawnodes.c
 // --------
 void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
-void HWR_AddTransparentFloor(levelflat_t *levelflat, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
+void HWR_AddTransparentFloor(levelflat_t *levelflat, poly_subsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
 void HWR_AddTransparentPolyobjectFloor(levelflat_t *levelflat, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight,
 									   INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
 void HWR_PushDrawNodeState(void);

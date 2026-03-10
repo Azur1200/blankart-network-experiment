@@ -11066,6 +11066,9 @@ void A_SPBChase(void *thing)
 					specialring->colorized = true;
 					specialring->color = SKINCOLOR_RED;
 					specialring->flags |= MF_NOCLIPHEIGHT;
+
+					// But don't let first pick these up.
+					specialring->extravalue3 = 1;
 				}
 
 			}

@@ -2081,7 +2081,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	// Affines
 	boolean affinesprite = (((thing->player != NULL) || R_ThingIsAffineSprite(thing)) && (!splat));
 	affine_t affine_transform = {0};
-	affine_bounding_t affine_bounds = {0};
+	affine_bounding_t affine_bounds = {};
 	vector2_t affine_scale = {0};
 	vector2_t affine_distscale = {0};
 	f_vector2_t affine_pivotoffsetdiff = {0};
@@ -2928,7 +2928,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	vis->viewpoint.z = viewz;
 	vis->viewpoint.angle = viewangle;
 
-	vis->affine = {0};
+	vis->affine = {};
 
 	if (affinesprite)
 	{
