@@ -90,6 +90,14 @@ consvar_t cv_controllerled[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("gamepadled4", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, controllerled_cons_t, led_off_handle4)
 };
 
+static CV_PossibleValue_t tiltcontrol_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Shakes Only"}, {0, NULL}};
+consvar_t cv_tiltcontrol[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("tiltcontrol",  "Off", CV_SAVE, tiltcontrol_cons_t, NULL),
+	CVAR_INIT ("tiltcontrol2", "Off", CV_SAVE, tiltcontrol_cons_t, NULL),
+	CVAR_INIT ("tiltcontrol3", "Off", CV_SAVE, tiltcontrol_cons_t, NULL),
+	CVAR_INIT ("tiltcontrol4", "Off", CV_SAVE, tiltcontrol_cons_t, NULL)
+};
+
 static void rumble_off_handle(void)
 {
 	if (cv_controllerrumble[0].value == 0)
@@ -333,6 +341,20 @@ void G_MapEventsToControls(event_t *ev)
 			gamekeydown[device][i] = max(0, ev->data2);
 
 			break;
+		
+		case ev_accelerometer:
+			// average out accel events recieved for this tick (favouring the newer data)
+			gamekeydown[device][KEY_ACCELEROMETER1+0] = (gamekeydown[device][KEY_ACCELEROMETER1+0] + (3*ev->data1))/4;
+			gamekeydown[device][KEY_ACCELEROMETER1+1] = (gamekeydown[device][KEY_ACCELEROMETER1+1] + (3*ev->data2))/4;
+			gamekeydown[device][KEY_ACCELEROMETER1+2] = (gamekeydown[device][KEY_ACCELEROMETER1+2] + (3*ev->data3))/4;
+			break;
+			
+		case ev_gyroscope:
+			// average out gyro events recieved for this tick
+			gamekeydown[device][KEY_GYROSCOPE1+0] = (gamekeydown[device][KEY_GYROSCOPE1+0] + ev->data1)/2;
+			gamekeydown[device][KEY_GYROSCOPE1+1] = (gamekeydown[device][KEY_GYROSCOPE1+1] + ev->data2)/2;
+			gamekeydown[device][KEY_GYROSCOPE1+2] = (gamekeydown[device][KEY_GYROSCOPE1+2] + ev->data3)/2;
+			break;
 
 		default:
 			break;
@@ -472,19 +494,13 @@ static keyname_t keynames[] =
 	{KEY_AXIS1+8, "L TRIGGER"},
 	{KEY_AXIS1+9, "R TRIGGER"},
 
-	{KEY_ACCELEROMETER1+0, "TILT -X"},
-	{KEY_ACCELEROMETER1+1, "TILT +X"},
-	{KEY_ACCELEROMETER1+2, "TILT -Y"},
-	{KEY_ACCELEROMETER1+3, "TILT +Y"},
-	{KEY_ACCELEROMETER1+4, "TILT -Z"},
-	{KEY_ACCELEROMETER1+5, "TILT +Z"},
+	{KEY_ACCELEROMETER1+0, "TILT X"},
+	{KEY_ACCELEROMETER1+1, "TILT Y"},
+	{KEY_ACCELEROMETER1+2, "TILT Z"},
 
-	{KEY_GYROSCOPE1+0, "ROTATE -X"},
-	{KEY_GYROSCOPE1+1, "ROTATE +X"},
-	{KEY_GYROSCOPE1+2, "ROTATE -Y"},
-	{KEY_GYROSCOPE1+3, "ROTATE +Y"},
-	{KEY_GYROSCOPE1+4, "ROTATE -Z"},
-	{KEY_GYROSCOPE1+5, "ROTATE +Z"},
+	{KEY_GYROSCOPE1+0, "ROTATE X"},
+	{KEY_GYROSCOPE1+1, "ROTATE Y"},
+	{KEY_GYROSCOPE1+2, "ROTATE Z"},
 };
 
 static const char *gamecontrolname[num_gamecontrols] =

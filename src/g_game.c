@@ -51,6 +51,7 @@
 #include "m_cond.h" // condition sets
 #include "r_fps.h" // frame interpolation/uncapped
 #include "lua_hud.h"
+#include "m_easing.h"
 
 // SRB2kart
 #include "k_kart.h"
@@ -1306,6 +1307,46 @@ retrygetcontrol:
 	return 0;
 }
 
+vector3_t G_PlayerInputSensor(UINT8 p, motionsensortype_e sensor)
+{
+	vector3_t out = {0};
+	INT32 deviceID;
+
+	if (p >= MAXSPLITSCREENPLAYERS)
+	{
+#ifdef PARANOIA
+		CONS_Debug(DBG_GAMELOGIC, "G_PlayerInputAnalog: Invalid player ID %d\n", p);
+#endif
+		return out;
+	}
+	
+	deviceID = I_GetControllerSlotfromID(I_GetControllerIDForPlayer(p));
+	if (deviceID >= MAXDEVICES)
+		return out;
+
+	if (deviceID == INVALID_DEVICE || deviceID == KEYBOARD_MOUSE_DEVICE)
+		return out;
+	
+	switch (sensor)
+	{
+		case ACCELEROMETER:
+			FV3_Load(&out,
+				gamekeydown[deviceID][KEY_ACCELEROMETER1+0],
+				gamekeydown[deviceID][KEY_ACCELEROMETER1+1],
+				gamekeydown[deviceID][KEY_ACCELEROMETER1+2]
+			);
+			break;
+		case GYROSCOPE:
+			FV3_Load(&out,
+				gamekeydown[deviceID][KEY_GYROSCOPE1+0],
+				gamekeydown[deviceID][KEY_GYROSCOPE1+1],
+				gamekeydown[deviceID][KEY_GYROSCOPE1+2]
+			);
+			break;
+	}
+	return out;
+}
+
 boolean G_PlayerInputDown(UINT8 p, INT32 gc, boolean digital, SINT8 type)
 {
 	return (G_PlayerInputAnalog(p, gc, digital, type) != 0);
@@ -1379,6 +1420,207 @@ static void G_HandleAxisDeadZone(UINT8 splitnum, joystickvector2_t *joystickvect
 	}
 }
 
+// copy/pasted from the lua version of these routines
+inline static vector3_t *QuaternionMulVec3(vector3_t *out, vector3_t *a, vector4_t *b)
+{
+	fixed_t ax = a->x, ay = a->y, az = a->z, aw = 0;
+	fixed_t bx = b->x, by = b->y, bz = b->z, bw = b->a;
+
+	FV3_NormalizeEx(out, FV3_Load(out,
+		FixedMul(aw, bx) + FixedMul(ax, bw) + FixedMul(ay, bz) - FixedMul(az, by),
+		FixedMul(aw, by) - FixedMul(ax, bz) + FixedMul(ay, bw) + FixedMul(az, bx),
+		FixedMul(aw, bz) + FixedMul(ax, by) - FixedMul(ay, bx) + FixedMul(az, bw)
+	));
+
+	return out;
+}
+
+inline static fixed_t FV3_LengthSquared(const vector3_t *vec)
+{
+	return FixedMul(vec->x, vec->x) + FixedMul(vec->y, vec->y) + FixedMul(vec->z, vec->z);
+}
+
+inline static fixed_t FV3_Length(const vector3_t *vec)
+{
+	return FixedSqrt(FV3_LengthSquared(vec));
+}
+
+inline static vector4_t AngleAxis(fixed_t angle, fixed_t x, fixed_t y, fixed_t z)
+{
+	fixed_t sinangle = FINESINE(FixedAngle(angle/2) >> ANGLETOFINESHIFT);
+	fixed_t cosangle = FINECOSINE(FixedAngle(angle/2) >> ANGLETOFINESHIFT);
+	vector3_t axis = {x, y, z};
+	vector4_t result;
+
+	FV3_Normalize(&axis);
+
+	FV4_Load(&result,
+		FixedMul(axis.x, sinangle),
+		FixedMul(axis.y, sinangle),
+		FixedMul(axis.z, sinangle),
+		cosangle
+	);
+
+	return result;
+}
+
+// math sourced from this article
+// http://gyrowiki.jibbsmart.com/blog:finding-gravity-with-sensor-fusion
+// state
+fixed_t localshakinessfac[MAXSPLITSCREENPLAYERS];
+vector3_t localsmoothedaccel[MAXSPLITSCREENPLAYERS];
+vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
+
+// thresholds of trust for accel shakiness. less shakiness = more trust
+#define ShakinessMaxThreshold (80*FRACUNIT/100)
+#define ShakinessMinThreshold (32*FRACUNIT/100)
+// when we trust the accel a lot (the controller is "still"), how quickly do we correct our gravity vector?
+#define CorrectionStillRate (FRACUNIT)
+// when we don't trust the accel (the controller is "shaky"), how quickly do we correct our gravity vector?
+#define CorrectionShakyRate (FRACUNIT/8)
+// if our old gravity vector is close enough to our new one, limit further corrections to this proportion of the rotation speed
+#define CorrectionGyroFactor (FRACUNIT/5)
+// thresholds for what's considered "close enough"
+#define CorrectionGyroMinThreshold (2*FRACUNIT/100)
+#define CorrectionGyroMaxThreshold (FRACUNIT/4)
+// no matter what, always apply a minimum of this much correction to our gravity vector
+#define CorrectionMinimumSpeed (9*FRACUNIT/100)
+
+void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
+{
+	// convert gyro input to reverse rotation
+	const fixed_t smoothFactor = 800*FRACUNIT/1000;
+	vector3_t invAccel = {-accel.x, -accel.y, -accel.z};
+	fixed_t gravCorrectionRate = 0;
+	fixed_t angleRate;
+	fixed_t correctionLimit;
+	vector4_t invRotation = AngleAxis(
+		FixedMul(FV3_Length(&gyro), FRACUNIT/TICRATE),
+		-gyro.x, 
+		-gyro.y, 
+		-gyro.z
+	);
+	vector3_t gravityToAccel = {0};
+	vector3_t gravityToAccelDirection = {0};
+	vector3_t correction = {0};
+
+	if (!G_GetGamepadCanUseTilt(p)) return;
+
+	// rotate gravity vector
+	QuaternionMulVec3(&localgravityvectors[p], &localgravityvectors[p], &invRotation);
+	QuaternionMulVec3(&localsmoothedaccel[p], &localsmoothedaccel[p], &invRotation);
+	localshakinessfac[p] = FixedMul(localshakinessfac[p], smoothFactor), 
+	FV3_SubEx(&accel, &localsmoothedaccel[p], &correction);
+	localshakinessfac[p] = max(localshakinessfac[p], FV3_Length(&correction));
+	FV3_Load(&localsmoothedaccel[p],
+		Easing_Linear(smoothFactor, accel.x, localsmoothedaccel[p].x),
+		Easing_Linear(smoothFactor, accel.y, localsmoothedaccel[p].y),
+		Easing_Linear(smoothFactor, accel.z, localsmoothedaccel[p].z)
+	);
+	
+	CONS_Debug(DBG_IMU, "Shakiness: %4.2f\n", FixedToFloat(localshakinessfac[p]));
+
+	FV3_SubEx(&invAccel, &localgravityvectors[p], &gravityToAccel);
+	FV3_NormalizeEx(&gravityToAccel, &gravityToAccelDirection);
+
+	if (ShakinessMaxThreshold > ShakinessMinThreshold)
+	{
+		fixed_t stillness = CLAMP(FixedDiv((localshakinessfac[p] - ShakinessMinThreshold), (ShakinessMaxThreshold - ShakinessMinThreshold)), 0, FRACUNIT);
+		gravCorrectionRate = CorrectionStillRate + FixedMul((CorrectionShakyRate - CorrectionStillRate), stillness);
+	}
+	else
+	{
+		gravCorrectionRate = localshakinessfac[p] < ShakinessMaxThreshold ? CorrectionStillRate : CorrectionShakyRate;
+	}
+
+	// limit in proportion to rotation rate
+	angleRate = FixedMul(FV3_Length(&gyro), M_PI_FIXED)/180;
+	correctionLimit = FixedMul(FixedMul(angleRate, FV3_Length(&localgravityvectors[p])), CorrectionGyroFactor);
+	if (gravCorrectionRate > correctionLimit) {
+		fixed_t closeEnoughFactor;
+		if (CorrectionGyroMaxThreshold > CorrectionGyroMinThreshold)
+		{
+			closeEnoughFactor = CLAMP(FixedDiv((FV3_Length(&gravityToAccel) - CorrectionGyroMinThreshold), (CorrectionGyroMaxThreshold - CorrectionGyroMinThreshold)), 0, FRACUNIT);
+		}
+		else
+		{
+			closeEnoughFactor = FV3_Length(&gravityToAccel) < CorrectionGyroMaxThreshold ? 0 : FRACUNIT;
+		}
+		gravCorrectionRate = correctionLimit + FixedMul((gravCorrectionRate - correctionLimit), closeEnoughFactor);
+	}
+
+	// finally, let's always allow a little bit of correction
+	gravCorrectionRate = max(gravCorrectionRate, CorrectionMinimumSpeed);
+
+	CONS_Debug(DBG_IMU, "Correction Rate: %4.2f\n", FixedToFloat(gravCorrectionRate));
+
+	FV3_Load(&correction,
+		FixedMul(gravityToAccel.x, gravCorrectionRate/TICRATE),
+		FixedMul(gravityToAccel.y, gravCorrectionRate/TICRATE),
+		FixedMul(gravityToAccel.z, gravCorrectionRate/TICRATE)
+	);
+	if (FV3_LengthSquared(&correction) < FV3_LengthSquared(&gravityToAccel))
+	{
+		FV3_Add(&localgravityvectors[p], &correction);
+	}
+	else
+	{
+		FV3_Add(&localgravityvectors[p], &gravityToAccel);
+	}
+}
+
+INT32 G_GetGamepadTilt(INT32 p)
+{	
+	fixed_t tilt;
+	fixed_t curve;
+	if (!G_GetGamepadCanUseTilt(p)) return 0;
+	tilt = CLAMP(FixedDiv(G_GetGamepadGravity(p).x + MAXGAMEPADTILT, 2*MAXGAMEPADTILT), 0, FRACUNIT);
+	CONS_Debug(DBG_IMU, "Tilt: %4.2f\n", FixedToFloat(tilt));
+	
+	curve = FINESINE(FixedAngle(180*(tilt-FRACUNIT/2))>>ANGLETOFINESHIFT);
+	CONS_Debug(DBG_IMU, "Pinched Tilt: %4.2f\n", FixedToFloat(curve));
+	
+	return (JOYAXISRANGE * curve)/FRACUNIT;
+}
+
+vector3_t G_GetGamepadGravity(INT32 p)
+{
+	const vector3_t zero = {0, -ACCELEROMETERGRAVITY, 0};
+	if (!G_GetGamepadCanUseTilt(p)) return zero;
+	return localgravityvectors[p];
+}
+
+vector3_t G_GetGamepadShake(INT32 p)
+{
+	vector3_t accel = {0};
+	if (!G_GetGamepadCanUseTilt(p)) return accel;
+	accel = G_PlayerInputSensor(p, ACCELEROMETER);
+	FV3_Add(&accel, &localgravityvectors[p]);
+
+	return accel;
+}
+
+boolean G_GetGamepadCanUseTilt(INT32 p)
+{
+	if (p >= MAXSPLITSCREENPLAYERS)
+	{
+#ifdef PARANOIA
+		CONS_Debug(DBG_GAMELOGIC, "G_GetGamepadCanUseTilt: Invalid player ID %d\n", p);
+#endif
+		return false;
+	}
+
+	return (I_ControllerSupportsSensorAccelerometer(p) && I_ControllerSupportsSensorGyro(p));
+}
+#undef ShakinessMaxThreshold
+#undef ShakinessMinThreshold
+#undef CorrectionStillRate
+#undef CorrectionShakyRate
+#undef CorrectionGyroFactor
+#undef CorrectionGyroMinThreshold
+#undef CorrectionGyroMaxThreshold
+#undef CorrectionMinimumSpeed
+
 //
 // G_BuildTiccmd
 // Builds a ticcmd from all of the available inputs
@@ -1414,6 +1656,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	INT32 forward, side, tspeed;
 
 	joystickvector2_t joystickvector;
+	INT32 accelerometertilt;
 
 	// you'd BETTER not touch the player while freecamming...
 	player_t *player = &players[g_localplayers[forplayer]];
@@ -1438,6 +1681,15 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			break;
 	}
 
+	// update our gamepad gravity when applicable
+	// this should always execute so we have an accurate state
+	if (G_GetGamepadCanUseTilt(forplayer))
+	{
+		vector3_t accel = G_PlayerInputSensor(forplayer, ACCELEROMETER);
+		vector3_t gyro = G_PlayerInputSensor(forplayer, GYROSCOPE);
+		G_UpdateGamepadGravity(forplayer, gyro, accel);
+	}
+
 	// why build a ticcmd if we're paused?
 	// Or, for that matter, if we're being reborn.
 	if (!thiscam->freecam && (paused || P_AutoPause() || (gamestate == GS_LEVEL && player->playerstate == PST_REBORN)))
@@ -1455,6 +1707,16 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	joystickvector.yaxis = 0;
 	G_HandleAxisDeadZone(forplayer, &joystickvector);
 
+	// tilt control never has deadzone
+	// if stick input is used gradually cancel out tilt based on stick intensity
+	if (cv_tiltcontrol[forplayer].value == 1)
+	{
+		fixed_t rate = FixedDiv(abs(joystickvector.xaxis), JOYAXISRANGE);
+		accelerometertilt = 
+			(FixedMul(rate, joystickvector.xaxis*FRACUNIT)/FRACUNIT) +
+			(FixedMul(FRACUNIT-rate, G_GetGamepadTilt(forplayer)*FRACUNIT)/FRACUNIT);
+	}
+
 	// For kart, I've turned the aim axis into a digital axis because we only
 	// use it for aiming to throw items forward/backward and the vote screen
 	// This mean that the turn axis will still be gradient but up/down will be 0
@@ -1465,10 +1727,18 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (encoremode)
 	{
 		joystickvector.xaxis = -joystickvector.xaxis;
+		accelerometertilt = -accelerometertilt;
 	}
 
 	forward = side = 0;
-	tspeed = joystickvector.xaxis;
+	if (cv_tiltcontrol[forplayer].value == 1)
+	{
+		tspeed = accelerometertilt;
+	}
+	else
+	{
+		tspeed = joystickvector.xaxis;
+	}
 
 	// use two stage accelerative turning
 	// on the keyboard and (NOT!) joystick
@@ -1488,11 +1758,19 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		}
 	}
 	else
+	{
 		turnheld[forplayer] = 0;
+	}
 
 	cmd->turning = 0;
 
-	if (joystickvector.xaxis != 0)
+	if (cv_tiltcontrol[forplayer].value == 1)
+	{
+		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
+		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
+		side += (accelerometertilt * 4) / JOYAXISRANGE;
+	}
+	else if (joystickvector.xaxis != 0)
 	{
 		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
@@ -1693,6 +1971,26 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	else if (cmd->throwdir < -KART_FULLTURN)
 		cmd->throwdir = -KART_FULLTURN;
 
+	if (G_GetGamepadCanUseTilt(forplayer) && cv_tiltcontrol[forplayer].value)
+	{
+		fixed_t tilt = G_GetGamepadGravity(forplayer).x;
+		vector3_t shake = G_GetGamepadShake(forplayer);
+
+		if (cv_tiltcontrol[forplayer].value == 1)
+		{
+			cmd->tilt = INT8_MAX*tilt/FRACUNIT;
+
+			cmd->flags |= TICCMD_USINGTILT;
+			if (abs(tilt) > MAXGAMEPADTILT)
+				cmd->flags |= TICCMD_EXCESSTILT;
+		}
+
+		CONS_Debug(DBG_IMU, "Shake: %4.2f\n", FixedToFloat(FV3_Length(&shake)));
+		cmd->shake = CLAMP((GAMEPADSHAKETHRESHOLD*FV3_Length(&shake))/FRACUNIT, 0, UINT8_MAX);
+
+		CONS_Debug(DBG_IMU, "CMD Tilt: %d, Shake: %d\n", cmd->tilt, cmd->shake);
+	}
+
 	G_DoCameraTurn(cmd, realtics, ssplayer, player);
 
 	// Reset away view if a command is given.
@@ -1725,6 +2023,8 @@ ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
 		dest[i].buttons = (UINT16)SHORT(src[i].buttons);
 		dest[i].latency = src[i].latency;
 		dest[i].flags = src[i].flags;
+		dest[i].tilt = src[i].tilt;
+		dest[i].shake = src[i].shake;
 	}
 	return dest;
 }

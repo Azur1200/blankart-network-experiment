@@ -189,7 +189,8 @@ static patch_t *kp_check[11];
 static patch_t *kp_eggnum[4];
 
 static patch_t *kp_fpview[3];
-static patch_t *kp_inputwheel[5];
+static patch_t *kp_inputwheel;
+static patch_t *kp_inputwheel_shadow;
 
 static patch_t *kp_challenger[25];
 
@@ -600,12 +601,21 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&joyshadow, "JOYSHD");
 
 	// Input UI Wheel
-	sprintf(buffer, "K_WHEELx");
-	for (i = 0; i < 5; i++)
-	{
-		buffer[7] = '0'+i;
-		HU_UpdatePatch(&kp_inputwheel[i], "%s", buffer);
-	}
+	HU_UpdatePatch(&kp_inputwheel, "K_WHEEL0");
+	kp_inputwheel->pivot.x = 
+		(kp_inputwheel->width / 2) + kp_inputwheel->leftoffset;
+	kp_inputwheel->pivot.y = 
+		(kp_inputwheel->height / 2) + kp_inputwheel->topoffset;
+	kp_inputwheel->alignflags |=
+		(PATCHALIGN_AUTOCENTER | PATCHALIGN_USEPIVOTS);
+
+	HU_UpdatePatch(&kp_inputwheel_shadow, "K_WHEEL1");
+	kp_inputwheel_shadow->pivot.x = 
+		(kp_inputwheel_shadow->width / 2) + kp_inputwheel_shadow->leftoffset;
+	kp_inputwheel_shadow->pivot.y = 
+		(kp_inputwheel_shadow->height / 2) + kp_inputwheel_shadow->topoffset;
+	kp_inputwheel_shadow->alignflags |=
+		(PATCHALIGN_AUTOCENTER | PATCHALIGN_USEPIVOTS);
 
 	// HERE COMES A NEW CHALLENGER
 	sprintf(buffer, "K_CHALxx");
@@ -5439,44 +5449,43 @@ static void K_drawInput(void)
 	}
 	else if (cv_showinput.value == 1)
 	{
-		if (!stplyr->cmd.turning) // no turn
-			target = 0;
-		else // turning of multiple strengths!
-		{
-			target = ((abs(stplyr->cmd.turning) - 1)/200)+1; // was 125, do we need another toggle for this? Zzz...
-			if (target > 4)
-				target = 4;
-			if (stplyr->cmd.turning < 0)
-				target = -target;
-		}
+		patch_t *workingPic = kp_inputwheel;
+		patch_t *shadowPic = kp_inputwheel_shadow;
 
-		if (pn != target)
-		{
-			if (abs(pn - target) == 1)
-				pn = target;
-			else if (pn < target)
-				pn += 2;
-			else //if (pn > target)
-				pn -= 2;
-		}
-
-		if (pn < 0)
-		{
-			splitflags |= V_FLIP; // right turn
-			x -= FRACUNIT;
-		}
-
-		target = abs(pn);
-		if (target > 4)
-			target = 4;
+		INT16 turning = encoremode ? -stplyr->cmd.turning : stplyr->cmd.turning;
+		SINT8 tilt =  encoremode ? -stplyr->cmd.tilt : stplyr->cmd.tilt;
+		angle_t rotate = FixedAngle(60 * FixedDiv(abs(turning), 1024) * intsign(turning));
+		UINT8 *colormap;
 
 		if (!K_GetHudColor())
-			V_DrawFixedPatch(x, y, FRACUNIT, splitflags, kp_inputwheel[target], NULL);
+		{
+			V_DrawRotatedPatch(x-(17*FRACUNIT), y-(38*FRACUNIT)+(FRACUNIT*2), rotate, FRACUNIT, FRACUNIT, splitflags|V_SUBTRACT|V_10TRANS, shadowPic, NULL);
+			V_DrawRotatedPatch(x-(17*FRACUNIT), y-(38*FRACUNIT), rotate, FRACUNIT, FRACUNIT, splitflags, workingPic, NULL);
+		}
 		else
 		{
-			UINT8 *colormap;
 			colormap = R_GetTranslationColormap(0, K_GetHudColor(), GTC_CACHE);
-			V_DrawFixedPatch(x, y, FRACUNIT, splitflags, kp_inputwheel[target], colormap);
+			V_DrawRotatedPatch(x-(17*FRACUNIT), y-(38*FRACUNIT)+(FRACUNIT*2), rotate, FRACUNIT, FRACUNIT, splitflags|V_SUBTRACT|V_10TRANS, shadowPic, colormap);
+			V_DrawRotatedPatch(x-(17*FRACUNIT), y-(38*FRACUNIT), rotate, FRACUNIT, FRACUNIT, splitflags, workingPic, colormap);
+		}
+
+		// a la GT7
+		if (stplyr->cmd.flags & TICCMD_USINGTILT)
+		{
+			rotate = FixedAngle(60 * ((tilt < 0) ? FixedDiv(-tilt, -(50*INT8_MIN/100)) : FixedDiv(tilt, (50*INT8_MAX/100))));
+			x += 17*FINESINE(rotate>>ANGLETOFINESHIFT) * intsign(tilt);
+			y -= 17*FINECOSINE(rotate>>ANGLETOFINESHIFT);
+			splitflags |= (((leveltime % 3 == 0) && (stplyr->cmd.flags & TICCMD_EXCESSTILT)) ? V_ADD|V_20TRANS : 0);
+
+			if (!K_GetHudColor())
+			{
+				V_DrawFixedPatch(x-(2*FRACUNIT)-(FRACUNIT/2), y-(23*FRACUNIT), FRACUNIT, splitflags, kp_minimapdot, NULL);
+			}
+			else
+			{
+				colormap = R_GetTranslationColormap(0, K_GetHudColor(), GTC_CACHE);
+				V_DrawFixedPatch(x-(2*FRACUNIT)-(FRACUNIT/2), y-(23*FRACUNIT), FRACUNIT, splitflags, kp_minimapdot, colormap);
+			}
 		}
 	}
 }

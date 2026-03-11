@@ -1813,7 +1813,7 @@ void K_KartMoveAnimation(player_t *player)
 	const boolean lookback = ((buttons & BT_LOOKBACK) == BT_LOOKBACK);
 	const boolean skincompat = wadfiles[((skin_t *)player->mo->skin)->wadnum]->compatmode;
 
-	SINT8 turndir = intsign(player->cmd.turning);
+	SINT8 turndir = 0;
 	SINT8 destGlanceDir = 0;
 	SINT8 drift = player->drift;
 	UINT8 spr2, glanceofs;
@@ -1823,6 +1823,11 @@ void K_KartMoveAnimation(player_t *player)
 
 	if (!lookback)
 		player->pflags &= ~PF_GAINAX;
+	
+	if (drift || (abs(player->cmd.turning) > (10*KART_FULLTURN/100)))
+	{
+		turndir = intsign(player->cmd.turning);
+	}
 
 	// Sliptides: drift -> lookback frames
 	if (abs(player->aizdriftturn) >= ANGLE_90 && !skincompat)

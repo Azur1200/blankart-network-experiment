@@ -135,6 +135,23 @@ typedef enum
 	DEADZONE_BUTTON,
 } analogdeadzone_e;
 
+typedef enum
+{
+	ACCELEROMETER,
+	GYROSCOPE,
+} motionsensortype_e;
+
+#define MAXGAMEPADTILT (50*FRACUNIT/100)
+#define ACCELEROMETERGRAVITY ((fixed_t)(9.80665f * ((float)FRACUNIT)))
+#define GAMEPADSHAKETHRESHOLD (UINT8_MAX/2)
+#define TILTTOSTICKEASE 6
+boolean G_GetGamepadCanUseTilt(INT32 p);
+void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel);
+INT32 G_GetGamepadTilt(INT32 p);
+vector3_t G_GetGamepadShake(INT32 p);
+vector3_t G_GetGamepadGravity(INT32 p);
+vector3_t G_PlayerInputSensor(UINT8 p, motionsensortype_e sensor);
+
 fixed_t G_GetDeadZoneType(INT32 p, SINT8 type);
 INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital, SINT8 type);
 boolean G_PlayerInputDown(UINT8 p, INT32 gc, boolean digital, SINT8 type);

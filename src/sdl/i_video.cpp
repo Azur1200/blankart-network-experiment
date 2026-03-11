@@ -1055,23 +1055,27 @@ static void Impl_HandleControllerSensorEvent(SDL_GamepadSensorEvent evt)
 		// data[0]: x acceleration in m/s
 		// data[1]: y acceleration in m/s
 		// data[2]: z acceleration in m/s
+		// we convert to gs before passing it to the event
 		case SDL_SENSOR_ACCEL:
+			// CONS_Debug(DBG_IMU, "Got Accelerometer event %4.2f %4.2f %4.2f\n", evt.data[0]/SDL_STANDARD_GRAVITY, evt.data[1]/SDL_STANDARD_GRAVITY, evt.data[2]/SDL_STANDARD_GRAVITY);
 			event.type = ev_accelerometer;
-			event.data1 = FLOAT_TO_FIXED(evt.data[0]);
-			event.data2 = FLOAT_TO_FIXED(evt.data[1]);
-			event.data3 = FLOAT_TO_FIXED(evt.data[2]);
+			event.data1 = FLOAT_TO_FIXED(evt.data[0] / SDL_STANDARD_GRAVITY);
+			event.data2 = FLOAT_TO_FIXED(evt.data[1] / SDL_STANDARD_GRAVITY);
+			event.data3 = FLOAT_TO_FIXED(evt.data[2] / SDL_STANDARD_GRAVITY);
 			D_PostEvent(&event);
 			return;
 			
 		// data[0]: delta pitch in rad/s
 		// data[1]: delta yaw in rad/s
 		// data[2]: delta roll in rad/s
+		// we convert to degrees per second before passing it to the event
 		case SDL_SENSOR_GYRO:
-#define RAD2DEG 57.295779513f
+#define RAD2DEG -57.295779513f
+			// CONS_Debug(DBG_IMU, "Got Gyro event %4.2f %4.2f %4.2f\n", RAD2DEG * evt.data[0], RAD2DEG * evt.data[1], RAD2DEG * evt.data[2]);
 			event.type = ev_gyroscope;
-			event.data1 = FixedAngle(FLOAT_TO_FIXED(RAD2DEG * evt.data[0]));
-			event.data2 = FixedAngle(FLOAT_TO_FIXED(RAD2DEG * evt.data[1]));
-			event.data3 = FixedAngle(FLOAT_TO_FIXED(RAD2DEG * evt.data[2]));
+			event.data1 = FLOAT_TO_FIXED(RAD2DEG * evt.data[0]);
+			event.data2 = FLOAT_TO_FIXED(RAD2DEG * evt.data[1]);
+			event.data3 = FLOAT_TO_FIXED(RAD2DEG * evt.data[2]);
 #undef RAD2DEG
 			D_PostEvent(&event);
 			return;

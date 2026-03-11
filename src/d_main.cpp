@@ -93,7 +93,7 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x348af552ccc104d2
+#define ASSET_HASH_MAIN_PK3            0x9a54c263d9f325cd
 #define ASSET_HASH_MAPPATCH_PK3        0x1745690024efbaf8
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
@@ -220,6 +220,16 @@ void D_ProcessEvents(void)
 	// i have to reset this somewhere or else your camera just glides away!
 	for (size_t i = 0; i < 4; i++)
 		gamekeydown[0][KEY_MOUSEMOVE + i] = 0;
+	
+	for (size_t dev = 0; dev < MAXDEVICES; dev++)
+	{
+		gamekeydown[dev][KEY_ACCELEROMETER1+0] = 0;
+		gamekeydown[dev][KEY_ACCELEROMETER1+1] = 0;
+		gamekeydown[dev][KEY_ACCELEROMETER1+2] = 0;
+		gamekeydown[dev][KEY_GYROSCOPE1+0] = 0;
+		gamekeydown[dev][KEY_GYROSCOPE1+1] = 0;
+		gamekeydown[dev][KEY_GYROSCOPE1+2] = 0;
+	}
 
 	for (; eventtail != eventhead; eventtail = (eventtail+1) & (MAXEVENTS-1))
 	{

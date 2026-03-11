@@ -2678,6 +2678,8 @@ enum ticcmd_e
 	ticcmd_buttons,
 	ticcmd_latency,
 	ticcmd_flags,
+	ticcmd_tilt,
+	ticcmd_shake,
 };
 
 static const char *const ticcmd_opt[] = {
@@ -2692,6 +2694,8 @@ static const char *const ticcmd_opt[] = {
 	"buttons",
 	"latency",
 	"flags",
+	"tilt",
+	"shake",
 	NULL,
 };
 
@@ -2735,6 +2739,12 @@ static int ticcmd_get(lua_State *L)
 		break;
 	case ticcmd_flags:
 		lua_pushinteger(L, cmd->flags);
+		break;
+	case ticcmd_tilt:
+		lua_pushinteger(L, cmd->tilt);
+		break;
+	case ticcmd_shake:
+		lua_pushinteger(L, cmd->shake);
 		break;
 	default:
 		return NOFIELD;
@@ -2782,6 +2792,10 @@ static int ticcmd_set(lua_State *L)
 		return NOSET;
 	case ticcmd_flags:
 		return NOSET;
+	case ticcmd_tilt:
+		cmd->tilt = (SINT8)luaL_checkinteger(L, 3);
+	case ticcmd_shake:
+		cmd->shake = (UINT8)luaL_checkinteger(L, 3);
 	default:
 		return NOFIELD;
 	}
