@@ -293,7 +293,7 @@ static boolean K_RaceForceSPB(SINT8 playerpos, UINT32 pdis)
 		return false;
 	}
 
-	return ((gametyperules & GTR_CIRCUIT) && playerpos == 2 && pdis > (UINT32)(7 * spb_res->augcvar[idx]->value / 2));
+	return ((gametypes[gametype]->rules & GTR_CIRCUIT) && playerpos == 2 && pdis > (UINT32)(7 * spb_res->augcvar[idx]->value / 2));
 }
 
 // 1/21/2025: I hate tiptoeing around the integer limit.
@@ -541,7 +541,7 @@ void K_UpdateItemCooldown(void)
 		if (!playeringame[i] || player->spectator || player->exiting > 0)
 			continue;
 
-		if (gametyperules & GTR_BUMPERS && player->bumper == 0)
+		if (gametypes[gametype]->rules & GTR_BUMPERS && player->bumper == 0)
 			continue;
 
 		// special case for legacy shrink
@@ -585,7 +585,7 @@ void K_UpdateItemCooldown(void)
 	{
 		kartresult_t *result = &kartresults[i];
 		if (result->isalt == K_IsKartItemAlternate(result->type)
-		 && (gametyperules & GTR_RACEODDS || result->flags & KRF_INDIRECTITEM)
+		 && (gametypes[gametype]->rules & GTR_RACEODDS || result->flags & KRF_INDIRECTITEM)
 		 && setcooldown[result->type])
 			result->cooldown = result->basecooldown;
 	}
@@ -654,16 +654,16 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 	// Item type used for actual odds retrieval and cooldown assignments.
 	UINT8 oddstable;
 
-	if (gametyperules & GTR_BATTLEODDS)
+	if (gametypes[gametype]->rules & GTR_BATTLEODDS)
 		oddstable = ODDS_BATTLE;
-	else if (gametyperules & GTR_RACEODDS)
+	else if (gametypes[gametype]->rules & GTR_RACEODDS)
 		oddstable = ODDS_RACE;
 	else
 		oddstable = ODDS_SPECIAL;
 
 	I_Assert(roulette->pos < oddstablemax[oddstable]); // DO NOT allow positions past the bounds of the table
 
-	if (gametyperules & GTR_BATTLEODDS)
+	if (gametypes[gametype]->rules & GTR_BATTLEODDS)
 		oddsmul = BATTLEODDSMUL;
 
 	// TODO: braaap (make a separate table for the current level!)
@@ -683,7 +683,7 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 		if (!playeringame[i] || players[i].spectator)
 			continue;
 
-		if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
+		if (!(gametypes[gametype]->rules & GTR_BUMPERS) || players[i].bumper)
 			roulette->pingame++;
 
 		if (players[i].exiting)
@@ -937,7 +937,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 	{
 		boolean available = false;
 
-		if ((gametyperules & GTR_BATTLEODDS) && i > 1)
+		if ((gametypes[gametype]->rules & GTR_BATTLEODDS) && i > 1)
 		{
 			oddsvalid[i] = false;
 			break;
@@ -966,7 +966,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 			distlen = min(sizeof(disttable) - 1, distlen); \
         }
 
-	if (gametyperules & GTR_BATTLEODDS) // Battle Mode
+	if (gametypes[gametype]->rules & GTR_BATTLEODDS) // Battle Mode
 	{
 		if (player->roulettetype == KROULETTETYPE_KARMA && oddsvalid[1] == true)
 		{
@@ -984,7 +984,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 			}
 		}
 	}
-	else if (gametyperules & GTR_RACEODDS)
+	else if (gametypes[gametype]->rules & GTR_RACEODDS)
 	{
 
 		INT32 tablediv = FixedMul(2, oddsfac);
@@ -1080,7 +1080,7 @@ UINT8* K_GetRollableItems(void)
 
 		roulette_size = 0;
 
-		if (gametyperules & GTR_BATTLEODDS)
+		if (gametypes[gametype]->rules & GTR_BATTLEODDS)
 			oddstable = ODDS_BATTLE;
 		else
 			oddstable = ODDS_RACE;
@@ -1317,7 +1317,7 @@ UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, boolean *spbrus
 
 static boolean K_BattleForceSPB(player_t *player)
 {
-	boolean battlecond = ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB) && (mostwanted != -1) && (!K_IsPlayerMostWanted(player)));
+	boolean battlecond = ((gametypes[gametype]->rules & GTR_WANTED) && (gametypes[gametype]->rules & GTR_WANTEDSPB) && (mostwanted != -1) && (!K_IsPlayerMostWanted(player)));
 
 	return battlecond;
 }
@@ -1415,7 +1415,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 
 	// SPECIAL CASE No. 3:
 	// This Gametype never specified an odds type. Roll something random please!
-	if (!(gametyperules & GTR_RACEODDS) && !(gametyperules & GTR_BATTLEODDS))
+	if (!(gametypes[gametype]->rules & GTR_RACEODDS) && !(gametypes[gametype]->rules & GTR_BATTLEODDS))
 	{
 		UINT8 itemroll = P_RandomRange(0, numkartresults - 1);
 		K_AwardPlayerResult(player, &kartresults[itemroll], KITEMBLINK_NORMAL);
@@ -1425,10 +1425,10 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// SPECIAL CASE No. 4:
 	// Record Attack / alone mashing behavior
 	if ((modeattacking || pingame == 1)
-		&& ((gametyperules & GTR_RACEODDS)
-		|| ((gametyperules & GTR_BATTLEODDS) && (itembreaker || bossinfo.boss))))
+		&& ((gametypes[gametype]->rules & GTR_RACEODDS)
+		|| ((gametypes[gametype]->rules & GTR_BATTLEODDS) && (itembreaker || bossinfo.boss))))
 	{
-		if ((gametyperules & GTR_RACEODDS))
+		if ((gametypes[gametype]->rules & GTR_RACEODDS))
 		{
 			if (mashed && (K_ItemResultEnabled(K_GetKartResult("superring")) || (modeattacking && K_RingsActive()))) // ANY mashed value? You get rings.
 			{
@@ -1442,7 +1442,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 					K_AwardPlayerResult(player, NULL, KITEMBLINK_NORMAL);
 			}
 		}
-		else if (gametyperules & GTR_BATTLEODDS)
+		else if (gametypes[gametype]->rules & GTR_BATTLEODDS)
 		{
 			if (mashed && (bossinfo.boss || K_ItemResultEnabled(K_GetKartResult("banana"))) && !itembreaker) // ANY mashed value? You get a banana.
 				K_AwardPlayerResult(player, K_GetKartResult("banana"), KITEMBLINK_MASHED);
@@ -1650,7 +1650,7 @@ static void K_DoGrowShrink(player_t *player, boolean shrinking)
 	}
 	else
 	{
-		player->growshrinktimer = (gametyperules & GTR_CLOSERPLAYERS ? 8 : 12) * ((shrinking) ? -TICRATE : TICRATE);
+		player->growshrinktimer = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS ? 8 : 12) * ((shrinking) ? -TICRATE : TICRATE);
 	}
 
 	if (shrinking)
@@ -1773,7 +1773,7 @@ static void K_DoHyudoroSteal(player_t *player)
 
 			// Can steal from this player
 			&& (gametype == GT_RACE //&& players[i].position < player->position)
-			|| ((gametyperules & GTR_BUMPERS) && players[i].bumper > 0))
+			|| ((gametypes[gametype]->rules & GTR_BUMPERS) && players[i].bumper > 0))
 
 			// Has an item
 			&& (players[i].itemtype

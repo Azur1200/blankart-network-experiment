@@ -52,7 +52,7 @@ static INT32 K_PlayersPlaying(void)
 
 static inline boolean race_rules(void)
 {
-	return (gametyperules & GTR_CIRCUIT);
+	return (gametypes[gametype]->rules & GTR_CIRCUIT);
 }
 
 static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)

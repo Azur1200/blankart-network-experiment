@@ -968,7 +968,7 @@ static void K_SpawnFootstepParticle(mobj_t *mo, t_footstep_t *fs, tic_t timer)
 
 	if (mo->player != NULL)
 	{
-		boolean karmabomb = ((gametyperules & GTR_BUMPERS) && mo->player->bumper <= 0);
+		boolean karmabomb = ((gametypes[gametype]->rules & GTR_BUMPERS) && mo->player->bumper <= 0);
 		tireAngle = (mo->player->drawangle + ANGLE_180);
 		speedValue = K_GetKartSpeedFromStat(mo->player->kartspeed, karmabomb);
 	}

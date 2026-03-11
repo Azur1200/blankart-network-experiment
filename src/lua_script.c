@@ -296,7 +296,7 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 		lua_pushinteger(L, gametype);
 		return 1;
 	} else if (fastcmp(word,"gametyperules")) {
-		lua_pushinteger(L, gametyperules);
+		lua_pushinteger(L, gametypes[gametype]->rules);
 		return 1;
 	} else if (fastcmp(word,"leveltime")) {
 		lua_pushinteger(L, leveltime);

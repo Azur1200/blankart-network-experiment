@@ -42,7 +42,7 @@ boolean K_IsPlayerWanted(player_t *player)
 {
 	UINT8 i;
 
-	if (!(gametyperules & GTR_WANTED))
+	if (!(gametypes[gametype]->rules & GTR_WANTED))
 		return false;
 
 	for (i = 0; i < 4; i++)
@@ -60,7 +60,7 @@ boolean K_IsPlayerMostWanted(player_t *player)
 	if (mostwanted == -1)
 		return false;
 
-	if (!(gametyperules & GTR_WANTEDSPB))
+	if (!(gametypes[gametype]->rules & GTR_WANTEDSPB))
 		return false;
 
 	if (player == &players[mostwanted])
@@ -78,7 +78,7 @@ void K_CalculateBattleWanted(void)
 
 	mostwanted = -1;
 
-	if (!(gametyperules & GTR_WANTED))
+	if (!(gametypes[gametype]->rules & GTR_WANTED))
 	{
 		memset(battlewanted, -1, sizeof (battlewanted));
 		return;
@@ -227,7 +227,7 @@ void K_CheckBumpers(void)
 	UINT32 winnerscoreadd = 0, maxroundscore = 0;
 	boolean nobumpers = false;
 
-	if (!(gametyperules & GTR_BUMPERS))
+	if (!(gametypes[gametype]->rules & GTR_BUMPERS))
 		return;
 
 	if (gameaction == ga_completed)
@@ -355,7 +355,7 @@ void K_RunPaperItemSpawners(void)
 		}
 
 		if ((players[i].exiting > 0 || (players[i].pflags & PF_ELIMINATED))
-			|| ((gametyperules & GTR_BUMPERS) && players[i].bumper <= 0))
+			|| ((gametypes[gametype]->rules & GTR_BUMPERS) && players[i].bumper <= 0))
 		{
 			continue;
 		}
@@ -489,7 +489,7 @@ void K_SpawnPlayerBattleBumpers(player_t *p)
 
 void K_BattleInit(boolean singleplayercontext)
 {
-	if ((gametyperules & GTR_ITEMBREAKER) && singleplayercontext && !itembreaker && !bossinfo.boss)
+	if ((gametypes[gametype]->rules & GTR_ITEMBREAKER) && singleplayercontext && !itembreaker && !bossinfo.boss)
 	{
 		if (!(K_CanChangeRules(true) && !cv_kartitembreaker.value))
 			itembreaker = true;
@@ -501,7 +501,7 @@ void K_BattleInit(boolean singleplayercontext)
 		}
 	}
 
-	if (gametyperules & GTR_BUMPERS)
+	if (gametypes[gametype]->rules & GTR_BUMPERS)
 	{
 		INT32 maxbumpers = K_StartingBumperCount();
 		UINT8 i;
@@ -519,7 +519,7 @@ void K_BattleInit(boolean singleplayercontext)
 // Handle respawning the battle boxes.
 void K_RespawnBattleBoxes(void)
 {
-	if (!(gametyperules & GTR_BATTLEBOXES))
+	if (!(gametypes[gametype]->rules & GTR_BATTLEBOXES))
 		return;
 
 	if (itembreaker)

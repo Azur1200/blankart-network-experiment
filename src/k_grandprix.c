@@ -789,7 +789,7 @@ boolean K_BotDefaultSpectator(void)
 		return false;
 	}
 
-	if (!(gametyperules & GTR_BOTS))
+	if (!(gametypes[gametype]->rules & GTR_BOTS))
 	{
 		// This gametype does not support bots.
 		return true;

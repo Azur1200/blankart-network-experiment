@@ -8286,7 +8286,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	// SRB2Kart: map load variables
 	if (grandprixinfo.gp == true)
 	{
-		if ((gametyperules & GTR_BATTLESPEED))
+		if ((gametypes[gametype]->rules & GTR_BATTLESPEED))
 		{
 			gamespeed = KARTSPEED_NORMAL;
 		}
@@ -8307,7 +8307,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	else if (modeattacking)
 	{
 		// Just play it safe and set everything
-		if ((gametyperules & GTR_BATTLESPEED))
+		if ((gametypes[gametype]->rules & GTR_BATTLESPEED))
 			gamespeed = KARTSPEED_NORMAL;
 		else
 			gamespeed = KARTSPEED_HARD;
@@ -8316,7 +8316,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	}
 	else
 	{
-		if (gametyperules & GTR_BATTLESPEED)
+		if (gametypes[gametype]->rules & GTR_BATTLESPEED)
 		{
 			if (cv_kartbattlespeed.value == KARTSPEED_AUTO)
 				gamespeed = ((speedscramble == -1) ? KARTSPEED_EASY : (UINT8)speedscramble);
@@ -8488,7 +8488,7 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 	{
 		mapthing_t *thing;
 
-		if (gametyperules & GTR_BATTLESTARTS)
+		if (gametypes[gametype]->rules & GTR_BATTLESTARTS)
 			thing = deathmatchstarts[0];
 		else
 			thing = playerstarts[0];
@@ -8533,7 +8533,7 @@ static void P_InitPlayers(void)
 
 		players[i].mo = NULL;
 
-		if (!(gametyperules & GTR_CIRCUIT))
+		if (!(gametypes[gametype]->rules & GTR_CIRCUIT))
 		{
 			G_DoReborn(i);
 		}
@@ -9048,7 +9048,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	K_ClearWaypoints();
 
 	// Load the ccheckpoints and waypoints please!
-	if (gametyperules & GTR_CIRCUIT && gamestate != GS_TITLESCREEN)
+	if (gametypes[gametype]->rules & GTR_CIRCUIT && gamestate != GS_TITLESCREEN)
 	{
 		if ((K_SetupWaypointList() == false))
 		{

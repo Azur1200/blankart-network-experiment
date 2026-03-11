@@ -4451,7 +4451,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 				return false;
 			}
 
-			if ((gametyperules & GTR_CIRCUIT) && (mo->player->exiting == 0) && !(mo->player->pflags & PF_HITFINISHLINE))
+			if ((gametypes[gametype]->rules & GTR_CIRCUIT) && (mo->player->exiting == 0) && !(mo->player->pflags & PF_HITFINISHLINE))
 			{
 				// megablock cope 1: single-use finish lines
 				if (args[0] & TMCFF_SINGLEUSE && mo->player->laps > 0)
@@ -5257,7 +5257,7 @@ static void P_ProcessExitSector(player_t *player, mtag_t sectag)
 	INT32 lineindex;
 
 #if 0
-	if (!(gametyperules & GTR_ALLOWEXIT))
+	if (!(gametypes[gametype]->rules & GTR_ALLOWEXIT))
 		return;
 #endif
 
@@ -5416,7 +5416,7 @@ static void P_EvaluateSpecialFlags(player_t *player, sector_t *sector, sector_t 
 		P_ProcessZoomTube(player, sectag, true);
 	if (sector->specialflags & SSF_FINISHLINE)
 	{
-		if (K_UsingLegacyCheckpoints() && (gametyperules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
+		if (K_UsingLegacyCheckpoints() && (gametypes[gametype]->rules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
 		{
 			K_HandleLapIncrement(player);
 			player->pflags |= PF_HITFINISHLINE;
@@ -5570,7 +5570,7 @@ static void P_EvaluateOldSectorSpecial(player_t *player, sector_t *sector, secto
 			{
 				if (!(sector->specialflags & SSF_FINISHLINE))
 				{
-					if (K_UsingLegacyCheckpoints() && (gametyperules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
+					if (K_UsingLegacyCheckpoints() && (gametypes[gametype]->rules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
 					{
 						K_HandleLapIncrement(player);
 						player->pflags |= PF_HITFINISHLINE;
@@ -7022,15 +7022,15 @@ static boolean P_CheckGametypeRules(INT32 checktype, UINT32 target)
 	{
 		case TMF_HASALL:
 		default:
-			return (gametyperules & target) == target;
+			return (gametypes[gametype]->rules & target) == target;
 		case TMF_HASANY:
-			return !!(gametyperules & target);
+			return !!(gametypes[gametype]->rules & target);
 		case TMF_HASEXACTLY:
-			return gametyperules == target;
+			return gametypes[gametype]->rules == target;
 		case TMF_DOESNTHAVEALL:
-			return (gametyperules & target) != target;
+			return (gametypes[gametype]->rules & target) != target;
 		case TMF_DOESNTHAVEANY:
-			return !(gametyperules & target);
+			return !(gametypes[gametype]->rules & target);
 	}
 }
 
@@ -7109,7 +7109,7 @@ void P_SpawnSpecials(boolean fromnetsave)
 		switch(GETSECSPECIAL(sector->special, 4))
 		{
 			case 10: // Circuit finish line (Unused)
-				if (gametyperules & GTR_CIRCUIT)
+				if (gametypes[gametype]->rules & GTR_CIRCUIT)
 					circuitmap = true;
 				break;
 		}
@@ -7823,7 +7823,7 @@ void P_SpawnSpecials(boolean fromnetsave)
 
 			// Linedef executor triggers for CTF teams.
 			case 309:
-				if (!(gametyperules & GTR_TEAMS))
+				if (!(gametypes[gametype]->rules & GTR_TEAMS))
 				{
 					lines[i].special = 0;
 					break;
@@ -8065,7 +8065,7 @@ void P_SpawnSpecials(boolean fromnetsave)
 
 			// SRB2Kart
 			case 2001: // Finish Line
-				if ((gametyperules & GTR_CIRCUIT))
+				if ((gametypes[gametype]->rules & GTR_CIRCUIT))
 					circuitmap = true;
 				break;
 

@@ -5597,7 +5597,7 @@ static void M_RetryResponse(INT32 ch)
 INT32 MR_Retry(INT32 choice)
 {
 	(void)choice;
-	M_StartMessage(va("Start this %s over?\n\n(Press 'Y' to confirm)\n", (gametyperules & GTR_CIRCUIT) ? "race" : "battle"),M_RetryResponse,MM_YESNO);
+	M_StartMessage(va("Start this %s over?\n\n(Press 'Y' to confirm)\n", (gametypes[gametype]->rules & GTR_CIRCUIT) ? "race" : "battle"),M_RetryResponse,MM_YESNO);
 	return true;
 }
 

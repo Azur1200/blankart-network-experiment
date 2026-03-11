@@ -253,7 +253,7 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 		if (!P_CanPickupItem(t2->player, PICKUPITEM_EGGMAN))
 			return true;
 
-		if ((gametyperules & GTR_BUMPERS) && t2->player->bumper <= 0)
+		if ((gametypes[gametype]->rules & GTR_BUMPERS) && t2->player->bumper <= 0)
 		{
 			if (t2->player->karmamode || t2->player->karmadelay)
 				return true;
@@ -288,7 +288,7 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 
 			if (t1->target && t1->target->player)
 			{
-				if ((gametyperules & GTR_CIRCUIT) || t1->target->player->bumper > 0)
+				if ((gametypes[gametype]->rules & GTR_CIRCUIT) || t1->target->player->bumper > 0)
 					t2->player->eggmanblame = t1->target->player-players;
 				else
 					t2->player->eggmanblame = t2->player-players;
@@ -1111,7 +1111,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 
 	// Battle Mode Sneaker damage
 	// (Pogo Spring damage is handled in head-stomping code)
-	if (gametyperules & GTR_BUMPERS)
+	if (gametypes[gametype]->rules & GTR_BUMPERS)
 	{
 		t1Condition = ((t1->player->sneakertimer > 0)
 			&& !P_PlayerInPain(t1->player)

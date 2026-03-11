@@ -4358,7 +4358,7 @@ boolean P_SupermanLook4Players(mobj_t *actor)
 			if (players[c].mo->health <= 0)
 				continue; // dead
 
-			if ((gametyperules & GTR_BUMPERS) && players[c].bumper <= 0)
+			if ((gametypes[gametype]->rules & GTR_BUMPERS) && players[c].bumper <= 0)
 				continue; // other dead
 
 			playersinthegame[stop] = &players[c];
@@ -7561,7 +7561,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 			mobj->color = mobj->target->color;
 			K_MatchGenericExtraFlags(mobj, mobj->target);
 
-			if ((!(gametyperules & GTR_ITEMARROWS) || (gametyperules & GTR_BUMPERS && mobj->target->player->bumper <= 0))
+			if ((!(gametypes[gametype]->rules & GTR_ITEMARROWS) || (gametypes[gametype]->rules & GTR_BUMPERS && mobj->target->player->bumper <= 0))
 #if 1 // Set to 0 to test without needing to host
 				|| (P_IsDisplayPlayer(mobj->target->player))
 #endif
@@ -8580,7 +8580,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			else if (gamespeed == KARTSPEED_EXPERT)
 				distbarrier = FixedMul(distbarrier, FRACUNIT+FRACUNIT/2);
 
-			if ((gametyperules & GTR_CIRCUIT) && mobj->tracer)
+			if ((gametypes[gametype]->rules & GTR_CIRCUIT) && mobj->tracer)
 			{
 				distaway = P_AproxDistance(mobj->tracer->x - mobj->x, mobj->tracer->y - mobj->y);
 				if (distaway < distbarrier)
@@ -9431,7 +9431,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			statenum_t state = (mobj->state-states);
 
 			if (!mobj->target || !mobj->target->health || !mobj->target->player || mobj->target->player->spectator
-				|| mobj->target->player->bumper || !(gametyperules & GTR_KARMA))
+				|| mobj->target->player->bumper || !(gametypes[gametype]->rules & GTR_KARMA))
 			{
 				P_RemoveMobj(mobj);
 				return false;
@@ -10392,7 +10392,7 @@ static boolean P_FuseThink(mobj_t *mobj)
 		{
 			;
 		}
-		else if (gametyperules & GTR_BATTLEBOXES)
+		else if (gametypes[gametype]->rules & GTR_BATTLEBOXES)
 		{
 			if (mobj->threshold != 69)
 				break;
@@ -12514,7 +12514,7 @@ void P_SpawnPlayer(INT32 playernum)
 	p->grieftime = 0;
 	p->spinoutrot = 0;
 
-	if (gametyperules & GTR_ITEMARROWS)
+	if (gametypes[gametype]->rules & GTR_ITEMARROWS)
 	{
 		mobj_t *overheadarrow = P_SpawnMobj(mobj->x, mobj->y, mobj->z + mobj->height + 16*FRACUNIT, MT_PLAYERARROW);
 		P_SetTarget(&overheadarrow->target, mobj);
@@ -12522,7 +12522,7 @@ void P_SpawnPlayer(INT32 playernum)
 		P_SetScale(overheadarrow, mobj->destscale);
 	}
 
-	if (gametyperules & GTR_BUMPERS)
+	if (gametypes[gametype]->rules & GTR_BUMPERS)
 	{
 		if (p->spectator)
 		{
@@ -12538,7 +12538,7 @@ void P_SpawnPlayer(INT32 playernum)
 
 			K_SpawnPlayerBattleBumpers(p);
 		}
-		else if (p->bumper <= 0 && (gametyperules & GTR_KARMA))
+		else if (p->bumper <= 0 && (gametypes[gametype]->rules & GTR_KARMA))
 		{
 			mobj_t *karmahitbox = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_KARMAHITBOX); // Player hitbox is too small!!
 			P_SetTarget(&karmahitbox->target, mobj);
@@ -12968,7 +12968,7 @@ static mobjtype_t P_GetMobjtypeSubstitute(mapthing_t *mthing, mobjtype_t i)
 {
 	(void)mthing;
 
-	if ((i == MT_RANDOMITEM) && (gametyperules & (GTR_PAPERITEMS|GTR_CIRCUIT)) == (GTR_PAPERITEMS|GTR_CIRCUIT) && !bossinfo.boss)
+	if ((i == MT_RANDOMITEM) && (gametypes[gametype]->rules & (GTR_PAPERITEMS|GTR_CIRCUIT)) == (GTR_PAPERITEMS|GTR_CIRCUIT) && !bossinfo.boss)
 		return MT_PAPERITEMSPOT;
 
 	return i;

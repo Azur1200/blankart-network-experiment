@@ -113,7 +113,7 @@ INT16 K_PowerLevelPlacementScore(player_t *player)
 		return 0;
 	}
 
-	if (gametyperules & GTR_CIRCUIT)
+	if (gametypes[gametype]->rules & GTR_CIRCUIT)
 	{
 		return MAXPLAYERS - player->position;
 	}
@@ -136,9 +136,9 @@ INT16 K_CalculatePowerLevelAvg(void)
 		return 0; // No average.
 	}
 
-	if ((gametyperules & GTR_CIRCUIT))
+	if ((gametypes[gametype]->rules & GTR_CIRCUIT))
 		t = PWRLV_RACE;
-	else if ((gametyperules & GTR_BUMPERS))
+	else if ((gametypes[gametype]->rules & GTR_BUMPERS))
 		t = PWRLV_BATTLE;
 
 	if (t == PWRLV_DISABLED)

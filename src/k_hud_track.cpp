@@ -215,7 +215,7 @@ private:
 
 bool is_player_tracking_target(player_t *player = stplyr)
 {
-	if ((gametyperules & (GTR_BUMPERS|GTR_CLOSERPLAYERS)) != (GTR_BUMPERS|GTR_CLOSERPLAYERS))
+	if ((gametypes[gametype]->rules & (GTR_BUMPERS|GTR_CLOSERPLAYERS)) != (GTR_BUMPERS|GTR_CLOSERPLAYERS))
 	{
 		return false;
 	}

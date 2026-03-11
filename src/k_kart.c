@@ -139,7 +139,7 @@ void K_TimerInit(void)
 		introtime = (108) + 5; // 108 for rotation, + 5 for white fade
 		starttime = 6*TICRATE + (3*TICRATE/4);
 
-		if (gametyperules & GTR_NOCOUNTDOWN)
+		if (gametypes[gametype]->rules & GTR_NOCOUNTDOWN)
 		{
 			starttime = 0;
 		}
@@ -147,7 +147,7 @@ void K_TimerInit(void)
 
 	K_BattleInit(domodeattack);
 
-	if ((gametyperules & GTR_TIMELIMIT) && !bossinfo.boss && !modeattacking)
+	if ((gametypes[gametype]->rules & GTR_TIMELIMIT) && !bossinfo.boss && !modeattacking)
 	{
 		if (!K_CanChangeRules(true))
 		{
@@ -1126,7 +1126,7 @@ static void K_UpdateDraft(player_t *player)
 
 	minDist = cv_kartdrafting_closedeadzone.value * player->mo->scale;
 
-	if (gametyperules & GTR_CLOSERPLAYERS)
+	if (gametypes[gametype]->rules & GTR_CLOSERPLAYERS)
 	{
 		minDist /= 4;
 		draftdistance *= 2;
@@ -1221,7 +1221,7 @@ static void K_UpdateDraft(player_t *player)
 				fixed_t add = (FRACUNIT/200) + ((9 - player->kartspeed+(player->kartspeed/3)) * ((3*FRACUNIT)/1600));
 				player->draftpower += add;
 
-				if (gametyperules & GTR_CLOSERPLAYERS)
+				if (gametypes[gametype]->rules & GTR_CLOSERPLAYERS)
 				{
 					// Double gain in Battle
 					player->draftpower += add;
@@ -3031,7 +3031,7 @@ fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb)
 
 fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dorubberband)
 {
-	boolean karmabomb = ((gametyperules & GTR_BUMPERS) && player->bumper <= 0);
+	boolean karmabomb = ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0);
 	fixed_t finalspeed;
 
 	if (doboostpower && player->forcedtopspeed > 0)
@@ -3077,7 +3077,7 @@ fixed_t K_GetKartAccel(const player_t *player)
 	fixed_t k_accel = 32; // 36;
 	UINT8 kartspeed = player->kartspeed;
 
-	if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
+	if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 		kartspeed = 1;
 
 	k_accel += 4 * (9 - kartspeed); // 32 - 64
@@ -3462,7 +3462,7 @@ void K_BattleAwardHit(player_t *player, player_t *victim, mobj_t *inflictor, UIN
 			// +3 points for hitting a wanted player
 			points = 3;
 		}
-		else if (gametyperules & GTR_BUMPERS)
+		else if (gametypes[gametype]->rules & GTR_BUMPERS)
 		{
 			if ((victim->bumper > 0) && (victim->bumper <= bumpersRemoved))
 			{
@@ -3472,7 +3472,7 @@ void K_BattleAwardHit(player_t *player, player_t *victim, mobj_t *inflictor, UIN
 		}
 	}
 
-	if (gametyperules & GTR_POINTS)
+	if (gametypes[gametype]->rules & GTR_POINTS)
 	{
 		P_AddPlayerScore(player, points);
 		K_SpawnBattlePoints(player, victim, points);
@@ -3651,7 +3651,7 @@ boolean K_IsPlayerDamaged(const player_t *player)
 
 void K_HandleBumperChanges(player_t *player, UINT8 prevBumpers)
 {
-	if (!(gametyperules & GTR_BUMPERS))
+	if (!(gametypes[gametype]->rules & GTR_BUMPERS))
 	{
 		// Bumpers aren't being used
 		return;
@@ -3694,7 +3694,7 @@ void K_DestroyBumpers(player_t *player, UINT8 amount)
 {
 	UINT8 oldBumpers = player->bumper;
 
-	if (!(gametyperules & GTR_BUMPERS))
+	if (!(gametypes[gametype]->rules & GTR_BUMPERS))
 	{
 		return;
 	}
@@ -3717,7 +3717,7 @@ void K_TakeBumpersFromPlayer(player_t *player, player_t *victim, UINT8 amount)
 
 	UINT8 tookBumpers = 0;
 
-	if (!(gametyperules & GTR_BUMPERS))
+	if (!(gametypes[gametype]->rules & GTR_BUMPERS))
 	{
 		return;
 	}
@@ -4319,7 +4319,7 @@ void K_SpawnBoostTrail(player_t *player)
 
 	if (!P_IsObjectOnGround(player->mo)
 		|| player->hyudorotimer != 0
-		|| ((gametyperules & GTR_BUMPERS) && player->bumper <= 0 && player->karmadelay))
+		|| ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0 && player->karmadelay))
 		return;
 
 	if (player->mo->eflags & MFE_VERTICALFLIP)
@@ -6215,7 +6215,7 @@ player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
 			thisang = InvAngle(thisang);
 
 		// Jawz only go after the person directly ahead of you in race... sort of literally now!
-		if (gametyperules & GTR_CIRCUIT)
+		if (gametypes[gametype]->rules & GTR_CIRCUIT)
 		{
 			// Don't go for people who are behind you
 			if (thisang > ANGLE_67h)
@@ -6465,7 +6465,7 @@ void K_KartPlayerHUDUpdate(player_t *player)
 	if (player->karthud[khud_taunthorns])
 		player->karthud[khud_taunthorns]--;
 
-	if (gametyperules & GTR_RINGS)
+	if (gametypes[gametype]->rules & GTR_RINGS)
 	{
 		if ((K_RingsActive() == true))
 		{
@@ -6484,7 +6484,7 @@ void K_KartPlayerHUDUpdate(player_t *player)
 	else
 		player->karthud[khud_finish] = 0;
 
-	if ((gametyperules & GTR_BUMPERS) && (player->exiting || player->karmadelay))
+	if ((gametypes[gametype]->rules & GTR_BUMPERS) && (player->exiting || player->karmadelay))
 	{
 		if (player->exiting)
 		{
@@ -6746,7 +6746,7 @@ static void K_RaceStart(player_t *player)
 
 UINT8 K_RaceLapCount(INT16 mapNum)
 {
-	if (!(gametyperules & GTR_CIRCUIT))
+	if (!(gametypes[gametype]->rules & GTR_CIRCUIT))
 	{
 		// Not in Race mode
 		return 0;
@@ -7373,7 +7373,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			player->rings = player->ringmin;
 	}
 
-	if (comeback == false || !(gametyperules & GTR_KARMA) || (player->pflags & PF_ELIMINATED))
+	if (comeback == false || !(gametypes[gametype]->rules & GTR_KARMA) || (player->pflags & PF_ELIMINATED))
 	{
 		player->karmadelay = comebacktime;
 	}
@@ -7485,7 +7485,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 				if (!playeringame[i] || players[i].spectator)
 					continue;
 
-				if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
+				if (!(gametypes[gametype]->rules & GTR_BUMPERS) || players[i].bumper)
 					pingame++;
 
 				if (pingame > 1) // We only want to see if one player is playing.
@@ -7709,7 +7709,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->eggmanexplode)
 	{
-		if (player->spectator || ((gametyperules & GTR_BUMPERS) && !player->bumper))
+		if (player->spectator || ((gametypes[gametype]->rules & GTR_BUMPERS) && !player->bumper))
 			player->eggmanexplode = 0;
 		else
 		{
@@ -9260,7 +9260,7 @@ INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
 
 INT32 K_GetKartDriftSparkValue(const player_t *player)
 {
-	UINT8 kartspeed = ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
+	UINT8 kartspeed = ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 		? 1
 		: player->kartspeed;
 	return (26*4 + kartspeed*2 + (9 - player->kartweight))*8;
@@ -10081,7 +10081,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 		if (!playeringame[i] || players[i].spectator)
 			continue;
 
-		if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
+		if (!(gametypes[gametype]->rules & GTR_BUMPERS) || players[i].bumper)
 			pingame++;
 	}
 
@@ -10090,7 +10090,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 		if (!playeringame[i] || players[i].spectator)
 			continue;
 
-		if ((players[i].mo) && (gametyperules & GTR_CIRCUIT))
+		if ((players[i].mo) && (gametypes[gametype]->rules & GTR_CIRCUIT))
 		{
 			if (players[i].position == 1 && first == -1)
 				first = i;
@@ -10129,7 +10129,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 			if (!playeringame[i] || players[i].spectator)
 				continue;
 
-			if ((players[i].mo) && (gametyperules & GTR_CIRCUIT))
+			if ((players[i].mo) && (gametypes[gametype]->rules & GTR_CIRCUIT))
 			{
 				if (players[i].position == (pingame - 1) && second == -1)
 				{
@@ -10270,7 +10270,7 @@ void K_KartUpdatePosition(player_t *player)
 			if (!playeringame[i] || players[i].spectator || !players[i].mo)
 				continue;
 
-			if (gametyperules & GTR_CIRCUIT)
+			if (gametypes[gametype]->rules & GTR_CIRCUIT)
 			{
 				if (player->exiting) // End of match standings
 				{
@@ -10336,7 +10336,7 @@ void K_KartLegacyUpdatePosition(player_t *player)
 		if (!playeringame[i] || players[i].spectator || !players[i].mo)
 			continue;
 
-		if (gametyperules & GTR_CIRCUIT)
+		if (gametypes[gametype]->rules & GTR_CIRCUIT)
 		{
 			if ((((players[i].starpostnum) + (numstarposts + 1) * players[i].laps) >
 				((player->starpostnum) + (numstarposts + 1) * player->laps)))
@@ -10830,7 +10830,7 @@ static void K_AdjustPlayerFriction(player_t *player)
 		player->mo->friction -= 2048;
 
 	// Karma ice physics
-	if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
+	if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 	{
 		player->mo->friction += 1228;
 
@@ -11066,9 +11066,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 					{
 						if ((buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
 						{
-							SINT8 incr = (gametyperules & GTR_CLOSERPLAYERS) ? 3 : 2;
-							SINT8 metincr = (gametyperules & GTR_CLOSERPLAYERS) ? 4 : 3;
-							SINT8 comincr = (gametyperules & GTR_CLOSERPLAYERS) ? 10 : 4;
+							SINT8 incr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 3 : 2;
+							SINT8 metincr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 4 : 3;
+							SINT8 comincr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 10 : 4;
 
 							// uses fuel faster, but raises temperature faster
 							if (cv_kartflame_fastfuel.value && (!player->flameburnstop))
@@ -11225,14 +11225,14 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			player->mo->renderflags &= ~RF_DONTDRAW;
 		}
 
-		if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0) // dead in match? you da bomb
+		if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0) // dead in match? you da bomb
 		{
 			K_DropItems(player); //K_StripItems(player);
 			K_StripOther(player);
 			player->mo->renderflags |= RF_GHOSTLY;
 			player->flashing = player->karmadelay;
 		}
-		else if ((player->bumper > 0) || ((gametyperules & GTR_CIRCUIT) && !(gametyperules & GTR_BUMPERS)))
+		else if ((player->bumper > 0) || ((gametypes[gametype]->rules & GTR_CIRCUIT) && !(gametypes[gametype]->rules & GTR_BUMPERS)))
 		{
 			player->mo->renderflags &= ~(RF_TRANSMASK|RF_BRIGHTMASK);
 		}
@@ -11254,7 +11254,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			S_StartSound(player->mo, sfx_s224);
 	}
 
-	if (!(gametyperules & GTR_NOCOUNTDOWN))
+	if (!(gametypes[gametype]->rules & GTR_NOCOUNTDOWN))
 		K_RaceStart(player);
 
 	if (onground == false)
@@ -11360,7 +11360,7 @@ void K_CheckSpectateStatus(boolean considermapreset)
 				return;
 
 			// DON'T allow if the race is at 2 laps
-			if ((gametyperules & GTR_CIRCUIT) && players[i].laps >= 2)
+			if ((gametypes[gametype]->rules & GTR_CIRCUIT) && players[i].laps >= 2)
 				return;
 
 			continue;
@@ -11505,7 +11505,7 @@ boolean K_IsSPBInGame(void)
 
 boolean K_RingsActive(void)
 {
-	if (!(gametyperules & GTR_RINGS))
+	if (!(gametypes[gametype]->rules & GTR_RINGS))
 	{
 		// No Rings in this gametype.
 		return false;

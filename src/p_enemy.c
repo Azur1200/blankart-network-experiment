@@ -3336,7 +3336,7 @@ void A_AttractChase(void *thing)
 
 			if (
 				actor->tracer->player && actor->tracer->health
-				&& ((gametyperules & GTR_BUMPERS)
+				&& ((gametypes[gametype]->rules & GTR_BUMPERS)
 					|| (actor->tracer->player->itemtype == KITEM_THUNDERSHIELD
 					&& RINGTOTAL(actor->tracer->player) < actor->tracer->player->ringmax
 					&& !(actor->tracer->player->pflags & PF_RINGLOCK)))
@@ -4830,7 +4830,7 @@ void A_OldRingExplode(void *thing)
 
 		if (changecolor)
 		{
-			if (!(gametyperules & GTR_TEAMS))
+			if (!(gametypes[gametype]->rules & GTR_TEAMS))
 				mo->color = actor->target->color; //copy color
 			else if (actor->target->player->ctfteam == 2)
 				mo->color = skincolor_bluering;
@@ -4846,7 +4846,7 @@ void A_OldRingExplode(void *thing)
 
 	if (changecolor)
 	{
-		if (!(gametyperules & GTR_TEAMS))
+		if (!(gametypes[gametype]->rules & GTR_TEAMS))
 			mo->color = actor->target->color; //copy color
 		else if (actor->target->player->ctfteam == 2)
 			mo->color = skincolor_bluering;
@@ -4861,7 +4861,7 @@ void A_OldRingExplode(void *thing)
 
 	if (changecolor)
 	{
-		if (!(gametyperules & GTR_TEAMS))
+		if (!(gametypes[gametype]->rules & GTR_TEAMS))
 			mo->color = actor->target->color; //copy color
 		else if (actor->target->player->ctfteam == 2)
 			mo->color = skincolor_bluering;
@@ -4888,7 +4888,7 @@ void A_MixUp(void *thing)
 		return;
 
 	// The random factor is okay for other game modes, but in these, it is cripplingly unfair.
-	if (gametyperules & GTR_CIRCUIT)
+	if (gametypes[gametype]->rules & GTR_CIRCUIT)
 	{
 		S_StartSound(actor, sfx_lose);
 		return;
@@ -10835,7 +10835,7 @@ void A_ItemPop(void *thing)
 	//if (actor->info->deathsound)
 		//S_StartSound(remains, actor->info->deathsound);
 
-	if (!((gametyperules & GTR_BUMPERS) && actor->target->player->bumper <= 0) && !itembreaker)
+	if (!((gametypes[gametype]->rules & GTR_BUMPERS) && actor->target->player->bumper <= 0) && !itembreaker)
 	{
 		K_StartRoulette(actor->target->player, KROULETTETYPE_NORMAL);
 	}
@@ -10853,7 +10853,7 @@ void A_ItemPop(void *thing)
 	remains->flags2 &= ~MF2_AMBUSH;
 
 	// Here at mapload in battle?
-	if (gametyperules & GTR_BUMPERS && actor->threshold != 69)
+	if (gametypes[gametype]->rules & GTR_BUMPERS && actor->threshold != 69)
 		numgotboxes++;
 
 	P_RemoveMobj(actor);
@@ -10987,7 +10987,7 @@ void A_SPBChase(void *thing)
 		if (players[i].respawn)
 			continue;*/ // respawning
 
-		if ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB))
+		if ((gametypes[gametype]->rules & GTR_WANTED) && (gametypes[gametype]->rules & GTR_WANTEDSPB))
 		{
 			if (K_IsPlayerMostWanted(&players[i]))
 			{
@@ -11048,7 +11048,7 @@ void A_SPBChase(void *thing)
 				else if (actor->extravalue2-- <= 0)
 					actor->extravalue1 = 0; // back to SEEKING
 
-				if ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB))
+				if ((gametypes[gametype]->rules & GTR_WANTED) && (gametypes[gametype]->rules & GTR_WANTEDSPB))
 				{
 					spbplace = (actor->tracer->player - players);
 				}
@@ -11177,7 +11177,7 @@ void A_SPBChase(void *thing)
 			&& !players[actor->lastlook].spectator
 			&& !players[actor->lastlook].exiting)
 		{
-			if ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB))
+			if ((gametypes[gametype]->rules & GTR_WANTED) && (gametypes[gametype]->rules & GTR_WANTEDSPB))
 			{
 				spbplace = actor->lastlook;
 			}
@@ -11302,7 +11302,7 @@ static inline BlockItReturn_t PIT_SSMineSearch(mobj_t *thing)
 		return BMIT_CONTINUE;
 
 	if (thing->player && (thing->player->hyudorotimer
-		|| ((gametyperules & GTR_BUMPERS) && thing->player && thing->player->bumper <= 0 && thing->player->karmadelay)))
+		|| ((gametypes[gametype]->rules & GTR_BUMPERS) && thing->player && thing->player->bumper <= 0 && thing->player->karmadelay)))
 		return BMIT_CONTINUE;
 
 	// see if it went over / under
@@ -11368,7 +11368,7 @@ static inline BlockItReturn_t PIT_MineExplode(mobj_t *thing)
 	if (netgame && thing->player && thing->player->spectator)
 		return BMIT_CONTINUE;
 
-	if ((gametyperules & GTR_BUMPERS) && grenade->target && grenade->target->player && grenade->target->player->bumper <= 0 && thing == grenade->target)
+	if ((gametypes[gametype]->rules & GTR_BUMPERS) && grenade->target && grenade->target->player && grenade->target->player->bumper <= 0 && thing == grenade->target)
 		return BMIT_CONTINUE;
 
 	// see if it went over / under

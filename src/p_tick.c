@@ -494,7 +494,7 @@ static void P_RunThinkers(void)
 		ps_thlist_times[i] = I_GetPreciseTime() - ps_thlist_times[i];
 	}
 
-	if (gametyperules & GTR_PAPERITEMS)
+	if (gametypes[gametype]->rules & GTR_PAPERITEMS)
 		K_RunPaperItemSpawners();
 
 	ps_acs_time = I_GetPreciseTime();
@@ -839,7 +839,7 @@ void P_Ticker(boolean run)
 		{
 			if (!(titlemapinaction == TITLEMAP_RUNNING))
 			{
-				if (!(gametyperules & GTR_NOCOUNTDOWN))
+				if (!(gametypes[gametype]->rules & GTR_NOCOUNTDOWN))
 				{
 					if (leveltime == starttime-(3*TICRATE))
 					{
@@ -855,9 +855,9 @@ void P_Ticker(boolean run)
 					}
 				}
 
-				// Change timing of start music based on gametyperules
+				// Change timing of start music based on gametypes[gametype]->rules
 				{
-					tic_t startingtime = (gametyperules & GTR_NOCOUNTDOWN) ? introtime : starttime;
+					tic_t startingtime = (gametypes[gametype]->rules & GTR_NOCOUNTDOWN) ? introtime : starttime;
 					if (leveltime < startingtime) // SRB2Kart
 						S_ChangeMusicInternal(((grandprixinfo.roundnum > 0) ? "gpstrt" : (encoremode ? "estart" : "kstart")), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
 					else if (leveltime == startingtime) // The GO! sound stops the level start ambience
@@ -920,7 +920,7 @@ void P_Ticker(boolean run)
 
 		K_TickSpecialStage();
 
-		if (gametyperules & GTR_WANTED)
+		if (gametypes[gametype]->rules & GTR_WANTED)
 		{
 			if (wantedcalcdelay && --wantedcalcdelay <= 0)
 				K_CalculateBattleWanted();

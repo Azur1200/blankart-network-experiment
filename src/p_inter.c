@@ -68,7 +68,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 		if (player->exiting || mapreset || (player->pflags & PF_ELIMINATED))
 			return false;
 
-		if ((gametyperules & GTR_BUMPERS) // No bumpers in Match
+		if ((gametypes[gametype]->rules & GTR_BUMPERS) // No bumpers in Match
 		&& !weapon
 		&& player->bumper <= 0)
 			return false;
@@ -296,7 +296,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (!P_CanPickupItem(player, PICKUPITEM_FLOATING) || (player->itemamount && player->itemtype != special->threshold))
 				return;
 
-			if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
+			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 				return;
 
 			player->itemtype = special->threshold;
@@ -326,7 +326,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (!itembreaker && !P_CanPickupItem(player, PICKUPITEM_ITEM))
 				return;
 
-			if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
+			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 			{
 				if (player->karmamode || player->karmadelay)
 					return;
@@ -338,7 +338,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			P_KillMobj(special, toucher, toucher, DMG_NORMAL);
 			break;
 		case MT_ITEMCAPSULE:
-			if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
+			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 				return;
 
 			if (special->scale < special->extravalue1) // don't break it while it's respawning
@@ -552,7 +552,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			S_StartSound(special, sfx_s1a2);
 			return;
 		case MT_CDUFO: // SRB2kart
-			if (special->fuse || !P_CanPickupItem(player, PICKUPITEM_ITEM) || ((gametyperules & GTR_BUMPERS) && player->bumper <= 0))
+			if (special->fuse || !P_CanPickupItem(player, PICKUPITEM_ITEM) || ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0))
 				return;
 
 			K_StartRoulette(player, KROULETTETYPE_KARMA);
@@ -1057,7 +1057,7 @@ void P_CheckTimeLimit(void)
 		}
 
 #ifdef TESTOVERTIMEINFREEPLAY
-		if (timelimitintics > 0 && (gametyperules & GTR_TIMELIMIT) && startedInFreePlay)
+		if (timelimitintics > 0 && (gametypes[gametype]->rules & GTR_TIMELIMIT) && startedInFreePlay)
 		{
 			goto overtimesound;
 		}
@@ -1070,7 +1070,7 @@ void P_CheckTimeLimit(void)
 				S_StartSound(NULL, sfx_strpst);
 
 			// Normal Match
-			if (!(gametyperules & GTR_TEAMS))
+			if (!(gametypes[gametype]->rules & GTR_TEAMS))
 			{
 				//Store the nodes of participating players in an array.
 				for (i = 0; i < MAXPLAYERS; i++)
@@ -1144,7 +1144,7 @@ void P_CheckPointLimit(void)
 	if (!cv_pointlimit.value)
 		return;
 
-	if (!(gametyperules & GTR_POINTLIMIT))
+	if (!(gametypes[gametype]->rules & GTR_POINTLIMIT))
 		return;
 
 	if (itembreaker)
@@ -1501,7 +1501,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			}
 		}
 
-		if (gametyperules & GTR_BUMPERS)
+		if (gametypes[gametype]->rules & GTR_BUMPERS)
 			K_CheckBumpers();
 
 		K_ResetPogoSpring(target->player);
@@ -2017,7 +2017,7 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 
 	if (type == DMG_TIMEOVER)
 	{
-		if (gametyperules & GTR_CIRCUIT)
+		if (gametypes[gametype]->rules & GTR_CIRCUIT)
 		{
 			mobj_t *boom = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_FZEROBOOM);
 			boom->scale = player->mo->scale;
@@ -2192,7 +2192,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			// If not, then spawn the instashield effect instead.
 			if (!force)
 			{
-				if (gametyperules & GTR_BUMPERS)
+				if (gametypes[gametype]->rules & GTR_BUMPERS)
 				{
 					if ((player->bumper <= 0 && player->karmadelay) || (player->karmamode == 1))
 					{
@@ -2251,7 +2251,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			// We successfully damaged them! Give 'em some bumpers!
 			if (source && source != player->mo && source->player)
 			{
-				if (gametyperules & GTR_BUMPERS)
+				if (gametypes[gametype]->rules & GTR_BUMPERS)
 				{
 					K_BattleAwardHit(source->player, player, inflictor, 1);
 
@@ -2303,12 +2303,12 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			player->glanceDir = 0;
 			player->pflags &= ~PF_GAINAX;
 
-			if (gametyperules & GTR_BUMPERS)
+			if (gametypes[gametype]->rules & GTR_BUMPERS)
 			{
 				if (player->bumper <= 0)
 				{
 					player->karmadelay = comebacktime;
-					if ((gametyperules & GTR_KARMA) && player->karmamode == 2 )
+					if ((gametypes[gametype]->rules & GTR_KARMA) && player->karmamode == 2 )
 					{
 						mobj_t *poof = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EXPLODE);
 						S_StartSound(poof, mobjinfo[MT_KARMAHITBOX].seesound);

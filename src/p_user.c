@@ -418,7 +418,7 @@ UINT8 P_FindLowestLap(void)
 	INT32 i;
 	UINT8 lowest = UINT8_MAX;
 
-	if (!(gametyperules & GTR_CIRCUIT))
+	if (!(gametypes[gametype]->rules & GTR_CIRCUIT))
 		return 0;
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -445,7 +445,7 @@ UINT8 P_FindHighestLap(void)
 	INT32 i;
 	UINT8 highest = 0;
 
-	if (!(gametyperules & GTR_CIRCUIT))
+	if (!(gametypes[gametype]->rules & GTR_CIRCUIT))
 		return 0;
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -540,7 +540,7 @@ void P_GivePlayerLives(player_t *player, INT32 numlives)
 // Adds to the player's score
 void P_AddPlayerScore(player_t *player, UINT32 amount)
 {
-	if (!(gametyperules & GTR_POINTS))
+	if (!(gametypes[gametype]->rules & GTR_POINTS))
 		return;
 
 	if (player->exiting) // srb2kart
@@ -762,7 +762,7 @@ boolean P_EndingMusic(player_t *player)
 
 #undef getplayerpos
 
-	if ((gametyperules & GTR_CIRCUIT) && bestlocalpos == MAXPLAYERS+1)
+	if ((gametypes[gametype]->rules & GTR_CIRCUIT) && bestlocalpos == MAXPLAYERS+1)
 		sprintf(buffer, "k*fail"); // F-Zero death results theme
 	else
 	{
@@ -776,9 +776,9 @@ boolean P_EndingMusic(player_t *player)
 
 	S_SpeedMusic(1.0f);
 
-	if ((gametyperules & GTR_CIRCUIT))
+	if ((gametypes[gametype]->rules & GTR_CIRCUIT))
 		buffer[1] = 'r';
-	else if ((gametyperules & GTR_BUMPERS))
+	else if ((gametypes[gametype]->rules & GTR_BUMPERS))
 	{
 		buffer[1] = 'b';
 		looping = false;
@@ -889,7 +889,7 @@ void P_RestoreMusic(player_t *player)
 #if 0
 			// Event - Final Lap
 			// Still works for GME, but disabled for consistency
-			if ((gametyperules & GTR_CIRCUIT) && player->laps >= numlaps)
+			if ((gametypes[gametype]->rules & GTR_CIRCUIT) && player->laps >= numlaps)
 				S_SpeedMusic(1.2f);
 #endif
 			if (mapmusresume && cv_resume.value)
@@ -1316,7 +1316,7 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 	if (!player->spectator)
 	{
 		boolean losing;
-		if ((gametyperules & GTR_CIRCUIT)) // If in Race Mode, allow
+		if ((gametypes[gametype]->rules & GTR_CIRCUIT)) // If in Race Mode, allow
 		{
 			player->exiting = raceexittime+2;
 			K_UpdateAllPlayerPositions();
@@ -1345,7 +1345,7 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 				G_BeginLevelExit();
 			}
 		}
-		else if ((gametyperules & GTR_BUMPERS)) // Battle Mode exiting
+		else if ((gametypes[gametype]->rules & GTR_BUMPERS)) // Battle Mode exiting
 		{
 			player->exiting = battleexittime+1;
 			G_BeginLevelExit();
@@ -2087,7 +2087,7 @@ boolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd)
 		return true;
 	}
 
-	if (((gametyperules & GTR_NOCOUNTDOWN) || (leveltime > starttime))
+	if (((gametypes[gametype]->rules & GTR_NOCOUNTDOWN) || (leveltime > starttime))
 		&& (cmd->buttons & BT_ACCELERATE)
 		&& (cmd->buttons & BT_BRAKE))
 	{
@@ -2162,7 +2162,7 @@ static void P_UpdatePlayerAngle(player_t *player)
 		player->lturn_max[leveltime%MAXPREDICTTICS] = player->rturn_max[leveltime%MAXPREDICTTICS] = 0;
 	}
 	
-	if ((gametyperules & GTR_NOCOUNTDOWN) || leveltime >= starttime)
+	if ((gametypes[gametype]->rules & GTR_NOCOUNTDOWN) || leveltime >= starttime)
 	{
 		// KART: Don't directly apply angleturn! It may have been either A) forged by a malicious client, or B) not be a smooth turn due to a player dropping frames.
 		// Instead, turn the player only up to the amount they're supposed to turn accounting for latency. Allow exactly 1 extra turn unit to try to keep old replays synced.
@@ -4109,7 +4109,7 @@ void P_PlayerThink(player_t *player)
 
 	if (!mapreset)
 	{
-		if (gametyperules & GTR_CIRCUIT)
+		if (gametypes[gametype]->rules & GTR_CIRCUIT)
 		{
 			INT32 i;
 
@@ -4153,7 +4153,7 @@ void P_PlayerThink(player_t *player)
 
 		// If it is set, start subtracting
 		// Don't allow it to go back to 0
-		if (player->exiting > 1 && (player->exiting < raceexittime+2 || !(gametyperules & GTR_CIRCUIT))) // SRB2kart - "&& player->exiting > 1"
+		if (player->exiting > 1 && (player->exiting < raceexittime+2 || !(gametypes[gametype]->rules & GTR_CIRCUIT))) // SRB2kart - "&& player->exiting > 1"
 			player->exiting--;
 
 		if (player->exiting && exitcountdown)
@@ -4177,7 +4177,7 @@ void P_PlayerThink(player_t *player)
 	}
 
 	// SRB2kart 010217
-	if (!(gametyperules & GTR_NOCOUNTDOWN))
+	if (!(gametypes[gametype]->rules & GTR_NOCOUNTDOWN))
 	{
 		if (leveltime < starttime)
 		{
@@ -4211,7 +4211,7 @@ void P_PlayerThink(player_t *player)
 		}
 	}
 
-	if (netgame && cv_antigrief.value != 0 && (gametyperules & GTR_CIRCUIT))
+	if (netgame && cv_antigrief.value != 0 && (gametypes[gametype]->rules & GTR_CIRCUIT))
 	{
 		INT32 i;
 		for (i = 0; i < MAXPLAYERS; i++)
@@ -4479,7 +4479,7 @@ void P_PlayerThink(player_t *player)
 		|| player->growshrinktimer > 0 // Grow doesn't flash either.
 		|| (player->respawn) // Respawn timer (for drop dash effect)
 		|| (player->pflags & PF_NOCONTEST) // NO CONTEST explosion
-		|| ((gametyperules & GTR_BUMPERS) && player->bumper <= 0 && player->karmadelay)))
+		|| ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0 && player->karmadelay)))
 	{
 		if (player->flashing > 0 && player->flashing < K_GetKartFlashing(player)
 			&& (leveltime & 1))

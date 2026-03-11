@@ -2220,7 +2220,7 @@ boolean G_CouldView(INT32 playernum)
 		return false;
 
 	// I don't know if we want this actually, but I'll humor the suggestion anyway
-	if ((gametyperules & GTR_BUMPERS) && !demo.playback)
+	if ((gametypes[gametype]->rules & GTR_BUMPERS) && !demo.playback)
 	{
 		if (player->bumper <= 0)
 			return false;
@@ -2962,7 +2962,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		itemamount = 0;
 		growshrinktimer = 0;
 		bubblehealth = 0;
-		bumper = ((gametyperules & GTR_BUMPERS) ? K_StartingBumperCount() : 0);
+		bumper = ((gametypes[gametype]->rules & GTR_BUMPERS) ? K_StartingBumperCount() : 0);
 		karmapoints = 0;
 		wanted = 0;
 		rings = cv_kartringsstart.value;
@@ -3370,7 +3370,7 @@ mapthing_t *G_FindTeamStart(INT32 playernum)
 
 	if (!numredctfstarts && !numbluectfstarts) //why even bother, eh?
 	{
-		if ((gametyperules & GTR_TEAMSTARTS) && doprints)
+		if ((gametypes[gametype]->rules & GTR_TEAMSTARTS) && doprints)
 			CONS_Alert(CONS_WARNING, M_GetText("No CTF starts in this map!\n"));
 		return NULL;
 	}
@@ -3450,7 +3450,7 @@ mapthing_t *G_FindBattleStart(INT32 playernum)
 		}
 	}
 
-	if ((gametyperules & GTR_BATTLESTARTS) && doprints)
+	if ((gametypes[gametype]->rules & GTR_BATTLESTARTS) && doprints)
 		CONS_Alert(CONS_WARNING, M_GetText("No Deathmatch starts in this map!\n"));
 	return NULL;
 }
@@ -3599,7 +3599,7 @@ mapthing_t *G_FindMapStart(INT32 playernum)
 	{
 		// In platform gametypes, spawn in Co-op starts first
 		// Overriden by GTR_BATTLESTARTS.
-		if (gametyperules & GTR_BATTLESTARTS && bossinfo.boss == false)
+		if (gametypes[gametype]->rules & GTR_BATTLESTARTS && bossinfo.boss == false)
 			spawnpoint = G_FindBattleStartOrFallback(playernum);
 		else
 			spawnpoint = G_FindRaceStartOrFallback(playernum);
@@ -3612,12 +3612,12 @@ mapthing_t *G_FindMapStart(INT32 playernum)
 
 	// -- CTF --
 	// Order: CTF->DM->Race
-	else if ((gametyperules & GTR_TEAMSTARTS) && players[playernum].ctfteam)
+	else if ((gametypes[gametype]->rules & GTR_TEAMSTARTS) && players[playernum].ctfteam)
 		spawnpoint = G_FindTeamStartOrFallback(playernum);
 
 	// -- DM/Tag/CTF-spectator/etc --
 	// Order: DM->CTF->Race
-	else if (gametyperules & GTR_BATTLESTARTS)
+	else if (gametypes[gametype]->rules & GTR_BATTLESTARTS)
 		spawnpoint = G_FindBattleStartOrFallback(playernum);
 
 	// -- Other game modes --
@@ -4096,12 +4096,12 @@ boolean G_GametypeUsesLives(void)
 //
 boolean G_GametypeHasTeams(void)
 {
-	if (gametyperules & GTR_TEAMS)
+	if (gametypes[gametype]->rules & GTR_TEAMS)
 	{
 		// Teams forced on by this gametype
 		return true;
 	}
-	else if (gametyperules & GTR_NOTEAMS)
+	else if (gametypes[gametype]->rules & GTR_NOTEAMS)
 	{
 		// Teams forced off by this gametype
 		return false;
@@ -4873,7 +4873,7 @@ static void G_DoCompleted(void)
 	}
 
 	// See Y_StartIntermission timer handling
-	if ((gametyperules & GTR_CIRCUIT) && ((multiplayer && demo.playback) || j == r_splitscreen+1) && (!K_CanChangeRules(false) || cv_inttime.value > 0))
+	if ((gametypes[gametype]->rules & GTR_CIRCUIT) && ((multiplayer && demo.playback) || j == r_splitscreen+1) && (!K_CanChangeRules(false) || cv_inttime.value > 0))
 	// play some generic music if there's no win/cool/lose music going on (for exitlevel commands)
 	{
 		S_ChangeMusicInternal("racent", true);

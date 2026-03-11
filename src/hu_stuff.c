@@ -2549,9 +2549,9 @@ static void HU_DrawRankings(void)
 		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, (modeattacking) ? "Record Attack" : gametype_cons_t[gametype].strvalue);
 	}
 
-	if ((gametyperules & (GTR_TIMELIMIT|GTR_POINTLIMIT)) && !bossinfo.boss)
+	if ((gametypes[gametype]->rules & (GTR_TIMELIMIT|GTR_POINTLIMIT)) && !bossinfo.boss)
 	{
-		if ((gametyperules & GTR_TIMELIMIT) && timelimitintics > 0)
+		if ((gametypes[gametype]->rules & GTR_TIMELIMIT) && timelimitintics > 0)
 		{
 			UINT32 timeval = (timelimitintics + starttime + 1 - leveltime);
 			if (timeval > timelimitintics+1)
@@ -2572,7 +2572,7 @@ static void HU_DrawRankings(void)
 			}
 		}
 
-		if ((gametyperules & GTR_POINTLIMIT) && cv_pointlimit.value > 0)
+		if ((gametypes[gametype]->rules & GTR_POINTLIMIT) && cv_pointlimit.value > 0)
 		{
 			V_DrawCenteredString(256, 8, 0, "POINT LIMIT");
 			V_DrawCenteredString(256, 16, hilicol, va("%d", cv_pointlimit.value));
@@ -2632,7 +2632,7 @@ static void HU_DrawRankings(void)
 
 		tab[scorelines].name = player_names[i];
 
-		if (gametyperules & GTR_CIRCUIT)
+		if (gametypes[gametype]->rules & GTR_CIRCUIT)
 		{
 			if (!players[i].exiting)
 				sprintf(tab[scorelines].string, "Lap %d", players[i].laps);
@@ -2645,7 +2645,7 @@ static void HU_DrawRankings(void)
 				sprintf(tab[scorelines].string, "%i'%02i\"%02i", min, sec, cen);
 			}
 		}
-		else if (gametyperules & GTR_POINTS)
+		else if (gametypes[gametype]->rules & GTR_POINTS)
 			sprintf(tab[scorelines].string, "%d", players[i].roundscore);
 
 		scorelines++;

@@ -531,9 +531,6 @@ enum GameTypeRules
 	// free: to and including 1<<31
 };
 
-// TODO: replace every instance
-#define gametyperules (gametypes[gametype]->rules)
-
 // TypeOfLevel things
 enum TypeOfLevel
 {

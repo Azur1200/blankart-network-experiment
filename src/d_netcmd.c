@@ -3414,7 +3414,7 @@ void D_SetupVote(void)
 	else
 		WRITEUINT8(p, gt);
 
-	if (cv_kartencore.value && cv_encorevotes.value == 0 && (gametyperules & GTR_CIRCUIT))
+	if (cv_kartencore.value && cv_encorevotes.value == 0 && (gametypes[gametype]->rules & GTR_CIRCUIT))
 		WRITEUINT8(p, secondgt|VOTEMODIFIER_ENCORE);
 	else
 		WRITEUINT8(p, secondgt);
@@ -3917,7 +3917,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	else if (gametype != lastgametype)
 		D_GameTypeChanged(lastgametype); // emulate consvar_t behavior for gametype
 
-	if (!(gametyperules & GTR_ENCORE) && !bossinfo.boss)
+	if (!(gametypes[gametype]->rules & GTR_ENCORE) && !bossinfo.boss)
 		pencoremode = false;
 
 	skipprecutscene = ((flags & (1<<2)) != 0);
@@ -4768,7 +4768,7 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 	{
 		players[playernum].spectatorreentry = (cv_spectatorreentry.value * TICRATE);
 
-		if (gametyperules & GTR_BUMPERS) // SRB2kart
+		if (gametypes[gametype]->rules & GTR_BUMPERS) // SRB2kart
 		{
 			players[playernum].roundscore = 0;
 			if (K_IsPlayerWanted(&players[playernum]))
@@ -6001,7 +6001,7 @@ static void PointLimit_OnChange(void)
 	}
 
 	// Don't allow pointlimit in non-pointlimited gametypes!
-	if (server && Playing() && !(gametyperules & GTR_POINTLIMIT))
+	if (server && Playing() && !(gametypes[gametype]->rules & GTR_POINTLIMIT))
 	{
 		if (cv_pointlimit.value)
 			CV_StealthSetValue(&cv_pointlimit, 0);
