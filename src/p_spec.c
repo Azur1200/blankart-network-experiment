@@ -2971,19 +2971,26 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 					mapmusposition = position;
 					mapmusresume = 0;
 
-					S_ChangeMusicEx(mapmusname, mapmusflags, !(args[0] & TMM_NOLOOP), position,
-						!(args[0] & TMM_FADE) ? prefadems : 0,
-						!(args[0] & TMM_FADE) ? postfadems : 0);
+					// FIXME HACK: Don't play music before the countdown music stops. Please properly fix this later.
+					// Change timing of start music based on gametypes[gametype]->rules
+					tic_t startingtime = (gametypes[gametype]->rules & GTR_NOCOUNTDOWN) ? introtime : starttime;
 
-					if (!(args[0] & TMM_NOCREDIT))
-						S_ShowMusicCredit(0, 5*TICRATE, 0);
-
-					if ((args[0] & TMM_FADE) && fadetarget)
+					if (leveltime >= (startingtime + (TICRATE/2)))
 					{
-						if (!postfadems)
-							S_SetInternalMusicVolume(fadetarget);
-						else
-							S_FadeMusicFromVolume(fadetarget, fadesource, postfadems);
+						S_ChangeMusicEx(mapmusname, mapmusflags, !(args[0] & TMM_NOLOOP), position,
+										!(args[0] & TMM_FADE) ? prefadems : 0,
+										!(args[0] & TMM_FADE) ? postfadems : 0);
+
+						if (!(args[0] & TMM_NOCREDIT))
+							S_ShowMusicCredit(0, 5*TICRATE, 0);
+
+						if ((args[0] & TMM_FADE) && fadetarget)
+						{
+							if (!postfadems)
+								S_SetInternalMusicVolume(fadetarget);
+							else
+								S_FadeMusicFromVolume(fadetarget, fadesource, postfadems);
+						}
 					}
 				}
 
