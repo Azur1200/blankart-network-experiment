@@ -837,36 +837,39 @@ void P_Ticker(boolean run)
 		// Plays the music after the starting countdown.
 		else
 		{
+			// Change timing of start music based on gametypes[gametype]->rules
+			tic_t startingtime = (gametypes[gametype]->rules & GTR_NOCOUNTDOWN) ? introtime : starttime;
+
 			if (!(titlemapinaction == TITLEMAP_RUNNING))
 			{
-				if (!(gametypes[gametype]->rules & GTR_NOCOUNTDOWN))
+				if (leveltime == (startingtime + (TICRATE/2)))
 				{
-					if (leveltime == starttime-(3*TICRATE))
-					{
-						S_StartSound(NULL, sfx_s3ka7); // 3,
-					}
-					else if ((leveltime == starttime-(2*TICRATE)) || (leveltime == starttime-TICRATE))
-					{
-						S_StartSound(NULL, sfx_s3ka7); // 2, 1,
-					}
-					else if (leveltime == starttime)
-					{
-						S_StartSound(NULL, sfx_s3kad); // GO!
-					}
+					// Plays the music after the starting countdown.
+					S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+					S_ShowMusicCredit(0, 5*TICRATE, 0);
 				}
-
-				// Change timing of start music based on gametypes[gametype]->rules
+				else if (startingtime != introtime)
 				{
-					tic_t startingtime = (gametypes[gametype]->rules & GTR_NOCOUNTDOWN) ? introtime : starttime;
+					if (!(gametypes[gametype]->rules & GTR_NOCOUNTDOWN))
+					{
+						if (leveltime == startingtime-(3*TICRATE))
+						{
+							S_StartSound(NULL, sfx_s3ka7); // 3,
+						}
+						else if ((leveltime == startingtime-(2*TICRATE)) || (leveltime == starttime-TICRATE))
+						{
+							S_StartSound(NULL, sfx_s3ka7); // 2, 1,
+						}
+						else if (leveltime == startingtime)
+						{
+							S_StartSound(NULL, sfx_s3kad); // GO!
+						}
+					}
+
 					if (leveltime < startingtime) // SRB2Kart
 						S_ChangeMusicInternal(((grandprixinfo.roundnum > 0) ? "gpstrt" : (encoremode ? "estart" : "kstart")), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
 					else if (leveltime == startingtime) // The GO! sound stops the level start ambience
 						S_StopMusic();
-					else if (leveltime == startingtime + (TICRATE/2)) // Plays the music after the starting countdown.
-					{
-						S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
-						S_ShowMusicCredit(0, 5*TICRATE, 0);
-					}
 				}
 			}
 		}
