@@ -2794,8 +2794,10 @@ static int ticcmd_set(lua_State *L)
 		return NOSET;
 	case ticcmd_tilt:
 		cmd->tilt = (SINT8)luaL_checkinteger(L, 3);
+		break;
 	case ticcmd_shake:
 		cmd->shake = (UINT8)luaL_checkinteger(L, 3);
+		break;
 	default:
 		return NOFIELD;
 	}
