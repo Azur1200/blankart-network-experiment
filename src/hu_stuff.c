@@ -2526,12 +2526,7 @@ static void HU_DrawRankings(void)
 	else if (modeattacking)
 		hilicol = V_ORANGEMAP;
 	else
-	{
-		if (gametypes[gametype]->color)
-			hilicol = gametypes[gametype]->color;
-		else
-			hilicol = V_YELLOWMAP;
-	}
+		hilicol = gametypes[gametype]->color;
 
 	if (!demo.playback)
 	{

@@ -462,12 +462,7 @@ void Y_IntermissionDrawer(void)
 	else if (modeattacking)
 		hilicol = V_ORANGEMAP;
 	else
-	{
-		if (gametypes[gametype]->color)
-			hilicol = gametypes[gametype]->color;
-		else
-			hilicol = V_YELLOWMAP;
-	}
+		hilicol = gametypes[gametype]->color;
 
 	if (rolltic != -1 && intertic > (rolltic - 8) && (intertic < (rolltic + 8)))
 	{
@@ -1797,15 +1792,12 @@ void Y_VoteDrawer(void)
 	if (timer)
 	{
 		INT32 hilicol, tickdown = (timer+1)/TICRATE;
+
 		if (cons_menuhighlight.value)
 			hilicol = cons_menuhighlight.value;
 		else
-		{
-			if (gametypes[gametype]->color)
-				hilicol = gametypes[gametype]->color;
-			else
-				hilicol = V_YELLOWMAP;
-		}
+			hilicol = gametypes[gametype]->color;
+
 		V_DrawCenteredString(BASEVIDWIDTH/2, 188, hilicol,
 			va("Vote ends in %d", tickdown));
 	}
