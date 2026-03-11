@@ -115,7 +115,6 @@ static INT32 listscroll_delay = 0;
 static fixed_t xscroll = 0;
 
 intertype_t intertype = int_none;
-intertype_t intermissiontypes[NUMGAMETYPES];
 
 static huddrawlist_h luahuddrawlist_intermission;
 static huddrawlist_h luahuddrawlist_vote;
@@ -464,8 +463,8 @@ void Y_IntermissionDrawer(void)
 		hilicol = V_ORANGEMAP;
 	else
 	{
-		if (gametypecolor[gametype])
-			hilicol = gametypecolor[gametype];
+		if (gametypes[gametype]->color)
+			hilicol = gametypes[gametype]->color;
 		else
 			hilicol = V_YELLOWMAP;
 	}
@@ -1052,12 +1051,11 @@ void Y_Ticker(void)
 //
 void Y_DetermineIntermissionType(void)
 {
-	// set to int_none initially
-	intertype = int_none;
+	// set initially
+	intertype = gametypes[gametype]->intermission;
 
-	if (gametype == GT_RACE)
-		intertype = int_race;
-	else if (gametype == GT_BATTLE)
+	// TODO: special cases
+	if (gametype == GT_BATTLE)
 	{
 		if (grandprixinfo.gp == true && bossinfo.boss == false)
 			intertype = int_none;
@@ -1073,8 +1071,6 @@ void Y_DetermineIntermissionType(void)
 			intertype = (nump < 2 ? int_battletime : int_battle);
 		}
 	}
-	else //if (intermissiontypes[gametype] != int_none)
-		intertype = intermissiontypes[gametype];
 }
 
 //
@@ -1131,9 +1127,6 @@ void Y_StartIntermission(void)
 		// Minimum two seconds for match results, then two second slideover approx halfway through
 		sorttic = max((timer/2) - 2*TICRATE, 2*TICRATE);
 	}
-
-	if (intermissiontypes[gametype] != int_none)
-		intertype = intermissiontypes[gametype];
 
 	// We couldn't display the intermission even if we wanted to.
 	// But we still need to give the players their score bonuses, dummy.
@@ -1808,8 +1801,8 @@ void Y_VoteDrawer(void)
 			hilicol = cons_menuhighlight.value;
 		else
 		{
-			if (gametypecolor[gametype])
-				hilicol = gametypecolor[gametype];
+			if (gametypes[gametype]->color)
+				hilicol = gametypes[gametype]->color;
 			else
 				hilicol = V_YELLOWMAP;
 		}
@@ -2231,7 +2224,7 @@ void Y_StartVote(void)
 		// set up the gtc and gts
 		levelinfo[i].gtc = G_GetGametypeColor(g_voteLevels[i][1]);
 		if (i == 2 && g_voteLevels[i][1] != g_voteLevels[0][1])
-			levelinfo[i].gts = gametype_cons_t[g_voteLevels[i][1]].strvalue;
+			levelinfo[i].gts = gametypes[g_voteLevels[i][1]]->name;
 		else
 			levelinfo[i].gts = NULL;
 	}

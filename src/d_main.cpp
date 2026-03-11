@@ -1752,9 +1752,6 @@ void D_SRB2Main(void)
 
 	CON_Init();
 
-	memset(timelimits, 0, sizeof(timelimits));
-	memset(pointlimits, 0, sizeof(pointlimits));
-
 	CON_SetLoadingProgress(LOADED_HUINIT);
 
 	if (modifiedgame)
@@ -2097,7 +2094,7 @@ void D_SRB2Main(void)
 			if (newgametype == -1) // reached end of the list with no match
 			{
 				j = atoi(sgametype); // assume they gave us a gametype number, which is okay too
-				if (j >= 0 && j < gametypecount)
+				if (j >= 0 && j < numgametypes)
 					newgametype = (INT16)j;
 			}
 

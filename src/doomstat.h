@@ -146,11 +146,6 @@ extern boolean addedtogame; // true after the server has added you
 // Only true if >1 player. netgame => multiplayer but not (multiplayer=>netgame)
 extern boolean multiplayer;
 
-extern INT16 gametype;
-
-extern UINT32 gametyperules;
-extern INT16 gametypecount;
-
 extern UINT8 splitscreen;
 extern int r_splitscreen;
 
@@ -458,7 +453,7 @@ extern mapheader_t** mapheaderinfo;
 extern INT32 nummapheaders, mapallocsize;
 
 // Gametypes
-#define NUMGAMETYPEFREESLOTS (NUMGAMETYPES-GT_FIRSTFREESLOT)
+#define NUMGAMETYPEFREESLOTS (MAXGAMETYPES-GT_FIRSTFREESLOT)
 
 enum GameType
 {
@@ -467,9 +462,29 @@ enum GameType
 
 	GT_FIRSTFREESLOT,
 	GT_LASTFREESLOT = 127, // Previously (GT_FIRSTFREESLOT + NUMGAMETYPEFREESLOTS - 1) - it would be necessary to rewrite VOTEMODIFIER_ENCORE to go higher than this.
-	NUMGAMETYPES
+	MAXGAMETYPES
 };
-// If you alter this list, update deh_tables.c, MISC_ChangeGameTypeMenu in m_menu.c, and Gametype_Names in g_game.c
+// If you alter this list, update defaultgametypes and *gametypes in g_game.c
+#define MAXTOL             (1<<31)
+#define NUMBASETOLNAMES    (10)
+#define NUMTOLNAMES        (NUMBASETOLNAMES + NUMGAMETYPEFREESLOTS)
+
+struct gametype_t
+{
+	const char *name;
+	const char *constant;
+	UINT32 rules;
+	UINT32 tol;
+	UINT8 intermission;
+	INT32 pointlimit;
+	INT32 timelimit;
+	INT32 color;
+};
+
+extern gametype_t *gametypes[MAXGAMETYPES+1];
+extern INT16 numgametypes;
+
+extern INT16 gametype;
 
 // Gametype rules
 enum GameTypeRules
@@ -516,13 +531,8 @@ enum GameTypeRules
 	// free: to and including 1<<31
 };
 
-// String names for gametypes
-extern const char *Gametype_Names[NUMGAMETYPES];
-extern const char *Gametype_ConstantNames[NUMGAMETYPES];
-
-// Point and time limits for every gametype
-extern INT32 pointlimits[NUMGAMETYPES];
-extern INT32 timelimits[NUMGAMETYPES];
+// TODO: replace every instance
+#define gametyperules (gametypes[gametype]->rules)
 
 // TypeOfLevel things
 enum TypeOfLevel
@@ -544,10 +554,6 @@ enum TypeOfLevel
 	// Modifiers
 	TOL_TV		= 0x0200 ///< Midnight Channel specific: draw TV like overlay on HUD
 };
-
-#define MAXTOL             (1<<31)
-#define NUMBASETOLNAMES    (10)
-#define NUMTOLNAMES        (NUMBASETOLNAMES + NUMGAMETYPEFREESLOTS)
 
 struct tolinfo_t
 {

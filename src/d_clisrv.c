@@ -1008,7 +1008,7 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 	else
 		netbuffer->u.serverinfo.refusereason = 0;
 
-	strncpy(netbuffer->u.serverinfo.gametypename, Gametype_Names[prefgametype],
+	strncpy(netbuffer->u.serverinfo.gametypename, gametypes[prefgametype]->name,
 			sizeof netbuffer->u.serverinfo.gametypename);
 	netbuffer->u.serverinfo.modifiedgame = (UINT8)modifiedgame;
 	netbuffer->u.serverinfo.cheatsenabled = CV_CheatsEnabled();

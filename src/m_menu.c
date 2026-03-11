@@ -454,7 +454,7 @@ consvar_t cv_skinselectsort = CVAR_INIT ("skinselectsort", "Name", CV_SAVE|CV_CA
 
 // This gametype list is integral for many different reasons.
 // When you add gametypes here, don't forget to update them in dehacked.c and doomstat.h!
-CV_PossibleValue_t gametype_cons_t[NUMGAMETYPES+1];
+CV_PossibleValue_t gametype_cons_t[MAXGAMETYPES+1];
 
 consvar_t cv_newgametype = CVAR_INIT ("newgametype", "Race", CV_HIDEN|CV_CALL|CV_NOINIT, gametype_cons_t, Levelplatter_OnChange);
 
@@ -613,19 +613,19 @@ inline static void M_GetGametypeColor(void)
 
 	if (gt == GT_BATTLE || levellistmode == LLM_BOSS)
 	{
-		highlightflags = gametypecolor[gt];
+		highlightflags = gametypes[gt]->color;
 		warningflags = V_ORANGEMAP;
 		return;
 	}
 	if (gt == GT_RACE)
 	{
-		highlightflags = gametypecolor[gt];
+		highlightflags = gametypes[gt]->color;
 		return;
 	}
 
-	if (gametypecolor[gt])
+	if (gametypes[gt]->color)
 	{
-		highlightflags = gametypecolor[gt];
+		highlightflags = gametypes[gt]->color;
 		return;
 	}
 

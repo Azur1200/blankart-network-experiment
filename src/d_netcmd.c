@@ -766,10 +766,6 @@ consvar_t cv_timelimit = CVAR_INIT ("timelimit", "2", CV_NETVAR|CV_CALL|CV_NOINI
 static CV_PossibleValue_t numlaps_cons_t[] = {{0, "MIN"}, {MAX_LAPS, "MAX"}, {-1, "Map default"}, {0, NULL}};
 consvar_t cv_numlaps = CVAR_INIT ("numlaps", "Map default", CV_NETVAR|CV_CALL|CV_CHEAT, numlaps_cons_t, NumLaps_OnChange);
 
-// Point and time limits for every gametype
-INT32 pointlimits[NUMGAMETYPES];
-INT32 timelimits[NUMGAMETYPES];
-
 consvar_t cv_forceskin = CVAR_INIT ("forceskin", "None", CV_NETVAR|CV_CALL|CV_CHEAT, NULL, ForceSkin_OnChange);
 
 consvar_t cv_downloading = CVAR_INIT ("downloading", "On", 0, CV_OnOff, NULL);
@@ -873,8 +869,7 @@ char timedemo_csv_id[256];
 boolean timedemo_quit;
 
 INT16 gametype = GT_RACE;
-UINT32 gametyperules = 0;
-INT16 gametypecount = GT_FIRSTFREESLOT;
+INT16 numgametypes = GT_FIRSTFREESLOT;
 
 boolean forceresetplayers = false;
 boolean deferencoremode = false;
@@ -960,13 +955,7 @@ void D_RegisterServerCommands(void)
 	Forceskin_cons_t[0].value = -1;
 	Forceskin_cons_t[0].strvalue = "Off";
 
-	for (i = 0; i < NUMGAMETYPES; i++)
-	{
-		gametype_cons_t[i].value = i;
-		gametype_cons_t[i].strvalue = Gametype_Names[i];
-	}
-	gametype_cons_t[NUMGAMETYPES].value = 0;
-	gametype_cons_t[NUMGAMETYPES].strvalue = NULL;
+	G_UpdateGametypeSelections();
 
 	// Set the values to 0/NULL, it will be overwritten later when a skin is assigned to the slot.
 	for (i = 1; i < MAXSKINS; i++)
@@ -3420,12 +3409,12 @@ void D_SetupVote(void)
 	UINT8 secondgt = G_SometimesGetDifferentGametype(gt);
 	INT16 votebuffer[4] = {-1,-1,-1,0};
 
-	if (cv_kartencore.value && cv_encorevotes.value == 1 && (gametypedefaultrules[gt] & GTR_CIRCUIT))
+	if (cv_kartencore.value && cv_encorevotes.value == 1 && (gametypes[gt]->rules & GTR_CIRCUIT))
 		WRITEUINT8(p, (gt|VOTEMODIFIER_ENCORE));
 	else
 		WRITEUINT8(p, gt);
 
-	if (cv_kartencore.value && cv_encorevotes.value == 0 && (gametypedefaultrules[gt] & GTR_CIRCUIT))
+	if (cv_kartencore.value && cv_encorevotes.value == 0 && (gametyperules & GTR_CIRCUIT))
 		WRITEUINT8(p, secondgt|VOTEMODIFIER_ENCORE);
 	else
 		WRITEUINT8(p, secondgt);
@@ -3680,7 +3669,7 @@ static void Command_Map_f(void)
 			if (isdigit(gametypename[0]))
 			{
 				d = atoi(gametypename);
-				if (d >= 0 && d < gametypecount)
+				if (d >= 0 && d < numgametypes)
 					newgametype = d;
 				else
 				{
@@ -3688,7 +3677,7 @@ static void Command_Map_f(void)
 							"Gametype number %d is out of range. Use a number between"
 							" 0 and %d inclusive. ...Or just use the name. :v\n",
 							d,
-							gametypecount-1);
+							numgametypes-1);
 					Z_Free(realmapname);
 					Z_Free(mapname);
 					return;
@@ -3923,7 +3912,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	gametype = READUINT8(*cp);
 	G_SetGametype(gametype); // I fear putting that macro as an argument
 
-	if (gametype < 0 || gametype >= gametypecount)
+	if (gametype < 0 || gametype >= numgametypes)
 		gametype = lastgametype;
 	else if (gametype != lastgametype)
 		D_GameTypeChanged(lastgametype); // emulate consvar_t behavior for gametype
@@ -5944,8 +5933,8 @@ static void Command_ShowGametype_f(void)
 	const char *gametypestr = NULL;
 
 	// get name string for current gametype
-	if (gametype >= 0 && gametype < gametypecount)
-		gametypestr = Gametype_Names[gametype];
+	if (gametype >= 0 && gametype < numgametypes)
+		gametypestr = gametypes[gametype]->name;
 
 	if (gametypestr)
 		CONS_Printf(M_GetText("Current gametype is %s\n"), gametypestr);
@@ -6110,10 +6099,10 @@ void D_GameTypeChanged(INT32 lastgametype)
 	{
 		const char *oldgt = NULL, *newgt = NULL;
 
-		if (lastgametype >= 0 && lastgametype < gametypecount)
-			oldgt = Gametype_Names[lastgametype];
-		if (gametype >= 0 && lastgametype < gametypecount)
-			newgt = Gametype_Names[gametype];
+		if (lastgametype >= 0 && lastgametype < numgametypes)
+			oldgt = gametypes[lastgametype]->name;
+		if (gametype >= 0 && gametype < numgametypes)
+			newgt = gametypes[gametype]->name;
 
 		if (oldgt && newgt)
 			CONS_Printf(M_GetText("Gametype was changed from %s to %s\n"), oldgt, newgt);
@@ -6124,11 +6113,11 @@ void D_GameTypeChanged(INT32 lastgametype)
 	{
 		if (!cv_timelimit.changed) // user hasn't changed limits
 		{
-			CV_SetValue(&cv_timelimit, timelimits[gametype]);
+			CV_SetValue(&cv_timelimit, gametypes[gametype]->timelimit);
 		}
 		if (!cv_pointlimit.changed)
 		{
-			CV_SetValue(&cv_pointlimit, pointlimits[gametype]);
+			CV_SetValue(&cv_pointlimit, gametypes[gametype]->pointlimit);
 		}
 	}
 
@@ -6429,25 +6418,25 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 
 	// Strip illegal Encore flag.
 	if ((gt & VOTEMODIFIER_ENCORE)
-		&& !(gametypedefaultrules[(gt & ~VOTEMODIFIER_ENCORE)] & GTR_CIRCUIT))
+		&& !(gametypes[(gt & ~VOTEMODIFIER_ENCORE)]->rules & GTR_CIRCUIT))
 	{
 		gt &= ~VOTEMODIFIER_ENCORE;
 	}
 
-	if ((gt & ~VOTEMODIFIER_ENCORE) >= gametypecount)
+	if ((gt & ~VOTEMODIFIER_ENCORE) >= numgametypes)
 	{
 		gt &= ~VOTEMODIFIER_ENCORE;
 		if (server)
-			I_Error("Got_SetupVotecmd: Internal gametype ID %d not found (gametypecount = %d)", gt, gametypecount);
+			I_Error("Got_SetupVotecmd: Internal gametype ID %d not found (numgametypes = %d)", gt, numgametypes);
 		CONS_Alert(CONS_WARNING, M_GetText("Vote setup with bad gametype ID %d received from %s\n"), gt, player_names[playernum]);
 		return;
 	}
 
-	if ((secondgt & ~VOTEMODIFIER_ENCORE) >= gametypecount)
+	if ((secondgt & ~VOTEMODIFIER_ENCORE) >= numgametypes)
 	{
 		secondgt &= ~VOTEMODIFIER_ENCORE;
 		if (server)
-			I_Error("Got_SetupVotecmd: Internal second gametype ID %d not found (gametypecount = %d)", secondgt, gametypecount);
+			I_Error("Got_SetupVotecmd: Internal second gametype ID %d not found (numgametypes = %d)", secondgt, numgametypes);
 		CONS_Alert(CONS_WARNING, M_GetText("Vote setup with bad second gametype ID %d received from %s\n"), secondgt, player_names[playernum]);
 		return;
 	}
@@ -6471,11 +6460,11 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 
 	// If third entry has an illelegal Encore flag... (illelegal!?)
 	if ((secondgt & VOTEMODIFIER_ENCORE)
-		&& !(gametypedefaultrules[(secondgt & ~VOTEMODIFIER_ENCORE)] & GTR_CIRCUIT))
+		&& !(gametypes[(secondgt & ~VOTEMODIFIER_ENCORE)]->rules & GTR_CIRCUIT))
 	{
 		secondgt &= ~VOTEMODIFIER_ENCORE;
 		// Apply it to the second entry instead, gametype permitting!
-		if (gametypedefaultrules[gt] & GTR_CIRCUIT)
+		if (gametypes[gt]->rules & GTR_CIRCUIT)
 		{
 			g_voteLevels[1][1] |= VOTEMODIFIER_ENCORE;
 		}
