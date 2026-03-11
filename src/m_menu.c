@@ -4847,9 +4847,11 @@ static void DrawReplayHutReplayInfo(void)
 		if (demolist[dir_on[menudepthleft]].numlaps)
 			V_DrawThinString(x, y+9, V_SNAPTOTOP|V_ALLOWLOWERCASE, va("(%d laps)", demolist[dir_on[menudepthleft]].numlaps));
 
-		V_DrawString(x, y+20, V_SNAPTOTOP|V_ALLOWLOWERCASE, demolist[dir_on[menudepthleft]].gametype == GT_RACE ?
-			va("Race (%s speed)", kartspeed_cons_t[(demolist[dir_on[menudepthleft]].kartspeed & ~DF_ENCORE) + 1].strvalue) :
-			"Battle Mode");
+		const char *gametypename = gametypes[demolist[dir_on[menudepthleft]].gametype] ? gametypes[demolist[dir_on[menudepthleft]].gametype]->name : "Unknown";
+		const char *gamespeed = kartspeed_cons_t[(demolist[dir_on[menudepthleft]].kartspeed & ~DF_ENCORE) + 1].strvalue;
+		const char *gamemodestring = va("%s (%s speed)", gametypename, gamespeed);
+
+		V_DrawString(x, y+20, V_SNAPTOTOP|V_ALLOWLOWERCASE, gamemodestring);
 
 		if (!demolist[dir_on[menudepthleft]].standings[0].ranking)
 		{
