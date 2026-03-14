@@ -825,6 +825,9 @@ static CV_PossibleValue_t rlplrtrans_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NU
 // Default is 7 (70% visible; V_30TRANS)
 consvar_t cv_rouletteplayertrans = CVAR_INIT ("rouletteonplayertrans", "7", CV_SAVE, rlplrtrans_cons_t, NULL);
 
+// Item box visibility; a separate cvar
+consvar_t cv_rouletteplayerboxtrans = CVAR_INIT ("rouletteonplayerboxtrans", "10", CV_SAVE, rlplrtrans_cons_t, NULL);
+
 consvar_t cv_showviewpointtext = CVAR_INIT ("showviewpointtext", "On", CV_SAVE, CV_OnOff, NULL);
 
 // Intermission time Tails 04-19-2002
@@ -1143,6 +1146,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_spinoutroll);
 	CV_RegisterVar(&cv_rouletteonplayer);
 	CV_RegisterVar(&cv_rouletteplayertrans);
+	CV_RegisterVar(&cv_rouletteplayerboxtrans);
 	CV_RegisterVar(&cv_showlapemblem);
 	CV_RegisterVar(&cv_lapemblemmode);
 	CV_RegisterVar(&cv_racesplits);
