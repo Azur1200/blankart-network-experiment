@@ -61,22 +61,6 @@
 //                                                                    GLOBALS
 // ==========================================================================
 
-// base values set at SetViewSize
-static float gl_basecentery;
-static float gl_basecenterx;
-
-float gl_baseviewwindowy, gl_basewindowcentery;
-float gl_baseviewwindowx, gl_basewindowcenterx;
-float gl_viewwidth, gl_viewheight; // viewport clipping boundaries (screen coords)
-float gl_viewwindowx;
-
-static float gl_centerx, gl_centery;
-static float gl_viewwindowy; // top left corner of view window
-static float gl_windowcenterx; // center of view window, for projection
-static float gl_windowcentery;
-
-static float gl_pspritexscale, gl_pspriteyscale;
-
 seg_t *gl_curline;
 side_t *gl_sidedef;
 line_t *gl_linedef;
@@ -604,59 +588,7 @@ boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 // -----------------+
 void HWR_SetViewSize(void)
 {
-	// setup view size
-	gl_viewwidth = (float)vid.width;
-	gl_viewheight = (float)vid.height;
-
-	if (r_splitscreen > 0)
-	{
-		gl_viewheight /= 2;
-
-		if (r_splitscreen > 1)
-		{
-			gl_viewwidth /= 2;
-		}
-	}
-
-	gl_basecenterx = gl_viewwidth / 2;
-	gl_basecentery = gl_viewheight / 2;
-
-	gl_baseviewwindowx = 0;
-	gl_basewindowcenterx = gl_viewwidth / 2;
-
-	gl_baseviewwindowy = 0;
-	gl_basewindowcentery = gl_viewheight / 2;
-
-	gl_pspritexscale = gl_viewwidth / BASEVIDWIDTH;
-	gl_pspriteyscale = ((vid.height*gl_pspritexscale*BASEVIDWIDTH)/BASEVIDHEIGHT)/vid.width;
-
 	GL_FlushScreenTextures();
-}
-
-// -------------------+
-// HWR_ShiftViewPort  : offset viewport according to current split
-// -------------------+
-static void HWR_ShiftViewPort(void)
-{
-	gl_centerx = gl_basecenterx;
-	gl_viewwindowx = gl_baseviewwindowx;
-	gl_windowcenterx = gl_basewindowcenterx;
-
-	gl_centery = gl_basecentery;
-	gl_viewwindowy = gl_baseviewwindowy;
-	gl_windowcentery = gl_basewindowcentery;
-
-	if (viewssnum > ( r_splitscreen > 1 ))
-	{
-		gl_viewwindowy += gl_viewheight;
-		gl_windowcentery += gl_viewheight;
-	}
-
-	if (r_splitscreen > 1 && viewssnum & 1)
-	{
-		gl_viewwindowx += gl_viewwidth;
-		gl_windowcenterx += gl_viewwidth;
-	}
 }
 
 // Set view aiming, for the sky dome, the skybox,
@@ -1063,13 +995,10 @@ void HWR_RollTransform(FTransform *tr, angle_t roll)
 // -----------------+
 static inline void HWR_ClearView(void)
 {
-	// set window position
-	HWR_ShiftViewPort();
-
-	GL_GClipRect((INT32)gl_viewwindowx,
-				 (INT32)gl_viewwindowy,
-				 (INT32)(gl_viewwindowx + gl_viewwidth),
-				 (INT32)(gl_viewwindowy + gl_viewheight),
+	GL_GClipRect(viewwindowx,
+				 viewwindowy,
+				 (viewwindowx + viewwidth),
+				 (viewwindowy + viewheight),
 				 ZCLIP_PLANE);
 
 	GL_ClearBuffer(false, true, true, NULL);

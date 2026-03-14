@@ -124,10 +124,6 @@ extern consvar_t cv_gldebugportal;
 
 extern consvar_t cv_glskydebug;
 
-extern float gl_viewwidth, gl_viewheight, gl_baseviewwindowy;
-
-extern float gl_viewwindowx, gl_basewindowcentery;
-
 extern seg_t *gl_curline;
 extern side_t *gl_sidedef;
 extern line_t *gl_linedef;
