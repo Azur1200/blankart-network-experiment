@@ -4050,7 +4050,7 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 		case MT_JAWZ:
 			if (source && source->player)
 			{
-				INT32 lasttarg = source->player->lastjawztarget;
+				INT32 lasttarg = source->player->lastitemtarget;
 				missile->cvmem = source->player->skincolor;
 				if ((lasttarg >= 0 && lasttarg < MAXPLAYERS)
 					&& playeringame[lasttarg]
@@ -8060,22 +8060,22 @@ void K_KartPlayerAfterThink(player_t *player)
 	// Jawz reticule (seeking)
 	if (player->itemtype == KITEM_JAWZ && (player->itemflags & IF_ITEMOUT))
 	{
-		INT32 lasttarg = player->lastjawztarget;
+		INT32 lasttarg = player->lastitemtarget;
 		player_t *targ;
 		mobj_t *ret;
 
-		if (player->jawztargetdelay && playeringame[lasttarg] && !players[lasttarg].spectator)
+		if (player->itemtargetdelay && playeringame[lasttarg] && !players[lasttarg].spectator)
 		{
 			targ = &players[lasttarg];
-			player->jawztargetdelay--;
+			player->itemtargetdelay--;
 		}
 		else
 			targ = K_FindJawzTarget(player->mo, player);
 
 		if (!targ || !targ->mo || P_MobjWasRemoved(targ->mo))
 		{
-			player->lastjawztarget = -1;
-			player->jawztargetdelay = 0;
+			player->lastitemtarget = -1;
+			player->itemtargetdelay = 0;
 			return;
 		}
 
@@ -8095,14 +8095,14 @@ void K_KartPlayerAfterThink(player_t *player)
 			else
 				S_StartSound(targ->mo, sfx_s3k89);
 
-			player->lastjawztarget = targ-players;
-			player->jawztargetdelay = 5;
+			player->lastitemtarget = targ-players;
+			player->itemtargetdelay = 5;
 		}
 	}
 	else
 	{
-		player->lastjawztarget = -1;
-		player->jawztargetdelay = 0;
+		player->lastitemtarget = -1;
+		player->itemtargetdelay = 0;
 	}
 
 	if (player->itemtype == KITEM_THUNDERSHIELD)

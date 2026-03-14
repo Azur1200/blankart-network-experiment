@@ -766,8 +766,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		SYNC(players[i].bananadrag);
 
-		SYNC(players[i].lastjawztarget);
-		SYNC(players[i].jawztargetdelay);
+		SYNC(players[i].lastitemtarget);
+		SYNC(players[i].itemtargetdelay);
 
 		SYNC(players[i].interpoints);
 		SYNC(players[i].roundscore);
