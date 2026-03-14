@@ -3288,6 +3288,10 @@ void readmaincfg(MYFILE *f)
 			{
 				bubbletime = get_number(word2);
 			}
+			else if (fastcmp(word, "FLAMETIME"))
+			{
+				flametime = get_number(word2);
+			}
 			else if (fastcmp(word, "COMEBACKTIME"))
 			{
 				comebacktime = get_number(word2);
