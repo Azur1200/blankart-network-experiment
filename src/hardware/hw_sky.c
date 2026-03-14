@@ -164,12 +164,13 @@ void HWR_BuildSkyDome(void)
 
 void HWR_DrawSkyBackground(player_t *player)
 {
-	UINT8 viewnum = R_GetViewNumber();
-	camera_t *thiscam = &camera[viewnum];
 	GL_SetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
 
 	if (cv_glskydome.value)
 	{
+		UINT8 viewnum = R_GetViewNumber();
+		camera_t *thiscam = &camera[viewnum];
+
 		FTransform dometransform;
 		const float fpov = FIXED_TO_FLOAT(cv_fov[viewssnum].value+player->fovadd);
 
@@ -178,17 +179,17 @@ void HWR_DrawSkyBackground(player_t *player)
 		HWR_SetTransformAiming(&dometransform, player, false, true);
 		dometransform.angley = (float)((viewangle-ANGLE_270)>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
 
-		dometransform.flip = false;
-		if ((thiscam->postimgflags & POSTIMG_FLIP) && !(thiscam->postimgflags & POSTIMG_MIRROR))
-			dometransform.flip = true;
-
-		dometransform.mirror = false;
-		if ((thiscam->postimgflags & POSTIMG_MIRROR) && !(thiscam->postimgflags & POSTIMG_FLIP))
-			dometransform.mirror = true;
-
-		dometransform.mirrorflip = false;
-		if ((thiscam->postimgflags & POSTIMG_FLIP) && (thiscam->postimgflags & POSTIMG_MIRROR))
-			dometransform.mirrorflip = true;
+		if (thiscam->postimgflags & POSTIMG_FLIP)
+		{
+			if (thiscam->postimgflags & POSTIMG_MIRROR)
+				dometransform.fliptype = TRANSFORM_MIRRORFLIP;
+			else
+				dometransform.fliptype = TRANSFORM_FLIP;
+		}
+		else if (thiscam->postimgflags & POSTIMG_MIRROR)
+		{
+			dometransform.fliptype = TRANSFORM_MIRROR;
+		}
 
 		dometransform.scalex = 1;
 		dometransform.scaley = (float)vid.width/vid.height;
@@ -265,7 +266,8 @@ void HWR_DrawSkyBackground(player_t *player)
 
 		// Middle of the sky should always be at angle 0
 		// need to keep correct aspect ratio with X
-		if (atransform.flip)
+		if (atransform.fliptype == TRANSFORM_FLIP ||
+			atransform.fliptype == TRANSFORM_MIRRORFLIP)
 		{
 			// During vertical flip the sky should be flipped and it's y movement should also be flipped obviously
 			v[3].t = v[2].t = -(0.5f-(0.5f/dimensionmultiply)); // top

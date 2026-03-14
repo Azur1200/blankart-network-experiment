@@ -1127,7 +1127,7 @@ UINT32 K_GetCongaLineDistance(const player_t *player, UINT8 startPos)
 
 	memset(sortedPlayers, -1, sizeof(sortedPlayers));
 
-	if (player->mo != NULL && P_MobjWasRemoved(player->mo) == false)
+	if (player->mo != NULL && P_MobjWasRemoved(player->mo) == false && player->position > 0)
 	{
 		// Sort all of the players ahead of you.
 		// Then tally up their distances in a conga line.

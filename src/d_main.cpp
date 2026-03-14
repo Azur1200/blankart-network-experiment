@@ -346,11 +346,6 @@ boolean D_RenderLevel(void)
 		{
 			viewssnum = i;
 
-#ifdef HWRENDER
-			if (rendermode == render_opengl)
-				HWR_RenderPlayerView();
-			else
-#endif
 			if (rendermode != render_none)
 			{
 				if (i > 0) // Splitscreen-specific
@@ -380,7 +375,15 @@ boolean D_RenderLevel(void)
 							break;
 					}
 				}
+			}
 
+#ifdef HWRENDER
+			if (rendermode == render_opengl)
+				HWR_RenderPlayerView();
+			else
+#endif
+			if (rendermode != render_none)
+			{
 				R_RenderPlayerView();
 			}
 		}

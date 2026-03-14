@@ -253,7 +253,7 @@ void K_SpawnMineExplosion(mobj_t *source, UINT8 color);
 UINT16 K_DriftSparkColor(player_t *player, INT32 charge);
 void K_SpawnBoostTrail(player_t *player);
 void K_SpawnSparkleTrail(mobj_t *mo);
-void K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent);
+mobj_t *K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent);
 void K_DriftDustHandling(mobj_t *spawner);
 mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t mapthing, INT32 defaultDir, INT32 altthrow);
 void K_PuntMine(mobj_t *mine, mobj_t *punter);

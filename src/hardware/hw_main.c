@@ -61,22 +61,6 @@
 //                                                                    GLOBALS
 // ==========================================================================
 
-// base values set at SetViewSize
-static float gl_basecentery;
-static float gl_basecenterx;
-
-float gl_baseviewwindowy, gl_basewindowcentery;
-float gl_baseviewwindowx, gl_basewindowcenterx;
-float gl_viewwidth, gl_viewheight; // viewport clipping boundaries (screen coords)
-float gl_viewwindowx;
-
-static float gl_centerx, gl_centery;
-static float gl_viewwindowy; // top left corner of view window
-static float gl_windowcenterx; // center of view window, for projection
-static float gl_windowcentery;
-
-static float gl_pspritexscale, gl_pspriteyscale;
-
 seg_t *gl_curline;
 side_t *gl_sidedef;
 line_t *gl_linedef;
@@ -604,59 +588,7 @@ boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 // -----------------+
 void HWR_SetViewSize(void)
 {
-	// setup view size
-	gl_viewwidth = (float)vid.width;
-	gl_viewheight = (float)vid.height;
-
-	if (r_splitscreen > 0)
-	{
-		gl_viewheight /= 2;
-
-		if (r_splitscreen > 1)
-		{
-			gl_viewwidth /= 2;
-		}
-	}
-
-	gl_basecenterx = gl_viewwidth / 2;
-	gl_basecentery = gl_viewheight / 2;
-
-	gl_baseviewwindowx = 0;
-	gl_basewindowcenterx = gl_viewwidth / 2;
-
-	gl_baseviewwindowy = 0;
-	gl_basewindowcentery = gl_viewheight / 2;
-
-	gl_pspritexscale = gl_viewwidth / BASEVIDWIDTH;
-	gl_pspriteyscale = ((vid.height*gl_pspritexscale*BASEVIDWIDTH)/BASEVIDHEIGHT)/vid.width;
-
 	GL_FlushScreenTextures();
-}
-
-// -------------------+
-// HWR_ShiftViewPort  : offset viewport according to current split
-// -------------------+
-static void HWR_ShiftViewPort(void)
-{
-	gl_centerx = gl_basecenterx;
-	gl_viewwindowx = gl_baseviewwindowx;
-	gl_windowcenterx = gl_basewindowcenterx;
-
-	gl_centery = gl_basecentery;
-	gl_viewwindowy = gl_baseviewwindowy;
-	gl_windowcentery = gl_basewindowcentery;
-
-	if (viewssnum > ( r_splitscreen > 1 ))
-	{
-		gl_viewwindowy += gl_viewheight;
-		gl_windowcentery += gl_viewheight;
-	}
-
-	if (r_splitscreen > 1 && viewssnum & 1)
-	{
-		gl_viewwindowx += gl_viewwidth;
-		gl_windowcenterx += gl_viewwidth;
-	}
 }
 
 // Set view aiming, for the sky dome, the skybox,
@@ -669,7 +601,9 @@ void HWR_SetTransformAiming(FTransform *trans, player_t *player, boolean skybox,
 	if (cv_glshearing.value == 1 || (cv_glshearing.value == 2 && R_IsViewpointThirdPerson(player, skybox)))
 	{
 		fixed_t fixedaiming = AIMINGTODY(aimingangle);
-		trans->viewaiming = FIXED_TO_FLOAT(fixedaiming);
+		trans->viewaiming = FixedToFloat(fixedaiming) * ((float)vid.width / (float)vid.height) / ((float)BASEVIDWIDTH / (float)BASEVIDHEIGHT);
+		if (splitscreen == 1) // only for 2 player splitscreen
+			trans->viewaiming *= 2.125f; // splitscreen adjusts fov with 0.8, so compensate (but only halfway, since splitscreen means only half the screen is used)
 		trans->shearing = true;
 		temp_aimingangle = 0;
 	}
@@ -730,17 +664,17 @@ static void HWR_PrepareTransform(player_t *player, boolean is_skybox)
 	gl_viewludsin = FIXED_TO_FLOAT(FINECOSINE(gl_aimingangle>>ANGLETOFINESHIFT));
 	gl_viewludcos = FIXED_TO_FLOAT(-FINESINE(gl_aimingangle>>ANGLETOFINESHIFT));
 
-	atransform.flip = false;
-	if ((thiscam->postimgflags & POSTIMG_FLIP) && !(thiscam->postimgflags & POSTIMG_MIRROR))
-		atransform.flip = true;
-
-	atransform.mirror = false;
-	if ((thiscam->postimgflags & POSTIMG_MIRROR) && !(thiscam->postimgflags & POSTIMG_FLIP))
-		atransform.mirror = true;
-
-	atransform.mirrorflip = false;
-	if ((thiscam->postimgflags & POSTIMG_FLIP) && (thiscam->postimgflags & POSTIMG_MIRROR))
-		atransform.mirrorflip = true;
+	if (thiscam->postimgflags & POSTIMG_FLIP)
+	{
+		if (thiscam->postimgflags & POSTIMG_MIRROR)
+			atransform.fliptype = TRANSFORM_MIRRORFLIP;
+		else
+			atransform.fliptype = TRANSFORM_FLIP;
+	}
+	else if (thiscam->postimgflags & POSTIMG_MIRROR)
+	{
+		atransform.fliptype = TRANSFORM_MIRROR;
+	}
 
 	atransform.x      = gl_viewx;  // FIXED_TO_FLOAT(viewx)
 	atransform.y      = gl_viewy;  // FIXED_TO_FLOAT(viewy)
@@ -987,7 +921,6 @@ static void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolea
 
 	if (timing)
 	{
-
 		ps_hw_spritesorttime = I_GetPreciseTime();
 	}
 
@@ -1057,6 +990,20 @@ void HWR_RollTransform(FTransform *tr, angle_t roll)
 	}
 }
 
+// -----------------+
+// HWR_ClearView : clear the viewwindow, with maximum z value. also clears stencil buffer.
+// -----------------+
+static inline void HWR_ClearView(void)
+{
+	GL_GClipRect(viewwindowx,
+				 viewwindowy,
+				 (viewwindowx + viewwidth),
+				 (viewwindowy + viewheight),
+				 ZCLIP_PLANE);
+
+	GL_ClearBuffer(false, true, true, NULL);
+}
+
 void HWR_RenderPlayerView(void)
 {
 	player_t * player = &players[displayplayers[viewssnum]];
@@ -1070,7 +1017,19 @@ void HWR_RenderPlayerView(void)
 	ClearColor.blue = 0.0f;
 	ClearColor.alpha = 1.0f;
 
-	GL_ClearBuffer(true, true, true, &ClearColor);
+	if (cv_glshaders.value)
+		GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
+
+	if (viewssnum == 0) // Only do it if it's the first screen being rendered
+		GL_ClearBuffer(true, true, true, &ClearColor); // Clear the Color Buffer, stops HOMs. Also seems to fix the skybox issue on Intel GPUs.
+
+	ps_hw_skyboxtime = I_GetPreciseTime();
+	if (skybox) // If there's a skybox and we should be drawing the sky, draw the skybox
+	{
+		HWR_ClearView();
+		HWR_RenderSkyboxView(player); // This is drawn before everything else so it is placed behind
+	}
+	ps_hw_skyboxtime = I_GetPreciseTime() - ps_hw_skyboxtime;
 
 	if (!HWR_ShouldUsePaletteRendering())
 	{
@@ -1084,28 +1043,8 @@ void HWR_RenderPlayerView(void)
 #endif
 	}
 
-	// set window position
-	HWR_ShiftViewPort();
-
-	GL_GClipRect((INT32)gl_viewwindowx,
-					 (INT32)gl_viewwindowy,
-					 (INT32)(gl_viewwindowx + gl_viewwidth),
-					 (INT32)(gl_viewwindowy + gl_viewheight),
-					 ZCLIP_PLANE);
-
 	// Reset the shader state.
 	HWR_SetShaderState();
-
-	if (cv_glshaders.value)
-		GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
-
-	if (viewssnum == 0) // Only do it if it's the first screen being rendered
-		GL_ClearBuffer(true, false, false, &ClearColor); // Clear the Color Buffer, stops HOMs. Also seems to fix the skybox issue on Intel GPUs.
-
-	ps_hw_skyboxtime = I_GetPreciseTime();
-	if (skybox) // If there's a skybox and we should be drawing the sky, draw the skybox
-		HWR_RenderSkyboxView(player); // This is drawn before everything else so it is placed behind
-	ps_hw_skyboxtime = I_GetPreciseTime() - ps_hw_skyboxtime;
 
 	// note: sets viewangle, viewx, viewy, viewz
 	R_SetupFrame(viewssnum, skybox);
@@ -1113,6 +1052,8 @@ void HWR_RenderPlayerView(void)
 
 	// Check for new console commands.
 	NetUpdate();
+
+	HWR_ClearView();
 
 	HWR_RenderViewpoint(player,
 						!skybox, // Don't draw the regular sky if there's a skybox

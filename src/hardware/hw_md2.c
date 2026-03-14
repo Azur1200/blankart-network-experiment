@@ -1717,8 +1717,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 		p.anglez = FIXED_TO_FLOAT(AngleFixed(R_InterpolateAngle(spr->mobj->old_pitch, spr->mobj->pitch)));
 		p.anglex = FIXED_TO_FLOAT(AngleFixed(R_InterpolateAngle(spr->mobj->old_roll, spr->mobj->roll)));
 
-		p.flip = atransform.flip;
-		p.mirror = atransform.mirror;
+		p.fliptype = atransform.fliptype;
 
 		if (HWR_UseShader())
 			GL_SetShader(HWR_GetShaderFromTarget(SHADER_MODEL));
