@@ -529,7 +529,6 @@ fixed_t K_GetKartGameSpeedScalar(SINT8 value)
 static fixed_t K_PlayerWeight(mobj_t* mobj, mobj_t* against)
 {
 	fixed_t weight = 5 * FRACUNIT;
-	fixed_t bubbleMultiplier = FRACUNIT;
 
 	if (!mobj->player)
 		return weight;
@@ -577,11 +576,6 @@ static fixed_t K_PlayerWeight(mobj_t* mobj, mobj_t* against)
 	{
 		weight = max(BUBBLEMINWEIGHT, weight);
 		weight = FixedMul(weight, FRACUNIT / 16);
-	}
-
-	if (bubbleMultiplier)
-	{
-		weight = FixedMul(weight, bubbleMultiplier);
 	}
 
 	if (mobj->player->speed > spd)
