@@ -1070,7 +1070,16 @@ void HWR_RenderPlayerView(void)
 	ClearColor.blue = 0.0f;
 	ClearColor.alpha = 1.0f;
 
-	GL_ClearBuffer(true, true, true, &ClearColor);
+	if (cv_glshaders.value)
+		GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
+
+	if (viewssnum == 0) // Only do it if it's the first screen being rendered
+		GL_ClearBuffer(true, true, true, &ClearColor); // Clear the Color Buffer, stops HOMs. Also seems to fix the skybox issue on Intel GPUs.
+
+	ps_hw_skyboxtime = I_GetPreciseTime();
+	if (skybox) // If there's a skybox and we should be drawing the sky, draw the skybox
+		HWR_RenderSkyboxView(player); // This is drawn before everything else so it is placed behind
+	ps_hw_skyboxtime = I_GetPreciseTime() - ps_hw_skyboxtime;
 
 	if (!HWR_ShouldUsePaletteRendering())
 	{
@@ -1087,25 +1096,14 @@ void HWR_RenderPlayerView(void)
 	// set window position
 	HWR_ShiftViewPort();
 
+	// Reset the shader state.
+	HWR_SetShaderState();
+
 	GL_GClipRect((INT32)gl_viewwindowx,
 					 (INT32)gl_viewwindowy,
 					 (INT32)(gl_viewwindowx + gl_viewwidth),
 					 (INT32)(gl_viewwindowy + gl_viewheight),
 					 ZCLIP_PLANE);
-
-	// Reset the shader state.
-	HWR_SetShaderState();
-
-	if (cv_glshaders.value)
-		GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
-
-	if (viewssnum == 0) // Only do it if it's the first screen being rendered
-		GL_ClearBuffer(true, false, false, &ClearColor); // Clear the Color Buffer, stops HOMs. Also seems to fix the skybox issue on Intel GPUs.
-
-	ps_hw_skyboxtime = I_GetPreciseTime();
-	if (skybox) // If there's a skybox and we should be drawing the sky, draw the skybox
-		HWR_RenderSkyboxView(player); // This is drawn before everything else so it is placed behind
-	ps_hw_skyboxtime = I_GetPreciseTime() - ps_hw_skyboxtime;
 
 	// note: sets viewangle, viewx, viewy, viewz
 	R_SetupFrame(viewssnum, skybox);
