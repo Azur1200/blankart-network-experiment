@@ -1505,6 +1505,10 @@ static void K_drawKartItem(void)
 
 			itembar = FixedDiv(stplyr->bubblehealth, MAXBUBBLEHEALTH);
 		}
+		else if (stplyr->altthundercharge > 0)
+		{
+			itembar = FixedDiv(stplyr->altthundercharge, ALTTHUNDERCHARGETIME);
+		}
 		else if (stplyr->bricktimer > 0)
 		{
 			if (leveltime & 2)

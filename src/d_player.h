@@ -698,6 +698,8 @@ struct player_t
 
 	mobj_t *shieldtracer;	// Blankart: Shield mobj
 
+	tic_t altthundercharge; // charge of Alt. Thunder Shield
+
 	UINT8 bubblecool;	// Bubble Shield use cooldown
 	UINT8 bubbleblowup;	// Bubble Shield usage blowup
 	UINT8 bubblehealth;	// Bubble Shield health

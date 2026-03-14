@@ -2408,19 +2408,54 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			S_StartSound(player->mo, sfx_s3k41);
 		}
 
-		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
+		if (K_IsKartItemAlternate(KITEM_THUNDERSHIELD))
 		{
-			K_DoThunderShield(player);
-			if (player->itemamount > 0)
+			if (!HOLDING_ITEM && NO_HYUDORO)
 			{
-				// Why is this a conditional?
-				// Thunder shield: the only item that allows you to
-				// activate a mine while you're out of its radius,
-				// the SAME tic it sets your itemamount to 0
-				// ...:dumbestass:
-				player->itemamount--;
-				K_PlayAttackTaunt(player->mo);
-				K_BotResetItemConfirm(player, false);
+				if (buttons & BT_ATTACK)
+				{
+					player->itemflags &= ~IF_HOLDREADY;
+					player->altthundercharge++;
+				}
+				else
+				{
+					if (player->altthundercharge)
+					{
+						if (player->altthundercharge >= ALTTHUNDERCHARGETIME)
+						{
+							K_DoThunderShield(player);
+						}
+						else
+						{
+						}
+						if (player->itemamount > 0)
+						{
+							player->itemamount--;
+							K_PlayAttackTaunt(player->mo);
+							K_BotResetItemConfirm(player, false);
+						}
+					}
+					player->itemflags |= IF_HOLDREADY;
+					player->altthundercharge = 0;
+				}
+			}
+		}
+		else
+		{
+			if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
+			{
+				K_DoThunderShield(player);
+				if (player->itemamount > 0)
+				{
+					// Why is this a conditional?
+					// Thunder shield: the only item that allows you to
+					// activate a mine while you're out of its radius,
+					// the SAME tic it sets your itemamount to 0
+					// ...:dumbestass:
+					player->itemamount--;
+					K_PlayAttackTaunt(player->mo);
+					K_BotResetItemConfirm(player, false);
+				}
 			}
 		}
 		break;

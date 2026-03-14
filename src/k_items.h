@@ -235,6 +235,7 @@ extern consvar_t cv_karteggmine_slotbrick;
 extern consvar_t cv_kartthunder_radius;
 
 #define BUBBLEBOOSTTIME (7 * sneakertime / 10)
+#define ALTTHUNDERCHARGETIME ((92*TICRATE)/60)
 
 #ifdef __cplusplus
 } // extern "C"
