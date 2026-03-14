@@ -2740,7 +2740,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 	// pos->mirror is if the screen is flipped horizontally
 	// XOR all the flips together to figure out what culling to use!
 	{
-		boolean reversecull = (flipped ^ hflipped ^ pos->flip ^ pos->mirror);
+		boolean reversecull = (flipped ^ hflipped ^ !!(pos->fliptype & TRANSFORM_FLIP) ^ !!(pos->fliptype & TRANSFORM_MIRROR));
 		if (reversecull)
 			pglCullFace(GL_FRONT);
 		else
@@ -2935,14 +2935,21 @@ void GL_SetTransform(FTransform *stransform)
 	if (stransform)
 	{
 		used_fov = stransform->fovxangle;
-		if (stransform->mirror)
-			pglScalef(-stransform->scalex, stransform->scaley, -stransform->scalez);
-		else if (stransform->mirrorflip)
-			pglScalef(-stransform->scalex, -stransform->scaley, -stransform->scalez);
-		else if (stransform->flip)
-			pglScalef(stransform->scalex, -stransform->scaley, -stransform->scalez);
-		else
-			pglScalef(stransform->scalex, stransform->scaley, -stransform->scalez);
+		switch (stransform->fliptype)
+		{
+			case TRANSFORM_MIRROR:
+				pglScalef(-stransform->scalex, stransform->scaley, -stransform->scalez);
+				break;
+			case TRANSFORM_MIRRORFLIP:
+				pglScalef(-stransform->scalex, -stransform->scaley, -stransform->scalez);
+				break;
+			case TRANSFORM_FLIP:
+				pglScalef(stransform->scalex, -stransform->scaley, -stransform->scalez);
+				break;
+			default: // TRANSFORM_NONE
+				pglScalef(stransform->scalex, stransform->scaley, -stransform->scalez);
+				break;
+		}
 
 		if (stransform->roll)
 			pglRotatef(stransform->rollangle, 0.0f, 0.0f, 1.0f);
@@ -2962,23 +2969,29 @@ void GL_SetTransform(FTransform *stransform)
 	pglMatrixMode(GL_PROJECTION);
 	pglLoadIdentity();
 
+	// jimita 14042019
 	// Simulate Software's y-shearing
 	// https://zdoom.org/wiki/Y-shearing
 	if (shearing)
 	{
-		float fdy = stransform->viewaiming * 2 * ((float)vid.width / vid.height) / ((float)BASEVIDWIDTH / BASEVIDHEIGHT); //screen_width/BASEVIDWIDTH;
-		if (stransform->flip)
-			fdy *= -1.0f;
-		pglTranslatef(0.0f, -fdy/BASEVIDHEIGHT, 0.0f);
+		float dy = stransform->viewaiming * 2;
+
+		if (stransform->fliptype == TRANSFORM_FLIP ||
+			stransform->fliptype == TRANSFORM_MIRRORFLIP)
+			dy *= -1.0f;
+
+		pglTranslatef(0.0f, -dy/BASEVIDHEIGHT, 0.0f);
 	}
 
 	if (special_splitscreen)
 	{
-		used_fov = atan(tan(used_fov*M_PI/360)*0.8)*360/M_PI;
+		used_fov = (atanf(tanf(used_fov * (float)M_PI / 360.0f) * 0.8f) * 360.0f / (float)M_PI);
 		GLPerspective(used_fov, 2*ASPECT_RATIO);
 	}
 	else
+	{
 		GLPerspective(used_fov, ASPECT_RATIO);
+	}
 
 	pglGetFloatv(GL_PROJECTION_MATRIX, projMatrix); // added for new coronas' code (without depth buffer)
 	pglMatrixMode(GL_MODELVIEW);

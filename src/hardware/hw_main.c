@@ -669,7 +669,9 @@ void HWR_SetTransformAiming(FTransform *trans, player_t *player, boolean skybox,
 	if (cv_glshearing.value == 1 || (cv_glshearing.value == 2 && R_IsViewpointThirdPerson(player, skybox)))
 	{
 		fixed_t fixedaiming = AIMINGTODY(aimingangle);
-		trans->viewaiming = FIXED_TO_FLOAT(fixedaiming);
+		trans->viewaiming = FixedToFloat(fixedaiming) * ((float)vid.width / (float)vid.height) / ((float)BASEVIDWIDTH / (float)BASEVIDHEIGHT);
+		if (splitscreen == 1) // only for 2 player splitscreen
+			trans->viewaiming *= 2.125f; // splitscreen adjusts fov with 0.8, so compensate (but only halfway, since splitscreen means only half the screen is used)
 		trans->shearing = true;
 		temp_aimingangle = 0;
 	}
@@ -730,17 +732,17 @@ static void HWR_PrepareTransform(player_t *player, boolean is_skybox)
 	gl_viewludsin = FIXED_TO_FLOAT(FINECOSINE(gl_aimingangle>>ANGLETOFINESHIFT));
 	gl_viewludcos = FIXED_TO_FLOAT(-FINESINE(gl_aimingangle>>ANGLETOFINESHIFT));
 
-	atransform.flip = false;
-	if ((thiscam->postimgflags & POSTIMG_FLIP) && !(thiscam->postimgflags & POSTIMG_MIRROR))
-		atransform.flip = true;
-
-	atransform.mirror = false;
-	if ((thiscam->postimgflags & POSTIMG_MIRROR) && !(thiscam->postimgflags & POSTIMG_FLIP))
-		atransform.mirror = true;
-
-	atransform.mirrorflip = false;
-	if ((thiscam->postimgflags & POSTIMG_FLIP) && (thiscam->postimgflags & POSTIMG_MIRROR))
-		atransform.mirrorflip = true;
+	if (thiscam->postimgflags & POSTIMG_FLIP)
+	{
+		if (thiscam->postimgflags & POSTIMG_MIRROR)
+			atransform.fliptype = TRANSFORM_MIRRORFLIP;
+		else
+			atransform.fliptype = TRANSFORM_FLIP;
+	}
+	else if (thiscam->postimgflags & POSTIMG_MIRROR)
+	{
+		atransform.fliptype = TRANSFORM_MIRROR;
+	}
 
 	atransform.x      = gl_viewx;  // FIXED_TO_FLOAT(viewx)
 	atransform.y      = gl_viewy;  // FIXED_TO_FLOAT(viewy)
