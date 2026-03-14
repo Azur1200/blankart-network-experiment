@@ -923,7 +923,7 @@ static void SetNoTexture(GLenum texture)
 	}
 }
 
-static void GLPerspective(GLfloat fovy, GLfloat aspect)
+static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 {
 	GLfloat m[4][4] =
 	{
@@ -1033,7 +1033,7 @@ void SetModelView(GLint w, GLint h)
 	pglMatrixMode(GL_MODELVIEW);
 	pglLoadIdentity();
 
-	GLPerspective(fov, ASPECT_RATIO);
+	GL_Perspective(fov, ASPECT_RATIO);
 	//pglScalef(1.0f, 320.0f/200.0f, 1.0f);  // gl_scalefrustum (ORIGINAL_ASPECT)
 
 	// added for new coronas' code (without depth buffer)
@@ -1339,7 +1339,7 @@ void GL_GClipRect(INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip
 	//pglScissor(minx, screen_height-maxy, maxx-minx, maxy-miny);
 	pglMatrixMode(GL_PROJECTION);
 	pglLoadIdentity();
-	GLPerspective(fov, ASPECT_RATIO);
+	GL_Perspective(fov, ASPECT_RATIO);
 	pglMatrixMode(GL_MODELVIEW);
 
 	// added for new coronas' code (without depth buffer)
@@ -1368,6 +1368,7 @@ void GL_ClearBuffer(FBOOLEAN ColorMask,
 			              ClearColor->alpha);
 		ClearMask |= GL_COLOR_BUFFER_BIT;
 	}
+
 	if (DepthMask)
 	{
 		pglClearDepth(1.0f);     //Hurdler: all that are permanen states
@@ -1375,6 +1376,7 @@ void GL_ClearBuffer(FBOOLEAN ColorMask,
 		pglDepthFunc(GL_LEQUAL);
 		ClearMask |= GL_DEPTH_BUFFER_BIT;
 	}
+
 	if (StencilMask)
 		ClearMask |= GL_STENCIL_BUFFER_BIT;
 
@@ -2926,7 +2928,7 @@ void GL_DrawModel(model_t *model, INT32 frameIndex, float duration, float tics, 
 // -----------------+
 void GL_SetTransform(FTransform *stransform)
 {
-	static boolean special_splitscreen;
+	boolean special_splitscreen = false;
 	boolean shearing = false;
 	float used_fov;
 
@@ -2986,11 +2988,11 @@ void GL_SetTransform(FTransform *stransform)
 	if (special_splitscreen)
 	{
 		used_fov = (atanf(tanf(used_fov * (float)M_PI / 360.0f) * 0.8f) * 360.0f / (float)M_PI);
-		GLPerspective(used_fov, 2*ASPECT_RATIO);
+		GL_Perspective(used_fov, 2*ASPECT_RATIO);
 	}
 	else
 	{
-		GLPerspective(used_fov, ASPECT_RATIO);
+		GL_Perspective(used_fov, ASPECT_RATIO);
 	}
 
 	pglGetFloatv(GL_PROJECTION_MATRIX, projMatrix); // added for new coronas' code (without depth buffer)
@@ -3000,7 +3002,7 @@ void GL_SetTransform(FTransform *stransform)
 
 }
 
-INT32  GL_GetTextureUsed(void)
+INT32 GL_GetTextureUsed(void)
 {
 	FTextureInfo *tmp = TexCacheHead;
 	INT32 res = 0;

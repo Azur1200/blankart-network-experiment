@@ -989,7 +989,6 @@ static void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolea
 
 	if (timing)
 	{
-
 		ps_hw_spritesorttime = I_GetPreciseTime();
 	}
 
@@ -1059,6 +1058,23 @@ void HWR_RollTransform(FTransform *tr, angle_t roll)
 	}
 }
 
+// -----------------+
+// HWR_ClearView : clear the viewwindow, with maximum z value. also clears stencil buffer.
+// -----------------+
+static inline void HWR_ClearView(void)
+{
+	// set window position
+	HWR_ShiftViewPort();
+
+	GL_GClipRect((INT32)gl_viewwindowx,
+				 (INT32)gl_viewwindowy,
+				 (INT32)(gl_viewwindowx + gl_viewwidth),
+				 (INT32)(gl_viewwindowy + gl_viewheight),
+				 ZCLIP_PLANE);
+
+	GL_ClearBuffer(false, true, true, NULL);
+}
+
 void HWR_RenderPlayerView(void)
 {
 	player_t * player = &players[displayplayers[viewssnum]];
@@ -1080,7 +1096,10 @@ void HWR_RenderPlayerView(void)
 
 	ps_hw_skyboxtime = I_GetPreciseTime();
 	if (skybox) // If there's a skybox and we should be drawing the sky, draw the skybox
+	{
+		HWR_ClearView();
 		HWR_RenderSkyboxView(player); // This is drawn before everything else so it is placed behind
+	}
 	ps_hw_skyboxtime = I_GetPreciseTime() - ps_hw_skyboxtime;
 
 	if (!HWR_ShouldUsePaletteRendering())
@@ -1095,17 +1114,8 @@ void HWR_RenderPlayerView(void)
 #endif
 	}
 
-	// set window position
-	HWR_ShiftViewPort();
-
 	// Reset the shader state.
 	HWR_SetShaderState();
-
-	GL_GClipRect((INT32)gl_viewwindowx,
-					 (INT32)gl_viewwindowy,
-					 (INT32)(gl_viewwindowx + gl_viewwidth),
-					 (INT32)(gl_viewwindowy + gl_viewheight),
-					 ZCLIP_PLANE);
 
 	// note: sets viewangle, viewx, viewy, viewz
 	R_SetupFrame(viewssnum, skybox);
@@ -1113,6 +1123,8 @@ void HWR_RenderPlayerView(void)
 
 	// Check for new console commands.
 	NetUpdate();
+
+	HWR_ClearView();
 
 	HWR_RenderViewpoint(player,
 						!skybox, // Don't draw the regular sky if there's a skybox
