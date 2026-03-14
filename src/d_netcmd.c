@@ -713,7 +713,7 @@ consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "On", C
 consvar_t cv_kartaltshrink_arrowbullet = CVAR_INIT ("kart_altshrink_arrowbullet", "On", CV_NETVAR, CV_OnOff, NULL);
 
 static CV_PossibleValue_t altshrink_arrowbullet_threshold_cons_t[] = {{0, "MIN"}, {2 * FRACUNIT, "MAX"}, {0, NULL}};
-consvar_t cv_kartaltshrink_arrowbulletthres = CVAR_INIT ("kart_altshrink_arrowbullet_threshold", "1.66", CV_NETVAR|CV_FLOAT, altshrink_arrowbullet_threshold_cons_t, NULL);
+consvar_t cv_kartaltshrink_arrowbulletthres = CVAR_INIT ("kart_altshrink_arrowbullet_threshold", "1.45", CV_NETVAR|CV_FLOAT, altshrink_arrowbullet_threshold_cons_t, NULL);
 
 static CV_PossibleValue_t kartairsquish_cons_t[] = {{1, "Squish"}, {2, "Flip-over"}, {0, "None"}, {0, NULL}};
 consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kartairsquish_cons_t, NULL);
