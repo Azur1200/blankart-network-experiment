@@ -294,7 +294,6 @@ void K_RemoveBubbleHealth(player_t *player, INT16 sub);
 boolean K_CheckBubbleChip(const mobj_t *mobj);
 void K_RepairOrbitChain(mobj_t *orbit);
 void K_CalculateBananaSlope(mobj_t *mobj, fixed_t x, fixed_t y, fixed_t z, fixed_t radius, fixed_t height, boolean flip, boolean player);
-player_t *K_FindJawzTarget(mobj_t *actor, player_t *source);
 INT32 K_GetKartRingPower(const player_t *player, boolean boosted);
 size_t K_NextRespawnWaypointIndex(waypoint_t *waypoint);
 boolean K_CheckPlayersRespawnColliding(INT32 playernum, fixed_t x, fixed_t y);

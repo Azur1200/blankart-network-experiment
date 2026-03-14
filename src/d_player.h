@@ -147,6 +147,7 @@ typedef enum
 	IF_ITEMOUT		= 1<<1,	// Are you holding an item out?
 	IF_EGGMANOUT	= 1<<2,	// Eggman mark held, separate from IF_ITEMOUT so it doesn't stop you from getting items
 	IF_HOLDREADY	= 1<<3,	// Hold button-style item is ready to activate
+	IF_SEEKING		= 1<<4,	// Item runs seeking / homing behaviour and needs a reticule
 } itemflags_t;
 
 typedef enum

@@ -376,7 +376,7 @@ void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags)
 
 void K_UnsetItemOut(player_t *player)
 {
-	player->itemflags &= ~(IF_ITEMOUT|IF_EGGMANOUT|IF_HOLDREADY);
+	player->itemflags &= ~(IF_ITEMOUT|IF_EGGMANOUT|IF_HOLDREADY|IF_SEEKING);
 	player->bananadrag = 0;
 	player->equippeditem = KITEM_NONE;
 }
@@ -2260,7 +2260,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *prev = player->mo;
 
 			//K_PlayAttackTaunt(player->mo);
-			K_SetItemOut(player, KITEM_JAWZ, IF_ITEMOUT);
+			K_SetItemOut(player, KITEM_JAWZ, IF_ITEMOUT|IF_SEEKING);
 			S_StartSound(player->mo, sfx_s3k3a);
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
@@ -2719,4 +2719,149 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 			}
 		}
 	}
+}
+
+void K_KartSeekingReticule(player_t *player)
+{
+	// seeking item reticule
+	if (player->itemflags & IF_SEEKING)
+	{
+		INT32 lasttarg = player->lastitemtarget;
+		player_t *targ;
+		mobj_t *ret;
+
+		if (player->itemtargetdelay && playeringame[lasttarg] && !players[lasttarg].spectator)
+		{
+			targ = &players[lasttarg];
+			player->itemtargetdelay--;
+		}
+		else
+			targ = K_FindJawzTarget(player->mo, player);
+
+		if (!targ || !targ->mo || P_MobjWasRemoved(targ->mo))
+		{
+			player->lastitemtarget = -1;
+			player->itemtargetdelay = 0;
+			return;
+		}
+
+		ret = P_SpawnMobj(targ->mo->x, targ->mo->y, targ->mo->z, MT_PLAYERRETICULE);
+		ret->old_x = targ->mo->old_x;
+		ret->old_y = targ->mo->old_y;
+		ret->old_z = targ->mo->old_z;
+		P_SetTarget(&ret->target, targ->mo);
+		ret->frame |= ((leveltime % 10) / 2);
+		ret->tics = 1;
+		ret->color = player->skincolor;
+
+		if (targ-players != lasttarg)
+		{
+			if (P_IsDisplayPlayer(player) || P_IsDisplayPlayer(targ))
+				S_StartSound(NULL, sfx_s3k89);
+			else
+				S_StartSound(targ->mo, sfx_s3k89);
+
+			player->lastitemtarget = targ-players;
+			player->itemtargetdelay = 5;
+		}
+	}
+	else
+	{
+		player->lastitemtarget = -1;
+		player->itemtargetdelay = 0;
+	}
+}
+
+player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
+{
+	fixed_t best = -1;
+	player_t *wtarg = NULL;
+	INT32 i;
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		angle_t thisang;
+		player_t *player;
+
+		if (!playeringame[i])
+			continue;
+
+		player = &players[i];
+
+		if (player->spectator)
+			continue; // spectator
+
+		if (!player->mo)
+			continue;
+
+		if (player->mo->health <= 0)
+			continue; // dead
+
+		// Don't target yourself, stupid.
+		if (player == source)
+			continue;
+
+		// Don't home in on teammates.
+		if (G_GametypeHasTeams() && source->ctfteam == player->ctfteam)
+			continue;
+
+		// Invisible, don't bother
+		if (player->hyudorotimer)
+			continue;
+
+		// Find the angle, see who's got the best.
+		thisang = actor->angle - R_PointToAngle2(actor->x, actor->y, player->mo->x, player->mo->y);
+		if (thisang > ANGLE_180)
+			thisang = InvAngle(thisang);
+
+		// Jawz only go after the person directly ahead of you in race... sort of literally now!
+		if (gametypes[gametype]->rules & GTR_CIRCUIT)
+		{
+			// Don't go for people who are behind you
+			if (thisang > ANGLE_67h)
+				continue;
+			// Don't pay attention to people who aren't above your position
+			if (player->position >= source->position)
+				continue;
+			if ((best == -1) || (player->position > best))
+			{
+				wtarg = player;
+				best = player->position;
+			}
+		}
+		else
+		{
+			fixed_t thisdist;
+			fixed_t thisavg;
+
+			// Don't go for people who are behind you
+			if (thisang > ANGLE_45)
+				continue;
+
+			// Don't pay attention to dead players
+			if (player->bumper <= 0)
+				continue;
+
+			// Z pos too high/low
+			if (abs(player->mo->z - (actor->z + actor->momz)) > RING_DIST/8)
+				continue;
+
+			thisdist = P_AproxDistance(player->mo->x - (actor->x + actor->momx), player->mo->y - (actor->y + actor->momy));
+
+			if (thisdist > 2*RING_DIST) // Don't go for people who are too far away
+				continue;
+
+			thisavg = (AngleFixed(thisang) + thisdist) / 2;
+
+			//CONS_Printf("got avg %d from player # %d\n", thisavg>>FRACBITS, i);
+
+			if ((best == -1) || (thisavg < best))
+			{
+				wtarg = player;
+				best = thisavg;
+			}
+		}
+	}
+
+	return wtarg;
 }
