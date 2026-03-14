@@ -7011,8 +7011,9 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 	const INT32 heavydropassistmin = TICRATE/2;
 	const INT32 heavydropassistmax = 3*TICRATE/2;
 
-	const INT32 airbrakedelay_heavy = TICRATE/8;
+	// in fusion, extend heavy airdrop's delay slightly so light airdrop isn't totally useless
 	const INT32 airbrakedelay_light = TICRATE/3;
+	const INT32 airbrakedelay_heavy = airdropactive == AIRDROP_FUSION ? 3*airbrakedelay_light/5 : TICRATE/8;
 
 	if (P_IsObjectOnGround(player->mo))
 	{
@@ -7023,12 +7024,19 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		player->airdropbuffer--;
 	}
 
-	if ((cmd->buttons & BT_BRAKE))
+	UINT16 buttons = cmd->buttons;
+
+	// kickstart needs a little special treatment in fusion...
+	// heavy airdrop should be the two-button input, not light airdrop
+	if (airdropactive == AIRDROP_FUSION && player->pflags & PF_KICKSTARTACCEL)
+		buttons ^= BT_ACCELERATE;
+
+	if (buttons & BT_BRAKE)
 	{
 		// don't buffer heavy airdrops on the ground to prevent silly mistakes
 		// but do allow buffering in the air (still) to compensate for the added delay
 		if ((!P_IsObjectOnGround(player->mo) && !(player->airdropflags & PAF_AIRDROPINPUT))
-		 || (airdropactive != AIRDROP_HEAVY && !(airdropactive == AIRDROP_FUSION && !(cmd->buttons & BT_ACCELERATE))))
+		 || (airdropactive != AIRDROP_HEAVY && !(airdropactive == AIRDROP_FUSION && !(buttons & BT_ACCELERATE))))
 		{
 			player->airdropflags |= PAF_WANTSAIRDROP;
 			player->airdropbuffer = 2;
@@ -7061,7 +7069,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 	{
 		if ((player->airdropflags & PAF_AIRDROP_HEAVY))
 		{
-			P_PlayerRingBurst(player, CLAMP(player->rings, 0, 3));
+			P_PlayerRingBurst(player, CLAMP(player->rings, 0, 2));
 
 			if (player->airdroptime > 1)
 			{
@@ -7091,12 +7099,13 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 
 	if (player->airdropflags & PAF_WANTSAIRDROP)
 	{
-		if (((airdropactive == AIRDROP_LIGHT) || (airdropactive == AIRDROP_FUSION && (cmd->buttons & BT_ACCELERATE))) && player->airdroppredelay >= airbrakedelay_light)
+		if (airdropactive == AIRDROP_LIGHT || (airdropactive == AIRDROP_FUSION && buttons & BT_ACCELERATE))
 		{
-			player->airdropflags |= PAF_AIRDROP_LIGHT;
+			if (player->airdroppredelay >= airbrakedelay_light)
+				player->airdropflags |= PAF_AIRDROP_LIGHT;
 		}
-		else if ((airdropactive == AIRDROP_HEAVY || airdropactive == AIRDROP_FUSION) && player->airdroppredelay >= (airdropactive == AIRDROP_FUSION ? airbrakedelay_light : airbrakedelay_heavy) &&
-			!(player->airdropflags & (PAF_AIRDROP_HEAVY)) && !(player->mo->eflags & MFE_GOOWATER)) // in fusion, fires if brake is held but not accel, and has the same delay as light airdrop (this makes it feel really really stiff but we're sacking feel for balance with light drop here 🥲)
+		else if ((airdropactive == AIRDROP_HEAVY || airdropactive == AIRDROP_FUSION) && player->airdroppredelay >= airbrakedelay_heavy
+		      && !(player->airdropflags & PAF_AIRDROP_HEAVY) && !(player->mo->eflags & MFE_GOOWATER))
 		{
 			player->airdropflags |= PAF_AIRDROP_HEAVY;
 			player->airdroptime = 0;
@@ -7105,9 +7114,11 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 			S_StartSound(player->mo, sfx_s3k77);
 			S_StartSound(player->mo, sfx_s3k51);
 
-			player->mo->momx = FixedMul(player->mo->momx, 90*FRACUNIT/100);
-			player->mo->momy = FixedMul(player->mo->momy, 90*FRACUNIT/100);
-			player->mo->momz -= 10*P_MobjFlip(player->mo)*mapobjectscale;
+			player->mo->momx = FixedMul(player->mo->momx, 17*FRACUNIT/20);
+			player->mo->momy = FixedMul(player->mo->momy, 17*FRACUNIT/20);
+
+			// extra strong on ramp jumps!
+			player->mo->momz -= P_MobjFlip(player->mo) * max(10*mapobjectscale, player->mo->momz/3);
 		}
 	}
 	else
@@ -7123,18 +7134,8 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		// hi-power is considerably shorter in fusion
 		const boolean high = player->airdroptime <= ((airdropactive == AIRDROP_FUSION) ? heavydrophipowertime_fusion : heavydrophipowertime);
 
-		if (airdropactive == AIRDROP_FUSION)
-		{
-			player->mo->momx = FixedMul(player->mo->momx, (high ? 98 : 99)*FRACUNIT/100);
-			player->mo->momy = FixedMul(player->mo->momy, (high ? 98 : 99)*FRACUNIT/100);
-		}
-		else if (!player->airdroptime)
-		{
-			// cut momentum once on start, it should feel particularily snappy when only being able to use heavy
-			player->mo->momx = FixedMul(player->mo->momx, 90*FRACUNIT/100);
-			player->mo->momy = FixedMul(player->mo->momy, 90*FRACUNIT/100);
-		}
-
+		player->mo->momx = FixedMul(player->mo->momx, FRACUNIT - FRACUNIT/300);
+		player->mo->momy = FixedMul(player->mo->momy, FRACUNIT - FRACUNIT/300);
 		player->mo->momz -= FixedMul((high ? 4 : 2)*gravity, mapobjectscale)*P_MobjFlip(player->mo);
 		K_SpawnFallLines(player, high);
 
