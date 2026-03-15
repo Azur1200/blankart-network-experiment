@@ -5426,9 +5426,25 @@ void K_PopPlayerShield(player_t *player)
 	switch (shield)
 	{
 		case KSHIELD_THUNDER:
-			K_DoThunderShield(player);
+			if (K_IsKartItemAlternate(KITEM_THUNDERSHIELD))
+			{
+				if (player->altthundercharge >= ALTTHUNDERCHARGETIME)
+				{
+					K_DoThunderShield(player);
+				}
+				else
+				{
+					player->mo->momz += 4*mapobjectscale*P_MobjFlip(player->mo);
+					player->mo->z += player->mo->momz;
+				}
+			}
+			else
+			{
+				K_DoThunderShield(player);
+			}
 			player->itemtype = KITEM_NONE;
 			player->itemamount = 0;
+			player->altthundercharge = 0;
 			break;
 		case KSHIELD_BUBBLE:
 			K_BreakBubbleShield(player);

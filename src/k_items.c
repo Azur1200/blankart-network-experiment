@@ -2415,20 +2415,71 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			{
 				if (buttons & BT_ATTACK)
 				{
+					if (player->itemflags & IF_HOLDREADY)
+					{
+						S_StartSound(player->mo, sfx_vwre);
+					}
 					player->itemflags &= ~IF_HOLDREADY;
+					
+					if (player->altthundercharge >= ALTTHUNDERCHARGETIME)
+					{
+						if (player->itemflags & IF_SEEKING)
+						{
+							S_StartSound(player->mo, sfx_ncchip);
+						}
+						if (S_SoundPlaying(player->mo, sfx_vwre))
+						{
+							S_StopSoundByID(player->mo, sfx_vwre);
+						}
+						player->itemflags &= ~IF_SEEKING;
+						player->bananadrag += 4;
+					}
+					else
+					{
+						player->itemflags |= IF_SEEKING;
+					}
+
 					player->altthundercharge++;
 				}
 				else
 				{
 					if (player->altthundercharge)
 					{
+						if (S_SoundPlaying(player->mo, sfx_vwre))
+						{
+							S_StopSoundByID(player->mo, sfx_vwre);
+						}
+
 						if (player->altthundercharge >= ALTTHUNDERCHARGETIME)
 						{
 							K_DoThunderShield(player);
 						}
 						else
 						{
+							angle_t attackangle = player->mo->angle;
+							fixed_t power = 16*mapobjectscale;
+							INT32 lastTarg = player->lastitemtarget;
+
+							if (lastTarg != -1
+								&& playeringame[lastTarg] == true
+								&& players[lastTarg].spectator == false
+								&& players[lastTarg].mo != NULL
+								&& P_MobjWasRemoved(players[lastTarg].mo) == false)
+							{
+								mobj_t *targMo = players[lastTarg].mo;
+								attackangle = R_PointToAngle2(player->mo->x, player->mo->y, targMo->x, targMo->y);
+								power = 32*mapobjectscale;
+							}
+
+							player->mo->momz += 4*mapobjectscale*P_MobjFlip(player->mo);
+							player->mo->z += player->mo->momz;
+							player->airdriftspeed = max(K_GetKartSpeed(player, false, false), player->speed);
+							P_Thrust(player->mo, attackangle, power);
+
+							S_StartSound(player->mo, sfx_s3k81);
+							S_StartSound(player->mo, sfx_kc4c);
 						}
+
 						if (player->itemamount > 0)
 						{
 							player->itemamount--;
