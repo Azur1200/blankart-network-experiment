@@ -10260,12 +10260,12 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 			// Otherwise, just use the raw distancing.
 			if (pingame < 3)
 			{
-				return (player->distancetofinish -
+				return K_UndoMapScaling(player->distancetofinish -
 					players[tinypoptarget].distancetofinish) /
 				       2;
 			}
 
-			return (player->distancetofinish - players[tinypoptarget].distancetofinish);
+			return K_UndoMapScaling(player->distancetofinish - players[tinypoptarget].distancetofinish);
 		}
 
 		UINT32 targetdtf;
@@ -10286,7 +10286,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 			return 0;  // Ahead, or tying.
 
 		// Return the difference between us and the cluster distance.
-		return (player->distancetofinish - targetdtf);
+		return K_UndoMapScaling(player->distancetofinish - targetdtf);
 	}
 }
 
@@ -10656,7 +10656,7 @@ void K_UpdateAllPlayerPositions(void)
 
 			// Get the cluster distance.
 			players[i].distancefromcluster =
-			    K_UndoMapScaling(K_UpdateDistanceFromCluster(&players[i]));
+			    K_UpdateDistanceFromCluster(&players[i]);
 		}
 	}
 }
