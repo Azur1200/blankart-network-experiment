@@ -399,6 +399,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(bubbleblowup) \
 	X(bubblehealth) \
 	X(bubbleboost) \
+	X(bubblegraze) \
 	X(flamedash) \
 	X(flametimer) \
 	X(flamestore) \
@@ -860,6 +861,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_bubbleboost:
 		lua_pushinteger(L, plr->bubbleboost);
+		break;
+	case player_bubblegraze:
+		lua_pushinteger(L, plr->bubblegraze);
 		break;
 	case player_flamedash:
 		lua_pushinteger(L, plr->flamedash);
@@ -1655,6 +1659,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_bubbleboost:
 		plr->bubbleboost = luaL_checkinteger(L, 3);
+		break;
+	case player_bubblegraze:
+		plr->bubblegraze = luaL_checkinteger(L, 3);
 		break;
 	case player_flamedash:
 		plr->flamedash = luaL_checkinteger(L, 3);

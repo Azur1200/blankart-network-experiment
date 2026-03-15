@@ -548,6 +548,11 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 {
 	fixed_t blockdist;
 	boolean shrinkleeway = false;
+	boolean bubbleleeway = false, movingbubble = false, movedbubble = false;
+
+	// Bubble Shield special case: unconditionally process collision for this object so the
+	// Bubble Shield can reflect it.
+	boolean bubblewantsreflect = false;
 
 	if (g_tm.thing == NULL || P_MobjWasRemoved(g_tm.thing) == true)
 		return BMIT_STOP; // func just popped our g_tm.thing, cannot continue.
@@ -565,8 +570,54 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 	|| (thing->player && thing->player->spectator))
 		return BMIT_CONTINUE;
 
-	if ((thing->flags & MF_NOCLIPTHING) || !(thing->flags & (MF_SOLID|MF_SPECIAL|MF_PAIN|MF_SHOOTABLE/*|MF_SPRING*/))) // we still use MF_SOLID for springs
-		return BMIT_CONTINUE;
+	// Check for players with inflated Bubble Shields
+	if (g_tm.thing->player && K_IsBubbleDefending(g_tm.thing->player))
+		movingbubble = true;
+
+	if (thing->player && K_IsBubbleDefending(thing->player))
+		movedbubble = true;
+
+	if (movingbubble || movedbubble)
+		bubbleleeway = true;
+
+    /*
+     * "Why does this exist?" Well...
+     * Falling rocks don't have the needed flags to process collisions further, when the Bubble
+     * Shield is the one checking for collisions (and thus things to reflect). At the same time,
+     * when falling rocks are checking for collision, the Bubble Shield has its noclip flags
+     * enabled, meaning it's ALSO never checked.
+     * So, how do we solve the problem? This shitty special-case bandaid.
+     */
+
+	boolean _playerinflate = false;
+
+	if (g_tm.thing->type == MT_BUBBLESHIELD)
+	{
+		_playerinflate =
+		    (g_tm.thing->target && (!P_MobjWasRemoved(g_tm.thing->target)) &&
+		     (g_tm.thing->target->player) && (g_tm.thing->target->player->bubbleblowup));
+
+		bubblewantsreflect =
+		    ((_playerinflate) && (!(g_tm.thing->flags & (MF_NOCLIP | MF_NOCLIPTHING))) &&
+		     (K_BubbleShieldReflectSpecialCase(thing)));
+	}
+	else if (thing->type == MT_BUBBLESHIELD)
+	{
+		_playerinflate =
+		    (g_tm.thing->target && (!P_MobjWasRemoved(g_tm.thing->target)) &&
+		     (g_tm.thing->target->player) && (g_tm.thing->target->player->bubbleblowup));
+
+		bubblewantsreflect =
+		    ((_playerinflate) && (!(thing->flags & (MF_NOCLIP | MF_NOCLIPTHING))) &&
+		     (K_BubbleShieldReflectSpecialCase(g_tm.thing)));
+	}
+
+	if ((thing->flags & MF_NOCLIPTHING) ||
+	    !((thing->flags & (MF_SOLID | MF_SPECIAL | MF_PAIN | MF_SHOOTABLE /*|MF_SPRING*/)) ||
+	      bubblewantsreflect))  // we still use MF_SOLID for springs
+	{
+        return BMIT_CONTINUE;
+    }
 
 	// Get rid of the "just flipped" flag.
 	// We only use that to confirm flipover hits.
@@ -744,6 +795,38 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 	// double make sure bubbles won't collide with anything else
 	if (thing->type == MT_BUBBLESHIELD || g_tm.thing->type == MT_BUBBLESHIELD)
 		return BMIT_CONTINUE;
+
+	// Triple-check: anything the Bubble Shield reflects should phase through players inflating their shield.
+	if (bubbleleeway)
+	{
+		// see if it went over / under
+		if (g_tm.thing->z > thing->z + thing->height)
+			return BMIT_CONTINUE; // overhead
+		if (g_tm.thing->z + g_tm.thing->height < thing->z)
+			return BMIT_CONTINUE; // underneath
+
+		if (movingbubble && K_BubbleShieldCanReflect(thing))
+		{
+			g_tm.thing->player->bubblegraze =
+			    ApproachOneWayUINT32(g_tm.thing->player->bubblegraze,
+						 BUBBLEGRAZE_MAX,
+						 BUBBLEGRAZE_INCREMENT);
+
+			return BMIT_CONTINUE;
+		}
+
+		if (movedbubble && K_BubbleShieldCanReflect(g_tm.thing))
+		{
+			thing->player->bubblegraze =
+			    ApproachOneWayUINT32(thing->player->bubblegraze,
+						 BUBBLEGRAZE_MAX,
+						 BUBBLEGRAZE_INCREMENT);
+
+			return BMIT_CONTINUE;
+		}
+
+		// Anything else falls through as a possible false positive.
+	}
 
 	if (thing->flags & MF_PAIN)
 	{ // Player touches painful thing sitting on the floor
@@ -1330,10 +1413,33 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 				return BMIT_CONTINUE;
 			}
 
+			// If we're inflating, don't do PvP bumps.
+			// I do not doubt the previous bubbleleeway check'll fall through, so, yeah.
+			if (bubbleleeway)
+			{
+				if (movingbubble)
+				{
+					g_tm.thing->player->bubblegraze =
+					    ApproachOneWayUINT32(g_tm.thing->player->bubblegraze,
+								 BUBBLEGRAZE_MAX,
+								 BUBBLEGRAZE_INCREMENT);
+				}
+
+				if (movedbubble)
+				{
+					thing->player->bubblegraze =
+					    ApproachOneWayUINT32(thing->player->bubblegraze,
+								 BUBBLEGRAZE_MAX,
+								 BUBBLEGRAZE_INCREMENT);
+				}
+				return BMIT_CONTINUE;
+			}
+
 			if (thing->player->squishedtimer || thing->player->hyudorotimer
 				|| thing->player->justbumped || thing->scale > g_tm.thing->scale + (mapobjectscale/8)
 				|| g_tm.thing->player->squishedtimer || g_tm.thing->player->hyudorotimer
-				|| g_tm.thing->player->justbumped || g_tm.thing->scale > thing->scale + (mapobjectscale/8))
+				|| g_tm.thing->player->justbumped || g_tm.thing->scale > thing->scale + (mapobjectscale/8)
+				|| thing->player->bubblegraze || g_tm.thing->player->bubblegraze)
 			{
 				return BMIT_CONTINUE;
 			}
@@ -1453,6 +1559,9 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		}
 		else if (thing->type == MT_KART_LEFTOVER)
 		{
+			if (bubbleleeway)
+				return BMIT_CONTINUE; // If we're inflating, don't do PvP bumps.
+
 			// see if it went over / under
 			if (g_tm.thing->z > thing->z + thing->height)
 				return BMIT_CONTINUE; // overhead

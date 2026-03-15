@@ -713,6 +713,14 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, INT16 d
 		player->bubbleblowup /= 2;
 }
 
+boolean K_BubbleShieldReflectSpecialCase(mobj_t *t)
+{
+	if ((!t) || (P_MobjWasRemoved(t)))
+		return false; // Object doesn't even exist
+
+	return t->type == MT_FALLINGROCK; // TODO: Maybe an object flag (MF_BUBBLEREFLECT)?
+}
+
 static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 {
 	// slow orbis are traps
@@ -721,7 +729,7 @@ static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 
 	return t->type == MT_BANANA || (t->type == MT_ORBINAUT && t->flags2 & MF2_AMBUSH) || t->type == MT_JAWZ_DUD ||
 	       t->type == MT_EGGMANITEM || t->type == MT_SSMINE || t->type == MT_SSMINE_SHIELD || t->type == MT_LANDMINE ||
-		   t->type == MT_EGGMINE;
+		   t->type == MT_EGGMINE || K_BubbleShieldReflectSpecialCase(t);
 }
 
 static boolean K_StrongPlayerBump(const player_t *player)
@@ -782,7 +790,7 @@ boolean K_BubbleShieldCanReflect(mobj_t *t)
 	return (t->type == MT_ORBINAUT || t->type == MT_JAWZ || t->type == MT_JAWZ_DUD
 		|| t->type == MT_BANANA || t->type == MT_EGGMANITEM || t->type == MT_BALLHOG
 		|| t->type == MT_SSMINE || t->type == MT_LANDMINE || t->type == MT_SINK || t->type == MT_EGGMINE
-		|| t->type == MT_KART_LEFTOVER
+		|| t->type == MT_KART_LEFTOVER || K_BubbleShieldReflectSpecialCase(t)
 		|| t->type == MT_PLAYER);
 }
 

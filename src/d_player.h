@@ -465,6 +465,17 @@ typedef enum
 // Delay-drift: Time the game is given to predict a "wanted" drift
 #define DRIFT_DELAY_TIME (7)
 
+#define BUBBLEGRAZE_INCREMENT (2)
+
+#if ((BUBBLEGRAZE_INCREMENT / 2) < 1)
+#define BUBBLEGRAZE_SOFTINCREMENT (1)
+#else
+#define BUBBLEGRAZE_SOFTINCREMENT (BUBBLEGRAZE_INCREMENT / 2)
+#endif
+
+#define BUBBLEGRAZE_DECREMENT (1)
+#define BUBBLEGRAZE_MAX (0x3FFFFFFF)
+
 // enum for saved lap times
 typedef enum
 {
@@ -702,6 +713,11 @@ struct player_t
 	UINT8 bubbleblowup;	// Bubble Shield usage blowup
 	UINT8 bubblehealth;	// Bubble Shield health
 	UINT16 bubbleboost; // Bubble shield boost timer
+
+	// Specific variant of justbumped where skimming a player with an inflated
+	// Bubble Shield increments this.
+	UINT32 bubblegraze;
+
 	tic_t bubblebuffer; // Prevents Bubble Shield from taking damage
 
 	UINT16 flamedash;	 // Flame Shield dash power

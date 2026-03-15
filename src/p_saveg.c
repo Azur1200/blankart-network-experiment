@@ -725,6 +725,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].bubbleblowup);
 		SYNC(players[i].bubblehealth);
 		SYNC(players[i].bubbleboost);
+		SYNC(players[i].bubblegraze);
 		SYNC(players[i].bubblebuffer);
 
 		SYNC(players[i].flamedash);

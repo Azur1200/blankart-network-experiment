@@ -846,6 +846,23 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		return false;
 	}
 
+	// Don't bump if you've bubble-grazed
+	if (mobj1->player && mobj1->player->bubblegraze)
+	{
+		mobj1->player->bubblegraze = ApproachOneWayUINT32(
+		    mobj1->player->bubblegraze, BUBBLEGRAZE_MAX, BUBBLEGRAZE_SOFTINCREMENT);
+		mobj1->player->justbumped = bumptime;
+		return false;
+	}
+
+	if (mobj2->player && mobj2->player->bubblegraze)
+	{
+		mobj2->player->bubblegraze = ApproachOneWayUINT32(
+		    mobj2->player->bubblegraze, BUBBLEGRAZE_MAX, BUBBLEGRAZE_SOFTINCREMENT);
+		mobj2->player->justbumped = bumptime;
+		return false;
+	}
+
 	// Don't bump if you're flipping over
 	if (mobj1->player && mobj1->player->flipovertimer)
 	{
@@ -5478,6 +5495,12 @@ void K_RemoveBubbleHealth(player_t *player, INT16 sub)
 
 	if (player->bubblehealth <= 0)
 	{
+		if (player->bubbleblowup)
+		{
+			// 1.5 seconds of i-frames for better gamefeel on shatters
+			player->flashing = (UINT32)((float)(TICRATE) * 1.5f);
+		}
+
 		K_PopPlayerShield(player);
 	}
 	else
@@ -7672,6 +7695,11 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->justbumped > 0)
 		player->justbumped--;
+
+	if (player->bubblegraze > 0)
+	{
+		player->bubblegraze = ApproachOneWayUINT32(player->bubblegraze, 0, BUBBLEGRAZE_DECREMENT);
+	}
 
 	if (player->outruntime > 0)
 		player->outruntime--;
