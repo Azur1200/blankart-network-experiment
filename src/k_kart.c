@@ -5875,7 +5875,10 @@ static void K_MoveHeldObjects(player_t *player)
 
 	if (!player->mo->hnext)
 	{
-		player->bananadrag = 0;
+		if (player->altthundercharge < ALTTHUNDERCHARGETIME)
+		{
+			player->bananadrag = 0;
+		}
 		if (player->itemflags & IF_EGGMANOUT)
 			player->itemflags &= ~IF_EGGMANOUT;
 		else if (player->itemflags & IF_ITEMOUT)

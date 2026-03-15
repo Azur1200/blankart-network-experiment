@@ -2433,6 +2433,25 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 						}
 						player->itemflags &= ~IF_SEEKING;
 						player->bananadrag += 4;
+
+						if (player->altthundercharge % 8 == 0)
+						{
+							mobj_t *mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
+							mo->angle = P_RandomRange(0, 359)*ANG1;
+							mo->fuse = P_RandomRange(20, 50);
+							P_SetScale(mo, player->mo->scale/4);
+							mo->destscale = mo->scale;
+
+							P_SetTarget(&mo->target, player->mo);
+							P_SetMobjState(mo, S_KLIT1);
+
+							mo->renderflags |= RF_VERTICALFLIP|RF_ADD|RF_FULLBRIGHT;
+						}
+
+						if (player->altthundercharge % 15 == 0)
+						{
+							S_StartSound(player->mo, sfx_beelec);
+						}
 					}
 					else
 					{
