@@ -1129,6 +1129,188 @@ void FM_Scale(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z)
 #undef M
 }
 
+// "Approach" functions taken from or based on the (decompiled) SM64 implementation
+// https://github.com/n64decomp/sm64/blob/master/src/engine/math_util.c
+
+/** \brief Returns the INT32 value 'current' after it tries to approach target, going up at most
+ 'inc' and going down at most 'dec'.
+ *
+ * If target is close to the max or min of INT32, then it's possible to overflow past it without
+ stopping.
+
+	\param current	(INT32) current value
+
+	\param target	(INT32) target value
+
+	\param inc	(INT32) value to increment by
+
+	\param dec	(INT32) value to decrement by
+
+	\return		(INT32) current value after incrementing/decrementing
+*/
+INT32 ApproachINT32(INT32 current, INT32 target, INT32 inc, INT32 dec)
+{
+	if (current < target)
+	{
+		current += inc;
+		if (current > target)
+		{
+			current = target;
+		}
+	}
+	else
+	{
+		current -= dec;
+		if (current < target)
+		{
+			current = target;
+		}
+	}
+	return current;
+}
+
+/** \brief Returns the unsigned INT32 value ``current`` after it tries to approach target, going
+ up at most ``inc`` and going down at most ``dec``.
+ *
+ * If target is close to the max or min of UINT32, then it's possible to overflow past it without
+ stopping.
+
+	\param current	(UINT32) current value
+
+	\param target	(UINT32) target value
+
+	\param inc	(UINT32) value to increment by
+
+	\param dec	(UINT32) value to decrement by
+
+	\return		(UINT32) current value after incrementing/decrementing
+*/
+UINT32 ApproachUINT32(UINT32 current, UINT32 target, UINT32 inc, UINT32 dec)
+{
+	if (current < target)
+	{
+		current += inc;
+		if (current > target)
+		{
+			current = target;
+		}
+	}
+	else
+	{
+		current -= dec;
+		if (current < target)
+		{
+			current = target;
+		}
+	}
+	return current;
+}
+
+/** \brief Returns the fixed-point value 'current' after it tries to approach target, going up at
+ most 'inc' and going down at most 'dec'.
+ *
+ * If target is close to the max or min of fixed_t, then it's possible to overflow past it without
+ stopping.
+
+	\param current	(fixed_t) current value
+
+	\param target	(fixed_t) target value
+
+	\param inc	(fixed_t) value to increment by
+
+	\param dec	(fixed_t) value to decrement by
+
+	\return		(fixed_t) current value after incrementing/decrementing
+*/
+fixed_t ApproachFixed(fixed_t current, fixed_t target, fixed_t inc, fixed_t dec)
+{
+	if (current < target)
+	{
+		current += inc;
+		if (current > target)
+		{
+			current = target;
+		}
+	}
+	else
+	{
+		current -= dec;
+		if (current < target)
+		{
+			current = target;
+		}
+	}
+	return current;
+}
+
+/** \brief Returns the floating-point value 'current' after it tries to approach target, going up at
+   most 'inc' and going down at most 'dec'.
+
+	\param current	(float) current value
+
+	\param target	(float) target value
+
+	\param inc	(float) value to increment by
+
+	\param dec	(float) value to decrement by
+
+	\return		(float) current value after incrementing/decrementing
+*/
+float ApproachFloat(float current, float target, float inc, float dec)
+{
+	if (current < target)
+	{
+		current += inc;
+		if (current > target)
+		{
+			current = target;
+		}
+	}
+	else
+	{
+		current -= dec;
+		if (current < target)
+		{
+			current = target;
+		}
+	}
+	return current;
+}
+
+/** \brief Returns the double-precision floating-point value 'current' after it tries to approach
+   target, going up at most 'inc' and going down at most 'dec'.
+
+	\param current	(double) current value
+
+	\param target	(double) target value
+
+	\param inc	(double) value to increment by
+
+	\param dec	(double) value to decrement by
+
+	\return		(double) current value after incrementing/decrementing
+*/
+double ApproachDouble(double current, double target, double inc, double dec)
+{
+	if (current < target)
+	{
+		current += inc;
+		if (current > target)
+		{
+			current = target;
+		}
+	}
+	else
+	{
+		current -= dec;
+		if (current < target)
+		{
+			current = target;
+		}
+	}
+	return current;
+}
+
 #ifdef M_TESTCASE
 //#define MULDIV_TEST
 #define SQRT_TEST

@@ -190,6 +190,16 @@ static int lib_coloropposite(lua_State *L)
 	return 2;
 }
 
+static int lib_approach(lua_State* L)
+{
+	lua_pushinteger(L,
+			ApproachFixed((fixed_t)luaL_checkinteger(L, 1),
+				      (fixed_t)luaL_checkinteger(L, 2),
+				      (fixed_t)luaL_checkinteger(L, 3),
+				      (fixed_t)luaL_checkinteger(L, 4)));
+	return 1;
+}
+
 static luaL_Reg lib_math[] = {
 	{"abs", lib_abs},
 	{"min", lib_min},
@@ -225,6 +235,7 @@ static luaL_Reg lib_math[] = {
 	{"GetSecSpecial", lib_getsecspecial},
 	{"All7Emeralds", lib_all7emeralds},
 	{"ColorOpposite", lib_coloropposite},
+	{"approach", lib_approach},
 	{NULL, NULL}
 };
 

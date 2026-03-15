@@ -462,6 +462,52 @@ void FM_MultMatrixEx(const matrix_t *m1, const matrix_t *m2, matrix_t *dest);
 void FM_Translate(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z);
 void FM_Scale(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z);
 
+//
+// Approach functions, see m_fixed.c for details
+//
+
+INT32 ApproachINT32(INT32 current, INT32 target, INT32 inc, INT32 dec);
+UINT32 ApproachUINT32(UINT32 current, UINT32 target, UINT32 inc, UINT32 dec);
+fixed_t ApproachFixed(fixed_t current, fixed_t target, fixed_t inc, fixed_t dec);
+float ApproachFloat(float current, float target, float inc, float dec);
+double ApproachDouble(double current, double target, double inc, double dec);
+
+/** \brief Returns the INT32 value ``current`` after it tries to approach ``target``, going up
+ or down at most ``delta``.
+ *
+ * If ``target`` is close to the max or min of INT32, then it's possible to overflow past it
+ without stopping.
+
+	\param current	(INT32) current value
+
+	\param target	(INT32) target value
+
+	\param delta	(INT32) value to increment/decrement by
+
+	\return		(INT32) current value after incrementing/decrementing
+*/
+#define ApproachOneWayINT32(current, target, delta) (ApproachINT32(current, target, delta, delta))
+
+/** \brief Returns the unsigned INT32 value ``current`` after it tries to approach ``target``,
+ going up or down at most ``delta``.
+ *
+ * If ``target`` is close to the max or min of UINT32, then it's possible to overflow past it
+ without stopping.
+
+	\param current	(UINT32) current value
+
+	\param target	(UINT32) target value
+
+	\param delta	(UINT32) value to increment/decrement by
+
+	\return		(UINT32) current value after incrementing/decrementing
+*/
+#define ApproachOneWayUINT32(current, target, delta) (ApproachUINT32(current, target, delta, delta))
+
+#define ApproachOneWayFixed(current, target, delta) (ApproachFixed(current, target, delta, delta))
+#define ApproachOneWayFloat(current, target, delta) (ApproachFloat(current, target, delta, delta))
+#define ApproachOneWayDouble(current, target, delta) (ApproachDouble(current, target, delta, delta))
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
