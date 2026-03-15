@@ -25,6 +25,7 @@
 #include "p_local.h"
 #include "p_mobj.h"
 #include "p_setup.h"
+#include "r_main.h"
 #include "s_sound.h"
 #include "typedef.h"
 #include "deh_tables.h"
