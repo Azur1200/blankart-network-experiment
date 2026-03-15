@@ -488,6 +488,9 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 	} else if (fastcmp(word, "bubbletime")) {
 		lua_pushinteger(L, bubbletime);
 		return 1;
+	} else if (fastcmp(word, "flametime")) {
+		lua_pushinteger(L, flametime);
+		return 1;
 	} else if (fastcmp(word, "comebacktime")) {
 		lua_pushinteger(L, comebacktime);
 		return 1;
@@ -598,6 +601,8 @@ int LUA_WriteGlobals(lua_State *L, const char *word)
 		waterpaneltime = (INT32)luaL_checkinteger(L, 2);
 	else if (fastcmp(word, "bubbletime"))
 		bubbletime = (INT32)luaL_checkinteger(L, 2);
+	else if (fastcmp(word, "flametime"))
+		flametime = (INT32)luaL_checkinteger(L, 2);
 	else if (fastcmp(word, "comebacktime"))
 		comebacktime = (INT32)luaL_checkinteger(L, 2);
 	else if (fastcmp(word, "greasetics"))

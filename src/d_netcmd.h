@@ -300,7 +300,7 @@ extern consvar_t cv_lapemblemmode;
 extern consvar_t cv_racesplits;
 extern consvar_t cv_showviewpointtext;
 extern consvar_t cv_rouletteonplayer;
-extern consvar_t cv_rouletteplayertrans;
+extern consvar_t cv_rouletteplayertrans, cv_rouletteplayerboxtrans;
 
 extern consvar_t cv_skipmapcheck;
 

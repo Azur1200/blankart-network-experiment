@@ -540,8 +540,8 @@ consvar_t cv_kartstacking_bubble_accelboost = CVAR_INIT ("vanillaboost_bubble_ac
 consvar_t cv_kartstacking_bubble_handleboost = CVAR_INIT ("vanillaboost_bubble_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_bubble_stackable = CVAR_INIT ("vanillaboost_bubble_stackable", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_flame_speedval = CVAR_INIT ("vanillaboost_flame_speedval", "0.14", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_flame_accelboost = CVAR_INIT ("vanillaboost_flame_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_flame_speedval = CVAR_INIT ("vanillaboost_flame_speedval", "0.20", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_flame_accelboost = CVAR_INIT ("vanillaboost_flame_accelboost", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_flame_handleboost = CVAR_INIT ("vanillaboost_flame_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_flame_stackable = CVAR_INIT ("vanillaboost_flame_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
@@ -713,7 +713,7 @@ consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "On", C
 consvar_t cv_kartaltshrink_arrowbullet = CVAR_INIT ("kart_altshrink_arrowbullet", "On", CV_NETVAR, CV_OnOff, NULL);
 
 static CV_PossibleValue_t altshrink_arrowbullet_threshold_cons_t[] = {{0, "MIN"}, {2 * FRACUNIT, "MAX"}, {0, NULL}};
-consvar_t cv_kartaltshrink_arrowbulletthres = CVAR_INIT ("kart_altshrink_arrowbullet_threshold", "1.66", CV_NETVAR|CV_FLOAT, altshrink_arrowbullet_threshold_cons_t, NULL);
+consvar_t cv_kartaltshrink_arrowbulletthres = CVAR_INIT ("kart_altshrink_arrowbullet_threshold", "1.45", CV_NETVAR|CV_FLOAT, altshrink_arrowbullet_threshold_cons_t, NULL);
 
 static CV_PossibleValue_t kartairsquish_cons_t[] = {{1, "Squish"}, {2, "Flip-over"}, {0, "None"}, {0, NULL}};
 consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kartairsquish_cons_t, NULL);
@@ -824,6 +824,9 @@ static CV_PossibleValue_t rlplrtrans_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NU
 // Controllable visibility for the player-tracking roulette icons.
 // Default is 7 (70% visible; V_30TRANS)
 consvar_t cv_rouletteplayertrans = CVAR_INIT ("rouletteonplayertrans", "7", CV_SAVE, rlplrtrans_cons_t, NULL);
+
+// Item box visibility; a separate cvar
+consvar_t cv_rouletteplayerboxtrans = CVAR_INIT ("rouletteonplayerboxtrans", "10", CV_SAVE, rlplrtrans_cons_t, NULL);
 
 consvar_t cv_showviewpointtext = CVAR_INIT ("showviewpointtext", "On", CV_SAVE, CV_OnOff, NULL);
 
@@ -1143,6 +1146,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_spinoutroll);
 	CV_RegisterVar(&cv_rouletteonplayer);
 	CV_RegisterVar(&cv_rouletteplayertrans);
+	CV_RegisterVar(&cv_rouletteplayerboxtrans);
 	CV_RegisterVar(&cv_showlapemblem);
 	CV_RegisterVar(&cv_lapemblemmode);
 	CV_RegisterVar(&cv_racesplits);

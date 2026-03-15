@@ -2547,7 +2547,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO && K_GetShieldFromPlayer(player) != KSHIELD_FLAME)
 		{
 			player->itemamount--;
-			player->flametimer = (itemtime*3);
+			player->flametimer = flametime;
 			player->flamedash = 0;
 			mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_FLAMESHIELD);
 			P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));

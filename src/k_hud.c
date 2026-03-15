@@ -1590,6 +1590,7 @@ static void K_drawKartItem(void)
 
 	INT32 hudtrans = V_GetHudTrans();
 	INT32 transflag = (fade) ? V_HUDTRANSHALF : V_HUDTRANS;
+	INT32 boxtransflag = V_HUDTRANS;
 	INT32 transmul = FRACUNIT - (hudtrans * FRACUNIT / 10);
 
 	if (hudtrans > 9)
@@ -1600,6 +1601,7 @@ static void K_drawKartItem(void)
 
 	// Let the player pick and choose their visibility level.
 	INT32 roulettetrans = cv_rouletteplayertrans.value;
+	INT32 boxtrans = cv_rouletteplayerboxtrans.value;
 
 	// RadioRacers
 	if (shouldDrawOnPlayer)
@@ -1625,7 +1627,10 @@ static void K_drawKartItem(void)
 		}
 
 		if (stplyr->exiting)
+		{
 			roulettetrans = -1;
+			boxtrans = -1;
+		}
 
 		if (roulettetrans > -1)
 		{
@@ -1634,6 +1639,15 @@ static void K_drawKartItem(void)
 		else
 		{
 			transflag = (fade) ? V_HUDTRANSHALF : V_HUDTRANS;
+		}
+
+		if (boxtrans > -1)
+		{
+			boxtransflag = max(0, min(9, 10 - FixedMul(boxtrans, transmul))) << V_ALPHASHIFT;
+		}
+		else
+		{
+			boxtransflag = V_HUDTRANS;
 		}
 	}
 
@@ -1644,6 +1658,7 @@ static void K_drawKartItem(void)
 	flipamount = info.flipamount;
 
 	INT32 localpatchflags = (transflag|fflags);
+	INT32 boxpatchflags = (boxtransflag|fflags);
 
 	if (localcolor != SKINCOLOR_NONE)
 	{
@@ -1657,7 +1672,7 @@ static void K_drawKartItem(void)
 	if (K_UseColorHud())
 		colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 
-	V_DrawFixedPatch(fx << FRACBITS, fy << FRACBITS, info.hudScale, V_HUDTRANS|fflags, localbg, colormap);
+	V_DrawFixedPatch(fx << FRACBITS, fy << FRACBITS, info.hudScale, boxpatchflags, localbg, colormap);
 
 	// Then, the numbers:
 	if (stplyr->itemamount >= K_GetItemNumberDisplayMin(stplyr->itemtype, tiny) && !stplyr->itemroulette)

@@ -618,6 +618,7 @@ extern INT32 sneakertime;
 extern INT32 waterpaneltime;
 extern INT32 itemtime;
 extern INT32 bubbletime;
+extern INT32 flametime;;
 extern INT32 comebacktime;
 extern INT32 bumptime;
 extern INT32 greasetics;
