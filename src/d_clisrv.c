@@ -983,13 +983,10 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 	netbuffer->packettype = PT_SERVERINFO;
 	netbuffer->u.serverinfo._255 = 255;
 	netbuffer->u.serverinfo.packetversion = PACKETVERSION;
-#ifdef COMMITVERSION
-	memcpy(netbuffer->u.serverinfo.commit,
-			comprevision_abbrev_bin, GIT_SHA_ABBREV);
-#else
 	netbuffer->u.serverinfo.version = VERSION;
 	netbuffer->u.serverinfo.subversion = SUBVERSION;
-#endif
+	memcpy(netbuffer->u.serverinfo.commit,
+			comprevision_abbrev_bin, GIT_SHA_ABBREV);
 	strncpy(netbuffer->u.serverinfo.application, SRB2APPLICATION,
 			sizeof netbuffer->u.serverinfo.application);
 	// return back the time value so client can compute their ping
@@ -2260,10 +2257,8 @@ static void CL_ConnectToServer(void)
 		CONS_Printf(M_GetText("Connecting to: %s\n"), serverlist[i].info.servername);
 		gametypestr[sizeof serverlist[i].info.gametypename - 1] = '\0';
 		CONS_Printf(M_GetText("Gametype: %s\n"), gametypestr);
-#ifndef COMMITVERSION
 		CONS_Printf(M_GetText("Version: %d.%d\n"),
 		 serverlist[i].info.version, serverlist[i].info.subversion);
-#endif
 	}
 	SL_ClearServerList(servernode);
 

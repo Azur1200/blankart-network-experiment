@@ -66,6 +66,7 @@ void ServerInfoUpdateSend(void);
 //
 // Packet structure
 //
+// anything that's explicitly set here is required to match what srb2ms-evo expects
 typedef enum
 {
 	PT_NOTHING,       // To send a nop through the network. ^_~
@@ -83,9 +84,9 @@ typedef enum
 	PT_SERVERSHUTDOWN,
 	PT_CLIENTQUIT,    // Client closes the connection.
 
-	PT_ASKINFO,       // Anyone can ask info of the server.
-	PT_SERVERINFO,    // Send game & server info (gamespy).
-	PT_PLAYERINFO,    // Send information for players in game (gamespy).
+	PT_ASKINFO = 12,    // Anyone can ask info of the server.
+	PT_SERVERINFO = 13, // Send game & server info (gamespy).
+	PT_PLAYERINFO = 14, // Send information for players in game (gamespy).
 	PT_REQUESTFILE,   // Client requests a file transfer
 	PT_ASKINFOVIAMS,  // Packet from the MS requesting info be sent to new client.
 	                  // If this ID changes, update masterserver definition.
@@ -97,8 +98,6 @@ typedef enum
 	PT_SENDINGLUAFILE, // Server telling a client Lua needs to open a file
 	PT_ASKLUAFILE,     // Client telling the server they don't have the file
 	PT_HASLUAFILE,     // Client telling the server they have the file
-
-	// Add non-PT_CANFAIL packet types here to avoid breaking MS compatibility.
 
 	// Kart-specific packets
 	PT_CLIENT3CMD,    // 3P
@@ -119,11 +118,12 @@ typedef enum
 	PT_TEXTCMD2,      // Splitscreen text commands.
 	PT_TEXTCMD3,      // 3P
 	PT_TEXTCMD4,      // 4P
+
+	PT_TELLFILESNEEDED = 35, // Client, to server: "what other files do I need starting from this number?"
+	PT_MOREFILESNEEDED = 36, // Server, to client: "you need these (+ more on top of those)"
+
 	PT_CLIENTJOIN,    // Client wants to join; used in start game.
 	PT_NODETIMEOUT,   // Packet sent to self if the connection times out.
-
-	PT_TELLFILESNEEDED, // Client, to server: "what other files do I need starting from this number?"
-	PT_MOREFILESNEEDED, // Server, to client: "you need these (+ more on top of those)"
 
 	PT_LOGIN,         // Login attempt from the client.
 	PT_LOGINCHALLENGE,// Challenge request sent to the client.
@@ -304,12 +304,9 @@ struct serverinfo_pak
 	UINT8 _255;
 	UINT8 packetversion;
 	char  application[MAXAPPLICATION];
-#ifdef COMMITVERSION
-	UINT8 commit[GIT_SHA_ABBREV];
-#else
 	UINT8 version;
 	UINT8 subversion;
-#endif
+	UINT8 commit[GIT_SHA_ABBREV];
 	UINT8 numberofplayer;
 	UINT8 maxplayer;
 	UINT8 refusereason; // 0: joinable, 1: joins disabled, 2: full
