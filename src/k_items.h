@@ -227,6 +227,9 @@ void K_AltShrinkPityIncrease(player_t *player);
 void K_SpawnEggMineBumpEffect(mobj_t *mo);
 void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source);
 
+void K_KartSeekingReticule(player_t *player);
+player_t *K_FindJawzTarget(mobj_t *actor, player_t *source);
+
 void K_PlayerItemThink(player_t *player, boolean onground);
 
 extern consvar_t cv_karteggmine_slotlock;
@@ -235,6 +238,7 @@ extern consvar_t cv_karteggmine_slotbrick;
 extern consvar_t cv_kartthunder_radius;
 
 #define BUBBLEBOOSTTIME (7 * sneakertime / 10)
+#define ALTTHUNDERCHARGETIME ((92*TICRATE)/60)
 
 #ifdef __cplusplus
 } // extern "C"

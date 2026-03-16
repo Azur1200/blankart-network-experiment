@@ -147,6 +147,7 @@ typedef enum
 	IF_ITEMOUT		= 1<<1,	// Are you holding an item out?
 	IF_EGGMANOUT	= 1<<2,	// Eggman mark held, separate from IF_ITEMOUT so it doesn't stop you from getting items
 	IF_HOLDREADY	= 1<<3,	// Hold button-style item is ready to activate
+	IF_SEEKING		= 1<<4,	// Item runs seeking / homing behaviour and needs a reticule
 } itemflags_t;
 
 typedef enum
@@ -709,6 +710,8 @@ struct player_t
 
 	mobj_t *shieldtracer;	// Blankart: Shield mobj
 
+	tic_t altthundercharge; // charge of Alt. Thunder Shield
+
 	UINT8 bubblecool;	// Bubble Shield use cooldown
 	UINT8 bubbleblowup;	// Bubble Shield usage blowup
 	UINT8 bubblehealth;	// Bubble Shield health
@@ -763,8 +766,10 @@ struct player_t
 
 	UINT16 bananadrag;		// After a second of holding a banana behind you, you start to slow down
 
-	SINT8 lastjawztarget;	// (-1 to 15) - Last person you target with jawz, for playing the target switch sfx
-	UINT8 jawztargetdelay;	// (0 to 5) - Delay for Jawz target switching, to make it less twitchy
+	SINT8 lastitemtarget;	// (-1 to 15) - Last person you target with jawz, for playing the target switch sfx
+	UINT8 itemtargetdelay;	// (0 to 5) - Delay for Jawz target switching, to make it less twitchy
+	// SINT8 lastjawztarget;	// (-1 to 15) - Last person you target with jawz, for playing the target switch sfx
+	// UINT8 jawztargetdelay;	// (0 to 5) - Delay for Jawz target switching, to make it less twitchy
 
 	UINT8 dashRingPullTics; // Timer during which the player is pulled towards a dash ring
 	UINT8 dashRingPushTics; // Timer during which the player displays effects and has no gravity after being thrust by a dash ring

@@ -861,7 +861,7 @@ static void K_BotItemJawz(botdata_t *bd, const player_t *player)
 	SINT8 throwdir = 1;
 	boolean tryLookback = false;
 	UINT8 snipeMul = 2;
-	INT32 lastTarg = player->lastjawztarget;
+	INT32 lastTarg = player->lastitemtarget;
 	player_t *target = NULL;
 
 	if (player->speed > topspeed)

@@ -25,6 +25,7 @@
 #include "p_local.h"
 #include "p_mobj.h"
 #include "p_setup.h"
+#include "r_main.h"
 #include "s_sound.h"
 #include "typedef.h"
 #include "deh_tables.h"
@@ -376,7 +377,7 @@ void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags)
 
 void K_UnsetItemOut(player_t *player)
 {
-	player->itemflags &= ~(IF_ITEMOUT|IF_EGGMANOUT|IF_HOLDREADY);
+	player->itemflags &= ~(IF_ITEMOUT|IF_EGGMANOUT|IF_HOLDREADY|IF_SEEKING);
 	player->bananadrag = 0;
 	player->equippeditem = KITEM_NONE;
 }
@@ -2260,7 +2261,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *prev = player->mo;
 
 			//K_PlayAttackTaunt(player->mo);
-			K_SetItemOut(player, KITEM_JAWZ, IF_ITEMOUT);
+			K_SetItemOut(player, KITEM_JAWZ, IF_ITEMOUT|IF_SEEKING);
 			S_StartSound(player->mo, sfx_s3k3a);
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
@@ -2408,19 +2409,129 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			S_StartSound(player->mo, sfx_s3k41);
 		}
 
-		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
+		if (K_IsKartItemAlternate(KITEM_THUNDERSHIELD))
 		{
-			K_DoThunderShield(player);
-			if (player->itemamount > 0)
+			if (!HOLDING_ITEM && NO_HYUDORO)
 			{
-				// Why is this a conditional?
-				// Thunder shield: the only item that allows you to
-				// activate a mine while you're out of its radius,
-				// the SAME tic it sets your itemamount to 0
-				// ...:dumbestass:
-				player->itemamount--;
-				K_PlayAttackTaunt(player->mo);
-				K_BotResetItemConfirm(player, false);
+				if (buttons & BT_ATTACK)
+				{
+					fixed_t effectscale = 75*player->mo->scale/100;
+
+					if (player->itemflags & IF_HOLDREADY)
+					{
+						S_StartSound(player->mo, sfx_vwre);
+					}
+					player->itemflags &= ~IF_HOLDREADY;
+					
+					if (player->altthundercharge >= ALTTHUNDERCHARGETIME)
+					{
+						if (player->itemflags & IF_SEEKING)
+						{
+							S_StartSound(player->mo, sfx_ncchip);
+						}
+						if (S_SoundPlaying(player->mo, sfx_vwre))
+						{
+							S_StopSoundByID(player->mo, sfx_vwre);
+						}
+						player->itemflags &= ~IF_SEEKING;
+						player->bananadrag += 4;
+					}
+					else
+					{
+						player->itemflags |= IF_SEEKING;
+						effectscale = Easing_Linear(CLAMP(FixedDiv(player->altthundercharge, ALTTHUNDERCHARGETIME), 0, FRACUNIT),
+							player->mo->scale/4,
+							player->mo->scale/2
+						);
+					}
+
+					if (player->altthundercharge % 8 == 0)
+					{
+						mobj_t *mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
+						mo->angle = P_RandomRange(0, 359)*ANG1;
+						mo->fuse = P_RandomRange(20, 50);
+						P_SetScale(mo, effectscale);
+						mo->destscale = mo->scale/2;
+
+						P_SetTarget(&mo->target, player->mo);
+						P_SetMobjState(mo, S_KLIT1);
+
+						mo->renderflags |= RF_VERTICALFLIP|RF_ADD|RF_FULLBRIGHT;
+					}
+					if (player->altthundercharge % 13 == 0)
+					{
+						S_StartSound(player->mo, sfx_beelec);
+					}
+
+					player->altthundercharge++;
+				}
+				else
+				{
+					if (player->altthundercharge)
+					{
+						if (S_SoundPlaying(player->mo, sfx_vwre))
+						{
+							S_StopSoundByID(player->mo, sfx_vwre);
+						}
+
+						if (player->altthundercharge >= ALTTHUNDERCHARGETIME)
+						{
+							K_DoThunderShield(player);
+						}
+						else
+						{
+							angle_t attackangle = player->mo->angle;
+							fixed_t power = 16*mapobjectscale;
+							INT32 lastTarg = player->lastitemtarget;
+
+							if (lastTarg != -1
+								&& playeringame[lastTarg] == true
+								&& players[lastTarg].spectator == false
+								&& players[lastTarg].mo != NULL
+								&& P_MobjWasRemoved(players[lastTarg].mo) == false)
+							{
+								mobj_t *targMo = players[lastTarg].mo;
+								attackangle = R_PointToAngle2(player->mo->x, player->mo->y, targMo->x, targMo->y);
+								power = 32*mapobjectscale;
+							}
+
+							player->mo->momz += 4*mapobjectscale*P_MobjFlip(player->mo);
+							player->mo->z += player->mo->momz;
+							player->airdriftspeed = max(K_GetKartSpeed(player, false, false), player->speed);
+							P_Thrust(player->mo, attackangle, power);
+
+							S_StartSound(player->mo, sfx_s3k81);
+							S_StartSound(player->mo, sfx_kc4c);
+						}
+
+						if (player->itemamount > 0)
+						{
+							player->itemamount--;
+							K_PlayAttackTaunt(player->mo);
+							K_BotResetItemConfirm(player, false);
+						}
+					}
+					player->itemflags |= IF_HOLDREADY;
+					player->altthundercharge = 0;
+				}
+			}
+		}
+		else
+		{
+			if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
+			{
+				K_DoThunderShield(player);
+				if (player->itemamount > 0)
+				{
+					// Why is this a conditional?
+					// Thunder shield: the only item that allows you to
+					// activate a mine while you're out of its radius,
+					// the SAME tic it sets your itemamount to 0
+					// ...:dumbestass:
+					player->itemamount--;
+					K_PlayAttackTaunt(player->mo);
+					K_BotResetItemConfirm(player, false);
+				}
 			}
 		}
 		break;
@@ -2684,4 +2795,149 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 			}
 		}
 	}
+}
+
+void K_KartSeekingReticule(player_t *player)
+{
+	// seeking item reticule
+	if (player->itemflags & IF_SEEKING)
+	{
+		INT32 lasttarg = player->lastitemtarget;
+		player_t *targ;
+		mobj_t *ret;
+
+		if (player->itemtargetdelay && playeringame[lasttarg] && !players[lasttarg].spectator)
+		{
+			targ = &players[lasttarg];
+			player->itemtargetdelay--;
+		}
+		else
+			targ = K_FindJawzTarget(player->mo, player);
+
+		if (!targ || !targ->mo || P_MobjWasRemoved(targ->mo))
+		{
+			player->lastitemtarget = -1;
+			player->itemtargetdelay = 0;
+			return;
+		}
+
+		ret = P_SpawnMobj(targ->mo->x, targ->mo->y, targ->mo->z, MT_PLAYERRETICULE);
+		ret->old_x = targ->mo->old_x;
+		ret->old_y = targ->mo->old_y;
+		ret->old_z = targ->mo->old_z;
+		P_SetTarget(&ret->target, targ->mo);
+		ret->frame |= ((leveltime % 10) / 2);
+		ret->tics = 1;
+		ret->color = player->skincolor;
+
+		if (targ-players != lasttarg)
+		{
+			if (P_IsDisplayPlayer(player) || P_IsDisplayPlayer(targ))
+				S_StartSound(NULL, sfx_s3k89);
+			else
+				S_StartSound(targ->mo, sfx_s3k89);
+
+			player->lastitemtarget = targ-players;
+			player->itemtargetdelay = 5;
+		}
+	}
+	else
+	{
+		player->lastitemtarget = -1;
+		player->itemtargetdelay = 0;
+	}
+}
+
+player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
+{
+	fixed_t best = -1;
+	player_t *wtarg = NULL;
+	INT32 i;
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		angle_t thisang;
+		player_t *player;
+
+		if (!playeringame[i])
+			continue;
+
+		player = &players[i];
+
+		if (player->spectator)
+			continue; // spectator
+
+		if (!player->mo)
+			continue;
+
+		if (player->mo->health <= 0)
+			continue; // dead
+
+		// Don't target yourself, stupid.
+		if (player == source)
+			continue;
+
+		// Don't home in on teammates.
+		if (G_GametypeHasTeams() && source->ctfteam == player->ctfteam)
+			continue;
+
+		// Invisible, don't bother
+		if (player->hyudorotimer)
+			continue;
+
+		// Find the angle, see who's got the best.
+		thisang = actor->angle - R_PointToAngle2(actor->x, actor->y, player->mo->x, player->mo->y);
+		if (thisang > ANGLE_180)
+			thisang = InvAngle(thisang);
+
+		// Jawz only go after the person directly ahead of you in race... sort of literally now!
+		if (gametypes[gametype]->rules & GTR_CIRCUIT)
+		{
+			// Don't go for people who are behind you
+			if (thisang > ANGLE_67h)
+				continue;
+			// Don't pay attention to people who aren't above your position
+			if (player->position >= source->position)
+				continue;
+			if ((best == -1) || (player->position > best))
+			{
+				wtarg = player;
+				best = player->position;
+			}
+		}
+		else
+		{
+			fixed_t thisdist;
+			fixed_t thisavg;
+
+			// Don't go for people who are behind you
+			if (thisang > ANGLE_45)
+				continue;
+
+			// Don't pay attention to dead players
+			if (player->bumper <= 0)
+				continue;
+
+			// Z pos too high/low
+			if (abs(player->mo->z - (actor->z + actor->momz)) > RING_DIST/8)
+				continue;
+
+			thisdist = P_AproxDistance(player->mo->x - (actor->x + actor->momx), player->mo->y - (actor->y + actor->momy));
+
+			if (thisdist > 2*RING_DIST) // Don't go for people who are too far away
+				continue;
+
+			thisavg = (AngleFixed(thisang) + thisdist) / 2;
+
+			//CONS_Printf("got avg %d from player # %d\n", thisavg>>FRACBITS, i);
+
+			if ((best == -1) || (thisavg < best))
+			{
+				wtarg = player;
+				best = thisavg;
+			}
+		}
+	}
+
+	return wtarg;
 }

@@ -424,6 +424,8 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(eggmanexplode) \
 	X(eggmanblame) \
 	X(bananadrag) \
+	X(lastitemtarget) \
+	X(itemtargetdelay) \
 	X(lastjawztarget) \
 	X(jawztargetdelay) \
 	X(confirmvictim) \
@@ -939,10 +941,12 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->bananadrag);
 		break;
 	case player_lastjawztarget:
-		lua_pushinteger(L, plr->lastjawztarget);
+	case player_lastitemtarget:
+		lua_pushinteger(L, plr->lastitemtarget);
 		break;
 	case player_jawztargetdelay:
-		lua_pushinteger(L, plr->jawztargetdelay);
+	case player_itemtargetdelay:
+		lua_pushinteger(L, plr->itemtargetdelay);
 		break;
 	case player_dashringpulltics:
 		lua_pushinteger(L, plr->dashRingPullTics);
@@ -1746,10 +1750,12 @@ static int player_set(lua_State *L)
 		plr->bananadrag = luaL_checkinteger(L, 3);
 		break;
 	case player_lastjawztarget:
-		plr->lastjawztarget = luaL_checkinteger(L, 3);
+	case player_lastitemtarget:
+		plr->lastitemtarget = luaL_checkinteger(L, 3);
 		break;
 	case player_jawztargetdelay:
-		plr->jawztargetdelay = luaL_checkinteger(L, 3);
+	case player_itemtargetdelay:
+		plr->itemtargetdelay = luaL_checkinteger(L, 3);
 		break;
 	case player_dashringpulltics:
 		plr->dashRingPullTics = luaL_checkinteger(L, 3);
@@ -2290,7 +2296,7 @@ static int kartstuff_get(lua_State *L)
 			lua_pushinteger(L, plr->eggmanblame);
 			return 1;
 		case k_lastjawztarget:
-			lua_pushinteger(L, plr->lastjawztarget);
+			lua_pushinteger(L, plr->lastitemtarget);
 			return 1;
 		case k_bananadrag:
 			lua_pushinteger(L, plr->bananadrag);
@@ -2339,7 +2345,7 @@ static int kartstuff_get(lua_State *L)
 			lua_pushinteger(L, (plr->pflags & PF_GETSPARKS));
 			return 1;
 		case k_jawztargetdelay:
-			lua_pushinteger(L, plr->jawztargetdelay);
+			lua_pushinteger(L, plr->itemtargetdelay);
 			return 1;
 		case k_spectatewait:
 			lua_pushinteger(L, plr->spectatewait);
@@ -2561,7 +2567,7 @@ static int kartstuff_set(lua_State *L)
 				plr->eggmanblame = i;
 				break;
 			case k_lastjawztarget:
-				plr->lastjawztarget = i;
+				plr->lastitemtarget = i;
 				break;
 			case k_bananadrag:
 				plr->bananadrag = CLAMP(i, 0, UINT16_MAX);
@@ -2611,7 +2617,7 @@ static int kartstuff_set(lua_State *L)
 					plr->pflags |= PF_GETSPARKS;
 				break;
 			case k_jawztargetdelay:
-				plr->jawztargetdelay = i;
+				plr->itemtargetdelay = i;
 				break;
 			case k_spectatewait:
 				plr->spectatewait = i;
