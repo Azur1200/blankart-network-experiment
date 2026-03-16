@@ -10076,6 +10076,29 @@ static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
     return K_Distance3D(source->mo->x,source->mo->y,source->mo->z,destination->mo->x,destination->mo->y,destination->mo->z);
 }*/
 
+/*--------------------------------------------------
+	UINT32 K_UndoMapScaling(UINT32 distance)
+
+		Takes a raw map distance and adjusts it to
+		be in x1 scale.
+
+	Input Arguments:-
+		distance - Original distance.
+
+	Return:-
+		Distance unscaled by mapobjectscale.
+--------------------------------------------------*/
+static UINT32 K_UndoMapScaling(UINT32 distance)
+{
+	if (mapobjectscale != FRACUNIT)
+	{
+		// Bring back to normal scale.
+		return FixedDiv(distance, mapobjectscale);
+	}
+
+	return distance;
+}
+
 #define MINCLUSTERPLAYERS 3
 
 // 1.27 * FRACUNIT
@@ -10473,29 +10496,6 @@ void K_KartLegacyUpdatePosition(player_t *player)
 		player->positiondelay = 10; // Position number growth
 
 	player->position = position;
-}
-
-/*--------------------------------------------------
-	UINT32 K_UndoMapScaling(UINT32 distance)
-
-		Takes a raw map distance and adjusts it to
-		be in x1 scale.
-
-	Input Arguments:-
-		distance - Original distance.
-
-	Return:-
-		Distance unscaled by mapobjectscale.
---------------------------------------------------*/
-static UINT32 K_UndoMapScaling(UINT32 distance)
-{
-	if (mapobjectscale != FRACUNIT)
-	{
-		// Bring back to normal scale.
-		return FixedDiv(distance, mapobjectscale);
-	}
-
-	return distance;
 }
 
 UINT32 clusterid = 0;
