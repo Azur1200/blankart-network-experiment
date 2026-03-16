@@ -5498,7 +5498,7 @@ void K_RemoveBubbleHealth(player_t *player, INT16 sub)
 		if (player->bubbleblowup)
 		{
 			// 1.5 seconds of i-frames for better gamefeel on shatters
-			player->flashing = (UINT32)((float)(TICRATE) * 1.5f);
+			player->flashing = (3 * TICRATE / 2);
 		}
 
 		K_PopPlayerShield(player);
