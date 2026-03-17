@@ -446,7 +446,7 @@ static void K_BotItemSneaker(botdata_t *bd, const player_t *player)
 		|| (stack && player->speedboost > (FRACUNIT/8)) // Have another type of boost (drafting)
 		|| bd->itemconfirm > 4*TICRATE) // Held onto it for too long
 	{
-		if (((stack && player->sneakertimer < stacktime) || player->sneakertimer == 0) && !bd->itemwasdown)
+		if (((sneakerstack && player->sneakertimer < stacktime) || player->sneakertimer == 0 || stack) && !bd->itemwasdown)
 		{
 			bd->itemdown = true;
 			//bd->itemconfirm = 2*TICRATE;
