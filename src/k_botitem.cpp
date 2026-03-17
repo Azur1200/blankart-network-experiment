@@ -436,7 +436,7 @@ static void K_BotItemSneaker(botdata_t *bd, const player_t *player)
 	}
 
 	boolean stack = K_StackingActive();
-	boolean sneakerstack = (stack && (cv_kartstacking_sneaker_maxgrade.value > 1))
+	boolean sneakerstack = (stack && (cv_kartstacking_sneaker_maxgrade.value > 1));
 	const SINT8 stacktime = K_BotSneakerStackThreshold(player->botvars.difficulty);
 
 	if ((player->offroad && K_ApplyOffroad(player)) // Stuck in offroad, use it NOW
