@@ -435,14 +435,15 @@ static void K_BotItemSneaker(botdata_t *bd, const player_t *player)
 		return;
 	}
 
-	boolean stack = K_StackingActive() && (cv_kartstacking_sneaker_maxgrade.value > 1);
+	boolean stack = K_StackingActive();
+	boolean sneakerstack = (stack && (cv_kartstacking_sneaker_maxgrade.value > 1))
 	const SINT8 stacktime = K_BotSneakerStackThreshold(player->botvars.difficulty);
 
 	if ((player->offroad && K_ApplyOffroad(player)) // Stuck in offroad, use it NOW
 		|| K_GetWaypointIsShortcut(player->nextwaypoint) == true // Going toward a shortcut!
 		|| player->speed < K_GetKartSpeed(player, false, true) / 2 // Being slowed down too much
-		|| (!stack && player->speedboost > (FRACUNIT/8)) // Have another type of boost (drafting)
-		|| (stack && player->sneakertimer < stacktime && player->sneakertimer > 0 && (bd->acceldown && !bd->brakedown)) // Stack them sneakers!
+		|| (sneakerstack && player->sneakertimer < stacktime && player->sneakertimer > 0 && (bd->acceldown && !bd->brakedown)) // Stack them sneakers!
+		|| (stack && player->speedboost > (FRACUNIT/8)) // Have another type of boost (drafting)
 		|| bd->itemconfirm > 4*TICRATE) // Held onto it for too long
 	{
 		if (((stack && player->sneakertimer < stacktime) || player->sneakertimer == 0) && !bd->itemwasdown)
