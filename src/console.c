@@ -1661,7 +1661,6 @@ static const char *CON_LoadingStrings[LOADED_ALLDONE+1] =
 	"Init rendering daemon...", //LOADED_RINIT
 	"Init audio subsystem...", //LOADED_SINITSFXCHANNELS
 	"Cache HUD...", //LOADED_STINIT
-	"Test fixed-point arithmetic...", //LOADED_MATHINIT
 	"Init ACSVM...", //LOADED_ACSINIT
 	"Check game status...", //LOADED_DCHECKNETGAME
 	"Now starting..."

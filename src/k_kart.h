@@ -278,7 +278,7 @@ extern boolean forcefullinvintheme;
 boolean K_PlayFullInvinTheme(void);
 void K_DoInvincibility(player_t *player, tic_t time);
 void K_DoSMonitor(player_t *player, tic_t time);
-#define SMONITORWARNINGTIME (fixed_t)(0.833333333f * (float)(FRACUNIT))
+#define SMONITORWARNINGTIME (5*FRACUNIT/6)
 fixed_t K_SMonitorGradient(UINT16 time);
 fixed_t K_GetSMonitorSpeed(UINT16 time);
 fixed_t K_GetSMonitorAccel(UINT16 time);

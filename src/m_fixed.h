@@ -57,19 +57,9 @@ FUNCMATH FUNCINLINE static ATTRINLINE float FixedToFloat(fixed_t x)
 	return x / (float)FRACUNIT;
 }
 
-FUNCMATH FUNCINLINE static ATTRINLINE float FixedToFloat64(INT64 x)
-{
-	return (float)x / (float)FRACUNIT;
-}
-
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FloatToFixed(float f)
 {
 	return (fixed_t)(f * FRACUNIT);
-}
-
-FUNCMATH FUNCINLINE static ATTRINLINE INT64 FloatToFixed64(float f)
-{
-	return (INT64)(f * FRACUNIT);
 }
 
 /*!
@@ -469,8 +459,6 @@ void FM_Scale(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z);
 INT32 ApproachINT32(INT32 current, INT32 target, INT32 inc, INT32 dec);
 UINT32 ApproachUINT32(UINT32 current, UINT32 target, UINT32 inc, UINT32 dec);
 fixed_t ApproachFixed(fixed_t current, fixed_t target, fixed_t inc, fixed_t dec);
-float ApproachFloat(float current, float target, float inc, float dec);
-double ApproachDouble(double current, double target, double inc, double dec);
 
 /** \brief Returns the INT32 value ``current`` after it tries to approach ``target``, going up
  or down at most ``delta``.
@@ -505,8 +493,6 @@ double ApproachDouble(double current, double target, double inc, double dec);
 #define ApproachOneWayUINT32(current, target, delta) (ApproachUINT32(current, target, delta, delta))
 
 #define ApproachOneWayFixed(current, target, delta) (ApproachFixed(current, target, delta, delta))
-#define ApproachOneWayFloat(current, target, delta) (ApproachFloat(current, target, delta, delta))
-#define ApproachOneWayDouble(current, target, delta) (ApproachDouble(current, target, delta, delta))
 
 #ifdef __cplusplus
 } // extern "C"

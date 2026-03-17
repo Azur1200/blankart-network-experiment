@@ -509,16 +509,8 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
 
 static INT32 K_KartGetSMonitorOdds(UINT32 dist)
 {
-	// I'm tired; use floating-point distances for this fuckshit.
-	INT32 monitordist = SMONITORDIST;
-
-	float fac_f = (float)(dist) / ((float)(monitordist));
-
-	if (fac_f < 1.0f)
-		return 0;
-
 	// If you're far enough for this to be in your item slot, you're far enough to SERIOUSLY need this.
-	return MAXSMONITORODDS;
+	return dist >= (UINT32)SMONITORDIST ? MAXSMONITORODDS : 0;
 }
 
 // updates all result cooldown timers, and sets cooldowns for "unique" items
