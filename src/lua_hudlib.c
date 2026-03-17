@@ -1784,7 +1784,7 @@ static int lib_hudaddtimer(lua_State *L)
 	CLEANUP(pfree) const char **patches = calloc(patches_size, sizeof(const char*));
 	for (INT32 i = 0; i < patches_size; ++i)
 	{
-		lua_rawgeti(L, 3, i);
+		lua_rawgeti(L, 3, i+1);
 		patches[i] = lua_tostring(L, -1);
 		lua_pop(L, 1);
 	}
