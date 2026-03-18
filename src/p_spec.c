@@ -9578,7 +9578,7 @@ void T_Pusher(void *thinker)
 		if (thing->eflags & MFE_PUSHED)
 			continue;
 
-		if (thing->player && (thing->state == &states[thing->info->painstate])
+		if (thing->player && !K_IsPlayerDamaged(thing->player) && (thing->state == &states[thing->info->painstate])
 			&& (thing->player->flashing > (K_GetKartFlashing(thing->player)/4)*3
 			&& thing->player->flashing <= K_GetKartFlashing(thing->player)))
 			continue;
