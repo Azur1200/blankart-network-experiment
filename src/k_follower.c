@@ -720,6 +720,7 @@ void K_FollowerHornTaunt(player_t *taunter, player_t *victim)
 {
 	if (
 		(cv_karthorns.value == 0)
+		|| cv_hidefollowers.value
 		|| taunter == NULL
 		|| victim == NULL
 		|| taunter->followerskin < 0
