@@ -9630,7 +9630,17 @@ void T_Pusher(void *thinker)
 		if (!touching && !inFOF) // Object is out of range of effect
 			continue;
 
-		if (inFOF || (p->type == p_current && touching))
+		// 2.2 UDMF swapped the order of these checks for some reason...
+		// which made the diamond square wind twice as fast
+		if (mapnamespace == MNS_SRB2KART && p->type == p_wind && touching)
+		{
+			xspeed = x_mag>>1; // half force
+			yspeed = y_mag>>1;
+			zspeed = z_mag>>1;
+			moved = true;
+		}
+		// 2.1 only ever checks (!touching && !inFOF) here which is pointless?
+		else if (inFOF || (p->type == p_current && (mapnamespace == MNS_SRB2KART || touching)))
 		{
 			xspeed = x_mag; // full force
 			yspeed = y_mag;
