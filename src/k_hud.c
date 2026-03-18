@@ -10,6 +10,7 @@
 /// \brief HUD drawing functions exclusive to Kart
 
 #include "k_hud.h"
+#include "command.h"
 #include "info.h"
 #include "k_kart.h"
 #include "k_battle.h"
@@ -86,7 +87,9 @@ static CV_PossibleValue_t speedo_cons_t[]= {
 	{0, "Default"},
 	{1, "Small"},
 	{2, "P-Meter"},
-	{0, NULL}};
+	{0, NULL}
+};
+
 consvar_t cv_newspeedometer = CVAR_INIT ("newspeedometer", "Small", CV_SAVE, speedo_cons_t, NULL);
 
 static CV_PossibleValue_t inputdisplay_cons_t[] = {{0, "Off"}, {1, "Wheel"}, {2, "Stick"}, {3, "SRB2"}, {0, NULL}};
@@ -110,6 +113,26 @@ consvar_t cv_newtabranking = CVAR_INIT ("newtabranking", "On", CV_SAVE, CV_OnOff
 consvar_t cv_draftindicator = CVAR_INIT ("draftindicator", "On", CV_SAVE, CV_OnOff, NULL);
 
 consvar_t cv_showstats = CVAR_INIT ("showstats", "On", CV_SAVE, CV_OnOff, NULL);
+
+typedef enum
+{
+	NT_OFF = 0,
+	NT_DEFAULT,
+	NT_SMALL,
+	NT_TEXT,
+} nametag_e;
+
+static CV_PossibleValue_t nametag_cons_t[]= {
+	{NT_OFF, "Off"},
+	{NT_DEFAULT, "Default"},
+	{NT_SMALL, "Small"},
+	{NT_TEXT, "Text-Only"},
+	{0, NULL}
+};
+
+consvar_t cv_seenames = CVAR_INIT ("seenames", "Default", CV_SAVE, nametag_cons_t, NULL);
+consvar_t cv_seenamerestat = CVAR_INIT ("seenamerestat", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_seeownname = CVAR_INIT ("seeownname", "Off", CV_SAVE, CV_OnOff, NULL);
 
 //{ 	Patch Definitions
 static patch_t *kp_nodraw;
@@ -252,6 +275,9 @@ void K_RegisterKartHUDStuff(void)
 #undef REG_HUD_OFFSET_X
 #undef REG_HUD_OFFSET_Y
 
+	CV_RegisterVar(&cv_seenames);
+	CV_RegisterVar(&cv_seenamerestat);
+	CV_RegisterVar(&cv_seeownname);
 	CV_RegisterVar(&cv_newspeedometer);
 	CV_RegisterVar(&cv_showinput);
 	CV_RegisterVar(&cv_colorizedhud);
@@ -3640,7 +3666,7 @@ static void K_drawKartPlayerCheck(void)
 
 static boolean K_ShowPlayerNametag(player_t *p)
 {
-	if (cv_seenames.value == 0)
+	if (cv_seenames.value == NT_OFF)
 	{
 		return false;
 	}
@@ -3652,7 +3678,14 @@ static boolean K_ShowPlayerNametag(player_t *p)
 
 	if (stplyr == p)
 	{
-		return false;
+		if (cv_seeownname.value)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
 
 	if (gametypes[gametype]->rules & GTR_CIRCUIT)
@@ -3708,13 +3741,18 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p, UINT8 flag
 	INT32 barx = x + 6*FRACUNIT, bary = y - 16*FRACUNIT, barw = namelen*FRACUNIT;
 	UINT8 backcolor = colormap ? colormap[31] : 31, frontcolor = colormap ? colormap[0] : 0;
 	INT32 vflags = V_SPLITSCREEN|flags;
+	fixed_t textxoffset = 0;
+	fixed_t textyoffset = 0;
+	fixed_t barxoffset = 0;
+	fixed_t baryoffset = 0;
 
 	// Lat: 10/06/2020: colormap can be NULL on the frame you join a game, just arbitrarily use palette indexes 31 and 0 instead of whatever the colormap would give us instead to avoid crashes.
 
-	// Draw the stem
+	// Calculate offsets and draw the stem
 	{
 		fixed_t stemx;
 		fixed_t stemy;
+		SINT8 stemcount = 4;
 		int j;
 		boolean flipcam = (p->pflags & PF_FLIPCAM) && (p->mo->eflags & MFE_VERTICALFLIP);
 		boolean flipped;
@@ -3727,49 +3765,83 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p, UINT8 flag
 		stemx = x;
 		stemy = y;
 
-
-		if (flipped)
+		switch(cv_seenames.value)
 		{
-			for	(j = 0; j < 4; j++)
-			{
-				fixed_t last = j == 3 ? FRACUNIT : 0;
-				stemy += FRACUNIT*4;
-				V_DrawFixedFill(stemx, stemy, 3*FRACUNIT, 4*FRACUNIT, vflags|backcolor);
-				V_DrawFixedFill(stemx + FRACUNIT, stemy, FRACUNIT, 4*FRACUNIT - last, vflags|frontcolor);
-				stemx += FRACUNIT;
-			}
-
-			bary += FRACUNIT*33;
-
-			x += FRACUNIT;
-			y += FRACUNIT*33;
-		}
-		else
-		{
-			for	(j = 0; j < 4; j++)
-			{
-				fixed_t last = j == 3 ? FRACUNIT : 0;
-				stemy -= FRACUNIT*4;
-				V_DrawFixedFill(stemx, stemy, 3*FRACUNIT, 4*FRACUNIT, vflags|backcolor);
-				V_DrawFixedFill(stemx + FRACUNIT, stemy + last, FRACUNIT, 4*FRACUNIT - last, vflags|frontcolor);
-				stemx += FRACUNIT;
-			}
+			case NT_DEFAULT:
+				break;
+			case NT_SMALL:
+				stemcount = 2;
+				textxoffset = -2*FRACUNIT;
+				textyoffset = flipped ? -2*FRACUNIT : 12*FRACUNIT;
+				barxoffset = -3*FRACUNIT;
+				baryoffset = flipped ? -7*FRACUNIT : 7*FRACUNIT;
+				break;
+			case NT_TEXT:
+				textxoffset = -9*FRACUNIT;
+				textyoffset = 21*FRACUNIT;
+				stemcount = 0;
+				break;
 		}
 
-		V_DrawFixedFill(barx, bary, barw, 3*FRACUNIT, vflags|backcolor);
-		V_DrawFixedFill(barx - FRACUNIT, bary + FRACUNIT, barw, FRACUNIT, vflags|frontcolor);
+		if (stemcount > 0)
+		{
+			if (flipped)
+			{
+				for	(j = 0; j < stemcount; j++)
+				{
+					fixed_t last = j == 3 ? FRACUNIT : 0;
+					stemy += FRACUNIT*4;
+					V_DrawFixedFill(stemx, stemy, 3*FRACUNIT, 4*FRACUNIT, vflags|backcolor);
+					V_DrawFixedFill(stemx + FRACUNIT, stemy, FRACUNIT, 4*FRACUNIT - last, vflags|frontcolor);
+					stemx += FRACUNIT;
+				}
+
+				bary += FRACUNIT*33;
+
+				x += FRACUNIT;
+				y += FRACUNIT*33;
+			}
+			else
+			{
+				for	(j = 0; j < stemcount; j++)
+				{
+					fixed_t last = j == 3 ? FRACUNIT : 0;
+					stemy -= FRACUNIT*4;
+					V_DrawFixedFill(stemx, stemy, 3*FRACUNIT, 4*FRACUNIT, vflags|backcolor);
+					V_DrawFixedFill(stemx + FRACUNIT, stemy + last, FRACUNIT, 4*FRACUNIT - last, vflags|frontcolor);
+					stemx += FRACUNIT;
+				}
+			}
+
+
+			if (cv_seenames.value == NT_SMALL)
+			{
+				fixed_t flipoffset = flipped ? 2*FRACUNIT : 0;
+				V_DrawFixedFill(barx + barxoffset - 2*FRACUNIT, bary + baryoffset + flipoffset, 3*FRACUNIT, 1*FRACUNIT, vflags|backcolor);
+			}
+
+			V_DrawFixedFill(barx + barxoffset, bary + baryoffset, barw, 3*FRACUNIT, vflags|backcolor);
+			V_DrawFixedFill(barx - FRACUNIT + barxoffset, bary + FRACUNIT + baryoffset, barw, FRACUNIT, vflags|frontcolor);
+		}
+		// END DRAWFILL DUMBNESS
 	}
-	// END DRAWFILL DUMBNESS
 
 	// Draw the name itself
-	V_DrawThinStringAtFixed(x + (5*FRACUNIT), y - (26*FRACUNIT), vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+	if (cv_seenames.value == NT_DEFAULT)
+	{
+		V_DrawThinStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+	}
+	else
+	{
+		V_DrawSmallStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+	}
 
 	// Also draw stats of restated players.
-	if (p->kartspeed != skins[p->skin].kartspeed
-		|| p->kartweight != skins[p->skin].kartweight)
+	if (cv_seenamerestat.value && (p->kartspeed != skins[p->skin].kartspeed
+		|| p->kartweight != skins[p->skin].kartweight))
 	{
-		V_DrawSmallStringAtFixed(x + (5*FRACUNIT), y - (31*FRACUNIT), vflags, va("\x84S%d ", p->kartspeed));
-		V_DrawSmallStringAtFixed(x + (15*FRACUNIT), y - (31*FRACUNIT), vflags, va("\x87W%d ", p->kartweight));
+		V_DrawSmallStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (31*FRACUNIT) + textyoffset, vflags, va("\x84S%d ", p->kartspeed));
+		V_DrawSmallStringAtFixed(x + (15*FRACUNIT) + textxoffset, y - (31*FRACUNIT) + textyoffset, vflags, va("\x87W%d ", p->kartweight));
 	}
 }
 
@@ -3793,7 +3865,7 @@ playertagtype_t K_WhichPlayerTag(player_t *p)
 			return PLAYERTAG_CPU;
 		}*/
 	}
-	else if (netgame || demo.playback)
+	else if (netgame || demo.playback || cv_seeownname.value)
 	{
 		if (K_ShowPlayerNametag(p) == true)
 		{

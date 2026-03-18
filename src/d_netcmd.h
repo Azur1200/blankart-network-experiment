@@ -37,7 +37,6 @@ extern consvar_t cv_dummyrestatrandom[MAXSPLITSCREENPLAYERS];
 // preferred number of players
 extern consvar_t cv_splitplayers;
 
-extern consvar_t cv_seenames;
 extern consvar_t cv_usemouse;
 extern consvar_t cv_laglesscam;
 extern consvar_t cv_usecontroller[MAXSPLITSCREENPLAYERS];

@@ -56,6 +56,10 @@ IMPL_HUD_OFFSET(want); // Wanted
 #undef IMPL_HUD_OFFSET_X
 #undef IMPL_HUD_OFFSET_Y
 
+extern consvar_t cv_seenames;
+extern consvar_t cv_seenamerestat;
+extern consvar_t cv_seeownname;
+
 extern consvar_t cv_newspeedometer;
 
 extern consvar_t cv_showinput;
