@@ -3110,7 +3110,13 @@ UINT16 K_GetKartFlashing(const player_t *player)
 		return tics;
 	}
 
+	if (gametypes[gametype]->rules & GTR_DOUBLEDFLASHTICS)
+	{
+		tics *= 2;
+	}
+
 	tics += (tics/8) * (player->kartspeed);
+
 	return tics;
 }
 

@@ -1476,7 +1476,7 @@ boolean P_PlayerHitFloor(player_t *player, boolean fromAir)
 			{
 				player->mo->momx = player->mo->momx/2;
 				player->mo->momy = player->mo->momy/2;
-			}                    
+			}
 		}
 	}
 
