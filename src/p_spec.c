@@ -9578,7 +9578,10 @@ void T_Pusher(void *thinker)
 		if (thing->eflags & MFE_PUSHED)
 			continue;
 
-		if (thing->player && !K_IsPlayerDamaged(thing->player) && (thing->state == &states[thing->info->painstate])
+		// in v1, MT_PLAYER's painstate is S_KART_PAIN, which is actually unused and
+		// the game instead uses S_KART_SPIN, so... this condition is never actually true!?
+		// unless you used lua to set the player's state, but meh, who cares
+		if (thing->player && false//(thing->state == &states[thing->info->painstate])
 			&& (thing->player->flashing > (K_GetKartFlashing(thing->player)/4)*3
 			&& thing->player->flashing <= K_GetKartFlashing(thing->player)))
 			continue;
