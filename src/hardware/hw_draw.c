@@ -245,11 +245,11 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 		flags |= HWR_GetBlendModeFlag(blendmode);
 
 		if (alphalevel == 13)
-			Surf.PolyColor.s.alpha = softwaretranstogl_lo[st_translucency];
+			Surf.PolyColor.s.alpha = softwaretranstogl_lo[V_GetHUDTranslucency(option)];
 		else if (alphalevel == 14)
-			Surf.PolyColor.s.alpha = softwaretranstogl[st_translucency];
+			Surf.PolyColor.s.alpha = softwaretranstogl[V_GetHUDTranslucency(option)];
 		else if (alphalevel == 15)
-			Surf.PolyColor.s.alpha = softwaretranstogl_hi[st_translucency];
+			Surf.PolyColor.s.alpha = softwaretranstogl_hi[V_GetHUDTranslucency(option)];
 		else if (alphalevel < 10)
 			Surf.PolyColor.s.alpha = softwaretranstogl[min(max((10 - alphalevel), 0), 10)];
 		else
@@ -370,11 +370,11 @@ void HWR_DrawAffinePatch(patch_t *gpatch, fixed_t x, fixed_t y, const affine_t *
 		flags |= HWR_GetBlendModeFlag(blendmode);
 
 		if (alphalevel == 13)
-			Surf.PolyColor.s.alpha = softwaretranstogl_lo[st_translucency];
+			Surf.PolyColor.s.alpha = softwaretranstogl_lo[V_GetHUDTranslucency(option)];
 		else if (alphalevel == 14)
-			Surf.PolyColor.s.alpha = softwaretranstogl[st_translucency];
+			Surf.PolyColor.s.alpha = softwaretranstogl[V_GetHUDTranslucency(option)];
 		else if (alphalevel == 15)
-			Surf.PolyColor.s.alpha = softwaretranstogl_hi[st_translucency];
+			Surf.PolyColor.s.alpha = softwaretranstogl_hi[V_GetHUDTranslucency(option)];
 		else if (alphalevel < 10)
 			Surf.PolyColor.s.alpha = softwaretranstogl[min(max((10 - alphalevel), 0), 10)];
 		else
@@ -522,11 +522,11 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 		flags |= HWR_GetBlendModeFlag(blendmode);
 
 		if (alphalevel == 13)
-			Surf.PolyColor.s.alpha = softwaretranstogl_lo[st_translucency];
+			Surf.PolyColor.s.alpha = softwaretranstogl_lo[V_GetHUDTranslucency(option)];
 		else if (alphalevel == 14)
-			Surf.PolyColor.s.alpha = softwaretranstogl[st_translucency];
+			Surf.PolyColor.s.alpha = softwaretranstogl[V_GetHUDTranslucency(option)];
 		else if (alphalevel == 15)
-			Surf.PolyColor.s.alpha = softwaretranstogl_hi[st_translucency];
+			Surf.PolyColor.s.alpha = softwaretranstogl_hi[V_GetHUDTranslucency(option)];
 		else if (alphalevel < 10)
 			Surf.PolyColor.s.alpha = softwaretranstogl[min(max((10 - alphalevel), 0), 10)];
 		else

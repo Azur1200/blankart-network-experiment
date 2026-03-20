@@ -134,6 +134,7 @@ void ST_Ticker(boolean run)
 // 0 is default, any others are special palettes.
 INT32 st_palette = 0;
 UINT32 st_translucency = 10;
+fixed_t st_fadein = 0;
 
 void ST_doPaletteStuff(void)
 {
@@ -984,6 +985,37 @@ void ST_AskToJoinEnvelope(void)
 }
 #endif
 
+static fixed_t ST_CalculateFadeIn(player_t *player)
+{
+	const tic_t length = TICRATE/4;
+
+	tic_t timer = lt_exitticker;
+
+	if (bossinfo.boss == true || G_IsTitleCardAvailable() == false)
+	{
+		if (timeinmap <= 16)
+			timer = 0;
+		else
+			timer = timeinmap-16;
+	}
+
+	if (timer < length)
+	{
+		fixed_t f = timer * FRACUNIT;
+
+		// Not interpolated at very beginning
+		if (timer > 0)
+		{
+			f += R_GetTimeFrac(RTF_LEVEL);
+		}
+
+		return f / length;
+	}
+
+	// Not interpolated at very end
+	return FRACUNIT;
+}
+
 void ST_Drawer(void)
 {
 	boolean stagetitle = false; // Decide whether to draw the stage title or not
@@ -1005,17 +1037,32 @@ void ST_Drawer(void)
 #endif
 		if (rendermode != render_none) ST_doPaletteStuff();
 
-	{
-		const tic_t length = TICRATE/2;
+	fixed_t localfadein[MAXSPLITSCREENPLAYERS];
 
-		if (lt_exitticker)
+	// HUD fading for anything not tied to a single player,
+	// i.e. the minimap. Since individual splitscreen
+	// players' HUDs may fade away before other's, use the
+	// the last one remaining.
+	{
+		fixed_t maxFade = 0;
+		UINT8 i;
+
+		for (i = 0; i <= r_splitscreen; i++)
 		{
-			st_translucency = cv_translucenthud.value;
-			if (lt_exitticker < length)
-				st_translucency = (((INT32)(lt_ticker - lt_endtime))*st_translucency)/((INT32)length);
+			localfadein[i] = ST_CalculateFadeIn(&players[displayplayers[i]]);
+
+			if (localfadein[i] > maxFade)
+			{
+				maxFade = localfadein[i];
+			}
 		}
+
+		if (maxFade == FRACUNIT)
+			st_translucency = cv_translucenthud.value;
 		else
-			st_translucency = 0;
+			st_translucency = FixedMul(cv_translucenthud.value, maxFade);
+
+		st_translucency = min(max((st_translucency), 0), 10);
 	}
 
 	// Check for a valid level title
@@ -1031,6 +1078,7 @@ void ST_Drawer(void)
 		for (i = 0; i <= r_splitscreen; i++)
 		{
 			stplyr = &players[displayplayers[i]];
+			st_fadein = localfadein[i];
 			stplyrnum = i;
 			R_SetViewContext(VIEWCONTEXT_PLAYER1 + i);
 			R_InterpolateView(R_GetTimeFrac(RTF_CAMERA)); // to assist with object tracking

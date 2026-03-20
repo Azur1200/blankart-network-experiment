@@ -185,6 +185,8 @@ void V_CubeApply(RGBA_t *input);
 #define V_NOSCALESTART       0x40000000 // don't scale x, y, start coords
 #define V_SPLITSCREEN        0x80000000 // Add half of screen width or height automatically depending on player number
 
+UINT32 V_GetHUDTranslucency(INT32 scrn);
+
 void V_AdjustXYWithSnap(INT32 *x, INT32 *y, UINT32 options, INT32 dup);
 
 struct cliprect_t

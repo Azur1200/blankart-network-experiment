@@ -612,45 +612,47 @@ void V_AdjustXYWithSnap(INT32 *x, INT32 *y, UINT32 options, INT32 dup)
 		}
 	}
 
-	if (options & V_SLIDEIN)
+	if ((options & V_SLIDEIN))
 	{
-		const tic_t length = TICRATE/4;
-		tic_t timer = lt_exitticker;
-		if (bossinfo.boss == true)
+		if (st_fadein < FRACUNIT)
 		{
-			if (leveltime <= 3)
-				timer = 0;
-			else
-				timer = leveltime-3;
-		}
-
-		if (timer < length)
-		{
-			boolean slidefromright = false;
-
-			const INT32 offsetAmount = (screenwidth * FRACUNIT/2) / length;
-			fixed_t offset = (screenwidth * FRACUNIT/2) - (timer * offsetAmount);
-
-			offset += FixedMul(offsetAmount, renderdeltatics);
-			offset /= FRACUNIT;
-
-			if (r_splitscreen > 1)
+			if ((options & (V_SNAPTORIGHT|V_SNAPTOLEFT|V_SPLITSCREEN)) != 0)
 			{
-				if (stplyrnum == 1 || stplyrnum == 3)
+				boolean slidefromright = false;
+
+				const fixed_t offsetAmount = (screenwidth * FRACUNIT/2);
+				INT32 offset = (offsetAmount - FixedMul(offsetAmount, st_fadein)) / FRACUNIT;
+
+				if (r_splitscreen > 1)
+				{
+					if (player & 1)
+						slidefromright = true;
+				}
+
+				if (options & V_SNAPTORIGHT)
 					slidefromright = true;
+				else if (options & V_SNAPTOLEFT)
+					slidefromright = false;
+
+				if (slidefromright == true)
+				{
+					offset = -offset;
+				}
+
+				*x -= offset;
 			}
-
-			if (options & V_SNAPTORIGHT)
-				slidefromright = true;
-			else if (options & V_SNAPTOLEFT)
-				slidefromright = false;
-
-			if (slidefromright == true)
+			else
 			{
-				offset = -offset;
-			}
+				const fixed_t offsetAmount = (screenheight * FRACUNIT/2);
+				INT32 offset = (offsetAmount - FixedMul(offsetAmount, st_fadein)) / FRACUNIT;
 
-			*x -= offset;
+				if (options & V_SNAPTOBOTTOM)
+				{
+					offset = -offset;
+				}
+
+				*y -= offset;
+			}
 		}
 	}
 }
@@ -1101,6 +1103,39 @@ void V_DrawRotatedPatch(fixed_t x, fixed_t y, angle_t angle, fixed_t pscale, fix
 	V_DrawAffinePatch(x, y, &t, scrn, patch, colormap);
 }
 
+UINT32 V_GetHUDTranslucency(INT32 scrn)
+{
+	if (scrn & V_SLIDEIN)
+	{
+		return cv_translucenthud.value;
+	}
+
+	if (scrn & V_SPLITSCREEN)
+	{
+		return FixedMul(cv_translucenthud.value, st_fadein);
+	}
+
+	return st_translucency;
+}
+
+static UINT32 V_GetAlphaLevel(INT32 scrn)
+{
+	switch (scrn & V_ALPHAMASK)
+	{
+		case V_HUDTRANSHALF:
+			return hudminusalpha[V_GetHUDTranslucency(scrn)];
+
+		case V_HUDTRANS:
+			return 10 - V_GetHUDTranslucency(scrn);
+
+		case V_HUDTRANSDOUBLE:
+			return hudplusalpha[V_GetHUDTranslucency(scrn)];
+
+		default:
+			return (scrn & V_ALPHAMASK) >> V_ALPHASHIFT;
+	}
+}
+
 // Draws a patch scaled to arbitrary size.
 void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap)
 {
@@ -1134,18 +1169,10 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 
 	if ((blendmode = ((scrn & V_BLENDMASK) >> V_BLENDSHIFT)))
 		blendmode++; // realign to constants
-	if ((alphalevel = ((scrn & V_ALPHAMASK) >> V_ALPHASHIFT)))
-	{
-		if (alphalevel == 13) // V_HUDTRANSHALF
-			alphalevel = hudminusalpha[st_translucency];
-		else if (alphalevel == 14) // V_HUDTRANS
-			alphalevel = 10 - st_translucency;
-		else if (alphalevel == 15) // V_HUDTRANSDOUBLE
-			alphalevel = hudplusalpha[st_translucency];
 
-		if (alphalevel >= 10) // Still inelegible to render?
-			return;
-	}
+	if ((alphalevel = V_GetAlphaLevel(scrn)) >= 10)
+		return;
+
 	if ((v_translevel = R_GetBlendTable(blendmode, alphalevel)))
 		patchdrawtype = TRANSLUCENTDRAW;
 
@@ -1801,18 +1828,9 @@ void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	}
 #endif
 
-	if ((alphalevel = ((c & V_ALPHAMASK) >> V_ALPHASHIFT)))
-	{
-		if (alphalevel == 13) // V_HUDTRANSHALF
-			alphalevel = hudminusalpha[st_translucency];
-		else if (alphalevel == 14) // V_HUDTRANS
-			alphalevel = 10 - st_translucency;
-		else if (alphalevel == 15) // V_HUDTRANSDOUBLE
-			alphalevel = hudplusalpha[st_translucency];
+	if ((alphalevel = V_GetAlphaLevel(c)) >= 10)
+		return;
 
-		if (alphalevel >= 10) // Still inelegible to render?
-			return;
-	}
 
 	if (!(c & V_NOSCALESTART))
 	{
