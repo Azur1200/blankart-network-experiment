@@ -476,7 +476,8 @@ static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 	fixed_t speed = spring->info->mass; // conveniently, both fans and gas jets use this for the vertical thrust
 	SINT8 flipval = P_MobjFlip(spring); // virtually everything here centers around the thruster's gravity, not the object's!
 
-	if (p && object->state == &states[object->info->painstate]) // can't use fans and gas jets when player is in pain!
+	// something something S_KART_PAIN being unused (see T_Pusher)
+	if (p && false)//object->state == &states[object->info->painstate]) // can't use fans and gas jets when player is in pain!
 		return;
 
 	// is object's top below thruster's position? if not, calculate distance between their bottoms
