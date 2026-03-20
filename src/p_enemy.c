@@ -3331,6 +3331,9 @@ void A_AttractChase(void *thing)
 
 		if (actor->tracer != NULL && P_MobjWasRemoved(actor->tracer) == false)
 		{
+			if (actor->extravalue3 && actor->tracer->player && (actor->tracer->player->position == 1))
+				goto spbring;
+
 			// Set attraction flag
 			actor->cusval = 1;
 
@@ -3378,6 +3381,7 @@ void A_AttractChase(void *thing)
 			}
 			else
 			{
+spbring:
 				P_SetTarget(&actor->tracer, NULL);
 			}
 		}
