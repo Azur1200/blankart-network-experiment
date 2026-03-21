@@ -222,6 +222,7 @@ void HWR_DrawSkyBackground(player_t *player)
 		float angleturn;
 
 		HWR_GetTexture(texturetranslation[skytexture], false);
+
 		aspectratio = (float)vid.width/(float)vid.height;
 
 		//Hurdler: the sky is the only texture who need 4.0f instead of 1.0
@@ -293,6 +294,8 @@ void HWR_DrawSkyBackground(player_t *player)
 			v[0].t = v[1].t -= ((float) angle / angleturn);
 		}
 
+		// since sky is drawn as a "flat quad" this way, we have to unset any view transformations for it to work
+		GL_SetTransform(NULL);
 		GL_UnSetShader();
 		GL_DrawPolygon(NULL, v, 4, 0);
 	}
