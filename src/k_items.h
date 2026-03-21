@@ -219,6 +219,7 @@ useoddsfunc_f KO_SMonitorOdds;
 useoddsfunc_f KO_SPBRaceOdds;
 
 void K_DoThunderShield(player_t *player);
+void K_DoAttractionShield(player_t *player, boolean hipower);
 void K_BreakBubbleShield(player_t* player);
 INT16 K_GetShrinkTime(const player_t *player);
 boolean K_IsAltShrunk(const player_t *player);
@@ -238,7 +239,10 @@ extern consvar_t cv_karteggmine_slotbrick;
 extern consvar_t cv_kartthunder_radius;
 
 #define BUBBLEBOOSTTIME (7 * sneakertime / 10)
-#define ALTTHUNDERCHARGETIME ((92*TICRATE)/60)
+#define ATTRACTIONCHARGETIME ((92*TICRATE)/60)
+#define ATTRACTIONATTACKTIME_FULL (TICRATE/2)
+#define ATTRACTIONATTACKTIME_MAX (TICRATE/4)
+#define ATTRACTIONATTACKTIME_MIN (2)
 
 #ifdef __cplusplus
 } // extern "C"

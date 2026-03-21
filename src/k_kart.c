@@ -5451,7 +5451,7 @@ void K_PopPlayerShield(player_t *player)
 		case KSHIELD_THUNDER:
 			if (K_IsKartItemAlternate(KITEM_THUNDERSHIELD))
 			{
-				if (player->altthundercharge >= ALTTHUNDERCHARGETIME)
+				if (player->attractioncharge >= ATTRACTIONCHARGETIME)
 				{
 					K_DoThunderShield(player);
 				}
@@ -5467,7 +5467,7 @@ void K_PopPlayerShield(player_t *player)
 			}
 			player->itemtype = KITEM_NONE;
 			player->itemamount = 0;
-			player->altthundercharge = 0;
+			player->attractioncharge = 0;
 			break;
 		case KSHIELD_BUBBLE:
 			K_BreakBubbleShield(player);
@@ -5904,7 +5904,7 @@ static void K_MoveHeldObjects(player_t *player)
 
 	if (!player->mo->hnext)
 	{
-		if (player->altthundercharge < ALTTHUNDERCHARGETIME)
+		if (player->attractioncharge < ATTRACTIONCHARGETIME)
 		{
 			player->bananadrag = 0;
 		}
@@ -8018,6 +8018,16 @@ void K_KartPlayerAfterThink(player_t *player)
 	if (player->itemtype == KITEM_THUNDERSHIELD)
 	{
 		K_LookForRings(player->mo);
+	}
+
+	if (player->attractionattack)
+	{
+		K_KartAttractHomingAttack(player);
+	}
+	else
+	{
+		player->attractionattack_hipower = false;
+		player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
 	}
 }
 
@@ -11759,6 +11769,55 @@ boolean K_CheckWaterskipLockout(player_t *player)
 boolean K_NullDriftTiltEnabled(void)
 {
 	return ((cv_nulldriftefx.value) && (cv_nulldrifttilt.value));
+}
+
+void K_KartAttractHomingAttack(player_t *player)
+{
+	angle_t attackangle = player->mo->angle;
+	fixed_t power = 24*mapobjectscale;
+	INT32 lastTarg = player->lastitemtarget;
+	
+	if (lastTarg >= 0)
+	{
+		if (playeringame[lastTarg] == true
+			&& players[lastTarg].spectator == false
+			&& players[lastTarg].mo != NULL
+			&& P_MobjWasRemoved(players[lastTarg].mo) == false)
+		{
+			mobj_t *targMo = players[lastTarg].mo;
+			attackangle = R_PointToAngle2(player->mo->x, player->mo->y, targMo->x + targMo->momx, targMo->y + targMo->momy);
+
+			player->mo->momz = (CLAMP((targMo->z + targMo->momz) - player->mo->z, -power, power)/TICRATE);
+			power = 32*mapobjectscale;
+		}
+	}
+
+	if (player->mo != NULL 
+		&& (!K_IsPlayerDamaged(player))
+		&& player->bumpUnstuck == 0)
+	{
+		mobj_t *mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
+		mo->angle = P_RandomRange(-30, 30)*ANG1 + R_PointToAngle2(0,0, player->mo->momx, player->mo->momy) - ANGLE_180;
+		mo->fuse = P_RandomRange(10, 20);
+		P_SetScale(mo, player->mo->scale);
+		mo->destscale = mo->scale/2;
+		P_SetTarget(&mo->target, player->mo);
+		P_SetMobjState(mo, S_KLIT1);
+		mo->renderflags |= RF_ADD|RF_FULLBRIGHT;
+
+		P_SpawnGhostMobj(player->mo);
+
+		player->airdriftspeed = K_GetKartSpeed(player, false, false);
+		P_InstaThrust(player->mo, attackangle, K_GetKartSpeed(player, false, false) + power);
+
+		player->attractionattack--;
+	}
+	else
+	{
+		player->attractionattack = 0;
+		player->attractionattack_hipower = false;
+		player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
+	}
 }
 
 //}

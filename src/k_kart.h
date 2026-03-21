@@ -423,6 +423,8 @@ boolean K_NullDriftTiltEnabled(void);
 //og val 3*TICRATE/2
 #define RECOVERYDASHWIPETIME (RECOVERYDASHCHARGETIME - RECOVERYDASHADD)
 
+void K_KartAttractHomingAttack(player_t *player);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

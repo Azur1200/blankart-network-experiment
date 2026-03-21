@@ -20,6 +20,7 @@ boolean K_MineCollide(mobj_t *t1, mobj_t *t2);
 boolean K_MineExplosionCollide(mobj_t *t1, mobj_t *t2);
 boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2);
 void K_ThunderShieldAttack(mobj_t *actor, fixed_t size);
+void K_AttractionShieldAttack(mobj_t *actor, fixed_t size);
 
 boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2);
 boolean K_BubbleShieldCanReflect(mobj_t *t);

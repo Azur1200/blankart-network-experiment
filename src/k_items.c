@@ -377,7 +377,7 @@ void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags)
 
 void K_UnsetItemOut(player_t *player)
 {
-	player->itemflags &= ~(IF_ITEMOUT|IF_EGGMANOUT|IF_HOLDREADY|IF_SEEKING);
+	player->itemflags &= ~(IF_ITEMOUT|IF_EGGMANOUT|IF_HOLDREADY);
 	player->bananadrag = 0;
 	player->equippeditem = KITEM_NONE;
 }
@@ -1904,6 +1904,55 @@ void K_DoThunderShield(player_t *player)
 	}
 }
 
+void K_DoAttractionShield(player_t *player, boolean hipower)
+{
+	mobj_t *mo;
+	int i = 0;
+	fixed_t sx;
+	fixed_t sy;
+	angle_t an;
+
+	S_StartSound(player->mo, sfx_zio3);
+	K_AttractionShieldAttack(player->mo, (cv_kartthunder_radius.value + THUNDERSPRITE) * FRACUNIT);
+
+	// spawn vertical bolt
+	mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
+	P_SetTarget(&mo->target, player->mo);
+	P_SetMobjState(mo, S_LZIO11);
+	mo->color = SKINCOLOR_TEAL;
+	mo->scale = player->mo->scale*3 + (player->mo->scale/2);
+
+	mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
+	P_SetTarget(&mo->target, player->mo);
+	P_SetMobjState(mo, S_LZIO21);
+	mo->color = SKINCOLOR_CYAN;
+	mo->scale = player->mo->scale*3 + (player->mo->scale/2);
+
+	// spawn horizontal bolts;
+	for (i=0; i<7; i++)
+	{
+		mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
+		mo->angle = P_RandomRange(0, 359)*ANG1;
+		mo->fuse = P_RandomRange(20, 50);
+		P_SetTarget(&mo->target, player->mo);
+		P_SetMobjState(mo, S_KLIT1);
+	}
+
+	// spawn the radius thing:
+	an = ANGLE_22h;
+	for (i=0; i<15; i++)
+	{
+		sx = player->mo->x + FixedMul((player->mo->scale*cv_kartthunder_radius.value), FINECOSINE((an*i)>>ANGLETOFINESHIFT));
+		sy = player->mo->y + FixedMul((player->mo->scale*cv_kartthunder_radius.value), FINESINE((an*i)>>ANGLETOFINESHIFT));
+		mo = P_SpawnMobj(sx, sy, player->mo->z, MT_THOK);
+		mo->angle = an*i;
+		mo->extravalue1 = cv_kartthunder_radius.value;	// Used to know whether we should teleport by radius or something.
+		mo->scale = player->mo->scale*3;
+		P_SetTarget(&mo->target, player->mo);
+		P_SetMobjState(mo, S_KSPARK1);
+	}
+}
+
 #undef THUNDERSPRITE
 
 #define MAXSHARDCOUNT 40
@@ -2415,29 +2464,30 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 					}
 					player->itemflags &= ~IF_HOLDREADY;
 					
-					if (player->altthundercharge >= ALTTHUNDERCHARGETIME)
+					if (player->attractioncharge >= ATTRACTIONCHARGETIME)
 					{
-						if (player->itemflags & IF_SEEKING)
+						if (player->attractioncharge == ATTRACTIONCHARGETIME)
 						{
+							player->attractioncharge++;
 							S_StartSound(player->mo, sfx_ncchip);
 						}
 						if (S_SoundPlaying(player->mo, sfx_vwre))
 						{
 							S_StopSoundByID(player->mo, sfx_vwre);
 						}
-						player->itemflags &= ~IF_SEEKING;
+						player->itemflags |= (IF_SEEKING|IF_PASSIVESEEKING);
 						player->bananadrag += 4;
 					}
 					else
 					{
 						player->itemflags |= IF_SEEKING;
-						effectscale = Easing_Linear(CLAMP(FixedDiv(player->altthundercharge, ALTTHUNDERCHARGETIME), 0, FRACUNIT),
+						effectscale = Easing_Linear(CLAMP(FixedDiv(player->attractioncharge, ATTRACTIONCHARGETIME), 0, FRACUNIT),
 							player->mo->scale/4,
 							player->mo->scale/2
 						);
 					}
 
-					if (player->altthundercharge % 8 == 0)
+					if (player->attractioncharge % 8 == 0)
 					{
 						mobj_t *mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
 						mo->angle = P_RandomRange(0, 359)*ANG1;
@@ -2450,51 +2500,38 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 
 						mo->renderflags |= RF_VERTICALFLIP|RF_ADD|RF_FULLBRIGHT;
 					}
-					if (player->altthundercharge % 13 == 0)
+					if (player->attractioncharge % 13 == 0)
 					{
 						S_StartSound(player->mo, sfx_beelec);
 					}
 
-					player->altthundercharge++;
+					player->attractioncharge++;
 				}
 				else
 				{
-					if (player->altthundercharge)
+					if (player->attractioncharge)
 					{
 						if (S_SoundPlaying(player->mo, sfx_vwre))
 						{
 							S_StopSoundByID(player->mo, sfx_vwre);
 						}
 
-						if (player->altthundercharge >= ALTTHUNDERCHARGETIME)
+						if (player->attractioncharge >= ATTRACTIONCHARGETIME)
 						{
-							K_DoThunderShield(player);
+							S_StartSound(player->mo, sfx_kc4c);
+							player->attractionattack_hipower = true;
+							player->attractionattack = ATTRACTIONATTACKTIME_FULL;
 						}
 						else
 						{
-							angle_t attackangle = player->mo->angle;
-							fixed_t power = 16*mapobjectscale;
-							INT32 lastTarg = player->lastitemtarget;
-
-							if (lastTarg != -1
-								&& playeringame[lastTarg] == true
-								&& players[lastTarg].spectator == false
-								&& players[lastTarg].mo != NULL
-								&& P_MobjWasRemoved(players[lastTarg].mo) == false)
-							{
-								mobj_t *targMo = players[lastTarg].mo;
-								attackangle = R_PointToAngle2(player->mo->x, player->mo->y, targMo->x, targMo->y);
-								power = 32*mapobjectscale;
-							}
-
-							player->mo->momz += 4*mapobjectscale*P_MobjFlip(player->mo);
-							player->mo->z += player->mo->momz;
-							player->airdriftspeed = max(K_GetKartSpeed(player, false, false), player->speed);
-							P_Thrust(player->mo, attackangle, power);
-
-							S_StartSound(player->mo, sfx_s3k81);
-							S_StartSound(player->mo, sfx_kc4c);
+							player->attractionattack = Easing_Linear(
+								CLAMP(FixedDiv(player->attractioncharge, ATTRACTIONCHARGETIME), 0, FRACUNIT),
+								ATTRACTIONATTACKTIME_MIN * FRACUNIT,
+								ATTRACTIONATTACKTIME_MAX * FRACUNIT
+							)/FRACUNIT;
 						}
+						K_DoAttractionShield(player, player->attractionattack_hipower);
+						S_StartSound(player->mo, sfx_s3k81);
 
 						if (player->itemamount > 0)
 						{
@@ -2502,9 +2539,11 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 							K_PlayAttackTaunt(player->mo);
 							K_BotResetItemConfirm(player, false);
 						}
+						
+						player->itemflags |= (IF_SEEKING|IF_PASSIVESEEKING);
 					}
 					player->itemflags |= IF_HOLDREADY;
-					player->altthundercharge = 0;
+					player->attractioncharge = 0;
 				}
 			}
 		}
@@ -2798,13 +2837,16 @@ void K_KartSeekingReticule(player_t *player)
 		player_t *targ;
 		mobj_t *ret;
 
-		if (player->itemtargetdelay && playeringame[lasttarg] && !players[lasttarg].spectator)
+		if ((player->itemtargetdelay && playeringame[lasttarg] && !players[lasttarg].spectator)
+			|| (player->itemflags & IF_PASSIVESEEKING))
 		{
 			targ = &players[lasttarg];
 			player->itemtargetdelay--;
 		}
 		else
+		{
 			targ = K_FindJawzTarget(player->mo, player);
+		}
 
 		if (!targ || !targ->mo || P_MobjWasRemoved(targ->mo))
 		{
@@ -2835,6 +2877,7 @@ void K_KartSeekingReticule(player_t *player)
 	}
 	else
 	{
+		player->itemflags &= ~IF_PASSIVESEEKING;
 		player->lastitemtarget = -1;
 		player->itemtargetdelay = 0;
 	}

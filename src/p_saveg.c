@@ -721,6 +721,10 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		RSYNC(players[i].shieldtracer);
 
+		SYNC(players[i].attractioncharge);
+		SYNC(players[i].attractionattack);
+		SYNC(players[i].attractionattack_hipower);
+
 		SYNC(players[i].bubblecool);
 		SYNC(players[i].bubbleblowup);
 		SYNC(players[i].bubblehealth);

@@ -682,6 +682,89 @@ void K_ThunderShieldAttack(mobj_t *actor, fixed_t size)
 			P_BlockThingsIterator(bx, by, PIT_ThunderShieldAttack);
 }
 
+static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
+{
+	if (lightningSource == NULL || P_MobjWasRemoved(lightningSource))
+	{
+		// Invalid?
+		return BMIT_ABORT;
+	}
+
+	if (thing == NULL || P_MobjWasRemoved(thing))
+	{
+		// Invalid?
+		return BMIT_ABORT;
+	}
+
+	if (thing->player)
+	{
+		// Don't damage players
+		return BMIT_CONTINUE;
+	}
+
+	if (thing == lightningSource)
+	{
+		// Don't explode yourself!!
+		return BMIT_CONTINUE;
+	}
+
+	if (thing->health <= 0)
+	{
+		// Dead
+		return BMIT_CONTINUE;
+	}
+
+	if (thing->type != MT_SPB)
+	{
+		if (!(thing->flags & MF_SHOOTABLE) || (thing->flags & MF_SCENERY))
+		{
+			// Not shootable
+			return BMIT_CONTINUE;
+		}
+	}
+
+	if (P_AproxDistance(thing->x - lightningSource->x, thing->y - lightningSource->y) > lightningDist + thing->radius)
+	{
+		// Too far away
+		return BMIT_CONTINUE;
+	}
+
+	if (P_CheckSight(lightningSource, thing) == false)
+	{
+		// Not in sight
+		return BMIT_CONTINUE;
+	}
+
+	if (thing->type == MT_SPB) // If you destroy a SPB, you don't get the luxury of a cooldown.
+	{
+		spbplace = -1;
+		K_SetIndirectItemCooldown(0);
+	}
+
+	P_DamageMobj(thing, lightningSource, lightningSource, 1, DMG_VOLTAGE|DMG_CANTHURTSELF);
+	return BMIT_CONTINUE;
+}
+
+void K_AttractionShieldAttack(mobj_t *actor, fixed_t size)
+{
+	INT32 bx, by, xl, xh, yl, yh;
+
+	lightningDist = FixedMul(size, actor->scale);
+	lightningSource = actor;
+
+	// Use blockmap to check for nearby shootables
+	yh = (unsigned)(actor->y + lightningDist - bmaporgy)>>MAPBLOCKSHIFT;
+	yl = (unsigned)(actor->y - lightningDist - bmaporgy)>>MAPBLOCKSHIFT;
+	xh = (unsigned)(actor->x + lightningDist - bmaporgx)>>MAPBLOCKSHIFT;
+	xl = (unsigned)(actor->x - lightningDist - bmaporgx)>>MAPBLOCKSHIFT;
+
+	BMBOUNDFIX (xl, xh, yl, yh);
+
+	for (by = yl; by <= yh; by++)
+		for (bx = xl; bx <= xh; bx++)
+			P_BlockThingsIterator(bx, by, PIT_AttractionShieldAttack);
+}
+
 static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, INT16 dmg)
 {
 	if (!player)
@@ -735,7 +818,8 @@ static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 static boolean K_StrongPlayerBump(const player_t *player)
 {
 	return ((player->invincibilitytimer)
-	    || (player->growshrinktimer > 0));
+	    || (player->growshrinktimer > 0)
+		|| (player->attractionattack));
 }
 
 boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
@@ -779,6 +863,11 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 			P_SetTarget(&t2->tracer, t2->target); // Back to the source!
 		P_SetTarget(&t2->target, owner); // Let the source reflect it back again!
 		t2->threshold = 10;
+	}
+	else if (t2->player->attractionattack)
+	{
+		// trolled
+		t2->player->attractionattack = 0;
 	}
 
 	S_StartSound(t1, sfx_s3k44);

@@ -143,11 +143,12 @@ typedef enum
 
 typedef enum
 {
-	IF_USERINGS		= 1,	// Have to be not holding the item button to change from using rings to using items (or vice versa) - prevents weirdness
-	IF_ITEMOUT		= 1<<1,	// Are you holding an item out?
-	IF_EGGMANOUT	= 1<<2,	// Eggman mark held, separate from IF_ITEMOUT so it doesn't stop you from getting items
-	IF_HOLDREADY	= 1<<3,	// Hold button-style item is ready to activate
-	IF_SEEKING		= 1<<4,	// Item runs seeking / homing behaviour and needs a reticule
+	IF_USERINGS			= 1,	// Have to be not holding the item button to change from using rings to using items (or vice versa) - prevents weirdness
+	IF_ITEMOUT			= 1<<1,	// Are you holding an item out?
+	IF_EGGMANOUT		= 1<<2,	// Eggman mark held, separate from IF_ITEMOUT so it doesn't stop you from getting items
+	IF_HOLDREADY		= 1<<3,	// Hold button-style item is ready to activate
+	IF_SEEKING			= 1<<4,	// Item runs seeking / homing behaviour and needs a reticule
+	IF_PASSIVESEEKING	= 1<<5,	// Item is seeking but doesn't switch targets (needs IF_SEEKING to stay active)
 } itemflags_t;
 
 typedef enum
@@ -710,7 +711,9 @@ struct player_t
 
 	mobj_t *shieldtracer;	// Blankart: Shield mobj
 
-	tic_t altthundercharge; // charge of Alt. Thunder Shield
+	tic_t attractioncharge; // charge of Attraction Shield
+	tic_t attractionattack; // attack timer for Attraction Shield
+	boolean attractionattack_hipower; // Attraction Shield attack's power is maximum
 
 	UINT8 bubblecool;	// Bubble Shield use cooldown
 	UINT8 bubbleblowup;	// Bubble Shield usage blowup
