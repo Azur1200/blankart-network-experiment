@@ -874,8 +874,8 @@ static void ST_overlayDrawer(void)
 			{
 				if (!r_splitscreen)
 				{
-					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-40, V_HUDTRANSHALF, M_GetText("VIEWPOINT:"));
-					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-32, V_HUDTRANSHALF|V_ALLOWLOWERCASE, player_names[stplyr-players]);
+					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-40, V_HUDTRANSHALF|V_SNAPTOBOTTOM, M_GetText("VIEWPOINT:"));
+					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-32, V_HUDTRANSHALF|V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, player_names[stplyr-players]);
 				}
 				else if (r_splitscreen == 1)
 				{

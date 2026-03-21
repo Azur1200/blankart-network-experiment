@@ -6134,6 +6134,8 @@ void K_getSlipstreamDrawinfo(drawinfo_t *out)
 
 		if (r_splitscreen > 0)
 			splitflags |= V_30TRANS;
+        else
+            splitflags |= V_SNAPTOBOTTOM;
 	}
 	else // now we're having a fun game.
 	{
@@ -6391,7 +6393,7 @@ void K_drawKartHUD(void)
 		else
 		{
 			INT32 karlen = strlen(countstr)*6; // half of 12
-			V_DrawKartString((BASEVIDWIDTH/2)-karlen, LAPS_Y+3, V_SPLITSCREEN, countstr);
+			V_DrawKartString((BASEVIDWIDTH/2)-karlen, LAPS_Y+3, V_SNAPTOBOTTOM, countstr);
 		}
 	}
 
