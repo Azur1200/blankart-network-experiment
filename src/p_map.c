@@ -2855,6 +2855,29 @@ fixed_t P_GetThingStepUp(mobj_t *thing, fixed_t destX, fixed_t destY)
 	return maxstep;
 }
 
+// temporary(?) measure to improve the kodachrome situation
+static boolean P_SlopeWedgeHit(const mobj_t *thing, fixed_t tryx, fixed_t tryy, vector2_t *outnormal)
+{
+	if (g_tm.floorslope == NULL && g_tm.ceilingslope == NULL)
+		return false;
+
+	// which slope to pick? first, check if there's only one slope
+	pslope_t *hitslope =
+		g_tm.floorslope == NULL ? g_tm.ceilingslope :
+		g_tm.ceilingslope == NULL ? g_tm.floorslope :
+	// otherwise, pick one or the other depending on mobj flip
+	// i don't even know how to factor in both slopes...
+		thing->eflags & MFE_VERTICALFLIP ? g_tm.floorslope :
+		g_tm.ceilingslope;
+
+	// don't ask me why this needs to copy the sign bits from normal
+	// it's the only way i could make this damn thing work
+	INT32 flip = P_GetSlopeZAt(hitslope, tryx, tryy) >= thing->z + thing->height/2 ? -1 : 1;
+	outnormal->x = abs(hitslope->d.x) * intsign(hitslope->normal.x) * flip;
+	outnormal->y = abs(hitslope->d.y) * intsign(hitslope->normal.y) * flip;
+	return true;
+}
+
 static boolean
 increment_move
 (		mobj_t * thing,
@@ -2948,6 +2971,10 @@ increment_move
 				{
 					P_SetTarget(&g_tm.hitthing, g_tm.floorthing);
 				}
+
+				// if you didn't hit a linedef or an mobj, it might be a slope wedge blocking you
+				if (result != NULL && result->line == NULL && result->mo == NULL)
+					P_SlopeWedgeHit(thing, tryx, tryy, &result->normal);
 
 				return false; // doesn't fit
 			}
@@ -3467,7 +3494,7 @@ static void P_HitSlideLine(line_t *ld)
 //
 // HitBounceLine, for players
 //
-static void P_PlayerHitBounceLine(line_t *ld, vector2_t* normal)
+static void P_PlayerHitBounceLine(const vector2_t *normal, boolean tripwire)
 {
 	fixed_t movelen;
 	fixed_t x, y;
@@ -3480,7 +3507,7 @@ static void P_PlayerHitBounceLine(line_t *ld, vector2_t* normal)
 	x = FixedMul(movelen, normal->x);
 	y = FixedMul(movelen, normal->y);
 
-	if (P_IsLineTripWire(ld))
+	if (tripwire)
 	{
 		tmxmove = FixedMul(x, FRACUNIT+(FRACUNIT/2));
 		tmymove = FixedMul(y, FRACUNIT+(FRACUNIT/2));
@@ -3857,8 +3884,10 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		return;
 	}
 
-	if (result->line == NULL)
-		return;
+	boolean tripwire = result->line != NULL && P_IsLineTripWire(result->line);
+
+	if (result->normal.x == 0 && result->normal.y == 0)
+		return; // nope, nothing we can do
 
 	mmomx = mo->player->rmomx;
 	mmomy = mo->player->rmomy;
@@ -3911,7 +3940,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
 	}
 
-	if (P_IsLineTripWire(result->line))
+	if (tripwire)
 	{
 		// TRIPWIRE CANNOT BE MADE NONBOUNCY
 		K_ApplyTripWire(mo->player, TRIPSTATE_BLOCKED);
@@ -3919,7 +3948,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	else
 	{
 		// Some walls aren't bouncy even if you are
-		if (result->line->flags & ML_NOTBOUNCY)
+		if (result->line != NULL && result->line->flags & ML_NOTBOUNCY)
 		{
 			// SRB2Kart: Non-bouncy line!
 			P_SlideMove(mo, result);
@@ -3929,7 +3958,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		K_SpawnBumpEffect(mo);
 	}
 
-	P_PlayerHitBounceLine(result->line, &result->normal);
+	P_PlayerHitBounceLine(&result->normal, tripwire);
 	mo->eflags |= MFE_JUSTBOUNCEDWALL;
 
 	if (mo->player)
@@ -3940,7 +3969,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	mo->player->cmomx = tmxmove;
 	mo->player->cmomy = tmymove;
 
-	if (!P_IsLineTripWire(result->line))
+	if (!tripwire)
 	{
 		if (!P_TryMove(mo, mo->x + tmxmove, mo->y + tmymove, true, NULL))
 		{
