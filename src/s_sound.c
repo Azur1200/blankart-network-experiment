@@ -191,7 +191,7 @@ static void S_StopChannel(INT32 cnum);
 //
 // If none available, return -1. Otherwise channel #.
 //
-static INT32 S_getChannel(const void *origin, sfxinfo_t *sfxinfo)
+static INT32 S_getChannel(const void *origin, sfxinfo_t *sfxinfo, efx_t *efx)
 {
 	// channel number to use
 	INT32 cnum;
@@ -213,7 +213,7 @@ static INT32 S_getChannel(const void *origin, sfxinfo_t *sfxinfo)
 			S_StopChannel(cnum);
 			break;
 		}
-		else if (origin && channels[cnum].origin == origin && channels[cnum].sfxinfo == sfxinfo)
+		else if (origin && channels[cnum].origin == origin && channels[cnum].sfxinfo == sfxinfo && efx == channels[cnum].efx)
 		{
 			if (sfxinfo->flags & SF_NOINTERRUPT)
 				return -1;
@@ -720,7 +720,7 @@ void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, INT32 volume
 		}
 
 		// At this point it is determined that a sound can and should be played, so find a free channel to play it on
-		cnum = S_getChannel(origin, sfx);
+		cnum = S_getChannel(origin, sfx, efx);
 
 		if (cnum < 0)
 		{
