@@ -3234,24 +3234,11 @@ void A_AttractChase(void *thing)
 				actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true);
 				actor->target->player->ringtime += K_GetKartRingPower(actor->target->player, true);
 
-//#define EFXTEST
-#ifdef EFXTEST
-				efx_t efx;
-				S_InitEFXArray(&efx);
-				efx.type = EFFECT_REVERB;
-				efx.var5 = 5.9;
-				S_StartSoundAtVolumeEx(actor->target, sfx_s1b5, actor->target->player->ringvolume, &efx);
-#else
 				S_StartSoundAtVolume(actor->target, sfx_s1b5, actor->target->player->ringvolume);
-#endif
 
 				if (actor->target->player->rings <= 10)
 				{
-#ifdef EFXTEST
-					S_StartSoundAtVolumeEx(actor->target, sfx_ringlw, 255 - actor->target->player->rings*10, &efx);
-#else
 					S_StartSoundAtVolume(actor->target, sfx_ringlw, 255 - actor->target->player->rings*10);
-#endif
 				}
 
 				if (actor->target->player->ringboost > (4*TICRATE + TICRATE/2))
@@ -11504,11 +11491,11 @@ void A_EggMinePop(void *thing)
 
 	poof = P_SpawnMobj(actor->x, actor->y, actor->z, MT_EXPLODE);
 	S_StartSound(poof, actor->info->deathsound);
-	
+
 	if (!(actor->target && actor->target->player)) return;
-	
+
 	player = actor->target->player;
-	
+
 	landMine = P_SpawnMobj(actor->x, actor->y, actor->z + actor->height/2, MT_LANDMINE);
 	K_FlipFromObject(landMine, actor);
 	landMine->threshold = 10;

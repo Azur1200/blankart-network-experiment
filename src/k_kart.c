@@ -9064,7 +9064,14 @@ INT32 K_GetKartRingPower(const player_t *player, boolean boosted)
 	if (player->ringtime == finalPower*ringcap)
 	{
 		if (P_IsLocalPlayer(player))
-			S_StartSound(NULL, sfx_cdfm66);
+		{
+			efx_t efx;
+			S_InitEFXArray(&efx);
+			efx.type = EFFECT_REVERB;
+			efx.var5 = 6;
+
+			S_StartSoundAtVolumeEx(NULL, sfx_cdfm66, 255, &efx);
+		}
 	}
 	else if (player->ringtime > finalPower*(ringcap+(ringcap/2)))
 	{
