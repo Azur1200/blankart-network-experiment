@@ -391,14 +391,6 @@ void I_StartupSound(void)
     LOAD_PROC(LPALGETAUXILIARYEFFECTSLOTFV, alGetAuxiliaryEffectSlotfv);
 #undef LOAD_PROC
 
-	// Start EFX
-	// TODO: Discuss and see if we even want EFX flags for sounds and implement system if so.
-	//alGenEffects(1, &audio.effect);
-	//TRY(alEffecti, audio.effect, AL_EFFECT_TYPE, AL_EFFECT_DISTORTION);
-	//TRY(alEffectf, audio.effect, AL_DISTORTION_EDGE, AL_DISTORTION_MAX_EDGE);
-	//alGenAuxiliaryEffectSlots(1, &audio.effectslot);
-	//alAuxiliaryEffectSloti(audio.effectslot, AL_EFFECTSLOT_EFFECT, audio.effect);
-
 	audio.music = INVALID_HANDLE;
 	audio.bufferindex = 0;
 
@@ -984,7 +976,7 @@ void I_FreeSfx(sfxinfo_t *sfx)
 	sfx->lumpnum = LUMPERROR;
 }
 
-void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch)
+void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch, efx_t *efx)
 {
 	if (handle == INVALID_HANDLE)
 		return;
@@ -1003,9 +995,14 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch)
 	pan = pan * 0.5f; // 0.5 = sin(30') for a +/- 30 degree arc
 	TRY(alSourcei, source, AL_SOURCE_RELATIVE, AL_TRUE);
 	TRY(alSource3f, source, AL_POSITION, pan, 0, -sqrtf(1.0f - pan*pan));
+
+	if (efx != NULL && TRY(alIsEffect, efx->effect) && TRY(alIsAuxiliaryEffectSlot, efx->slot))
+	{
+		TRY(alSource3i, source, AL_AUXILIARY_SEND_FILTER, efx->slot, 0, AL_FILTER_NULL);
+	}
 }
 
-INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel)
+INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel, efx_t *efx)
 {
 	ALuint source;
 	if (!TRY(alGenSources, 1, &source))
@@ -1023,7 +1020,7 @@ INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priori
 		return INVALID_HANDLE;
 	}
 
-	I_UpdateSoundParams(source, vol, sep, pitch);
+	I_UpdateSoundParams(source, vol, sep, pitch, efx);
 
 	if (!TRY(alSourcePlay, source))
 	{
@@ -1896,6 +1893,102 @@ boolean I_FadeInPlaySong(UINT32 ms, boolean looping)
 		return I_FadeSongFromVolume(100, 0, ms, NULL);
 	else
 		return false;
+}
+
+efx_t *I_CreateEFX(efx_t *efx)
+{
+	LOCKAUDIO;
+
+	efx_t *efxc = Z_Calloc(sizeof(efx_t), PU_STATIC, NULL);
+
+	if (efxc == NULL)
+		I_Error("OpenAL: Ran out of memory generating EFX.\n");
+
+	if (efx != NULL)
+		memcpy(efxc, efx, sizeof(efx_t));
+
+	// Init effects and slots.
+	TRY(alGenEffects, 1, &efxc->effect);
+	TRY(alGenAuxiliaryEffectSlots, 1, &efxc->slot);
+
+	if (TRY(alIsEffect, efxc->effect) && TRY(alIsAuxiliaryEffectSlot, efxc->slot))
+	{
+		switch (efxc->type)
+		{
+			case EFFECT_REVERB:
+				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_REVERB);
+
+				if (efxc->var1 != -255)
+					TRY(alEffectf, efxc->effect, AL_REVERB_DENSITY, efxc->var1);
+				if (efxc->var2 != -255)
+					TRY(alEffectf, efxc->effect, AL_REVERB_DIFFUSION, efxc->var2);
+				if (efxc->var3 != -255)
+					TRY(alEffectf, efxc->effect, AL_REVERB_GAIN, efxc->var3);
+				if (efxc->var4 != -255)
+					TRY(alEffectf, efxc->effect, AL_REVERB_GAINHF, efxc->var4);
+				if (efxc->var5 != -255)
+					TRY(alEffectf, efxc->effect, AL_REVERB_DECAY_TIME, efxc->var5);
+				if (efxc->var6 != -255)
+					TRY(alEffectf, efxc->effect, AL_REVERB_DECAY_HFRATIO, efxc->var6);
+				if (efxc->var7 != -255)
+					TRY(alEffectf, efxc->effect, AL_REVERB_REFLECTIONS_GAIN, efxc->var7);
+				if (efxc->var8 != -255)
+					TRY(alEffectf, efxc->effect, AL_REVERB_REFLECTIONS_DELAY, efxc->var8);
+				if (efxc->var9 != -255)
+					TRY(alEffectf, efxc->effect, AL_REVERB_LATE_REVERB_GAIN, efxc->var9);
+				if (efxc->var10 != -255)
+					TRY(alEffectf, efxc->effect, AL_REVERB_LATE_REVERB_DELAY, efxc->var10);
+				if (efxc->var11 != -255)
+					TRY(alEffectf, efxc->effect, AL_REVERB_AIR_ABSORPTION_GAINHF, efxc->var11);
+				if (efxc->var12 != -255)
+					TRY(alEffectf, efxc->effect, AL_REVERB_ROOM_ROLLOFF_FACTOR, efxc->var12);
+				if (efxc->var13 != -255)
+					TRY(alEffectf, efxc->effect, AL_REVERB_ROOM_ROLLOFF_FACTOR, efxc->var13);
+
+				break;
+			case EFFECT_DISTORTION:
+				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_DISTORTION);
+
+				if (efxc->var1 != -255)
+					TRY(alEffectf, efxc->effect, AL_DISTORTION_EDGE, efxc->var1);
+				if (efxc->var2 != -255)
+					TRY(alEffectf, efxc->effect, AL_DISTORTION_GAIN, efxc->var2);
+				if (efxc->var3 != -255)
+					TRY(alEffectf, efxc->effect, AL_DISTORTION_LOWPASS_CUTOFF, efxc->var3);
+				if (efxc->var4 != -255)
+					TRY(alEffectf, efxc->effect, AL_DISTORTION_EQCENTER, efxc->var4);
+				if (efxc->var5 != -255)
+					TRY(alEffectf, efxc->effect, AL_DISTORTION_EQBANDWIDTH, efxc->var5);
+				break;
+		}
+
+		TRY(alAuxiliaryEffectSloti, efxc->slot, AL_EFFECTSLOT_EFFECT, efxc->effect);
+		return efxc;
+	}
+
+	Z_Free(efxc);
+
+	return NULL;
+}
+
+void I_DeleteEFX(efx_t *efx)
+{
+	LOCKAUDIO;
+
+	if (efx == NULL)
+		return;
+
+	if (TRY(alIsEffect, efx->effect))
+	{
+		TRY(alDeleteEffects, 1, &efx->effect);
+	}
+
+	if (TRY(alIsAuxiliaryEffectSlot, efx->slot))
+	{
+		TRY(alDeleteAuxiliaryEffectSlots, 1, &efx->slot);
+	}
+
+	Z_Free(efx);
 }
 
 #endif // defined(HAVE_OPENAL)

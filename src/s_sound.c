@@ -317,6 +317,7 @@ static void SetChannelsNum(void)
 	{
 		channels[i].sfxinfo = 0;
 		channels[i].origin = NULL;
+		channels[i].efx = NULL;
 	}
 
 	S_ResetCaptions();
@@ -525,7 +526,7 @@ static INT32 S_ScaleVolumeWithSplitscreen(INT32 volume)
 	) / FRACUNIT;
 }
 
-void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
+void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, INT32 volume, efx_t *efx)
 {
 	const mobj_t *origin = (const mobj_t *)origin_p;
 	const sfxenum_t actual_id = sfx_id;
@@ -730,7 +731,17 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		channels[cnum].sfxinfo = sfx;
 		channels[cnum].origin = origin;
 		channels[cnum].volume = initial_volume;
-		channels[cnum].handle = I_StartSound(sfx_id, S_GetSoundVolume(sfx, volume), sep, pitch, priority, cnum);
+
+		if (efx != NULL && efx->type != EFFECT_NONE)
+		{
+			channels[cnum].efx = I_CreateEFX(efx);
+		}
+		else
+		{
+			channels[cnum].efx = NULL;
+		}
+
+		channels[cnum].handle = I_StartSound(sfx_id, S_GetSoundVolume(sfx, volume), sep, pitch, priority, cnum, channels[cnum].efx);
 	}
 }
 
@@ -951,7 +962,7 @@ notinlevel:
 			}
 
 			if (audible)
-				I_UpdateSoundParams(c->handle, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch);
+				I_UpdateSoundParams(c->handle, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch, c->efx);
 			else
 				S_StopChannel(cnum);
 		}
@@ -1021,6 +1032,8 @@ static void S_StopChannel(INT32 cnum)
 	}
 
 	c->origin = NULL;
+	I_DeleteEFX(c->efx);
+	c->efx = NULL;
 }
 
 //
@@ -2943,3 +2956,15 @@ void ModFilter_OnChange(void)
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH, cv_modfilter.value);
 }
 #endif
+
+void S_InitEFXArray(efx_t *efx)
+{
+	if (efx == NULL)
+		return;
+
+	efx->type = EFFECT_NONE;
+	efx->var1 = efx->var2 = efx->var3 = -255;
+	efx->var4 = efx->var5 = efx->var6 = -255;
+	efx->var7 = efx->var8 = efx->var9 = -255;
+	efx->var10 = efx->var11 = efx->var12 = efx->var13 = -255;
+}

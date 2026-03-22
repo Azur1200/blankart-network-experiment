@@ -18,6 +18,14 @@
 #include "sounds.h"
 #include "command.h"
 
+#ifdef HAVE_OPENAL
+#include "AL/al.h"
+#include "AL/alc.h"
+#include "AL/alext.h"
+#include "AL/efx.h"
+#include "AL/efx-presets.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,6 +44,36 @@ typedef enum {
 	MU_MOD_EX, // libopenmpt
 	MU_MID_EX, // Non-native MIDI
 } musictype_t;
+
+typedef enum
+{
+	EFFECT_NONE = 0,
+	EFFECT_REVERB,
+	EFFECT_DISTORTION,
+} effecttypes_t;
+
+typedef struct
+{
+	// flags for effects
+#ifdef HAVE_OPENAL
+	ALuint effect;
+	ALuint slot;
+#endif
+	UINT32 type;
+	float var1;
+	float var2;
+	float var3;
+	float var4;
+	float var5;
+	float var6;
+	float var7;
+	float var8;
+	float var9;
+	float var10;
+	float var11;
+	float var12;
+	float var13;
+} efx_t;
 
 /**	\brief Sound subsystem runing and waiting
 */
@@ -83,7 +121,7 @@ void I_ShutdownSound(void);
 
 	\return	sfx handle
 */
-INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel);
+INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel, efx_t *efx);
 
 /**	\brief	Stops a sound channel.
 
@@ -105,6 +143,8 @@ void I_UpdateSound(void);
 */
 boolean I_SoundIsPlaying(INT32 handle);
 
+
+
 /**	\brief	Updates the sfx handle
 
 	\param	handle	sfx handle
@@ -114,7 +154,7 @@ boolean I_SoundIsPlaying(INT32 handle);
 
 	\return	void
 */
-void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch);
+void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch, efx_t *efx);
 
 /**	\brief	The I_SetSfxVolume function
 
@@ -245,6 +285,9 @@ boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms
 boolean I_FadeSong(UINT8 target_volume, UINT32 ms, void (*callback)(void));
 boolean I_FadeOutStopSong(UINT32 ms);
 boolean I_FadeInPlaySong(UINT32 ms, boolean looping);
+
+efx_t *I_CreateEFX(efx_t *efx);
+void I_DeleteEFX(efx_t *efx);
 
 #ifdef __cplusplus
 } // extern "C"
