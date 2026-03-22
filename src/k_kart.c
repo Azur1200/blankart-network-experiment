@@ -3552,7 +3552,7 @@ void K_FlipPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 			P_InstaThrust(player->mo, player->flipoverangle, FixedMul(FLIPOVERSPEED+(flipoveradd/8), player->mo->scale));
 		}
 
-		player->mo->momz = FixedMul(FlipOverZMomentum(gravity), player->mo->scale);
+		player->mo->momz = FixedMul(FlipOverZMomentum(gravity), player->mo->scale) * P_MobjFlip(player->mo);
 		player->pflags |= PF_JUSTFLIPPED;
 	}
 
