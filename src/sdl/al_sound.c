@@ -1946,6 +1946,22 @@ efx_t *I_CreateEFX(efx_t *efx)
 					TRY(alEffectf, efxc->effect, AL_REVERB_ROOM_ROLLOFF_FACTOR, efxc->var13);
 
 				break;
+			case EFFECT_CHORUS:
+				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_CHORUS);
+
+				if (efxc->var1 != -255)
+					TRY(alEffectf, efxc->effect, AL_CHORUS_WAVEFORM, efxc->var1);
+				if (efxc->var2 != -255)
+					TRY(alEffectf, efxc->effect, AL_CHORUS_PHASE, efxc->var2);
+				if (efxc->var3 != -255)
+					TRY(alEffectf, efxc->effect, AL_CHORUS_RATE, efxc->var3);
+				if (efxc->var4 != -255)
+					TRY(alEffectf, efxc->effect, AL_CHORUS_DEPTH, efxc->var4);
+				if (efxc->var5 != -255)
+					TRY(alEffectf, efxc->effect, AL_CHORUS_FEEDBACK, efxc->var5);
+				if (efxc->var6 != -255)
+					TRY(alEffectf, efxc->effect, AL_CHORUS_DELAY, efxc->var6);
+				break;
 			case EFFECT_DISTORTION:
 				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_DISTORTION);
 
@@ -1959,6 +1975,70 @@ efx_t *I_CreateEFX(efx_t *efx)
 					TRY(alEffectf, efxc->effect, AL_DISTORTION_EQCENTER, efxc->var4);
 				if (efxc->var5 != -255)
 					TRY(alEffectf, efxc->effect, AL_DISTORTION_EQBANDWIDTH, efxc->var5);
+				break;
+			case EFFECT_ECHO:
+				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_ECHO);
+
+				if (efxc->var1 != -255)
+					TRY(alEffectf, efxc->effect, AL_ECHO_DELAY, efxc->var1);
+				if (efxc->var2 != -255)
+					TRY(alEffectf, efxc->effect, AL_ECHO_LRDELAY, efxc->var2);
+				if (efxc->var3 != -255)
+					TRY(alEffectf, efxc->effect, AL_ECHO_DAMPING, efxc->var3);
+				if (efxc->var4 != -255)
+					TRY(alEffectf, efxc->effect, AL_ECHO_FEEDBACK, efxc->var4);
+				if (efxc->var5 != -255)
+					TRY(alEffectf, efxc->effect, AL_ECHO_SPREAD, efxc->var5);
+
+				break;
+			case EFFECT_PITCHSHIFT:
+				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_PITCH_SHIFTER);
+
+				if (efxc->var1 != -255)
+					TRY(alEffectf, efxc->effect, AL_PITCH_SHIFTER_COARSE_TUNE, efxc->var1);
+				if (efxc->var2 != -255)
+					TRY(alEffectf, efxc->effect, AL_PITCH_SHIFTER_FINE_TUNE , efxc->var2);
+				break;
+			case EFFECT_RINGMOD:
+				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_RING_MODULATOR);
+
+				if (efxc->var1 != -255)
+					TRY(alEffectf, efxc->effect, AL_RING_MODULATOR_FREQUENCY, efxc->var1);
+				if (efxc->var2 != -255)
+					TRY(alEffectf, efxc->effect, AL_RING_MODULATOR_HIGHPASS_CUTOFF, efxc->var2);
+				if (efxc->var3 != -255)
+					TRY(alEffectf, efxc->effect, AL_RING_MODULATOR_WAVEFORM, efxc->var3);
+
+				break;
+			case EFFECT_COMPRESSOR:
+				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_COMPRESSOR);
+
+				if (efxc->var1 != -255)
+					TRY(alEffectf, efxc->effect, AL_COMPRESSOR_ONOFF, efxc->var1);
+				break;
+			case EFFECT_EQ:
+				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_EQUALIZER);
+
+				if (efxc->var1 != -255)
+					TRY(alEffectf, efxc->effect, AL_EQUALIZER_LOW_GAIN, efxc->var1);
+				if (efxc->var2 != -255)
+					TRY(alEffectf, efxc->effect, AL_EQUALIZER_LOW_CUTOFF, efxc->var2);
+				if (efxc->var3 != -255)
+					TRY(alEffectf, efxc->effect, AL_EQUALIZER_MID1_GAIN, efxc->var3);
+				if (efxc->var4 != -255)
+					TRY(alEffectf, efxc->effect, AL_EQUALIZER_MID1_CENTER, efxc->var4);
+				if (efxc->var5 != -255)
+					TRY(alEffectf, efxc->effect, AL_EQUALIZER_MID1_WIDTH, efxc->var5);
+				if (efxc->var6 != -255)
+					TRY(alEffectf, efxc->effect, AL_EQUALIZER_MID2_GAIN, efxc->var6);
+				if (efxc->var7 != -255)
+					TRY(alEffectf, efxc->effect, AL_EQUALIZER_MID2_CENTER, efxc->var7);
+				if (efxc->var8 != -255)
+					TRY(alEffectf, efxc->effect, AL_EQUALIZER_MID2_WIDTH, efxc->var8);
+				if (efxc->var9 != -255)
+					TRY(alEffectf, efxc->effect, AL_EQUALIZER_HIGH_GAIN, efxc->var9);
+				if (efxc->var10 != -255)
+					TRY(alEffectf, efxc->effect, AL_EQUALIZER_HIGH_CUTOFF, efxc->var10);
 				break;
 		}
 
