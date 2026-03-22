@@ -427,6 +427,7 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartslopeboost);
 
+	CV_RegisterVar(&cv_handleboostslip);
 	CV_RegisterVar(&cv_kartrecoverydash);
 	CV_RegisterVar(&cv_kartrecoverydash_spinspeed);
 
