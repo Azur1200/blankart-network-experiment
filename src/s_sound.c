@@ -895,11 +895,13 @@ notinlevel:
 		if (!I_SoundIsPlaying(c->handle))
 		{
 			c->endtime += 1;
+
 			if (c->efx == NULL || c->endtime > c->efxtail + c->duration)
 			{
-				CONS_Printf("endtime: %f efxtail: %f duration: %f \n", c->endtime, c->efxtail, c->duration);
+				//CONS_Printf("endtime: %f efxtail: %f duration: %f \n", c->endtime, c->efxtail, c->duration);
 				S_StopChannel(cnum);
 			}
+
 			continue;
 		}
 		else

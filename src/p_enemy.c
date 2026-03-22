@@ -3234,7 +3234,7 @@ void A_AttractChase(void *thing)
 				actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true);
 				actor->target->player->ringtime += K_GetKartRingPower(actor->target->player, true);
 
-#define EFXTEST
+//#define EFXTEST
 #ifdef EFXTEST
 				efx_t efx;
 				S_InitEFXArray(&efx);
