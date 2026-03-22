@@ -287,6 +287,7 @@ boolean I_FadeOutStopSong(UINT32 ms);
 boolean I_FadeInPlaySong(UINT32 ms, boolean looping);
 
 efx_t *I_CreateEFX(efx_t *efx);
+float I_GetEFXTail(efx_t *efx);
 void I_DeleteEFX(efx_t *efx);
 
 #ifdef __cplusplus

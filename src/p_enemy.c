@@ -3234,11 +3234,12 @@ void A_AttractChase(void *thing)
 				actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true);
 				actor->target->player->ringtime += K_GetKartRingPower(actor->target->player, true);
 
-//#define EFXTEST
+#define EFXTEST
 #ifdef EFXTEST
 				efx_t efx;
 				S_InitEFXArray(&efx);
 				efx.type = EFFECT_REVERB;
+				efx.var5 = 5.9;
 				S_StartSoundAtVolumeEx(actor->target, sfx_s1b5, actor->target->player->ringvolume, &efx);
 #else
 				S_StartSoundAtVolume(actor->target, sfx_s1b5, actor->target->player->ringvolume);

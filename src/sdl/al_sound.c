@@ -1971,6 +1971,31 @@ efx_t *I_CreateEFX(efx_t *efx)
 	return NULL;
 }
 
+float I_GetEFXTail(efx_t *efx)
+{
+	LOCKAUDIO;
+
+	if (efx == NULL)
+		return 0;
+
+	float tailtime = 0;
+	switch(efx->type)
+	{
+		case EFFECT_REVERB:
+			if (efx->var5 != 255)
+				tailtime = efx->var5;
+			else
+				tailtime = 1.49;
+			break;
+
+		default:
+			tailtime = 0;
+			break;
+	}
+
+	return tailtime*TICRATE;
+}
+
 void I_DeleteEFX(efx_t *efx)
 {
 	LOCKAUDIO;

@@ -316,7 +316,10 @@ static void SetChannelsNum(void)
 	for (i = 0; i < numofchannels; i++)
 	{
 		channels[i].sfxinfo = 0;
+		channels[i].duration = 0;
+		channels[i].endtime = 0;
 		channels[i].origin = NULL;
+		channels[i].efxtail = 0;
 		channels[i].efx = NULL;
 	}
 
@@ -735,6 +738,7 @@ void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, INT32 volume
 		if (efx != NULL && efx->type != EFFECT_NONE)
 		{
 			channels[cnum].efx = I_CreateEFX(efx);
+			channels[cnum].efxtail = I_GetEFXTail(efx);
 		}
 		else
 		{
@@ -890,8 +894,18 @@ notinlevel:
 		// if channel is allocated but sound has stopped, free it
 		if (!I_SoundIsPlaying(c->handle))
 		{
-			S_StopChannel(cnum);
+			c->endtime += 1;
+			if (c->efx == NULL || c->endtime > c->efxtail + c->duration)
+			{
+				CONS_Printf("endtime: %f efxtail: %f duration: %f \n", c->endtime, c->efxtail, c->duration);
+				S_StopChannel(cnum);
+			}
 			continue;
+		}
+		else
+		{
+			c->duration += 1;
+			c->endtime += 1;
 		}
 
 		if (gamestate != GS_LEVEL || c->origin == NULL)
@@ -962,7 +976,9 @@ notinlevel:
 			}
 
 			if (audible)
+			{
 				I_UpdateSoundParams(c->handle, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch, c->efx);
+			}
 			else
 				S_StopChannel(cnum);
 		}
@@ -1031,8 +1047,11 @@ static void S_StopChannel(INT32 cnum)
 		c->sfxinfo = 0;
 	}
 
+	c->duration = 0;
+	c->endtime = 0;
 	c->origin = NULL;
 	I_DeleteEFX(c->efx);
+	c->efxtail = 0;
 	c->efx = NULL;
 }
 

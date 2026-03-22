@@ -88,8 +88,13 @@ struct channel_t
 	// handle of the sound being played
 	INT32 handle;
 
+	// length sound has been playing
+	float duration;
+	float endtime;
+
 	// EFX
 	efx_t *efx;
+	float efxtail;
 };
 
 struct caption_t {
