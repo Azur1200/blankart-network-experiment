@@ -14,6 +14,7 @@
 #include "d_ticcmd.h"
 #include "doomdef.h" // Constants
 #include "s_sound.h" // Sound constants
+#include "i_sound.h"
 #include "info.h" // Mobj, state, sprite, etc constants
 #include "m_menu.h" // Menu constants
 #include "y_inter.h" // Intermission constants
@@ -537,6 +538,7 @@ const char *const MSF_LIST[] = {
 	"INVERTENCORE",
 	"FLATLIGHTING",
 	"DIRECTIONLIGHTING",
+	"NOEFX",
 	NULL
 };
 
@@ -559,6 +561,10 @@ const char *const SSF_LIST[] = {
 	"FINISHLINE",
 	"ZOOMTUBESTART",
 	"ZOOMTUBEEND",
+	"NOPHYSICSFLOOR",
+	"NOPHYSICSCEILING",
+	"GRAVITYOVERRIDE",
+	"WALLTRANSFER",
 	NULL
 };
 
@@ -1862,6 +1868,24 @@ struct int_const_s const INT_CONST[] = {
 	{"TICCMD_KEYSTROKE", TICCMD_KEYSTROKE},
 	{"TICCMD_USINGTILT", TICCMD_USINGTILT},
 	{"TICCMD_EXCESSTILT", TICCMD_EXCESSTILT},
+
+	// EFX
+	{"EFFECT_NONE", EFFECT_NONE},
+	{"EFFECT_REVERB", EFFECT_REVERB},
+	{"EFFECT_CHORUS", EFFECT_CHORUS},
+	{"EFFECT_DISTORTION", EFFECT_DISTORTION},
+	{"EFFECT_ECHO", EFFECT_ECHO},
+	{"EFFECT_PITCHSHIFT", EFFECT_PITCHSHIFT},
+	{"EFFECT_RINGMOD", EFFECT_RINGMOD},
+	{"EFFECT_COMPRESSOR", EFFECT_COMPRESSOR},
+	{"EFFECT_EQ", EFFECT_EQ},
+
+	{"CHORUSWAVE_SINUSOID", CHORUSWAVE_SINUSOID},
+	{"CHORUSWAVE_TRIANGLE", CHORUSWAVE_TRIANGLE},
+
+	{"RINGMOD_SIN", RINGMOD_SIN},
+	{"RINGMOD_SAW", RINGMOD_SAW},
+	{"RINGMOD_SQUARE", RINGMOD_SQUARE},
 
 	{NULL,0}
 };

@@ -29,6 +29,8 @@ extern "C" {
 // We need the player data structure as well.
 #include "d_player.h"
 
+#include "i_sound.h"
+
 // =============================
 // Selected map etc.
 // =============================
@@ -435,6 +437,9 @@ struct mapheader_t
 	boolean use_terrain;						///< Whether to use gameplay affecting Terrain effects or not (leaves visuals alone)
 	INT32 base_track_complexity;				///< Decides what the base track compexity for the current map is.
 	fixed_t track_modifier_max;					///< Decides what the modifier max for the current map is.
+
+	// EFX
+	efx_t *globalEFX;							///< Decides what global EFX for the current map is. ONLY USE FOR TYPE AND VARS.
 };
 
 

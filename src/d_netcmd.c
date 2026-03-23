@@ -1437,6 +1437,9 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_digmusicvolume);
 	CV_RegisterVar(&cv_numChannels);
 
+	// al_sound.c
+	CV_RegisterVar(&cv_soundefx);
+
 	// screen.c
 	CV_RegisterVar(&cv_fullscreen);
 	CV_RegisterVar(&cv_renderview);

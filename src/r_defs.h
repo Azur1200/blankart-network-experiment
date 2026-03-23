@@ -363,6 +363,8 @@ typedef enum
 	MSF_FLATLIGHTING            =  1<<13,
 	// force it on (even if it was disabled)
 	MSF_DIRECTIONLIGHTING       =  1<<14,
+	// Disable Audio EFX
+	MSF_NOEFX                   =  1<<15,
 } sectorflags_t;
 
 // Per-sector bot controller override

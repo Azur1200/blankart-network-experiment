@@ -79,6 +79,7 @@ typedef enum
 #include "../i_threads.h"
 #include "../i_system.h" // I_Sleep
 #include "../fastcmp.h"
+#include "../r_defs.h"
 
 #include <SDL3/SDL.h>
 
@@ -143,6 +144,13 @@ static void (*fading_callback)(void);
 static boolean fading_do_callback;
 static boolean fading_nocleanup;
 
+static void SoundEFX_OnChange(void)
+{
+	COM_ImmedExecute("restartaudio");
+}
+
+consvar_t cv_soundefx = CVAR_INIT ("soundefx", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, SoundEFX_OnChange);
+
 // any access (read/write) to this struct MUST lock the mutex
 typedef struct audiostate_s
 {
@@ -158,6 +166,13 @@ typedef struct audiostate_s
 	ALuint music;
 	float loop_point;
 	boolean looping;
+
+	struct
+	{
+		boolean enabled;
+		ALuint effect;
+		ALuint slot;
+	} globalefx;
 
 	boolean startplay;
 	boolean shutdown;
@@ -976,11 +991,14 @@ void I_FreeSfx(sfxinfo_t *sfx)
 	sfx->lumpnum = LUMPERROR;
 }
 
-void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch, efx_t *efx)
+void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch, efx_t *efx, const void *origin)
 {
+	LOCKAUDIO;
+
 	if (handle == INVALID_HANDLE)
 		return;
 
+	const mobj_t *originmobj = (const mobj_t *)origin;
 	ALuint source = handle;
 	TRY(alSourcef, source, AL_GAIN, sfx_volume * (vol / 255.0f));
 	TRY(alSourcef, source, AL_PITCH, pitch / 128.0f);
@@ -996,13 +1014,23 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch, efx_t 
 	TRY(alSourcei, source, AL_SOURCE_RELATIVE, AL_TRUE);
 	TRY(alSource3f, source, AL_POSITION, pan, 0, -sqrtf(1.0f - pan*pan));
 
-	if (efx != NULL && TRY(alIsEffect, efx->effect) && TRY(alIsAuxiliaryEffectSlot, efx->slot))
+	if (cv_soundefx.value && !dedicated)
 	{
-		TRY(alSource3i, source, AL_AUXILIARY_SEND_FILTER, efx->slot, 0, AL_FILTER_NULL);
+		if (efx != NULL && TRY(alIsEffect, efx->effect) && TRY(alIsAuxiliaryEffectSlot, efx->slot))
+		{
+			TRY(alSource3i, source, AL_AUXILIARY_SEND_FILTER, efx->slot, 0, AL_FILTER_NULL);
+		}
+		else if ((((originmobj != NULL) && originmobj->type && originmobj->subsector->sector->flags & MSF_NOEFX) || (origin != NULL))
+			&& audio.globalefx.enabled
+			&& TRY(alIsEffect, audio.globalefx.effect)
+			&& TRY(alIsAuxiliaryEffectSlot, audio.globalefx.slot))
+		{
+			TRY(alSource3i, source, AL_AUXILIARY_SEND_FILTER, audio.globalefx.slot, 0, AL_FILTER_NULL);
+		}
 	}
 }
 
-INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel, efx_t *efx)
+INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel, efx_t *efx, const void * origin)
 {
 	ALuint source;
 	if (!TRY(alGenSources, 1, &source))
@@ -1020,7 +1048,7 @@ INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priori
 		return INVALID_HANDLE;
 	}
 
-	I_UpdateSoundParams(source, vol, sep, pitch, efx);
+	I_UpdateSoundParams(source, vol, sep, pitch, efx, origin);
 
 	if (!TRY(alSourcePlay, source))
 	{
@@ -1895,9 +1923,141 @@ boolean I_FadeInPlaySong(UINT32 ms, boolean looping)
 		return false;
 }
 
+static void I_HandleEFXType(efx_t *efx, ALuint effect)
+{
+	switch (efx->type)
+	{
+		case EFFECT_REVERB:
+			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_REVERB);
+
+			if (efx->var1 != -255)
+				TRY(alEffectf, effect, AL_REVERB_DENSITY, efx->var1);
+			if (efx->var2 != -255)
+				TRY(alEffectf, effect, AL_REVERB_DIFFUSION, efx->var2);
+			if (efx->var3 != -255)
+				TRY(alEffectf, effect, AL_REVERB_GAIN, efx->var3);
+			if (efx->var4 != -255)
+				TRY(alEffectf, effect, AL_REVERB_GAINHF, efx->var4);
+			if (efx->var5 != -255)
+				TRY(alEffectf, effect, AL_REVERB_DECAY_TIME, efx->var5);
+			if (efx->var6 != -255)
+				TRY(alEffectf, effect, AL_REVERB_DECAY_HFRATIO, efx->var6);
+			if (efx->var7 != -255)
+				TRY(alEffectf, effect, AL_REVERB_REFLECTIONS_GAIN, efx->var7);
+			if (efx->var8 != -255)
+				TRY(alEffectf, effect, AL_REVERB_REFLECTIONS_DELAY, efx->var8);
+			if (efx->var9 != -255)
+				TRY(alEffectf, effect, AL_REVERB_LATE_REVERB_GAIN, efx->var9);
+			if (efx->var10 != -255)
+				TRY(alEffectf, effect, AL_REVERB_LATE_REVERB_DELAY, efx->var10);
+			if (efx->var11 != -255)
+				TRY(alEffectf, effect, AL_REVERB_AIR_ABSORPTION_GAINHF, efx->var11);
+			if (efx->var12 != -255)
+				TRY(alEffectf, effect, AL_REVERB_ROOM_ROLLOFF_FACTOR, efx->var12);
+			if (efx->var13 != -255)
+				TRY(alEffectf, effect, AL_REVERB_ROOM_ROLLOFF_FACTOR, efx->var13);
+			break;
+		case EFFECT_CHORUS:
+			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_CHORUS);
+
+			if (efx->var1 != -255)
+				TRY(alEffectf, effect, AL_CHORUS_WAVEFORM, efx->var1);
+			if (efx->var2 != -255)
+				TRY(alEffectf, effect, AL_CHORUS_PHASE, efx->var2);
+			if (efx->var3 != -255)
+				TRY(alEffectf, effect, AL_CHORUS_RATE, efx->var3);
+			if (efx->var4 != -255)
+				TRY(alEffectf, effect, AL_CHORUS_DEPTH, efx->var4);
+			if (efx->var5 != -255)
+				TRY(alEffectf, effect, AL_CHORUS_FEEDBACK, efx->var5);
+			if (efx->var6 != -255)
+				TRY(alEffectf, effect, AL_CHORUS_DELAY, efx->var6);
+			break;
+		case EFFECT_DISTORTION:
+			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_DISTORTION);
+
+			if (efx->var1 != -255)
+				TRY(alEffectf, effect, AL_DISTORTION_EDGE, efx->var1);
+			if (efx->var2 != -255)
+				TRY(alEffectf, effect, AL_DISTORTION_GAIN, efx->var2);
+			if (efx->var3 != -255)
+				TRY(alEffectf, effect, AL_DISTORTION_LOWPASS_CUTOFF, efx->var3);
+			if (efx->var4 != -255)
+				TRY(alEffectf, effect, AL_DISTORTION_EQCENTER, efx->var4);
+			if (efx->var5 != -255)
+				TRY(alEffectf, effect, AL_DISTORTION_EQBANDWIDTH, efx->var5);
+			break;
+		case EFFECT_ECHO:
+			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_ECHO);
+
+			if (efx->var1 != -255)
+				TRY(alEffectf, effect, AL_ECHO_DELAY, efx->var1);
+			if (efx->var2 != -255)
+				TRY(alEffectf, effect, AL_ECHO_LRDELAY, efx->var2);
+			if (efx->var3 != -255)
+				TRY(alEffectf, effect, AL_ECHO_DAMPING, efx->var3);
+			if (efx->var4 != -255)
+				TRY(alEffectf, effect, AL_ECHO_FEEDBACK, efx->var4);
+			if (efx->var5 != -255)
+				TRY(alEffectf, effect, AL_ECHO_SPREAD, efx->var5);
+			break;
+		case EFFECT_PITCHSHIFT:
+			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_PITCH_SHIFTER);
+
+			if (efx->var1 != -255)
+				TRY(alEffectf, effect, AL_PITCH_SHIFTER_COARSE_TUNE, efx->var1);
+			if (efx->var2 != -255)
+				TRY(alEffectf, effect, AL_PITCH_SHIFTER_FINE_TUNE , efx->var2);
+			break;
+		case EFFECT_RINGMOD:
+			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_RING_MODULATOR);
+
+			if (efx->var1 != -255)
+				TRY(alEffectf, effect, AL_RING_MODULATOR_FREQUENCY, efx->var1);
+			if (efx->var2 != -255)
+				TRY(alEffectf, effect, AL_RING_MODULATOR_HIGHPASS_CUTOFF, efx->var2);
+			if (efx->var3 != -255)
+				TRY(alEffectf, effect, AL_RING_MODULATOR_WAVEFORM, efx->var3);
+			break;
+		case EFFECT_COMPRESSOR:
+			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_COMPRESSOR);
+
+			if (efx->var1 != -255)
+				TRY(alEffectf, effect, AL_COMPRESSOR_ONOFF, efx->var1);
+			break;
+		case EFFECT_EQ:
+			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_EQUALIZER);
+
+			if (efx->var1 != -255)
+				TRY(alEffectf, effect, AL_EQUALIZER_LOW_GAIN, efx->var1);
+			if (efx->var2 != -255)
+				TRY(alEffectf, effect, AL_EQUALIZER_LOW_CUTOFF, efx->var2);
+			if (efx->var3 != -255)
+				TRY(alEffectf, effect, AL_EQUALIZER_MID1_GAIN, efx->var3);
+			if (efx->var4 != -255)
+				TRY(alEffectf, effect, AL_EQUALIZER_MID1_CENTER, efx->var4);
+			if (efx->var5 != -255)
+				TRY(alEffectf, effect, AL_EQUALIZER_MID1_WIDTH, efx->var5);
+			if (efx->var6 != -255)
+				TRY(alEffectf, effect, AL_EQUALIZER_MID2_GAIN, efx->var6);
+			if (efx->var7 != -255)
+				TRY(alEffectf, effect, AL_EQUALIZER_MID2_CENTER, efx->var7);
+			if (efx->var8 != -255)
+				TRY(alEffectf, effect, AL_EQUALIZER_MID2_WIDTH, efx->var8);
+			if (efx->var9 != -255)
+				TRY(alEffectf, effect, AL_EQUALIZER_HIGH_GAIN, efx->var9);
+			if (efx->var10 != -255)
+				TRY(alEffectf, effect, AL_EQUALIZER_HIGH_CUTOFF, efx->var10);
+			break;
+	}
+}
+
 efx_t *I_CreateEFX(efx_t *efx)
 {
 	LOCKAUDIO;
+
+	if (!cv_soundefx.value || dedicated)
+		return NULL;
 
 	efx_t *efxc = Z_Calloc(sizeof(efx_t), PU_STATIC, NULL);
 
@@ -1913,134 +2073,7 @@ efx_t *I_CreateEFX(efx_t *efx)
 
 	if (TRY(alIsEffect, efxc->effect) && TRY(alIsAuxiliaryEffectSlot, efxc->slot))
 	{
-		switch (efxc->type)
-		{
-			case EFFECT_REVERB:
-				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_REVERB);
-
-				if (efxc->var1 != -255)
-					TRY(alEffectf, efxc->effect, AL_REVERB_DENSITY, efxc->var1);
-				if (efxc->var2 != -255)
-					TRY(alEffectf, efxc->effect, AL_REVERB_DIFFUSION, efxc->var2);
-				if (efxc->var3 != -255)
-					TRY(alEffectf, efxc->effect, AL_REVERB_GAIN, efxc->var3);
-				if (efxc->var4 != -255)
-					TRY(alEffectf, efxc->effect, AL_REVERB_GAINHF, efxc->var4);
-				if (efxc->var5 != -255)
-					TRY(alEffectf, efxc->effect, AL_REVERB_DECAY_TIME, efxc->var5);
-				if (efxc->var6 != -255)
-					TRY(alEffectf, efxc->effect, AL_REVERB_DECAY_HFRATIO, efxc->var6);
-				if (efxc->var7 != -255)
-					TRY(alEffectf, efxc->effect, AL_REVERB_REFLECTIONS_GAIN, efxc->var7);
-				if (efxc->var8 != -255)
-					TRY(alEffectf, efxc->effect, AL_REVERB_REFLECTIONS_DELAY, efxc->var8);
-				if (efxc->var9 != -255)
-					TRY(alEffectf, efxc->effect, AL_REVERB_LATE_REVERB_GAIN, efxc->var9);
-				if (efxc->var10 != -255)
-					TRY(alEffectf, efxc->effect, AL_REVERB_LATE_REVERB_DELAY, efxc->var10);
-				if (efxc->var11 != -255)
-					TRY(alEffectf, efxc->effect, AL_REVERB_AIR_ABSORPTION_GAINHF, efxc->var11);
-				if (efxc->var12 != -255)
-					TRY(alEffectf, efxc->effect, AL_REVERB_ROOM_ROLLOFF_FACTOR, efxc->var12);
-				if (efxc->var13 != -255)
-					TRY(alEffectf, efxc->effect, AL_REVERB_ROOM_ROLLOFF_FACTOR, efxc->var13);
-
-				break;
-			case EFFECT_CHORUS:
-				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_CHORUS);
-
-				if (efxc->var1 != -255)
-					TRY(alEffectf, efxc->effect, AL_CHORUS_WAVEFORM, efxc->var1);
-				if (efxc->var2 != -255)
-					TRY(alEffectf, efxc->effect, AL_CHORUS_PHASE, efxc->var2);
-				if (efxc->var3 != -255)
-					TRY(alEffectf, efxc->effect, AL_CHORUS_RATE, efxc->var3);
-				if (efxc->var4 != -255)
-					TRY(alEffectf, efxc->effect, AL_CHORUS_DEPTH, efxc->var4);
-				if (efxc->var5 != -255)
-					TRY(alEffectf, efxc->effect, AL_CHORUS_FEEDBACK, efxc->var5);
-				if (efxc->var6 != -255)
-					TRY(alEffectf, efxc->effect, AL_CHORUS_DELAY, efxc->var6);
-				break;
-			case EFFECT_DISTORTION:
-				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_DISTORTION);
-
-				if (efxc->var1 != -255)
-					TRY(alEffectf, efxc->effect, AL_DISTORTION_EDGE, efxc->var1);
-				if (efxc->var2 != -255)
-					TRY(alEffectf, efxc->effect, AL_DISTORTION_GAIN, efxc->var2);
-				if (efxc->var3 != -255)
-					TRY(alEffectf, efxc->effect, AL_DISTORTION_LOWPASS_CUTOFF, efxc->var3);
-				if (efxc->var4 != -255)
-					TRY(alEffectf, efxc->effect, AL_DISTORTION_EQCENTER, efxc->var4);
-				if (efxc->var5 != -255)
-					TRY(alEffectf, efxc->effect, AL_DISTORTION_EQBANDWIDTH, efxc->var5);
-				break;
-			case EFFECT_ECHO:
-				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_ECHO);
-
-				if (efxc->var1 != -255)
-					TRY(alEffectf, efxc->effect, AL_ECHO_DELAY, efxc->var1);
-				if (efxc->var2 != -255)
-					TRY(alEffectf, efxc->effect, AL_ECHO_LRDELAY, efxc->var2);
-				if (efxc->var3 != -255)
-					TRY(alEffectf, efxc->effect, AL_ECHO_DAMPING, efxc->var3);
-				if (efxc->var4 != -255)
-					TRY(alEffectf, efxc->effect, AL_ECHO_FEEDBACK, efxc->var4);
-				if (efxc->var5 != -255)
-					TRY(alEffectf, efxc->effect, AL_ECHO_SPREAD, efxc->var5);
-
-				break;
-			case EFFECT_PITCHSHIFT:
-				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_PITCH_SHIFTER);
-
-				if (efxc->var1 != -255)
-					TRY(alEffectf, efxc->effect, AL_PITCH_SHIFTER_COARSE_TUNE, efxc->var1);
-				if (efxc->var2 != -255)
-					TRY(alEffectf, efxc->effect, AL_PITCH_SHIFTER_FINE_TUNE , efxc->var2);
-				break;
-			case EFFECT_RINGMOD:
-				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_RING_MODULATOR);
-
-				if (efxc->var1 != -255)
-					TRY(alEffectf, efxc->effect, AL_RING_MODULATOR_FREQUENCY, efxc->var1);
-				if (efxc->var2 != -255)
-					TRY(alEffectf, efxc->effect, AL_RING_MODULATOR_HIGHPASS_CUTOFF, efxc->var2);
-				if (efxc->var3 != -255)
-					TRY(alEffectf, efxc->effect, AL_RING_MODULATOR_WAVEFORM, efxc->var3);
-
-				break;
-			case EFFECT_COMPRESSOR:
-				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_COMPRESSOR);
-
-				if (efxc->var1 != -255)
-					TRY(alEffectf, efxc->effect, AL_COMPRESSOR_ONOFF, efxc->var1);
-				break;
-			case EFFECT_EQ:
-				TRY(alEffecti, efxc->effect, AL_EFFECT_TYPE, AL_EFFECT_EQUALIZER);
-
-				if (efxc->var1 != -255)
-					TRY(alEffectf, efxc->effect, AL_EQUALIZER_LOW_GAIN, efxc->var1);
-				if (efxc->var2 != -255)
-					TRY(alEffectf, efxc->effect, AL_EQUALIZER_LOW_CUTOFF, efxc->var2);
-				if (efxc->var3 != -255)
-					TRY(alEffectf, efxc->effect, AL_EQUALIZER_MID1_GAIN, efxc->var3);
-				if (efxc->var4 != -255)
-					TRY(alEffectf, efxc->effect, AL_EQUALIZER_MID1_CENTER, efxc->var4);
-				if (efxc->var5 != -255)
-					TRY(alEffectf, efxc->effect, AL_EQUALIZER_MID1_WIDTH, efxc->var5);
-				if (efxc->var6 != -255)
-					TRY(alEffectf, efxc->effect, AL_EQUALIZER_MID2_GAIN, efxc->var6);
-				if (efxc->var7 != -255)
-					TRY(alEffectf, efxc->effect, AL_EQUALIZER_MID2_CENTER, efxc->var7);
-				if (efxc->var8 != -255)
-					TRY(alEffectf, efxc->effect, AL_EQUALIZER_MID2_WIDTH, efxc->var8);
-				if (efxc->var9 != -255)
-					TRY(alEffectf, efxc->effect, AL_EQUALIZER_HIGH_GAIN, efxc->var9);
-				if (efxc->var10 != -255)
-					TRY(alEffectf, efxc->effect, AL_EQUALIZER_HIGH_CUTOFF, efxc->var10);
-				break;
-		}
+		I_HandleEFXType(efxc, efxc->effect);
 
 		TRY(alAuxiliaryEffectSloti, efxc->slot, AL_EFFECTSLOT_EFFECT, efxc->effect);
 		return efxc;
@@ -2054,6 +2087,9 @@ efx_t *I_CreateEFX(efx_t *efx)
 float I_GetEFXTail(efx_t *efx)
 {
 	LOCKAUDIO;
+
+	if (!cv_soundefx.value || dedicated)
+		return 0;
 
 	if (efx == NULL)
 		return 0;
@@ -2094,6 +2130,61 @@ void I_DeleteEFX(efx_t *efx)
 	}
 
 	Z_Free(efx);
+}
+
+void I_CreateGlobalEFX(efx_t *efx)
+{
+	LOCKAUDIO;
+
+	if (!cv_soundefx.value || dedicated)
+		return;
+
+	if (efx == NULL)
+		return;
+
+	// Init effects and slots.
+	TRY(alGenEffects, 1, &audio.globalefx.effect);
+	TRY(alGenAuxiliaryEffectSlots, 1, &audio.globalefx.slot);
+
+	if (TRY(alIsEffect, audio.globalefx.effect) && TRY(alIsAuxiliaryEffectSlot, audio.globalefx.slot))
+	{
+		I_HandleEFXType(efx, audio.globalefx.effect);
+		TRY(alAuxiliaryEffectSloti, audio.globalefx.slot, AL_EFFECTSLOT_EFFECT, audio.globalefx.effect);
+		audio.globalefx.enabled = true;
+		return;
+	}
+
+	if (TRY(alIsEffect, audio.globalefx.effect))
+	{
+		TRY(alDeleteEffects, 1, &audio.globalefx.effect);
+	}
+
+	if (TRY(alIsAuxiliaryEffectSlot, audio.globalefx.slot))
+	{
+		TRY(alDeleteAuxiliaryEffectSlots, 1, &audio.globalefx.slot);
+	}
+
+	audio.globalefx.enabled = false;
+}
+
+void I_DeleteGlobalEFX(void)
+{
+	LOCKAUDIO;
+
+	if (audio.globalefx.enabled == false)
+		return;
+
+	if (TRY(alIsEffect, audio.globalefx.effect))
+	{
+		TRY(alDeleteEffects, 1, &audio.globalefx.effect);
+	}
+
+	if (TRY(alIsAuxiliaryEffectSlot, audio.globalefx.slot))
+	{
+		TRY(alDeleteAuxiliaryEffectSlots, 1, &audio.globalefx.slot);
+	}
+
+	audio.globalefx.enabled = false;
 }
 
 #endif // defined(HAVE_OPENAL)

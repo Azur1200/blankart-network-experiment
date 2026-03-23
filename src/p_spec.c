@@ -6956,6 +6956,10 @@ void P_InitSpecials(void)
 
 	// Set weather
 	curWeather = globalweather = mapheaderinfo[gamemap-1]->weather;
+
+	// Set global EFX
+	S_DeleteGlobalEFX();
+	S_CreateGlobalEFX(mapheaderinfo[gamemap-1]->globalEFX);
 }
 
 void P_ApplyFlatAlignment(sector_t *sector, angle_t flatangle, fixed_t xoffs, fixed_t yoffs, boolean floor, boolean ceiling)

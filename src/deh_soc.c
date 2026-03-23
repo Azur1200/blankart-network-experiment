@@ -1270,6 +1270,77 @@ void readlevelheader(MYFILE *f, char * name)
 				else
 					mapheaderinfo[num]->use_terrain = false;
 			}
+			// Global EFX
+			else if (fastcmp(word, "GLOBALEFX"))
+			{
+				mapheaderinfo[num]->globalEFX->type = get_number(word2);
+			}
+			else if (fastcmp(word, "GLOBALEFXVAR1"))
+			{
+				float flonum = atof(word2);
+				mapheaderinfo[num]->globalEFX->var1 = flonum ? flonum : get_number(word2);
+			}
+			else if (fastcmp(word, "GLOBALEFXVAR2"))
+			{
+				float flonum = atof(word2);
+				mapheaderinfo[num]->globalEFX->var2 = flonum ? flonum : get_number(word2);
+			}
+			else if (fastcmp(word, "GLOBALEFXVAR3"))
+			{
+				float flonum = atof(word2);
+				mapheaderinfo[num]->globalEFX->var3 = flonum ? flonum : get_number(word2);
+			}
+			else if (fastcmp(word, "GLOBALEFXVAR4"))
+			{
+				float flonum = atof(word2);
+				mapheaderinfo[num]->globalEFX->var4 = flonum ? flonum : get_number(word2);
+			}
+			else if (fastcmp(word, "GLOBALEFXVAR5"))
+			{
+				float flonum = atof(word2);
+				mapheaderinfo[num]->globalEFX->var5 = flonum ? flonum : get_number(word2);
+			}
+			else if (fastcmp(word, "GLOBALEFXVAR6"))
+			{
+				float flonum = atof(word2);
+				mapheaderinfo[num]->globalEFX->var6 = flonum ? flonum : get_number(word2);
+			}
+			else if (fastcmp(word, "GLOBALEFXVAR7"))
+			{
+				float flonum = atof(word2);
+				mapheaderinfo[num]->globalEFX->var7 = flonum ? flonum : get_number(word2);
+			}
+			else if (fastcmp(word, "GLOBALEFXVAR8"))
+			{
+				float flonum = atof(word2);
+				mapheaderinfo[num]->globalEFX->var8 = flonum ? flonum : get_number(word2);
+			}
+			else if (fastcmp(word, "GLOBALEFXVAR9"))
+			{
+				float flonum = atof(word2);
+				mapheaderinfo[num]->globalEFX->var9 = flonum ? flonum : get_number(word2);
+			}
+			else if (fastcmp(word, "GLOBALEFXVAR10"))
+			{
+				float flonum = atof(word2);
+				mapheaderinfo[num]->globalEFX->var10 = flonum ? flonum : get_number(word2);
+			}
+			else if (fastcmp(word, "GLOBALEFXVAR11"))
+			{
+				float flonum = atof(word2);
+				mapheaderinfo[num]->globalEFX->var11 = flonum ? flonum : get_number(word2);
+			}
+			else if (fastcmp(word, "GLOBALEFXVAR12"))
+			{
+				float flonum = atof(word2);
+				mapheaderinfo[num]->globalEFX->var12 = flonum ? flonum : get_number(word2);
+			}
+			else if (fastcmp(word, "GLOBALEFXVAR13"))
+			{
+				float flonum = atof(word2);
+				mapheaderinfo[num]->globalEFX->var13 = flonum ? flonum : get_number(word2);
+			}
+
 			 // ignored for compatibility
 			else if (fastcmp(word, "NEXTLEVEL") || fastcmp(word, "TIMEATTACK") || fastcmp(word, "RECORDATTACK"))
 				continue;

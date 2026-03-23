@@ -58,13 +58,16 @@ typedef enum
 	EFFECT_EQ,
 } effecttypes_t;
 
-#ifdef HAVE_OPENAL
 typedef enum
 {
+#ifdef HAVE_OPENAL
 	CHORUSWAVE_SINUSOID = AL_CHORUS_WAVEFORM_SINUSOID,
 	CHORUSWAVE_TRIANGLE = AL_CHORUS_WAVEFORM_TRIANGLE,
-} choruswaves_t;
+#else
+	CHORUSWAVE_SINUSOID = 0,
+	CHORUSWAVE_TRIANGLE = 0,
 #endif
+} choruswaves_t;
 
 typedef enum
 {
@@ -142,7 +145,7 @@ void I_ShutdownSound(void);
 
 	\return	sfx handle
 */
-INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel, efx_t *efx);
+INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel, efx_t *efx, const void *origin);
 
 /**	\brief	Stops a sound channel.
 
@@ -175,7 +178,7 @@ boolean I_SoundIsPlaying(INT32 handle);
 
 	\return	void
 */
-void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch, efx_t *efx);
+void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch, efx_t *efx, const void *origin);
 
 /**	\brief	The I_SetSfxVolume function
 
@@ -310,6 +313,11 @@ boolean I_FadeInPlaySong(UINT32 ms, boolean looping);
 efx_t *I_CreateEFX(efx_t *efx);
 float I_GetEFXTail(efx_t *efx);
 void I_DeleteEFX(efx_t *efx);
+
+void I_CreateGlobalEFX(efx_t *efx);
+void I_DeleteGlobalEFX(void);
+
+extern consvar_t cv_soundefx;
 
 #ifdef __cplusplus
 } // extern "C"

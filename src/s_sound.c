@@ -745,7 +745,7 @@ void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, INT32 volume
 			channels[cnum].efx = NULL;
 		}
 
-		channels[cnum].handle = I_StartSound(sfx_id, S_GetSoundVolume(sfx, volume), sep, pitch, priority, cnum, channels[cnum].efx);
+		channels[cnum].handle = I_StartSound(sfx_id, S_GetSoundVolume(sfx, volume), sep, pitch, priority, cnum, channels[cnum].efx, channels[cnum].origin);
 	}
 }
 
@@ -979,7 +979,7 @@ notinlevel:
 
 			if (audible)
 			{
-				I_UpdateSoundParams(c->handle, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch, c->efx);
+				I_UpdateSoundParams(c->handle, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch, c->efx, c->origin);
 			}
 			else
 				S_StopChannel(cnum);
@@ -2884,6 +2884,7 @@ static void Command_RestartAudio_f(void)
 	S_StopMusic();
 	S_StopSounds();
 	S_ClearSfx();
+	S_DeleteGlobalEFX();
 	I_ShutdownMusic();
 	I_ShutdownSound();
 	I_StartupSound();
@@ -2897,7 +2898,10 @@ static void Command_RestartAudio_f(void)
 	S_StartSound(NULL, sfx_strpst);
 
 	if (Playing()) // Gotta make sure the player is in a level
+	{
+		S_CreateGlobalEFX(mapheaderinfo[gamemap-1]->globalEFX);
 		P_RestoreMusic(&players[consoleplayer]);
+	}
 	else
 		M_ChangeMenuMusic();
 }
@@ -2988,4 +2992,14 @@ void S_InitEFXArray(efx_t *efx)
 	efx->var4 = efx->var5 = efx->var6 = -255;
 	efx->var7 = efx->var8 = efx->var9 = -255;
 	efx->var10 = efx->var11 = efx->var12 = efx->var13 = -255;
+}
+
+void S_CreateGlobalEFX(efx_t *efx)
+{
+	I_CreateGlobalEFX(efx);
+}
+
+void S_DeleteGlobalEFX(void)
+{
+	I_DeleteGlobalEFX();
 }

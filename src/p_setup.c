@@ -26,6 +26,7 @@
 
 #include "i_time.h"
 #include "i_video.h" // for I_FinishUpdate()..
+#include "r_defs.h"
 #include "r_sky.h"
 #include "i_system.h"
 
@@ -470,6 +471,7 @@ static void P_ClearSingleMapHeaderInfo(INT16 num)
 	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting);
 	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting_encore);
 	mapheaderinfo[num]->use_encore_lighting = false;
+	S_InitEFXArray(mapheaderinfo[num]->globalEFX);
 #if 1 // equivalent to "FlickyList = DEMO"
 	P_SetDemoFlickies(num);
 #else // equivalent to "FlickyList = NONE"
@@ -529,6 +531,11 @@ void P_AllocMapHeader(INT16 i)
 		mapheaderinfo[i]->minimapPic = NULL;
 		mapheaderinfo[i]->cup = NULL;
 		mapheaderinfo[i]->flickies = NULL;
+		mapheaderinfo[i]->globalEFX =  Z_Calloc(sizeof(efx_t), PU_STATIC, NULL);
+
+		if (mapheaderinfo[i]->globalEFX == NULL)
+			I_Error("P_AllocMapHeader: Not enough memory to allocate new global mapheader EFX (ID %d).", i);
+
 		nummapheaders++;
 	}
 	P_ClearSingleMapHeaderInfo(i);
@@ -1892,6 +1899,8 @@ static void ParseTextmapSectorParameter(UINT32 i, const char *param, const char 
 		sectors[i].flags |= MSF_FLATLIGHTING;
 	else if (fastcmp(param, "forcedirectionallighting") && fastcmp("true", val))
 		sectors[i].flags |= MSF_DIRECTIONLIGHTING;
+	else if (fastcmp(param, "noaudioeffects") && fastcmp("true", val))
+		sectors[i].flags |= MSF_NOEFX;
 	else if (fastcmp(param, "nostepup") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_NOSTEPUP;
 	else if (fastcmp(param, "doublestepup") && fastcmp("true", val))
@@ -1916,20 +1925,20 @@ static void ParseTextmapSectorParameter(UINT32 i, const char *param, const char 
 		sectors[i].specialflags |= SSF_YELLOWPOGOSPRING;
 	else if (fastcmp(param, "fan") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_FAN;
+	else if (fastcmp(param, "finishline") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_FINISHLINE;
 	else if (fastcmp(param, "zoomtubestart") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_ZOOMTUBESTART;
 	else if (fastcmp(param, "zoomtubeend") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_ZOOMTUBEEND;
-	else if (fastcmp(param, "finishline") && fastcmp("true", val))
-		sectors[i].specialflags |= SSF_FINISHLINE;
-	else if (fastcmp(param, "gravityoverride") && fastcmp("true", val))
-		sectors[i].specialflags |= SSF_GRAVITYOVERRIDE;
-	else if (fastcmp(param, "walltransfer") && fastcmp("true", val))
-		sectors[i].specialflags |= SSF_WALLTRANSFER;
 	else if (fastcmp(param, "nophysics_floor") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_NOPHYSICSFLOOR;
 	else if (fastcmp(param, "nophysics_ceiling") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_NOPHYSICSCEILING;
+	else if (fastcmp(param, "gravityoverride") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_GRAVITYOVERRIDE;
+	else if (fastcmp(param, "walltransfer") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_WALLTRANSFER;
 	else if (fastcmp(param, "friction"))
 		sectors[i].friction = FLOAT_TO_FIXED(atof(val));
 	else if (fastcmp(param, "gravity"))
@@ -3109,6 +3118,12 @@ static void P_WriteTextmap(void)
 			fprintf(f, "ripple_ceiling = true;\n");
 		if (wsectors[i].flags & MSF_INVERTENCORE)
 			fprintf(f, "invertencore = true;\n");
+		if (wsectors[i].flags & MSF_FLATLIGHTING)
+			fprintf(f, "flatlighting = true;\n");
+		if (wsectors[i].flags & MSF_DIRECTIONLIGHTING)
+			fprintf(f, "forcedirectionallighting = true;\n");
+		if (wsectors[i].flags & MSF_NOEFX)
+			fprintf(f, "noaudioeffects = true;\n");
 		if (wsectors[i].specialflags & SSF_NOSTEPUP)
 			fprintf(f, "nostepup = true;\n");
 		if (wsectors[i].specialflags & SSF_DOUBLESTEPUP)
@@ -3133,14 +3148,20 @@ static void P_WriteTextmap(void)
 			fprintf(f, "yellowpogospring = true;\n");
 		if (wsectors[i].specialflags & SSF_FAN)
 			fprintf(f, "fan = true;\n");
+		if (wsectors[i].specialflags & SSF_FINISHLINE)
+			fprintf(f, "finishline = true;\n");
 		if (wsectors[i].specialflags & SSF_ZOOMTUBESTART)
 			fprintf(f, "zoomtubestart = true;\n");
 		if (wsectors[i].specialflags & SSF_ZOOMTUBEEND)
 			fprintf(f, "zoomtubeend = true;\n");
-		if (wsectors[i].specialflags & SSF_FINISHLINE)
-			fprintf(f, "finishline = true;\n");
+		if (wsectors[i].specialflags & SSF_NOPHYSICSFLOOR)
+			fprintf(f, "nophysics_floor = true;\n");
+		if (wsectors[i].specialflags & SSF_NOPHYSICSCEILING)
+			fprintf(f, "nophysics_ceiling = true;\n");
 		if (wsectors[i].specialflags & SSF_GRAVITYOVERRIDE)
 			fprintf(f, "gravityoverride = true;\n");
+		if (wsectors[i].specialflags & SSF_WALLTRANSFER)
+			fprintf(f, "walltransfer = true;\n");
 		if (wsectors[i].friction != ORIG_FRICTION)
 			fprintf(f, "friction = %f;\n", FIXED_TO_FLOAT(wsectors[i].friction));
 		if (wsectors[i].gravity != FRACUNIT)

@@ -353,7 +353,10 @@ void S_StartSoundName(void *mo, const  char *soundname);
 void S_StopSoundByID(void *origin, sfxenum_t sfx_id);
 void S_StopSoundByNum(sfxenum_t sfxnum);
 
+// EFX
 void S_InitEFXArray(efx_t *efx);
+void S_CreateGlobalEFX(efx_t *efx);
+void S_DeleteGlobalEFX(void);
 
 #ifndef HW3SOUND
 #define S_StartAttackSound S_StartSound
