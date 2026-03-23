@@ -873,13 +873,13 @@ extracolormap_t *R_CreateColormapFromLinedef(char *p1, char *p2, char *p3)
 	// Get base colormap value
 	// First alpha-only, then full value
 	if (p1[0] >= 'a' && p1[0] <= 'z' && !p1[1])
-		ca = ((p1[0] - 'a') * 102);
+		ca = (p1[0] - 'a');
 	else if (p1[0] == '#' && p1[1] >= 'a' && p1[1] <= 'z' && !p1[2])
-		ca = ((p1[1] - 'a') * 102);
+		ca = (p1[1] - 'a');
 	else if (p1[0] >= 'A' && p1[0] <= 'Z' && !p1[1])
-		ca = ((p1[0] - 'A') * 102);
+		ca = (p1[0] - 'A');
 	else if (p1[0] == '#' && p1[1] >= 'A' && p1[1] <= 'Z' && !p1[2])
-		ca = ((p1[1] - 'A') * 102);
+		ca = (p1[1] - 'A');
 	else if (p1[0] == '#')
 	{
 		// For each subsequent value, the value before it must exist
@@ -895,9 +895,9 @@ extracolormap_t *R_CreateColormapFromLinedef(char *p1, char *p2, char *p3)
 					cb = ((HEX2INT(p1[5]) * 16) + HEX2INT(p1[6]));
 
 					if (p1[7] >= 'a' && p1[7] <= 'z')
-						ca = ((p1[7] - 'a') * 102);
+						ca = (p1[7] - 'a');
 					else if (p1[7] >= 'A' && p1[7] <= 'Z')
-						ca = ((p1[7] - 'A') * 102);
+						ca = (p1[7] - 'A');
 					else
 						ca = 25;
 				}
@@ -938,13 +938,13 @@ extracolormap_t *R_CreateColormapFromLinedef(char *p1, char *p2, char *p3)
 	// Get fade (dark) colormap value
 	// First alpha-only, then full value
 	if (p3[0] >= 'a' && p3[0] <= 'z' && !p3[1])
-		cfa = ((p3[0] - 'a') * 102);
+		cfa = (p3[0] - 'a');
 	else if (p3[0] == '#' && p3[1] >= 'a' && p3[1] <= 'z' && !p3[2])
-		cfa = ((p3[1] - 'a') * 102);
+		cfa = (p3[1] - 'a');
 	else if (p3[0] >= 'A' && p3[0] <= 'Z' && !p3[1])
-		cfa = ((p3[0] - 'A') * 102);
+		cfa = (p3[0] - 'A');
 	else if (p3[0] == '#' && p3[1] >= 'A' && p3[1] <= 'Z' && !p3[2])
-		cfa = ((p3[1] - 'A') * 102);
+		cfa = (p3[1] - 'A');
 	else if (p3[0] == '#')
 	{
 		// For each subsequent value, the value before it must exist
@@ -960,9 +960,9 @@ extracolormap_t *R_CreateColormapFromLinedef(char *p1, char *p2, char *p3)
 					cfb = ((HEX2INT(p3[5]) * 16) + HEX2INT(p3[6]));
 
 					if (p3[7] >= 'a' && p3[7] <= 'z')
-						cfa = ((p3[7] - 'a') * 102);
+						cfa = (p3[7] - 'a');
 					else if (p3[7] >= 'A' && p3[7] <= 'Z')
-						cfa = ((p3[7] - 'A') * 102);
+						cfa = (p3[7] - 'A');
 					else
 						cfa = 25;
 				}
