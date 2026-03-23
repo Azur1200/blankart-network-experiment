@@ -1109,6 +1109,7 @@ void LUA_InvalidatePlayer(player_t *player)
 	LUA_InvalidateUserdata(player->powers);
 	LUA_InvalidateUserdata(&player->loop);
 	LUA_InvalidateUserdata(&player->cmd);
+	LUA_InvalidateUserdata(&player->botvars);
 }
 
 enum
