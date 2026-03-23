@@ -235,6 +235,7 @@ TYPEDEF (mdllistitem_t);
 TYPEDEF (vector2_t);
 TYPEDEF (f_vector2_t);
 TYPEDEF (vector3_t);
+TYPEDEF (f_vector3_t);
 TYPEDEF (vector4_t);
 TYPEDEF (matrix_t);
 

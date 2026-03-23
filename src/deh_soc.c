@@ -804,6 +804,454 @@ static mapheader_lighting_t *usemaplighting(INT32 mapnum, const char *word)
 	}
 }
 
+static void processvector(char *word2, f_vector3_t *vec, SINT8 num)
+{
+	char *tmp = strtok(word2,",");
+	float vector[num];
+	int i = 0;
+
+	do {
+		if (i >= num)
+			break;
+		vector[i++] = atof(tmp);
+	} while ((tmp = strtok(NULL, ",")) != NULL);
+
+	vec->x = vector[0];
+	vec->y = vector[1];
+	vec->z = vector[2];
+}
+
+// Handle parsing globalefx info
+static void globalmapefxparameters(INT32 mapnum, INT32 i, char *word, char *word2)
+{
+	// Take off GLOBALEFX_
+	word += 10;
+
+	// Check and take off effect name
+	if (fastncmp(word, "EAXREVERB_", 10))
+	{
+		word += 10;
+
+		if (fastcmp(word, "DENSITY"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.density = atof(word2);
+		}
+		else if (fastcmp(word, "DIFFUSION"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.diffusion = atof(word2);
+		}
+		else if (fastcmp(word, "GAIN"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.gain = atof(word2);
+		}
+		else if (fastcmp(word, "GAINHF"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.gainhf = atof(word2);
+		}
+		else if (fastcmp(word, "GAINLF"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.gainlf = atof(word2);
+		}
+		else if (fastcmp(word, "DECAY_TIME"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.decay_time = atof(word2);
+		}
+		else if (fastcmp(word, "DECAY_HFRATIO"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.decay_hfratio = atof(word2);
+		}
+		else if (fastcmp(word, "DECAY_LFRATIO"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.decay_lfratio = atof(word2);
+		}
+		else if (fastcmp(word, "REFLECTIONS_GAIN"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.reflections_gain = atof(word2);
+		}
+		else if (fastcmp(word, "REFLECTIONS_DELAY"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.reflections_delay = atof(word2);
+		}
+		else if (fastcmp(word, "REFLECTIONS_PAN"))
+		{
+			processvector(word2, &mapheaderinfo[mapnum]->globalEFX->eaxreverb.reflections_pan, 3);
+		}
+		else if (fastcmp(word, "LATE_REVERB_GAIN"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.late_reverb_gain = atof(word2);
+		}
+		else if (fastcmp(word, "LATE_REVERB_DELAY"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.late_reverb_gain = atof(word2);
+		}
+		else if (fastcmp(word, "LATE_REVERB_PAN"))
+		{
+			processvector(word2, &mapheaderinfo[mapnum]->globalEFX->eaxreverb.late_reverb_pan, 3);
+		}
+		else if (fastcmp(word, "ECHO_TIME"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.echo_time = atof(word2);
+		}
+		else if (fastcmp(word, "ECHO_DEPTH"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.echo_depth = atof(word2);
+		}
+		else if (fastcmp(word, "MODULATION_TIME"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.modulation_time = atof(word2);
+		}
+		else if (fastcmp(word, "MODULATION_DEPTH"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.modulation_depth = atof(word2);
+		}
+		else if (fastcmp(word, "AIR_ABSORPTION_GAINHF"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.air_absorption_gainhf = atof(word2);
+		}
+		else if (fastcmp(word, "HFREFERENCE"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.hfreference = atof(word2);
+		}
+		else if (fastcmp(word, "LFREFERENCE"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.lfreference = atof(word2);
+		}
+		else if (fastcmp(word, "ROOM_ROLLOFF_FACTOR"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eaxreverb.room_rolloff_factor = atof(word2);
+		}
+		else if (fastcmp(word, "DECAY_HFLIMIT"))
+		{
+			if (i || word2[0] == 'T' || word2[0] == 'O')
+				mapheaderinfo[mapnum]->globalEFX->eaxreverb.decay_hflimit = 1;
+			else
+				mapheaderinfo[mapnum]->globalEFX->eaxreverb.decay_hflimit = 0;
+		}
+	}
+	else if (fastncmp(word, "REVERB_", 7))
+	{
+		word += 7;
+
+		if (fastcmp(word, "DENSITY"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->reverb.density = atof(word2);
+		}
+		else if (fastcmp(word, "DIFFUSION"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->reverb.diffusion = atof(word2);
+		}
+		else if (fastcmp(word, "GAIN"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->reverb.gain = atof(word2);
+		}
+		else if (fastcmp(word, "GAINHF"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->reverb.gainhf = atof(word2);
+		}
+		else if (fastcmp(word, "DECAY_TIME"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->reverb.decay_time = atof(word2);
+		}
+		else if (fastcmp(word, "DECAY_HFRATIO"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->reverb.decay_hfratio = atof(word2);
+		}
+		else if (fastcmp(word, "REFLECTIONS_GAIN"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->reverb.reflections_gain = atof(word2);
+		}
+		else if (fastcmp(word, "REFLECTIONS_DELAY"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->reverb.reflections_delay = atof(word2);
+		}
+		else if (fastcmp(word, "LATE_REVERB_GAIN"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->reverb.late_reverb_gain = atof(word2);
+		}
+		else if (fastcmp(word, "LATE_REVERB_DELAY"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->reverb.late_reverb_delay = atof(word2);
+		}
+		else if (fastcmp(word, "AIR_ABSORPTION_GAINHF"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->reverb.air_absorption_gainhf = atof(word2);
+		}
+		else if (fastcmp(word, "ROOM_ROLLOFF_FACTOR"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->reverb.room_rolloff_factor = atof(word2);
+		}
+		else if (fastcmp(word, "DECAY_HFLIMIT"))
+		{
+			if (i || word2[0] == 'T' || word2[0] == 'O')
+				mapheaderinfo[mapnum]->globalEFX->reverb.decay_hflimit = 1;
+			else
+				mapheaderinfo[mapnum]->globalEFX->reverb.decay_hflimit = 0;
+		}
+	}
+	else if (fastncmp(word, "CHORUS_", 7))
+	{
+		word += 7;
+
+		if (fastcmp(word, "WAVEFORM"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->chorus.waveform = get_number(word2);
+		}
+		else if (fastcmp(word, "PHASE"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->chorus.phase = i;
+		}
+		else if (fastcmp(word, "RATE"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->chorus.rate = atof(word2);
+		}
+		else if (fastcmp(word, "DEPTH"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->chorus.depth = atof(word2);
+		}
+		else if (fastcmp(word, "FEEDBACK"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->chorus.feedback = atof(word2);
+		}
+		else if (fastcmp(word, "DELAY"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->chorus.delay = atof(word2);
+		}
+	}
+	else if (fastncmp(word, "DISTORTION_", 11))
+	{
+		word += 11;
+
+		if (fastcmp(word, "EDGE"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->distortion.edge = atof(word2);
+		}
+		else if (fastcmp(word, "GAIN"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->distortion.gain = atof(word2);
+		}
+		else if (fastcmp(word, "LOWPASS_CUTOFF"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->distortion.lowpass_cutoff = atof(word2);
+		}
+		else if (fastcmp(word, "EQCENTER"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->distortion.eqcenter = atof(word2);
+		}
+		else if (fastcmp(word, "EQBANDWIDTH"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->distortion.eqbandwidth = atof(word2);
+		}
+	}
+	else if (fastncmp(word, "ECHO_", 5))
+	{
+		word += 5;
+
+		if (fastcmp(word, "DELAY"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->echo.delay = atof(word2);
+		}
+		else if (fastcmp(word, "LRDELAY"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->echo.lrdelay = atof(word2);
+		}
+		else if (fastcmp(word, "DAMPING"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->echo.damping = atof(word2);
+		}
+		else if (fastcmp(word, "FEEDBACK"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->echo.feedback = atof(word2);
+		}
+		else if (fastcmp(word, "SPREAD"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->echo.spread = atof(word2);
+		}
+	}
+	else if (fastncmp(word, "FLANGER_", 8))
+	{
+		word += 8;
+
+		if (fastcmp(word, "WAVEFORM"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->flanger.waveform = get_number(word2);
+		}
+		else if (fastcmp(word, "PHASE"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->flanger.phase = i;
+		}
+		else if (fastcmp(word, "RATE"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->flanger.rate = atof(word2);
+		}
+		else if (fastcmp(word, "DEPTH"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->flanger.depth = atof(word2);
+		}
+		else if (fastcmp(word, "FEEDBACK"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->flanger.feedback = atof(word2);
+		}
+		else if (fastcmp(word, "DELAY"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->flanger.delay = atof(word2);
+		}
+	}
+	else if (fastncmp(word, "FREQSHIFT_", 10))
+	{
+		word += 10;
+
+		if (fastcmp(word, "FREQUENCY"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->freqshift.frequency = atof(word2);
+		}
+		else if (fastcmp(word, "LEFT_DIRECTION"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->freqshift.left_direction = get_number(word2);
+		}
+		else if (fastcmp(word, "RIGHT_DIRECTION"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->freqshift.right_direction = get_number(word2);
+		}
+	}
+	else if (fastncmp(word, "VOCALMORPH_", 11))
+	{
+		word += 11;
+
+		if (fastcmp(word, "PHONEMEA"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->vocal_morpher.phonemea = i;
+		}
+		else if (fastcmp(word, "PHONEMEB"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->vocal_morpher.phonemeb = i;
+		}
+		else if (fastcmp(word, "PHONEMEA_COARSE_TUNING"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->vocal_morpher.phonemea_coarse_tuning = i;
+		}
+		else if (fastcmp(word, "PHONEMEB_COARSE_TUNING"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->vocal_morpher.phonemeb_coarse_tuning = i;
+		}
+		else if (fastcmp(word, "WAVEFORM"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->vocal_morpher.waveform = get_number(word2);
+		}
+		else if (fastcmp(word, "RATE"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->vocal_morpher.rate = atof(word2);
+		}
+	}
+	else if (fastncmp(word, "PITCHSHIFT_", 11))
+	{
+		word += 11;
+
+		if (fastcmp(word, "COARSE_TUNE"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->pitchshift.coarse_tune = i;
+		}
+		else if (fastcmp(word, "FINE_TUNE"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->pitchshift.fine_tune = i;
+		}
+	}
+	else if (fastncmp(word, "RINGMOD_", 8))
+	{
+		word += 8;
+
+		if (fastcmp(word, "FREQUENCY"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->ringmod.frequency = atof(word2);
+		}
+		else if (fastcmp(word, "HIGHPASS_CUTOFF"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->ringmod.highpass_cutoff = atof(word2);
+		}
+		else if (fastcmp(word, "WAVEFORM"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->ringmod.waveform = get_number(word2);
+		}
+	}
+	else if (fastncmp(word, "AUTOWAH_", 8))
+	{
+		word += 8;
+
+		if (fastcmp(word, "ATTACK_TIME"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->autowah.attack_time = atof(word2);
+		}
+		else if (fastcmp(word, "RELEASE_TIME"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->autowah.release_time = atof(word2);
+		}
+		else if (fastcmp(word, "RESONANCE"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->autowah.resonance = atof(word2);
+		}
+		else if (fastcmp(word, "PEAK_GAIN"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->autowah.peak_gain = atof(word2);
+		}
+	}
+	else if (fastncmp(word, "COMPRESSOR_", 11))
+	{
+		word += 11;
+
+		if (fastcmp(word, "ONOFF"))
+		{
+			if (i || word2[0] == 'T' || word2[0] == 'O')
+				mapheaderinfo[mapnum]->globalEFX->compressor.onoff = 1;
+			else
+				mapheaderinfo[mapnum]->globalEFX->compressor.onoff = 0;
+		}
+	}
+	else if (fastncmp(word, "EQ_", 3))
+	{
+		word += 3;
+
+		if (fastcmp(word, "LOW_GAIN"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eq.low_gain = atof(word2);
+		}
+		else if (fastcmp(word, "LOW_CUTOFF"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eq.low_cutoff = atof(word2);
+		}
+		else if (fastcmp(word, "MID1_GAIN"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eq.mid1_gain = atof(word2);
+		}
+		else if (fastcmp(word, "MID1_CENTER"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eq.mid1_center = atof(word2);
+		}
+		else if (fastcmp(word, "MID1_WIDTH"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eq.mid1_width = atof(word2);
+		}
+		else if (fastcmp(word, "MID2_GAIN"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eq.mid2_gain = atof(word2);
+		}
+		else if (fastcmp(word, "MID2_CENTER"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eq.mid2_center = atof(word2);
+		}
+		else if (fastcmp(word, "MID2_WIDTH"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eq.mid2_width = atof(word2);
+		}
+		else if (fastcmp(word, "HIGH_GAIN"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eq.high_gain = atof(word2);
+		}
+		else if (fastcmp(word, "HIGH_CUTOFF"))
+		{
+			mapheaderinfo[mapnum]->globalEFX->eq.high_cutoff = atof(word2);
+		}
+	}
+}
+
 void readlevelheader(MYFILE *f, char * name)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -1275,72 +1723,10 @@ void readlevelheader(MYFILE *f, char * name)
 			{
 				mapheaderinfo[num]->globalEFX->type = get_number(word2);
 			}
-			else if (fastcmp(word, "GLOBALEFXVAR1"))
+			else if (fastncmp("GLOBALEFX_",word,10))
 			{
-				float flonum = atof(word2);
-				mapheaderinfo[num]->globalEFX->var1 = flonum ? flonum : get_number(word2);
+				globalmapefxparameters(num, i, word, word2);
 			}
-			else if (fastcmp(word, "GLOBALEFXVAR2"))
-			{
-				float flonum = atof(word2);
-				mapheaderinfo[num]->globalEFX->var2 = flonum ? flonum : get_number(word2);
-			}
-			else if (fastcmp(word, "GLOBALEFXVAR3"))
-			{
-				float flonum = atof(word2);
-				mapheaderinfo[num]->globalEFX->var3 = flonum ? flonum : get_number(word2);
-			}
-			else if (fastcmp(word, "GLOBALEFXVAR4"))
-			{
-				float flonum = atof(word2);
-				mapheaderinfo[num]->globalEFX->var4 = flonum ? flonum : get_number(word2);
-			}
-			else if (fastcmp(word, "GLOBALEFXVAR5"))
-			{
-				float flonum = atof(word2);
-				mapheaderinfo[num]->globalEFX->var5 = flonum ? flonum : get_number(word2);
-			}
-			else if (fastcmp(word, "GLOBALEFXVAR6"))
-			{
-				float flonum = atof(word2);
-				mapheaderinfo[num]->globalEFX->var6 = flonum ? flonum : get_number(word2);
-			}
-			else if (fastcmp(word, "GLOBALEFXVAR7"))
-			{
-				float flonum = atof(word2);
-				mapheaderinfo[num]->globalEFX->var7 = flonum ? flonum : get_number(word2);
-			}
-			else if (fastcmp(word, "GLOBALEFXVAR8"))
-			{
-				float flonum = atof(word2);
-				mapheaderinfo[num]->globalEFX->var8 = flonum ? flonum : get_number(word2);
-			}
-			else if (fastcmp(word, "GLOBALEFXVAR9"))
-			{
-				float flonum = atof(word2);
-				mapheaderinfo[num]->globalEFX->var9 = flonum ? flonum : get_number(word2);
-			}
-			else if (fastcmp(word, "GLOBALEFXVAR10"))
-			{
-				float flonum = atof(word2);
-				mapheaderinfo[num]->globalEFX->var10 = flonum ? flonum : get_number(word2);
-			}
-			else if (fastcmp(word, "GLOBALEFXVAR11"))
-			{
-				float flonum = atof(word2);
-				mapheaderinfo[num]->globalEFX->var11 = flonum ? flonum : get_number(word2);
-			}
-			else if (fastcmp(word, "GLOBALEFXVAR12"))
-			{
-				float flonum = atof(word2);
-				mapheaderinfo[num]->globalEFX->var12 = flonum ? flonum : get_number(word2);
-			}
-			else if (fastcmp(word, "GLOBALEFXVAR13"))
-			{
-				float flonum = atof(word2);
-				mapheaderinfo[num]->globalEFX->var13 = flonum ? flonum : get_number(word2);
-			}
-
 			 // ignored for compatibility
 			else if (fastcmp(word, "NEXTLEVEL") || fastcmp(word, "TIMEATTACK") || fastcmp(word, "RECORDATTACK"))
 				continue;

@@ -9068,7 +9068,7 @@ INT32 K_GetKartRingPower(const player_t *player, boolean boosted)
 			efx_t efx;
 			S_InitEFXArray(&efx);
 			efx.type = EFFECT_REVERB;
-			efx.var5 = 6;
+			efx.reverb.decay_time = 6.0;
 
 			S_StartSoundAtVolumeEx(NULL, sfx_cdfm66, 255, &efx);
 		}

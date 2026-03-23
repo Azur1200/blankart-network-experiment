@@ -2589,4 +2589,3 @@ int M_RoundUp(double number)
 
 	return (int)number;
 }
-

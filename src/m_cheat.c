@@ -739,6 +739,8 @@ struct debugFlagNames_s const debug_flag_names[] =
 	{"Randomizer", DBG_RNG}, // alt name
 	{"Demo", DBG_DEMO},
 	{"Replay", DBG_DEMO}, // alt name
+	{"EFX", DBG_EFX},
+	{"SoundEFX", DBG_EFX}, // alt name
 	{NULL, 0}
 };
 

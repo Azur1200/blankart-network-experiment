@@ -406,6 +406,7 @@ void I_StartupSound(void)
     LOAD_PROC(LPALGETAUXILIARYEFFECTSLOTFV, alGetAuxiliaryEffectSlotfv);
 #undef LOAD_PROC
 
+	audio.globalefx.enabled = false;
 	audio.music = INVALID_HANDLE;
 	audio.bufferindex = 0;
 
@@ -1016,9 +1017,9 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch, efx_t 
 
 	if (cv_soundefx.value && !dedicated)
 	{
-		if (efx != NULL && TRY(alIsEffect, efx->effect) && TRY(alIsAuxiliaryEffectSlot, efx->slot))
+		if (efx != NULL && TRY(alIsEffect, efx->al.effect) && TRY(alIsAuxiliaryEffectSlot, efx->al.slot))
 		{
-			TRY(alSource3i, source, AL_AUXILIARY_SEND_FILTER, efx->slot, 0, AL_FILTER_NULL);
+			TRY(alSource3i, source, AL_AUXILIARY_SEND_FILTER, efx->al.slot, 0, AL_FILTER_NULL);
 		}
 		else if (origin != NULL && audio.globalefx.enabled
 			&& TRY(alIsEffect, audio.globalefx.effect)
@@ -1910,11 +1911,11 @@ boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms
 
 boolean I_FadeSong(UINT8 target_volume, UINT32 ms, void (*callback)(void))
 {
-    return I_FadeSongFromVolume(target_volume, (internal_volume * 100.f), ms, callback);
+	return I_FadeSongFromVolume(target_volume, (internal_volume * 100.f), ms, callback);
 }
 boolean I_FadeOutStopSong(UINT32 ms)
 {
-    return I_FadeSongFromVolume(0, (internal_volume * 100.f), ms, &I_StopSong);
+	return I_FadeSongFromVolume(0, (internal_volume * 100.f), ms, &I_StopSong);
 }
 
 boolean I_FadeInPlaySong(UINT32 ms, boolean looping)
@@ -1925,134 +1926,172 @@ boolean I_FadeInPlaySong(UINT32 ms, boolean looping)
 		return false;
 }
 
+// Debugging
+#define VAL(x) #x
+
+#define APPLY_EFFECT(alEffectType, field, altype, alfield) TRY(alEffectType, effect, AL_##altype##_##alfield, efx->field); \
+CONS_Debug(DBG_EFX, VAL(AL_##altype##_##alfield) ": %f\n", (float)efx->field)
+
+#define APPLY_EFFECT_BOOL(field, altype, alfield) TRY(alEffecti, effect, AL_##altype##_##alfield, efx->field ? AL_TRUE : AL_FALSE); \
+CONS_Debug(DBG_EFX, VAL(AL_##altype##_##alfield) ": %s\n", efx->field ? "TRUE" : "FALSE")
+
+#define APPLY_EFFECT_FVEC3(alEffectType, field, altype, alfield, min, max) \
+ALfloat vec3fields##alfield[3]; \
+vec3fields##alfield[0] = efx->field.x; \
+vec3fields##alfield[1] = efx->field.y; \
+vec3fields##alfield[2] = efx->field.z; \
+TRY(alEffectType, effect, AL_##altype##_##alfield, vec3fields##alfield); \
+CONS_Debug(DBG_EFX, VAL(AL_##altype##_##alfield) ": x=%f y=%f z=%f\n", vec3fields##alfield[0], vec3fields##alfield[1], vec3fields##alfield[2])
+
+
 static void I_HandleEFXType(efx_t *efx, ALuint effect)
 {
+	CONS_Debug(DBG_EFX, "Attempting to Handle EFX type.\n");
 	switch (efx->type)
 	{
+		case EFFECT_EAXREVERB:
+			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_EAXREVERB);
+
+			APPLY_EFFECT(alEffectf, eaxreverb.density, EAXREVERB, DENSITY);
+			APPLY_EFFECT(alEffectf, eaxreverb.diffusion, EAXREVERB, DIFFUSION);
+			APPLY_EFFECT(alEffectf, eaxreverb.gain, EAXREVERB, GAIN);
+			APPLY_EFFECT(alEffectf, eaxreverb.gainhf, EAXREVERB, GAINHF);
+			APPLY_EFFECT(alEffectf, eaxreverb.gainlf, EAXREVERB, GAINLF);
+			APPLY_EFFECT(alEffectf, eaxreverb.decay_time, EAXREVERB, DECAY_TIME);
+			APPLY_EFFECT(alEffectf, eaxreverb.decay_hfratio, EAXREVERB, DECAY_HFRATIO);
+			APPLY_EFFECT(alEffectf, eaxreverb.decay_lfratio, EAXREVERB, DECAY_LFRATIO);
+			APPLY_EFFECT(alEffectf, eaxreverb.reflections_gain, EAXREVERB, REFLECTIONS_GAIN);
+			APPLY_EFFECT(alEffectf, eaxreverb.reflections_delay, EAXREVERB, REFLECTIONS_DELAY);
+			APPLY_EFFECT_FVEC3(alEffectfv, eaxreverb.reflections_pan, EAXREVERB, REFLECTIONS_PAN, -1.0, 1.0);
+			APPLY_EFFECT(alEffectf, eaxreverb.late_reverb_gain, EAXREVERB, LATE_REVERB_GAIN);
+			APPLY_EFFECT(alEffectf, eaxreverb.late_reverb_delay, EAXREVERB, LATE_REVERB_DELAY);
+			APPLY_EFFECT_FVEC3(alEffectfv, eaxreverb.late_reverb_pan, EAXREVERB, LATE_REVERB_PAN, -1.0, 1.0);
+			APPLY_EFFECT(alEffectf, eaxreverb.echo_time, EAXREVERB, ECHO_TIME);
+			APPLY_EFFECT(alEffectf, eaxreverb.echo_depth, EAXREVERB, ECHO_DEPTH);
+			APPLY_EFFECT(alEffectf, eaxreverb.modulation_time, EAXREVERB, MODULATION_TIME);
+			APPLY_EFFECT(alEffectf, eaxreverb.modulation_depth, EAXREVERB, MODULATION_DEPTH);
+			APPLY_EFFECT(alEffectf, eaxreverb.air_absorption_gainhf, EAXREVERB, AIR_ABSORPTION_GAINHF);
+			APPLY_EFFECT(alEffectf, eaxreverb.hfreference, EAXREVERB, HFREFERENCE);
+			APPLY_EFFECT(alEffectf, eaxreverb.lfreference, EAXREVERB, LFREFERENCE);
+			APPLY_EFFECT(alEffectf, eaxreverb.room_rolloff_factor, EAXREVERB, ROOM_ROLLOFF_FACTOR);
+			APPLY_EFFECT_BOOL(eaxreverb.decay_hflimit, EAXREVERB, DECAY_HFLIMIT);
+			break;
 		case EFFECT_REVERB:
 			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_REVERB);
 
-			if (efx->var1 != -255)
-				TRY(alEffectf, effect, AL_REVERB_DENSITY, efx->var1);
-			if (efx->var2 != -255)
-				TRY(alEffectf, effect, AL_REVERB_DIFFUSION, efx->var2);
-			if (efx->var3 != -255)
-				TRY(alEffectf, effect, AL_REVERB_GAIN, efx->var3);
-			if (efx->var4 != -255)
-				TRY(alEffectf, effect, AL_REVERB_GAINHF, efx->var4);
-			if (efx->var5 != -255)
-				TRY(alEffectf, effect, AL_REVERB_DECAY_TIME, efx->var5);
-			if (efx->var6 != -255)
-				TRY(alEffectf, effect, AL_REVERB_DECAY_HFRATIO, efx->var6);
-			if (efx->var7 != -255)
-				TRY(alEffectf, effect, AL_REVERB_REFLECTIONS_GAIN, efx->var7);
-			if (efx->var8 != -255)
-				TRY(alEffectf, effect, AL_REVERB_REFLECTIONS_DELAY, efx->var8);
-			if (efx->var9 != -255)
-				TRY(alEffectf, effect, AL_REVERB_LATE_REVERB_GAIN, efx->var9);
-			if (efx->var10 != -255)
-				TRY(alEffectf, effect, AL_REVERB_LATE_REVERB_DELAY, efx->var10);
-			if (efx->var11 != -255)
-				TRY(alEffectf, effect, AL_REVERB_AIR_ABSORPTION_GAINHF, efx->var11);
-			if (efx->var12 != -255)
-				TRY(alEffectf, effect, AL_REVERB_ROOM_ROLLOFF_FACTOR, efx->var12);
-			if (efx->var13 != -255)
-				TRY(alEffectf, effect, AL_REVERB_ROOM_ROLLOFF_FACTOR, efx->var13);
+			APPLY_EFFECT(alEffectf, reverb.density, REVERB, DENSITY);
+			APPLY_EFFECT(alEffectf, reverb.diffusion, REVERB, DIFFUSION);
+			APPLY_EFFECT(alEffectf, reverb.gain, REVERB, GAIN);
+			APPLY_EFFECT(alEffectf, reverb.gainhf, REVERB, GAINHF);
+			APPLY_EFFECT(alEffectf, reverb.decay_time, REVERB, DECAY_TIME);
+			APPLY_EFFECT(alEffectf, reverb.decay_hfratio, REVERB, DECAY_HFRATIO);
+			APPLY_EFFECT(alEffectf, reverb.reflections_gain, REVERB, REFLECTIONS_GAIN);
+			APPLY_EFFECT(alEffectf, reverb.reflections_delay, REVERB, REFLECTIONS_DELAY);
+			APPLY_EFFECT(alEffectf, reverb.late_reverb_gain, REVERB, LATE_REVERB_GAIN);
+			APPLY_EFFECT(alEffectf, reverb.late_reverb_delay, REVERB, LATE_REVERB_DELAY);
+			APPLY_EFFECT(alEffectf, reverb.air_absorption_gainhf, REVERB, AIR_ABSORPTION_GAINHF);
+			APPLY_EFFECT_BOOL(reverb.decay_hflimit, REVERB, DECAY_HFLIMIT);
 			break;
 		case EFFECT_CHORUS:
 			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_CHORUS);
 
-			if (efx->var1 != -255)
-				TRY(alEffectf, effect, AL_CHORUS_WAVEFORM, efx->var1);
-			if (efx->var2 != -255)
-				TRY(alEffectf, effect, AL_CHORUS_PHASE, efx->var2);
-			if (efx->var3 != -255)
-				TRY(alEffectf, effect, AL_CHORUS_RATE, efx->var3);
-			if (efx->var4 != -255)
-				TRY(alEffectf, effect, AL_CHORUS_DEPTH, efx->var4);
-			if (efx->var5 != -255)
-				TRY(alEffectf, effect, AL_CHORUS_FEEDBACK, efx->var5);
-			if (efx->var6 != -255)
-				TRY(alEffectf, effect, AL_CHORUS_DELAY, efx->var6);
+			APPLY_EFFECT(alEffectf, chorus.waveform, CHORUS, WAVEFORM);
+			APPLY_EFFECT(alEffecti, chorus.phase, CHORUS, PHASE);
+			APPLY_EFFECT(alEffectf, chorus.rate, CHORUS, RATE);
+			APPLY_EFFECT(alEffectf, chorus.depth, CHORUS, DEPTH);
+			APPLY_EFFECT(alEffectf, chorus.feedback, CHORUS, FEEDBACK);
+			APPLY_EFFECT(alEffectf, chorus.delay, CHORUS, DELAY);
 			break;
 		case EFFECT_DISTORTION:
 			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_DISTORTION);
 
-			if (efx->var1 != -255)
-				TRY(alEffectf, effect, AL_DISTORTION_EDGE, efx->var1);
-			if (efx->var2 != -255)
-				TRY(alEffectf, effect, AL_DISTORTION_GAIN, efx->var2);
-			if (efx->var3 != -255)
-				TRY(alEffectf, effect, AL_DISTORTION_LOWPASS_CUTOFF, efx->var3);
-			if (efx->var4 != -255)
-				TRY(alEffectf, effect, AL_DISTORTION_EQCENTER, efx->var4);
-			if (efx->var5 != -255)
-				TRY(alEffectf, effect, AL_DISTORTION_EQBANDWIDTH, efx->var5);
+			APPLY_EFFECT(alEffectf, distortion.edge, DISTORTION, EDGE);
+			APPLY_EFFECT(alEffectf, distortion.gain, DISTORTION, GAIN);
+			APPLY_EFFECT(alEffectf, distortion.lowpass_cutoff, DISTORTION, LOWPASS_CUTOFF);
+			APPLY_EFFECT(alEffectf, distortion.eqcenter, DISTORTION, EQCENTER);
+			APPLY_EFFECT(alEffectf, distortion.eqbandwidth, DISTORTION, EQBANDWIDTH);
 			break;
 		case EFFECT_ECHO:
 			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_ECHO);
 
-			if (efx->var1 != -255)
-				TRY(alEffectf, effect, AL_ECHO_DELAY, efx->var1);
-			if (efx->var2 != -255)
-				TRY(alEffectf, effect, AL_ECHO_LRDELAY, efx->var2);
-			if (efx->var3 != -255)
-				TRY(alEffectf, effect, AL_ECHO_DAMPING, efx->var3);
-			if (efx->var4 != -255)
-				TRY(alEffectf, effect, AL_ECHO_FEEDBACK, efx->var4);
-			if (efx->var5 != -255)
-				TRY(alEffectf, effect, AL_ECHO_SPREAD, efx->var5);
+			APPLY_EFFECT(alEffectf, echo.delay, ECHO, DELAY);
+			APPLY_EFFECT(alEffectf, echo.lrdelay, ECHO, LRDELAY);
+			APPLY_EFFECT(alEffectf, echo.damping, ECHO, DAMPING);
+			APPLY_EFFECT(alEffectf, echo.feedback, ECHO, FEEDBACK);
+			APPLY_EFFECT(alEffectf, echo.spread, ECHO, SPREAD);
+			break;
+		case EFFECT_FLANGER:
+			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_FLANGER);
+
+			APPLY_EFFECT(alEffectf, flanger.waveform, FLANGER, WAVEFORM);
+			APPLY_EFFECT(alEffecti, flanger.phase, FLANGER, PHASE);
+			APPLY_EFFECT(alEffectf, flanger.rate, FLANGER, RATE);
+			APPLY_EFFECT(alEffectf, flanger.depth, FLANGER, DEPTH);
+			APPLY_EFFECT(alEffectf, flanger.feedback, FLANGER, FEEDBACK);
+			APPLY_EFFECT(alEffectf, flanger.delay, FLANGER, DELAY);
+			break;
+		case EFFECT_FREQSHIFT:
+			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_FREQUENCY_SHIFTER);
+
+			APPLY_EFFECT(alEffectf, freqshift.frequency, FREQUENCY_SHIFTER, FREQUENCY);
+			APPLY_EFFECT(alEffecti, freqshift.left_direction, FREQUENCY_SHIFTER, LEFT_DIRECTION);
+			APPLY_EFFECT(alEffecti, freqshift.right_direction, FREQUENCY_SHIFTER, RIGHT_DIRECTION);
+			break;
+		case EFFECT_VOCALMORPH:
+			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_VOCAL_MORPHER);
+
+			APPLY_EFFECT(alEffecti, vocal_morpher.phonemea, VOCAL_MORPHER, PHONEMEA);
+			APPLY_EFFECT(alEffecti, vocal_morpher.phonemeb, VOCAL_MORPHER, PHONEMEB);
+			APPLY_EFFECT(alEffecti, vocal_morpher.phonemea_coarse_tuning, VOCAL_MORPHER, PHONEMEA_COARSE_TUNING);
+			APPLY_EFFECT(alEffecti, vocal_morpher.phonemeb_coarse_tuning, VOCAL_MORPHER, PHONEMEB_COARSE_TUNING);
+			APPLY_EFFECT(alEffecti, vocal_morpher.waveform, VOCAL_MORPHER, WAVEFORM);
+			APPLY_EFFECT(alEffectf, vocal_morpher.rate, VOCAL_MORPHER, RATE);
 			break;
 		case EFFECT_PITCHSHIFT:
 			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_PITCH_SHIFTER);
 
-			if (efx->var1 != -255)
-				TRY(alEffectf, effect, AL_PITCH_SHIFTER_COARSE_TUNE, efx->var1);
-			if (efx->var2 != -255)
-				TRY(alEffectf, effect, AL_PITCH_SHIFTER_FINE_TUNE , efx->var2);
+			APPLY_EFFECT(alEffecti, pitchshift.coarse_tune, PITCH_SHIFTER, COARSE_TUNE);
+			APPLY_EFFECT(alEffecti, pitchshift.fine_tune, PITCH_SHIFTER, FINE_TUNE);
 			break;
 		case EFFECT_RINGMOD:
 			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_RING_MODULATOR);
 
-			if (efx->var1 != -255)
-				TRY(alEffectf, effect, AL_RING_MODULATOR_FREQUENCY, efx->var1);
-			if (efx->var2 != -255)
-				TRY(alEffectf, effect, AL_RING_MODULATOR_HIGHPASS_CUTOFF, efx->var2);
-			if (efx->var3 != -255)
-				TRY(alEffectf, effect, AL_RING_MODULATOR_WAVEFORM, efx->var3);
+			APPLY_EFFECT(alEffectf, ringmod.frequency, RING_MODULATOR, FREQUENCY);
+			APPLY_EFFECT(alEffectf, ringmod.highpass_cutoff, RING_MODULATOR, HIGHPASS_CUTOFF);
+			APPLY_EFFECT(alEffecti, ringmod.waveform, RING_MODULATOR, WAVEFORM);
+			break;
+		case EFFECT_AUTOWAH:
+			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_AUTOWAH);
+
+			APPLY_EFFECT(alEffectf, autowah.attack_time, AUTOWAH, ATTACK_TIME);
+			APPLY_EFFECT(alEffectf, autowah.release_time, AUTOWAH, RELEASE_TIME);
+			APPLY_EFFECT(alEffectf, autowah.resonance, AUTOWAH, RESONANCE);
+			APPLY_EFFECT(alEffectf, autowah.peak_gain, AUTOWAH, PEAK_GAIN);
 			break;
 		case EFFECT_COMPRESSOR:
 			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_COMPRESSOR);
 
-			if (efx->var1 != -255)
-				TRY(alEffectf, effect, AL_COMPRESSOR_ONOFF, efx->var1);
+			APPLY_EFFECT(alEffectf, compressor.onoff, COMPRESSOR, ONOFF);
 			break;
 		case EFFECT_EQ:
 			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_EQUALIZER);
 
-			if (efx->var1 != -255)
-				TRY(alEffectf, effect, AL_EQUALIZER_LOW_GAIN, efx->var1);
-			if (efx->var2 != -255)
-				TRY(alEffectf, effect, AL_EQUALIZER_LOW_CUTOFF, efx->var2);
-			if (efx->var3 != -255)
-				TRY(alEffectf, effect, AL_EQUALIZER_MID1_GAIN, efx->var3);
-			if (efx->var4 != -255)
-				TRY(alEffectf, effect, AL_EQUALIZER_MID1_CENTER, efx->var4);
-			if (efx->var5 != -255)
-				TRY(alEffectf, effect, AL_EQUALIZER_MID1_WIDTH, efx->var5);
-			if (efx->var6 != -255)
-				TRY(alEffectf, effect, AL_EQUALIZER_MID2_GAIN, efx->var6);
-			if (efx->var7 != -255)
-				TRY(alEffectf, effect, AL_EQUALIZER_MID2_CENTER, efx->var7);
-			if (efx->var8 != -255)
-				TRY(alEffectf, effect, AL_EQUALIZER_MID2_WIDTH, efx->var8);
-			if (efx->var9 != -255)
-				TRY(alEffectf, effect, AL_EQUALIZER_HIGH_GAIN, efx->var9);
-			if (efx->var10 != -255)
-				TRY(alEffectf, effect, AL_EQUALIZER_HIGH_CUTOFF, efx->var10);
+			APPLY_EFFECT(alEffectf, eq.low_gain, EQUALIZER, LOW_GAIN);
+			APPLY_EFFECT(alEffectf, eq.low_cutoff, EQUALIZER, LOW_CUTOFF);
+			APPLY_EFFECT(alEffectf, eq.mid1_gain, EQUALIZER, MID1_GAIN);
+			APPLY_EFFECT(alEffectf, eq.mid1_center, EQUALIZER, MID1_CENTER);
+			APPLY_EFFECT(alEffectf, eq.mid1_width, EQUALIZER, MID1_WIDTH);
+			APPLY_EFFECT(alEffectf, eq.mid2_gain, EQUALIZER, MID2_GAIN);
+			APPLY_EFFECT(alEffectf, eq.mid2_center, EQUALIZER, MID2_CENTER);
+			APPLY_EFFECT(alEffectf, eq.mid2_width, EQUALIZER, MID2_WIDTH);
+			APPLY_EFFECT(alEffectf, eq.high_gain, EQUALIZER, HIGH_GAIN);
+			APPLY_EFFECT(alEffectf, eq.high_cutoff, EQUALIZER, HIGH_CUTOFF);
 			break;
 	}
 }
+
+#undef APPLY_EFFECT
+#undef APPLY_EFFECT_FVEC3
 
 efx_t *I_CreateEFX(efx_t *efx)
 {
@@ -2063,24 +2102,32 @@ efx_t *I_CreateEFX(efx_t *efx)
 
 	efx_t *efxc = Z_Calloc(sizeof(efx_t), PU_STATIC, NULL);
 
+	CONS_Debug(DBG_EFX, "I_CreateEFX: Attempting to allocate new EFX.\n");
+
 	if (efxc == NULL)
 		I_Error("OpenAL: Ran out of memory generating EFX.\n");
 
 	if (efx != NULL)
+	{
 		memcpy(efxc, efx, sizeof(efx_t));
+		CONS_Debug(DBG_EFX, "I_CreateEFX: Given EFX exists, attempt to copy its data over.\n");
+	}
 
 	// Init effects and slots.
-	TRY(alGenEffects, 1, &efxc->effect);
-	TRY(alGenAuxiliaryEffectSlots, 1, &efxc->slot);
+	CONS_Debug(DBG_EFX, "I_CreateEFX: Generating Effect and Slot.\n");
+	TRY(alGenEffects, 1, &efxc->al.effect);
+	TRY(alGenAuxiliaryEffectSlots, 1, &efxc->al.slot);
 
-	if (TRY(alIsEffect, efxc->effect) && TRY(alIsAuxiliaryEffectSlot, efxc->slot))
+	if (TRY(alIsEffect, efxc->al.effect) && TRY(alIsAuxiliaryEffectSlot, efxc->al.slot))
 	{
-		I_HandleEFXType(efxc, efxc->effect);
+		CONS_Debug(DBG_EFX, "I_CreateEFX: Effect and Slot successfully created.\n");
+		I_HandleEFXType(efxc, efxc->al.effect);
 
-		TRY(alAuxiliaryEffectSloti, efxc->slot, AL_EFFECTSLOT_EFFECT, efxc->effect);
+		TRY(alAuxiliaryEffectSloti, efxc->al.slot, AL_EFFECTSLOT_EFFECT, efxc->al.effect);
 		return efxc;
 	}
 
+	CONS_Debug(DBG_EFX, "I_CreateEFX: Effect or Slot failed to be created, freeing.\n");
 	Z_Free(efxc);
 
 	return NULL;
@@ -2100,10 +2147,7 @@ float I_GetEFXTail(efx_t *efx)
 	switch(efx->type)
 	{
 		case EFFECT_REVERB:
-			if (efx->var5 != 255)
-				tailtime = efx->var5;
-			else
-				tailtime = 1.49;
+			tailtime = efx->reverb.decay_time;
 			break;
 
 		default:
@@ -2111,6 +2155,7 @@ float I_GetEFXTail(efx_t *efx)
 			break;
 	}
 
+	CONS_Debug(DBG_EFX, "I_GetEFXTail: EFX tail is %f aka %f.\n", tailtime, tailtime*TICRATE);
 	return tailtime*TICRATE;
 }
 
@@ -2121,16 +2166,19 @@ void I_DeleteEFX(efx_t *efx)
 	if (efx == NULL)
 		return;
 
-	if (TRY(alIsEffect, efx->effect))
+	if (TRY(alIsEffect, efx->al.effect))
 	{
-		TRY(alDeleteEffects, 1, &efx->effect);
+		CONS_Debug(DBG_EFX, "I_DeleteEFX: Effect exists, attempting to delete.\n");
+		TRY(alDeleteEffects, 1, &efx->al.effect);
 	}
 
-	if (TRY(alIsAuxiliaryEffectSlot, efx->slot))
+	if (TRY(alIsAuxiliaryEffectSlot, efx->al.slot))
 	{
-		TRY(alDeleteAuxiliaryEffectSlots, 1, &efx->slot);
+		CONS_Debug(DBG_EFX, "I_DeleteEFX: Slot exists, attempting to delete.\n");
+		TRY(alDeleteAuxiliaryEffectSlots, 1, &efx->al.slot);
 	}
 
+	CONS_Debug(DBG_EFX, "I_DeleteEFX: Freeing allocated memory.\n");
 	Z_Free(efx);
 }
 
@@ -2145,27 +2193,36 @@ void I_CreateGlobalEFX(efx_t *efx)
 		return;
 
 	// Init effects and slots.
+	CONS_Debug(DBG_EFX, "I_CreateGlobalEFX: Generating Effect and Slot.\n");
 	TRY(alGenEffects, 1, &audio.globalefx.effect);
 	TRY(alGenAuxiliaryEffectSlots, 1, &audio.globalefx.slot);
 
 	if (TRY(alIsEffect, audio.globalefx.effect) && TRY(alIsAuxiliaryEffectSlot, audio.globalefx.slot))
 	{
+		CONS_Debug(DBG_EFX, "I_CreateGlobalEFX: Effect and Slot successfully created.\n");
 		I_HandleEFXType(efx, audio.globalefx.effect);
 		TRY(alAuxiliaryEffectSloti, audio.globalefx.slot, AL_EFFECTSLOT_EFFECT, audio.globalefx.effect);
+
+		CONS_Debug(DBG_EFX, "I_CreateGlobalEFX: Global EFX enabled.\n");
 		audio.globalefx.enabled = true;
 		return;
 	}
 
+	CONS_Debug(DBG_EFX, "I_CreateEFX: Effect or Slot failed to be created.\n");
+
 	if (TRY(alIsEffect, audio.globalefx.effect))
 	{
+		CONS_Debug(DBG_EFX, "I_CreateGlobalEFX: Effect exists, attempting to delete.\n");
 		TRY(alDeleteEffects, 1, &audio.globalefx.effect);
 	}
 
 	if (TRY(alIsAuxiliaryEffectSlot, audio.globalefx.slot))
 	{
+		CONS_Debug(DBG_EFX, "I_CreateGlobalEFX: Slot exists, attempting to delete.\n");
 		TRY(alDeleteAuxiliaryEffectSlots, 1, &audio.globalefx.slot);
 	}
 
+	CONS_Debug(DBG_EFX, "I_CreateGlobalEFX: Global EFX disabled.\n");
 	audio.globalefx.enabled = false;
 }
 
@@ -2178,15 +2235,139 @@ void I_DeleteGlobalEFX(void)
 
 	if (TRY(alIsEffect, audio.globalefx.effect))
 	{
+		CONS_Debug(DBG_EFX, "I_DeleteGlobalEFX: Effect exists, attempting to delete.\n");
 		TRY(alDeleteEffects, 1, &audio.globalefx.effect);
 	}
 
 	if (TRY(alIsAuxiliaryEffectSlot, audio.globalefx.slot))
 	{
+		CONS_Debug(DBG_EFX, "I_DeleteGlobalEFX: Slot exists, attempting to delete.\n");
 		TRY(alDeleteAuxiliaryEffectSlots, 1, &audio.globalefx.slot);
 	}
 
+	CONS_Debug(DBG_EFX, "I_DeleteGlobalEFX: Global EFX disabled.\n");
 	audio.globalefx.enabled = false;
 }
+
+#define RESET_EFFECT(field, altype, alfield) efx->field = AL_##altype##_DEFAULT_##alfield; \
+CONS_Debug(DBG_EFX, VAL(AL_##altype##_##alfield) ": %f\n", (float)efx->field)
+
+#define RESET_EFFECT_FVEC3(field, altype, alfield) efx->field.x = AL_##altype##_DEFAULT_##alfield##_XYZ; \
+efx->field.y = AL_##altype##_DEFAULT_##alfield##_XYZ; \
+efx->field.z = AL_##altype##_DEFAULT_##alfield##_XYZ; \
+CONS_Debug(DBG_EFX, VAL(AL_##altype##_##alfield) ": x=%f y=%f z=%f\n", efx->field.x, efx->field.y, efx->field.z)
+
+void I_InitEFXArray(efx_t *efx)
+{
+	if (efx == NULL)
+		return;
+
+	efx->type = EFFECT_NONE;
+
+	CONS_Debug(DBG_EFX, "I_InitEFXArray: Resetting EFX array to defaults.\n");
+
+	RESET_EFFECT(eaxreverb.density, EAXREVERB, DENSITY);
+	RESET_EFFECT(eaxreverb.diffusion, EAXREVERB, DIFFUSION);
+	RESET_EFFECT(eaxreverb.gain, EAXREVERB, GAIN);
+	RESET_EFFECT(eaxreverb.gainhf, EAXREVERB, GAINHF);
+	RESET_EFFECT(eaxreverb.gainlf, EAXREVERB, GAINLF);
+	RESET_EFFECT(eaxreverb.decay_time, EAXREVERB, DECAY_TIME);
+	RESET_EFFECT(eaxreverb.decay_hfratio, EAXREVERB, DECAY_HFRATIO);
+	RESET_EFFECT(eaxreverb.decay_lfratio, EAXREVERB, DECAY_LFRATIO);
+	RESET_EFFECT(eaxreverb.reflections_gain, EAXREVERB, REFLECTIONS_GAIN);
+	RESET_EFFECT(eaxreverb.reflections_delay, EAXREVERB, REFLECTIONS_DELAY);
+	RESET_EFFECT_FVEC3(eaxreverb.reflections_pan, EAXREVERB, REFLECTIONS_PAN);
+	RESET_EFFECT(eaxreverb.late_reverb_gain, EAXREVERB, LATE_REVERB_GAIN);
+	RESET_EFFECT(eaxreverb.late_reverb_delay, EAXREVERB, LATE_REVERB_DELAY);
+	RESET_EFFECT_FVEC3(eaxreverb.late_reverb_pan, EAXREVERB, LATE_REVERB_PAN);
+	RESET_EFFECT(eaxreverb.echo_time, EAXREVERB, ECHO_TIME);
+	RESET_EFFECT(eaxreverb.echo_depth, EAXREVERB, ECHO_DEPTH);
+	RESET_EFFECT(eaxreverb.modulation_time, EAXREVERB, MODULATION_TIME);
+	RESET_EFFECT(eaxreverb.modulation_depth, EAXREVERB, MODULATION_DEPTH);
+	RESET_EFFECT(eaxreverb.air_absorption_gainhf, EAXREVERB, AIR_ABSORPTION_GAINHF);
+	RESET_EFFECT(eaxreverb.hfreference, EAXREVERB, HFREFERENCE);
+	RESET_EFFECT(eaxreverb.lfreference, EAXREVERB, LFREFERENCE);
+	RESET_EFFECT(eaxreverb.room_rolloff_factor, EAXREVERB, ROOM_ROLLOFF_FACTOR);
+	RESET_EFFECT(eaxreverb.decay_hflimit, EAXREVERB, DECAY_HFLIMIT);
+
+	RESET_EFFECT(reverb.density, REVERB, DENSITY);
+	RESET_EFFECT(reverb.diffusion, REVERB, DIFFUSION);
+	RESET_EFFECT(reverb.gain, REVERB, GAIN);
+	RESET_EFFECT(reverb.gainhf, REVERB, GAINHF);
+	RESET_EFFECT(reverb.decay_time, REVERB, DECAY_TIME);
+	RESET_EFFECT(reverb.decay_hfratio, REVERB, DECAY_HFRATIO);
+	RESET_EFFECT(reverb.reflections_gain, REVERB, REFLECTIONS_GAIN);
+	RESET_EFFECT(reverb.reflections_delay, REVERB, REFLECTIONS_DELAY);
+	RESET_EFFECT(reverb.late_reverb_gain, REVERB, LATE_REVERB_GAIN);
+	RESET_EFFECT(reverb.late_reverb_delay, REVERB, LATE_REVERB_DELAY);
+	RESET_EFFECT(reverb.air_absorption_gainhf, REVERB, AIR_ABSORPTION_GAINHF);
+	RESET_EFFECT(reverb.decay_hflimit, REVERB, DECAY_HFLIMIT);
+
+	RESET_EFFECT(chorus.waveform, CHORUS, WAVEFORM);
+	RESET_EFFECT(chorus.phase, CHORUS, PHASE);
+	RESET_EFFECT(chorus.rate, CHORUS, RATE);
+	RESET_EFFECT(chorus.depth, CHORUS, DEPTH);
+	RESET_EFFECT(chorus.feedback, CHORUS, FEEDBACK);
+	RESET_EFFECT(chorus.delay, CHORUS, DELAY);
+
+	RESET_EFFECT(distortion.edge, DISTORTION, EDGE);
+	RESET_EFFECT(distortion.gain, DISTORTION, GAIN);
+	RESET_EFFECT(distortion.lowpass_cutoff, DISTORTION, LOWPASS_CUTOFF);
+	RESET_EFFECT(distortion.eqcenter, DISTORTION, EQCENTER);
+	RESET_EFFECT(distortion.eqbandwidth, DISTORTION, EQBANDWIDTH);
+
+	RESET_EFFECT(echo.delay, ECHO, DELAY);
+	RESET_EFFECT(echo.lrdelay, ECHO, LRDELAY);
+	RESET_EFFECT(echo.damping, ECHO, DAMPING);
+	RESET_EFFECT(echo.feedback, ECHO, FEEDBACK);
+	RESET_EFFECT(echo.spread, ECHO, SPREAD);
+
+	RESET_EFFECT(flanger.waveform, FLANGER, WAVEFORM);
+	RESET_EFFECT(flanger.phase, FLANGER, PHASE);
+	RESET_EFFECT(flanger.rate, FLANGER, RATE);
+	RESET_EFFECT(flanger.depth, FLANGER, DEPTH);
+	RESET_EFFECT(flanger.feedback, FLANGER, FEEDBACK);
+	RESET_EFFECT(flanger.delay, FLANGER, DELAY);
+
+	RESET_EFFECT(freqshift.frequency, FREQUENCY_SHIFTER, FREQUENCY);
+	RESET_EFFECT(freqshift.left_direction, FREQUENCY_SHIFTER, LEFT_DIRECTION);
+	RESET_EFFECT(freqshift.right_direction, FREQUENCY_SHIFTER, RIGHT_DIRECTION);
+
+	RESET_EFFECT(vocal_morpher.phonemea, VOCAL_MORPHER, PHONEMEA);
+	RESET_EFFECT(vocal_morpher.phonemeb, VOCAL_MORPHER, PHONEMEB);
+	RESET_EFFECT(vocal_morpher.phonemea_coarse_tuning, VOCAL_MORPHER, PHONEMEA_COARSE_TUNING);
+	RESET_EFFECT(vocal_morpher.phonemeb_coarse_tuning, VOCAL_MORPHER, PHONEMEB_COARSE_TUNING);
+	RESET_EFFECT(vocal_morpher.waveform, VOCAL_MORPHER, WAVEFORM);
+	RESET_EFFECT(vocal_morpher.rate, VOCAL_MORPHER, RATE);
+
+	RESET_EFFECT(pitchshift.coarse_tune, PITCH_SHIFTER, COARSE_TUNE);
+	RESET_EFFECT(pitchshift.fine_tune, PITCH_SHIFTER, FINE_TUNE);
+
+	RESET_EFFECT(ringmod.frequency, RING_MODULATOR, FREQUENCY);
+	RESET_EFFECT(ringmod.highpass_cutoff, RING_MODULATOR, HIGHPASS_CUTOFF);
+	RESET_EFFECT(ringmod.waveform, RING_MODULATOR, WAVEFORM);
+
+	RESET_EFFECT(autowah.attack_time, AUTOWAH, ATTACK_TIME);
+	RESET_EFFECT(autowah.release_time, AUTOWAH, RELEASE_TIME);
+	RESET_EFFECT(autowah.resonance, AUTOWAH, RESONANCE);
+	RESET_EFFECT(autowah.peak_gain, AUTOWAH, PEAK_GAIN);
+
+	RESET_EFFECT(compressor.onoff, COMPRESSOR, ONOFF);
+
+	RESET_EFFECT(eq.low_gain, EQUALIZER, LOW_GAIN);
+	RESET_EFFECT(eq.low_cutoff, EQUALIZER, LOW_CUTOFF);
+	RESET_EFFECT(eq.mid1_gain, EQUALIZER, MID1_GAIN);
+	RESET_EFFECT(eq.mid1_center, EQUALIZER, MID1_CENTER);
+	RESET_EFFECT(eq.mid1_width, EQUALIZER, MID1_WIDTH);
+	RESET_EFFECT(eq.mid2_gain, EQUALIZER, MID2_GAIN);
+	RESET_EFFECT(eq.mid2_center, EQUALIZER, MID2_CENTER);
+	RESET_EFFECT(eq.mid2_width, EQUALIZER, MID2_WIDTH);
+	RESET_EFFECT(eq.high_gain, EQUALIZER, HIGH_GAIN);
+	RESET_EFFECT(eq.high_cutoff, EQUALIZER, HIGH_CUTOFF);
+}
+
+#undef RESET_EFFECT
+#undef RESET_EFFECT_FVEC3
+#undef VAL
 
 #endif // defined(HAVE_OPENAL)

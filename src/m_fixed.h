@@ -377,6 +377,13 @@ struct vector3_t
 	fixed_t x, y, z;
 };
 
+struct f_vector3_t
+{
+	float x;
+	float y;
+	float z;
+};
+
 vector3_t *FV3_Load(vector3_t *vec, fixed_t x, fixed_t y, fixed_t z);
 vector3_t *FV3_UnLoad(vector3_t *vec, fixed_t *x, fixed_t *y, fixed_t *z);
 vector3_t *FV3_Copy(vector3_t *a_o, const vector3_t *a_i);

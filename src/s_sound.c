@@ -837,7 +837,11 @@ notinlevel:
 
 			if (c->efx == NULL || c->endtime > c->efxtail + c->duration)
 			{
-				//CONS_Printf("endtime: %f efxtail: %f duration: %f \n", c->endtime, c->efxtail, c->duration);
+				if (c->efx != NULL)
+				{
+					CONS_Debug(DBG_EFX, "S_UpdateSounds: endtime: %f efxtail: %f duration: %f \n", c->endtime, c->efxtail, c->duration);
+				}
+
 				S_StopChannel(cnum);
 			}
 
@@ -2904,14 +2908,7 @@ void ModFilter_OnChange(void)
 
 void S_InitEFXArray(efx_t *efx)
 {
-	if (efx == NULL)
-		return;
-
-	efx->type = EFFECT_NONE;
-	efx->var1 = efx->var2 = efx->var3 = -255;
-	efx->var4 = efx->var5 = efx->var6 = -255;
-	efx->var7 = efx->var8 = efx->var9 = -255;
-	efx->var10 = efx->var11 = efx->var12 = efx->var13 = -255;
+	I_InitEFXArray(efx);
 }
 
 void S_CreateGlobalEFX(efx_t *efx)
