@@ -358,11 +358,6 @@ void S_InitEFXArray(efx_t *efx);
 void S_CreateGlobalEFX(efx_t *efx);
 void S_DeleteGlobalEFX(void);
 
-#ifndef HW3SOUND
-#define S_StartAttackSound S_StartSound
-#define S_StartScreamSound S_StartSound
-#endif
-
 #ifdef __cplusplus
 } // extern "C"
 #endif

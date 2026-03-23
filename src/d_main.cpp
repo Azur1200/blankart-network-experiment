@@ -110,10 +110,6 @@
 #include "hardware/hw_main.h" // 3D View Rendering
 #endif
 
-#ifdef HW3SOUND
-#include "hardware/hw3sound.h"
-#endif
-
 #include "lua_script.h"
 
 // Version numbers for netplay :upside_down_face:
@@ -1038,10 +1034,6 @@ void D_SRB2Loop(void)
 		interp = !dedicated && (R_GetFramerateCap() != TICRATE || cv_timescale.value < FRACUNIT);
 		doDisplay = false;
 
-#ifdef HW3SOUND
-		HW3S_BeginFrameUpdate();
-#endif
-
 		if (realtics > 0 || singletics)
 		{
 			// don't skip more than 10 frames at a time
@@ -1129,10 +1121,6 @@ void D_SRB2Loop(void)
 		S_UpdateSounds(); // move positional sounds
 		if (renderisnewtic)
 			S_UpdateClosedCaptions();
-
-#ifdef HW3SOUND
-		HW3S_EndFrameUpdate();
-#endif
 
 		LUA_Step();
 
@@ -1390,7 +1378,7 @@ static void IdentifyVersion(void)
 #endif
 ////
 
-#if !defined (HAVE_SDL) || defined (HAVE_MIXER) || defined (HAVE_OPENAL)
+#if !defined (HAVE_SDL) || defined (HAVE_OPENAL)
 
 #define MUSICTEST(str) \
 	{\

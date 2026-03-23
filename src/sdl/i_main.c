@@ -35,11 +35,6 @@
 
 #ifdef HAVE_SDL
 
-#ifdef HAVE_TTF
-#include <SDL3/SDL.h>
-#include "i_ttf.h"
-#endif
-
 #if defined (_WIN32) && !defined (main)
 //#define SDLMAIN
 #endif
@@ -198,14 +193,6 @@ int main(int argc, char **argv)
 {
 	myargc = argc;
 	myargv = argv; /// \todo pull out path to exe from this string
-
-#ifdef HAVE_TTF
-#ifdef _WIN32
-	I_StartupTTF(FONTPOINTSIZE, SDL_INIT_VIDEO|SDL_INIT_AUDIO, SDL_SWSURFACE);
-#else
-	I_StartupTTF(FONTPOINTSIZE, SDL_INIT_VIDEO, SDL_SWSURFACE);
-#endif
-#endif
 
 #ifdef _WIN32
 	ChDirToExe();

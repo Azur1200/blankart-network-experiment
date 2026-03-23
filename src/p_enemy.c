@@ -34,10 +34,6 @@
 #include "k_items.h"
 #include "k_objects.h"
 
-#ifdef HW3SOUND
-#include "hardware/hw3sound.h"
-#endif
-
 boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor);
 
 INT32 var1;
@@ -676,7 +672,7 @@ void A_Chase(void *thing)
 	if (!(locvar1 & 1) && actor->info->meleestate && P_CheckMeleeRange(actor))
 	{
 		if (actor->info->attacksound)
-			S_StartAttackSound(actor, actor->info->attacksound);
+			S_StartSound(actor, actor->info->attacksound);
 
 		P_SetMobjState(actor, actor->info->meleestate);
 		return;
@@ -765,7 +761,7 @@ void A_FaceStabChase(void *thing)
 	if (actor->info->meleestate && P_FaceStabCheckMeleeRange(actor))
 	{
 		if (actor->info->attacksound)
-			S_StartAttackSound(actor, actor->info->attacksound);
+			S_StartSound(actor, actor->info->attacksound);
 
 		P_SetMobjState(actor, actor->info->meleestate);
 		return;
@@ -1730,7 +1726,7 @@ void A_SkimChase(void *thing)
 	if (actor->info->meleestate && P_SkimCheckMeleeRange(actor))
 	{
 		if (actor->info->attacksound)
-			S_StartAttackSound(actor, actor->info->attacksound);
+			S_StartSound(actor, actor->info->attacksound);
 
 		P_SetMobjState(actor, actor->info->meleestate);
 		return;
@@ -2519,7 +2515,7 @@ void A_BossZoom(void *thing)
 	dest = actor->target;
 	actor->flags2 |= MF2_SKULLFLY;
 	if (actor->info->attacksound)
-		S_StartAttackSound(actor, actor->info->attacksound);
+		S_StartSound(actor, actor->info->attacksound);
 	A_FaceTarget(actor);
 	an = actor->angle >> ANGLETOFINESHIFT;
 	actor->momx = FixedMul(FixedMul(actor->info->speed*5*FRACUNIT, actor->scale), FINECOSINE(an));
@@ -2601,9 +2597,9 @@ void A_Scream(void *thing)
 		return;
 
 	if (actor->tracer && (actor->tracer->type == MT_SHELL || actor->tracer->type == MT_FIREBALL))
-		S_StartScreamSound(actor, sfx_mario2);
+		S_StartSound(actor, sfx_mario2);
 	else if (actor->info->deathsound)
-		S_StartScreamSound(actor, actor->info->deathsound);
+		S_StartSound(actor, actor->info->deathsound);
 }
 
 // Function: A_Pain
@@ -3795,7 +3791,7 @@ void A_JetbThink(void *thing)
 		{
 			mobj_t *bomb;
 			if (actor->info->attacksound)
-				S_StartAttackSound(actor, actor->info->attacksound);
+				S_StartSound(actor, actor->info->attacksound);
 
 			// use raisestate instead of MT_MINE
 			bomb = P_SpawnMobj(actor->x, actor->y, actor->z - FixedMul((32<<FRACBITS), actor->scale), (mobjtype_t)actor->info->raisestate);
@@ -4227,7 +4223,7 @@ void A_DetonChase(void *thing)
 		actor->reactiontime = -42;
 
 		if (actor->info->seesound)
-			S_StartScreamSound(actor, actor->info->seesound);
+			S_StartSound(actor, actor->info->seesound);
 	}
 
 	if (actor->reactiontime == -42)
@@ -5352,7 +5348,7 @@ void A_Boss2Chase(void *thing)
 			goop->fuse = 10*TICRATE;
 
 			if (actor->info->attacksound)
-				S_StartAttackSound(actor, actor->info->attacksound);
+				S_StartSound(actor, actor->info->attacksound);
 
 			if (P_RandomChance(FRACUNIT/2))
 			{
@@ -5412,7 +5408,7 @@ void A_Boss2Pogo(void *thing)
 		}
 		actor->reactiontime = 0; // we already shot goop, so don't do it again!
 		if (actor->info->attacksound)
-			S_StartAttackSound(actor, actor->info->attacksound);
+			S_StartSound(actor, actor->info->attacksound);
 		actor->flags2 |= MF2_JUSTATTACKED;
 	}
 }
@@ -6398,7 +6394,7 @@ void A_PlaySeeSound(void *thing)
 		return;
 
 	if (actor->info->seesound)
-		S_StartScreamSound(actor, actor->info->seesound);
+		S_StartSound(actor, actor->info->seesound);
 }
 
 // Function: A_PlayAttackSound
@@ -6415,7 +6411,7 @@ void A_PlayAttackSound(void *thing)
 		return;
 
 	if (actor->info->attacksound)
-		S_StartAttackSound(actor, actor->info->attacksound);
+		S_StartSound(actor, actor->info->attacksound);
 }
 
 // Function: A_PlayActiveSound
@@ -9463,7 +9459,7 @@ void A_BrakChase(void *thing)
 			&& actor->health <= P_RandomRange(actor->info->spawnhealth/4, (actor->info->spawnhealth * 3)/4)) // Guaranteed true if <= 1/4 health, guaranteed false if > 3/4 health
 		{
 			if (actor->info->attacksound)
-				S_StartAttackSound(actor, actor->info->attacksound);
+				S_StartSound(actor, actor->info->attacksound);
 
 			P_SetMobjState(actor, actor->info->meleestate);
 			actor->flags2 |= MF2_JUSTATTACKED;

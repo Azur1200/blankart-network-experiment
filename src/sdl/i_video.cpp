@@ -31,10 +31,6 @@
 #define _MATH_DEFINES_DEFINED
 #include <SDL3/SDL.h>
 
-#ifdef HAVE_TTF
-#include "i_ttf.h"
-#endif
-
 #ifdef HAVE_IMAGE
 #include "SDL_image.h"
 #elif defined (__unix__) || (!defined(__APPLE__) && defined (UNIXCOMMON)) // Windows & Mac don't need this, as SDL will do it for us.
@@ -1826,10 +1822,6 @@ void I_StartupGraphics(void)
 	vid.height = BASEVIDHEIGHT;
 
 	VID_SetMode(VID_GetModeForSize(vid.width, vid.height));
-
-#ifdef HAVE_TTF
-	I_ShutdownTTF();
-#endif
 
 	SDLdoUngrabMouse();
 
