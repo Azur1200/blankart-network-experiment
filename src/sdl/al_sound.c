@@ -1020,12 +1020,14 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch, efx_t 
 		{
 			TRY(alSource3i, source, AL_AUXILIARY_SEND_FILTER, efx->slot, 0, AL_FILTER_NULL);
 		}
-		else if ((((originmobj != NULL) && originmobj->type && originmobj->subsector->sector->flags & MSF_NOEFX) || (origin != NULL))
-			&& audio.globalefx.enabled
+		else if (origin != NULL && audio.globalefx.enabled
 			&& TRY(alIsEffect, audio.globalefx.effect)
 			&& TRY(alIsAuxiliaryEffectSlot, audio.globalefx.slot))
 		{
-			TRY(alSource3i, source, AL_AUXILIARY_SEND_FILTER, audio.globalefx.slot, 0, AL_FILTER_NULL);
+			if (originmobj->type && (originmobj->subsector->sector->flags & MSF_NOEFX))
+				TRY(alSource3i, source, AL_AUXILIARY_SEND_FILTER, AL_EFFECTSLOT_NULL, 0, AL_FILTER_NULL);
+			else
+				TRY(alSource3i, source, AL_AUXILIARY_SEND_FILTER, audio.globalefx.slot, 0, AL_FILTER_NULL);
 		}
 	}
 }
