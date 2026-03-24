@@ -1995,7 +1995,7 @@ static void I_HandleEFXType(efx_t *efx, ALuint effect)
 		case EFFECT_CHORUS:
 			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_CHORUS);
 
-			APPLY_EFFECT(alEffectf, chorus.waveform, CHORUS, WAVEFORM);
+			APPLY_EFFECT(alEffecti, chorus.waveform, CHORUS, WAVEFORM);
 			APPLY_EFFECT(alEffecti, chorus.phase, CHORUS, PHASE);
 			APPLY_EFFECT(alEffectf, chorus.rate, CHORUS, RATE);
 			APPLY_EFFECT(alEffectf, chorus.depth, CHORUS, DEPTH);
@@ -2023,7 +2023,7 @@ static void I_HandleEFXType(efx_t *efx, ALuint effect)
 		case EFFECT_FLANGER:
 			TRY(alEffecti, effect, AL_EFFECT_TYPE, AL_EFFECT_FLANGER);
 
-			APPLY_EFFECT(alEffectf, flanger.waveform, FLANGER, WAVEFORM);
+			APPLY_EFFECT(alEffecti, flanger.waveform, FLANGER, WAVEFORM);
 			APPLY_EFFECT(alEffecti, flanger.phase, FLANGER, PHASE);
 			APPLY_EFFECT(alEffectf, flanger.rate, FLANGER, RATE);
 			APPLY_EFFECT(alEffectf, flanger.depth, FLANGER, DEPTH);
