@@ -1661,6 +1661,7 @@ static luaL_Reg lib_draw[] = {
 	// cache
 	{"patchExists", libd_patchExists},
 	{"cachePatch", libd_cachePatch},
+	{"cachePatchRotated", libd_cachePatch}, // Backcompat for v1 extension rotated patch caching.
 	{"getSpritePatch", libd_getSpritePatch},
 	{"getSprite2Patch", libd_getSprite2Patch},
 	{"getColormap", libd_getColormap},
