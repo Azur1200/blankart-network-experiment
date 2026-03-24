@@ -29,6 +29,7 @@ extern "C" {
 #endif
 
 extern consvar_t cv_naturalcamera;
+extern consvar_t cv_lookbackinreplays;
 
 #define FLOATSPEED (FRACUNIT*4)
 
