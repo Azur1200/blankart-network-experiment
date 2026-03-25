@@ -224,6 +224,11 @@ struct int_const_s const MOBJ_ALIASES[] = {
 	{ NULL, 0 }
 };
 
+struct int_const_s const GAMETYPE_ALIASES[] = {
+	{"GT_MATCH",    	GT_BATTLE},
+	{ NULL, 0 }
+};
+
 const char *const MOBJFLAG_LIST[] = {
 	"SPECIAL",
 	"SOLID",

@@ -203,6 +203,7 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	else if (fastncmp("GT_", word, 3)) {
 		p = word;
 		i = 0;
+		INT32 j = 0;
 		while (gametypes[i] != NULL)
 		{
 			if (fastcmp(p, gametypes[i]->constant))
@@ -210,6 +211,14 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 				CacheAndPushConstant(L, word, i);
 				return 1;
 			}
+
+			if (lua_compatmode)
+				for (j = 0; GAMETYPE_ALIASES[j].n; j++)
+					if (fastcmp(p, GAMETYPE_ALIASES[j].n)) {
+						CacheAndPushConstant(L, word, GAMETYPE_ALIASES[j].v);
+						return 1;
+					}
+
 			i++;
 		}
 		if (mathlib) return luaL_error(L, "gametype '%s' could not be found.\n", word);
