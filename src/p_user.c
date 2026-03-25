@@ -171,13 +171,14 @@ void P_InstaThrust(mobj_t *mo, angle_t angle, fixed_t move)
 	mo->momy = FixedMul(move,FINESINE(angle));
 }
 
-// Returns a location (hard to explain - go see how it is used)
+// Returns the X component of a 2D vector pointing at an angle, with move as the magnitude
 fixed_t P_ReturnThrustX(mobj_t *mo, angle_t angle, fixed_t move)
 {
 	(void)mo;
 	angle >>= ANGLETOFINESHIFT;
 	return FixedMul(move, FINECOSINE(angle));
 }
+// Returns the Y component of a 2D vector pointing at an angle, with move as the magnitude
 fixed_t P_ReturnThrustY(mobj_t *mo, angle_t angle, fixed_t move)
 {
 	(void)mo;

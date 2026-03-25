@@ -2919,6 +2919,11 @@ static void K_GetKartBoostPower(player_t *player)
 		}
 	}
 
+	if (player->attractionboost)
+	{
+		K_DoBoost(player, player->attractionboost, (player->attractionattack_hipower) ? 3*FRACUNIT : FRACUNIT, FRACUNIT/4, true, false); // + ???% top speed, + 300% acceleration
+	}
+
 	if (player->slopeboost || player->slopeaccel)
 	{
 		K_DoBoost(player, player->slopeboost, player->slopeaccel, 0, SLOPESTACKABLE, false); // + ???% top speed, + 300% acceleration
@@ -8027,6 +8032,7 @@ void K_KartPlayerAfterThink(player_t *player)
 	}
 	else
 	{
+		player->attractionboost = 0;
 		player->attractionattack_hipower = false;
 		player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
 	}
@@ -11779,10 +11785,10 @@ boolean K_NullDriftTiltEnabled(void)
 	return ((cv_nulldriftefx.value) && (cv_nulldrifttilt.value));
 }
 
+#define TargetThreshold (80*FRACUNIT/100)
 void K_KartAttractHomingAttack(player_t *player)
 {
-	angle_t attackangle = player->mo->angle;
-	fixed_t power = 24*mapobjectscale;
+	fixed_t influence = 0;
 	INT32 lastTarg = player->lastitemtarget;
 	
 	if (lastTarg >= 0)
@@ -11793,10 +11799,12 @@ void K_KartAttractHomingAttack(player_t *player)
 			&& P_MobjWasRemoved(players[lastTarg].mo) == false)
 		{
 			mobj_t *targMo = players[lastTarg].mo;
-			attackangle = R_PointToAngle2(player->mo->x, player->mo->y, targMo->x + targMo->momx, targMo->y + targMo->momy);
+			vector2_t targetdirection = {targMo->x - player->mo->x, targMo->y - player->mo->y};
+			vector2_t movedirection = {P_ReturnThrustX(NULL, player->mo->angle, FRACUNIT), P_ReturnThrustY(NULL, player->mo->angle, FRACUNIT)};
 
-			player->mo->momz = (CLAMP((targMo->z + targMo->momz) - player->mo->z, -power, power)/TICRATE);
-			power = 32*mapobjectscale;
+			FV2_Normalize(&movedirection);
+			FV2_Normalize(&targetdirection);
+			influence = FixedDiv(CLAMP(FV2_Dot(&movedirection, &targetdirection), 0, TargetThreshold), TargetThreshold);
 		}
 	}
 
@@ -11812,11 +11820,17 @@ void K_KartAttractHomingAttack(player_t *player)
 		P_SetTarget(&mo->target, player->mo);
 		P_SetMobjState(mo, S_KLIT1);
 		mo->renderflags |= RF_ADD|RF_FULLBRIGHT;
-
 		P_SpawnGhostMobj(player->mo);
 
-		player->airdriftspeed = K_GetKartSpeed(player, false, false);
-		P_InstaThrust(player->mo, attackangle, K_GetKartSpeed(player, false, false) + power);
+		
+		if (player->attractionattack_hipower)
+		{
+			player->attractionboost = Easing_InCubic(influence, 50*FRACUNIT/100, 60*FRACUNIT/100);
+		}
+		else
+		{
+			player->attractionboost = Easing_InCubic(influence, 25*FRACUNIT/100, 30*FRACUNIT/100);
+		}
 
 		player->attractionattack--;
 	}
@@ -11824,8 +11838,10 @@ void K_KartAttractHomingAttack(player_t *player)
 	{
 		player->attractionattack = 0;
 		player->attractionattack_hipower = false;
+		player->attractionboost = 0;
 		player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
 	}
 }
+#undef TargetThreshold
 
 //}

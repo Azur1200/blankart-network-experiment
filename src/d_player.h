@@ -714,6 +714,7 @@ struct player_t
 	tic_t attractioncharge; // charge of Attraction Shield
 	tic_t attractionattack; // attack timer for Attraction Shield
 	boolean attractionattack_hipower; // Attraction Shield attack's power is maximum
+	fixed_t attractionboost; // while using the Attraction Shield attack, controls the intensity of the boost recieved (stronger when facing towards the target)
 
 	UINT8 bubblecool;	// Bubble Shield use cooldown
 	UINT8 bubbleblowup;	// Bubble Shield usage blowup

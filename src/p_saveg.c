@@ -724,6 +724,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].attractioncharge);
 		SYNC(players[i].attractionattack);
 		SYNC(players[i].attractionattack_hipower);
+		SYNC(players[i].attractionboost);
 
 		SYNC(players[i].bubblecool);
 		SYNC(players[i].bubbleblowup);
