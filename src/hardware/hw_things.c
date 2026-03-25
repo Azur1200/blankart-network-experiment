@@ -1842,7 +1842,14 @@ static void HWR_ProjectSprite(mobj_t *thing)
 									   sprinfo,
 									   (thing->frame & FF_FRAMEMASK));
 
-		affine_pivotoffsetdiff.x = FIXED_TO_FLOAT(affine_pivot.x - spr_offset);
+		fixed_t use_xoffset = spr_offset;
+
+		if (flip)
+		{
+			use_xoffset = spr_width - spr_offset;
+		}
+
+		affine_pivotoffsetdiff.x = FIXED_TO_FLOAT(affine_pivot.x - use_xoffset);
 		affine_pivotoffsetdiff.y = FIXED_TO_FLOAT(affine_pivot.y - spr_topoffset);
 
 		affine_scale.x = FLOAT_TO_FIXED(spritexscale * this_scale);
@@ -2071,12 +2078,8 @@ static void HWR_ProjectSprite(mobj_t *thing)
 				affine_rootpoint.x = tr_x;
 				affine_rootpoint.z = tr_y;
 
-				// Rescale X and Y so we can multiply the pivot offset differences by them.
-				const float f_affinexscale = f_xlen / (FIXED_TO_FLOAT(spr_width));
-				const float f_affineyscale = f_ylen / (FIXED_TO_FLOAT(spr_height));
-
-				affine_pivotoffsetdiff.x *= f_affinexscale;
-				affine_pivotoffsetdiff.y *= f_affineyscale;
+				affine_pivotoffsetdiff.x *= FIXED_TO_FLOAT(affine_scale.x);
+				affine_pivotoffsetdiff.y *= FIXED_TO_FLOAT(affine_scale.y);
 
 				affine_rootpoint.x -= (affine_pivotoffsetdiff.x * rightcos);
 				affine_rootpoint.z -= (affine_pivotoffsetdiff.x * rightsin);
