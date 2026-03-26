@@ -1201,6 +1201,11 @@ void Y_StartIntermission(void)
 		K_CashInPowerLevels();
 	}
 
+	if (roundqueue.size > 0 && roundqueue.position == roundqueue.size)
+	{
+		Automate_Run(AEV_QUEUEEND);
+	}
+
 	bgtile = W_CachePatchName("SRB2BACK", PU_STATIC);
 	useinterpic = false;
 	Automate_Run(AEV_INTERMISSIONSTART);

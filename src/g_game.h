@@ -53,6 +53,29 @@ typedef enum
 	NEXTMAP_SPECIAL = NEXTMAP_INVALID
 } nextmapspecial_t;
 
+#define ROUNDQUEUE_MAX 10 // sane max? maybe make dynamically allocated later
+
+struct roundentry_t
+{
+	UINT16 mapnum;				// Map number at this position
+	UINT8 gametype;				// Gametype we want to play this in
+	boolean encore;				// Whether this will be flipped
+	boolean rankrestricted;		// For grand prix progression
+};
+
+extern struct roundqueue
+{
+	UINT8 roundnum;							// Visible number on HUD
+	UINT8 position;							// Head position in the round queue
+	UINT8 size;								// Number of entries in the round queue
+	boolean netcommunicate;					// As server, should we net-communicate this in XD_MAP?
+	roundentry_t entries[ROUNDQUEUE_MAX];	// Entries in the round queue
+} roundqueue;
+
+void G_MapSlipIntoRoundQueue(UINT8 position, UINT16 map, UINT8 setgametype, boolean setencore, boolean rankrestricted);
+void G_MapIntoRoundQueue(UINT16 map, UINT8 setgametype, boolean setencore, boolean rankrestricted);
+void G_GPCupIntoRoundQueue(cupheader_t *cup, UINT8 setgametype, boolean setencore);
+
 extern INT16 kartmap2native[NEXTMAP_SPECIAL], nativemap2kart[NEXTMAP_SPECIAL];
 extern INT16 nextexnum;
 
@@ -166,7 +189,7 @@ void G_ChangePlayerReferences(mobj_t *oldmo, mobj_t *newmo);
 void G_DoReborn(INT32 playernum);
 void G_PlayerReborn(INT32 player, boolean betweenmaps);
 void G_InitNew(UINT8 pencoremode, INT32 map, boolean resetplayer,
-	boolean skipprecutscene, boolean FLS);
+	boolean skipprecutscene);
 char *G_BuildMapTitle(INT32 mapnum);
 
 struct searchdim
@@ -221,10 +244,11 @@ void G_SaveGameOver(UINT32 slot, boolean modifylives);
 
 void G_SetGametype(INT16 gametype);
 char *G_PrepareGametypeConstant(const char *newgtconst);
-void G_UpdateGametypeSelections(void);
-void G_SetGametypeColor(INT16 gtype,INT32 color);
 void G_AddTOL(UINT32 newtol, const char *tolname);
+void G_UpdateGametypeSelections(void);
 INT32 G_GetGametypeByName(const char *gametypestr);
+INT32 G_GuessGametypeByTOL(UINT32 tol);
+
 boolean G_IsSpecialStage(INT32 mapnum);
 boolean G_GametypeUsesLives(void);
 boolean G_GametypeHasTeams(void);
@@ -235,6 +259,7 @@ UINT8 G_GetGametypeColor(INT16 gt);
 void G_BeginLevelExit(void);
 void G_FinishExitLevel(void);
 void G_NextLevel(void);
+void G_GetNextMap(void);
 void G_Continue(void);
 void G_UseContinue(void);
 void G_AfterIntermission(void);

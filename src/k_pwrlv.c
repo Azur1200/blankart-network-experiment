@@ -39,23 +39,35 @@ SINT8 encorescramble = -1;
 
 SINT8 K_UsingPowerLevels(void)
 {
-	SINT8 pt = PWRLV_DISABLED;
-
-	if (!cv_kartusepwrlv.value || !(netgame || (demo.playback && demo.netgame)) || grandprixinfo.gp == true || bossinfo.boss == true)
+	if (!cv_kartusepwrlv.value)
 	{
+		// Explicitly forbidden.
+		return PWRLV_DISABLED;
+	}
+
+	if (!(netgame || (demo.playback && demo.netgame)))
+	{
+		// Servers only.
+		return PWRLV_DISABLED;
+	}
+
+	if (roundqueue.size > 0 && roundqueue.position > 0)
+	{
+		// When explicit progression is in place, we're going by different rules.
 		return PWRLV_DISABLED;
 	}
 
 	if (gametype == GT_RACE)
 	{
-		pt = PWRLV_RACE;
+		return PWRLV_RACE;
 	}
 	else if (gametype == GT_BATTLE)
 	{
-		pt = PWRLV_BATTLE;
+		return PWRLV_BATTLE;
 	}
 
-	return pt;
+	// We do not support PWR for custom gametypes at this moment in time.
+	return PWRLV_DISABLED;
 }
 
 void K_ClearClientPowerLevels(void)

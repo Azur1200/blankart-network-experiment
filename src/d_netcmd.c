@@ -874,6 +874,7 @@ INT16 numgametypes = GT_FIRSTFREESLOT;
 
 boolean forceresetplayers = false;
 boolean deferencoremode = false;
+boolean forcespecialstage = false;
 UINT8 splitscreen = 0;
 boolean circuitmap = false;
 INT32 adminplayers[MAXPLAYERS] = {};
@@ -893,7 +894,9 @@ const char *automate_names[AEV__MAX] =
 {
 	"RoundStart", // AEV_ROUNDSTART
 	"IntermissionStart", // AEV_INTERMISSIONSTART
-	"VoteStart" // AEV_VOTESTART
+	"VoteStart", // AEV_VOTESTART
+	"QueueStart", // AEV_QUEUESTART
+	"QueueEnd", // AEV_QUEUEEND
 };
 
 /// \warning Keep this up-to-date if you add/remove/rename net text commands
@@ -3317,21 +3320,21 @@ INT32 mapchangepending = 0;
   * ESC to abort", which calls I_GetKey(), which adds an event. In other words,
   * 63 old events will get reexecuted, with ridiculous results. Just don't do
   * it (without setting delay to 1, which is the current solution).
-  *
-  * \param mapnum          Map number to change to.
-  * \param gametype        Gametype to switch to.
-  * \param pencoremode     Is this 'Encore Mode'?
-  * \param resetplayers    1 to reset player scores and lives and such, 0 not to.
-  * \param delay           Determines how the function will be executed: 0 to do
-  *                        it all right now (must not be done from a menu), 1 to
-  *                        do step one and prepare step two, 2 to do step two.
-  * \param skipprecutscene To skip the precutscence or not?
+  * \param mapnum             Map number to change to.
+  * \param gametype           Gametype to switch to.
+  * \param pencoremode        Is this 'Encore Mode'?
+  * \param presetplayers      1 to reset player scores and lives and such, 0 not to.
+  * \param delay              Determines how the function will be executed: 0 to do
+  *                           it all right now (must not be done from a menu), 1 to
+  *                           do step one and prepare step two, 2 to do step two.
+  * \param skipprecutscene    To skip the precutscence or not?
+  * \param pforcespecialstage For certain contexts, forces a special stage.
   * \sa D_GameTypeChanged, Command_Map_f
   * \author Graue <graue@oceanbase.org>
   */
-void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean resetplayers, INT32 delay, boolean skipprecutscene, boolean FLS)
+void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean presetplayers, INT32 delay, boolean skipprecutscene, boolean pforcespecialstage)
 {
-	static char buf[2+MAX_WADPATH+1+4];
+	static char buf[1+1+1+1+1+2+4];
 	static char *buf_p = buf;
 	// The supplied data are assumed to be good.
 	I_Assert(delay >= 0 && delay <= 2);
@@ -3341,25 +3344,8 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean r
 		CV_SetValue(&cv_nextmap, mapnum);
 	}
 
-	CONS_Debug(DBG_GAMELOGIC, "Map change: mapnum=%d gametype=%d pencoremode=%d resetplayers=%d delay=%d skipprecutscene=%d\n",
-	           mapnum, newgametype, pencoremode, resetplayers, delay, skipprecutscene);
-
-	if ((netgame || multiplayer) && (grandprixinfo.gp != false))
-		FLS = false;
-
-	// Too lazy to change the input value for every instance of this function.......
-	if (bossinfo.boss == true)
-	{
-		pencoremode = bossinfo.encore;
-	}
-	else if (specialStage.active == true)
-	{
-		pencoremode = specialStage.encore;
-	}
-	else if (grandprixinfo.gp == true)
-	{
-		pencoremode = grandprixinfo.encore;
-	}
+	CONS_Debug(DBG_GAMELOGIC, "Map change: mapnum=%d gametype=%d pencoremode=%d presetplayers=%d delay=%d skipprecutscene=%d pforcespecialstage = %d\n",
+			   mapnum, newgametype, pencoremode, presetplayers, delay, skipprecutscene, pforcespecialstage);
 
 	if (delay != 2)
 	{
@@ -3368,13 +3354,24 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean r
 		buf_p = buf;
 		if (pencoremode)
 			flags |= 1;
-		if (!resetplayers)
+		if (presetplayers)
 			flags |= 1<<1;
 		if (skipprecutscene)
 			flags |= 1<<2;
-		if (FLS)
+		if (pforcespecialstage)
 			flags |= 1<<3;
+		if (roundqueue.netcommunicate)
+			flags |= 1<<4;
 		WRITEUINT8(buf_p, flags);
+
+		if (roundqueue.netcommunicate)
+		{
+			// roundqueue state
+			WRITEUINT8(buf_p, roundqueue.position);
+			WRITEUINT8(buf_p, roundqueue.size);
+			WRITEUINT8(buf_p, roundqueue.roundnum);
+			roundqueue.netcommunicate = false;
+		}
 
 		// new gametype value
 		WRITEUINT8(buf_p, newgametype);
@@ -3574,6 +3571,7 @@ static void Command_Map_f(void)
 	size_t option_skill;
 	const char *gametypename;
 	boolean newresetplayers;
+	boolean newforcespecialstage;
 
 	boolean mustmodifygame;
 
@@ -3598,6 +3596,7 @@ static void Command_Map_f(void)
 	option_encore   =   COM_CheckPartialParm("-e");
 	option_skill    =   COM_CheckPartialParm("-s");
 	newresetplayers = ! COM_CheckParm("-noresetplayers");
+	newforcespecialstage = COM_CheckParm("-forcespecialstage");
 
 	mustmodifygame = !(netgame || multiplayer) && !majormods;
 
@@ -3727,7 +3726,7 @@ static void Command_Map_f(void)
 	// don't use a gametype the map doesn't support
 	if (cht_debug || option_force || cv_skipmapcheck.value)
 	{
-		fromlevelselect = false; // The player wants us to trek on anyway.  Do so.
+		// The player wants us to trek on anyway.  Do so.
 	}
 	// G_TOLFlag handles both multiplayer gametype and ignores it for !multiplayer
 	else
@@ -3750,12 +3749,6 @@ static void Command_Map_f(void)
 			Z_Free(realmapname);
 			Z_Free(mapname);
 			return;
-		}
-		else
-		{
-			fromlevelselect =
-				( netgame || multiplayer ) &&
-				grandprixinfo.gp != false;
 		}
 	}
 
@@ -3845,36 +3838,41 @@ static void Command_Map_f(void)
 					}
 				}
 
-				grandprixinfo.encore = newencoremode;
-
 				grandprixinfo.gp = true;
-				grandprixinfo.roundnum = 0;
-				grandprixinfo.cup = NULL;
 				grandprixinfo.wonround = false;
 
 				bossinfo.boss = false;
 				specialStage.active = false;
 
-				grandprixinfo.initalize = true;
+				if (!Playing())
+				{
+					UINT8 ssplayers = cv_splitplayers.value-1;
+
+					grandprixinfo.cup = NULL;
+					grandprixinfo.initalize = true;
+
+					multiplayer = true;
+
+					CopyCaretColors(connectedservername, cv_servername.string, MAXSERVERNAME);
+					CopyCaretColors(connectedservercontact, cv_server_contact.string, MAXSERVERCONTACT);
+					strncpy(connectedserverdescription, DEFAULTDESCSTRING, MAXSERVERDESCRIPTION);
+
+					if (cv_maxplayers.value < ssplayers+1)
+						CV_SetValue(&cv_maxplayers, ssplayers+1);
+
+					if (splitscreen != ssplayers)
+					{
+						splitscreen = ssplayers;
+						SplitScreen_OnChange();
+					}
+				}
 			}
 		}
 	}
 
-	// Prevent warping to locked levels
-	// ... unless you're in a dedicated server.  Yes, technically this means you can view any level by
-	// running a dedicated server and joining it yourself, but that's better than making dedicated server's
-	// lives hell.
-	if (!dedicated && M_MapLocked(newmapnum))
-	{
-		CONS_Alert(CONS_NOTICE, M_GetText("You need to unlock this level before you can warp to it!\n"));
-		Z_Free(realmapname);
-		Z_Free(mapname);
-		return;
-	}
-
 	tutorialmode = false; // warping takes us out of tutorial mode
 
-	D_MapChange(newmapnum, newgametype, newencoremode, newresetplayers, 0, false, fromlevelselect);
+	D_MapChange(newmapnum, newgametype, newencoremode, newresetplayers, 0, false, newforcespecialstage);
 
 	Z_Free(realmapname);
 }
@@ -3889,9 +3887,9 @@ static void Command_Map_f(void)
 static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 {
 	UINT8 flags;
-	INT32 resetplayer = 1, lastgametype;
-	UINT8 skipprecutscene, FLS;
-	boolean pencoremode;
+	INT32 presetplayer = 1, lastgametype;
+	UINT8 skipprecutscene, pforcespecialstage;
+	boolean pencoremode, hasroundqueuedata;
 	INT16 mapnumber;
 
 	forceresetplayers = deferencoremode = false;
@@ -3904,14 +3902,53 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 		return;
 	}
 
-	if (chmappending)
-		chmappending--;
-
 	flags = READUINT8(*cp);
 
 	pencoremode = ((flags & 1) != 0);
 
-	resetplayer = ((flags & (1<<1)) == 0);
+	presetplayer = ((flags & (1<<1)) != 0);
+
+	skipprecutscene = ((flags & (1<<2)) != 0);
+
+	pforcespecialstage = ((flags & (1<<3)) != 0);
+
+	hasroundqueuedata = ((flags & (1<<4)) != 0);
+
+	if (hasroundqueuedata)
+	{
+		UINT8 position = READUINT8(*cp);
+		UINT8 size = READUINT8(*cp);
+		UINT8 roundnum = READUINT8(*cp);
+
+		if (playernum != serverplayer // Clients, even admin clients, don't have full roundqueue data
+			|| position > size // Sanity check A (intentionally not a >= comparison)
+			|| size > ROUNDQUEUE_MAX) // Sanity Check B (ditto)
+		{
+			CONS_Alert(CONS_WARNING, M_GetText("Illegal round-queue data received from %s\n"), player_names[playernum]);
+			if (server && playernum != serverplayer)
+				SendKick(playernum, KICK_MSG_CON_FAIL);
+			return;
+		}
+
+		roundqueue.position = position;
+		if (size < roundqueue.size)
+		{
+				// Bafooliganism afoot - set to zero if the size is zero! ~toast 150523
+				roundqueue.size = size;
+		}
+		else while (roundqueue.size < size)
+		{
+			// We wipe rather than provide full data to prevent bloating the packet,
+			// and because only this data is necessary for sync. ~toast 100423
+			memset(&roundqueue.entries[roundqueue.size], 0, sizeof(roundentry_t));
+			roundqueue.size++;
+		}
+		roundqueue.roundnum = roundnum; // no sanity checking required, server is authoriative
+	}
+
+	// No more kicks below this line, we can now start modifying state beyond this function.
+	if (chmappending)
+		chmappending--;
 
 	lastgametype = gametype;
 	gametype = READUINT8(*cp);
@@ -3922,20 +3959,32 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	else if (gametype != lastgametype)
 		D_GameTypeChanged(lastgametype); // emulate consvar_t behavior for gametype
 
+	if (hasroundqueuedata && roundqueue.position > 0 && roundqueue.size > 0)
+	{
+		// ...we can evaluate CURRENT specifics for roundqueue data, though.
+		roundqueue.entries[roundqueue.position-1].gametype = gametype;
+		roundqueue.entries[roundqueue.position-1].encore = pencoremode;
+	}
+
 	if (!(gametypes[gametype]->rules & GTR_ENCORE) && !bossinfo.boss)
 		pencoremode = false;
 
-	skipprecutscene = ((flags & (1<<2)) != 0);
-
-	FLS = ((flags & (1<<3)) != 0);
-
 	mapnumber = READINT16(*cp);
 
+	// Handle some Grand Prix state.
 	if (grandprixinfo.gp)
 	{
-		if (gametype != GT_RACE)
+		boolean caughtretry = (gametype == lastgametype
+				&& mapnumber == gamemap);
+		if (pforcespecialstage // Forced.
+			|| (caughtretry && grandprixinfo.eventmode == GPEVENT_SPECIAL) // Catch retries of forced.
+			/*|| (roundqueue.size == 0 && (gametyperules & (GTR_BOSS|GTR_CATCHER)))*/) // Force convention for the (queue)map command.
 		{
-			grandprixinfo.eventmode = GPEVENT_CHALLENGE;
+			grandprixinfo.eventmode = GPEVENT_SPECIAL;
+		}
+		else if (gametype != GT_RACE)
+		{
+			grandprixinfo.eventmode = GPEVENT_BONUS;
 		}
 		else
 		{
@@ -3949,14 +3998,8 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	if (!skipprecutscene)
 	{
 		DEBFILE(va("Warping to %s [resetplayer=%d lastgametype=%d gametype=%d cpnd=%d]\n",
-			G_BuildMapName(mapnumber), resetplayer, lastgametype, gametype, chmappending));
+			G_BuildMapName(mapnumber), presetplayer, lastgametype, gametype, chmappending));
 		CON_LogMessage(M_GetText("Speeding off to level...\n"));
-	}
-
-	if (resetplayer && !FLS)
-	{
-		emeralds = 0;
-		memset(&luabanks, 0, sizeof(luabanks));
 	}
 
 	demo.savemode = (cv_recordmultiplayerdemos.value == 2) ? DSM_WILLAUTOSAVE : DSM_NOTSAVING;
@@ -3966,7 +4009,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	if (demo.recording && !modeattacking)
 		G_CheckDemoStatus();
 
-	G_InitNew(pencoremode, mapnumber, resetplayer, skipprecutscene, FLS);
+	G_InitNew(pencoremode, mapnumber, presetplayer, skipprecutscene);
 
 	if (demo.timing)
 		G_DoneLevelLoad();

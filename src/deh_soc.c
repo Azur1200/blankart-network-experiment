@@ -3722,6 +3722,41 @@ void readmaincfg(MYFILE *f)
 	Z_Free(s);
 }
 
+//
+// SRB2KART
+//
+
+static void invalidateacrosscups(UINT16 map)
+{
+	cupheader_t *cup = kartcupheaders;
+	UINT8 i;
+
+	if (map >= nummapheaders)
+		return;
+
+	while (cup)
+	{
+		for (i = 0; i < CUPCACHE_MAX; i++)
+		{
+			if (cup->cachedlevels[i] != map)
+				continue;
+			cup->cachedlevels[i] = NEXTMAP_INVALID;
+		}
+		cup = cup->next;
+	}
+
+	mapheaderinfo[map]->cup = NULL;
+}
+
+static char *MapNameOrRemoval(char *name)
+{
+	if (name[0] == '\0'
+		|| (name[0] == '/' && name[1] == '\0'))
+		return NULL;
+
+	return Z_StrDup(name);
+}
+
 void readwipes(MYFILE *f)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -3931,7 +3966,7 @@ void readcupheader(MYFILE *f, cupheader_t *cup)
 					cup->levellist[cup->numlevels] = NULL;
 					if (cup->cachedlevels[cup->numlevels] == NEXTMAP_INVALID)
 						continue;
-					mapheaderinfo[cup->cachedlevels[cup->numlevels]]->cup = NULL;
+					invalidateacrosscups(cup->cachedlevels[cup->numlevels]);
 				}
 
 				tmp = strtok(word2,",");
@@ -3949,9 +3984,32 @@ void readcupheader(MYFILE *f, cupheader_t *cup)
 			}
 			else if (fastcmp(word, "BONUSGAME"))
 			{
-				Z_Free(cup->levellist[CUPCACHE_BONUS]);
-				cup->levellist[CUPCACHE_BONUS] = Z_StrDup(word2);
-				cup->cachedlevels[CUPCACHE_BONUS] = NEXTMAP_INVALID;
+				while (cup->numbonus > 0)
+				{
+					cup->numbonus--;
+					Z_Free(cup->levellist[CUPCACHE_BONUS + cup->numbonus]);
+					cup->levellist[CUPCACHE_BONUS + cup->numbonus] = NULL;
+					if (cup->cachedlevels[CUPCACHE_BONUS + cup->numbonus] == NEXTMAP_INVALID)
+						continue;
+					invalidateacrosscups(cup->cachedlevels[CUPCACHE_BONUS + cup->numbonus]);
+				}
+
+				tmp = strtok(word2,",");
+				do {
+					if (cup->numbonus >= MAXBONUSLIST)
+					{
+						deh_warning("%s Cup: reached max bonus list (%d)\n", cup->name, MAXBONUSLIST);
+						break;
+					}
+
+					cup->levellist[CUPCACHE_BONUS + cup->numbonus] = MapNameOrRemoval(tmp);
+					cup->cachedlevels[CUPCACHE_BONUS + cup->numbonus] = NEXTMAP_INVALID;
+
+					if (cup->levellist[CUPCACHE_BONUS + cup->numbonus] == NULL)
+						break;
+
+					cup->numbonus++;
+				} while((tmp = strtok(NULL,",")) != NULL);
 			}
 			else if (fastcmp(word, "SPECIALSTAGE"))
 			{

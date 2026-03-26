@@ -1200,8 +1200,9 @@ void D_StartTitle(void)
 	modeattacking = ATTACKING_NONE;
 	marathonmode = static_cast<marathonmode_t>(0);
 
-	// Reset GP
+	// Reset GP and roundqueue
 	memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
+	memset(&roundqueue, 0, sizeof(struct roundqueue));
 
 	// Reset Server mods
 	numcustomservermods = 0;
@@ -1901,14 +1902,13 @@ void D_SRB2Main(void)
 
 			// Start up a "minor" grand prix session
 			memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
+			memset(&roundqueue, 0, sizeof(struct roundqueue));
 
 			grandprixinfo.gamespeed = KARTSPEED_HARD;
-			grandprixinfo.encore = false;
 			grandprixinfo.masterbots = false;
 			grandprixinfo.lunaticmode = false;
 
 			grandprixinfo.gp = true;
-			grandprixinfo.roundnum = 0;
 			grandprixinfo.cup = NULL;
 			grandprixinfo.wonround = false;
 

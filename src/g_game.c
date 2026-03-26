@@ -2135,6 +2135,11 @@ void G_DoLoadLevel(boolean resetplayer)
 
 	if (doAutomate == true)
 	{
+		if (roundqueue.size > 0 && roundqueue.position == 1)
+		{
+			Automate_Run(AEV_QUEUESTART);
+		}
+
 		Automate_Run(AEV_ROUNDSTART);
 	}
 }
@@ -4198,6 +4203,25 @@ INT32 G_GetGametypeByName(const char *gametypestr)
 }
 
 //
+// G_GuessGametypeByTOL
+//
+// Returns the first valid number for the given typeoflevel, or -1 if not valid.
+//
+INT32 G_GuessGametypeByTOL(UINT32 tol)
+{
+	INT32 i = 0;
+
+	while (gametypes[i] != NULL)
+	{
+		if (tol & gametypes[i]->tol)
+			return i;
+		i++;
+	}
+
+	return -1; // unknown gametype
+}
+
+//
 // G_SetGametype
 //
 // Set a new gametype, also setting gametype rules accordingly. Yay!
@@ -4857,10 +4881,126 @@ static void G_HandleSaveLevel(void)
 		G_SaveGame((UINT32)cursaveslot, lastmap+1); // not nextmap+1 to route around special stages
 }
 
-static INT16 G_GetNextMap(boolean advancemap)
+// Next map apparatus
+struct roundqueue roundqueue;
+
+void G_MapSlipIntoRoundQueue(UINT8 position, UINT16 map, UINT8 setgametype, boolean setencore, boolean rankrestricted)
+{
+	I_Assert(position < ROUNDQUEUE_MAX);
+
+	roundqueue.entries[position].mapnum = map;
+	roundqueue.entries[position].gametype = setgametype;
+	roundqueue.entries[position].encore = setencore;
+	roundqueue.entries[position].rankrestricted = rankrestricted;
+}
+
+void G_MapIntoRoundQueue(UINT16 map, UINT8 setgametype, boolean setencore, boolean rankrestricted)
+{
+	if (roundqueue.size >= ROUNDQUEUE_MAX)
+	{
+		CONS_Alert(CONS_ERROR, "G_MapIntoRoundQueue: Unable to add map beyond %u\n", roundqueue.size);
+		return;
+	}
+
+	G_MapSlipIntoRoundQueue(roundqueue.size, map, setgametype, setencore, rankrestricted);
+
+	roundqueue.size++;
+}
+
+void G_GPCupIntoRoundQueue(cupheader_t *cup, UINT8 setgametype, boolean setencore)
+{
+	UINT8 i, levelindex = 0, bonusindex = 0;
+	UINT8 bonusmodulo = max(1, (cup->numlevels+1)/(cup->numbonus+1));
+	UINT16 cupLevelNum;
+
+	// Levels are added to the queue in the following pattern.
+	// For 5 Race rounds and 2 Bonus rounds, the most common case:
+	//    race - race - BONUS - race - race - BONUS - race
+	// The system is flexible enough to permit other arrangements.
+	// However, we just want to keep the pacing even & consistent.
+	while (levelindex < cup->numlevels)
+	{
+		// Fill like two or three Race maps.
+		for (i = 0; i < bonusmodulo; i++)
+		{
+			cupLevelNum = cup->cachedlevels[levelindex];
+
+			if (cupLevelNum >= nummapheaders)
+			{
+				// For invalid Race maps, we keep the pacing by going to TEST RUN.
+				// It transparently lets the user know something is wrong.
+				cupLevelNum = 0;
+			}
+
+			G_MapIntoRoundQueue(
+				cupLevelNum,
+				setgametype,
+				setencore, // *probably* correct
+				false
+			);
+
+			levelindex++;
+			if (levelindex >= cup->numlevels)
+				break;
+		}
+
+		// Attempt to add an interstitial Bonus round.
+		if (levelindex < cup->numlevels
+			&& bonusindex < cup->numbonus)
+		{
+			cupLevelNum = cup->cachedlevels[CUPCACHE_BONUS + bonusindex];
+
+			if (cupLevelNum < nummapheaders)
+			{
+				// In the case of Bonus rounds, we simply skip invalid maps.
+				G_MapIntoRoundQueue(
+					cupLevelNum,
+					G_GuessGametypeByTOL(mapheaderinfo[cupLevelNum]->typeoflevel),
+					setencore, // if this isn't correct, Got_Mapcmd will fix it
+					false
+				);
+			}
+
+			bonusindex++;
+		}
+	}
+
+	// ...but there's one last trick up our sleeves.
+	// At the end of the Cup is a Rank-restricted treat.
+	// So we append it to the end of the roundqueue.
+	// (as long as it exists, of course!)
+	cupLevelNum = cup->cachedlevels[CUPCACHE_SPECIAL];
+	if (cupLevelNum < nummapheaders)
+	{
+		G_MapIntoRoundQueue(
+			cupLevelNum,
+			G_GuessGametypeByTOL(mapheaderinfo[cupLevelNum]->typeoflevel),
+			setencore, // if this isn't correct, Got_Mapcmd will fix it
+			true // Rank-restricted!
+		);
+	}
+
+	if (roundqueue.size == 0)
+	{
+		I_Error("G_CupToRoundQueue: roundqueue size is 0 after population!?");
+	}
+}
+
+void G_GetNextMap(void)
 {
 	boolean spec = G_IsSpecialStage(prevmap+1);
 	INT32 i;
+	boolean setalready = false;
+
+	if (!server)
+	{
+		// Server is authoriative, not you
+		return;
+	}
+
+	deferencoremode = (cv_kartencore.value == 1);
+	forceresetplayers = forcespecialstage = false;
+
 	INT16 newmap, curmap = gamestate == GS_LEVEL ? gamemap-1 : prevmap;
 
 	// go to next level
@@ -4868,131 +5008,97 @@ static INT16 G_GetNextMap(boolean advancemap)
 	if (nextmapoverride != 0)
 	{
 		newmap = (INT16)(nextmapoverride-1);
+		setalready = true;
 	}
-	else if (grandprixinfo.gp == true)
+	else if (roundqueue.size > 0)
 	{
-		// G: oh dear, this whole GP block has loads of side effects...
-		// for now, just repeat the same map for "map +"
-		// you're not supposed to use that in GP anyways
-		if (!advancemap || // ...right?
-		    grandprixinfo.roundnum == 0 || grandprixinfo.cup == NULL) // Single session
+		boolean permitrank = false;
+		/*if (grandprixinfo.gp == true
+			&& grandprixinfo.gamespeed >= KARTSPEED_NORMAL)
 		{
-			newmap = curmap; // Same map
+			// On A rank pace? Then you get a chance for S rank!
+			permitrank = (K_CalculateGPPercent(&grandprixinfo.rank) >= K_SealedStarEntryRequirement(&grandprixinfo.rank));
+
+			// If you're on Master, a win floats you to rank-restricted levels for free.
+			// (This is a different class of challenge!)
+			if (grandprixinfo.masterbots && grandprixinfo.rank.position <= 1)
+				permitrank = true;
+		}*/
+
+		while (roundqueue.position < roundqueue.size
+			&& (roundqueue.entries[roundqueue.position].mapnum >= nummapheaders
+			|| (permitrank == false && roundqueue.entries[roundqueue.position].rankrestricted == true)))
+		{
+			// Skip all restricted queue entries.
+			roundqueue.position++;
+		}
+
+		if (roundqueue.position < roundqueue.size)
+		{
+			// The next entry in the queue is valid; set it as nextmap!
+			nextmap = roundqueue.entries[roundqueue.position].mapnum;
+			deferencoremode = roundqueue.entries[roundqueue.position].encore;
+
+			// And we handle gametype changes, too.
+			if (roundqueue.entries[roundqueue.position].gametype != gametype)
+			{
+				INT32 lastgametype = gametype;
+				G_SetGametype(roundqueue.entries[roundqueue.position].gametype);
+				D_GameTypeChanged(lastgametype);
+			}
+
+			// On entering roundqueue mode, kill the non-PWR between-round scores.
+			// This makes it viable as a future tournament mode base.
+			if (roundqueue.position == 0)
+			{
+				forceresetplayers = true;
+			}
+
+			// Handle primary queue position update.
+			roundqueue.position++;
+			if (grandprixinfo.gp == false || gametype == roundqueue.entries[0].gametype)
+			{
+				roundqueue.roundnum++;
+			}
+
+			setalready = true;
 		}
 		else
 		{
-			INT32 lastgametype = gametype;
+			// Wipe the queue info.
+			memset(&roundqueue, 0, sizeof(struct roundqueue));
 
-			// If we're in a GP event, don't immediately follow it up with another.
-			// I also suspect this will not work with online GP so I'm gonna prevent it right now.
-			// The server might have to communicate eventmode (alongside other GP data) in XD_MAP later.
-			if (netgame || grandprixinfo.eventmode != GPEVENT_NONE)
+			if (grandprixinfo.gp == true)
 			{
-				grandprixinfo.eventmode = GPEVENT_NONE;
-
-				G_SetGametype(GT_RACE);
-				if (gametype != lastgametype)
-					D_GameTypeChanged(lastgametype);
-
-				specialStage.active = false;
-				bossinfo.boss = false;
-			}
-			// Special stage
-			else if (grandprixinfo.roundnum >= grandprixinfo.cup->numlevels)
-			{
-				INT16 totaltotalring = 0;
-
-				for (i = 0; i < MAXPLAYERS; i++)
-				{
-					if (!playeringame[i])
-						continue;
-					if (players[i].spectator)
-						continue;
-					if (players[i].bot)
-						continue;
-					totaltotalring += players[i].totalring;
-				}
-
-				if (totaltotalring >= 50)
-				{
-					const INT32 cupLevelNum = grandprixinfo.cup->cachedlevels[CUPCACHE_SPECIAL];
-					if (cupLevelNum < nummapheaders && mapheaderinfo[cupLevelNum]
-						&& mapheaderinfo[cupLevelNum]->typeoflevel & (TOL_SPECIAL|TOL_BOSS|TOL_BATTLE))
-					{
-						grandprixinfo.eventmode = GPEVENT_SPECIAL;
-						newmap = cupLevelNum;
-					}
-				}
-			}
-			else if (grandprixinfo.roundnum == (grandprixinfo.cup->numlevels+1)/2) // 3 for a 5-map cup
-			{
-				// todo any other condition?
-				{
-					const INT32 cupLevelNum = grandprixinfo.cup->cachedlevels[CUPCACHE_BONUS];
-					if (cupLevelNum < nummapheaders && mapheaderinfo[cupLevelNum]
-						&& mapheaderinfo[cupLevelNum]->typeoflevel & (TOL_BOSS|TOL_BATTLE))
-					{
-						grandprixinfo.eventmode = GPEVENT_CHALLENGE;
-						newmap = cupLevelNum;
-					}
-				}
-			}
-
-			if (grandprixinfo.eventmode != GPEVENT_NONE)
-			{
-				// nextmap is set above
-				const INT32 newtol = mapheaderinfo[newmap]->typeoflevel;
-
-				if (newtol & TOL_SPECIAL)
-				{
-					specialStage.active = true;
-					specialStage.encore = grandprixinfo.encore;
-				}
-				else //(if newtol & (TOL_BATTLE|TOL_BOSS)) -- safe to assume??
-				{
-					G_SetGametype(GT_BATTLE);
-					if (gametype != lastgametype)
-						D_GameTypeChanged(lastgametype);
-					if (newtol & TOL_BOSS)
-					{
-						K_ResetBossInfo();
-						bossinfo.boss = true;
-						bossinfo.encore = grandprixinfo.encore;
-					}
-				}
-			}
-			else if (grandprixinfo.roundnum >= grandprixinfo.cup->numlevels) // On final map
-			{
-				newmap = NEXTMAP_CEREMONY; // ceremonymap
+				// In GP, we're now ready to go to the ceremony.
+				nextmap = NEXTMAP_CEREMONY;
+				setalready = true;
 			}
 			else
 			{
-				// Proceed to next map
-				const INT32 cupLevelNum = grandprixinfo.cup->cachedlevels[grandprixinfo.roundnum];
-
-				if (cupLevelNum < nummapheaders && mapheaderinfo[cupLevelNum])
-				{
-					newmap = cupLevelNum;
-				}
-				else
-				{
-					newmap = curmap; // Prevent uninitialised use
-				}
-
-				grandprixinfo.roundnum++;
+				// On exiting roundqueue mode, kill the non-PWR between-round scores.
+				// This prevents future tournament winners from carrying their wins out.
+				forceresetplayers = true;
 			}
 		}
+
+		// Make sure the next D_MapChange sends updated roundqueue state.
+		roundqueue.netcommunicate = true;
 	}
-	else if (bossinfo.boss == true)
+	else if (grandprixinfo.gp == true)
 	{
-		newmap = NEXTMAP_TITLE; // temporary
+		// Fast And Rapid Testing
+		// this codepath is exclusively accessible through console/command line
+		nextmap = prevmap;
+		setalready = true;
 	}
-	else
+
+	if (setalready == false)
 	{
 		UINT32 tolflag = G_TOLFlag(gametype);
 		register INT16 cm;
 
-		if (grandprixinfo.gp == true)
+		if (true/*!(gametyperules & GTR_NOCUPSELECT)*/)
 		{
 			cupheader_t *cup = mapheaderinfo[gamemap-1]->cup;
 			UINT8 gettingresult = 0;
@@ -5000,12 +5106,12 @@ static INT16 G_GetNextMap(boolean advancemap)
 			while (cup)
 			{
 				// Not unlocked? Grab the next result afterwards
-				if (!marathonmode && cup->unlockrequired != -1 && !unlockables[cup->unlockrequired].unlocked)
+				/*if (!marathonmode && M_CupLocked(cup))
 				{
 					cup = cup->next;
 					gettingresult = 1;
 					continue;
-				}
+				}*/
 
 				for (i = 0; i < cup->numlevels; i++)
 				{
@@ -5019,16 +5125,22 @@ static INT16 G_GetNextMap(boolean advancemap)
 						|| (!marathonmode && M_MapLocked(cm+1)))
 						continue;
 
+					// If the map is in multiple cups, only consider the first one valid.
+					if (mapheaderinfo[cm]->cup != cup)
+					{
+						continue;
+					}
+
 					// Grab the first valid after the map you're on
 					if (gettingresult)
 					{
-						newmap = cm;
+						nextmap = cm;
 						gettingresult = 2;
 						break;
 					}
 
 					// Not the map you're on?
-					if (cm != curmap)
+					if (cm != prevmap)
 					{
 						continue;
 					}
@@ -5050,16 +5162,16 @@ static INT16 G_GetNextMap(boolean advancemap)
 			// Didn't get a nextmap before reaching the end?
 			if (gettingresult != 2)
 			{
-				newmap = NEXTMAP_CEREMONY; // ceremonymap
+				nextmap = NEXTMAP_CEREMONY; // ceremonymap
 			}
 		}
 		else
 		{
-			cm = curmap;
+			cm = prevmap;
 			if (++cm >= nummapheaders)
 				cm = 0;
 
-			while (cm != curmap)
+			while (cm != prevmap)
 			{
 				if (!mapheaderinfo[cm]
 					|| mapheaderinfo[cm]->lumpnum == LUMPERROR
@@ -5075,40 +5187,42 @@ static INT16 G_GetNextMap(boolean advancemap)
 				break;
 			}
 
-			newmap = cm;
+			nextmap = cm;
 		}
 
-		if (advancemap && K_CanChangeRules(true))
+		if (K_CanChangeRules(true))
 		{
-			switch (cv_advancemap.value)
+			if (!netgame) // Match Race.
+				nextmap = NEXTMAP_TITLE;
+			else switch (cv_advancemap.value)
 			{
 				case 0: // Stay on same map.
-					newmap = curmap;
+					nextmap = prevmap;
 					break;
 				case 3: // Voting screen.
+				{
+					for (i = 0; i < MAXPLAYERS; i++)
 					{
-						for (i = 0; i < MAXPLAYERS; i++)
-						{
-							if (!playeringame[i])
-								continue;
-							if (players[i].spectator)
-								continue;
-							break;
-						}
-						if (i != MAXPLAYERS)
-						{
-							newmap = NEXTMAP_VOTING;
-							break;
-						}
+						if (!playeringame[i])
+							continue;
+						if (players[i].spectator)
+							continue;
+						break;
 					}
-					/* FALLTHRU */
+					if (i != MAXPLAYERS)
+					{
+						nextmap = NEXTMAP_VOTING;
+						break;
+					}
+				}
+				/* FALLTHRU */
 				case 2: // Go to random map.
-					newmap = G_RandMap(G_TOLFlag(gametype), curmap, 0, 0, NULL);
+					nextmap = G_RandMap(G_TOLFlag(gametype), prevmap, false, false, NULL);
 					break;
 				default:
-					if (newmap >= NEXTMAP_SPECIAL) // Loop back around
+					if (nextmap >= NEXTMAP_SPECIAL) // Loop back around
 					{
-						newmap = G_GetFirstMapOfGametype(gametype);
+						nextmap = G_GetFirstMapOfGametype(gametype);
 					}
 					break;
 			}
@@ -5119,10 +5233,10 @@ static INT16 G_GetNextMap(boolean advancemap)
 	if (newmap == NEXTMAP_INVALID || (newmap < NEXTMAP_SPECIAL && (newmap >= nummapheaders || !mapheaderinfo[newmap] || mapheaderinfo[newmap]->lumpnum == LUMPERROR)))
 		I_Error("G_GetNextMap: Internal map ID %d not found (nummapheaders = %d)\n", newmap, nummapheaders);
 
+#if 0 // This is a surprise tool that will help us later.
 	if (!spec)
+#endif //#if 0
 		lastmap = newmap;
-
-	return newmap;
 }
 
 //
@@ -5244,7 +5358,7 @@ void G_AfterIntermission(void)
 
 	if (gamestate != GS_VOTING)
 	{
-		nextmap = G_GetNextMap(true);
+		G_GetNextMap();
 		G_HandleSaveLevel();
 	}
 
@@ -5270,10 +5384,6 @@ void G_NextLevel(void)
 		return;
 	}
 
-	forceresetplayers = false;
-	if (cv_kartencore.value == 1)
-		deferencoremode = true;
-
 	gameaction = ga_worlddone;
 }
 
@@ -5288,7 +5398,7 @@ static void G_DoWorldDone(void)
 			forceresetplayers,
 			0,
 			false,
-			false);
+			forcespecialstage);
 	}
 
 	gameaction = ga_nothing;
@@ -6125,13 +6235,11 @@ void G_DeferedInitNew(boolean pencoremode, INT32 map, INT32 pickedchar, UINT8 ss
 // This is the map command interpretation something like Command_Map_f
 //
 // called at: map cmd execution, doloadgame, doplaydemo
-void G_InitNew(UINT8 pencoremode, INT32 map, boolean resetplayer, boolean skipprecutscene, boolean FLS)
+void G_InitNew(UINT8 pencoremode, INT32 map, boolean resetplayer, boolean skipprecutscene)
 {
 	const char * mapname = G_BuildMapName(map);
 
 	INT32 i;
-
-	(void)FLS;
 
 	Y_CleanupScreenBuffer();
 
@@ -6160,7 +6268,7 @@ void G_InitNew(UINT8 pencoremode, INT32 map, boolean resetplayer, boolean skippr
 
 		players[i].roundscore = 0;
 
-		if (resetplayer && !(multiplayer && demo.playback)) // SRB2Kart
+		if (resetplayer && !demo.playback) // SRB2Kart
 		{
 			players[i].lives = 3;
 			players[i].xtralife = 0;
@@ -6465,7 +6573,11 @@ INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 		if (mapname[0] == '*') // current map
 			return gamemap;
 		else if (mapname[0] == '+') // next map
-			return G_GetNextMap(false)+1;
+		{
+			G_GetNextMap();
+			return nextmap;
+		}
+
 	}
 
 	/* Now detect map number in base 10, which no one asked for. */

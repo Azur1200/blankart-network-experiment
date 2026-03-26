@@ -6171,7 +6171,7 @@ boolean TryRunTics(tic_t realtics)
 	{
 		COM_BufTicker();
 		if (mapchangepending)
-			D_MapChange(-1, 0, encoremode, false, 2, false, fromlevelselect); // finish the map change
+			D_MapChange(-1, 0, encoremode, false, 2, false, forcespecialstage); // finish the map change
 
 		// fun fact: this used to be located in NetUpdate!
 		// as it turns out, reloading the level in rendering code is a very bad idea!

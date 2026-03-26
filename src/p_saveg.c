@@ -420,14 +420,15 @@ static void P_RelinkWaypoint(savebuffer_t *save, waypoint_t **ptr)
 
 // Block UINT32s to attempt to ensure that the correct data is
 // being sent and received
-#define ARCHIVEBLOCK_MISC     0x7FEEDEED
-#define ARCHIVEBLOCK_PLAYERS  0x7F448008
-#define ARCHIVEBLOCK_PARTIES  0x7F87AF0C
-#define ARCHIVEBLOCK_WORLD    0x7F8C08C0
-#define ARCHIVEBLOCK_POBJS    0x7F928546
-#define ARCHIVEBLOCK_THINKERS 0x7F37037C
-#define ARCHIVEBLOCK_SPECIALS 0x7F228378
-#define ARCHIVEBLOCK_WAYPOINTS 0x7F46498F
+#define ARCHIVEBLOCK_MISC		0x7FEEDEED
+#define ARCHIVEBLOCK_PLAYERS	0x7F448008
+#define ARCHIVEBLOCK_PARTIES	0x7F87AF0C
+#define ARCHIVEBLOCK_ROUNDQUEUE	0x7F721331
+#define ARCHIVEBLOCK_WORLD		0x7F8C08C0
+#define ARCHIVEBLOCK_POBJS		0x7F928546
+#define ARCHIVEBLOCK_THINKERS	0x7F37037C
+#define ARCHIVEBLOCK_SPECIALS	0x7F228378
+#define ARCHIVEBLOCK_WAYPOINTS	0x7F46498F
 
 // Specialized netsynch markers
 #define PLYRSYNC_ITEMLIST (1)
@@ -918,6 +919,48 @@ static void P_NetSyncParties(savebuffer_t *save)
 	}
 
 	TracyCZoneEnd(__zone);
+}
+
+static void P_NetArchiveRoundQueue(savebuffer_t *save)
+{
+	UINT8 i;
+	WRITEUINT32(save->p, ARCHIVEBLOCK_ROUNDQUEUE);
+
+	WRITEUINT8(save->p, roundqueue.position);
+	WRITEUINT8(save->p, roundqueue.size);
+	WRITEUINT8(save->p, roundqueue.roundnum);
+
+	for (i = 0; i < roundqueue.size; i++)
+	{
+		//WRITEUINT16(save->p, roundqueue.entries[i].mapnum);
+		/* NOPE! Clients do not need to know what is in the roundqueue.
+		 *		This disincentivises cheaty clients in future tournament environments.
+		 *		~toast 080423 */
+		WRITEUINT8(save->p, roundqueue.entries[i].gametype);
+		WRITEUINT8(save->p, (UINT8)roundqueue.entries[i].encore);
+		WRITEUINT8(save->p, (UINT8)roundqueue.entries[i].rankrestricted);
+	}
+}
+
+static void P_NetUnArchiveRoundQueue(savebuffer_t *save)
+{
+	UINT8 i;
+	if (READUINT32(save->p) != ARCHIVEBLOCK_ROUNDQUEUE)
+		I_Error("Bad $$$.sav at archive block RoundQueue");
+
+	memset(&roundqueue, 0, sizeof(struct roundqueue));
+
+	roundqueue.position = READUINT8(save->p);
+	roundqueue.size = READUINT8(save->p);
+	roundqueue.roundnum = READUINT8(save->p);
+
+	for (i = 0; i < roundqueue.size; i++)
+	{
+		roundqueue.entries[i].mapnum = 0; // TEST RUN -- dummy, has to be < nummapheaders
+		roundqueue.entries[i].gametype = READUINT8(save->p);
+		roundqueue.entries[i].encore = (boolean)READUINT8(save->p);
+		roundqueue.entries[i].rankrestricted = (boolean)READUINT8(save->p);
+	}
 }
 
 ///
@@ -4562,6 +4605,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 
 	P_NetSyncPlayers(save);
 	P_NetSyncParties(save);
+	P_NetArchiveRoundQueue(save);
 
 	if (gamestate == GS_LEVEL)
 	{
@@ -4614,6 +4658,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 		return false;
 	P_NetSyncPlayers(save);
 	P_NetSyncParties(save);
+	P_NetUnArchiveRoundQueue(save);
 
 	if (gamestate == GS_LEVEL)
 	{

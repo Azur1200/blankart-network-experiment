@@ -867,7 +867,8 @@ void P_Ticker(boolean run)
 					}
 
 					if (leveltime < startingtime) // SRB2Kart
-						S_ChangeMusicInternal(((grandprixinfo.roundnum > 0) ? "gpstrt" : (encoremode ? "estart" : "kstart")), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
+						S_ChangeMusicInternal(((grandprixinfo.gp == true
+						) ? "gpstrt" : (encoremode ? "estart" : "kstart")), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
 					else if (leveltime == startingtime) // The GO! sound stops the level start ambience
 						S_StopMusic();
 				}

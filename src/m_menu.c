@@ -145,8 +145,6 @@ M_waiting_mode_t m_waiting_mode = M_NOT_WAITING;
 
 const char *quitmsg[NUM_QUITMESSAGES];
 
-boolean fromlevelselect = false;
-
 static char menu_text_input_buf[MAXSTRINGLENGTH];
 static textinput_t menuinput;
 
@@ -6525,8 +6523,6 @@ INT32 MR_StartGrandPrix(INT32 choice)
 			break;
 	}
 
-	grandprixinfo.encore = (boolean)(cv_dummygpencore.value);
-
 	for (gpcup = kartcupheaders; gpcup != NULL; gpcup = gpcup->next)
 	{
 		if (gpcup->id == cv_nextcup.value-1)
@@ -6534,23 +6530,28 @@ INT32 MR_StartGrandPrix(INT32 choice)
 	}
 
 	I_Assert(gpcup != NULL);
-	grandprixinfo.cup = gpcup;
 
 	grandprixinfo.gp = true;
-	grandprixinfo.roundnum = 1;
 	grandprixinfo.wonround = false;
-
 	grandprixinfo.initalize = true;
+	grandprixinfo.cup = gpcup;
 
-	levelNum = G_MapNumber(grandprixinfo.cup->levellist[0]);
+	// Populate the roundqueue
+	memset(&roundqueue, 0, sizeof(struct roundqueue));
+	G_GPCupIntoRoundQueue(gpcup, GT_RACE/*levellist.newgametype*/, (boolean)cv_dummygpencore.value);
+	roundqueue.position = roundqueue.roundnum = 1;
+	roundqueue.netcommunicate = true; // relevant for future Online GP
 
-	G_DeferedInitNew(
+	D_MapChange(
+		roundqueue.entries[0].mapnum + 1,
+		roundqueue.entries[0].gametype,
+		roundqueue.entries[0].encore,
+		true,
+		1,
 		false,
-		levelNum + 1,
-		cv_chooseskin.value,
-		(UINT8)(cv_splitplayers.value - 1),
-		false
+		roundqueue.entries[0].rankrestricted
 	);
+
 	return true;
 }
 
