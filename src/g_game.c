@@ -326,7 +326,7 @@ tic_t antibumptime; // Delay before players start bumping into one another.
 
 typedef struct
 {
-	INT16 *mapbuffer;			// Pointer to zone memory
+	UINT16 *mapbuffer;			// Pointer to zone memory
 	INT32 lastnummapheaders;	// Reset if nummapheaders != this
 	UINT8 counttogametype;		// Time to gametype change event
 } randmaps_t;
@@ -337,9 +337,9 @@ static void G_ResetRandMapBuffer(void)
 	INT32 i;
 	Z_Free(randmaps.mapbuffer);
 	randmaps.lastnummapheaders = nummapheaders;
-	randmaps.mapbuffer = Z_Malloc(randmaps.lastnummapheaders * sizeof(INT16), PU_STATIC, NULL);
+	randmaps.mapbuffer = Z_Malloc(randmaps.lastnummapheaders * sizeof(UINT16), PU_STATIC, NULL);
 	for (i = 0; i < randmaps.lastnummapheaders; i++)
-		randmaps.mapbuffer[i] = -1;
+		randmaps.mapbuffer[i] = NEXTMAP_INVALID;
 	//intentionally not resetting randmaps.counttogametype here
 }
 
@@ -4695,7 +4695,7 @@ tryagain:
 			{
 				for (bufx = 0; bufx < extbufsize; bufx++)
 				{
-					if (extbuffer[bufx] == -1) // Rest of buffer SHOULD be empty
+					if (extbuffer[bufx] == NEXTMAP_INVALID) // Rest of buffer SHOULD be empty
 						break;
 					if (ix == extbuffer[bufx])
 					{
@@ -4710,7 +4710,7 @@ tryagain:
 
 			for (bufx = 0; bufx < (maphell ? 3 : randmaps.lastnummapheaders); bufx++)
 			{
-				if (randmaps.mapbuffer[bufx] == -1) // Rest of buffer SHOULD be empty
+				if (randmaps.mapbuffer[bufx] == NEXTMAP_INVALID) // Rest of buffer SHOULD be empty
 					break;
 				if (ix == randmaps.mapbuffer[bufx])
 				{
@@ -4730,7 +4730,7 @@ tryagain:
 	{
 		if (!ignorebuffer)
 		{
-			if (randmaps.mapbuffer[3] == -1) // Is the buffer basically empty?
+			if (randmaps.mapbuffer[3] == NEXTMAP_INVALID) // Is the buffer basically empty?
 			{
 				ignorebuffer = 1; // This will probably only help in situations where there's very few maps, but it's folly not to at least try it
 				//CONS_Printf("RANDMAP - ignoring buffer\n");
@@ -4738,7 +4738,7 @@ tryagain:
 			}
 
 			for (bufx = 3; bufx < randmaps.lastnummapheaders; bufx++) // Let's clear all but the three most recent maps...
-				randmaps.mapbuffer[bufx] = -1;
+				randmaps.mapbuffer[bufx] = NEXTMAP_INVALID;
 			//CONS_Printf("RANDMAP - emptying randmapbuffer\n");
 			goto tryagain;
 		}
@@ -4756,7 +4756,7 @@ tryagain:
 		{
 			//CONS_Printf("(emptying randmapbuffer entirely)\n");
 			for (bufx = 0; bufx < randmaps.lastnummapheaders; bufx++)
-				randmaps.mapbuffer[bufx] = -1; // if we're having trouble finding a map we should probably clear it
+				randmaps.mapbuffer[bufx] = NEXTMAP_INVALID; // if we're having trouble finding a map we should probably clear it
 		}
 	}
 	else
@@ -4793,11 +4793,11 @@ void G_AddMapToBuffer(UINT16 map)
 	randmaps.mapbuffer[0] = map;
 
 	// We're getting pretty full, so lets flush this for future usage.
-	if (randmaps.mapbuffer[refreshnum] != -1)
+	if (randmaps.mapbuffer[refreshnum] != NEXTMAP_INVALID)
 	{
 		// Clear all but the five most recent maps.
 		for (bufx = 5; bufx < randmaps.lastnummapheaders; bufx++)
-			randmaps.mapbuffer[bufx] = -1;
+			randmaps.mapbuffer[bufx] = NEXTMAP_INVALID;
 		//CONS_Printf("Random map buffer has been flushed.\n");
 	}
 }
@@ -5248,9 +5248,7 @@ void G_GetNextMap(void)
 
 		if (K_CanChangeRules(true))
 		{
-			if (!netgame) // Match Race.
-				nextmap = NEXTMAP_VOTING;
-			else switch (cv_advancemap.value)
+			switch (cv_advancemap.value)
 			{
 				case 0: // Stay on same map.
 					nextmap = prevmap;
