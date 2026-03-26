@@ -179,7 +179,7 @@ boolean exitfadestarted = false;
 cutscene_t *cutscenes[128] = {};
 textprompt_t *textprompts[MAX_PROMPTS];
 
-INT16 nextmapoverride;
+UINT16 nextmapoverride;
 UINT8 skipstats;
 
 struct quake quake = {};
@@ -4619,7 +4619,7 @@ static INT32 TOLMaps(UINT8 pgametype)
   *         has those flags.
   * \author Graue <graue@oceanbase.org>
   */
-INT16 G_RandMap(UINT32 tolflags, INT16 pprevmap, UINT8 ignorebuffer, UINT8 maphell, INT16 *extbuffer)
+UINT16 G_RandMap(UINT32 tolflags, UINT16 pprevmap, UINT8 ignorebuffer, UINT8 maphell, INT16 *extbuffer)
 {
 	UINT32 numokmaps = 0;
 	INT16 ix, bufx;
@@ -4663,7 +4663,7 @@ tryagain:
 			|| (usehellmaps != (mapheaderinfo[ix]->menuflags & LF2_HIDEINMENU))) // this is bad
 			continue; //isokmap = false;
 
-		if (pprevmap == -2)  // title demo hack
+		if (pprevmap == UINT16_MAX)  // title demo hack
 		{
 			// vres GHOST_%u
 			virtres_t *vRes;
@@ -4998,17 +4998,65 @@ void G_GetNextMap(void)
 		return;
 	}
 
-	deferencoremode = (cv_kartencore.value == 1);
-	forceresetplayers = forcespecialstage = false;
+	if (grandprixinfo.gp)
+	{
+		// Inherit from GP
+		deferencoremode = grandprixinfo.encore;
+	}
+	else if (K_CanChangeRules(true))
+	{
+		// Use cvar
+		deferencoremode = (cv_kartencore.value == 1);
+	}
+	else
+	{
+		// Inherit from current state
+		deferencoremode = encoremode;
+	}
 
-	UINT16 newmap, curmap = gamestate == GS_LEVEL ? gamemap-1 : prevmap;
+	forceresetplayers = forcespecialstage = false;
 
 	// go to next level
 	// nextmap is 0-based, unlike gamemap
 	if (nextmapoverride != 0)
 	{
-		newmap = (UINT16)(nextmapoverride-1);
+		nextmap = (nextmapoverride-1);
 		setalready = true;
+
+		if (nextmap < nummapheaders && mapheaderinfo[nextmap])
+		{
+			if ((mapheaderinfo[nextmap]->typeoflevel & G_TOLFlag(gametype)) == 0)
+			{
+				INT32 lastgametype = gametype;
+				INT32 newgametype = G_GuessGametypeByTOL(mapheaderinfo[nextmap]->typeoflevel);
+				if (newgametype == -1)
+					newgametype = GT_RACE; // sensible default
+
+				G_SetGametype(newgametype);
+				D_GameTypeChanged(lastgametype);
+			}
+
+			// Roundqueue integration: Override the current entry!
+			if (roundqueue.position > 0
+				&& roundqueue.position <= roundqueue.size)
+			{
+				UINT8 entry = roundqueue.position-1;
+
+				/*if (grandprixinfo.gp)
+				{
+					K_RejiggerGPRankData(
+						&grandprixinfo.rank,
+						roundqueue.entries[entry].mapnum,
+						roundqueue.entries[entry].gametype,
+						nextmap,
+						gametype);
+				}*/
+
+				roundqueue.entries[entry].mapnum = nextmap;
+				roundqueue.entries[entry].gametype = gametype;
+				//roundqueue.entries[entry].overridden = true;
+			}
+		}
 	}
 	else if (roundqueue.size > 0)
 	{
@@ -5027,6 +5075,7 @@ void G_GetNextMap(void)
 
 		while (roundqueue.position < roundqueue.size
 			&& (roundqueue.entries[roundqueue.position].mapnum >= nummapheaders
+			|| mapheaderinfo[roundqueue.entries[roundqueue.position].mapnum] == NULL
 			|| (permitrank == false && roundqueue.entries[roundqueue.position].rankrestricted == true)))
 		{
 			// Skip all restricted queue entries.
@@ -5047,6 +5096,9 @@ void G_GetNextMap(void)
 				D_GameTypeChanged(lastgametype);
 			}
 
+			// Is this special..?
+			forcespecialstage = roundqueue.entries[roundqueue.position].rankrestricted;
+
 			// On entering roundqueue mode, kill the non-PWR between-round scores.
 			// This makes it viable as a future tournament mode base.
 			if (roundqueue.position == 0)
@@ -5056,7 +5108,7 @@ void G_GetNextMap(void)
 
 			// Handle primary queue position update.
 			roundqueue.position++;
-			if (grandprixinfo.gp == false || gametype == roundqueue.entries[0].gametype)
+			if (grandprixinfo.gp == false || gametype == GT_RACE) // roundqueue.entries[0].gametype
 			{
 				roundqueue.roundnum++;
 			}
@@ -5168,24 +5220,28 @@ void G_GetNextMap(void)
 		else
 		{
 			cm = prevmap;
-			if (++cm >= nummapheaders)
-				cm = 0;
 
-			while (cm != prevmap)
+			do
 			{
+				if (++cm >= nummapheaders)
+					cm = 0;
+
 				if (!mapheaderinfo[cm]
 					|| mapheaderinfo[cm]->lumpnum == LUMPERROR
 					|| !(mapheaderinfo[cm]->typeoflevel & tolflag)
-					|| (mapheaderinfo[cm]->menuflags & LF2_HIDEINMENU)
-					|| M_MapLocked(cm+1))
+					|| (mapheaderinfo[cm]->menuflags & LF2_HIDEINMENU))
 				{
-					if (++cm >= nummapheaders)
-						cm = 0;
+					continue;
+				}
+
+				if (M_MapLocked(cm + 1) == true)
+				{
+					// We haven't earned this one.
 					continue;
 				}
 
 				break;
-			}
+			} while (cm != prevmap);
 
 			nextmap = cm;
 		}
@@ -5230,13 +5286,13 @@ void G_GetNextMap(void)
 	}
 
 	// We are committed to this map now.
-	if (newmap == NEXTMAP_INVALID || (newmap < NEXTMAP_SPECIAL && (newmap >= nummapheaders || !mapheaderinfo[newmap] || mapheaderinfo[newmap]->lumpnum == LUMPERROR)))
-		I_Error("G_GetNextMap: Internal map ID %d not found (nummapheaders = %d)\n", newmap, nummapheaders);
+	if (nextmap == NEXTMAP_INVALID || (nextmap < NEXTMAP_SPECIAL && (nextmap >= nummapheaders || !mapheaderinfo[nextmap] || mapheaderinfo[nextmap]->lumpnum == LUMPERROR)))
+		I_Error("G_GetNextMap: Internal map ID %d not found (nummapheaders = %d)\n", nextmap, nummapheaders);
 
 #if 0 // This is a surprise tool that will help us later.
 	if (!spec)
 #endif //#if 0
-		lastmap = newmap;
+		lastmap = nextmap;
 }
 
 //
@@ -5300,7 +5356,7 @@ static void G_DoCompleted(void)
 
 	S_StopSounds();
 
-	prevmap = (INT16)(gamemap-1);
+	prevmap = (UINT16)(gamemap-1);
 
 	if (!demo.playback)
 	{
@@ -6574,8 +6630,14 @@ UINT16 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 			return gamemap;
 		else if (mapname[0] == '+') // next map
 		{
+			//TODO: FIXME
+			// THIS CURRENTLY ALWAYS RETURNS ZERO. FIGURE OUT WHY.
 			G_GetNextMap();
-			return nextmap;
+
+			if (nextmap < NEXTMAP_INVALID)
+				return nextmap;
+			else
+				return 0;
 		}
 
 	}

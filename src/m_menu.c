@@ -2747,7 +2747,7 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 		case ITF_THUMBNAIL:
 		{
 			UINT16 mapnum = G_MapNumber(item->patch);
-			scale = M_GetMapThumbnail(mapnum < nummapheaders ? mapnum : -1, &p)/4;
+			scale = M_GetMapThumbnail(mapnum < nummapheaders ? mapnum : NEXTMAP_INVALID, &p)/4;
 			break;
 		}
 		case ITF_PATCH:
@@ -3698,7 +3698,7 @@ static void M_DrawLevelPlatterMap(const levelselectmap_t *lsmap, INT32 x, INT32 
 	// wide thumbnails? mmm... i dunno... maybe...
 	patch_t *patch;
 	boolean encore = cv_kartencore.value == 1 && levellistmode == LLM_CREATESERVER && cv_newgametype.value == GT_RACE;
-	fixed_t thumbscale = M_GetMapThumbnail(lsmap->available ? lsmap->mapnum : -1, &patch);
+	fixed_t thumbscale = M_GetMapThumbnail(lsmap->available ? lsmap->mapnum : NEXTMAP_INVALID, &patch);
 	thumbscale = FixedMul(thumbscale/4, scale);
 
 	V_DrawSciencePatch(x*FRACUNIT - patch->width*thumbscale/2 + (encore ? patch->width*thumbscale : 0),

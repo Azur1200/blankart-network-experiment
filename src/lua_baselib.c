@@ -3519,7 +3519,7 @@ static int lib_gSetCustomExitVars(lua_State *L)
 
 	if (n >= 1)
 	{
-		nextmapoverride = (INT16)luaL_optinteger(L, 1, 0);
+		nextmapoverride = (UINT16)luaL_optinteger(L, 1, 0);
 		skipstats = (INT16)luaL_optinteger(L, 2, 0);
 		if (lua_compatmode && nextmapoverride)
 			nextmapoverride = G_KartMapToNative(nextmapoverride);

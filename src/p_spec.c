@@ -5286,7 +5286,7 @@ static void P_ProcessExitSector(player_t *player, mtag_t sectag)
 		return;
 	}
 
-	nextmapoverride = (INT16)(udmf ? lines[lineindex].args[0] : lines[lineindex].frontsector->floorheight>>FRACBITS);
+	nextmapoverride = (UINT16)(udmf ? lines[lineindex].args[0] : lines[lineindex].frontsector->floorheight>>FRACBITS);
 
 	if (lines[lineindex].args[1] & TMEF_SKIPTALLY)
 		skipstats = 1;
