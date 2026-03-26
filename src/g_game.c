@@ -5249,7 +5249,7 @@ void G_GetNextMap(void)
 		if (K_CanChangeRules(true))
 		{
 			if (!netgame) // Match Race.
-				nextmap = NEXTMAP_TITLE;
+				nextmap = NEXTMAP_VOTING;
 			else switch (cv_advancemap.value)
 			{
 				case 0: // Stay on same map.
