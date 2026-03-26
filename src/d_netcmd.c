@@ -3340,17 +3340,12 @@ INT32 mapchangepending = 0;
   * \sa D_GameTypeChanged, Command_Map_f
   * \author Graue <graue@oceanbase.org>
   */
-void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean presetplayers, INT32 delay, boolean skipprecutscene, boolean pforcespecialstage)
+void D_MapChange(UINT16 mapnum, INT32 newgametype, boolean pencoremode, boolean presetplayers, INT32 delay, boolean skipprecutscene, boolean pforcespecialstage)
 {
 	static char buf[1+1+1+1+1+2+4];
 	static char *buf_p = buf;
 	// The supplied data are assumed to be good.
 	I_Assert(delay >= 0 && delay <= 2);
-
-	if (mapnum != -1)
-	{
-		CV_SetValue(&cv_nextmap, mapnum);
-	}
 
 	CONS_Debug(DBG_GAMELOGIC, "Map change: mapnum=%d gametype=%d pencoremode=%d presetplayers=%d delay=%d skipprecutscene=%d pforcespecialstage = %d\n",
 			   mapnum, newgametype, pencoremode, presetplayers, delay, skipprecutscene, pforcespecialstage);
@@ -3384,7 +3379,7 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean p
 		// new gametype value
 		WRITEUINT16(buf_p, newgametype);
 
-		WRITEINT16(buf_p, mapnum);
+		WRITEUINT16(buf_p, mapnum);
 	}
 
 	if (delay == 1)
@@ -3928,7 +3923,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	UINT8 skipprecutscene, pforcespecialstage;
 	boolean pencoremode, hasroundqueuedata;
 	UINT16 lastgametype;
-	INT16 mapnumber;
+	UINT16 mapnumber;
 
 	forceresetplayers = deferencoremode = false;
 
@@ -4007,7 +4002,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	if (!(gametypes[gametype]->rules & GTR_ENCORE) && !bossinfo.boss)
 		pencoremode = false;
 
-	mapnumber = READINT16(*cp);
+	mapnumber = READUINT16(*cp);
 
 	// Handle some Grand Prix state.
 	if (grandprixinfo.gp)

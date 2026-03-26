@@ -3997,7 +3997,7 @@ static inline void P_NetSyncSpecials(savebuffer_t *save)
 // =======================================================================
 //          Misc
 // =======================================================================
-static inline void P_ArchiveMisc(savebuffer_t *save, INT16 mapnum)
+static inline void P_ArchiveMisc(savebuffer_t *save, UINT16 mapnum)
 {
 	TracyCZone(__zone, true);
 
@@ -4007,20 +4007,20 @@ static inline void P_ArchiveMisc(savebuffer_t *save, INT16 mapnum)
 	if (gamecomplete)
 		mapnum |= 8192;
 
-	WRITEINT16(save->p, mapnum);
+	WRITEUINT16(save->p, mapnum);
 	WRITEUINT16(save->p, emeralds+357);
 	WRITESTRINGN(save->p, timeattackfolder, sizeof(timeattackfolder));
 
 	TracyCZoneEnd(__zone);
 }
 
-static inline void P_UnArchiveSPGame(savebuffer_t *save, INT16 mapoverride)
+static inline void P_UnArchiveSPGame(savebuffer_t *save, UINT16 mapoverride)
 {
 	TracyCZone(__zone, true);
 
 	char testname[sizeof(timeattackfolder)];
 
-	gamemap = READINT16(save->p);
+	gamemap = READUINT16(save->p);
 
 	if (mapoverride != 0)
 	{
@@ -4568,7 +4568,7 @@ static inline boolean P_UnArchiveLuabanksAndConsistency(savebuffer_t *save)
 	return ret;
 }
 
-void P_SaveGame(savebuffer_t *save, INT16 mapnum)
+void P_SaveGame(savebuffer_t *save, UINT16 mapnum)
 {
 	P_ArchiveMisc(save, mapnum);
 	P_ArchivePlayer(save);
@@ -4626,7 +4626,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 	TracyCZoneEnd(__zone);
 }
 
-boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride)
+boolean P_LoadGame(savebuffer_t *save, UINT16 mapoverride)
 {
 	if (gamestate == GS_INTERMISSION)
 		Y_EndIntermission();

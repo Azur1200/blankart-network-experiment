@@ -98,7 +98,7 @@ boolean P_AddWadFile(const char *wadfilename, wadcompat_t compat, boolean local)
 #define MAPRET_CURRENTREPLACED (1<<1)
 UINT8 P_InitMapData(boolean existingmapheaders);
 extern lumpnum_t wadnamelump;
-extern INT16 wadnamemap;
+extern UINT16 wadnamemap;
 #define WADNAMECHECK(name) (!strncmp(name, "WADNAME", 7))
 
 // WARNING: The following functions should be grouped as follows:
@@ -130,10 +130,10 @@ boolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector);
 boolean P_ApplyLightOffsetFine(UINT8 baselightlevel, const sector_t *sector);
 boolean P_SectorUsesDirectionalLighting(const sector_t *sector);
 size_t P_PrecacheLevelFlats(void);
-void P_AllocMapHeader(INT16 i);
+void P_AllocMapHeader(UINT16 i);
 
-void P_SetDemoFlickies(INT16 i);
-void P_DeleteFlickies(INT16 i);
+void P_SetDemoFlickies(UINT16 i);
+void P_DeleteFlickies(UINT16 i);
 
 // Needed for NiGHTS
 void P_ReloadRings(void);

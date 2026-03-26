@@ -403,7 +403,7 @@ UINT8 M_SecretUnlocked(INT32 type)
 #undef CHADYES
 }
 
-UINT8 M_MapLocked(INT32 mapnum)
+UINT8 M_MapLocked(UINT16 mapnum)
 {
 
 #ifdef DEVELOP
@@ -517,9 +517,9 @@ INT32 M_UnlockableSkinNum(unlockable_t *unlock)
 // Pass -1 mapnum to continue from last emblem.
 // NULL if not found.
 // note that this goes in reverse!!
-emblem_t *M_GetLevelEmblems(INT32 mapnum)
+emblem_t *M_GetLevelEmblems(UINT16 mapnum)
 {
-	static INT32 map = -1;
+	static UINT16 map = -1;
 	static INT32 i = -1;
 
 	if (mapnum >= 0)

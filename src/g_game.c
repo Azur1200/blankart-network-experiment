@@ -102,7 +102,7 @@ UINT32 mapmusposition; // Position to jump to
 UINT32 mapmusresume;
 UINT8 mapmusrng; // Random selection result
 
-INT16 gamemap = 1;
+UINT16 gamemap = 1;
 UINT32 maptol;
 
 preciptype_t globalweather = PRECIP_NONE;
@@ -352,10 +352,10 @@ typedef struct joystickvector2_s
 	INT32 yaxis;
 } joystickvector2_t;
 
-INT16 prevmap, nextmap;
+UINT16 prevmap, nextmap;
 
-INT16 kartmap2native[NEXTMAP_SPECIAL] = {0}, nativemap2kart[NEXTMAP_SPECIAL] = {0};
-INT16 nextexnum = NUMMAPS;
+UINT16 kartmap2native[NEXTMAP_SPECIAL] = {0}, nativemap2kart[NEXTMAP_SPECIAL] = {0};
+UINT16 nextexnum = NUMMAPS;
 
 // don't mind me putting these here, I was lazy to figure out where else I could put those without blowing up the compiler.
 
@@ -777,7 +777,7 @@ void G_ClearRecords(void)
 
 // For easy retrieval of records
 // TODO: should this work for unloaded maps?
-tic_t G_GetBestTime(INT16 map)
+tic_t G_GetBestTime(UINT16 map)
 {
 	const char *mapname = G_BuildMapName(map + 1);
 	tic_t besttime = UINT32_MAX;
@@ -1006,7 +1006,7 @@ void G_SetGameModified(boolean silent, boolean major)
   * \return Pointer to a static buffer containing the desired map name.
   * \sa G_MapNumber
   */
-const char *G_BuildMapName(INT32 map)
+const char *G_BuildMapName(UINT16 map)
 {
 	if (map > 0 && map <= nummapheaders && mapheaderinfo[map - 1] != NULL)
 	{
@@ -1024,13 +1024,13 @@ const char *G_BuildMapName(INT32 map)
   * \return Map number.
   * \sa G_BuildMapName, nextmapspecial_t
   */
-INT32 G_MapNumber(const char * name)
+UINT16 G_MapNumber(const char * name)
 {
 #ifdef NEXTMAPINSOC
 	if (strncasecmp("NEXTMAP_", name, 8) != 0)
 #endif
 	{
-		INT32 map;
+		UINT16 map;
 		UINT32 hash = FNV1a_QuickCaseHash(name, MAXMAPLUMPNAME);
 
 		for (map = 0; map < nummapheaders; ++map)
@@ -1067,9 +1067,9 @@ INT32 G_MapNumber(const char * name)
   * \return Map number.
   * \sa G_BuildMapName, nextmapspecial_t
   */
-INT32 G_LevelTitleToMapNum(const char * leveltitle)
+UINT16 G_LevelTitleToMapNum(const char * leveltitle)
 {
-	INT32 map;
+	UINT16  map;
 	char levelname[48];
 
 	for (map = 0; map < nummapheaders; ++map)
@@ -1099,11 +1099,11 @@ INT32 G_LevelTitleToMapNum(const char * leveltitle)
 		}
 
 	}
-	return INT32_MIN;
+	return NEXTMAP_INVALID;
 }
 
 // convert kart map number to native map number
-INT16 G_KartMapToNative(INT16 mapnum)
+UINT16 G_KartMapToNative(UINT16 mapnum)
 {
 	if (mapnum > 0 && mapnum < NEXTMAP_SPECIAL)
 		return kartmap2native[mapnum-1];
@@ -1111,7 +1111,7 @@ INT16 G_KartMapToNative(INT16 mapnum)
 }
 
 // convert native map number to kart
-INT16 G_NativeMapToKart(INT16 mapnum)
+UINT16 G_NativeMapToKart(UINT16 mapnum)
 {
 	if (mapnum > 0 && mapnum < NEXTMAP_SPECIAL)
 		return nativemap2kart[mapnum-1]+1;
@@ -4374,7 +4374,7 @@ void G_AddTOL(UINT32 newtol, const char *tolname)
 // Returns TRUE if
 // the given map is a special stage.
 //
-boolean G_IsSpecialStage(INT32 mapnum)
+boolean G_IsSpecialStage(UINT16 mapnum)
 {
 	mapnum--; // gamemap-based to 0 indexed
 
@@ -4558,7 +4558,7 @@ UINT32 G_TOLFlag(INT32 pgametype)
 
 INT16 G_GetFirstMapOfGametype(UINT8 pgametype)
 {
-	INT16 mapnum = NEXTMAP_INVALID;
+	UINT16 mapnum = NEXTMAP_INVALID;
 
 	/* G: not sure what to do with this
 	if ((gametypes[pgametype]->rules & GTR_CAMPAIGN) && kartcupheaders)
@@ -4772,7 +4772,7 @@ tryagain:
 	return ix;
 }
 
-void G_AddMapToBuffer(INT16 map)
+void G_AddMapToBuffer(UINT16 map)
 {
 	INT16 bufx;
 	INT16 refreshnum = (TOLMaps(gametype))-3;
@@ -4848,7 +4848,7 @@ static void G_UpdateVisited(void)
 		//CONS_Printf(M_GetText("\x82" "Earned %hu emblem%s for level completion.\n"), (UINT16)earnedEmblems, earnedEmblems > 1 ? "s" : "");
 }
 
-static boolean CanSaveLevel(INT32 mapnum)
+static boolean CanSaveLevel(UINT16 mapnum)
 {
 	// SRB2Kart: No save files yet
 	(void)mapnum;
@@ -5001,13 +5001,13 @@ void G_GetNextMap(void)
 	deferencoremode = (cv_kartencore.value == 1);
 	forceresetplayers = forcespecialstage = false;
 
-	INT16 newmap, curmap = gamestate == GS_LEVEL ? gamemap-1 : prevmap;
+	UINT16 newmap, curmap = gamestate == GS_LEVEL ? gamemap-1 : prevmap;
 
 	// go to next level
 	// nextmap is 0-based, unlike gamemap
 	if (nextmapoverride != 0)
 	{
-		newmap = (INT16)(nextmapoverride-1);
+		newmap = (UINT16)(nextmapoverride-1);
 		setalready = true;
 	}
 	else if (roundqueue.size > 0)
@@ -5559,7 +5559,7 @@ static boolean LoadLegacyRecords(savebuffer_t *save)
 	for (UINT32 i = 0; i < numgamedatamapheaders; i++)
 	{
 		char mapname[MAXMAPLUMPNAME];
-		//INT16 mapnum;
+		//UINT16 mapnum;
 		tic_t rectime;
 		tic_t reclap;
 
@@ -5933,7 +5933,7 @@ void G_SaveGameData(void)
 // G_InitFromSavegame
 // Can be called by the startup code or the menu task.
 //
-void G_LoadGame(UINT32 slot, INT16 mapoverride)
+void G_LoadGame(UINT32 slot, UINT16 mapoverride)
 {
 	char vcheck[VERSIONSIZE];
 	char savename[255];
@@ -6026,7 +6026,7 @@ void G_LoadGame(UINT32 slot, INT16 mapoverride)
 // G_SaveGame
 // Saves your game.
 //
-void G_SaveGame(UINT32 slot, INT16 mapnum)
+void G_SaveGame(UINT32 slot, UINT16 mapnum)
 {
 	boolean saved;
 	char savename[256] = "";
@@ -6188,7 +6188,7 @@ cleanup:
 // Can be called by the startup code or the menu task,
 // consoleplayer, displayplayers[], playeringame[] should be set.
 //
-void G_DeferedInitNew(boolean pencoremode, INT32 map, INT32 pickedchar, UINT8 ssplayers, boolean FLS)
+void G_DeferedInitNew(boolean pencoremode, UINT16 map, INT32 pickedchar, UINT8 ssplayers, boolean FLS)
 {
 	UINT16 color = SKINCOLOR_NONE;
 	INT32 dogametype;
@@ -6235,7 +6235,7 @@ void G_DeferedInitNew(boolean pencoremode, INT32 map, INT32 pickedchar, UINT8 ss
 // This is the map command interpretation something like Command_Map_f
 //
 // called at: map cmd execution, doloadgame, doplaydemo
-void G_InitNew(UINT8 pencoremode, INT32 map, boolean resetplayer, boolean skipprecutscene)
+void G_InitNew(UINT8 pencoremode, UINT16 map, boolean resetplayer, boolean skipprecutscene)
 {
 	const char * mapname = G_BuildMapName(map);
 
@@ -6336,7 +6336,7 @@ void G_InitNew(UINT8 pencoremode, INT32 map, boolean resetplayer, boolean skippr
 }
 
 
-char *G_BuildMapTitle(INT32 mapnum)
+char *G_BuildMapTitle(UINT16 mapnum)
 {
 	char *title = NULL;
 
@@ -6409,7 +6409,7 @@ static void measurekeywords(mapsearchfreq_t *fr,
 }
 
 static void writesimplefreq(mapsearchfreq_t *fr, INT32 *frc,
-		INT32 mapnum, UINT8 pos, UINT8 siz)
+		UINT16 mapnum, UINT8 pos, UINT8 siz)
 {
 	fr[(*frc)].mapnum = mapnum;
 	fr[(*frc)].matchd = ZZ_Alloc(sizeof (struct searchdim));
@@ -6420,12 +6420,12 @@ static void writesimplefreq(mapsearchfreq_t *fr, INT32 *frc,
 	(*frc)++;
 }
 
-INT32 G_FindMap(const char *mapname, char **foundmapnamep,
+UINT16 G_FindMap(const char *mapname, char **foundmapnamep,
 		mapsearchfreq_t **freqp, INT32 *freqcp)
 {
-	INT32 newmapnum = 0;
-	INT32 mapnum;
-	INT32 apromapnum = 0;
+	UINT16 newmapnum = 0;
+	UINT16 mapnum;
+	UINT16 apromapnum = 0;
 
 	size_t      mapnamelen;
 	char   *realmapname = NULL;
@@ -6558,7 +6558,7 @@ void G_FreeMapSearch(mapsearchfreq_t *freq, INT32 freqc)
 	Z_Free(freq);
 }
 
-INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
+UINT16 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 {
 	INT32 newmapnum;
 

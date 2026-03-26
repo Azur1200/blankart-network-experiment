@@ -1452,7 +1452,7 @@ void Y_VoteDrawer(void)
 	fixed_t rubyheight = 0;
 	fixed_t scale;
 	patch_t *pic;
-	INT16 mapnum;
+	UINT16 mapnum;
 	fixed_t picwidth = 160;
 
 	// CEP: scale by screen hypotenuse for extra voting rows
@@ -1551,7 +1551,7 @@ void Y_VoteDrawer(void)
 		if (i == rowval)
 		{
 			str = "RANDOM";
-			mapnum = -1;
+			mapnum = NEXTMAP_INVALID;
 		}
 		else
 		{

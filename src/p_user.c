@@ -310,7 +310,7 @@ boolean P_PlayerMoving(INT32 pnum)
 //
 UINT8 P_GetNextEmerald(void)
 {
-	INT16 mapnum = gamemap-1;
+	UINT16 mapnum = gamemap-1;
 
 	if (mapnum > nummapheaders || !mapheaderinfo[mapnum])
 		return 0;
