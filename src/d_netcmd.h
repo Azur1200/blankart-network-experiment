@@ -133,6 +133,15 @@ extern consvar_t cv_kartstacking_flame_accelboost;
 extern consvar_t cv_kartstacking_flame_handleboost;
 extern consvar_t cv_kartstacking_flame_stackable;
 
+extern consvar_t cv_kartstacking_attraction_speedboost_himin;
+extern consvar_t cv_kartstacking_attraction_speedboost_himax;
+extern consvar_t cv_kartstacking_attraction_speedboost_normmin;
+extern consvar_t cv_kartstacking_attraction_speedboost_normmax;
+extern consvar_t cv_kartstacking_attraction_accelboost_hi;
+extern consvar_t cv_kartstacking_attraction_accelboost_norm;
+extern consvar_t cv_kartstacking_attraction_handleboost;
+extern consvar_t cv_kartstacking_attraction_stackable;
+
 extern consvar_t cv_kartstacking_grow_speedboost;
 extern consvar_t cv_kartstacking_grow_accelboost;
 extern consvar_t cv_kartstacking_grow_handleboost;
