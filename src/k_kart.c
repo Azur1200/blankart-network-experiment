@@ -11859,7 +11859,7 @@ void K_KartAttractHomingAttack(player_t *player)
 
 		P_SpawnGhostMobj(player->mo);
 		
-		if (player->attractionattack_hipower)
+		if (player->attractionattack_hipower && lastTarg >= 0)
 		{
 			player->attractionboost = Easing_InCubic(influence, ATTRACTIONSPEEDHIMIN, ATTRACTIONSPEEDHIMAX);
 		}
