@@ -4619,7 +4619,7 @@ static INT32 TOLMaps(UINT8 pgametype)
   *         has those flags.
   * \author Graue <graue@oceanbase.org>
   */
-UINT16 G_RandMap(UINT32 tolflags, UINT16 pprevmap, UINT8 ignorebuffer, UINT8 maphell, INT16 *extbuffer)
+UINT16 G_RandMap(UINT32 tolflags, UINT16 pprevmap, UINT8 ignorebuffer, UINT8 maphell, UINT16 *extbuffer)
 {
 	UINT32 numokmaps = 0;
 	INT16 ix, bufx;

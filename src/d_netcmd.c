@@ -3412,7 +3412,7 @@ void D_SetupVote(void)
 	INT32 i;
 	UINT8 gt = (cv_kartgametypepreference.value == -1) ? gametype : cv_kartgametypepreference.value;
 	UINT8 secondgt = G_SometimesGetDifferentGametype(gt);
-	INT16 votebuffer[4] = {-1,-1,-1,0};
+	UINT16 votebuffer[4] = {NEXTMAP_INVALID,NEXTMAP_INVALID,NEXTMAP_INVALID,0};
 
 	if (cv_kartencore.value && cv_encorevotes.value == 1 && (gametypes[gt]->rules & GTR_CIRCUIT))
 		WRITEUINT8(p, (gt|VOTEMODIFIER_ENCORE));
