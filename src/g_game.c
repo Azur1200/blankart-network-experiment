@@ -1472,31 +1472,37 @@ fixed_t localshakinessfac[MAXSPLITSCREENPLAYERS];
 vector3_t localsmoothedaccel[MAXSPLITSCREENPLAYERS];
 vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
 
+// the time it takes in our acceleration smoothing for 'A' to get halfway to 'B'
+#define SmoothingHalfTime (0.025)
 // thresholds of trust for accel shakiness. less shakiness = more trust
-#define ShakinessMaxThreshold (80*FRACUNIT/100)
+#define ShakinessMaxThreshold (50*FRACUNIT/100)
 #define ShakinessMinThreshold (32*FRACUNIT/100)
 // when we trust the accel a lot (the controller is "still"), how quickly do we correct our gravity vector?
 #define CorrectionStillRate (FRACUNIT)
 // when we don't trust the accel (the controller is "shaky"), how quickly do we correct our gravity vector?
 #define CorrectionShakyRate (FRACUNIT/8)
 // if our old gravity vector is close enough to our new one, limit further corrections to this proportion of the rotation speed
-#define CorrectionGyroFactor (FRACUNIT/5)
+#define CorrectionGyroFactor (FRACUNIT/4)
 // thresholds for what's considered "close enough"
-#define CorrectionGyroMinThreshold (2*FRACUNIT/100)
-#define CorrectionGyroMaxThreshold (FRACUNIT/4)
+#define CorrectionGyroMinThreshold (5*FRACUNIT/100)
+#define CorrectionGyroMaxThreshold (FRACUNIT/3)
 // no matter what, always apply a minimum of this much correction to our gravity vector
-#define CorrectionMinimumSpeed (9*FRACUNIT/100)
+#define CorrectionMinimumSpeed (10*FRACUNIT/100)
 
 void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 {
 	// convert gyro input to reverse rotation
-	const fixed_t smoothFactor = 800*FRACUNIT/1000;
 	vector3_t invAccel = {-accel.x, -accel.y, -accel.z};
 	fixed_t gravCorrectionRate = 0;
+	// scaling is reversed, smaller time scales = larger steps in this code
+	// (1/timescale)/dt
+	fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
+	// we don't have exp2 and we actually need it here to take timescale into account :(
+	fixed_t smoothFactor = FloatToFixed(exp2(-FixedToFloat(deltaseconds) / SmoothingHalfTime));
 	fixed_t angleRate;
 	fixed_t correctionLimit;
 	vector4_t invRotation = AngleAxis(
-		FixedMul(FV3_Length(&gyro), FRACUNIT/TICRATE),
+		FixedMul(FV3_Length(&gyro), deltaseconds),
 		-gyro.x, 
 		-gyro.y, 
 		-gyro.z
@@ -1556,9 +1562,9 @@ void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 	CONS_Debug(DBG_IMU, "Correction Rate: %4.2f\n", FixedToFloat(gravCorrectionRate));
 
 	FV3_Load(&correction,
-		FixedMul(gravityToAccel.x, gravCorrectionRate/TICRATE),
-		FixedMul(gravityToAccel.y, gravCorrectionRate/TICRATE),
-		FixedMul(gravityToAccel.z, gravCorrectionRate/TICRATE)
+		FixedMul(gravityToAccel.x, FixedMul(deltaseconds, gravCorrectionRate)),
+		FixedMul(gravityToAccel.y, FixedMul(deltaseconds, gravCorrectionRate)),
+		FixedMul(gravityToAccel.z, FixedMul(deltaseconds, gravCorrectionRate))
 	);
 	if (FV3_LengthSquared(&correction) < FV3_LengthSquared(&gravityToAccel))
 	{
