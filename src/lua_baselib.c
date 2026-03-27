@@ -440,7 +440,7 @@ static int lib_pGetColorAfter(lua_State *L)
 static int lib_gMapNumber(lua_State *L)
 {
 	const char *arg = luaL_checkstring(L, 1);
-	UINT16 map;
+	mapnum_t map;
 
 	map = G_MapNumber(arg);
 
@@ -3347,7 +3347,7 @@ static int Lcheckmapnumber (lua_State *L, int idx, const char *fun)
 
 static int lib_gBuildMapName(lua_State *L)
 {
-	UINT16 map = Lcheckmapnumber(L, 1, "G_BuildMapName");
+	mapnum_t map = Lcheckmapnumber(L, 1, "G_BuildMapName");
 
 	if (lua_compatmode && map == 0) // v1 has undefined behaviour if you return 0, who knew.
 	{
@@ -3361,7 +3361,7 @@ static int lib_gBuildMapName(lua_State *L)
 
 static int lib_gBuildMapTitle(lua_State *L)
 {
-	UINT16 map = Lcheckmapnumber(L, 1, "G_BuildMapTitle");
+	mapnum_t map = Lcheckmapnumber(L, 1, "G_BuildMapTitle");
 	char *name;
 	if (map < 1 || map > nummapheaders)
 	{
@@ -3427,7 +3427,7 @@ static int lib_gFindMap(lua_State *L)
 {
 	const char *query = luaL_checkstring(L, 1);
 
-	UINT16 map;
+	mapnum_t map;
 	char *realname;
 	INT32 frc;
 	mapsearchfreq_t *frv;
@@ -3474,7 +3474,7 @@ Returns:
 static int lib_gFindMapByNameOrCode(lua_State *L)
 {
 	const char *query = luaL_checkstring(L, 1);
-	UINT16 map;
+	mapnum_t map;
 	char *realname;
 	map = G_FindMapByNameOrCode(query, &realname);
 	lua_pushnumber(L, map);
@@ -3519,7 +3519,7 @@ static int lib_gSetCustomExitVars(lua_State *L)
 
 	if (n >= 1)
 	{
-		nextmapoverride = (UINT16)luaL_optinteger(L, 1, 0);
+		nextmapoverride = luaL_optinteger(L, 1, 0);
 		skipstats = (INT16)luaL_optinteger(L, 2, 0);
 		if (lua_compatmode && nextmapoverride)
 			nextmapoverride = G_KartMapToNative(nextmapoverride);
@@ -3542,7 +3542,7 @@ static int lib_gExitLevel(lua_State *L)
 
 static int lib_gIsSpecialStage(lua_State *L)
 {
-	UINT16 mapnum = Lcheckmapnumber(L, 1, "G_IsSpecialStage");
+	mapnum_t mapnum = Lcheckmapnumber(L, 1, "G_IsSpecialStage");
 	//HUDSAFE
 	INLEVEL
 	lua_pushboolean(L, G_IsSpecialStage(lua_compatmode ? G_KartMapToNative(mapnum) : mapnum));

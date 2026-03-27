@@ -790,7 +790,7 @@ void readgametype(MYFILE *f, char *gtname)
 	CONS_Printf("Added gametype %s\n", gtname);
 }
 
-static mapheader_lighting_t *usemaplighting(UINT16 mapnum, const char *word)
+static mapheader_lighting_t *usemaplighting(mapnum_t mapnum, const char *word)
 {
 	if (fastncmp(word, "ENCORE", 6))
 	{
@@ -853,7 +853,7 @@ if (fastcmp(word, name)) \
 		OUTOFRANGE_CONSTANT(name, word2, minname, maxname); \
 }
 
-static void processvector(const char* name, UINT16 mapnum, char *word2, f_vector3_t *vec, float min, float max)
+static void processvector(const char* name, mapnum_t mapnum, char *word2, f_vector3_t *vec, float min, float max)
 {
 	char *tmp = strtok(word2,",");
 	float vector[3];
@@ -878,7 +878,7 @@ static void processvector(const char* name, UINT16 mapnum, char *word2, f_vector
 }
 
 // Handle parsing globalefx info
-static void globalmapefxparameters(UINT16 mapnum, INT32 i, char *word, char *word2)
+static void globalmapefxparameters(mapnum_t mapnum, INT32 i, char *word, char *word2)
 {
 	// Take off GLOBALEFX_
 	word += 10;
@@ -1068,7 +1068,7 @@ void readlevelheader(MYFILE *f, char * name)
 		name = va("MAP%s", name);
 	}
 
-	UINT16 num = G_MapNumber(name);
+	mapnum_t num = G_MapNumber(name);
 
 	if (num >= nummapheaders)
 	{
@@ -3166,7 +3166,7 @@ void readunlockable(MYFILE *f, INT32 num)
 				{
 					Z_Free(unlockables[num].stringVar);
 					unlockables[num].stringVar = Z_StrDup(word2);
-					unlockables[num].variable = (UINT16)G_MapNumber(word2);
+					unlockables[num].variable = G_MapNumber(word2);
 				}
 				else
 					deh_warning("Unlockable %d: unknown word '%s'", num+1, word);

@@ -15,6 +15,7 @@
 ///        plus functions to parse command line parameters, configure game
 ///        parameters, and call the startup functions.
 
+#include "g_mapnum.h"
 #if (defined (__unix__) && !defined (MSDOS)) || defined(__APPLE__) || defined (UNIXCOMMON)
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -1172,7 +1173,7 @@ void D_StartTitle(void)
 			if (i > nummapheaders)
 				I_Error("D_StartTitle: No valid map ID found!?");
 
-			COM_BufAddText(va("map %s\n", G_BuildMapName(i)));
+			COM_BufAddText(va("map %s\n", G_BuildMapName((mapnum_t)(i))));
 		}
 
 		return;
@@ -1456,7 +1457,7 @@ void D_SRB2Main(void)
 {
 	INT32 p;
 
-	INT32 pstartmap = 1;
+	mapnum_t pstartmap = (mapnum_t)1;
 	boolean autostart = false;
 
 	/* break the version string into version numbers, for netplay */
@@ -2006,7 +2007,7 @@ void D_SRB2Main(void)
 	// rei/miru: bootmap (Idea: starts the game on a predefined map)
 	if (bootmap && !(M_CheckParm("-warp") && M_IsNextParm()))
 	{
-		pstartmap = G_MapNumber(bootmap)+1;
+		pstartmap = (mapnum_t)(G_MapNumber(bootmap)+1);
 
 		if (pstartmap > nummapheaders)
 		{

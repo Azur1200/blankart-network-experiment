@@ -9,6 +9,7 @@
 #include "doomdef.h"
 #include "d_player.h" // Need for player_t
 #include "command.h" // Need for player_t
+#include "g_game.h" // Need for mapnum_t
 
 #ifdef __cplusplus
 extern "C" {
@@ -228,7 +229,7 @@ void K_SpawnBumpEffect(mobj_t *mo);
 void K_KartMoveAnimation(player_t *player);
 void K_KartPlayerHUDUpdate(player_t *player);
 void K_KartResetPlayerColor(player_t *player);
-UINT8 K_RaceLapCount(UINT16 mapNum);
+UINT8 K_RaceLapCount(mapnum_t mapNum);
 void K_KartPlayerThink(player_t *player, ticcmd_t *cmd);
 void K_KartPlayerAfterThink(player_t *player);
 angle_t K_MomentumAngle(mobj_t *mo);

@@ -1452,7 +1452,7 @@ void Y_VoteDrawer(void)
 	fixed_t rubyheight = 0;
 	fixed_t scale;
 	patch_t *pic;
-	UINT16 mapnum;
+	mapnum_t mapnum;
 	fixed_t picwidth = 160;
 
 	// CEP: scale by screen hypotenuse for extra voting rows

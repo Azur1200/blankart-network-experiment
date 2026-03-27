@@ -1377,7 +1377,7 @@ static int libd_getStringColormap(lua_State *L)
 
 static int libd_getMapThumbnail(lua_State *L)
 {
-	UINT16 mapnum;
+	mapnum_t mapnum;
 	patch_t *patch = NULL;
 	HUDONLY
 	if (lua_type(L, 1) == LUA_TNUMBER)
@@ -1393,7 +1393,7 @@ static int libd_getMapThumbnail(lua_State *L)
 
 static int libd_getMapMinimap(lua_State *L)
 {
-	UINT16 mapnum;
+	mapnum_t mapnum;
 	patch_t *patch = NULL;
 	HUDONLY
 	if (lua_type(L, 1) == LUA_TNUMBER)

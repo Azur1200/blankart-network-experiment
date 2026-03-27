@@ -201,7 +201,7 @@ int  M_GetWaitingMode(void);
 
 typedef struct
 {
-	UINT16 mapnum;
+	mapnum_t mapnum;
 	char mapname[MAXMAPNAME];
 	UINT8 color;
 	boolean available;
@@ -637,7 +637,7 @@ INT32 HU_GetHighlightColor(void)
 	return highlightflags;
 }
 
-fixed_t M_GetMapThumbnail(UINT16 mapnum, patch_t **out)
+fixed_t M_GetMapThumbnail(mapnum_t mapnum, patch_t **out)
 {
 	patch_t *patch = NULL;
 	if (mapnum == NEXTMAP_INVALID)
@@ -2441,7 +2441,7 @@ static void M_CentreText(INT32 y, const char *string)
 //
 // used by pause & statistics to draw a row of emblems for a map
 //
-static void M_DrawMapEmblems(UINT16 mapnum, INT32 x, INT32 y)
+static void M_DrawMapEmblems(mapnum_t mapnum, INT32 x, INT32 y)
 {
 	UINT8 lasttype = UINT8_MAX, curtype;
 	emblem_t *emblem = M_GetLevelEmblems(mapnum);
@@ -2746,7 +2746,7 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 		{
 		case ITF_THUMBNAIL:
 		{
-			UINT16 mapnum = G_MapNumber(item->patch);
+			mapnum_t mapnum = G_MapNumber(item->patch);
 			scale = M_GetMapThumbnail(mapnum < nummapheaders ? mapnum : NEXTMAP_INVALID, &p)/4;
 			break;
 		}
@@ -3040,7 +3040,7 @@ static INT32 M_GetLevelListTOL(void)
 	}
 }
 
-static boolean M_LevelAvailableOnPlatter(UINT16 mapnum)
+static boolean M_LevelAvailableOnPlatter(mapnum_t mapnum)
 {
 	// don't care
 	(void)mapnum;
@@ -3052,7 +3052,7 @@ static boolean M_LevelAvailableOnPlatter(UINT16 mapnum)
 //
 // Determines whether to show a given map in the various level-select lists.
 //
-static boolean M_CanShowLevelOnPlatter(UINT16 mapnum)
+static boolean M_CanShowLevelOnPlatter(mapnum_t mapnum)
 {
 	// Does the map exist?
 	if (mapnum < 0 || mapnum >= nummapheaders || !mapheaderinfo[mapnum])
@@ -3266,7 +3266,7 @@ static void M_UpdateLevelPlatterCups(void)
 				break;
 
 			levelselectmap_t *lsmap = &lsrow->maps[lsrow->numcolumns++];
-			UINT16 mapnum = cup->cachedlevels[j];
+			mapnum_t mapnum = cup->cachedlevels[j];
 
 			lsmap->mapnum = mapnum; // putting the map on the platter
 			lsmap->available = M_LevelAvailableOnPlatter(mapnum);
@@ -3351,7 +3351,7 @@ static void M_UpdateLevelPlatter(void)
 
 	for (i = 0; i < numsortedmaps; i++)
 	{
-		UINT16 mapnum = sortedmaps[i];
+		mapnum_t mapnum = sortedmaps[i];
 		mapheader_t *itermap = mapheaderinfo[mapnum];
 		boolean wide = false;//(headermap->menuflags & LF2_WIDEICON);
 
@@ -3882,7 +3882,7 @@ void MD_DrawLevelPlatterMenu(void)
 // Determines whether to show a given map in the various level-select lists.
 // Set gt = -1 to ignore gametype.
 //
-boolean M_CanShowLevelInList(UINT16 mapnum)
+boolean M_CanShowLevelInList(mapnum_t mapnum)
 {
 	return M_CanShowLevelOnPlatter(mapnum) && M_LevelAvailableOnPlatter(mapnum);
 }

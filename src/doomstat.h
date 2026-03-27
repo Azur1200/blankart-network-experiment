@@ -23,6 +23,8 @@
 extern "C" {
 #endif
 
+#include "g_mapnum.h"
+
 // We need globally shared data structures, for defining the global state variables.
 #include "doomdata.h"
 
@@ -36,7 +38,7 @@ extern "C" {
 // =============================
 
 // Selected by user.
-extern UINT16 gamemap;
+extern mapnum_t gamemap;
 extern char mapmusname[7];
 extern UINT16 mapmusflags;
 extern UINT32 mapmusposition;
@@ -284,7 +286,7 @@ struct textprompt_t
 extern textprompt_t *textprompts[MAX_PROMPTS];
 
 // For the Custom Exit linedef.
-extern UINT16 nextmapoverride;
+extern mapnum_t nextmapoverride;
 extern UINT8 skipstats;
 
 // Fun extra stuff
@@ -347,7 +349,7 @@ struct cupheader_t
 
 	char icon[9];							///< Name of the icon patch
 	char *levellist[CUPCACHE_MAX];			///< List of levels that belong to this cup
-	UINT16 cachedlevels[CUPCACHE_MAX];		///< IDs in levellist, bonusgame, and specialstage
+	mapnum_t cachedlevels[CUPCACHE_MAX];		///< IDs in levellist, bonusgame, and specialstage
 	UINT8 numlevels;						///< Number of levels defined in levellist
 	UINT8 numbonus;							///< Number of bonus stages defined
 	UINT8 emeraldnum;						///< ID of Emerald to use for special stage (1-7 for Chaos Emeralds, 8-14 for Super Emeralds, 0 for no emerald)

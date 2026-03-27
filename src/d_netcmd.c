@@ -3340,7 +3340,7 @@ INT32 mapchangepending = 0;
   * \sa D_GameTypeChanged, Command_Map_f
   * \author Graue <graue@oceanbase.org>
   */
-void D_MapChange(UINT16 mapnum, INT32 newgametype, boolean pencoremode, boolean presetplayers, INT32 delay, boolean skipprecutscene, boolean pforcespecialstage)
+void D_MapChange(mapnum_t mapnum, INT32 newgametype, boolean pencoremode, boolean presetplayers, INT32 delay, boolean skipprecutscene, boolean pforcespecialstage)
 {
 	static char buf[1+1+1+1+1+2+4];
 	static char *buf_p = buf;
@@ -3412,7 +3412,7 @@ void D_SetupVote(void)
 	INT32 i;
 	UINT8 gt = (cv_kartgametypepreference.value == -1) ? gametype : cv_kartgametypepreference.value;
 	UINT8 secondgt = G_SometimesGetDifferentGametype(gt);
-	UINT16 votebuffer[4] = {NEXTMAP_INVALID,NEXTMAP_INVALID,NEXTMAP_INVALID,0};
+	mapnum_t votebuffer[4] = {NEXTMAP_INVALID,NEXTMAP_INVALID,NEXTMAP_INVALID,0};
 
 	if (cv_kartencore.value && cv_encorevotes.value == 1 && (gametypes[gt]->rules & GTR_CIRCUIT))
 		WRITEUINT8(p, (gt|VOTEMODIFIER_ENCORE));
@@ -3923,7 +3923,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	UINT8 skipprecutscene, pforcespecialstage;
 	boolean pencoremode, hasroundqueuedata;
 	UINT16 lastgametype;
-	UINT16 mapnumber;
+	mapnum_t mapnumber;
 
 	forceresetplayers = deferencoremode = false;
 

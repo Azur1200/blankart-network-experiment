@@ -3997,7 +3997,7 @@ static inline void P_NetSyncSpecials(savebuffer_t *save)
 // =======================================================================
 //          Misc
 // =======================================================================
-static inline void P_ArchiveMisc(savebuffer_t *save, UINT16 mapnum)
+static inline void P_ArchiveMisc(savebuffer_t *save, mapnum_t mapnum)
 {
 	TracyCZone(__zone, true);
 
@@ -4014,7 +4014,7 @@ static inline void P_ArchiveMisc(savebuffer_t *save, UINT16 mapnum)
 	TracyCZoneEnd(__zone);
 }
 
-static inline void P_UnArchiveSPGame(savebuffer_t *save, UINT16 mapoverride)
+static inline void P_UnArchiveSPGame(savebuffer_t *save, mapnum_t mapoverride)
 {
 	TracyCZone(__zone, true);
 
@@ -4568,7 +4568,7 @@ static inline boolean P_UnArchiveLuabanksAndConsistency(savebuffer_t *save)
 	return ret;
 }
 
-void P_SaveGame(savebuffer_t *save, UINT16 mapnum)
+void P_SaveGame(savebuffer_t *save, mapnum_t mapnum)
 {
 	P_ArchiveMisc(save, mapnum);
 	P_ArchivePlayer(save);
@@ -4626,7 +4626,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 	TracyCZoneEnd(__zone);
 }
 
-boolean P_LoadGame(savebuffer_t *save, UINT16 mapoverride)
+boolean P_LoadGame(savebuffer_t *save, mapnum_t mapoverride)
 {
 	if (gamestate == GS_INTERMISSION)
 		Y_EndIntermission();

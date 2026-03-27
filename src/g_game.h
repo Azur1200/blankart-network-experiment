@@ -14,6 +14,7 @@
 #ifndef __G_GAME__
 #define __G_GAME__
 
+#include "g_mapnum.h"
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_event.h"
@@ -38,20 +39,7 @@ extern boolean playeringame[MAXPLAYERS];
 extern tic_t levelstarttic;
 
 // for modding?
-extern UINT16 prevmap, nextmap;
-
-// see also G_MapNumber
-typedef enum
-{
-	NEXTMAP_RESERVED = UINT16_MAX, // so nextmap+1 doesn't roll over -- remove when gamemap is made 0-indexed
-	NEXTMAP_TITLE = UINT16_MAX-1,
-	NEXTMAP_EVALUATION = UINT16_MAX-2,
-	NEXTMAP_CREDITS = UINT16_MAX-3,
-	NEXTMAP_CEREMONY = UINT16_MAX-4,
-	NEXTMAP_VOTING = UINT16_MAX-5,
-	NEXTMAP_INVALID = UINT16_MAX-6, // Always last
-	NEXTMAP_SPECIAL = NEXTMAP_INVALID
-} nextmapspecial_t;
+extern mapnum_t prevmap, nextmap;
 
 #define ROUNDQUEUE_MAX 10 // sane max? maybe make dynamically allocated later
 #define ROUNDQUEUE_CLEAR UINT16_MAX // lives in gametype field of packets
@@ -77,8 +65,8 @@ void G_MapSlipIntoRoundQueue(UINT8 position, UINT16 map, UINT8 setgametype, bool
 void G_MapIntoRoundQueue(UINT16 map, UINT8 setgametype, boolean setencore, boolean rankrestricted);
 void G_GPCupIntoRoundQueue(cupheader_t *cup, UINT8 setgametype, boolean setencore);
 
-extern UINT16 kartmap2native[NEXTMAP_SPECIAL], nativemap2kart[NEXTMAP_SPECIAL];
-extern UINT16 nextexnum;
+extern mapnum_t kartmap2native[NEXTMAP_SPECIAL], nativemap2kart[NEXTMAP_SPECIAL];
+extern mapnum_t nextexnum;
 
 extern INT32 gameovertics;
 extern UINT8 ammoremovaltics;
@@ -130,11 +118,11 @@ void weaponPrefChange4(void);
 
 #define MAXPLMOVE (50)
 
-const char *G_BuildMapName(UINT16 map);
-UINT16 G_MapNumber(const char *mapname);
-UINT16 G_LevelTitleToMapNum(const char * leveltitle);
-UINT16 G_KartMapToNative(UINT16 mapnum);
-UINT16 G_NativeMapToKart(UINT16 mapnum);
+const char *G_BuildMapName(mapnum_t map);
+mapnum_t G_MapNumber(const char *mapname);
+mapnum_t G_LevelTitleToMapNum(const char * leveltitle);
+mapnum_t G_KartMapToNative(mapnum_t mapnum);
+mapnum_t G_NativeMapToKart(mapnum_t mapnum);
 
 void G_ResetAnglePrediction(player_t *player);
 void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer);
@@ -189,9 +177,9 @@ boolean G_AxisInDeadzone(UINT8 p, event_t *ev);
 void G_ChangePlayerReferences(mobj_t *oldmo, mobj_t *newmo);
 void G_DoReborn(INT32 playernum);
 void G_PlayerReborn(INT32 player, boolean betweenmaps);
-void G_InitNew(UINT8 pencoremode, UINT16 map, boolean resetplayer,
+void G_InitNew(UINT8 pencoremode, mapnum_t map, boolean resetplayer,
 	boolean skipprecutscene);
-char *G_BuildMapTitle(UINT16 mapnum);
+char *G_BuildMapTitle(mapnum_t mapnum);
 
 struct searchdim
 {
@@ -209,12 +197,12 @@ struct mapsearchfreq_t
 	UINT8  total;/* total hits */
 };
 
-UINT16 G_FindMap(const char *query, char **foundmapnamep,
+mapnum_t G_FindMap(const char *query, char **foundmapnamep,
 		mapsearchfreq_t **freqp, INT32 *freqc);
 void G_FreeMapSearch(mapsearchfreq_t *freq, INT32 freqc);
 
 /* Match map name by search + 2 digit map code or map number. */
-UINT16 G_FindMapByNameOrCode(const char *query, char **foundmapnamep);
+mapnum_t G_FindMapByNameOrCode(const char *query, char **foundmapnamep);
 
 // XMOD spawning
 mapthing_t *G_FindTeamStart(INT32 playernum);
@@ -226,7 +214,7 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost);
 
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1, but a warp test can start elsewhere
-void G_DeferedInitNew(boolean pencoremode, UINT16 map, INT32 pickedchar,
+void G_DeferedInitNew(boolean pencoremode, mapnum_t map, INT32 pickedchar,
 	UINT8 ssplayers, boolean FLS);
 void G_DoLoadLevel(boolean resetplayer);
 
@@ -235,11 +223,11 @@ void G_PreLevelTitleCard(void);
 boolean G_IsTitleCardAvailable(void);
 
 // Can be called by the startup code or M_Responder, calls P_SetupLevel.
-void G_LoadGame(UINT32 slot, UINT16 mapoverride);
+void G_LoadGame(UINT32 slot, mapnum_t mapoverride);
 
 void G_SaveGameData(void);
 
-void G_SaveGame(UINT32 slot, UINT16 mapnum);
+void G_SaveGame(UINT32 slot, mapnum_t mapnum);
 
 void G_SaveGameOver(UINT32 slot, boolean modifylives);
 
@@ -250,7 +238,7 @@ void G_UpdateGametypeSelections(void);
 INT32 G_GetGametypeByName(const char *gametypestr);
 INT32 G_GuessGametypeByTOL(UINT32 tol);
 
-boolean G_IsSpecialStage(UINT16 mapnum);
+boolean G_IsSpecialStage(mapnum_t mapnum);
 boolean G_GametypeUsesLives(void);
 boolean G_GametypeHasTeams(void);
 boolean G_GametypeHasSpectators(void);
@@ -381,11 +369,11 @@ maprecord_t *G_GetMapRecord(const char *mapname);
 maprecordpreset_t *G_AllocateMapRecordPreset(maprecord_t *record, const char *presetname, UINT8 version);
 maprecordpreset_t *G_GetMapRecordPreset(maprecord_t *record, const char *presetname);
 void G_ClearRecords(void);
-tic_t G_GetBestTime(UINT16 map);
+tic_t G_GetBestTime(mapnum_t map);
 boolean G_EmblemsEnabled(void);
 char *G_GetRecordReplayFolder(boolean home, boolean breaker);
-char *G_GetRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, recordreplay_e which);
-boolean G_CheckRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, recordreplay_e which);
+char *G_GetRecordReplay(const char *folder, mapnum_t mapnum, UINT16 skinnum, recordreplay_e which);
+boolean G_CheckRecordReplay(const char *folder, mapnum_t mapnum, UINT16 skinnum, recordreplay_e which);
 
 FUNCMATH INT32 G_TicsToHours(tic_t tics);
 FUNCMATH INT32 G_TicsToMinutes(tic_t tics, boolean full);
@@ -395,10 +383,10 @@ FUNCMATH INT32 G_TicsToMilliseconds(tic_t tics);
 
 // Don't split up TOL handling
 UINT32 G_TOLFlag(INT32 pgametype);
-INT16 G_GetFirstMapOfGametype(UINT8 pgametype);
+mapnum_t G_GetFirstMapOfGametype(UINT8 pgametype);
 
-UINT16 G_RandMap(UINT32 tolflags, UINT16 pprevmap, UINT8 ignorebuffer, UINT8 maphell, UINT16 *extbuffer);
-void G_AddMapToBuffer(UINT16 map);
+mapnum_t G_RandMap(UINT32 tolflags, mapnum_t pprevmap, UINT8 ignorebuffer, UINT8 maphell, mapnum_t *extbuffer);
+void G_AddMapToBuffer(mapnum_t map);
 
 typedef struct 
 {
