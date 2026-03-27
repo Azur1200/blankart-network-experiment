@@ -8043,7 +8043,6 @@ void K_KartPlayerAfterThink(player_t *player)
 	{
 		player->attractionboost = 0;
 		player->attractionattack_hipower = false;
-		player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
 	}
 }
 
@@ -11876,6 +11875,11 @@ void K_KartAttractHomingAttack(player_t *player)
 		player->attractionattack--;
 	}
 	else
+	{
+		player->attractionattack = 0;
+	}
+
+	if (player->attractionattack <= 0)
 	{
 		player->attractionattack = 0;
 		player->attractionattack_hipower = false;

@@ -2326,6 +2326,11 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			K_PlayAttackTaunt(player->mo);
 			K_UpdateHnextList(player, false);
 			K_BotResetItemConfirm(player, false);
+
+			if (player->itemamount <= 0)
+			{
+				player->itemflags &= ~IF_SEEKING;
+			}
 		}
 		break;
 	case KITEM_MINE:
