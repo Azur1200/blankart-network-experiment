@@ -301,6 +301,12 @@ void K_DisplayItemTimers(void)
 			{qche("K_TIFLMS")},
 			1,
 		},
+		{ // attractionshield
+			"attractionshield",
+			stplyr->attractionattack,
+			{qche("K_TIATTR")},
+			1,
+		},
 	};
 
 	// insert sortable timers

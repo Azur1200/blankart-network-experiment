@@ -11844,16 +11844,15 @@ void K_KartAttractHomingAttack(player_t *player)
 		{
 			effectangle = R_PointToAngle2(0,0, player->mo->momx, player->mo->momy);
 		}
-		mo->angle = P_RandomRange(-30, 30)*ANG1 + effectangle - ANGLE_180;
+		mo->angle = P_RandomRange(-30, 30)*ANG1 + (effectangle - ANGLE_180);
 		mo->fuse = P_RandomRange(10, 20);
 		P_SetScale(mo, player->mo->scale/2);
 		mo->destscale = mo->scale/3;
 		P_SetTarget(&mo->target, player->mo);
 		P_SetMobjState(mo, S_KLIT1);
-		mo->renderflags |= RF_ADD|RF_FULLBRIGHT|RF_TRANS30;
+		mo->renderflags |= RF_ADD|RF_FULLBRIGHT|RF_TRANS50;
 
 		mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
-		P_SetTarget(&mo->target, player->mo);
 		P_SetMobjState(mo, S_KSPARK1);
 		mo->renderflags |= RF_ADD|RF_FULLBRIGHT|RF_TRANS30;
 
