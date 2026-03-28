@@ -1533,6 +1533,20 @@ static void K_drawKartItem(void)
 		}
 		else if (stplyr->attractioncharge > 0)
 		{
+			if (leveltime & 2)
+			{
+				if (stplyr->attractioncharge >= ATTRACTIONCHARGETIME)
+				{
+					colormode = TC_BLINK;
+					localcolor = SKINCOLOR_WHITE;
+				}
+				localpatch = K_GetCachedItemPatch(KITEM_THUNDERSHIELD, tiny, 0);
+			}
+			else
+			{
+				localpatch = kp_nodraw;
+			}
+
 			itembar = FixedDiv(stplyr->attractioncharge, ATTRACTIONCHARGETIME);
 		}
 		else if (stplyr->bricktimer > 0)

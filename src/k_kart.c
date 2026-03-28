@@ -340,6 +340,15 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_flame_handleboost);
 	CV_RegisterVar(&cv_kartstacking_flame_stackable);
 
+	CV_RegisterVar(&cv_kartstacking_attraction_speedboost_himin);
+	CV_RegisterVar(&cv_kartstacking_attraction_speedboost_himax);
+	CV_RegisterVar(&cv_kartstacking_attraction_speedboost_normmin);
+	CV_RegisterVar(&cv_kartstacking_attraction_speedboost_normmax);
+	CV_RegisterVar(&cv_kartstacking_attraction_accelboost_hi);
+	CV_RegisterVar(&cv_kartstacking_attraction_accelboost_norm);
+	CV_RegisterVar(&cv_kartstacking_attraction_handleboost);
+	CV_RegisterVar(&cv_kartstacking_attraction_stackable);
+
 	CV_RegisterVar(&cv_kartstacking_start_speedboost);
 	CV_RegisterVar(&cv_kartstacking_start_accelboost);
 	CV_RegisterVar(&cv_kartstacking_start_handleboost);
@@ -2921,7 +2930,7 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->attractionboost)
 	{
-		K_DoBoost(player, player->attractionboost, (player->attractionattack_hipower) ? 3*FRACUNIT : FRACUNIT, FRACUNIT/4, true, false); // + ???% top speed, + 300% acceleration
+		K_DoBoost(player, player->attractionboost, (player->attractionattack_hipower) ? ATTRACTIONACCELHI : ATTRACTIONACCELNORM, ATTRACTIONHANDLEBOOST, ATTRACTIONSTACKABLE, false); // + ???% top speed, + 300% acceleration
 	}
 
 	if (player->slopeboost || player->slopeaccel)
@@ -8034,7 +8043,6 @@ void K_KartPlayerAfterThink(player_t *player)
 	{
 		player->attractionboost = 0;
 		player->attractionattack_hipower = false;
-		player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
 	}
 }
 
@@ -11786,9 +11794,11 @@ boolean K_NullDriftTiltEnabled(void)
 }
 
 #define TargetThreshold (80*FRACUNIT/100)
+#define TargetAngleAssist (FRACUNIT/2)
 void K_KartAttractHomingAttack(player_t *player)
 {
 	fixed_t influence = 0;
+	fixed_t angleassist = 0;
 	INT32 lastTarg = player->lastitemtarget;
 	
 	if (lastTarg >= 0)
@@ -11801,10 +11811,25 @@ void K_KartAttractHomingAttack(player_t *player)
 			mobj_t *targMo = players[lastTarg].mo;
 			vector2_t targetdirection = {targMo->x - player->mo->x, targMo->y - player->mo->y};
 			vector2_t movedirection = {P_ReturnThrustX(NULL, player->mo->angle, FRACUNIT), P_ReturnThrustY(NULL, player->mo->angle, FRACUNIT)};
-
+			fixed_t targetangle = AngleFixed(R_PointToAngle2(player->mo->x + player->mo->momx, player->mo->y + player->mo->momy, targMo->x + targMo->momx, targMo->y + targMo->momy));
+			
 			FV2_Normalize(&movedirection);
 			FV2_Normalize(&targetdirection);
-			influence = FixedDiv(CLAMP(FV2_Dot(&movedirection, &targetdirection), 0, TargetThreshold), TargetThreshold);
+			influence = FixedDiv(CLAMP(FV2_Dot(&targetdirection, &movedirection), 0, TargetThreshold), TargetThreshold);
+
+			if (FV2_Dot(&targetdirection, &movedirection) > 0)
+			{
+				angleassist = (targetangle - AngleFixed(player->mo->angle));
+				if (angleassist < -180*FRACUNIT)
+				{
+					angleassist += 360*FRACUNIT;
+				}
+				else if (angleassist > 180*FRACUNIT)
+				{
+					angleassist -= 360*FRACUNIT;
+				}
+				angleassist = FixedMul(CLAMP(angleassist, -TargetAngleAssist, TargetAngleAssist), influence);
+			}
 		}
 	}
 
@@ -11813,28 +11838,48 @@ void K_KartAttractHomingAttack(player_t *player)
 		&& player->bumpUnstuck == 0)
 	{
 		mobj_t *mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
-		mo->angle = P_RandomRange(-30, 30)*ANG1 + R_PointToAngle2(0,0, player->mo->momx, player->mo->momy) - ANGLE_180;
+		angle_t effectangle = player->mo->angle;
+		if (player->speed > 0)
+		{
+			effectangle = R_PointToAngle2(0,0, player->mo->momx, player->mo->momy);
+		}
+		mo->angle = P_RandomRange(-30, 30)*ANG1 + (effectangle - ANGLE_180);
 		mo->fuse = P_RandomRange(10, 20);
-		P_SetScale(mo, player->mo->scale);
-		mo->destscale = mo->scale/2;
+		P_SetScale(mo, player->mo->scale/2);
+		mo->destscale = mo->scale/3;
 		P_SetTarget(&mo->target, player->mo);
 		P_SetMobjState(mo, S_KLIT1);
-		mo->renderflags |= RF_ADD|RF_FULLBRIGHT;
-		P_SpawnGhostMobj(player->mo);
+		mo->renderflags |= RF_ADD|RF_FULLBRIGHT|RF_TRANS50;
 
+		mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
+		P_SetMobjState(mo, S_KSPARK1);
+		mo->renderflags |= RF_ADD|RF_FULLBRIGHT|RF_TRANS30;
+
+		P_SpawnGhostMobj(player->mo);
 		
-		if (player->attractionattack_hipower)
+		if (player->attractionattack_hipower && lastTarg >= 0)
 		{
-			player->attractionboost = Easing_InCubic(influence, 50*FRACUNIT/100, 60*FRACUNIT/100);
+			player->attractionboost = Easing_InCubic(influence, ATTRACTIONSPEEDHIMIN, ATTRACTIONSPEEDHIMAX);
 		}
 		else
 		{
-			player->attractionboost = Easing_InCubic(influence, 25*FRACUNIT/100, 30*FRACUNIT/100);
+			player->attractionboost = Easing_InCubic(influence, ATTRACTIONSPEEDNORMMIN, ATTRACTIONSPEEDNORMMAX);
 		}
 
+		if (angleassist)
+		{
+			player->mo->angle += FixedAngle(angleassist);
+			P_SetPlayerAngle(player, player->mo->angle);
+		}
+		
 		player->attractionattack--;
 	}
 	else
+	{
+		player->attractionattack = 0;
+	}
+
+	if (player->attractionattack <= 0)
 	{
 		player->attractionattack = 0;
 		player->attractionattack_hipower = false;

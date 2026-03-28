@@ -24,6 +24,7 @@
 #include "st_stuff.h"
 #include "hu_stuff.h"
 #include "lua_hook.h"
+#include "lua_script.h" // lua_compatmode
 #include "m_cond.h" // unlockables, emblems, etc
 #include "p_setup.h"
 #include "m_cheat.h" // objectplace
@@ -2041,21 +2042,38 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 // Determines what ShouldX Hook's status should be used.
 static UINT8 P_ShouldHookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
 {
-	UINT8 shouldDamage = LUA_HookShouldDamage(target, inflictor, source, damage, damagetype);
-	UINT8 shouldSpin = LUA_HookShouldSpin(target, inflictor, source, damage, damagetype);
-	UINT8 shouldExplode = LUA_HookShouldExplode(target, inflictor, source, damage, damagetype);
-	UINT8 shouldSquish = LUA_HookShouldSquish(target, inflictor, source, damage, damagetype);
+	boolean targetisplayer = false;
+	const boolean killer = (damagetype & DMG_DEATHMASK);
+	INT32 use_damage = damage;
+
+	if (target && (!P_MobjWasRemoved(target)) && target->player)
+	{
+		targetisplayer = true;
+	}
+
+	if (lua_compatmode && targetisplayer && killer)
+	{
+		// Before the introduction of dedicated damage types, this magic number was used to kill players.
+		use_damage = 10000;
+	}
+
+	UINT8 shouldDamage = LUA_HookShouldDamage(target, inflictor, source, use_damage, damagetype);
+	UINT8 shouldSpin = LUA_HookShouldSpin(target, inflictor, source, use_damage, damagetype);
+	UINT8 shouldExplode = LUA_HookShouldExplode(target, inflictor, source, use_damage, damagetype);
+	UINT8 shouldSquish = LUA_HookShouldSquish(target, inflictor, source, use_damage, damagetype);
 	UINT8 status;
 	const UINT8 type = (damagetype & DMG_TYPEMASK);
-
 	status = shouldDamage;
 
-	if (shouldSpin > 0 && ((type == DMG_NORMAL) || (type == DMG_WIPEOUT) || (type == DMG_FLIPOVER)))
-		status = shouldSpin;
-	else if (shouldExplode > 0 && ((type == DMG_EXPLODE) || (type == DMG_KARMA)))
-		status = shouldExplode;
-	else if (shouldSquish > 0 && (type == DMG_SQUISH))
-		status = shouldSquish;
+	if (!killer)
+	{
+		if (shouldSpin > 0 && ((type == DMG_NORMAL) || (type == DMG_WIPEOUT) || (type == DMG_FLIPOVER)))
+			status = shouldSpin;
+		else if (shouldExplode > 0 && ((type == DMG_EXPLODE) || (type == DMG_KARMA)))
+			status = shouldExplode;
+		else if (shouldSquish > 0 && (type == DMG_SQUISH))
+			status = shouldSquish;
+	}
 
 	return status;
 }

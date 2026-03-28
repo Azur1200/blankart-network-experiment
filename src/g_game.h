@@ -154,7 +154,8 @@ typedef enum
 } motionsensortype_e;
 
 #define MAXGAMEPADTILT (50*FRACUNIT/100)
-#define ACCELEROMETERGRAVITY ((fixed_t)(9.80665f * ((float)FRACUNIT)))
+// #define ACCELEROMETERGRAVITY ((fixed_t)(9.80665f * ((float)FRACUNIT)))
+#define ACCELEROMETERGRAVITY 642688
 #define GAMEPADSHAKETHRESHOLD (UINT8_MAX/2)
 #define TILTTOSTICKEASE 6
 boolean G_GetGamepadCanUseTilt(INT32 p);

@@ -1928,16 +1928,6 @@ void K_DoAttractionShield(player_t *player, boolean hipower)
 	mo->color = SKINCOLOR_CYAN;
 	mo->scale = player->mo->scale*3 + (player->mo->scale/2);
 
-	// spawn horizontal bolts;
-	for (i=0; i<7; i++)
-	{
-		mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
-		mo->angle = P_RandomRange(0, 359)*ANG1;
-		mo->fuse = P_RandomRange(20, 50);
-		P_SetTarget(&mo->target, player->mo);
-		P_SetMobjState(mo, S_KLIT1);
-	}
-
 	// spawn the radius thing:
 	an = ANGLE_22h;
 	for (i=0; i<15; i++)
@@ -2336,6 +2326,11 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			K_PlayAttackTaunt(player->mo);
 			K_UpdateHnextList(player, false);
 			K_BotResetItemConfirm(player, false);
+
+			if (player->itemamount <= 0)
+			{
+				player->itemflags &= ~IF_SEEKING;
+			}
 		}
 		break;
 	case KITEM_MINE:

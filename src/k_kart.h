@@ -139,6 +139,15 @@ extern vector3_t clusterpoint, clusterdtf;
 #define FLAMEHANDLEBOOST CV_Get(&cv_kartstacking_flame_handleboost)
 #define FLAMESTACKABLE CV_Get(&cv_kartstacking_flame_stackable)
 
+#define ATTRACTIONSPEEDHIMIN CV_Get(&cv_kartstacking_attraction_speedboost_himin)
+#define ATTRACTIONSPEEDHIMAX CV_Get(&cv_kartstacking_attraction_speedboost_himax)
+#define ATTRACTIONSPEEDNORMMIN CV_Get(&cv_kartstacking_attraction_speedboost_normmin)
+#define ATTRACTIONSPEEDNORMMAX CV_Get(&cv_kartstacking_attraction_speedboost_normmax)
+#define ATTRACTIONACCELHI CV_Get(&cv_kartstacking_attraction_accelboost_hi)
+#define ATTRACTIONACCELNORM CV_Get(&cv_kartstacking_attraction_accelboost_norm)
+#define ATTRACTIONHANDLEBOOST CV_Get(&cv_kartstacking_attraction_handleboost)
+#define ATTRACTIONSTACKABLE CV_Get(&cv_kartstacking_attraction_stackable)
+
 #define ALTSHRINKTIME CV_Get(&cv_kartaltshrinktime)
 #define SHRINKSPEEDBOOST CV_Get(&cv_kartstacking_altshrink_speedboost)
 #define SHRINKACCELBOOST CV_Get(&cv_kartstacking_altshrink_accelboost)
