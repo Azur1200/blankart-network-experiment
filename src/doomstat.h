@@ -23,6 +23,8 @@
 extern "C" {
 #endif
 
+#include "g_mapnum.h"
+
 // We need globally shared data structures, for defining the global state variables.
 #include "doomdata.h"
 
@@ -35,8 +37,14 @@ extern "C" {
 // Selected map etc.
 // =============================
 
+#define ROUNDQUEUE_MAX 20 // sane max? maybe make dynamically allocated later
+// These two live in gametype field of packets
+#define ROUNDQUEUE_CMD_CLEAR UINT16_MAX
+#define ROUNDQUEUE_CMD_SHOW UINT16_MAX-1
+// The roundqueue itself is resident in g_game.h
+
 // Selected by user.
-extern INT16 gamemap;
+extern mapnum_t gamemap;
 extern char mapmusname[7];
 extern UINT16 mapmusflags;
 extern UINT32 mapmusposition;
@@ -152,8 +160,7 @@ extern UINT8 splitscreen;
 extern int r_splitscreen;
 
 extern boolean circuitmap; // Does this level have 'circuit mode'?
-extern boolean fromlevelselect;
-extern boolean forceresetplayers, deferencoremode;
+extern boolean forceresetplayers, deferencoremode, forcespecialstage;
 
 // ========================================
 // Internal parameters for sound rendering.
@@ -285,7 +292,7 @@ struct textprompt_t
 extern textprompt_t *textprompts[MAX_PROMPTS];
 
 // For the Custom Exit linedef.
-extern INT16 nextmapoverride;
+extern mapnum_t nextmapoverride;
 extern UINT8 skipstats;
 
 // Fun extra stuff
@@ -330,8 +337,10 @@ struct mapheader_lighting_t
 // Keep in mind that it may encourage people making overly long cups just because they "can", and would be a waste of memory.
 #define MAXLEVELLIST 5
 #define CUPCACHE_BONUS MAXLEVELLIST
-#define CUPCACHE_SPECIAL MAXLEVELLIST+1
-#define CUPCACHE_MAX CUPCACHE_SPECIAL+1
+#define MAXBONUSLIST 2
+#define CUPCACHE_SPECIAL (CUPCACHE_BONUS+MAXBONUSLIST)
+#define CUPCACHE_PODIUM (CUPCACHE_SPECIAL+1)
+#define CUPCACHE_MAX (CUPCACHE_PODIUM+1)
 
 #define MAXCUPNAME 16 // includes \0, for cleaner savedata
 
@@ -346,8 +355,9 @@ struct cupheader_t
 
 	char icon[9];							///< Name of the icon patch
 	char *levellist[CUPCACHE_MAX];			///< List of levels that belong to this cup
-	INT16 cachedlevels[CUPCACHE_MAX];		///< IDs in levellist, bonusgame, and specialstage
+	mapnum_t cachedlevels[CUPCACHE_MAX];		///< IDs in levellist, bonusgame, and specialstage
 	UINT8 numlevels;						///< Number of levels defined in levellist
+	UINT8 numbonus;							///< Number of bonus stages defined
 	UINT8 emeraldnum;						///< ID of Emerald to use for special stage (1-7 for Chaos Emeralds, 8-14 for Super Emeralds, 0 for no emerald)
 	SINT8 unlockrequired;					///< An unlockable is required to select this cup. -1 for no unlocking required.
 	cupheader_t *next;						///< Next cup in linked list
@@ -371,6 +381,8 @@ struct mapheader_t
 	void *minimapPic;							///< Lump data for the minimap graphic.
 
 	cupheader_t *cup;							///< Cached cup
+
+	size_t justPlayed;							///< Prevent this map from showing up in votes if it was recently picked.
 
 	// Titlecard information
 	char lvlttl[22];							///< Level name without "Zone". (21 character limit instead of 32, 21 characters can display on screen max anyway)

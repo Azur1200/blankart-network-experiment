@@ -46,6 +46,7 @@
 #include "g_party.h"
 #include "k_waypoint.h"
 #include "k_itemlist.hpp"
+#include "k_vote.h"
 
 #include <tracy/tracy/TracyC.h>
 
@@ -420,14 +421,15 @@ static void P_RelinkWaypoint(savebuffer_t *save, waypoint_t **ptr)
 
 // Block UINT32s to attempt to ensure that the correct data is
 // being sent and received
-#define ARCHIVEBLOCK_MISC     0x7FEEDEED
-#define ARCHIVEBLOCK_PLAYERS  0x7F448008
-#define ARCHIVEBLOCK_PARTIES  0x7F87AF0C
-#define ARCHIVEBLOCK_WORLD    0x7F8C08C0
-#define ARCHIVEBLOCK_POBJS    0x7F928546
-#define ARCHIVEBLOCK_THINKERS 0x7F37037C
-#define ARCHIVEBLOCK_SPECIALS 0x7F228378
-#define ARCHIVEBLOCK_WAYPOINTS 0x7F46498F
+#define ARCHIVEBLOCK_MISC		0x7FEEDEED
+#define ARCHIVEBLOCK_PLAYERS	0x7F448008
+#define ARCHIVEBLOCK_PARTIES	0x7F87AF0C
+#define ARCHIVEBLOCK_ROUNDQUEUE	0x7F721331
+#define ARCHIVEBLOCK_WORLD		0x7F8C08C0
+#define ARCHIVEBLOCK_POBJS		0x7F928546
+#define ARCHIVEBLOCK_THINKERS	0x7F37037C
+#define ARCHIVEBLOCK_SPECIALS	0x7F228378
+#define ARCHIVEBLOCK_WAYPOINTS	0x7F46498F
 
 // Specialized netsynch markers
 #define PLYRSYNC_ITEMLIST (1)
@@ -918,6 +920,48 @@ static void P_NetSyncParties(savebuffer_t *save)
 	}
 
 	TracyCZoneEnd(__zone);
+}
+
+static void P_NetArchiveRoundQueue(savebuffer_t *save)
+{
+	UINT8 i;
+	WRITEUINT32(save->p, ARCHIVEBLOCK_ROUNDQUEUE);
+
+	WRITEUINT8(save->p, roundqueue.position);
+	WRITEUINT8(save->p, roundqueue.size);
+	WRITEUINT8(save->p, roundqueue.roundnum);
+
+	for (i = 0; i < roundqueue.size; i++)
+	{
+		//WRITEUINT16(save->p, roundqueue.entries[i].mapnum);
+		/* NOPE! Clients do not need to know what is in the roundqueue.
+		 *		This disincentivises cheaty clients in future tournament environments.
+		 *		~toast 080423 */
+		WRITEUINT8(save->p, roundqueue.entries[i].gametype);
+		WRITEUINT8(save->p, (UINT8)roundqueue.entries[i].encore);
+		WRITEUINT8(save->p, (UINT8)roundqueue.entries[i].rankrestricted);
+	}
+}
+
+static void P_NetUnArchiveRoundQueue(savebuffer_t *save)
+{
+	UINT8 i;
+	if (READUINT32(save->p) != ARCHIVEBLOCK_ROUNDQUEUE)
+		I_Error("Bad $$$.sav at archive block RoundQueue");
+
+	memset(&roundqueue, 0, sizeof(struct roundqueue));
+
+	roundqueue.position = READUINT8(save->p);
+	roundqueue.size = READUINT8(save->p);
+	roundqueue.roundnum = READUINT8(save->p);
+
+	for (i = 0; i < roundqueue.size; i++)
+	{
+		roundqueue.entries[i].mapnum = 0; // TEST RUN -- dummy, has to be < nummapheaders
+		roundqueue.entries[i].gametype = READUINT8(save->p);
+		roundqueue.entries[i].encore = (boolean)READUINT8(save->p);
+		roundqueue.entries[i].rankrestricted = (boolean)READUINT8(save->p);
+	}
 }
 
 ///
@@ -3954,7 +3998,7 @@ static inline void P_NetSyncSpecials(savebuffer_t *save)
 // =======================================================================
 //          Misc
 // =======================================================================
-static inline void P_ArchiveMisc(savebuffer_t *save, INT16 mapnum)
+static inline void P_ArchiveMisc(savebuffer_t *save, mapnum_t mapnum)
 {
 	TracyCZone(__zone, true);
 
@@ -3964,20 +4008,20 @@ static inline void P_ArchiveMisc(savebuffer_t *save, INT16 mapnum)
 	if (gamecomplete)
 		mapnum |= 8192;
 
-	WRITEINT16(save->p, mapnum);
+	WRITEUINT16(save->p, mapnum);
 	WRITEUINT16(save->p, emeralds+357);
 	WRITESTRINGN(save->p, timeattackfolder, sizeof(timeattackfolder));
 
 	TracyCZoneEnd(__zone);
 }
 
-static inline void P_UnArchiveSPGame(savebuffer_t *save, INT16 mapoverride)
+static inline void P_UnArchiveSPGame(savebuffer_t *save, mapnum_t mapoverride)
 {
 	TracyCZone(__zone, true);
 
 	char testname[sizeof(timeattackfolder)];
 
-	gamemap = READINT16(save->p);
+	gamemap = READUINT16(save->p);
 
 	if (mapoverride != 0)
 	{
@@ -4525,7 +4569,7 @@ static inline boolean P_UnArchiveLuabanksAndConsistency(savebuffer_t *save)
 	return ret;
 }
 
-void P_SaveGame(savebuffer_t *save, INT16 mapnum)
+void P_SaveGame(savebuffer_t *save, mapnum_t mapnum)
 {
 	P_ArchiveMisc(save, mapnum);
 	P_ArchivePlayer(save);
@@ -4562,6 +4606,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 
 	P_NetSyncPlayers(save);
 	P_NetSyncParties(save);
+	P_NetArchiveRoundQueue(save);
 
 	if (gamestate == GS_LEVEL)
 	{
@@ -4582,7 +4627,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 	TracyCZoneEnd(__zone);
 }
 
-boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride)
+boolean P_LoadGame(savebuffer_t *save, mapnum_t mapoverride)
 {
 	if (gamestate == GS_INTERMISSION)
 		Y_EndIntermission();
@@ -4614,6 +4659,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 		return false;
 	P_NetSyncPlayers(save);
 	P_NetSyncParties(save);
+	P_NetUnArchiveRoundQueue(save);
 
 	if (gamestate == GS_LEVEL)
 	{

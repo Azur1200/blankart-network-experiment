@@ -35,6 +35,7 @@
 
 #include "k_hud.h"
 #include "h_timers.h"
+#include "k_vote.h"
 
 #define HUDONLY if (!hud_running) return luaL_error(L, "HUD rendering code should not be called outside of rendering hooks!");
 
@@ -1377,7 +1378,7 @@ static int libd_getStringColormap(lua_State *L)
 
 static int libd_getMapThumbnail(lua_State *L)
 {
-	INT16 mapnum;
+	mapnum_t mapnum;
 	patch_t *patch = NULL;
 	HUDONLY
 	if (lua_type(L, 1) == LUA_TNUMBER)
@@ -1393,7 +1394,7 @@ static int libd_getMapThumbnail(lua_State *L)
 
 static int libd_getMapMinimap(lua_State *L)
 {
-	INT16 mapnum;
+	mapnum_t mapnum;
 	patch_t *patch = NULL;
 	HUDONLY
 	if (lua_type(L, 1) == LUA_TNUMBER)
@@ -1401,7 +1402,7 @@ static int libd_getMapMinimap(lua_State *L)
 	else
 		mapnum = G_MapNumber(luaL_checkstring(L, 1));
 
-	if (mapnum >= 0 && mapnum < nummapheaders && mapheaderinfo[mapnum])
+	if (/*mapnum >= 0 && */mapnum < nummapheaders && mapheaderinfo[mapnum])
 		patch = mapheaderinfo[mapnum]->minimapPic;
 	if (!patch)
 		patch = missingpat;

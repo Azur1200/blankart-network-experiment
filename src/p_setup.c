@@ -75,6 +75,8 @@
 
 #include "y_inter.h"
 
+#include "k_vote.h"
+
 // for MapLoad hook
 #include "lua_script.h"
 #include "lua_hook.h"
@@ -391,7 +393,7 @@ FUNCNORETURN static ATTRNORETURN void CorruptMapError(const char *msg)
   *
   * \param i The header to set flickies for
   */
-void P_SetDemoFlickies(INT16 i)
+void P_SetDemoFlickies(mapnum_t i)
 {
 	mapheaderinfo[i]->numFlickies = 5;
 	mapheaderinfo[i]->flickies = Z_Realloc(mapheaderinfo[i]->flickies, 5*sizeof(mobjtype_t), PU_STATIC, NULL);
@@ -406,7 +408,7 @@ void P_SetDemoFlickies(INT16 i)
   *
   * \param i The header to clear flickies for
   */
-void P_DeleteFlickies(INT16 i)
+void P_DeleteFlickies(mapnum_t i)
 {
 	if (mapheaderinfo[i]->flickies)
 		Z_Free(mapheaderinfo[i]->flickies);
@@ -486,7 +488,7 @@ static void P_ClearSingleMapHeaderInfo(INT16 num)
   *
   * \param i Index of header to allocate.
   */
-void P_AllocMapHeader(INT16 i)
+void P_AllocMapHeader(mapnum_t i)
 {
 	if (i > nummapheaders)
 		I_Error("P_AllocMapHeader: Called on %d, should be %d", i, nummapheaders);
@@ -9394,7 +9396,7 @@ static lumpinfo_t* FindFolder(const char *folName, UINT16 *start, UINT16 *end, l
 }
 
 lumpnum_t wadnamelump = LUMPERROR;
-INT16 wadnamemap = 0; // gamemap based
+mapnum_t wadnamemap = 0; // gamemap based
 
 // Initialising map data...
 UINT8 P_InitMapData(boolean existingmapheaders)

@@ -129,7 +129,7 @@ typedef enum
 void M_QuitResponse(INT32 ch);
 
 // Determines whether to show a level in the list (platter version does not need to be exposed)
-boolean M_CanShowLevelInList(INT32 mapnum);
+boolean M_CanShowLevelInList(mapnum_t mapnum);
 
 typedef enum
 {
@@ -450,7 +450,7 @@ void M_RefreshPauseMenu(void);
 
 INT32 HU_GetHighlightColor(void);
 
-fixed_t M_GetMapThumbnail(INT16 mapnum, patch_t **out);
+fixed_t M_GetMapThumbnail(mapnum_t mapnum, patch_t **out);
 
 // Moviemode menu updating
 void Moviemode_option_Onchange(void);

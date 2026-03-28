@@ -152,6 +152,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	k_mapuser.c
 	k_stats.c
 	k_specialstage.c
+	k_vote.c
 	h_timers.cpp
 	stun.c
 	lonesha256.c

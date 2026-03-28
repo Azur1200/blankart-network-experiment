@@ -59,6 +59,7 @@
 #include "r_fps.h"
 #include "m_cond.h" // netUnlocked
 #include "g_party.h"
+#include "k_vote.h"
 
 // cl loading screen
 #include "v_video.h"
@@ -220,6 +221,8 @@ consvar_t cv_playbackspeed = CVAR_INIT ("playbackspeed", "1", 0, playbackspeed_c
 consvar_t cv_httpsource = CVAR_INIT ("http_source", "", CV_SAVE, NULL, NULL);
 
 consvar_t cv_kicktime = CVAR_INIT ("kicktime", "10", CV_SAVE, CV_Unsigned, NULL);
+
+static tic_t stop_spamming[MAXPLAYERS];
 
 static inline void *G_DcpyTiccmd(void* dest, const ticcmd_t* src, const size_t n)
 {
@@ -2792,6 +2795,18 @@ void CL_RemovePlayer(INT32 playernum, kickreason_t reason)
 			startedInFreePlay = true;
 		}
 	}
+	
+	// Reset map headers' justPlayed and anger records
+	// when there are no players in a dedicated server.
+	// Otherwise maps get angry at newly-joined players
+	// that don't deserve it.
+	if (dedicated && D_NumPlayers() == 0)
+	{
+		for (INT32 i = 0; i < nummapheaders; i++)
+		{
+			mapheaderinfo[i]->justPlayed = 0;
+		}
+	}
 }
 
 void CL_Reset(void)
@@ -4799,6 +4814,56 @@ static boolean CheckForSpeedHacks(UINT8 p)
 	return false;
 }
 
+static void PT_Say(int node)
+{
+	if (client)
+		return; // Only sent to servers, why are we receiving this?
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	say_pak say = netbuffer->u.say;
+
+	if (playernode[say.source] != node)
+		return; // Spoofed source!
+
+	if ((cv_mute.value || say.flags & (HU_CSAY|HU_SHOUT)) && say.source != serverplayer && !(IsPlayerAdmin(say.source)))
+	{
+		CONS_Debug(DBG_NETPLAY,"Received SAY cmd from Player %d (%s), but cv_mute is on.\n", say.source+1, player_names[say.source]);
+		return;
+	}
+
+	if ((say.flags & HU_PRIVNOTICE) && !(IsPlayerAdmin(say.source)))
+	{
+		CONS_Debug(DBG_NETPLAY,"Received SAY cmd from Player %d (%s) with an illegal HU_PRIVNOTICE flag.\n", say.source+1, player_names[say.source]);
+		SendKick(say.source, KICK_MSG_CON_FAIL);
+		return;
+	}
+
+	{
+		size_t i;
+		const size_t j = strlen(say.message);
+		for (i = 0; i < j; i++)
+		{
+			if (say.message[i] & 0x80)
+			{
+				CONS_Alert(CONS_WARNING, M_GetText("Illegal say command received from %s containing invalid characters\n"), player_names[say.source]);
+				SendKick(say.source, KICK_MSG_CON_FAIL);
+				return;
+			}
+		}
+	}
+
+	if (stop_spamming[say.source] != 0 && consoleplayer != say.source && cv_chatspamprotection.value && !(say.flags & (HU_CSAY|HU_SHOUT)))
+	{
+		CONS_Debug(DBG_NETPLAY,"Received SAY cmd too quickly from Player %d (%s), assuming as spam and blocking message.\n", say.source+1, player_names[say.source]);
+		stop_spamming[say.source] = 4;
+		return;
+	}
+
+	stop_spamming[say.source] = 4;
+
+	DoSayCommand(say.message, say.target, say.flags, say.source);
+}
+
 static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
@@ -5363,6 +5428,114 @@ static void HandlePlayerInfo(SINT8 node)
 	receivedplayerinfo = true;
 }
 
+static void PT_ReqMapQueue(int node)
+{
+	if (client)
+		return; // Only sent to servers, why are we receiving this?
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	reqmapqueue_pak reqmapqueue = netbuffer->u.reqmapqueue;
+
+	// Check for a spoofed source.
+	if (reqmapqueue.source == serverplayer)
+	{
+		// Servers aren't guaranteed to have a playernode, dedis exist.
+		if (node != servernode)
+			return;
+	}
+	else
+	{
+		if (playernode[reqmapqueue.source] != node)
+			return;
+
+		if (!IsPlayerAdmin(reqmapqueue.source))
+		{
+			CONS_Debug(DBG_NETPLAY,"Received illegal request map queue cmd from Player %d (%s).\n", reqmapqueue.source+1, player_names[reqmapqueue.source]);
+			SendKick(reqmapqueue.source, KICK_MSG_CON_FAIL);
+			return;
+		}
+	}
+
+	const boolean doclear = (reqmapqueue.newgametype == ROUNDQUEUE_CMD_CLEAR);
+
+	// The following prints will only appear when multiple clients
+	// attempt to affect the round queue at similar time increments
+	if (doclear == true)
+	{
+		if (roundqueue.size == 0)
+		{
+			// therefore this one doesn't really need a error print
+			// because what both players wanted was done anyways
+			//CONS_Alert(CONS_ERROR, "queuemap: Queue is already empty!\n");
+			return;
+		}
+	}
+	else if (reqmapqueue.newgametype == ROUNDQUEUE_CMD_SHOW)
+	{
+		char maprevealmsg[256];
+		if (roundqueue.size == 0)
+		{
+			strlcpy(maprevealmsg, "There are no Rounds queued.", 256);
+		}
+		else if (roundqueue.position >= roundqueue.size)
+		{
+			strlcpy(maprevealmsg, "There are no more Rounds queued!", 256);
+		}
+		else
+		{
+			char *title = G_BuildMapTitle(roundqueue.entries[roundqueue.position].mapnum + 1);
+
+			strlcpy(
+				maprevealmsg,
+				va("The next Round will be on \"%s\".", title),
+				256
+			);
+
+			Z_Free(title);
+		}
+		DoSayCommand(maprevealmsg, 0, HU_SHOUT, servernode);
+
+		return;
+	}
+	else if (roundqueue.size >= ROUNDQUEUE_MAX)
+	{
+		CONS_Alert(CONS_ERROR, "Recieved REQMAPQUEUE, but unable to add map beyond %u\n", roundqueue.size);
+
+		// But this one does, because otherwise it's silent failure!
+		// Todo print the map's name, maybe?
+		char rejectmsg[256];
+		strlcpy(rejectmsg, "The server couldn't queue your chosen map.", 256);
+		SendServerNotice(reqmapqueue.source, rejectmsg);
+
+		return;
+	}
+
+	UINT8 buf[1+2+1];
+	UINT8 *buf_p = buf;
+
+	WRITEUINT8(buf_p, reqmapqueue.flags);
+	WRITEUINT16(buf_p, reqmapqueue.newgametype);
+
+	WRITEUINT8(buf_p, roundqueue.size);
+
+	// Match Got_MapQueuecmd, but with the addition of reqmapqueue.newmapnum available to us
+	if (doclear == true)
+	{
+		memset(&roundqueue, 0, sizeof(struct roundqueue));
+	}
+	else
+	{
+		G_MapIntoRoundQueue(
+			reqmapqueue.newmapnum,
+			reqmapqueue.newgametype,
+			((reqmapqueue.flags & 1) != 0),
+							false
+		);
+	}
+
+	SendNetXCmd(XD_MAPQUEUE, buf, buf_p - buf);
+}
+
 /** Handles a packet received from a node that isn't in game
   *
   * \param node The packet sender
@@ -5441,6 +5614,8 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_TEXTCMD2           : PT_TextCmd            (node, netconsole); break;
 		case PT_TEXTCMD3           : PT_TextCmd            (node, netconsole); break;
 		case PT_TEXTCMD4           : PT_TextCmd            (node, netconsole); break;
+		case PT_SAY                : PT_Say                (node            ); break;
+		case PT_REQMAPQUEUE        : PT_ReqMapQueue        (node            ); break;
 		case PT_LOGIN              : PT_Login              (node            ); break;
 		case PT_LOGINAUTH          : PT_LoginAuth          (node, netconsole); break;
 		case PT_NODETIMEOUT        : PT_ClientQuit         (node, netconsole); break;
@@ -6171,7 +6346,7 @@ boolean TryRunTics(tic_t realtics)
 	{
 		COM_BufTicker();
 		if (mapchangepending)
-			D_MapChange(-1, 0, encoremode, false, 2, false, fromlevelselect); // finish the map change
+			D_MapChange(-1, 0, encoremode, false, 2, false, forcespecialstage); // finish the map change
 
 		// fun fact: this used to be located in NetUpdate!
 		// as it turns out, reloading the level in rendering code is a very bad idea!
@@ -6687,6 +6862,15 @@ void NetUpdate(void)
 		}
 	}
 
+	if (server)
+	{
+		for(i = 0; i < MAXPLAYERS; i++)
+		{
+			if (stop_spamming[i] > 0)
+				stop_spamming[i]--;
+		}
+	}
+
 	Net_AckTicker();
 	HandleNodeTimeouts();
 
@@ -6824,4 +7008,51 @@ void D_SHA256PasswordPass(const UINT8 *buffer, size_t len, const char *salt, UIN
 
 	lonesha256(dest, tmpbuf, len+sl);
 	Z_Free(tmpbuf);
+}
+
+// Want to say something? XD_SAY is server only, gotta request that they send one on our behalf
+void DoSayPacket(SINT8 target, UINT8 flags, UINT8 source, char *message)
+{
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	say_pak *packet = (void*)&netbuffer->u.say;
+	netbuffer->packettype = PT_SAY;
+
+	memset(packet->message, 0, sizeof(packet->message));
+	strcpy(packet->message, message);
+
+	packet->source = source;
+	packet->flags = flags;
+	packet->target = target;
+
+	HSendPacket(servernode, false, 0, sizeof(say_pak));
+}
+
+void DoSayPacketFromCommand(SINT8 target, size_t usedargs, UINT8 flags)
+{
+	char msg[HU_MAXMSGLEN + 1];
+	size_t numwords, ix;
+	const size_t msgspace = sizeof msg;
+
+	numwords = COM_Argc() - usedargs;
+	I_Assert(numwords > 0);
+
+	msg[0] = '\0';
+
+	for (ix = 0; ix < numwords; ix++)
+	{
+		if (ix > 0)
+			strlcat(msg, " ", msgspace);
+		strlcat(msg, COM_Argv(ix + usedargs), msgspace);
+	}
+
+	DoSayPacket(target, flags, consoleplayer, msg);
+}
+
+// This is meant to be targeted at player indices, not whatever the hell XD_SAY is doing with 1-indexed players.
+void SendServerNotice(SINT8 target, char *message)
+{
+	if (client)
+		return;
+	DoSayCommand(message, target + 1, HU_PRIVNOTICE, servernode);
 }

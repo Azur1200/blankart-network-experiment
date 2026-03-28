@@ -20,14 +20,16 @@
 extern "C" {
 #endif
 
-#define GPEVENT_NONE 0
-#define GPEVENT_CHALLENGE 1
-#define GPEVENT_SPECIAL 2
+typedef enum
+{
+	GPEVENT_NONE = 0,
+	GPEVENT_BONUS,
+	GPEVENT_SPECIAL,
+} gpEvent_e;
 
 extern struct grandprixinfo
 {
 	boolean gp;				///< If true, then we are in a Grand Prix.
-	UINT8 roundnum;			///< Round number. If 0, this is a single session from the warp command.
 	cupheader_t *cup;		///< Which cup are we playing?
 	UINT8 gamespeed;		///< Copy of gamespeed, just to make sure you can't cheat it with cvars
 	boolean encore;			///< Ditto, but for encore mode

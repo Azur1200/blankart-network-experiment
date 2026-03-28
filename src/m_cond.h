@@ -14,6 +14,7 @@
 #define __M_COND_H__
 
 #include "info.h"
+#include "g_mapnum.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -170,11 +171,11 @@ UINT8 M_CheckLevelEmblems(void);
 // Checking unlockable status
 UINT8 M_AnySecretUnlocked(void);
 UINT8 M_SecretUnlocked(INT32 type);
-UINT8 M_MapLocked(INT32 mapnum);
+UINT8 M_MapLocked(mapnum_t mapnum);
 INT32 M_CountEmblems(void);
 
 // Emblem shit
-emblem_t *M_GetLevelEmblems(INT32 mapnum);
+emblem_t *M_GetLevelEmblems(mapnum_t mapnum);
 skincolornum_t M_GetEmblemColor(emblem_t *em);
 const char *M_GetEmblemPatch(emblem_t *em, boolean big);
 skincolornum_t M_GetExtraEmblemColor(extraemblem_t *em);

@@ -145,8 +145,6 @@ M_waiting_mode_t m_waiting_mode = M_NOT_WAITING;
 
 const char *quitmsg[NUM_QUITMESSAGES];
 
-boolean fromlevelselect = false;
-
 static char menu_text_input_buf[MAXSTRINGLENGTH];
 static textinput_t menuinput;
 
@@ -203,7 +201,7 @@ int  M_GetWaitingMode(void);
 
 typedef struct
 {
-	INT16 mapnum;
+	mapnum_t mapnum;
 	char mapname[MAXMAPNAME];
 	UINT8 color;
 	boolean available;
@@ -639,12 +637,12 @@ INT32 HU_GetHighlightColor(void)
 	return highlightflags;
 }
 
-fixed_t M_GetMapThumbnail(INT16 mapnum, patch_t **out)
+fixed_t M_GetMapThumbnail(mapnum_t mapnum, patch_t **out)
 {
 	patch_t *patch = NULL;
-	if (mapnum == -1)
+	if (mapnum == NEXTMAP_INVALID)
 		patch = randomlvl;
-	else if (mapnum >= 0 && mapnum < nummapheaders && mapheaderinfo[mapnum])
+	else if (/*mapnum >= 0 &&*/ mapnum < nummapheaders && mapheaderinfo[mapnum])
 		patch = mapheaderinfo[mapnum]->thumbnailPic;
 
 	if (!patch)
@@ -2443,7 +2441,7 @@ static void M_CentreText(INT32 y, const char *string)
 //
 // used by pause & statistics to draw a row of emblems for a map
 //
-static void M_DrawMapEmblems(INT32 mapnum, INT32 x, INT32 y)
+static void M_DrawMapEmblems(mapnum_t mapnum, INT32 x, INT32 y)
 {
 	UINT8 lasttype = UINT8_MAX, curtype;
 	emblem_t *emblem = M_GetLevelEmblems(mapnum);
@@ -2748,8 +2746,8 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 		{
 		case ITF_THUMBNAIL:
 		{
-			INT32 mapnum = G_MapNumber(item->patch);
-			scale = M_GetMapThumbnail(mapnum < nummapheaders ? mapnum : -1, &p)/4;
+			mapnum_t mapnum = G_MapNumber(item->patch);
+			scale = M_GetMapThumbnail(mapnum < nummapheaders ? mapnum : NEXTMAP_INVALID, &p)/4;
 			break;
 		}
 		case ITF_PATCH:
@@ -3042,7 +3040,7 @@ static INT32 M_GetLevelListTOL(void)
 	}
 }
 
-static boolean M_LevelAvailableOnPlatter(INT32 mapnum)
+static boolean M_LevelAvailableOnPlatter(mapnum_t mapnum)
 {
 	// don't care
 	(void)mapnum;
@@ -3054,10 +3052,10 @@ static boolean M_LevelAvailableOnPlatter(INT32 mapnum)
 //
 // Determines whether to show a given map in the various level-select lists.
 //
-static boolean M_CanShowLevelOnPlatter(INT32 mapnum)
+static boolean M_CanShowLevelOnPlatter(mapnum_t mapnum)
 {
 	// Does the map exist?
-	if (mapnum < 0 || mapnum >= nummapheaders || !mapheaderinfo[mapnum])
+	if (/*mapnum < 0 || */mapnum >= nummapheaders || !mapheaderinfo[mapnum])
 		return false;
 
 	// Does the map have a name?
@@ -3268,7 +3266,7 @@ static void M_UpdateLevelPlatterCups(void)
 				break;
 
 			levelselectmap_t *lsmap = &lsrow->maps[lsrow->numcolumns++];
-			INT16 mapnum = cup->cachedlevels[j];
+			mapnum_t mapnum = cup->cachedlevels[j];
 
 			lsmap->mapnum = mapnum; // putting the map on the platter
 			lsmap->available = M_LevelAvailableOnPlatter(mapnum);
@@ -3353,7 +3351,7 @@ static void M_UpdateLevelPlatter(void)
 
 	for (i = 0; i < numsortedmaps; i++)
 	{
-		INT32 mapnum = sortedmaps[i];
+		mapnum_t mapnum = sortedmaps[i];
 		mapheader_t *itermap = mapheaderinfo[mapnum];
 		boolean wide = false;//(headermap->menuflags & LF2_WIDEICON);
 
@@ -3700,7 +3698,7 @@ static void M_DrawLevelPlatterMap(const levelselectmap_t *lsmap, INT32 x, INT32 
 	// wide thumbnails? mmm... i dunno... maybe...
 	patch_t *patch;
 	boolean encore = cv_kartencore.value == 1 && levellistmode == LLM_CREATESERVER && cv_newgametype.value == GT_RACE;
-	fixed_t thumbscale = M_GetMapThumbnail(lsmap->available ? lsmap->mapnum : -1, &patch);
+	fixed_t thumbscale = M_GetMapThumbnail(lsmap->available ? lsmap->mapnum : NEXTMAP_INVALID, &patch);
 	thumbscale = FixedMul(thumbscale/4, scale);
 
 	V_DrawSciencePatch(x*FRACUNIT - patch->width*thumbscale/2 + (encore ? patch->width*thumbscale : 0),
@@ -3884,7 +3882,7 @@ void MD_DrawLevelPlatterMenu(void)
 // Determines whether to show a given map in the various level-select lists.
 // Set gt = -1 to ignore gametype.
 //
-boolean M_CanShowLevelInList(INT32 mapnum)
+boolean M_CanShowLevelInList(mapnum_t mapnum)
 {
 	return M_CanShowLevelOnPlatter(mapnum) && M_LevelAvailableOnPlatter(mapnum);
 }
@@ -6485,7 +6483,6 @@ INT32 MR_GrandPrixTemp(INT32 choice)
 INT32 MR_StartGrandPrix(INT32 choice)
 {
 	cupheader_t *gpcup;
-	INT32 levelNum;
 
 	(void)choice;
 
@@ -6525,8 +6522,6 @@ INT32 MR_StartGrandPrix(INT32 choice)
 			break;
 	}
 
-	grandprixinfo.encore = (boolean)(cv_dummygpencore.value);
-
 	for (gpcup = kartcupheaders; gpcup != NULL; gpcup = gpcup->next)
 	{
 		if (gpcup->id == cv_nextcup.value-1)
@@ -6534,23 +6529,28 @@ INT32 MR_StartGrandPrix(INT32 choice)
 	}
 
 	I_Assert(gpcup != NULL);
-	grandprixinfo.cup = gpcup;
 
 	grandprixinfo.gp = true;
-	grandprixinfo.roundnum = 1;
 	grandprixinfo.wonround = false;
-
 	grandprixinfo.initalize = true;
+	grandprixinfo.cup = gpcup;
 
-	levelNum = G_MapNumber(grandprixinfo.cup->levellist[0]);
+	// Populate the roundqueue
+	memset(&roundqueue, 0, sizeof(struct roundqueue));
+	G_GPCupIntoRoundQueue(gpcup, GT_RACE/*levellist.newgametype*/, (boolean)cv_dummygpencore.value);
+	roundqueue.position = roundqueue.roundnum = 1;
+	roundqueue.netcommunicate = true; // relevant for future Online GP
 
-	G_DeferedInitNew(
+	D_MapChange(
+		roundqueue.entries[0].mapnum + 1,
+		roundqueue.entries[0].gametype,
+		roundqueue.entries[0].encore,
+		true,
+		1,
 		false,
-		levelNum + 1,
-		cv_chooseskin.value,
-		(UINT8)(cv_splitplayers.value - 1),
-		false
+		roundqueue.entries[0].rankrestricted
 	);
+
 	return true;
 }
 

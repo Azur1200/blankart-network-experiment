@@ -3066,7 +3066,7 @@ bool CallFunc_MapWarp(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Wor
 		return false;
 	}
 
-	nextmapoverride = (nextmap + 1);
+	nextmapoverride = (mapnum_t)(nextmap + 1);
 
 	if (argV[1] == 0)
 		skipstats = 1;

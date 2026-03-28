@@ -54,6 +54,7 @@
 #include "k_color.h"
 #include "k_follower.h"
 #include "k_grandprix.h"
+#include "k_vote.h"
 
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
 consvar_t cv_recordmultiplayerdemos = CVAR_INIT ("netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL);
@@ -4001,7 +4002,7 @@ void G_DoPlayDemo(char *defdemoname)
 	R_ExecuteSetViewSize();
 
 	P_SetRandSeed(header.randseed);
-	G_InitNew(demoflags & DF_ENCORE, gamemap, true, true, false); // Doesn't matter whether you reset or not here, given changes to resetplayer.
+	G_InitNew(demoflags & DF_ENCORE, gamemap, true, true); // Doesn't matter whether you reset or not here, given changes to resetplayer.
 
 	// Setup server name, contact and description.
 	CopyCaretColors(connectedservername, header.servername, MAXSERVERNAME);

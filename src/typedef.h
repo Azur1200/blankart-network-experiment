@@ -71,6 +71,8 @@ TYPEDEF (doomdata_t);
 TYPEDEF (serverelem_t);
 TYPEDEF (rewind_t);
 TYPEDEF (netinfo_pak);
+TYPEDEF (say_pak);
+TYPEDEF (reqmapqueue_pak);
 
 // d_event.h
 TYPEDEF (event_t);
@@ -134,6 +136,7 @@ TYPEDEF (menudemo_t);
 TYPEDEF (demoghost);
 
 // g_game.h
+TYPEDEF (roundentry_t);
 TYPEDEF (mapsearchfreq_t);
 
 // hu_stuff.h

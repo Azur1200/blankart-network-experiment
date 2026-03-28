@@ -16,6 +16,7 @@
 #define __D_NETCMD__
 
 #include "command.h"
+#include "g_mapnum.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -369,6 +370,7 @@ typedef enum
 	XD_SCHEDULECLEAR, // 36
 	XD_AUTOMATE,    // 37
 	XD_CHEAT,       // 38
+	XD_MAPQUEUE,	// 39
 
 	MAXNETXCMD
 } netxcmd_t;
@@ -411,7 +413,7 @@ void D_SendPlayerConfig(UINT8 n);
 void Command_ExitGame_f(void);
 void Command_Retry_f(void);
 void D_GameTypeChanged(INT32 lastgametype); // not a real _OnChange function anymore
-void D_MapChange(INT32 pmapnum, INT32 pgametype, boolean pencoremode, boolean presetplayers, INT32 pdelay, boolean pskipprecutscene, boolean pfromlevelselect);
+void D_MapChange(mapnum_t pmapnum, INT32 pgametype, boolean pencoremode, boolean presetplayers, INT32 pdelay, boolean pskipprecutscene, boolean pforcespecialstage);
 void D_SetupVote(void);
 void D_ModifyClientVote(UINT8 player, SINT8 voted);
 void D_PickVote(void);
@@ -447,6 +449,8 @@ typedef enum
 	AEV_ROUNDSTART,
 	AEV_INTERMISSIONSTART,
 	AEV_VOTESTART,
+	AEV_QUEUESTART,
+	AEV_QUEUEEND,
 	AEV__MAX
 } automateEvents_t;
 

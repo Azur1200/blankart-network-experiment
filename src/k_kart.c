@@ -6715,7 +6715,7 @@ static void K_RaceStart(player_t *player)
 
 }
 
-UINT8 K_RaceLapCount(INT16 mapNum)
+UINT8 K_RaceLapCount(mapnum_t mapNum)
 {
 	if (!(gametypes[gametype]->rules & GTR_CIRCUIT))
 	{
