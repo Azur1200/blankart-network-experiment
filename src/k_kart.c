@@ -465,6 +465,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_saltyhop);
 
 	CV_RegisterVar(&cv_naturalcamera);
+	CV_RegisterVar(&cv_lookbackinreplays);
 	CV_RegisterVar(&cv_gptest);
 
 	CV_RegisterVar(&cv_kartexplosion_limitlifetime);
