@@ -1022,10 +1022,11 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch, efx_t 
 			TRY(alSource3i, source, AL_AUXILIARY_SEND_FILTER, efx->al.slot, 0, AL_FILTER_NULL);
 		}
 		else if (origin != NULL && audio.globalefx.enabled
+			&& mapheaderinfo[gamemap-1]->globalEFX->type != EFFECT_NONE
 			&& TRY(alIsEffect, audio.globalefx.effect)
 			&& TRY(alIsAuxiliaryEffectSlot, audio.globalefx.slot))
 		{
-			if (originmobj->type && (originmobj->subsector->sector->flags & MSF_NOEFX))
+			if (originmobj && originmobj->type && originmobj->subsector && originmobj->subsector->sector && (originmobj->subsector->sector->flags & MSF_NOEFX))
 				TRY(alSource3i, source, AL_AUXILIARY_SEND_FILTER, AL_EFFECTSLOT_NULL, 0, AL_FILTER_NULL);
 			else
 				TRY(alSource3i, source, AL_AUXILIARY_SEND_FILTER, audio.globalefx.slot, 0, AL_FILTER_NULL);
@@ -2187,6 +2188,9 @@ void I_CreateGlobalEFX(efx_t *efx)
 	LOCKAUDIO;
 
 	if (!cv_soundefx.value || dedicated)
+		return;
+
+	if (mapheaderinfo[gamemap-1]->globalEFX->type == EFFECT_NONE)
 		return;
 
 	if (efx == NULL)
