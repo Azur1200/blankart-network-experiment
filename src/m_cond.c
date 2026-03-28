@@ -522,7 +522,7 @@ emblem_t *M_GetLevelEmblems(mapnum_t mapnum)
 	static mapnum_t map = NEXTMAP_INVALID;
 	static INT32 i = -1;
 
-	if (mapnum >= 0)
+	//if (mapnum >= 0)
 	{
 		map = mapnum;
 		i = numemblems;

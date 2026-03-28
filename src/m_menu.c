@@ -642,7 +642,7 @@ fixed_t M_GetMapThumbnail(mapnum_t mapnum, patch_t **out)
 	patch_t *patch = NULL;
 	if (mapnum == NEXTMAP_INVALID)
 		patch = randomlvl;
-	else if (mapnum >= 0 && mapnum < nummapheaders && mapheaderinfo[mapnum])
+	else if (/*mapnum >= 0 &&*/ mapnum < nummapheaders && mapheaderinfo[mapnum])
 		patch = mapheaderinfo[mapnum]->thumbnailPic;
 
 	if (!patch)
@@ -3055,7 +3055,7 @@ static boolean M_LevelAvailableOnPlatter(mapnum_t mapnum)
 static boolean M_CanShowLevelOnPlatter(mapnum_t mapnum)
 {
 	// Does the map exist?
-	if (mapnum < 0 || mapnum >= nummapheaders || !mapheaderinfo[mapnum])
+	if (/*mapnum < 0 || */mapnum >= nummapheaders || !mapheaderinfo[mapnum])
 		return false;
 
 	// Does the map have a name?

@@ -1401,7 +1401,7 @@ static int libd_getMapMinimap(lua_State *L)
 	else
 		mapnum = G_MapNumber(luaL_checkstring(L, 1));
 
-	if (mapnum >= 0 && mapnum < nummapheaders && mapheaderinfo[mapnum])
+	if (/*mapnum >= 0 && */mapnum < nummapheaders && mapheaderinfo[mapnum])
 		patch = mapheaderinfo[mapnum]->minimapPic;
 	if (!patch)
 		patch = missingpat;

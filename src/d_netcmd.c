@@ -3636,7 +3636,6 @@ static void Command_Map_f(void)
 	size_t option_gametype;
 	size_t option_encore;
 	size_t option_skill;
-	const char *gametypename;
 	boolean newresetplayers;
 	boolean newforcespecialstage;
 
@@ -3649,8 +3648,6 @@ static void Command_Map_f(void)
 
 	INT32 newgametype = gametype;
 	boolean newencoremode = (cv_kartencore.value == 1);
-
-	INT32 d;
 
 	if (client && !IsPlayerAdmin(consoleplayer))
 	{

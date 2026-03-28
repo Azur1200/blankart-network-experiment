@@ -827,7 +827,7 @@ const char *replaysuffixes[] = {
 	[REPLAY_GUEST] = "guest",
 };
 
-char *G_GetRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, recordreplay_e which)
+char *G_GetRecordReplay(const char *folder, mapnum_t mapnum, UINT16 skinnum, recordreplay_e which)
 {
 	const char *map = G_BuildMapName(mapnum), *suf = replaysuffixes[which];
 	if (which != REPLAY_GUEST)
@@ -836,7 +836,7 @@ char *G_GetRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, recor
 		return strdup(va("%s"PATHSEP"%s-%s.lmp", folder, map, suf));
 }
 
-boolean G_CheckRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, recordreplay_e which)
+boolean G_CheckRecordReplay(const char *folder, mapnum_t mapnum, UINT16 skinnum, recordreplay_e which)
 {
 	const char *map = G_BuildMapName(mapnum), *suf = replaysuffixes[which];
 	if (which != REPLAY_GUEST)
@@ -4783,7 +4783,7 @@ void G_AddMapToBuffer(mapnum_t map)
 	mapnum_t bufx;
 	mapnum_t refreshnum = (TOLMaps(gametype))-3;
 
-	if (refreshnum < 0)
+	//if (refreshnum < 0)
 		refreshnum = 3;
 
 	if (nummapheaders != randmaps.lastnummapheaders)
@@ -4994,7 +4994,7 @@ void G_GPCupIntoRoundQueue(cupheader_t *cup, UINT8 setgametype, boolean setencor
 
 void G_GetNextMap(void)
 {
-	boolean spec = G_IsSpecialStage(prevmap+1);
+	//boolean spec = G_IsSpecialStage(prevmap+1);
 	INT32 i;
 	boolean setalready = false;
 
