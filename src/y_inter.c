@@ -1822,19 +1822,10 @@ void Y_VoteDrawer(void)
 //
 // Vote screen's selection stops moving
 //
-SINT8 deferredlevel = 0;
-static void Y_VoteStops(SINT8 pick, SINT8 level)
+static void Y_FinalizeVote(const SINT8 level)
 {
 	nextmap = g_voteLevels[level][0];
-
-	//if (level == 4)
-		//S_StartSound(NULL, sfx_noooo2); // gasp
-	if (mapheaderinfo[nextmap] && (mapheaderinfo[nextmap]->menuflags & LF2_HIDEINMENU))
-		S_StartSound(NULL, sfx_noooo1); // this is bad
-	else if (netgame && P_IsLocalPlayer(&players[pick]))
-		S_StartSound(NULL, sfx_yeeeah); // yeeeah!
-	else
-		S_StartSound(NULL, sfx_kc48); // just a cool sound
+	deferencoremode = (levelinfo[level].encore);
 
 	if (gametype != g_voteLevels[level][1])
 	{
@@ -1843,8 +1834,30 @@ static void Y_VoteStops(SINT8 pick, SINT8 level)
 		D_GameTypeChanged(lastgametype);
 		forceresetplayers = true;
 	}
+}
 
-	deferencoremode = (levelinfo[level].encore);
+SINT8 deferredlevel = 0;
+static void Y_VoteStops(const SINT8 pick, const SINT8 level)
+{
+	Y_FinalizeVote(level);
+
+	/*if (level == 4)
+	{
+		S_StartSound(NULL, sfx_noooo2); // gasp
+	}
+	else */
+	if (mapheaderinfo[nextmap] && (mapheaderinfo[nextmap]->menuflags & LF2_HIDEINMENU))
+	{
+		S_StartSound(NULL, sfx_noooo1); // this is bad
+	}
+	else if (netgame && P_IsLocalPlayer(&players[pick]))
+	{
+		S_StartSound(NULL, sfx_yeeeah); // yeeeah!
+	}
+	else
+	{
+		S_StartSound(NULL, sfx_kc48); // just a cool sound
+	}
 }
 
 //
@@ -2243,7 +2256,7 @@ void Y_EndVote(void)
 		// Don't leave nextmap unset if the vote is ended through
 		// weird means! (such as a dedicated server becoming empty)
 		// If nextmap was left at NEXTMAP_VOTING, we'd crash!
-		Y_VoteStops(0, 0);
+		Y_FinalizeVote(0);
 	}
 
 	Y_UnloadVoteData();
