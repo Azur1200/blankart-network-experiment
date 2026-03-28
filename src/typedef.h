@@ -71,6 +71,7 @@ TYPEDEF (doomdata_t);
 TYPEDEF (serverelem_t);
 TYPEDEF (rewind_t);
 TYPEDEF (netinfo_pak);
+TYPEDEF (say_pak);
 
 // d_event.h
 TYPEDEF (event_t);

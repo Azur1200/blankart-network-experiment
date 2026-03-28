@@ -41,6 +41,8 @@ applications may follow different packet versions.
 //  one that defines the actual packets to
 //  be transmitted.
 
+#define HU_MAXMSGLEN 223
+
 #define MAXSERVERNAME 32
 #define MAXSERVERCONTACT 350
 #define MAXSERVERDESCRIPTION 1024
@@ -132,6 +134,9 @@ typedef enum
 	PT_PING,          // Packet sent to tell clients the other client's latency to server.
 
 	PT_SERVERINFOUPDATE, // Update server info for clients.
+
+	PT_SAY,				// "Hey server, please send this chat message to everyone via XD_SAY"
+
 	NUMPACKETTYPE
 } packettype_t;
 
@@ -378,6 +383,14 @@ struct netinfo_pak
 	UINT32 delay[MAXPLAYERS+1];
 } ATTRPACK;
 
+struct say_pak
+{
+	char message[HU_MAXMSGLEN + 1];
+	UINT8 target;
+	UINT8 flags;
+	UINT8 source;
+} ATTRPACK;
+
 //
 // Network packet data
 //
@@ -413,6 +426,7 @@ struct doomdata_t
 		INT32 filesneedednum;
 		filesneededconfig_pak filesneededcfg;
 		netinfo_pak netinfo;
+		say_pak say;
 	} u; // This is needed to pack diff packet types data together
 } ATTRPACK;
 
@@ -648,6 +662,10 @@ struct rewind_t {
 void CL_ClearRewinds(void);
 rewind_t *CL_SaveRewindPoint(size_t demopos);
 rewind_t *CL_RewindToTime(tic_t time);
+
+void DoSayPacket(SINT8 target, UINT8 flags, UINT8 source, char *message);
+void DoSayPacketFromCommand(SINT8 target, size_t usedargs, UINT8 flags);
+void SendServerNotice(SINT8 target, char *message);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -221,6 +221,8 @@ consvar_t cv_httpsource = CVAR_INIT ("http_source", "", CV_SAVE, NULL, NULL);
 
 consvar_t cv_kicktime = CVAR_INIT ("kicktime", "10", CV_SAVE, CV_Unsigned, NULL);
 
+static tic_t stop_spamming[MAXPLAYERS];
+
 static inline void *G_DcpyTiccmd(void* dest, const ticcmd_t* src, const size_t n)
 {
 	const size_t d = n / sizeof(ticcmd_t);
@@ -4799,6 +4801,56 @@ static boolean CheckForSpeedHacks(UINT8 p)
 	return false;
 }
 
+static void PT_Say(int node)
+{
+	if (client)
+		return; // Only sent to servers, why are we receiving this?
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	say_pak say = netbuffer->u.say;
+
+	if (playernode[say.source] != node)
+		return; // Spoofed source!
+
+	if ((cv_mute.value || say.flags & (HU_CSAY|HU_SHOUT)) && say.source != serverplayer && !(IsPlayerAdmin(say.source)))
+	{
+		CONS_Debug(DBG_NETPLAY,"Received SAY cmd from Player %d (%s), but cv_mute is on.\n", say.source+1, player_names[say.source]);
+		return;
+	}
+
+	if ((say.flags & HU_PRIVNOTICE) && !(IsPlayerAdmin(say.source)))
+	{
+		CONS_Debug(DBG_NETPLAY,"Received SAY cmd from Player %d (%s) with an illegal HU_PRIVNOTICE flag.\n", say.source+1, player_names[say.source]);
+		SendKick(say.source, KICK_MSG_CON_FAIL);
+		return;
+	}
+
+	{
+		size_t i;
+		const size_t j = strlen(say.message);
+		for (i = 0; i < j; i++)
+		{
+			if (say.message[i] & 0x80)
+			{
+				CONS_Alert(CONS_WARNING, M_GetText("Illegal say command received from %s containing invalid characters\n"), player_names[say.source]);
+				SendKick(say.source, KICK_MSG_CON_FAIL);
+				return;
+			}
+		}
+	}
+
+	if (stop_spamming[say.source] != 0 && consoleplayer != say.source && cv_chatspamprotection.value && !(say.flags & (HU_CSAY|HU_SHOUT)))
+	{
+		CONS_Debug(DBG_NETPLAY,"Received SAY cmd too quickly from Player %d (%s), assuming as spam and blocking message.\n", say.source+1, player_names[say.source]);
+		stop_spamming[say.source] = 4;
+		return;
+	}
+
+	stop_spamming[say.source] = 4;
+
+	DoSayCommand(say.message, say.target, say.flags, say.source);
+}
+
 static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
@@ -5441,6 +5493,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_TEXTCMD2           : PT_TextCmd            (node, netconsole); break;
 		case PT_TEXTCMD3           : PT_TextCmd            (node, netconsole); break;
 		case PT_TEXTCMD4           : PT_TextCmd            (node, netconsole); break;
+		case PT_SAY                : PT_Say                (node            ); break;
 		case PT_LOGIN              : PT_Login              (node            ); break;
 		case PT_LOGINAUTH          : PT_LoginAuth          (node, netconsole); break;
 		case PT_NODETIMEOUT        : PT_ClientQuit         (node, netconsole); break;
@@ -6687,6 +6740,15 @@ void NetUpdate(void)
 		}
 	}
 
+	if (server)
+	{
+		for(i = 0; i < MAXPLAYERS; i++)
+		{
+			if (stop_spamming[i] > 0)
+				stop_spamming[i]--;
+		}
+	}
+
 	Net_AckTicker();
 	HandleNodeTimeouts();
 
@@ -6825,3 +6887,51 @@ void D_SHA256PasswordPass(const UINT8 *buffer, size_t len, const char *salt, UIN
 	lonesha256(dest, tmpbuf, len+sl);
 	Z_Free(tmpbuf);
 }
+
+// Want to say something? XD_SAY is server only, gotta request that they send one on our behalf
+void DoSayPacket(SINT8 target, UINT8 flags, UINT8 source, char *message)
+{
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	say_pak *packet = (void*)&netbuffer->u.say;
+	netbuffer->packettype = PT_SAY;
+
+	memset(packet->message, 0, sizeof(packet->message));
+	strcpy(packet->message, message);
+
+	packet->source = source;
+	packet->flags = flags;
+	packet->target = target;
+
+	HSendPacket(servernode, false, 0, sizeof(say_pak));
+}
+
+void DoSayPacketFromCommand(SINT8 target, size_t usedargs, UINT8 flags)
+{
+	char buf[2 + HU_MAXMSGLEN + 1];
+	size_t numwords, ix;
+	char *msg = &buf[3];
+	const size_t msgspace = sizeof buf - 2;
+
+	numwords = COM_Argc() - usedargs;
+	I_Assert(numwords > 0);
+
+	msg[0] = '\0';
+
+	for (ix = 0; ix < numwords; ix++)
+	{
+		if (ix > 0)
+			strlcat(msg, " ", msgspace);
+		strlcat(msg, COM_Argv(ix + usedargs), msgspace);
+	}
+
+	DoSayPacket(target, flags, consoleplayer, msg);
+}
+
+void SendServerNotice(SINT8 target, char *message)
+{
+	if (client)
+		return;
+	DoSayCommand(message, target + 1, HU_PRIVNOTICE, servernode);
+}
+
