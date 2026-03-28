@@ -1732,7 +1732,7 @@ void Y_VoteDrawer(void)
 		if (Y_PlayerIDCanVote(i) && g_votes[i] != VOTE_NOT_PICKED)
 		{
 			if (g_votes[i] >= ((votemax*3)+((votemax > 1) ? (votemax - 1) : 0)) && (i != g_pickedVote || voteendtic == -1))
-				mapnum = -1; // randomlvl
+				mapnum = NEXTMAP_INVALID; // randomlvl
 			else
 				mapnum = g_voteLevels[g_votes[i]][0];
 
