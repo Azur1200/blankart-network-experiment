@@ -70,6 +70,7 @@
 #include "g_party.h"
 #include "f_dscredits.hpp"
 #include "strbuf.h"
+#include "k_vote.h"
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"

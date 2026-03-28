@@ -59,6 +59,7 @@
 #include "r_fps.h"
 #include "m_cond.h" // netUnlocked
 #include "g_party.h"
+#include "k_vote.h"
 
 // cl loading screen
 #include "v_video.h"

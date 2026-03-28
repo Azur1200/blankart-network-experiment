@@ -35,6 +35,7 @@
 
 #include "k_hud.h"
 #include "h_timers.h"
+#include "k_vote.h"
 
 #define HUDONLY if (!hud_running) return luaL_error(L, "HUD rendering code should not be called outside of rendering hooks!");
 

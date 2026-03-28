@@ -71,6 +71,7 @@
 #include "k_specialstage.h"
 #include "k_items.h"
 #include "k_itemlist.hpp"
+#include "k_vote.h"
 
 #define CV_RESTRICT CV_NETVAR
 

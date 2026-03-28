@@ -75,6 +75,8 @@
 
 #include "y_inter.h"
 
+#include "k_vote.h"
+
 // for MapLoad hook
 #include "lua_script.h"
 #include "lua_hook.h"

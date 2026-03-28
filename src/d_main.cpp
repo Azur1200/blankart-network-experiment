@@ -82,6 +82,7 @@
 #include "m_random.h" // P_ClearRandom
 #include "acs/interface.h"
 #include "k_specialstage.h"
+#include "k_vote.h"
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>

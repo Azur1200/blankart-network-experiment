@@ -46,6 +46,7 @@
 #include "g_party.h"
 #include "k_waypoint.h"
 #include "k_itemlist.hpp"
+#include "k_vote.h"
 
 #include <tracy/tracy/TracyC.h>
 
