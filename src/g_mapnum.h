@@ -6,7 +6,7 @@
 // terms of the GNU General Public License, version 2.
 // See the 'LICENSE' file for more details.
 //-----------------------------------------------------------------------------
-/// \file  d_player.h
+/// \file  g_mapnum.h
 /// \brief Map number type
 
 #ifndef __MAPNUM__
