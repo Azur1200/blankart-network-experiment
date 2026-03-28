@@ -4101,7 +4101,7 @@ static void Command_RandomMap(void)
 		newgametype = cv_newgametype.value;
 		newencoremode = false;
 		newresetplayers = true;
-		oldmapnum = -1;
+		oldmapnum = NEXTMAP_INVALID;
 	}
 
 	newmapnum = G_RandMap(G_TOLFlag(newgametype), oldmapnum, 0, 0, NULL) + 1;
