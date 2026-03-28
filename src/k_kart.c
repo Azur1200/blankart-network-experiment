@@ -2584,7 +2584,7 @@ static inline fixed_t K_GetProjectileSpeed(void)
 	}
 }
 
-static inline fixed_t K_GetSneakerBoostSpeed(void)
+fixed_t K_GetSneakerBoostSpeed(void)
 {
 	switch (gamespeed)
 	{

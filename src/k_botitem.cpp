@@ -442,11 +442,14 @@ static void K_BotItemSneaker(botdata_t *bd, const player_t *player)
 	if ((player->offroad && K_ApplyOffroad(player)) // Stuck in offroad, use it NOW
 		|| K_GetWaypointIsShortcut(player->nextwaypoint) == true // Going toward a shortcut!
 		|| player->speed < K_GetKartSpeed(player, false, true) / 2 // Being slowed down too much
-		|| (sneakerstack && player->sneakertimer < stacktime && player->sneakertimer > 0 && (bd->acceldown && !bd->brakedown)) // Stack them sneakers!
-		|| (stack && player->speedboost > (FRACUNIT/8)) // Have another type of boost (drafting)
+		|| (sneakerstack && player->sneakertimer > 0 && player->sneakertimer < stacktime && (bd->acceldown && !bd->brakedown)) // Stack them sneakers!
+		|| (stack && player->speedboost > (FRACUNIT/8) && !player->sneakertimer) // Have another type of boost (drafting)
 		|| bd->itemconfirm > 4*TICRATE) // Held onto it for too long
 	{
-		if (((sneakerstack && player->sneakertimer < stacktime) || player->sneakertimer == 0 || stack) && !bd->itemwasdown)
+		if (((sneakerstack && player->sneakertimer > 0 && player->sneakertimer < stacktime)
+			|| player->sneakertimer == 0
+			|| (stack && player->speedboost > (FRACUNIT/8) && !player->sneakertimer))
+			&& !bd->itemwasdown)
 		{
 			bd->itemdown = true;
 			//bd->itemconfirm = 2*TICRATE;
