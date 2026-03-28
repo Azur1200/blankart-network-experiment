@@ -324,25 +324,6 @@ boolean legitimateexit; // Did this client actually finish the match?
 boolean comebackshowninfo; // Have you already seen the "ATTACK OR PROTECT" message?
 tic_t antibumptime; // Delay before players start bumping into one another.
 
-typedef struct
-{
-	mapnum_t *mapbuffer;			// Pointer to zone memory
-	INT32 lastnummapheaders;	// Reset if nummapheaders != this
-	UINT8 counttogametype;		// Time to gametype change event
-} randmaps_t;
-static randmaps_t randmaps = {NULL, 0, 0};
-
-static void G_ResetRandMapBuffer(void)
-{
-	INT32 i;
-	Z_Free(randmaps.mapbuffer);
-	randmaps.lastnummapheaders = nummapheaders;
-	randmaps.mapbuffer = Z_Malloc(randmaps.lastnummapheaders * sizeof(mapnum_t), PU_STATIC, NULL);
-	for (i = 0; i < randmaps.lastnummapheaders; i++)
-		randmaps.mapbuffer[i] = NEXTMAP_INVALID;
-	//intentionally not resetting randmaps.counttogametype here
-}
-
 // Grading
 UINT32 timesBeaten;
 
@@ -4467,10 +4448,6 @@ INT16 G_SometimesGetDifferentGametype(UINT8 prefgametype)
 		&& (gametypes[prefgametype]->rules & GTR_CIRCUIT));
 	UINT8 encoremodifier = 0;
 
-	// -- the below is only necessary if you want to use randmaps.mapbuffer here
-	//if (randmaps.lastnummapheaders != nummapheaders)
-		//G_ResetRandMapBuffer();
-
 	if (encorepossible)
 	{
 		if (encorescramble != -1)
@@ -4501,22 +4478,22 @@ INT16 G_SometimesGetDifferentGametype(UINT8 prefgametype)
 	if (!cv_kartvoterulechanges.value) // never
 		return (gametype|encoremodifier);
 
-	if (randmaps.counttogametype > 0 && (cv_kartvoterulechanges.value != 3))
+	if (g_countToGametype > 0 && (cv_kartvoterulechanges.value != 3))
 	{
-		randmaps.counttogametype--;
-		return (gametype|encoremodifier);
+			g_countToGametype--;
+			return (gametype|encoremodifier);
 	}
 
 	switch (cv_kartvoterulechanges.value) // okay, we're having a gametype change! when's the next one, luv?
 	{
-		case 1: // sometimes
-			randmaps.counttogametype = 5; // per "cup"
-			break;
-		default:
-			// fallthrough - happens when clearing buffer, but needs a reasonable countdown if cvar is modified
-		case 2: // frequent
-			randmaps.counttogametype = 2; // ...every 1/2th-ish cup?
-			break;
+			case 1: // sometimes
+				g_countToGametype = 5; // per "cup"
+				break;
+			default:
+				// fallthrough - happens when clearing buffer, but needs a reasonable countdown if cvar is modified
+			case 2: // frequent
+				g_countToGametype = 2; // ...every 1/2th-ish cup?
+				break;
 	}
 
 	// Only this response is prefgametype-based.
@@ -4625,49 +4602,63 @@ static INT32 TOLMaps(UINT8 pgametype)
   *         has those flags.
   * \author Graue <graue@oceanbase.org>
   */
-mapnum_t G_RandMap(UINT32 tolflags, mapnum_t pprevmap, UINT8 ignorebuffer, UINT8 maphell, mapnum_t *extbuffer)
+static mapnum_t *g_allowedMaps = NULL;
+
+UINT8 g_countToGametype = 0;
+
+#ifdef PARANOIA
+static INT32 g_randMapStack = 0;
+#endif
+
+mapnum_t G_RandMap(UINT32 tolflags, mapnum_t pprevmap, boolean ignoreBuffers, UINT8 maphell, boolean callAgainSoon, mapnum_t *extBuffer)
 {
-	UINT32 numokmaps = 0;
-	mapnum_t ix, bufx;
-	mapnum_t *okmaps = NULL;
-	mapnum_t extbufsize = 0;
+	INT32 allowedMapsCount = 0;
+	INT32 extBufferCount = 0;
+	mapnum_t ret = 0;
+	INT32 i, j;
 	boolean usehellmaps; // Only consider Hell maps in this pick
 
-	if (randmaps.lastnummapheaders != nummapheaders)
-		G_ResetRandMapBuffer();
+#ifdef PARANOIA
+	g_randMapStack++;
+#endif
 
-	if (!okmaps)
+	if (g_allowedMaps == NULL)
 	{
-		//CONS_Printf("(making okmaps)\n");
-		okmaps = Z_Malloc(nummapheaders * sizeof(INT16), PU_STATIC, NULL);
+		g_allowedMaps = Z_Malloc(nummapheaders * sizeof(INT16), PU_STATIC, NULL);
 	}
 
-	if (extbuffer != NULL)
+	if (extBuffer != NULL)
 	{
-		bufx = 0;
-		while (extbuffer[bufx])
+		for (i = 0; extBuffer[i] != 0; i++)
 		{
-			extbufsize++; bufx++;
+			extBufferCount++;
 		}
 	}
 
-tryagain:
+tryAgain:
 
 	usehellmaps = (maphell == 0 ? false : (maphell == 2 || M_RandomChance(FRACUNIT/100))); // 1% chance of Hell
 
 	// Find all the maps that are ok and and put them in an array.
-	for (ix = 0; ix < nummapheaders; ix++)
+	for (i = 0; i < nummapheaders; i++)
 	{
-		boolean isokmap = true;
-
-		if (!mapheaderinfo[ix] || mapheaderinfo[ix]->lumpnum == LUMPERROR)
+		if (mapheaderinfo[i] == NULL || mapheaderinfo[i]->lumpnum == LUMPERROR)
+		{
+			// Doesn't exist?
 			continue;
+		}
 
-		if ((mapheaderinfo[ix]->typeoflevel & tolflags) != tolflags
-			|| ix == pprevmap
-			|| (!dedicated && M_MapLocked(ix+1))
-			|| (usehellmaps != (mapheaderinfo[ix]->menuflags & LF2_HIDEINMENU))) // this is bad
-			continue; //isokmap = false;
+		if (i == pprevmap)
+		{
+			// We were just here.
+			continue;
+		}
+
+		if ((mapheaderinfo[i]->typeoflevel & tolflags) == 0)
+		{
+			// Doesn't match our gametype.
+			continue;
+		}
 
 		if (pprevmap == UINT16_MAX)  // title demo hack
 		{
@@ -4676,17 +4667,17 @@ tryagain:
 			virtlump_t *vLump;
 			lumpnum_t l;
 
-			vRes = vres_GetMap(mapheaderinfo[ix]->lumpnum);
+			vRes = vres_GetMap(mapheaderinfo[i]->lumpnum);
 
-			for (int i = 0; i < 10; i++)
+			for (int k = 0; k < 10; k++)
 			{
-				vLump = vres_Find(vRes, va("%s/GHOST_%u",mapheaderinfo[ix]->lumpname,i));
+				vLump = vres_Find(vRes, va("%s/GHOST_%u",mapheaderinfo[i]->lumpname,k));
 
 				if (vLump != NULL)
 					break;
 			}
 
-			if (vLump == NULL && ((l = W_CheckNumForLongName(va("%sS01",mapheaderinfo[ix]->lumpname))) == LUMPERROR))
+			if (vLump == NULL && ((l = W_CheckNumForLongName(va("%sS01",mapheaderinfo[i]->lumpname))) == LUMPERROR))
 			{
 				vres_Free(vRes);
 				continue;
@@ -4695,118 +4686,124 @@ tryagain:
 			vres_Free(vRes);
 		}
 
-		if (!ignorebuffer)
+		if ((!usehellmaps && ((mapheaderinfo[i]->menuflags & LF2_HIDEINMENU) == LF2_HIDEINMENU))
+			|| (usehellmaps && usehellmaps != ((mapheaderinfo[i]->menuflags & LF2_HIDEINMENU) == LF2_HIDEINMENU)))
 		{
-			if (extbufsize > 0)
+			// THIS IS BAD
+			continue;
+		}
+
+		if (M_MapLocked(i + 1) == true)
+		{
+			// We haven't earned this one.
+			continue;
+		}
+
+		if (ignoreBuffers == false)
+		{
+			if (mapheaderinfo[i]->justPlayed > 0)
 			{
-				for (bufx = 0; bufx < extbufsize; bufx++)
+				// We just played this map, don't play it again.
+				continue;
+			}
+
+			if (extBufferCount > 0)
+			{
+				// An optional additional buffer,
+				// to avoid duplicates on the voting screen.
+				for (j = 0; j < (maphell ? 3 : extBufferCount); j++)
 				{
-					if (extbuffer[bufx] == NEXTMAP_INVALID) // Rest of buffer SHOULD be empty
-						break;
-					if (ix == extbuffer[bufx])
+					if (extBuffer[j] < 0 || extBuffer[j] >= nummapheaders)
 					{
-						isokmap = false;
+						// Rest of buffer SHOULD be empty.
+						break;
+					}
+
+					if (i == extBuffer[j])
+					{
+						// Map is in this other buffer, don't duplicate.
 						break;
 					}
 				}
 
-				if (!isokmap)
-					continue;
-			}
-
-			for (bufx = 0; bufx < (maphell ? 3 : randmaps.lastnummapheaders); bufx++)
-			{
-				if (randmaps.mapbuffer[bufx] == NEXTMAP_INVALID) // Rest of buffer SHOULD be empty
-					break;
-				if (ix == randmaps.mapbuffer[bufx])
+				if (j < extBufferCount)
 				{
-					isokmap = false;
-					break;
+					// Didn't make it out of this buffer, so don't add this map.
+					continue;
 				}
 			}
-
-			if (!isokmap)
-				continue;
 		}
 
-		okmaps[numokmaps++] = ix;
+		// Got past the gauntlet, so we can allow this one.
+		g_allowedMaps[ allowedMapsCount++ ] = i;
 	}
 
-	if (numokmaps == 0)  // If there's no matches... (Goodbye, incredibly silly function chains :V)
+	if (allowedMapsCount == 0)
 	{
-		if (!ignorebuffer)
+		// No maps are available.
+		if (ignoreBuffers == false)
 		{
-			if (randmaps.mapbuffer[3] == NEXTMAP_INVALID) // Is the buffer basically empty?
-			{
-				ignorebuffer = 1; // This will probably only help in situations where there's very few maps, but it's folly not to at least try it
-				//CONS_Printf("RANDMAP - ignoring buffer\n");
-				goto tryagain;
-			}
-
-			for (bufx = 3; bufx < randmaps.lastnummapheaders; bufx++) // Let's clear all but the three most recent maps...
-				randmaps.mapbuffer[bufx] = NEXTMAP_INVALID;
-			//CONS_Printf("RANDMAP - emptying randmapbuffer\n");
-			goto tryagain;
+			// Try again with ignoring the buffer before giving up.
+			ignoreBuffers = true;
+			goto tryAgain;
 		}
 
-		if (maphell) // Any wiggle room to loosen our restrictions here?
+		if (maphell)
 		{
-			//CONS_Printf("RANDMAP -maphell decrement\n");
+			// Any wiggle room to loosen our restrictions here?
 			maphell--;
-			goto tryagain;
+			goto tryAgain;
 		}
 
-		//CONS_Printf("RANDMAP - defaulting to map01\n");
-		ix = 0; // Sorry, none match. You get MAP01.
-		if (ignorebuffer == 1)
-		{
-			//CONS_Printf("(emptying randmapbuffer entirely)\n");
-			for (bufx = 0; bufx < randmaps.lastnummapheaders; bufx++)
-				randmaps.mapbuffer[bufx] = NEXTMAP_INVALID; // if we're having trouble finding a map we should probably clear it
-		}
+		// Nothing else actually worked. Welp!
+		// You just get whatever was added first.
+		ret = 0;
 	}
 	else
 	{
-		//CONS_Printf("RANDMAP - %d maps available to grab\n", numokmaps);
-		ix = okmaps[M_RandomKey(numokmaps)];
+		ret = g_allowedMaps[ M_RandomKey(allowedMapsCount) ];
 	}
 
-	//CONS_Printf("(freeing okmaps)\n");
-	Z_Free(okmaps);
-	okmaps = NULL;
+	if (callAgainSoon == false)
+	{
+		Z_Free(g_allowedMaps);
+		g_allowedMaps = NULL;
 
-	return ix;
+#ifdef PARANOIA
+		// Crash if callAgainSoon was mishandled.
+		I_Assert(g_randMapStack == 1);
+#endif
+	}
+
+#ifdef PARANOIA
+	g_randMapStack--;
+#endif
+
+	return ret;
 }
+
+#define VOTEROWSADDSONE ((cv_votemaxrows.value*3) + 1 + ((cv_votemaxrows.value > 1) ? (cv_votemaxrows.value - 1) : 0))
+
 
 void G_AddMapToBuffer(mapnum_t map)
 {
-	mapnum_t bufx;
-	mapnum_t refreshnum = (TOLMaps(gametype))-3;
-
-	//if (refreshnum < 0)
-		refreshnum = 3;
-
-	if (nummapheaders != randmaps.lastnummapheaders)
+	if (mapheaderinfo[map]->justPlayed == 0) // Started playing a new map.
 	{
-		G_ResetRandMapBuffer();
-	}
-	else
-	{
-		for (bufx = randmaps.lastnummapheaders-1; bufx > 0; bufx--)
-			randmaps.mapbuffer[bufx] = randmaps.mapbuffer[bufx-1];
+		// Decrement every maps' justPlayed value.
+		INT32 i;
+		for (i = 0; i < nummapheaders; i++)
+		{
+			if (mapheaderinfo[i]->justPlayed > 0)
+			{
+				mapheaderinfo[i]->justPlayed--;
+			}
+		}
 	}
 
-	randmaps.mapbuffer[0] = map;
-
-	// We're getting pretty full, so lets flush this for future usage.
-	if (randmaps.mapbuffer[refreshnum] != NEXTMAP_INVALID)
-	{
-		// Clear all but the five most recent maps.
-		for (bufx = 5; bufx < randmaps.lastnummapheaders; bufx++)
-			randmaps.mapbuffer[bufx] = NEXTMAP_INVALID;
-		//CONS_Printf("Random map buffer has been flushed.\n");
-	}
+	// Set our map's justPlayed value.
+	mapheaderinfo[map]->justPlayed = TOLMaps(gametype) - VOTEROWSADDSONE;
 }
+#undef VOTEROWSADDSONE
 
 //
 // G_UpdateVisited
@@ -5277,7 +5274,7 @@ void G_GetNextMap(void)
 				}
 				/* FALLTHRU */
 				case 2: // Go to random map.
-					nextmap = G_RandMap(G_TOLFlag(gametype), prevmap, false, false, NULL);
+					nextmap = G_RandMap(G_TOLFlag(gametype), prevmap, false, 0, false, NULL);
 					break;
 				default:
 					if (nextmap >= NEXTMAP_SPECIAL) // Loop back around
@@ -6259,8 +6256,6 @@ void G_DeferedInitNew(boolean pencoremode, mapnum_t map, INT32 pickedchar, UINT8
 		COM_BufAddText("stopdemo\n");
 
 	G_FreeGhosts(); // TODO: do we actually need to do this?
-
-	G_ResetRandMapBuffer();
 
 	if ((modeattacking == ATTACKING_ITEMBREAK) || (bossinfo.boss == true))
 	{

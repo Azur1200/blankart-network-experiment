@@ -3351,7 +3351,7 @@ static int lib_gBuildMapName(lua_State *L)
 
 	if (lua_compatmode && map == 0) // v1 has undefined behaviour if you return 0, who knew.
 	{
-		map = G_NativeMapToKart(G_RandMap(G_TOLFlag(gametype), gamemap-1, 0, 0, NULL) + 1);
+		map = G_NativeMapToKart(G_RandMap(G_TOLFlag(gametype), gamemap-1, true, 0, false, NULL) + 1);
 	}
 
 	//HUDSAFE

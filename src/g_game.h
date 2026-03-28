@@ -383,8 +383,11 @@ FUNCMATH INT32 G_TicsToMilliseconds(tic_t tics);
 UINT32 G_TOLFlag(INT32 pgametype);
 mapnum_t G_GetFirstMapOfGametype(UINT8 pgametype);
 
-mapnum_t G_RandMap(UINT32 tolflags, mapnum_t pprevmap, UINT8 ignorebuffer, UINT8 maphell, mapnum_t *extbuffer);
 void G_AddMapToBuffer(mapnum_t map);
+
+extern UINT8 g_countToGametype;
+
+mapnum_t G_RandMap(UINT32 tolflags, mapnum_t pprevmap, boolean ignoreBuffers, UINT8 maphell, boolean callAgainSoon, mapnum_t *extBuffer);
 
 typedef struct 
 {
