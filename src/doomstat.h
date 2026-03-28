@@ -37,7 +37,7 @@ extern "C" {
 // Selected map etc.
 // =============================
 
-#define ROUNDQUEUE_MAX 10 // sane max? maybe make dynamically allocated later
+#define ROUNDQUEUE_MAX 20 // sane max? maybe make dynamically allocated later
 // These two live in gametype field of packets
 #define ROUNDQUEUE_CMD_CLEAR UINT16_MAX
 #define ROUNDQUEUE_CMD_SHOW UINT16_MAX-1
