@@ -79,6 +79,7 @@ static void P_NukeAllPlayers(player_t *player);
 
 // Some people like the more limited camerea from V1 so why not.
 consvar_t cv_naturalcamera = CVAR_INIT ("naturalcamera", "Off", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_lookbackinreplays = CVAR_INIT ("lookbackinreplays", "Off", CV_SAVE, CV_OnOff, NULL);
 
 //
 // Jingle stuff.
@@ -3109,7 +3110,10 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (P_CameraThinker(player, thiscam, resetcalled))
 		return true;
 
-	lookback = ( player->cmd.buttons & BT_LOOKBACK );
+	if (P_IsLocalPlayer(player) || (demo.playback && cv_lookbackinreplays.value))
+		lookback = G_PlayerInputDown(num, gc_lookback, false, DEADZONE_BUTTON);
+	else
+		lookback = player->cmd.buttons & BT_LOOKBACK;
 
 	camspeed = cv_cam_speed[num].value;
 	camstill = cv_cam_still[num].value;
