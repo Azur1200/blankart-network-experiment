@@ -303,7 +303,7 @@ void K_DisplayItemTimers(void)
 		},
 		{ // attractionshield
 			"attractionshield",
-			stplyr->attractionattack,
+			static_cast<int32_t>(stplyr->attractionattack),
 			{qche("K_TIATTR")},
 			1,
 		},
