@@ -5415,6 +5415,87 @@ static void HandlePlayerInfo(SINT8 node)
 	receivedplayerinfo = true;
 }
 
+static void PT_ReqMapQueue(int node)
+{
+	if (client)
+		return; // Only sent to servers, why are we receiving this?
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	reqmapqueue_pak reqmapqueue = netbuffer->u.reqmapqueue;
+
+	// Check for a spoofed source.
+	if (reqmapqueue.source == serverplayer)
+	{
+		// Servers aren't guaranteed to have a playernode, dedis exist.
+		if (node != servernode)
+			return;
+	}
+	else
+	{
+		if (playernode[reqmapqueue.source] != node)
+			return;
+
+		if (!IsPlayerAdmin(reqmapqueue.source))
+		{
+			CONS_Debug(DBG_NETPLAY,"Received illegal request map queue cmd from Player %d (%s).\n", reqmapqueue.source+1, player_names[reqmapqueue.source]);
+			SendKick(reqmapqueue.source, KICK_MSG_CON_FAIL);
+			return;
+		}
+	}
+
+	const boolean doclear = (reqmapqueue.newgametype == ROUNDQUEUE_CLEAR);
+
+	// The following prints will only appear when multiple clients
+	// attempt to affect the round queue at similar time increments
+	if (doclear == true)
+	{
+		if (roundqueue.size == 0)
+		{
+			// therefore this one doesn't really need a error print
+			// because what both players wanted was done anyways
+			//CONS_Alert(CONS_ERROR, "queuemap: Queue is already empty!\n");
+			return;
+		}
+	}
+	else if (roundqueue.size >= ROUNDQUEUE_MAX)
+	{
+		CONS_Alert(CONS_ERROR, "Recieved REQMAPQUEUE, but unable to add map beyond %u\n", roundqueue.size);
+
+		// But this one does, because otherwise it's silent failure!
+		// Todo print the map's name, maybe?
+		char rejectmsg[256];
+		strlcpy(rejectmsg, "The server couldn't queue your chosen map.", 256);
+		SendServerNotice(reqmapqueue.source, rejectmsg);
+
+		return;
+	}
+
+	UINT8 buf[1+2+1];
+	UINT8 *buf_p = buf;
+
+	WRITEUINT8(buf_p, reqmapqueue.flags);
+	WRITEUINT16(buf_p, reqmapqueue.newgametype);
+
+	WRITEUINT8(buf_p, roundqueue.size);
+
+	// Match Got_MapQueuecmd, but with the addition of reqmapqueue.newmapnum available to us
+	if (doclear == true)
+	{
+		memset(&roundqueue, 0, sizeof(struct roundqueue));
+	}
+	else
+	{
+		G_MapIntoRoundQueue(
+			reqmapqueue.newmapnum,
+			reqmapqueue.newgametype,
+			((reqmapqueue.flags & 1) != 0),
+							false
+		);
+	}
+
+	SendNetXCmd(XD_MAPQUEUE, buf, buf_p - buf);
+}
+
 /** Handles a packet received from a node that isn't in game
   *
   * \param node The packet sender
@@ -5494,6 +5575,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_TEXTCMD3           : PT_TextCmd            (node, netconsole); break;
 		case PT_TEXTCMD4           : PT_TextCmd            (node, netconsole); break;
 		case PT_SAY                : PT_Say                (node            ); break;
+		case PT_REQMAPQUEUE        : PT_ReqMapQueue        (node            ); break;
 		case PT_LOGIN              : PT_Login              (node            ); break;
 		case PT_LOGINAUTH          : PT_LoginAuth          (node, netconsole); break;
 		case PT_NODETIMEOUT        : PT_ClientQuit         (node, netconsole); break;
@@ -6927,10 +7009,10 @@ void DoSayPacketFromCommand(SINT8 target, size_t usedargs, UINT8 flags)
 	DoSayPacket(target, flags, consoleplayer, msg);
 }
 
+// This is meant to be targeted at player indices, not whatever the hell XD_SAY is doing with 1-indexed players.
 void SendServerNotice(SINT8 target, char *message)
 {
 	if (client)
 		return;
 	DoSayCommand(message, target + 1, HU_PRIVNOTICE, servernode);
 }
-

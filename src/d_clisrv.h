@@ -136,6 +136,7 @@ typedef enum
 	PT_SERVERINFOUPDATE, // Update server info for clients.
 
 	PT_SAY,				// "Hey server, please send this chat message to everyone via XD_SAY"
+	PT_REQMAPQUEUE,		// Client requesting a roundqueue operation
 
 	NUMPACKETTYPE
 } packettype_t;
@@ -376,6 +377,14 @@ struct filesneededconfig_pak
 	UINT8 files[MAXFILENEEDED]; // is filled with writexxx (byteptr.h)
 } ATTRPACK;
 
+struct reqmapqueue_pak
+{
+	UINT16 newmapnum;
+	UINT16 newgametype;
+	UINT8 flags;
+	UINT8 source;
+} ATTRPACK;
+
 struct netinfo_pak
 {
 	UINT32 pingtable[MAXPLAYERS+1];
@@ -427,6 +436,7 @@ struct doomdata_t
 		filesneededconfig_pak filesneededcfg;
 		netinfo_pak netinfo;
 		say_pak say;
+		reqmapqueue_pak reqmapqueue;			// Formerly XD_REQMAPQUEUE
 	} u; // This is needed to pack diff packet types data together
 } ATTRPACK;
 

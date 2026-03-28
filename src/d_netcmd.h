@@ -370,8 +370,7 @@ typedef enum
 	XD_SCHEDULECLEAR, // 36
 	XD_AUTOMATE,    // 37
 	XD_CHEAT,       // 38
-	XD_REQMAPQUEUE, // 39
-	XD_MAPQUEUE,	// 40
+	XD_MAPQUEUE,	// 39
 
 	MAXNETXCMD
 } netxcmd_t;

@@ -106,7 +106,6 @@ static void Got_DiscordInfo(UINT8 **cp, INT32 playernum);
 static void Got_ScheduleTaskcmd(UINT8 **cp, INT32 playernum);
 static void Got_ScheduleClearcmd(UINT8 **cp, INT32 playernum);
 static void Got_Automatecmd(UINT8 **cp, INT32 playernum);
-static void Got_RequestMapQueuecmd(UINT8 **cp, INT32 playernum);
 static void Got_MapQueuecmd(UINT8 **cp, INT32 playernum);
 static void Got_Cheat(UINT8 **cp, INT32 playernum);
 static void Command_ScoreboardAdd(void);
@@ -954,7 +953,6 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"SCHEDULECLEAR", // XD_SCHEDULECLEAR
 	"AUTOMATE", // XD_AUTOMATE
 	"CHEAT", // XD_CHEAT
-	"REQMAPQUEUE", // XD_REQMAPQUEUE
 	"MAPQUEUE", // XD_MAPQUEUE
 };
 
@@ -1005,7 +1003,6 @@ void D_RegisterServerCommands(void)
 	RegisterNetXCmd(XD_SCHEDULETASK, Got_ScheduleTaskcmd);
 	RegisterNetXCmd(XD_SCHEDULECLEAR, Got_ScheduleClearcmd);
 	RegisterNetXCmd(XD_AUTOMATE, Got_Automatecmd);
-	RegisterNetXCmd(XD_REQMAPQUEUE, Got_RequestMapQueuecmd);
 	RegisterNetXCmd(XD_MAPQUEUE, Got_MapQueuecmd);
 
 	RegisterNetXCmd(XD_CHEAT, Got_Cheat);
@@ -4130,41 +4127,26 @@ static void Command_RestartLevel(void)
 
 static void Handle_MapQueueSend(UINT16 newmapnum, UINT16 newgametype, boolean newencoremode)
 {
-	static char buf[1+2+2];
-	static char *buf_p = buf;
-
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	UINT8 flags = 0;
-	boolean doclear = (newgametype == ROUNDQUEUE_CLEAR);
 
 	CONS_Debug(DBG_GAMELOGIC, "Map queue: mapnum=%d newgametype=%d newencoremode=%d\n",
 	           newmapnum, newgametype, newencoremode);
 
-	buf_p = buf;
-
 	if (newencoremode)
 		flags |= 1;
 
-	WRITEUINT8(buf_p, flags);
-	WRITEUINT16(buf_p, newgametype);
+	netbuffer->packettype = PT_REQMAPQUEUE;
+	reqmapqueue_pak *reqmapqueue = &netbuffer->u.reqmapqueue;
 
-	if (client)
-	{
-		WRITEUINT16(buf_p, newmapnum);
-		SendNetXCmd(XD_REQMAPQUEUE, buf, buf_p - buf);
-		return;
-	}
+	reqmapqueue->newmapnum = newmapnum;
+	reqmapqueue->flags = flags;
+	reqmapqueue->newgametype = newgametype;
+	reqmapqueue->source = consoleplayer;
 
-	WRITEUINT8(buf_p, roundqueue.size);
-	if (doclear == true)
-	{
-		memset(&roundqueue, 0, sizeof(struct roundqueue));
-	}
-	else
-	{
-		G_MapIntoRoundQueue(newmapnum, newgametype, newencoremode, false);
-	}
+	HSendPacket(servernode, false, 0, sizeof(reqmapqueue_pak));
 
-	SendNetXCmd(XD_MAPQUEUE, buf, buf_p - buf);
+	// See PT_ReqMapQueue and Got_MapQueuecmd for the next stages
 }
 
 static void Command_QueueMap_f(void)
@@ -4319,52 +4301,6 @@ static void Command_QueueMap_f(void)
 
 	Z_Free(realmapname);
 	Z_Free(mapname);
-}
-
-static void Got_RequestMapQueuecmd(UINT8 **cp, INT32 playernum)
-{
-	UINT8 flags;
-	boolean setencore;
-	UINT16 mapnumber, setgametype;
-	boolean doclear = false;
-
-	flags = READUINT8(*cp);
-
-	setencore = ((flags & 1) != 0);
-
-	setgametype = READUINT16(*cp);
-
-	mapnumber = READUINT16(*cp);
-
-	if (!IsPlayerAdmin(playernum))
-	{
-		CONS_Alert(CONS_WARNING, M_GetText("Illegal request map queue command received from %s\n"), player_names[playernum]);
-		if (server && playernum != serverplayer)
-			SendKick(playernum, KICK_MSG_CON_FAIL);
-		return;
-	}
-
-	if (roundqueue.size >= ROUNDQUEUE_MAX)
-		doclear = (setgametype == ROUNDQUEUE_CLEAR);
-
-	if (doclear == true)
-	{
-		if (roundqueue.size == 0)
-		{
-			CONS_Alert(CONS_ERROR, "queuemap: Queue is already empty!\n");
-			return;
-		}
-	}
-	else if (roundqueue.size >= ROUNDQUEUE_MAX)
-	{
-		CONS_Alert(CONS_ERROR, "queuemap: Unable to add map beyond %u\n", roundqueue.size);
-		return;
-	}
-
-	if (client)
-		return;
-
-	Handle_MapQueueSend(mapnumber, setgametype, setencore);
 }
 
 static void Got_MapQueuecmd(UINT8 **cp, INT32 playernum)

@@ -814,7 +814,6 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 					Z_Free(tempchar);
 				return; // I pretend I do not see it
 			}
-
 		}
 		else // To everyone or sayteam, it doesn't change anything.
 			fmt2 = "%s<%s%s> %s%s";
