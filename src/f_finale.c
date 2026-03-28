@@ -931,6 +931,7 @@ const char *blancredits[] = {
 	"\"blondedradio\"", // Screen-tracking item roulette, lifted near-directly from RadioRacers
 	"\"Antoine De Grandpré\"", // Zero Deadzone fix
 	"\"Skirlez\"", // PT_SAY packet fixes
+	"Sally \"TehRealSalt\" Cochenour", // Map Buffer rewrite, Voting rewrites
 	"",
 	"\1Item Design",
 	"\"NepDisk\"",
