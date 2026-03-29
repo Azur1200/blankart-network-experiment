@@ -10002,6 +10002,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				mobj->lastlook = player->cmd.turning;
 			}
 
+			/*
 			if (player->cmd.shake > GAMEPADSHAKETHRESHOLD)
 			{
 				if (mobj->extravalue3 == 0) mobj->extravalue3 = 1;
@@ -10019,6 +10020,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			{
 				mobj->extravalue2 = 0;
 			}
+			*/
 
 			mobj->movecount++;
 		}

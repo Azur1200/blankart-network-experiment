@@ -1967,7 +1967,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 		if (cv_tiltcontrol[forplayer].value == 1)
 		{
-			cmd->tilt = INT8_MAX*tilt/FRACUNIT;
+			//cmd->tilt = INT8_MAX*tilt/FRACUNIT;
 
 			cmd->flags |= TICCMD_USINGTILT;
 			if (abs(tilt) > MAXGAMEPADTILT)
@@ -1975,9 +1975,9 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		}
 
 		CONS_Debug(DBG_IMU, "Shake: %4.2f\n", FixedToFloat(FV3_Length(&shake)));
-		cmd->shake = CLAMP((GAMEPADSHAKETHRESHOLD*FV3_Length(&shake))/FRACUNIT, 0, UINT8_MAX);
+		//cmd->shake = CLAMP((GAMEPADSHAKETHRESHOLD*FV3_Length(&shake))/FRACUNIT, 0, UINT8_MAX);
 
-		CONS_Debug(DBG_IMU, "CMD Tilt: %d, Shake: %d\n", cmd->tilt, cmd->shake);
+		//CONS_Debug(DBG_IMU, "CMD Tilt: %d, Shake: %d\n", cmd->tilt, cmd->shake);
 	}
 
 	G_DoCameraTurn(cmd, realtics, ssplayer, player);
@@ -2012,8 +2012,6 @@ ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
 		dest[i].buttons = (UINT16)SHORT(src[i].buttons);
 		dest[i].latency = src[i].latency;
 		dest[i].flags = src[i].flags;
-		dest[i].tilt = src[i].tilt;
-		dest[i].shake = src[i].shake;
 	}
 	return dest;
 }

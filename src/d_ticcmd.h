@@ -73,8 +73,6 @@ struct ticcmd_t
 	UINT16 buttons;
 	UINT8 latency; // Netgames: how many tics ago was this ticcmd generated from this player's end?
 	UINT8 flags;
-	SINT8 tilt;
-	UINT8 shake;
 } ATTRPACK;
 
 #ifdef __cplusplus

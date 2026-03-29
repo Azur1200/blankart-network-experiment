@@ -145,8 +145,6 @@ demoghost *ghosts = NULL;
 #define ZT_AIMING	0x0040
 #define ZT_LATENCY	0x0080
 #define ZT_FLAGS	0x0100
-#define ZT_IMUTILT	0x0200
-#define ZT_IMUSHAKE	0x0400
 // Ziptics are UINT16 now, go nuts
 
 #define DEMOMARKER 0x80 // demobuf.end
@@ -403,10 +401,6 @@ static UINT8 *G_ReadZipTic(ticcmd_t *cmd, UINT8 *dp, UINT16 version)
 		cmd->latency = READUINT8(dp);
 	if (ziptic & ZT_FLAGS)
 		cmd->flags = READUINT8(dp);
-	if (ziptic & ZT_IMUTILT)
-		cmd->tilt = READSINT8(dp);
-	if (ziptic & ZT_IMUSHAKE)
-		cmd->shake = READUINT8(dp);
 
 	if (version < 0x000a && ziptic & 0x8000) // ZT_BOT
 	{
@@ -1588,20 +1582,6 @@ void G_WriteDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 		WRITEUINT8(demobuf.p,cmd->flags);
 		oldcmd[playernum].flags = cmd->flags;
 		ziptic |= ZT_FLAGS;
-	}
-
-	if (cmd->tilt != oldcmd[playernum].tilt)
-	{
-		WRITESINT8(demobuf.p,cmd->tilt);
-		oldcmd[playernum].tilt = cmd->tilt;
-		ziptic |= ZT_IMUTILT;
-	}
-
-	if (cmd->shake != oldcmd[playernum].shake)
-	{
-		WRITESINT8(demobuf.p,cmd->shake);
-		oldcmd[playernum].shake = cmd->shake;
-		ziptic |= ZT_IMUSHAKE;
 	}
 
 	WRITEUINT16(ziptic_p, ziptic);

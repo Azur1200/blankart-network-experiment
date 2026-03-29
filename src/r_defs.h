@@ -1003,9 +1003,7 @@ typedef enum
 
 	RF_ABSOLUTELIGHTLEVEL = 0x00010000, //  mobj_t.lightlevel is absolute instead of relative
 	RF_HIDEINSKYBOX       = 0x00020000, //  do not render in skybox
-#ifdef HWRENDER
-	RF_NOMODEL            = 0x00040000, // do not draw a model for this mobj in opengl, use its sprite instead
-#endif
+	RF_AFFINEPRESCALE     = 0x00040000, // Makes affines scale before rotating, instead of rotating before scaling
 	RF_NOAFFINE           = 0x00080000,  // Disables affine drawing for this sprite
 
 	RF_HIDESHIFT        = (20),
@@ -1024,7 +1022,7 @@ typedef enum
 	RF_MODULATE			= ((AST_MODULATE-1)<<RF_BLENDSHIFT),
 	RF_OVERLAY			= ((AST_OVERLAY-1)<<RF_BLENDSHIFT),
 
-	RF_AFFINEPRESCALE    = 0x08000000,  // Makes affines scale before rotating, instead of rotating before scaling
+	// free: 0x08000000
 
 	RF_TRANSMASK       	= (INT32)0xF0000000,   // --Transparency override
 	RF_TRANSSHIFT		= (7*4),
