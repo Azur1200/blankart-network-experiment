@@ -73,6 +73,8 @@ TYPEDEF (rewind_t);
 TYPEDEF (netinfo_pak);
 TYPEDEF (say_pak);
 TYPEDEF (reqmapqueue_pak);
+TYPEDEF (clientkey_pak);
+TYPEDEF (serverchallenge_pak);
 
 // d_event.h
 TYPEDEF (event_t);

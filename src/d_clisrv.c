@@ -47,6 +47,8 @@
 #include "lonesha256.h"
 #include "m_perfstats.h"
 
+#include "monocypher/monocypher.h"
+
 // SRB2Kart
 #include "k_kart.h"
 #include "k_battle.h"
@@ -181,8 +183,18 @@ char connectedserverdescription[MAXSERVERDESCRIPTION];
 /// \todo WORK!
 boolean acceptnewnode = true;
 
+uint8_t lastReceivedKey[MAXNETNODES][32];
+uint8_t lastSentChallenge[MAXNETNODES][32];
+
 boolean serverisfull = false; //lets us be aware if the server was full after we check files, but before downloading, so we can ask if the user still wants to download or not
 tic_t firstconnectattempttime = 0;
+
+uint8_t awaitingChallenge[32];
+
+#ifdef DEVELOP
+	consvar_t cv_sigfail = CVAR_INIT ("sigfail", "Off", CV_SAVE, CV_OnOff, NULL);
+#endif
+
 
 // engine
 
@@ -905,8 +917,38 @@ static boolean CL_SendJoin(void)
 
 	memcpy(&netbuffer->u.clientcfg.availabilities, R_GetSkinAvailabilities(), MAXAVAILABILITY*sizeof(UINT8));
 
+	// Don't leak old signatures from prior sessions.
+	memset(&netbuffer->u.clientcfg.challengeResponse, 0, sizeof(((clientconfig_pak *)0)->challengeResponse));
+
+	uint8_t signature[64];
+	crypto_eddsa_sign(signature, secret_key, awaitingChallenge, 32);
+
+	if (crypto_eddsa_check(signature, public_key, awaitingChallenge, 32) != 0)
+		I_Error("Couldn't verify own key, may be corrupted?");
+
+#ifdef DEVELOP
+		if (cv_sigfail.value)
+		{
+			CONS_Alert(CONS_WARNING, "SIGFAIL enabled, scrubbing signature from CL_SendJoin\n");
+			memset(signature, 0, 64);
+		}
+#endif
+
+	// Testing
+	// memset(signature, 0, sizeof(signature));
+
+	memcpy(&netbuffer->u.clientcfg.challengeResponse, signature, sizeof(signature));
 
 	return HSendPacket(servernode, false, 0, sizeof (clientconfig_pak));
+}
+
+static boolean CL_SendKey(void)
+{
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	netbuffer->packettype = PT_CLIENTKEY;
+
+	memcpy(netbuffer->u.clientkey.key, public_key, sizeof(public_key));
+	return HSendPacket(servernode, false, 0, sizeof (clientkey_pak) );
 }
 
 void
@@ -2039,7 +2081,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			{
 				*asksent = 0; //This ensure the first join ask is right away
 				firstconnectattempttime = I_GetTime();
-				cl_mode = CL_ASKJOIN;
+				cl_mode = CL_SENDKEY;
 			}
 			break;
 		case CL_ASKJOIN:
@@ -2073,6 +2115,19 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			if (I_GetTime() >= *asksent)
 			{
 				cl_mode = CL_ASKJOIN;
+			}
+			break;
+		case CL_SENDKEY:
+			if (I_GetTime() >= *asksent && CL_SendKey())
+			{
+				*asksent = I_GetTime() + NEWTICRATE*3;
+				cl_mode = CL_WAITCHALLENGE;
+			}
+			break;
+		case CL_WAITCHALLENGE:
+			if (I_GetTime() >= *asksent)
+			{
+				cl_mode = CL_SENDKEY;
 			}
 			break;
 		case CL_DOWNLOADSAVEGAME:
@@ -2795,7 +2850,7 @@ void CL_RemovePlayer(INT32 playernum, kickreason_t reason)
 			startedInFreePlay = true;
 		}
 	}
-	
+
 	// Reset map headers' justPlayed and anger records
 	// when there are no players in a dedicated server.
 	// Otherwise maps get angry at newly-joined players
@@ -2933,6 +2988,8 @@ static void Command_Nodes(void)
 				if ((I_GetNodeAddress && (address = I_GetNodeAddress(playernode[i])) != NULL) && (cv_shownodeip.value))
 					CONS_Printf(" - %s", address);
 			}
+
+			CONS_Printf(" [RRID-%s] ", GetPrettyRRID(players[i].public_key, true));
 
 			if (IsPlayerAdmin(i))
 				CONS_Printf(M_GetText(" (verified admin)"));
@@ -3381,6 +3438,11 @@ static void Got_KickCmd(UINT8 **p, INT32 playernum)
 			HU_AddChatText(va("\x82*%s left the game (Connection timeout)", player_names[pnum]), false);
 			kickreason = KR_TIMEOUT;
 			break;
+		case KICK_MSG_SIGFAIL:
+			HU_AddChatText(va("\x82*%s left the game (Invalid signature)", player_names[pnum]), false);
+			kickreason = KR_TIMEOUT;
+			break;
+
 		case KICK_MSG_PLAYER_QUIT:
 			if (netgame) // not splitscreen/bots
 				HU_AddChatText(va("\x82*%s left the game", player_names[pnum]), false);
@@ -3933,10 +3995,19 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 
 		D_SendPlayerConfig(splitscreenplayer);
 		addedtogame = true;
+
+		CONS_Printf("It's me, node %d, with ID %s! (This is uninitialized memory because Tyron is a nice person :)!)\n", node, GetPrettyRRID(lastReceivedKey[node], true));
+		memcpy(lastReceivedKey[node], public_key, 32);
 	}
 
 	players[newplayernum].splitscreenindex = splitscreenplayer;
 	players[newplayernum].bot = false;
+
+	// player_t is the only place in the game that a key is null-terminated, for ease of Lua push.
+	memset(players[newplayernum].public_key, 0, 32 + 1);
+	CONS_Printf("Adding player from node %d with ID %s\n", node, GetPrettyRRID(lastReceivedKey[node], true));
+	memcpy(players[newplayernum].public_key, lastReceivedKey[node], 32);
+	CONS_Printf("Node %d now has ID %s\n", node, GetPrettyRRID(players[newplayernum].public_key, true));
 
 	// Previously called at the top of this function, commented as
 	// "caused desyncs in this spot :(". But we can't do this in
@@ -4395,6 +4466,9 @@ static void HandleConnect(SINT8 node)
 		}
 	}
 
+	// Testing
+	// memset(netbuffer->u.clientcfg.challengeResponse, 0, sizeof(netbuffer->u.clientcfg.challengeResponse));
+
 	if (bannednode && bannednode[node].banid != SIZE_MAX)
 	{
 		const char *reason = NULL;
@@ -4478,6 +4552,7 @@ static void HandleConnect(SINT8 node)
 	}
 	else
 	{
+		int sigcheck;
 		boolean newnode = false;
 
 		for (i = 0; i < netbuffer->u.clientcfg.localplayers - playerpernode[node]; i++)
@@ -4487,6 +4562,24 @@ static void HandleConnect(SINT8 node)
 			{
 				SV_SendRefuse(node, "Bad player name");
 				return;
+			}
+
+			if (node == 0) // Server
+			{
+				memcpy(lastReceivedKey[node], public_key, sizeof(lastReceivedKey[node]));
+				CONS_Printf("Adding SERVER. Setting lastReceivedKey on node %d to %s\n", node, GetPrettyRRID(lastReceivedKey[node], true));
+			}
+			else
+			{
+				CONS_Printf("Adding client. Doing sigcheck for node %d, ID %s\n", node, GetPrettyRRID(lastReceivedKey[node], true));
+
+				sigcheck = crypto_eddsa_check(netbuffer->u.clientcfg.challengeResponse, lastReceivedKey[node], lastSentChallenge[node], 32);
+
+				if (netgame && sigcheck != 0)
+				{
+					SV_SendRefuse(node, M_GetText("Signature verification failed."));
+					return;
+				}
 			}
 		}
 
@@ -5576,6 +5669,16 @@ static void HandlePacketFromAwayNode(SINT8 node)
 		case PT_SERVERTICS     : PT_ServerTics     (node, -1); break;
 		case PT_CLIENTCMD      :                               break; // This is not an "unknown packet"
 		case PT_PLAYERINFO	   : HandlePlayerInfo  (node    ); break;
+		case PT_CLIENTKEY:
+			if (server)
+				PT_ClientKey(node);
+			break;
+		case PT_SERVERCHALLENGE:
+			if (cl_mode != CL_WAITCHALLENGE)
+				break;
+			memcpy(awaitingChallenge, netbuffer->u.serverchallenge.secret, sizeof(awaitingChallenge));
+			cl_mode = CL_ASKJOIN;
+			break;
 
 		default:
 			DEBFILE(va("unknown packet received (%d) from unknown host\n",netbuffer->packettype));
@@ -5604,6 +5707,22 @@ static void HandlePacketFromPlayer(SINT8 node)
 	if (netconsole >= MAXPLAYERS)
 		I_Error("bad table nodetoplayer: node %d player %d", doomcom->remotenode, netconsole);
 #endif
+
+	uint8_t allzero[32];
+	memset(allzero, 0, sizeof(allzero));
+
+	if (IsPacketSigned(netbuffer->packettype))
+	{
+		const void* message = &netbuffer->u;
+		if (crypto_eddsa_check(netbuffer->signature, lastReceivedKey[node], message, doomcom->datalength - BASEPACKETSIZE))
+		{
+			//CONS_Alert(CONS_ERROR, "SIGFAIL! Packet type %d from node %d \nkey %s size %d\n",
+				//netbuffer->packettype, node,
+				//GetPrettyRRID(lastReceivedKey[node], true), doomcom->datalength - BASEPACKETSIZE);
+			// SendKick(netconsole, KICK_MSG_CON_FAIL);
+			return;
+		}
+	}
 
 	switch (netbuffer->packettype)
 	{

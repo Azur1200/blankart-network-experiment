@@ -1347,6 +1347,10 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_netticbuffer);
 	CV_RegisterVar(&cv_mindelay);
 
+#ifdef DEVELOP
+	CV_RegisterVar(&cv_sigfail);
+#endif
+
 	// HUD
 	CV_RegisterVar(&cv_itemfinder);
 

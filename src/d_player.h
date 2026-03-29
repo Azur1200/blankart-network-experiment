@@ -890,6 +890,8 @@ struct player_t
 	boolean walltransfered;
 	UINT8 walltransferboost;
 
+	uint8_t public_key[32 + 1];
+
 #ifdef HWRENDER
 	fixed_t fovadd; // adjust FOV for hw rendering
 #endif

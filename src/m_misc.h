@@ -130,6 +130,8 @@ boolean M_IsStringEmpty(const char *s);
 
 int M_RoundUp(double number);
 
+char *GetPrettyRRID(const unsigned char *bin, boolean brief);
+
 #include "w_wad.h"
 extern char configfile[MAX_WADPATH];
 

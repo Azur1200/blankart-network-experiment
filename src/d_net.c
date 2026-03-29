@@ -31,6 +31,7 @@
 #include "d_main.h" // srb2home
 #include "stun.h"
 #include "byteptr.h"
+#include "monocypher/monocypher.h"
 
 #include "qs22j.h"
 
@@ -470,7 +471,12 @@ static void InitAck(void)
 		ackpak[i].acknum = 0;
 
 	for (i = 0; i < MAXNETNODES; i++)
+	{
 		InitNode(&nodes[i]);
+
+		csprng(lastSentChallenge[i], sizeof(lastSentChallenge[i]));
+		csprng(lastReceivedKey[i], sizeof(lastReceivedKey[i]));
+	}
 }
 
 /** Removes all acks of a given packet type
@@ -547,6 +553,9 @@ void Net_CloseConnection(INT32 node)
 	if (server)
 		SV_AbortLuaFileTransfer(node);
 	I_NetFreeNodenum(node);
+
+	csprng(lastSentChallenge[node], sizeof(lastSentChallenge[node]));
+	csprng(lastReceivedKey[node], sizeof(lastReceivedKey[node]));
 }
 
 //
@@ -835,6 +844,31 @@ static boolean ShouldDropPacket(void)
 }
 #endif
 
+boolean IsPacketSigned(int packettype)
+{
+	switch (packettype)
+	{
+		case PT_CLIENTCMD:
+		case PT_CLIENT2CMD:
+		case PT_CLIENT3CMD:
+		case PT_CLIENT4CMD:
+		case PT_CLIENTMIS:
+		case PT_CLIENT2MIS:
+		case PT_CLIENT3MIS:
+		case PT_CLIENT4MIS:
+		case PT_TEXTCMD:
+		case PT_TEXTCMD2:
+		case PT_TEXTCMD3:
+		case PT_TEXTCMD4:
+		case PT_LOGIN:
+		case PT_ASKLUAFILE:
+		case PT_SENDINGLUAFILE:
+			return true;
+		default:
+			return false;
+	}
+}
+
 //
 // HSendPacket
 //
@@ -842,6 +876,27 @@ boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlen
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	doomcom->datalength = (INT16)(packetlength + BASEPACKETSIZE);
+
+	if (IsPacketSigned(netbuffer->packettype))
+	{
+		const void* message = &netbuffer->u;
+		//CONS_Printf("Signing packet type %d of length %d\n", netbuffer->packettype, packetlength);
+		crypto_eddsa_sign(netbuffer->signature, secret_key, message, packetlength);
+
+#ifdef DEVELOP
+		if (cv_sigfail.value)
+		{
+			CONS_Alert(CONS_WARNING, "SIGFAIL enabled, scrubbing signature from HSendPacket\n");
+			memset(netbuffer->signature, 0, sizeof(netbuffer->signature));
+		}
+#endif
+	}
+	else
+	{
+		//CONS_Printf("NOT signing PT_%d of length %d, it doesn't need to be\n", netbuffer->packettype, packetlength);
+		memset(netbuffer->signature, 0, sizeof(netbuffer->signature));
+	}
+
 	if (node == 0) // Packet is to go back to us
 	{
 		if ((rebound_head+1) % MAXREBOUND == rebound_tail)

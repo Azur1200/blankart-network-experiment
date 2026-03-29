@@ -64,6 +64,9 @@ extern char srb2path[256]; //Alam: SRB2's Home
 
 const char *D_GetFancyBranchName(void);
 
+extern uint8_t	public_key[32];
+extern uint8_t	secret_key[64];
+
 // the infinite loop of D_SRB2Loop() called from win_main for windows version
 void D_SRB2Loop(void) FUNCNORETURN;
 

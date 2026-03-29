@@ -276,6 +276,7 @@ add_subdirectory(sdl)
 add_subdirectory(objects)
 add_subdirectory(core)
 add_subdirectory(acs)
+add_subdirectory(monocypher)
 
 # OS macros
 if (UNIX)

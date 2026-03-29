@@ -138,6 +138,9 @@ typedef enum
 	PT_SAY,				// "Hey server, please send this chat message to everyone via XD_SAY"
 	PT_REQMAPQUEUE,		// Client requesting a roundqueue operation
 
+	PT_CLIENTKEY,		// "Here's my public key"
+	PT_SERVERCHALLENGE,		// "Prove it"
+
 	NUMPACKETTYPE
 } packettype_t;
 
@@ -291,6 +294,7 @@ struct clientconfig_pak
 	UINT8 mode;
 	char names[MAXSPLITSCREENPLAYERS][MAXPLAYERNAME];
 	UINT8 availabilities[MAXAVAILABILITY];
+	uint8_t challengeResponse[64];
 } ATTRPACK;
 
 #define SV_SPEEDMASK 0x03		// used to send kartspeed
@@ -385,6 +389,16 @@ struct reqmapqueue_pak
 	UINT8 source;
 } ATTRPACK;
 
+struct clientkey_pak
+{
+	char key[32];
+} ATTRPACK;
+
+struct serverchallenge_pak
+{
+	char secret[32];
+} ATTRPACK;
+
 struct netinfo_pak
 {
 	UINT32 pingtable[MAXPLAYERS+1];
@@ -410,6 +424,7 @@ struct doomdata_t
 	UINT8 ackreturn; // The return of the ack number
 
 	UINT8 packettype;
+	uint8_t signature[64];
 	UINT8 packetindex;
 	union
 	{
@@ -437,6 +452,8 @@ struct doomdata_t
 		netinfo_pak netinfo;
 		say_pak say;
 		reqmapqueue_pak reqmapqueue;			// Formerly XD_REQMAPQUEUE
+		clientkey_pak clientkey;				// TODO: Tyron, does anyone take any of these sizes even remotely seriously
+		serverchallenge_pak serverchallenge;	// Are you even going to update this shit, are you even going to remove this comment
 	} u; // This is needed to pack diff packet types data together
 } ATTRPACK;
 
@@ -478,6 +495,7 @@ extern consvar_t cv_serverinfoscreen;
 #define KICK_MSG_GRIEF       7
 #define KICK_MSG_CUSTOM_KICK 8
 #define KICK_MSG_CUSTOM_BAN  9
+#define KICK_MSG_SIGFAIL     10
 
 typedef enum
 {
@@ -528,6 +546,10 @@ extern consvar_t cv_joinnextround;
 
 extern consvar_t cv_discordinvites;
 
+#ifdef DEVELOP
+extern consvar_t cv_sigfail;
+#endif
+
 // Used in d_net, the only dependence
 tic_t ExpandTics(INT32 low, tic_t basetic);
 void D_ClientServerInit(void);
@@ -558,6 +580,8 @@ typedef enum
 	CL_PREPAREHTTPFILES,
 	CL_DOWNLOADHTTPFILES,
 #endif
+	CL_SENDKEY,
+	CL_WAITCHALLENGE,
 } cl_mode_t;
 
 // Create any new ticcmds and broadcast to other players.
@@ -676,6 +700,9 @@ rewind_t *CL_RewindToTime(tic_t time);
 void DoSayPacket(SINT8 target, UINT8 flags, UINT8 source, char *message);
 void DoSayPacketFromCommand(SINT8 target, size_t usedargs, UINT8 flags);
 void SendServerNotice(SINT8 target, char *message);
+
+extern uint8_t lastReceivedKey[MAXNETNODES][32];
+extern uint8_t lastSentChallenge[MAXNETNODES][32];
 
 #ifdef __cplusplus
 } // extern "C"

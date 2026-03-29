@@ -52,6 +52,8 @@
 #include "m_misc.h"
 #include "m_menu.h"
 #include "filesrch.h"
+#include "stun.h"
+
 
 #include <errno.h>
 
@@ -1337,6 +1339,22 @@ void PT_FileReceived(SINT8 node)
 
 	if (server && trans && netbuffer->u.filereceived == trans->fileid)
 		SV_EndFileSend(doomcom->remotenode);
+}
+
+void PT_ClientKey(INT32 node)
+{
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	clientkey_pak *packet = (void*)&netbuffer->u.clientkey;
+
+	memcpy(lastReceivedKey[node], packet->key, sizeof(lastReceivedKey[node]));
+
+	CONS_Printf("Got keys from node %d, %s\n", node, GetPrettyRRID(lastReceivedKey[node], true));
+
+	netbuffer->packettype = PT_SERVERCHALLENGE;
+
+	csprng(lastSentChallenge[node], sizeof(serverchallenge_pak));
+	memcpy(&netbuffer->u.serverchallenge, lastSentChallenge[node], sizeof(serverchallenge_pak));
+	HSendPacket(node, false, 0, sizeof (serverchallenge_pak));
 }
 
 static void SendAckPacket(fileack_pak *packet, UINT8 fileid)

@@ -2589,3 +2589,29 @@ int M_RoundUp(double number)
 
 	return (int)number;
 }
+
+
+char *GetPrettyRRID(const unsigned char *bin, boolean brief)
+{
+	char   *out;
+	size_t i;
+	size_t len = 32;
+
+	if (brief)
+		len = 8;
+
+	if (bin == NULL || len == 0)
+		return NULL;
+
+	out = (char *)malloc(len*2 + 1);
+
+	for (i=0; i<len; i++)
+	{
+		out[i*2]   = "0123456789ABCDEF"[bin[i] >> 4];
+		out[i*2+1] = "0123456789ABCDEF"[bin[i] & 0x0F];
+	}
+
+	out[len*2] = '\0';
+
+	return out;
+}

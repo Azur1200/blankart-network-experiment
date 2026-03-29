@@ -465,7 +465,8 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(recoverydashcharge) \
 	X(recoverydash) \
 	X(tripwireunstuck) \
-	X(bumpunstuck)
+	X(bumpunstuck) \
+	X(public_key)
 
 enum player_e
 {
@@ -1193,6 +1194,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_ping:
 		lua_pushinteger(L, playerpingtable[( plr - players )]);
+		break;
+	case player_public_key:
+		lua_pushstring(L, plr->public_key);
 		break;
 	case player_packetloss:
 		lua_pushinteger(L, playerpacketlosstable[plr - players]);
