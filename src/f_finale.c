@@ -925,13 +925,14 @@ const char *blancredits[] = {
 	"\"hayaunderscore\" aka \"DeltaKanyx\"",
 	"\"Guilmon35249vr\"",
 	"Vivian \"toaster\" Grannell", // Horncode
-	"AJ \"Tyron\" Martinez", // Horncode, PT_SAY
+	"AJ \"Tyron\" Martinez", // Horncode, PT_SAY, RRID
 	"\"Superstarxalien\"", // Horncode
 	"\"Freaky Mutant Man\"", // Color profiles menu
 	"\"blondedradio\"", // Screen-tracking item roulette, lifted near-directly from RadioRacers
 	"\"Antoine De Grandpré\"", // Zero Deadzone fix
 	"\"Skirlez\"", // PT_SAY packet fixes
 	"Sally \"TehRealSalt\" Cochenour", // Map Buffer rewrite, Voting rewrites
+	"\"Jartha\"", // Various bugfixes, RRID
 	"",
 	"\1Item Design",
 	"\"NepDisk\"",
