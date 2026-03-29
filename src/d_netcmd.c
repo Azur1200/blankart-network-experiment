@@ -1956,7 +1956,7 @@ UINT8 CanChangeSkin(INT32 playernum)
 			return true;
 
 		// Not in game, so you can change
-		if (players[playernum].spectator || players[playernum].playerstate == PST_DEAD || players[playernum].playerstate == PST_REBORN)
+		if (players[playernum].spectator || players[playernum].playerstate == PST_DEAD || players[playernum].playerstate == PST_REBORN || players[playernum].exiting)
 			return true;
 
 		return false;

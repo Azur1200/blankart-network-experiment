@@ -268,6 +268,7 @@ void G_AdjustViewEx(UINT8 viewnum, INT32 offset, boolean onlyactive, boolean res
 #define G_AdjustView(v,o,oa) G_AdjustViewEx(v,o,oa, true)
 
 void G_AddPlayer(INT32 playernum, INT32 console);
+void G_SpectatePlayerOnJoin(INT32 playernum);
 
 void G_SetExitGameFlag(void);
 void G_ClearExitGameFlag(void);

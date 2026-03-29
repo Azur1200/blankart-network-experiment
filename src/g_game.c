@@ -3053,6 +3053,8 @@ static inline void G_PlayerFinishLevel(INT32 player)
 
 		legitimateexit = false;
 	}
+
+	p->spectatorreentry = 0; // Clean up any pending re-entry forbiddings
 }
 
 void G_HandleRestatMessage(restatmessage_t *rm)
@@ -3199,6 +3201,15 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	tic_t laptime[LAP__MAX];
 
+	// This needs to be first, to permit it to wipe extra information
+	jointime = players[player].jointime;
+	if (jointime <= 1)
+	{
+		// Now called in Got_AddPlayer. In case of weirdness, break glass.
+		// G_SpectatePlayerOnJoin(player);
+		betweenmaps = true;
+	}
+
 	score = players[player].score;
 	lives = players[player].lives;
 	ctfteam = players[player].ctfteam;
@@ -3247,7 +3258,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	pflags = (players[player].pflags & (PF_WANTSTOJOIN|PF_KICKSTARTACCEL|PF_SHRINKME|PF_SHRINKACTIVE|PF_FLIPCAM));
 
 	// SRB2kart
-	if (betweenmaps || leveltime <= starttime || spectator == true || players[player].jointime == 0)
+	if (betweenmaps || leveltime <= starttime || spectator == true)
 	{
 		itemroulette = 0;
 		previtemroulette = 0;
@@ -4027,6 +4038,38 @@ void G_AddPlayer(INT32 playernum, INT32 console)
 	newplayer->jointime = 0;
 
 	demo_extradata[playernum] |= DXD_ADDPLAYER; // Set everything
+}
+
+void G_SpectatePlayerOnJoin(INT32 playernum)
+{
+	// This is only ever called shortly after the above.
+	// That calls CL_ClearPlayer, so spectator is false by default
+
+	if (!netgame && !G_GametypeHasTeams() && !G_GametypeHasSpectators())
+		return;
+
+	// These are handled automatically elsewhere
+	if (demo.playback || players[playernum].bot)
+		return;
+
+	UINT8 i;
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		// Spectators are of no consequence
+		if (players[i].spectator)
+			continue;
+
+		// Prevent splitscreen hosters/joiners from only adding 1 player at a time in empty servers (this will also catch yourself)
+		if (!players[i].jointime)
+			continue;
+
+		// A ha! An established player! It's time to spectate
+		players[playernum].spectator = true;
+		break;
+	}
 }
 
 void G_BeginLevelExit(void)

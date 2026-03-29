@@ -56,6 +56,8 @@
 #include "k_items.h"
 #include "k_waypoint.h"
 #include "k_grandprix.h"
+#include "g_party.h"
+#include "k_director.h"
 
 // BlanKart
 #include "blan/b_soc.h"
@@ -12381,64 +12383,19 @@ void P_RespawnSpecials(void)
 //
 void P_SpawnPlayer(INT32 playernum)
 {
-	UINT8 i, pcount = 0; // MAXPLAYERS if exiting
+	UINT8 i;
 	player_t *p = &players[playernum];
 	mobj_t *mobj;
 
+	boolean justjoined = (p->jointime <= 1);
+
 	if (p->playerstate == PST_REBORN)
-		G_PlayerReborn(playernum, false);
+		G_PlayerReborn(playernum, justjoined);
 
-	for (i = 0; i < MAXPLAYERS; i++)
-	{
-		if (i == playernum)
-			continue;
-		if (!playeringame[i] || players[i].spectator)
-			continue;
-		if (players[i].exiting)
-		{
-			pcount = MAXPLAYERS;
-			break;
-		}
-		if (players[i].jointime <= 1) // Prevent splitscreen hosters/joiners from only adding 1 player at a time in empty servers
-			continue;
-		pcount++;
-	}
-
-	// spawn as spectator determination
-	if (multiplayer && demo.playback)
-	{
-		; // Don't mess with spectator values since the demo setup handles them already.
-	}
-	else if (p->bot)
-	{
-		if (K_BotDefaultSpectator())
-		{
-			// Bots should avoid
-			p->spectator = true;
-			p->pflags &= ~PF_WANTSTOJOIN;
-		}
-		else if (p->spectator)
-		{
-			// No point in a spectating bot!
-			p->spectator = false;
-			p->pflags |= PF_WANTSTOJOIN;
-		}
-	}
-	else if (netgame && p->jointime <= 1 && pcount)
-	{
-		p->spectator = true;
-
-#if 0
-		if (pcount == 1 || leveltime < starttime)
-			p->pflags |= PF_WANTSTOJOIN;
-		p->jointime = 2;
-#endif
-		p->spectatorreentry = 0; //(cv_spectatorreentry.value * TICRATE);
-	}
-	else if (multiplayer && !netgame)
+	if (G_GametypeHasTeams())
 	{
 		// If you're in a team game and you don't have a team assigned yet...
-		if (G_GametypeHasTeams() && p->ctfteam == 0)
+		if (!p->spectator && p->ctfteam == 0)
 		{
 			changeteam_union NetPacket;
 			UINT16 usvalue;
@@ -12459,20 +12416,6 @@ void P_SpawnPlayer(INT32 playernum)
 
 			usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
 			SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
-		}
-		else // Otherwise, never spectator.
-		{
-			p->spectator = false;
-		}
-	}
-
-	if (G_GametypeHasTeams())
-	{
-		// Fix stupid non spectator spectators.
-		if (!p->spectator && !p->ctfteam)
-		{
-			p->spectator = true;
-			p->spectatorreentry = 0; //(cv_spectatorreentry.value * TICRATE);
 		}
 
 		// Fix team colors.

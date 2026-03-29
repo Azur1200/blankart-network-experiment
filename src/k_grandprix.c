@@ -19,6 +19,7 @@
 #include "k_bot.h"
 #include "k_kart.h"
 #include "m_random.h"
+#include "p_local.h"
 #include "r_things.h"
 #include "lua_hook.h"
 #include "k_battle.h"
@@ -343,8 +344,13 @@ void K_UpdateGrandPrixBots(void)
 		{
 			continue;
 		}
-		
+
 		players[i].spectator = K_BotDefaultSpectator();
+	}
+
+	if (grandprixinfo.wonround == false)
+	{
+		return;
 	}
 
 	// Find the rival.

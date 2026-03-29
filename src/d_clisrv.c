@@ -3886,6 +3886,8 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 	node = READUINT8(*p);
 	newplayernum = READUINT8(*p);
 
+	CONS_Debug(DBG_NETPLAY, "addplayer: %d %d\n", node, newplayernum);
+
 	if (newplayernum+1 > doomcom->numslots)
 		doomcom->numslots = (INT16)(newplayernum+1);
 
@@ -3898,12 +3900,12 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 	console = READUINT8(*p);
 	splitscreenplayer = READUINT8(*p);
 
+	G_AddPlayer(newplayernum, console);
+
 	for (i = 0; i < MAXAVAILABILITY; i++)
 	{
 		newplayer->availabilities[i] = READUINT8(*p);
 	}
-
-	G_AddPlayer(newplayernum, console);
 
 	// the server is creating my player
 	if (node == mynode)
@@ -3935,6 +3937,13 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 
 	players[newplayernum].splitscreenindex = splitscreenplayer;
 	players[newplayernum].bot = false;
+
+	// Previously called at the top of this function, commented as
+	// "caused desyncs in this spot :(". But we can't do this in
+	// G_PlayerReborn, since that only runs for level contexts and
+	// allows people to party-crash the vote screen even when
+	// maxplayers is too low for them. Let's try it here...?
+	G_SpectatePlayerOnJoin(newplayernum);
 
 	if (netgame)
 	{
