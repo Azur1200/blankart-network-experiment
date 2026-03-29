@@ -17,6 +17,7 @@
 #include "d_net.h"
 #include "d_netcmd.h"
 #include "d_net.h"
+#include "doomdef.h"
 #include "tables.h"
 #include "d_player.h"
 #include "mserv.h"
@@ -294,7 +295,7 @@ struct clientconfig_pak
 	UINT8 mode;
 	char names[MAXSPLITSCREENPLAYERS][MAXPLAYERNAME];
 	UINT8 availabilities[MAXAVAILABILITY];
-	uint8_t challengeResponse[64];
+	uint8_t challengeResponse[MAXSPLITSCREENPLAYERS][64];
 } ATTRPACK;
 
 #define SV_SPEEDMASK 0x03		// used to send kartspeed
@@ -391,12 +392,12 @@ struct reqmapqueue_pak
 
 struct clientkey_pak
 {
-	char key[32];
+	char key[MAXSPLITSCREENPLAYERS][32];
 } ATTRPACK;
 
 struct serverchallenge_pak
 {
-	char secret[32];
+	char secret[MAXSPLITSCREENPLAYERS][32];
 } ATTRPACK;
 
 struct netinfo_pak
@@ -424,7 +425,7 @@ struct doomdata_t
 	UINT8 ackreturn; // The return of the ack number
 
 	UINT8 packettype;
-	uint8_t signature[64];
+	uint8_t signature[MAXSPLITSCREENPLAYERS][64];
 	UINT8 packetindex;
 	union
 	{
@@ -701,8 +702,8 @@ void DoSayPacket(SINT8 target, UINT8 flags, UINT8 source, char *message);
 void DoSayPacketFromCommand(SINT8 target, size_t usedargs, UINT8 flags);
 void SendServerNotice(SINT8 target, char *message);
 
-extern uint8_t lastReceivedKey[MAXNETNODES][32];
-extern uint8_t lastSentChallenge[MAXNETNODES][32];
+extern uint8_t lastReceivedKey[MAXNETNODES][MAXSPLITSCREENPLAYERS][32];
+extern uint8_t lastSentChallenge[MAXNETNODES][MAXSPLITSCREENPLAYERS][32];
 
 #ifdef __cplusplus
 } // extern "C"

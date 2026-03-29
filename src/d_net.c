@@ -879,9 +879,14 @@ boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlen
 
 	if (IsPacketSigned(netbuffer->packettype))
 	{
-		const void* message = &netbuffer->u;
-		//CONS_Printf("Signing packet type %d of length %d\n", netbuffer->packettype, packetlength);
-		crypto_eddsa_sign(netbuffer->signature, secret_key, message, packetlength);
+		int i;
+
+		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		{
+			const void* message = &netbuffer->u;
+			//CONS_Printf("Signing packet type %d of length %d\n", netbuffer->packettype, packetlength);
+			crypto_eddsa_sign(netbuffer->signature[i], secret_key[i], message, packetlength);
+		}
 
 #ifdef DEVELOP
 		if (cv_sigfail.value)

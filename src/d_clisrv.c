@@ -183,8 +183,8 @@ char connectedserverdescription[MAXSERVERDESCRIPTION];
 /// \todo WORK!
 boolean acceptnewnode = true;
 
-uint8_t lastReceivedKey[MAXNETNODES][32];
-uint8_t lastSentChallenge[MAXNETNODES][32];
+uint8_t lastReceivedKey[MAXNETNODES][MAXSPLITSCREENPLAYERS][32];
+uint8_t lastSentChallenge[MAXNETNODES][MAXSPLITSCREENPLAYERS][32];
 
 boolean serverisfull = false; //lets us be aware if the server was full after we check files, but before downloading, so we can ask if the user still wants to download or not
 tic_t firstconnectattempttime = 0;
@@ -920,11 +920,13 @@ static boolean CL_SendJoin(void)
 	// Don't leak old signatures from prior sessions.
 	memset(&netbuffer->u.clientcfg.challengeResponse, 0, sizeof(((clientconfig_pak *)0)->challengeResponse));
 
-	uint8_t signature[64];
-	crypto_eddsa_sign(signature, secret_key, awaitingChallenge, 32);
+	for (i = 0; i <= splitscreen; i++)
+	{
+		uint8_t signature[64];
 
-	if (crypto_eddsa_check(signature, public_key, awaitingChallenge, 32) != 0)
-		I_Error("Couldn't verify own key, may be corrupted?");
+		crypto_eddsa_sign(signature, secret_key[i], awaitingChallenge, 32);
+		if (crypto_eddsa_check(signature, public_key[i], awaitingChallenge, 32) != 0)
+			I_Error("Couldn't self-verify key associated with player %d.\nkey may be corrupted.\n", i); // I guess this is the most reasonable way to catch a malformed key.
 
 #ifdef DEVELOP
 		if (cv_sigfail.value)
@@ -934,20 +936,26 @@ static boolean CL_SendJoin(void)
 		}
 #endif
 
-	// Testing
-	// memset(signature, 0, sizeof(signature));
+		// Testing
+		// memset(signature, 0, sizeof(signature));
 
-	memcpy(&netbuffer->u.clientcfg.challengeResponse, signature, sizeof(signature));
+		memcpy(&netbuffer->u.clientcfg.challengeResponse[i], signature, sizeof(signature));
+	}
 
 	return HSendPacket(servernode, false, 0, sizeof (clientconfig_pak));
 }
 
 static boolean CL_SendKey(void)
 {
+	int i;
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	netbuffer->packettype = PT_CLIENTKEY;
 
-	memcpy(netbuffer->u.clientkey.key, public_key, sizeof(public_key));
+	memset(netbuffer->u.clientkey.key, 0, sizeof(((clientkey_pak *)0)->key));
+	for (i = 0; i <= splitscreen; i++)
+	{
+		memcpy(netbuffer->u.clientkey.key[i], public_key[i], 32);
+	}
 	return HSendPacket(servernode, false, 0, sizeof (clientkey_pak) );
 }
 
@@ -3996,8 +4004,8 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 		D_SendPlayerConfig(splitscreenplayer);
 		addedtogame = true;
 
-		CONS_Printf("It's me, node %d, with ID %s! (This is uninitialized memory because Tyron is a nice person :)!)\n", node, GetPrettyRRID(lastReceivedKey[node], true));
-		memcpy(lastReceivedKey[node], public_key, 32);
+		CONS_Printf("It's me, node %d, with ID %s! (This is uninitialized memory because Tyron is a nice person :) )\n", node, GetPrettyRRID(lastReceivedKey[node][splitscreenplayer], true));
+		memcpy(lastReceivedKey[node][splitscreenplayer], public_key[splitscreenplayer], 32);
 	}
 
 	players[newplayernum].splitscreenindex = splitscreenplayer;
@@ -4005,8 +4013,8 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 
 	// player_t is the only place in the game that a key is null-terminated, for ease of Lua push.
 	memset(players[newplayernum].public_key, 0, 32 + 1);
-	CONS_Printf("Adding player from node %d with ID %s\n", node, GetPrettyRRID(lastReceivedKey[node], true));
-	memcpy(players[newplayernum].public_key, lastReceivedKey[node], 32);
+	CONS_Printf("Adding player from node %d with ID %s\n", node, GetPrettyRRID(lastReceivedKey[node][splitscreenplayer], true));
+	memcpy(players[newplayernum].public_key, lastReceivedKey[node][splitscreenplayer], sizeof(players[newplayernum].public_key));
 	CONS_Printf("Node %d now has ID %s\n", node, GetPrettyRRID(players[newplayernum].public_key, true));
 
 	// Previously called at the top of this function, commented as
@@ -4566,14 +4574,15 @@ static void HandleConnect(SINT8 node)
 
 			if (node == 0) // Server
 			{
-				memcpy(lastReceivedKey[node], public_key, sizeof(lastReceivedKey[node]));
-				CONS_Printf("Adding SERVER. Setting lastReceivedKey on node %d to %s\n", node, GetPrettyRRID(lastReceivedKey[node], true));
+				memcpy(lastReceivedKey[node][i], public_key[i], sizeof(lastReceivedKey[node][i]));
+				CONS_Printf("We're SERVER! Setting lastReceivedKey on node %d to %s\n", node, GetPrettyRRID(lastReceivedKey[node][i], true));
+
 			}
 			else
 			{
-				CONS_Printf("Adding client. Doing sigcheck for node %d, ID %s\n", node, GetPrettyRRID(lastReceivedKey[node], true));
+				CONS_Printf("Adding client. Doing sigcheck for node %d, ID %s\n", node, GetPrettyRRID(lastReceivedKey[i][node], true));
 
-				sigcheck = crypto_eddsa_check(netbuffer->u.clientcfg.challengeResponse, lastReceivedKey[node], lastSentChallenge[node], 32);
+				sigcheck = crypto_eddsa_check(netbuffer->u.clientcfg.challengeResponse[i], lastReceivedKey[node][i], lastSentChallenge[node][i], 32);
 
 				if (netgame && sigcheck != 0)
 				{
@@ -5707,20 +5716,34 @@ static void HandlePacketFromPlayer(SINT8 node)
 	if (netconsole >= MAXPLAYERS)
 		I_Error("bad table nodetoplayer: node %d player %d", doomcom->remotenode, netconsole);
 #endif
-
-	uint8_t allzero[32];
-	memset(allzero, 0, sizeof(allzero));
-
-	if (IsPacketSigned(netbuffer->packettype))
+	if (server)
 	{
-		const void* message = &netbuffer->u;
-		if (crypto_eddsa_check(netbuffer->signature, lastReceivedKey[node], message, doomcom->datalength - BASEPACKETSIZE))
+		int splitnodes;
+		if (IsPacketSigned(netbuffer->packettype))
 		{
-			//CONS_Alert(CONS_ERROR, "SIGFAIL! Packet type %d from node %d \nkey %s size %d\n",
-				//netbuffer->packettype, node,
-				//GetPrettyRRID(lastReceivedKey[node], true), doomcom->datalength - BASEPACKETSIZE);
-			// SendKick(netconsole, KICK_MSG_CON_FAIL);
-			return;
+			for (splitnodes = 0; splitnodes < MAXSPLITSCREENPLAYERS; splitnodes++)
+			{
+				// Don't try to enforce signatures for players that aren't present.
+				if (splitnodes > 0 && nodetoplayer2[node] <= 0)
+					break;
+				if (splitnodes > 1 && nodetoplayer3[node] <= 0)
+					break;
+				if (splitnodes > 2 && nodetoplayer4[node] <= 0)
+					break;
+
+				const void* message = &netbuffer->u;
+				if (crypto_eddsa_check(netbuffer->signature[splitnodes], lastReceivedKey[node][splitnodes], message, doomcom->datalength - BASEPACKETSIZE))
+				{
+					CONS_Alert(CONS_ERROR, "SIGFAIL! Packet type %d from node %d player %d\nkey %s size %d netconsole %d\n",
+						netbuffer->packettype, node, splitnodes,
+						GetPrettyRRID(lastReceivedKey[node][splitnodes], true), doomcom->datalength - BASEPACKETSIZE, netconsole);
+					if (netconsole != -1) // NO IDEA.
+						SendKick(netconsole, KICK_MSG_SIGFAIL);
+					Net_CloseConnection(node);
+					nodeingame[node] = false;
+					return;
+				}
+			}
 		}
 	}
 
