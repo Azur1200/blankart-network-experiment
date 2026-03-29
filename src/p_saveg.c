@@ -862,9 +862,9 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].itemusecooldownmax);
 
 		if (save->write)
-			WRITESTRINGN(save->p, players[i].public_key, 32 + 1);
+			WRITEMEM(save->p, players[i].public_key, PUBKEYLENGTH);
 		else
-			READSTRINGN(save->p, players[i].public_key, 32 + 1);
+			READMEM(save->p, players[i].public_key, PUBKEYLENGTH);
 
 	}
 	TracyCZoneEnd(__zone);

@@ -2590,12 +2590,12 @@ int M_RoundUp(double number)
 	return (int)number;
 }
 
+static char rrid_buf[256];
 
 char *GetPrettyRRID(const unsigned char *bin, boolean brief)
 {
-	char   *out;
 	size_t i;
-	size_t len = 32;
+	size_t len = PUBKEYLENGTH;
 
 	if (brief)
 		len = 8;
@@ -2603,15 +2603,13 @@ char *GetPrettyRRID(const unsigned char *bin, boolean brief)
 	if (bin == NULL || len == 0)
 		return NULL;
 
-	out = (char *)malloc(len*2 + 1);
-
 	for (i=0; i<len; i++)
 	{
-		out[i*2]   = "0123456789ABCDEF"[bin[i] >> 4];
-		out[i*2+1] = "0123456789ABCDEF"[bin[i] & 0x0F];
+		rrid_buf[i*2]   = "0123456789ABCDEF"[bin[i] >> 4];
+		rrid_buf[i*2+1] = "0123456789ABCDEF"[bin[i] & 0x0F];
 	}
 
-	out[len*2] = '\0';
+	rrid_buf[len*2] = '\0';
 
-	return out;
+	return rrid_buf;
 }

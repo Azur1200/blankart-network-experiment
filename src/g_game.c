@@ -71,6 +71,7 @@
 #include "f_dscredits.hpp"
 #include "strbuf.h"
 #include "k_vote.h"
+#include "d_clisrv.h"
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
@@ -3174,7 +3175,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	SINT8 xtralife;
 
-	uint8_t public_key[32];
+	uint8_t public_key[PUBKEYLENGTH];
 
 	// SRB2kart
 	INT32 itemtype;

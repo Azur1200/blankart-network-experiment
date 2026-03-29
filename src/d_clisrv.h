@@ -304,7 +304,7 @@ struct clientconfig_pak
 	UINT8 mode;
 	char names[MAXSPLITSCREENPLAYERS][MAXPLAYERNAME];
 	UINT8 availabilities[MAXAVAILABILITY];
-	uint8_t challengeResponse[MAXSPLITSCREENPLAYERS][64];
+	uint8_t challengeResponse[MAXSPLITSCREENPLAYERS][SIGNATURELENGTH];
 } ATTRPACK;
 
 #define SV_SPEEDMASK 0x03		// used to send kartspeed
@@ -401,27 +401,27 @@ struct reqmapqueue_pak
 
 struct clientkey_pak
 {
-	uint8_t key[MAXSPLITSCREENPLAYERS][32];
+	uint8_t key[MAXSPLITSCREENPLAYERS][PUBKEYLENGTH];
 } ATTRPACK;
 
 struct serverchallenge_pak
 {
-	uint8_t secret[32];
+	uint8_t secret[CHALLENGELENGTH];
 } ATTRPACK;
 
 struct challengeall_pak
 {
-	uint8_t secret[64];
+	uint8_t secret[CHALLENGELENGTH];
 } ATTRPACK;
 
 struct responseall_pak
 {
-	uint8_t signature[MAXSPLITSCREENPLAYERS][64];
+	uint8_t signature[MAXSPLITSCREENPLAYERS][SIGNATURELENGTH];
 } ATTRPACK;
 
 struct resultsall_pak
 {
-	uint8_t signature[MAXPLAYERS][64];
+	uint8_t signature[MAXPLAYERS][SIGNATURELENGTH];
 } ATTRPACK;
 
 struct netinfo_pak
@@ -450,7 +450,7 @@ struct doomdata_t
 
 	UINT8 packettype;
 #ifdef SIGNGAMETRAFFIC
-	uint8_t signature[MAXSPLITSCREENPLAYERS][64];
+	uint8_t signature[MAXSPLITSCREENPLAYERS][SIGNATURELENGTH];
 #endif
 	UINT8 packetindex;
 	union
@@ -480,7 +480,7 @@ struct doomdata_t
 		say_pak say;
 		reqmapqueue_pak reqmapqueue;			// Formerly XD_REQMAPQUEUE
 		clientkey_pak clientkey;				// 32 bytes
-		serverchallenge_pak serverchallenge;	// 64 bytes
+		serverchallenge_pak serverchallenge;	// 256 bytes
 		challengeall_pak challengeall;			// 256 bytes
 		responseall_pak responseall;			// 256 bytes
 		resultsall_pak resultsall;				// 1024 bytes. Also, you really shouldn't trust anything here.
@@ -554,11 +554,11 @@ extern char connectedservercontact[MAXSERVERCONTACT];
 extern char connectedserverdescription[MAXSERVERDESCRIPTION];
 
 extern UINT32 ourIP;
-extern uint8_t lastReceivedKey[MAXNETNODES][MAXSPLITSCREENPLAYERS][32];
-extern uint8_t lastSentChallenge[MAXNETNODES][32];
-extern uint8_t lastChallengeAll[64];
-extern uint8_t lastReceivedSignature[MAXPLAYERS][64];
-extern uint8_t knownWhenChallenged[MAXPLAYERS][32];
+extern uint8_t lastReceivedKey[MAXNETNODES][MAXSPLITSCREENPLAYERS][PUBKEYLENGTH];
+extern uint8_t lastSentChallenge[MAXNETNODES][CHALLENGELENGTH];
+extern uint8_t lastChallengeAll[CHALLENGELENGTH];
+extern uint8_t lastReceivedSignature[MAXPLAYERS][SIGNATURELENGTH];
+extern uint8_t knownWhenChallenged[MAXPLAYERS][PUBKEYLENGTH];
 extern boolean expectChallenge;
 
 void Command_Ping_f(void);

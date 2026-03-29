@@ -183,8 +183,8 @@ INT32 eventhead, eventtail;
 boolean dedicated = false;
 
 // For identity negotiation with netgame servers
-uint8_t	public_key[MAXSPLITSCREENPLAYERS][32];
-uint8_t	secret_key[MAXSPLITSCREENPLAYERS][64];
+uint8_t	public_key[MAXSPLITSCREENPLAYERS][PUBKEYLENGTH];
+uint8_t	secret_key[MAXSPLITSCREENPLAYERS][PRIVKEYLENGTH];
 
 boolean loaded_config = false;
 
