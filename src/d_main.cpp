@@ -92,6 +92,10 @@
 
 #include <tracy/tracy/Tracy.hpp>
 
+#ifdef HAVE_SDL
+#include <SDL3/SDL_filesystem.h>
+#endif
+
 // Put hashes here to get them out of header hell.
 #define ASSET_HASH_SRB2_SRB            0xf3ec1ea4d0eca4a9
 #define ASSET_HASH_GFX_KART            0xc91b0d43f5ba131f
@@ -1875,13 +1879,38 @@ void D_SRB2Main(void)
 	ACS_Init();
 	CON_SetLoadingProgress(LOADED_ACSINIT);
 
-	// TODO: This file should probably give a fuck about command line params,
-	// or not be stored next to the EXE in a way that allows people to unknowingly send it to others.
-	// I'm thinking ~/.config on nix and %appdata on windows since we don't have profiles. - Nep
-	static char keyfile[MAXSPLITSCREENPLAYERS][16] = {"rrid1.dat", "rrid2.dat", "rrid3.dat", "rrid4.dat"};
+	// Read / create RRID key files in local preference directory
+	// /home/username/.local/share/Team BlanKart/BlanKart/ on *NIX
+	// C:\Users\username\AppData\Roaming\Team BlanKart\BlanKart\ for Windows
+	// otherwise uses srb2home
+	static char keyfile[MAXSPLITSCREENPLAYERS][16] = {"bkid1.dat", "bkid2.dat", "bkid3.dat", "bkid4.dat"};
+	char *storefolder = NULL;
+	INT32 snum;
 
-	for (INT32 snum = 0; snum < MAXSPLITSCREENPLAYERS; snum++)
+	for (snum = 0; snum < MAXSPLITSCREENPLAYERS; snum++)
 	{
+#ifdef HAVE_SDL
+
+		if (!M_CheckParm("-rridinhome"))
+		{
+			char *prefpath = SDL_GetPrefPath("Team BlanKart", "BlanKart");
+			storefolder = va("%s%s", prefpath, keyfile[snum]);
+			if (prefpath != NULL)
+				SDL_free(prefpath);
+		}
+
+		if (storefolder)
+		{
+			;
+		}
+		else
+#endif
+		{
+			// Strange platform that doesn't have UNIX folders or Windows Appdata...
+			// Write to the srb2 folder instead...
+			storefolder = va(pandf, srb2home, keyfile[snum]);
+		}
+
 		static uint8_t seed[32];
 		csprng(seed, 32);
 		crypto_eddsa_key_pair(g_secret_key[snum], g_public_key[snum], seed);
@@ -1890,10 +1919,10 @@ void D_SRB2Main(void)
 		int pk_size = sizeof(g_public_key[snum]);
 		int totalsize = sk_size + pk_size;
 
-		if (FIL_ReadFileOK(keyfile[snum]))
+		if (FIL_ReadFileOK(storefolder))
 		{
 			UINT8 *readbuffer = NULL;
-			UINT16 lengthRead = FIL_ReadFile(keyfile[snum], &readbuffer);
+			UINT16 lengthRead = FIL_ReadFile(storefolder, &readbuffer);
 			if (readbuffer == NULL || lengthRead != totalsize)
 				I_Error("Malformed keyfile %d", snum);
 			memcpy(g_secret_key[snum], readbuffer, sk_size);
@@ -1904,7 +1933,7 @@ void D_SRB2Main(void)
 			uint8_t *keybuffer = (uint8_t *)malloc(totalsize);
 			memcpy(keybuffer, g_secret_key[snum], sk_size);
 			memcpy(keybuffer + sk_size, g_public_key[snum], pk_size);
-			if (!FIL_WriteFile(keyfile[snum], keybuffer, totalsize))
+			if (!FIL_WriteFile(storefolder, keybuffer, totalsize))
 				I_Error("Couldn't open keyfile %d", snum);
 			free(keybuffer);
 		}
