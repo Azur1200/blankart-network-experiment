@@ -9021,16 +9021,17 @@ INT32 MR_SetupMonitorToggles(INT32 choice)
 		if (result == NULL)
 		{
 			item->argument = 1;
-			item->patch = "";
+			item->patch = Z_StrDup("");
 		}
 		else
 		{
 			item->argument = 0;
-			item->patch = result->cvar->name;
+			item->patch = Z_StrDup(result->cvar->name);
+
 			if (kartitems[result->type].altcvar != NULL)
-				item->tooltip = "Press BACKSPACE to swap variants.";
+				item->tooltip = Z_StrDup("Press BACKSPACE to swap variants.");
 			else if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
-				item->tooltip = "Rings must be enabled in Gameplay Mods!";
+				item->tooltip = Z_StrDup("Rings must be enabled in Gameplay Mods!");
 		}
 	}
 
@@ -9040,7 +9041,7 @@ INT32 MR_SetupMonitorToggles(INT32 choice)
 		menuitem_t *item = menudef->menuitems + menudef->numitems++;
 
 		item->argument = 2;
-		item->patch = "";
+		item->patch = Z_StrDup("");
 	}
 
 	menudef->x = 136 - FixedMul(max(0, min((menudef->numitems - 1) / height, 7)), TICRATE*FRACUNIT/2);
