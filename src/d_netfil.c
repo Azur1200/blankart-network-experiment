@@ -1341,6 +1341,8 @@ void PT_FileReceived(SINT8 node)
 		SV_EndFileSend(doomcom->remotenode);
 }
 
+// Someone knocked on the door with their public key.
+// Give them a challenge to sign in their PT_CLIENTJOIN.
 void PT_ClientKey(INT32 node)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
@@ -1351,8 +1353,8 @@ void PT_ClientKey(INT32 node)
 	CONS_Printf("Got keys from node %d, %s / %s / %s / %s\n", node, GetPrettyRRID(lastReceivedKey[node][0], true), GetPrettyRRID(lastReceivedKey[node][1], true), GetPrettyRRID(lastReceivedKey[node][2], true), GetPrettyRRID(lastReceivedKey[node][3], true));
 
 	netbuffer->packettype = PT_SERVERCHALLENGE;
+	GenerateChallenge(lastSentChallenge[node]);
 
-	csprng(lastSentChallenge[node], sizeof(serverchallenge_pak));
 	memcpy(&netbuffer->u.serverchallenge, lastSentChallenge[node], sizeof(serverchallenge_pak));
 	HSendPacket(node, false, 0, sizeof (serverchallenge_pak));
 }

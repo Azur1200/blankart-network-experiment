@@ -1348,7 +1348,15 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_mindelay);
 
 #ifdef DEVELOP
-	CV_RegisterVar(&cv_sigfail);
+	CV_RegisterVar(&cv_badjoin);
+	CV_RegisterVar(&cv_badtraffic);
+	CV_RegisterVar(&cv_badresponse);
+	CV_RegisterVar(&cv_noresponse);
+	CV_RegisterVar(&cv_nochallenge);
+	CV_RegisterVar(&cv_badresults);
+	CV_RegisterVar(&cv_noresults);
+	CV_RegisterVar(&cv_badtime);
+	CV_RegisterVar(&cv_badip);
 #endif
 
 	// HUD

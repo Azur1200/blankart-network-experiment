@@ -142,8 +142,19 @@ typedef enum
 	PT_CLIENTKEY,		// "Here's my public key"
 	PT_SERVERCHALLENGE,		// "Prove it"
 
+	PT_CHALLENGEALL,	// Prove to the other clients you are who you say you are, sign this random bullshit!
+	PT_RESPONSEALL,		// OK, here is my signature on that random bullshit
+	PT_RESULTSALL,		// Here's what everyone responded to PT_CHALLENGEALL with, if this is wrong or you don't receive it disconnect
+
 	NUMPACKETTYPE
 } packettype_t;
+
+typedef enum
+{
+	SIGN_OK,
+	SIGN_BADTIME, // Timestamp differs by too much, suspect reuse of an old challenge.
+	SIGN_BADIP // Asked to sign the wrong IP by an external host, suspect reuse of another server's challenge.
+} shouldsign_t;
 
 typedef struct consistancy_s
 {
@@ -176,9 +187,7 @@ void SPrintConsistancy(char *out, consistancy_t *c);
 void Command_Drop(void);
 void Command_Droprate(void);
 #endif
-#ifdef _DEBUG
 void Command_Numnodes(void);
-#endif
 
 // Client to server packet
 struct clientcmd_pak
@@ -392,12 +401,27 @@ struct reqmapqueue_pak
 
 struct clientkey_pak
 {
-	char key[MAXSPLITSCREENPLAYERS][32];
+	uint8_t key[MAXSPLITSCREENPLAYERS][32];
 } ATTRPACK;
 
 struct serverchallenge_pak
 {
-	char secret[MAXSPLITSCREENPLAYERS][32];
+	uint8_t secret[32];
+} ATTRPACK;
+
+struct challengeall_pak
+{
+	uint8_t secret[64];
+} ATTRPACK;
+
+struct responseall_pak
+{
+	uint8_t signature[MAXSPLITSCREENPLAYERS][64];
+} ATTRPACK;
+
+struct resultsall_pak
+{
+	uint8_t signature[MAXPLAYERS][64];
 } ATTRPACK;
 
 struct netinfo_pak
@@ -425,7 +449,9 @@ struct doomdata_t
 	UINT8 ackreturn; // The return of the ack number
 
 	UINT8 packettype;
+#ifdef SIGNGAMETRAFFIC
 	uint8_t signature[MAXSPLITSCREENPLAYERS][64];
+#endif
 	UINT8 packetindex;
 	union
 	{
@@ -453,8 +479,11 @@ struct doomdata_t
 		netinfo_pak netinfo;
 		say_pak say;
 		reqmapqueue_pak reqmapqueue;			// Formerly XD_REQMAPQUEUE
-		clientkey_pak clientkey;				// TODO: Tyron, does anyone take any of these sizes even remotely seriously
-		serverchallenge_pak serverchallenge;	// Are you even going to update this shit, are you even going to remove this comment
+		clientkey_pak clientkey;				// 32 bytes
+		serverchallenge_pak serverchallenge;	// 64 bytes
+		challengeall_pak challengeall;			// 256 bytes
+		responseall_pak responseall;			// 256 bytes
+		resultsall_pak resultsall;				// 1024 bytes. Also, you really shouldn't trust anything here.
 	} u; // This is needed to pack diff packet types data together
 } ATTRPACK;
 
@@ -524,6 +553,14 @@ extern char connectedservername[MAXSERVERNAME];
 extern char connectedservercontact[MAXSERVERCONTACT];
 extern char connectedserverdescription[MAXSERVERDESCRIPTION];
 
+extern UINT32 ourIP;
+extern uint8_t lastReceivedKey[MAXNETNODES][MAXSPLITSCREENPLAYERS][32];
+extern uint8_t lastSentChallenge[MAXNETNODES][32];
+extern uint8_t lastChallengeAll[64];
+extern uint8_t lastReceivedSignature[MAXPLAYERS][64];
+extern uint8_t knownWhenChallenged[MAXPLAYERS][32];
+extern boolean expectChallenge;
+
 void Command_Ping_f(void);
 extern tic_t connectiontimeout;
 extern tic_t jointimeout;
@@ -548,12 +585,23 @@ extern consvar_t cv_joinnextround;
 extern consvar_t cv_discordinvites;
 
 #ifdef DEVELOP
-extern consvar_t cv_sigfail;
+	extern consvar_t cv_badjoin;
+	extern consvar_t cv_badtraffic;
+	extern consvar_t cv_badresponse;
+	extern consvar_t cv_noresponse;
+	extern consvar_t cv_nochallenge;
+	extern consvar_t cv_badresults;
+	extern consvar_t cv_noresults;
+	extern consvar_t cv_badtime;
+	extern consvar_t cv_badip;
 #endif
 
 // Used in d_net, the only dependence
 tic_t ExpandTics(INT32 low, tic_t basetic);
 void D_ClientServerInit(void);
+
+void GenerateChallenge(uint8_t *buf);
+shouldsign_t ShouldSignChallenge(uint8_t *message);
 
 // Initialise the other field
 void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(UINT8 **p, INT32 playernum));
@@ -698,12 +746,18 @@ void CL_ClearRewinds(void);
 rewind_t *CL_SaveRewindPoint(size_t demopos);
 rewind_t *CL_RewindToTime(tic_t time);
 
+void HandleSigfail(const char *string);
+
 void DoSayPacket(SINT8 target, UINT8 flags, UINT8 source, char *message);
 void DoSayPacketFromCommand(SINT8 target, size_t usedargs, UINT8 flags);
 void SendServerNotice(SINT8 target, char *message);
 
-extern uint8_t lastReceivedKey[MAXNETNODES][MAXSPLITSCREENPLAYERS][32];
-extern uint8_t lastSentChallenge[MAXNETNODES][MAXSPLITSCREENPLAYERS][32];
+// We give clients a chance to verify each other once per race.
+// When is that challenge sent, and when should clients bail if they don't receive the responses?
+#define CHALLENGEALL_START (TICRATE*10)
+#define CHALLENGEALL_KICKUNRESPONSIVE (TICRATE*12)
+#define CHALLENGEALL_SENDRESULTS (TICRATE*14)
+#define CHALLENGEALL_CLIENTCUTOFF (TICRATE*16)
 
 #ifdef __cplusplus
 } // extern "C"

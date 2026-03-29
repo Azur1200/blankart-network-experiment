@@ -23,6 +23,7 @@
 #include "lua_libs.h"
 #include "lua_hud.h" // hud_running errors
 #include "lua_hook.h" // hook_cmd_running errors
+#include "m_misc.h" // GetPrettyRRID
 
 static int lib_iteratePlayers(lua_State *L)
 {
@@ -1196,7 +1197,7 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, playerpingtable[( plr - players )]);
 		break;
 	case player_public_key:
-		lua_pushstring(L, plr->public_key);
+		lua_pushstring(L, GetPrettyRRID(plr->public_key, false));
 		break;
 	case player_packetloss:
 		lua_pushinteger(L, playerpacketlosstable[plr - players]);
@@ -1953,8 +1954,7 @@ static int player_set(lua_State *L)
 	case player_botvars:
 		return NOSET;
 	case player_jointime:
-		plr->jointime = (tic_t)luaL_checkinteger(L, 3);
-		break;
+		return NOSET;
 	case player_spectatorreentry:
 		plr->spectatorreentry = (tic_t)luaL_checkinteger(L, 3);
 		break;

@@ -82,6 +82,7 @@ boolean (*I_NetOpenSocket)(void) = NULL;
 boolean (*I_Ban) (INT32 node) = NULL;
 void (*I_ClearBans)(void) = NULL;
 const char *(*I_GetNodeAddress) (INT32 node) = NULL;
+UINT32 (*I_GetNodeAddressInt) (INT32 node) = NULL;
 const char *(*I_GetBanAddress) (size_t ban) = NULL;
 const char *(*I_GetBanMask) (size_t ban) = NULL;
 const char *(*I_GetBanUsername) (size_t ban) = NULL;
@@ -656,12 +657,31 @@ static const char *packettypename[NUMPACKETTYPE] =
 	"TEXTCMD2",
 	"TEXTCMD3",
 	"TEXTCMD4",
+
+	"TELLFILESNEEDED",
+	"MOREFILESNEEDED",
+
 	"CLIENTJOIN",
 	"NODETIMEOUT",
 
 	"LOGIN",
+	"LOGINCHALLENGE",
+	"LOGINAUTH",
 
-	"PING"
+	"PING",
+
+	"SERVERINFOUPDATE",
+
+	"SAY",
+
+	"REQMAPQUEUE",
+
+	"CLIENTKEY",
+	"SERVERCHALLENGE",
+
+	"CHALLENGEALL",
+	"RESPONSEALL",
+	"RESULTSALL"
 };
 
 static void DebugPrintpacket(const char *header)
@@ -844,6 +864,8 @@ static boolean ShouldDropPacket(void)
 }
 #endif
 
+// Unused because Eidolon correctly pointed out that +512b on every packet was scary.
+#ifdef SIGNGAMETRAFFIC
 boolean IsPacketSigned(int packettype)
 {
 	switch (packettype)
@@ -868,6 +890,7 @@ boolean IsPacketSigned(int packettype)
 			return false;
 	}
 }
+#endif
 
 //
 // HSendPacket
@@ -877,6 +900,7 @@ boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlen
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	doomcom->datalength = (INT16)(packetlength + BASEPACKETSIZE);
 
+#ifdef SIGNGAMETRAFFIC
 	if (IsPacketSigned(netbuffer->packettype))
 	{
 		int i;
@@ -889,11 +913,13 @@ boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlen
 		}
 
 #ifdef DEVELOP
-		if (cv_sigfail.value)
+		if (cv_badtraffic.value)
 		{
-			CONS_Alert(CONS_WARNING, "SIGFAIL enabled, scrubbing signature from HSendPacket\n");
+			CV_AddValue(&cv_badtraffic, -1);
+			CONS_Alert(CONS_WARNING, "cv_badtraffic enabled, scrubbing signature from HSendPacket\n");
 			memset(netbuffer->signature, 0, sizeof(netbuffer->signature));
 		}
+
 #endif
 	}
 	else
@@ -901,6 +927,7 @@ boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlen
 		//CONS_Printf("NOT signing PT_%d of length %d, it doesn't need to be\n", netbuffer->packettype, packetlength);
 		memset(netbuffer->signature, 0, sizeof(netbuffer->signature));
 	}
+#endif
 
 	if (node == 0) // Packet is to go back to us
 	{
