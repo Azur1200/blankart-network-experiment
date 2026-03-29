@@ -6541,6 +6541,8 @@ INT32 MR_StartGrandPrix(INT32 choice)
 	roundqueue.position = roundqueue.roundnum = 1;
 	roundqueue.netcommunicate = true; // relevant for future Online GP
 
+	multiplayer = true;
+
 	D_MapChange(
 		roundqueue.entries[0].mapnum + 1,
 		roundqueue.entries[0].gametype,
