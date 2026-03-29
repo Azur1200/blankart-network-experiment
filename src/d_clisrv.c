@@ -6036,7 +6036,6 @@ static void HandlePacketFromPlayer(SINT8 node)
 				if (targetplayer == -1)
 					continue;
 
-				CONS_Printf("receiving %s pk %s\n", GetPrettyRRID(lastChallengeAll, true), GetPrettyRRID(players[targetplayer].public_key, true));
 				if (crypto_eddsa_check(netbuffer->u.responseall.signature[responseplayer], players[targetplayer].public_key, lastChallengeAll, sizeof(lastChallengeAll)))
 				{
 					// Something scary can happen when multiple kicks that resolve to the same node are processed in quick succession.
