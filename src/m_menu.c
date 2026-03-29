@@ -1895,10 +1895,23 @@ void M_StartControlPanel(void)
 		M_EnterMenu(MN_MAPAUSE, true, 0);
 		M_SetItemOn(MN_MAPAUSE, "CONTINUE");
 	}
-	else if (!(netgame || multiplayer)) // Single Player
+	else if (grandprixinfo.gp) // Single Player
 	{
+		boolean retryallowed = false;
+		INT32 i;
+		for (i = 0; i <= splitscreen; i++)
+		{
+			if (G_GametypeUsesLives() && players[g_localplayers[i]].lives <= 1)
+				continue;
+			retryallowed = true;
+			break;
+		}
+
+		if (gamestate != GS_LEVEL)
+			retryallowed = false;
+
 		// intermission, so gray out stuff.
-		M_SetItemDisabled(MN_SPAUSE, "RETRY", gamestate != GS_LEVEL /*|| ultimatemode*/);
+		M_SetItemDisabled(MN_SPAUSE, "RETRY", !retryallowed /*|| ultimatemode*/);
 
 		M_EnterMenu(MN_SPAUSE, true, 0);
 		M_SetItemOn(MN_SPAUSE, "CONTINUE");
@@ -5587,7 +5600,7 @@ static void M_RetryResponse(INT32 ch)
 	if (ch != 'y' && ch != KEY_ENTER)
 		return;
 
-	if (netgame || multiplayer) // Should never happen!
+	if (netgame) // Should never happen!
 		return;
 
 	M_ClearMenus(true);

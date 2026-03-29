@@ -4154,7 +4154,7 @@ void G_FinishExitLevel(void)
 				// Back to the menu with you.
 				D_QuitNetGame();
 				CL_Reset();
-				M_StartControlPanel();
+				D_StartTitle();
 				return;
 			}
 		}
