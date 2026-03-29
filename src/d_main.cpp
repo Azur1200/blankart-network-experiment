@@ -183,8 +183,8 @@ INT32 eventhead, eventtail;
 boolean dedicated = false;
 
 // For identity negotiation with netgame servers
-uint8_t	public_key[MAXSPLITSCREENPLAYERS][PUBKEYLENGTH];
-uint8_t	secret_key[MAXSPLITSCREENPLAYERS][PRIVKEYLENGTH];
+uint8_t	g_public_key[MAXSPLITSCREENPLAYERS][PUBKEYLENGTH];
+uint8_t	g_secret_key[MAXSPLITSCREENPLAYERS][PRIVKEYLENGTH];
 
 boolean loaded_config = false;
 
@@ -1884,10 +1884,10 @@ void D_SRB2Main(void)
 	{
 		static uint8_t seed[32];
 		csprng(seed, 32);
-		crypto_eddsa_key_pair(secret_key[snum], public_key[snum], seed);
+		crypto_eddsa_key_pair(g_secret_key[snum], g_public_key[snum], seed);
 
-		int sk_size = sizeof(secret_key[snum]);
-		int pk_size = sizeof(public_key[snum]);
+		int sk_size = sizeof(g_secret_key[snum]);
+		int pk_size = sizeof(g_public_key[snum]);
 		int totalsize = sk_size + pk_size;
 
 		if (FIL_ReadFileOK(keyfile[snum]))
@@ -1896,14 +1896,14 @@ void D_SRB2Main(void)
 			UINT16 lengthRead = FIL_ReadFile(keyfile[snum], &readbuffer);
 			if (readbuffer == NULL || lengthRead != totalsize)
 				I_Error("Malformed keyfile %d", snum);
-			memcpy(secret_key[snum], readbuffer, sk_size);
-			memcpy(public_key[snum], readbuffer + sk_size, pk_size);
+			memcpy(g_secret_key[snum], readbuffer, sk_size);
+			memcpy(g_public_key[snum], readbuffer + sk_size, pk_size);
 		}
 		else
 		{
 			uint8_t *keybuffer = (uint8_t *)malloc(totalsize);
-			memcpy(keybuffer, secret_key[snum], sk_size);
-			memcpy(keybuffer + sk_size, public_key[snum], pk_size);
+			memcpy(keybuffer, g_secret_key[snum], sk_size);
+			memcpy(keybuffer + sk_size, g_public_key[snum], pk_size);
 			if (!FIL_WriteFile(keyfile[snum], keybuffer, totalsize))
 				I_Error("Couldn't open keyfile %d", snum);
 			free(keybuffer);

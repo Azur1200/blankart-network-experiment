@@ -1019,8 +1019,8 @@ static boolean CL_SendJoin(void)
 		uint8_t signature[SIGNATURELENGTH];
 
 		// If our keys are garbage (corrupted profile?), fail here instead of when the server boots us, so the player knows what's going on.
-		crypto_eddsa_sign(signature, secret_key[i], awaitingChallenge, sizeof(awaitingChallenge));
-		if (crypto_eddsa_check(signature, public_key[i], awaitingChallenge, sizeof(awaitingChallenge)) != 0)
+		crypto_eddsa_sign(signature, g_secret_key[i], awaitingChallenge, sizeof(awaitingChallenge));
+		if (crypto_eddsa_check(signature, g_public_key[i], awaitingChallenge, sizeof(awaitingChallenge)) != 0)
 			I_Error("Couldn't self-verify key associated with player %d.\nKey may be corrupted.\n", i); // I guess this is the most reasonable way to catch a malformed key.
 
 #ifdef DEVELOP
@@ -1050,7 +1050,7 @@ static boolean CL_SendKey(void)
 	memset(netbuffer->u.clientkey.key, 0, sizeof(((clientkey_pak *)0)->key));
 	for (i = 0; i <= splitscreen; i++)
 	{
-		memcpy(netbuffer->u.clientkey.key[i], public_key[i], 32);
+		memcpy(netbuffer->u.clientkey.key[i], g_public_key[i], 32);
 	}
 	return HSendPacket(servernode, false, 0, sizeof (clientkey_pak) );
 }
@@ -4479,8 +4479,8 @@ boolean SV_SpawnServer(void)
 		UINT8 *availabilitiesbuffer = R_GetSkinAvailabilities();
 		SINT8 node = 0;
 		for (; node < MAXNETNODES; node++)
-			result |= SV_AddWaitingPlayers(node, availabilitiesbuffer, cv_playername[0].zstring, public_key[0], cv_playername[1].zstring, public_key[1],
-			cv_playername[2].zstring, public_key[2], cv_playername[3].zstring, public_key[3]);
+			result |= SV_AddWaitingPlayers(node, availabilitiesbuffer, cv_playername[0].zstring, g_public_key[0], cv_playername[1].zstring, g_public_key[1],
+			cv_playername[2].zstring, g_public_key[2], cv_playername[3].zstring, g_public_key[3]);
 
 	}
 	return result;
@@ -4702,7 +4702,7 @@ static void HandleConnect(SINT8 node)
 
 			if (node == 0) // Hey, that's us. We're always allowed to do what we want.
 			{
-				memcpy(lastReceivedKey[node][i], public_key[i], sizeof(lastReceivedKey[node][i]));
+				memcpy(lastReceivedKey[node][i], g_public_key[i], sizeof(lastReceivedKey[node][i]));
 			}
 			else // Remote player, gotta check their signature.
 			{
@@ -6009,8 +6009,8 @@ static void HandlePacketFromPlayer(SINT8 node)
 			{
 				uint8_t signature[SIGNATURELENGTH];
 
-				crypto_eddsa_sign(signature, secret_key[challengeplayers], lastChallengeAll, sizeof(lastChallengeAll));
-				if (crypto_eddsa_check(signature, public_key[challengeplayers], lastChallengeAll, sizeof(lastChallengeAll)) != 0)
+				crypto_eddsa_sign(signature, g_secret_key[challengeplayers], lastChallengeAll, sizeof(lastChallengeAll));
+				if (crypto_eddsa_check(signature, g_public_key[challengeplayers], lastChallengeAll, sizeof(lastChallengeAll)) != 0)
 						I_Error("Couldn't self-verify key associated with player %d.\nKey may be corrupted.", challengeplayers);
 
 #ifdef DEVELOP
