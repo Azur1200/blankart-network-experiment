@@ -16,6 +16,7 @@
 #include "hu_stuff.h"
 #include "font.h"
 
+#include "k_grandprix.h"
 #include "m_menu.h" // gametype_cons_t
 #include "m_cond.h" // emblems
 #include "m_misc.h" // word jumping
@@ -2547,7 +2548,7 @@ static void HU_DrawRankings(void)
 #endif
 	}
 
-	if (cv_newtabranking.value)
+	if (!grandprixinfo.gp && cv_newtabranking.value)
 	{
 		INT32 xoffset = K_DrawNeoTabRankings(0, 33, tab, scorelines, whiteplayer, hilicol, true);
 		K_DrawServerDescrption(xoffset+10, 33);
