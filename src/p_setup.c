@@ -9823,6 +9823,10 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 		ST_LoadGraphics();
 		ST_ReloadSkinFaceGraphics();
 
+		// reload minimap stuff while were in the map since it may get replaced otherwise
+		if (gamestate == GS_LEVEL)
+			P_InitMinimapInfo();
+
 		if (!partadd_important)
 			partadd_stage = -1; // everything done
 		else if (fullsetup)
