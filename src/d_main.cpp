@@ -1879,37 +1879,24 @@ void D_SRB2Main(void)
 	ACS_Init();
 	CON_SetLoadingProgress(LOADED_ACSINIT);
 
-	// Read / create RRID key files in local preference directory
-	// /home/username/.local/share/Team BlanKart/BlanKart/ on *NIX
-	// C:\Users\username\AppData\Roaming\Team BlanKart\BlanKart\ for Windows
-	// otherwise uses srb2home
-	static char keyfile[MAXSPLITSCREENPLAYERS][16] = {"bkid1.dat", "bkid2.dat", "bkid3.dat", "bkid4.dat"};
-	char *storefolder = NULL;
+	// Read / create RRID key files in srb2home/private_keys
+	// About as obvious as I can make this say DONT SHARE.
+#define RRIDWARNINGNAME "DO_NOT_SHARE_THESE\0"
+#define RRIDWARNINGMESSAGE "This folder contains keys that should not be shared.\nThe base game and mods may use these to keep track of gamedata.\0"
+	static char keyfile[MAXSPLITSCREENPLAYERS][10] = {"bkid1.dat", "bkid2.dat", "bkid3.dat", "bkid4.dat"};
 	INT32 snum;
 
 	for (snum = 0; snum < MAXSPLITSCREENPLAYERS; snum++)
 	{
-#ifdef HAVE_SDL
+		char base_path[MAX_WADPATH];
+		char file[MAX_WADPATH];
 
-		if (!M_CheckParm("-rridinhome"))
-		{
-			char *prefpath = SDL_GetPrefPath("Team BlanKart", "BlanKart");
-			storefolder = va("%s%s", prefpath, keyfile[snum]);
-			if (prefpath != NULL)
-				SDL_free(prefpath);
-		}
+		strcpy(base_path, srb2home);
+		strcat(base_path, PATHSEP "private_keys" PATHSEP);
+		M_MkdirEach(base_path, M_PathParts(base_path) - 2, 0755);
 
-		if (storefolder)
-		{
-			;
-		}
-		else
-#endif
-		{
-			// Strange platform that doesn't have UNIX folders or Windows Appdata...
-			// Write to the srb2 folder instead...
-			storefolder = va(pandf, srb2home, keyfile[snum]);
-		}
+		strcpy(file, base_path);
+		strcat(file, keyfile[snum]);
 
 		static uint8_t seed[32];
 		csprng(seed, 32);
@@ -1919,10 +1906,10 @@ void D_SRB2Main(void)
 		int pk_size = sizeof(g_public_key[snum]);
 		int totalsize = sk_size + pk_size;
 
-		if (FIL_ReadFileOK(storefolder))
+		if (FIL_ReadFileOK(file))
 		{
 			UINT8 *readbuffer = NULL;
-			UINT16 lengthRead = FIL_ReadFile(storefolder, &readbuffer);
+			UINT16 lengthRead = FIL_ReadFile(file, &readbuffer);
 			if (readbuffer == NULL || lengthRead != totalsize)
 				I_Error("Malformed keyfile %d", snum);
 			memcpy(g_secret_key[snum], readbuffer, sk_size);
@@ -1933,11 +1920,15 @@ void D_SRB2Main(void)
 			uint8_t *keybuffer = (uint8_t *)malloc(totalsize);
 			memcpy(keybuffer, g_secret_key[snum], sk_size);
 			memcpy(keybuffer + sk_size, g_public_key[snum], pk_size);
-			if (!FIL_WriteFile(storefolder, keybuffer, totalsize))
-				I_Error("Couldn't open keyfile %d", snum);
+			if (!FIL_WriteFile(file, keybuffer, totalsize))
+				I_Error("Couldn't open key file %d", snum);
+			if (!FIL_WriteFile(va("%s%s",base_path , RRIDWARNINGNAME), RRIDWARNINGMESSAGE, strlen(RRIDWARNINGMESSAGE)))
+				I_Error("Failed to create RRID warning file.");
 			free(keybuffer);
 		}
 	}
+#undef RRIDWARNINGNAME
+#undef RRIDWARNINGMESSAGE
 
 	//------------------------------------------------ COMMAND LINE PARAMS
 
