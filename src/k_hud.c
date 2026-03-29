@@ -5558,7 +5558,7 @@ static void K_drawInput(void)
 		patch_t *shadowPic = kp_inputwheel_shadow;
 
 		INT16 turning = encoremode ? -stplyr->cmd.turning : stplyr->cmd.turning;
-		SINT8 tilt =  encoremode ? -stplyr->cmd.tilt : stplyr->cmd.tilt;
+		SINT8 tilt =  stplyr->cmd.tilt;
 		angle_t rotate = FixedAngle(60 * FixedDiv(abs(turning), 1024) * intsign(turning));
 		UINT8 *colormap;
 
