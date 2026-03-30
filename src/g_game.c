@@ -3583,7 +3583,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		}
 	}
 
-	if (betweenmaps)
+	if (betweenmaps && !(p->jointime <= 1))
 		return;
 
 	if (leveltime < starttime)

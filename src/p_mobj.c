@@ -12385,7 +12385,6 @@ void P_RespawnSpecials(void)
 //
 void P_SpawnPlayer(INT32 playernum)
 {
-	UINT8 i;
 	player_t *p = &players[playernum];
 	mobj_t *mobj;
 
