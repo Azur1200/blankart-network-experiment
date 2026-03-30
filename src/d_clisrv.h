@@ -564,6 +564,7 @@ extern boolean expectChallenge;
 void Command_Ping_f(void);
 extern tic_t connectiontimeout;
 extern tic_t jointimeout;
+extern tic_t freezetimeout[MAXNETNODES];
 extern UINT16 pingmeasurecount;
 extern UINT32 realpingtable[MAXPLAYERS];
 extern UINT32 playerpingtable[MAXPLAYERS];
@@ -758,6 +759,8 @@ void SendServerNotice(SINT8 target, char *message);
 #define CHALLENGEALL_KICKUNRESPONSIVE (TICRATE*12)
 #define CHALLENGEALL_SENDRESULTS (TICRATE*14)
 #define CHALLENGEALL_CLIENTCUTOFF (TICRATE*16)
+
+extern uint8_t awaitingChallenge[CHALLENGELENGTH]; // The message the server asked our client to sign when joining;
 
 #ifdef __cplusplus
 } // extern "C"

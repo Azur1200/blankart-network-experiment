@@ -119,7 +119,7 @@ tic_t jointimeout = (3*TICRATE);
 static boolean sendingsavegame[MAXNETNODES]; // Are we sending the savegame?
 static boolean resendingsavegame[MAXNETNODES]; // Are we resending the savegame?
 static tic_t savegameresendcooldown[MAXNETNODES]; // How long before we can resend again?
-static tic_t freezetimeout[MAXNETNODES]; // Until when can this node freeze the server before getting a timeout?
+tic_t freezetimeout[MAXNETNODES]; // Until when can this node freeze the server before getting a timeout?
 
 // Incremented by cv_joindelay when a client joins, decremented each tic.
 // If higher than cv_joindelay * 2 (3 joins in a short timespan), joins are temporarily disabled.
@@ -5796,6 +5796,7 @@ static void PT_ReqMapQueue(int node)
 	SendNetXCmd(XD_MAPQUEUE, buf, buf_p - buf);
 }
 
+
 /** Handles a packet received from a node that isn't in game
   *
   * \param node The packet sender
@@ -5812,43 +5813,23 @@ static void HandlePacketFromAwayNode(SINT8 node)
 
 	switch (netbuffer->packettype)
 	{
-		case PT_ASKINFOVIAMS   : PT_AskInfoViaMS   (node    ); break;
-		case PT_TELLFILESNEEDED: PT_TellFilesNeeded(node    ); break;
-		case PT_MOREFILESNEEDED: PT_MoreFilesNeeded(node    ); break;
-		case PT_ASKINFO        : PT_AskInfo        (node    ); break;
-		case PT_SERVERREFUSE   : PT_ServerRefuse   (node    ); break;
-		case PT_SERVERCFG      : PT_ServerCFG      (node    ); break;
-		case PT_FILEFRAGMENT   : PT_FileFragment   (node, -1); break;
-		case PT_FILEACK        : PT_FileAck        (node    ); break;
-		case PT_FILERECEIVED   : PT_FileReceived   (node    ); break;
-		case PT_REQUESTFILE    : PT_RequestFile    (node    ); break;
-		case PT_NODETIMEOUT    : PT_ClientQuit     (node, -1); break;
-		case PT_CLIENTQUIT     : PT_ClientQuit     (node, -1); break;
-		case PT_SERVERTICS     : PT_ServerTics     (node, -1); break;
-		case PT_CLIENTCMD      :                               break; // This is not an "unknown packet"
-		case PT_PLAYERINFO	   : HandlePlayerInfo  (node    ); break;
-		case PT_CLIENTKEY:
-			if (server)
-			{
-				PT_ClientKey(node);
-
-				// Client's not in the server yet, but we still need to lock up the node.
-				// Otherwise, someone else could request a challenge on the same node and trash it.
-				nodeneedsauth[node] = true;
-				freezetimeout[node] = I_GetTime() + jointimeout;
-			}
-			break;
-		case PT_SERVERCHALLENGE:
-			if (server && serverrunning && node != servernode)
-			{
-				Net_CloseConnection(node);
-				break;
-			}
-			if (cl_mode != CL_WAITCHALLENGE)
-				break;
-			memcpy(awaitingChallenge, netbuffer->u.serverchallenge.secret, sizeof(awaitingChallenge));
-			cl_mode = CL_ASKJOIN;
-			break;
+		case PT_ASKINFOVIAMS   : PT_AskInfoViaMS   (node    );      break;
+		case PT_TELLFILESNEEDED: PT_TellFilesNeeded(node    );      break;
+		case PT_MOREFILESNEEDED: PT_MoreFilesNeeded(node    );      break;
+		case PT_ASKINFO        : PT_AskInfo        (node    );      break;
+		case PT_SERVERREFUSE   : PT_ServerRefuse   (node    );      break;
+		case PT_SERVERCFG      : PT_ServerCFG      (node    );      break;
+		case PT_FILEFRAGMENT   : PT_FileFragment   (node, -1);      break;
+		case PT_FILEACK        : PT_FileAck        (node    );      break;
+		case PT_FILERECEIVED   : PT_FileReceived   (node    );      break;
+		case PT_REQUESTFILE    : PT_RequestFile    (node    );      break;
+		case PT_NODETIMEOUT    : PT_ClientQuit     (node, -1);      break;
+		case PT_CLIENTQUIT     : PT_ClientQuit     (node, -1);      break;
+		case PT_SERVERTICS     : PT_ServerTics     (node, -1);      break;
+		case PT_CLIENTCMD      :                                    break; // This is not an "unknown packet"
+		case PT_PLAYERINFO     : HandlePlayerInfo  (node    );      break;
+		case PT_CLIENTKEY      : PT_ClientKey      (node    );      break;
+		case PT_SERVERCHALLENGE: PT_ServerChallenge(node,&cl_mode); break;
 
 		default:
 			DEBFILE(va("unknown packet received (%d) from unknown host\n",netbuffer->packettype));
@@ -5867,6 +5848,137 @@ static char NodeToSplitPlayer(int node, int split)
 	else if (split == 3)
 		return nodetoplayer4[node];
 	return -1;
+}
+
+static void PT_ChallengeAll(SINT8 node)
+{
+	if (demo.playback || node != servernode) // SERVER should still respond to this to prove its own identity, just not from clients.
+		return;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	int challengeplayers;
+
+	memcpy(lastChallengeAll, netbuffer->u.challengeall.secret, sizeof(lastChallengeAll));
+
+	shouldsign_t safe = ShouldSignChallenge(lastChallengeAll);
+	if (safe != SIGN_OK)
+	{
+		if (safe == SIGN_BADIP)
+			HandleSigfail("External server sent the wrong IP");
+		else if (safe == SIGN_BADTIME)
+			HandleSigfail("Bad timestamp - is your time set correctly?");
+		else
+			HandleSigfail("Unknown auth error - contact a developer");
+		return;
+	}
+
+	netbuffer->packettype = PT_RESPONSEALL;
+
+	#ifdef DEVELOP
+	if (cv_noresponse.value)
+	{
+		CV_AddValue(&cv_noresponse, -1);
+		CONS_Alert(CONS_WARNING, "cv_noresponse enabled, not sending PT_RESPONSEALL\n");
+		return;
+	}
+	#endif
+
+	// Don't leak uninitialized memory.
+	memset(&netbuffer->u.responseall, 0, sizeof(netbuffer->u.responseall));
+
+	for (challengeplayers = 0; challengeplayers <= splitscreen; challengeplayers++)
+	{
+		uint8_t signature[SIGNATURELENGTH];
+
+		crypto_eddsa_sign(signature, g_secret_key[challengeplayers], lastChallengeAll, sizeof(lastChallengeAll));
+		if (crypto_eddsa_check(signature, g_public_key[challengeplayers], lastChallengeAll, sizeof(lastChallengeAll)) != 0)
+			I_Error("Couldn't self-verify key associated with player %d.\nKey may be corrupted.", challengeplayers);
+
+		#ifdef DEVELOP
+		if (cv_badresponse.value)
+		{
+			CV_AddValue(&cv_badresponse, -1);
+			CONS_Alert(CONS_WARNING, "cv_badresponse enabled, scrubbing signature from PT_RESPONSEALL\n");
+			memset(signature, 0, sizeof(signature));
+		}
+		#endif
+
+		memcpy(netbuffer->u.responseall.signature[challengeplayers], signature, sizeof(signature));
+	}
+
+	HSendPacket(servernode, true, 0, sizeof(netbuffer->u.responseall));
+}
+
+static void PT_ResponseAll(SINT8 node)
+{
+	if (demo.playback || client)
+		return;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	int responseplayer;
+	for (responseplayer = 0; responseplayer < MAXSPLITSCREENPLAYERS; responseplayer++)
+	{
+		int targetplayer = NodeToSplitPlayer(node, responseplayer);
+		if (targetplayer == -1)
+			continue;
+
+		if (crypto_eddsa_check(netbuffer->u.responseall.signature[responseplayer], players[targetplayer].public_key, lastChallengeAll, sizeof(lastChallengeAll)))
+		{
+			// Something scary can happen when multiple kicks that resolve to the same node are processed in quick succession.
+			// Sometimes, a kick will still be left to process after the player's been disposed, and that causes the kick to resolve on the server instead!
+			// This sucks, so we check for a stale/misfiring kick beforehand.
+			if (playernode[targetplayer] != 0)
+				SendKick(targetplayer, KICK_MSG_SIGFAIL);
+			return;
+		}
+		else
+		{
+			memcpy(lastReceivedSignature[targetplayer], netbuffer->u.responseall.signature[responseplayer], sizeof(lastReceivedSignature[targetplayer]));
+		}
+	}
+}
+
+static void PT_ResultsAll(SINT8 node)
+{
+	if (demo.playback || server || node != servernode || !expectChallenge)
+		return;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	int resultsplayer;
+	uint8_t allZero[PUBKEYLENGTH];
+	memset(allZero, 0, PUBKEYLENGTH);
+
+	for (resultsplayer = 0; resultsplayer < MAXPLAYERS; resultsplayer++)
+	{
+		if (!playeringame[resultsplayer])
+		{
+			continue;
+		}
+		else if (memcmp(knownWhenChallenged[resultsplayer], allZero, PUBKEYLENGTH) == 0)
+		{
+			// Wasn't here for the challenge.
+			continue;
+		}
+		else if (memcmp(knownWhenChallenged[resultsplayer], players[resultsplayer].public_key, sizeof(knownWhenChallenged[resultsplayer])) != 0)
+		{
+			// A player left after the challenge process started, and someone else took their place.
+			// That means they haven't received a challenge either.
+			continue;
+		}
+		else
+		{
+			if (crypto_eddsa_check(netbuffer->u.resultsall.signature[resultsplayer],
+				knownWhenChallenged[resultsplayer], lastChallengeAll, sizeof(lastChallengeAll)))
+			{
+				CONS_Alert(CONS_WARNING, "PT_RESULTSALL had invalid signature %s for node %d player %d split %d, something doesn't add up!\n",
+						GetPrettyRRID(netbuffer->u.resultsall.signature[resultsplayer], true), playernode[resultsplayer], resultsplayer, players[resultsplayer].splitscreenindex);
+				HandleSigfail("Server sent invalid client signature.");
+				return;
+			}
+		}
+	}
+	csprng(lastChallengeAll, sizeof(lastChallengeAll));
+	expectChallenge = false;
 }
 
 /** Handles a packet received from a node that is in game
@@ -5971,128 +6083,10 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_WILLRESENDGAMESTATE: PT_WillResendGamestate(node            ); break;
 		case PT_SENDINGLUAFILE     : PT_SendingLuaFile     (node            ); break;
 		case PT_SERVERCFG          :                                           break;
-		case PT_CHALLENGEALL: ;
-			if (demo.playback || node != servernode) // SERVER should still respond to this to prove its own identity, just not from clients.
-				break;
-
-			int challengeplayers;
-
-			memcpy(lastChallengeAll, netbuffer->u.challengeall.secret, sizeof(lastChallengeAll));
-
-			shouldsign_t safe = ShouldSignChallenge(lastChallengeAll);
-			if (safe != SIGN_OK)
-			{
-				if (safe == SIGN_BADIP)
-					HandleSigfail("External server sent the wrong IP");
-				else if (safe == SIGN_BADTIME)
-					HandleSigfail("Bad timestamp - is your time set correctly?");
-				else
-					HandleSigfail("Unknown auth error - contact a developer");
-				break;
-			}
-
-			netbuffer->packettype = PT_RESPONSEALL;
-
-#ifdef DEVELOP
-			if (cv_noresponse.value)
-			{
-				CV_AddValue(&cv_noresponse, -1);
-				CONS_Alert(CONS_WARNING, "cv_noresponse enabled, not sending PT_RESPONSEALL\n");
-				break;
-			}
-#endif
-
-			// Don't leak uninitialized memory.
-			memset(&netbuffer->u.responseall, 0, sizeof(netbuffer->u.responseall));
-
-			for (challengeplayers = 0; challengeplayers <= splitscreen; challengeplayers++)
-			{
-				uint8_t signature[SIGNATURELENGTH];
-
-				crypto_eddsa_sign(signature, g_secret_key[challengeplayers], lastChallengeAll, sizeof(lastChallengeAll));
-				if (crypto_eddsa_check(signature, g_public_key[challengeplayers], lastChallengeAll, sizeof(lastChallengeAll)) != 0)
-						I_Error("Couldn't self-verify key associated with player %d.\nKey may be corrupted.", challengeplayers);
-
-#ifdef DEVELOP
-				if (cv_badresponse.value)
-				{
-					CV_AddValue(&cv_badresponse, -1);
-					CONS_Alert(CONS_WARNING, "cv_badresponse enabled, scrubbing signature from PT_RESPONSEALL\n");
-					memset(signature, 0, sizeof(signature));
-				}
-#endif
-
-				memcpy(netbuffer->u.responseall.signature[challengeplayers], signature, sizeof(signature));
-			}
-
-			HSendPacket(servernode, true, 0, sizeof(netbuffer->u.responseall));
-			break;
-		case PT_RESPONSEALL:
-			if (demo.playback || client)
-				break;
-
-			int responseplayer;
-			for (responseplayer = 0; responseplayer < MAXSPLITSCREENPLAYERS; responseplayer++)
-			{
-				int targetplayer = NodeToSplitPlayer(node, responseplayer);
-				if (targetplayer == -1)
-					continue;
-
-				if (crypto_eddsa_check(netbuffer->u.responseall.signature[responseplayer], players[targetplayer].public_key, lastChallengeAll, sizeof(lastChallengeAll)))
-				{
-					// Something scary can happen when multiple kicks that resolve to the same node are processed in quick succession.
-					// Sometimes, a kick will still be left to process after the player's been disposed, and that causes the kick to resolve on the server instead!
-					// This sucks, so we check for a stale/misfiring kick beforehand.
-					if (playernode[targetplayer] != 0)
-						SendKick(targetplayer, KICK_MSG_SIGFAIL);
-					break;
-				}
-				else
-				{
-					memcpy(lastReceivedSignature[targetplayer], netbuffer->u.responseall.signature[responseplayer], sizeof(lastReceivedSignature[targetplayer]));
-				}
-			}
-			break;
-		case PT_RESULTSALL:
-			if (demo.playback || server || node != servernode || !expectChallenge)
-				break;
-
-			int resultsplayer;
-			uint8_t allZero[PUBKEYLENGTH];
-			memset(allZero, 0, sizeof(PUBKEYLENGTH));
-
-			for (resultsplayer = 0; resultsplayer < MAXPLAYERS; resultsplayer++)
-			{
-				if (!playeringame[resultsplayer])
-				{
-					continue;
-				}
-				else if (memcmp(knownWhenChallenged[resultsplayer], allZero, sizeof(PUBKEYLENGTH)) == 0)
-				{
-					// Wasn't here for the challenge.
-					continue;
-				}
-				else if (memcmp(knownWhenChallenged[resultsplayer], players[resultsplayer].public_key, sizeof(knownWhenChallenged[resultsplayer])) != 0)
-				{
-					// A player left after the challenge process started, and someone else took their place.
-					// That means they haven't received a challenge either.
-					continue;
-				}
-				else
-				{
-					if (crypto_eddsa_check(netbuffer->u.resultsall.signature[resultsplayer],
-						knownWhenChallenged[resultsplayer], lastChallengeAll, sizeof(lastChallengeAll)))
-					{
-						CONS_Alert(CONS_WARNING, "PT_RESULTSALL had invalid signature %s for node %d player %d split %d, something doesn't add up!\n",
-							GetPrettyRRID(netbuffer->u.resultsall.signature[resultsplayer], true), playernode[resultsplayer], resultsplayer, players[resultsplayer].splitscreenindex);
-						HandleSigfail("Server sent invalid client signature.");
-						break;
-					}
-				}
-			}
-			csprng(lastChallengeAll, sizeof(lastChallengeAll));
-			expectChallenge = false;
-			break;
+		// CHALLENGE
+		case PT_CHALLENGEALL       : PT_ChallengeAll       (node            ); break;
+		case PT_RESPONSEALL        : PT_ResponseAll        (node            ); break;
+		case PT_RESULTSALL         : PT_ResultsAll         (node            ); break;
 		default:
 			DEBFILE(va("UNKNOWN PACKET TYPE RECEIVED %d from host %d\n",
 				netbuffer->packettype, node));
@@ -7106,7 +7100,6 @@ static void UpdatePingTable(void)
 	}
 }
 
-// It's that time again! Send everyone a safe message to sign, so we can show off their signature and prove we're playing fair.
 // It's that time again! Send everyone a safe message to sign, so we can show off their signature and prove we're playing fair.
 static void SendChallenges(void)
 {

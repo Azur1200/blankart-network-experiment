@@ -118,6 +118,8 @@ void PT_RequestFile(INT32 node);
 
 void PT_ClientKey(INT32 node);
 
+void PT_ServerChallenge(INT32 node, cl_mode_t *cl_mode);
+
 typedef enum
 {
 	LFTNS_NONE,    // This node is not connected

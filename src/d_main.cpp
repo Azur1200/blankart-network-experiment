@@ -1881,8 +1881,8 @@ void D_SRB2Main(void)
 
 	// Read / create RRID key files in srb2home/private_keys
 	// About as obvious as I can make this say DONT SHARE.
-#define RRIDWARNINGNAME "DO_NOT_SHARE_THESE\0"
-#define RRIDWARNINGMESSAGE "This folder contains keys that should not be shared.\nThe base game and mods may use these to keep track of gamedata.\0"
+#define RRIDWARNINGNAME "DO_NOT_SHARE_THESE"
+#define RRIDWARNINGMESSAGE "This folder contains keys that should not be shared.\nThe base game and mods may use these to keep track of gamedata."
 	static char keyfile[MAXSPLITSCREENPLAYERS][10] = {"bkid1.dat", "bkid2.dat", "bkid3.dat", "bkid4.dat"};
 	INT32 snum;
 

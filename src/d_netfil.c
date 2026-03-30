@@ -1345,6 +1345,9 @@ void PT_FileReceived(SINT8 node)
 // Give them a challenge to sign in their PT_CLIENTJOIN.
 void PT_ClientKey(INT32 node)
 {
+	if (!server)
+		return;
+
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	clientkey_pak *packet = (void*)&netbuffer->u.clientkey;
 
@@ -1355,7 +1358,27 @@ void PT_ClientKey(INT32 node)
 
 	memcpy(&netbuffer->u.serverchallenge, lastSentChallenge[node], sizeof(serverchallenge_pak));
 	HSendPacket(node, false, 0, sizeof (serverchallenge_pak));
+
+	// Client's not in the server yet, but we still need to lock up the node.
+	// Otherwise, someone else could request a challenge on the same node and trash it.
+	nodeneedsauth[node] = true;
+	freezetimeout[node] = I_GetTime() + jointimeout;
 }
+
+void PT_ServerChallenge(INT32 node, cl_mode_t *cl_mode)
+{
+	if (server && serverrunning && node != servernode)
+	{
+		Net_CloseConnection(node);
+		return;
+	}
+	if (*cl_mode != CL_WAITCHALLENGE)
+		return;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	memcpy(awaitingChallenge, netbuffer->u.serverchallenge.secret, sizeof(awaitingChallenge));
+	*cl_mode = CL_ASKJOIN;
+}
+
 
 static void SendAckPacket(fileack_pak *packet, UINT8 fileid)
 {
