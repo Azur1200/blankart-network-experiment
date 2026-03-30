@@ -11857,10 +11857,14 @@ void K_KartAttractHomingAttack(player_t *player)
 		P_SetTarget(&mo->target, player->mo);
 		P_SetMobjState(mo, S_KLIT1);
 		mo->renderflags |= RF_ADD|RF_FULLBRIGHT|RF_TRANS50;
+		mo->color = SKINCOLOR_YELLOW;
+		mo->colorized = true;
 
 		mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
 		P_SetMobjState(mo, S_KSPARK1);
 		mo->renderflags |= RF_ADD|RF_FULLBRIGHT|RF_TRANS30;
+		mo->color = SKINCOLOR_YELLOW;
+		mo->colorized = true;
 
 		P_SpawnGhostMobj(player->mo);
 		
