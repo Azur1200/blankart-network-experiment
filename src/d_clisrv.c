@@ -11,6 +11,7 @@
 /// \brief SRB2 Network game communication and protocol, all OS independent parts.
 
 #include "d_clisrv.h"
+#include "doomdef.h"
 #include <time.h>
 #ifdef __GNUC__
 #include <unistd.h> //for unlink
@@ -5005,11 +5006,16 @@ static void PT_ServerRefuse(SINT8 node)
 			M_StartMessage(va("You have been %sfrom the server\n\nReason:\n%s",
 							  (reason[0] == 'B') ? "banned\n" : "temporarily\nkicked ",
 							  reason+2), NULL, MM_NOTHING);
+			CONS_Alert(CONS_NOTICE, "You have been %sfrom the server\n\nReason:\n%s",
+						 (reason[0] == 'B') ? "banned\n" : "temporarily\nkicked ",
+						 reason+2);
 		}
 		else
 		{
 			M_StartMessage(va(M_GetText("Server refuses connection\n\nReason:\n%s"),
 							  reason), NULL, MM_NOTHING);
+			CONS_Alert(CONS_NOTICE, "Server refuses connection\n\nReason:\n%s",
+						   reason);
 		}
 
 		free(reason);
