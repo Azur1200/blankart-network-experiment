@@ -1357,7 +1357,7 @@ void PT_ClientKey(INT32 node)
 	GenerateChallenge(lastSentChallenge[node]);
 
 	memcpy(&netbuffer->u.serverchallenge, lastSentChallenge[node], sizeof(serverchallenge_pak));
-	HSendPacket(node, false, 0, sizeof (serverchallenge_pak));
+	HSendPacket(node, true, 0, sizeof (serverchallenge_pak));
 
 	// Client's not in the server yet, but we still need to lock up the node.
 	// Otherwise, someone else could request a challenge on the same node and trash it.
