@@ -784,6 +784,14 @@ static void K_SetPlayerBumped(player_t *player, mobj_t *comparemobj)
 			// Play a distinct "crack!" noise to clue the player in.
 			S_StartSound(player->mo, sfx_s3k6e);
 		}
+
+		if (comparemobj->player != NULL && comparemobj->player->attractionattack)
+		{
+			comparemobj->player->attractionattack = 0;
+			comparemobj->player->attractionattack_hipower = 0;
+			comparemobj->player->attractionboost = 0;
+			comparemobj->player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
+		}
 	}
 	else if (pshield == KSHIELD_NONE)
 	{
@@ -5465,25 +5473,19 @@ void K_PopPlayerShield(player_t *player)
 	switch (shield)
 	{
 		case KSHIELD_THUNDER:
-			if (K_IsKartItemAlternate(KITEM_THUNDERSHIELD))
-			{
-				if (player->attractioncharge >= ATTRACTIONCHARGETIME)
-				{
-					K_DoThunderShield(player);
-				}
-				else
-				{
-					player->mo->momz += 4*mapobjectscale*P_MobjFlip(player->mo);
-					player->mo->z += player->mo->momz;
-				}
-			}
-			else
-			{
-				K_DoThunderShield(player);
-			}
+			K_DoThunderShield(player);
+			player->itemtype = KITEM_NONE;
+			player->itemamount = 0;
+			break;
+		case KSHIELD_ATTRACTION:
+			K_DoAttractionShield(player, false);
 			player->itemtype = KITEM_NONE;
 			player->itemamount = 0;
 			player->attractioncharge = 0;
+			player->attractionattack = 0;
+			player->attractionattack_hipower = 0;
+			player->attractionboost = 0;
+			player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
 			break;
 		case KSHIELD_BUBBLE:
 			K_BreakBubbleShield(player);
@@ -10842,6 +10844,7 @@ INT32 K_GetShieldFromPlayer(const player_t *player)
 	switch (player->shieldtracer->type)
 	{
 		case MT_THUNDERSHIELD: return KSHIELD_THUNDER;
+		case MT_ATTRACTIONSHIELD: return KSHIELD_ATTRACTION;
 		case MT_BUBBLESHIELD: return KSHIELD_BUBBLE;
 		case MT_FLAMESHIELD: return KSHIELD_FLAME;
 		default: return KSHIELD_NONE;
@@ -10852,7 +10855,10 @@ INT32 K_GetShieldFromItem(INT32 item)
 {
 	switch (item)
 	{
-		case KITEM_THUNDERSHIELD: return KSHIELD_THUNDER;
+		case KITEM_THUNDERSHIELD: 
+		{
+			return K_IsKartItemAlternate(KITEM_THUNDERSHIELD) ? KSHIELD_ATTRACTION : KSHIELD_THUNDER;
+		}
 		case KITEM_BUBBLESHIELD: return KSHIELD_BUBBLE;
 		case KITEM_FLAMESHIELD: return KSHIELD_FLAME;
 		default: return KSHIELD_NONE;

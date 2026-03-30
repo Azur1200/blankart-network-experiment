@@ -818,8 +818,7 @@ static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 static boolean K_StrongPlayerBump(const player_t *player)
 {
 	return ((player->invincibilitytimer)
-	    || (player->growshrinktimer > 0)
-		|| (player->attractionattack));
+	    || (player->growshrinktimer > 0));
 }
 
 boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
@@ -867,7 +866,11 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 	else if (t2->player->attractionattack)
 	{
 		// trolled
+		t2->player->attractioncharge = 0;
 		t2->player->attractionattack = 0;
+		t2->player->attractionattack_hipower = 0;
+		t2->player->attractionboost = 0;
+		t2->player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
 	}
 
 	S_StartSound(t1, sfx_s3k44);
@@ -1207,8 +1210,9 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	}
 
 	// Attraction Shield tackle damage
-	t1Condition = (t1->player->attractionattack && t1->player->attractionattack_hipower);
-	t2Condition = (t2->player->attractionattack && t2->player->attractionattack_hipower);
+	// players with Bubble Shield equipped are protected
+	t1Condition = (t1->player->attractionattack && t1->player->attractionattack_hipower && (K_GetShieldFromPlayer(t2->player) != KSHIELD_BUBBLE));
+	t2Condition = (t2->player->attractionattack && t2->player->attractionattack_hipower && (K_GetShieldFromPlayer(t1->player) != KSHIELD_BUBBLE));
 	if (t1Condition == true && t2Condition == false)
 	{
 		P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);

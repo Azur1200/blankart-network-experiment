@@ -2436,28 +2436,28 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		}
 		break;
 	case KITEM_THUNDERSHIELD:
-		if (K_GetShieldFromPlayer(player) != KSHIELD_THUNDER)
-		{
-			mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THUNDERSHIELD);
-			P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
-			P_SetTarget(&shield->target, player->mo);
-			P_SetTarget(&player->shieldtracer, shield);
-			S_StartSound(player->mo, sfx_s3k41);
-		}
-
 		if (K_IsKartItemAlternate(KITEM_THUNDERSHIELD))
 		{
+			if (K_GetShieldFromPlayer(player) != KSHIELD_ATTRACTION)
+			{
+				mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_ATTRACTIONSHIELD);
+				P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
+				P_SetTarget(&shield->target, player->mo);
+				P_SetTarget(&player->shieldtracer, shield);
+				S_StartSound(player->mo, sfx_attrsg);
+			}
+
 			if (!HOLDING_ITEM && NO_HYUDORO)
 			{
-				if (buttons & BT_ATTACK)
+				if (buttons & BT_ATTACK && 
+					((player->itemflags & IF_HOLDREADY) || player->attractioncharge > 0))
 				{
 					fixed_t effectscale = 75*player->mo->scale/100;
 
-					if (player->itemflags & IF_HOLDREADY)
+					if (player->attractioncharge == 0)
 					{
 						S_StartSound(player->mo, sfx_vwre);
 					}
-					player->itemflags &= ~IF_HOLDREADY;
 					
 					if (player->attractioncharge >= ATTRACTIONCHARGETIME)
 					{
@@ -2470,7 +2470,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 						{
 							S_StopSoundByID(player->mo, sfx_vwre);
 						}
-						player->itemflags |= (IF_SEEKING|IF_PASSIVESEEKING);
+						player->itemflags |= IF_SEEKING;
 						player->bananadrag += 4;
 					}
 					else
@@ -2537,13 +2537,30 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 						
 						player->itemflags |= (IF_SEEKING|IF_PASSIVESEEKING);
 					}
-					player->itemflags |= IF_HOLDREADY;
 					player->attractioncharge = 0;
+				}
+
+				if (buttons & BT_ATTACK || player->attractioncharge > 0)
+				{
+					player->itemflags &= ~IF_HOLDREADY;
+				}
+				else
+				{
+					player->itemflags |= IF_HOLDREADY;
 				}
 			}
 		}
 		else
 		{
+			if (K_GetShieldFromPlayer(player) != KSHIELD_THUNDER)
+			{
+				mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THUNDERSHIELD);
+				P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
+				P_SetTarget(&shield->target, player->mo);
+				P_SetTarget(&player->shieldtracer, shield);
+				S_StartSound(player->mo, sfx_s3k41);
+			}
+
 			if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 			{
 				K_DoThunderShield(player);

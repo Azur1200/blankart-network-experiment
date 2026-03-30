@@ -546,14 +546,14 @@ consvar_t cv_kartstacking_flame_accelboost = CVAR_INIT ("vanillaboost_flame_acce
 consvar_t cv_kartstacking_flame_handleboost = CVAR_INIT ("vanillaboost_flame_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_flame_stackable = CVAR_INIT ("vanillaboost_flame_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_attraction_speedboost_himin = CVAR_INIT ("vanillaboost_attraction_speedboost_himin", "0.5", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_attraction_speedboost_himax = CVAR_INIT ("vanillaboost_attraction_speedboost_himax", "0.6", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_speedboost_himin = CVAR_INIT ("vanillaboost_attraction_speedboost_himin", "0.60", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_speedboost_himax = CVAR_INIT ("vanillaboost_attraction_speedboost_himax", "0.75", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_attraction_speedboost_normmin = CVAR_INIT ("vanillaboost_attraction_speedboost_normmin", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_attraction_speedboost_normmax = CVAR_INIT ("vanillaboost_attraction_speedboost_normmax", "0.3", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_attraction_accelboost_hi = CVAR_INIT ("vanillaboost_attraction_accelboost_hi", "10.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_attraction_accelboost_norm = CVAR_INIT ("vanillaboost_attraction_accelboost_norm", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_attraction_handleboost = CVAR_INIT ("vanillaboost_sttraction_handleboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_attraction_stackable = CVAR_INIT ("vanillaboost_sttraction_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
+consvar_t cv_kartstacking_attraction_accelboost_hi = CVAR_INIT ("vanillaboost_attraction_accelboost_hi", "16.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_accelboost_norm = CVAR_INIT ("vanillaboost_attraction_accelboost_norm", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_handleboost = CVAR_INIT ("vanillaboost_attraction_handleboost", "0.50", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_stackable = CVAR_INIT ("vanillaboost_attraction_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_start_speedboost = CVAR_INIT ("vanillaboost_start_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_start_accelboost = CVAR_INIT ("vanillaboost_start_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
