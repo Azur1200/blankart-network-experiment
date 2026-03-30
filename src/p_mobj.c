@@ -9224,6 +9224,27 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		break;
 	}
+	case MT_ATTRACTIONSHIELD:
+	{
+		if (!mobj->target || !mobj->target->health || !mobj->target->player
+			|| K_GetShieldFromPlayer(mobj->target->player) != KSHIELD_ATTRACTION)
+		{
+			P_RemoveMobj(mobj);
+			return false;
+		}
+		P_SetScale(mobj, (mobj->destscale = (5*mobj->target->scale)>>2));
+
+		// Don't sloperoll Shields
+		mobj->pitch = 0;
+		mobj->roll = 0;
+
+		mobj->slopepitch = 0;
+		mobj->sloperoll = 0;
+
+		P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
+
+		break;
+	}
 	case MT_BUBBLESHIELD:
 	{
 		const player_t *player = P_MobjWasRemoved(mobj->target) ? NULL : mobj->target->player;
@@ -11021,6 +11042,7 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_THUNDERSHIELD:
 		case MT_BUBBLESHIELD:
 		case MT_FLAMESHIELD:
+		case MT_ATTRACTIONSHIELD:
 		case MT_BLUEFRUIT:
 		case MT_ORANGEFRUIT:
 		case MT_REDFRUIT:
