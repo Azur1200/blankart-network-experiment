@@ -261,10 +261,6 @@ struct serverconfig_pak
 	UINT8 maxplayer;
 	boolean allownewplayer;
 	boolean discordinvites;
-
-	char server_name[MAXSERVERNAME];
-	char server_contact[MAXSERVERCONTACT];
-	char server_description[MAXSERVERDESCRIPTION];
 } ATTRPACK;
 
 struct filetx_pak

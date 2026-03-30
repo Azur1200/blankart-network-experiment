@@ -1325,10 +1325,6 @@ static boolean SV_SendServerConfig(INT32 node)
 
 	memcpy(netbuffer->u.servercfg.server_context, server_context, 8);
 
-	strncpy(netbuffer->u.servercfg.server_name, cv_servername.string, MAXSERVERNAME);
-	strncpy(netbuffer->u.servercfg.server_contact, cv_server_contact.string, MAXSERVERCONTACT);
-	strncpy(netbuffer->u.servercfg.server_description, connectedserverdescription, MAXSERVERDESCRIPTION);
-
 	{
 		const size_t len = sizeof (serverconfig_pak);
 
@@ -4776,6 +4772,8 @@ static void HandleConnect(SINT8 node)
 				/// \todo fix this !!!
 				return; // restart the while
 			}
+
+			ServerInfoUpdateSend();
 			//if (gamestate != GS_LEVEL) // GS_INTERMISSION, etc?
 			//	SV_SendPlayerConfigs(node); // send bare minimum player info
 			G_SetGamestate(backupstate);
@@ -5046,10 +5044,6 @@ static void PT_ServerCFG(SINT8 node)
 		connectedtodedicated = netbuffer->u.servercfg.dedicated;
 
 		memcpy(server_context, netbuffer->u.servercfg.server_context, 8);
-
-		CopyCaretColors(connectedservername, netbuffer->u.servercfg.server_name, MAXSERVERNAME);
-		CopyCaretColors(connectedservercontact, netbuffer->u.servercfg.server_contact, MAXSERVERCONTACT);
-		strncpy(connectedserverdescription, netbuffer->u.servercfg.server_description, MAXSERVERDESCRIPTION);
 	}
 
 #ifdef HAVE_DISCORDRPC
