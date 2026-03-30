@@ -451,30 +451,30 @@ struct doomdata_t
 	UINT8 packetindex;
 	union
 	{
-		clientcmd_pak clientpak;
-		client2cmd_pak client2pak;
-		client3cmd_pak client3pak;
-		client4cmd_pak client4pak;
-		servertics_pak serverpak;
-		serverconfig_pak servercfg;
-		UINT8 textcmd[MAXTEXTCMD+1];
-		char filetxpak[sizeof (filetx_pak)];
-		char fileack[sizeof (fileack_pak)];
-		UINT8 filereceived;
-		clientconfig_pak clientcfg;
-		char salt[9];
-		UINT8 sha256sum[32];
-		serverinfo_pak serverinfo;
-		serverrefuse_pak serverrefuse;
-		serverinfoupdate_pak serverinfoupdate;
-		askinfo_pak askinfo;
-		msaskinfo_pak msaskinfo;
-		plrinfo playerinfo[MAXPLAYERINFO];
-		INT32 filesneedednum;
-		filesneededconfig_pak filesneededcfg;
-		netinfo_pak netinfo;
-		say_pak say;
-		reqmapqueue_pak reqmapqueue;			// Formerly XD_REQMAPQUEUE
+		clientcmd_pak clientpak; // 96 bytes
+		client2cmd_pak client2pak; // 110 bytes
+		client3cmd_pak client3pak; // 124 bytes
+		client4cmd_pak client4pak; // 138 bytes
+		servertics_pak serverpak; // 633 bytes
+		serverconfig_pak servercfg; // 33 bytes
+		UINT8 textcmd[MAXTEXTCMD+1]; // 257 bytes
+		char filetxpak[sizeof (filetx_pak)]; // 12 bytes
+		char fileack[sizeof (fileack_pak)]; // 3 bytes
+		UINT8 filereceived; // 1 byte
+		clientconfig_pak clientcfg; // 378 bytes
+		char salt[9]; // 9 bytes
+		UINT8 sha256sum[32]; // 32 bytes
+		serverinfo_pak serverinfo; // 1311 bytes
+		serverrefuse_pak serverrefuse; // 255 bytes
+		serverinfoupdate_pak serverinfoupdate; // 1406 bytes
+		askinfo_pak askinfo; // 5 bytes
+		msaskinfo_pak msaskinfo; // 26 bytes
+		plrinfo playerinfo[MAXPLAYERINFO]; // 1056 bytes
+		INT32 filesneedednum; // 4 bytes
+		filesneededconfig_pak filesneededcfg; // 921 bytes
+		netinfo_pak netinfo; // 396 bytes
+		say_pak say; // 227 bytes
+		reqmapqueue_pak reqmapqueue;			// 6 bytes. Formerly XD_REQMAPQUEUE
 		clientkey_pak clientkey;				// 32 bytes
 		serverchallenge_pak serverchallenge;	// 256 bytes
 		challengeall_pak challengeall;			// 256 bytes
