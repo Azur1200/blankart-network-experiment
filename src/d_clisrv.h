@@ -479,7 +479,7 @@ struct doomdata_t
 		serverchallenge_pak serverchallenge;	// 256 bytes
 		challengeall_pak challengeall;			// 256 bytes
 		responseall_pak responseall;			// 256 bytes
-		resultsall_pak resultsall;				// 1024 bytes. Also, you really shouldn't trust anything here.
+		resultsall_pak resultsall;				// 1024 bytes
 	} u; // This is needed to pack diff packet types data together
 } ATTRPACK;
 
