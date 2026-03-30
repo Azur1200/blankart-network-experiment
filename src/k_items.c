@@ -1772,7 +1772,11 @@ static void K_DoHyudoroSteal(player_t *player)
 			&& (players[i].itemtype
 			&& players[i].itemamount
 			&& !(players[i].itemflags & IF_ITEMOUT)
-			&& !players[i].itemblink))
+			&& !players[i].itemblink
+			//todo: make this more modular for hold-button items (these should never be stolen when being used)
+			&& !players[i].bubblecool
+			&& !players[i].attractioncharge
+			))
 		{
 			kartitemflags_e flags = K_GetItemFlags(players[i].itemtype);
 
@@ -1911,6 +1915,11 @@ void K_DoAttractionShield(player_t *player, boolean hipower)
 	fixed_t sx;
 	fixed_t sy;
 	angle_t an;
+
+	if (S_SoundPlaying(player->mo, sfx_vwre))
+	{
+		S_StopSoundByID(player->mo, sfx_vwre);
+	}
 
 	S_StartSound(player->mo, sfx_zio3);
 	K_AttractionShieldAttack(player->mo, (cv_kartthunder_radius.value + THUNDERSPRITE) * FRACUNIT);

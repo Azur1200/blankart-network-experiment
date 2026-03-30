@@ -7724,6 +7724,15 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->bubblehealth = 0;
 	}
 
+	// yes this runs even with standard thunder shield
+	if (player->itemtype != KITEM_THUNDERSHIELD || (!K_IsKartItemAlternate(KITEM_THUNDERSHIELD)))
+	{
+		player->attractionattack = 0;
+		player->attractionattack_hipower = false;
+		player->attractioncharge = 0;
+		player->attractionboost = 0;
+	}
+
 	if (player->flamedash)
 		player->flamedash--;
 
