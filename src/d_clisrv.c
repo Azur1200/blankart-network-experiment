@@ -4574,7 +4574,7 @@ static void HandleConnect(SINT8 node)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	char names[MAXSPLITSCREENPLAYERS][MAXPLAYERNAME + 1];
-	INT32 i;
+	INT32 i, j;
 	UINT8 availabilitiesbuffer[MAXAVAILABILITY];
 
 	// Sal: Dedicated mode is INCREDIBLY hacked together.
@@ -4690,6 +4690,8 @@ static void HandleConnect(SINT8 node)
 	{
 		int sigcheck;
 		boolean newnode = false;
+		char allZero[PUBKEYLENGTH];
+		memset(allZero, 0, sizeof(allZero));
 
 		for (i = 0; i < netbuffer->u.clientcfg.localplayers - playerpernode[node]; i++)
 		{
@@ -4712,6 +4714,40 @@ static void HandleConnect(SINT8 node)
 				{
 					SV_SendRefuse(node, M_GetText("Signature verification failed."));
 					return;
+				}
+			}
+
+			if (cv_validate_pubkey.value)
+			{
+				// Check non-GUESTS for duplicate pubkeys, they'll create nonsense stats
+				if (memcmp(lastReceivedKey[node][i], allZero, PUBKEYLENGTH) != 0)
+				{
+					// Players already here
+					for (j = 0; j < MAXPLAYERS; j++)
+					{
+						if (!playeringame[j])
+							continue;
+
+						if (memcmp(lastReceivedKey[node][i], players[j].public_key, PUBKEYLENGTH) == 0)
+						{
+							SV_SendRefuse(node, M_GetText("This server disallows\nduplicate pubkeys,\n(Did you share your keys?)"));
+							return;
+						}
+					}
+
+					// Players we're trying to add
+					for (j = 0; j < netbuffer->u.clientcfg.localplayers - playerpernode[node]; j++)
+					{
+						if (memcmp(lastReceivedKey[node][i], allZero, PUBKEYLENGTH) == 0)
+							continue;
+						if (i == j)
+							continue;
+						if (memcmp(lastReceivedKey[node][i], lastReceivedKey[node][j], PUBKEYLENGTH) == 0)
+						{
+							SV_SendRefuse(node, M_GetText("Duplicate pubkey in local party.\n(How did you even do this?)"));
+							return;
+						}
+					}
 				}
 			}
 		}
