@@ -1921,12 +1921,16 @@ void K_DoAttractionShield(player_t *player, boolean hipower)
 	P_SetMobjState(mo, S_LZIO11);
 	mo->color = SKINCOLOR_TEAL;
 	mo->scale = player->mo->scale*3 + (player->mo->scale/2);
+	mo->color = SKINCOLOR_YELLOW;
+	mo->colorized = true;
 
 	mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
 	P_SetTarget(&mo->target, player->mo);
 	P_SetMobjState(mo, S_LZIO21);
 	mo->color = SKINCOLOR_CYAN;
 	mo->scale = player->mo->scale*3 + (player->mo->scale/2);
+	mo->color = SKINCOLOR_YELLOW;
+	mo->colorized = true;
 
 	// spawn the radius thing:
 	an = ANGLE_22h;
@@ -1940,6 +1944,8 @@ void K_DoAttractionShield(player_t *player, boolean hipower)
 		mo->scale = player->mo->scale*3;
 		P_SetTarget(&mo->target, player->mo);
 		P_SetMobjState(mo, S_KSPARK1);
+		mo->color = SKINCOLOR_YELLOW;
+		mo->colorized = true;
 	}
 }
 
@@ -2482,6 +2488,19 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 						);
 					}
 
+					// stolen from machine water breathing
+					if (P_RandomChance(FRACUNIT/5))
+					{
+						fixed_t r = player->mo->radius>>FRACBITS;
+						fixed_t x = player->mo->x + (P_RandomRange(r, -r)<<FRACBITS);
+						fixed_t y = player->mo->y + (P_RandomRange(r, -r)<<FRACBITS);
+						fixed_t z = player->mo->z + (P_RandomKey(player->mo->height>>FRACBITS)<<FRACBITS);
+						mobj_t *spark = P_SpawnMobj(x, y, z, MT_WATERZAP);
+						S_StartSound(spark, sfx_beelec);
+						spark->color = SKINCOLOR_YELLOW;
+						spark->colorized = true;
+					}
+
 					if (player->attractioncharge % 8 == 0)
 					{
 						mobj_t *mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
@@ -2489,6 +2508,8 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 						mo->fuse = P_RandomRange(20, 50);
 						P_SetScale(mo, effectscale);
 						mo->destscale = mo->scale/2;
+						mo->color = SKINCOLOR_YELLOW;
+						mo->colorized = true;
 
 						P_SetTarget(&mo->target, player->mo);
 						P_SetMobjState(mo, S_KLIT1);
