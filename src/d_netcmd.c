@@ -791,7 +791,7 @@ consvar_t cv_nettimeout = CVAR_INIT ("nettimeout", "210", CV_CALL|CV_SAVE, netti
 consvar_t cv_jointimeout = CVAR_INIT ("jointimeout", "210", CV_CALL|CV_SAVE, nettimeout_cons_t, JoinTimeout_OnChange);
 consvar_t cv_maxping = CVAR_INIT ("maxdelay", "20", CV_SAVE, CV_Unsigned, NULL);
 
-consvar_t cv_validate_pubkey= CVAR_INIT ("validate_pubkey", "On", 0, CV_OnOff, NULL); // Validate for duplicate players on Join.
+consvar_t cv_validate_pubkey= CVAR_INIT ("prevent_duplicate_pubkey", "On", 0, CV_OnOff, NULL); // Validate for duplicate players on Join.
 
 
 static CV_PossibleValue_t lagless_cons_t[] = {{-1, "Worst"}, {0, "Best"}, {1, "Lagless"}, {0, NULL}};
