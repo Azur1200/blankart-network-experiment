@@ -368,7 +368,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_ring_accelboost);
 	CV_RegisterVar(&cv_kartstacking_ring_handleboost);
 	CV_RegisterVar(&cv_kartstacking_ring_stackable);
-	
+
 	CV_RegisterVar(&cv_kartstacking_heavydrop_speedboost);
 	CV_RegisterVar(&cv_kartstacking_heavydrop_accelboost);
 	CV_RegisterVar(&cv_kartstacking_heavydrop_handleboost);
@@ -1853,7 +1853,7 @@ void K_KartMoveAnimation(player_t *player)
 
 	if (!lookback)
 		player->pflags &= ~PF_GAINAX;
-	
+
 	if (drift || (abs(player->cmd.turning) > (10*KART_FULLTURN/100)))
 	{
 		turndir = intsign(player->cmd.turning);
@@ -2156,7 +2156,7 @@ void K_PlayHitEmSound(mobj_t *source, mobj_t *other)
 		// No voice!
 		return;
 	}
-	
+
 	sfxenum_t sfx_id = src_voice->hitem;
 	boolean alwaysHear = false;
 
@@ -2863,7 +2863,7 @@ static void K_GetKartBoostPower(player_t *player)
 	if (player->flamestore) // Flame Shield dash
 	{
 		fixed_t dash = 0;
-		
+
 		if (!player->offroad)
 		{
 			dash = K_FlameShieldDashVar(player->flamedash);
@@ -2902,7 +2902,7 @@ static void K_GetKartBoostPower(player_t *player)
 		{
 			vector2_t fwd = {P_ReturnThrustX(player->mo, player->mo->angle, FRACUNIT), P_ReturnThrustY(player->mo, player->mo->angle, FRACUNIT)};
 			vector2_t mov = {player->mo->momx, player->mo->momy};
-			
+
 			FV2_Normalize(&mov);
 			rate = FV2_Dot(&fwd, &mov);
 			if (rate >= 0)
@@ -4118,9 +4118,9 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 			break;
 		case MT_EGGMINE:
 			// eggmines should spawn closer to the source
-			P_SetOrigin(missile, 
-				source->x + FixedMul(source->radius + mobjinfo[type].radius, FINECOSINE(an>>ANGLETOFINESHIFT)), 
-				source->y + FixedMul(source->radius + mobjinfo[type].radius, FINESINE(an>>ANGLETOFINESHIFT)), 
+			P_SetOrigin(missile,
+				source->x + FixedMul(source->radius + mobjinfo[type].radius, FINECOSINE(an>>ANGLETOFINESHIFT)),
+				source->y + FixedMul(source->radius + mobjinfo[type].radius, FINESINE(an>>ANGLETOFINESHIFT)),
 				missile->z
 			);
 			// spawn on the ground if the player is on the ground
@@ -4243,7 +4243,7 @@ static void K_SpawnDriftSparks(player_t *player)
 	for (i = 0; i < 2; i++)
 	{
 		fixed_t driftExtraScale = 0;
-		if (player->nulldrifttilt && 
+		if (player->nulldrifttilt &&
 			((player->drift < 0 && (i & 1)) || (player->drift > 0 && !(i & 1))))
 		{
 			// when tilting during a null-drift don't spawn the sparks for the front tyre
@@ -7429,7 +7429,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->recoverydash)
 		player->recoverydash--;
-		
+
 	if (player->airdropheavydash > 0)
 		player->airdropheavydash--;
 
@@ -7727,10 +7727,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	// yes this runs even with standard thunder shield
 	if (player->itemtype != KITEM_THUNDERSHIELD || (!K_IsKartItemAlternate(KITEM_THUNDERSHIELD)))
 	{
-		player->attractionattack = 0;
-		player->attractionattack_hipower = false;
 		player->attractioncharge = 0;
-		player->attractionboost = 0;
 	}
 
 	if (player->flamedash)
@@ -9337,7 +9334,7 @@ boolean K_InterceptArrowBullet(player_t *player)
 {
 	if (!player)
 		return false;
-	
+
 	return ((player->invincibilitytimer) || (player->growshrinktimer > 0) || (player->flamestore >= FLAMESTOREMAX-1));
 }
 
@@ -9392,7 +9389,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 	// This fixes this problem.
 	if (player->pogospring == 2 && player->mo->scale > mapobjectscale)
 		minspeed = FixedMul(10<<FRACBITS, mapobjectscale);
-	
+
 	// horrible
 	if (player->pflags & PF_RECOVERYSPIN)
 		minspeed = (player->speed+1);
@@ -9402,7 +9399,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 	{
 		K_HandleAirDriftDrag(player, onground);
 	}
-	
+
 	// Drifting is actually straffing + automatic turning.
 	// Holding the Jump button will enable drifting.
 
@@ -9414,7 +9411,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 			UINT8 boost = 0;
 			if (!cv_kartdriftsounds.value || driftstage < 3)
 				S_StartSound(player->mo, sfx_s23c);
-			
+
 			switch (driftstage)
 			{
 				case 1:
@@ -9446,7 +9443,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 			if (K_AirThrustActive() && !onground) // Air Thrust is enabled
 			{
 				fixed_t airthrust = 0;
-				
+
 				switch (driftstage)
 				{
 					case 1:
@@ -9462,7 +9459,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 						airthrust = cv_kartairthrust_power4.value;
 						break;
 				}
-				
+
 				if (driftstage > 0)
 				{
 					// before thrust, set player's target speed to their speed before the air thrust
@@ -9471,7 +9468,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 
 					// Give the player a forward boost
 					P_Thrust(player->mo, K_MomentumAngle(player->mo), FixedMul(player->speed, airthrust));
-					
+
 					// Slash the player's vertical momentum. Gets stronger with higher drift charge, but is significantly weaker in water
 					player->mo->momz = FixedMul(player->mo->momz, FRACUNIT - FixedMul(airthrust/2, abs(P_GetMobjGravity(player->mo))));
 				}
@@ -9650,11 +9647,11 @@ static void K_KartDrift(player_t *player, boolean onground)
 			fixed_t dot;
 			vector2_t fwd = {P_ReturnThrustX(player->mo, player->mo->angle, FRACUNIT), P_ReturnThrustY(player->mo, player->mo->angle, FRACUNIT)};
 			vector2_t mov = {player->mo->momx, player->mo->momy};
-			
+
 			FV2_Normalize(&mov);
 			dot = FRACUNIT - abs(FV2_Dot(&fwd, &mov));
 			tilt = FixedAngle(FixedMul(AngleFixed(ANG20), dot));
-			
+
 			if ((angle_t)abs(player->nulldrifttilt) < tilt)
 			{
 				player->nulldrifttilt = (abs(player->nulldrifttilt) + tilt/10) * -player->nulldrift;
@@ -10864,7 +10861,7 @@ INT32 K_GetShieldFromItem(INT32 item)
 {
 	switch (item)
 	{
-		case KITEM_THUNDERSHIELD: 
+		case KITEM_THUNDERSHIELD:
 		{
 			return K_IsKartItemAlternate(KITEM_THUNDERSHIELD) ? KSHIELD_ATTRACTION : KSHIELD_THUNDER;
 		}
@@ -11057,7 +11054,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								comincr = comincr * 2;
 								metincr = metincr * 3 / 2;
 							}
-							
+
 							// burning a trap / missile stops you from raising temperature for a tiny bit
 							if (player->flameburnstop)
 								metincr = 0;
@@ -11816,7 +11813,7 @@ void K_KartAttractHomingAttack(player_t *player)
 	fixed_t influence = 0;
 	fixed_t angleassist = 0;
 	INT32 lastTarg = player->lastitemtarget;
-	
+
 	if (lastTarg >= 0)
 	{
 		if (playeringame[lastTarg] == true
@@ -11828,7 +11825,7 @@ void K_KartAttractHomingAttack(player_t *player)
 			vector2_t targetdirection = {targMo->x - player->mo->x, targMo->y - player->mo->y};
 			vector2_t movedirection = {P_ReturnThrustX(NULL, player->mo->angle, FRACUNIT), P_ReturnThrustY(NULL, player->mo->angle, FRACUNIT)};
 			fixed_t targetangle = AngleFixed(R_PointToAngle2(player->mo->x + player->mo->momx, player->mo->y + player->mo->momy, targMo->x + targMo->momx, targMo->y + targMo->momy));
-			
+
 			FV2_Normalize(&movedirection);
 			FV2_Normalize(&targetdirection);
 			influence = FixedDiv(CLAMP(FV2_Dot(&targetdirection, &movedirection), 0, TargetThreshold), TargetThreshold);
@@ -11849,7 +11846,7 @@ void K_KartAttractHomingAttack(player_t *player)
 		}
 	}
 
-	if (player->mo != NULL 
+	if (player->mo != NULL
 		&& (!K_IsPlayerDamaged(player))
 		&& player->bumpUnstuck == 0)
 	{
@@ -11876,7 +11873,7 @@ void K_KartAttractHomingAttack(player_t *player)
 		mo->colorized = true;
 
 		P_SpawnGhostMobj(player->mo);
-		
+
 		if (player->attractionattack_hipower && lastTarg >= 0)
 		{
 			player->attractionboost = Easing_InCubic(influence, ATTRACTIONSPEEDHIMIN, ATTRACTIONSPEEDHIMAX);
@@ -11891,7 +11888,7 @@ void K_KartAttractHomingAttack(player_t *player)
 			player->mo->angle += FixedAngle(angleassist);
 			P_SetPlayerAngle(player, player->mo->angle);
 		}
-		
+
 		player->attractionattack--;
 	}
 	else
