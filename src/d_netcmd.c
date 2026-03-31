@@ -1333,7 +1333,7 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_jitterlegacy[i]);
 		CV_RegisterVar(&cv_driftmode[i]);
 		CV_RegisterVar(&cv_voice[i]);
-		
+
 		CV_RegisterVar(&cv_dummyrestatspeed[i]);
 		CV_RegisterVar(&cv_dummyrestatweight[i]);
 		CV_RegisterVar(&cv_dummyrestatrandom[i]);
@@ -1561,7 +1561,7 @@ static void RestatForPlayer(UINT32 ssplayer)
 		int speed;
 		int weight;
 
-		if (sscanf(COM_Argv(1), " %d", &speed) == 0 || 
+		if (sscanf(COM_Argv(1), " %d", &speed) == 0 ||
 			sscanf(COM_Argv(2), " %d", &weight) == 0)
 		{
 			CONS_Printf("Expected two numbers (<speed> <weight>) in the range of 1-9.\n");
@@ -1572,7 +1572,7 @@ static void RestatForPlayer(UINT32 ssplayer)
 			weight < 1 || weight > 9)
 		{
 			CONS_Printf("Expected two numbers (<speed> <weight>) in the range of 1-9.\n");
-			return;	
+			return;
 		}
 
 		// should be good now 🥲
@@ -2227,7 +2227,7 @@ static void SendNameAndColor(UINT8 n)
 		else
 		{
 			// Get the voice from our ID.
-			// No need to compare parents, 
+			// No need to compare parents,
 			valuevoice = &skins[player->skin].voices[player->voice_id];
 
 			if (valuevoice)
@@ -2482,7 +2482,7 @@ void WeaponPref_Send(UINT8 ssplayer)
 
 	if (!(cv_jitterlegacy[ssplayer].value))
 		prefs |= WP_LEGACYJITTER;
-	
+
 	if (cv_dummyrestatrandom[ssplayer].value)
 		prefs |= WP_RANDOMRESTAT;
 
@@ -4136,6 +4136,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 static void Command_RandomMap(void)
 {
 	CONS_Printf("randommap is deprecated, please use \"map -random\" instead.\n");
+	COM_ImmedExecute("map -r");
 }
 
 static void Command_RestartLevel(void)
@@ -6722,11 +6723,11 @@ static void Command_Showmap_f(void)
 
 	if (option_random)
 	{
-		UINT8 numPlayers = 0;
+		//UINT8 numPlayers = 0;
 		UINT16 oldmapnum = UINT16_MAX;
 		if (Playing())
 		{
-			UINT8 i;
+			/*UINT8 i;
 			for (i = 0; i < MAXPLAYERS; ++i)
 			{
 				if (!playeringame[i] || players[i].spectator)
@@ -6743,7 +6744,7 @@ static void Command_Showmap_f(void)
 				}
 
 				numPlayers++;
-			}
+			}*/
 
 			oldmapnum = (gamestate == GS_LEVEL)
 				? (gamemap-1)
