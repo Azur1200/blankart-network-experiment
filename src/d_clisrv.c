@@ -4521,7 +4521,7 @@ void SV_StartSinglePlayerServer(INT32 dogametype, boolean donetgame)
 {
 	INT32 lastgametype = gametype;
 	server = true;
-	multiplayer = (modeattacking == ATTACKING_NONE) && !grandprixinfo.gp; // G: no multiplayer in GP!
+	multiplayer = (modeattacking == ATTACKING_NONE); // N: multiplayer in GP!
 	connectedtodedicated = false;
 
 	netgame = false; // so setting timelimit works... (XD_NETVAR doesn't play nice with SV_StopServer)
