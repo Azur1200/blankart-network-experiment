@@ -3328,7 +3328,7 @@ void A_AttractChase(void *thing)
 
 		if (actor->tracer != NULL && P_MobjWasRemoved(actor->tracer) == false)
 		{
-			if (actor->extravalue3 && actor->tracer->player && (actor->tracer->player->position == 1))
+			if (actor->extravalue3 && spbplace != -1 && actor->tracer->player && (actor->tracer->player->position == spbplace))
 				goto spbring;
 
 			// Set attraction flag
