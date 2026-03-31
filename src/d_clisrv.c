@@ -3105,7 +3105,7 @@ static void Command_Nodes(void)
 					CONS_Printf(" - %s", address);
 			}
 
-			CONS_Printf(" [RRID-%s] ", GetPrettyRRID(players[i].public_key, true));
+			CONS_Printf(" [BKID-%s] ", GetPrettyRRID(players[i].public_key, true));
 
 			if (IsPlayerAdmin(i))
 				CONS_Printf(M_GetText(" (verified admin)"));

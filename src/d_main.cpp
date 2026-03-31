@@ -1923,7 +1923,7 @@ void D_SRB2Main(void)
 			if (!FIL_WriteFile(file, keybuffer, totalsize))
 				I_Error("Couldn't open key file %d", snum);
 			if (!FIL_WriteFile(va("%s%s",base_path , RRIDWARNINGNAME), RRIDWARNINGMESSAGE, strlen(RRIDWARNINGMESSAGE)))
-				I_Error("Failed to create RRID warning file.");
+				I_Error("Failed to create BKID warning file.");
 			free(keybuffer);
 		}
 	}
