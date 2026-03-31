@@ -884,7 +884,7 @@ static void K_BotItemJawz(botdata_t *bd, const player_t *player)
 		tryLookback = true;
 	}
 
-	if (lastTarg != -1
+	if (lastTarg >= 0 && lastTarg < MAXPLAYERS
 		&& playeringame[lastTarg] == true
 		&& players[lastTarg].spectator == false
 		&& players[lastTarg].mo != NULL

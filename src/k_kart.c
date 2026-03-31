@@ -11816,7 +11816,7 @@ void K_KartAttractHomingAttack(player_t *player)
 	fixed_t targetangleassist = cv_kartattraction_assistpower.value;
 	INT32 lastTarg = player->lastitemtarget;
 
-	if (lastTarg >= 0)
+	if (lastTarg >= 0 && lastTarg < MAXPLAYERS)
 	{
 		if (playeringame[lastTarg] == true
 			&& players[lastTarg].spectator == false

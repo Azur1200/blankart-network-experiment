@@ -2879,8 +2879,9 @@ void K_KartSeekingReticule(player_t *player)
 		player_t *targ;
 		mobj_t *ret;
 
-		if ((player->itemtargetdelay && playeringame[lasttarg] && !players[lasttarg].spectator)
-			|| (player->itemflags & IF_PASSIVESEEKING))
+		if (lasttarg >= 0 && lasttarg < MAXPLAYERS &&
+			((player->itemtargetdelay && playeringame[lasttarg] && !players[lasttarg].spectator)
+			 || (player->itemflags & IF_PASSIVESEEKING)))
 		{
 			targ = &players[lasttarg];
 			player->itemtargetdelay--;
