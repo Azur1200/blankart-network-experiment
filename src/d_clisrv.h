@@ -417,6 +417,7 @@ struct responseall_pak
 
 struct resultsall_pak
 {
+	// Maybe use a FAM in the future for space saving?
 	uint8_t signature[MAXPLAYERS][SIGNATURELENGTH];
 } ATTRPACK;
 
