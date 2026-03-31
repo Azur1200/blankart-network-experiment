@@ -2147,6 +2147,10 @@ float I_GetEFXTail(efx_t *efx)
 	float tailtime = 0;
 	switch(efx->type)
 	{
+		case EFFECT_EAXREVERB:
+			tailtime = efx->eaxreverb.decay_time;
+			break;
+
 		case EFFECT_REVERB:
 			tailtime = efx->reverb.decay_time;
 			break;
