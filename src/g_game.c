@@ -1526,6 +1526,10 @@ void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 	// limit in proportion to rotation rate
 	angleRate = FixedMul(FV3_Length(&gyro), M_PI_FIXED)/180;
 	correctionLimit = FixedMul(FixedMul(angleRate, FV3_Length(&localgravityvectors[p])), CorrectionGyroFactor);
+
+	CONS_Debug(DBG_IMU, "Angle Rate: %4.3f\n", FixedToFloat(angleRate));
+	CONS_Debug(DBG_IMU, "Correction Limit: %4.3f\n", FixedToFloat(correctionLimit));
+
 	if (gravCorrectionRate > correctionLimit) {
 		fixed_t closeEnoughFactor;
 		if (CorrectionGyroMaxThreshold > CorrectionGyroMinThreshold)

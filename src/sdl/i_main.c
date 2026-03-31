@@ -36,13 +36,7 @@
 #ifdef HAVE_SDL
 
 #if defined (_WIN32) && !defined (main)
-//#define SDLMAIN
-#endif
-
-#ifdef SDLMAIN
-#include "SDL_main.h"
-#elif defined(FORCESDLMAIN)
-extern int SDL_main(int argc, char *argv[]);
+#define SDLMAIN
 #endif
 
 #ifdef LOGMESSAGES
@@ -185,11 +179,7 @@ ChDirToExe (void)
 #pragma GCC diagnostic ignored "-Wmissing-noreturn"
 #endif
 
-#ifdef FORCESDLMAIN
-int SDL_main(int argc, char **argv)
-#else
 int main(int argc, char **argv)
-#endif
 {
 	myargc = argc;
 	myargv = argv; /// \todo pull out path to exe from this string

@@ -7631,14 +7631,14 @@ tic_t GetLag(INT32 node)
 }
 
 #define REWIND_POINT_INTERVAL 4*TICRATE + 16
-rewind_t *rewindhead;
+rewind_t *netrewindhead;
 
 void CL_ClearRewinds(void)
 {
 	rewind_t *head;
-	while ((head = rewindhead))
+	while ((head = netrewindhead))
 	{
-		rewindhead = rewindhead->next;
+		netrewindhead = netrewindhead->next;
 		free(head);
 	}
 }
@@ -7648,7 +7648,7 @@ rewind_t *CL_SaveRewindPoint(size_t demopos)
 	savebuffer_t save = {0};
 	rewind_t *rewind;
 
-	if (rewindhead && rewindhead->leveltime + REWIND_POINT_INTERVAL > leveltime)
+	if (netrewindhead && netrewindhead->leveltime + REWIND_POINT_INTERVAL > leveltime)
 		return NULL;
 
 	rewind = (rewind_t *)malloc(sizeof (rewind_t));
@@ -7659,9 +7659,9 @@ rewind_t *CL_SaveRewindPoint(size_t demopos)
 	P_SaveNetGame(&save, false);
 
 	rewind->leveltime = leveltime;
-	rewind->next = rewindhead;
+	rewind->next = netrewindhead;
 	rewind->demopos = demopos;
-	rewindhead = rewind;
+	netrewindhead = rewind;
 
 	return rewind;
 }
@@ -7671,23 +7671,23 @@ rewind_t *CL_RewindToTime(tic_t time)
 	savebuffer_t save = {0};
 	rewind_t *rewind;
 
-	while (rewindhead && rewindhead->leveltime > time)
+	while (netrewindhead && netrewindhead->leveltime > time)
 	{
-		rewind = rewindhead->next;
-		free(rewindhead);
-		rewindhead = rewind;
+		rewind = netrewindhead->next;
+		free(netrewindhead);
+		netrewindhead = rewind;
 	}
 
-	if (!rewindhead)
+	if (!netrewindhead)
 		return NULL;
 
-	P_SaveBufferFromExisting(&save, rewindhead->savebuffer, NETSAVEGAMESIZE);
+	P_SaveBufferFromExisting(&save, netrewindhead->savebuffer, NETSAVEGAMESIZE);
 	P_LoadNetGame(&save, false);
 
 	wipegamestate = gamestate; // No fading back in!
 	timeinmap = leveltime;
 
-	return rewindhead;
+	return netrewindhead;
 }
 
 #undef CloneConsistancy

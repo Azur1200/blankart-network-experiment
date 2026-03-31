@@ -88,13 +88,6 @@
 
 #include "deh_tables.h" // menunames
 
-#if defined(HAVE_SDL)
-#include <SDL3/SDL.h>
-#if SDL_VERSION_ATLEAST(2,0,0)
-#include <SDL3/SDL_main.h> // JOYSTICK_HOTPLUG
-#endif
-#endif
-
 #ifdef PC_DOS
 #include <stdio.h> // for snprintf
 int	snprintf(char *str, size_t n, const char *fmt, ...);
