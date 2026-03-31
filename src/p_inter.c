@@ -638,7 +638,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (special->threshold > 0 || P_PlayerInPain(player))
 				return;
 
-			// Don't pick up SPB rings in when being trailed by SPB.
+			// Don't pick up SPB rings when being trailed by SPB.
 			if (special->extravalue3 && spbplace != -1 && player->position == spbplace)
 				return;
 
