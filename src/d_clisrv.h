@@ -452,6 +452,7 @@ struct doomdata_t
 	UINT8 packetindex;
 	union
 	{
+		// NOTICE: UPDATE THE COMMENT SIZES WHEN YOU CHANGE STUFF.
 		clientcmd_pak clientpak; // 96 bytes
 		client2cmd_pak client2pak; // 110 bytes
 		client3cmd_pak client3pak; // 124 bytes
