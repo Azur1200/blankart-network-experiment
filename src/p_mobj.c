@@ -12582,7 +12582,7 @@ void P_AfterPlayerSpawn(INT32 playernum)
 		P_CheckGravity(mobj, false);
 
 	// set the player's starting waypoint
-	if (!K_UsingLegacyCheckpoints())
+	if (!K_UsingLegacyCheckpoints() && (gametypes[gametype]->rules & GTR_CIRCUIT) && waypointcap != NULL)
 		p->currentwaypoint = K_GetSpawnWaypointForMobj(p->mo);
 }
 

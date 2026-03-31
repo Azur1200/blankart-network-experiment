@@ -5042,6 +5042,12 @@ static void K_drawKartMinimap(void)
 
 	if (cv_kartdebugwaypoints.value != 0)
 	{
+		if (!(gametypes[gametype]->rules & GTR_CIRCUIT))
+			return;
+
+		if (waypointcap == NULL)
+			return;
+
 		size_t idx;
 
 		for (idx = 0; idx < K_GetNumWaypoints(); ++idx)
