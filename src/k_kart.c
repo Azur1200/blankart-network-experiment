@@ -456,6 +456,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbubble_boost_offroadignore);
 	CV_RegisterVar(&cv_kartflame_fastfuel);
 	CV_RegisterVar(&cv_kartflame_offroadburn);
+	CV_RegisterVar(&cv_kartattraction_assistpower);
 	CV_RegisterVar(&cv_kartaltshrink_arrowbullet);
 	CV_RegisterVar(&cv_kartaltshrink_arrowbulletthres);
 
@@ -5451,10 +5452,11 @@ void K_DropHnextList(player_t *player)
 		player->itemflags &= ~IF_EGGMANOUT;
 	}
 	else if ((player->itemflags & IF_ITEMOUT)
-		&& (dropall || (--player->itemamount <= 0)))
+	&& (dropall || (--player->itemamount <= 0)))
 	{
 		player->itemamount = 0;
 		K_UnsetItemOut(player);
+		player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
 		player->itemtype = KITEM_NONE;
 	}
 }
@@ -11807,11 +11809,11 @@ boolean K_NullDriftTiltEnabled(void)
 }
 
 #define TargetThreshold (80*FRACUNIT/100)
-#define TargetAngleAssist (FRACUNIT/2)
 void K_KartAttractHomingAttack(player_t *player)
 {
 	fixed_t influence = 0;
 	fixed_t angleassist = 0;
+	fixed_t targetangleassist = cv_kartattraction_assistpower.value;
 	INT32 lastTarg = player->lastitemtarget;
 
 	if (lastTarg >= 0)
@@ -11841,7 +11843,7 @@ void K_KartAttractHomingAttack(player_t *player)
 				{
 					angleassist -= 360*FRACUNIT;
 				}
-				angleassist = FixedMul(CLAMP(angleassist, -TargetAngleAssist, TargetAngleAssist), influence);
+				angleassist = FixedMul(CLAMP(angleassist, -targetangleassist, targetangleassist), influence);
 			}
 		}
 	}
@@ -11850,21 +11852,12 @@ void K_KartAttractHomingAttack(player_t *player)
 		&& (!K_IsPlayerDamaged(player))
 		&& player->bumpUnstuck == 0)
 	{
-		mobj_t *mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
+		mobj_t *mo;
 		angle_t effectangle = player->mo->angle;
 		if (player->speed > 0)
 		{
 			effectangle = R_PointToAngle2(0,0, player->mo->momx, player->mo->momy);
 		}
-		mo->angle = P_RandomRange(-30, 30)*ANG1 + (effectangle - ANGLE_180);
-		mo->fuse = P_RandomRange(10, 20);
-		P_SetScale(mo, player->mo->scale/2);
-		mo->destscale = mo->scale/3;
-		P_SetTarget(&mo->target, player->mo);
-		P_SetMobjState(mo, S_KLIT1);
-		mo->renderflags |= RF_ADD|RF_FULLBRIGHT|RF_TRANS50;
-		mo->color = SKINCOLOR_YELLOW;
-		mo->colorized = true;
 
 		mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
 		P_SetMobjState(mo, S_KSPARK1);
@@ -11874,13 +11867,25 @@ void K_KartAttractHomingAttack(player_t *player)
 
 		P_SpawnGhostMobj(player->mo);
 
-		if (player->attractionattack_hipower && lastTarg >= 0)
+		if (player->attractionattack_hipower && player->position > 1 && lastTarg >= 0)
 		{
 			player->attractionboost = Easing_InCubic(influence, ATTRACTIONSPEEDHIMIN, ATTRACTIONSPEEDHIMAX);
+
+			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
+			mo->angle = P_RandomRange(-15, 15)*ANG1 + (effectangle - ANGLE_180);
+			mo->fuse = P_RandomRange(10, 20);
+			P_SetScale(mo, player->mo->scale/2);
+			mo->destscale = mo->scale/3;
+			P_SetTarget(&mo->target, player->mo);
+			P_SetMobjState(mo, S_KLIT1);
+			mo->renderflags |= RF_ADD|RF_FULLBRIGHT|RF_TRANS50;
+			mo->color = SKINCOLOR_YELLOW;
+			mo->colorized = true;
 		}
 		else
 		{
 			player->attractionboost = Easing_InCubic(influence, ATTRACTIONSPEEDNORMMIN, ATTRACTIONSPEEDNORMMAX);
+			player->attractionattack_hipower = false;
 		}
 
 		if (angleassist)
