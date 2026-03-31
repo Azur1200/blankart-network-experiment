@@ -792,6 +792,9 @@ consvar_t cv_nettimeout = CVAR_INIT ("nettimeout", "210", CV_CALL|CV_SAVE, netti
 consvar_t cv_jointimeout = CVAR_INIT ("jointimeout", "210", CV_CALL|CV_SAVE, nettimeout_cons_t, JoinTimeout_OnChange);
 consvar_t cv_maxping = CVAR_INIT ("maxdelay", "20", CV_SAVE, CV_Unsigned, NULL);
 
+consvar_t cv_validate_pubkey= CVAR_INIT ("prevent_duplicate_pubkey", "On", 0, CV_OnOff, NULL); // Validate for duplicate players on Join.
+
+
 static CV_PossibleValue_t lagless_cons_t[] = {{-1, "Worst"}, {0, "Best"}, {1, "Lagless"}, {0, NULL}};
 consvar_t cv_lagless = CVAR_INIT ("lagless", "Lagless", CV_SAVE|CV_NETVAR|CV_CALL, lagless_cons_t, Lagless_OnChange);
 
@@ -1147,6 +1150,7 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("ping", Command_Ping_f);
 	CV_RegisterVar(&cv_nettimeout);
 	CV_RegisterVar(&cv_jointimeout);
+	CV_RegisterVar(&cv_validate_pubkey);
 	CV_RegisterVar(&cv_kicktime);
 	CV_RegisterVar(&cv_skipmapcheck);
 	CV_RegisterVar(&cv_sleep);
@@ -1347,6 +1351,18 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_netstat);
 	CV_RegisterVar(&cv_netticbuffer);
 	CV_RegisterVar(&cv_mindelay);
+
+#ifdef DEVELOP
+	CV_RegisterVar(&cv_badjoin);
+	CV_RegisterVar(&cv_badtraffic);
+	CV_RegisterVar(&cv_badresponse);
+	CV_RegisterVar(&cv_noresponse);
+	CV_RegisterVar(&cv_nochallenge);
+	CV_RegisterVar(&cv_badresults);
+	CV_RegisterVar(&cv_noresults);
+	CV_RegisterVar(&cv_badtime);
+	CV_RegisterVar(&cv_badip);
+#endif
 
 	// HUD
 	CV_RegisterVar(&cv_itemfinder);

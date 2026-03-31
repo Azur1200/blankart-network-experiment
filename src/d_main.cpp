@@ -74,6 +74,9 @@
 #include "m_perfstats.h"
 #include "core/memory.h"
 
+#include "monocypher/monocypher.h"
+#include "stun.h"
+
 // SRB2Kart
 #include "k_grandprix.h"
 #include "k_boss.h"
@@ -88,6 +91,10 @@
 #include <inttypes.h>
 
 #include <tracy/tracy/Tracy.hpp>
+
+#ifdef HAVE_SDL
+#include <SDL3/SDL_filesystem.h>
+#endif
 
 // Put hashes here to get them out of header hell.
 #define ASSET_HASH_SRB2_SRB            0xf3ec1ea4d0eca4a9
@@ -178,6 +185,10 @@ event_t events[MAXEVENTS];
 INT32 eventhead, eventtail;
 
 boolean dedicated = false;
+
+// For identity negotiation with netgame servers
+uint8_t	g_public_key[MAXSPLITSCREENPLAYERS][PUBKEYLENGTH];
+uint8_t	g_secret_key[MAXSPLITSCREENPLAYERS][PRIVKEYLENGTH];
 
 boolean loaded_config = false;
 
@@ -1867,6 +1878,57 @@ void D_SRB2Main(void)
 	CONS_Printf("ACS_Init(): Init Action Code Script VM.\n");
 	ACS_Init();
 	CON_SetLoadingProgress(LOADED_ACSINIT);
+
+	// Read / create RRID key files in srb2home/private_keys
+	// About as obvious as I can make this say DONT SHARE.
+#define RRIDWARNINGNAME "DO_NOT_SHARE_THESE"
+#define RRIDWARNINGMESSAGE "This folder contains keys that should not be shared.\nThe base game and mods may use these to keep track of gamedata."
+	static char keyfile[MAXSPLITSCREENPLAYERS][10] = {"bkid1.dat", "bkid2.dat", "bkid3.dat", "bkid4.dat"};
+	INT32 snum;
+
+	for (snum = 0; snum < MAXSPLITSCREENPLAYERS; snum++)
+	{
+		char base_path[MAX_WADPATH];
+		char file[MAX_WADPATH];
+
+		strcpy(base_path, srb2home);
+		strcat(base_path, PATHSEP "private_keys" PATHSEP);
+		M_MkdirEach(base_path, M_PathParts(base_path) - 2, 0755);
+
+		strcpy(file, base_path);
+		strcat(file, keyfile[snum]);
+
+		static uint8_t seed[32];
+		csprng(seed, 32);
+		crypto_eddsa_key_pair(g_secret_key[snum], g_public_key[snum], seed);
+
+		int sk_size = sizeof(g_secret_key[snum]);
+		int pk_size = sizeof(g_public_key[snum]);
+		int totalsize = sk_size + pk_size;
+
+		if (FIL_ReadFileOK(file))
+		{
+			UINT8 *readbuffer = NULL;
+			UINT16 lengthRead = FIL_ReadFile(file, &readbuffer);
+			if (readbuffer == NULL || lengthRead != totalsize)
+				I_Error("Malformed keyfile %d", snum);
+			memcpy(g_secret_key[snum], readbuffer, sk_size);
+			memcpy(g_public_key[snum], readbuffer + sk_size, pk_size);
+		}
+		else
+		{
+			uint8_t *keybuffer = (uint8_t *)malloc(totalsize);
+			memcpy(keybuffer, g_secret_key[snum], sk_size);
+			memcpy(keybuffer + sk_size, g_public_key[snum], pk_size);
+			if (!FIL_WriteFile(file, keybuffer, totalsize))
+				I_Error("Couldn't open key file %d", snum);
+			if (!FIL_WriteFile(va("%s%s",base_path , RRIDWARNINGNAME), RRIDWARNINGMESSAGE, strlen(RRIDWARNINGMESSAGE)))
+				I_Error("Failed to create BKID warning file.");
+			free(keybuffer);
+		}
+	}
+#undef RRIDWARNINGNAME
+#undef RRIDWARNINGMESSAGE
 
 	//------------------------------------------------ COMMAND LINE PARAMS
 

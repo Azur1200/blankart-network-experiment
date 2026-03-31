@@ -71,6 +71,7 @@
 #include "f_dscredits.hpp"
 #include "strbuf.h"
 #include "k_vote.h"
+#include "d_clisrv.h"
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
@@ -3174,6 +3175,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	SINT8 xtralife;
 
+	uint8_t public_key[PUBKEYLENGTH];
+
 	// SRB2kart
 	INT32 itemtype;
 	INT32 itemamount;
@@ -3254,6 +3257,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	xtralife = players[player].xtralife;
 
 	pflags = (players[player].pflags & (PF_WANTSTOJOIN|PF_KICKSTARTACCEL|PF_SHRINKME|PF_SHRINKACTIVE|PF_FLIPCAM));
+
+	memcpy(&public_key, &players[player].public_key, sizeof(public_key));
 
 	// SRB2kart
 	if (betweenmaps || leveltime <= starttime || spectator == true)
@@ -3530,6 +3535,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->botvars.controller = UINT16_MAX;
 
 	K_BotReborn(p);
+
+	memcpy(&p->public_key, &public_key, sizeof(p->public_key));
 
 	if (follower)
 		P_RemoveMobj(follower);
