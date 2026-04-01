@@ -1456,27 +1456,31 @@ vector3_t localsmoothedaccel[MAXSPLITSCREENPLAYERS];
 vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
 
 // the time it takes in our acceleration smoothing for 'A' to get halfway to 'B'
-#define SmoothingHalfTime (0.025)
+#define SmoothingHalfTime (0.01)
 // thresholds of trust for accel shakiness. less shakiness = more trust
 #define ShakinessMaxThreshold (50*FRACUNIT/100)
-#define ShakinessMinThreshold (32*FRACUNIT/100)
+#define ShakinessMinThreshold (40*FRACUNIT/100)
 // when we trust the accel a lot (the controller is "still"), how quickly do we correct our gravity vector?
 #define CorrectionStillRate (FRACUNIT)
 // when we don't trust the accel (the controller is "shaky"), how quickly do we correct our gravity vector?
-#define CorrectionShakyRate (FRACUNIT/8)
+#define CorrectionShakyRate (20*FRACUNIT/100)
 // if our old gravity vector is close enough to our new one, limit further corrections to this proportion of the rotation speed
-#define CorrectionGyroFactor (FRACUNIT/4)
+#define CorrectionGyroFactor (40*FRACUNIT/100)
 // thresholds for what's considered "close enough"
 #define CorrectionGyroMinThreshold (5*FRACUNIT/100)
-#define CorrectionGyroMaxThreshold (FRACUNIT/3)
+#define CorrectionGyroMaxThreshold (FRACUNIT/6)
 // no matter what, always apply a minimum of this much correction to our gravity vector
-#define CorrectionMinimumSpeed (10*FRACUNIT/100)
+#define CorrectionMinimumSpeed (25*FRACUNIT/100)
+
+#define CorrectionInstantRate (80*FRACUNIT/100)
+#define CorrectionInstantShake (4*FRACUNIT/100)
+#define CorrectionInstantTurn (5*FRACUNIT/100)
 
 void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 {
 	// convert gyro input to reverse rotation
 	vector3_t invAccel = {-accel.x, -accel.y, -accel.z};
-	fixed_t gravCorrectionRate = 0;
+	fixed_t correctionRate = 0;
 	// scaling is reversed, smaller time scales = larger steps in this code
 	// (1/timescale)/dt
 	fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
@@ -1490,11 +1494,12 @@ void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 		-gyro.y, 
 		-gyro.z
 	);
-	vector3_t gravityToAccel = {0};
-	vector3_t gravityToAccelDirection = {0};
+	vector3_t gravityDelta = {0};
+	vector3_t gravityDeltaDirection = {0};
 	vector3_t correction = {0};
 
 	if (!G_GetGamepadCanUseTilt(p)) return;
+	CONS_Debug(DBG_IMU, "= Update Gravity Delta Time: %4.3f =\n", FixedToFloat(deltaseconds));
 
 	// rotate gravity vector
 	QuaternionMulVec3(&localgravityvectors[p], &localgravityvectors[p], &invRotation);
@@ -1510,56 +1515,68 @@ void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 	
 	CONS_Debug(DBG_IMU, "Shakiness: %4.2f\n", FixedToFloat(localshakinessfac[p]));
 
-	FV3_SubEx(&invAccel, &localgravityvectors[p], &gravityToAccel);
-	FV3_NormalizeEx(&gravityToAccel, &gravityToAccelDirection);
+	FV3_SubEx(&invAccel, &localgravityvectors[p], &gravityDelta);
+	FV3_NormalizeEx(&gravityDelta, &gravityDeltaDirection);
 
 	if (ShakinessMaxThreshold > ShakinessMinThreshold)
 	{
 		fixed_t stillness = CLAMP(FixedDiv((localshakinessfac[p] - ShakinessMinThreshold), (ShakinessMaxThreshold - ShakinessMinThreshold)), 0, FRACUNIT);
-		gravCorrectionRate = CorrectionStillRate + FixedMul((CorrectionShakyRate - CorrectionStillRate), stillness);
+		correctionRate = CorrectionStillRate + FixedMul((CorrectionShakyRate - CorrectionStillRate), stillness);
+	}
+	else if (localshakinessfac[p] > ShakinessMaxThreshold)
+	{
+		correctionRate = CorrectionShakyRate;
 	}
 	else
 	{
-		gravCorrectionRate = localshakinessfac[p] < ShakinessMaxThreshold ? CorrectionStillRate : CorrectionShakyRate;
+		correctionRate = CorrectionStillRate;
 	}
 
 	// limit in proportion to rotation rate
-	angleRate = FixedMul(FV3_Length(&gyro), M_PI_FIXED)/180;
-	correctionLimit = FixedMul(FixedMul(angleRate, FV3_Length(&localgravityvectors[p])), CorrectionGyroFactor);
+	angleRate = FixedMul(FV3_Length(&gyro), M_PI_FIXED/180);
+	correctionLimit = max(FixedMul(FixedMul(angleRate, FV3_Length(&localgravityvectors[p])), CorrectionGyroFactor), CorrectionMinimumSpeed);
 
 	CONS_Debug(DBG_IMU, "Angle Rate: %4.3f\n", FixedToFloat(angleRate));
 	CONS_Debug(DBG_IMU, "Correction Limit: %4.3f\n", FixedToFloat(correctionLimit));
 
-	if (gravCorrectionRate > correctionLimit) {
+	if (correctionRate > correctionLimit) {
 		fixed_t closeEnoughFactor;
 		if (CorrectionGyroMaxThreshold > CorrectionGyroMinThreshold)
 		{
-			closeEnoughFactor = CLAMP(FixedDiv((FV3_Length(&gravityToAccel) - CorrectionGyroMinThreshold), (CorrectionGyroMaxThreshold - CorrectionGyroMinThreshold)), 0, FRACUNIT);
+			closeEnoughFactor = CLAMP(FixedDiv((FV3_Length(&gravityDelta) - CorrectionGyroMinThreshold), (CorrectionGyroMaxThreshold - CorrectionGyroMinThreshold)), 0, FRACUNIT);
+		}
+		else if (FV3_Length(&gravityDelta) > CorrectionGyroMaxThreshold)
+		{
+			closeEnoughFactor = FRACUNIT;
 		}
 		else
 		{
-			closeEnoughFactor = FV3_Length(&gravityToAccel) < CorrectionGyroMaxThreshold ? 0 : FRACUNIT;
+			closeEnoughFactor = 0;
 		}
-		gravCorrectionRate = correctionLimit + FixedMul((gravCorrectionRate - correctionLimit), closeEnoughFactor);
+		
+		CONS_Debug(DBG_IMU, "'Close Enough' Fac: %4.3f\n", FixedToFloat(closeEnoughFactor));
+		correctionRate = correctionLimit + FixedMul((correctionRate - correctionLimit), closeEnoughFactor);
 	}
 
-	// finally, let's always allow a little bit of correction
-	gravCorrectionRate = max(gravCorrectionRate, CorrectionMinimumSpeed);
+	if (localshakinessfac[p] < CorrectionInstantShake && angleRate < CorrectionInstantTurn)
+	{
+		correctionRate = max(correctionRate, CorrectionInstantRate);
+	}
 
-	CONS_Debug(DBG_IMU, "Correction Rate: %4.2f\n", FixedToFloat(gravCorrectionRate));
+	CONS_Debug(DBG_IMU, "Correction Rate: %4.2f\n", FixedToFloat(correctionRate));
 
 	FV3_Load(&correction,
-		FixedMul(gravityToAccel.x, FixedMul(deltaseconds, gravCorrectionRate)),
-		FixedMul(gravityToAccel.y, FixedMul(deltaseconds, gravCorrectionRate)),
-		FixedMul(gravityToAccel.z, FixedMul(deltaseconds, gravCorrectionRate))
+		FixedMul(gravityDelta.x, FixedMul(deltaseconds, correctionRate)),
+		FixedMul(gravityDelta.y, FixedMul(deltaseconds, correctionRate)),
+		FixedMul(gravityDelta.z, FixedMul(deltaseconds, correctionRate))
 	);
-	if (FV3_LengthSquared(&correction) < FV3_LengthSquared(&gravityToAccel))
+	if ((FV3_LengthSquared(&correction) < FV3_LengthSquared(&gravityDelta)))
 	{
 		FV3_Add(&localgravityvectors[p], &correction);
 	}
 	else
 	{
-		FV3_Add(&localgravityvectors[p], &gravityToAccel);
+		FV3_Load(&localgravityvectors[p], invAccel.x, invAccel.y, invAccel.z);
 	}
 }
 
