@@ -939,6 +939,7 @@ const char *blancredits[] = {
 	"\"yama\"",
 	"\"GenericHeroGuy\"",
 	"\"minenice\"",
+	"\"Miguelius256\"", // Initial Attraction Shield design
 	"",
 	"\1Design Support",
 	"\"Rim Jobless\"",
@@ -958,6 +959,7 @@ const char *blancredits[] = {
 	"\"yama\"",
 	"\"minenice\"",
 	"\"Mompi\"",
+	"\"Chuckles troll\"", // Attraction Shield, S-Monitor
 	"",
 	"\1New HUD Art",
 	"\"Spee\"",
@@ -972,6 +974,7 @@ const char *blancredits[] = {
 	"\"RetroStation\"",
 	"\"StarrydustNova\"",
 	"\"joshyflip\"",
+	"\"Chuckles troll\"", // Timer icons for: Attraction Shield, S-Monitor
 	"",
 	"\1New Misc Art",
 	"\"scizor300\"",
