@@ -1743,7 +1743,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	}
 
 	forward = side = 0;
-	if (cv_tiltcontrol[forplayer].value == 1)
+	if (cv_tiltcontrol[forplayer].value == 1 && (!spectating))
 	{
 		tspeed = accelerometertilt;
 	}
@@ -1781,6 +1781,11 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		side += (accelerometertilt * 4) / JOYAXISRANGE;
+
+		//todo: control spectator camera using the gyro
+		// if (spectating)
+		// {
+		// }
 	}
 	else if (joystickvector.xaxis != 0)
 	{
