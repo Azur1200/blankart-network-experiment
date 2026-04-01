@@ -1459,7 +1459,7 @@ vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
 #define SmoothingHalfTime (0.01)
 // thresholds of trust for accel shakiness. less shakiness = more trust
 #define ShakinessMaxThreshold (50*FRACUNIT/100)
-#define ShakinessMinThreshold (40*FRACUNIT/100)
+#define ShakinessMinThreshold (1*FRACUNIT/100)
 // when we trust the accel a lot (the controller is "still"), how quickly do we correct our gravity vector?
 #define CorrectionStillRate (FRACUNIT)
 // when we don't trust the accel (the controller is "shaky"), how quickly do we correct our gravity vector?
@@ -1468,9 +1468,9 @@ vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
 #define CorrectionGyroFactor (40*FRACUNIT/100)
 // thresholds for what's considered "close enough"
 #define CorrectionGyroMinThreshold (5*FRACUNIT/100)
-#define CorrectionGyroMaxThreshold (FRACUNIT/6)
+#define CorrectionGyroMaxThreshold (FRACUNIT/4)
 // no matter what, always apply a minimum of this much correction to our gravity vector
-#define CorrectionMinimumSpeed (10*FRACUNIT/100)
+#define CorrectionMinimumSpeed (1*FRACUNIT/100)
 
 // when holding the controller still (shaking and turning included), corrcet this quickly to resolve error
 #define CorrectionInstantRate (80*FRACUNIT/100)
