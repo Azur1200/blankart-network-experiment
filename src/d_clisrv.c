@@ -265,7 +265,12 @@ void GenerateChallenge(uint8_t *buf)
 	UINT64 now = time(NULL);
 	csprng(buf, CHALLENGELENGTH); // Random noise as a baseline, but...
 	memcpy(buf, &now, sizeof(now)); // Timestamp limits the reuse window.
+#if 0 // im sorry I have to do this but....
 	memcpy(buf + sizeof(now), &ourIP, sizeof(ourIP)); // IP prevents captured signatures from being used elsewhere.
+#else
+	UINT32 dummy = UINT32_MAX;
+	memcpy(buf + sizeof(now), &dummy, sizeof(dummy)); // Dummy since ip breaks VPN and other check is not good enough.
+#endif
 
 	#ifdef DEVELOP
 	if (cv_badtime.value)
@@ -292,6 +297,11 @@ shouldsign_t ShouldSignChallenge(uint8_t *message)
 	#error  "FIXME: 64-bit timestamp field is not supported on Big Endian"
 #endif
 
+#if 1
+	(void)message;
+#endif
+
+#if 0 // Sorry.....
 	UINT64 then, now;
 	UINT32 claimedIP, realIP;
 
@@ -303,8 +313,10 @@ shouldsign_t ShouldSignChallenge(uint8_t *message)
 	if ((max(now, then) - min(now, then)) > 60*15)
 		return SIGN_BADTIME;
 
+
 	if (realIP != claimedIP && I_IsExternalAddress(&realIP))
 		return SIGN_BADIP;
+#endif
 
 	return SIGN_OK;
 }
@@ -993,6 +1005,7 @@ static boolean CL_SendJoin(void)
 	// Don't leak old signatures from prior sessions.
 	memset(&netbuffer->u.clientcfg.challengeResponse, 0, sizeof(((clientconfig_pak *)0)->challengeResponse));
 
+#if 0
 	if (client && netgame)
 	{
 		shouldsign_t safe = ShouldSignChallenge(awaitingChallenge);
@@ -1014,6 +1027,7 @@ static boolean CL_SendJoin(void)
 			return false;
 		}
 	}
+#endif
 
 	for (i = 0; i <= splitscreen; i++)
 	{
@@ -7495,7 +7509,7 @@ void NetUpdate(void)
 
 	UpdatePingTable();
 
-	UpdateChallenges();
+	//UpdateChallenges();
 
 	if (client)
 		maketic = neededtic;
