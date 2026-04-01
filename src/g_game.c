@@ -1463,15 +1463,16 @@ vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
 // when we trust the accel a lot (the controller is "still"), how quickly do we correct our gravity vector?
 #define CorrectionStillRate (FRACUNIT)
 // when we don't trust the accel (the controller is "shaky"), how quickly do we correct our gravity vector?
-#define CorrectionShakyRate (20*FRACUNIT/100)
+#define CorrectionShakyRate (10*FRACUNIT/100)
 // if our old gravity vector is close enough to our new one, limit further corrections to this proportion of the rotation speed
 #define CorrectionGyroFactor (40*FRACUNIT/100)
 // thresholds for what's considered "close enough"
 #define CorrectionGyroMinThreshold (5*FRACUNIT/100)
 #define CorrectionGyroMaxThreshold (FRACUNIT/6)
 // no matter what, always apply a minimum of this much correction to our gravity vector
-#define CorrectionMinimumSpeed (25*FRACUNIT/100)
+#define CorrectionMinimumSpeed (10*FRACUNIT/100)
 
+// when holding the controller still (shaking and turning included), corrcet this quickly to resolve error
 #define CorrectionInstantRate (80*FRACUNIT/100)
 #define CorrectionInstantShake (4*FRACUNIT/100)
 #define CorrectionInstantTurn (5*FRACUNIT/100)
