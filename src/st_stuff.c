@@ -491,11 +491,11 @@ static void ST_drawImuDebug(INT32 *height)
 	grav = G_GetGamepadGravity(pnum);
 	shake = G_GetGamepadShake(pnum);
 
-	ST_pushDebugString(height, va("    Grav : %4.2f, %4.2f,%4.2f", FixedToFloat(grav.x), FixedToFloat(grav.y), FixedToFloat(grav.z)));
-	ST_pushDebugString(height, va("   Shake : %4.2f, %4.2f,%4.2f", FixedToFloat(shake.x), FixedToFloat(shake.y), FixedToFloat(shake.z)));
-	ST_pushDebugString(height, va("Cal. Gyro: %4.2f, %4.2f,%4.2f", FixedToFloat(gyrocalibrated.x), FixedToFloat(gyrocalibrated.y), FixedToFloat(gyrocalibrated.z)));
-	ST_pushDebugString(height, va("    Gyro : %4.2f, %4.2f,%4.2f", FixedToFloat(gyro.x), FixedToFloat(gyro.y), FixedToFloat(gyro.z)));
-	ST_pushDebugString(height, va("   Accel : %4.2f, %4.2f,%4.2f", FixedToFloat(accel.x), FixedToFloat(accel.y), FixedToFloat(accel.z)));
+	ST_pushDebugString(height, va(" Grav :%4.2f,%4.2f,%4.2f", FixedToFloat(grav.x), FixedToFloat(grav.y), FixedToFloat(grav.z)));
+	ST_pushDebugString(height, va("Shake :%4.2f,%4.2f,%4.2f", FixedToFloat(shake.x), FixedToFloat(shake.y), FixedToFloat(shake.z)));
+	ST_pushDebugString(height, va("Cal. G:%4.2f,%4.2f,%4.2f", FixedToFloat(gyrocalibrated.x), FixedToFloat(gyrocalibrated.y), FixedToFloat(gyrocalibrated.z)));
+	ST_pushDebugString(height, va(" Gyro :%4.2f,%4.2f,%4.2f", FixedToFloat(gyro.x), FixedToFloat(gyro.y), FixedToFloat(gyro.z)));
+	ST_pushDebugString(height, va("Accel :%4.2f,%4.2f,%4.2f", FixedToFloat(accel.x), FixedToFloat(accel.y), FixedToFloat(accel.z)));
 }
 
 static void ST_drawRenderDebug(INT32 *height)
