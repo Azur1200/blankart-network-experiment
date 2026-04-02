@@ -2831,7 +2831,7 @@ void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 		cam->reset_aiming = false;
 	}
 
-	cam->angle += cmd->turning << TICCMD_REDUCE;
+	cam->angle = cmd->angle << TICCMD_REDUCE;
 
 	// camera movement:
 	if (!cam->button_a_held)

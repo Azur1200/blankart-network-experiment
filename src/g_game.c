@@ -1557,15 +1557,22 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		side += (accelerometertilt * 4) / JOYAXISRANGE;
 
-		//todo: control spectator camera using the gyro
+		//control spectator camera using the gyro
+		// player space gyro from http://gyrowiki.jibbsmart.com/blog:player-space-gyro-and-alternatives-explained
 		if (spectating)
 		{
+			fixed_t yawRelaxFactor = 141*FRACUNIT/100;
+			fixed_t worldYaw;
 			fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
 			vector3_t gyro = G_GetGamepadCalibratedGyro(forplayer);
-			cmd->turning -= (FixedMul(FixedMul(gyro.y, M_PI_FIXED/180), deltaseconds) * 1) * (encoremode ? -1 : 1);
-			cmd->angle -= (FixedMul(FixedMul(gyro.y, M_PI_FIXED/180), deltaseconds) * 1) * (encoremode ? -1 : 1);
-
-			cmd->aiming -= (FixedMul(FixedMul(gyro.x, M_PI_FIXED/180), deltaseconds) * 1);
+			vector3_t gravnorm = G_GetGamepadGravity(forplayer);
+			vector2_t gyroYZ = {gyro.y, gyro.z};
+			FV3_Normalize(&gravnorm);
+			// use world yaw for yaw direction, local combined yaw for magnitude
+			worldYaw = FixedMul(gyroYZ.x, gravnorm.y) + FixedMul(gyroYZ.y, gravnorm.z); // dot product but just yaw and roll
+			// yes this is backwards intentionally
+			cmd->angle += ((FixedMul(min(FixedMul(abs(worldYaw), yawRelaxFactor), FV2_Magnitude(&gyroYZ)), deltaseconds)*180)/FRACUNIT) * intsign(worldYaw) * (encoremode ? -1 : 1);
+			cmd->aiming -= (((FixedMul(gyro.x, deltaseconds)*180)/FRACUNIT));
 		}
 	}
 	else if (joystickvector.xaxis != 0)
@@ -1579,7 +1586,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (spectating)
 	{
 		INT32 mousex = gamekeydown[0][KEY_MOUSEMOVE+3] - gamekeydown[0][KEY_MOUSEMOVE+2];
-		cmd->turning -= (mousex * 8) * (encoremode ? -1 : 1);
 		cmd->angle -= (mousex * 8) * (encoremode ? -1 : 1);
 	}
 
@@ -1758,11 +1764,14 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->turning = KART_FULLTURN;
 	else if (cmd->turning < -KART_FULLTURN)
 		cmd->turning = -KART_FULLTURN;
-
-	if (cmd->angle > KART_FULLTURN)
-		cmd->angle = KART_FULLTURN;
-	else if (cmd->angle < -KART_FULLTURN)
-		cmd->angle = -KART_FULLTURN;
+		
+	if (!spectating)
+	{
+		if (cmd->angle > KART_FULLTURN)
+			cmd->angle = KART_FULLTURN;
+		else if (cmd->angle < -KART_FULLTURN)
+			cmd->angle = -KART_FULLTURN;
+	}
 
 	if (cmd->throwdir > KART_FULLTURN)
 		cmd->throwdir = KART_FULLTURN;
