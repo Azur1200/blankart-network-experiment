@@ -98,6 +98,19 @@ typedef enum
 	num_gamecontrols
 } gamecontrols_e;
 
+typedef enum
+{
+	DEADZONE_X,
+	DEADZONE_Y,
+	DEADZONE_BUTTON,
+} analogdeadzone_e;
+
+typedef enum
+{
+	ACCELEROMETER,
+	GYROSCOPE,
+} motionsensortype_e;
+
 // mouse values are used once
 extern consvar_t cv_mousesens, cv_mouseysens;
 extern consvar_t cv_mousesens2, cv_mouseysens2;
@@ -177,6 +190,22 @@ INT32 G_GetControlScheme(INT32 (*fromcontrols)[MAXINPUTMAPPING], const INT32 *gc
 void G_ResetControls(UINT8 p);
 void G_SaveKeySetting(FILE *f, INT32 (*fromcontrolsa)[MAXINPUTMAPPING], INT32 (*fromcontrolsb)[MAXINPUTMAPPING], INT32 (*fromcontrolsc)[MAXINPUTMAPPING], INT32 (*fromcontrolsd)[MAXINPUTMAPPING]);
 INT32 G_CheckDoubleUsage(INT32 keynum, INT32 playernum, boolean modify);
+
+#define MAXGAMEPADTILT (50*FRACUNIT/100)
+// #define ACCELEROMETERGRAVITY ((fixed_t)(9.80665f * ((float)FRACUNIT)))
+#define ACCELEROMETERGRAVITY 642688
+boolean G_GetGamepadCanUseTilt(INT32 p);
+void G_ResetGyroCalibration(INT32 p);
+void G_UpdateGamepadAutoCalibration(INT32 p, vector3_t accel, vector3_t gyro, boolean allowautocalibration);
+void G_UpdateGamepadGyro(INT32 p, vector3_t gyro);
+void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel);
+fixed_t G_GetGamepadShakinessFactor(INT32 p);
+vector3_t G_GetGamepadShake(INT32 p);
+vector3_t G_GetGamepadGravity(INT32 p);
+vector3_t G_GetCalibratedGyroOffset(INT32 p);
+vector3_t G_GetGamepadCalibratedGyro(INT32 p);
+vector3_t G_PlayerInputSensor(UINT8 p, motionsensortype_e sensor);
+INT32 G_GetGamepadTilt(INT32 p);
 
 #ifdef __cplusplus
 } // extern "C"

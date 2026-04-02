@@ -32,6 +32,7 @@
 #include "doomstat.h"
 #include "d_clisrv.h"
 #include "g_game.h"
+#include "g_input.h"
 #include "p_local.h"
 #include "z_zone.h"
 #include "m_cond.h"

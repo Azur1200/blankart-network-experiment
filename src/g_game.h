@@ -121,6 +121,9 @@ mapnum_t G_LevelTitleToMapNum(const char * leveltitle);
 mapnum_t G_KartMapToNative(mapnum_t mapnum);
 mapnum_t G_NativeMapToKart(mapnum_t mapnum);
 
+#define GAMEPADSHAKETHRESHOLD (UINT8_MAX/2)
+#define TILTTOSTICKEASE 6
+
 void G_ResetAnglePrediction(player_t *player);
 void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer);
 
@@ -136,31 +139,6 @@ void G_FinalClipAimingPitch(INT32 *aiming, player_t *player, boolean skybox);
 
 extern angle_t localangle[MAXSPLITSCREENPLAYERS];
 extern INT32 localaiming[MAXSPLITSCREENPLAYERS]; // should be an angle_t but signed
-
-typedef enum
-{
-	DEADZONE_X,
-	DEADZONE_Y,
-	DEADZONE_BUTTON,
-} analogdeadzone_e;
-
-typedef enum
-{
-	ACCELEROMETER,
-	GYROSCOPE,
-} motionsensortype_e;
-
-#define MAXGAMEPADTILT (50*FRACUNIT/100)
-// #define ACCELEROMETERGRAVITY ((fixed_t)(9.80665f * ((float)FRACUNIT)))
-#define ACCELEROMETERGRAVITY 642688
-#define GAMEPADSHAKETHRESHOLD (UINT8_MAX/2)
-#define TILTTOSTICKEASE 6
-boolean G_GetGamepadCanUseTilt(INT32 p);
-void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel);
-INT32 G_GetGamepadTilt(INT32 p);
-vector3_t G_GetGamepadShake(INT32 p);
-vector3_t G_GetGamepadGravity(INT32 p);
-vector3_t G_PlayerInputSensor(UINT8 p, motionsensortype_e sensor);
 
 fixed_t G_GetDeadZoneType(INT32 p, SINT8 type);
 INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital, SINT8 type);
