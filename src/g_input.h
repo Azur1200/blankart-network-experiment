@@ -95,6 +95,7 @@ typedef enum
 	gc_respawn,
 	gc_director,
 	gc_horncode,
+	gc_freelook,
 	num_gamecontrols
 } gamecontrols_e;
 

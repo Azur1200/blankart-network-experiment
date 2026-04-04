@@ -132,14 +132,17 @@ struct camera_t
 	fixed_t pan;
 	// SRB2Kart: camera pitches on slopes
 	angle_t pitch;
-
+	
 	// Freecam: A button was held since entering from menu, so don't move camera
 	UINT8 button_a_held;
-
+	
 	boolean reset_aiming;	// camera aiming needs to be reset from chase camera
-
+	
 	// Hold up/down to pan the camera vertically
-	SINT8 dpad_y_held;
+	SINT8 freelook_held;
+	// between -45 deg and 45 deg
+	fixed_t freelook_pitch;
+	fixed_t freelook_pitch_add;
 
 	// Interpolation data
 	fixed_t old_x, old_y, old_z;

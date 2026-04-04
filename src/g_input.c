@@ -179,6 +179,7 @@ INT32 gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING] = {
 	[gc_centerview ] = {KEY_END                    },
 	[gc_camreset   ] = {KEY_HOME                   },
 	[gc_camtoggle  ] = {KEY_BACKSPACE              },
+	[gc_freelook   ] = {KEY_RCTRL	               },
 };
 
 // lists of GC codes for selective operation

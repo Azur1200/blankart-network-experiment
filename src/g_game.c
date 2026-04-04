@@ -1561,18 +1561,21 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		// player space gyro from http://gyrowiki.jibbsmart.com/blog:player-space-gyro-and-alternatives-explained
 		if (spectating)
 		{
-			fixed_t yawRelaxFactor = 141*FRACUNIT/100;
-			fixed_t worldYaw;
 			fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
+			fixed_t yawRelaxFactor = 141*FRACUNIT/100;
 			vector3_t gyro = G_GetGamepadCalibratedGyro(forplayer);
 			vector3_t gravnorm = G_GetGamepadGravity(forplayer);
 			vector2_t gyroYZ = {gyro.y, gyro.z};
-			FV3_Normalize(&gravnorm);
+
 			// use world yaw for yaw direction, local combined yaw for magnitude
-			worldYaw = FixedMul(gyroYZ.x, gravnorm.y) + FixedMul(gyroYZ.y, gravnorm.z); // dot product but just yaw and roll
-			// yes this is backwards intentionally
-			cmd->angle += ((FixedMul(min(FixedMul(abs(worldYaw), yawRelaxFactor), FV2_Magnitude(&gyroYZ)), deltaseconds)*180)/FRACUNIT) * intsign(worldYaw) * (encoremode ? -1 : 1);
-			cmd->aiming -= (((FixedMul(gyro.x, deltaseconds)*180)/FRACUNIT));
+			FV3_Normalize(&gravnorm);
+			fixed_t worldYaw = FixedMul(gyro.y, gravnorm.y) + FixedMul(gyro.z, gravnorm.z); // dot product but just yaw and roll
+
+			fixed_t yaw = intsign(worldYaw) * (encoremode ? -1 : 1) *
+				min(FixedMul(-abs(worldYaw), yawRelaxFactor), FV2_Magnitude(&gyroYZ));
+
+			cmd->angle -= FixedMul(yaw, deltaseconds*180)/FRACUNIT;
+			cmd->aiming -= FixedMul(gyro.x, deltaseconds*180)/FRACUNIT;
 		}
 	}
 	else if (joystickvector.xaxis != 0)
