@@ -4913,12 +4913,197 @@ void G_GPCupIntoRoundQueue(cupheader_t *cup, UINT8 setgametype, boolean setencor
 	}
 }
 
+static UINT8 G_GetRoundQueuePosition(void)
+{
+	UINT8 position = roundqueue.position;
+	boolean permitrank = false;
+	/*if (grandprixinfo.gp == true
+		&& grandprixinfo.gamespeed >= KARTSPEED_NORMAL)
+	{
+		// On A rank pace? Then you get a chance for S rank!
+		permitrank = (K_CalculateGPPercent(&grandprixinfo.rank) >= K_SealedStarEntryRequirement(&grandprixinfo.rank));
+
+		// If you're on Master, a win floats you to rank-restricted levels for free.
+		// (This is a different class of challenge!)
+		if (grandprixinfo.masterbots && grandprixinfo.rank.position <= 1)
+			permitrank = true;
+	}*/
+
+	while (position < roundqueue.size
+		&& (roundqueue.entries[position].mapnum >= nummapheaders
+		|| mapheaderinfo[roundqueue.entries[position].mapnum] == NULL
+		|| (permitrank == false && roundqueue.entries[position].rankrestricted == true)))
+	{
+		// Skip all restricted queue entries.
+		position++;
+	}
+
+	return position;
+}
+
+// gets the nextmap number WITHOUT ANY GODDAMN SIDE EFFECTS!
+// any gametype changes or roundqueue updates should happen in G_GetNextMap or elsewhere
+mapnum_t G_CheckNextMap(boolean noadvancemap)
+{
+	mapnum_t currentmap = G_GamestateUsesLevel() ? gamemap-1 : prevmap;
+	//boolean spec = G_IsSpecialStage(currentmap);
+	INT32 i;
+
+	if (nextmapoverride != 0)
+	{
+		return nextmapoverride-1;
+	}
+	else if (roundqueue.size > 0)
+	{
+		UINT8 position = G_GetRoundQueuePosition();
+		if (position < roundqueue.size)
+		{
+			// The next entry in the queue is valid; set it as nextmap!
+			return roundqueue.entries[position].mapnum;
+		}
+		else if (grandprixinfo.gp == true)
+		{
+			// In GP, we're now ready to go to the ceremony.
+			return NEXTMAP_CEREMONY;
+		}
+	}
+	else if (grandprixinfo.gp == true)
+	{
+		// Fast And Rapid Testing
+		// this codepath is exclusively accessible through console/command line
+		return currentmap;
+	}
+
+	// no special cases? time to cycle maps!
+	mapnum_t newmap = NEXTMAP_INVALID;
+	UINT32 tolflag = G_TOLFlag(gametype);
+	mapnum_t cm;
+
+	if (true/*!(gametyperules & GTR_NOCUPSELECT)*/)
+	{
+		cupheader_t *cup = mapheaderinfo[gamemap-1]->cup;
+		UINT8 gettingresult = 0;
+
+		while (cup)
+		{
+			// Not unlocked? Grab the next result afterwards
+			/*if (!marathonmode && M_CupLocked(cup))
+			{
+				cup = cup->next;
+				gettingresult = 1;
+				continue;
+			}*/
+
+			for (i = 0; i < cup->numlevels; i++)
+			{
+				cm = cup->cachedlevels[i];
+
+				// Not valid?
+				if (cm >= nummapheaders
+					|| !mapheaderinfo[cm]
+					|| mapheaderinfo[cm]->lumpnum == LUMPERROR
+					|| !(mapheaderinfo[cm]->typeoflevel & tolflag)
+					|| (!marathonmode && M_MapLocked(cm+1)))
+					continue;
+
+				// If the map is in multiple cups, only consider the first one valid.
+				if (mapheaderinfo[cm]->cup != cup)
+				{
+					continue;
+				}
+
+				// Grab the first valid after the map you're on
+				if (gettingresult)
+				{
+					newmap = cm;
+					gettingresult = 2;
+					break;
+				}
+
+				// Not the map you're on?
+				if (cm != currentmap)
+				{
+					continue;
+				}
+
+				// Ok, this is the current map, time to get the next
+				gettingresult = 1;
+			}
+
+			// We have a good nextmap?
+			if (gettingresult == 2)
+			{
+				break;
+			}
+
+			// Ok, iterate to the next
+			cup = cup->next;
+		}
+	}
+
+	// still nothing? just go through maps sequentially...
+	if (newmap == NEXTMAP_INVALID)
+	{
+		cm = currentmap;
+
+		do
+		{
+			if (++cm >= nummapheaders)
+				cm = 0;
+
+			if (!mapheaderinfo[cm]
+				|| mapheaderinfo[cm]->lumpnum == LUMPERROR
+				|| !(mapheaderinfo[cm]->typeoflevel & tolflag)
+				|| (mapheaderinfo[cm]->menuflags & LF2_HIDEINMENU))
+			{
+				continue;
+			}
+
+			if (M_MapLocked(cm + 1) == true)
+			{
+				// We haven't earned this one.
+				continue;
+			}
+
+			break;
+		} while (cm != currentmap);
+
+		newmap = cm;
+	}
+
+	if (!noadvancemap && K_CanChangeRules(true))
+	{
+		switch (cv_advancemap.value)
+		{
+			case 0: // Stay on same map.
+				return currentmap;
+			case 3: // Voting screen.
+				for (i = 0; i < MAXPLAYERS; i++)
+				{
+					if (!playeringame[i])
+						continue;
+					if (players[i].spectator)
+						continue;
+					break;
+				}
+				if (i != MAXPLAYERS)
+					return NEXTMAP_VOTING;
+			/* FALLTHRU */
+			case 2: // Go to random map.
+				return NEXTMAP_RANDOM;
+			default:
+				// Loop back around
+				return newmap < NEXTMAP_SPECIAL ? newmap : G_GetFirstMapOfGametype(gametype);
+		}
+	}
+	else
+	{
+		return newmap;
+	}
+}
+
 void G_GetNextMap(void)
 {
-	//boolean spec = G_IsSpecialStage(prevmap+1);
-	INT32 i;
-	boolean setalready = false;
-
 	if (!server)
 	{
 		// Server is authoriative, not you
@@ -4945,11 +5130,10 @@ void G_GetNextMap(void)
 
 	// go to next level
 	// nextmap is 0-based, unlike gamemap
+	nextmap = G_CheckNextMap(false);
+
 	if (nextmapoverride != 0)
 	{
-		nextmap = (nextmapoverride-1);
-		setalready = true;
-
 		if (nextmap < nummapheaders && mapheaderinfo[nextmap])
 		{
 			if ((mapheaderinfo[nextmap]->typeoflevel & G_TOLFlag(gametype)) == 0)
@@ -4987,73 +5171,43 @@ void G_GetNextMap(void)
 	}
 	else if (roundqueue.size > 0)
 	{
-		boolean permitrank = false;
-		/*if (grandprixinfo.gp == true
-			&& grandprixinfo.gamespeed >= KARTSPEED_NORMAL)
+		UINT8 position = G_GetRoundQueuePosition();
+
+		if (position < roundqueue.size)
 		{
-			// On A rank pace? Then you get a chance for S rank!
-			permitrank = (K_CalculateGPPercent(&grandprixinfo.rank) >= K_SealedStarEntryRequirement(&grandprixinfo.rank));
+			deferencoremode = roundqueue.entries[position].encore;
 
-			// If you're on Master, a win floats you to rank-restricted levels for free.
-			// (This is a different class of challenge!)
-			if (grandprixinfo.masterbots && grandprixinfo.rank.position <= 1)
-				permitrank = true;
-		}*/
-
-		while (roundqueue.position < roundqueue.size
-			&& (roundqueue.entries[roundqueue.position].mapnum >= nummapheaders
-			|| mapheaderinfo[roundqueue.entries[roundqueue.position].mapnum] == NULL
-			|| (permitrank == false && roundqueue.entries[roundqueue.position].rankrestricted == true)))
-		{
-			// Skip all restricted queue entries.
-			roundqueue.position++;
-		}
-
-		if (roundqueue.position < roundqueue.size)
-		{
-			// The next entry in the queue is valid; set it as nextmap!
-			nextmap = roundqueue.entries[roundqueue.position].mapnum;
-			deferencoremode = roundqueue.entries[roundqueue.position].encore;
-
-			// And we handle gametype changes, too.
-			if (roundqueue.entries[roundqueue.position].gametype != gametype)
+			// Handle gametype changes.
+			if (roundqueue.entries[position].gametype != gametype)
 			{
 				INT32 lastgametype = gametype;
-				G_SetGametype(roundqueue.entries[roundqueue.position].gametype);
+				G_SetGametype(roundqueue.entries[position].gametype);
 				D_GameTypeChanged(lastgametype);
 			}
 
 			// Is this special..?
-			forcespecialstage = roundqueue.entries[roundqueue.position].rankrestricted;
+			forcespecialstage = roundqueue.entries[position].rankrestricted;
 
 			// On entering roundqueue mode, kill the non-PWR between-round scores.
 			// This makes it viable as a future tournament mode base.
-			if (roundqueue.position == 0)
+			if (position == 0)
 			{
 				forceresetplayers = true;
 			}
 
 			// Handle primary queue position update.
-			roundqueue.position++;
+			roundqueue.position = position + 1;
 			if (grandprixinfo.gp == false || gametype == GT_RACE) // roundqueue.entries[0].gametype
 			{
 				roundqueue.roundnum++;
 			}
-
-			setalready = true;
 		}
 		else
 		{
 			// Wipe the queue info.
 			memset(&roundqueue, 0, sizeof(struct roundqueue));
 
-			if (grandprixinfo.gp == true)
-			{
-				// In GP, we're now ready to go to the ceremony.
-				nextmap = NEXTMAP_CEREMONY;
-				setalready = true;
-			}
-			else
+			if (grandprixinfo.gp == false)
 			{
 				// On exiting roundqueue mode, kill the non-PWR between-round scores.
 				// This prevents future tournament winners from carrying their wins out.
@@ -5063,151 +5217,6 @@ void G_GetNextMap(void)
 
 		// Make sure the next D_MapChange sends updated roundqueue state.
 		roundqueue.netcommunicate = true;
-	}
-	else if (grandprixinfo.gp == true)
-	{
-		// Fast And Rapid Testing
-		// this codepath is exclusively accessible through console/command line
-		nextmap = prevmap;
-		setalready = true;
-	}
-
-	if (setalready == false)
-	{
-		UINT32 tolflag = G_TOLFlag(gametype);
-		register INT16 cm;
-
-		if (true/*!(gametyperules & GTR_NOCUPSELECT)*/)
-		{
-			cupheader_t *cup = mapheaderinfo[gamemap-1]->cup;
-			UINT8 gettingresult = 0;
-
-			while (cup)
-			{
-				// Not unlocked? Grab the next result afterwards
-				/*if (!marathonmode && M_CupLocked(cup))
-				{
-					cup = cup->next;
-					gettingresult = 1;
-					continue;
-				}*/
-
-				for (i = 0; i < cup->numlevels; i++)
-				{
-					cm = cup->cachedlevels[i];
-
-					// Not valid?
-					if (cm >= nummapheaders
-						|| !mapheaderinfo[cm]
-						|| mapheaderinfo[cm]->lumpnum == LUMPERROR
-						|| !(mapheaderinfo[cm]->typeoflevel & tolflag)
-						|| (!marathonmode && M_MapLocked(cm+1)))
-						continue;
-
-					// If the map is in multiple cups, only consider the first one valid.
-					if (mapheaderinfo[cm]->cup != cup)
-					{
-						continue;
-					}
-
-					// Grab the first valid after the map you're on
-					if (gettingresult)
-					{
-						nextmap = cm;
-						gettingresult = 2;
-						break;
-					}
-
-					// Not the map you're on?
-					if (cm != prevmap)
-					{
-						continue;
-					}
-
-					// Ok, this is the current map, time to get the next
-					gettingresult = 1;
-				}
-
-				// We have a good nextmap?
-				if (gettingresult == 2)
-				{
-					break;
-				}
-
-				// Ok, iterate to the next
-				cup = cup->next;
-			}
-
-			// Didn't get a nextmap before reaching the end?
-			if (gettingresult != 2)
-			{
-				nextmap = NEXTMAP_CEREMONY; // ceremonymap
-			}
-		}
-		else
-		{
-			cm = prevmap;
-
-			do
-			{
-				if (++cm >= nummapheaders)
-					cm = 0;
-
-				if (!mapheaderinfo[cm]
-					|| mapheaderinfo[cm]->lumpnum == LUMPERROR
-					|| !(mapheaderinfo[cm]->typeoflevel & tolflag)
-					|| (mapheaderinfo[cm]->menuflags & LF2_HIDEINMENU))
-				{
-					continue;
-				}
-
-				if (M_MapLocked(cm + 1) == true)
-				{
-					// We haven't earned this one.
-					continue;
-				}
-
-				break;
-			} while (cm != prevmap);
-
-			nextmap = cm;
-		}
-
-		if (K_CanChangeRules(true))
-		{
-			switch (cv_advancemap.value)
-			{
-				case 0: // Stay on same map.
-					nextmap = prevmap;
-					break;
-				case 3: // Voting screen.
-				{
-					for (i = 0; i < MAXPLAYERS; i++)
-					{
-						if (!playeringame[i])
-							continue;
-						if (players[i].spectator)
-							continue;
-						break;
-					}
-					if (i != MAXPLAYERS)
-					{
-						nextmap = NEXTMAP_VOTING;
-						break;
-					}
-				}
-				/* FALLTHRU */
-				case 2: // Go to random map.
-					nextmap = G_RandMap(G_TOLFlag(gametype), prevmap, false, 0, false, NULL);
-					break;
-				default:
-					if (nextmap >= NEXTMAP_SPECIAL) // Loop back around
-					{
-						nextmap = G_GetFirstMapOfGametype(gametype);
-					}
-					break;
-			}
-		}
 	}
 
 	// We are committed to this map now.
@@ -5359,7 +5368,11 @@ void G_AfterIntermission(void)
 //
 void G_NextLevel(void)
 {
-	if (nextmap >= NEXTMAP_SPECIAL)
+	if (nextmap == NEXTMAP_RANDOM)
+	{
+		nextmap = G_RandMap(G_TOLFlag(gametype), prevmap, false, 0, false, NULL);
+	}
+	else if (nextmap >= NEXTMAP_SPECIAL)
 	{
 		G_EndGame();
 		return;
@@ -6553,16 +6566,9 @@ mapnum_t G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 			return gamemap;
 		else if (mapname[0] == '+') // next map
 		{
-			//TODO: FIXME
-			// THIS CURRENTLY ALWAYS RETURNS ZERO. FIGURE OUT WHY.
-			G_GetNextMap();
-
-			if (nextmap < NEXTMAP_INVALID)
-				return nextmap;
-			else
-				return 0;
+			newmapnum = G_CheckNextMap(true);
+			return newmapnum >= NEXTMAP_SPECIAL ? 0 : newmapnum+1;
 		}
-
 	}
 
 	/* Now detect map number in base 10, which no one asked for. */

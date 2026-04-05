@@ -3366,7 +3366,7 @@ INT32 mapchangepending = 0;
   */
 void D_MapChange(mapnum_t mapnum, INT32 newgametype, boolean pencoremode, boolean presetplayers, INT32 delay, boolean skipprecutscene, boolean pforcespecialstage)
 {
-	static char buf[1+1+1+1+1+2+4];
+	static char buf[1+1+1+1+2+2+4];
 	static char *buf_p = buf;
 	// The supplied data are assumed to be good.
 	I_Assert(delay >= 0 && delay <= 2);
@@ -6790,19 +6790,13 @@ static void Command_Showmap_f(void)
 	{
 		char *title = G_BuildMapTitle(printmap + 1);
 
-		if (mapheaderinfo[gamemap-1]->zonttl[0] && !(mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE))
+		/* if (mapheaderinfo[printmap]->menuttl[0])
 		{
-			if (mapheaderinfo[gamemap-1]->actnum[0])
-				CONS_Printf("%s (%d): %s %s %s", G_BuildMapName(gamemap), gamemap, mapheaderinfo[gamemap-1]->lvlttl, mapheaderinfo[gamemap-1]->zonttl, mapheaderinfo[gamemap-1]->actnum);
-			else
-				CONS_Printf("%s (%d): %s %s\n", G_BuildMapName(gamemap), gamemap, mapheaderinfo[gamemap-1]->lvlttl, mapheaderinfo[gamemap-1]->zonttl);
+			CONS_Printf("%s (%d): %s / %s\n", G_BuildMapName(printmap + 1), printmap, title, mapheaderinfo[printmap]->menuttl);
 		}
-		else
+		else */
 		{
-			if (mapheaderinfo[gamemap-1]->actnum[0])
-				CONS_Printf("%s (%d): %s %s\n", G_BuildMapName(gamemap), gamemap, mapheaderinfo[gamemap-1]->lvlttl, mapheaderinfo[gamemap-1]->actnum);
-			else
-				CONS_Printf("%s (%d): %s\n", G_BuildMapName(gamemap), gamemap, mapheaderinfo[gamemap-1]->lvlttl);
+			CONS_Printf("%s (%d): %s\n", G_BuildMapName(printmap + 1), printmap, title);
 		}
 
 		Z_Free(title);

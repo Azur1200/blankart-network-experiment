@@ -224,6 +224,7 @@ UINT8 G_GetGametypeColor(INT16 gt);
 void G_BeginLevelExit(void);
 void G_FinishExitLevel(void);
 void G_NextLevel(void);
+mapnum_t G_CheckNextMap(boolean noadvancemap);
 void G_GetNextMap(void);
 void G_Continue(void);
 void G_UseContinue(void);

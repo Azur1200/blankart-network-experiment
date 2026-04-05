@@ -759,7 +759,25 @@ skiptallydrawer:
 		else if (modeattacking != ATTACKING_NONE)
 			string = va("Exiting in %d", tickdown);
 		else
-			string = va("%s starts in %d", cv_advancemap.string, tickdown);
+		{
+			mapnum_t next = G_CheckNextMap(false);
+			switch (next)
+			{
+			case NEXTMAP_VOTING:
+				string = "Vote";
+				break;
+			case NEXTMAP_CEREMONY:
+				string = "Ceremony";
+				break;
+			case NEXTMAP_RANDOM:
+				string = "Random";
+				break;
+			default:
+				string = next == prevmap ? "Same" : "Next";
+				break;
+			}
+			string = va("%s starts in %d", string, tickdown);
+		}
 
 		V_DrawCenteredString(BASEVIDWIDTH/2, 188, hilicol,
 			string);
