@@ -2309,6 +2309,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			//K_PlayAttackTaunt(player->mo);
 			K_SetItemOut(player, KITEM_JAWZ, IF_ITEMOUT|IF_SEEKING);
 			S_StartSound(player->mo, sfx_s3k3a);
+			K_EnableSeekingReticule(player, false);
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
 			{
@@ -2344,7 +2345,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 
 			if (player->itemamount <= 0)
 			{
-				player->itemflags &= ~IF_SEEKING;
+				K_DisableSeekingReticule(player);
 			}
 		}
 		break;
@@ -2485,16 +2486,16 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 						{
 							S_StopSoundByID(player->mo, sfx_vwre);
 						}
-						player->itemflags |= IF_SEEKING;
+						K_EnableSeekingReticule(player, false);
 						player->bananadrag += 4;
 					}
 					else
 					{
-						player->itemflags |= IF_SEEKING;
 						effectscale = Easing_Linear(CLAMP(FixedDiv(player->attractioncharge, ATTRACTIONCHARGETIME), 0, FRACUNIT),
 							player->mo->scale/4,
 							player->mo->scale/2
 						);
+						K_EnableSeekingReticule(player, false);
 					}
 
 					// stolen from machine water breathing
@@ -2565,7 +2566,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 							K_BotResetItemConfirm(player, false);
 						}
 						
-						player->itemflags |= (IF_SEEKING|IF_PASSIVESEEKING);
+						K_EnableSeekingReticule(player, true);
 					}
 					player->attractioncharge = 0;
 				}
@@ -2868,6 +2869,20 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 			}
 		}
 	}
+}
+
+void K_EnableSeekingReticule(player_t *player, boolean passive)
+{
+	player->itemflags |= IF_SEEKING;
+	if (passive)
+	{
+		player->itemflags |= IF_PASSIVESEEKING;
+	}
+}
+
+void K_DisableSeekingReticule(player_t *player)
+{
+	player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
 }
 
 void K_KartSeekingReticule(player_t *player)

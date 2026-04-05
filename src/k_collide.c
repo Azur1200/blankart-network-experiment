@@ -870,7 +870,7 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 		t2->player->attractionattack = 0;
 		t2->player->attractionattack_hipower = 0;
 		t2->player->attractionboost = 0;
-		t2->player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
+		K_DisableSeekingReticule(t2->player);
 	}
 
 	S_StartSound(t1, sfx_s3k44);

@@ -228,6 +228,8 @@ void K_AltShrinkPityIncrease(player_t *player);
 void K_SpawnEggMineBumpEffect(mobj_t *mo);
 void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source);
 
+void K_EnableSeekingReticule(player_t *player, boolean passive);
+void K_DisableSeekingReticule(player_t *player);
 void K_KartSeekingReticule(player_t *player);
 player_t *K_FindJawzTarget(mobj_t *actor, player_t *source);
 

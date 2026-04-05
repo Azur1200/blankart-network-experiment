@@ -791,7 +791,7 @@ static void K_SetPlayerBumped(player_t *player, mobj_t *comparemobj)
 			comparemobj->player->attractionattack = 0;
 			comparemobj->player->attractionattack_hipower = 0;
 			comparemobj->player->attractionboost = 0;
-			comparemobj->player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
+			K_DisableSeekingReticule(comparemobj->player);
 		}
 	}
 	else if (pshield == KSHIELD_NONE)
@@ -5454,9 +5454,9 @@ void K_DropHnextList(player_t *player)
 	else if ((player->itemflags & IF_ITEMOUT)
 	&& (dropall || (--player->itemamount <= 0)))
 	{
+		K_DisableSeekingReticule(player);
 		player->itemamount = 0;
 		K_UnsetItemOut(player);
-		player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
 		player->itemtype = KITEM_NONE;
 	}
 }
@@ -5487,7 +5487,7 @@ void K_PopPlayerShield(player_t *player)
 			player->attractionattack = 0;
 			player->attractionattack_hipower = 0;
 			player->attractionboost = 0;
-			player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
+			K_DisableSeekingReticule(player);
 			break;
 		case KSHIELD_BUBBLE:
 			K_BreakBubbleShield(player);
@@ -11906,7 +11906,7 @@ void K_KartAttractHomingAttack(player_t *player)
 		player->attractionattack = 0;
 		player->attractionattack_hipower = false;
 		player->attractionboost = 0;
-		player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
+		K_DisableSeekingReticule(player);
 	}
 }
 #undef TargetThreshold
