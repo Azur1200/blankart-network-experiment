@@ -1471,7 +1471,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		vector3_t gyro = G_PlayerInputSensor(forplayer, GYROSCOPE);
 
 		G_UpdateGamepadAutoCalibration(forplayer, accel, gyro,
-			(paused || P_AutoPause() || (menustack[0] == MN_OP_CONTROLSETUP)));
+			(menustack[0] == MN_OP_CONTROLSETUP));
 
 		G_UpdateGamepadGyro(forplayer, gyro);
 		G_UpdateGamepadGravity(forplayer, G_GetGamepadCalibratedGyro(forplayer), accel);

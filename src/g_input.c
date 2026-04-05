@@ -1233,7 +1233,8 @@ void Command_Setcontrol4_f(void)
 // accelerometer and gyro stuff
 
 // when holding the controller still (shaking and turning included), correct this quickly to resolve error
-#define GyroCalibrationRollingAvgSamples (TICRATE)
+#define GyroCalibrationRollingAvgSamples (TICRATE/2)
+#define GyroCalibrationStart (TICRATE/2)
 #define GyroCalibrationTrust (1*FRACUNIT/100)
 
 boolean localgyrocalibrating[MAXSPLITSCREENPLAYERS];
@@ -1323,7 +1324,7 @@ void G_UpdateGamepadAutoCalibration(INT32 p, vector3_t accel, vector3_t gyro, bo
 	else
 	{
 		// incomplete calibration
-		if (localgyrocalibrating[p] && localgyrocalibrationsamples[p] <= GyroCalibrationRollingAvgSamples)
+		if (localgyrocalibrating[p] && localgyrocalibrationsamples[p] <= (GyroCalibrationRollingAvgSamples + GyroCalibrationStart))
 		{
 			FV3_Copy(&localgyrocalibrationoffset[p], &localgyrocalibrationlastoffset[p]);
 			localgyrocalibrationsamples[p] = 0;
@@ -1348,12 +1349,15 @@ void G_UpdateGamepadGyro(INT32 p, vector3_t gyro)
 	if (localgyrocalibrating[p])
 	{
 		localgyrocalibrationsamples[p]++;
-		FV3_Load(
-			&localgyrocalibrationoffset[p],
-			(((GyroCalibrationRollingAvgSamples-1)*localgyrocalibrationoffset[p].x) + gyro.x)/GyroCalibrationRollingAvgSamples,
-			(((GyroCalibrationRollingAvgSamples-1)*localgyrocalibrationoffset[p].y) + gyro.y)/GyroCalibrationRollingAvgSamples,
-			(((GyroCalibrationRollingAvgSamples-1)*localgyrocalibrationoffset[p].z) + gyro.z)/GyroCalibrationRollingAvgSamples
-		);
+		if (localgyrocalibrationsamples[p] > GyroCalibrationStart)
+		{
+			FV3_Load(
+				&localgyrocalibrationoffset[p],
+				(((GyroCalibrationRollingAvgSamples-1)*localgyrocalibrationoffset[p].x) + gyro.x)/GyroCalibrationRollingAvgSamples,
+				(((GyroCalibrationRollingAvgSamples-1)*localgyrocalibrationoffset[p].y) + gyro.y)/GyroCalibrationRollingAvgSamples,
+				(((GyroCalibrationRollingAvgSamples-1)*localgyrocalibrationoffset[p].z) + gyro.z)/GyroCalibrationRollingAvgSamples
+			);
+		}
 	}
 	CONS_Debug(DBG_IMU, "Gyro calibration samples: %d\n", localgyrocalibrationsamples[p]);
 
@@ -1564,3 +1568,5 @@ boolean G_GetGamepadCanUseTilt(INT32 p)
 #undef SmoothingHalfTime
 
 #undef GyroCalibrationTrust
+#undef GyroCalibrationStart
+#undef GyroCalibrationRollingAvgSamples
