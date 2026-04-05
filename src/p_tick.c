@@ -650,16 +650,50 @@ void P_RunChaseCameras(void)
 	{
 		if (camera[i].chase)
 		{
-			player_t *p = &players[displayplayers[i]];
+			INT32 forplayer = displayplayers[i];
+			player_t *p = &players[forplayer];
 			camera_t *cam = &camera[i];
 
-			if (p->mo && p->cmd.throwdir != 0)
+			// client sided
+			if (p->mo && G_PlayerInputDown(forplayer, gc_freelook, false, DEADZONE_BUTTON))
 			{
-				if (p->speed < 6 * p->mo->scale && abs(cam->dpad_y_held) < 2*TICRATE)
-					cam->dpad_y_held += intsign(p->cmd.throwdir);
+				// instantly able to move camera
+				if (p->speed < 6 * p->mo->scale && abs(cam->freelook_held) < 2*TICRATE)
+				{
+					cam->freelook_held = 2*TICRATE;
+				}
+
+				if (abs(cam->freelook_held) >= 2*TICRATE)
+				{
+					cam->freelook_pitch = (45*FixedDiv(p->cmd.throwdir, KART_FULLTURN));
+
+					// gyro aiming
+					if (G_GetGamepadCanUseTilt(forplayer) && cv_tiltcontrol[forplayer].value == 1)
+					{
+						fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
+						vector3_t gyro = G_GetGamepadCalibratedGyro(forplayer);
+						cam->freelook_pitch_add -= FixedMul(gyro.x, deltaseconds);
+					}
+				}
+			}
+			else if (p->mo && p->cmd.throwdir != 0)
+			{
+				if (p->speed < 6 * p->mo->scale && abs(cam->freelook_held) < 2*TICRATE)
+				{
+					cam->freelook_held += intsign(p->cmd.throwdir);
+				}
+				
+				if (abs(cam->freelook_held) >= 2*TICRATE)
+				{
+					cam->freelook_pitch = 45*FRACUNIT*intsign(p->cmd.throwdir);
+				}
 			}
 			else
-				cam->dpad_y_held = 0;
+			{
+				cam->freelook_held = 0;
+				cam->freelook_pitch = 0;
+				cam->freelook_pitch_add = 0;
+			}
 
 			P_MoveChaseCamera(p, cam, false);
 		}

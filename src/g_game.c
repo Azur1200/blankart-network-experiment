@@ -51,7 +51,6 @@
 #include "m_cond.h" // condition sets
 #include "r_fps.h" // frame interpolation/uncapped
 #include "lua_hud.h"
-#include "m_easing.h"
 
 // SRB2kart
 #include "k_kart.h"
@@ -1404,235 +1403,6 @@ static void G_HandleAxisDeadZone(UINT8 splitnum, joystickvector2_t *joystickvect
 	}
 }
 
-// copy/pasted from the lua version of these routines
-inline static vector3_t *QuaternionMulVec3(vector3_t *out, vector3_t *a, vector4_t *b)
-{
-	fixed_t ax = a->x, ay = a->y, az = a->z, aw = 0;
-	fixed_t bx = b->x, by = b->y, bz = b->z, bw = b->a;
-
-	FV3_NormalizeEx(out, FV3_Load(out,
-		FixedMul(aw, bx) + FixedMul(ax, bw) + FixedMul(ay, bz) - FixedMul(az, by),
-		FixedMul(aw, by) - FixedMul(ax, bz) + FixedMul(ay, bw) + FixedMul(az, bx),
-		FixedMul(aw, bz) + FixedMul(ax, by) - FixedMul(ay, bx) + FixedMul(az, bw)
-	));
-
-	return out;
-}
-
-inline static fixed_t FV3_LengthSquared(const vector3_t *vec)
-{
-	return FixedMul(vec->x, vec->x) + FixedMul(vec->y, vec->y) + FixedMul(vec->z, vec->z);
-}
-
-inline static fixed_t FV3_Length(const vector3_t *vec)
-{
-	return FixedSqrt(FV3_LengthSquared(vec));
-}
-
-inline static vector4_t AngleAxis(fixed_t angle, fixed_t x, fixed_t y, fixed_t z)
-{
-	fixed_t sinangle = FINESINE(FixedAngle(angle/2) >> ANGLETOFINESHIFT);
-	fixed_t cosangle = FINECOSINE(FixedAngle(angle/2) >> ANGLETOFINESHIFT);
-	vector3_t axis = {x, y, z};
-	vector4_t result;
-
-	FV3_Normalize(&axis);
-
-	FV4_Load(&result,
-		FixedMul(axis.x, sinangle),
-		FixedMul(axis.y, sinangle),
-		FixedMul(axis.z, sinangle),
-		cosangle
-	);
-
-	return result;
-}
-
-// math sourced from this article
-// http://gyrowiki.jibbsmart.com/blog:finding-gravity-with-sensor-fusion
-// state
-fixed_t localshakinessfac[MAXSPLITSCREENPLAYERS];
-vector3_t localsmoothedaccel[MAXSPLITSCREENPLAYERS];
-vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
-
-// the time it takes in our acceleration smoothing for 'A' to get halfway to 'B'
-#define SmoothingHalfTime (0.01)
-// thresholds of trust for accel shakiness. less shakiness = more trust
-#define ShakinessMaxThreshold (50*FRACUNIT/100)
-#define ShakinessMinThreshold (1*FRACUNIT/100)
-// when we trust the accel a lot (the controller is "still"), how quickly do we correct our gravity vector?
-#define CorrectionStillRate (FRACUNIT)
-// when we don't trust the accel (the controller is "shaky"), how quickly do we correct our gravity vector?
-#define CorrectionShakyRate (10*FRACUNIT/100)
-// if our old gravity vector is close enough to our new one, limit further corrections to this proportion of the rotation speed
-#define CorrectionGyroFactor (40*FRACUNIT/100)
-// thresholds for what's considered "close enough"
-#define CorrectionGyroMinThreshold (5*FRACUNIT/100)
-#define CorrectionGyroMaxThreshold (FRACUNIT/4)
-// no matter what, always apply a minimum of this much correction to our gravity vector
-#define CorrectionMinimumSpeed (1*FRACUNIT/100)
-
-// when holding the controller still (shaking and turning included), corrcet this quickly to resolve error
-#define CorrectionInstantRate (80*FRACUNIT/100)
-#define CorrectionInstantShake (4*FRACUNIT/100)
-#define CorrectionInstantTurn (5*FRACUNIT/100)
-
-void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
-{
-	// convert gyro input to reverse rotation
-	vector3_t invAccel = {-accel.x, -accel.y, -accel.z};
-	fixed_t correctionRate = 0;
-	// scaling is reversed, smaller time scales = larger steps in this code
-	// (1/timescale)/dt
-	fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
-	// we don't have exp2 and we actually need it here to take timescale into account :(
-	fixed_t smoothFactor = FloatToFixed(exp2(-FixedToFloat(deltaseconds) / SmoothingHalfTime));
-	fixed_t angleRate;
-	fixed_t correctionLimit;
-	vector4_t invRotation = AngleAxis(
-		FixedMul(FV3_Length(&gyro), deltaseconds),
-		-gyro.x, 
-		-gyro.y, 
-		-gyro.z
-	);
-	vector3_t gravityDelta = {0};
-	vector3_t gravityDeltaDirection = {0};
-	vector3_t correction = {0};
-
-	if (!G_GetGamepadCanUseTilt(p)) return;
-	CONS_Debug(DBG_IMU, "= Update Gravity Delta Time: %4.3f =\n", FixedToFloat(deltaseconds));
-
-	// rotate gravity vector
-	QuaternionMulVec3(&localgravityvectors[p], &localgravityvectors[p], &invRotation);
-	QuaternionMulVec3(&localsmoothedaccel[p], &localsmoothedaccel[p], &invRotation);
-	localshakinessfac[p] = FixedMul(localshakinessfac[p], smoothFactor), 
-	FV3_SubEx(&accel, &localsmoothedaccel[p], &correction);
-	localshakinessfac[p] = max(localshakinessfac[p], FV3_Length(&correction));
-	FV3_Load(&localsmoothedaccel[p],
-		Easing_Linear(smoothFactor, accel.x, localsmoothedaccel[p].x),
-		Easing_Linear(smoothFactor, accel.y, localsmoothedaccel[p].y),
-		Easing_Linear(smoothFactor, accel.z, localsmoothedaccel[p].z)
-	);
-	
-	CONS_Debug(DBG_IMU, "Shakiness: %4.2f\n", FixedToFloat(localshakinessfac[p]));
-
-	FV3_SubEx(&invAccel, &localgravityvectors[p], &gravityDelta);
-	FV3_NormalizeEx(&gravityDelta, &gravityDeltaDirection);
-
-	if (ShakinessMaxThreshold > ShakinessMinThreshold)
-	{
-		fixed_t stillness = CLAMP(FixedDiv((localshakinessfac[p] - ShakinessMinThreshold), (ShakinessMaxThreshold - ShakinessMinThreshold)), 0, FRACUNIT);
-		correctionRate = CorrectionStillRate + FixedMul((CorrectionShakyRate - CorrectionStillRate), stillness);
-	}
-	else if (localshakinessfac[p] > ShakinessMaxThreshold)
-	{
-		correctionRate = CorrectionShakyRate;
-	}
-	else
-	{
-		correctionRate = CorrectionStillRate;
-	}
-
-	// limit in proportion to rotation rate
-	angleRate = FixedMul(FV3_Length(&gyro), M_PI_FIXED/180);
-	correctionLimit = max(FixedMul(FixedMul(angleRate, FV3_Length(&localgravityvectors[p])), CorrectionGyroFactor), CorrectionMinimumSpeed);
-
-	CONS_Debug(DBG_IMU, "Angle Rate: %4.3f\n", FixedToFloat(angleRate));
-	CONS_Debug(DBG_IMU, "Correction Limit: %4.3f\n", FixedToFloat(correctionLimit));
-
-	if (correctionRate > correctionLimit) {
-		fixed_t closeEnoughFactor;
-		if (CorrectionGyroMaxThreshold > CorrectionGyroMinThreshold)
-		{
-			closeEnoughFactor = CLAMP(FixedDiv((FV3_Length(&gravityDelta) - CorrectionGyroMinThreshold), (CorrectionGyroMaxThreshold - CorrectionGyroMinThreshold)), 0, FRACUNIT);
-		}
-		else if (FV3_Length(&gravityDelta) > CorrectionGyroMaxThreshold)
-		{
-			closeEnoughFactor = FRACUNIT;
-		}
-		else
-		{
-			closeEnoughFactor = 0;
-		}
-		
-		CONS_Debug(DBG_IMU, "'Close Enough' Fac: %4.3f\n", FixedToFloat(closeEnoughFactor));
-		correctionRate = correctionLimit + FixedMul((correctionRate - correctionLimit), closeEnoughFactor);
-	}
-
-	if (localshakinessfac[p] < CorrectionInstantShake && angleRate < CorrectionInstantTurn)
-	{
-		correctionRate = max(correctionRate, CorrectionInstantRate);
-	}
-
-	CONS_Debug(DBG_IMU, "Correction Rate: %4.2f\n", FixedToFloat(correctionRate));
-
-	FV3_Load(&correction,
-		FixedMul(gravityDelta.x, FixedMul(deltaseconds, correctionRate)),
-		FixedMul(gravityDelta.y, FixedMul(deltaseconds, correctionRate)),
-		FixedMul(gravityDelta.z, FixedMul(deltaseconds, correctionRate))
-	);
-	if ((FV3_LengthSquared(&correction) < FV3_LengthSquared(&gravityDelta)))
-	{
-		FV3_Add(&localgravityvectors[p], &correction);
-	}
-	else
-	{
-		FV3_Load(&localgravityvectors[p], invAccel.x, invAccel.y, invAccel.z);
-	}
-}
-
-INT32 G_GetGamepadTilt(INT32 p)
-{	
-	fixed_t tilt;
-	fixed_t curve;
-	if (!G_GetGamepadCanUseTilt(p)) return 0;
-	tilt = CLAMP(FixedDiv(G_GetGamepadGravity(p).x + MAXGAMEPADTILT, 2*MAXGAMEPADTILT), 0, FRACUNIT);
-	CONS_Debug(DBG_IMU, "Tilt: %4.2f\n", FixedToFloat(tilt));
-	
-	curve = FINESINE(FixedAngle(180*(tilt-FRACUNIT/2))>>ANGLETOFINESHIFT);
-	CONS_Debug(DBG_IMU, "Pinched Tilt: %4.2f\n", FixedToFloat(curve));
-	
-	return (JOYAXISRANGE * curve)/FRACUNIT;
-}
-
-vector3_t G_GetGamepadGravity(INT32 p)
-{
-	const vector3_t zero = {0, -ACCELEROMETERGRAVITY, 0};
-	if (!G_GetGamepadCanUseTilt(p)) return zero;
-	return localgravityvectors[p];
-}
-
-vector3_t G_GetGamepadShake(INT32 p)
-{
-	vector3_t accel = {0};
-	if (!G_GetGamepadCanUseTilt(p)) return accel;
-	accel = G_PlayerInputSensor(p, ACCELEROMETER);
-	FV3_Add(&accel, &localgravityvectors[p]);
-
-	return accel;
-}
-
-boolean G_GetGamepadCanUseTilt(INT32 p)
-{
-	if (p >= MAXSPLITSCREENPLAYERS)
-	{
-#ifdef PARANOIA
-		CONS_Debug(DBG_GAMELOGIC, "G_GetGamepadCanUseTilt: Invalid player ID %d\n", p);
-#endif
-		return false;
-	}
-
-	return (I_ControllerSupportsSensorAccelerometer(p) && I_ControllerSupportsSensorGyro(p));
-}
-#undef ShakinessMaxThreshold
-#undef ShakinessMinThreshold
-#undef CorrectionStillRate
-#undef CorrectionShakyRate
-#undef CorrectionGyroFactor
-#undef CorrectionGyroMinThreshold
-#undef CorrectionGyroMaxThreshold
-#undef CorrectionMinimumSpeed
-
 //
 // G_BuildTiccmd
 // Builds a ticcmd from all of the available inputs
@@ -1699,7 +1469,12 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	{
 		vector3_t accel = G_PlayerInputSensor(forplayer, ACCELEROMETER);
 		vector3_t gyro = G_PlayerInputSensor(forplayer, GYROSCOPE);
-		G_UpdateGamepadGravity(forplayer, gyro, accel);
+
+		G_UpdateGamepadAutoCalibration(forplayer, accel, gyro,
+			(menustack[0] == MN_OP_CONTROLSETUP));
+
+		G_UpdateGamepadGyro(forplayer, gyro);
+		G_UpdateGamepadGravity(forplayer, G_GetGamepadCalibratedGyro(forplayer), accel);
 	}
 
 	// why build a ticcmd if we're paused?
@@ -1782,10 +1557,26 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		side += (accelerometertilt * 4) / JOYAXISRANGE;
 
-		//todo: control spectator camera using the gyro
-		// if (spectating)
-		// {
-		// }
+		//control spectator camera using the gyro
+		// player space gyro from http://gyrowiki.jibbsmart.com/blog:player-space-gyro-and-alternatives-explained
+		if (spectating)
+		{
+			fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
+			fixed_t yawRelaxFactor = 141*FRACUNIT/100;
+			vector3_t gyro = G_GetGamepadCalibratedGyro(forplayer);
+			vector3_t gravnorm = G_GetGamepadGravity(forplayer);
+			vector2_t gyroYZ = {gyro.y, gyro.z};
+
+			// use world yaw for yaw direction, local combined yaw for magnitude
+			FV3_Normalize(&gravnorm);
+			fixed_t worldYaw = FixedMul(gyro.y, gravnorm.y) + FixedMul(gyro.z, gravnorm.z); // dot product but just yaw and roll
+
+			fixed_t yaw = intsign(worldYaw) * (encoremode ? -1 : 1) *
+				min(FixedMul(-abs(worldYaw), yawRelaxFactor), FV2_Magnitude(&gyroYZ));
+
+			cmd->angle -= FixedMul(yaw, deltaseconds*180)/FRACUNIT;
+			cmd->aiming -= FixedMul(gyro.x, deltaseconds*180)/FRACUNIT;
+		}
 	}
 	else if (joystickvector.xaxis != 0)
 	{
@@ -1798,7 +1589,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (spectating)
 	{
 		INT32 mousex = gamekeydown[0][KEY_MOUSEMOVE+3] - gamekeydown[0][KEY_MOUSEMOVE+2];
-		cmd->turning -= (mousex * 8) * (encoremode ? -1 : 1);
 		cmd->angle -= (mousex * 8) * (encoremode ? -1 : 1);
 	}
 
@@ -1977,11 +1767,14 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->turning = KART_FULLTURN;
 	else if (cmd->turning < -KART_FULLTURN)
 		cmd->turning = -KART_FULLTURN;
-
-	if (cmd->angle > KART_FULLTURN)
-		cmd->angle = KART_FULLTURN;
-	else if (cmd->angle < -KART_FULLTURN)
-		cmd->angle = -KART_FULLTURN;
+		
+	if (!spectating)
+	{
+		if (cmd->angle > KART_FULLTURN)
+			cmd->angle = KART_FULLTURN;
+		else if (cmd->angle < -KART_FULLTURN)
+			cmd->angle = -KART_FULLTURN;
+	}
 
 	if (cmd->throwdir > KART_FULLTURN)
 		cmd->throwdir = KART_FULLTURN;
@@ -2001,8 +1794,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			if (abs(tilt) > MAXGAMEPADTILT)
 				cmd->flags |= TICCMD_EXCESSTILT;
 		}
-
-		CONS_Debug(DBG_IMU, "Shake: %4.2f\n", FixedToFloat(FV3_Length(&shake)));
 		//cmd->shake = CLAMP((GAMEPADSHAKETHRESHOLD*FV3_Length(&shake))/FRACUNIT, 0, UINT8_MAX);
 
 		//CONS_Debug(DBG_IMU, "CMD Tilt: %d, Shake: %d\n", cmd->tilt, cmd->shake);

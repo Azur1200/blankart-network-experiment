@@ -475,15 +475,10 @@ static void ST_drawMusicDebug(INT32 *height)
 	ST_pushDebugString(height, va("    Song: %8s", mname));
 }
 
-static INT32 ST_getFixedFrac(fixed_t val)
-{
-	return ((abs(val) * 100)>>FRACBITS) % 100;
-}
-
 static void ST_drawImuDebug(INT32 *height)
 {
 	INT32 pnum = stplyrnum;
-	vector3_t accel, gyro, grav, shake;
+	vector3_t accel, gyro, gyrocalibrated, grav, shake;
 	if (demo.playback || (!P_IsMachineLocalPlayer(stplyr)))
 	{
 		ST_pushDebugString(height, va("Only for local player!!"));
@@ -491,14 +486,16 @@ static void ST_drawImuDebug(INT32 *height)
 	}
 
 	accel = G_PlayerInputSensor(pnum, ACCELEROMETER);
-	gyro =  G_PlayerInputSensor(pnum, GYROSCOPE);
-	grav =  G_GetGamepadGravity(pnum);
+	gyro = G_PlayerInputSensor(pnum, GYROSCOPE);
+	gyrocalibrated = G_GetGamepadCalibratedGyro(pnum);
+	grav = G_GetGamepadGravity(pnum);
 	shake = G_GetGamepadShake(pnum);
 
-	ST_pushDebugString(height, va(" Gyro :%4.2f, %4.2f,%4.2f", FixedToFloat(gyro.x), FixedToFloat(gyro.y), FixedToFloat(gyro.z)));
-	ST_pushDebugString(height, va("Accel :%4.2f, %4.2f,%4.2f", FixedToFloat(accel.x), FixedToFloat(accel.y), FixedToFloat(accel.z)));
-	ST_pushDebugString(height, va("Shake :%4.2f, %4.2f,%4.2f", FixedToFloat(shake.x), FixedToFloat(shake.y), FixedToFloat(shake.z)));
-	ST_pushDebugString(height, va(" Grav :%4.2f, %4.2f,%4.2f", FixedToFloat(grav.x), FixedToFloat(grav.y), FixedToFloat(grav.z)));
+	ST_pushDebugString(height, va(" Grav :%4.2f,%4.2f,%4.2f", FixedToFloat(grav.x), FixedToFloat(grav.y), FixedToFloat(grav.z)));
+	ST_pushDebugString(height, va("Shake :%4.2f,%4.2f,%4.2f", FixedToFloat(shake.x), FixedToFloat(shake.y), FixedToFloat(shake.z)));
+	ST_pushDebugString(height, va("Cal. G:%4.2f,%4.2f,%4.2f", FixedToFloat(gyrocalibrated.x), FixedToFloat(gyrocalibrated.y), FixedToFloat(gyrocalibrated.z)));
+	ST_pushDebugString(height, va(" Gyro :%4.2f,%4.2f,%4.2f", FixedToFloat(gyro.x), FixedToFloat(gyro.y), FixedToFloat(gyro.z)));
+	ST_pushDebugString(height, va("Accel :%4.2f,%4.2f,%4.2f", FixedToFloat(accel.x), FixedToFloat(accel.y), FixedToFloat(accel.z)));
 }
 
 static void ST_drawRenderDebug(INT32 *height)
