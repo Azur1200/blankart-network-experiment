@@ -363,8 +363,9 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 INT32 P_FloorPicAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height);
 
 boolean P_InsideANonSolidFFloor(mobj_t *mobj, ffloor_t *rover);
-boolean P_CheckDeathPitCollide(mobj_t *mo);
+boolean P_CheckDeathPitCollide(const mobj_t *mo);
 boolean P_CheckSolidLava(ffloor_t *rover);
+boolean P_CheckDeathPitFOFs(const mobj_t *mo);
 void P_AdjustMobjFloorZ_FFloors(mobj_t *mo, sector_t *sector, UINT8 motype);
 
 mobj_t *P_SpawnMobjFromMobjUnscaled(mobj_t *mobj, fixed_t xofs, fixed_t yofs, fixed_t zofs, mobjtype_t type);

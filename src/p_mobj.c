@@ -2162,7 +2162,7 @@ void P_RingZMovement(mobj_t *mo)
 	}
 }
 
-boolean P_CheckDeathPitCollide(mobj_t *mo)
+boolean P_CheckDeathPitCollide(const mobj_t *mo)
 {
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
@@ -2192,6 +2192,25 @@ boolean P_CheckSolidLava(ffloor_t *rover)
 	if ((rover->fofflags & FOF_SWIMMABLE) && (rover->master->frontsector->damagetype == SD_LAVA))
 	{
 		return true;
+	}
+
+	return false;
+}
+
+boolean P_CheckDeathPitFOFs(const mobj_t *mo)
+{
+	if (P_CheckDeathPitCollide(mo))
+		return true;
+
+	const sector_t *sector = mo->subsector->sector;
+
+	for (ffloor_t *rover = sector->ffloors; rover != NULL; rover = rover->next)
+	{
+		// i... think these are the right checks?
+		if (rover->fofflags & FOF_EXISTS
+		 && rover->master->frontsector->damagetype == SD_DEATHPIT
+		 && P_IsMobjTouching3DFloor(mo, rover, sector))
+			return true;
 	}
 
 	return false;
@@ -2440,7 +2459,8 @@ boolean P_ZMovement(mobj_t *mo)
 			;
 		else if (mo->type == MT_PLAYER) // only DEAD players
 		{
-			mom.z = -4*mom.z/5;
+			if (!P_CheckDeathPitFOFs(mo))
+				mom.z = -4*mom.z/5;
 			mo->flags |= MF_NOCLIPHEIGHT; // fall through floor next time
 		}
 		else if (mo->flags & MF_MISSILE)
@@ -3015,7 +3035,8 @@ boolean P_SceneryZMovement(mobj_t *mo)
 
 			if (mo->type == MT_KART_TIRE)
 			{
-				mo->momz = -mo->momz;
+				if (!P_CheckDeathPitFOFs(mo))
+					mo->momz = -mo->momz;
 				mo->flags |= MF_NOCLIPHEIGHT;
 			}
 			else if (g_tm.floorthing)

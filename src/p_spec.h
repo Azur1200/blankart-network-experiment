@@ -627,9 +627,9 @@ boolean P_AllowFriction(mobj_t *mobj);
 
 void P_SetupSignExit(player_t *player);
 
-boolean P_IsMobjTouchingSectorPlane(mobj_t *mo, sector_t *sec);
-boolean P_IsMobjTouching3DFloor(mobj_t *mo, ffloor_t *ffloor, sector_t *sec);
-boolean P_IsMobjTouchingPolyobj(mobj_t *mo, polyobj_t *po, sector_t *polysec);
+boolean P_IsMobjTouchingSectorPlane(const mobj_t *mo, const sector_t *sec);
+boolean P_IsMobjTouching3DFloor(const mobj_t *mo, const ffloor_t *ffloor, const sector_t *sec);
+boolean P_IsMobjTouchingPolyobj(const mobj_t *mo, const polyobj_t *po, const sector_t *polysec);
 
 void P_SwitchWeather(preciptype_t newWeather);
 

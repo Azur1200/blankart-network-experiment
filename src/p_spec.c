@@ -4611,19 +4611,19 @@ void P_SetupSignExit(player_t *player)
 	}
 }
 
-static boolean P_IsMobjTouchingPlane(mobj_t *mo, sector_t *sec, fixed_t floorz, fixed_t ceilingz)
+static boolean P_IsMobjTouchingPlane(const mobj_t *mo, const sector_t *sec, fixed_t floorz, fixed_t ceilingz)
 {
 	boolean floorallowed = ((sec->flags & MSF_FLIPSPECIAL_FLOOR) && ((sec->flags & MSF_TRIGGERSPECIAL_HEADBUMP) || !(mo->eflags & MFE_VERTICALFLIP)) && (mo->z == floorz));
 	boolean ceilingallowed = ((sec->flags & MSF_FLIPSPECIAL_CEILING) && ((sec->flags &  MSF_TRIGGERSPECIAL_HEADBUMP) || (mo->eflags & MFE_VERTICALFLIP)) && (mo->z + mo->height == ceilingz));
 	return (floorallowed || ceilingallowed);
 }
 
-boolean P_IsMobjTouchingSectorPlane(mobj_t *mo, sector_t *sec)
+boolean P_IsMobjTouchingSectorPlane(const mobj_t *mo, const sector_t *sec)
 {
 	return P_IsMobjTouchingPlane(mo, sec, P_GetSpecialBottomZ(mo, sec, sec), P_GetSpecialTopZ(mo, sec, sec));
 }
 
-boolean P_IsMobjTouching3DFloor(mobj_t *mo, ffloor_t *fof, sector_t *sec)
+boolean P_IsMobjTouching3DFloor(const mobj_t *mo, const ffloor_t *fof, const sector_t *sec)
 {
 	fixed_t topheight = P_GetSpecialTopZ(mo, sectors + fof->secnum, sec);
 	fixed_t bottomheight = P_GetSpecialBottomZ(mo, sectors + fof->secnum, sec);
@@ -4641,7 +4641,7 @@ boolean P_IsMobjTouching3DFloor(mobj_t *mo, ffloor_t *fof, sector_t *sec)
 	}
 }
 
-boolean P_IsMobjTouchingPolyobj(mobj_t *mo, polyobj_t *po, sector_t *polysec)
+boolean P_IsMobjTouchingPolyobj(const mobj_t *mo, const polyobj_t *po, const sector_t *polysec)
 {
 	if (!(po->flags & POF_TESTHEIGHT)) // Don't do height checking
 		return true;
