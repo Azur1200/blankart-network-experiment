@@ -6166,6 +6166,14 @@ static void P_ConvertBinaryLinedefTypes(void)
 			}
 			P_WriteDuplicateText(sides[lines[i].sidenum[0]].text, &lines[i].stringargs[0]);
 			break;
+		case 415: //Run script
+			if (strlen(G_BuildMapName(gamemap)) != 5)
+				break; // good enough check methinks
+			INT32 scrnum = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
+			if (scrnum < 0 || scrnum > 999)
+				scrnum = 0;
+			P_WriteDuplicateText(va("SCR%s%03u", G_BuildMapName(gamemap) + 3, scrnum), &lines[i].stringargs[0]);
+			break;
 		case 416: //Start adjustable flickering light
 		case 417: //Start adjustable pulsating light
 		case 602: //Adjustable pulsating light

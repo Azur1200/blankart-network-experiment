@@ -1099,7 +1099,28 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	
 	t1Condition = (t1->scale > t2->scale + (mapobjectscale/8));
 	t2Condition = (t2->scale > t1->scale + (mapobjectscale/8));
-	
+
+	// Merritt suggestion: ONLY make Alt. Shrink squish/flipover interactions happen if and only
+	// if the crushing player doesn't have an S-Monitor active
+
+	if (t1Condition && (t1->player && t1->player->smonitortimer) && (t2->player && K_IsAltShrunk(t2->player)))
+	{
+		// t1Condition: t1's player has an S-Monitor, don't do squat
+		// Extend some mercy to the players phasing through one another
+		t1->player->justbumped = 6;
+		t2->player->justbumped = 6;
+		return false;
+	}
+
+	if (t2Condition && (t2->player && t2->player->smonitortimer) && (t1->player && K_IsAltShrunk(t1->player)))
+	{
+		// t2Condition: t2's player has an S-Monitor, don't do squat
+		// Extend some mercy to the players phasing through one another
+		t1->player->justbumped = 6;
+		t2->player->justbumped = 6;
+		return false;
+	}
+
 	if ((t1Condition == true || flameT1 == true) && (t2Condition == true || flameT2 == true))
 	{
 		return false;

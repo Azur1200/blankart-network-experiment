@@ -7296,7 +7296,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		|| player->squishedtimer != 0
 		|| player->flipovertimer != 0)
 	{
-		if (!player->flipovertimer && ( player->spinouttype & KSPIN_IFRAMES ) == 0)
+		if ((player->spinouttimer || player->wipeoutslow) && ( player->spinouttype & KSPIN_IFRAMES ) == 0)
 			player->flashing = 0;
 		else
 			player->flashing = K_GetKartFlashing(player);

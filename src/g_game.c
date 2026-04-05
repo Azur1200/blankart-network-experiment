@@ -2034,13 +2034,20 @@ boolean G_Responder(event_t *ev)
 		return false;
 	}
 
-	if (gamestate == GS_LEVEL)
+	if (Playing())
 	{
+		// If you're playing, chat is real.
+		// Neatly sidesteps a class of bugs where whenever we add a
+		// new gamestate accessible in netplay, chat was console-only.
 		if (HU_Responder(ev))
 		{
 			hu_keystrokes = true;
 			return true; // chat ate the event
 		}
+	}
+
+	if (gamestate == GS_LEVEL)
+	{
 		if (AM_Responder(ev))
 			return true; // automap ate it
 		// map the event (key/mouse/joy) to a gamecontrol
@@ -2056,12 +2063,6 @@ boolean G_Responder(event_t *ev)
 	}
 	else if (gamestate == GS_CUTSCENE)
 	{
-		if (HU_Responder(ev))
-		{
-			hu_keystrokes = true;
-			return true; // chat ate the event
-		}
-
 		if (F_CutsceneResponder(ev))
 		{
 			D_StartTitle();
@@ -2070,12 +2071,6 @@ boolean G_Responder(event_t *ev)
 	}
 	else if (gamestate == GS_CREDITS) // todo: keep ending here?
 	{
-		if (HU_Responder(ev))
-		{
-			hu_keystrokes = true;
-			return true; // chat ate the event
-		}
-
 		if (F_CreditResponder(ev))
 		{
 			// Skip credits for everyone
@@ -2088,12 +2083,6 @@ boolean G_Responder(event_t *ev)
 	}
 	else if (gamestate == GS_BLANCREDITS)
 	{
-		if (HU_Responder(ev))
-		{
-			hu_keystrokes = true;
-			return true; // chat ate the event
-		}
-
 		if (F_CreditResponder(ev))
 		{
 			// Skip credits for everyone
@@ -2106,12 +2095,6 @@ boolean G_Responder(event_t *ev)
 	}
 	else if (gamestate == GS_SECRETCREDITS)
 	{
-		if (HU_Responder(ev))
-		{
-			hu_keystrokes = true;
-			return true; // chat ate the event
-		}
-
 		if (F_CreditResponder(ev))
 		{
 			// Skip credits for everyone
@@ -2122,12 +2105,6 @@ boolean G_Responder(event_t *ev)
 			return true;
 		}
 	}
-	else if (gamestate == GS_INTERMISSION || gamestate == GS_VOTING || gamestate == GS_EVALUATION)
-		if (HU_Responder(ev))
-		{
-			hu_keystrokes = true;
-			return true; // chat ate the event
-		}
 
 	// allow spy mode changes even during the demo
 	if (gamestate == GS_LEVEL && ev->type == ev_keydown
