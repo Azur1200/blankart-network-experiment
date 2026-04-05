@@ -810,12 +810,14 @@ static void COM_Echo_f(void)
 static void COM_CEcho_f(void)
 {
 	size_t i;
-	char cechotext[1024] = "";
+	char cechotext[1024];
 
-	for (i = 1; i < COM_Argc(); i++)
+	strlcpy(cechotext, COM_Argc() > 1 ? COM_Argv(1) : "", sizeof(cechotext));
+
+	for (i = 2; i < COM_Argc(); i++)
 	{
-		strlcpy(cechotext, COM_Argv(i), sizeof(cechotext)-1);
-		strlcpy(cechotext, " ", sizeof(cechotext)-1);
+		strlcat(cechotext, " ", sizeof(cechotext));
+		strlcat(cechotext, COM_Argv(i), sizeof(cechotext));
 	}
 
 	HU_DoCEcho(cechotext);
