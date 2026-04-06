@@ -5446,6 +5446,7 @@ void K_DropHnextList(player_t *player)
 	P_SetTarget(&player->mo->hnext, NULL);
 
 	player->bananadrag = 0;
+	K_DisableSeekingReticule(player);
 
 	if (player->itemflags & IF_EGGMANOUT)
 	{
@@ -5454,7 +5455,6 @@ void K_DropHnextList(player_t *player)
 	else if ((player->itemflags & IF_ITEMOUT)
 	&& (dropall || (--player->itemamount <= 0)))
 	{
-		K_DisableSeekingReticule(player);
 		player->itemamount = 0;
 		K_UnsetItemOut(player);
 		player->itemtype = KITEM_NONE;
@@ -5944,6 +5944,7 @@ static void K_MoveHeldObjects(player_t *player)
 		// we need this here too because this is done in afterthink - pointers are cleaned up at the START of each tic...
 		P_SetTarget(&player->mo->hnext, NULL);
 		player->bananadrag = 0;
+		K_DisableSeekingReticule(player);
 		if (player->itemflags & IF_EGGMANOUT)
 			player->itemflags &= ~IF_EGGMANOUT;
 		else if (player->itemflags & IF_EGGMANOUT)
@@ -10605,6 +10606,7 @@ void K_StripItems(player_t *player)
 	player->equippeditem = KITEM_NONE;
 	player->itemamount = 0;
 	player->itemflags &= ~IF_EGGMANOUT;
+	K_DisableSeekingReticule(player);
 	K_UnsetItemOut(player);
 
 	if (!player->itemroulette || player->roulettetype != KROULETTETYPE_EGGMAN)
