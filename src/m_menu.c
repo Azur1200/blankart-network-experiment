@@ -7588,51 +7588,49 @@ void MD_DrawCssStatBars(void)
 	const INT32 ICNYFIRST = 1;
 	const INT32 ICNYSECOND = 17;
 
+	menuitem_t *item = M_GetMenuItem(MN_MP_PLAYERSETUP, "STATBAR");
+
 	patch_t *statbitsub = 	W_CachePatchName("STATBSPD", PU_CACHE);
 	patch_t *statbitmain = 	W_CachePatchName("STATBWGT", PU_CACHE);
 
 	patch_t *speedicn = 	W_CachePatchName("K_STSPD", PU_CACHE);
 	patch_t *weighticn = 	W_CachePatchName("K_STWHT", PU_CACHE);
-	//patch_t *accelicn = 	W_CachePatchName("K_STACL", PU_CACHE);
-	//patch_t *handlingicn = 	W_CachePatchName("K_STHDL", PU_CACHE);
 
-	UINT8 *speedcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_SAPPHIRE, 0);
-	UINT8 *weightcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_KETCHUP, 0);
-	UINT8 *speednumcolour = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_NIGHTFALL, 0);
-	UINT8 *weightnumcolour = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_AMBER, 0);
-	// UINT8 *accelcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_GOLD, 0);
-	// UINT8 *handlingcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_MINT, 0);
-	UINT8 *subcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_BLACK, 0);
+	UINT8 *speedcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_SAPPHIRE, GTC_MENUCACHE);
+	UINT8 *weightcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_KETCHUP, GTC_MENUCACHE);
+	UINT8 *speednumcolour = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_NIGHTFALL, GTC_MENUCACHE);
+	UINT8 *weightnumcolour = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_AMBER, GTC_MENUCACHE);
+	// UINT8 *accelcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_GOLD, GTC_MENUCACHE);
+	// UINT8 *handlingcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_MINT, GTC_MENUCACHE);
+	UINT8 *subcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_BLACK, GTC_MENUCACHE);
 
 	INT32 skintodisplay = cv_chooseskin.value;
 	UINT8 speed = skins[skintodisplay].kartspeed;
 	UINT8 weight = skins[skintodisplay].kartweight;
 
-	INT16 i;
+	mx = item->x;
+	my = item->y;
 
-	mx = M_GetItemX(MN_MP_PLAYERSETUP, "STATBAR");
-	my = M_GetItemY(MN_MP_PLAYERSETUP, "STATBAR");
-
-	// Draw speed
-	for (i = 0; i < speed; i++)
+	// // Draw speed
+	for (INT16 s = 0; s < speed; s++)
 	{
-		V_DrawFixedPatch((mx + BITSTARTXMAIN + (BITSPACING * i))<<FRACBITS, (my + BITSPEEDSTARTY)<<FRACBITS, FRACUNIT, 0, statbitmain, speedcolour);
+		V_DrawFixedPatch((mx + BITSTARTXMAIN + (BITSPACING * s))<<FRACBITS, (my + BITSPEEDSTARTY)<<FRACBITS, FRACUNIT, 0, statbitmain, speedcolour);
 	}
 	// Draw accel
-	for (i = 0; i < 9-speed; i++)
+	for (INT16 a = 0; a < 9-speed; a++)
 	{
-		V_DrawFixedPatch((mx + BITSTARTXSUB - (BITSPACING * i))<<FRACBITS, (my + BITSPEEDSTARTY + BITSHIFTSUB)<<FRACBITS, FRACUNIT, 0, statbitsub, subcolour);
+		V_DrawFixedPatch((mx + BITSTARTXSUB - (BITSPACING * a))<<FRACBITS, (my + BITSPEEDSTARTY + BITSHIFTSUB)<<FRACBITS, FRACUNIT, 0, statbitsub, subcolour);
 	}
 
 	// Draw weight
-	for (i = 0; i < weight; i++)
+	for (INT16 w = 0; w < weight; w++)
 	{
-		V_DrawFixedPatch((mx + BITSTARTXMAIN + (BITSPACING * i))<<FRACBITS, (my + BITWEIGHTSTARTY)<<FRACBITS, FRACUNIT, 0, statbitmain, weightcolour);
+		V_DrawFixedPatch((mx + BITSTARTXMAIN + (BITSPACING * w))<<FRACBITS, (my + BITWEIGHTSTARTY)<<FRACBITS, FRACUNIT, 0, statbitmain, weightcolour);
 	}
 	// Draw handling
-	for (i = 0; i < 9-weight; i++)
+	for (INT16 h = 0; h < 9-weight; h++)
 	{
-		V_DrawFixedPatch((mx + BITSTARTXSUB - (BITSPACING * i))<<FRACBITS, (my + BITWEIGHTSTARTY + BITSHIFTSUB)<<FRACBITS, FRACUNIT, 0, statbitsub, subcolour);
+		V_DrawFixedPatch((mx + BITSTARTXSUB - (BITSPACING * h))<<FRACBITS, (my + BITWEIGHTSTARTY + BITSHIFTSUB)<<FRACBITS, FRACUNIT, 0, statbitsub, subcolour);
 	}
 
 	// Draw our icons
@@ -7640,8 +7638,6 @@ void MD_DrawCssStatBars(void)
 	V_DrawFixedPatch((mx + ICNXFIRST)<<FRACBITS, (my + ICNYSECOND)<<FRACBITS, FRACUNIT, 0, weighticn, NULL);
 
 	// Draw stat numbers
-	//V_DrawThinString((mx + ICNXSECOND+3), (my + ICNYFIRST+3), V_BLUEMAP, va("%d",speed));
-	//V_DrawThinString((mx + ICNXSECOND+3), (my + ICNYSECOND+3), V_ORANGEMAP, va("%d",weight));
 	V_DrawPaddedTallColorNumAtFixed((mx + ICNXSECOND+11 + (speed == 7 ? 1 : 0))<<FRACBITS, (my + ICNYFIRST+2)<<FRACBITS, 0, speed, 1, speednumcolour);
 	V_DrawPaddedTallColorNumAtFixed((mx + ICNXSECOND+11 + (weight == 7 ? 1 : 0))<<FRACBITS, (my + ICNYSECOND+2)<<FRACBITS, 0, weight, 1, weightnumcolour);
 }
@@ -7998,23 +7994,20 @@ void MD_DrawGridCssSelector(void)
 		colmap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
 		V_DrawFixedPatch((cursorx * FRACUNIT) - (face->width * FRACUNIT/4), (cursory * FRACUNIT) - (face->height * FRACUNIT/4), FRACUNIT, 0, face, colmap);
 
-
-		cursorframe += renderdeltatics / 4;
-		for (; cursorframe > 7 * FRACUNIT; cursorframe -= 7 * FRACUNIT) {}
+		cursorframe = (cursorframe + (renderdeltatics / 4)) % (7*FRACUNIT);
 		cursor = W_CachePatchName(va("K_BHILI%d", (cursorframe >> FRACBITS) + 1), PU_CACHE);
 		// cursor patch offsets are wrong so draw at same coordinate as portrait
 		V_DrawFixedPatch((cursorx * FRACUNIT) - (face->width * FRACUNIT/4), (cursory * FRACUNIT) - (face->height * FRACUNIT/4), FRACUNIT, 0, cursor, colmap);
-
 	}
 	else
 	{
 		face = faceprefix[skintodisplay][FACE_RANK];
 		colmap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
 		V_DrawFixedPatch((cursorx + face->leftoffset) * FRACUNIT, (cursory + face->topoffset) * FRACUNIT, FRACUNIT, 0, face, colmap);
-		cursor = W_CachePatchName("M_FSEL", PU_CACHE);
-
+		
 		if (skullAnimCounter < 4)
 		{
+			cursor = W_CachePatchName("M_FSEL", PU_CACHE);
 			colmap = V_GetStringColormap(skincolors[cv_dummycolor.value].chatcolor);
 			V_DrawFixedPatch(cursorx * FRACUNIT, cursory * FRACUNIT, FRACUNIT/2, 0, cursor, colmap);
 		}
@@ -8024,14 +8017,14 @@ void MD_DrawGridCssSelector(void)
 //
 // Maps a CSS grid selection cursor column (x) and row (y) to a skin selection index
 //
-INT32 MapGridSelectToSkin(INT32 row, INT32 column)
+static inline INT32 MapGridSelectToSkin(INT32 row, INT32 column)
 {
-	return (row % SKINGRIDWIDTH) + (column * SKINGRIDWIDTH);
+	return ((row % SKINGRIDWIDTH) + (column * SKINGRIDWIDTH));
 }
 
 INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 {
-	INT32 sortedIndex;
+	INT32 sortedIndex = 0;
 	// don't consume input if we're not interacting with the grid CSS
 	if (!(M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN") && cv_skinselectstyle.value))
 	{

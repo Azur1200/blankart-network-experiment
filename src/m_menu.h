@@ -374,8 +374,6 @@ void MD_DrawLevelPlatterMenu(void);
 void MD_DrawDiscordRequests(void);
 #endif
 
-INT32 MapGridSelectToSkin(INT32 column, INT32 row);
-
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);
 
