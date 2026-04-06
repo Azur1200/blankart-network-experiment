@@ -8098,7 +8098,7 @@ void P_SpawnSpecials(boolean fromnetsave)
 
 /** Fuck polyobjects
   */
-void P_SpawnSpecialsThatRequireObjects(boolean fromnetsave)
+void P_SpawnSpecialsThatRequireObjects(boolean reloadinggamestate)
 {
 	size_t i;
 
@@ -8139,7 +8139,7 @@ void P_SpawnSpecialsThatRequireObjects(boolean fromnetsave)
 		}
 	}
 
-	if (!fromnetsave)
+	if (!reloadinggamestate)
 		P_RunLevelLoadExecutors();
 }
 

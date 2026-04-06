@@ -572,7 +572,7 @@ void P_InitSpecials(void);
 void P_ApplyFlatAlignment(sector_t* sector, angle_t flatangle, fixed_t xoffs, fixed_t yoffs, boolean floor, boolean ceiling);
 fixed_t P_GetSectorGravityFactor(sector_t *sec);
 void P_SpawnSpecials(boolean fromnetsave);
-void P_SpawnSpecialsThatRequireObjects(boolean fromnetsave);
+void P_SpawnSpecialsThatRequireObjects(boolean reloadinggamestate);
 
 // every tic
 void P_UpdateSpecials(void);
