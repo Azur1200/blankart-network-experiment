@@ -546,8 +546,8 @@ consvar_t cv_kartstacking_flame_accelboost = CVAR_INIT ("vanillaboost_flame_acce
 consvar_t cv_kartstacking_flame_handleboost = CVAR_INIT ("vanillaboost_flame_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_flame_stackable = CVAR_INIT ("vanillaboost_flame_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_attraction_speedboost_himin = CVAR_INIT ("vanillaboost_attraction_speedboost_himin", "0.32", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_attraction_speedboost_himax = CVAR_INIT ("vanillaboost_attraction_speedboost_himax", "0.40", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_speedboost_himin = CVAR_INIT ("vanillaboost_attraction_speedboost_himin", "0.42", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_speedboost_himax = CVAR_INIT ("vanillaboost_attraction_speedboost_himax", "0.50", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_attraction_speedboost_normmin = CVAR_INIT ("vanillaboost_attraction_speedboost_normmin", "0.15", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_attraction_speedboost_normmax = CVAR_INIT ("vanillaboost_attraction_speedboost_normmax", "0.20", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_attraction_accelboost_hi = CVAR_INIT ("vanillaboost_attraction_accelboost_hi", "18.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
@@ -716,7 +716,7 @@ consvar_t cv_kartbubble_boost_allow = CVAR_INIT ("kartbubble_boost_allow", "On",
 consvar_t cv_kartbubble_boost_offroadignore = CVAR_INIT ("kartbubble_boost_offroadignore", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "On", CV_NETVAR, CV_OnOff, NULL);
-consvar_t cv_kartattraction_assistpower = CVAR_INIT ("kartattraction_assistpower", "1.0", CV_NETVAR|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartattraction_assistpower = CVAR_INIT ("kartattraction_assistpower", "0.5", CV_NETVAR|CV_FLOAT, CV_Unsigned, NULL);
 
 // "Arrow Bullet": above a certain speed threshold, an aura in the shape of the Shrink arrow
 // covers you, signaling protection from (most) items and players.
