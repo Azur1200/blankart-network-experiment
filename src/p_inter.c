@@ -1422,7 +1422,10 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 	}
 	// Above block does not clean up rocket sneakers when a player dies, so we need to do it here target->target is null when using rocket sneakers
 	if (target->player)
+	{
+		K_DisableSeekingReticule(target->player);
 		K_DropRocketSneaker(target->player);
+	}
 
 	// Let EVERYONE know what happened to a player! 01-29-2002 Tails
 	if (target->player && !target->player->spectator)

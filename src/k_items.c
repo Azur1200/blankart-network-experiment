@@ -1849,7 +1849,6 @@ static void K_DoHyudoroSteal(player_t *player)
 		players[stealplayer].itemamount = 0;
 		K_DisableSeekingReticule(player);
 		K_UnsetItemOut(&players[stealplayer]);
-		
 
 		if (P_IsDisplayPlayer(&players[stealplayer]) && !r_splitscreen)
 			S_StartSound(NULL, sfx_s3k92);
