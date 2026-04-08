@@ -1237,6 +1237,13 @@ UINT16 W_FindNextEmptyInPwad(UINT16 wad, UINT16 startlump)
 UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 startlump)
 {
 	UINT16 i, end;
+	boolean compatload = false;
+
+	if (wadfiles[wad]->compatmode)
+	{
+		// Compatibility mode: "blind idiot" trace to the first map header/WAD
+		compatload = true;
+	}
 
 	if (wadfiles[wad]->type == RET_WAD)
 	{
@@ -1282,6 +1289,33 @@ UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 st
 					continue;
 #endif
 
+				return i;
+			}
+		}
+		else if (compatload)
+		{
+			for (i = startlump; i < wadfiles[wad]->numlumps; i++)
+			{
+				// Not the hash?
+				if ((wadfiles[wad]->lumpinfo + i)->hash.longname != hash)
+					continue;
+
+				// Not the name? (always use longname, even in wads, to accomodate WADNAME)
+				if (strcasecmp(name, (wadfiles[wad]->lumpinfo + i)->longname))
+					continue;
+
+				if (W_LumpLength(i | (wad << 16)) > 0)
+				{
+					// Not a header? Maybe it's a WAD file...
+
+					if (!W_IsLumpWad(i | (wad << 16)))
+					{
+						// ...no dice?
+						continue;
+					}
+				}
+
+				// Found a map!
 				return i;
 			}
 		}
