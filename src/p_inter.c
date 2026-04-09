@@ -2047,6 +2047,7 @@ static UINT8 P_ShouldHookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *sourc
 {
 	boolean targetisplayer = false;
 	const boolean killer = (damagetype & DMG_DEATHMASK);
+	const boolean specdamage = (damagetype == DMG_SPECTATOR);
 	INT32 use_damage = damage;
 
 	if (target && (!P_MobjWasRemoved(target)) && target->player)
@@ -2054,7 +2055,12 @@ static UINT8 P_ShouldHookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *sourc
 		targetisplayer = true;
 	}
 
-	if (lua_compatmode && targetisplayer && killer)
+	if (lua_compatmode && targetisplayer && specdamage)
+	{
+		// Before the introduction of dedicated damage types, this magic number was used to kill spectator players.
+		use_damage = 42000;
+	}
+	else if (lua_compatmode && targetisplayer && killer)
 	{
 		// Before the introduction of dedicated damage types, this magic number was used to kill players.
 		use_damage = 10000;
@@ -2068,7 +2074,7 @@ static UINT8 P_ShouldHookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *sourc
 	const UINT8 type = (damagetype & DMG_TYPEMASK);
 	status = shouldDamage;
 
-	if (!killer)
+	if (!killer && !specdamage)
 	{
 		if (shouldSpin > 0 && ((type == DMG_NORMAL) || (type == DMG_WIPEOUT) || (type == DMG_FLIPOVER)))
 			status = shouldSpin;
@@ -2115,6 +2121,9 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	// Spectator handling
 	if (damagetype != DMG_SPECTATOR && target->player && target->player->spectator)
 		return false;
+
+	if (damagetype == DMG_SPECTATOR && target->player && target->player->spectator)
+		damagetype = DMG_INSTAKILL;
 
 	if (!P_MobjWasRemoved(source) && source->player && source->player->spectator)
 		return false;

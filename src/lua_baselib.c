@@ -1850,7 +1850,9 @@ static int lib_pDamageMobj(lua_State *L)
 	damage = (INT32)luaL_optinteger(L, 4, 1);
 
 	if ((damage == 10000) && lua_isnil(L, 5))
-		damagetype = DMG_TIMEOVER;
+		damagetype = DMG_INSTAKILL;
+	else if ((damage == 42000) && lua_isnil(L, 5))
+		damagetype = DMG_SPECTATOR;
 	else
 		damagetype = (UINT8)luaL_optinteger(L, 5, 0);
 
