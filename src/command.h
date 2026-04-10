@@ -189,6 +189,22 @@ extern CV_PossibleValue_t CV_Natural[];
 #define KARTGP_NIGHTMARE 5 // Not a speed setting, gives expert speed with maxed out bots
 #define KARTGP_LUNATIC 6 // Not a speed setting; Master difficulty with some... modifications.
 #define KARTGP_MANIAC 7 // Not a speed setting; Nightmare difficulty with some... modifications.
+
+// Default/intended game speed.
+#define KARTSPEED_DEFAULT (KARTSPEED_HARD)
+
+// Harder than the default; mainly used for Auto-speed calculations
+#define KARTSPEED_HARDERTHANDEFAULT (KARTSPEED_EXPERT)
+
+// Easier than the default; mainly used for Auto-speed calculations
+#define KARTSPEED_EASIERTHANDEFAULT (KARTSPEED_NORMAL)
+
+// Highest game speed.
+#define KARTSPEED_HARDEST (KARTSPEED_EXPERT)
+
+// Lowest game speed.
+#define KARTSPEED_EASIEST (KARTSPEED_EASY)
+
 extern CV_PossibleValue_t kartspeed_cons_t[], gpdifficulty_cons_t[];
 
 extern consvar_t cv_execversion;

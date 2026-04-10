@@ -24,6 +24,7 @@
 #include "st_stuff.h"
 #include "hu_stuff.h"
 #include "lua_hook.h"
+#include "lua_script.h" // lua_compatmode
 #include "m_cond.h" // unlockables, emblems, etc
 #include "p_setup.h"
 #include "m_cheat.h" // objectplace
@@ -68,7 +69,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 		if (player->exiting || mapreset || (player->pflags & PF_ELIMINATED))
 			return false;
 
-		if ((gametyperules & GTR_BUMPERS) // No bumpers in Match
+		if ((gametypes[gametype]->rules & GTR_BUMPERS) // No bumpers in Match
 		&& !weapon
 		&& player->bumper <= 0)
 			return false;
@@ -296,7 +297,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (!P_CanPickupItem(player, PICKUPITEM_FLOATING) || (player->itemamount && player->itemtype != special->threshold))
 				return;
 
-			if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
+			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 				return;
 
 			player->itemtype = special->threshold;
@@ -326,7 +327,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (!itembreaker && !P_CanPickupItem(player, PICKUPITEM_ITEM))
 				return;
 
-			if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
+			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 			{
 				if (player->karmamode || player->karmadelay)
 					return;
@@ -338,7 +339,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			P_KillMobj(special, toucher, toucher, DMG_NORMAL);
 			break;
 		case MT_ITEMCAPSULE:
-			if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
+			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 				return;
 
 			if (special->scale < special->extravalue1) // don't break it while it's respawning
@@ -552,7 +553,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			S_StartSound(special, sfx_s1a2);
 			return;
 		case MT_CDUFO: // SRB2kart
-			if (special->fuse || !P_CanPickupItem(player, PICKUPITEM_ITEM) || ((gametyperules & GTR_BUMPERS) && player->bumper <= 0))
+			if (special->fuse || !P_CanPickupItem(player, PICKUPITEM_ITEM) || ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0))
 				return;
 
 			K_StartRoulette(player, KROULETTETYPE_KARMA);
@@ -629,12 +630,16 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (special->extravalue1)
 				return;
 
-			// No picking up rings while SPB is targetting you
+			// No picking up rings while your rings are locked.
 			if (player->pflags & PF_RINGLOCK)
 				return;
 
 			// Don't immediately pick up spilled rings
 			if (special->threshold > 0 || P_PlayerInPain(player))
+				return;
+
+			// Don't pick up SPB rings when being trailed by SPB.
+			if (special->extravalue3 && spbplace != -1 && player->position == spbplace)
 				return;
 
 			if (!(P_CanPickupItem(player, PICKUPITEM_RING)))
@@ -1053,7 +1058,7 @@ void P_CheckTimeLimit(void)
 		}
 
 #ifdef TESTOVERTIMEINFREEPLAY
-		if (timelimitintics > 0 && (gametyperules & GTR_TIMELIMIT) && startedInFreePlay)
+		if (timelimitintics > 0 && (gametypes[gametype]->rules & GTR_TIMELIMIT) && startedInFreePlay)
 		{
 			goto overtimesound;
 		}
@@ -1066,7 +1071,7 @@ void P_CheckTimeLimit(void)
 				S_StartSound(NULL, sfx_strpst);
 
 			// Normal Match
-			if (!(gametyperules & GTR_TEAMS))
+			if (!(gametypes[gametype]->rules & GTR_TEAMS))
 			{
 				//Store the nodes of participating players in an array.
 				for (i = 0; i < MAXPLAYERS; i++)
@@ -1140,7 +1145,7 @@ void P_CheckPointLimit(void)
 	if (!cv_pointlimit.value)
 		return;
 
-	if (!(gametyperules & GTR_POINTLIMIT))
+	if (!(gametypes[gametype]->rules & GTR_POINTLIMIT))
 		return;
 
 	if (itembreaker)
@@ -1417,7 +1422,10 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 	}
 	// Above block does not clean up rocket sneakers when a player dies, so we need to do it here target->target is null when using rocket sneakers
 	if (target->player)
+	{
+		K_DisableSeekingReticule(target->player);
 		K_DropRocketSneaker(target->player);
+	}
 
 	// Let EVERYONE know what happened to a player! 01-29-2002 Tails
 	if (target->player && !target->player->spectator)
@@ -1497,7 +1505,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			}
 		}
 
-		if (gametyperules & GTR_BUMPERS)
+		if (gametypes[gametype]->rules & GTR_BUMPERS)
 			K_CheckBumpers();
 
 		K_ResetPogoSpring(target->player);
@@ -2013,7 +2021,7 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 
 	if (type == DMG_TIMEOVER)
 	{
-		if (gametyperules & GTR_CIRCUIT)
+		if (gametypes[gametype]->rules & GTR_CIRCUIT)
 		{
 			mobj_t *boom = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_FZEROBOOM);
 			boom->scale = player->mo->scale;
@@ -2037,21 +2045,44 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 // Determines what ShouldX Hook's status should be used.
 static UINT8 P_ShouldHookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
 {
-	UINT8 shouldDamage = LUA_HookShouldDamage(target, inflictor, source, damage, damagetype);
-	UINT8 shouldSpin = LUA_HookShouldSpin(target, inflictor, source, damage, damagetype);
-	UINT8 shouldExplode = LUA_HookShouldExplode(target, inflictor, source, damage, damagetype);
-	UINT8 shouldSquish = LUA_HookShouldSquish(target, inflictor, source, damage, damagetype);
+	boolean targetisplayer = false;
+	const boolean killer = (damagetype & DMG_DEATHMASK);
+	const boolean specdamage = (damagetype == DMG_SPECTATOR);
+	INT32 use_damage = damage;
+
+	if (target && (!P_MobjWasRemoved(target)) && target->player)
+	{
+		targetisplayer = true;
+	}
+
+	if (lua_compatmode && targetisplayer && specdamage)
+	{
+		// Before the introduction of dedicated damage types, this magic number was used to kill spectator players.
+		use_damage = 42000;
+	}
+	else if (lua_compatmode && targetisplayer && killer)
+	{
+		// Before the introduction of dedicated damage types, this magic number was used to kill players.
+		use_damage = 10000;
+	}
+
+	UINT8 shouldDamage = LUA_HookShouldDamage(target, inflictor, source, use_damage, damagetype);
+	UINT8 shouldSpin = LUA_HookShouldSpin(target, inflictor, source, use_damage, damagetype);
+	UINT8 shouldExplode = LUA_HookShouldExplode(target, inflictor, source, use_damage, damagetype);
+	UINT8 shouldSquish = LUA_HookShouldSquish(target, inflictor, source, use_damage, damagetype);
 	UINT8 status;
 	const UINT8 type = (damagetype & DMG_TYPEMASK);
-
 	status = shouldDamage;
 
-	if (shouldSpin > 0 && ((type == DMG_NORMAL) || (type == DMG_WIPEOUT) || (type == DMG_FLIPOVER)))
-		status = shouldSpin;
-	else if (shouldExplode > 0 && ((type == DMG_EXPLODE) || (type == DMG_KARMA)))
-		status = shouldExplode;
-	else if (shouldSquish > 0 && (type == DMG_SQUISH))
-		status = shouldSquish;
+	if (!killer && !specdamage)
+	{
+		if (shouldSpin > 0 && ((type == DMG_NORMAL) || (type == DMG_WIPEOUT) || (type == DMG_FLIPOVER)))
+			status = shouldSpin;
+		else if (shouldExplode > 0 && ((type == DMG_EXPLODE) || (type == DMG_KARMA)))
+			status = shouldExplode;
+		else if (shouldSquish > 0 && (type == DMG_SQUISH))
+			status = shouldSquish;
+	}
 
 	return status;
 }
@@ -2090,6 +2121,9 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	// Spectator handling
 	if (damagetype != DMG_SPECTATOR && target->player && target->player->spectator)
 		return false;
+
+	if (damagetype == DMG_SPECTATOR && target->player && target->player->spectator)
+		damagetype = DMG_INSTAKILL;
 
 	if (!P_MobjWasRemoved(source) && source->player && source->player->spectator)
 		return false;
@@ -2188,7 +2222,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			// If not, then spawn the instashield effect instead.
 			if (!force)
 			{
-				if (gametyperules & GTR_BUMPERS)
+				if (gametypes[gametype]->rules & GTR_BUMPERS)
 				{
 					if ((player->bumper <= 0 && player->karmadelay) || (player->karmamode == 1))
 					{
@@ -2247,7 +2281,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			// We successfully damaged them! Give 'em some bumpers!
 			if (source && source != player->mo && source->player)
 			{
-				if (gametyperules & GTR_BUMPERS)
+				if (gametypes[gametype]->rules & GTR_BUMPERS)
 				{
 					K_BattleAwardHit(source->player, player, inflictor, 1);
 
@@ -2299,12 +2333,12 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			player->glanceDir = 0;
 			player->pflags &= ~PF_GAINAX;
 
-			if (gametyperules & GTR_BUMPERS)
+			if (gametypes[gametype]->rules & GTR_BUMPERS)
 			{
 				if (player->bumper <= 0)
 				{
 					player->karmadelay = comebacktime;
-					if ((gametyperules & GTR_KARMA) && player->karmamode == 2 )
+					if ((gametypes[gametype]->rules & GTR_KARMA) && player->karmamode == 2 )
 					{
 						mobj_t *poof = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EXPLODE);
 						S_StartSound(poof, mobjinfo[MT_KARMAHITBOX].seesound);

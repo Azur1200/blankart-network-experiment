@@ -56,6 +56,8 @@
 #include "k_items.h"
 #include "k_waypoint.h"
 #include "k_grandprix.h"
+#include "g_party.h"
+#include "k_director.h"
 
 // BlanKart
 #include "blan/b_soc.h"
@@ -2160,7 +2162,7 @@ void P_RingZMovement(mobj_t *mo)
 	}
 }
 
-boolean P_CheckDeathPitCollide(mobj_t *mo)
+boolean P_CheckDeathPitCollide(const mobj_t *mo)
 {
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
@@ -2190,6 +2192,25 @@ boolean P_CheckSolidLava(ffloor_t *rover)
 	if ((rover->fofflags & FOF_SWIMMABLE) && (rover->master->frontsector->damagetype == SD_LAVA))
 	{
 		return true;
+	}
+
+	return false;
+}
+
+boolean P_CheckDeathPitFOFs(const mobj_t *mo)
+{
+	if (P_CheckDeathPitCollide(mo))
+		return true;
+
+	const sector_t *sector = mo->subsector->sector;
+
+	for (ffloor_t *rover = sector->ffloors; rover != NULL; rover = rover->next)
+	{
+		// i... think these are the right checks?
+		if (rover->fofflags & FOF_EXISTS
+		 && rover->master->frontsector->damagetype == SD_DEATHPIT
+		 && P_IsMobjTouching3DFloor(mo, rover, sector))
+			return true;
 	}
 
 	return false;
@@ -2438,7 +2459,8 @@ boolean P_ZMovement(mobj_t *mo)
 			;
 		else if (mo->type == MT_PLAYER) // only DEAD players
 		{
-			mom.z = -4*mom.z/5;
+			if (!P_CheckDeathPitFOFs(mo))
+				mom.z = -4*mom.z/5;
 			mo->flags |= MF_NOCLIPHEIGHT; // fall through floor next time
 		}
 		else if (mo->flags & MF_MISSILE)
@@ -3013,7 +3035,8 @@ boolean P_SceneryZMovement(mobj_t *mo)
 
 			if (mo->type == MT_KART_TIRE)
 			{
-				mo->momz = -mo->momz;
+				if (!P_CheckDeathPitFOFs(mo))
+					mo->momz = -mo->momz;
 				mo->flags |= MF_NOCLIPHEIGHT;
 			}
 			else if (g_tm.floorthing)
@@ -3406,12 +3429,7 @@ void P_MobjCheckWater(mobj_t *mobj)
 				mobj->momz = FixedMul(mobj->momz, FixedDiv(2*FRACUNIT, 5*FRACUNIT)); // kill momentum significantly, to make the goo feel thick.
 
 			// Kill heavy airdrop too so you don't get softlocked.
-			if (mobj->player && (mobj->player->airdropflags & PAF_AIRDROP_HEAVY))
-			{
-				mobj->player->airdroptime = 0;
-				mobj->player->airdroppredelay = 0;
-				mobj->player->airdropflags &= ~PAF_AIRDROP_MASK;
-			}
+			K_KillAirDrop(mobj->player, PAF_AIRDROP_HEAVY);
 		}
 		else if (wasinwater && P_MobjFlip(mobj) * mobj->momz > 0)
 		{
@@ -3721,10 +3739,10 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 	thiscam->floorz = g_tm.floorz;
 	thiscam->ceilingz = g_tm.ceilingz;
 
-	if (thiscam->momz || player->mo->pmomz)
+	if (thiscam->momz || thiscam->pmomz)
 	{
 		// adjust height
-		thiscam->z += thiscam->momz + player->mo->pmomz;
+		thiscam->z += thiscam->momz + thiscam->pmomz;
 	}
 
 	if (thiscam->ceilingz - thiscam->z < thiscam->height
@@ -4363,7 +4381,7 @@ boolean P_SupermanLook4Players(mobj_t *actor)
 			if (players[c].mo->health <= 0)
 				continue; // dead
 
-			if ((gametyperules & GTR_BUMPERS) && players[c].bumper <= 0)
+			if ((gametypes[gametype]->rules & GTR_BUMPERS) && players[c].bumper <= 0)
 				continue; // other dead
 
 			playersinthegame[stop] = &players[c];
@@ -6632,20 +6650,6 @@ static void P_RemoveKartItem(mobj_t *thing)
 	}
 }
 
-// Doesn't actually do anything since items have their own thinkers,
-// but this is necessary for the sole purpose of updating kitemcap
-void P_RunKartItems(void)
-{
-	mobj_t *mobj, *next;
-
-	for (mobj = kitemcap; mobj; mobj = next)
-	{
-		next = mobj->itnext;
-		P_SetTarget(&mobj->itnext, NULL);
-	}
-	P_SetTarget(&kitemcap, NULL);
-}
-
 static boolean P_IsMiscCapObject(INT32 type)
 {
 	switch (type)
@@ -6658,9 +6662,11 @@ static boolean P_IsMiscCapObject(INT32 type)
 			break;
 
 		case MT_RANDOMITEM:
-			if (itembreaker)
 				return true;
 			break;
+
+		case MT_PLAYER:
+				return true;
 
 		default:
 			break;
@@ -6703,20 +6709,6 @@ static void P_RemoveMiscCap(mobj_t *thing)
 		P_SetTarget(&thing->itnext, NULL);
 		return;
 	}
-}
-
-// Doesn't actually do anything since objects can have their own thinkers,
-// but this is necessary for the sole purpose of updating misccap
-void P_RunMiscCap(void)
-{
-	mobj_t *mobj, *next;
-
-	for (mobj = misccap; mobj; mobj = next)
-	{
-		next = mobj->itnext;
-		P_SetTarget(&mobj->itnext, NULL);
-	}
-	P_SetTarget(&misccap, NULL);
 }
 
 void P_RunOverlays(void)
@@ -7198,9 +7190,6 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 	if (P_MobjWasRemoved(mobj))
 		return;
 
-	if (P_IsMiscCapObject(mobj->type)) // mobj is object we want on the list:
-		P_AddMiscCap(mobj);			   // add to misccap list
-
 	switch (mobj->type)
 	{
 	case MT_SHADOW:
@@ -7595,7 +7584,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 			mobj->color = mobj->target->color;
 			K_MatchGenericExtraFlags(mobj, mobj->target);
 
-			if ((!(gametyperules & GTR_ITEMARROWS) || (gametyperules & GTR_BUMPERS && mobj->target->player->bumper <= 0))
+			if ((!(gametypes[gametype]->rules & GTR_ITEMARROWS) || (gametypes[gametype]->rules & GTR_BUMPERS && mobj->target->player->bumper <= 0))
 #if 1 // Set to 0 to test without needing to host
 				|| (P_IsDisplayPlayer(mobj->target->player))
 #endif
@@ -8420,9 +8409,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		// No need to check water. Who cares?
 		P_RingThinker(mobj);
 
-		if (cv_kartdebugrings.value)
-			P_AddMiscCap(mobj);
-
 		A_AttractChase(mobj);
 		return false;
 		// Flung items
@@ -8617,7 +8603,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			else if (gamespeed == KARTSPEED_EXPERT)
 				distbarrier = FixedMul(distbarrier, FRACUNIT+FRACUNIT/2);
 
-			if ((gametyperules & GTR_CIRCUIT) && mobj->tracer)
+			if ((gametypes[gametype]->rules & GTR_CIRCUIT) && mobj->tracer)
 			{
 				distaway = P_AproxDistance(mobj->tracer->x - mobj->x, mobj->tracer->y - mobj->y);
 				if (distaway < distbarrier)
@@ -8833,7 +8819,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		if (mobj->threshold > 0 || FixedHypot(mobj->momx, mobj->momy) >= 12*mobj->scale)
 		{
 			mobj_t *ghost = P_SpawnGhostMobj(mobj);
-			
+
 			if (mobj->target && mobj->target->player)
 			{
 				ghost->color = mobj->target->player->skincolor;
@@ -8841,33 +8827,33 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 		}
 
-		if (P_IsObjectOnGround(mobj)) 
+		if (P_IsObjectOnGround(mobj))
 		{
 			if (mobj->threshold == 0 && mobj->health > 1 && FixedHypot(mobj->momx, mobj->momy) < 12*mobj->scale)
 			{
 				mobj->health = 1;
 				mobj->whiteshadow = false;
 			}
-			if (!S_SoundPlaying(mobj, sfx_s3kd2l)) 
+			if (!S_SoundPlaying(mobj, sfx_s3kd2l))
 			{
 				S_StartSound(mobj, sfx_s3kd2l);
 			}
 			mobj->movefactor -= 1;
-			if (mobj->movefactor <= 0) 
+			if (mobj->movefactor <= 0)
 			{
 				P_KillMobj(mobj, mobj, NULL, DMG_INSTAKILL);
 			}
 		}
-		else if (S_SoundPlaying(mobj, sfx_s3kd2l)) 
+		else if (S_SoundPlaying(mobj, sfx_s3kd2l))
 		{
 			S_StopSoundByID(mobj, sfx_s3kd2l);
 		}
-		
+
 		if (mobj->threshold > 0)
 		{
 			mobj->threshold--;
 		}
-		if (mobj->extravalue1 > 0) 
+		if (mobj->extravalue1 > 0)
 		{
 			mobj->extravalue1--;
 		}
@@ -9259,6 +9245,27 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		break;
 	}
+	case MT_ATTRACTIONSHIELD:
+	{
+		if (!mobj->target || !mobj->target->health || !mobj->target->player
+			|| K_GetShieldFromPlayer(mobj->target->player) != KSHIELD_ATTRACTION)
+		{
+			P_RemoveMobj(mobj);
+			return false;
+		}
+		P_SetScale(mobj, (mobj->destscale = (5*mobj->target->scale)>>2));
+
+		// Don't sloperoll Shields
+		mobj->pitch = 0;
+		mobj->roll = 0;
+
+		mobj->slopepitch = 0;
+		mobj->sloperoll = 0;
+
+		P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
+
+		break;
+	}
 	case MT_BUBBLESHIELD:
 	{
 		const player_t *player = P_MobjWasRemoved(mobj->target) ? NULL : mobj->target->player;
@@ -9397,13 +9404,14 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 	case MT_FLAMESHIELD:
 		{
 			statenum_t curstate;
-			UINT8 flamestore = mobj->target->player->flamestore;
+			UINT8 flamestore = 0;
 			if (!mobj->target || !mobj->target->health || !mobj->target->player
 				|| K_GetShieldFromPlayer(mobj->target->player) != KSHIELD_FLAME)
 			{
 				P_RemoveMobj(mobj);
 				return false;
 			}
+			flamestore = mobj->target->player->flamestore;
 			// P_SetScale(mobj, (mobj->destscale = ((flamestore >= FLAMESTOREMAX-1) ? (2*mobj->target->scale) : (5*mobj->target->scale)>>2)));
 			mobj->destscale = ((flamestore >= FLAMESTOREMAX-1) ? (7*mobj->target->scale/4) : (5*mobj->target->scale)>>2);
 			curstate = ((mobj->tics == 1) ? (mobj->state->nextstate) : ((statenum_t)(mobj->state-states)));
@@ -9419,7 +9427,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 					P_SetMobjState(mobj, S_FLAMESHIELD1);
 				mobj->renderflags &= ~RF_DONTDRAW;
 			}
-			
+
 			if (flamestore >= FLAMESTOREMAX-1)
 			{
 				mobj->renderflags |= RF_ADD;
@@ -9467,7 +9475,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			statenum_t state = (mobj->state-states);
 
 			if (!mobj->target || !mobj->target->health || !mobj->target->player || mobj->target->player->spectator
-				|| mobj->target->player->bumper || !(gametyperules & GTR_KARMA))
+				|| mobj->target->player->bumper || !(gametypes[gametype]->rules & GTR_KARMA))
 			{
 				P_RemoveMobj(mobj);
 				return false;
@@ -10036,6 +10044,26 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				mobj->lastlook = player->cmd.turning;
 			}
 
+			/*
+			if (player->cmd.shake > GAMEPADSHAKETHRESHOLD)
+			{
+				if (mobj->extravalue3 == 0) mobj->extravalue3 = 1;
+				
+				if (mobj->extravalue2 == 0)
+				{
+					mobj->movecount += (TICRATE/2);
+					mobj->threshold = 16*mobj->extravalue3;
+					S_StartSound(mobj, sfx_s1ab);
+				}
+				mobj->extravalue2 = 1;
+				mobj->extravalue3 *= -1;
+			}
+			else
+			{
+				mobj->extravalue2 = 0;
+			}
+			*/
+
 			mobj->movecount++;
 		}
 		else if (mobj->extravalue1) // lost your player somehow, DIE
@@ -10428,7 +10456,7 @@ static boolean P_FuseThink(mobj_t *mobj)
 		{
 			;
 		}
-		else if (gametyperules & GTR_BATTLEBOXES)
+		else if (gametypes[gametype]->rules & GTR_BATTLEBOXES)
 		{
 			if (mobj->threshold != 69)
 				break;
@@ -10764,12 +10792,6 @@ void P_MobjThinker(mobj_t *mobj)
 	if (P_MobjWasRemoved(mobj))
 		return; // obligatory paranoia check
 
-	if (P_IsKartItem(mobj->type))	// mobj is a kart item we want on the list:
-		P_AddKartItem(mobj);		// add to kitem list
-
-	if (P_IsMiscCapObject(mobj->type)) // mobj is object we want on the list:
-		P_AddMiscCap(mobj);			   // add to misccap list
-
 	// Can end up here if a player dies.
 	if (mobj->player)
 		P_CyclePlayerMobjState(mobj);
@@ -11041,6 +11063,7 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_THUNDERSHIELD:
 		case MT_BUBBLESHIELD:
 		case MT_FLAMESHIELD:
+		case MT_ATTRACTIONSHIELD:
 		case MT_BLUEFRUIT:
 		case MT_ORANGEFRUIT:
 		case MT_REDFRUIT:
@@ -11727,6 +11750,12 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
 	R_AddMobjInterpolator(mobj);
 
+	if (P_IsKartItem(mobj->type))	// mobj is a kart item we want on the list:
+		P_AddKartItem(mobj);		// add to kitem list
+
+	if (P_IsMiscCapObject(mobj->type)) // mobj is object we want on the list:
+		P_AddMiscCap(mobj);			   // add to misccap list
+
 	return mobj;
 }
 
@@ -12399,64 +12428,18 @@ void P_RespawnSpecials(void)
 //
 void P_SpawnPlayer(INT32 playernum)
 {
-	UINT8 i, pcount = 0; // MAXPLAYERS if exiting
 	player_t *p = &players[playernum];
 	mobj_t *mobj;
 
+	boolean justjoined = (p->jointime <= 1);
+
 	if (p->playerstate == PST_REBORN)
-		G_PlayerReborn(playernum, false);
+		G_PlayerReborn(playernum, justjoined);
 
-	for (i = 0; i < MAXPLAYERS; i++)
-	{
-		if (i == playernum)
-			continue;
-		if (!playeringame[i] || players[i].spectator)
-			continue;
-		if (players[i].exiting)
-		{
-			pcount = MAXPLAYERS;
-			break;
-		}
-		if (players[i].jointime <= 1) // Prevent splitscreen hosters/joiners from only adding 1 player at a time in empty servers
-			continue;
-		pcount++;
-	}
-
-	// spawn as spectator determination
-	if (multiplayer && demo.playback)
-	{
-		; // Don't mess with spectator values since the demo setup handles them already.
-	}
-	else if (p->bot)
-	{
-		if (K_BotDefaultSpectator())
-		{
-			// Bots should avoid
-			p->spectator = true;
-			p->pflags &= ~PF_WANTSTOJOIN;
-		}
-		else if (p->spectator)
-		{
-			// No point in a spectating bot!
-			p->spectator = false;
-			p->pflags |= PF_WANTSTOJOIN;
-		}
-	}
-	else if (netgame && p->jointime <= 1 && pcount)
-	{
-		p->spectator = true;
-
-#if 0
-		if (pcount == 1 || leveltime < starttime)
-			p->pflags |= PF_WANTSTOJOIN;
-		p->jointime = 2;
-#endif
-		p->spectatorreentry = 0; //(cv_spectatorreentry.value * TICRATE);
-	}
-	else if (multiplayer && !netgame)
+	if (G_GametypeHasTeams())
 	{
 		// If you're in a team game and you don't have a team assigned yet...
-		if (G_GametypeHasTeams() && p->ctfteam == 0)
+		if (!p->spectator && p->ctfteam == 0)
 		{
 			changeteam_union NetPacket;
 			UINT16 usvalue;
@@ -12477,20 +12460,6 @@ void P_SpawnPlayer(INT32 playernum)
 
 			usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
 			SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
-		}
-		else // Otherwise, never spectator.
-		{
-			p->spectator = false;
-		}
-	}
-
-	if (G_GametypeHasTeams())
-	{
-		// Fix stupid non spectator spectators.
-		if (!p->spectator && !p->ctfteam)
-		{
-			p->spectator = true;
-			p->spectatorreentry = 0; //(cv_spectatorreentry.value * TICRATE);
 		}
 
 		// Fix team colors.
@@ -12550,7 +12519,7 @@ void P_SpawnPlayer(INT32 playernum)
 	p->grieftime = 0;
 	p->spinoutrot = 0;
 
-	if (gametyperules & GTR_ITEMARROWS)
+	if (gametypes[gametype]->rules & GTR_ITEMARROWS)
 	{
 		mobj_t *overheadarrow = P_SpawnMobj(mobj->x, mobj->y, mobj->z + mobj->height + 16*FRACUNIT, MT_PLAYERARROW);
 		P_SetTarget(&overheadarrow->target, mobj);
@@ -12558,7 +12527,7 @@ void P_SpawnPlayer(INT32 playernum)
 		P_SetScale(overheadarrow, mobj->destscale);
 	}
 
-	if (gametyperules & GTR_BUMPERS)
+	if (gametypes[gametype]->rules & GTR_BUMPERS)
 	{
 		if (p->spectator)
 		{
@@ -12574,7 +12543,7 @@ void P_SpawnPlayer(INT32 playernum)
 
 			K_SpawnPlayerBattleBumpers(p);
 		}
-		else if (p->bumper <= 0 && (gametyperules & GTR_KARMA))
+		else if (p->bumper <= 0 && (gametypes[gametype]->rules & GTR_KARMA))
 		{
 			mobj_t *karmahitbox = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_KARMAHITBOX); // Player hitbox is too small!!
 			P_SetTarget(&karmahitbox->target, mobj);
@@ -12634,7 +12603,7 @@ void P_AfterPlayerSpawn(INT32 playernum)
 		P_CheckGravity(mobj, false);
 
 	// set the player's starting waypoint
-	if (!K_UsingLegacyCheckpoints())
+	if (!K_UsingLegacyCheckpoints() && (gametypes[gametype]->rules & GTR_CIRCUIT) && waypointcap != NULL)
 		p->currentwaypoint = K_GetSpawnWaypointForMobj(p->mo);
 }
 
@@ -13004,7 +12973,7 @@ static mobjtype_t P_GetMobjtypeSubstitute(mapthing_t *mthing, mobjtype_t i)
 {
 	(void)mthing;
 
-	if ((i == MT_RANDOMITEM) && (gametyperules & (GTR_PAPERITEMS|GTR_CIRCUIT)) == (GTR_PAPERITEMS|GTR_CIRCUIT) && !bossinfo.boss)
+	if ((i == MT_RANDOMITEM) && (gametypes[gametype]->rules & (GTR_PAPERITEMS|GTR_CIRCUIT)) == (GTR_PAPERITEMS|GTR_CIRCUIT) && !bossinfo.boss)
 		return MT_PAPERITEMSPOT;
 
 	return i;

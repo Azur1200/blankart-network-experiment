@@ -37,12 +37,7 @@
 #include "m_menu.h" // M_ChangeMenuMusic
 #include "k_grandprix.h" // grandprixinfo
 
-#ifdef HW3SOUND
-// 3D Sound Interface
-#include "hardware/hw3sound.h"
-#else
 static boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch, sfxinfo_t *sfxinfo);
-#endif
 
 CV_PossibleValue_t soundvolume_cons_t[] = {{0, "MIN"}, {MAX_VOLUME, "MAX"}, {0, NULL}};
 static void SetChannelsNum(void);
@@ -191,7 +186,7 @@ static void S_StopChannel(INT32 cnum);
 //
 // If none available, return -1. Otherwise channel #.
 //
-static INT32 S_getChannel(const void *origin, sfxinfo_t *sfxinfo)
+static INT32 S_getChannel(const void *origin, sfxinfo_t *sfxinfo, efx_t *efx)
 {
 	// channel number to use
 	INT32 cnum;
@@ -213,7 +208,7 @@ static INT32 S_getChannel(const void *origin, sfxinfo_t *sfxinfo)
 			S_StopChannel(cnum);
 			break;
 		}
-		else if (origin && channels[cnum].origin == origin && channels[cnum].sfxinfo == sfxinfo)
+		else if (origin && channels[cnum].origin == origin && channels[cnum].sfxinfo == sfxinfo && efx == channels[cnum].efx)
 		{
 			if (sfxinfo->flags & SF_NOINTERRUPT)
 				return -1;
@@ -301,13 +296,6 @@ static void SetChannelsNum(void)
 	if (cv_numChannels.value == 999999999) //Alam_GBC: OH MY ROD!(ROD rimmiced with GOD!)
 		CV_StealthSet(&cv_numChannels,cv_numChannels.defaultvalue);
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_SetSourcesNum();
-		return;
-	}
-#endif
 	if (cv_numChannels.value)
 		channels = (channel_t *)Z_Malloc(cv_numChannels.value * sizeof (channel_t), PU_STATIC, NULL);
 	numofchannels = cv_numChannels.value;
@@ -316,7 +304,11 @@ static void SetChannelsNum(void)
 	for (i = 0; i < numofchannels; i++)
 	{
 		channels[i].sfxinfo = 0;
+		channels[i].duration = 0;
+		channels[i].endtime = 0;
 		channels[i].origin = NULL;
+		channels[i].efxtail = 0;
+		channels[i].efx = NULL;
 	}
 
 	S_ResetCaptions();
@@ -362,14 +354,6 @@ void S_StopSounds(void)
 {
 	INT32 cnum;
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_StopSounds();
-		return;
-	}
-#endif
-
 	// kill all playing sounds at start of level
 	for (cnum = 0; cnum < numofchannels; cnum++)
 		if (channels[cnum].sfxinfo)
@@ -386,13 +370,7 @@ void S_StopSoundByID(void *origin, sfxenum_t sfx_id)
 	// be stopped by new sounds.
 	if (!origin)
 		return;
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_StopSoundByID(origin, sfx_id);
-		return;
-	}
-#endif
+
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
 		if (channels[cnum].sfxinfo == &S_sfx[sfx_id] && channels[cnum].origin == origin)
@@ -406,13 +384,6 @@ void S_StopSoundByNum(sfxenum_t sfxnum)
 {
 	INT32 cnum;
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_StopSoundByNum(sfxnum);
-		return;
-	}
-#endif
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
 		if (channels[cnum].sfxinfo == &S_sfx[sfxnum])
@@ -525,7 +496,7 @@ static INT32 S_ScaleVolumeWithSplitscreen(INT32 volume)
 	) / FRACUNIT;
 }
 
-void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
+void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, INT32 volume, efx_t *efx)
 {
 	const mobj_t *origin = (const mobj_t *)origin_p;
 	const sfxenum_t actual_id = sfx_id;
@@ -574,14 +545,6 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 			itsUs = true;
 		}
 	}
-
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_StartSound(origin, sfx_id);
-		return;
-	};
-#endif
 
 	for (i = 0; i <= r_splitscreen; i++)
 	{
@@ -716,7 +679,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		}
 
 		// At this point it is determined that a sound can and should be played, so find a free channel to play it on
-		cnum = S_getChannel(origin, sfx);
+		cnum = S_getChannel(origin, sfx, efx);
 
 		if (cnum < 0)
 		{
@@ -730,7 +693,18 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 		channels[cnum].sfxinfo = sfx;
 		channels[cnum].origin = origin;
 		channels[cnum].volume = initial_volume;
-		channels[cnum].handle = I_StartSound(sfx_id, S_GetSoundVolume(sfx, volume), sep, pitch, priority, cnum);
+
+		if (efx != NULL && efx->type != EFFECT_NONE)
+		{
+			channels[cnum].efx = I_CreateEFX(efx);
+			channels[cnum].efxtail = I_GetEFXTail(efx);
+		}
+		else
+		{
+			channels[cnum].efx = NULL;
+		}
+
+		channels[cnum].handle = I_StartSound(sfx_id, S_GetSoundVolume(sfx, volume), sep, pitch, priority, cnum, channels[cnum].efx, channels[cnum].origin);
 	}
 }
 
@@ -740,12 +714,7 @@ void S_StartSound(const void *origin, sfxenum_t sfx_id)
 		return;
 
 	// the volume is handled 8 bits
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-		HW3S_StartSound(origin, sfx_id);
-	else
-#endif
-		S_StartSoundAtVolume(origin, sfx_id, 255);
+	S_StartSoundAtVolume(origin, sfx_id, 255);
 }
 
 void S_StopSound(void *origin)
@@ -757,13 +726,6 @@ void S_StopSound(void *origin)
 	if (!origin)
 		return;
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_StopSound(origin);
-		return;
-	}
-#endif
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
 		if (channels[cnum].sfxinfo && channels[cnum].origin == origin)
@@ -831,14 +793,6 @@ void S_UpdateSounds(void)
 		}
 	}
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-	{
-		HW3S_UpdateSources();
-		goto notinlevel;
-	}
-#endif
-
 	for (i = 0; i <= r_splitscreen; i++)
 	{
 		player_t *player = &players[displayplayers[i]];
@@ -879,8 +833,24 @@ notinlevel:
 		// if channel is allocated but sound has stopped, free it
 		if (!I_SoundIsPlaying(c->handle))
 		{
-			S_StopChannel(cnum);
+			c->endtime += 1;
+
+			if (c->efx == NULL || c->endtime > c->efxtail + c->duration)
+			{
+				if (c->efx != NULL)
+				{
+					CONS_Debug(DBG_EFX, "S_UpdateSounds: endtime: %f efxtail: %f duration: %f \n", c->endtime, c->efxtail, c->duration);
+				}
+
+				S_StopChannel(cnum);
+			}
+
 			continue;
+		}
+		else
+		{
+			c->duration += 1;
+			c->endtime += 1;
 		}
 
 		if (gamestate != GS_LEVEL || c->origin == NULL)
@@ -951,7 +921,9 @@ notinlevel:
 			}
 
 			if (audible)
-				I_UpdateSoundParams(c->handle, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch);
+			{
+				I_UpdateSoundParams(c->handle, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch, c->efx, c->origin);
+			}
 			else
 				S_StopChannel(cnum);
 		}
@@ -991,12 +963,8 @@ void S_SetSfxVolume(INT32 volume)
 {
 	actualsfxvolume = volume;
 
-#ifdef HW3SOUND
-	hws_mode == HWS_DEFAULT_MODE ? I_SetSfxVolume(volume&0x1F) : HW3S_SetSfxVolume(volume&0x1F);
-#else
 	// now hardware volume
 	I_SetSfxVolume(volume);
-#endif
 }
 
 void S_ClearSfx(void)
@@ -1020,7 +988,12 @@ static void S_StopChannel(INT32 cnum)
 		c->sfxinfo = 0;
 	}
 
+	c->duration = 0;
+	c->endtime = 0;
 	c->origin = NULL;
+	I_DeleteEFX(c->efx);
+	c->efxtail = 0;
+	c->efx = NULL;
 }
 
 //
@@ -1199,11 +1172,6 @@ INT32 S_OriginPlaying(void *origin)
 	if (!origin)
 		return false;
 
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-		return HW3S_OriginPlaying(origin);
-#endif
-
 	for (cnum = 0; cnum < numofchannels; cnum++)
 		if (channels[cnum].origin == origin)
 			return 1;
@@ -1215,11 +1183,6 @@ INT32 S_OriginPlaying(void *origin)
 INT32 S_IdPlaying(sfxenum_t id)
 {
 	INT32 cnum;
-
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-		return HW3S_IdPlaying(id);
-#endif
 
 	for (cnum = 0; cnum < numofchannels; cnum++)
 		if ((size_t)(channels[cnum].sfxinfo - S_sfx) == (size_t)id)
@@ -1234,11 +1197,6 @@ INT32 S_SoundPlaying(void *origin, sfxenum_t id)
 	INT32 cnum;
 	if (!origin)
 		return 0;
-
-#ifdef HW3SOUND
-	if (hws_mode != HWS_DEFAULT_MODE)
-		return HW3S_SoundPlaying(origin, id);
-#endif
 
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
@@ -2721,7 +2679,8 @@ void S_InitLevelMusic(boolean fromnetsave)
 
 	S_StopMusic(); // Starting ambience should always be restarted, if playing.
 
-	S_ChangeMusicEx(((grandprixinfo.roundnum > 0) ? "gpstrt" : (encoremode ? "estart" : "kstart")), 0, false, mapmusposition, 0, 0);
+	S_ChangeMusicEx(((grandprixinfo.gp == true
+	) ? "gpstrt" : (encoremode ? "estart" : "kstart")), 0, false, mapmusposition, 0, 0);
 
 	S_ResetMusicStack();
 	music_stack_noposition = false;
@@ -2850,6 +2809,7 @@ static void Command_RestartAudio_f(void)
 	S_StopMusic();
 	S_StopSounds();
 	S_ClearSfx();
+	S_DeleteGlobalEFX();
 	I_ShutdownMusic();
 	I_ShutdownSound();
 	I_StartupSound();
@@ -2863,7 +2823,10 @@ static void Command_RestartAudio_f(void)
 	S_StartSound(NULL, sfx_strpst);
 
 	if (Playing()) // Gotta make sure the player is in a level
+	{
+		S_CreateGlobalEFX(mapheaderinfo[gamemap-1]->globalEFX);
 		P_RestoreMusic(&players[consoleplayer]);
+	}
 	else
 		M_ChangeMenuMusic();
 }
@@ -2943,3 +2906,18 @@ void ModFilter_OnChange(void)
 		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH, cv_modfilter.value);
 }
 #endif
+
+void S_InitEFXArray(efx_t *efx)
+{
+	I_InitEFXArray(efx);
+}
+
+void S_CreateGlobalEFX(efx_t *efx)
+{
+	I_CreateGlobalEFX(efx);
+}
+
+void S_DeleteGlobalEFX(void)
+{
+	I_DeleteGlobalEFX();
+}

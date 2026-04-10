@@ -810,12 +810,14 @@ static void COM_Echo_f(void)
 static void COM_CEcho_f(void)
 {
 	size_t i;
-	char cechotext[1024] = "";
+	char cechotext[1024];
 
-	for (i = 1; i < COM_Argc(); i++)
+	strlcpy(cechotext, COM_Argc() > 1 ? COM_Argv(1) : "", sizeof(cechotext));
+
+	for (i = 2; i < COM_Argc(); i++)
 	{
-		strlcpy(cechotext, COM_Argv(i), sizeof(cechotext)-1);
-		strlcpy(cechotext, " ", sizeof(cechotext)-1);
+		strlcat(cechotext, " ", sizeof(cechotext));
+		strlcat(cechotext, COM_Argv(i), sizeof(cechotext));
 	}
 
 	HU_DoCEcho(cechotext);
@@ -2119,9 +2121,9 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 			return;
 		}
 
-		if (var == &cv_kartspeed && !M_SecretUnlocked(SECRET_HARDSPEED))
+		if (var == &cv_kartspeed && !M_SecretUnlocked(SECRET_EXPERTSPEED))
 		{
-			if (fasticmp(value, "Hard") || fasticmp(value, "Expert") || atoi(value) >= KARTSPEED_HARD)
+			if (fasticmp(value, "Expert") || atoi(value) >= KARTSPEED_HARDERTHANDEFAULT)
 			{
 				CONS_Printf(M_GetText("You haven't unlocked this yet!\n"));
 				return;
@@ -2335,9 +2337,9 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 
 			if (var->PossibleValue == kartspeed_cons_t || var->PossibleValue == gpdifficulty_cons_t)
 			{
-				if (!M_SecretUnlocked(SECRET_HARDSPEED))
+				if (!M_SecretUnlocked(SECRET_EXPERTSPEED))
 				{
-					max = KARTSPEED_NORMAL+1;
+					max = KARTSPEED_DEFAULT+1;
 					if (var->PossibleValue == kartspeed_cons_t)
 						max++; // Accommodate KARTSPEED_AUTO
 				}

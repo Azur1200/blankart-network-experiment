@@ -612,45 +612,47 @@ void V_AdjustXYWithSnap(INT32 *x, INT32 *y, UINT32 options, INT32 dup)
 		}
 	}
 
-	if (options & V_SLIDEIN)
+	if ((options & V_SLIDEIN))
 	{
-		const tic_t length = TICRATE/4;
-		tic_t timer = lt_exitticker;
-		if (bossinfo.boss == true)
+		if (st_fadein < FRACUNIT)
 		{
-			if (leveltime <= 3)
-				timer = 0;
-			else
-				timer = leveltime-3;
-		}
-
-		if (timer < length)
-		{
-			boolean slidefromright = false;
-
-			const INT32 offsetAmount = (screenwidth * FRACUNIT/2) / length;
-			fixed_t offset = (screenwidth * FRACUNIT/2) - (timer * offsetAmount);
-
-			offset += FixedMul(offsetAmount, renderdeltatics);
-			offset /= FRACUNIT;
-
-			if (r_splitscreen > 1)
+			if ((options & (V_SNAPTORIGHT|V_SNAPTOLEFT|V_SPLITSCREEN)) != 0)
 			{
-				if (stplyrnum == 1 || stplyrnum == 3)
+				boolean slidefromright = false;
+
+				const fixed_t offsetAmount = (screenwidth * FRACUNIT/2);
+				INT32 offset = (offsetAmount - FixedMul(offsetAmount, st_fadein)) / FRACUNIT;
+
+				if (r_splitscreen > 1)
+				{
+					if (player & 1)
+						slidefromright = true;
+				}
+
+				if (options & V_SNAPTORIGHT)
 					slidefromright = true;
+				else if (options & V_SNAPTOLEFT)
+					slidefromright = false;
+
+				if (slidefromright == true)
+				{
+					offset = -offset;
+				}
+
+				*x -= offset;
 			}
-
-			if (options & V_SNAPTORIGHT)
-				slidefromright = true;
-			else if (options & V_SNAPTOLEFT)
-				slidefromright = false;
-
-			if (slidefromright == true)
+			else
 			{
-				offset = -offset;
-			}
+				const fixed_t offsetAmount = (screenheight * FRACUNIT/2);
+				INT32 offset = (offsetAmount - FixedMul(offsetAmount, st_fadein)) / FRACUNIT;
 
-			*x -= offset;
+				if (options & V_SNAPTOBOTTOM)
+				{
+					offset = -offset;
+				}
+
+				*y -= offset;
+			}
 		}
 	}
 }
@@ -810,6 +812,114 @@ static int sortcoords(const void *a, const void *b)
 }
 */
 
+affine_bounding_t* V_GetAffineBounds(const affine_t* transform,
+				     patch_t* patch,
+					 fixed_t divisor,
+				     affine_bounding_t* out,
+					 boolean unrestrict_bound)
+{
+	// A decent chunk of this code is just fixedpointizing stuff
+	// from HWR_GetAffinePatch; That system's near flawless, why fix what isn't broken?
+	// Kudos to Generic for making my life easier 🥹
+
+	// First, let's set our output to a bunch of dummy values.
+
+	out->l = INT32_MAX;
+	out->t = INT32_MAX;
+	out->r = INT32_MIN;
+	out->b = INT32_MIN;
+
+	fixed_t fa = FixedDiv(transform->a, divisor);
+	fixed_t fd = FixedDiv(transform->d, divisor);
+	fixed_t fc = FixedDiv(transform->c, divisor);
+	fixed_t fb = FixedDiv(transform->b, divisor);
+	fixed_t fx = (transform->ox);
+	fixed_t fy = (transform->oy);
+
+	// now, the matrix passed to this function maps screen coordinates to texel coordinates...
+	// but to translate this from software to GL, we have to figure out where each corner
+	// (or vertex) of the patch should end up on the screen.
+	// which means we have to map texel coordinates to screen coordinates.
+	// which means we have to invert the matrix.
+	// how do you invert a matrix?
+	// ...
+	// i don't fucking know, i spent a day on this and got absolutely nowhere, but this guy
+	// knows:
+	// https://nigeltao.github.io/blog/2021/inverting-3x2-affine-transformation-matrix.html
+
+	// ...so I thought this would be standard fare order-of-operations stuff
+	// NOPE!
+	// The compiled assembly code does THIS:
+	// (fa * fd) - (fb * fc)
+	fixed_t determinant = FixedMul(fa, fd) - FixedMul(fb, fc);
+
+	if (determinant == 0)
+		return out;
+
+	fixed_t ba = FixedDiv(fd, determinant);
+	fixed_t bb = FixedDiv(-fb, determinant);
+	fixed_t bc = FixedDiv(-fc, determinant);
+	fixed_t bd = FixedDiv(fa, determinant);
+
+	// set the polygon vertices to the right positions
+	//  3--2
+	//  | /|
+	//  |/ |
+	//  0--1
+	fixed_t pw = (patch->width << FRACBITS);
+	fixed_t ph = (patch->height << FRACBITS);
+	vector2_t v[4] = {
+	    [3] = {.x = (FixedMul(ba, -fx) - FixedMul(bb, fy)) + fx,
+		        .y = (FixedMul(bc, -fx) - FixedMul(bd, fy)) + fy },
+		[2] = { .x = (FixedMul(ba, (pw - fx)) - FixedMul(bb, fy)) + fx,
+		        .y = (FixedMul(bc, (pw - fx)) - FixedMul(bd, fy)) + fy },
+		[0] = { .x = (FixedMul(ba, -fx) + FixedMul(bb, (ph - fy))) + fx,
+		        .y = (FixedMul(bc, -fx) + FixedMul(bd, (ph - fy))) + fy },
+		[1] = { .x = (FixedMul(ba, (pw - fx)) + FixedMul(bb, (ph - fy))) + fx,
+		        .y = (FixedMul(bc, (pw - fx)) + FixedMul(bd, (ph - fy))) + fy },
+	};
+
+	// Get the leftmost and uppermost bounds of the current resolution.
+	INT32 vw = vid.width, vh = vid.height;
+	INT32 leftmost = ((BASEVIDWIDTH - vw) / 2), uppermost = ((BASEVIDHEIGHT - vh) / 2);
+
+	if (unrestrict_bound)
+	{
+		vw = vh = INT32_MAX;
+		leftmost = uppermost = INT32_MIN;
+	}
+
+	// ...okay, now comb through all four vertices and set the output bounds based on this.
+	// "Why not a loop?" According to SM64 programming wizard Kaze Emanuar,
+	// loops take more processing time. If we can help it, it's better to just cut corners.
+#define BOUNDCHECK(i)                                     \
+	{                                                 \
+		out->l = max(leftmost, min(v[i].x >> FRACBITS, out->l)); \
+		out->r = min(vw, max(v[i].x >> FRACBITS, out->r)); \
+		out->t = max(uppermost, min(v[i].y >> FRACBITS, out->t)); \
+		out->b = min(vh, max(v[i].y >> FRACBITS, out->b)); \
+	}
+
+	BOUNDCHECK(0);
+	BOUNDCHECK(1);
+	BOUNDCHECK(2);
+	BOUNDCHECK(3);
+
+#undef BOUNDCHECK
+
+	// Cool, we have our bounds. Get the diffs so the loops have something to reference.
+	out->xlen = abs(out->r - out->l);
+	out->ylen = abs(out->b - out->t);
+
+	out->xleft = (fx >> FRACBITS) - out->l;
+	out->xright = out->r - (fx >> FRACBITS);
+
+	out->yup = (fy >> FRACBITS) - out->t;
+	out->ydown = out->b - (fy >> FRACBITS);
+
+	return out;
+}
+
 void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, INT32 scrn, patch_t *patch, const UINT8 *colormap)
 {
 	if (rendermode == render_none)
@@ -858,6 +968,9 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, INT32 sc
 	}
 #endif
 
+	affine_bounding_t bounds = {0};
+	V_GetAffineBounds(transform, patch, vid.dup * FRACUNIT, &bounds, false);
+
 	Patch_GenerateFlat(patch, 0);
 	const UINT16 *src = patch->flats[0];
 	if (src == NULL)
@@ -867,8 +980,8 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, INT32 sc
 	const fixed_t b = transform->b / dup;
 	const fixed_t c = transform->c / dup;
 	const fixed_t d = transform->d / dup;
-	const fixed_t cx = transform->ox;
-	const fixed_t cy = transform->oy;
+	fixed_t cx = transform->ox;
+	fixed_t cy = transform->oy;
 
 	const INT32 scrwidth = vid.width;
 	const INT32 pw = patch->width, ph = patch->height;
@@ -892,20 +1005,43 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, INT32 sc
 	fixed_t y4 = FixedMul(bc, pw*FRACUNIT - cx) + FixedMul(bd, ph*FRACUNIT - cy) + cy;
 	*/
 
-	UINT8 * const destbase = vid.screens[0] + y * vid.width + x;
-	INT32 dx = 0, dy = 0;
+	INT32 ydiff = (bounds.yup - (transform->oy >> FRACBITS));
+	INT32 xdiff = (bounds.xleft - (transform->ox >> FRACBITS));
 
-	for (dy = 0; dy < ph; dy++)
+	// Get the clipping values, since that can vary per-resolution.
+	INT32 yclip = min(y - ydiff, 0) * -1;
+	INT32 xclip = min(x - xdiff, 0) * -1;
+
+	ydiff -= yclip;
+	xdiff -= xclip;
+
+	// Get the leftmost and uppermost bounds of the current resolution.
+	const INT32 vw = vid.width, vh = vid.height;
+
+	INT32 yy = CLAMP(y - ydiff, 0, vh);
+	INT32 xx = CLAMP(x - xdiff, 0, vw);
+
+	INT32 xmax = max(bounds.xlen - xclip, pw), ymax = max(bounds.ylen - yclip, ph);
+
+	// Offset our X and Y positions by the bounding differences.
+	fixed_t cxx = cx + (xdiff * FRACUNIT);
+	fixed_t cyy = cy + (ydiff * FRACUNIT);
+
+	intptr_t dest_y = (intptr_t)(vid.screens[0]) + yy * vw;
+
+	UINT8 * const destbase = (UINT8 * const)(dest_y + xx);
+	INT32 dx = 0, dy = 0;
+	for (dy = 0; dy < ymax; dy++)
 	{
 		// yoinked from NovaSquirrel's mode 7 preview
 		// ...which is in turn yoinked from Mesen's S-PPU code
 		// i can't do matrix math to save my life :face_holding_back_tears:
 		// (m7xofs and m7yofs are already factored in by destbase)
-		fixed_t ux = FixedMul(a, -cx) + FixedMul(b, -cy) + b*dy + cx;
-		fixed_t uy = FixedMul(c, -cx) + FixedMul(d, -cy) + d*dy + cy;
-		UINT8 *dest = destbase + dy * scrwidth;
+		fixed_t ux = (FixedMul(a, -cxx) + FixedMul(b, -cyy) + b*(dy) + cx);
+		fixed_t uy = FixedMul(c, -cxx) + FixedMul(d, -cyy) + d*(dy) + cy;
+		UINT8 *dest = (destbase) + (dy) * scrwidth;
 
-		for (dx = 0; dx < pw; dx++, dest++)
+		for (dx = 0; dx < xmax; dx++, dest++)
 		{
 			const INT32 srcx = ux >> FRACBITS;
 			const INT32 srcy = uy >> FRACBITS;
@@ -967,6 +1103,39 @@ void V_DrawRotatedPatch(fixed_t x, fixed_t y, angle_t angle, fixed_t pscale, fix
 	V_DrawAffinePatch(x, y, &t, scrn, patch, colormap);
 }
 
+UINT32 V_GetHUDTranslucency(INT32 scrn)
+{
+	if (scrn & V_SLIDEIN)
+	{
+		return cv_translucenthud.value;
+	}
+
+	if (scrn & V_SPLITSCREEN)
+	{
+		return FixedMul(cv_translucenthud.value, st_fadein);
+	}
+
+	return st_translucency;
+}
+
+static UINT32 V_GetAlphaLevel(INT32 scrn)
+{
+	switch (scrn & V_ALPHAMASK)
+	{
+		case V_HUDTRANSHALF:
+			return hudminusalpha[V_GetHUDTranslucency(scrn)];
+
+		case V_HUDTRANS:
+			return 10 - V_GetHUDTranslucency(scrn);
+
+		case V_HUDTRANSDOUBLE:
+			return hudplusalpha[V_GetHUDTranslucency(scrn)];
+
+		default:
+			return (scrn & V_ALPHAMASK) >> V_ALPHASHIFT;
+	}
+}
+
 // Draws a patch scaled to arbitrary size.
 void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap)
 {
@@ -1000,18 +1169,10 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 
 	if ((blendmode = ((scrn & V_BLENDMASK) >> V_BLENDSHIFT)))
 		blendmode++; // realign to constants
-	if ((alphalevel = ((scrn & V_ALPHAMASK) >> V_ALPHASHIFT)))
-	{
-		if (alphalevel == 13) // V_HUDTRANSHALF
-			alphalevel = hudminusalpha[st_translucency];
-		else if (alphalevel == 14) // V_HUDTRANS
-			alphalevel = 10 - st_translucency;
-		else if (alphalevel == 15) // V_HUDTRANSDOUBLE
-			alphalevel = hudplusalpha[st_translucency];
 
-		if (alphalevel >= 10) // Still inelegible to render?
-			return;
-	}
+	if ((alphalevel = V_GetAlphaLevel(scrn)) >= 10)
+		return;
+
 	if ((v_translevel = R_GetBlendTable(blendmode, alphalevel)))
 		patchdrawtype = TRANSLUCENTDRAW;
 
@@ -1667,18 +1828,9 @@ void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	}
 #endif
 
-	if ((alphalevel = ((c & V_ALPHAMASK) >> V_ALPHASHIFT)))
-	{
-		if (alphalevel == 13) // V_HUDTRANSHALF
-			alphalevel = hudminusalpha[st_translucency];
-		else if (alphalevel == 14) // V_HUDTRANS
-			alphalevel = 10 - st_translucency;
-		else if (alphalevel == 15) // V_HUDTRANSDOUBLE
-			alphalevel = hudplusalpha[st_translucency];
+	if ((alphalevel = V_GetAlphaLevel(c)) >= 10)
+		return;
 
-		if (alphalevel >= 10) // Still inelegible to render?
-			return;
-	}
 
 	if (!(c & V_NOSCALESTART))
 	{

@@ -25,6 +25,7 @@
 #include "p_local.h"
 #include "p_mobj.h"
 #include "p_setup.h"
+#include "r_main.h"
 #include "s_sound.h"
 #include "typedef.h"
 #include "deh_tables.h"
@@ -293,7 +294,7 @@ static boolean K_RaceForceSPB(SINT8 playerpos, UINT32 pdis)
 		return false;
 	}
 
-	return ((gametyperules & GTR_CIRCUIT) && playerpos == 2 && pdis > (UINT32)(7 * spb_res->augcvar[idx]->value / 2));
+	return ((gametypes[gametype]->rules & GTR_CIRCUIT) && playerpos == 2 && pdis > (UINT32)(7 * spb_res->augcvar[idx]->value / 2));
 }
 
 // 1/21/2025: I hate tiptoeing around the integer limit.
@@ -508,16 +509,8 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
 
 static INT32 K_KartGetSMonitorOdds(UINT32 dist)
 {
-	// I'm tired; use floating-point distances for this fuckshit.
-	INT32 monitordist = SMONITORDIST;
-
-	float fac_f = (float)(dist) / ((float)(monitordist));
-
-	if (fac_f < 1.0f)
-		return 0;
-
 	// If you're far enough for this to be in your item slot, you're far enough to SERIOUSLY need this.
-	return MAXSMONITORODDS;
+	return dist >= (UINT32)SMONITORDIST ? MAXSMONITORODDS : 0;
 }
 
 // updates all result cooldown timers, and sets cooldowns for "unique" items
@@ -541,7 +534,7 @@ void K_UpdateItemCooldown(void)
 		if (!playeringame[i] || player->spectator || player->exiting > 0)
 			continue;
 
-		if (gametyperules & GTR_BUMPERS && player->bumper == 0)
+		if (gametypes[gametype]->rules & GTR_BUMPERS && player->bumper == 0)
 			continue;
 
 		// special case for legacy shrink
@@ -585,7 +578,7 @@ void K_UpdateItemCooldown(void)
 	{
 		kartresult_t *result = &kartresults[i];
 		if (result->isalt == K_IsKartItemAlternate(result->type)
-		 && (gametyperules & GTR_RACEODDS || result->flags & KRF_INDIRECTITEM)
+		 && (gametypes[gametype]->rules & GTR_RACEODDS || result->flags & KRF_INDIRECTITEM)
 		 && setcooldown[result->type])
 			result->cooldown = result->basecooldown;
 	}
@@ -654,16 +647,16 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 	// Item type used for actual odds retrieval and cooldown assignments.
 	UINT8 oddstable;
 
-	if (gametyperules & GTR_BATTLEODDS)
+	if (gametypes[gametype]->rules & GTR_BATTLEODDS)
 		oddstable = ODDS_BATTLE;
-	else if (gametyperules & GTR_RACEODDS)
+	else if (gametypes[gametype]->rules & GTR_RACEODDS)
 		oddstable = ODDS_RACE;
 	else
 		oddstable = ODDS_SPECIAL;
 
 	I_Assert(roulette->pos < oddstablemax[oddstable]); // DO NOT allow positions past the bounds of the table
 
-	if (gametyperules & GTR_BATTLEODDS)
+	if (gametypes[gametype]->rules & GTR_BATTLEODDS)
 		oddsmul = BATTLEODDSMUL;
 
 	// TODO: braaap (make a separate table for the current level!)
@@ -683,7 +676,7 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 		if (!playeringame[i] || players[i].spectator)
 			continue;
 
-		if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
+		if (!(gametypes[gametype]->rules & GTR_BUMPERS) || players[i].bumper)
 			roulette->pingame++;
 
 		if (players[i].exiting)
@@ -937,7 +930,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 	{
 		boolean available = false;
 
-		if ((gametyperules & GTR_BATTLEODDS) && i > 1)
+		if ((gametypes[gametype]->rules & GTR_BATTLEODDS) && i > 1)
 		{
 			oddsvalid[i] = false;
 			break;
@@ -966,7 +959,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 			distlen = min(sizeof(disttable) - 1, distlen); \
         }
 
-	if (gametyperules & GTR_BATTLEODDS) // Battle Mode
+	if (gametypes[gametype]->rules & GTR_BATTLEODDS) // Battle Mode
 	{
 		if (player->roulettetype == KROULETTETYPE_KARMA && oddsvalid[1] == true)
 		{
@@ -984,7 +977,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 			}
 		}
 	}
-	else if (gametyperules & GTR_RACEODDS)
+	else if (gametypes[gametype]->rules & GTR_RACEODDS)
 	{
 
 		INT32 tablediv = FixedMul(2, oddsfac);
@@ -1080,7 +1073,7 @@ UINT8* K_GetRollableItems(void)
 
 		roulette_size = 0;
 
-		if (gametyperules & GTR_BATTLEODDS)
+		if (gametypes[gametype]->rules & GTR_BATTLEODDS)
 			oddstable = ODDS_BATTLE;
 		else
 			oddstable = ODDS_RACE;
@@ -1127,7 +1120,7 @@ UINT32 K_GetCongaLineDistance(const player_t *player, UINT8 startPos)
 
 	memset(sortedPlayers, -1, sizeof(sortedPlayers));
 
-	if (player->mo != NULL && P_MobjWasRemoved(player->mo) == false)
+	if (player->mo != NULL && P_MobjWasRemoved(player->mo) == false && player->position > 0)
 	{
 		// Sort all of the players ahead of you.
 		// Then tally up their distances in a conga line.
@@ -1317,7 +1310,7 @@ UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, boolean *spbrus
 
 static boolean K_BattleForceSPB(player_t *player)
 {
-	boolean battlecond = ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB) && (mostwanted != -1) && (!K_IsPlayerMostWanted(player)));
+	boolean battlecond = ((gametypes[gametype]->rules & GTR_WANTED) && (gametypes[gametype]->rules & GTR_WANTEDSPB) && (mostwanted != -1) && (!K_IsPlayerMostWanted(player)));
 
 	return battlecond;
 }
@@ -1415,7 +1408,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 
 	// SPECIAL CASE No. 3:
 	// This Gametype never specified an odds type. Roll something random please!
-	if (!(gametyperules & GTR_RACEODDS) && !(gametyperules & GTR_BATTLEODDS))
+	if (!(gametypes[gametype]->rules & GTR_RACEODDS) && !(gametypes[gametype]->rules & GTR_BATTLEODDS))
 	{
 		UINT8 itemroll = P_RandomRange(0, numkartresults - 1);
 		K_AwardPlayerResult(player, &kartresults[itemroll], KITEMBLINK_NORMAL);
@@ -1425,10 +1418,10 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// SPECIAL CASE No. 4:
 	// Record Attack / alone mashing behavior
 	if ((modeattacking || pingame == 1)
-		&& ((gametyperules & GTR_RACEODDS)
-		|| ((gametyperules & GTR_BATTLEODDS) && (itembreaker || bossinfo.boss))))
+		&& ((gametypes[gametype]->rules & GTR_RACEODDS)
+		|| ((gametypes[gametype]->rules & GTR_BATTLEODDS) && (itembreaker || bossinfo.boss))))
 	{
-		if ((gametyperules & GTR_RACEODDS))
+		if ((gametypes[gametype]->rules & GTR_RACEODDS))
 		{
 			if (mashed && (K_ItemResultEnabled(K_GetKartResult("superring")) || (modeattacking && K_RingsActive()))) // ANY mashed value? You get rings.
 			{
@@ -1442,7 +1435,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 					K_AwardPlayerResult(player, NULL, KITEMBLINK_NORMAL);
 			}
 		}
-		else if (gametyperules & GTR_BATTLEODDS)
+		else if (gametypes[gametype]->rules & GTR_BATTLEODDS)
 		{
 			if (mashed && (bossinfo.boss || K_ItemResultEnabled(K_GetKartResult("banana"))) && !itembreaker) // ANY mashed value? You get a banana.
 				K_AwardPlayerResult(player, K_GetKartResult("banana"), KITEMBLINK_MASHED);
@@ -1650,7 +1643,7 @@ static void K_DoGrowShrink(player_t *player, boolean shrinking)
 	}
 	else
 	{
-		player->growshrinktimer = (gametyperules & GTR_CLOSERPLAYERS ? 8 : 12) * ((shrinking) ? -TICRATE : TICRATE);
+		player->growshrinktimer = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS ? 8 : 12) * ((shrinking) ? -TICRATE : TICRATE);
 	}
 
 	if (shrinking)
@@ -1773,13 +1766,17 @@ static void K_DoHyudoroSteal(player_t *player)
 
 			// Can steal from this player
 			&& (gametype == GT_RACE //&& players[i].position < player->position)
-			|| ((gametyperules & GTR_BUMPERS) && players[i].bumper > 0))
+			|| ((gametypes[gametype]->rules & GTR_BUMPERS) && players[i].bumper > 0))
 
 			// Has an item
 			&& (players[i].itemtype
 			&& players[i].itemamount
 			&& !(players[i].itemflags & IF_ITEMOUT)
-			&& !players[i].itemblink))
+			&& !players[i].itemblink
+			//todo: make this more modular for hold-button items (these should never be stolen when being used)
+			&& !players[i].bubblecool
+			&& !players[i].attractioncharge
+			))
 		{
 			kartitemflags_e flags = K_GetItemFlags(players[i].itemtype);
 
@@ -1850,6 +1847,7 @@ static void K_DoHyudoroSteal(player_t *player)
 
 		players[stealplayer].itemtype = KITEM_NONE;
 		players[stealplayer].itemamount = 0;
+		K_DisableSeekingReticule(player);
 		K_UnsetItemOut(&players[stealplayer]);
 
 		if (P_IsDisplayPlayer(&players[stealplayer]) && !r_splitscreen)
@@ -1908,6 +1906,56 @@ void K_DoThunderShield(player_t *player)
 		mo->scale = player->mo->scale*3;
 		P_SetTarget(&mo->target, player->mo);
 		P_SetMobjState(mo, S_KSPARK1);
+	}
+}
+
+void K_DoAttractionShield(player_t *player, boolean hipower)
+{
+	mobj_t *mo;
+	int i = 0;
+	fixed_t sx;
+	fixed_t sy;
+	angle_t an;
+
+	if (S_SoundPlaying(player->mo, sfx_vwre))
+	{
+		S_StopSoundByID(player->mo, sfx_vwre);
+	}
+
+	S_StartSound(player->mo, sfx_zio3);
+	K_AttractionShieldAttack(player->mo, (cv_kartthunder_radius.value + THUNDERSPRITE) * FRACUNIT);
+
+	// spawn vertical bolt
+	mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
+	P_SetTarget(&mo->target, player->mo);
+	P_SetMobjState(mo, S_LZIO11);
+	mo->color = SKINCOLOR_TEAL;
+	mo->scale = player->mo->scale*3 + (player->mo->scale/2);
+	mo->color = SKINCOLOR_YELLOW;
+	mo->colorized = true;
+
+	mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
+	P_SetTarget(&mo->target, player->mo);
+	P_SetMobjState(mo, S_LZIO21);
+	mo->color = SKINCOLOR_CYAN;
+	mo->scale = player->mo->scale*3 + (player->mo->scale/2);
+	mo->color = SKINCOLOR_YELLOW;
+	mo->colorized = true;
+
+	// spawn the radius thing:
+	an = ANGLE_22h;
+	for (i=0; i<15; i++)
+	{
+		sx = player->mo->x + FixedMul((player->mo->scale*cv_kartthunder_radius.value), FINECOSINE((an*i)>>ANGLETOFINESHIFT));
+		sy = player->mo->y + FixedMul((player->mo->scale*cv_kartthunder_radius.value), FINESINE((an*i)>>ANGLETOFINESHIFT));
+		mo = P_SpawnMobj(sx, sy, player->mo->z, MT_THOK);
+		mo->angle = an*i;
+		mo->extravalue1 = cv_kartthunder_radius.value;	// Used to know whether we should teleport by radius or something.
+		mo->scale = player->mo->scale*3;
+		P_SetTarget(&mo->target, player->mo);
+		P_SetMobjState(mo, S_KSPARK1);
+		mo->color = SKINCOLOR_YELLOW;
+		mo->colorized = true;
 	}
 }
 
@@ -2260,8 +2308,9 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *prev = player->mo;
 
 			//K_PlayAttackTaunt(player->mo);
-			K_SetItemOut(player, KITEM_JAWZ, IF_ITEMOUT);
+			K_SetItemOut(player, KITEM_JAWZ, IF_ITEMOUT|IF_SEEKING);
 			S_StartSound(player->mo, sfx_s3k3a);
+			K_EnableSeekingReticule(player, false);
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
 			{
@@ -2294,6 +2343,11 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			K_PlayAttackTaunt(player->mo);
 			K_UpdateHnextList(player, false);
 			K_BotResetItemConfirm(player, false);
+
+			if (player->itemamount <= 0)
+			{
+				K_DisableSeekingReticule(player);
+			}
 		}
 		break;
 	case KITEM_MINE:
@@ -2399,28 +2453,160 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		}
 		break;
 	case KITEM_THUNDERSHIELD:
-		if (K_GetShieldFromPlayer(player) != KSHIELD_THUNDER)
+		if (K_IsKartItemAlternate(KITEM_THUNDERSHIELD))
 		{
-			mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THUNDERSHIELD);
-			P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
-			P_SetTarget(&shield->target, player->mo);
-			P_SetTarget(&player->shieldtracer, shield);
-			S_StartSound(player->mo, sfx_s3k41);
-		}
-
-		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
-		{
-			K_DoThunderShield(player);
-			if (player->itemamount > 0)
+			if (K_GetShieldFromPlayer(player) != KSHIELD_ATTRACTION)
 			{
-				// Why is this a conditional?
-				// Thunder shield: the only item that allows you to
-				// activate a mine while you're out of its radius,
-				// the SAME tic it sets your itemamount to 0
-				// ...:dumbestass:
-				player->itemamount--;
-				K_PlayAttackTaunt(player->mo);
-				K_BotResetItemConfirm(player, false);
+				mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_ATTRACTIONSHIELD);
+				P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
+				P_SetTarget(&shield->target, player->mo);
+				P_SetTarget(&player->shieldtracer, shield);
+				S_StartSound(player->mo, sfx_attrsg);
+			}
+
+			if (!HOLDING_ITEM && NO_HYUDORO)
+			{
+				if (buttons & BT_ATTACK && 
+					((player->itemflags & IF_HOLDREADY) || player->attractioncharge > 0))
+				{
+					fixed_t effectscale = 75*player->mo->scale/100;
+
+					if (player->attractioncharge == 0)
+					{
+						S_StartSound(player->mo, sfx_vwre);
+					}
+					
+					if (player->attractioncharge >= ATTRACTIONCHARGETIME)
+					{
+						if (player->attractioncharge == ATTRACTIONCHARGETIME)
+						{
+							player->attractioncharge++;
+							S_StartSound(player->mo, sfx_ncchip);
+						}
+						if (S_SoundPlaying(player->mo, sfx_vwre))
+						{
+							S_StopSoundByID(player->mo, sfx_vwre);
+						}
+						K_EnableSeekingReticule(player, false);
+						player->bananadrag += 4;
+					}
+					else
+					{
+						effectscale = Easing_Linear(CLAMP(FixedDiv(player->attractioncharge, ATTRACTIONCHARGETIME), 0, FRACUNIT),
+							player->mo->scale/4,
+							player->mo->scale/2
+						);
+						K_EnableSeekingReticule(player, false);
+					}
+
+					// stolen from machine water breathing
+					if (P_RandomChance(FRACUNIT/5))
+					{
+						fixed_t r = player->mo->radius>>FRACBITS;
+						fixed_t x = player->mo->x + (P_RandomRange(r, -r)<<FRACBITS);
+						fixed_t y = player->mo->y + (P_RandomRange(r, -r)<<FRACBITS);
+						fixed_t z = player->mo->z + (P_RandomKey(player->mo->height>>FRACBITS)<<FRACBITS);
+						mobj_t *spark = P_SpawnMobj(x, y, z, MT_WATERZAP);
+						S_StartSound(spark, sfx_beelec);
+						spark->color = SKINCOLOR_YELLOW;
+						spark->colorized = true;
+					}
+
+					if (player->attractioncharge % 8 == 0)
+					{
+						mobj_t *mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
+						mo->angle = P_RandomRange(0, 359)*ANG1;
+						mo->fuse = P_RandomRange(20, 50);
+						P_SetScale(mo, effectscale);
+						mo->destscale = mo->scale/2;
+						mo->color = SKINCOLOR_YELLOW;
+						mo->colorized = true;
+
+						P_SetTarget(&mo->target, player->mo);
+						P_SetMobjState(mo, S_KLIT1);
+
+						mo->renderflags |= RF_VERTICALFLIP|RF_ADD|RF_FULLBRIGHT;
+					}
+					if (player->attractioncharge % 13 == 0)
+					{
+						S_StartSound(player->mo, sfx_beelec);
+					}
+
+					player->attractioncharge++;
+				}
+				else
+				{
+					if (player->attractioncharge)
+					{
+						if (S_SoundPlaying(player->mo, sfx_vwre))
+						{
+							S_StopSoundByID(player->mo, sfx_vwre);
+						}
+
+						if (player->attractioncharge >= ATTRACTIONCHARGETIME)
+						{
+							S_StartSound(player->mo, sfx_kc4c);
+							player->attractionattack_hipower = true;
+							player->attractionattack = ATTRACTIONATTACKTIME_FULL;
+						}
+						else
+						{
+							player->attractionattack = Easing_Linear(
+								CLAMP(FixedDiv(player->attractioncharge, ATTRACTIONCHARGETIME), 0, FRACUNIT),
+								ATTRACTIONATTACKTIME_MIN * FRACUNIT,
+								ATTRACTIONATTACKTIME_MAX * FRACUNIT
+							)/FRACUNIT;
+						}
+						K_DoAttractionShield(player, player->attractionattack_hipower);
+						S_StartSound(player->mo, sfx_s3k81);
+
+						if (player->itemamount > 0)
+						{
+							player->itemamount--;
+							K_PlayAttackTaunt(player->mo);
+							K_BotResetItemConfirm(player, false);
+						}
+						
+						K_EnableSeekingReticule(player, true);
+					}
+					player->attractioncharge = 0;
+				}
+
+				if (buttons & BT_ATTACK || player->attractioncharge > 0)
+				{
+					player->itemflags &= ~IF_HOLDREADY;
+				}
+				else
+				{
+					player->itemflags |= IF_HOLDREADY;
+				}
+			}
+		}
+		else
+		{
+			if (K_GetShieldFromPlayer(player) != KSHIELD_THUNDER)
+			{
+				mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THUNDERSHIELD);
+				P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
+				P_SetTarget(&shield->target, player->mo);
+				P_SetTarget(&player->shieldtracer, shield);
+				S_StartSound(player->mo, sfx_s3k41);
+			}
+
+			if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
+			{
+				K_DoThunderShield(player);
+				if (player->itemamount > 0)
+				{
+					// Why is this a conditional?
+					// Thunder shield: the only item that allows you to
+					// activate a mine while you're out of its radius,
+					// the SAME tic it sets your itemamount to 0
+					// ...:dumbestass:
+					player->itemamount--;
+					K_PlayAttackTaunt(player->mo);
+					K_BotResetItemConfirm(player, false);
+				}
 			}
 		}
 		break;
@@ -2512,7 +2698,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO && K_GetShieldFromPlayer(player) != KSHIELD_FLAME)
 		{
 			player->itemamount--;
-			player->flametimer = (itemtime*3);
+			player->flametimer = flametime;
 			player->flamedash = 0;
 			mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_FLAMESHIELD);
 			P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
@@ -2684,4 +2870,168 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 			}
 		}
 	}
+}
+
+void K_EnableSeekingReticule(player_t *player, boolean passive)
+{
+	player->itemflags |= IF_SEEKING;
+	if (passive)
+	{
+		player->itemflags |= IF_PASSIVESEEKING;
+	}
+}
+
+void K_DisableSeekingReticule(player_t *player)
+{
+	player->itemflags &= ~(IF_SEEKING|IF_PASSIVESEEKING);
+}
+
+void K_KartSeekingReticule(player_t *player)
+{
+	// seeking item reticule
+	if (player->itemflags & IF_SEEKING)
+	{
+		INT32 lasttarg = player->lastitemtarget;
+		player_t *targ;
+		mobj_t *ret;
+
+		if (lasttarg >= 0 && lasttarg < MAXPLAYERS &&
+			((player->itemtargetdelay && playeringame[lasttarg] && !players[lasttarg].spectator)
+			 || (player->itemflags & IF_PASSIVESEEKING)))
+		{
+			targ = &players[lasttarg];
+			player->itemtargetdelay--;
+		}
+		else
+		{
+			targ = K_FindJawzTarget(player->mo, player);
+		}
+
+		if (!targ || !targ->mo || P_MobjWasRemoved(targ->mo))
+		{
+			player->lastitemtarget = -1;
+			player->itemtargetdelay = 0;
+			return;
+		}
+
+		ret = P_SpawnMobj(targ->mo->x, targ->mo->y, targ->mo->z, MT_PLAYERRETICULE);
+		ret->old_x = targ->mo->old_x;
+		ret->old_y = targ->mo->old_y;
+		ret->old_z = targ->mo->old_z;
+		P_SetTarget(&ret->target, targ->mo);
+		ret->frame |= ((leveltime % 10) / 2);
+		ret->tics = 1;
+		ret->color = player->skincolor;
+
+		if (targ-players != lasttarg)
+		{
+			if (P_IsDisplayPlayer(player) || P_IsDisplayPlayer(targ))
+				S_StartSound(NULL, sfx_s3k89);
+			else
+				S_StartSound(targ->mo, sfx_s3k89);
+
+			player->lastitemtarget = targ-players;
+			player->itemtargetdelay = 5;
+		}
+	}
+	else
+	{
+		player->itemflags &= ~IF_PASSIVESEEKING;
+		player->lastitemtarget = -1;
+		player->itemtargetdelay = 0;
+	}
+}
+
+player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
+{
+	fixed_t best = -1;
+	player_t *wtarg = NULL;
+	INT32 i;
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		angle_t thisang;
+		player_t *player;
+
+		if (!playeringame[i])
+			continue;
+
+		player = &players[i];
+
+		if (player->spectator)
+			continue; // spectator
+
+		if (!player->mo)
+			continue;
+
+		if (player->mo->health <= 0)
+			continue; // dead
+
+		// Don't target yourself, stupid.
+		if (player == source)
+			continue;
+
+		// Don't home in on teammates.
+		if (G_GametypeHasTeams() && source->ctfteam == player->ctfteam)
+			continue;
+
+		// Invisible, don't bother
+		if (player->hyudorotimer)
+			continue;
+
+		// Find the angle, see who's got the best.
+		thisang = actor->angle - R_PointToAngle2(actor->x, actor->y, player->mo->x, player->mo->y);
+		if (thisang > ANGLE_180)
+			thisang = InvAngle(thisang);
+
+		// Jawz only go after the person directly ahead of you in race... sort of literally now!
+		if (gametypes[gametype]->rules & GTR_CIRCUIT)
+		{
+			// Don't go for people who are behind you
+			if (thisang > ANGLE_67h)
+				continue;
+			// Don't pay attention to people who aren't above your position
+			if (player->position >= source->position)
+				continue;
+			if ((best == -1) || (player->position > best))
+			{
+				wtarg = player;
+				best = player->position;
+			}
+		}
+		else
+		{
+			fixed_t thisdist;
+			fixed_t thisavg;
+
+			// Don't go for people who are behind you
+			if (thisang > ANGLE_45)
+				continue;
+
+			// Don't pay attention to dead players
+			if (player->bumper <= 0)
+				continue;
+
+			// Z pos too high/low
+			if (abs(player->mo->z - (actor->z + actor->momz)) > RING_DIST/8)
+				continue;
+
+			thisdist = P_AproxDistance(player->mo->x - (actor->x + actor->momx), player->mo->y - (actor->y + actor->momy));
+
+			if (thisdist > 2*RING_DIST) // Don't go for people who are too far away
+				continue;
+
+			thisavg = (AngleFixed(thisang) + thisdist) / 2;
+
+			//CONS_Printf("got avg %d from player # %d\n", thisavg>>FRACBITS, i);
+
+			if ((best == -1) || (thisavg < best))
+			{
+				wtarg = player;
+				best = thisavg;
+			}
+		}
+	}
+
+	return wtarg;
 }

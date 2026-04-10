@@ -816,7 +816,7 @@ void HWR_WallLighting(FOutVector *wlVerts)
 	for (j = 0; j < dynlights->nb; j++)
 	{
 		FVector         inter;
-		FSurfaceInfo    Surf;
+		FSurfaceInfo    Surf = {};
 		float           dist_p2d, d[4], s;
 
 		if (!dynlights->mo[j])
@@ -904,7 +904,7 @@ void HWR_PlaneLighting(FOutVector *clVerts, int nrClipVerts)
 
 	for (j = 0; j < dynlights->nb; j++)
 	{
-		FSurfaceInfo    Surf;
+		FSurfaceInfo    Surf = {};
 		float           dist_p2d, s;
 
 		if (!dynlights->mo[j])
@@ -979,7 +979,7 @@ void HWR_DoCoronasLighting(FOutVector *outVerts, gl_vissprite_t *spr)
 	if (cv_glcoronas.value && (p_lspr->type & CORONA_SPR))
 	{ // it's an object which emits light
 		FOutVector      light[4];
-		FSurfaceInfo    Surf;
+		FSurfaceInfo    Surf = {};
 		float           cx = 0.0f, cy = 0.0f, cz = 0.0f; // gravity center
 		float           size;
 		UINT8           i;
@@ -1065,7 +1065,7 @@ void HWR_DrawCoronas(void)
 	for (j = 0;j < dynlights->nb;j++)
 	{
 		FOutVector      light[4];
-		FSurfaceInfo    Surf;
+		FSurfaceInfo    Surf = {};
 		float           cx = LIGHT_POS(j).x;
 		float           cy = LIGHT_POS(j).y;
 		float           cz = LIGHT_POS(j).z; // gravity center

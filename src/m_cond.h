@@ -14,6 +14,7 @@
 #define __M_COND_H__
 
 #include "info.h"
+#include "g_mapnum.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -130,7 +131,7 @@ struct unlockable_t
 #define SECRET_EMBLEMHINTS	10 // Enables Emblem Hints
 
 #define SECRET_ENCORE		11 // Enables Encore mode cvar
-#define SECRET_HARDSPEED	12 // Enables Hard gamespeed
+#define SECRET_EXPERTSPEED	12 // Enables Expert gamespeed
 #define SECRET_HELLATTACK	13 // Map Hell in record attack
 
 #define SECRET_PANDORA		14 // Enables Pandora's Box
@@ -170,11 +171,11 @@ UINT8 M_CheckLevelEmblems(void);
 // Checking unlockable status
 UINT8 M_AnySecretUnlocked(void);
 UINT8 M_SecretUnlocked(INT32 type);
-UINT8 M_MapLocked(INT32 mapnum);
+UINT8 M_MapLocked(mapnum_t mapnum);
 INT32 M_CountEmblems(void);
 
 // Emblem shit
-emblem_t *M_GetLevelEmblems(INT32 mapnum);
+emblem_t *M_GetLevelEmblems(mapnum_t mapnum);
 skincolornum_t M_GetEmblemColor(emblem_t *em);
 const char *M_GetEmblemPatch(emblem_t *em, boolean big);
 skincolornum_t M_GetExtraEmblemColor(extraemblem_t *em);

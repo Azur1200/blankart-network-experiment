@@ -54,9 +54,17 @@
 #include "k_color.h"
 #include "k_follower.h"
 #include "k_grandprix.h"
+#include "k_vote.h"
 
-static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
-consvar_t cv_recordmultiplayerdemos = CVAR_INIT ("netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL);
+static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {
+    {DEMOSAVE_NONE, "Disabled"},
+    {DEMOSAVE_MANUAL, "Manual Save"},
+    {DEMOSAVE_AUTO_NETONLY, "Auto Save Online"},
+    {DEMOSAVE_AUTO, "Auto Save All"},
+    {0, NULL}};
+
+consvar_t cv_recordmultiplayerdemos =
+    CVAR_INIT("netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL);
 
 static CV_PossibleValue_t netdemosyncquality_cons_t[] = {{1, "MIN"}, {35, "MAX"}, {0, NULL}};
 consvar_t cv_netdemosyncquality = CVAR_INIT ("netdemo_syncquality", "1", CV_SAVE, netdemosyncquality_cons_t, NULL);
@@ -188,6 +196,23 @@ static ticcmd_t oldcmd[MAXPLAYERS];
 #define FZT_COLORIZED 0x08 // colorized (ditto)
 #define FZT_SCALE 0x10 // different scale to object
 // spare FZT slots 0x20 to 0x80
+
+//
+// Checks if auto-saving demos is allowed.
+//
+boolean G_DemoWillAutoSave(void)
+{
+	if (cv_recordmultiplayerdemos.value == DEMOSAVE_AUTO_NETONLY)
+	{
+		return (netgame);
+	}
+	else if (cv_recordmultiplayerdemos.value == DEMOSAVE_AUTO)
+	{
+		return true;
+	}
+
+	return false;
+}
 
 typedef struct
 {
@@ -3980,7 +4005,7 @@ void G_DoPlayDemo(char *defdemoname)
 	R_ExecuteSetViewSize();
 
 	P_SetRandSeed(header.randseed);
-	G_InitNew(demoflags & DF_ENCORE, gamemap, true, true, false); // Doesn't matter whether you reset or not here, given changes to resetplayer.
+	G_InitNew(demoflags & DF_ENCORE, gamemap, true, true); // Doesn't matter whether you reset or not here, given changes to resetplayer.
 
 	// Setup server name, contact and description.
 	CopyCaretColors(connectedservername, header.servername, MAXSERVERNAME);
@@ -4609,7 +4634,7 @@ boolean G_DemoTitleResponder(event_t *ev)
 	// Only ESC and non-keyboard keys abort connection
 	if (ch == KEY_ESCAPE)
 	{
-		demo.savemode = (cv_recordmultiplayerdemos.value == 2) ? DSM_WILLAUTOSAVE : DSM_NOTSAVING;
+		demo.savemode = (G_DemoWillAutoSave()) ? DSM_WILLAUTOSAVE : DSM_NOTSAVING;
 		return true;
 	}
 

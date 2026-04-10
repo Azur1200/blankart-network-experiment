@@ -476,7 +476,8 @@ static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 	fixed_t speed = spring->info->mass; // conveniently, both fans and gas jets use this for the vertical thrust
 	SINT8 flipval = P_MobjFlip(spring); // virtually everything here centers around the thruster's gravity, not the object's!
 
-	if (p && object->state == &states[object->info->painstate]) // can't use fans and gas jets when player is in pain!
+	// something something S_KART_PAIN being unused (see T_Pusher)
+	if (p && false)//object->state == &states[object->info->painstate]) // can't use fans and gas jets when player is in pain!
 		return;
 
 	// is object's top below thruster's position? if not, calculate distance between their bottoms
@@ -548,6 +549,11 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 {
 	fixed_t blockdist;
 	boolean shrinkleeway = false;
+	boolean bubbleleeway = false, movingbubble = false, movedbubble = false;
+
+	// Bubble Shield special case: unconditionally process collision for this object so the
+	// Bubble Shield can reflect it.
+	boolean bubblewantsreflect = false;
 
 	if (g_tm.thing == NULL || P_MobjWasRemoved(g_tm.thing) == true)
 		return BMIT_STOP; // func just popped our g_tm.thing, cannot continue.
@@ -565,8 +571,54 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 	|| (thing->player && thing->player->spectator))
 		return BMIT_CONTINUE;
 
-	if ((thing->flags & MF_NOCLIPTHING) || !(thing->flags & (MF_SOLID|MF_SPECIAL|MF_PAIN|MF_SHOOTABLE/*|MF_SPRING*/))) // we still use MF_SOLID for springs
-		return BMIT_CONTINUE;
+	// Check for players with inflated Bubble Shields
+	if (g_tm.thing->player && K_IsBubbleDefending(g_tm.thing->player))
+		movingbubble = true;
+
+	if (thing->player && K_IsBubbleDefending(thing->player))
+		movedbubble = true;
+
+	if (movingbubble || movedbubble)
+		bubbleleeway = true;
+
+    /*
+     * "Why does this exist?" Well...
+     * Falling rocks don't have the needed flags to process collisions further, when the Bubble
+     * Shield is the one checking for collisions (and thus things to reflect). At the same time,
+     * when falling rocks are checking for collision, the Bubble Shield has its noclip flags
+     * enabled, meaning it's ALSO never checked.
+     * So, how do we solve the problem? This shitty special-case bandaid.
+     */
+
+	boolean _playerinflate = false;
+
+	if (g_tm.thing->type == MT_BUBBLESHIELD)
+	{
+		_playerinflate =
+		    (g_tm.thing->target && (!P_MobjWasRemoved(g_tm.thing->target)) &&
+		     (g_tm.thing->target->player) && (g_tm.thing->target->player->bubbleblowup));
+
+		bubblewantsreflect =
+		    ((_playerinflate) && (!(g_tm.thing->flags & (MF_NOCLIP | MF_NOCLIPTHING))) &&
+		     (K_BubbleShieldReflectSpecialCase(thing)));
+	}
+	else if (thing->type == MT_BUBBLESHIELD)
+	{
+		_playerinflate =
+		    (g_tm.thing->target && (!P_MobjWasRemoved(g_tm.thing->target)) &&
+		     (g_tm.thing->target->player) && (g_tm.thing->target->player->bubbleblowup));
+
+		bubblewantsreflect =
+		    ((_playerinflate) && (!(thing->flags & (MF_NOCLIP | MF_NOCLIPTHING))) &&
+		     (K_BubbleShieldReflectSpecialCase(g_tm.thing)));
+	}
+
+	if ((thing->flags & MF_NOCLIPTHING) ||
+	    !((thing->flags & (MF_SOLID | MF_SPECIAL | MF_PAIN | MF_SHOOTABLE /*|MF_SPRING*/)) ||
+	      bubblewantsreflect))  // we still use MF_SOLID for springs
+	{
+        return BMIT_CONTINUE;
+    }
 
 	// Get rid of the "just flipped" flag.
 	// We only use that to confirm flipover hits.
@@ -744,6 +796,38 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 	// double make sure bubbles won't collide with anything else
 	if (thing->type == MT_BUBBLESHIELD || g_tm.thing->type == MT_BUBBLESHIELD)
 		return BMIT_CONTINUE;
+
+	// Triple-check: anything the Bubble Shield reflects should phase through players inflating their shield.
+	if (bubbleleeway)
+	{
+		// see if it went over / under
+		if (g_tm.thing->z > thing->z + thing->height)
+			return BMIT_CONTINUE; // overhead
+		if (g_tm.thing->z + g_tm.thing->height < thing->z)
+			return BMIT_CONTINUE; // underneath
+
+		if (movingbubble && K_BubbleShieldCanReflect(thing))
+		{
+			g_tm.thing->player->bubblegraze =
+			    ApproachOneWayUINT32(g_tm.thing->player->bubblegraze,
+						 BUBBLEGRAZE_MAX,
+						 BUBBLEGRAZE_INCREMENT);
+
+			return BMIT_CONTINUE;
+		}
+
+		if (movedbubble && K_BubbleShieldCanReflect(g_tm.thing))
+		{
+			thing->player->bubblegraze =
+			    ApproachOneWayUINT32(thing->player->bubblegraze,
+						 BUBBLEGRAZE_MAX,
+						 BUBBLEGRAZE_INCREMENT);
+
+			return BMIT_CONTINUE;
+		}
+
+		// Anything else falls through as a possible false positive.
+	}
 
 	if (thing->flags & MF_PAIN)
 	{ // Player touches painful thing sitting on the floor
@@ -1330,15 +1414,38 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 				return BMIT_CONTINUE;
 			}
 
+			// If we're inflating, don't do PvP bumps.
+			// I do not doubt the previous bubbleleeway check'll fall through, so, yeah.
+			if (bubbleleeway)
+			{
+				if (movingbubble)
+				{
+					g_tm.thing->player->bubblegraze =
+					    ApproachOneWayUINT32(g_tm.thing->player->bubblegraze,
+								 BUBBLEGRAZE_MAX,
+								 BUBBLEGRAZE_INCREMENT);
+				}
+
+				if (movedbubble)
+				{
+					thing->player->bubblegraze =
+					    ApproachOneWayUINT32(thing->player->bubblegraze,
+								 BUBBLEGRAZE_MAX,
+								 BUBBLEGRAZE_INCREMENT);
+				}
+				return BMIT_CONTINUE;
+			}
+
 			if (thing->player->squishedtimer || thing->player->hyudorotimer
 				|| thing->player->justbumped || thing->scale > g_tm.thing->scale + (mapobjectscale/8)
 				|| g_tm.thing->player->squishedtimer || g_tm.thing->player->hyudorotimer
-				|| g_tm.thing->player->justbumped || g_tm.thing->scale > thing->scale + (mapobjectscale/8))
+				|| g_tm.thing->player->justbumped || g_tm.thing->scale > thing->scale + (mapobjectscale/8)
+				|| thing->player->bubblegraze || g_tm.thing->player->bubblegraze)
 			{
 				return BMIT_CONTINUE;
 			}
 
-			if ((gametyperules & GTR_BUMPERS)
+			if ((gametypes[gametype]->rules & GTR_BUMPERS)
 				&& ((thing->player->bumper && !g_tm.thing->player->bumper)
 				|| (g_tm.thing->player->bumper && !thing->player->bumper)))
 			{
@@ -1453,6 +1560,9 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		}
 		else if (thing->type == MT_KART_LEFTOVER)
 		{
+			if (bubbleleeway)
+				return BMIT_CONTINUE; // If we're inflating, don't do PvP bumps.
+
 			// see if it went over / under
 			if (g_tm.thing->z > thing->z + thing->height)
 				return BMIT_CONTINUE; // overhead
@@ -2745,6 +2855,29 @@ fixed_t P_GetThingStepUp(mobj_t *thing, fixed_t destX, fixed_t destY)
 	return maxstep;
 }
 
+// temporary(?) measure to improve the kodachrome situation
+static boolean P_SlopeWedgeHit(const mobj_t *thing, fixed_t tryx, fixed_t tryy, vector2_t *outnormal)
+{
+	if (g_tm.floorslope == NULL && g_tm.ceilingslope == NULL)
+		return false;
+
+	// which slope to pick? first, check if there's only one slope
+	pslope_t *hitslope =
+		g_tm.floorslope == NULL ? g_tm.ceilingslope :
+		g_tm.ceilingslope == NULL ? g_tm.floorslope :
+	// otherwise, pick one or the other depending on mobj flip
+	// i don't even know how to factor in both slopes...
+		thing->eflags & MFE_VERTICALFLIP ? g_tm.floorslope :
+		g_tm.ceilingslope;
+
+	// don't ask me why this needs to copy the sign bits from normal
+	// it's the only way i could make this damn thing work
+	INT32 flip = P_GetSlopeZAt(hitslope, tryx, tryy) >= thing->z + thing->height/2 ? -1 : 1;
+	outnormal->x = abs(hitslope->d.x) * intsign(hitslope->normal.x) * flip;
+	outnormal->y = abs(hitslope->d.y) * intsign(hitslope->normal.y) * flip;
+	return true;
+}
+
 static boolean
 increment_move
 (		mobj_t * thing,
@@ -2838,6 +2971,10 @@ increment_move
 				{
 					P_SetTarget(&g_tm.hitthing, g_tm.floorthing);
 				}
+
+				// if you didn't hit a linedef or an mobj, it might be a slope wedge blocking you
+				if (result != NULL && result->line == NULL && result->mo == NULL)
+					P_SlopeWedgeHit(thing, tryx, tryy, &result->normal);
 
 				return false; // doesn't fit
 			}
@@ -3357,7 +3494,7 @@ static void P_HitSlideLine(line_t *ld)
 //
 // HitBounceLine, for players
 //
-static void P_PlayerHitBounceLine(line_t *ld, vector2_t* normal)
+static void P_PlayerHitBounceLine(const vector2_t *normal, boolean tripwire)
 {
 	fixed_t movelen;
 	fixed_t x, y;
@@ -3370,7 +3507,7 @@ static void P_PlayerHitBounceLine(line_t *ld, vector2_t* normal)
 	x = FixedMul(movelen, normal->x);
 	y = FixedMul(movelen, normal->y);
 
-	if (P_IsLineTripWire(ld))
+	if (tripwire)
 	{
 		tmxmove = FixedMul(x, FRACUNIT+(FRACUNIT/2));
 		tmymove = FixedMul(y, FRACUNIT+(FRACUNIT/2));
@@ -3747,8 +3884,10 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		return;
 	}
 
-	if (result->line == NULL)
-		return;
+	boolean tripwire = result->line != NULL && P_IsLineTripWire(result->line);
+
+	if (result->normal.x == 0 && result->normal.y == 0)
+		return; // nope, nothing we can do
 
 	mmomx = mo->player->rmomx;
 	mmomy = mo->player->rmomy;
@@ -3801,7 +3940,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
 	}
 
-	if (P_IsLineTripWire(result->line))
+	if (tripwire)
 	{
 		// TRIPWIRE CANNOT BE MADE NONBOUNCY
 		K_ApplyTripWire(mo->player, TRIPSTATE_BLOCKED);
@@ -3809,7 +3948,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	else
 	{
 		// Some walls aren't bouncy even if you are
-		if (result->line->flags & ML_NOTBOUNCY)
+		if (result->line != NULL && result->line->flags & ML_NOTBOUNCY)
 		{
 			// SRB2Kart: Non-bouncy line!
 			P_SlideMove(mo, result);
@@ -3819,15 +3958,18 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		K_SpawnBumpEffect(mo);
 	}
 
-	P_PlayerHitBounceLine(result->line, &result->normal);
+	P_PlayerHitBounceLine(&result->normal, tripwire);
 	mo->eflags |= MFE_JUSTBOUNCEDWALL;
+
+	if (mo->player)
+		mo->player->bumpUnstuck += 5;
 
 	mo->momx = tmxmove;
 	mo->momy = tmymove;
 	mo->player->cmomx = tmxmove;
 	mo->player->cmomy = tmymove;
 
-	if (!P_IsLineTripWire(result->line))
+	if (!tripwire)
 	{
 		if (!P_TryMove(mo, mo->x + tmxmove, mo->y + tmymove, true, NULL))
 		{

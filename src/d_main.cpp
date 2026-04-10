@@ -15,6 +15,7 @@
 ///        plus functions to parse command line parameters, configure game
 ///        parameters, and call the startup functions.
 
+#include "g_mapnum.h"
 #if (defined (__unix__) && !defined (MSDOS)) || defined(__APPLE__) || defined (UNIXCOMMON)
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -73,6 +74,9 @@
 #include "m_perfstats.h"
 #include "core/memory.h"
 
+#include "monocypher/monocypher.h"
+#include "stun.h"
+
 // SRB2Kart
 #include "k_grandprix.h"
 #include "k_boss.h"
@@ -81,11 +85,16 @@
 #include "m_random.h" // P_ClearRandom
 #include "acs/interface.h"
 #include "k_specialstage.h"
+#include "k_vote.h"
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
 #include <tracy/tracy/Tracy.hpp>
+
+#ifdef HAVE_SDL
+#include <SDL3/SDL_filesystem.h>
+#endif
 
 // Put hashes here to get them out of header hell.
 #define ASSET_HASH_SRB2_SRB            0xf3ec1ea4d0eca4a9
@@ -93,7 +102,7 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x348af552ccc104d2
+#define ASSET_HASH_MAIN_PK3            0x5bb203462b8eb19b
 #define ASSET_HASH_MAPPATCH_PK3        0x1745690024efbaf8
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
@@ -108,10 +117,6 @@
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h" // 3D View Rendering
-#endif
-
-#ifdef HW3SOUND
-#include "hardware/hw3sound.h"
 #endif
 
 #include "lua_script.h"
@@ -181,6 +186,10 @@ INT32 eventhead, eventtail;
 
 boolean dedicated = false;
 
+// For identity negotiation with netgame servers
+uint8_t	g_public_key[MAXSPLITSCREENPLAYERS][PUBKEYLENGTH];
+uint8_t	g_secret_key[MAXSPLITSCREENPLAYERS][PRIVKEYLENGTH];
+
 boolean loaded_config = false;
 
 //
@@ -220,6 +229,16 @@ void D_ProcessEvents(void)
 	// i have to reset this somewhere or else your camera just glides away!
 	for (size_t i = 0; i < 4; i++)
 		gamekeydown[0][KEY_MOUSEMOVE + i] = 0;
+	
+	for (size_t dev = 0; dev < MAXDEVICES; dev++)
+	{
+		gamekeydown[dev][KEY_ACCELEROMETER1+0] = 0;
+		gamekeydown[dev][KEY_ACCELEROMETER1+1] = 0;
+		gamekeydown[dev][KEY_ACCELEROMETER1+2] = 0;
+		gamekeydown[dev][KEY_GYROSCOPE1+0] = 0;
+		gamekeydown[dev][KEY_GYROSCOPE1+1] = 0;
+		gamekeydown[dev][KEY_GYROSCOPE1+2] = 0;
+	}
 
 	for (; eventtail != eventhead; eventtail = (eventtail+1) & (MAXEVENTS-1))
 	{
@@ -336,11 +355,6 @@ boolean D_RenderLevel(void)
 		{
 			viewssnum = i;
 
-#ifdef HWRENDER
-			if (rendermode == render_opengl)
-				HWR_RenderPlayerView();
-			else
-#endif
 			if (rendermode != render_none)
 			{
 				if (i > 0) // Splitscreen-specific
@@ -370,7 +384,15 @@ boolean D_RenderLevel(void)
 							break;
 					}
 				}
+			}
 
+#ifdef HWRENDER
+			if (rendermode == render_opengl)
+				HWR_RenderPlayerView();
+			else
+#endif
+			if (rendermode != render_none)
+			{
 				R_RenderPlayerView();
 			}
 		}
@@ -1032,10 +1054,6 @@ void D_SRB2Loop(void)
 		interp = !dedicated && (R_GetFramerateCap() != TICRATE || cv_timescale.value < FRACUNIT);
 		doDisplay = false;
 
-#ifdef HW3SOUND
-		HW3S_BeginFrameUpdate();
-#endif
-
 		if (realtics > 0 || singletics)
 		{
 			// don't skip more than 10 frames at a time
@@ -1124,10 +1142,6 @@ void D_SRB2Loop(void)
 		if (renderisnewtic)
 			S_UpdateClosedCaptions();
 
-#ifdef HW3SOUND
-		HW3S_EndFrameUpdate();
-#endif
-
 		LUA_Step();
 
 #ifdef HAVE_DISCORDRPC
@@ -1189,8 +1203,9 @@ void D_ResetGameState(void)
 	modeattacking = ATTACKING_NONE;
 	marathonmode = static_cast<marathonmode_t>(0);
 
-	// Reset GP
+	// Reset GP and roundqueue
 	memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
+	memset(&roundqueue, 0, sizeof(struct roundqueue));
 
 	// Reset Server mods
 	numcustomservermods = 0;
@@ -1385,7 +1400,7 @@ static void IdentifyVersion(void)
 #endif
 ////
 
-#if !defined (HAVE_SDL) || defined (HAVE_MIXER) || defined (HAVE_OPENAL)
+#if !defined (HAVE_SDL) || defined (HAVE_OPENAL)
 
 #define MUSICTEST(str) \
 	{\
@@ -1462,7 +1477,7 @@ void D_SRB2Main(void)
 {
 	INT32 p;
 
-	INT32 pstartmap = 1;
+	mapnum_t pstartmap = (mapnum_t)1;
 	boolean autostart = false;
 
 	/* break the version string into version numbers, for netplay */
@@ -1760,9 +1775,6 @@ void D_SRB2Main(void)
 
 	CON_Init();
 
-	memset(timelimits, 0, sizeof(timelimits));
-	memset(pointlimits, 0, sizeof(pointlimits));
-
 	CON_SetLoadingProgress(LOADED_HUINIT);
 
 	if (modifiedgame)
@@ -1871,64 +1883,60 @@ void D_SRB2Main(void)
 	ST_Init();
 	CON_SetLoadingProgress(LOADED_STINIT);
 
-	CONS_Printf("FixedSqrt of 32767 fracunits: %d; FixedSqrt64: %" PRId64 "\n",
-				FixedSqrt(0x7FFF0000),
-				FixedSqrt64(0x7FFF0000));
-
-	if (FixedSqrt(0x7FFF0000) == FixedSqrt64(0x7FFF0000))
-	{
-		CONS_Printf("\x83" "32767: Test OK!" "\x80" "\n");
-	}
-	else
-	{
-		CONS_Printf("\x85" "32767: Test NG!" "\x80" "\n");
-	}
-
-	CONS_Printf("FixedSqrt of 4 fracunits: %d; FixedSqrt64: %" PRId64 "\n",
-				FixedSqrt(0x40000),
-				FixedSqrt64(0x40000));
-
-	if (FixedSqrt(0x40000) == FixedSqrt64(0x40000))
-	{
-		CONS_Printf("\x83" "4: Test OK!" "\x80" "\n");
-	}
-	else
-	{
-		CONS_Printf("\x85" "4: Test NG!" "\x80" "\n");
-	}
-
-	// You should probably generate the weird number with RANDOM.org
-#define WEIRDNUMBER 3886284 /* 59.3 fracunits; this should approximate to around 7 */
-	CONS_Printf("FixedSqrt of 59.3 fracunits: %d; FixedSqrt64: %" PRId64 "\n",
-				FixedSqrt(WEIRDNUMBER),
-				FixedSqrt64(WEIRDNUMBER));
-
-	if (FixedSqrt(WEIRDNUMBER) == FixedSqrt64(WEIRDNUMBER))
-	{
-		CONS_Printf("\x83" "59.3: Test OK!" "\x80" "\n");
-	}
-	else
-	{
-		CONS_Printf("\x85" "59.3: Test NG!" "\x80" "\n");
-	}
-#undef WEIRDNUMBER
-
-	CONS_Printf("FixedSqrt64 of 65535 fracunits: %" PRId64 "(not possible at 32-bit scale)\n",
-				FixedSqrt64(0xFFFFFFFF));
-
-	CONS_Printf("IntSqrt of 32767: %d; IntSqrt64: %" PRId64 "\n",
-				IntSqrt(0x7FFF),
-				IntSqrt64(0x7FFF));
-
-	CONS_Printf("IntSqrt of 4: %d; IntSqrt64: %" PRId64 "\n",
-				IntSqrt(4),
-				IntSqrt64(4));
-
-	CON_SetLoadingProgress(LOADED_MATHINIT);
-
 	CONS_Printf("ACS_Init(): Init Action Code Script VM.\n");
 	ACS_Init();
 	CON_SetLoadingProgress(LOADED_ACSINIT);
+
+	// Read / create RRID key files in srb2home/private_keys
+	// About as obvious as I can make this say DONT SHARE.
+#define RRIDWARNINGNAME "DO_NOT_SHARE_THESE"
+#define RRIDWARNINGMESSAGE "This folder contains keys that should not be shared.\nThe base game and mods may use these to keep track of gamedata."
+	static char keyfile[MAXSPLITSCREENPLAYERS][10] = {"bkid1.dat", "bkid2.dat", "bkid3.dat", "bkid4.dat"};
+	INT32 snum;
+
+	for (snum = 0; snum < MAXSPLITSCREENPLAYERS; snum++)
+	{
+		char base_path[MAX_WADPATH];
+		char file[MAX_WADPATH];
+
+		strcpy(base_path, srb2home);
+		strcat(base_path, PATHSEP "private_keys" PATHSEP);
+		M_MkdirEach(base_path, M_PathParts(base_path) - 2, 0755);
+
+		strcpy(file, base_path);
+		strcat(file, keyfile[snum]);
+
+		static uint8_t seed[32];
+		csprng(seed, 32);
+		crypto_eddsa_key_pair(g_secret_key[snum], g_public_key[snum], seed);
+
+		int sk_size = sizeof(g_secret_key[snum]);
+		int pk_size = sizeof(g_public_key[snum]);
+		int totalsize = sk_size + pk_size;
+
+		if (FIL_ReadFileOK(file))
+		{
+			UINT8 *readbuffer = NULL;
+			UINT16 lengthRead = FIL_ReadFile(file, &readbuffer);
+			if (readbuffer == NULL || lengthRead != totalsize)
+				I_Error("Malformed keyfile %d", snum);
+			memcpy(g_secret_key[snum], readbuffer, sk_size);
+			memcpy(g_public_key[snum], readbuffer + sk_size, pk_size);
+		}
+		else
+		{
+			uint8_t *keybuffer = (uint8_t *)malloc(totalsize);
+			memcpy(keybuffer, g_secret_key[snum], sk_size);
+			memcpy(keybuffer + sk_size, g_public_key[snum], pk_size);
+			if (!FIL_WriteFile(file, keybuffer, totalsize))
+				I_Error("Couldn't open key file %d", snum);
+			if (!FIL_WriteFile(va("%s%s",base_path , RRIDWARNINGNAME), RRIDWARNINGMESSAGE, strlen(RRIDWARNINGMESSAGE)))
+				I_Error("Failed to create BKID warning file.");
+			free(keybuffer);
+		}
+	}
+#undef RRIDWARNINGNAME
+#undef RRIDWARNINGMESSAGE
 
 	//------------------------------------------------ COMMAND LINE PARAMS
 
@@ -1966,14 +1974,13 @@ void D_SRB2Main(void)
 
 			// Start up a "minor" grand prix session
 			memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
+			memset(&roundqueue, 0, sizeof(struct roundqueue));
 
 			grandprixinfo.gamespeed = KARTSPEED_HARD;
-			grandprixinfo.encore = false;
 			grandprixinfo.masterbots = false;
 			grandprixinfo.lunaticmode = false;
 
 			grandprixinfo.gp = true;
-			grandprixinfo.roundnum = 0;
 			grandprixinfo.cup = NULL;
 			grandprixinfo.wonround = false;
 
@@ -2071,7 +2078,7 @@ void D_SRB2Main(void)
 	// rei/miru: bootmap (Idea: starts the game on a predefined map)
 	if (bootmap && !(M_CheckParm("-warp") && M_IsNextParm()))
 	{
-		pstartmap = G_MapNumber(bootmap)+1;
+		pstartmap = (mapnum_t)(G_MapNumber(bootmap)+1);
 
 		if (pstartmap > nummapheaders)
 		{
@@ -2105,7 +2112,7 @@ void D_SRB2Main(void)
 			if (newgametype == -1) // reached end of the list with no match
 			{
 				j = atoi(sgametype); // assume they gave us a gametype number, which is okay too
-				if (j >= 0 && j < gametypecount)
+				if (j >= 0 && j < numgametypes)
 					newgametype = (INT16)j;
 			}
 

@@ -52,10 +52,6 @@
 #include "blan/b_soc.h"
 #include "k_waypoint.h"
 
-#ifdef HW3SOUND
-#include "hardware/hw3sound.h"
-#endif
-
 // Not sure if this is necessary, but it was in w_wad.c, so I'm putting it here too -Shadow Hog
 #include <errno.h>
 
@@ -2971,19 +2967,26 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 					mapmusposition = position;
 					mapmusresume = 0;
 
-					S_ChangeMusicEx(mapmusname, mapmusflags, !(args[0] & TMM_NOLOOP), position,
-						!(args[0] & TMM_FADE) ? prefadems : 0,
-						!(args[0] & TMM_FADE) ? postfadems : 0);
+					// FIXME HACK: Don't play music before the countdown music stops. Please properly fix this later.
+					// Change timing of start music based on gametypes[gametype]->rules
+					tic_t startingtime = (gametypes[gametype]->rules & GTR_NOCOUNTDOWN) ? introtime : starttime;
 
-					if (!(args[0] & TMM_NOCREDIT))
-						S_ShowMusicCredit(0, 5*TICRATE, 0);
-
-					if ((args[0] & TMM_FADE) && fadetarget)
+					if (leveltime >= (startingtime + (TICRATE/2)))
 					{
-						if (!postfadems)
-							S_SetInternalMusicVolume(fadetarget);
-						else
-							S_FadeMusicFromVolume(fadetarget, fadesource, postfadems);
+						S_ChangeMusicEx(mapmusname, mapmusflags, !(args[0] & TMM_NOLOOP), position,
+										!(args[0] & TMM_FADE) ? prefadems : 0,
+										!(args[0] & TMM_FADE) ? postfadems : 0);
+
+						if (!(args[0] & TMM_NOCREDIT))
+							S_ShowMusicCredit(0, 5*TICRATE, 0);
+
+						if ((args[0] & TMM_FADE) && fadetarget)
+						{
+							if (!postfadems)
+								S_SetInternalMusicVolume(fadetarget);
+							else
+								S_FadeMusicFromVolume(fadetarget, fadesource, postfadems);
+						}
 					}
 				}
 
@@ -3004,7 +3007,15 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 				if (lumpnum == LUMPERROR || W_LumpLength(lumpnum) == 0)
 					CONS_Debug(DBG_SETUP, "Line type 415 Executor: script lump %s not found/not valid.\n", stringargs[0]);
 				else
-					COM_BufInsertText(W_CacheLumpNum(lumpnum, PU_CACHE));
+				{
+					void *lump = W_CacheLumpNum(lumpnum, PU_CACHE);
+					size_t len = W_LumpLength(lumpnum);
+					char *text = Z_Malloc(len + 1, PU_CACHE, NULL);
+					memcpy(text, lump, len);
+					text[len] = '\0';
+					COM_BufInsertText(text);
+					Z_Free(text);
+				}
 			}
 			break;
 
@@ -4451,7 +4462,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 				return false;
 			}
 
-			if ((gametyperules & GTR_CIRCUIT) && (mo->player->exiting == 0) && !(mo->player->pflags & PF_HITFINISHLINE))
+			if ((gametypes[gametype]->rules & GTR_CIRCUIT) && (mo->player->exiting == 0) && !(mo->player->pflags & PF_HITFINISHLINE))
 			{
 				// megablock cope 1: single-use finish lines
 				if (args[0] & TMCFF_SINGLEUSE && mo->player->laps > 0)
@@ -4608,19 +4619,19 @@ void P_SetupSignExit(player_t *player)
 	}
 }
 
-static boolean P_IsMobjTouchingPlane(mobj_t *mo, sector_t *sec, fixed_t floorz, fixed_t ceilingz)
+static boolean P_IsMobjTouchingPlane(const mobj_t *mo, const sector_t *sec, fixed_t floorz, fixed_t ceilingz)
 {
 	boolean floorallowed = ((sec->flags & MSF_FLIPSPECIAL_FLOOR) && ((sec->flags & MSF_TRIGGERSPECIAL_HEADBUMP) || !(mo->eflags & MFE_VERTICALFLIP)) && (mo->z == floorz));
 	boolean ceilingallowed = ((sec->flags & MSF_FLIPSPECIAL_CEILING) && ((sec->flags &  MSF_TRIGGERSPECIAL_HEADBUMP) || (mo->eflags & MFE_VERTICALFLIP)) && (mo->z + mo->height == ceilingz));
 	return (floorallowed || ceilingallowed);
 }
 
-boolean P_IsMobjTouchingSectorPlane(mobj_t *mo, sector_t *sec)
+boolean P_IsMobjTouchingSectorPlane(const mobj_t *mo, const sector_t *sec)
 {
 	return P_IsMobjTouchingPlane(mo, sec, P_GetSpecialBottomZ(mo, sec, sec), P_GetSpecialTopZ(mo, sec, sec));
 }
 
-boolean P_IsMobjTouching3DFloor(mobj_t *mo, ffloor_t *fof, sector_t *sec)
+boolean P_IsMobjTouching3DFloor(const mobj_t *mo, const ffloor_t *fof, const sector_t *sec)
 {
 	fixed_t topheight = P_GetSpecialTopZ(mo, sectors + fof->secnum, sec);
 	fixed_t bottomheight = P_GetSpecialBottomZ(mo, sectors + fof->secnum, sec);
@@ -4638,7 +4649,7 @@ boolean P_IsMobjTouching3DFloor(mobj_t *mo, ffloor_t *fof, sector_t *sec)
 	}
 }
 
-boolean P_IsMobjTouchingPolyobj(mobj_t *mo, polyobj_t *po, sector_t *polysec)
+boolean P_IsMobjTouchingPolyobj(const mobj_t *mo, const polyobj_t *po, const sector_t *polysec)
 {
 	if (!(po->flags & POF_TESTHEIGHT)) // Don't do height checking
 		return true;
@@ -5257,7 +5268,7 @@ static void P_ProcessExitSector(player_t *player, mtag_t sectag)
 	INT32 lineindex;
 
 #if 0
-	if (!(gametyperules & GTR_ALLOWEXIT))
+	if (!(gametypes[gametype]->rules & GTR_ALLOWEXIT))
 		return;
 #endif
 
@@ -5283,7 +5294,7 @@ static void P_ProcessExitSector(player_t *player, mtag_t sectag)
 		return;
 	}
 
-	nextmapoverride = (INT16)(udmf ? lines[lineindex].args[0] : lines[lineindex].frontsector->floorheight>>FRACBITS);
+	nextmapoverride = (mapnum_t)(udmf ? lines[lineindex].args[0] : lines[lineindex].frontsector->floorheight>>FRACBITS);
 
 	if (lines[lineindex].args[1] & TMEF_SKIPTALLY)
 		skipstats = 1;
@@ -5416,7 +5427,7 @@ static void P_EvaluateSpecialFlags(player_t *player, sector_t *sector, sector_t 
 		P_ProcessZoomTube(player, sectag, true);
 	if (sector->specialflags & SSF_FINISHLINE)
 	{
-		if (K_UsingLegacyCheckpoints() && (gametyperules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
+		if (K_UsingLegacyCheckpoints() && (gametypes[gametype]->rules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
 		{
 			K_HandleLapIncrement(player);
 			player->pflags |= PF_HITFINISHLINE;
@@ -5570,7 +5581,7 @@ static void P_EvaluateOldSectorSpecial(player_t *player, sector_t *sector, secto
 			{
 				if (!(sector->specialflags & SSF_FINISHLINE))
 				{
-					if (K_UsingLegacyCheckpoints() && (gametyperules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
+					if (K_UsingLegacyCheckpoints() && (gametypes[gametype]->rules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
 					{
 						K_HandleLapIncrement(player);
 						player->pflags |= PF_HITFINISHLINE;
@@ -6949,6 +6960,10 @@ void P_InitSpecials(void)
 
 	// Set weather
 	curWeather = globalweather = mapheaderinfo[gamemap-1]->weather;
+
+	// Set global EFX
+	S_DeleteGlobalEFX();
+	S_CreateGlobalEFX(mapheaderinfo[gamemap-1]->globalEFX);
 }
 
 void P_ApplyFlatAlignment(sector_t *sector, angle_t flatangle, fixed_t xoffs, fixed_t yoffs, boolean floor, boolean ceiling)
@@ -7022,15 +7037,15 @@ static boolean P_CheckGametypeRules(INT32 checktype, UINT32 target)
 	{
 		case TMF_HASALL:
 		default:
-			return (gametyperules & target) == target;
+			return (gametypes[gametype]->rules & target) == target;
 		case TMF_HASANY:
-			return !!(gametyperules & target);
+			return !!(gametypes[gametype]->rules & target);
 		case TMF_HASEXACTLY:
-			return gametyperules == target;
+			return gametypes[gametype]->rules == target;
 		case TMF_DOESNTHAVEALL:
-			return (gametyperules & target) != target;
+			return (gametypes[gametype]->rules & target) != target;
 		case TMF_DOESNTHAVEANY:
-			return !(gametyperules & target);
+			return !(gametypes[gametype]->rules & target);
 	}
 }
 
@@ -7109,7 +7124,7 @@ void P_SpawnSpecials(boolean fromnetsave)
 		switch(GETSECSPECIAL(sector->special, 4))
 		{
 			case 10: // Circuit finish line (Unused)
-				if (gametyperules & GTR_CIRCUIT)
+				if (gametypes[gametype]->rules & GTR_CIRCUIT)
 					circuitmap = true;
 				break;
 		}
@@ -7823,7 +7838,7 @@ void P_SpawnSpecials(boolean fromnetsave)
 
 			// Linedef executor triggers for CTF teams.
 			case 309:
-				if (!(gametyperules & GTR_TEAMS))
+				if (!(gametypes[gametype]->rules & GTR_TEAMS))
 				{
 					lines[i].special = 0;
 					break;
@@ -8065,7 +8080,7 @@ void P_SpawnSpecials(boolean fromnetsave)
 
 			// SRB2Kart
 			case 2001: // Finish Line
-				if ((gametyperules & GTR_CIRCUIT))
+				if ((gametypes[gametype]->rules & GTR_CIRCUIT))
 					circuitmap = true;
 				break;
 
@@ -8083,7 +8098,7 @@ void P_SpawnSpecials(boolean fromnetsave)
 
 /** Fuck polyobjects
   */
-void P_SpawnSpecialsThatRequireObjects(boolean fromnetsave)
+void P_SpawnSpecialsThatRequireObjects(boolean reloadinggamestate)
 {
 	size_t i;
 
@@ -8124,7 +8139,7 @@ void P_SpawnSpecialsThatRequireObjects(boolean fromnetsave)
 		}
 	}
 
-	if (!fromnetsave)
+	if (!reloadinggamestate)
 		P_RunLevelLoadExecutors();
 }
 
@@ -9571,7 +9586,10 @@ void T_Pusher(void *thinker)
 		if (thing->eflags & MFE_PUSHED)
 			continue;
 
-		if (thing->player && (thing->state == &states[thing->info->painstate])
+		// in v1, MT_PLAYER's painstate is S_KART_PAIN, which is actually unused and
+		// the game instead uses S_KART_SPIN, so... this condition is never actually true!?
+		// unless you used lua to set the player's state, but meh, who cares
+		if (thing->player && false//(thing->state == &states[thing->info->painstate])
 			&& (thing->player->flashing > (K_GetKartFlashing(thing->player)/4)*3
 			&& thing->player->flashing <= K_GetKartFlashing(thing->player)))
 			continue;
@@ -9623,7 +9641,17 @@ void T_Pusher(void *thinker)
 		if (!touching && !inFOF) // Object is out of range of effect
 			continue;
 
-		if (inFOF || (p->type == p_current && touching))
+		// 2.2 UDMF swapped the order of these checks for some reason...
+		// which made the diamond square wind twice as fast
+		if (mapnamespace == MNS_SRB2KART && p->type == p_wind && touching)
+		{
+			xspeed = x_mag>>1; // half force
+			yspeed = y_mag>>1;
+			zspeed = z_mag>>1;
+			moved = true;
+		}
+		// 2.1 only ever checks (!touching && !inFOF) here which is pointless?
+		else if (inFOF || (p->type == p_current && (mapnamespace == MNS_SRB2KART || touching)))
 		{
 			xspeed = x_mag; // full force
 			yspeed = y_mag;

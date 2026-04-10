@@ -253,7 +253,7 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 		if (!P_CanPickupItem(t2->player, PICKUPITEM_EGGMAN))
 			return true;
 
-		if ((gametyperules & GTR_BUMPERS) && t2->player->bumper <= 0)
+		if ((gametypes[gametype]->rules & GTR_BUMPERS) && t2->player->bumper <= 0)
 		{
 			if (t2->player->karmamode || t2->player->karmadelay)
 				return true;
@@ -288,7 +288,7 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 
 			if (t1->target && t1->target->player)
 			{
-				if ((gametyperules & GTR_CIRCUIT) || t1->target->player->bumper > 0)
+				if ((gametypes[gametype]->rules & GTR_CIRCUIT) || t1->target->player->bumper > 0)
 					t2->player->eggmanblame = t1->target->player-players;
 				else
 					t2->player->eggmanblame = t2->player-players;
@@ -682,6 +682,89 @@ void K_ThunderShieldAttack(mobj_t *actor, fixed_t size)
 			P_BlockThingsIterator(bx, by, PIT_ThunderShieldAttack);
 }
 
+static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
+{
+	if (lightningSource == NULL || P_MobjWasRemoved(lightningSource))
+	{
+		// Invalid?
+		return BMIT_ABORT;
+	}
+
+	if (thing == NULL || P_MobjWasRemoved(thing))
+	{
+		// Invalid?
+		return BMIT_ABORT;
+	}
+
+	if (thing->player)
+	{
+		// Don't damage players
+		return BMIT_CONTINUE;
+	}
+
+	if (thing == lightningSource)
+	{
+		// Don't explode yourself!!
+		return BMIT_CONTINUE;
+	}
+
+	if (thing->health <= 0)
+	{
+		// Dead
+		return BMIT_CONTINUE;
+	}
+
+	if (thing->type != MT_SPB)
+	{
+		if (!(thing->flags & MF_SHOOTABLE) || (thing->flags & MF_SCENERY))
+		{
+			// Not shootable
+			return BMIT_CONTINUE;
+		}
+	}
+
+	if (P_AproxDistance(thing->x - lightningSource->x, thing->y - lightningSource->y) > lightningDist + thing->radius)
+	{
+		// Too far away
+		return BMIT_CONTINUE;
+	}
+
+	if (P_CheckSight(lightningSource, thing) == false)
+	{
+		// Not in sight
+		return BMIT_CONTINUE;
+	}
+
+	if (thing->type == MT_SPB) // If you destroy a SPB, you don't get the luxury of a cooldown.
+	{
+		spbplace = -1;
+		K_SetIndirectItemCooldown(0);
+	}
+
+	P_DamageMobj(thing, lightningSource, lightningSource, 1, DMG_VOLTAGE|DMG_CANTHURTSELF);
+	return BMIT_CONTINUE;
+}
+
+void K_AttractionShieldAttack(mobj_t *actor, fixed_t size)
+{
+	INT32 bx, by, xl, xh, yl, yh;
+
+	lightningDist = FixedMul(size, actor->scale);
+	lightningSource = actor;
+
+	// Use blockmap to check for nearby shootables
+	yh = (unsigned)(actor->y + lightningDist - bmaporgy)>>MAPBLOCKSHIFT;
+	yl = (unsigned)(actor->y - lightningDist - bmaporgy)>>MAPBLOCKSHIFT;
+	xh = (unsigned)(actor->x + lightningDist - bmaporgx)>>MAPBLOCKSHIFT;
+	xl = (unsigned)(actor->x - lightningDist - bmaporgx)>>MAPBLOCKSHIFT;
+
+	BMBOUNDFIX (xl, xh, yl, yh);
+
+	for (by = yl; by <= yh; by++)
+		for (bx = xl; bx <= xh; bx++)
+			P_BlockThingsIterator(bx, by, PIT_AttractionShieldAttack);
+}
+
 static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, INT16 dmg)
 {
 	if (!player)
@@ -713,6 +796,14 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, INT16 d
 		player->bubbleblowup /= 2;
 }
 
+boolean K_BubbleShieldReflectSpecialCase(mobj_t *t)
+{
+	if ((!t) || (P_MobjWasRemoved(t)))
+		return false; // Object doesn't even exist
+
+	return t->type == MT_FALLINGROCK; // TODO: Maybe an object flag (MF_BUBBLEREFLECT)?
+}
+
 static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 {
 	// slow orbis are traps
@@ -721,7 +812,7 @@ static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 
 	return t->type == MT_BANANA || (t->type == MT_ORBINAUT && t->flags2 & MF2_AMBUSH) || t->type == MT_JAWZ_DUD ||
 	       t->type == MT_EGGMANITEM || t->type == MT_SSMINE || t->type == MT_SSMINE_SHIELD || t->type == MT_LANDMINE ||
-		   t->type == MT_EGGMINE;
+		   t->type == MT_EGGMINE || K_BubbleShieldReflectSpecialCase(t);
 }
 
 static boolean K_StrongPlayerBump(const player_t *player)
@@ -772,6 +863,15 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 		P_SetTarget(&t2->target, owner); // Let the source reflect it back again!
 		t2->threshold = 10;
 	}
+	else if (t2->player->attractionattack)
+	{
+		// trolled
+		t2->player->attractioncharge = 0;
+		t2->player->attractionattack = 0;
+		t2->player->attractionattack_hipower = 0;
+		t2->player->attractionboost = 0;
+		K_DisableSeekingReticule(t2->player);
+	}
 
 	S_StartSound(t1, sfx_s3k44);
 	return true;
@@ -782,7 +882,7 @@ boolean K_BubbleShieldCanReflect(mobj_t *t)
 	return (t->type == MT_ORBINAUT || t->type == MT_JAWZ || t->type == MT_JAWZ_DUD
 		|| t->type == MT_BANANA || t->type == MT_EGGMANITEM || t->type == MT_BALLHOG
 		|| t->type == MT_SSMINE || t->type == MT_LANDMINE || t->type == MT_SINK || t->type == MT_EGGMINE
-		|| t->type == MT_KART_LEFTOVER
+		|| t->type == MT_KART_LEFTOVER || K_BubbleShieldReflectSpecialCase(t)
 		|| t->type == MT_PLAYER);
 }
 
@@ -999,7 +1099,28 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	
 	t1Condition = (t1->scale > t2->scale + (mapobjectscale/8));
 	t2Condition = (t2->scale > t1->scale + (mapobjectscale/8));
-	
+
+	// Merritt suggestion: ONLY make Alt. Shrink squish/flipover interactions happen if and only
+	// if the crushing player doesn't have an S-Monitor active
+
+	if (t1Condition && (t1->player && t1->player->smonitortimer) && (t2->player && K_IsAltShrunk(t2->player)))
+	{
+		// t1Condition: t1's player has an S-Monitor, don't do squat
+		// Extend some mercy to the players phasing through one another
+		t1->player->justbumped = 6;
+		t2->player->justbumped = 6;
+		return false;
+	}
+
+	if (t2Condition && (t2->player && t2->player->smonitortimer) && (t1->player && K_IsAltShrunk(t1->player)))
+	{
+		// t2Condition: t2's player has an S-Monitor, don't do squat
+		// Extend some mercy to the players phasing through one another
+		t1->player->justbumped = 6;
+		t2->player->justbumped = 6;
+		return false;
+	}
+
 	if ((t1Condition == true || flameT1 == true) && (t2Condition == true || flameT2 == true))
 	{
 		return false;
@@ -1109,14 +1230,31 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 		return true;
 	}
 
-	// Battle Mode Sneaker damage
-	// (Pogo Spring damage is handled in head-stomping code)
-	if (gametyperules & GTR_BUMPERS)
+	// Attraction Shield tackle damage
+	// players with Bubble Shield equipped are protected
+	t1Condition = (t1->player->attractionattack && t1->player->attractionattack_hipower && (K_GetShieldFromPlayer(t2->player) != KSHIELD_BUBBLE));
+	t2Condition = (t2->player->attractionattack && t2->player->attractionattack_hipower && (K_GetShieldFromPlayer(t1->player) != KSHIELD_BUBBLE));
+	if (t1Condition == true && t2Condition == false)
 	{
-		t1Condition = ((t1->player->sneakertimer > 0)
+		P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
+		return true;
+	}
+	else if (t1Condition == false && t2Condition == true)
+	{
+		P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
+		return true;
+	}
+
+	// Battle Mode Sneaker and Bubble damage
+	// (Pogo Spring damage is handled in head-stomping code)
+	if (gametypes[gametype]->rules & GTR_BUMPERS)
+	{
+		t1Condition = (((t1->player->sneakertimer > 0)
+		|| (t1->player->bubbleboost > 0))
 			&& !P_PlayerInPain(t1->player)
 			&& (t1->player->flashing == 0));
-		t2Condition = ((t2->player->sneakertimer > 0)
+		t2Condition = (((t2->player->sneakertimer > 0)
+			|| (t2->player->bubbleboost > 0))
 			&& !P_PlayerInPain(t2->player)
 			&& (t2->player->flashing == 0));
 

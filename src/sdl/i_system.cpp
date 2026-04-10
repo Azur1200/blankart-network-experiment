@@ -72,10 +72,6 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #define _MATH_DEFINES_DEFINED
 #include <SDL3/SDL.h>
 
-#ifdef HAVE_TTF
-#include "i_ttf.h"
-#endif
-
 #if defined (__unix__) || defined(__APPLE__) || (defined (UNIXCOMMON) && !defined (__HAIKU__))
 #if defined (__linux__)
 #include <sys/vfs.h>
@@ -884,11 +880,6 @@ void I_OutputMsg(const char *fmt, ...)
 	va_start(argptr,fmt);
 	vsprintf(txt, fmt, argptr);
 	va_end(argptr);
-
-#ifdef HAVE_TTF
-	if (TTF_WasInit()) I_TTFDrawText(currentfont, solid, DEFAULTFONTFGR, DEFAULTFONTFGG, DEFAULTFONTFGB,  DEFAULTFONTFGA,
-	DEFAULTFONTBGR, DEFAULTFONTBGG, DEFAULTFONTBGB, DEFAULTFONTBGA, txt);
-#endif
 
 	len = strlen(txt);
 

@@ -19,6 +19,7 @@
 extern "C" {
 #endif
 
+#define FAR_CLIPPING_PLANE 32768.0f // Draw further! Tails 01-21-2001
 #define ZCLIP_PLANE 4.0f // Used for the actual game drawing
 #define NZCLIP_PLANE 0.9f // Seems to be only used for the HUD and screen textures
 
@@ -121,16 +122,22 @@ typedef struct
 	FLOAT       scalex,scaley,scalez;
 	FLOAT       fovxangle, fovyangle;
 	UINT8       splitscreen;
-	boolean     flip;            // screenflip
 	boolean     shearing;        // 14042019
 	float       viewaiming;      // 17052019
 	boolean     roll;
 	FLOAT       rollangle; // done to not override USE_FTRANSFORM_ANGLEZ
 	FLOAT       centerx, centery;
 	FLOAT       rollx, rollz;
-	boolean     mirror;          // SRB2Kart: Encore Mode
-	boolean     mirrorflip;      // Encore Mode with Flipcam
+	UINT8       fliptype;
 } FTransform;
+
+enum
+{
+	TRANSFORM_NONE   = 0,
+	TRANSFORM_FLIP   = 1 << 0,                             // screenflip
+	TRANSFORM_MIRROR = 1 << 1,                             // SRB2Kart: Encore Mode
+	TRANSFORM_MIRRORFLIP = TRANSFORM_FLIP|TRANSFORM_MIRROR // SRB2Kart: Encore Mode with Flipcam
+};
 
 // Transformed vector, as passed to HWR API
 typedef struct
@@ -299,7 +306,7 @@ struct FSurfaceInfo
 typedef struct FSurfaceInfo FSurfaceInfo;
 
 #define GL_DEFAULTMIX 0x00000000
-#define GL_DEFAULTFOG 0x19000000
+#define GL_DEFAULTFOG 0xFF000000
 
 // Various settings and states for the rendering backend.
 enum hwdsetspecialstate
@@ -308,7 +315,6 @@ enum hwdsetspecialstate
 	HWD_SET_SHADERS,
 	HWD_SET_TEXTUREFILTERMODE,
 	HWD_SET_TEXTUREANISOTROPICMODE,
-
 	HWD_NUMSTATE
 };
 typedef enum hwdsetspecialstate hwdspecialstate_t;
@@ -320,6 +326,17 @@ enum hwdshaderstage
 };
 
 typedef enum hwdshaderstage hwdshaderstage_t;
+
+// Modes for SetStencilMode
+enum hwdstencilmode
+{
+	HWD_STENCIL_INACTIVE,
+	HWD_STENCIL_PORTAL_BEGIN,
+	HWD_STENCIL_PORTAL_INSIDE,
+	HWD_STENCIL_PORTAL_FINISH
+};
+
+typedef enum hwdstencilmode hwdstencilmode_t;
 
 // Lactozilla: Shader info
 // Generally set at the start of the frame.

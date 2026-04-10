@@ -57,19 +57,9 @@ FUNCMATH FUNCINLINE static ATTRINLINE float FixedToFloat(fixed_t x)
 	return x / (float)FRACUNIT;
 }
 
-FUNCMATH FUNCINLINE static ATTRINLINE float FixedToFloat64(INT64 x)
-{
-	return (float)x / (float)FRACUNIT;
-}
-
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FloatToFixed(float f)
 {
 	return (fixed_t)(f * FRACUNIT);
-}
-
-FUNCMATH FUNCINLINE static ATTRINLINE INT64 FloatToFixed64(float f)
-{
-	return (INT64)(f * FRACUNIT);
 }
 
 /*!
@@ -351,6 +341,13 @@ struct vector2_t
 	fixed_t y;
 };
 
+// Floating-point version, used sparingly, primarily in rendering
+struct f_vector2_t
+{
+	float x;
+	float y;
+};
+
 vector2_t *FV2_Load(vector2_t *vec, fixed_t x, fixed_t y);
 vector2_t *FV2_UnLoad(vector2_t *vec, fixed_t *x, fixed_t *y);
 vector2_t *FV2_Copy(vector2_t *a_o, const vector2_t *a_i);
@@ -378,6 +375,13 @@ vector2_t *FV2_Point2Vec (const vector2_t *point1, const vector2_t *point2, vect
 struct vector3_t
 {
 	fixed_t x, y, z;
+};
+
+struct f_vector3_t
+{
+	float x;
+	float y;
+	float z;
 };
 
 vector3_t *FV3_Load(vector3_t *vec, fixed_t x, fixed_t y, fixed_t z);
@@ -454,6 +458,48 @@ void FM_MultMatrix(matrix_t *dest, const matrix_t *multme);
 void FM_MultMatrixEx(const matrix_t *m1, const matrix_t *m2, matrix_t *dest);
 void FM_Translate(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z);
 void FM_Scale(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z);
+
+//
+// Approach functions, see m_fixed.c for details
+//
+
+INT32 ApproachINT32(INT32 current, INT32 target, INT32 inc, INT32 dec);
+UINT32 ApproachUINT32(UINT32 current, UINT32 target, UINT32 inc, UINT32 dec);
+fixed_t ApproachFixed(fixed_t current, fixed_t target, fixed_t inc, fixed_t dec);
+
+/** \brief Returns the INT32 value ``current`` after it tries to approach ``target``, going up
+ or down at most ``delta``.
+ *
+ * If ``target`` is close to the max or min of INT32, then it's possible to overflow past it
+ without stopping.
+
+	\param current	(INT32) current value
+
+	\param target	(INT32) target value
+
+	\param delta	(INT32) value to increment/decrement by
+
+	\return		(INT32) current value after incrementing/decrementing
+*/
+#define ApproachOneWayINT32(current, target, delta) (ApproachINT32(current, target, delta, delta))
+
+/** \brief Returns the unsigned INT32 value ``current`` after it tries to approach ``target``,
+ going up or down at most ``delta``.
+ *
+ * If ``target`` is close to the max or min of UINT32, then it's possible to overflow past it
+ without stopping.
+
+	\param current	(UINT32) current value
+
+	\param target	(UINT32) target value
+
+	\param delta	(UINT32) value to increment/decrement by
+
+	\return		(UINT32) current value after incrementing/decrementing
+*/
+#define ApproachOneWayUINT32(current, target, delta) (ApproachUINT32(current, target, delta, delta))
+
+#define ApproachOneWayFixed(current, target, delta) (ApproachFixed(current, target, delta, delta))
 
 #ifdef __cplusplus
 } // extern "C"

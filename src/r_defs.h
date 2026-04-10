@@ -363,6 +363,8 @@ typedef enum
 	MSF_FLATLIGHTING            =  1<<13,
 	// force it on (even if it was disabled)
 	MSF_DIRECTIONLIGHTING       =  1<<14,
+	// Disable Audio EFX
+	MSF_NOEFX                   =  1<<15,
 } sectorflags_t;
 
 // Per-sector bot controller override
@@ -1001,6 +1003,8 @@ typedef enum
 
 	RF_ABSOLUTELIGHTLEVEL = 0x00010000, //  mobj_t.lightlevel is absolute instead of relative
 	RF_HIDEINSKYBOX       = 0x00020000, //  do not render in skybox
+	RF_AFFINEPRESCALE     = 0x00040000, // Makes affines scale before rotating, instead of rotating before scaling
+	RF_NOAFFINE           = 0x00080000,  // Disables affine drawing for this sprite
 
 	RF_HIDESHIFT        = (20),
 	RF_DONTDRAW         = 0x0F << RF_HIDESHIFT,   // --Don't generate a vissprite
@@ -1018,6 +1022,8 @@ typedef enum
 	RF_MODULATE			= ((AST_MODULATE-1)<<RF_BLENDSHIFT),
 	RF_OVERLAY			= ((AST_OVERLAY-1)<<RF_BLENDSHIFT),
 
+	// free: 0x08000000
+
 	RF_TRANSMASK       	= (INT32)0xF0000000,   // --Transparency override
 	RF_TRANSSHIFT		= (7*4),
 	RF_TRANS10       	= (1<<RF_TRANSSHIFT),   // 10%
@@ -1032,6 +1038,14 @@ typedef enum
 	RF_GHOSTLY			= (RF_TRANS80 | RF_FULLBRIGHT),
 	RF_GHOSTLYMASK		= (RF_TRANSMASK | RF_FULLBRIGHT),
 } renderflags_t;
+
+#if 0
+typedef enum
+{
+	RF2_NOAFFINE          = 0x00000001,  // Disables affine drawing for this sprite
+	RF2_AFFINEPRESCALE    = 0x00000002,  // Makes affines scale before rotating, instead of rotating before scaling
+} renderflags2_t;
+#endif
 
 typedef enum
 {
@@ -1087,6 +1101,35 @@ struct spritedef_t
 	spriteframe_t *spriteframes;
 };
 
+// Affine transformation bounding positions, in pixels. Used for Software to determine
+// the dimensions of an affine patch.
+struct affine_bounding_t
+{
+	vector2_t pivot;
+
+	// Differences between the "pivot" of the bound and each corner position.
+	INT32 xleft, yup, xright, ydown;
+
+	// General length between each bounding position
+	INT32 xlen, ylen;
+
+	INT32 l;  // Leftmost bounding
+	INT32 r;  // Rightmost bounding
+
+	INT32 t;  // Highest bounding
+	INT32 b;  // Lowest bounding
+};
+
+// an affine transformation matrix. maps screen coordinates to texture coordinates
+struct affine_t
+{
+	fixed_t a; // horizontal step per pixel (M7A)
+	fixed_t b; // horizontal step per scanline (M7B)
+	fixed_t c; // vertical step per pixel (M7C)
+	fixed_t d; // vertical step per scanline (M7D)
+	fixed_t ox, oy; // transform origin in texture coordinates (M7X/M7Y)
+};
+
 // Column and span drawing data bundles
 
 typedef struct
@@ -1120,6 +1163,13 @@ typedef struct
 	INT32 sourcelength;
 
 	UINT8 r8_flatcolor;
+
+	affine_bounding_t affinebound;
+	affine_t affine;
+	vector2_t affineoffset;
+	fixed_t affineystep;
+	f_vector2_t affinemosaic; // Truncates how columndrawers "move" across the screen
+	fixed_t frac;
 } drawcolumndata_t;
 
 extern drawcolumndata_t g_dc;

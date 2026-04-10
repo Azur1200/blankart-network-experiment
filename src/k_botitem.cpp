@@ -435,17 +435,21 @@ static void K_BotItemSneaker(botdata_t *bd, const player_t *player)
 		return;
 	}
 
-	boolean stack = K_StackingActive() && (cv_kartstacking_sneaker_maxgrade.value > 1);
+	boolean stack = K_StackingActive();
+	boolean sneakerstack = (stack && (cv_kartstacking_sneaker_maxgrade.value > 1));
 	const SINT8 stacktime = K_BotSneakerStackThreshold(player->botvars.difficulty);
 
 	if ((player->offroad && K_ApplyOffroad(player)) // Stuck in offroad, use it NOW
 		|| K_GetWaypointIsShortcut(player->nextwaypoint) == true // Going toward a shortcut!
 		|| player->speed < K_GetKartSpeed(player, false, true) / 2 // Being slowed down too much
-		|| (!stack && player->speedboost > (FRACUNIT/8)) // Have another type of boost (drafting)
-		|| (stack && player->sneakertimer < stacktime && player->sneakertimer > 0 && (bd->acceldown && !bd->brakedown)) // Stack them sneakers!
+		|| (sneakerstack && player->sneakertimer > 0 && player->sneakertimer < stacktime && (bd->acceldown && !bd->brakedown)) // Stack them sneakers!
+		|| (stack && player->speedboost > (FRACUNIT/8) && !player->sneakertimer) // Have another type of boost (drafting)
 		|| bd->itemconfirm > 4*TICRATE) // Held onto it for too long
 	{
-		if (((stack && player->sneakertimer < stacktime) || player->sneakertimer == 0) && !bd->itemwasdown)
+		if (((sneakerstack && player->sneakertimer > 0 && player->sneakertimer < stacktime)
+			|| player->sneakertimer == 0
+			|| (stack && player->speedboost > (FRACUNIT/8) && !player->sneakertimer))
+			&& !bd->itemwasdown)
 		{
 			bd->itemdown = true;
 			//bd->itemconfirm = 2*TICRATE;
@@ -861,7 +865,7 @@ static void K_BotItemJawz(botdata_t *bd, const player_t *player)
 	SINT8 throwdir = 1;
 	boolean tryLookback = false;
 	UINT8 snipeMul = 2;
-	INT32 lastTarg = player->lastjawztarget;
+	INT32 lastTarg = player->lastitemtarget;
 	player_t *target = NULL;
 
 	if (player->speed > topspeed)
@@ -880,7 +884,7 @@ static void K_BotItemJawz(botdata_t *bd, const player_t *player)
 		tryLookback = true;
 	}
 
-	if (lastTarg != -1
+	if (lastTarg >= 0 && lastTarg < MAXPLAYERS
 		&& playeringame[lastTarg] == true
 		&& players[lastTarg].spectator == false
 		&& players[lastTarg].mo != NULL
@@ -987,26 +991,15 @@ static void K_BotItemFlame(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
+	boolean forceoverheat = ((player->offroad && K_ApplyOffroad(player)) || (K_GetWaypointIsShortcut(player->nextwaypoint) == true));
+
 	// if we're smart enough, allow overheating the flame shield if we want to go off-road
-	if (player->flametimer >= (itemtime*3)-5 && !(K_ApplyOffroad(player) && player->botvars.difficulty >= 6))
+	if (player->flametimer >= (itemtime*3)-5 && !(forceoverheat && player->botvars.difficulty >= 6))
 	{
 		bd->itemdelay = 5;
 	}
 
-	if (P_IsObjectOnGround(player->mo) == false)
-	{
-		// Drain itemdelay as needed so theres no delay when landing.
-		if (bd->itemdelay)
-		{
-			bd->itemdelay--;
-			bd->itemconfirm = 0;
-		}
-
-		// Don't use while mid-air.
-		return;
-	}
-
-	if (player->botvars.difficulty < 6 || player->flametimer <= 2*TICRATE)
+	if (player->botvars.difficulty < 6 || player->flametimer <= 2*TICRATE || forceoverheat)
 	{
 		// We aren't smart enough to use this properly.
 		// ...or we are doing the finishing blow.

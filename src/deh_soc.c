@@ -642,14 +642,13 @@ void readgametype(MYFILE *f, char *gtname)
 	char *tmp;
 	INT32 i, j;
 
-	INT16 newgtidx = 0;
+	gametype_t *newgametype = NULL;
 	UINT32 newgtrules = 0;
 	UINT32 newgttol = 0;
 	INT32 newgtpointlimit = 0;
 	INT32 newgttimelimit = 0;
-	INT16 newgtrankingstype = -1;
 	INT32 newgtcolor = V_YELLOWMAP;
-	int newgtinttype = 0;
+	UINT8 newgtinttype = 0;
 	char gtconst[MAXLINELEN];
 
 	// Empty strings.
@@ -700,12 +699,6 @@ void readgametype(MYFILE *f, char *gtname)
 				newgtpointlimit = (INT32)i;
 			else if (fastcmp(word, "DEFAULTTIMELIMIT"))
 				newgttimelimit = (INT32)i;
-			// Rankings type
-			else if (fastcmp(word, "RANKINGTYPE"))
-			{
-				// Case insensitive
-				newgtrankingstype = (int)get_number(word2);
-			}
 			// Intermission type
 			else if (fastcmp(word, "INTERMISSIONTYPE"))
 			{
@@ -765,40 +758,39 @@ void readgametype(MYFILE *f, char *gtname)
 		Z_Free(word2lwr);
 
 	// Ran out of gametype slots
-	if (gametypecount == NUMGAMETYPEFREESLOTS)
+	if (numgametypes == GT_LASTFREESLOT)
 	{
-		CONS_Alert(CONS_WARNING, "Ran out of free gametype slots!\n");
-		return;
+		I_Error("Out of Gametype Freeslots while allocating \"%s\"\nLoad less addons to fix this.", gtname);
 	}
 
 	// Add the new gametype
-	newgtidx = G_AddGametype(newgtrules);
-	G_AddGametypeTOL(newgtidx, newgttol);
+	newgametype = Z_Calloc(sizeof (gametype_t), PU_STATIC, NULL);
+	if (!newgametype)
+	{
+		I_Error("Out of memory allocating gametype \"%s\"", gtname);
+	}
 
-	// Not covered by G_AddGametype alone.
-	if (newgtrankingstype == -1)
-		newgtrankingstype = newgtidx;
-	gametyperankings[newgtidx] = newgtrankingstype;
-	intermissiontypes[newgtidx] = newgtinttype;
-	pointlimits[newgtidx] = newgtpointlimit;
-	timelimits[newgtidx] = newgttimelimit;
-	gametypecolor[newgtidx] = newgtcolor;
-
-	// Write the new gametype name.
-	Gametype_Names[newgtidx] = Z_StrDup((const char *)gtname);
-
-	// Write the constant name.
 	if (gtconst[0] == '\0')
 		strncpy(gtconst, gtname, MAXLINELEN);
-	G_AddGametypeConstant(newgtidx, (const char *)gtconst);
+
+	newgametype->name = Z_StrDup((const char *)gtname);
+	newgametype->rules = newgtrules;
+	newgametype->constant = G_PrepareGametypeConstant((const char *)gtconst);
+	newgametype->tol = newgttol;
+	newgametype->intermission = newgtinttype;
+	newgametype->pointlimit = newgtpointlimit;
+	newgametype->timelimit = newgttimelimit;
+	newgametype->color = newgtcolor;
+
+	gametypes[numgametypes++] = newgametype;
 
 	// Update gametype_cons_t accordingly.
 	G_UpdateGametypeSelections();
 
-	CONS_Printf("Added gametype %s\n", Gametype_Names[newgtidx]);
+	CONS_Printf("Added gametype %s\n", gtname);
 }
 
-static mapheader_lighting_t *usemaplighting(INT32 mapnum, const char *word)
+static mapheader_lighting_t *usemaplighting(mapnum_t mapnum, const char *word)
 {
 	if (fastncmp(word, "ENCORE", 6))
 	{
@@ -809,6 +801,243 @@ static mapheader_lighting_t *usemaplighting(INT32 mapnum, const char *word)
 	else
 	{
 		return &mapheaderinfo[mapnum]->lighting;
+	}
+}
+
+#define OUTOFRANGE(name, value, min, max) deh_warning("Level header %d: EFX parameter %s is out of range. (value:%d min:%d max:%d)\n", mapnum, name, value, min, max)
+
+#define OUTOFRANGE_FLOAT(name, value, min, max) deh_warning("Level header %d: EFX parameter %s is out of range. (value:%f min:%f max:%f)\n", mapnum, name, value, min, max)
+
+#define OUTOFRANGE_CONSTANT(name, valuename, minname, maxname) deh_warning("Level header %d: EFX parameter %s is out of range. (value:%s min:%s max:%s)\n", mapnum, name, valuename, minname, maxname)
+
+#define FIELDSET(name, field, value, min, max) \
+if (fastcmp(word, name)) \
+{ \
+	if (value >= min && value <= max) \
+		mapheaderinfo[mapnum]->globalEFX->field = value; \
+		else \
+			OUTOFRANGE(name, value, min, max); \
+}
+
+#define FIELDSET_FLOAT(name, field, value, min, max) \
+if (fastcmp(word, name)) \
+{ \
+	if (value >= min && value <= max) \
+		mapheaderinfo[mapnum]->globalEFX->field = value; \
+	else \
+		OUTOFRANGE_FLOAT(name, value, min, max); \
+}
+
+#define FIELDSET_FVEC3(name, field, value, min, max) \
+if (fastcmp(word, name)) \
+{ \
+	processvector(name, mapnum, value, &mapheaderinfo[mapnum]->globalEFX->field, min, max); \
+}
+
+#define FIELDSET_BOOL(name, field, value, word2) \
+if (fastcmp(word, name)) \
+{ \
+	if (value || word2[0] == 'T' || word2[0] == 'O') \
+		mapheaderinfo[mapnum]->globalEFX->field = 1; \
+	else \
+		mapheaderinfo[mapnum]->globalEFX->field = 0; \
+}
+
+#define FIELDSET_CONSTANT(name, minname, maxname, field, word2, min, max) \
+if (fastcmp(word, name)) \
+{ \
+	INT32 constnum = get_number(word2); \
+	if (constnum >= min && constnum <= max) \
+		mapheaderinfo[mapnum]->globalEFX->field = constnum; \
+	else \
+		OUTOFRANGE_CONSTANT(name, word2, minname, maxname); \
+}
+
+static void processvector(const char* name, mapnum_t mapnum, char *word2, f_vector3_t *vec, float min, float max)
+{
+	char *tmp = strtok(word2,",");
+	float vector[3];
+	int i = 0;
+
+	do {
+		if (i >= 3)
+			break;
+		float value = atof(tmp);
+		if (value >= min && value <= max)
+			vector[i++] = value;
+		else
+		{
+			deh_warning("Level header %d: EFX parameter %d of 3 of is out of range for %s. (value:%f min:%f max:%f)\n", mapnum, i+1, name, value, min, max);
+			return;
+		}
+	} while ((tmp = strtok(NULL, ",")) != NULL);
+
+	vec->x = vector[0];
+	vec->y = vector[1];
+	vec->z = vector[2];
+}
+
+// Handle parsing globalefx info
+static void globalmapefxparameters(mapnum_t mapnum, INT32 i, char *word, char *word2)
+{
+	// Take off GLOBALEFX_
+	word += 10;
+
+	// this is a float.
+	float j = atof(word2);
+
+	// Check and take off effect name
+	if (fastncmp(word, "EAXREVERB_", 10))
+	{
+		word += 10;
+
+		FIELDSET_FLOAT("DENSITY", eaxreverb.density, j, 0.0f, 1.0f)
+		else FIELDSET_FLOAT("DIFFUSION", eaxreverb.diffusion, j, 0.0f, 1.0f)
+		else FIELDSET_FLOAT("GAIN", eaxreverb.gain, j, 0.0f, 1.0f)
+		else FIELDSET_FLOAT("GAINHF", eaxreverb.gainhf, j, 0.0f, 1.0f)
+		else FIELDSET_FLOAT("GAINLF", eaxreverb.gainlf, j, 0.0f, 1.0f)
+		else FIELDSET_FLOAT("DECAY_TIME", eaxreverb.decay_time, j, 0.1f, 20.0f)
+		else FIELDSET_FLOAT("DECAY_HFRATIO", eaxreverb.decay_hfratio, j, 0.1f, 2.0f)
+		else FIELDSET_FLOAT("DECAY_LFRATIO", eaxreverb.decay_lfratio, j, 0.1f, 2.0f)
+		else FIELDSET_FLOAT("REFLECTIONS_GAIN", eaxreverb.reflections_gain, j, 0.0f, 3.16f)
+		else FIELDSET_FLOAT("REFLECTIONS_DELAY", eaxreverb.reflections_delay, j, 0.0f, 0.3f)
+		else FIELDSET_FVEC3("REFLECTIONS_PAN", eaxreverb.reflections_pan, word2, -1.0f, 1.0f)
+		else FIELDSET_FLOAT("LATE_REVERB_GAIN", eaxreverb.late_reverb_gain, j, 0.0f, 10.0f)
+		else FIELDSET_FLOAT("LATE_REVERB_DELAY", eaxreverb.late_reverb_delay, j, 0.0f, 0.1f)
+		else FIELDSET_FVEC3("LATE_REVERB_PAN", eaxreverb.late_reverb_pan, word2, -1.0f, 1.0f)
+		else FIELDSET_FLOAT("ECHO_TIME", eaxreverb.echo_time, j, 0.075f, 0.25f)
+		else FIELDSET_FLOAT("ECHO_DEPTH", eaxreverb.echo_depth, j, 0.0f, 1.0f)
+		else FIELDSET_FLOAT("MODULATION_TIME", eaxreverb.modulation_time, j, 0.04f, 4.0f)
+		else FIELDSET_FLOAT("MODULATION_DEPTH", eaxreverb.modulation_depth, j, 0.0f, 1.0f)
+		else FIELDSET_FLOAT("AIR_ABSORPTION_GAINHF", eaxreverb.air_absorption_gainhf, j, 0.892f, 1.0f)
+		else FIELDSET_FLOAT("HFREFERENCE", eaxreverb.hfreference, j, 1000.0f, 20000.0f)
+		else FIELDSET_FLOAT("LFREFERENCE", eaxreverb.lfreference, j, 20.0f, 1000.0f)
+		else FIELDSET_FLOAT("ROOM_ROLLOFF_FACTOR", eaxreverb.room_rolloff_factor, j, 0.0f, 10.0f)
+		else FIELDSET_BOOL("DECAY_HFLIMIT", eaxreverb.decay_hflimit, i, word2)
+	}
+	else if (fastncmp(word, "REVERB_", 7))
+	{
+		word += 7;
+
+		FIELDSET_FLOAT("DENSITY", reverb.density, j, 0.0f, 1.0f)
+		else FIELDSET_FLOAT("DIFFUSION", reverb.diffusion, j, 0.0f, 1.0f)
+		else FIELDSET_FLOAT("GAIN", reverb.gain, j, 0.0f, 1.0f)
+		else FIELDSET_FLOAT("GAINHF", reverb.gainhf, j, 0.0f, 1.0f)
+		else FIELDSET_FLOAT("DECAY_TIME", reverb.decay_time, j, 0.1f, 20.0f)
+		else FIELDSET_FLOAT("DECAY_HFRATIO", reverb.decay_hfratio, j, 0.1f, 2.0f)
+		else FIELDSET_FLOAT("REFLECTIONS_GAIN", reverb.reflections_gain, j, 0.0f, 3.16f)
+		else FIELDSET_FLOAT("REFLECTIONS_DELAY", reverb.reflections_delay, j, 0.0f, 0.3f)
+		else FIELDSET_FLOAT("LATE_REVERB_GAIN", reverb.late_reverb_gain, j, 0.0f, 10.0f)
+		else FIELDSET_FLOAT("LATE_REVERB_DELAY", reverb.late_reverb_delay, j, 0.0f, 0.1f)
+		else FIELDSET_FLOAT("AIR_ABSORPTION_GAINHF", reverb.air_absorption_gainhf, j, 0.892f, 1.0f)
+		else FIELDSET_FLOAT("ROOM_ROLLOFF_FACTOR", reverb.room_rolloff_factor, j, 0.0f, 10.0f)
+		else FIELDSET_BOOL("DECAY_HFLIMIT", reverb.decay_hflimit, i, word2)
+	}
+	else if (fastncmp(word, "CHORUS_", 7))
+	{
+		word += 7;
+
+		FIELDSET_CONSTANT("WAVEFORM", "CHORUSWAVE_SINUSOID", "CHORUSWAVE_TRIANGLE", chorus.waveform, word2, CHORUSWAVE_SINUSOID, CHORUSWAVE_TRIANGLE)
+		else FIELDSET("PHASE", chorus.phase, i, -180, 180)
+		else FIELDSET_FLOAT("RATE", chorus.rate, j, 0.0f, 10.0f)
+		else FIELDSET_FLOAT("DEPTH", chorus.depth, j, 0.0f, 1.0f)
+		else FIELDSET_FLOAT("FEEDBACK", chorus.feedback, j, -1.0f, 1.0f)
+		else FIELDSET_FLOAT("DELAY", chorus.delay, j, 0.0f, 0.016f)
+	}
+	else if (fastncmp(word, "DISTORTION_", 11))
+	{
+		word += 11;
+
+		FIELDSET_FLOAT("EDGE", distortion.edge, j, 0.0f, 1.0f)
+		else FIELDSET_FLOAT("GAIN", distortion.gain, j, 0.01f, 1.0f)
+		else FIELDSET_FLOAT("LOWPASS_CUTOFF", distortion.lowpass_cutoff, j, 80.0f, 24000.0f)
+		else FIELDSET_FLOAT("EQCENTER", distortion.eqcenter, j, 80.0f, 24000.0f)
+		else FIELDSET_FLOAT("EQBANDWIDTH", distortion.eqbandwidth, j, 80.0f, 24000.0f)
+	}
+	else if (fastncmp(word, "ECHO_", 5))
+	{
+		word += 5;
+
+		FIELDSET_FLOAT("DELAY", echo.delay, j, 0.0f, 0.207f)
+		else FIELDSET_FLOAT("LRDELAY", echo.lrdelay, j, 0.0f, 0.404f)
+		else FIELDSET_FLOAT("DAMPING", echo.damping, j, 0.0f, 0.99f)
+		else FIELDSET_FLOAT("FEEDBACK", echo.feedback, j, 0.0f, 1.0f)
+		else FIELDSET_FLOAT("SPREAD", echo.spread, j, -1.0f, 1.0f)
+	}
+	else if (fastncmp(word, "FLANGER_", 8))
+	{
+		word += 8;
+
+		FIELDSET_CONSTANT("WAVEFORM", "FLANGERWAVE_SINUSOID", "FLANGERWAVE_TRIANGLE", flanger.waveform, word2, FLANGERWAVE_SINUSOID, FLANGERWAVE_TRIANGLE)
+		else FIELDSET("PHASE", flanger.phase, i, -180, 180)
+		else FIELDSET_FLOAT("RATE", flanger.rate, j, 0.0f, 10.0f)
+		else FIELDSET_FLOAT("DEPTH", flanger.depth, j, 0.0f, 1.0f)
+		else FIELDSET_FLOAT("FEEDBACK", flanger.feedback, j, -1.0f, 1.0f)
+		else FIELDSET_FLOAT("DELAY", flanger.delay, j, 0.0f, 0.004f)
+	}
+	else if (fastncmp(word, "FREQSHIFT_", 10))
+	{
+		word += 10;
+
+		FIELDSET_FLOAT("FREQUENCY", freqshift.frequency, j, 0.0f, 24000.0f)
+		else FIELDSET_CONSTANT("LEFT_DIRECTION", "FREQSHIFTDIR_DOWN", "FREQSHIFTDIR_OFF", freqshift.left_direction, word2, FREQSHIFTDIR_DOWN, FREQSHIFTDIR_OFF)
+		else FIELDSET_CONSTANT("RIGHT_DIRECTION", "FREQSHIFTDIR_DOWN", "FREQSHIFTDIR_OFF", freqshift.right_direction, word2, FREQSHIFTDIR_DOWN, FREQSHIFTDIR_OFF)
+	}
+	else if (fastncmp(word, "VOCALMORPH_", 11))
+	{
+		word += 11;
+
+		FIELDSET("PHONEMEA", vocal_morpher.phonemea, i, 0, 29)
+		else FIELDSET("PHONEMEB", vocal_morpher.phonemeb, i, 0, 29)
+		else FIELDSET("PHONEMEA_COARSE_TUNING", vocal_morpher.phonemea_coarse_tuning, i, -24, 24)
+		else FIELDSET("PHONEMEB_COARSE_TUNING", vocal_morpher.phonemeb_coarse_tuning, i, -24, 24)
+		else FIELDSET_CONSTANT("WAVEFORM", "VOCALMORPH_SIN", "VOCALMORPH_SAW", flanger.waveform, word2, VOCALMORPH_SIN, VOCALMORPH_SAW)
+		else FIELDSET_FLOAT("RATE", vocal_morpher.rate, j, 0.0f, 10.0f)
+	}
+	else if (fastncmp(word, "PITCHSHIFT_", 11))
+	{
+		word += 11;
+
+		FIELDSET("COARSE_TUNE", pitchshift.coarse_tune, i, -12, 12)
+		else FIELDSET("FINE_TUNE", pitchshift.fine_tune, i, -50, 50)
+	}
+	else if (fastncmp(word, "RINGMOD_", 8))
+	{
+		word += 8;
+
+		FIELDSET_FLOAT("FREQUENCY", ringmod.frequency, j, 0.0f, 8000.0f)
+		else FIELDSET_FLOAT("HIGHPASS_CUTOFF", ringmod.highpass_cutoff, j, 0.0f, 24000.0f)
+		else FIELDSET_CONSTANT("WAVEFORM", "RINGMOD_SIN", "RINGMOD_SQUARE", ringmod.waveform, word2, RINGMOD_SIN, RINGMOD_SQUARE)
+	}
+	else if (fastncmp(word, "AUTOWAH_", 8))
+	{
+		word += 8;
+
+		FIELDSET_FLOAT("ATTACK_TIME", autowah.attack_time, j, 0.0001f, 1.0f)
+		else FIELDSET_FLOAT("RELEASE_TIME", autowah.release_time, j, 0.0001f, 1.0f)
+		else FIELDSET_FLOAT("RESONANCE", autowah.resonance, j, 2.0f, 1000.0f)
+		else FIELDSET_FLOAT("PEAK_GAIN", autowah.peak_gain, j, 0.00003f, 31621.0f)
+	}
+	else if (fastncmp(word, "COMPRESSOR_", 11))
+	{
+		word += 11;
+
+		FIELDSET_BOOL("ONOFF", compressor.onoff, i, word2)
+	}
+	else if (fastncmp(word, "EQ_", 3))
+	{
+		word += 3;
+
+		FIELDSET_FLOAT("LOW_GAIN", eq.low_gain, j, 0.126f, 7.943f)
+		else FIELDSET_FLOAT("LOW_CUTOFF", eq.low_cutoff, j, 50.0f, 800.0f)
+		else FIELDSET_FLOAT("MID1_GAIN", eq.mid1_gain, j, 0.126f, 7.943f)
+		else FIELDSET_FLOAT("MID1_CENTER", eq.mid1_center, j, 200.0f, 3000.0f)
+		else FIELDSET_FLOAT("MID1_WIDTH", eq.mid1_width, j, 0.01f, 1.0f)
+		else FIELDSET_FLOAT("MID2_GAIN", eq.mid2_gain, j, 0.126f, 7.943f)
+		else FIELDSET_FLOAT("MID2_CENTER", eq.mid2_center, j, 1000.0f, 8000.0f)
+		else FIELDSET_FLOAT("MID2_WIDTH", eq.mid2_width, j, 0.01f, 1.0f)
+		else FIELDSET_FLOAT("HIGH_GAIN", eq.high_gain, j, 0.126f, 7.943f)
+		else FIELDSET_FLOAT("HIGH_CUTOFF", eq.high_cutoff, j, 4000.0f, 16000.0f)
 	}
 }
 
@@ -839,7 +1068,7 @@ void readlevelheader(MYFILE *f, char * name)
 		name = va("MAP%s", name);
 	}
 
-	INT32 num = G_MapNumber(name);
+	mapnum_t num = G_MapNumber(name);
 
 	if (num >= nummapheaders)
 	{
@@ -1277,6 +1506,15 @@ void readlevelheader(MYFILE *f, char * name)
 					mapheaderinfo[num]->use_terrain = true;
 				else
 					mapheaderinfo[num]->use_terrain = false;
+			}
+			// Global EFX
+			else if (fastcmp(word, "GLOBALEFX"))
+			{
+				mapheaderinfo[num]->globalEFX->type = get_number(word2);
+			}
+			else if (fastncmp("GLOBALEFX_",word,10))
+			{
+				globalmapefxparameters(num, i, word, word2);
 			}
 			 // ignored for compatibility
 			else if (fastcmp(word, "NEXTLEVEL") || fastcmp(word, "TIMEATTACK") || fastcmp(word, "RECORDATTACK"))
@@ -2063,6 +2301,17 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		}
 		else if (fastcmp(word, "SUBMENU"))
 		{
+#ifndef HAVE_DISCORDRPC
+			{
+				const char *testname = word2;
+				if (fastncmp("MN_", testname, 3))
+					testname += 3;
+				if (fastcmp(testname, "OP_DISCORD") || fastcmp(testname, "MISC_DISCORDREQUESTS"))
+				{
+					continue;
+				}
+			}
+#endif
 			menutype_t mn = get_menutype(word2);
 			if (mn == MAXMENUTYPES)
 			{
@@ -2904,8 +3153,8 @@ void readunlockable(MYFILE *f, INT32 num)
 						unlockables[num].type = SECRET_EMBLEMHINTS;
 					else if (fastcmp(word2, "ENCORE"))
 						unlockables[num].type = SECRET_ENCORE;
-					else if (fastcmp(word2, "HARDSPEED"))
-						unlockables[num].type = SECRET_HARDSPEED;
+					else if (fastcmp(word2, "EXPERTSPEED"))
+						unlockables[num].type = SECRET_EXPERTSPEED;
 					else if (fastcmp(word2, "HELLATTACK"))
 						unlockables[num].type = SECRET_HELLATTACK;
 					else if (fastcmp(word2, "PANDORA"))
@@ -2917,7 +3166,7 @@ void readunlockable(MYFILE *f, INT32 num)
 				{
 					Z_Free(unlockables[num].stringVar);
 					unlockables[num].stringVar = Z_StrDup(word2);
-					unlockables[num].variable = (INT16)G_MapNumber(word2);
+					unlockables[num].variable = G_MapNumber(word2);
 				}
 				else
 					deh_warning("Unlockable %d: unknown word '%s'", num+1, word);
@@ -3285,6 +3534,10 @@ void readmaincfg(MYFILE *f)
 			{
 				bubbletime = get_number(word2);
 			}
+			else if (fastcmp(word, "FLAMETIME"))
+			{
+				flametime = get_number(word2);
+			}
 			else if (fastcmp(word, "COMEBACKTIME"))
 			{
 				comebacktime = get_number(word2);
@@ -3467,6 +3720,41 @@ void readmaincfg(MYFILE *f)
 	} while (!myfeof(f));
 
 	Z_Free(s);
+}
+
+//
+// SRB2KART
+//
+
+static void invalidateacrosscups(UINT16 map)
+{
+	cupheader_t *cup = kartcupheaders;
+	UINT8 i;
+
+	if (map >= nummapheaders)
+		return;
+
+	while (cup)
+	{
+		for (i = 0; i < CUPCACHE_MAX; i++)
+		{
+			if (cup->cachedlevels[i] != map)
+				continue;
+			cup->cachedlevels[i] = NEXTMAP_INVALID;
+		}
+		cup = cup->next;
+	}
+
+	mapheaderinfo[map]->cup = NULL;
+}
+
+static char *MapNameOrRemoval(char *name)
+{
+	if (name[0] == '\0'
+		|| (name[0] == '/' && name[1] == '\0'))
+		return NULL;
+
+	return Z_StrDup(name);
 }
 
 void readwipes(MYFILE *f)
@@ -3670,7 +3958,7 @@ void readcupheader(MYFILE *f, cupheader_t *cup)
 					cup->levellist[cup->numlevels] = NULL;
 					if (cup->cachedlevels[cup->numlevels] == NEXTMAP_INVALID)
 						continue;
-					mapheaderinfo[cup->cachedlevels[cup->numlevels]]->cup = NULL;
+					invalidateacrosscups(cup->cachedlevels[cup->numlevels]);
 				}
 
 				tmp = strtok(word2,",");
@@ -3688,9 +3976,32 @@ void readcupheader(MYFILE *f, cupheader_t *cup)
 			}
 			else if (fastcmp(word, "BONUSGAME"))
 			{
-				Z_Free(cup->levellist[CUPCACHE_BONUS]);
-				cup->levellist[CUPCACHE_BONUS] = Z_StrDup(word2);
-				cup->cachedlevels[CUPCACHE_BONUS] = NEXTMAP_INVALID;
+				while (cup->numbonus > 0)
+				{
+					cup->numbonus--;
+					Z_Free(cup->levellist[CUPCACHE_BONUS + cup->numbonus]);
+					cup->levellist[CUPCACHE_BONUS + cup->numbonus] = NULL;
+					if (cup->cachedlevels[CUPCACHE_BONUS + cup->numbonus] == NEXTMAP_INVALID)
+						continue;
+					invalidateacrosscups(cup->cachedlevels[CUPCACHE_BONUS + cup->numbonus]);
+				}
+
+				tmp = strtok(word2,",");
+				do {
+					if (cup->numbonus >= MAXBONUSLIST)
+					{
+						deh_warning("%s Cup: reached max bonus list (%d)\n", cup->name, MAXBONUSLIST);
+						break;
+					}
+
+					cup->levellist[CUPCACHE_BONUS + cup->numbonus] = MapNameOrRemoval(tmp);
+					cup->cachedlevels[CUPCACHE_BONUS + cup->numbonus] = NEXTMAP_INVALID;
+
+					if (cup->levellist[CUPCACHE_BONUS + cup->numbonus] == NULL)
+						break;
+
+					cup->numbonus++;
+				} while((tmp = strtok(NULL,",")) != NULL);
 			}
 			else if (fastcmp(word, "SPECIALSTAGE"))
 			{
@@ -4478,7 +4789,7 @@ menudrawer_f *get_menudrawer(const char *word)
 		return atoi(word);
 	if (fastncmp("GT_",word,3))
 		word += 3; // take off the GT_
-	for (i = 0; i < NUMGAMETYPES; i++)
+	for (i = 0; i < MAXGAMETYPES; i++)
 		if (fastcmp(word, Gametype_ConstantNames[i]+3))
 			return i;
 	deh_warning("Couldn't find gametype named 'GT_%s'",word);

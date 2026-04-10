@@ -232,6 +232,8 @@ static const struct {
 
 	{META_PATCH,        "patch_t"},
 	{META_COLORMAP,     "colormap"},
+	{META_EXTRACOLORMAP,"extracolormap_t"},
+	{META_LIGHTTABLE,   "lighttable_t"},
 	{META_CAMERA,       "camera_t"},
 
 	{META_ACTION,       "action"},
@@ -438,11 +440,11 @@ static int lib_pGetColorAfter(lua_State *L)
 static int lib_gMapNumber(lua_State *L)
 {
 	const char *arg = luaL_checkstring(L, 1);
-	INT32 map;
+	mapnum_t map;
 
 	map = G_MapNumber(arg);
 
-	if (map == INT32_MAX)
+	if (map == NEXTMAP_INVALID)
 		return 0;
 
 
@@ -1793,7 +1795,6 @@ static int lib_pGetSectorLightLevelAt(lua_State *L)
 	return 1;
 }
 
-/* Maybe color lib someday....
 static int lib_pGetSectorColormapAt(lua_State *L)
 {
 	boolean has_sector = false;
@@ -1817,7 +1818,6 @@ static int lib_pGetSectorColormapAt(lua_State *L)
 	LUA_PushUserdata(L, exc, META_EXTRACOLORMAP);
 	return 1;
 }
-*/
 
 static int lib_pDoSpring(lua_State *L)
 {
@@ -1850,7 +1850,9 @@ static int lib_pDamageMobj(lua_State *L)
 	damage = (INT32)luaL_optinteger(L, 4, 1);
 
 	if ((damage == 10000) && lua_isnil(L, 5))
-		damagetype = DMG_TIMEOVER;
+		damagetype = DMG_INSTAKILL;
+	else if ((damage == 42000) && lua_isnil(L, 5))
+		damagetype = DMG_SPECTATOR;
 	else
 		damagetype = (UINT8)luaL_optinteger(L, 5, 0);
 
@@ -2605,7 +2607,7 @@ static int lib_rTextureNumForName(lua_State *L)
 {
 	const char *name = luaL_checkstring(L, 1);
 	//HUDSAFE
-	lua_pushinteger(L, R_TextureNumForName(name));
+	lua_pushinteger(L, R_TextureNumForNameEx(name, true));
 	return 1;
 }
 
@@ -3209,16 +3211,16 @@ static int lib_gAddGametype(lua_State *L)
 	const char *k;
 	lua_Integer i;
 
+	gametype_t *newgametype = NULL;
+
 	const char *gtname = NULL;
 	const char *gtconst = NULL;
-	INT16 newgtidx = 0;
 	UINT32 newgtrules = 0;
 	UINT32 newgttol = 0;
 	INT32 newgtpointlimit = 0;
 	INT32 newgttimelimit = 0;
-	INT16 newgtrankingstype = -1;
 	INT32 newgtcolor = V_YELLOWMAP;
-	int newgtinttype = 0;
+	UINT8 newgtinttype = 0;
 
 	luaL_checktype(L, 1, LUA_TTABLE);
 	lua_settop(L, 1); // Clear out all other possible arguments, leaving only the first one.
@@ -3227,8 +3229,10 @@ static int lib_gAddGametype(lua_State *L)
 		return luaL_error(L, "This function cannot be called from within a hook or coroutine!");
 
 	// Ran out of gametype slots
-	if (gametypecount == NUMGAMETYPEFREESLOTS)
-		return luaL_error(L, "Ran out of free gametype slots!");
+	if (numgametypes == GT_LASTFREESLOT)
+	{
+		I_Error("Out of Gametype Freeslots while allocating \"%s\"\nLoad less addons to fix this.", gtname);
+	}
 
 #define FIELDERROR(f, e) luaL_error(L, "bad value for " LUA_QL(f) " in table passed to " LUA_QL("G_AddGametype") " (%s)", e);
 #define TYPEERROR(f, t) FIELDERROR(f, va("%s expected, got %s", lua_typename(L, t), luaL_typename(L, -1)))
@@ -3261,23 +3265,19 @@ static int lib_gAddGametype(lua_State *L)
 			if (!lua_isnumber(L, 3))
 				TYPEERROR("typeoflevel", LUA_TNUMBER)
 			newgttol = (UINT32)lua_tointeger(L, 3);
-		} else if (i == 5 || (k && fasticmp(k, "rankingtype"))) {
-			if (!lua_isnumber(L, 3))
-				TYPEERROR("rankingtype", LUA_TNUMBER)
-			newgtrankingstype = (INT16)lua_tointeger(L, 3);
-		} else if (i == 6 || (k && fasticmp(k, "intermissiontype"))) {
+		} else if (i == 5 || (k && fasticmp(k, "intermissiontype"))) {
 			if (!lua_isnumber(L, 3))
 				TYPEERROR("intermissiontype", LUA_TNUMBER)
 			newgtinttype = (int)lua_tointeger(L, 3);
-		} else if (i == 7 || (k && fasticmp(k, "defaultpointlimit"))) {
+		} else if (i == 6 || (k && fasticmp(k, "defaultpointlimit"))) {
 			if (!lua_isnumber(L, 3))
 				TYPEERROR("defaultpointlimit", LUA_TNUMBER)
 			newgtpointlimit = (INT32)lua_tointeger(L, 3);
-		} else if (i == 8 || (k && fasticmp(k, "defaulttimelimit"))) {
+		} else if (i == 7 || (k && fasticmp(k, "defaulttimelimit"))) {
 			if (!lua_isnumber(L, 3))
 				TYPEERROR("defaulttimelimit", LUA_TNUMBER)
 			newgttimelimit = (INT32)lua_tointeger(L, 3);
-		} else if (i == 9 || (k && fasticmp(k, "menucolor"))) {
+		} else if (i == 8 || (k && fasticmp(k, "menucolor"))) {
 			if (!lua_isnumber(L, 3))
 				TYPEERROR("menucolor", LUA_TNUMBER)
 			{
@@ -3300,31 +3300,32 @@ static int lib_gAddGametype(lua_State *L)
 		gtname = Z_StrDup("Unnamed gametype");
 
 	// Add the new gametype
-	newgtidx = G_AddGametype(newgtrules);
-	G_AddGametypeTOL(newgtidx, newgttol);
-
-	// Not covered by G_AddGametype alone.
-	if (newgtrankingstype == -1)
-		newgtrankingstype = newgtidx;
-	gametyperankings[newgtidx] = newgtrankingstype;
-	intermissiontypes[newgtidx] = newgtinttype;
-	pointlimits[newgtidx] = newgtpointlimit;
-	timelimits[newgtidx] = newgttimelimit;
-	gametypecolor[newgtidx] = newgtcolor;
-
-	// Write the new gametype name.
-	Gametype_Names[newgtidx] = gtname;
+	newgametype = Z_Calloc(sizeof (gametype_t), PU_STATIC, NULL);
+	if (!newgametype)
+	{
+		I_Error("Out of memory allocating gametype \"%s\"", gtname);
+	}
 
 	// Write the constant name.
 	if (gtconst == NULL)
 		gtconst = gtname;
-	G_AddGametypeConstant(newgtidx, gtconst);
+
+	newgametype->name = gtname;
+	newgametype->rules = newgtrules;
+	newgametype->constant = G_PrepareGametypeConstant(gtconst);
+	newgametype->tol = newgttol;
+	newgametype->intermission = newgtinttype;
+	newgametype->pointlimit = newgtpointlimit;
+	newgametype->timelimit = newgttimelimit;
+	newgametype->color = newgtcolor;
+
+	gametypes[numgametypes++] = newgametype;
 
 	// Update gametype_cons_t accordingly.
 	G_UpdateGametypeSelections();
 
 	// done
-	CONS_Printf("Added gametype %s\n", Gametype_Names[newgtidx]);
+	CONS_Printf("Added gametype %s\n", gtname);
 	return 0;
 }
 
@@ -3348,11 +3349,11 @@ static int Lcheckmapnumber (lua_State *L, int idx, const char *fun)
 
 static int lib_gBuildMapName(lua_State *L)
 {
-	INT32 map = Lcheckmapnumber(L, 1, "G_BuildMapName");
+	mapnum_t map = Lcheckmapnumber(L, 1, "G_BuildMapName");
 
 	if (lua_compatmode && map == 0) // v1 has undefined behaviour if you return 0, who knew.
 	{
-		map = G_NativeMapToKart(G_RandMap(G_TOLFlag(gametype), gamemap-1, 0, 0, NULL) + 1);
+		map = G_NativeMapToKart(G_RandMap(G_TOLFlag(gametype), gamemap-1, true, 0, false, NULL) + 1);
 	}
 
 	//HUDSAFE
@@ -3362,7 +3363,7 @@ static int lib_gBuildMapName(lua_State *L)
 
 static int lib_gBuildMapTitle(lua_State *L)
 {
-	INT32 map = Lcheckmapnumber(L, 1, "G_BuildMapTitle");
+	mapnum_t map = Lcheckmapnumber(L, 1, "G_BuildMapTitle");
 	char *name;
 	if (map < 1 || map > nummapheaders)
 	{
@@ -3428,7 +3429,7 @@ static int lib_gFindMap(lua_State *L)
 {
 	const char *query = luaL_checkstring(L, 1);
 
-	INT32 map;
+	mapnum_t map;
 	char *realname;
 	INT32 frc;
 	mapsearchfreq_t *frv;
@@ -3475,7 +3476,7 @@ Returns:
 static int lib_gFindMapByNameOrCode(lua_State *L)
 {
 	const char *query = luaL_checkstring(L, 1);
-	INT32 map;
+	mapnum_t map;
 	char *realname;
 	map = G_FindMapByNameOrCode(query, &realname);
 	lua_pushnumber(L, map);
@@ -3520,7 +3521,7 @@ static int lib_gSetCustomExitVars(lua_State *L)
 
 	if (n >= 1)
 	{
-		nextmapoverride = (INT16)luaL_optinteger(L, 1, 0);
+		nextmapoverride = luaL_optinteger(L, 1, 0);
 		skipstats = (INT16)luaL_optinteger(L, 2, 0);
 		if (lua_compatmode && nextmapoverride)
 			nextmapoverride = G_KartMapToNative(nextmapoverride);
@@ -3543,7 +3544,7 @@ static int lib_gExitLevel(lua_State *L)
 
 static int lib_gIsSpecialStage(lua_State *L)
 {
-	INT32 mapnum = Lcheckmapnumber(L, 1, "G_IsSpecialStage");
+	mapnum_t mapnum = Lcheckmapnumber(L, 1, "G_IsSpecialStage");
 	//HUDSAFE
 	INLEVEL
 	lua_pushboolean(L, G_IsSpecialStage(lua_compatmode ? G_KartMapToNative(mapnum) : mapnum));
@@ -4373,6 +4374,18 @@ static int lib_kSafeRespawnPositionEx(lua_State *L)
 	//HUDSAFE
 	lua_pushboolean(L, K_SafeRespawnPositionEx(x, y, z , flip));
 	return 1;
+}
+
+static int lib_kKillAirDrop(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	p_airdropflags_t airdropflags = luaL_checkinteger(L, 2);
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	K_KillAirDrop(player, airdropflags);
+	return 0;
 }
 
 // Checks if Rings are applicable.
@@ -5589,7 +5602,7 @@ static luaL_Reg lib[] = {
 	{"P_FloorzAtPos",lib_pFloorzAtPos},
 	{"P_CeilingzAtPos",lib_pCeilingzAtPos},
 	{"P_GetSectorLightLevelAt",lib_pGetSectorLightLevelAt},
-	//{"P_GetSectorColormapAt",lib_pGetSectorColormapAt},
+	{"P_GetSectorColormapAt",lib_pGetSectorColormapAt},
 	{"P_DoSpring",lib_pDoSpring},
 
 	// p_inter
@@ -5770,6 +5783,7 @@ static luaL_Reg lib[] = {
 	{"K_SetHyudoroCooldown",lib_kSetHyuCountdown},
 	{"K_SafeRespawnPosition",lib_kSafeRespawnPosition},
 	{"K_SafeRespawnPositionEx",lib_kSafeRespawnPositionEx},
+	{"K_KillAirDrop", lib_kKillAirDrop},
 
 	{"K_GetCollideAngle",lib_kGetCollideAngle},
 

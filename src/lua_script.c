@@ -61,6 +61,7 @@ static lua_CFunction liblist[] = {
 	LUA_PolyObjLib, 	// polyobj_t
 	LUA_BlockmapLib,	// blockmap stuff
 	LUA_HudLib, 		// HUD stuff
+	LUA_ColorLib, 		// general color functions
 	LUA_FollowerLib, 	// follower_t, followers[]
 	LUA_BotVarsLib, 	// botvars_t
 	LUA_TerrainLib, 	// t_splash_t, t_footstep_t, t_overlay_t, terrain_t
@@ -295,7 +296,7 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 		lua_pushinteger(L, gametype);
 		return 1;
 	} else if (fastcmp(word,"gametyperules")) {
-		lua_pushinteger(L, gametyperules);
+		lua_pushinteger(L, gametypes[gametype]->rules);
 		return 1;
 	} else if (fastcmp(word,"leveltime")) {
 		lua_pushinteger(L, leveltime);
@@ -487,6 +488,9 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 	} else if (fastcmp(word, "bubbletime")) {
 		lua_pushinteger(L, bubbletime);
 		return 1;
+	} else if (fastcmp(word, "flametime")) {
+		lua_pushinteger(L, flametime);
+		return 1;
 	} else if (fastcmp(word, "comebacktime")) {
 		lua_pushinteger(L, comebacktime);
 		return 1;
@@ -597,6 +601,8 @@ int LUA_WriteGlobals(lua_State *L, const char *word)
 		waterpaneltime = (INT32)luaL_checkinteger(L, 2);
 	else if (fastcmp(word, "bubbletime"))
 		bubbletime = (INT32)luaL_checkinteger(L, 2);
+	else if (fastcmp(word, "flametime"))
+		flametime = (INT32)luaL_checkinteger(L, 2);
 	else if (fastcmp(word, "comebacktime"))
 		comebacktime = (INT32)luaL_checkinteger(L, 2);
 	else if (fastcmp(word, "greasetics"))
@@ -1027,6 +1033,8 @@ void LUA_InvalidateLevel(void)
 		LUA_InvalidateUserdata(&sectors[i]);
 		LUA_InvalidateUserdata(&sectors[i].lines);
 		LUA_InvalidateUserdata(&sectors[i].tags);
+		if (sectors[i].extra_colormap)
+			LUA_InvalidateUserdata(sectors[i].extra_colormap);
 		LUA_InvalidateUserdata(&sectors[i].args);
 		if (sectors[i].ffloors)
 		{
@@ -1101,6 +1109,7 @@ void LUA_InvalidatePlayer(player_t *player)
 	LUA_InvalidateUserdata(player->powers);
 	LUA_InvalidateUserdata(&player->loop);
 	LUA_InvalidateUserdata(&player->cmd);
+	LUA_InvalidateUserdata(&player->botvars);
 }
 
 enum

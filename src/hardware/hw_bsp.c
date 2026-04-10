@@ -1,1026 +1,924 @@
-// BLANKART
+// SONIC ROBO BLAST 2
 //-----------------------------------------------------------------------------
 // Copyright (C) 1998-2000 by DooM Legacy Team.
+// Copyright (C) 1999-2022 by Sonic Team Junior.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
 // See the 'LICENSE' file for more details.
 //-----------------------------------------------------------------------------
 /// \file hw_bsp.c
-/// \brief convert SRB2 map
+/// \brief Rendering the BSP tree subsectors. Culling with segs.
 
-#include "../doomdef.h"
-#include "../doomstat.h"
 #ifdef HWRENDER
+#include "hw_clip.h"
 #include "hw_glob.h"
+#include "../p_local.h"
+#include "../p_slopes.h"
 #include "../r_local.h"
 #include "../z_zone.h"
-#include "../console.h"
-#include "../v_video.h"
-#include "../m_menu.h"
-#include "../i_system.h"
-#include "../m_argv.h"
-#include "../i_video.h"
-#include "../w_wad.h"
-#include "../p_setup.h" // levelfadecol
 
-// --------------------------------------------------------------------------
-// This is global data for planes rendering
-// --------------------------------------------------------------------------
-
-extrasubsector_t *extrasubsectors = NULL;
-
-// newsubsectors are subsectors without segs, added for the plane polygons
-#define NEWSUBSECTORS 50
-static size_t totsubsectors;
-size_t addsubsector;
-
-typedef struct
-{
-	float x, y;
-	float dx, dy;
-} fdivline_t;
-
-// ==========================================================================
-//                                    FLOOR & CEILING CONVEX POLYS GENERATION
-// ==========================================================================
-
-//debug counters
-static INT32 nobackpoly = 0;
-static INT32 skipcut = 0;
-static INT32 totalsubsecpolys = 0;
-
-// --------------------------------------------------------------------------
-// Polygon fast alloc / free
-// --------------------------------------------------------------------------
-//hurdler: quick fix for those who wants to play with larger wad
-
-#define ZPLANALLOC
-#ifndef ZPLANALLOC
-//#define POLYPOOLSIZE 1024000 // may be much over what is needed
-/// \todo check out how much is used
-static size_t POLYPOOLSIZE = 1024000;
-
-static UINT8 *gl_polypool = NULL;
-static UINT8 *gl_ppcurrent;
-static size_t gl_ppfree;
-#endif
-
-// only between levels, clear poly pool
-static void HWR_ClearPolys(void)
-{
-#ifndef ZPLANALLOC
-	gl_ppcurrent = gl_polypool;
-	gl_ppfree = POLYPOOLSIZE;
-#endif
-}
-
-// allocate  pool for fast alloc of polys
-void HWR_InitPolyPool(void)
-{
-#ifndef ZPLANALLOC
-	INT32 pnum;
-
-	//hurdler: quick fix for those who wants to play with larger wad
-	if ((pnum = M_CheckParm("-polypoolsize")))
-		POLYPOOLSIZE = atoi(myargv[pnum+1])*1024; // (in kb)
-
-	CONS_Debug(DBG_RENDER, "HWR_InitPolyPool(): allocating %d bytes\n", POLYPOOLSIZE);
-	gl_polypool = malloc(POLYPOOLSIZE);
-	if (!gl_polypool)
-		I_Error("HWR_InitPolyPool(): couldn't malloc polypool\n");
-	HWR_ClearPolys();
-#endif
-}
-
-void HWR_FreePolyPool(void)
-{
-#ifndef ZPLANALLOC
-	if (gl_polypool)
-		free(gl_polypool);
-	gl_polypool = NULL;
-#endif
-}
-
-static poly_t *HWR_AllocPoly(INT32 numpts)
-{
-	poly_t *p;
-	size_t size = sizeof (poly_t) + sizeof (polyvertex_t) * numpts;
-#ifdef ZPLANALLOC
-	p = Z_Malloc(size, PU_HWRPLANE, NULL);
-#else
-#ifdef PARANOIA
-	if (!gl_polypool)
-		I_Error("Used gl_polypool without init!\n");
-	if (!gl_ppcurrent)
-		I_Error("gl_ppcurrent == NULL!\n");
-#endif
-
-	if (gl_ppfree < size)
-		I_Error("HWR_AllocPoly(): no more memory %u bytes left, %u bytes needed\n\n%s\n",
-		        gl_ppfree, size, "You can try the param -polypoolsize 2048 (or higher if needed)");
-
-	p = (poly_t *)gl_ppcurrent;
-	gl_ppcurrent += size;
-	gl_ppfree -= size;
-#endif
-	p->numpts = numpts;
-	return p;
-}
-
-static polyvertex_t *HWR_AllocVertex(void)
-{
-	polyvertex_t *p;
-	size_t size = sizeof (polyvertex_t);
-#ifdef ZPLANALLOC
-	p = Z_Malloc(size, PU_HWRPLANE, NULL);
-#else
-	if (gl_ppfree < size)
-		I_Error("HWR_AllocVertex(): no more memory %u bytes left, %u bytes needed\n\n%s\n",
-		        gl_ppfree, size, "You can try the param -polypoolsize 2048 (or higher if needed)");
-
-	p = (polyvertex_t *)gl_ppcurrent;
-	gl_ppcurrent += size;
-	gl_ppfree -= size;
-#endif
-	return p;
-}
-
-/// \todo polygons should be freed in reverse order for efficiency,
-/// for now don't free because it doesn't free in reverse order
-static void HWR_FreePoly(poly_t *poly)
-{
-#ifdef ZPLANALLOC
-	Z_Free(poly);
-#else
-	const size_t size = sizeof (poly_t) + sizeof (polyvertex_t) * poly->numpts;
-	memset(poly, 0x00, size);
-	//mempoly -= polysize;
-#endif
-}
-
-
-// Return interception along bsp line,
-// with the polygon segment
+// From PrBoom:
 //
-static float bspfrac;
-static polyvertex_t *fracdivline(fdivline_t *bsp, polyvertex_t *v1,
-	polyvertex_t *v2)
-{
-	static polyvertex_t pt;
-	double frac;
-	double num;
-	double den;
-	double v1x,v1y,v1dx,v1dy;
-	double v2x,v2y,v2dx,v2dy;
-
-	// a segment of a polygon
-	v1x  = v1->x;
-	v1y  = v1->y;
-	v1dx = v2->x - v1->x;
-	v1dy = v2->y - v1->y;
-
-	// the bsp partition line
-	v2x  = bsp->x;
-	v2y  = bsp->y;
-	v2dx = bsp->dx;
-	v2dy = bsp->dy;
-
-	den = v2dy*v1dx - v2dx*v1dy;
-	if (fabsf((float)den) < 1.0E-36f) // avoid checking exactly for 0.0
-		return NULL;       // parallel
-
-	// first check the frac along the polygon segment,
-	// (do not accept hit with the extensions)
-	num = (v2x - v1x)*v2dy + (v1y - v2y)*v2dx;
-	frac = num / den;
-	if (frac < 0.0l || frac > 1.0l)
-		return NULL;
-
-	// now get the frac along the BSP line
-	// which is useful to determine what is left, what is right
-	num = (v2x - v1x)*v1dy + (v1y - v2y)*v1dx;
-	frac = num / den;
-	bspfrac = (float)frac;
-
-
-	// find the interception point along the partition line
-	pt.x = (float)(v2x + v2dx*frac);
-	pt.y = (float)(v2y + v2dy*frac);
-
-	return &pt;
-}
-
-// if two vertice coords have a x and/or y difference
-// of less or equal than 1 FRACUNIT, they are considered the same
-// point. Note: hardcoded value, 1.0f could be anything else.
-static boolean SameVertice (polyvertex_t *p1, polyvertex_t *p2)
-{
-#if 0
-	float diff;
-	diff = p2->x - p1->x;
-	if (diff < -1.5f || diff > 1.5f)
-		return false;
-	diff = p2->y - p1->y;
-	if (diff < -1.5f || diff > 1.5f)
-		return false;
-#elif 0
-	if (p1->x != p2->x)
-		return false;
-	if (p1->y != p2->y)
-		return false;
-#elif 0
-	if (fabsf( p2->x - p1->x ) > 1.0E-36f )
-		return false;
-	if (fabsf( p2->y - p1->y ) > 1.0E-36f )
-		return false;
-#else
-#define  DIVLINE_VERTEX_DIFF   0.45f
-	float ep = DIVLINE_VERTEX_DIFF;
-	if (fabsf( p2->x - p1->x ) > ep )
-		return false;
-	if (fabsf( p2->y - p1->y ) > ep )
-		return false;
-#endif
-	// p1 and p2 are considered the same vertex
-	return true;
-}
-
-
-// split a _CONVEX_ polygon in two convex polygons
-// outputs:
-//   frontpoly : polygon on right side of bsp line
-//   backpoly  : polygon on left side
+// e6y: Check whether the player can look beyond this line
 //
-static void SplitPoly (fdivline_t *bsp,         //splitting parametric line
-                       poly_t *poly,            //the convex poly we split
-                       poly_t **frontpoly,      //return one poly here
-                       poly_t **backpoly)       //return the other here
+boolean checkforemptylines = true;
+
+// Don't modify anything here, just check
+// Kalaron: Modified for sloped linedefs
+static boolean CheckClip(seg_t * seg, sector_t * afrontsector, sector_t * abacksector)
 {
-	INT32      i,j;
-	polyvertex_t *pv;
+	fixed_t frontf1,frontf2, frontc1, frontc2; // front floor/ceiling ends
+	fixed_t backf1, backf2, backc1, backc2; // back floor ceiling ends
 
-	INT32          ps = -1,pe = -1;
-	INT32          nptfront,nptback;
-	polyvertex_t vs = {0,0,0};
-	polyvertex_t ve = {0,0,0};
-	polyvertex_t lastpv = {0,0,0};
-	float        fracs = 0.0f,frace = 0.0f; //used to tell which poly is on
-	                                        // the front side of the bsp partition line
-	INT32         psonline = 0, peonline = 0;
+	boolean bothceilingssky = false, bothfloorssky = false;
 
-	for (i = 0; i < poly->numpts; i++)
+	if (mapnamespace != MNS_SRB2KART)
 	{
-		j = i + 1;
-		if (j == poly->numpts) j = 0;
+		if (abacksector->ceilingpic == skyflatnum && afrontsector->ceilingpic == skyflatnum)
+			bothceilingssky = true;
+		if (abacksector->floorpic == skyflatnum && afrontsector->floorpic == skyflatnum)
+			bothfloorssky = true;
+	}
 
-		// start & end points
-		pv = fracdivline(bsp, &poly->pts[i], &poly->pts[j]);
+	// GZDoom method of sloped line clipping
 
-		if (pv == NULL)
-			continue;
-
-		if (ps < 0)
+	if (afrontsector->f_slope || afrontsector->c_slope || abacksector->f_slope || abacksector->c_slope)
+	{
+		fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
+		if (LIKELY(gl_curline->pv1))
 		{
-			// first point
-			ps = i;
-			vs = *pv;
-			fracs = bspfrac;
+			v1x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->x);
+			v1y = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->y);
 		}
 		else
 		{
-			//the partition line traverse a junction between two segments
-			// or the two points are so close, they can be considered as one
-			// thus, don't accept, since split 2 must be another vertex
-			if (SameVertice(pv, &lastpv))
+			v1x = gl_curline->v1->x;
+			v1y = gl_curline->v1->y;
+		}
+		if (LIKELY(gl_curline->pv2))
+		{
+			v2x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->x);
+			v2y = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->y);
+		}
+		else
+		{
+			v2x = gl_curline->v2->x;
+			v2y = gl_curline->v2->y;
+		}
+#define SLOPEPARAMS(slope, end1, end2, normalheight) \
+		end1 = P_GetZAt(slope, v1x, v1y, normalheight); \
+		end2 = P_GetZAt(slope, v2x, v2y, normalheight);
+
+		SLOPEPARAMS(afrontsector->f_slope, frontf1, frontf2, afrontsector->  floorheight)
+		SLOPEPARAMS(afrontsector->c_slope, frontc1, frontc2, afrontsector->ceilingheight)
+		SLOPEPARAMS( abacksector->f_slope,  backf1,  backf2,  abacksector->  floorheight)
+		SLOPEPARAMS( abacksector->c_slope,  backc1,  backc2,  abacksector->ceilingheight)
+#undef SLOPEPARAMS
+	}
+	else
+	{
+		frontf1 = frontf2 = afrontsector->  floorheight;
+		frontc1 = frontc2 = afrontsector->ceilingheight;
+		backf1  =  backf2 =  abacksector->  floorheight;
+		backc1  =  backc2 =  abacksector->ceilingheight;
+	}
+
+	// properly render skies (consider door "open" if both ceilings are sky)
+	// same for floors
+	// lug: but only on kart maps :chaosleep:
+	// kart does some funky crap on its binary maps and thus using this code breaks many maps visually and generally makes performance really bad
+	if (mapnamespace != MNS_SRB2KART)
+	{
+		if (!bothceilingssky && !bothfloorssky)
+		{
+			// now check for closed sectors!
+			if ((backc1 <= frontf1 && backc2 <= frontf2)
+				|| (backf1 >= frontc1 && backf2 >= frontc2))
 			{
-				if (pe < 0)
+				checkforemptylines = false;
+				return true;
+			}
+
+			if (backc1 <= backf1 && backc2 <= backf2)
+			{
+				// preserve a kind of transparent door/lift special effect:
+				if (((backc1 >= frontc1 && backc2 >= frontc2) || seg->sidedef->toptexture)
+				&& ((backf1 <= frontf1 && backf2 <= frontf2) || seg->sidedef->bottomtexture))
 				{
-					ps = i;
-					psonline = 1;
+					checkforemptylines = false;
+					return true;
 				}
-				else
-				{
-					pe = i;
-					peonline = 1;
-				}
+			}
+		}
+
+		if (!bothceilingssky)
+		{
+			if (backc1 != frontc1 || backc2 != frontc2)
+			{
+				checkforemptylines = false;
+				return false;
+			}
+		}
+
+		if (!bothfloorssky)
+		{
+			if (backf1 != frontf1 || backf2 != frontf2)
+			{
+				checkforemptylines = false;
+				return false;
+			}
+		}
+	}
+	else
+	{
+		// not in vanilla kart, but this makes noclipcam alot more bearable when its stuck in walls
+		// otherwise it may cull half your view which is not really desirable
+		// using this check with portals causes weird culling issues on ante-station
+		if (!gl_portalclipline &&
+			(afrontsector == viewsector || abacksector == viewsector))
+		{
+			fixed_t viewf1, viewf2, viewc1, viewc2;
+			if (afrontsector == viewsector)
+			{
+				viewf1 = frontf1;
+				viewf2 = frontf2;
+				viewc1 = frontc1;
+				viewc2 = frontc2;
 			}
 			else
 			{
-				if (pe < 0)
+				viewf1 = backf1;
+				viewf2 = backf2;
+				viewc1 = backc1;
+				viewc2 = backc2;
+			}
+
+			// check if camera is outside the bounds of the floor and the ceiling (noclipping)
+			// either above the ceiling or below the floor
+			if ((viewz > viewc1 && viewz > viewc2) || (viewz < viewf1 && viewz < viewf2))
+				return false;
+		}
+
+		// now check for closed sectors!
+
+		// here we're talking about a CEILING lower than a floor. ...yeah we don't even need to bother.
+		if (backc1 <= frontf1 && backc2 <= frontf2)
+		{
+			checkforemptylines = false;
+			return !gl_portalclipline; // during portal rendering view position may cause undesired culling and the above code has some wrong side effects
+		}
+
+		// here we're talking about floors higher than ceilings, don't even bother either.
+		if (backf1 >= frontc1 && backf2 >= frontc2)
+		{
+			checkforemptylines = false;
+			return true;
+		}
+
+		// Lat: Ok, here's what we need to do, we want to draw thok barriers. Let's define what a thok barrier is;
+		// -Must have ceilheight <= floorheight
+		// -ceilpic must be skyflatnum
+		// -an adjacant sector needs to have a ceilingheight or a floor height different than the one we have, otherwise, it's just a huge ass wall, we shouldn't render past it.
+		// -said adjacant sector cannot also be a thok barrier, because that's also dumb and we could render far more than we need to as a result :V
+
+		if (backc1 <= backf1 && backc2 <= backf2)
+		{
+			checkforemptylines = false;
+
+			// before we do anything, if both sectors are thok barriers, GET ME OUT OF HERE!
+			if (frontc1 <= backc1 && frontc2 <= backc2)
+				return true;	// STOP RENDERING.
+
+			// draw floors at the top of thok barriers:
+			if (backc1 < frontc1 || backc2 < frontc2)
+				return false;
+
+			if (backf1 > frontf1 || backf2 > frontf2)
+				return false;
+
+			return true;
+		}
+
+		// Window.
+		// We know it's a window when the above isn't true and the back and front sectors don't match
+		if (backc1 != frontc1 || backc2 != frontc2 || backf1 != frontf1 || backf2 != frontf2)
+		{
+			checkforemptylines = false;
+			return false;
+		}
+	}
+
+	return false;
+}
+
+// returns true if the point is on the correct (viewable) side of the
+// portal destination line
+static boolean HWR_PortalCheckPointSide(fixed_t x, fixed_t y)
+{
+	// we are checking if the point is on the viewable side of the portal exit.
+	// being exactly on the portal exit line is not enough to pass the test.
+	// P_PointOnLineSide could behave differently from this expectation on this case,
+	// so first check if the point is precisely on the line, and then if not, check the side.
+
+	vertex_t closest_point;
+	P_ClosestPointOnLine(x, y, gl_portalclipline, &closest_point);
+	if (closest_point.x != x || closest_point.y != y)
+	{
+		if (P_PointOnLineSide(x, y, gl_portalclipline) != 1)
+			return true;
+	}
+	return false;
+}
+
+// Handles seg clipping and renders the seg if it could be visible.
+static void HWR_AddLine(seg_t * line)
+{
+	angle_t angle1, angle2;
+	boolean skipseg = false;
+
+	// SoM: Backsector needs to be run through R_FakeFlat
+	static sector_t tempsec;
+
+	fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
+	if (line->polyseg && !(line->polyseg->flags & POF_RENDERSIDES))
+		return;
+
+	gl_curline = line;
+
+	if (LIKELY(gl_curline->pv1))
+	{
+		v1x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->x);
+		v1y = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->y);
+	}
+	else
+	{
+		v1x = gl_curline->v1->x;
+		v1y = gl_curline->v1->y;
+	}
+	if (LIKELY(gl_curline->pv2))
+	{
+		v2x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->x);
+		v2y = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->y);
+	}
+	else
+	{
+		v2x = gl_curline->v2->x;
+		v2y = gl_curline->v2->y;
+	}
+
+	// OPTIMIZE: quickly reject orthogonal back sides.
+	angle1 = R_PointToAngle64(v1x, v1y);
+	angle2 = R_PointToAngle64(v2x, v2y);
+
+	 // PrBoom: Back side, i.e. backface culling - read: endAngle >= startAngle!
+	if (angle2 - angle1 < ANGLE_180)
+		return;
+
+	// PrBoom: use REAL clipping math YAYYYYYYY!!!
+
+	if (!gld_clipper_SafeCheckRange(angle2, angle1))
+	{
+		return;
+	}
+
+	checkforemptylines = true;
+	gl_backsector = line->backsector;
+
+	// do extra checks on the seg when rendering portals:
+	// don't render segs that are behind the portal destination line
+	if (gl_portalclipline &&
+		!HWR_PortalCheckPointSide(line->v1->x, line->v1->y) &&
+		!HWR_PortalCheckPointSide(line->v2->x, line->v2->y))
+	{
+		return;
+	}
+
+	// Portal line
+	if (line->linedef->special == 40)
+	{
+		if (line->side == 0)
+		{
+			mtag_t tag = Tag_FGet(&line->linedef->tags);
+			INT32 li1 = line->linedef-lines;
+			INT32 li2;
+
+			// Find the other side!
+			li2 = P_FindSpecialLineFromTag(40, tag, -1);
+
+			if (line->linedef == &lines[li2])
+				li2 = P_FindSpecialLineFromTag(40, tag, li2);
+
+			if (li2 >= 0) // found it!
+			{
+				if (HWR_AddPortal(&lines[li1], &lines[li2], line))
 				{
-					pe = i;
-					ve = *pv;
-					frace = bspfrac;
+					skipseg = true; // TODO could this cause unintentional disappearing of some walls?
+					if (gl_printportals && !gl_portal_level && !gl_rendering_skybox)
+					{
+						// print some info about first level portals
+						CONS_Printf("line %d -> line %d\n", li1, li2);
+					}
 				}
-				else
+			}
+		}
+		else
+			return;// dont do anything with the other side i guess?
+ 	}
+
+	if (!line->backsector)
+	{
+		gld_clipper_SafeAddClipRange(angle2, angle1);
+	}
+	else
+	{
+		boolean bothceilingssky = false, bothfloorssky = false;
+
+		gl_backsector = R_FakeFlat(gl_backsector, &tempsec, NULL, NULL, true);
+
+		if (mapnamespace != MNS_SRB2KART) // same here, thisll most likely break kart maps
+		{
+			if (gl_backsector->ceilingpic == skyflatnum && gl_frontsector->ceilingpic == skyflatnum)
+				bothceilingssky = true;
+			if (gl_backsector->floorpic == skyflatnum && gl_frontsector->floorpic == skyflatnum)
+				bothfloorssky = true;
+
+			if (bothceilingssky && bothfloorssky) // everything's sky? let's save us a bit of time then
+			{
+				if (!line->polyseg &&
+					!line->sidedef->midtexture
+					&& ((!gl_frontsector->ffloors && !gl_backsector->ffloors)
+						|| Tag_Compare(&gl_frontsector->tags, &gl_backsector->tags)))
+					return; // line is empty, don't even bother
+				// treat like wide open window instead
+				HWR_ProcessSeg(); // Doesn't need arguments because they're defined globally :D
+				return;
+			}
+		}
+
+		if (CheckClip(line, gl_frontsector, gl_backsector))
+		{
+			gld_clipper_SafeAddClipRange(angle2, angle1);
+			checkforemptylines = false;
+		}
+		// Reject empty lines used for triggers and special events.
+		// Identical floor and ceiling on both sides,
+		//  identical light levels on both sides,
+		//  and no middle texture.
+		if (checkforemptylines && R_IsEmptyLine(line, gl_frontsector, gl_backsector))
+			return;
+	}
+
+	if (!skipseg)
+		HWR_ProcessSeg(); // Doesn't need arguments because they're defined globally :D
+}
+
+// HWR_CheckBBox
+// Checks BSP node/subtree bounding box.
+// Returns true
+//  if some part of the bbox might be visible.
+//
+// modified to use local variables
+
+static boolean HWR_CheckBBox(const fixed_t *bspcoord)
+{
+	INT32 boxpos;
+	fixed_t px1, py1, px2, py2;
+	angle_t angle1, angle2;
+
+	// Find the corners of the box
+	// that define the edges from current viewpoint.
+	if (viewx <= bspcoord[BOXLEFT])
+		boxpos = 0;
+	else if (viewx < bspcoord[BOXRIGHT])
+		boxpos = 1;
+	else
+		boxpos = 2;
+
+	if (viewy >= bspcoord[BOXTOP])
+		boxpos |= 0;
+	else if (viewy > bspcoord[BOXBOTTOM])
+		boxpos |= 1<<2;
+	else
+		boxpos |= 2<<2;
+
+	if (boxpos == 5)
+		return true;
+
+	px1 = bspcoord[checkcoord[boxpos][0]];
+	py1 = bspcoord[checkcoord[boxpos][1]];
+	px2 = bspcoord[checkcoord[boxpos][2]];
+	py2 = bspcoord[checkcoord[boxpos][3]];
+
+	angle1 = R_PointToAngle64(px1, py1);
+	angle2 = R_PointToAngle64(px2, py2);
+
+	return gld_clipper_SafeCheckRange(angle2, angle1);
+}
+
+// Check if bounding box is (partially or fully) in the correct side
+// of the portal destination.
+static boolean HWR_PortalCheckBBox(const fixed_t *bspcoord)
+{
+	if (!gl_portalclipline)
+		return true;
+
+	if (HWR_PortalCheckPointSide(bspcoord[BOXLEFT], bspcoord[BOXTOP]) ||
+		HWR_PortalCheckPointSide(bspcoord[BOXLEFT], bspcoord[BOXBOTTOM]) ||
+		HWR_PortalCheckPointSide(bspcoord[BOXRIGHT], bspcoord[BOXTOP]) ||
+		HWR_PortalCheckPointSide(bspcoord[BOXRIGHT], bspcoord[BOXBOTTOM]))
+	{
+		return true;
+	}
+
+	// we did not find any reason to pass the check, so return failure
+	return false;
+}
+
+//
+// HWR_AddPolyObjectSegs
+//
+// haleyjd 02/19/06
+// Adds all segs in all polyobjects in the given subsector.
+// Modified for hardware rendering.
+//
+static inline void HWR_AddPolyObjectSegs(void)
+{
+	size_t i, j;
+	seg_t gl_fakeline;
+	polyvertex_t pv1;
+	polyvertex_t pv2;
+
+	// Sort through all the polyobjects
+	for (i = 0; i < numpolys; ++i)
+	{
+		// Render the polyobject's lines
+		for (j = 0; j < po_ptrs[i]->segCount; ++j)
+		{
+			// Copy the info of a polyobject's seg, then convert it to OpenGL floating point
+			memcpy(&gl_fakeline, po_ptrs[i]->segs[j], sizeof(seg_t));
+
+			// Now convert the line to float and add it to be rendered
+			pv1.x = FIXED_TO_FLOAT(gl_fakeline.v1->x);
+			pv1.y = FIXED_TO_FLOAT(gl_fakeline.v1->y);
+			pv2.x = FIXED_TO_FLOAT(gl_fakeline.v2->x);
+			pv2.y = FIXED_TO_FLOAT(gl_fakeline.v2->y);
+
+			gl_fakeline.pv1 = &pv1;
+			gl_fakeline.pv2 = &pv2;
+
+			HWR_AddLine(&gl_fakeline);
+		}
+	}
+}
+
+static void HWR_AddPolyObjectPlanes(void)
+{
+	size_t i;
+	sector_t *polyobjsector;
+	INT32 light = 0;
+
+	// Polyobject Planes need their own function for drawing because they don't have poly_subsectors by themselves
+	// It should be okay because polyobjects should always be convex anyway
+
+	for (i  = 0; i < numpolys; i++)
+	{
+		polyobjsector = po_ptrs[i]->lines[0]->backsector; // the in-level polyobject sector
+
+		if (!(po_ptrs[i]->flags & POF_RENDERPLANES)) // Only render planes when you should
+			continue;
+
+		if (po_ptrs[i]->translucency >= NUMTRANSMAPS)
+			continue;
+
+		if (polyobjsector->floorheight <= gl_frontsector->ceilingheight
+			&& polyobjsector->floorheight >= gl_frontsector->floorheight
+			&& (viewz < polyobjsector->floorheight))
+		{
+			light = R_GetPlaneLight(gl_frontsector, polyobjsector->floorheight, true);
+			if (po_ptrs[i]->translucency > 0)
+			{
+				FSurfaceInfo Surf = {};
+				FBITFIELD blendmode;
+				blendmode = HWR_TranstableToAlpha(po_ptrs[i]->translucency, &Surf);
+				HWR_AddTransparentPolyobjectFloor(&levelflats[polyobjsector->floorpic], po_ptrs[i], false, polyobjsector->floorheight,
+													(light == -1 ? gl_frontsector->lightlevel : *gl_frontsector->lightlist[light].lightlevel), Surf.PolyColor.s.alpha, polyobjsector, blendmode, (light == -1 ? gl_frontsector->extra_colormap : *gl_frontsector->lightlist[light].extra_colormap));
+			}
+			else
+			{
+				HWR_GetLevelFlat(&levelflats[polyobjsector->floorpic], R_NoEncore(polyobjsector, &levelflats[polyobjsector->floorpic], false));
+				HWR_RenderPolyObjectPlane(po_ptrs[i], false, polyobjsector->floorheight, PF_Occlude,
+										(light == -1 ? gl_frontsector->lightlevel : *gl_frontsector->lightlist[light].lightlevel), &levelflats[polyobjsector->floorpic],
+										polyobjsector, 255, (light == -1 ? gl_frontsector->extra_colormap : *gl_frontsector->lightlist[light].extra_colormap));
+			}
+		}
+
+		if (polyobjsector->ceilingheight >= gl_frontsector->floorheight
+			&& polyobjsector->ceilingheight <= gl_frontsector->ceilingheight
+			&& (viewz > polyobjsector->ceilingheight))
+		{
+			light = R_GetPlaneLight(gl_frontsector, polyobjsector->ceilingheight, true);
+			if (po_ptrs[i]->translucency > 0)
+			{
+				FSurfaceInfo Surf = {};
+				FBITFIELD blendmode;
+				blendmode = HWR_TranstableToAlpha(po_ptrs[i]->translucency, &Surf);
+				HWR_AddTransparentPolyobjectFloor(&levelflats[polyobjsector->ceilingpic], po_ptrs[i], true, polyobjsector->ceilingheight,
+				                                  (light == -1 ? gl_frontsector->lightlevel : *gl_frontsector->lightlist[light].lightlevel), Surf.PolyColor.s.alpha, polyobjsector, blendmode, (light == -1 ? gl_frontsector->extra_colormap : *gl_frontsector->lightlist[light].extra_colormap));
+			}
+			else
+			{
+				HWR_GetLevelFlat(&levelflats[polyobjsector->ceilingpic], R_NoEncore(polyobjsector, &levelflats[polyobjsector->ceilingpic], true));
+				HWR_RenderPolyObjectPlane(po_ptrs[i], true, polyobjsector->ceilingheight, PF_Occlude,
+				                          (light == -1 ? gl_frontsector->lightlevel : *gl_frontsector->lightlist[light].lightlevel), &levelflats[polyobjsector->ceilingpic],
+				                          polyobjsector, 255, (light == -1 ? gl_frontsector->extra_colormap : *gl_frontsector->lightlist[light].extra_colormap));
+			}
+		}
+	}
+}
+
+static FBITFIELD HWR_RippleBlend(sector_t *sector, ffloor_t *rover, boolean ceiling)
+{
+	return R_IsRipplePlane(sector, rover, ceiling) ? PF_Ripple : 0;
+}
+
+// -----------------+
+// HWR_Subsector    : Determine floor/ceiling planes.
+//                  : Add sprites of things in sector.
+//                  : Draw one or more line segments.
+// Notes            : Sets gl_cursectorlight to the light of the parent sector, to modulate wall textures
+// -----------------+
+static void HWR_Subsector(size_t num)
+{
+	INT16 count;
+	seg_t *line;
+	subsector_t *sub;
+	static sector_t tempsec; //SoM: 4/7/2000
+	INT32 floorlightlevel;
+	INT32 ceilinglightlevel;
+	INT32 locFloorHeight, locCeilingHeight;
+	INT32 cullFloorHeight, cullCeilingHeight;
+	INT32 light = 0;
+	extracolormap_t *floorcolormap;
+	extracolormap_t *ceilingcolormap;
+	ffloor_t *rover;
+
+	//if (gl_printportals && gl_portalclipline)
+	//	CONS_Printf("subsector %d in portal\n", (INT32)num);
+
+#ifdef PARANOIA //no risk while developing, enough debugging nights!
+	if (num >= num_poly_subsector)
+		I_Error("HWR_Subsector: ss %s with numss = %s, addss = %s\n",
+			sizeu1(num), sizeu2(numsubsectors), sizeu3(num_poly_subsector));
+
+	/*if (num >= numsubsectors)
+		I_Error("HWR_Subsector: ss %i with numss = %i",
+		        num,
+		        numsubsectors);*/
+#endif
+
+	if (num < numsubsectors)
+	{
+		// subsector
+		sub = &subsectors[num];
+		// sector
+		gl_frontsector = sub->sector;
+		// how many linedefs
+		count = sub->numlines;
+		// first line seg
+		line = &segs[sub->firstline];
+	}
+	else
+	{
+		// there are no segs but only planes
+		sub = &subsectors[0];
+		gl_frontsector = sub->sector;
+		count = 0;
+		line = NULL;
+	}
+
+	//SoM: 4/7/2000: Test to make Boom water work in Hardware mode.
+	gl_frontsector = R_FakeFlat(gl_frontsector, &tempsec, &floorlightlevel,
+								&ceilinglightlevel, false);
+	//FIXME: Use floorlightlevel and ceilinglightlevel insted of lightlevel.
+
+	floorcolormap = ceilingcolormap = gl_frontsector->extra_colormap;
+
+	// ------------------------------------------------------------------------
+	// sector lighting, DISABLED because it's done in HWR_StoreWallRange
+	// ------------------------------------------------------------------------
+	/// \todo store a RGBA instead of just intensity, allow coloured sector lighting
+	//light = (FUBYTE)(sub->sector->lightlevel & 0xFF) / 255.0f;
+	//gl_cursectorlight.red   = light;
+	//gl_cursectorlight.green = light;
+	//gl_cursectorlight.blue  = light;
+	//gl_cursectorlight.alpha = light;
+
+// ----- end special tricks -----
+	cullFloorHeight   = P_GetSectorFloorZAt  (gl_frontsector, viewx, viewy);
+	cullCeilingHeight = P_GetSectorCeilingZAt(gl_frontsector, viewx, viewy);
+	locFloorHeight    = P_GetSectorFloorZAt  (gl_frontsector, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
+	locCeilingHeight  = P_GetSectorCeilingZAt(gl_frontsector, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
+
+	if (gl_frontsector->ffloors)
+	{
+		boolean anyMoved = gl_frontsector->moved;
+
+		if (anyMoved == false)
+		{
+			for (rover = gl_frontsector->ffloors; rover; rover = rover->next)
+			{
+				sector_t *controlSec = &sectors[rover->secnum];
+				if (controlSec->moved == true)
 				{
-				// a frac, not same vertice as last one
-				// we already got pt2 so pt 2 is not on the line,
-				// so we probably got back to the start point
-				// which is on the line
-					if (SameVertice(pv, &vs))
-						psonline = 1;
+					anyMoved = true;
 					break;
 				}
 			}
 		}
 
-		// remember last point intercept to detect identical points
-		lastpv = *pv;
-	}
-
-	// no split: the partition line is either parallel and
-	// aligned with one of the poly segments, or the line is totally
-	// out of the polygon and doesn't traverse it (happens if the bsp
-	// is fooled by some trick where the sidedefs don't point to
-	// the right sectors)
-	if (ps < 0)
-	{
-		//I_Error("SplitPoly: did not split polygon (%d %d)\n"
-		//        "debugpos %d",ps,pe,debugpos);
-
-		// this eventually happens with 'broken' BSP's that accept
-		// linedefs where each side point the same sector, that is:
-		// the deep water effect with the original Doom
-
-		/// \todo make sure front poly is to front of partition line?
-
-		*frontpoly = poly;
-		*backpoly = NULL;
-		return;
-	}
-
-	if (pe < 0)
-	{
-		//I_Error("SplitPoly: only one point for split line (%d %d)", ps, pe);
-		*frontpoly = poly;
-		*backpoly = NULL;
-		return;
-	}
-	if (pe <= ps)
-		I_Error("SplitPoly: invalid splitting line (%d %d)", ps, pe);
-
-	// number of points on each side, _not_ counting those
-	// that may lie just one the line
-	nptback  = pe - ps - peonline;
-	nptfront = poly->numpts - peonline - psonline - nptback;
-
-	if (nptback > 0)
-		*backpoly = HWR_AllocPoly(2 + nptback);
-	else
-		*backpoly = NULL;
-	if (nptfront > 0)
-		*frontpoly = HWR_AllocPoly(2 + nptfront);
-	else
-		*frontpoly = NULL;
-
-	// generate FRONT poly
-	if (*frontpoly)
-	{
-		pv = (*frontpoly)->pts;
-		*pv++ = vs;
-		*pv++ = ve;
-		i = pe;
-		do
+		if (anyMoved == true)
 		{
-			if (++i == poly->numpts)
-				i = 0;
-			*pv++ = poly->pts[i];
-		} while (i != ps && --nptfront);
+			gl_frontsector->numlights = sub->sector->numlights = 0;
+			R_Prep3DFloors(gl_frontsector, locCeilingHeight);
+			sub->sector->lightlist = gl_frontsector->lightlist;
+			sub->sector->numlights = gl_frontsector->numlights;
+			sub->sector->moved = gl_frontsector->moved = false;
+		}
+
+		light = R_GetPlaneLight(gl_frontsector, locFloorHeight, false);
+		if (gl_frontsector->floorlightsec == -1 && !gl_frontsector->floorlightabsolute)
+			floorlightlevel = max(0, min(255, *gl_frontsector->lightlist[light].lightlevel + gl_frontsector->floorlightlevel));
+		floorcolormap = *gl_frontsector->lightlist[light].extra_colormap;
+
+		light = R_GetPlaneLight(gl_frontsector, locCeilingHeight, false);
+		if (gl_frontsector->ceilinglightsec == -1 && !gl_frontsector->ceilinglightabsolute)
+			ceilinglightlevel = max(0, min(255, *gl_frontsector->lightlist[light].lightlevel + gl_frontsector->ceilinglightlevel));
+		ceilingcolormap = *gl_frontsector->lightlist[light].extra_colormap;
 	}
 
-	// generate BACK poly
-	if (*backpoly)
+	sub->sector->extra_colormap = gl_frontsector->extra_colormap;
+
+	// render floor ?
+	// yeah, easy backface cull! :)
+	if (cullFloorHeight < viewz)
 	{
-		pv = (*backpoly)->pts;
-		*pv++ = ve;
-		*pv++ = vs;
-		i = ps;
-		do
+		if (gl_frontsector->floorpic != skyflatnum)
 		{
-			if (++i == poly->numpts)
-				i = 0;
-			*pv++ = poly->pts[i];
-		} while (i != pe && --nptback);
+			if (sub->validcount != validcount)
+			{
+				HWR_GetLevelFlat(&levelflats[gl_frontsector->floorpic], R_NoEncore(gl_frontsector, &levelflats[gl_frontsector->floorpic], false));
+				HWR_RenderPlane(sub, &poly_subsectors[num], false,
+					// Hack to make things continue to work around slopes.
+					locFloorHeight == cullFloorHeight ? locFloorHeight : gl_frontsector->floorheight,
+					// We now return you to your regularly scheduled rendering.
+					PF_Occlude | HWR_RippleBlend(gl_frontsector, NULL, false),
+					floorlightlevel, &levelflats[gl_frontsector->floorpic], NULL, 255, floorcolormap);
+			}
+		}
 	}
 
-	// make sure frontpoly is the one on the 'right' side
-	// of the partition line
-	if (fracs > frace)
+	if (cullCeilingHeight > viewz)
 	{
-		poly_t *swappoly;
-		swappoly = *backpoly;
-		*backpoly = *frontpoly;
-		*frontpoly = swappoly;
-	}
-
-	HWR_FreePoly (poly);
-}
-
-
-// use each seg of the poly as a partition line, keep only the
-// part of the convex poly to the front of the seg (that is,
-// the part inside the sector), the part behind the seg, is
-// the void space and is cut out
-//
-static poly_t *CutOutSubsecPoly(seg_t *lseg, INT32 count, poly_t *poly)
-{
-	INT32 i, j;
-
-	polyvertex_t *pv;
-
-	INT32 nump = 0, ps, pe;
-	polyvertex_t vs = {0, 0, 0}, ve = {0, 0, 0},
-		p1 = {0, 0, 0}, p2 = {0, 0, 0};
-	float fracs = 0.0f;
-
-	fdivline_t cutseg; // x, y, dx, dy as start of node_t struct
-
-	poly_t *temppoly;
-
-	// for each seg of the subsector
-	for (; count--; lseg++)
-	{
-		line_t *line = lseg->linedef;
-
-		if (lseg->glseg)
-			continue;
-
-		//x,y,dx,dy (like a divline)
-		p1.x = FIXED_TO_FLOAT(lseg->side ? line->v2->x : line->v1->x);
-		p1.y = FIXED_TO_FLOAT(lseg->side ? line->v2->y : line->v1->y);
-		p2.x = FIXED_TO_FLOAT(lseg->side ? line->v1->x : line->v2->x);
-		p2.y = FIXED_TO_FLOAT(lseg->side ? line->v1->y : line->v2->y);
-
-		cutseg.x = p1.x;
-		cutseg.y = p1.y;
-		cutseg.dx = p2.x - p1.x;
-		cutseg.dy = p2.y - p1.y;
-
-		// see if it cuts the convex poly
-		ps = -1;
-		pe = -1;
-		for (i = 0; i < poly->numpts; i++)
+		if (gl_frontsector->ceilingpic != skyflatnum)
 		{
-			j = i + 1;
-			if (j == poly->numpts)
-				j = 0;
+			if (sub->validcount != validcount)
+			{
+				HWR_GetLevelFlat(&levelflats[gl_frontsector->ceilingpic], R_NoEncore(gl_frontsector, &levelflats[gl_frontsector->ceilingpic], true));
+				HWR_RenderPlane(sub, &poly_subsectors[num], true,
+					// Hack to make things continue to work around slopes.
+					locCeilingHeight == cullCeilingHeight ? locCeilingHeight : gl_frontsector->ceilingheight,
+					// We now return you to your regularly scheduled rendering.
+					PF_Occlude | HWR_RippleBlend(gl_frontsector, NULL, true),
+					ceilinglightlevel, &levelflats[gl_frontsector->ceilingpic], NULL, 255, ceilingcolormap);
+			}
+		}
+	}
 
-			pv = fracdivline(&cutseg, &poly->pts[i], &poly->pts[j]);
+	if (gl_frontsector->ffloors)
+	{
+		/// \todo fix light, xoffs, yoffs, extracolormap ?
+		for (rover = gl_frontsector->ffloors;
+			rover; rover = rover->next)
+		{
+			fixed_t cullHeight, centerHeight;
 
-			if (pv == NULL)
+            // bottom plane
+			cullHeight   = P_GetFFloorBottomZAt(rover, viewx, viewy);
+			centerHeight = P_GetFFloorBottomZAt(rover, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
+
+			if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_RENDERPLANES))
+				continue;
+			if (sub->validcount == validcount)
 				continue;
 
-			if (ps < 0)
+			if (centerHeight <= locCeilingHeight &&
+			    centerHeight >= locFloorHeight &&
+			    ((viewz < cullHeight && (rover->fofflags & FOF_BOTHPLANES || !(rover->fofflags & FOF_INVERTPLANES))) ||
+			     (viewz > cullHeight && (rover->fofflags & FOF_BOTHPLANES || rover->fofflags & FOF_INVERTPLANES))))
 			{
-				ps = i;
-				vs = *pv;
-				fracs = bspfrac;
-			}
-			else
-			{
-				//frac 1 on previous segment,
-				//     0 on the next,
-				//the split line goes through one of the convex poly
-				// vertices, happens quite often since the convex
-				// poly is already adjacent to the subsector segs
-				// on most borders
-				if (SameVertice(pv, &vs))
-					continue;
-
-				if (fracs <= bspfrac)
+				if (rover->fofflags & FOF_FOG)
 				{
-					nump = 2 + poly->numpts - (i-ps);
-					pe = ps;
-					ps = i;
-					ve = *pv;
+					UINT8 alpha;
+
+					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < cullHeight ? true : false);
+					alpha = HWR_FogBlockAlpha(*gl_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
+
+					HWR_AddTransparentFloor(0,
+					                       &poly_subsectors[num],
+										   false,
+					                       *rover->bottomheight,
+					                       *gl_frontsector->lightlist[light].lightlevel,
+					                       alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
+										   true, rover->master->frontsector->extra_colormap);
+				}
+				else if (rover->fofflags & FOF_TRANSLUCENT
+					&& (rover->alpha < 256 || rover->blend)) // SoM: Flags are more efficient
+				{
+					FBITFIELD blendmode = HWR_GetBlendModeFlag(rover->blend) | HWR_RippleBlend(gl_frontsector, rover, false);
+
+					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < cullHeight ? true : false);
+
+					HWR_AddTransparentFloor(&levelflats[*rover->bottompic],
+					                       &poly_subsectors[num],
+										   false,
+					                       *rover->bottomheight,
+					                       *gl_frontsector->lightlist[light].lightlevel,
+					                       max(0, min(rover->alpha, 255)), rover->master->frontsector, blendmode,
+					                       false, *gl_frontsector->lightlist[light].extra_colormap);
 				}
 				else
 				{
-					nump = 2 + (i-ps);
-					pe = i;
-					ve = vs;
-					vs = *pv;
+					HWR_GetLevelFlat(&levelflats[*rover->bottompic], R_NoEncore(gl_frontsector, &levelflats[*rover->bottompic], false));
+					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < cullHeight ? true : false);
+					HWR_RenderPlane(sub, &poly_subsectors[num], false, *rover->bottomheight, HWR_RippleBlend(gl_frontsector, rover, false) | PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, &levelflats[*rover->bottompic],
+					                rover->master->frontsector, 255, *gl_frontsector->lightlist[light].extra_colormap);
 				}
-				//found 2nd point
-				break;
 			}
-		}
 
-		// there was a split
-		if (ps >= 0)
-		{
-			//need 2 points
-			if (pe >= 0)
+			// top plane
+			cullHeight   = P_GetFFloorTopZAt(rover, viewx, viewy);
+			centerHeight = P_GetFFloorTopZAt(rover, gl_frontsector->soundorg.x, gl_frontsector->soundorg.y);
+
+			if (centerHeight >= locFloorHeight &&
+			    centerHeight <= locCeilingHeight &&
+			    ((viewz > cullHeight && (rover->fofflags & FOF_BOTHPLANES || !(rover->fofflags & FOF_INVERTPLANES))) ||
+			     (viewz < cullHeight && (rover->fofflags & FOF_BOTHPLANES || rover->fofflags & FOF_INVERTPLANES))))
 			{
-				// generate FRONT poly
-				temppoly = HWR_AllocPoly(nump);
-				pv = temppoly->pts;
-				*pv++ = vs;
-				*pv++ = ve;
-				do
+				if (rover->fofflags & FOF_FOG)
 				{
-					if (++ps == poly->numpts)
-						ps = 0;
-					*pv++ = poly->pts[ps];
-				} while (ps != pe);
-				HWR_FreePoly(poly);
-				poly = temppoly;
+					UINT8 alpha;
+
+					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < cullHeight ? true : false);
+					alpha = HWR_FogBlockAlpha(*gl_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
+
+					HWR_AddTransparentFloor(0,
+					                       &poly_subsectors[num],
+										   true,
+					                       *rover->topheight,
+					                       *gl_frontsector->lightlist[light].lightlevel,
+					                       alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
+										   true, rover->master->frontsector->extra_colormap);
+				}
+				else if (rover->fofflags & FOF_TRANSLUCENT
+					&& (rover->alpha < 256 || rover->blend)) // SoM: Flags are more efficient
+				{
+					FBITFIELD blendmode = HWR_GetBlendModeFlag(rover->blend) | HWR_RippleBlend(gl_frontsector, rover, false);
+
+					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < cullHeight ? true : false);
+
+					HWR_AddTransparentFloor(&levelflats[*rover->toppic],
+					                        &poly_subsectors[num],
+											true,
+					                        *rover->topheight,
+					                        *gl_frontsector->lightlist[light].lightlevel,
+					                        max(0, min(rover->alpha, 255)), rover->master->frontsector, blendmode,
+					                        false, *gl_frontsector->lightlist[light].extra_colormap);
+				}
+				else
+				{
+					HWR_GetLevelFlat(&levelflats[*rover->toppic], R_NoEncore(gl_frontsector, &levelflats[*rover->toppic], true));
+					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < cullHeight ? true : false);
+					HWR_RenderPlane(sub, &poly_subsectors[num], true, *rover->topheight, HWR_RippleBlend(gl_frontsector, rover, true) | PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, &levelflats[*rover->toppic],
+					                  rover->master->frontsector, 255, *gl_frontsector->lightlist[light].extra_colormap);
+				}
 			}
-			//hmmm... maybe we should NOT accept this, but this happens
-			// only when the cut is not needed it seems (when the cut
-			// line is aligned to one of the borders of the poly, and
-			// only some times..)
-			else
-				skipcut++;
-			//    I_Error("CutOutPoly: only one point for split line (%d %d) %d", ps, pe, debugpos);
 		}
 	}
-	return poly;
-}
 
-// At this point, the poly should be convex and the exact
-// layout of the subsector, it is not always the case,
-// so continue to cut off the poly into smaller parts with
-// each seg of the subsector.
-//
-static inline void HWR_SubsecPoly(INT32 num, poly_t *poly)
-{
-	INT16 count;
-	subsector_t *sub;
-	seg_t *lseg;
-
-	sub = &subsectors[num];
-	count = sub->numlines;
-	lseg = &segs[sub->firstline];
-
-	if (poly)
+	// Draw all the polyobjects in this subsector
+	if (sub->polyList)
 	{
-		poly = CutOutSubsecPoly (lseg,count,poly);
-		totalsubsecpolys++;
-		//extra data for this subsector
-		extrasubsectors[num].planepoly = poly;
+		polyobj_t *po = sub->polyList;
+
+		numpolys = 0;
+
+		// Count all the polyobjects, reset the list, and recount them
+		while (po)
+		{
+			++numpolys;
+			po = (polyobj_t *)(po->link.next);
+		}
+
+		// for render stats
+		ps_numpolyobjects += numpolys;
+
+		// Sort polyobjects
+		R_SortPolyObjects(sub);
+
+		// Draw polyobject lines.
+		HWR_AddPolyObjectSegs();
+
+		if (sub->validcount != validcount) // This validcount situation seems to let us know that the floors have already been drawn.
+		{
+			// Draw polyobject planes
+			HWR_AddPolyObjectPlanes();
+		}
 	}
+
+// Hurder ici se passe les choses INT32�essantes!
+// on vient de tracer le sol et le plafond
+// on trace �pr�ent d'abord les sprites et ensuite les murs
+// hurdler: faux: on ajoute seulement les sprites, le murs sont trac� d'abord
+	if (line)
+	{
+		if (sub->sector->validcount != validcount)
+		{
+			// draw sprites first, coz they are clipped to the solidsegs of
+			// subsectors more 'in front'
+			HWR_AddSprites(gl_frontsector);
+		}
+
+		//Hurdler: at this point validcount must be the same, but is not because
+		//         gl_frontsector doesn't point anymore to sub->sector due to
+		//         the call gl_frontsector = R_FakeFlat(...)
+		//         if it's not done, the sprite is drawn more than once,
+		//         what looks really bad with translucency or dynamic light,
+		//         without talking about the overdraw of course.
+		sub->sector->validcount = validcount;/// \todo fix that in a better way
+
+		while (count--)
+		{
+			if (LIKELY(!line->glseg && !line->polyseg)) // ignore segs that belong to polyobjects
+				HWR_AddLine(line);
+			line++;
+		}
+	}
+
+	sub->validcount = validcount;
 }
 
-// the bsp divline have not enouth presition
-// search for the segs source of this divline
-static inline void SearchDivline(node_t *bsp, fdivline_t *divline)
+//
+// Renders all subsectors below a given node,
+//  traversing subtree recursively.
+// Just call with BSP root.
+void HWR_RenderBSPNode(INT32 bspnum)
 {
-	divline->x = FIXED_TO_FLOAT(bsp->x);
-	divline->y = FIXED_TO_FLOAT(bsp->y);
-	divline->dx = FIXED_TO_FLOAT(bsp->dx);
-	divline->dy = FIXED_TO_FLOAT(bsp->dy);
-}
+	const node_t *bsp;
+	INT32 side;
+	ps_numbspcalls++;
 
-#ifdef HWR_LOADING_SCREEN
-//Hurdler: implement a loading status
-static size_t ls_count = 0;
-static UINT8 ls_percent = 0;
+	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
+	{
+		bsp = &nodes[bspnum];
 
-static void loading_status(void)
-{
-	char s[16];
-	int x, y;
+		// Decide which side the view point is on.
+		side = R_PointOnSideFast(viewx, viewy, bsp);
 
-	I_OsPolling();
-	CON_Drawer();
-	sprintf(s, "%d%%", (++ls_percent)<<1);
-	x = BASEVIDWIDTH/2;
-	y = BASEVIDHEIGHT/2;
-	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, levelfadecol); // Black background to match fade in effect
-	//V_DrawPatchFill(W_CachePatchName("SRB2BACK",PU_CACHE)); // SRB2 background, ehhh too bright.
-	M_DrawTextBox(x-58, y-8, 13, 1);
-	V_DrawString(x-50, y, V_YELLOWMAP, "Loading...");
-	V_DrawRightAlignedString(x+50, y, V_YELLOWMAP, s);
+		// Recursively divide front space.
+		if (HWR_PortalCheckBBox(bsp->bbox[side]))
+			HWR_RenderBSPNode(bsp->children[side]);
 
-	// Is this really necessary at this point..?
-	V_DrawCenteredString(BASEVIDWIDTH/2, 40, V_YELLOWMAP, "OPENGL MODE IS INCOMPLETE AND MAY");
-	V_DrawCenteredString(BASEVIDWIDTH/2, 50, V_YELLOWMAP, "NOT DISPLAY SOME SURFACES.");
-	V_DrawCenteredString(BASEVIDWIDTH/2, 70, V_YELLOWMAP, "USE AT SONIC'S RISK.");
+        // Possibly divide back space
+        if (!(HWR_CheckBBox(bsp->bbox[side^1]) && HWR_PortalCheckBBox(bsp->bbox[side^1])))
+            return;
 
-	I_UpdateNoVsync();
-}
-#endif
+		bspnum = bsp->children[side^1];
+	}
 
-// poly : the convex polygon that encloses all child subsectors
-static void WalkBSPNode(INT32 bspnum, poly_t *poly, UINT16 *leafnode, fixed_t *bbox)
-{
-	node_t *bsp;
-	poly_t *backpoly, *frontpoly;
-	fdivline_t fdivline;
-	polyvertex_t *pt;
-	INT32 i;
-
-	// Found a subsector?
+	// e6y: support for extended nodes
 	if (bspnum & NF_SUBSECTOR)
 	{
 		if (bspnum == -1)
 		{
-			// BP: i think this code is useless and wrong because
-			// - bspnum==-1 happens only when numsubsectors == 0
-			// - it can't happens in bsp recursive call since bspnum is a INT32 and children is UINT16
-			// - the BSP is complet !! (there just can have subsector without segs) (i am not sure of this point)
-
-			// do we have a valid polygon ?
-			if (poly && poly->numpts > 2)
-			{
-				CONS_Debug(DBG_RENDER, "Adding a new subsector\n");
-				if (addsubsector == numsubsectors + NEWSUBSECTORS)
-					I_Error("WalkBSPNode: not enough addsubsectors\n");
-				else if (addsubsector > 0x7fff)
-					I_Error("WalkBSPNode: addsubsector > 0x7fff\n");
-				*leafnode = (UINT16)((UINT16)addsubsector | NF_SUBSECTOR);
-				extrasubsectors[addsubsector].planepoly = poly;
-				addsubsector++;
-			}
-
-			//add subsectors without segs here?
-			//HWR_SubsecPoly(0, NULL);
+			//*(gl_drawsubsector_p++) = 0;
+			HWR_Subsector(0);
 		}
 		else
 		{
-			HWR_SubsecPoly(bspnum & ~NF_SUBSECTOR, poly);
-
-			//Hurdler: implement a loading status
-#ifdef HWR_LOADING_SCREEN
-			if (ls_count-- <= 0)
+			if (gl_portalcullsector)
 			{
-				ls_count = numsubsectors/50;
-				loading_status();
-			}
-#endif
-		}
-		M_ClearBox(bbox);
-		poly = extrasubsectors[bspnum & ~NF_SUBSECTOR].planepoly;
-
-		for (i = 0, pt = poly->pts; i < poly->numpts; i++,pt++)
-			M_AddToBox(bbox, FLOAT_TO_FIXED(pt->x), FLOAT_TO_FIXED(pt->y));
-
-		return;
-	}
-
-	bsp = &nodes[bspnum];
-	SearchDivline(bsp, &fdivline);
-	SplitPoly(&fdivline, poly, &frontpoly, &backpoly);
-	poly = NULL;
-
-	//debug
-	if (!backpoly)
-		nobackpoly++;
-
-	// Recursively divide front space.
-	if (frontpoly)
-	{
-		WalkBSPNode(bsp->children[0], frontpoly, &bsp->children[0],bsp->bbox[0]);
-
-		// copy child bbox
-		memcpy(bbox, bsp->bbox[0], 4*sizeof (fixed_t));
-	}
-	else
-		I_Error("WalkBSPNode: no front poly?");
-
-	// Recursively divide back space.
-	if (backpoly)
-	{
-		// Correct back bbox to include floor/ceiling convex polygon
-		WalkBSPNode(bsp->children[1], backpoly, &bsp->children[1], bsp->bbox[1]);
-
-		// enlarge bbox with second child
-		M_AddToBox(bbox, bsp->bbox[1][BOXLEFT  ],
-		                 bsp->bbox[1][BOXTOP   ]);
-		M_AddToBox(bbox, bsp->bbox[1][BOXRIGHT ],
-		                 bsp->bbox[1][BOXBOTTOM]);
-	}
-}
-
-// FIXME: use Z_Malloc() STATIC ?
-void HWR_FreeExtraSubsectors(void)
-{
-	if (extrasubsectors)
-		free(extrasubsectors);
-	extrasubsectors = NULL;
-}
-
-#define MAXDIST 1.5f
-// BP: can't move vertex: DON'T change polygon geometry! (convex)
-//#define MOVEVERTEX
-static boolean PointInSeg(polyvertex_t *a,polyvertex_t *v1,polyvertex_t *v2)
-{
-	register float ax,ay,bx,by,cx,cy,d,norm;
-	register polyvertex_t *p;
-
-	// check bbox of the seg first
-	if (v1->x > v2->x)
-	{
-		p = v1;
-		v1 = v2;
-		v2 = p;
-	}
-
-	if (a->x < v1->x-MAXDIST || a->x > v2->x+MAXDIST)
-		return false;
-
-	if (v1->y > v2->y)
-	{
-		p = v1;
-		v1 = v2;
-		v2 = p;
-	}
-	if (a->y < v1->y-MAXDIST || a->y > v2->y+MAXDIST)
-		return false;
-
-	// v1 = origine
-	ax= v2->x-v1->x;
-	ay= v2->y-v1->y;
-	norm = (float)hypot(ax, ay);
-	ax /= norm;
-	ay /= norm;
-	bx = a->x-v1->x;
-	by = a->y-v1->y;
-	//d = a.b
-	d =ax*bx+ay*by;
-	// bound of the seg
-	if (d < 0 || d > norm)
-		return false;
-	//c = d.1a-b
-	cx = ax*d-bx;
-	cy = ay*d-by;
-#ifdef MOVEVERTEX
-	if (cx*cx+cy*cy <= MAXDIST*MAXDIST)
-	{
-		// ajust a little the point position
-		a->x = ax*d+v1->x;
-		a->y = ay*d+v1->y;
-		// anyway the correction is not enouth
-		return true;
-	}
-	return false;
-#else
-	return cx*cx+cy*cy <= MAXDIST*MAXDIST;
-#endif
-}
-
-static INT32 numsplitpoly;
-
-static void SearchSegInBSP(INT32 bspnum,polyvertex_t *p,poly_t *poly)
-{
-	poly_t  *q;
-	INT32     j,k;
-
-	if (bspnum & NF_SUBSECTOR)
-	{
-		if (bspnum != -1)
-		{
-			bspnum &= ~NF_SUBSECTOR;
-			q = extrasubsectors[bspnum].planepoly;
-			if (poly == q || !q)
-				return;
-			for (j = 0; j < q->numpts; j++)
-			{
-				k = j+1;
-				if (k == q->numpts) k = 0;
-				if (!SameVertice(p, &q->pts[j])
-					&& !SameVertice(p, &q->pts[k])
-					&& PointInSeg(p, &q->pts[j],
-						&q->pts[k]))
-				{
-					poly_t *newpoly = HWR_AllocPoly(q->numpts+1);
-					INT32 n;
-
-					for (n = 0; n <= j; n++)
-						newpoly->pts[n] = q->pts[n];
-					newpoly->pts[k] = *p;
-					for (n = k+1; n < newpoly->numpts; n++)
-						newpoly->pts[n] = q->pts[n-1];
-					numsplitpoly++;
-					extrasubsectors[bspnum].planepoly =
-						newpoly;
-					HWR_FreePoly(q);
+				// skip all subsectors encountered before the portal
+				// destination's front sector
+				if (gl_portalcullsector != subsectors[bspnum & ~NF_SUBSECTOR].sector)
 					return;
-				}
+				else
+					gl_portalcullsector = NULL;
 			}
-		}
-		return;
-	}
-
-	if ((FIXED_TO_FLOAT(nodes[bspnum].bbox[0][BOXBOTTOM])-MAXDIST <= p->y) &&
-	    (FIXED_TO_FLOAT(nodes[bspnum].bbox[0][BOXTOP   ])+MAXDIST >= p->y) &&
-	    (FIXED_TO_FLOAT(nodes[bspnum].bbox[0][BOXLEFT  ])-MAXDIST <= p->x) &&
-	    (FIXED_TO_FLOAT(nodes[bspnum].bbox[0][BOXRIGHT ])+MAXDIST >= p->x))
-		SearchSegInBSP(nodes[bspnum].children[0],p,poly);
-
-	if ((FIXED_TO_FLOAT(nodes[bspnum].bbox[1][BOXBOTTOM])-MAXDIST <= p->y) &&
-	    (FIXED_TO_FLOAT(nodes[bspnum].bbox[1][BOXTOP   ])+MAXDIST >= p->y) &&
-	    (FIXED_TO_FLOAT(nodes[bspnum].bbox[1][BOXLEFT  ])-MAXDIST <= p->x) &&
-	    (FIXED_TO_FLOAT(nodes[bspnum].bbox[1][BOXRIGHT ])+MAXDIST >= p->x))
-		SearchSegInBSP(nodes[bspnum].children[1],p,poly);
-}
-
-// search for T-intersection problem
-// BP : It can be mush more faster doing this at the same time of the splitpoly
-// but we must use a different structure : polygone pointing on segs
-// segs pointing on polygone and on vertex (too mush complicated, well not
-// realy but i am soo lasy), the methode discibed is also better for segs presition
-static INT32 SolveTProblem(void)
-{
-	poly_t *p;
-	INT32 i;
-	size_t l;
-
-	if (cv_glsolvetjoin.value == 0)
-		return 0;
-
-	CONS_Debug(DBG_RENDER, "Solving T-joins. This may take a while. Please wait...\n");
-#ifdef HWR_LOADING_SCREEN
-	CON_Drawer(); //let the user know what we are doing
-	I_FinishUpdate(); // page flip or blit buffer
-#endif
-
-	numsplitpoly = 0;
-
-	for (l = 0; l < addsubsector; l++)
-	{
-		p = extrasubsectors[l].planepoly;
-		if (p)
-			for (i = 0; i < p->numpts; i++)
-				SearchSegInBSP((INT32)numnodes-1, &p->pts[i], p);
-	}
-	//CONS_Debug(DBG_RENDER, "numsplitpoly %d\n", numsplitpoly);
-	return numsplitpoly;
-}
-
-#define NEARDIST (0.75f)
-#define MYMAX    (10000000000000.0f)
-
-/* Adjust true segs (from the segs lump) to be exactely the same as
- * plane polygone segs
- * This also convert fixed_t point of segs in float (in moste case
- * it share the same vertice
- */
-static void AdjustSegs(void)
-{
-	size_t i, count;
-	INT32 j;
-	seg_t *lseg;
-	poly_t *p;
-	INT32 v1found = 0, v2found = 0;
-	float nearv1, nearv2;
-
-	for (i = 0; i < numsubsectors; i++)
-	{
-		count = subsectors[i].numlines;
-		lseg = &segs[subsectors[i].firstline];
-		p = extrasubsectors[i].planepoly;
-		//if (!p)
-			//continue;
-		for (; count--; lseg++)
-		{
-			float distv1,distv2,tmp;
-			nearv1 = nearv2 = MYMAX;
-
-			// Don't touch polyobject segs. We'll compensate
-			// for this when we go about drawing them.
-			if (lseg->polyseg)
-				continue;
-
-			if (p) {
-				for (j = 0; j < p->numpts; j++)
-				{
-					distv1 = p->pts[j].x - FIXED_TO_FLOAT(lseg->v1->x);
-					tmp    = p->pts[j].y - FIXED_TO_FLOAT(lseg->v1->y);
-					distv1 = distv1*distv1+tmp*tmp;
-					if (distv1 <= nearv1)
-					{
-						v1found = j;
-						nearv1 = distv1;
-					}
-					// the same with v2
-					distv2 = p->pts[j].x - FIXED_TO_FLOAT(lseg->v2->x);
-					tmp    = p->pts[j].y - FIXED_TO_FLOAT(lseg->v2->y);
-					distv2 = distv2*distv2+tmp*tmp;
-					if (distv2 <= nearv2)
-					{
-						v2found = j;
-						nearv2 = distv2;
-					}
-				}
-			}
-			if (p && nearv1 <= NEARDIST*NEARDIST)
-				// share vertice with segs
-				lseg->pv1 = &(p->pts[v1found]);
-			else
-			{
-				// BP: here we can do better, using PointInSeg and compute
-				// the right point position also split a polygone side to
-				// solve a T-intersection, but too mush work
-
-				// convert fixed vertex to float vertex
-				polyvertex_t *pv = HWR_AllocVertex();
-				pv->x = FIXED_TO_FLOAT(lseg->v1->x);
-				pv->y = FIXED_TO_FLOAT(lseg->v1->y);
-				lseg->pv1 = pv;
-			}
-			if (p && nearv2 <= NEARDIST*NEARDIST)
-				lseg->pv2 = &(p->pts[v2found]);
-			else
-			{
-				polyvertex_t *pv = HWR_AllocVertex();
-				pv->x = FIXED_TO_FLOAT(lseg->v2->x);
-				pv->y = FIXED_TO_FLOAT(lseg->v2->y);
-				lseg->pv2 = pv;
-			}
-
-			// recompute length
-			{
-				float x,y;
-				x = ((polyvertex_t *)lseg->pv2)->x - ((polyvertex_t *)lseg->pv1)->x
-					+ FIXED_TO_FLOAT(FRACUNIT/2);
-				y = ((polyvertex_t *)lseg->pv2)->y - ((polyvertex_t *)lseg->pv1)->y
-					+ FIXED_TO_FLOAT(FRACUNIT/2);
-				lseg->flength = (float)hypot(x, y);
-				// BP: debug see this kind of segs
-				//if (nearv2 > NEARDIST*NEARDIST || nearv1 > NEARDIST*NEARDIST)
-				//    lseg->length = 1;
-			}
+			//*(gl_drawsubsector_p++) = bspnum&(~NF_SUBSECTOR);
+			HWR_Subsector(bspnum&(~NF_SUBSECTOR));
 		}
 	}
 }
 
-
-// call this routine after the BSP of a Doom wad file is loaded,
-// and it will generate all the convex polys for the hardware renderer
-void HWR_CreatePlanePolygons(INT32 bspnum)
-{
-	poly_t *rootp;
-	polyvertex_t *rootpv;
-	size_t i;
-	fixed_t rootbbox[4];
-
-	CONS_Debug(DBG_RENDER, "Creating polygons, please wait...\n");
-#ifdef HWR_LOADING_SCREEN
-	ls_count = ls_percent = 0; // reset the loading status
-	CON_Drawer(); //let the user know what we are doing
-	I_FinishUpdate(); // page flip or blit buffer
 #endif
-
-	HWR_ClearPolys();
-
-	// find min/max boundaries of map
-	//CONS_Debug(DBG_RENDER, "Looking for boundaries of map...\n");
-	M_ClearBox(rootbbox);
-	for (i = 0;i < numvertexes; i++)
-		M_AddToBox(rootbbox, vertexes[i].x, vertexes[i].y);
-
-	//CONS_Debug(DBG_RENDER, "Generating subsector polygons... %d subsectors\n", numsubsectors);
-
-	HWR_FreeExtraSubsectors();
-	// allocate extra data for each subsector present in map
-	totsubsectors = numsubsectors + NEWSUBSECTORS;
-	extrasubsectors = calloc(totsubsectors, sizeof (*extrasubsectors));
-	if (extrasubsectors == NULL)
-		I_Error("couldn't malloc extrasubsectors totsubsectors %s\n", sizeu1(totsubsectors));
-
-	// allocate table for back to front drawing of subsectors
-	/*gl_drawsubsectors = (INT16 *)malloc(sizeof (*gl_drawsubsectors) * totsubsectors);
-	if (!gl_drawsubsectors)
-		I_Error("couldn't malloc gl_drawsubsectors\n");*/
-
-	// number of the first new subsector that might be added
-	addsubsector = numsubsectors;
-
-	// construct the initial convex poly that encloses the full map
-	rootp = HWR_AllocPoly(4);
-	rootpv = rootp->pts;
-
-	rootpv->x = FIXED_TO_FLOAT(rootbbox[BOXLEFT  ]);
-	rootpv->y = FIXED_TO_FLOAT(rootbbox[BOXBOTTOM]);  //lr
-	rootpv++;
-	rootpv->x = FIXED_TO_FLOAT(rootbbox[BOXLEFT  ]);
-	rootpv->y = FIXED_TO_FLOAT(rootbbox[BOXTOP   ]);  //ur
-	rootpv++;
-	rootpv->x = FIXED_TO_FLOAT(rootbbox[BOXRIGHT ]);
-	rootpv->y = FIXED_TO_FLOAT(rootbbox[BOXTOP   ]);  //ul
-	rootpv++;
-	rootpv->x = FIXED_TO_FLOAT(rootbbox[BOXRIGHT ]);
-	rootpv->y = FIXED_TO_FLOAT(rootbbox[BOXBOTTOM]);  //ll
-	rootpv++;
-
-	WalkBSPNode(bspnum, rootp, NULL,rootbbox);
-
-	i = SolveTProblem();
-	//CONS_Debug(DBG_RENDER, "%d point divides a polygon line\n",i);
-	AdjustSegs();
-
-	//debug debug..
-	//if (nobackpoly)
-	//    CONS_Debug(DBG_RENDER, "no back polygon %u times\n",nobackpoly);
-	//"(should happen only with the deep water trick)"
-	//if (skipcut)
-	//    CONS_Debug(DBG_RENDER, "%u cuts were skipped because of only one point\n",skipcut);
-
-	//CONS_Debug(DBG_RENDER, "done: %u total subsector convex polygons\n", totalsubsecpolys);
-}
-
-#endif //HWRENDER

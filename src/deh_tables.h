@@ -87,6 +87,7 @@ extern struct flickytypes_s FLICKYTYPES[];
 extern actionpointer_t actionpointers[]; // Array mapping action names to action functions.
 extern struct int_const_s const STATE_ALIASES[];
 extern struct int_const_s const MOBJ_ALIASES[];
+extern struct int_const_s const GAMETYPE_ALIASES[];
 extern const char *const MOBJFLAG_LIST[];
 extern const char *const MOBJFLAG2_LIST[]; // \tMF2_(\S+).*// (.+) --> \t"\1", // \2
 extern const char *const MOBJEFLAG_LIST[];

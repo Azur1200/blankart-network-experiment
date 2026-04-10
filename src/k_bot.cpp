@@ -263,7 +263,7 @@ void K_UpdateMatchRaceBots(void)
 	{
 		difficulty = 0;
 	}
-	else if ((gametyperules & GTR_BOTS) == 0 && !cv_forcebots.value)
+	else if ((gametypes[gametype]->rules & GTR_BOTS) == 0 && !cv_forcebots.value)
 	{
 		difficulty = 0;
 	}
@@ -1608,7 +1608,7 @@ void K_BotTicker(const player_t *player)
 	bd->itemthrow = 0;
 	boolean onground = P_IsObjectOnGround(player->mo);
 
-	if (!(gametyperules & GTR_BOTS) // No bot behaviors
+	if (!(gametypes[gametype]->rules & GTR_BOTS) // No bot behaviors
 		|| K_GetNumWaypoints() == 0 // No waypoints
 		|| leveltime <= introtime // During intro camera
 		|| player->playerstate == PST_DEAD // Dead, respawning.

@@ -185,6 +185,8 @@ void V_CubeApply(RGBA_t *input);
 #define V_NOSCALESTART       0x40000000 // don't scale x, y, start coords
 #define V_SPLITSCREEN        0x80000000 // Add half of screen width or height automatically depending on player number
 
+UINT32 V_GetHUDTranslucency(INT32 scrn);
+
 void V_AdjustXYWithSnap(INT32 *x, INT32 *y, UINT32 options, INT32 dup);
 
 struct cliprect_t
@@ -218,16 +220,11 @@ void V_ClearClipRect(void);
 void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap);
 void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, INT32 scrn, patch_t *patch, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h);
 
-// an affine transformation matrix. maps screen coordinates to texture coordinates
-struct affine_t
-{
-	fixed_t a; // horizontal step per pixel (M7A)
-	fixed_t b; // horizontal step per scanline (M7B)
-	fixed_t c; // vertical step per pixel (M7C)
-	fixed_t d; // vertical step per scanline (M7D)
-	fixed_t ox, oy; // transform origin in texture coordinates (M7X/M7Y)
-};
-
+affine_bounding_t* V_GetAffineBounds(const affine_t* transform,
+				     patch_t* patch,
+					 fixed_t divisor,
+				     affine_bounding_t* out,
+					 boolean unrestrict_bound);
 void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, INT32 scrn, patch_t *patch, const UINT8 *colormap);
 void V_DrawRotatedPatch(fixed_t x, fixed_t y, angle_t angle, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap);
 

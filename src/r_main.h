@@ -83,9 +83,11 @@ FUNCINLINE static ATTRINLINE INT32 R_PointOnSideFast(fixed_t x, fixed_t y, const
 
 INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line);
 #define R_PointToAngle(x, y) R_PointToAngle2(viewx, viewy, x, y)
+#define R_PointToAngleFloat(x, y) (R_PointToAngleFloat2(viewx, viewy, x, y))
 angle_t R_PointToAnglePlayer(player_t *player, fixed_t x, fixed_t y);
 angle_t R_PointToAngle64(INT64 x, INT64 y);
 angle_t R_PointToAngle2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1);
+angle_t R_PointToAngleFloat2(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2);
 #define R_PointToDist(x, y) R_PointToDist2(viewx, viewy, x, y)
 #define R_PointToDist2(px2, py2, px1, py1) FixedHypot((px1) - (px2), (py1) - (py2))
 
@@ -153,13 +155,15 @@ extern consvar_t cv_drawdist, cv_drawdist_precip;
 extern consvar_t cv_playerfade;
 extern consvar_t cv_fov[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_skybox;
-extern consvar_t cv_tailspickup;
 extern consvar_t cv_debugfinishline;
 extern consvar_t cv_secbright;
 
 extern consvar_t cv_sloperoll;
 extern consvar_t cv_sliptidetilt;
 extern consvar_t cv_nulldriftefx, cv_nulldrifttilt;
+
+extern consvar_t cv_fakerollangle;
+extern consvar_t cv_affineprescale, cv_affinemosaic;
 
 // debugging
 

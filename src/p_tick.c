@@ -494,7 +494,7 @@ static void P_RunThinkers(void)
 		ps_thlist_times[i] = I_GetPreciseTime() - ps_thlist_times[i];
 	}
 
-	if (gametyperules & GTR_PAPERITEMS)
+	if (gametypes[gametype]->rules & GTR_PAPERITEMS)
 		K_RunPaperItemSpawners();
 
 	ps_acs_time = I_GetPreciseTime();
@@ -650,7 +650,52 @@ void P_RunChaseCameras(void)
 	{
 		if (camera[i].chase)
 		{
-			P_MoveChaseCamera(&players[displayplayers[i]], &camera[i], false);
+			INT32 forplayer = displayplayers[i];
+			player_t *p = &players[forplayer];
+			camera_t *cam = &camera[i];
+
+			// client sided
+			if (p->mo && G_PlayerInputDown(forplayer, gc_freelook, false, DEADZONE_BUTTON))
+			{
+				// instantly able to move camera
+				if (p->speed < 6 * p->mo->scale && abs(cam->freelook_held) < 2*TICRATE)
+				{
+					cam->freelook_held = 2*TICRATE;
+				}
+
+				if (abs(cam->freelook_held) >= 2*TICRATE)
+				{
+					cam->freelook_pitch = (45*FixedDiv(p->cmd.throwdir, KART_FULLTURN));
+
+					// gyro aiming
+					if (G_GetGamepadCanUseTilt(forplayer) && cv_tiltcontrol[forplayer].value == 1)
+					{
+						fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
+						vector3_t gyro = G_GetGamepadCalibratedGyro(forplayer);
+						cam->freelook_pitch_add -= FixedMul(gyro.x, deltaseconds);
+					}
+				}
+			}
+			else if (p->mo && p->cmd.throwdir != 0)
+			{
+				if (p->speed < 6 * p->mo->scale && abs(cam->freelook_held) < 2*TICRATE)
+				{
+					cam->freelook_held += intsign(p->cmd.throwdir);
+				}
+				
+				if (abs(cam->freelook_held) >= 2*TICRATE)
+				{
+					cam->freelook_pitch = 45*FRACUNIT*intsign(p->cmd.throwdir);
+				}
+			}
+			else
+			{
+				cam->freelook_held = 0;
+				cam->freelook_pitch = 0;
+				cam->freelook_pitch_add = 0;
+			}
+
+			P_MoveChaseCamera(p, cam, false);
 		}
 	}
 }
@@ -776,11 +821,6 @@ void P_Ticker(boolean run)
 	// Keep track of how long they've been playing!
 	K_StatTicker();
 
-	// formality so kitemcap gets updated properly each frame.
-	P_RunKartItems();
-
-	P_RunMiscCap();
-
 	if (run)
 	{
 		ps_thinkertime = I_GetPreciseTime();
@@ -831,36 +871,40 @@ void P_Ticker(boolean run)
 		// Plays the music after the starting countdown.
 		else
 		{
+			// Change timing of start music based on gametypes[gametype]->rules
+			tic_t startingtime = (gametypes[gametype]->rules & GTR_NOCOUNTDOWN) ? introtime : starttime;
+
 			if (!(titlemapinaction == TITLEMAP_RUNNING))
 			{
-				if (!(gametyperules & GTR_NOCOUNTDOWN))
+				if (leveltime == (startingtime + (TICRATE/2)))
 				{
-					if (leveltime == starttime-(3*TICRATE))
-					{
-						S_StartSound(NULL, sfx_s3ka7); // 3,
-					}
-					else if ((leveltime == starttime-(2*TICRATE)) || (leveltime == starttime-TICRATE))
-					{
-						S_StartSound(NULL, sfx_s3ka7); // 2, 1,
-					}
-					else if (leveltime == starttime)
-					{
-						S_StartSound(NULL, sfx_s3kad); // GO!
-					}
+					// Plays the music after the starting countdown.
+					S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+					S_ShowMusicCredit(0, 5*TICRATE, 0);
 				}
-
-				// Change timing of start music based on gametyperules
+				else if (startingtime != introtime)
 				{
-					tic_t startingtime = (gametyperules & GTR_NOCOUNTDOWN) ? introtime : starttime;
+					if (!(gametypes[gametype]->rules & GTR_NOCOUNTDOWN))
+					{
+						if (leveltime == startingtime-(3*TICRATE))
+						{
+							S_StartSound(NULL, sfx_s3ka7); // 3,
+						}
+						else if ((leveltime == startingtime-(2*TICRATE)) || (leveltime == starttime-TICRATE))
+						{
+							S_StartSound(NULL, sfx_s3ka7); // 2, 1,
+						}
+						else if (leveltime == startingtime)
+						{
+							S_StartSound(NULL, sfx_s3kad); // GO!
+						}
+					}
+
 					if (leveltime < startingtime) // SRB2Kart
-						S_ChangeMusicInternal(((grandprixinfo.roundnum > 0) ? "gpstrt" : (encoremode ? "estart" : "kstart")), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
+						S_ChangeMusicInternal(((grandprixinfo.gp == true
+						) ? "gpstrt" : (encoremode ? "estart" : "kstart")), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
 					else if (leveltime == startingtime) // The GO! sound stops the level start ambience
 						S_StopMusic();
-					else if (leveltime == startingtime + (TICRATE/2)) // Plays the music after the starting countdown.
-					{
-						S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
-						S_ShowMusicCredit(0, 5*TICRATE, 0);
-					}
 				}
 			}
 		}
@@ -914,7 +958,7 @@ void P_Ticker(boolean run)
 
 		K_TickSpecialStage();
 
-		if (gametyperules & GTR_WANTED)
+		if (gametypes[gametype]->rules & GTR_WANTED)
 		{
 			if (wantedcalcdelay && --wantedcalcdelay <= 0)
 				K_CalculateBattleWanted();

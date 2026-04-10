@@ -642,27 +642,43 @@ extracolormap_t *R_ColormapForName(char *name)
 static double brightChange[256], map[256][3];
 static double deltas[256][3]; // for old fade colormaps
 
-static int RoundUp(double number);
+static colorlookup_t lighttable_lut;
+
+static UINT8 LightTableNearest(UINT8 r, UINT8 g, UINT8 b)
+{
+	return NearestColor(r, g, b);
+}
+
+static UINT8 LightTableNearest_LUT(UINT8 r, UINT8 g, UINT8 b)
+{
+	return GetColorLUT(&lighttable_lut, r, g, b);
+}
 
 lighttable_t *R_CreateLightTable(extracolormap_t *extra_colormap)
+{
+	extra_colormap->colormap = Z_MallocAlign((COLORMAP_SIZE * (encoremap ? 2 : 1)) + 10, PU_LEVEL, NULL, 8);
+	R_GenerateLightTable(extra_colormap, false);
+	return extra_colormap->colormap;
+}
+
+void R_GenerateLightTable(extracolormap_t *extra_colormap, boolean uselookup)
 {
 	double cmaskr, cmaskg, cmaskb, cdestr, cdestg, cdestb, cdestbright;
 	double maskamt = 0, othermask = 0;
 	double fmaskamt = 0, fothermask = 0;
 
 	UINT8 cr = R_GetRgbaR(extra_colormap->rgba),
-		cg = R_GetRgbaG(extra_colormap->rgba),
-		cb = R_GetRgbaB(extra_colormap->rgba),
-		ca = R_GetRgbaA(extra_colormap->rgba),
-		cfr = R_GetRgbaR(extra_colormap->fadergba),
-		cfg = R_GetRgbaG(extra_colormap->fadergba),
-		cfb = R_GetRgbaB(extra_colormap->fadergba),
-		cfa = R_GetRgbaA(extra_colormap->fadergba);
+	cg = R_GetRgbaG(extra_colormap->rgba),
+	cb = R_GetRgbaB(extra_colormap->rgba),
+	ca = R_GetRgbaA(extra_colormap->rgba),
+	cfr = R_GetRgbaR(extra_colormap->fadergba),
+	cfg = R_GetRgbaG(extra_colormap->fadergba),
+	cfb = R_GetRgbaB(extra_colormap->fadergba),
+	cfa = R_GetRgbaA(extra_colormap->fadergba);
 
 	UINT8 fadestart = extra_colormap->fadestart,
-		fadedist = extra_colormap->fadeend - extra_colormap->fadestart;
+	fadedist = extra_colormap->fadeend - extra_colormap->fadestart;
 
-	lighttable_t *lighttable = NULL;
 	size_t i;
 
 	/////////////////////
@@ -701,6 +717,16 @@ lighttable_t *R_CreateLightTable(extracolormap_t *extra_colormap)
 		double r, g, b, cbrightness, cbest, cdist;
 		int p;
 		lighttable_t *colormap_p;
+
+		UINT8 (*NearestColorFunc)(UINT8, UINT8, UINT8);
+
+		if (uselookup)
+		{
+			InitColorLUT(&lighttable_lut, pMasterPalette, false);
+			NearestColorFunc = LightTableNearest_LUT;
+		}
+		else
+			NearestColorFunc = LightTableNearest;
 
 		// Initialise the map and delta arrays
 		// map[i] stores an RGB color (as double) for index i,
@@ -755,8 +781,7 @@ lighttable_t *R_CreateLightTable(extracolormap_t *extra_colormap)
 
 		// Now allocate memory for the actual colormap array itself!
 		// aligned on 8 bit for asm code
-		colormap_p = Z_MallocAlign((COLORMAP_SIZE * (encoremap ? 2 : 1)) + 10, PU_LEVEL, NULL, 8);
-		lighttable = (UINT8 *)colormap_p;
+		colormap_p = extra_colormap->colormap;
 
 		// Calculate the palette index for each palette index, for each light level
 		// (as well as the two unused colormap lines we inherited from Doom)
@@ -764,9 +789,9 @@ lighttable_t *R_CreateLightTable(extracolormap_t *extra_colormap)
 		{
 			for (i = 0; i < 256; i++)
 			{
-				*colormap_p = NearestColor((UINT8)RoundUp(map[i][0]),
-					(UINT8)RoundUp(map[i][1]),
-					(UINT8)RoundUp(map[i][2]));
+				*colormap_p = NearestColorFunc((UINT8)M_RoundUp(map[i][0]),
+										   (UINT8)M_RoundUp(map[i][1]),
+										   (UINT8)M_RoundUp(map[i][2]));
 				colormap_p++;
 
 				if ((UINT32)p < fadestart)
@@ -818,7 +843,7 @@ lighttable_t *R_CreateLightTable(extracolormap_t *extra_colormap)
 
 		if (encoremap)
 		{
-			lighttable_t *colormap_p2 = lighttable;
+			lighttable_t *colormap_p2 = colormap_p;
 
 			for (p = 0; p < LIGHTLEVELS; p++)
 			{
@@ -832,7 +857,6 @@ lighttable_t *R_CreateLightTable(extracolormap_t *extra_colormap)
 		}
 	}
 
-	return lighttable;
 }
 
 extracolormap_t *R_CreateColormapFromLinedef(char *p1, char *p2, char *p3)
@@ -1164,20 +1188,6 @@ UINT8 NearestPaletteColor(UINT8 r, UINT8 g, UINT8 b, RGBA_t *palette)
 	}
 
 	return (UINT8)bestcolor;
-}
-
-// Rounds off floating numbers and checks for 0 - 255 bounds
-static int RoundUp(double number)
-{
-	if (number > 255.0l)
-		return 255;
-	if (number < 0.0l)
-		return 0;
-
-	if ((int)number <= (int)(number - 0.5f))
-		return (int)number + 1;
-
-	return (int)number;
 }
 
 #ifdef EXTRACOLORMAPLUMPS

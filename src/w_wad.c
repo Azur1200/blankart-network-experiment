@@ -625,21 +625,13 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 			{
 				const char *temp = trimname-1;
 				// CONS_Printf("wadnumtemp: %s\n", temp);
-#if (defined(_WIN32))
 				while (temp >= filename+5 && *temp != PATHSEP[0])
 					temp--;
 
 				if (((trimname-1) - temp) == 8
 					&& temp >= filename+5
-					&& !strncmp(temp-5, PATHSEP"Temp", 5))
-#elif (defined(__linux__))
-				while (temp >= filename+4 && *temp != PATHSEP[0])
-					temp--;
-
-				if (((trimname-1) - temp) == 8
-					&& temp >= filename+4
-					&& !strncmp(temp-4, PATHSEP"tmp", 4))
-#endif
+					&& (!strncmp(temp-5, PATHSEP"Temp", 5)
+					|| !strncmp(temp-4, PATHSEP"tmp", 4)))
 				{
 					filename = wadfiles[
 						((wadnamelump & ~UINT16_MAX) >> 16)
@@ -1245,6 +1237,13 @@ UINT16 W_FindNextEmptyInPwad(UINT16 wad, UINT16 startlump)
 UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 startlump)
 {
 	UINT16 i, end;
+	boolean compatload = false;
+
+	if (wadfiles[wad]->compatmode)
+	{
+		// Compatibility mode: "blind idiot" trace to the first map header/WAD
+		compatload = true;
+	}
 
 	if (wadfiles[wad]->type == RET_WAD)
 	{
@@ -1290,6 +1289,33 @@ UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 st
 					continue;
 #endif
 
+				return i;
+			}
+		}
+		else if (compatload)
+		{
+			for (i = startlump; i < wadfiles[wad]->numlumps; i++)
+			{
+				// Not the hash?
+				if ((wadfiles[wad]->lumpinfo + i)->hash.longname != hash)
+					continue;
+
+				// Not the name? (always use longname, even in wads, to accomodate WADNAME)
+				if (strcasecmp(name, (wadfiles[wad]->lumpinfo + i)->longname))
+					continue;
+
+				if (W_LumpLength(i | (wad << 16)) > 0)
+				{
+					// Not a header? Maybe it's a WAD file...
+
+					if (!W_IsLumpWad(i | (wad << 16)))
+					{
+						// ...no dice?
+						continue;
+					}
+				}
+
+				// Found a map!
 				return i;
 			}
 		}
@@ -1725,7 +1751,7 @@ UINT8 W_LumpExists(const char *name)
 	// Check the lumpnumcache first.
 	lumpnum_t cachenum = CheckLumpInCache(name);
 	if (cachenum != LUMPERROR)
-		return cachenum;
+		return true;
 
 	namelen = strlen(name);
 	hash = W_HashLumpName(name, namelen);

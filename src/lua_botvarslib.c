@@ -228,6 +228,20 @@ static int botdata_get(lua_State *L)
 	case botdata_turnamt:
 		lua_pushinteger(L, botdata->turnamt);
 		break;
+	default:
+		lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
+		I_Assert(lua_istable(L, -1));
+		lua_pushlightuserdata(L, botdata);
+		lua_rawget(L, -2);
+		if (!lua_istable(L, -1)) { // no extra values table
+			CONS_Debug(DBG_LUA, M_GetText("'%s' has no extvars table or field named '%s'; returning nil.\n"), "botdata_t", lua_tostring(L, 2));
+			return 0;
+		}
+		lua_pushvalue(L, 2); // field name
+		lua_gettable(L, -2);
+		if (lua_isnil(L, -1)) // no value for this field
+			CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "botdata_t", lua_tostring(L, 2));
+		break;
 	}
 
 	return 1;
@@ -305,6 +319,25 @@ static int botdata_set(lua_State *L)
 		break;
 	case botdata_turnamt:
 		botdata->turnamt = luaL_checkinteger(L, 3);
+		break;
+	default:
+		lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
+		I_Assert(lua_istable(L, -1));
+		lua_pushlightuserdata(L, botdata);
+		lua_rawget(L, -2);
+		if (lua_isnil(L, -1)) {
+			// This index doesn't have a table for extra values yet, let's make one.
+			lua_pop(L, 1);
+			CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; adding it as Lua data.\n"), "botdata_t", lua_tostring(L, 2));
+			lua_newtable(L);
+			lua_pushlightuserdata(L, botdata);
+			lua_pushvalue(L, -2); // ext value table
+			lua_rawset(L, -4); // LREG_EXTVARS table
+		}
+		lua_pushvalue(L, 2); // key
+		lua_pushvalue(L, 3); // value to store
+		lua_settable(L, -3);
+		lua_pop(L, 2);
 		break;
 	}
 

@@ -535,17 +535,7 @@ void HWR_InitModels(void)
 	}
 
 loadmodelfile:
-	if (loaded == MD2M_MODELS)
-	{
-		modelfile = "models.dat";
-	}
-	else if (loaded == MD2M_BLANMODELS)
-	{
-		modelfile = "blanmodels.dat";
-	}
-
-	if (!modelfile)
-		return; // No modelfile somehow?
+	modelfile = loaded == MD2M_MODELS ? "models.dat" : "blanmodels.dat";
 
 	// read the models.dat/blanmodels.dat file
 	//Filename checking fixed ~Monster Iestyn and Golden
@@ -556,6 +546,11 @@ loadmodelfile:
 		f = fopen(va("%s"PATHSEP"%s", srb2path, modelfile), "rt");
 		if (!f)
 		{
+			if (loaded == MD2M_MODELS)
+			{
+				loaded = MD2M_BLANMODELS;
+				goto loadmodelfile;
+			}
 			CONS_Printf("Error while loading %s: %s\n", modelfile, strerror(errno));
 			nomd2s = true;
 			return;
@@ -1342,7 +1337,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 	INT32 nextFrame = -1;
 	UINT8 spr2 = 0;
 	FTransform p;
-	FSurfaceInfo Surf;
+	FSurfaceInfo Surf = {};
 
 	if (!cv_glmodels.value || spr->precip)
 		return false;
@@ -1678,7 +1673,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 		fixedAngY = 0;
 
 		{
-			fixed_t anglef = AngleFixed(R_SpriteRotationAngle(spr->mobj, NULL, &interp));
+			fixed_t anglef = AngleFixed(R_SpriteRotationAngle(spr->mobj, NULL, &interp, false));
 
 			p.rollangle = 0.0f;
 
@@ -1717,8 +1712,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 		p.anglez = FIXED_TO_FLOAT(AngleFixed(R_InterpolateAngle(spr->mobj->old_pitch, spr->mobj->pitch)));
 		p.anglex = FIXED_TO_FLOAT(AngleFixed(R_InterpolateAngle(spr->mobj->old_roll, spr->mobj->roll)));
 
-		p.flip = atransform.flip;
-		p.mirror = atransform.mirror;
+		p.fliptype = atransform.fliptype;
 
 		if (HWR_UseShader())
 			GL_SetShader(HWR_GetShaderFromTarget(SHADER_MODEL));

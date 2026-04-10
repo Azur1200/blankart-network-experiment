@@ -17,6 +17,15 @@
 #include "doomdef.h"
 #include "sounds.h"
 #include "command.h"
+#include "m_fixed.h"
+
+#ifdef HAVE_OPENAL
+#include "AL/al.h"
+#include "AL/alc.h"
+#include "AL/alext.h"
+#include "AL/efx.h"
+#include "AL/efx-presets.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,6 +45,209 @@ typedef enum {
 	MU_MOD_EX, // libopenmpt
 	MU_MID_EX, // Non-native MIDI
 } musictype_t;
+
+typedef enum
+{
+	EFFECT_NONE = 0,
+	EFFECT_EAXREVERB,
+	EFFECT_REVERB,
+	EFFECT_CHORUS,
+	EFFECT_DISTORTION,
+	EFFECT_ECHO,
+	EFFECT_FLANGER,
+	EFFECT_FREQSHIFT,
+	EFFECT_VOCALMORPH,
+	EFFECT_PITCHSHIFT,
+	EFFECT_RINGMOD,
+	EFFECT_AUTOWAH,
+	EFFECT_COMPRESSOR,
+	EFFECT_EQ,
+} effecttypes_t;
+
+typedef enum
+{
+	CHORUSWAVE_SINUSOID = 0,
+	CHORUSWAVE_TRIANGLE = 1,
+} choruswaves_t;
+
+typedef enum
+{
+	FLANGERWAVE_SINUSOID = 0,
+	FLANGERWAVE_TRIANGLE = 1,
+} flangerwaves_t;
+
+typedef enum
+{
+	FREQSHIFTDIR_DOWN = 0,
+	FREQSHIFTDIR_UP = 1,
+	FREQSHIFTDIR_OFF = 2,
+} freqshiftdirection_t;
+
+typedef enum
+{
+	VOCALMORPH_SIN = 0,
+	VOCALMORPH_TRIANGLE = 1,
+	VOCALMORPH_SAW = 2,
+} vocalmorphwaves_t;
+
+typedef enum
+{
+	RINGMOD_SIN = 0,
+	RINGMOD_SAW = 1,
+	RINGMOD_SQUARE = 2,
+} ringmodwaves_t;
+
+typedef struct
+{
+#ifdef HAVE_OPENAL
+	struct
+	{
+		ALuint effect;
+		ALuint slot;
+	} al;
+#endif
+
+	UINT32 type;
+
+	struct
+	{
+		float density;
+		float diffusion;
+		float gain;
+		float gainhf;
+		float gainlf;
+		float decay_time;
+		float decay_hfratio;
+		float decay_lfratio;
+		float reflections_gain;
+		float reflections_delay;
+		f_vector3_t reflections_pan;
+		float late_reverb_gain;
+		float late_reverb_delay;
+		f_vector3_t late_reverb_pan;
+		float echo_time;
+		float echo_depth;
+		float modulation_time;
+		float modulation_depth;
+		float air_absorption_gainhf;
+		float hfreference;
+		float lfreference;
+		float room_rolloff_factor;
+		boolean decay_hflimit;
+	} eaxreverb;
+
+	struct
+	{
+		float density;
+		float diffusion;
+		float gain;
+		float gainhf;
+		float decay_time;
+		float decay_hfratio;
+		float reflections_gain;
+		float reflections_delay;
+		float late_reverb_gain;
+		float late_reverb_delay;
+		float air_absorption_gainhf;
+		float room_rolloff_factor;
+		boolean decay_hflimit;
+	} reverb;
+
+	struct
+	{
+		SINT8 waveform;
+		INT16 phase;
+		float rate;
+		float depth;
+		float feedback;
+		float delay;
+	} chorus;
+
+	struct
+	{
+		float edge;
+		float gain;
+		float lowpass_cutoff;
+		float eqcenter;
+		float eqbandwidth;
+	} distortion;
+
+	struct
+	{
+		float delay;
+		float lrdelay;
+		float damping;
+		float feedback;
+		float spread;
+	} echo;
+
+	struct
+	{
+		SINT8 waveform;
+		INT16 phase;
+		float rate;
+		float depth;
+		float feedback;
+		float delay;
+	} flanger;
+
+	struct
+	{
+		float frequency;
+		SINT8 left_direction;
+		SINT8 right_direction;
+	} freqshift;
+
+	struct
+	{
+		SINT8 phonemea;
+		SINT8 phonemeb;
+		SINT8 phonemea_coarse_tuning;
+		SINT8 phonemeb_coarse_tuning;
+		SINT8 waveform;
+		float rate;
+	} vocal_morpher;
+
+	struct
+	{
+		SINT8 coarse_tune;
+		SINT8 fine_tune;
+	} pitchshift;
+
+	struct
+	{
+		float frequency;
+		float highpass_cutoff;
+		SINT8 waveform;
+	} ringmod;
+
+	struct
+	{
+		float attack_time;
+		float release_time;
+		float resonance;
+		float peak_gain;
+	} autowah;
+
+	struct
+	{
+		boolean onoff;
+	} compressor;
+
+	struct
+	{
+		float low_gain;
+		float low_cutoff;
+		float mid1_gain;
+		float mid1_center;
+		float mid1_width;
+		float mid2_gain;
+		float mid2_center;
+		float mid2_width;
+		float high_gain;
+		float high_cutoff;
+	} eq;
+} efx_t;
 
 /**	\brief Sound subsystem runing and waiting
 */
@@ -83,7 +295,7 @@ void I_ShutdownSound(void);
 
 	\return	sfx handle
 */
-INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel);
+INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel, efx_t *efx, const void *origin);
 
 /**	\brief	Stops a sound channel.
 
@@ -105,6 +317,8 @@ void I_UpdateSound(void);
 */
 boolean I_SoundIsPlaying(INT32 handle);
 
+
+
 /**	\brief	Updates the sfx handle
 
 	\param	handle	sfx handle
@@ -114,7 +328,7 @@ boolean I_SoundIsPlaying(INT32 handle);
 
 	\return	void
 */
-void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch);
+void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch, efx_t *efx, const void *origin);
 
 /**	\brief	The I_SetSfxVolume function
 
@@ -245,6 +459,17 @@ boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms
 boolean I_FadeSong(UINT8 target_volume, UINT32 ms, void (*callback)(void));
 boolean I_FadeOutStopSong(UINT32 ms);
 boolean I_FadeInPlaySong(UINT32 ms, boolean looping);
+
+efx_t *I_CreateEFX(efx_t *efx);
+float I_GetEFXTail(efx_t *efx);
+void I_DeleteEFX(efx_t *efx);
+
+void I_CreateGlobalEFX(efx_t *efx);
+void I_DeleteGlobalEFX(void);
+
+void I_InitEFXArray(efx_t *efx);
+
+extern consvar_t cv_soundefx;
 
 #ifdef __cplusplus
 } // extern "C"

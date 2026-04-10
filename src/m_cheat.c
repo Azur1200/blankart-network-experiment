@@ -723,6 +723,11 @@ struct debugFlagNames_s const debug_flag_names[] =
 	{"Player", DBG_PLAYER},
 	{"Render", DBG_RENDER},
 	{"Renderer", DBG_RENDER}, // alt name
+	{"Music", DBG_MUSIC},
+	{"IMU", DBG_IMU},
+	{"Accelerometer", DBG_IMU}, // alt name
+	{"Gyro", DBG_IMU}, // alt name
+	{"Sensors", DBG_IMU}, // alt name
 	{"Polyobj", DBG_POLYOBJ},
 	{"GameLogic", DBG_GAMELOGIC},
 	{"Game", DBG_GAMELOGIC}, // alt name
@@ -734,6 +739,8 @@ struct debugFlagNames_s const debug_flag_names[] =
 	{"Randomizer", DBG_RNG}, // alt name
 	{"Demo", DBG_DEMO},
 	{"Replay", DBG_DEMO}, // alt name
+	{"EFX", DBG_EFX},
+	{"SoundEFX", DBG_EFX}, // alt name
 	{NULL, 0}
 };
 

@@ -26,6 +26,8 @@
 #include "v_video.h"
 #include "p_local.h"
 #include "k_kart.h"
+#include "m_fixed.h"
+#include "m_easing.h"
 
 #define MAXMOUSESENSITIVITY 100 // sensitivity steps
 
@@ -88,6 +90,14 @@ consvar_t cv_controllerled[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("gamepadled2", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, controllerled_cons_t, led_off_handle2),
 	CVAR_INIT ("gamepadled3", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, controllerled_cons_t, led_off_handle3),
 	CVAR_INIT ("gamepadled4", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, controllerled_cons_t, led_off_handle4)
+};
+
+static CV_PossibleValue_t tiltcontrol_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Shakes Only"}, {0, NULL}};
+consvar_t cv_tiltcontrol[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("tiltcontrol",  "Off", CV_SAVE, tiltcontrol_cons_t, NULL),
+	CVAR_INIT ("tiltcontrol2", "Off", CV_SAVE, tiltcontrol_cons_t, NULL),
+	CVAR_INIT ("tiltcontrol3", "Off", CV_SAVE, tiltcontrol_cons_t, NULL),
+	CVAR_INIT ("tiltcontrol4", "Off", CV_SAVE, tiltcontrol_cons_t, NULL)
 };
 
 static void rumble_off_handle(void)
@@ -169,6 +179,7 @@ INT32 gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING] = {
 	[gc_centerview ] = {KEY_END                    },
 	[gc_camreset   ] = {KEY_HOME                   },
 	[gc_camtoggle  ] = {KEY_BACKSPACE              },
+	[gc_freelook   ] = {KEY_RCTRL	               },
 };
 
 // lists of GC codes for selective operation
@@ -333,6 +344,20 @@ void G_MapEventsToControls(event_t *ev)
 			gamekeydown[device][i] = max(0, ev->data2);
 
 			break;
+		
+		case ev_accelerometer:
+			// average out accel events recieved for this tick (favouring the newer data)
+			gamekeydown[device][KEY_ACCELEROMETER1+0] = (gamekeydown[device][KEY_ACCELEROMETER1+0] + (3*ev->data1))/4;
+			gamekeydown[device][KEY_ACCELEROMETER1+1] = (gamekeydown[device][KEY_ACCELEROMETER1+1] + (3*ev->data2))/4;
+			gamekeydown[device][KEY_ACCELEROMETER1+2] = (gamekeydown[device][KEY_ACCELEROMETER1+2] + (3*ev->data3))/4;
+			break;
+			
+		case ev_gyroscope:
+			// average out gyro events recieved for this tick
+			gamekeydown[device][KEY_GYROSCOPE1+0] = (gamekeydown[device][KEY_GYROSCOPE1+0] + ev->data1)/2;
+			gamekeydown[device][KEY_GYROSCOPE1+1] = (gamekeydown[device][KEY_GYROSCOPE1+1] + ev->data2)/2;
+			gamekeydown[device][KEY_GYROSCOPE1+2] = (gamekeydown[device][KEY_GYROSCOPE1+2] + ev->data3)/2;
+			break;
 
 		default:
 			break;
@@ -472,19 +497,13 @@ static keyname_t keynames[] =
 	{KEY_AXIS1+8, "L TRIGGER"},
 	{KEY_AXIS1+9, "R TRIGGER"},
 
-	{KEY_ACCELEROMETER1+0, "TILT -X"},
-	{KEY_ACCELEROMETER1+1, "TILT +X"},
-	{KEY_ACCELEROMETER1+2, "TILT -Y"},
-	{KEY_ACCELEROMETER1+3, "TILT +Y"},
-	{KEY_ACCELEROMETER1+4, "TILT -Z"},
-	{KEY_ACCELEROMETER1+5, "TILT +Z"},
+	{KEY_ACCELEROMETER1+0, "TILT X"},
+	{KEY_ACCELEROMETER1+1, "TILT Y"},
+	{KEY_ACCELEROMETER1+2, "TILT Z"},
 
-	{KEY_GYROSCOPE1+0, "ROTATE -X"},
-	{KEY_GYROSCOPE1+1, "ROTATE +X"},
-	{KEY_GYROSCOPE1+2, "ROTATE -Y"},
-	{KEY_GYROSCOPE1+3, "ROTATE +Y"},
-	{KEY_GYROSCOPE1+4, "ROTATE -Z"},
-	{KEY_GYROSCOPE1+5, "ROTATE +Z"},
+	{KEY_GYROSCOPE1+0, "ROTATE X"},
+	{KEY_GYROSCOPE1+1, "ROTATE Y"},
+	{KEY_GYROSCOPE1+2, "ROTATE Z"},
 };
 
 static const char *gamecontrolname[num_gamecontrols] =
@@ -1210,3 +1229,344 @@ void Command_Setcontrol4_f(void)
 
 	setcontrol(3);
 }
+
+// accelerometer and gyro stuff
+
+// when holding the controller still (shaking and turning included), correct this quickly to resolve error
+#define GyroCalibrationRollingAvgSamples (TICRATE/2)
+#define GyroCalibrationStart (TICRATE/2)
+#define GyroCalibrationTrust (1*FRACUNIT/100)
+
+boolean localgyrocalibrating[MAXSPLITSCREENPLAYERS];
+vector3_t localgyrovectors[MAXSPLITSCREENPLAYERS];
+
+tic_t localgyrocalibrationsamples[MAXSPLITSCREENPLAYERS];
+vector3_t localgyrocalibrationlastoffset[MAXSPLITSCREENPLAYERS];
+vector3_t localgyrocalibrationoffset[MAXSPLITSCREENPLAYERS];
+
+// assume the accelerometer doesn't need calibration, use this to determine if gyro can be calibrated
+vector3_t localaccelcalibrationoffset[MAXSPLITSCREENPLAYERS];
+
+fixed_t localshakinessfac[MAXSPLITSCREENPLAYERS];
+vector3_t localsmoothedaccel[MAXSPLITSCREENPLAYERS];
+vector3_t localgravityvectors[MAXSPLITSCREENPLAYERS];
+vector4_t localquaternions[MAXSPLITSCREENPLAYERS];
+
+// copy/pasted from the lua version of these routines
+inline static vector3_t *QuaternionMulVec3(vector3_t *out, vector3_t *a, vector4_t *b)
+{
+	fixed_t ax = a->x, ay = a->y, az = a->z, aw = 0;
+	fixed_t bx = b->x, by = b->y, bz = b->z, bw = b->a;
+
+	FV3_NormalizeEx(out, FV3_Load(out,
+		FixedMul(aw, bx) + FixedMul(ax, bw) + FixedMul(ay, bz) - FixedMul(az, by),
+		FixedMul(aw, by) - FixedMul(ax, bz) + FixedMul(ay, bw) + FixedMul(az, bx),
+		FixedMul(aw, bz) + FixedMul(ax, by) - FixedMul(ay, bx) + FixedMul(az, bw)
+	));
+
+	return out;
+}
+
+inline static fixed_t FV3_LengthSquared(const vector3_t *vec)
+{
+	return FixedMul(vec->x, vec->x) + FixedMul(vec->y, vec->y) + FixedMul(vec->z, vec->z);
+}
+
+inline static vector4_t AngleAxis(fixed_t angle, fixed_t x, fixed_t y, fixed_t z)
+{
+	fixed_t sinangle = FINESINE(FixedAngle(angle/2) >> ANGLETOFINESHIFT);
+	fixed_t cosangle = FINECOSINE(FixedAngle(angle/2) >> ANGLETOFINESHIFT);
+	vector3_t axis = {x, y, z};
+	vector4_t result;
+
+	FV3_Normalize(&axis);
+
+	FV4_Load(&result,
+		FixedMul(axis.x, sinangle),
+		FixedMul(axis.y, sinangle),
+		FixedMul(axis.z, sinangle),
+		cosangle
+	);
+
+	return result;
+}
+
+vector3_t G_GetCalibratedGyroOffset(INT32 p)
+{
+	return localgyrocalibrationoffset[p];
+}
+
+void G_UpdateGamepadAutoCalibration(INT32 p, vector3_t accel, vector3_t gyro, boolean allowautocalibration)
+{
+	fixed_t trust = FV3_Distance(&localaccelcalibrationoffset[p], &accel);
+	FV3_Load(
+		&localaccelcalibrationoffset[p],
+		(localaccelcalibrationoffset[p].x + accel.x)/2,
+		(localaccelcalibrationoffset[p].y + accel.y)/2,
+		(localaccelcalibrationoffset[p].z + accel.z)/2
+	);
+
+	CONS_Debug(DBG_IMU, "== Gyro Update ==\n");
+	CONS_Debug(DBG_IMU, "Gyro calibration safety: %4.3f\n", FixedToFloat(trust));
+	if (allowautocalibration && (trust < GyroCalibrationTrust))
+	{
+		if (!localgyrocalibrating[p])
+		{
+			localgyrocalibrationsamples[p] = 0;
+			FV3_Copy(&localgyrocalibrationlastoffset[p], &localgyrocalibrationoffset[p]);
+			FV3_Load(
+				&localgyrocalibrationoffset[p],
+				0, 0, 0
+			);
+			localgyrocalibrating[p] = true;
+		}
+	}
+	else
+	{
+		// incomplete calibration
+		if (localgyrocalibrating[p] && localgyrocalibrationsamples[p] <= (GyroCalibrationRollingAvgSamples + GyroCalibrationStart))
+		{
+			FV3_Copy(&localgyrocalibrationoffset[p], &localgyrocalibrationlastoffset[p]);
+			localgyrocalibrationsamples[p] = 0;
+		}
+		localgyrocalibrating[p] = false;
+	}
+}
+
+void G_UpdateGamepadGyro(INT32 p, vector3_t gyro)
+{
+	vector3_t offset = {0};
+
+	if (p >= MAXSPLITSCREENPLAYERS)
+	{
+#ifdef PARANOIA
+		CONS_Debug(DBG_GAMELOGIC, "G_UpdateGamepadGyro: Invalid player ID %d\n", p);
+#endif
+		return;
+	}
+	if (!I_ControllerSupportsSensorGyro(p)) return;
+	
+	if (localgyrocalibrating[p])
+	{
+		localgyrocalibrationsamples[p]++;
+		if (localgyrocalibrationsamples[p] > GyroCalibrationStart)
+		{
+			FV3_Load(
+				&localgyrocalibrationoffset[p],
+				(((GyroCalibrationRollingAvgSamples-1)*localgyrocalibrationoffset[p].x) + gyro.x)/GyroCalibrationRollingAvgSamples,
+				(((GyroCalibrationRollingAvgSamples-1)*localgyrocalibrationoffset[p].y) + gyro.y)/GyroCalibrationRollingAvgSamples,
+				(((GyroCalibrationRollingAvgSamples-1)*localgyrocalibrationoffset[p].z) + gyro.z)/GyroCalibrationRollingAvgSamples
+			);
+		}
+	}
+	CONS_Debug(DBG_IMU, "Gyro calibration samples: %d\n", localgyrocalibrationsamples[p]);
+
+	offset = G_GetCalibratedGyroOffset(p);
+	FV3_SubEx(&gyro, &offset, &localgyrovectors[p]);
+}
+
+// math sourced from this article
+// http://gyrowiki.jibbsmart.com/blog:finding-gravity-with-sensor-fusion
+
+// the time it takes in our acceleration smoothing for 'A' to get halfway to 'B'
+#define SmoothingHalfTime (0.25)
+// thresholds of trust for accel shakiness. less shakiness = more trust
+#define ShakinessMaxThreshold (40*FRACUNIT/100)
+#define ShakinessMinThreshold (1*FRACUNIT/100)
+// when we trust the accel a lot (the controller is "still"), how quickly do we correct our gravity vector?
+#define CorrectionStillRate (FRACUNIT)
+// when we don't trust the accel (the controller is "shaky"), how quickly do we correct our gravity vector?
+#define CorrectionShakyRate (1*FRACUNIT/100)
+// if our old gravity vector is close enough to our new one, limit further corrections to this proportion of the rotation speed
+#define CorrectionGyroFactor (5*FRACUNIT/100)
+// thresholds for what's considered "close enough"
+#define CorrectionGyroMinThreshold (5*FRACUNIT/100)
+#define CorrectionGyroMaxThreshold (FRACUNIT/4)
+// no matter what, always apply a minimum of this much correction to our gravity vector
+#define CorrectionMinimumSpeed (1*FRACUNIT/100)
+
+void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
+{
+	// convert gyro input to reverse rotation
+	vector3_t invAccel = {-accel.x, -accel.y, -accel.z};
+	fixed_t correctionRate = 0;
+	// scaling is reversed, smaller time scales = larger steps in this code
+	// (1/timescale)/dt
+	fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
+	// we don't have exp2 and we actually need it here to take timescale into account :(
+	fixed_t smoothFactor = FloatToFixed(exp2(-FixedToFloat(deltaseconds) / SmoothingHalfTime));
+	fixed_t angleRate = FixedMul(FV3_Magnitude(&gyro), M_PI_FIXED)/180;
+	fixed_t correctionLimit;
+	vector4_t invRotation = {0};
+	vector3_t gravityDelta = {0};
+	vector3_t gravityDeltaDirection = {0};
+	vector3_t correction = {0};
+
+	if (!G_GetGamepadCanUseTilt(p)) return;
+	CONS_Debug(DBG_IMU, "= Update Gravity Delta Time: %4.3f =\n", FixedToFloat(deltaseconds));
+
+	invRotation = AngleAxis(
+		FixedMul(FixedMul(FV3_Magnitude(&gyro), deltaseconds), 190*FRACUNIT/100),
+		-gyro.x, 
+		-gyro.y, 
+		-gyro.z
+	);
+
+	// rotate gravity vector
+	QuaternionMulVec3(&localgravityvectors[p], &localgravityvectors[p], &invRotation);
+	QuaternionMulVec3(&localsmoothedaccel[p], &localsmoothedaccel[p], &invRotation);
+	localshakinessfac[p] = FixedMul(localshakinessfac[p], smoothFactor), 
+	FV3_SubEx(&accel, &localsmoothedaccel[p], &correction);
+	localshakinessfac[p] = max(localshakinessfac[p], FV3_Magnitude(&correction));
+	FV3_Load(&localsmoothedaccel[p],
+		Easing_Linear(smoothFactor, accel.x, localsmoothedaccel[p].x),
+		Easing_Linear(smoothFactor, accel.y, localsmoothedaccel[p].y),
+		Easing_Linear(smoothFactor, accel.z, localsmoothedaccel[p].z)
+	);
+	
+	CONS_Debug(DBG_IMU, "Shakiness: %4.2f\n", FixedToFloat(localshakinessfac[p]));
+
+	FV3_SubEx(&invAccel, &localgravityvectors[p], &gravityDelta);
+	if (FV3_Magnitude(&gravityDelta) > 0)
+	{
+		FV3_NormalizeEx(&gravityDelta, &gravityDeltaDirection);
+	}
+
+	CONS_Debug(DBG_IMU, "Gravity Delta Magnitude: %4.3f\n", FixedToFloat(FV3_Magnitude(&gravityDelta)));
+
+	if (ShakinessMaxThreshold > ShakinessMinThreshold)
+	{
+		fixed_t stillness = CLAMP(FixedDiv((localshakinessfac[p] - ShakinessMinThreshold), (ShakinessMaxThreshold - ShakinessMinThreshold)), 0, FRACUNIT);
+		correctionRate = CorrectionStillRate + FixedMul((CorrectionShakyRate - CorrectionStillRate), stillness);
+	}
+	else if (localshakinessfac[p] > ShakinessMaxThreshold)
+	{
+		correctionRate = CorrectionShakyRate;
+	}
+	else
+	{
+		correctionRate = CorrectionStillRate;
+	}
+
+	// limit in proportion to rotation rate
+	correctionLimit = FixedMul(angleRate, CorrectionGyroFactor);
+
+	CONS_Debug(DBG_IMU, "Angle Rate: %4.3f\n", FixedToFloat(angleRate));
+	CONS_Debug(DBG_IMU, "Correction Limit: %4.3f\n", FixedToFloat(correctionLimit));
+
+	if (correctionRate > correctionLimit) {
+		fixed_t closeEnoughFactor;
+		if (CorrectionGyroMaxThreshold > CorrectionGyroMinThreshold)
+		{
+			closeEnoughFactor = CLAMP(FixedDiv((FV3_Magnitude(&gravityDelta) - CorrectionGyroMinThreshold), (CorrectionGyroMaxThreshold - CorrectionGyroMinThreshold)), 0, FRACUNIT);
+		}
+		else if (FV3_Magnitude(&gravityDelta) > CorrectionGyroMaxThreshold)
+		{
+			closeEnoughFactor = FRACUNIT;
+		}
+		else
+		{
+			closeEnoughFactor = 0;
+		}
+		
+		CONS_Debug(DBG_IMU, "'Close Enough' Fac: %4.3f\n", FixedToFloat(closeEnoughFactor));
+		correctionRate = correctionLimit + FixedMul((correctionRate - correctionLimit), closeEnoughFactor);
+	}
+
+	correctionRate = max(correctionRate, CorrectionMinimumSpeed);
+
+	CONS_Debug(DBG_IMU, "Correction Rate: %4.2f\n", FixedToFloat(correctionRate));
+
+	FV3_Load(&correction,
+		FixedMul(gravityDeltaDirection.x, FixedMul(deltaseconds, correctionRate)),
+		FixedMul(gravityDeltaDirection.y, FixedMul(deltaseconds, correctionRate)),
+		FixedMul(gravityDeltaDirection.z, FixedMul(deltaseconds, correctionRate))
+	);
+	if ((FV3_LengthSquared(&correction) < FV3_LengthSquared(&gravityDelta)))
+	{
+		FV3_Add(&localgravityvectors[p], &correction);
+	}
+	else
+	{
+		FV3_Add(&localgravityvectors[p], &gravityDelta);
+	}
+}
+
+INT32 G_GetGamepadTilt(INT32 p)
+{	
+	fixed_t tilt;
+	fixed_t curve;
+	if (!G_GetGamepadCanUseTilt(p)) return 0;
+	tilt = CLAMP(FixedDiv(G_GetGamepadGravity(p).x + MAXGAMEPADTILT, 2*MAXGAMEPADTILT), 0, FRACUNIT);
+	CONS_Debug(DBG_IMU, "Tilt: %4.2f\n", FixedToFloat(tilt));
+	
+	curve = FINESINE(FixedAngle(180*(tilt-FRACUNIT/2))>>ANGLETOFINESHIFT);
+	CONS_Debug(DBG_IMU, "Pinched Tilt: %4.2f\n", FixedToFloat(curve));
+	
+	return (JOYAXISRANGE * curve)/FRACUNIT;
+}
+
+vector3_t G_GetGamepadGravity(INT32 p)
+{
+	const vector3_t zero = {0, -ACCELEROMETERGRAVITY, 0};
+	if (!G_GetGamepadCanUseTilt(p)) return zero;
+	return localgravityvectors[p];
+}
+
+vector3_t G_GetGamepadShake(INT32 p)
+{
+	vector3_t accel = {0};
+	if (!G_GetGamepadCanUseTilt(p)) return accel;
+	accel = G_PlayerInputSensor(p, ACCELEROMETER);
+	FV3_Add(&accel, &localgravityvectors[p]);
+
+	return accel;
+}
+
+fixed_t G_GetGamepadShakinessFactor(INT32 p)
+{
+	if (!G_GetGamepadCanUseTilt(p)) return 0;
+	return localshakinessfac[p];
+}
+
+vector3_t G_GetGamepadCalibratedGyro(INT32 p)
+{
+	vector3_t zero = {0};
+	if (p >= MAXSPLITSCREENPLAYERS)
+	{
+#ifdef PARANOIA
+		CONS_Debug(DBG_GAMELOGIC, "G_GetGamepadGyro: Invalid player ID %d\n", p);
+#endif
+		return zero;
+	}
+
+	if (!I_ControllerSupportsSensorGyro(p)) return zero;
+
+	return localgyrovectors[p];
+}
+
+boolean G_GetGamepadCanUseTilt(INT32 p)
+{
+	if (p >= MAXSPLITSCREENPLAYERS)
+	{
+#ifdef PARANOIA
+		CONS_Debug(DBG_GAMELOGIC, "G_GetGamepadCanUseTilt: Invalid player ID %d\n", p);
+#endif
+		return false;
+	}
+
+	return (I_ControllerSupportsSensorAccelerometer(p) && I_ControllerSupportsSensorGyro(p));
+}
+#undef ShakinessMaxThreshold
+#undef ShakinessMinThreshold
+#undef CorrectionStillRate
+#undef CorrectionShakyRate
+#undef CorrectionGyroFactor
+#undef CorrectionGyroMinThreshold
+#undef CorrectionGyroMaxThreshold
+#undef CorrectionMinimumSpeed
+#undef SmoothingHalfTime
+
+#undef GyroCalibrationTrust
+#undef GyroCalibrationStart
+#undef GyroCalibrationRollingAvgSamples

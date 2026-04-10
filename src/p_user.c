@@ -68,10 +68,6 @@
 
 #include "acs/interface.h"
 
-#ifdef HW3SOUND
-#include "hardware/hw3sound.h"
-#endif
-
 #ifdef HWRENDER
 #include "hardware/hw_light.h"
 #include "hardware/hw_main.h"
@@ -83,6 +79,7 @@ static void P_NukeAllPlayers(player_t *player);
 
 // Some people like the more limited camerea from V1 so why not.
 consvar_t cv_naturalcamera = CVAR_INIT ("naturalcamera", "Off", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_lookbackinreplays = CVAR_INIT ("lookbackinreplays", "Off", CV_SAVE, CV_OnOff, NULL);
 
 //
 // Jingle stuff.
@@ -175,13 +172,14 @@ void P_InstaThrust(mobj_t *mo, angle_t angle, fixed_t move)
 	mo->momy = FixedMul(move,FINESINE(angle));
 }
 
-// Returns a location (hard to explain - go see how it is used)
+// Returns the X component of a 2D vector pointing at an angle, with move as the magnitude
 fixed_t P_ReturnThrustX(mobj_t *mo, angle_t angle, fixed_t move)
 {
 	(void)mo;
 	angle >>= ANGLETOFINESHIFT;
 	return FixedMul(move, FINECOSINE(angle));
 }
+// Returns the Y component of a 2D vector pointing at an angle, with move as the magnitude
 fixed_t P_ReturnThrustY(mobj_t *mo, angle_t angle, fixed_t move)
 {
 	(void)mo;
@@ -313,7 +311,7 @@ boolean P_PlayerMoving(INT32 pnum)
 //
 UINT8 P_GetNextEmerald(void)
 {
-	INT16 mapnum = gamemap-1;
+	mapnum_t mapnum = gamemap-1;
 
 	if (mapnum > nummapheaders || !mapheaderinfo[mapnum])
 		return 0;
@@ -418,7 +416,7 @@ UINT8 P_FindLowestLap(void)
 	INT32 i;
 	UINT8 lowest = UINT8_MAX;
 
-	if (!(gametyperules & GTR_CIRCUIT))
+	if (!(gametypes[gametype]->rules & GTR_CIRCUIT))
 		return 0;
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -445,7 +443,7 @@ UINT8 P_FindHighestLap(void)
 	INT32 i;
 	UINT8 highest = 0;
 
-	if (!(gametyperules & GTR_CIRCUIT))
+	if (!(gametypes[gametype]->rules & GTR_CIRCUIT))
 		return 0;
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -540,7 +538,7 @@ void P_GivePlayerLives(player_t *player, INT32 numlives)
 // Adds to the player's score
 void P_AddPlayerScore(player_t *player, UINT32 amount)
 {
-	if (!(gametyperules & GTR_POINTS))
+	if (!(gametypes[gametype]->rules & GTR_POINTS))
 		return;
 
 	if (player->exiting) // srb2kart
@@ -762,7 +760,7 @@ boolean P_EndingMusic(player_t *player)
 
 #undef getplayerpos
 
-	if ((gametyperules & GTR_CIRCUIT) && bestlocalpos == MAXPLAYERS+1)
+	if ((gametypes[gametype]->rules & GTR_CIRCUIT) && bestlocalpos == MAXPLAYERS+1)
 		sprintf(buffer, "k*fail"); // F-Zero death results theme
 	else
 	{
@@ -776,9 +774,9 @@ boolean P_EndingMusic(player_t *player)
 
 	S_SpeedMusic(1.0f);
 
-	if ((gametyperules & GTR_CIRCUIT))
+	if ((gametypes[gametype]->rules & GTR_CIRCUIT))
 		buffer[1] = 'r';
-	else if ((gametyperules & GTR_BUMPERS))
+	else if ((gametypes[gametype]->rules & GTR_BUMPERS))
 	{
 		buffer[1] = 'b';
 		looping = false;
@@ -889,7 +887,7 @@ void P_RestoreMusic(player_t *player)
 #if 0
 			// Event - Final Lap
 			// Still works for GME, but disabled for consistency
-			if ((gametyperules & GTR_CIRCUIT) && player->laps >= numlaps)
+			if ((gametypes[gametype]->rules & GTR_CIRCUIT) && player->laps >= numlaps)
 				S_SpeedMusic(1.2f);
 #endif
 			if (mapmusresume && cv_resume.value)
@@ -1261,12 +1259,15 @@ mobj_t *P_SpawnGhostMobjEX(mobj_t *mobj, boolean legacy)
 	if (!(mobj->flags & MF_DONTENCOREMAP))
 		ghost->flags &= ~MF_DONTENCOREMAP;
 
-	if (mobj->player && mobj->player->followmobj)
+	if (mobj->player)
 	{
-		mobj_t *ghost2 = P_SpawnGhostMobj(mobj->player->followmobj);
-		P_SetTarget(&ghost2->tracer, ghost);
-		P_SetTarget(&ghost->tracer, ghost2);
-		ghost2->flags2 |= (mobj->player->followmobj->flags2 & MF2_LINKDRAW);
+		if(mobj->player->followmobj)
+		{
+			mobj_t *ghost2 = P_SpawnGhostMobj(mobj->player->followmobj);
+			P_SetTarget(&ghost2->tracer, ghost);
+			P_SetTarget(&ghost->tracer, ghost2);
+			ghost2->flags2 |= (mobj->player->followmobj->flags2 & MF2_LINKDRAW);
+		}
 	}
 
 	// Copy interpolation data :)
@@ -1313,7 +1314,7 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 	if (!player->spectator)
 	{
 		boolean losing;
-		if ((gametyperules & GTR_CIRCUIT)) // If in Race Mode, allow
+		if ((gametypes[gametype]->rules & GTR_CIRCUIT)) // If in Race Mode, allow
 		{
 			player->exiting = raceexittime+2;
 			K_UpdateAllPlayerPositions();
@@ -1342,7 +1343,7 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 				G_BeginLevelExit();
 			}
 		}
-		else if ((gametyperules & GTR_BUMPERS)) // Battle Mode exiting
+		else if ((gametypes[gametype]->rules & GTR_BUMPERS)) // Battle Mode exiting
 		{
 			player->exiting = battleexittime+1;
 			G_BeginLevelExit();
@@ -1454,7 +1455,7 @@ boolean P_PlayerHitFloor(player_t *player, boolean fromAir)
 
 	clipmomz = !(P_CheckDeathPitCollide(player->mo));
 
-	if (player->airtime > 10 && player->prevonground == false && fromAir == true && clipmomz == true)
+	if (player->airtime > 10 && player->prevonground == false && fromAir == true && !P_CheckDeathPitFOFs(player->mo))
 	{
 		K_SpawnSplashForMobj(player->mo, abs(player->mo->momz));
 	}
@@ -1473,7 +1474,7 @@ boolean P_PlayerHitFloor(player_t *player, boolean fromAir)
 			{
 				player->mo->momx = player->mo->momx/2;
 				player->mo->momy = player->mo->momy/2;
-			}                    
+			}
 		}
 	}
 
@@ -1689,6 +1690,9 @@ static void P_CheckBouncySectors(player_t *player)
 			{
 				player->mo->momx = -FixedMul(player->mo->momx,rover->bouncestrength);
 				player->mo->momy = -FixedMul(player->mo->momy,rover->bouncestrength);
+
+				// Kill heavy airdrop too so you don't get softlocked.
+				K_KillAirDrop(player, PAF_AIRDROP_HEAVY);
 			}
 			else
 			{
@@ -1728,6 +1732,10 @@ static void P_CheckBouncySectors(player_t *player)
 				player->mo->momx = momentum.x;
 				player->mo->momy = momentum.y;
 				player->mo->momz = momentum.z;
+
+				// Kill heavy airdrop too so you don't get softlocked.
+				K_KillAirDrop(player, PAF_AIRDROP_HEAVY);
+
 			}
 			goto bouncydone;
 		}
@@ -2077,7 +2085,7 @@ boolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd)
 		return true;
 	}
 
-	if (((gametyperules & GTR_NOCOUNTDOWN) || (leveltime > starttime))
+	if (((gametypes[gametype]->rules & GTR_NOCOUNTDOWN) || (leveltime > starttime))
 		&& (cmd->buttons & BT_ACCELERATE)
 		&& (cmd->buttons & BT_BRAKE))
 	{
@@ -2152,7 +2160,7 @@ static void P_UpdatePlayerAngle(player_t *player)
 		player->lturn_max[leveltime%MAXPREDICTTICS] = player->rturn_max[leveltime%MAXPREDICTTICS] = 0;
 	}
 	
-	if ((gametyperules & GTR_NOCOUNTDOWN) || leveltime >= starttime)
+	if ((gametypes[gametype]->rules & GTR_NOCOUNTDOWN) || leveltime >= starttime)
 	{
 		// KART: Don't directly apply angleturn! It may have been either A) forged by a malicious client, or B) not be a smooth turn due to a player dropping frames.
 		// Instead, turn the player only up to the amount they're supposed to turn accounting for latency. Allow exactly 1 extra turn unit to try to keep old replays synced.
@@ -2437,9 +2445,6 @@ void P_MovePlayer(player_t *player)
 	// Look for Quicksand!
 	if (CheckForQuicksand)
 		P_CheckQuicksand(player);
-
-	if (P_IsObjectOnGround(player->mo))
-		player->mo->pmomz = 0;
 }
 
 static void P_DoZoomTube(player_t *player)
@@ -2690,10 +2695,6 @@ static void P_DeathThink(player_t *player)
 			playerGone = true;
 		}
 	}
-	else if (player->bot && K_BotDefaultSpectator())
-	{
-		playerGone = true;
-	}
 
 	if (playerGone == false)
 	{
@@ -2830,7 +2831,7 @@ void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 		cam->reset_aiming = false;
 	}
 
-	cam->angle += cmd->turning << TICCMD_REDUCE;
+	cam->angle = cmd->angle << TICCMD_REDUCE;
 
 	// camera movement:
 	if (!cam->button_a_held)
@@ -3097,10 +3098,18 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		focusaiming = player->aiming;
 	}
 
+	if (abs(thiscam->freelook_held) >= 2*TICRATE)
+	{
+		focusaiming += FixedAngle(CLAMP(thiscam->freelook_pitch + thiscam->freelook_pitch_add, -45*FRACUNIT, 45*FRACUNIT) * P_MobjFlip(mo));
+	}
+
 	if (P_CameraThinker(player, thiscam, resetcalled))
 		return true;
 
-	lookback = ( player->cmd.buttons & BT_LOOKBACK );
+	if (P_IsLocalPlayer(player) || (demo.playback && cv_lookbackinreplays.value))
+		lookback = G_PlayerInputDown(num, gc_lookback, false, DEADZONE_BUTTON);
+	else
+		lookback = player->cmd.buttons & BT_LOOKBACK;
 
 	camspeed = cv_cam_speed[num].value;
 	camstill = cv_cam_still[num].value;
@@ -3879,8 +3888,12 @@ static angle_t P_GetCameraPitchRollAngle(mobj_t *mobj, player_t *viewPlayer)
 	}
 	else
 	{
-		// Regular Mobjs don't air tilt.
-		viewingAngle = mobj->angle;
+		// For regular objects, use the camera; just not the *player's* camera.
+		//... Unless you are a Nights bumber...
+		if (mobj->type == MT_NIGHTSBUMPER)
+			viewingAngle = mobj->angle;
+		else
+			viewingAngle = R_PointToAngleFloat(mobj->x, mobj->y);
 	}
 
 	pitchMul = -FINESINE(viewingAngle >> ANGLETOFINESHIFT);
@@ -4093,7 +4106,7 @@ void P_PlayerThink(player_t *player)
 
 	if (!mapreset)
 	{
-		if (gametyperules & GTR_CIRCUIT)
+		if (gametypes[gametype]->rules & GTR_CIRCUIT)
 		{
 			INT32 i;
 
@@ -4137,7 +4150,7 @@ void P_PlayerThink(player_t *player)
 
 		// If it is set, start subtracting
 		// Don't allow it to go back to 0
-		if (player->exiting > 1 && (player->exiting < raceexittime+2 || !(gametyperules & GTR_CIRCUIT))) // SRB2kart - "&& player->exiting > 1"
+		if (player->exiting > 1 && (player->exiting < raceexittime+2 || !(gametypes[gametype]->rules & GTR_CIRCUIT))) // SRB2kart - "&& player->exiting > 1"
 			player->exiting--;
 
 		if (player->exiting && exitcountdown)
@@ -4161,7 +4174,7 @@ void P_PlayerThink(player_t *player)
 	}
 
 	// SRB2kart 010217
-	if (!(gametyperules & GTR_NOCOUNTDOWN))
+	if (!(gametypes[gametype]->rules & GTR_NOCOUNTDOWN))
 	{
 		if (leveltime < starttime)
 		{
@@ -4195,7 +4208,7 @@ void P_PlayerThink(player_t *player)
 		}
 	}
 
-	if (netgame && cv_antigrief.value != 0 && (gametyperules & GTR_CIRCUIT))
+	if (netgame && cv_antigrief.value != 0 && (gametypes[gametype]->rules & GTR_CIRCUIT))
 	{
 		INT32 i;
 		for (i = 0; i < MAXPLAYERS; i++)
@@ -4463,7 +4476,7 @@ void P_PlayerThink(player_t *player)
 		|| player->growshrinktimer > 0 // Grow doesn't flash either.
 		|| (player->respawn) // Respawn timer (for drop dash effect)
 		|| (player->pflags & PF_NOCONTEST) // NO CONTEST explosion
-		|| ((gametyperules & GTR_BUMPERS) && player->bumper <= 0 && player->karmadelay)))
+		|| ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0 && player->karmadelay)))
 	{
 		if (player->flashing > 0 && player->flashing < K_GetKartFlashing(player)
 			&& (leveltime & 1))
@@ -4567,9 +4580,6 @@ void P_PlayerAfterThink(player_t *player)
 		player->mo->flags |= MF_NOGRAVITY;
 	}
 
-	if (P_IsObjectOnGround(player->mo))
-		player->mo->pmomz = 0;
-
 	K_KartPlayerAfterThink(player);
 
 	if (player->followmobj && (player->spectator || player->mo->health <= 0 || player->followmobj->type != player->followitem))
@@ -4614,11 +4624,19 @@ void P_PlayerAfterThink(player_t *player)
 	// so a lag value of 1 is exactly attached to the player.
 	K_HandleFollower(player);
 
-
 	if (K_PlayerUsesBotMovement(player))
 	{
 		K_UpdateBotGameplayVars(player);
 	}
+
+	if (thiscam)
+	{
+		// Store before it gets 0'd out
+		thiscam->pmomz = player->mo->pmomz;
+	}
+
+	if (P_IsObjectOnGround(player->mo))
+		player->mo->pmomz = 0;
 }
 
 void P_SetPlayerAngle(player_t *player, angle_t angle)

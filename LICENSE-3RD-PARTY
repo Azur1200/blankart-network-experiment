@@ -64,6 +64,10 @@ POSSIBILITY OF SUCH DAMAGE.
         - LZ4 Library
           Copyright (c) 2011-2025 Yann Collet
           All rights reserved.
+	- monocypher
+          Copyright (c) 2017-2020, Loup Vaillant
+          All rights reserved.
+          https://monocypher.org/
 
 --------------------------------------------------------------------------------
 

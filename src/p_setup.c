@@ -26,6 +26,7 @@
 
 #include "i_time.h"
 #include "i_video.h" // for I_FinishUpdate()..
+#include "r_defs.h"
 #include "r_sky.h"
 #include "i_system.h"
 
@@ -73,6 +74,8 @@
 #include "deh_tables.h"
 
 #include "y_inter.h"
+
+#include "k_vote.h"
 
 // for MapLoad hook
 #include "lua_script.h"
@@ -390,7 +393,7 @@ FUNCNORETURN static ATTRNORETURN void CorruptMapError(const char *msg)
   *
   * \param i The header to set flickies for
   */
-void P_SetDemoFlickies(INT16 i)
+void P_SetDemoFlickies(mapnum_t i)
 {
 	mapheaderinfo[i]->numFlickies = 5;
 	mapheaderinfo[i]->flickies = Z_Realloc(mapheaderinfo[i]->flickies, 5*sizeof(mobjtype_t), PU_STATIC, NULL);
@@ -405,7 +408,7 @@ void P_SetDemoFlickies(INT16 i)
   *
   * \param i The header to clear flickies for
   */
-void P_DeleteFlickies(INT16 i)
+void P_DeleteFlickies(mapnum_t i)
 {
 	if (mapheaderinfo[i]->flickies)
 		Z_Free(mapheaderinfo[i]->flickies);
@@ -470,6 +473,7 @@ static void P_ClearSingleMapHeaderInfo(INT16 num)
 	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting);
 	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting_encore);
 	mapheaderinfo[num]->use_encore_lighting = false;
+	S_InitEFXArray(mapheaderinfo[num]->globalEFX);
 #if 1 // equivalent to "FlickyList = DEMO"
 	P_SetDemoFlickies(num);
 #else // equivalent to "FlickyList = NONE"
@@ -484,7 +488,7 @@ static void P_ClearSingleMapHeaderInfo(INT16 num)
   *
   * \param i Index of header to allocate.
   */
-void P_AllocMapHeader(INT16 i)
+void P_AllocMapHeader(mapnum_t i)
 {
 	if (i > nummapheaders)
 		I_Error("P_AllocMapHeader: Called on %d, should be %d", i, nummapheaders);
@@ -529,6 +533,11 @@ void P_AllocMapHeader(INT16 i)
 		mapheaderinfo[i]->minimapPic = NULL;
 		mapheaderinfo[i]->cup = NULL;
 		mapheaderinfo[i]->flickies = NULL;
+		mapheaderinfo[i]->globalEFX =  Z_Calloc(sizeof(efx_t), PU_STATIC, NULL);
+
+		if (mapheaderinfo[i]->globalEFX == NULL)
+			I_Error("P_AllocMapHeader: Not enough memory to allocate new global mapheader EFX (ID %d).", i);
+
 		nummapheaders++;
 	}
 	P_ClearSingleMapHeaderInfo(i);
@@ -1892,6 +1901,8 @@ static void ParseTextmapSectorParameter(UINT32 i, const char *param, const char 
 		sectors[i].flags |= MSF_FLATLIGHTING;
 	else if (fastcmp(param, "forcedirectionallighting") && fastcmp("true", val))
 		sectors[i].flags |= MSF_DIRECTIONLIGHTING;
+	else if (fastcmp(param, "noaudioeffects") && fastcmp("true", val))
+		sectors[i].flags |= MSF_NOEFX;
 	else if (fastcmp(param, "nostepup") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_NOSTEPUP;
 	else if (fastcmp(param, "doublestepup") && fastcmp("true", val))
@@ -1916,20 +1927,20 @@ static void ParseTextmapSectorParameter(UINT32 i, const char *param, const char 
 		sectors[i].specialflags |= SSF_YELLOWPOGOSPRING;
 	else if (fastcmp(param, "fan") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_FAN;
+	else if (fastcmp(param, "finishline") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_FINISHLINE;
 	else if (fastcmp(param, "zoomtubestart") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_ZOOMTUBESTART;
 	else if (fastcmp(param, "zoomtubeend") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_ZOOMTUBEEND;
-	else if (fastcmp(param, "finishline") && fastcmp("true", val))
-		sectors[i].specialflags |= SSF_FINISHLINE;
-	else if (fastcmp(param, "gravityoverride") && fastcmp("true", val))
-		sectors[i].specialflags |= SSF_GRAVITYOVERRIDE;
-	else if (fastcmp(param, "walltransfer") && fastcmp("true", val))
-		sectors[i].specialflags |= SSF_WALLTRANSFER;
 	else if (fastcmp(param, "nophysics_floor") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_NOPHYSICSFLOOR;
 	else if (fastcmp(param, "nophysics_ceiling") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_NOPHYSICSCEILING;
+	else if (fastcmp(param, "gravityoverride") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_GRAVITYOVERRIDE;
+	else if (fastcmp(param, "walltransfer") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_WALLTRANSFER;
 	else if (fastcmp(param, "friction"))
 		sectors[i].friction = FLOAT_TO_FIXED(atof(val));
 	else if (fastcmp(param, "gravity"))
@@ -3109,6 +3120,12 @@ static void P_WriteTextmap(void)
 			fprintf(f, "ripple_ceiling = true;\n");
 		if (wsectors[i].flags & MSF_INVERTENCORE)
 			fprintf(f, "invertencore = true;\n");
+		if (wsectors[i].flags & MSF_FLATLIGHTING)
+			fprintf(f, "flatlighting = true;\n");
+		if (wsectors[i].flags & MSF_DIRECTIONLIGHTING)
+			fprintf(f, "forcedirectionallighting = true;\n");
+		if (wsectors[i].flags & MSF_NOEFX)
+			fprintf(f, "noaudioeffects = true;\n");
 		if (wsectors[i].specialflags & SSF_NOSTEPUP)
 			fprintf(f, "nostepup = true;\n");
 		if (wsectors[i].specialflags & SSF_DOUBLESTEPUP)
@@ -3133,14 +3150,20 @@ static void P_WriteTextmap(void)
 			fprintf(f, "yellowpogospring = true;\n");
 		if (wsectors[i].specialflags & SSF_FAN)
 			fprintf(f, "fan = true;\n");
+		if (wsectors[i].specialflags & SSF_FINISHLINE)
+			fprintf(f, "finishline = true;\n");
 		if (wsectors[i].specialflags & SSF_ZOOMTUBESTART)
 			fprintf(f, "zoomtubestart = true;\n");
 		if (wsectors[i].specialflags & SSF_ZOOMTUBEEND)
 			fprintf(f, "zoomtubeend = true;\n");
-		if (wsectors[i].specialflags & SSF_FINISHLINE)
-			fprintf(f, "finishline = true;\n");
+		if (wsectors[i].specialflags & SSF_NOPHYSICSFLOOR)
+			fprintf(f, "nophysics_floor = true;\n");
+		if (wsectors[i].specialflags & SSF_NOPHYSICSCEILING)
+			fprintf(f, "nophysics_ceiling = true;\n");
 		if (wsectors[i].specialflags & SSF_GRAVITYOVERRIDE)
 			fprintf(f, "gravityoverride = true;\n");
+		if (wsectors[i].specialflags & SSF_WALLTRANSFER)
+			fprintf(f, "walltransfer = true;\n");
 		if (wsectors[i].friction != ORIG_FRICTION)
 			fprintf(f, "friction = %f;\n", FIXED_TO_FLOAT(wsectors[i].friction));
 		if (wsectors[i].gravity != FRACUNIT)
@@ -3416,6 +3439,7 @@ static void P_LoadTextmap(boolean patch)
 		if (textmap_colormap.used)
 		{
 			textmap_colormap.flags |= CMF_NEWFADE; // TODO: an actual option?
+			// Convert alpha values from old 0-25 (A-Z) range to 0-255 range
 			INT32 rgba = P_ColorToRGBA(textmap_colormap.lightcolor, textmap_colormap.lightalpha);
 			INT32 fadergba = P_ColorToRGBA(textmap_colormap.fadecolor, textmap_colormap.fadealpha);
 			sc->extra_colormap = sc->spawn_extra_colormap = R_CreateColormap(rgba, fadergba, textmap_colormap.fadestart, textmap_colormap.fadeend, textmap_colormap.flags);
@@ -3873,7 +3897,7 @@ static inline float P_SegLengthFloat(seg_t *seg)
 	dx = FIXED_TO_FLOAT(seg->v2->x - seg->v1->x);
 	dy = FIXED_TO_FLOAT(seg->v2->y - seg->v1->y);
 
-	return (float)hypot(dx, dy);
+	return hypotf(dx, dy);
 }
 #endif
 
@@ -4033,7 +4057,7 @@ static void P_LoadSegs(UINT8 *data)
 
 		seg->length = P_SegLength(seg);
 #ifdef HWRENDER
-		seg->flength = (rendermode == render_opengl) ? P_SegLengthFloat(seg) : 0;
+		seg->flength = P_SegLengthFloat(seg);
 #endif
 
 		seg->glseg = false;
@@ -6141,6 +6165,14 @@ static void P_ConvertBinaryLinedefTypes(void)
 				}
 			}
 			P_WriteDuplicateText(sides[lines[i].sidenum[0]].text, &lines[i].stringargs[0]);
+			break;
+		case 415: //Run script
+			if (strlen(G_BuildMapName(gamemap)) != 5)
+				break; // good enough check methinks
+			INT32 scrnum = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
+			if (scrnum < 0 || scrnum > 999)
+				scrnum = 0;
+			P_WriteDuplicateText(va("SCR%s%03u", G_BuildMapName(gamemap) + 3, scrnum), &lines[i].stringargs[0]);
 			break;
 		case 416: //Start adjustable flickering light
 		case 417: //Start adjustable pulsating light
@@ -8286,7 +8318,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	// SRB2Kart: map load variables
 	if (grandprixinfo.gp == true)
 	{
-		if ((gametyperules & GTR_BATTLESPEED))
+		if ((gametypes[gametype]->rules & GTR_BATTLESPEED))
 		{
 			gamespeed = KARTSPEED_NORMAL;
 		}
@@ -8307,7 +8339,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	else if (modeattacking)
 	{
 		// Just play it safe and set everything
-		if ((gametyperules & GTR_BATTLESPEED))
+		if ((gametypes[gametype]->rules & GTR_BATTLESPEED))
 			gamespeed = KARTSPEED_NORMAL;
 		else
 			gamespeed = KARTSPEED_HARD;
@@ -8316,7 +8348,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	}
 	else
 	{
-		if (gametyperules & GTR_BATTLESPEED)
+		if (gametypes[gametype]->rules & GTR_BATTLESPEED)
 		{
 			if (cv_kartbattlespeed.value == KARTSPEED_AUTO)
 				gamespeed = ((speedscramble == -1) ? KARTSPEED_EASY : (UINT8)speedscramble);
@@ -8326,7 +8358,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 		else
 		{
 			if (cv_kartspeed.value == KARTSPEED_AUTO)
-				gamespeed = ((speedscramble == -1) ? KARTSPEED_NORMAL : (UINT8)speedscramble);
+				gamespeed = ((speedscramble == -1) ? KARTSPEED_DEFAULT : (UINT8)speedscramble);
 			else
 				gamespeed = (UINT8)cv_kartspeed.value;
 		}
@@ -8488,7 +8520,7 @@ static void P_SetupCamera(UINT8 pnum, camera_t *cam)
 	{
 		mapthing_t *thing;
 
-		if (gametyperules & GTR_BATTLESTARTS)
+		if (gametypes[gametype]->rules & GTR_BATTLESTARTS)
 			thing = deathmatchstarts[0];
 		else
 			thing = playerstarts[0];
@@ -8533,7 +8565,7 @@ static void P_InitPlayers(void)
 
 		players[i].mo = NULL;
 
-		if (!(gametyperules & GTR_CIRCUIT))
+		if (!(gametypes[gametype]->rules & GTR_CIRCUIT))
 		{
 			G_DoReborn(i);
 		}
@@ -8604,7 +8636,7 @@ static void P_InitGametype(void)
 
 	// Start recording replay in multiplayer with a temp filename
 	//@TODO I'd like to fix dedis crashing when recording replays for the future too...
-	if (gamestate == GS_LEVEL && !demo.playback && (multiplayer || grandprixinfo.gp) && !dedicated)
+	if (gamestate == GS_LEVEL && !demo.playback && multiplayer && !dedicated)
 	{
 		char buf[MAX_WADPATH];
 		char ver[128];
@@ -8785,7 +8817,6 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	// This is needed. Don't touch.
 	maptol = mapheaderinfo[gamemap-1]->typeoflevel;
-	gametyperules = gametypedefaultrules[gametype];
 
 	CON_Drawer(); // let the user know what we are going to do
 	I_FinishUpdate(); // page flip or blit buffer
@@ -9038,7 +9069,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		if (!playerstarts[numcoopstarts])
 			break;
 
-	P_SpawnSpecialsThatRequireObjects(fromnetsave);
+	P_SpawnSpecialsThatRequireObjects(reloadinggamestate);
 
 	if (!udmf)
 	{
@@ -9056,22 +9087,22 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	K_ClearWaypoints();
 
 	// Load the ccheckpoints and waypoints please!
-	if (gametyperules & GTR_CIRCUIT && gamestate != GS_TITLESCREEN)
+	if (gametypes[gametype]->rules & GTR_CIRCUIT && gamestate != GS_TITLESCREEN)
 	{
-			if ((K_SetupWaypointList() == false))
+		if ((K_SetupWaypointList() == false))
+		{
+			if (!K_UsingLegacyCheckpoints())
 			{
-				if (!K_UsingLegacyCheckpoints())
-				{
-					CONS_Alert(CONS_ERROR, "Waypoints were not able to be setup and legacy checkpoints do not exist! Player positions will not work correctly.\n");
-				}
+				CONS_Alert(CONS_ERROR, "Waypoints were not able to be setup and legacy checkpoints do not exist! Player positions will not work correctly.\n");
 			}
+		}
 	}
 
 #ifdef HWRENDER // not win32 only 19990829 by Kin
 	gl_maploaded = false;
 
-	// Lactozilla: Free extrasubsectors regardless of renderer.
-	HWR_FreeExtraSubsectors();
+	// Lactozilla: Free poly_subsectors regardless of renderer.
+	HWR_FreePolyPool();
 
 	// Create plane polygons.
 	if (rendermode == render_opengl)
@@ -9237,7 +9268,7 @@ void P_PostLoadLevel(void)
 			K_InitGrandPrixBots();
 			grandprixinfo.initalize = false;
 		}
-		else// if (grandprixinfo.wonround == true)
+		else
 		{
 			K_UpdateGrandPrixBots();
 			grandprixinfo.wonround = false;
@@ -9380,7 +9411,7 @@ static lumpinfo_t* FindFolder(const char *folName, UINT16 *start, UINT16 *end, l
 }
 
 lumpnum_t wadnamelump = LUMPERROR;
-INT16 wadnamemap = 0; // gamemap based
+mapnum_t wadnamemap = 0; // gamemap based
 
 // Initialising map data...
 UINT8 P_InitMapData(boolean existingmapheaders)
@@ -9806,6 +9837,10 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 		HU_LoadGraphics();
 		ST_LoadGraphics();
 		ST_ReloadSkinFaceGraphics();
+
+		// reload minimap stuff while were in the map since it may get replaced otherwise
+		if (gamestate == GS_LEVEL)
+			P_InitMinimapInfo();
 
 		if (!partadd_important)
 			partadd_stage = -1; // everything done

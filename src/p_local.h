@@ -29,6 +29,7 @@ extern "C" {
 #endif
 
 extern consvar_t cv_naturalcamera;
+extern consvar_t cv_lookbackinreplays;
 
 #define FLOATSPEED (FRACUNIT*4)
 
@@ -125,16 +126,23 @@ struct camera_t
 
 	// Momentums, used to update position.
 	fixed_t momx, momy, momz;
+	fixed_t pmomz;
 
 	// SRB2Kart: camera pans while drifting
 	fixed_t pan;
 	// SRB2Kart: camera pitches on slopes
 	angle_t pitch;
-
+	
 	// Freecam: A button was held since entering from menu, so don't move camera
 	UINT8 button_a_held;
-
+	
 	boolean reset_aiming;	// camera aiming needs to be reset from chase camera
+	
+	// Hold up/down to pan the camera vertically
+	SINT8 freelook_held;
+	// between -45 deg and 45 deg
+	fixed_t freelook_pitch;
+	fixed_t freelook_pitch_add;
 
 	// Interpolation data
 	fixed_t old_x, old_y, old_z;
@@ -358,8 +366,9 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 INT32 P_FloorPicAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height);
 
 boolean P_InsideANonSolidFFloor(mobj_t *mobj, ffloor_t *rover);
-boolean P_CheckDeathPitCollide(mobj_t *mo);
+boolean P_CheckDeathPitCollide(const mobj_t *mo);
 boolean P_CheckSolidLava(ffloor_t *rover);
+boolean P_CheckDeathPitFOFs(const mobj_t *mo);
 void P_AdjustMobjFloorZ_FFloors(mobj_t *mo, sector_t *sector, UINT8 motype);
 
 mobj_t *P_SpawnMobjFromMobjUnscaled(mobj_t *mobj, fixed_t xofs, fixed_t yofs, fixed_t zofs, mobjtype_t type);

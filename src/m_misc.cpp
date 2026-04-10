@@ -2556,3 +2556,60 @@ UINT32 FNV1a_QuickCaseHash(const char *message, size_t size)
 
 	return hash;
 }
+
+// Returns true if the string is empty.
+boolean M_IsStringEmpty(const char *s)
+{
+	const char *ch = s;
+
+	if (s == NULL || s[0] == '\0')
+		return true;
+
+	for (;;ch++)
+	{
+		if (!(*ch))
+			break;
+		if (!isspace((*ch)))
+			return false;
+	}
+
+	return true;
+}
+
+// Rounds off floating numbers and checks for 0 - 255 bounds
+int M_RoundUp(double number)
+{
+	if (number > 255.0l)
+		return 255;
+	if (number < 0.0l)
+		return 0;
+
+	if ((int)number <= (int)(number - 0.5f))
+		return (int)number + 1;
+
+	return (int)number;
+}
+
+static char rrid_buf[256];
+
+char *GetPrettyRRID(const unsigned char *bin, boolean brief)
+{
+	size_t i;
+	size_t len = PUBKEYLENGTH;
+
+	if (brief)
+		len = 8;
+
+	if (bin == NULL || len == 0)
+		return NULL;
+
+	for (i=0; i<len; i++)
+	{
+		rrid_buf[i*2]   = "0123456789ABCDEF"[bin[i] >> 4];
+		rrid_buf[i*2+1] = "0123456789ABCDEF"[bin[i] & 0x0F];
+	}
+
+	rrid_buf[len*2] = '\0';
+
+	return rrid_buf;
+}
