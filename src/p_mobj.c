@@ -14013,6 +14013,10 @@ static mobj_t *P_SpawnMobjFromMapThing(mapthing_t *mthing, fixed_t x, fixed_t y,
 	size_t arg = SIZE_MAX;
 
 	mobj = P_SpawnMobj(x, y, z, i);
+
+	if (mobj == NULL || P_MobjWasRemoved(mobj))
+		return NULL;
+
 	mobj->spawnpoint = mthing;
 
 	if (doangle)
