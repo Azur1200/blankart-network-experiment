@@ -401,6 +401,49 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 				continue;
 			}
 
+			if (compat && (rotation >= 8))
+			{
+				// Yama's Kludgy Sprite Two-Pass
+				//
+				// Here's the dilemma: In vanilla SRB2Kart (and Saturn), SRF_3DGE
+				// simply does not exist. This is very much NOT the case for
+				// Neptune, which DOES have 3DGE (16-angle rotation) support.
+				//
+				// However, Neptune replaces the I_Error crash with a stern warning;
+				// this leads to hastily-made character addons missing rotations and
+				// causing hard-to-identify segfaults during gameplay.
+				//
+				// Obviously, we don't want that here! Let's prevent that from ever
+				// happening by doing a two-pass check: if we have an 8-char
+				// graphic, ENSURE it's a 3DGE sprite by checking if it's:
+				// - A valid frame
+				// - A valid rotation (1-G)
+				//
+				// If neither pass, this isn't a valid sprite, and we can safely
+				// ignore it. There WILL be false positives: be warned.
+				boolean invalidframe = false;
+
+				if (lumpinfo[l].name[7])
+				{
+					UINT8 framecheck = R_Char2Rotation(lumpinfo[l].name[7]);
+
+					if (framecheck > ROT_R)
+					{
+						invalidframe = true;
+					}
+				}
+
+				if ((lumpinfo[l].name[6] &&
+				     (R_Char2Frame(lumpinfo[l].name[6], compat) >= 64)) ||
+				    (invalidframe))
+				{
+					CONS_Alert(CONS_WARNING,
+						   M_GetText("%s is not a valid sprite graphic\n"),
+						   W_CheckNameForNumPwad(wadnum, l));
+					continue;
+				}
+			}
+
 			// skip NULL sprites from very old dmadds pwads
 			if (W_LumpLengthPwad(wadnum,l)<=8)
 				continue;
