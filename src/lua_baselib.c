@@ -4183,6 +4183,49 @@ static int lib_kGetSpeedPercentage(lua_State *L)
 	return 1;
 }
 
+static int lib_kGetKartBaseRingPower(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	boolean boosted = lua_optboolean(L, 2);
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushinteger(L, K_GetKartBaseRingPower(player, boosted));
+	return 1;
+}
+
+static int lib_kGetKartRingCap(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushinteger(L, K_GetKartRingCap(player));
+	return 1;
+}
+
+static int lib_kIsPlayerRingBurnt(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	UINT16 ringPower = luaL_checkinteger(L, 2);
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushboolean(L, K_IsPlayerRingBurnt(player, ringPower));
+	return 1;
+}
+
+static int lib_kGetKartRingPower(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	boolean boosted = lua_optboolean(L, 2);
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushinteger(L, K_GetKartRingPower(player, boosted));
+	return 1;
+}
+
 // this function is for compatibility only; do not add new functionality here
 // see K_GetItemGraphics
 static int lib_kGetItemPatch(lua_State *L)
@@ -5820,6 +5863,10 @@ static luaL_Reg lib[] = {
 	{"K_GetShieldFromPlayer", lib_kGetShieldFromPlayer},
 	{"K_PlayerCanPunt", lib_kPlayerCanPunt},
 	{"K_Momentum3D", lib_kMomentum3D},
+	{"K_GetKartBaseRingPower", lib_kGetKartBaseRingPower},
+	{"K_GetKartRingCap", lib_kGetKartRingCap},
+	{"K_IsPlayerRingBurnt", lib_kIsPlayerRingBurnt},
+	{"K_GetKartRingPower", lib_kGetKartRingPower},
 
 	// kart stuff that's in other places for some reason
 	{"K_IsMissileOrKartItem", lib_kMissileOrKartItem},
