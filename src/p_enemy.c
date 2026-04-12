@@ -3219,6 +3219,16 @@ void A_AttractChase(void *thing)
 			return;
 		}
 
+		INT32 ringpower = K_GetKartBaseRingPower(actor->target->player, true);
+		boolean ringburnt = K_IsPlayerRingBurnt(actor->target->player, ringpower);
+
+		if (ringburnt)
+		{
+			actor->colorized = true;
+			actor->color = SKINCOLOR_ABYSS;
+			actor->renderflags |= RF_ADD;
+		}
+
 		if (actor->extravalue2) // Using for ring boost
 		{
 			// Always fullbright
@@ -3229,6 +3239,12 @@ void A_AttractChase(void *thing)
 				// Base add is 4 tics for 9,9, adds 1 tic for each point closer to the 1,1 end
 				actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true);
 				actor->target->player->ringtime += K_GetKartRingPower(actor->target->player, true);
+
+				if (ringburnt)
+				{
+					// s3k55 s264
+					S_StartSoundAtVolume(actor->target, sfx_s264, actor->target->player->ringvolume);
+				}
 
 				S_StartSoundAtVolume(actor->target, sfx_s1b5, actor->target->player->ringvolume);
 
@@ -3271,8 +3287,8 @@ void A_AttractChase(void *thing)
 				if (actor->target->player->ringboost > (4*TICRATE + TICRATE/2))
 					actor->target->player->ringboost = (4*TICRATE + TICRATE/2);
 
-				if (actor->cvmem) // caching
-					S_StartSound(actor->target, sfx_s1c5);
+				if (actor->cvmem && P_IsLocalPlayer(actor->target->player)) // caching
+					S_StartSound(NULL, sfx_s1c5);
 				else
 					S_StartSoundAtVolume(actor->target, sfx_s227, actor->target->player->ringvolume);
 
