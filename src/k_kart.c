@@ -9087,9 +9087,11 @@ INT32 K_GetKartRingPower(const player_t *player, boolean boosted)
 	finalPower += 3;
 
 	// If you use alot of rings at a time, you start gaining less ring timer...
-	if (player->ringtime == finalPower*ringcap)
+	fixed_t burnStart = finalPower*ringcap;
+	fixed_t burnEnd = finalPower*(ringcap+(ringcap/2));
+	if (player->ringtime >= burnStart)
 	{
-		if (P_IsLocalPlayer(player))
+		if (P_IsLocalPlayer(player) && player->ringtime == burnStart)
 		{
 			efx_t efx;
 			S_InitEFXArray(&efx);
@@ -9098,14 +9100,12 @@ INT32 K_GetKartRingPower(const player_t *player, boolean boosted)
 
 			S_StartSoundAtVolumeEx(NULL, sfx_cdfm66, 255, &efx);
 		}
-	}
-	else if (player->ringtime > finalPower*(ringcap+(ringcap/2)))
-	{
-		finalPower = 1;
-	}
-	else if (player->ringtime > finalPower*ringcap)
-	{
-		finalPower = 2;
+
+		fixed_t usage = CLAMP(FixedDiv(player->ringtime - burnStart, burnEnd - burnStart), 0, FRACUNIT);
+
+		usage =  Easing_OutCubic(usage, finalPower * FRACUNIT, FRACUNIT);
+
+		finalPower = max(usage / FRACUNIT, 1);
 	}
 
 	return finalPower;
