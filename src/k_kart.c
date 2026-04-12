@@ -9064,11 +9064,9 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 	player->pflags &= ~PF_TRUSTWAYPOINTS; // clear special exception
 }
 
-INT32 K_GetKartRingPower(const player_t *player, boolean boosted)
+INT32 K_GetKartBaseRingPower(const player_t *player, boolean boosted)
 {
 	fixed_t ringPower = ((9 - player->kartspeed) + (9 - player->kartweight)) * (FRACUNIT/2);
-	UINT16 finalPower = 0;
-	UINT8 ringcap = 18 - ((9 - player->kartspeed) + (9 - player->kartweight))/2;
 
 	if (boosted == true)
 	{
@@ -9081,15 +9079,40 @@ INT32 K_GetKartRingPower(const player_t *player, boolean boosted)
 		ringPower += 1;
 	}
 
-	finalPower = max(ringPower / FRACUNIT, 1);
+	ringPower = max(ringPower / FRACUNIT, 1);
 
 	// the base is 4 tics
-	finalPower += 3;
+	ringPower += 3;
+
+	return ringPower;
+}
+
+UINT8 K_GetKartRingCap(const player_t *player)
+{
+	return 18 - ((9 - player->kartspeed) + (9 - player->kartweight))/2;
+}
+
+boolean K_IsPlayerRingBurnt(const player_t *player, UINT16 ringpower)
+{
+	UINT8 ringcap = K_GetKartRingCap(player);
+
+	if (player->ringtime >= ringpower*ringcap)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+INT32 K_GetKartRingPower(const player_t *player, boolean boosted)
+{
+	UINT16 finalPower = K_GetKartBaseRingPower(player, boosted);
+	UINT8 ringcap = K_GetKartRingCap(player);
 
 	// If you use alot of rings at a time, you start gaining less ring timer...
 	fixed_t burnStart = finalPower*ringcap;
 	fixed_t burnEnd = finalPower*(ringcap+(ringcap/2));
-	if (player->ringtime >= burnStart)
+	if (K_IsPlayerRingBurnt(player, finalPower))
 	{
 		if (P_IsLocalPlayer(player) && player->ringtime == burnStart)
 		{
