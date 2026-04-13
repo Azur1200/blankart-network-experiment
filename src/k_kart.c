@@ -8172,11 +8172,16 @@ boolean K_SafeRespawnPositionEx(fixed_t x, fixed_t y, fixed_t z, boolean flip)
 		{
 			if (!(rover->fofflags & FOF_EXISTS))
 				continue;
-			if (!(rover->fofflags & FOF_SOLID))
-				continue;
 			if (!(rover->fofflags & FOF_BLOCKPLAYER))
 				continue;
-
+			if (!(rover->fofflags & FOF_SOLID))
+			{
+				// check effects of fof parent sector, it may still be needed
+				if (rover->master->frontsector->damagetype == SD_NONE)
+					continue;
+					
+			}
+			
 			curheight = flip ? P_GetFFloorBottomZAt(rover, x, y) : P_GetFFloorTopZAt(rover, x, y);
 
 			if (curbest == INT32_MAX)
@@ -8827,10 +8832,7 @@ static boolean K_SafeRespawnWaypoint(waypoint_t *waypoint)
 	if (!K_GetWaypointIsSpawnpoint(waypoint))
 		return false;
 
-	if (!K_SafeRespawnPosition(waypoint->mobj))
-		return false;
-
-	return true;
+	return K_SafeRespawnPosition(waypoint->mobj);
 }
 
 void K_SetRespawnAtNextWaypoint(player_t *player)
@@ -8838,7 +8840,7 @@ void K_SetRespawnAtNextWaypoint(player_t *player)
 	waypoint_t *previouswp = NULL;
 	waypoint_t *nextwp = NULL;
 	angle_t angle;
-	size_t i;
+	size_t i, j;
 
 	if (K_UsingLegacyCheckpoints())
 	{
@@ -8852,7 +8854,7 @@ void K_SetRespawnAtNextWaypoint(player_t *player)
 		return;
 	}
 
-	// If the player's next waypoint is safe, carry on as usual
+	// If the player's current and next waypoint is safe, carry on as usual
 	if (player->currentwaypoint &&
 		player->nextwaypoint &&
 		player->nextwaypoint->mobj &&
@@ -8861,10 +8863,14 @@ void K_SetRespawnAtNextWaypoint(player_t *player)
 	{
 		previouswp = player->currentwaypoint;
 		nextwp   = player->nextwaypoint;
+		CONS_Debug(DBG_PLAYER, "Respawn at WP %d is safe\n", K_GetWaypointID(nextwp));
 	}
 	else // Find the next waypoint
 	{
 		waypoint_t *oopsiepoint = player->nextwaypoint ? player->nextwaypoint : K_GetBestWaypointForMobj(player->mo, player->currentwaypoint);
+		boolean foundreplacement = false;
+
+		CONS_Debug(DBG_PLAYER, "Respawn at WP %d is not safe\n", K_GetWaypointID(oopsiepoint));
 
 		if (!oopsiepoint || !oopsiepoint->mobj)
 		{
@@ -8872,31 +8878,56 @@ void K_SetRespawnAtNextWaypoint(player_t *player)
 		}
 
 		// Look forward for good waypoints
-		if (oopsiepoint && oopsiepoint->numnextwaypoints)
+		nextwp = oopsiepoint;
+		while ((nextwp && nextwp->numnextwaypoints) && !(K_SafeRespawnWaypoint(nextwp) || K_GetWaypointIsFinishline(nextwp)))
 		{
-			for (i = 0; i < oopsiepoint->numnextwaypoints; i++)
+			for (i = 0; i < nextwp->numnextwaypoints; i++)
 			{
-				waypoint_t *searchwp = oopsiepoint->nextwaypoints[i];
+				waypoint_t *searchwp = nextwp->nextwaypoints[i];
+				CONS_Debug(DBG_PLAYER, "Checking WP %d\n", K_GetWaypointID(searchwp));
 
-				if (!K_SafeRespawnWaypoint(searchwp))
-					continue;
-
-				nextwp = searchwp;
-				if (K_GetWaypointIsFinishline(searchwp))
-					break; // Prefer finish-line safety
-				break;
+				if (K_SafeRespawnWaypoint(searchwp) || K_GetWaypointIsFinishline(searchwp))
+				{
+					// also check all waypoints after this one if needed, we're looking for two safe WPs in a row ideally
+					if (searchwp->numnextwaypoints)
+					{
+						for (j = 0; j < searchwp->numnextwaypoints; j++)
+						{
+							if (K_SafeRespawnWaypoint(searchwp->nextwaypoints[j]) || K_GetWaypointIsFinishline(searchwp->nextwaypoints[j]))
+							{
+								nextwp = searchwp->nextwaypoints[j];
+								previouswp = searchwp;
+								foundreplacement = true;
+								break;
+							}
+						}
+					}
+					else
+					{
+						// dead end, so spawn here anyways
+						nextwp = searchwp;
+						foundreplacement = true;
+					}
+					break;
+				}
 			}
 
-			if (nextwp)
-				oopsiepoint = nextwp;
+			if (foundreplacement)
+			{
+				break;
+			}
+			else
+			{
+				nextwp = K_GetNextWaypointToDestination(nextwp, K_GetFinishLineWaypoint(), false, false);
+			}
 		}
 
-		// Then look backwards for respawn angle and safety
-		if (oopsiepoint && oopsiepoint->numprevwaypoints)
+		// Then look backwards for respawn angle and safety, if we don't have one already
+		if ((previouswp == NULL) && nextwp && nextwp->numprevwaypoints)
 		{
-			for (i = 0; i < oopsiepoint->numprevwaypoints; i++)
+			for (i = 0; i < nextwp->numprevwaypoints; i++)
 			{
-				waypoint_t *searchwp = oopsiepoint->prevwaypoints[i];
+				waypoint_t *searchwp = nextwp->prevwaypoints[i];
 
 				if (!K_SafeRespawnWaypoint(searchwp))
 					continue;
@@ -8905,10 +8936,11 @@ void K_SetRespawnAtNextWaypoint(player_t *player)
 				break;
 			}
 		}
-
+		
+		CONS_Debug(DBG_PLAYER, "Will respawn at WP %d\n", K_GetWaypointID(nextwp));
 		if (!nextwp)
 		{
-			CONS_Debug(DBG_GAMELOGIC, "Tried to set respawn at invalid waypoint! Setting respawn to closest waypoint\n");
+			CONS_Debug(DBG_PLAYER, "Tried to set respawn at invalid waypoint! Setting respawn to closest waypoint\n");
 
 			nextwp = player->nextwaypoint;
 		}

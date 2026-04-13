@@ -6117,6 +6117,24 @@ static void K_DrawWaypointDebugger(void)
 	if (stplyr->bigwaypointgap)
 		V_DrawString(8, 140, 0, va("Auto Respawn Timer: %d", stplyr->bigwaypointgap));
 
+	if (stplyr->currentwaypoint && (stplyr->currentwaypoint->mobj != NULL) && K_SafeRespawnPosition(stplyr->currentwaypoint->mobj))
+	{
+		V_DrawString(8, 120, 0, va("Waypoint %d (Current) Safe: True", K_GetWaypointID(stplyr->currentwaypoint)));
+	}
+	else
+	{
+		V_DrawString(8, 120, 0, va("Waypoint %d (Current) Safe: False", K_GetWaypointID(stplyr->currentwaypoint)));	
+	}
+
+	if (stplyr->nextwaypoint && (stplyr->nextwaypoint->mobj != NULL) && K_SafeRespawnPosition(stplyr->nextwaypoint->mobj))
+	{
+		V_DrawString(8, 130, 0, va("Waypoint %d (Next) Safe: True", K_GetWaypointID(stplyr->nextwaypoint)));
+	}
+	else
+	{
+		V_DrawString(8, 130, 0, va("Waypoint %d (Next) Safe: False", K_GetWaypointID(stplyr->nextwaypoint)));
+	}
+
 	V_DrawString(8, 150, 0, va("Current Waypoint ID: %d", K_GetWaypointID(stplyr->currentwaypoint)));
 	V_DrawString(8, 160, 0, va("Next Waypoint ID: %d", K_GetWaypointID(stplyr->nextwaypoint)));
 	V_DrawString(8, 170, 0, va("Finishline Distance: %u (WP %u)", stplyr->distancetofinish,
