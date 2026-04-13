@@ -68,9 +68,6 @@ enum
 };
 #undef  X
 
-extern char *shiftxform; // english translation shift table
-extern char english_shiftxform[];
-
 //------------------------------------
 //        sorted player lines
 //------------------------------------

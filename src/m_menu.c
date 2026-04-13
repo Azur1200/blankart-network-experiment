@@ -1616,8 +1616,6 @@ boolean M_Responder(event_t *ev)
 	{
 		if (M_WipeBuffer(ch, currentMenu->keyhandler))
 			return true;
-		if (shiftdown && ch >= 32 && ch <= 127)
-			ch = shiftxform[ch];
 		if (currentMenu->keyhandler(ch))
 			return true;
 	}
