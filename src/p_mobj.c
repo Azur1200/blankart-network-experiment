@@ -1182,9 +1182,13 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 			gravityadd = (5*gravityadd)/2;
 		}
 
-		if (mo->player->carry == CR_DASHRING && Obj_DashRingPlayerHasNoGravity(mo->player))
+		if (mo->player->carry == CR_DASHRING)
 		{
-			gravityadd = 0;
+			if (Obj_DashRingPlayerHasNoGravity(mo->player))
+			{
+				gravityadd = 0;
+			}
+			gravitymul = mapobjectscale;
 		}
 
 		if (K_IsAltShrunk(mo->player))
