@@ -913,6 +913,7 @@ const char *automate_names[AEV__MAX] =
 	"VoteStart", // AEV_VOTESTART
 	"QueueStart", // AEV_QUEUESTART
 	"QueueEnd", // AEV_QUEUEEND
+	"LevelStart" // AEV_LEVELSTART
 };
 
 /// \warning Keep this up-to-date if you add/remove/rename net text commands

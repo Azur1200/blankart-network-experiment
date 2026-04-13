@@ -11,6 +11,7 @@
 /// \file  g_game.c
 /// \brief game loop functions, events handling
 
+#include "d_netcmd.h"
 #include "doomdef.h"
 #include "console.h"
 #include "d_main.h"
@@ -1947,6 +1948,8 @@ void G_DoLoadLevel(boolean resetplayer)
 
 		Automate_Run(AEV_ROUNDSTART);
 	}
+
+	Automate_Run(AEV_LEVELSTART);
 }
 
 //

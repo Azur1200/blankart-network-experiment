@@ -452,6 +452,7 @@ typedef enum
 	AEV_VOTESTART,
 	AEV_QUEUESTART,
 	AEV_QUEUEEND,
+	AEV_LEVELSTART,
 	AEV__MAX
 } automateEvents_t;
 
