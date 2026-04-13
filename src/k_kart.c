@@ -8855,7 +8855,7 @@ void K_SetRespawnAtNextWaypoint(player_t *player)
 	}
 
 	// If the player's current and next waypoint is safe, carry on as usual
-	if (player->currentwaypoint && (K_SafeRespawnWaypoint(nextwp) || K_GetWaypointIsFinishline(nextwp)))
+	if (player->currentwaypoint && (K_SafeRespawnWaypoint(player->nextwaypoint) || K_GetWaypointIsFinishline(player->nextwaypoint)))
 	{
 		previouswp = player->currentwaypoint;
 		nextwp   = player->nextwaypoint;
