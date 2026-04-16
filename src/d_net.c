@@ -1245,7 +1245,8 @@ boolean D_CheckNetGame(void)
 #if 0
 	software_MAXPACKETLENGTH = hardware_MAXPACKETLENGTH;
 #else
-	software_MAXPACKETLENGTH = 1500;
+	// MTU, IPV4, UDP header.
+	software_MAXPACKETLENGTH = 1500 - 20 - 8;
 #endif
 	if (M_CheckParm("-packetsize"))
 	{
