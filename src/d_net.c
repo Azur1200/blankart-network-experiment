@@ -1242,7 +1242,11 @@ boolean D_CheckNetGame(void)
 			I_Error("usage: -bandwidth <byte_per_sec>");
 	}
 
+#if 0
 	software_MAXPACKETLENGTH = hardware_MAXPACKETLENGTH;
+#else
+	software_MAXPACKETLENGTH = 1500;
+#endif
 	if (M_CheckParm("-packetsize"))
 	{
 		if (M_IsNextParm())
