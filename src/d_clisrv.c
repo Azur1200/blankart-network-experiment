@@ -5207,7 +5207,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 	realstart = ExpandTics(netbuffer->u.clientpak.client_tic, nettics[node]);
 	realend = ExpandTics(netbuffer->u.clientpak.resendfrom, nettics[node]);
 
-	if (netbuffer->packettype == PT_CLIENTMIS || netbuffer->packettype == PT_CLIENT2MIS
+	if (   netbuffer->packettype == PT_CLIENTMIS  || netbuffer->packettype == PT_CLIENT2MIS
 		|| netbuffer->packettype == PT_CLIENT3MIS || netbuffer->packettype == PT_CLIENT4MIS
 		|| netbuffer->packettype == PT_NODEKEEPALIVEMIS
 		|| supposedtics[node] < realend)
@@ -5246,10 +5246,10 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 		return;
 
 	// Splitscreen cmd
-	if (((netbuffer->packettype == PT_CLIENT2CMD || netbuffer->packettype == PT_CLIENT2MIS)
+	if ((nodetoplayer2[node] >= 0) &&
+		  ((netbuffer->packettype == PT_CLIENT2CMD || netbuffer->packettype == PT_CLIENT2MIS)
 		|| (netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
-		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
-		&& (nodetoplayer2[node] >= 0))
+		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)))
 	{
 		G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer2[node]], &netbuffer->u.client2pak.cmd2, 1);
 
@@ -5257,9 +5257,9 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 			return;
 	}
 
-	if (((netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
-		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
-		&& (nodetoplayer3[node] >= 0))
+	if ((nodetoplayer3[node] >= 0) &&
+		  ((netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
+		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)))
 	{
 		G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer3[node]], &netbuffer->u.client3pak.cmd3, 1);
 
@@ -5267,8 +5267,8 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 			return;
 	}
 
-	if ((netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)
-		&& (nodetoplayer4[node] >= 0))
+	if ((nodetoplayer4[node] >= 0) &&
+		(netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
 	{
 		G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer4[node]], &netbuffer->u.client4pak.cmd4, 1);
 
