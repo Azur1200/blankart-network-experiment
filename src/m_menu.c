@@ -2957,9 +2957,9 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 
 		case ITT_THUMBNAIL:
 			if (fastcmp(string, "$"))
-				num = -1; // random
+				num = NEXTMAP_INVALID; // random
 			else if (fastcmp(string, "?"))
-				num = -2; // unknown
+				num = NEXTMAP_RESERVED; // unknown
 			else
 				num = G_MapNumber(string);
 			scale = M_GetMapThumbnail(num, &p)/4;
