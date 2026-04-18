@@ -263,7 +263,7 @@ void K_UpdateMatchRaceBots(void)
 	{
 		difficulty = 0;
 	}
-	else if ((gametyperules & GTR_BOTS) == 0 && !cv_forcebots.value)
+	else if ((gametypes[gametype]->rules & GTR_BOTS) == 0 && !cv_forcebots.value)
 	{
 		difficulty = 0;
 	}
@@ -1271,6 +1271,7 @@ static INT32 K_HandleBotTrack(botdata_t *bd, const player_t *player, angle_t des
 	angle_t moveangle;
 	INT32 anglediff, anglediff2;
 	fixed_t speedfactor = FixedDiv(player->speed, K_GetKartSpeed(player, false, false));
+	boolean onground = P_IsObjectOnGround(player->mo);
 
 	moveangle = player->mo->angle;
 	anglediff = AngleDeltaSigned(moveangle, destangle);
@@ -1347,7 +1348,7 @@ static INT32 K_HandleBotTrack(botdata_t *bd, const player_t *player, angle_t des
 		bd->brakedown = false;
 
 		// Additional grip for turns.
-		if (player->mo && P_IsObjectOnGround(player->mo) && (player->speed > K_GetKartSpeed(player, false, false)/2) && !bd->griplockout)//35*FRACUNIT
+		if (player->mo && onground && (player->speed > K_GetKartSpeed(player, false, false)/2) && !bd->griplockout)//35*FRACUNIT
 		{
 			const angle_t MAXERROR = ANGLE_45;
 			const angle_t MIDERROR = ANGLE_22h;
@@ -1605,8 +1606,9 @@ void K_BotTicker(const player_t *player)
 	bd->acceldown = bd->brakedown = bd->driftdown = bd->itemdown = false;
 	bd->dolookback = false;
 	bd->itemthrow = 0;
+	boolean onground = P_IsObjectOnGround(player->mo);
 
-	if (!(gametyperules & GTR_BOTS) // No bot behaviors
+	if (!(gametypes[gametype]->rules & GTR_BOTS) // No bot behaviors
 		|| K_GetNumWaypoints() == 0 // No waypoints
 		|| leveltime <= introtime // During intro camera
 		|| player->playerstate == PST_DEAD // Dead, respawning.
@@ -1643,27 +1645,30 @@ void K_BotTicker(const player_t *player)
 		return;
 	}
 
-	// Is a bot not making any progress? Kill it and respawn at next waypoint.
-	K_IncrementBotRespawn(player, &bd->respawnconfirm, BOTRESPAWNCONFIRM);
-
-	if (bd->respawnconfirm > BOTRESPAWNCONFIRM - TICRATE)
+	if (onground)
 	{
-		// We want to respawn. Simply hold brake and stop here!
-		bd->acceldown = false;
-		K_BotSetDriftState(player, DRIFTSTATE_AUTO, TICRATE);
-		if (player->speed > 0)
-			bd->brakedown = true;
+		// Is a bot not making any progress? Kill it and respawn at next waypoint.
+		K_IncrementBotRespawn(player, &bd->respawnconfirm, BOTRESPAWNCONFIRM);
 
-		if (bd->respawnconfirm >= BOTRESPAWNCONFIRM || player->speed < 10*FRACUNIT)
+		if (bd->respawnconfirm > BOTRESPAWNCONFIRM - TICRATE)
 		{
-			// WHAT ARE YOU DOING??? RACE ALREADY!
-			// ...
-			// FINE, I'LL SEND A RESPAWN COMMAND ON YOUR BEHALF!
-			char buf[1], *cp = buf;
-			WRITEUINT8(cp, player - players);
-			SendNetXCmdForPlayer(consoleplayer, XD_RESPAWN, buf, sizeof(buf));
+			// We want to respawn. Simply hold brake and stop here!
+			bd->acceldown = false;
+			K_BotSetDriftState(player, DRIFTSTATE_AUTO, TICRATE);
+			if (player->speed > 0)
+				bd->brakedown = true;
+
+			if (bd->respawnconfirm >= BOTRESPAWNCONFIRM || player->speed < 10*FRACUNIT)
+			{
+				// WHAT ARE YOU DOING??? RACE ALREADY!
+				// ...
+				// FINE, I'LL SEND A RESPAWN COMMAND ON YOUR BEHALF!
+				char buf[1], *cp = buf;
+				WRITEUINT8(cp, player - players);
+				SendNetXCmdForPlayer(consoleplayer, XD_RESPAWN, buf, sizeof(buf));
+			}
+			return;
 		}
-		return;
 	}
 
 	destangle = player->mo->angle;
@@ -1686,7 +1691,7 @@ void K_BotTicker(const player_t *player)
 		forcedDir = true;
 	}
 
-	if (P_IsObjectOnGround(player->mo) == false)
+	if (!onground)
 	{
 		if (player->airdroptime == 0
 			&& K_AirDropActive()
@@ -1703,7 +1708,8 @@ void K_BotTicker(const player_t *player)
 			}
 		}
 
-		//return; // Don't allow bots to turn in the air.
+		//if (!player->pogospring && !player->respawn)
+			//return; // Don't allow bots to turn in the air.
 	}
 
 	if (forcedDir == true)

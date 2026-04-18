@@ -9,6 +9,7 @@
 #include "doomdef.h"
 #include "d_player.h" // Need for player_t
 #include "command.h" // Need for player_t
+#include "g_game.h" // Need for mapnum_t
 
 #ifdef __cplusplus
 extern "C" {
@@ -138,6 +139,15 @@ extern vector3_t clusterpoint, clusterdtf;
 #define FLAMEHANDLEBOOST CV_Get(&cv_kartstacking_flame_handleboost)
 #define FLAMESTACKABLE CV_Get(&cv_kartstacking_flame_stackable)
 
+#define ATTRACTIONSPEEDHIMIN CV_Get(&cv_kartstacking_attraction_speedboost_himin)
+#define ATTRACTIONSPEEDHIMAX CV_Get(&cv_kartstacking_attraction_speedboost_himax)
+#define ATTRACTIONSPEEDNORMMIN CV_Get(&cv_kartstacking_attraction_speedboost_normmin)
+#define ATTRACTIONSPEEDNORMMAX CV_Get(&cv_kartstacking_attraction_speedboost_normmax)
+#define ATTRACTIONACCELHI CV_Get(&cv_kartstacking_attraction_accelboost_hi)
+#define ATTRACTIONACCELNORM CV_Get(&cv_kartstacking_attraction_accelboost_norm)
+#define ATTRACTIONHANDLEBOOST CV_Get(&cv_kartstacking_attraction_handleboost)
+#define ATTRACTIONSTACKABLE CV_Get(&cv_kartstacking_attraction_stackable)
+
 #define ALTSHRINKTIME CV_Get(&cv_kartaltshrinktime)
 #define SHRINKSPEEDBOOST CV_Get(&cv_kartstacking_altshrink_speedboost)
 #define SHRINKACCELBOOST CV_Get(&cv_kartstacking_altshrink_accelboost)
@@ -228,7 +238,7 @@ void K_SpawnBumpEffect(mobj_t *mo);
 void K_KartMoveAnimation(player_t *player);
 void K_KartPlayerHUDUpdate(player_t *player);
 void K_KartResetPlayerColor(player_t *player);
-UINT8 K_RaceLapCount(INT16 mapNum);
+UINT8 K_RaceLapCount(mapnum_t mapNum);
 void K_KartPlayerThink(player_t *player, ticcmd_t *cmd);
 void K_KartPlayerAfterThink(player_t *player);
 angle_t K_MomentumAngle(mobj_t *mo);
@@ -253,7 +263,7 @@ void K_SpawnMineExplosion(mobj_t *source, UINT8 color);
 UINT16 K_DriftSparkColor(player_t *player, INT32 charge);
 void K_SpawnBoostTrail(player_t *player);
 void K_SpawnSparkleTrail(mobj_t *mo);
-void K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent);
+mobj_t *K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent);
 void K_DriftDustHandling(mobj_t *spawner);
 mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t mapthing, INT32 defaultDir, INT32 altthrow);
 void K_PuntMine(mobj_t *mine, mobj_t *punter);
@@ -278,7 +288,7 @@ extern boolean forcefullinvintheme;
 boolean K_PlayFullInvinTheme(void);
 void K_DoInvincibility(player_t *player, tic_t time);
 void K_DoSMonitor(player_t *player, tic_t time);
-#define SMONITORWARNINGTIME (fixed_t)(0.833333333f * (float)(FRACUNIT))
+#define SMONITORWARNINGTIME (5*FRACUNIT/6)
 fixed_t K_SMonitorGradient(UINT16 time);
 fixed_t K_GetSMonitorSpeed(UINT16 time);
 fixed_t K_GetSMonitorAccel(UINT16 time);
@@ -294,7 +304,9 @@ void K_RemoveBubbleHealth(player_t *player, INT16 sub);
 boolean K_CheckBubbleChip(const mobj_t *mobj);
 void K_RepairOrbitChain(mobj_t *orbit);
 void K_CalculateBananaSlope(mobj_t *mobj, fixed_t x, fixed_t y, fixed_t z, fixed_t radius, fixed_t height, boolean flip, boolean player);
-player_t *K_FindJawzTarget(mobj_t *actor, player_t *source);
+INT32 K_GetKartBaseRingPower(const player_t *player, boolean boosted);
+UINT8 K_GetKartRingCap(const player_t *player);
+boolean K_IsPlayerRingBurnt(const player_t *player, UINT16 ringpower);
 INT32 K_GetKartRingPower(const player_t *player, boolean boosted);
 size_t K_NextRespawnWaypointIndex(waypoint_t *waypoint);
 boolean K_CheckPlayersRespawnColliding(INT32 playernum, fixed_t x, fixed_t y);
@@ -316,6 +328,7 @@ void K_StripItems(player_t *player);
 void K_StripOther(player_t *player);
 void K_MomentumToFacing(player_t *player);
 boolean K_ApplyOffroad(const player_t *player);
+fixed_t K_GetSneakerBoostSpeed(void);
 fixed_t K_PlayerTripwireSpeedThreshold(const player_t *player);
 tripwirepass_t K_TripwirePassConditions(const player_t *player);
 boolean K_TripwirePass(const player_t *player);
@@ -414,13 +427,17 @@ typedef enum
 	AIRDROP_FUSION,
 } airdroptype_t;
 
-boolean K_NullDriftTiltEnalbed();
+void K_KillAirDrop(player_t *player, p_airdropflags_t airdropflags);
+
+boolean K_NullDriftTiltEnabled(void);
 
 #define RECOVERYDASHADD (TICRATE/2)
 //og val 2*TICRATE
 #define RECOVERYDASHCHARGETIME (3*TICRATE/2)
 //og val 3*TICRATE/2
 #define RECOVERYDASHWIPETIME (RECOVERYDASHCHARGETIME - RECOVERYDASHADD)
+
+void K_KartAttractHomingAttack(player_t *player);
 
 #ifdef __cplusplus
 } // extern "C"

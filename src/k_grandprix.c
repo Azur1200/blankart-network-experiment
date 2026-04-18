@@ -19,6 +19,7 @@
 #include "k_bot.h"
 #include "k_kart.h"
 #include "m_random.h"
+#include "p_local.h"
 #include "r_things.h"
 #include "lua_hook.h"
 #include "k_battle.h"
@@ -294,10 +295,10 @@ static INT16 K_RivalScore(player_t *bot)
 	UINT8 lowestdifficulty = MAXBOTDIFFICULTY;
 	UINT8 i;
 
-	if (grandprixinfo.cup != NULL)
+	if (grandprixinfo.cup != NULL && roundqueue.size > 0)
 	{
-		roundnum = grandprixinfo.roundnum;
-		roundsleft = grandprixinfo.cup->numlevels - grandprixinfo.roundnum;
+		roundnum = roundqueue.roundnum;
+		roundsleft = grandprixinfo.cup->numlevels - roundnum;
 	}
 
 	for (i = 0; i < MAXGPPLAYERS; i++)
@@ -343,8 +344,13 @@ void K_UpdateGrandPrixBots(void)
 		{
 			continue;
 		}
-		
+
 		players[i].spectator = K_BotDefaultSpectator();
+	}
+
+	if (grandprixinfo.wonround == false)
+	{
+		return;
 	}
 
 	// Find the rival.
@@ -539,8 +545,10 @@ void K_RetireBots(void)
 	UINT16 i;
 
 	if (grandprixinfo.gp == true
-		&& (((grandprixinfo.cup != NULL) && (grandprixinfo.roundnum >= grandprixinfo.cup->numlevels))
-		|| grandprixinfo.eventmode != GPEVENT_NONE))
+		&& (grandprixinfo.eventmode != GPEVENT_NONE
+		|| (grandprixinfo.cup != NULL
+		&& roundqueue.size > 0
+		&& roundqueue.roundnum >= grandprixinfo.cup->numlevels)))
 	{
 		// No replacement.
 		return;
@@ -580,6 +588,10 @@ void K_RetireBots(void)
 		{
 			const UINT8 startingdifficulty = K_BotStartingDifficulty(grandprixinfo.gamespeed);
 			newDifficulty = startingdifficulty - 4;
+			if (roundqueue.size > 0)
+			{
+				newDifficulty += roundqueue.roundnum;
+			}
 		}
 	}
 	else
@@ -738,7 +750,7 @@ void K_PlayerLoseLife(player_t *player)
 --------------------------------------------------*/
 boolean K_CanChangeRules(boolean allowdemos)
 {
-	if (grandprixinfo.gp == true && grandprixinfo.roundnum > 0)
+	if (grandprixinfo.gp == true)
 	{
 		// Don't cheat the rules of the GP!
 		return false;
@@ -789,7 +801,7 @@ boolean K_BotDefaultSpectator(void)
 		return false;
 	}
 
-	if (!(gametyperules & GTR_BOTS))
+	if (!(gametypes[gametype]->rules & GTR_BOTS))
 	{
 		// This gametype does not support bots.
 		return true;

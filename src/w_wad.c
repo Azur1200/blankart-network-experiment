@@ -90,34 +90,29 @@ typedef struct
 #define LUMPNUMCACHESIZE 2048 // should be reasonable ig
 #define LUMPNUMCACHENAME 32
 
-#include <unordered_map>
-#include <string>
-#include <cstring>
+#define NAME      lumpnum_map
+#define KEY_TY    char *
+#define KEY_GET_CONST
+#define VAL_TY    lumpnum_t
+#define HASH_FN   vt_hash_string
+#define CMPR_FN   vt_cmpr_string
+#define KEY_DTOR_FN free
+#include "verstable.h"
 
-struct LumpnumNameHash
-{
-	std::size_t operator()(const std::string& str) const
-	{
-		// hopefully this is fast enough but should be
-		return static_cast<std::size_t>(HASH32(str.c_str(), str.length()));
-	}
-};
+#define NAME      folder_map
+#define KEY_TY    char *
+#define KEY_GET_CONST
+#define VAL_TY    UINT16
+#define HASH_FN   vt_hash_string
+#define CMPR_FN   vt_cmpr_string
+#define KEY_DTOR_FN free
+#include "verstable.h"
 
-struct LumpnumStringEquals
-{
-	bool operator()(const std::string& str1, const std::string& str2) const
-	{
-		//return fastcmp(str1.c_str(), str2.c_str());
-		return str1 == str2;
-	}
-};
+static lumpnum_map lumpnumcache;
 
-static std::unordered_map<std::string, lumpnum_t, LumpnumNameHash, LumpnumStringEquals> lumpnumcache(LUMPNUMCACHESIZE);
-
-// gotta wrap this in a struct due to external C linkage
-struct FolderCache {
-	std::unordered_map<std::string, UINT16, LumpnumNameHash, LumpnumStringEquals> map;
-};
+typedef struct FolderCache {
+	folder_map map;
+} FolderCache;
 
 //===========================================================================
 //                                                                    GLOBALS
@@ -132,6 +127,8 @@ wadfile_t *wadfiles[MAX_WADFILES]; // 0 to numwadfiles-1 are valid
 // being ejected
 void W_Shutdown(void)
 {
+	lumpnum_map_cleanup(&lumpnumcache);
+
 	while (numwadfiles--)
 	{
 		wadfile_t *wad = wadfiles[numwadfiles];
@@ -147,12 +144,22 @@ void W_Shutdown(void)
 			}
 		}
 
-		delete wad->startfolders;
-		delete wad->endfolders;
+		folder_map_cleanup(&wad->startfolders->map);
+		free(wad->startfolders);
+		folder_map_cleanup(&wad->endfolders->map);
+		free(wad->endfolders);
 
 		Z_Free(wad->lumpinfo);
 		Z_Free(wad);
 	}
+}
+
+// the lumpnum cache needs to be initialized before use
+// call this as early as possible!
+void W_Startup(void)
+{
+	lumpnum_map_init(&lumpnumcache);
+	lumpnum_map_reserve(&lumpnumcache, LUMPNUMCACHESIZE);
 }
 
 //===========================================================================
@@ -457,7 +464,7 @@ boolean W_MakeFileHash(const char *filename, boolean openwad, UINT64 *ret)
 // Invalidates the cache of lump numbers. Call this whenever a wad is added.
 FUNCINLINE static ATTRINLINE void W_InvalidateLumpnumCache(void)
 {
-	lumpnumcache.clear();
+	lumpnum_map_clear(&lumpnumcache);
 }
 
 FUNCINLINE static ATTRINLINE UINT32 W_HashLumpName(const char *name, size_t len)
@@ -618,21 +625,13 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 			{
 				const char *temp = trimname-1;
 				// CONS_Printf("wadnumtemp: %s\n", temp);
-#if (defined(_WIN32))
 				while (temp >= filename+5 && *temp != PATHSEP[0])
 					temp--;
 
 				if (((trimname-1) - temp) == 8
 					&& temp >= filename+5
-					&& !strncmp(temp-5, PATHSEP"Temp", 5))
-#elif (defined(__linux__))
-				while (temp >= filename+4 && *temp != PATHSEP[0])
-					temp--;
-
-				if (((trimname-1) - temp) == 8
-					&& temp >= filename+4
-					&& !strncmp(temp-4, PATHSEP"tmp", 4))
-#endif
+					&& (!strncmp(temp-5, PATHSEP"Temp", 5)
+					|| !strncmp(temp-4, PATHSEP"tmp", 4)))
 				{
 					filename = wadfiles[
 						((wadnamelump & ~UINT16_MAX) >> 16)
@@ -656,7 +655,7 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 				namelen = strlen(trimname);
 
 			// Allocate the lump's long and full name (save on memory).
-			lump_p->longname = lump_p->fullname = static_cast<char*>(Z_Calloc(namelen * sizeof(char), PU_STATIC, NULL));
+			lump_p->longname = lump_p->fullname = (char*)Z_Calloc(namelen * sizeof(char), PU_STATIC, NULL);
 			strncpy(lump_p->longname, trimname, namelen);
 			lump_p->longname[namelen-1] = '\0';
 			lump_p->hash.longname = lump_p->hash.fullname = W_HashLumpName(lump_p->longname, strlen(lump_p->longname));
@@ -785,7 +784,7 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 	// Look for central directory end signature near end of file.
 	// Contains entry number (number of lumps), and central directory start offset.
 	fseek(handle, 0, SEEK_END);
-	if (!ResFindSignature(handle, pat_end, std::max<long>(0, ftell(handle) - (22 + 65536))))
+	if (!ResFindSignature(handle, pat_end, (long)max(0, ftell(handle) - (22 + 65536))))
 	{
 		CONS_Alert(CONS_ERROR, "Missing central directory\n");
 		return NULL;
@@ -844,7 +843,7 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 			dotpos = fullname + strlen(fullname); // Watch for files without extension.
 
 		memset(lump_p->name, '\0', 9); // Making sure they're initialized to 0. Is it necessary?
-		strncpy(lump_p->name, trimname, std::min<size_t>(8, dotpos - trimname));
+		strncpy(lump_p->name, trimname, (size_t)min(8, dotpos - trimname));
 		lump_p->namelength = strlen(lump_p->name);
 		lump_p->hash.name = W_HashLumpName(lump_p->name, lump_p->namelength);
 
@@ -1049,8 +1048,10 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boole
 	fseek(handle, 0, SEEK_END);
 	wadfile->filesize = (unsigned)ftell(handle);
 	wadfile->type = type;
-	wadfile->startfolders = new FolderCache();
-	wadfile->endfolders = new FolderCache();
+	wadfile->startfolders = (FolderCache *)malloc(sizeof(FolderCache));
+	folder_map_init(&wadfile->startfolders->map);
+	wadfile->endfolders = (FolderCache *)malloc(sizeof(FolderCache));
+	folder_map_init(&wadfile->endfolders->map);
 
 	// already generated, just copy it over
 	wadfile->hash = filehash;
@@ -1236,6 +1237,13 @@ UINT16 W_FindNextEmptyInPwad(UINT16 wad, UINT16 startlump)
 UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 startlump)
 {
 	UINT16 i, end;
+	boolean compatload = false;
+
+	if (wadfiles[wad]->compatmode)
+	{
+		// Compatibility mode: "blind idiot" trace to the first map header/WAD
+		compatload = true;
+	}
 
 	if (wadfiles[wad]->type == RET_WAD)
 	{
@@ -1281,6 +1289,33 @@ UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 st
 					continue;
 #endif
 
+				return i;
+			}
+		}
+		else if (compatload)
+		{
+			for (i = startlump; i < wadfiles[wad]->numlumps; i++)
+			{
+				// Not the hash?
+				if ((wadfiles[wad]->lumpinfo + i)->hash.longname != hash)
+					continue;
+
+				// Not the name? (always use longname, even in wads, to accomodate WADNAME)
+				if (strcasecmp(name, (wadfiles[wad]->lumpinfo + i)->longname))
+					continue;
+
+				if (W_LumpLength(i | (wad << 16)) > 0)
+				{
+					// Not a header? Maybe it's a WAD file...
+
+					if (!W_IsLumpWad(i | (wad << 16)))
+					{
+						// ...no dice?
+						continue;
+					}
+				}
+
+				// Found a map!
 				return i;
 			}
 		}
@@ -1391,9 +1426,9 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 	size_t namelen;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 
-	auto it = wadfiles[wad]->startfolders->map.find(name);
-	if (it != wadfiles[wad]->startfolders->map.end())
-		return it->second;
+	folder_map_itr it = folder_map_get(&wadfiles[wad]->startfolders->map, name);
+	if (!folder_map_is_end(it))
+		return it.data->val;
 
 	namelen = strlen(name);
 
@@ -1405,12 +1440,12 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 			if (lump_p->fullnamelength == namelen)
 				i++;
 
-			wadfiles[wad]->startfolders->map[name] = i;
+			folder_map_insert(&wadfiles[wad]->startfolders->map, strdup(name), i);
 			return i;
 		}
 	}
 
-	wadfiles[wad]->startfolders->map[name] = INT16_MAX;
+	folder_map_insert(&wadfiles[wad]->startfolders->map, strdup(name), INT16_MAX);
 	return INT16_MAX;
 }
 
@@ -1423,9 +1458,9 @@ UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 	size_t namelen;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 
-	auto it = wadfiles[wad]->endfolders->map.find(name);
-	if (it != wadfiles[wad]->endfolders->map.end())
-		return it->second;
+	folder_map_itr it = folder_map_get(&wadfiles[wad]->endfolders->map, name);
+	if (!folder_map_is_end(it))
+		return it.data->val;
 
 	namelen = strlen(name);
 
@@ -1435,7 +1470,7 @@ UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 			break;
 	}
 
-	wadfiles[wad]->endfolders->map[name] = i;
+	folder_map_insert(&wadfiles[wad]->endfolders->map, strdup(name), i);
 	return i;
 }
 
@@ -1458,16 +1493,16 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump)
 
 FUNCINLINE static ATTRINLINE lumpnum_t CheckLumpInCache(const char *name)
 {
-	auto it = lumpnumcache.find(name);
-	if (it != lumpnumcache.end())
-		return it->second;
+	lumpnum_map_itr it = lumpnum_map_get(&lumpnumcache, name);
+	if (!lumpnum_map_is_end(it))
+		return it.data->val;
 
 	return LUMPERROR;
 }
 
 FUNCINLINE static ATTRINLINE void AddLumpToCache(lumpnum_t lumpnum, const char *name)
 {
-	lumpnumcache.emplace(name, lumpnum);
+	lumpnum_map_insert(&lumpnumcache, strdup(name), lumpnum);
 }
 
 //
@@ -1498,12 +1533,16 @@ lumpnum_t W_CheckNumForName(const char *name)
 			break; //found it
 	}
 
-	if (check == INT16_MAX) return LUMPERROR;
+	if (check == INT16_MAX)
+	{
+		return LUMPERROR;
+	}
 	else
 	{
 		// Update the cache.
 		lumpnum_t lumpnum = (i << 16) | check;
-		lumpnumcache.insert({name, lumpnum});
+		AddLumpToCache(lumpnum, name);
+
 		return lumpnum;
 	}
 }
@@ -1712,7 +1751,7 @@ UINT8 W_LumpExists(const char *name)
 	// Check the lumpnumcache first.
 	lumpnum_t cachenum = CheckLumpInCache(name);
 	if (cachenum != LUMPERROR)
-		return cachenum;
+		return true;
 
 	namelen = strlen(name);
 	hash = W_HashLumpName(name, namelen);
@@ -2461,7 +2500,7 @@ W_VerifyPK3 (FILE *fp, lumpchecklist_t *checklist, boolean status)
 	fseek(fp, 0, SEEK_END);
 	file_size = ftell(fp);
 
-	if (!ResFindSignature(fp, pat_end, std::max<long>(0, ftell(fp) - (22 + 65536))))
+	if (!ResFindSignature(fp, pat_end, (long)max(0, ftell(fp) - (22 + 65536))))
 		return true;
 
 	fseek(fp, -4, SEEK_CUR);
@@ -2502,7 +2541,7 @@ W_VerifyPK3 (FILE *fp, lumpchecklist_t *checklist, boolean status)
 					dotpos = fullname + strlen(fullname); // Watch for files without extension.
 
 				memset(lumpname, '\0', 9); // Making sure they're initialized to 0. Is it necessary?
-				strncpy(lumpname, trimname,std::min<size_t>(8, dotpos - trimname));
+				strncpy(lumpname, trimname,(size_t)min(8, dotpos - trimname));
 
 				if (! W_VerifyName(lumpname, checklist, status))
 					verified = false;

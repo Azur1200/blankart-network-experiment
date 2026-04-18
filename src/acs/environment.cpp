@@ -275,7 +275,7 @@ void Environment::loadModule(ACSVM::Module *module)
 
 	if (name->i) // this module is from a map!
 	{
-		INT32 mapnum = G_MapNumber(name->s->str);
+		mapnum_t mapnum = G_MapNumber(name->s->str);
 		if (mapnum < NEXTMAP_INVALID)
 			lumpnum = mapheaderinfo[mapnum]->lumpnum;
 	}

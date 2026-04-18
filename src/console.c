@@ -47,12 +47,12 @@
 #ifdef HAVE_THREADS
 I_mutex con_mutex;
 
-// g_in_exiting_signal_handler is an evil hack
+// I_In_Exiting_Signal_Handler is an evil hack
 // to avoid infinite SIGABRT recursion in the signal handler
 // due to poisoned locks or mach-o kernel not supporting locks in signals
 // or something like that. idk
-#  define Lock_state()    if (!g_in_exiting_signal_handler) { I_lock_mutex(&con_mutex); }
-#  define Unlock_state()  if (!g_in_exiting_signal_handler) { I_unlock_mutex(con_mutex); }
+#  define Lock_state()    if (!I_In_Exiting_Signal_Handler()) { I_lock_mutex(&con_mutex); }
+#  define Unlock_state()  if (!I_In_Exiting_Signal_Handler()) { I_unlock_mutex(con_mutex); }
 #else/*HAVE_THREADS*/
 #  define Lock_state()
 #  define Unlock_state()
@@ -226,14 +226,6 @@ static void CONS_Clear_f(void)
 
 	Unlock_state();
 }
-
-// Choose english keymap
-//
-/*static void CONS_English_f(void)
-{
-	shiftxform = english_shiftxform;
-	CONS_Printf(M_GetText("%s keymap.\n"), M_GetText("English"));
-}*/
 
 static char *bindtable[NUMINPUTS];
 
@@ -675,23 +667,57 @@ void CON_MoveConsole(void)
 	Unlock_state();
 }
 
+static char shiftxform[] =
+{
+	0,
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+	21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+	31,
+	' ', '!', '"', '#', '$', '%', '&',
+	'"', // shift-'
+	'(', ')', '*', '+',
+	'<', // shift-,
+	'_', // shift--
+	'>', // shift-.
+	'?', // shift-/
+	')', // shift-0
+	'!', // shift-1
+	'@', // shift-2
+	'#', // shift-3
+	'$', // shift-4
+	'%', // shift-5
+	'^', // shift-6
+	'&', // shift-7
+	'*', // shift-8
+	'(', // shift-9
+	':',
+	':', // shift-;
+	'<',
+	'+', // shift-=
+	'>', '?', '@',
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'{', // shift-[
+	'|', // shift-backslash - OH MY GOD DOES WATCOM SUCK
+	'}', // shift-]
+	'"', '_',
+	'~', // shift-`
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'{', '|', '}', '~', 127
+};
+
 INT32 CON_ShiftChar(INT32 ch)
 {
-	if (I_UseNativeKeyboard())
+	if (I_UseNativeKeyboard() || ch >= sizeof(shiftxform))
 		return ch;
 
+	// warning: shiftdown is NOT a boolean, it's 1 or 2 for lshift/rshift
 	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
-	{
-		if (shiftdown ^ capslock)
-			ch = shiftxform[ch];
-	}
+		return !!shiftdown != capslock ? shiftxform[ch] : ch;
 	else	// if we're holding shift we should still shift non letter symbols
-	{
-		if (shiftdown)
-			ch = shiftxform[ch];
-	}
-
-	return ch;
+		return shiftdown ? shiftxform[ch] : ch;
 }
 
 // Clear time of console heads up messages
@@ -801,6 +827,31 @@ void CON_Ticker(void)
 //
 // ----
 //
+
+static void AdjustTextSize(INT32 n)
+{
+	INT32 range = vid.dup;
+	if (range < 3) // make bigger jumps if the resolution is small
+		n *= 4 - range;
+
+	// 1-3 ascending is larger
+	// but 0 is special and is the largest
+	INT32 cur = (cv_constextsize.value & V_SCALEPATCHMASK) >> V_SCALEPATCHSHIFT;
+	if (!cur) // reverse direction at 0
+	{
+		if (n < 0)
+			cur = 4 + n;
+		else
+			return;
+	}
+	else
+		cur += n;
+	if (cur < 1) // min: V_NOSCALEPATCH
+		cur = 1;
+	if (cur > 4) // max: 4 & 3 = 0
+		cur = 4;
+	CV_SetValue(&cv_constextsize, (cur << V_SCALEPATCHSHIFT) & V_SCALEPATCHMASK);
+}
 
 // Handles console key input
 //
@@ -924,6 +975,18 @@ boolean CON_Responder(event_t *ev)
 		// Those are already handled in M_TextInputHandle, but they do extra logic... Maybe textinput_t should have some sort of callbacks?
 		if (key == 'x' || key == 'X' || key == 'v' || key == 'V')
 			completion[0] = 0;
+
+		// Zoom
+		if (key == '=')
+		{
+			AdjustTextSize(1);
+			return true;
+		}
+		else if (key == '-')
+		{
+			AdjustTextSize(-1);
+			return true;
+		}
 
 		// ...why shouldn't it eat the key? if it doesn't, it just means you
 		// can control Sonic from the console, which is silly
@@ -1661,7 +1724,6 @@ static const char *CON_LoadingStrings[LOADED_ALLDONE+1] =
 	"Init rendering daemon...", //LOADED_RINIT
 	"Init audio subsystem...", //LOADED_SINITSFXCHANNELS
 	"Cache HUD...", //LOADED_STINIT
-	"Test fixed-point arithmetic...", //LOADED_MATHINIT
 	"Init ACSVM...", //LOADED_ACSINIT
 	"Check game status...", //LOADED_DCHECKNETGAME
 	"Now starting..."

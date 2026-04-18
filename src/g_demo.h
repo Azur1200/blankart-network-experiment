@@ -28,6 +28,13 @@ extern "C" {
 // DEMO playback/recording related stuff.
 // ======================================
 
+typedef enum {
+	DEMOSAVE_NONE = 0,
+	DEMOSAVE_MANUAL,
+	DEMOSAVE_AUTO_NETONLY,
+	DEMOSAVE_AUTO
+} demosavemode_e;
+
 extern consvar_t cv_recordmultiplayerdemos, cv_netdemosyncquality, cv_netdemosize;
 extern consvar_t cv_resyncdemo;
 
@@ -183,6 +190,7 @@ extern demoghost *ghosts;
 #define DFILE_ERROR_CANNOTLOAD           0x04 // Files are missing and cannot be loaded.
 #define DFILE_ERROR_EXTRAFILES           0x05 // Extra files outside of the replay's file list are loaded.
 
+boolean G_DemoWillAutoSave(void);
 void G_DeferedPlayDemo(const char *demo);
 void G_DoPlayDemo(char *defdemoname);
 void G_SetupDemoPlayer(INT32 i);

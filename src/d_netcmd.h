@@ -16,6 +16,7 @@
 #define __D_NETCMD__
 
 #include "command.h"
+#include "g_mapnum.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,7 +38,6 @@ extern consvar_t cv_dummyrestatrandom[MAXSPLITSCREENPLAYERS];
 // preferred number of players
 extern consvar_t cv_splitplayers;
 
-extern consvar_t cv_seenames;
 extern consvar_t cv_usemouse;
 extern consvar_t cv_laglesscam;
 extern consvar_t cv_usecontroller[MAXSPLITSCREENPLAYERS];
@@ -134,6 +134,15 @@ extern consvar_t cv_kartstacking_flame_accelboost;
 extern consvar_t cv_kartstacking_flame_handleboost;
 extern consvar_t cv_kartstacking_flame_stackable;
 
+extern consvar_t cv_kartstacking_attraction_speedboost_himin;
+extern consvar_t cv_kartstacking_attraction_speedboost_himax;
+extern consvar_t cv_kartstacking_attraction_speedboost_normmin;
+extern consvar_t cv_kartstacking_attraction_speedboost_normmax;
+extern consvar_t cv_kartstacking_attraction_accelboost_hi;
+extern consvar_t cv_kartstacking_attraction_accelboost_norm;
+extern consvar_t cv_kartstacking_attraction_handleboost;
+extern consvar_t cv_kartstacking_attraction_stackable;
+
 extern consvar_t cv_kartstacking_grow_speedboost;
 extern consvar_t cv_kartstacking_grow_accelboost;
 extern consvar_t cv_kartstacking_grow_handleboost;
@@ -227,6 +236,7 @@ extern consvar_t cv_kartbubble_boost_allow;
 extern consvar_t cv_kartbubble_boost_offroadignore;
 extern consvar_t cv_kartflame_fastfuel;
 extern consvar_t cv_kartflame_offroadburn;
+extern consvar_t cv_kartattraction_assistpower;
 extern consvar_t cv_kartaltshrink_arrowbullet;
 extern consvar_t cv_kartaltshrink_arrowbulletthres;
 
@@ -300,7 +310,7 @@ extern consvar_t cv_lapemblemmode;
 extern consvar_t cv_racesplits;
 extern consvar_t cv_showviewpointtext;
 extern consvar_t cv_rouletteonplayer;
-extern consvar_t cv_rouletteplayertrans;
+extern consvar_t cv_rouletteplayertrans, cv_rouletteplayerboxtrans;
 
 extern consvar_t cv_skipmapcheck;
 
@@ -361,6 +371,7 @@ typedef enum
 	XD_SCHEDULECLEAR, // 36
 	XD_AUTOMATE,    // 37
 	XD_CHEAT,       // 38
+	XD_MAPQUEUE,	// 39
 
 	MAXNETXCMD
 } netxcmd_t;
@@ -403,7 +414,7 @@ void D_SendPlayerConfig(UINT8 n);
 void Command_ExitGame_f(void);
 void Command_Retry_f(void);
 void D_GameTypeChanged(INT32 lastgametype); // not a real _OnChange function anymore
-void D_MapChange(INT32 pmapnum, INT32 pgametype, boolean pencoremode, boolean presetplayers, INT32 pdelay, boolean pskipprecutscene, boolean pfromlevelselect);
+void D_MapChange(mapnum_t pmapnum, INT32 pgametype, boolean pencoremode, boolean presetplayers, INT32 pdelay, boolean pskipprecutscene, boolean pforcespecialstage);
 void D_SetupVote(void);
 void D_ModifyClientVote(UINT8 player, SINT8 voted);
 void D_PickVote(void);
@@ -439,6 +450,9 @@ typedef enum
 	AEV_ROUNDSTART,
 	AEV_INTERMISSIONSTART,
 	AEV_VOTESTART,
+	AEV_QUEUESTART,
+	AEV_QUEUEEND,
+	AEV_LEVELSTART,
 	AEV__MAX
 } automateEvents_t;
 

@@ -46,6 +46,7 @@
 #include "g_party.h"
 #include "k_waypoint.h"
 #include "k_itemlist.hpp"
+#include "k_vote.h"
 
 #include <tracy/tracy/TracyC.h>
 
@@ -420,14 +421,15 @@ static void P_RelinkWaypoint(savebuffer_t *save, waypoint_t **ptr)
 
 // Block UINT32s to attempt to ensure that the correct data is
 // being sent and received
-#define ARCHIVEBLOCK_MISC     0x7FEEDEED
-#define ARCHIVEBLOCK_PLAYERS  0x7F448008
-#define ARCHIVEBLOCK_PARTIES  0x7F87AF0C
-#define ARCHIVEBLOCK_WORLD    0x7F8C08C0
-#define ARCHIVEBLOCK_POBJS    0x7F928546
-#define ARCHIVEBLOCK_THINKERS 0x7F37037C
-#define ARCHIVEBLOCK_SPECIALS 0x7F228378
-#define ARCHIVEBLOCK_WAYPOINTS 0x7F46498F
+#define ARCHIVEBLOCK_MISC		0x7FEEDEED
+#define ARCHIVEBLOCK_PLAYERS	0x7F448008
+#define ARCHIVEBLOCK_PARTIES	0x7F87AF0C
+#define ARCHIVEBLOCK_ROUNDQUEUE	0x7F721331
+#define ARCHIVEBLOCK_WORLD		0x7F8C08C0
+#define ARCHIVEBLOCK_POBJS		0x7F928546
+#define ARCHIVEBLOCK_THINKERS	0x7F37037C
+#define ARCHIVEBLOCK_SPECIALS	0x7F228378
+#define ARCHIVEBLOCK_WAYPOINTS	0x7F46498F
 
 // Specialized netsynch markers
 #define PLYRSYNC_ITEMLIST (1)
@@ -721,10 +723,16 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		RSYNC(players[i].shieldtracer);
 
+		SYNC(players[i].attractioncharge);
+		SYNC(players[i].attractionattack);
+		SYNC(players[i].attractionattack_hipower);
+		SYNC(players[i].attractionboost);
+
 		SYNC(players[i].bubblecool);
 		SYNC(players[i].bubbleblowup);
 		SYNC(players[i].bubblehealth);
 		SYNC(players[i].bubbleboost);
+		SYNC(players[i].bubblegraze);
 		SYNC(players[i].bubblebuffer);
 
 		SYNC(players[i].flamedash);
@@ -766,8 +774,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		SYNC(players[i].bananadrag);
 
-		SYNC(players[i].lastjawztarget);
-		SYNC(players[i].jawztargetdelay);
+		SYNC(players[i].lastitemtarget);
+		SYNC(players[i].itemtargetdelay);
 
 		SYNC(players[i].interpoints);
 		SYNC(players[i].roundscore);
@@ -788,6 +796,9 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		SYNC(players[i].lastsafelap);
 		SYNC(players[i].lastsafestarpost);
+
+		SYNC(players[i].tripwireUnstuck);
+		SYNC(players[i].bumpUnstuck);
 
 		SYNC(players[i].typing_timer);
 		SYNC(players[i].typing_duration);
@@ -849,6 +860,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		SYNC(players[i].itemusecooldown);
 		SYNC(players[i].itemusecooldownmax);
+
+		P_SyncMem(save, players[i].public_key, PUBKEYLENGTH);
 	}
 	TracyCZoneEnd(__zone);
 }
@@ -909,6 +922,34 @@ static void P_NetSyncParties(savebuffer_t *save)
 	}
 
 	TracyCZoneEnd(__zone);
+}
+
+static void P_NetSyncRoundQueue(savebuffer_t *save)
+{
+	UINT8 i;
+
+	if (P_SyncUINT32(save, ARCHIVEBLOCK_ROUNDQUEUE) != ARCHIVEBLOCK_ROUNDQUEUE)
+		I_Error("Bad $$$.sav at archive block RoundQueue");
+
+	if (!save->write)
+		memset(&roundqueue, 0, sizeof(struct roundqueue));
+
+	SYNC(roundqueue.position);
+	SYNC(roundqueue.size);
+	SYNC(roundqueue.roundnum);
+
+	for (i = 0; i < roundqueue.size; i++)
+	{
+		//SYNC(roundqueue.entries[i].mapnum);
+		/* NOPE! Clients do not need to know what is in the roundqueue.
+		 *		This disincentivises cheaty clients in future tournament environments.
+		 *		~toast 080423 */
+		if (!save->write)
+			roundqueue.entries[i].mapnum = 0; // TEST RUN -- dummy, has to be < nummapheaders
+		SYNC(roundqueue.entries[i].gametype);
+		SYNCBOOLEAN(roundqueue.entries[i].encore);
+		SYNCBOOLEAN(roundqueue.entries[i].rankrestricted);
+	}
 }
 
 ///
@@ -2046,7 +2087,7 @@ static void DiffMobj(const mobj_t *mobj, UINT32 diff[])
 	DIFF(mobj->mirrored, MD2_MIRRORED);
 	DIFF(mobj->rollangle, MD2_ROLLANGLE);
 	DIFF(mobj->shadowscale, MD2_SHADOWSCALE);
-	DIFF(mobj->renderflags, MD2_RENDERFLAGS);
+	DIFF(mobj->renderflags /*|| mobj->renderflags2*/, MD2_RENDERFLAGS);
 	DIFF(mobj->tid != 0, MD2_TID);
 	DIFF(mobj->spritexscale != FRACUNIT || mobj->spriteyscale != FRACUNIT, MD2_SPRITESCALE);
 	DIFF(mobj->spritexoffset || mobj->spriteyoffset || mobj->rollingxoffset || mobj->rollingyoffset, MD2_SPRITEOFFSET);
@@ -2078,6 +2119,35 @@ static void DiffMobj(const mobj_t *mobj, UINT32 diff[])
 	DIFF(mobj->voice, MD3_VOICE);
 }
 
+boolean MobjIsNetSynced(mobj_t *mobj)
+{
+	// Ignore stationary hoops - these will be respawned from mapthings.
+	if (mobj->type == MT_HOOP)
+		return false;
+
+	// These are NEVER saved.
+	if (mobj->type == MT_HOOPCOLLIDE)
+		return false;
+
+	// This hoop has already been collected.
+	if (mobj->type == MT_HOOPCENTER && mobj->threshold == 4242)
+		return false;
+
+	// MT_SPARK: used for debug stuff
+	if (mobj->type == MT_SPARK)
+		return false;
+
+	// MT_FOLLOWERHORN: So it turns out hornmod is fundamentally incompatible with netsync
+	if (mobj->type == MT_FOLLOWERHORN)
+		return false;
+
+	// This is a non-synched visual effect mobj
+	if (mobj->flags2 & MF2_DONTSYNC)
+		return false;
+
+	return true;
+}
+
 static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
 	mobj_t *mobj = (mobj_t *)th;
@@ -2086,24 +2156,7 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 
 	if (save->write)
 	{
-		// Ignore stationary hoops - these will be respawned from mapthings.
-		if (mobj->type == MT_HOOP)
-			return th;
-
-		// These are NEVER saved.
-		if (mobj->type == MT_HOOPCOLLIDE)
-			return th;
-
-		// This hoop has already been collected.
-		if (mobj->type == MT_HOOPCENTER && mobj->threshold == 4242)
-			return th;
-
-		// MT_SPARK: used for debug stuff
-		if (mobj->type == MT_SPARK)
-			return th;
-
-		// This is a non-synched visual effect mobj
-		if (mobj->flags2 & MF2_DONTSYNC)
+		if (!MobjIsNetSynced(mobj))
 			return th;
 
 		// Scrap all of that. If we're a hoop center, this is ALL we're saving.
@@ -2324,6 +2377,9 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 			mobj->renderflags = READUINT32(save->p);
 		}
 	}
+#if 0
+	SYNCF(MD2_RENDERFLAGS, mobj->renderflags2);
+#endif
 	SYNCF(MD2_TID, mobj->tid);
 	SYNCDEF(MD2_SPRITESCALE, mobj->spritexscale, FRACUNIT);
 	SYNCDEF(MD2_SPRITESCALE, mobj->spriteyscale, FRACUNIT);
@@ -3816,9 +3872,7 @@ static void P_RelinkPointers(savebuffer_t *save)
 
 		mobj = (mobj_t *)currentthinker;
 
-		if (UNLIKELY(mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER
-			// MT_SPARK: used for debug stuff
-			|| mobj->type == MT_SPARK))
+		if (!MobjIsNetSynced(mobj))
 			continue;
 
 		RELINK(&mobj->tracer);
@@ -3932,7 +3986,7 @@ static inline void P_NetSyncSpecials(savebuffer_t *save)
 // =======================================================================
 //          Misc
 // =======================================================================
-static inline void P_ArchiveMisc(savebuffer_t *save, INT16 mapnum)
+static inline void P_ArchiveMisc(savebuffer_t *save, mapnum_t mapnum)
 {
 	TracyCZone(__zone, true);
 
@@ -3942,20 +3996,20 @@ static inline void P_ArchiveMisc(savebuffer_t *save, INT16 mapnum)
 	if (gamecomplete)
 		mapnum |= 8192;
 
-	WRITEINT16(save->p, mapnum);
+	WRITEUINT16(save->p, mapnum);
 	WRITEUINT16(save->p, emeralds+357);
 	WRITESTRINGN(save->p, timeattackfolder, sizeof(timeattackfolder));
 
 	TracyCZoneEnd(__zone);
 }
 
-static inline void P_UnArchiveSPGame(savebuffer_t *save, INT16 mapoverride)
+static inline void P_UnArchiveSPGame(savebuffer_t *save, mapnum_t mapoverride)
 {
 	TracyCZone(__zone, true);
 
 	char testname[sizeof(timeattackfolder)];
 
-	gamemap = READINT16(save->p);
+	gamemap = READUINT16(save->p);
 
 	if (mapoverride != 0)
 	{
@@ -4503,7 +4557,7 @@ static inline boolean P_UnArchiveLuabanksAndConsistency(savebuffer_t *save)
 	return ret;
 }
 
-void P_SaveGame(savebuffer_t *save, INT16 mapnum)
+void P_SaveGame(savebuffer_t *save, mapnum_t mapnum)
 {
 	P_ArchiveMisc(save, mapnum);
 	P_ArchivePlayer(save);
@@ -4532,11 +4586,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 				continue;
 
 			mobj = (mobj_t *)th;
-			if (UNLIKELY(mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER
-				// MT_SPARK: used for debug stuff
-				|| mobj->type == MT_SPARK
-				// MT_FOLLOWERHORN: So it turns out hornmod is fundamentally incompatible with netsync
-				|| mobj->type == MT_FOLLOWERHORN || mobj->flags2 & MF2_DONTSYNC))
+			if (!MobjIsNetSynced(mobj))
 				continue;
 			mobj->mobjnum = i++;
 		}
@@ -4544,6 +4594,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 
 	P_NetSyncPlayers(save);
 	P_NetSyncParties(save);
+	P_NetSyncRoundQueue(save);
 
 	if (gamestate == GS_LEVEL)
 	{
@@ -4564,7 +4615,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 	TracyCZoneEnd(__zone);
 }
 
-boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride)
+boolean P_LoadGame(savebuffer_t *save, mapnum_t mapoverride)
 {
 	if (gamestate == GS_INTERMISSION)
 		Y_EndIntermission();
@@ -4596,6 +4647,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 		return false;
 	P_NetSyncPlayers(save);
 	P_NetSyncParties(save);
+	P_NetSyncRoundQueue(save);
 
 	if (gamestate == GS_LEVEL)
 	{

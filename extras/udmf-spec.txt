@@ -214,6 +214,7 @@ BlanKart's namespace implements the following additional fields:
 		invertencore = <bool>;				// true = encore remap rules are inverted.
 		flatlighting = <bool>;				// true = directional lighting is forced off.
 		forcedirectionallighting = <bool>;	// true = directional lighting is forced on.
+		noaudioeffects = <bool>;			// true = global audio effects for objects in this sector are disabled.
 		nostepup = <bool>;					// true = objects can't step up.
 		doublestepup = <bool>;				// true = objects have increased step up.
 		nostepdown = <bool>;				// true = objects can't step down.
@@ -225,12 +226,13 @@ BlanKart's namespace implements the following additional fields:
 		zoomtubestart = <bool>;				// true = sector is start of a zoom tube.
 		zoomtubeend = <bool>;				// true = sector is end of a zoom tube.
 
-		speedpad = <bool>; // true = players are launched forward by this sector.
-		finishline = <bool>; // true = players gain a lap or finish the race in this sector. Used for legacy support.
-		sneakerpanel = <bool>; // true = players are speed boosted forward by this sector.
-		waterpanel = <bool>; // true = players are speed boosted forward by this sector and are able to drive on water.
-		redpogospring = <bool>; // true = players are bounced into the air by this sector.
-		yellowpogospring = <bool>; // true = players are bounced into the air and then speedcapped by this sector.
+		speedpad = <bool>;					// true = players are launched forward by this sector.
+		finishline = <bool>;				// true = players gain a lap or finish the race in this sector. Used for legacy support.
+		sneakerpanel = <bool>;				// true = players are speed boosted forward by this sector.
+		waterpanel = <bool>;				// true = players are speed boosted forward by this sector and are able to drive on water.
+		redpogospring = <bool>;				// true = players are bounced into the air by this sector.
+		yellowpogospring = <bool>;			// true = players are bounced into the air and then speedcapped by this sector.
+		walltransfer = <bool>;				// true = players are allowed to slide up walls from this sector.
 
 		repeatspecial = <bool>;				// true = repeatable action.
 		continuousspecial = <bool>;			// true = action is executed every game tick.
@@ -312,4 +314,7 @@ BK 1.0: 10.02.2025
 
 BK 1.0: 11.03.2025
 - Fixed up some typos.
+- Added more effects.
+
+BK 1.0 22.03.2026
 - Added more effects.

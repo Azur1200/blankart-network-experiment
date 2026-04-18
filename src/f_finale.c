@@ -925,16 +925,21 @@ const char *blancredits[] = {
 	"\"hayaunderscore\" aka \"DeltaKanyx\"",
 	"\"Guilmon35249vr\"",
 	"Vivian \"toaster\" Grannell", // Horncode
-	"AJ \"Tyron\" Martinez", // Horncode
+	"AJ \"Tyron\" Martinez", // Horncode, PT_SAY, RRID
 	"\"Superstarxalien\"", // Horncode
 	"\"Freaky Mutant Man\"", // Color profiles menu
 	"\"blondedradio\"", // Screen-tracking item roulette, lifted near-directly from RadioRacers
+	"\"Antoine De Grandpré\"", // Zero Deadzone fix
+	"\"Skirlez\"", // PT_SAY packet fixes
+	"Sally \"TehRealSalt\" Cochenour", // Map Buffer rewrite, Voting rewrites
+	"\"Jartha\"", // Various bugfixes, RRID
 	"",
 	"\1Item Design",
 	"\"NepDisk\"",
 	"\"yama\"",
 	"\"GenericHeroGuy\"",
 	"\"minenice\"",
+	"\"Miguelius256\"", // Initial Attraction Shield design
 	"",
 	"\1Design Support",
 	"\"Rim Jobless\"",
@@ -954,6 +959,7 @@ const char *blancredits[] = {
 	"\"yama\"",
 	"\"minenice\"",
 	"\"Mompi\"",
+	"\"Chuckles troll\"", // Attraction Shield, S-Monitor
 	"",
 	"\1New HUD Art",
 	"\"Spee\"",
@@ -968,6 +974,7 @@ const char *blancredits[] = {
 	"\"RetroStation\"",
 	"\"StarrydustNova\"",
 	"\"joshyflip\"",
+	"\"Chuckles troll\"", // Timer icons for: Attraction Shield, S-Monitor
 	"",
 	"\1New Misc Art",
 	"\"scizor300\"",
@@ -1739,7 +1746,7 @@ void F_TitleScreenTicker(boolean run)
 		// prevent console spam if failed
 		demoIdleLeft = demoIdleTime;
 
-		mapnum = G_RandMap(TOL_RACE, -2, 2, 0, NULL);
+		mapnum = G_RandMap(TOL_RACE, UINT16_MAX, true, 0, false, NULL);
 		if (mapnum == 0) // gotta have ONE
 		{
 			return;

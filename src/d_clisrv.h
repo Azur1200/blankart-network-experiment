@@ -17,6 +17,7 @@
 #include "d_net.h"
 #include "d_netcmd.h"
 #include "d_net.h"
+#include "doomdef.h"
 #include "tables.h"
 #include "d_player.h"
 #include "mserv.h"
@@ -40,6 +41,8 @@ applications may follow different packet versions.
 //  communication related stuff, and another
 //  one that defines the actual packets to
 //  be transmitted.
+
+#define HU_MAXMSGLEN 223
 
 #define MAXSERVERNAME 32
 #define MAXSERVERCONTACT 350
@@ -66,6 +69,7 @@ void ServerInfoUpdateSend(void);
 //
 // Packet structure
 //
+// anything that's explicitly set here is required to match what srb2ms-evo expects
 typedef enum
 {
 	PT_NOTHING,       // To send a nop through the network. ^_~
@@ -73,16 +77,19 @@ typedef enum
 	                  // (must stay 1 for backwards compatibility).
 	                  // This is a positive response to a CLIENTJOIN request.
 	PT_CLIENTCMD,     // Ticcmd of the client.
+	PT_CLIENTMIS,     // Same as above with but saying resend from.
 	PT_CLIENT2CMD,    // 2 cmds in the packet for splitscreen.
+	PT_CLIENT2MIS,    // Same as above with but saying resend from
 	PT_NODEKEEPALIVE, // Same but without ticcmd and consistancy
+	PT_NODEKEEPALIVEMIS,
 	PT_SERVERTICS,    // All cmds for the tic.
 	PT_SERVERREFUSE,  // Server refuses joiner (reason inside).
 	PT_SERVERSHUTDOWN,
 	PT_CLIENTQUIT,    // Client closes the connection.
 
-	PT_ASKINFO,       // Anyone can ask info of the server.
-	PT_SERVERINFO,    // Send game & server info (gamespy).
-	PT_PLAYERINFO,    // Send information for players in game (gamespy).
+	PT_ASKINFO = 12,    // Anyone can ask info of the server.
+	PT_SERVERINFO = 13, // Send game & server info (gamespy).
+	PT_PLAYERINFO = 14, // Send information for players in game (gamespy).
 	PT_REQUESTFILE,   // Client requests a file transfer
 	PT_ASKINFOVIAMS,  // Packet from the MS requesting info be sent to new client.
 	                  // If this ID changes, update masterserver definition.
@@ -95,11 +102,11 @@ typedef enum
 	PT_ASKLUAFILE,     // Client telling the server they don't have the file
 	PT_HASLUAFILE,     // Client telling the server they have the file
 
-	// Add non-PT_CANFAIL packet types here to avoid breaking MS compatibility.
-
 	// Kart-specific packets
 	PT_CLIENT3CMD,    // 3P
+	PT_CLIENT3MIS,
 	PT_CLIENT4CMD,    // 4P
+	PT_CLIENT4MIS,
 	PT_BASICKEEPALIVE,// Keep the network alive during wipes, as tics aren't advanced and NetUpdate isn't called
 
 	PT_CANFAIL,       // This is kind of a priority. Anything bigger than CANFAIL
@@ -114,11 +121,12 @@ typedef enum
 	PT_TEXTCMD2,      // Splitscreen text commands.
 	PT_TEXTCMD3,      // 3P
 	PT_TEXTCMD4,      // 4P
+
+	PT_TELLFILESNEEDED = 35, // Client, to server: "what other files do I need starting from this number?"
+	PT_MOREFILESNEEDED = 36, // Server, to client: "you need these (+ more on top of those)"
+
 	PT_CLIENTJOIN,    // Client wants to join; used in start game.
 	PT_NODETIMEOUT,   // Packet sent to self if the connection times out.
-
-	PT_TELLFILESNEEDED, // Client, to server: "what other files do I need starting from this number?"
-	PT_MOREFILESNEEDED, // Server, to client: "you need these (+ more on top of those)"
 
 	PT_LOGIN,         // Login attempt from the client.
 	PT_LOGINCHALLENGE,// Challenge request sent to the client.
@@ -127,8 +135,26 @@ typedef enum
 	PT_PING,          // Packet sent to tell clients the other client's latency to server.
 
 	PT_SERVERINFOUPDATE, // Update server info for clients.
+
+	PT_SAY,				// "Hey server, please send this chat message to everyone via XD_SAY"
+	PT_REQMAPQUEUE,		// Client requesting a roundqueue operation
+
+	PT_CLIENTKEY,		// "Here's my public key"
+	PT_SERVERCHALLENGE,		// "Prove it"
+
+	PT_CHALLENGEALL,	// Prove to the other clients you are who you say you are, sign this random bullshit!
+	PT_RESPONSEALL,		// OK, here is my signature on that random bullshit
+	PT_RESULTSALL,		// Here's what everyone responded to PT_CHALLENGEALL with, if this is wrong or you don't receive it disconnect
+
 	NUMPACKETTYPE
 } packettype_t;
+
+typedef enum
+{
+	SIGN_OK,
+	SIGN_BADTIME, // Timestamp differs by too much, suspect reuse of an old challenge.
+	SIGN_BADIP // Asked to sign the wrong IP by an external host, suspect reuse of another server's challenge.
+} shouldsign_t;
 
 typedef struct consistancy_s
 {
@@ -161,9 +187,7 @@ void SPrintConsistancy(char *out, consistancy_t *c);
 void Command_Drop(void);
 void Command_Droprate(void);
 #endif
-#ifdef _DEBUG
 void Command_Numnodes(void);
-#endif
 
 // Client to server packet
 struct clientcmd_pak
@@ -237,10 +261,6 @@ struct serverconfig_pak
 	UINT8 maxplayer;
 	boolean allownewplayer;
 	boolean discordinvites;
-
-	char server_name[MAXSERVERNAME];
-	char server_contact[MAXSERVERCONTACT];
-	char server_description[MAXSERVERDESCRIPTION];
 } ATTRPACK;
 
 struct filetx_pak
@@ -280,6 +300,7 @@ struct clientconfig_pak
 	UINT8 mode;
 	char names[MAXSPLITSCREENPLAYERS][MAXPLAYERNAME];
 	UINT8 availabilities[MAXAVAILABILITY];
+	uint8_t challengeResponse[MAXSPLITSCREENPLAYERS][SIGNATURELENGTH];
 } ATTRPACK;
 
 #define SV_SPEEDMASK 0x03		// used to send kartspeed
@@ -299,12 +320,9 @@ struct serverinfo_pak
 	UINT8 _255;
 	UINT8 packetversion;
 	char  application[MAXAPPLICATION];
-#ifdef COMMITVERSION
-	UINT8 commit[GIT_SHA_ABBREV];
-#else
 	UINT8 version;
 	UINT8 subversion;
-#endif
+	UINT8 commit[GIT_SHA_ABBREV];
 	UINT8 numberofplayer;
 	UINT8 maxplayer;
 	UINT8 refusereason; // 0: joinable, 1: joins disabled, 2: full
@@ -369,11 +387,53 @@ struct filesneededconfig_pak
 	UINT8 files[MAXFILENEEDED]; // is filled with writexxx (byteptr.h)
 } ATTRPACK;
 
+struct reqmapqueue_pak
+{
+	UINT16 newmapnum;
+	UINT16 newgametype;
+	UINT8 flags;
+	UINT8 source;
+} ATTRPACK;
+
+struct clientkey_pak
+{
+	uint8_t key[MAXSPLITSCREENPLAYERS][PUBKEYLENGTH];
+} ATTRPACK;
+
+struct serverchallenge_pak
+{
+	uint8_t secret[CHALLENGELENGTH];
+} ATTRPACK;
+
+struct challengeall_pak
+{
+	uint8_t secret[CHALLENGELENGTH];
+} ATTRPACK;
+
+struct responseall_pak
+{
+	uint8_t signature[MAXSPLITSCREENPLAYERS][SIGNATURELENGTH];
+} ATTRPACK;
+
+struct resultsall_pak
+{
+	// Maybe use a FAM in the future for space saving?
+	uint8_t signature[MAXPLAYERS][SIGNATURELENGTH];
+} ATTRPACK;
+
 struct netinfo_pak
 {
 	UINT32 pingtable[MAXPLAYERS+1];
 	UINT32 packetloss[MAXPLAYERS+1];
 	UINT32 delay[MAXPLAYERS+1];
+} ATTRPACK;
+
+struct say_pak
+{
+	char message[HU_MAXMSGLEN + 1];
+	UINT8 target;
+	UINT8 flags;
+	UINT8 source;
 } ATTRPACK;
 
 //
@@ -386,31 +446,42 @@ struct doomdata_t
 	UINT8 ackreturn; // The return of the ack number
 
 	UINT8 packettype;
+#ifdef SIGNGAMETRAFFIC
+	uint8_t signature[MAXSPLITSCREENPLAYERS][SIGNATURELENGTH];
+#endif
 	UINT8 packetindex;
 	union
 	{
-		clientcmd_pak clientpak;
-		client2cmd_pak client2pak;
-		client3cmd_pak client3pak;
-		client4cmd_pak client4pak;
-		servertics_pak serverpak;
-		serverconfig_pak servercfg;
-		UINT8 textcmd[MAXTEXTCMD+1];
-		char filetxpak[sizeof (filetx_pak)];
-		char fileack[sizeof (fileack_pak)];
-		UINT8 filereceived;
-		clientconfig_pak clientcfg;
-		char salt[9];
-		UINT8 sha256sum[32];
-		serverinfo_pak serverinfo;
-		serverrefuse_pak serverrefuse;
-		serverinfoupdate_pak serverinfoupdate;
-		askinfo_pak askinfo;
-		msaskinfo_pak msaskinfo;
-		plrinfo playerinfo[MAXPLAYERINFO];
-		INT32 filesneedednum;
-		filesneededconfig_pak filesneededcfg;
-		netinfo_pak netinfo;
+		// NOTICE: UPDATE THE COMMENT SIZES WHEN YOU CHANGE STUFF.
+		clientcmd_pak clientpak; // 96 bytes
+		client2cmd_pak client2pak; // 110 bytes
+		client3cmd_pak client3pak; // 124 bytes
+		client4cmd_pak client4pak; // 138 bytes
+		servertics_pak serverpak; // 633 bytes
+		serverconfig_pak servercfg; // 33 bytes
+		UINT8 textcmd[MAXTEXTCMD+1]; // 257 bytes
+		char filetxpak[sizeof (filetx_pak)]; // 12 bytes
+		char fileack[sizeof (fileack_pak)]; // 3 bytes
+		UINT8 filereceived; // 1 byte
+		clientconfig_pak clientcfg; // 378 bytes
+		char salt[9]; // 9 bytes
+		UINT8 sha256sum[32]; // 32 bytes
+		serverinfo_pak serverinfo; // 1311 bytes
+		serverrefuse_pak serverrefuse; // 255 bytes
+		serverinfoupdate_pak serverinfoupdate; // 1406 bytes
+		askinfo_pak askinfo; // 5 bytes
+		msaskinfo_pak msaskinfo; // 26 bytes
+		plrinfo playerinfo[MAXPLAYERINFO]; // 1056 bytes
+		INT32 filesneedednum; // 4 bytes
+		filesneededconfig_pak filesneededcfg; // 921 bytes
+		netinfo_pak netinfo; // 396 bytes
+		say_pak say; // 227 bytes
+		reqmapqueue_pak reqmapqueue;			// 6 bytes. Formerly XD_REQMAPQUEUE
+		clientkey_pak clientkey;				// 32 bytes
+		serverchallenge_pak serverchallenge;	// 256 bytes
+		challengeall_pak challengeall;			// 256 bytes
+		responseall_pak responseall;			// 256 bytes
+		resultsall_pak resultsall;				// 1024 bytes (2048 bytes in 32P)
 	} u; // This is needed to pack diff packet types data together
 } ATTRPACK;
 
@@ -432,6 +503,7 @@ extern consvar_t cv_httpsource;
 extern consvar_t cv_kicktime;
 
 extern consvar_t cv_showjoinaddress;
+extern consvar_t cv_shownodeip;
 extern consvar_t cv_playbackspeed;
 
 extern consvar_t cv_connectawaittime;
@@ -451,6 +523,7 @@ extern consvar_t cv_serverinfoscreen;
 #define KICK_MSG_GRIEF       7
 #define KICK_MSG_CUSTOM_KICK 8
 #define KICK_MSG_CUSTOM_BAN  9
+#define KICK_MSG_SIGFAIL     10
 
 typedef enum
 {
@@ -478,9 +551,18 @@ extern char connectedservername[MAXSERVERNAME];
 extern char connectedservercontact[MAXSERVERCONTACT];
 extern char connectedserverdescription[MAXSERVERDESCRIPTION];
 
+extern UINT32 ourIP;
+extern uint8_t lastReceivedKey[MAXNETNODES][MAXSPLITSCREENPLAYERS][PUBKEYLENGTH];
+extern uint8_t lastSentChallenge[MAXNETNODES][CHALLENGELENGTH];
+extern uint8_t lastChallengeAll[CHALLENGELENGTH];
+extern uint8_t lastReceivedSignature[MAXPLAYERS][SIGNATURELENGTH];
+extern uint8_t knownWhenChallenged[MAXPLAYERS][PUBKEYLENGTH];
+extern boolean expectChallenge;
+
 void Command_Ping_f(void);
 extern tic_t connectiontimeout;
 extern tic_t jointimeout;
+extern tic_t freezetimeout[MAXNETNODES];
 extern UINT16 pingmeasurecount;
 extern UINT32 realpingtable[MAXPLAYERS];
 extern UINT32 playerpingtable[MAXPLAYERS];
@@ -501,9 +583,24 @@ extern consvar_t cv_joinnextround;
 
 extern consvar_t cv_discordinvites;
 
+#ifdef DEVELOP
+	extern consvar_t cv_badjoin;
+	extern consvar_t cv_badtraffic;
+	extern consvar_t cv_badresponse;
+	extern consvar_t cv_noresponse;
+	extern consvar_t cv_nochallenge;
+	extern consvar_t cv_badresults;
+	extern consvar_t cv_noresults;
+	extern consvar_t cv_badtime;
+	extern consvar_t cv_badip;
+#endif
+
 // Used in d_net, the only dependence
 tic_t ExpandTics(INT32 low, tic_t basetic);
 void D_ClientServerInit(void);
+
+void GenerateChallenge(uint8_t *buf);
+shouldsign_t ShouldSignChallenge(uint8_t *message);
 
 // Initialise the other field
 void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(UINT8 **p, INT32 playernum));
@@ -531,6 +628,8 @@ typedef enum
 	CL_PREPAREHTTPFILES,
 	CL_DOWNLOADHTTPFILES,
 #endif
+	CL_SENDKEY,
+	CL_WAITCHALLENGE,
 } cl_mode_t;
 
 // Create any new ticcmds and broadcast to other players.
@@ -645,6 +744,21 @@ struct rewind_t {
 void CL_ClearRewinds(void);
 rewind_t *CL_SaveRewindPoint(size_t demopos);
 rewind_t *CL_RewindToTime(tic_t time);
+
+void HandleSigfail(const char *string);
+
+void DoSayPacket(SINT8 target, UINT8 flags, UINT8 source, char *message);
+void DoSayPacketFromCommand(SINT8 target, size_t usedargs, UINT8 flags);
+void SendServerNotice(SINT8 target, char *message);
+
+// We give clients a chance to verify each other once per race.
+// When is that challenge sent, and when should clients bail if they don't receive the responses?
+#define CHALLENGEALL_START (TICRATE*10)
+#define CHALLENGEALL_KICKUNRESPONSIVE (TICRATE*12)
+#define CHALLENGEALL_SENDRESULTS (TICRATE*14)
+#define CHALLENGEALL_CLIENTCUTOFF (TICRATE*16)
+
+extern uint8_t awaitingChallenge[CHALLENGELENGTH]; // The message the server asked our client to sign when joining;
 
 #ifdef __cplusplus
 } // extern "C"

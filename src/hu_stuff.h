@@ -68,9 +68,6 @@ enum
 };
 #undef  X
 
-extern char *shiftxform; // english translation shift table
-extern char english_shiftxform[];
-
 //------------------------------------
 //        sorted player lines
 //------------------------------------
@@ -85,7 +82,6 @@ struct playersort_t
 //------------------------------------
 //           chat stuff
 //------------------------------------
-#define HU_MAXMSGLEN 223
 #define CHAT_BUFSIZE 64		// that's enough messages, right? We'll delete the older ones when that gets out of hand.
 #define NETSPLITSCREEN // why the hell WOULDN'T we want this?
 #ifdef NETSPLITSCREEN
@@ -95,6 +91,13 @@ struct playersort_t
 #endif
 #define CHAT_MUTE (cv_mute.value && !(server || IsPlayerAdmin(consoleplayer))) // this still allows to open the chat but not to type. That's used for scrolling and whatnot.
 #define OLD_MUTE (OLDCHAT && cv_mute.value && !(server || IsPlayerAdmin(consoleplayer))) // this is used to prevent oldchat from opening when muted.
+
+typedef enum
+{
+	HU_SHOUT		= 1,		// Shout message
+	HU_CSAY			= 1<<1,		// Middle-of-screen server message
+	HU_PRIVNOTICE	= 1<<2,		// Special server sayto, we don't want to see it as the sender.
+} sayflags_t;
 
 // some functions
 void HU_AddChatText(const char *text, boolean playsound);
@@ -143,6 +146,8 @@ void HU_ClearCEcho(void);
 void HU_SetCEchoDuration(INT32 seconds);
 void HU_SetCEchoFlags(INT32 flags);
 void HU_DoCEcho(const char *msg);
+
+void DoSayCommand(char *message, SINT8 target, UINT8 flags, UINT8 source);
 
 // Demo playback info
 extern UINT32 hu_demotime;

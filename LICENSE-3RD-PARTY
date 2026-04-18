@@ -64,6 +64,10 @@ POSSIBILITY OF SUCH DAMAGE.
         - LZ4 Library
           Copyright (c) 2011-2025 Yann Collet
           All rights reserved.
+	- monocypher
+          Copyright (c) 2017-2020, Loup Vaillant
+          All rights reserved.
+          https://monocypher.org/
 
 --------------------------------------------------------------------------------
 
@@ -1667,6 +1671,10 @@ freely, subject to the following restrictions:
         - stb_vorbis + stb_rect_pack
           Copyright (c) 2017 Sean Barrett
           https://github.com/nothings/stb
+        - Verstable
+           Copyright (c) 2026 Jackson Allan
+           https://github.com/JacksonAllan/Verstable
+
 --------------------------------------------------------------------------------
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

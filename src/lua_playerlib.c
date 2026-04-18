@@ -23,6 +23,7 @@
 #include "lua_libs.h"
 #include "lua_hud.h" // hud_running errors
 #include "lua_hook.h" // hook_cmd_running errors
+#include "m_misc.h" // GetPrettyRRID
 
 static int lib_iteratePlayers(lua_State *L)
 {
@@ -399,6 +400,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(bubbleblowup) \
 	X(bubblehealth) \
 	X(bubbleboost) \
+	X(bubblegraze) \
 	X(flamedash) \
 	X(flametimer) \
 	X(flamestore) \
@@ -423,6 +425,8 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(eggmanexplode) \
 	X(eggmanblame) \
 	X(bananadrag) \
+	X(lastitemtarget) \
+	X(itemtargetdelay) \
 	X(lastjawztarget) \
 	X(jawztargetdelay) \
 	X(confirmvictim) \
@@ -460,7 +464,10 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(walltransfered) \
 	X(walltransferboost) \
 	X(recoverydashcharge) \
-	X(recoverydash)
+	X(recoverydash) \
+	X(tripwireunstuck) \
+	X(bumpunstuck) \
+	X(public_key)
 
 enum player_e
 {
@@ -859,6 +866,9 @@ static int player_get(lua_State *L)
 	case player_bubbleboost:
 		lua_pushinteger(L, plr->bubbleboost);
 		break;
+	case player_bubblegraze:
+		lua_pushinteger(L, plr->bubblegraze);
+		break;
 	case player_flamedash:
 		lua_pushinteger(L, plr->flamedash);
 		break;
@@ -933,10 +943,12 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->bananadrag);
 		break;
 	case player_lastjawztarget:
-		lua_pushinteger(L, plr->lastjawztarget);
+	case player_lastitemtarget:
+		lua_pushinteger(L, plr->lastitemtarget);
 		break;
 	case player_jawztargetdelay:
-		lua_pushinteger(L, plr->jawztargetdelay);
+	case player_itemtargetdelay:
+		lua_pushinteger(L, plr->itemtargetdelay);
 		break;
 	case player_dashringpulltics:
 		lua_pushinteger(L, plr->dashRingPullTics);
@@ -1184,6 +1196,9 @@ static int player_get(lua_State *L)
 	case player_ping:
 		lua_pushinteger(L, playerpingtable[( plr - players )]);
 		break;
+	case player_public_key:
+		lua_pushstring(L, GetPrettyRRID(plr->public_key, false));
+		break;
 	case player_packetloss:
 		lua_pushinteger(L, playerpacketlosstable[plr - players]);
 		break;
@@ -1204,6 +1219,12 @@ static int player_get(lua_State *L)
 		break;
 	case player_recoverydash:
 		lua_pushinteger(L, plr->recoverydash);
+		break;
+	case player_tripwireunstuck:
+		lua_pushinteger(L, plr->tripwireUnstuck);
+		break;
+	case player_bumpunstuck:
+		lua_pushinteger(L, plr->bumpUnstuck);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:
@@ -1648,6 +1669,9 @@ static int player_set(lua_State *L)
 	case player_bubbleboost:
 		plr->bubbleboost = luaL_checkinteger(L, 3);
 		break;
+	case player_bubblegraze:
+		plr->bubblegraze = luaL_checkinteger(L, 3);
+		break;
 	case player_flamedash:
 		plr->flamedash = luaL_checkinteger(L, 3);
 		break;
@@ -1731,10 +1755,12 @@ static int player_set(lua_State *L)
 		plr->bananadrag = luaL_checkinteger(L, 3);
 		break;
 	case player_lastjawztarget:
-		plr->lastjawztarget = luaL_checkinteger(L, 3);
+	case player_lastitemtarget:
+		plr->lastitemtarget = luaL_checkinteger(L, 3);
 		break;
 	case player_jawztargetdelay:
-		plr->jawztargetdelay = luaL_checkinteger(L, 3);
+	case player_itemtargetdelay:
+		plr->itemtargetdelay = luaL_checkinteger(L, 3);
 		break;
 	case player_dashringpulltics:
 		plr->dashRingPullTics = luaL_checkinteger(L, 3);
@@ -1928,8 +1954,7 @@ static int player_set(lua_State *L)
 	case player_botvars:
 		return NOSET;
 	case player_jointime:
-		plr->jointime = (tic_t)luaL_checkinteger(L, 3);
-		break;
+		return NOSET;
 	case player_spectatorreentry:
 		plr->spectatorreentry = (tic_t)luaL_checkinteger(L, 3);
 		break;
@@ -1972,6 +1997,12 @@ static int player_set(lua_State *L)
 		break;
 	case player_recoverydash:
 		plr->recoverydash = lua_tointeger(L, 3);
+		break;
+	case player_tripwireunstuck:
+		plr->tripwireUnstuck = lua_tointeger(L, 3);
+		break;
+	case player_bumpunstuck:
+		plr->bumpUnstuck = lua_tointeger(L, 3);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:
@@ -2269,7 +2300,7 @@ static int kartstuff_get(lua_State *L)
 			lua_pushinteger(L, plr->eggmanblame);
 			return 1;
 		case k_lastjawztarget:
-			lua_pushinteger(L, plr->lastjawztarget);
+			lua_pushinteger(L, plr->lastitemtarget);
 			return 1;
 		case k_bananadrag:
 			lua_pushinteger(L, plr->bananadrag);
@@ -2318,7 +2349,7 @@ static int kartstuff_get(lua_State *L)
 			lua_pushinteger(L, (plr->pflags & PF_GETSPARKS));
 			return 1;
 		case k_jawztargetdelay:
-			lua_pushinteger(L, plr->jawztargetdelay);
+			lua_pushinteger(L, plr->itemtargetdelay);
 			return 1;
 		case k_spectatewait:
 			lua_pushinteger(L, plr->spectatewait);
@@ -2540,7 +2571,7 @@ static int kartstuff_set(lua_State *L)
 				plr->eggmanblame = i;
 				break;
 			case k_lastjawztarget:
-				plr->lastjawztarget = i;
+				plr->lastitemtarget = i;
 				break;
 			case k_bananadrag:
 				plr->bananadrag = CLAMP(i, 0, UINT16_MAX);
@@ -2590,7 +2621,7 @@ static int kartstuff_set(lua_State *L)
 					plr->pflags |= PF_GETSPARKS;
 				break;
 			case k_jawztargetdelay:
-				plr->jawztargetdelay = i;
+				plr->itemtargetdelay = i;
 				break;
 			case k_spectatewait:
 				plr->spectatewait = i;

@@ -219,6 +219,7 @@ useoddsfunc_f KO_SMonitorOdds;
 useoddsfunc_f KO_SPBRaceOdds;
 
 void K_DoThunderShield(player_t *player);
+void K_DoAttractionShield(player_t *player, boolean hipower);
 void K_BreakBubbleShield(player_t* player);
 INT16 K_GetShrinkTime(const player_t *player);
 boolean K_IsAltShrunk(const player_t *player);
@@ -226,6 +227,11 @@ void K_AltShrinkPityIncrease(player_t *player);
 
 void K_SpawnEggMineBumpEffect(mobj_t *mo);
 void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source);
+
+void K_EnableSeekingReticule(player_t *player, boolean passive);
+void K_DisableSeekingReticule(player_t *player);
+void K_KartSeekingReticule(player_t *player);
+player_t *K_FindJawzTarget(mobj_t *actor, player_t *source);
 
 void K_PlayerItemThink(player_t *player, boolean onground);
 
@@ -235,6 +241,10 @@ extern consvar_t cv_karteggmine_slotbrick;
 extern consvar_t cv_kartthunder_radius;
 
 #define BUBBLEBOOSTTIME (7 * sneakertime / 10)
+#define ATTRACTIONCHARGETIME ((92*TICRATE)/60)
+#define ATTRACTIONATTACKTIME_FULL (TICRATE)
+#define ATTRACTIONATTACKTIME_MAX (TICRATE/2)
+#define ATTRACTIONATTACKTIME_MIN (TICRATE/3)
 
 #ifdef __cplusplus
 } // extern "C"

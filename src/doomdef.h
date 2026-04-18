@@ -15,46 +15,6 @@
 #ifndef __DOOMDEF__
 #define __DOOMDEF__
 
-// Sound system select
-// This should actually be in the makefile,
-// but I can't stand that gibberish. D:
-#define SOUND_DUMMY   0
-#define SOUND_SDL     1
-#define SOUND_MIXER   2
-#define SOUND_FMOD    3
-
-#ifndef SOUND
-#ifdef HAVE_SDL
-
-// Use Mixer interface?
-#ifdef HAVE_MIXER
-    #define SOUND SOUND_MIXER
-    #ifdef HW3SOUND
-    #undef HW3SOUND
-    #endif
-#endif
-
-// Use generic SDL interface.
-#ifndef SOUND
-#define SOUND SOUND_SDL
-#endif
-
-#else // No SDL.
-
-// Use FMOD?
-#ifdef HAVE_FMOD
-    #define SOUND SOUND_FMOD
-    #ifdef HW3SOUND
-    #undef HW3SOUND
-    #endif
-#else
-    // No more interfaces. :(
-    #define SOUND SOUND_DUMMY
-#endif
-
-#endif
-#endif
-
 #ifdef _WIN32
 #define ASMCALL __cdecl
 #else
@@ -370,7 +330,7 @@ typedef enum
 	DBG_PLAYER			= 0x00000004,
 	DBG_RENDER			= 0x00000008,
 	DBG_MUSIC			= 0x00000010,
-	//DBG_NIGHTS		= 0x00000020, // free
+	DBG_IMU				= 0x00000020,
 	DBG_POLYOBJ			= 0x00000040,
 	DBG_GAMELOGIC		= 0x00000080,
 	DBG_NETPLAY			= 0x00000100,
@@ -379,6 +339,7 @@ typedef enum
 	DBG_LUA				= 0x00000800,
 	DBG_RNG				= 0x00001000,
 	DBG_DEMO			= 0x00002000,
+	DBG_EFX				= 0x00004000,
 } debugFlags_t;
 
 struct debugFlagNames_s
@@ -566,6 +527,12 @@ extern int compuncommitted;
 // problems
 
 #define MAX_VOLUME 100
+
+// Crypto/RRID primitives
+#define PUBKEYLENGTH 32 // Enforced by Monocypher EdDSA
+#define PRIVKEYLENGTH 64 // Enforced by Monocypher EdDSA
+#define SIGNATURELENGTH 64 // Enforced by Monocypher EdDSA
+#define CHALLENGELENGTH 64 // Servers verify client identity by giving them messages to sign. How long are these messages?
 
 #ifdef HAVE_CURL
 #define MASTERSERVER

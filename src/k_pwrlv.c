@@ -39,23 +39,35 @@ SINT8 encorescramble = -1;
 
 SINT8 K_UsingPowerLevels(void)
 {
-	SINT8 pt = PWRLV_DISABLED;
-
-	if (!cv_kartusepwrlv.value || !(netgame || (demo.playback && demo.netgame)) || grandprixinfo.gp == true || bossinfo.boss == true)
+	if (!cv_kartusepwrlv.value)
 	{
+		// Explicitly forbidden.
+		return PWRLV_DISABLED;
+	}
+
+	if (!(netgame || (demo.playback && demo.netgame)))
+	{
+		// Servers only.
+		return PWRLV_DISABLED;
+	}
+
+	if (roundqueue.size > 0 && roundqueue.position > 0)
+	{
+		// When explicit progression is in place, we're going by different rules.
 		return PWRLV_DISABLED;
 	}
 
 	if (gametype == GT_RACE)
 	{
-		pt = PWRLV_RACE;
+		return PWRLV_RACE;
 	}
 	else if (gametype == GT_BATTLE)
 	{
-		pt = PWRLV_BATTLE;
+		return PWRLV_BATTLE;
 	}
 
-	return pt;
+	// We do not support PWR for custom gametypes at this moment in time.
+	return PWRLV_DISABLED;
 }
 
 void K_ClearClientPowerLevels(void)
@@ -113,7 +125,7 @@ INT16 K_PowerLevelPlacementScore(player_t *player)
 		return 0;
 	}
 
-	if (gametyperules & GTR_CIRCUIT)
+	if (gametypes[gametype]->rules & GTR_CIRCUIT)
 	{
 		return MAXPLAYERS - player->position;
 	}
@@ -136,9 +148,9 @@ INT16 K_CalculatePowerLevelAvg(void)
 		return 0; // No average.
 	}
 
-	if ((gametyperules & GTR_CIRCUIT))
+	if ((gametypes[gametype]->rules & GTR_CIRCUIT))
 		t = PWRLV_RACE;
-	else if ((gametyperules & GTR_BUMPERS))
+	else if ((gametypes[gametype]->rules & GTR_BUMPERS))
 		t = PWRLV_BATTLE;
 
 	if (t == PWRLV_DISABLED)
@@ -447,7 +459,7 @@ void K_SetPowerLevelScrambles(SINT8 powertype)
 		case PWRLV_RACE:
 			if (cv_kartspeed.value == -1 || cv_kartencore.value == -1)
 			{
-				UINT8 speed = KARTSPEED_NORMAL;
+				UINT8 speed = KARTSPEED_DEFAULT;
 				boolean encore = false;
 				INT16 avg = 0, min = 0;
 				UINT8 i, t = 1;
@@ -476,34 +488,41 @@ void K_SetPowerLevelScrambles(SINT8 powertype)
 				if (min >= 8200)
 				{
 					if (avg >= 8500)
-						t = 6;
+						t = 7;
 					else
-						t = 5;
+						t = 6;
 				}
 				else if (min >= 7800)
 				{
 					if (avg >= 8200)
-						t = 5;
+						t = 6;
 					else
-						t = 4;
+						t = 5;
 				}
 				else if (min >= 6800)
 				{
 					if (avg >= 7200)
-						t = 4;
+						t = 5;
 					else
-						t = 3;
+						t = 4;
 				}
 				else if (min >= 5800)
 				{
 					if (avg >= 6200)
-						t = 3;
+						t = 4;
 					else
-						t = 2;
+						t = 3;
 				}
 				else if (min >= 3800)
 				{
 					if (avg >= 4200)
+						t = 3;
+					else
+						t = 2;
+				}
+				else if (min >= 1300)
+				{
+					if (avg >= 1700)
 						t = 2;
 					else
 						t = 1;
@@ -527,32 +546,36 @@ void K_SetPowerLevelScrambles(SINT8 powertype)
 
 				switch (t)
 				{
+					case 7:
+						speed = KARTSPEED_HARDEST;
+						encore = P_RandomChance(FRACUNIT>>1);
+						break;
 					case 6:
-						speed = KARTSPEED_EXPERT;
+						speed = KARTSPEED_HARDERTHANDEFAULT;
 						encore = P_RandomChance(FRACUNIT>>1);
 						break;
 					case 5:
-						speed = KARTSPEED_HARD;
+						speed = P_RandomChance((7<<FRACBITS)/10) ? KARTSPEED_HARDERTHANDEFAULT : KARTSPEED_DEFAULT;
 						encore = P_RandomChance(FRACUNIT>>1);
 						break;
 					case 4:
-						speed = P_RandomChance((7<<FRACBITS)/10) ? KARTSPEED_HARD : KARTSPEED_NORMAL;
-						encore = P_RandomChance(FRACUNIT>>1);
-						break;
-					case 3:
-						speed = P_RandomChance((3<<FRACBITS)/10) ? KARTSPEED_HARD : KARTSPEED_NORMAL;
+						speed = P_RandomChance((3<<FRACBITS)/10) ? KARTSPEED_HARDERTHANDEFAULT : KARTSPEED_DEFAULT;
 						encore = P_RandomChance(FRACUNIT>>2);
 						break;
-					case 2:
-						speed = KARTSPEED_NORMAL;
+					case 3:
+						speed = KARTSPEED_DEFAULT;
 						encore = P_RandomChance(FRACUNIT>>3);
 						break;
-					case 1: default:
-						speed = KARTSPEED_NORMAL;
+					case 2: default:
+						speed = KARTSPEED_DEFAULT;
+						encore = false;
+						break;
+					case 1:
+						speed = KARTSPEED_EASIERTHANDEFAULT;
 						encore = false;
 						break;
 					case 0:
-						speed = P_RandomChance((3<<FRACBITS)/10) ? KARTSPEED_EASY : KARTSPEED_NORMAL;
+						speed = P_RandomChance((3<<FRACBITS)/10) ? KARTSPEED_EASIEST : KARTSPEED_EASIERTHANDEFAULT;
 						encore = false;
 						break;
 				}

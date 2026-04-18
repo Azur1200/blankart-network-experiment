@@ -94,7 +94,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	v_video.c
 	s_sound.c
 	sounds.c
-	w_wad.cpp
+	w_wad.c
 	filesrch.c
 	mserv.c
 	http-mserv.c
@@ -118,6 +118,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	lua_botvarslib.c
 	lua_hudlib.c
 	lua_hudlib_drawlist.c
+	lua_colorlib.c
 	lua_followerlib.c
 	lua_terrainlib.c
 	lua_waypointslib.c
@@ -143,6 +144,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	k_grandprix.c
 	k_boss.c
 	k_hud.c
+	k_hud_track.cpp
 	k_terrain.c
 	k_brightmap.c
 	k_director.c
@@ -150,6 +152,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	k_mapuser.c
 	k_stats.c
 	k_specialstage.c
+	k_vote.c
 	h_timers.cpp
 	stun.c
 	lonesha256.c
@@ -273,6 +276,7 @@ add_subdirectory(sdl)
 add_subdirectory(objects)
 add_subdirectory(core)
 add_subdirectory(acs)
+add_subdirectory(monocypher)
 
 # OS macros
 if (UNIX)

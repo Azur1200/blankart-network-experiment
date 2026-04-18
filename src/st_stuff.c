@@ -134,6 +134,7 @@ void ST_Ticker(boolean run)
 // 0 is default, any others are special palettes.
 INT32 st_palette = 0;
 UINT32 st_translucency = 10;
+fixed_t st_fadein = 0;
 
 void ST_doPaletteStuff(void)
 {
@@ -474,6 +475,29 @@ static void ST_drawMusicDebug(INT32 *height)
 	ST_pushDebugString(height, va("    Song: %8s", mname));
 }
 
+static void ST_drawImuDebug(INT32 *height)
+{
+	INT32 pnum = stplyrnum;
+	vector3_t accel, gyro, gyrocalibrated, grav, shake;
+	if (demo.playback || (!P_IsMachineLocalPlayer(stplyr)))
+	{
+		ST_pushDebugString(height, va("Only for local player!!"));
+		return;
+	}
+
+	accel = G_PlayerInputSensor(pnum, ACCELEROMETER);
+	gyro = G_PlayerInputSensor(pnum, GYROSCOPE);
+	gyrocalibrated = G_GetGamepadCalibratedGyro(pnum);
+	grav = G_GetGamepadGravity(pnum);
+	shake = G_GetGamepadShake(pnum);
+
+	ST_pushDebugString(height, va(" Grav :%4.2f,%4.2f,%4.2f", FixedToFloat(grav.x), FixedToFloat(grav.y), FixedToFloat(grav.z)));
+	ST_pushDebugString(height, va("Shake :%4.2f,%4.2f,%4.2f", FixedToFloat(shake.x), FixedToFloat(shake.y), FixedToFloat(shake.z)));
+	ST_pushDebugString(height, va("Cal. G:%4.2f,%4.2f,%4.2f", FixedToFloat(gyrocalibrated.x), FixedToFloat(gyrocalibrated.y), FixedToFloat(gyrocalibrated.z)));
+	ST_pushDebugString(height, va(" Gyro :%4.2f,%4.2f,%4.2f", FixedToFloat(gyro.x), FixedToFloat(gyro.y), FixedToFloat(gyro.z)));
+	ST_pushDebugString(height, va("Accel :%4.2f,%4.2f,%4.2f", FixedToFloat(accel.x), FixedToFloat(accel.y), FixedToFloat(accel.z)));
+}
+
 static void ST_drawRenderDebug(INT32 *height)
 {
 	const struct RenderStats *i = &g_renderstats;
@@ -567,6 +591,11 @@ static void ST_drawDebugInfo(void)
 		V_DrawRightAlignedString(320, height,      V_MONOSPACE, va("==  : %08x", peekres));
 
 		height -= 32;
+	}
+
+	if (cht_debug & DBG_IMU)
+	{
+		ST_drawImuDebug(&height);
 	}
 
 	if (cht_debug & DBG_MUSIC)
@@ -746,8 +775,8 @@ void ST_drawTitleCard(void)
 		V_DrawLevelTitle(ttlnumxpos+12, bary+6, V_SNAPTOBOTTOM, actnum);
 
 	// TODO: a bit more elaborate?
-	if (grandprixinfo.gp)
-		V_DrawCenteredString(BASEVIDWIDTH/2 + sub, bary+24, V_SNAPTOBOTTOM|V_YELLOWMAP, va("ROUND %d", grandprixinfo.roundnum));
+	if (roundqueue.position > 0 && roundqueue.position <= roundqueue.size)
+		V_DrawCenteredString(BASEVIDWIDTH/2 + sub, bary+24, V_SNAPTOBOTTOM|V_YELLOWMAP, va("ROUND %d", roundqueue.roundnum));
 
 luahook:
 	if (renderisnewtic)
@@ -842,8 +871,8 @@ static void ST_overlayDrawer(void)
 			{
 				if (!r_splitscreen)
 				{
-					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-40, V_HUDTRANSHALF, M_GetText("VIEWPOINT:"));
-					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-32, V_HUDTRANSHALF|V_ALLOWLOWERCASE, player_names[stplyr-players]);
+					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-40, V_HUDTRANSHALF|V_SNAPTOBOTTOM, M_GetText("VIEWPOINT:"));
+					V_DrawCenteredString((BASEVIDWIDTH/2), BASEVIDHEIGHT-32, V_HUDTRANSHALF|V_ALLOWLOWERCASE|V_SNAPTOBOTTOM, player_names[stplyr-players]);
 				}
 				else if (r_splitscreen == 1)
 				{
@@ -953,6 +982,37 @@ void ST_AskToJoinEnvelope(void)
 }
 #endif
 
+static fixed_t ST_CalculateFadeIn(player_t *player)
+{
+	const tic_t length = TICRATE/4;
+
+	tic_t timer = lt_exitticker;
+
+	if (bossinfo.boss == true || G_IsTitleCardAvailable() == false)
+	{
+		if (timeinmap <= 16)
+			timer = 0;
+		else
+			timer = timeinmap-16;
+	}
+
+	if (timer < length)
+	{
+		fixed_t f = timer * FRACUNIT;
+
+		// Not interpolated at very beginning
+		if (timer > 0)
+		{
+			f += R_GetTimeFrac(RTF_LEVEL);
+		}
+
+		return f / length;
+	}
+
+	// Not interpolated at very end
+	return FRACUNIT;
+}
+
 void ST_Drawer(void)
 {
 	boolean stagetitle = false; // Decide whether to draw the stage title or not
@@ -974,17 +1034,32 @@ void ST_Drawer(void)
 #endif
 		if (rendermode != render_none) ST_doPaletteStuff();
 
-	{
-		const tic_t length = TICRATE/2;
+	fixed_t localfadein[MAXSPLITSCREENPLAYERS];
 
-		if (lt_exitticker)
+	// HUD fading for anything not tied to a single player,
+	// i.e. the minimap. Since individual splitscreen
+	// players' HUDs may fade away before other's, use the
+	// the last one remaining.
+	{
+		fixed_t maxFade = 0;
+		UINT8 i;
+
+		for (i = 0; i <= r_splitscreen; i++)
 		{
-			st_translucency = cv_translucenthud.value;
-			if (lt_exitticker < length)
-				st_translucency = (((INT32)(lt_ticker - lt_endtime))*st_translucency)/((INT32)length);
+			localfadein[i] = ST_CalculateFadeIn(&players[displayplayers[i]]);
+
+			if (localfadein[i] > maxFade)
+			{
+				maxFade = localfadein[i];
+			}
 		}
+
+		if (maxFade == FRACUNIT)
+			st_translucency = cv_translucenthud.value;
 		else
-			st_translucency = 0;
+			st_translucency = FixedMul(cv_translucenthud.value, maxFade);
+
+		st_translucency = min(max((st_translucency), 0), 10);
 	}
 
 	// Check for a valid level title
@@ -1000,6 +1075,7 @@ void ST_Drawer(void)
 		for (i = 0; i <= r_splitscreen; i++)
 		{
 			stplyr = &players[displayplayers[i]];
+			st_fadein = localfadein[i];
 			stplyrnum = i;
 			R_SetViewContext(VIEWCONTEXT_PLAYER1 + i);
 			R_InterpolateView(R_GetTimeFrac(RTF_CAMERA)); // to assist with object tracking

@@ -11,30 +11,12 @@
 /// \file  m_fixed.c
 /// \brief Fixed point implementation
 
-#if 0 //#ifndef NO_M
-#include <math.h>
-#define HAVE_SQRT
- #if 0 //#ifndef _WIN32 // MSVCRT does not have *f() functions
- #define HAVE_SQRTF
- #endif
-#endif
-
 #include "doomdef.h"
 #include "m_fixed.h"
 #include "tables.h" // ANGLETOFINESHIFT
 
 fixed_t FixedSqrt(fixed_t x)
 {
-#ifdef HAVE_SQRT
-	const float fx = FIXED_TO_FLOAT(x);
-	float fr;
-#ifdef HAVE_SQRTF
-	fr = sqrtf(fx);
-#else
-	fr = (float)sqrt(fx);
-#endif
-	return FLOAT_TO_FIXED(fr);
-#else
 	// The neglected art of Fixed Point arithmetic
 	// Jetro Lauha
 	// Seminar Presentation
@@ -58,22 +40,11 @@ fixed_t FixedSqrt(fixed_t x)
 		}
 	} while (count-- != 0);
 	return root;
-#endif
 }
 
 // Shitty 64-bit duplicate so certain distancing edgecases in k_odds die
 INT64 FixedSqrt64(INT64 x)
 {
-#ifdef HAVE_SQRT
-	const float fx = FixedToFloat64(x);
-	float fr;
-#ifdef HAVE_SQRTF
-	fr = sqrtf(fx);
-#else
-	fr = (float)sqrt(fx);
-#endif
-	return FloatToFixed64(fr);
-#else
 	// The neglected art of Fixed Point arithmetic
 	// Jetro Lauha
 	// Seminar Presentation
@@ -97,7 +68,6 @@ INT64 FixedSqrt64(INT64 x)
 		}
 	} while (count-- != 0);
 	return root;
-#endif
 }
 
 fixed_t FixedHypot(fixed_t x, fixed_t y)
@@ -1129,162 +1099,116 @@ void FM_Scale(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z)
 #undef M
 }
 
-#ifdef M_TESTCASE
-//#define MULDIV_TEST
-#define SQRT_TEST
+// "Approach" functions taken from or based on the (decompiled) SM64 implementation
+// https://github.com/n64decomp/sm64/blob/master/src/engine/math_util.c
 
-static inline void M_print(INT64 a)
+/** \brief Returns the INT32 value 'current' after it tries to approach target, going up at most
+ 'inc' and going down at most 'dec'.
+ *
+ * If target is close to the max or min of INT32, then it's possible to overflow past it without
+ stopping.
+
+	\param current	(INT32) current value
+
+	\param target	(INT32) target value
+
+	\param inc	(INT32) value to increment by
+
+	\param dec	(INT32) value to decrement by
+
+	\return		(INT32) current value after incrementing/decrementing
+*/
+INT32 ApproachINT32(INT32 current, INT32 target, INT32 inc, INT32 dec)
 {
-	const fixed_t w = (a >> FRACBITS);
-	fixed_t f = a % FRACUNIT;
-	fixed_t d = FRACUNIT;
-
-	if (f == 0)
+	if (current < target)
 	{
-		printf("%d", (fixed_t)w);
-		return;
+		current += inc;
+		if (current > target)
+		{
+			current = target;
+		}
 	}
-	else while (f != 1 && f / 2 == f >> 1)
-	{
-		d /= 2;
-		f /= 2;
-	}
-
-	if (w == 0)
-		printf("%d/%d", (fixed_t)f, d);
 	else
-		printf("%d+(%d/%d)", (fixed_t)w, (fixed_t)f, d);
-}
-
-FUNCMATH FUNCINLINE static inline fixed_t FixedMulC(fixed_t a, fixed_t b)
-{
-	return (fixed_t)((((INT64)a * b)) / FRACUNIT);
-}
-
-FUNCMATH FUNCINLINE static inline INT64 FixedMul64C(fixed_t a, fixed_t b)
-{
-	return (INt64)((((INT64)a * b)) / FRACUNIT);
-}
-
-FUNCMATH FUNCINLINE static inline fixed_t FixedDivC2(fixed_t a, fixed_t b)
-{
-	INT64 ret;
-
-	if (b == 0)
-		I_Error("FixedDiv: divide by zero");
-
-	ret = (((INT64)a * FRACUNIT)) / b;
-
-	if ((ret > INT32_MAX) || (ret < INT32_MIN))
-		I_Error("FixedDiv: divide by zero");
-	return (fixed_t)ret;
-}
-
-FUNCMATH FUNCINLINE static inline fixed_t FixedDivC(fixed_t a, fixed_t b)
-{
-	if ((abs(a) >> (FRACBITS - 2)) >= abs(b))
-		return (a^b) < 0 ? INT32_MIN : INT32_MAX;
-
-	return FixedDivC2(a, b);
-}
-
-FUNCMATH FUNCINLINE static inline fixed_t FixedSqrtC(fixed_t x)
-{
-	const float fx = FIXED_TO_FLOAT(x);
-	float fr;
-#ifdef HAVE_SQRTF
-	fr = sqrtf(fx);
-#else
-	fr = (float)sqrt(fx);
-#endif
-	return FLOAT_TO_FIXED(fr);
-}
-int main(int argc, char** argv)
-{
-	int n = 10;
-	INT64 a, b;
-	fixed_t c, d;
-	(void)argc;
-	(void)argv;
-
-#ifdef MULDIV_TEST
-	for (a = 1; a <= INT32_MAX; a += FRACUNIT)
-		for (b = 0; b <= INT32_MAX; b += FRACUNIT)
-		{
-			c = FixedMul(a, b);
-			d = FixedMulC(a, b);
-			if (c != d)
-			{
-				printf("(");
-				M_print(a);
-				printf(") * (");
-				M_print(b);
-				printf(") = (");
-				M_print(c);
-				printf(") != (");
-				M_print(d);
-				printf(") \n");
-				n--;
-				printf("%d != %d\n", c, d);
-			}
-			c = FixedDiv(a, b);
-			d = FixedDivC(a, b);
-			if (c != d)
-			{
-				printf("(");
-				M_print(a);
-				printf(") / (");
-				M_print(b);
-				printf(") = (");
-				M_print(c);
-				printf(") != (");
-				M_print(d);
-				printf(")\n");
-				n--;
-				printf("%d != %d\n", c, d);
-			}
-			if (n <= 0)
-				exit(-1);
-		}
-#endif
-
-#ifdef SQRT_TEST
-	for (a = 0; a <= INT32_MAX; a += 1)
 	{
-		c = FixedSqrt(a);
-		d = FixedSqrtC(a);
-		b = abs(c - d);
-		if (b > 1)
+		current -= dec;
+		if (current < target)
 		{
-			printf("sqrt(");
-			M_print(a);
-			printf(") = {(");
-			M_print(c);
-			printf(") != (");
-			M_print(d);
-			printf(")} \n");
-			//n--;
-			printf("%d != %d {", c, d);
-			M_print(b);
-			printf("}\n");
+			current = target;
 		}
-		if (n <= 0)
-			exit(-1);
 	}
-#endif
-	exit(0);
+	return current;
 }
 
-static void *cpu_cpy(void *dest, const void *src, size_t n)
+/** \brief Returns the unsigned INT32 value ``current`` after it tries to approach target, going
+ up at most ``inc`` and going down at most ``dec``.
+ *
+ * If target is close to the max or min of UINT32, then it's possible to overflow past it without
+ stopping.
+
+	\param current	(UINT32) current value
+
+	\param target	(UINT32) target value
+
+	\param inc	(UINT32) value to increment by
+
+	\param dec	(UINT32) value to decrement by
+
+	\return		(UINT32) current value after incrementing/decrementing
+*/
+UINT32 ApproachUINT32(UINT32 current, UINT32 target, UINT32 inc, UINT32 dec)
 {
-	return memcpy(dest, src, n);
+	if (current < target)
+	{
+		current += inc;
+		if (current > target)
+		{
+			current = target;
+		}
+	}
+	else
+	{
+		current -= dec;
+		if (current < target)
+		{
+			current = target;
+		}
+	}
+	return current;
 }
 
-void *(*memcpy)(void* dest, const void* src, size_t n) = cpu_cpy;
+/** \brief Returns the fixed-point value 'current' after it tries to approach target, going up at
+ most 'inc' and going down at most 'dec'.
+ *
+ * If target is close to the max or min of fixed_t, then it's possible to overflow past it without
+ stopping.
 
-void I_Error(const char *error, ...)
+	\param current	(fixed_t) current value
+
+	\param target	(fixed_t) target value
+
+	\param inc	(fixed_t) value to increment by
+
+	\param dec	(fixed_t) value to decrement by
+
+	\return		(fixed_t) current value after incrementing/decrementing
+*/
+fixed_t ApproachFixed(fixed_t current, fixed_t target, fixed_t inc, fixed_t dec)
 {
-	(void)error;
-	exit(-1);
+	if (current < target)
+	{
+		current += inc;
+		if (current > target)
+		{
+			current = target;
+		}
+	}
+	else
+	{
+		current -= dec;
+		if (current < target)
+		{
+			current = target;
+		}
+	}
+	return current;
 }
-#endif

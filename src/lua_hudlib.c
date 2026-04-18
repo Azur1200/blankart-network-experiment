@@ -35,6 +35,7 @@
 
 #include "k_hud.h"
 #include "h_timers.h"
+#include "k_vote.h"
 
 #define HUDONLY if (!hud_running) return luaL_error(L, "HUD rendering code should not be called outside of rendering hooks!");
 
@@ -748,6 +749,7 @@ static int libd_drawAffine(lua_State *L)
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 	huddrawlist_h list = lua_touserdata(L, -1);
+	(void)list;
 	lua_pop(L, 1);
 
 	//if (LUA_HUD_IsDrawListValid(list))
@@ -988,6 +990,45 @@ static int libd_drawFill(lua_State *L)
 	else
 		V_DrawFill(x, y, w, h, c);
 	return 0;
+}
+
+static int libd_getSectorColormap(lua_State *L)
+{
+	boolean has_sector = false;
+	sector_t *sector = NULL;
+	if (!lua_isnoneornil(L, 1))
+	{
+		has_sector = true;
+		sector = *((sector_t **)luaL_checkudata(L, 1, META_SECTOR));
+	}
+	fixed_t x = luaL_checkfixed(L, 2);
+	fixed_t y = luaL_checkfixed(L, 3);
+	fixed_t z = luaL_checkfixed(L, 4);
+	int lightlevel = luaL_optinteger(L, 5, 255);
+	UINT8 *colormap = NULL;
+	extracolormap_t *exc = NULL;
+
+	INLEVEL
+	HUDONLY
+
+	if (has_sector && !sector)
+		return LUA_ErrInvalid(L, "sector_t");
+
+	if (sector)
+		exc = P_GetColormapFromSectorAt(sector, x, y, z);
+	else
+		exc = P_GetSectorColormapAt(x, y, z);
+
+	if (exc)
+		colormap = exc->colormap;
+	else
+		colormap = colormaps;
+
+	lightlevel = 255 - min(max(lightlevel, 0), 255);
+	lightlevel >>= 3;
+
+	LUA_PushUserdata(L, colormap + (lightlevel * 256), META_COLORMAP);
+	return 1;
 }
 
 static int libd_fadeScreen(lua_State *L)
@@ -1337,7 +1378,7 @@ static int libd_getStringColormap(lua_State *L)
 
 static int libd_getMapThumbnail(lua_State *L)
 {
-	INT16 mapnum;
+	mapnum_t mapnum;
 	patch_t *patch = NULL;
 	HUDONLY
 	if (lua_type(L, 1) == LUA_TNUMBER)
@@ -1353,7 +1394,7 @@ static int libd_getMapThumbnail(lua_State *L)
 
 static int libd_getMapMinimap(lua_State *L)
 {
-	INT16 mapnum;
+	mapnum_t mapnum;
 	patch_t *patch = NULL;
 	HUDONLY
 	if (lua_type(L, 1) == LUA_TNUMBER)
@@ -1361,7 +1402,7 @@ static int libd_getMapMinimap(lua_State *L)
 	else
 		mapnum = G_MapNumber(luaL_checkstring(L, 1));
 
-	if (mapnum >= 0 && mapnum < nummapheaders && mapheaderinfo[mapnum])
+	if (/*mapnum >= 0 && */mapnum < nummapheaders && mapheaderinfo[mapnum])
 		patch = mapheaderinfo[mapnum]->minimapPic;
 	if (!patch)
 		patch = missingpat;
@@ -1621,10 +1662,12 @@ static luaL_Reg lib_draw[] = {
 	// cache
 	{"patchExists", libd_patchExists},
 	{"cachePatch", libd_cachePatch},
+	{"cachePatchRotated", libd_cachePatch}, // Backcompat for v1 extension rotated patch caching.
 	{"getSpritePatch", libd_getSpritePatch},
 	{"getSprite2Patch", libd_getSprite2Patch},
 	{"getColormap", libd_getColormap},
 	{"getStringColormap", libd_getStringColormap},
+	{"getSectorColormap", libd_getSectorColormap},
 	{"getMapThumbnail", libd_getMapThumbnail},
 	{"getMapMinimap", libd_getMapMinimap},
 	// drawing
@@ -1783,7 +1826,7 @@ static int lib_hudaddtimer(lua_State *L)
 	CLEANUP(pfree) const char **patches = calloc(patches_size, sizeof(const char*));
 	for (INT32 i = 0; i < patches_size; ++i)
 	{
-		lua_rawgeti(L, 3, i);
+		lua_rawgeti(L, 3, i+1);
 		patches[i] = lua_tostring(L, -1);
 		lua_pop(L, 1);
 	}

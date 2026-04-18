@@ -83,7 +83,8 @@ extern boolean st_overlay; // sb overlay on or off when fullscreen
 extern INT32 st_palette; // 0 is default, any others are special palettes.
 extern player_t *stplyr; // for splitscreen correct palette changes and overlay
 extern UINT8 stplyrnum;
-extern UINT32 st_translucency;
+extern UINT32 st_translucency; // HUD fading for elements not attached to specific players
+extern fixed_t st_fadein; // transitioning value per player, FRACUNIT = fully in view
 
 extern lumpnum_t st_borderpatchnum;
 // patches, also used in intermission

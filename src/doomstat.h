@@ -23,18 +23,28 @@
 extern "C" {
 #endif
 
+#include "g_mapnum.h"
+
 // We need globally shared data structures, for defining the global state variables.
 #include "doomdata.h"
 
 // We need the player data structure as well.
 #include "d_player.h"
 
+#include "i_sound.h"
+
 // =============================
 // Selected map etc.
 // =============================
 
+#define ROUNDQUEUE_MAX 20 // sane max? maybe make dynamically allocated later
+// These two live in gametype field of packets
+#define ROUNDQUEUE_CMD_CLEAR UINT16_MAX
+#define ROUNDQUEUE_CMD_SHOW UINT16_MAX-1
+// The roundqueue itself is resident in g_game.h
+
 // Selected by user.
-extern INT16 gamemap;
+extern mapnum_t gamemap;
 extern char mapmusname[7];
 extern UINT16 mapmusflags;
 extern UINT32 mapmusposition;
@@ -146,17 +156,11 @@ extern boolean addedtogame; // true after the server has added you
 // Only true if >1 player. netgame => multiplayer but not (multiplayer=>netgame)
 extern boolean multiplayer;
 
-extern INT16 gametype;
-
-extern UINT32 gametyperules;
-extern INT16 gametypecount;
-
 extern UINT8 splitscreen;
 extern int r_splitscreen;
 
 extern boolean circuitmap; // Does this level have 'circuit mode'?
-extern boolean fromlevelselect;
-extern boolean forceresetplayers, deferencoremode;
+extern boolean forceresetplayers, deferencoremode, forcespecialstage;
 
 // ========================================
 // Internal parameters for sound rendering.
@@ -288,7 +292,7 @@ struct textprompt_t
 extern textprompt_t *textprompts[MAX_PROMPTS];
 
 // For the Custom Exit linedef.
-extern INT16 nextmapoverride;
+extern mapnum_t nextmapoverride;
 extern UINT8 skipstats;
 
 // Fun extra stuff
@@ -333,8 +337,10 @@ struct mapheader_lighting_t
 // Keep in mind that it may encourage people making overly long cups just because they "can", and would be a waste of memory.
 #define MAXLEVELLIST 5
 #define CUPCACHE_BONUS MAXLEVELLIST
-#define CUPCACHE_SPECIAL MAXLEVELLIST+1
-#define CUPCACHE_MAX CUPCACHE_SPECIAL+1
+#define MAXBONUSLIST 2
+#define CUPCACHE_SPECIAL (CUPCACHE_BONUS+MAXBONUSLIST)
+#define CUPCACHE_PODIUM (CUPCACHE_SPECIAL+1)
+#define CUPCACHE_MAX (CUPCACHE_PODIUM+1)
 
 #define MAXCUPNAME 16 // includes \0, for cleaner savedata
 
@@ -349,8 +355,9 @@ struct cupheader_t
 
 	char icon[9];							///< Name of the icon patch
 	char *levellist[CUPCACHE_MAX];			///< List of levels that belong to this cup
-	INT16 cachedlevels[CUPCACHE_MAX];		///< IDs in levellist, bonusgame, and specialstage
+	mapnum_t cachedlevels[CUPCACHE_MAX];		///< IDs in levellist, bonusgame, and specialstage
 	UINT8 numlevels;						///< Number of levels defined in levellist
+	UINT8 numbonus;							///< Number of bonus stages defined
 	UINT8 emeraldnum;						///< ID of Emerald to use for special stage (1-7 for Chaos Emeralds, 8-14 for Super Emeralds, 0 for no emerald)
 	SINT8 unlockrequired;					///< An unlockable is required to select this cup. -1 for no unlocking required.
 	cupheader_t *next;						///< Next cup in linked list
@@ -374,6 +381,8 @@ struct mapheader_t
 	void *minimapPic;							///< Lump data for the minimap graphic.
 
 	cupheader_t *cup;							///< Cached cup
+
+	size_t justPlayed;							///< Prevent this map from showing up in votes if it was recently picked.
 
 	// Titlecard information
 	char lvlttl[22];							///< Level name without "Zone". (21 character limit instead of 32, 21 characters can display on screen max anyway)
@@ -440,6 +449,9 @@ struct mapheader_t
 	boolean use_terrain;						///< Whether to use gameplay affecting Terrain effects or not (leaves visuals alone)
 	INT32 base_track_complexity;				///< Decides what the base track compexity for the current map is.
 	fixed_t track_modifier_max;					///< Decides what the modifier max for the current map is.
+
+	// EFX
+	efx_t *globalEFX;							///< Decides what global EFX for the current map is. ONLY USE FOR TYPE AND VARS.
 };
 
 
@@ -458,7 +470,7 @@ extern mapheader_t** mapheaderinfo;
 extern INT32 nummapheaders, mapallocsize;
 
 // Gametypes
-#define NUMGAMETYPEFREESLOTS 128
+#define NUMGAMETYPEFREESLOTS (MAXGAMETYPES-GT_FIRSTFREESLOT)
 
 enum GameType
 {
@@ -466,10 +478,30 @@ enum GameType
 	GT_BATTLE,
 
 	GT_FIRSTFREESLOT,
-	GT_LASTFREESLOT = GT_FIRSTFREESLOT + NUMGAMETYPEFREESLOTS - 1,
-	NUMGAMETYPES
+	GT_LASTFREESLOT = 127, // Previously (GT_FIRSTFREESLOT + NUMGAMETYPEFREESLOTS - 1) - it would be necessary to rewrite VOTEMODIFIER_ENCORE to go higher than this.
+	MAXGAMETYPES
 };
-// If you alter this list, update deh_tables.c, MISC_ChangeGameTypeMenu in m_menu.c, and Gametype_Names in g_game.c
+// If you alter this list, update defaultgametypes and *gametypes in g_game.c
+#define MAXTOL             (1<<31)
+#define NUMBASETOLNAMES    (10)
+#define NUMTOLNAMES        (NUMBASETOLNAMES + NUMGAMETYPEFREESLOTS)
+
+struct gametype_t
+{
+	const char *name;
+	const char *constant;
+	UINT32 rules;
+	UINT32 tol;
+	UINT8 intermission;
+	INT32 pointlimit;
+	INT32 timelimit;
+	INT32 color;
+};
+
+extern gametype_t *gametypes[MAXGAMETYPES+1];
+extern INT16 numgametypes;
+
+extern INT16 gametype;
 
 // Gametype rules
 enum GameTypeRules
@@ -494,35 +526,27 @@ enum GameTypeRules
 	GTR_CLOSERPLAYERS		= 1<<14, // Enables specfic gameplay tweaks with closer players.
 	GTR_BATTLEBOXES			= 1<<15, // Itemboxes respawn differently.
 	GTR_BATTLESPEED			= 1<<16, // Use battle gamespeed cvar.
+	GTR_DOUBLEDFLASHTICS	= 1<<17, // Double your flashtics after taking damage.
 
-	GTR_POINTLIMIT			= 1<<17, // Reaching point limit ends the round.
-	GTR_TIMELIMIT			= 1<<18, // Reaching time limit ends the round.
-	GTR_OVERTIME			= 1<<19, // Allow overtime behavior.
+	GTR_POINTLIMIT			= 1<<18, // Reaching point limit ends the round.
+	GTR_TIMELIMIT			= 1<<19, // Reaching time limit ends the round.
+	GTR_OVERTIME			= 1<<20, // Allow overtime behavior.
 
 	// Custom gametype rules
-	GTR_TEAMS				= 1<<20, // Teams are forced on.
-	GTR_NOTEAMS				= 1<<21, // Teams are forced off.
-	GTR_TEAMSTARTS			= 1<<22, // Use team-based start positions.
+	GTR_TEAMS				= 1<<21, // Teams are forced on.
+	GTR_NOTEAMS				= 1<<22, // Teams are forced off.
+	GTR_TEAMSTARTS			= 1<<23, // Use team-based start positions.
 
 	// Grand Prix rules
-	//Free					= 1<<23,
-	GTR_LIVES				= 1<<24, // Lives system, players are forced to spectate during Game Over.
-	GTR_SPECIALBOTS			= 1<<25, // Bot difficulty gets stronger between rounds, and the rival system is enabled.
+	GTR_LIVES				= 1<<25, // Lives system, players are forced to spectate during Game Over.
+	GTR_SPECIALBOTS			= 1<<26, // Bot difficulty gets stronger between rounds, and the rival system is enabled.
 	
 	// Misc
-	GTR_NOCOUNTDOWN			= 1<<26, // Disables Countdown timer and control lock at the start of levels.
-	GTR_ENCORE				= 1<<27, // Enable Encore mode.
+	GTR_NOCOUNTDOWN			= 1<<27, // Disables Countdown timer and control lock at the start of levels.
+	GTR_ENCORE				= 1<<28, // Enable Encore mode.
 
 	// free: to and including 1<<31
 };
-
-// String names for gametypes
-extern const char *Gametype_Names[NUMGAMETYPES];
-extern const char *Gametype_ConstantNames[NUMGAMETYPES];
-
-// Point and time limits for every gametype
-extern INT32 pointlimits[NUMGAMETYPES];
-extern INT32 timelimits[NUMGAMETYPES];
 
 // TypeOfLevel things
 enum TypeOfLevel
@@ -544,10 +568,6 @@ enum TypeOfLevel
 	// Modifiers
 	TOL_TV		= 0x0200 ///< Midnight Channel specific: draw TV like overlay on HUD
 };
-
-#define MAXTOL             (1<<31)
-#define NUMBASETOLNAMES    (10)
-#define NUMTOLNAMES        (NUMBASETOLNAMES + NUMGAMETYPEFREESLOTS)
 
 struct tolinfo_t
 {
@@ -615,6 +635,7 @@ extern INT32 sneakertime;
 extern INT32 waterpaneltime;
 extern INT32 itemtime;
 extern INT32 bubbletime;
+extern INT32 flametime;;
 extern INT32 comebacktime;
 extern INT32 bumptime;
 extern INT32 greasetics;
@@ -757,6 +778,7 @@ extern consvar_t cv_forceskin; // force clients to use the server's skin
 extern consvar_t cv_downloading; // allow clients to downloading WADs.
 extern consvar_t cv_nettimeout; // SRB2Kart: Advanced server options menu
 extern consvar_t cv_jointimeout;
+extern consvar_t cv_validate_pubkey;
 extern ticcmd_t netcmds[BACKUPTICS][MAXPLAYERS];
 extern INT32 serverplayer;
 extern INT32 adminplayers[MAXPLAYERS];

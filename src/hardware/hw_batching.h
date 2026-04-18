@@ -20,22 +20,12 @@
 extern "C" {
 #endif
 
-typedef struct
-{
-	FSurfaceInfo surf;// surf also has its own polyflags for some reason, but it seems unused
-	unsigned int vertsIndex;// location of verts in unsortedVertexArray
-	FUINT numVerts;
-	FBITFIELD polyFlags;
-	GLMipmap_t *texture;
-	GLMipmap_t *brightmap;
-	int shader;
-	// this tells batching that the plane belongs to a horizon line and must be drawn in correct order with the skywalls
-	boolean horizonSpecial;
-} PolygonArrayEntry;
-
 void HWR_StartBatching(void);
+void HWR_PauseBatching(void);
 void HWR_SetCurrentTexture(GLMipmap_t *texture);
 void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, int shader, boolean horizonSpecial);
+void HWR_PushBatchingState(void);
+void HWR_PopBatchingState(void);
 void HWR_RenderBatches(void);
 
 #ifdef __cplusplus

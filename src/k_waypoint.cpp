@@ -856,6 +856,11 @@ void K_DebugWaypointsVisualise(void)
 				debugmobj->color = SKINCOLOR_GREY;
 			}
 
+			if (!K_SafeRespawnPosition(waypoint->mobj))
+			{
+				debugmobj->color = SKINCOLOR_PURPLE;
+			}
+
 			if (!K_GetWaypointIsSpawnpoint(waypoint))
 			{
 				debugmobj->frame |= FF_TRANS60;

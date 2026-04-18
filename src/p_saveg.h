@@ -14,6 +14,8 @@
 #ifndef __P_SAVEG__
 #define __P_SAVEG__
 
+#include "g_mapnum.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -27,9 +29,9 @@ extern "C" {
 // Persistent storage/archiving.
 // These are the load / save game routines.
 
-void P_SaveGame(savebuffer_t *save, INT16 mapnum);
+void P_SaveGame(savebuffer_t *save, mapnum_t mapnum);
 void P_SaveNetGame(savebuffer_t *save, boolean resending);
-boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride);
+boolean P_LoadGame(savebuffer_t *save, mapnum_t mapoverride);
 boolean P_LoadNetGame(savebuffer_t *save, boolean reloading);
 
 mobj_t *P_FindNewPosition(UINT32 oldposition);
@@ -60,6 +62,8 @@ boolean P_SaveBufferFromExisting(savebuffer_t *save, UINT8 *existing_buffer, siz
 boolean P_SaveBufferFromLump(savebuffer_t *save, lumpnum_t lump);
 size_t P_SaveBufferFromFile(savebuffer_t *save, char const *name);
 void P_SaveBufferFree(savebuffer_t *save);
+
+boolean MobjIsNetSynced(mobj_t *mobj);
 
 #ifdef __cplusplus
 } // extern "C"

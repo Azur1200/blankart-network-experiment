@@ -683,6 +683,18 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 						continue; // dedis don't need menus, silly!
 					}
 
+#ifndef HAVE_DISCORDRPC
+					{
+						const char *testname = word2;
+						if (fastncmp("MN_", testname, 3))
+							testname += 3;
+						if (fastcmp(testname, "OP_DISCORD") || fastcmp(testname, "MISC_DISCORDREQUESTS"))
+						{
+							ignoremenulines(f);
+							continue;
+						}
+					}
+#endif
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_menutype(word2); // find a huditem by name
 					if (i >= 1 && i < nummenutypes)

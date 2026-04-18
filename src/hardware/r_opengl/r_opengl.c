@@ -62,7 +62,6 @@ static GLuint NOTEXTURE_NUM = 0;
 #define      N_PI_DEMI               (M_PIl/2.0f) //(1.5707963268f)
 
 #define      ASPECT_RATIO            (1.0f)  //(320.0f/200.0f)
-#define      FAR_CLIPPING_PLANE      32768.0f // Draw further! Tails 01-21-2001
 static float NEAR_CLIPPING_PLANE =   NZCLIP_PLANE;
 
 // **************************************************************************
@@ -339,6 +338,12 @@ static PFNglDepthMask pglDepthMask;
 typedef void (APIENTRY * PFNglDepthRange) (GLclampd near_val, GLclampd far_val);
 static PFNglDepthRange pglDepthRange;
 
+/* Stencil Buffer */
+typedef void (APIENTRY * PFNglStencilFunc) (GLenum func, GLint ref, GLuint mask);
+static PFNglStencilFunc pglStencilFunc;
+typedef void (APIENTRY * PFNglStencilOp) (GLenum sfail, GLenum dpfail, GLenum dppass);
+static PFNglStencilOp pglStencilOp;
+
 /* Transformation */
 typedef void (APIENTRY * PFNglMatrixMode) (GLenum mode);
 static PFNglMatrixMode pglMatrixMode;
@@ -520,6 +525,9 @@ boolean SetupGLfunc(void)
 	GETOPENGLFUNC(pglDepthFunc, glDepthFunc)
 	GETOPENGLFUNC(pglDepthMask, glDepthMask)
 	GETOPENGLFUNC(pglDepthRange, glDepthRange)
+
+	GETOPENGLFUNC(pglStencilFunc, glStencilFunc)
+	GETOPENGLFUNC(pglStencilOp, glStencilOp)
 
 	GETOPENGLFUNC(pglMatrixMode, glMatrixMode)
 	GETOPENGLFUNC(pglViewport, glViewport)
@@ -915,7 +923,7 @@ static void SetNoTexture(GLenum texture)
 	}
 }
 
-static void GLPerspective(GLfloat fovy, GLfloat aspect)
+static void GL_Perspective(GLfloat fovy, GLfloat aspect)
 {
 	GLfloat m[4][4] =
 	{
@@ -1025,7 +1033,7 @@ void SetModelView(GLint w, GLint h)
 	pglMatrixMode(GL_MODELVIEW);
 	pglLoadIdentity();
 
-	GLPerspective(fov, ASPECT_RATIO);
+	GL_Perspective(fov, ASPECT_RATIO);
 	//pglScalef(1.0f, 320.0f/200.0f, 1.0f);  // gl_scalefrustum (ORIGINAL_ASPECT)
 
 	// added for new coronas' code (without depth buffer)
@@ -1107,6 +1115,7 @@ void SetStates(void)
 
 	//pglDisable(GL_DITHER);         // faB: ??? (undocumented in OpenGL 1.1)
 	                              // Hurdler: yes, it is!
+	pglEnable(GL_STENCIL_TEST);
 	pglEnable(GL_DEPTH_TEST);    // check the depth buffer
 	pglDepthMask(GL_TRUE);             // enable writing to depth buffer
 	pglClearDepth(1.0f);
@@ -1330,7 +1339,7 @@ void GL_GClipRect(INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip
 	//pglScissor(minx, screen_height-maxy, maxx-minx, maxy-miny);
 	pglMatrixMode(GL_PROJECTION);
 	pglLoadIdentity();
-	GLPerspective(fov, ASPECT_RATIO);
+	GL_Perspective(fov, ASPECT_RATIO);
 	pglMatrixMode(GL_MODELVIEW);
 
 	// added for new coronas' code (without depth buffer)
@@ -1344,6 +1353,7 @@ void GL_GClipRect(INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip
 // -----------------+
 void GL_ClearBuffer(FBOOLEAN ColorMask,
                                     FBOOLEAN DepthMask,
+									FBOOLEAN StencilMask,
                                     FRGBAFloat * ClearColor)
 {
 	// GL_DBG_Printf ("ClearBuffer(%d)\n", alpha);
@@ -1358,6 +1368,7 @@ void GL_ClearBuffer(FBOOLEAN ColorMask,
 			              ClearColor->alpha);
 		ClearMask |= GL_COLOR_BUFFER_BIT;
 	}
+
 	if (DepthMask)
 	{
 		pglClearDepth(1.0f);     //Hurdler: all that are permanen states
@@ -1365,6 +1376,9 @@ void GL_ClearBuffer(FBOOLEAN ColorMask,
 		pglDepthFunc(GL_LEQUAL);
 		ClearMask |= GL_DEPTH_BUFFER_BIT;
 	}
+
+	if (StencilMask)
+		ClearMask |= GL_STENCIL_BUFFER_BIT;
 
 	GL_SetBlend(DepthMask ? PF_Occlude | CurrentPolyFlags : CurrentPolyFlags&~PF_Occlude);
 
@@ -2392,6 +2406,31 @@ void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value)
 	}
 }
 
+void GL_SetStencilMode(hwdstencilmode_t mode, INT32 ref)
+{
+	switch (mode)
+	{
+		case HWD_STENCIL_INACTIVE:
+			pglStencilFunc(GL_ALWAYS, ref, 0xFF);
+			pglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+			break;
+
+		default:
+		case HWD_STENCIL_PORTAL_BEGIN:
+			pglStencilFunc(GL_EQUAL, ref, 0xFF);
+			pglStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+			break;
+		case HWD_STENCIL_PORTAL_INSIDE:
+			pglStencilFunc(GL_EQUAL, ref, 0xFF);
+			pglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+			break;
+		case HWD_STENCIL_PORTAL_FINISH:
+			pglStencilFunc(GL_EQUAL, ref, 0xFF);
+			pglStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+			break;
+	}
+}
+
 static float *vertBuffer = NULL;
 static float *normBuffer = NULL;
 static size_t lerpBufferSize = 0;
@@ -2703,7 +2742,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 	// pos->mirror is if the screen is flipped horizontally
 	// XOR all the flips together to figure out what culling to use!
 	{
-		boolean reversecull = (flipped ^ hflipped ^ pos->flip ^ pos->mirror);
+		boolean reversecull = (flipped ^ hflipped ^ !!(pos->fliptype & TRANSFORM_FLIP) ^ !!(pos->fliptype & TRANSFORM_MIRROR));
 		if (reversecull)
 			pglCullFace(GL_FRONT);
 		else
@@ -2889,7 +2928,7 @@ void GL_DrawModel(model_t *model, INT32 frameIndex, float duration, float tics, 
 // -----------------+
 void GL_SetTransform(FTransform *stransform)
 {
-	static boolean special_splitscreen;
+	boolean special_splitscreen = false;
 	boolean shearing = false;
 	float used_fov;
 
@@ -2898,14 +2937,21 @@ void GL_SetTransform(FTransform *stransform)
 	if (stransform)
 	{
 		used_fov = stransform->fovxangle;
-		if (stransform->mirror)
-			pglScalef(-stransform->scalex, stransform->scaley, -stransform->scalez);
-		else if (stransform->mirrorflip)
-			pglScalef(-stransform->scalex, -stransform->scaley, -stransform->scalez);
-		else if (stransform->flip)
-			pglScalef(stransform->scalex, -stransform->scaley, -stransform->scalez);
-		else
-			pglScalef(stransform->scalex, stransform->scaley, -stransform->scalez);
+		switch (stransform->fliptype)
+		{
+			case TRANSFORM_MIRROR:
+				pglScalef(-stransform->scalex, stransform->scaley, -stransform->scalez);
+				break;
+			case TRANSFORM_MIRRORFLIP:
+				pglScalef(-stransform->scalex, -stransform->scaley, -stransform->scalez);
+				break;
+			case TRANSFORM_FLIP:
+				pglScalef(stransform->scalex, -stransform->scaley, -stransform->scalez);
+				break;
+			default: // TRANSFORM_NONE
+				pglScalef(stransform->scalex, stransform->scaley, -stransform->scalez);
+				break;
+		}
 
 		if (stransform->roll)
 			pglRotatef(stransform->rollangle, 0.0f, 0.0f, 1.0f);
@@ -2925,23 +2971,29 @@ void GL_SetTransform(FTransform *stransform)
 	pglMatrixMode(GL_PROJECTION);
 	pglLoadIdentity();
 
+	// jimita 14042019
 	// Simulate Software's y-shearing
 	// https://zdoom.org/wiki/Y-shearing
 	if (shearing)
 	{
-		float fdy = stransform->viewaiming * 2 * ((float)vid.width / vid.height) / ((float)BASEVIDWIDTH / BASEVIDHEIGHT); //screen_width/BASEVIDWIDTH;
-		if (stransform->flip)
-			fdy *= -1.0f;
-		pglTranslatef(0.0f, -fdy/BASEVIDHEIGHT, 0.0f);
+		float dy = stransform->viewaiming * 2;
+
+		if (stransform->fliptype == TRANSFORM_FLIP ||
+			stransform->fliptype == TRANSFORM_MIRRORFLIP)
+			dy *= -1.0f;
+
+		pglTranslatef(0.0f, -dy/BASEVIDHEIGHT, 0.0f);
 	}
 
 	if (special_splitscreen)
 	{
-		used_fov = atan(tan(used_fov*M_PI/360)*0.8)*360/M_PI;
-		GLPerspective(used_fov, 2*ASPECT_RATIO);
+		used_fov = (atanf(tanf(used_fov * (float)M_PI / 360.0f) * 0.8f) * 360.0f / (float)M_PI);
+		GL_Perspective(used_fov, 2*ASPECT_RATIO);
 	}
 	else
-		GLPerspective(used_fov, ASPECT_RATIO);
+	{
+		GL_Perspective(used_fov, ASPECT_RATIO);
+	}
 
 	pglGetFloatv(GL_PROJECTION_MATRIX, projMatrix); // added for new coronas' code (without depth buffer)
 	pglMatrixMode(GL_MODELVIEW);
@@ -2950,7 +3002,7 @@ void GL_SetTransform(FTransform *stransform)
 
 }
 
-INT32  GL_GetTextureUsed(void)
+INT32 GL_GetTextureUsed(void)
 {
 	FTextureInfo *tmp = TexCacheHead;
 	INT32 res = 0;
@@ -3384,7 +3436,7 @@ void GL_DrawScreenFinalTexture(int tex, int width, int height)
 
 	clearColour.red = clearColour.green = clearColour.blue = 0;
 	clearColour.alpha = 1;
-	GL_ClearBuffer(true, false, &clearColour);
+	GL_ClearBuffer(true, false, false, &clearColour);
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
 	pglColor4ubv(white);

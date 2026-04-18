@@ -72,10 +72,6 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #define _MATH_DEFINES_DEFINED
 #include <SDL3/SDL.h>
 
-#ifdef HAVE_TTF
-#include "i_ttf.h"
-#endif
-
 #if defined (__unix__) || defined(__APPLE__) || (defined (UNIXCOMMON) && !defined (__HAIKU__))
 #if defined (__linux__)
 #include <sys/vfs.h>
@@ -222,7 +218,7 @@ bool consolevent = false;
 bool framebuffer = false;
 
 UINT8 keyboard_started = false;
-boolean g_in_exiting_signal_handler = false;
+static volatile sig_atomic_t g_in_exiting_signal_handler = false;
 
 #ifdef UNIXBACKTRACE
 #define STDERR_WRITE(string) if (fd != -1) I_OutputMsg("%s", string)
@@ -430,6 +426,11 @@ static void I_ReportSignal(int num, int coredumped)
 	);
 }
 
+boolean I_In_Exiting_Signal_Handler(void)
+{
+	return g_in_exiting_signal_handler;
+}
+
 #ifndef NEWSIGNALHANDLER
 static ATTRNORETURN void signal_handler(INT32 num)
 {
@@ -454,7 +455,7 @@ static ATTRNORETURN void signal_handler(INT32 num)
 }
 #endif
 
-static volatile sig_atomic_t interrupted = 0;
+static volatile sig_atomic_t interrupted = false;
 
 boolean I_Interrupted(void)
 {
@@ -463,9 +464,7 @@ boolean I_Interrupted(void)
 
 static void quit_handler(int num)
 {
-	signal(num, SIG_DFL); //default signal action
-	raise(num);
-	//I_Quit();
+	(void)num;
 	interrupted = true;
 }
 
@@ -883,11 +882,6 @@ void I_OutputMsg(const char *fmt, ...)
 	va_start(argptr,fmt);
 	vsprintf(txt, fmt, argptr);
 	va_end(argptr);
-
-#ifdef HAVE_TTF
-	if (TTF_WasInit()) I_TTFDrawText(currentfont, solid, DEFAULTFONTFGR, DEFAULTFONTFGG, DEFAULTFONTFGB,  DEFAULTFONTFGA,
-	DEFAULTFONTBGR, DEFAULTFONTBGG, DEFAULTFONTBGB, DEFAULTFONTBGA, txt);
-#endif
 
 	len = strlen(txt);
 
@@ -1372,6 +1366,7 @@ static void I_Fork(void)
 INT32 I_StartupSystem(void)
 {
 	int SDLlinked = SDL_GetVersion();
+	W_Startup();
 	I_StartupConsole();
 #ifdef NEWSIGNALHANDLER
 	// This is useful when debugging. It lets GDB attach to

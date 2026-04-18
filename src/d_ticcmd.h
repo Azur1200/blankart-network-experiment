@@ -58,14 +58,17 @@ typedef enum
 #define TICCMD_RECEIVED		(0x01) /* Actual tic recieved from client */
 #define TICCMD_TYPING		(0x02) /* chat window or console open */
 #define TICCMD_KEYSTROKE	(0x04) /* chat character input */
+#define TICCMD_USINGTILT	(0x08) /* player is using tilt control instead of the stick/buttons to turn */
+#define TICCMD_EXCESSTILT	(0x10) /* player is tilting gamepad farther than the max range */
 
+// 16 bytes long now!
 struct ticcmd_t
 {
-	SINT8 forwardmove; // -MAXPLMOVE to MAXPLMOVE (50)
-	SINT8 sidemove; // -MAXPLMOVE to MAXPLMOVE (50)
-	INT16 turning; // Turn speed
+	SINT8 forwardmove; // -MAXPLMOVE to MAXPLMOVE (50) (has anticheat)
+	SINT8 sidemove; // -MAXPLMOVE to MAXPLMOVE (50) (has anticheat)
+	INT16 turning; // "Steering Wheel" turn speed when driving (has anticheat)
 	INT16 angle; // Predicted angle, use me if you can!
-	INT16 throwdir; // Aiming direction
+	INT16 throwdir; // Forwards/Backwards item use direction (has anticheat)
 	INT16 aiming; // vertical aiming, see G_BuildTicCmd
 	UINT16 buttons;
 	UINT8 latency; // Netgames: how many tics ago was this ticcmd generated from this player's end?

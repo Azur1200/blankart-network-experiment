@@ -71,6 +71,13 @@ TYPEDEF (doomdata_t);
 TYPEDEF (serverelem_t);
 TYPEDEF (rewind_t);
 TYPEDEF (netinfo_pak);
+TYPEDEF (say_pak);
+TYPEDEF (reqmapqueue_pak);
+TYPEDEF (clientkey_pak);
+TYPEDEF (serverchallenge_pak);
+TYPEDEF (challengeall_pak);
+TYPEDEF (responseall_pak);
+TYPEDEF (resultsall_pak);
 
 // d_event.h
 TYPEDEF (event_t);
@@ -115,6 +122,7 @@ TYPEDEF (textpage_t);
 TYPEDEF (textprompt_t);
 TYPEDEF (mappoint_t);
 TYPEDEF (customoption_t);
+TYPEDEF (gametype_t);
 TYPEDEF (mapheader_t);
 TYPEDEF (tolinfo_t);
 TYPEDEF (cupheader_t);
@@ -133,6 +141,7 @@ TYPEDEF (menudemo_t);
 TYPEDEF (demoghost);
 
 // g_game.h
+TYPEDEF (roundentry_t);
 TYPEDEF (mapsearchfreq_t);
 
 // hu_stuff.h
@@ -233,7 +242,9 @@ TYPEDEF (mdllistitem_t);
 
 // m_fixed.h
 TYPEDEF (vector2_t);
+TYPEDEF (f_vector2_t);
 TYPEDEF (vector3_t);
+TYPEDEF (f_vector3_t);
 TYPEDEF (vector4_t);
 TYPEDEF (matrix_t);
 
@@ -359,6 +370,8 @@ TYPEDEF (msecnode_t);
 TYPEDEF (mprecipsecnode_t);
 TYPEDEF (lightmap_t);
 TYPEDEF (seg_t);
+TYPEDEF (affine_t);
+TYPEDEF (affine_bounding_t);
 
 // r_fps.h
 TYPEDEF (viewvars_t);
@@ -420,7 +433,6 @@ TYPEDEF (taggroup_t);
 // v_video.h
 TYPEDEF (colorlookup_t);
 TYPEDEF (cliprect_t);
-TYPEDEF (affine_t);
 
 // w_wad.h
 TYPEDEF (filelump_t);

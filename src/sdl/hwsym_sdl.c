@@ -43,10 +43,6 @@
 #endif
 #endif
 
-#ifdef HW3SOUND
-#include "../hardware/hw3dsdrv.h"
-#endif
-
 #define GETFUNC(func) \
 	else if (fastcmp(#func, funcName)) \
 		funcPointer = FUNCPTRCAST(&func) \

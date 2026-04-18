@@ -88,6 +88,13 @@ struct channel_t
 	// handle of the sound being played
 	INT32 handle;
 
+	// length sound has been playing
+	float duration;
+	float endtime;
+
+	// EFX
+	efx_t *efx;
+	float efxtail;
 };
 
 struct caption_t {
@@ -139,7 +146,8 @@ boolean S_SoundDisabled(void);
 void S_StartSound(const void *origin, sfxenum_t sound_id);
 
 // Will start a sound at a given volume.
-void S_StartSoundAtVolume(const void *origin, sfxenum_t sound_id, INT32 volume);
+void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, INT32 volume, efx_t *efx);
+#define S_StartSoundAtVolume(origin, sound_id, volume) S_StartSoundAtVolumeEx(origin, sound_id, volume, NULL)
 
 // Stop sound for thing at <origin>
 void S_StopSound(void *origin);
@@ -345,10 +353,10 @@ void S_StartSoundName(void *mo, const  char *soundname);
 void S_StopSoundByID(void *origin, sfxenum_t sfx_id);
 void S_StopSoundByNum(sfxenum_t sfxnum);
 
-#ifndef HW3SOUND
-#define S_StartAttackSound S_StartSound
-#define S_StartScreamSound S_StartSound
-#endif
+// EFX
+void S_InitEFXArray(efx_t *efx);
+void S_CreateGlobalEFX(efx_t *efx);
+void S_DeleteGlobalEFX(void);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -10,6 +10,7 @@
 /// \file  lua_maplib.c
 /// \brief game map library for Lua scripting
 
+#include "blua/lua.h"
 #include "doomdef.h"
 #include "r_state.h"
 #include "p_local.h"
@@ -49,6 +50,7 @@ enum sector_e {
 	sector_ffloors,
 	sector_fslope,
 	sector_cslope,
+	sector_colormap,
 	sector_flags,
 	sector_specialflags,
 	sector_damagetype,
@@ -85,6 +87,7 @@ static const char *const sector_opt[] = {
 	"ffloors",
 	"f_slope",
 	"c_slope",
+	"colormap",
 	"flags",
 	"specialflags",
 	"damagetype",
@@ -749,6 +752,9 @@ static int sector_get(lua_State *L)
 		return 1;
 	case sector_cslope: // c_slope
 		LUA_PushUserdata(L, sector->c_slope, META_SLOPE);
+		return 1;
+	case sector_colormap: // extra_colormap
+		LUA_PushUserdata(L, sector->extra_colormap, META_EXTRACOLORMAP);
 		return 1;
 	case sector_flags: // flags
 		lua_pushinteger(L, sector->flags);
@@ -2541,7 +2547,13 @@ static int mapheaderinfo_get(lua_State *L)
 {
 	mapheader_t *header = *((mapheader_t **)luaL_checkudata(L, 1, META_MAPHEADER));
 	const char *field = luaL_checkstring(L, 2);
-	if (fastcmp(field,"lvlttl"))
+	if (fastcmp(field,"lumpname"))
+		lua_pushstring(L, header->lumpname);
+	else if (fastcmp(field,"lumpnamehash"))
+		lua_pushinteger(L, header->lumpnamehash);
+	else if (fastcmp(field,"lumpnum"))
+		lua_pushinteger(L, header->lumpnum);
+	else if (fastcmp(field,"lvlttl"))
 		lua_pushstring(L, header->lvlttl);
 	else if (fastcmp(field,"subttl"))
 		lua_pushstring(L, header->subttl);
@@ -2608,8 +2620,14 @@ static int mapheaderinfo_get(lua_State *L)
 		lua_pushinteger(L, header->menuflags);
 	else if (fastcmp(field,"mobj_scale"))
 		lua_pushfixed(L, header->mobj_scale);
+	else if (fastcmp(field,"default_waypoint_radius"))
+		lua_pushfixed(L, header->default_waypoint_radius);
 	else if (fastcmp(field, "gravity"))
 		lua_pushfixed(L, header->gravity);
+	else if (fastcmp(field, "use_walltransfer"))
+		lua_pushboolean(L, header->use_walltransfer);
+	else if (fastcmp(field, "use_terrain"))
+		lua_pushboolean(L, header->use_terrain);
 	else {
 		// Read custom vars now
 		// (note: don't include the "LUA." in your lua scripts!)

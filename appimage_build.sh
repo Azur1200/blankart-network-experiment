@@ -40,6 +40,7 @@ libogg
 libvorbis
 libvorbisfile
 libvorbisenc
+libminiupnpc
 libopus
 libsndfile
 libjson

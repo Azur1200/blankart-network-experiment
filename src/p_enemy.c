@@ -15,6 +15,7 @@
 #include "dehacked.h"
 #include "doomdef.h"
 #include "g_game.h"
+#include "i_sound.h"
 #include "p_local.h"
 #include "p_setup.h"
 #include "r_main.h"
@@ -32,10 +33,6 @@
 #include "k_collide.h"
 #include "k_items.h"
 #include "k_objects.h"
-
-#ifdef HW3SOUND
-#include "hardware/hw3sound.h"
-#endif
 
 boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor);
 
@@ -675,7 +672,7 @@ void A_Chase(void *thing)
 	if (!(locvar1 & 1) && actor->info->meleestate && P_CheckMeleeRange(actor))
 	{
 		if (actor->info->attacksound)
-			S_StartAttackSound(actor, actor->info->attacksound);
+			S_StartSound(actor, actor->info->attacksound);
 
 		P_SetMobjState(actor, actor->info->meleestate);
 		return;
@@ -764,7 +761,7 @@ void A_FaceStabChase(void *thing)
 	if (actor->info->meleestate && P_FaceStabCheckMeleeRange(actor))
 	{
 		if (actor->info->attacksound)
-			S_StartAttackSound(actor, actor->info->attacksound);
+			S_StartSound(actor, actor->info->attacksound);
 
 		P_SetMobjState(actor, actor->info->meleestate);
 		return;
@@ -1729,7 +1726,7 @@ void A_SkimChase(void *thing)
 	if (actor->info->meleestate && P_SkimCheckMeleeRange(actor))
 	{
 		if (actor->info->attacksound)
-			S_StartAttackSound(actor, actor->info->attacksound);
+			S_StartSound(actor, actor->info->attacksound);
 
 		P_SetMobjState(actor, actor->info->meleestate);
 		return;
@@ -2518,7 +2515,7 @@ void A_BossZoom(void *thing)
 	dest = actor->target;
 	actor->flags2 |= MF2_SKULLFLY;
 	if (actor->info->attacksound)
-		S_StartAttackSound(actor, actor->info->attacksound);
+		S_StartSound(actor, actor->info->attacksound);
 	A_FaceTarget(actor);
 	an = actor->angle >> ANGLETOFINESHIFT;
 	actor->momx = FixedMul(FixedMul(actor->info->speed*5*FRACUNIT, actor->scale), FINECOSINE(an));
@@ -2600,9 +2597,9 @@ void A_Scream(void *thing)
 		return;
 
 	if (actor->tracer && (actor->tracer->type == MT_SHELL || actor->tracer->type == MT_FIREBALL))
-		S_StartScreamSound(actor, sfx_mario2);
+		S_StartSound(actor, sfx_mario2);
 	else if (actor->info->deathsound)
-		S_StartScreamSound(actor, actor->info->deathsound);
+		S_StartSound(actor, actor->info->deathsound);
 }
 
 // Function: A_Pain
@@ -3222,6 +3219,16 @@ void A_AttractChase(void *thing)
 			return;
 		}
 
+		INT32 ringpower = K_GetKartBaseRingPower(actor->target->player, true);
+		boolean ringburnt = K_IsPlayerRingBurnt(actor->target->player, ringpower);
+
+		if (ringburnt)
+		{
+			actor->colorized = true;
+			actor->color = SKINCOLOR_ABYSS;
+			actor->renderflags |= RF_ADD;
+		}
+
 		if (actor->extravalue2) // Using for ring boost
 		{
 			// Always fullbright
@@ -3232,6 +3239,12 @@ void A_AttractChase(void *thing)
 				// Base add is 4 tics for 9,9, adds 1 tic for each point closer to the 1,1 end
 				actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true);
 				actor->target->player->ringtime += K_GetKartRingPower(actor->target->player, true);
+
+				if (ringburnt)
+				{
+					// s3k55 s264
+					S_StartSoundAtVolume(actor->target, sfx_s264, actor->target->player->ringvolume);
+				}
 
 				S_StartSoundAtVolume(actor->target, sfx_s1b5, actor->target->player->ringvolume);
 
@@ -3274,8 +3287,8 @@ void A_AttractChase(void *thing)
 				if (actor->target->player->ringboost > (4*TICRATE + TICRATE/2))
 					actor->target->player->ringboost = (4*TICRATE + TICRATE/2);
 
-				if (actor->cvmem) // caching
-					S_StartSound(actor->target, sfx_s1c5);
+				if (actor->cvmem && P_IsLocalPlayer(actor->target->player)) // caching
+					S_StartSound(NULL, sfx_s1c5);
 				else
 					S_StartSoundAtVolume(actor->target, sfx_s227, actor->target->player->ringvolume);
 
@@ -3331,12 +3344,15 @@ void A_AttractChase(void *thing)
 
 		if (actor->tracer != NULL && P_MobjWasRemoved(actor->tracer) == false)
 		{
+			if (actor->extravalue3 && spbplace != -1 && actor->tracer->player && (actor->tracer->player->position == spbplace))
+				goto spbring;
+
 			// Set attraction flag
 			actor->cusval = 1;
 
 			if (
 				actor->tracer->player && actor->tracer->health
-				&& ((gametyperules & GTR_BUMPERS)
+				&& ((gametypes[gametype]->rules & GTR_BUMPERS)
 					|| (actor->tracer->player->itemtype == KITEM_THUNDERSHIELD
 					&& RINGTOTAL(actor->tracer->player) < actor->tracer->player->ringmax
 					&& !(actor->tracer->player->pflags & PF_RINGLOCK)))
@@ -3378,6 +3394,7 @@ void A_AttractChase(void *thing)
 			}
 			else
 			{
+spbring:
 				P_SetTarget(&actor->tracer, NULL);
 			}
 		}
@@ -3790,7 +3807,7 @@ void A_JetbThink(void *thing)
 		{
 			mobj_t *bomb;
 			if (actor->info->attacksound)
-				S_StartAttackSound(actor, actor->info->attacksound);
+				S_StartSound(actor, actor->info->attacksound);
 
 			// use raisestate instead of MT_MINE
 			bomb = P_SpawnMobj(actor->x, actor->y, actor->z - FixedMul((32<<FRACBITS), actor->scale), (mobjtype_t)actor->info->raisestate);
@@ -4222,7 +4239,7 @@ void A_DetonChase(void *thing)
 		actor->reactiontime = -42;
 
 		if (actor->info->seesound)
-			S_StartScreamSound(actor, actor->info->seesound);
+			S_StartSound(actor, actor->info->seesound);
 	}
 
 	if (actor->reactiontime == -42)
@@ -4830,7 +4847,7 @@ void A_OldRingExplode(void *thing)
 
 		if (changecolor)
 		{
-			if (!(gametyperules & GTR_TEAMS))
+			if (!(gametypes[gametype]->rules & GTR_TEAMS))
 				mo->color = actor->target->color; //copy color
 			else if (actor->target->player->ctfteam == 2)
 				mo->color = skincolor_bluering;
@@ -4846,7 +4863,7 @@ void A_OldRingExplode(void *thing)
 
 	if (changecolor)
 	{
-		if (!(gametyperules & GTR_TEAMS))
+		if (!(gametypes[gametype]->rules & GTR_TEAMS))
 			mo->color = actor->target->color; //copy color
 		else if (actor->target->player->ctfteam == 2)
 			mo->color = skincolor_bluering;
@@ -4861,7 +4878,7 @@ void A_OldRingExplode(void *thing)
 
 	if (changecolor)
 	{
-		if (!(gametyperules & GTR_TEAMS))
+		if (!(gametypes[gametype]->rules & GTR_TEAMS))
 			mo->color = actor->target->color; //copy color
 		else if (actor->target->player->ctfteam == 2)
 			mo->color = skincolor_bluering;
@@ -4888,7 +4905,7 @@ void A_MixUp(void *thing)
 		return;
 
 	// The random factor is okay for other game modes, but in these, it is cripplingly unfair.
-	if (gametyperules & GTR_CIRCUIT)
+	if (gametypes[gametype]->rules & GTR_CIRCUIT)
 	{
 		S_StartSound(actor, sfx_lose);
 		return;
@@ -5347,7 +5364,7 @@ void A_Boss2Chase(void *thing)
 			goop->fuse = 10*TICRATE;
 
 			if (actor->info->attacksound)
-				S_StartAttackSound(actor, actor->info->attacksound);
+				S_StartSound(actor, actor->info->attacksound);
 
 			if (P_RandomChance(FRACUNIT/2))
 			{
@@ -5407,7 +5424,7 @@ void A_Boss2Pogo(void *thing)
 		}
 		actor->reactiontime = 0; // we already shot goop, so don't do it again!
 		if (actor->info->attacksound)
-			S_StartAttackSound(actor, actor->info->attacksound);
+			S_StartSound(actor, actor->info->attacksound);
 		actor->flags2 |= MF2_JUSTATTACKED;
 	}
 }
@@ -6393,7 +6410,7 @@ void A_PlaySeeSound(void *thing)
 		return;
 
 	if (actor->info->seesound)
-		S_StartScreamSound(actor, actor->info->seesound);
+		S_StartSound(actor, actor->info->seesound);
 }
 
 // Function: A_PlayAttackSound
@@ -6410,7 +6427,7 @@ void A_PlayAttackSound(void *thing)
 		return;
 
 	if (actor->info->attacksound)
-		S_StartAttackSound(actor, actor->info->attacksound);
+		S_StartSound(actor, actor->info->attacksound);
 }
 
 // Function: A_PlayActiveSound
@@ -9458,7 +9475,7 @@ void A_BrakChase(void *thing)
 			&& actor->health <= P_RandomRange(actor->info->spawnhealth/4, (actor->info->spawnhealth * 3)/4)) // Guaranteed true if <= 1/4 health, guaranteed false if > 3/4 health
 		{
 			if (actor->info->attacksound)
-				S_StartAttackSound(actor, actor->info->attacksound);
+				S_StartSound(actor, actor->info->attacksound);
 
 			P_SetMobjState(actor, actor->info->meleestate);
 			actor->flags2 |= MF2_JUSTATTACKED;
@@ -10835,7 +10852,7 @@ void A_ItemPop(void *thing)
 	//if (actor->info->deathsound)
 		//S_StartSound(remains, actor->info->deathsound);
 
-	if (!((gametyperules & GTR_BUMPERS) && actor->target->player->bumper <= 0) && !itembreaker)
+	if (!((gametypes[gametype]->rules & GTR_BUMPERS) && actor->target->player->bumper <= 0) && !itembreaker)
 	{
 		K_StartRoulette(actor->target->player, KROULETTETYPE_NORMAL);
 	}
@@ -10853,7 +10870,7 @@ void A_ItemPop(void *thing)
 	remains->flags2 &= ~MF2_AMBUSH;
 
 	// Here at mapload in battle?
-	if (gametyperules & GTR_BUMPERS && actor->threshold != 69)
+	if (gametypes[gametype]->rules & GTR_BUMPERS && actor->threshold != 69)
 		numgotboxes++;
 
 	P_RemoveMobj(actor);
@@ -10987,7 +11004,7 @@ void A_SPBChase(void *thing)
 		if (players[i].respawn)
 			continue;*/ // respawning
 
-		if ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB))
+		if ((gametypes[gametype]->rules & GTR_WANTED) && (gametypes[gametype]->rules & GTR_WANTEDSPB))
 		{
 			if (K_IsPlayerMostWanted(&players[i]))
 			{
@@ -11048,7 +11065,7 @@ void A_SPBChase(void *thing)
 				else if (actor->extravalue2-- <= 0)
 					actor->extravalue1 = 0; // back to SEEKING
 
-				if ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB))
+				if ((gametypes[gametype]->rules & GTR_WANTED) && (gametypes[gametype]->rules & GTR_WANTEDSPB))
 				{
 					spbplace = (actor->tracer->player - players);
 				}
@@ -11066,6 +11083,9 @@ void A_SPBChase(void *thing)
 					specialring->colorized = true;
 					specialring->color = SKINCOLOR_RED;
 					specialring->flags |= MF_NOCLIPHEIGHT;
+
+					// But don't let first pick these up.
+					specialring->extravalue3 = 1;
 				}
 
 			}
@@ -11174,7 +11194,7 @@ void A_SPBChase(void *thing)
 			&& !players[actor->lastlook].spectator
 			&& !players[actor->lastlook].exiting)
 		{
-			if ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB))
+			if ((gametypes[gametype]->rules & GTR_WANTED) && (gametypes[gametype]->rules & GTR_WANTEDSPB))
 			{
 				spbplace = actor->lastlook;
 			}
@@ -11299,7 +11319,7 @@ static inline BlockItReturn_t PIT_SSMineSearch(mobj_t *thing)
 		return BMIT_CONTINUE;
 
 	if (thing->player && (thing->player->hyudorotimer
-		|| ((gametyperules & GTR_BUMPERS) && thing->player && thing->player->bumper <= 0 && thing->player->karmadelay)))
+		|| ((gametypes[gametype]->rules & GTR_BUMPERS) && thing->player && thing->player->bumper <= 0 && thing->player->karmadelay)))
 		return BMIT_CONTINUE;
 
 	// see if it went over / under
@@ -11365,7 +11385,7 @@ static inline BlockItReturn_t PIT_MineExplode(mobj_t *thing)
 	if (netgame && thing->player && thing->player->spectator)
 		return BMIT_CONTINUE;
 
-	if ((gametyperules & GTR_BUMPERS) && grenade->target && grenade->target->player && grenade->target->player->bumper <= 0 && thing == grenade->target)
+	if ((gametypes[gametype]->rules & GTR_BUMPERS) && grenade->target && grenade->target->player && grenade->target->player->bumper <= 0 && thing == grenade->target)
 		return BMIT_CONTINUE;
 
 	// see if it went over / under
@@ -11483,11 +11503,11 @@ void A_EggMinePop(void *thing)
 
 	poof = P_SpawnMobj(actor->x, actor->y, actor->z, MT_EXPLODE);
 	S_StartSound(poof, actor->info->deathsound);
-	
+
 	if (!(actor->target && actor->target->player)) return;
-	
+
 	player = actor->target->player;
-	
+
 	landMine = P_SpawnMobj(actor->x, actor->y, actor->z + actor->height/2, MT_LANDMINE);
 	K_FlipFromObject(landMine, actor);
 	landMine->threshold = 10;

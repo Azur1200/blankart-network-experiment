@@ -31,7 +31,7 @@ void GL_DrawPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, F
 void GL_DrawIndexedTriangles(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, UINT32 *IndexArray);
 void GL_RenderSkyDome(gl_sky_t *sky);
 void GL_SetBlend(FBITFIELD PolyFlags);
-void GL_ClearBuffer(FBOOLEAN ColorMask, FBOOLEAN DepthMask, FRGBAFloat *ClearColor);
+void GL_ClearBuffer(FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask, FRGBAFloat *ClearColor);
 void GL_SetTexture(GLMipmap_t *pTexInfo);
 void GL_UpdateTexture(GLMipmap_t *pTexInfo);
 void GL_DeleteTexture(GLMipmap_t *pTexInfo);
@@ -40,6 +40,7 @@ void GL_GClipRect(INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip
 void GL_ClearMipMapCache(void);
 
 void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value);
+void GL_SetStencilMode(hwdstencilmode_t mode, INT32 ref);
 
 // Hurdler: added for new development
 void GL_DrawModel(model_t *model, INT32 frameIndex, float duration, float tics, INT32 nextFrameIndex, FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface);

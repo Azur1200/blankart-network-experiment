@@ -599,7 +599,7 @@ void DRPC_UpdatePresence(void)
 			if (grandprixinfo.gp == true)
 			{
 				snprintf(detailstr, 48, "%s%s%s",
-					Gametype_Names[gametype],
+					gametypes[gametype]->name,
 					va(" | %s", cv_dummygpdifficulty.string),
 					(encoremode == true) ? " | Encore" : ""
 				);
@@ -607,7 +607,7 @@ void DRPC_UpdatePresence(void)
 			else
 			{
 				snprintf(detailstr, 48, "%s%s%s",
-					Gametype_Names[gametype],
+					gametypes[gametype]->name,
 					va(" | %s", kartspeed_cons_t[gamespeed+1].strvalue),
 					(encoremode == true) ? " | Encore" : ""
 				);

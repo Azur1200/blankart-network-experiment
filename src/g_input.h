@@ -35,8 +35,9 @@ extern "C" {
 #define JOYANALOGS		4 // 4 analog stick axes (2 sticks * 2 axes)
 #define JOYTRIGGERS		2 // 2 trigger axes, positive only
 #define JOYIMUAXISES	6 // 3 accelerometer, 3 gyroscope axes (x, y, z)
-#define JOYAXISES	(JOYANALOGS + JOYTRIGGERS + JOYIMUAXISES)
-#define JOYAXISKEYS	((2 * JOYANALOGS) + JOYTRIGGERS + (2 * JOYIMUAXISES))
+#define JOYAXISES		(JOYANALOGS + JOYTRIGGERS + JOYIMUAXISES)
+#define JOYAXISKEYS		(2 * JOYANALOGS) + JOYTRIGGERS
+#define JOYSTATEKEYS	JOYAXISKEYS + JOYIMUAXISES
 
 #define MAXINPUTMAPPING 4
 
@@ -48,9 +49,9 @@ typedef enum
 	KEY_JOY1 = NUMKEYS,
 	KEY_HAT1 = KEY_JOY1 + JOY_DPAD_UP,
 	KEY_AXIS1 = KEY_JOY1 + JOYBUTTONS,
-	KEY_ACCELEROMETER1 = KEY_AXIS1 + JOYANALOGS + JOYTRIGGERS,
-	KEY_GYROSCOPE1 = KEY_ACCELEROMETER1 + 6,
-	JOYINPUTEND = KEY_AXIS1 + JOYAXISKEYS,
+	KEY_ACCELEROMETER1 = KEY_AXIS1 + JOYAXISKEYS,
+	KEY_GYROSCOPE1 = KEY_ACCELEROMETER1 + 3,
+	JOYINPUTEND = KEY_AXIS1 + JOYSTATEKEYS,
 
 	KEY_MOUSE1 = JOYINPUTEND,
 	KEY_MOUSEMOVE = KEY_MOUSE1 + MOUSEBUTTONS,
@@ -94,8 +95,22 @@ typedef enum
 	gc_respawn,
 	gc_director,
 	gc_horncode,
+	gc_freelook,
 	num_gamecontrols
 } gamecontrols_e;
+
+typedef enum
+{
+	DEADZONE_X,
+	DEADZONE_Y,
+	DEADZONE_BUTTON,
+} analogdeadzone_e;
+
+typedef enum
+{
+	ACCELEROMETER,
+	GYROSCOPE,
+} motionsensortype_e;
 
 // mouse values are used once
 extern consvar_t cv_mousesens, cv_mouseysens;
@@ -106,6 +121,7 @@ extern consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_controllerrumble[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_rumblestrength[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_controllerled[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_tiltcontrol[MAXSPLITSCREENPLAYERS];
 
 // current state of the keys: JOYAXISRANGE or 0 when boolean.
 // Or anything inbetween for analog values
@@ -175,6 +191,22 @@ INT32 G_GetControlScheme(INT32 (*fromcontrols)[MAXINPUTMAPPING], const INT32 *gc
 void G_ResetControls(UINT8 p);
 void G_SaveKeySetting(FILE *f, INT32 (*fromcontrolsa)[MAXINPUTMAPPING], INT32 (*fromcontrolsb)[MAXINPUTMAPPING], INT32 (*fromcontrolsc)[MAXINPUTMAPPING], INT32 (*fromcontrolsd)[MAXINPUTMAPPING]);
 INT32 G_CheckDoubleUsage(INT32 keynum, INT32 playernum, boolean modify);
+
+#define MAXGAMEPADTILT (50*FRACUNIT/100)
+// #define ACCELEROMETERGRAVITY ((fixed_t)(9.80665f * ((float)FRACUNIT)))
+#define ACCELEROMETERGRAVITY 642688
+boolean G_GetGamepadCanUseTilt(INT32 p);
+void G_ResetGyroCalibration(INT32 p);
+void G_UpdateGamepadAutoCalibration(INT32 p, vector3_t accel, vector3_t gyro, boolean allowautocalibration);
+void G_UpdateGamepadGyro(INT32 p, vector3_t gyro);
+void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel);
+fixed_t G_GetGamepadShakinessFactor(INT32 p);
+vector3_t G_GetGamepadShake(INT32 p);
+vector3_t G_GetGamepadGravity(INT32 p);
+vector3_t G_GetCalibratedGyroOffset(INT32 p);
+vector3_t G_GetGamepadCalibratedGyro(INT32 p);
+vector3_t G_PlayerInputSensor(UINT8 p, motionsensortype_e sensor);
+INT32 G_GetGamepadTilt(INT32 p);
 
 #ifdef __cplusplus
 } // extern "C"

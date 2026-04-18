@@ -91,7 +91,7 @@
 #if defined(HAVE_SDL)
 #include <SDL3/SDL.h>
 #if SDL_VERSION_ATLEAST(2,0,0)
-#include <SDL3/SDL_main.h> // JOYSTICK_HOTPLUG
+#include "sdl/sdlmain.h" // JOYSTICK_HOTPLUG
 #endif
 #endif
 
@@ -144,8 +144,6 @@ I_mutex m_menu_mutex;
 M_waiting_mode_t m_waiting_mode = M_NOT_WAITING;
 
 const char *quitmsg[NUM_QUITMESSAGES];
-
-boolean fromlevelselect = false;
 
 static char menu_text_input_buf[MAXSTRINGLENGTH];
 static textinput_t menuinput;
@@ -202,7 +200,7 @@ int  M_GetWaitingMode(void);
 
 typedef struct
 {
-	INT16 mapnum;
+	mapnum_t mapnum;
 	char mapname[MAXMAPNAME];
 	UINT8 color;
 	boolean available;
@@ -600,7 +598,7 @@ consvar_t cv_skinselectsort = CVAR_INIT ("skinselectsort", "Name", CV_SAVE|CV_CA
 
 // This gametype list is integral for many different reasons.
 // When you add gametypes here, don't forget to update them in dehacked.c and doomstat.h!
-CV_PossibleValue_t gametype_cons_t[NUMGAMETYPES+1];
+CV_PossibleValue_t gametype_cons_t[MAXGAMETYPES+1];
 
 consvar_t cv_newgametype = CVAR_INIT ("newgametype", "Race", CV_HIDEN|CV_CALL|CV_NOINIT, gametype_cons_t, Levelplatter_OnChange);
 
@@ -761,19 +759,19 @@ inline static void M_GetGametypeColor(void)
 
 	if (gt == GT_BATTLE || levellistmode == LLM_BOSS)
 	{
-		highlightflags = gametypecolor[gt];
+		highlightflags = gametypes[gt]->color;
 		warningflags = V_ORANGEMAP;
 		return;
 	}
 	if (gt == GT_RACE)
 	{
-		highlightflags = gametypecolor[gt];
+		highlightflags = gametypes[gt]->color;
 		return;
 	}
 
-	if (gametypecolor[gt])
+	if (gametypes[gt]->color)
 	{
-		highlightflags = gametypecolor[gt];
+		highlightflags = gametypes[gt]->color;
 		return;
 	}
 
@@ -787,14 +785,14 @@ INT32 HU_GetHighlightColor(void)
 	return highlightflags;
 }
 
-fixed_t M_GetMapThumbnail(INT16 mapnum, patch_t **out)
+fixed_t M_GetMapThumbnail(mapnum_t mapnum, patch_t **out)
 {
 	patch_t *patch = NULL;
-	if (mapnum == -1)
+	if (mapnum == NEXTMAP_INVALID)
 		patch = randomlvl;
-	else if (mapnum == -2)
+	else if (mapnum == NEXTMAP_RESERVED)
 		patch = nolvl;
-	else if (mapnum >= 0 && mapnum < nummapheaders && mapheaderinfo[mapnum])
+	else if (/*mapnum >= 0 &&*/ mapnum < nummapheaders && mapheaderinfo[mapnum])
 		patch = mapheaderinfo[mapnum]->thumbnailPic;
 
 	if (!patch)
@@ -1771,8 +1769,6 @@ boolean M_Responder(event_t *ev)
 	{
 		if (M_WipeBuffer(ch, curpd->keyhandler))
 			return true;
-		if (shiftdown && ch >= 32 && ch <= 127)
-			ch = shiftxform[ch];
 		if (curpd->keyhandler(ch))
 			return true;
 	}
@@ -2254,14 +2250,27 @@ void M_StartControlPanel(void)
 		pi = M_GetPanel("MAIN");
 		M_SetItemOn(pi, "CONTINUE");
 	}
-	else if (!(netgame || multiplayer)) // Single Player
+	else if (grandprixinfo.gp) // Single Player
 	{
+		boolean retryallowed = false;
+		INT32 i;
+		for (i = 0; i <= splitscreen; i++)
+		{
+			if (G_GametypeUsesLives() && players[g_localplayers[i]].lives <= 1)
+				continue;
+			retryallowed = true;
+			break;
+		}
+
+		if (gamestate != GS_LEVEL)
+			retryallowed = false;
+
 		M_EnterMenu(MN_SPAUSE, true, 0);
 		pi = M_GetPanel("MAIN");
 		M_SetItemOn(pi, "CONTINUE");
 
 		// intermission, so gray out stuff.
-		M_SetItemDisabled(pi, "RETRY", gamestate != GS_LEVEL /*|| ultimatemode*/);
+		M_SetItemDisabled(pi, "RETRY", !retryallowed /*|| ultimatemode*/);
 	}
 	else // multiplayer
 	{
@@ -3434,7 +3443,7 @@ static INT32 M_GetLevelListTOL(void)
 	}
 }
 
-static boolean M_LevelAvailableOnPlatter(INT32 mapnum)
+static boolean M_LevelAvailableOnPlatter(mapnum_t mapnum)
 {
 	// don't care
 	(void)mapnum;
@@ -3446,10 +3455,10 @@ static boolean M_LevelAvailableOnPlatter(INT32 mapnum)
 //
 // Determines whether to show a given map in the various level-select lists.
 //
-static boolean M_CanShowLevelOnPlatter(INT32 mapnum)
+static boolean M_CanShowLevelOnPlatter(mapnum_t mapnum)
 {
 	// Does the map exist?
-	if (mapnum < 0 || mapnum >= nummapheaders || !mapheaderinfo[mapnum])
+	if (/*mapnum < 0 || */mapnum >= nummapheaders || !mapheaderinfo[mapnum])
 		return false;
 
 	// Does the map have a name?
@@ -3660,7 +3669,7 @@ static void M_UpdateLevelPlatterCups(void)
 				break;
 
 			levelselectmap_t *lsmap = &lsrow->maps[lsrow->numcolumns++];
-			INT16 mapnum = cup->cachedlevels[j];
+			mapnum_t mapnum = cup->cachedlevels[j];
 
 			lsmap->mapnum = mapnum; // putting the map on the platter
 			lsmap->available = M_LevelAvailableOnPlatter(mapnum);
@@ -3729,7 +3738,7 @@ static void M_UpdateLevelPlatter(void)
 
 	for (i = 0; i < numsortedmaps; i++)
 	{
-		INT32 mapnum = sortedmaps[i];
+		mapnum_t mapnum = sortedmaps[i];
 		mapheader_t *itermap = mapheaderinfo[mapnum];
 		boolean wide = false;//(headermap->menuflags & LF2_WIDEICON);
 
@@ -4048,7 +4057,7 @@ static void M_DrawLevelPlatterMap(const levelselectmap_t *lsmap, fixed_t x, fixe
 	// wide thumbnails? mmm... i dunno... maybe...
 	patch_t *patch;
 	boolean encore = cv_kartencore.value == 1 && levellistmode == LLM_CREATESERVER && cv_newgametype.value == GT_RACE;
-	fixed_t thumbscale = M_GetMapThumbnail(lsmap->available ? lsmap->mapnum : -1, &patch);
+	fixed_t thumbscale = M_GetMapThumbnail(lsmap->available ? lsmap->mapnum : NEXTMAP_INVALID, &patch);
 	thumbscale = FixedMul(thumbscale/4, scale);
 
 	V_DrawSciencePatch(x - patch->width*thumbscale/2 + (encore ? patch->width*thumbscale : 0),
@@ -4232,7 +4241,7 @@ void MD_DrawLevelPlatterMenu(menupanelinst_t *pi)
 // Determines whether to show a given map in the various level-select lists.
 // Set gt = -1 to ignore gametype.
 //
-boolean M_CanShowLevelInList(INT32 mapnum)
+boolean M_CanShowLevelInList(mapnum_t mapnum)
 {
 	return M_CanShowLevelOnPlatter(mapnum) && M_LevelAvailableOnPlatter(mapnum);
 }
@@ -5801,7 +5810,7 @@ static void M_RetryResponse(INT32 ch)
 	if (ch != 'y' && ch != KEY_ENTER)
 		return;
 
-	if (netgame || multiplayer) // Should never happen!
+	if (netgame) // Should never happen!
 		return;
 
 	M_ClearMenus(true);
@@ -5811,7 +5820,7 @@ static void M_RetryResponse(INT32 ch)
 INT32 MR_Retry(INT32 choice)
 {
 	(void)choice;
-	M_StartMessage(va("Start this %s over?\n\n(Press 'Y' to confirm)\n", (gametyperules & GTR_CIRCUIT) ? "race" : "battle"),M_RetryResponse,MM_YESNO);
+	M_StartMessage(va("Start this %s over?\n\n(Press 'Y' to confirm)\n", (gametypes[gametype]->rules & GTR_CIRCUIT) ? "race" : "battle"),M_RetryResponse,MM_YESNO);
 	return true;
 }
 
@@ -6608,7 +6617,6 @@ INT32 MR_GrandPrixTemp(INT32 choice)
 INT32 MR_StartGrandPrix(INT32 choice)
 {
 	cupheader_t *gpcup;
-	INT32 levelNum;
 
 	(void)choice;
 
@@ -6644,11 +6652,9 @@ INT32 MR_StartGrandPrix(INT32 choice)
 			break;
 		default:
 			CONS_Alert(CONS_WARNING, "Invalid GP difficulty\n");
-			grandprixinfo.gamespeed = KARTSPEED_NORMAL;
+			grandprixinfo.gamespeed = KARTSPEED_DEFAULT;
 			break;
 	}
-
-	grandprixinfo.encore = (boolean)(cv_dummygpencore.value);
 
 	for (gpcup = kartcupheaders; gpcup != NULL; gpcup = gpcup->next)
 	{
@@ -6657,23 +6663,30 @@ INT32 MR_StartGrandPrix(INT32 choice)
 	}
 
 	I_Assert(gpcup != NULL);
-	grandprixinfo.cup = gpcup;
 
 	grandprixinfo.gp = true;
-	grandprixinfo.roundnum = 1;
 	grandprixinfo.wonround = false;
-
 	grandprixinfo.initalize = true;
+	grandprixinfo.cup = gpcup;
 
-	levelNum = G_MapNumber(grandprixinfo.cup->levellist[0]);
+	// Populate the roundqueue
+	memset(&roundqueue, 0, sizeof(struct roundqueue));
+	G_GPCupIntoRoundQueue(gpcup, GT_RACE/*levellist.newgametype*/, (boolean)cv_dummygpencore.value);
+	roundqueue.position = roundqueue.roundnum = 1;
+	roundqueue.netcommunicate = true; // relevant for future Online GP
 
-	G_DeferedInitNew(
+	multiplayer = true;
+
+	D_MapChange(
+		roundqueue.entries[0].mapnum + 1,
+		roundqueue.entries[0].gametype,
+		roundqueue.entries[0].encore,
+		true,
+		1,
 		false,
-		levelNum + 1,
-		cv_chooseskin.value,
-		(UINT8)(cv_splitplayers.value - 1),
-		false
+		roundqueue.entries[0].rankrestricted
 	);
+
 	return true;
 }
 
@@ -7697,51 +7710,52 @@ static void MD_DrawCssStatBars(menupanelinst_t *pi)
 	const INT32 ICNYFIRST = 1;
 	const INT32 ICNYSECOND = 17;
 
+	menuitem_t *item = M_GetMenuItem(pi, "STATBAR");
+
 	patch_t *statbitsub = 	W_CachePatchName("STATBSPD", PU_CACHE);
 	patch_t *statbitmain = 	W_CachePatchName("STATBWGT", PU_CACHE);
 
 	patch_t *speedicn = 	W_CachePatchName("K_STSPD", PU_CACHE);
 	patch_t *weighticn = 	W_CachePatchName("K_STWHT", PU_CACHE);
-	//patch_t *accelicn = 	W_CachePatchName("K_STACL", PU_CACHE);
-	//patch_t *handlingicn = 	W_CachePatchName("K_STHDL", PU_CACHE);
 
-	UINT8 *speedcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_SAPPHIRE, 0);
-	UINT8 *weightcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_KETCHUP, 0);
-	UINT8 *speednumcolour = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_NIGHTFALL, 0);
-	UINT8 *weightnumcolour = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_AMBER, 0);
-	// UINT8 *accelcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_GOLD, 0);
-	// UINT8 *handlingcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_MINT, 0);
-	UINT8 *subcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_BLACK, 0);
+	UINT8 *speedcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_SAPPHIRE, GTC_MENUCACHE);
+	UINT8 *weightcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_KETCHUP, GTC_MENUCACHE);
+	UINT8 *speednumcolour = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_NIGHTFALL, GTC_MENUCACHE);
+	UINT8 *weightnumcolour = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_AMBER, GTC_MENUCACHE);
+	// UINT8 *accelcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_GOLD, GTC_MENUCACHE);
+	// UINT8 *handlingcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_MINT, GTC_MENUCACHE);
+	UINT8 *subcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_BLACK, GTC_MENUCACHE);
 
 	INT32 skintodisplay = cv_chooseskin.value;
 	UINT8 speed = skins[skintodisplay].kartspeed;
 	UINT8 weight = skins[skintodisplay].kartweight;
 
-	INT16 i;
+	mx = item->x;
+	my = item->y;
 
 	mx = (pi->x + M_GetItemX(pi, "STATBAR"))/FRACUNIT;
 	my = (pi->y + M_GetItemY(pi, "STATBAR"))/FRACUNIT;
 
-	// Draw speed
-	for (i = 0; i < speed; i++)
+	// // Draw speed
+	for (INT16 s = 0; s < speed; s++)
 	{
-		V_DrawFixedPatch((mx + BITSTARTXMAIN + (BITSPACING * i))<<FRACBITS, (my + BITSPEEDSTARTY)<<FRACBITS, FRACUNIT, 0, statbitmain, speedcolour);
+		V_DrawFixedPatch((mx + BITSTARTXMAIN + (BITSPACING * s))<<FRACBITS, (my + BITSPEEDSTARTY)<<FRACBITS, FRACUNIT, 0, statbitmain, speedcolour);
 	}
 	// Draw accel
-	for (i = 0; i < 9-speed; i++)
+	for (INT16 a = 0; a < 9-speed; a++)
 	{
-		V_DrawFixedPatch((mx + BITSTARTXSUB - (BITSPACING * i))<<FRACBITS, (my + BITSPEEDSTARTY + BITSHIFTSUB)<<FRACBITS, FRACUNIT, 0, statbitsub, subcolour);
+		V_DrawFixedPatch((mx + BITSTARTXSUB - (BITSPACING * a))<<FRACBITS, (my + BITSPEEDSTARTY + BITSHIFTSUB)<<FRACBITS, FRACUNIT, 0, statbitsub, subcolour);
 	}
 
 	// Draw weight
-	for (i = 0; i < weight; i++)
+	for (INT16 w = 0; w < weight; w++)
 	{
-		V_DrawFixedPatch((mx + BITSTARTXMAIN + (BITSPACING * i))<<FRACBITS, (my + BITWEIGHTSTARTY)<<FRACBITS, FRACUNIT, 0, statbitmain, weightcolour);
+		V_DrawFixedPatch((mx + BITSTARTXMAIN + (BITSPACING * w))<<FRACBITS, (my + BITWEIGHTSTARTY)<<FRACBITS, FRACUNIT, 0, statbitmain, weightcolour);
 	}
 	// Draw handling
-	for (i = 0; i < 9-weight; i++)
+	for (INT16 h = 0; h < 9-weight; h++)
 	{
-		V_DrawFixedPatch((mx + BITSTARTXSUB - (BITSPACING * i))<<FRACBITS, (my + BITWEIGHTSTARTY + BITSHIFTSUB)<<FRACBITS, FRACUNIT, 0, statbitsub, subcolour);
+		V_DrawFixedPatch((mx + BITSTARTXSUB - (BITSPACING * h))<<FRACBITS, (my + BITWEIGHTSTARTY + BITSHIFTSUB)<<FRACBITS, FRACUNIT, 0, statbitsub, subcolour);
 	}
 
 	// Draw our icons
@@ -7749,8 +7763,6 @@ static void MD_DrawCssStatBars(menupanelinst_t *pi)
 	V_DrawFixedPatch((mx + ICNXFIRST)<<FRACBITS, (my + ICNYSECOND)<<FRACBITS, FRACUNIT, 0, weighticn, NULL);
 
 	// Draw stat numbers
-	//V_DrawThinString((mx + ICNXSECOND+3), (my + ICNYFIRST+3), V_BLUEMAP, va("%d",speed));
-	//V_DrawThinString((mx + ICNXSECOND+3), (my + ICNYSECOND+3), V_ORANGEMAP, va("%d",weight));
 	V_DrawPaddedTallColorNumAtFixed((mx + ICNXSECOND+11 + (speed == 7 ? 1 : 0))<<FRACBITS, (my + ICNYFIRST+2)<<FRACBITS, 0, speed, 1, speednumcolour);
 	V_DrawPaddedTallColorNumAtFixed((mx + ICNXSECOND+11 + (weight == 7 ? 1 : 0))<<FRACBITS, (my + ICNYSECOND+2)<<FRACBITS, 0, weight, 1, weightnumcolour);
 }
@@ -8112,17 +8124,16 @@ static void MD_DrawGridCssSelector(menupanelinst_t *pi)
 		cursor = W_CachePatchName(va("K_BHILI%d", (cursorframe >> FRACBITS) + 1), PU_CACHE);
 		// cursor patch offsets are wrong so draw at same coordinate as portrait
 		V_DrawFixedPatch((cursorx * FRACUNIT) - (face->width * FRACUNIT/4), (cursory * FRACUNIT) - (face->height * FRACUNIT/4), FRACUNIT, 0, cursor, colmap);
-
 	}
 	else
 	{
 		face = faceprefix[skintodisplay][FACE_RANK];
 		colmap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
 		V_DrawFixedPatch((cursorx + face->leftoffset) * FRACUNIT, (cursory + face->topoffset) * FRACUNIT, FRACUNIT, 0, face, colmap);
-		cursor = W_CachePatchName("M_FSEL", PU_CACHE);
-
+		
 		if (skullAnimCounter < 4)
 		{
+			cursor = W_CachePatchName("M_FSEL", PU_CACHE);
 			colmap = V_GetStringColormap(skincolors[cv_dummycolor.value].chatcolor);
 			V_DrawFixedPatch(cursorx * FRACUNIT, cursory * FRACUNIT, FRACUNIT/2, 0, cursor, colmap);
 		}
@@ -8132,14 +8143,14 @@ static void MD_DrawGridCssSelector(menupanelinst_t *pi)
 //
 // Maps a CSS grid selection cursor column (x) and row (y) to a skin selection index
 //
-INT32 MapGridSelectToSkin(INT32 row, INT32 column)
+static inline INT32 MapGridSelectToSkin(INT32 row, INT32 column)
 {
-	return (row % SKINGRIDWIDTH) + (column * SKINGRIDWIDTH);
+	return ((row % SKINGRIDWIDTH) + (column * SKINGRIDWIDTH));
 }
 
 INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 {
-	INT32 sortedIndex;
+	INT32 sortedIndex = 0;
 	// don't consume input if we're not interacting with the grid CSS
 	if (!(M_IsItemOn(&curpanels[panelOn], "SKIN") && cv_skinselectstyle.value))
 	{
@@ -8738,6 +8749,7 @@ void MP_SetupControls(menupanelinst_t *pi)
 	M_SetItemCvar(pi, "LEDCOLOR", &cv_controllerled[pnum]);
 	M_SetItemCvar(pi, "RUMBLE", &cv_controllerrumble[pnum]);
 	M_SetItemCvar(pi, "RUMBLESTR", &cv_rumblestrength[pnum]);
+	M_SetItemCvar(pi, "TILTCONTROL", &cv_tiltcontrol[pnum]);
 
 	M_SetItemVisible(pi, "TALK", player1); // Chat
 	//M_SetItemVisible(pi, "TEAM", player1); // Team-chat
