@@ -431,6 +431,9 @@ void K_KillAirDrop(player_t *player, p_airdropflags_t airdropflags);
 
 boolean K_NullDriftTiltEnabled(void);
 
+void K_AddTiltMomentum(player_t *player, fixed_t angularvelocity);
+void K_AddTiltImpulse(player_t *player, fixed_t distance, fixed_t force);
+
 #define RECOVERYDASHADD (TICRATE/2)
 //og val 2*TICRATE
 #define RECOVERYDASHCHARGETIME (3*TICRATE/2)
