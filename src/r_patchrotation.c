@@ -65,7 +65,7 @@ static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer, bo
 	angle_t viewingAngle = R_PointToAnglePlayer(viewPlayer, player->mo->x, player->mo->y);
 	angle_t angleDelta = (viewingAngle - player->mo->angle);
 
-	INT32 nulltilt = (K_NullDriftTiltEnabled()) ? player->nulldrifttilt : 0;
+	INT32 nulltilt = (K_NullDriftTiltEnabled()) ? FixedAngle(player->karttilt) : 0;
 	INT32 aiztilt = (cv_sliptidetilt.value) ? player->aizdrifttilt : 0;
 
 	boolean nullBeforeSlip = (abs(aiztilt) < abs(nulltilt));

@@ -4755,6 +4755,27 @@ static int lib_kMomentum3D(lua_State *L)
 	return 1;
 }
 
+static int lib_kAddTiltImpulse(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	fixed_t distance = luaL_checkinteger(L, 2);
+	fixed_t force = luaL_checkinteger(L, 3);
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_AddTiltImpulse(player, distance, force);
+	return 0;
+}
+
+static int lib_kAddTiltMomentum(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	fixed_t angularvelocity = luaL_checkinteger(L, 2);
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_AddTiltMomentum(player, angularvelocity);
+	return 0;
+}
+
 static int lib_kMissileOrKartItem(lua_State *L)
 {
 	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
@@ -5867,6 +5888,9 @@ static luaL_Reg lib[] = {
 	{"K_GetKartRingCap", lib_kGetKartRingCap},
 	{"K_IsPlayerRingBurnt", lib_kIsPlayerRingBurnt},
 	{"K_GetKartRingPower", lib_kGetKartRingPower},
+	
+	{"K_AddTiltImpulse", lib_kAddTiltImpulse},
+	{"K_AddTiltMomentum", lib_kAddTiltMomentum},
 
 	// kart stuff that's in other places for some reason
 	{"K_IsMissileOrKartItem", lib_kMissileOrKartItem},
