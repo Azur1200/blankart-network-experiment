@@ -6972,12 +6972,6 @@ boolean TryRunTics(tic_t realtics)
 					dontRun = false;
 				}
 
-				if ((gamestate == GS_LEVEL) && (!(addedtogame || dedicated)))
-				{
-					// Prevent race conditions by not running game ticks if we're not added to the game yet
-					dontRun = true;
-				}
-
 				if (dontRun == false)
 				{
 					if (levelloading == true)
