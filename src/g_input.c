@@ -164,7 +164,7 @@ INT32 gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING] = {
 	[gc_lookback   ] = {KEY_LSHIFT,     KEY_JOY1+2              }, // North
 	[gc_horncode   ] = {'r',            KEY_JOY1+8              }, // R-Stick Click
 
-	[gc_pause      ] = {KEY_PAUSE,      KEY_JOY1+4 }, // Back
+	[gc_pause      ] = {KEY_PAUSE				   }, // Back
 	[gc_systemmenu ] = {                KEY_JOY1+6 }, // Start
 	[gc_console    ] = {KEY_CONSOLE                },
 	[gc_screenshot ] = {KEY_F8                     },

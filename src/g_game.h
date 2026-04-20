@@ -69,7 +69,6 @@ extern INT32 gameovertics;
 extern UINT8 ammoremovaltics;
 extern tic_t timeinmap; // Ticker for time spent in level (used for levelcard display)
 extern INT32 pausedelay;
-extern boolean pausebreakkey;
 
 extern boolean promptactive;
 

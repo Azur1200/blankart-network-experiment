@@ -2001,7 +2001,6 @@ boolean G_IsTitleCardAvailable(void)
 }
 
 INT32 pausedelay = 0;
-boolean pausebreakkey = false;
 static INT32 camtoggledelay[MAXSPLITSCREENPLAYERS];
 static INT32 spectatedelay[MAXSPLITSCREENPLAYERS];
 static INT32 respawndelay[MAXSPLITSCREENPLAYERS];
@@ -2183,7 +2182,6 @@ boolean G_Responder(event_t *ev)
 			{
 				if (modeattacking && !demo.playback && (gamestate == GS_LEVEL))
 				{
-					pausebreakkey = (ev->data1 == KEY_PAUSE);
 					if (menustack[0] || pausedelay < 0 || leveltime < 2)
 						return true;
 

@@ -8644,7 +8644,7 @@ static void M_ChangecontrolResponse(event_t *ev)
 	}
 
 	// ESCAPE cancels; dummy out PAUSE
-	if (ch != KEY_ESCAPE && ch != KEY_PAUSE)
+	if (ch != KEY_ESCAPE)
 	{
 		// keypad arrows are converted for the menu in cursor arrows
 		// so use the event instead of ch
@@ -8685,23 +8685,23 @@ static void M_ChangecontrolResponse(event_t *ev)
 		}
 		S_StartSound(NULL, sfx_s221);
 	}
-	else if (ch == KEY_PAUSE)
-	{
-		// This buffer assumes a 125-character message plus a 32-character control name (per controltochangetext buffer size)
-		static char tmp[158];
+	// else if (ch == KEY_PAUSE)
+	// {
+	// 	// This buffer assumes a 125-character message plus a 32-character control name (per controltochangetext buffer size)
+	// 	static char tmp[158];
 
-		if (controltochange == gc_pause)
-			sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nyou may select another key. \n\nHit another key for\n%s\nESC for Cancel"),
-				controltochangetext);
-		else
-			sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nit is not configurable. \n\nHit another key for\n%s\nESC for Cancel"),
-				controltochangetext);
+	// 	if (controltochange == gc_pause)
+	// 		sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nyou may select another key. \n\nHit another key for\n%s\nESC for Cancel"),
+	// 			controltochangetext);
+	// 	else
+	// 		sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nit is not configurable. \n\nHit another key for\n%s\nESC for Cancel"),
+	// 			controltochangetext);
 
-		M_StartMessage(tmp, M_ChangecontrolResponse, MM_EVENTHANDLER);
+	// 	M_StartMessage(tmp, M_ChangecontrolResponse, MM_EVENTHANDLER);
 
-		S_StartSound(NULL, sfx_s3k42);
-		return;
-	}
+	// 	S_StartSound(NULL, sfx_s3k42);
+	// 	return;
+	// }
 	else
 		S_StartSound(NULL, sfx_s224);
 
