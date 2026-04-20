@@ -180,6 +180,11 @@ INT32 gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING] = {
 	[gc_camreset   ] = {KEY_HOME                   },
 	[gc_camtoggle  ] = {KEY_BACKSPACE              },
 	[gc_freelook   ] = {KEY_RCTRL	               },
+	[gc_menuaccept ] = {'a',            KEY_JOY1+0              }, // East
+	[gc_menudecline] = {'d',            KEY_JOY1+1              }, // South
+	[gc_menumisc1  ] = {'s',            KEY_JOY1+10, KEY_AXIS1+9}, // RB, RT
+	[gc_menumisc2  ] = {KEY_SPACE,      KEY_JOY1+9,  KEY_AXIS1+8}, // LB, LT
+	[gc_menuescape ] = {                KEY_JOY1+6 }, // Start
 };
 
 // lists of GC codes for selective operation
