@@ -442,6 +442,8 @@ void K_AddTiltImpulse(player_t *player, fixed_t distance, fixed_t force);
 
 void K_KartAttractHomingAttack(player_t *player);
 
+void K_KartPlayerBumpyRoad(player_t *player);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

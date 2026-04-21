@@ -633,17 +633,9 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 		K_DoSneaker(player, SNEAKERTYPE_WATERPANEL);
 	}
 
-	if ((terrain->flags & TRF_BUMPY) && player->speed > 4*mapobjectscale && abs(player->karttilt) < FRACUNIT/2)
+	if (terrain->flags & TRF_BUMPY)
 	{
-		fixed_t baseimpulse = 9*FRACUNIT * (player->karttiltmomentum ? intsign(player->karttiltmomentum) : 1);
-		fixed_t rate = CLAMP(FixedDiv(player->speed, K_GetKartSpeed(player, false, false)), 6*FRACUNIT/10, FRACUNIT);
-		if (abs(player->karttiltmomentum) < abs(baseimpulse))
-		{
-			player->karttilt = (FRACUNIT/2) * (player->karttiltmomentum ? intsign(player->karttiltmomentum) : 1);
-			player->karttiltmomentum = 0;
-			K_AddTiltImpulse(player, mo->height/2, baseimpulse);
-			S_StartSoundAtVolume(mo, sfx_s3k56, CLAMP((200*rate)/FRACUNIT, 0, 200));
-		}
+		K_KartPlayerBumpyRoad(player);
 	}
 	
 	// Speed pad

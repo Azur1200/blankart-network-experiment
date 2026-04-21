@@ -1941,6 +1941,8 @@ static void ParseTextmapSectorParameter(UINT32 i, const char *param, const char 
 		sectors[i].specialflags |= SSF_GRAVITYOVERRIDE;
 	else if (fastcmp(param, "walltransfer") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_WALLTRANSFER;
+	else if (fastcmp(param, "bumpyroad") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_BUMPYROAD;
 	else if (fastcmp(param, "friction"))
 		sectors[i].friction = FLOAT_TO_FIXED(atof(val));
 	else if (fastcmp(param, "gravity"))
@@ -3164,6 +3166,8 @@ static void P_WriteTextmap(void)
 			fprintf(f, "gravityoverride = true;\n");
 		if (wsectors[i].specialflags & SSF_WALLTRANSFER)
 			fprintf(f, "walltransfer = true;\n");
+		if (wsectors[i].specialflags & SSF_BUMPYROAD)
+			fprintf(f, "bumpyroad = true;\n");
 		if (wsectors[i].friction != ORIG_FRICTION)
 			fprintf(f, "friction = %f;\n", FIXED_TO_FLOAT(wsectors[i].friction));
 		if (wsectors[i].gravity != FRACUNIT)
