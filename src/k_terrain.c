@@ -569,14 +569,19 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 		return;
 	}
 
+	terrain = mo->terrain;
+	player = mo->player;
+
+	if (player && terrain->flags & TRF_BUMPY)
+	{
+		K_KartPlayerBumpyRoad(player);
+	}
+
 	if (!K_AffectingTerrainActive())
 	{
 		// Terrain has been disabled for this map.
 		return;
 	}
-
-	terrain = mo->terrain;
-	player = mo->player;
 	
 	if (terrain->friction) // Handle Friction set here so mobjs are affected as well.
 		K_SetTerrainFriction(mo);
@@ -631,11 +636,6 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 			player->floorboost = 2;
 
 		K_DoSneaker(player, SNEAKERTYPE_WATERPANEL);
-	}
-
-	if (terrain->flags & TRF_BUMPY)
-	{
-		K_KartPlayerBumpyRoad(player);
 	}
 	
 	// Speed pad
