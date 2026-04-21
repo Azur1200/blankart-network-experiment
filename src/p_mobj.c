@@ -1195,6 +1195,11 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 		{
 			gravitymul = mapobjectscale;
 		}
+		
+		if (mo->player->pflags & PF_NOSCALEGRAVITY)
+		{
+			gravitymul = mapobjectscale;
+		}
 	}
 	else
 	{

@@ -4324,6 +4324,11 @@ void P_PlayerThink(player_t *player)
 		player->typing_duration = 0;
 	}
 
+	if (P_IsObjectOnGround(player->mo) && (player->pflags & PF_NOSCALEGRAVITY))
+	{
+		player->pflags &= ~PF_NOSCALEGRAVITY;
+	}
+
 	player->pflags &= ~PF_HITFINISHLINE;
 	
 	// experiment: process the drift input *before* player movement instead of after

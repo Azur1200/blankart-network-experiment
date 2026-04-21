@@ -72,7 +72,9 @@ typedef enum
 	PF_GAINAX			= 1<<3,
 	PF_KICKSTARTACCEL	= 1<<4, // Accessibility feature: Is accelerate in kickstart mode?
 
-	// free: 1<<5 and 1<<6
+	// free: 1<<5
+
+	PF_NOSCALEGRAVITY	= 1<<6, // Don't scale gravity by player object scale (cleared when grounded)
 
 	PF_WANTSTOJOIN		= 1<<7, // Spectator that wants to join
 
