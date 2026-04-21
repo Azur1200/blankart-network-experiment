@@ -629,6 +629,8 @@ struct player_t
 	fixed_t karttilt;    // Generalized sliptide-like kart tilting as an angle_t (Can be toggled off by clients)
 	fixed_t karttiltmomentum; // angular velocity in rad/sec
 
+	SINT8 bumpyroadside; // last side lifted up by bumpy road
+
 	// (Delay-drift) - Delay in tics before the final drift angle is determined.
 	// Potentially influenced by player lag.
 	tic_t driftdelay;

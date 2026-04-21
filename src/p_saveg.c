@@ -863,6 +863,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].itemusecooldownmax);
 
 		P_SyncMem(save, players[i].public_key, PUBKEYLENGTH);
+		
+		SYNC(players[i].bumpyroadside);
 	}
 	TracyCZoneEnd(__zone);
 }

@@ -9435,7 +9435,7 @@ static void K_HandleAirDriftDrag(player_t *player, boolean onground)
 /// @brief simulates applying a torque by applying a force at an offset from the player's centre, is a purely visual effect
 /// @param player player to apply angular momentum to
 /// @param distance distance from player centre to apply torque to ("radius")
-/// @param force linear force to apply to the player to turn into angular velocity, + is CCW. Don't mobjscale if your distance is already scaled
+/// @param force linear force to apply to the player to turn into angular velocity, + is CCW.
 void K_AddTiltImpulse(player_t *player, fixed_t distance, fixed_t force)
 {
 	fixed_t angularvelocity = FixedDiv(force, abs(distance));
@@ -12037,17 +12037,16 @@ void K_KartAttractHomingAttack(player_t *player)
 // Visual effect for bumpy road sector.
 void K_KartPlayerBumpyRoad(player_t *player)
 {
-	if (player->speed > 4*mapobjectscale && abs(player->karttilt) < FRACUNIT/2)
+	if (player->speed > 4*mapobjectscale && abs(player->karttilt) < FRACUNIT/4)
 	{
-		fixed_t baseimpulse = 9*FRACUNIT * (player->karttiltmomentum ? intsign(player->karttiltmomentum) : 1);
-		fixed_t rate = CLAMP(FixedDiv(player->speed, K_GetKartSpeed(player, false, false)), 6*FRACUNIT/10, FRACUNIT);
-		if (abs(player->karttiltmomentum) < abs(baseimpulse))
-		{
-			player->karttilt = (FRACUNIT/2) * (player->karttiltmomentum ? intsign(player->karttiltmomentum) : 1);
-			player->karttiltmomentum = 0;
-			K_AddTiltImpulse(player, player->mo->height/2, baseimpulse);
-			S_StartSoundAtVolume(player->mo, sfx_s3k56, CLAMP((200*rate)/FRACUNIT, 0, 200));
-		}
+		fixed_t baseimpulse;
+		fixed_t rate = CLAMP(FixedDiv(player->speed, K_GetKartSpeed(player, false, false)), 8*FRACUNIT/10, 11*FRACUNIT/10);
+		player->bumpyroadside = (player->bumpyroadside ? -player->bumpyroadside : 1);
+		baseimpulse = FixedMul(4*mapobjectscale * player->bumpyroadside, rate);
+		
+		player->karttilt = FixedMul((3*FRACUNIT/2) * player->bumpyroadside, rate);
+		K_AddTiltImpulse(player, player->mo->height/2, baseimpulse);
+		S_StartSoundAtVolume(player->mo, sfx_s3k56, CLAMP((180*rate)/FRACUNIT, 0, 180));
 	}
 }
 
