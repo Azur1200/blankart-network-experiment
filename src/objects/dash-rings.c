@@ -82,10 +82,12 @@ void Obj_DashRingSetup(mobj_t *mobj, mapthing_t *mthing)
 {
 	static const UINT8 numColors = sizeof(ring_colors) / sizeof(skincolornum_t);
 	const UINT8 additionalThrust = mthing->args[1];
+	const UINT8 baseThrust = mthing->args[2] ? mthing->args[2] : 4;
+	const skincolornum_t skinColor = mthing->stringargs[0] ? get_number(mthing->stringargs[0]) : SKINCOLOR_NONE;
 	statenum_t ringState, overlayState;
 
 	mobj->extravalue1 = mthing->args[0];
-	mobj->cusval = 4 + additionalThrust;
+	mobj->cusval = baseThrust + additionalThrust;
 
 	switch (mobj->extravalue1)
 	{
@@ -113,7 +115,7 @@ void Obj_DashRingSetup(mobj_t *mobj, mapthing_t *mthing)
 		P_SetMobjState(mobj->tracer, overlayState);
 
 	mobj->spriteyoffset = mobj->info->height >> 1; // I think this is to center the sprite within its hitbox regardless of height
-	mobj->color = ring_colors[min(additionalThrust, numColors - 1)];
+	mobj->color = skinColor != SKINCOLOR_NONE ? skinColor : ring_colors[min(additionalThrust, numColors - 1)];
 }
 
 void Obj_RainbowDashRingThink(mobj_t *mobj)
