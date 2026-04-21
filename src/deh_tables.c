@@ -1752,6 +1752,7 @@ struct int_const_s const INT_CONST[] = {
 	{"TRF_TRIPWIRE",TRF_TRIPWIRE},
 	{"TRF_REMAP",TRF_REMAP},
 	{"TRF_BYPASSBOOST", TRF_BYPASSBOOST},
+	{"TRF_BUMPY", TRF_BUMPY},
 
 	// facepatches
 	{"FACE_RANK", FACE_RANK},

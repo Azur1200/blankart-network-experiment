@@ -2030,7 +2030,8 @@ void K_KartMoveAnimation(player_t *player)
 	if (player->karttilt)
 	{
 		//todo: a way for skins(?) to define the tyre offset
-		player->mo->rollingyoffset = -abs(FixedMul(2 * player->mo->radius, FINESINE(FixedAngle(abs(player->karttilt))>>ANGLETOFINESHIFT))/FRACUNIT);
+		player->mo->rollingyoffset = -abs(FixedMul(3 * player->mo->info->radius, FINESINE(FixedAngle(abs(player->karttilt))>>ANGLETOFINESHIFT))/FRACUNIT);
+		player->mo->rollingxoffset -= (FixedMul(player->mo->info->radius, FINESINE(FixedAngle(player->karttilt)>>ANGLETOFINESHIFT))/FRACUNIT);
 	}
 
 	// Update lastspeed value -- we use to display slow driving frames instead of fast driving when slowing down.
@@ -4241,9 +4242,10 @@ static void K_SpawnDriftSparks(player_t *player)
 	{
 		fixed_t driftExtraScale = 0;
 		if (player->karttilt &&
-			((player->drift < 0 && (i & 1)) || (player->drift > 0 && !(i & 1))))
+			((player->karttilt < 0 && !(i & 1)) || (player->karttilt > 0 && (i & 1)))
+		)
 		{
-			// when tilting during a null-drift don't spawn the sparks for the front tyre
+			// when the kart is tilting don't spawn the sparks for the tyre that is lifted off the ground
 			continue;
 		}
 		newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
@@ -9428,12 +9430,12 @@ static void K_HandleAirDriftDrag(player_t *player, boolean onground)
 // no float-to-fixed here because this is in the deterministic path
 #define FIXEDRADTODEG (3754879)	//57.2958
 #define PLAYERTILTCAP (90*FRACUNIT)
-#define PLAYERTILTMOMENTUMCAP (4*M_PI_FIXED)
+#define PLAYERTILTMOMENTUMCAP (8*M_PI_FIXED)
 
 /// @brief simulates applying a torque by applying a force at an offset from the player's centre, is a purely visual effect
 /// @param player player to apply angular momentum to
 /// @param distance distance from player centre to apply torque to ("radius")
-/// @param force linear force to apply to the player to turn into angular velocity, + is CCW
+/// @param force linear force to apply to the player to turn into angular velocity, + is CCW. Don't mobjscale if your distance is already scaled
 void K_AddTiltImpulse(player_t *player, fixed_t distance, fixed_t force)
 {
 	fixed_t angularvelocity = FixedDiv(force, abs(distance));
@@ -9451,6 +9453,7 @@ void K_AddTiltMomentum(player_t *player, fixed_t angularvelocity)
 static void K_HandleKartTilt(player_t *player)
 {
 	SINT8 startsign = intsign(player->karttilt);
+	fixed_t lineargravity = P_GetMobjGravity(player->mo);
 	fixed_t angulargravity;
 	fixed_t angaccelgravity;
 
@@ -9459,18 +9462,8 @@ static void K_HandleKartTilt(player_t *player)
 		return;
 	}
 	
-	if (player->mo->eflags & MFE_UNDERWATER)
-	{
-		// angular drag
-		player->karttiltmomentum = FixedMul(player->karttiltmomentum, 92*FRACUNIT/100);
-		angulargravity = abs(player->mo->gravity) * (P_IsObjectOnGround(player->mo) ? 2 : 1);
-	}
-	else
-	{
-		// angular drag
-		player->karttiltmomentum = FixedMul(player->karttiltmomentum, 98*FRACUNIT/100);
-		angulargravity = abs(player->mo->gravity) * (P_IsObjectOnGround(player->mo) ? 8 : 3);
-	}
+	
+	angulargravity = abs(lineargravity) * (P_IsObjectOnGround(player->mo) ? 10 : 3);
 	// O = (linear velocity) / (distance from CoM)
 	angaccelgravity = FixedDiv(angulargravity, abs(FixedMul(player->mo->radius, FINECOSINE(FixedAngle(player->karttilt)>>ANGLETOFINESHIFT))));
 
@@ -9482,19 +9475,31 @@ static void K_HandleKartTilt(player_t *player)
 
 	player->karttilt += FixedMul(player->karttiltmomentum, FIXEDRADTODEG)/TICRATE;
 
-	// CONS_Printf("angaccelgravity: %4.3f\n", FixedToFloat(angaccelgravity));
-	// CONS_Printf("tilt angle: %4.3f\n", FixedToFloat(player->karttilt));
-	// CONS_Printf("tilt angle momentum (deg/s): %4.3f\n", FixedToFloat(player->karttiltmomentum) * (M_PI/180.0));
+	// angular drag
+	if (player->mo->eflags & MFE_UNDERWATER)
+	{
+		player->karttiltmomentum = FixedMul(player->karttiltmomentum, 75*FRACUNIT/100);
+	}
+	else
+	{
+		player->karttiltmomentum = FixedMul(player->karttiltmomentum, 90*FRACUNIT/100);
+	}
+
+	CONS_Printf("angaccelgravity: %4.3f\n", FixedToFloat(angaccelgravity));
+	CONS_Printf("tilt angle: %4.3f\n", FixedToFloat(player->karttilt));
+	CONS_Printf("tilt angle momentum (rad/s): %4.3f\n", FixedToFloat(player->karttiltmomentum));
+	CONS_Printf("tilt angle momentum (deg/s): %4.3f\n", FixedToFloat(player->karttiltmomentum) * (M_PI/180.0));
 
 	if ((player->karttilt < 0 && startsign > 0) || 
 		(player->karttilt > 0 && startsign < 0))
 	{
-		player->karttilt = 0;
+		player->karttiltmomentum = abs(player->karttiltmomentum) * intsign(player->karttilt);
 		player->karttiltmomentum /= 2;
 		if (abs(player->karttiltmomentum) < FRACUNIT/3)
 		{
 			player->karttiltmomentum = 0;
 		}
+		player->karttilt = 0;
 	}
 	else if (abs(player->karttilt) >= PLAYERTILTCAP)
 	{
@@ -9780,7 +9785,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 
 		FV2_Normalize(&fwd);
 		FV2_Normalize(&mov);
-		dot = FixedMul(CLAMP(abs(player->speed), 0, 30*mapobjectscale), FRACUNIT - abs(FV2_Dot(&fwd, &mov)));
+		dot = FixedMul(CLAMP(abs(player->speed), 0, 32*mapobjectscale), FRACUNIT - abs(FV2_Dot(&fwd, &mov)));
 
 		angularvelocity = FixedDiv(-dot * intsign(player->nulldrift), 
 			abs(FixedMul(player->mo->height/2, FINECOSINE(FixedAngle(player->karttilt)>>ANGLETOFINESHIFT)))
