@@ -9485,10 +9485,10 @@ static void K_HandleKartTilt(player_t *player)
 		player->karttiltmomentum = FixedMul(player->karttiltmomentum, 90*FRACUNIT/100);
 	}
 
-	CONS_Printf("angaccelgravity: %4.3f\n", FixedToFloat(angaccelgravity));
-	CONS_Printf("tilt angle: %4.3f\n", FixedToFloat(player->karttilt));
-	CONS_Printf("tilt angle momentum (rad/s): %4.3f\n", FixedToFloat(player->karttiltmomentum));
-	CONS_Printf("tilt angle momentum (deg/s): %4.3f\n", FixedToFloat(player->karttiltmomentum) * (M_PI/180.0));
+	// CONS_Printf("angaccelgravity: %4.3f\n", FixedToFloat(angaccelgravity));
+	// CONS_Printf("tilt angle: %4.3f\n", FixedToFloat(player->karttilt));
+	// CONS_Printf("tilt angle momentum (rad/s): %4.3f\n", FixedToFloat(player->karttiltmomentum));
+	// CONS_Printf("tilt angle momentum (deg/s): %4.3f\n", FixedToFloat(player->karttiltmomentum) * (M_PI/180.0));
 
 	if ((player->karttilt < 0 && startsign > 0) || 
 		(player->karttilt > 0 && startsign < 0))
