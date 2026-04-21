@@ -350,7 +350,7 @@ const char *const PLAYERFLAG_LIST[] = {
 	"GAINAX",
 	"KICKSTARTACCEL",	 // Accessibility feature: Is accelerate in kickstart mode?
 	"\x01",
-	"\x01",
+	"NOSCALEGRAVITY",
 
 	"WANTSTOJOIN",		 // Spectator that wants to join
 
