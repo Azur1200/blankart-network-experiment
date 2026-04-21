@@ -4226,6 +4226,16 @@ static int lib_kGetKartRingPower(lua_State *L)
 	return 1;
 }
 
+static int lib_kKartPlayerBumpyRoad(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_KartPlayerBumpyRoad(player);
+	return 0;
+}
+
 // this function is for compatibility only; do not add new functionality here
 // see K_GetItemGraphics
 static int lib_kGetItemPatch(lua_State *L)
@@ -5888,6 +5898,7 @@ static luaL_Reg lib[] = {
 	{"K_GetKartRingCap", lib_kGetKartRingCap},
 	{"K_IsPlayerRingBurnt", lib_kIsPlayerRingBurnt},
 	{"K_GetKartRingPower", lib_kGetKartRingPower},
+	{"K_KartPlayerBumpyRoad", lib_kKartPlayerBumpyRoad},
 	
 	{"K_AddTiltImpulse", lib_kAddTiltImpulse},
 	{"K_AddTiltMomentum", lib_kAddTiltMomentum},
