@@ -88,6 +88,7 @@ void Obj_DashRingSetup(mobj_t *mobj, mapthing_t *mthing)
 
 	mobj->extravalue1 = mthing->args[0];
 	mobj->cusval = baseThrust + additionalThrust;
+	mobj->extravalue2 = mthing->args[3];
 
 	switch (mobj->extravalue1)
 	{
@@ -163,6 +164,12 @@ void Obj_DashRingTouch(mobj_t *ring, player_t *player)
 	player->carry = CR_DASHRING;
 	player->dashRingPullTics = DASHRING_PULL_TICS;
 	player->dashRingPushTics = 0;
+
+	if (ring->extravalue2)
+	{
+		P_SetPlayerAngle(player, ring->angle);
+		player->mo->angle = ring->angle;
+	}
 
 	player->pflags |= PF_NOSCALEGRAVITY;
 }
