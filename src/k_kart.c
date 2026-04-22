@@ -8836,7 +8836,7 @@ void K_SetRespawnAtNextWaypoint(player_t *player)
 	waypoint_t *previouswp = NULL;
 	waypoint_t *nextwp = NULL;
 	angle_t angle;
-	size_t i, j;
+	size_t i, j, k;
 
 	if (K_UsingLegacyCheckpoints())
 	{
@@ -8945,11 +8945,36 @@ void K_SetRespawnAtNextWaypoint(player_t *player)
 	}
 
 	// Get respawn angle.
-	if (previouswp && previouswp->mobj)
+	if (nextwp->numnextwaypoints)
 	{
-		angle = R_PointToAngle2(
-			previouswp->mobj->x, previouswp->mobj->y,
-			nextwp->mobj->x,   nextwp->mobj->y);
+		boolean goodangle = false;
+		for (k = 0; k < nextwp->numnextwaypoints; k++)
+		{
+			if (K_GetWaypointIsEnabled(nextwp->nextwaypoints[k]) && !(K_GetWaypointIsShortcut(nextwp->nextwaypoints[k])))
+			{
+				goodangle = true;
+				angle = R_PointToAngle2(
+					nextwp->mobj->x, nextwp->mobj->y,
+					nextwp->nextwaypoints[k]->mobj->x, nextwp->nextwaypoints[k]->mobj->y);
+				break;
+			}
+		}
+
+		if (!goodangle)
+		{
+			if ((previouswp && previouswp->mobj))
+			{
+				angle = R_PointToAngle2(
+					previouswp->mobj->x, previouswp->mobj->y,
+					nextwp->mobj->x,   nextwp->mobj->y);
+			}
+			else
+			{
+				angle = R_PointToAngle2(
+					player->mo->x, player->mo->y,
+					nextwp->mobj->x,   nextwp->mobj->y);
+			}
+		}
 	}
 	else
 	{
