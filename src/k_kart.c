@@ -1851,7 +1851,6 @@ void K_KartMoveAnimation(player_t *player)
 
 	player->mo->rollingxoffset = 0;
 	player->mo->rollingyoffset = 0;
-	player->mo->spritexoffset = 0;
 
 	if (!lookback)
 		player->pflags &= ~PF_GAINAX;
@@ -2026,13 +2025,6 @@ void K_KartMoveAnimation(player_t *player)
 
 	if (!player->glanceDir)
 		player->pflags &= ~PF_GAINAX;
-
-	if (player->karttilt)
-	{
-		//todo: a way for skins(?) to define the tyre offset
-		player->mo->rollingyoffset = -abs(FixedMul(3 * player->mo->info->radius, FINESINE(FixedAngle(abs(player->karttilt))>>ANGLETOFINESHIFT))/FRACUNIT);
-		player->mo->rollingxoffset -= (FixedMul(player->mo->info->radius, FINESINE(FixedAngle(player->karttilt)>>ANGLETOFINESHIFT))/FRACUNIT);
-	}
 
 	// Update lastspeed value -- we use to display slow driving frames instead of fast driving when slowing down.
 	player->lastspeed = player->speed;
@@ -7175,6 +7167,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	player->cameraOffset = 0;
 
+	player->mo->spritexoffset = 0;
+	player->mo->spriteyoffset = 0;
+
 	if (player->loop.radius)
 	{
 		// Offset sprite Z position so wheels touch top of
@@ -7874,6 +7869,13 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	// Update SPB timer...
 	K_UpdateSPBTimer();
+	
+	if (player->karttilt)
+	{
+		//todo: a way for skins(?) to define the tyre offset
+		player->mo->spriteyoffset += abs(FixedMul(player->mo->info->radius, FINESINE(FixedAngle(abs(player->karttilt))>>ANGLETOFINESHIFT))) * P_MobjFlip(player->mo);
+		player->mo->spritexoffset -= FixedMul(4*player->mo->info->radius, FINESINE(FixedAngle(player->karttilt)>>ANGLETOFINESHIFT));
+	}
 }
 
 static void K_KartResetPlayerFullbright(player_t *player)
@@ -9463,7 +9465,9 @@ static void K_HandleAirDriftDrag(player_t *player, boolean onground)
 /// @param force linear force to apply to the player to turn into angular velocity, + is CCW.
 void K_AddTiltImpulse(player_t *player, fixed_t distance, fixed_t force)
 {
-	fixed_t angularvelocity = FixedDiv(force, abs(distance));
+	fixed_t angularvelocity;
+	if (distance == 0) distance = FRACUNIT/100;
+	angularvelocity = FixedDiv(force, abs(distance));
 	player->karttiltmomentum += angularvelocity;
 }
 
@@ -9479,18 +9483,17 @@ static void K_HandleKartTilt(player_t *player)
 {
 	SINT8 startsign = intsign(player->karttilt);
 	fixed_t lineargravity = P_GetMobjGravity(player->mo);
-	fixed_t angulargravity;
-	fixed_t angaccelgravity;
+	fixed_t angulargravity = 0;
+	fixed_t angaccelgravity = 0;
 
 	if (player->karttilt == 0 && player->karttiltmomentum == 0)
 	{
 		return;
 	}
 	
-	
-	angulargravity = abs(lineargravity) * (P_IsObjectOnGround(player->mo) ? 10 : 3);
+	angulargravity = abs(lineargravity) * (P_IsObjectOnGround(player->mo) ? 11 : 5);
 	// O = (linear velocity) / (distance from CoM)
-	angaccelgravity = FixedDiv(angulargravity, abs(FixedMul(player->mo->radius, FINECOSINE(FixedAngle(player->karttilt)>>ANGLETOFINESHIFT))));
+	angaccelgravity = FixedDiv(angulargravity, abs(FixedMul(player->mo->radius, FRACUNIT + abs(FINESINE(FixedAngle(player->karttilt)>>ANGLETOFINESHIFT)))));
 
 	player->karttiltmomentum += angaccelgravity * -intsign(player->karttilt);
 	if (abs(player->karttiltmomentum) >= PLAYERTILTMOMENTUMCAP)
@@ -9507,7 +9510,7 @@ static void K_HandleKartTilt(player_t *player)
 	}
 	else
 	{
-		player->karttiltmomentum = FixedMul(player->karttiltmomentum, 90*FRACUNIT/100);
+		player->karttiltmomentum = FixedMul(player->karttiltmomentum, 95*FRACUNIT/100);
 	}
 
 	// CONS_Printf("angaccelgravity: %4.3f\n", FixedToFloat(angaccelgravity));
@@ -11916,7 +11919,7 @@ void K_QuiteSaltyHop(player_t *player)
 			//player->mo->spriteyscale += (FRACUNIT/30);
 		}
 		// Apply the z offset!
-		player->mo->spriteyoffset = player->salty.zoffset;
+		player->mo->spriteyoffset += player->salty.zoffset;
 
 		// Stop any and all drift sounds when hopping.
 		if (S_SoundPlaying(player->mo, sfx_screec))
