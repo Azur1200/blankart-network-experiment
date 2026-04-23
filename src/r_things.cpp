@@ -2398,7 +2398,26 @@ static void R_ProjectSprite(mobj_t *thing)
 									   sprinfo,
 									   (thing->frame & FF_FRAMEMASK));
 
-		affine_pivotoffsetdiff.x = FIXED_TO_FLOAT(affine_pivot.x - spr_offset);
+		fixed_t use_xoffset = spr_offset;
+
+		if (flip)
+		{
+			use_xoffset = spr_width - spr_offset;
+		}
+
+		if (thing->renderflags & RF_ABSOLUTEOFFSETS)
+		{
+			use_xoffset = FixedDiv(interp.spritexoffset,highresscale);
+		}
+		else
+		{
+			SINT8 flipoffset = 1;
+			if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
+				flipoffset = -1;
+			use_xoffset += (FixedDiv(interp.spritexoffset,highresscale) * flipoffset);
+		}
+
+		affine_pivotoffsetdiff.x = FIXED_TO_FLOAT(affine_pivot.x - use_xoffset);
 		affine_pivotoffsetdiff.y = FIXED_TO_FLOAT(affine_pivot.y - spr_topoffset);
 
 		affine_scale.x = FixedMul(affine_scale.x, FixedMul(spritexscale, this_scale));
@@ -2463,7 +2482,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	if (thing->renderflags & RF_ABSOLUTEOFFSETS)
 	{
-		spr_offset = FixedDiv(use_sprxoff, highresscale);
+		spr_offset = FixedDiv(interp.spritexoffset, highresscale);
 #ifdef ROTSPRITE
 		spr_topoffset = thingyoffset;
 #else
@@ -2477,7 +2496,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
 			flipoffset = -1;
 
-		spr_offset += FixedDiv(use_sprxoff, highresscale) * flipoffset;
+		spr_offset += FixedDiv(interp.spritexoffset, highresscale) * flipoffset;
 #ifdef ROTSPRITE
 		thingyoffset *= flipoffset;
 
@@ -2490,7 +2509,7 @@ static void R_ProjectSprite(mobj_t *thing)
 #endif
 	}
 
-	if (flip)
+	if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
 		offset = spr_offset - spr_width;
 	else
 		offset = -spr_offset;

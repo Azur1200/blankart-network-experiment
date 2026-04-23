@@ -7873,8 +7873,15 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->karttilt)
 	{
 		//todo: a way for skins(?) to define the tyre offset
-		player->mo->spriteyoffset += abs(FixedMul(player->mo->info->radius, FINESINE(FixedAngle(abs(player->karttilt))>>ANGLETOFINESHIFT))) * P_MobjFlip(player->mo);
-		player->mo->spritexoffset -= FixedMul(4*player->mo->info->radius, FINESINE(FixedAngle(player->karttilt)>>ANGLETOFINESHIFT));
+		vector2_t tyreoffs = {player->mo->info->radius * intsign(player->karttilt), 0};
+		FV2_Rotate(&tyreoffs, -player->karttilt);
+		player->mo->spritexoffset -= FixedMul(5 * player->mo->info->radius / 2, FSIN(FixedAngle(-player->karttilt))) - ((player->mo->info->radius * intsign(player->karttilt)) - tyreoffs.x);
+		player->mo->spriteyoffset += (-tyreoffs.y/2) * P_MobjFlip(player->mo);
+		
+		CONS_Debug(DBG_PLAYER, "kart tilt : %4.3f\n", FIXED_TO_FLOAT(player->karttilt));
+		CONS_Debug(DBG_PLAYER, "tyreoffs x: %4.3f, y: %4.3f\n", FIXED_TO_FLOAT(tyreoffs.x), FIXED_TO_FLOAT(tyreoffs.y));
+		CONS_Debug(DBG_PLAYER, "radius fac: %4.3f\n", FIXED_TO_FLOAT(player->mo->info->radius * intsign(player->karttilt)));
+		CONS_Debug(DBG_PLAYER, "spritexoff: %4.3f, y: %4.3f\n", FIXED_TO_FLOAT(player->mo->spritexoffset), FIXED_TO_FLOAT(player->mo->spriteyoffset));
 	}
 }
 
@@ -9491,7 +9498,7 @@ static void K_HandleKartTilt(player_t *player)
 		return;
 	}
 	
-	angulargravity = abs(lineargravity) * (P_IsObjectOnGround(player->mo) ? 11 : 5);
+	angulargravity = abs(lineargravity) * (P_IsObjectOnGround(player->mo) ? 12 : 5);
 	// O = (linear velocity) / (distance from CoM)
 	angaccelgravity = FixedDiv(angulargravity, abs(FixedMul(player->mo->radius, FRACUNIT + abs(FINESINE(FixedAngle(player->karttilt)>>ANGLETOFINESHIFT)))));
 
@@ -9501,12 +9508,12 @@ static void K_HandleKartTilt(player_t *player)
 		player->karttiltmomentum = PLAYERTILTMOMENTUMCAP * intsign(player->karttiltmomentum);
 	}
 
-	player->karttilt += FixedMul(player->karttiltmomentum, FIXEDRADTODEG)/TICRATE;
+	player->karttilt = CLAMP(player->karttilt + FixedMul(player->karttiltmomentum, FIXEDRADTODEG)/TICRATE, -PLAYERTILTCAP + 1, PLAYERTILTCAP - 1);
 
 	// angular drag
 	if (player->mo->eflags & MFE_UNDERWATER)
 	{
-		player->karttiltmomentum = FixedMul(player->karttiltmomentum, 75*FRACUNIT/100);
+		player->karttiltmomentum = FixedMul(player->karttiltmomentum, 80*FRACUNIT/100);
 	}
 	else
 	{
@@ -9521,18 +9528,13 @@ static void K_HandleKartTilt(player_t *player)
 	if ((player->karttilt < 0 && startsign > 0) || 
 		(player->karttilt > 0 && startsign < 0))
 	{
-		player->karttiltmomentum = abs(player->karttiltmomentum) * intsign(player->karttilt);
+		player->karttiltmomentum = abs(90*player->karttiltmomentum/100) * intsign(player->karttilt);
 		player->karttiltmomentum /= 2;
-		if (abs(player->karttiltmomentum) < FRACUNIT/3)
+		if (abs(player->karttiltmomentum) < FRACUNIT/2)
 		{
 			player->karttiltmomentum = 0;
 		}
 		player->karttilt = 0;
-	}
-	else if (abs(player->karttilt) >= PLAYERTILTCAP)
-	{
-		player->karttiltmomentum = 0;
-		player->karttilt = CLAMP(player->karttilt, -PLAYERTILTCAP + 1, PLAYERTILTCAP - 1);
 	}
 }
 
