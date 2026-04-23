@@ -7873,15 +7873,16 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->karttilt)
 	{
 		//todo: a way for skins(?) to define the tyre offset
+		// this kinda looks bad in general currently, may need to edit the pivots in real time instead
 		vector2_t tyreoffs = {player->mo->info->radius * intsign(player->karttilt), 0};
 		FV2_Rotate(&tyreoffs, -player->karttilt);
-		player->mo->spritexoffset -= FixedMul(5 * player->mo->info->radius / 2, FSIN(FixedAngle(-player->karttilt))) - ((player->mo->info->radius * intsign(player->karttilt)) - tyreoffs.x);
-		player->mo->spriteyoffset += (-tyreoffs.y/2) * P_MobjFlip(player->mo);
+		player->mo->spritexoffset -= FixedMul(2 * player->mo->info->radius, FSIN(FixedAngle(-player->karttilt)));// - ((player->mo->info->radius * intsign(player->karttilt)) - tyreoffs.x);
+		// player->mo->spriteyoffset += (-tyreoffs.y/2) * P_MobjFlip(player->mo);
 		
-		CONS_Debug(DBG_PLAYER, "kart tilt : %4.3f\n", FIXED_TO_FLOAT(player->karttilt));
-		CONS_Debug(DBG_PLAYER, "tyreoffs x: %4.3f, y: %4.3f\n", FIXED_TO_FLOAT(tyreoffs.x), FIXED_TO_FLOAT(tyreoffs.y));
-		CONS_Debug(DBG_PLAYER, "radius fac: %4.3f\n", FIXED_TO_FLOAT(player->mo->info->radius * intsign(player->karttilt)));
-		CONS_Debug(DBG_PLAYER, "spritexoff: %4.3f, y: %4.3f\n", FIXED_TO_FLOAT(player->mo->spritexoffset), FIXED_TO_FLOAT(player->mo->spriteyoffset));
+		// CONS_Debug(DBG_PLAYER, "kart tilt : %4.3f\n", FIXED_TO_FLOAT(player->karttilt));
+		// CONS_Debug(DBG_PLAYER, "tyreoffs x: %4.3f, y: %4.3f\n", FIXED_TO_FLOAT(tyreoffs.x), FIXED_TO_FLOAT(tyreoffs.y));
+		// CONS_Debug(DBG_PLAYER, "radius fac: %4.3f\n", FIXED_TO_FLOAT(player->mo->info->radius * intsign(player->karttilt)));
+		// CONS_Debug(DBG_PLAYER, "spritexoff: %4.3f, y: %4.3f\n", FIXED_TO_FLOAT(player->mo->spritexoffset), FIXED_TO_FLOAT(player->mo->spriteyoffset));
 	}
 }
 
