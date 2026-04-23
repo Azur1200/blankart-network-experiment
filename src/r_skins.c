@@ -11,6 +11,7 @@
 /// \file  r_skins.c
 /// \brief Loading skins
 
+#include "d_player.h"
 #include "doomdef.h"
 #include "console.h"
 #include "g_game.h"
@@ -927,40 +928,43 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 			Z_Free(tmp.spriteframes);
 #undef SPR2COUNT
 
-		// now we have to rotate the drift frames. i hate this.
-		sd = &skin->sprites[SPR2_DRRN];
-		for (i = 0; i < sd->numframes; i++)
+		if (!(skin->flags & SF_NOCOMPATROTATE))
 		{
-			sf = &sd->spriteframes[i];
-			if (sf->rotate != SRF_3D)
-				continue;
-			lumpnum_t lastpat = sf->lumppat[7];
-			size_t lastid = sf->lumpid[7];
-			for (int r = 7; r >= 1; r--)
+			// now we have to rotate the drift frames. i hate this.
+			sd = &skin->sprites[SPR2_DRRN];
+			for (i = 0; i < sd->numframes; i++)
 			{
-				sf->lumppat[r] = sf->lumppat[r-1];
-				sf->lumpid[r] = sf->lumpid[r-1];
+				sf = &sd->spriteframes[i];
+				if (sf->rotate != SRF_3D)
+					continue;
+				lumpnum_t lastpat = sf->lumppat[7];
+				size_t lastid = sf->lumpid[7];
+				for (int r = 7; r >= 1; r--)
+				{
+					sf->lumppat[r] = sf->lumppat[r-1];
+					sf->lumpid[r] = sf->lumpid[r-1];
+				}
+				sf->lumppat[0] = lastpat;
+				sf->lumpid[0] = lastid;
+				sf->flip = (sf->flip & 0xff00) | ((sf->flip & 0x80) >> 7) | ((sf->flip & 0x7f) << 1);
 			}
-			sf->lumppat[0] = lastpat;
-			sf->lumpid[0] = lastid;
-			sf->flip = (sf->flip & 0xff00) | ((sf->flip & 0x80) >> 7) | ((sf->flip & 0x7f) << 1);
-		}
-		sd = &skin->sprites[SPR2_DRLN];
-		for (i = 0; i < sd->numframes; i++)
-		{
-			sf = &sd->spriteframes[i];
-			if (sf->rotate != SRF_3D)
-				continue;
-			lumpnum_t firstpat = sf->lumppat[0];
-			size_t firstid = sf->lumpid[0];
-			for (int r = 0; r < 8; r++)
+			sd = &skin->sprites[SPR2_DRLN];
+			for (i = 0; i < sd->numframes; i++)
 			{
-				sf->lumppat[r] = sf->lumppat[r+1];
-				sf->lumpid[r] = sf->lumpid[r+1];
+				sf = &sd->spriteframes[i];
+				if (sf->rotate != SRF_3D)
+					continue;
+				lumpnum_t firstpat = sf->lumppat[0];
+				size_t firstid = sf->lumpid[0];
+				for (int r = 0; r < 8; r++)
+				{
+					sf->lumppat[r] = sf->lumppat[r+1];
+					sf->lumpid[r] = sf->lumpid[r+1];
+				}
+				sf->lumppat[7] = firstpat;
+				sf->lumpid[7] = firstid;
+				sf->flip = (sf->flip & 0xff00) | ((sf->flip & 0x01) << 7) | ((sf->flip & 0xfe) >> 1);
 			}
-			sf->lumppat[7] = firstpat;
-			sf->lumpid[7] = firstid;
-			sf->flip = (sf->flip & 0xff00) | ((sf->flip & 0x01) << 7) | ((sf->flip & 0xfe) >> 1);
 		}
 
 		R_AddKartFaces(skin);
@@ -1139,6 +1143,7 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 	// 1, true, yes are all valid values
 	GETFLAG(MACHINE)
 	GETFLAG(OLDDEATH)
+	GETFLAG(NOCOMPATROTATE)
 #undef GETFLAG
 
 #define GETPATCH(field) else if (compat && fasticmp(stoken, #field)) strncpy(skin->field, value, 8);

@@ -38,6 +38,7 @@ typedef enum
 {
 	SF_MACHINE          = 1, // Beep boop. Are you a robot?
 	SF_OLDDEATH			= 1<<1, // Kart V1 styled death animation
+	SF_NOCOMPATROTATE	= 1<<2, // Kart V1 skins that should not be rotated (simple animal, etc)
 	// free up to and including 1<<31
 } skinflags_t;
 
