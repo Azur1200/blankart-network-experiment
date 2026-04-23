@@ -9503,7 +9503,7 @@ static void K_HandleKartTilt(player_t *player)
 	
 	angulargravity = abs(lineargravity) * (P_IsObjectOnGround(player->mo) ? 12 : 5);
 	// O = (linear velocity) / (distance from CoM)
-	angaccelgravity = FixedDiv(angulargravity, abs(FixedMul(player->mo->radius, FRACUNIT + abs(FINESINE(FixedAngle(player->karttilt)>>ANGLETOFINESHIFT)))));
+	angaccelgravity = FixedDiv(angulargravity, abs(FixedMul(player->mo->radius, FRACUNIT + abs(FSIN(FixedAngle(player->karttilt))))));
 
 	player->karttiltmomentum += angaccelgravity * -intsign(player->karttilt);
 	if (abs(player->karttiltmomentum) >= PLAYERTILTMOMENTUMCAP)
@@ -9818,12 +9818,12 @@ static void K_KartDrift(player_t *player, boolean onground)
 
 		FV2_Normalize(&fwd);
 		FV2_Normalize(&mov);
-		dot = FixedMul(CLAMP(abs(player->speed), 0, 32*mapobjectscale), FRACUNIT - abs(FV2_Dot(&fwd, &mov)));
+		dot = FixedMul(CLAMP(player->speed, 0, 42*mapobjectscale), FRACUNIT - abs(FV2_Dot(&fwd, &mov)));
 
 		angularvelocity = FixedDiv(-dot * intsign(player->nulldrift), 
-			abs(FixedMul(player->mo->height/2, FINECOSINE(FixedAngle(player->karttilt)>>ANGLETOFINESHIFT)))
+			abs(FixedMul(player->mo->height/2, FCOS(FixedAngle(player->karttilt))))
 		);
-		angularvelocity = FixedMul(CLAMP(angularvelocity, -M_PI_FIXED, M_PI_FIXED), FINECOSINE(FixedAngle(2 * player->karttilt)>>ANGLETOFINESHIFT));
+		angularvelocity = FixedMul(CLAMP(angularvelocity, -M_PI_FIXED, M_PI_FIXED), CLAMP(FCOS(FixedAngle(5 * player->karttilt / 2)), 0, FRACUNIT));
 		if (abs(player->karttiltmomentum) < abs(angularvelocity))
 		{
 			player->karttiltmomentum = angularvelocity;
