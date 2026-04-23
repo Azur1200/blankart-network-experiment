@@ -1849,6 +1849,18 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			use_xoffset = spr_width - spr_offset;
 		}
 
+		if (thing->renderflags & RF_ABSOLUTEOFFSETS)
+		{
+			use_xoffset = FixedDiv(interp.spritexoffset,highresscale);
+		}
+		else
+		{
+			SINT8 flipoffset = 1;
+			if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
+				flipoffset = -1;
+			use_xoffset += (FixedDiv(interp.spritexoffset,highresscale) * flipoffset);
+		}
+
 		affine_pivotoffsetdiff.x = FIXED_TO_FLOAT(affine_pivot.x - use_xoffset);
 		affine_pivotoffsetdiff.y = FIXED_TO_FLOAT(affine_pivot.y - spr_topoffset);
 
@@ -1861,8 +1873,9 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 		angle = R_ConvToRollAngle(spriterotangle) * flipsign;
 
-		const fixed_t rolloffs_x = FixedDiv(interptarg->rollingxoffset * FRACUNIT, highresscale) * (((thing->renderflags & RF_FLIPOFFSETS) && flip) ? -1 : 1);
-		const fixed_t rolloffs_y = FixedDiv(interptarg->rollingyoffset * FRACUNIT, highresscale);
+		const boolean renderflip = ((thing->renderflags & RF_FLIPOFFSETS) == RF_FLIPOFFSETS);
+		const fixed_t rolloffs_x = FixedDiv(interptarg->rollingxoffset * FRACUNIT, highresscale) * (((!renderflip) && flip) ? -1 : 1);
+		const fixed_t rolloffs_y = FixedDiv(interptarg->rollingyoffset * FRACUNIT, highresscale) * (((!renderflip) && vflip) ? -1 : 1);
 		fixed_t y_piv = affine_pivot.y;
 
 		if (vflip)
