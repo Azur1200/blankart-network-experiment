@@ -1223,8 +1223,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	{
 		if (cv_kartflame_shove.value)
 		{
-			K_ShovePlayer(t2->player, t1, CLAMP(t1->player->speed, 12*t1->scale, 20*t1->scale));
-			t2->player->justbumped = 6;
+			K_ShovePlayer(t2, t1, t1->scale);
 		}
 		else
 		{
@@ -1236,8 +1235,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	{
 		if (cv_kartflame_shove.value)
 		{
-			K_ShovePlayer(t1->player, t2, CLAMP(t1->player->speed, 12*t1->scale, 20*t1->scale));
-			t1->player->justbumped = 6;
+			K_ShovePlayer(t1, t2, t1->scale);
 		}
 		else
 		{

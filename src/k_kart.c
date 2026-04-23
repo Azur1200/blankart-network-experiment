@@ -12076,20 +12076,27 @@ void K_KartPlayerBumpyRoad(player_t *player)
 	}
 }
 
-void K_ShovePlayer(player_t *victim, mobj_t *source, fixed_t force)
+void K_ShovePlayer(mobj_t *victim, mobj_t *source, fixed_t force)
 {
-	vector3_t fwd = {P_ReturnThrustX(victim->mo, victim->mo->angle, FRACUNIT), P_ReturnThrustY(victim->mo, victim->mo->angle, FRACUNIT), 0};
-	vector3_t side = {source->x - victim->mo->x, source->y - victim->mo->y, 0};
+	vector3_t fwd = {P_ReturnThrustX(victim, victim->angle, FRACUNIT), P_ReturnThrustY(victim, victim->angle, FRACUNIT), 0};
+	vector3_t side = {source->x - victim->x, source->y - victim->y, 0};
 	vector3_t cross = {0};
 	SINT8 direction = 0;
-	
+
 	FV3_Cross(&fwd, &side, &cross);
+	// pick using victim's left/right (negative is right of the victim here)
 	direction = intsign(cross.z);
 	if (direction == 0) direction = 1;
 
-	P_Thrust(victim->mo, victim->mo->angle + (direction * ANGLE_90), force);
-	K_AddTiltImpulse(victim, victim->mo->radius, force*direction);
-	
-	K_SpawnBumpsForMobj(victim->mo, source);
+	P_Thrust(victim, victim->angle + (direction * ANGLE_90), force);
+	K_SpawnBumpsForMobj(victim, source);
+
+	if (victim->player)
+	{
+		// use source's speed for angular impulse calc
+		FV3_Load(&side, source->momx, source->momy, 0);
+		K_AddTiltImpulse(victim->player, victim->radius, CLAMP(FV3_Magnitude(&side)/4, 8*victim->scale, 28*victim->scale)*direction);
+		K_SetPlayerBumped(victim->player, source);
+	}
 }
 //}
