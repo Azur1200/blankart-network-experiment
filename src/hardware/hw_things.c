@@ -1849,6 +1849,15 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			use_xoffset = spr_width - spr_offset;
 		}
 
+		if (thing->renderflags & RF_ABSOLUTEOFFSETS)
+		{
+			use_xoffset = FixedDiv(interp.spritexoffset,highresscale);
+		}
+		else
+		{
+			use_xoffset += (FixedDiv(interp.spritexoffset,highresscale) * (flip ? -1 : 1));
+		}
+
 		affine_pivotoffsetdiff.x = FIXED_TO_FLOAT(affine_pivot.x - use_xoffset);
 		affine_pivotoffsetdiff.y = FIXED_TO_FLOAT(affine_pivot.y - spr_topoffset);
 
