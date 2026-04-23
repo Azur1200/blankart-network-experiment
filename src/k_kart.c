@@ -456,6 +456,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbubble_boost_offroadignore);
 	CV_RegisterVar(&cv_kartflame_fastfuel);
 	CV_RegisterVar(&cv_kartflame_offroadburn);
+	CV_RegisterVar(&cv_kartflame_shove);
 	CV_RegisterVar(&cv_kartattraction_assistpower);
 	CV_RegisterVar(&cv_kartaltshrink_arrowbullet);
 	CV_RegisterVar(&cv_kartaltshrink_arrowbulletthres);
@@ -12075,4 +12076,20 @@ void K_KartPlayerBumpyRoad(player_t *player)
 	}
 }
 
+void K_ShovePlayer(player_t *victim, mobj_t *source, fixed_t force)
+{
+	vector3_t fwd = {P_ReturnThrustX(victim->mo, victim->mo->angle, FRACUNIT), P_ReturnThrustY(victim->mo, victim->mo->angle, FRACUNIT), 0};
+	vector3_t side = {source->x - victim->mo->x, source->y - victim->mo->y, 0};
+	vector3_t cross = {0};
+	SINT8 direction = 0;
+	
+	FV3_Cross(&fwd, &side, &cross);
+	direction = intsign(cross.z);
+	if (direction == 0) direction = 1;
+
+	P_Thrust(victim->mo, victim->mo->angle + (direction * ANGLE_90), force);
+	K_AddTiltImpulse(victim, victim->mo->radius, force*direction);
+	
+	K_SpawnBumpsForMobj(victim->mo, source);
+}
 //}

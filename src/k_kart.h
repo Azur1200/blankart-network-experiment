@@ -444,6 +444,8 @@ void K_KartAttractHomingAttack(player_t *player);
 
 void K_KartPlayerBumpyRoad(player_t *player);
 
+void K_ShovePlayer(player_t *victim, mobj_t *source, fixed_t force);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

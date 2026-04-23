@@ -236,6 +236,7 @@ extern consvar_t cv_kartbubble_boost_allow;
 extern consvar_t cv_kartbubble_boost_offroadignore;
 extern consvar_t cv_kartflame_fastfuel;
 extern consvar_t cv_kartflame_offroadburn;
+extern consvar_t cv_kartflame_shove;
 extern consvar_t cv_kartattraction_assistpower;
 extern consvar_t cv_kartaltshrink_arrowbullet;
 extern consvar_t cv_kartaltshrink_arrowbulletthres;

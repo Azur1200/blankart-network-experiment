@@ -1221,12 +1221,28 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 
 	if (t1Condition == true && t2Condition == false)
 	{
-		P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
+		if (cv_kartflame_shove.value)
+		{
+			K_ShovePlayer(t2->player, t1, CLAMP(t1->player->speed, 12*t1->scale, 20*t1->scale));
+			t2->player->justbumped = 6;
+		}
+		else
+		{
+			P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
+		}
 		return true;
 	}
 	else if (t1Condition == false && t2Condition == true)
 	{
-		P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
+		if (cv_kartflame_shove.value)
+		{
+			K_ShovePlayer(t1->player, t2, CLAMP(t1->player->speed, 12*t1->scale, 20*t1->scale));
+			t1->player->justbumped = 6;
+		}
+		else
+		{
+			P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
+		}
 		return true;
 	}
 
