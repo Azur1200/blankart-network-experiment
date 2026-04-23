@@ -7874,15 +7874,17 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->karttilt)
 	{
 		//todo: a way for skins(?) to define the tyre offset
-		// this kinda looks bad in general currently, may need to edit the pivots in real time instead
-		vector2_t tyreoffs = {player->mo->info->radius * intsign(player->karttilt), 0};
-		FV2_Rotate(&tyreoffs, -player->karttilt);
-		player->mo->spritexoffset -= FixedMul(2 * player->mo->info->radius, FSIN(FixedAngle(-player->karttilt)));// - ((player->mo->info->radius * intsign(player->karttilt)) - tyreoffs.x);
-		// player->mo->spriteyoffset += (-tyreoffs.y/2) * P_MobjFlip(player->mo);
+		// this can look weird depending on camera angle, may be smarter to change pivots instead
+		fixed_t tyredistance = player->mo->info->radius * intsign(player->karttilt);
+		vector2_t tyreoffs = {tyredistance, 0};
+		fixed_t rate = FixedDiv(abs(player->karttilt), 90*FRACUNIT);
+		fixed_t vrate = (-FixedMul(rate * 2 - FRACUNIT, rate * 2 - FRACUNIT)) + FRACUNIT;
+		FV2_Rotate(&tyreoffs, 45*FRACUNIT);
+		player->mo->spritexoffset += Easing_Linear(rate, 0, (5*tyredistance/2));
+		player->mo->spriteyoffset += Easing_Linear(vrate, 0, abs(tyreoffs.y/2) * P_MobjFlip(player->mo));
 		
+		// CONS_Debug(DBG_PLAYER, "tyre dist : %4.3f\n", FIXED_TO_FLOAT(tyredistance));
 		// CONS_Debug(DBG_PLAYER, "kart tilt : %4.3f\n", FIXED_TO_FLOAT(player->karttilt));
-		// CONS_Debug(DBG_PLAYER, "tyreoffs x: %4.3f, y: %4.3f\n", FIXED_TO_FLOAT(tyreoffs.x), FIXED_TO_FLOAT(tyreoffs.y));
-		// CONS_Debug(DBG_PLAYER, "radius fac: %4.3f\n", FIXED_TO_FLOAT(player->mo->info->radius * intsign(player->karttilt)));
 		// CONS_Debug(DBG_PLAYER, "spritexoff: %4.3f, y: %4.3f\n", FIXED_TO_FLOAT(player->mo->spritexoffset), FIXED_TO_FLOAT(player->mo->spriteyoffset));
 	}
 }
@@ -9530,7 +9532,7 @@ static void K_HandleKartTilt(player_t *player)
 	if ((player->karttilt < 0 && startsign > 0) || 
 		(player->karttilt > 0 && startsign < 0))
 	{
-		player->karttiltmomentum = abs(90*player->karttiltmomentum/100) * intsign(player->karttilt);
+		player->karttiltmomentum = abs(75*player->karttiltmomentum/100) * intsign(player->karttilt);
 		player->karttiltmomentum /= 2;
 		if (abs(player->karttiltmomentum) < FRACUNIT/2)
 		{
