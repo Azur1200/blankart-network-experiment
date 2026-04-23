@@ -12093,7 +12093,7 @@ void K_ShovePlayer(mobj_t *victim, mobj_t *source, fixed_t force)
 
 	FV3_Cross(&fwd, &side, &cross);
 	// pick using victim's left/right (negative is right of the victim here)
-	direction = intsign(cross.z);
+	direction = -intsign(cross.z);
 	if (direction == 0) direction = 1;
 
 	P_Thrust(victim, victim->angle + (direction * ANGLE_90), force);
@@ -12103,7 +12103,7 @@ void K_ShovePlayer(mobj_t *victim, mobj_t *source, fixed_t force)
 	{
 		// use source's speed for angular impulse calc
 		FV3_Load(&side, source->momx, source->momy, 0);
-		K_AddTiltImpulse(victim->player, victim->radius, CLAMP(FV3_Magnitude(&side)/4, 8*victim->scale, 28*victim->scale)*direction);
+		K_AddTiltImpulse(victim->player, victim->radius, CLAMP(FV3_Magnitude(&side)/10, 8*victim->scale, 24*victim->scale)*direction);
 		K_SetPlayerBumped(victim->player, source);
 	}
 }
