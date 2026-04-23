@@ -108,6 +108,8 @@ int	snprintf(char *str, size_t n, const char *fmt, ...);
 
 #include "qs22j.h"
 
+#include "k_director.h"
+
 typedef enum
 {
 	QUITMSG = 0,
@@ -1232,6 +1234,9 @@ static boolean M_DemoBinds(INT32 ch)
 {
 	switch (ch)
 	{
+	case ';':	// toggle director
+		MR_PlaybackToggleDirector(0);
+		break;
 	case '\'':	// toggle freecam
 		MR_PlaybackToggleFreecam(0);
 		break;
@@ -5214,6 +5219,8 @@ void MD_DrawPlaybackMenu(void)
 	M_SetItemVisible(MN_PLAYBACK, "VIEW3", !modeattacking && r_splitscreen >= 2);
 	M_SetItemVisible(MN_PLAYBACK, "VIEW4", !modeattacking && r_splitscreen >= 3);
 
+	M_SetItemVisible(MN_PLAYBACK, "DIRECTOR", !modeattacking);
+
 	if (modeattacking)
 	{
 		M_SetItemX(MN_PLAYBACK, "FREECAM", 72);
@@ -5222,9 +5229,10 @@ void MD_DrawPlaybackMenu(void)
 	}
 	else
 	{
-		M_SetItemX(MN_PLAYBACK, "FREECAM", 156);
-		M_SetItemX(MN_PLAYBACK, "QUIT", 172);
-		currentMenu->x = BASEVIDWIDTH/2 - 88;
+		M_SetItemX(MN_PLAYBACK, "DIRECTOR", 156);
+		M_SetItemX(MN_PLAYBACK, "FREECAM", 172);
+		M_SetItemX(MN_PLAYBACK, "QUIT", 188);
+		currentMenu->x = BASEVIDWIDTH/2 - 98;
 	}
 
 	// wip
@@ -5428,11 +5436,26 @@ INT32 MR_PlaybackToggleFreecam(INT32 choice)
 	splitscreen = 0;
 	R_ExecuteSetViewSize();
 
+	G_SyncDemoParty(consoleplayer, 0);
 	UINT8 i;
 	for (i = 0; i <= r_splitscreen; ++i)
 	{
 		P_ToggleDemoCamera(i);
 	}
+	return true;
+}
+
+INT32 MR_PlaybackToggleDirector(INT32 choice)
+{
+	(void)choice;
+	M_ClearMenus(true);
+
+	// remove splitscreen:
+	splitscreen = 0;
+	R_ExecuteSetViewSize();
+
+	G_SyncDemoParty(consoleplayer, 0);
+	K_ToggleDirector();
 	return true;
 }
 
