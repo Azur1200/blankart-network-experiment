@@ -12103,7 +12103,7 @@ void K_ShovePlayer(mobj_t *victim, mobj_t *source, fixed_t force)
 	{
 		// use source's speed for angular impulse calc
 		FV3_Load(&side, source->momx, source->momy, 0);
-		K_AddTiltImpulse(victim->player, victim->radius, CLAMP(FV3_Magnitude(&side)/12, 8*victim->scale, 22*victim->scale)*direction);
+		K_AddTiltImpulse(victim->player, victim->radius, CLAMP(FV3_Magnitude(&side)/16, 8*victim->scale, 26*victim->scale)*direction);
 		K_SetPlayerBumped(victim->player, source);
 	}
 }
