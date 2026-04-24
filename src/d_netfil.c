@@ -1481,7 +1481,6 @@ static void OpenNewFileForDownload(doomdata_t *netbuffer, fileneeded_t *file, co
 		I_Error("FileSendTicker: No more memory\n");
 }
 
-
 void PT_FileFragment(SINT8 node, INT32 netconsole)
 {
 	if (nodeingame[node])
@@ -1582,7 +1581,7 @@ void PT_FileFragment(SINT8 node, INT32 netconsole)
 		{
 			CL_AbortDownloadResume();
 			OpenNewFileForDownload(netbuffer, file, file->filename);
-			CONS_Printf("Downloading addon \"%s\" from the server...\n", filename);
+			CONS_Printf("Downloading file \"%s\" from the server...\n", filename);
 		}
 
 		lasttimeackpacketsent = I_GetTime();
