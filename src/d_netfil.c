@@ -1508,7 +1508,7 @@ void PT_FileFragment(SINT8 node, INT32 netconsole)
 	fileneeded_t *file = &fileneeded[filenum];
 	UINT32 fragmentpos = LONG(pak->position);
 	UINT16 fragmentsize = SHORT(pak->size);
-	UINT16 boundedfragmentsize = doomcom->datalength - sizeof(netbuffer->u.filetxpak);
+	UINT16 boundedfragmentsize = doomcom->datalength - BASEPACKETSIZE - sizeof(netbuffer->u.filetxpak);
 	char *filename;
 
 	filename = va("%s", file->filename);
