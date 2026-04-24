@@ -924,7 +924,7 @@ const char *blancredits[] = {
 	"\"Chearii\"",
 	"\"hayaunderscore\" aka \"DeltaKanyx\"",
 	"\"Guilmon35249vr\"",
-	"Vivian \"toaster\" Grannell", // Horncode
+	"Vivian \"toaster\" Grannell", // Horncode, fix for Followers in demos
 	"AJ \"Tyron\" Martinez", // Horncode, PT_SAY, RRID
 	"\"Superstarxalien\"", // Horncode
 	"\"Freaky Mutant Man\"", // Color profiles menu

@@ -3064,7 +3064,9 @@ void G_BeginRecording(void)
 				if (Followercolor_cons_t[j].value == players[i].followercolor)
 					break;
 			}
-			WRITESTRINGL(demobuf.p, Followercolor_cons_t[j].strvalue, 16+1);	// Not KartColor_Names because followercolor has extra values such as "Match"
+
+			// Not KartColor_Names because followercolor has extra values such as "Match"
+			WRITESTRINGL(demobuf.p, Followercolor_cons_t[j].strvalue, 16+1);
 
 			// Score, since Kart uses this to determine where you start on the map
 			WRITEUINT32(demobuf.p, player->score);
