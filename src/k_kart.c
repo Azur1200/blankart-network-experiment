@@ -10640,6 +10640,13 @@ static vector3_t* K_FindPlayerCluster(vector3_t* out)
 
 		nump++;
 
+		if (!leader)
+		{
+			// Leader somehow doesn't exist
+			distavg += 0;
+			break;
+		}
+
 		if (K_LegacyOddsMode())
 		{
 			distavg += (INT64)(K_GetCongaLineDistance(player, 1));
