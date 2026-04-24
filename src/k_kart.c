@@ -10589,7 +10589,8 @@ UINT32 clusterid = 0;
 static vector3_t* K_FindPlayerCluster(vector3_t* out)
 {
 	INT32 i;
-	player_t *player, *leader;
+	player_t *player = NULL;
+	player_t *leader = NULL;
 
 	INT32 nump = 0;
 	INT64 distavg = 0;
