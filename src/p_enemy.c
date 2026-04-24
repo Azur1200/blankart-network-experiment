@@ -9747,6 +9747,11 @@ void A_SpawnFreshCopy(void *thing)
 
 	newObject = P_SpawnMobjFromMobj(actor, 0, 0, 0, actor->type);
 	newObject->flags2 = actor->flags2 & MF2_AMBUSH;
+
+	INT32 i;
+	for (i = 0; i < NUM_SCRIPT_ARGS; i++)
+		newObject->script_args[i] = actor->script_args[i];
+
 	newObject->angle = actor->angle;
 	newObject->color = actor->color;
 	P_SetTarget(&newObject->target, actor->target);
@@ -10574,6 +10579,29 @@ void A_CheckFlags2(void *thing)
 		return;
 
 	if (actor->flags2 & locvar1)
+		P_SetMobjState(actor, (statenum_t)locvar2);
+}
+
+// Function: A_CheckScriptArg
+//
+// Description: If actor->script_args[var1] != 0, goto var2.
+//
+// var1 = mask
+// var2 = state to go
+//
+void A_CheckScriptArg(void *thing)
+{
+	mobj_t *actor = thing;
+	INT32 locvar1 = var1;
+	INT32 locvar2 = var2;
+
+	if (locvar1 >= NUM_SCRIPT_ARGS)
+		return;
+
+	if (LUA_CallAction(A_CHECKSCRIPTARG, actor))
+		return;
+
+	if (actor->script_args[locvar1])
 		P_SetMobjState(actor, (statenum_t)locvar2);
 }
 

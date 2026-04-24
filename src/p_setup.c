@@ -7182,6 +7182,8 @@ static void P_ConvertBinarySectorTypes(void)
 	}
 }
 
+
+// TODO: Check to make sure every object that sets flags such as ambush properly get converted to UDMF
 static void P_ConvertBinaryThingTypes(void)
 {
 	size_t i;
@@ -7342,7 +7344,9 @@ static void P_ConvertBinaryThingTypes(void)
 			mapthings[i].args[2] = !(mapthings[i].options & (MTF_AMBUSH|MTF_OBJECTSPECIAL));
 			break;
 		case 462: //Balloon
-			mapthings[i].args[0] = !!(mapthings[i].options & MTF_AMBUSH);
+			mapthings[i].args[0] = !(mapthings[i].options & MTF_AMBUSH);
+			mapthings[i].options &= ~MTF_AMBUSH;
+
 			if (mapthings[i].angle > 0)
 				P_WriteSkincolor(((mapthings[i].angle - 1) % (numskincolors - 1)) + 1, &mapthings[i].stringargs[0]);
 			break;
