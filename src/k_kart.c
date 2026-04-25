@@ -5437,7 +5437,6 @@ void K_DropHnextList(player_t *player)
 	P_SetTarget(&player->mo->hnext, NULL);
 
 	player->bananadrag = 0;
-	K_DisableSeekingReticule(player);
 
 	if (player->itemflags & IF_EGGMANOUT)
 	{
@@ -5448,6 +5447,7 @@ void K_DropHnextList(player_t *player)
 	{
 		player->itemamount = 0;
 		K_UnsetItemOut(player);
+		K_DisableSeekingReticule(player);
 		player->itemtype = KITEM_NONE;
 	}
 }

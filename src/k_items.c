@@ -1847,7 +1847,7 @@ static void K_DoHyudoroSteal(player_t *player)
 
 		players[stealplayer].itemtype = KITEM_NONE;
 		players[stealplayer].itemamount = 0;
-		K_DisableSeekingReticule(player);
+		K_DisableSeekingReticule(&players[stealplayer]);
 		K_UnsetItemOut(&players[stealplayer]);
 
 		if (P_IsDisplayPlayer(&players[stealplayer]) && !r_splitscreen)
