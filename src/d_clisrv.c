@@ -979,8 +979,6 @@ static boolean CL_SendJoin(void)
 		CONS_Printf(M_GetText("Sending join request...\n"));
 	netbuffer->packettype = PT_CLIENTJOIN;
 
-	neededtic = 0;
-
 	if (splitscreen)
 		localplayers += splitscreen;
 
@@ -5562,7 +5560,7 @@ static void PT_ServerTics(SINT8 node, INT32 netconsole)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
-	UINT8 numtxtpak;
+	UINT8 *pak, *txtpak, numtxtpak;
 	tic_t realend, realstart;
 
 	if (!nodeingame[node])
@@ -5588,46 +5586,57 @@ static void PT_ServerTics(SINT8 node, INT32 netconsole)
 	realstart = ExpandTics(netbuffer->u.serverpak.starttic, maketic);
 	realend = realstart + netbuffer->u.serverpak.numtics;
 
-
+	txtpak = (UINT8 *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numslots
+	* netbuffer->u.serverpak.numtics];
 
 	if (realend > gametic + CLIENTBACKUPTICS)
 		realend = gametic + CLIENTBACKUPTICS;
 	cl_packetmissed = realstart > neededtic;
 
-	// NOTE: we just blindly accept what we get, since it's impossible for the client to know which tic the server is on
-	UINT8 *pak = (UINT8 *)&netbuffer->u.serverpak.cmds;
-	UINT8 *txtpak = (UINT8 *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numslots
-				* netbuffer->u.serverpak.numtics];
-
-	for (tic_t i = realstart; i < realend; i++)
+	if (realstart <= neededtic && realend > neededtic)
 	{
-		// clear first
-		D_Clearticcmd(i);
+		tic_t i, j;
+		pak = (UINT8 *)&netbuffer->u.serverpak.cmds;
 
-		// copy the tics
-		pak = G_ScpyTiccmd(netcmds[i%BACKUPTICS], pak,
-			netbuffer->u.serverpak.numslots*sizeof (ticcmd_t));
-
-		// copy the textcmds
-		numtxtpak = *txtpak++;
-		for (tic_t j = 0; j < numtxtpak; j++)
+		for (i = realstart; i < realend; i++)
 		{
-			INT32 playernum = *txtpak++; // playernum
-			const size_t txtsize = txtpak[0]+1;
+			// clear first
+			D_Clearticcmd(i);
 
-			if (playernum < 0 || playernum >= MAXPLAYERS)
+			// copy the tics
+			pak = G_ScpyTiccmd(netcmds[i%BACKUPTICS], pak,
+							   netbuffer->u.serverpak.numslots*sizeof (ticcmd_t));
+
+			// copy the textcmds
+			numtxtpak = *txtpak++;
+			for (j = 0; j < numtxtpak; j++)
 			{
-				CONS_Alert(CONS_WARNING, "Got bogus NetXCmd packet targetting player %d\n", playernum);
-				return;
+				INT32 playernum = *txtpak++; // playernum
+				const size_t txtsize = txtpak[0]+1;
+
+				if (playernum < 0 || playernum >= MAXPLAYERS)
+				{
+					CONS_Alert(CONS_WARNING, "Got bogus NetXCmd packet targetting player %d\n", playernum);
+					return;
+				}
+
+				if (i >= gametic) // Don't copy old net commands
+					memcpy(D_GetTextcmd(i, playernum), txtpak, txtsize);
+				txtpak += txtsize;
 			}
-
-			if (i >= gametic) // Don't copy old net commands
-				memcpy(D_GetTextcmd(i, playernum), txtpak, txtsize);
-			txtpak += txtsize;
 		}
-	}
 
-	neededtic = realend;
+		neededtic = realend;
+	}
+	else
+	{
+		DEBFILE(va("frame not in bound: %u\n", neededtic));
+		/*if (realend < neededtic - 2 * TICRATE || neededtic + 2 * TICRATE < realstart)
+		 *	I_Error("Received an out of order PT_SERVERTICS packet!\n"
+		 *			"Got tics %d-%d, needed tic %d\n\n"
+		 *			"Please report this crash on the Master Board,\n"
+		 *			"IRC or Discord so it can be fixed.\n", (INT32)realstart, (INT32)realend, (INT32)neededtic);*/
+	}
 }
 
 static void PT_Ping(SINT8 node, INT32 netconsole)
