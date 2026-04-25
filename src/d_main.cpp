@@ -124,9 +124,9 @@
 // Version numbers for netplay :upside_down_face:
 int    VERSION;
 int SUBVERSION;
-#ifdef COMMITVERSION
+// #ifdef COMMITVERSION
 UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
-#endif
+// #endif
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
@@ -1413,7 +1413,7 @@ static void IdentifyVersion(void)
 #endif
 }
 
-#ifdef COMMITVERSION
+// #ifdef COMMITVERSION
 static void D_AbbrevCommit (void)
 {
        UINT8 i;
@@ -1424,7 +1424,7 @@ static void D_AbbrevCommit (void)
                                &comprevision_abbrev_bin[i]);
        }
 }
-#endif
+// #endif
 
 static void
 D_ConvertVersionNumbers (void)
