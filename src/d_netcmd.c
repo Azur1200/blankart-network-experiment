@@ -720,7 +720,7 @@ consvar_t cv_kartattraction_assistpower = CVAR_INIT ("kartattraction_assistpower
 
 // Attraction Shield damage toggles
 static CV_PossibleValue_t kartattractiondmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {DMG_EXPLODE, "Explode"}, {0, NULL}};
-consvar_t cv_kartattraction_aoedmg = CVAR_INIT ("kartattraction_aoedmg", "None", CV_NETVAR|CV_FLOAT, kartattractiondmg_cons_t, NULL);
+consvar_t cv_kartattraction_aoedmg = CVAR_INIT ("kartattraction_aoedmg", "None", CV_NETVAR|CV_CHEAT|CV_GUARD, kartattractiondmg_cons_t, NULL);
 
 // "Arrow Bullet": above a certain speed threshold, an aura in the shape of the Shrink arrow
 // covers you, signaling protection from (most) items and players.
