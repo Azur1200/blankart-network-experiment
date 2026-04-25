@@ -1785,7 +1785,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (G_GetGamepadCanUseTilt(forplayer) && cv_tiltcontrol[forplayer].value)
 	{
 		fixed_t tilt = G_GetGamepadGravity(forplayer).x;
-		vector3_t shake = G_GetGamepadShake(forplayer);
+		// vector3_t shake = G_GetGamepadShake(forplayer);
 
 		if (cv_tiltcontrol[forplayer].value == 1)
 		{
