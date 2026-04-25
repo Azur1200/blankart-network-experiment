@@ -457,6 +457,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartflame_fastfuel);
 	CV_RegisterVar(&cv_kartflame_offroadburn);
 	CV_RegisterVar(&cv_kartattraction_assistpower);
+	CV_RegisterVar(&cv_kartattraction_aoedmg);
 	CV_RegisterVar(&cv_kartaltshrink_arrowbullet);
 	CV_RegisterVar(&cv_kartaltshrink_arrowbulletthres);
 

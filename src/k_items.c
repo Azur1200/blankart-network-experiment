@@ -1923,7 +1923,7 @@ void K_DoAttractionShield(player_t *player, boolean hipower)
 	}
 
 	S_StartSound(player->mo, sfx_zio3);
-	K_AttractionShieldAttack(player->mo, (cv_kartthunder_radius.value + THUNDERSPRITE) * FRACUNIT);
+	K_AttractionShieldAttack(player->mo, (cv_kartthunder_radius.value + THUNDERSPRITE) * FRACUNIT, hipower);
 
 	// spawn vertical bolt
 	mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
