@@ -12088,7 +12088,11 @@ void K_KartPlayerBumpyRoad(player_t *player)
 		
 		player->karttilt = FixedMul((3*FRACUNIT/2) * player->bumpyroadside, rate);
 		K_AddTiltImpulse(player, player->mo->height/2, baseimpulse);
-		S_StartSoundAtVolume(player->mo, sfx_s3k56, CLAMP((180*rate)/FRACUNIT, 0, 180));
+
+		if (P_IsDisplayPlayer(player))
+		{
+			S_StartSoundAtVolume(player->mo, sfx_s3k56, CLAMP((180*rate)/FRACUNIT, 0, 180));
+		}
 	}
 }
 
