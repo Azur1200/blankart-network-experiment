@@ -1401,6 +1401,9 @@ static void SendAckPacket(fileack_pak *packet, UINT8 fileid)
 	memcpy(&netbuffer->u.fileack, packet, packetsize);
 	HSendPacket(servernode, false, 0, packetsize);
 
+	CONS_Printf("Sending file transfer ACKs for %d segments (time = %d, last sent %d)\n", packet->numsegments, I_GetTime(), lasttimeackpacketsent);
+	lasttimeackpacketsent = I_GetTime();
+
 	// Clear the packet
 	memset(packet, 0, sizeof(*packet) + 512);
 }
@@ -1594,9 +1597,13 @@ void PT_FileFragment(SINT8 node, INT32 netconsole)
 
 		file->iteration = max(file->iteration, pak->iteration);
 
+		CONS_Printf("Download %d/%d of \"%s\"...\n", file->currentsize, file->totalsize, filename);
+
 		if (!file->receivedfragments[fragmentpos / fragmentsize]) // Not received yet
 		{
 			file->receivedfragments[fragmentpos / fragmentsize] = true;
+
+			CONS_Printf("Received no. %d fragment (fragmentsize = %d, boundedfragmentsize = %d) \n", fragmentpos / fragmentsize, fragmentsize, boundedfragmentsize);
 
 			// We can receive packets in the wrong order, anyway all OSes support gaped files
 			fseek(file->file, fragmentpos, SEEK_SET);
@@ -1637,6 +1644,7 @@ void PT_FileFragment(SINT8 node, INT32 netconsole)
 		}
 		else // Already received
 		{
+			CONS_Printf("Re-Received no. %d fragment (fragmentsize = %d, boundedfragmentsize = %d) \n", fragmentpos / fragmentsize, fragmentsize, boundedfragmentsize);
 			// If they are sending us the fragment again, it's probably because
 			// they missed our previous ack, so we must re-acknowledge it
 			AddFragmentToAckPacket(file->ackpacket, file->iteration, fragmentpos / fragmentsize, filenum);
