@@ -697,7 +697,7 @@ static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
 		return BMIT_ABORT;
 	}
 
-	if (thing->player && (cv_kartattraction_aoedmg.value == 0 || (!attractionhipower)))
+	if (thing->player && (ATTRACTIONAOEDAMAGE == 0 || (!attractionhipower)))
 	{
 		// Don't damage players
 		return BMIT_CONTINUE;
@@ -744,7 +744,7 @@ static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
 
 	if (thing->player)
 	{
-		P_DamageMobj(thing, lightningSource, lightningSource, 1, (cv_kartattraction_aoedmg.value)|DMG_CANTHURTSELF);
+		P_DamageMobj(thing, lightningSource, lightningSource, 1, ATTRACTIONAOEDAMAGE|DMG_CANTHURTSELF);
 	}
 	else
 	{
