@@ -2420,8 +2420,13 @@ static boolean CV_FilterVarByVersion(consvar_t *v, const char *valstr)
 	if (!(v->flags & CV_SAVE))
 		return true;
 
-	// nothing to see here...
 	(void)valstr;
+
+	if (GETMAJOREXECVERSION(cv_execversion.value) == 12 && GETMINOREXECVERSION(cv_execversion.value) < 1) // 12.1 = BK Indev 25-04-26
+	{
+		if (fasticmp(v->name, "masterserver")) // Upgrade the masterserver from SRB2Classic's to our own.
+			return false;
+	}
 
 	return true;
 }
