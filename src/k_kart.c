@@ -11323,6 +11323,11 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		// No more!
 		if (!player->itemamount)
 		{
+			// really really shitty hack
+			if (!(player->itemflags &= ~IF_PASSIVESEEKING))
+			{
+				K_DisableSeekingReticule(player);
+			}
 			player->itemflags &= ~IF_ITEMOUT;
 			player->itemtype = KITEM_NONE;
 			if (K_GetShieldFromPlayer(player) != KSHIELD_NONE && K_GetShieldFromPlayer(player) != KSHIELD_FLAME)
