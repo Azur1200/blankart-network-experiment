@@ -3106,7 +3106,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (P_CameraThinker(player, thiscam, resetcalled))
 		return true;
 
-	if (P_IsLocalPlayer(player) || (demo.playback && cv_lookbackinreplays.value))
+	if (P_IsMachineLocalPlayer(player) || (demo.playback && cv_lookbackinreplays.value))
 		lookback = G_PlayerInputDown(num, gc_lookback, false, DEADZONE_BUTTON);
 	else
 		lookback = player->cmd.buttons & BT_LOOKBACK;
