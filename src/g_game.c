@@ -1603,6 +1603,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (cv_litesteer[forplayer].value && joystickvector.yaxis >= JOYAXISRANGE && abs(cmd->angle) == KART_FULLTURN)
 	{
 		// >= beacuse some analog devices can go past JOYAXISRANGE (?!)
+		cmd->turning /= 2;	// mine: make this show up in the input disp (we respect tilt control why not this too)
 		cmd->angle /= 2;
 	}
 
