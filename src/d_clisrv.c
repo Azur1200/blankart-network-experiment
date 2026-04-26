@@ -862,8 +862,8 @@ static inline void CL_DrawConnectionStatus(void)
 			static char tempname[28];
 			fileneeded_t *file = &fileneeded[lastfilenum];
 			char *filename = file->filename;
-			UINT32 currentsize = file->currentsize;
 			UINT32 totalsize   = file->totalsize;
+			UINT32 currentsize = min(file->currentsize, file->totalsize);
 
 			// Draw the bottom box.
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-58-8, 32, 1);
