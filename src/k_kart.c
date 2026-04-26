@@ -3005,8 +3005,8 @@ static void K_GetKartBoostPower(player_t *player)
 		else if ((finalspeedboost >= player->prevspeedboost) && (finalspeedboost != 0))
 		{
 			player->speedboost = max(player->speedboost, finalspeedboost);
-			player->accelboost = max(player->accelboost, finalaccelboost);
-			player->handleboost = max(player->handleboost, finalhandleboost);
+			player->accelboost = finalaccelboost;
+			player->handleboost = finalhandleboost;
 		}
 		else
 		{
