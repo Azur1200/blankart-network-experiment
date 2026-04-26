@@ -379,10 +379,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_ssmt_accelboost);
 	CV_RegisterVar(&cv_kartstacking_ssmt_handleboost);
 
-	CV_RegisterVar(&cv_kartstacking_recspin_speedboost_lo);
 	CV_RegisterVar(&cv_kartstacking_recspin_accelboost_lo);
 	CV_RegisterVar(&cv_kartstacking_recspin_handleboost_lo);
-	CV_RegisterVar(&cv_kartstacking_recspin_speedboost_hi);
 	CV_RegisterVar(&cv_kartstacking_recspin_accelboost_hi);
 	CV_RegisterVar(&cv_kartstacking_recspin_handleboost_hi);
 
@@ -2775,6 +2773,16 @@ fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmi
 	return newmin + FixedMul(FixedDiv(value-oldmin , oldmax-oldmin), newmax-newmin);
 }
 
+static boolean K_CanPanicRecoverySpin(const player_t *player)
+{
+	return player->flashing > 0 && (
+#if 0 // skip the last flashtics? maybe not...
+		player->spinouttimer > 0 ? player->spinouttimer <= TICRATE/4 :
+#endif
+		!K_IsPlayerDamaged(player)
+	);
+}
+
 // sets boostpower, speedboost and accelboost to whatever we need it to be
 static void K_GetKartBoostPower(player_t *player)
 {
@@ -2914,17 +2922,17 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->recoverydash) // SSMT Boost
 	{
-		K_DoBoost(player, SSMTSPEEDBOOST, SSMTACCELBOOST, SSMTHANDLEBOOST, false, false); // + 10% top speed, + ?% acceleration
+		K_DoBoost(player, SSMTSPEEDBOOST, SSMTACCELBOOST, SSMTHANDLEBOOST, false, false);
 	}
 	else if (player->pflags & PF_RECOVERYSPIN)
 	{
-		if (player->flashing || player->recoverydashcharge >= RECOVERYDASHCHARGETIME)
+		if (K_CanPanicRecoverySpin(player) || player->recoverydashcharge >= RECOVERYDASHCHARGETIME)
 		{
-			K_DoBoost(player, RECSPINSPEEDBOOSTHI, RECSPINACCELBOOSTHI, RECSPINHANDLEBOOSTHI, false, false);
+			K_DoBoost(player, 0, RECSPINACCELBOOSTHI, RECSPINHANDLEBOOSTHI, false, false);
 		}
 		else
 		{
-			K_DoBoost(player, RECSPINSPEEDBOOSTLO, RECSPINACCELBOOSTLO, RECSPINHANDLEBOOSTLO, false, false);
+			K_DoBoost(player, 0, RECSPINACCELBOOSTLO, RECSPINHANDLEBOOSTLO, false, false);
 		}
 	}
 
@@ -2994,7 +3002,7 @@ static void K_GetKartBoostPower(player_t *player)
 			player->accelboost = finalaccelboost;
 			player->handleboost = finalhandleboost;
 		}
-		else if (finalspeedboost >= player->prevspeedboost)
+		else if ((finalspeedboost >= player->prevspeedboost) && (finalspeedboost != 0))
 		{
 			player->speedboost = max(player->speedboost, finalspeedboost);
 			player->accelboost = max(player->accelboost, finalaccelboost);
@@ -9940,25 +9948,21 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 	}
 }
 
-static boolean K_CanPanicRecoverySpin(const player_t *player)
-{
-	return player->flashing > 0 && (
-#if 0 // skip the last flashtics? maybe not...
-		player->spinouttimer > 0 ? player->spinouttimer <= TICRATE/4 :
-#endif
-		!K_IsPlayerDamaged(player)
-	);
-}
-
 static boolean K_PlayerWantsRecoverySpin(player_t *player)
 {
-	return (K_GetKartButtons(player) & (BT_ACCELERATE|BT_BRAKE|BT_DRIFT)) == (BT_ACCELERATE|BT_BRAKE);
+	return ((K_GetKartButtons(player) & (BT_ACCELERATE|BT_BRAKE|BT_DRIFT)) == (BT_ACCELERATE|BT_BRAKE));
+}
+
+static boolean K_PlayerWantsOrForcedRecoverySpin(player_t *player)
+{
+	return K_PlayerWantsRecoverySpin(player) ||
+			((player->pflags & PF_RECOVERYSPIN) && player->recoverydashcharge <= RECOVERYDASHCHARGETIMEMIN);
 }
 
 static boolean K_PlayerCanStartRecoverySpin(player_t *player)
 {
-	return (K_RecoveryDashActive() && P_IsObjectOnGround(player->mo) && (!(player->pflags & PF_STASIS)) && (player->carry == CR_NONE) &&
-			(player->speed < 10*player->mo->scale || player->wipeoutslow) && (!(player->pflags & PF_RECOVERYSPIN)));
+	return (K_RecoveryDashActive() && P_IsObjectOnGround(player->mo) && (!(player->pflags & PF_RECOVERYSPIN)) && (!(player->pflags & PF_STASIS)) && (player->carry == CR_NONE) &&
+			(player->speed < 10*player->mo->scale || player->wipeoutslow));
 }
 
 static boolean K_PlayerCanRecoverySpin(player_t *player)
@@ -9986,14 +9990,19 @@ static void K_RecoveryDash(player_t *player)
 		return;
 	}
 
-	if (K_PlayerWantsRecoverySpin(player) && K_PlayerCanStartRecoverySpin(player))
+	if (K_PlayerWantsOrForcedRecoverySpin(player) && K_PlayerCanStartRecoverySpin(player))
 	{
 		player->pflags |= PF_RECOVERYSPIN;
+		player->recoverydashcharge = 0;
 		player->forcedtopspeed = cv_kartrecoverydash_spinspeed.value + 8;
 		S_StartSound(player->mo, sfx_cdfm20);
 
 		player->mo->momx = min(10*player->mo->scale, abs(player->mo->momx/2)) * intsign(player->mo->momx);
 		player->mo->momy = min(10*player->mo->scale, abs(player->mo->momy/2)) * intsign(player->mo->momy);
+		// make friction not instantly kill the new momentum
+		// learned we need to do this from some dt8 stuff 🥲
+		player->rmomx = player->mo->momx - player->cmomx;
+		player->rmomy = player->mo->momy - player->cmomy;
 
 		player->driftboost = 0;
 		player->sneakertimer = 0;
@@ -10003,7 +10012,8 @@ static void K_RecoveryDash(player_t *player)
 
 	if (player->pflags & PF_RECOVERYSPIN)
 	{
-		if ((K_GetKartButtons(player) & (BT_ACCELERATE|BT_BRAKE)) != (BT_ACCELERATE|BT_BRAKE))
+		if ((K_GetKartButtons(player) & (BT_ACCELERATE|BT_BRAKE)) != (BT_ACCELERATE|BT_BRAKE) &&
+			(player->recoverydashcharge > RECOVERYDASHCHARGETIMEMIN))
 		{
 			player->pflags &= ~PF_RECOVERYSPIN;
 			if (player->recoverydashcharge >= RECOVERYDASHCHARGETIME && (K_GetKartButtons(player) & BT_ACCELERATE))
@@ -10940,7 +10950,10 @@ static void K_AdjustPlayerFriction(player_t *player)
 
 	player->mo->friction = prevfriction;
 
-	if ((player->pflags & PF_RECOVERYSPIN) && player->speed < K_GetKartSpeedFromStat(player->kartspeed, false))
+	if ((player->pflags & PF_RECOVERYSPIN) && 
+		player->speed < K_GetKartSpeedFromStat(player->kartspeed, false) &&
+		player->speed >= 10*player->mo->scale
+	)
 	{
 		if (player->cmd.turning)
 			player->mo->friction += 1880;
