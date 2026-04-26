@@ -434,7 +434,7 @@ void K_AddTiltMomentum(player_t *player, fixed_t angularvelocity);
 void K_AddTiltImpulse(player_t *player, fixed_t distance, fixed_t force);
 
 #define RECOVERYDASHADD (TICRATE/2)
-#define RECOVERYDASHCHARGETIMEMIN (8)
+#define RECOVERYDASHCHARGETIMEMIN (12)
 //og val 2*TICRATE
 #define RECOVERYDASHCHARGETIME (3*TICRATE/2)
 //og val 3*TICRATE/2
