@@ -9477,7 +9477,7 @@ static void K_HandleAirDriftDrag(player_t *player, boolean onground)
 // no float-to-fixed here because this is in the deterministic path
 #define FIXEDRADTODEG (3754879)	//57.2958
 #define PLAYERTILTCAP (90*FRACUNIT)
-#define PLAYERTILTMOMENTUMCAP (8*M_PI_FIXED)
+#define PLAYERTILTMOMENTUMCAP (12*M_PI_FIXED)
 
 /// @brief simulates applying a torque by applying a force at an offset from the player's centre, is a purely visual effect
 /// @param player player to apply angular momentum to
@@ -9503,46 +9503,45 @@ static void K_HandleKartTilt(player_t *player)
 {
 	SINT8 startsign = intsign(player->karttilt);
 	fixed_t lineargravity = P_GetMobjGravity(player->mo);
-	fixed_t angulargravity = 0;
+	fixed_t angulargravity = abs(lineargravity) * (P_IsObjectOnGround(player->mo) ? 12 : 3);
 	fixed_t angaccelgravity = 0;
+	fixed_t tiltfactor = abs(FSIN(FixedAngle(CLAMP(player->karttilt, -89*FRACUNIT, 89*FRACUNIT))));
 
 	if (player->karttilt == 0 && player->karttiltmomentum == 0)
 	{
 		return;
 	}
-	
-	angulargravity = abs(lineargravity) * (P_IsObjectOnGround(player->mo) ? 12 : 5);
-	// O = (linear velocity) / (distance from CoM)
-	angaccelgravity = FixedDiv(angulargravity, abs(FixedMul(player->mo->radius, FRACUNIT + abs(FSIN(FixedAngle(player->karttilt))))));
+
+	// w = sqrt(3*g*sin(a) / L)
+	angaccelgravity = FixedSqrt(FixedDiv(FixedMul(3 * angulargravity, tiltfactor), 2 * player->mo->radius));
 
 	player->karttiltmomentum += angaccelgravity * -intsign(player->karttilt);
-	if (abs(player->karttiltmomentum) >= PLAYERTILTMOMENTUMCAP)
-	{
-		player->karttiltmomentum = PLAYERTILTMOMENTUMCAP * intsign(player->karttiltmomentum);
-	}
+	// if (abs(player->karttiltmomentum) >= PLAYERTILTMOMENTUMCAP)
+	// {
+	// 	player->karttiltmomentum = PLAYERTILTMOMENTUMCAP * intsign(player->karttiltmomentum);
+	// }
 
 	player->karttilt = CLAMP(player->karttilt + FixedMul(player->karttiltmomentum, FIXEDRADTODEG)/TICRATE, -PLAYERTILTCAP + 1, PLAYERTILTCAP - 1);
 
 	// angular drag
 	if (player->mo->eflags & MFE_UNDERWATER)
 	{
-		player->karttiltmomentum = FixedMul(player->karttiltmomentum, 80*FRACUNIT/100);
+		player->karttiltmomentum = FixedMul(player->karttiltmomentum, 90*FRACUNIT/100);
 	}
 	else
 	{
-		player->karttiltmomentum = FixedMul(player->karttiltmomentum, 95*FRACUNIT/100);
+		player->karttiltmomentum = FixedMul(player->karttiltmomentum, 98*FRACUNIT/100);
 	}
 
+	// CONS_Printf("angulargravity: %4.3f\n", FixedToFloat(angulargravity));
 	// CONS_Printf("angaccelgravity: %4.3f\n", FixedToFloat(angaccelgravity));
 	// CONS_Printf("tilt angle: %4.3f\n", FixedToFloat(player->karttilt));
 	// CONS_Printf("tilt angle momentum (rad/s): %4.3f\n", FixedToFloat(player->karttiltmomentum));
-	// CONS_Printf("tilt angle momentum (deg/s): %4.3f\n", FixedToFloat(player->karttiltmomentum) * (M_PI/180.0));
 
 	if ((player->karttilt < 0 && startsign > 0) || 
 		(player->karttilt > 0 && startsign < 0))
 	{
-		player->karttiltmomentum = abs(75*player->karttiltmomentum/100) * intsign(player->karttilt);
-		player->karttiltmomentum /= 2;
+		player->karttiltmomentum = abs((P_IsObjectOnGround(player->mo) ? 33 : 75)*player->karttiltmomentum/100) * intsign(player->karttilt);
 		if (abs(player->karttiltmomentum) < FRACUNIT/2)
 		{
 			player->karttiltmomentum = 0;
@@ -12101,11 +12100,11 @@ void K_KartPlayerBumpyRoad(player_t *player)
 	if (player->speed > 4*mapobjectscale && abs(player->karttilt) < FRACUNIT/4)
 	{
 		fixed_t baseimpulse;
-		fixed_t rate = CLAMP(FixedDiv(player->speed, K_GetKartSpeed(player, false, false)), 8*FRACUNIT/10, 11*FRACUNIT/10);
+		fixed_t rate = CLAMP(FixedDiv(player->speed, K_GetKartSpeed(player, false, false)), 8*FRACUNIT/10, FRACUNIT);
 		player->bumpyroadside = (player->bumpyroadside ? -player->bumpyroadside : 1);
-		baseimpulse = FixedMul(4*mapobjectscale * player->bumpyroadside, rate);
-		
+
 		player->karttilt = FixedMul((3*FRACUNIT/2) * player->bumpyroadside, rate);
+		baseimpulse = (mapobjectscale) * -player->bumpyroadside;
 		K_AddTiltImpulse(player, player->mo->height/2, baseimpulse);
 
 		if (P_IsDisplayPlayer(player))

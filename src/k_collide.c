@@ -730,11 +730,13 @@ static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
 		return BMIT_CONTINUE;
 	}
 
+#if 0
 	if (P_CheckSight(lightningSource, thing) == false)
 	{
 		// Not in sight
 		return BMIT_CONTINUE;
 	}
+#endif
 
 	if (thing->type == MT_SPB) // If you destroy a SPB, you don't get the luxury of a cooldown.
 	{
