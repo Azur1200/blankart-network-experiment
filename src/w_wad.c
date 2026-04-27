@@ -155,8 +155,7 @@ void W_Shutdown(void)
 }
 
 // the lumpnum cache needs to be initialized before use
-// call this as early as possible!
-void W_Startup(void)
+CONSTRUCTOR static void W_Startup(void)
 {
 	lumpnum_map_init(&lumpnumcache);
 	lumpnum_map_reserve(&lumpnumcache, LUMPNUMCACHESIZE);
