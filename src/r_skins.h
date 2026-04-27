@@ -126,6 +126,10 @@ enum skinmenusortoption
 /// Externs
 extern INT32 numskins;
 extern skin_t skins[MAXSKINS];
+
+extern INT32 num_multivoiceskins;
+extern skin_t * multivoiceskins[MAXSKINS];
+
 extern INT32 skinsorted[MAXSKINS];
 
 extern CV_PossibleValue_t Forceskin_cons_t[];

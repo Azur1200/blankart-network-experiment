@@ -17,6 +17,7 @@
 
 #include "console.h"
 #include "command.h"
+#include "cvector.h"
 #include "i_time.h"
 #include "i_gamepad.h"
 #include "i_system.h"
@@ -8279,6 +8280,104 @@ static void Command_ListSkins(void)
 	}
 }
 
+__attribute__((used)) static void appendStrToCharVec(cvector(char) * v, const char * str)
+{
+	int i, len;
+
+	if (!v)
+		return;
+
+	if (!str)
+		return;
+
+	i = 0;
+	len = strlen(str);
+
+	for (i = 0; i < len; i++)
+		cvector_push_back(*v, str[i]);
+}
+
+#define CHARINDENT "    "
+#define MAXCHARSB4COLUMN (32)
+
+// Lists all multi-voiced characters in a long list. No pages here!
+__attribute__((used)) static void outputVoicesForSkin(skin_t * skin)
+{
+	cvector(char) str = NULL;
+	kartvoice_t* vox = NULL;
+
+	char color_prefix[2] = {0};
+
+	int i = 0;
+	int list_total_length = 0;
+
+	if (!skin)
+		return; // No skin
+
+	if (!skin->numvoices)
+		return; // No voices, either
+
+	const int voice_num = skin->numvoices;
+	const int voice_lastiter = (voice_num - 1);
+
+	UINT16 chatcolor = skincolors[skin->prefcolor].chatcolor;
+
+	if (chatcolor > V_TANMAP)
+	{
+		sprintf(color_prefix, "%c", '\x80');
+	}
+	else
+	{
+		sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+	}
+
+	color_prefix[1] = 0;
+
+	CONS_Printf("\x82Voices for %s%s\x82 (\x80\"%s\"\x82):\x80\n",
+		    color_prefix,
+		    skin->realname,
+		    skin->name);
+
+	appendStrToCharVec(&str, CHARINDENT);
+
+	for (i = 0; i < voice_num; i++)
+	{
+		if (list_total_length >= MAXCHARSB4COLUMN)
+		{
+			// Create a newline if we exceed the char limit
+			appendStrToCharVec(&str, "\n" CHARINDENT);
+			list_total_length = 0;
+		}
+
+		vox = &skin->voices[i];
+
+		if (!vox)
+			continue;
+
+		if (i < voice_lastiter)
+		{
+			appendStrToCharVec(&str, va("%s, ", vox->name));
+			list_total_length += strlen(vox->name) + 2;
+		}
+		else
+		{
+			appendStrToCharVec(&str, vox->name);
+		}
+	}
+
+	// Add the ending token for safety
+	cvector_push_back(str, '\0');
+
+	if (str)
+		CONS_Printf("%s\n", str);
+
+	// We're done; clear the vector
+	cvector_free(str);
+}
+
+#undef CHARINDENT
+#undef MAXCHARSB4COLUMN
+
 static void Command_ListVoices(void)
 {
 	int i;
@@ -8287,6 +8386,7 @@ static void Command_ListVoices(void)
 	int page = 0;
 	int longest_name = 0;
 	boolean searchedskin = false;
+	boolean searchallskins = false;
 
 	if (COM_Argc() > 1)
 	{
@@ -8297,7 +8397,7 @@ static void Command_ListVoices(void)
 				// Anyone who names their skin "--help" can suck it.
 				CONS_Printf(
 				    "Usage: \"listvoices <playernum/skinname> "
-				    "<pagenum>\"\nAlternatively: \"listvoices\" alone\n");
+				    "<pagenum>\"\nAlternatively: \"listvoices\" alone to find all skins with dubs\n");
 				return;
 			}
 			// Assume the player is searching by skin name instead.
@@ -8339,7 +8439,34 @@ static void Command_ListVoices(void)
 	}
 	else
 	{
-		sid = cv_skin[0].value;
+		// Assume we want to see all skins
+		searchallskins = true;
+	}
+
+	if (searchallskins)
+	{
+		if (num_multivoiceskins < 1)
+		{
+			CONS_Printf("There are no skins with multiple voices.\n");
+		}
+		else
+		{
+			// Comb through all the skins in the multivoice array, and list their voicebanks
+			if (num_multivoiceskins < 2)
+			{
+				// Only one skin in here.
+				outputVoicesForSkin(multivoiceskins[0]);
+			}
+			else
+			{
+				for (i = 0; i < num_multivoiceskins; i++)
+				{
+					outputVoicesForSkin(multivoiceskins[i]);
+				}
+			}
+		}
+
+		return;
 	}
 
 	if (sid == -1)
