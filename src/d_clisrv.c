@@ -1630,7 +1630,12 @@ static void CL_ReloadReceivedSavegame(void)
 static void SendAskInfo(INT32 node)
 {
 	tic_t asktime;
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	doomdata_t *netbuffer;
+
+	if (node == -1)
+		return;
+
+	netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (node != 0 && node != BROADCASTADDR &&
 			cv_rendezvousserver.string[0])
