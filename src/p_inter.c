@@ -2182,7 +2182,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		if (player->pflags & PF_GODMODE)
 			return false;
 
-		if (player->exiting)
+		if (player->exiting && (damagetype & DMG_DEATHMASK))
 		{
 			if (inflictor)
 				K_DoInstashield(player);
