@@ -1443,11 +1443,20 @@ void VS_Print(vsbuf_t *buf, const char *data)
 //
 // =========================================================================
 
+static UINT32 xxHashString32(const char *name)
+{
+	size_t len = strlen(name);
+	char *uname = (char *)alloca(len + 1);
+	strlcpy(uname, name, len + 1);
+	strlwr(uname);
+	return HASH32(uname, len);
+}
+
 #define NAME      cvar_map_t
 #define KEY_TY    const char *
 #define VAL_TY    consvar_t *
-#define HASH_FN   vt_hash_string
-#define CMPR_FN   vt_cmpr_string
+#define HASH_FN   xxHashString32
+#define CMPR_FN   vt_cmpr_casestring
 #include "verstable.h"
 
 #define NAME      netvar_map_t
@@ -1457,8 +1466,16 @@ void VS_Print(vsbuf_t *buf, const char *data)
 #define CMPR_FN   vt_cmpr_integer
 #include "verstable.h"
 
+#define NAME      compatnetvar_map_t
+#define KEY_TY    UINT16
+#define VAL_TY    consvar_t *
+#define HASH_FN   vt_hash_integer
+#define CMPR_FN   vt_cmpr_integer
+#include "verstable.h"
+
 static cvar_map_t cvar_map;
 static netvar_map_t netvar_map;
+static compatnetvar_map_t compatnetvar_map;
 
 CONSTRUCTOR static void CV_InitMap(void)
 {
@@ -1468,12 +1485,16 @@ CONSTRUCTOR static void CV_InitMap(void)
 
 	netvar_map_t_init(&netvar_map);
 	netvar_map_t_reserve(&netvar_map, 256);
+
+	compatnetvar_map_t_init(&compatnetvar_map);
+	compatnetvar_map_t_reserve(&compatnetvar_map, 256);
 }
 
 DESTRUCTOR static void CV_DestroyMap(void)
 {
 	cvar_map_t_cleanup(&cvar_map);
 	netvar_map_t_cleanup(&netvar_map);
+	compatnetvar_map_t_cleanup(&compatnetvar_map);
 }
 
 static const char *cv_null_string = "";
@@ -1545,11 +1566,17 @@ static consvar_t *CV_FindNetVar(UINT16 netid)
 
 consvar_t *CV_FindLegacyNetVar(UINT16 netid)
 {
+	compatnetvar_map_t_itr it = compatnetvar_map_t_get(&compatnetvar_map, netid);
+	if (!compatnetvar_map_t_is_end(it))
+		return it.data->val;
+
+	/*
 	consvar_t *cvar;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		if (cvar->compatnetid == netid)
 			return cvar;
+	*/
 
 	if (netid == 44542) // ouch this hack
 		return &cv_karteliminatelast;
@@ -1634,6 +1661,8 @@ void CV_RegisterVar(consvar_t *variable)
 
 	if (variable->flags & CV_NETVAR)
 		netvar_map_t_insert(&netvar_map, variable->netid, variable);
+	if (variable->compatnetid)
+		compatnetvar_map_t_insert(&compatnetvar_map, variable->compatnetid, variable);
 }
 
 /** Finds the string value of a console variable.

@@ -466,7 +466,8 @@ FUNCINLINE static ATTRINLINE void W_InvalidateLumpnumCache(void)
 	lumpnum_map_clear(&lumpnumcache);
 }
 
-FUNCINLINE static ATTRINLINE UINT32 W_HashLumpName(const char *name, size_t len)
+// This is unfornately duped in command.c since I want this inlined...
+FUNCINLINE ATTRINLINE UINT32 W_HashLumpName(const char *name, size_t len)
 {
 	char *uname = (char *)alloca(len + 1);
 	strlcpy(uname, name, len + 1);
