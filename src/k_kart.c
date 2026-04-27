@@ -12135,7 +12135,7 @@ void K_ShovePlayer(mobj_t *victim, mobj_t *source, fixed_t force)
 		// use the speed difference between the two objects for angular impulse calc
 		// this may or may not look awkward in some cases? will be looked into as we develop this effect more
 		FV3_Load(&side, victim->momx - source->momx, victim->momy - source->momy, victim->momz - source->momz);
-		K_AddTiltImpulse(victim->player, victim->radius, CLAMP(FV3_Magnitude(&side)/16, 8*victim->scale, 26*victim->scale)*direction);
+		K_AddTiltImpulse(victim->player, victim->radius, CLAMP(FV3_Magnitude(&side)/10, 8*victim->scale, 32*victim->scale)*direction);
 		K_SetPlayerBumped(victim->player, source);
 	}
 }
