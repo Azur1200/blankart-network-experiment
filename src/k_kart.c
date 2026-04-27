@@ -4242,11 +4242,12 @@ static void K_SpawnDriftSparks(player_t *player)
 	for (i = 0; i < 2; i++)
 	{
 		fixed_t driftExtraScale = 0;
-		if (player->karttilt &&
+		if (P_IsObjectOnGround(player->mo) && player->karttilt &&
 			((player->karttilt < 0 && !(i & 1)) || (player->karttilt > 0 && (i & 1)))
 		)
 		{
 			// when the kart is tilting don't spawn the sparks for the tyre that is lifted off the ground
+			// player has to be grounded in general for this to make sense, so never skip spawning sparks if player is airborne
 			continue;
 		}
 		newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
