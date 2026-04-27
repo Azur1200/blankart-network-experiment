@@ -1413,6 +1413,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			if (!target->target->player->itemamount)
 			{
 				K_UnsetItemOut(target->target->player);
+				K_DisableSeekingReticule(target->target->player);
 				// target->target->player->itemflags &= ~IF_ITEMOUT;
 			}
 

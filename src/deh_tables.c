@@ -831,6 +831,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "PLAYBACKSETVIEWS", &MR_PlaybackSetViews },
 	{ "PLAYBACKADJUSTVIEW", &MR_PlaybackAdjustView },
 	{ "PLAYBACKTOGGLEFREECAM", &MR_PlaybackToggleFreecam },
+	{ "PLAYBACKTOGGLEDIRECTOR", &MR_PlaybackToggleDirector },
 	{ "PLAYBACKQUIT", &MR_PlaybackQuit },
 	{ "HANDLEIMAGEDEF", &MR_HandleImageDef },
 	{ "HANDLEMUSICTEST", &MR_HandleMusicTest },

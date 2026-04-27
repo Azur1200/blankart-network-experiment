@@ -1347,12 +1347,12 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 	}
 
 	// thanks to sal for solidenemies dot lua
-	if (thing->flags & (MF_ENEMY|MF_BOSS) && g_tm.thing->flags & (MF_ENEMY|MF_BOSS))
+	/*if (thing->flags & (MF_ENEMY|MF_BOSS) && g_tm.thing->flags & (MF_ENEMY|MF_BOSS))
 	{
 		if ((thing->z + thing->height >= g_tm.thing->z)
 		&& (g_tm.thing->z + g_tm.thing->height >= thing->z))
 			return BMIT_ABORT;
-	}
+	}*/
 
 	// Damage other players when possible.
 	// Handle before bumpcode to prevent lower weights from getting affected.

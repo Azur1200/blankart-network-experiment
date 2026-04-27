@@ -5588,8 +5588,8 @@ static void K_drawInput(void)
 				tilt = -1;
 			else
 				rotate = FixedAngle(120 * abs(tilt));
-			x += 17*FINESINE(rotate>>ANGLETOFINESHIFT) * intsign(tilt);
-			y -= 17*FINECOSINE(rotate>>ANGLETOFINESHIFT);
+			x += 17*FSIN(rotate) * intsign(tilt);
+			y -= 17*FCOS(rotate);
 			splitflags |= (((leveltime % 3 == 0) && (stplyr->cmd.flags & TICCMD_EXCESSTILT)) ? V_ADD|V_20TRANS : 0);
 
 			if (!K_GetHudColor())

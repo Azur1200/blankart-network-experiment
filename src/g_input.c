@@ -1500,7 +1500,7 @@ INT32 G_GetGamepadTilt(INT32 p)
 	tilt = CLAMP(FixedDiv(G_GetGamepadGravity(p).x + MAXGAMEPADTILT, 2*MAXGAMEPADTILT), 0, FRACUNIT);
 	CONS_Debug(DBG_IMU, "Tilt: %4.2f\n", FixedToFloat(tilt));
 	
-	curve = FINESINE(FixedAngle(180*(tilt-FRACUNIT/2))>>ANGLETOFINESHIFT);
+	curve = FSIN(FixedAngle(180*(tilt-FRACUNIT/2)));
 	CONS_Debug(DBG_IMU, "Pinched Tilt: %4.2f\n", FixedToFloat(curve));
 	
 	return (JOYAXISRANGE * curve)/FRACUNIT;

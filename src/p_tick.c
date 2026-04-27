@@ -655,7 +655,7 @@ void P_RunChaseCameras(void)
 			camera_t *cam = &camera[i];
 
 			// client sided
-			if (p->mo && G_PlayerInputDown(forplayer, gc_freelook, false, DEADZONE_BUTTON))
+			if (P_IsMachineLocalPlayer(p) && p->mo && G_PlayerInputDown(i, gc_freelook, false, DEADZONE_BUTTON))
 			{
 				// instantly able to move camera
 				if (p->speed < 6 * p->mo->scale && abs(cam->freelook_held) < 2*TICRATE)
@@ -668,10 +668,10 @@ void P_RunChaseCameras(void)
 					cam->freelook_pitch = (45*FixedDiv(p->cmd.throwdir, KART_FULLTURN));
 
 					// gyro aiming
-					if (G_GetGamepadCanUseTilt(forplayer) && cv_tiltcontrol[forplayer].value == 1)
+					if (G_GetGamepadCanUseTilt(i) && cv_tiltcontrol[i].value == 1)
 					{
 						fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
-						vector3_t gyro = G_GetGamepadCalibratedGyro(forplayer);
+						vector3_t gyro = G_GetGamepadCalibratedGyro(i);
 						cam->freelook_pitch_add -= FixedMul(gyro.x, deltaseconds);
 					}
 				}

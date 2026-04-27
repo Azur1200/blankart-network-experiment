@@ -241,10 +241,11 @@ extern consvar_t cv_karteggmine_slotbrick;
 extern consvar_t cv_kartthunder_radius;
 
 #define BUBBLEBOOSTTIME (7 * sneakertime / 10)
+
 #define ATTRACTIONCHARGETIME ((92*TICRATE)/60)
 #define ATTRACTIONATTACKTIME_FULL (TICRATE)
-#define ATTRACTIONATTACKTIME_MAX (TICRATE/2)
-#define ATTRACTIONATTACKTIME_MIN (TICRATE/3)
+#define ATTRACTIONATTACKTIME_MAX (3*TICRATE/4)
+#define ATTRACTIONATTACKTIME_MIN (TICRATE/2)
 
 #ifdef __cplusplus
 } // extern "C"

@@ -102,7 +102,7 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0xc1ae7d6e343e4bfb
+#define ASSET_HASH_MAIN_PK3            0xd2bf7373c266f900
 #define ASSET_HASH_MAPPATCH_PK3        0x1745690024efbaf8
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
@@ -124,9 +124,9 @@
 // Version numbers for netplay :upside_down_face:
 int    VERSION;
 int SUBVERSION;
-#ifdef COMMITVERSION
+// #ifdef COMMITVERSION
 UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
-#endif
+// #endif
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
@@ -1413,7 +1413,7 @@ static void IdentifyVersion(void)
 #endif
 }
 
-#ifdef COMMITVERSION
+// #ifdef COMMITVERSION
 static void D_AbbrevCommit (void)
 {
        UINT8 i;
@@ -1424,7 +1424,7 @@ static void D_AbbrevCommit (void)
                                &comprevision_abbrev_bin[i]);
        }
 }
-#endif
+// #endif
 
 static void
 D_ConvertVersionNumbers (void)

@@ -548,11 +548,11 @@ consvar_t cv_kartstacking_flame_stackable = CVAR_INIT ("vanillaboost_flame_stack
 
 consvar_t cv_kartstacking_attraction_speedboost_himin = CVAR_INIT ("vanillaboost_attraction_speedboost_himin", "0.42", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_attraction_speedboost_himax = CVAR_INIT ("vanillaboost_attraction_speedboost_himax", "0.50", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_attraction_speedboost_normmin = CVAR_INIT ("vanillaboost_attraction_speedboost_normmin", "0.15", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_attraction_speedboost_normmax = CVAR_INIT ("vanillaboost_attraction_speedboost_normmax", "0.20", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_attraction_accelboost_hi = CVAR_INIT ("vanillaboost_attraction_accelboost_hi", "18.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_attraction_accelboost_norm = CVAR_INIT ("vanillaboost_attraction_accelboost_norm", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_attraction_handleboost = CVAR_INIT ("vanillaboost_attraction_handleboost", "1.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_speedboost_normmin = CVAR_INIT ("vanillaboost_attraction_speedboost_normmin", "0.24", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_speedboost_normmax = CVAR_INIT ("vanillaboost_attraction_speedboost_normmax", "0.32", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_accelboost_hi = CVAR_INIT ("vanillaboost_attraction_accelboost_hi", "16.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_accelboost_norm = CVAR_INIT ("vanillaboost_attraction_accelboost_norm", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_handleboost = CVAR_INIT ("vanillaboost_attraction_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_attraction_stackable = CVAR_INIT ("vanillaboost_attraction_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_start_speedboost = CVAR_INIT ("vanillaboost_start_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
@@ -585,11 +585,9 @@ consvar_t cv_kartstacking_ssmt_speedboost = CVAR_INIT ("vanillaboost_ssmt_speedb
 consvar_t cv_kartstacking_ssmt_accelboost = CVAR_INIT ("vanillaboost_ssmt_accelboost", "10.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_ssmt_handleboost = CVAR_INIT ("vanillaboost_ssmt_handleboost", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
-consvar_t cv_kartstacking_recspin_speedboost_lo = CVAR_INIT ("vanillaboost_recspin_speedboost_lo", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_recspin_accelboost_lo = CVAR_INIT ("vanillaboost_recspin_accelboost_lo", "0.5", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_recspin_handleboost_lo = CVAR_INIT ("vanillaboost_recspin_handleboost_lo", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
-consvar_t cv_kartstacking_recspin_speedboost_hi = CVAR_INIT ("vanillaboost_recspin_speedboost_hi", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_recspin_accelboost_hi = CVAR_INIT ("vanillaboost_recspin_accelboost_hi", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_recspin_handleboost_hi = CVAR_INIT ("vanillaboost_recspin_handleboost_hi", "0.5", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
@@ -718,6 +716,10 @@ consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "On", CV_NETV
 consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartflame_shove = CVAR_INIT ("kartflame_shove", "Off", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartattraction_assistpower = CVAR_INIT ("kartattraction_assistpower", "0.5", CV_NETVAR|CV_FLOAT, CV_Unsigned, NULL);
+
+// Attraction Shield damage toggles
+static CV_PossibleValue_t kartattractiondmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {DMG_EXPLODE, "Explode"}, {0, NULL}};
+consvar_t cv_kartattraction_aoedmg = CVAR_INIT ("kartattraction_aoedmg", "None", CV_NETVAR|CV_CHEAT|CV_GUARD, kartattractiondmg_cons_t, NULL);
 
 // "Arrow Bullet": above a certain speed threshold, an aura in the shape of the Shrink arrow
 // covers you, signaling protection from (most) items and players.

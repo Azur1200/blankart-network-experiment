@@ -141,7 +141,7 @@ extern char logfilename[1024];
 // to an increment in MODVERSION. This might never happen in practice.
 // If MODVERSION increases, set MINOREXECVERSION to 0.
 #define MAJOREXECVERSION MODVERSION
-#define MINOREXECVERSION 0
+#define MINOREXECVERSION 1
 // (It would have been nice to use VERSION and SUBVERSION but those are zero'd out for DEVELOP builds)
 
 // Macros
@@ -312,10 +312,10 @@ extern int SUBVERSION;
 // abbreviation. Maybe in another 20k commits, more than 8
 // characters will be required! =P
 // P.S. 8 is also what comptime generates
-#ifdef COMMITVERSION
+// #ifdef COMMITVERSION
 #define GIT_SHA_ABBREV (4)
 extern UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
-#endif
+// #endif
 
 extern boolean devparm; // development mode (-debug)
 

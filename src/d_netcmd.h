@@ -189,11 +189,9 @@ extern consvar_t cv_kartstacking_ssmt_speedboost;
 extern consvar_t cv_kartstacking_ssmt_accelboost;
 extern consvar_t cv_kartstacking_ssmt_handleboost;
 
-extern consvar_t cv_kartstacking_recspin_speedboost_lo;
 extern consvar_t cv_kartstacking_recspin_accelboost_lo;
 extern consvar_t cv_kartstacking_recspin_handleboost_lo;
 
-extern consvar_t cv_kartstacking_recspin_speedboost_hi;
 extern consvar_t cv_kartstacking_recspin_accelboost_hi;
 extern consvar_t cv_kartstacking_recspin_handleboost_hi;
 
@@ -238,6 +236,7 @@ extern consvar_t cv_kartflame_fastfuel;
 extern consvar_t cv_kartflame_offroadburn;
 extern consvar_t cv_kartflame_shove;
 extern consvar_t cv_kartattraction_assistpower;
+extern consvar_t cv_kartattraction_aoedmg;
 extern consvar_t cv_kartaltshrink_arrowbullet;
 extern consvar_t cv_kartaltshrink_arrowbulletthres;
 

@@ -1340,7 +1340,11 @@ UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 	if (!TestValidLump(wad, 0))
 		return INT16_MAX;
 
-	namelen = strlen(name);
+	// Name = SHORTNAME. Truncate/move the string to something that has a max of 8 characters.
+	// Will this cause lumpname/lumphash collisions? Of course it will! But we need it for
+	// SRB2Kart compatibility, so...
+	namelen = min(strlen(name), 8);
+
 	hash = W_HashLumpName(name, namelen); // Not a mistake, legacy system for short lumpnames
 
 	//

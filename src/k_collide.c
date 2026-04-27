@@ -596,6 +596,7 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 
 static mobj_t *lightningSource;
 static fixed_t lightningDist;
+static boolean attractionhipower;
 
 static inline BlockItReturn_t PIT_ThunderShieldAttack(mobj_t *thing)
 {
@@ -696,7 +697,7 @@ static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
 		return BMIT_ABORT;
 	}
 
-	if (thing->player)
+	if (thing->player && (ATTRACTIONAOEDAMAGE == 0 || (!attractionhipower)))
 	{
 		// Don't damage players
 		return BMIT_CONTINUE;
@@ -741,16 +742,24 @@ static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
 		K_SetIndirectItemCooldown(0);
 	}
 
-	P_DamageMobj(thing, lightningSource, lightningSource, 1, DMG_VOLTAGE|DMG_CANTHURTSELF);
+	if (thing->player)
+	{
+		P_DamageMobj(thing, lightningSource, lightningSource, 1, ATTRACTIONAOEDAMAGE|DMG_CANTHURTSELF);
+	}
+	else
+	{
+		P_DamageMobj(thing, lightningSource, lightningSource, 1, DMG_VOLTAGE|DMG_CANTHURTSELF);
+	}
 	return BMIT_CONTINUE;
 }
 
-void K_AttractionShieldAttack(mobj_t *actor, fixed_t size)
+void K_AttractionShieldAttack(mobj_t *actor, fixed_t size, boolean hipower)
 {
 	INT32 bx, by, xl, xh, yl, yh;
 
 	lightningDist = FixedMul(size, actor->scale);
 	lightningSource = actor;
+	attractionhipower = hipower;
 
 	// Use blockmap to check for nearby shootables
 	yh = (unsigned)(actor->y + lightningDist - bmaporgy)>>MAPBLOCKSHIFT;

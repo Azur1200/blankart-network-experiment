@@ -139,6 +139,7 @@ extern vector3_t clusterpoint, clusterdtf;
 #define FLAMEHANDLEBOOST CV_Get(&cv_kartstacking_flame_handleboost)
 #define FLAMESTACKABLE CV_Get(&cv_kartstacking_flame_stackable)
 
+#define ATTRACTIONAOEDAMAGE CV_Get(&cv_kartattraction_aoedmg)
 #define ATTRACTIONSPEEDHIMIN CV_Get(&cv_kartstacking_attraction_speedboost_himin)
 #define ATTRACTIONSPEEDHIMAX CV_Get(&cv_kartstacking_attraction_speedboost_himax)
 #define ATTRACTIONSPEEDNORMMIN CV_Get(&cv_kartstacking_attraction_speedboost_normmin)
@@ -183,11 +184,9 @@ extern vector3_t clusterpoint, clusterdtf;
 #define SSMTACCELBOOST CV_Get(&cv_kartstacking_ssmt_accelboost)
 #define SSMTHANDLEBOOST CV_Get(&cv_kartstacking_ssmt_handleboost)
 
-#define RECSPINSPEEDBOOSTLO CV_Get(&cv_kartstacking_recspin_speedboost_lo)
 #define RECSPINACCELBOOSTLO CV_Get(&cv_kartstacking_recspin_accelboost_lo)
 #define RECSPINHANDLEBOOSTLO CV_Get(&cv_kartstacking_recspin_handleboost_lo)
 
-#define RECSPINSPEEDBOOSTHI CV_Get(&cv_kartstacking_recspin_speedboost_hi)
 #define RECSPINACCELBOOSTHI CV_Get(&cv_kartstacking_recspin_accelboost_hi)
 #define RECSPINHANDLEBOOSTHI CV_Get(&cv_kartstacking_recspin_handleboost_hi)
 
@@ -435,6 +434,7 @@ void K_AddTiltMomentum(player_t *player, fixed_t angularvelocity);
 void K_AddTiltImpulse(player_t *player, fixed_t distance, fixed_t force);
 
 #define RECOVERYDASHADD (TICRATE/2)
+#define RECOVERYDASHCHARGETIMEMIN (12)
 //og val 2*TICRATE
 #define RECOVERYDASHCHARGETIME (3*TICRATE/2)
 //og val 3*TICRATE/2

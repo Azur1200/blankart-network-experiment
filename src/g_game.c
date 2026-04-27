@@ -1603,6 +1603,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (cv_litesteer[forplayer].value && joystickvector.yaxis >= JOYAXISRANGE && abs(cmd->angle) == KART_FULLTURN)
 	{
 		// >= beacuse some analog devices can go past JOYAXISRANGE (?!)
+		cmd->turning /= 2;	// mine: make this show up in the input disp (we respect tilt control why not this too)
 		cmd->angle /= 2;
 	}
 
@@ -1785,7 +1786,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (G_GetGamepadCanUseTilt(forplayer) && cv_tiltcontrol[forplayer].value)
 	{
 		fixed_t tilt = G_GetGamepadGravity(forplayer).x;
-		vector3_t shake = G_GetGamepadShake(forplayer);
+		// vector3_t shake = G_GetGamepadShake(forplayer);
 
 		if (cv_tiltcontrol[forplayer].value == 1)
 		{
