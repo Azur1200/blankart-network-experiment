@@ -697,11 +697,13 @@ static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
 		return BMIT_ABORT;
 	}
 
+#if 0
 	if (thing->player && (ATTRACTIONAOEDAMAGE == 0 || (!attractionhipower)))
 	{
 		// Don't damage players
 		return BMIT_CONTINUE;
 	}
+#endif
 
 	if (thing == lightningSource)
 	{
@@ -746,7 +748,15 @@ static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
 
 	if (thing->player)
 	{
-		P_DamageMobj(thing, lightningSource, lightningSource, 1, ATTRACTIONAOEDAMAGE|DMG_CANTHURTSELF);
+		if (ATTRACTIONAOEDAMAGE && attractionhipower)
+		{
+			P_DamageMobj(thing, lightningSource, lightningSource, 1, ATTRACTIONAOEDAMAGE|DMG_CANTHURTSELF);
+		}
+		if (ATTRACTIONAOEEMP && attractionhipower && thing != lightningSource)
+		{
+			//todo: filter out teammates
+			K_SetPlayerItemCooldown(thing->player, TICRATE * ATTRACTIONAOEEMP, false);
+		}
 	}
 	else
 	{
