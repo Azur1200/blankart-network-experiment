@@ -1774,8 +1774,13 @@ static void K_DoHyudoroSteal(player_t *player)
 			&& !(players[i].itemflags & IF_ITEMOUT)
 			&& !players[i].itemblink
 			//todo: make this more modular for hold-button items (these should never be stolen when being used)
-			&& !players[i].bubblecool
-			&& !players[i].attractioncharge
+			&& !(
+				players[i].flametimer +
+				players[i].bubblecool +
+				players[i].bubbleblowup +
+				players[i].bubblebuffer +
+				players[i].attractioncharge
+			)
 			))
 		{
 			kartitemflags_e flags = K_GetItemFlags(players[i].itemtype);
@@ -2620,6 +2625,8 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			S_StartSound(player->mo, sfx_s3k3f);
 			if (player->bubblehealth <= 0 || player->bubblehealth > MAXBUBBLEHEALTH)
 				player->bubblehealth = MAXBUBBLEHEALTH;
+			// bit of mercy so bubble doesn't get instantly killed on creation
+			player->bubblebuffer = TICRATE/2;
 		}
 
 		if (!HOLDING_ITEM && NO_HYUDORO)
