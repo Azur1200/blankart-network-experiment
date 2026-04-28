@@ -154,11 +154,9 @@ void ST_doPaletteStuff(void)
 	{
 		st_palette = palette;
 
-		if (rendermode == render_soft)
+		if (!r_splitscreen)
 		{
-			//V_SetPaletteLump(GetPalette()); // Reset the palette -- is this needed?
-			if (!r_splitscreen)
-				V_SetPalette(palette);
+			V_SetPalette(palette);
 		}
 	}
 }
