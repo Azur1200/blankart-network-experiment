@@ -85,13 +85,6 @@ boolean HWR_ShouldUsePaletteRendering(void);
 
 extern CV_PossibleValue_t glanisotropicmode_cons_t[];
 
-#ifdef ALAM_LIGHTING
-extern consvar_t cv_gldynamiclighting;
-extern consvar_t cv_glstaticlighting;
-extern consvar_t cv_glcoronas;
-extern consvar_t cv_glcoronasize;
-#endif
-
 extern consvar_t cv_glshaders, cv_glallowshaders;
 extern consvar_t cv_glmodels;
 

@@ -2,7 +2,6 @@ target_sources(BLANKART PRIVATE
 	hw_map.c
 	hw_bsp.c
 	hw_draw.c
-	hw_light.c
 	hw_main.c
 	hw_sky.c
 	hw_things.c

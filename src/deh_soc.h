@@ -37,10 +37,6 @@
 #include "d_clisrv.h"
 #include "k_items.h"
 
-#ifdef HWRENDER
-#include "hardware/hw_light.h"
-#endif
-
 #include "info.h"
 #include "dehacked.h"
 #include "doomdef.h" // HWRENDER
@@ -80,9 +76,6 @@ void readcutscene(MYFILE *f, INT32 num);
 void readlevelheader(MYFILE *f, char * name);
 void readgametype(MYFILE *f, char *gtname);
 void readsprite2(MYFILE *f, INT32 num);
-#ifdef HWRENDER
-void readlight(MYFILE *f, INT32 num);
-#endif
 void readskincolor(MYFILE *f, INT32 num, boolean mainfile);
 void readthing(MYFILE *f, INT32 num);
 void readfreeslots(MYFILE *f);

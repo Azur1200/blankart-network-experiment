@@ -796,11 +796,6 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	gpatch = spr->gpatch;
 
-#ifdef ALAM_LIGHTING
-	if (!(spr->mobj->flags2 & MF2_DEBRIS) && (spr->mobj->sprite != SPR_PLAY))
-		HWR_DL_AddLight(spr, gpatch);
-#endif
-
 	// create the sprite billboard
 	//
 	//  3--2

@@ -69,7 +69,6 @@
 #include "acs/interface.h"
 
 #ifdef HWRENDER
-#include "hardware/hw_light.h"
 #include "hardware/hw_main.h"
 #endif
 

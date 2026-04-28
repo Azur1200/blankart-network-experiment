@@ -290,11 +290,6 @@ void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, boolean isc
 			}
 		}
 	}
-
-#ifdef ALAM_LIGHTING
-	// add here code for dynamic lighting on planes
-	HWR_PlaneLighting(planeVerts, nrPlaneVerts);
-#endif
 }
 
 void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t fixedheight,

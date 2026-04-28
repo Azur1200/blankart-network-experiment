@@ -20,7 +20,6 @@
 #ifdef HWRENDER
 #include "hw_clip.h"
 #include "hw_glob.h"
-#include "hw_light.h"
 #include "hw_gpu.h"
 #include "hw_batching.h"
 
@@ -638,12 +637,6 @@ void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolean is_sk
 	// Check for new console commands.
 	NetUpdate();
 
-#ifdef ALAM_LIGHTING
-	//14/11/99: Hurdler: moved here because it doesn't work with
-	// subsector, see other comments;
-	HWR_ResetLights();
-#endif
-
 	// Draw MD2 and sprites
 
 	if (timing)
@@ -765,9 +758,6 @@ void HWR_RenderPlayerView(void)
 		stplyr = player;
 		ST_doPaletteStuff();
 		stplyr = saved_player;
-#ifdef ALAM_LIGHTING
-		HWR_SetLights(viewssnum);
-#endif
 	}
 
 	// Reset the shader state.
@@ -856,11 +846,6 @@ static void HWR_TogglePaletteRendering(void)
 
 void HWR_LoadLevel(void)
 {
-#ifdef ALAM_LIGHTING
-	// BP: reset light between levels (we draw preview frame lights on current frame)
-	HWR_ResetLights();
-#endif
-
 	HWR_CreatePlanePolygons((INT32)numnodes - 1);
 
 	// Build the sky dome
@@ -899,13 +884,6 @@ consvar_t cv_glshaders = CVAR_INIT ("gr_shaders", "On", CV_SAVE, glshaders_cons_
 consvar_t cv_glallowshaders = CVAR_INIT ("gr_allowclientshaders", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_fovchange = CVAR_INIT ("gr_fovchange", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_glsecbright = CVAR_INIT("gr_secbright", "0", CV_SAVE, glsecbright_cons_t, NULL);
-
-#ifdef ALAM_LIGHTING
-consvar_t cv_gldynamiclighting = CVAR_INIT ("gr_dynamiclighting", "On", CV_SAVE, CV_OnOff, NULL);
-consvar_t cv_glstaticlighting  = CVAR_INIT ("gr_staticlighting", "On", CV_SAVE, CV_OnOff, NULL);
-consvar_t cv_glcoronas = CVAR_INIT ("gr_coronas", "On", CV_SAVE, CV_OnOff, NULL);
-consvar_t cv_glcoronasize = CVAR_INIT ("gr_coronasize", "1", CV_SAVE|CV_FLOAT, 0, NULL);
-#endif
 
 consvar_t cv_glmodels = CVAR_INIT ("gr_models", "Off", CV_SAVE, CV_OnOff, NULL);
 
@@ -1022,13 +1000,6 @@ void HWR_AddCommands(void)
 {
 	CV_RegisterVar(&cv_fovchange);
 
-#ifdef ALAM_LIGHTING
-	CV_RegisterVar(&cv_glstaticlighting);
-	CV_RegisterVar(&cv_gldynamiclighting);
-	CV_RegisterVar(&cv_glcoronasize);
-	CV_RegisterVar(&cv_glcoronas);
-#endif
-
 #ifdef BAD_MODEL_OPTIONS
 	CV_RegisterVar(&cv_glmodellighting);
 	CV_RegisterVar(&cv_glmodelinterpolation);
@@ -1085,9 +1056,6 @@ void HWR_Startup(void)
 		HWR_AddSessionCommands();
 		HWR_InitMapTextures();
 		HWR_InitModels();
-#ifdef ALAM_LIGHTING
-		HWR_InitLight();
-#endif
 
 		gl_shadersavailable = HWR_InitShaders();
 		HWR_SetShaderState();
