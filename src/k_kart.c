@@ -12112,6 +12112,26 @@ void K_KartPlayerBumpyRoad(player_t *player)
 		{
 			S_StartSoundAtVolume(player->mo, sfx_s3k56, CLAMP((180*rate)/FRACUNIT, 0, 180));
 		}
+
+		// dust ptcl
+		{
+			INT32 speedrange = 1;
+			fixed_t sidex = P_ReturnThrustX(NULL, player->mo->angle + (ANGLE_90 * player->bumpyroadside), player->mo->radius);
+			fixed_t sidey = P_ReturnThrustY(NULL, player->mo->angle + (ANGLE_90 * player->bumpyroadside), player->mo->radius);
+			fixed_t backoffsetx = P_ReturnThrustX(NULL, player->mo->angle + ANGLE_180, player->mo->radius);
+			fixed_t backoffsety = P_ReturnThrustY(NULL, player->mo->angle + ANGLE_180, player->mo->radius);
+			mobj_t *dust = P_SpawnMobj(player->mo->x + sidex + backoffsetx, player->mo->y + sidey + backoffsety, player->mo->z, MT_WIPEOUTTRAIL);
+
+			dust->angle = K_MomentumAngle(player->mo);
+			K_FlipFromObject(dust, player->mo);
+			P_SetScale(dust, player->mo->scale);
+			dust->destscale = player->mo->scale / 2;
+			P_SetTarget(&dust->target, player->mo);
+			dust->renderflags |= RF_GHOSTLY;
+
+			dust->momx = FixedMul(player->mo->momx + (P_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(player->mo->scale)/4);
+			dust->momy = FixedMul(player->mo->momy + (P_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(player->mo->scale)/4);
+		}
 	}
 }
 
