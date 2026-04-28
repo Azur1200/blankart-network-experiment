@@ -7766,7 +7766,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		if (player->flameburnstop)
 			player->flameburnstop--;
 
-		if (player->stealingtimer == 0 && player->stolentimer == 0)
+		if (player->stealingtimer == 0 && player->stolentimer == 0 && player->position == 1)
 			player->flametimer--;
 
 		if (player->flametimer == 0)
