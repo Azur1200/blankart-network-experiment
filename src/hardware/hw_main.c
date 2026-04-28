@@ -527,9 +527,6 @@ void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolean is_sk
 	if (rootportal)
 		HWR_PortalClipping(rootportal);
 
-	// check for new console commands.
-	NetUpdate();
-
 	if (timing)
 	{
 		ps_numbspcalls = 0;
@@ -634,9 +631,6 @@ void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolean is_sk
 		gl_portal_level = 0;
 	}
 
-	// Check for new console commands.
-	NetUpdate();
-
 	// Draw MD2 and sprites
 
 	if (timing)
@@ -679,9 +673,6 @@ void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolean is_sk
 	// hack for debugportal, see earlier comment
 	if (gl_debugportal && !gl_portal_level)
 		HWR_SetStencilState(HWD_STENCIL_INACTIVE);
-
-	// Check for new console commands.
-	NetUpdate();
 }
 
 // ==========================================================================
@@ -746,8 +737,14 @@ void HWR_RenderPlayerView(void)
 	ps_hw_skyboxtime = I_GetPreciseTime();
 	if (skybox) // If there's a skybox and we should be drawing the sky, draw the skybox
 	{
+		// Check for new console commands.
+		NetUpdate();
+
 		HWR_ClearView();
 		HWR_RenderSkyboxView(player); // This is drawn before everything else so it is placed behind
+
+		// Check for new console commands.
+		NetUpdate();
 	}
 	ps_hw_skyboxtime = I_GetPreciseTime() - ps_hw_skyboxtime;
 
