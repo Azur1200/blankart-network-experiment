@@ -324,6 +324,8 @@ extern consvar_t cv_schedule;
 
 extern consvar_t cv_debugmappatch;
 
+extern consvar_t cv_allowmismatchmappatch;
+
 extern char timedemo_name[256];
 extern boolean timedemo_csv;
 extern char timedemo_csv_id[256];

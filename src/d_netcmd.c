@@ -884,6 +884,8 @@ consvar_t cv_automate = CVAR_INIT ("automate", "On", CV_NETVAR, CV_OnOff, NULL);
 
 consvar_t cv_debugmappatch = CVAR_INIT ("debugmappatch", "", 0, NULL, NULL);
 
+consvar_t cv_allowmismatchmappatch = CVAR_INIT ("allowmismatchmappatch", "No", CV_NETVAR, CV_YesNo, NULL);
+
 char timedemo_name[256];
 boolean timedemo_csv;
 char timedemo_csv_id[256];
@@ -1212,6 +1214,7 @@ void D_RegisterServerCommands(void)
 #endif
 
 	CV_RegisterVar(&cv_debugmappatch);
+	CV_RegisterVar(&cv_allowmismatchmappatch);
 
 	COM_AddCommand("playsound", Command_PlaySound);
 	RegisterNetXCmd(XD_PLAYSOUND, Got_PlaySound);

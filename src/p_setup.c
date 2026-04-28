@@ -1474,6 +1474,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 		if (!fastcmp(tkn, "namespace"))
 		{
 			CONS_Alert(CONS_ERROR, "No namespace at beginning of lump!\n");
+			TracyCZoneEnd(__zone);
 			return false;
 		}
 
@@ -1482,6 +1483,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 		if (!fastcmp(tkn, "blankart-patch"))
 		{
 			CONS_Alert(CONS_ERROR, "Invalid namespace '%s'. Only 'blankart-patch' is supported.\n", tkn);
+			TracyCZoneEnd(__zone);
 			return false;
 		}
 	}
@@ -1514,6 +1516,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 		if (!fastcmp(tkn, "checksum"))
 		{
 			CONS_Alert(CONS_ERROR, "No checksum in lump!\n");
+			TracyCZoneEnd(__zone);
 			return false;
 		}
 
@@ -1532,6 +1535,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 			if (end == hashstr || (*end && *end != '|'))
 			{
 				CONS_Alert(CONS_ERROR, "Invalid checksum string '%s'\n", tkn);
+				TracyCZoneEnd(__zone);
 				return false;
 			}
 			hashstr = end + 1;
@@ -1540,7 +1544,14 @@ static boolean TextmapCount(size_t size, boolean patch)
 		tkn = M_TokenizerRead(0);
 
 		if (!foundhash)
+		{
 			CONS_Alert(CONS_WARNING, "This map patch is not compatible with the current map (checksum: " HASHFMT "). The patch may not work.\n", maphash);
+			if (cv_allowmismatchmappatch.value)
+			{
+				TracyCZoneEnd(__zone);
+				return false;
+			}
+		}
 	}
 
 	// check for things to remove from the base map
@@ -1566,6 +1577,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 			if (end == typestr || (*end && *end != '|'))
 			{
 				CONS_Alert(CONS_ERROR, "Invalid basemaptyperemoval string '%s'\n", tkn);
+				TracyCZoneEnd(__zone);
 				return false;
 			}
 
