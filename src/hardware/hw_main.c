@@ -914,9 +914,12 @@ consvar_t cv_glbatching = CVAR_INIT ("gr_batching", "On", 0, CV_OnOff, NULL);
 CV_PossibleValue_t glpalettedepth_cons_t[] = {{16, "16 bits"}, {24, "24 bits"}, {0, NULL}};
 void CV_glpaletterendering_OnChange(void);
 void CV_glpalettedepth_OnChange(void);
+void CV_gllightdithering_OnChange(void);
 
 consvar_t cv_glpaletterendering = CVAR_INIT ("gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_glpaletterendering_OnChange);
 consvar_t cv_glpalettedepth = CVAR_INIT ("gr_palettedepth", "16 bits", CV_SAVE|CV_CALL, glpalettedepth_cons_t, CV_glpalettedepth_OnChange);
+
+consvar_t cv_gllightdither = CVAR_INIT ("gr_lightdithering", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_gllightdithering_OnChange);
 
 // Isolates rendering to one of the top level portals.
 // (Stencil cutting of the portal is also disabled)
@@ -958,7 +961,15 @@ void CV_glpaletterendering_OnChange(void)
 	}
 }
 
-void CV_glpalettedepth_OnChange(void);
+void CV_gllightdithering_OnChange(void)
+{
+	ONLY_IF_GL_LOADED
+	if (gl_shadersavailable)
+	{
+		HWR_CompileShaders();
+	}
+}
+
 void CV_glpalettedepth_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
@@ -1023,6 +1034,8 @@ void HWR_AddCommands(void)
 
 	CV_RegisterVar(&cv_glpaletterendering);
 	CV_RegisterVar(&cv_glpalettedepth);
+
+	CV_RegisterVar(&cv_gllightdither);
 
 	COM_AddCommand("gr_printportals", Command_Glprintportals_f);
 	CV_RegisterVar(&cv_gldebugportal);

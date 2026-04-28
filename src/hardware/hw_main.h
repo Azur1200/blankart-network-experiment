@@ -113,6 +113,7 @@ extern consvar_t cv_glsolvetjoin, cv_glpolytile, cv_glpolyshape;
 extern consvar_t cv_glbatching;
 extern consvar_t cv_glpaletterendering;
 extern consvar_t cv_glpalettedepth;
+extern consvar_t cv_gllightdither;
 extern consvar_t cv_gldebugportal;
 
 extern consvar_t cv_glskydebug;

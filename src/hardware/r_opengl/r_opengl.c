@@ -654,6 +654,8 @@ typedef enum
 	// misc.
 	gluniform_leveltime,
 
+	gluniform_scr_resolution,
+
 	gluniform_max,
 } gluniform_t;
 
@@ -1935,6 +1937,8 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 
 		UNIFORM_1(shader->uniforms[gluniform_leveltime], shader_leveltime, pglUniform1f);
 
+		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], (GLfloat)vid.width, (GLfloat)vid.height, pglUniform2f);
+
 		#undef UNIFORM_1
 		#undef UNIFORM_2
 		#undef UNIFORM_3
@@ -2050,24 +2054,26 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	shader->uniforms[gluniform_brightmap] = GETUNI("brightmap");
 
 	// lighting
-	shader->uniforms[gluniform_poly_color] = GETUNI("poly_color");
-	shader->uniforms[gluniform_tint_color] = GETUNI("tint_color");
-	shader->uniforms[gluniform_fade_color] = GETUNI("fade_color");
-	shader->uniforms[gluniform_lighting] = GETUNI("lighting");
-	shader->uniforms[gluniform_fade_start] = GETUNI("fade_start");
-	shader->uniforms[gluniform_fade_end] = GETUNI("fade_end");
-	shader->uniforms[gluniform_newfade] = GETUNI("newfade");
-	shader->uniforms[gluniform_light_dir] = GETUNI("light_dir");
-	shader->uniforms[gluniform_light_contrast] = GETUNI("light_contrast");
-	shader->uniforms[gluniform_light_backlight] = GETUNI("light_backlight");
+	shader->uniforms[gluniform_poly_color]            = GETUNI("poly_color");
+	shader->uniforms[gluniform_tint_color]            = GETUNI("tint_color");
+	shader->uniforms[gluniform_fade_color]            = GETUNI("fade_color");
+	shader->uniforms[gluniform_lighting]              = GETUNI("lighting");
+	shader->uniforms[gluniform_fade_start]            = GETUNI("fade_start");
+	shader->uniforms[gluniform_fade_end]              = GETUNI("fade_end");
+	shader->uniforms[gluniform_newfade]               = GETUNI("newfade");
+	shader->uniforms[gluniform_light_dir]             = GETUNI("light_dir");
+	shader->uniforms[gluniform_light_contrast]        = GETUNI("light_contrast");
+	shader->uniforms[gluniform_light_backlight]       = GETUNI("light_backlight");
 
 	// palette rendering
-	shader->uniforms[gluniform_palette_tex] = GETUNI("palette_tex");
-	shader->uniforms[gluniform_palette_lookup_tex] = GETUNI("palette_lookup_tex");
-	shader->uniforms[gluniform_lighttable_tex] = GETUNI("lighttable_tex");
+	shader->uniforms[gluniform_palette_tex]           = GETUNI("palette_tex");
+	shader->uniforms[gluniform_palette_lookup_tex]    = GETUNI("palette_lookup_tex");
+	shader->uniforms[gluniform_lighttable_tex]        = GETUNI("lighttable_tex");
+
+	shader->uniforms[gluniform_scr_resolution]        = GETUNI("scr_resolution");
 
 	// misc. (custom shaders)
-	shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
+	shader->uniforms[gluniform_leveltime]             = GETUNI("leveltime");
 
 #undef GETUNI
 
