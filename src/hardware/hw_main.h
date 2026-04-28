@@ -164,21 +164,6 @@ extern boolean gl_shadersavailable;
 
 extern boolean gl_rendering_skybox;
 
-/* Portal stuff */
-
-// TODO probably put this to a separate file?
-
-boolean HWR_AddPortal(line_t *start, line_t *dest, seg_t *seg);
-
-extern INT32 gl_portal_level;
-
-extern boolean gl_drawing_stencil;
-extern sector_t *gl_portalcullsector;
-extern line_t *gl_portalclipline;
-
-extern boolean gl_printportals;
-extern INT32 gl_debugportal;
-
 #ifdef __cplusplus
 } // extern "C"
 #endif

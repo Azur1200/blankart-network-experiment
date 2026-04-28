@@ -116,6 +116,38 @@ typedef struct gl_vissprite_s
 
 void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model);
 
+typedef struct
+{
+	// Viewport.
+	fixed_t viewx;
+	fixed_t viewy;
+	fixed_t viewz;
+	angle_t viewangle;
+
+	seg_t *seg; // seg that is used for drawing to the stencil buffer
+	line_t *clipline;
+
+	// angles for the left and right edges of the portal
+	// relative to the viewpoint
+	angle_t angle1;
+	angle_t angle2;
+} gl_portal_t;
+
+typedef struct
+{
+	gl_portal_t *portals;
+	unsigned int size;
+	unsigned int capacity;
+} gl_portal_array_t;
+
+// --------
+// hw_main.c
+// -------
+
+void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolean is_skybox, boolean timing, gl_portal_t *rootportal);
+void HWR_PrepareTransform(player_t *player, boolean is_skybox);
+void HWR_ResetClipper(void);
+
 // --------
 // hw_map.c
 // --------
@@ -229,6 +261,32 @@ void HWR_AddPrecipitationSprites(void);
 UINT32 HWR_SortVisSprites(void);
 void HWR_DrawSprites(void);
 void HWR_ProjectBoundingBox(mobj_t *thing);
+
+// --------
+// hw_portal.c
+// --------
+
+#define INIT_PORTAL_ARRAY_SIZE 4
+
+void HWR_PortalFrame(gl_portal_t *portal, boolean set_culling);
+gl_portal_array_t *HWR_GetPortalArray(void);
+boolean HWR_AddPortal(line_t *start, line_t *dest, seg_t *seg);
+void HWR_ClearPortals(void);
+void HWR_PortalClipping(gl_portal_t *portal);
+void HWR_RenderPortalSeg(seg_t *seg);
+void HWR_SetStencilState(INT32 state);
+void HWR_RenderDepthEraser(boolean visible);
+void HWR_RenderPortal(gl_portal_t *portal, gl_portal_t *rootportal, player_t *player, boolean is_skybox);
+
+extern INT32 gl_portal_level;
+
+extern boolean gl_drawing_stencil;
+extern sector_t *gl_portalcullsector;
+extern line_t *gl_portalclipline;
+
+extern boolean gl_printportals;
+extern INT32 gl_debugportal;
+
 
 #ifdef __cplusplus
 } // extern "C"

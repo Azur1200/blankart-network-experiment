@@ -18,5 +18,6 @@ target_sources(BLANKART PRIVATE
 	hw_plane.c
 	hw_segs.c
 	hw_shaders.c
+	hw_portal.c
 	r_opengl/r_opengl.c
 )
