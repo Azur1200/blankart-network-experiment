@@ -866,6 +866,10 @@ void GL_SetShader(int slot)
 		return;
 	}
 
+	// If using model lighting, set the appropriate shader.
+	if (slot == SHADER_MODEL && model_lighting)
+		slot = SHADER_MODEL_LIGHTING;
+
 	if (gl_allowshaders)
 	{
 		gl_shader_t *next_shader = &gl_shaders[slot]; // the gl_shader_t we are going to switch to

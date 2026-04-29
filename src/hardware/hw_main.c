@@ -917,7 +917,7 @@ void CV_glpalettedepth_OnChange(void);
 void CV_gllightdithering_OnChange(void);
 
 consvar_t cv_glpaletterendering = CVAR_INIT ("gr_paletteshader", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_glpaletterendering_OnChange);
-consvar_t cv_glpalettedepth = CVAR_INIT ("gr_palettedepth", "16 bits", CV_SAVE|CV_CALL, glpalettedepth_cons_t, CV_glpalettedepth_OnChange);
+consvar_t cv_glpalettedepth = CVAR_INIT ("gr_palettedepth", "24 bits", CV_SAVE|CV_CALL, glpalettedepth_cons_t, CV_glpalettedepth_OnChange);
 
 consvar_t cv_gllightdither = CVAR_INIT ("gr_lightdithering", "Off", CV_CALL|CV_SAVE, CV_OnOff, CV_gllightdithering_OnChange);
 
