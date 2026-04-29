@@ -148,13 +148,6 @@ static void Followercolor2_OnChange(void);
 static void Followercolor3_OnChange(void);
 static void Followercolor4_OnChange(void);
 
-/*
-static void Voice_OnChange(void);
-static void Voice2_OnChange(void);
-static void Voice3_OnChange(void);
-static void Voice4_OnChange(void);
-*/
-
 static void Color_OnChange(void);
 static void Color2_OnChange(void);
 static void Color3_OnChange(void);
@@ -2084,19 +2077,19 @@ static void setVoiceDataByName(UINT8 n, const char * vox_name)
 static void SendNameAndColor(UINT8 n)
 {
 	const INT32 playernum = g_localplayers[n];
-	player_t *player = &players[playernum];
-	kartvoice_t *voice;
-	kartvoice_t *valuevoice;
+	player_t* player = &players[playernum];
+	kartvoice_t* voice;
+	kartvoice_t* valuevoice;
 	INT32 prevskin;
 	kartvoicenum_t prefvox = MAXSKINVOICES;
 
-	char buf[MAXPLAYERNAME+12];
-	char *p;
+	char buf[MAXPLAYERNAME + 12];
+	char* p;
 
 	UINT16 i = 0;
 
 	if (splitscreen < n)
-		return; // can happen if skin4/color4/name4 changed
+		return;  // can happen if skin4/color4/name4 changed
 
 	if (playernum == -1)
 		return;
@@ -2108,23 +2101,29 @@ static void SendNameAndColor(UINT8 n)
 	{
 		if (player->skincolor && skincolors[player->skincolor].accessible)
 			CV_StealthSetValue(&cv_playercolor[n], player->skincolor);
-		else if (skins[player->skin].prefcolor && skincolors[skins[player->skin].prefcolor].accessible)
+		else if (skins[player->skin].prefcolor &&
+			 skincolors[skins[player->skin].prefcolor].accessible)
 			CV_StealthSetValue(&cv_playercolor[n], skins[player->skin].prefcolor);
 		else if (skincolors[atoi(cv_playercolor[n].defaultvalue)].accessible)
 			CV_StealthSet(&cv_playercolor[n], cv_playercolor[n].defaultvalue);
 		else
 		{
-			while (i<numskincolors && !skincolors[i].accessible)
+			while (i < numskincolors && !skincolors[i].accessible)
 				i++;
-			CV_StealthSetValue(&cv_playercolor[n], (i != numskincolors) ? i : SKINCOLOR_BLUE);
+			CV_StealthSetValue(&cv_playercolor[n],
+					   (i != numskincolors) ? i : SKINCOLOR_BLUE);
 		}
 	}
 
 	// ditto for follower colour:
 	if (!cv_followercolor[n].value)
-		CV_StealthSet(&cv_followercolor[n], "Default"); // set it to "Default". I don't care about your stupidity!
+		CV_StealthSet(
+		    &cv_followercolor[n],
+		    "Default");  // set it to "Default". I don't care about your stupidity!
 
-	// so like, this is sent before we even use anything like cvars or w/e so it's possible that follower is set to a pretty yikes value, so let's fix that before we send garbage that could crash the game:
+	// so like, this is sent before we even use anything like cvars or w/e so it's possible that
+	// follower is set to a pretty yikes value, so let's fix that before we send garbage that
+	// could crash the game:
 	if (cv_follower[n].value >= numfollowers || cv_follower[n].value < -1)
 		CV_StealthSet(&cv_follower[n], "-1");
 
@@ -2137,12 +2136,12 @@ static void SendNameAndColor(UINT8 n)
 		voice = &skins[player->skin].voices[0];
 	}
 
-	if (fastcmp(cv_playername[n].string, player_names[playernum])
-		&& cv_playercolor[n].value == player->skincolor
-		&& fastcmp(cv_skin[n].string, skins[player->skin].name)
-		&& cv_follower[n].value == player->followerskin
-		&& cv_followercolor[n].value == player->followercolor
-		&& fasticmp(localvoicedata[n].name, voice->name))
+	if (fastcmp(cv_playername[n].string, player_names[playernum]) &&
+	    cv_playercolor[n].value == player->skincolor &&
+	    fastcmp(cv_skin[n].string, skins[player->skin].name) &&
+	    cv_follower[n].value == player->followerskin &&
+	    cv_followercolor[n].value == player->followercolor &&
+	    fasticmp(localvoicedata[n].name, voice->name))
 		return;
 
 	// We'll handle it later if we're not playing.
@@ -2219,7 +2218,8 @@ static void SendNameAndColor(UINT8 n)
 
 				if (player->jointime > 1)
 				{
-					// We're officially in the game; assume any skin/voice change is 100% on purpose
+					// We're officially in the game; assume any skin/voice
+					// change is 100% on purpose
 					setVoiceDataByName(n, valuevoice->name);
 				}
 			}
@@ -2247,10 +2247,11 @@ static void SendNameAndColor(UINT8 n)
 						// Skin's changing, let's try their preference
 
 						// Give the player a heads-up
-						CONS_Alert(CONS_NOTICE,
-							   M_GetText("Using preferred voice "
-								     "\"%s\" for this skin.\n"),
-							   skins[player->skin].voices[prefvox].name);
+						CONS_Alert(
+						    CONS_NOTICE,
+						    M_GetText("Using preferred voice "
+							      "\"%s\" for this skin.\n"),
+						    skins[player->skin].voices[prefvox].name);
 						valuevoice = &skins[player->skin].voices[prefvox];
 
 						// Preferences get to set local data for free!
@@ -2270,7 +2271,8 @@ static void SendNameAndColor(UINT8 n)
 
 				if (player->jointime > 1)
 				{
-					// We're officially in the game; assume any skin/voice change is 100% on purpose
+					// We're officially in the game; assume any skin/voice
+					// change is 100% on purpose
 					setVoiceDataByName(n, valuevoice->name);
 				}
 			}
@@ -2307,7 +2309,8 @@ static void SendNameAndColor(UINT8 n)
 			}
 		}
 
-		if (cv_autovoxpref[n].value && player->voice_id != 0) // Please please PLEASE not for defaults...
+		if (cv_autovoxpref[n].value &&
+		    player->voice_id != 0)  // Please please PLEASE not for defaults...
 		{
 			// Auto-assign a preference based on our final voice.
 			// This overwrites anything currently present
@@ -2328,7 +2331,7 @@ static void SendNameAndColor(UINT8 n)
 	}
 	else if (cv_mute.value && !(server || IsPlayerAdmin(playernum)))
 		CV_StealthSet(&cv_playername[n], player_names[playernum]);
-	else // Cleanup name if changing it
+	else  // Cleanup name if changing it
 		CleanupPlayerName(playernum, cv_playername[n].zstring);
 
 	// Don't change skin if the server doesn't want you to.
@@ -2339,7 +2342,7 @@ static void SendNameAndColor(UINT8 n)
 		if (R_FindIDForVoice(&skins[player->skin], localvoicedata[n].name) == MAXSKINVOICES)
 		{
 			// Our voice is no longer valid.
-			
+
 			// Check if we have a preference
 			prefvox = R_GetLocalPreferredVoiceForSkin(n, skins[player->skin].name);
 
@@ -2386,7 +2389,9 @@ static void SendNameAndColor(UINT8 n)
 			setVoiceDataByName(n, skins[cv_skin[n].value].voices[prefvox].name);
 
 			// Give the player a heads-up
-			CONS_Alert(CONS_NOTICE, M_GetText("Using preferred voice \"%s\" for this skin.\n"), skins[cv_skin[n].value].voices[prefvox].name);
+			CONS_Alert(CONS_NOTICE,
+				   M_GetText("Using preferred voice \"%s\" for this skin.\n"),
+				   skins[cv_skin[n].value].voices[prefvox].name);
 		}
 		else if (player->jointime >= 1)
 		{
@@ -2447,8 +2452,9 @@ static void SendNameAndColor(UINT8 n)
 
 	if (cv_autovoxpref[n].value && localvoicedata[n].value != 0)
 	{
-		// Auto-assign a preference based on our final voice, if it isn't the default. Defaults should be manually set.
-		// This overwrites anything currently present (again, given it's not the default voice).
+		// Auto-assign a preference based on our final voice, if it isn't the default.
+		// Defaults should be manually set. This overwrites anything currently present
+		// (again, given it's not the default voice).
 		R_SetLocalPreferredVoiceForSkin(
 		    n, skins[cv_skin[n].value].name, localvoicedata[n].name);
 	}
@@ -8503,19 +8509,35 @@ static void __voice_cmd_func(INT32 pid, UINT8 pnum)
 
 			if (vo_id == MAXSKINVOICES)
 			{
-				// Found nothing. Make sure we're not playing as this skin, or at least not playing yet!
-				if (!ingame || !fasticmp(skins[skin_id].name, skins[players[pid].skin].name))
+				// Found nothing. Make sure we're not playing as this skin, or at
+				// least not playing yet!
+				if (!ingame ||
+				    !fasticmp(skins[skin_id].name, skins[players[pid].skin].name))
 				{
 					// Okay, good, we're not, Set a preference.
-					CONS_Printf("Set local player %d's preferred voice for skin \"%s\" to %s.\n", pnum + 1, skins[skin_id].name, COM_Argv(2));
+					CONS_Printf(
+					    "Set local player %d's preferred voice for skin \"%s\" "
+					    "to %s.\n",
+					    pnum + 1,
+					    skins[skin_id].name,
+					    COM_Argv(2));
 				}
 				else
 				{
 					// SHIT, we are. Break the bad news.
-					CONS_Alert(CONS_NOTICE, M_GetText("No voice exists for skin %s with the name %s. A preference has been set instead.\n(TIP: Type \"listvoices %s\" in the console to see this skin's voices!)\n"), skins[skin_id].name, COM_Argv(2), skins[skin_id].name);
+					CONS_Alert(
+					    CONS_NOTICE,
+					    M_GetText("No voice exists for skin %s with the name "
+						      "%s. A preference has been set "
+						      "instead.\n(TIP: Type \"listvoices %s\" in "
+						      "the console to see this skin's voices!)\n"),
+					    skins[skin_id].name,
+					    COM_Argv(2),
+					    skins[skin_id].name);
 				}
 
-				R_SetLocalPreferredVoiceForSkin(pnum, skins[skin_id].name, va("%s", COM_Argv(2)));
+				R_SetLocalPreferredVoiceForSkin(
+				    pnum, skins[skin_id].name, va("%s", COM_Argv(2)));
 				return;
 			}
 		}
@@ -8589,13 +8611,20 @@ static void __voice_cmd_func(INT32 pid, UINT8 pnum)
 		}
 		else if (fasticmp(COM_Argv(1), "--help"))
 		{
-			char command_name[7] = "voice";
+			char command_name[7] = "voice_";
 
-			command_name[5] = (pid > 0) ? (49 + pid) : 0;
+			command_name[5] = (pid > 0) ? ('1' + pid) : 0;
 			command_name[6] = 0;
 
 			// Anyone who names their skin "--help" can suck it.
-			CONS_Printf("Usage: \"%s <skin_name> <voice_name>\" to set a preference, regardless of if the voice is actually set or not\nAlternatively: \"%s\" alone to see the current voice, or \"%s <voice_name>\" to set a voice for the current skin without setting a preference.\n", command_name, command_name, command_name);
+			CONS_Printf(
+			    "Usage: \"%s <skin_name> <voice_name>\" to set a preference, "
+			    "regardless of if the voice is actually set or not\nAlternatively: "
+			    "\"%s\" alone to see the current voice, or \"%s <voice_name>\" to set "
+			    "a voice for the current skin without setting a preference.\n",
+			    command_name,
+			    command_name,
+			    command_name);
 			return;
 		}
 		else
@@ -9151,28 +9180,6 @@ static void Color4_OnChange(void)
 	}
 	lastgoodcolor[3] = cv_playercolor[3].value;
 }
-
-/*
-static void Voice_OnChange(void)
-{
-	__voice_cvar_func(consoleplayer, 0);
-}
-
-static void Voice2_OnChange(void)
-{
-	__voice_cvar_func(g_localplayers[1], 1);
-}
-
-static void Voice3_OnChange(void)
-{
-	__voice_cvar_func(g_localplayers[2], 2);
-}
-
-static void Voice4_OnChange(void)
-{
-	__voice_cvar_func(g_localplayers[3], 3);
-}
-*/
 
 /** Displays the result of the chat being muted or unmuted.
   * The server or remote admin should already know and be able to talk
