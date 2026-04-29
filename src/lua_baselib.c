@@ -3502,10 +3502,11 @@ static int lib_gDoReborn(lua_State *L)
 }
 
 // Another Lua function that doesn't actually exist!
-// Sets nextmapoverride & skipstats without instantly ending the level, for instances where other sources should be exiting the level, like normal signposts.
-static int lib_gSetCustomExitVars(lua_State *L)
+// Sets nextmapoverride & skipstats without instantly ending the level, for instances where other
+// sources should be exiting the level, like normal signposts.
+static int lib_gSetCustomExitVars(lua_State* L)
 {
-	int n = lua_gettop(L); // Num arguments
+	int n = lua_gettop(L);  // Num arguments
 	NOHUD
 	INLEVEL
 
@@ -3516,15 +3517,36 @@ static int lib_gSetCustomExitVars(lua_State *L)
 	//	G_SetCustomExitVars(nil, int)	[skipstats only]
 	//	G_SetCustomExitVars(int, int)	[both of the above]
 
+	mapnum_t potential_override = 0;
+
 	nextmapoverride = 0;
 	skipstats = 0;
 
 	if (n >= 1)
 	{
-		nextmapoverride = luaL_optinteger(L, 1, 0);
+		potential_override = luaL_optinteger(L, 1, 0);
 		skipstats = (INT16)luaL_optinteger(L, 2, 0);
-		if (lua_compatmode && nextmapoverride)
-			nextmapoverride = G_KartMapToNative(nextmapoverride);
+		if (lua_compatmode && potential_override)
+			potential_override = G_KartMapToNative(potential_override);
+
+		if (potential_override != 0)
+		{
+			// Prevent crashes by making sure the override is safe
+			if (!G_MapIsSafe(potential_override))
+			{
+				// Override is very definitively NOT safe; error out
+				return luaL_error(
+				    L,
+				    "provided map override %d is invalid (nummapheaders = %d)",
+				    potential_override,
+				    nummapheaders);
+			}
+			else
+			{
+				// Allow the override
+				nextmapoverride = potential_override;
+			}
+		}
 	}
 
 	return 0;
@@ -3627,6 +3649,18 @@ static int lib_gTicsToMilliseconds(lua_State *L)
 	tic_t rtic = luaL_checkinteger(L, 1);
 	//HUDSAFE
 	lua_pushinteger(L, G_TicsToMilliseconds(rtic));
+	return 1;
+}
+
+static int lib_gMapIsSafe(lua_State *L)
+{
+	mapnum_t map = (mapnum_t)luaL_checkinteger(L, 1);
+
+	if (lua_compatmode && map)
+		map = G_KartMapToNative(map);
+
+	//HUDSAFE
+	lua_pushboolean(L, G_MapIsSafe(map));
 	return 1;
 }
 
@@ -5781,6 +5815,7 @@ static luaL_Reg lib[] = {
 	{"G_AddGametype", lib_gAddGametype},
 	{"G_BuildMapName",lib_gBuildMapName},
 	{"G_MapNumber",lib_gMapNumber},
+	{"G_MapIsSafe",lib_gMapIsSafe},
 	{"G_BuildMapTitle",lib_gBuildMapTitle},
 	{"G_FindMap",lib_gFindMap},
 	{"G_FindMapByNameOrCode",lib_gFindMapByNameOrCode},

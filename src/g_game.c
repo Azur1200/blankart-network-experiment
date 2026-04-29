@@ -4951,6 +4951,14 @@ mapnum_t G_CheckNextMap(boolean noadvancemap)
 	//boolean spec = G_IsSpecialStage(currentmap);
 	INT32 i;
 
+	// Kill nextmapoverride if it's not a safe move
+	if (!G_MapIsSafe(nextmapoverride))
+	{
+		// At least beat the programmer/host over the head for it
+		CONS_Alert(CONS_WARNING, "Overriding map ID %d is unsafe!", nextmapoverride);
+		nextmapoverride = 0;
+	}
+
 	if (nextmapoverride != 0)
 	{
 		return nextmapoverride-1;
@@ -5104,6 +5112,14 @@ mapnum_t G_CheckNextMap(boolean noadvancemap)
 	}
 }
 
+// Tests if a given map number is safe to go to. If not, this returns false.
+boolean G_MapIsSafe(mapnum_t map)
+{
+	return (map != NEXTMAP_INVALID &&
+		(map >= NEXTMAP_SPECIAL || (map < nummapheaders && mapheaderinfo[map] &&
+					    mapheaderinfo[map]->lumpnum != LUMPERROR)));
+}
+
 void G_GetNextMap(void)
 {
 	if (!server)
@@ -5222,7 +5238,7 @@ void G_GetNextMap(void)
 	}
 
 	// We are committed to this map now.
-	if (nextmap == NEXTMAP_INVALID || (nextmap < NEXTMAP_SPECIAL && (nextmap >= nummapheaders || !mapheaderinfo[nextmap] || mapheaderinfo[nextmap]->lumpnum == LUMPERROR)))
+	if (!G_MapIsSafe(nextmap))
 		I_Error("G_GetNextMap: Internal map ID %d not found (nummapheaders = %d)\n", nextmap, nummapheaders);
 
 #if 0 // This is a surprise tool that will help us later.
