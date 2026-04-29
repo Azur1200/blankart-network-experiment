@@ -57,6 +57,14 @@ CV_PossibleValue_t skin_cons_t[MAXSKINS+1];
 
 CV_PossibleValue_t Forceskin_cons_t[MAXSKINS+2];
 
+// FIXME: Save voice data to a separate file
+kartvoiceinfo_t localvoicedata[MAXSPLITSCREENPLAYERS] = {
+	[0] = {.name = "default", .value = 0},
+	[1] = {.name = "default", .value = 0},
+	[2] = {.name = "default", .value = 0},
+	[3] = {.name = "default", .value = 0}
+};
+
 //
 // P_GetSkinSprite2
 // For non-super players, tries each sprite2's immediate predecessor until it finds one with a number of frames or ends up at standing.
@@ -735,8 +743,20 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 
 	if (player->voice_id == voicenum)
 	{
-		// Hey... this voice is the same as before!
-		return;
+		// Same ID? Seems suspicious...
+
+		if (P_MobjWasRemoved(player->mo))
+			return; // Unfortunately, we have no object, so we'll assume it's a dupe...
+
+		if (!player->mo->voice)
+			return; // We somehow have no voice either!
+
+		// Check the actual voice structs to be absolutely sure.
+		if (player->mo->voice == &skins[player->skin].voices[voicenum])
+		{
+			// Hey... this voice is the same as before!
+			return;
+		}
 	}
 
 	player->voice_id = voicenum;

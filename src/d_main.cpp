@@ -54,6 +54,7 @@
 #include "p_saveg.h"
 #include "r_main.h"
 #include "r_local.h"
+#include "r_voicepreference.hpp" // Preferences directory
 #include "s_sound.h"
 #include "st_stuff.h"
 #include "v_video.h"
@@ -1564,6 +1565,7 @@ void D_SRB2Main(void)
 			strcatbf(liveeventbackup, srb2home, PATHSEP);
 
 			snprintf(luafiledir, sizeof luafiledir, "%s" PATHSEP "luafiles", srb2home);
+			snprintf(preferencesdir, sizeof preferencesdir, "%s" PATHSEP "preferences" PATHSEP, srb2home);
 #else // DEFAULTDIR
 			snprintf(srb2home, sizeof srb2home, "%s", userhome);
 			if (dedicated)
@@ -1576,6 +1578,7 @@ void D_SRB2Main(void)
 			strcatbf(liveeventbackup, userhome, PATHSEP);
 
 			snprintf(luafiledir, sizeof luafiledir, "%s" PATHSEP "luafiles", userhome);
+			snprintf(preferencesdir, sizeof preferencesdir, "%s" PATHSEP "preferences" PATHSEP, userhome);
 #endif // DEFAULTDIR
 		}
 
@@ -1795,6 +1798,8 @@ void D_SRB2Main(void)
 
 	//--------------------------------------------------------- CONFIG.CFG
 	M_FirstLoadConfig(); // WARNING : this do a "COM_BufExecute()"
+
+	R_LoadVoicePreferences();
 
 	VID_PrepareModeList(); // Regenerate Modelist according to cv_fullscreen
 

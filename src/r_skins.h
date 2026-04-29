@@ -40,6 +40,15 @@ extern consvar_t cv_skinselectstyle, cv_skinselectsort;
 
 #define MAXSKINVOICES 16 // 16 voices * 4096 skins = 65536 voices in total :^)
 
+// Replacement for cv_voice
+struct kartvoiceinfo_t
+{
+	char name[VOICENAMESIZE+1];
+	kartvoicenum_t value;
+};
+
+extern kartvoiceinfo_t localvoicedata[MAXSPLITSCREENPLAYERS];
+
 // Player voice struct
 struct kartvoice_t
 {
@@ -92,7 +101,7 @@ struct skin_t
 	// If an mobj_t doesn't have a voice, it defaults to this value, given a skin is in use.
 	kartvoice_t voices[MAXSKINVOICES];
 
-	UINT16 numvoices;
+	kartvoicenum_t numvoices;
 
 	// Proxy value for the (now removed) soundsid array.
 	// This is ONLY used in a Lua context.

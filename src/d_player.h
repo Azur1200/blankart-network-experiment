@@ -33,6 +33,8 @@
 extern "C" {
 #endif
 
+typedef UINT16 kartvoicenum_t;
+
 // Extra abilities/settings for skins (combinable stuff)
 typedef enum
 {

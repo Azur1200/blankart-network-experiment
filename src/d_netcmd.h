@@ -22,6 +22,11 @@
 extern "C" {
 #endif
 
+// Big overshoot
+#define PREFLISTSIZE (4096)
+
+extern char prefvoiceliststr[PREFLISTSIZE];
+
 extern consvar_t cv_showgremlins;
 
 // console vars
@@ -30,7 +35,7 @@ extern consvar_t cv_playercolor[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_skin[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_follower[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_followercolor[MAXSPLITSCREENPLAYERS];
-extern consvar_t cv_voice[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_autovoxpref[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_dummyrestatspeed[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_dummyrestatweight[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_dummyrestatrandom[MAXSPLITSCREENPLAYERS];

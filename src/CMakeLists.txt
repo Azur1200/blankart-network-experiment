@@ -77,6 +77,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	r_plane.cpp
 	r_segs.cpp
 	r_skins.c
+	r_voicepreference.cpp
 	r_sky.c
 	r_splats.c
 	r_things.cpp
