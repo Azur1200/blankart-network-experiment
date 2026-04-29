@@ -656,6 +656,8 @@ typedef enum
 
 	gluniform_scr_resolution,
 
+	gluniform_water_ripple,
+
 	gluniform_max,
 } gluniform_t;
 
@@ -1943,6 +1945,8 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 
 		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], (GLfloat)vid.width, (GLfloat)vid.height, pglUniform2f);
 
+		UNIFORM_1(shader->uniforms[gluniform_water_ripple], !!(Surface && (Surface->PolyFlags & PF_Ripple)), pglUniform1f);
+
 		#undef UNIFORM_1
 		#undef UNIFORM_2
 		#undef UNIFORM_3
@@ -2078,6 +2082,8 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 
 	// misc. (custom shaders)
 	shader->uniforms[gluniform_leveltime]             = GETUNI("leveltime");
+
+	shader->uniforms[gluniform_water_ripple]          = GETUNI("water_ripple");
 
 #undef GETUNI
 
