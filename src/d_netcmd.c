@@ -8613,7 +8613,7 @@ static void __voice_cmd_func(INT32 pid, UINT8 pnum)
 		{
 			char command_name[7] = "voice_";
 
-			command_name[5] = (pid > 0) ? ('1' + pid) : 0;
+			command_name[5] = (pnum > 0) ? ('1' + pnum) : 0;
 			command_name[6] = 0;
 
 			// Anyone who names their skin "--help" can suck it.
