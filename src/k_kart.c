@@ -9503,8 +9503,8 @@ void K_AddTiltMomentum(player_t *player, fixed_t angularvelocity)
 static void K_HandleKartTilt(player_t *player)
 {
 	SINT8 startsign = intsign(player->karttilt);
-	fixed_t lineargravity = P_GetMobjGravity(player->mo);
-	fixed_t angulargravity = abs(lineargravity) * (P_IsObjectOnGround(player->mo) ? 12 : 3);
+	fixed_t lineargravity = max(abs(P_GetMobjGravity(player->mo)), FRACUNIT/10);
+	fixed_t angulargravity = lineargravity * (P_IsObjectOnGround(player->mo) ? 12 : 3);
 	fixed_t angaccelgravity = 0;
 	fixed_t tiltfactor = abs(FSIN(FixedAngle(CLAMP(player->karttilt, -89*FRACUNIT, 89*FRACUNIT))));
 
@@ -9517,13 +9517,7 @@ static void K_HandleKartTilt(player_t *player)
 	angaccelgravity = FixedSqrt(FixedDiv(FixedMul(3 * angulargravity, tiltfactor), 2 * player->mo->radius));
 
 	player->karttiltmomentum += angaccelgravity * -intsign(player->karttilt);
-	// if (abs(player->karttiltmomentum) >= PLAYERTILTMOMENTUMCAP)
-	// {
-	// 	player->karttiltmomentum = PLAYERTILTMOMENTUMCAP * intsign(player->karttiltmomentum);
-	// }
-
 	player->karttilt = CLAMP(player->karttilt + FixedMul(player->karttiltmomentum, FIXEDRADTODEG)/TICRATE, -PLAYERTILTCAP + 1, PLAYERTILTCAP - 1);
-
 	// angular drag
 	if (player->mo->eflags & MFE_UNDERWATER)
 	{
