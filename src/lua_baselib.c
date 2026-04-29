@@ -3654,7 +3654,7 @@ static int lib_gTicsToMilliseconds(lua_State *L)
 
 static int lib_gMapIsSafe(lua_State *L)
 {
-	mapnum_t map = (mapnum_t)luaL_checkinteger(L, 1);
+	mapnum_t map = luaL_checkinteger(L, 1);
 
 	if (lua_compatmode && map)
 		map = G_KartMapToNative(map);
