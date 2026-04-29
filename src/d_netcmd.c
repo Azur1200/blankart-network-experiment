@@ -398,10 +398,10 @@ consvar_t cv_dummyrestatrandom[MAXSPLITSCREENPLAYERS] = {
 
 // Toggle for automatic voice preferences on voice change
 consvar_t cv_autovoxpref[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("voicepref_auto", "On", CV_SAVE|CV_NOINIT, CV_OnOff, NULL),
-	CVAR_INIT ("voicepref_auto2", "On", CV_SAVE|CV_NOINIT, CV_OnOff, NULL),
-	CVAR_INIT ("voicepref_auto3", "On", CV_SAVE|CV_NOINIT, CV_OnOff, NULL),
-	CVAR_INIT ("voicepref_auto4", "On", CV_SAVE|CV_NOINIT, CV_OnOff, NULL)
+	CVAR_INIT ("voicepref_auto", "On", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("voicepref_auto2", "On", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("voicepref_auto3", "On", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("voicepref_auto4", "On", CV_SAVE, CV_OnOff, NULL)
 };
 
 consvar_t cv_skipmapcheck = CVAR_INIT ("skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL);

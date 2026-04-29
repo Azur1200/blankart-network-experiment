@@ -729,7 +729,17 @@ void HWR_RenderPlayerView(void)
 	ClearColor.alpha = 1.0f;
 
 	if (cv_glshaders.value)
+	{
 		GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
+
+		const angle_t light_angle = maplighting.angle - viewangle + ANGLE_90; // I fucking hate OGL's coordinate system
+		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_X, FINECOSINE(light_angle >> ANGLETOFINESHIFT));
+		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_Y, 0);
+		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_Z,  -FINESINE(light_angle >> ANGLETOFINESHIFT));
+
+		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_CONTRAST, maplighting.contrast);
+		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_BACKLIGHT, maplighting.backlight);
+	}
 
 	if (viewssnum == 0) // Only do it if it's the first screen being rendered
 		GL_ClearBuffer(true, true, true, &ClearColor); // Clear the Color Buffer, stops HOMs. Also seems to fix the skybox issue on Intel GPUs.
@@ -886,7 +896,7 @@ consvar_t cv_glmodels = CVAR_INIT ("gr_models", "Off", CV_SAVE, CV_OnOff, NULL);
 
 #ifdef BAD_MODEL_OPTIONS
 consvar_t cv_glmodelinterpolation = CVAR_INIT ("gr_modelinterpolation", "Sometimes", CV_SAVE, glmodelinterpolation_cons_t, NULL);
-consvar_t cv_glmodellighting = CVAR_INIT ("gr_modellighting", "Off", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_glmodellighting = CVAR_INIT ("gr_modellighting", "On", CV_SAVE, CV_OnOff, NULL);
 #endif
 
 consvar_t cv_glshearing = CVAR_INIT ("gr_shearing", "Off", CV_SAVE, glshearing_cons_t, NULL);

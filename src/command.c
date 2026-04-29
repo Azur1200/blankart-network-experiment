@@ -2525,6 +2525,14 @@ static boolean CV_FilterVarByVersion(consvar_t *v, const char *valstr)
 			return false;
 	}
 
+	if (GETMAJOREXECVERSION(cv_execversion.value) == 12 && GETMINOREXECVERSION(cv_execversion.value) < 2) // 12.1 = BK Indev 25-04-26
+	{
+		if (fasticmp(v->name, "gr_modellighting")) // This needs to be on for directional lighting to look right on models.
+			return false;
+		if (fasticmp(v->name, "gr_palettedepth")) // 24 bit looks best.
+			return false;
+	}
+
 	return true;
 }
 
