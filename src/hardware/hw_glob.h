@@ -236,8 +236,8 @@ void HWR_CompileShaders(void);
 
 int HWR_GetShaderFromTarget(int shader_target);
 
-void HWR_LoadAllCustomShaders(void);
-void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3);
+void HWR_LoadAllBaseShaders(void);
+void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3, boolean startup);
 const char *HWR_GetShaderName(INT32 shader);
 
 extern customshaderxlat_t shaderxlat[];

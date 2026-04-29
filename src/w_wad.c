@@ -1076,7 +1076,7 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boole
 #ifdef HWRENDER
 	// Read shaders from file
 	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
-		HWR_LoadCustomShadersFromFile(numwadfiles - 1, (type == RET_PK3));
+		HWR_LoadCustomShadersFromFile(numwadfiles - 1, (type == RET_PK3), false);
 #endif // HWRENDER
 
 	// check if compatmode is needed

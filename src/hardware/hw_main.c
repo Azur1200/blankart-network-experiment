@@ -1067,9 +1067,9 @@ void HWR_Startup(void)
 		HWR_InitMapTextures();
 		HWR_InitModels();
 
+		HWR_LoadAllBaseShaders();
 		gl_shadersavailable = HWR_InitShaders();
 		HWR_SetShaderState();
-		HWR_LoadAllCustomShaders();
 		HWR_TogglePaletteRendering();
 	}
 

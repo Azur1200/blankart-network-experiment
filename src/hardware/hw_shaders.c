@@ -21,41 +21,9 @@
 // ================
 
 static struct {
-	const char *vertex;
-	const char *fragment;
-} const gl_shadersources[] = {
-	// Floor shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_FLOOR_FRAGMENT_SHADER},
-
-	// Wall shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
-
-	// Sprite shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
-
-	// Model shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
-
-	// Model shader + diffuse lighting from above
-	{GLSL_MODEL_LIGHTING_VERTEX_SHADER, GLSL_SOFTWARE_MODEL_LIGHTING_FRAGMENT_SHADER},
-
-	// Water shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WATER_FRAGMENT_SHADER},
-
-	// Fog shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_FOG_FRAGMENT_SHADER},
-
-	// Sky shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_SKY_FRAGMENT_SHADER},
-
-	// Palette postprocess shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_PALETTE_POSTPROCESS_FRAGMENT_SHADER},
-
-	// UI colormap fade shader
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_UI_COLORMAP_FADE_FRAGMENT_SHADER},
-
-	{NULL, NULL},
-};
+	char *vertex;
+	char *fragment;
+} gl_baseshaders[NUMSHADERTARGETS];
 
 typedef struct
 {
@@ -95,8 +63,28 @@ boolean HWR_InitShaders(void)
 	for (i = 0; i < NUMSHADERTARGETS; i++)
 	{
 		// set up string pointers for base shaders
-		gl_shaders[i].vertex = Z_StrDup(gl_shadersources[i].vertex);
-		gl_shaders[i].fragment = Z_StrDup(gl_shadersources[i].fragment);
+		if (gl_baseshaders[i].vertex)
+		{
+			gl_shaders[i].vertex = Z_StrDup(gl_baseshaders[i].vertex);
+		}
+		else
+		{
+			CONS_Alert(CONS_ERROR, "HWR_InitShaders: Could not load base vertex shader for%s\n", shaderxlat[i].type);
+			gl_shaders[i].vertex = Z_StrDup(GLSL_FALLBACK_VERTEX_SHADER);
+		}
+
+
+		if (gl_baseshaders[i].fragment)
+		{
+			gl_shaders[i].fragment = Z_StrDup(gl_baseshaders[i].fragment);
+		}
+		else
+		{
+			CONS_Alert(CONS_ERROR, "HWR_InitShaders: Could not load base fragment shader for%s\n", shaderxlat[i].type);
+			gl_shaders[i].fragment = Z_StrDup(GLSL_FALLBACK_FRAGMENT_SHADER);
+		}
+
+
 		// set shader target indices to correct values
 		gl_shadertargets[i].base_shader = i;
 		gl_shadertargets[i].custom_shader = -1;
@@ -450,18 +438,18 @@ customshaderxlat_t shaderxlat[] =
 	{NULL, 0},
 };
 
-void HWR_LoadAllCustomShaders(void)
+void HWR_LoadAllBaseShaders(void)
 {
-	/*
 	INT32 i;
 
-	// read every custom shader
+	// read every base shader added by iwads.
 	for (i = 0; i < numwadfiles; i++)
-		HWR_LoadCustomShadersFromFile(i, (type == RET_PK3)));
-	*/
+	{
+		HWR_LoadCustomShadersFromFile(i, (wadfiles[i]->type == RET_PK3), true);
+	}
 }
 
-void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3)
+void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3, boolean startup)
 {
 	UINT16 lump;
 	char *shaderdef, *line;
@@ -473,7 +461,7 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3)
 	int i;
 	boolean modified_shaders[NUMSHADERTARGETS] = {0};
 
-	if (!gl_shadersavailable)
+	if (!startup && !gl_shadersavailable)
 		return;
 
 	lump = HWR_FindShaderDefs(wadnum);
@@ -570,7 +558,11 @@ skip_lump:
 					W_ReadLumpPwad(wadnum, shader_lumpnum, shader_source);
 					shader_source[shader_string_length-1] = '\0';
 
-					shader_index = shaderxlat[i].id + NUMSHADERTARGETS;
+					if (startup)
+						shader_index = shaderxlat[i].id;
+					else
+						shader_index = shaderxlat[i].id + NUMSHADERTARGETS;
+
 					if (!modified_shaders[shaderxlat[i].id])
 					{
 						// this will clear any old custom shaders from previously loaded files
@@ -579,26 +571,59 @@ skip_lump:
 						gl_shaders[shader_index].vertex = NULL;
 						Z_Free(gl_shaders[shader_index].fragment);
 						gl_shaders[shader_index].fragment = NULL;
+
+						if (startup)
+						{
+							Z_Free(gl_baseshaders[shader_index].vertex);
+							gl_baseshaders[shader_index].vertex = NULL;
+							Z_Free(gl_baseshaders[shader_index].fragment);
+							gl_baseshaders[shader_index].fragment = NULL;
+						}
 					}
+
 					modified_shaders[shaderxlat[i].id] = true;
 
 					if (shadertype == 1)
 					{
-						if (gl_shaders[shader_index].vertex)
+						if (startup)
 						{
-							CONS_Alert(CONS_WARNING, "HWR_LoadCustomShadersFromFile: %s is overwriting another %s vertex shader from the same addon! (file %s, line %d)\n", shader_lumpname, shaderxlat[i].type, wadfiles[wadnum]->filename, linenum);
-							Z_Free(gl_shaders[shader_index].vertex);
+							if (gl_baseshaders[shader_index].vertex)
+							{
+								CONS_Alert(CONS_WARNING, "HWR_LoadCustomShadersFromFile: %s is overwriting another %s vertex shader from the same addon! (file %s, line %d)\n", shader_lumpname, shaderxlat[i].type, wadfiles[wadnum]->filename, linenum);
+								Z_Free(gl_baseshaders[shader_index].vertex);
+							}
+							gl_baseshaders[shader_index].vertex = Z_StrDup(shader_source);
 						}
-						gl_shaders[shader_index].vertex = shader_source;
+						else
+						{
+							if (gl_shaders[shader_index].vertex)
+							{
+								CONS_Alert(CONS_WARNING, "HWR_LoadCustomShadersFromFile: %s is overwriting another %s vertex shader from the same addon! (file %s, line %d)\n", shader_lumpname, shaderxlat[i].type, wadfiles[wadnum]->filename, linenum);
+								Z_Free(gl_shaders[shader_index].vertex);
+							}
+							gl_shaders[shader_index].vertex = shader_source;
+						}
 					}
 					else
 					{
-						if (gl_shaders[shader_index].fragment)
+						if (startup)
 						{
-							CONS_Alert(CONS_WARNING, "HWR_LoadCustomShadersFromFile: %s is overwriting another %s fragment shader from the same addon! (file %s, line %d)\n", shader_lumpname, shaderxlat[i].type, wadfiles[wadnum]->filename, linenum);
-							Z_Free(gl_shaders[shader_index].fragment);
+							if (gl_baseshaders[shader_index].fragment)
+							{
+								CONS_Alert(CONS_WARNING, "HWR_LoadCustomShadersFromFile: %s is overwriting another %s fragment shader from the same addon! (file %s, line %d)\n", shader_lumpname, shaderxlat[i].type, wadfiles[wadnum]->filename, linenum);
+								Z_Free(gl_baseshaders[shader_index].fragment);
+							}
+							gl_baseshaders[shader_index].fragment = Z_StrDup(shader_source);
 						}
-						gl_shaders[shader_index].fragment = shader_source;
+						else
+						{
+							if (gl_shaders[shader_index].fragment)
+							{
+								CONS_Alert(CONS_WARNING, "HWR_LoadCustomShadersFromFile: %s is overwriting another %s fragment shader from the same addon! (file %s, line %d)\n", shader_lumpname, shaderxlat[i].type, wadfiles[wadnum]->filename, linenum);
+								Z_Free(gl_shaders[shader_index].fragment);
+							}
+							gl_shaders[shader_index].fragment = shader_source;
+						}
 					}
 
 					Z_Free(shader_lumpname);
@@ -611,21 +636,24 @@ skip_field:
 		}
 	}
 
-	for (i = 0; i < NUMSHADERTARGETS; i++)
+	if (!startup)
 	{
-		if (modified_shaders[i])
+		for (i = 0; i < NUMSHADERTARGETS; i++)
 		{
-			int shader_index = i + NUMSHADERTARGETS; // index to gl_shaders
-			gl_shadertargets[i].custom_shader = shader_index;
-			// if only one stage (vertex/fragment) is defined, the other one
-			// is copied from the base shaders.
-			if (!gl_shaders[shader_index].fragment)
-				gl_shaders[shader_index].fragment = Z_StrDup(gl_shadersources[i].fragment);
-			if (!gl_shaders[shader_index].vertex)
-				gl_shaders[shader_index].vertex = Z_StrDup(gl_shadersources[i].vertex);
-			HWR_CompileShader(shader_index);
-			if (!gl_shaders[shader_index].compiled)
-				CONS_Alert(CONS_ERROR, "HWR_LoadCustomShadersFromFile: A compilation error occured for the %s shader in file %s. See the console messages above for more information.\n", shaderxlat[i].type, wadfiles[wadnum]->filename);
+			if (modified_shaders[i])
+			{
+				int shader_index = i + NUMSHADERTARGETS; // index to gl_shaders
+				gl_shadertargets[i].custom_shader = shader_index;
+				// if only one stage (vertex/fragment) is defined, the other one
+				// is copied from the base shaders.
+				if (!gl_shaders[shader_index].fragment)
+					gl_shaders[shader_index].fragment = Z_StrDup(gl_baseshaders[i].fragment);
+				if (!gl_shaders[shader_index].vertex)
+					gl_shaders[shader_index].vertex = Z_StrDup(gl_baseshaders[i].vertex);
+				HWR_CompileShader(shader_index);
+				if (!gl_shaders[shader_index].compiled)
+					CONS_Alert(CONS_ERROR, "HWR_LoadCustomShadersFromFile: A compilation error occured for the %s shader in file %s. See the console messages above for more information.\n", shaderxlat[i].type, wadfiles[wadnum]->filename);
+			}
 		}
 	}
 
