@@ -1945,14 +1945,7 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 
 		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], (GLfloat)vid.width, (GLfloat)vid.height, pglUniform2f);
 
-		if (Surface)
-		{
-			UNIFORM_1(shader->uniforms[gluniform_water_ripple], (Surface->PolyFlags & PF_Ripple), pglUniform1f);
-		}
-		else
-		{
-			UNIFORM_1(shader->uniforms[gluniform_water_ripple], 0, pglUniform1f);
-		}
+		UNIFORM_1(shader->uniforms[gluniform_water_ripple], !!(Surface && (Surface->PolyFlags & PF_Ripple)), pglUniform1f);
 
 		#undef UNIFORM_1
 		#undef UNIFORM_2
