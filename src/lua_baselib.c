@@ -4135,6 +4135,27 @@ static int lib_kUnsetItemOut(lua_State *L)
 	return 0;
 }
 
+static int lib_kSpawnEquippedItem(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	kartitemequip_e equipstyle = luaL_checkint(L, 2);
+	mobjtype_t type = luaL_checkint(L, 3);
+	INT32 moloop = luaL_optinteger(L, 4, 0);
+	mobj_t *prev = NULL;
+	mobj_t *mo = NULL;
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	if (!lua_isnone(L, 5) && lua_isuserdata(L, 5))
+		prev = *((mobj_t **)luaL_checkudata(L, 5, META_MOBJ));
+	mo = K_SpawnEquippedItem(player, equipstyle, type, moloop, prev);
+	if (mo)
+		LUA_PushUserdata(L, mo, META_MOBJ);
+	else
+		lua_pushnil(L);
+	return 0;
+}
+
 static int lib_kDropItems(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -5874,6 +5895,7 @@ static luaL_Reg lib[] = {
 	{"K_UpdateHnextList",lib_kUpdateHnextList},
 	{"K_SetItemOut",lib_kSetItemOut},
 	{"K_UnsetItemOut",lib_kUnsetItemOut},
+	{"K_SpawnEquippedItem",lib_kSpawnEquippedItem},
 	{"K_DropItems",lib_kDropItems},
 	{"K_StripItems",lib_kStripItems},
 	{"K_StripOther",lib_kStripOther},

@@ -2101,16 +2101,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 
 			for (moloop = 0; moloop < 2; moloop++)
 			{
-				mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_ROCKETSNEAKER);
-				K_MatchGenericExtraFlags(mo, player->mo);
-				mo->flags |= MF_NOCLIPTHING;
-				mo->angle = player->mo->angle;
-				mo->threshold = 10;
-				mo->movecount = moloop%2;
-				mo->movedir = mo->lastlook = moloop+1;
-				P_SetTarget(&mo->target, player->mo);
-				P_SetTarget(&mo->hprev, prev);
-				P_SetTarget(&prev->hnext, mo);
+				mo = K_SpawnEquippedItem(player, KITEMEQUIP_ROCKETS, MT_ROCKETSNEAKER, moloop, prev);
 				prev = mo;
 			}
 			K_BotResetItemConfirm(player, false);
@@ -2141,19 +2132,12 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
 			{
-				mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BANANA_SHIELD);
+				mo = K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_BANANA_SHIELD, moloop, prev);
 				if (!mo)
 				{
 					player->itemamount = moloop;
 					break;
 				}
-				mo->flags |= MF_NOCLIPTHING;
-				mo->threshold = 10;
-				mo->movecount = player->itemamount;
-				mo->movedir = moloop+1;
-				P_SetTarget(&mo->target, player->mo);
-				P_SetTarget(&mo->hprev, prev);
-				P_SetTarget(&prev->hnext, mo);
 				prev = mo;
 			}
 			K_BotResetItemConfirm(player, false);
@@ -2187,21 +2171,12 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 
 				for (moloop = 0; moloop < player->itemamount; moloop++)
 				{
-					newangle = (player->mo->angle + ANGLE_157h) + FixedAngle(((360 / player->itemamount) * moloop) << FRACBITS) + ANGLE_90;
-					mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EGGMINE_SHIELD);
+					mo = K_SpawnEquippedItem(player, KITEMEQUIP_ORBIT, MT_EGGMINE_SHIELD, moloop, prev);
 					if (!mo)
 					{
 						player->itemamount = moloop;
 						break;
 					}
-					mo->flags |= MF_NOCLIPTHING;
-					mo->angle = newangle;
-					mo->movecount = player->itemamount;
-					mo->movedir = mo->lastlook = moloop+1;
-
-					P_SetTarget(&mo->target, player->mo);
-					P_SetTarget(&mo->hprev, prev);
-					P_SetTarget(&prev->hnext, mo);
 					prev = mo;
 				}
 				K_BotResetItemConfirm(player, false);
@@ -2246,16 +2221,10 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 				player->itemamount--;
 				K_SetItemOut(player, KITEM_EGGMAN, IF_EGGMANOUT);
 				S_StartSound(player->mo, sfx_s254);
-				mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EGGMANITEM_SHIELD);
+				mo = K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_EGGMANITEM_SHIELD, 0, player->mo);
 				if (mo)
 				{
 					K_FlipFromObject(mo, player->mo);
-					mo->flags |= MF_NOCLIPTHING;
-					mo->threshold = 10;
-					mo->movecount = 1;
-					mo->movedir = 1;
-					P_SetTarget(&mo->target, player->mo);
-					P_SetTarget(&player->mo->hnext, mo);
 				}
 				K_BotResetItemConfirm(player, false);
 			}
@@ -2275,22 +2244,13 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
 			{
-				newangle = (player->mo->angle + ANGLE_157h) + FixedAngle(((360 / player->itemamount) * moloop) << FRACBITS) + ANGLE_90;
-				mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_ORBINAUT_SHIELD);
+				mo = K_SpawnEquippedItem(player, KITEMEQUIP_ORBIT, MT_ORBINAUT_SHIELD, moloop, prev);
 				if (!mo)
 				{
 					player->itemamount = moloop;
 					break;
 				}
-				mo->flags |= MF_NOCLIPTHING;
-				mo->angle = newangle;
-				mo->threshold = 10;
-				mo->movecount = player->itemamount;
-				mo->movedir = mo->lastlook = moloop+1;
 				mo->color = player->skincolor;
-				P_SetTarget(&mo->target, player->mo);
-				P_SetTarget(&mo->hprev, prev);
-				P_SetTarget(&prev->hnext, mo);
 				prev = mo;
 			}
 			K_BotResetItemConfirm(player, false);
@@ -2319,21 +2279,12 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 
 			for (moloop = 0; moloop < player->itemamount; moloop++)
 			{
-				newangle = (player->mo->angle + ANGLE_157h) + FixedAngle(((360 / player->itemamount) * moloop) << FRACBITS) + ANGLE_90;
-				mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_JAWZ_SHIELD);
+				mo = K_SpawnEquippedItem(player, KITEMEQUIP_ORBIT, MT_JAWZ_SHIELD, moloop, prev);
 				if (!mo)
 				{
 					player->itemamount = moloop;
 					break;
 				}
-				mo->flags |= MF_NOCLIPTHING;
-				mo->angle = newangle;
-				mo->threshold = 10;
-				mo->movecount = player->itemamount;
-				mo->movedir = mo->lastlook = moloop+1;
-				P_SetTarget(&mo->target, player->mo);
-				P_SetTarget(&mo->hprev, prev);
-				P_SetTarget(&prev->hnext, mo);
 				prev = mo;
 			}
 			K_BotResetItemConfirm(player, false);
@@ -2361,16 +2312,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *mo;
 			K_SetItemOut(player, KITEM_MINE, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s254);
-			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_SSMINE_SHIELD);
-			if (mo)
-			{
-				mo->flags |= MF_NOCLIPTHING;
-				mo->threshold = 10;
-				mo->movecount = 1;
-				mo->movedir = 1;
-				P_SetTarget(&mo->target, player->mo);
-				P_SetTarget(&player->mo->hnext, mo);
-			}
+			mo = K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_SSMINE_SHIELD, 0, player->mo);
 			K_BotResetItemConfirm(player, false);
 		}
 		else if (ATTACK_IS_DOWN && (player->itemflags & IF_ITEMOUT))
@@ -2462,10 +2404,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		{
 			if (K_GetShieldFromPlayer(player) != KSHIELD_ATTRACTION)
 			{
-				mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_ATTRACTIONSHIELD);
-				P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
-				P_SetTarget(&shield->target, player->mo);
-				P_SetTarget(&player->shieldtracer, shield);
+				mobj_t *shield = K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_ATTRACTIONSHIELD, 0, NULL);
 				S_StartSound(player->mo, sfx_attrsg);
 			}
 
@@ -2591,10 +2530,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		{
 			if (K_GetShieldFromPlayer(player) != KSHIELD_THUNDER)
 			{
-				mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THUNDERSHIELD);
-				P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
-				P_SetTarget(&shield->target, player->mo);
-				P_SetTarget(&player->shieldtracer, shield);
+				mobj_t *shield = K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_THUNDERSHIELD, 0, NULL);
 				S_StartSound(player->mo, sfx_s3k41);
 			}
 
@@ -2618,10 +2554,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 	case KITEM_BUBBLESHIELD:
 		if (K_GetShieldFromPlayer(player) != KSHIELD_BUBBLE)
 		{
-			mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BUBBLESHIELD);
-			P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
-			P_SetTarget(&shield->target, player->mo);
-			P_SetTarget(&player->shieldtracer, shield);
+			mobj_t *shield = K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_BUBBLESHIELD, 0, NULL);
 			S_StartSound(player->mo, sfx_s3k3f);
 			if (player->bubblehealth <= 0 || player->bubblehealth > MAXBUBBLEHEALTH)
 				player->bubblehealth = MAXBUBBLEHEALTH;
@@ -2707,10 +2640,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			player->itemamount--;
 			player->flametimer = flametime;
 			player->flamedash = 0;
-			mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_FLAMESHIELD);
-			P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
-			P_SetTarget(&shield->target, player->mo);
-			P_SetTarget(&player->shieldtracer, shield);
+			mobj_t *shield = K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, NULL);
 			S_StartSound(player->mo, sfx_s3k3e);
 		}
 		break;
@@ -2747,16 +2677,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			mobj_t *mo;
 			K_SetItemOut(player, KITEM_KITCHENSINK, IF_ITEMOUT);
 			S_StartSound(player->mo, sfx_s254);
-			mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_SINK_SHIELD);
-			if (mo)
-			{
-				mo->flags |= MF_NOCLIPTHING;
-				mo->threshold = 10;
-				mo->movecount = 1;
-				mo->movedir = 1;
-				P_SetTarget(&mo->target, player->mo);
-				P_SetTarget(&player->mo->hnext, mo);
-			}
+			mo = K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_SINK_SHIELD, 0, player->mo);
 			K_BotResetItemConfirm(player, false);
 
 			// Woah this could be big, lets get the inside scoop...
@@ -3041,4 +2962,56 @@ player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
 	}
 
 	return wtarg;
+}
+
+// after using this you must handle setting any additional values on the mobj (like skincolour)
+mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, INT32 moloop, mobj_t *prev)
+{
+	mobj_t *mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, type);
+	angle_t newangle;
+	if (!mo)
+	{
+		return NULL;
+	}
+
+	mo->flags |= MF_NOCLIPTHING;
+	mo->threshold = 10;
+
+	switch (equipstyle)
+	{
+		case KITEMEQUIP_ORBIT: // Kart orbit items
+			K_MatchGenericExtraFlags(mo, player->mo);
+			newangle = (player->mo->angle + ANGLE_157h) + FixedAngle(((360 / player->itemamount) * moloop) << FRACBITS) + ANGLE_90;
+			mo->angle = newangle;
+			mo->movecount = player->itemamount;
+			mo->movedir = mo->lastlook = moloop+1;
+			break;
+		case KITEMEQUIP_TRAIL: // Kart trailing items
+			mo->movecount = player->itemamount;
+			mo->movedir = moloop+1;
+			break;
+		case KITEMEQUIP_ROCKETS: // Rocket Sneaker et autres side-by-side style items
+			K_MatchGenericExtraFlags(mo, player->mo);
+			mo->angle = player->mo->angle;
+			mo->movecount = moloop%2;
+			mo->movedir = mo->lastlook = moloop+1;
+			break;
+		case KITEMEQUIP_SHIELD: // Force Field Shields
+			P_SetScale(mo, (mo->destscale = (5*mo->destscale)>>2));
+			P_SetTarget(&player->shieldtracer, mo);
+			break;
+		default:
+			break;
+	}
+
+	P_SetTarget(&mo->target, player->mo);
+	if (prev != NULL)
+	{
+		if (equipstyle != KITEMEQUIP_SHIELD)
+		{
+			P_SetTarget(&mo->hprev, prev);
+		}
+		P_SetTarget(&prev->hnext, mo);
+	}
+	return mo;
 }
