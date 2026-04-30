@@ -2096,7 +2096,7 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 
 	// restore gl shader state
 	pglUseProgram(gl_shaderstate.program);
-	#undef UNIFORM_1
+#undef UNIFORM_1
 
 	return true;
 }
@@ -2734,7 +2734,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 
 	if (Surface->LightTableId && Surface->LightTableId != lt_downloaded)
 	{
-		pglActiveTexture(GL_TEXTURE2);
+		pglActiveTexture(GL_TEXTURE3);
 		pglBindTexture(GL_TEXTURE_2D, Surface->LightTableId);
 		pglActiveTexture(GL_TEXTURE0);
 		lt_downloaded = Surface->LightTableId;
