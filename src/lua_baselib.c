@@ -4598,6 +4598,14 @@ static int lib_kTrailSlowActive(lua_State *L)
 	return 1;
 }
 
+
+// Checks if rankings are active.
+static int lib_kRankingsActive(lua_State *L)
+{
+	lua_pushboolean(L, K_RankingsActive());
+	return 1;
+}
+
 // Gets the currently active bumpspark type.
 static int lib_kGetBumpSpark(lua_State *L)
 {
@@ -6082,6 +6090,7 @@ static luaL_Reg lib[] = {
 	{"K_ItemLitterActive",lib_kItemLitterActive},
 	{"K_ItemListActive", lib_kItemListActive},
 	{"K_TrailSlowActive", lib_kTrailSlowActive},
+	{"K_RankingsActive", lib_kRankingsActive},
 	{"K_GetBumpSpark",lib_kGetBumpSpark},
 	{"K_GetPlayerBump",lib_kGetPlayerBump},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},

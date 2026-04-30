@@ -2125,6 +2125,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	boolean force = false;
 	boolean spbpop = false;
 	boolean painsound = false;
+	boolean hithazard = true;
 
 	if (objectplacing)
 		return false;
@@ -2216,7 +2217,16 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		if ((damagetype & DMG_DEATHMASK))
 		{
 			if (!P_KillPlayer(player, inflictor, source, damagetype))
+			{
 				return false;
+			}
+			else
+			{
+				I_OutputMsg("[%s] respawn/death logged\n", player_names[player - players]);
+
+				if (!(inflictor && !P_MobjWasRemoved(inflictor) && inflictor->type == MT_SINK)) // DON'T let sinks be a free rank-grief!
+					player->ranklog.numrespawns++; // Log a respawn
+			}
 		}
 		else if (LUA_HookMobjDamage(target, inflictor, source, damage, damagetype))
 		{
@@ -2321,11 +2331,27 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					}
 				}
 
+				// Update the ranklog
+				I_OutputMsg("[%s] hitconfirm", player_names[source->player - players]);
+				source->player->ranklog.numhitconfirms++;
+
 				K_TryHurtSoundExchange(target, source);
 			}
 			else
 			{
 				K_DestroyBumpers(player, 1);
+			}
+
+			if ((!inflictor) || (!source))
+			{
+				// Must be some stray hazard
+				hithazard = true;
+			}
+
+			if (source && source == player->mo)
+			{
+				// Self hit; not a hazard
+				hithazard = false;
 			}
 
 			if (type == DMG_EXPLODE || type == DMG_KARMA || type == DMG_SQUISH ||
@@ -2493,6 +2519,13 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			if (painsound)
 			{
 				K_PlayPainSound(target, source);
+			}
+
+			if (hithazard)
+			{
+				// Log a hazard hit
+				I_OutputMsg("[%s] damaged by hazard\n", player_names[player - players]);
+				player->ranklog.hitdamagingsector++;
 			}
 
 			if ((explosioncombo == true) || (cv_kartdebughuddrop.value && !modeattacking))

@@ -382,20 +382,20 @@ static UINT32 K_Dist2D(INT32 x1, INT32 y1, INT32 x2, INT32 y2)
 }*/
 
 // This one uses map scaling instead, use in case of loss of depth on mobjscaled maps.
-static UINT32 K_IntDistanceForMap(fixed_t curx,
-			       fixed_t cury,
-			       fixed_t curz,
-			       fixed_t destx,
-			       fixed_t desty,
-			       fixed_t destz)
+UINT32 K_IntDistanceForMap(fixed_t curx,
+			   fixed_t cury,
+			   fixed_t curz,
+			   fixed_t destx,
+			   fixed_t desty,
+			   fixed_t destz)
 {
 	return K_Dist2D(0,
-		      curz / mapobjectscale,
-		      K_Dist2D(curx / mapobjectscale,
-			     cury / mapobjectscale,
-			     destx / mapobjectscale,
-			     desty / mapobjectscale),
-		      destz / mapobjectscale);
+			curz / mapobjectscale,
+			K_Dist2D(curx / mapobjectscale,
+				 cury / mapobjectscale,
+				 destx / mapobjectscale,
+				 desty / mapobjectscale),
+			destz / mapobjectscale);
 }
 
 /**	\brief	Prevent overpowered rolls while under the effects of Alt. Shrink.

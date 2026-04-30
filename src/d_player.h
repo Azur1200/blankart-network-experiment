@@ -529,6 +529,34 @@ typedef enum
 	KARMAMODE_EGGMAN,
 } karmamode_e;
 
+struct ranklog_t
+{
+	//
+	// BONUSES
+	//
+
+	UINT16 numhitconfirms; // How many times did you hit other players with items?
+	INT32 driftboostcount[4]; // Number of driftboosts performed, separated by tier.
+	INT32 leadertics; // Time spent leading the pack.
+	INT32 spbattack; // Time spent being tailed by a Self-Propelled Bomb. The closer it is, the faster this increases.
+	fixed_t startboostgrading; // How well did this player perform the startboost?
+
+	//
+	// VOLATILE (can increment or decrement)
+	//
+
+	INT32 lapgrading; // "Pseudo-EXP"; grading points calculated based on a percentage value (race position) each lap.
+
+	//
+	// PENALTIES
+	//
+
+	INT32 timeoffroad; // Time in tics spent offroad.
+	INT32 wallbonks; // Number of times the player hit a wall.
+	UINT16 hitdamagingsector; // Hit a damaging sector or stray course hazard.
+	UINT16 numrespawns; // If you manage to respawn over 65535 times, color me impressed.
+};
+
 // ========================================================================
 //                          PLAYER STRUCTURE
 // ========================================================================
@@ -651,6 +679,9 @@ struct player_t
 	UINT8 wipeoutslow;		// Timer before you slowdown when getting wiped out
 	UINT8 justbumped;		// Prevent players from endlessly bumping into each other
 	boolean noclip;			// Fix Grow breaking the "noclip" cheat. Also applies noclip as a bonus.
+
+	ranklog_t ranklog;		// Data relevant to a player's rank.
+	INT32 rankscore;		// Final rank score.
 
 	driftmode_e driftmode;
 	SINT8 drift;			// (-5 to 5) - Drifting Left or Right, plus a bigger counter = sharper turn

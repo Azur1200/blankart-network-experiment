@@ -2002,7 +2002,9 @@ static void K_HandleLapIncrement(player_t *player)
 				// immediately update our waypoint to one after the finish line
 				K_FixupFinishWaypoint(player, false);
 
+				K_GetPlayerNumber();
 				K_UpdateAllPlayerPositions(); // P_DoPlayerExit calls this
+				K_UpdatePositionFactorAndPlayerRanks();
 			}
 
 			if (!K_UsingLegacyCheckpoints())
@@ -2088,6 +2090,19 @@ static void K_HandleLapIncrement(player_t *player)
 					// Nice-to-have: Halfway-through-lap splits?
 					const UINT8 fakegradingpoint = ((UINT8)(player->laps - 1) & 7);
 					K_HandleRaceSplits(player, leveltime - starttime, fakegradingpoint);
+
+					// Calculate rank score.
+					const INT64 posfac_64 = max(POSGRADEFACTOR, (INT64)positionfactor * max(0, players_racing - player->position));
+					const fixed_t realposfac = (fixed_t)(posfac_64 / 256);
+					
+					INT32 lapgrade_addend = FixedMul(200, realposfac) - 100;
+
+					if (lapgrade_addend < 0)
+						lapgrade_addend /= 2; // +100 for leading, -50 for trailing
+
+					player->ranklog.lapgrading += lapgrade_addend;
+
+					I_OutputMsg("[%s] lap grading = %d", player_names[player - players], player->ranklog.lapgrading);
 				}
 			}
 
@@ -2129,7 +2144,9 @@ static void K_HandleLapDecrement(player_t *player)
 			player->starpostnum = numstarposts;
 			player->laps--;
 			K_FixupFinishWaypoint(player, true);
+			K_GetPlayerNumber();
 			K_UpdateAllPlayerPositions();
+			K_UpdatePositionFactorAndPlayerRanks();
 			player->laptime[LAP_CUR] = UINT32_MAX;
 		}
 	}

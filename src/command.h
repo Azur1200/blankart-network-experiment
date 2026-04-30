@@ -205,6 +205,8 @@ extern CV_PossibleValue_t CV_Natural[];
 // Lowest game speed.
 #define KARTSPEED_EASIEST (KARTSPEED_EASY)
 
+#define NUMKARTSPEEDS (4)
+
 extern CV_PossibleValue_t kartspeed_cons_t[], gpdifficulty_cons_t[];
 
 extern consvar_t cv_execversion;

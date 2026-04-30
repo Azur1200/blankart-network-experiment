@@ -178,6 +178,7 @@ UINT8   bumpsparkactive;
 boolean itemlistactive;
 boolean trailslow_active = false;
 playerbumptype_t playerbumpactive = PBUMP_STANDARD;
+boolean rankingactive = false;
 UINT16 bossdisabled;
 boolean stoppedclock;
 boolean levelloading;
@@ -8310,6 +8311,9 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 
 	if (cv_itemlist.value)
 		itemlistactive = true;
+	
+	if (cv_kartraceranks.value || grandprixinfo.gp)
+		rankingactive = true;
 
 	if (cv_trailslow.value)
 		trailslow_active = true;
@@ -8629,7 +8633,9 @@ static void P_InitPlayers(void)
 			G_SetupDemoPlayer(i);
 	}
 	K_UpdateClusterPoints();
+	K_GetPlayerNumber();
 	K_UpdateAllPlayerPositions();
+	K_UpdatePositionFactorAndPlayerRanks();
 }
 
 static void P_InitGametype(void)

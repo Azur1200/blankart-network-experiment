@@ -2706,7 +2706,9 @@ void G_Ticker(boolean run)
 
 		if (changed == true)
 		{
+			K_GetPlayerNumber();
 			K_UpdateAllPlayerPositions();
+			K_UpdatePositionFactorAndPlayerRanks();
 		}
 	}
 
@@ -3068,6 +3070,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	UINT16 bigwaypointgap;
 	boolean jitterlegacy = false;
 
+	ranklog_t rankdata = {0};
+	INT32 rankpts = 0;
+
 	tic_t laptime[LAP__MAX];
 
 	// Keep stuff shit
@@ -3144,6 +3149,10 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	memcpy(&public_key, &players[player].public_key, sizeof(public_key));
 	strncpy(clan, players[player].clan, MAXCLANTAG);
 
+	// BlanKart: Ranks
+	memcpy(&rankdata, &players[player].ranklog, sizeof(rankdata));
+	rankpts = players[player].rankscore;
+
 	// SRB2kart
 	if (betweenmaps || leveltime <= starttime || spectator == true)
 	{
@@ -3192,6 +3201,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		ksmaxsmonitortime = 0;
 		ksgrowshrinktimer = 0;
 		ksflametimer = 0;
+
+		memset(&rankdata, 0, sizeof (rankdata));
+		rankpts = 0;
 
 		for (i = 0; i < LAP__MAX; i++)
 		{
@@ -3454,6 +3466,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->keepstuff.maxsmonitortime = ksmaxsmonitortime;
 	p->keepstuff.growshrinktimer = ksgrowshrinktimer;
 	p->keepstuff.flametimer = ksflametimer;
+
+	memcpy(&p->ranklog, &rankdata, sizeof(p->ranklog));
+	p->rankscore = rankpts;
 
 	p->ringvolume = 255;
 	p->ringtransparency = 255;

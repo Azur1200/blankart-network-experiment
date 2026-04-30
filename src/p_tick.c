@@ -896,7 +896,9 @@ void P_Ticker(boolean run)
 		ps_playerthink_time = I_GetPreciseTime();
 
 		K_UpdateClusterPoints();
+		K_GetPlayerNumber();
 		K_UpdateAllPlayerPositions();
+		K_UpdatePositionFactorAndPlayerRanks();
 
 		// OK! Now that we got all of that sorted, players can think!
 		UINT8 p = 0;

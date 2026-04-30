@@ -520,6 +520,25 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 			SYNC(players[i].availabilities[j]);
 		}
 
+		//////////////////////
+		// Player Rank Data //
+		//////////////////////
+		SYNC(players[i].ranklog.numhitconfirms);
+		// Not using a loop for driftboostcount for micro-optimization reasons
+		SYNC(players[i].ranklog.driftboostcount[0]);
+		SYNC(players[i].ranklog.driftboostcount[1]);
+		SYNC(players[i].ranklog.driftboostcount[2]);
+		SYNC(players[i].ranklog.driftboostcount[3]);
+		SYNC(players[i].ranklog.leadertics);
+		SYNC(players[i].ranklog.spbattack);
+		SYNC(players[i].ranklog.startboostgrading);
+		SYNC(players[i].ranklog.lapgrading);
+		SYNC(players[i].ranklog.timeoffroad);
+		SYNC(players[i].ranklog.wallbonks);
+		SYNC(players[i].ranklog.hitdamagingsector);
+		SYNC(players[i].ranklog.numrespawns);
+		SYNC(players[i].rankscore);
+
 		SYNC(players[i].score);
 		SYNC(players[i].lives);
 		SYNC(players[i].xtralife);
@@ -4358,6 +4377,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(itempushing);
 	SYNCBOOLEAN(itemlistactive);
 	SYNCBOOLEAN(trailslow_active);
+	SYNCBOOLEAN(rankingactive);
 	SYNC(airdropactive);
 	SYNC(bumpsparkactive);
 	SYNC(antibumptime);

@@ -44,6 +44,7 @@ TYPEDEF (discordRequest_t);
 // d_player.h
 TYPEDEF (botvars_t);
 TYPEDEF (boostinfo_t);
+TYPEDEF (ranklog_t);
 TYPEDEF (player_t);
 TYPEDEF (sonicloopcamvars_t);
 TYPEDEF (sonicloopvars_t);

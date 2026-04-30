@@ -1320,7 +1320,9 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 		if ((gametypes[gametype]->rules & GTR_CIRCUIT)) // If in Race Mode, allow
 		{
 			player->exiting = raceexittime+2;
+			K_GetPlayerNumber();
 			K_UpdateAllPlayerPositions();
+			K_UpdatePositionFactorAndPlayerRanks();
 
 			if (!modeattacking)
 				RR_addPlayerToFinshTicker(player);

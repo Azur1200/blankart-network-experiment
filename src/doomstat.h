@@ -452,6 +452,8 @@ struct mapheader_t
 	INT32 base_track_complexity;				///< Decides what the base track compexity for the current map is.
 	fixed_t track_modifier_max;					///< Decides what the modifier max for the current map is.
 
+	tic_t par_time[NUMKARTSPEEDS];				///< Par time for the map, used as part of the rank system.
+
 	// EFX
 	efx_t *globalEFX;							///< Decides what global EFX for the current map is. ONLY USE FOR TYPE AND VARS.
 };

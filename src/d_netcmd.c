@@ -182,6 +182,7 @@ static void KartBumpSpark_OnChange(void);
 static void KartItemList_OnChange(void);
 static void KartTrailSlow_OnChange(void);
 static void PlayerBump_OnChange(void);
+static void KartRaceRanks_OnChange(void);
 
 static void Schedule_OnChange(void);
 
@@ -935,6 +936,8 @@ consvar_t cv_debugmappatch = CVAR_INIT ("debugmappatch", "", 0, NULL, NULL);
 
 consvar_t cv_allowmismatchmappatch = CVAR_INIT ("allowmismatchmappatch", "No", CV_NETVAR, CV_YesNo, NULL);
 
+consvar_t cv_kartraceranks = CVAR_INIT ("raceranks", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRaceRanks_OnChange);
+
 char timedemo_name[256];
 boolean timedemo_csv;
 char timedemo_csv_id[256];
@@ -1251,6 +1254,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_encorevotes);
 
 	CV_RegisterVar(&cv_itemlist);
+	CV_RegisterVar(&cv_kartraceranks);
 
 #ifdef USE_STUN
 	CV_RegisterVar(&cv_stunserver);
@@ -10195,6 +10199,39 @@ static void KartTrailSlow_OnChange(void)
 		else
 		{
 			CONS_Printf(M_GetText("Trailing slowdown will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
+static void KartRaceRanks_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_RankingsActive() && cv_kartraceranks.value)
+	{
+		if (leveltime < starttime)
+		{
+			rankingactive = true;
+			CONS_Printf(M_GetText("Player performance will be ranked.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Player performance will be ranked next round.\n"));
+		}
+	}
+	else if (K_RankingsActive() && !cv_kartraceranks.value)
+	{
+		if (leveltime < starttime)
+		{
+			rankingactive = false;
+			CONS_Printf(M_GetText("Player performance will not be ranked.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Player performance will not be ranked next round.\n"));
 		}
 	}
 }

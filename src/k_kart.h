@@ -215,6 +215,12 @@ extern vector3_t clusterpoint, clusterdtf;
 #define RINGVOLUMEREGEN 1
 #define RINGTRANSPARENCYREGEN 3
 
+#define POSGRADEFACTOR (1 << 24)
+extern fixed_t positionfactor;
+
+// Number of all players currently in the race
+extern INT32 players_racing;
+
 angle_t K_ReflectAngle(angle_t angle, angle_t against, fixed_t maxspeed, fixed_t yourspeed);
 
 void K_RegisterKartStuff(void);
@@ -321,6 +327,7 @@ void K_KartUpdatePosition(player_t *player);
 void K_KartLegacyUpdatePosition(player_t *player);
 void K_UpdateClusterPoints(void);
 void K_UpdateAllPlayerPositions(void);
+void K_GetPlayerNumber(void);
 mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 flip, UINT8 type, UINT8 amount);
 void K_DropItems(player_t *player);
 void K_DropRocketSneaker(player_t *player);
@@ -391,6 +398,7 @@ boolean K_ItemLitterActive(void);
 boolean K_ItemListActive(void);
 boolean K_ItemPushingActive(void);
 boolean K_TrailSlowActive(void);
+boolean K_RankingsActive(void);
 INT32 K_GetBumpSpark(void);
 playerbumptype_t K_GetPlayerBump(void);
 boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);
@@ -398,6 +406,8 @@ INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement,
 boolean K_UsingLegacyCheckpoints(void);
 boolean K_UsingPatchedMap(void);
 INT32 K_CheckpointThreshold(boolean roundup);
+void K_UpdateRankScore(void);
+void K_UpdatePositionFactorAndPlayerRanks(void);
 
 fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmin,fixed_t newmax);
 void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, fixed_t handleboost, boolean stack, boolean visible);

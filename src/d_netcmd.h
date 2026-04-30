@@ -285,6 +285,7 @@ extern consvar_t cv_kartlegacyoddsdist;
 extern consvar_t cv_kartspbrush;
 
 extern consvar_t cv_itemlist;
+extern consvar_t cv_kartraceranks;
 
 extern consvar_t cv_encorevotes;
 

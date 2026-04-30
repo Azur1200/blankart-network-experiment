@@ -3902,10 +3902,13 @@ papercollision:
 // Bounce move, for players.
 //
 
+#define VALIDLOGBUMPPCT (3 * FRACUNIT / 4)
+
 static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 {
 	fixed_t mmomx = 0, mmomy = 0;
 	fixed_t oldmomx = mo->momx, oldmomy = mo->momy;
+	fixed_t impactspeed = 0;
 
 	if (P_MobjWasRemoved(mo) == true)
 		return;
@@ -3929,6 +3932,8 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	mmomx = mo->player->rmomx;
 	mmomy = mo->player->rmomy;
+
+	impactspeed = R_PointToDist2(0, 0, mmomx, mmomy);
 
 	UINT32 bumpspark = K_GetBumpSpark();
 
@@ -3978,10 +3983,15 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
 	}
 
+	INT32 bump_penalty = 1;
+
 	if (tripwire)
 	{
 		// TRIPWIRE CANNOT BE MADE NONBOUNCY
 		K_ApplyTripWire(mo->player, TRIPSTATE_BLOCKED);
+
+		// Running into a tripwire will cost you double!
+		bump_penalty = 2;
 	}
 	else
 	{
@@ -4002,7 +4012,17 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	mo->eflags |= MFE_JUSTBOUNCEDWALL;
 
 	if (mo->player)
+	{
+		if (impactspeed >= FixedMul(K_GetKartSpeed(mo->player, false, false), VALIDLOGBUMPPCT))
+		{
+			// We check impact speed to make things a bit more fair.
+			// You can have a tendency to "glue-wall", which can make you bonk SEVERAL times in quick succession.
+			I_OutputMsg("[%s] logged wall bump\n", player_names[mo->player - players]);
+			mo->player->ranklog.wallbonks += bump_penalty;
+		}
+
 		mo->player->bumpUnstuck += 5;
+	}
 
 	mo->momx = tmxmove;
 	mo->momy = tmymove;
