@@ -2602,12 +2602,13 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 //
 void S_InitLevelMusic(boolean fromnetsave)
 {
+	mapheader_t* mapheader = mapheaderinfo[gamemap - 1];
 	INT16 usemusrng = 0;
 	INT16 altmusonlysize = 0;
 
-	UINT8 truesize = (encoremode && mapheaderinfo[gamemap-1]->encoremusname_size)
-	? mapheaderinfo[gamemap-1]->encoremusname_size
-	: mapheaderinfo[gamemap-1]->musname_size;
+	boolean validencore = (encoremode && (mapheader->encoremusname_size > 0));
+
+	UINT8 truesize = validencore ? mapheader->encoremusname_size : mapheader->musname_size;
 
 	if (mapmusflags & MUSIC_RELOADRESET)
 	{
@@ -2670,14 +2671,18 @@ void S_InitLevelMusic(boolean fromnetsave)
 			}
 		}
 
-		if (mapheaderinfo[gamemap-1]->musname[0][0] == 0)
-			strncpy(mapmusname, va("%sM", G_BuildMapName(gamemap)), 7);
+		char musicname[7];
+
+		if (!validencore && mapheader->musname[0][0] == 0)
+			sprintf(musicname, "%sM", G_BuildMapName(gamemap));
 		else
-			strncpy(mapmusname,(encoremode ? mapheaderinfo[gamemap-1]->encoremusname : mapheaderinfo[gamemap-1]->musname)[usemusrng], 7);
+			sprintf(musicname, "%s",(validencore ? mapheader->encoremusname : mapheader->musname)[usemusrng]);
+
+		strncpy(mapmusname, musicname, 7);
 
 		mapmusname[6] = 0;
-		mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
-		mapmusposition = mapheaderinfo[gamemap-1]->muspos;
+		mapmusflags = (mapheader->mustrack & MUSIC_TRACKMASK);
+		mapmusposition = mapheader->muspos;
 		mapmusresume = 0;
 	}
 
