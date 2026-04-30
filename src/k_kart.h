@@ -406,8 +406,12 @@ INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement,
 boolean K_UsingLegacyCheckpoints(void);
 boolean K_UsingPatchedMap(void);
 INT32 K_CheckpointThreshold(boolean roundup);
+
+ranktier_e K_GetRankTier(INT32 rank_score);
+void K_UpdateIndividualPlayerRank(player_t *player);
 void K_UpdateRankScore(void);
 void K_UpdatePositionFactorAndPlayerRanks(void);
+void K_CalculateLapGrading(player_t *player);
 
 fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmin,fixed_t newmax);
 void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, fixed_t handleboost, boolean stack, boolean visible);

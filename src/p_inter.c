@@ -2125,7 +2125,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	boolean force = false;
 	boolean spbpop = false;
 	boolean painsound = false;
-	boolean hithazard = true;
+	boolean hithazard = false;
 
 	if (objectplacing)
 		return false;
@@ -2222,9 +2222,11 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			}
 			else
 			{
-				I_OutputMsg("[%s] respawn/death logged\n", player_names[player - players]);
-
-				if (!(inflictor && !P_MobjWasRemoved(inflictor) && inflictor->type == MT_SINK)) // DON'T let sinks be a free rank-grief!
+				//I_OutputMsg("[%s] respawn/death logged\n", player_names[player - players]);
+				
+				// DON'T let sinks be a free rank-grief!
+				// Don't penalize the player for getting hit off the map, either!
+				if (!(inflictor && !P_MobjWasRemoved(inflictor) && inflictor->type == MT_SINK) && !player->ranklog.ijustgothitasshole)
 					player->ranklog.numrespawns++; // Log a respawn
 			}
 		}
@@ -2332,8 +2334,11 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				}
 
 				// Update the ranklog
-				I_OutputMsg("[%s] hitconfirm", player_names[source->player - players]);
+				//I_OutputMsg("[%s] hitconfirm\n", player_names[source->player - players]);
 				source->player->ranklog.numhitconfirms++;
+
+				// Some post-hit mercy
+				player->ranklog.ijustgothitasshole = 7 * TICRATE;
 
 				K_TryHurtSoundExchange(target, source);
 			}
@@ -2524,7 +2529,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			if (hithazard)
 			{
 				// Log a hazard hit
-				I_OutputMsg("[%s] damaged by hazard\n", player_names[player - players]);
+				//I_OutputMsg("[%s] damaged by hazard\n", player_names[player - players]);
 				player->ranklog.hitdamagingsector++;
 			}
 

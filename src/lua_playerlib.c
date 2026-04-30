@@ -479,7 +479,8 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(itemreservetype) \
 	X(itemreserveamount) \
 	X(clan) \
-	X(rankscore)
+	X(rankscore) \
+	X(realrankscore)
 
 enum player_e
 {
@@ -1275,6 +1276,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_rankscore:
 		lua_pushinteger(L, plr->rankscore);
+		break;
+	case player_realrankscore:
+		lua_pushinteger(L, plr->realrankscore);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:
@@ -2086,6 +2090,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_rankscore:
 		plr->rankscore = lua_tointeger(L, 3);
+		break;
+	case player_realrankscore:
+		plr->realrankscore = lua_tointeger(L, 3);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:

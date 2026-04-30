@@ -3902,7 +3902,7 @@ papercollision:
 // Bounce move, for players.
 //
 
-#define VALIDLOGBUMPPCT (3 * FRACUNIT / 4)
+#define VALIDLOGBUMPPCT (2 * FRACUNIT / 3)
 
 static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 {
@@ -4017,7 +4017,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		{
 			// We check impact speed to make things a bit more fair.
 			// You can have a tendency to "glue-wall", which can make you bonk SEVERAL times in quick succession.
-			I_OutputMsg("[%s] logged wall bump\n", player_names[mo->player - players]);
+			//I_OutputMsg("[%s] logged wall bump\n", player_names[mo->player - players]);
 			mo->player->ranklog.wallbonks += bump_penalty;
 		}
 

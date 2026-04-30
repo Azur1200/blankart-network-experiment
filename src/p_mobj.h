@@ -637,6 +637,7 @@ extern UINT8   bumpsparkactive;
 extern boolean itemlistactive;
 extern boolean trailslow_active;
 extern boolean rankingactive;
+extern boolean cannotrank;
 extern UINT16 bossdisabled;
 extern boolean stoppedclock;
 

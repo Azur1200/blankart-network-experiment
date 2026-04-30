@@ -537,7 +537,10 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].ranklog.wallbonks);
 		SYNC(players[i].ranklog.hitdamagingsector);
 		SYNC(players[i].ranklog.numrespawns);
+		SYNC(players[i].ranklog.ijustgothitasshole);
 		SYNC(players[i].rankscore);
+		SYNC(players[i].realrankscore);
+		SYNC(players[i].ranktier);
 
 		SYNC(players[i].score);
 		SYNC(players[i].lives);
@@ -4378,6 +4381,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(itemlistactive);
 	SYNCBOOLEAN(trailslow_active);
 	SYNCBOOLEAN(rankingactive);
+	SYNCBOOLEAN(cannotrank);
 	SYNC(airdropactive);
 	SYNC(bumpsparkactive);
 	SYNC(antibumptime);
@@ -4453,6 +4457,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 
 	SYNC(gamespeed);
 	SYNC(numlaps);
+	SYNC(autopartime);
 	SYNCBOOLEAN(franticitems);
 	SYNCBOOLEAN(comeback);
 

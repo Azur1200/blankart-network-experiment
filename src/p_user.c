@@ -1319,10 +1319,13 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 		boolean losing;
 		if ((gametypes[gametype]->rules & GTR_CIRCUIT)) // If in Race Mode, allow
 		{
-			player->exiting = raceexittime+2;
+			// Handle the player headcount and grading BEFORE positions are finalized
 			K_GetPlayerNumber();
-			K_UpdateAllPlayerPositions();
+			K_CalculateLapGrading(player);
 			K_UpdatePositionFactorAndPlayerRanks();
+
+			player->exiting = raceexittime+2;
+			K_UpdateAllPlayerPositions();
 
 			if (!modeattacking)
 				RR_addPlayerToFinshTicker(player);
@@ -3747,8 +3750,17 @@ void P_DoTimeOver(player_t *player)
 
 	if (player->mo)
 	{
+		// Punish the player's rank dearly for their folly
+		player->ranklog.lapgrading -= 100; // Flat lap grading of -100
+		K_UpdateIndividualPlayerRank(player); // Update ranks with the new data
+
 		S_StopSound(player->mo);
-		P_DamageMobj(player->mo, NULL, NULL, 1, DMG_TIMEOVER);
+		if (P_DamageMobj(player->mo, NULL, NULL, 1, DMG_TIMEOVER))
+		{
+			// The rank system will count this as a death; let's undo that...
+			player->ranklog.numrespawns--;
+			//I_OutputMsg("[%s] death was player retiring\n", player_names[player - players]);
+		}
 	}
 
 	P_EndingMusic(player);

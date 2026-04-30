@@ -529,8 +529,33 @@ typedef enum
 	KARMAMODE_EGGMAN,
 } karmamode_e;
 
+// Anything but the P-rank is divided up into multiples of 120
+
+typedef enum
+{
+	RTIER_E = 0,				// Good job! That was... AWFUL
+	RTIER_D,
+	RTIER_C,
+	RTIER_B,
+	RTIER_A,
+	RTIER_ONESTAR,
+	RTIER_TWOSTAR,		
+	RTIER_THREESTAR,
+	NUMSTDRANKTIERS,
+	RTIER_P = NUMSTDRANKTIERS,	// Go for a Perfect!
+	NUMRANKTIERS
+} ATTRPACK ranktier_e;
+
 struct ranklog_t
 {
+	//
+	// NON-GRADING
+	//
+
+	// "I JUST GOT HIT, ASSHOLE!"
+	// Prevents certain penalties if the player was hit or bumped recently.
+	INT32 ijustgothitasshole;
+
 	//
 	// BONUSES
 	//
@@ -681,7 +706,9 @@ struct player_t
 	boolean noclip;			// Fix Grow breaking the "noclip" cheat. Also applies noclip as a bonus.
 
 	ranklog_t ranklog;		// Data relevant to a player's rank.
+	INT32 realrankscore;    // Un-clamped ranking score.
 	INT32 rankscore;		// Final rank score.
+	ranktier_e ranktier;         // The actual rank.
 
 	driftmode_e driftmode;
 	SINT8 drift;			// (-5 to 5) - Drifting Left or Right, plus a bigger counter = sharper turn

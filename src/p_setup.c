@@ -179,6 +179,7 @@ boolean itemlistactive;
 boolean trailslow_active = false;
 playerbumptype_t playerbumpactive = PBUMP_STANDARD;
 boolean rankingactive = false;
+boolean cannotrank = false; // We can't rank this race!
 UINT16 bossdisabled;
 boolean stoppedclock;
 boolean levelloading;
@@ -545,6 +546,11 @@ void P_AllocMapHeader(mapnum_t i)
 		mapheaderinfo[i]->cup = NULL;
 		mapheaderinfo[i]->flickies = NULL;
 		mapheaderinfo[i]->globalEFX =  Z_Calloc(sizeof(efx_t), PU_STATIC, NULL);
+
+		mapheaderinfo[i]->par_time[0] = 0;
+		mapheaderinfo[i]->par_time[1] = 0;
+		mapheaderinfo[i]->par_time[2] = 0;
+		mapheaderinfo[i]->par_time[3] = 0;
 
 		if (mapheaderinfo[i]->globalEFX == NULL)
 			I_Error("P_AllocMapHeader: Not enough memory to allocate new global mapheader EFX (ID %d).", i);
@@ -8318,6 +8324,8 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	if (cv_trailslow.value)
 		trailslow_active = true;
 
+	cannotrank = false;
+
 	bumpsparkactive = (UINT8)cv_kartbumpspark.value;
 	playerbumpactive = (playerbumptype_t)cv_playerbump.value;
 
@@ -8638,6 +8646,27 @@ static void P_InitPlayers(void)
 	K_UpdatePositionFactorAndPlayerRanks();
 }
 
+
+#define DIST_TO_SECONDS (60.3904821429)
+#define MERCYTIME (TICRATE * 5)
+
+static tic_t P_GenerateAutoParTime(void)
+{
+	const UINT32 course_length = K_GetCircuitLength();
+	double course_length_f = ((double)(course_length) / FIXED_TO_FLOAT(mapobjectscale)) * (double)(numlaps);
+	double divisor = DIST_TO_SECONDS / max(1.0, FIXED_TO_FLOAT(K_GetKartGameSpeedScalar(gamespeed)));
+	tic_t result = 0;
+
+	// Resulting par time is the course length divided by the divisor, rounded up and given 5 extra seconds
+	result = (tic_t)(max(0.0, round(course_length_f / divisor))) + MERCYTIME;
+
+	I_OutputMsg("generated a par time of %u\n", result);
+	return result;
+}
+
+#undef DIST_TO_SECONDS
+#undef MERCYTIME
+
 static void P_InitGametype(void)
 {
 	size_t i;
@@ -8649,6 +8678,9 @@ static void P_InitGametype(void)
 		P_LoadRecordGhosts();
 
 	numlaps = K_RaceLapCount(gamemap - 1);
+
+	// Set autopartime here
+	autopartime = P_GenerateAutoParTime();
 
 	wantedcalcdelay = wantedfrequency*2;
 
@@ -9133,6 +9165,9 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// The waypoint data that's in PU_LEVEL needs to be reset back to 0/NULL now since PU_LEVEL was cleared
 	K_ClearWaypoints();
 
+	boolean needsautopar = false;
+	autopartime = 0;
+
 	// Load the ccheckpoints and waypoints please!
 	if (gametypes[gametype]->rules & GTR_CIRCUIT && gamestate != GS_TITLESCREEN)
 	{
@@ -9142,6 +9177,10 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 			{
 				CONS_Alert(CONS_ERROR, "Waypoints were not able to be setup and legacy checkpoints do not exist! Player positions will not work correctly.\n");
 			}
+		}
+		else
+		{
+			needsautopar = true;
 		}
 	}
 

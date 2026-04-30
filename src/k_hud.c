@@ -253,6 +253,8 @@ static patch_t *kp_dialbase[4] = {NULL};
 static patch_t *kp_speedpatchesdial[8] = {NULL};
 static patch_t *kp_dialnum[20] = {NULL};
 
+static patch_t *kp_ranktier[NUMRANKTIERS];
+
 void K_RegisterKartHUDStuff(void)
 {
 	K_ReloadHUDColorCvar();
@@ -514,7 +516,7 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_driftgaugeparts[3], "K_WDGM4");
 	HU_UpdatePatch(&kp_driftgaugeparts[4], "K_DGAU3M");
 
-	// S-Monitor. Sparkles
+	// S-Monitor Sparkles
 	HU_UpdatePatch(&kp_smonitorsparkle, "ALTISPRK");
 
 	kp_smonitorsparkle->pivot.x = kp_smonitorsparkle->width / 2;
@@ -819,6 +821,15 @@ void K_LoadKartHUDGraphics(void)
 	{
 		buffer[7] = '0'+i;
 		HU_UpdatePatch(&kp_itemtarget_near[1][i], "%s", buffer);
+	}
+
+	// Rank Tiers
+	sprintf(buffer, "BKRNKxx");
+	for (i = 0; i < NUMRANKTIERS; i++)
+	{
+		buffer[5] = '0'+((i+1)/10);
+		buffer[6] = '0'+((i+1)%10);
+		HU_UpdatePatch(&kp_ranktier[i], "%s", buffer);
 	}
 }
 
@@ -1918,6 +1929,61 @@ static void K_drawKartItem(void)
 			V_DrawPingNumScaled((fx<<FRACBITS) + (26*info.hudScale), (fy<<FRACBITS) + (26*info.hudScale), info.hudScale, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, stplyr->itemreserveamount, colmap);
 		}
 	}
+}
+
+static void k_drawKartRaceRank(player_t *p, INT32 x, INT32 y, UINT32 flags, UINT8 *colormap, boolean splitscreen)
+{
+	if (dedicated)
+		return; // Not for dedis, stupid!
+
+	if (!p || cannotrank)
+		return; // ...of course.
+
+	const patch_t *rankpic = kp_ranktier[p->ranktier];
+
+	if (!rankpic)
+	{
+		// Yeah.
+		return;
+	}
+
+	const boolean is_negative = (p->rankscore < 0);
+
+	const INT16 basewidth = kp_facenum[0]->width;
+	const INT16 rnknumwidth = basewidth - 1;
+	INT16 rnkstringwidth = 0;
+
+	INT32 num = abs(p->rankscore);
+	INT32 xx = 0;
+
+	// First loop: get the "width" of the numbers
+	do
+	{
+		rnkstringwidth += (rnknumwidth - 1);
+		num /= 10;
+	} while (num);
+
+	V_DrawMappedPatch(x + 7, y, flags, rankpic, colormap);
+
+	// Add the minus if we're drawing a negative number
+	if (is_negative)
+		rnkstringwidth += 5;
+
+	const INT32 centering = 15 + (rnkstringwidth / 2) - basewidth;
+
+	// If this is a negative number, draw the minus right before the actual numbers
+	if (is_negative)
+		V_DrawScaledPatch(x + 15 - ((rnkstringwidth / 2) + 5), y + 16, flags, kp_ringdebtminus);
+
+	num = abs(p->rankscore);
+
+	// Second loop: actually fucking draw the numbers
+	do
+	{
+		V_DrawScaledPatch(x + centering - xx, y + 16, flags, kp_facenum[num%10]);
+		xx += (rnknumwidth - 1);
+		num /= 10;
+	} while (num);
 }
 
 void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UINT8 mode)
@@ -6810,6 +6876,10 @@ void K_drawKartHUD(void)
 			{
 				K_drawKartAccessibilityIcons((cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2) ? 50 : 0);
 			}
+
+			// Draw the player's rank score
+			if (r_splitscreen < 1)
+				k_drawKartRaceRank(stplyr, 87, 150, V_HUDTRANS|V_SNAPTOBOTTOM|V_SNAPTOLEFT, NULL, (r_splitscreen >= 1));
 
 			if (LUA_HudEnabled(hud_rings) && K_RingsActive() == true)
 			{

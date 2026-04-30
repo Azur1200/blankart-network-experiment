@@ -629,6 +629,7 @@ extern UINT16 nightslinktics;
 // SRB2kart
 extern tic_t introtime;
 extern tic_t starttime;
+extern tic_t autopartime;
 
 extern tic_t raceexittime;
 extern tic_t battleexittime;

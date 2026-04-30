@@ -1123,11 +1123,6 @@ static void K_UpdateOffroad(player_t *player)
 			}
 
 			player->offroad += offroad;
-
-			// Log offroad tics
-			player->ranklog.timeoffroad++;
-
-			I_OutputMsg("[%s] time offroad: %d", player_names[player - players], player->ranklog.timeoffroad);
 		}
 
 		if (player->offroad > offroadstrength)
@@ -7331,6 +7326,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	player->mo->spritexoffset = 0;
 	player->mo->spriteyoffset = 0;
 
+	if (player->ranklog.ijustgothitasshole)
+		player->ranklog.ijustgothitasshole--;
+
 	if (player->loop.radius)
 	{
 		// Offset sprite Z position so wheels touch top of
@@ -7342,6 +7340,16 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	K_UpdateOffroad(player);
 	K_UpdateDraft(player);
+
+	if (player->offroad && K_ApplyOffroad(player) && !(cv_kartflame_offroadburn.value && player->flameoverheat))
+	{
+		// Log offroad tics
+		if (!player->ranklog.ijustgothitasshole)
+		{
+			player->ranklog.timeoffroad++;
+			//I_OutputMsg("[%s] time offroad: %d\n", player_names[player - players], player->ranklog.timeoffroad);
+		}
+	}
 
 	if (player->draftpower > 0)
 	{
@@ -10725,10 +10733,7 @@ void K_KartUpdatePosition(player_t *player)
 
 	player->position = position;
 
-	if (player->position < 2)
-	{
-		player->ranklog.leadertics++;
-	}
+	player->ranklog.leadertics += max(0, (players_racing - 1) - position);
 }
 
 void K_KartLegacyUpdatePosition(player_t *player)
@@ -10840,10 +10845,7 @@ void K_KartLegacyUpdatePosition(player_t *player)
 
 	player->position = position;
 
-	if (player->position < 2)
-	{
-		player->ranklog.leadertics++;
-	}
+	player->ranklog.leadertics += max(0, (players_racing - 1) - position);
 }
 
 UINT32 clusterid = 0;
@@ -11026,7 +11028,7 @@ fixed_t positionfactor = 0;
 // Updates `positionfactor`, then grades all players with a rank (`p->rankscore`).
 void K_UpdatePositionFactorAndPlayerRanks(void)
 {
-	if (!rankingactive || (gametypes[gametype]->rules & GTR_BUMPERS))
+	if (!rankingactive || (gametypes[gametype]->rules & GTR_BUMPERS) || (players_racing <= 1))
 	{
 		// Can't do nuthin'
 		positionfactor = 0;
@@ -11034,7 +11036,7 @@ void K_UpdatePositionFactorAndPlayerRanks(void)
 	}
 
 	// Calculate position factor
-	positionfactor = (POSGRADEFACTOR / max(1, players_racing));
+	positionfactor = (POSGRADEFACTOR / max(1, players_racing - 1)); // Forgot about zero-indexing...
 
 	// And then update ranks
 	K_UpdateRankScore();
@@ -12044,8 +12046,9 @@ boolean K_RankingsActive(void)
 }
 
 #define OFFROADPENALTYDIV (2) // TICRATE / 20 rounded up
-#define TILTRANKBONUS (10)
-#define GENERICPARTIME (TICRATE * 145)
+#define TILTRANKBONUS (40)
+#define GENERICPARTIME (TICRATE * 145) // 2 minutes 25 seconds; an average Kart race is 2 minutes, so this is an overshoot
+#define TIMECHECKOFFSET (5 * TICRATE / 2)
 
 static INT32 K_GetDriftBoostRankScore(player_t * player)
 {
@@ -12056,13 +12059,179 @@ static INT32 K_GetDriftBoostRankScore(player_t * player)
 	return bluepoints + redpoints + purplepoints + rainbowpoints;
 }
 
-// Updates rank data for all players, given their ranklog structs.
+void K_CalculateLapGrading(player_t *player)
+{
+	// Calculate rank score.
+	const INT64 posfac_64 = min(POSGRADEFACTOR, (INT64)(positionfactor) * max(0, players_racing - player->position));
+	const fixed_t realposfac = (fixed_t)(posfac_64 / 256);
+
+	INT32 lapgrade_addend = FixedMul(200, realposfac) - 100;
+
+	if (lapgrade_addend < 0)
+		lapgrade_addend /= 2; // +100 for leading, -50 for trailing
+
+	player->ranklog.lapgrading += lapgrade_addend;
+}
+
+#define BEST_SCORE_BEFORE_P_RANK (1160)
+#define RANKSCORE_DIVISOR (BEST_SCORE_BEFORE_P_RANK / NUMSTDRANKTIERS)
+
+// Gets a tier value based on the provided ranking score.
+ranktier_e K_GetRankTier(INT32 rank_score)
+{
+	INT32 _rank_score = rank_score + 200; // Rank scores can go as low as -200
+
+	if (_rank_score >= BEST_SCORE_BEFORE_P_RANK)
+	{
+		// P-rank: perfect play! You're CRAZY good!
+		return RTIER_P;
+	}
+
+	// All other ranks are decided by dividing the score by a multiple
+	return (ranktier_e)(max(0, _rank_score / RANKSCORE_DIVISOR));
+}
+
+#undef BEST_SCORE_BEFORE_P_RANK
+#undef RANKSCORE_DIVISOR
+
+// Updates the rank score of an individual player, based on a series of factors within their ranklog struct.
+void K_UpdateIndividualPlayerRank(player_t *player)
+{
+	if (!player)
+	{
+		// No player
+		return;
+	}
+
+	const UINT16 pid = (UINT16)(player - players);
+
+	INT32 raceStarRankScore = 0;
+    INT64 krtTime = 0;
+
+	if (!playeringame[pid] || player->spectator)
+	{
+		// Not in the game
+		return;
+	}
+
+	if (!player->mo)
+	{
+		// No object
+		return;
+	}
+
+	if (player->exiting)
+	{
+		// We finished, doofus!
+		return;
+	}
+
+	// Get this map's time limit
+    INT32 engineClass = (grandprixinfo.gp) ? grandprixinfo.gamespeed : gamespeed;
+    mapnum_t courseId = gamemap;
+
+    krtTime = mapheaderinfo[gamemap - 1]->par_time[engineClass];
+
+	if (krtTime <= 0)
+	{
+		// No par time? Try seeing if we have an auto-generated one.
+		if (autopartime)
+		{
+			// We do, use that
+			krtTime = autopartime;
+		}
+		else
+		{
+			// Nope? Use a flat rate.
+			krtTime = FixedMul(GENERICPARTIME, K_GetKartGameSpeedScalar(engineClass));
+		}
+	}
+
+	// Calculate time bonus
+    raceStarRankScore += 550.0f * (krtTime - max(0, (INT64)(player->realtime) - TIMECHECKOFFSET)) / krtTime;
+
+	if (leveltime > (starttime + TIMECHECKOFFSET))
+	{
+		// Calculate time bonus corresponding to the time spent in 1st place,
+		// and the time spent being targeted by an S.P.B.
+		raceStarRankScore +=
+			(((player->ranklog.leadertics / max(1, players_racing - 1)) * 850.0f) +
+				(player->ranklog.spbattack * ((grandprixinfo.lunaticmode) ? 450.0 : 960.0))) / krtTime;
+	}
+
+    // Apply bonus for successfull rocket start.
+    if (player->ranklog.startboostgrading)
+	{
+        raceStarRankScore += FixedMul(50, player->ranklog.startboostgrading);
+    }
+
+    // Apply bonus for number of miniturbos performed.
+    INT32 miniturbos = K_GetDriftBoostRankScore(player);
+    raceStarRankScore += (miniturbos * 8);
+
+    // Apply bonus for number of times the player hits a CPU with items.
+    UINT16 hitOthersWithItemsCount = player->ranklog.numhitconfirms;
+    raceStarRankScore += (hitOthersWithItemsCount * 5);
+
+    // Apply penalty for the time spent offroad.
+    raceStarRankScore -= (player->ranklog.timeoffroad / OFFROADPENALTYDIV);
+
+    // Apply penalty for number of times the player hits a wall.
+    // Adjusting this because you're going to hit walls in BlanKart... a LOT.
+    INT32 numWallCollision = player->ranklog.wallbonks / 2;
+    raceStarRankScore -= (numWallCollision * 20);
+
+    // Apply penalty for number of times the player gets damaged by a course object.
+    UINT16 numObjectCollision = player->ranklog.hitdamagingsector;
+    raceStarRankScore -= (numObjectCollision * 56);
+
+	// Let's allow you to respawn a few times before they're counted against you.
+	// This is BlanKart; some stupid thing WILL force you to eat a respawn or two.
+	const INT32 respawnMercy = 2;
+
+	// Apply penalty for number of times the player respawned during a race.
+	// Also adjusting this because letting people freely rank-grief by weightchecking does not sound fun.
+    INT32 outOfBounds = max(0, player->ranklog.numrespawns - respawnMercy);
+    raceStarRankScore -= (outOfBounds * 200);
+
+    // Apply bonus for playing using motion controls.
+    if (player->cmd.flags & TICCMD_USINGTILT)
+	{
+        raceStarRankScore += TILTRANKBONUS;
+    }
+
+	// Apply bonus/penalty based on lap grading.
+	raceStarRankScore += (player->ranklog.lapgrading * 9 / numlaps);
+
+	player->realrankscore = raceStarRankScore;
+
+    // Clamp the start rank score for this race between [-200, 1000]
+    if (raceStarRankScore < -200)
+	{
+        raceStarRankScore = -200;
+	}
+
+    if (raceStarRankScore > 1000)
+	{
+        raceStarRankScore = 1000;
+    }
+
+    // Save the new star rank score
+    player->rankscore = raceStarRankScore;
+
+	// Finally: get their tier
+	player->ranktier = K_GetRankTier(raceStarRankScore);
+}
+
+// Updates rank data for all players, based on factors within their ranklog structs.
 void K_UpdateRankScore(void)
 {
 	INT32 i = 0;
-	if (!rankingactive || (gametypes[gametype]->rules & GTR_BUMPERS))
+	cannotrank = false;
+
+	if (!rankingactive || (gametypes[gametype]->rules & GTR_BUMPERS) || (players_racing <= 1))
 	{
-		
+		cannotrank = true;
 		// If ranking is disabled, or we're in Battle, we can't rank
 		for (i = 0; i < MAXPLAYERS; i++)
     	{
@@ -12073,107 +12242,16 @@ void K_UpdateRankScore(void)
 		return;
 	}
 
-    INT32 raceStarRankScore = 0;
-    INT64 krtTime = 0;
-
     for (i = 0; i < MAXPLAYERS; i++)
     {
-		if (!playeringame[i] || players[i].spectator)
-		{
-			// Not in the game
-			continue;
-		}
-
-		if (!players[i].mo)
-		{
-			// No object
-			continue;
-		}
-
-        // Get this map's time limit
-        INT32 engineClass = (grandprixinfo.gp) ? grandprixinfo.gamespeed : gamespeed;
-        mapnum_t courseId = gamemap;
-
-        krtTime = mapheaderinfo[gamemap - 1]->par_time[engineClass];
-
-		if (krtTime <= 0)
-		{
-			// No par time? Use a flat rate.
-			krtTime = GENERICPARTIME; // 2 minutes 25 seconds; most Kart races last about 2 minutes.
-		}
-
-		// Calculate time bonus
-		raceStarRankScore += (INT32)(1000.0f * (krtTime - (INT64)players[i].realtime) / krtTime);
-
-		// Calculate time bonus corresponding to the time spent in 1st place,
-		// and the time spent being targeted by an S.P.B.
-		raceStarRankScore +=
-			(players[i].ranklog.leadertics * 150) +
-				(players[i].ranklog.spbattack * ((grandprixinfo.lunaticmode) ? 75 : 250)) / krtTime;
-
-        // Apply bonus for successfull rocket start.
-        if (players[i].ranklog.startboostgrading)
-		{
-            raceStarRankScore += FixedMul(25, players[i].ranklog.startboostgrading);
-        }
-
-        // Apply bonus for number of miniturbos performed.
-        INT32 miniturbos = K_GetDriftBoostRankScore(&players[i]);
-        raceStarRankScore += (miniturbos * 8);
-        
-        // Apply bonus for number of times the player hits a CPU with items.
-        UINT16 hitOthersWithItemsCount = players[i].ranklog.numhitconfirms;
-        raceStarRankScore += (hitOthersWithItemsCount * 15);
-        
-        // Apply penalty for the time spent offroad.
-        raceStarRankScore -= (players[i].ranklog.timeoffroad / OFFROADPENALTYDIV);
-        
-        // Apply penalty for number of times the player hits a wall.
-        // Adjusting this because you're going to hit walls in BlanKart... a LOT.
-        INT32 numWallCollision = players[i].ranklog.wallbonks / 2;
-        raceStarRankScore -= (numWallCollision * 20);
-
-        // Apply penalty for number of times the player gets damaged by a course object.
-        UINT16 numObjectCollision = players[i].ranklog.hitdamagingsector;
-        raceStarRankScore -= (numObjectCollision * 56);
-
-		// Let's allow you to respawn a few times before they're counted against you.
-		// This is BlanKart; some stupid thing WILL force you to eat a respawn or two.
-		const INT32 respawnMercy = 2;
-
-		// Apply penalty for number of times the player respawned during a race.
-		// Also adjusting this because letting people freely rank-grief by weightchecking does not sound fun.
-        INT32 outOfBounds = max(0, players[i].ranklog.numrespawns - respawnMercy);
-        raceStarRankScore -= (outOfBounds * 200);
-
-        // Apply bonus for playing using motion controls.
-        if (players[i].cmd.flags & TICCMD_USINGTILT)
-		{
-            raceStarRankScore += TILTRANKBONUS;
-        }
-
-		// Apply bonus/penalty based on lap grading.
-		raceStarRankScore += (players[i].ranklog.lapgrading / numlaps);
-
-        // Clamp the start rank score for this race between [-200, 1000]
-        if (raceStarRankScore < -200)
-		{
-            raceStarRankScore = -200;
-		}
-
-        if (raceStarRankScore > 1000)
-		{
-            raceStarRankScore = 1000;
-        }
-
-        // Save the new star rank score
-        players[i].rankscore = raceStarRankScore;
+        K_UpdateIndividualPlayerRank(&players[i]);
     }
 }
 
 #undef OFFROADPENALTYDIV
 #undef TILTRANKBONUS
 #undef GENERICPARTIME
+#undef TIMECHECKOFFSET
 
 boolean K_UsingLegacyCheckpoints(void)
 {

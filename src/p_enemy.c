@@ -10997,7 +10997,7 @@ void A_JawzExplode(void *thing)
 // The closer it is, the more points you earn. Don't get reckless!
 static INT32 P_GetSPBChaseRankPoints(mobj_t *spb, mobj_t *spb_target)
 {
-	const INT64 divisor = max(1, FixedMul(SPBPLAYERMINDIST * SPBCHASEDISTMUL, spb_target->scale) / FRACUNIT);
+	const INT64 divisor = max(1, (SPBPLAYERMINDIST * SPBCHASEDISTMUL) / FRACUNIT);
 	const INT64 min_dist = divisor / SPBCHASEDISTMUL;
 
 	INT64 dist = K_IntDistanceForMap(spb->x, spb->y, spb->z, spb_target->x, spb_target->y, spb_target->z);
