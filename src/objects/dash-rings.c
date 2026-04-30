@@ -172,6 +172,7 @@ void Obj_DashRingTouch(mobj_t *ring, player_t *player)
 	}
 
 	player->pflags |= PF_NOSCALEGRAVITY;
+	K_KillAirDrop(player, PAF_AIRDROP_HEAVY);
 }
 
 static fixed_t GetPlayerDashRingZ(player_t *player, mobj_t *ring)
