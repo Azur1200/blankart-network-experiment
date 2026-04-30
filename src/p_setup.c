@@ -18,6 +18,7 @@
 #include "byteptr.h"
 #include "g_game.h"
 
+#include "g_mapnum.h"
 #include "info.h"
 #include "p_local.h"
 #include "p_setup.h"
@@ -432,7 +433,7 @@ static void P_ClearMapHeaderLighting(mapheader_lighting_t *lighting)
   * \param i Map number to clear header for.
   * \sa P_ClearMapHeaderInfo
   */
-static void P_ClearSingleMapHeaderInfo(INT16 num)
+static void P_ClearSingleMapHeaderInfo(mapnum_t num)
 {
 	mapheaderinfo[num]->lvlttl[0] = '\0';
 	mapheaderinfo[num]->subttl[0] = '\0';
@@ -443,11 +444,15 @@ static void P_ClearSingleMapHeaderInfo(INT16 num)
 	mapheaderinfo[num]->use_walltransfer = false;
 	mapheaderinfo[num]->use_terrain = false;
 	mapheaderinfo[num]->keywords[0] = '\0';
-	for (int i = 0; i < MAXMUSNAMES; i++)
-		mapheaderinfo[num]->musname[i][0] = 0;
+
+	memset(mapheaderinfo[num]->musname, 0, sizeof(mapheaderinfo[num]->musname));
+	memset(mapheaderinfo[num]->encoremusname, 0, sizeof(mapheaderinfo[num]->encoremusname));
+
 	mapheaderinfo[num]->mustrack = 0;
 	mapheaderinfo[num]->muspos = 0;
 	mapheaderinfo[num]->musname_size = 0;
+	mapheaderinfo[num]->encoremusname_size = 0;
+
 	mapheaderinfo[num]->weather = PRECIP_NONE;
 	snprintf(mapheaderinfo[num]->skytexture, 5, "SKY1");
 	mapheaderinfo[num]->skytexture[4] = 0;

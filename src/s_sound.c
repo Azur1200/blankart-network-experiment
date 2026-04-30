@@ -2605,24 +2605,28 @@ void S_InitLevelMusic(boolean fromnetsave)
 	INT16 usemusrng = 0;
 	INT16 altmusonlysize = 0;
 
+	UINT8 truesize = (encoremode && mapheaderinfo[gamemap-1]->encoremusname_size)
+	? mapheaderinfo[gamemap-1]->encoremusname_size
+	: mapheaderinfo[gamemap-1]->musname_size;
+
 	if (mapmusflags & MUSIC_RELOADRESET)
 	{
 
-		if (mapheaderinfo[gamemap-1]->musname_size > 1)
+		if (truesize > 1)
 		{
-			altmusonlysize = max(0, mapheaderinfo[gamemap-1]->musname_size - 1);
+			altmusonlysize = max(0, truesize - 1);
 		}
 
 		if (!fromnetsave)
 		{
 			if (demo.playback)
 			{
-				if (mapheaderinfo[gamemap-1]->musname_size > 1)
+				if (truesize > 1)
 				{
 					P_RandomFixed();
 				}
 				// mapmusrng has already been set by the demo; just make sure it's valid
-				if (mapmusrng >= mapheaderinfo[gamemap-1]->musname_size)
+				if (mapmusrng >= truesize)
 				{
 					mapmusrng = 0;
 				}
@@ -2630,9 +2634,9 @@ void S_InitLevelMusic(boolean fromnetsave)
 			else
 			{
 
-				if (mapheaderinfo[gamemap-1]->musname_size > 1)
+				if (truesize > 1)
 				{
-					mapmusrng = P_RandomKey(mapheaderinfo[gamemap-1]->musname_size);
+					mapmusrng = P_RandomKey(truesize);
 				}
 				else
 					mapmusrng = 0;
@@ -2669,7 +2673,7 @@ void S_InitLevelMusic(boolean fromnetsave)
 		if (mapheaderinfo[gamemap-1]->musname[0][0] == 0)
 			strncpy(mapmusname, va("%sM", G_BuildMapName(gamemap)), 7);
 		else
-			strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname[usemusrng], 7);
+			strncpy(mapmusname,(encoremode ? mapheaderinfo[gamemap-1]->encoremusname : mapheaderinfo[gamemap-1]->musname)[usemusrng], 7);
 
 		mapmusname[6] = 0;
 		mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
