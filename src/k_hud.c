@@ -6881,8 +6881,27 @@ void K_drawKartHUD(void)
 			}
 
 			// Draw the player's rank score
+			// FIXME: Splitscreen disply 🫠
 			if (r_splitscreen < 1)
-				k_drawKartRaceRank(stplyr, 87, 150, V_HUDTRANS|V_SNAPTOBOTTOM|V_SNAPTOLEFT, NULL, (r_splitscreen >= 1));
+			{
+				const skincolornum_t ranktier_color =
+				    (stplyr->ranktier >= RTIER_ONESTAR) ? SKINCOLOR_GOLD
+									: SKINCOLOR_SILVER;
+
+				UINT8* cmap =
+				    (stplyr->ranklog.prankeligible && stplyr->ranktier == RTIER_P)
+					? R_GetTranslationColormap(
+					      TC_RAINBOW, K_SMonitorColor(leveltime / 2), GTC_CACHE)
+					: R_GetTranslationColormap(
+					      TC_RAINBOW, ranktier_color, GTC_CACHE);
+
+				k_drawKartRaceRank(stplyr,
+						   96,
+						   150,
+						   V_HUDTRANS | V_SNAPTOBOTTOM | V_SNAPTOLEFT,
+						   cmap,
+						   (r_splitscreen >= 1));
+			}
 
 			if (LUA_HudEnabled(hud_rings) && K_RingsActive() == true)
 			{
