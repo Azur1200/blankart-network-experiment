@@ -1324,6 +1324,12 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			K_CalculateLapGrading(player);
 			K_UpdatePositionFactorAndPlayerRanks();
 
+			if (player->ranklog.prankeligible && (player->ranktier == RTIER_P) && P_IsDisplayPlayer(player))
+			{
+				// You did it!
+				S_StartSound(NULL, sfx_gprng);
+			}
+
 			player->exiting = raceexittime+2;
 			K_UpdateAllPlayerPositions();
 

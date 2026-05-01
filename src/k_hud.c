@@ -1936,7 +1936,10 @@ static void k_drawKartRaceRank(player_t *p, INT32 x, INT32 y, UINT32 flags, UINT
 	if (dedicated)
 		return; // Not for dedis, stupid!
 
-	if (!p || cannotrank)
+	if (cannotrank)
+		return; // No point in displaying something irrelevant!
+
+	if (!p)
 		return; // ...of course.
 
 	const patch_t *rankpic = kp_ranktier[p->ranktier];

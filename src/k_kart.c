@@ -11028,10 +11028,13 @@ fixed_t positionfactor = 0;
 // Updates `positionfactor`, then grades all players with a rank (`p->rankscore`).
 void K_UpdatePositionFactorAndPlayerRanks(void)
 {
+	cannotrank = false;
+
 	if (!rankingactive || (gametypes[gametype]->rules & GTR_BUMPERS) || (players_racing <= 1))
 	{
 		// Can't do nuthin'
 		positionfactor = 0;
+		cannotrank = true;
 		return;
 	}
 
@@ -12070,6 +12073,22 @@ void K_CalculateLapGrading(player_t *player)
 	if (lapgrade_addend < 0)
 		lapgrade_addend /= 2; // +100 for leading, -50 for trailing
 
+	if (player->ranklog.prankeligible && player->position > 1)
+	{
+		// No P-rank, buddy. You biffed it!
+		player->ranklog.prankeligible = false;
+
+		if (P_IsDisplayPlayer(player))
+		{
+			S_StartSound(NULL, sfx_gprnf);
+		}
+	}
+
+	player->ranklog.numlapgrades++;
+
+	// The rank thinker will zero this out; just blind-set it
+	player->ranklog.lapwasgraded = true;
+
 	player->ranklog.lapgrading += lapgrade_addend;
 }
 
@@ -12077,21 +12096,28 @@ void K_CalculateLapGrading(player_t *player)
 #define RANKSCORE_DIVISOR (BEST_SCORE_BEFORE_P_RANK / NUMSTDRANKTIERS)
 
 // Gets a tier value based on the provided ranking score.
-ranktier_e K_GetRankTier(INT32 rank_score)
+ranktier_e K_GetRankTier(INT32 rank_score, SINT8 prankoverride)
 {
 	INT32 _rank_score = rank_score + 200; // Rank scores can go as low as -200
 
-	if (_rank_score >= BEST_SCORE_BEFORE_P_RANK)
+	boolean prankcondition =
+		(grandprixinfo.gp && prankoverride >= 0) ?
+			((boolean)prankoverride) :
+				(_rank_score >= BEST_SCORE_BEFORE_P_RANK);
+
+	if (prankcondition)
 	{
 		// P-rank: perfect play! You're CRAZY good!
 		return RTIER_P;
 	}
+	
+	// Cap the rank score
+	_rank_score = min(BEST_SCORE_BEFORE_P_RANK, _rank_score);
 
 	// All other ranks are decided by dividing the score by a multiple
-	return (ranktier_e)(max(0, _rank_score / RANKSCORE_DIVISOR));
+	return (ranktier_e)(max(0, min(NUMSTDRANKTIERS - 1, _rank_score / RANKSCORE_DIVISOR)));
 }
 
-#undef BEST_SCORE_BEFORE_P_RANK
 #undef RANKSCORE_DIVISOR
 
 // Updates the rank score of an individual player, based on a series of factors within their ranklog struct.
@@ -12219,19 +12245,41 @@ void K_UpdateIndividualPlayerRank(player_t *player)
     // Save the new star rank score
     player->rankscore = raceStarRankScore;
 
-	// Finally: get their tier
-	player->ranktier = K_GetRankTier(raceStarRankScore);
+	// Get the tier we're about to swap the player to
+	ranktier_e newtier = K_GetRankTier(raceStarRankScore, (player->ranklog.prankeligible && ((raceStarRankScore + 200) >= BEST_SCORE_BEFORE_P_RANK)));
+
+	if (grandprixinfo.gp &&
+	    player->position <= 1 &&
+	    player->ranklog.numlapgrades < 2 &&
+	    player->ranklog.lapwasgraded &&
+	    player->ranktier >= RTIER_ONESTAR &&
+	    newtier >= RTIER_ONESTAR)
+	{
+		// This player is officially in the running for a P-Rank; set it as so and update their tier again
+		player->ranklog.prankeligible = true;
+		
+		if (P_IsDisplayPlayer(player))
+		{
+			// Play a neat sound
+			S_StartSound(NULL, sfx_gprnk);
+		}
+		newtier = K_GetRankTier(raceStarRankScore, (player->ranklog.prankeligible && ((raceStarRankScore + 200) >= BEST_SCORE_BEFORE_P_RANK)));
+	}
+
+	player->ranklog.lapwasgraded = false;
+
+	// Finally: set their tier
+	player->ranktier = newtier;
 }
+
+#undef BEST_SCORE_BEFORE_P_RANK
 
 // Updates rank data for all players, based on factors within their ranklog structs.
 void K_UpdateRankScore(void)
 {
 	INT32 i = 0;
-	cannotrank = false;
-
-	if (!rankingactive || (gametypes[gametype]->rules & GTR_BUMPERS) || (players_racing <= 1))
+	if (cannotrank || !rankingactive || (gametypes[gametype]->rules & GTR_BUMPERS) || (players_racing <= 1))
 	{
-		cannotrank = true;
 		// If ranking is disabled, or we're in Battle, we can't rank
 		for (i = 0; i < MAXPLAYERS; i++)
     	{

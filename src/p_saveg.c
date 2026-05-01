@@ -538,6 +538,9 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].ranklog.hitdamagingsector);
 		SYNC(players[i].ranklog.numrespawns);
 		SYNC(players[i].ranklog.ijustgothitasshole);
+		SYNC(players[i].ranklog.numlapgrades);
+		SYNCBOOLEAN(players[i].ranklog.lapwasgraded);
+		SYNCBOOLEAN(players[i].ranklog.prankeligible);
 		SYNC(players[i].rankscore);
 		SYNC(players[i].realrankscore);
 		SYNC(players[i].ranktier);

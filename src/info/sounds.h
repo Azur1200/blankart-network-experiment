@@ -1028,3 +1028,8 @@ _(vclgna)
 // Egg mine
 _(bckuse)
 _(egrbhe)
+
+// P-Rank
+_(gprnk)
+_(gprng)
+_(gprnf)

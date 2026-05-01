@@ -407,7 +407,7 @@ boolean K_UsingLegacyCheckpoints(void);
 boolean K_UsingPatchedMap(void);
 INT32 K_CheckpointThreshold(boolean roundup);
 
-ranktier_e K_GetRankTier(INT32 rank_score);
+ranktier_e K_GetRankTier(INT32 rank_score, SINT8 prankoverride);
 void K_UpdateIndividualPlayerRank(player_t *player);
 void K_UpdateRankScore(void);
 void K_UpdatePositionFactorAndPlayerRanks(void);

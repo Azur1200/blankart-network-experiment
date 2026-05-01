@@ -555,6 +555,9 @@ struct ranklog_t
 	// "I JUST GOT HIT, ASSHOLE!"
 	// Prevents certain penalties if the player was hit or bumped recently.
 	INT32 ijustgothitasshole;
+	UINT16 numlapgrades; // How many times did we grade a lap?
+	boolean lapwasgraded; // Was a lap graded?
+	boolean prankeligible; // (Grand Prix) This player knows what they're doing; they're contending for a P-Rank!
 
 	//
 	// BONUSES
