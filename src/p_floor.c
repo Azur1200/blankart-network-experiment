@@ -1749,8 +1749,9 @@ void EV_DoFloorOLD(mtag_t tag, line_t *line, floor_e floortype)
 
 				// chained linedef executing ability
 				// Only set it on one of the moving sectors (the smallest numbered)
-				if (line->args[4])
-					dofloor->tag = firstone ? (INT16)line->args[3] : -1;
+				// and only if arg 4 is positive, indicating a valid tag.
+				if (firstone && line->args[4])
+					dofloor->tag = firstone ? (INT16)(line->args[4] - 32769) : -1;
 
 				// flat changing ability
 				dofloor->texture = line->args[5] ? line->frontsector->floorpic : -1;
