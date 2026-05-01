@@ -3449,6 +3449,8 @@ void GL_DrawScreenFinalTexture(int tex, int width, int height)
 	GL_ClearBuffer(true, false, false, &clearColour);
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
 
+	Shader_SetUniforms(NULL, NULL, NULL, NULL); // prepare shader, if it is enabled
+
 	pglColor4ubv(white);
 
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);

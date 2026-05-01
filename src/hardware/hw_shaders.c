@@ -435,6 +435,8 @@ customshaderxlat_t shaderxlat[] =
 	{"Sky", SHADER_SKY},
 	{"PalettePostprocess", SHADER_PALETTE_POSTPROCESS},
 	{"UIColormapFade", SHADER_UI_COLORMAP_FADE},
+	{"FinalPostProcess", SHADER_FINAL_POST_PROCESS},
+
 	{NULL, 0},
 };
 
