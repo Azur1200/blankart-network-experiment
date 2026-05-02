@@ -389,6 +389,7 @@ boolean K_KeepStuffActive(void);
 boolean K_ItemLitterActive(void);
 boolean K_ItemListActive(void);
 boolean K_ItemPushingActive(void);
+boolean K_TrailSlowActive(void);
 INT32 K_GetBumpSpark(void);
 boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);
 INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement, boolean chainsound);

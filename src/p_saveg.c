@@ -4348,6 +4348,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(itemlittering);
 	SYNCBOOLEAN(itempushing);
 	SYNCBOOLEAN(itemlistactive);
+	SYNCBOOLEAN(trailslow_active);
 	SYNC(airdropactive);
 	SYNC(bumpsparkactive);
 	SYNC(antibumptime);

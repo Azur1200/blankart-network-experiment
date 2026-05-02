@@ -490,6 +490,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartthunder_radius);
 
 	CV_RegisterVar(&cv_kartkeepstuff);
+	CV_RegisterVar(&cv_trailslow);
 }
 
 //}
@@ -6122,7 +6123,7 @@ static void K_MoveHeldObjects(player_t *player)
 				mobj_t *targ = player->mo;
 				UINT16 pcolor = player->skincolor;
 
-				if (P_IsObjectOnGround(player->mo) && player->speed > 0)
+				if (P_IsObjectOnGround(player->mo) && player->speed > 0 && trailslow_active)
 					player->bananadrag++;
 
 				while (cur && !P_MobjWasRemoved(cur))
@@ -11897,6 +11898,17 @@ boolean K_ItemListActive(void)
 boolean K_ItemPushingActive(void)
 {
 	return itempushing;
+}
+
+boolean K_TrailSlowActive(void)
+{
+	if (trailslow_active)
+	{
+		// Trailing slowdown is enabled! (what a drag...)
+		return true;
+	}
+
+	return false;
 }
 
 boolean K_UsingLegacyCheckpoints(void)

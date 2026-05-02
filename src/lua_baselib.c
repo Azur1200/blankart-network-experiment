@@ -4588,6 +4588,13 @@ static int lib_kItemListActive(lua_State *L)
 	return 1;
 }
 
+// Checks if trailing slowdown is active.
+static int lib_kTrailSlowActive(lua_State *L)
+{
+	lua_pushboolean(L, K_TrailSlowActive());
+	return 1;
+}
+
 // Gets the currently active bumpspark type.
 static int lib_kGetBumpSpark(lua_State *L)
 {
@@ -5952,6 +5959,7 @@ static luaL_Reg lib[] = {
 	{"K_KeepStuffActive",lib_kKeepStuffActive},
 	{"K_ItemLitterActive",lib_kItemLitterActive},
 	{"K_ItemListActive", lib_kItemListActive},
+	{"K_TrailSlowActive", lib_kTrailSlowActive},
 	{"K_GetBumpSpark",lib_kGetBumpSpark},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
 	{"K_DoBoost",lib_kDoBoost},

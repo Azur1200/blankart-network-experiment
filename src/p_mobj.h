@@ -634,6 +634,7 @@ extern boolean itemlittering;
 extern boolean itempushing;
 extern UINT8   bumpsparkactive;
 extern boolean itemlistactive;
+extern boolean trailslow_active;
 extern UINT16 bossdisabled;
 extern boolean stoppedclock;
 

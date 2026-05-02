@@ -174,6 +174,7 @@ boolean itemlittering;
 boolean itempushing;
 UINT8   bumpsparkactive;
 boolean itemlistactive;
+boolean trailslow_active = false;
 UINT16 bossdisabled;
 boolean stoppedclock;
 boolean levelloading;
@@ -8251,6 +8252,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	itemlittering = false;
 	itempushing = false;
 	itemlistactive = false;
+	trailslow_active = false;
 	bumpsparkactive = 0;
 	antibumptime = 0;
 
@@ -8297,6 +8299,9 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 
 	if (cv_itemlist.value)
 		itemlistactive = true;
+
+	if (cv_trailslow.value)
+		trailslow_active = true;
 
 	bumpsparkactive = (UINT8)cv_kartbumpspark.value;
 

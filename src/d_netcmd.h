@@ -262,6 +262,8 @@ extern consvar_t cv_kartitemlitter, cv_kartitempush;
 
 extern consvar_t cv_kartantibump;
 
+extern consvar_t cv_trailslow;
+
 extern consvar_t cv_kartforcelegacyodds;
 
 extern consvar_t cv_handleboostslip;

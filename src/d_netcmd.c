@@ -179,6 +179,7 @@ static void KartAntiBump_OnChange(void);
 static void KartItemBreaker_OnChange(void);
 static void KartBumpSpark_OnChange(void);
 static void KartItemList_OnChange(void);
+static void KartTrailSlow_OnChange(void);
 
 static void Schedule_OnChange(void);
 
@@ -675,6 +676,8 @@ consvar_t cv_kartrecoverydash = CVAR_INIT ("kartrecoverydash", "No", CV_NETVAR|C
 consvar_t cv_kartrecoverydash_spinspeed = CVAR_INIT ("kartrecoverydash_spinspeed", "24.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 
 consvar_t cv_kartkeepstuff = CVAR_INIT ("kartkeepstuff", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartKeepStuff_OnChange);
+
+consvar_t cv_trailslow = CVAR_INIT ("trailslow", "Yes", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartTrailSlow_OnChange);
 
 
 #define ANTIBUMP_MAX (UINT32_MAX / TICRATE)
@@ -9913,6 +9916,39 @@ static void KartItemList_OnChange(void)
 		else
 		{
 			CONS_Printf(M_GetText("Item rolls will not be displayed next round.\n"));
+		}
+	}
+}
+
+static void KartTrailSlow_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_TrailSlowActive() && cv_trailslow.value)
+	{
+		if (leveltime < starttime)
+		{
+			trailslow_active = true;
+			CONS_Printf(M_GetText("Trailing slowdown has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Trailing slowdown will be turned \"On\" Next Round.\n"));
+		}
+	}
+	else if (K_TrailSlowActive() && !cv_trailslow.value)
+	{
+		if (leveltime < starttime)
+		{
+			trailslow_active = false;
+			CONS_Printf(M_GetText("Trailing slowdown has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Trailing slowdown will be turned \"Off\" next round.\n"));
 		}
 	}
 }

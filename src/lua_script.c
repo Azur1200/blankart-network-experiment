@@ -432,6 +432,9 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 	} else if (fastcmp(word,"itempushing")) {
 		lua_pushboolean(L, itempushing); // hmm... i think this should be a boolean
 		return 1;
+	} else if (fastcmp(word,"trailslow_active") || fastcmp(word,"trailslowactive")) {
+		lua_pushinteger(L, trailslow_active);
+		return 1;
 	} else if (fastcmp(word,"hyubgone")) {
 		lua_pushinteger(L, K_GetKartResult("hyudoro")->cooldown);
 		return 1;
@@ -614,6 +617,10 @@ int LUA_WriteGlobals(lua_State *L, const char *word)
 		keepstuffactive = (boolean)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"itempushing"))
 		itempushing = (boolean)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"trailslowactive"))
+		trailslow_active = (boolean)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"trailslow_active"))
+		trailslow_active = (boolean)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"gamespeed"))
 		gamespeed = (UINT8)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"nummapboxes"))
