@@ -1948,7 +1948,8 @@ void EV_DoMoveFloorByHeight(mtag_t tag, fixed_t height, fixed_t speed, mtag_t ch
 
 		// chained linedef executing ability
 		// Only set it on one of the moving sectors (the smallest numbered)
-		if (chain)
+		boolean kartcheck = (mapnamespace == MNS_SRB2KART) ? firstone : true;
+		if (kartcheck && chain)
 			dofloor->tag = firstone ? (INT16)chain : -1;
 
 		// flat changing ability

@@ -2637,15 +2637,6 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 						return false;
 					}
 
-					if (mapnamespace == MNS_SRB2KART)
-					{
-						if (line->args[2] != TMP_CEILING)
-							EV_DoFloor(line->args[1], line, moveFloorByFrontSector);
-						if (line->args[2] != TMP_FLOOR)
-							EV_DoCeiling(line->args[1], line, moveCeilingByFrontSector);
-						break;
-					}
-
 					copySector = line->frontsector;
 				}
 				else
