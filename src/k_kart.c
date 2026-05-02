@@ -7985,7 +7985,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		fixed_t vrate = (-FixedMul(rate * 2 - FRACUNIT, rate * 2 - FRACUNIT)) + FRACUNIT;
 		FV2_Rotate(&tyreoffs, 45*FRACUNIT);
 		player->mo->spritexoffset += Easing_Linear(rate, 0, (5*tyredistance/2));
-		player->mo->spriteyoffset += Easing_Linear(vrate, 0, abs(tyreoffs.y/2) * P_MobjFlip(player->mo));
+		player->mo->spriteyoffset += Easing_Linear(vrate, 0, abs(tyreoffs.y/2));
 		
 		// CONS_Debug(DBG_PLAYER, "tyre dist : %4.3f\n", FIXED_TO_FLOAT(tyredistance));
 		// CONS_Debug(DBG_PLAYER, "kart tilt : %4.3f\n", FIXED_TO_FLOAT(player->karttilt));
