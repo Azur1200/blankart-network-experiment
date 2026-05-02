@@ -115,6 +115,9 @@ consvar_t cv_draftindicator = CVAR_INIT ("draftindicator", "On", CV_SAVE, CV_OnO
 
 consvar_t cv_showstats = CVAR_INIT ("showstats", "On", CV_SAVE, CV_OnOff, NULL);
 
+// make char potraits use their high-res version instead
+consvar_t cv_highresportrait = CVAR_INIT ("highresportrait", "Off", CV_SAVE, CV_OnOff, NULL);
+
 typedef enum
 {
 	NT_OFF = 0,
@@ -292,6 +295,7 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_newtabranking);
 	CV_RegisterVar(&cv_draftindicator);
 	CV_RegisterVar(&cv_showstats);
+	CV_RegisterVar(&cv_highresportrait);
 
 	// k_items.c
 	CV_RegisterVar(&cv_fancyroulette);
@@ -816,6 +820,16 @@ skincolornum_t K_GetHudColor(void)
 	if (cv_colorizedhud.value && cv_colorizedhudcolor.value) return cv_colorizedhudcolor.value;
 
 	return ((stplyr && gamestate == GS_LEVEL) ? stplyr->skincolor : cv_playercolor[0].value);
+}
+
+static boolean K_IsHighResolution(void)
+{
+	return (vid.width >= 640 && vid.height >= 400);
+}
+
+boolean K_UseHighResPortraits(void)
+{
+	return (cv_highresportrait.value && K_IsHighResolution());
 }
 
 static boolean K_BigLapSticker(void)
@@ -2295,7 +2309,9 @@ static boolean K_drawKartPositionFaces(void)
 			else
 				colormap = R_GetTranslationColormap(players[rankplayer[i]].skin, players[rankplayer[i]].mo->color, GTC_CACHE);
 
-			patch_t *facerank = faceprefix[players[rankplayer[i]].skin][FACE_RANK];
+			boolean hires = K_UseHighResPortraits();
+
+			patch_t *facerank = faceprefix[players[rankplayer[i]].skin][hires ? FACE_WANTED : FACE_RANK];
 
 			offsets.x = facerank->leftoffset;
 			offsets.y = facerank->topoffset;
@@ -2314,14 +2330,14 @@ static boolean K_drawKartPositionFaces(void)
 			}
 #endif
 
-			V_DrawMappedPatch(FACE_X + offsets.x, Y + offsets.y, V_HUDTRANS|V_SNAPTOLEFT, facerank, colormap);
+			V_DrawFixedPatch((FACE_X + offsets.x)<<FRACBITS, (Y + offsets.y)<<FRACBITS, hires ? FRACUNIT / 2 : FRACUNIT, V_HUDTRANS|V_SNAPTOLEFT, facerank, colormap);
 
 			if (players[rankplayer[i]].smonitortimer)
 			{
 				colormap = R_GetTranslationColormap(TC_BLINK, K_SMonitorColor(leveltime / 2), GTC_CACHE);
 				smntrhudtrans = K_SMonitorHUDVisibility(players[rankplayer[i]].smonitortimer);
 
-				V_DrawMappedPatch(FACE_X + offsets.x, Y + offsets.y, smntrhudtrans|V_SNAPTOLEFT|V_ADD, facerank, colormap);
+				V_DrawFixedPatch((FACE_X + offsets.x)<<FRACBITS, (Y + offsets.y)<<FRACBITS, hires ? FRACUNIT / 2 : FRACUNIT, smntrhudtrans|V_SNAPTOLEFT|V_ADD, facerank, colormap);
 			}
 
 			if (LUA_HudEnabled(hud_battlebumpers))
@@ -2852,9 +2868,12 @@ void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, IN
 		else
 			V_DrawString(x + 20, y2, ((tab[i].num == whiteplayer) ? hightlightcolor : 0)|V_ALLOWLOWERCASE, playername);
 
-		patch_t *facerank = faceprefix[players[tab[i].num].skin][FACE_RANK];
+		boolean hires = K_UseHighResPortraits();
+		patch_t *facerank = faceprefix[players[tab[i].num].skin][hires ? FACE_WANTED : FACE_RANK];
+		INT16 leftoffset = facerank->leftoffset;
+		INT16 topoffset = facerank->topoffset;
 
-		V_DrawMappedPatch(x+facerank->leftoffset, y-4+facerank->topoffset, 0, facerank, colormap);
+		V_DrawFixedPatch((x+leftoffset)<<FRACBITS, (y-4+topoffset)<<FRACBITS, hires ? FRACUNIT/2 : FRACUNIT, 0, facerank, colormap);
 
 		/*if ((gametypes[gametype]->rules & GTR_BUMPERS) && players[tab[i].num].bumper > 0) -- not enough space for this
 		{
@@ -3041,8 +3060,11 @@ static void K_drawKartStatsnLives(void)
 
 			// We specify stplyr->skincolor since we want it to match the player and not the hud color.
 			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, stplyr->skincolor, GTC_CACHE);
-			patch_t *facerank = faceprefix[stplyr->skin][FACE_RANK];
-			V_DrawMappedPatch(fx+59+offsetx+facerank->leftoffset, fy-16+offsety+facerank->topoffset, V_HUDTRANS|splitflags, facerank, colormap);
+			boolean hires = K_UseHighResPortraits();
+			patch_t *facerank = faceprefix[stplyr->skin][hires ? FACE_WANTED : FACE_RANK];
+			INT16 topoffset = hires ? facerank->topoffset / 2 : facerank->topoffset;
+			INT16 leftoffset = hires ? facerank->leftoffset / 2 : facerank->leftoffset;
+			V_DrawFixedPatch((fx+59+offsetx+leftoffset)<<FRACBITS, (fy-16+offsety+topoffset)<<FRACBITS, hires ? FRACUNIT/2 : FRACUNIT, V_HUDTRANS|splitflags, facerank, colormap);
 			if (stplyr->lives >= 0 && uselives)
 				V_DrawScaledPatch(fx+77+offsetx, fy-11+offsety, V_HUDTRANS|splitflags, kp_facenum[(stplyr->lives % 10)]); // make sure this doesn't overflow OR underflow
 
@@ -3059,8 +3081,8 @@ static void K_drawKartStatsnLives(void)
 					colormapstat2 = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MUSTARD, GTC_CACHE);
 				}
 
-				V_DrawFixedPatch((fx+56+offsetx+facerank->leftoffset)<< FRACBITS, (fy-19+offsety+facerank->topoffset)<< FRACBITS, FRACUNIT, V_HUDTRANS|splitflags, kp_facenum[(stplyr->kartspeed % 10)], colormapstat);
-				V_DrawFixedPatch((fx+69+offsetx+facerank->leftoffset)<< FRACBITS, (fy-4+offsety+facerank->topoffset)<< FRACBITS, FRACUNIT, V_HUDTRANS|splitflags, kp_facenum[(stplyr->kartweight % 10)], colormapstat2);
+				V_DrawFixedPatch((fx+56+offsetx+leftoffset)<< FRACBITS, (fy-19+offsety+topoffset)<< FRACBITS, FRACUNIT, V_HUDTRANS|splitflags, kp_facenum[(stplyr->kartspeed % 10)], colormapstat);
+				V_DrawFixedPatch((fx+69+offsetx+leftoffset)<< FRACBITS, (fy-4+offsety+topoffset)<< FRACBITS, FRACUNIT, V_HUDTRANS|splitflags, kp_facenum[(stplyr->kartweight % 10)], colormapstat2);
 			}
 		}
 	}
