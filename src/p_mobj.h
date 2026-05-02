@@ -628,6 +628,7 @@ extern boolean draftingactive;
 extern UINT8 airdropactive;
 extern boolean airthrustactive;
 extern boolean recoverydashactive;
+extern boolean keepstuffactive;
 extern boolean waterskipbricks;
 extern boolean itemlittering;
 extern boolean itempushing;

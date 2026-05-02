@@ -488,6 +488,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_karteggmine_slotbrick);
 
 	CV_RegisterVar(&cv_kartthunder_radius);
+
+	CV_RegisterVar(&cv_kartkeepstuff);
 }
 
 //}
@@ -1727,6 +1729,80 @@ static SINT8 K_GlanceAtPlayers(player_t *glancePlayer)
 	return lastValidGlance;
 }
 
+static void K_UpdateKeepstuff(player_t *player)
+{
+	if (!K_KeepStuffActive())
+	{
+		// Keep Stuff isn't on
+		return;
+	}
+
+	UINT16 flags = player->keepstuff.flags;
+
+	if (flags & KEEPSTUFF_ROCKET)
+	{
+		if (!player->rocketsneakertimer)
+		{
+			INT32 moloop;
+			mobj_t *mo = NULL;
+			mobj_t *prev = player->mo;
+
+			K_SetItemOut(player, KITEM_ROCKETSNEAKER, 0);
+			K_UpdateHnextList(player, true);
+
+			for (moloop = 0; moloop < 2; moloop++)
+			{
+				mo = K_SpawnEquippedItem(player, KITEMEQUIP_ROCKETS, MT_ROCKETSNEAKER, moloop, prev);
+				prev = mo;
+			}
+		}
+
+		player->rocketsneakertimer = player->keepstuff.rocketsneakertimer;
+	}
+
+	if (flags & KEEPSTUFF_INVIN)
+	{
+		if (!player->invincibilitytimer)
+		{
+			K_DoInvincibility(player, INVINTIME);
+		}
+
+		player->invincibilitytimer = player->keepstuff.invincibilitytimer;
+	}
+
+	if (flags & KEEPSTUFF_SMON)
+	{
+		if (!player->smonitortimer)
+		{
+			K_DoSMonitor(player, SMONITORTIME);
+		}
+
+		player->smonitortimer = player->keepstuff.smonitortimer;
+		player->smonitorexpiring = player->keepstuff.smonitorexpiring;
+		player->maxsmonitortime = player->keepstuff.maxsmonitortime;
+	}
+
+	if (flags & KEEPSTUFF_GROWSHRINK)
+	{
+		if (!player->growshrinktimer)
+		{
+			K_DoGrowShrink(player, player->keepstuff.growshrinktimer < 0);
+		}
+
+		player->growshrinktimer = player->keepstuff.growshrinktimer;
+	}
+
+	if (flags & KEEPSTUFF_FLAME)
+	{
+		if (!player->flametimer)
+		{
+			K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, NULL);
+		}
+
+		player->flametimer = player->keepstuff.flametimer;
+	}
+}
+
 /**	\brief	Calculates the respawn timer and drop-boosting
 
 	\param	player	player object passed from K_KartPlayerThink
@@ -1741,6 +1817,8 @@ static void K_RespawnChecker(player_t *player)
 
 	if (player->respawn > 1)
 	{
+		K_UpdateKeepstuff(player);
+
 		player->respawn--;
 		player->mo->momz = 0;
 		player->flashing = 2;
@@ -1780,6 +1858,8 @@ static void K_RespawnChecker(player_t *player)
 	}
 	else if (player->respawn == 1)
 	{
+		K_UpdateKeepstuff(player);
+
 		if (player->growshrinktimer < 0)
 		{
 			player->mo->scalespeed = mapobjectscale/TICRATE;
@@ -5725,8 +5805,6 @@ void K_DropRocketSneaker(player_t *player)
 		leftshoe = false;
 	}
 	P_SetTarget(&player->mo->hnext, NULL);
-	player->rocketsneakertimer = 0;
-	player->equippeditem = KITEM_NONE;
 }
 
 void K_DropKitchenSink(player_t *player)
@@ -10784,6 +10862,7 @@ void K_StripItems(player_t *player)
 	player->hyudorotimer = 0;
 	player->stealingtimer = 0;
 	player->stolentimer = 0;
+	player->rocketsneakertimer = 0;
 
 	if (!P_MobjWasRemoved(player->shieldtracer))
 		P_RemoveMobj(player->shieldtracer);
@@ -11769,6 +11848,18 @@ boolean K_RecoveryDashActive(void)
 
 	return false;
 }
+
+boolean K_KeepStuffActive(void)
+{
+	if (keepstuffactive)
+	{
+		// Keep Stuff is enabled!
+		return true;
+	}
+
+	return false;
+}
+
 
 boolean K_WaterskipBricksActive(void)
 {

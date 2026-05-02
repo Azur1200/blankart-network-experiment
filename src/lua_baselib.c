@@ -4552,6 +4552,27 @@ static int lib_kAirDropActive(lua_State *L)
 	return 1;
 }
 
+// Checks if Air Thrust is active.
+static int lib_kAirThrustActive(lua_State *L)
+{
+	lua_pushboolean(L, K_AirThrustActive());
+	return 1;
+}
+
+// Checks if Recovery Dash is active.
+static int lib_kRecoveryDashActive(lua_State *L)
+{
+	lua_pushboolean(L, K_RecoveryDashActive());
+	return 1;
+}
+
+// Checks if Keep Stuff is active.
+static int lib_kKeepStuffActive(lua_State *L)
+{
+	lua_pushboolean(L, K_KeepStuffActive());
+	return 1;
+}
+
 // Checks if item littering is active.
 static int lib_kItemLitterActive(lua_State *L)
 {
@@ -5926,6 +5947,9 @@ static luaL_Reg lib[] = {
 	{"K_SlopeBoostActive",lib_kSlopeBoostActive},
 	{"K_DraftingActive",lib_kDraftingActive},
 	{"K_AirDropActive",lib_kAirDropActive},
+	{"K_AirThrustActive",lib_kAirThrustActive},
+	{"K_RecoveryDashActive",lib_kRecoveryDashActive},
+	{"K_KeepStuffActive",lib_kKeepStuffActive},
 	{"K_ItemLitterActive",lib_kItemLitterActive},
 	{"K_ItemListActive", lib_kItemListActive},
 	{"K_GetBumpSpark",lib_kGetBumpSpark},

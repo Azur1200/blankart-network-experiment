@@ -249,6 +249,8 @@ extern consvar_t cv_kartthunder_radius;
 #define ATTRACTIONATTACKTIME_MAX (3*TICRATE/4)
 #define ATTRACTIONATTACKTIME_MIN (TICRATE/2)
 
+void K_DoGrowShrink(player_t *player, boolean shrinking);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

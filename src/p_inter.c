@@ -1426,6 +1426,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 	{
 		K_DisableSeekingReticule(target->player);
 		K_DropRocketSneaker(target->player);
+		target->player->equippeditem = KITEM_NONE;
 	}
 
 	// Let EVERYONE know what happened to a player! 01-29-2002 Tails

@@ -2999,6 +2999,21 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	tic_t laptime[LAP__MAX];
 
+	// Keep stuff shit
+	UINT16 ksflags;
+
+	UINT16 ksrocketsneakertimer;
+
+	UINT16 ksinvincibilitytimer;
+
+	UINT16 kssmonitortimer;
+	UINT16 kssmonitorexpiring;
+	UINT16 ksmaxsmonitortime;
+
+	INT16 ksgrowshrinktimer;
+
+	UINT16 ksflametimer;
+
 	// This needs to be first, to permit it to wipe extra information
 	jointime = players[player].jointime;
 	if (jointime <= 1)
@@ -3094,6 +3109,16 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		prevcheck = 0;
 		nextcheck = 0;
 
+		// keepstuff
+		ksflags = 0;
+		ksrocketsneakertimer = 0;
+		ksinvincibilitytimer = 0;
+		kssmonitortimer = 0;
+		kssmonitorexpiring = 0;
+		ksmaxsmonitortime = 0;
+		ksgrowshrinktimer = 0;
+		ksflametimer = 0;
+
 		for (i = 0; i < LAP__MAX; i++)
 		{
 			laptime[i] = 0;
@@ -3158,6 +3183,27 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 			growshrinktimer = players[player].growshrinktimer;
 		else
 			growshrinktimer = 0;
+
+		// keepstuff
+		ksflags = 0;
+		ksrocketsneakertimer = players[player].rocketsneakertimer;
+		ksinvincibilitytimer = players[player].invincibilitytimer;
+		kssmonitortimer = players[player].smonitortimer;
+		kssmonitorexpiring = players[player].smonitorexpiring;
+		ksmaxsmonitortime = players[player].maxsmonitortime;
+		ksgrowshrinktimer = players[player].growshrinktimer;
+		ksflametimer = players[player].flametimer;
+
+		if (ksrocketsneakertimer)
+			ksflags |= KEEPSTUFF_ROCKET;
+		if (ksinvincibilitytimer)
+			ksflags |= KEEPSTUFF_INVIN;
+		if (kssmonitortimer || kssmonitorexpiring || ksmaxsmonitortime)
+			ksflags |= KEEPSTUFF_SMON;
+		if (ksgrowshrinktimer)
+			ksflags |= KEEPSTUFF_GROWSHRINK;
+		if (ksflametimer)
+			ksflags |= KEEPSTUFF_FLAME;
 
 		// deplete your item stack if you died with zero bubble health
 		bubblehealth = players[player].bubblehealth;
@@ -3319,6 +3365,16 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->nocontrol = nocontrol;
 	p->kickstartaccel = kickstartaccel;
 	p->jitterlegacy = jitterlegacy;
+
+	// keepstuff
+	p->keepstuff.flags = ksflags;
+	p->keepstuff.rocketsneakertimer = ksrocketsneakertimer;
+	p->keepstuff.invincibilitytimer = ksinvincibilitytimer;
+	p->keepstuff.smonitortimer = kssmonitortimer;
+	p->keepstuff.smonitorexpiring = kssmonitorexpiring;
+	p->keepstuff.maxsmonitortime = ksmaxsmonitortime;
+	p->keepstuff.growshrinktimer = ksgrowshrinktimer;
+	p->keepstuff.flametimer = ksflametimer;
 
 	p->ringvolume = 255;
 	p->ringtransparency = 255;

@@ -168,6 +168,7 @@ boolean draftingactive;
 UINT8	airdropactive;
 boolean airthrustactive;
 boolean recoverydashactive;
+boolean keepstuffactive;
 boolean waterskipbricks;
 boolean itemlittering;
 boolean itempushing;
@@ -8245,6 +8246,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	airdropactive = 0;
 	airthrustactive = false;
 	recoverydashactive = false;
+	keepstuffactive = false;
 	waterskipbricks = false;
 	itemlittering = false;
 	itempushing = false;
@@ -8280,6 +8282,9 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 
 	if (cv_kartrecoverydash.value)
 		recoverydashactive = true;
+
+	if (cv_kartkeepstuff.value)
+		keepstuffactive = true;
 
 	if (cv_kartwaterskiplock.value)
 		waterskipbricks = true;

@@ -269,6 +269,8 @@ extern consvar_t cv_handleboostslip;
 extern consvar_t cv_kartrecoverydash;
 extern consvar_t cv_kartrecoverydash_spinspeed;
 
+extern consvar_t cv_kartkeepstuff;
+
 extern consvar_t cv_kartoddsdist;
 extern consvar_t cv_kartlegacyoddsdist;
 

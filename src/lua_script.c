@@ -13,6 +13,7 @@
 #include "doomdef.h"
 #include "dehacked.h"
 #include "deh_lua.h"
+#include "p_mobj.h"
 #include "z_zone.h"
 #include "w_wad.h"
 #include "p_setup.h"
@@ -419,6 +420,12 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 	} else if (fastcmp(word,"purpledriftactive")) {
 		lua_pushinteger(L, purpledriftactive);
 		return 1;
+	} else if (fastcmp(word,"recoverydashactive")) {
+		lua_pushinteger(L, recoverydashactive);
+		return 1;
+	} else if (fastcmp(word,"keepstuffactive")) {
+		lua_pushinteger(L, keepstuffactive);
+		return 1;
 	} else if (fastcmp(word,"itemlittering")) {
 		lua_pushinteger(L, itemlittering);
 		return 1;
@@ -581,10 +588,32 @@ int LUA_WriteGlobals(lua_State *L, const char *word)
 		itembreaker = (boolean)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"battleprisons"))
 		itembreaker = (boolean)luaL_checkinteger(L, 2);
-	else if (fastcmp(word,"chainingactive"))
+	else if (fastcmp(word,"ringsactive"))
+		ringsactive = (boolean)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"stackingactive"))
 		stackingactive = (boolean)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"chainingactive"))
 		chainingactive = (boolean)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"slipdashactive"))
+		slipdashactive = (boolean)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"slopeboostactive"))
+		slopeboostactive = (boolean)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"draftingactive"))
+		draftingactive = (boolean)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"airdropactive"))
+		airdropactive = luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"bumpsparkactive"))
+		bumpsparkactive = luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"purpledriftactive"))
+		purpledriftactive = (boolean)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"recoverydashactive"))
+		recoverydashactive = (boolean)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"itemlittering"))
+		itemlittering = (boolean)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"keepstuffactive"))
+		keepstuffactive = (boolean)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"itempushing"))
+		itempushing = (boolean)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"gamespeed"))
 		gamespeed = (UINT8)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"nummapboxes"))

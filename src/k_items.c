@@ -1627,7 +1627,7 @@ INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresul
 #define NEIGHBOR_IFRAMES (TICRATE / 2)
 #define BASE_IFRAMES (2 * TICRATE)
 
-static void K_DoGrowShrink(player_t *player, boolean shrinking)
+void K_DoGrowShrink(player_t *player, boolean shrinking)
 {
 	player->mo->scalespeed = mapobjectscale/TICRATE;
 	player->mo->destscale = FixedMul(mapobjectscale, (shrinking) ? SHRINK_SCALE : GROW_SCALE);

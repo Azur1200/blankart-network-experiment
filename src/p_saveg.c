@@ -865,6 +865,16 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		P_SyncMem(save, players[i].public_key, PUBKEYLENGTH);
 		
 		SYNC(players[i].bumpyroadside);
+
+		// keepstuff_t
+		SYNC(players[i].keepstuff.flags);
+		SYNC(players[i].keepstuff.rocketsneakertimer);
+		SYNC(players[i].keepstuff.invincibilitytimer);
+		SYNC(players[i].keepstuff.smonitortimer);
+		SYNC(players[i].keepstuff.smonitorexpiring);
+		SYNC(players[i].keepstuff.maxsmonitortime);
+		SYNC(players[i].keepstuff.growshrinktimer);
+		SYNC(players[i].keepstuff.flametimer);
 	}
 	TracyCZoneEnd(__zone);
 }
@@ -4333,6 +4343,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(draftingactive);
 	SYNCBOOLEAN(airthrustactive);
 	SYNCBOOLEAN(recoverydashactive);
+	SYNCBOOLEAN(keepstuffactive);
 	SYNCBOOLEAN(waterskipbricks);
 	SYNCBOOLEAN(itemlittering);
 	SYNCBOOLEAN(itempushing);

@@ -9471,6 +9471,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			if (!mobj->extravalue2)
 			{
 				K_DropRocketSneaker(mobj->target->player);
+				mobj->target->player->equippeditem = KITEM_NONE;
 			}
 			else if (P_IsObjectOnGround(mobj))
 			{
@@ -10207,7 +10208,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				S_StartSound(mobj->tracer, sfx_s3k77);
 				mobj->tracer->flags &= ~MF_NOGRAVITY;
 				P_KillMobj(mobj, mobj->tracer, mobj->tracer, DMG_NORMAL);
-				player->respawn = 1;
 
 				break;
 			}

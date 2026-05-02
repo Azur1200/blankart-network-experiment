@@ -48,6 +48,7 @@ TYPEDEF (player_t);
 TYPEDEF (sonicloopcamvars_t);
 TYPEDEF (sonicloopvars_t);
 TYPEDEF (saltyhop_t);
+TYPEDEF (keepstuff_t);
 
 // d_clisrv.h
 TYPEDEF (clientcmd_pak);

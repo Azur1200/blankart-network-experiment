@@ -171,6 +171,7 @@ static void KartDrafting_OnChange(void);
 static void KartAirDrop_OnChange(void);
 static void KartAirThrust_OnChange(void);
 static void KartRecoveryDash_OnChange(void);
+static void KartKeepStuff_OnChange(void);
 static void KartWaterSkipLock_OnChange(void);
 static void KartItemLitter_OnChange(void);
 static void KartItemPush_OnChange(void);
@@ -672,6 +673,9 @@ consvar_t cv_handleboostslip = CVAR_INIT ("karthandleboostsliptide", "Off", CV_N
 
 consvar_t cv_kartrecoverydash = CVAR_INIT ("kartrecoverydash", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartRecoveryDash_OnChange);
 consvar_t cv_kartrecoverydash_spinspeed = CVAR_INIT ("kartrecoverydash_spinspeed", "24.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+
+consvar_t cv_kartkeepstuff = CVAR_INIT ("kartkeepstuff", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartKeepStuff_OnChange);
+
 
 #define ANTIBUMP_MAX (UINT32_MAX / TICRATE)
 static CV_PossibleValue_t antibump_cons_t[] = {{0, "MIN"}, {ANTIBUMP_MAX, "MAX"}, {0, NULL}};
@@ -9680,6 +9684,39 @@ static void KartRecoveryDash_OnChange(void)
 		else
 		{
 			CONS_Printf(M_GetText("Recovery Dash will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
+static void KartKeepStuff_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_KeepStuffActive() && cv_kartkeepstuff.value)
+	{
+		if (leveltime < starttime)
+		{
+			keepstuffactive = true;
+			CONS_Printf(M_GetText("Keep Stuff has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Keep Stuff will be turned \"On\" Next Round.\n"));
+		}
+	}
+	else if (K_KeepStuffActive() && !cv_kartkeepstuff.value)
+	{
+		if (leveltime < starttime)
+		{
+			keepstuffactive = false;
+			CONS_Printf(M_GetText("Keep Stuff has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Keep Stuff will be turned \"Off\" next round.\n"));
 		}
 	}
 }

@@ -493,6 +493,32 @@ typedef enum
 	LAP__MAX
 } laptime_e;
 
+typedef enum
+{
+	KEEPSTUFF_ROCKET			= 1,
+	KEEPSTUFF_INVIN				= 1<<1,
+	KEEPSTUFF_SMON				= 1<<2,
+	KEEPSTUFF_GROWSHRINK		= 1<<3,
+	KEEPSTUFF_FLAME				= 1<<4,
+} keepstuffflags_t;
+
+struct keepstuff_t
+{
+	UINT16 flags;
+
+	UINT16 rocketsneakertimer;
+
+	UINT16 invincibilitytimer;
+
+	UINT16 smonitortimer;
+	UINT16 smonitorexpiring;
+	UINT16 maxsmonitortime;
+
+	INT16 growshrinktimer;
+
+	UINT16 flametimer;
+};
+
 // ========================================================================
 //                          PLAYER STRUCTURE
 // ========================================================================
@@ -901,6 +927,8 @@ struct player_t
 	UINT8 walltransferboost;
 
 	uint8_t public_key[PUBKEYLENGTH];
+
+	keepstuff_t keepstuff;
 
 #ifdef HWRENDER
 	fixed_t fovadd; // adjust FOV for hw rendering

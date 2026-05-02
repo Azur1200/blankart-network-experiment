@@ -385,6 +385,7 @@ SINT8 K_AirDropActive(void);
 boolean K_AirThrustActive(void);
 boolean K_RecoveryDashActive(void);
 boolean K_WaterskipBricksActive(void);
+boolean K_KeepStuffActive(void);
 boolean K_ItemLitterActive(void);
 boolean K_ItemListActive(void);
 boolean K_ItemPushingActive(void);
