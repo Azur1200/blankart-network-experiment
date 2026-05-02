@@ -175,6 +175,7 @@ boolean itempushing;
 UINT8   bumpsparkactive;
 boolean itemlistactive;
 boolean trailslow_active = false;
+playerbumptype_t playerbumpactive = PBUMP_STANDARD;
 UINT16 bossdisabled;
 boolean stoppedclock;
 boolean levelloading;
@@ -8255,6 +8256,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	trailslow_active = false;
 	bumpsparkactive = 0;
 	antibumptime = 0;
+	playerbumpactive = PBUMP_STANDARD;
 
 	if (cv_kartrings.value)
 		ringsactive = true;
@@ -8304,6 +8306,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 		trailslow_active = true;
 
 	bumpsparkactive = (UINT8)cv_kartbumpspark.value;
+	playerbumpactive = (playerbumptype_t)cv_playerbump.value;
 
 	antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
 

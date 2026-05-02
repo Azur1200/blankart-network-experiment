@@ -1356,6 +1356,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 
 	// Damage other players when possible.
 	// Handle before bumpcode to prevent lower weights from getting affected.
+	boolean pvp_hit = false;
 	if (g_tm.thing->player && thing->player
 	// Make sure they aren't able to damage you ANYWHERE along the Z axis, you have to be TOUCHING the person.
 		&& !(thing->z + thing->height < g_tm.thing->z || thing->z > g_tm.thing->z + g_tm.thing->height))
@@ -1363,7 +1364,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		mobj_t *mo1 = g_tm.thing;
 		mobj_t *mo2 = thing;
 
-		K_PvPTouchDamage(mo1, mo2);
+		pvp_hit = K_PvPTouchDamage(mo1, mo2);
 	}
 
 	if (thing->player)
@@ -1402,6 +1403,21 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		}
 		else if (thing->player) // bounce when players collide
 		{
+			boolean cannotbump = false;
+
+			switch(playerbumpactive)
+			{
+				case PBUMP_GNDONLY:
+					cannotbump = ((!P_IsObjectOnGround(thing) || !P_IsObjectOnGround(g_tm.thing)) && !pvp_hit);
+					break;
+				case PBUMP_NONE:
+					cannotbump = !pvp_hit;
+					break;
+				case PBUMP_STANDARD:
+				default:
+					break;
+			}
+
 			// see if it went over / under
 			if (g_tm.thing->z > thing->z + thing->height)
 				return BMIT_CONTINUE; // overhead
@@ -1433,6 +1449,14 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 								 BUBBLEGRAZE_MAX,
 								 BUBBLEGRAZE_INCREMENT);
 				}
+				return BMIT_CONTINUE;
+			}
+
+			if (cannotbump) // Unable to actually bump; don't process things further
+			{
+				// Just in case...
+				g_tm.thing->player->justbumped = min(24, g_tm.thing->player->justbumped + 6);
+				thing->player->justbumped = min(24, thing->player->justbumped + 6);
 				return BMIT_CONTINUE;
 			}
 

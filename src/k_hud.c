@@ -2683,7 +2683,7 @@ void K_SetScoreboardModStatus(const char *name, SINT8 active)
 	CONS_Alert(CONS_WARNING, "Server mod '%s' does not exist so status cannot be changed.\n", name);
 }
 
-#define BASEMODS 21
+#define BASEMODS 23
 static void K_DrawServerMods(INT32 x, INT32 y)
 {
 	UINT8 i, j;
@@ -2713,6 +2713,8 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 		{"Bump Spring", 0, &cv_kartbumpspring, -1, true},
 		{"Keep Stuff", 0, NULL, K_KeepStuffActive() > 0, true},
 		{"No BananaDrag", 0, NULL, K_TrailSlowActive() < 1, true},
+		{"No Air Bumps", 0, NULL, K_GetPlayerBump() == PBUMP_GNDONLY, true},
+		{"No PvP Bumps", 0, NULL, K_GetPlayerBump() == PBUMP_NONE, true},
 		//TODO: separate drawer that enumerates item changes?
 	};
 

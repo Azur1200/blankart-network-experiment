@@ -491,6 +491,7 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartkeepstuff);
 	CV_RegisterVar(&cv_trailslow);
+	CV_RegisterVar(&cv_playerbump);
 }
 
 //}
@@ -7240,6 +7241,12 @@ void K_KillAirDrop(player_t *player, p_airdropflags_t airdropflags)
 INT32 K_GetBumpSpark(void)
 {
 	return max(min(BUMPSPARK_ALL, (bumpsparktype_t)bumpsparkactive), BUMPSPARK_NONE);
+}
+
+// Returns the playerbump value as an enum.
+playerbumptype_t K_GetPlayerBump(void)
+{
+	return max(min(PBUMP_NONE, (playerbumptype_t)playerbumpactive), PBUMP_STANDARD);
 }
 
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c

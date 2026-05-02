@@ -377,6 +377,16 @@ typedef struct
 } restatmessage_t;
 void G_HandleRestatMessage(restatmessage_t *rm);
 
+typedef enum
+{
+	PBUMP_STANDARD = 0,
+	PBUMP_GNDONLY,
+	PBUMP_NONE,
+	NUMPLAYERBUMPTYPES
+} ATTRPACK playerbumptype_t;
+
+extern playerbumptype_t playerbumpactive;
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

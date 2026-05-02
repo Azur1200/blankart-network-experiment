@@ -180,6 +180,7 @@ static void KartItemBreaker_OnChange(void);
 static void KartBumpSpark_OnChange(void);
 static void KartItemList_OnChange(void);
 static void KartTrailSlow_OnChange(void);
+static void PlayerBump_OnChange(void);
 
 static void Schedule_OnChange(void);
 
@@ -679,6 +680,11 @@ consvar_t cv_kartkeepstuff = CVAR_INIT ("kartkeepstuff", "No", CV_NETVAR|CV_CALL
 
 consvar_t cv_trailslow = CVAR_INIT ("trailslow", "Yes", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartTrailSlow_OnChange);
 
+static CV_PossibleValue_t playerbump_cons_t[] = {{PBUMP_STANDARD, "Standard"},
+						 {PBUMP_GNDONLY, "Only on Ground"},
+						 {PBUMP_NONE, "None"},
+						 {0, NULL}};
+consvar_t cv_playerbump = CVAR_INIT ("playerbump", "Standard", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, playerbump_cons_t, PlayerBump_OnChange);
 
 #define ANTIBUMP_MAX (UINT32_MAX / TICRATE)
 static CV_PossibleValue_t antibump_cons_t[] = {{0, "MIN"}, {ANTIBUMP_MAX, "MAX"}, {0, NULL}};
@@ -9950,6 +9956,24 @@ static void KartTrailSlow_OnChange(void)
 		{
 			CONS_Printf(M_GetText("Trailing slowdown will be turned \"Off\" next round.\n"));
 		}
+	}
+}
+
+static void PlayerBump_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (leveltime < starttime)
+	{
+		CONS_Printf(M_GetText("Player bump type has been changed to \"%s\".\n"), cv_playerbump.string);
+		playerbumpactive = (playerbumptype_t)cv_playerbump.value;
+	}
+	else
+	{
+		CONS_Printf(M_GetText("Player bump type will be changed to \"%s\" next round.\n"), cv_playerbump.string);
 	}
 }
 

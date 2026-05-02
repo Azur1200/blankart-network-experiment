@@ -4352,6 +4352,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNC(airdropactive);
 	SYNC(bumpsparkactive);
 	SYNC(antibumptime);
+	SYNC(playerbumpactive);
 
 	for (i = 0; i < sizeof(g_voteLevels)/sizeof(*g_voteLevels); i++)
 	{

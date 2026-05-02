@@ -4602,6 +4602,13 @@ static int lib_kGetBumpSpark(lua_State *L)
 	return 1;
 }
 
+// Gets the currently active playerbump type.
+static int lib_kGetPlayerBump(lua_State *L)
+{
+	lua_pushinteger(L, K_GetPlayerBump());
+	return 1;
+}
+
 // Checks if current map is using legacy boss3 bassed checkpoints. Useful for map compat.
 static int lib_kUsingLegacyCheckpoints(lua_State *L)
 {
@@ -5961,6 +5968,7 @@ static luaL_Reg lib[] = {
 	{"K_ItemListActive", lib_kItemListActive},
 	{"K_TrailSlowActive", lib_kTrailSlowActive},
 	{"K_GetBumpSpark",lib_kGetBumpSpark},
+	{"K_GetPlayerBump",lib_kGetPlayerBump},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
 	{"K_DoBoost",lib_kDoBoost},
 	{"K_ClearBoost",lib_kClearBoost},
