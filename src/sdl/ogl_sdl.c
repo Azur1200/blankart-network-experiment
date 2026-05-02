@@ -185,9 +185,11 @@ void OglSdlFinishUpdate(boolean waitvbl)
 	SDL_GetWindowSizeInPixels(window, &sdlw, &sdlh);
 
 	HWR_MakeScreenFinalTexture();
-	GL_SetShader(HWR_GetShaderFromTarget(SHADER_FINAL_POST_PROCESS));
+	if (gl_shadersavailable)
+		GL_SetShader(HWR_GetShaderFromTarget(SHADER_FINAL_POST_PROCESS));
 	HWR_DrawScreenFinalTexture(sdlw, sdlh);
-	GL_UnSetShader();
+	if (gl_shadersavailable)
+		GL_UnSetShader();
 	SDL_GL_SwapWindow(window);
 
 	GL_GClipRect(0, 0, vid.width, vid.height, NZCLIP_PLANE);

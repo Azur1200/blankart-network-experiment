@@ -384,7 +384,11 @@ void Y_IntermissionDrawer(void)
 
 	if (useinterpic)
 		V_DrawScaledPatch(0, 0, 0, interpic);
+#ifdef HWRENDER
+	else if (y_screenbuffer != NULL && !(rendermode == render_opengl && cv_glscreentextures.value != 2))
+#else
 	else if (y_screenbuffer != NULL)
+#endif
 	{
 		if (rendermode == render_soft)
 			VID_BlitLinearScreen(y_screenbuffer, vid.screens[0], vid.width, vid.height, vid.width, vid.rowbytes);

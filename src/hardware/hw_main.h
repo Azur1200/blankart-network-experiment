@@ -86,7 +86,7 @@ boolean HWR_ShouldUsePaletteRendering(void);
 extern CV_PossibleValue_t glanisotropicmode_cons_t[];
 
 extern consvar_t cv_glshaders, cv_glallowshaders;
-extern consvar_t cv_glmodels;
+extern consvar_t cv_glmodels, cv_glscreentextures;
 
 // SRB2Kart: We don't like these options.
 // Interpolation should be up to who animated the model.

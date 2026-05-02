@@ -339,13 +339,12 @@ boolean D_RenderLevel(void)
 		if (r_splitscreen == 2) // Draw over the fourth screen so you don't have to stare at a HOM :V
 		{
 			// V_DrawPatchFill, but for the fourth screen only
-			patch_t *pat = static_cast<patch_t*>(W_CachePatchName("SRB2BACK", PU_CACHE));
 			INT32 x, y, pw = SHORT(pat->width) * vid.dup, ph = SHORT(pat->height) * vid.dup;
 
 			for (x = vid.width>>1; x < vid.width; x += pw)
 			{
 				for (y = vid.height>>1; y < vid.height; y += ph)
-					V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
+					V_DrawScaledPatch(x, y, V_NOSCALESTART, srb2back);
 			}
 		}
 	}

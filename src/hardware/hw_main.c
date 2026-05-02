@@ -877,6 +877,7 @@ static CV_PossibleValue_t glshearing_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Thi
 
 static void CV_glfiltermode_OnChange(void);
 static void CV_glanisotropic_OnChange(void);
+static void CV_screentextures_OnChange(void);
 
 static CV_PossibleValue_t glfiltermode_cons_t[]= {{HWD_SET_TEXTUREFILTER_POINTSAMPLED, "Nearest"},
 	{HWD_SET_TEXTUREFILTER_BILINEAR, "Bilinear"}, {HWD_SET_TEXTUREFILTER_TRILINEAR, "Trilinear"},
@@ -891,6 +892,15 @@ consvar_t cv_glshaders = CVAR_INIT ("gr_shaders", "On", CV_SAVE, glshaders_cons_
 consvar_t cv_glallowshaders = CVAR_INIT ("gr_allowclientshaders", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_fovchange = CVAR_INIT ("gr_fovchange", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_glsecbright = CVAR_INIT("gr_secbright", "0", CV_SAVE, glsecbright_cons_t, NULL);
+
+// The current screen texture implementation is inefficient and disabling it can result in significant
+// performance gains on lower end hardware. The game is still quite playable without this functionality.
+// Features that break when disabling this:
+//  - water and heat wave effects
+//  - intermission background
+//  - full screen scaling (use native resolution or windowed mode to avoid this)
+static CV_PossibleValue_t glscreentextures_cons_t[] = {{0, "Off"}, {1, "Wipes Only"}, {2, "All"}, {0, NULL}};
+consvar_t cv_glscreentextures = CVAR_INIT("gr_screentextures", "All", CV_CALL|CV_SAVE, glscreentextures_cons_t, CV_screentextures_OnChange);
 
 consvar_t cv_glmodels = CVAR_INIT ("gr_models", "Off", CV_SAVE, CV_OnOff, NULL);
 
@@ -940,6 +950,17 @@ consvar_t cv_glskydebug = CVAR_INIT ("gr_skydebug", "0", 0, CV_Unsigned, NULL);
 
 #define ONLY_IF_GL_LOADED if (vid.glstate != VID_GL_LIBRARY_LOADED) return;
 
+static void CV_screentextures_OnChange(void)
+{
+	ONLY_IF_GL_LOADED
+	if (cv_glscreentextures.value != 2)
+	{
+		if (cv_glpaletterendering.value != 0)
+			CV_SetValue(&cv_glpaletterendering, 0);
+	}
+	GL_SetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_glscreentextures.value);
+}
+
 static void CV_glfiltermode_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
@@ -964,10 +985,15 @@ void CV_glmodellighting_OnChange(void)
 void CV_glpaletterendering_OnChange(void)
 {
 	ONLY_IF_GL_LOADED
+
+	if (cv_glpaletterendering.value != 0 && cv_glscreentextures.value != 2) // can't do palette rendering without screen textures
+		CV_SetValue(&cv_glpaletterendering, 0);
+
 	if (gl_shadersavailable)
 	{
 		HWR_CompileShaders();
 		HWR_TogglePaletteRendering();
+		HWR_PrecacheLevel();
 	}
 }
 
@@ -1051,6 +1077,8 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_gldebugportal);
 
 	CV_RegisterVar(&cv_glskydebug);
+
+	CV_RegisterVar(&cv_glscreentextures);
 }
 
 void HWR_AddSessionCommands(void)
@@ -1081,6 +1109,14 @@ void HWR_Startup(void)
 		gl_shadersavailable = HWR_InitShaders();
 		HWR_SetShaderState();
 		HWR_TogglePaletteRendering();
+
+		if (cv_glscreentextures.value != 2)
+		{
+			if (cv_glpaletterendering.value != 0)
+				CV_SetValue(&cv_glpaletterendering, 0);
+		}
+
+		GL_SetSpecialState(HWD_SET_SCREEN_TEXTURES, cv_glscreentextures.value);
 	}
 
 	gl_init = true;
@@ -1179,6 +1215,9 @@ void HWR_DoPostProcessor(player_t *player)
 
 		GL_DrawPolygon(&Surf, v, 4, PF_Modulated|PF_Additive|PF_NoTexture|PF_NoDepthTest);
 	}
+
+	if (cv_glscreentextures.value != 2) // screen textures are needed for the rest of the effects
+		return;
 
 	// Capture the screen for intermission and screen waving
 	if (gamestate != GS_INTERMISSION)
@@ -1290,6 +1329,12 @@ static boolean HWR_WipeCheck(UINT8 wipenum, UINT8 scrnnum)
 
 void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
 {
+	if (cv_glscreentextures.value == 0)
+	{
+		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31); // just draw a black screen instead of flashing and crap
+		return;
+	}
+
 	if (!HWR_WipeCheck(wipenum, scrnnum))
 		return;
 
