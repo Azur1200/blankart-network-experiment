@@ -3268,24 +3268,24 @@ static void K_DrawDialSpeedometer(fixed_t speed,
 	if (colorized)  // Colourized hud
 	{
 		V_DrawMappedPatch(
-			SPDM_X, SPDM_Y - 25 + ringoffset, (V_HUDTRANS | splitflags), kp_dialbase[infoidx + 2], colormap);
+			SPDM_X, SPDM_Y - 25, (V_HUDTRANS | splitflags), kp_dialbase[infoidx + 2], colormap);
 		V_DrawMappedPatch(SPDM_X,
-						  SPDM_Y + 14 + ringoffset,
+						  SPDM_Y + 14,
 						  V_HUDTRANS | splitflags,
 						  kp_speedpatchesdial[labeln + 4],
 						  colormap);
 	}
 	else
 	{
-		V_DrawScaledPatch(SPDM_X, SPDM_Y - 25 + ringoffset, (V_HUDTRANS | splitflags), kp_dialbase[infoidx]);
+		V_DrawScaledPatch(SPDM_X, SPDM_Y - 25, (V_HUDTRANS | splitflags), kp_dialbase[infoidx]);
 		V_DrawScaledPatch(SPDM_X,
-						  SPDM_Y + 14 + ringoffset,
+						  SPDM_Y + 14,
 						  V_HUDTRANS | splitflags,
 						  kp_speedpatchesdial[labeln]);
 	}
 
 	K_DrawDialNum(SPDM_X + 10,
-				  SPDM_Y + 9 + ringoffset,
+				  SPDM_Y + 9,
 				  colorized,
 				  V_HUDTRANS | splitflags,
 				  speed / FRACUNIT,
@@ -3294,7 +3294,7 @@ static void K_DrawDialSpeedometer(fixed_t speed,
 
 	// gotta center the dial manually
 	V_DrawRotatedPatch((SPDM_X - 19) << FRACBITS,
-			   (SPDM_Y - 1 + ringoffset) << FRACBITS,
+			   (SPDM_Y - 1) << FRACBITS,
 			   speedangle,
 			   FRACUNIT,
 			   FRACUNIT,
@@ -3314,9 +3314,9 @@ static void K_DrawDialSpeedometer(fixed_t speed,
 		if (stplyr->kartstuff[k_bumper] <= 0)
 		{
 			V_DrawMappedPatch(
-				SPDM_X + 28, SPDM_Y + 12 + ringoffset, V_HUDTRANS | splitflags, kp_splitkarmabomb, colormap);
+				SPDM_X + 28, SPDM_Y + 12, V_HUDTRANS | splitflags, kp_splitkarmabomb, colormap);
 			K_DrawDialLaps(SPDM_X + 46,
-						   SPDM_Y + ringoffset + 13,
+						   SPDM_Y + 13,
 						   stplyr->kartstuff[k_comebackpoints],
 						   2,
 						   V_HUDTRANS | splitflags);
@@ -3327,7 +3327,7 @@ static void K_DrawDialSpeedometer(fixed_t speed,
 			V_DrawMappedPatch(
 				SPDM_X + 28, SPDM_Y + 12, V_HUDTRANS | splitflags, kp_rankbumper, colormap);
 			K_DrawDialLaps(SPDM_X + 46,
-						   SPDM_Y + ringoffset + 13,
+						   SPDM_Y + 13,
 						   stplyr->kartstuff[k_bumper],
 						   cv_kartbumpers.value,
 						   V_HUDTRANS | splitflags);
@@ -3335,13 +3335,13 @@ static void K_DrawDialSpeedometer(fixed_t speed,
 	}
 	else
 	{
-		V_DrawScaledPatch(SPDM_X + 28, SPDM_Y + 12 + ringoffset, V_HUDTRANS | splitflags, kp_splitlapflag);
+		V_DrawScaledPatch(SPDM_X + 28, SPDM_Y + 12, V_HUDTRANS | splitflags, kp_splitlapflag);
 
 		if (stplyr->exiting)
-			V_DrawScaledPatch(SPDM_X + 39, SPDM_Y + 29 + ringoffset, V_HUDTRANS | splitflags, kp_dialfinish);
+			V_DrawScaledPatch(SPDM_X + 39, SPDM_Y + 29, V_HUDTRANS | splitflags, kp_dialfinish);
 		else
 			K_DrawDialLaps(SPDM_X + 46,
-						   SPDM_Y + ringoffset + 13,
+						   SPDM_Y + 13,
 						   stplyr->laps,
 						   numlaps,
 						   V_HUDTRANS | splitflags);
