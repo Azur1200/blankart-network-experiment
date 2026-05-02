@@ -1804,6 +1804,12 @@ static void K_UpdateKeepstuff(player_t *player)
 	}
 }
 
+static void K_ClearKeepstuff(player_t *player)
+{
+	memset(&player->keepstuff, 0, sizeof(player->keepstuff));
+}
+
+
 /**	\brief	Calculates the respawn timer and drop-boosting
 
 	\param	player	player object passed from K_KartPlayerThink
@@ -1892,6 +1898,8 @@ static void K_RespawnChecker(player_t *player)
 		}
 		else
 		{
+			K_ClearKeepstuff(player);
+
 			if ((buttons & BT_ACCELERATE) && (player->dropdash >= TICRATE/4))
 			{
 				S_StartSound(player->mo, sfx_s23c);
