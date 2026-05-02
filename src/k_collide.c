@@ -1108,13 +1108,11 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	{
 		if (t1Condition == true && t2Condition == false)
 		{
-			P_DamageMobj(t2, t1, t1, 1, invindamage);
-			return true;
+			return P_DamageMobj(t2, t1, t1, 1, invindamage);
 		}
 		else if (t1Condition == false && t2Condition == true)
 		{
-			P_DamageMobj(t1, t2, t2, 1, invindamage);
-			return true;
+			return P_DamageMobj(t1, t2, t2, 1, invindamage);
 		}
 	}
 	
@@ -1168,19 +1166,17 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 			}
 			if (P_IsObjectOnGround(t1) && P_IsObjectOnGround(t2))
 			{
-				P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
+				return P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
 			}
 			else
 			{
 				switch (cv_kartairsquish.value)
 				{
 					case 1:
-						P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
-						return true;
+						return P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
 						break;
 					case 2:
-						P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
-						return true;
+						return P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
 						break;
 					default:
 						return false;
@@ -1213,27 +1209,24 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 			}
 			else if (P_IsObjectOnGround(t1) && P_IsObjectOnGround(t2))
 			{
-				P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
+				return P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
 			}
 			else
 			{
 				switch (cv_kartairsquish.value)
 				{
 					case 1:
-						P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
-						return true;
+						return P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
 						break;
 					case 2:
-						P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
-						return true;
+						return P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
 						break;
 					default:
 						return false;
 						break;
 				}
+			}
 		}
-		}
-		return true;
 	}
 
 	// Flame Shield dash damage
@@ -1242,13 +1235,11 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 
 	if (t1Condition == true && t2Condition == false)
 	{
-		P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
-		return true;
+		return P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
 	}
 	else if (t1Condition == false && t2Condition == true)
 	{
-		P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
-		return true;
+		return P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
 	}
 
 	// Attraction Shield tackle damage
@@ -1257,13 +1248,11 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	t2Condition = (t2->player->attractionattack && t2->player->attractionattack_hipower && (K_GetShieldFromPlayer(t1->player) != KSHIELD_BUBBLE));
 	if (t1Condition == true && t2Condition == false)
 	{
-		P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
-		return true;
+		return P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
 	}
 	else if (t1Condition == false && t2Condition == true)
 	{
-		P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
-		return true;
+		return P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
 	}
 
 	// Battle Mode Sneaker and Bubble damage
@@ -1281,13 +1270,11 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 
 		if (t1Condition == true && t2Condition == false)
 		{
-			P_DamageMobj(t2, t1, t1, 1, DMG_WIPEOUT|DMG_STEAL);
-			return true;
+			return P_DamageMobj(t2, t1, t1, 1, DMG_WIPEOUT|DMG_STEAL);
 		}
 		else if (t1Condition == false && t2Condition == true)
 		{
-			P_DamageMobj(t1, t2, t2, 1, DMG_WIPEOUT|DMG_STEAL);
-			return true;
+			return P_DamageMobj(t1, t2, t2, 1, DMG_WIPEOUT|DMG_STEAL);
 		}
 	}
 	
