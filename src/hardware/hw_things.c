@@ -1781,7 +1781,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	float base_topoffs = FIXED_TO_FLOAT(spr_topoffset);
 
 #ifdef ROTSPRITE
-	spriterotangle = R_SpriteRotationAngle(thing, NULL, &interp, false);
+	spriterotangle = R_SpriteRotationAngle(thing, NULL, &interp, (affinesprite && vflip));
 
 	if (spriterotangle != 0
 	&& !(splat && !(thing->renderflags & RF_NOSPLATROLLANGLE))
