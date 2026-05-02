@@ -102,7 +102,7 @@
 #define ASSET_HASH_GFX_KART            0xc91b0d43f5ba131f
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
-#define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
+#define ASSET_HASH_MAPS_KART           0x2be29dfb3a146dfa
 #define ASSET_HASH_MAIN_PK3            0x4ea7e79e2d5d0d63
 #define ASSET_HASH_MAPPATCH_PK3        0x1745690024efbaf8
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
@@ -339,7 +339,7 @@ boolean D_RenderLevel(void)
 		if (r_splitscreen == 2) // Draw over the fourth screen so you don't have to stare at a HOM :V
 		{
 			// V_DrawPatchFill, but for the fourth screen only
-			INT32 x, y, pw = SHORT(pat->width) * vid.dup, ph = SHORT(pat->height) * vid.dup;
+			INT32 x, y, pw = SHORT(srb2back->width) * vid.dup, ph = SHORT(srb2back->height) * vid.dup;
 
 			for (x = vid.width>>1; x < vid.width; x += pw)
 			{
