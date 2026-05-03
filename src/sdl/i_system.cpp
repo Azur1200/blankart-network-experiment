@@ -1444,7 +1444,6 @@ void I_Quit(void)
 	if (myargmalloc)
 		free(myargv); // Deallocate allocated memory
 
-	W_Shutdown();
 	exit(0);
 }
 
@@ -1522,7 +1521,6 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 					"SRB2Kart V2 " VERSIONSTRING " Recursive Error",
 					buffer, NULL);
 
-			W_Shutdown();
 			exit(-1); // recursive errors detected
 		}
 	}
@@ -1569,8 +1567,6 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 	// use this for 1.28 19990220 by Kin
 	I_ShutdownSystem();
 	SDL_Quit();
-
-	W_Shutdown();
 
 #if defined (PARANOIA) || defined (DEVELOP)
 	*(volatile INT32 *)0 = 4; //Alam: Debug!
