@@ -2980,7 +2980,6 @@ mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjty
 	switch (equipstyle)
 	{
 		case KITEMEQUIP_ORBIT: // Kart orbit items
-			K_MatchGenericExtraFlags(mo, player->mo);
 			newangle = (player->mo->angle + ANGLE_157h) + FixedAngle(((360 / player->itemamount) * moloop) << FRACBITS) + ANGLE_90;
 			mo->angle = newangle;
 			mo->movecount = player->itemamount;
