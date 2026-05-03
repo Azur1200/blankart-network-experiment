@@ -1365,11 +1365,13 @@ void K_getRingsDrawinfo(drawinfo_t *out)
 {
 	INT32 fx, fy, splitflags = 0;
 
+	boolean dialspeedometer = (cv_newspeedometer.value == 3 && r_splitscreen < 1);
+
 	// pain and suffering defined below
 	if (r_splitscreen < 2)	// don't change shit for THIS splitscreen.
 	{
-		fx = RING_X;
-		fy = RING_Y;
+		fx = RING_X + ((dialspeedometer) ? 31 : 0);
+		fy = RING_Y + ((dialspeedometer) ? 14 : 0);
 		splitflags = V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANS|V_SPLITSCREEN;
 	}
 	else
@@ -3311,26 +3313,39 @@ static void K_DrawDialSpeedometer(fixed_t speed,
 	// draw the info
 	if (battlemode)
 	{
-		if (stplyr->kartstuff[k_bumper] <= 0)
+		if (itembreaker)
 		{
-			V_DrawMappedPatch(
-				SPDM_X + 28, SPDM_Y + 12, V_HUDTRANS | splitflags, kp_splitkarmabomb, colormap);
+			V_DrawMappedPatch(SPDM_X + 28, SPDM_Y + 12, V_HUDTRANS | splitflags, kp_itemboxminimap, NULL);
 			K_DrawDialLaps(SPDM_X + 46,
-						   SPDM_Y + 13,
-						   stplyr->kartstuff[k_comebackpoints],
-						   2,
-						   V_HUDTRANS | splitflags);
+				       SPDM_Y + 13,
+				       numtargets,
+				       nummapboxes,
+				       V_HUDTRANS | splitflags);
 		}
-		else  // the above doesn't need to account for weird stuff since the max amount of karma
-			  // necessary is always 2 ^^^^
+		else
 		{
-			V_DrawMappedPatch(
-				SPDM_X + 28, SPDM_Y + 12, V_HUDTRANS | splitflags, kp_rankbumper, colormap);
-			K_DrawDialLaps(SPDM_X + 46,
-						   SPDM_Y + 13,
-						   stplyr->kartstuff[k_bumper],
-						   cv_kartbumpers.value,
-						   V_HUDTRANS | splitflags);
+			if (stplyr->bumper <= 0 && (gametypes[gametype]->rules & GTR_KARMA) && comeback)
+			{
+				V_DrawMappedPatch(
+					SPDM_X + 28, SPDM_Y + 12, V_HUDTRANS | splitflags, kp_splitkarmabomb, colormap);
+				K_DrawDialLaps(SPDM_X + 46,
+							SPDM_Y + 13,
+							stplyr->karmapoints,
+							2,
+							V_HUDTRANS | splitflags);
+			}
+			else  // the above doesn't need to account for weird stuff since the max amount of karma
+				// necessary is always 2 ^^^^
+			{
+				INT32 maxbumper = K_StartingBumperCount();
+				V_DrawMappedPatch(
+					SPDM_X + 28, SPDM_Y + 12, V_HUDTRANS | splitflags, kp_rankbumper, colormap);
+				K_DrawDialLaps(SPDM_X + 46,
+							SPDM_Y + 13,
+							stplyr->bumper,
+							maxbumper,
+							V_HUDTRANS | splitflags);
+			}
 		}
 	}
 	else
@@ -3338,7 +3353,7 @@ static void K_DrawDialSpeedometer(fixed_t speed,
 		V_DrawScaledPatch(SPDM_X + 28, SPDM_Y + 12, V_HUDTRANS | splitflags, kp_splitlapflag);
 
 		if (stplyr->exiting)
-			V_DrawScaledPatch(SPDM_X + 39, SPDM_Y + 29, V_HUDTRANS | splitflags, kp_dialfinish);
+			V_DrawScaledPatch(SPDM_X + 39, SPDM_Y + 13, V_HUDTRANS | splitflags, kp_dialfinish);
 		else
 			K_DrawDialLaps(SPDM_X + 46,
 						   SPDM_Y + 13,
