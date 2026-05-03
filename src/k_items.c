@@ -2993,6 +2993,7 @@ mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjty
 			mo->movedir = mo->lastlook = moloop+1;
 			break;
 		case KITEMEQUIP_SHIELD: // Force Field Shields
+			K_FlipFromObject(mo, player->mo);
 			P_SetScale(mo, (mo->destscale = (5*mo->destscale)>>2));
 			P_SetTarget(&player->shieldtracer, mo);
 			break;

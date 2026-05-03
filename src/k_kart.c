@@ -10065,7 +10065,7 @@ static boolean K_PlayerCanRecoverySpin(player_t *player)
 
 static void K_RecoveryDash(player_t *player)
 {
-	if (K_PlayerWantsRecoverySpin(player) && K_IsPlayerDamaged(player) && player->wipeoutslow == 0)
+	if (K_RecoveryDashActive() && K_PlayerWantsRecoverySpin(player) && K_IsPlayerDamaged(player) && player->wipeoutslow == 0)
 	{
 		player->wipeoutslow = max(wipeoutslowtime + 1, player->spinouttimer + 4);
 	}
