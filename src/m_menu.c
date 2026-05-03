@@ -4865,8 +4865,8 @@ static void DrawReplayHutReplayInfo(void)
 			V_DrawThinString(x, y+9, V_SNAPTOTOP|V_ALLOWLOWERCASE, va("(%d laps)", demolist[dir_on[menudepthleft]].numlaps));
 
 		const char *gametypename = gametypes[demolist[dir_on[menudepthleft]].gametype] ? gametypes[demolist[dir_on[menudepthleft]].gametype]->name : "Unknown";
-		const char *gamespeed = kartspeed_cons_t[(demolist[dir_on[menudepthleft]].kartspeed & ~DF_ENCORE) + 1].strvalue;
-		const char *gamemodestring = va("%s (%s speed)", gametypename, gamespeed);
+		const char *displaygamespeed = kartspeed_cons_t[(demolist[dir_on[menudepthleft]].kartspeed & ~DF_ENCORE) + 1].strvalue;
+		const char *gamemodestring = va("%s (%s speed)", gametypename, displaygamespeed);
 
 		V_DrawString(x, y+20, V_SNAPTOTOP|V_ALLOWLOWERCASE, gamemodestring);
 

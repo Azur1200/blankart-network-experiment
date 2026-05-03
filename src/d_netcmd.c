@@ -2164,7 +2164,7 @@ static void SendNameAndColor(UINT8 n)
 	// If you're not in a netgame, merely update the skin, color, and name.
 	if (!netgame)
 	{
-		INT32 foundskin, voxid;
+		INT32 foundskin;
 
 		CleanupPlayerName(playernum, cv_playername[n].zstring);
 		strcpy(player_names[playernum], cv_playername[n].zstring);

@@ -2160,7 +2160,6 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		{
 			if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 			{
-				angle_t newangle;
 				INT32 moloop;
 				mobj_t *mo = NULL;
 				mobj_t *prev = player->mo;
@@ -2233,7 +2232,6 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 	case KITEM_ORBINAUT:
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 		{
-			angle_t newangle;
 			INT32 moloop;
 			mobj_t *mo = NULL;
 			mobj_t *prev = player->mo;
@@ -2267,7 +2265,6 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 	case KITEM_JAWZ:
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 		{
-			angle_t newangle;
 			INT32 moloop;
 			mobj_t *mo = NULL;
 			mobj_t *prev = player->mo;
@@ -2404,7 +2401,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		{
 			if (K_GetShieldFromPlayer(player) != KSHIELD_ATTRACTION)
 			{
-				mobj_t *shield = K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_ATTRACTIONSHIELD, 0, NULL);
+				/*mobj_t *shield =*/ K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_ATTRACTIONSHIELD, 0, NULL);
 				S_StartSound(player->mo, sfx_attrsg);
 			}
 
@@ -2530,7 +2527,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		{
 			if (K_GetShieldFromPlayer(player) != KSHIELD_THUNDER)
 			{
-				mobj_t *shield = K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_THUNDERSHIELD, 0, NULL);
+				/*mobj_t *shield =*/K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_THUNDERSHIELD, 0, NULL);
 				S_StartSound(player->mo, sfx_s3k41);
 			}
 
@@ -2554,7 +2551,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 	case KITEM_BUBBLESHIELD:
 		if (K_GetShieldFromPlayer(player) != KSHIELD_BUBBLE)
 		{
-			mobj_t *shield = K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_BUBBLESHIELD, 0, NULL);
+			/*mobj_t *shield =*/ K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_BUBBLESHIELD, 0, NULL);
 			S_StartSound(player->mo, sfx_s3k3f);
 			if (player->bubblehealth <= 0 || player->bubblehealth > MAXBUBBLEHEALTH)
 				player->bubblehealth = MAXBUBBLEHEALTH;
@@ -2640,7 +2637,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			player->itemamount--;
 			player->flametimer = flametime;
 			player->flamedash = 0;
-			mobj_t *shield = K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, NULL);
+			/*mobj_t *shield =*/ K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, NULL);
 			S_StartSound(player->mo, sfx_s3k3e);
 		}
 		break;

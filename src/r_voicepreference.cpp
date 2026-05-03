@@ -353,7 +353,7 @@ extern "C"
                 return false;
             }
 
-            fprintf(f, va("// BlanKart preferences file for local player %d.\n", snum + 1));
+            fprintf(f, "%s", va("// BlanKart preferences file for local player %d.\n", snum + 1));
             fprintf(
                 f,
                 "// Due to the nature of the unordered map system, data here may be shuffled!\n");
@@ -398,7 +398,7 @@ extern "C"
                 file_output.copy(voicepref_buffer, VOICEPREFBUFSIZE);
                 voicepref_buffer[VOICEPREFBUFSIZE - 1] = 0;
 
-                fprintf(f, voicepref_buffer);
+                fprintf(f, "%s",voicepref_buffer);
             }
 
             fclose(f);
@@ -432,7 +432,7 @@ extern "C"
         INT32 strikes = 0;
 
         std::vector<std::string> data_to_load[2];
-        char name_buffer[2][VOICENAMESIZE] = {0};
+        char name_buffer[2][VOICENAMESIZE] = {{0}};
 
         for (snum = 0; snum < MAXSPLITSCREENPLAYERS; snum++)
         {

@@ -4449,8 +4449,8 @@ void CL_RemoveSplitscreenPlayer(UINT8 p)
 
 static void GotOurIP(UINT32 address)
 {
-	const unsigned char * p = (const unsigned char *)&address;
 #ifdef DEVELOP
+	const unsigned char * p = (const unsigned char *)&address;
 	CONS_Printf("Got IP of %u.%u.%u.%u\n", p[0], p[1], p[2], p[3]);
 #endif
 	ourIP = address;
@@ -7215,6 +7215,7 @@ static void UpdatePingTable(void)
 }
 
 // It's that time again! Send everyone a safe message to sign, so we can show off their signature and prove we're playing fair.
+#if 0
 static void SendChallenges(void)
 {
 	int i;
@@ -7375,6 +7376,7 @@ static void UpdateChallenges(void)
 			HandleSigfail("Didn't receive client signatures.");
 	}
 }
+#endif
 
 static void RenewHolePunch(void)
 {

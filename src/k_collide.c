@@ -817,7 +817,7 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, INT16 d
 		player->bubbleblowup /= 2;
 }
 
-boolean K_BubbleShieldReflectSpecialCase(mobj_t *t)
+boolean K_BubbleShieldReflectSpecialCase(const mobj_t *t)
 {
 	if ((!t) || (P_MobjWasRemoved(t)))
 		return false; // Object doesn't even exist

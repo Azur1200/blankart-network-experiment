@@ -101,34 +101,6 @@ INT32 flags;         Bits = 3232              MF_SOLID|MF_SHOOTABLE|MF_DROPOFF|M
 INT32 raisestate;    Respawn frame = 32       S_NULL          // raisestate
                                          }, */
 
-#ifdef HWRENDER
-static INT32 searchvalue(const char *s)
-{
-	while (s[0] != '=' && s[0])
-		s++;
-	if (s[0] == '=')
-		return atoi(&s[1]);
-	else
-	{
-		deh_warning("No value found");
-		return 0;
-	}
-}
-
-static float searchfvalue(const char *s)
-{
-	while (s[0] != '=' && s[0])
-		s++;
-	if (s[0] == '=')
-		return (float)atof(&s[1]);
-	else
-	{
-		deh_warning("No value found");
-		return 0;
-	}
-}
-#endif
-
 // These are for clearing all of various things
 void clear_emblems(void)
 {

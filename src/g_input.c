@@ -1298,6 +1298,8 @@ vector3_t G_GetCalibratedGyroOffset(INT32 p)
 
 void G_UpdateGamepadAutoCalibration(INT32 p, vector3_t accel, vector3_t gyro, boolean allowautocalibration)
 {
+	(void)gyro;
+
 	fixed_t trust = FV3_Distance(&localaccelcalibrationoffset[p], &accel);
 	FV3_Load(
 		&localaccelcalibrationoffset[p],

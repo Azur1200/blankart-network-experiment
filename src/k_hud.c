@@ -5720,8 +5720,7 @@ static void K_drawKartFirstPerson(void)
 // doesn't need to ever support 4p
 static void K_drawInput(void)
 {
-	static INT32 pn = 0;
-	INT32 target = 0, splitflags = (V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_SLIDEIN);
+	INT32 splitflags = (V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_SLIDEIN);
 	INT32 x = (BASEVIDWIDTH - 32)*FRACUNIT, y = (BASEVIDHEIGHT - 24)*FRACUNIT;
 	UINT8 *shadowcolormap = NULL;
 	INT32 offs, col;

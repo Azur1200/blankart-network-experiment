@@ -982,6 +982,8 @@ void ST_AskToJoinEnvelope(void)
 
 static fixed_t ST_CalculateFadeIn(player_t *player)
 {
+	(void)player;
+
 	const tic_t length = TICRATE/4;
 
 	tic_t timer = lt_exitticker;

@@ -294,7 +294,10 @@ void HWR_DrawAffinePatch(patch_t *gpatch, fixed_t x, fixed_t y, const affine_t *
 	// i don't fucking know, i spent a day on this and got absolutely nowhere, but this guy knows:
 	// https://nigeltao.github.io/blog/2021/inverting-3x2-affine-transformation-matrix.html
 	float determinant = fa * fd - fb * fc;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
 	if (determinant == 0.0f)
+#pragma GCC diagnostic pop
 		return;
 	float ba = fd / determinant;
 	float bb = -fb / determinant;
