@@ -675,7 +675,7 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&joyshadow, "JOYSHD");
 
 	// Input UI Wheel
-	HU_UpdatePatch(&kp_inputwheel, "K_WHEEL0");
+	HU_UpdatePatch(&kp_inputwheel, "B_WHEEL0");
 	kp_inputwheel->pivot.x = 
 		(kp_inputwheel->width / 2) + kp_inputwheel->leftoffset;
 	kp_inputwheel->pivot.y = 
@@ -683,7 +683,7 @@ void K_LoadKartHUDGraphics(void)
 	kp_inputwheel->alignflags |=
 		(PATCHALIGN_AUTOCENTER | PATCHALIGN_USEPIVOTS);
 
-	HU_UpdatePatch(&kp_inputwheel_shadow, "K_WHEEL1");
+	HU_UpdatePatch(&kp_inputwheel_shadow, "B_WHEEL1");
 	kp_inputwheel_shadow->pivot.x = 
 		(kp_inputwheel_shadow->width / 2) + kp_inputwheel_shadow->leftoffset;
 	kp_inputwheel_shadow->pivot.y = 

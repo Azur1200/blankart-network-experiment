@@ -2,6 +2,7 @@
 //-----------------------------------------------------------------------------
 // Copyright (C) 2025 by haya3218.
 // Copyright (C) 2018-2024 by Kart Krew
+// Copyright (C) 2026 by Team Blankart.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -293,6 +294,12 @@ void K_DisplayItemTimers(void)
 			"ringboost",
 			stplyr->ringboost,
 			{qche("K_TIRING")},
+			1,
+		},
+		{ // bubbleshield
+			"bubbleshield",
+			stplyr->bubbleboost,
+			{qche("K_TIBUBS")},
 			1,
 		},
 		{ // flameshield
