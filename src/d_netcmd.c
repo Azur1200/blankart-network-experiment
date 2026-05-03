@@ -734,7 +734,7 @@ consvar_t cv_kartbubble_boost_offroadignore = CVAR_INIT ("kartbubble_boost_offro
 
 consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "On", CV_NETVAR, CV_OnOff, NULL);
-consvar_t cv_kartattraction_assistpower = CVAR_INIT ("kartattraction_assistpower", "0.5", CV_NETVAR|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartattraction_assistpower = CVAR_INIT ("kartattraction_assistpower", "0.2", CV_NETVAR|CV_FLOAT, CV_Unsigned, NULL);
 
 // Attraction Shield damage toggles
 static CV_PossibleValue_t kartattractiondmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {DMG_EXPLODE, "Explode"}, {0, NULL}};
