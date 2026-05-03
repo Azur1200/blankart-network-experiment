@@ -12162,6 +12162,7 @@ void K_KartAttractHomingAttack(player_t *player)
 	{
 		mobj_t *mo;
 		angle_t effectangle = player->mo->angle;
+		boolean raceFirst = ((gametypes[gametype]->rules & GTR_CIRCUIT) && player->position <= 1);
 		if (player->speed > 0)
 		{
 			effectangle = R_PointToAngle2(0,0, player->mo->momx, player->mo->momy);
@@ -12175,7 +12176,7 @@ void K_KartAttractHomingAttack(player_t *player)
 
 		P_SpawnGhostMobj(player->mo);
 
-		if (player->attractionattack_hipower && player->position > 1 && lastTarg >= 0)
+		if (player->attractionattack_hipower && lastTarg >= 0 && (!raceFirst))
 		{
 			player->attractionboost = Easing_InCubic(influence, ATTRACTIONSPEEDHIMIN, ATTRACTIONSPEEDHIMAX);
 
