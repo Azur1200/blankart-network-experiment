@@ -1248,11 +1248,21 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	t2Condition = (t2->player->attractionattack && t2->player->attractionattack_hipower && (K_GetShieldFromPlayer(t1->player) != KSHIELD_BUBBLE));
 	if (t1Condition == true && t2Condition == false)
 	{
-		return P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
+		UINT8 damage = DMG_FLIPOVER;
+
+		if (gametypes[gametype]->rules & GTR_BUMPERS)
+			damage |= DMG_STEAL;
+
+		return P_DamageMobj(t2, t1, t1, 1, damage);
 	}
 	else if (t1Condition == false && t2Condition == true)
 	{
-		return P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
+		UINT8 damage = DMG_FLIPOVER;
+
+		if (gametypes[gametype]->rules & GTR_BUMPERS)
+			damage |= DMG_STEAL;
+
+		return P_DamageMobj(t1, t2, t2, 1, damage);
 	}
 
 	// Battle Mode Sneaker and Bubble damage
