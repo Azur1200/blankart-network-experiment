@@ -10155,6 +10155,10 @@ static void K_RecoveryDash(player_t *player)
 				travelangle = player->mo->angle;
 				for (INT32 i = 0; i < 2; i++)
 				{
+					if (player->karttilt && ((player->karttilt < 0 && !(i & 1)) || (player->karttilt > 0 && (i & 1))))
+					{
+						continue;
+					}
 					newx = P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(28*FRACUNIT, player->mo->scale));
 					newy = P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(28*FRACUNIT, player->mo->scale));
 					skid = P_SpawnMobjFromMobj(player->mo, newx, newy, (10*player->mo->scale), MT_OVERLAY);
@@ -10196,6 +10200,14 @@ static void K_RecoveryDash(player_t *player)
 				sparkangle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
 				for (INT32 i = 0; i < 2; i++)
 				{
+					if (P_IsObjectOnGround(player->mo) && player->karttilt &&
+						((player->karttilt < 0 && !(i & 1)) || (player->karttilt > 0 && (i & 1)))
+					)
+					{
+						// when the kart is tilting don't spawn the sparks for the tyre that is lifted off the ground
+						// player has to be grounded in general for this to make sense, so never skip spawning sparks if player is airborne
+						continue;
+					}
 					newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
 					newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
 					spark = P_SpawnMobj(newx, newy, player->mo->z, MT_DRIFTSPARK);
