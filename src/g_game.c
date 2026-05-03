@@ -266,7 +266,7 @@ INT32 greasetics = 3*TICRATE;
 INT32 wipeoutslowtime = 20;
 INT32 wantedreduce = 5*TICRATE;
 INT32 wantedfrequency = 10*TICRATE;
-INT32 flametime = (((8*TICRATE)*3) + (4*TICRATE));
+INT32 flametime = 25*TICRATE + (2*TICRATE/10); // (((8*TICRATE)*3) + (4*TICRATE))
 
 UINT8 use1upSound = 0;
 UINT8 maxXtraLife = 2; // Max extra lives from rings
