@@ -126,6 +126,8 @@ FUNCMATH UINT8 M_CountBits(UINT32 num, UINT8 size);
 // Hashes some message using FNV-1a
 UINT32 FNV1a_QuickCaseHash(const char *message, size_t size);
 
+UINT32 FNV1a_HashLowercaseString(const char *message);
+
 boolean M_IsStringEmpty(const char *s);
 
 int M_RoundUp(double number);
