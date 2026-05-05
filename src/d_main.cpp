@@ -1638,6 +1638,24 @@ void D_SRB2Main(void)
 	COM_AddCommand("crash", Command_crash);
 #endif
 
+	// add any files specified on the command line with -file wadfile
+	// to the wad list
+	if (!((M_GetUrlProtocolArg() || M_CheckParm("-connect")) && !M_CheckParm("-server")))
+	{
+		if (M_CheckParm("-file"))
+		{
+			// the parms after p are wadfile/lump names,
+			// until end of parms or another - preceded parm
+			while (M_IsNextParm())
+			{
+				const char *s = M_GetNextParm();
+
+				if (s) // Check for NULL?
+					D_AddFile(startuppwads, s);
+			}
+		}
+	}
+
 	// get map from parms
 
 	if (M_CheckParm("-server") || dedicated)
@@ -1674,24 +1692,6 @@ void D_SRB2Main(void)
 	}
 
 	I_RegisterSysCommands();
-
-	// add any files specified on the command line with -file wadfile
-	// to the wad list
-	if (!((M_GetUrlProtocolArg() || M_CheckParm("-connect")) && !M_CheckParm("-server")))
-	{
-		if (M_CheckParm("-file"))
-		{
-			// the parms after p are wadfile/lump names,
-			// until end of parms or another - preceded parm
-			while (M_IsNextParm())
-			{
-				const char *s = M_GetNextParm();
-
-				if (s) // Check for NULL?
-					D_AddFile(startuppwads, s);
-			}
-		}
-	}
 
 #ifdef HWRENDER
 	// Lactozilla: Add every hardware mode CVAR and CCMD.
