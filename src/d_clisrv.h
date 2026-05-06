@@ -168,7 +168,7 @@ typedef struct consistancy_s
 
 	INT32 itemsum; // Player item checksum
 
-	UINT32 rngseed;
+	UINT64 seed_checksum; // Sum of all RNG seeds
 
 	// Object data checksum
 	INT32 mobjtype;

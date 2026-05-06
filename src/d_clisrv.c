@@ -12,6 +12,7 @@
 
 #include "d_clisrv.h"
 #include "doomdef.h"
+#include "inttypes.h" // PRIX64
 #include <time.h>
 #ifdef __GNUC__
 #include <unistd.h> //for unlink
@@ -6267,9 +6268,18 @@ static void GetPackets(void)
 static UINT32 GenerateConsistancySum(consistancy_t *c)
 {
 	UINT32 sum = 0;
+	UINT32 seed_sum[2] = {0}; // Split the seed checksum into two UINT32s; subtract the lower half by the upper half
 
-	// RNG seed
-	sum += c->rngseed;
+	// RNG seed checksum
+
+	// Lower
+	seed_sum[0] = (UINT32)(c->seed_checksum & 0xFFFFFFFF);
+
+	// Higher
+	seed_sum[1] = (UINT32)(c->seed_checksum >> 32);
+
+	// Finally, add the difference to our sum
+	sum += (UINT32)(seed_sum[0] - seed_sum[1]);
 
 	// Player data
 	sum += c->playerpos[0];
@@ -6317,7 +6327,7 @@ static void ResetConsistancy(consistancy_t *c)
 
 	c->itemsum = 0; // Player item checksum
 
-	c->rngseed = 0;
+	c->seed_checksum = 0;
 
 	// Object data checksum
 	c->mobjtype = 0;
@@ -6336,9 +6346,9 @@ void SPrintConsistancy(char *out, consistancy_t *c)
 {
 	snprintf(out,
 			 CONSISTANCYDBGSIZE,
-			 "------------\nChecksum: %d\nRandomization Seed: %d\n[Player Position] X: %d, Y: %d\nItem Checksum: %d\n[Position] X: %d, Y: %d, Z: %d\n[Speed] X: %d, Y: %d, Z: %d\nObject Type: %d\nAngle: %d\n[Flags] Flags1: %d, Flags2: %d, EFlags: %d\n[Animation] State: %d, Tics %d, Sprite: %d, Frame: %d\n------------\n",
+			 "------------\nChecksum: %d\nRandomization Seed Checksum: 0x%" PRIX64 "\n[Player Position] X: %d, Y: %d\nItem Checksum: %d\n[Position] X: %d, Y: %d, Z: %d\n[Speed] X: %d, Y: %d, Z: %d\nObject Type: %d\nAngle: %d\n[Flags] Flags1: %d, Flags2: %d, EFlags: %d\n[Animation] State: %d, Tics %d, Sprite: %d, Frame: %d\n------------\n",
 			 c->checksum,
-			 c->rngseed,
+			 c->seed_checksum,
 			 c->playerpos[0], c->playerpos[1],
 			 c->itemsum,
 			 c->position[0], c->position[1], c->position[2],
@@ -6433,7 +6443,7 @@ static INT16 Consistancy(consistancy_t *c)
 	// I give up
 	// Coop desynching enemies is painful
 	if (gamestate == GS_LEVEL)
-		c->rngseed += P_GetRandSeed();
+		c->seed_checksum += P_GetRandSeed();
 
 #ifdef MOBJCONSISTANCY
 	if (gamestate == GS_LEVEL)
@@ -6587,7 +6597,7 @@ static void SV_SendServerKeepAlive(void)
 #define CloneConsistancy(ca, cb) \
 { \
 	ca.checksum = cb.checksum; \
-	ca.rngseed = cb.rngseed; \
+	ca.seed_checksum = cb.seed_checksum; \
 	ca.itemsum = cb.itemsum; \
 \
 	ca.playerpos[0] = cb.playerpos[0]; \
