@@ -5199,6 +5199,18 @@ static void PT_Say(int node)
 	DoSayCommand(say.message, say.target, say.flags, say.source);
 }
 
+// Blast-print the seeds; very much not feasible with dynamic seed allocation
+#define PRINTSEEDSMISMATCH(seed)                                                               \
+	if (consistancy[realstart % BACKUPTICS].rngseed[PR_##seed] !=                          \
+	    clientconsistancy.rngseed[PR_##seed])                                              \
+	{                                                                                      \
+		CONS_Printf("Seed desynch for RNG class %d (" #seed "); expected 0x%08" PRIX32 \
+			    ", got 0x%08" PRIX32 "\n",                                         \
+			    PR_##seed,                                                         \
+			    clientconsistancy.rngseed[PR_##seed],                              \
+			    consistancy[realstart % BACKUPTICS].rngseed[PR_##seed]);           \
+	};
+
 static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
@@ -5314,6 +5326,8 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 				// Extremely elaborate debug!
 				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
 				CONS_Printf(M_GetText("RECEIVED\n%s"), cfailrecieved);
+				{RNGSEEDS(PRINTSEEDSMISMATCH)}
+				CONS_Printf("------------\n");
 			}
 			DEBFILE(va("Restoring player %d (synch failure) [%update] %d!=%d\n",
 				netconsole, realstart, consistancy[realstart%BACKUPTICS].checksum,
@@ -5338,6 +5352,8 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 				// Extremely elaborate debug!
 				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
 				CONS_Printf(M_GetText("RECEIVED\n%s"), cfailrecieved);
+				{RNGSEEDS(PRINTSEEDSMISMATCH)}
+				CONS_Printf("------------\n");
 			}
 			SendKick(netconsole, KICK_MSG_CON_FAIL);
 			DEBFILE(va("player %d kicked (synch failure) [%u] %d!=%d\n",
@@ -5347,6 +5363,8 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 		}
 	}
 }
+
+#undef PRINTSEEDSMISMATCH
 
 static void PT_BasicKeepAlive(SINT8 node, INT32 netconsole)
 {
@@ -6346,21 +6364,21 @@ static void ResetConsistancy(consistancy_t *c)
 void SPrintConsistancy(char *out, consistancy_t *c)
 {
 	snprintf(out,
-			 CONSISTANCYDBGSIZE,
-			 "------------\nChecksum: %d\nRandomization Seed Checksum: 0x%" PRIX64 "\n[Player Position] X: %d, Y: %d\nItem Checksum: %d\n[Position] X: %d, Y: %d, Z: %d\n[Speed] X: %d, Y: %d, Z: %d\nObject Type: %d\nAngle: %d\n[Flags] Flags1: %d, Flags2: %d, EFlags: %d\n[Animation] State: %d, Tics %d, Sprite: %d, Frame: %d\n------------\n",
-			 c->checksum,
-			 c->seed_checksum,
-			 c->playerpos[0], c->playerpos[1],
-			 c->itemsum,
-			 c->position[0], c->position[1], c->position[2],
-			 c->momentum[0], c->momentum[1], c->momentum[2],
-			 c->mobjtype,
-			 c->mobjangle,
-			 c->mobjflags, c->mobjflags2, c->mobjeflags,
-			 c->mobjstate,
-			 c->mobjtics,
-			 c->mobjsprite,
-			 c->mobjframe);
+		 CONSISTANCYDBGSIZE,
+		 "------------\nChecksum: %d\nRandomization Seed Checksum: 0x%" PRIX64 "\n------------\n[Player Position] X: %d, Y: %d\nItem Checksum: %d\n[Position] X: %d, Y: %d, Z: %d\n[Speed] X: %d, Y: %d, Z: %d\nObject Type: %d\nAngle: %d\n[Flags] Flags1: %d, Flags2: %d, EFlags: %d\n[Animation] State: %d, Tics %d, Sprite: %d, Frame: %d\n------------\n",
+		 c->checksum,
+		 c->seed_checksum,
+		 c->playerpos[0], c->playerpos[1],
+		 c->itemsum,
+		 c->position[0], c->position[1], c->position[2],
+		 c->momentum[0], c->momentum[1], c->momentum[2],
+		 c->mobjtype,
+		 c->mobjangle,
+		 c->mobjflags, c->mobjflags2, c->mobjeflags,
+		 c->mobjstate,
+		 c->mobjtics,
+		 c->mobjsprite,
+		 c->mobjframe);
 }
 
 // I'm losing my sanity fast, just do this.
@@ -6392,6 +6410,9 @@ void SPrintConsistancy(char *out, consistancy_t *c)
 	c->mobjsprite ^= value;
 	c->mobjframe ^= value;
 }*/
+
+#define WRITERNGSEEDTOCONSISTANCY(seed) c->rngseed[PR_##seed] = P_GetRandSeed(PR_##seed);
+#define ADDTORNGCHECKSUM(seed) c->seed_checksum += c->rngseed[PR_##seed];
 
 //
 // NetUpdate
@@ -6445,12 +6466,12 @@ static INT16 Consistancy(consistancy_t *c)
 	// Coop desynching enemies is painful
 	if (gamestate == GS_LEVEL)
 	{
-		for (i = 0; i < PRNUMCLASS; i++)
-		{
-			// We're using a 64-bit integer for seeds, so the sky's pretty much the limit for how much we can add!
-			// (In theory: you'd need 4 billion maxed-out seeds to risk an overflow, for context)
-			c->seed_checksum += P_GetRandSeed(i);
-		}
+		// Not using a for-loop for this (at least not until dynamic seeds become a thing);
+		// blast all seeds into the consistancy struct
+		{RNGSEEDS(WRITERNGSEEDTOCONSISTANCY)};
+		// We're using a 64-bit integer for seeds, so the sky's pretty much the limit for how much we can add!
+		// (In theory: you'd need 4 billion maxed-out seeds to risk an overflow, for context)
+		{RNGSEEDS(ADDTORNGCHECKSUM)};
 	}
 
 #ifdef MOBJCONSISTANCY
@@ -6576,6 +6597,9 @@ static INT16 Consistancy(consistancy_t *c)
 	return (INT16)(ret & 0xFFFF);
 }
 
+#undef WRITERNGSEEDTOCONSISTANCY
+#undef ADDTORNGCHECKSUM
+
 // confusing, but this DOESN'T send PT_NODEKEEPALIVE, it sends PT_BASICKEEPALIVE
 // used during wipes to tell the server that a node is still connected
 static void CL_SendClientKeepAlive(void)
@@ -6605,6 +6629,8 @@ static void SV_SendServerKeepAlive(void)
 #define CloneConsistancy(ca, cb) \
 { \
 	ca.checksum = cb.checksum; \
+	INT32 ii = 0; \
+	for (ii = 1; ii <= PRNUMCLASS; ii++) {ca.rngseed[ii] = cb.rngseed[ii];}; \
 	ca.seed_checksum = cb.seed_checksum; \
 	ca.itemsum = cb.itemsum; \
 \

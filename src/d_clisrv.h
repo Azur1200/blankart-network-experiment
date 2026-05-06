@@ -22,6 +22,8 @@
 #include "d_player.h"
 #include "mserv.h"
 
+#include "m_random.h" // PRNUMCLASS
+
 #include "k_pwrlv.h" // PWRLV_NUMTYPES
 #include "p_saveg.h" // NETSAVEGAMESIZE
 
@@ -168,6 +170,7 @@ typedef struct consistancy_s
 
 	INT32 itemsum; // Player item checksum
 
+	UINT32 rngseed[PRNUMCLASS];
 	UINT64 seed_checksum; // Sum of all RNG seeds
 
 	// Object data checksum
