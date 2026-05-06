@@ -96,11 +96,6 @@ typedef enum
 	gc_director,
 	gc_horncode,
 	gc_freelook,
-	gc_menuaccept,
-	gc_menudecline,
-	gc_menumisc1,
-	gc_menumisc2,
-	gc_menuescape,
 	num_gamecontrols
 } gamecontrols_e;
 
