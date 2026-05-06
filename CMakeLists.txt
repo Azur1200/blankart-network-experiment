@@ -73,6 +73,7 @@ set(SRB2_CONFIG_ASSET_DIRECTORY "" CACHE PATH "Path to directory that contains a
 option(SRB2_CONFIG_LTO "Enable link time optimizations, improves performance at the cost of longer link times." ON)
 option(SRB2_CONFIG_TIDY "Enable clang tiny, checks compiled code for issues at the cost of longer compile times." OFF)
 option(SRB2_CONFIG_UPNP "Enable UPnP support for networking." ON)
+option(SRB2_CONFIG_NOAPPENDBUILD "Don't append the build type to the executable name" OFF)
 
 if(SRB2_CONFIG_ENABLE_TESTS)
 	# https://github.com/catchorg/Catch2
@@ -183,7 +184,7 @@ if("${BLANKART_EXE_NAME}" STREQUAL "")
 		list(APPEND EXE_NAME_PARTS ${SRB2_GIT_BRANCH})
 	endif()
 
-	if(NOT "${NOAPPENDBUILD}")
+	if(NOT "${SRB2_CONFIG_NOAPPENDBUILD}")
 		string(TOLOWER "${CMAKE_BUILD_TYPE}" BLDTYPE_READOUT)
 		list(APPEND EXE_NAME_PARTS ${BLDTYPE_READOUT})
 	endif()
