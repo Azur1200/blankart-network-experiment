@@ -15,11 +15,13 @@
 #include "doomdef.h"
 #include "doomtype.h"
 #include "k_stats.h" // kartstats.totalplaytime
+#include "g_demo.h" // demo struct
 
 #include "m_random.h"
 #include "m_fixed.h"
 
 char pr_class_name[PRNUMCLASS][33] = {
+	"LEGACY", // PR_LEGACY is PR_UNDEFINED; "LEGACY" is just more elegant
 #define SEEDNAME(name) #name"\0",
 	RNGSEEDS(SEEDNAME)
 	"\0",
@@ -142,7 +144,7 @@ typedef struct
 	UINT32 init[PRNUMCLASS]; // Holds the INITIAL seed value. Used for demos, possibly other debugging
 } rng_t;
 
-static rng_t rng; // The entire PRNG state
+static rng_t rng = {0}; // The entire PRNG state
 
 /** Provides a random 32 bit integer.
   * This is a variant of an xorshift PRNG; state fits in a 32 bit integer structure.
@@ -151,10 +153,17 @@ static rng_t rng; // The entire PRNG state
   */
 ATTRINLINE static UINT32 FUNCINLINE __internal_prng__(pr_class_t pr_class)
 {
-	rng.seed[pr_class] ^= rng.seed[pr_class] >> 13;
-	rng.seed[pr_class] ^= rng.seed[pr_class] >> 11;
-	rng.seed[pr_class] ^= rng.seed[pr_class] << 21;
-	return (rng.seed[pr_class] * 36548569);
+	pr_class_t _class = pr_class;
+	if (demo.single_seed)
+	{
+		// Legacy demo being played; reroute the seed to our legacy monolith
+		_class = PR_LEGACY;
+	}
+
+	rng.seed[_class] ^= rng.seed[_class] >> 13;
+	rng.seed[_class] ^= rng.seed[_class] >> 11;
+	rng.seed[_class] ^= rng.seed[_class] << 21;
+	return (rng.seed[_class] * 36548569);
 }
 
 /** Provides a random number within a specified range.
@@ -163,23 +172,41 @@ ATTRINLINE static UINT32 FUNCINLINE __internal_prng__(pr_class_t pr_class)
  */
 ATTRINLINE static UINT32 FUNCINLINE __internal_prng_bound__(pr_class_t pr_class, UINT32 bound)
 {
+	pr_class_t _class = pr_class;
+	if (demo.single_seed)
+	{
+		// Legacy demo being played; reroute the seed to our legacy monolith
+		_class = PR_LEGACY;
+	}
+
   // Handle zero like it would previously.
   if (bound == 0)
   {
-    (void)__internal_prng__(pr_class);
+    (void)__internal_prng__(_class);
     return 0;
   }
   else
   {
     // Do rejection sampling to remove the modulo bias.
     UINT32 threshold = -bound % bound;
+		UINT32 r = __internal_prng__(_class);
+		UINT32 stuck = 0; // Ideally, this never happens, but if it *does*...
     for (;;)
     {
-      UINT32 r = __internal_prng__(pr_class);
+      UINT32 r = __internal_prng__(_class);
       if (r >= threshold)
       {
         return r % bound;
       }
+
+			stuck++;
+
+			if (stuck > 8)
+			{
+				// We got stuck :(
+				CONS_Alert(CONS_ERROR, "__internal_prng_bound__: PRNG class %s infinitely-looped\n", pr_class_name[_class]);
+				return DEFAULT_SEED;
+			}
     }
   }
 }

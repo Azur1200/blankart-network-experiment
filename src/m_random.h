@@ -101,6 +101,8 @@ typedef enum
 	// willl fall back to this when needed.
 	PR_UNDEFINED,
 
+	PR_LEGACY = PR_UNDEFINED,
+
 	RNGSEEDS(ENUMITEM)
 
 	PRLASTLUACLASS = PR_LUA_6,

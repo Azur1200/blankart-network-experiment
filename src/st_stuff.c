@@ -67,14 +67,14 @@ consvar_t cv_stagetitle = CVAR_INIT ("maptitle", "On", CV_SAVE, CV_OnOff, NULL);
 #define IMPL_RNGSEED_POSSIBLEVALUE(name) {PR_##name, #name},
 
 static CV_PossibleValue_t rngseed_cons_t[] = {
-	{PR_UNDEFINED, "UNDEFINED"},
+	{PR_UNDEFINED, "LEGACY"},
 	RNGSEEDS(IMPL_RNGSEED_POSSIBLEVALUE)
 	{0, NULL}
 };
 
 #undef IMPL_RNGSEED_POSSIBLEVALUE
 
-consvar_t cv_rngpeek = CVAR_INIT("rngpeek", "UNDEFINED", CV_SAVE, rngseed_cons_t, NULL);
+consvar_t cv_rngpeek = CVAR_INIT("rngpeek", "LEGACY", CV_SAVE, rngseed_cons_t, NULL);
 
 UINT16 objectsdrawn = 0;
 

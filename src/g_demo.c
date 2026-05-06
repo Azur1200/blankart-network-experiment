@@ -593,7 +593,7 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 		{
 			if (singleseed)
 			{
-				extra->randseed[0] = READUINT32(dp);
+				extra->randseed[PR_LEGACY] = READUINT32(dp);
 			}
 			else
 			{
@@ -795,7 +795,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 			gplunatic = false;
 			/* FALLTHRU */
 		case 0x0010:
-			// no header changes (yet), just DXD_WEAPONPREF
+			/* FALLTHRU */
 		case 0x0011:
 			servermotd = false;
 			/* FALLTHRU */
@@ -954,7 +954,7 @@ skipfiles:
 	else
 	{
 		header->single_seed = true;
-		header->randseed[0] = READUINT32(dp);
+		header->randseed[PR_LEGACY] = READUINT32(dp);
 	}
 
 	if (oldkart)
@@ -3632,6 +3632,7 @@ static void PrintDemoError(const char (*msg)[1024])
 
 	CONS_Alert(CONS_ERROR, "%s", *msg);
 	demo.playback = false;
+	demo.single_seed = false;
 	demo.title = false;
 	if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
 		M_StartMessage(*msg, NULL, MM_NOTHING);
@@ -4062,9 +4063,12 @@ void G_DoPlayDemo(char *defdemoname)
 
 	R_ExecuteSetViewSize();
 
+	demo.single_seed = false;
+
 	if (header.demoversion < 0x0012)
 	{
-		P_SetRandSeed(0, header.randseed[0]); // FIXME: replace with an enum
+		demo.single_seed = true;
+		P_SetRandSeed(PR_LEGACY, header.randseed[PR_LEGACY]);
 	}
 	else
 	{
@@ -4524,6 +4528,7 @@ void G_StopDemo(void)
 {
 	P_SaveBufferFree(&demobuf);
 	demo.playback = false;
+	demo.single_seed = false;
 	if (demo.title)
 		modeattacking = false;
 	demo.title = false;

@@ -1543,6 +1543,7 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 
 	paused = false;
 	demo.playback = false;
+	demo.single_seed = false;
 	demo.title = false;
 	titlemapinaction = TITLEMAP_OFF;
 	automapactive = false;
