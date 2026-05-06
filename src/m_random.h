@@ -86,7 +86,9 @@ extern "C" {
 	X(LUA_1) \
 	X(LUA_2) \
 	X(LUA_3) \
-	X(LUA_4)
+	X(LUA_4) \
+	X(LUA_5) \
+	X(LUA_6)
 
 //#define DEBUGRANDOM
 
@@ -100,6 +102,8 @@ typedef enum
 	PR_UNDEFINED,
 
 	RNGSEEDS(ENUMITEM)
+
+	PRLASTLUACLASS = PR_LUA_6,
 
 	// Place new ones at the end for demo compatibility.
 
