@@ -111,6 +111,7 @@ extern boolean hu_keystrokes;
 extern patch_t *pinggfx[5];
 extern patch_t *framecounter;
 extern patch_t *frameslash;
+extern patch_t *srb2back;
 
 // set true whenever the tab rankings are being shown for any reason
 extern boolean hu_showscores;

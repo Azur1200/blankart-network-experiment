@@ -398,6 +398,7 @@ typedef enum
 	SSF_NOPHYSICSCEILING = 1<<18,
 	SSF_GRAVITYOVERRIDE = 1<<19, // combine with MSF_GRAVITYFLIP
 	SSF_WALLTRANSFER = 1<<20,
+	SSF_BUMPYROAD = 1<<21,
 } sectorspecialflags_t;
 
 typedef enum

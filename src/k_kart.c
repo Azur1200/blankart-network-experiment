@@ -379,10 +379,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_ssmt_accelboost);
 	CV_RegisterVar(&cv_kartstacking_ssmt_handleboost);
 
-	CV_RegisterVar(&cv_kartstacking_recspin_speedboost_lo);
 	CV_RegisterVar(&cv_kartstacking_recspin_accelboost_lo);
 	CV_RegisterVar(&cv_kartstacking_recspin_handleboost_lo);
-	CV_RegisterVar(&cv_kartstacking_recspin_speedboost_hi);
 	CV_RegisterVar(&cv_kartstacking_recspin_accelboost_hi);
 	CV_RegisterVar(&cv_kartstacking_recspin_handleboost_hi);
 
@@ -457,6 +455,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartflame_fastfuel);
 	CV_RegisterVar(&cv_kartflame_offroadburn);
 	CV_RegisterVar(&cv_kartattraction_assistpower);
+	CV_RegisterVar(&cv_kartattraction_aoedmg);
+	CV_RegisterVar(&cv_kartattraction_aoeemp);
 	CV_RegisterVar(&cv_kartaltshrink_arrowbullet);
 	CV_RegisterVar(&cv_kartaltshrink_arrowbulletthres);
 
@@ -488,6 +488,10 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_karteggmine_slotbrick);
 
 	CV_RegisterVar(&cv_kartthunder_radius);
+
+	CV_RegisterVar(&cv_kartkeepstuff);
+	CV_RegisterVar(&cv_trailslow);
+	CV_RegisterVar(&cv_playerbump);
 }
 
 //}
@@ -1727,6 +1731,86 @@ static SINT8 K_GlanceAtPlayers(player_t *glancePlayer)
 	return lastValidGlance;
 }
 
+static void K_UpdateKeepstuff(player_t *player)
+{
+	if (!K_KeepStuffActive())
+	{
+		// Keep Stuff isn't on
+		return;
+	}
+
+	UINT16 flags = player->keepstuff.flags;
+
+	if (flags & KEEPSTUFF_ROCKET)
+	{
+		if (!player->rocketsneakertimer)
+		{
+			INT32 moloop;
+			mobj_t *mo = NULL;
+			mobj_t *prev = player->mo;
+
+			K_SetItemOut(player, KITEM_ROCKETSNEAKER, 0);
+			K_UpdateHnextList(player, true);
+
+			for (moloop = 0; moloop < 2; moloop++)
+			{
+				mo = K_SpawnEquippedItem(player, KITEMEQUIP_ROCKETS, MT_ROCKETSNEAKER, moloop, prev);
+				prev = mo;
+			}
+		}
+
+		player->rocketsneakertimer = player->keepstuff.rocketsneakertimer;
+	}
+
+	if (flags & KEEPSTUFF_INVIN)
+	{
+		if (!player->invincibilitytimer)
+		{
+			K_DoInvincibility(player, INVINTIME);
+		}
+
+		player->invincibilitytimer = player->keepstuff.invincibilitytimer;
+	}
+
+	if (flags & KEEPSTUFF_SMON)
+	{
+		if (!player->smonitortimer)
+		{
+			K_DoSMonitor(player, SMONITORTIME);
+		}
+
+		player->smonitortimer = player->keepstuff.smonitortimer;
+		player->smonitorexpiring = player->keepstuff.smonitorexpiring;
+		player->maxsmonitortime = player->keepstuff.maxsmonitortime;
+	}
+
+	if (flags & KEEPSTUFF_GROWSHRINK)
+	{
+		if (!player->growshrinktimer)
+		{
+			K_DoGrowShrink(player, player->keepstuff.growshrinktimer < 0);
+		}
+
+		player->growshrinktimer = player->keepstuff.growshrinktimer;
+	}
+
+	if (flags & KEEPSTUFF_FLAME)
+	{
+		if (!player->flametimer)
+		{
+			K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, NULL);
+		}
+
+		player->flametimer = player->keepstuff.flametimer;
+	}
+}
+
+static void K_ClearKeepstuff(player_t *player)
+{
+	memset(&player->keepstuff, 0, sizeof(player->keepstuff));
+}
+
+
 /**	\brief	Calculates the respawn timer and drop-boosting
 
 	\param	player	player object passed from K_KartPlayerThink
@@ -1741,6 +1825,8 @@ static void K_RespawnChecker(player_t *player)
 
 	if (player->respawn > 1)
 	{
+		K_UpdateKeepstuff(player);
+
 		player->respawn--;
 		player->mo->momz = 0;
 		player->flashing = 2;
@@ -1780,6 +1866,8 @@ static void K_RespawnChecker(player_t *player)
 	}
 	else if (player->respawn == 1)
 	{
+		K_UpdateKeepstuff(player);
+
 		if (player->growshrinktimer < 0)
 		{
 			player->mo->scalespeed = mapobjectscale/TICRATE;
@@ -1811,6 +1899,8 @@ static void K_RespawnChecker(player_t *player)
 		}
 		else
 		{
+			K_ClearKeepstuff(player);
+
 			if ((buttons & BT_ACCELERATE) && (player->dropdash >= TICRATE/4))
 			{
 				S_StartSound(player->mo, sfx_s23c);
@@ -1976,12 +2066,10 @@ void K_KartMoveAnimation(player_t *player)
 
 	if (onground && drift)
 	{
-		INT16 reversejitter = 0;
-		INT16 nullrolloffset = 0;
 		if ((player->jitterlegacy) && (!skincompat))
 		{
 			// Make RR characters imitate legacy jitters.
-			reversejitter = ((player->driftelapsed & 1) * 2) * -intsign(drift);
+			player->mo->rollingxoffset = ((player->driftelapsed & 1) * 2) * -intsign(drift);
 		}
 		else
 		{
@@ -1993,15 +2081,6 @@ void K_KartMoveAnimation(player_t *player)
 			else if (turndir == 1)
 				spr2 += 1; // Outwards drift
 		}
-
-		if (abs(player->nulldrifttilt) > 0)
-		{
-			//todo: a way for skins(?) to define the tyre offset
-			nullrolloffset = intsign(drift) * ((36 * FINESINE(abs(player->nulldrifttilt)>>ANGLETOFINESHIFT))/FRACUNIT);
-			player->mo->rollingyoffset = ((18 * FINESINE(abs(player->nulldrifttilt)>>ANGLETOFINESHIFT))/FRACUNIT);
-		}
-
-		player->mo->rollingxoffset = reversejitter - nullrolloffset;
 	}
 	else if (glanceofs)
 		spr2 += glanceofs+1;
@@ -2785,6 +2864,16 @@ fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmi
 	return newmin + FixedMul(FixedDiv(value-oldmin , oldmax-oldmin), newmax-newmin);
 }
 
+static boolean K_CanPanicRecoverySpin(const player_t *player)
+{
+	return player->flashing > 0 && (
+#if 0 // skip the last flashtics? maybe not...
+		player->spinouttimer > 0 ? player->spinouttimer <= TICRATE/4 :
+#endif
+		!K_IsPlayerDamaged(player)
+	);
+}
+
 // sets boostpower, speedboost and accelboost to whatever we need it to be
 static void K_GetKartBoostPower(player_t *player)
 {
@@ -2924,17 +3013,17 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->recoverydash) // SSMT Boost
 	{
-		K_DoBoost(player, SSMTSPEEDBOOST, SSMTACCELBOOST, SSMTHANDLEBOOST, false, false); // + 10% top speed, + ?% acceleration
+		K_DoBoost(player, SSMTSPEEDBOOST, SSMTACCELBOOST, SSMTHANDLEBOOST, false, false);
 	}
 	else if (player->pflags & PF_RECOVERYSPIN)
 	{
-		if (player->flashing || player->recoverydashcharge >= RECOVERYDASHCHARGETIME)
+		if (K_CanPanicRecoverySpin(player) || player->recoverydashcharge >= RECOVERYDASHCHARGETIME)
 		{
-			K_DoBoost(player, RECSPINSPEEDBOOSTHI, RECSPINACCELBOOSTHI, RECSPINHANDLEBOOSTHI, false, false);
+			K_DoBoost(player, 0, RECSPINACCELBOOSTHI, RECSPINHANDLEBOOSTHI, false, false);
 		}
 		else
 		{
-			K_DoBoost(player, RECSPINSPEEDBOOSTLO, RECSPINACCELBOOSTLO, RECSPINHANDLEBOOSTLO, false, false);
+			K_DoBoost(player, 0, RECSPINACCELBOOSTLO, RECSPINHANDLEBOOSTLO, false, false);
 		}
 	}
 
@@ -3004,11 +3093,11 @@ static void K_GetKartBoostPower(player_t *player)
 			player->accelboost = finalaccelboost;
 			player->handleboost = finalhandleboost;
 		}
-		else if (finalspeedboost >= player->prevspeedboost)
+		else if ((finalspeedboost >= player->prevspeedboost) && (finalspeedboost != 0))
 		{
 			player->speedboost = max(player->speedboost, finalspeedboost);
-			player->accelboost = max(player->accelboost, finalaccelboost);
-			player->handleboost = max(player->handleboost, finalhandleboost);
+			player->accelboost = finalaccelboost;
+			player->handleboost = finalhandleboost;
 		}
 		else
 		{
@@ -4244,10 +4333,12 @@ static void K_SpawnDriftSparks(player_t *player)
 	for (i = 0; i < 2; i++)
 	{
 		fixed_t driftExtraScale = 0;
-		if (player->nulldrifttilt &&
-			((player->drift < 0 && (i & 1)) || (player->drift > 0 && !(i & 1))))
+		if (P_IsObjectOnGround(player->mo) && player->karttilt &&
+			((player->karttilt < 0 && !(i & 1)) || (player->karttilt > 0 && (i & 1)))
+		)
 		{
-			// when tilting during a null-drift don't spawn the sparks for the front tyre
+			// when the kart is tilting don't spawn the sparks for the tyre that is lifted off the ground
+			// player has to be grounded in general for this to make sense, so never skip spawning sparks if player is airborne
 			continue;
 		}
 		newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
@@ -5446,7 +5537,6 @@ void K_DropHnextList(player_t *player)
 	P_SetTarget(&player->mo->hnext, NULL);
 
 	player->bananadrag = 0;
-	K_DisableSeekingReticule(player);
 
 	if (player->itemflags & IF_EGGMANOUT)
 	{
@@ -5457,6 +5547,7 @@ void K_DropHnextList(player_t *player)
 	{
 		player->itemamount = 0;
 		K_UnsetItemOut(player);
+		K_DisableSeekingReticule(player);
 		player->itemtype = KITEM_NONE;
 	}
 }
@@ -5724,8 +5815,6 @@ void K_DropRocketSneaker(player_t *player)
 		leftshoe = false;
 	}
 	P_SetTarget(&player->mo->hnext, NULL);
-	player->rocketsneakertimer = 0;
-	player->equippeditem = KITEM_NONE;
 }
 
 void K_DropKitchenSink(player_t *player)
@@ -6043,7 +6132,7 @@ static void K_MoveHeldObjects(player_t *player)
 				mobj_t *targ = player->mo;
 				UINT16 pcolor = player->skincolor;
 
-				if (P_IsObjectOnGround(player->mo) && player->speed > 0)
+				if (P_IsObjectOnGround(player->mo) && player->speed > 0 && trailslow_active)
 					player->bananadrag++;
 
 				while (cur && !P_MobjWasRemoved(cur))
@@ -7154,6 +7243,12 @@ INT32 K_GetBumpSpark(void)
 	return max(min(BUMPSPARK_ALL, (bumpsparktype_t)bumpsparkactive), BUMPSPARK_NONE);
 }
 
+// Returns the playerbump value as an enum.
+playerbumptype_t K_GetPlayerBump(void)
+{
+	return max(min(PBUMP_NONE, (playerbumptype_t)playerbumpactive), PBUMP_STANDARD);
+}
+
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
 
 	\param	player	player object passed from P_PlayerThink
@@ -7167,8 +7262,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	player->mo->sprxoff = 0;
 	player->mo->spryoff = 0;
 	player->mo->sprzoff = 0;
-	player->mo->spritexoffset = 0;
-	player->mo->spriteyoffset = 0;
 
 	player->mo->bakexoff = 0;
 	player->mo->bakeyoff = 0;
@@ -7178,6 +7271,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	player->mo->bakezpiv = 0;
 
 	player->cameraOffset = 0;
+
+	player->mo->spritexoffset = 0;
+	player->mo->spriteyoffset = 0;
 
 	if (player->loop.radius)
 	{
@@ -7765,7 +7861,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		if (player->flameburnstop)
 			player->flameburnstop--;
 
-		if (player->stealingtimer == 0 && player->stolentimer == 0)
+		if (player->stealingtimer == 0 && player->stolentimer == 0 && player->position == 1)
 			player->flametimer--;
 
 		if (player->flametimer == 0)
@@ -7878,6 +7974,23 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	// Update SPB timer...
 	K_UpdateSPBTimer();
+	
+	if (player->karttilt)
+	{
+		//todo: a way for skins(?) to define the tyre offset
+		// this can look weird depending on camera angle, may be smarter to change pivots instead
+		fixed_t tyredistance = player->mo->info->radius * intsign(player->karttilt);
+		vector2_t tyreoffs = {tyredistance, 0};
+		fixed_t rate = FixedDiv(abs(player->karttilt), 90*FRACUNIT);
+		fixed_t vrate = (-FixedMul(rate * 2 - FRACUNIT, rate * 2 - FRACUNIT)) + FRACUNIT;
+		FV2_Rotate(&tyreoffs, 45*FRACUNIT);
+		player->mo->spritexoffset += Easing_Linear(rate, 0, (5*tyredistance/2));
+		player->mo->spriteyoffset += Easing_Linear(vrate, 0, abs(tyreoffs.y/2));
+		
+		// CONS_Debug(DBG_PLAYER, "tyre dist : %4.3f\n", FIXED_TO_FLOAT(tyredistance));
+		// CONS_Debug(DBG_PLAYER, "kart tilt : %4.3f\n", FIXED_TO_FLOAT(player->karttilt));
+		// CONS_Debug(DBG_PLAYER, "spritexoff: %4.3f, y: %4.3f\n", FIXED_TO_FLOAT(player->mo->spritexoffset), FIXED_TO_FLOAT(player->mo->spriteyoffset));
+	}
 }
 
 static void K_KartResetPlayerFullbright(player_t *player)
@@ -8840,7 +8953,7 @@ void K_SetRespawnAtNextWaypoint(player_t *player)
 	waypoint_t *previouswp = NULL;
 	waypoint_t *nextwp = NULL;
 	angle_t angle;
-	size_t i, j;
+	size_t i, j, k;
 
 	if (K_UsingLegacyCheckpoints())
 	{
@@ -8949,11 +9062,36 @@ void K_SetRespawnAtNextWaypoint(player_t *player)
 	}
 
 	// Get respawn angle.
-	if (previouswp && previouswp->mobj)
+	if (nextwp->numnextwaypoints)
 	{
-		angle = R_PointToAngle2(
-			previouswp->mobj->x, previouswp->mobj->y,
-			nextwp->mobj->x,   nextwp->mobj->y);
+		boolean goodangle = false;
+		for (k = 0; k < nextwp->numnextwaypoints; k++)
+		{
+			if (K_GetWaypointIsEnabled(nextwp->nextwaypoints[k]) && !(K_GetWaypointIsShortcut(nextwp->nextwaypoints[k])))
+			{
+				goodangle = true;
+				angle = R_PointToAngle2(
+					nextwp->mobj->x, nextwp->mobj->y,
+					nextwp->nextwaypoints[k]->mobj->x, nextwp->nextwaypoints[k]->mobj->y);
+				break;
+			}
+		}
+
+		if (!goodangle)
+		{
+			if ((previouswp && previouswp->mobj))
+			{
+				angle = R_PointToAngle2(
+					previouswp->mobj->x, previouswp->mobj->y,
+					nextwp->mobj->x,   nextwp->mobj->y);
+			}
+			else
+			{
+				angle = R_PointToAngle2(
+					player->mo->x, player->mo->y,
+					nextwp->mobj->x,   nextwp->mobj->y);
+			}
+		}
 	}
 	else
 	{
@@ -9431,6 +9569,80 @@ static void K_HandleAirDriftDrag(player_t *player, boolean onground)
 	}
 }
 
+// no float-to-fixed here because this is in the deterministic path
+#define FIXEDRADTODEG (3754879)	//57.2958
+#define PLAYERTILTCAP (90*FRACUNIT)
+#define PLAYERTILTMOMENTUMCAP (12*M_PI_FIXED)
+
+/// @brief simulates applying a torque by applying a force at an offset from the player's centre, is a purely visual effect
+/// @param player player to apply angular momentum to
+/// @param distance distance from player centre to apply torque to ("radius")
+/// @param force linear force to apply to the player to turn into angular velocity, + is CCW.
+void K_AddTiltImpulse(player_t *player, fixed_t distance, fixed_t force)
+{
+	fixed_t angularvelocity;
+	if (distance == 0) distance = FRACUNIT/100;
+	angularvelocity = FixedDiv(force, abs(distance));
+	player->karttiltmomentum += angularvelocity;
+}
+
+/// @brief adds angular velocity to the player's tilt, this is a purely visual effect
+/// @param player player to apply angular momentum to
+/// @param angularvelocity angular velocity in rad/sec to impart onto the player's sprite
+void K_AddTiltMomentum(player_t *player, fixed_t angularvelocity)
+{
+	player->karttiltmomentum += angularvelocity;
+}
+
+static void K_HandleKartTilt(player_t *player)
+{
+	SINT8 startsign = intsign(player->karttilt);
+	fixed_t lineargravity = max(abs(P_GetMobjGravity(player->mo)), FRACUNIT/10);
+	fixed_t angulargravity = lineargravity * (P_IsObjectOnGround(player->mo) ? 12 : 3);
+	fixed_t angaccelgravity = 0;
+	fixed_t tiltfactor = abs(FSIN(FixedAngle(CLAMP(player->karttilt, -89*FRACUNIT, 89*FRACUNIT))));
+
+	if (player->karttilt == 0 && player->karttiltmomentum == 0)
+	{
+		return;
+	}
+
+	// w = sqrt(3*g*sin(a) / L)
+	angaccelgravity = FixedSqrt(FixedDiv(FixedMul(3 * angulargravity, tiltfactor), 2 * player->mo->radius));
+
+	player->karttiltmomentum += angaccelgravity * -intsign(player->karttilt);
+	player->karttilt = CLAMP(player->karttilt + FixedMul(player->karttiltmomentum, FIXEDRADTODEG)/TICRATE, -PLAYERTILTCAP + 1, PLAYERTILTCAP - 1);
+	// angular drag
+	if (player->mo->eflags & MFE_UNDERWATER)
+	{
+		player->karttiltmomentum = FixedMul(player->karttiltmomentum, 90*FRACUNIT/100);
+	}
+	else
+	{
+		player->karttiltmomentum = FixedMul(player->karttiltmomentum, 98*FRACUNIT/100);
+	}
+
+	// CONS_Printf("angulargravity: %4.3f\n", FixedToFloat(angulargravity));
+	// CONS_Printf("angaccelgravity: %4.3f\n", FixedToFloat(angaccelgravity));
+	// CONS_Printf("tilt angle: %4.3f\n", FixedToFloat(player->karttilt));
+	// CONS_Printf("tilt angle momentum (rad/s): %4.3f\n", FixedToFloat(player->karttiltmomentum));
+
+	if ((player->karttilt < 0 && startsign > 0) || 
+		(player->karttilt > 0 && startsign < 0))
+	{
+		player->karttiltmomentum = abs((P_IsObjectOnGround(player->mo) ? 33 : 75)*player->karttiltmomentum/100) * intsign(player->karttilt);
+		if (abs(player->karttiltmomentum) < FRACUNIT/2)
+		{
+			player->karttiltmomentum = 0;
+		}
+		player->karttilt = 0;
+	}
+}
+
+#undef FIXEDRADTODEG
+#undef PLAYERTILTCAP
+#undef PLAYERTILTMOMENTUMCAP
+
 static void K_KartDrift(player_t *player, boolean onground)
 {
 	fixed_t minspeed = (10 * player->mo->scale);
@@ -9694,31 +9906,25 @@ static void K_KartDrift(player_t *player, boolean onground)
 		}
 	}
 
+	
 	if (player->nulldrift)
 	{
-		if (player->nulldrifttime <= 3*TICRATE/4)
-		{
-			angle_t tilt;
-			fixed_t dot;
-			vector2_t fwd = {P_ReturnThrustX(player->mo, player->mo->angle, FRACUNIT), P_ReturnThrustY(player->mo, player->mo->angle, FRACUNIT)};
-			vector2_t mov = {player->mo->momx, player->mo->momy};
+		fixed_t dot;
+		fixed_t angularvelocity;
+		vector2_t fwd = {P_ReturnThrustX(player->mo, player->mo->angle, FRACUNIT), P_ReturnThrustY(player->mo, player->mo->angle, FRACUNIT)};
+		vector2_t mov = {player->mo->momx, player->mo->momy};
 
-			FV2_Normalize(&mov);
-			dot = FRACUNIT - abs(FV2_Dot(&fwd, &mov));
-			tilt = FixedAngle(FixedMul(AngleFixed(ANG20), dot));
+		FV2_Normalize(&fwd);
+		FV2_Normalize(&mov);
+		dot = FixedMul(CLAMP(player->speed, 0, 42*mapobjectscale), FRACUNIT - abs(FV2_Dot(&fwd, &mov)));
 
-			if ((angle_t)abs(player->nulldrifttilt) < tilt)
-			{
-				player->nulldrifttilt = (abs(player->nulldrifttilt) + tilt/10) * -player->nulldrift;
-			}
-		}
-		else if (player->nulldrifttilt)
+		angularvelocity = FixedDiv(-dot * intsign(player->nulldrift), 
+			abs(FixedMul(player->mo->height/2, FCOS(FixedAngle(player->karttilt))))
+		);
+		angularvelocity = FixedMul(CLAMP(angularvelocity, -M_PI_FIXED, M_PI_FIXED), CLAMP(FCOS(FixedAngle(5 * player->karttilt / 2)), 0, FRACUNIT));
+		if (abs(player->karttiltmomentum) < abs(angularvelocity))
 		{
-			player->nulldrifttilt -= (CLAMP(ANG20 - abs(player->nulldrifttilt), ANG1, abs(player->nulldrifttilt))/3) * intsign(player->nulldrifttilt);
-			if (abs(player->nulldrifttilt) < (ANGLE_11hh / 4))
-			{
-				player->nulldrifttilt = 0;
-			}
+			player->karttiltmomentum = angularvelocity;
 		}
 
 		// Increment nulldrift timer.
@@ -9726,14 +9932,6 @@ static void K_KartDrift(player_t *player, boolean onground)
 
 		// Let's have some faith that the driftspark thinker will set this value again
 		player->nulldrift = 0;
-	}
-	else if (player->nulldrifttilt)
-	{
-		player->nulldrifttilt -= (CLAMP(ANG20 - abs(player->nulldrifttilt), ANG1, abs(player->nulldrifttilt))/3) * intsign(player->nulldrifttilt);
-		if (abs(player->nulldrifttilt) < (ANGLE_11hh / 4))
-		{
-			player->nulldrifttilt = 0;
-		}
 	}
 
 	if (!K_Sliptiding(player))
@@ -9839,25 +10037,21 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 	}
 }
 
-static boolean K_CanPanicRecoverySpin(const player_t *player)
-{
-	return player->flashing > 0 && (
-#if 0 // skip the last flashtics? maybe not...
-		player->spinouttimer > 0 ? player->spinouttimer <= TICRATE/4 :
-#endif
-		!K_IsPlayerDamaged(player)
-	);
-}
-
 static boolean K_PlayerWantsRecoverySpin(player_t *player)
 {
-	return (K_GetKartButtons(player) & (BT_ACCELERATE|BT_BRAKE|BT_DRIFT)) == (BT_ACCELERATE|BT_BRAKE);
+	return ((K_GetKartButtons(player) & (BT_ACCELERATE|BT_BRAKE|BT_DRIFT)) == (BT_ACCELERATE|BT_BRAKE));
+}
+
+static boolean K_PlayerWantsOrForcedRecoverySpin(player_t *player)
+{
+	return K_PlayerWantsRecoverySpin(player) ||
+			((player->pflags & PF_RECOVERYSPIN) && player->recoverydashcharge <= RECOVERYDASHCHARGETIMEMIN);
 }
 
 static boolean K_PlayerCanStartRecoverySpin(player_t *player)
 {
-	return (K_RecoveryDashActive() && P_IsObjectOnGround(player->mo) && (!(player->pflags & PF_STASIS)) && (player->carry == CR_NONE) &&
-			(player->speed < 10*player->mo->scale || player->wipeoutslow) && (!(player->pflags & PF_RECOVERYSPIN)));
+	return (K_RecoveryDashActive() && P_IsObjectOnGround(player->mo) && (!(player->pflags & PF_RECOVERYSPIN)) && (!(player->pflags & PF_STASIS)) && (player->carry == CR_NONE) &&
+			(player->speed < 10*player->mo->scale || player->wipeoutslow));
 }
 
 static boolean K_PlayerCanRecoverySpin(player_t *player)
@@ -9871,7 +10065,7 @@ static boolean K_PlayerCanRecoverySpin(player_t *player)
 
 static void K_RecoveryDash(player_t *player)
 {
-	if (K_PlayerWantsRecoverySpin(player) && K_IsPlayerDamaged(player) && player->wipeoutslow == 0)
+	if (K_RecoveryDashActive() && K_PlayerWantsRecoverySpin(player) && K_IsPlayerDamaged(player) && player->wipeoutslow == 0)
 	{
 		player->wipeoutslow = max(wipeoutslowtime + 1, player->spinouttimer + 4);
 	}
@@ -9885,14 +10079,19 @@ static void K_RecoveryDash(player_t *player)
 		return;
 	}
 
-	if (K_PlayerWantsRecoverySpin(player) && K_PlayerCanStartRecoverySpin(player))
+	if (K_PlayerWantsOrForcedRecoverySpin(player) && K_PlayerCanStartRecoverySpin(player))
 	{
 		player->pflags |= PF_RECOVERYSPIN;
+		player->recoverydashcharge = 0;
 		player->forcedtopspeed = cv_kartrecoverydash_spinspeed.value + 8;
 		S_StartSound(player->mo, sfx_cdfm20);
 
 		player->mo->momx = min(10*player->mo->scale, abs(player->mo->momx/2)) * intsign(player->mo->momx);
 		player->mo->momy = min(10*player->mo->scale, abs(player->mo->momy/2)) * intsign(player->mo->momy);
+		// make friction not instantly kill the new momentum
+		// learned we need to do this from some dt8 stuff 🥲
+		player->rmomx = player->mo->momx - player->cmomx;
+		player->rmomy = player->mo->momy - player->cmomy;
 
 		player->driftboost = 0;
 		player->sneakertimer = 0;
@@ -9902,7 +10101,8 @@ static void K_RecoveryDash(player_t *player)
 
 	if (player->pflags & PF_RECOVERYSPIN)
 	{
-		if ((K_GetKartButtons(player) & (BT_ACCELERATE|BT_BRAKE)) != (BT_ACCELERATE|BT_BRAKE))
+		if ((K_GetKartButtons(player) & (BT_ACCELERATE|BT_BRAKE)) != (BT_ACCELERATE|BT_BRAKE) &&
+			(player->recoverydashcharge > RECOVERYDASHCHARGETIMEMIN))
 		{
 			player->pflags &= ~PF_RECOVERYSPIN;
 			if (player->recoverydashcharge >= RECOVERYDASHCHARGETIME && (K_GetKartButtons(player) & BT_ACCELERATE))
@@ -9955,6 +10155,10 @@ static void K_RecoveryDash(player_t *player)
 				travelangle = player->mo->angle;
 				for (INT32 i = 0; i < 2; i++)
 				{
+					if (player->karttilt && ((player->karttilt < 0 && !(i & 1)) || (player->karttilt > 0 && (i & 1))))
+					{
+						continue;
+					}
 					newx = P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(28*FRACUNIT, player->mo->scale));
 					newy = P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(28*FRACUNIT, player->mo->scale));
 					skid = P_SpawnMobjFromMobj(player->mo, newx, newy, (10*player->mo->scale), MT_OVERLAY);
@@ -9996,6 +10200,14 @@ static void K_RecoveryDash(player_t *player)
 				sparkangle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
 				for (INT32 i = 0; i < 2; i++)
 				{
+					if (P_IsObjectOnGround(player->mo) && player->karttilt &&
+						((player->karttilt < 0 && !(i & 1)) || (player->karttilt > 0 && (i & 1)))
+					)
+					{
+						// when the kart is tilting don't spawn the sparks for the tyre that is lifted off the ground
+						// player has to be grounded in general for this to make sense, so never skip spawning sparks if player is airborne
+						continue;
+					}
 					newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
 					newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
 					spark = P_SpawnMobj(newx, newy, player->mo->z, MT_DRIFTSPARK);
@@ -10489,7 +10701,8 @@ UINT32 clusterid = 0;
 static vector3_t* K_FindPlayerCluster(vector3_t* out)
 {
 	INT32 i;
-	player_t *player, *leader;
+	player_t *player = NULL;
+	player_t *leader = NULL;
 
 	INT32 nump = 0;
 	INT64 distavg = 0;
@@ -10538,6 +10751,13 @@ static vector3_t* K_FindPlayerCluster(vector3_t* out)
 			continue;
 
 		nump++;
+
+		if (!leader)
+		{
+			// Leader somehow doesn't exist
+			distavg += 0;
+			break;
+		}
 
 		if (K_LegacyOddsMode())
 		{
@@ -10670,6 +10890,7 @@ void K_StripItems(player_t *player)
 	player->hyudorotimer = 0;
 	player->stealingtimer = 0;
 	player->stolentimer = 0;
+	player->rocketsneakertimer = 0;
 
 	if (!P_MobjWasRemoved(player->shieldtracer))
 		P_RemoveMobj(player->shieldtracer);
@@ -10831,7 +11052,10 @@ static void K_AdjustPlayerFriction(player_t *player)
 
 	player->mo->friction = prevfriction;
 
-	if ((player->pflags & PF_RECOVERYSPIN) && player->speed < K_GetKartSpeedFromStat(player->kartspeed, false))
+	if ((player->pflags & PF_RECOVERYSPIN) && 
+		player->speed < K_GetKartSpeedFromStat(player->kartspeed, false) &&
+		player->speed >= 10*player->mo->scale
+	)
 	{
 		if (player->cmd.turning)
 			player->mo->friction += 1880;
@@ -11214,6 +11438,11 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		// No more!
 		if (!player->itemamount)
 		{
+			// really really shitty hack
+			if (!(player->itemflags &= ~IF_PASSIVESEEKING))
+			{
+				K_DisableSeekingReticule(player);
+			}
 			player->itemflags &= ~IF_ITEMOUT;
 			player->itemtype = KITEM_NONE;
 			if (K_GetShieldFromPlayer(player) != KSHIELD_NONE && K_GetShieldFromPlayer(player) != KSHIELD_FLAME)
@@ -11275,6 +11504,8 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	K_KartDrift(player, onground);
 
 	K_KartSlipdash(player, onground);
+
+	K_HandleKartTilt(player);
 
 	K_RecoveryDash(player);
 
@@ -11646,6 +11877,18 @@ boolean K_RecoveryDashActive(void)
 	return false;
 }
 
+boolean K_KeepStuffActive(void)
+{
+	if (keepstuffactive)
+	{
+		// Keep Stuff is enabled!
+		return true;
+	}
+
+	return false;
+}
+
+
 boolean K_WaterskipBricksActive(void)
 {
 	if (waterskipbricks)
@@ -11682,6 +11925,17 @@ boolean K_ItemListActive(void)
 boolean K_ItemPushingActive(void)
 {
 	return itempushing;
+}
+
+boolean K_TrailSlowActive(void)
+{
+	if (trailslow_active)
+	{
+		// Trailing slowdown is enabled! (what a drag...)
+		return true;
+	}
+
+	return false;
 }
 
 boolean K_UsingLegacyCheckpoints(void)
@@ -11822,7 +12076,7 @@ void K_QuiteSaltyHop(player_t *player)
 			//player->mo->spriteyscale += (FRACUNIT/30);
 		}
 		// Apply the z offset!
-		player->mo->spriteyoffset = player->salty.zoffset;
+		player->mo->spriteyoffset += player->salty.zoffset;
 
 		// Stop any and all drift sounds when hopping.
 		if (S_SoundPlaying(player->mo, sfx_screec))
@@ -11908,6 +12162,7 @@ void K_KartAttractHomingAttack(player_t *player)
 	{
 		mobj_t *mo;
 		angle_t effectangle = player->mo->angle;
+		boolean raceFirst = ((gametypes[gametype]->rules & GTR_CIRCUIT) && player->position <= 1);
 		if (player->speed > 0)
 		{
 			effectangle = R_PointToAngle2(0,0, player->mo->momx, player->mo->momy);
@@ -11921,7 +12176,7 @@ void K_KartAttractHomingAttack(player_t *player)
 
 		P_SpawnGhostMobj(player->mo);
 
-		if (player->attractionattack_hipower && player->position > 1 && lastTarg >= 0)
+		if (player->attractionattack_hipower && lastTarg >= 0 && (!raceFirst))
 		{
 			player->attractionboost = Easing_InCubic(influence, ATTRACTIONSPEEDHIMIN, ATTRACTIONSPEEDHIMAX);
 
@@ -11964,5 +12219,45 @@ void K_KartAttractHomingAttack(player_t *player)
 	}
 }
 #undef TargetThreshold
+
+// Visual effect for bumpy road sector.
+void K_KartPlayerBumpyRoad(player_t *player)
+{
+	if (player->speed > 4*mapobjectscale && abs(player->karttilt) < FRACUNIT/4)
+	{
+		fixed_t baseimpulse;
+		fixed_t rate = CLAMP(FixedDiv(player->speed, K_GetKartSpeed(player, false, false)), 8*FRACUNIT/10, FRACUNIT);
+		player->bumpyroadside = (player->bumpyroadside ? -player->bumpyroadside : 1);
+
+		player->karttilt = FixedMul((3*FRACUNIT/2) * player->bumpyroadside, rate);
+		baseimpulse = (mapobjectscale) * -player->bumpyroadside;
+		K_AddTiltImpulse(player, player->mo->height/2, baseimpulse);
+
+		if (P_IsDisplayPlayer(player))
+		{
+			S_StartSoundAtVolume(player->mo, sfx_s3k56, CLAMP((180*rate)/FRACUNIT, 0, 180));
+		}
+
+		// dust ptcl
+		{
+			INT32 speedrange = 1;
+			fixed_t sidex = P_ReturnThrustX(NULL, player->mo->angle + (ANGLE_90 * player->bumpyroadside), player->mo->radius);
+			fixed_t sidey = P_ReturnThrustY(NULL, player->mo->angle + (ANGLE_90 * player->bumpyroadside), player->mo->radius);
+			fixed_t backoffsetx = P_ReturnThrustX(NULL, player->mo->angle + ANGLE_180, player->mo->radius);
+			fixed_t backoffsety = P_ReturnThrustY(NULL, player->mo->angle + ANGLE_180, player->mo->radius);
+			mobj_t *dust = P_SpawnMobj(player->mo->x + sidex + backoffsetx, player->mo->y + sidey + backoffsety, player->mo->z, MT_WIPEOUTTRAIL);
+
+			dust->angle = K_MomentumAngle(player->mo);
+			K_FlipFromObject(dust, player->mo);
+			P_SetScale(dust, player->mo->scale);
+			dust->destscale = player->mo->scale / 2;
+			P_SetTarget(&dust->target, player->mo);
+			dust->renderflags |= RF_GHOSTLY;
+
+			dust->momx = FixedMul(player->mo->momx + (P_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(player->mo->scale)/4);
+			dust->momy = FixedMul(player->mo->momy + (P_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(player->mo->scale)/4);
+		}
+	}
+}
 
 //}

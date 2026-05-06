@@ -983,13 +983,13 @@ INT32 K_PositionBully(const player_t *player)
 	return KART_FULLTURN;
 }
 
-static mobj_t *bubbleSource;
-static fixed_t bubbleDist;
-static boolean bubbleBlock;
+static mobj_t *shieldSource = NULL;
+static fixed_t shieldDist = 0;
+static boolean shieldBlock = 0;
 
-static inline BlockItReturn_t PIT_BubbleShieldBlock(mobj_t *thing)
+static inline BlockItReturn_t PIT_ShieldBlock(mobj_t *thing)
 {
-	if (bubbleSource == NULL || P_MobjWasRemoved(bubbleSource))
+	if (shieldSource == NULL || P_MobjWasRemoved(shieldSource))
 	{
 		// Invalid?
 		return BMIT_ABORT;
@@ -1001,7 +1001,7 @@ static inline BlockItReturn_t PIT_BubbleShieldBlock(mobj_t *thing)
 		return BMIT_ABORT;
 	}
 
-	if (thing == bubbleSource)
+	if (thing == shieldSource)
 	{
 		// Don't block yourself!!
 		return BMIT_CONTINUE;
@@ -1026,9 +1026,9 @@ static inline BlockItReturn_t PIT_BubbleShieldBlock(mobj_t *thing)
 	}
 
 	if (P_AproxDistance(P_AproxDistance(
-		bubbleSource->x - thing->x,
-		bubbleSource->y - thing->y),
-		(bubbleSource->z - thing->z) / 4) > bubbleDist)
+		shieldSource->x - thing->x,
+		shieldSource->y - thing->y),
+		(shieldSource->z - thing->z) / 4) > shieldDist)
 	{
 		// Too far away
 		return BMIT_CONTINUE;
@@ -1042,30 +1042,30 @@ static inline BlockItReturn_t PIT_BubbleShieldBlock(mobj_t *thing)
 	}
 #endif
 
-	bubbleBlock = true;
+	shieldBlock = true;
 	return BMIT_CONTINUE;
 }
 
-// Searches the blockmap for items to block with the Bubble Shield
-boolean K_GetBlockedBubbleItem(const player_t *player, fixed_t radius)
+// Searches the blockmap for items to block with Shields
+boolean K_GetBlockedShieldItem(const player_t *player, fixed_t radius)
 {
 	INT32 bx, by, xl, xh, yl, yh;
 
-	bubbleSource = player->mo;
-	bubbleDist = radius;
-	bubbleBlock = false;
+	shieldSource = player->mo;
+	shieldDist = radius;
+	shieldBlock = false;
 
 	// Use blockmap to check for nearby harmful items.
-	yh = (unsigned)(bubbleSource->y + bubbleDist - bmaporgy)>>MAPBLOCKSHIFT;
-	yl = (unsigned)(bubbleSource->y - bubbleDist - bmaporgy)>>MAPBLOCKSHIFT;
-	xh = (unsigned)(bubbleSource->x + bubbleDist - bmaporgx)>>MAPBLOCKSHIFT;
-	xl = (unsigned)(bubbleSource->x - bubbleDist - bmaporgx)>>MAPBLOCKSHIFT;
+	yh = (unsigned)(shieldSource->y + shieldDist - bmaporgy)>>MAPBLOCKSHIFT;
+	yl = (unsigned)(shieldSource->y - shieldDist - bmaporgy)>>MAPBLOCKSHIFT;
+	xh = (unsigned)(shieldSource->x + shieldDist - bmaporgx)>>MAPBLOCKSHIFT;
+	xl = (unsigned)(shieldSource->x - shieldDist - bmaporgx)>>MAPBLOCKSHIFT;
 
 	BMBOUNDFIX (xl, xh, yl, yh);
 
 	for (by = yl; by <= yh; by++)
 		for (bx = xl; bx <= xh; bx++)
-			P_BlockThingsIterator(bx, by, PIT_BubbleShieldBlock);
+			P_BlockThingsIterator(bx, by, PIT_ShieldBlock);
 
-	return bubbleBlock;
+	return shieldBlock;
 }

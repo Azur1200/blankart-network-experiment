@@ -69,7 +69,6 @@ extern INT32 gameovertics;
 extern UINT8 ammoremovaltics;
 extern tic_t timeinmap; // Ticker for time spent in level (used for levelcard display)
 extern INT32 pausedelay;
-extern boolean pausebreakkey;
 
 extern boolean promptactive;
 
@@ -224,6 +223,7 @@ UINT8 G_GetGametypeColor(INT16 gt);
 void G_BeginLevelExit(void);
 void G_FinishExitLevel(void);
 void G_NextLevel(void);
+boolean G_MapIsSafe(mapnum_t map);
 mapnum_t G_CheckNextMap(boolean noadvancemap);
 void G_GetNextMap(void);
 void G_Continue(void);
@@ -376,6 +376,16 @@ typedef struct
 	UINT8 kartspeed, kartweight, kartspeedrestat, kartweightrestat;
 } restatmessage_t;
 void G_HandleRestatMessage(restatmessage_t *rm);
+
+typedef enum
+{
+	PBUMP_STANDARD = 0,
+	PBUMP_GNDONLY,
+	PBUMP_NONE,
+	NUMPLAYERBUMPTYPES
+} ATTRPACK playerbumptype_t;
+
+extern playerbumptype_t playerbumpactive;
 
 #ifdef __cplusplus
 } // extern "C"

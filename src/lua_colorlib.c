@@ -1,4 +1,4 @@
-// SONIC ROBO BLAST 2
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2021-2022 by "Lactozilla".
 // Copyright (C) 2014-2023 by Sonic Team Junior.

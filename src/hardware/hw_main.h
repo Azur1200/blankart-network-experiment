@@ -85,15 +85,8 @@ boolean HWR_ShouldUsePaletteRendering(void);
 
 extern CV_PossibleValue_t glanisotropicmode_cons_t[];
 
-#ifdef ALAM_LIGHTING
-extern consvar_t cv_gldynamiclighting;
-extern consvar_t cv_glstaticlighting;
-extern consvar_t cv_glcoronas;
-extern consvar_t cv_glcoronasize;
-#endif
-
 extern consvar_t cv_glshaders, cv_glallowshaders;
-extern consvar_t cv_glmodels;
+extern consvar_t cv_glmodels, cv_glscreentextures;
 
 // SRB2Kart: We don't like these options.
 // Interpolation should be up to who animated the model.
@@ -120,6 +113,7 @@ extern consvar_t cv_glsolvetjoin, cv_glpolytile, cv_glpolyshape;
 extern consvar_t cv_glbatching;
 extern consvar_t cv_glpaletterendering;
 extern consvar_t cv_glpalettedepth;
+extern consvar_t cv_gllightdither;
 extern consvar_t cv_gldebugportal;
 
 extern consvar_t cv_glskydebug;
@@ -163,21 +157,6 @@ extern boolean gl_sessioncommandsadded;
 extern boolean gl_shadersavailable;
 
 extern boolean gl_rendering_skybox;
-
-/* Portal stuff */
-
-// TODO probably put this to a separate file?
-
-boolean HWR_AddPortal(line_t *start, line_t *dest, seg_t *seg);
-
-extern INT32 gl_portal_level;
-
-extern boolean gl_drawing_stencil;
-extern sector_t *gl_portalcullsector;
-extern line_t *gl_portalclipline;
-
-extern boolean gl_printportals;
-extern INT32 gl_debugportal;
 
 #ifdef __cplusplus
 } // extern "C"

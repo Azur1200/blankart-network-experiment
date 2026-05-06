@@ -164,7 +164,7 @@ INT32 gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING] = {
 	[gc_lookback   ] = {KEY_LSHIFT,     KEY_JOY1+2              }, // North
 	[gc_horncode   ] = {'r',            KEY_JOY1+8              }, // R-Stick Click
 
-	[gc_pause      ] = {KEY_PAUSE,      KEY_JOY1+4 }, // Back
+	[gc_pause      ] = {KEY_PAUSE				   }, // Back
 	[gc_systemmenu ] = {                KEY_JOY1+6 }, // Start
 	[gc_console    ] = {KEY_CONSOLE                },
 	[gc_screenshot ] = {KEY_F8                     },
@@ -1298,6 +1298,8 @@ vector3_t G_GetCalibratedGyroOffset(INT32 p)
 
 void G_UpdateGamepadAutoCalibration(INT32 p, vector3_t accel, vector3_t gyro, boolean allowautocalibration)
 {
+	(void)gyro;
+
 	fixed_t trust = FV3_Distance(&localaccelcalibrationoffset[p], &accel);
 	FV3_Load(
 		&localaccelcalibrationoffset[p],
@@ -1500,7 +1502,7 @@ INT32 G_GetGamepadTilt(INT32 p)
 	tilt = CLAMP(FixedDiv(G_GetGamepadGravity(p).x + MAXGAMEPADTILT, 2*MAXGAMEPADTILT), 0, FRACUNIT);
 	CONS_Debug(DBG_IMU, "Tilt: %4.2f\n", FixedToFloat(tilt));
 	
-	curve = FINESINE(FixedAngle(180*(tilt-FRACUNIT/2))>>ANGLETOFINESHIFT);
+	curve = FSIN(FixedAngle(180*(tilt-FRACUNIT/2)));
 	CONS_Debug(DBG_IMU, "Pinched Tilt: %4.2f\n", FixedToFloat(curve));
 	
 	return (JOYAXISRANGE * curve)/FRACUNIT;

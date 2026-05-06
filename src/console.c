@@ -710,7 +710,7 @@ static char shiftxform[] =
 
 INT32 CON_ShiftChar(INT32 ch)
 {
-	if (I_UseNativeKeyboard() || ch >= sizeof(shiftxform))
+	if (I_UseNativeKeyboard() || ch >= (INT32)sizeof(shiftxform))
 		return ch;
 
 	// warning: shiftdown is NOT a boolean, it's 1 or 2 for lshift/rshift

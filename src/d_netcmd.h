@@ -22,6 +22,11 @@
 extern "C" {
 #endif
 
+// Big overshoot
+#define PREFLISTSIZE (4096)
+
+extern char prefvoiceliststr[PREFLISTSIZE];
+
 extern consvar_t cv_showgremlins;
 
 // console vars
@@ -30,7 +35,7 @@ extern consvar_t cv_playercolor[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_skin[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_follower[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_followercolor[MAXSPLITSCREENPLAYERS];
-extern consvar_t cv_voice[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_autovoxpref[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_dummyrestatspeed[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_dummyrestatweight[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_dummyrestatrandom[MAXSPLITSCREENPLAYERS];
@@ -189,11 +194,9 @@ extern consvar_t cv_kartstacking_ssmt_speedboost;
 extern consvar_t cv_kartstacking_ssmt_accelboost;
 extern consvar_t cv_kartstacking_ssmt_handleboost;
 
-extern consvar_t cv_kartstacking_recspin_speedboost_lo;
 extern consvar_t cv_kartstacking_recspin_accelboost_lo;
 extern consvar_t cv_kartstacking_recspin_handleboost_lo;
 
-extern consvar_t cv_kartstacking_recspin_speedboost_hi;
 extern consvar_t cv_kartstacking_recspin_accelboost_hi;
 extern consvar_t cv_kartstacking_recspin_handleboost_hi;
 
@@ -237,6 +240,8 @@ extern consvar_t cv_kartbubble_boost_offroadignore;
 extern consvar_t cv_kartflame_fastfuel;
 extern consvar_t cv_kartflame_offroadburn;
 extern consvar_t cv_kartattraction_assistpower;
+extern consvar_t cv_kartattraction_aoedmg;
+extern consvar_t cv_kartattraction_aoeemp;
 extern consvar_t cv_kartaltshrink_arrowbullet;
 extern consvar_t cv_kartaltshrink_arrowbulletthres;
 
@@ -257,12 +262,18 @@ extern consvar_t cv_kartitemlitter, cv_kartitempush;
 
 extern consvar_t cv_kartantibump;
 
+extern consvar_t cv_trailslow;
+
+extern consvar_t cv_playerbump;
+
 extern consvar_t cv_kartforcelegacyodds;
 
 extern consvar_t cv_handleboostslip;
 
 extern consvar_t cv_kartrecoverydash;
 extern consvar_t cv_kartrecoverydash_spinspeed;
+
+extern consvar_t cv_kartkeepstuff;
 
 extern consvar_t cv_kartoddsdist;
 extern consvar_t cv_kartlegacyoddsdist;
@@ -323,6 +334,8 @@ extern consvar_t cv_director;
 extern consvar_t cv_schedule;
 
 extern consvar_t cv_debugmappatch;
+
+extern consvar_t cv_allowmismatchmappatch;
 
 extern char timedemo_name[256];
 extern boolean timedemo_csv;

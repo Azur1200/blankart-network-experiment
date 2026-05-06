@@ -154,11 +154,9 @@ void ST_doPaletteStuff(void)
 	{
 		st_palette = palette;
 
-		if (rendermode == render_soft)
+		if (!r_splitscreen)
 		{
-			//V_SetPaletteLump(GetPalette()); // Reset the palette -- is this needed?
-			if (!r_splitscreen)
-				V_SetPalette(palette);
+			V_SetPalette(palette);
 		}
 	}
 }
@@ -192,7 +190,7 @@ void ST_LoadGraphics(void)
 
 static boolean ST_IconCanSpinout(UINT8 icon)
 {
-	return ((icon == FACE_MINIMAP)||(icon == FACE_RANK));
+	return ((icon == FACE_MINIMAP)||(icon == FACE_RANK)||(icon == FACE_WANTED));
 }
 
 // made separate so that skins code can reload custom face graphics
@@ -217,7 +215,7 @@ void ST_LoadFaceGraphics(INT32 skinnum)
 
 		if ((ST_IconCanSpinout(i)) && (!alreadycentered))
 		{
-			// Auto-center the pivots of all minimap and rank patches with
+			// Auto-center the pivots of all minimap ,rank and wanted patches with
 			// the ability to spinout.
 			// This is a shitty, hacky solution... but it's less work for spinout
 			// rotations!
@@ -984,6 +982,8 @@ void ST_AskToJoinEnvelope(void)
 
 static fixed_t ST_CalculateFadeIn(player_t *player)
 {
+	(void)player;
+
 	const tic_t length = TICRATE/4;
 
 	tic_t timer = lt_exitticker;

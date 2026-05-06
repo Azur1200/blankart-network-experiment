@@ -43,7 +43,6 @@
 #ifdef HWRENDER
 #include "hardware/hw_md2.h"
 #include "hardware/hw_glob.h"
-#include "hardware/hw_light.h"
 #include "hardware/hw_gpu.h"
 #endif
 
@@ -2360,6 +2359,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (spritexscale < 1 || spriteyscale < 1)
 		return;
 
+	fixed_t use_sprxoff = interp.spritexoffset;
+
 #ifdef ROTSPRITE
 	// initialize and rotate pitch/roll vectors
 	visoffs.x = 0;
@@ -2368,7 +2369,6 @@ static void R_ProjectSprite(mobj_t *thing)
 	rotoffset.y = 0;
 
 	const fixed_t visoffs_xsc = (affinesprite) ? xscale : FixedDiv(FRACUNIT, mapobjectscale);
-
 	const fixed_t visoffymul = (vflip ? -FRACUNIT : FRACUNIT);
 
 	if (R_ThingIsUsingBakedOffsets(interptarg))
@@ -2396,7 +2396,26 @@ static void R_ProjectSprite(mobj_t *thing)
 									   sprinfo,
 									   (thing->frame & FF_FRAMEMASK));
 
-		affine_pivotoffsetdiff.x = FIXED_TO_FLOAT(affine_pivot.x - spr_offset);
+		fixed_t use_xoffset = spr_offset;
+
+		if (flip)
+		{
+			use_xoffset = spr_width - spr_offset;
+		}
+
+		if (thing->renderflags & RF_ABSOLUTEOFFSETS)
+		{
+			use_xoffset = FixedDiv(interp.spritexoffset,highresscale);
+		}
+		else
+		{
+			SINT8 flipoffset = 1;
+			if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
+				flipoffset = -1;
+			use_xoffset += (FixedDiv(interp.spritexoffset,highresscale) * flipoffset);
+		}
+
+		affine_pivotoffsetdiff.x = FIXED_TO_FLOAT(affine_pivot.x - use_xoffset);
 		affine_pivotoffsetdiff.y = FIXED_TO_FLOAT(affine_pivot.y - spr_topoffset);
 
 		affine_scale.x = FixedMul(affine_scale.x, FixedMul(spritexscale, this_scale));
@@ -2448,6 +2467,8 @@ static void R_ProjectSprite(mobj_t *thing)
 		affine_pivotoffsetdiff.x *= FIXED_TO_FLOAT(affine_scale.x);
 		affine_pivotoffsetdiff.y *= FIXED_TO_FLOAT(affine_scale.y);
 
+		use_sprxoff = FixedMul(interp.spritexoffset, affine_scale.x);
+
 		spr_width = (affine_bounds.xlen * FRACUNIT);
 		spr_offset = (affine_bounds.xleft * FRACUNIT) - FLOAT_TO_FIXED(affine_pivotoffsetdiff.x);
 
@@ -2486,7 +2507,7 @@ static void R_ProjectSprite(mobj_t *thing)
 #endif
 	}
 
-	if (flip)
+	if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
 		offset = spr_offset - spr_width;
 	else
 		offset = -spr_offset;

@@ -406,9 +406,11 @@ struct mapheader_t
 
 	// Music information
 	char musname[MAXMUSNAMES][7];				///< Music tracks to play. First dimension is the track number, second is the music string. "" for no music.
+	char encoremusname[MAXMUSNAMES][7];			///< Music tracks to play in Encore. First dimension is the track number, second is the music string. "" for no music.
 	UINT16 mustrack;							///< Subsong to play. Only really relevant for music modules and specific formats supported by GME. 0 to ignore.
 	UINT32 muspos;								///< Music position to jump to.
 	UINT8 musname_size;							///< Number of music tracks defined
+	UINT8 encoremusname_size;					///< Number of Encore music tracks defined
 
 	// Sky information
 	UINT8 weather;								///< See preciptype_t

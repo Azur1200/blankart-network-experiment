@@ -411,6 +411,36 @@ angle_t R_PointToAngleFloat2(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 #undef ANGLE_180_DOUBLE
 #undef ANGLE_360_DOUBLE
 
+// More precise version of R_PointToAngle2 using floats and atan2.
+angle_t R_PointToAngle2Precise(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
+{
+	fixed_t dx = x - pviewx;
+	fixed_t dy = y - pviewy;
+	float radians;
+
+	if (!dx && !dy)
+		return 0;
+
+	// no need for correct scale with FIXED_TO_FLOAT here
+	// since we're just calculating the angle
+	radians = atan2(dy, dx);
+
+	return (angle_t)(radians / M_PI * ANGLE_180);
+}
+
+// More precise version of R_PointToDist2 using floats and sqrt.
+fixed_t R_PointToDist2Precise(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1)
+{
+	// float-fixed conversions can be omitted here
+	// because they cancel each other out in this case
+
+	float dx = px1 - px2;
+	float dy = py1 - py2;
+	double result = sqrt(dx*dx + dy*dy);
+
+	return (fixed_t)result;
+}
+
 //
 // R_ScaleFromGlobalAngle
 // Returns the texture mapping scale for the current line (horizontal span)

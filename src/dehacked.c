@@ -568,19 +568,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 						ignorelines(f);
 					}
 				}
-#ifdef HWRENDER
-				else if (fastcmp(word, "LIGHT"))
-				{
-					// TODO: Read lights by name
-					if (i > 0 && i < NUMLIGHTS)
-						readlight(f, i);
-					else
-					{
-						deh_warning("Light number %d out of range (1 - %d)", i, NUMLIGHTS-1);
-						ignorelines(f);
-					}
-				}
-#endif
 				else if (fastcmp(word, "LEVEL"))
 				{
 					size_t len = strlen(word2);

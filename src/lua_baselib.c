@@ -3502,10 +3502,11 @@ static int lib_gDoReborn(lua_State *L)
 }
 
 // Another Lua function that doesn't actually exist!
-// Sets nextmapoverride & skipstats without instantly ending the level, for instances where other sources should be exiting the level, like normal signposts.
-static int lib_gSetCustomExitVars(lua_State *L)
+// Sets nextmapoverride & skipstats without instantly ending the level, for instances where other
+// sources should be exiting the level, like normal signposts.
+static int lib_gSetCustomExitVars(lua_State* L)
 {
-	int n = lua_gettop(L); // Num arguments
+	int n = lua_gettop(L);  // Num arguments
 	NOHUD
 	INLEVEL
 
@@ -3516,15 +3517,36 @@ static int lib_gSetCustomExitVars(lua_State *L)
 	//	G_SetCustomExitVars(nil, int)	[skipstats only]
 	//	G_SetCustomExitVars(int, int)	[both of the above]
 
+	mapnum_t potential_override = 0;
+
 	nextmapoverride = 0;
 	skipstats = 0;
 
 	if (n >= 1)
 	{
-		nextmapoverride = luaL_optinteger(L, 1, 0);
+		potential_override = luaL_optinteger(L, 1, 0);
 		skipstats = (INT16)luaL_optinteger(L, 2, 0);
-		if (lua_compatmode && nextmapoverride)
-			nextmapoverride = G_KartMapToNative(nextmapoverride);
+		if (lua_compatmode && potential_override)
+			potential_override = G_KartMapToNative(potential_override);
+
+		if (potential_override != 0)
+		{
+			// Prevent crashes by making sure the override is safe
+			if (!G_MapIsSafe(potential_override))
+			{
+				// Override is very definitively NOT safe; error out
+				return luaL_error(
+				    L,
+				    "provided map override %d is invalid (nummapheaders = %d)",
+				    potential_override,
+				    nummapheaders);
+			}
+			else
+			{
+				// Allow the override
+				nextmapoverride = potential_override;
+			}
+		}
 	}
 
 	return 0;
@@ -3627,6 +3649,18 @@ static int lib_gTicsToMilliseconds(lua_State *L)
 	tic_t rtic = luaL_checkinteger(L, 1);
 	//HUDSAFE
 	lua_pushinteger(L, G_TicsToMilliseconds(rtic));
+	return 1;
+}
+
+static int lib_gMapIsSafe(lua_State *L)
+{
+	mapnum_t map = luaL_checkinteger(L, 1);
+
+	if (lua_compatmode && map)
+		map = G_KartMapToNative(map);
+
+	//HUDSAFE
+	lua_pushboolean(L, G_MapIsSafe(map));
 	return 1;
 }
 
@@ -4101,6 +4135,27 @@ static int lib_kUnsetItemOut(lua_State *L)
 	return 0;
 }
 
+static int lib_kSpawnEquippedItem(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	kartitemequip_e equipstyle = luaL_checkint(L, 2);
+	mobjtype_t type = luaL_checkint(L, 3);
+	INT32 moloop = luaL_optinteger(L, 4, 0);
+	mobj_t *prev = NULL;
+	mobj_t *mo = NULL;
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	if (!lua_isnone(L, 5) && lua_isuserdata(L, 5))
+		prev = *((mobj_t **)luaL_checkudata(L, 5, META_MOBJ));
+	mo = K_SpawnEquippedItem(player, equipstyle, type, moloop, prev);
+	if (mo)
+		LUA_PushUserdata(L, mo, META_MOBJ);
+	else
+		lua_pushnil(L);
+	return 0;
+}
+
 static int lib_kDropItems(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -4224,6 +4279,16 @@ static int lib_kGetKartRingPower(lua_State *L)
 		return LUA_ErrInvalid(L, "player_t");
 	lua_pushinteger(L, K_GetKartRingPower(player, boosted));
 	return 1;
+}
+
+static int lib_kKartPlayerBumpyRoad(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_KartPlayerBumpyRoad(player);
+	return 0;
 }
 
 // this function is for compatibility only; do not add new functionality here
@@ -4487,6 +4552,27 @@ static int lib_kAirDropActive(lua_State *L)
 	return 1;
 }
 
+// Checks if Air Thrust is active.
+static int lib_kAirThrustActive(lua_State *L)
+{
+	lua_pushboolean(L, K_AirThrustActive());
+	return 1;
+}
+
+// Checks if Recovery Dash is active.
+static int lib_kRecoveryDashActive(lua_State *L)
+{
+	lua_pushboolean(L, K_RecoveryDashActive());
+	return 1;
+}
+
+// Checks if Keep Stuff is active.
+static int lib_kKeepStuffActive(lua_State *L)
+{
+	lua_pushboolean(L, K_KeepStuffActive());
+	return 1;
+}
+
 // Checks if item littering is active.
 static int lib_kItemLitterActive(lua_State *L)
 {
@@ -4502,10 +4588,24 @@ static int lib_kItemListActive(lua_State *L)
 	return 1;
 }
 
+// Checks if trailing slowdown is active.
+static int lib_kTrailSlowActive(lua_State *L)
+{
+	lua_pushboolean(L, K_TrailSlowActive());
+	return 1;
+}
+
 // Gets the currently active bumpspark type.
 static int lib_kGetBumpSpark(lua_State *L)
 {
 	lua_pushinteger(L, K_GetBumpSpark());
+	return 1;
+}
+
+// Gets the currently active playerbump type.
+static int lib_kGetPlayerBump(lua_State *L)
+{
+	lua_pushinteger(L, K_GetPlayerBump());
 	return 1;
 }
 
@@ -4753,6 +4853,27 @@ static int lib_kMomentum3D(lua_State *L)
 
 	lua_pushinteger(L, K_Momentum3D(mo));
 	return 1;
+}
+
+static int lib_kAddTiltImpulse(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	fixed_t distance = luaL_checkinteger(L, 2);
+	fixed_t force = luaL_checkinteger(L, 3);
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_AddTiltImpulse(player, distance, force);
+	return 0;
+}
+
+static int lib_kAddTiltMomentum(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	fixed_t angularvelocity = luaL_checkinteger(L, 2);
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_AddTiltMomentum(player, angularvelocity);
+	return 0;
 }
 
 static int lib_kMissileOrKartItem(lua_State *L)
@@ -5750,6 +5871,7 @@ static luaL_Reg lib[] = {
 	{"G_AddGametype", lib_gAddGametype},
 	{"G_BuildMapName",lib_gBuildMapName},
 	{"G_MapNumber",lib_gMapNumber},
+	{"G_MapIsSafe",lib_gMapIsSafe},
 	{"G_BuildMapTitle",lib_gBuildMapTitle},
 	{"G_FindMap",lib_gFindMap},
 	{"G_FindMapByNameOrCode",lib_gFindMapByNameOrCode},
@@ -5808,6 +5930,7 @@ static luaL_Reg lib[] = {
 	{"K_UpdateHnextList",lib_kUpdateHnextList},
 	{"K_SetItemOut",lib_kSetItemOut},
 	{"K_UnsetItemOut",lib_kUnsetItemOut},
+	{"K_SpawnEquippedItem",lib_kSpawnEquippedItem},
 	{"K_DropItems",lib_kDropItems},
 	{"K_StripItems",lib_kStripItems},
 	{"K_StripOther",lib_kStripOther},
@@ -5838,9 +5961,14 @@ static luaL_Reg lib[] = {
 	{"K_SlopeBoostActive",lib_kSlopeBoostActive},
 	{"K_DraftingActive",lib_kDraftingActive},
 	{"K_AirDropActive",lib_kAirDropActive},
+	{"K_AirThrustActive",lib_kAirThrustActive},
+	{"K_RecoveryDashActive",lib_kRecoveryDashActive},
+	{"K_KeepStuffActive",lib_kKeepStuffActive},
 	{"K_ItemLitterActive",lib_kItemLitterActive},
 	{"K_ItemListActive", lib_kItemListActive},
+	{"K_TrailSlowActive", lib_kTrailSlowActive},
 	{"K_GetBumpSpark",lib_kGetBumpSpark},
+	{"K_GetPlayerBump",lib_kGetPlayerBump},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
 	{"K_DoBoost",lib_kDoBoost},
 	{"K_ClearBoost",lib_kClearBoost},
@@ -5867,6 +5995,10 @@ static luaL_Reg lib[] = {
 	{"K_GetKartRingCap", lib_kGetKartRingCap},
 	{"K_IsPlayerRingBurnt", lib_kIsPlayerRingBurnt},
 	{"K_GetKartRingPower", lib_kGetKartRingPower},
+	{"K_KartPlayerBumpyRoad", lib_kKartPlayerBumpyRoad},
+	
+	{"K_AddTiltImpulse", lib_kAddTiltImpulse},
+	{"K_AddTiltMomentum", lib_kAddTiltMomentum},
 
 	// kart stuff that's in other places for some reason
 	{"K_IsMissileOrKartItem", lib_kMissileOrKartItem},

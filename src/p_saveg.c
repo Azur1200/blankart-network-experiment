@@ -641,7 +641,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].driftboost);
 		SYNC(players[i].airdriftspeed);
 		SYNC(players[i].nulldrift);
-		SYNC(players[i].nulldrifttilt);
+		SYNC(players[i].karttilt);
+		SYNC(players[i].karttiltmomentum);
 		SYNC(players[i].nulldrifttime);
 
 		SYNC(players[i].recoverydashcharge);
@@ -862,6 +863,18 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].itemusecooldownmax);
 
 		P_SyncMem(save, players[i].public_key, PUBKEYLENGTH);
+		
+		SYNC(players[i].bumpyroadside);
+
+		// keepstuff_t
+		SYNC(players[i].keepstuff.flags);
+		SYNC(players[i].keepstuff.rocketsneakertimer);
+		SYNC(players[i].keepstuff.invincibilitytimer);
+		SYNC(players[i].keepstuff.smonitortimer);
+		SYNC(players[i].keepstuff.smonitorexpiring);
+		SYNC(players[i].keepstuff.maxsmonitortime);
+		SYNC(players[i].keepstuff.growshrinktimer);
+		SYNC(players[i].keepstuff.flametimer);
 	}
 	TracyCZoneEnd(__zone);
 }
@@ -4330,13 +4343,16 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(draftingactive);
 	SYNCBOOLEAN(airthrustactive);
 	SYNCBOOLEAN(recoverydashactive);
+	SYNCBOOLEAN(keepstuffactive);
 	SYNCBOOLEAN(waterskipbricks);
 	SYNCBOOLEAN(itemlittering);
 	SYNCBOOLEAN(itempushing);
 	SYNCBOOLEAN(itemlistactive);
+	SYNCBOOLEAN(trailslow_active);
 	SYNC(airdropactive);
 	SYNC(bumpsparkactive);
 	SYNC(antibumptime);
+	SYNC(playerbumpactive);
 
 	for (i = 0; i < sizeof(g_voteLevels)/sizeof(*g_voteLevels); i++)
 	{

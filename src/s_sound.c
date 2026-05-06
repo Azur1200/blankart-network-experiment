@@ -2602,27 +2602,32 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 //
 void S_InitLevelMusic(boolean fromnetsave)
 {
+	mapheader_t* mapheader = mapheaderinfo[gamemap - 1];
 	INT16 usemusrng = 0;
 	INT16 altmusonlysize = 0;
+
+	boolean validencore = (encoremode && (mapheader->encoremusname_size > 0));
+
+	UINT8 truesize = validencore ? mapheader->encoremusname_size : mapheader->musname_size;
 
 	if (mapmusflags & MUSIC_RELOADRESET)
 	{
 
-		if (mapheaderinfo[gamemap-1]->musname_size > 1)
+		if (truesize > 1)
 		{
-			altmusonlysize = max(0, mapheaderinfo[gamemap-1]->musname_size - 1);
+			altmusonlysize = max(0, truesize - 1);
 		}
 
 		if (!fromnetsave)
 		{
 			if (demo.playback)
 			{
-				if (mapheaderinfo[gamemap-1]->musname_size > 1)
+				if (truesize > 1)
 				{
 					P_RandomFixed();
 				}
 				// mapmusrng has already been set by the demo; just make sure it's valid
-				if (mapmusrng >= mapheaderinfo[gamemap-1]->musname_size)
+				if (mapmusrng >= truesize)
 				{
 					mapmusrng = 0;
 				}
@@ -2630,9 +2635,9 @@ void S_InitLevelMusic(boolean fromnetsave)
 			else
 			{
 
-				if (mapheaderinfo[gamemap-1]->musname_size > 1)
+				if (truesize > 1)
 				{
-					mapmusrng = P_RandomKey(mapheaderinfo[gamemap-1]->musname_size);
+					mapmusrng = P_RandomKey(truesize);
 				}
 				else
 					mapmusrng = 0;
@@ -2666,14 +2671,18 @@ void S_InitLevelMusic(boolean fromnetsave)
 			}
 		}
 
-		if (mapheaderinfo[gamemap-1]->musname[0][0] == 0)
-			strncpy(mapmusname, va("%sM", G_BuildMapName(gamemap)), 7);
+		char musicname[7];
+
+		if (!validencore && mapheader->musname[0][0] == 0)
+			sprintf(musicname, "%sM", G_BuildMapName(gamemap));
 		else
-			strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname[usemusrng], 7);
+			sprintf(musicname, "%s",(validencore ? mapheader->encoremusname : mapheader->musname)[usemusrng]);
+
+		strncpy(mapmusname, musicname, 7);
 
 		mapmusname[6] = 0;
-		mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
-		mapmusposition = mapheaderinfo[gamemap-1]->muspos;
+		mapmusflags = (mapheader->mustrack & MUSIC_TRACKMASK);
+		mapmusposition = mapheader->muspos;
 		mapmusresume = 0;
 	}
 

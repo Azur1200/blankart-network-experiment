@@ -73,6 +73,8 @@ extern consvar_t cv_newtabranking;
 
 extern consvar_t cv_kartdebughudtracker;
 
+extern consvar_t cv_highresportrait;
+
 extern patch_t *kp_facenum[MAXPLAYERS+1];
 extern patch_t *kp_itemboxminimap;
 extern patch_t *kp_minimapdot;
@@ -188,6 +190,8 @@ extern patch_t *kp_itemtarget_icon[2];
 extern patch_t *kp_itemtarget_far[2][2];
 extern patch_t *kp_itemtarget_far_text[2];
 extern patch_t *kp_itemtarget_near[2][8];
+
+boolean K_UseHighResPortraits(void);
 
 #ifdef __cplusplus
 } // extern "C"

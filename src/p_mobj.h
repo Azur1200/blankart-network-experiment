@@ -628,11 +628,13 @@ extern boolean draftingactive;
 extern UINT8 airdropactive;
 extern boolean airthrustactive;
 extern boolean recoverydashactive;
+extern boolean keepstuffactive;
 extern boolean waterskipbricks;
 extern boolean itemlittering;
 extern boolean itempushing;
 extern UINT8   bumpsparkactive;
 extern boolean itemlistactive;
+extern boolean trailslow_active;
 extern UINT16 bossdisabled;
 extern boolean stoppedclock;
 

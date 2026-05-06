@@ -192,9 +192,8 @@ void G_ResetControls(UINT8 p);
 void G_SaveKeySetting(FILE *f, INT32 (*fromcontrolsa)[MAXINPUTMAPPING], INT32 (*fromcontrolsb)[MAXINPUTMAPPING], INT32 (*fromcontrolsc)[MAXINPUTMAPPING], INT32 (*fromcontrolsd)[MAXINPUTMAPPING]);
 INT32 G_CheckDoubleUsage(INT32 keynum, INT32 playernum, boolean modify);
 
-#define MAXGAMEPADTILT (50*FRACUNIT/100)
-// #define ACCELEROMETERGRAVITY ((fixed_t)(9.80665f * ((float)FRACUNIT)))
-#define ACCELEROMETERGRAVITY 642688
+#define MAXGAMEPADTILT (55*FRACUNIT/100)
+#define ACCELEROMETERGRAVITY (642688) // 9.80665
 boolean G_GetGamepadCanUseTilt(INT32 p);
 void G_ResetGyroCalibration(INT32 p);
 void G_UpdateGamepadAutoCalibration(INT32 p, vector3_t accel, vector3_t gyro, boolean allowautocalibration);

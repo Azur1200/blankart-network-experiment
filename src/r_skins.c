@@ -11,6 +11,7 @@
 /// \file  r_skins.c
 /// \brief Loading skins
 
+#include "d_player.h"
 #include "doomdef.h"
 #include "console.h"
 #include "g_game.h"
@@ -41,7 +42,11 @@
 #include "discord.h"
 
 INT32 numskins = 0;
+INT32 num_multivoiceskins = 0;
+
 skin_t skins[MAXSKINS];
+skin_t * multivoiceskins[MAXSKINS];
+
 INT32 skinsorted[MAXSKINS];
 
 // FIXTHIS: don't work because it must be inistilised before the config load
@@ -51,6 +56,14 @@ CV_PossibleValue_t skin_cons_t[MAXSKINS+1];
 #endif
 
 CV_PossibleValue_t Forceskin_cons_t[MAXSKINS+2];
+
+// FIXME: Save voice data to a separate file
+kartvoiceinfo_t localvoicedata[MAXSPLITSCREENPLAYERS] = {
+	[0] = {.name = "default", .value = 0},
+	[1] = {.name = "default", .value = 0},
+	[2] = {.name = "default", .value = 0},
+	[3] = {.name = "default", .value = 0}
+};
 
 //
 // P_GetSkinSprite2
@@ -730,8 +743,20 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 
 	if (player->voice_id == voicenum)
 	{
-		// Hey... this voice is the same as before!
-		return;
+		// Same ID? Seems suspicious...
+
+		if (P_MobjWasRemoved(player->mo))
+			return; // Unfortunately, we have no object, so we'll assume it's a dupe...
+
+		if (!player->mo->voice)
+			return; // We somehow have no voice either!
+
+		// Check the actual voice structs to be absolutely sure.
+		if (player->mo->voice == &skins[player->skin].voices[voicenum])
+		{
+			// Hey... this voice is the same as before!
+			return;
+		}
 	}
 
 	player->voice_id = voicenum;
@@ -927,40 +952,43 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 			Z_Free(tmp.spriteframes);
 #undef SPR2COUNT
 
-		// now we have to rotate the drift frames. i hate this.
-		sd = &skin->sprites[SPR2_DRRN];
-		for (i = 0; i < sd->numframes; i++)
+		if (!(skin->flags & SF_NOCOMPATROTATE))
 		{
-			sf = &sd->spriteframes[i];
-			if (sf->rotate != SRF_3D)
-				continue;
-			lumpnum_t lastpat = sf->lumppat[7];
-			size_t lastid = sf->lumpid[7];
-			for (int r = 7; r >= 1; r--)
+			// now we have to rotate the drift frames. i hate this.
+			sd = &skin->sprites[SPR2_DRRN];
+			for (i = 0; i < sd->numframes; i++)
 			{
-				sf->lumppat[r] = sf->lumppat[r-1];
-				sf->lumpid[r] = sf->lumpid[r-1];
+				sf = &sd->spriteframes[i];
+				if (sf->rotate != SRF_3D)
+					continue;
+				lumpnum_t lastpat = sf->lumppat[7];
+				size_t lastid = sf->lumpid[7];
+				for (int r = 7; r >= 1; r--)
+				{
+					sf->lumppat[r] = sf->lumppat[r-1];
+					sf->lumpid[r] = sf->lumpid[r-1];
+				}
+				sf->lumppat[0] = lastpat;
+				sf->lumpid[0] = lastid;
+				sf->flip = (sf->flip & 0xff00) | ((sf->flip & 0x80) >> 7) | ((sf->flip & 0x7f) << 1);
 			}
-			sf->lumppat[0] = lastpat;
-			sf->lumpid[0] = lastid;
-			sf->flip = (sf->flip & 0xff00) | ((sf->flip & 0x80) >> 7) | ((sf->flip & 0x7f) << 1);
-		}
-		sd = &skin->sprites[SPR2_DRLN];
-		for (i = 0; i < sd->numframes; i++)
-		{
-			sf = &sd->spriteframes[i];
-			if (sf->rotate != SRF_3D)
-				continue;
-			lumpnum_t firstpat = sf->lumppat[0];
-			size_t firstid = sf->lumpid[0];
-			for (int r = 0; r < 8; r++)
+			sd = &skin->sprites[SPR2_DRLN];
+			for (i = 0; i < sd->numframes; i++)
 			{
-				sf->lumppat[r] = sf->lumppat[r+1];
-				sf->lumpid[r] = sf->lumpid[r+1];
+				sf = &sd->spriteframes[i];
+				if (sf->rotate != SRF_3D)
+					continue;
+				lumpnum_t firstpat = sf->lumppat[0];
+				size_t firstid = sf->lumpid[0];
+				for (int r = 0; r < 8; r++)
+				{
+					sf->lumppat[r] = sf->lumppat[r+1];
+					sf->lumpid[r] = sf->lumpid[r+1];
+				}
+				sf->lumppat[7] = firstpat;
+				sf->lumpid[7] = firstid;
+				sf->flip = (sf->flip & 0xff00) | ((sf->flip & 0x01) << 7) | ((sf->flip & 0xfe) >> 1);
 			}
-			sf->lumppat[7] = firstpat;
-			sf->lumpid[7] = firstid;
-			sf->flip = (sf->flip & 0xff00) | ((sf->flip & 0x01) << 7) | ((sf->flip & 0xfe) >> 1);
 		}
 
 		R_AddKartFaces(skin);
@@ -995,6 +1023,47 @@ static void R_IHateThatHedgehog(UINT16 wadnum)
 
 static kartvoice_t *allocvoice;
 
+static INT32 R_AddSkinToMultiVoiceArray(skin_t * skin)
+{
+	if (num_multivoiceskins < 1)
+	{
+		// Nobody's home, add ourselves to the array
+		multivoiceskins[0] = skin;
+	}
+	else
+	{
+		// Comb through all the skins in the multivoice array to make sure we're not adding a dupe
+		if (num_multivoiceskins < 2)
+		{
+			// Only one skin in here, just check if we match
+			if (skin == multivoiceskins[0])
+			{
+				// Dupe
+				return num_multivoiceskins;
+			}
+
+			multivoiceskins[1] = skin;
+		}
+		else
+		{
+			INT32 i = 0;
+
+			for (i = 0; i < num_multivoiceskins; i++)
+			{
+				if (skin == multivoiceskins[i])
+				{
+					// Dupe, don't bother
+					return num_multivoiceskins;
+				}
+			}
+
+			multivoiceskins[num_multivoiceskins] = skin;
+		}
+	}
+
+	return num_multivoiceskins++;
+}
+
 //
 // Allocates a voice onto the dehacked list, and iterates the provided output pointer
 // (should it exist).
@@ -1025,7 +1094,12 @@ static INT32 R_AllocKartVoice(skin_t *skin, const char* name)
 
 	CONS_Printf("Voice '%s' allocated for skin '%s'.\n", voice->name, skin->name);
 
-	return skin->numvoices++;
+	skin->numvoices++;
+
+	if (skin->numvoices > 1)
+		R_AddSkinToMultiVoiceArray(skin);
+
+	return max(0, skin->numvoices - 1);
 }
 
 // returns whether found appropriate property
@@ -1139,6 +1213,7 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 	// 1, true, yes are all valid values
 	GETFLAG(MACHINE)
 	GETFLAG(OLDDEATH)
+	GETFLAG(NOCOMPATROTATE)
 #undef GETFLAG
 
 #define GETPATCH(field) else if (compat && fasticmp(stoken, #field)) strncpy(skin->field, value, 8);

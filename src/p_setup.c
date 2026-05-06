@@ -18,6 +18,7 @@
 #include "byteptr.h"
 #include "g_game.h"
 
+#include "g_mapnum.h"
 #include "info.h"
 #include "p_local.h"
 #include "p_setup.h"
@@ -87,7 +88,7 @@
 #endif
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
-#include "hardware/hw_light.h"
+#include "hardware/hw_glob.h"
 #include "hardware/hw_model.h"
 #endif
 
@@ -167,11 +168,14 @@ boolean draftingactive;
 UINT8	airdropactive;
 boolean airthrustactive;
 boolean recoverydashactive;
+boolean keepstuffactive;
 boolean waterskipbricks;
 boolean itemlittering;
 boolean itempushing;
 UINT8   bumpsparkactive;
 boolean itemlistactive;
+boolean trailslow_active = false;
+playerbumptype_t playerbumpactive = PBUMP_STANDARD;
 UINT16 bossdisabled;
 boolean stoppedclock;
 boolean levelloading;
@@ -432,7 +436,7 @@ static void P_ClearMapHeaderLighting(mapheader_lighting_t *lighting)
   * \param i Map number to clear header for.
   * \sa P_ClearMapHeaderInfo
   */
-static void P_ClearSingleMapHeaderInfo(INT16 num)
+static void P_ClearSingleMapHeaderInfo(mapnum_t num)
 {
 	mapheaderinfo[num]->lvlttl[0] = '\0';
 	mapheaderinfo[num]->subttl[0] = '\0';
@@ -443,11 +447,15 @@ static void P_ClearSingleMapHeaderInfo(INT16 num)
 	mapheaderinfo[num]->use_walltransfer = false;
 	mapheaderinfo[num]->use_terrain = false;
 	mapheaderinfo[num]->keywords[0] = '\0';
-	for (int i = 0; i < MAXMUSNAMES; i++)
-		mapheaderinfo[num]->musname[i][0] = 0;
+
+	memset(mapheaderinfo[num]->musname, 0, sizeof(mapheaderinfo[num]->musname));
+	memset(mapheaderinfo[num]->encoremusname, 0, sizeof(mapheaderinfo[num]->encoremusname));
+
 	mapheaderinfo[num]->mustrack = 0;
 	mapheaderinfo[num]->muspos = 0;
 	mapheaderinfo[num]->musname_size = 0;
+	mapheaderinfo[num]->encoremusname_size = 0;
+
 	mapheaderinfo[num]->weather = PRECIP_NONE;
 	snprintf(mapheaderinfo[num]->skytexture, 5, "SKY1");
 	mapheaderinfo[num]->skytexture[4] = 0;
@@ -1474,6 +1482,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 		if (!fastcmp(tkn, "namespace"))
 		{
 			CONS_Alert(CONS_ERROR, "No namespace at beginning of lump!\n");
+			TracyCZoneEnd(__zone);
 			return false;
 		}
 
@@ -1482,6 +1491,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 		if (!fastcmp(tkn, "blankart-patch"))
 		{
 			CONS_Alert(CONS_ERROR, "Invalid namespace '%s'. Only 'blankart-patch' is supported.\n", tkn);
+			TracyCZoneEnd(__zone);
 			return false;
 		}
 	}
@@ -1514,6 +1524,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 		if (!fastcmp(tkn, "checksum"))
 		{
 			CONS_Alert(CONS_ERROR, "No checksum in lump!\n");
+			TracyCZoneEnd(__zone);
 			return false;
 		}
 
@@ -1532,6 +1543,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 			if (end == hashstr || (*end && *end != '|'))
 			{
 				CONS_Alert(CONS_ERROR, "Invalid checksum string '%s'\n", tkn);
+				TracyCZoneEnd(__zone);
 				return false;
 			}
 			hashstr = end + 1;
@@ -1540,7 +1552,14 @@ static boolean TextmapCount(size_t size, boolean patch)
 		tkn = M_TokenizerRead(0);
 
 		if (!foundhash)
+		{
 			CONS_Alert(CONS_WARNING, "This map patch is not compatible with the current map (checksum: " HASHFMT "). The patch may not work.\n", maphash);
+			if (cv_allowmismatchmappatch.value)
+			{
+				TracyCZoneEnd(__zone);
+				return false;
+			}
+		}
 	}
 
 	// check for things to remove from the base map
@@ -1566,6 +1585,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 			if (end == typestr || (*end && *end != '|'))
 			{
 				CONS_Alert(CONS_ERROR, "Invalid basemaptyperemoval string '%s'\n", tkn);
+				TracyCZoneEnd(__zone);
 				return false;
 			}
 
@@ -1941,6 +1961,8 @@ static void ParseTextmapSectorParameter(UINT32 i, const char *param, const char 
 		sectors[i].specialflags |= SSF_GRAVITYOVERRIDE;
 	else if (fastcmp(param, "walltransfer") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_WALLTRANSFER;
+	else if (fastcmp(param, "bumpyroad") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_BUMPYROAD;
 	else if (fastcmp(param, "friction"))
 		sectors[i].friction = FLOAT_TO_FIXED(atof(val));
 	else if (fastcmp(param, "gravity"))
@@ -3164,6 +3186,8 @@ static void P_WriteTextmap(void)
 			fprintf(f, "gravityoverride = true;\n");
 		if (wsectors[i].specialflags & SSF_WALLTRANSFER)
 			fprintf(f, "walltransfer = true;\n");
+		if (wsectors[i].specialflags & SSF_BUMPYROAD)
+			fprintf(f, "bumpyroad = true;\n");
 		if (wsectors[i].friction != ORIG_FRICTION)
 			fprintf(f, "friction = %f;\n", FIXED_TO_FLOAT(wsectors[i].friction));
 		if (wsectors[i].gravity != FRACUNIT)
@@ -7178,6 +7202,8 @@ static void P_ConvertBinarySectorTypes(void)
 	}
 }
 
+
+// TODO: Check to make sure every object that sets flags such as ambush properly get converted to UDMF
 static void P_ConvertBinaryThingTypes(void)
 {
 	size_t i;
@@ -7338,7 +7364,9 @@ static void P_ConvertBinaryThingTypes(void)
 			mapthings[i].args[2] = !(mapthings[i].options & (MTF_AMBUSH|MTF_OBJECTSPECIAL));
 			break;
 		case 462: //Balloon
-			mapthings[i].args[0] = !!(mapthings[i].options & MTF_AMBUSH);
+			mapthings[i].args[0] = !(mapthings[i].options & MTF_AMBUSH);
+			mapthings[i].options &= ~MTF_AMBUSH;
+
 			if (mapthings[i].angle > 0)
 				P_WriteSkincolor(((mapthings[i].angle - 1) % (numskincolors - 1)) + 1, &mapthings[i].stringargs[0]);
 			break;
@@ -8220,12 +8248,15 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	airdropactive = 0;
 	airthrustactive = false;
 	recoverydashactive = false;
+	keepstuffactive = false;
 	waterskipbricks = false;
 	itemlittering = false;
 	itempushing = false;
 	itemlistactive = false;
+	trailslow_active = false;
 	bumpsparkactive = 0;
 	antibumptime = 0;
+	playerbumpactive = PBUMP_STANDARD;
 
 	if (cv_kartrings.value)
 		ringsactive = true;
@@ -8256,6 +8287,9 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	if (cv_kartrecoverydash.value)
 		recoverydashactive = true;
 
+	if (cv_kartkeepstuff.value)
+		keepstuffactive = true;
+
 	if (cv_kartwaterskiplock.value)
 		waterskipbricks = true;
 
@@ -8268,7 +8302,11 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	if (cv_itemlist.value)
 		itemlistactive = true;
 
+	if (cv_trailslow.value)
+		trailslow_active = true;
+
 	bumpsparkactive = (UINT8)cv_kartbumpspark.value;
+	playerbumpactive = (playerbumptype_t)cv_playerbump.value;
 
 	antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
 

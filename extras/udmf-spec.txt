@@ -233,6 +233,7 @@ BlanKart's namespace implements the following additional fields:
 		redpogospring = <bool>;				// true = players are bounced into the air by this sector.
 		yellowpogospring = <bool>;			// true = players are bounced into the air and then speedcapped by this sector.
 		walltransfer = <bool>;				// true = players are allowed to slide up walls from this sector.
+		bumpyroad = <bool>;					// true = players are visually tilted by this sector to simulate a bumpy road. Does not effect gameplay.
 
 		repeatspecial = <bool>;				// true = repeatable action.
 		continuousspecial = <bool>;			// true = action is executed every game tick.
@@ -318,3 +319,6 @@ BK 1.0: 11.03.2025
 
 BK 1.0 22.03.2026
 - Added more effects.
+
+BK 1.0 21.04.2026
+- Added bumpy road effect.

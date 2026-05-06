@@ -195,6 +195,8 @@ patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, boolean tiny, UINT8 amount,
 void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags);
 void K_UnsetItemOut(player_t *player);
 
+mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, INT32 moloop, mobj_t *prev);
+
 void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, kartitemblink_e blink);
 void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCount);
 void K_UpdateItemCooldown(void);
@@ -241,10 +243,13 @@ extern consvar_t cv_karteggmine_slotbrick;
 extern consvar_t cv_kartthunder_radius;
 
 #define BUBBLEBOOSTTIME (7 * sneakertime / 10)
+
 #define ATTRACTIONCHARGETIME ((92*TICRATE)/60)
 #define ATTRACTIONATTACKTIME_FULL (TICRATE)
-#define ATTRACTIONATTACKTIME_MAX (TICRATE/2)
-#define ATTRACTIONATTACKTIME_MIN (TICRATE/3)
+#define ATTRACTIONATTACKTIME_MAX (3*TICRATE/4)
+#define ATTRACTIONATTACKTIME_MIN (TICRATE/2)
+
+void K_DoGrowShrink(player_t *player, boolean shrinking);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -266,7 +266,7 @@ INT32 greasetics = 3*TICRATE;
 INT32 wipeoutslowtime = 20;
 INT32 wantedreduce = 5*TICRATE;
 INT32 wantedfrequency = 10*TICRATE;
-INT32 flametime = (((8*TICRATE)*3) + (4*TICRATE));
+INT32 flametime = 25*TICRATE + (2*TICRATE/10); // (((8*TICRATE)*3) + (4*TICRATE))
 
 UINT8 use1upSound = 0;
 UINT8 maxXtraLife = 2; // Max extra lives from rings
@@ -1603,6 +1603,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (cv_litesteer[forplayer].value && joystickvector.yaxis >= JOYAXISRANGE && abs(cmd->angle) == KART_FULLTURN)
 	{
 		// >= beacuse some analog devices can go past JOYAXISRANGE (?!)
+		cmd->turning /= 2;	// mine: make this show up in the input disp (we respect tilt control why not this too)
 		cmd->angle /= 2;
 	}
 
@@ -1785,7 +1786,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (G_GetGamepadCanUseTilt(forplayer) && cv_tiltcontrol[forplayer].value)
 	{
 		fixed_t tilt = G_GetGamepadGravity(forplayer).x;
-		vector3_t shake = G_GetGamepadShake(forplayer);
+		// vector3_t shake = G_GetGamepadShake(forplayer);
 
 		if (cv_tiltcontrol[forplayer].value == 1)
 		{
@@ -2001,7 +2002,6 @@ boolean G_IsTitleCardAvailable(void)
 }
 
 INT32 pausedelay = 0;
-boolean pausebreakkey = false;
 static INT32 camtoggledelay[MAXSPLITSCREENPLAYERS];
 static INT32 spectatedelay[MAXSPLITSCREENPLAYERS];
 static INT32 respawndelay[MAXSPLITSCREENPLAYERS];
@@ -2183,7 +2183,6 @@ boolean G_Responder(event_t *ev)
 			{
 				if (modeattacking && !demo.playback && (gamestate == GS_LEVEL))
 				{
-					pausebreakkey = (ev->data1 == KEY_PAUSE);
 					if (menustack[0] || pausedelay < 0 || leveltime < 2)
 						return true;
 
@@ -3000,6 +2999,21 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	tic_t laptime[LAP__MAX];
 
+	// Keep stuff shit
+	UINT16 ksflags;
+
+	UINT16 ksrocketsneakertimer;
+
+	UINT16 ksinvincibilitytimer;
+
+	UINT16 kssmonitortimer;
+	UINT16 kssmonitorexpiring;
+	UINT16 ksmaxsmonitortime;
+
+	INT16 ksgrowshrinktimer;
+
+	UINT16 ksflametimer;
+
 	// This needs to be first, to permit it to wipe extra information
 	jointime = players[player].jointime;
 	if (jointime <= 1)
@@ -3095,6 +3109,16 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		prevcheck = 0;
 		nextcheck = 0;
 
+		// keepstuff
+		ksflags = 0;
+		ksrocketsneakertimer = 0;
+		ksinvincibilitytimer = 0;
+		kssmonitortimer = 0;
+		kssmonitorexpiring = 0;
+		ksmaxsmonitortime = 0;
+		ksgrowshrinktimer = 0;
+		ksflametimer = 0;
+
 		for (i = 0; i < LAP__MAX; i++)
 		{
 			laptime[i] = 0;
@@ -3159,6 +3183,27 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 			growshrinktimer = players[player].growshrinktimer;
 		else
 			growshrinktimer = 0;
+
+		// keepstuff
+		ksflags = 0;
+		ksrocketsneakertimer = players[player].rocketsneakertimer;
+		ksinvincibilitytimer = players[player].invincibilitytimer;
+		kssmonitortimer = players[player].smonitortimer;
+		kssmonitorexpiring = players[player].smonitorexpiring;
+		ksmaxsmonitortime = players[player].maxsmonitortime;
+		ksgrowshrinktimer = players[player].growshrinktimer;
+		ksflametimer = players[player].flametimer;
+
+		if (ksrocketsneakertimer)
+			ksflags |= KEEPSTUFF_ROCKET;
+		if (ksinvincibilitytimer)
+			ksflags |= KEEPSTUFF_INVIN;
+		if (kssmonitortimer || kssmonitorexpiring || ksmaxsmonitortime)
+			ksflags |= KEEPSTUFF_SMON;
+		if (ksgrowshrinktimer)
+			ksflags |= KEEPSTUFF_GROWSHRINK;
+		if (ksflametimer)
+			ksflags |= KEEPSTUFF_FLAME;
 
 		// deplete your item stack if you died with zero bubble health
 		bubblehealth = players[player].bubblehealth;
@@ -3320,6 +3365,16 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->nocontrol = nocontrol;
 	p->kickstartaccel = kickstartaccel;
 	p->jitterlegacy = jitterlegacy;
+
+	// keepstuff
+	p->keepstuff.flags = ksflags;
+	p->keepstuff.rocketsneakertimer = ksrocketsneakertimer;
+	p->keepstuff.invincibilitytimer = ksinvincibilitytimer;
+	p->keepstuff.smonitortimer = kssmonitortimer;
+	p->keepstuff.smonitorexpiring = kssmonitorexpiring;
+	p->keepstuff.maxsmonitortime = ksmaxsmonitortime;
+	p->keepstuff.growshrinktimer = ksgrowshrinktimer;
+	p->keepstuff.flametimer = ksflametimer;
 
 	p->ringvolume = 255;
 	p->ringtransparency = 255;
@@ -4952,6 +5007,14 @@ mapnum_t G_CheckNextMap(boolean noadvancemap)
 	//boolean spec = G_IsSpecialStage(currentmap);
 	INT32 i;
 
+	// Kill nextmapoverride if it's not a safe move
+	if (!G_MapIsSafe(nextmapoverride))
+	{
+		// At least beat the programmer/host over the head for it
+		CONS_Alert(CONS_WARNING, "Overriding map ID %d is unsafe!", nextmapoverride);
+		nextmapoverride = 0;
+	}
+
 	if (nextmapoverride != 0)
 	{
 		return nextmapoverride-1;
@@ -5105,6 +5168,14 @@ mapnum_t G_CheckNextMap(boolean noadvancemap)
 	}
 }
 
+// Tests if a given map number is safe to go to. If not, this returns false.
+boolean G_MapIsSafe(mapnum_t map)
+{
+	return (map != NEXTMAP_INVALID &&
+		(map >= NEXTMAP_SPECIAL || (map < nummapheaders && mapheaderinfo[map] &&
+					    mapheaderinfo[map]->lumpnum != LUMPERROR)));
+}
+
 void G_GetNextMap(void)
 {
 	if (!server)
@@ -5223,7 +5294,7 @@ void G_GetNextMap(void)
 	}
 
 	// We are committed to this map now.
-	if (nextmap == NEXTMAP_INVALID || (nextmap < NEXTMAP_SPECIAL && (nextmap >= nummapheaders || !mapheaderinfo[nextmap] || mapheaderinfo[nextmap]->lumpnum == LUMPERROR)))
+	if (!G_MapIsSafe(nextmap))
 		I_Error("G_GetNextMap: Internal map ID %d not found (nummapheaders = %d)\n", nextmap, nummapheaders);
 
 #if 0 // This is a surprise tool that will help us later.

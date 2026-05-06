@@ -2580,12 +2580,29 @@ static int mapheaderinfo_get(lua_State *L)
 			lua_rawseti(L, -2, 1 + j);
 		}
 	}
+	else if (fastcmp(field,"encoremusname")) // we create a table here because it saves us from a userdata nightmare
+	{
+		if (lua_compatmode)
+		{
+			lua_pushstring(L, header->encoremusname[0]);
+			return 1;
+		}
+		UINT8 j;
+		lua_createtable(L, header->encoremusname_size, 0);
+		for (j = 0; j < header->encoremusname_size; j++)
+		{
+			lua_pushstring(L, header->encoremusname[j]);
+			lua_rawseti(L, -2, 1 + j);
+		}
+	}
 	else if (fastcmp(field,"mustrack"))
 		lua_pushinteger(L, header->mustrack);
 	else if (fastcmp(field,"muspos"))
 		lua_pushinteger(L, header->muspos);
 	else if (fastcmp(field,"musname_size"))
 		lua_pushinteger(L, header->musname_size);
+	else if (fastcmp(field,"encoremusname_size"))
+		lua_pushinteger(L, header->encoremusname_size);
 	else if (fastcmp(field,"weather"))
 		lua_pushinteger(L, header->weather);
 	else if (fastcmp(field,"skytexture"))

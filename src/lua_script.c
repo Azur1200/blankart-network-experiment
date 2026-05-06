@@ -13,6 +13,7 @@
 #include "doomdef.h"
 #include "dehacked.h"
 #include "deh_lua.h"
+#include "p_mobj.h"
 #include "z_zone.h"
 #include "w_wad.h"
 #include "p_setup.h"
@@ -387,28 +388,28 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 		lua_pushinteger(L, numgotboxes);
 		return 1;
 	} else if (fastcmp(word,"itembreaker")) {
-		lua_pushinteger(L, itembreaker);
+		lua_pushboolean(L, itembreaker);
 		return 1;
 	} else if (fastcmp(word,"battleprisons")) {
-		lua_pushinteger(L, itembreaker);
+		lua_pushboolean(L, itembreaker);
 		return 1;
 	} else if (fastcmp(word,"ringsactive")) {
-		lua_pushinteger(L, ringsactive);
+		lua_pushboolean(L, ringsactive);
 		return 1;
 	} else if (fastcmp(word,"stackingactive")) {
-		lua_pushinteger(L, stackingactive);
+		lua_pushboolean(L, stackingactive);
 		return 1;
 	} else if (fastcmp(word,"chainingactive")) {
-		lua_pushinteger(L, chainingactive);
+		lua_pushboolean(L, chainingactive);
 		return 1;
 	} else if (fastcmp(word,"slipdashactive")) {
-		lua_pushinteger(L, slipdashactive);
+		lua_pushboolean(L, slipdashactive);
 		return 1;
 	} else if (fastcmp(word,"slopeboostactive")) {
-		lua_pushinteger(L, slopeboostactive);
+		lua_pushboolean(L, slopeboostactive);
 		return 1;
 	} else if (fastcmp(word,"draftingactive")) {
-		lua_pushinteger(L, draftingactive);
+		lua_pushboolean(L, draftingactive);
 		return 1;
 	} else if (fastcmp(word,"airdropactive")) {
 		lua_pushinteger(L, airdropactive);
@@ -417,13 +418,25 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 		lua_pushinteger(L, bumpsparkactive);
 		return 1;
 	} else if (fastcmp(word,"purpledriftactive")) {
-		lua_pushinteger(L, purpledriftactive);
+		lua_pushboolean(L, purpledriftactive);
+		return 1;
+	} else if (fastcmp(word,"recoverydashactive")) {
+		lua_pushboolean(L, recoverydashactive);
+		return 1;
+	} else if (fastcmp(word,"keepstuffactive")) {
+		lua_pushboolean(L, keepstuffactive);
 		return 1;
 	} else if (fastcmp(word,"itemlittering")) {
-		lua_pushinteger(L, itemlittering);
+		lua_pushboolean(L, itemlittering);
 		return 1;
 	} else if (fastcmp(word,"itempushing")) {
 		lua_pushboolean(L, itempushing); // hmm... i think this should be a boolean
+		return 1;
+	} else if (fastcmp(word,"trailslow_active") || fastcmp(word,"trailslowactive")) {
+		lua_pushboolean(L, trailslow_active); // I agree!
+		return 1;
+	} else if (fastcmp(word,"playerbumpactive")) {
+		lua_pushinteger(L, playerbumpactive);
 		return 1;
 	} else if (fastcmp(word,"hyubgone")) {
 		lua_pushinteger(L, K_GetKartResult("hyudoro")->cooldown);
@@ -578,13 +591,41 @@ int LUA_WriteGlobals(lua_State *L, const char *word)
 	else if (fastcmp(word,"introtime"))
 		introtime = (tic_t)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"itembreaker"))
-		itembreaker = (boolean)luaL_checkinteger(L, 2);
+		itembreaker = luaL_checkboolean(L, 2);
 	else if (fastcmp(word,"battleprisons"))
-		itembreaker = (boolean)luaL_checkinteger(L, 2);
+		itembreaker = luaL_checkboolean(L, 2);
+	else if (fastcmp(word,"ringsactive"))
+		ringsactive = luaL_checkboolean(L, 2);
+	else if (fastcmp(word,"stackingactive"))
+		stackingactive = luaL_checkboolean(L, 2);
 	else if (fastcmp(word,"chainingactive"))
-		stackingactive = (boolean)luaL_checkinteger(L, 2);
-	else if (fastcmp(word,"chainingactive"))
-		chainingactive = (boolean)luaL_checkinteger(L, 2);
+		chainingactive = luaL_checkboolean(L, 2);
+	else if (fastcmp(word,"slipdashactive"))
+		slipdashactive = luaL_checkboolean(L, 2);
+	else if (fastcmp(word,"slopeboostactive"))
+		slopeboostactive = luaL_checkboolean(L, 2);
+	else if (fastcmp(word,"draftingactive"))
+		draftingactive = luaL_checkboolean(L, 2);
+	else if (fastcmp(word,"airdropactive"))
+		airdropactive = luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"bumpsparkactive"))
+		bumpsparkactive = luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"purpledriftactive"))
+		purpledriftactive = luaL_checkboolean(L, 2);
+	else if (fastcmp(word,"recoverydashactive"))
+		recoverydashactive = luaL_checkboolean(L, 2);
+	else if (fastcmp(word,"itemlittering"))
+		itemlittering = luaL_checkboolean(L, 2);
+	else if (fastcmp(word,"keepstuffactive"))
+		keepstuffactive = luaL_checkboolean(L, 2);
+	else if (fastcmp(word,"itempushing"))
+		itempushing = luaL_checkboolean(L, 2);
+	else if (fastcmp(word,"trailslowactive"))
+		trailslow_active = luaL_checkboolean(L, 2);
+	else if (fastcmp(word,"trailslow_active"))
+		trailslow_active = luaL_checkboolean(L, 2);
+	else if (fastcmp(word,"playerbumpactive"))
+		playerbumpactive = (playerbumptype_t)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"gamespeed"))
 		gamespeed = (UINT8)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"nummapboxes"))

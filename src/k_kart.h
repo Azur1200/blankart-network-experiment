@@ -139,6 +139,8 @@ extern vector3_t clusterpoint, clusterdtf;
 #define FLAMEHANDLEBOOST CV_Get(&cv_kartstacking_flame_handleboost)
 #define FLAMESTACKABLE CV_Get(&cv_kartstacking_flame_stackable)
 
+#define ATTRACTIONAOEEMP CV_Get(&cv_kartattraction_aoeemp)
+#define ATTRACTIONAOEDAMAGE CV_Get(&cv_kartattraction_aoedmg)
 #define ATTRACTIONSPEEDHIMIN CV_Get(&cv_kartstacking_attraction_speedboost_himin)
 #define ATTRACTIONSPEEDHIMAX CV_Get(&cv_kartstacking_attraction_speedboost_himax)
 #define ATTRACTIONSPEEDNORMMIN CV_Get(&cv_kartstacking_attraction_speedboost_normmin)
@@ -183,11 +185,9 @@ extern vector3_t clusterpoint, clusterdtf;
 #define SSMTACCELBOOST CV_Get(&cv_kartstacking_ssmt_accelboost)
 #define SSMTHANDLEBOOST CV_Get(&cv_kartstacking_ssmt_handleboost)
 
-#define RECSPINSPEEDBOOSTLO CV_Get(&cv_kartstacking_recspin_speedboost_lo)
 #define RECSPINACCELBOOSTLO CV_Get(&cv_kartstacking_recspin_accelboost_lo)
 #define RECSPINHANDLEBOOSTLO CV_Get(&cv_kartstacking_recspin_handleboost_lo)
 
-#define RECSPINSPEEDBOOSTHI CV_Get(&cv_kartstacking_recspin_speedboost_hi)
 #define RECSPINACCELBOOSTHI CV_Get(&cv_kartstacking_recspin_accelboost_hi)
 #define RECSPINHANDLEBOOSTHI CV_Get(&cv_kartstacking_recspin_handleboost_hi)
 
@@ -385,10 +385,13 @@ SINT8 K_AirDropActive(void);
 boolean K_AirThrustActive(void);
 boolean K_RecoveryDashActive(void);
 boolean K_WaterskipBricksActive(void);
+boolean K_KeepStuffActive(void);
 boolean K_ItemLitterActive(void);
 boolean K_ItemListActive(void);
 boolean K_ItemPushingActive(void);
+boolean K_TrailSlowActive(void);
 INT32 K_GetBumpSpark(void);
+playerbumptype_t K_GetPlayerBump(void);
 boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);
 INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement, boolean chainsound);
 boolean K_UsingLegacyCheckpoints(void);
@@ -431,13 +434,19 @@ void K_KillAirDrop(player_t *player, p_airdropflags_t airdropflags);
 
 boolean K_NullDriftTiltEnabled(void);
 
+void K_AddTiltMomentum(player_t *player, fixed_t angularvelocity);
+void K_AddTiltImpulse(player_t *player, fixed_t distance, fixed_t force);
+
 #define RECOVERYDASHADD (TICRATE/2)
+#define RECOVERYDASHCHARGETIMEMIN (12)
 //og val 2*TICRATE
 #define RECOVERYDASHCHARGETIME (3*TICRATE/2)
 //og val 3*TICRATE/2
 #define RECOVERYDASHWIPETIME (RECOVERYDASHCHARGETIME - RECOVERYDASHADD)
 
 void K_KartAttractHomingAttack(player_t *player);
+
+void K_KartPlayerBumpyRoad(player_t *player);
 
 #ifdef __cplusplus
 } // extern "C"

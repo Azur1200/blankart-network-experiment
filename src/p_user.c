@@ -69,7 +69,6 @@
 #include "acs/interface.h"
 
 #ifdef HWRENDER
-#include "hardware/hw_light.h"
 #include "hardware/hw_main.h"
 #endif
 
@@ -3106,7 +3105,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (P_CameraThinker(player, thiscam, resetcalled))
 		return true;
 
-	if (P_IsLocalPlayer(player) || (demo.playback && cv_lookbackinreplays.value))
+	if (P_IsMachineLocalPlayer(player) || (demo.playback && cv_lookbackinreplays.value))
 		lookback = G_PlayerInputDown(num, gc_lookback, false, DEADZONE_BUTTON);
 	else
 		lookback = player->cmd.buttons & BT_LOOKBACK;
@@ -4322,6 +4321,11 @@ void P_PlayerThink(player_t *player)
 	{
 		player->typing_timer = 0;
 		player->typing_duration = 0;
+	}
+
+	if (P_IsObjectOnGround(player->mo) && (player->pflags & PF_NOSCALEGRAVITY))
+	{
+		player->pflags &= ~PF_NOSCALEGRAVITY;
 	}
 
 	player->pflags &= ~PF_HITFINISHLINE;

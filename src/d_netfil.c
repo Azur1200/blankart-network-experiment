@@ -1400,6 +1400,9 @@ static void SendAckPacket(fileack_pak *packet, UINT8 fileid)
 	memcpy(&netbuffer->u.fileack, packet, packetsize);
 	HSendPacket(servernode, false, 0, packetsize);
 
+	CONS_Printf("Sending file transfer ACKs for %d segments (time = %d, last sent %d)\n", packet->numsegments, I_GetTime(), lasttimeackpacketsent);
+	lasttimeackpacketsent = I_GetTime();
+
 	// Clear the packet
 	memset(packet, 0, sizeof(*packet) + 512);
 }
@@ -1461,6 +1464,23 @@ void FileReceiveTicker(void)
 			}
 		}
 	}
+}
+
+static void OpenNewFileForDownload(doomdata_t *netbuffer, fileneeded_t *file, const char *filename)
+{
+	filetx_pak *pak = (void*)&netbuffer->u.filetxpak;
+
+	file->file = fopen(filename, "wb");
+	if (!file->file)
+		I_Error("Can't create file %s: %s", filename, strerror(errno));
+
+	file->currentsize = 0;
+	file->totalsize = LONG(pak->filesize);
+	file->ackresendposition = UINT32_MAX; // Only used for resumed downloads
+
+	file->receivedfragments = calloc(file->totalsize / file->fragmentsize + 1, sizeof(*file->receivedfragments));
+	if (!file->receivedfragments)
+		I_Error("FileSendTicker: No more memory\n");
 }
 
 void PT_FileFragment(SINT8 node, INT32 netconsole)
@@ -1539,13 +1559,22 @@ void PT_FileFragment(SINT8 node, INT32 netconsole)
 		{
 			file->file = fopen(filename, "r+b");
 			if (!file->file)
+			{
 				I_Error("Can't reopen file %s: %s", filename, strerror(errno));
-			CONS_Printf("\r%s...\n", filename);
 
-			CONS_Printf("Resuming download...\n");
-			file->currentsize = pauseddownload->currentsize;
-			file->receivedfragments = pauseddownload->receivedfragments;
-			file->ackresendposition = 0;
+				free(pauseddownload->receivedfragments);
+
+				CONS_Printf("Restarting download of file \"%s\"...\n", filename);
+
+				OpenNewFileForDownload(netbuffer, file, file->filename);
+			}
+			else
+			{
+				CONS_Printf("Resuming download of file \"%s\"...\n", filename);
+				file->currentsize = pauseddownload->currentsize;
+				file->receivedfragments = pauseddownload->receivedfragments;
+				file->ackresendposition = 0;
+			}
 
 			free(pauseddownload);
 			pauseddownload = NULL;
@@ -1553,20 +1582,8 @@ void PT_FileFragment(SINT8 node, INT32 netconsole)
 		else
 		{
 			CL_AbortDownloadResume();
-
-			file->file = fopen(filename, "wb");
-			if (!file->file)
-				I_Error("Can't create file %s: %s", filename, strerror(errno));
-
-			CONS_Printf("\r%s...\n",filename);
-
-			file->currentsize = 0;
-			file->totalsize = LONG(pak->filesize);
-			file->ackresendposition = UINT32_MAX; // Only used for resumed downloads
-
-			file->receivedfragments = calloc(file->totalsize / fragmentsize + 1, sizeof(*file->receivedfragments));
-			if (!file->receivedfragments)
-				I_Error("FileSendTicker: No more memory\n");
+			OpenNewFileForDownload(netbuffer, file, file->filename);
+			CONS_Printf("Downloading file \"%s\" from the server...\n", filename);
 		}
 
 		lasttimeackpacketsent = I_GetTime();
@@ -1579,9 +1596,13 @@ void PT_FileFragment(SINT8 node, INT32 netconsole)
 
 		file->iteration = max(file->iteration, pak->iteration);
 
+		CONS_Printf("Download %d/%d of \"%s\"...\n", file->currentsize, file->totalsize, filename);
+
 		if (!file->receivedfragments[fragmentpos / fragmentsize]) // Not received yet
 		{
 			file->receivedfragments[fragmentpos / fragmentsize] = true;
+
+			CONS_Printf("Received no. %d fragment (fragmentsize = %d, boundedfragmentsize = %d) \n", fragmentpos / fragmentsize, fragmentsize, boundedfragmentsize);
 
 			// We can receive packets in the wrong order, anyway all OSes support gaped files
 			fseek(file->file, fragmentpos, SEEK_SET);
@@ -1600,27 +1621,29 @@ void PT_FileFragment(SINT8 node, INT32 netconsole)
 				free(file->ackpacket);
 				file->status = FS_FOUND;
 				file->justdownloaded = true;
-				CONS_Printf(M_GetText("Downloading %s...(done)\n"),
-					filename);
-
+				
 				// Tell the server we have received the file
 				netbuffer->packettype = PT_FILERECEIVED;
 				netbuffer->u.filereceived = filenum;
 				HSendPacket(servernode, true, 0, 1);
-
+				
 				if (luafiletransfers)
 				{
 					// Tell the server we have received the file
 					netbuffer->packettype = PT_HASLUAFILE;
 					HSendPacket(servernode, true, 0, 0);
 				}
-
+				
 				downloadcompletednum++;
 				downloadcompletedsize += file->totalsize;
+
+				CONS_Printf(M_GetText("Downloading %s...(done)\n"),
+					filename);
 			}
 		}
 		else // Already received
 		{
+			CONS_Printf("Re-Received no. %d fragment (fragmentsize = %d, boundedfragmentsize = %d) \n", fragmentpos / fragmentsize, fragmentsize, boundedfragmentsize);
 			// If they are sending us the fragment again, it's probably because
 			// they missed our previous ack, so we must re-acknowledge it
 			AddFragmentToAckPacket(file->ackpacket, file->iteration, fragmentpos / fragmentsize, filenum);

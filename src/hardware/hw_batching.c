@@ -283,6 +283,7 @@ static int compareDrawCalls(const void *p1, const void *p2)
 	if (diff != 0) return diff;
 
 	diff = poly1->surf.LightInfo.directional - poly2->surf.LightInfo.directional;
+	if (diff != 0) return diff;
 
 	return diff;
 }
@@ -400,7 +401,8 @@ static unsigned int HWR_MarkStateChanges(DrawCallInfo *current, DrawCallInfo *ne
 			currentSI->FadeColor.rgba != nextSI->FadeColor.rgba ||
 			currentSI->LightInfo.light_level != nextSI->LightInfo.light_level ||
 			currentSI->LightInfo.fade_start != nextSI->LightInfo.fade_start ||
-			currentSI->LightInfo.fade_end != nextSI->LightInfo.fade_end)
+			currentSI->LightInfo.fade_end != nextSI->LightInfo.fade_end ||
+			currentSI->LightInfo.directional != nextSI->LightInfo.directional)
 		{
 			stateChanges |= SURFACEINFO_CHANGED;
 		}

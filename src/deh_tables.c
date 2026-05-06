@@ -386,7 +386,7 @@ const char *const PLAYERFLAG_LIST[] = {
 	"GAINAX",
 	"KICKSTARTACCEL",	 // Accessibility feature: Is accelerate in kickstart mode?
 	"\x01",
-	"\x01",
+	"NOSCALEGRAVITY",
 
 	"WANTSTOJOIN",		 // Spectator that wants to join
 
@@ -862,6 +862,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "PLAYBACKSETVIEWS", &MR_PlaybackSetViews },
 	{ "PLAYBACKADJUSTVIEW", &MR_PlaybackAdjustView },
 	{ "PLAYBACKTOGGLEFREECAM", &MR_PlaybackToggleFreecam },
+	{ "PLAYBACKTOGGLEDIRECTOR", &MR_PlaybackToggleDirector },
 	{ "PLAYBACKQUIT", &MR_PlaybackQuit },
 	{ "HANDLEIMAGEDEF", &MR_HandleImageDef },
 	{ "HANDLEMUSICTEST", &MR_HandleMusicTest },
@@ -1806,6 +1807,7 @@ struct int_const_s const INT_CONST[] = {
 	{"TRF_TRIPWIRE",TRF_TRIPWIRE},
 	{"TRF_REMAP",TRF_REMAP},
 	{"TRF_BYPASSBOOST", TRF_BYPASSBOOST},
+	{"TRF_BUMPY", TRF_BUMPY},
 
 	// facepatches
 	{"FACE_RANK", FACE_RANK},
@@ -1963,6 +1965,18 @@ struct int_const_s const INT_CONST[] = {
 	{"RINGMOD_SIN", RINGMOD_SIN},
 	{"RINGMOD_SAW", RINGMOD_SAW},
 	{"RINGMOD_SQUARE", RINGMOD_SQUARE},
+
+	// keepstuffflags_t
+	{"KEEPSTUFF_ROCKET", KEEPSTUFF_ROCKET},
+	{"KEEPSTUFF_INVIN", KEEPSTUFF_INVIN},
+	{"KEEPSTUFF_SMON", KEEPSTUFF_SMON},
+	{"KEEPSTUFF_GROWSHRINK", KEEPSTUFF_GROWSHRINK},
+	{"KEEPSTUFF_FLAME", KEEPSTUFF_FLAME},
+
+	// playerbumptype_t
+	{"PBUMP_STANDARD", PBUMP_STANDARD},
+	{"PBUMP_GNDONLY", PBUMP_GNDONLY},
+	{"PBUMP_NONE", PBUMP_NONE},
 
 	{NULL,0}
 };

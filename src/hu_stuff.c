@@ -82,6 +82,8 @@ patch_t *pinglocal[2]; // mindelay indecator
 patch_t *framecounter;
 patch_t *frameslash;	// framerate stuff. Used in screen.c
 
+patch_t *srb2back = NULL;
+
 static player_t *plr;
 boolean hu_keystrokes; // :)
 boolean chat_on; // entering a chat message?
@@ -166,6 +168,8 @@ void HU_LoadGraphics(void)
 	// fps stuff
 	HU_UpdatePatch(&framecounter, "FRAMER");
 	HU_UpdatePatch(&frameslash, "FRAMESL");
+
+	HU_UpdatePatch(&srb2back, "SRB2BACK");
 }
 
 // Initialise Heads up
@@ -2052,7 +2056,7 @@ void HU_Drawer(void)
 		V_DrawCenteredString(BASEVIDWIDTH/2, 180, V_YELLOWMAP | V_ALLOWLOWERCASE, resynch_text);
 	}
 
-	if (modeattacking && pausedelay > 0 && !pausebreakkey)
+	if (modeattacking && pausedelay > 0)
 	{
 		INT32 strength = ((pausedelay - 1 - NEWTICRATE/2)*10)/(NEWTICRATE/3);
 		INT32 x = BASEVIDWIDTH/2, y = BASEVIDHEIGHT/2; // obviously incorrect values while we scrap hudinfo

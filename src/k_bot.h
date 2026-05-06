@@ -361,9 +361,9 @@ INT32 K_PositionBully(const player_t *player);
 
 
 /*--------------------------------------------------
-	boolean K_GetBlockedBubbleItem(const player_t *player, , fixed_t radius)
+	boolean K_GetBlockedShieldItem(const player_t *player, , fixed_t radius)
 
-		Searches the blockmap for items to block with the Bubble Shield
+		Searches the blockmap for items to block with Shields
 
 	Input Arguments:-
 		player - Bot to run this for.
@@ -373,7 +373,7 @@ INT32 K_PositionBully(const player_t *player);
 		false if couldn't find anything, otherwise true to attempt blocking item.
 --------------------------------------------------*/
 
-boolean K_GetBlockedBubbleItem(const player_t *player, fixed_t radius);
+boolean K_GetBlockedShieldItem(const player_t *player, fixed_t radius);
 
 /*--------------------------------------------------
 	void K_BuildBotTiccmd(player_t *player, ticcmd_t *cmd);

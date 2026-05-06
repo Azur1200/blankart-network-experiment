@@ -467,7 +467,11 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(recoverydash) \
 	X(tripwireunstuck) \
 	X(bumpunstuck) \
-	X(public_key)
+	X(public_key) \
+	X(nulldrift) \
+	X(nulldrifttime) \
+	X(karttilt) \
+	X(karttiltmomentum)
 
 enum player_e
 {
@@ -1225,6 +1229,18 @@ static int player_get(lua_State *L)
 		break;
 	case player_bumpunstuck:
 		lua_pushinteger(L, plr->bumpUnstuck);
+		break;
+	case player_nulldrift:
+		lua_pushinteger(L, plr->nulldrift);
+		break;
+	case player_nulldrifttime:
+		lua_pushinteger(L, plr->nulldrifttime);
+		break;
+	case player_karttilt:
+		lua_pushinteger(L, plr->karttilt);
+		break;
+	case player_karttiltmomentum:
+		lua_pushinteger(L, plr->karttiltmomentum);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:
@@ -2003,6 +2019,18 @@ static int player_set(lua_State *L)
 		break;
 	case player_bumpunstuck:
 		plr->bumpUnstuck = lua_tointeger(L, 3);
+		break;
+	case player_nulldrift:
+		plr->nulldrift = lua_tointeger(L, 3);
+		break;
+	case player_nulldrifttime:
+		plr->nulldrifttime = lua_tointeger(L, 3);
+		break;
+	case player_karttilt:
+		plr->karttilt = lua_tointeger(L, 3);
+		break;
+	case player_karttiltmomentum:
+		plr->karttiltmomentum = lua_tointeger(L, 3);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:

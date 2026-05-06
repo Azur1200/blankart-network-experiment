@@ -33,11 +33,14 @@
 extern "C" {
 #endif
 
+typedef UINT16 kartvoicenum_t;
+
 // Extra abilities/settings for skins (combinable stuff)
 typedef enum
 {
 	SF_MACHINE          = 1, // Beep boop. Are you a robot?
 	SF_OLDDEATH			= 1<<1, // Kart V1 styled death animation
+	SF_NOCOMPATROTATE	= 1<<2, // Kart V1 skins that should not be rotated (simple animal, etc)
 	// free up to and including 1<<31
 } skinflags_t;
 
@@ -72,7 +75,9 @@ typedef enum
 	PF_GAINAX			= 1<<3,
 	PF_KICKSTARTACCEL	= 1<<4, // Accessibility feature: Is accelerate in kickstart mode?
 
-	// free: 1<<5 and 1<<6
+	// free: 1<<5
+
+	PF_NOSCALEGRAVITY	= 1<<6, // Don't scale gravity by player object scale (cleared when grounded)
 
 	PF_WANTSTOJOIN		= 1<<7, // Spectator that wants to join
 
@@ -488,6 +493,32 @@ typedef enum
 	LAP__MAX
 } laptime_e;
 
+typedef enum
+{
+	KEEPSTUFF_ROCKET			= 1,
+	KEEPSTUFF_INVIN				= 1<<1,
+	KEEPSTUFF_SMON				= 1<<2,
+	KEEPSTUFF_GROWSHRINK		= 1<<3,
+	KEEPSTUFF_FLAME				= 1<<4,
+} keepstuffflags_t;
+
+struct keepstuff_t
+{
+	UINT16 flags;
+
+	UINT16 rocketsneakertimer;
+
+	UINT16 invincibilitytimer;
+
+	UINT16 smonitortimer;
+	UINT16 smonitorexpiring;
+	UINT16 maxsmonitortime;
+
+	INT16 growshrinktimer;
+
+	UINT16 flametimer;
+};
+
 // ========================================================================
 //                          PLAYER STRUCTURE
 // ========================================================================
@@ -624,8 +655,12 @@ struct player_t
 	INT32 drift_wannaturn;  // Turn values the game uses to determine the direction you want to drift.
 
 	INT32 nulldrift;        // When you drift without accelerating, this value ticks up/down depending on your drift's angle.
-	INT32 nulldrifttilt;    // Sliptide-like kart tilting! (Can be toggled off)
 	tic_t nulldrifttime;
+
+	fixed_t karttilt;    // Generalized sliptide-like kart tilting as an angle_t (Can be toggled off by clients)
+	fixed_t karttiltmomentum; // angular velocity in rad/sec
+
+	SINT8 bumpyroadside; // last side lifted up by bumpy road
 
 	// (Delay-drift) - Delay in tics before the final drift angle is determined.
 	// Potentially influenced by player lag.
@@ -892,6 +927,8 @@ struct player_t
 	UINT8 walltransferboost;
 
 	uint8_t public_key[PUBKEYLENGTH];
+
+	keepstuff_t keepstuff;
 
 #ifdef HWRENDER
 	fixed_t fovadd; // adjust FOV for hw rendering

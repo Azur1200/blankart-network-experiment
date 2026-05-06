@@ -5232,7 +5232,6 @@ static void P_ProcessPogoSpring(player_t *player, boolean isTouching, int type)
 
 static void P_ProcessBoostPanel(player_t *player, boolean isTouching, int type)
 {
-
 	if (player->mo->terrain && K_AffectingTerrainActive())
 	{
 		if (player->mo->terrain->flags & TRF_SNEAKERPANEL)
@@ -5247,7 +5246,6 @@ static void P_ProcessBoostPanel(player_t *player, boolean isTouching, int type)
 			return;
 		}
 	}
-
 
 	if (isTouching)
 	{
@@ -5360,6 +5358,20 @@ static void P_ProcessZoomTube(player_t *player, mtag_t sectag, boolean end)
 	player->speed = speed;
 }
 
+static void P_ProcessBumpyRoad(player_t *player, boolean isTouching)
+{
+	if (player->mo->terrain && (player->mo->terrain->flags & TRF_BUMPY))
+	{
+		// Don't double process bumpy roads.
+		return;
+	}
+
+	if (isTouching)
+	{
+		K_KartPlayerBumpyRoad(player);
+	}
+}
+
 static boolean P_SectorHasSpecial(sector_t *sec)
 {
 	if (sec->specialflags)
@@ -5433,6 +5445,8 @@ static void P_EvaluateSpecialFlags(player_t *player, sector_t *sector, sector_t 
 			player->pflags |= PF_HITFINISHLINE;
 		}
 	}
+	if (sector->specialflags & SSF_BUMPYROAD)
+		P_ProcessBumpyRoad(player, isTouching);
 }
 
 static void P_EvaluateDamageType(player_t *player, sector_t *sector, boolean isTouching)

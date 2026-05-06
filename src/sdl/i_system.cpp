@@ -185,6 +185,7 @@ static char returnWadPath[256];
 #include "../g_game.h"
 #include "../filesrch.h"
 #include "../s_sound.h"
+#include "../r_voicepreference.hpp"
 #include "../core/thread_pool.h"
 #include "endtxt.h"
 #include "sdlmain.h"
@@ -1282,6 +1283,69 @@ void I_Sleep(UINT32 ms)
 	SDL_Delay(ms);
 }
 
+void I_SleepDuration(precise_t duration)
+{
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__HAIKU__) || defined(__OpenBSD__)
+	UINT64 precision = I_GetPrecisePrecision();
+	precise_t dest = I_GetPreciseTime() + duration;
+#ifdef __OpenBSD__
+	precise_t slack = (precision / 50); // 20 ms slack
+#else
+	precise_t slack = (precision / 5000); // 0.2 ms slack
+#endif
+	if (duration > slack)
+	{
+		duration -= slack;
+		struct timespec ts = {
+			.tv_sec = static_cast<__time_t>(duration / precision),
+			.tv_nsec = static_cast<__syscall_slong_t>(duration * 1000000000 / precision % 1000000000),
+		};
+		int status;
+#ifdef __OpenBSD__
+		do status = nanosleep(&ts, &ts);
+#else
+		do status = clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, &ts);
+#endif
+		while (status == EINTR);
+	}
+
+	// busy-wait the rest
+	while (((INT64)dest - (INT64)I_GetPreciseTime()) > 0);
+#elif defined (MIN_SLEEP_DURATION_MS)
+	UINT64 precision = I_GetPrecisePrecision();
+	INT32 sleepvalue = cv_sleep.value;
+	UINT64 delaygranularity;
+	precise_t cur;
+	precise_t dest;
+
+	{
+		double gran = round(((double)(precision / 1000) * sleepvalue * MIN_SLEEP_DURATION_MS));
+		delaygranularity = (UINT64)gran;
+	}
+
+	cur = I_GetPreciseTime();
+	dest = cur + duration;
+
+	// the reason this is not dest > cur is because the precise counter may wrap
+	// two's complement arithmetic is our friend here, though!
+	// e.g. cur 0xFFFFFFFFFFFFFFFE = -2, dest 0x0000000000000001 = 1
+	// 0x0000000000000001 - 0xFFFFFFFFFFFFFFFE = 3
+	while ((INT64)(dest - cur) > 0)
+	{
+		// If our cv_sleep value exceeds the remaining sleep duration, use the
+		// hard sleep function.
+		if (sleepvalue > 0 && (dest - cur) > delaygranularity)
+		{
+			I_Sleep(sleepvalue);
+		}
+
+		// Otherwise, this is a spinloop.
+
+		cur = I_GetPreciseTime();
+	}
+#endif
+}
+
 #ifdef NEWSIGNALHANDLER
 static void newsignalhandler_Warn(const char *pr)
 {
@@ -1322,6 +1386,18 @@ static void I_Fork(void)
 			I_RegisterChildSignals();
 			break;
 		default:
+			// ignore those, those are handled by child process
+			// otherwise parent might exit before it
+			// and the below stuff wont run and your terminal will be left in an awkward state
+#ifdef SIGINT
+			signal(SIGINT,   SIG_IGN);
+#endif
+#ifdef SIGBREAK
+			signal(SIGBREAK, SIG_IGN);
+#endif
+#ifdef SIGTERM
+			signal(SIGTERM,  SIG_IGN);
+#endif
 			if (logstream)
 				fclose(logstream);/* the child has this */
 
@@ -1366,7 +1442,6 @@ static void I_Fork(void)
 INT32 I_StartupSystem(void)
 {
 	int SDLlinked = SDL_GetVersion();
-	W_Startup();
 	I_StartupConsole();
 #ifdef NEWSIGNALHANDLER
 	// This is useful when debugging. It lets GDB attach to
@@ -1409,6 +1484,8 @@ void I_Quit(void)
 
 	is_quitting = true;
 	SDLforceUngrabMouse();
+
+	R_SaveVoicePreferences();
 	M_SaveConfig(NULL); //save game config, cvars..
 	D_SaveBan(); // save the ban list
 
@@ -1444,7 +1521,6 @@ void I_Quit(void)
 	if (myargmalloc)
 		free(myargv); // Deallocate allocated memory
 
-	W_Shutdown();
 	exit(0);
 }
 
@@ -1505,6 +1581,7 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 			SDL_Quit();
 		if (errorcount == 8)
 		{
+			R_SaveVoicePreferences();
 			M_SaveConfig(NULL);
 			G_SaveGameData();
 		}
@@ -1521,7 +1598,6 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 					"SRB2Kart V2 " VERSIONSTRING " Recursive Error",
 					buffer, NULL);
 
-			W_Shutdown();
 			exit(-1); // recursive errors detected
 		}
 	}
@@ -1541,6 +1617,7 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 	I_OutputMsg("\nI_Error(): %s\n", buffer);
 	// ---
 
+	R_SaveVoicePreferences();
 	M_SaveConfig(NULL); // save game config, cvars..
 	D_SaveBan(); // save the ban list
 	G_SaveGameData(); // Tails 12-08-2002
@@ -1567,8 +1644,6 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 	// use this for 1.28 19990220 by Kin
 	I_ShutdownSystem();
 	SDL_Quit();
-
-	W_Shutdown();
 
 #if defined (PARANOIA) || defined (DEVELOP)
 	*(volatile INT32 *)0 = 4; //Alam: Debug!

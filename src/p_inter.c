@@ -1413,6 +1413,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			if (!target->target->player->itemamount)
 			{
 				K_UnsetItemOut(target->target->player);
+				K_DisableSeekingReticule(target->target->player);
 				// target->target->player->itemflags &= ~IF_ITEMOUT;
 			}
 
@@ -1425,6 +1426,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 	{
 		K_DisableSeekingReticule(target->player);
 		K_DropRocketSneaker(target->player);
+		target->player->equippeditem = KITEM_NONE;
 	}
 
 	// Let EVERYONE know what happened to a player! 01-29-2002 Tails
@@ -2181,7 +2183,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		if (player->pflags & PF_GODMODE)
 			return false;
 
-		if (player->exiting)
+		if (player->exiting && (damagetype & DMG_DEATHMASK))
 		{
 			if (inflictor)
 				K_DoInstashield(player);
