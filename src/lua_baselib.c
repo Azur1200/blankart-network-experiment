@@ -5532,6 +5532,16 @@ static int lib_kDisableSeekingReticule(lua_State *L)
 	return 0;
 }
 
+static int lib_kDontDoubleMyItems(lua_State *L)
+{
+	kartitemtype_e type = luaL_checkinteger(L, 1);
+	INT32 amount = luaL_checkinteger(L, 2);
+
+	lua_pushboolean(L, K_DontDoubleMyItems(type, amount));
+	return 1;
+}
+
+
 static int lib_kAddItemRollToList(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -6085,6 +6095,7 @@ static luaL_Reg lib[] = {
 	{"K_SpawnEquippedItem",lib_kSpawnEquippedItem},
 	{"K_EnableSeekingReticule",lib_kEnableSeekingReticule},
 	{"K_DisableSeekingReticule",lib_kDisableSeekingReticule},
+	{"K_DontDoubleMyItems",lib_kDontDoubleMyItems},
 
 	// k_itemlist
 	{"K_AddItemRollToList", lib_kAddItemRollToList},
