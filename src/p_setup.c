@@ -1554,7 +1554,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 		if (!foundhash)
 		{
 			CONS_Alert(CONS_WARNING, "This map patch is not compatible with the current map (checksum: " HASHFMT "). The patch may not work.\n", maphash);
-			if (cv_allowmismatchmappatch.value)
+			if (!cv_allowmismatchmappatch.value)
 			{
 				TracyCZoneEnd(__zone);
 				return false;
