@@ -5510,7 +5510,7 @@ static int lib_kSpawnEquippedItem(lua_State *L)
 		LUA_PushUserdata(L, mo, META_MOBJ);
 	else
 		lua_pushnil(L);
-	return 0;
+	return 1;
 }
 
 static int lib_kEnableSeekingReticule(lua_State *L)
