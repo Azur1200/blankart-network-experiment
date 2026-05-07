@@ -91,7 +91,7 @@ static void Y_UnloadVoteData(void);
 //
 // Y_VoteScreenCheck
 //
-static void Y_VoteScreenCheck(void)
+void Y_VoteScreenCheck(void)
 {
 	strcpy(VoteScreen.Prefix, "INTS");
 

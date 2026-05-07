@@ -1779,6 +1779,10 @@ static int lib_hudsetvotebackground(lua_State *L)
 		VoteScreen.timePerAnimFrame = time_per_frame;
 	}
 
+	// Update background if we're already on vote screen
+	if (gamestate == GS_VOTING)
+		Y_VoteScreenCheck();
+
 	return 0;
 }
 
