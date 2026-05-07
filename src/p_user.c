@@ -68,6 +68,8 @@
 
 #include "acs/interface.h"
 
+#include <tracy/tracy/TracyC.h>
+
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
 #endif
@@ -3962,6 +3964,7 @@ DoABarrelRoll (player_t *player)
 
 void P_PlayerThink(player_t *player)
 {
+	TracyCZone(__zone, true);
 	ticcmd_t *cmd;
 	const size_t playeri = (size_t)(player - players);
 
@@ -4142,6 +4145,8 @@ void P_PlayerThink(player_t *player)
 				if (player->playerstate == PST_DEAD)
 				{
 					LUA_HookPlayer(player, HOOK(PlayerThink));
+					
+					TracyCZoneEnd(__zone);
 					return;
 				}
 			}
@@ -4363,6 +4368,8 @@ void P_PlayerThink(player_t *player)
 			player->mo->renderflags &= ~RF_GHOSTLYMASK;
 		P_DeathThink(player);
 		LUA_HookPlayer(player, HOOK(PlayerThink));
+		
+		TracyCZoneEnd(__zone);
 		return;
 	}
 
@@ -4496,7 +4503,13 @@ void P_PlayerThink(player_t *player)
 	if (player->carry == CR_SLIDING)
 		player->carry = CR_NONE;
 
-	LUA_HookPlayer(player, HOOK(PlayerThink));
+	{
+		TracyCZoneN(__zone, "LUA_PlayerThink", true);
+		LUA_HookPlayer(player, HOOK(PlayerThink));
+		TracyCZoneEnd(__zone);
+	}
+
+	TracyCZoneEnd(__zone);
 }
 
 //
@@ -4506,6 +4519,7 @@ void P_PlayerThink(player_t *player)
 //
 void P_PlayerAfterThink(player_t *player)
 {
+	TracyCZone(__zone, true);
 	camera_t *thiscam = NULL; // if not one of the displayed players, just don't bother
 	UINT8 i;
 
@@ -4553,7 +4567,8 @@ void P_PlayerAfterThink(player_t *player)
 			P_RemoveMobj(player->followmobj);
 			P_SetTarget(&player->followmobj, NULL);
 		}
-
+		
+		TracyCZoneEnd(__zone);
 		return;
 	}
 
@@ -4641,6 +4656,8 @@ void P_PlayerAfterThink(player_t *player)
 
 	if (P_IsObjectOnGround(player->mo))
 		player->mo->pmomz = 0;
+
+	TracyCZoneEnd(__zone);
 }
 
 void P_SetPlayerAngle(player_t *player, angle_t angle)

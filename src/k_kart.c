@@ -71,6 +71,8 @@
 #include "h_timers.h"
 #include "blan/b_soc.h"
 
+#include <tracy/tracy/TracyC.h>
+
 consvar_t cv_kartstacking_colorflame = CVAR_INIT ("kartstacking_colorflame", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_kartstacking_sneakerstacksound = CVAR_INIT ("kartstacking_sneakerstacksound", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_kartchainingsound = CVAR_INIT ("kartchaining_chainsound", "On", CV_SAVE, CV_OnOff, NULL);
@@ -7258,6 +7260,8 @@ playerbumptype_t K_GetPlayerBump(void)
 */
 void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 {
+	TracyCZone(__zone, true);
+
 	/* reset sprite offsets :) */
 	player->mo->sprxoff = 0;
 	player->mo->spryoff = 0;
@@ -7991,6 +7995,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		// CONS_Debug(DBG_PLAYER, "kart tilt : %4.3f\n", FIXED_TO_FLOAT(player->karttilt));
 		// CONS_Debug(DBG_PLAYER, "spritexoff: %4.3f, y: %4.3f\n", FIXED_TO_FLOAT(player->mo->spritexoffset), FIXED_TO_FLOAT(player->mo->spriteyoffset));
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 static void K_KartResetPlayerFullbright(player_t *player)

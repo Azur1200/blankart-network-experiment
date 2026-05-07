@@ -73,6 +73,8 @@
 #include "k_vote.h"
 #include "d_clisrv.h"
 
+#include <tracy/tracy/TracyC.h>
+
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
 #endif
@@ -2557,6 +2559,8 @@ void G_ResetViews(boolean resetfreecam)
 //
 void G_Ticker(boolean run)
 {
+	TracyCZone(__zone, true);
+
 	UINT32 i;
 	INT32 buf;
 	ticcmd_t *cmd;
@@ -2805,6 +2809,8 @@ void G_Ticker(boolean run)
 			memset(player_name_changes, 0, sizeof player_name_changes);
 		}
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 //

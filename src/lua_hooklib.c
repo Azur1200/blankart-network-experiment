@@ -29,6 +29,8 @@
 
 #include "v_video.h" // V_ClearClipRect
 
+#include <tracy/tracy/TracyC.h>
+
 /* =========================================================================
                                   ABSTRACTION
    ========================================================================= */
@@ -728,6 +730,7 @@ void LUA_HookHUD(huddrawlist_h list, int hook_type)
 
 void LUA_HookThinkFrame(void)
 {
+	TracyCZone(__zone, true);
 	const int type = HOOK(ThinkFrame);
 
 	// variables used by perf stats
@@ -753,20 +756,28 @@ void LUA_HookThinkFrame(void)
 				time_taken = I_GetPreciseTime();
 			}
 
-			call_single_hook(&hook);
-
-			if (cv_perfstats.value == PS_THINKFRAME)
 			{
-				lua_Debug ar;
-				time_taken = I_GetPreciseTime() - time_taken;
-				lua_getinfo(gL, ">S", &ar);
-				PS_SetThinkFrameHookInfo(hook_index, time_taken, ar.short_src);
-				hook_index++;
+				TracyCZoneN(__zone, "LUA_HookThinkFrame (call_single_hook)", true);
+				call_single_hook(&hook);
+
+				if (cv_perfstats.value == PS_THINKFRAME)
+				{
+					lua_Debug ar;
+					time_taken = I_GetPreciseTime() - time_taken;
+					lua_getinfo(gL, ">S", &ar);
+					PS_SetThinkFrameHookInfo(hook_index, time_taken, ar.short_src);
+					TracyCMessage(ar.short_src, strlen(ar.short_src));
+					hook_index++;
+				}
+
+				TracyCZoneEnd(__zone);
 			}
 		}
 
 		lua_settop(gL, 0);
 	}
+	
+	TracyCZoneEnd(__zone);
 }
 
 int LUA_HookMobjLineCollide(mobj_t *mobj, line_t *line)

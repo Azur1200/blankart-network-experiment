@@ -46,6 +46,8 @@
 #include "k_specialstage.h"
 #include "k_grandprix.h"
 
+#include <tracy/tracy/TracyC.h>
+
 #ifdef PARANOIA
 #include "deh_tables.h" // MOBJTYPE_LIST
 #endif
@@ -479,6 +481,7 @@ mobj_t *P_SetTarget2(mobj_t **mop, mobj_t *targ
 //
 static void P_RunThinkers(void)
 {
+	TracyCZone(__zone, true);
 	size_t i;
 
 	for (i = 0; i < NUM_ACTIVETHINKERLISTS; i++)
@@ -500,6 +503,8 @@ static void P_RunThinkers(void)
 	ps_acs_time = I_GetPreciseTime();
 	ACS_Tick();
 	ps_acs_time = I_GetPreciseTime() - ps_acs_time;
+	
+	TracyCZoneEnd(__zone);
 }
 
 //
@@ -705,6 +710,8 @@ void P_RunChaseCameras(void)
 //
 void P_Ticker(boolean run)
 {
+	TracyCZone(__zone, true);
+
 	INT32 i;
 
 	thinkersCompleted = false;
@@ -735,6 +742,8 @@ void P_Ticker(boolean run)
 			R_UpdateViewInterpolation();
 			P_MapEnd();
 			S_SetStackAdjustmentStart();
+
+			TracyCZoneEnd(__zone);
 			return;
 		}
 	}
@@ -751,6 +760,9 @@ void P_Ticker(boolean run)
 		}
 		else
 			P_RunChaseCameras();	// special case: allow freecam to MOVE during pause!
+		
+			
+		TracyCZoneEnd(__zone);
 		return;
 	}
 
@@ -786,7 +798,11 @@ void P_Ticker(boolean run)
 		ps_lua_mobjhooks = 0;
 		ps_checkposition_calls = 0;
 
-		LUA_HOOK(PreThinkFrame);
+		{
+			TracyCZoneN(__zone, "LUA_PreThinkFrame", true);
+			LUA_HOOK(PreThinkFrame);
+			TracyCZoneEnd(__zone);
+		}
 
 		ps_playerthink_time = I_GetPreciseTime();
 
@@ -795,16 +811,21 @@ void P_Ticker(boolean run)
 
 		// OK! Now that we got all of that sorted, players can think!
 		UINT8 p = 0;
-		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+			TracyCZoneN(__zone, "PlayerThink", true);
+			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				P_PlayerThink(&players[i]);
-				K_KartPlayerHUDUpdate(&players[i]);
-
-				if (!players[i].spectator)
+				if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+				{
+					TracyCMessage(player_names[i], strlen(player_names[i]));
+					P_PlayerThink(&players[i]);
+					K_KartPlayerHUDUpdate(&players[i]);
+					
+					if (!players[i].spectator)
 					p++;
+				}
 			}
+			TracyCZoneEnd(__zone);
 		}
 
 		if (p > (MAXPLAYERS / 2))
@@ -1061,4 +1082,5 @@ void P_Ticker(boolean run)
 	}
 
 //	Z_CheckMemCleanup();
+	TracyCZoneEnd(__zone);
 }
