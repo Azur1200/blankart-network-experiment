@@ -149,6 +149,7 @@ int  LUA_HookPlayerForceResults(player_t *, int hook);
 int  LUA_HookTiccmd(player_t *, ticcmd_t *, int hook);
 int  LUA_HookKey(event_t *event, int hook); // Hooks for key events
 
+void LUA_HookPlayerThink(player_t *player);
 void LUA_HookThinkFrame(void);
 int  LUA_HookMobjLineCollide(mobj_t *, line_t *);
 int  LUA_HookTouchSpecial(mobj_t *special, mobj_t *toucher);

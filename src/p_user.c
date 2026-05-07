@@ -1885,6 +1885,7 @@ static void P_DoBubbleBreath(player_t *player)
 //#define OLD_MOVEMENT_CODE 1
 static void P_3dMovement(player_t *player)
 {
+	TracyCZone(__zone, true);
 	ticcmd_t *cmd;
 	angle_t movepushangle, movepushsideangle; // Analog
 	fixed_t movepushforward = 0, movepushside = 0;
@@ -2076,6 +2077,8 @@ static void P_3dMovement(player_t *player)
 			}
 		}
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 boolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd)
@@ -2215,6 +2218,7 @@ fixed_t P_KartAltShrinkAuraScalar(player_t *player)
 // P_MovePlayer
 void P_MovePlayer(player_t *player)
 {
+	TracyCZone(__zone, true);
 	ticcmd_t *cmd;
 	//INT32 i;
 
@@ -2237,6 +2241,7 @@ void P_MovePlayer(player_t *player)
 	if (player->spectator)
 	{
 		player->mo->eflags &= ~MFE_VERTICALFLIP; // deflip...
+		TracyCZoneEnd(__zone);
 		return;
 	}
 
@@ -2424,7 +2429,10 @@ void P_MovePlayer(player_t *player)
 			P_DamageMobj(player->mo, NULL, NULL, 1, DMG_SQUISH); // SRB2kart - we don't kill when squished, we squish when squished.
 
 		if (player->playerstate == PST_DEAD)
+		{
+			TracyCZoneEnd(__zone);
 			return;
+		}
 	}
 
 #ifdef FLOORSPLATS
@@ -2446,6 +2454,8 @@ void P_MovePlayer(player_t *player)
 	// Look for Quicksand!
 	if (CheckForQuicksand)
 		P_CheckQuicksand(player);
+	
+	TracyCZoneEnd(__zone);
 }
 
 static void P_DoZoomTube(player_t *player)
@@ -4144,8 +4154,7 @@ void P_PlayerThink(player_t *player)
 
 				if (player->playerstate == PST_DEAD)
 				{
-					LUA_HookPlayer(player, HOOK(PlayerThink));
-					
+					LUA_HookPlayerThink(player);
 					TracyCZoneEnd(__zone);
 					return;
 				}
@@ -4367,7 +4376,7 @@ void P_PlayerThink(player_t *player)
 		else
 			player->mo->renderflags &= ~RF_GHOSTLYMASK;
 		P_DeathThink(player);
-		LUA_HookPlayer(player, HOOK(PlayerThink));
+		LUA_HookPlayerThink(player);
 		
 		TracyCZoneEnd(__zone);
 		return;
@@ -4503,11 +4512,7 @@ void P_PlayerThink(player_t *player)
 	if (player->carry == CR_SLIDING)
 		player->carry = CR_NONE;
 
-	{
-		TracyCZoneN(__zone, "LUA_PlayerThink", true);
-		LUA_HookPlayer(player, HOOK(PlayerThink));
-		TracyCZoneEnd(__zone);
-	}
+	LUA_HookPlayerThink(player);
 
 	TracyCZoneEnd(__zone);
 }

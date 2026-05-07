@@ -44,6 +44,8 @@
 #include "k_items.h"
 #include "k_collide.h"
 
+#include <tracy/tracy/TracyC.h>
+
 kartitem_t kartitems[MAXKARTITEMS] = {0};
 kartresult_t kartresults[MAXKARTRESULTS] = {0};
 UINT8 numkartitems = 0;
@@ -2061,14 +2063,26 @@ static void K_ThrowLandMine(player_t *player)
 
 void K_PlayerItemThink(player_t *player, boolean onground)
 {
+	TracyCZone(__zone, true);
 	const UINT16 buttons = K_GetKartButtons(player);
 	const boolean ATTACK_IS_DOWN = ((buttons & BT_ATTACK) && !(player->oldcmd.buttons & BT_ATTACK));
 	const boolean HOLDING_ITEM = (player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT));
 	const boolean NO_HYUDORO = (player->stealingtimer == 0 && player->stolentimer == 0);
 
 	boolean force = false;
+
+#ifdef TRACY_ENABLE
+	{
+		const char *itemname = DEH_KartItemName(player->itemtype);
+		TracyCMessage(itemname, strlen(itemname));
+	}
+#endif
+
 	if (LUA_HookPlayerItem(player, player->itemtype, HOLDING_ITEM, &force))
+	{
+		TracyCZoneEnd(__zone);
 		return;
+	}
 
 	switch (player->itemtype)
 	{
@@ -2713,6 +2727,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 	default:
 		break;
 	}
+	TracyCZoneEnd(__zone);
 }
 
 INT16 K_GetShrinkTime(const player_t *player)

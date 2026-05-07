@@ -728,6 +728,51 @@ void LUA_HookHUD(huddrawlist_h list, int hook_type)
                                SPECIALIZED HOOKS
    ========================================================================= */
 
+void LUA_HookPlayerThink(player_t *player)
+{
+	TracyCZone(__zone, true);
+	const int type = HOOK(PlayerThink);
+	Hook_State hook = {};
+
+	const hook_t * map = &hookIds[type];
+	int k;
+
+	if (prepare_hook(&hook, false, type))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		// call_hooks(&hook, 1, res_true);
+
+		init_hook_call(&hook, 0, res_none);
+		for (k = 0; k < map->numHooks; ++k)
+		{
+			get_hook(&hook, map->ids, k);
+
+			if (cv_perfstats.value == PS_THINKFRAME)
+			{
+				lua_pushvalue(gL, -1);/* need the function again */
+			}
+
+			{
+				TracyCZoneN(__zone, "LUA_HookPlayerThink (call_single_hook)", true);
+				call_single_hook(&hook);
+
+				if (cv_perfstats.value == PS_THINKFRAME)
+				{
+					lua_Debug ar;
+					lua_getinfo(gL, ">S", &ar);
+					TracyCMessage(ar.short_src, strlen(ar.short_src));
+				}
+
+				TracyCZoneEnd(__zone);
+			}
+		}
+
+		lua_settop(gL, 0);
+	}
+	
+	TracyCZoneEnd(__zone);
+}
+
 void LUA_HookThinkFrame(void)
 {
 	TracyCZone(__zone, true);

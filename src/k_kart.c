@@ -1821,9 +1821,13 @@ static void K_ClearKeepstuff(player_t *player)
 */
 static void K_RespawnChecker(player_t *player)
 {
+	TracyCZone(__zone, true);
 	UINT16 buttons = K_GetKartButtons(player);
 	if (player->spectator)
+	{
+		TracyCZoneEnd(__zone);
 		return;
+	}
 
 	if (player->respawn > 1)
 	{
@@ -1916,6 +1920,8 @@ static void K_RespawnChecker(player_t *player)
 			player->respawn = 0;
 		}
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 /**	\brief Handles the state changing for moving players, moved here to eliminate duplicate code
@@ -1926,6 +1932,8 @@ static void K_RespawnChecker(player_t *player)
 */
 void K_KartMoveAnimation(player_t *player)
 {
+	TracyCZone(__zone, true);
+
 	const fixed_t fastspeed = (K_GetKartSpeed(player, player->forcedtopspeed > 0, true) * 17) / 20; // 85%
 	const fixed_t speedthreshold = player->mo->scale / 8;
 
@@ -2120,6 +2128,8 @@ void K_KartMoveAnimation(player_t *player)
 
 	// Update lastspeed value -- we use to display slow driving frames instead of fast driving when slowing down.
 	player->lastspeed = player->speed;
+
+	TracyCZoneEnd(__zone);
 }
 
 static void K_TauntVoiceTimers(player_t *player)
@@ -11167,6 +11177,8 @@ boolean K_SMonitorSlotHogging(player_t *player)
 //
 void K_MoveKartPlayer(player_t *player, boolean onground)
 {
+	TracyCZone(__zone, true);
+
 	UINT16 buttons = K_GetKartButtons(player);
 	boolean ATTACK_IS_DOWN = ((buttons & BT_ATTACK) && !(player->oldcmd.buttons & BT_ATTACK));
 	boolean HOLDING_ITEM = (player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT));
@@ -11544,6 +11556,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		player->walltransfered = false;
 	}
 
+	TracyCZoneEnd(__zone);
 }
 
 void K_CheckSpectateStatus(boolean considermapreset)

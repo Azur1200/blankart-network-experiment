@@ -41,6 +41,8 @@
 #include "g_state.h"
 #include "m_argv.h"
 
+#include <tracy/tracy/TracyC.h>
+
 lua_State *gL = NULL;
 boolean lua_compatmode = false;
 
@@ -1968,7 +1970,8 @@ void LUA_Step(void)
 	if (lua_gettop(gL) != 0)
 	{
 		// TODO: Fix lua stack garbage so print can be always on.
-		//CONS_Alert(CONS_WARNING, "Eek, there is garbage on lua stack!\n");
+		TracyCMessage("garbage on lua stack!", strlen("garbage on lua stack!"));
+		CONS_Alert(CONS_WARNING, "Eek, there is garbage on lua stack!\n");
 		lua_settop(gL, 0);
 		lua_gc(gL, LUA_GCSTEP, 1);
 	}
