@@ -4139,6 +4139,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 			if (!P_LoadLevel(true, resending))
 			{
 				CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
+				TracyCZoneEnd(__zone);
 				return false;
 			}
 		}
@@ -4510,8 +4511,8 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 
 	SYNC(cht_debug);
 
-	return true;
 	TracyCZoneEnd(__zone);
+	return true;
 }
 
 static inline void P_ArchiveLuabanksAndConsistency(savebuffer_t *save)
