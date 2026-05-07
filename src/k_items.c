@@ -357,7 +357,7 @@ static UINT32 K_IntDistanceForMap(fixed_t curx,
 
 	\return	Don't double for this item?
 */
-static boolean K_DontDoubleMyItems(kartitemtype_e type, UINT8 amount)
+boolean K_DontDoubleMyItems(kartitemtype_e type, UINT8 amount)
 {
 	return type == KITEM_BALLHOG || type == KITEM_SPB
 	    || type == KITEM_INVINCIBILITY || type == KITEM_GROW

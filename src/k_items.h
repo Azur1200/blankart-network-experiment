@@ -192,6 +192,8 @@ UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny);
 patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, boolean tiny, UINT8 amount, SINT8 altmode);
 #define K_GetCachedItemPatch(type, tiny, amount) K_GetCachedItemPatchEx(type, tiny, amount, -1)
 
+boolean K_DontDoubleMyItems(kartitemtype_e type, UINT8 amount);
+
 void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags);
 void K_UnsetItemOut(player_t *player);
 
