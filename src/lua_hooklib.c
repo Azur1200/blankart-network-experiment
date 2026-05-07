@@ -1033,6 +1033,10 @@ int LUA_HookPlayerMsg(int source, int target, int flags, char *msg)
 		}
 		lua_pushstring(gL, msg); // msg
 
+		// stand-in for spam protect that doesn't exist here
+		// todo / need help: compatmode?
+		lua_pushboolean(gL, false);
+
 		call_hooks(&hook, 1, res_true);
 	}
 	return hook.status;
