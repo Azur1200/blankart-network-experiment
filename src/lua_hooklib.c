@@ -720,7 +720,12 @@ void LUA_HookHUD(huddrawlist_h list, int hook_type)
 		init_hook_call(&hook, 0, res_none);
 		call_mapped_hud(&hook, map);
 
+		lua_settop(gL, 0);
+
 		hud_running = false;
+
+		lua_pushnil(gL);
+		lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 	}
 }
 

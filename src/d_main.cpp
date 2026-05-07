@@ -1144,11 +1144,6 @@ void D_SRB2Loop(void)
 		if (renderisnewtic)
 			S_UpdateClosedCaptions();
 
-		{
-			ZoneScopedN("LUA_Step");
-			LUA_Step();
-		}
-
 #ifdef HAVE_DISCORDRPC
 		if (! dedicated)
 		{
@@ -1166,6 +1161,11 @@ void D_SRB2Loop(void)
 			deltatics = deltamath;
 			frameskip = 0;
 			ranwipe = false;
+		}
+
+		{
+			ZoneScopedN("LUA_Step");
+			LUA_Step();
 		}
 	}
 }
