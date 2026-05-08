@@ -73,13 +73,16 @@ void LUA_RegisterUserdataMetatable(
 	lua_CFunction len
 );
 
+extern int global_fields_ref;
+extern const char *const global_opt[];
+
 int LUA_PushGlobals(lua_State *L);
 int LUA_WriteGlobals(lua_State *L);
 
 void Got_Luacmd(UINT8 **cp, INT32 playernum); // lua_consolelib.c
 void LUA_CVarChanged(void *cvar); // lua_consolelib.c
-int Lua_optoption(lua_State *L, int narg,
-	const char *def, const char *const lst[]);
+int Lua_optoption(lua_State *L, int narg, int def, int list_ref);
+int Lua_CreateFieldTable(lua_State *L, const char *const lst[]);
 void LUA_HookNetArchive(lua_CFunction archFunc, savebuffer_t *save);
 
 void LUA_PushTaggableObjectArray

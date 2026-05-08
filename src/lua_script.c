@@ -288,16 +288,18 @@ enum global_e
 	NUMGLOBALFIELDS,
 };
 
-static const char *const global_opt[] = {
+const char *const global_opt[] = {
 #define ENUMITEMNAME(name) #name,
 	GLOBALFIELDS(ENUMITEMNAME)
 	NULL,
 };
 
+int global_fields_ref = LUA_NOREF;
+
 // Moved here from lib_getenum.
 int LUA_PushGlobals(lua_State *L)
 {
-	enum global_e field = Lua_optoption(L, 2, NULL, global_opt);
+	enum global_e field = Lua_optoption(L, 2, -1, global_fields_ref);
 	lua_settop(L, 2);
 
 	switch (field)
@@ -673,7 +675,7 @@ int LUA_PushGlobals(lua_State *L)
 // See the above.
 int LUA_WriteGlobals(lua_State *L)
 {
-	enum global_e field = Lua_optoption(L, 2, NULL, global_opt);
+	enum global_e field = Lua_optoption(L, 2, -1, global_fields_ref);
 	lua_settop(L, 2);
 
 	switch (field)
@@ -2231,15 +2233,43 @@ void LUA_RegisterUserdataMetatable(
 }
 
 // For mobj_t, player_t, etc. to take custom variables.
-int Lua_optoption(lua_State *L, int narg,
-	const char *def, const char *const lst[])
+int Lua_optoption(lua_State *L, int narg, int def, int list_ref)
 {
-	const char *name = (def) ? luaL_optstring(L, narg, def) :  luaL_checkstring(L, narg);
+	int result = -1;
+
+	if (lua_isnoneornil(L, narg))
+		return def;
+
+	I_Assert(lua_checkstack(L, 2));
+	luaL_checkstring(L, narg);
+
+	lua_rawgeti(L, LUA_REGISTRYINDEX, list_ref);
+	I_Assert(lua_istable(L, -1));
+	lua_pushvalue(L, narg);
+	lua_rawget(L, -2);
+
+	if (lua_isnumber(L, -1))
+		result = lua_tointeger(L, -1);
+
+	lua_pop(L, 2); // Pop result and fields table
+
+	return result;
+}
+
+
+int Lua_CreateFieldTable(lua_State *L, const char *const lst[])
+{
 	int i;
-	for (i=0; lst[i]; i++)
-		if (fastcmp(lst[i], name))
-			return i;
-	return -1;
+
+	lua_newtable(L);
+	for (i = 0; lst[i] != NULL; i++)
+	{
+		lua_pushstring(L, lst[i]);
+		lua_pushinteger(L, i);
+		lua_settable(L, -3);
+	}
+
+	return luaL_ref(L, LUA_REGISTRYINDEX);
 }
 
 void LUA_PushTaggableObjectArray

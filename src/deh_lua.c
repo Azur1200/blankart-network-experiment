@@ -638,6 +638,8 @@ int LUA_EnumLib(lua_State *L)
 	if (lua_gettop(L) == 0)
 		lua_pushboolean(L, 0);
 
+	global_fields_ref = Lua_CreateFieldTable(L, global_opt);
+
 	// Set the global metatable
 	lua_createtable(L, 0, 1);
 	lua_pushvalue(L, 1); // boolean passed to LUA_EnumLib as first argument.

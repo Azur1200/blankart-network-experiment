@@ -489,10 +489,12 @@ static const char *const player_opt[] = {
 	NULL,
 };
 
+int player_fields_ref = LUA_NOREF;
+
 static int player_get(lua_State *L)
 {
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
-	enum player_e field = Lua_optoption(L, 2, NULL, player_opt);
+	enum player_e field = Lua_optoption(L, 2, -1, player_fields_ref);
 	lua_settop(L, 2);
 
 	if (!plr)
@@ -1271,7 +1273,7 @@ static int player_get(lua_State *L)
 static int player_set(lua_State *L)
 {
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
-	enum player_e field = Lua_optoption(L, 2, player_opt[player_cmd], player_opt);
+	enum player_e field = Lua_optoption(L, 2, player_cmd, player_fields_ref);
 	if (!plr)
 		return LUA_ErrInvalid(L, "player_t");
 
@@ -2740,10 +2742,12 @@ static const char *const ticcmd_opt[] = {
 	NULL,
 };
 
+int ticcmd_fields_ref = LUA_NOREF;
+
 static int ticcmd_get(lua_State *L)
 {
 	ticcmd_t *cmd = *((ticcmd_t **)luaL_checkudata(L, 1, META_TICCMD));
-	enum ticcmd_e field = Lua_optoption(L, 2, NULL, ticcmd_opt);
+	enum ticcmd_e field = Lua_optoption(L, 2, -1, ticcmd_fields_ref);
 	if (!cmd)
 		return LUA_ErrInvalid(L, "player_t");
 
@@ -2791,7 +2795,7 @@ static int ticcmd_get(lua_State *L)
 static int ticcmd_set(lua_State *L)
 {
 	ticcmd_t *cmd = *((ticcmd_t **)luaL_checkudata(L, 1, META_TICCMD));
-	enum ticcmd_e field = Lua_optoption(L, 2, ticcmd_opt[0], ticcmd_opt);
+	enum ticcmd_e field = Lua_optoption(L, 2, ticcmd_forwardmove, ticcmd_fields_ref);
 	if (!cmd)
 		return LUA_ErrInvalid(L, "ticcmd_t");
 
@@ -3087,6 +3091,9 @@ static int boostinfo_set(lua_State *L)
 
 int LUA_PlayerLib(lua_State *L)
 {
+	player_fields_ref = Lua_CreateFieldTable(L, player_opt);
+	ticcmd_fields_ref = Lua_CreateFieldTable(L, ticcmd_opt);
+
 	luaL_newmetatable(L, META_PLAYER);
 		lua_pushcfunction(L, player_get);
 		lua_setfield(L, -2, "__index");

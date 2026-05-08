@@ -270,10 +270,12 @@ static UINT32 spr2frame(UINT8 spr2, UINT32 frame)
 }
 #undef F
 
+int mobj_fields_ref = LUA_NOREF;
+
 static int mobj_get(lua_State *L)
 {
 	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
-	enum mobj_e field = Lua_optoption(L, 2, NULL, mobj_opt);
+	enum mobj_e field = Lua_optoption(L, 2, -1, mobj_fields_ref);
 	lua_settop(L, 2);
 
 	if (!mo || !G_GamestateUsesLevel()) {
@@ -668,7 +670,7 @@ static inline UINT32 eflags_vischeck(UINT32 eflags)
 static int mobj_set(lua_State *L)
 {
 	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
-	enum mobj_e field = Lua_optoption(L, 2, mobj_opt[0], mobj_opt);
+	enum mobj_e field = Lua_optoption(L, 2, mobj_valid, mobj_fields_ref);;
 	lua_settop(L, 3);
 
 	INLEVEL
@@ -1252,11 +1254,12 @@ const char *const mapthing_opt[] = {
 	NULL,
 };
 
+int mapthing_fields_ref = LUA_NOREF;
+
 static int mapthing_get(lua_State *L)
 {
 	mapthing_t *mt = *((mapthing_t **)luaL_checkudata(L, 1, META_MAPTHING));
-	enum mapthing_e field = Lua_optoption(L, 2, NULL, mapthing_opt);
-	lua_settop(L, 2);
+	enum mapthing_e field = Lua_optoption(L, 2, -1, mapthing_fields_ref);
 
 	if (!mt) {
 		if (field == mapthing_valid) {
@@ -1334,7 +1337,7 @@ static int mapthing_get(lua_State *L)
 static int mapthing_set(lua_State *L)
 {
 	mapthing_t *mt = *((mapthing_t **)luaL_checkudata(L, 1, META_MAPTHING));
-	enum mapthing_e field = Lua_optoption(L, 2, mapthing_opt[0], mapthing_opt);
+	enum mapthing_e field = Lua_optoption(L, 2, mapthing_valid, mapthing_fields_ref);
 	lua_settop(L, 3);
 
 	if (!mt)
@@ -1457,6 +1460,9 @@ static int lib_nummapthings(lua_State *L)
 
 int LUA_MobjLib(lua_State *L)
 {
+	mobj_fields_ref = Lua_CreateFieldTable(L, mobj_opt);
+	mapthing_fields_ref = Lua_CreateFieldTable(L, mapthing_opt);
+
 	luaL_newmetatable(L, META_MOBJ);
 		lua_pushcfunction(L, mobj_get);
 		lua_setfield(L, -2, "__index");
