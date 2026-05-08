@@ -603,7 +603,7 @@ static inline int lib_getenum(lua_State *L)
 			}
 		return 0;
 	}
-	else if ((!mathlib && LUA_PushGlobals(L, word)) || ScanConstants(L, mathlib, word))
+	else if ((!mathlib && LUA_PushGlobals(L)) || ScanConstants(L, mathlib, word))
 		return 1;
 
 	if (mathlib) return luaL_error(L, "constant '%s' could not be parsed.\n", word);

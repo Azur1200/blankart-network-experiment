@@ -73,8 +73,8 @@ void LUA_RegisterUserdataMetatable(
 	lua_CFunction len
 );
 
-int LUA_PushGlobals(lua_State *L, const char *word);
-int LUA_WriteGlobals(lua_State *L, const char *word);
+int LUA_PushGlobals(lua_State *L);
+int LUA_WriteGlobals(lua_State *L);
 
 void Got_Luacmd(UINT8 **cp, INT32 playernum); // lua_consolelib.c
 void LUA_CVarChanged(void *cvar); // lua_consolelib.c
