@@ -81,10 +81,12 @@ static const char *const follower_opt[] = {
 
 #define UNIMPLEMENTED luaL_error(L, LUA_QL("follower_t") " field " LUA_QS " is not implemented for Lua and cannot be accessed.", follower_opt[field])
 
+int follower_fields_ref = LUA_NOREF;
+
 static int follower_get(lua_State *L)
 {
 	follower_t *follower = *((follower_t **)luaL_checkudata(L, 1, META_FOLLOWER));
-	enum follower field = luaL_checkoption(L, 2, NULL, follower_opt);
+	enum follower field = Lua_optoption(L, 2, -1, follower_fields_ref);
 
 	// followers are always valid, only added, never removed
 	I_Assert(follower != NULL);
@@ -259,6 +261,7 @@ static int lib_numFollowers(lua_State *L)
 
 int LUA_FollowerLib(lua_State *L)
 {
+	follower_fields_ref = Lua_CreateFieldTable(L, follower_opt);
 	luaL_newmetatable(L, META_FOLLOWER);
 		lua_pushcfunction(L, follower_get);
 		lua_setfield(L, -2, "__index");

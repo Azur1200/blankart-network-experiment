@@ -2876,10 +2876,12 @@ static const char *const sonicloopvars_opt[] = {
 	NULL
 };
 
+int sonicloopvars_fields_ref = LUA_NOREF;
+
 static int sonicloopvars_get(lua_State *L)
 {
 	sonicloopvars_t *sonicloopvars = *((sonicloopvars_t **)luaL_checkudata(L, 1, META_SONICLOOPVARS));
-	enum sonicloopvars field = luaL_checkoption(L, 2, NULL, sonicloopvars_opt);
+	enum sonicloopvars field = Lua_optoption(L, 2, -1, sonicloopvars_fields_ref);
 
 	// This should always be valid.
 	I_Assert(sonicloopvars != NULL);
@@ -2957,10 +2959,12 @@ static const char *const sonicloopcamvars_opt[] = {
 	NULL
 };
 
+int sonicloopcamvars_fields_ref = LUA_NOREF;
+
 static int sonicloopcamvars_get(lua_State *L)
 {
 	sonicloopcamvars_t *sonicloopcamvars = *((sonicloopcamvars_t **)luaL_checkudata(L, 1, META_SONICLOOPCAMVARS));
-	enum sonicloopcamvars field = luaL_checkoption(L, 2, NULL, sonicloopcamvars_opt);
+	enum sonicloopcamvars field = Lua_optoption(L, 2, -1, sonicloopcamvars_fields_ref);
 
 	// This should always be valid.
 	I_Assert(sonicloopcamvars != NULL);
@@ -3019,10 +3023,12 @@ static const char *const boostinfo_opt[] = {
 	NULL,
 };
 
+int boostinfo_fields_ref = LUA_NOREF;
+
 static int boostinfo_get(lua_State *L)
 {
 	boostinfo_t *boostinfo = *((boostinfo_t **)luaL_checkudata(L, 1, META_BOOSTINFO));
-	enum boostinfo field = luaL_checkoption(L, 2, NULL, boostinfo_opt);
+	enum boostinfo field = Lua_optoption(L, 2, -1, boostinfo_fields_ref);
 
 	// This should always be valid.
 	I_Assert(boostinfo != NULL);
@@ -3052,7 +3058,7 @@ static int boostinfo_get(lua_State *L)
 static int boostinfo_set(lua_State *L)
 {
 	boostinfo_t *boostinfo = *((boostinfo_t **)luaL_checkudata(L, 1, META_BOOSTINFO));
-	enum boostinfo field = luaL_checkoption(L, 2, boostinfo_opt[0], boostinfo_opt);
+	enum boostinfo field = Lua_optoption(L, 2, boostinfo_stackspeedboost, boostinfo_fields_ref);
 
 	// This is a property that always exists in a player.
 	I_Assert(boostinfo != NULL);
@@ -3093,6 +3099,11 @@ int LUA_PlayerLib(lua_State *L)
 {
 	player_fields_ref = Lua_CreateFieldTable(L, player_opt);
 	ticcmd_fields_ref = Lua_CreateFieldTable(L, ticcmd_opt);
+
+	sonicloopvars_fields_ref = Lua_CreateFieldTable(L, sonicloopvars_opt);
+	sonicloopcamvars_fields_ref = Lua_CreateFieldTable(L, sonicloopcamvars_opt);
+
+	boostinfo_fields_ref = Lua_CreateFieldTable(L, boostinfo_opt);
 
 	luaL_newmetatable(L, META_PLAYER);
 		lua_pushcfunction(L, player_get);
