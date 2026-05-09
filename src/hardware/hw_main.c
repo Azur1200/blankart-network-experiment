@@ -1216,7 +1216,8 @@ void HWR_DoPostProcessor(player_t *player)
 		GL_DrawPolygon(&Surf, v, 4, PF_Modulated|PF_Additive|PF_NoTexture|PF_NoDepthTest);
 	}
 
-	if (cv_glscreentextures.value != 2) // screen textures are needed for the rest of the effects
+	// screen textures are needed for the rest of the effects
+	if (cv_glscreentextures.value != 2)
 		return;
 
 	// Capture the screen for intermission and screen waving

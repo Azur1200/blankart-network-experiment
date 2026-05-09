@@ -653,6 +653,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 
 		// The x and y only need to be adjusted in the case that it's not a papersprite
 		if (cv_glspritebillboarding.value
+			&& !cv_glshearing.value
 			&& spr->mobj && !R_ThingIsPaperSprite(spr->mobj))
 		{
 			// Get the x and z of the vertices so billboarding draws correctly
