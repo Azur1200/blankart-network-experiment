@@ -4031,6 +4031,7 @@ enum
 	SECTOR_PROP_ARG9,
 	SECTOR_PROP_ARG0STR,
 	SECTOR_PROP_ARG1STR,
+	SECTOR_PROP_OFFROAD,
 	SECTOR_PROP__MAX
 };
 
@@ -4137,6 +4138,7 @@ bool CallFunc_GetSectorProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, 
 			PROP_INT(SECTOR_PROP_ARG9, args[9])
 			PROP_STR(SECTOR_PROP_ARG0STR, stringargs[0])
 			PROP_STR(SECTOR_PROP_ARG1STR, stringargs[1])
+			PROP_INT(SECTOR_PROP_OFFROAD, offroad)
 			default:
 			{
 				CONS_Alert(CONS_WARNING, "GetSectorProperty type %d out of range (expected 0 - %d).\n", property, SECTOR_PROP__MAX-1);
@@ -4255,6 +4257,7 @@ bool CallFunc_SetSectorProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, 
 			PROP_INT(SECTOR_PROP_ARG9, args[9])
 			PROP_STR(SECTOR_PROP_ARG0STR, stringargs[0])
 			PROP_STR(SECTOR_PROP_ARG1STR, stringargs[1])
+			PROP_INT(SECTOR_PROP_OFFROAD, offroad)
 			default:
 			{
 				CONS_Alert(CONS_WARNING, "SetSectorProperty type %d out of range (expected 0 - %d).\n", property, SECTOR_PROP__MAX-1);
