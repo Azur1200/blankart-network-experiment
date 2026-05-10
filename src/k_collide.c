@@ -257,7 +257,7 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 		{
 			if (t2->player->karmamode || t2->player->karmadelay)
 				return true;
-			t2->player->karmamode = 2;
+			t2->player->karmamode = KARMAMODE_EGGMAN;
 		}
 		else
 		{

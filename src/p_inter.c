@@ -331,7 +331,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			{
 				if (player->karmamode || player->karmadelay)
 					return;
-				player->karmamode = 1;
+				player->karmamode = KARMAMODE_ITEM;
 			}
 
 			special->momx = special->momy = special->momz = 0;
@@ -401,7 +401,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				special->target->player->karthud[khud_yougotem] = 2*TICRATE;
 				special->target->player->karmadelay = comebacktime;
 			}
-			else if (special->target->player->karmamode == 1 && P_CanPickupItem(player, PICKUPITEM_ITEM))
+			else if (special->target->player->karmamode == KARMAMODE_ITEM && P_CanPickupItem(player, PICKUPITEM_ITEM))
 			{
 				mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
 				S_StartSound(poof, special->info->seesound);
@@ -418,8 +418,10 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 					firework->color = special->target->color;
 				}
 
-				special->target->player->karmamode = 0;
+				special->target->player->karmamode = KARMAMODE_DEFAULT;
 				special->target->player->karmapoints++;
+				if(K_RingsActive())
+					K_AwardPlayerRings(special->target->player, 10, true);
 
 				if (special->target->player->karmapoints >= 2)
 					K_TakeBumpersFromPlayer(special->target->player, player, 1);
@@ -428,7 +430,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				K_StartRoulette(player, KROULETTETYPE_KARMA);
 			}
-			else if (special->target->player->karmamode == 2 && P_CanPickupItem(player, PICKUPITEM_EGGMAN))
+			else if (special->target->player->karmamode == KARMAMODE_EGGMAN && P_CanPickupItem(player, PICKUPITEM_EGGMAN))
 			{
 				mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
 				UINT8 ptadd = 1; // No WANTED bonus for tricking
@@ -450,8 +452,10 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 						ptadd++;
 				}
 
-				special->target->player->karmamode = 0;
+				special->target->player->karmamode = KARMAMODE_DEFAULT;
 				special->target->player->karmapoints += ptadd;
+				if(K_RingsActive())
+					K_AwardPlayerRings(special->target->player, 10, true);
 
 				if (ptadd > 1)
 					special->target->player->karthud[khud_yougotem] = 2*TICRATE;
@@ -2226,7 +2230,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			{
 				if (gametypes[gametype]->rules & GTR_BUMPERS)
 				{
-					if ((player->bumper <= 0 && player->karmadelay) || (player->karmamode == 1))
+					if ((player->bumper <= 0 && player->karmadelay) || (player->karmamode == KARMAMODE_ITEM))
 					{
 						// No bumpers & in WAIT, can't be hurt
 						K_DoInstashield(player);
@@ -2340,11 +2344,11 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				if (player->bumper <= 0)
 				{
 					player->karmadelay = comebacktime;
-					if ((gametypes[gametype]->rules & GTR_KARMA) && player->karmamode == 2 )
+					if ((gametypes[gametype]->rules & GTR_KARMA) && player->karmamode == KARMAMODE_EGGMAN )
 					{
 						mobj_t *poof = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EXPLODE);
 						S_StartSound(poof, mobjinfo[MT_KARMAHITBOX].seesound);
-						player->karmamode = 0;
+						player->karmamode = KARMAMODE_DEFAULT;
 					}
 				}
 			}

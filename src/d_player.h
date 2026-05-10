@@ -519,6 +519,13 @@ struct keepstuff_t
 	UINT16 flametimer;
 };
 
+typedef enum
+{
+	KARMAMODE_DEFAULT = 0,
+	KARMAMODE_ITEM,
+	KARMAMODE_EGGMAN,
+} karmamode_e;
+
 // ========================================================================
 //                          PLAYER STRUCTURE
 // ========================================================================

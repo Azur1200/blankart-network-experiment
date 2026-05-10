@@ -9500,7 +9500,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->colorized = true;
 
 			// Give items an item-sized hitbox
-			if (mobj->target->player->karmamode == 1)
+			if (mobj->target->player->karmamode == KARMAMODE_ITEM)
 				mobj->radius = 48*mobj->target->scale;
 			else
 				mobj->radius = 24*mobj->target->scale;
@@ -9520,10 +9520,10 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				if (!mobj->target->player->karmamode
 					&& (state < mobj->info->spawnstate || state > mobj->info->spawnstate+19))
 					P_SetMobjState(mobj, mobj->info->spawnstate);
-				else if (mobj->target->player->karmamode == 1
+				else if (mobj->target->player->karmamode == KARMAMODE_ITEM
 					&& state != mobj->info->seestate)
 					P_SetMobjState(mobj, mobj->info->seestate);
-				else if (mobj->target->player->karmamode == 2
+				else if (mobj->target->player->karmamode == KARMAMODE_EGGMAN
 					&& state != mobj->info->painstate)
 					P_SetMobjState(mobj, mobj->info->painstate);
 

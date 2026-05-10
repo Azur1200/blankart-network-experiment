@@ -11240,7 +11240,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			{
 				mobj_t *newitem;
 
-				if (player->karmamode == 1)
+				if (player->karmamode == KARMAMODE_ITEM)
 				{
 					newitem = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_RANDOMITEM);
 					newitem->threshold = 69; // selected "randomly".
@@ -11260,7 +11260,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 				newitem->flags2 = (player->mo->flags2 & MF2_OBJECTFLIP);
 				newitem->fuse = 15*TICRATE; // selected randomly.
 
-				player->karmamode = 0;
+				player->karmamode = KARMAMODE_DEFAULT;
 				player->karmadelay = comebacktime;
 				S_StartSound(player->mo, sfx_s254);
 			}
