@@ -203,8 +203,8 @@ private:
 					{{8, 2, {kp_itemtarget_near[1]}}}, // 4P
 				},
 				{{ // Far
-					{2, 6, foreground ?
-						layers {kp_itemtarget_far[0], kp_itemtarget_far_text} :
+					{2, 6, /*foreground ?
+						layers {kp_itemtarget_far[0], kp_itemtarget_far_text} :*/
 						layers {kp_itemtarget_far[0]}}, // 1P
 						{{2, 6, {kp_itemtarget_far[1]}}}, // 4P
 				}},
