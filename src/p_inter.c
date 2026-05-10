@@ -420,7 +420,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				special->target->player->karmamode = KARMAMODE_DEFAULT;
 				special->target->player->karmapoints++;
-				if(K_RingsActive())
+				if (K_RingsActive())
 					K_AwardPlayerRings(special->target->player, 10, true);
 
 				if (special->target->player->karmapoints >= 2)
@@ -454,7 +454,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				special->target->player->karmamode = KARMAMODE_DEFAULT;
 				special->target->player->karmapoints += ptadd;
-				if(K_RingsActive())
+				if (K_RingsActive())
 					K_AwardPlayerRings(special->target->player, 10, true);
 
 				if (ptadd > 1)
@@ -2405,6 +2405,10 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				case DMG_KARMA:
 					// 10 on SPB hit, 5 on normal explosion
 					painsound = true;
+
+					if (source && source->player && type == DMG_KARMA && K_RingsActive())
+						K_AwardPlayerRings(source->player, 10, true);
+
 					ringburst = K_ExplodePlayer(player, inflictor, source);
 					LUA_HookPlayerExplode(target, inflictor, source, damage, damagetype);
 					break;
