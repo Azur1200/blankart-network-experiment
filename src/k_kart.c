@@ -8165,6 +8165,8 @@ void K_KartResetPlayerColor(player_t *player)
 
 void K_KartPlayerAfterThink(player_t *player)
 {
+	TracyCZone(__zone, true);
+	
 	K_KartResetPlayerFullbright(player);
 
 	// Move held objects (Bananas, Orbinaut, etc)
@@ -8185,6 +8187,8 @@ void K_KartPlayerAfterThink(player_t *player)
 		player->attractionboost = 0;
 		player->attractionattack_hipower = false;
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 static int clostVal(fixed_t arr[], int N, fixed_t K)

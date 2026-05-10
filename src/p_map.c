@@ -1796,7 +1796,7 @@ boolean P_IsLineBlocking(const line_t *ld, const mobj_t *thing)
 
 		if (thing->player)
 		{
-			return ld->blockplayers;
+			return ld->blockplayers || (thing->player->walltransfered && ld->blockintransfer);
 		}
 		else if (thing->flags & (MF_ENEMY|MF_BOSS))
 		{

@@ -2135,6 +2135,8 @@ static void ParseTextmapLinedefParameter(UINT32 i, const char *param, const char
 		lines[i].tripwire = true;
 	else if (fastcmp(param, "blockplayers") && fastcmp("true", val))
 		lines[i].blockplayers = true;
+	else if (fastcmp(param, "blockintransfer") && fastcmp("true", val))
+		lines[i].blockintransfer = true;
 	else if (fastcmp(param, "blocking") && fastcmp("true", val))
 		lines[i].flags |= ML_IMPASSABLE;
 	else if (fastcmp(param, "blockmonsters") && fastcmp("true", val))

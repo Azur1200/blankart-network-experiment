@@ -55,6 +55,8 @@
 // Not sure if this is necessary, but it was in w_wad.c, so I'm putting it here too -Shadow Hog
 #include <errno.h>
 
+#include <tracy/tracy/TracyC.h>
+
 mobj_t *skyboxmo[2]; // current skybox mobjs: 0 = viewpoint, 1 = centerpoint
 mobj_t *skyboxviewpnts[16]; // array of MT_SKYBOX viewpoint mobjs
 mobj_t *skyboxcenterpnts[16]; // array of MT_SKYBOX centerpoint mobjs
@@ -5738,25 +5740,42 @@ static void P_PlayerOnSpecialPolyobj(player_t *player)
   */
 void P_PlayerInSpecialSector(player_t *player)
 {
+	TracyCZone(__zone, true);
+	
 	sector_t *originalsector;
 	sector_t *loopsector;
 	msecnode_t *node;
 
 	if (!player->mo)
+	{
+		TracyCZoneEnd(__zone);
 		return;
+	}
 
 	K_ProcessTerrainEffect(player->mo);
 	originalsector = player->mo->subsector->sector;
 
 	P_PlayerOnSpecial3DFloor(player, originalsector); // Handle FOFs first.
-	if TELEPORTED(player->mo) return;
+	if TELEPORTED(player->mo)
+	{
+		TracyCZoneEnd(__zone);
+		return;
+	}
 
 	// Allow sector specials to be applied to polyobjects!
 	P_PlayerOnSpecialPolyobj(player);
-	if TELEPORTED(player->mo) return;
+	if TELEPORTED(player->mo)
+	{
+		TracyCZoneEnd(__zone);
+		return;
+	}
 
 	P_ProcessSpecialSector(player, originalsector, NULL);
-	if TELEPORTED(player->mo) return;
+	if TELEPORTED(player->mo)
+	{
+		TracyCZoneEnd(__zone);
+		return;
+	}
 
 	// Iterate through touching_sectorlist for SF_TRIGGERSPECIAL_TOUCH
 	for (node = player->mo->touching_sectorlist; node; node = node->m_sectorlist_next)
@@ -5768,14 +5787,24 @@ void P_PlayerInSpecialSector(player_t *player)
 
 		// Check 3D floors...
 		P_PlayerOnSpecial3DFloor(player, loopsector);
-		if TELEPORTED(player->mo) return;
+		if TELEPORTED(player->mo)
+		{
+			TracyCZoneEnd(__zone);
+			return;
+		}
 
 		if (!(loopsector->flags & MSF_TRIGGERSPECIAL_TOUCH))
 			continue;
 
 		P_ProcessSpecialSector(player, loopsector, NULL);
-		if TELEPORTED(player->mo) return;
+		if TELEPORTED(player->mo)
+		{
+			TracyCZoneEnd(__zone);
+			return;
+		}
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 static void P_CheckMobj3DFloorTrigger(mobj_t *mo, sector_t *sec)

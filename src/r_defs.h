@@ -650,6 +650,7 @@ struct line_t
 
 	boolean tripwire;
 	boolean blockplayers;
+	boolean blockintransfer;
 
 	char *text; // a concatenation of all front and back texture names, for linedef specials that require a string.
 	INT16 callcount; // no. of calls left before triggering, for the "X calls" linedef specials, defaults to 0
