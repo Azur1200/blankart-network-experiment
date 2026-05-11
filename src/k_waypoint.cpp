@@ -2233,6 +2233,8 @@ static waypoint_t *K_MakeWaypoint(mobj_t *const mobj)
 		}
 	}
 
+	madewaypoint->respawnstatus = STATUS_PENDING;
+
 	return madewaypoint;
 }
 

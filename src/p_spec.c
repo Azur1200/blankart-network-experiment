@@ -4815,6 +4815,145 @@ sector_t *P_MobjTouchingSectorSpecial(mobj_t *mo, INT32 section, INT32 number)
 	return NULL;
 }
 
+static boolean P_SectorHasSpecial(sector_t *sec)
+{
+	if (sec->specialflags)
+		return true;
+
+	if (sec->damagetype != SD_NONE)
+		return true;
+
+	if (sec->triggertag)
+		return true;
+
+	if (sec->special)
+		return true;
+
+	return false;
+}
+
+static sector_t *P_MobjTouchingInstakill3DFloor(mobj_t *mo, sector_t *sector)
+{
+	ffloor_t *rover;
+
+	for (rover = sector->ffloors; rover; rover = rover->next)
+	{
+		if ((!rover) || (!rover->master) || (!rover->master->frontsector))
+			continue; // Fuck off
+
+		if (!P_SectorHasSpecial(rover->master->frontsector))
+			continue;
+
+		if (rover->master->frontsector->damagetype != SD_INSTAKILL && rover->master->frontsector->damagetype != SD_DEATHPIT)
+			continue;
+
+		if (!(rover->fofflags & FOF_EXISTS))
+			continue;
+
+		if (!P_IsMobjTouching3DFloor(mo, rover, sector))
+			continue;
+
+		// This FOF has the special we're looking for, but are we allowed to touch it?
+		if (sector == mo->subsector->sector
+			|| (rover->master->frontsector->flags & MSF_TRIGGERSPECIAL_TOUCH))
+			return rover->master->frontsector;
+	}
+
+	return NULL;
+}
+
+static sector_t *P_MobjTouchingInstakillPolyobj(mobj_t *mo)
+{
+	polyobj_t *po;
+	sector_t *polysec;
+	boolean touching = false;
+	boolean inside = false;
+
+	if (!mo->subsector)
+		return NULL; // Fuck off
+
+	for (po = mo->subsector->polyList; po; po = (polyobj_t *)(po->link.next))
+	{
+		if (po->flags & POF_NOSPECIALS)
+			continue;
+
+		polysec = po->lines[0]->backsector;
+
+		if (!polysec)
+			continue; // Fuck. Off.
+
+		if (!P_SectorHasSpecial(polysec))
+			continue;
+
+		if (polysec->damagetype != SD_INSTAKILL && polysec->damagetype != SD_DEATHPIT)
+			continue;
+
+		touching = (polysec->flags & MSF_TRIGGERSPECIAL_TOUCH) && P_MobjTouchingPolyobj(po, mo);
+		inside = P_MobjInsidePolyobj(po, mo);
+
+		if (!(inside || touching))
+			continue;
+
+		if (!P_IsMobjTouchingPolyobj(mo, po, polysec))
+			continue;
+
+		return polysec;
+	}
+
+	return NULL;
+}
+
+// Checks if an object is touching an instant-kill sector, such as a death pit.
+// Returns a valid sector if one is found, and NULL otherwise.
+sector_t *P_MobjTouchingInstakillSector(mobj_t *mo)
+{
+	msecnode_t *node = NULL;
+	sector_t *result = NULL;
+	boolean isTouching = false;
+
+	if (!mo->subsector)
+		return NULL;
+
+	if (!mo->subsector->sector)
+		return NULL;
+
+	result = P_MobjTouchingInstakill3DFloor(mo, mo->subsector->sector);
+	if (result)
+		return result;
+
+	result = P_MobjTouchingInstakillPolyobj(mo);
+	if (result)
+		return result;
+
+	UINT8 sectordamage = mo->subsector->sector->damagetype;
+
+	isTouching = P_IsMobjTouchingSectorPlane(mo, mo->subsector->sector);
+
+	if (P_SectorHasSpecial(mo->subsector->sector) && (sectordamage == SD_DEATHPIT || sectordamage == SD_INSTAKILL) && isTouching)
+		return mo->subsector->sector;
+
+	for (node = mo->touching_sectorlist; node; node = node->m_sectorlist_next)
+	{
+		if (node->m_sector == mo->subsector->sector) // Don't duplicate
+			continue;
+
+		result = P_MobjTouchingInstakill3DFloor(mo, node->m_sector);
+		if (result)
+			return result;
+
+		if (!(node->m_sector->flags & MSF_TRIGGERSPECIAL_TOUCH))
+			continue;
+
+		sectordamage = node->m_sector->damagetype;
+		isTouching = P_IsMobjTouchingSectorPlane(mo, node->m_sector);
+
+		if (P_SectorHasSpecial(node->m_sector) && (sectordamage == SD_DEATHPIT || sectordamage == SD_INSTAKILL) && (isTouching))
+			return node->m_sector;
+	}
+
+	return NULL;
+}
+
 sector_t *P_MobjTouchingSectorSpecialFlag(mobj_t *mo, sectorspecialflags_t flag)
 {
 	msecnode_t *node;
@@ -5373,25 +5512,6 @@ static void P_ProcessBumpyRoad(player_t *player, boolean isTouching)
 		K_KartPlayerBumpyRoad(player);
 	}
 }
-
-static boolean P_SectorHasSpecial(sector_t *sec)
-{
-	if (sec->specialflags)
-		return true;
-
-	if (sec->damagetype != SD_NONE)
-		return true;
-
-	if (sec->triggertag)
-		return true;
-
-	if (sec->special)
-		return true;
-
-	return false;
-}
-
-
 
 static void P_EvaluateSpecialFlags(player_t *player, sector_t *sector, sector_t *roversector, boolean isTouching)
 {

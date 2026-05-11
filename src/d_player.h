@@ -628,6 +628,7 @@ struct player_t
 	UINT32 distancefromcluster;
 	waypoint_t *currentwaypoint;
 	waypoint_t *nextwaypoint;
+	boolean onbadwaypoint;	// This waypoint is bad, so we need to find a better one
 	UINT16 bigwaypointgap;
 	tic_t airtime; 			// Keep track of how long you've been in the air
 	UINT8 startboost;		// (0 to 125) - Boost you get from start of race or respawn drop dash

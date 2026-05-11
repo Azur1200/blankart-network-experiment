@@ -614,6 +614,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].distancetofinishprev);
 		RSYNC(players[i].currentwaypoint);
 		RSYNC(players[i].nextwaypoint);
+		SYNCBOOLEAN(players[i].onbadwaypoint);
 		SYNC(players[i].bigwaypointgap);
 		SYNC(players[i].airtime);
 		SYNC(players[i].startboost);

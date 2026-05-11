@@ -12562,7 +12562,7 @@ void P_SpawnPlayer(INT32 playernum)
 	}
 }
 
-void P_AfterPlayerSpawn(INT32 playernum)
+void P_AfterPlayerSpawn(INT32 playernum, boolean starpost)
 {
 	player_t *p = &players[playernum];
 	mobj_t *mobj = p->mo;
@@ -12613,7 +12613,28 @@ void P_AfterPlayerSpawn(INT32 playernum)
 
 	// set the player's starting waypoint
 	if (!K_UsingLegacyCheckpoints() && (gametypes[gametype]->rules & GTR_CIRCUIT) && waypointcap != NULL)
-		p->currentwaypoint = K_GetSpawnWaypointForMobj(p->mo);
+	{
+		waypoint_t *spawn_wp = K_GetSpawnWaypointForMobj(p->mo);
+
+		p->currentwaypoint = spawn_wp;
+
+		if (p->onbadwaypoint)
+		{
+			CONS_Alert(CONS_ERROR, "BAD WAYPOINT at ID %d; respawn is on a deathpit!\n", K_GetWaypointID(spawn_wp));
+			spawn_wp->respawnstatus = STATUS_BADWAYPOINT;
+
+			p->onbadwaypoint = false;
+
+			if (p->currentwaypoint)
+			{
+				// We need a new waypoint RIGHT NOW, so search for the next waypoint once we've flagged this one
+				K_SetRespawnAtNextWaypoint(p);
+
+				// Play it again, Sam!
+				G_MovePlayerToSpawnOrStarpost((INT32)(p - players), starpost);
+			}
+		}
+	}
 }
 
 // spawn it at a playerspawn mapthing
@@ -12694,7 +12715,7 @@ void P_MovePlayerToSpawn(INT32 playernum, mapthing_t *mthing)
 
 	mobj->angle = angle;
 
-	P_AfterPlayerSpawn(playernum);
+	P_AfterPlayerSpawn(playernum, false);
 }
 
 void P_MovePlayerToStarpost(INT32 playernum)
@@ -12741,7 +12762,14 @@ void P_MovePlayerToStarpost(INT32 playernum)
 
 	//p->kartstuff[k_waypoint] = p->kartstuff[k_starpostwp]; // SRB2kart
 
-	P_AfterPlayerSpawn(playernum);
+	if (P_MobjTouchingInstakillSector(mobj))
+	{
+		// Respawn is bad, attempt to force the player ahead
+		// while flagging the bad waypoint
+		p->onbadwaypoint = true;
+	}
+
+	P_AfterPlayerSpawn(playernum, true);
 
 	//if (!(netgame || multiplayer))
 	//	leveltime = p->starposttime;

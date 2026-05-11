@@ -34,6 +34,12 @@ typedef enum {
     DRIFT_END
 } ATTRPACK driftSetting_e;
 
+typedef enum {
+	STATUS_PENDING = 0,
+	STATUS_OKWAYPOINT,
+	STATUS_BADWAYPOINT
+} ATTRPACK waypointstatus_e;
+
 struct waypoint_t
 {
 	mobj_t             *mobj;
@@ -46,6 +52,7 @@ struct waypoint_t
 	UINT32              distancetofinish;
 	driftSetting_e      driftsettings;
 	boolean             onaline;
+	waypointstatus_e    respawnstatus;
 };
 
 
