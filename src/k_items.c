@@ -511,8 +511,9 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
 
 static INT32 K_KartGetSMonitorOdds(UINT32 dist)
 {
+	const UINT32 forcedist = (UINT32)(K_LegacyOddsMode() ? SMONITORCONGADIST : SMONITORDIST);
 	// If you're far enough for this to be in your item slot, you're far enough to SERIOUSLY need this.
-	return dist >= (UINT32)SMONITORDIST ? MAXSMONITORODDS : 0;
+	return dist >= forcedist ? MAXSMONITORODDS : 0;
 }
 
 // updates all result cooldown timers, and sets cooldowns for "unique" items

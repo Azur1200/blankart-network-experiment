@@ -445,7 +445,9 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartinvindamage);
 	CV_RegisterVar(&cv_kartinvintheme);
 
-    CV_RegisterVar(&cv_kartsmonitordist);
+	CV_RegisterVar(&cv_kartsmonitordist);
+	CV_RegisterVar(&cv_kartsmonitor_congadist);
+
 	CV_RegisterVar(&cv_kartsmonitor_decaydist);
 	CV_RegisterVar(&cv_kartsmonitor_decaytime);
 
@@ -10321,9 +10323,28 @@ static UINT32 K_UndoMapScaling(UINT32 distance)
 
 static boolean K_CheckBestRankForCluster(player_t *player, UINT32 pingame)
 {
+
 	if (pingame > 6)
 	{
-		if (!K_IsPlayerLosing(player))
+		if (K_LegacyOddsMode())
+		{
+			if (pingame > 11 && (!K_IsPlayerLosing(player)))
+			{
+				return false; // Ignore winning players to prevent sandbagging.
+			}
+			else
+			{
+				const UINT32 podium = (pingame > 7) ? 3 : 2;
+				if (player->position <= podium)
+				{
+					// Ignore the top players.
+					// Also to prevent sandbagging, but in non-standard
+					// lobbies, we can afford to be lenient.
+					return false;
+				}
+			}
+		}
+		else if (!K_IsPlayerLosing(player))
 		{
 			return false; // Ignore winning players to prevent sandbagging.
 		}

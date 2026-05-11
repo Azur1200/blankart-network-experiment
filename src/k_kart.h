@@ -91,6 +91,7 @@ extern vector3_t clusterpoint, clusterdtf;
 
 // S-Monitor distance value
 #define SMONITORDIST CV_Get(&cv_kartsmonitordist)
+#define SMONITORCONGADIST CV_Get(&cv_kartsmonitor_congadist)
 #define SMONITORDECAYDIST CV_Get(&cv_kartsmonitor_decaydist)
 #define SMONITORDECAYTIME CV_Get(&cv_kartsmonitor_decaytime)
 
