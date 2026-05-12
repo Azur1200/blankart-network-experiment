@@ -8967,7 +8967,7 @@ static boolean K_SafeRespawnWaypoint(waypoint_t *waypoint)
 	if (!K_GetWaypointIsSpawnpoint(waypoint))
 		return false;
 
-	if (waypoint->respawnstatus == STATUS_BADWAYPOINT)
+	if (waypoint->respawnstatus == WPSTATUS_BADWAYPOINT)
 		return false;
 
 	return K_SafeRespawnPosition(waypoint->mobj);

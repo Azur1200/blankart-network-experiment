@@ -35,9 +35,9 @@ typedef enum {
 } ATTRPACK driftSetting_e;
 
 typedef enum {
-	STATUS_PENDING = 0,
-	STATUS_OKWAYPOINT,
-	STATUS_BADWAYPOINT
+	WPSTATUS_PENDING = 0,
+	WPSTATUS_OKWAYPOINT,
+	WPSTATUS_BADWAYPOINT
 } ATTRPACK waypointstatus_e;
 
 struct waypoint_t

@@ -6376,7 +6376,7 @@ static void K_DrawWaypointDebugger(void)
 		V_DrawString(8, 140, 0, va("Auto Respawn Timer: %d", stplyr->bigwaypointgap));
 
 	if (stplyr->currentwaypoint &&
-	    (stplyr->currentwaypoint->respawnstatus != STATUS_BADWAYPOINT) &&
+	    (stplyr->currentwaypoint->respawnstatus != WPSTATUS_BADWAYPOINT) &&
 		(stplyr->currentwaypoint->mobj != NULL) &&
 		K_SafeRespawnPosition(stplyr->currentwaypoint->mobj))
 	{
@@ -6388,7 +6388,7 @@ static void K_DrawWaypointDebugger(void)
 	}
 
 	if (stplyr->nextwaypoint &&
-		(stplyr->nextwaypoint->respawnstatus != STATUS_BADWAYPOINT) &&
+		(stplyr->nextwaypoint->respawnstatus != WPSTATUS_BADWAYPOINT) &&
 	    (stplyr->nextwaypoint->mobj != NULL) &&
 		K_SafeRespawnPosition(stplyr->nextwaypoint->mobj))
 	{

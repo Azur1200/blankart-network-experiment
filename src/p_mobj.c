@@ -12621,7 +12621,7 @@ void P_AfterPlayerSpawn(INT32 playernum, boolean starpost)
 		if (p->onbadwaypoint)
 		{
 			CONS_Alert(CONS_ERROR, "BAD WAYPOINT at ID %d; respawn is on a deathpit!\n", K_GetWaypointID(spawn_wp));
-			spawn_wp->respawnstatus = STATUS_BADWAYPOINT;
+			spawn_wp->respawnstatus = WPSTATUS_BADWAYPOINT;
 
 			p->onbadwaypoint = false;
 

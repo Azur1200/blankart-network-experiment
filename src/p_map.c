@@ -3909,6 +3909,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	}
 
 	boolean tripwire = result->line != NULL && P_IsLineTripWire(result->line);
+	boolean slideline = result->line != NULL && ((result->line->flags & ML_NOTBOUNCY) || (result->line->blockintransfer && mo->player->walltransfered));
 
 	if (result->normal.x == 0 && result->normal.y == 0)
 		return; // nope, nothing we can do
@@ -3972,7 +3973,9 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	else
 	{
 		// Some walls aren't bouncy even if you are
-		if (result->line != NULL && result->line->flags & ML_NOTBOUNCY)
+		// wall transfer only lines always make players slide along em even if they'd be bouncy otherwise
+		// todo: let wall transfer override the tripwire case too?
+		if (slideline)
 		{
 			// SRB2Kart: Non-bouncy line!
 			P_SlideMove(mo, result);

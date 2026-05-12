@@ -2233,7 +2233,7 @@ static waypoint_t *K_MakeWaypoint(mobj_t *const mobj)
 		}
 	}
 
-	madewaypoint->respawnstatus = STATUS_PENDING;
+	madewaypoint->respawnstatus = WPSTATUS_PENDING;
 
 	return madewaypoint;
 }
