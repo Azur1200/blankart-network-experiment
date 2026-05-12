@@ -463,6 +463,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartattraction_aoeemp);
 	CV_RegisterVar(&cv_kartaltshrink_arrowbullet);
 	CV_RegisterVar(&cv_kartaltshrink_arrowbulletthres);
+	CV_RegisterVar(&cv_kartaltshrink_runneranger);
 
 	CV_RegisterVar(&cv_kartairsquish);
 

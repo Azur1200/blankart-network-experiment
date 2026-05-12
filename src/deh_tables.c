@@ -889,6 +889,7 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 struct odds_func_s const USEODDS_FUNCS[] = {
 	{ "SMONITORODDS", &KO_SMonitorOdds },
 	{ "SPBRACEODDS", &KO_SPBRaceOdds },
+	{ "GROWRACEODDS",  &KO_GrowRaceOdds },
 	{ NULL, NULL }
 };
 
@@ -1635,6 +1636,7 @@ struct int_const_s const INT_CONST[] = {
 	{"KRF_NOTFORBOTTOM",KRF_NOTFORBOTTOM},
 	{"KRF_RUNNERAUGMENT",KRF_RUNNERAUGMENT},
 	{"KRF_HIDEFROMSPB",KRF_HIDEFROMSPB},
+	{"KRF_DONTCHANGERESULT", KRF_DONTCHANGERESULT},
 
 	// kartspinoutflags_t
 	{"KSPIN_THRUST",KSPIN_THRUST},

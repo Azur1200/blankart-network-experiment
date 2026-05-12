@@ -63,6 +63,7 @@ typedef enum
 	KROULETTETYPE_NORMAL,
 	KROULETTETYPE_KARMA,
 	KROULETTETYPE_EGGMAN,
+	KROULETTETYPE_SHRINK
 } kartroulettetype_e;
 
 typedef enum
@@ -90,13 +91,14 @@ typedef enum
 // result flags relevant to the roulette
 typedef enum
 {
-	KRF_INDIRECTITEM = 1<<0,    // This result's item affects others indirectly. All results with this flag share a single cooldown timer.
-	KRF_POWERITEM = 1<<1,       // This result is a "power item". This activates "frantic item" toggle related functionality.
-	KRF_COOLDOWNONSTART = 1<<2, // This result should not appear at the beginning of a race. (Usually really powerful crowd-breaking items)
-	KRF_NOTNEAREND = 1<<3,      // This result should not appear at the end of a race. (Usually trap items that lose their effectiveness)
-	KRF_NOTFORBOTTOM = 1<<4,    // After the first 30 seconds, this result stops appearing for losing players. (Usually items that feel less effective at these positions)
-	KRF_RUNNERAUGMENT = 1<<5,   // This result's odds are affected by the severity of 1st place's frontrun. (Very likely only for SPBs, but who knows?)
-	KRF_HIDEFROMSPB = 1<<6,     // This result refuses to appear when a Self-Propelled Bomb is active in a race or battle.
+	KRF_INDIRECTITEM = 1<<0,     // This result's item affects others indirectly. All results with this flag share a single cooldown timer.
+	KRF_POWERITEM = 1<<1,        // This result is a "power item". This activates "frantic item" toggle related functionality.
+	KRF_COOLDOWNONSTART = 1<<2,  // This result should not appear at the beginning of a race. (Usually really powerful crowd-breaking items)
+	KRF_NOTNEAREND = 1<<3,       // This result should not appear at the end of a race. (Usually trap items that lose their effectiveness)
+	KRF_NOTFORBOTTOM = 1<<4,     // After the first 30 seconds, this result stops appearing for losing players. (Usually items that feel less effective at these positions)
+	KRF_RUNNERAUGMENT = 1<<5,    // This result's odds are affected by the severity of 1st place's frontrun. (Very likely only for SPBs, but who knows?)
+	KRF_HIDEFROMSPB = 1<<6,      // This result refuses to appear when a Self-Propelled Bomb is active in a race or battle.
+	KRF_DONTCHANGERESULT = 1<<7, // This result prevents certain effects (Alt. Shrink item doubling) from occurring for it.
 } ATTRPACK kartresultflags_e;
 
 // Unique useodds function
@@ -156,6 +158,8 @@ struct kartroulette_t
 	boolean spbrush;
 	boolean bot;
 	boolean rival;
+	boolean shrink_freebie;
+	boolean is_shrunk; // Under the effects of Alt. Shrink, which changes odds significantly
 	boolean rival_frontrunner; // Is a Rival bot frontrunning?
 	boolean inBottom;
 
@@ -192,14 +196,14 @@ UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny);
 patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, boolean tiny, UINT8 amount, SINT8 altmode);
 #define K_GetCachedItemPatch(type, tiny, amount) K_GetCachedItemPatchEx(type, tiny, amount, -1)
 
-boolean K_DontDoubleMyItems(kartitemtype_e type, UINT8 amount);
+boolean K_DontDoubleMyItems(kartresult_t *res);
 
 void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags);
 void K_UnsetItemOut(player_t *player);
 
 mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, INT32 moloop, mobj_t *prev);
 
-void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, kartitemblink_e blink);
+void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, boolean nodoubles, kartitemblink_e blink);
 void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCount);
 void K_UpdateItemCooldown(void);
 tic_t K_GetIndirectItemCooldown(void);
@@ -221,6 +225,7 @@ void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force);
 
 useoddsfunc_f KO_SMonitorOdds;
 useoddsfunc_f KO_SPBRaceOdds;
+useoddsfunc_f KO_GrowRaceOdds;
 
 void K_DoThunderShield(player_t *player);
 void K_DoAttractionShield(player_t *player, boolean hipower);

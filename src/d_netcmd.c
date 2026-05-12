@@ -753,6 +753,9 @@ consvar_t cv_kartaltshrink_arrowbullet = CVAR_INIT ("kart_altshrink_arrowbullet"
 static CV_PossibleValue_t altshrink_arrowbullet_threshold_cons_t[] = {{0, "MIN"}, {2 * FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_kartaltshrink_arrowbulletthres = CVAR_INIT ("kart_altshrink_arrowbullet_threshold", "1.45", CV_NETVAR|CV_FLOAT, altshrink_arrowbullet_threshold_cons_t, NULL);
 
+// If you're in Alt. Shrink state, you'll roll KRF_RUNNERAUGMENT items at earlier distances with this on.
+consvar_t cv_kartaltshrink_runneranger = CVAR_INIT ("kart_altshrink_runneranger", "Off", CV_NETVAR, CV_OnOff, NULL);
+
 static CV_PossibleValue_t kartairsquish_cons_t[] = {{1, "Squish"}, {2, "Flip-over"}, {0, "None"}, {0, NULL}};
 consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kartairsquish_cons_t, NULL);
 

@@ -1721,7 +1721,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 					break;
 				}
 
-				K_AwardPlayerItem(player, target->threshold, max(1, target->movecount), KITEMBLINK_NORMAL);
+				K_AwardPlayerItem(player, target->threshold, max(1, target->movecount), true, KITEMBLINK_NORMAL);
 			}
 			break;
 		}

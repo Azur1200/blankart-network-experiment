@@ -357,18 +357,17 @@ static UINT32 K_IntDistanceForMap(fixed_t curx,
 
 	\return	Don't double for this item?
 */
-boolean K_DontDoubleMyItems(kartitemtype_e type, UINT8 amount)
+boolean K_DontDoubleMyItems(kartresult_t *res)
 {
-	return type == KITEM_BALLHOG || type == KITEM_SPB
+	return ((res->flags & KRF_DONTCHANGERESULT) == KRF_DONTCHANGERESULT);
+	/*return type == KITEM_BALLHOG || type == KITEM_SPB
 	    || type == KITEM_INVINCIBILITY || type == KITEM_GROW
 	    || type == KITEM_BUBBLESHIELD || type == KITEM_FLAMESHIELD
 	    || type == KITEM_ROCKETSNEAKER || type == KITEM_SHRINK
 	    || type == KITEM_HYUDORO
-	    || (type == KITEM_BANANA && amount >= 4)
-	    || (type == KITEM_ORBINAUT && amount >= 3)
-	    || (type == KITEM_SNEAKER && amount >= 3)
-	    || (type == KITEM_JAWZ && amount >= 2)
-	    || type >= KITEM_FIRSTFREESLOT; // TODO: excludes custom items for now
+	    || (type == KITEM_BANANA && amount >= 4) // Do you REALLY want 20 bananas?
+	    || (type == KITEM_JAWZ && amount >= 2) // Or 4 Jawz?
+	    || type >= KITEM_FIRSTFREESLOT; // TODO: excludes custom items for now*/
 }
 
 void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags)
@@ -392,7 +391,7 @@ static sfxenum_t resultfx[] = {
 };
 
 // be careful with invalid item types here
-void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, kartitemblink_e blink)
+void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, boolean nodoubles, kartitemblink_e blink)
 {
 	K_BotResetItemConfirm(player, true);
 
@@ -406,7 +405,7 @@ void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, kart
 
 	player->itemtype = type;
 
-	if (K_IsAltShrunk(player) && !K_DontDoubleMyItems(type, amount) && blink != KITEMBLINK_DEBUG)
+	if (K_IsAltShrunk(player) && !nodoubles && blink != KITEMBLINK_DEBUG)
 		amount *= 2;
 
 	player->itemamount = amount;
@@ -419,8 +418,9 @@ static void K_AwardPlayerResult(player_t *player, kartresult_t *result, kartitem
 {
 	kartitemtype_e type = result != NULL ? result->type : MAXKARTITEMS;
 	UINT8 amount = result != NULL ? result->amount : 1;
+	const boolean nodoubles = K_DontDoubleMyItems(result);
 
-	K_AwardPlayerItem(player, type, amount, blink);
+	K_AwardPlayerItem(player, type, amount, nodoubles, blink);
 
 	if (result == NULL)
 		return;
@@ -745,7 +745,7 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 		}
 		else
 		{
-			if (roulette->rival)
+			if (roulette->rival || roulette->is_shrunk)
 			{
 				// Rival bot or already shrunk. DON'T roll another.
 				newodds = 0;
@@ -797,9 +797,10 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 			runner_distval = FixedMul(runner_distval, LUNATIC_RUNNERAUG_CRUNCHER);
 		}
 
-		if (roulette->rival_frontrunner == true)
+		if (roulette->rival_frontrunner == true || (roulette->is_shrunk == true && cv_kartaltshrink_runneranger.value))
 		{
 			// The rival is frontrunning. Be *especially* vicious against them!
+			// Players with Alt. Shrink also get to be more vicious...
 			runner_distval = (runner_distval / 2);
 		}
 
@@ -859,6 +860,12 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 			fracOdds *= 2;
 		}
 
+		if (roulette->shrink_freebie == true)
+		{
+			// As do Alt. Shrunk players... but only on their freebie roll!
+			fracOdds *= 2;
+		}
+
 		fracOdds = FixedMul(fracOdds, FRACUNIT + K_ItemOddsScale(roulette->pingame, roulette->spbrush));
 
 		if (roulette->mashed > 0)
@@ -896,16 +903,26 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 	UINT8 disttable[(MAXODDS - 1) * 2];
 	UINT8 distlen = 0;
 	boolean oddsvalid[MAXODDS];
+
 	boolean rivalodds = false;
 	boolean rivalrunner = false;
+
+	boolean shrinkodds = false;
+	boolean shrinkfreebie = false;
 
 	// Unused now, oops :V
 	(void)bestbumper;
 
-	if ((player->bot && player->botvars.rival) || K_IsAltShrunk(player))
+	if (player->bot && player->botvars.rival)
 	{
-		// Rival bots and players using Alt. Shrink get crazier items.
+		// Rival bots get crazier items.
 		rivalodds = true;
+	}
+	
+	if (K_IsAltShrunk(player))
+	{
+		// Players using Alt. Shrink ALSO get crazier items.
+		shrinkodds = true;
 	}
 
 	if (player->bot && player->botvars.rival && player->position <= 1)
@@ -924,6 +941,8 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 		.mashed = mashed,
 		.spbrush = spbrush,
 		.bot = player->bot,
+		.shrink_freebie = (player->roulettetype == KROULETTETYPE_SHRINK),
+		.is_shrunk = shrinkodds,
 		.rival = rivalodds,
 		.rival_frontrunner = rivalrunner,
 		.inBottom = K_IsPlayerLosing(player),
@@ -1278,6 +1297,12 @@ UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 		pdis = FixedMul(pdis, LEGACYODDSEXAGGERATE);
 	}
 
+	if (player->itemroulette && (player->roulettetype == KROULETTETYPE_SHRINK))
+	{
+		// Alt. Shrink freebie roll, divide by 4 to curb on ESPECIALLY stupid rolls
+		pdis /= 4;
+	}
+
 	return pdis;
 }
 
@@ -1405,7 +1430,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// Give a debug item instead if specified
 	if (cv_kartdebugitem.value != 0 && !modeattacking)
 	{
-		K_AwardPlayerItem(player, cv_kartdebugitem.value, cv_kartdebugamount.value, KITEMBLINK_DEBUG);
+		K_AwardPlayerItem(player, cv_kartdebugitem.value, cv_kartdebugamount.value, true, KITEMBLINK_DEBUG);
 		return;
 	}
 
@@ -1488,7 +1513,9 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		.mashed = mashed,
 		.spbrush = spbrush,
 		.bot = player->bot,
-		.rival = ((player->bot && player->botvars.rival) || (K_IsAltShrunk(player))),
+		.shrink_freebie = (player->roulettetype == KROULETTETYPE_SHRINK),
+		.is_shrunk = (K_IsAltShrunk(player)),
+		.rival = (player->bot && player->botvars.rival),
 		.rival_frontrunner = ((player->bot && player->botvars.rival) && (player->position <= 1)),
 		.inBottom = K_IsPlayerLosing(player),
 	};
@@ -1621,6 +1648,19 @@ INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresul
 	{
 		// Force SPB onto 2nd if they get too far behind.
 		*forceme = 2;
+	}
+
+	return odds;
+}
+
+// Grow odds
+INT32 KO_GrowRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme)
+{
+	(void)result;
+	if (roulette->is_shrunk)
+	{
+		// Using Alt. Shrink; if you've already changed size, do you *really* need this?
+		odds = 0;
 	}
 
 	return odds;
@@ -2400,6 +2440,12 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 				K_DoGrowShrink(player, true);
 
 				S_StartSound(player->mo, sfx_kc46);
+
+				// Shrink isn't very strong on its own--give a freebie roll to really bring down the hurt!
+				if ((player->itemamount - 1) <= 0)
+				{
+					K_StartRoulette(player, KROULETTETYPE_SHRINK);
+				}
 			}
 			else
 			{

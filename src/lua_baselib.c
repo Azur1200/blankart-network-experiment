@@ -5534,10 +5534,12 @@ static int lib_kDisableSeekingReticule(lua_State *L)
 
 static int lib_kDontDoubleMyItems(lua_State *L)
 {
-	kartitemtype_e type = luaL_checkinteger(L, 1);
-	INT32 amount = luaL_checkinteger(L, 2);
+	kartresult_t *res = *((kartresult_t **)luaL_checkudata(L, 1, META_KARTRESULT));
+	//HUDSAFE
+	if (!res)
+		return LUA_ErrInvalid(L, "kartresult_t");
 
-	lua_pushboolean(L, K_DontDoubleMyItems(type, amount));
+	lua_pushboolean(L, K_DontDoubleMyItems(res));
 	return 1;
 }
 
