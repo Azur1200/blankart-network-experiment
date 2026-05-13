@@ -103,7 +103,7 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0xd92ae03b05cacd3f
+#define ASSET_HASH_MAIN_PK3            0x435696b325c19b43
 #define ASSET_HASH_MAPPATCH_PK3        0xdfb3c9da6c8c3adf
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE

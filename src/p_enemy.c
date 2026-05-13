@@ -10826,14 +10826,6 @@ void A_ItemPop(void *thing)
 	if (LUA_CallAction(A_ITEMPOP, actor))
 		return;
 
-	if (!(actor->target && actor->target->player))
-	{
-		//mine: this can happen intentionally now
-		// if (cht_debug && !(actor->target && actor->target->player))
-		// 	CONS_Printf("ERROR: Powerup has no target!\n");
-		return;
-	}
-
 	// de-solidify
 	P_UnsetThingPosition(actor);
 	actor->flags &= ~MF_SOLID;
@@ -10881,18 +10873,22 @@ void A_ItemPop(void *thing)
 	//if (actor->info->deathsound)
 		//S_StartSound(remains, actor->info->deathsound);
 
-	if (!((gametypes[gametype]->rules & GTR_BUMPERS) && actor->target->player->bumper <= 0) && !itembreaker)
+	if (actor->target && actor->target->player)
 	{
-		K_StartRoulette(actor->target->player, KROULETTETYPE_NORMAL);
-	}
-	else if (itembreaker)
-	{
-		K_AwardScaledPlayerRings(actor->target->player, ASR_ITEMBOX);
 
-		if (numtargets < 4)
+		if (!((gametypes[gametype]->rules & GTR_BUMPERS) && actor->target->player->bumper <= 0) && !itembreaker)
 		{
-			actor->target->player->itemtype = KITEM_POGOSPRING;
-			actor->target->player->itemamount += 1;
+			K_StartRoulette(actor->target->player, KROULETTETYPE_NORMAL);
+		}
+		else if (itembreaker)
+		{
+			K_AwardScaledPlayerRings(actor->target->player, ASR_ITEMBOX);
+
+			if (numtargets < 4)
+			{
+				actor->target->player->itemtype = KITEM_POGOSPRING;
+				actor->target->player->itemamount += 1;
+			}
 		}
 	}
 
