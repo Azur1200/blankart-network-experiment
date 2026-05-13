@@ -333,19 +333,24 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 					P_KillMobj(special, toucher, NULL, DMG_NORMAL);
 					K_AddPlayerReserveItem(player, KITEM_BONUSITEMROLL, 1);
 				}
-				return;
-			}
-
-			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
-			{
-				if (player->karmamode || player->karmadelay)
+				else
+				{
 					return;
-				player->karmamode = KARMAMODE_ITEM;
+				}
 			}
-
-			special->momx = special->momy = special->momz = 0;
-			P_SetTarget(&special->target, toucher);
-			P_KillMobj(special, toucher, toucher, DMG_NORMAL);
+			else
+			{
+				if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
+				{
+					if (player->karmamode || player->karmadelay)
+						return;
+					player->karmamode = KARMAMODE_ITEM;
+				}
+	
+				special->momx = special->momy = special->momz = 0;
+				P_SetTarget(&special->target, toucher);
+				P_KillMobj(special, toucher, toucher, DMG_NORMAL);
+			}
 			break;
 		case MT_ITEMCAPSULE:
 			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
@@ -1398,7 +1403,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 
 		if (target->target->player->itemflags & IF_ITEMOUT)
 		{
-			kartitemequip_e equipstyle = K_GetItemEquipStyle(target->target->player->equippeditem);
+			// kartitemequip_e equipstyle = K_GetItemEquipStyle(target->target->player->equippeditem);
 			if ((target->type == MT_BANANA_SHIELD && target->target->player->itemtype == KITEM_BANANA) // trail items
 				|| (target->type == MT_SSMINE_SHIELD && target->target->player->itemtype == KITEM_MINE)
 				|| (target->type == MT_SINK_SHIELD && target->target->player->itemtype == KITEM_KITCHENSINK))
