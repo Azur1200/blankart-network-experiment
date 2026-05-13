@@ -143,6 +143,8 @@ struct camera_t
 	// between -45 deg and 45 deg
 	fixed_t freelook_pitch;
 	fixed_t freelook_pitch_add;
+	// flickstick
+	fixed_t freelook_rotate;
 
 	// Interpolation data
 	fixed_t old_x, old_y, old_z;

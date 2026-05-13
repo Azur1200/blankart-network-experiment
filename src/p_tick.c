@@ -700,6 +700,19 @@ void P_RunChaseCameras(void)
 				cam->freelook_pitch_add = 0;
 			}
 
+			INT32 flickstick_xaxis = G_PlayerInputAnalog(i, gc_flickstick_right, false, DEADZONE_X) - G_PlayerInputAnalog(i, gc_flickstick_left, false, DEADZONE_Y);
+			INT32 flickstick_yaxis = G_PlayerInputAnalog(i, gc_flickstick_back, false, DEADZONE_Y) - G_PlayerInputAnalog(i, gc_flickstick_forward, false, DEADZONE_Y);
+			double radians = atan2(-flickstick_xaxis, -flickstick_yaxis);
+			INT32 degrees = (INT32) (radians * (180.0 / 3.1415926535));
+			// CONS_Printf(M_GetText("flick stick x axis: %d\n"), flickstick_xaxis);
+			// CONS_Printf(M_GetText("flick stick y axis: %d\n"), flickstick_yaxis);
+			// CONS_Printf(M_GetText("radians: %f\n"), radians);
+			// CONS_Printf(M_GetText("degrees: %d\n"), degrees);
+			cam->freelook_rotate = degrees;
+	
+			if (abs(flickstick_xaxis) < 10 && abs(flickstick_yaxis) < 10)
+				cam->freelook_rotate = 0;
+
 			P_MoveChaseCamera(p, cam, false);
 		}
 	}
