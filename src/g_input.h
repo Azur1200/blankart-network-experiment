@@ -96,6 +96,10 @@ typedef enum
 	gc_director,
 	gc_horncode,
 	gc_freelook,
+	gc_flickstick_left, // ASTROS BULLSHIT OH YEAH
+	gc_flickstick_right, // ASTROS BULLSHIT OH YEAH
+	gc_flickstick_forward, // ASTROS BULLSHIT OH YEAH
+	gc_flickstick_back, // ASTROS BULLSHIT OH YEAH
 	num_gamecontrols
 } gamecontrols_e;
 

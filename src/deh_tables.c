@@ -1577,6 +1577,10 @@ struct int_const_s const INT_CONST[] = {
 	{"GC_DIRECTOR",gc_director},
 	{"GC_HORNCODE",gc_horncode},
 	{"GC_FREELOOK",gc_freelook},
+	{"GC_FLICKSTICK_LEFT", gc_flickstick_left},
+	{"GC_FLICKSTICK_RIGHT", gc_flickstick_right},
+	{"GC_FLICKSTICK_FORWARD", gc_flickstick_forward},
+	{"GC_FLICKSTICK_BACK", gc_flickstick_back},
 	{"NUM_GAMECONTROLS",num_gamecontrols},
 
 	// screen.h constants
