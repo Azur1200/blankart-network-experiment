@@ -980,6 +980,7 @@ const char *blancredits[] = {
 	"\"scizor300\"",
 	"\"StarrydustNova\"", // Per some indev talks. Can't reveal the secrets yet!
 	"\"joshyflip\"", // Per some indev talks. Can't reveal the secrets yet!
+	"\"ArtoMeister\"", // "Bad waypoint" graphic
 	"",
 	"\1Additional Assets",
 	"Sonic Team Jr.",
