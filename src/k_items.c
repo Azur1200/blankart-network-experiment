@@ -390,6 +390,19 @@ static sfxenum_t resultfx[] = {
 	[KITEMBLINK_DEBUG] = sfx_dbgsal,
 };
 
+void K_AddPlayerReserveItem(player_t *player, kartitemtype_e type, UINT8 amount)
+{
+	// will disallow adding non-matching items
+	if (player->itemreservetype != 0 && type != player->itemreservetype)
+	{
+		return;
+	}
+
+	// adds items to the reserve instead of setting
+	player->itemreservetype = type;
+	player->itemreserveamount += amount;
+}
+
 // be careful with invalid item types here
 void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, boolean nodoubles, kartitemblink_e blink)
 {
@@ -412,6 +425,50 @@ void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, bool
 
 	if (itemlistactive)
 		K_AddItemRollToList((INT32)(player - players), type, amount);
+}
+
+void K_TransferPlayerReserveItem(player_t *player)
+{
+	UINT8 transferamount = player->itemreserveamount;
+	if (transferamount == 0 || player->itemreservetype == 0)
+		return;
+	if (!P_CanPickupItem(player, PICKUPITEM_RESERVE))
+		return;
+
+	K_BotResetItemConfirm(player, true);
+	
+	if (K_GetItemFlags(player->itemreservetype) & KIF_SINGLEFROMRESERVE)
+	{
+		transferamount = 1;
+	}
+
+	if (player->itemreservetype == KITEM_BONUSITEMROLL)
+	{
+		S_StartSound(player->mo, sfx_kc2e);
+		K_StartRoulette(player, KROULETTETYPE_NORMAL);
+	}
+	else
+	{
+		player->itemblink = TICRATE;
+		player->itemblinkmode = 0;
+		if (P_IsDisplayPlayer(player))
+		{
+			S_StartSound(NULL, resultfx[0]);
+		}
+
+		player->itemtype = player->itemreservetype;
+		player->itemamount = transferamount;
+
+		if (itemlistactive)
+			K_AddItemRollToList((INT32)(player - players), player->itemreservetype, player->itemreserveamount);
+	}
+
+	// update reserve
+	player->itemreserveamount -= transferamount;
+	if (player->itemreserveamount == 0)
+	{
+		player->itemreservetype = 0;
+	}
 }
 
 static void K_AwardPlayerResult(player_t *player, kartresult_t *result, kartitemblink_e blink)
@@ -2127,6 +2184,10 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 
 	switch (player->itemtype)
 	{
+	case KITEM_BONUSITEMROLL:
+		K_StartRoulette(player, KROULETTETYPE_NORMAL);
+		player->itemamount = 0;
+		break;
 	case KITEM_SNEAKER:
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && (onground || force) && NO_HYUDORO)
 		{

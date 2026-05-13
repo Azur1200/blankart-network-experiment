@@ -471,7 +471,9 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(nulldrift) \
 	X(nulldrifttime) \
 	X(karttilt) \
-	X(karttiltmomentum)
+	X(karttiltmomentum) \
+	X(itemreservetype) \
+	X(itemreserveamount)
 
 enum player_e
 {
@@ -793,6 +795,12 @@ static int player_get(lua_State *L)
 		break;
 	case player_itemamount:
 		lua_pushinteger(L, plr->itemamount);
+		break;
+	case player_itemreservetype:
+		lua_pushinteger(L, plr->itemreservetype);
+		break;
+	case player_itemreserveamount:
+		lua_pushinteger(L, plr->itemreserveamount);
 		break;
 	case player_equippeditem:
 		lua_pushinteger(L, plr->equippeditem);
@@ -1612,6 +1620,12 @@ static int player_set(lua_State *L)
 		break;
 	case player_itemamount:
 		plr->itemamount = luaL_checkinteger(L, 3);
+		break;
+	case player_itemreservetype:
+		plr->itemreservetype = luaL_checkinteger(L, 3);
+		break;
+	case player_itemreserveamount:
+		plr->itemreserveamount = luaL_checkinteger(L, 3);
 		break;
 	case player_itemusecooldown:
 		plr->itemusecooldown = luaL_checkinteger(L, 3);

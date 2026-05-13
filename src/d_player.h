@@ -723,9 +723,11 @@ struct player_t
 	// Item held stuff
 	UINT8 itemtype;				// KITEM_ constant for item number
 	UINT8 itemamount;			// Amount of said item
-	UINT8 equippeditem;			// Item type that is currently "equipped"
+	UINT8 itemreservetype;		// KITEM_ constant for item number in the reserve slot
+	UINT8 itemreserveamount;	// Amount of said item in the reserve slot
+	UINT8 equippeditem;			// Item type that is currently in the equip slot, amount is handled by the player's hnext linked list of mobjs
 	itemflags_t itemflags; 		// holds IF_flags (see itemstate_t)
-	tic_t itemusecooldown;		// timer for which the player is locked out of using an item or mashing the item roulette (implementation of xItemLib setPlayerItemCooldown)
+	tic_t itemusecooldown;		// timer for which the player is locked out of using an item or mashing the item roulette (implementation of xItemLib setPlayerItemCooldown), doesn't block ring usage
 	tic_t itemusecooldownmax;	// most recent highest value for itemusecooldown, mainly used for HUD rendering currently
 	
 	SINT8 throwdir; 	// Held dir of controls; 1 = forward, 0 = none, -1 = backward (was "player->heldDir")

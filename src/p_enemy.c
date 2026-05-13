@@ -10828,8 +10828,9 @@ void A_ItemPop(void *thing)
 
 	if (!(actor->target && actor->target->player))
 	{
-		if (cht_debug && !(actor->target && actor->target->player))
-			CONS_Printf("ERROR: Powerup has no target!\n");
+		//mine: this can happen intentionally now
+		// if (cht_debug && !(actor->target && actor->target->player))
+		// 	CONS_Printf("ERROR: Powerup has no target!\n");
 		return;
 	}
 

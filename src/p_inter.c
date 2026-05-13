@@ -105,7 +105,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 				if (player->stealingtimer || player->stolentimer
 					|| player->rocketsneakertimer
 					|| player->eggmanexplode
-					|| K_SMonitorSlotHogging(player)
+					|| (K_SMonitorSlotHogging(player))
 					|| (player->growshrinktimer > 0)
 					|| player->flametimer)
 					return false;
@@ -116,7 +116,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 					|| (player->itemflags & IF_ITEMOUT))
 					return false;
 
-				if (weapon == 3 && K_GetShieldFromPlayer(player) != KSHIELD_NONE)
+				if (weapon == PICKUPITEM_FLOATING && K_GetShieldFromPlayer(player) != KSHIELD_NONE)
 					return false; // No stacking shields!
 			}
 		}
@@ -325,7 +325,16 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			return;
 		case MT_RANDOMITEM:
 			if (!itembreaker && !P_CanPickupItem(player, PICKUPITEM_ITEM))
+			{
+				if (K_SMonitorSlotHogging(player) && player->itemreserveamount == 0)
+				{
+					special->momx = special->momy = special->momz = 0;
+					// P_SetTarget(&special->target, toucher);
+					P_KillMobj(special, toucher, NULL, DMG_NORMAL);
+					K_AddPlayerReserveItem(player, KITEM_BONUSITEMROLL, 1);
+				}
 				return;
+			}
 
 			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 			{

@@ -876,6 +876,9 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].keepstuff.maxsmonitortime);
 		SYNC(players[i].keepstuff.growshrinktimer);
 		SYNC(players[i].keepstuff.flametimer);
+
+		SYNC(players[i].itemreservetype);
+		SYNC(players[i].itemreserveamount);
 	}
 	TracyCZoneEnd(__zone);
 }

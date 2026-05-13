@@ -2983,6 +2983,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	// SRB2kart
 	INT32 itemtype;
 	INT32 itemamount;
+	INT32 itemreservetype;
+	INT32 itemreserveamount;
 	INT32 itemroulette;
 	INT32 previtemroulette;
 	INT32 roulettetype;
@@ -3086,6 +3088,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		roulettetype = KROULETTETYPE_NORMAL;
 		itemtype = 0;
 		itemamount = 0;
+		itemreservetype = 0;
+		itemreserveamount = 0;
 		growshrinktimer = 0;
 		bubblehealth = 0;
 		bumper = ((gametypes[gametype]->rules & GTR_BUMPERS) ? K_StartingBumperCount() : 0);
@@ -3182,6 +3186,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 			itemtype = players[player].itemtype;
 			itemamount = players[player].itemamount;
 		}
+
+		itemreservetype = players[player].itemreservetype;
+		itemreserveamount = players[player].itemreserveamount;
 
 		// Keep Shrink status, remove Grow status
 		// Alt. Shrink is a powerup, so don't keep that.
@@ -3361,6 +3368,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->roulettetype = roulettetype;
 	p->itemtype = itemtype;
 	p->itemamount = itemamount;
+	p->itemreservetype = itemreservetype;
+	p->itemreserveamount = itemreserveamount;
 	p->growshrinktimer = growshrinktimer;
 	p->bubblehealth = bubblehealth;
 	p->bumper = bumper;
