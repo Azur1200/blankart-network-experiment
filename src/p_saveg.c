@@ -760,6 +760,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].growshrinktimer);
 		SYNC(players[i].growcancel);
 		SYNC(players[i].altshrinktimeshit);
+		SYNCBOOLEAN(players[i].inarrowbullet);
 		RSYNC(players[i].arrowbullet);
 
 		SYNC(players[i].rocketsneakertimer);

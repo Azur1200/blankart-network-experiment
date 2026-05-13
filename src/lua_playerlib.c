@@ -415,6 +415,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(growcancel) \
 	X(squishedtimer) \
 	X(arrowbullet) \
+	X(inarrowbullet) \
 	X(rocketsneakertimer) \
 	X(invincibilitytimer) \
 	X(smonitortimer) \
@@ -924,6 +925,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_arrowbullet:
 		LUA_PushUserdata(L, plr->arrowbullet, META_MOBJ);
+		break;
+	case player_inarrowbullet:
+		lua_pushboolean(L, plr->inarrowbullet);
 		break;
 	case player_rocketsneakertimer:
 		lua_pushinteger(L, plr->rocketsneakertimer);
@@ -1753,6 +1757,9 @@ static int player_set(lua_State *L)
 	}
 	case player_arrowbullet:
 		return NOSET;
+	case player_inarrowbullet:
+		plr->inarrowbullet = luaL_checkboolean(L, 3);
+		break;
 	case player_rocketsneakertimer:
 		plr->rocketsneakertimer = luaL_checkinteger(L, 3);
 		break;
