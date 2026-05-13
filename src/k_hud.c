@@ -1490,11 +1490,12 @@ static void K_drawKartItem(void)
 	{
 		// S-Monitor nonsense necessitates we do this ahead of time
 		boolean candrawitemstatus = true;
+		boolean notincooldown = stplyr->itemusecooldown <= 0;
 
-		if (stplyr->itemamount <= 0 && stplyr->itemusecooldown <= 0)
+		if (stplyr->itemamount <= 0 && notincooldown)
 			candrawitemstatus = false;
 
-		if (stplyr->itemtype == 0 && stplyr->itemusecooldown <= 0)
+		if (stplyr->itemtype == 0 && notincooldown)
 			candrawitemstatus = false;
 
 		if (stplyr->itemtype >= numkartitems && stplyr->itemtype != MAXKARTITEMS)
@@ -1751,7 +1752,6 @@ static void K_drawKartItem(void)
 		}
 	}
 
-
 	fx = info.x;
 	fy = info.y;
 	fflags = info.flags;
@@ -1871,6 +1871,42 @@ static void K_drawKartItem(void)
 				   (fy<<FRACBITS) + (13 * info.hudScale) - (tiny ? FRACUNIT : 0),
 				   V_HUDTRANS|fflags, kp_eggnum[min(3, G_TicsToSeconds(stplyr->eggmanexplode))],
 				   info.hudScale);
+	}
+
+	// draw the item reserve
+	if (stplyr->itemreservetype && stplyr->itemreserveamount > 0)
+	{
+		localpatch = K_GetCachedItemPatch(stplyr->itemreservetype, true, stplyr->itemreserveamount);
+
+		if (localpatch == NULL)
+			localpatch = kp_nodraw; // diagnose underflows
+		
+		if (K_GetItemFlags(stplyr->itemreservetype) & KIF_COLPATCH2PLAYER)
+		{
+			colmap = R_GetTranslationColormap(TC_DEFAULT, stplyr->skincolor, GTC_CACHE);
+		}
+		else
+		{
+			colmap = NULL;
+		}
+		
+		fx = (fx<<FRACBITS) + ((tiny ? 16 : 34) * (flipamount ? -info.hudScale : info.hudScale));
+		fy = (fy<<FRACBITS) + ((tiny ? -10 : -7) * info.hudScale);
+		if (!tiny)
+		{
+			dark = K_GetItemFlags(stplyr->itemreservetype) & KIF_DARKBG;
+			localbg = K_getItemBoxPatch(true, dark);
+			
+			V_DrawFixedPatch(fx, fy, info.hudScale, boxpatchflags, localbg, colormap);
+		}
+		
+		V_DrawFixedPatch(fx, fy, info.hudScale, localpatchflags, localpatch, colmap);
+
+		// numbers
+		if (stplyr->itemreserveamount >= K_GetItemNumberDisplayMin(stplyr->itemreservetype, true))
+		{
+			V_DrawPingNumScaled((fx<<FRACBITS) + (26*info.hudScale), (fy<<FRACBITS) + (26*info.hudScale), info.hudScale, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, stplyr->itemreserveamount, colmap);
+		}
 	}
 }
 

@@ -5776,15 +5776,31 @@ void K_DropItems(player_t *player)
 {
 	K_DropHnextList(player);
 
-	if (player->mo && !P_MobjWasRemoved(player->mo) && player->itemamount > 0 && player->itemtype != MAXKARTITEMS)	// don't drop KITEM_SAD
+	if (player->mo && !P_MobjWasRemoved(player->mo))
 	{
-		mobj_t *drop = K_CreatePaperItem(
-			player->mo->x, player->mo->y, player->mo->z + player->mo->height/2,
-			player->mo->angle + ANGLE_90, P_MobjFlip(player->mo),
-			player->itemtype, player->itemamount
-		);
+		mobj_t *drop = NULL;
+		// don't drop undroppable items and KITEM_SAD
+		if (player->itemamount > 0 && !((K_GetItemFlags(player->itemtype) & KIF_DESTROYONDROP) || player->itemtype == MAXKARTITEMS))
+		{
+			drop = K_CreatePaperItem(
+				player->mo->x, player->mo->y, player->mo->z + player->mo->height/2,
+				player->mo->angle + ANGLE_90, P_MobjFlip(player->mo),
+				player->itemtype, player->itemamount
+			);
 
-		K_FlipFromObject(drop, player->mo);
+			K_FlipFromObject(drop, player->mo);
+		}
+		// drop reserve item too
+		if (player->itemreserveamount > 0 && !((K_GetItemFlags(player->itemreservetype) & KIF_DESTROYONDROP) || player->itemreservetype == MAXKARTITEMS))
+		{
+			drop = K_CreatePaperItem(
+				player->mo->x, player->mo->y, player->mo->z + player->mo->height/2,
+				player->mo->angle - ANGLE_90, P_MobjFlip(player->mo),
+				player->itemreservetype, player->itemreserveamount
+			);
+
+			K_FlipFromObject(drop, player->mo);
+		}
 	}
 
 	K_StripItems(player);
@@ -8190,6 +8206,8 @@ void K_KartPlayerAfterThink(player_t *player)
 		player->attractionboost = 0;
 		player->attractionattack_hipower = false;
 	}
+
+	K_TransferPlayerReserveItem(player);
 
 	TracyCZoneEnd(__zone);
 }
@@ -10922,6 +10940,8 @@ void K_StripItems(player_t *player)
 	player->itemtype = KITEM_NONE;
 	player->equippeditem = KITEM_NONE;
 	player->itemamount = 0;
+	player->itemreservetype = KITEM_NONE;
+	player->itemreserveamount = 0;
 	player->itemflags &= ~IF_EGGMANOUT;
 	K_DisableSeekingReticule(player);
 	K_UnsetItemOut(player);
@@ -11482,69 +11502,69 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		}
 	}
 
-		// No more!
-		if (!player->itemamount)
+	// No more!
+	if (!player->itemamount)
+	{
+		// really really shitty hack
+		if (!(player->itemflags &= ~IF_PASSIVESEEKING))
 		{
-			// really really shitty hack
-			if (!(player->itemflags &= ~IF_PASSIVESEEKING))
-			{
-				K_DisableSeekingReticule(player);
-			}
-			player->itemflags &= ~IF_ITEMOUT;
-			player->itemtype = KITEM_NONE;
-			if (K_GetShieldFromPlayer(player) != KSHIELD_NONE && K_GetShieldFromPlayer(player) != KSHIELD_FLAME)
-				P_RemoveMobj(player->shieldtracer);
+			K_DisableSeekingReticule(player);
 		}
+		player->itemflags &= ~IF_ITEMOUT;
+		player->itemtype = KITEM_NONE;
+		if (K_GetShieldFromPlayer(player) != KSHIELD_NONE && K_GetShieldFromPlayer(player) != KSHIELD_FLAME)
+			P_RemoveMobj(player->shieldtracer);
+	}
 
-		if (player->growshrinktimer == 0)
+	if (player->growshrinktimer == 0)
+	{
+		player->altshrinktimeshit = 0;
+
+		if (player->arrowbullet && (!P_MobjWasRemoved(player->arrowbullet)))
 		{
-			player->altshrinktimeshit = 0;
-
-			if (player->arrowbullet && (!P_MobjWasRemoved(player->arrowbullet)))
-			{
-				P_SetTarget(&player->arrowbullet->target, NULL);
-				P_RemoveMobj(player->arrowbullet);
-				P_SetTarget(&player->arrowbullet, NULL);
-			}
+			P_SetTarget(&player->arrowbullet->target, NULL);
+			P_RemoveMobj(player->arrowbullet);
+			P_SetTarget(&player->arrowbullet, NULL);
 		}
+	}
 
-		if (player->growshrinktimer <= 0)
-			player->growcancel = -1;
+	if (player->growshrinktimer <= 0)
+		player->growcancel = -1;
 
-		if (player->hyudorotimer > 0)
+	if (player->hyudorotimer > 0)
+	{
+		INT32 hyu = hyudorotime;
+
+		if (leveltime & 1)
 		{
-			INT32 hyu = hyudorotime;
-
-			if (leveltime & 1)
-			{
-				player->mo->renderflags |= RF_DONTDRAW;
-			}
+			player->mo->renderflags |= RF_DONTDRAW;
+		}
+		else
+		{
+			if (player->hyudorotimer >= (TICRATE/2) && player->hyudorotimer <= hyu-(TICRATE/2))
+				player->mo->renderflags &= ~K_GetPlayerDontDrawFlag(player);
 			else
-			{
-				if (player->hyudorotimer >= (TICRATE/2) && player->hyudorotimer <= hyu-(TICRATE/2))
-					player->mo->renderflags &= ~K_GetPlayerDontDrawFlag(player);
-				else
-					player->mo->renderflags &= ~RF_DONTDRAW;
-			}
-
-			player->flashing = player->hyudorotimer; // We'll do this for now, let's people know about the invisible people through subtle hints
-		}
-		else if (player->hyudorotimer == 0)
-		{
-			player->mo->renderflags &= ~RF_DONTDRAW;
+				player->mo->renderflags &= ~RF_DONTDRAW;
 		}
 
-		if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0) // dead in match? you da bomb
-		{
-			K_DropItems(player); //K_StripItems(player);
-			K_StripOther(player);
-			player->mo->renderflags |= RF_GHOSTLY;
-			player->flashing = player->karmadelay;
-		}
-		else if ((player->bumper > 0) || ((gametypes[gametype]->rules & GTR_CIRCUIT) && !(gametypes[gametype]->rules & GTR_BUMPERS)))
-		{
-			player->mo->renderflags &= ~(RF_TRANSMASK|RF_BRIGHTMASK);
-		}
+		player->flashing = player->hyudorotimer; // We'll do this for now, let's people know about the invisible people through subtle hints
+	}
+	else if (player->hyudorotimer == 0)
+	{
+		player->mo->renderflags &= ~RF_DONTDRAW;
+	}
+
+	if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0) // dead in match? you da bomb
+	{
+		K_DropItems(player); //K_StripItems(player);
+		K_StripOther(player);
+		player->mo->renderflags |= RF_GHOSTLY;
+		player->flashing = player->karmadelay;
+	}
+	else if ((player->bumper > 0) || ((gametypes[gametype]->rules & GTR_CIRCUIT) && !(gametypes[gametype]->rules & GTR_BUMPERS)))
+	{
+		player->mo->renderflags &= ~(RF_TRANSMASK|RF_BRIGHTMASK);
+	}
 
 	K_AdjustPlayerFriction(player);
 
