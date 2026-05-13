@@ -2411,7 +2411,12 @@ void P_MovePlayer(player_t *player)
 
 	if (K_AltShrinkArrowBulletCondition(player))
 	{
+		player->inarrowbullet = true;
 		K_SpawnNormalSpeedLines(player);
+	}
+	else
+	{
+		player->inarrowbullet = false;
 	}
 #undef MINAURAPCT
 #undef AURA_DIFF

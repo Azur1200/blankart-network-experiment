@@ -7694,6 +7694,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->growshrinktimer != 0)
 	{
+		INT16 lastgrowshrink = player->growshrinktimer;
+
 		if (player->growshrinktimer > 0)
 			player->growshrinktimer--;
 		if (player->growshrinktimer < 0)
@@ -7701,7 +7703,16 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 		// Back to normal
 		if (player->growshrinktimer == 0)
+		{
+			if (player->inarrowbullet)
+			{
+				// 1.5 seconds of i-frames for better gamefeel
+				player->flashing = 3 * TICRATE / 2;
+			}
+
+			player->inarrowbullet = false;
 			K_RemoveGrowShrink(player);
+		}
 	}
 
 	if (player->superring)
