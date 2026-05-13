@@ -836,6 +836,12 @@ void K_DebugWaypointsVisualise(void)
 				debugmobj->color = SKINCOLOR_YELLOW;
 				debugmobj->colorized = true;
 			}
+			else if (waypoint->respawnstatus == WPSTATUS_BADWAYPOINT)
+			{
+				P_SetMobjState(debugmobj, S_BADWAYPOINT);
+				debugmobj->color = SKINCOLOR_GREEN;
+				debugmobj->colorized = false;
+			}
 			else if (waypoint == players[displayplayers[0]].nextwaypoint)
 			{
 				debugmobj->color = SKINCOLOR_GREEN;
