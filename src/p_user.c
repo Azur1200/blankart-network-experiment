@@ -3131,7 +3131,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	camspeed = cv_cam_speed[num].value;
 	camstill = cv_cam_still[num].value;
 	camrotate = cv_cam_rotate[num].value;
-	camfreelookrotate = thiscam->freelook_yaw;
+	camfreelookrotate = thiscam->freelook_yaw + thiscam->freelook_yaw_add;
 	camdist = FixedMul(cv_cam_dist[num].value, mapobjectscale);
 	camheight = FixedMul(cv_cam_height[num].value, mapobjectscale);
 

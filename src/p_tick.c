@@ -701,8 +701,34 @@ static void P_HandleCameraFreelookYaw(UINT8 pnum, player_t *player, camera_t *ca
 				angle = -cam->freelook_yaw;
 				break;
 		}
-
 		angle = min(abs(angle), TICRATE<<FRACBITS) * intsign(angle);
+
+		// gyro aiming
+		if (G_GetGamepadCanUseTilt(pnum)
+			&& (cv_tiltcontrol[pnum].value == TILTCONTROL_CAME || cv_tiltcontrol[pnum].value == TILTCONTROL_ON)
+			&& G_PlayerInputDown(pnum, gc_freelook, false, DEADZONE_BUTTON)
+		)
+		{
+			fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
+			fixed_t yawRelaxFactor = 141*FRACUNIT/100;
+			vector3_t gyro = G_GetGamepadCalibratedGyro(pnum);
+			vector3_t gravnorm = G_GetGamepadGravity(pnum);
+			vector2_t gyroYZ = {gyro.y, gyro.z};
+			
+			// use world yaw for yaw direction, local combined yaw for magnitude
+			FV3_Normalize(&gravnorm);
+			fixed_t worldYaw = FixedMul(gyro.y, gravnorm.y) + FixedMul(gyro.z, gravnorm.z); // dot product but just yaw and roll
+			
+			fixed_t yaw = intsign(worldYaw) * (encoremode ? -1 : 1) *
+			min(FixedMul(-abs(worldYaw), yawRelaxFactor), FV2_Magnitude(&gyroYZ));
+			
+			cam->freelook_yaw_add = (cam->freelook_yaw_add - FixedMul(yaw, deltaseconds)) % (360<<FRACBITS);
+		}
+		else
+		{
+			cam->freelook_yaw_add = 0;
+		}
+
 		if (cam->freelook_yaw+angle < -180*FRACUNIT)
 		{
 			cam->freelook_yaw += 360*FRACUNIT;
@@ -736,7 +762,7 @@ void P_RunChaseCameras(void)
 				// gamecontrol aiming
 				cam->freelook_pitch = (45*FixedDiv(p->cmd.throwdir, KART_FULLTURN));
 				// gyro aiming
-				if (G_GetGamepadCanUseTilt(i) && (cv_tiltcontrol[forplayer].value == TILTCONTROL_CAME || cv_tiltcontrol[forplayer].value == TILTCONTROL_ON))
+				if (G_GetGamepadCanUseTilt(i) && (cv_tiltcontrol[i].value == TILTCONTROL_CAME || cv_tiltcontrol[i].value == TILTCONTROL_ON))
 				{
 					fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
 					vector3_t gyro = G_GetGamepadCalibratedGyro(i);

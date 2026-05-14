@@ -138,13 +138,16 @@ struct camera_t
 	
 	boolean reset_aiming;	// camera aiming needs to be reset from chase camera
 	
-	// Hold up/down to pan the camera vertically
 	boolean freelook_held;
+	// pitch freelook
 	// between -45 deg and 45 deg
 	fixed_t freelook_pitch;
+	// added influence from relative control methods (gyro)
 	fixed_t freelook_pitch_add;
-	// flickstick
+	// yaw freelook
 	fixed_t freelook_yaw;
+	// added influence from relative control methods (gyro)
+	fixed_t freelook_yaw_add;
 
 	// Interpolation data
 	fixed_t old_x, old_y, old_z;
