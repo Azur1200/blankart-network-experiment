@@ -505,6 +505,13 @@ consvar_t cv_freelookstyle[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("freelookstyle4", "Flick Turn", CV_SAVE, freelookstyle_cons_t, NULL)
 };
 
+consvar_t cv_freelookrequiresbutton[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("freelookrequiresbutton", "Off",  CV_SAVE, CV_YesNo, NULL),
+	CVAR_INIT ("freelookrequiresbutton2", "Off", CV_SAVE, CV_YesNo, NULL),
+	CVAR_INIT ("freelookrequiresbutton3", "Off", CV_SAVE, CV_YesNo, NULL),
+	CVAR_INIT ("freelookrequiresbutton4", "Off", CV_SAVE, CV_YesNo, NULL)
+};
+
 // allows players to use restat (server toggle)
 consvar_t cv_allowrestat = CVAR_INIT ("allowrestat", "Yes", CV_NETVAR, CV_YesNo, NULL);
 consvar_t cv_notifyrestat = CVAR_INIT ("notifyrestat", "Yes", CV_NETVAR, CV_YesNo, NULL);

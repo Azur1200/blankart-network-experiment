@@ -103,6 +103,7 @@ typedef enum
 	FREELOOKSTYLE_ROTATIONAL = 2
 } freelookstyle_e;
 extern consvar_t cv_freelookstyle[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_freelookrequiresbutton[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_guest, cv_ghost_staff;
 

@@ -1472,6 +1472,7 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_deadzonetwod[i]);
 		CV_RegisterVar(&cv_deadzonestyle[i]);
 		CV_RegisterVar(&cv_freelookstyle[i]);
+		CV_RegisterVar(&cv_freelookrequiresbutton[i]);
 		CV_RegisterVar(&cv_litesteer[i]);
 		CV_RegisterVar(&cv_turnsmooth[i]);
 		CV_RegisterVar(&cv_controllerrumble[i]);

@@ -665,41 +665,48 @@ static void P_HandleCameraFreelookYaw(UINT8 pnum, player_t *player, camera_t *ca
 	{
 		fixed_t angle = 0;
 
-		switch (cv_freelookstyle[pnum].value)
+		if (cv_freelookrequiresbutton[pnum].value && (!G_PlayerInputDown(pnum, gc_freelook, false, DEADZONE_BUTTON)))
 		{
-			case FREELOOKSTYLE_FLICK:
-				{
-					INT32 flickstick_xaxis = G_PlayerInputAnalog(pnum, gc_flickstick_right, false, DEADZONE_NONE) - G_PlayerInputAnalog(pnum, gc_flickstick_left, false, DEADZONE_NONE);
-					INT32 flickstick_yaxis = G_PlayerInputAnalog(pnum, gc_flickstick_back, false, DEADZONE_NONE) - G_PlayerInputAnalog(pnum, gc_flickstick_forward, false, DEADZONE_NONE);
-					fixed_t tilt = FixedHypot(abs(flickstick_xaxis) * FRACUNIT, abs(flickstick_yaxis) * FRACUNIT);
+			angle = -cam->freelook_yaw;
+		}
+		else
+		{
+			switch (cv_freelookstyle[pnum].value)
+			{
+				case FREELOOKSTYLE_FLICK:
+					{
+						INT32 flickstick_xaxis = G_PlayerInputAnalog(pnum, gc_flickstick_right, false, DEADZONE_NONE) - G_PlayerInputAnalog(pnum, gc_flickstick_left, false, DEADZONE_NONE);
+						INT32 flickstick_yaxis = G_PlayerInputAnalog(pnum, gc_flickstick_back, false, DEADZONE_NONE) - G_PlayerInputAnalog(pnum, gc_flickstick_forward, false, DEADZONE_NONE);
+						fixed_t tilt = FixedHypot(abs(flickstick_xaxis) * FRACUNIT, abs(flickstick_yaxis) * FRACUNIT);
 
-					if (abs(tilt) >= ((JOYAXISRANGE * G_GetDeadZoneType(pnum, DEADZONE_2D))))
-					{
-						double radians = atan2(-flickstick_xaxis, -flickstick_yaxis);
-						angle = WrapFixed(FixedAngleDifference(cam->freelook_yaw, FloatToFixed(radians * (180.0 / M_PI))), 0<<FRACBITS, 360<<FRACBITS);
+						if (abs(tilt) >= ((JOYAXISRANGE * G_GetDeadZoneType(pnum, DEADZONE_2D))))
+						{
+							double radians = atan2(-flickstick_xaxis, -flickstick_yaxis);
+							angle = WrapFixed(FixedAngleDifference(cam->freelook_yaw, FloatToFixed(radians * (180.0 / M_PI))), 0<<FRACBITS, 360<<FRACBITS);
+						}
+						else
+						{
+							angle = -cam->freelook_yaw;
+						}
 					}
-					else
+					break;
+				case FREELOOKSTYLE_ROTATIONAL:
 					{
-						angle = -cam->freelook_yaw;
+						INT32 flickstick_xaxis = G_PlayerInputAnalog(pnum, gc_flickstick_right, false, DEADZONE_X) - G_PlayerInputAnalog(pnum, gc_flickstick_left, false, DEADZONE_X);
+						if (flickstick_xaxis == 0 && ((player->cmd.buttons & (BT_ACCELERATE|BT_BRAKE)) != 0))
+						{
+							angle = -cam->freelook_yaw;
+						}
+						else
+						{
+							angle = FixedMul((TICRATE<<FRACBITS)/8, FixedDiv(abs(flickstick_xaxis), JOYAXISRANGE)) * -intsign(flickstick_xaxis);
+						}
 					}
-				}
-				break;
-			case FREELOOKSTYLE_ROTATIONAL:
-				{
-					INT32 flickstick_xaxis = G_PlayerInputAnalog(pnum, gc_flickstick_right, false, DEADZONE_X) - G_PlayerInputAnalog(pnum, gc_flickstick_left, false, DEADZONE_X);
-					if (flickstick_xaxis == 0 && ((player->cmd.buttons & (BT_ACCELERATE|BT_BRAKE)) != 0))
-					{
-						angle = -cam->freelook_yaw;
-					}
-					else
-					{
-						angle = FixedMul((TICRATE<<FRACBITS)/8, FixedDiv(abs(flickstick_xaxis), JOYAXISRANGE)) * -intsign(flickstick_xaxis);
-					}
-				}
-				break;
-			default:
-				angle = -cam->freelook_yaw;
-				break;
+					break;
+				default:
+					angle = -cam->freelook_yaw;
+					break;
+			}
 		}
 		angle = min(abs(angle), TICRATE<<FRACBITS) * intsign(angle);
 
