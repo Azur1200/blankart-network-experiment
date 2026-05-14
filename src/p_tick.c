@@ -661,11 +661,11 @@ static fixed_t FixedAngleDifference(fixed_t angle1, fixed_t angle2 )
 
 static void P_HandleCameraFreelookYaw(UINT8 pnum, player_t *player, camera_t *cam)
 {
-	if (P_IsMachineLocalPlayer(player))
+	if (P_IsDisplayPlayer(player))
 	{
 		fixed_t angle = 0;
 
-		if (cv_freelookrequiresbutton[pnum].value && (!G_PlayerInputDown(pnum, gc_freelook, false, DEADZONE_BUTTON)))
+		if (cv_freelookrequiresbutton[pnum].value && (!cam->freelook_held))
 		{
 			angle = -cam->freelook_yaw;
 		}
@@ -693,7 +693,10 @@ static void P_HandleCameraFreelookYaw(UINT8 pnum, player_t *player, camera_t *ca
 				case FREELOOKSTYLE_ROTATIONAL:
 					{
 						INT32 flickstick_xaxis = G_PlayerInputAnalog(pnum, gc_flickstick_right, false, DEADZONE_X) - G_PlayerInputAnalog(pnum, gc_flickstick_left, false, DEADZONE_X);
-						if (flickstick_xaxis == 0 && ((player->cmd.buttons & (BT_ACCELERATE|BT_BRAKE)) != 0))
+						if (flickstick_xaxis == 0 && 
+							(((player->cmd.buttons & (BT_ACCELERATE|BT_BRAKE)) != 0 && !(player->spectator || cam->freecam)) ||
+							(player->spectator || cam->freecam) && G_PlayerInputDown(pnum, gc_camreset, false, DEADZONE_BUTTON))
+						)
 						{
 							angle = -cam->freelook_yaw;
 						}
@@ -761,7 +764,7 @@ void P_RunChaseCameras(void)
 			camera_t *cam = &camera[i];
 
 			// client sided
-			if (P_IsMachineLocalPlayer(p) && G_PlayerInputDown(i, gc_freelook, false, DEADZONE_BUTTON))
+			if (P_IsDisplayPlayer(p) && G_PlayerInputDown(i, gc_freelook, false, DEADZONE_BUTTON))
 			{
 				// instantly able to move camera
 				cam->freelook_held = true;

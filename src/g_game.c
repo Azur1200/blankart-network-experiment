@@ -1586,7 +1586,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 	cmd->turning = 0;
 
-	if (cv_tiltcontrol[forplayer].value == TILTCONTROL_STEER || cv_tiltcontrol[forplayer].value == TILTCONTROL_ON)
+	if ((!spectating) && (cv_tiltcontrol[forplayer].value == TILTCONTROL_STEER || cv_tiltcontrol[forplayer].value == TILTCONTROL_ON))
 	{
 		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
@@ -1958,6 +1958,13 @@ void G_DoLoadLevel(boolean resetplayer)
 	{
 		if (camera[i].chase)
 			P_ResetCamera(&players[displayplayers[i]], &camera[i]);
+		
+		// reset freelook stuff
+		camera[i].freelook_held = false;
+		camera[i].freelook_pitch = 0;
+		camera[i].freelook_pitch_add = 0;
+		camera[i].freelook_yaw = 0;
+		camera[i].freelook_yaw_add = 0;
 	}
 
 	// clear cmd building stuff
