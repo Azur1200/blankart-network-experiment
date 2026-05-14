@@ -46,6 +46,8 @@
 #include "k_specialstage.h"
 #include "k_grandprix.h"
 
+#include "i_gamepad.h"
+
 #include <tracy/tracy/TracyC.h>
 
 #ifdef PARANOIA
@@ -647,6 +649,72 @@ static inline void P_DoTeamStuff(void)
 	}
 }
 
+static inline fixed_t WrapFixed(fixed_t value, fixed_t min, fixed_t max)
+{
+	return ((value - min) % (max - min)) + min;
+}
+static fixed_t FixedAngleDifference(fixed_t angle1, fixed_t angle2 )
+{
+    fixed_t diff = ( angle2 - angle1 + (180<<FRACBITS) ) % (360<<FRACBITS) - (180<<FRACBITS);
+    return diff < -(180<<FRACBITS) ? diff + (360<<FRACBITS) : diff;
+}
+
+static void P_HandleCameraFreelookYaw(UINT8 pnum, player_t *player, camera_t *cam)
+{
+	if (P_IsMachineLocalPlayer(player))
+	{
+		fixed_t angle = 0;
+
+		switch (cv_freelookstyle[pnum].value)
+		{
+			case FREELOOKSTYLE_FLICK:
+				{
+					INT32 flickstick_xaxis = G_PlayerInputAnalog(pnum, gc_flickstick_right, false, DEADZONE_NONE) - G_PlayerInputAnalog(pnum, gc_flickstick_left, false, DEADZONE_NONE);
+					INT32 flickstick_yaxis = G_PlayerInputAnalog(pnum, gc_flickstick_back, false, DEADZONE_NONE) - G_PlayerInputAnalog(pnum, gc_flickstick_forward, false, DEADZONE_NONE);
+					fixed_t tilt = FixedHypot(abs(flickstick_xaxis) * FRACUNIT, abs(flickstick_yaxis) * FRACUNIT);
+
+					if (abs(tilt) >= ((JOYAXISRANGE * G_GetDeadZoneType(pnum, DEADZONE_2D))))
+					{
+						double radians = atan2(-flickstick_xaxis, -flickstick_yaxis);
+						angle = WrapFixed(FixedAngleDifference(cam->freelook_yaw, FloatToFixed(radians * (180.0 / M_PI))), 0<<FRACBITS, 360<<FRACBITS);
+					}
+					else
+					{
+						angle = -cam->freelook_yaw;
+					}
+				}
+				break;
+			case FREELOOKSTYLE_ROTATIONAL:
+				{
+					INT32 flickstick_xaxis = G_PlayerInputAnalog(pnum, gc_flickstick_right, false, DEADZONE_X) - G_PlayerInputAnalog(pnum, gc_flickstick_left, false, DEADZONE_X);
+					if (flickstick_xaxis == 0 && ((player->cmd.buttons & (BT_ACCELERATE|BT_BRAKE)) != 0))
+					{
+						angle = -cam->freelook_yaw;
+					}
+					else
+					{
+						angle = FixedMul((TICRATE<<FRACBITS)/8, FixedDiv(abs(flickstick_xaxis), JOYAXISRANGE)) * -intsign(flickstick_xaxis);
+					}
+				}
+				break;
+			default:
+				angle = -cam->freelook_yaw;
+				break;
+		}
+
+		angle = min(abs(angle), TICRATE<<FRACBITS) * intsign(angle);
+		if (cam->freelook_yaw+angle < -180*FRACUNIT)
+		{
+			cam->freelook_yaw += 360*FRACUNIT;
+		}
+		else if (cam->freelook_yaw+angle > 180*FRACUNIT)
+		{
+			cam->freelook_yaw -= 360*FRACUNIT;
+		}
+		cam->freelook_yaw = (cam->freelook_yaw + angle) % (360<<FRACBITS);
+	}
+}
+
 void P_RunChaseCameras(void)
 {
 	UINT8 i;
@@ -663,7 +731,7 @@ void P_RunChaseCameras(void)
 			if (P_IsMachineLocalPlayer(p) && p->mo && G_PlayerInputDown(i, gc_freelook, false, DEADZONE_BUTTON))
 			{
 				// instantly able to move camera
-				if (p->speed < 6 * p->mo->scale && abs(cam->freelook_held) < 2*TICRATE)
+				if (abs(cam->freelook_held) < 2*TICRATE)
 				{
 					cam->freelook_held = 2*TICRATE;
 				}
@@ -673,7 +741,7 @@ void P_RunChaseCameras(void)
 					cam->freelook_pitch = (45*FixedDiv(p->cmd.throwdir, KART_FULLTURN));
 
 					// gyro aiming
-					if (G_GetGamepadCanUseTilt(i) && cv_tiltcontrol[i].value == 1)
+					if (G_GetGamepadCanUseTilt(i) && (cv_tiltcontrol[forplayer].value == TILTCONTROL_CAME || cv_tiltcontrol[forplayer].value == TILTCONTROL_ON))
 					{
 						fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
 						vector3_t gyro = G_GetGamepadCalibratedGyro(i);
@@ -699,19 +767,7 @@ void P_RunChaseCameras(void)
 				cam->freelook_pitch = 0;
 				cam->freelook_pitch_add = 0;
 			}
-
-			INT32 flickstick_xaxis = G_PlayerInputAnalog(i, gc_flickstick_right, false, DEADZONE_X) - G_PlayerInputAnalog(i, gc_flickstick_left, false, DEADZONE_Y);
-			INT32 flickstick_yaxis = G_PlayerInputAnalog(i, gc_flickstick_back, false, DEADZONE_Y) - G_PlayerInputAnalog(i, gc_flickstick_forward, false, DEADZONE_Y);
-			double radians = atan2(-flickstick_xaxis, -flickstick_yaxis);
-			INT32 degrees = (INT32) (radians * (180.0 / 3.1415926535));
-			// CONS_Printf(M_GetText("flick stick x axis: %d\n"), flickstick_xaxis);
-			// CONS_Printf(M_GetText("flick stick y axis: %d\n"), flickstick_yaxis);
-			// CONS_Printf(M_GetText("radians: %f\n"), radians);
-			// CONS_Printf(M_GetText("degrees: %d\n"), degrees);
-			cam->freelook_rotate = degrees;
-	
-			if (abs(flickstick_xaxis) < 10 && abs(flickstick_yaxis) < 10)
-				cam->freelook_rotate = 0;
+			P_HandleCameraFreelookYaw(i, p, cam);
 
 			P_MoveChaseCamera(p, cam, false);
 		}

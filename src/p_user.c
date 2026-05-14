@@ -3131,7 +3131,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	camspeed = cv_cam_speed[num].value;
 	camstill = cv_cam_still[num].value;
 	camrotate = cv_cam_rotate[num].value;
-	camfreelookrotate = thiscam->freelook_rotate;
+	camfreelookrotate = thiscam->freelook_yaw;
 	camdist = FixedMul(cv_cam_dist[num].value, mapobjectscale);
 	camheight = FixedMul(cv_cam_height[num].value, mapobjectscale);
 
@@ -3243,18 +3243,18 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		camspeed = FRACUNIT;
 
 	if (timeover)
-		angle = mo->angle + FixedAngle(camrotate*FRACUNIT) + FixedAngle(camfreelookrotate*FRACUNIT);
+		angle = mo->angle + FixedAngle(camrotate*FRACUNIT) + FixedAngle(camfreelookrotate);
 	else if (leveltime < introtime)
-		angle = focusangle + FixedAngle(camrotate*FRACUNIT) + FixedAngle(camfreelookrotate*FRACUNIT);
+		angle = focusangle + FixedAngle(camrotate*FRACUNIT) + FixedAngle(camfreelookrotate);
 	else if (camstill || resetcalled || player->playerstate == PST_DEAD)
 		angle = thiscam->angle;
 	else
 	{
 		if (camspeed == FRACUNIT)
-			angle = focusangle + FixedAngle(camrotate<<FRACBITS) + FixedAngle(camfreelookrotate<<FRACBITS);
+			angle = focusangle + FixedAngle(camrotate<<FRACBITS) + FixedAngle(camfreelookrotate);
 		else
 		{
-			angle_t input = focusangle + FixedAngle(camrotate<<FRACBITS) + FixedAngle(camfreelookrotate<<FRACBITS) - thiscam->angle;
+			angle_t input = focusangle + FixedAngle(camrotate<<FRACBITS) + FixedAngle(camfreelookrotate) - thiscam->angle;
 			boolean invert = (input > ANGLE_180);
 			if (invert)
 				input = InvAngle(input);

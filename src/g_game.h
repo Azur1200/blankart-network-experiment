@@ -93,7 +93,16 @@ extern consvar_t cv_driftmode[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_deadzonex[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_deadzoney[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_deadzonet[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_deadzonetwod[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_deadzonestyle[MAXSPLITSCREENPLAYERS];
+
+typedef enum
+{
+	FREELOOKSTYLE_OFF = 0,
+	FREELOOKSTYLE_FLICK = 1,
+	FREELOOKSTYLE_ROTATIONAL = 2
+} freelookstyle_e;
+extern consvar_t cv_freelookstyle[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_guest, cv_ghost_staff;
 

@@ -92,7 +92,7 @@ consvar_t cv_controllerled[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("gamepadled4", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, controllerled_cons_t, led_off_handle4)
 };
 
-static CV_PossibleValue_t tiltcontrol_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Shakes Only"}, {0, NULL}};
+static CV_PossibleValue_t tiltcontrol_cons_t[] = {{TILTCONTROL_OFF, "Off"}, {TILTCONTROL_STEER, "Steering Only"}, {TILTCONTROL_CAME, "Camera Only"}, {TILTCONTROL_ON, "On"}, {0, NULL}};
 consvar_t cv_tiltcontrol[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("tiltcontrol",  "Off", CV_SAVE, tiltcontrol_cons_t, NULL),
 	CVAR_INIT ("tiltcontrol2", "Off", CV_SAVE, tiltcontrol_cons_t, NULL),

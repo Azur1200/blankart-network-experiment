@@ -144,7 +144,7 @@ struct camera_t
 	fixed_t freelook_pitch;
 	fixed_t freelook_pitch_add;
 	// flickstick
-	fixed_t freelook_rotate;
+	fixed_t freelook_yaw;
 
 	// Interpolation data
 	fixed_t old_x, old_y, old_z;
