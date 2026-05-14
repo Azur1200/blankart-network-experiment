@@ -499,10 +499,10 @@ consvar_t cv_deadzonestyle[MAXSPLITSCREENPLAYERS] = {
 
 static CV_PossibleValue_t freelookstyle_cons_t[] = {{FREELOOKSTYLE_OFF, "Off"}, {FREELOOKSTYLE_FLICK, "Flick Turn"}, {FREELOOKSTYLE_ROTATIONAL, "Rotational Turn"}, {0, NULL}};
 consvar_t cv_freelookstyle[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("freelookstyle", "Off",  CV_SAVE, freelookstyle_cons_t, NULL),
-	CVAR_INIT ("freelookstyle2", "Off", CV_SAVE, freelookstyle_cons_t, NULL),
-	CVAR_INIT ("freelookstyle3", "Off", CV_SAVE, freelookstyle_cons_t, NULL),
-	CVAR_INIT ("freelookstyle4", "Off", CV_SAVE, freelookstyle_cons_t, NULL)
+	CVAR_INIT ("freelookstyle", "Flick Turn",  CV_SAVE, freelookstyle_cons_t, NULL),
+	CVAR_INIT ("freelookstyle2", "Flick Turn", CV_SAVE, freelookstyle_cons_t, NULL),
+	CVAR_INIT ("freelookstyle3", "Flick Turn", CV_SAVE, freelookstyle_cons_t, NULL),
+	CVAR_INIT ("freelookstyle4", "Flick Turn", CV_SAVE, freelookstyle_cons_t, NULL)
 };
 
 // allows players to use restat (server toggle)
