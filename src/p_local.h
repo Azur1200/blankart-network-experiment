@@ -139,7 +139,7 @@ struct camera_t
 	boolean reset_aiming;	// camera aiming needs to be reset from chase camera
 	
 	// Hold up/down to pan the camera vertically
-	SINT8 freelook_held;
+	boolean freelook_held;
 	// between -45 deg and 45 deg
 	fixed_t freelook_pitch;
 	fixed_t freelook_pitch_add;

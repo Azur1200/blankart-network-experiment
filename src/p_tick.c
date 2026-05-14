@@ -728,42 +728,24 @@ void P_RunChaseCameras(void)
 			camera_t *cam = &camera[i];
 
 			// client sided
-			if (P_IsMachineLocalPlayer(p) && p->mo && G_PlayerInputDown(i, gc_freelook, false, DEADZONE_BUTTON))
+			if (P_IsMachineLocalPlayer(p) && G_PlayerInputDown(i, gc_freelook, false, DEADZONE_BUTTON))
 			{
 				// instantly able to move camera
-				if (abs(cam->freelook_held) < 2*TICRATE)
-				{
-					cam->freelook_held = 2*TICRATE;
-				}
+				cam->freelook_held = true;
 
-				if (abs(cam->freelook_held) >= 2*TICRATE)
+				// gamecontrol aiming
+				cam->freelook_pitch = (45*FixedDiv(p->cmd.throwdir, KART_FULLTURN));
+				// gyro aiming
+				if (G_GetGamepadCanUseTilt(i) && (cv_tiltcontrol[forplayer].value == TILTCONTROL_CAME || cv_tiltcontrol[forplayer].value == TILTCONTROL_ON))
 				{
-					cam->freelook_pitch = (45*FixedDiv(p->cmd.throwdir, KART_FULLTURN));
-
-					// gyro aiming
-					if (G_GetGamepadCanUseTilt(i) && (cv_tiltcontrol[forplayer].value == TILTCONTROL_CAME || cv_tiltcontrol[forplayer].value == TILTCONTROL_ON))
-					{
-						fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
-						vector3_t gyro = G_GetGamepadCalibratedGyro(i);
-						cam->freelook_pitch_add -= FixedMul(gyro.x, deltaseconds);
-					}
-				}
-			}
-			else if (p->mo && p->cmd.throwdir != 0)
-			{
-				if (p->speed < 6 * p->mo->scale && abs(cam->freelook_held) < 2*TICRATE)
-				{
-					cam->freelook_held += intsign(p->cmd.throwdir);
-				}
-				
-				if (abs(cam->freelook_held) >= 2*TICRATE)
-				{
-					cam->freelook_pitch = 45*FRACUNIT*intsign(p->cmd.throwdir);
+					fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
+					vector3_t gyro = G_GetGamepadCalibratedGyro(i);
+					cam->freelook_pitch_add -= FixedMul(gyro.x, deltaseconds);
 				}
 			}
 			else
 			{
-				cam->freelook_held = 0;
+				cam->freelook_held = false;
 				cam->freelook_pitch = 0;
 				cam->freelook_pitch_add = 0;
 			}
