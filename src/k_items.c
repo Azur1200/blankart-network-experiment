@@ -965,7 +965,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 	boolean rivalrunner = false;
 
 	boolean shrinkodds = false;
-	boolean shrinkfreebie = false;
+	//boolean shrinkfreebie = false;
 
 	// Unused now, oops :V
 	(void)bestbumper;
@@ -1714,6 +1714,7 @@ INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresul
 INT32 KO_GrowRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme)
 {
 	(void)result;
+	(void)forceme;
 	if (roulette->is_shrunk)
 	{
 		// Using Alt. Shrink; if you've already changed size, do you *really* need this?

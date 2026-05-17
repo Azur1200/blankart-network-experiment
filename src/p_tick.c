@@ -695,7 +695,7 @@ static void P_HandleCameraFreelookYaw(UINT8 pnum, player_t *player, camera_t *ca
 						INT32 flickstick_xaxis = G_PlayerInputAnalog(pnum, gc_flickstick_right, false, DEADZONE_X) - G_PlayerInputAnalog(pnum, gc_flickstick_left, false, DEADZONE_X);
 						if (flickstick_xaxis == 0 && 
 							(((player->cmd.buttons & (BT_ACCELERATE|BT_BRAKE)) != 0 && !(player->spectator || cam->freecam)) ||
-							(player->spectator || cam->freecam) && G_PlayerInputDown(pnum, gc_camreset, false, DEADZONE_BUTTON))
+							((player->spectator || cam->freecam) && G_PlayerInputDown(pnum, gc_camreset, false, DEADZONE_BUTTON)))
 						)
 						{
 							angle = -cam->freelook_yaw;

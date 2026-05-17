@@ -1557,7 +1557,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 			if (!cv_allowmismatchmappatch.value)
 			{
 				TracyCZoneEnd(__zone);
-				CONS_Alert(CONS_WARNING, "Mismatching patches have been prevented from loading.\n", maphash);
+				CONS_Alert(CONS_WARNING, "Mismatching patches have been prevented from loading.\n");
 				return false;
 			}
 		}
