@@ -37,7 +37,7 @@ function(git_current_branch variable)
 endfunction()
 
 function(git_latest_commit variable)
-	_git_easy_command(rev-parse --short HEAD)
+	_git_easy_command(rev-parse --short=8 HEAD)
 endfunction()
 
 function(git_working_tree_dirty variable)
