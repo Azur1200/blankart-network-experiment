@@ -5353,6 +5353,7 @@ void K_UpdateHnextList(player_t *player, boolean clean)
 		// Like below, try to clean up the pointer if it's NULL.
 		// Maybe this was a cause of the shrink/eggbox fails?
 		P_SetTarget(&player->mo->hnext, NULL);
+		K_DisableSeekingReticule(player);
 	}
 }
 
