@@ -2788,6 +2788,32 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 	case KITEM_SUPERRING:
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 		{
+			if (onground)
+			{
+				P_Thrust(player->mo, player->mo->angle, 9*player->mo->scale);
+				P_Thrust(player->mo, K_MomentumAngle(player->mo), 9*player->mo->scale);
+			}
+			else
+			{
+				P_Thrust(player->mo, K_MomentumAngle(player->mo), 6*player->mo->scale);
+			}
+
+			// LOUDER!
+			S_StartSound(player->mo, sfx_turhit);
+			S_StartSound(player->mo, sfx_turhit);
+			S_StartSound(player->mo, sfx_s23c);
+
+			K_SpawnDashDustRelease(player, true);
+
+			UINT8 modifier = 32 / (player->kartspeed + player->kartweight + 2);
+
+			player->ringboost += (TICRATE/6) + modifier;
+			player->outruntime += (TICRATE/6) + modifier;
+
+			// make friction not instantly kill the new momentum
+			player->rmomx = player->mo->momx - player->cmomx;
+			player->rmomy = player->mo->momy - player->cmomy;
+
 			player->itemamount--;
 			K_AwardScaledPlayerRings(player, ASR_SUPERRING);
 			K_BotResetItemConfirm(player, false);
