@@ -11351,162 +11351,165 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 				}
 			}
 			// Other items
-			// TODO: how should player->itemusecooldown interact with LUA_HookPlayerItem?
-			else if (player->itemusecooldown == 0)
+			else
 			{
-				// Eggman Monitor exploding
-				if (player->eggmanexplode)
+				// TODO: how should player->itemusecooldown interact with LUA_HookPlayerItem?
+				if (player->itemusecooldown == 0)
 				{
-					if (ATTACK_IS_DOWN && player->eggmanexplode <= 3*TICRATE && player->eggmanexplode > 1)
+					// Eggman Monitor exploding
+					if (player->eggmanexplode)
 					{
-						player->eggmanexplode = 1;
-						K_BotResetItemConfirm(player, false);
-					}
-				}
-				// Eggman Monitor throwing
-				else if (player->itemflags & IF_EGGMANOUT)
-				{
-					if (ATTACK_IS_DOWN)
-					{
-						K_ThrowKartItem(player, false, MT_EGGMANITEM, -1, 0);
-						K_PlayAttackTaunt(player->mo);
-						player->itemflags &= ~IF_EGGMANOUT;
-						player->equippeditem = KITEM_NONE;
-						K_UpdateHnextList(player, true);
-						K_BotResetItemConfirm(player, false);
-					}
-				}
-				// Rocket Sneaker usage
-				else if (player->rocketsneakertimer > 1)
-				{
-					if (ATTACK_IS_DOWN && !HOLDING_ITEM && onground && NO_HYUDORO)
-					{
-						K_DoSneaker(player, SNEAKERTYPE_ROCKETSNEAKER);
-						K_PlayBoostTaunt(player->mo);
-						if (player->rocketsneakertimer <= 2*TICRATE)
-							player->rocketsneakertimer = 1;
-						else
-							player->rocketsneakertimer -= 2*TICRATE;
-						K_BotResetItemConfirm(player, false);
-					}
-				}
-				// Flame Shield Usage
-				else if (player->flametimer > 0)
-				{
-					// Usage sound
-					// moved here so the sound doesn't cut off early when not holding the item button
-					if ((!S_SoundPlaying(player->mo, sfx_s3kd3l)) && player->flamestore > 0)
-						S_StartSound(player->mo, sfx_s3kd3l);
-
-					if (!HOLDING_ITEM && NO_HYUDORO)
-					{
-						if ((buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
+						if (ATTACK_IS_DOWN && player->eggmanexplode <= 3*TICRATE && player->eggmanexplode > 1)
 						{
-							SINT8 incr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 3 : 2;
-							SINT8 metincr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 4 : 3;
-							SINT8 comincr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 10 : 4;
+							player->eggmanexplode = 1;
+							K_BotResetItemConfirm(player, false);
+						}
+					}
+					// Eggman Monitor throwing
+					else if (player->itemflags & IF_EGGMANOUT)
+					{
+						if (ATTACK_IS_DOWN)
+						{
+							K_ThrowKartItem(player, false, MT_EGGMANITEM, -1, 0);
+							K_PlayAttackTaunt(player->mo);
+							player->itemflags &= ~IF_EGGMANOUT;
+							player->equippeditem = KITEM_NONE;
+							K_UpdateHnextList(player, true);
+							K_BotResetItemConfirm(player, false);
+						}
+					}
+					// Rocket Sneaker usage
+					else if (player->rocketsneakertimer > 1)
+					{
+						if (ATTACK_IS_DOWN && !HOLDING_ITEM && onground && NO_HYUDORO)
+						{
+							K_DoSneaker(player, SNEAKERTYPE_ROCKETSNEAKER);
+							K_PlayBoostTaunt(player->mo);
+							if (player->rocketsneakertimer <= 2*TICRATE)
+								player->rocketsneakertimer = 1;
+							else
+								player->rocketsneakertimer -= 2*TICRATE;
+							K_BotResetItemConfirm(player, false);
+						}
+					}
+					// Flame Shield Usage
+					else if (player->flametimer > 0)
+					{
+						// Usage sound
+						// moved here so the sound doesn't cut off early when not holding the item button
+						if ((!S_SoundPlaying(player->mo, sfx_s3kd3l)) && player->flamestore > 0)
+							S_StartSound(player->mo, sfx_s3kd3l);
 
-							// uses fuel faster, but raises temperature faster
-							if (cv_kartflame_fastfuel.value && (!player->flameburnstop))
+						if (!HOLDING_ITEM && NO_HYUDORO)
+						{
+							if ((buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
 							{
-								incr = incr * 2;
-								comincr = comincr * 2;
-								metincr = metincr * 3 / 2;
-							}
+								SINT8 incr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 3 : 2;
+								SINT8 metincr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 4 : 3;
+								SINT8 comincr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 10 : 4;
 
-							// burning a trap / missile stops you from raising temperature for a tiny bit
-							if (player->flameburnstop)
-								metincr = 0;
-
-							if (onground)
-							{
-								if (player->flamestore == 0)
+								// uses fuel faster, but raises temperature faster
+								if (cv_kartflame_fastfuel.value && (!player->flameburnstop))
 								{
-									S_StartSound(player->mo, sfx_s3k9b);
-									K_PlayBoostTaunt(player->mo);
-
-									if (player->karthud[khud_flamecamtime] == 0)
-										player->karthud[khud_flamecamtime] = TICRATE/2;
-
-									if (!S_SoundPlaying(player->mo, sfx_s3kd3l))
-										S_StartSound(player->mo, sfx_s3kd3l);
+									incr = incr * 2;
+									comincr = comincr * 2;
+									metincr = metincr * 3 / 2;
 								}
 
-								player->flamedash += incr;
-							}
-							// allow burning in the air
-							player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
-							player->flametimer -= comincr;
+								// burning a trap / missile stops you from raising temperature for a tiny bit
+								if (player->flameburnstop)
+									metincr = 0;
 
-							if (player->flametimer <= 0)
-								K_PopPlayerShield(player);
-						}
-						else
-						{
-							if (buttons & BT_ATTACK)
-							{
-								player->itemflags &= ~IF_HOLDREADY;
+								if (onground)
+								{
+									if (player->flamestore == 0)
+									{
+										S_StartSound(player->mo, sfx_s3k9b);
+										K_PlayBoostTaunt(player->mo);
+
+										if (player->karthud[khud_flamecamtime] == 0)
+											player->karthud[khud_flamecamtime] = TICRATE/2;
+
+										if (!S_SoundPlaying(player->mo, sfx_s3kd3l))
+											S_StartSound(player->mo, sfx_s3kd3l);
+									}
+
+									player->flamedash += incr;
+								}
+								// allow burning in the air
+								player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
+								player->flametimer -= comincr;
+
+								if (player->flametimer <= 0)
+									K_PopPlayerShield(player);
 							}
 							else
 							{
-								player->itemflags |= IF_HOLDREADY;
+								if (buttons & BT_ATTACK)
+								{
+									player->itemflags &= ~IF_HOLDREADY;
+								}
+								else
+								{
+									player->itemflags |= IF_HOLDREADY;
+								}
 							}
 						}
 					}
-				}
-				// Grow Canceling
-				else if (player->growshrinktimer > 0)
-				{
-					if (player->growcancel >= 0)
+					// Grow Canceling
+					else if (player->growshrinktimer > 0)
 					{
-						if (buttons & BT_ATTACK)
+						if (player->growcancel >= 0)
 						{
-							player->growcancel++;
-							if (player->growcancel > 26)
-								K_RemoveGrowShrink(player);
-						}
-						else
-							player->growcancel = 0;
-					}
-					else
-					{
-						if ((buttons & BT_ATTACK) || (player->oldcmd.buttons & BT_ATTACK))
-							player->growcancel = -1;
-						else
-							player->growcancel = 0;
-					}
-				}
-				// S-Monitor
-				else if (K_SMonitorSlotHogging(player))
-				{
-					// Cancel the S-Monitor
-					if (player->smonitorcancel >= 0)
-					{
-						if (buttons & BT_ATTACK)
-						{
-							player->smonitorcancel++;
-							if (player->smonitorcancel > 25)
+							if (buttons & BT_ATTACK)
 							{
-								// Don't fully cancel due to how the music handling works.
-								player->smonitortimer = 1;
+								player->growcancel++;
+								if (player->growcancel > 26)
+									K_RemoveGrowShrink(player);
 							}
+							else
+								player->growcancel = 0;
 						}
 						else
-							player->smonitorcancel = 0;
+						{
+							if ((buttons & BT_ATTACK) || (player->oldcmd.buttons & BT_ATTACK))
+								player->growcancel = -1;
+							else
+								player->growcancel = 0;
+						}
 					}
-					else
+					// S-Monitor
+					else if (K_SMonitorSlotHogging(player))
 					{
-						if ((buttons & BT_ATTACK) || (player->oldcmd.buttons & BT_ATTACK))
-							player->smonitorcancel = -1;
+						// Cancel the S-Monitor
+						if (player->smonitorcancel >= 0)
+						{
+							if (buttons & BT_ATTACK)
+							{
+								player->smonitorcancel++;
+								if (player->smonitorcancel > 25)
+								{
+									// Don't fully cancel due to how the music handling works.
+									player->smonitortimer = 1;
+								}
+							}
+							else
+								player->smonitorcancel = 0;
+						}
 						else
-							player->smonitorcancel = 0;
+						{
+							if ((buttons & BT_ATTACK) || (player->oldcmd.buttons & BT_ATTACK))
+								player->smonitorcancel = -1;
+							else
+								player->smonitorcancel = 0;
+						}
 					}
 				}
-				else if (player->itemamount == 0)
+				if (player->itemamount == 0)
 				{
 					K_UnsetItemOut(player);
 				}
-				else
+				else if (player->itemusecooldown <= 0)
 				{
 					K_PlayerItemThink(player, onground);
 				}
@@ -11517,12 +11520,11 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	// No more!
 	if (!player->itemamount)
 	{
-		// really really shitty hack
+		K_UnsetItemOut(player);
 		if (!(player->itemflags &= ~IF_PASSIVESEEKING))
 		{
 			K_DisableSeekingReticule(player);
 		}
-		player->itemflags &= ~IF_ITEMOUT;
 		player->itemtype = KITEM_NONE;
 		if (K_GetShieldFromPlayer(player) != KSHIELD_NONE && K_GetShieldFromPlayer(player) != KSHIELD_FLAME)
 			P_RemoveMobj(player->shieldtracer);
