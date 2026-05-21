@@ -359,6 +359,8 @@ static UINT32 K_IntDistanceForMap(fixed_t curx,
 */
 boolean K_DontDoubleMyItems(kartresult_t *res)
 {
+	if (res == NULL)
+		return false;
 	return ((res->flags & KRF_DONTCHANGERESULT) == KRF_DONTCHANGERESULT);
 	/*return type == KITEM_BALLHOG || type == KITEM_SPB
 	    || type == KITEM_INVINCIBILITY || type == KITEM_GROW
