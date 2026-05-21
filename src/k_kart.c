@@ -11508,6 +11508,10 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 				if (player->itemamount == 0)
 				{
 					K_UnsetItemOut(player);
+					if (!(player->itemflags &= ~IF_PASSIVESEEKING))
+					{
+						K_DisableSeekingReticule(player);
+					}
 				}
 				else if (player->itemusecooldown <= 0)
 				{
