@@ -4274,13 +4274,12 @@ static int lib_kHandleAirdrag(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	boolean onground = lua_optboolean(L, 2);
-	angle_t angle = luaL_checkangle(L, 3);
-	fixed_t speed = luaL_checkfixed(L, 4);
-	fixed_t airdrag = luaL_checkfixed(L, 5);
+	fixed_t speed = luaL_checkfixed(L, 3);
+	fixed_t airdrag = luaL_checkfixed(L, 4);
 	NOHUD
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	lua_pushfixed(L, K_HandleAirDrag(player, onground, angle, speed, airdrag));
+	lua_pushfixed(L, K_HandleAirDrag(player, onground, speed, airdrag));
 	return 1;
 }
 
