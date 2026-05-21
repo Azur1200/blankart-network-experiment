@@ -9616,29 +9616,29 @@ static boolean K_OtherSliptideCondition(player_t* player)
 
 #undef HANDLEBOOSTTHRESHOLD
 
-fixed_t K_HandleAirDrag(player_t *player, boolean onground, fixed_t speed, fixed_t airdrag)
+fixed_t K_HandleAirDrag(player_t *player, boolean onground, fixed_t targetspeed, fixed_t airdrag)
 {
-	if (onground && speed > 0)
+	if (onground && targetspeed > 0)
 	{
-		speed = 0;
+		targetspeed = 0;
 	}
 
 	fixed_t difference;
 
-	if (player->mo && speed > 0)
+	if (player->mo && targetspeed > 0)
 	{
-		if (player->speed > speed)
+		if (player->speed > targetspeed)
 		{
-			difference = player->speed - speed;
+			difference = player->speed - targetspeed;
 			P_Thrust(player->mo, K_MomentumAngle(player->mo), -min(difference, airdrag));
 		}
-		else	// we're done doing drag (TODO: also stop applying drag after being bumped or hit or sprung etc.)
+		if (FixedHypot(player->mo->momx, player->mo->momy) <= targetspeed)	// we're done doing drag (TODO: also stop applying drag after being bumped or hit or sprung etc.)
 		{
-			speed = 0;
+			targetspeed = 0;
 		}
 	}
 
-	return speed;
+	return targetspeed;
 }
 
 // no float-to-fixed here because this is in the deterministic path
