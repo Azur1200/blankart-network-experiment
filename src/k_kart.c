@@ -432,6 +432,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartairthrust_power3);
 	CV_RegisterVar(&cv_kartairthrust_power4);
 
+	CV_RegisterVar(&cv_kartairsuperring_reductionrate);
+
 	CV_RegisterVar(&cv_kartwaterskiplock);
 
 	CV_RegisterVar(&cv_kartslopeboost);
@@ -7292,6 +7294,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 {
 	TracyCZone(__zone, true);
 
+	boolean onground = P_IsObjectOnGround(player->mo);
+
 	/* reset sprite offsets :) */
 	player->mo->sprxoff = 0;
 	player->mo->spryoff = 0;
@@ -7520,6 +7524,14 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	}
 
 	K_AirDrop(player, cmd);
+
+	if (player->superringdrag && !onground && !player->pogospring)
+		player->superringdrag = K_HandleAirDrag(player, onground, K_MomentumAngle(player->mo), player->superringdrag, cv_kartairsuperring_reductionrate.value);
+	else if ((onground || player->pogospring) && player->superringdrag && !player->superringleeway)
+		player->superringdrag = 0;
+
+	if (player->superringleeway)
+		player->superringleeway--;
 
 	if (player->ringlock)
 	{
@@ -9604,25 +9616,29 @@ static boolean K_OtherSliptideCondition(player_t* player)
 
 #undef HANDLEBOOSTTHRESHOLD
 
-static void K_HandleAirDriftDrag(player_t *player, boolean onground)
+fixed_t K_HandleAirDrag(player_t *player, boolean onground, angle_t angle, fixed_t speed, fixed_t airdrag)
 {
-	if (onground && player->airdriftspeed > 0)
+	if (onground && speed > 0)
 	{
-		player->airdriftspeed = 0;
+		speed = 0;
 	}
+
 	fixed_t difference;
-	if (player->mo && player->airdriftspeed > 0)
+
+	if (player->mo && speed > 0)
 	{
-		if (player->speed > player->airdriftspeed)
+		if (player->speed > speed)
 		{
-			difference = player->speed - player->airdriftspeed;
-			P_Thrust(player->mo, K_MomentumAngle(player->mo), -min(difference, cv_kartairthrust_reductionrate.value));
+			difference = player->speed - speed;
+			P_Thrust(player->mo, angle, -min(difference, airdrag));
 		}
 		else	// we're done doing drag (TODO: also stop applying drag after being bumped or hit or sprung etc.)
 		{
-			player->airdriftspeed = 0;
+			speed = 0;
 		}
 	}
+
+	return speed;
 }
 
 // no float-to-fixed here because this is in the deterministic path
@@ -9720,7 +9736,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 	// air thrust drag
 	if (K_AirThrustActive())
 	{
-		K_HandleAirDriftDrag(player, onground);
+		player->airdriftspeed = K_HandleAirDrag(player, onground, K_MomentumAngle(player->mo), player->airdriftspeed, cv_kartairthrust_reductionrate.value);
 	}
 
 	// Drifting is actually straffing + automatic turning.

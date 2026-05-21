@@ -713,6 +713,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].ringboost);
 		SYNC(players[i].ringtime);
 		SYNC(players[i].superring);
+		SYNC(players[i].superringleeway);
+		SYNC(players[i].superringdrag);
 		SYNC(players[i].nextringaward);
 		SYNC(players[i].ringvolume);
 		SYNC(players[i].ringtransparency);

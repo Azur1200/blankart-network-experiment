@@ -4270,6 +4270,20 @@ static int lib_kKartPlayerBumpyRoad(lua_State *L)
 	return 0;
 }
 
+static int lib_kHandleAirdrag(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	boolean onground = lua_optboolean(L, 2);
+	angle_t angle = luaL_checkangle(L, 3);
+	fixed_t speed = luaL_checkfixed(L, 4);
+	fixed_t airdrag = luaL_checkfixed(L, 5);
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushfixed(L, K_HandleAirDrag(player, onground, angle, speed, airdrag));
+	return 1;
+}
+
 // this function is for compatibility only; do not add new functionality here
 // see K_GetItemGraphics
 static int lib_kGetItemPatch(lua_State *L)
@@ -6026,6 +6040,7 @@ static luaL_Reg lib[] = {
 	{"K_IsPlayerRingBurnt", lib_kIsPlayerRingBurnt},
 	{"K_GetKartRingPower", lib_kGetKartRingPower},
 	{"K_KartPlayerBumpyRoad", lib_kKartPlayerBumpyRoad},
+	{"K_HandleAirDrag",lib_kHandleAirdrag},
 	
 	{"K_AddTiltImpulse", lib_kAddTiltImpulse},
 	{"K_AddTiltMomentum", lib_kAddTiltMomentum},

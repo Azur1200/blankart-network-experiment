@@ -2788,10 +2788,12 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 	case KITEM_SUPERRING:
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 		{
-			if (onground)
+			player->superringdrag = max(K_GetKartSpeed(player, true, false), player->speed);
+
+			if (P_IsObjectOnGround(player->mo) && !player->offroad)
 			{
-				P_Thrust(player->mo, player->mo->angle, 9*player->mo->scale);
-				P_Thrust(player->mo, K_MomentumAngle(player->mo), 9*player->mo->scale);
+				P_Thrust(player->mo, player->mo->angle, 12*player->mo->scale);
+				P_Thrust(player->mo, K_MomentumAngle(player->mo), 12*player->mo->scale);
 			}
 			else
 			{
@@ -2809,6 +2811,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 
 			player->ringboost += (TICRATE/6) + modifier;
 			player->outruntime += (TICRATE/6) + modifier;
+			player->superringleeway = 5;
 
 			// make friction not instantly kill the new momentum
 			player->rmomx = player->mo->momx - player->cmomx;

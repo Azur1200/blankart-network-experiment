@@ -1477,6 +1477,9 @@ boolean P_PlayerHitFloor(player_t *player, boolean fromAir)
 				player->mo->momy = player->mo->momy/2;
 			}
 		}
+
+		player->superringdrag = 0;
+		player->superringleeway = 0;
 	}
 
 	return clipmomz;

@@ -389,6 +389,8 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(ringboost) \
 	X(ringtime) \
 	X(superring) \
+	X(superringleeway) \
+	X(superringdrag) \
 	X(nextringaward) \
 	X(ringvolume) \
 	X(ringtransparency) \
@@ -847,6 +849,12 @@ static int player_get(lua_State *L)
 		break;
 	case player_superring:
 		lua_pushinteger(L, plr->superring);
+		break;
+	case player_superringleeway:
+		lua_pushinteger(L, plr->superringleeway);
+		break;
+	case player_superringdrag:
+		lua_pushfixed(L, plr->superringdrag);
 		break;
 	case player_nextringaward:
 		lua_pushinteger(L, plr->nextringaward);
@@ -1672,6 +1680,12 @@ static int player_set(lua_State *L)
 		break;
 	case player_superring:
 		plr->superring = luaL_checkinteger(L, 3);
+		break;
+	case player_superringleeway:
+		plr->superringleeway = luaL_checkinteger(L, 3);
+		break;
+	case player_superringdrag:
+		plr->superringdrag = luaL_checkfixed(L, 3);
 		break;
 	case player_nextringaward:
 		plr->nextringaward = luaL_checkinteger(L, 3);

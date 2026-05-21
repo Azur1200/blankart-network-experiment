@@ -745,6 +745,8 @@ struct player_t
 	UINT16 ringboost;	// Ring boost timer
 	UINT16 ringtime;	// The current Ring boost timer if it wasn't capped. Used for spam prevention measures.
 	UINT16 superring;	// Spawn rings on top of you every tic!
+	UINT8 superringleeway; // how long can you be on the ground before airdrag is reset.
+	fixed_t superringdrag; // Slow down the superring boost when doing ground to air (ie ramp).
 	UINT8 nextringaward;	// When should we spawn our next superring ring?
 	UINT8 ringvolume;		// When consuming lots of rings, lower the sound a little.
 	UINT8 ringtransparency; // When consuming lots of rings, fade out the rings again.

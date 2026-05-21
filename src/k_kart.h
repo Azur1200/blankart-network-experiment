@@ -449,6 +449,8 @@ void K_KartAttractHomingAttack(player_t *player);
 
 void K_KartPlayerBumpyRoad(player_t *player);
 
+fixed_t K_HandleAirDrag(player_t *player, boolean onground, angle_t angle, fixed_t speed, fixed_t airdrag);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

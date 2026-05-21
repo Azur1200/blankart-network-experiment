@@ -664,6 +664,8 @@ consvar_t cv_kartairthrust_power2 = CVAR_INIT ("kartairthrust_power2", "0.35", C
 consvar_t cv_kartairthrust_power3 = CVAR_INIT ("kartairthrust_power3", "0.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power4 = CVAR_INIT ("kartairthrust_power4", "0.75", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 
+consvar_t cv_kartairsuperring_reductionrate = CVAR_INIT ("kartairsuperring_reductionrate", "0.6", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+
 consvar_t cv_kartwaterskiplock = CVAR_INIT ("kartwaterskiplock", "Yes", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartWaterSkipLock_OnChange);
 
 consvar_t cv_kartitemlitter = CVAR_INIT ("kartitemlitter", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemLitter_OnChange);
