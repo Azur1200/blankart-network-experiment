@@ -2788,15 +2788,18 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 	case KITEM_SUPERRING:
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 		{
+			boolean offroad = (player->offroad && K_ApplyOffroad(player));
 			player->superringdrag = max(K_GetKartSpeed(player, true, false), player->speed);
 
-			if (P_IsObjectOnGround(player->mo) && !player->offroad)
+			if (P_IsObjectOnGround(player->mo) && !offroad)
 			{
 				P_Thrust(player->mo, player->mo->angle, 12*player->mo->scale);
 				P_Thrust(player->mo, K_MomentumAngle(player->mo), 12*player->mo->scale);
 			}
 			else
 			{
+				if (offroad)
+					P_Thrust(player->mo, player->mo->angle, 6*player->mo->scale);
 				P_Thrust(player->mo, K_MomentumAngle(player->mo), 6*player->mo->scale);
 			}
 
