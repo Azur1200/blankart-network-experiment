@@ -562,6 +562,7 @@ void P_AddCachedAction(mobj_t *mobj, INT32 statenum);
 
 // kartitem stuff: Returns true if the specified 'type' is one of the kart item constants we want in the kitemcap list
 boolean P_IsKartFieldItem(INT32 type);
+boolean P_IsKartEquippedItem(INT32 type);
 boolean P_IsKartItem(INT32 type);
 boolean K_IsMissileOrKartItem(mobj_t *mo);
 boolean P_CanDeleteKartItem(INT32 type);

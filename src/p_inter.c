@@ -1396,7 +1396,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 
 	// SRB2kart
 	// I wish I knew a better way to do this
-	if (!P_MobjWasRemoved(target->target) && target->target->player && !P_MobjWasRemoved(target->target->player->mo))
+	if (P_IsKartEquippedItem(target->type) && (!P_MobjWasRemoved(target->target)) && target->target->player && (!P_MobjWasRemoved(target->target->player->mo)))
 	{
 		if ((target->target->player->itemflags & IF_EGGMANOUT) && target->type == MT_EGGMANITEM_SHIELD)
 			target->target->player->itemflags &= ~IF_EGGMANOUT;
@@ -1404,9 +1404,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 		if (target->target->player->itemflags & IF_ITEMOUT)
 		{
 			kartitemequip_e equipstyle = K_GetItemEquipStyle(target->target->player->equippeditem);
-			// if ((target->type == MT_BANANA_SHIELD && target->target->player->itemtype == KITEM_BANANA) // trail items
-			// 	|| (target->type == MT_SSMINE_SHIELD && target->target->player->itemtype == KITEM_MINE)
-			// 	|| (target->type == MT_SINK_SHIELD && target->target->player->itemtype == KITEM_KITCHENSINK))
 			if (equipstyle == KITEMEQUIP_TRAIL)
 			{
 				if (target->movedir != 0 && target->movedir < (UINT16)target->target->player->itemamount)
@@ -1418,9 +1415,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 				else if (target->target->player->itemamount)
 					target->target->player->itemamount--;
 			}
-			// else if ((target->type == MT_ORBINAUT_SHIELD && target->target->player->itemtype == KITEM_ORBINAUT) // orbit items
-			// 	|| (target->type == MT_JAWZ_SHIELD && target->target->player->itemtype == KITEM_JAWZ)
-			// 	|| (target->type == MT_EGGMINE_SHIELD && target->target->player->itemtype == KITEM_EGGMAN && K_IsKartItemAlternate(KITEM_EGGMAN)))
 			else if (equipstyle == KITEMEQUIP_ORBIT)
 			{
 				if (target->target->player->itemamount)

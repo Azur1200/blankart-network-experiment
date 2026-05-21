@@ -6574,7 +6574,7 @@ boolean P_IsKartFieldItem(INT32 type)
 	}
 }
 
-boolean P_IsKartItem(INT32 type)
+boolean P_IsKartEquippedItem(INT32 type)
 {
 	switch (type)
 	{
@@ -6587,13 +6587,22 @@ boolean P_IsKartItem(INT32 type)
 		case MT_EGGMINE_SHIELD:
 			return true;
 
+		default:
+			return false;
+	}
+}
+
+boolean P_IsKartItem(INT32 type)
+{
+	switch (type)
+	{
 		// Primarily for minimap data, handle with care
 		case MT_SPB:
 			return true;
 		// FALLTHRU
 
 		default:
-			return P_IsKartFieldItem(type);
+			return P_IsKartFieldItem(type) || P_IsKartEquippedItem(type);
 	}
 }
 
