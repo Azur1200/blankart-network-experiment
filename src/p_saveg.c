@@ -654,6 +654,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].aizdriftturn);
 		SYNC(players[i].slipdashcharge);
 		SYNC(players[i].slipdashdir);
+		SYNC(players[i].airthrustdir);
 
 		SYNC(players[i].offroad);
 		SYNC(players[i].tiregrease);
@@ -4349,7 +4350,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(purpledriftactive);
 	SYNCBOOLEAN(slopeboostactive);
 	SYNCBOOLEAN(draftingactive);
-	SYNCBOOLEAN(airthrustactive);
+	SYNC(airthrustactive);
 	SYNCBOOLEAN(recoverydashactive);
 	SYNCBOOLEAN(keepstuffactive);
 	SYNCBOOLEAN(waterskipbricks);

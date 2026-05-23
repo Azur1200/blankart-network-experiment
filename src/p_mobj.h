@@ -627,7 +627,7 @@ extern boolean purpledriftactive;
 extern boolean slopeboostactive;
 extern boolean draftingactive;
 extern UINT8 airdropactive;
-extern boolean airthrustactive;
+extern UINT8 airthrustactive;
 extern boolean recoverydashactive;
 extern boolean keepstuffactive;
 extern boolean waterskipbricks;

@@ -657,8 +657,13 @@ static CV_PossibleValue_t airdrop_cons_t[] = {{AIRDROP_NONE, "Off"},
 						{0, NULL}};
 consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "Off", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, airdrop_cons_t, KartAirDrop_OnChange);
 
-consvar_t cv_kartairthrust = CVAR_INIT ("kartairthrust", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartAirThrust_OnChange);
+static CV_PossibleValue_t airthrust_cons_t[] = {{AIRTHRUST_NONE, "Off"},
+						{AIRTHRUST_BURST, "Burst"},
+						{AIRTHRUST_FLASH, "Flash"},
+						{0, NULL}};
+consvar_t cv_kartairthrust = CVAR_INIT ("kartairthrust", "Off", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, airthrust_cons_t, KartAirThrust_OnChange);
 consvar_t cv_kartairthrust_reductionrate = CVAR_INIT ("kartairthrust_reductionrate", "0.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartairthrust_flashreductionrate = CVAR_INIT ("kartairthrust_reductionrate_flash", "1.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power1 = CVAR_INIT ("kartairthrust_power1", "0.2", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power2 = CVAR_INIT ("kartairthrust_power2", "0.35", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power3 = CVAR_INIT ("kartairthrust_power3", "0.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
@@ -9650,28 +9655,16 @@ static void KartAirThrust_OnChange(void)
 		return;
 	}
 
-	if (!K_AirThrustActive() && cv_kartairthrust.value)
+	if (K_AirThrustActive() != cv_kartairthrust.value)
 	{
 		if (leveltime < starttime)
 		{
-			airthrustactive = true;
-			CONS_Printf(M_GetText("Air Thrust has been turned \"On\".\n"));
+			airthrustactive = cv_kartairthrust.value;
+			CONS_Printf(M_GetText("Air Thrust has been set to \"%s\".\n"), cv_kartairthrust.string);
 		}
 		else
 		{
-			CONS_Printf(M_GetText("Air Thrust will be turned \"On\" Next Round.\n"));
-		}
-	}
-	else if (K_AirThrustActive() && !cv_kartairthrust.value)
-	{
-		if (leveltime < starttime)
-		{
-			airthrustactive = false;
-			CONS_Printf(M_GetText("Air Thrust has been turned \"Off\".\n"));
-		}
-		else
-		{
-			CONS_Printf(M_GetText("Air Thrust will be turned \"Off\" next round.\n"));
+			CONS_Printf(M_GetText("Air Thrust will be set to \"%s\" next round.\n"), cv_kartairthrust.string);
 		}
 	}
 }

@@ -8939,7 +8939,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			{
 				if (mobj->extravalue1 > 0)
 				{
-					if (p->driftboost > mobj->movecount)
+					if (p->driftboost > mobj->movecount && !mobj->extravalue2)
 					{
 						P_SetMobjState(mobj, S_DRIFTBOOSTFLAME);
 						if (mobj->extravalue1 == 1)
@@ -8951,7 +8951,9 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 					}
 					mobj->movecount = p->driftboost;
 
-					if (mobj->extravalue1 == 4)
+					if (mobj->extravalue2)
+						P_SetScale(mobj, FixedMul(5*FRACUNIT * mobj->tics / TICRATE, mobj->scale));
+					else if (mobj->extravalue1 == 4)
 						P_SetScale(mobj, max(10, mobj->tics - 3*TICRATE/2)*mobj->scale/10);
 
 					// larger karts need larger flames
@@ -8961,7 +8963,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 						mobj->spriteyoffset = -6*FRACUNIT;
 					}
 
-					if (p->driftboost == 0)
+					if (p->driftboost == 0 && !mobj->extravalue2)
 					{
 						P_RemoveMobj(mobj);
 						return false;
@@ -9025,7 +9027,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 		}
 
-		if (mobj->state == &states[S_BOOSTSMOKESPAWNER])
+		if (mobj->state == &states[S_BOOSTSMOKESPAWNER] || mobj->extravalue2)
 		{
 			mobj_t *smoke = P_SpawnMobj(mobj->x, mobj->y, mobj->z+(8<<FRACBITS), MT_BOOSTSMOKE);
 
@@ -9044,6 +9046,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			rand_angle = mobj->angle+FixedAngle(P_RandomRange(135, 225)<<FRACBITS);
 
 			P_Thrust(smoke, rand_angle, rand_move);
+
+			if (mobj->extravalue2)
+			{
+				smoke->colorized = true;
+				smoke->color = mobj->color;
+			}
 		}
 		break;
 	case MT_SPARKLETRAIL:

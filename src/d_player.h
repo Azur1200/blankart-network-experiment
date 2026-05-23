@@ -684,6 +684,7 @@ struct player_t
 	INT32 aizdriftturn;
 	fixed_t slipdashcharge;	// charge up a dash with a sliptide!
 	SINT8 slipdashdir;		// no snaking allowed :^)
+	SINT8 airthrustdir;		// player->drift before airthrust was released
 
 	fixed_t offroad;		// In Super Mario Kart, going offroad has lee-way of about 1 second before you start losing speed
 	UINT8 pogospring;		// Pogo spring bounce effect

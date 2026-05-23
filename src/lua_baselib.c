@@ -4558,7 +4558,7 @@ static int lib_kAirDropActive(lua_State *L)
 // Checks if Air Thrust is active.
 static int lib_kAirThrustActive(lua_State *L)
 {
-	lua_pushboolean(L, K_AirThrustActive());
+	lua_pushinteger(L, K_AirThrustActive());
 	return 1;
 }
 

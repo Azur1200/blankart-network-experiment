@@ -427,6 +427,7 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartairthrust);
 	CV_RegisterVar(&cv_kartairthrust_reductionrate);
+	CV_RegisterVar(&cv_kartairthrust_flashreductionrate);
 	CV_RegisterVar(&cv_kartairthrust_power1);
 	CV_RegisterVar(&cv_kartairthrust_power2);
 	CV_RegisterVar(&cv_kartairthrust_power3);
@@ -4259,6 +4260,14 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 	return missile;
 }
 
+static boolean K_AirThrustRateLimit(const player_t *player)
+{
+	// airdriftspeed difference-based limiter
+	// allows mashing at low air speed, and adjusts nicely to different stats (i think)
+	return player->airdriftspeed > 0
+	       && player->speed - player->airdriftspeed > player->airdriftspeed/AIRTHRUST_SPAMFACTOR;
+}
+
 UINT16 K_DriftSparkColor(player_t *player, INT32 charge)
 {
 	INT32 ds = K_GetKartDriftSparkValue(player);
@@ -4342,10 +4351,11 @@ static void K_SpawnDriftSparks(player_t *player)
 	if (leveltime % 2 == 1)
 		return;
 
-	if (!player->drift || player->driftcharge < K_GetKartDriftSparkValue(player))
+	if (player->driftcharge < K_GetKartDriftSparkValue(player))
 		return;
 
 	travelangle = player->mo->angle-(ANGLE_45/5)*player->drift;
+	boolean pencilready = abs(player->airthrustdir) >= 2;
 
 	for (i = 0; i < 2; i++)
 	{
@@ -4381,14 +4391,14 @@ static void K_SpawnDriftSparks(player_t *player)
 		}
 		else if (K_PurpleDriftActive() && player->driftcharge >= K_GetKartDriftSparkValue(player)*3)
 		{
-			if (player->driftcharge <= (K_GetKartDriftSparkValue(player)*3)+(24*3))
+			if (player->driftcharge <= (K_GetKartDriftSparkValue(player)*3)+(24*3) || pencilready)
 				spark->color = SKINCOLOR_VIOLET; // transition
 			else
 				spark->color = SKINCOLOR_PURPLE;
 		}
 		else if (player->driftcharge >= K_GetKartDriftSparkValue(player)*2)
 		{
-			if (player->driftcharge <= (K_GetKartDriftSparkValue(player)*2)+(24*3))
+			if (player->driftcharge <= (K_GetKartDriftSparkValue(player)*2)+(24*3) || pencilready)
 				spark->color = SKINCOLOR_RASPBERRY; // transition
 			else
 				spark->color = SKINCOLOR_KETCHUP;
@@ -4420,6 +4430,9 @@ static void K_SpawnDriftSparks(player_t *player)
 		}
 
 		K_MatchGenericExtraFlags(spark, player->mo);
+
+		if (pencilready)
+			spark->renderflags |= RF_ADD;
 	}
 }
 
@@ -9521,7 +9534,7 @@ UINT8 K_GetKartDriftSparkStageForValue(const player_t *player, INT32 value)
 	}
 }
 
-static void K_SpawnDriftEFX(player_t *player, SINT8 level)
+static void K_SpawnDriftEFX(player_t *player, SINT8 level, boolean pencil)
 {
 	mobj_t *overlay = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BOOSTFLAME);
 	P_SetMobjState(overlay, S_DRIFTBOOSTFLAME);
@@ -9529,6 +9542,12 @@ static void K_SpawnDriftEFX(player_t *player, SINT8 level)
 	P_SetScale(overlay, (overlay->destscale = player->mo->scale));
 	K_FlipFromObject(overlay, player->mo);
 	overlay->extravalue1 = level;
+
+	if (pencil)
+	{
+		overlay->extravalue2 = 1;
+		overlay->tics = AIRTHRUST_FLASHEFXTIME + level*TICRATE/20;
+	}
 
 	if (level == 1)
 		overlay->color = SKINCOLOR_SAPPHIRE;
@@ -9715,6 +9734,31 @@ static void K_HandleKartTilt(player_t *player)
 #undef PLAYERTILTCAP
 #undef PLAYERTILTMOMENTUMCAP
 
+static void K_ApplyAirThrust(player_t *player, UINT8 driftstage)
+{
+	static consvar_t *powervars[] = {
+		[1] = &cv_kartairthrust_power1,
+		[2] = &cv_kartairthrust_power2,
+		[3] = &cv_kartairthrust_power3,
+		[4] = &cv_kartairthrust_power4,
+	};
+	fixed_t airthrust = powervars[driftstage]->value;
+
+	// shittier spark rate gives you better flash bursts
+	if (K_AirThrustActive() == AIRTHRUST_FLASH)
+		airthrust = FixedMul(airthrust, K_GetKartDriftSparkValue(player)*100 - FRACUNIT/4);
+
+	// before thrust, set player's target speed to their speed before the air thrust
+	// after the air thrust player's momentum will be reduced back to this value
+	player->airdriftspeed = max(K_GetKartSpeed(player, false, false), player->speed);
+
+	// Give the player a forward boost
+	P_Thrust(player->mo, K_MomentumAngle(player->mo), FixedMul(player->speed, airthrust));
+
+	// Slash the player's vertical momentum. Gets stronger with higher drift charge, but is significantly weaker in water
+	player->mo->momz = FixedMul(player->mo->momz, FRACUNIT - FixedMul(airthrust/2, abs(P_GetMobjGravity(player->mo))));
+}
+
 static void K_KartDrift(player_t *player, boolean onground)
 {
 	fixed_t minspeed = (10 * player->mo->scale);
@@ -9736,18 +9780,41 @@ static void K_KartDrift(player_t *player, boolean onground)
 	// air thrust drag
 	if (K_AirThrustActive())
 	{
-		player->airdriftspeed = K_HandleAirDrag(player, onground, player->airdriftspeed, cv_kartairthrust_reductionrate.value);
+		fixed_t reductionrate = K_AirThrustActive() == AIRTHRUST_FLASH
+		                      ? cv_kartairthrust_flashreductionrate.value
+		                      : cv_kartairthrust_reductionrate.value;
+		player->airdriftspeed = K_HandleAirDrag(player, onground, player->airdriftspeed, reductionrate);
 	}
 
 	// Drifting is actually straffing + automatic turning.
 	// Holding the Jump button will enable drifting.
 
 	// Drift Release (Moved here so you can't "chain" drifts)
-	if (player->drift != -5 && player->drift != 5)
+	if (player->pflags & PF_DRIFTINPUT && abs(player->airthrustdir) >= 2)
 	{
-		if (driftstage && (onground || K_AirThrustActive()))
+		player->drift = intsign(player->airthrustdir)*5;
+		player->airthrustdir = 0;
+		player->pflags &= ~PF_DRIFTEND;
+
+		if (driftstage)
+		{
+			player->driftcharge = min(dsv*4, player->driftcharge);
+			// how about you DON'T chain rainbow thrust into purple...
+			player->driftcharge = max(0, player->driftcharge - dsv - max(0, player->driftcharge/2 - dsv));
+			S_StartSound(player->mo, sfx_kc5b);
+			if (driftstage >= 3)
+				S_StartSoundAtVolume(player->mo, sfx_s3k81, 160);
+
+			K_ApplyAirThrust(player, driftstage);
+			K_SpawnDriftEFX(player, driftstage, true);
+		}
+	}
+	else if (player->drift != -5 && player->drift != 5)
+	{
+		if (driftstage && (onground || K_AirThrustActive() == AIRTHRUST_BURST))
 		{
 			UINT8 boost = 0;
+
 			if (!cv_kartdriftsounds.value || driftstage < 3)
 				S_StartSound(player->mo, sfx_s23c);
 
@@ -9779,57 +9846,27 @@ static void K_KartDrift(player_t *player, boolean onground)
 					}
 					break;
 			}
-			if (K_AirThrustActive() && !onground) // Air Thrust is enabled
-			{
-				fixed_t airthrust = 0;
 
-				switch (driftstage)
-				{
-					case 1:
-						airthrust = cv_kartairthrust_power1.value;
-						break;
-					case 2:
-						airthrust = cv_kartairthrust_power2.value;
-						break;
-					case 3:
-						airthrust = cv_kartairthrust_power3.value;
-						break;
-					case 4:
-						airthrust = cv_kartairthrust_power4.value;
-						break;
-				}
-
-				if (driftstage > 0)
-				{
-					// before thrust, set player's target speed to their speed before the air thrust
-					// after the air thrust player's momentum will be reduced back to this value
-					player->airdriftspeed = max(K_GetKartSpeed(player, false, false), player->speed);
-
-					// Give the player a forward boost
-					P_Thrust(player->mo, K_MomentumAngle(player->mo), FixedMul(player->speed, airthrust));
-
-					// Slash the player's vertical momentum. Gets stronger with higher drift charge, but is significantly weaker in water
-					player->mo->momz = FixedMul(player->mo->momz, FRACUNIT - FixedMul(airthrust/2, abs(P_GetMobjGravity(player->mo))));
-				}
-			}
+			if (K_AirThrustActive() == AIRTHRUST_BURST && !onground) // Air Thrust is enabled
+				K_ApplyAirThrust(player, driftstage);
 
 			if (player->driftboost < boost)
 				player->driftboost = boost;
 
 			player->driftlevel = driftstage * 10; // * 10 to detect that this came from drift release
 
-			K_SpawnDriftEFX(player, driftstage);
+			K_SpawnDriftEFX(player, driftstage, false);
 		}
 
 		// afterimage, when you release the drift
-		if (player->pflags & PF_DRIFTEND || (!onground && player->driftcharge))
+		if (player->pflags & PF_DRIFTEND && (onground || K_AirThrustActive() != AIRTHRUST_FLASH))
 		{
 			if (!player->karthud[khud_afterimagetime])
 				player->karthud[khud_afterimagevalue] = min(player->driftcharge, dsv*4);
 			player->karthud[khud_afterimagetime] = 10;
 		}
 
-		if (onground || K_AirThrustActive())
+		if (onground || K_AirThrustActive() == AIRTHRUST_BURST)
 			player->driftcharge = 0;
 	}
 
@@ -9838,6 +9875,17 @@ static void K_KartDrift(player_t *player, boolean onground)
 	{
 		player->driftturnsnapshot = player->cmd.turning;
 	}
+
+	// prepare pencil thrust
+	if (K_AirThrustActive() == AIRTHRUST_FLASH && !onground && player->driftcharge >= dsv && !(player->pflags & PF_DRIFTINPUT))
+	{
+		if (abs(player->airthrustdir) < 2 && !K_AirThrustRateLimit(player))
+			S_StartSoundAtVolume(player->mo, sfx_kc50, 200);
+		player->airthrustdir = intsign(player->drift ? player->drift : player->airthrustdir) * (K_AirThrustRateLimit(player) ? 1 : 2);
+	}
+	else if (onground || player->driftcharge < dsv)
+		player->airthrustdir = 0;
+
 	// Drifting: left or right?
 	if ((player->driftturnsnapshot > 0) && player->speed > minspeed && (player->pflags & PF_DRIFTINPUT) && (player->drift == 0 || (player->pflags & PF_DRIFTEND)))
 	{
@@ -9856,14 +9904,9 @@ static void K_KartDrift(player_t *player, boolean onground)
 	else if (!(player->pflags & PF_DRIFTINPUT))
 	{
 		// drift is not being performed so if we're just finishing set driftend and decrement counters
-		if (player->drift > 0)
+		if (player->drift != 0)
 		{
-			player->drift--;
-			player->pflags |= PF_DRIFTEND;
-		}
-		else if (player->drift < 0)
-		{
-			player->drift++;
+			player->drift -= intsign(player->drift);
 			player->pflags |= PF_DRIFTEND;
 		}
 		else
@@ -9919,7 +9962,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 	}
 
 	// Spawn Sparks regardless of size
-	if (!P_PlayerInPain(player) && player->drift != 0)
+	if (!P_PlayerInPain(player) && (player->drift != 0 || player->airthrustdir != 0))
 	{
 		if (driftstage)
 			K_SpawnDriftSparks(player);
@@ -11957,15 +12000,9 @@ SINT8 K_AirDropActive(void)
 	return airdropactive;
 }
 
-boolean K_AirThrustActive(void)
+SINT8 K_AirThrustActive(void)
 {
-	if (airthrustactive)
-	{
-		// Air Thrust is enabled!
-		return true;
-	}
-
-	return false;
+	return airthrustactive;
 }
 
 boolean K_RecoveryDashActive(void)

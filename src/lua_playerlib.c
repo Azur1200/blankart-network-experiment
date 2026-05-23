@@ -345,6 +345,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(aizdriftturn) \
 	X(slipdashcharge) \
 	X(slipdashdir) \
+	X(airthrustdir) \
 	X(offroad) \
 	X(pogospring) \
 	X(brakestop) \
@@ -711,6 +712,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_slipdashdir:
 		lua_pushinteger(L, plr->slipdashdir);
+		break;
+	case player_airthrustdir:
+		lua_pushinteger(L, plr->airthrustdir);
 		break;
 	case player_offroad:
 		lua_pushinteger(L, plr->offroad);
@@ -1545,6 +1549,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_slipdashdir:
 		plr->slipdashdir = luaL_checkinteger(L, 3);
+		break;
+	case player_airthrustdir:
+		plr->airthrustdir = luaL_checkinteger(L, 3);
 		break;
 	case player_offroad:
 		plr->offroad = luaL_checkinteger(L, 3);

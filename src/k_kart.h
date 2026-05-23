@@ -383,7 +383,7 @@ boolean K_SlipdashActive(void);
 boolean K_SlopeBoostActive(void);
 boolean K_DraftingActive(void);
 SINT8 K_AirDropActive(void);
-boolean K_AirThrustActive(void);
+SINT8 K_AirThrustActive(void);
 boolean K_RecoveryDashActive(void);
 boolean K_WaterskipBricksActive(void);
 boolean K_KeepStuffActive(void);
@@ -430,6 +430,16 @@ typedef enum
 	AIRDROP_HEAVY,
 	AIRDROP_FUSION,
 } airdroptype_t;
+
+typedef enum
+{
+	AIRTHRUST_NONE = 0,
+	AIRTHRUST_BURST,
+	AIRTHRUST_FLASH,
+} airthrusttype_t;
+
+#define AIRTHRUST_SPAMFACTOR 6 // higher makes it harder to spam
+#define AIRTHRUST_FLASHEFXTIME (TICRATE/3) // base timer for vfx
 
 void K_KillAirDrop(player_t *player, p_airdropflags_t airdropflags);
 

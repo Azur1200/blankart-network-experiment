@@ -2780,14 +2780,13 @@ void K_SetScoreboardModStatus(const char *name, SINT8 active)
 	CONS_Alert(CONS_WARNING, "Server mod '%s' does not exist so status cannot be changed.\n", name);
 }
 
-#define BASEMODS 23
 static void K_DrawServerMods(INT32 x, INT32 y)
 {
 	UINT8 i, j;
 	INT32 xoff = 0, yoff = 10;
 	UINT8 numdrawn = 0;
 
-	servermods_t basemods[BASEMODS] =
+	servermods_t basemods[] =
 	{
 		{"Restat", 0, &cv_allowrestat, -1, true},
 		{"Item Litter", 0, NULL, K_ItemLitterActive() > 0, true},
@@ -2802,7 +2801,8 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 		{"Light AirDrop", 0, NULL, K_AirDropActive() == AIRDROP_LIGHT, true},
 		{"Heavy AirDrop", 0, NULL, K_AirDropActive() == AIRDROP_HEAVY, true},
 		{"Fus. AirDrop", 0, NULL, K_AirDropActive() == AIRDROP_FUSION, true},
-		{"Air Thrust", 0, NULL, K_AirThrustActive() > 0, true},
+		{"Burst Thrust", 0, NULL, K_AirThrustActive() == AIRTHRUST_BURST, true},
+		{"Flash Thrust", 0, NULL, K_AirThrustActive() == AIRTHRUST_FLASH, true},
 		{"Recovery Dash", 0, NULL, K_RecoveryDashActive() > 0, true},
 		{"Bump Spark", 0, &cv_kartbumpspark, -1, true},
 		{"Bump Drift", 0, NULL, K_GetBumpSpark() > 0, true},
@@ -2817,7 +2817,7 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 
 	for (j = 0; j < 2; j++)
 	{
-		UINT8 modcount = j == 0 ? BASEMODS : numcustomservermods;
+		UINT8 modcount = j == 0 ? sizeof(basemods)/sizeof(*basemods) : numcustomservermods;
 		servermods_t *modslist = j == 0 ? basemods : customservermods;
 
 		// Draw the the modlist.
@@ -2859,7 +2859,6 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 		V_DrawThinString(x, y, V_6WIDTHSPACE|V_ALLOWLOWERCASE|V_GRAYMAP, "Gameplay / Balance Changes:");
 
 }
-#undef BASEMODS
 
 void K_DrawServerDescrption(INT32 x, INT32 y)
 {
@@ -7026,7 +7025,7 @@ void K_DrawDriftGauge(void)
 	UINT8 *cmap = R_GetTranslationColormap(TC_RAINBOW, rainbow ? (INT32)(1 + (leveltime % FIRSTSUPERCOLOR)) : driftskins[level], GTC_CACHE);
 
 	INT32 afterimage = stplyr->karthud[khud_afterimagetime];
-	if (!stplyr->drift)
+	if (!stplyr->drift && !stplyr->airthrustdir)
 	{
 		if (afterimage)
 			goto doafterimage;
