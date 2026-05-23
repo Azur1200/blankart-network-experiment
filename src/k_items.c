@@ -378,9 +378,9 @@ void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags)
 	player->equippeditem = itemtype;
 }
 
-void K_UnsetItemOut(player_t *player)
+void K_UnsetItemOutEx(player_t *player, itemflags_t flags)
 {
-	player->itemflags &= ~(IF_ITEMOUT|IF_EGGMANOUT|IF_HOLDREADY);
+	player->itemflags &= ~(flags);
 	player->bananadrag = 0;
 	player->equippeditem = KITEM_NONE;
 }

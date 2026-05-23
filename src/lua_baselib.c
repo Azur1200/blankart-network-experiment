@@ -4135,6 +4135,17 @@ static int lib_kUnsetItemOut(lua_State *L)
 	return 0;
 }
 
+static int lib_kUnsetItemOutEx(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	itemflags_t itemflags = luaL_checkint(L, 2);
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_UnsetItemOutEx(player, itemflags);
+	return 0;
+}
+
 static int lib_kDropItems(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -5974,6 +5985,7 @@ static luaL_Reg lib[] = {
 	{"K_UpdateHnextList",lib_kUpdateHnextList},
 	{"K_SetItemOut",lib_kSetItemOut},
 	{"K_UnsetItemOut",lib_kUnsetItemOut},
+	{"K_UnsetItemOutEx",lib_kUnsetItemOutEx},
 	{"K_DropItems",lib_kDropItems},
 	{"K_StripItems",lib_kStripItems},
 	{"K_StripOther",lib_kStripOther},

@@ -201,7 +201,8 @@ patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, boolean tiny, UINT8 amount,
 boolean K_DontDoubleMyItems(kartresult_t *res);
 
 void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags);
-void K_UnsetItemOut(player_t *player);
+void K_UnsetItemOutEx(player_t *player, itemflags_t flags);
+#define K_UnsetItemOut(player) K_UnsetItemOutEx(player, IF_ITEMOUT|IF_EGGMANOUT|IF_HOLDREADY)
 
 mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, INT32 moloop, mobj_t *prev);
 
