@@ -185,6 +185,93 @@ extern kartresult_t kartresults[MAXKARTRESULTS];
 extern UINT8 numkartresults;
 extern UINT8 oddstablemax[MAXODDSTABLES];
 
+typedef void (itemthinkfunc_f)(player_t *player);
+typedef void (itemusefunc_f)(player_t *player, boolean onground, boolean force, boolean nohyudoro);
+// item usage functions
+itemusefunc_f K_UseItem_Sneaker;
+itemusefunc_f K_UseItem_RocketSneaker;
+itemusefunc_f K_UseItem_Invincibility;
+itemusefunc_f K_UseItem_SMonitor;
+itemusefunc_f K_UseItem_Banana;
+itemusefunc_f K_UseItem_Eggman;
+itemusefunc_f K_UseItem_EggMine;
+itemusefunc_f K_UseItem_Orbinaut;
+itemusefunc_f K_UseItem_Jawz;
+itemusefunc_f K_UseItem_Mine;
+itemusefunc_f K_UseItem_LandMine;
+itemusefunc_f K_UseItem_Ballhog;
+itemusefunc_f K_UseItem_SPB;
+itemusefunc_f K_UseItem_Grow;
+itemusefunc_f K_UseItem_Shrink;
+itemusefunc_f K_UseItem_Mini;
+itemusefunc_f K_UseItem_ThunderShield;
+itemusefunc_f K_UseItem_AttractionShield;
+	itemusefunc_f K_HoldUseItem_AttractionShield;
+	itemusefunc_f K_ReleaseUseItem_AttractionShield;
+itemusefunc_f K_UseItem_BubbleShield;
+	itemusefunc_f K_HoldUseItem_BubbleShield;
+	itemusefunc_f K_ReleaseItem_BubbleShield;
+itemusefunc_f K_UseItem_FlameShield;
+	itemusefunc_f K_HoldUseItem_FlameShield;
+itemusefunc_f K_UseItem_Hyudoro;
+itemusefunc_f K_UseItem_PogoSpring;
+itemusefunc_f K_UseItem_SuperRing;
+itemusefunc_f K_UseItem_KitchenSink;
+itemusefunc_f K_UseItem_EggBrick;
+itemusefunc_f K_UseItem_Sad;
+// item thinker functions
+itemthinkfunc_f K_ItemThink_ThunderShield;
+itemthinkfunc_f K_ItemThink_AttractionShield;
+itemthinkfunc_f K_ItemThink_BubbleShield;
+itemthinkfunc_f K_ItemThink_BonusRoll;
+
+// item function tables, in the form of {standard, alternate}
+itemthinkfunc_f *KI_ItemThinkFunctions[][2] =
+{
+	[KITEM_THUNDERSHIELD] = 	{K_ItemThink_ThunderShield, K_ItemThink_AttractionShield},
+	[KITEM_BUBBLESHIELD] = 	{K_ItemThink_BubbleShield, NULL},
+	[KITEM_BONUSITEMROLL] = 	{K_ItemThink_BonusRoll, NULL},
+	[MAXKARTITEMS] = 			{NULL,NULL}
+};
+itemusefunc_f *KI_ItemUseFunctions[][2] =
+{
+	[KITEM_SNEAKER] = 			{K_UseItem_Sneaker, NULL},
+	[KITEM_ROCKETSNEAKER] = 	{K_UseItem_RocketSneaker, NULL},
+	[KITEM_INVINCIBILITY] = 	{K_UseItem_Invincibility, K_UseItem_SMonitor},
+	[KITEM_BANANA] = 			{K_UseItem_Banana, NULL},
+	[KITEM_EGGMAN] = 			{K_UseItem_Eggman, K_UseItem_EggMine},
+	[KITEM_ORBINAUT] = 			{K_UseItem_Orbinaut, NULL},
+	[KITEM_JAWZ] = 				{K_UseItem_Jawz, NULL},
+	[KITEM_MINE] = 				{K_UseItem_Mine, NULL},
+	[KITEM_LANDMINE] = 			{K_UseItem_LandMine, NULL},
+	[KITEM_BALLHOG] = 			{K_UseItem_Ballhog, NULL},
+	[KITEM_SPB] =	 			{K_UseItem_SPB, NULL},
+	[KITEM_GROW] =	 			{K_UseItem_Grow, NULL},
+	[KITEM_SHRINK] =	 		{K_UseItem_Shrink, K_UseItem_Mini},
+	[KITEM_THUNDERSHIELD] =	 	{K_UseItem_ThunderShield, K_UseItem_AttractionShield},
+	[KITEM_BUBBLESHIELD] =	 	{K_UseItem_BubbleShield, NULL},
+	[KITEM_FLAMESHIELD] =	 	{K_UseItem_FlameShield, NULL},
+	[KITEM_HYUDORO] =		 	{K_UseItem_Hyudoro, NULL},
+	[KITEM_POGOSPRING] =	 	{K_UseItem_PogoSpring, NULL},
+	[KITEM_SUPERRING] =		 	{K_UseItem_SuperRing, NULL},
+	[KITEM_KITCHENSINK] =	 	{K_UseItem_KitchenSink, NULL},
+	[KITEM_EGGBRICK] =		 	{K_UseItem_EggBrick, NULL},
+	[MAXKARTITEMS] = 			{K_UseItem_Sad, NULL}
+};
+itemusefunc_f *KI_ItemHoldUseFunctions[][2] =
+{
+	[KITEM_THUNDERSHIELD] = 	{NULL, K_HoldUseItem_AttractionShield},
+	[KITEM_BUBBLESHIELD] = 		{K_HoldUseItem_BubbleShield, NULL},
+	[KITEM_FLAMESHIELD] = 		{K_HoldUseItem_FlameShield, NULL},
+	[MAXKARTITEMS] = 			{NULL,NULL}
+};
+itemusefunc_f *KI_ItemReleaseUseFunctions[][2] =
+{
+	[KITEM_THUNDERSHIELD] = 	{NULL, K_ReleaseUseItem_AttractionShield},
+	[KITEM_BUBBLESHIELD] = 		{K_ReleaseItem_BubbleShield, NULL},
+	[MAXKARTITEMS] = 			{NULL,NULL}
+};
+
 void K_RegisterItem(kartitemtype_e itemtype);
 kartresult_t *K_RegisterResult(const char *name, boolean alternate);
 kartresult_t *K_GetKartResultAlt(const char *name, boolean alternate);
@@ -205,6 +292,10 @@ void K_UnsetItemOutEx(player_t *player, itemflags_t flags);
 #define K_UnsetItemOut(player) K_UnsetItemOutEx(player, IF_ITEMOUT|IF_EGGMANOUT|IF_HOLDREADY)
 
 mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, INT32 moloop, mobj_t *prev);
+void K_RemoveEquippedItem(mobj_t *equipmo);
+
+void K_IncrementCurrentItem(player_t *player);
+void K_DecrementCurrentItem(player_t *player);
 
 void K_AddPlayerReserveItem(player_t *player, kartitemtype_e type, UINT8 amount);
 void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, boolean nodoubles, kartitemblink_e blink);
