@@ -1163,10 +1163,10 @@ void D_SRB2Loop(void)
 			ranwipe = false;
 		}
 
-		{
-			ZoneScopedN("LUA_Step");
-			LUA_Step();
-		}
+		// {
+		// 	ZoneScopedN("LUA_Step");
+		// 	LUA_Step();
+		// }
 	}
 }
 

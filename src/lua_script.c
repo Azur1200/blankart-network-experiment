@@ -2112,20 +2112,20 @@ static void UnArchiveTables(UINT8 **p, boolean compat)
 	}
 }
 
-void LUA_Step(void)
-{
-	if (!gL)
-		return;
+// void LUA_Step(void)
+// {
+// 	if (!gL)
+// 		return;
 
-	if (lua_gettop(gL) != 0)
-	{
-		// TODO: Fix lua stack garbage so print can be always on.
-		TracyCMessage("garbage on lua stack!", strlen("garbage on lua stack!"));
-		CONS_Alert(CONS_WARNING, "Eek, there is garbage on lua stack!\n");
-		lua_settop(gL, 0);
-		lua_gc(gL, LUA_GCSTEP, 1);
-	}
-}
+// 	if (lua_gettop(gL) != 0)
+// 	{
+// 		// TODO: Fix lua stack garbage so print can be always on.
+// 		TracyCMessage("garbage on lua stack!", strlen("garbage on lua stack!"));
+// 		CONS_Alert(CONS_WARNING, "Eek, there is garbage on lua stack!\n");
+// 		lua_settop(gL, 0);
+// 		lua_gc(gL, LUA_GCSTEP, 1);
+// 	}
+// }
 
 void LUA_Sync(savebuffer_t *save, boolean network, boolean compat)
 {
