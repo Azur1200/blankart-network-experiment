@@ -2238,7 +2238,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 
 	if (itemtype > 0)
 	{
-		itemthinkfunc_f *itemthinker = KI_ItemThinkFunctions[itemtype][K_IsKartItemAlternate(itemtype)];
+		itemthinkfunc_f *itemthinker = KI_ItemThinkFunctions[itemtype][altitem];
 		itemusefunc_f *itemuse = NULL;
 
 		if (itemthinker != NULL)
@@ -2251,16 +2251,16 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		{
 			if (ATTACK_JUST_DOWN)
 			{
-				itemuse = KI_ItemUseFunctions[itemtype][K_IsKartItemAlternate(itemtype)];
+				itemuse = KI_ItemUseFunctions[itemtype][altitem];
 			}
 			else
 			{
-				itemuse = KI_ItemHoldUseFunctions[itemtype][K_IsKartItemAlternate(itemtype)];
+				itemuse = KI_ItemHoldUseFunctions[itemtype][altitem];
 			}
 		}
 		else if ((player->oldcmd.buttons & BT_ATTACK))
 		{
-			itemuse = KI_ItemReleaseUseFunctions[itemtype][K_IsKartItemAlternate(itemtype)];
+			itemuse = KI_ItemReleaseUseFunctions[itemtype][altitem];
 		}
 
 		if (itemuse != NULL)
@@ -2639,6 +2639,9 @@ void K_UseItem_RocketSneaker(player_t *player, boolean onground, boolean force, 
 
 void K_UseItem_Invincibility(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+
 	if (nohyudoro)
 	{
 		K_DoInvincibility(player, INVINTIME);
@@ -2650,6 +2653,9 @@ void K_UseItem_Invincibility(player_t *player, boolean onground, boolean force, 
 
 void K_UseItem_SMonitor(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+
 	if (nohyudoro)
 	{
 		K_DoSMonitor(player, SMONITORTIME);
@@ -2661,6 +2667,9 @@ void K_UseItem_SMonitor(player_t *player, boolean onground, boolean force, boole
 
 void K_UseItem_Banana(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (player->equippeditem == KITEM_BANANA)
 	{
 		player->itemamount--;
@@ -2698,6 +2707,9 @@ void K_UseItem_Banana(player_t *player, boolean onground, boolean force, boolean
 
 void K_UseItem_Eggman(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (player->equippeditem == KITEM_EGGMAN)
 	{
 		K_ThrowKartItem(player, false, MT_EGGMANITEM, -1, 0);
@@ -2724,6 +2736,9 @@ void K_UseItem_Eggman(player_t *player, boolean onground, boolean force, boolean
 
 void K_UseItem_EggMine(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (player->equippeditem == KITEM_EGGMAN)
 	{
 		mobj_t *mo;
@@ -2780,6 +2795,9 @@ void K_UseItem_EggMine(player_t *player, boolean onground, boolean force, boolea
 
 void K_UseItem_Orbinaut(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (player->equippeditem == KITEM_ORBINAUT)
 	{
 		player->itemamount--;
@@ -2815,6 +2833,9 @@ void K_UseItem_Orbinaut(player_t *player, boolean onground, boolean force, boole
 
 void K_UseItem_Jawz(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (player->equippeditem == KITEM_JAWZ)
 	{
 		player->itemamount--;
@@ -2862,6 +2883,9 @@ void K_UseItem_Jawz(player_t *player, boolean onground, boolean force, boolean n
 
 void K_UseItem_Mine(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (player->equippeditem == KITEM_MINE)
 	{
 		player->itemamount--;
@@ -2873,28 +2897,32 @@ void K_UseItem_Mine(player_t *player, boolean onground, boolean force, boolean n
 	}
 	else if (nohyudoro)
 	{
-		mobj_t *mo;
 		K_SetItemOut(player, KITEM_MINE, IF_ITEMOUT);
 		S_StartSound(player->mo, sfx_s254);
-		mo = K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_SSMINE_SHIELD, 0, player->mo);
+		K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_SSMINE_SHIELD, 0, player->mo);
 		K_BotResetItemConfirm(player, false);
 	}
 }
 
 void K_UseItem_LandMine(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (nohyudoro)
 	{
-		mobj_t *mo;
-		K_SetItemOut(player, KITEM_MINE, IF_ITEMOUT);
-		S_StartSound(player->mo, sfx_s254);
-		mo = K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_SSMINE_SHIELD, 0, player->mo);
+		player->itemamount--;
+		K_ThrowLandMine(player);
+		K_PlayAttackTaunt(player->mo);
 		K_BotResetItemConfirm(player, false);
 	}
 }
 
 void K_UseItem_Ballhog(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (nohyudoro)
 	{
 		player->itemamount--;
@@ -2906,6 +2934,9 @@ void K_UseItem_Ballhog(player_t *player, boolean onground, boolean force, boolea
 
 void K_UseItem_SPB(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (nohyudoro)
 	{
 		player->itemamount--;
@@ -2917,6 +2948,9 @@ void K_UseItem_SPB(player_t *player, boolean onground, boolean force, boolean no
 
 void K_UseItem_Grow(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (nohyudoro)
 	{
 		player->itemamount--;
@@ -2947,6 +2981,9 @@ void K_UseItem_Grow(player_t *player, boolean onground, boolean force, boolean n
 
 void K_UseItem_Shrink(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (nohyudoro)
 	{
 		K_DoShrink(player);
@@ -2958,6 +2995,9 @@ void K_UseItem_Shrink(player_t *player, boolean onground, boolean force, boolean
 
 void K_UseItem_Mini(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (nohyudoro)
 	{
 		K_DoGrowShrink(player, true);
@@ -2976,6 +3016,9 @@ void K_UseItem_Mini(player_t *player, boolean onground, boolean force, boolean n
 
 void K_UseItem_ThunderShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (nohyudoro)
 	{
 		K_DoThunderShield(player);
@@ -2995,6 +3038,9 @@ void K_UseItem_ThunderShield(player_t *player, boolean onground, boolean force, 
 
 void K_UseItem_AttractionShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (nohyudoro)
 	{
 		S_StartSound(player->mo, sfx_vwre);
@@ -3003,6 +3049,9 @@ void K_UseItem_AttractionShield(player_t *player, boolean onground, boolean forc
 
 void K_HoldUseItem_AttractionShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	fixed_t effectscale = 75*player->mo->scale/100;
 
 	if (player->attractioncharge >= ATTRACTIONCHARGETIME)
@@ -3066,6 +3115,9 @@ void K_HoldUseItem_AttractionShield(player_t *player, boolean onground, boolean 
 
 void K_ReleaseUseItem_AttractionShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (player->attractioncharge)
 	{
 		if (S_SoundPlaying(player->mo, sfx_vwre))
@@ -3104,6 +3156,9 @@ void K_ReleaseUseItem_AttractionShield(player_t *player, boolean onground, boole
 
 void K_UseItem_BubbleShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (nohyudoro)
 	{
 		S_StartSound(player->mo, sfx_s3k75);
@@ -3112,6 +3167,9 @@ void K_UseItem_BubbleShield(player_t *player, boolean onground, boolean force, b
 
 void K_HoldUseItem_BubbleShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (player->bubblecool < bubbletime && player->bubblehealth > 0)
 	{
 		player->bubbleblowup += 3;
@@ -3146,6 +3204,9 @@ void K_HoldUseItem_BubbleShield(player_t *player, boolean onground, boolean forc
 
 void K_ReleaseItem_BubbleShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (player->bubblecool > bubbletime)
 		player->bubblecool = bubbletime;
 
@@ -3169,6 +3230,9 @@ void K_ReleaseItem_BubbleShield(player_t *player, boolean onground, boolean forc
 
 void K_UseItem_FlameShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (nohyudoro && K_GetShieldFromPlayer(player) != KSHIELD_FLAME)
 	{
 		player->itemamount--;
@@ -3181,6 +3245,9 @@ void K_UseItem_FlameShield(player_t *player, boolean onground, boolean force, bo
 
 void K_HoldUseItem_FlameShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (player->equippeditem == KITEM_FLAMESHIELD)
 	{
 		SINT8 incr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 3 : 2;
@@ -3226,6 +3293,9 @@ void K_HoldUseItem_FlameShield(player_t *player, boolean onground, boolean force
 
 void K_UseItem_Hyudoro(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (nohyudoro)
 	{
 		player->itemamount--;
@@ -3249,6 +3319,9 @@ void K_UseItem_PogoSpring(player_t *player, boolean onground, boolean force, boo
 
 void K_UseItem_SuperRing(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (nohyudoro)
 	{
 		boolean offroad = (player->offroad && K_ApplyOffroad(player));
@@ -3291,6 +3364,9 @@ void K_UseItem_SuperRing(player_t *player, boolean onground, boolean force, bool
 
 void K_UseItem_KitchenSink(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (player->equippeditem == KITEM_KITCHENSINK)
 	{
 		player->itemamount--;
@@ -3316,6 +3392,9 @@ void K_UseItem_KitchenSink(player_t *player, boolean onground, boolean force, bo
 
 void K_UseItem_EggBrick(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (nohyudoro && player->bricktimer <= 0)
 	{
 		S_StartSound(player->mo, sfx_bckuse);
@@ -3327,6 +3406,9 @@ void K_UseItem_EggBrick(player_t *player, boolean onground, boolean force, boole
 
 void K_UseItem_Sad(player_t *player, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)onground;
+	(void)force;
+	
 	if (nohyudoro && player->sadtimer <= 0)
 	{
 		player->sadtimer = stealtime;
