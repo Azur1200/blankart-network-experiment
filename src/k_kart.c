@@ -4991,12 +4991,7 @@ void K_PuntMine(mobj_t *origMine, mobj_t *punter)
 
 		if (mineOwner->player->itemamount)
 		{
-			mineOwner->player->itemamount--;
-		}
-
-		if (!mineOwner->player->itemamount)
-		{
-			mineOwner->player->itemtype = KITEM_NONE;
+			K_DecrementCurrentItem(mineOwner->player);
 		}
 
 		P_RemoveMobj(origMine);
@@ -5914,6 +5909,16 @@ void K_RepairOrbitChain(mobj_t *orbit)
 
 		if (orbit->target && !P_MobjWasRemoved(orbit->target) && orbit->target->player->itemamount != num)
 			orbit->target->player->itemamount = num;
+	}
+	
+	if (orbit->target->player->itemamount <= 0)
+	{
+		K_UnsetItemOut(orbit->target->player);
+		if (!(orbit->target->player->itemflags &= ~IF_PASSIVESEEKING))
+		{
+			K_DisableSeekingReticule(orbit->target->player);
+		}
+		orbit->target->player->itemtype = KITEM_NONE;
 	}
 }
 
