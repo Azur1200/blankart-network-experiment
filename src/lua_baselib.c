@@ -5505,6 +5505,53 @@ static int lib_kTerrainHasAffect(lua_State *L)
 	return 1;
 }
 
+static int lib_kAwardPlayerItem(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	kartitemtype_e type = luaL_checkinteger(L, 2);
+	UINT8 amount = luaL_checkinteger(L, 3);
+	boolean nodoubles = lua_optboolean(L, 4);
+	kartitemblink_e blink = luaL_optint(L, 5, KITEMBLINK_NORMAL);
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_AwardPlayerItem(player, type, amount, nodoubles, blink);
+	return 0;
+}
+
+static int lib_kAwardPlayerItemOrReserve(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	kartitemtype_e type = luaL_checkinteger(L, 2);
+	UINT8 amount = luaL_checkinteger(L, 3);
+	boolean nodoubles = lua_optboolean(L, 4);
+	kartitemblink_e blink = luaL_optint(L, 5, KITEMBLINK_NORMAL);
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_AwardPlayerItemOrReserve(player, type, amount, nodoubles, blink);
+	return 0;
+}
+
+static int lib_kAddPlayerReserveItem(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	kartitemtype_e type = luaL_checkinteger(L, 2);
+	UINT8 amount = luaL_checkinteger(L, 3);
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_AddPlayerReserveItem(player, type, amount);
+	return 0;
+}
+
+static int lib_kStartRoulette(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	kartroulettetype_e type = luaL_checkinteger(L, 2);
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_StartRoulette(player, type);
+	return 0;
+}
+
 static int lib_kSetPlayerItemCooldown(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -5556,6 +5603,15 @@ static int lib_kDisableSeekingReticule(lua_State *L)
 	return 0;
 }
 
+static int lib_kDecrementAndCheckCurrentItem(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_DecrementAndCheckCurrentItem(player);
+	return 0;
+}
+
 static int lib_kDontDoubleMyItems(lua_State *L)
 {
 	kartresult_t *res = *((kartresult_t **)luaL_checkudata(L, 1, META_KARTRESULT));
@@ -5566,7 +5622,6 @@ static int lib_kDontDoubleMyItems(lua_State *L)
 	lua_pushboolean(L, K_DontDoubleMyItems(res));
 	return 1;
 }
-
 
 static int lib_kAddItemRollToList(lua_State *L)
 {
@@ -6119,10 +6174,15 @@ static luaL_Reg lib[] = {
 	{"K_TerrainHasAffect", lib_kTerrainHasAffect},
 
 	// k_items
+	{"K_AwardPlayerItem", lib_kAwardPlayerItem},
+	{"K_AwardPlayerItemOrReserve", lib_kAwardPlayerItemOrReserve},
+	{"K_AddPlayerReserveItem", lib_kAddPlayerReserveItem},
+	{"K_StartRoulette", lib_kStartRoulette},
 	{"K_SetPlayerItemCooldown", lib_kSetPlayerItemCooldown},
 	{"K_SpawnEquippedItem",lib_kSpawnEquippedItem},
 	{"K_EnableSeekingReticule",lib_kEnableSeekingReticule},
 	{"K_DisableSeekingReticule",lib_kDisableSeekingReticule},
+	{"K_DecrementAndCheckCurrentItem",lib_kDecrementAndCheckCurrentItem},
 	{"K_DontDoubleMyItems",lib_kDontDoubleMyItems},
 
 	// k_itemlist

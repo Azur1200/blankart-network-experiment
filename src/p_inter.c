@@ -1411,25 +1411,23 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 					if (target->target->hnext)
 						K_KillBananaChain(target->target->hnext, inflictor, source);
 					target->target->player->itemamount = 0;
+					K_DecrementAndCheckCurrentItem(target->target->player);
 				}
 				else if (target->target->player->itemamount)
-					target->target->player->itemamount--;
+				{
+					K_DecrementAndCheckCurrentItem(target->target->player);
+				}
 			}
 			else if (equipstyle == KITEMEQUIP_ORBIT)
 			{
 				if (target->target->player->itemamount)
-					target->target->player->itemamount--;
+				{
+					K_DecrementAndCheckCurrentItem(target->target->player);
+				}
 				if (target->lastlook != 0)
 				{
 					K_RepairOrbitChain(target);
 				}
-			}
-
-			if (!target->target->player->itemamount)
-			{
-				K_UnsetItemOut(target->target->player);
-				K_DisableSeekingReticule(target->target->player);
-				// target->target->player->itemflags &= ~IF_ITEMOUT;
 			}
 
 			if (target->target->hnext == target)
@@ -1439,7 +1437,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 	// Above block does not clean up rocket sneakers when a player dies, so we need to do it here target->target is null when using rocket sneakers
 	if (target->player)
 	{
-		K_DisableSeekingReticule(target->player);
 		K_DropRocketSneaker(target->player);
 		target->player->equippeditem = KITEM_NONE;
 	}

@@ -88,6 +88,10 @@ automatically.
 	X (GPRankPoints),/* K_CalculateGPRankPoints */\
 	X (AddonLoaded),\
 	X (PlayerItem),/*SRB2KART*/\
+	X (PlayerItemThink),/*SRB2KART*/\
+	X (PlayerItemUse),/*SRB2KART*/\
+	X (PlayerItemHoldUse),/*SRB2KART*/\
+	X (PlayerItemReleaseUse),/*SRB2KART*/\
 	X (KartHyudoro),/*SRB2KART*/\
 	X (KartSneaker),/*SRB2KART*/\
 	X (KartStripItems),/*SRB2KART*/\
@@ -181,6 +185,11 @@ int  LUA_HookMusicChange(const char *oldname, struct MusicChange *);
 
 // Item shit
 boolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, boolean wasHoldingItem, boolean *force);
+boolean LUA_HookPlayerItemThink(player_t *player, UINT8 itemType);
+boolean LUA_HookPlayerItemUse(player_t *player, UINT8 itemType, boolean attackJustDown, boolean onground, boolean force, boolean noHyudoro);
+boolean LUA_HookPlayerItemHoldUse(player_t *player, UINT8 itemType, boolean attackJustDown, boolean onground, boolean force, boolean noHyudoro);
+boolean LUA_HookPlayerItemReleaseUse(player_t *player, UINT8 itemType, boolean attackJustDown, boolean onground, boolean force, boolean noHyudoro);
+
 boolean LUA_HookKartHyudoro(player_t *player, INT32 *target, boolean sink); // SRB2Kart: Hook for K_DoHyudoroSteal and overriding its results.
 boolean LUA_HookMobjScaleChange(mobj_t *target, fixed_t newscale, fixed_t oldscale); // SRB2Kart: Hook for P_SetScale.
 boolean LUA_HookKartSneaker(player_t *player, int type); // SRB2Kart: Hook for K_DoSneaker.
