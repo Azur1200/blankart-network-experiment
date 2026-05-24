@@ -6087,11 +6087,10 @@ static void K_MoveHeldObjects(player_t *player)
 		K_DisableSeekingReticule(player);
 		if (player->itemflags & IF_EGGMANOUT)
 			player->itemflags &= ~IF_EGGMANOUT;
-		else if (player->itemflags & IF_EGGMANOUT)
+		else if (player->itemflags & IF_ITEMOUT)
 		{
 			player->itemamount = 0;
-			K_UnsetItemOut(player);
-			player->itemtype = KITEM_NONE;
+			K_DecrementCurrentItem(player);
 		}
 		return;
 	}
