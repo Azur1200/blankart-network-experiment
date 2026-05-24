@@ -186,7 +186,7 @@ extern UINT8 numkartresults;
 extern UINT8 oddstablemax[MAXODDSTABLES];
 
 typedef void (itemthinkfunc_f)(player_t *player);
-typedef void (itemusefunc_f)(player_t *player, boolean onground, boolean force, boolean nohyudoro);
+typedef void (itemusefunc_f)(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro);
 // item usage functions
 itemusefunc_f K_UseItem_Sneaker;
 itemusefunc_f K_UseItem_RocketSneaker;
@@ -209,10 +209,10 @@ itemusefunc_f K_UseItem_AttractionShield;
 	itemusefunc_f K_HoldUseItem_AttractionShield;
 	itemusefunc_f K_ReleaseUseItem_AttractionShield;
 itemusefunc_f K_UseItem_BubbleShield;
-	itemusefunc_f K_HoldUseItem_BubbleShield;
-	itemusefunc_f K_ReleaseItem_BubbleShield;
+	itemusefunc_f K_ReleaseUseItem_BubbleShield;
 itemusefunc_f K_UseItem_FlameShield;
 	itemusefunc_f K_HoldUseItem_FlameShield;
+	itemusefunc_f K_ReleaseUseItem_FlameShield;
 itemusefunc_f K_UseItem_Hyudoro;
 itemusefunc_f K_UseItem_PogoSpring;
 itemusefunc_f K_UseItem_SuperRing;
@@ -242,12 +242,11 @@ boolean K_DontDoubleMyItems(kartresult_t *res);
 
 void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags);
 void K_UnsetItemOutEx(player_t *player, itemflags_t flags);
-#define K_UnsetItemOut(player) K_UnsetItemOutEx(player, IF_ITEMOUT|IF_EGGMANOUT|IF_HOLDREADY)
+#define K_UnsetItemOut(player) K_UnsetItemOutEx(player, IF_ITEMOUT|IF_EGGMANOUT)
 
 mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, INT32 moloop, mobj_t *prev);
 void K_RemoveEquippedItem(mobj_t *equipmo);
 
-void K_IncrementCurrentItem(player_t *player);
 void K_DecrementCurrentItem(player_t *player);
 
 void K_AddPlayerReserveItem(player_t *player, kartitemtype_e type, UINT8 amount);

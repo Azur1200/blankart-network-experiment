@@ -123,14 +123,14 @@ itemusefunc_f *KI_ItemUseFunctions[][2] =
 itemusefunc_f *KI_ItemHoldUseFunctions[][2] =
 {
 	[KITEM_THUNDERSHIELD] = 	{NULL, K_HoldUseItem_AttractionShield},
-	[KITEM_BUBBLESHIELD] = 		{K_HoldUseItem_BubbleShield, NULL},
 	[KITEM_FLAMESHIELD] = 		{K_HoldUseItem_FlameShield, NULL},
 	[MAXKARTITEMS] = 			{NULL,NULL}
 };
 itemusefunc_f *KI_ItemReleaseUseFunctions[][2] =
 {
 	[KITEM_THUNDERSHIELD] = 	{NULL, K_ReleaseUseItem_AttractionShield},
-	[KITEM_BUBBLESHIELD] = 		{K_ReleaseItem_BubbleShield, NULL},
+	[KITEM_BUBBLESHIELD] = 		{K_ReleaseUseItem_BubbleShield, NULL},
+	[KITEM_FLAMESHIELD] = 		{K_ReleaseUseItem_FlameShield, NULL},
 	[MAXKARTITEMS] = 			{NULL,NULL}
 };
 
@@ -2213,14 +2213,13 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 {
 	TracyCZone(__zone, true);
 
-	const kartitemtype_e itemtype = player->itemtype;
-	const boolean altitem = K_IsKartItemAlternate(itemtype);
-
 	const UINT16 buttons = K_GetKartButtons(player);
 	const boolean ATTACK_JUST_DOWN = ((buttons & BT_ATTACK) && !(player->oldcmd.buttons & BT_ATTACK));
 	const boolean HOLDING_ITEM = (player->equippeditem != 0);
 	const boolean NO_HYUDORO = (player->stealingtimer == 0 && player->stolentimer == 0);
-
+	
+	kartitemtype_e itemtype = player->itemtype;
+	boolean altitem = K_IsKartItemAlternate(itemtype);
 	boolean force = false;
 
 #ifdef TRACY_ENABLE
@@ -2235,8 +2234,14 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		TracyCZoneEnd(__zone);
 		return;
 	}
+	
+	if (itemtype == KITEM_NONE)
+	{
+		itemtype = player->equippeditem;
+		altitem = K_IsKartItemAlternate(itemtype);
+	}
 
-	if (itemtype > 0)
+	if (itemtype != KITEM_NONE)
 	{
 		itemthinkfunc_f *itemthinker = KI_ItemThinkFunctions[itemtype][altitem];
 		itemusefunc_f *itemuse = NULL;
@@ -2257,17 +2262,16 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			{
 				itemuse = KI_ItemHoldUseFunctions[itemtype][altitem];
 			}
-			player->itemflags |= IF_HOLDREADY;
 		}
-		else if ((player->itemflags & IF_HOLDREADY))
+
+		if ((player->oldcmd.buttons & BT_ATTACK) && !(buttons & BT_ATTACK))
 		{
 			itemuse = KI_ItemReleaseUseFunctions[itemtype][altitem];
-			player->itemflags &= ~IF_HOLDREADY;
 		}
 
 		if (itemuse != NULL)
 		{
-			itemuse(player, onground, force, NO_HYUDORO);
+			itemuse(player, ATTACK_JUST_DOWN, onground, force, NO_HYUDORO);
 		}
 		// lua hook(s) for item usage?
 	}
@@ -2578,29 +2582,40 @@ void K_RemoveEquippedItem(mobj_t *equipmo)
 
 }
 
-void K_IncrementCurrentItem(player_t *player)
-{
-	
-}
-
 void K_DecrementCurrentItem(player_t *player)
 {
-
+	if (player->itemamount > 0)
+	{
+		player->itemamount--;
+	}
+	if (player->itemamount <= 0)
+	{
+		K_UnsetItemOut(player);
+		if (!(player->itemflags &= ~IF_PASSIVESEEKING))
+		{
+			K_DisableSeekingReticule(player);
+		}
+		player->itemtype = KITEM_NONE;
+	}
 }
 
-void K_UseItem_Sneaker(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Sneaker(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)itemjustdown;
+
 	if (nohyudoro && (onground || force))
 	{
 		K_DoSneaker(player, SNEAKERTYPE_SNEAKER);
 		K_PlayBoostTaunt(player->mo);
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_BotResetItemConfirm(player, false);
 	}
 }
 
-void K_UseItem_RocketSneaker(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_RocketSneaker(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
+	(void)itemjustdown;
+
 	if (nohyudoro && (onground || force))
 	{
 		if (player->rocketsneakertimer == 0)
@@ -2615,7 +2630,7 @@ void K_UseItem_RocketSneaker(player_t *player, boolean onground, boolean force, 
 			//K_DoSneaker(player, SNEAKERTYPE_ROCKETSNEAKER);
 
 			player->rocketsneakertimer = (itemtime*3);
-			player->itemamount--;
+			K_DecrementCurrentItem(player);
 			K_SetItemOut(player, KITEM_ROCKETSNEAKER, 0);
 			K_UpdateHnextList(player, true);
 
@@ -2639,42 +2654,45 @@ void K_UseItem_RocketSneaker(player_t *player, boolean onground, boolean force, 
 	}
 }
 
-void K_UseItem_Invincibility(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Invincibility(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 
 	if (nohyudoro)
 	{
 		K_DoInvincibility(player, INVINTIME);
 		K_PlayPowerGloatSound(player->mo);
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_BotResetItemConfirm(player, false);
 	}
 }
 
-void K_UseItem_SMonitor(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_SMonitor(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 
 	if (nohyudoro)
 	{
 		K_DoSMonitor(player, SMONITORTIME);
 		K_PlayPowerGloatSound(player->mo);
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_BotResetItemConfirm(player, false);
 	}
 }
 
-void K_UseItem_Banana(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Banana(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (player->equippeditem == KITEM_BANANA)
 	{
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 
 		mobj_t *mo = K_ThrowKartItem(player, false, MT_BANANA, -1, 0);
 		mo->color = player->skincolor;
@@ -2707,24 +2725,24 @@ void K_UseItem_Banana(player_t *player, boolean onground, boolean force, boolean
 	}
 }
 
-void K_UseItem_Eggman(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Eggman(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (player->equippeditem == KITEM_EGGMAN)
 	{
 		K_ThrowKartItem(player, false, MT_EGGMANITEM, -1, 0);
 		K_PlayAttackTaunt(player->mo);
-		player->itemflags &= ~IF_EGGMANOUT;
-		player->equippeditem = KITEM_NONE;
+		K_UnsetItemOut(player);
 		K_UpdateHnextList(player, true);
 		K_BotResetItemConfirm(player, false);
 	}
 	else if (nohyudoro)
 	{
 		mobj_t *mo;
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_SetItemOut(player, KITEM_EGGMAN, IF_EGGMANOUT);
 		S_StartSound(player->mo, sfx_s254);
 		mo = K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_EGGMANITEM_SHIELD, 0, player->mo);
@@ -2736,10 +2754,11 @@ void K_UseItem_Eggman(player_t *player, boolean onground, boolean force, boolean
 	}
 }
 
-void K_UseItem_EggMine(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_EggMine(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (player->equippeditem == KITEM_EGGMAN)
 	{
@@ -2795,14 +2814,15 @@ void K_UseItem_EggMine(player_t *player, boolean onground, boolean force, boolea
 	}
 }
 
-void K_UseItem_Orbinaut(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Orbinaut(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (player->equippeditem == KITEM_ORBINAUT)
 	{
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_ThrowKartItem(player, true, MT_ORBINAUT, 1, 0);
 		K_PlayAttackTaunt(player->mo);
 		K_UpdateHnextList(player, false);
@@ -2833,14 +2853,15 @@ void K_UseItem_Orbinaut(player_t *player, boolean onground, boolean force, boole
 	}
 }
 
-void K_UseItem_Jawz(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Jawz(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (player->equippeditem == KITEM_JAWZ)
 	{
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		if (player->throwdir == 1 || player->throwdir == 0)
 		{
 			K_ThrowKartItem(player, true, MT_JAWZ, 1, 0);
@@ -2852,11 +2873,6 @@ void K_UseItem_Jawz(player_t *player, boolean onground, boolean force, boolean n
 		K_PlayAttackTaunt(player->mo);
 		K_UpdateHnextList(player, false);
 		K_BotResetItemConfirm(player, false);
-
-		if (player->itemamount <= 0)
-		{
-			K_DisableSeekingReticule(player);
-		}
 	}
 	else if (nohyudoro)
 	{
@@ -2883,17 +2899,17 @@ void K_UseItem_Jawz(player_t *player, boolean onground, boolean force, boolean n
 	}
 }
 
-void K_UseItem_Mine(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Mine(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (player->equippeditem == KITEM_MINE)
 	{
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_ThrowKartItem(player, false, MT_SSMINE, 1, 1);
 		K_PlayAttackTaunt(player->mo);
-		player->itemflags &= ~IF_ITEMOUT;
 		K_UpdateHnextList(player, true);
 		K_BotResetItemConfirm(player, false);
 	}
@@ -2906,56 +2922,60 @@ void K_UseItem_Mine(player_t *player, boolean onground, boolean force, boolean n
 	}
 }
 
-void K_UseItem_LandMine(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_LandMine(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (nohyudoro)
 	{
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_ThrowLandMine(player);
 		K_PlayAttackTaunt(player->mo);
 		K_BotResetItemConfirm(player, false);
 	}
 }
 
-void K_UseItem_Ballhog(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Ballhog(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (nohyudoro)
 	{
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_ThrowKartItem(player, true, MT_BALLHOG, 1, 0);
 		K_PlayAttackTaunt(player->mo);
 		K_BotResetItemConfirm(player, false);
 	}
 }
 
-void K_UseItem_SPB(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_SPB(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (nohyudoro)
 	{
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_ThrowKartItem(player, true, MT_SPB, 1, 0);
 		K_PlayAttackTaunt(player->mo);
 		K_BotResetItemConfirm(player, false);
 	}
 }
 
-void K_UseItem_Grow(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Grow(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (nohyudoro)
 	{
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		if (player->growshrinktimer < 0 && !K_IsKartItemAlternate(KITEM_SHRINK))
 		{
 			// If you're shrunk, then "grow" will just make you normal again...
@@ -2981,45 +3001,48 @@ void K_UseItem_Grow(player_t *player, boolean onground, boolean force, boolean n
 	}
 }
 
-void K_UseItem_Shrink(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Shrink(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (nohyudoro)
 	{
 		K_DoShrink(player);
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_PlayPowerGloatSound(player->mo);
 		K_BotResetItemConfirm(player, false);
 	}
 }
 
-void K_UseItem_Mini(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Mini(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (nohyudoro)
 	{
 		K_DoGrowShrink(player, true);
 		S_StartSound(player->mo, sfx_kc46);
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_PlayPowerGloatSound(player->mo);
 		K_BotResetItemConfirm(player, false);
 
 		// Shrink isn't very strong on its own--give a freebie roll to really bring down the hurt!
-		if ((player->itemamount - 1) <= 0)
+		if (player->itemamount <= 0)
 		{
 			K_StartRoulette(player, KROULETTETYPE_SHRINK);
 		}
 	}
 }
 
-void K_UseItem_ThunderShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_ThunderShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (nohyudoro)
 	{
@@ -3031,17 +3054,18 @@ void K_UseItem_ThunderShield(player_t *player, boolean onground, boolean force, 
 			// activate a mine while you're out of its radius,
 			// the SAME tic it sets your itemamount to 0
 			// ...:dumbestass:
-			player->itemamount--;
+			K_DecrementCurrentItem(player);
 			K_PlayAttackTaunt(player->mo);
 			K_BotResetItemConfirm(player, false);
 		}
 	}
 }
 
-void K_UseItem_AttractionShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_AttractionShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (nohyudoro)
 	{
@@ -3049,10 +3073,11 @@ void K_UseItem_AttractionShield(player_t *player, boolean onground, boolean forc
 	}
 }
 
-void K_HoldUseItem_AttractionShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_HoldUseItem_AttractionShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	fixed_t effectscale = 75*player->mo->scale/100;
 
@@ -3115,10 +3140,11 @@ void K_HoldUseItem_AttractionShield(player_t *player, boolean onground, boolean 
 	player->attractioncharge++;
 }
 
-void K_ReleaseUseItem_AttractionShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_ReleaseUseItem_AttractionShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (player->attractioncharge)
 	{
@@ -3146,7 +3172,7 @@ void K_ReleaseUseItem_AttractionShield(player_t *player, boolean onground, boole
 
 		if (player->itemamount > 0)
 		{
-			player->itemamount--;
+			K_DecrementCurrentItem(player);
 			K_PlayAttackTaunt(player->mo);
 			K_BotResetItemConfirm(player, false);
 		}
@@ -3156,101 +3182,60 @@ void K_ReleaseUseItem_AttractionShield(player_t *player, boolean onground, boole
 	player->attractioncharge = 0;
 }
 
-void K_UseItem_BubbleShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_BubbleShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (nohyudoro)
 	{
 		S_StartSound(player->mo, sfx_s3k75);
 	}
-}
 
-void K_HoldUseItem_BubbleShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
-{
-	(void)onground;
-	(void)force;
-	
-	if (player->bubblecool < bubbletime && player->bubblehealth > 0)
+	if ((player->itemflags & IF_HOLDREADY))
 	{
-		player->bubbleblowup += 3;
-		player->bubblehealth--;
-	}
-	else if (player->bubblecool >= bubbletime)
-		player->bubbleblowup++; // overcharge bonus
-
-	if (++player->bubblecool >= bubbletime + TICRATE/2)
-	{
-		// If you overcharge the Bubble Shield at
-		// any point, it pops and gives you a boost.
-		K_PopPlayerShield(player);
-
-		if (onground)
-		{
-			// If you're on the ground, you're going to
-			// immediately feel the effects of this boost.
-			// Play a sound to let everyone know!
-			S_StartSoundAtVolume(player->mo, sfx_cdfm57, 170);
-			K_PlayBoostTaunt(player->mo);
-		}
-
-		// experiment: don't boost, just give invulnerability
-		if (cv_kartbubble_boost_allow.value)
-		{
-			player->bubbleboost = BUBBLEBOOSTTIME;
-		}
-		player->flashing = 4*TICRATE/7;
+		player->itemflags &= ~IF_HOLDREADY;
 	}
 }
 
-void K_ReleaseItem_BubbleShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_ReleaseUseItem_BubbleShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
-	
-	if (player->bubblecool > bubbletime)
-		player->bubblecool = bubbletime;
+	(void)itemjustdown;
 
-	if (player->bubbleblowup > 0)
+	if ((player->itemflags & IF_HOLDREADY))
 	{
-		player->bubbleblowup--;
-		if (player->bubbleblowup == 0)
-			K_BotResetItemConfirm(player, false);
-		if (player->bubblecool < bubbletime)
-			player->bubblecool++;
-	}
-
-	if (player->bubbleblowup == 0 && player->bubblecool > 0)
-	{
-		player->bubblecool--;
-
-		if (player->bubblecool == 0 && player->bubblehealth <= 0)
-			K_PopPlayerShield(player);
+		player->itemflags &= ~IF_HOLDREADY;
 	}
 }
 
-void K_UseItem_FlameShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_FlameShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (nohyudoro && K_GetShieldFromPlayer(player) != KSHIELD_FLAME)
 	{
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		player->flametimer = flametime;
 		player->flamedash = 0;
 		K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, NULL);
 		S_StartSound(player->mo, sfx_s3k3e);
+		// make sure this is after K_DecrementCurrentItem so that equip state stays set properly
+		K_SetItemOut(player, KITEM_FLAMESHIELD, IF_HOLDREADY);
 	}
 }
 
-void K_HoldUseItem_FlameShield(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_HoldUseItem_FlameShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
-	if (player->equippeditem == KITEM_FLAMESHIELD)
+	if (player->equippeditem == KITEM_FLAMESHIELD && !(player->itemflags & IF_HOLDREADY))
 	{
 		SINT8 incr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 3 : 2;
 		SINT8 metincr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 4 : 3;
@@ -3293,25 +3278,38 @@ void K_HoldUseItem_FlameShield(player_t *player, boolean onground, boolean force
 	}
 }
 
-void K_UseItem_Hyudoro(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_ReleaseUseItem_FlameShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
+
+	if ((player->itemflags & IF_HOLDREADY))
+	{
+		player->itemflags &= ~IF_HOLDREADY;
+	}
+}
+
+void K_UseItem_Hyudoro(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+{
+	(void)onground;
+	(void)force;
+	(void)itemjustdown;
 	
 	if (nohyudoro)
 	{
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_DoHyudoroSteal(player); // yes. yes they do.
 		K_PlayAttackTaunt(player->mo);
 		K_BotResetItemConfirm(player, false);
 	}
 }
 
-void K_UseItem_PogoSpring(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_PogoSpring(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	if (nohyudoro && (onground || force) && player->pogospring == 0)
 	{
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_PlayBoostTaunt(player->mo);
 		K_DoPogoSpring(player->mo, 32<<FRACBITS, 2);
 		player->pogospring = 1;
@@ -3319,10 +3317,11 @@ void K_UseItem_PogoSpring(player_t *player, boolean onground, boolean force, boo
 	}
 }
 
-void K_UseItem_SuperRing(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_SuperRing(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (nohyudoro)
 	{
@@ -3358,32 +3357,31 @@ void K_UseItem_SuperRing(player_t *player, boolean onground, boolean force, bool
 		player->rmomx = player->mo->momx - player->cmomx;
 		player->rmomy = player->mo->momy - player->cmomy;
 
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_AwardScaledPlayerRings(player, ASR_SUPERRING);
 		K_BotResetItemConfirm(player, false);
 	}
 }
 
-void K_UseItem_KitchenSink(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_KitchenSink(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (player->equippeditem == KITEM_KITCHENSINK)
 	{
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_ThrowKartItem(player, false, MT_SINK, 1, 2);
 		K_PlayAttackTaunt(player->mo);
-		player->itemflags &= ~IF_ITEMOUT;
 		K_UpdateHnextList(player, true);
 		K_BotResetItemConfirm(player, false);
 	}
 	else if (nohyudoro)
 	{
-		mobj_t *mo;
 		K_SetItemOut(player, KITEM_KITCHENSINK, IF_ITEMOUT);
 		S_StartSound(player->mo, sfx_s254);
-		mo = K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_SINK_SHIELD, 0, player->mo);
+		K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_SINK_SHIELD, 0, player->mo);
 		K_BotResetItemConfirm(player, false);
 
 		// Woah this could be big, lets get the inside scoop...
@@ -3392,29 +3390,31 @@ void K_UseItem_KitchenSink(player_t *player, boolean onground, boolean force, bo
 	}
 }
 
-void K_UseItem_EggBrick(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_EggBrick(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (nohyudoro && player->bricktimer <= 0)
 	{
 		S_StartSound(player->mo, sfx_bckuse);
 		player->bricktimer = stealtime;
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_BotResetItemConfirm(player, false);
 	}
 }
 
-void K_UseItem_Sad(player_t *player, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Sad(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
+	(void)itemjustdown;
 	
 	if (nohyudoro && player->sadtimer <= 0)
 	{
 		player->sadtimer = stealtime;
-		player->itemamount--;
+		K_DecrementCurrentItem(player);
 		K_BotResetItemConfirm(player, false);
 	}
 }
@@ -3425,6 +3425,7 @@ void K_ItemThink_ThunderShield(player_t *player)
 	{
 		K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_THUNDERSHIELD, 0, NULL);
 		S_StartSound(player->mo, sfx_s3k41);
+		K_SetItemOut(player, KITEM_THUNDERSHIELD, 0);
 	}
 }
 
@@ -3434,6 +3435,7 @@ void K_ItemThink_AttractionShield(player_t *player)
 	{
 		K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_ATTRACTIONSHIELD, 0, NULL);
 		S_StartSound(player->mo, sfx_attrsg);
+		K_SetItemOut(player, KITEM_THUNDERSHIELD, 0);
 	}
 }
 
@@ -3447,6 +3449,64 @@ void K_ItemThink_BubbleShield(player_t *player)
 			player->bubblehealth = MAXBUBBLEHEALTH;
 		// bit of mercy so bubble doesn't get instantly killed on creation
 		player->bubblebuffer = TICRATE/2;
+		K_SetItemOut(player, KITEM_BUBBLESHIELD, IF_HOLDREADY);
+	}
+
+	if ((player->cmd.buttons & BT_ATTACK && (!(player->itemflags & IF_HOLDREADY)))
+			|| (player->bubbleblowup > 0 && player->bubblecool <= bubbletime/2)) // auto
+	{
+		if (player->bubblecool < bubbletime && player->bubblehealth > 0)
+		{
+			player->bubbleblowup += 3;
+			player->bubblehealth--;
+		}
+		else if (player->bubblecool >= bubbletime)
+			player->bubbleblowup++; // overcharge bonus
+
+		if (++player->bubblecool >= bubbletime + TICRATE/2)
+		{
+			// If you overcharge the Bubble Shield at
+			// any point, it pops and gives you a boost.
+			K_PopPlayerShield(player);
+
+			if (P_IsObjectOnGround(player->mo) || (player->pogospring))
+			{
+				// If you're on the ground, you're going to
+				// immediately feel the effects of this boost.
+				// Play a sound to let everyone know!
+				S_StartSoundAtVolume(player->mo, sfx_cdfm57, 170);
+				K_PlayBoostTaunt(player->mo);
+			}
+
+			// experiment: don't boost, just give invulnerability
+			if (cv_kartbubble_boost_allow.value)
+			{
+				player->bubbleboost = BUBBLEBOOSTTIME;
+			}
+			player->flashing = 4*TICRATE/7;
+		}
+	}
+	else
+	{
+		if (player->bubblecool > bubbletime)
+			player->bubblecool = bubbletime;
+	
+		if (player->bubbleblowup > 0)
+		{
+			player->bubbleblowup--;
+			if (player->bubbleblowup == 0)
+				K_BotResetItemConfirm(player, false);
+			if (player->bubblecool < bubbletime)
+				player->bubblecool++;
+		}
+	
+		if (player->bubbleblowup == 0 && player->bubblecool > 0)
+		{
+			player->bubblecool--;
+	
+			if (player->bubblecool == 0 && player->bubblehealth <= 0)
+				K_PopPlayerShield(player);
+		}
 	}
 }
 

@@ -5368,7 +5368,6 @@ void K_UpdateHnextList(player_t *player, boolean clean)
 		// Like below, try to clean up the pointer if it's NULL.
 		// Maybe this was a cause of the shrink/eggbox fails?
 		P_SetTarget(&player->mo->hnext, NULL);
-		K_DisableSeekingReticule(player);
 	}
 }
 
@@ -11424,97 +11423,6 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							K_BotResetItemConfirm(player, false);
 						}
 					}
-					// Eggman Monitor throwing
-					else if (player->itemflags & IF_EGGMANOUT)
-					{
-						if (ATTACK_IS_DOWN)
-						{
-							K_ThrowKartItem(player, false, MT_EGGMANITEM, -1, 0);
-							K_PlayAttackTaunt(player->mo);
-							player->itemflags &= ~IF_EGGMANOUT;
-							player->equippeditem = KITEM_NONE;
-							K_UpdateHnextList(player, true);
-							K_BotResetItemConfirm(player, false);
-						}
-					}
-					// Rocket Sneaker usage
-					else if (player->rocketsneakertimer > 1)
-					{
-						if (ATTACK_IS_DOWN && !HOLDING_ITEM && onground && NO_HYUDORO)
-						{
-							K_DoSneaker(player, SNEAKERTYPE_ROCKETSNEAKER);
-							K_PlayBoostTaunt(player->mo);
-							if (player->rocketsneakertimer <= 2*TICRATE)
-								player->rocketsneakertimer = 1;
-							else
-								player->rocketsneakertimer -= 2*TICRATE;
-							K_BotResetItemConfirm(player, false);
-						}
-					}
-					// Flame Shield Usage
-					else if (player->flametimer > 0)
-					{
-						// Usage sound
-						// moved here so the sound doesn't cut off early when not holding the item button
-						if ((!S_SoundPlaying(player->mo, sfx_s3kd3l)) && player->flamestore > 0)
-							S_StartSound(player->mo, sfx_s3kd3l);
-
-						if (!HOLDING_ITEM && NO_HYUDORO)
-						{
-							if ((buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
-							{
-								SINT8 incr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 3 : 2;
-								SINT8 metincr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 4 : 3;
-								SINT8 comincr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 10 : 4;
-
-								// uses fuel faster, but raises temperature faster
-								if (cv_kartflame_fastfuel.value && (!player->flameburnstop))
-								{
-									incr = incr * 2;
-									comincr = comincr * 2;
-									metincr = metincr * 3 / 2;
-								}
-
-								// burning a trap / missile stops you from raising temperature for a tiny bit
-								if (player->flameburnstop)
-									metincr = 0;
-
-								if (onground)
-								{
-									if (player->flamestore == 0)
-									{
-										S_StartSound(player->mo, sfx_s3k9b);
-										K_PlayBoostTaunt(player->mo);
-
-										if (player->karthud[khud_flamecamtime] == 0)
-											player->karthud[khud_flamecamtime] = TICRATE/2;
-
-										if (!S_SoundPlaying(player->mo, sfx_s3kd3l))
-											S_StartSound(player->mo, sfx_s3kd3l);
-									}
-
-									player->flamedash += incr;
-								}
-								// allow burning in the air
-								player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
-								player->flametimer -= comincr;
-
-								if (player->flametimer <= 0)
-									K_PopPlayerShield(player);
-							}
-							else
-							{
-								if (buttons & BT_ATTACK)
-								{
-									player->itemflags &= ~IF_HOLDREADY;
-								}
-								else
-								{
-									player->itemflags |= IF_HOLDREADY;
-								}
-							}
-						}
-					}
 					// Grow Canceling
 					else if (player->growshrinktimer > 0)
 					{
@@ -11563,18 +11471,10 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								player->smonitorcancel = 0;
 						}
 					}
-				}
-				if (player->itemamount == 0)
-				{
-					K_UnsetItemOutEx(player, IF_ITEMOUT);
-					if (!(player->itemflags &= ~IF_PASSIVESEEKING))
+					else
 					{
-						K_DisableSeekingReticule(player);
+						K_PlayerItemThink(player, onground);
 					}
-				}
-				else if (player->itemusecooldown <= 0)
-				{
-					K_PlayerItemThink(player, onground);
 				}
 			}
 		}
@@ -11583,7 +11483,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	// No more!
 	if (player->itemamount == 0)
 	{
-		K_UnsetItemOutEx(player, IF_ITEMOUT);
+		player->itemflags &= ~IF_ITEMOUT;
 		if (!(player->itemflags &= ~IF_PASSIVESEEKING))
 		{
 			K_DisableSeekingReticule(player);
