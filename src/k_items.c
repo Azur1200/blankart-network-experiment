@@ -2741,6 +2741,8 @@ void K_UseItem_Banana(player_t *player, boolean itemjustdown, boolean onground, 
 				player->itemamount = moloop;
 				break;
 			}
+			
+			mo->color = player->skincolor;
 			prev = mo;
 		}
 		K_BotResetItemConfirm(player, false);
@@ -2771,6 +2773,7 @@ void K_UseItem_Eggman(player_t *player, boolean itemjustdown, boolean onground, 
 		if (mo)
 		{
 			K_FlipFromObject(mo, player->mo);
+			mo->color = SKINCOLOR_BLACK;
 		}
 		K_BotResetItemConfirm(player, false);
 	}
@@ -2930,8 +2933,13 @@ void K_UseItem_Mine(player_t *player, boolean itemjustdown, boolean onground, bo
 	
 	if (player->equippeditem == KITEM_MINE)
 	{
+		mobj_t *mo = NULL;
 		K_DecrementAndCheckCurrentItem(player);
-		K_ThrowKartItem(player, false, MT_SSMINE, 1, 1);
+		mo = K_ThrowKartItem(player, false, MT_SSMINE, 1, 1);
+		if (mo != NULL && player->throwdir <= -1)
+		{
+			mo->extravalue1 = 49; // Pads the start-up length from 21 frames to a full 2 seconds
+		}
 		K_PlayAttackTaunt(player->mo);
 		K_UpdateHnextList(player, true);
 		K_BotResetItemConfirm(player, false);

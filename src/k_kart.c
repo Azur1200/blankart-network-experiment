@@ -4936,15 +4936,6 @@ mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t mapthing, 
 
 			if (player->mo->eflags & MFE_VERTICALFLIP)
 				mo->eflags |= MFE_VERTICALFLIP;
-
-			if (mapthing == MT_SSMINE)
-				mo->extravalue1 = 49; // Pads the start-up length from 21 frames to a full 2 seconds
-			else if (mapthing == MT_BUBBLESHIELDTRAP)
-			{
-				P_SetScale(mo, ((5*mo->destscale)>>2)*4);
-				mo->destscale = (5*mo->destscale)>>2;
-				S_StartSound(mo, sfx_s3kbfl);
-			}
 		}
 	}
 
@@ -6180,7 +6171,6 @@ static void K_MoveHeldObjects(player_t *player)
 				mobj_t *cur = player->mo->hnext;
 				mobj_t *curnext;
 				mobj_t *targ = player->mo;
-				UINT16 pcolor = player->skincolor;
 
 				if (P_IsObjectOnGround(player->mo) && player->speed > 0 && trailslow_active)
 					player->bananadrag++;
@@ -6193,16 +6183,6 @@ static void K_MoveHeldObjects(player_t *player)
 					fixed_t speed, dist;
 
 					curnext = cur->hnext;
-
-					if (cur->type == MT_EGGMANITEM_SHIELD)
-					{
-						// Decided that this should use their "canon" color.
-						cur->color = SKINCOLOR_BLACK;
-					}
-					else if (cur->type == MT_BANANA_SHIELD)
-					{
-						cur->color = pcolor;
-					}
 
 					cur->flags &= ~MF_NOCLIPTHING;
 
