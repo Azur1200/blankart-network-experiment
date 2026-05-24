@@ -247,7 +247,7 @@ void K_UnsetItemOutEx(player_t *player, itemflags_t flags);
 mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, INT32 moloop, mobj_t *prev);
 void K_RemoveEquippedItem(mobj_t *equipmo);
 
-void K_DecrementCurrentItem(player_t *player);
+void K_DecrementAndCheckCurrentItem(player_t *player);
 
 void K_AddPlayerReserveItem(player_t *player, kartitemtype_e type, UINT8 amount);
 void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, boolean nodoubles, kartitemblink_e blink);

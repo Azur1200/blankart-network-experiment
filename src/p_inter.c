@@ -1411,18 +1411,18 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 					if (target->target->hnext)
 						K_KillBananaChain(target->target->hnext, inflictor, source);
 					target->target->player->itemamount = 0;
-					K_DecrementCurrentItem(target->target->player);
+					K_DecrementAndCheckCurrentItem(target->target->player);
 				}
 				else if (target->target->player->itemamount)
 				{
-					K_DecrementCurrentItem(target->target->player);
+					K_DecrementAndCheckCurrentItem(target->target->player);
 				}
 			}
 			else if (equipstyle == KITEMEQUIP_ORBIT)
 			{
 				if (target->target->player->itemamount)
 				{
-					K_DecrementCurrentItem(target->target->player);
+					K_DecrementAndCheckCurrentItem(target->target->player);
 				}
 				if (target->lastlook != 0)
 				{

@@ -4991,7 +4991,7 @@ void K_PuntMine(mobj_t *origMine, mobj_t *punter)
 
 		if (mineOwner->player->itemamount)
 		{
-			K_DecrementCurrentItem(mineOwner->player);
+			K_DecrementAndCheckCurrentItem(mineOwner->player);
 		}
 
 		P_RemoveMobj(origMine);
@@ -6090,7 +6090,7 @@ static void K_MoveHeldObjects(player_t *player)
 		else if (player->itemflags & IF_ITEMOUT)
 		{
 			player->itemamount = 0;
-			K_DecrementCurrentItem(player);
+			K_DecrementAndCheckCurrentItem(player);
 		}
 		return;
 	}
