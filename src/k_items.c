@@ -2270,7 +2270,6 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 				itemthinker(player);
 			}
 		}
-		// lua hook for item think?
 
 		if ((buttons & BT_ATTACK))
 		{
@@ -2283,6 +2282,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			}
 			else
 			{
+				// note that this doesn't run for the first tick the item is used
 				if (!LUA_HookPlayerItemHoldUse(player, itemtype, ATTACK_JUST_DOWN, onground, force, NO_HYUDORO))
 				{
 					itemuse = KI_ItemHoldUseFunctions[itemtype][altitem];
@@ -2302,7 +2302,6 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		{
 			itemuse(player, ATTACK_JUST_DOWN, onground, force, NO_HYUDORO);
 		}
-		// lua hook(s) for item usage?
 	}
 
 	TracyCZoneEnd(__zone);
@@ -3087,14 +3086,11 @@ void K_UseItem_ThunderShield(player_t *player, boolean itemjustdown, boolean ong
 }
 
 void K_UseItem_AttractionShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
-{
-	(void)onground;
-	(void)force;
-	(void)itemjustdown;
-	
+{	
 	if (nohyudoro)
 	{
 		S_StartSound(player->mo, sfx_vwre);
+		K_HoldUseItem_AttractionShield(player, itemjustdown, onground, force, nohyudoro);
 	}
 }
 
@@ -3237,20 +3233,20 @@ void K_ReleaseUseItem_BubbleShield(player_t *player, boolean itemjustdown, boole
 }
 
 void K_UseItem_FlameShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
-{
-	(void)onground;
-	(void)force;
-	(void)itemjustdown;
-	
-	if (nohyudoro && K_GetShieldFromPlayer(player) != KSHIELD_FLAME)
+{	
+	if (nohyudoro)
 	{
-		K_DecrementAndCheckCurrentItem(player);
-		player->flametimer = flametime;
-		player->flamedash = 0;
-		K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, NULL);
-		S_StartSound(player->mo, sfx_s3k3e);
-		// make sure this is after K_DecrementCurrentItem so that equip state stays set properly
-		K_SetItemOut(player, KITEM_FLAMESHIELD, IF_HOLDREADY);
+		if (K_GetShieldFromPlayer(player) != KSHIELD_FLAME)
+		{
+			K_DecrementAndCheckCurrentItem(player);
+			player->flametimer = flametime;
+			player->flamedash = 0;
+			K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, NULL);
+			S_StartSound(player->mo, sfx_s3k3e);
+			// make sure this is after K_DecrementCurrentItem so that equip state stays set properly
+			K_SetItemOut(player, KITEM_FLAMESHIELD, IF_HOLDREADY);
+		}
+		K_HoldUseItem_FlameShield(player, itemjustdown, onground, force, nohyudoro);
 	}
 }
 
