@@ -251,6 +251,7 @@ void K_DecrementCurrentItem(player_t *player);
 
 void K_AddPlayerReserveItem(player_t *player, kartitemtype_e type, UINT8 amount);
 void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, boolean nodoubles, kartitemblink_e blink);
+void K_AwardPlayerItemOrReserve(player_t *player, kartitemtype_e type, UINT8 amount, boolean nodoubles, kartitemblink_e blink);
 void K_TransferPlayerReserveItem(player_t *player);
 void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCount);
 void K_UpdateItemCooldown(void);
@@ -268,6 +269,8 @@ INT32 K_GetRollingRouletteItemOffset(player_t *player, INT16 offset, INT32 anims
 UINT8* K_GetRollableItems(void);
 void K_KartItemRoulette(player_t *player, ticcmd_t *cmd);
 void K_StartRoulette(player_t *player, kartroulettetype_e roulettetype);
+
+void K_AwardPlayerResult(player_t *player, kartresult_t *result, kartitemblink_e blink);
 
 void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force);
 

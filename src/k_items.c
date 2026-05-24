@@ -452,6 +452,21 @@ void K_AddPlayerReserveItem(player_t *player, kartitemtype_e type, UINT8 amount)
 	player->itemreserveamount += amount;
 }
 
+void K_AwardPlayerItemOrReserve(player_t *player, kartitemtype_e type, UINT8 amount, boolean nodoubles, kartitemblink_e blink)
+{
+	if (player->itemtype == KITEM_NONE && player->itemamount == 0)
+	{
+		K_AwardPlayerItem(player, type, amount, nodoubles, blink);
+	}
+	else
+	{
+		if (K_IsAltShrunk(player) && !nodoubles && blink != KITEMBLINK_DEBUG)
+			amount *= 2;
+
+		K_AddPlayerReserveItem(player, type, amount);
+	}
+}
+
 // be careful with invalid item types here
 void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, boolean nodoubles, kartitemblink_e blink)
 {
@@ -520,7 +535,7 @@ void K_TransferPlayerReserveItem(player_t *player)
 	}
 }
 
-static void K_AwardPlayerResult(player_t *player, kartresult_t *result, kartitemblink_e blink)
+void K_AwardPlayerResult(player_t *player, kartresult_t *result, kartitemblink_e blink)
 {
 	kartitemtype_e type = result != NULL ? result->type : MAXKARTITEMS;
 	UINT8 amount = result != NULL ? result->amount : 1;
