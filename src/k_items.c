@@ -2233,7 +2233,8 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 	const boolean HOLDING_ITEM = (player->equippeditem != 0);
 	const boolean NO_HYUDORO = (player->stealingtimer == 0 && player->stolentimer == 0);
 	
-	kartitemtype_e itemtype = player->itemtype;
+	// actions of the equipped item go first, then the item in the player's item slot (relevant for standard eggman)
+	kartitemtype_e itemtype = player->equippeditem;
 	boolean altitem = K_IsKartItemAlternate(itemtype);
 	boolean force = false;
 
@@ -2244,7 +2245,8 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 	}
 #endif
 
-	if (LUA_HookPlayerItem(player, itemtype, HOLDING_ITEM, &force))
+	// uses player->itemtype to maintain the old logic
+	if (LUA_HookPlayerItem(player, player->itemtype, HOLDING_ITEM, &force))
 	{
 		TracyCZoneEnd(__zone);
 		return;
@@ -2252,7 +2254,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 	
 	if (itemtype == KITEM_NONE)
 	{
-		itemtype = player->equippeditem;
+		itemtype = player->itemtype;
 		altitem = K_IsKartItemAlternate(itemtype);
 	}
 
