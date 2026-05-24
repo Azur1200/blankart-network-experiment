@@ -2257,10 +2257,12 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			{
 				itemuse = KI_ItemHoldUseFunctions[itemtype][altitem];
 			}
+			player->itemflags |= IF_HOLDREADY;
 		}
-		else if ((player->oldcmd.buttons & BT_ATTACK))
+		else if ((player->itemflags & IF_HOLDREADY))
 		{
 			itemuse = KI_ItemReleaseUseFunctions[itemtype][altitem];
+			player->itemflags &= ~IF_HOLDREADY;
 		}
 
 		if (itemuse != NULL)
