@@ -1358,6 +1358,74 @@ boolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, boolean wasHoldingI
 	return state.override;
 }
 
+boolean LUA_HookPlayerItemThink(player_t *player, UINT8 itemType)
+{
+	Hook_State hook = {};
+	if (prepare_hook(&hook, false, HOOK(PlayerItemThink)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushinteger(gL, itemType);
+
+		call_hooks(&hook, 1, res_true);
+	}
+	
+	return hook.status;
+}
+
+boolean LUA_HookPlayerItemUse(player_t *player, UINT8 itemType, boolean attackJustDown, boolean onground, boolean force, boolean noHyudoro)
+{
+	Hook_State hook = {};
+	if (prepare_hook(&hook, false, HOOK(PlayerItemUse)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushinteger(gL, itemType);
+		lua_pushboolean(gL, attackJustDown);
+		lua_pushboolean(gL, onground);
+		lua_pushboolean(gL, force);
+		lua_pushboolean(gL, noHyudoro);
+
+		call_hooks(&hook, 1, res_true);
+	}
+	
+	return hook.status;
+}
+
+boolean LUA_HookPlayerItemHoldUse(player_t *player, UINT8 itemType, boolean attackJustDown, boolean onground, boolean force, boolean noHyudoro)
+{
+	Hook_State hook = {};
+	if (prepare_hook(&hook, false, HOOK(PlayerItemHoldUse)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushinteger(gL, itemType);
+		lua_pushboolean(gL, attackJustDown);
+		lua_pushboolean(gL, onground);
+		lua_pushboolean(gL, force);
+		lua_pushboolean(gL, noHyudoro);
+
+		call_hooks(&hook, 1, res_true);
+	}
+	
+	return hook.status;
+}
+
+boolean LUA_HookPlayerItemReleaseUse(player_t *player, UINT8 itemType, boolean attackJustDown, boolean onground, boolean force, boolean noHyudoro)
+{
+	Hook_State hook = {};
+	if (prepare_hook(&hook, false, HOOK(PlayerItemReleaseUse)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushinteger(gL, itemType);
+		lua_pushboolean(gL, attackJustDown);
+		lua_pushboolean(gL, onground);
+		lua_pushboolean(gL, force);
+		lua_pushboolean(gL, noHyudoro);
+
+		call_hooks(&hook, 1, res_true);
+	}
+	
+	return hook.status;
+}
+
 typedef struct {
 	INT32 *target;
 	boolean force_sink;

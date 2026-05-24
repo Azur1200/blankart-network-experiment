@@ -2245,10 +2245,13 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 	{
 		itemthinkfunc_f *itemthinker = KI_ItemThinkFunctions[itemtype][altitem];
 		itemusefunc_f *itemuse = NULL;
-
-		if (itemthinker != NULL)
+		
+		if (!LUA_HookPlayerItemThink(player, itemtype))
 		{
-			itemthinker(player);
+			if (itemthinker != NULL)
+			{
+				itemthinker(player);
+			}
 		}
 		// lua hook for item think?
 
@@ -2256,17 +2259,26 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		{
 			if (ATTACK_JUST_DOWN)
 			{
-				itemuse = KI_ItemUseFunctions[itemtype][altitem];
+				if (!LUA_HookPlayerItemUse(player, itemtype, ATTACK_JUST_DOWN, onground, force, NO_HYUDORO))
+				{
+					itemuse = KI_ItemUseFunctions[itemtype][altitem];
+				}
 			}
 			else
 			{
-				itemuse = KI_ItemHoldUseFunctions[itemtype][altitem];
+				if (!LUA_HookPlayerItemHoldUse(player, itemtype, ATTACK_JUST_DOWN, onground, force, NO_HYUDORO))
+				{
+					itemuse = KI_ItemHoldUseFunctions[itemtype][altitem];
+				}
 			}
 		}
 
 		if ((player->oldcmd.buttons & BT_ATTACK) && !(buttons & BT_ATTACK))
 		{
-			itemuse = KI_ItemReleaseUseFunctions[itemtype][altitem];
+			if (!LUA_HookPlayerItemReleaseUse(player, itemtype, ATTACK_JUST_DOWN, onground, force, NO_HYUDORO))
+			{
+				itemuse = KI_ItemReleaseUseFunctions[itemtype][altitem];
+			}
 		}
 
 		if (itemuse != NULL)
@@ -2790,6 +2802,7 @@ void K_UseItem_EggMine(player_t *player, boolean itemjustdown, boolean onground,
 		}
 		K_UpdateHnextList(player, false);
 		K_PlayAttackTaunt(player->mo);
+		K_BotResetItemConfirm(player, false);
 	}
 	else if (nohyudoro)
 	{
