@@ -2763,7 +2763,7 @@ void K_UseItem_EggMine(player_t *player, boolean itemjustdown, boolean onground,
 	if (player->equippeditem == KITEM_EGGMAN)
 	{
 		mobj_t *mo;
-		player->itemamount -= 1;
+		K_DecrementCurrentItem(player);
 
 		if (player->throwdir == 1)
 		{
