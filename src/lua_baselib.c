@@ -5603,6 +5603,15 @@ static int lib_kDisableSeekingReticule(lua_State *L)
 	return 0;
 }
 
+static int lib_kDecrementAndCheckCurrentItem(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_DecrementAndCheckCurrentItem(player);
+	return 0;
+}
+
 static int lib_kDontDoubleMyItems(lua_State *L)
 {
 	kartresult_t *res = *((kartresult_t **)luaL_checkudata(L, 1, META_KARTRESULT));
@@ -6173,6 +6182,7 @@ static luaL_Reg lib[] = {
 	{"K_SpawnEquippedItem",lib_kSpawnEquippedItem},
 	{"K_EnableSeekingReticule",lib_kEnableSeekingReticule},
 	{"K_DisableSeekingReticule",lib_kDisableSeekingReticule},
+	{"K_DecrementAndCheckCurrentItem",lib_kDecrementAndCheckCurrentItem},
 	{"K_DontDoubleMyItems",lib_kDontDoubleMyItems},
 
 	// k_itemlist
