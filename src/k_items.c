@@ -87,6 +87,52 @@ consvar_t cv_karteggmine_slotbrick = CVAR_INIT ("karteggmine_slotbrick", "On", C
 
 consvar_t cv_kartthunder_radius = CVAR_INIT ("kartthunder_radius", "320", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Natural, NULL);
 
+// item function tables, in the form of {standard, alternate}
+itemthinkfunc_f *KI_ItemThinkFunctions[][2] =
+{
+	[KITEM_THUNDERSHIELD] = 	{K_ItemThink_ThunderShield, K_ItemThink_AttractionShield},
+	[KITEM_BUBBLESHIELD] = 		{K_ItemThink_BubbleShield, NULL},
+	[KITEM_BONUSITEMROLL] = 	{K_ItemThink_BonusRoll, NULL},
+	[MAXKARTITEMS] = 			{NULL,NULL}
+};
+itemusefunc_f *KI_ItemUseFunctions[][2] =
+{
+	[KITEM_SNEAKER] = 			{K_UseItem_Sneaker, NULL},
+	[KITEM_ROCKETSNEAKER] = 	{K_UseItem_RocketSneaker, NULL},
+	[KITEM_INVINCIBILITY] = 	{K_UseItem_Invincibility, K_UseItem_SMonitor},
+	[KITEM_BANANA] = 			{K_UseItem_Banana, NULL},
+	[KITEM_EGGMAN] = 			{K_UseItem_Eggman, K_UseItem_EggMine},
+	[KITEM_ORBINAUT] = 			{K_UseItem_Orbinaut, NULL},
+	[KITEM_JAWZ] = 				{K_UseItem_Jawz, NULL},
+	[KITEM_MINE] = 				{K_UseItem_Mine, NULL},
+	[KITEM_LANDMINE] = 			{K_UseItem_LandMine, NULL},
+	[KITEM_BALLHOG] = 			{K_UseItem_Ballhog, NULL},
+	[KITEM_SPB] =	 			{K_UseItem_SPB, NULL},
+	[KITEM_GROW] =	 			{K_UseItem_Grow, NULL},
+	[KITEM_SHRINK] =	 		{K_UseItem_Shrink, K_UseItem_Mini},
+	[KITEM_THUNDERSHIELD] =	 	{K_UseItem_ThunderShield, K_UseItem_AttractionShield},
+	[KITEM_BUBBLESHIELD] =	 	{K_UseItem_BubbleShield, NULL},
+	[KITEM_FLAMESHIELD] =	 	{K_UseItem_FlameShield, NULL},
+	[KITEM_HYUDORO] =		 	{K_UseItem_Hyudoro, NULL},
+	[KITEM_POGOSPRING] =	 	{K_UseItem_PogoSpring, NULL},
+	[KITEM_SUPERRING] =		 	{K_UseItem_SuperRing, NULL},
+	[KITEM_KITCHENSINK] =	 	{K_UseItem_KitchenSink, NULL},
+	[KITEM_EGGBRICK] =		 	{K_UseItem_EggBrick, NULL},
+	[MAXKARTITEMS] = 			{K_UseItem_Sad, NULL}
+};
+itemusefunc_f *KI_ItemHoldUseFunctions[][2] =
+{
+	[KITEM_THUNDERSHIELD] = 	{NULL, K_HoldUseItem_AttractionShield},
+	[KITEM_BUBBLESHIELD] = 		{K_HoldUseItem_BubbleShield, NULL},
+	[KITEM_FLAMESHIELD] = 		{K_HoldUseItem_FlameShield, NULL},
+	[MAXKARTITEMS] = 			{NULL,NULL}
+};
+itemusefunc_f *KI_ItemReleaseUseFunctions[][2] =
+{
+	[KITEM_THUNDERSHIELD] = 	{NULL, K_ReleaseUseItem_AttractionShield},
+	[KITEM_BUBBLESHIELD] = 		{K_ReleaseItem_BubbleShield, NULL},
+	[MAXKARTITEMS] = 			{NULL,NULL}
+};
 
 void K_RegisterItem(kartitemtype_e itemtype)
 {
