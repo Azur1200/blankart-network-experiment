@@ -2604,11 +2604,6 @@ mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjty
 	return mo;
 }
 
-void K_RemoveEquippedItem(mobj_t *equipmo)
-{
-
-}
-
 void K_DecrementCurrentItem(player_t *player)
 {
 	if (player->itemamount > 0)
