@@ -5914,7 +5914,7 @@ void K_RepairOrbitChain(mobj_t *orbit)
 	if (orbit->target->player->itemamount <= 0)
 	{
 		K_UnsetItemOut(orbit->target->player);
-		if (!(orbit->target->player->itemflags &= ~IF_PASSIVESEEKING))
+		if (!(orbit->target->player->itemflags & IF_PASSIVESEEKING))
 		{
 			K_DisableSeekingReticule(orbit->target->player);
 		}
@@ -11489,7 +11489,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	if (player->itemamount == 0)
 	{
 		player->itemflags &= ~IF_ITEMOUT;
-		if (!(player->itemflags &= ~IF_PASSIVESEEKING))
+		if (!(player->itemflags & IF_PASSIVESEEKING))
 		{
 			K_DisableSeekingReticule(player);
 		}
