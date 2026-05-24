@@ -918,10 +918,9 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 			// The Rival bot gets frantic-like items, also :p
 			fracOdds *= 2;
 		}
-
-		if (roulette->shrink_freebie == true)
+		else if (roulette->is_shrunk == true)
 		{
-			// As do Alt. Shrunk players... but only on their freebie roll!
+			// As do Alt. Shrunk players
 			fracOdds *= 2;
 		}
 
