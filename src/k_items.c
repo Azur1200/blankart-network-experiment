@@ -2591,7 +2591,7 @@ void K_DecrementCurrentItem(player_t *player)
 	if (player->itemamount <= 0)
 	{
 		K_UnsetItemOut(player);
-		if (!(player->itemflags &= ~IF_PASSIVESEEKING))
+		if (!(player->itemflags & IF_PASSIVESEEKING))
 		{
 			K_DisableSeekingReticule(player);
 		}
