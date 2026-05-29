@@ -1115,7 +1115,7 @@ void ST_DrawServerSplash(boolean timelimited)
 
 	V_DrawRightAlignedString(
 		textX, textY,
-		(V_SNAPTORIGHT|V_SNAPTOBOTTOM) | opacityFlag,
+		(V_SNAPTORIGHT|V_SNAPTOBOTTOM|V_ALLOWLOWERCASE) | opacityFlag,
 		connectedservername
 	);
 
@@ -1125,8 +1125,20 @@ void ST_DrawServerSplash(boolean timelimited)
 	{
 		V_DrawRightAlignedThinString(
 			textX, textY,
-			(V_SNAPTORIGHT|V_SNAPTOBOTTOM) | opacityFlag,
-			va("Contact @ %c%s", '\x80' + cv_shoutcolor.value, connectedservercontact)
+			(V_SNAPTORIGHT|V_SNAPTOBOTTOM|V_ALLOWLOWERCASE) | opacityFlag,
+			va("Contact: %c%s", '\x80' + cv_shoutcolor.value, connectedservercontact)
+		);
+	}
+
+	textX -= 260;
+	textY += 10;
+
+	if (connectedservermotd[0] != 0)
+	{
+		V_DrawSmallString(
+			textX, textY,
+			(V_SNAPTORIGHT|V_SNAPTOBOTTOM|V_ALLOWLOWERCASE) | opacityFlag,
+			va("%s", connectedservermotd)
 		);
 	}
 }
