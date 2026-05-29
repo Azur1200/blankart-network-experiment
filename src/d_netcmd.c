@@ -256,7 +256,6 @@ static void Got_Removal(UINT8 **cp, INT32 playernum);
 static void Command_Verify_f(void);
 static void Command_RemoveAdmin_f(void);
 static void Command_MotD_f(void);
-static void Got_MotD_f(UINT8 **cp, INT32 playernum);
 
 static void Command_ShowScores_f(void);
 static void Command_ShowTime_f(void);
@@ -974,7 +973,6 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"RANDOMSEED", // XD_RANDOMSEED
 	"RUNSOC", // XD_RUNSOC
 	"REQADDFILE", // XD_REQADDFILE
-	"SETMOTD", // XD_SETMOTD
 	"RESPAWN", // XD_RESPAWN
 	"DEMOTED", // XD_DEMOTED
 	"LUACMD", // XD_LUACMD
@@ -1064,7 +1062,6 @@ void D_RegisterServerCommands(void)
 	RegisterNetXCmd(XD_DEMOTED, Got_Removal);
 
 	COM_AddCommand("motd", Command_MotD_f);
-	RegisterNetXCmd(XD_SETMOTD, Got_MotD_f); // For remote admin
 
 	RegisterNetXCmd(XD_TEAMCHANGE, Got_Teamchange);
 	COM_AddCommand("serverchangeteam", Command_ServerTeamChange_f);
@@ -5770,24 +5767,26 @@ static void Command_MotD_f(void)
 		return;
 	}
 
-	if (!(server || (IsPlayerAdmin(consoleplayer))))
+	// TODO: make PT_ServerInfoUpdate support external admin players.
+	if (!(server /*|| (IsPlayerAdmin(consoleplayer))*/))
 	{
-		CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
+		//CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
+		CONS_Printf(M_GetText("Only the server can use this.\n"));
 		return;
 	}
 
-	mymotd = Z_Malloc(sizeof(motd), PU_STATIC, NULL);
+	mymotd = Z_Malloc(MAXSERVERMOTD, PU_STATIC, NULL);
 
 	if (!mymotd)
 		return;
 		//I_Error("Command_MotD_f: Out of memory!\n"); // idk if this aint a bit too much lel
 
-	strlcpy(mymotd, COM_Argv(1), sizeof(motd));
+	strlcpy(mymotd, COM_Argv(1), MAXSERVERMOTD);
 
 	for (i = 2; i < j; i++)
 	{
-		strlcat(mymotd, " ", sizeof(motd));
-		strlcat(mymotd, COM_Argv(i), sizeof(motd));
+		strlcat(mymotd, " ", MAXSERVERMOTD);
+		strlcat(mymotd, COM_Argv(i), MAXSERVERMOTD);
 	}
 
 	// Disallow non-printing characters and semicolons.
@@ -5796,47 +5795,13 @@ static void Command_MotD_f(void)
 		if (!isprint(mymotd[i]) || mymotd[i] == ';')
 		{
 			Z_Free(mymotd);
+			CONS_Alert(CONS_WARNING, M_GetText("Invalid characters in message of the day.\n"));
 			return;
 		}
 	}
 
-	if ((netgame || multiplayer) && client)
-	{
-		SendNetXCmd(XD_SETMOTD, mymotd, i); // send the actual size of the motd string, not the full buffer's size
-	}
-	else
-	{
-		strcpy(motd, mymotd);
-		CONS_Printf(M_GetText("Message of the day set.\n"));
-	}
-
-	Z_Free(mymotd);
-}
-
-static void Got_MotD_f(UINT8 **cp, INT32 playernum)
-{
-	char *mymotd = Z_Malloc(sizeof(motd), PU_STATIC, NULL);
-	INT32 i;
-	boolean kick = false;
-
-	READSTRINGN(*cp, mymotd, sizeof(motd));
-
-	// Disallow non-printing characters and semicolons.
-	for (i = 0; mymotd[i] != '\0'; i++)
-		if (!isprint(mymotd[i]) || mymotd[i] == ';')
-			kick = true;
-
-	if ((playernum != serverplayer && !IsPlayerAdmin(playernum)) || kick)
-	{
-		CONS_Alert(CONS_WARNING, M_GetText("Illegal motd change received from %s\n"), player_names[playernum]);
-		if (server)
-			SendKick(playernum, KICK_MSG_CON_FAIL);
-		Z_Free(mymotd);
-		return;
-	}
-
-	strcpy(motd, mymotd);
-
+	strcpy(connectedservermotd, mymotd);
+	ServerInfoUpdateSend();
 	CONS_Printf(M_GetText("Message of the day set.\n"));
 
 	Z_Free(mymotd);

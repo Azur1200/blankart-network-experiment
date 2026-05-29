@@ -118,7 +118,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x0011
+#define DEMOVERSION 0x0012
 #define DEMOHEADER  "\xF0" "BlanReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -271,6 +271,7 @@ typedef struct
 	UINT8 rapresetversion;
 	UINT8 gametype;
 	UINT8 numlaps;
+	char servermotd[MAXSERVERMOTD];
 	char servername[MAXSERVERNAME];
 	char servercontact[MAXSERVERCONTACT];
 	char serverdescription[MAXSERVERDESCRIPTION];
@@ -729,6 +730,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	boolean kart = false, oldkart = false;
 	boolean raflag = false;
 	boolean serverinfo = true;
+	boolean servermotd = true;
 	boolean rapreset = true; // + extended serverinfo length
 	boolean dubs = true; // Multiple voices
 	boolean availabilities = true; // Store player availabilities
@@ -743,6 +745,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	header->mapmusrng = 0;
 	header->numlaps = 0;
 	header->raflags = 0;
+	memset(header->servermotd, 0, MAXSERVERMOTD);
 	memset(header->servername, 0, MAXSERVERNAME);
 	memset(header->servercontact, 0, MAXSERVERCONTACT);
 	memset(header->serverdescription, 0, MAXSERVERDESCRIPTION);
@@ -777,9 +780,12 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 			/* FALLTHRU */
 		case 0x000F:
 			gplunatic = false;
-			break;
+			/* FALLTHRU */
 		case 0x0010:
 			// no header changes (yet), just DXD_WEAPONPREF
+		case 0x0011:
+			servermotd = false;
+			/* FALLTHRU */
 			break;
 
 		default: // too old, cannot support.
@@ -856,6 +862,13 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	{
 		size_t maxservercontact  = rapreset ? MAXSERVERCONTACT : 320;
 		size_t maxdescription = rapreset ? MAXSERVERDESCRIPTION : 320;
+
+		if (servermotd)
+		{
+			READSTRINGL(dp, header->servermotd, MAXSERVERMOTD);
+			if (dp[-1] != '\0') dp++;
+
+		}
 
 		READSTRINGL(dp, header->servername, MAXSERVERNAME);
 		if (dp[-1] != '\0') dp++;
@@ -2949,6 +2962,7 @@ void G_BeginRecording(void)
 	WRITEUINT8(demobuf.p, demoflags);
 	WRITESTRINGL(demobuf.p, currentrecordpreset, MAXPRESETNAME+1);
 	WRITEUINT8(demobuf.p, currentrecordpresetversion);
+	WRITESTRINGL(demobuf.p, connectedservermotd, MAXSERVERMOTD);
 	WRITESTRINGL(demobuf.p, connectedservername, MAXSERVERNAME);
 	WRITESTRINGL(demobuf.p, connectedservercontact, MAXSERVERCONTACT);
 	WRITESTRINGL(demobuf.p, connectedserverdescription, MAXSERVERDESCRIPTION);
@@ -4012,6 +4026,7 @@ void G_DoPlayDemo(char *defdemoname)
 	G_InitNew(demoflags & DF_ENCORE, gamemap, true, true); // Doesn't matter whether you reset or not here, given changes to resetplayer.
 
 	// Setup server name, contact and description.
+	strncpy(connectedservermotd, header.servermotd, MAXSERVERMOTD);
 	CopyCaretColors(connectedservername, header.servername, MAXSERVERNAME);
 	CopyCaretColors(connectedservercontact, header.servercontact, MAXSERVERCONTACT);
 	strncpy(connectedserverdescription, header.serverdescription, MAXSERVERDESCRIPTION);

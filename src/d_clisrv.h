@@ -44,11 +44,12 @@ applications may follow different packet versions.
 
 #define HU_MAXMSGLEN 223
 
+#define MAXSERVERMOTD 256
 #define MAXSERVERNAME 32
 #define MAXSERVERCONTACT 350
 #define MAXSERVERDESCRIPTION 1024
 #define MAXSERVERDESCRIPTIONLINE 80
-#define DEFAULTDESCSTRING "Welcome to my SRB2Kart server!\n"
+#define DEFAULTDESCSTRING "Welcome to my BlanKart server!\n"
 
 // Sends over info via packets to client players.
 void ServerInfoUpdateSend(void);
@@ -345,6 +346,7 @@ struct serverinfo_pak
 
 struct serverinfoupdate_pak
 {
+	char servermotd[MAXSERVERMOTD];
 	char servername[MAXSERVERNAME];
 	char servercontact[MAXSERVERCONTACT];
 	char serverdescription[MAXSERVERDESCRIPTION];
@@ -547,6 +549,7 @@ extern boolean connectedtodedicated; // Client that is connected to a dedicated 
 extern UINT16 software_MAXPACKETLENGTH;
 extern boolean acceptnewnode;
 extern SINT8 servernode;
+extern char connectedservermotd[MAXSERVERMOTD];
 extern char connectedservername[MAXSERVERNAME];
 extern char connectedservercontact[MAXSERVERCONTACT];
 extern char connectedserverdescription[MAXSERVERDESCRIPTION];
@@ -690,7 +693,7 @@ void ReadLmpExtraData(UINT8 **demo_pointer, INT32 playernum);*/
 // print a error message in the console
 SINT8 nametonum(const char *name);
 
-extern char motd[254], server_context[8];
+extern char server_context[8];
 extern UINT8 playernode[MAXPLAYERS];
 /* consoleplayer of this player (splitscreen) */
 extern UINT8 playerconsole[MAXPLAYERS];
