@@ -675,7 +675,7 @@ int LUA_PushGlobals(lua_State *L)
 // See the above.
 int LUA_WriteGlobals(lua_State *L)
 {
-	enum global_e field = Lua_optoption(L, 2, -1, global_fields_ref);
+	enum global_e field = Lua_optoption(L, 1, -1, global_fields_ref);
 	lua_settop(L, 2);
 
 	switch (field)
