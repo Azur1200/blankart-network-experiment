@@ -105,7 +105,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 				if (player->stealingtimer || player->stolentimer
 					|| player->rocketsneakertimer
 					|| player->eggmanexplode
-					|| K_SMonitorSlotHogging(player)
+					|| (K_SMonitorSlotHogging(player))
 					|| (player->growshrinktimer > 0)
 					|| player->flametimer)
 					return false;
@@ -116,7 +116,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 					|| (player->itemflags & IF_ITEMOUT))
 					return false;
 
-				if (weapon == 3 && K_GetShieldFromPlayer(player) != KSHIELD_NONE)
+				if (weapon == PICKUPITEM_FLOATING && K_GetShieldFromPlayer(player) != KSHIELD_NONE)
 					return false; // No stacking shields!
 			}
 		}
@@ -325,18 +325,32 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			return;
 		case MT_RANDOMITEM:
 			if (!itembreaker && !P_CanPickupItem(player, PICKUPITEM_ITEM))
-				return;
-
-			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 			{
-				if (player->karmamode || player->karmadelay)
+				if (K_SMonitorSlotHogging(player) && player->itemreserveamount == 0)
+				{
+					special->momx = special->momy = special->momz = 0;
+					// P_SetTarget(&special->target, toucher);
+					P_KillMobj(special, toucher, NULL, DMG_NORMAL);
+					K_AddPlayerReserveItem(player, KITEM_BONUSITEMROLL, 1);
+				}
+				else
+				{
 					return;
-				player->karmamode = 1;
+				}
 			}
-
-			special->momx = special->momy = special->momz = 0;
-			P_SetTarget(&special->target, toucher);
-			P_KillMobj(special, toucher, toucher, DMG_NORMAL);
+			else
+			{
+				if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
+				{
+					if (player->karmamode || player->karmadelay)
+						return;
+					player->karmamode = KARMAMODE_ITEM;
+				}
+	
+				special->momx = special->momy = special->momz = 0;
+				P_SetTarget(&special->target, toucher);
+				P_KillMobj(special, toucher, toucher, DMG_NORMAL);
+			}
 			break;
 		case MT_ITEMCAPSULE:
 			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
@@ -401,7 +415,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				special->target->player->karthud[khud_yougotem] = 2*TICRATE;
 				special->target->player->karmadelay = comebacktime;
 			}
-			else if (special->target->player->karmamode == 1 && P_CanPickupItem(player, PICKUPITEM_ITEM))
+			else if (special->target->player->karmamode == KARMAMODE_ITEM && P_CanPickupItem(player, PICKUPITEM_ITEM))
 			{
 				mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
 				S_StartSound(poof, special->info->seesound);
@@ -418,8 +432,10 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 					firework->color = special->target->color;
 				}
 
-				special->target->player->karmamode = 0;
+				special->target->player->karmamode = KARMAMODE_DEFAULT;
 				special->target->player->karmapoints++;
+				if (K_RingsActive())
+					K_AwardPlayerRings(special->target->player, 10, true);
 
 				if (special->target->player->karmapoints >= 2)
 					K_TakeBumpersFromPlayer(special->target->player, player, 1);
@@ -428,7 +444,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				K_StartRoulette(player, KROULETTETYPE_KARMA);
 			}
-			else if (special->target->player->karmamode == 2 && P_CanPickupItem(player, PICKUPITEM_EGGMAN))
+			else if (special->target->player->karmamode == KARMAMODE_EGGMAN && P_CanPickupItem(player, PICKUPITEM_EGGMAN))
 			{
 				mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
 				UINT8 ptadd = 1; // No WANTED bonus for tricking
@@ -450,8 +466,10 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 						ptadd++;
 				}
 
-				special->target->player->karmamode = 0;
+				special->target->player->karmamode = KARMAMODE_DEFAULT;
 				special->target->player->karmapoints += ptadd;
+				if (K_RingsActive())
+					K_AwardPlayerRings(special->target->player, 10, true);
 
 				if (ptadd > 1)
 					special->target->player->karthud[khud_yougotem] = 2*TICRATE;
@@ -1378,43 +1396,38 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 
 	// SRB2kart
 	// I wish I knew a better way to do this
-	if (!P_MobjWasRemoved(target->target) && target->target->player && !P_MobjWasRemoved(target->target->player->mo))
+	if (P_IsKartEquippedItem(target->type) && (!P_MobjWasRemoved(target->target)) && target->target->player && (!P_MobjWasRemoved(target->target->player->mo)))
 	{
 		if ((target->target->player->itemflags & IF_EGGMANOUT) && target->type == MT_EGGMANITEM_SHIELD)
 			target->target->player->itemflags &= ~IF_EGGMANOUT;
 
 		if (target->target->player->itemflags & IF_ITEMOUT)
 		{
-			if ((target->type == MT_BANANA_SHIELD && target->target->player->itemtype == KITEM_BANANA) // trail items
-				|| (target->type == MT_SSMINE_SHIELD && target->target->player->itemtype == KITEM_MINE)
-				|| (target->type == MT_SINK_SHIELD && target->target->player->itemtype == KITEM_KITCHENSINK))
+			kartitemequip_e equipstyle = K_GetItemEquipStyle(target->target->player->equippeditem);
+			if (equipstyle == KITEMEQUIP_TRAIL)
 			{
 				if (target->movedir != 0 && target->movedir < (UINT16)target->target->player->itemamount)
 				{
 					if (target->target->hnext)
 						K_KillBananaChain(target->target->hnext, inflictor, source);
 					target->target->player->itemamount = 0;
+					K_DecrementAndCheckCurrentItem(target->target->player);
 				}
 				else if (target->target->player->itemamount)
-					target->target->player->itemamount--;
+				{
+					K_DecrementAndCheckCurrentItem(target->target->player);
+				}
 			}
-			else if ((target->type == MT_ORBINAUT_SHIELD && target->target->player->itemtype == KITEM_ORBINAUT) // orbit items
-				|| (target->type == MT_JAWZ_SHIELD && target->target->player->itemtype == KITEM_JAWZ)
-				|| (target->type == MT_EGGMINE_SHIELD && target->target->player->itemtype == KITEM_EGGMAN && K_IsKartItemAlternate(KITEM_EGGMAN)))
+			else if (equipstyle == KITEMEQUIP_ORBIT)
 			{
 				if (target->target->player->itemamount)
-					target->target->player->itemamount--;
+				{
+					K_DecrementAndCheckCurrentItem(target->target->player);
+				}
 				if (target->lastlook != 0)
 				{
 					K_RepairOrbitChain(target);
 				}
-			}
-
-			if (!target->target->player->itemamount)
-			{
-				K_UnsetItemOut(target->target->player);
-				K_DisableSeekingReticule(target->target->player);
-				// target->target->player->itemflags &= ~IF_ITEMOUT;
 			}
 
 			if (target->target->hnext == target)
@@ -1424,8 +1437,8 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 	// Above block does not clean up rocket sneakers when a player dies, so we need to do it here target->target is null when using rocket sneakers
 	if (target->player)
 	{
-		K_DisableSeekingReticule(target->player);
 		K_DropRocketSneaker(target->player);
+		target->player->equippeditem = KITEM_NONE;
 	}
 
 	// Let EVERYONE know what happened to a player! 01-29-2002 Tails
@@ -1716,7 +1729,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 					break;
 				}
 
-				K_AwardPlayerItem(player, target->threshold, max(1, target->movecount), KITEMBLINK_NORMAL);
+				K_AwardPlayerItem(player, target->threshold, max(1, target->movecount), true, KITEMBLINK_NORMAL);
 			}
 			break;
 		}
@@ -2182,7 +2195,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		if (player->pflags & PF_GODMODE)
 			return false;
 
-		if (player->exiting)
+		if (player->exiting && ((damagetype & DMG_DEATHMASK) || itembreaker))
 		{
 			if (inflictor)
 				K_DoInstashield(player);
@@ -2225,7 +2238,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			{
 				if (gametypes[gametype]->rules & GTR_BUMPERS)
 				{
-					if ((player->bumper <= 0 && player->karmadelay) || (player->karmamode == 1))
+					if ((player->bumper <= 0 && player->karmadelay) || (player->karmamode == KARMAMODE_ITEM))
 					{
 						// No bumpers & in WAIT, can't be hurt
 						K_DoInstashield(player);
@@ -2339,11 +2352,11 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				if (player->bumper <= 0)
 				{
 					player->karmadelay = comebacktime;
-					if ((gametypes[gametype]->rules & GTR_KARMA) && player->karmamode == 2 )
+					if ((gametypes[gametype]->rules & GTR_KARMA) && player->karmamode == KARMAMODE_EGGMAN )
 					{
 						mobj_t *poof = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EXPLODE);
 						S_StartSound(poof, mobjinfo[MT_KARMAHITBOX].seesound);
-						player->karmamode = 0;
+						player->karmamode = KARMAMODE_DEFAULT;
 					}
 				}
 			}
@@ -2400,6 +2413,10 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				case DMG_KARMA:
 					// 10 on SPB hit, 5 on normal explosion
 					painsound = true;
+
+					if (source && source->player && type == DMG_KARMA && K_RingsActive())
+						K_AwardPlayerRings(source->player, 10, true);
+
 					ringburst = K_ExplodePlayer(player, inflictor, source);
 					LUA_HookPlayerExplode(target, inflictor, source, damage, damagetype);
 					break;

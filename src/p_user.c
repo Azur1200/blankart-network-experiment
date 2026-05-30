@@ -68,8 +68,9 @@
 
 #include "acs/interface.h"
 
+#include <tracy/tracy/TracyC.h>
+
 #ifdef HWRENDER
-#include "hardware/hw_light.h"
 #include "hardware/hw_main.h"
 #endif
 
@@ -1476,6 +1477,9 @@ boolean P_PlayerHitFloor(player_t *player, boolean fromAir)
 				player->mo->momy = player->mo->momy/2;
 			}
 		}
+
+		player->superringdrag = 0;
+		player->superringleeway = 0;
 	}
 
 	return clipmomz;
@@ -1677,10 +1681,11 @@ static void P_CheckBouncySectors(player_t *player)
 				continue;
 
 			topheight = P_GetFOFTopZ(player->mo, node->m_sector, rover, player->mo->x, player->mo->y, NULL);
-			bottomheight = P_GetFOFBottomZ(player->mo, node->m_sector, rover, player->mo->x, player->mo->y, NULL);
 
 			if (player->mo->z > topheight)
 				continue;
+
+			bottomheight = P_GetFOFBottomZ(player->mo, node->m_sector, rover, player->mo->x, player->mo->y, NULL);
 
 			if (player->mo->z + player->mo->height < bottomheight)
 				continue;
@@ -1884,6 +1889,7 @@ static void P_DoBubbleBreath(player_t *player)
 //#define OLD_MOVEMENT_CODE 1
 static void P_3dMovement(player_t *player)
 {
+	TracyCZone(__zone, true);
 	ticcmd_t *cmd;
 	angle_t movepushangle, movepushsideangle; // Analog
 	fixed_t movepushforward = 0, movepushside = 0;
@@ -2075,6 +2081,8 @@ static void P_3dMovement(player_t *player)
 			}
 		}
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 boolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd)
@@ -2214,6 +2222,7 @@ fixed_t P_KartAltShrinkAuraScalar(player_t *player)
 // P_MovePlayer
 void P_MovePlayer(player_t *player)
 {
+	TracyCZone(__zone, true);
 	ticcmd_t *cmd;
 	//INT32 i;
 
@@ -2236,6 +2245,7 @@ void P_MovePlayer(player_t *player)
 	if (player->spectator)
 	{
 		player->mo->eflags &= ~MFE_VERTICALFLIP; // deflip...
+		TracyCZoneEnd(__zone);
 		return;
 	}
 
@@ -2404,7 +2414,12 @@ void P_MovePlayer(player_t *player)
 
 	if (K_AltShrinkArrowBulletCondition(player))
 	{
+		player->inarrowbullet = true;
 		K_SpawnNormalSpeedLines(player);
+	}
+	else
+	{
+		player->inarrowbullet = false;
 	}
 #undef MINAURAPCT
 #undef AURA_DIFF
@@ -2423,7 +2438,10 @@ void P_MovePlayer(player_t *player)
 			P_DamageMobj(player->mo, NULL, NULL, 1, DMG_SQUISH); // SRB2kart - we don't kill when squished, we squish when squished.
 
 		if (player->playerstate == PST_DEAD)
+		{
+			TracyCZoneEnd(__zone);
 			return;
+		}
 	}
 
 #ifdef FLOORSPLATS
@@ -2445,6 +2463,8 @@ void P_MovePlayer(player_t *player)
 	// Look for Quicksand!
 	if (CheckForQuicksand)
 		P_CheckQuicksand(player);
+	
+	TracyCZoneEnd(__zone);
 }
 
 static void P_DoZoomTube(player_t *player)
@@ -2972,7 +2992,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	angle_t angle = 0, focusangle = 0, focusaiming = 0, pitch = 0;
 	fixed_t x, y, z, dist, distxy, distz, viewpointx, viewpointy, camspeed, camdist, camheight, pviewheight;
 	fixed_t pan, xpan, ypan;
-	INT32 camrotate;
+	INT32 camrotate, camfreelookrotate = 0;
 	boolean camstill, lookback, lookbackdown;
 	UINT8 timeover;
 	mobj_t *mo;
@@ -3098,7 +3118,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		focusaiming = player->aiming;
 	}
 
-	if (abs(thiscam->freelook_held) >= 2*TICRATE)
+	if (thiscam->freelook_held)
 	{
 		focusaiming += FixedAngle(CLAMP(thiscam->freelook_pitch + thiscam->freelook_pitch_add, -45*FRACUNIT, 45*FRACUNIT) * P_MobjFlip(mo));
 	}
@@ -3114,6 +3134,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	camspeed = cv_cam_speed[num].value;
 	camstill = cv_cam_still[num].value;
 	camrotate = cv_cam_rotate[num].value;
+	camfreelookrotate = thiscam->freelook_yaw + thiscam->freelook_yaw_add;
 	camdist = FixedMul(cv_cam_dist[num].value, mapobjectscale);
 	camheight = FixedMul(cv_cam_height[num].value, mapobjectscale);
 
@@ -3225,18 +3246,18 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		camspeed = FRACUNIT;
 
 	if (timeover)
-		angle = mo->angle + FixedAngle(camrotate*FRACUNIT);
+		angle = mo->angle + FixedAngle(camrotate*FRACUNIT) + FixedAngle(camfreelookrotate);
 	else if (leveltime < introtime)
-		angle = focusangle + FixedAngle(camrotate*FRACUNIT);
+		angle = focusangle + FixedAngle(camrotate*FRACUNIT) + FixedAngle(camfreelookrotate);
 	else if (camstill || resetcalled || player->playerstate == PST_DEAD)
 		angle = thiscam->angle;
 	else
 	{
 		if (camspeed == FRACUNIT)
-			angle = focusangle + FixedAngle(camrotate<<FRACBITS);
+			angle = focusangle + FixedAngle(camrotate<<FRACBITS) + FixedAngle(camfreelookrotate);
 		else
 		{
-			angle_t input = focusangle + FixedAngle(camrotate<<FRACBITS) - thiscam->angle;
+			angle_t input = focusangle + FixedAngle(camrotate<<FRACBITS) + FixedAngle(camfreelookrotate) - thiscam->angle;
 			boolean invert = (input > ANGLE_180);
 			if (invert)
 				input = InvAngle(input);
@@ -3963,6 +3984,7 @@ DoABarrelRoll (player_t *player)
 
 void P_PlayerThink(player_t *player)
 {
+	TracyCZone(__zone, true);
 	ticcmd_t *cmd;
 	const size_t playeri = (size_t)(player - players);
 
@@ -4142,7 +4164,8 @@ void P_PlayerThink(player_t *player)
 
 				if (player->playerstate == PST_DEAD)
 				{
-					LUA_HookPlayer(player, HOOK(PlayerThink));
+					LUA_HookPlayerThink(player);
+					TracyCZoneEnd(__zone);
 					return;
 				}
 			}
@@ -4363,7 +4386,9 @@ void P_PlayerThink(player_t *player)
 		else
 			player->mo->renderflags &= ~RF_GHOSTLYMASK;
 		P_DeathThink(player);
-		LUA_HookPlayer(player, HOOK(PlayerThink));
+		LUA_HookPlayerThink(player);
+		
+		TracyCZoneEnd(__zone);
 		return;
 	}
 
@@ -4497,7 +4522,9 @@ void P_PlayerThink(player_t *player)
 	if (player->carry == CR_SLIDING)
 		player->carry = CR_NONE;
 
-	LUA_HookPlayer(player, HOOK(PlayerThink));
+	LUA_HookPlayerThink(player);
+
+	TracyCZoneEnd(__zone);
 }
 
 //
@@ -4507,6 +4534,7 @@ void P_PlayerThink(player_t *player)
 //
 void P_PlayerAfterThink(player_t *player)
 {
+	TracyCZone(__zone, true);
 	camera_t *thiscam = NULL; // if not one of the displayed players, just don't bother
 	UINT8 i;
 
@@ -4554,7 +4582,8 @@ void P_PlayerAfterThink(player_t *player)
 			P_RemoveMobj(player->followmobj);
 			P_SetTarget(&player->followmobj, NULL);
 		}
-
+		
+		TracyCZoneEnd(__zone);
 		return;
 	}
 
@@ -4642,6 +4671,8 @@ void P_PlayerAfterThink(player_t *player)
 
 	if (P_IsObjectOnGround(player->mo))
 		player->mo->pmomz = 0;
+
+	TracyCZoneEnd(__zone);
 }
 
 void P_SetPlayerAngle(player_t *player, angle_t angle)

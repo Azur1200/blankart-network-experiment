@@ -1443,6 +1443,51 @@ void VS_Print(vsbuf_t *buf, const char *data)
 //
 // =========================================================================
 
+#define NAME      cvar_map_t
+#define KEY_TY    const char *
+#define VAL_TY    consvar_t *
+#define HASH_FN   FNV1a_HashLowercaseString
+#define CMPR_FN   vt_cmpr_casestring
+#include "verstable.h"
+
+#define NAME      netvar_map_t
+#define KEY_TY    UINT16
+#define VAL_TY    consvar_t *
+#define HASH_FN   vt_hash_integer
+#define CMPR_FN   vt_cmpr_integer
+#include "verstable.h"
+
+#define NAME      compatnetvar_map_t
+#define KEY_TY    UINT16
+#define VAL_TY    consvar_t *
+#define HASH_FN   vt_hash_integer
+#define CMPR_FN   vt_cmpr_integer
+#include "verstable.h"
+
+static cvar_map_t cvar_map;
+static netvar_map_t netvar_map;
+static compatnetvar_map_t compatnetvar_map;
+
+CONSTRUCTOR static void CV_InitMap(void)
+{
+	// ensure the map is initialized
+	cvar_map_t_init(&cvar_map);
+	cvar_map_t_reserve(&cvar_map, 512);
+
+	netvar_map_t_init(&netvar_map);
+	netvar_map_t_reserve(&netvar_map, 256);
+
+	compatnetvar_map_t_init(&compatnetvar_map);
+	compatnetvar_map_t_reserve(&compatnetvar_map, 256);
+}
+
+DESTRUCTOR static void CV_DestroyMap(void)
+{
+	cvar_map_t_cleanup(&cvar_map);
+	netvar_map_t_cleanup(&netvar_map);
+	compatnetvar_map_t_cleanup(&compatnetvar_map);
+}
+
 static const char *cv_null_string = "";
 
 /** Searches if a variable has been registered.
@@ -1453,11 +1498,17 @@ static const char *cv_null_string = "";
   */
 consvar_t *CV_FindVar(const char *name)
 {
-	consvar_t *cvar;
+	cvar_map_t_itr it = cvar_map_t_get(&cvar_map, name);
+	if (!cvar_map_t_is_end(it))
+		return it.data->val;
 
+	// fallback linear search
+	/*
+	consvar_t *cvar;
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		if (fasticmp(name, cvar->name))
 			return cvar;
+	*/
 
 	return NULL;
 }
@@ -1484,6 +1535,10 @@ static inline UINT16 CV_ComputeLegacyNetid(const char *s)
   */
 static consvar_t *CV_FindNetVar(UINT16 netid)
 {
+	netvar_map_t_itr it = netvar_map_t_get(&netvar_map, netid);
+	if (!netvar_map_t_is_end(it))
+		return it.data->val;
+	/*
 	consvar_t *cvar;
 
 	if (netid > consvar_number_of_netids)
@@ -1492,6 +1547,7 @@ static consvar_t *CV_FindNetVar(UINT16 netid)
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		if (cvar->netid == netid)
 			return cvar;
+	*/
 
 	if (netid == 44542) // ouch this hack
 		return &cv_karteliminatelast;
@@ -1501,11 +1557,17 @@ static consvar_t *CV_FindNetVar(UINT16 netid)
 
 consvar_t *CV_FindLegacyNetVar(UINT16 netid)
 {
+	compatnetvar_map_t_itr it = compatnetvar_map_t_get(&compatnetvar_map, netid);
+	if (!compatnetvar_map_t_is_end(it))
+		return it.data->val;
+
+	/*
 	consvar_t *cvar;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		if (cvar->compatnetid == netid)
 			return cvar;
+	*/
 
 	if (netid == 44542) // ouch this hack
 		return &cv_karteliminatelast;
@@ -1585,6 +1647,13 @@ void CV_RegisterVar(consvar_t *variable)
 
 	// the SetValue will set this bit
 	variable->flags &= ~CV_MODIFIED;
+
+	cvar_map_t_insert(&cvar_map, variable->name, variable);
+
+	if (variable->flags & CV_NETVAR)
+		netvar_map_t_insert(&netvar_map, variable->netid, variable);
+	if (variable->compatnetid)
+		compatnetvar_map_t_insert(&compatnetvar_map, variable->compatnetid, variable);
 }
 
 /** Finds the string value of a console variable.
@@ -1971,6 +2040,25 @@ static void CV_LoadVars(UINT8 **p,
 	// prevent "invalid command received"
 	serverloading = true;
 
+	// we can use our netvar map instead of going through all cvars each time
+	netvar_map_t_itr it;
+	for (it = netvar_map_t_first(&netvar_map);
+		 !netvar_map_t_is_end(it);
+		 it = netvar_map_t_next(it))
+	{
+		cvar = it.data->val;
+
+		if (store && cvar->revert.v.string == NULL)
+		{
+			cvar->revert.v.const_munge = cvar->string;
+			cvar->revert.allocated = ( cvar->zstring != NULL );
+			cvar->zstring = NULL; // don't free this
+		}
+
+		Setvalue(cvar, cvar->defaultvalue, true);
+	}
+
+	/*
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 	{
 		if (cvar->flags & CV_NETVAR)
@@ -1979,12 +2067,12 @@ static void CV_LoadVars(UINT8 **p,
 			{
 				cvar->revert.v.const_munge = cvar->string;
 				cvar->revert.allocated = ( cvar->zstring != NULL );
-				cvar->zstring = NULL;/* don't free this */
+				cvar->zstring = NULL; // don't free this
 			}
 
 			Setvalue(cvar, cvar->defaultvalue, true);
 		}
-	}
+	}*/
 
 	if (got == NULL)
 		G_LoadDemoCvars((void **)p, Setvalue);
@@ -2425,6 +2513,14 @@ static boolean CV_FilterVarByVersion(consvar_t *v, const char *valstr)
 	if (GETMAJOREXECVERSION(cv_execversion.value) == 12 && GETMINOREXECVERSION(cv_execversion.value) < 1) // 12.1 = BK Indev 25-04-26
 	{
 		if (fasticmp(v->name, "masterserver")) // Upgrade the masterserver from SRB2Classic's to our own.
+			return false;
+	}
+
+	if (GETMAJOREXECVERSION(cv_execversion.value) == 12 && GETMINOREXECVERSION(cv_execversion.value) < 2) // 12.2 = BK Indev 29-04-26
+	{
+		if (fasticmp(v->name, "gr_modellighting")) // This needs to be on for directional lighting to look right on models.
+			return false;
+		if (fasticmp(v->name, "gr_palettedepth")) // 24 bit looks best.
 			return false;
 	}
 

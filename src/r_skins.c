@@ -42,7 +42,11 @@
 #include "discord.h"
 
 INT32 numskins = 0;
+INT32 num_multivoiceskins = 0;
+
 skin_t skins[MAXSKINS];
+skin_t * multivoiceskins[MAXSKINS];
+
 INT32 skinsorted[MAXSKINS];
 
 // FIXTHIS: don't work because it must be inistilised before the config load
@@ -52,6 +56,14 @@ CV_PossibleValue_t skin_cons_t[MAXSKINS+1];
 #endif
 
 CV_PossibleValue_t Forceskin_cons_t[MAXSKINS+2];
+
+// FIXME: Save voice data to a separate file
+kartvoiceinfo_t localvoicedata[MAXSPLITSCREENPLAYERS] = {
+	[0] = {.name = "default", .value = 0},
+	[1] = {.name = "default", .value = 0},
+	[2] = {.name = "default", .value = 0},
+	[3] = {.name = "default", .value = 0}
+};
 
 //
 // P_GetSkinSprite2
@@ -731,8 +743,20 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 
 	if (player->voice_id == voicenum)
 	{
-		// Hey... this voice is the same as before!
-		return;
+		// Same ID? Seems suspicious...
+
+		if (P_MobjWasRemoved(player->mo))
+			return; // Unfortunately, we have no object, so we'll assume it's a dupe...
+
+		if (!player->mo->voice)
+			return; // We somehow have no voice either!
+
+		// Check the actual voice structs to be absolutely sure.
+		if (player->mo->voice == &skins[player->skin].voices[voicenum])
+		{
+			// Hey... this voice is the same as before!
+			return;
+		}
 	}
 
 	player->voice_id = voicenum;
@@ -999,6 +1023,47 @@ static void R_IHateThatHedgehog(UINT16 wadnum)
 
 static kartvoice_t *allocvoice;
 
+static INT32 R_AddSkinToMultiVoiceArray(skin_t * skin)
+{
+	if (num_multivoiceskins < 1)
+	{
+		// Nobody's home, add ourselves to the array
+		multivoiceskins[0] = skin;
+	}
+	else
+	{
+		// Comb through all the skins in the multivoice array to make sure we're not adding a dupe
+		if (num_multivoiceskins < 2)
+		{
+			// Only one skin in here, just check if we match
+			if (skin == multivoiceskins[0])
+			{
+				// Dupe
+				return num_multivoiceskins;
+			}
+
+			multivoiceskins[1] = skin;
+		}
+		else
+		{
+			INT32 i = 0;
+
+			for (i = 0; i < num_multivoiceskins; i++)
+			{
+				if (skin == multivoiceskins[i])
+				{
+					// Dupe, don't bother
+					return num_multivoiceskins;
+				}
+			}
+
+			multivoiceskins[num_multivoiceskins] = skin;
+		}
+	}
+
+	return num_multivoiceskins++;
+}
+
 //
 // Allocates a voice onto the dehacked list, and iterates the provided output pointer
 // (should it exist).
@@ -1029,7 +1094,12 @@ static INT32 R_AllocKartVoice(skin_t *skin, const char* name)
 
 	CONS_Printf("Voice '%s' allocated for skin '%s'.\n", voice->name, skin->name);
 
-	return skin->numvoices++;
+	skin->numvoices++;
+
+	if (skin->numvoices > 1)
+		R_AddSkinToMultiVoiceArray(skin);
+
+	return max(0, skin->numvoices - 1);
 }
 
 // returns whether found appropriate property

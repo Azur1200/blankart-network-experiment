@@ -345,6 +345,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(aizdriftturn) \
 	X(slipdashcharge) \
 	X(slipdashdir) \
+	X(airthrustdir) \
 	X(offroad) \
 	X(pogospring) \
 	X(brakestop) \
@@ -389,6 +390,8 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(ringboost) \
 	X(ringtime) \
 	X(superring) \
+	X(superringleeway) \
+	X(superringdrag) \
 	X(nextringaward) \
 	X(ringvolume) \
 	X(ringtransparency) \
@@ -415,6 +418,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(growcancel) \
 	X(squishedtimer) \
 	X(arrowbullet) \
+	X(inarrowbullet) \
 	X(rocketsneakertimer) \
 	X(invincibilitytimer) \
 	X(smonitortimer) \
@@ -471,7 +475,9 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(nulldrift) \
 	X(nulldrifttime) \
 	X(karttilt) \
-	X(karttiltmomentum)
+	X(karttiltmomentum) \
+	X(itemreservetype) \
+	X(itemreserveamount)
 
 enum player_e
 {
@@ -489,10 +495,12 @@ static const char *const player_opt[] = {
 	NULL,
 };
 
+int player_fields_ref = LUA_NOREF;
+
 static int player_get(lua_State *L)
 {
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
-	enum player_e field = Lua_optoption(L, 2, NULL, player_opt);
+	enum player_e field = Lua_optoption(L, 2, -1, player_fields_ref);
 	lua_settop(L, 2);
 
 	if (!plr)
@@ -705,6 +713,9 @@ static int player_get(lua_State *L)
 	case player_slipdashdir:
 		lua_pushinteger(L, plr->slipdashdir);
 		break;
+	case player_airthrustdir:
+		lua_pushinteger(L, plr->airthrustdir);
+		break;
 	case player_offroad:
 		lua_pushinteger(L, plr->offroad);
 		break;
@@ -792,6 +803,12 @@ static int player_get(lua_State *L)
 	case player_itemamount:
 		lua_pushinteger(L, plr->itemamount);
 		break;
+	case player_itemreservetype:
+		lua_pushinteger(L, plr->itemreservetype);
+		break;
+	case player_itemreserveamount:
+		lua_pushinteger(L, plr->itemreserveamount);
+		break;
 	case player_equippeditem:
 		lua_pushinteger(L, plr->equippeditem);
 		break;
@@ -836,6 +853,12 @@ static int player_get(lua_State *L)
 		break;
 	case player_superring:
 		lua_pushinteger(L, plr->superring);
+		break;
+	case player_superringleeway:
+		lua_pushinteger(L, plr->superringleeway);
+		break;
+	case player_superringdrag:
+		lua_pushfixed(L, plr->superringdrag);
 		break;
 	case player_nextringaward:
 		lua_pushinteger(L, plr->nextringaward);
@@ -914,6 +937,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_arrowbullet:
 		LUA_PushUserdata(L, plr->arrowbullet, META_MOBJ);
+		break;
+	case player_inarrowbullet:
+		lua_pushboolean(L, plr->inarrowbullet);
 		break;
 	case player_rocketsneakertimer:
 		lua_pushinteger(L, plr->rocketsneakertimer);
@@ -1271,7 +1297,7 @@ static int player_get(lua_State *L)
 static int player_set(lua_State *L)
 {
 	player_t *plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
-	enum player_e field = Lua_optoption(L, 2, player_opt[player_cmd], player_opt);
+	enum player_e field = Lua_optoption(L, 2, player_cmd, player_fields_ref);
 	if (!plr)
 		return LUA_ErrInvalid(L, "player_t");
 
@@ -1524,6 +1550,9 @@ static int player_set(lua_State *L)
 	case player_slipdashdir:
 		plr->slipdashdir = luaL_checkinteger(L, 3);
 		break;
+	case player_airthrustdir:
+		plr->airthrustdir = luaL_checkinteger(L, 3);
+		break;
 	case player_offroad:
 		plr->offroad = luaL_checkinteger(L, 3);
 		break;
@@ -1611,6 +1640,12 @@ static int player_set(lua_State *L)
 	case player_itemamount:
 		plr->itemamount = luaL_checkinteger(L, 3);
 		break;
+	case player_itemreservetype:
+		plr->itemreservetype = luaL_checkinteger(L, 3);
+		break;
+	case player_itemreserveamount:
+		plr->itemreserveamount = luaL_checkinteger(L, 3);
+		break;
 	case player_itemusecooldown:
 		plr->itemusecooldown = luaL_checkinteger(L, 3);
 		break;
@@ -1652,6 +1687,12 @@ static int player_set(lua_State *L)
 		break;
 	case player_superring:
 		plr->superring = luaL_checkinteger(L, 3);
+		break;
+	case player_superringleeway:
+		plr->superringleeway = luaL_checkinteger(L, 3);
+		break;
+	case player_superringdrag:
+		plr->superringdrag = luaL_checkfixed(L, 3);
 		break;
 	case player_nextringaward:
 		plr->nextringaward = luaL_checkinteger(L, 3);
@@ -1737,6 +1778,9 @@ static int player_set(lua_State *L)
 	}
 	case player_arrowbullet:
 		return NOSET;
+	case player_inarrowbullet:
+		plr->inarrowbullet = luaL_checkboolean(L, 3);
+		break;
 	case player_rocketsneakertimer:
 		plr->rocketsneakertimer = luaL_checkinteger(L, 3);
 		break;
@@ -2740,10 +2784,12 @@ static const char *const ticcmd_opt[] = {
 	NULL,
 };
 
+int ticcmd_fields_ref = LUA_NOREF;
+
 static int ticcmd_get(lua_State *L)
 {
 	ticcmd_t *cmd = *((ticcmd_t **)luaL_checkudata(L, 1, META_TICCMD));
-	enum ticcmd_e field = Lua_optoption(L, 2, NULL, ticcmd_opt);
+	enum ticcmd_e field = Lua_optoption(L, 2, -1, ticcmd_fields_ref);
 	if (!cmd)
 		return LUA_ErrInvalid(L, "player_t");
 
@@ -2791,7 +2837,7 @@ static int ticcmd_get(lua_State *L)
 static int ticcmd_set(lua_State *L)
 {
 	ticcmd_t *cmd = *((ticcmd_t **)luaL_checkudata(L, 1, META_TICCMD));
-	enum ticcmd_e field = Lua_optoption(L, 2, ticcmd_opt[0], ticcmd_opt);
+	enum ticcmd_e field = Lua_optoption(L, 2, ticcmd_forwardmove, ticcmd_fields_ref);
 	if (!cmd)
 		return LUA_ErrInvalid(L, "ticcmd_t");
 
@@ -2872,10 +2918,12 @@ static const char *const sonicloopvars_opt[] = {
 	NULL
 };
 
+int sonicloopvars_fields_ref = LUA_NOREF;
+
 static int sonicloopvars_get(lua_State *L)
 {
 	sonicloopvars_t *sonicloopvars = *((sonicloopvars_t **)luaL_checkudata(L, 1, META_SONICLOOPVARS));
-	enum sonicloopvars field = luaL_checkoption(L, 2, NULL, sonicloopvars_opt);
+	enum sonicloopvars field = Lua_optoption(L, 2, -1, sonicloopvars_fields_ref);
 
 	// This should always be valid.
 	I_Assert(sonicloopvars != NULL);
@@ -2953,10 +3001,12 @@ static const char *const sonicloopcamvars_opt[] = {
 	NULL
 };
 
+int sonicloopcamvars_fields_ref = LUA_NOREF;
+
 static int sonicloopcamvars_get(lua_State *L)
 {
 	sonicloopcamvars_t *sonicloopcamvars = *((sonicloopcamvars_t **)luaL_checkudata(L, 1, META_SONICLOOPCAMVARS));
-	enum sonicloopcamvars field = luaL_checkoption(L, 2, NULL, sonicloopcamvars_opt);
+	enum sonicloopcamvars field = Lua_optoption(L, 2, -1, sonicloopcamvars_fields_ref);
 
 	// This should always be valid.
 	I_Assert(sonicloopcamvars != NULL);
@@ -3015,10 +3065,12 @@ static const char *const boostinfo_opt[] = {
 	NULL,
 };
 
+int boostinfo_fields_ref = LUA_NOREF;
+
 static int boostinfo_get(lua_State *L)
 {
 	boostinfo_t *boostinfo = *((boostinfo_t **)luaL_checkudata(L, 1, META_BOOSTINFO));
-	enum boostinfo field = luaL_checkoption(L, 2, NULL, boostinfo_opt);
+	enum boostinfo field = Lua_optoption(L, 2, -1, boostinfo_fields_ref);
 
 	// This should always be valid.
 	I_Assert(boostinfo != NULL);
@@ -3048,7 +3100,7 @@ static int boostinfo_get(lua_State *L)
 static int boostinfo_set(lua_State *L)
 {
 	boostinfo_t *boostinfo = *((boostinfo_t **)luaL_checkudata(L, 1, META_BOOSTINFO));
-	enum boostinfo field = luaL_checkoption(L, 2, boostinfo_opt[0], boostinfo_opt);
+	enum boostinfo field = Lua_optoption(L, 2, boostinfo_stackspeedboost, boostinfo_fields_ref);
 
 	// This is a property that always exists in a player.
 	I_Assert(boostinfo != NULL);
@@ -3087,6 +3139,14 @@ static int boostinfo_set(lua_State *L)
 
 int LUA_PlayerLib(lua_State *L)
 {
+	player_fields_ref = Lua_CreateFieldTable(L, player_opt);
+	ticcmd_fields_ref = Lua_CreateFieldTable(L, ticcmd_opt);
+
+	sonicloopvars_fields_ref = Lua_CreateFieldTable(L, sonicloopvars_opt);
+	sonicloopcamvars_fields_ref = Lua_CreateFieldTable(L, sonicloopcamvars_opt);
+
+	boostinfo_fields_ref = Lua_CreateFieldTable(L, boostinfo_opt);
+
 	luaL_newmetatable(L, META_PLAYER);
 		lua_pushcfunction(L, player_get);
 		lua_setfield(L, -2, "__index");

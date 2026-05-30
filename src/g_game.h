@@ -93,7 +93,17 @@ extern consvar_t cv_driftmode[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_deadzonex[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_deadzoney[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_deadzonet[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_deadzonetwod[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_deadzonestyle[MAXSPLITSCREENPLAYERS];
+
+typedef enum
+{
+	FREELOOKSTYLE_OFF = 0,
+	FREELOOKSTYLE_FLICK = 1,
+	FREELOOKSTYLE_ROTATIONAL = 2
+} freelookstyle_e;
+extern consvar_t cv_freelookstyle[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_freelookrequiresbutton[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_guest, cv_ghost_staff;
 
@@ -223,6 +233,7 @@ UINT8 G_GetGametypeColor(INT16 gt);
 void G_BeginLevelExit(void);
 void G_FinishExitLevel(void);
 void G_NextLevel(void);
+boolean G_MapIsSafe(mapnum_t map);
 mapnum_t G_CheckNextMap(boolean noadvancemap);
 void G_GetNextMap(void);
 void G_Continue(void);
@@ -375,6 +386,16 @@ typedef struct
 	UINT8 kartspeed, kartweight, kartspeedrestat, kartweightrestat;
 } restatmessage_t;
 void G_HandleRestatMessage(restatmessage_t *rm);
+
+typedef enum
+{
+	PBUMP_STANDARD = 0,
+	PBUMP_GNDONLY,
+	PBUMP_NONE,
+	NUMPLAYERBUMPTYPES
+} ATTRPACK playerbumptype_t;
+
+extern playerbumptype_t playerbumpactive;
 
 #ifdef __cplusplus
 } // extern "C"

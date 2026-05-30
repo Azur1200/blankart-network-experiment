@@ -653,6 +653,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 
 		// The x and y only need to be adjusted in the case that it's not a papersprite
 		if (cv_glspritebillboarding.value
+			&& !cv_glshearing.value
 			&& spr->mobj && !R_ThingIsPaperSprite(spr->mobj))
 		{
 			// Get the x and z of the vertices so billboarding draws correctly
@@ -795,11 +796,6 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	//          in memory and we add the md2 model if it exists for that sprite
 
 	gpatch = spr->gpatch;
-
-#ifdef ALAM_LIGHTING
-	if (!(spr->mobj->flags2 & MF2_DEBRIS) && (spr->mobj->sprite != SPR_PLAY))
-		HWR_DL_AddLight(spr, gpatch);
-#endif
 
 	// create the sprite billboard
 	//
@@ -1786,7 +1782,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	float base_topoffs = FIXED_TO_FLOAT(spr_topoffset);
 
 #ifdef ROTSPRITE
-	spriterotangle = R_SpriteRotationAngle(thing, NULL, &interp, false);
+	spriterotangle = R_SpriteRotationAngle(thing, NULL, &interp, (affinesprite && vflip));
 
 	if (spriterotangle != 0
 	&& !(splat && !(thing->renderflags & RF_NOSPLATROLLANGLE))

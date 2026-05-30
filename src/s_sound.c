@@ -1316,6 +1316,7 @@ static tic_t     pause_starttic;
 
 musicdef_t *musicdefstart = NULL;
 struct cursongcredit cursongcredit; // Currently displayed song credit info
+char *g_realsongcredit;
 int musicdef_volume;
 
 //
@@ -1653,11 +1654,11 @@ void S_InitMusicDefs(void)
 }
 
 //
-// S_ShowMusicCredit
+// S_LoadMusicCredit
 //
-// Display current song's credit on screen
+// Load the current song's credit into memory
 //
-void S_ShowMusicCredit(fixed_t yoffset, UINT16 animtime, INT32 snapflags)
+void S_LoadMusicCredit(void)
 {
 	UINT8 i = 0;
 	musicdef_t *def = S_FindMusicDef(music_name, &i);
@@ -1667,21 +1668,16 @@ void S_ShowMusicCredit(fixed_t yoffset, UINT16 animtime, INT32 snapflags)
 	size_t len = 128, worklen;
 	INT32 widthused = (3*BASEVIDWIDTH/4) - 7, workwidth;
 
-	if (!cv_songcredits.value || demo.rewinding)
-		return;
+	S_UnloadMusicCredit();
 
 	if (!def) // No definitions
 		return;
 
 	if (!def->title)
-	{
 		return;
-	}
 
 	if (def->contentidunsafe && cv_streamersafemusic.value)
-	{
 		return;
-	}
 
 	work = va("\x1F %s", def->title);
 	worklen = strlen(work);
@@ -1729,9 +1725,34 @@ void S_ShowMusicCredit(fixed_t yoffset, UINT16 animtime, INT32 snapflags)
 	if (credittext[0] == '\0')
 		return;
 
-	cursongcredit.def = def;
+	g_realsongcredit = Z_StrDup(credittext);
+}
+
+void S_UnloadMusicCredit(void)
+{
+	Z_Free(g_realsongcredit);
+	g_realsongcredit = NULL;
+}
+
+//
+// S_ShowMusicCredit
+//
+// Display current song's credit on screen
+//
+void S_ShowMusicCredit(fixed_t yoffset, UINT16 animtime, INT32 snapflags)
+{
+	if (!cv_songcredits.value || demo.rewinding)
+		return;
+
+	if (!g_realsongcredit)
+	{
+		// Like showing a blank credit.
+		S_StopMusicCredit();
+		return;
+	}
+
 	Z_Free(cursongcredit.text);
-	cursongcredit.text = Z_StrDup(credittext);
+	cursongcredit.text = Z_StrDup(g_realsongcredit);
 	cursongcredit.anim = animtime; // 5*TICRATE
 	cursongcredit.x = cursongcredit.old_x = 0;
 	cursongcredit.y = yoffset;
@@ -1741,7 +1762,7 @@ void S_ShowMusicCredit(fixed_t yoffset, UINT16 animtime, INT32 snapflags)
 
 void S_ChangeMusicCreditSettings(INT32 yoffset, INT32 snapflags)
 {
-	if (cursongcredit.def != NULL)
+	if (cursongcredit.text != NULL)
 	{
 		cursongcredit.y = yoffset;
 		cursongcredit.snapflags = snapflags;
@@ -1749,16 +1770,15 @@ void S_ChangeMusicCreditSettings(INT32 yoffset, INT32 snapflags)
 }
 
 //
-// S_ClearMusicCredit
+// S_StopMusicCredit
 //
 // Clear the currently displaying song credit on the screen
 //
-void S_ClearMusicCredit(void)
+void S_StopMusicCredit(void)
 {
-	cursongcredit.x = cursongcredit.old_x = 0;
-	cursongcredit.y = 0;
-	cursongcredit.anim = 0;
-	cursongcredit.trans = NUMTRANSMAPS;
+	S_UnloadMusicCredit();
+	Z_Free(cursongcredit.text);
+	memset(&cursongcredit,0,sizeof(struct cursongcredit));
 }
 
 musicdef_t **soundtestdefs = NULL;
@@ -2344,6 +2364,8 @@ static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)
 	if (S_MusicNotInFocus())
 		I_SetMusicVolume(0);
 
+	S_LoadMusicCredit();
+
 	return true;
 }
 
@@ -2484,6 +2506,7 @@ void S_StopMusic(void)
 	S_SpeedMusic(1.0f);
 	I_StopSong();
 	S_UnloadMusic(); // for now, stopping also means you unload the song
+	S_StopMusicCredit();
 
 	if (cv_closedcaptioning.value)
 	{
@@ -2602,27 +2625,32 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 //
 void S_InitLevelMusic(boolean fromnetsave)
 {
+	mapheader_t* mapheader = mapheaderinfo[gamemap - 1];
 	INT16 usemusrng = 0;
 	INT16 altmusonlysize = 0;
+
+	boolean validencore = (encoremode && (mapheader->encoremusname_size > 0));
+
+	UINT8 truesize = validencore ? mapheader->encoremusname_size : mapheader->musname_size;
 
 	if (mapmusflags & MUSIC_RELOADRESET)
 	{
 
-		if (mapheaderinfo[gamemap-1]->musname_size > 1)
+		if (truesize > 1)
 		{
-			altmusonlysize = max(0, mapheaderinfo[gamemap-1]->musname_size - 1);
+			altmusonlysize = max(0, truesize - 1);
 		}
 
 		if (!fromnetsave)
 		{
 			if (demo.playback)
 			{
-				if (mapheaderinfo[gamemap-1]->musname_size > 1)
+				if (truesize > 1)
 				{
 					P_RandomFixed();
 				}
 				// mapmusrng has already been set by the demo; just make sure it's valid
-				if (mapmusrng >= mapheaderinfo[gamemap-1]->musname_size)
+				if (mapmusrng >= truesize)
 				{
 					mapmusrng = 0;
 				}
@@ -2630,9 +2658,9 @@ void S_InitLevelMusic(boolean fromnetsave)
 			else
 			{
 
-				if (mapheaderinfo[gamemap-1]->musname_size > 1)
+				if (truesize > 1)
 				{
-					mapmusrng = P_RandomKey(mapheaderinfo[gamemap-1]->musname_size);
+					mapmusrng = P_RandomKey(truesize);
 				}
 				else
 					mapmusrng = 0;
@@ -2666,14 +2694,18 @@ void S_InitLevelMusic(boolean fromnetsave)
 			}
 		}
 
-		if (mapheaderinfo[gamemap-1]->musname[0][0] == 0)
-			strncpy(mapmusname, va("%sM", G_BuildMapName(gamemap)), 7);
+		char musicname[7];
+
+		if (!validencore && mapheader->musname[0][0] == 0)
+			sprintf(musicname, "%sM", G_BuildMapName(gamemap));
 		else
-			strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname[usemusrng], 7);
+			sprintf(musicname, "%s",(validencore ? mapheader->encoremusname : mapheader->musname)[usemusrng]);
+
+		strncpy(mapmusname, musicname, 7);
 
 		mapmusname[6] = 0;
-		mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
-		mapmusposition = mapheaderinfo[gamemap-1]->muspos;
+		mapmusflags = (mapheader->mustrack & MUSIC_TRACKMASK);
+		mapmusposition = mapheader->muspos;
 		mapmusresume = 0;
 	}
 

@@ -1749,8 +1749,9 @@ void EV_DoFloorOLD(mtag_t tag, line_t *line, floor_e floortype)
 
 				// chained linedef executing ability
 				// Only set it on one of the moving sectors (the smallest numbered)
-				if (line->args[4])
-					dofloor->tag = firstone ? (INT16)line->args[3] : -1;
+				// and only if arg 4 is positive, indicating a valid tag.
+				if (firstone && line->args[4])
+					dofloor->tag = firstone ? (INT16)(line->args[4] - 32769) : -1;
 
 				// flat changing ability
 				dofloor->texture = line->args[5] ? line->frontsector->floorpic : -1;
@@ -1947,7 +1948,8 @@ void EV_DoMoveFloorByHeight(mtag_t tag, fixed_t height, fixed_t speed, mtag_t ch
 
 		// chained linedef executing ability
 		// Only set it on one of the moving sectors (the smallest numbered)
-		if (chain)
+		boolean kartcheck = (mapnamespace == MNS_SRB2KART) ? firstone : true;
+		if (kartcheck && chain)
 			dofloor->tag = firstone ? (INT16)chain : -1;
 
 		// flat changing ability

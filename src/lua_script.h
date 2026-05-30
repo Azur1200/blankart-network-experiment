@@ -60,7 +60,7 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump, boolean noresults);
 void LUA_DumpFile(const char *filename);
 #endif
 fixed_t LUA_EvalMath(const char *word);
-void LUA_Step(void);
+// void LUA_Step(void);
 void LUA_Sync(savebuffer_t *save, boolean network, boolean compat);
 
 void LUA_SetCFunctionField(lua_State *L, const char *name, lua_CFunction value);
@@ -73,13 +73,16 @@ void LUA_RegisterUserdataMetatable(
 	lua_CFunction len
 );
 
-int LUA_PushGlobals(lua_State *L, const char *word);
-int LUA_WriteGlobals(lua_State *L, const char *word);
+extern int global_fields_ref;
+extern const char *const global_opt[];
+
+int LUA_PushGlobals(lua_State *L);
+int LUA_WriteGlobals(lua_State *L);
 
 void Got_Luacmd(UINT8 **cp, INT32 playernum); // lua_consolelib.c
 void LUA_CVarChanged(void *cvar); // lua_consolelib.c
-int Lua_optoption(lua_State *L, int narg,
-	const char *def, const char *const lst[]);
+int Lua_optoption(lua_State *L, int narg, int def, int list_ref);
+int Lua_CreateFieldTable(lua_State *L, const char *const lst[]);
 void LUA_HookNetArchive(lua_CFunction archFunc, savebuffer_t *save);
 
 void LUA_PushTaggableObjectArray

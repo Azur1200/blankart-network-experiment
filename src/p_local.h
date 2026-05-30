@@ -138,11 +138,16 @@ struct camera_t
 	
 	boolean reset_aiming;	// camera aiming needs to be reset from chase camera
 	
-	// Hold up/down to pan the camera vertically
-	SINT8 freelook_held;
+	boolean freelook_held;
+	// pitch freelook
 	// between -45 deg and 45 deg
 	fixed_t freelook_pitch;
+	// added influence from relative control methods (gyro)
 	fixed_t freelook_pitch_add;
+	// yaw freelook
+	fixed_t freelook_yaw;
+	// added influence from relative control methods (gyro)
+	fixed_t freelook_yaw_add;
 
 	// Interpolation data
 	fixed_t old_x, old_y, old_z;
@@ -537,7 +542,7 @@ fixed_t P_FloorzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height);
 fixed_t P_CeilingzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height);
 BlockItReturn_t PIT_PushableMoved(mobj_t *thing);
 
-void P_DoSpringEx(mobj_t * object,fixed_t scaleVal, fixed_t vertispeed, fixed_t horizspeed, angle_t finalAngle);
+void P_DoSpringRR(mobj_t * object,fixed_t scaleVal, fixed_t vertispeed, fixed_t horizspeed, angle_t finalAngle);
 boolean P_DoSpring(mobj_t *spring, mobj_t *object);
 
 INT32 P_GetSectorLightNumAt(sector_t *sector, fixed_t x, fixed_t y, fixed_t z);
@@ -620,6 +625,7 @@ typedef enum
 	PICKUPITEM_EGGMAN,
 	PICKUPITEM_FLOATING,
 	PICKUPITEM_EGGMINE,
+	PICKUPITEM_RESERVE,
 } pickupitem_e;
 
 boolean P_CanPickupItem(player_t *player, UINT8 weapon);

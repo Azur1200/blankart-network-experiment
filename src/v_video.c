@@ -920,10 +920,40 @@ affine_bounding_t* V_GetAffineBounds(const affine_t* transform,
 	return out;
 }
 
+static UINT32 V_GetAlphaLevel(INT32 scrn)
+{
+	switch (scrn & V_ALPHAMASK)
+	{
+		case V_HUDTRANSHALF:
+			return hudminusalpha[V_GetHUDTranslucency(scrn)];
+
+		case V_HUDTRANS:
+			return 10 - V_GetHUDTranslucency(scrn);
+
+		case V_HUDTRANSDOUBLE:
+			return hudplusalpha[V_GetHUDTranslucency(scrn)];
+
+		default:
+			return (scrn & V_ALPHAMASK) >> V_ALPHASHIFT;
+	}
+}
+
 void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, INT32 scrn, patch_t *patch, const UINT8 *colormap)
 {
+	UINT32 alphalevel = 0, blendmode = 0;
+	UINT8 patchdrawtype = STANDARDDRAW;
+
 	if (rendermode == render_none)
 		return;
+
+	if ((blendmode = ((scrn & V_BLENDMASK) >> V_BLENDSHIFT)))
+		blendmode++; // realign to constants
+
+	if ((alphalevel = V_GetAlphaLevel(scrn)) >= 10)
+		return;
+
+	if ((v_translevel = R_GetBlendTable(blendmode, alphalevel)))
+		patchdrawtype = TRANSLUCENTDRAW;
 
 	INT32 dup;
 	switch (scrn & V_SCALEPATCHMASK)
@@ -1031,6 +1061,7 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, INT32 sc
 
 	UINT8 * const destbase = (UINT8 * const)(dest_y + xx);
 	INT32 dx = 0, dy = 0;
+	UINT8 mypixel = TRANSPARENTPIXEL;
 	for (dy = 0; dy < ymax; dy++)
 	{
 		// yoinked from NovaSquirrel's mode 7 preview
@@ -1056,9 +1087,20 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, INT32 sc
 				continue;
 
 			if (colormap != NULL)
-				*dest = colormap[pixel & 0xff];
+				mypixel = colormap[pixel & 0xff];
 			else
-				*dest = (UINT8)(pixel & 0xff);
+				mypixel = (UINT8)(pixel & 0xff);
+
+			if (patchdrawtype == TRANSLUCENTDRAW)
+			{
+				// Translucent
+				*dest = *(v_translevel + (((mypixel)<<8)&0xff00) + (*dest&0xff));
+			}
+			else
+			{
+				// Opaque
+				*dest = mypixel;
+			}
 		}
 	}
 
@@ -1116,24 +1158,6 @@ UINT32 V_GetHUDTranslucency(INT32 scrn)
 	}
 
 	return st_translucency;
-}
-
-static UINT32 V_GetAlphaLevel(INT32 scrn)
-{
-	switch (scrn & V_ALPHAMASK)
-	{
-		case V_HUDTRANSHALF:
-			return hudminusalpha[V_GetHUDTranslucency(scrn)];
-
-		case V_HUDTRANS:
-			return 10 - V_GetHUDTranslucency(scrn);
-
-		case V_HUDTRANSDOUBLE:
-			return hudplusalpha[V_GetHUDTranslucency(scrn)];
-
-		default:
-			return (scrn & V_ALPHAMASK) >> V_ALPHASHIFT;
-	}
 }
 
 // Draws a patch scaled to arbitrary size.
@@ -3581,7 +3605,12 @@ INT32 V_DrawPingNum(INT32 x, INT32 y, INT32 flags, INT32 num, const UINT8 *color
 
 INT32 V_DrawPingNumAtFixed(fixed_t x, fixed_t y, INT32 flags, INT32 num, const UINT8 *colormap)
 {
-	INT32 w = SHORT(fontv[PINGNUM_FONT].font[0]->width);	// this SHOULD always be 5 but I guess custom graphics exist.
+	return V_DrawPingNumScaled(x, y, FRACUNIT, flags, num, colormap);
+}
+
+INT32 V_DrawPingNumScaled(fixed_t x, fixed_t y, fixed_t scale, INT32 flags, INT32 num, const UINT8 *colormap)
+{
+	INT32 w = SHORT(fontv[PINGNUM_FONT].font[0]->width);
 
 	if (flags & V_NOSCALESTART)
 		w *= vid.dup;
@@ -3592,8 +3621,8 @@ INT32 V_DrawPingNumAtFixed(fixed_t x, fixed_t y, INT32 flags, INT32 num, const U
 	// draw the number
 	do
 	{
-		x -= (w-1)*FRACUNIT;	// Oni wanted their outline to intersect.
-		V_DrawFixedPatch(x, y, FRACUNIT, flags, fontv[PINGNUM_FONT].font[num%10], colormap);
+		x -= (w-1)*scale;
+		V_DrawFixedPatch(x, y, scale, flags, fontv[PINGNUM_FONT].font[num%10], colormap);
 		num /= 10;
 	} while (num);
 
@@ -4284,12 +4313,12 @@ void V_Recalc(void)
 	// Set dup based on width or height, whichever is less
 	if (((vid.width*FRACUNIT) / BASEVIDWIDTH) < ((vid.height*FRACUNIT) / BASEVIDHEIGHT))
 	{
-		vid.dup = vid.width / BASEVIDWIDTH;
+		vid.dup = max(vid.width / BASEVIDWIDTH, 1);
 		vid.fdup = (vid.width*FRACUNIT) / BASEVIDWIDTH;
 	}
 	else
 	{
-		vid.dup = vid.height / BASEVIDHEIGHT;
+		vid.dup = max(vid.height / BASEVIDHEIGHT, 1);
 		vid.fdup = (vid.height*FRACUNIT) / BASEVIDHEIGHT;
 	}
 

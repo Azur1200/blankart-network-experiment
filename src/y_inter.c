@@ -384,7 +384,11 @@ void Y_IntermissionDrawer(void)
 
 	if (useinterpic)
 		V_DrawScaledPatch(0, 0, 0, interpic);
+#ifdef HWRENDER
+	else if (y_screenbuffer != NULL && !(rendermode == render_opengl && cv_glscreentextures.value != 2))
+#else
 	else if (y_screenbuffer != NULL)
+#endif
 	{
 		if (rendermode == render_soft)
 			VID_BlitLinearScreen(y_screenbuffer, vid.screens[0], vid.width, vid.height, vid.width, vid.rowbytes);
@@ -543,9 +547,12 @@ void Y_IntermissionDrawer(void)
 					UINT8 *colormap = R_GetTranslationColormap(*data.character[i], *data.color[i], GTC_CACHE);
 					patch_t *facerank;
 
-					facerank = faceprefix[*data.character[i]][FACE_RANK];
+					boolean hires = K_UseHighResPortraits() && !manyplayers16 && !displayitemrolls;
+					facerank = faceprefix[*data.character[i]][hires ? FACE_WANTED : FACE_RANK];
+					SINT8 hiresoffsetx = hires ? 8: 0;
+					SINT8 hiresoffsety = hires ? 2: 0;
 
-					fixed_t scale = FRACUNIT;
+					fixed_t scale = hires ? FRACUNIT / 2 : FRACUNIT;
 
 					if (manyplayers16)
 					{
@@ -556,8 +563,10 @@ void Y_IntermissionDrawer(void)
 					else
 					{
 						INT32 xoffs, yoffs;
+						INT16 leftoffset = hires ? facerank->leftoffset / 2 : facerank->leftoffset;
+						INT16 topoffset = hires ? facerank->topoffset / 2 :facerank->topoffset;
 
-						scale = (displayitemrolls) ? FRACUNIT/2 : FRACUNIT;
+						scale = (hires || displayitemrolls) ? FRACUNIT/2 : FRACUNIT;
 
 						xoffs = FixedMul(16, scale);
 						yoffs = FixedMul(4, scale);
@@ -565,8 +574,8 @@ void Y_IntermissionDrawer(void)
 						if (displayitemrolls)
 						{
 							V_DrawFixedPatch(
-								((x+11-xscroll_px)*FRACUNIT) + ((facerank->leftoffset) * scale),
-								((y+1)*FRACUNIT) + ((facerank->topoffset) * scale),
+								((x+11-xscroll_px)*FRACUNIT) + ((leftoffset) * scale),
+								((y+1)*FRACUNIT) + ((topoffset) * scale),
 								scale,
 								0,
 								facerank,
@@ -583,7 +592,7 @@ void Y_IntermissionDrawer(void)
 						}
 						else
 						{
-							V_DrawFixedPatch((x+xoffs)<<FRACBITS, ((y-yoffs)<<FRACBITS), scale, 0, facerank, colormap);
+							V_DrawFixedPatch((x+xoffs+hiresoffsetx)<<FRACBITS, ((y-yoffs- +hiresoffsety)<<FRACBITS), scale, 0, facerank, colormap);
 						}
 					}
 				}

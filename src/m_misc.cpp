@@ -2557,6 +2557,20 @@ UINT32 FNV1a_QuickCaseHash(const char *message, size_t size)
 	return hash;
 }
 
+UINT32 FNV1a_HashLowercaseString(const char *message)
+{
+	UINT32 hash = FNV1A_OFFSET_BASIS;
+
+	while (*message)
+	{
+		hash ^= tolower(*message);
+		hash *= FNV1A_PRIME;
+		message++;
+	}
+
+	return hash;
+}
+
 // Returns true if the string is empty.
 boolean M_IsStringEmpty(const char *s)
 {

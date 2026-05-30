@@ -115,6 +115,7 @@ BlanKart's namespace implements the following additional fields:
 		notbouncy = <bool>; // true = disable bouncing collision.
 		transfer = <bool>; // true = use FOF transfer properties effect.
 		tripwire = <bool>; // true = mark linedef as tripwire line.
+		blockintransfer = <bool>; // true = line is impassible only during wall transfer.
 	}
 
 	sidedef
@@ -322,3 +323,6 @@ BK 1.0 22.03.2026
 
 BK 1.0 21.04.2026
 - Added bumpy road effect.
+
+BK 1.0 09.05.2026
+- Added blockintransfer line flag.

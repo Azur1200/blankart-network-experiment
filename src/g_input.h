@@ -96,6 +96,10 @@ typedef enum
 	gc_director,
 	gc_horncode,
 	gc_freelook,
+	gc_flickstick_left, // ASTROS BULLSHIT OH YEAH
+	gc_flickstick_right, // ASTROS BULLSHIT OH YEAH
+	gc_flickstick_forward, // ASTROS BULLSHIT OH YEAH
+	gc_flickstick_back, // ASTROS BULLSHIT OH YEAH
 	num_gamecontrols
 } gamecontrols_e;
 
@@ -104,6 +108,8 @@ typedef enum
 	DEADZONE_X,
 	DEADZONE_Y,
 	DEADZONE_BUTTON,
+	DEADZONE_2D,
+	DEADZONE_NONE,
 } analogdeadzone_e;
 
 typedef enum
@@ -121,6 +127,14 @@ extern consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_controllerrumble[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_rumblestrength[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_controllerled[MAXSPLITSCREENPLAYERS];
+
+typedef enum
+{
+	TILTCONTROL_OFF = 0,
+	TILTCONTROL_STEER = 1,
+	TILTCONTROL_CAME = 2,
+	TILTCONTROL_ON = 3
+} tiltcontrol_e;
 extern consvar_t cv_tiltcontrol[MAXSPLITSCREENPLAYERS];
 
 // current state of the keys: JOYAXISRANGE or 0 when boolean.

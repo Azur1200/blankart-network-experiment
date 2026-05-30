@@ -63,6 +63,7 @@ typedef enum
 	KROULETTETYPE_NORMAL,
 	KROULETTETYPE_KARMA,
 	KROULETTETYPE_EGGMAN,
+	KROULETTETYPE_SHRINK
 } kartroulettetype_e;
 
 typedef enum
@@ -85,18 +86,21 @@ typedef enum
 	KIF_COLPATCH2PLAYER = 1<<4,  // colourize patch to player
 	KIF_HIDEFROMROULETTE = 1<<5, // don't show this item in the roulette (inversion of xItem's showInRoulette item flag)
 	KIF_HYUCANTSTEAL = 1<<7,     // Prevents the item from being stolen by a Hyudoro
+	KIF_SINGLEFROMRESERVE = 1<<8,// If multiple of this item is in the reserve item slot, transfer them one at a time as they are used instead of all at once
+	KIF_DESTROYONDROP = 1<<9,	 // Destroy the item entirely when it would be dropped
 } ATTRPACK kartitemflags_e;
 
 // result flags relevant to the roulette
 typedef enum
 {
-	KRF_INDIRECTITEM = 1<<0,    // This result's item affects others indirectly. All results with this flag share a single cooldown timer.
-	KRF_POWERITEM = 1<<1,       // This result is a "power item". This activates "frantic item" toggle related functionality.
-	KRF_COOLDOWNONSTART = 1<<2, // This result should not appear at the beginning of a race. (Usually really powerful crowd-breaking items)
-	KRF_NOTNEAREND = 1<<3,      // This result should not appear at the end of a race. (Usually trap items that lose their effectiveness)
-	KRF_NOTFORBOTTOM = 1<<4,    // After the first 30 seconds, this result stops appearing for losing players. (Usually items that feel less effective at these positions)
-	KRF_RUNNERAUGMENT = 1<<5,   // This result's odds are affected by the severity of 1st place's frontrun. (Very likely only for SPBs, but who knows?)
-	KRF_HIDEFROMSPB = 1<<6,     // This result refuses to appear when a Self-Propelled Bomb is active in a race or battle.
+	KRF_INDIRECTITEM = 1<<0,     // This result's item affects others indirectly. All results with this flag share a single cooldown timer.
+	KRF_POWERITEM = 1<<1,        // This result is a "power item". This activates "frantic item" toggle related functionality.
+	KRF_COOLDOWNONSTART = 1<<2,  // This result should not appear at the beginning of a race. (Usually really powerful crowd-breaking items)
+	KRF_NOTNEAREND = 1<<3,       // This result should not appear at the end of a race. (Usually trap items that lose their effectiveness)
+	KRF_NOTFORBOTTOM = 1<<4,     // After the first 30 seconds, this result stops appearing for losing players. (Usually items that feel less effective at these positions)
+	KRF_RUNNERAUGMENT = 1<<5,    // This result's odds are affected by the severity of 1st place's frontrun. (Very likely only for SPBs, but who knows?)
+	KRF_HIDEFROMSPB = 1<<6,      // This result refuses to appear when a Self-Propelled Bomb is active in a race or battle.
+	KRF_DONTCHANGERESULT = 1<<7, // This result prevents certain effects (Alt. Shrink item doubling) from occurring for it.
 } ATTRPACK kartresultflags_e;
 
 // Unique useodds function
@@ -156,6 +160,8 @@ struct kartroulette_t
 	boolean spbrush;
 	boolean bot;
 	boolean rival;
+	boolean shrink_freebie;
+	boolean is_shrunk; // Under the effects of Alt. Shrink, which changes odds significantly
 	boolean rival_frontrunner; // Is a Rival bot frontrunning?
 	boolean inBottom;
 
@@ -179,6 +185,46 @@ extern kartresult_t kartresults[MAXKARTRESULTS];
 extern UINT8 numkartresults;
 extern UINT8 oddstablemax[MAXODDSTABLES];
 
+typedef void (itemthinkfunc_f)(player_t *player);
+typedef void (itemusefunc_f)(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro);
+// item usage functions
+itemusefunc_f K_UseItem_Sneaker;
+itemusefunc_f K_UseItem_RocketSneaker;
+itemusefunc_f K_UseItem_Invincibility;
+itemusefunc_f K_UseItem_SMonitor;
+itemusefunc_f K_UseItem_Banana;
+itemusefunc_f K_UseItem_Eggman;
+itemusefunc_f K_UseItem_EggMine;
+itemusefunc_f K_UseItem_Orbinaut;
+itemusefunc_f K_UseItem_Jawz;
+itemusefunc_f K_UseItem_Mine;
+itemusefunc_f K_UseItem_LandMine;
+itemusefunc_f K_UseItem_Ballhog;
+itemusefunc_f K_UseItem_SPB;
+itemusefunc_f K_UseItem_Grow;
+itemusefunc_f K_UseItem_Shrink;
+itemusefunc_f K_UseItem_Mini;
+itemusefunc_f K_UseItem_ThunderShield;
+itemusefunc_f K_UseItem_AttractionShield;
+	itemusefunc_f K_HoldUseItem_AttractionShield;
+	itemusefunc_f K_ReleaseUseItem_AttractionShield;
+itemusefunc_f K_UseItem_BubbleShield;
+	itemusefunc_f K_ReleaseUseItem_BubbleShield;
+itemusefunc_f K_UseItem_FlameShield;
+	itemusefunc_f K_HoldUseItem_FlameShield;
+	itemusefunc_f K_ReleaseUseItem_FlameShield;
+itemusefunc_f K_UseItem_Hyudoro;
+itemusefunc_f K_UseItem_PogoSpring;
+itemusefunc_f K_UseItem_SuperRing;
+itemusefunc_f K_UseItem_KitchenSink;
+itemusefunc_f K_UseItem_EggBrick;
+itemusefunc_f K_UseItem_Sad;
+// item thinker functions
+itemthinkfunc_f K_ItemThink_ThunderShield;
+itemthinkfunc_f K_ItemThink_AttractionShield;
+itemthinkfunc_f K_ItemThink_BubbleShield;
+itemthinkfunc_f K_ItemThink_BonusRoll;
+
 void K_RegisterItem(kartitemtype_e itemtype);
 kartresult_t *K_RegisterResult(const char *name, boolean alternate);
 kartresult_t *K_GetKartResultAlt(const char *name, boolean alternate);
@@ -192,10 +238,21 @@ UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny);
 patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, boolean tiny, UINT8 amount, SINT8 altmode);
 #define K_GetCachedItemPatch(type, tiny, amount) K_GetCachedItemPatchEx(type, tiny, amount, -1)
 
-void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags);
-void K_UnsetItemOut(player_t *player);
+boolean K_DontDoubleMyItems(kartresult_t *res);
 
-void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, kartitemblink_e blink);
+void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags);
+void K_UnsetItemOutEx(player_t *player, itemflags_t flags);
+#define K_UnsetItemOut(player) K_UnsetItemOutEx(player, IF_ITEMOUT|IF_EGGMANOUT)
+
+mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, INT32 moloop, mobj_t *prev);
+void K_RemoveEquippedItem(mobj_t *equipmo);
+
+void K_DecrementAndCheckCurrentItem(player_t *player);
+
+void K_AddPlayerReserveItem(player_t *player, kartitemtype_e type, UINT8 amount);
+void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, boolean nodoubles, kartitemblink_e blink);
+void K_AwardPlayerItemOrReserve(player_t *player, kartitemtype_e type, UINT8 amount, boolean nodoubles, kartitemblink_e blink);
+void K_TransferPlayerReserveItem(player_t *player);
 void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCount);
 void K_UpdateItemCooldown(void);
 tic_t K_GetIndirectItemCooldown(void);
@@ -213,10 +270,13 @@ UINT8* K_GetRollableItems(void);
 void K_KartItemRoulette(player_t *player, ticcmd_t *cmd);
 void K_StartRoulette(player_t *player, kartroulettetype_e roulettetype);
 
+void K_AwardPlayerResult(player_t *player, kartresult_t *result, kartitemblink_e blink);
+
 void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force);
 
 useoddsfunc_f KO_SMonitorOdds;
 useoddsfunc_f KO_SPBRaceOdds;
+useoddsfunc_f KO_GrowRaceOdds;
 
 void K_DoThunderShield(player_t *player);
 void K_DoAttractionShield(player_t *player, boolean hipower);
@@ -246,6 +306,8 @@ extern consvar_t cv_kartthunder_radius;
 #define ATTRACTIONATTACKTIME_FULL (TICRATE)
 #define ATTRACTIONATTACKTIME_MAX (3*TICRATE/4)
 #define ATTRACTIONATTACKTIME_MIN (TICRATE/2)
+
+void K_DoGrowShrink(player_t *player, boolean shrinking);
 
 #ifdef __cplusplus
 } // extern "C"

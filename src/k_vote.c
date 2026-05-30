@@ -37,6 +37,7 @@
 #include "console.h" // cons_menuhighlight
 #include "k_itemlist.hpp"
 #include "k_vote.h"
+#include "k_hud.h"
 
 static INT32 votetimer;
 
@@ -90,7 +91,7 @@ static void Y_UnloadVoteData(void);
 //
 // Y_VoteScreenCheck
 //
-static void Y_VoteScreenCheck(void)
+void Y_VoteScreenCheck(void)
 {
 	strcpy(VoteScreen.Prefix, "INTS");
 
@@ -601,9 +602,11 @@ void Y_VoteDrawer(void)
 			if (players[i].skincolor)
 			{
 				UINT8 *colormap = R_GetTranslationColormap(players[i].skin, players[i].skincolor, GTC_CACHE);
-				patch_t *facerank = faceprefix[players[i].skin][FACE_RANK];
+				boolean hires = K_UseHighResPortraits();
+				patch_t *facerank = faceprefix[players[i].skin][hires ? FACE_WANTED : FACE_RANK];
+				fixed_t hiresscale = hires ? FRACUNIT/2 : FRACUNIT;
 
-				V_DrawMappedPatch(x+24+facerank->leftoffset, y+(highplayers ? smallfaceheight : bigfaceheight)+facerank->topoffset, V_SNAPTOLEFT, facerank, colormap);
+				V_DrawFixedPatch((x+24+facerank->leftoffset)<<FRACBITS, (y+(highplayers ? smallfaceheight : bigfaceheight)+facerank->topoffset)<<FRACBITS, hiresscale, V_SNAPTOLEFT, facerank, colormap);
 			}
 
 			if (!splitscreen && i == consoleplayer)

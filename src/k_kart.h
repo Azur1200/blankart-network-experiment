@@ -91,6 +91,7 @@ extern vector3_t clusterpoint, clusterdtf;
 
 // S-Monitor distance value
 #define SMONITORDIST CV_Get(&cv_kartsmonitordist)
+#define SMONITORCONGADIST CV_Get(&cv_kartsmonitor_congadist)
 #define SMONITORDECAYDIST CV_Get(&cv_kartsmonitor_decaydist)
 #define SMONITORDECAYTIME CV_Get(&cv_kartsmonitor_decaytime)
 
@@ -139,6 +140,7 @@ extern vector3_t clusterpoint, clusterdtf;
 #define FLAMEHANDLEBOOST CV_Get(&cv_kartstacking_flame_handleboost)
 #define FLAMESTACKABLE CV_Get(&cv_kartstacking_flame_stackable)
 
+#define ATTRACTIONAOEEMP CV_Get(&cv_kartattraction_aoeemp)
 #define ATTRACTIONAOEDAMAGE CV_Get(&cv_kartattraction_aoedmg)
 #define ATTRACTIONSPEEDHIMIN CV_Get(&cv_kartstacking_attraction_speedboost_himin)
 #define ATTRACTIONSPEEDHIMAX CV_Get(&cv_kartstacking_attraction_speedboost_himax)
@@ -381,13 +383,16 @@ boolean K_SlipdashActive(void);
 boolean K_SlopeBoostActive(void);
 boolean K_DraftingActive(void);
 SINT8 K_AirDropActive(void);
-boolean K_AirThrustActive(void);
+SINT8 K_AirThrustActive(void);
 boolean K_RecoveryDashActive(void);
 boolean K_WaterskipBricksActive(void);
+boolean K_KeepStuffActive(void);
 boolean K_ItemLitterActive(void);
 boolean K_ItemListActive(void);
 boolean K_ItemPushingActive(void);
+boolean K_TrailSlowActive(void);
 INT32 K_GetBumpSpark(void);
+playerbumptype_t K_GetPlayerBump(void);
 boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);
 INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement, boolean chainsound);
 boolean K_UsingLegacyCheckpoints(void);
@@ -426,6 +431,16 @@ typedef enum
 	AIRDROP_FUSION,
 } airdroptype_t;
 
+typedef enum
+{
+	AIRTHRUST_NONE = 0,
+	AIRTHRUST_BURST,
+	AIRTHRUST_FLASH,
+} airthrusttype_t;
+
+#define AIRTHRUST_SPAMFACTOR 6 // higher makes it harder to spam
+#define AIRTHRUST_FLASHEFXTIME (TICRATE/3) // base timer for vfx
+
 void K_KillAirDrop(player_t *player, p_airdropflags_t airdropflags);
 
 boolean K_NullDriftTiltEnabled(void);
@@ -443,6 +458,8 @@ void K_AddTiltImpulse(player_t *player, fixed_t distance, fixed_t force);
 void K_KartAttractHomingAttack(player_t *player);
 
 void K_KartPlayerBumpyRoad(player_t *player);
+
+fixed_t K_HandleAirDrag(player_t *player, boolean onground, fixed_t speed, fixed_t airdrag);
 
 void K_ShovePlayer(mobj_t *victim, mobj_t *source, fixed_t force);
 

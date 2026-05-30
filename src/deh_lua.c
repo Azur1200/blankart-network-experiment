@@ -603,7 +603,7 @@ static inline int lib_getenum(lua_State *L)
 			}
 		return 0;
 	}
-	else if ((!mathlib && LUA_PushGlobals(L, word)) || ScanConstants(L, mathlib, word))
+	else if ((!mathlib && LUA_PushGlobals(L)) || ScanConstants(L, mathlib, word))
 		return 1;
 
 	if (mathlib) return luaL_error(L, "constant '%s' could not be parsed.\n", word);
@@ -637,6 +637,8 @@ int LUA_EnumLib(lua_State *L)
 {
 	if (lua_gettop(L) == 0)
 		lua_pushboolean(L, 0);
+
+	global_fields_ref = Lua_CreateFieldTable(L, global_opt);
 
 	// Set the global metatable
 	lua_createtable(L, 0, 1);

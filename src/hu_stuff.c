@@ -82,6 +82,8 @@ patch_t *pinglocal[2]; // mindelay indecator
 patch_t *framecounter;
 patch_t *frameslash;	// framerate stuff. Used in screen.c
 
+patch_t *srb2back = NULL;
+
 static player_t *plr;
 boolean hu_keystrokes; // :)
 boolean chat_on; // entering a chat message?
@@ -166,6 +168,8 @@ void HU_LoadGraphics(void)
 	// fps stuff
 	HU_UpdatePatch(&framecounter, "FRAMER");
 	HU_UpdatePatch(&frameslash, "FRAMESL");
+
+	HU_UpdatePatch(&srb2back, "SRB2BACK");
 }
 
 // Initialise Heads up
@@ -805,9 +809,10 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 //
 void HU_TickSongCredits(void)
 {
-	if (cursongcredit.def == NULL) // No def
+	if (cursongcredit.text == NULL) // No def
 	{
-		S_ClearMusicCredit();
+		if (g_realsongcredit == NULL)
+			S_StopMusicCredit();
 		return;
 	}
 
@@ -1954,8 +1959,17 @@ void HU_DrawSongCredits(void)
 	INT32 snapflags = cursongcredit.snapflags;
 	INT32 bgt;
 
-	if (!cursongcredit.def || cursongcredit.trans >= NUMTRANSMAPS) // No def
+	if (!cursongcredit.text || cursongcredit.trans >= NUMTRANSMAPS) // No def
 	{
+		return;
+	}
+
+	if (menustack[0] && (menustack[0] == MN_MPAUSE ||
+		menustack[0] == MN_MAPAUSE ||
+		menustack[0] == MN_SPAUSE)
+	)
+	{
+		// We already display this here. No need to do it twice!
 		return;
 	}
 

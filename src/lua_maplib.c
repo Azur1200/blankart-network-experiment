@@ -548,6 +548,9 @@ static int sector_iterate(lua_State *L)
 // Modified this and _num to use triple pointers, to allow for a new hack of mine involving offsetof
 // this way we don't need to check frontsector or backsector of line #0 in the array
 //
+
+int validmap_fields_ref = LUA_NOREF;
+
 static int sectorlines_get(lua_State *L)
 {
 	line_t ***seclines = *((line_t ****)luaL_checkudata(L, 1, META_SECTORLINES));
@@ -556,7 +559,7 @@ static int sectorlines_get(lua_State *L)
 	lua_settop(L, 2);
 	if (!lua_isnumber(L, 2))
 	{
-		int field = luaL_checkoption(L, 2, NULL, valid_opt);
+		int field = Lua_optoption(L, 2, -1, validmap_fields_ref);
 		if (!seclines || !(*seclines))
 		{
 			if (field == 0) {
@@ -656,10 +659,12 @@ static int sectorstringargs_len(lua_State *L)
 	return 1;
 }
 
+int sector_fields_ref = LUA_NOREF;
+
 static int sector_get(lua_State *L)
 {
 	sector_t *sector = *((sector_t **)luaL_checkudata(L, 1, META_SECTOR));
-	enum sector_e field = luaL_checkoption(L, 2, sector_opt[0], sector_opt);
+	enum sector_e field = Lua_optoption(L, 2, sector_valid, sector_fields_ref);
 	INT16 i;
 
 	if (!sector)
@@ -802,7 +807,7 @@ static int sector_get(lua_State *L)
 static int sector_set(lua_State *L)
 {
 	sector_t *sector = *((sector_t **)luaL_checkudata(L, 1, META_SECTOR));
-	enum sector_e field = luaL_checkoption(L, 2, sector_opt[0], sector_opt);
+	enum sector_e field = Lua_optoption(L, 2, sector_valid, sector_fields_ref);
 
 	if (!sector)
 		return luaL_error(L, "accessed sector_t doesn't exist anymore.");
@@ -929,10 +934,12 @@ static int sector_num(lua_State *L)
 // subsector_t //
 /////////////////
 
+int subsector_fields_ref = LUA_NOREF;
+
 static int subsector_get(lua_State *L)
 {
 	subsector_t *subsector = *((subsector_t **)luaL_checkudata(L, 1, META_SUBSECTOR));
-	enum subsector_e field = luaL_checkoption(L, 2, subsector_opt[0], subsector_opt);
+	enum subsector_e field = Lua_optoption(L, 2, subsector_valid, subsector_fields_ref);
 
 	if (!subsector)
 	{
@@ -1013,10 +1020,12 @@ static int linestringargs_len(lua_State *L)
 	return 1;
 }
 
+int line_fields_ref = LUA_NOREF;
+
 static int line_get(lua_State *L)
 {
 	line_t *line = *((line_t **)luaL_checkudata(L, 1, META_LINE));
-	enum line_e field = luaL_checkoption(L, 2, line_opt[0], line_opt);
+	enum line_e field = Lua_optoption(L, 2, line_valid, line_fields_ref);
 
 	if (!line)
 	{
@@ -1150,7 +1159,7 @@ static int sidenum_get(lua_State *L)
 	lua_settop(L, 2);
 	if (!lua_isnumber(L, 2))
 	{
-		int field = luaL_checkoption(L, 2, NULL, valid_opt);
+		int field = Lua_optoption(L, 2, -1, validmap_fields_ref);
 		if (!sidenum)
 		{
 			if (field == 0) {
@@ -1175,10 +1184,12 @@ static int sidenum_get(lua_State *L)
 // side_t //
 ////////////
 
+int side_fields_ref = LUA_NOREF;
+
 static int side_get(lua_State *L)
 {
 	side_t *side = *((side_t **)luaL_checkudata(L, 1, META_SIDE));
-	enum side_e field = luaL_checkoption(L, 2, side_opt[0], side_opt);
+	enum side_e field = Lua_optoption(L, 2, side_valid, side_fields_ref);
 
 	if (!side)
 	{
@@ -1249,7 +1260,7 @@ static int side_get(lua_State *L)
 static int side_set(lua_State *L)
 {
 	side_t *side = *((side_t **)luaL_checkudata(L, 1, META_SIDE));
-	enum side_e field = luaL_checkoption(L, 2, side_opt[0], side_opt);
+	enum side_e field = Lua_optoption(L, 2, side_valid, side_fields_ref);
 
 	if (!side)
 	{
@@ -1321,10 +1332,12 @@ static int side_num(lua_State *L)
 // vertex_t //
 //////////////
 
+int vertex_fields_ref = LUA_NOREF;
+
 static int vertex_get(lua_State *L)
 {
 	vertex_t *vertex = *((vertex_t **)luaL_checkudata(L, 1, META_VERTEX));
-	enum vertex_e field = luaL_checkoption(L, 2, vertex_opt[0], vertex_opt);
+	enum vertex_e field = Lua_optoption(L, 2, vertex_valid, vertex_fields_ref);
 
 	if (!vertex)
 	{
@@ -1369,16 +1382,20 @@ static int vertex_num(lua_State *L)
 	return 1;
 }
 
+int bbox_fields_ref = LUA_NOREF;
+
 #ifdef HAVE_LUA_SEGS
 
 ///////////
 // seg_t //
 ///////////
 
+int seg_fields_ref = LUA_NOREF;
+
 static int seg_get(lua_State *L)
 {
 	seg_t *seg = *((seg_t **)luaL_checkudata(L, 1, META_SEG));
-	enum seg_e field = luaL_checkoption(L, 2, seg_opt[0], seg_opt);
+	enum seg_e field = Lua_optoption(L, 2, seg_valid, seg_fields_ref);
 
 	if (!seg)
 	{
@@ -1439,10 +1456,12 @@ static int seg_num(lua_State *L)
 // node_t //
 ////////////
 
+int node_fields_ref = LUA_NOREF;
+
 static int node_get(lua_State *L)
 {
 	node_t *node = *((node_t **)luaL_checkudata(L, 1, META_NODE));
-	enum node_e field = luaL_checkoption(L, 2, node_opt[0], node_opt);
+	enum node_e field = Lua_optoption(L, 2, node_valid, node_fields_ref);
 
 	if (!node)
 	{
@@ -1503,7 +1522,7 @@ static int nodebbox_get(lua_State *L)
 	lua_settop(L, 2);
 	if (!lua_isnumber(L, 2))
 	{
-		int field = luaL_checkoption(L, 2, NULL, valid_opt);
+		int field = Lua_optoption(L, 2, -1, validmap_fields_ref);
 		if (!bbox)
 		{
 			if (field == 0) {
@@ -1524,6 +1543,9 @@ static int nodebbox_get(lua_State *L)
 	return 1;
 }
 */
+
+int nodechild_fields_ref = LUA_NOREF;
+
 static int nodebbox_call(lua_State *L)
 {
 	fixed_t *bbox = *((fixed_t **)luaL_checkudata(L, 1, META_NODEBBOX));
@@ -1536,7 +1558,7 @@ static int nodebbox_call(lua_State *L)
 		return luaL_error(L, "arguments 2 and/or 3 not given (expected node.bbox(child, coord))");
 	// get child
 	if (!lua_isnumber(L, 2)) {
-		enum nodechild_e field = luaL_checkoption(L, 2, nodechild_opt[0], nodechild_opt);
+		enum nodechild_e field = Lua_optoption(L, 2, nodechild_valid, nodechild_fields_ref);
 		switch (field) {
 			case nodechild_right: i = 0; break;
 			case nodechild_left:  i = 1; break;
@@ -1551,7 +1573,7 @@ static int nodebbox_call(lua_State *L)
 	}
 	// get bbox coord
 	if (!lua_isnumber(L, 3)) {
-		enum bbox_e field = luaL_checkoption(L, 3, bbox_opt[0], bbox_opt);
+		enum bbox_e field = Lua_optoption(L, 3, bbox_valid, bbox_fields_ref);
 		switch (field) {
 			case bbox_top:    j = BOXTOP;    break;
 			case bbox_bottom: j = BOXBOTTOM; break;
@@ -1582,7 +1604,7 @@ static int nodechildren_get(lua_State *L)
 	lua_settop(L, 2);
 	if (!lua_isnumber(L, 2))
 	{
-		enum nodechild_e field = luaL_checkoption(L, 2, nodechild_opt[0], nodechild_opt);
+		enum nodechild_e field = Lua_optoption(L, 2, nodechild_valid, nodechild_fields_ref);
 		if (!children)
 		{
 			if (field == nodechild_valid) {
@@ -1622,7 +1644,7 @@ static int bbox_get(lua_State *L)
 	lua_settop(L, 2);
 	if (!lua_isnumber(L, 2))
 	{
-		enum bbox_e field = luaL_checkoption(L, 2, bbox_opt[0], bbox_opt);
+		enum bbox_e field = Lua_optoption(L, 2, bbox_valid, bbox_fields_ref);
 		if (!bbox)
 		{
 			if (field == bbox_valid) {
@@ -1714,6 +1736,8 @@ static int lib_iterateSubsectors(lua_State *L)
 	return 0;
 }
 
+int array_fields_ref = LUA_NOREF;
+
 static int lib_getSubsector(lua_State *L)
 {
 	int field;
@@ -1728,7 +1752,7 @@ static int lib_getSubsector(lua_State *L)
 		LUA_PushUserdata(L, &subsectors[i], META_SUBSECTOR);
 		return 1;
 	}
-	field = luaL_checkoption(L, 1, NULL, array_opt);
+	field = Lua_optoption(L, 1, -1, array_fields_ref);
 	switch(field)
 	{
 	case 0: // iterate
@@ -1822,7 +1846,7 @@ static int lib_getSide(lua_State *L)
 		LUA_PushUserdata(L, &sides[i], META_SIDE);
 		return 1;
 	}
-	field = luaL_checkoption(L, 1, NULL, array_opt);
+	field = Lua_optoption(L, 1, -1, array_fields_ref);
 	switch(field)
 	{
 	case 0: // iterate
@@ -1874,7 +1898,7 @@ static int lib_getVertex(lua_State *L)
 		LUA_PushUserdata(L, &vertexes[i], META_VERTEX);
 		return 1;
 	}
-	field = luaL_checkoption(L, 1, NULL, array_opt);
+	field = Lua_optoption(L, 1, -1, array_fields_ref);
 	switch(field)
 	{
 	case 0: // iterate
@@ -1928,7 +1952,7 @@ static int lib_getSeg(lua_State *L)
 		LUA_PushUserdata(L, &segs[i], META_SEG);
 		return 1;
 	}
-	field = luaL_checkoption(L, 1, NULL, array_opt);
+	field = Lua_optoption(L, 1, -1, array_fields_ref);
 	switch(field)
 	{
 	case 0: // iterate
@@ -1980,7 +2004,7 @@ static int lib_getNode(lua_State *L)
 		LUA_PushUserdata(L, &nodes[i], META_NODE);
 		return 1;
 	}
-	field = luaL_checkoption(L, 1, NULL, array_opt);
+	field = Lua_optoption(L, 1, -1, array_fields_ref);
 	switch(field)
 	{
 	case 0: // iterate
@@ -2075,10 +2099,12 @@ static INT32 P_GetOldFOFFlags(ffloor_t *fflr)
 	return result;
 }
 
+int ffloor_fields_ref = LUA_NOREF;
+
 static int ffloor_get(lua_State *L)
 {
 	ffloor_t *ffloor = *((ffloor_t **)luaL_checkudata(L, 1, META_FFLOOR));
-	enum ffloor_e field = luaL_checkoption(L, 2, ffloor_opt[0], ffloor_opt);
+	enum ffloor_e field = Lua_optoption(L, 2, ffloor_valid, ffloor_fields_ref);
 	INT16 i;
 
 	if (!ffloor)
@@ -2260,7 +2286,7 @@ static void P_SetOldFOFFlags(ffloor_t *fflr, oldffloortype_e oldflags)
 static int ffloor_set(lua_State *L)
 {
 	ffloor_t *ffloor = *((ffloor_t **)luaL_checkudata(L, 1, META_FFLOOR));
-	enum ffloor_e field = luaL_checkoption(L, 2, ffloor_opt[0], ffloor_opt);
+	enum ffloor_e field = Lua_optoption(L, 2, ffloor_valid, ffloor_fields_ref);
 
 	if (!ffloor)
 		return luaL_error(L, "accessed ffloor_t doesn't exist anymore.");
@@ -2355,10 +2381,12 @@ static int ffloor_set(lua_State *L)
 // pslope_t //
 //////////////
 
+int slope_fields_ref = LUA_NOREF;
+
 static int slope_get(lua_State *L)
 {
 	pslope_t *slope = *((pslope_t **)luaL_checkudata(L, 1, META_SLOPE));
-	enum slope_e field = luaL_checkoption(L, 2, slope_opt[0], slope_opt);
+	enum slope_e field = Lua_optoption(L, 2, slope_valid, slope_fields_ref);
 
 	if (!slope)
 	{
@@ -2417,7 +2445,7 @@ static int slope_get(lua_State *L)
 static int slope_set(lua_State *L)
 {
 	pslope_t *slope = *((pslope_t **)luaL_checkudata(L, 1, META_SLOPE));
-	enum slope_e field = luaL_checkoption(L, 2, slope_opt[0], slope_opt);
+	enum slope_e field = Lua_optoption(L, 2, slope_valid, slope_fields_ref);
 
 	if (!slope)
 		return luaL_error(L, "accessed pslope_t doesn't exist anymore.");
@@ -2523,7 +2551,7 @@ static int lib_getMapheaderinfo(lua_State *L)
 		//CONS_Printf(mapheaderinfo[i]->lvlttl);
 		return 1;
 	}/*
-	field = luaL_checkoption(L, 1, NULL, array_opt);
+	field = Lua_optoption(L, 1, -1, array_fields_ref);
 	switch(field)
 	{
 	case 0: // iterate
@@ -2580,12 +2608,29 @@ static int mapheaderinfo_get(lua_State *L)
 			lua_rawseti(L, -2, 1 + j);
 		}
 	}
+	else if (fastcmp(field,"encoremusname")) // we create a table here because it saves us from a userdata nightmare
+	{
+		if (lua_compatmode)
+		{
+			lua_pushstring(L, header->encoremusname[0]);
+			return 1;
+		}
+		UINT8 j;
+		lua_createtable(L, header->encoremusname_size, 0);
+		for (j = 0; j < header->encoremusname_size; j++)
+		{
+			lua_pushstring(L, header->encoremusname[j]);
+			lua_rawseti(L, -2, 1 + j);
+		}
+	}
 	else if (fastcmp(field,"mustrack"))
 		lua_pushinteger(L, header->mustrack);
 	else if (fastcmp(field,"muspos"))
 		lua_pushinteger(L, header->muspos);
 	else if (fastcmp(field,"musname_size"))
 		lua_pushinteger(L, header->musname_size);
+	else if (fastcmp(field,"encoremusname_size"))
+		lua_pushinteger(L, header->encoremusname_size);
 	else if (fastcmp(field,"weather"))
 		lua_pushinteger(L, header->weather);
 	else if (fastcmp(field,"skytexture"))
@@ -2646,10 +2691,12 @@ static int mapheaderinfo_get(lua_State *L)
 // activator_t //
 /////////////////
 
+int activator_fields_ref = LUA_NOREF;
+
 static int activator_get(lua_State *L)
 {
 	activator_t *activator = *((activator_t **)luaL_checkudata(L, 1, META_ACTIVATOR));
-	enum activator_e field = luaL_checkoption(L, 2, activator_opt[0], activator_opt);
+	enum activator_e field = Lua_optoption(L, 2, activator_valid, activator_fields_ref);
 
 	if (activator == NULL)
 	{
@@ -2699,10 +2746,12 @@ static int activator_get(lua_State *L)
 // botcontroller_t //
 /////////////////////
 
+int botcontroller_fields_ref = LUA_NOREF;
+
 static int botcontroller_get(lua_State *L)
 {
 	botcontroller_t *botcontroller = *((botcontroller_t **)luaL_checkudata(L, 1, META_BOTCONTROLLER));
-	enum botcontroller_e field = luaL_checkoption(L, 2, botcontroller_opt[0], botcontroller_opt);
+	enum botcontroller_e field = Lua_optoption(L, 2, botcontroller_valid, botcontroller_fields_ref);
 
 	if (!botcontroller)
 	{
@@ -2740,6 +2789,26 @@ static int botcontroller_get(lua_State *L)
 
 int LUA_MapLib(lua_State *L)
 {
+	validmap_fields_ref = Lua_CreateFieldTable(L, valid_opt);
+	sector_fields_ref = Lua_CreateFieldTable(L, sector_opt);
+	subsector_fields_ref = Lua_CreateFieldTable(L, subsector_opt);
+	line_fields_ref = Lua_CreateFieldTable(L, line_opt);
+	side_fields_ref = Lua_CreateFieldTable(L, side_opt);
+	vertex_fields_ref = Lua_CreateFieldTable(L, vertex_opt);
+	bbox_fields_ref = Lua_CreateFieldTable(L, bbox_opt);
+
+#ifdef HAVE_LUA_SEGS
+	seg_fields_ref = Lua_CreateFieldTable(L, seg_opt);
+	node_fields_ref = Lua_CreateFieldTable(L, node_opt);
+	nodechild_fields_ref = Lua_CreateFieldTable(L, nodechild_opt);
+#endif
+
+	array_fields_ref = Lua_CreateFieldTable(L, array_opt);
+	ffloor_fields_ref = Lua_CreateFieldTable(L, ffloor_opt);
+	slope_fields_ref = Lua_CreateFieldTable(L, slope_opt);
+	activator_fields_ref = Lua_CreateFieldTable(L, activator_opt);
+	botcontroller_fields_ref = Lua_CreateFieldTable(L, botcontroller_opt);
+
 	luaL_newmetatable(L, META_SECTORLINES);
 		lua_pushcfunction(L, sectorlines_get);
 		lua_setfield(L, -2, "__index");

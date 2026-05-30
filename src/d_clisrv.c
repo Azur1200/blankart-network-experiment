@@ -106,7 +106,7 @@ boolean nodownload = false;
 boolean serverrunning = false;
 boolean connectedtodedicated = false;
 INT32 serverplayer = 0;
-char motd[254], server_context[8]; // Message of the Day, Unique Context (even without Mumble support)
+char server_context[8]; // Unique Context (even without Mumble support)
 
 UINT8 playerconsole[MAXPLAYERS];
 plrinfo playerinfo[MAXPLAYERINFO];
@@ -183,6 +183,7 @@ SINT8 joinnode = 0; // used for CL_VIEWSERVER
 char connectedservername[MAXSERVERNAME];
 char connectedservercontact[MAXSERVERCONTACT];
 char connectedserverdescription[MAXSERVERDESCRIPTION];
+char connectedservermotd[MAXSERVERMOTD];
 
 /// \brief do we accept new players?
 /// \todo WORK!
@@ -1630,7 +1631,12 @@ static void CL_ReloadReceivedSavegame(void)
 static void SendAskInfo(INT32 node)
 {
 	tic_t asktime;
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	doomdata_t *netbuffer;
+
+	if (node == -1)
+		return;
+
+	netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (node != 0 && node != BROADCASTADDR &&
 			cv_rendezvousserver.string[0])
@@ -2840,9 +2846,21 @@ static void Command_connect(void)
 		}
 		else
 			CONS_Alert(CONS_ERROR, M_GetText("There is no network driver\n"));
+
+		// invalid address
+		if (servernode == -1)
+		{
+			D_QuitNetGame(); // this will also call D_CloseConnection for us
+			CL_Reset();
+			servernode = 0; // not sure if this is cool, but if this is -1 then bad things happen in alot of networking code
+			D_StartTitle();
+			M_StartMessage(M_GetText("Failed to connect to server\nMake sure you put in a valid Address!\n"), NULL, MM_NOTHING);
+			return;
+		}
 	}
 
-	CV_Set(&cv_lastserver, I_GetNodeAddress(servernode));
+	if (I_GetNodeAddress)
+		CV_Set(&cv_lastserver, I_GetNodeAddress(servernode));
 
 	if (splitscreen != cv_splitplayers.value-1)
 	{
@@ -3959,6 +3977,7 @@ void SV_ResetServer(void)
 	// clear server_context
 	memset(server_context, '-', 8);
 
+	memset(connectedservermotd, 0, MAXSERVERNAME);
 	memset(connectedservername, 0, MAXSERVERNAME);
 	memset(connectedservercontact, 0, MAXSERVERCONTACT);
 	memset(connectedserverdescription, 0, MAXSERVERDESCRIPTION);
@@ -4166,8 +4185,8 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 		HU_AddChatText(joinmsg, false);
 	}
 
-	if (server && multiplayer && motd[0] != '\0')
-		COM_BufAddText(va("sayto %d %s\n", newplayernum, motd));
+	if (server && multiplayer && connectedservermotd[0] != '\0')
+		COM_BufAddText(va("sayto %d %s\n", newplayernum, connectedservermotd));
 
 	LUA_HookInt(newplayernum, HOOK(PlayerJoin));
 
@@ -4432,8 +4451,8 @@ void CL_RemoveSplitscreenPlayer(UINT8 p)
 
 static void GotOurIP(UINT32 address)
 {
-	const unsigned char * p = (const unsigned char *)&address;
 #ifdef DEVELOP
+	const unsigned char * p = (const unsigned char *)&address;
 	CONS_Printf("Got IP of %u.%u.%u.%u\n", p[0], p[1], p[2], p[3]);
 #endif
 	ourIP = address;
@@ -4834,6 +4853,7 @@ void ServerInfoUpdateSend(void)
 		// Do Shit
 		if (nodeingame[n])
 		{
+			strncpy(netbuffer->u.serverinfoupdate.servermotd, connectedservermotd, MAXSERVERMOTD);
 			CopyCaretColors(netbuffer->u.serverinfoupdate.servername, cv_servername.string, MAXSERVERNAME);
 			CopyCaretColors(netbuffer->u.serverinfoupdate.servercontact, cv_server_contact.string, MAXSERVERCONTACT);
 			strncpy(netbuffer->u.serverinfoupdate.serverdescription, connectedserverdescription, MAXSERVERDESCRIPTION);
@@ -4854,6 +4874,7 @@ static void PT_ServerInfoUpdate(SINT8 node)
 	if ((size_t)doomcom->datalength < sizeof(netbuffer->u.serverinfoupdate))/* ignore partial sends */
 		return;
 
+	strncpy(connectedservermotd, netbuffer->u.serverinfoupdate.servermotd, MAXSERVERMOTD);
 	CopyCaretColors(connectedservername, netbuffer->u.serverinfoupdate.servername, MAXSERVERNAME);
 	CopyCaretColors(connectedservercontact, netbuffer->u.serverinfoupdate.servercontact, MAXSERVERCONTACT);
 	strncpy(connectedserverdescription, netbuffer->u.serverinfoupdate.serverdescription, MAXSERVERDESCRIPTION);
@@ -5190,7 +5211,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 	realstart = ExpandTics(netbuffer->u.clientpak.client_tic, nettics[node]);
 	realend = ExpandTics(netbuffer->u.clientpak.resendfrom, nettics[node]);
 
-	if (netbuffer->packettype == PT_CLIENTMIS || netbuffer->packettype == PT_CLIENT2MIS
+	if (   netbuffer->packettype == PT_CLIENTMIS  || netbuffer->packettype == PT_CLIENT2MIS
 		|| netbuffer->packettype == PT_CLIENT3MIS || netbuffer->packettype == PT_CLIENT4MIS
 		|| netbuffer->packettype == PT_NODEKEEPALIVEMIS
 		|| supposedtics[node] < realend)
@@ -5229,10 +5250,10 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 		return;
 
 	// Splitscreen cmd
-	if (((netbuffer->packettype == PT_CLIENT2CMD || netbuffer->packettype == PT_CLIENT2MIS)
+	if ((nodetoplayer2[node] >= 0) &&
+		  ((netbuffer->packettype == PT_CLIENT2CMD || netbuffer->packettype == PT_CLIENT2MIS)
 		|| (netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
-		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
-		&& (nodetoplayer2[node] >= 0))
+		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)))
 	{
 		G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer2[node]], &netbuffer->u.client2pak.cmd2, 1);
 
@@ -5240,9 +5261,9 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 			return;
 	}
 
-	if (((netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
-		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
-		&& (nodetoplayer3[node] >= 0))
+	if ((nodetoplayer3[node] >= 0) &&
+		  ((netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
+		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)))
 	{
 		G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer3[node]], &netbuffer->u.client3pak.cmd3, 1);
 
@@ -5250,8 +5271,8 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 			return;
 	}
 
-	if ((netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)
-		&& (nodetoplayer4[node] >= 0))
+	if ((nodetoplayer4[node] >= 0) &&
+		(netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
 	{
 		G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer4[node]], &netbuffer->u.client4pak.cmd4, 1);
 
@@ -7198,6 +7219,7 @@ static void UpdatePingTable(void)
 }
 
 // It's that time again! Send everyone a safe message to sign, so we can show off their signature and prove we're playing fair.
+#if 0
 static void SendChallenges(void)
 {
 	int i;
@@ -7358,6 +7380,7 @@ static void UpdateChallenges(void)
 			HandleSigfail("Didn't receive client signatures.");
 	}
 }
+#endif
 
 static void RenewHolePunch(void)
 {

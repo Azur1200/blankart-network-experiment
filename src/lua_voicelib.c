@@ -53,10 +53,12 @@ static const char *const voicevars_opt[] = {
 #define RNOFIELD luaL_error(L, LUA_QL("kartvoice_t") " has no field named " LUA_QS, field)
 #define RNOGET luaL_error(L, LUA_QL("kartvoice_t") " field " LUA_QS " cannot be get.", field)
 
+int voicevars_fields_ref = LUA_NOREF;
+
 static int voice_get(lua_State* L)
 {
 	kartvoice_t* voice = *((kartvoice_t**)luaL_checkudata(L, 1, META_VOICE));
-	enum voicevars field = luaL_checkoption(L, 2, NULL, voicevars_opt);
+	enum voicevars field = Lua_optoption(L, 2, -1, voicevars_fields_ref);
 
 	// voices are always valid, only added, never removed
 	I_Assert(voice != NULL);
@@ -194,6 +196,8 @@ static int voice_array1_num(lua_State *L)
 
 int LUA_VoiceLib(lua_State* L)
 {
+	voicevars_fields_ref = Lua_CreateFieldTable(L, voicevars_opt);
+
 	luaL_newmetatable(L, META_VOICE);
 	lua_pushcfunction(L, voice_get);
 	lua_setfield(L, -2, "__index");
