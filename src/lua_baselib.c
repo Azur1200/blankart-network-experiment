@@ -3186,7 +3186,7 @@ static int lib_sChangeMusicCreditSettings(lua_State *L)
 	return 0;
 }
 
-static int lib_sClearMusicCredit(lua_State *L)
+static int lib_sStopMusicCredit(lua_State *L)
 {
 	player_t *player = NULL;
 	//HUDSAFE
@@ -3198,7 +3198,7 @@ static int lib_sClearMusicCredit(lua_State *L)
 	}
 
 	if (!player || P_IsLocalPlayer(player))
-		S_ClearMusicCredit();
+		S_StopMusicCredit();
 	return 0;
 }
 
@@ -5975,7 +5975,7 @@ static luaL_Reg lib[] = {
 	{"S_StartMusicCaption", lib_sStartMusicCaption},
 	{"S_ShowMusicCredit",lib_sShowMusicCredit},
 	{"S_ChangeMusicCreditSettings",lib_sChangeMusicCreditSettings},
-	{"S_ClearMusicCredit",lib_sClearMusicCredit},
+	{"S_StopMusicCredit",lib_sStopMusicCredit},
 
 	// g_game
 	{"G_AddGametype", lib_gAddGametype},
