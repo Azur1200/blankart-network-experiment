@@ -811,7 +811,8 @@ void HU_TickSongCredits(void)
 {
 	if (cursongcredit.text == NULL) // No def
 	{
-		S_StopMusicCredit();
+		if (g_realsongcredit == NULL)
+			S_StopMusicCredit();
 		return;
 	}
 
@@ -1960,6 +1961,15 @@ void HU_DrawSongCredits(void)
 
 	if (!cursongcredit.text || cursongcredit.trans >= NUMTRANSMAPS) // No def
 	{
+		return;
+	}
+
+	if (menustack[0] && (menustack[0] == MN_MPAUSE ||
+		menustack[0] == MN_MAPAUSE ||
+		menustack[0] == MN_SPAUSE)
+	)
+	{
+		// We already display this here. No need to do it twice!
 		return;
 	}
 

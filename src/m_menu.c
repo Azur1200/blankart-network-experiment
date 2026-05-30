@@ -1863,15 +1863,20 @@ void M_Drawer(void)
 		currentMenu->drawroutine(); // call current menu Draw routine
 	}
 
-	if (netgame && Playing())
-	{
-		boolean mainpause_open = menustack[0]
+	boolean mainpause_open = menustack[0]
 		&& (menustack[0] == MN_MPAUSE ||
 			menustack[0] == MN_MAPAUSE ||
 			menustack[0] == MN_SPAUSE
 		);
 
+	if (netgame && Playing())
+	{
 		ST_DrawServerSplash(!mainpause_open);
+	}
+
+	if (mainpause_open && g_realsongcredit)
+	{
+		V_DrawThinString(6, 32+20, V_ALLOWLOWERCASE|V_6WIDTHSPACE|V_SNAPTOLEFT, g_realsongcredit);
 	}
 
 	// focus lost notification goes on top of everything, even the former everything
