@@ -682,35 +682,34 @@ int LUA_WriteGlobals(lua_State *L)
 	{
 		case global_redscore:
 			redscore = (UINT32)luaL_checkinteger(L, 2);
+			break;
 		case global_bluescore:
 			bluescore = (UINT32)luaL_checkinteger(L, 2);
+			break;
 		case global_skincolor_redteam:
 			skincolor_redteam = (UINT16)luaL_checkinteger(L, 2);
+			break;
 		case global_skincolor_blueteam:
 			skincolor_blueteam = (UINT16)luaL_checkinteger(L, 2);
+			break;
 		case global_skincolor_redring:
 			skincolor_redring = (UINT16)luaL_checkinteger(L, 2);
+			break;
 		case global_skincolor_bluering:
 			skincolor_bluering = (UINT16)luaL_checkinteger(L, 2);
+			break;
 		case global_emeralds:
 			emeralds = (UINT16)luaL_checkinteger(L, 2);
+			break;
 		case global_token:
 			token = (UINT32)luaL_checkinteger(L, 2);
+			break;
 		case global_gravity:
 			gravity = (fixed_t)luaL_checkinteger(L, 2);
+			break;
 		case global_stoppedclock:
 			stoppedclock = luaL_checkboolean(L, 2);
-		/*
-		*	// KART TODO: displayplayers is a table...
-		*	case global_displayplayer:
-		*	{
-		*		player_t *player = *((player_t **)luaL_checkudata(L, 2, META_PLAYER));
-		*
-		*		if (player)
-		*			displayplayer = player - players;
-		*	}
-		}
-		*/
+			break;
 		case global_mapmusname:
 		{
 			size_t strlength;
@@ -723,89 +722,130 @@ int LUA_WriteGlobals(lua_State *L)
 				return luaL_error(L, "string must not contain embedded zeros!");
 
 			strncpy(mapmusname, str, strlength);
+			break;
 		}
 		case global_mapmusflags:
 			mapmusflags = (UINT16)luaL_checkinteger(L, 2);
+			break;
 		case global_mapmusrng:
 			mapmusrng = (UINT8)luaL_checkinteger(L, 2);
+			break;
 		// SRB2Kart
 		case global_racecountdown:
 			racecountdown = (tic_t)luaL_checkinteger(L, 2);
+			break;
 		case global_exitcountdown:
 			exitcountdown = (tic_t)luaL_checkinteger(L, 2);
+			break;
 		case global_indirectitemcooldown:
 			K_SetIndirectItemCooldown(luaL_checkinteger(L, 2));
+			break;
 		case global_hyubgone:
 			K_GetKartResult("hyudoro")->cooldown = (tic_t)luaL_checkinteger(L, 2);
+			break;
 		case global_starttime:
 			starttime = (tic_t)luaL_checkinteger(L, 2);
+			break;
 		case global_introtime:
 			introtime = (tic_t)luaL_checkinteger(L, 2);
+			break;
 		case global_itembreaker:
 		case global_battleprisons:
 			itembreaker = luaL_checkboolean(L, 2);
+			break;
 		case global_ringsactive:
 			ringsactive = luaL_checkboolean(L, 2);
+			break;
 		case global_stackingactive:
 			stackingactive = luaL_checkboolean(L, 2);
+			break;
 		case global_chainingactive:
 			chainingactive = luaL_checkboolean(L, 2);
+			break;
 		case global_slipdashactive:
 			slipdashactive = luaL_checkboolean(L, 2);
+			break;
 		case global_slopeboostactive:
 			slopeboostactive = luaL_checkboolean(L, 2);
+			break;
 		case global_draftingactive:
 			draftingactive = luaL_checkboolean(L, 2);
+			break;
 		case global_airdropactive:
 			airdropactive = luaL_checkinteger(L, 2);
+			break;
 		case global_bumpsparkactive:
 			bumpsparkactive = luaL_checkinteger(L, 2);
+			break;
 		case global_purpledriftactive:
 			purpledriftactive = luaL_checkboolean(L, 2);
+			break;
 		case global_recoverydashactive:
 			recoverydashactive = luaL_checkboolean(L, 2);
+			break;
 		case global_itemlittering:
 			itemlittering = luaL_checkboolean(L, 2);
+			break;
 		case global_keepstuffactive:
 			keepstuffactive = luaL_checkboolean(L, 2);
+			break;
 		case global_itempushing:
 			itempushing = luaL_checkboolean(L, 2);
+			break;
 		case global_trailslowactive:
 			trailslow_active = luaL_checkboolean(L, 2);
+			break;
 		case global_trailslow_active:
 			trailslow_active = luaL_checkboolean(L, 2);
+			break;
 		case global_playerbumpactive:
 			playerbumpactive = (playerbumptype_t)luaL_checkinteger(L, 2);
+			break;
 		case global_gamespeed:
 			gamespeed = (UINT8)luaL_checkinteger(L, 2);
+			break;
 		case global_nummapboxes:
 			nummapboxes = (INT32)luaL_checkinteger(L, 2);
+			break;
 		case global_numgotboxes:
 			numgotboxes = (INT32)luaL_checkinteger(L, 2);
+			break;
 		case global_hyudorotime:
 			hyudorotime = (INT32)luaL_checkinteger(L, 2);
+			break;
 		case global_stealtime:
 			stealtime = (INT32)luaL_checkinteger(L, 2);
+			break;
 		case global_sneakertime:
 			sneakertime = (INT32)luaL_checkinteger(L, 2);
+			break;
 		case global_waterpaneltime:
 			waterpaneltime = (INT32)luaL_checkinteger(L, 2);
+			break;
 		case global_bubbletime:
 			bubbletime = (INT32)luaL_checkinteger(L, 2);
+			break;
 		case global_flametime:
 			flametime = (INT32)luaL_checkinteger(L, 2);
+			break;
 		case global_comebacktime:
 			comebacktime = (INT32)luaL_checkinteger(L, 2);
+			break;
 		case global_greasetics:
 			greasetics = (INT32)luaL_checkinteger(L, 2);
+			break;
 		case global_wipeoutslowtime:
 			wipeoutslowtime = (INT32)luaL_checkinteger(L, 2);
+			break;
 		case global_wantedreduce:
 			wantedreduce = (INT32)luaL_checkinteger(L, 2);
+			break;
 		case global_wantedfrequency:
 			wantedfrequency = (INT32)luaL_checkinteger(L, 2);
+			break;
 		case global_compatmode:
 			lua_compatmode = luaL_checkboolean(L, 2); // you'd BETTER not forget to change it back afterwards!
+			break;
 		default:
 			return 0;
 	}
