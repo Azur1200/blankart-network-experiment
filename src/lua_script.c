@@ -473,7 +473,7 @@ int LUA_PushGlobals(lua_State *L)
 			return 1;
 		// local player variables, by popular request
 		case global_consoleplayer: // player controlling console (aka local player 1)
-			if (!addedtogame || consoleplayer < 0 || !playeringame[consoleplayer])
+			if (!addedtogame || consoleplayer < 0 || !playeringame[consoleplayer] || dedicated)
 				return 0;
 			LUA_PushUserdata(L, &players[consoleplayer], META_PLAYER);
 			return 1;
