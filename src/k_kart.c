@@ -1807,6 +1807,9 @@ static void K_UpdateKeepstuff(player_t *player)
 		if (!player->flametimer)
 		{
 			K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, NULL);
+			S_StartSound(player->mo, sfx_s3k3e);
+			// make sure this is after K_DecrementCurrentItem so that equip state stays set properly
+			K_SetItemOut(player, KITEM_FLAMESHIELD, IF_HOLDREADY);
 		}
 
 		player->flametimer = player->keepstuff.flametimer;
