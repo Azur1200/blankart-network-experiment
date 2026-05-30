@@ -1039,7 +1039,7 @@ void ST_DrawServerSplash(boolean timelimited)
 		memcpy(prevContext, server_context, 8);
 	}
 
-	if (lt_ticker < lt_endtime)
+	if (timelimited && lt_ticker < lt_endtime)
 	{
 		// Level title is running rn
 		return;
@@ -1061,14 +1061,18 @@ void ST_DrawServerSplash(boolean timelimited)
 
 	const INT32 splashTic = splashTime >> FRACBITS;
 	INT32 opacity = NUMTRANSMAPS;
-	if (splashTic < NUMTRANSMAPS)
+
+	if (timelimited)
 	{
-		opacity = splashTic;
-	}
-	else if (timelimited
-		&& splashTic > (SPLASH_LEN >> FRACBITS) - NUMTRANSMAPS)
-	{
-		opacity = (SPLASH_LEN >> FRACBITS) - splashTic;
+		if (splashTic < NUMTRANSMAPS)
+		{
+			opacity = splashTic;
+		}
+		else if (timelimited
+			&& splashTic > (SPLASH_LEN >> FRACBITS) - NUMTRANSMAPS)
+		{
+			opacity = (SPLASH_LEN >> FRACBITS) - splashTic;
+		}
 	}
 
 	INT32 opacityFlag = ST_ServerSplash_OpacityFlag(opacity);
