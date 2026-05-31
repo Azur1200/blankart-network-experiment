@@ -470,7 +470,7 @@ struct doomdata_t
 		UINT8 sha256sum[32]; // 32 bytes
 		serverinfo_pak serverinfo; // 1311 bytes
 		serverrefuse_pak serverrefuse; // 255 bytes
-		serverinfoupdate_pak serverinfoupdate; // 1406 bytes
+		serverinfoupdate_pak serverinfoupdate; // 1662 bytes
 		askinfo_pak askinfo; // 5 bytes
 		msaskinfo_pak msaskinfo; // 26 bytes
 		plrinfo playerinfo[MAXPLAYERINFO]; // 1056 bytes
