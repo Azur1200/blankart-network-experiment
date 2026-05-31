@@ -343,7 +343,7 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 	const boolean affine = ((spr->mobj && !P_MobjWasRemoved(spr->mobj)) && ((spr->mobj->player != NULL) || R_ThingIsAffineSprite(spr->mobj)));
 
 	if ((cv_glspritebillboarding.value == 1 || (cv_glspritebillboarding.value == 2 &&
-		(spr->mobj->player || spr->mobj->type == (mobjtype_t)skins[spr->mobj->player->skin].followitem)))
+		(spr->mobj->player)))
 		&& spr && spr->mobj && !R_ThingIsPaperSprite(spr->mobj)
 		&& wallVerts)
 	{
@@ -653,7 +653,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 		wallVerts[1].y = endbot;
 
 		// The x and y only need to be adjusted in the case that it's not a papersprite
-		if ((cv_glspritebillboarding.value == 1 || (cv_glspritebillboarding.value == 2 && (spr->mobj->player || spr->mobj->type == (mobjtype_t)skins[spr->mobj->player->skin].followitem)))
+		if ((cv_glspritebillboarding.value == 1 || (cv_glspritebillboarding.value == 2 && (spr->mobj->player)))
 			&& !cv_glshearing.value
 			&& spr->mobj && !R_ThingIsPaperSprite(spr->mobj))
 		{
