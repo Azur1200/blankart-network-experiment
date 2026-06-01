@@ -4695,16 +4695,20 @@ static void K_drawKartMinimap(void)
 
 	minimaptrans = ((10-minimaptrans)<<FF_TRANSSHIFT);
 
-	// Really looking forward to never writing this loop again
+
 	UINT8 bestplayer = MAXPLAYERS;
-	for (i = 0; i < MAXPLAYERS; i++)
+	if (mapnamespace != MNS_SRB2KART)
 	{
-		if (!playeringame[i])
-			continue;
-		if (players[i].spectator)
-			continue;
-		if (players[i].position == 1)
-			bestplayer = i;
+		// Really looking forward to never writing this loop again
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i])
+				continue;
+			if (players[i].spectator)
+				continue;
+			if (players[i].position == 1)
+				bestplayer = i;
+		}
 	}
 
 	if (bestplayer == MAXPLAYERS || leveltime < starttime) // Countdown / no players
@@ -4715,9 +4719,19 @@ static void K_drawKartMinimap(void)
 		minimapcolor =  players[bestplayer].skincolor;
 
 	if (encoremode)
-		V_DrawFixedPatch((x+minimapinfo.minimap_pic->width) * FRACUNIT, (y)* FRACUNIT, FRACUNIT, splitflags|minimaptrans|V_FLIP, minimapinfo.minimap_pic, R_GetTranslationColormap(TC_DEFAULT, minimapcolor, GTC_CACHE));
+		V_DrawFixedPatch((x+minimapinfo.minimap_pic->width) * FRACUNIT,
+			(y)* FRACUNIT,
+			FRACUNIT,
+			splitflags|minimaptrans|V_FLIP,
+			minimapinfo.minimap_pic,
+			mapnamespace == MNS_SRB2KART ? NULL : R_GetTranslationColormap(TC_DEFAULT, minimapcolor, GTC_CACHE));
 	else
-		V_DrawFixedPatch((x) * FRACUNIT, (y) * FRACUNIT, FRACUNIT, splitflags|minimaptrans, minimapinfo.minimap_pic, R_GetTranslationColormap(TC_DEFAULT, minimapcolor, GTC_CACHE));
+		V_DrawFixedPatch((x) * FRACUNIT,
+			(y) * FRACUNIT,
+			FRACUNIT,
+			splitflags|minimaptrans,
+			minimapinfo.minimap_pic,
+			mapnamespace == MNS_SRB2KART ? NULL : R_GetTranslationColormap(TC_DEFAULT, minimapcolor, GTC_CACHE));
 
 	// let offsets transfer to the heads, too!
 	if (encoremode)
