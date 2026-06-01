@@ -20,6 +20,7 @@
 #include "k_director.h"
 #include "k_items.h"
 #include "p_mobj.h"
+#include "p_setup.h"
 #include "screen.h"
 #include "doomtype.h"
 #include "doomdef.h"
@@ -4615,6 +4616,7 @@ static void K_drawKartMinimap(void)
 	INT32 splitflags = 0;
 	UINT16 skin = 0;
 	UINT8 *colormap = NULL;
+	skincolornum_t minimapcolor;
 	SINT8 localplayers[MAXSPLITSCREENPLAYERS];
 	SINT8 numlocalplayers = 0;
 	mobj_t *mobj, *next;	// for SPB drawing (or any other item(s) we may wanna draw, I dunno!)
@@ -4693,10 +4695,29 @@ static void K_drawKartMinimap(void)
 
 	minimaptrans = ((10-minimaptrans)<<FF_TRANSSHIFT);
 
+	// Really looking forward to never writing this loop again
+	UINT8 bestplayer = MAXPLAYERS;
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+		if (players[i].spectator)
+			continue;
+		if (players[i].position == 1)
+			bestplayer = i;
+	}
+
+	if (bestplayer == MAXPLAYERS || leveltime < starttime) // Countdown / no players
+		minimapcolor = SKINCOLOR_WHITE;
+	else if (players[bestplayer].laps >= numlaps) // Final lap
+		minimapcolor = K_RainbowColor(leveltime);
+	else // Standard: color to leader
+		minimapcolor =  players[bestplayer].skincolor;
+
 	if (encoremode)
-		V_DrawScaledPatch(x+minimapinfo.minimap_pic->width, y, splitflags|minimaptrans|V_FLIP, minimapinfo.minimap_pic);
+		V_DrawFixedPatch((x+minimapinfo.minimap_pic->width) * FRACUNIT, (y)* FRACUNIT, FRACUNIT, splitflags|minimaptrans|V_FLIP, minimapinfo.minimap_pic, R_GetTranslationColormap(TC_DEFAULT, minimapcolor, GTC_CACHE));
 	else
-		V_DrawScaledPatch(x, y, splitflags|minimaptrans, minimapinfo.minimap_pic);
+		V_DrawFixedPatch((x) * FRACUNIT, (y) * FRACUNIT, FRACUNIT, splitflags|minimaptrans, minimapinfo.minimap_pic, R_GetTranslationColormap(TC_DEFAULT, minimapcolor, GTC_CACHE));
 
 	// let offsets transfer to the heads, too!
 	if (encoremode)
