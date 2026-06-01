@@ -64,6 +64,8 @@
 #include "k_items.h"
 #include "g_party.h"
 
+#include "radio_finish.h"
+
 #include "m_easing.h" // Arrow Bullet aura
 
 #include "acs/interface.h"
@@ -1317,6 +1319,9 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 		boolean losing;
 		if ((gametypes[gametype]->rules & GTR_CIRCUIT)) // If in Race Mode, allow
 		{
+			if (!modeattacking)
+				RR_addPlayerToFinshTicker(player);
+
 			player->exiting = raceexittime+2;
 			K_UpdateAllPlayerPositions();
 			losing = K_IsPlayerLosing(player); // HEY!!!! Set it AFTER K_UpdateAllPlayerPositions!!!!

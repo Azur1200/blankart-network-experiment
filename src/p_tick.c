@@ -46,6 +46,8 @@
 #include "k_specialstage.h"
 #include "k_grandprix.h"
 
+#include "radio_finish.h"
+
 #include "i_gamepad.h"
 
 #include <tracy/tracy/TracyC.h>
@@ -1127,6 +1129,11 @@ void P_Ticker(boolean run)
 		// Move the camera during levels.
 		K_UpdateDirector();
 		P_RunChaseCameras();
+	}
+
+	if (run && !levelloading && leveltime)
+	{
+		RR_ridersFinishTick();
 	}
 
 	if (run)

@@ -78,6 +78,8 @@
 
 #include "k_vote.h"
 
+#include "radio_finish.h"
+
 // for MapLoad hook
 #include "lua_script.h"
 #include "lua_hook.h"
@@ -9003,6 +9005,8 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	P_InitTIDHash();
 	R_InitMobjInterpolators();
 	P_InitCachedActions();
+
+	RR_resetRidersFinishTicker();
 
 	if (!fromnetsave && savedata.lives > 0)
 	{

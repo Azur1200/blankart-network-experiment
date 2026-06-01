@@ -193,6 +193,9 @@ extern patch_t *kp_itemtarget_near[2][8];
 
 boolean K_UseHighResPortraits(void);
 
+extern patch_t *kp_splitlapflag;
+extern consvar_t cv_show_riders_finish_ticker;
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

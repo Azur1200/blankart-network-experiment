@@ -46,6 +46,8 @@
 #include "k_bot.h" // K_DrawBotDebugger
 #include "k_waypoint.h"
 
+#include "radio_finish.h"
+
 #define NUMPOSNUMS 10
 #define NUMPOSFRAMES 7 // White, three blues, three reds
 #define NUMWINFRAMES 6 // Red, yellow, green, cyan, blue, purple
@@ -155,7 +157,7 @@ static patch_t *kp_bumperstickerwide[2];
 static patch_t *kp_karmasticker[2];
 static patch_t *kp_timeoutsticker[2];
 
-static patch_t *kp_splitlapflag;
+patch_t *kp_splitlapflag;
 static patch_t *kp_splitkarmabomb;
 
 static patch_t *kp_startcountdown[20];
@@ -312,6 +314,9 @@ void K_RegisterKartHUDStuff(void)
 
 	// k_hud_track.cpp
 	CV_RegisterVar(&cv_kartdebughudtracker);
+
+	// radio_finish.cpp
+	CV_RegisterVar(&cv_show_riders_finish_ticker);
 }
 
 void K_LoadKartHUDGraphics(void)
@@ -6668,6 +6673,8 @@ void K_drawKartHUD(void)
 		}
 
 		islonesome = K_drawKartPositionFaces();
+
+		RR_drawRidersFinishTicker();
 	}
 
 	if (!stplyr->spectator && !freecam) // Bottom of the screen elements, don't need in spectate mode
