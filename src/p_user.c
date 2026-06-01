@@ -1319,11 +1319,12 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 		boolean losing;
 		if ((gametypes[gametype]->rules & GTR_CIRCUIT)) // If in Race Mode, allow
 		{
+			player->exiting = raceexittime+2;
+			K_UpdateAllPlayerPositions();
+
 			if (!modeattacking)
 				RR_addPlayerToFinshTicker(player);
 
-			player->exiting = raceexittime+2;
-			K_UpdateAllPlayerPositions();
 			losing = K_IsPlayerLosing(player); // HEY!!!! Set it AFTER K_UpdateAllPlayerPositions!!!!
 
 			if (cv_kartvoices.value)
