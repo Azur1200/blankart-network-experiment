@@ -5662,7 +5662,7 @@ static void DataCorrupt(UINT8 *corrupted)
 			gdfolder = srb2home;
 
 		I_Error(*corrupted == 1
-		      ? "Game data is not for SRB2Kart v2.\nDelete %s (maybe in %s) and try again."
+		      ? "Game data is not for BlanKart.\nDelete %s (maybe in %s) and try again."
 		      : "Corrupt game data file.\nDelete %s (maybe in %s) and try again.",
 		        gamedatafilename, gdfolder);
 	}
