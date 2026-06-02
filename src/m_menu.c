@@ -14,6 +14,7 @@
 /// \brief XMOD's extremely revamped menu system, revamped again for BlanKart
 
 #include "doomstat.h"
+#include "g_state.h"
 #include "screen.h"
 #ifdef __GNUC__
 #include <unistd.h>
@@ -2690,6 +2691,14 @@ void M_Ticker(void)
 			MR_StartGrandPrix(0);
 		else
 			M_ExitMenu();
+	}
+
+	if (gamestate == GS_MENU)
+	{
+		if (M_AttackOnStack())
+			modeattacking = ATTACKING_MENU;
+		else
+			modeattacking = ATTACKING_NONE;
 	}
 
 	CL_TimeoutServerList();
