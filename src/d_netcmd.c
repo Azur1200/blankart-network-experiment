@@ -7542,7 +7542,7 @@ static void HandleClantagSetCommand(UINT8 localplayer)
 
 	if (COM_Argc() < 2)
 	{
-		CONS_Printf("%s <text>: Set your clantag to this.\n", localplayer == 0 ? "clantag_set" : va("clantag%d_set", localplayer));
+		CONS_Printf("%s <text>: Set your clantag to this.\n", localplayer == 0 ? "clantag_set" : va("clantag%d_set", localplayer+1));
 		return;
 	}
 
