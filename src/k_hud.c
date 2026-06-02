@@ -4062,7 +4062,7 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p, UINT8 flag
 	const INT32 clr = skincolors[p->skincolor].chatcolor;
 	INT32 namelen = V_ThinStringWidth(player_names[p - players], V_6WIDTHSPACE|V_ALLOWLOWERCASE);
 
-	if (p->clan != 0)
+	if (p->clan[0] != 0)
 		namelen = V_ThinStringWidth(va("%s%s", p->clan, player_names[p - players]), V_6WIDTHSPACE|V_ALLOWLOWERCASE)+2;
 
 	UINT8 *colormap = V_GetStringColormap(clr);
@@ -4157,7 +4157,7 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p, UINT8 flag
 	// Draw the name itself
 	if (cv_seenames.value == NT_DEFAULT)
 	{
-		if (p->clan != 0)
+		if (p->clan[0] != 0)
 		{
 			UINT8 length = V_ThinStringWidth(p->clan, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE)+2;
 			V_DrawThinStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|V_SKYMAP, p->clan);
@@ -4170,7 +4170,7 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p, UINT8 flag
 	}
 	else
 	{
-		if (p->clan != 0)
+		if (p->clan[0] != 0)
 		{
 			UINT8 length = V_SmallStringWidth(p->clan, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE)+2;
 			V_DrawSmallStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|V_SKYMAP, p->clan);

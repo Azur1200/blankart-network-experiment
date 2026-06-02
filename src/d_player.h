@@ -245,6 +245,9 @@ typedef enum
 	khud_afterimagetime, // tics left for displaying afterimage
 	khud_afterimagevalue, // what value the drift ended at
 
+	khud_itemtimer_xoff, // used to move itemtimers, useful for mods that want stuff in the middle.
+	khud_itemtimer_yoff, // ^
+
 	NUMKARTHUD
 } karthudtype_t;
 
