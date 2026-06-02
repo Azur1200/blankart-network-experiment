@@ -165,9 +165,11 @@ static int matrix_mulXYZ(lua_State *L)
 	return 3;
 }
 
+int matrixfield_fields_ref = LUA_NOREF;
+
 static int matrix_get(lua_State *L)
 {
-	enum matrixfield_e field = luaL_checkoption(L, 2, matrixfield_opt[0], matrixfield_opt);
+	enum matrixfield_e field = Lua_optoption(L, 2, matrixfield_clone, matrixfield_fields_ref);
 
 	switch(field)
 	{
@@ -210,6 +212,8 @@ static int matrix_mul(lua_State *L)
 
 int LUA_MatrixLib(lua_State *L)
 {
+	matrixfield_fields_ref = Lua_CreateFieldTable(L, matrixfield_opt);
+
 	luaL_newmetatable(L, META_MATRIX);
 	LUA_SetCFunctionField(L, "__index", matrix_get);
 	LUA_SetCFunctionField(L, "__mul", matrix_mul);

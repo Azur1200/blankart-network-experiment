@@ -342,7 +342,8 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 {
 	const boolean affine = ((spr->mobj && !P_MobjWasRemoved(spr->mobj)) && ((spr->mobj->player != NULL) || R_ThingIsAffineSprite(spr->mobj)));
 
-	if (cv_glspritebillboarding.value
+	if ((cv_glspritebillboarding.value == 1 || (cv_glspritebillboarding.value == 2 &&
+		(spr->mobj->player)))
 		&& spr && spr->mobj && !R_ThingIsPaperSprite(spr->mobj)
 		&& wallVerts)
 	{
@@ -652,7 +653,8 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 		wallVerts[1].y = endbot;
 
 		// The x and y only need to be adjusted in the case that it's not a papersprite
-		if (cv_glspritebillboarding.value
+		if ((cv_glspritebillboarding.value == 1 || (cv_glspritebillboarding.value == 2 && (spr->mobj->player)))
+			&& !cv_glshearing.value
 			&& spr->mobj && !R_ThingIsPaperSprite(spr->mobj))
 		{
 			// Get the x and z of the vertices so billboarding draws correctly
@@ -795,11 +797,6 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	//          in memory and we add the md2 model if it exists for that sprite
 
 	gpatch = spr->gpatch;
-
-#ifdef ALAM_LIGHTING
-	if (!(spr->mobj->flags2 & MF2_DEBRIS) && (spr->mobj->sprite != SPR_PLAY))
-		HWR_DL_AddLight(spr, gpatch);
-#endif
 
 	// create the sprite billboard
 	//
@@ -1786,7 +1783,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	float base_topoffs = FIXED_TO_FLOAT(spr_topoffset);
 
 #ifdef ROTSPRITE
-	spriterotangle = R_SpriteRotationAngle(thing, NULL, &interp, false);
+	spriterotangle = R_SpriteRotationAngle(thing, NULL, &interp, (affinesprite && vflip));
 
 	if (spriterotangle != 0
 	&& !(splat && !(thing->renderflags & RF_NOSPLATROLLANGLE))
@@ -1849,6 +1846,18 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			use_xoffset = spr_width - spr_offset;
 		}
 
+		if (thing->renderflags & RF_ABSOLUTEOFFSETS)
+		{
+			use_xoffset = FixedDiv(interp.spritexoffset,highresscale);
+		}
+		else
+		{
+			SINT8 flipoffset = 1;
+			if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
+				flipoffset = -1;
+			use_xoffset += (FixedDiv(interp.spritexoffset,highresscale) * flipoffset);
+		}
+
 		affine_pivotoffsetdiff.x = FIXED_TO_FLOAT(affine_pivot.x - use_xoffset);
 		affine_pivotoffsetdiff.y = FIXED_TO_FLOAT(affine_pivot.y - spr_topoffset);
 
@@ -1861,8 +1870,9 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 		angle = R_ConvToRollAngle(spriterotangle) * flipsign;
 
-		const fixed_t rolloffs_x = FixedDiv(interptarg->rollingxoffset * FRACUNIT, highresscale) * (((thing->renderflags & RF_FLIPOFFSETS) && flip) ? -1 : 1);
-		const fixed_t rolloffs_y = FixedDiv(interptarg->rollingyoffset * FRACUNIT, highresscale);
+		const boolean renderflip = ((thing->renderflags & RF_FLIPOFFSETS) == RF_FLIPOFFSETS);
+		const fixed_t rolloffs_x = FixedDiv(interptarg->rollingxoffset * FRACUNIT, highresscale) * (((!renderflip) && flip) ? -1 : 1);
+		const fixed_t rolloffs_y = FixedDiv(interptarg->rollingyoffset * FRACUNIT, highresscale) * (((!renderflip) && vflip) ? -1 : 1);
 		fixed_t y_piv = affine_pivot.y;
 
 		if (vflip)

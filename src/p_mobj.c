@@ -1182,12 +1182,21 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 			gravityadd = (5*gravityadd)/2;
 		}
 
-		if (mo->player->carry == CR_DASHRING && Obj_DashRingPlayerHasNoGravity(mo->player))
+		if (mo->player->carry == CR_DASHRING)
 		{
-			gravityadd = 0;
+			if (Obj_DashRingPlayerHasNoGravity(mo->player))
+			{
+				gravityadd = 0;
+			}
+			gravitymul = mapobjectscale;
 		}
 
 		if (K_IsAltShrunk(mo->player))
+		{
+			gravitymul = mapobjectscale;
+		}
+		
+		if (mo->player->pflags & PF_NOSCALEGRAVITY)
 		{
 			gravitymul = mapobjectscale;
 		}
@@ -6565,7 +6574,7 @@ boolean P_IsKartFieldItem(INT32 type)
 	}
 }
 
-boolean P_IsKartItem(INT32 type)
+boolean P_IsKartEquippedItem(INT32 type)
 {
 	switch (type)
 	{
@@ -6578,13 +6587,22 @@ boolean P_IsKartItem(INT32 type)
 		case MT_EGGMINE_SHIELD:
 			return true;
 
+		default:
+			return false;
+	}
+}
+
+boolean P_IsKartItem(INT32 type)
+{
+	switch (type)
+	{
 		// Primarily for minimap data, handle with care
 		case MT_SPB:
 			return true;
 		// FALLTHRU
 
 		default:
-			return P_IsKartFieldItem(type);
+			return P_IsKartFieldItem(type) || P_IsKartEquippedItem(type);
 	}
 }
 
@@ -8921,7 +8939,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			{
 				if (mobj->extravalue1 > 0)
 				{
-					if (p->driftboost > mobj->movecount)
+					if (p->driftboost > mobj->movecount && !mobj->extravalue2)
 					{
 						P_SetMobjState(mobj, S_DRIFTBOOSTFLAME);
 						if (mobj->extravalue1 == 1)
@@ -8933,7 +8951,9 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 					}
 					mobj->movecount = p->driftboost;
 
-					if (mobj->extravalue1 == 4)
+					if (mobj->extravalue2)
+						P_SetScale(mobj, FixedMul(5*FRACUNIT * mobj->tics / TICRATE, mobj->scale));
+					else if (mobj->extravalue1 == 4)
 						P_SetScale(mobj, max(10, mobj->tics - 3*TICRATE/2)*mobj->scale/10);
 
 					// larger karts need larger flames
@@ -8943,7 +8963,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 						mobj->spriteyoffset = -6*FRACUNIT;
 					}
 
-					if (p->driftboost == 0)
+					if (p->driftboost == 0 && !mobj->extravalue2)
 					{
 						P_RemoveMobj(mobj);
 						return false;
@@ -9007,7 +9027,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 		}
 
-		if (mobj->state == &states[S_BOOSTSMOKESPAWNER])
+		if (mobj->state == &states[S_BOOSTSMOKESPAWNER] || mobj->extravalue2)
 		{
 			mobj_t *smoke = P_SpawnMobj(mobj->x, mobj->y, mobj->z+(8<<FRACBITS), MT_BOOSTSMOKE);
 
@@ -9026,6 +9046,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			rand_angle = mobj->angle+FixedAngle(P_RandomRange(135, 225)<<FRACBITS);
 
 			P_Thrust(smoke, rand_angle, rand_move);
+
+			if (mobj->extravalue2)
+			{
+				smoke->colorized = true;
+				smoke->color = mobj->color;
+			}
 		}
 		break;
 	case MT_SPARKLETRAIL:
@@ -9462,6 +9488,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			if (!mobj->extravalue2)
 			{
 				K_DropRocketSneaker(mobj->target->player);
+				mobj->target->player->equippeditem = KITEM_NONE;
 			}
 			else if (P_IsObjectOnGround(mobj))
 			{
@@ -9490,7 +9517,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->colorized = true;
 
 			// Give items an item-sized hitbox
-			if (mobj->target->player->karmamode == 1)
+			if (mobj->target->player->karmamode == KARMAMODE_ITEM)
 				mobj->radius = 48*mobj->target->scale;
 			else
 				mobj->radius = 24*mobj->target->scale;
@@ -9510,10 +9537,10 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				if (!mobj->target->player->karmamode
 					&& (state < mobj->info->spawnstate || state > mobj->info->spawnstate+19))
 					P_SetMobjState(mobj, mobj->info->spawnstate);
-				else if (mobj->target->player->karmamode == 1
+				else if (mobj->target->player->karmamode == KARMAMODE_ITEM
 					&& state != mobj->info->seestate)
 					P_SetMobjState(mobj, mobj->info->seestate);
-				else if (mobj->target->player->karmamode == 2
+				else if (mobj->target->player->karmamode == KARMAMODE_EGGMAN
 					&& state != mobj->info->painstate)
 					P_SetMobjState(mobj, mobj->info->painstate);
 
@@ -10198,7 +10225,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				S_StartSound(mobj->tracer, sfx_s3k77);
 				mobj->tracer->flags &= ~MF_NOGRAVITY;
 				P_KillMobj(mobj, mobj->tracer, mobj->tracer, DMG_NORMAL);
-				player->respawn = 1;
 
 				break;
 			}
@@ -12553,7 +12579,7 @@ void P_SpawnPlayer(INT32 playernum)
 	}
 }
 
-void P_AfterPlayerSpawn(INT32 playernum)
+void P_AfterPlayerSpawn(INT32 playernum, boolean starpost)
 {
 	player_t *p = &players[playernum];
 	mobj_t *mobj = p->mo;
@@ -12604,7 +12630,28 @@ void P_AfterPlayerSpawn(INT32 playernum)
 
 	// set the player's starting waypoint
 	if (!K_UsingLegacyCheckpoints() && (gametypes[gametype]->rules & GTR_CIRCUIT) && waypointcap != NULL)
-		p->currentwaypoint = K_GetSpawnWaypointForMobj(p->mo);
+	{
+		waypoint_t *spawn_wp = K_GetSpawnWaypointForMobj(p->mo);
+
+		p->currentwaypoint = spawn_wp;
+
+		if (p->onbadwaypoint)
+		{
+			CONS_Alert(CONS_ERROR, "BAD WAYPOINT at ID %d; respawn is on a deathpit!\n", K_GetWaypointID(spawn_wp));
+			spawn_wp->respawnstatus = WPSTATUS_BADWAYPOINT;
+
+			p->onbadwaypoint = false;
+
+			if (p->currentwaypoint)
+			{
+				// We need a new waypoint RIGHT NOW, so search for the next waypoint once we've flagged this one
+				K_SetRespawnAtNextWaypoint(p);
+
+				// Play it again, Sam!
+				G_MovePlayerToSpawnOrStarpost((INT32)(p - players), starpost);
+			}
+		}
+	}
 }
 
 // spawn it at a playerspawn mapthing
@@ -12685,7 +12732,7 @@ void P_MovePlayerToSpawn(INT32 playernum, mapthing_t *mthing)
 
 	mobj->angle = angle;
 
-	P_AfterPlayerSpawn(playernum);
+	P_AfterPlayerSpawn(playernum, false);
 }
 
 void P_MovePlayerToStarpost(INT32 playernum)
@@ -12732,7 +12779,14 @@ void P_MovePlayerToStarpost(INT32 playernum)
 
 	//p->kartstuff[k_waypoint] = p->kartstuff[k_starpostwp]; // SRB2kart
 
-	P_AfterPlayerSpawn(playernum);
+	if (P_MobjTouchingInstakillSector(mobj))
+	{
+		// Respawn is bad, attempt to force the player ahead
+		// while flagging the bad waypoint
+		p->onbadwaypoint = true;
+	}
+
+	P_AfterPlayerSpawn(playernum, true);
 
 	//if (!(netgame || multiplayer))
 	//	leveltime = p->starposttime;
@@ -13912,6 +13966,11 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		*doangle = false;
 		break;
 	}
+	case MT_AMBIENT:
+		if (mthing->stringargs[0])
+			mobj->threshold = get_number(mthing->stringargs[0]);
+		mobj->health = mthing->args[0] ? mthing->args[0] : TICRATE;
+		break;
 	case MT_DASHRING:
 	case MT_RAINBOWDASHRING:
 	{
@@ -14013,6 +14072,10 @@ static mobj_t *P_SpawnMobjFromMapThing(mapthing_t *mthing, fixed_t x, fixed_t y,
 	size_t arg = SIZE_MAX;
 
 	mobj = P_SpawnMobj(x, y, z, i);
+
+	if (mobj == NULL || P_MobjWasRemoved(mobj))
+		return NULL;
+
 	mobj->spawnpoint = mthing;
 
 	if (doangle)

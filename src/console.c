@@ -227,14 +227,6 @@ static void CONS_Clear_f(void)
 	Unlock_state();
 }
 
-// Choose english keymap
-//
-/*static void CONS_English_f(void)
-{
-	shiftxform = english_shiftxform;
-	CONS_Printf(M_GetText("%s keymap.\n"), M_GetText("English"));
-}*/
-
 static char *bindtable[NUMINPUTS];
 
 static void CONS_Bind_f(void)
@@ -675,23 +667,57 @@ void CON_MoveConsole(void)
 	Unlock_state();
 }
 
+static char shiftxform[] =
+{
+	0,
+	1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+	11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+	21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+	31,
+	' ', '!', '"', '#', '$', '%', '&',
+	'"', // shift-'
+	'(', ')', '*', '+',
+	'<', // shift-,
+	'_', // shift--
+	'>', // shift-.
+	'?', // shift-/
+	')', // shift-0
+	'!', // shift-1
+	'@', // shift-2
+	'#', // shift-3
+	'$', // shift-4
+	'%', // shift-5
+	'^', // shift-6
+	'&', // shift-7
+	'*', // shift-8
+	'(', // shift-9
+	':',
+	':', // shift-;
+	'<',
+	'+', // shift-=
+	'>', '?', '@',
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'{', // shift-[
+	'|', // shift-backslash - OH MY GOD DOES WATCOM SUCK
+	'}', // shift-]
+	'"', '_',
+	'~', // shift-`
+	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+	'{', '|', '}', '~', 127
+};
+
 INT32 CON_ShiftChar(INT32 ch)
 {
-	if (I_UseNativeKeyboard())
+	if (I_UseNativeKeyboard() || ch >= (INT32)sizeof(shiftxform))
 		return ch;
 
+	// warning: shiftdown is NOT a boolean, it's 1 or 2 for lshift/rshift
 	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
-	{
-		if (shiftdown ^ capslock)
-			ch = shiftxform[ch];
-	}
+		return !!shiftdown != capslock ? shiftxform[ch] : ch;
 	else	// if we're holding shift we should still shift non letter symbols
-	{
-		if (shiftdown)
-			ch = shiftxform[ch];
-	}
-
-	return ch;
+		return shiftdown ? shiftxform[ch] : ch;
 }
 
 // Clear time of console heads up messages

@@ -75,6 +75,7 @@
 #include "k_color.h"
 #include "k_grandprix.h"
 #include "k_follower.h"
+#include "r_voicepreference.hpp"
 #include "r_fps.h"
 #include "m_easing.h"
 
@@ -107,6 +108,8 @@ int	snprintf(char *str, size_t n, const char *fmt, ...);
 #endif
 
 #include "qs22j.h"
+
+#include "k_director.h"
 
 typedef enum
 {
@@ -809,6 +812,7 @@ void Moviemode_option_Onchange(void)
 #define SKINGRIDWIDTH 9
 #define SKINGRIDHEIGHT 6
 
+static boolean gridcss_active;
 static INT32 gridcss_skinydrag;
 static INT32 gridcss_skinmemory;
 static INT32 gridcss_row;
@@ -942,7 +946,7 @@ void M_ChangeMenuMusic(void)
 		else if (menudefs[menutype].musstop)
 		{
 			S_StopMusic();
-			S_ClearMusicCredit();
+			S_StopMusicCredit();
 			return;
 		}
 		else if (menudefs[menutype].musignore)
@@ -951,7 +955,7 @@ void M_ChangeMenuMusic(void)
 	if (target == MN_MAIN && gamestate == GS_TITLESCREEN && finalecount < 50)
 	{
 		S_StopMusic();
-		S_ClearMusicCredit();
+		S_StopMusicCredit();
 	}
 	else
 	{
@@ -1232,6 +1236,9 @@ static boolean M_DemoBinds(INT32 ch)
 {
 	switch (ch)
 	{
+	case ';':	// toggle director
+		MR_PlaybackToggleDirector(0);
+		break;
 	case '\'':	// toggle freecam
 		MR_PlaybackToggleFreecam(0);
 		break;
@@ -1339,14 +1346,15 @@ static INT32 RemapGamepadButton(event_t *ev)
 	static INT32 joyremap[][2] = {
 		{ gc_accelerate,  KEY_ENTER      }, // these two first
 		{ gc_brake,       KEY_ESCAPE     }, // in case of conflicts
-		{ gc_fire,        KEY_BACKSPACE  },
-		{ gc_drift,       KEY_SPACE      },
 		{ gc_systemmenu,  KEY_ESCAPE     },
 		{ gc_aimforward,  KEY_UPARROW    },
 		{ gc_aimbackward, KEY_DOWNARROW  },
 		{ gc_turnleft,    KEY_LEFTARROW  },
 		{ gc_turnright,   KEY_RIGHTARROW },
-		{ gc_lookback,	  KEY_TAB },
+		{ gc_fire,        KEY_BACKSPACE  },
+		{ gc_horncode,	  KEY_BACKSPACE  },
+		{ gc_drift,       KEY_SPACE      },
+		{ gc_lookback,	  KEY_TAB		 },
 	};
 
 	for (size_t r = 0; r < sizeof(joyremap)/sizeof(*joyremap); r++)
@@ -1632,8 +1640,6 @@ boolean M_Responder(event_t *ev)
 	{
 		if (M_WipeBuffer(ch, currentMenu->keyhandler))
 			return true;
-		if (shiftdown && ch >= 32 && ch <= 127)
-			ch = shiftxform[ch];
 		if (currentMenu->keyhandler(ch))
 			return true;
 	}
@@ -1871,6 +1877,22 @@ void M_Drawer(void)
 	{
 		M_GetGametypeColor();
 		currentMenu->drawroutine(); // call current menu Draw routine
+	}
+
+	boolean mainpause_open = menustack[0]
+		&& (menustack[0] == MN_MPAUSE ||
+			menustack[0] == MN_MAPAUSE ||
+			menustack[0] == MN_SPAUSE
+		);
+
+	if (netgame && Playing())
+	{
+		ST_DrawServerSplash(!mainpause_open);
+	}
+
+	if (mainpause_open && g_realsongcredit)
+	{
+		V_DrawThinString(6, 32+20, V_ALLOWLOWERCASE|V_6WIDTHSPACE|V_SNAPTOLEFT, g_realsongcredit);
 	}
 
 	// focus lost notification goes on top of everything, even the former everything
@@ -4934,8 +4956,8 @@ static void DrawReplayHutReplayInfo(void)
 			V_DrawThinString(x, y+9, V_SNAPTOTOP|V_ALLOWLOWERCASE, va("(%d laps)", demolist[dir_on[menudepthleft]].numlaps));
 
 		const char *gametypename = gametypes[demolist[dir_on[menudepthleft]].gametype] ? gametypes[demolist[dir_on[menudepthleft]].gametype]->name : "Unknown";
-		const char *gamespeed = kartspeed_cons_t[(demolist[dir_on[menudepthleft]].kartspeed & ~DF_ENCORE) + 1].strvalue;
-		const char *gamemodestring = va("%s (%s speed)", gametypename, gamespeed);
+		const char *displaygamespeed = kartspeed_cons_t[(demolist[dir_on[menudepthleft]].kartspeed & ~DF_ENCORE) + 1].strvalue;
+		const char *gamemodestring = va("%s (%s speed)", gametypename, displaygamespeed);
 
 		V_DrawString(x, y+20, V_SNAPTOTOP|V_ALLOWLOWERCASE, gamemodestring);
 
@@ -5226,10 +5248,13 @@ INT32 MR_QuitReplayHut(INT32 choice)
 	demolist = NULL;
 
 	demo.inreplayhut = false;
+
 	if (!M_AttackOnStack())
 	{
 		modeattacking = ATTACKING_NONE;
 	}
+
+	S_StopMusicCredit();
 	return true;
 }
 
@@ -5295,6 +5320,8 @@ void MD_DrawPlaybackMenu(void)
 	M_SetItemVisible(MN_PLAYBACK, "VIEW3", !modeattacking && r_splitscreen >= 2);
 	M_SetItemVisible(MN_PLAYBACK, "VIEW4", !modeattacking && r_splitscreen >= 3);
 
+	M_SetItemVisible(MN_PLAYBACK, "DIRECTOR", !modeattacking);
+
 	if (modeattacking)
 	{
 		M_SetItemX(MN_PLAYBACK, "FREECAM", 72);
@@ -5303,9 +5330,10 @@ void MD_DrawPlaybackMenu(void)
 	}
 	else
 	{
-		M_SetItemX(MN_PLAYBACK, "FREECAM", 156);
-		M_SetItemX(MN_PLAYBACK, "QUIT", 172);
-		currentMenu->x = BASEVIDWIDTH/2 - 88;
+		M_SetItemX(MN_PLAYBACK, "DIRECTOR", 156);
+		M_SetItemX(MN_PLAYBACK, "FREECAM", 172);
+		M_SetItemX(MN_PLAYBACK, "QUIT", 188);
+		currentMenu->x = BASEVIDWIDTH/2 - 98;
 	}
 
 	// wip
@@ -5509,11 +5537,26 @@ INT32 MR_PlaybackToggleFreecam(INT32 choice)
 	splitscreen = 0;
 	R_ExecuteSetViewSize();
 
+	G_SyncDemoParty(consoleplayer, 0);
 	UINT8 i;
 	for (i = 0; i <= r_splitscreen; ++i)
 	{
 		P_ToggleDemoCamera(i);
 	}
+	return true;
+}
+
+INT32 MR_PlaybackToggleDirector(INT32 choice)
+{
+	(void)choice;
+	M_ClearMenus(true);
+
+	// remove splitscreen:
+	splitscreen = 0;
+	R_ExecuteSetViewSize();
+
+	G_SyncDemoParty(consoleplayer, 0);
+	K_ToggleDirector();
 	return true;
 }
 
@@ -6762,10 +6805,13 @@ INT32 MR_QuitTimeAttackMenu(INT32 choice)
 
 	// you know what? always putting these in the buffer won't hurt anything.
 	COM_BufAddText(va("skin \"%s\"\n", skins[cv_chooseskin.value].name));
+
 	if (!M_AttackOnStack())
 	{
 		modeattacking = ATTACKING_NONE;
 	}
+
+	S_StopMusicCredit();
 	return true;
 }
 
@@ -8102,7 +8148,7 @@ void MD_DrawGridCssSelector(void)
 	}
 
 	// draw wanted portrait and cursor
-	if (M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN"))
+	if (M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN") && gridcss_active)
 	{
 		face = faceprefix[skintodisplay][FACE_WANTED];
 		colmap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
@@ -8139,10 +8185,39 @@ static inline INT32 MapGridSelectToSkin(INT32 row, INT32 column)
 INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 {
 	INT32 sortedIndex = 0;
-	// don't consume input if we're not interacting with the grid CSS
-	if (!(M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN") && cv_skinselectstyle.value))
+
+	if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOWER") && (choice == KEY_BACKSPACE || choice == KEY_ENTER))
 	{
-		return false;
+		if (cv_dummyfollower.value > -1)
+		{
+			follower_t fl = followers[cv_dummyfollower.value];
+			S_StopSounds();
+			S_StartSound(NULL, fl.hornsound);
+		}
+		return true;
+	}
+
+	// don't consume input if we're not interacting with the grid CSS
+	if (cv_skinselectstyle.value != 1) return false;
+	if (!M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN")) return false;
+
+	if (!gridcss_active)
+	{
+		if (choice == KEY_ENTER)
+		{
+			gridcss_active = true;
+			S_StartSound(NULL, sfx_menu1);
+			return true;
+		}
+		if (choice == KEY_LEFTARROW || choice == KEY_RIGHTARROW)
+		{
+			gridcss_active = true;
+			// fall-thru into navigation
+		}
+		else
+		{
+			return false;
+		}
 	}
 
 	switch (choice)
@@ -8155,6 +8230,8 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 				sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
 				gridcss_row = sortedIndex % SKINGRIDWIDTH;
 				gridcss_column = sortedIndex / SKINGRIDWIDTH;
+			
+				gridcss_active = false;
 
 				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
 			}
@@ -8181,6 +8258,8 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 				sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
 				gridcss_row = sortedIndex % SKINGRIDWIDTH;
 				gridcss_column = sortedIndex / SKINGRIDWIDTH;
+			
+				gridcss_active = false;
 
 				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
 			}
@@ -8257,23 +8336,41 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 				S_StartSound(NULL, sfx_menu1);
 			}
 			break;
-		case KEY_TAB:
-			M_SetItemOn(MN_MP_PLAYERSETUP, "FOLLOWER");
+		case KEY_ENTER:
+			if (cv_chooseskin.value < numskins)
+			{
+				skin_t *skin = &skins[cv_chooseskin.value];
+				INT32 voxid = R_GetLocalPreferredVoiceForSkin(setupplayer, skin->name);
+				kartvoice_t *voice = NULL;
+				gridcss_skinmemory = cv_chooseskin.value;
+				gridcss_active = false;
+
+				if (voxid == MAXSKINVOICES)
+				{
+					// Couldn't find a voice.
+					// try current setting
+					voxid = R_FindIDForVoice(skin, localvoicedata[setupplayer].name);
+					// sorry nothing
+					if (voxid == MAXSKINVOICES) voxid = 0;
+				}
+				voice = &skin->voices[voxid];
+				S_StopSounds();
+				S_StartSound(NULL, sfx_s221);
+				if (voice != NULL)
+					S_StartSound(NULL, R_GetLegacySkinSound(voice, sfx_kslow));
+			}
+			break;
+		case KEY_ESCAPE:
 			CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
 			sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
 			gridcss_row = sortedIndex % SKINGRIDWIDTH;
 			gridcss_column = sortedIndex / SKINGRIDWIDTH;
 
-			gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
+			gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
+			
+			gridcss_active = false;
 
 			S_StartSound(NULL, sfx_menu1);
-			break;
-		case KEY_ENTER:
-			if (cv_chooseskin.value < numskins)
-			{
-				gridcss_skinmemory = cv_chooseskin.value;
-				S_StartSound(NULL, sfx_s221);
-			}
 			break;
 		default:
 			return false;
@@ -8322,6 +8419,7 @@ INT32 MR_SetupMultiPlayer(INT32 arg)
 	CV_SetValue(&cv_dummycolor, cv_playercolor[arg].value);
 	G_SetPlayerControllerIndicatorColor(arg, cv_playercolor[arg].value);
 	dummycolorplayer = arg;
+	gridcss_active = false;
 
 	Skinsort_option_Onchange();
 
@@ -8760,7 +8858,7 @@ static void M_ChangecontrolResponse(event_t *ev)
 	}
 
 	// ESCAPE cancels; dummy out PAUSE
-	if (ch != KEY_ESCAPE && ch != KEY_PAUSE)
+	if (ch != KEY_ESCAPE)
 	{
 		// keypad arrows are converted for the menu in cursor arrows
 		// so use the event instead of ch
@@ -8801,23 +8899,23 @@ static void M_ChangecontrolResponse(event_t *ev)
 		}
 		S_StartSound(NULL, sfx_s221);
 	}
-	else if (ch == KEY_PAUSE)
-	{
-		// This buffer assumes a 125-character message plus a 32-character control name (per controltochangetext buffer size)
-		static char tmp[158];
+	// else if (ch == KEY_PAUSE)
+	// {
+	// 	// This buffer assumes a 125-character message plus a 32-character control name (per controltochangetext buffer size)
+	// 	static char tmp[158];
 
-		if (controltochange == gc_pause)
-			sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nyou may select another key. \n\nHit another key for\n%s\nESC for Cancel"),
-				controltochangetext);
-		else
-			sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nit is not configurable. \n\nHit another key for\n%s\nESC for Cancel"),
-				controltochangetext);
+	// 	if (controltochange == gc_pause)
+	// 		sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nyou may select another key. \n\nHit another key for\n%s\nESC for Cancel"),
+	// 			controltochangetext);
+	// 	else
+	// 		sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nit is not configurable. \n\nHit another key for\n%s\nESC for Cancel"),
+	// 			controltochangetext);
 
-		M_StartMessage(tmp, M_ChangecontrolResponse, MM_EVENTHANDLER);
+	// 	M_StartMessage(tmp, M_ChangecontrolResponse, MM_EVENTHANDLER);
 
-		S_StartSound(NULL, sfx_s3k42);
-		return;
-	}
+	// 	S_StartSound(NULL, sfx_s3k42);
+	// 	return;
+	// }
 	else
 		S_StartSound(NULL, sfx_s224);
 

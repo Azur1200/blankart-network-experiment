@@ -108,25 +108,6 @@ Environment::Environment()
 	// 175 to 179: Implemented by ACSVM
 
 	// 181 to 189: Implemented by ACSVM
-	addCodeDataACS0(196, {"",        1, addCallFunc(CallFunc_GetObjectX)});
-	addCodeDataACS0(197, {"",        1, addCallFunc(CallFunc_GetObjectY)});
-	addCodeDataACS0(198, {"",        1, addCallFunc(CallFunc_GetObjectZ)});
-	
-	addFuncDataACS0( 200, addCallFunc(CallFunc_GetObjectVelX));
-	addFuncDataACS0( 201, addCallFunc(CallFunc_GetObjectVelY));
-	addFuncDataACS0( 202, addCallFunc(CallFunc_GetObjectVelZ));
-	addFuncDataACS0( 203, addCallFunc(CallFunc_GetObjectRoll));
-	addFuncDataACS0( 204, addCallFunc(CallFunc_GetObjectFloorTexture));
-	addFuncDataACS0( 205, addCallFunc(CallFunc_CheckObjectState));
-	addFuncDataACS0( 206, addCallFunc(CallFunc_CheckObjectFlag));
-	addFuncDataACS0( 207, addCallFunc(CallFunc_GetObjectClass));
-	addFuncDataACS0( 208, addCallFunc(CallFunc_GetObjectDye));
-
-	addFuncDataACS0( 209, addCallFunc(CallFunc_SetObjectVelocity));
-	addFuncDataACS0( 210, addCallFunc(CallFunc_SetObjectRoll));
-	addFuncDataACS0( 211, addCallFunc(CallFunc_SetObjectFlag));
-	addFuncDataACS0( 212, addCallFunc(CallFunc_SetObjectClass));
-	addFuncDataACS0( 213, addCallFunc(CallFunc_SetObjectDye));
 	addFuncDataACS0( 214, addCallFunc(CallFunc_SpawnObjectForced));
 
 	// 203 to 217: Implemented by ACSVM
@@ -141,22 +122,14 @@ Environment::Environment()
 	// 253: Implemented by ACSVM
 
 	// 256 to 257: Implemented by ACSVM
-	addCodeDataACS0(259, {"",        1, addCallFunc(CallFunc_GetObjectFloorZ)});
 
 	// 263: Implemented by ACSVM
-	addCodeDataACS0(260, {"",        1, addCallFunc(CallFunc_GetObjectAngle)});
 	addCodeDataACS0(270, {"",        0, addCallFunc(CallFunc_EndLog)});
 	// 273 to 275: Implemented by ACSVM
-	addCodeDataACS0(276, {"",        2, addCallFunc(CallFunc_SetObjectAngle)});
-	addCodeDataACS0(282, {"",        1, addCallFunc(CallFunc_GetObjectCeilingZ)});
 
 	// 291 to 325: Implemented by ACSVM
 
 	// 330: Implemented by ACSVM
-	addCodeDataACS0(331, {"",        1, addCallFunc(CallFunc_GetObjectPitch)});
-	addCodeDataACS0(332, {"",        1, addCallFunc(CallFunc_SetObjectPitch)});
-	addCodeDataACS0(334, {"",        1, addCallFunc(CallFunc_SetObjectState)});
-	//addCodeDataACS0(340, {"",        1, addCallFunc(CallFunc_GetObjectLightLevel)});
 	
 	// 349 to 361: Implemented by ACSVM
 
@@ -193,7 +166,6 @@ Environment::Environment()
 	addFuncDataACS0( 303, addCallFunc(CallFunc_PlaceHolder));*/
 	
 	addFuncDataACS0( 304, addCallFunc(CallFunc_PlayerSkin));
-	addFuncDataACS0( 305, addCallFunc(CallFunc_GetObjectDye));
 	addFuncDataACS0( 306, addCallFunc(CallFunc_PlayerEmeralds));
 	addFuncDataACS0( 307, addCallFunc(CallFunc_PlayerLap));
 	addFuncDataACS0( 308, addCallFunc(CallFunc_LowestLap));

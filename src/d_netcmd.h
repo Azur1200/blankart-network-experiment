@@ -22,6 +22,11 @@
 extern "C" {
 #endif
 
+// Big overshoot
+#define PREFLISTSIZE (4096)
+
+extern char prefvoiceliststr[PREFLISTSIZE];
+
 extern consvar_t cv_showgremlins;
 
 // console vars
@@ -30,7 +35,7 @@ extern consvar_t cv_playercolor[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_skin[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_follower[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_followercolor[MAXSPLITSCREENPLAYERS];
-extern consvar_t cv_voice[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_autovoxpref[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_dummyrestatspeed[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_dummyrestatweight[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_dummyrestatrandom[MAXSPLITSCREENPLAYERS];
@@ -189,11 +194,9 @@ extern consvar_t cv_kartstacking_ssmt_speedboost;
 extern consvar_t cv_kartstacking_ssmt_accelboost;
 extern consvar_t cv_kartstacking_ssmt_handleboost;
 
-extern consvar_t cv_kartstacking_recspin_speedboost_lo;
 extern consvar_t cv_kartstacking_recspin_accelboost_lo;
 extern consvar_t cv_kartstacking_recspin_handleboost_lo;
 
-extern consvar_t cv_kartstacking_recspin_speedboost_hi;
 extern consvar_t cv_kartstacking_recspin_accelboost_hi;
 extern consvar_t cv_kartstacking_recspin_handleboost_hi;
 
@@ -226,6 +229,7 @@ extern consvar_t cv_kartslopeboost;
 extern consvar_t cv_kartinvintheme;
 extern consvar_t cv_kartinvindamage;
 extern consvar_t cv_kartsmonitordist;
+extern consvar_t cv_kartsmonitor_congadist;
 extern consvar_t cv_kartsmonitor_decaydist;
 extern consvar_t cv_kartsmonitor_decaytime;
 
@@ -237,19 +241,24 @@ extern consvar_t cv_kartbubble_boost_offroadignore;
 extern consvar_t cv_kartflame_fastfuel;
 extern consvar_t cv_kartflame_offroadburn;
 extern consvar_t cv_kartattraction_assistpower;
+extern consvar_t cv_kartattraction_aoedmg;
+extern consvar_t cv_kartattraction_aoeemp;
 extern consvar_t cv_kartaltshrink_arrowbullet;
 extern consvar_t cv_kartaltshrink_arrowbulletthres;
+extern consvar_t cv_kartaltshrink_runneranger;
 
 extern consvar_t cv_kartairsquish;
 
 extern consvar_t cv_kartairdrop;
 
 extern consvar_t cv_kartairthrust;
-extern consvar_t cv_kartairthrust_reductionrate;
+extern consvar_t cv_kartairthrust_reductionrate, cv_kartairthrust_flashreductionrate;
 extern consvar_t cv_kartairthrust_power1;
 extern consvar_t cv_kartairthrust_power2;
 extern consvar_t cv_kartairthrust_power3;
 extern consvar_t cv_kartairthrust_power4;
+
+extern consvar_t cv_kartairsuperring_reductionrate;
 
 extern consvar_t cv_kartwaterskiplock;
 
@@ -257,12 +266,18 @@ extern consvar_t cv_kartitemlitter, cv_kartitempush;
 
 extern consvar_t cv_kartantibump;
 
+extern consvar_t cv_trailslow;
+
+extern consvar_t cv_playerbump;
+
 extern consvar_t cv_kartforcelegacyodds;
 
 extern consvar_t cv_handleboostslip;
 
 extern consvar_t cv_kartrecoverydash;
 extern consvar_t cv_kartrecoverydash_spinspeed;
+
+extern consvar_t cv_kartkeepstuff;
 
 extern consvar_t cv_kartoddsdist;
 extern consvar_t cv_kartlegacyoddsdist;
@@ -324,6 +339,8 @@ extern consvar_t cv_schedule;
 
 extern consvar_t cv_debugmappatch;
 
+extern consvar_t cv_allowmismatchmappatch;
+
 extern char timedemo_name[256];
 extern boolean timedemo_csv;
 extern char timedemo_csv_id[256];
@@ -347,31 +364,32 @@ typedef enum
 	XD_RANDOMSEED,  // 14
 	XD_RUNSOC,      // 15
 	XD_REQADDFILE,  // 16
-	XD_SETMOTD,     // 17
-	XD_RESPAWN,     // 18
-	XD_DEMOTED,     // 19
-	XD_LUACMD,      // 20
-	XD_LUAVAR,      // 21
-	XD_LUAFILE,     // 22
+	XD_RESPAWN,     // 17
+	XD_DEMOTED,     // 18
+	XD_LUACMD,      // 19
+	XD_LUAVAR,      // 20
+	XD_LUAFILE,     // 21
 
 	// SRB2Kart
-	XD_SETUPVOTE,   // 23
-	XD_MODIFYVOTE,  // 24
-	XD_PICKVOTE,    // 25
-	XD_REMOVEPLAYER,// 26
-	XD_POWERLEVEL,  // 27
-	XD_PARTYINVITE, // 28
-	XD_ACCEPTPARTYINVITE, // 29
-	XD_LEAVEPARTY,  // 30
-	XD_CANCELPARTYINVITE, // 31
-	XD_ADDBOT,      // 32
-	XD_DISCORD,     // 33
-	XD_PLAYSOUND,   // 34
-	XD_SCHEDULETASK, // 35
-	XD_SCHEDULECLEAR, // 36
-	XD_AUTOMATE,    // 37
-	XD_CHEAT,       // 38
-	XD_MAPQUEUE,	// 39
+	XD_SETUPVOTE,   // 22
+	XD_MODIFYVOTE,  // 23
+	XD_PICKVOTE,    // 24
+	XD_REMOVEPLAYER,// 25
+	XD_POWERLEVEL,  // 26
+	XD_PARTYINVITE, // 27
+	XD_ACCEPTPARTYINVITE, // 28
+	XD_LEAVEPARTY,  // 29
+	XD_CANCELPARTYINVITE, // 30
+	XD_ADDBOT,      // 31
+	XD_DISCORD,     // 32
+	XD_PLAYSOUND,   // 33
+	XD_SCHEDULETASK, // 34
+	XD_SCHEDULECLEAR, // 35
+	XD_AUTOMATE,    // 36
+	XD_CHEAT,       // 37
+	XD_MAPQUEUE,	// 38
+	XD_CLANTAGSET,	// 39
+	XD_CLANTAGCLEAR,// 40
 
 	MAXNETXCMD
 } netxcmd_t;
@@ -452,6 +470,7 @@ typedef enum
 	AEV_VOTESTART,
 	AEV_QUEUESTART,
 	AEV_QUEUEEND,
+	AEV_LEVELSTART,
 	AEV__MAX
 } automateEvents_t;
 

@@ -29,6 +29,8 @@
 
 #include "v_video.h" // V_ClearClipRect
 
+#include <tracy/tracy/TracyC.h>
+
 /* =========================================================================
                                   ABSTRACTION
    ========================================================================= */
@@ -718,7 +720,12 @@ void LUA_HookHUD(huddrawlist_h list, int hook_type)
 		init_hook_call(&hook, 0, res_none);
 		call_mapped_hud(&hook, map);
 
+		lua_settop(gL, 0);
+
 		hud_running = false;
+
+		lua_pushnil(gL);
+		lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 	}
 }
 
@@ -726,8 +733,54 @@ void LUA_HookHUD(huddrawlist_h list, int hook_type)
                                SPECIALIZED HOOKS
    ========================================================================= */
 
+void LUA_HookPlayerThink(player_t *player)
+{
+	TracyCZone(__zone, true);
+	const int type = HOOK(PlayerThink);
+	Hook_State hook = {};
+
+	const hook_t * map = &hookIds[type];
+	int k;
+
+	if (prepare_hook(&hook, false, type))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		// call_hooks(&hook, 1, res_true);
+
+		init_hook_call(&hook, 0, res_none);
+		for (k = 0; k < map->numHooks; ++k)
+		{
+			get_hook(&hook, map->ids, k);
+
+			if (cv_perfstats.value == PS_THINKFRAME)
+			{
+				lua_pushvalue(gL, -1);/* need the function again */
+			}
+
+			{
+				TracyCZoneN(__zone, "LUA_HookPlayerThink (call_single_hook)", true);
+				call_single_hook(&hook);
+
+				if (cv_perfstats.value == PS_THINKFRAME)
+				{
+					lua_Debug ar;
+					lua_getinfo(gL, ">S", &ar);
+					TracyCMessage(ar.short_src, strlen(ar.short_src));
+				}
+
+				TracyCZoneEnd(__zone);
+			}
+		}
+
+		lua_settop(gL, 0);
+	}
+	
+	TracyCZoneEnd(__zone);
+}
+
 void LUA_HookThinkFrame(void)
 {
+	TracyCZone(__zone, true);
 	const int type = HOOK(ThinkFrame);
 
 	// variables used by perf stats
@@ -753,20 +806,28 @@ void LUA_HookThinkFrame(void)
 				time_taken = I_GetPreciseTime();
 			}
 
-			call_single_hook(&hook);
-
-			if (cv_perfstats.value == PS_THINKFRAME)
 			{
-				lua_Debug ar;
-				time_taken = I_GetPreciseTime() - time_taken;
-				lua_getinfo(gL, ">S", &ar);
-				PS_SetThinkFrameHookInfo(hook_index, time_taken, ar.short_src);
-				hook_index++;
+				TracyCZoneN(__zone, "LUA_HookThinkFrame (call_single_hook)", true);
+				call_single_hook(&hook);
+
+				if (cv_perfstats.value == PS_THINKFRAME)
+				{
+					lua_Debug ar;
+					time_taken = I_GetPreciseTime() - time_taken;
+					lua_getinfo(gL, ">S", &ar);
+					PS_SetThinkFrameHookInfo(hook_index, time_taken, ar.short_src);
+					TracyCMessage(ar.short_src, strlen(ar.short_src));
+					hook_index++;
+				}
+
+				TracyCZoneEnd(__zone);
 			}
 		}
 
 		lua_settop(gL, 0);
 	}
+	
+	TracyCZoneEnd(__zone);
 }
 
 int LUA_HookMobjLineCollide(mobj_t *mobj, line_t *line)
@@ -971,6 +1032,10 @@ int LUA_HookPlayerMsg(int source, int target, int flags, char *msg)
 			LUA_PushUserdata(gL, &players[target-1], META_PLAYER); // target
 		}
 		lua_pushstring(gL, msg); // msg
+
+		// stand-in for spam protect that doesn't exist here
+		// todo / need help: compatmode?
+		lua_pushboolean(gL, false);
 
 		call_hooks(&hook, 1, res_true);
 	}
@@ -1291,6 +1356,74 @@ boolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, boolean wasHoldingI
 
 	*force = state.force;
 	return state.override;
+}
+
+boolean LUA_HookPlayerItemThink(player_t *player, UINT8 itemType)
+{
+	Hook_State hook = {};
+	if (prepare_hook(&hook, false, HOOK(PlayerItemThink)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushinteger(gL, itemType);
+
+		call_hooks(&hook, 1, res_true);
+	}
+	
+	return hook.status;
+}
+
+boolean LUA_HookPlayerItemUse(player_t *player, UINT8 itemType, boolean attackJustDown, boolean onground, boolean force, boolean noHyudoro)
+{
+	Hook_State hook = {};
+	if (prepare_hook(&hook, false, HOOK(PlayerItemUse)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushinteger(gL, itemType);
+		lua_pushboolean(gL, attackJustDown);
+		lua_pushboolean(gL, onground);
+		lua_pushboolean(gL, force);
+		lua_pushboolean(gL, noHyudoro);
+
+		call_hooks(&hook, 1, res_true);
+	}
+	
+	return hook.status;
+}
+
+boolean LUA_HookPlayerItemHoldUse(player_t *player, UINT8 itemType, boolean attackJustDown, boolean onground, boolean force, boolean noHyudoro)
+{
+	Hook_State hook = {};
+	if (prepare_hook(&hook, false, HOOK(PlayerItemHoldUse)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushinteger(gL, itemType);
+		lua_pushboolean(gL, attackJustDown);
+		lua_pushboolean(gL, onground);
+		lua_pushboolean(gL, force);
+		lua_pushboolean(gL, noHyudoro);
+
+		call_hooks(&hook, 1, res_true);
+	}
+	
+	return hook.status;
+}
+
+boolean LUA_HookPlayerItemReleaseUse(player_t *player, UINT8 itemType, boolean attackJustDown, boolean onground, boolean force, boolean noHyudoro)
+{
+	Hook_State hook = {};
+	if (prepare_hook(&hook, false, HOOK(PlayerItemReleaseUse)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushinteger(gL, itemType);
+		lua_pushboolean(gL, attackJustDown);
+		lua_pushboolean(gL, onground);
+		lua_pushboolean(gL, force);
+		lua_pushboolean(gL, noHyudoro);
+
+		call_hooks(&hook, 1, res_true);
+	}
+	
+	return hook.status;
 }
 
 typedef struct {

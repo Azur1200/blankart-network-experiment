@@ -42,10 +42,12 @@ static const char *const vectorfield_opt[] = {
 // VECTOR2 MEMBERS //
 /////////////////////
 
+int vectorfield_fields_ref = LUA_NOREF;
+
 static int vector2d_get(lua_State *L)
 {
 	vector2_t *vec = luaL_checkudata(L, 1, META_VECTOR2);
-	enum vectorfield_e field = luaL_checkoption(L, 2, vectorfield_opt[0], vectorfield_opt);
+	enum vectorfield_e field = Lua_optoption(L, 2, vectorfield_clone, vectorfield_fields_ref);
 
 	switch(field)
 	{
@@ -109,7 +111,7 @@ static int vector3d_opposite(lua_State *L)
 static int vector3d_get(lua_State *L)
 {
 	vector3_t *vec = luaL_checkudata(L, 1, META_VECTOR3);
-	enum vectorfield_e field = luaL_checkoption(L, 2, vectorfield_opt[0], vectorfield_opt);
+	enum vectorfield_e field = Lua_optoption(L, 2, vectorfield_clone, vectorfield_fields_ref);
 
 	if (!vec)
 		return luaL_error(L, "accessed vector3_t doesn't exist anymore.");
@@ -202,6 +204,8 @@ static int vector3d_unm(lua_State *L)
 
 int LUA_VectorLib(lua_State *L)
 {
+	vectorfield_fields_ref = Lua_CreateFieldTable(L, vectorfield_opt);
+
 	LUA_RegisterUserdataMetatable(L, META_VECTOR2, vector2d_get, NULL, NULL);
 
 	luaL_newmetatable(L, META_VECTOR3);

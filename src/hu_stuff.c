@@ -82,6 +82,8 @@ patch_t *pinglocal[2]; // mindelay indecator
 patch_t *framecounter;
 patch_t *frameslash;	// framerate stuff. Used in screen.c
 
+patch_t *srb2back = NULL;
+
 static player_t *plr;
 boolean hu_keystrokes; // :)
 boolean chat_on; // entering a chat message?
@@ -113,49 +115,6 @@ static void HU_DrawRankings(void);
 //======================================================================
 //                 KEYBOARD LAYOUTS FOR ENTERING TEXT
 //======================================================================
-
-char *shiftxform;
-
-char english_shiftxform[] =
-{
-	0,
-	1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-	11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-	21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
-	31,
-	' ', '!', '"', '#', '$', '%', '&',
-	'"', // shift-'
-	'(', ')', '*', '+',
-	'<', // shift-,
-	'_', // shift--
-	'>', // shift-.
-	'?', // shift-/
-	')', // shift-0
-	'!', // shift-1
-	'@', // shift-2
-	'#', // shift-3
-	'$', // shift-4
-	'%', // shift-5
-	'^', // shift-6
-	'&', // shift-7
-	'*', // shift-8
-	'(', // shift-9
-	':',
-	':', // shift-;
-	'<',
-	'+', // shift-=
-	'>', '?', '@',
-	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-	'{', // shift-[
-	'|', // shift-backslash - OH MY GOD DOES WATCOM SUCK
-	'}', // shift-]
-	'"', '_',
-	'~', // shift-`
-	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-	'{', '|', '}', '~', 127
-};
 
 static char cechotext[1024];
 static tic_t cechotimer = 0;
@@ -209,6 +168,8 @@ void HU_LoadGraphics(void)
 	// fps stuff
 	HU_UpdatePatch(&framecounter, "FRAMER");
 	HU_UpdatePatch(&frameslash, "FRAMESL");
+
+	HU_UpdatePatch(&srb2back, "SRB2BACK");
 }
 
 // Initialise Heads up
@@ -234,9 +195,6 @@ void HU_Init(void)
 
 		missingpat = W_CachePatchNum(missingnum, PU_STATIC);
 	}
-
-	// set shift translation table
-	shiftxform = english_shiftxform;
 
 	/*
 	Setup fonts
@@ -851,9 +809,10 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 //
 void HU_TickSongCredits(void)
 {
-	if (cursongcredit.def == NULL) // No def
+	if (cursongcredit.text == NULL) // No def
 	{
-		S_ClearMusicCredit();
+		if (g_realsongcredit == NULL)
+			S_StopMusicCredit();
 		return;
 	}
 
@@ -2000,8 +1959,17 @@ void HU_DrawSongCredits(void)
 	INT32 snapflags = cursongcredit.snapflags;
 	INT32 bgt;
 
-	if (!cursongcredit.def || cursongcredit.trans >= NUMTRANSMAPS) // No def
+	if (!cursongcredit.text || cursongcredit.trans >= NUMTRANSMAPS) // No def
 	{
+		return;
+	}
+
+	if (menustack[0] && (menustack[0] == MN_MPAUSE ||
+		menustack[0] == MN_MAPAUSE ||
+		menustack[0] == MN_SPAUSE)
+	)
+	{
+		// We already display this here. No need to do it twice!
 		return;
 	}
 
@@ -2098,7 +2066,7 @@ void HU_Drawer(void)
 		V_DrawCenteredString(BASEVIDWIDTH/2, 180, V_YELLOWMAP | V_ALLOWLOWERCASE, resynch_text);
 	}
 
-	if (modeattacking && pausedelay > 0 && !pausebreakkey)
+	if (modeattacking && pausedelay > 0)
 	{
 		INT32 strength = ((pausedelay - 1 - NEWTICRATE/2)*10)/(NEWTICRATE/3);
 		INT32 x = BASEVIDWIDTH/2, y = BASEVIDHEIGHT/2; // obviously incorrect values while we scrap hudinfo
@@ -2523,6 +2491,7 @@ static void HU_DrawRankings(void)
 		completed[i] = true;
 
 		tab[scorelines].name = player_names[i];
+		strncpy(&tab[scorelines].clan, players[i].clan, MAXCLANTAG);
 
 		if (gametypes[gametype]->rules & GTR_CIRCUIT)
 		{

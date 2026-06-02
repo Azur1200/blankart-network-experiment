@@ -628,6 +628,9 @@ static PFNglUniform3fv pglUniform3fv;
 static PFNglGetUniformLocation pglGetUniformLocation;
 
 // 13062019
+
+static INT32 gl_enable_screen_textures = 2;
+
 typedef enum
 {
 	// textures
@@ -653,6 +656,8 @@ typedef enum
 
 	// misc.
 	gluniform_leveltime,
+
+	gluniform_scr_resolution,
 
 	gluniform_max,
 } gluniform_t;
@@ -863,6 +868,10 @@ void GL_SetShader(int slot)
 		GL_UnSetShader();
 		return;
 	}
+
+	// If using model lighting, set the appropriate shader.
+	if (slot == SHADER_MODEL && model_lighting)
+		slot = SHADER_MODEL_LIGHTING;
 
 	if (gl_allowshaders)
 	{
@@ -1935,6 +1944,8 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 
 		UNIFORM_1(shader->uniforms[gluniform_leveltime], shader_leveltime, pglUniform1f);
 
+		UNIFORM_2(shader->uniforms[gluniform_scr_resolution], (GLfloat)vid.width, (GLfloat)vid.height, pglUniform2f);
+
 		#undef UNIFORM_1
 		#undef UNIFORM_2
 		#undef UNIFORM_3
@@ -2050,24 +2061,26 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	shader->uniforms[gluniform_brightmap] = GETUNI("brightmap");
 
 	// lighting
-	shader->uniforms[gluniform_poly_color] = GETUNI("poly_color");
-	shader->uniforms[gluniform_tint_color] = GETUNI("tint_color");
-	shader->uniforms[gluniform_fade_color] = GETUNI("fade_color");
-	shader->uniforms[gluniform_lighting] = GETUNI("lighting");
-	shader->uniforms[gluniform_fade_start] = GETUNI("fade_start");
-	shader->uniforms[gluniform_fade_end] = GETUNI("fade_end");
-	shader->uniforms[gluniform_newfade] = GETUNI("newfade");
-	shader->uniforms[gluniform_light_dir] = GETUNI("light_dir");
-	shader->uniforms[gluniform_light_contrast] = GETUNI("light_contrast");
-	shader->uniforms[gluniform_light_backlight] = GETUNI("light_backlight");
+	shader->uniforms[gluniform_poly_color]            = GETUNI("poly_color");
+	shader->uniforms[gluniform_tint_color]            = GETUNI("tint_color");
+	shader->uniforms[gluniform_fade_color]            = GETUNI("fade_color");
+	shader->uniforms[gluniform_lighting]              = GETUNI("lighting");
+	shader->uniforms[gluniform_fade_start]            = GETUNI("fade_start");
+	shader->uniforms[gluniform_fade_end]              = GETUNI("fade_end");
+	shader->uniforms[gluniform_newfade]               = GETUNI("newfade");
+	shader->uniforms[gluniform_light_dir]             = GETUNI("light_dir");
+	shader->uniforms[gluniform_light_contrast]        = GETUNI("light_contrast");
+	shader->uniforms[gluniform_light_backlight]       = GETUNI("light_backlight");
 
 	// palette rendering
-	shader->uniforms[gluniform_palette_tex] = GETUNI("palette_tex");
-	shader->uniforms[gluniform_palette_lookup_tex] = GETUNI("palette_lookup_tex");
-	shader->uniforms[gluniform_lighttable_tex] = GETUNI("lighttable_tex");
+	shader->uniforms[gluniform_palette_tex]           = GETUNI("palette_tex");
+	shader->uniforms[gluniform_palette_lookup_tex]    = GETUNI("palette_lookup_tex");
+	shader->uniforms[gluniform_lighttable_tex]        = GETUNI("lighttable_tex");
+
+	shader->uniforms[gluniform_scr_resolution]        = GETUNI("scr_resolution");
 
 	// misc. (custom shaders)
-	shader->uniforms[gluniform_leveltime] = GETUNI("leveltime");
+	shader->uniforms[gluniform_leveltime]             = GETUNI("leveltime");
 
 #undef GETUNI
 
@@ -2086,7 +2099,7 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 
 	// restore gl shader state
 	pglUseProgram(gl_shaderstate.program);
-	#undef UNIFORM_1
+#undef UNIFORM_1
 
 	return true;
 }
@@ -2399,6 +2412,10 @@ void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value)
 			anisotropic_filter = min(Value,maximumAnisotropy);
 			if (maximumAnisotropy)
 				Flush(); //??? if we want to change filter mode by texture, remove this
+			break;
+
+		case HWD_SET_SCREEN_TEXTURES:
+			gl_enable_screen_textures = Value;
 			break;
 
 		default:
@@ -2724,7 +2741,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 
 	if (Surface->LightTableId && Surface->LightTableId != lt_downloaded)
 	{
-		pglActiveTexture(GL_TEXTURE2);
+		pglActiveTexture(GL_TEXTURE3);
 		pglBindTexture(GL_TEXTURE_2D, Surface->LightTableId);
 		pglActiveTexture(GL_TEXTURE0);
 		lt_downloaded = Surface->LightTableId;
@@ -3033,6 +3050,9 @@ void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 	float float_x, float_y, float_nextx, float_nexty;
 	float xfix, yfix;
 
+	if (gl_enable_screen_textures != 2)
+		return;
+
 	const float blackBack[16] =
 	{
 		-16.0f, -16.0f, 6.0f,
@@ -3125,6 +3145,9 @@ void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags)
 {
 	float xfix, yfix;
 
+	if (gl_enable_screen_textures != 2)
+		return;
+
 	const float screenVerts[12] =
 	{
 		-1.0f, -1.0f, 1.0f,
@@ -3172,6 +3195,9 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 	float xfix, yfix;
 
 	INT32 fademaskdownloaded = tex_downloaded; // the fade mask that has been set
+
+	if (!gl_enable_screen_textures)
+		return;
 
 	const float screenVerts[12] =
 	{
@@ -3250,6 +3276,9 @@ void GL_MakeScreenTexture(int tex)
 {
 	boolean firstTime = (screenTextures[tex] == 0);
 
+	if (!gl_enable_screen_textures)
+		return;
+
 	// Create screen texture
 	if (firstTime)
 		pglGenTextures(1, &screenTextures[tex]);
@@ -3274,6 +3303,9 @@ void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8
 	float xfix, yfix;
 	float fix[8];
 	float i;
+
+	if (gl_enable_screen_textures != 2)
+		return;
 
 	GLubyte color[4] = {255, 255, 255, 255};
 
@@ -3392,6 +3424,9 @@ void GL_DrawScreenFinalTexture(int tex, int width, int height)
 	float off[12];
 	float fix[8];
 
+	if (gl_enable_screen_textures != 2)
+		return;
+
 	xfix = 1/((float)(texsize)/((float)((screen_width))));
 	yfix = 1/((float)(texsize)/((float)((screen_height))));
 
@@ -3438,6 +3473,8 @@ void GL_DrawScreenFinalTexture(int tex, int width, int height)
 	clearColour.alpha = 1;
 	GL_ClearBuffer(true, false, false, &clearColour);
 	pglBindTexture(GL_TEXTURE_2D, screenTextures[tex]);
+
+	Shader_SetUniforms(NULL, NULL, NULL, NULL); // prepare shader, if it is enabled
 
 	pglColor4ubv(white);
 

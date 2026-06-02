@@ -452,13 +452,21 @@ static const char *SOCK_GetNodeAddress(INT32 node)
 {
 	if (node == 0)
 		return "self";
+
+	if (node < 0 || node > MAXNETNODES)
+		return NULL;
+
 	if (!nodeconnected[node])
 		return NULL;
+
 	return SOCK_AddrToStr(&clientaddress[node]);
 }
 
 static UINT32 SOCK_GetNodeAddressInt(INT32 node)
 {
+	if (node < 0 || node > MAXNETNODES)
+		return 0;
+
 	if (nodeconnected[node] && clientaddress[node].any.sa_family == AF_INET)
 	{
 		return clientaddress[node].ip4.sin_addr.s_addr;

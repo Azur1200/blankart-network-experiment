@@ -1,4 +1,4 @@
-// SONIC ROBO BLAST 2
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2025 by Classic Development Team.
 // Copyright (C) 2014-2020 by Sonic Team Junior.

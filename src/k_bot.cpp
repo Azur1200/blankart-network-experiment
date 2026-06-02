@@ -1300,8 +1300,11 @@ static INT32 K_HandleBotTrack(botdata_t *bd, const player_t *player, angle_t des
 	if (anglediff > ANGLE_67h)
 	{
 		// Wrong way!
-		bd->acceldown = false;
-		bd->brakedown = true;
+		if (onground)
+		{
+			bd->acceldown = false;
+			bd->brakedown = true;
+		}
 	}
 	else
 	{

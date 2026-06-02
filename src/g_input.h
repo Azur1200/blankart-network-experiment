@@ -96,6 +96,10 @@ typedef enum
 	gc_director,
 	gc_horncode,
 	gc_freelook,
+	gc_flickstick_left, // ASTROS BULLSHIT OH YEAH
+	gc_flickstick_right, // ASTROS BULLSHIT OH YEAH
+	gc_flickstick_forward, // ASTROS BULLSHIT OH YEAH
+	gc_flickstick_back, // ASTROS BULLSHIT OH YEAH
 	num_gamecontrols
 } gamecontrols_e;
 
@@ -104,6 +108,8 @@ typedef enum
 	DEADZONE_X,
 	DEADZONE_Y,
 	DEADZONE_BUTTON,
+	DEADZONE_2D,
+	DEADZONE_NONE,
 } analogdeadzone_e;
 
 typedef enum
@@ -121,6 +127,14 @@ extern consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_controllerrumble[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_rumblestrength[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_controllerled[MAXSPLITSCREENPLAYERS];
+
+typedef enum
+{
+	TILTCONTROL_OFF = 0,
+	TILTCONTROL_STEER = 1,
+	TILTCONTROL_CAME = 2,
+	TILTCONTROL_ON = 3
+} tiltcontrol_e;
 extern consvar_t cv_tiltcontrol[MAXSPLITSCREENPLAYERS];
 
 // current state of the keys: JOYAXISRANGE or 0 when boolean.
@@ -192,9 +206,8 @@ void G_ResetControls(UINT8 p);
 void G_SaveKeySetting(FILE *f, INT32 (*fromcontrolsa)[MAXINPUTMAPPING], INT32 (*fromcontrolsb)[MAXINPUTMAPPING], INT32 (*fromcontrolsc)[MAXINPUTMAPPING], INT32 (*fromcontrolsd)[MAXINPUTMAPPING]);
 INT32 G_CheckDoubleUsage(INT32 keynum, INT32 playernum, boolean modify);
 
-#define MAXGAMEPADTILT (50*FRACUNIT/100)
-// #define ACCELEROMETERGRAVITY ((fixed_t)(9.80665f * ((float)FRACUNIT)))
-#define ACCELEROMETERGRAVITY 642688
+#define MAXGAMEPADTILT (55*FRACUNIT/100)
+#define ACCELEROMETERGRAVITY (642688) // 9.80665
 boolean G_GetGamepadCanUseTilt(INT32 p);
 void G_ResetGyroCalibration(INT32 p);
 void G_UpdateGamepadAutoCalibration(INT32 p, vector3_t accel, vector3_t gyro, boolean allowautocalibration);

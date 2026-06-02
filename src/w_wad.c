@@ -125,7 +125,7 @@ wadfile_t *wadfiles[MAX_WADFILES]; // 0 to numwadfiles-1 are valid
 // If not done on a Mac then open wad files
 // can prevent removable media they are on from
 // being ejected
-void W_Shutdown(void)
+DESTRUCTOR static void W_Shutdown(void)
 {
 	lumpnum_map_cleanup(&lumpnumcache);
 
@@ -155,8 +155,7 @@ void W_Shutdown(void)
 }
 
 // the lumpnum cache needs to be initialized before use
-// call this as early as possible!
-void W_Startup(void)
+CONSTRUCTOR static void W_Startup(void)
 {
 	lumpnum_map_init(&lumpnumcache);
 	lumpnum_map_reserve(&lumpnumcache, LUMPNUMCACHESIZE);
@@ -467,7 +466,8 @@ FUNCINLINE static ATTRINLINE void W_InvalidateLumpnumCache(void)
 	lumpnum_map_clear(&lumpnumcache);
 }
 
-FUNCINLINE static ATTRINLINE UINT32 W_HashLumpName(const char *name, size_t len)
+// This is unfornately duped in command.c since I want this inlined...
+FUNCINLINE ATTRINLINE UINT32 W_HashLumpName(const char *name, size_t len)
 {
 	char *uname = (char *)alloca(len + 1);
 	strlcpy(uname, name, len + 1);
@@ -1076,7 +1076,7 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boole
 #ifdef HWRENDER
 	// Read shaders from file
 	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
-		HWR_LoadCustomShadersFromFile(numwadfiles - 1, (type == RET_PK3));
+		HWR_LoadCustomShadersFromFile(numwadfiles - 1, (type == RET_PK3), false);
 #endif // HWRENDER
 
 	// check if compatmode is needed
@@ -1340,7 +1340,11 @@ UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 	if (!TestValidLump(wad, 0))
 		return INT16_MAX;
 
-	namelen = strlen(name);
+	// Name = SHORTNAME. Truncate/move the string to something that has a max of 8 characters.
+	// Will this cause lumpname/lumphash collisions? Of course it will! But we need it for
+	// SRB2Kart compatibility, so...
+	namelen = min(strlen(name), 8);
+
 	hash = W_HashLumpName(name, namelen); // Not a mistake, legacy system for short lumpnames
 
 	//

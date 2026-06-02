@@ -372,11 +372,15 @@ void Z_FreeTags(INT32 lowtag, INT32 hightag)
 		g_level_tiny_pool.release();
 	}
 
-	for (block = head.next; block != &head; block = next)
 	{
-		next = block->next; // get link before freeing
-		if (block->tag >= lowtag && block->tag <= hightag)
+		TracyCZoneN(__zone, "Z_Free Blocks", true);
+		for (block = head.next; block != &head; block = next)
+		{
+			next = block->next; // get link before freeing
+			if (block->tag >= lowtag && block->tag <= hightag)
 			Z_Free(MEMORY(block));
+		}
+		TracyCZoneEnd(__zone);
 	}
 	TracyCZoneEnd(__zone);
 }
@@ -449,6 +453,7 @@ void Z_CheckHeap(INT32 i)
 	memblock_t *block;
 	UINT32 blocknumon = 0;
 	void *given;
+	TracyCZone(__zone, true);
 
 	for (block = head.next; block != &head; block = block->next)
 	{
@@ -501,6 +506,8 @@ void Z_CheckHeap(INT32 i)
 			);
 		}
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 // ------------------------

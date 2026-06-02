@@ -329,6 +329,7 @@ INT32 MR_PlaybackAdvance(INT32 choice);
 INT32 MR_PlaybackSetViews(INT32 choice);
 INT32 MR_PlaybackAdjustView(INT32 choice);
 INT32 MR_PlaybackToggleFreecam(INT32 choice);
+INT32 MR_PlaybackToggleDirector(INT32 choice);
 INT32 MR_PlaybackQuit(INT32 choice);
 INT32 MR_HandleImageDef(INT32 choice);
 INT32 MR_HandleMusicTest(INT32 choice);

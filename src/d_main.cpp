@@ -54,6 +54,7 @@
 #include "p_saveg.h"
 #include "r_main.h"
 #include "r_local.h"
+#include "r_voicepreference.hpp" // Preferences directory
 #include "s_sound.h"
 #include "st_stuff.h"
 #include "v_video.h"
@@ -102,8 +103,8 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x5bb203462b8eb19b
-#define ASSET_HASH_MAPPATCH_PK3        0x1745690024efbaf8
+#define ASSET_HASH_MAIN_PK3            0x9ecb761ca0cac6e5
+#define ASSET_HASH_MAPPATCH_PK3        0xdfb3c9da6c8c3adf
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
 #define ASSET_HASH_PATCH_PK3           0x0000000000000000
@@ -124,9 +125,9 @@
 // Version numbers for netplay :upside_down_face:
 int    VERSION;
 int SUBVERSION;
-#ifdef COMMITVERSION
+// #ifdef COMMITVERSION
 UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
-#endif
+// #endif
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
@@ -338,13 +339,12 @@ boolean D_RenderLevel(void)
 		if (r_splitscreen == 2) // Draw over the fourth screen so you don't have to stare at a HOM :V
 		{
 			// V_DrawPatchFill, but for the fourth screen only
-			patch_t *pat = static_cast<patch_t*>(W_CachePatchName("SRB2BACK", PU_CACHE));
-			INT32 x, y, pw = SHORT(pat->width) * vid.dup, ph = SHORT(pat->height) * vid.dup;
+			INT32 x, y, pw = SHORT(srb2back->width) * vid.dup, ph = SHORT(srb2back->height) * vid.dup;
 
 			for (x = vid.width>>1; x < vid.width; x += pw)
 			{
 				for (y = vid.height>>1; y < vid.height; y += ph)
-					V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
+					V_DrawScaledPatch(x, y, V_NOSCALESTART, srb2back);
 			}
 		}
 	}
@@ -664,7 +664,7 @@ static void D_Display(void)
 		else
 			py = viewwindowy + 4;
 		patch = static_cast<patch_t*>(W_CachePatchName("M_PAUSE", PU_PATCH));
-		V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - patch->width)/2, py, 0, patch);
+		V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - patch->width)/2, py, V_SNAPTOTOP, patch);
 	}
 
 	if (demo.rewinding)
@@ -954,6 +954,10 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 
 tic_t rendergametic;
 
+#ifdef TRACY_ENABLE
+const char * const sl_Tic = " Tic " ;
+#endif
+
 void D_SRB2Loop(void)
 {
 	tic_t entertic = 0, oldentertics = 0, realtics = 0, rendertimeout = INFTICS;
@@ -1019,6 +1023,8 @@ void D_SRB2Loop(void)
 		if (I_Interrupted())
 			I_Quit();
 
+		FrameMark;
+
 		precise_t enterprecise = I_GetPreciseTime();
 
 		memset(&g_dc, 0, sizeof(g_dc));
@@ -1056,6 +1062,8 @@ void D_SRB2Loop(void)
 
 		if (realtics > 0 || singletics)
 		{
+			FrameMarkStart(sl_Tic);
+
 			// don't skip more than 10 frames at a time
 			// (fadein / fadeout cause massive frame skip!)
 			if (realtics > 8)
@@ -1092,6 +1100,7 @@ void D_SRB2Loop(void)
 			}
 
 			renderisnewtic = true;
+			FrameMarkEnd(sl_Tic);
 		}
 		else
 		{
@@ -1142,8 +1151,6 @@ void D_SRB2Loop(void)
 		if (renderisnewtic)
 			S_UpdateClosedCaptions();
 
-		LUA_Step();
-
 #ifdef HAVE_DISCORDRPC
 		if (! dedicated)
 		{
@@ -1162,6 +1169,11 @@ void D_SRB2Loop(void)
 			frameskip = 0;
 			ranwipe = false;
 		}
+
+		// {
+		// 	ZoneScopedN("LUA_Step");
+		// 	LUA_Step();
+		// }
 	}
 }
 
@@ -1421,7 +1433,7 @@ static void IdentifyVersion(void)
 #endif
 }
 
-#ifdef COMMITVERSION
+// #ifdef COMMITVERSION
 static void D_AbbrevCommit (void)
 {
        UINT8 i;
@@ -1432,7 +1444,7 @@ static void D_AbbrevCommit (void)
                                &comprevision_abbrev_bin[i]);
        }
 }
-#endif
+// #endif
 
 static void
 D_ConvertVersionNumbers (void)
@@ -1572,6 +1584,7 @@ void D_SRB2Main(void)
 			strcatbf(liveeventbackup, srb2home, PATHSEP);
 
 			snprintf(luafiledir, sizeof luafiledir, "%s" PATHSEP "luafiles", srb2home);
+			snprintf(preferencesdir, sizeof preferencesdir, "%s" PATHSEP "preferences" PATHSEP, srb2home);
 #else // DEFAULTDIR
 			snprintf(srb2home, sizeof srb2home, "%s", userhome);
 			if (dedicated)
@@ -1584,6 +1597,7 @@ void D_SRB2Main(void)
 			strcatbf(liveeventbackup, userhome, PATHSEP);
 
 			snprintf(luafiledir, sizeof luafiledir, "%s" PATHSEP "luafiles", userhome);
+			snprintf(preferencesdir, sizeof preferencesdir, "%s" PATHSEP "preferences" PATHSEP, userhome);
 #endif // DEFAULTDIR
 		}
 
@@ -1803,6 +1817,8 @@ void D_SRB2Main(void)
 
 	//--------------------------------------------------------- CONFIG.CFG
 	M_FirstLoadConfig(); // WARNING : this do a "COM_BufExecute()"
+
+	R_LoadVoicePreferences();
 
 	VID_PrepareModeList(); // Regenerate Modelist according to cv_fullscreen
 

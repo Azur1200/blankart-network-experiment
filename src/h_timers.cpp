@@ -2,6 +2,7 @@
 //-----------------------------------------------------------------------------
 // Copyright (C) 2025 by haya3218.
 // Copyright (C) 2018-2024 by Kart Krew
+// Copyright (C) 2026 by Team Blankart.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -191,8 +192,8 @@ void K_getTimersDrawinfo(drawinfo_t *out)
 		flags |= V_HUDTRANSHALF;
 	}
 
-	out->x = fx;
-	out->y = fy;
+	out->x = fx+stplyr->karthud[khud_itemtimer_xoff];
+	out->y = fy+stplyr->karthud[khud_itemtimer_yoff];
 	out->flags = flags;
 }
 
@@ -293,6 +294,12 @@ void K_DisplayItemTimers(void)
 			"ringboost",
 			stplyr->ringboost,
 			{qche("K_TIRING")},
+			1,
+		},
+		{ // bubbleshield
+			"bubbleshield",
+			stplyr->bubbleboost,
+			{qche("K_TIBUBS")},
 			1,
 		},
 		{ // flameshield

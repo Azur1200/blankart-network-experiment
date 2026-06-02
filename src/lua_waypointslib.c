@@ -52,10 +52,12 @@ static const char *const waypointvars_opt[] = {
 #define RNOSET luaL_error(L, LUA_QL("waypoint_t") " field " LUA_QS " cannot be set.", field)
 #define RNOGET luaL_error(L, LUA_QL("waypoint_t") " field " LUA_QS " cannot be get.", field)
 
+int waypointvars_fields_ref = LUA_NOREF;
+
 static int waypoint_get(lua_State *L)
 {
 	waypoint_t *waypoint = *((waypoint_t **)luaL_checkudata(L, 1, META_WAYPOINT));
-	enum waypointvars field = luaL_checkoption(L, 2, NULL, waypointvars_opt);
+	enum waypointvars field = Lua_optoption(L, 2, -1, waypointvars_fields_ref);
 	
 	if (!waypoint)
 	{
@@ -152,7 +154,7 @@ static int waypoint_get(lua_State *L)
 static int waypoint_set(lua_State *L)
 {
 	waypoint_t *waypoint = *((waypoint_t **)luaL_checkudata(L, 1, META_WAYPOINT));
-	enum waypointvars field = luaL_checkoption(L, 2, waypointvars_opt[0], waypointvars_opt);
+	enum waypointvars field = Lua_optoption(L, 2, waypointvars_valid, waypointvars_fields_ref);
 
 	if (!waypoint)
 		return LUA_ErrInvalid(L, "waypoint_t");
@@ -268,6 +270,8 @@ static int lib_numWaypoints(lua_State *L)
 
 int LUA_WaypointLib(lua_State *L)
 {
+	waypointvars_fields_ref = Lua_CreateFieldTable(L, waypointvars_opt);
+
 	luaL_newmetatable(L, META_WAYPOINT);
 		lua_pushcfunction(L, waypoint_get);
 		lua_setfield(L, -2, "__index");

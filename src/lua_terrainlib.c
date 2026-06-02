@@ -146,10 +146,12 @@ static const char *const overlay_opt[] = {
 	NULL
 };
 
+int splash_fields_ref = LUA_NOREF;
+
 static int splash_get(lua_State *L)
 {
 	t_splash_t *splash = *((t_splash_t **)luaL_checkudata(L, 1, META_SPLASH));
-	enum splash field = luaL_checkoption(L, 2, splash_opt[0], splash_opt);
+	enum splash field = Lua_optoption(L, 2, splash_valid, splash_fields_ref);
 
 	if (!splash)
 	{
@@ -291,10 +293,12 @@ static int lib_numSplashes(lua_State *L)
 	return 1;
 }
 
+int footstep_fields_ref = LUA_NOREF;
+
 static int footstep_get(lua_State *L)
 {
 	t_footstep_t *footstep = *((t_footstep_t **)luaL_checkudata(L, 1, META_FOOTSTEP));
-	enum footstep field = luaL_checkoption(L, 2, footstep_opt[0], footstep_opt);
+	enum footstep field = Lua_optoption(L, 2, footstep_valid, footstep_fields_ref);
 
 	if (!footstep)
 	{
@@ -442,10 +446,12 @@ static int lib_numFootsteps(lua_State *L)
 	return 1;
 }
 
+int overlay_fields_ref = LUA_NOREF;
+
 static int overlay_get(lua_State *L)
 {
 	t_overlay_t *overlay = *((t_overlay_t **)luaL_checkudata(L, 1, META_OVERLAY));
-	enum overlay field = luaL_checkoption(L, 2, overlay_opt[0], overlay_opt);
+	enum overlay field = Lua_optoption(L, 2, overlay_valid, overlay_fields_ref);
 
 	if (!overlay)
 	{
@@ -581,10 +587,12 @@ static int lib_numOverlays(lua_State *L)
 	return 1;
 }
 
+int terrain_fields_ref = LUA_NOREF;
+
 static int terrain_get(lua_State *L)
 {
 	terrain_t *terrain = *((terrain_t **)luaL_checkudata(L, 1, META_TERRAIN));
-	enum terrain field = luaL_checkoption(L, 2, terrain_opt[0], terrain_opt);
+	enum terrain field = Lua_optoption(L, 2, terrain_valid, terrain_fields_ref);
 
 	if (!terrain)
 	{
@@ -746,6 +754,11 @@ static int lib_numTerrains(lua_State *L)
 
 int LUA_TerrainLib(lua_State *L)
 {
+	splash_fields_ref = Lua_CreateFieldTable(L, splash_opt);
+	footstep_fields_ref = Lua_CreateFieldTable(L, footstep_opt);
+	overlay_fields_ref = Lua_CreateFieldTable(L,overlay_opt);
+	terrain_fields_ref = Lua_CreateFieldTable(L, terrain_opt);
+
 	luaL_newmetatable(L, META_SPLASH);
 		lua_pushcfunction(L, splash_get);
 		lua_setfield(L, -2, "__index");

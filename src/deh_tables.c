@@ -350,7 +350,7 @@ const char *const PLAYERFLAG_LIST[] = {
 	"GAINAX",
 	"KICKSTARTACCEL",	 // Accessibility feature: Is accelerate in kickstart mode?
 	"\x01",
-	"\x01",
+	"NOSCALEGRAVITY",
 
 	"WANTSTOJOIN",		 // Spectator that wants to join
 
@@ -736,6 +736,19 @@ const char *const KARTHUD_LIST[] = {
 
 	"CARDANIMATION",
 	"YOUGOTEM",
+
+	"SPLITTIME",
+	"SPLITWIN",
+	"SPLITTIMER",
+	"SPLITSKIN",
+	"SPLITCOLOR",
+	"SPLITPOSITION",
+
+	"AFTERIMAGETIME",
+	"AFTERIMAGEVALUE",
+
+	"ITEMTIMER_XOFF",
+	"ITEMTIMER_YOFF",
 };
 
 const char *const HUDITEMS_LIST[] = {
@@ -831,6 +844,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "PLAYBACKSETVIEWS", &MR_PlaybackSetViews },
 	{ "PLAYBACKADJUSTVIEW", &MR_PlaybackAdjustView },
 	{ "PLAYBACKTOGGLEFREECAM", &MR_PlaybackToggleFreecam },
+	{ "PLAYBACKTOGGLEDIRECTOR", &MR_PlaybackToggleDirector },
 	{ "PLAYBACKQUIT", &MR_PlaybackQuit },
 	{ "HANDLEIMAGEDEF", &MR_HandleImageDef },
 	{ "HANDLEMUSICTEST", &MR_HandleMusicTest },
@@ -888,6 +902,7 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 struct odds_func_s const USEODDS_FUNCS[] = {
 	{ "SMONITORODDS", &KO_SMonitorOdds },
 	{ "SPBRACEODDS", &KO_SPBRaceOdds },
+	{ "GROWRACEODDS",  &KO_GrowRaceOdds },
 	{ NULL, NULL }
 };
 
@@ -1575,11 +1590,23 @@ struct int_const_s const INT_CONST[] = {
 	{"GC_DIRECTOR",gc_director},
 	{"GC_HORNCODE",gc_horncode},
 	{"GC_FREELOOK",gc_freelook},
+	{"GC_FLICKSTICK_LEFT", gc_flickstick_left},
+	{"GC_FLICKSTICK_RIGHT", gc_flickstick_right},
+	{"GC_FLICKSTICK_FORWARD", gc_flickstick_forward},
+	{"GC_FLICKSTICK_BACK", gc_flickstick_back},
 	{"NUM_GAMECONTROLS",num_gamecontrols},
 
 	// screen.h constants
 	{"BASEVIDWIDTH", BASEVIDWIDTH},
 	{"BASEVIDHEIGHT", BASEVIDHEIGHT},
+
+	// itemflags_t
+	{"IF_USERINGS",IF_USERINGS},
+	{"IF_ITEMOUT",IF_ITEMOUT},
+	{"IF_EGGMANOUT",IF_EGGMANOUT},
+	{"IF_HOLDREADY",IF_HOLDREADY},
+	{"IF_SEEKING",IF_SEEKING},
+	{"IF_PASSIVESEEKING",IF_PASSIVESEEKING},
 
 	// kartshields_t
 	{"KSHIELD_NONE",KSHIELD_NONE},
@@ -1617,6 +1644,8 @@ struct int_const_s const INT_CONST[] = {
 	{"KIF_COLPATCH2PLAYER",KIF_COLPATCH2PLAYER},
 	{"KIF_HIDEFROMROULETTE",KIF_HIDEFROMROULETTE},
 	{"KIF_HYUCANTSTEAL",KIF_HYUCANTSTEAL},
+	{"KIF_SINGLEFROMRESERVE",KIF_SINGLEFROMRESERVE},
+	{"KIF_DESTROYONDROP",KIF_DESTROYONDROP},
 
 	// kartresultflags_e
 	{"KRF_INDIRECTITEM",KRF_INDIRECTITEM},
@@ -1626,6 +1655,7 @@ struct int_const_s const INT_CONST[] = {
 	{"KRF_NOTFORBOTTOM",KRF_NOTFORBOTTOM},
 	{"KRF_RUNNERAUGMENT",KRF_RUNNERAUGMENT},
 	{"KRF_HIDEFROMSPB",KRF_HIDEFROMSPB},
+	{"KRF_DONTCHANGERESULT", KRF_DONTCHANGERESULT},
 
 	// kartspinoutflags_t
 	{"KSPIN_THRUST",KSPIN_THRUST},
@@ -1752,6 +1782,7 @@ struct int_const_s const INT_CONST[] = {
 	{"TRF_TRIPWIRE",TRF_TRIPWIRE},
 	{"TRF_REMAP",TRF_REMAP},
 	{"TRF_BYPASSBOOST", TRF_BYPASSBOOST},
+	{"TRF_BUMPY", TRF_BUMPY},
 
 	// facepatches
 	{"FACE_RANK", FACE_RANK},
@@ -1841,6 +1872,11 @@ struct int_const_s const INT_CONST[] = {
 	{"AIRDROP_HEAVY", AIRDROP_HEAVY},
 	{"AIRDROP_FUSION", AIRDROP_FUSION},
 
+	// airthrusttype_t
+	{"AIRTHRUST_NONE", AIRTHRUST_NONE},
+	{"AIRTHRUST_BURST", AIRTHRUST_BURST},
+	{"AIRTHRUST_FLASH", AIRTHRUST_FLASH},
+
 	// item timer stuff
 	{"TIMER_COUNTER", TIMER_COUNTER},
 	{"TIMER_NONUMBER",TIMER_NONUMBER},
@@ -1909,6 +1945,23 @@ struct int_const_s const INT_CONST[] = {
 	{"RINGMOD_SIN", RINGMOD_SIN},
 	{"RINGMOD_SAW", RINGMOD_SAW},
 	{"RINGMOD_SQUARE", RINGMOD_SQUARE},
+
+	// keepstuffflags_t
+	{"KEEPSTUFF_ROCKET", KEEPSTUFF_ROCKET},
+	{"KEEPSTUFF_INVIN", KEEPSTUFF_INVIN},
+	{"KEEPSTUFF_SMON", KEEPSTUFF_SMON},
+	{"KEEPSTUFF_GROWSHRINK", KEEPSTUFF_GROWSHRINK},
+	{"KEEPSTUFF_FLAME", KEEPSTUFF_FLAME},
+
+	// playerbumptype_t
+	{"PBUMP_STANDARD", PBUMP_STANDARD},
+	{"PBUMP_GNDONLY", PBUMP_GNDONLY},
+	{"PBUMP_NONE", PBUMP_NONE},
+
+	// karmamode_e
+	{"KARMAMODE_DEFAULT", KARMAMODE_DEFAULT},
+	{"KARMAMODE_ITEM", KARMAMODE_ITEM},
+	{"KARMAMODE_EGGMAN", KARMAMODE_EGGMAN},
 
 	{NULL,0}
 };

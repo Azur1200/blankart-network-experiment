@@ -936,7 +936,7 @@ static void K_BotItemLightning(botdata_t *bd, const player_t *player)
 
 	if (K_BotUseItemNearPlayer(bd, player, radius) == false)
 	{
-		if (bd->itemconfirm > 10*TICRATE)
+		if (K_GetBlockedShieldItem(player, radius) || bd->itemconfirm > 10*TICRATE)
 		{
 			K_BotGenericPressItem(bd, 0);
 		}
@@ -971,7 +971,7 @@ static void K_BotItemBubble(botdata_t *bd, const player_t *player)
 	{
 		fixed_t radius = 192 * player->mo->scale;
 		radius = Easing_Linear(FRACUNIT * player->botvars.difficulty / MAXBOTDIFFICULTY, 2*radius, radius);
-		hold = K_GetBlockedBubbleItem(player, radius);
+		hold = K_GetBlockedShieldItem(player, radius);
 	}
 	else if (player->bubblecool < bubbletime)
 	{

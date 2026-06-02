@@ -287,55 +287,68 @@ static boolean P_ShouldSpringForceAngle(mobj_t *spring, ticcmd_t *cmd)
 }
 
 void
-P_DoSpringEx
+P_DoSpringRR
 (		mobj_t * object,
 		fixed_t scaleVal,
-		fixed_t vertispeed,
-		fixed_t horizspeed,
-		angle_t finalAngle)
+   fixed_t vertispeed,
+   fixed_t horizspeed,
+   angle_t finalAngle)
 {
-	fixed_t objscale = object->scale;
-
-	if (object->player)
+	if (object->eflags & MFE_SPRUNG)
 	{
-		// For smaller players: fudge the scale calculation by adding a minimum scale.
-		// In certain cases, the game will pretend they're bigger than they actually are,
-		// so the game handles springs as such.
-		// Alt. Shrink *especially* needs this change!
-		objscale = max(object->scale, mapobjectscale);
+		// Object was already sprung this tic
+		return;
 	}
-
-	const fixed_t hscale = mapobjectscale + (mapobjectscale - objscale);
-	const fixed_t vscale = mapobjectscale + (objscale - mapobjectscale);
-
-	object->standingslope = NULL; // Okay, now we know it's not going to be relevant - no launching off at silly angles for you.
-	object->terrain = NULL;
 
 	object->eflags |= MFE_SPRUNG; // apply this flag asap!
 
+	if (horizspeed < 0)
+	{
+		horizspeed = -(horizspeed);
+		finalAngle += ANGLE_180;
+	}
+
 	if (vertispeed)
-		object->momz = FixedMul(vertispeed,FixedSqrt(FixedMul(vscale, scaleVal)));
+	{
+		object->standingslope = NULL; // Okay, now we know it's not going to be relevant - no launching off at silly angles for you.
+		object->terrain = NULL;
+
+		if ((vertispeed < 0) ^ P_IsObjectFlipped(object))
+			vertispeed *= 2;
+
+		object->momz = FixedMul(vertispeed, scaleVal);
+	}
 
 	if (horizspeed)
 	{
-		if (!object->player)
-			P_InstaThrust(object, finalAngle, FixedMul(horizspeed,FixedSqrt(FixedMul(hscale, scaleVal))));
+		fixed_t finalSpeed = FixedMul(horizspeed, scaleVal);
+		fixed_t objectSpeed;
+
+		if (object->player)
+			objectSpeed = object->player->speed;
 		else
+			objectSpeed = R_PointToDist2(0, 0, object->momx, object->momy);
+
+		if (!vertispeed)
 		{
-			fixed_t finalSpeed = FixedDiv(horizspeed, hscale);
-			fixed_t pSpeed = object->player->speed;
+			// Scale to gamespeed
+			finalSpeed = FixedMul(finalSpeed, K_GetKartGameSpeedScalar(gamespeed));
 
-			if (pSpeed > finalSpeed)
-				finalSpeed = pSpeed;
-
-			P_InstaThrust(object, finalAngle, FixedMul(finalSpeed,FixedSqrt(FixedMul(hscale, scaleVal))));
-
-			if (object->player->airdriftspeed > 0)
+			// Reflect your momentum angle against the surface of horizontal springs.
+			// This makes it a bit more interesting & unique than just being a speed boost in a pre-defined direction
+			if (object->momx || object->momy)
 			{
-				// clear air thrust target speed too
-				object->player->airdriftspeed = 0;
+				finalAngle = K_ReflectAngle(
+					R_PointToAngle2(0, 0, object->momx, object->momy), finalAngle,
+											objectSpeed, finalSpeed
+				);
 			}
 		}
+
+		// Horizontal speed is used as a minimum thrust, not a direct replacement
+		finalSpeed = max(objectSpeed, finalSpeed);
+
+		P_InstaThrust(object, finalAngle, finalSpeed);
 	}
 }
 
@@ -1347,15 +1360,16 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 	}
 
 	// thanks to sal for solidenemies dot lua
-	if (thing->flags & (MF_ENEMY|MF_BOSS) && g_tm.thing->flags & (MF_ENEMY|MF_BOSS))
+	/*if (thing->flags & (MF_ENEMY|MF_BOSS) && g_tm.thing->flags & (MF_ENEMY|MF_BOSS))
 	{
 		if ((thing->z + thing->height >= g_tm.thing->z)
 		&& (g_tm.thing->z + g_tm.thing->height >= thing->z))
 			return BMIT_ABORT;
-	}
+	}*/
 
 	// Damage other players when possible.
 	// Handle before bumpcode to prevent lower weights from getting affected.
+	boolean pvp_hit = false;
 	if (g_tm.thing->player && thing->player
 	// Make sure they aren't able to damage you ANYWHERE along the Z axis, you have to be TOUCHING the person.
 		&& !(thing->z + thing->height < g_tm.thing->z || thing->z > g_tm.thing->z + g_tm.thing->height))
@@ -1363,7 +1377,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		mobj_t *mo1 = g_tm.thing;
 		mobj_t *mo2 = thing;
 
-		K_PvPTouchDamage(mo1, mo2);
+		pvp_hit = K_PvPTouchDamage(mo1, mo2);
 	}
 
 	if (thing->player)
@@ -1402,6 +1416,21 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		}
 		else if (thing->player) // bounce when players collide
 		{
+			boolean cannotbump = false;
+
+			switch(playerbumpactive)
+			{
+				case PBUMP_GNDONLY:
+					cannotbump = ((!P_IsObjectOnGround(thing) || !P_IsObjectOnGround(g_tm.thing)) && !pvp_hit);
+					break;
+				case PBUMP_NONE:
+					cannotbump = !pvp_hit;
+					break;
+				case PBUMP_STANDARD:
+				default:
+					break;
+			}
+
 			// see if it went over / under
 			if (g_tm.thing->z > thing->z + thing->height)
 				return BMIT_CONTINUE; // overhead
@@ -1433,6 +1462,14 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 								 BUBBLEGRAZE_MAX,
 								 BUBBLEGRAZE_INCREMENT);
 				}
+				return BMIT_CONTINUE;
+			}
+
+			if (cannotbump) // Unable to actually bump; don't process things further
+			{
+				// Just in case...
+				g_tm.thing->player->justbumped = min(24, g_tm.thing->player->justbumped + 6);
+				thing->player->justbumped = min(24, thing->player->justbumped + 6);
 				return BMIT_CONTINUE;
 			}
 
@@ -1772,7 +1809,7 @@ boolean P_IsLineBlocking(const line_t *ld, const mobj_t *thing)
 
 		if (thing->player)
 		{
-			return ld->blockplayers;
+			return ld->blockplayers || (thing->player->walltransfered && ld->blockintransfer);
 		}
 		else if (thing->flags & (MF_ENEMY|MF_BOSS))
 		{
@@ -3885,6 +3922,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	}
 
 	boolean tripwire = result->line != NULL && P_IsLineTripWire(result->line);
+	boolean slideline = result->line != NULL && ((result->line->flags & ML_NOTBOUNCY) || (result->line->blockintransfer && mo->player->walltransfered));
 
 	if (result->normal.x == 0 && result->normal.y == 0)
 		return; // nope, nothing we can do
@@ -3948,7 +3986,9 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	else
 	{
 		// Some walls aren't bouncy even if you are
-		if (result->line != NULL && result->line->flags & ML_NOTBOUNCY)
+		// wall transfer only lines always make players slide along em even if they'd be bouncy otherwise
+		// todo: let wall transfer override the tripwire case too?
+		if (slideline)
 		{
 			// SRB2Kart: Non-bouncy line!
 			P_SlideMove(mo, result);

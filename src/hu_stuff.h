@@ -68,9 +68,6 @@ enum
 };
 #undef  X
 
-extern char *shiftxform; // english translation shift table
-extern char english_shiftxform[];
-
 //------------------------------------
 //        sorted player lines
 //------------------------------------
@@ -80,6 +77,7 @@ struct playersort_t
 	char string[48];
 	INT32 num;
 	const char *name;
+	char clan;
 };
 
 //------------------------------------
@@ -114,6 +112,7 @@ extern boolean hu_keystrokes;
 extern patch_t *pinggfx[5];
 extern patch_t *framecounter;
 extern patch_t *frameslash;
+extern patch_t *srb2back;
 
 // set true whenever the tab rankings are being shown for any reason
 extern boolean hu_showscores;

@@ -3219,6 +3219,16 @@ void A_AttractChase(void *thing)
 			return;
 		}
 
+		INT32 ringpower = K_GetKartBaseRingPower(actor->target->player, true);
+		boolean ringburnt = K_IsPlayerRingBurnt(actor->target->player, ringpower);
+
+		if (ringburnt)
+		{
+			actor->colorized = true;
+			actor->color = SKINCOLOR_ABYSS;
+			actor->renderflags |= RF_ADD;
+		}
+
 		if (actor->extravalue2) // Using for ring boost
 		{
 			// Always fullbright
@@ -3229,6 +3239,12 @@ void A_AttractChase(void *thing)
 				// Base add is 4 tics for 9,9, adds 1 tic for each point closer to the 1,1 end
 				actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true);
 				actor->target->player->ringtime += K_GetKartRingPower(actor->target->player, true);
+
+				if (ringburnt)
+				{
+					// s3k55 s264
+					S_StartSoundAtVolume(actor->target, sfx_s264, actor->target->player->ringvolume);
+				}
 
 				S_StartSoundAtVolume(actor->target, sfx_s1b5, actor->target->player->ringvolume);
 
@@ -3271,8 +3287,8 @@ void A_AttractChase(void *thing)
 				if (actor->target->player->ringboost > (4*TICRATE + TICRATE/2))
 					actor->target->player->ringboost = (4*TICRATE + TICRATE/2);
 
-				if (actor->cvmem) // caching
-					S_StartSound(actor->target, sfx_s1c5);
+				if (actor->cvmem && P_IsLocalPlayer(actor->target->player)) // caching
+					S_StartSound(NULL, sfx_s1c5);
 				else
 					S_StartSoundAtVolume(actor->target, sfx_s227, actor->target->player->ringvolume);
 
@@ -9731,6 +9747,11 @@ void A_SpawnFreshCopy(void *thing)
 
 	newObject = P_SpawnMobjFromMobj(actor, 0, 0, 0, actor->type);
 	newObject->flags2 = actor->flags2 & MF2_AMBUSH;
+
+	INT32 i;
+	for (i = 0; i < NUM_SCRIPT_ARGS; i++)
+		newObject->script_args[i] = actor->script_args[i];
+
 	newObject->angle = actor->angle;
 	newObject->color = actor->color;
 	P_SetTarget(&newObject->target, actor->target);
@@ -10561,6 +10582,29 @@ void A_CheckFlags2(void *thing)
 		P_SetMobjState(actor, (statenum_t)locvar2);
 }
 
+// Function: A_CheckScriptArg
+//
+// Description: If actor->script_args[var1] != 0, goto var2.
+//
+// var1 = mask
+// var2 = state to go
+//
+void A_CheckScriptArg(void *thing)
+{
+	mobj_t *actor = thing;
+	INT32 locvar1 = var1;
+	INT32 locvar2 = var2;
+
+	if (locvar1 >= NUM_SCRIPT_ARGS)
+		return;
+
+	if (LUA_CallAction(A_CHECKSCRIPTARG, actor))
+		return;
+
+	if (actor->script_args[locvar1])
+		P_SetMobjState(actor, (statenum_t)locvar2);
+}
+
 // Function: A_DoNPCSkid
 //
 // Description: Something that looks like a player is skidding.
@@ -10782,13 +10826,6 @@ void A_ItemPop(void *thing)
 	if (LUA_CallAction(A_ITEMPOP, actor))
 		return;
 
-	if (!(actor->target && actor->target->player))
-	{
-		if (cht_debug && !(actor->target && actor->target->player))
-			CONS_Printf("ERROR: Powerup has no target!\n");
-		return;
-	}
-
 	// de-solidify
 	P_UnsetThingPosition(actor);
 	actor->flags &= ~MF_SOLID;
@@ -10836,18 +10873,22 @@ void A_ItemPop(void *thing)
 	//if (actor->info->deathsound)
 		//S_StartSound(remains, actor->info->deathsound);
 
-	if (!((gametypes[gametype]->rules & GTR_BUMPERS) && actor->target->player->bumper <= 0) && !itembreaker)
+	if (actor->target && actor->target->player)
 	{
-		K_StartRoulette(actor->target->player, KROULETTETYPE_NORMAL);
-	}
-	else if (itembreaker)
-	{
-		K_AwardScaledPlayerRings(actor->target->player, ASR_ITEMBOX);
 
-		if (numtargets < 4)
+		if (!((gametypes[gametype]->rules & GTR_BUMPERS) && actor->target->player->bumper <= 0) && !itembreaker)
 		{
-			actor->target->player->itemtype = KITEM_POGOSPRING;
-			actor->target->player->itemamount += 1;
+			K_StartRoulette(actor->target->player, KROULETTETYPE_NORMAL);
+		}
+		else if (itembreaker)
+		{
+			K_AwardScaledPlayerRings(actor->target->player, ASR_ITEMBOX);
+
+			if (numtargets < 4)
+			{
+				actor->target->player->itemtype = KITEM_POGOSPRING;
+				actor->target->player->itemamount += 1;
+			}
 		}
 	}
 

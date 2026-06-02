@@ -18,6 +18,12 @@
 #include "lua_libs.h"
 //#include "lua_hud.h" // hud_running errors
 
+enum search_e {
+	search_objects = 0,
+	search_lines,
+	search_polyobjs
+};
+
 static const char *const search_opt[] = {
 	"objects",
 	"lines",
@@ -218,6 +224,8 @@ static UINT8 lib_searchBlockmap_PolyObjs(lua_State *L, INT32 x, INT32 y, mobj_t 
 	return 0; // Everything was checked.
 }
 
+int search_fields_ref = LUA_NOREF;
+
 // The searchBlockmap function
 // arguments: searchBlockmap(searchtype, function, mobj, [x1, x2, y1, y2])
 // return value:
@@ -225,7 +233,7 @@ static UINT8 lib_searchBlockmap_PolyObjs(lua_State *L, INT32 x, INT32 y, mobj_t 
 //   false = searching of at least one block stopped mid-way (including if the whole search was stopped)
 static int lib_searchBlockmap(lua_State *L)
 {
-	int searchtype = luaL_checkoption(L, 1, "objects", search_opt);
+	int searchtype = Lua_optoption(L, 1, search_objects, search_fields_ref);
 	int n;
 	mobj_t *mobj;
 	INT32 xl, xh, yl, yh, bx, by;
@@ -239,14 +247,14 @@ static int lib_searchBlockmap(lua_State *L)
 
 	switch (searchtype)
 	{
-		case 0: // "objects"
+		case search_objects: // "objects"
 		default:
 			searchFunc = lib_searchBlockmap_Objects;
 			break;
-		case 1: // "lines"
+		case search_lines: // "lines"
 			searchFunc = lib_searchBlockmap_Lines;
 			break;
-		case 2: // "polyobjs"
+		case search_polyobjs: // "polyobjs"
 			searchFunc = lib_searchBlockmap_PolyObjs;
 			break;
 	}
@@ -310,6 +318,8 @@ static int lib_searchBlockmap(lua_State *L)
 
 int LUA_BlockmapLib(lua_State *L)
 {
+	search_fields_ref = Lua_CreateFieldTable(L, search_opt);
+
 	lua_register(L, "searchBlockmap", lib_searchBlockmap);
 	return 0;
 }

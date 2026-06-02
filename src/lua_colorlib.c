@@ -1,4 +1,4 @@
-// SONIC ROBO BLAST 2
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2021-2022 by "Lactozilla".
 // Copyright (C) 2014-2023 by Sonic Team Junior.
@@ -444,10 +444,12 @@ static const char *const extracolormap_opt[] = {
 #define SCALE_ALPHA_UP(alpha) (((alpha) * ALPHA_SCALE_FACTOR) / 10)
 #define SCALE_ALPHA_DOWN(alpha) (((alpha) * 10) / ALPHA_SCALE_FACTOR)
 
+int extracolormap_fields_ref = LUA_NOREF;
+
 static int extracolormap_get(lua_State *L)
 {
 	extracolormap_t *exc = *((extracolormap_t **)luaL_checkudata(L, 1, META_EXTRACOLORMAP));
-	enum extracolormap_e field = luaL_checkoption(L, 2, NULL, extracolormap_opt);
+	enum extracolormap_e field = Lua_optoption(L, 2, -1, extracolormap_fields_ref);
 
 	if (!exc)
 		return LUA_ErrInvalid(L, "extracolormap_t");
@@ -525,7 +527,7 @@ static void GetExtraColormapRGBA(lua_State *L, UINT8 *rgba, int arg)
 static int extracolormap_set(lua_State *L)
 {
 	extracolormap_t *exc = *((extracolormap_t **)luaL_checkudata(L, 1, META_EXTRACOLORMAP));
-	enum extracolormap_e field = luaL_checkoption(L, 2, NULL, extracolormap_opt);
+	enum extracolormap_e field = Lua_optoption(L, 2, -1, extracolormap_fields_ref);
 
 	if (!exc)
 		return LUA_ErrInvalid(L, "extracolormap_t");
@@ -639,6 +641,8 @@ static int lighttable_len(lua_State *L)
 
 int LUA_ColorLib(lua_State *L)
 {
+	extracolormap_fields_ref = Lua_CreateFieldTable(L, extracolormap_opt);
+
 	luaL_newmetatable(L, META_EXTRACOLORMAP);
 		lua_pushcfunction(L, extracolormap_get);
 		lua_setfield(L, -2, "__index");

@@ -614,6 +614,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].distancetofinishprev);
 		RSYNC(players[i].currentwaypoint);
 		RSYNC(players[i].nextwaypoint);
+		SYNCBOOLEAN(players[i].onbadwaypoint);
 		SYNC(players[i].bigwaypointgap);
 		SYNC(players[i].airtime);
 		SYNC(players[i].startboost);
@@ -641,7 +642,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].driftboost);
 		SYNC(players[i].airdriftspeed);
 		SYNC(players[i].nulldrift);
-		SYNC(players[i].nulldrifttilt);
+		SYNC(players[i].karttilt);
+		SYNC(players[i].karttiltmomentum);
 		SYNC(players[i].nulldrifttime);
 
 		SYNC(players[i].recoverydashcharge);
@@ -652,6 +654,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].aizdriftturn);
 		SYNC(players[i].slipdashcharge);
 		SYNC(players[i].slipdashdir);
+		SYNC(players[i].airthrustdir);
 
 		SYNC(players[i].offroad);
 		SYNC(players[i].tiregrease);
@@ -711,6 +714,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].ringboost);
 		SYNC(players[i].ringtime);
 		SYNC(players[i].superring);
+		SYNC(players[i].superringleeway);
+		SYNC(players[i].superringdrag);
 		SYNC(players[i].nextringaward);
 		SYNC(players[i].ringvolume);
 		SYNC(players[i].ringtransparency);
@@ -758,6 +763,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].growshrinktimer);
 		SYNC(players[i].growcancel);
 		SYNC(players[i].altshrinktimeshit);
+		SYNCBOOLEAN(players[i].inarrowbullet);
 		RSYNC(players[i].arrowbullet);
 
 		SYNC(players[i].rocketsneakertimer);
@@ -862,6 +868,21 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].itemusecooldownmax);
 
 		P_SyncMem(save, players[i].public_key, PUBKEYLENGTH);
+		
+		SYNC(players[i].bumpyroadside);
+
+		// keepstuff_t
+		SYNC(players[i].keepstuff.flags);
+		SYNC(players[i].keepstuff.rocketsneakertimer);
+		SYNC(players[i].keepstuff.invincibilitytimer);
+		SYNC(players[i].keepstuff.smonitortimer);
+		SYNC(players[i].keepstuff.smonitorexpiring);
+		SYNC(players[i].keepstuff.maxsmonitortime);
+		SYNC(players[i].keepstuff.growshrinktimer);
+		SYNC(players[i].keepstuff.flametimer);
+
+		SYNC(players[i].itemreservetype);
+		SYNC(players[i].itemreserveamount);
 	}
 	TracyCZoneEnd(__zone);
 }
@@ -4126,6 +4147,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 			if (!P_LoadLevel(true, resending))
 			{
 				CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
+				TracyCZoneEnd(__zone);
 				return false;
 			}
 		}
@@ -4328,15 +4350,18 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(purpledriftactive);
 	SYNCBOOLEAN(slopeboostactive);
 	SYNCBOOLEAN(draftingactive);
-	SYNCBOOLEAN(airthrustactive);
+	SYNC(airthrustactive);
 	SYNCBOOLEAN(recoverydashactive);
+	SYNCBOOLEAN(keepstuffactive);
 	SYNCBOOLEAN(waterskipbricks);
 	SYNCBOOLEAN(itemlittering);
 	SYNCBOOLEAN(itempushing);
 	SYNCBOOLEAN(itemlistactive);
+	SYNCBOOLEAN(trailslow_active);
 	SYNC(airdropactive);
 	SYNC(bumpsparkactive);
 	SYNC(antibumptime);
+	SYNC(playerbumpactive);
 
 	for (i = 0; i < sizeof(g_voteLevels)/sizeof(*g_voteLevels); i++)
 	{
@@ -4494,8 +4519,8 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 
 	SYNC(cht_debug);
 
-	return true;
 	TracyCZoneEnd(__zone);
+	return true;
 }
 
 static inline void P_ArchiveLuabanksAndConsistency(savebuffer_t *save)

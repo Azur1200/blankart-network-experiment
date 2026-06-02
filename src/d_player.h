@@ -33,11 +33,14 @@
 extern "C" {
 #endif
 
+typedef UINT16 kartvoicenum_t;
+
 // Extra abilities/settings for skins (combinable stuff)
 typedef enum
 {
 	SF_MACHINE          = 1, // Beep boop. Are you a robot?
 	SF_OLDDEATH			= 1<<1, // Kart V1 styled death animation
+	SF_NOCOMPATROTATE	= 1<<2, // Kart V1 skins that should not be rotated (simple animal, etc)
 	// free up to and including 1<<31
 } skinflags_t;
 
@@ -72,7 +75,9 @@ typedef enum
 	PF_GAINAX			= 1<<3,
 	PF_KICKSTARTACCEL	= 1<<4, // Accessibility feature: Is accelerate in kickstart mode?
 
-	// free: 1<<5 and 1<<6
+	// free: 1<<5
+
+	PF_NOSCALEGRAVITY	= 1<<6, // Don't scale gravity by player object scale (cleared when grounded)
 
 	PF_WANTSTOJOIN		= 1<<7, // Spectator that wants to join
 
@@ -239,6 +244,9 @@ typedef enum
 	// Drifting
 	khud_afterimagetime, // tics left for displaying afterimage
 	khud_afterimagevalue, // what value the drift ended at
+
+	khud_itemtimer_xoff, // used to move itemtimers, useful for mods that want stuff in the middle.
+	khud_itemtimer_yoff, // ^
 
 	NUMKARTHUD
 } karthudtype_t;
@@ -488,6 +496,39 @@ typedef enum
 	LAP__MAX
 } laptime_e;
 
+typedef enum
+{
+	KEEPSTUFF_ROCKET			= 1,
+	KEEPSTUFF_INVIN				= 1<<1,
+	KEEPSTUFF_SMON				= 1<<2,
+	KEEPSTUFF_GROWSHRINK		= 1<<3,
+	KEEPSTUFF_FLAME				= 1<<4,
+} keepstuffflags_t;
+
+struct keepstuff_t
+{
+	UINT16 flags;
+
+	UINT16 rocketsneakertimer;
+
+	UINT16 invincibilitytimer;
+
+	UINT16 smonitortimer;
+	UINT16 smonitorexpiring;
+	UINT16 maxsmonitortime;
+
+	INT16 growshrinktimer;
+
+	UINT16 flametimer;
+};
+
+typedef enum
+{
+	KARMAMODE_DEFAULT = 0,
+	KARMAMODE_ITEM,
+	KARMAMODE_EGGMAN,
+} karmamode_e;
+
 // ========================================================================
 //                          PLAYER STRUCTURE
 // ========================================================================
@@ -590,6 +631,7 @@ struct player_t
 	UINT32 distancefromcluster;
 	waypoint_t *currentwaypoint;
 	waypoint_t *nextwaypoint;
+	boolean onbadwaypoint;	// This waypoint is bad, so we need to find a better one
 	UINT16 bigwaypointgap;
 	tic_t airtime; 			// Keep track of how long you've been in the air
 	UINT8 startboost;		// (0 to 125) - Boost you get from start of race or respawn drop dash
@@ -624,8 +666,12 @@ struct player_t
 	INT32 drift_wannaturn;  // Turn values the game uses to determine the direction you want to drift.
 
 	INT32 nulldrift;        // When you drift without accelerating, this value ticks up/down depending on your drift's angle.
-	INT32 nulldrifttilt;    // Sliptide-like kart tilting! (Can be toggled off)
 	tic_t nulldrifttime;
+
+	fixed_t karttilt;    // Generalized sliptide-like kart tilting as an angle_t (Can be toggled off by clients)
+	fixed_t karttiltmomentum; // angular velocity in rad/sec
+
+	SINT8 bumpyroadside; // last side lifted up by bumpy road
 
 	// (Delay-drift) - Delay in tics before the final drift angle is determined.
 	// Potentially influenced by player lag.
@@ -641,6 +687,7 @@ struct player_t
 	INT32 aizdriftturn;
 	fixed_t slipdashcharge;	// charge up a dash with a sliptide!
 	SINT8 slipdashdir;		// no snaking allowed :^)
+	SINT8 airthrustdir;		// player->drift before airthrust was released
 
 	fixed_t offroad;		// In Super Mario Kart, going offroad has lee-way of about 1 second before you start losing speed
 	UINT8 pogospring;		// Pogo spring bounce effect
@@ -680,9 +727,11 @@ struct player_t
 	// Item held stuff
 	UINT8 itemtype;				// KITEM_ constant for item number
 	UINT8 itemamount;			// Amount of said item
-	UINT8 equippeditem;			// Item type that is currently "equipped"
+	UINT8 itemreservetype;		// KITEM_ constant for item number in the reserve slot
+	UINT8 itemreserveamount;	// Amount of said item in the reserve slot
+	UINT8 equippeditem;			// Item type that is currently in the equip slot, amount is handled by the player's hnext linked list of mobjs
 	itemflags_t itemflags; 		// holds IF_flags (see itemstate_t)
-	tic_t itemusecooldown;		// timer for which the player is locked out of using an item or mashing the item roulette (implementation of xItemLib setPlayerItemCooldown)
+	tic_t itemusecooldown;		// timer for which the player is locked out of using an item or mashing the item roulette (implementation of xItemLib setPlayerItemCooldown), doesn't block ring usage
 	tic_t itemusecooldownmax;	// most recent highest value for itemusecooldown, mainly used for HUD rendering currently
 	
 	SINT8 throwdir; 	// Held dir of controls; 1 = forward, 0 = none, -1 = backward (was "player->heldDir")
@@ -700,6 +749,8 @@ struct player_t
 	UINT16 ringboost;	// Ring boost timer
 	UINT16 ringtime;	// The current Ring boost timer if it wasn't capped. Used for spam prevention measures.
 	UINT16 superring;	// Spawn rings on top of you every tic!
+	UINT8 superringleeway; // how long can you be on the ground before airdrag is reset.
+	fixed_t superringdrag; // Slow down the superring boost when doing ground to air (ie ramp).
 	UINT8 nextringaward;	// When should we spawn our next superring ring?
 	UINT8 ringvolume;		// When consuming lots of rings, lower the sound a little.
 	UINT8 ringtransparency; // When consuming lots of rings, fade out the rings again.
@@ -754,6 +805,7 @@ struct player_t
 	INT16 squishedtimer;			// Duration of being squished
 
 	INT16 altshrinktimeshit;		// (Alt. Shrink) How many times were you flipped over while shrunk?
+	boolean inarrowbullet;			// (Alt. Shrink) Are we in the Arrow Bullet state?
 	mobj_t *arrowbullet;			// (Alt. Shrink) Arrow Bullet aura visual
 
 	UINT16 rocketsneakertimer;		// Rocket Sneaker duration timer
@@ -892,6 +944,10 @@ struct player_t
 	UINT8 walltransferboost;
 
 	uint8_t public_key[PUBKEYLENGTH];
+
+	keepstuff_t keepstuff;
+
+	char clan[MAXCLANTAG];
 
 #ifdef HWRENDER
 	fixed_t fovadd; // adjust FOV for hw rendering

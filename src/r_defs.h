@@ -398,6 +398,7 @@ typedef enum
 	SSF_NOPHYSICSCEILING = 1<<18,
 	SSF_GRAVITYOVERRIDE = 1<<19, // combine with MSF_GRAVITYFLIP
 	SSF_WALLTRANSFER = 1<<20,
+	SSF_BUMPYROAD = 1<<21,
 } sectorspecialflags_t;
 
 typedef enum
@@ -649,6 +650,7 @@ struct line_t
 
 	boolean tripwire;
 	boolean blockplayers;
+	boolean blockintransfer;
 
 	char *text; // a concatenation of all front and back texture names, for linedef specials that require a string.
 	INT16 callcount; // no. of calls left before triggering, for the "X calls" linedef specials, defaults to 0

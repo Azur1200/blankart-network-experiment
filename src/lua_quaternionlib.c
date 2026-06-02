@@ -1,4 +1,4 @@
-// SONIC ROBO BLAST 2
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2025 by LJ Sonic
 //
@@ -129,10 +129,12 @@ static const char *const quaternionfield_opt[] = {
 	"w",
 	NULL};
 
+int quaternionfield_fields_ref = LUA_NOREF;
+
 static int quaternion_get(lua_State *L)
 {
 	vector4_t *quat = luaL_checkudata(L, 1, META_QUATERNION);
-	enum quaternionfield_e field = luaL_checkoption(L, 2, quaternionfield_opt[0], quaternionfield_opt);
+	enum quaternionfield_e field = Lua_optoption(L, 2, quaternionfield_clone, quaternionfield_fields_ref);
 
 	switch(field)
 	{
@@ -182,6 +184,8 @@ static int quaternion_mul(lua_State *L)
 
 int LUA_QuaternionLib(lua_State *L)
 {
+	quaternionfield_fields_ref = Lua_CreateFieldTable(L, quaternionfield_opt);
+
 	luaL_newmetatable(L, META_QUATERNION);
 	LUA_SetCFunctionField(L, "__index", quaternion_get);
 	LUA_SetCFunctionField(L, "__mul", quaternion_mul);

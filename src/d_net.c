@@ -1242,7 +1242,13 @@ boolean D_CheckNetGame(void)
 			I_Error("usage: -bandwidth <byte_per_sec>");
 	}
 
+#if 0
 	software_MAXPACKETLENGTH = hardware_MAXPACKETLENGTH;
+#else
+	// MTU, IPV4, UDP header.
+	// 1500 - 20 - 8;
+	software_MAXPACKETLENGTH = 1000;
+#endif
 	if (M_CheckParm("-packetsize"))
 	{
 		if (M_IsNextParm())

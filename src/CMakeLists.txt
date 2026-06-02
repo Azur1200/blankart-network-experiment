@@ -77,6 +77,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	r_plane.cpp
 	r_segs.cpp
 	r_skins.c
+	r_voicepreference.cpp
 	r_sky.c
 	r_splats.c
 	r_things.cpp
@@ -154,6 +155,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	k_specialstage.c
 	k_vote.c
 	h_timers.cpp
+	radio_finish.cpp
 	stun.c
 	lonesha256.c
 )
@@ -182,6 +184,9 @@ set(SRB2_CONFIG_STD23 OFF CACHE BOOL
 set(SRB2_CONFIG_COMPILEAPPIMAGE OFF CACHE BOOL
 	"Compiles the game then attempts turning it into an appimage.")
 
+set(SRB2_CONFIG_JEMALLOC OFF CACHE BOOL
+	"Links jemalloc Allocator to replace GLibc malloc.")
+
 if(SRB2_CONFIG_COMPILEAPPIMAGE AND "${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
 message("-- Generating Appimage at build time.")
 add_custom_command(
@@ -202,6 +207,18 @@ else()
 	target_compile_features(BLANKART PRIVATE c_std_11 cxx_std_17)
 	set_property(TARGET BLANKART PROPERTY C_STANDARD 11)
 	set_property(TARGET BLANKART PROPERTY CXX_STANDARD 17)
+endif()
+
+# Thanks https://stackoverflow.com/a/63320046
+if(SRB2_CONFIG_JEMALLOC)
+	message("-- Using JEMALLOC.")
+	find_package(PkgConfig REQUIRED)
+	pkg_check_modules(JEMALLOC jemalloc)
+
+	pkg_search_module(JEMALLOC REQUIRED jemalloc)
+	include_directories(${JEMALLOC_INCLUDE_DIRS})
+
+	target_link_libraries(BLANKART PRIVATE ${JEMALLOC_LIBRARIES})
 endif()
 
 ### Configuration

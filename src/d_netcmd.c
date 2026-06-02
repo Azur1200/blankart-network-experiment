@@ -12,11 +12,13 @@
 ///        commands are executed through the command buffer
 ///	       like console commands, other miscellaneous commands (at the end)
 
+#include "d_netcmd.h"
 #include "d_player.h"
 #include "doomdef.h"
 
 #include "console.h"
 #include "command.h"
+#include "cvector.h"
 #include "i_time.h"
 #include "i_gamepad.h"
 #include "i_system.h"
@@ -28,6 +30,7 @@
 #include "p_mobj.h"
 #include "r_local.h"
 #include "r_skins.h"
+#include "r_voicepreference.hpp"
 #include "p_local.h"
 #include "p_setup.h"
 #include "s_sound.h"
@@ -109,8 +112,8 @@ static void Got_ScheduleClearcmd(UINT8 **cp, INT32 playernum);
 static void Got_Automatecmd(UINT8 **cp, INT32 playernum);
 static void Got_MapQueuecmd(UINT8 **cp, INT32 playernum);
 static void Got_Cheat(UINT8 **cp, INT32 playernum);
-static void Command_ScoreboardAdd(void);
-static void Command_ScoreboardClear(void);
+static void Got_ClanTagSet(UINT8 **cp, INT32 playernum);
+static void Got_ClanTagClear(UINT8 **cp, INT32 playernum);
 
 static void PointLimit_OnChange(void);
 static void TimeLimit_OnChange(void);
@@ -146,11 +149,6 @@ static void Followercolor2_OnChange(void);
 static void Followercolor3_OnChange(void);
 static void Followercolor4_OnChange(void);
 
-static void Voice_OnChange(void);
-static void Voice2_OnChange(void);
-static void Voice3_OnChange(void);
-static void Voice4_OnChange(void);
-
 static void Color_OnChange(void);
 static void Color2_OnChange(void);
 static void Color3_OnChange(void);
@@ -174,6 +172,7 @@ static void KartDrafting_OnChange(void);
 static void KartAirDrop_OnChange(void);
 static void KartAirThrust_OnChange(void);
 static void KartRecoveryDash_OnChange(void);
+static void KartKeepStuff_OnChange(void);
 static void KartWaterSkipLock_OnChange(void);
 static void KartItemLitter_OnChange(void);
 static void KartItemPush_OnChange(void);
@@ -181,8 +180,22 @@ static void KartAntiBump_OnChange(void);
 static void KartItemBreaker_OnChange(void);
 static void KartBumpSpark_OnChange(void);
 static void KartItemList_OnChange(void);
+static void KartTrailSlow_OnChange(void);
+static void PlayerBump_OnChange(void);
 
 static void Schedule_OnChange(void);
+
+static void Command_ScoreboardAdd(void);
+static void Command_ScoreboardClear(void);
+
+static void Command_ClantagSet(void);
+static void Command_ClantagSet2(void);
+static void Command_ClantagSet3(void);
+static void Command_ClantagSet4(void);
+static void Command_ClantagClear(void);
+static void Command_ClantagClear2(void);
+static void Command_ClantagClear3(void);
+static void Command_ClantagClear4(void);
 
 static void Command_Playdemo_f(void);
 static void Command_Timedemo_f(void);
@@ -256,7 +269,6 @@ static void Got_Removal(UINT8 **cp, INT32 playernum);
 static void Command_Verify_f(void);
 static void Command_RemoveAdmin_f(void);
 static void Command_MotD_f(void);
-static void Got_MotD_f(UINT8 **cp, INT32 playernum);
 
 static void Command_ShowScores_f(void);
 static void Command_ShowTime_f(void);
@@ -265,7 +277,14 @@ static void Command_Isgamemodified_f(void);
 static void Command_Cheats_f(void);
 
 static void Command_ListSkins(void);
+
+static void Command_Voice(void);
+static void Command_Voice2(void);
+static void Command_Voice3(void);
+static void Command_Voice4(void);
+
 static void Command_ListVoices(void);
+static void Command_ListVoicePrefs(void);
 
 #ifdef _DEBUG
 static void Command_Togglemodified_f(void);
@@ -369,13 +388,7 @@ consvar_t cv_followercolor[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("followercolor4", "Default", CV_SAVE|CV_CALL|CV_NOINIT, Followercolor_cons_t, Followercolor4_OnChange)
 };
 
-// player's voices...also, uh, saved.
-consvar_t cv_voice[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("voice", "None", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Voice_OnChange),
-	CVAR_INIT ("voice2", "None", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Voice2_OnChange),
-	CVAR_INIT ("voice3", "None", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Voice3_OnChange),
-	CVAR_INIT ("voice4", "None", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Voice4_OnChange)
-};
+// Player voice data now saved to its own config
 
 static CV_PossibleValue_t restatvalue_cons_t[] = {{0, "MIN"}, {9, "MAX"}, {0, NULL}};
 consvar_t cv_dummyrestatspeed[MAXSPLITSCREENPLAYERS] = {
@@ -396,6 +409,14 @@ consvar_t cv_dummyrestatrandom[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("restatrandom2", "No", 0, CV_YesNo, NULL),
 	CVAR_INIT ("restatrandom3", "No", 0, CV_YesNo, NULL),
 	CVAR_INIT ("restatrandom4", "No", 0, CV_YesNo, NULL)
+};
+
+// Toggle for automatic voice preferences on voice change
+consvar_t cv_autovoxpref[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("voicepref_auto", "On", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("voicepref_auto2", "On", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("voicepref_auto3", "On", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("voicepref_auto4", "On", CV_SAVE, CV_OnOff, NULL)
 };
 
 consvar_t cv_skipmapcheck = CVAR_INIT ("skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL);
@@ -548,11 +569,11 @@ consvar_t cv_kartstacking_flame_stackable = CVAR_INIT ("vanillaboost_flame_stack
 
 consvar_t cv_kartstacking_attraction_speedboost_himin = CVAR_INIT ("vanillaboost_attraction_speedboost_himin", "0.42", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_attraction_speedboost_himax = CVAR_INIT ("vanillaboost_attraction_speedboost_himax", "0.50", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_attraction_speedboost_normmin = CVAR_INIT ("vanillaboost_attraction_speedboost_normmin", "0.15", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_attraction_speedboost_normmax = CVAR_INIT ("vanillaboost_attraction_speedboost_normmax", "0.20", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_attraction_accelboost_hi = CVAR_INIT ("vanillaboost_attraction_accelboost_hi", "18.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_attraction_accelboost_norm = CVAR_INIT ("vanillaboost_attraction_accelboost_norm", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_attraction_handleboost = CVAR_INIT ("vanillaboost_attraction_handleboost", "1.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_speedboost_normmin = CVAR_INIT ("vanillaboost_attraction_speedboost_normmin", "0.24", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_speedboost_normmax = CVAR_INIT ("vanillaboost_attraction_speedboost_normmax", "0.32", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_accelboost_hi = CVAR_INIT ("vanillaboost_attraction_accelboost_hi", "16.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_accelboost_norm = CVAR_INIT ("vanillaboost_attraction_accelboost_norm", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_attraction_handleboost = CVAR_INIT ("vanillaboost_attraction_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_attraction_stackable = CVAR_INIT ("vanillaboost_attraction_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_start_speedboost = CVAR_INIT ("vanillaboost_start_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
@@ -560,8 +581,8 @@ consvar_t cv_kartstacking_start_accelboost = CVAR_INIT ("vanillaboost_start_acce
 consvar_t cv_kartstacking_start_handleboost = CVAR_INIT ("vanillaboost_start_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_start_stackable = CVAR_INIT ("vanillaboost_start_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_walltransfer_speedboost = CVAR_INIT ("vanillaboost_walltransfer_speedboost", "0.10", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_walltransfer_accelboost = CVAR_INIT ("vanillaboost_walltransfer_accelboost", "5.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_walltransfer_speedboost = CVAR_INIT ("vanillaboost_walltransfer_speedboost", "0.12", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_walltransfer_accelboost = CVAR_INIT ("vanillaboost_walltransfer_accelboost", "12.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_walltransfer_handleboost = CVAR_INIT ("vanillaboost_walltransfer_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_walltransfer_stackable = CVAR_INIT ("vanillaboost_walltransfer_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
@@ -585,11 +606,9 @@ consvar_t cv_kartstacking_ssmt_speedboost = CVAR_INIT ("vanillaboost_ssmt_speedb
 consvar_t cv_kartstacking_ssmt_accelboost = CVAR_INIT ("vanillaboost_ssmt_accelboost", "10.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_ssmt_handleboost = CVAR_INIT ("vanillaboost_ssmt_handleboost", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
-consvar_t cv_kartstacking_recspin_speedboost_lo = CVAR_INIT ("vanillaboost_recspin_speedboost_lo", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_recspin_accelboost_lo = CVAR_INIT ("vanillaboost_recspin_accelboost_lo", "0.5", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_recspin_handleboost_lo = CVAR_INIT ("vanillaboost_recspin_handleboost_lo", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
-consvar_t cv_kartstacking_recspin_speedboost_hi = CVAR_INIT ("vanillaboost_recspin_speedboost_hi", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_recspin_accelboost_hi = CVAR_INIT ("vanillaboost_recspin_accelboost_hi", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_recspin_handleboost_hi = CVAR_INIT ("vanillaboost_recspin_handleboost_hi", "0.5", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
@@ -650,12 +669,19 @@ static CV_PossibleValue_t airdrop_cons_t[] = {{AIRDROP_NONE, "Off"},
 						{0, NULL}};
 consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "Off", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, airdrop_cons_t, KartAirDrop_OnChange);
 
-consvar_t cv_kartairthrust = CVAR_INIT ("kartairthrust", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartAirThrust_OnChange);
+static CV_PossibleValue_t airthrust_cons_t[] = {{AIRTHRUST_NONE, "Off"},
+						{AIRTHRUST_BURST, "Burst"},
+						{AIRTHRUST_FLASH, "Flash"},
+						{0, NULL}};
+consvar_t cv_kartairthrust = CVAR_INIT ("kartairthrust", "Off", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, airthrust_cons_t, KartAirThrust_OnChange);
 consvar_t cv_kartairthrust_reductionrate = CVAR_INIT ("kartairthrust_reductionrate", "0.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartairthrust_flashreductionrate = CVAR_INIT ("kartairthrust_reductionrate_flash", "1.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power1 = CVAR_INIT ("kartairthrust_power1", "0.2", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power2 = CVAR_INIT ("kartairthrust_power2", "0.35", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power3 = CVAR_INIT ("kartairthrust_power3", "0.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power4 = CVAR_INIT ("kartairthrust_power4", "0.75", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+
+consvar_t cv_kartairsuperring_reductionrate = CVAR_INIT ("kartairsuperring_reductionrate", "0.6", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 
 consvar_t cv_kartwaterskiplock = CVAR_INIT ("kartwaterskiplock", "Yes", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartWaterSkipLock_OnChange);
 
@@ -668,6 +694,16 @@ consvar_t cv_handleboostslip = CVAR_INIT ("karthandleboostsliptide", "Off", CV_N
 
 consvar_t cv_kartrecoverydash = CVAR_INIT ("kartrecoverydash", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartRecoveryDash_OnChange);
 consvar_t cv_kartrecoverydash_spinspeed = CVAR_INIT ("kartrecoverydash_spinspeed", "24.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+
+consvar_t cv_kartkeepstuff = CVAR_INIT ("kartkeepstuff", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartKeepStuff_OnChange);
+
+consvar_t cv_trailslow = CVAR_INIT ("trailslow", "Yes", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartTrailSlow_OnChange);
+
+static CV_PossibleValue_t playerbump_cons_t[] = {{PBUMP_STANDARD, "Standard"},
+						 {PBUMP_GNDONLY, "Only on Ground"},
+						 {PBUMP_NONE, "None"},
+						 {0, NULL}};
+consvar_t cv_playerbump = CVAR_INIT ("playerbump", "Standard", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, playerbump_cons_t, PlayerBump_OnChange);
 
 #define ANTIBUMP_MAX (UINT32_MAX / TICRATE)
 static CV_PossibleValue_t antibump_cons_t[] = {{0, "MIN"}, {ANTIBUMP_MAX, "MAX"}, {0, NULL}};
@@ -703,6 +739,10 @@ consvar_t cv_kartinvindamage = CVAR_INIT ("kartinvindamage", "Wipe-out", CV_NETV
 // How far the player must be from the cluster to roll an S-Monitor.
 static CV_PossibleValue_t smonitordist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
 consvar_t cv_kartsmonitordist = CVAR_INIT ("smonitor_startdist", "12000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
+
+// Conga is extremely finicky, so we need a separate threshold to preserve the S-Monitor's reliability
+consvar_t cv_kartsmonitor_congadist = CVAR_INIT("smonitor_startdist_conga", "10000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
+
 consvar_t cv_kartsmonitor_decaydist = CVAR_INIT ("smonitor_decaydist", "3600", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
 
 static CV_PossibleValue_t smonitordecaytime_cons_t[] = {{1, "MIN"}, {6, "MAX"}, {0, NULL}};
@@ -711,12 +751,18 @@ consvar_t cv_kartsmonitor_decaytime = CVAR_INIT ("smonitor_decaytime", "2", CV_N
 // opinionated stuff for testing balance tweaks on the shields
 consvar_t cv_kartbubble_defense_canidle = CVAR_INIT ("kartbubble_defense_canidle", "On", CV_NETVAR, CV_OnOff, NULL);
 static CV_PossibleValue_t bubble_defense_damagerate_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
-consvar_t cv_kartbubble_defense_damagerate = CVAR_INIT ("kartbubble_defense_damagerate", "1.0", CV_NETVAR|CV_FLOAT, bubble_defense_damagerate_cons_t, NULL);
+consvar_t cv_kartbubble_defense_damagerate = CVAR_INIT ("kartbubble_defense_damagerate", "0.8", CV_NETVAR|CV_FLOAT, bubble_defense_damagerate_cons_t, NULL);
 consvar_t cv_kartbubble_boost_allow = CVAR_INIT ("kartbubble_boost_allow", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartbubble_boost_offroadignore = CVAR_INIT ("kartbubble_boost_offroadignore", "On", CV_NETVAR, CV_OnOff, NULL);
+
 consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "On", CV_NETVAR, CV_OnOff, NULL);
-consvar_t cv_kartattraction_assistpower = CVAR_INIT ("kartattraction_assistpower", "0.5", CV_NETVAR|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartattraction_assistpower = CVAR_INIT ("kartattraction_assistpower", "0.2", CV_NETVAR|CV_FLOAT, CV_Unsigned, NULL);
+
+// Attraction Shield damage toggles
+static CV_PossibleValue_t kartattractiondmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {DMG_EXPLODE, "Explode"}, {0, NULL}};
+consvar_t cv_kartattraction_aoedmg = CVAR_INIT ("kartattraction_aoedmg", "None", CV_NETVAR|CV_CHEAT|CV_GUARD, kartattractiondmg_cons_t, NULL);
+consvar_t cv_kartattraction_aoeemp = CVAR_INIT ("kartattraction_aoeemp", "0", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 
 // "Arrow Bullet": above a certain speed threshold, an aura in the shape of the Shrink arrow
 // covers you, signaling protection from (most) items and players.
@@ -725,6 +771,9 @@ consvar_t cv_kartaltshrink_arrowbullet = CVAR_INIT ("kart_altshrink_arrowbullet"
 
 static CV_PossibleValue_t altshrink_arrowbullet_threshold_cons_t[] = {{0, "MIN"}, {2 * FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_kartaltshrink_arrowbulletthres = CVAR_INIT ("kart_altshrink_arrowbullet_threshold", "1.45", CV_NETVAR|CV_FLOAT, altshrink_arrowbullet_threshold_cons_t, NULL);
+
+// If you're in Alt. Shrink state, you'll roll KRF_RUNNERAUGMENT items at earlier distances with this on.
+consvar_t cv_kartaltshrink_runneranger = CVAR_INIT ("kart_altshrink_runneranger", "Off", CV_NETVAR, CV_OnOff, NULL);
 
 static CV_PossibleValue_t kartairsquish_cons_t[] = {{1, "Squish"}, {2, "Flip-over"}, {0, "None"}, {0, NULL}};
 consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kartairsquish_cons_t, NULL);
@@ -746,7 +795,7 @@ consvar_t cv_kartdebugcolorize = CVAR_INIT ("kartdebugcolorize", "Off", 0, CV_On
 consvar_t cv_kartdebugdirector = CVAR_INIT ("kartdebugdirector", "Off", 0, CV_OnOff, NULL);
 consvar_t cv_gptest = CVAR_INIT ("gptest", "Off", CV_CHEAT|CV_NETVAR, CV_OnOff, NULL);
 
-static CV_PossibleValue_t votetime_cons_t[] = {{10, "MIN"}, {3600, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t votetime_cons_t[] = {{0, "MIN"}, {3600, "MAX"}, {0, NULL}};
 consvar_t cv_votetime = CVAR_INIT ("votetime", "20", CV_NETVAR, votetime_cons_t, NULL);
 
 consvar_t cv_gravity = CVAR_INIT ("gravity", "0.8", CV_RESTRICT|CV_FLOAT|CV_CALL, NULL, Gravity_OnChange); // change DEFAULT_GRAVITY if you change this
@@ -880,6 +929,8 @@ consvar_t cv_automate = CVAR_INIT ("automate", "On", CV_NETVAR, CV_OnOff, NULL);
 
 consvar_t cv_debugmappatch = CVAR_INIT ("debugmappatch", "", 0, NULL, NULL);
 
+consvar_t cv_allowmismatchmappatch = CVAR_INIT ("allowmismatchmappatch", "No", CV_NETVAR, CV_YesNo, NULL);
+
 char timedemo_name[256];
 boolean timedemo_csv;
 char timedemo_csv_id[256];
@@ -913,6 +964,7 @@ const char *automate_names[AEV__MAX] =
 	"VoteStart", // AEV_VOTESTART
 	"QueueStart", // AEV_QUEUESTART
 	"QueueEnd", // AEV_QUEUEEND
+	"LevelStart" // AEV_LEVELSTART
 };
 
 /// \warning Keep this up-to-date if you add/remove/rename net text commands
@@ -934,7 +986,6 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"RANDOMSEED", // XD_RANDOMSEED
 	"RUNSOC", // XD_RUNSOC
 	"REQADDFILE", // XD_REQADDFILE
-	"SETMOTD", // XD_SETMOTD
 	"RESPAWN", // XD_RESPAWN
 	"DEMOTED", // XD_DEMOTED
 	"LUACMD", // XD_LUACMD
@@ -959,6 +1010,8 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"AUTOMATE", // XD_AUTOMATE
 	"CHEAT", // XD_CHEAT
 	"MAPQUEUE", // XD_MAPQUEUE
+	"CLANTAGSET", // XD_CLANTAGSET
+	"CLANTAGCLEAR", // XD_CLANTAGCLEAR
 };
 
 // =========================================================================
@@ -1010,6 +1063,17 @@ void D_RegisterServerCommands(void)
 	RegisterNetXCmd(XD_AUTOMATE, Got_Automatecmd);
 	RegisterNetXCmd(XD_MAPQUEUE, Got_MapQueuecmd);
 
+	COM_AddCommand("clantag_set", Command_ClantagSet);
+	COM_AddCommand("clantag2_set", Command_ClantagSet2);
+	COM_AddCommand("clantag3_set", Command_ClantagSet3);
+	COM_AddCommand("clantag4_set", Command_ClantagSet4);
+	COM_AddCommand("clantag_clear", Command_ClantagClear);
+	COM_AddCommand("clantag2_clear", Command_ClantagClear2);
+	COM_AddCommand("clantag3_clear", Command_ClantagClear3);
+	COM_AddCommand("clantag4_clear", Command_ClantagClear4);
+	RegisterNetXCmd(XD_CLANTAGSET, Got_ClanTagSet);
+	RegisterNetXCmd(XD_CLANTAGCLEAR, Got_ClanTagClear);
+
 	RegisterNetXCmd(XD_CHEAT, Got_Cheat);
 	COM_AddCommand("scoreboard_addline", Command_ScoreboardAdd);
 	COM_AddCommand("scoreboard_clear", Command_ScoreboardClear);
@@ -1024,7 +1088,6 @@ void D_RegisterServerCommands(void)
 	RegisterNetXCmd(XD_DEMOTED, Got_Removal);
 
 	COM_AddCommand("motd", Command_MotD_f);
-	RegisterNetXCmd(XD_SETMOTD, Got_MotD_f); // For remote admin
 
 	RegisterNetXCmd(XD_TEAMCHANGE, Got_Teamchange);
 	COM_AddCommand("serverchangeteam", Command_ServerTeamChange_f);
@@ -1207,6 +1270,7 @@ void D_RegisterServerCommands(void)
 #endif
 
 	CV_RegisterVar(&cv_debugmappatch);
+	CV_RegisterVar(&cv_allowmismatchmappatch);
 
 	COM_AddCommand("playsound", Command_PlaySound);
 	RegisterNetXCmd(XD_PLAYSOUND, Got_PlaySound);
@@ -1332,7 +1396,7 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_followercolor[i]);
 		CV_RegisterVar(&cv_jitterlegacy[i]);
 		CV_RegisterVar(&cv_driftmode[i]);
-		CV_RegisterVar(&cv_voice[i]);
+		CV_RegisterVar(&cv_autovoxpref[i]);
 
 		CV_RegisterVar(&cv_dummyrestatspeed[i]);
 		CV_RegisterVar(&cv_dummyrestatweight[i]);
@@ -1435,7 +1499,10 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_deadzonex[i]);
 		CV_RegisterVar(&cv_deadzoney[i]);
 		CV_RegisterVar(&cv_deadzonet[i]);
+		CV_RegisterVar(&cv_deadzonetwod[i]);
 		CV_RegisterVar(&cv_deadzonestyle[i]);
+		CV_RegisterVar(&cv_freelookstyle[i]);
+		CV_RegisterVar(&cv_freelookrequiresbutton[i]);
 		CV_RegisterVar(&cv_litesteer[i]);
 		CV_RegisterVar(&cv_turnsmooth[i]);
 		CV_RegisterVar(&cv_controllerrumble[i]);
@@ -1541,8 +1608,14 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_discordasks);
 #endif
 
+	COM_AddCommand("voice", Command_Voice);
+	COM_AddCommand("voice2", Command_Voice2);
+	COM_AddCommand("voice3", Command_Voice3);
+	COM_AddCommand("voice4", Command_Voice4);
+
 	COM_AddCommand("listskins", Command_ListSkins);
 	COM_AddCommand("listvoices", Command_ListVoices);
+	COM_AddCommand("listvoiceprefs", Command_ListVoicePrefs);
 
 	CV_RegisterVar(&cv_connectawaittime);
 	CV_RegisterVar(&cv_serverinfoscreen);
@@ -2046,23 +2119,30 @@ VaguePartyDescription (int playernum, int size, int default_color)
 static INT32 snacpending[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
 static INT32 chmappending = 0;
 
+static void setVoiceDataByName(UINT8 n, const char * vox_name)
+{
+	strncpy(localvoicedata[n].name, vox_name, VOICENAMESIZE);
+	localvoicedata[n].name[32] = 0;
+}
+
 // name, color, skin, or voice has changed
 //
 static void SendNameAndColor(UINT8 n)
 {
 	const INT32 playernum = g_localplayers[n];
-	player_t *player = &players[playernum];
-	kartvoice_t *voice;
-	kartvoice_t *valuevoice;
+	player_t* player = &players[playernum];
+	kartvoice_t* voice;
+	kartvoice_t* valuevoice;
 	INT32 prevskin;
+	kartvoicenum_t prefvox = MAXSKINVOICES;
 
-	char buf[MAXPLAYERNAME+12];
-	char *p;
+	char buf[MAXPLAYERNAME + 12];
+	char* p;
 
 	UINT16 i = 0;
 
 	if (splitscreen < n)
-		return; // can happen if skin4/color4/name4 changed
+		return;  // can happen if skin4/color4/name4 changed
 
 	if (playernum == -1)
 		return;
@@ -2074,23 +2154,29 @@ static void SendNameAndColor(UINT8 n)
 	{
 		if (player->skincolor && skincolors[player->skincolor].accessible)
 			CV_StealthSetValue(&cv_playercolor[n], player->skincolor);
-		else if (skins[player->skin].prefcolor && skincolors[skins[player->skin].prefcolor].accessible)
+		else if (skins[player->skin].prefcolor &&
+			 skincolors[skins[player->skin].prefcolor].accessible)
 			CV_StealthSetValue(&cv_playercolor[n], skins[player->skin].prefcolor);
 		else if (skincolors[atoi(cv_playercolor[n].defaultvalue)].accessible)
 			CV_StealthSet(&cv_playercolor[n], cv_playercolor[n].defaultvalue);
 		else
 		{
-			while (i<numskincolors && !skincolors[i].accessible)
+			while (i < numskincolors && !skincolors[i].accessible)
 				i++;
-			CV_StealthSetValue(&cv_playercolor[n], (i != numskincolors) ? i : SKINCOLOR_BLUE);
+			CV_StealthSetValue(&cv_playercolor[n],
+					   (i != numskincolors) ? i : SKINCOLOR_BLUE);
 		}
 	}
 
 	// ditto for follower colour:
 	if (!cv_followercolor[n].value)
-		CV_StealthSet(&cv_followercolor[n], "Default"); // set it to "Default". I don't care about your stupidity!
+		CV_StealthSet(
+		    &cv_followercolor[n],
+		    "Default");  // set it to "Default". I don't care about your stupidity!
 
-	// so like, this is sent before we even use anything like cvars or w/e so it's possible that follower is set to a pretty yikes value, so let's fix that before we send garbage that could crash the game:
+	// so like, this is sent before we even use anything like cvars or w/e so it's possible that
+	// follower is set to a pretty yikes value, so let's fix that before we send garbage that
+	// could crash the game:
 	if (cv_follower[n].value >= numfollowers || cv_follower[n].value < -1)
 		CV_StealthSet(&cv_follower[n], "-1");
 
@@ -2103,12 +2189,12 @@ static void SendNameAndColor(UINT8 n)
 		voice = &skins[player->skin].voices[0];
 	}
 
-	if (fastcmp(cv_playername[n].string, player_names[playernum])
-		&& cv_playercolor[n].value == player->skincolor
-		&& fastcmp(cv_skin[n].string, skins[player->skin].name)
-		&& cv_follower[n].value == player->followerskin
-		&& cv_followercolor[n].value == player->followercolor
-		&& fasticmp(cv_voice[n].string, voice->name))
+	if (fastcmp(cv_playername[n].string, player_names[playernum]) &&
+	    cv_playercolor[n].value == player->skincolor &&
+	    fastcmp(cv_skin[n].string, skins[player->skin].name) &&
+	    cv_follower[n].value == player->followerskin &&
+	    cv_followercolor[n].value == player->followercolor &&
+	    fasticmp(localvoicedata[n].name, voice->name))
 		return;
 
 	// We'll handle it later if we're not playing.
@@ -2118,7 +2204,7 @@ static void SendNameAndColor(UINT8 n)
 	// If you're not in a netgame, merely update the skin, color, and name.
 	if (!netgame)
 	{
-		INT32 foundskin, voxid;
+		INT32 foundskin;
 
 		CleanupPlayerName(playernum, cv_playername[n].zstring);
 		strcpy(player_names[playernum], cv_playername[n].zstring);
@@ -2134,13 +2220,14 @@ static void SendNameAndColor(UINT8 n)
 		player->followercolor = cv_followercolor[n].value;
 
 		if (metalrecording && n == 0)
-		{ // Starring Metal Sonic as themselves, obviously.
+		{  // Starring Metal Sonic as themselves, obviously.
 			SetPlayerSkinByNum(playernum, 5);
 			CV_StealthSet(&cv_skin[n], skins[5].name);
 		}
-		else if ((foundskin = R_SkinAvailable(cv_skin[n].string)) != -1 && R_SkinUsable(playernum, foundskin))
+		else if ((foundskin = R_SkinAvailable(cv_skin[n].string)) != -1 &&
+			 R_SkinUsable(playernum, foundskin))
 		{
-			prevskin = cv_skin[n].value;
+			prevskin = player->skin;
 
 			cv_skin[n].value = foundskin;
 			SetPlayerSkin(playernum, cv_skin[n].string);
@@ -2149,19 +2236,31 @@ static void SendNameAndColor(UINT8 n)
 			// Reset the voice.
 			if (prevskin != player->skin)
 			{
-				if (cv_voice[n].string)
-				{
-					voxid = R_FindIDForVoice(&skins[player->skin], cv_voice[n].string);
+				// First off: Check for a preferred voice for this skin
+				prefvox =
+				    R_GetLocalPreferredVoiceForSkin(n, skins[player->skin].name);
 
-					if (voxid == MAXSKINVOICES)
+				if (localvoicedata[n].name[0] != 0)
+				{
+					if (prefvox != MAXSKINVOICES)
 					{
-						// No dice; use the default voice.
-						valuevoice = &skins[player->skin].voices[0];
+						// Skin's changing, let's try their preference
+
+						// Give the player a heads-up
+						CONS_Alert(
+						    CONS_NOTICE,
+						    M_GetText("Using preferred voice \"%s\" for "
+							      "this skin.\n"),
+						    skins[player->skin].voices[prefvox].name);
+						valuevoice = &skins[player->skin].voices[prefvox];
+
+						// Preferences get to set local data for free!
+						setVoiceDataByName(n, valuevoice->name);
 					}
 					else
 					{
-
-						valuevoice = &skins[player->skin].voices[voxid];
+						// No dice; use the default voice.
+						valuevoice = &skins[player->skin].voices[0];
 					}
 				}
 				else
@@ -2170,7 +2269,12 @@ static void SendNameAndColor(UINT8 n)
 					valuevoice = &skins[player->skin].voices[0];
 				}
 
-				CV_StealthSet(&cv_voice[n], valuevoice->name);
+				if (player->jointime > 1)
+				{
+					// We're officially in the game; assume any skin/voice
+					// change is 100% on purpose
+					setVoiceDataByName(n, valuevoice->name);
+				}
 			}
 		}
 		else
@@ -2185,19 +2289,31 @@ static void SendNameAndColor(UINT8 n)
 			// Reset the voice.
 			if (prevskin != player->skin)
 			{
-				if (cv_voice[n].string)
-				{
-					voxid = R_FindIDForVoice(&skins[player->skin], cv_voice[n].string);
+				// First off: Check for a preferred voice for this skin
+				prefvox =
+				    R_GetLocalPreferredVoiceForSkin(n, skins[player->skin].name);
 
-					if (voxid == MAXSKINVOICES)
+				if (localvoicedata[n].name[0] != 0)
+				{
+					if (prefvox != MAXSKINVOICES)
 					{
-						// No dice; use the default voice.
-						valuevoice = &skins[player->skin].voices[0];
+						// Skin's changing, let's try their preference
+
+						// Give the player a heads-up
+						CONS_Alert(
+						    CONS_NOTICE,
+						    M_GetText("Using preferred voice "
+							      "\"%s\" for this skin.\n"),
+						    skins[player->skin].voices[prefvox].name);
+						valuevoice = &skins[player->skin].voices[prefvox];
+
+						// Preferences get to set local data for free!
+						setVoiceDataByName(n, valuevoice->name);
 					}
 					else
 					{
-
-						valuevoice = &skins[player->skin].voices[voxid];
+						// No dice; use the default voice.
+						valuevoice = &skins[player->skin].voices[0];
 					}
 				}
 				else
@@ -2206,23 +2322,28 @@ static void SendNameAndColor(UINT8 n)
 					valuevoice = &skins[player->skin].voices[0];
 				}
 
-				CV_StealthSet(&cv_voice[n], valuevoice->name);
+				if (player->jointime > 1)
+				{
+					// We're officially in the game; assume any skin/voice
+					// change is 100% on purpose
+					setVoiceDataByName(n, valuevoice->name);
+				}
 			}
 		}
 
 		// Need to update voices after the fact.
-		if (!cv_voice[n].string)
+		if (localvoicedata[n].name[0] == 0)
 		{
-			CV_StealthSet(&cv_voice[n], skins[player->skin].voices[0].name);
+			setVoiceDataByName(n, skins[player->skin].voices[0].name);
 		}
 
-		SetPlayerVoice(playernum, cv_voice[n].string);
+		SetPlayerVoice(playernum, localvoicedata[n].name);
 
 		valuevoice = P_GetMobjVoice(player->mo);
 
 		if (valuevoice)
 		{
-			CV_StealthSet(&cv_voice[n], valuevoice->name);
+			setVoiceDataByName(n, valuevoice->name);
 		}
 		else
 		{
@@ -2232,13 +2353,22 @@ static void SendNameAndColor(UINT8 n)
 
 			if (valuevoice)
 			{
-				CV_StealthSet(&cv_voice[n], valuevoice->name);
+				setVoiceDataByName(n, valuevoice->name);
 			}
 			else
 			{
 				// ...still nothing?
-				CV_StealthSet(&cv_voice[n], skins[player->skin].voices[0].name);
+				setVoiceDataByName(n, skins[player->skin].voices[0].name);
 			}
+		}
+
+		if (cv_autovoxpref[n].value &&
+		    player->voice_id != 0)  // Please please PLEASE not for defaults...
+		{
+			// Auto-assign a preference based on our final voice.
+			// This overwrites anything currently present
+			R_SetLocalPreferredVoiceForSkin(
+			    n, skins[player->skin].name, localvoicedata[n].name);
 		}
 
 		return;
@@ -2254,7 +2384,7 @@ static void SendNameAndColor(UINT8 n)
 	}
 	else if (cv_mute.value && !(server || IsPlayerAdmin(playernum)))
 		CV_StealthSet(&cv_playername[n], player_names[playernum]);
-	else // Cleanup name if changing it
+	else  // Cleanup name if changing it
 		CleanupPlayerName(playernum, cv_playername[n].zstring);
 
 	// Don't change skin if the server doesn't want you to.
@@ -2262,10 +2392,22 @@ static void SendNameAndColor(UINT8 n)
 	{
 		CV_StealthSet(&cv_skin[n], skins[player->skin].name);
 
-		if (R_FindIDForVoice(&skins[player->skin], cv_voice[n].string) == MAXSKINVOICES)
+		if (R_FindIDForVoice(&skins[player->skin], localvoicedata[n].name) == MAXSKINVOICES)
 		{
-			// Our voice is no longer valid, set it to that of our skin's.
-			CV_StealthSet(&cv_voice[n], skins[player->skin].voices[0].name);
+			// Our voice is no longer valid.
+
+			// Check if we have a preference
+			prefvox = R_GetLocalPreferredVoiceForSkin(n, skins[player->skin].name);
+
+			// If we don't, set it to that of our skin's.
+			if (prefvox != MAXSKINVOICES)
+			{
+				setVoiceDataByName(n, skins[player->skin].voices[prefvox].name);
+			}
+			else
+			{
+				setVoiceDataByName(n, skins[player->skin].voices[0].name);
+			}
 		}
 	}
 
@@ -2277,17 +2419,43 @@ static void SendNameAndColor(UINT8 n)
 		CV_StealthSet(&cv_skin[n], DEFAULTSKIN);
 		cv_skin[n].value = 0;
 
-		CV_StealthSet(&cv_voice[n], "sonic_voice");
-		cv_voice[n].value = 0;
+		setVoiceDataByName(n, "default");
+		localvoicedata[n].value = 0;
 	}
 
 	// Need to update voices after the fact.
-	if (!cv_voice[n].string)
+	if (localvoicedata[n].name[0] == 0)
 	{
-		CV_StealthSet(&cv_voice[n], skins[cv_skin[n].value].voices[0].name);
+		setVoiceDataByName(n, skins[cv_skin[n].value].voices[0].name);
 	}
 
-	if (R_FindIDForVoice(&skins[cv_skin[n].value], cv_voice[n].string) == MAXSKINVOICES)
+	const boolean skinmightchange = (player->skin != cv_skin[n].value);
+
+	if (skinmightchange)
+	{
+		// We're very likely changing skins. Check for preferences!
+		prefvox = R_GetLocalPreferredVoiceForSkin(n, skins[cv_skin[n].value].name);
+
+		if (prefvox != MAXSKINVOICES)
+		{
+			// Update local voice data
+			setVoiceDataByName(n, skins[cv_skin[n].value].voices[prefvox].name);
+
+			// Give the player a heads-up
+			CONS_Alert(CONS_NOTICE,
+				   M_GetText("Using preferred voice \"%s\" for this skin.\n"),
+				   skins[cv_skin[n].value].voices[prefvox].name);
+		}
+		else if (player->jointime >= 1)
+		{
+			// Nothing found; fall back to the default voice.
+			setVoiceDataByName(n, skins[cv_skin[n].value].voices[0].name);
+		}
+
+		// Then, let it lead into the standard finder for verification.
+	}
+
+	if (R_FindIDForVoice(&skins[cv_skin[n].value], localvoicedata[n].name) == MAXSKINVOICES)
 	{
 		// In the chance our current voice isn't valid,
 		// rescan our current voice and send that over the network.
@@ -2295,7 +2463,7 @@ static void SendNameAndColor(UINT8 n)
 
 		if (valuevoice)
 		{
-			CV_StealthSet(&cv_voice[n], valuevoice->name);
+			setVoiceDataByName(n, valuevoice->name);
 		}
 		else
 		{
@@ -2303,29 +2471,45 @@ static void SendNameAndColor(UINT8 n)
 			// No need to compare parents.
 			valuevoice = &skins[cv_skin[n].value].voices[player->voice_id];
 
+			// Once again: check preferences
+			prefvox = R_GetLocalPreferredVoiceForSkin(n, skins[cv_skin[n].value].name);
+
 			if (valuevoice)
 			{
-				CV_StealthSet(&cv_voice[n], valuevoice->name);
+				setVoiceDataByName(n, valuevoice->name);
+			}
+			else if (prefvox != MAXSKINVOICES)
+			{
+				setVoiceDataByName(n, skins[cv_skin[n].value].voices[prefvox].name);
 			}
 			else
 			{
 				// ...still nothing?
-				CV_StealthSet(&cv_voice[n], skins[cv_skin[n].value].voices[0].name);
+				setVoiceDataByName(n, skins[cv_skin[n].value].voices[0].name);
 			}
 		}
 	}
 
 	// After EVERYTHING, do one last check on our voice so we can set the value.
-	INT32 cvar_voxid = R_FindIDForVoice(&skins[cv_skin[n].value], cv_voice[n].string);
+	INT32 cvar_voxid = R_FindIDForVoice(&skins[cv_skin[n].value], localvoicedata[n].name);
 
 	if (cvar_voxid == MAXSKINVOICES)
 	{
 		// ...huh?! Reset to the default.
-		cv_voice[n].value = 0;
+		localvoicedata[n].value = 0;
 	}
 	else
 	{
-		cv_voice[n].value = cvar_voxid;
+		localvoicedata[n].value = cvar_voxid;
+	}
+
+	if (cv_autovoxpref[n].value && localvoicedata[n].value != 0)
+	{
+		// Auto-assign a preference based on our final voice, if it isn't the default.
+		// Defaults should be manually set. This overwrites anything currently present
+		// (again, given it's not the default voice).
+		R_SetLocalPreferredVoiceForSkin(
+		    n, skins[cv_skin[n].value].name, localvoicedata[n].name);
 	}
 
 	// Finally write out the complete packet and send it off.
@@ -2334,15 +2518,15 @@ static void SendNameAndColor(UINT8 n)
 	WRITEUINT16(p, (UINT16)cv_skin[n].value);
 	WRITEINT32(p, (INT32)cv_follower[n].value);
 	WRITEUINT16(p, (UINT16)cv_followercolor[n].value);
-	WRITEUINT16(p, (UINT16)cv_voice[n].value);
+	WRITEUINT16(p, (UINT16)localvoicedata[n].value);
 
 	SendNetXCmdForPlayer(n, XD_NAMEANDCOLOR, buf, p - buf);
 }
 
-static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
+static void Got_NameAndColor(UINT8** cp, INT32 playernum)
 {
-	player_t *p = &players[playernum];
-	char name[MAXPLAYERNAME+1];
+	player_t* p = &players[playernum];
+	char name[MAXPLAYERNAME + 1];
 	UINT16 color, followercolor;
 	UINT16 skin, voice;
 	INT32 follower;
@@ -2410,26 +2594,45 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 
 		if (kick)
 		{
-			CONS_Alert(CONS_WARNING, M_GetText("Illegal color change received from %s (team: %d), color: %d)\n"), player_names[playernum], p->ctfteam, p->skincolor);
+			CONS_Alert(
+			    CONS_WARNING,
+			    M_GetText(
+				"Illegal color change received from %s (team: %d), color: %d)\n"),
+			    player_names[playernum],
+			    p->ctfteam,
+			    p->skincolor);
 			SendKick(playernum, KICK_MSG_CON_FAIL);
 			return;
 		}
 	}
 
 	// set skin
-	if (cv_forceskin.value >= 0 && K_CanChangeRules(true)) // Server wants everyone to use the same player
+	if (cv_forceskin.value >= 0 &&
+	    K_CanChangeRules(true))  // Server wants everyone to use the same player
 	{
 		const INT32 forcedskin = cv_forceskin.value;
 		SetPlayerSkinByNum(playernum, forcedskin);
 
+		kartvoicenum_t forcedvox = 0;
+
 		if (localplayer != -1)
 		{
+			// You know the drill: check for preferences
+			forcedvox =
+			    R_GetLocalPreferredVoiceForSkin(localplayer, skins[forcedskin].name);
+
+			if (forcedvox == MAXSKINVOICES)
+			{
+				// If we find nothing, just fall back to the default
+				forcedvox = 0;
+			}
+
 			CV_StealthSet(&cv_skin[localplayer], skins[forcedskin].name);
-			CV_StealthSet(&cv_voice[localplayer], skins[forcedskin].voices[0].name);
+			setVoiceDataByName(localplayer, skins[forcedskin].voices[forcedvox].name);
 		}
 
 		// set voice
-		SetPlayerVoiceByNum(playernum, skins[forcedskin].voices[0].id);
+		SetPlayerVoiceByNum(playernum, skins[forcedskin].voices[forcedvox].id);
 	}
 	else
 	{
@@ -2440,7 +2643,7 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 
 		if (localplayer != -1)
 		{
-			CV_StealthSet(&cv_voice[localplayer], skins[p->skin].voices[p->voice_id].name);
+			setVoiceDataByName(localplayer, skins[p->skin].voices[p->voice_id].name);
 		}
 	}
 
@@ -5590,24 +5793,26 @@ static void Command_MotD_f(void)
 		return;
 	}
 
-	if (!(server || (IsPlayerAdmin(consoleplayer))))
+	// TODO: make PT_ServerInfoUpdate support external admin players.
+	if (!(server /*|| (IsPlayerAdmin(consoleplayer))*/))
 	{
-		CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
+		//CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
+		CONS_Printf(M_GetText("Only the server can use this.\n"));
 		return;
 	}
 
-	mymotd = Z_Malloc(sizeof(motd), PU_STATIC, NULL);
+	mymotd = Z_Malloc(MAXSERVERMOTD, PU_STATIC, NULL);
 
 	if (!mymotd)
 		return;
 		//I_Error("Command_MotD_f: Out of memory!\n"); // idk if this aint a bit too much lel
 
-	strlcpy(mymotd, COM_Argv(1), sizeof(motd));
+	strlcpy(mymotd, COM_Argv(1), MAXSERVERMOTD);
 
 	for (i = 2; i < j; i++)
 	{
-		strlcat(mymotd, " ", sizeof(motd));
-		strlcat(mymotd, COM_Argv(i), sizeof(motd));
+		strlcat(mymotd, " ", MAXSERVERMOTD);
+		strlcat(mymotd, COM_Argv(i), MAXSERVERMOTD);
 	}
 
 	// Disallow non-printing characters and semicolons.
@@ -5616,47 +5821,13 @@ static void Command_MotD_f(void)
 		if (!isprint(mymotd[i]) || mymotd[i] == ';')
 		{
 			Z_Free(mymotd);
+			CONS_Alert(CONS_WARNING, M_GetText("Invalid characters in message of the day.\n"));
 			return;
 		}
 	}
 
-	if ((netgame || multiplayer) && client)
-	{
-		SendNetXCmd(XD_SETMOTD, mymotd, i); // send the actual size of the motd string, not the full buffer's size
-	}
-	else
-	{
-		strcpy(motd, mymotd);
-		CONS_Printf(M_GetText("Message of the day set.\n"));
-	}
-
-	Z_Free(mymotd);
-}
-
-static void Got_MotD_f(UINT8 **cp, INT32 playernum)
-{
-	char *mymotd = Z_Malloc(sizeof(motd), PU_STATIC, NULL);
-	INT32 i;
-	boolean kick = false;
-
-	READSTRINGN(*cp, mymotd, sizeof(motd));
-
-	// Disallow non-printing characters and semicolons.
-	for (i = 0; mymotd[i] != '\0'; i++)
-		if (!isprint(mymotd[i]) || mymotd[i] == ';')
-			kick = true;
-
-	if ((playernum != serverplayer && !IsPlayerAdmin(playernum)) || kick)
-	{
-		CONS_Alert(CONS_WARNING, M_GetText("Illegal motd change received from %s\n"), player_names[playernum]);
-		if (server)
-			SendKick(playernum, KICK_MSG_CON_FAIL);
-		Z_Free(mymotd);
-		return;
-	}
-
-	strcpy(motd, mymotd);
-
+	strcpy(connectedservermotd, mymotd);
+	ServerInfoUpdateSend();
 	CONS_Printf(M_GetText("Message of the day set.\n"));
 
 	Z_Free(mymotd);
@@ -7361,6 +7532,161 @@ static void Got_PlaySound(UINT8 **cp, INT32 playernum)
 	S_StartSound(NULL, sound_id);
 }
 
+static void HandleClantagSetCommand(UINT8 localplayer)
+{
+	char buf[sizeof(UINT8)+MAXCLANTAG];
+	char *cp = buf;
+	char temp[MAXCLANTAG*4];
+	char clantag[MAXCLANTAG];
+	size_t i, j = COM_Argc();
+
+	if (COM_Argc() < 2)
+	{
+		CONS_Printf("%s <text>: Set your clantag to this.\n", localplayer == 0 ? "clantag_set" : va("clantag%d_set", localplayer+1));
+		return;
+	}
+
+	if (!(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
+	{
+		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
+		return;
+	}
+
+	if (localplayer != 0 && !g_localplayers[localplayer])
+	{
+		CONS_Printf(M_GetText("There is no player to set a clantag for.\n"));
+		return;
+	}
+
+	strlcpy(temp, COM_Argv(1), sizeof temp);
+	for (i = 2; i < j; i++)
+	{
+		strlcat(temp, " ", sizeof temp);
+		strlcat(temp, COM_Argv(i), sizeof temp);
+	}
+
+	if (strlen(temp) >= MAXCLANTAG)
+	{
+		CONS_Printf(M_GetText("Supplied clantag is too long.\n"));
+		return;
+	}
+
+	if ((fasticmp("@", temp)
+		|| fasticmp("~", temp)
+		|| fasticmp("staff", temp)
+		|| fasticmp("admin", temp))
+	)
+	{
+		CONS_Printf(M_GetText("Nice try.\n"));
+		return;
+	}
+
+	strncpy(clantag, temp, MAXCLANTAG);
+
+	WRITEUINT8(cp, g_localplayers[localplayer]);
+	WRITESTRINGN(cp, clantag, MAXCLANTAG);
+	SendNetXCmdForPlayer(localplayer, XD_CLANTAGSET, &buf, cp - buf);
+}
+
+static void Command_ClantagSet(void)
+{
+	HandleClantagSetCommand(0);
+}
+
+static void Command_ClantagSet2(void)
+{
+	HandleClantagSetCommand(1);
+}
+
+static void Command_ClantagSet3(void)
+{
+	HandleClantagSetCommand(2);
+}
+
+static void Command_ClantagSet4(void)
+{
+	HandleClantagSetCommand(3);
+}
+
+static void Got_ClanTagSet(UINT8 **cp, INT32 playernum)
+{
+	char clantag[MAXCLANTAG];
+	UINT8 targetPlayer = READUINT8(*cp);
+	READSTRINGN(*cp, clantag, MAXCLANTAG);
+
+	if (targetPlayer >= MAXPLAYERS
+		|| playernode[targetPlayer] != playernode[playernum]
+		|| (fasticmp("@", clantag)
+		|| fasticmp("~", clantag)
+		|| fasticmp("staff", clantag)
+		|| fasticmp("admin", clantag))
+	)
+	{
+		CONS_Alert(CONS_WARNING,
+			M_GetText ("Illegal Clantag Set command received from %s\n"),
+			player_names[playernum]);
+		return;
+	}
+
+	strncpy(players[targetPlayer].clan, clantag, MAXCLANTAG);
+}
+
+static void HandleClantagClearCommand(UINT8 localplayer)
+{
+	char buf[1];
+	char *cp = buf;
+
+	if (!(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
+	{
+		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
+		return;
+	}
+
+	if (localplayer != 0 && !g_localplayers[localplayer])
+	{
+		CONS_Printf(M_GetText("There is no player to set a clantag for.\n"));
+		return;
+	}
+
+	WRITEUINT8(cp, g_localplayers[localplayer]);
+	SendNetXCmdForPlayer(localplayer, XD_CLANTAGCLEAR, &buf, cp - buf);
+}
+
+static void Command_ClantagClear(void)
+{
+	HandleClantagClearCommand(0);
+}
+
+static void Command_ClantagClear2(void)
+{
+	HandleClantagClearCommand(1);
+}
+
+static void Command_ClantagClear3(void)
+{
+	HandleClantagClearCommand(2);
+}
+
+static void Command_ClantagClear4(void)
+{
+	HandleClantagClearCommand(3);
+}
+
+static void Got_ClanTagClear(UINT8 **cp, INT32 playernum)
+{
+	UINT8 targetPlayer = READUINT8(*cp);
+
+	if (targetPlayer >= MAXPLAYERS || playernode[targetPlayer] != playernode[playernum])
+	{
+		CONS_Alert(CONS_WARNING,
+				   M_GetText ("Illegal Clantag Clear command received from %s\n"),
+				   player_names[playernum]);
+		return;
+	}
+
+	memset(players[targetPlayer].clan, 0, MAXCLANTAG);
+}
+
 static const char *displayplayer_compose_col(int playernum)
 {
 	return va("\x84(%d) \x83%s\x80", playernum, player_names[playernum]);
@@ -8281,6 +8607,378 @@ static void Command_ListSkins(void)
 	}
 }
 
+static void __voice_cmd_func(INT32 pid, UINT8 pnum)
+{
+	int vo_id = 0;
+	int skin_id = 0;
+	boolean ingame = false;
+
+	if (!numskins)
+	{
+		// There aren't even any skins yet!
+		return;
+	}
+
+	kartvoice_t* myvoice = P_GetMobjVoice(players[pid].mo);
+
+	if (!myvoice)
+	{
+		// ...how?!
+		myvoice = &skins[players[pid].skin].voices[0];
+	}
+
+	if (Playing() && (pnum < 1 || splitscreen))
+	{
+		ingame = true;
+
+		if (pnum < 1)
+		{
+			if (!(cht_debug || devparm) &&
+			    !(multiplayer || netgame)  // In single player.
+			    && (gamestate !=
+				GS_WAITINGPLAYERS))  // allows command line -warp x +skin y
+			{
+				setVoiceDataByName(pnum, myvoice->name);
+				return;
+			}
+		}
+
+		if (P_PlayerMoving(pid) && COM_Argc() > 0)
+		{
+			CONS_Alert(CONS_NOTICE,
+				   M_GetText("You can't change your voice at the moment.\n"));
+			setVoiceDataByName(pnum, myvoice->name);
+			return;
+		}
+	}
+
+	// ...now that we've dealt with the pleasantries...
+
+	if (COM_Argc() > 2)
+	{
+		// Assume we're trying to define a preferred voice
+		if (sscanf(COM_Argv(1), " %d", &skin_id) == 0)
+		{
+			// Assume the player is searching by skin name instead
+			skin_id = R_SkinAvailable(COM_Argv(1));
+
+			if (skin_id == -1)
+			{
+				CONS_Alert(
+				    CONS_NOTICE,
+				    M_GetText(
+					"No skin exists with the name %s. \n(TIP: Type \"skin\" in "
+					"the console to see your current skin!)\n"),
+				    COM_Argv(1));
+				return;
+			}
+		}
+		else if (skin_id < 0)
+		{
+			CONS_Alert(CONS_NOTICE, M_GetText("Skin ID cannot be negative.\n"));
+			return;
+		}
+		else if (skin_id >= numskins)
+		{
+			// Make sure the ID isn't invalid
+			CONS_Alert(CONS_NOTICE,
+				   M_GetText("Skin ID is out of range (0 to %d).\n"),
+				   numskins - 1);
+			return;
+		}
+
+		// Now, check for voices in the same way
+		if (sscanf(COM_Argv(2), " %d", &vo_id) == 0)
+		{
+			// Assume the player is searching by voice name instead
+			vo_id = R_FindIDForVoice(&skins[skin_id], COM_Argv(2));
+
+			if (vo_id == MAXSKINVOICES)
+			{
+				// Found nothing. Make sure we're not playing as this skin, or at
+				// least not playing yet!
+				if (!ingame ||
+				    !fasticmp(skins[skin_id].name, skins[players[pid].skin].name))
+				{
+					// Okay, good, we're not, Set a preference.
+					CONS_Printf(
+					    "Set local player %d's preferred voice for skin \"%s\" "
+					    "to %s.\n",
+					    pnum + 1,
+					    skins[skin_id].name,
+					    COM_Argv(2));
+				}
+				else
+				{
+					// SHIT, we are. Break the bad news.
+					CONS_Alert(
+					    CONS_NOTICE,
+					    M_GetText("No voice exists for skin %s with the name "
+						      "%s. A preference has been set "
+						      "instead.\n(TIP: Type \"listvoices %s\" in "
+						      "the console to see this skin's voices!)\n"),
+					    skins[skin_id].name,
+					    COM_Argv(2),
+					    skins[skin_id].name);
+				}
+
+				R_SetLocalPreferredVoiceForSkin(
+				    pnum, skins[skin_id].name, va("%s", COM_Argv(2)));
+				return;
+			}
+		}
+		else if (vo_id < 0)
+		{
+			CONS_Alert(CONS_NOTICE, M_GetText("Voice ID cannot be negative.\n"));
+			return;
+		}
+		else if (vo_id >= skins[skin_id].numvoices)
+		{
+			// Make sure the ID isn't invalid
+			CONS_Alert(CONS_NOTICE,
+				   M_GetText("Voice ID is out of range (0 to %d).\n"),
+				   skins[skin_id].numvoices - 1);
+			return;
+		}
+
+		// Check if we're PLAYING AS the skin we're about to set a voice for
+		if (!fasticmp(skins[skin_id].name, skins[players[pid].skin].name))
+		{
+			// No? Well, at least set a preference for the voice we want...
+			R_SetLocalPreferredVoiceForSkin(
+			    pnum, skins[skin_id].name, skins[skin_id].voices[vo_id].name);
+
+			CONS_Printf(
+			    "Set local player %d's preferred voice for skin \"%s\" to %s.\n",
+			    pnum + 1,
+			    skins[skin_id].name,
+			    skins[skin_id].voices[vo_id].name);
+			return;
+		}
+
+		// Yes? Even still, set a preference!
+		R_SetLocalPreferredVoiceForSkin(
+		    pnum, skins[skin_id].name, skins[skin_id].voices[vo_id].name);
+
+		// FINALLY... set the damn voice, and send it over the network
+		setVoiceDataByName(pnum, skins[skin_id].voices[vo_id].name);
+		SendNameAndColor(pnum);
+	}
+	else if (COM_Argc() > 1)  // More standard, "cvar-like" behavior
+	{
+		skin_t* set_skin = &skins[players[pid].skin];
+
+		if (sscanf(COM_Argv(1), " %d", &vo_id) != 0)
+		{
+			if ((!Playing()) || (pnum > 0 && !splitscreen))
+			{
+				// Not in a game, and certainly not playing. Use what
+				// the player's cvar has
+				set_skin = &skins[cv_skin[pnum].value];
+
+				if (!set_skin)
+					set_skin = &skins[0];
+			}
+			// Setting our voice by ID
+			if (vo_id < 0)
+			{
+				CONS_Alert(CONS_NOTICE,
+					   M_GetText("Voice ID cannot be negative.\n"));
+				return;
+			}
+			else if (vo_id >= set_skin->numvoices)
+			{
+				// Make sure the ID isn't invalid
+				CONS_Alert(CONS_NOTICE,
+					   M_GetText("Voice ID is out of range (0 to %d).\n"),
+					   set_skin->numvoices - 1);
+				return;
+			}
+		}
+		else if (fasticmp(COM_Argv(1), "--help"))
+		{
+			char command_name[7] = "voice_";
+
+			command_name[5] = (pnum > 0) ? ('1' + pnum) : 0;
+			command_name[6] = 0;
+
+			// Anyone who names their skin "--help" can suck it.
+			CONS_Printf(
+			    "Usage: \"%s <skin_name> <voice_name>\" to set a preference, "
+			    "regardless of if the voice is actually set or not\nAlternatively: "
+			    "\"%s\" alone to see the current voice, or \"%s <voice_name>\" to set "
+			    "a voice for the current skin without setting a preference.\n",
+			    command_name,
+			    command_name,
+			    command_name);
+			return;
+		}
+		else
+		{
+			// Setting voice by name
+			if ((!Playing()) || (pnum > 0 && !splitscreen))
+			{
+				// Not in a game, and certainly not playing. Just let them set
+				// the voice; the networking system will catch if something
+				// is wrong
+				setVoiceDataByName(pnum, COM_Argv(1));
+				return;
+			}
+
+			vo_id = R_FindIDForVoice(set_skin, COM_Argv(1));
+			if (vo_id == MAXSKINVOICES)
+			{
+				// No dice
+				CONS_Alert(CONS_NOTICE,
+					   M_GetText("No voice exists for skin %s with the name "
+						     "%s. \n(TIP: Type \"listvoices %s\" in the "
+						     "console to see this skin's voices!)\n"),
+					   set_skin->name,
+					   COM_Argv(1),
+					   set_skin->name);
+				return;
+			}
+		}
+
+		// FINALLY... set the damn voice, and send it over the network
+		setVoiceDataByName(pnum, set_skin->voices[vo_id].name);
+		SendNameAndColor(pnum);
+	}
+	else
+	{
+		// No args; print our current voice like a cvar would
+		if (localvoicedata[pnum].name[0] != 0)
+			CONS_Printf(
+			    "Current voice for local player %d is %s.\nType \"voice default\" to "
+			    "return to your default voice.\n",
+			    pnum + 1,
+			    localvoicedata[pnum].name);
+		else
+			CONS_Printf(
+			    "No current voice assigned for local player %d yet. Are you in the "
+			    "title screen?\n",
+			    pnum + 1);
+	}
+}
+
+static void Command_Voice(void)
+{
+	__voice_cmd_func(consoleplayer, 0);
+}
+
+static void Command_Voice2(void)
+{
+	__voice_cmd_func(g_localplayers[1], 1);
+}
+
+static void Command_Voice3(void)
+{
+	__voice_cmd_func(g_localplayers[2], 2);
+}
+
+static void Command_Voice4(void)
+{
+	__voice_cmd_func(g_localplayers[3], 3);
+}
+
+__attribute__((used)) static void appendStrToCharVec(cvector(char) * v, const char * str)
+{
+	int i, len;
+
+	if (!v)
+		return;
+
+	if (!str)
+		return;
+
+	i = 0;
+	len = strlen(str);
+
+	for (i = 0; i < len; i++)
+		cvector_push_back(*v, str[i]);
+}
+
+#define CHARINDENT "    "
+#define MAXCHARSB4COLUMN (32)
+
+// Lists all multi-voiced characters in a long list. No pages here!
+__attribute__((used)) static void outputVoicesForSkin(skin_t * skin)
+{
+	cvector(char) str = NULL;
+	kartvoice_t* vox = NULL;
+
+	char color_prefix[2] = {0};
+
+	int i = 0;
+	int list_total_length = 0;
+
+	if (!skin)
+		return; // No skin
+
+	if (!skin->numvoices)
+		return; // No voices, either
+
+	const int voice_num = skin->numvoices;
+	const int voice_lastiter = (voice_num - 1);
+
+	UINT16 chatcolor = skincolors[skin->prefcolor].chatcolor;
+
+	if (chatcolor > V_TANMAP)
+	{
+		sprintf(color_prefix, "%c", '\x80');
+	}
+	else
+	{
+		sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+	}
+
+	color_prefix[1] = 0;
+
+	CONS_Printf("\x82Voices for %s%s\x82 (\x80\"%s\"\x82):\x80\n",
+		    color_prefix,
+		    skin->realname,
+		    skin->name);
+
+	appendStrToCharVec(&str, CHARINDENT);
+
+	for (i = 0; i < voice_num; i++)
+	{
+		if (list_total_length >= MAXCHARSB4COLUMN)
+		{
+			// Create a newline if we exceed the char limit
+			appendStrToCharVec(&str, "\n" CHARINDENT);
+			list_total_length = 0;
+		}
+
+		vox = &skin->voices[i];
+
+		if (!vox)
+			continue;
+
+		if (i < voice_lastiter)
+		{
+			appendStrToCharVec(&str, va("%s, ", vox->name));
+			list_total_length += strlen(vox->name) + 2;
+		}
+		else
+		{
+			appendStrToCharVec(&str, vox->name);
+		}
+	}
+
+	// Add the ending token for safety
+	cvector_push_back(str, '\0');
+
+	if (str)
+		CONS_Printf("%s\n", str);
+
+	// We're done; clear the vector
+	cvector_free(str);
+}
+
+#undef CHARINDENT
+#undef MAXCHARSB4COLUMN
+
 static void Command_ListVoices(void)
 {
 	int i;
@@ -8289,6 +8987,7 @@ static void Command_ListVoices(void)
 	int page = 0;
 	int longest_name = 0;
 	boolean searchedskin = false;
+	boolean searchallskins = false;
 
 	if (COM_Argc() > 1)
 	{
@@ -8299,7 +8998,7 @@ static void Command_ListVoices(void)
 				// Anyone who names their skin "--help" can suck it.
 				CONS_Printf(
 				    "Usage: \"listvoices <playernum/skinname> "
-				    "<pagenum>\"\nAlternatively: \"listvoices\" alone\n");
+				    "<pagenum>\"\nAlternatively: \"listvoices\" alone to find all skins with dubs\n");
 				return;
 			}
 			// Assume the player is searching by skin name instead.
@@ -8341,7 +9040,34 @@ static void Command_ListVoices(void)
 	}
 	else
 	{
-		sid = cv_skin[0].value;
+		// Assume we want to see all skins
+		searchallskins = true;
+	}
+
+	if (searchallskins)
+	{
+		if (num_multivoiceskins < 1)
+		{
+			CONS_Printf("There are no skins with multiple voices.\n");
+		}
+		else
+		{
+			// Comb through all the skins in the multivoice array, and list their voicebanks
+			if (num_multivoiceskins < 2)
+			{
+				// Only one skin in here.
+				outputVoicesForSkin(multivoiceskins[0]);
+			}
+			else
+			{
+				for (i = 0; i < num_multivoiceskins; i++)
+				{
+					outputVoicesForSkin(multivoiceskins[i]);
+				}
+			}
+		}
+
+		return;
 	}
 
 	if (sid == -1)
@@ -8418,6 +9144,121 @@ static void Command_ListVoices(void)
 		CONS_Printf("There are no more pages.\n");
 	}
 }
+
+// Used as a constant pointer for the voice preference list.
+char prefvoiceliststr[PREFLISTSIZE] = {0};
+
+#define LISTVOICEPREFHELP "Usage: \"listvoiceprefs <playernum/skinname> <pagenum>\" OR \"listvoiceprefs <pagenum>\" OR \"listvoiceprefs\"\nNote: \"listvoiceprefs <pagenum>\" and \"listvoiceprefs\" alone will only show Player 1's voice preferences.\n"
+
+#if MAXSPLITSCREENPLAYERS == 1
+
+#define OVERPLAYERLIMIT "There is only %d local player.\n"
+
+#else
+
+#define OVERPLAYERLIMIT "There are only %d local players.\n"
+
+#endif
+
+static void Command_ListVoicePrefs(void)
+{
+	INT32 pnum = 0;
+	INT32 page = 1;
+
+	if (COM_Argc() == 2)
+	{
+		// Assume player 1 (pnum 0)
+		if (sscanf(COM_Argv(1), " %d", &page) == 0)
+		{
+			if (fasticmp(COM_Argv(1), "--help"))
+			{
+				CONS_Printf(LISTVOICEPREFHELP);
+				return;
+			}
+
+			page = 1;
+		}
+		else
+		{
+			if (page < 0)
+			{
+				CONS_Printf("Page number cannot be negative.\n");
+				return;
+			}
+			else if (page == 0)
+			{
+				CONS_Printf("There is no 0th page. (What are you, a programmer?)\n");
+				return;
+			}
+		}
+	}
+	else if (COM_Argc() > 2)
+	{
+		if (sscanf(COM_Argv(1), " %d", &pnum) == 0)
+		{
+			CONS_Printf("Player number cannot be a string.\n");
+		}
+		else if (pnum > MAXSPLITSCREENPLAYERS)
+		{
+			CONS_Printf(OVERPLAYERLIMIT, MAXSPLITSCREENPLAYERS);
+			return;
+		}
+		else if (pnum < 0)
+		{
+			CONS_Printf("Player number cannot be negative.\n");
+			return;
+		}
+		else if (pnum != 0) // The "0th player" is Player 1
+		{
+			pnum -= 1;
+		}
+
+		if (sscanf(COM_Argv(2), " %d", &page) == 0)
+		{
+			page = 1;
+		}
+		else
+		{
+			if (page < 0)
+			{
+				CONS_Printf("Page number cannot be negative.\n");
+				return;
+			}
+			else if (page == 0)
+			{
+				CONS_Printf("There is no 0th page. (What are you, a programmer?)\n");
+				return;
+			}
+		}
+	}
+	else if (COM_Argc() <= 1)
+	{
+		// Assume player 1, page 1
+		page = 1;
+		pnum = 0;
+	}
+	else
+	{
+		// Too many args! List the help blurb.
+		CONS_Printf(LISTVOICEPREFHELP);
+		return;
+	}
+
+	INT32 str_size = R_MakePreferredVoicesList(pnum, prefvoiceliststr, PREFLISTSIZE, page);
+
+	if (str_size <= 0)
+	{
+		CONS_Printf("(local player %d) You have no voice preferences.\nUse voice <skin_name> <voice_name> to assign a preferred voice.\n", pnum+1);
+		return; // Don't do shit, we have no string
+	}
+
+	prefvoiceliststr[str_size] = 0; // Add a terminator so the printer isn't combing through such a massive list...
+
+	CONS_Printf("%s", prefvoiceliststr);
+}
+
+#undef LISTVOICESHELP
+
 
 /** Sends a color change for the console player, unless that player is moving.
   * \sa cv_playercolor, Color2_OnChange, Skin_OnChange
@@ -8524,74 +9365,6 @@ static void Color4_OnChange(void)
 		}
 	}
 	lastgoodcolor[3] = cv_playercolor[3].value;
-}
-
-static void __voice_cvar_func(INT32 pid, UINT8 pnum)
-{
-	if (!numskins)
-	{
-		// There aren't even any skins yet!
-		return;
-	}
-
-	kartvoice_t *myvoice = P_GetMobjVoice(players[pid].mo);
-
-	if (!myvoice)
-	{
-		// ...how?!
-		myvoice = &skins[players[pid].skin].voices[0];
-	}
-
-	if (R_FindIDForVoice(&skins[players[pid].skin], cv_voice[pnum].string) == MAXSKINVOICES)
-	{
-		CONS_Alert(CONS_NOTICE, M_GetText("Voice \"%s\" does not exist for this skin.\n"), cv_voice[pnum].string);
-		CV_StealthSet(&cv_voice[pnum], myvoice->name);
-		return;
-	}
-
-	if (!Playing())
-		return; // do whatever you want
-
-	if (pnum > 0 && !splitscreen)
-		return; // do whatever you want
-
-	if (pnum < 1)
-	{
-		if (!(cht_debug || devparm) && !(multiplayer || netgame) // In single player.
-			&& (gamestate != GS_WAITINGPLAYERS)) // allows command line -warp x +skin y
-		{
-			CV_StealthSet(&cv_voice[pnum], myvoice->name);
-			return;
-		}
-	}
-
-	if (!P_PlayerMoving(pid))
-		SendNameAndColor(pnum);
-	else
-	{
-		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your voice at the moment.\n"));
-		CV_StealthSet(&cv_voice[pnum], myvoice->name);
-	}
-}
-
-static void Voice_OnChange(void)
-{
-	__voice_cvar_func(consoleplayer, 0);
-}
-
-static void Voice2_OnChange(void)
-{
-	__voice_cvar_func(g_localplayers[1], 1);
-}
-
-static void Voice3_OnChange(void)
-{
-	__voice_cvar_func(g_localplayers[2], 2);
-}
-
-static void Voice4_OnChange(void)
-{
-	__voice_cvar_func(g_localplayers[3], 3);
 }
 
 /** Displays the result of the chat being muted or unmuted.
@@ -9038,28 +9811,16 @@ static void KartAirThrust_OnChange(void)
 		return;
 	}
 
-	if (!K_AirThrustActive() && cv_kartairthrust.value)
+	if (K_AirThrustActive() != cv_kartairthrust.value)
 	{
 		if (leveltime < starttime)
 		{
-			airthrustactive = true;
-			CONS_Printf(M_GetText("Air Thrust has been turned \"On\".\n"));
+			airthrustactive = cv_kartairthrust.value;
+			CONS_Printf(M_GetText("Air Thrust has been set to \"%s\".\n"), cv_kartairthrust.string);
 		}
 		else
 		{
-			CONS_Printf(M_GetText("Air Thrust will be turned \"On\" Next Round.\n"));
-		}
-	}
-	else if (K_AirThrustActive() && !cv_kartairthrust.value)
-	{
-		if (leveltime < starttime)
-		{
-			airthrustactive = false;
-			CONS_Printf(M_GetText("Air Thrust has been turned \"Off\".\n"));
-		}
-		else
-		{
-			CONS_Printf(M_GetText("Air Thrust will be turned \"Off\" next round.\n"));
+			CONS_Printf(M_GetText("Air Thrust will be set to \"%s\" next round.\n"), cv_kartairthrust.string);
 		}
 	}
 }
@@ -9093,6 +9854,39 @@ static void KartRecoveryDash_OnChange(void)
 		else
 		{
 			CONS_Printf(M_GetText("Recovery Dash will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
+static void KartKeepStuff_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_KeepStuffActive() && cv_kartkeepstuff.value)
+	{
+		if (leveltime < starttime)
+		{
+			keepstuffactive = true;
+			CONS_Printf(M_GetText("Keep Stuff has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Keep Stuff will be turned \"On\" Next Round.\n"));
+		}
+	}
+	else if (K_KeepStuffActive() && !cv_kartkeepstuff.value)
+	{
+		if (leveltime < starttime)
+		{
+			keepstuffactive = false;
+			CONS_Printf(M_GetText("Keep Stuff has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Keep Stuff will be turned \"Off\" next round.\n"));
 		}
 	}
 }
@@ -9290,6 +10084,57 @@ static void KartItemList_OnChange(void)
 		{
 			CONS_Printf(M_GetText("Item rolls will not be displayed next round.\n"));
 		}
+	}
+}
+
+static void KartTrailSlow_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_TrailSlowActive() && cv_trailslow.value)
+	{
+		if (leveltime < starttime)
+		{
+			trailslow_active = true;
+			CONS_Printf(M_GetText("Trailing slowdown has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Trailing slowdown will be turned \"On\" Next Round.\n"));
+		}
+	}
+	else if (K_TrailSlowActive() && !cv_trailslow.value)
+	{
+		if (leveltime < starttime)
+		{
+			trailslow_active = false;
+			CONS_Printf(M_GetText("Trailing slowdown has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Trailing slowdown will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
+static void PlayerBump_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (leveltime < starttime)
+	{
+		CONS_Printf(M_GetText("Player bump type has been changed to \"%s\".\n"), cv_playerbump.string);
+		playerbumpactive = (playerbumptype_t)cv_playerbump.value;
+	}
+	else
+	{
+		CONS_Printf(M_GetText("Player bump type will be changed to \"%s\" next round.\n"), cv_playerbump.string);
 	}
 }
 

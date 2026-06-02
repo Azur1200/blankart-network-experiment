@@ -569,14 +569,19 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 		return;
 	}
 
+	terrain = mo->terrain;
+	player = mo->player;
+
+	if (player && terrain->flags & TRF_BUMPY)
+	{
+		K_KartPlayerBumpyRoad(player);
+	}
+
 	if (!K_AffectingTerrainActive())
 	{
 		// Terrain has been disabled for this map.
 		return;
 	}
-
-	terrain = mo->terrain;
-	player = mo->player;
 	
 	if (terrain->friction) // Handle Friction set here so mobjs are affected as well.
 		K_SetTerrainFriction(mo);
@@ -747,7 +752,7 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 			angle = slope->xydirection;
 		}
 
-		P_DoSpringEx(player->mo, mapobjectscale,
+		P_DoSpringRR(player->mo, mapobjectscale,
 				FixedMul(terrain->springStrength, co),
 				FixedMul(terrain->springStrength, si),
 				angle);
@@ -1825,6 +1830,10 @@ static void K_ParseTerrainParameter(size_t i, char *param, char *val)
 	else if (fasticmp(param, "fricfix") || fasticmp(param, "frictionfix") || fasticmp(param, "boostbypass"))
 	{
 		K_FlagBoolean(&terrain->flags, TRF_BYPASSBOOST, val);
+	}
+	else if (fasticmp(param, "bumpy") || fasticmp(param, "stairJank"))
+	{
+		K_FlagBoolean(&terrain->flags, TRF_BUMPY, val);
 	}
 }
 

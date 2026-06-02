@@ -924,7 +924,7 @@ const char *blancredits[] = {
 	"\"Chearii\"",
 	"\"hayaunderscore\" aka \"DeltaKanyx\"",
 	"\"Guilmon35249vr\"",
-	"Vivian \"toaster\" Grannell", // Horncode
+	"Vivian \"toaster\" Grannell", // Horncode, fix for Followers in demos
 	"AJ \"Tyron\" Martinez", // Horncode, PT_SAY, RRID
 	"\"Superstarxalien\"", // Horncode
 	"\"Freaky Mutant Man\"", // Color profiles menu
@@ -980,6 +980,7 @@ const char *blancredits[] = {
 	"\"scizor300\"",
 	"\"StarrydustNova\"", // Per some indev talks. Can't reveal the secrets yet!
 	"\"joshyflip\"", // Per some indev talks. Can't reveal the secrets yet!
+	"\"ArtoMeister\"", // "Bad waypoint" graphic
 	"",
 	"\1Additional Assets",
 	"Sonic Team Jr.",
@@ -1639,7 +1640,7 @@ void F_TitleScreenTicker(boolean run)
 	if (run)
 	{
 		if (finalecount == 0)
-			S_ClearMusicCredit();
+			S_StopMusicCredit();
 
 		finalecount++;
 
