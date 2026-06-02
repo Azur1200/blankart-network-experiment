@@ -562,6 +562,7 @@ void P_AddCachedAction(mobj_t *mobj, INT32 statenum);
 
 // kartitem stuff: Returns true if the specified 'type' is one of the kart item constants we want in the kitemcap list
 boolean P_IsKartFieldItem(INT32 type);
+boolean P_IsKartEquippedItem(INT32 type);
 boolean P_IsKartItem(INT32 type);
 boolean K_IsMissileOrKartItem(mobj_t *mo);
 boolean P_CanDeleteKartItem(INT32 type);
@@ -578,7 +579,7 @@ void P_MobjCheckWater(mobj_t *mobj);
 void P_SpawnPlayer(INT32 playernum);
 void P_MovePlayerToSpawn(INT32 playernum, mapthing_t *mthing);
 void P_MovePlayerToStarpost(INT32 playernum);
-void P_AfterPlayerSpawn(INT32 playernum);
+void P_AfterPlayerSpawn(INT32 playernum, boolean starpost);
 
 fixed_t P_GetMobjSpawnHeight(const mobjtype_t mobjtype, const fixed_t x, const fixed_t y, const fixed_t dz, const fixed_t offset, const size_t layer, const boolean flip, const fixed_t scale);
 fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mthing, const fixed_t x, const fixed_t y);
@@ -626,7 +627,7 @@ extern boolean purpledriftactive;
 extern boolean slopeboostactive;
 extern boolean draftingactive;
 extern UINT8 airdropactive;
-extern boolean airthrustactive;
+extern UINT8 airthrustactive;
 extern boolean recoverydashactive;
 extern boolean keepstuffactive;
 extern boolean waterskipbricks;

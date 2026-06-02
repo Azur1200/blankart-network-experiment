@@ -76,6 +76,9 @@ static const char *const valid_opt[] ={"valid",NULL};
 //
 // see sectorlines_get in lua_maplib.c
 //
+
+int validpolyobj_fields_ref = LUA_NOREF;
+
 static int polyobjvertices_get(lua_State *L)
 {
 	vertex_t ***polyverts = *((vertex_t ****)luaL_checkudata(L, 1, META_POLYOBJVERTICES));
@@ -84,7 +87,7 @@ static int polyobjvertices_get(lua_State *L)
 	lua_settop(L, 2);
 	if (!lua_isnumber(L, 2))
 	{
-		int field = luaL_checkoption(L, 2, NULL, valid_opt);
+		int field = Lua_optoption(L, 2, -1, validpolyobj_fields_ref);
 		if (!polyverts || !(*polyverts))
 		{
 			if (field == 0) {
@@ -141,7 +144,7 @@ static int polyobjlines_get(lua_State *L)
 	lua_settop(L, 2);
 	if (!lua_isnumber(L, 2))
 	{
-		int field = luaL_checkoption(L, 2, NULL, valid_opt);
+		int field = Lua_optoption(L, 2, -1, validpolyobj_fields_ref);
 		if (!polylines || !(*polylines))
 		{
 			if (field == 0) {
@@ -258,10 +261,12 @@ static int lib_polyobj_rotate(lua_State *L)
 // polyobj_t //
 ///////////////
 
+int polyobj_fields_ref = LUA_NOREF;
+
 static int polyobj_get(lua_State *L)
 {
 	polyobj_t *polyobj = *((polyobj_t **)luaL_checkudata(L, 1, META_POLYOBJ));
-	enum polyobj_e field = luaL_checkoption(L, 2, NULL, polyobj_opt);
+	enum polyobj_e field = Lua_optoption(L, 2, -1, polyobj_fields_ref);
 
 	if (!polyobj) {
 		if (field == polyobj_valid) {
@@ -334,7 +339,7 @@ static int polyobj_get(lua_State *L)
 static int polyobj_set(lua_State *L)
 {
 	polyobj_t *polyobj = *((polyobj_t **)luaL_checkudata(L, 1, META_POLYOBJ));
-	enum polyobj_e field = luaL_checkoption(L, 2, NULL, polyobj_opt);
+	enum polyobj_e field = Lua_optoption(L, 2, -1, polyobj_fields_ref);
 
 	if (!polyobj)
 		return LUA_ErrInvalid(L, "polyobj_t");
@@ -446,6 +451,9 @@ static int lib_numPolyObjects(lua_State *L)
 
 int LUA_PolyObjLib(lua_State *L)
 {
+	validpolyobj_fields_ref = Lua_CreateFieldTable(L, valid_opt);
+	polyobj_fields_ref = Lua_CreateFieldTable(L, polyobj_opt);
+
 	luaL_newmetatable(L, META_POLYOBJVERTICES);
 		lua_pushcfunction(L, polyobjvertices_get);
 		lua_setfield(L, -2, "__index");

@@ -1091,7 +1091,7 @@ void M_ChangeMenuMusic(void)
 		else if (menudefs[menutype].musstop)
 		{
 			S_StopMusic();
-			S_ClearMusicCredit();
+			S_StopMusicCredit();
 			return;
 		}
 		else if (menudefs[menutype].musignore)
@@ -1100,7 +1100,7 @@ void M_ChangeMenuMusic(void)
 	if (target == MN_MAIN && gamestate == GS_TITLESCREEN && finalecount < 50)
 	{
 		S_StopMusic();
-		S_ClearMusicCredit();
+		S_StopMusicCredit();
 	}
 	else
 	{
@@ -2153,6 +2153,22 @@ texty -= 10*vid.dup;\
 				                cursortimer <= 9 ? 9 - cursortimer : 0);
 			}
 		}
+	}
+
+	boolean mainpause_open = menustack[0]
+		&& (menustack[0] == MN_MPAUSE ||
+			menustack[0] == MN_MAPAUSE ||
+			menustack[0] == MN_SPAUSE
+		);
+
+	if (netgame && Playing())
+	{
+		ST_DrawServerSplash(!mainpause_open);
+	}
+
+	if (mainpause_open && g_realsongcredit)
+	{
+		V_DrawThinString(6, 32+20, V_ALLOWLOWERCASE|V_6WIDTHSPACE|V_SNAPTOLEFT, g_realsongcredit);
 	}
 
 	// focus lost notification goes on top of everything, even the former everything
@@ -5369,7 +5385,7 @@ INT32 MR_QuitReplayHut(INT32 choice)
 	demolist = NULL;
 
 	demo.inreplayhut = false;
-	S_ClearMusicCredit();
+	S_StopMusicCredit();
 	return true;
 }
 
@@ -6858,7 +6874,7 @@ INT32 MR_QuitTimeAttackMenu(INT32 choice)
 
 	// you know what? always putting these in the buffer won't hurt anything.
 	COM_BufAddText(va("skin \"%s\"\n", skins[cv_chooseskin.value].name));
-	S_ClearMusicCredit();
+	S_StopMusicCredit();
 	return true;
 }
 

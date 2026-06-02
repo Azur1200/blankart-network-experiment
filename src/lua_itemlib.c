@@ -41,10 +41,12 @@ static const char *const itemvars_opt[] = {
 	NULL
 };
 
+int itemvars_fields_ref = LUA_NOREF;
+
 static int item_get(lua_State *L)
 {
 	kartitem_t *item = *((kartitem_t**)luaL_checkudata(L, 1, META_KARTITEM));
-	enum itemvars field = luaL_checkoption(L, 2, NULL, itemvars_opt);
+	enum itemvars field = Lua_optoption(L, 2, -1, itemvars_fields_ref);
 
 	// items are always valid, only added, never removed
 	I_Assert(item != NULL);
@@ -118,10 +120,12 @@ static const char *const resultvars_opt[] = {
 	NULL
 };
 
+int resultvars_fields_ref = LUA_NOREF;
+
 static int result_get(lua_State *L)
 {
 	kartresult_t *result = *((kartresult_t**)luaL_checkudata(L, 1, META_KARTRESULT));
-	enum resultvars field = luaL_checkoption(L, 2, NULL, resultvars_opt);
+	enum resultvars field = Lua_optoption(L, 2, -1, resultvars_fields_ref);
 
 	// results are always valid, only added, never removed
 	I_Assert(result != NULL);
@@ -164,7 +168,7 @@ static int result_get(lua_State *L)
 static int result_set(lua_State *L)
 {
 	kartresult_t *result = *((kartresult_t**)luaL_checkudata(L, 1, META_KARTRESULT));
-	enum resultvars field = luaL_checkoption(L, 2, NULL, resultvars_opt);
+	enum resultvars field = Lua_optoption(L, 2, -1, resultvars_fields_ref);
 
 	if (hud_running)
 		return luaL_error(L, "Do not alter kartresult_t in HUD rendering code!");
@@ -337,6 +341,9 @@ static int lib_numKartResults(lua_State *L)
 
 int LUA_ItemLib(lua_State *L)
 {
+	itemvars_fields_ref = Lua_CreateFieldTable(L, itemvars_opt);
+	resultvars_fields_ref = Lua_CreateFieldTable(L, resultvars_opt);
+
 	luaL_newmetatable(L, META_KARTITEM);
 		lua_pushcfunction(L, item_get);
 		lua_setfield(L, -2, "__index");

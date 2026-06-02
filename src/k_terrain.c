@@ -752,7 +752,7 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 			angle = slope->xydirection;
 		}
 
-		P_DoSpringEx(player->mo, mapobjectscale,
+		P_DoSpringRR(player->mo, mapobjectscale,
 				FixedMul(terrain->springStrength, co),
 				FixedMul(terrain->springStrength, si),
 				angle);

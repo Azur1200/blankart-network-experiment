@@ -78,6 +78,8 @@
 
 #include "k_vote.h"
 
+#include "radio_finish.h"
+
 // for MapLoad hook
 #include "lua_script.h"
 #include "lua_hook.h"
@@ -166,7 +168,7 @@ boolean purpledriftactive;
 boolean slopeboostactive;
 boolean draftingactive;
 UINT8	airdropactive;
-boolean airthrustactive;
+UINT8 airthrustactive;
 boolean recoverydashactive;
 boolean keepstuffactive;
 boolean waterskipbricks;
@@ -1554,9 +1556,10 @@ static boolean TextmapCount(size_t size, boolean patch)
 		if (!foundhash)
 		{
 			CONS_Alert(CONS_WARNING, "This map patch is not compatible with the current map (checksum: " HASHFMT "). The patch may not work.\n", maphash);
-			if (cv_allowmismatchmappatch.value)
+			if (!cv_allowmismatchmappatch.value)
 			{
 				TracyCZoneEnd(__zone);
+				CONS_Alert(CONS_WARNING, "Mismatching patches have been prevented from loading.\n");
 				return false;
 			}
 		}
@@ -2134,6 +2137,8 @@ static void ParseTextmapLinedefParameter(UINT32 i, const char *param, const char
 		lines[i].tripwire = true;
 	else if (fastcmp(param, "blockplayers") && fastcmp("true", val))
 		lines[i].blockplayers = true;
+	else if (fastcmp(param, "blockintransfer") && fastcmp("true", val))
+		lines[i].blockintransfer = true;
 	else if (fastcmp(param, "blocking") && fastcmp("true", val))
 		lines[i].flags |= ML_IMPASSABLE;
 	else if (fastcmp(param, "blockmonsters") && fastcmp("true", val))
@@ -8246,7 +8251,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	slopeboostactive = false;
 	draftingactive = false;
 	airdropactive = 0;
-	airthrustactive = false;
+	airthrustactive = AIRTHRUST_NONE;
 	recoverydashactive = false;
 	keepstuffactive = false;
 	waterskipbricks = false;
@@ -8281,8 +8286,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 
 	airdropactive = (UINT8)cv_kartairdrop.value;
 
-	if (cv_kartairthrust.value)
-		airthrustactive = true;
+	airthrustactive = cv_kartairthrust.value;
 
 	if (cv_kartrecoverydash.value)
 		recoverydashactive = true;
@@ -8331,8 +8335,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	memset(&quake,0,sizeof(struct quake));
 
 	// song credit init
-	Z_Free(cursongcredit.text);
-	memset(&cursongcredit,0,sizeof(struct cursongcredit));
+	S_StopMusicCredit();
 	cursongcredit.trans = NUMTRANSMAPS;
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -9002,6 +9005,8 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	P_InitTIDHash();
 	R_InitMobjInterpolators();
 	P_InitCachedActions();
+
+	RR_resetRidersFinishTicker();
 
 	if (!fromnetsave && savedata.lives > 0)
 	{

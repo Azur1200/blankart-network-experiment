@@ -92,7 +92,7 @@ consvar_t cv_controllerled[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("gamepadled4", "Skincolor", CV_SAVE|CV_CALL|CV_NOINIT, controllerled_cons_t, led_off_handle4)
 };
 
-static CV_PossibleValue_t tiltcontrol_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Shakes Only"}, {0, NULL}};
+static CV_PossibleValue_t tiltcontrol_cons_t[] = {{TILTCONTROL_OFF, "Off"}, {TILTCONTROL_STEER, "Steering Only"}, {TILTCONTROL_CAME, "Camera Only"}, {TILTCONTROL_ON, "On"}, {0, NULL}};
 consvar_t cv_tiltcontrol[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("tiltcontrol",  "Off", CV_SAVE, tiltcontrol_cons_t, NULL),
 	CVAR_INIT ("tiltcontrol2", "Off", CV_SAVE, tiltcontrol_cons_t, NULL),
@@ -153,33 +153,38 @@ inputpoll_t gamekeydown_msec = {};
 INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][MAXINPUTMAPPING] = {};
 
 INT32 gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING] = {
-	[gc_aimforward ] = {KEY_UPARROW,    KEY_AXIS1+2             }, // Left Y-
-	[gc_aimbackward] = {KEY_DOWNARROW,  KEY_AXIS1+3             }, // Left Y+
-	[gc_turnleft   ] = {KEY_LEFTARROW,  KEY_AXIS1+0             }, // Left X-
-	[gc_turnright  ] = {KEY_RIGHTARROW, KEY_AXIS1+1             }, // Left X+
-	[gc_accelerate ] = {'a',            KEY_JOY1+0              }, // East
-	[gc_drift      ] = {'s',            KEY_JOY1+10, KEY_AXIS1+9}, // RB, RT
-	[gc_brake      ] = {'d',            KEY_JOY1+1              }, // South
-	[gc_fire       ] = {KEY_SPACE,      KEY_JOY1+9,  KEY_AXIS1+8}, // LB, LT
-	[gc_lookback   ] = {KEY_LSHIFT,     KEY_JOY1+2              }, // North
-	[gc_horncode   ] = {'r',            KEY_JOY1+8              }, // R-Stick Click
+	[gc_aimforward        ] = {KEY_UPARROW,    KEY_AXIS1+2             }, // Left Y-
+	[gc_aimbackward       ] = {KEY_DOWNARROW,  KEY_AXIS1+3             }, // Left Y+
+	[gc_turnleft          ] = {KEY_LEFTARROW,  KEY_AXIS1+0             }, // Left X-
+	[gc_turnright         ] = {KEY_RIGHTARROW, KEY_AXIS1+1             }, // Left X+
+	[gc_accelerate        ] = {'a',            KEY_JOY1+0              }, // East
+	[gc_drift             ] = {'s',            KEY_JOY1+10, KEY_AXIS1+9}, // RB, RT
+	[gc_brake             ] = {'d',            KEY_JOY1+1              }, // South
+	[gc_fire              ] = {KEY_SPACE,      KEY_JOY1+9,  KEY_AXIS1+8}, // LB, LT
+	[gc_lookback          ] = {KEY_LSHIFT,     KEY_JOY1+2              }, // North
+	[gc_horncode          ] = {'r',            KEY_JOY1+8              }, // R-Stick Click
 
-	[gc_pause      ] = {KEY_PAUSE				   }, // Back
-	[gc_systemmenu ] = {                KEY_JOY1+6 }, // Start
-	[gc_console    ] = {KEY_CONSOLE                },
-	[gc_screenshot ] = {KEY_F8                     },
-	[gc_recordgif  ] = {KEY_F9                     },
-	[gc_viewpoint  ] = {KEY_F12,        KEY_JOY1+3 }, // West
-	[gc_talkkey    ] = {'t',            KEY_HAT1+1 }, // D-Pad Down
+	[gc_pause             ] = {KEY_PAUSE				  }, // Back
+	[gc_systemmenu        ] = {                KEY_JOY1+6 }, // Start
+	[gc_console           ] = {KEY_CONSOLE                },
+	[gc_screenshot        ] = {KEY_F8                     },
+	[gc_recordgif         ] = {KEY_F9                     },
+	[gc_viewpoint         ] = {KEY_F12,        KEY_JOY1+3 }, // West
+	[gc_talkkey           ] = {'t',            KEY_HAT1+1 }, // D-Pad Down
 	//[gc_teamkey    ] = {'y'                        },
-	[gc_scores     ] = {KEY_TAB,        KEY_HAT1+0 }, // D-Pad Up
-	[gc_spectate   ] = {'\''                       },
-	[gc_lookup     ] = {KEY_PGUP,       KEY_AXIS1+6}, // Right Y-
-	[gc_lookdown   ] = {KEY_PGDN,       KEY_AXIS1+7}, // Right Y+
-	[gc_centerview ] = {KEY_END                    },
-	[gc_camreset   ] = {KEY_HOME                   },
-	[gc_camtoggle  ] = {KEY_BACKSPACE              },
-	[gc_freelook   ] = {KEY_RCTRL	               },
+	[gc_scores            ] = {KEY_TAB,        KEY_HAT1+0 }, // D-Pad Up
+	[gc_spectate          ] = {'\''                       },
+	[gc_lookup            ] = {KEY_PGUP                   },
+	[gc_lookdown          ] = {KEY_PGDN                   },
+	[gc_centerview        ] = {KEY_END                    },
+	[gc_camreset          ] = {KEY_HOME                   },
+	[gc_camtoggle         ] = {KEY_BACKSPACE              },
+	[gc_freelook          ] = {KEY_RCTRL	              },
+	// Tying flickstick stuff to the numpad keys because they're similarly underused in gameplay
+	[gc_flickstick_left   ] = {KEY_KEYPAD4,    KEY_AXIS1+4}, // Right X-
+	[gc_flickstick_right  ] = {KEY_KEYPAD6,    KEY_AXIS1+5}, // Right X+
+	[gc_flickstick_forward] = {KEY_KEYPAD8,    KEY_AXIS1+6}, // Right Y-
+	[gc_flickstick_back   ] = {KEY_KEYPAD2,    KEY_AXIS1+7}  // Right Y+
 };
 
 // lists of GC codes for selective operation
@@ -539,6 +544,11 @@ static const char *gamecontrolname[num_gamecontrols] =
 	"respawn",
 	"director",
 	"horncode",
+	"freelook",
+	"flickstick_left",
+	"flickstick_right",
+	"flickstick_forward",
+	"flickstick_back",
 };
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))

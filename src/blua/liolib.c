@@ -224,6 +224,27 @@ static int CheckFileName(lua_State* L, const char* filename, boolean extensionch
 	return 0;
 }
 
+/*
+** Equivalent to 'fopen', but if it fails due to a lack of resources
+** (see 'luaL_resourcetryagain'), do an "emergency" garbage collection to try
+** to close some files and then tries to open the file again.
+*/
+static FILE *trytoopen (lua_State *L, const char *path, const char *mode) {
+  FILE *f = fopen(path, mode);
+  if (f == NULL && luaL_resourcetryagain(L))  /* resource failure? */
+    f = fopen(path, mode);  /* try to open again */
+  return f;
+}
+
+static void opencheck (lua_State *L, const char *fname, const char *mode) {
+  FILE **p = newfile(L);
+  *p = trytoopen(L, fname, mode);
+  if (*p == NULL)
+  {
+      I_Error("Can't open file \"%s\"\n", fname); // The file SHOULD exist
+  }
+}
+
 static int io_openlocal (lua_State *L) {
 	FILE **pf;
 	const char *filename = luaL_checkstring(L, 1);
@@ -252,7 +273,7 @@ static int io_openlocal (lua_State *L) {
 
 	// Open and return the file
 	pf = newfile(L);
-	*pf = fopen(realfilename, mode);
+	*pf = trytoopen(L, realfilename, mode);
 	return (*pf == NULL) ? pushresult(L, 0, filename) : 1;
 }
 
@@ -316,10 +337,7 @@ void Got_LuaFile(UINT8 **cp, INT32 playernum)
 		if (!strchr(mode, 'b'))
 			strcat(mode, "b");
 
-		pf = newfile(gL); // Create and push the file handle
-		*pf = fopen(luafiletransfers->realfilename, mode); // Open the file
-		if (!*pf)
-			I_Error("Can't open file \"%s\"\n", luafiletransfers->realfilename); // The file SHOULD exist
+		opencheck(gL, luafiletransfers->realfilename, mode); // Open the file
 	}
 	else
 		lua_pushnil(gL);
@@ -376,6 +394,8 @@ void RemoveLuaFileCallback(INT32 id)
 static int io_tmpfile (lua_State *L) {
   FILE **pf = newfile(L);
   *pf = tmpfile();
+  if (*pf == NULL && luaL_resourcetryagain(L))  /* resource failure? */
+    *pf = tmpfile();  /* try to open again */
   return (*pf == NULL) ? pushresult(L, 0, NULL) : 1;
 }
 

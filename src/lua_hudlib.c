@@ -190,6 +190,7 @@ enum hudpatch {
 static const char *const hud_patch_options[] = {
 	"item",
 	"itemmul",
+	"itemalt",
 	NULL};
 
 enum hudoffsets {
@@ -236,10 +237,12 @@ static int colormap_get(lua_State *L)
 	return 1;
 }
 
+int patch_fields_ref = LUA_NOREF;
+
 static int patch_get(lua_State *L)
 {
 	patch_t *patch = *((patch_t **)luaL_checkudata(L, 1, META_PATCH));
-	enum patch field = luaL_checkoption(L, 2, NULL, patch_opt);
+	enum patch field = Lua_optoption(L, 2, -1, patch_fields_ref);
 
 	// patches are invalidated when switching renderers
 	if (!patch) {
@@ -276,10 +279,12 @@ static int patch_set(lua_State *L)
 	return luaL_error(L, LUA_QL("patch_t") " struct cannot be edited by Lua.");
 }
 
+int camera_fields_ref = LUA_NOREF;
+
 static int camera_get(lua_State *L)
 {
 	camera_t *cam = *((camera_t **)luaL_checkudata(L, 1, META_CAMERA));
-	enum cameraf field = luaL_checkoption(L, 2, NULL, camera_opt);
+	enum cameraf field = Lua_optoption(L, 2, -1, camera_fields_ref);
 
 	// cameras should always be valid unless I'm a nutter
 	I_Assert(cam != NULL);
@@ -1069,6 +1074,8 @@ static int libd_fadeScreen(lua_State *L)
 	return 0;
 }
 
+int align_fields_ref = LUA_NOREF;
+
 static int libd_drawString(lua_State *L)
 {
 	huddrawlist_h list;
@@ -1076,7 +1083,7 @@ static int libd_drawString(lua_State *L)
 	fixed_t y = luaL_checkinteger(L, 2);
 	const char *str = luaL_checkstring(L, 3);
 	INT32 flags = luaL_optinteger(L, 4, V_ALLOWLOWERCASE);
-	enum align align = luaL_checkoption(L, 5, "left", align_opt);
+	enum align align = Lua_optoption(L, 5, align_left, align_fields_ref);
 
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
@@ -1224,11 +1231,13 @@ static int libd_titleCardStringWidth(lua_State *L)
 	return 1;
 }
 
+int widtht_fields_ref = LUA_NOREF;
+
 static int libd_stringWidth(lua_State *L)
 {
 	const char *str = luaL_checkstring(L, 1);
 	INT32 flags = luaL_optinteger(L, 2, V_ALLOWLOWERCASE);
-	enum widtht widtht = luaL_checkoption(L, 3, "normal", widtht_opt);
+	enum widtht widtht = Lua_optoption(L, 3, widtht_normal, widtht_fields_ref);
 
 	HUDONLY
 	switch(widtht)
@@ -1311,10 +1320,12 @@ static int libd_getColormap(lua_State *L)
 	return 1;
 }
 
+int hud_patch_fields_ref = LUA_NOREF;
+
 static int libd_getColorHudPatch(lua_State *L)
 {
 	HUDONLY
-	enum hudpatch option = luaL_checkoption(L, 1, NULL, hud_patch_options);
+	enum hudpatch option = Lua_optoption(L, 1, -1, hud_patch_fields_ref);
 	patch_t *patch;
 	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 	boolean small, dark, multi;
@@ -1534,10 +1545,12 @@ static const char *const hud_drawinfo_options[] = {
 	"lives",
 	NULL};
 
+int hud_drawinfo_fields_ref = LUA_NOREF;
+
 static int libd_getDrawInfo(lua_State *L)
 {
 	HUDONLY
-	enum huddrawinfo option = luaL_checkoption(L, 1, NULL, hud_drawinfo_options);
+	enum huddrawinfo option = Lua_optoption(L, 1, -1, hud_drawinfo_fields_ref);
 	drawinfo_t info = {0};
 	rouletteinfo_t rinfo = {0};
 
@@ -1722,10 +1735,12 @@ static int lib_draw_ref;
 // lib_hud
 //
 
+int hud_disable_fields_ref = LUA_NOREF;
+
 // enable vanilla HUD element
 static int lib_hudenable(lua_State *L)
 {
-	enum hud option = luaL_checkoption(L, 1, NULL, hud_disable_options);
+	enum hud option = Lua_optoption(L, 1, -1, hud_disable_fields_ref);
 	hud_enabled[option/8] |= 1<<(option%8);
 	return 0;
 }
@@ -1733,7 +1748,7 @@ static int lib_hudenable(lua_State *L)
 // disable vanilla HUD element
 static int lib_huddisable(lua_State *L)
 {
-	enum hud option = luaL_checkoption(L, 1, NULL, hud_disable_options);
+	enum hud option = Lua_optoption(L, 1, -1, hud_disable_fields_ref);
 	hud_enabled[option/8] &= ~(1<<(option%8));
 	return 0;
 }
@@ -1741,7 +1756,7 @@ static int lib_huddisable(lua_State *L)
 // 30/10/18: Lat': How come this wasn't here before?
 static int lib_hudenabled(lua_State *L)
 {
-	enum hud option = luaL_checkoption(L, 1, NULL, hud_disable_options);
+	enum hud option = Lua_optoption(L, 1, -1, hud_disable_fields_ref);
 	if (hud_enabled[option/8] & (1<<(option%8)))
 		lua_pushboolean(L, true);
 	else
@@ -1779,12 +1794,18 @@ static int lib_hudsetvotebackground(lua_State *L)
 		VoteScreen.timePerAnimFrame = time_per_frame;
 	}
 
+	// Update background if we're already on vote screen
+	if (gamestate == GS_VOTING)
+		Y_VoteScreenCheck();
+
 	return 0;
 }
 
+int hud_offsets_fields_ref = LUA_NOREF;
+
 static int lib_hudgetoffsets(lua_State *L)
 {
-	enum hudoffsets option = luaL_checkoption(L, 1, NULL, hud_offsets_options);
+	enum hudoffsets option = Lua_optoption(L, 1, -1, hud_offsets_fields_ref);
 	INT32 ofx, ofy;
 
 #define OFS(it) ofx = cv_##it##_xoffset.value; ofy = cv_##it##_yoffset.value; break;
@@ -1870,6 +1891,15 @@ static luaL_Reg lib_hud[] = {
 int LUA_HudLib(lua_State *L)
 {
 	memset(hud_enabled, 0xff, (hud_MAX/8)+1);
+
+	patch_fields_ref = Lua_CreateFieldTable(L, patch_opt);
+	camera_fields_ref = Lua_CreateFieldTable(L, camera_opt);
+	align_fields_ref = Lua_CreateFieldTable(L, align_opt);
+	widtht_fields_ref = Lua_CreateFieldTable(L, widtht_opt);
+	hud_patch_fields_ref = Lua_CreateFieldTable(L, hud_patch_options);
+	hud_drawinfo_fields_ref = Lua_CreateFieldTable(L, hud_drawinfo_options);
+	hud_disable_fields_ref = Lua_CreateFieldTable(L, hud_disable_options);
+	hud_offsets_fields_ref = Lua_CreateFieldTable(L, hud_offsets_options);
 
 	lua_newtable(L);
 	luaL_register(L, NULL, lib_draw);

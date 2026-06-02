@@ -103,7 +103,7 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0xbeaab17108f0815a
+#define ASSET_HASH_MAIN_PK3            0x9ecb761ca0cac6e5
 #define ASSET_HASH_MAPPATCH_PK3        0xdfb3c9da6c8c3adf
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
@@ -947,6 +947,10 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 
 tic_t rendergametic;
 
+#ifdef TRACY_ENABLE
+const char * const sl_Tic = " Tic " ;
+#endif
+
 void D_SRB2Loop(void)
 {
 	tic_t entertic = 0, oldentertics = 0, realtics = 0, rendertimeout = INFTICS;
@@ -1012,6 +1016,8 @@ void D_SRB2Loop(void)
 		if (I_Interrupted())
 			I_Quit();
 
+		FrameMark;
+
 		precise_t enterprecise = I_GetPreciseTime();
 
 		memset(&g_dc, 0, sizeof(g_dc));
@@ -1049,6 +1055,8 @@ void D_SRB2Loop(void)
 
 		if (realtics > 0 || singletics)
 		{
+			FrameMarkStart(sl_Tic);
+
 			// don't skip more than 10 frames at a time
 			// (fadein / fadeout cause massive frame skip!)
 			if (realtics > 8)
@@ -1085,6 +1093,7 @@ void D_SRB2Loop(void)
 			}
 
 			renderisnewtic = true;
+			FrameMarkEnd(sl_Tic);
 		}
 		else
 		{
@@ -1135,8 +1144,6 @@ void D_SRB2Loop(void)
 		if (renderisnewtic)
 			S_UpdateClosedCaptions();
 
-		LUA_Step();
-
 #ifdef HAVE_DISCORDRPC
 		if (! dedicated)
 		{
@@ -1155,6 +1162,11 @@ void D_SRB2Loop(void)
 			frameskip = 0;
 			ranwipe = false;
 		}
+
+		// {
+		// 	ZoneScopedN("LUA_Step");
+		// 	LUA_Step();
+		// }
 	}
 }
 

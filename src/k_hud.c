@@ -20,6 +20,7 @@
 #include "k_director.h"
 #include "k_items.h"
 #include "p_mobj.h"
+#include "p_setup.h"
 #include "screen.h"
 #include "doomtype.h"
 #include "doomdef.h"
@@ -45,6 +46,8 @@
 #include "h_timers.h"
 #include "k_bot.h" // K_DrawBotDebugger
 #include "k_waypoint.h"
+
+#include "radio_finish.h"
 
 #define NUMPOSNUMS 10
 #define NUMPOSFRAMES 7 // White, three blues, three reds
@@ -155,7 +158,7 @@ static patch_t *kp_bumperstickerwide[2];
 static patch_t *kp_karmasticker[2];
 static patch_t *kp_timeoutsticker[2];
 
-static patch_t *kp_splitlapflag;
+patch_t *kp_splitlapflag;
 static patch_t *kp_splitkarmabomb;
 
 static patch_t *kp_startcountdown[20];
@@ -312,6 +315,9 @@ void K_RegisterKartHUDStuff(void)
 
 	// k_hud_track.cpp
 	CV_RegisterVar(&cv_kartdebughudtracker);
+
+	// radio_finish.cpp
+	CV_RegisterVar(&cv_show_riders_finish_ticker);
 }
 
 void K_LoadKartHUDGraphics(void)
@@ -1490,11 +1496,12 @@ static void K_drawKartItem(void)
 	{
 		// S-Monitor nonsense necessitates we do this ahead of time
 		boolean candrawitemstatus = true;
+		boolean notincooldown = stplyr->itemusecooldown <= 0;
 
-		if (stplyr->itemamount <= 0 && stplyr->itemusecooldown <= 0)
+		if (stplyr->itemamount <= 0 && notincooldown)
 			candrawitemstatus = false;
 
-		if (stplyr->itemtype == 0 && stplyr->itemusecooldown <= 0)
+		if (stplyr->itemtype == 0 && notincooldown)
 			candrawitemstatus = false;
 
 		if (stplyr->itemtype >= numkartitems && stplyr->itemtype != MAXKARTITEMS)
@@ -1751,7 +1758,6 @@ static void K_drawKartItem(void)
 		}
 	}
 
-
 	fx = info.x;
 	fy = info.y;
 	fflags = info.flags;
@@ -1871,6 +1877,42 @@ static void K_drawKartItem(void)
 				   (fy<<FRACBITS) + (13 * info.hudScale) - (tiny ? FRACUNIT : 0),
 				   V_HUDTRANS|fflags, kp_eggnum[min(3, G_TicsToSeconds(stplyr->eggmanexplode))],
 				   info.hudScale);
+	}
+
+	// draw the item reserve
+	if (stplyr->itemreservetype && stplyr->itemreserveamount > 0)
+	{
+		localpatch = K_GetCachedItemPatch(stplyr->itemreservetype, true, stplyr->itemreserveamount);
+
+		if (localpatch == NULL)
+			localpatch = kp_nodraw; // diagnose underflows
+		
+		if (K_GetItemFlags(stplyr->itemreservetype) & KIF_COLPATCH2PLAYER)
+		{
+			colmap = R_GetTranslationColormap(TC_DEFAULT, stplyr->skincolor, GTC_CACHE);
+		}
+		else
+		{
+			colmap = NULL;
+		}
+		
+		fx = (fx<<FRACBITS) + ((tiny ? 16 : 34) * (flipamount ? -info.hudScale : info.hudScale));
+		fy = (fy<<FRACBITS) + ((tiny ? -10 : -7) * info.hudScale);
+		if (!tiny)
+		{
+			dark = K_GetItemFlags(stplyr->itemreservetype) & KIF_DARKBG;
+			localbg = K_getItemBoxPatch(true, dark);
+			
+			V_DrawFixedPatch(fx, fy, info.hudScale, boxpatchflags, localbg, colormap);
+		}
+		
+		V_DrawFixedPatch(fx, fy, info.hudScale, localpatchflags, localpatch, colmap);
+
+		// numbers
+		if (stplyr->itemreserveamount >= K_GetItemNumberDisplayMin(stplyr->itemreservetype, true))
+		{
+			V_DrawPingNumScaled((fx<<FRACBITS) + (26*info.hudScale), (fy<<FRACBITS) + (26*info.hudScale), info.hudScale, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, stplyr->itemreserveamount, colmap);
+		}
 	}
 }
 
@@ -2603,6 +2645,7 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 	{
 		INT32 pos = CLAMP(players[tab[i].num].position, 0 , MAXPLAYERS);
 		char playername[MAXPLAYERNAME+1];
+		char clanname[MAXCLANTAG];
 
 		if (players[tab[i].num].spectator || !players[tab[i].num].mo)
 			continue; //ignore them.
@@ -2626,6 +2669,7 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 		}
 
 		STRBUFCPY(playername, tab[i].name);
+		strncpy(clanname, &tab[i].clan, MAXCLANTAG);
 
 		if (players[tab[i].num].mo->color)
 		{
@@ -2646,7 +2690,15 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 		x2 = netgame ? x + (BASEVIDWIDTH/20) : x;
 		y2 = y;
 
-		V_DrawThinString(x2 + 20, y2, ((tab[i].num == whiteplayer) ? hightlightcolor : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, playername);
+		if (clanname[0] != 0)
+		{
+			UINT8 length = V_ThinStringWidth(clanname, V_ALLOWLOWERCASE|V_6WIDTHSPACE);
+			V_DrawThinString(x2 + 20, y2, V_SKYMAP|V_ALLOWLOWERCASE|V_6WIDTHSPACE, clanname);
+			V_DrawThinString(x2 + 20 + length + 2, y2, ((tab[i].num == whiteplayer) ? hightlightcolor : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, playername);
+
+		}
+		else
+			V_DrawThinString(x2 + 20, y2, ((tab[i].num == whiteplayer) ? hightlightcolor : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, playername);
 
 		patch_t *facerank = faceprefix[players[tab[i].num].skin][FACE_RANK];
 		fixed_t scale = FRACUNIT/2;
@@ -2744,14 +2796,13 @@ void K_SetScoreboardModStatus(const char *name, SINT8 active)
 	CONS_Alert(CONS_WARNING, "Server mod '%s' does not exist so status cannot be changed.\n", name);
 }
 
-#define BASEMODS 23
 static void K_DrawServerMods(INT32 x, INT32 y)
 {
 	UINT8 i, j;
 	INT32 xoff = 0, yoff = 10;
 	UINT8 numdrawn = 0;
 
-	servermods_t basemods[BASEMODS] =
+	servermods_t basemods[] =
 	{
 		{"Restat", 0, &cv_allowrestat, -1, true},
 		{"Item Litter", 0, NULL, K_ItemLitterActive() > 0, true},
@@ -2766,7 +2817,8 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 		{"Light AirDrop", 0, NULL, K_AirDropActive() == AIRDROP_LIGHT, true},
 		{"Heavy AirDrop", 0, NULL, K_AirDropActive() == AIRDROP_HEAVY, true},
 		{"Fus. AirDrop", 0, NULL, K_AirDropActive() == AIRDROP_FUSION, true},
-		{"Air Thrust", 0, NULL, K_AirThrustActive() > 0, true},
+		{"Burst Thrust", 0, NULL, K_AirThrustActive() == AIRTHRUST_BURST, true},
+		{"Flash Thrust", 0, NULL, K_AirThrustActive() == AIRTHRUST_FLASH, true},
 		{"Recovery Dash", 0, NULL, K_RecoveryDashActive() > 0, true},
 		{"Bump Spark", 0, &cv_kartbumpspark, -1, true},
 		{"Bump Drift", 0, NULL, K_GetBumpSpark() > 0, true},
@@ -2781,7 +2833,7 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 
 	for (j = 0; j < 2; j++)
 	{
-		UINT8 modcount = j == 0 ? BASEMODS : numcustomservermods;
+		UINT8 modcount = j == 0 ? sizeof(basemods)/sizeof(*basemods) : numcustomservermods;
 		servermods_t *modslist = j == 0 ? basemods : customservermods;
 
 		// Draw the the modlist.
@@ -2823,7 +2875,6 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 		V_DrawThinString(x, y, V_6WIDTHSPACE|V_ALLOWLOWERCASE|V_GRAYMAP, "Gameplay / Balance Changes:");
 
 }
-#undef BASEMODS
 
 void K_DrawServerDescrption(INT32 x, INT32 y)
 {
@@ -4009,7 +4060,10 @@ static void K_DrawTypingNotifier(fixed_t x, fixed_t y, player_t *p, UINT8 flags)
 static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p, UINT8 flags)
 {
 	const INT32 clr = skincolors[p->skincolor].chatcolor;
-	const INT32 namelen = V_ThinStringWidth(player_names[p - players], V_6WIDTHSPACE|V_ALLOWLOWERCASE);
+	INT32 namelen = V_ThinStringWidth(player_names[p - players], V_6WIDTHSPACE|V_ALLOWLOWERCASE);
+
+	if (p->clan[0] != 0)
+		namelen = V_ThinStringWidth(va("%s%s", p->clan, player_names[p - players]), V_6WIDTHSPACE|V_ALLOWLOWERCASE)+2;
 
 	UINT8 *colormap = V_GetStringColormap(clr);
 	INT32 barx = x + 6*FRACUNIT, bary = y - 16*FRACUNIT, barw = namelen*FRACUNIT;
@@ -4103,11 +4157,30 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p, UINT8 flag
 	// Draw the name itself
 	if (cv_seenames.value == NT_DEFAULT)
 	{
-		V_DrawThinStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+		if (p->clan[0] != 0)
+		{
+			UINT8 length = V_ThinStringWidth(p->clan, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE)+2;
+			V_DrawThinStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|V_SKYMAP, p->clan);
+			V_DrawThinStringAtFixed(x + (5*FRACUNIT) + textxoffset + (length*FRACUNIT), y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+		}
+		else
+		{
+			V_DrawThinStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+		}
 	}
 	else
 	{
-		V_DrawSmallStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+		if (p->clan[0] != 0)
+		{
+			UINT8 length = V_SmallStringWidth(p->clan, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE)+2;
+			V_DrawSmallStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|V_SKYMAP, p->clan);
+			V_DrawSmallStringAtFixed(x + (5*FRACUNIT) + textxoffset + (length*FRACUNIT), y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+		}
+		else
+		{
+			V_DrawSmallStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+		}
+
 	}
 
 	// Also draw stats of restated players.
@@ -4575,6 +4648,7 @@ static void K_drawKartMinimap(void)
 	INT32 splitflags = 0;
 	UINT16 skin = 0;
 	UINT8 *colormap = NULL;
+	skincolornum_t minimapcolor;
 	SINT8 localplayers[MAXSPLITSCREENPLAYERS];
 	SINT8 numlocalplayers = 0;
 	mobj_t *mobj, *next;	// for SPB drawing (or any other item(s) we may wanna draw, I dunno!)
@@ -4653,10 +4727,43 @@ static void K_drawKartMinimap(void)
 
 	minimaptrans = ((10-minimaptrans)<<FF_TRANSSHIFT);
 
+
+	UINT8 bestplayer = MAXPLAYERS;
+	if (mapnamespace != MNS_SRB2KART)
+	{
+		// Really looking forward to never writing this loop again
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i])
+				continue;
+			if (players[i].spectator)
+				continue;
+			if (players[i].position == 1)
+				bestplayer = i;
+		}
+	}
+
+	if (bestplayer == MAXPLAYERS || leveltime < starttime) // Countdown / no players
+		minimapcolor = SKINCOLOR_WHITE;
+	else if (players[bestplayer].laps >= numlaps) // Final lap
+		minimapcolor = K_RainbowColor(leveltime);
+	else // Standard: color to leader
+		minimapcolor =  players[bestplayer].skincolor;
+
 	if (encoremode)
-		V_DrawScaledPatch(x+minimapinfo.minimap_pic->width, y, splitflags|minimaptrans|V_FLIP, minimapinfo.minimap_pic);
+		V_DrawFixedPatch((x+minimapinfo.minimap_pic->width) * FRACUNIT,
+			(y)* FRACUNIT,
+			FRACUNIT,
+			splitflags|minimaptrans|V_FLIP,
+			minimapinfo.minimap_pic,
+			mapnamespace == MNS_SRB2KART ? NULL : R_GetTranslationColormap(TC_DEFAULT, minimapcolor, GTC_CACHE));
 	else
-		V_DrawScaledPatch(x, y, splitflags|minimaptrans, minimapinfo.minimap_pic);
+		V_DrawFixedPatch((x) * FRACUNIT,
+			(y) * FRACUNIT,
+			FRACUNIT,
+			splitflags|minimaptrans,
+			minimapinfo.minimap_pic,
+			mapnamespace == MNS_SRB2KART ? NULL : R_GetTranslationColormap(TC_DEFAULT, minimapcolor, GTC_CACHE));
 
 	// let offsets transfer to the heads, too!
 	if (encoremode)
@@ -6375,7 +6482,10 @@ static void K_DrawWaypointDebugger(void)
 	if (stplyr->bigwaypointgap)
 		V_DrawString(8, 140, 0, va("Auto Respawn Timer: %d", stplyr->bigwaypointgap));
 
-	if (stplyr->currentwaypoint && (stplyr->currentwaypoint->mobj != NULL) && K_SafeRespawnPosition(stplyr->currentwaypoint->mobj))
+	if (stplyr->currentwaypoint &&
+	    (stplyr->currentwaypoint->respawnstatus != WPSTATUS_BADWAYPOINT) &&
+		(stplyr->currentwaypoint->mobj != NULL) &&
+		K_SafeRespawnPosition(stplyr->currentwaypoint->mobj))
 	{
 		V_DrawString(8, 120, 0, va("Waypoint %d (Current) Safe: True", K_GetWaypointID(stplyr->currentwaypoint)));
 	}
@@ -6384,7 +6494,10 @@ static void K_DrawWaypointDebugger(void)
 		V_DrawString(8, 120, 0, va("Waypoint %d (Current) Safe: False", K_GetWaypointID(stplyr->currentwaypoint)));	
 	}
 
-	if (stplyr->nextwaypoint && (stplyr->nextwaypoint->mobj != NULL) && K_SafeRespawnPosition(stplyr->nextwaypoint->mobj))
+	if (stplyr->nextwaypoint &&
+		(stplyr->nextwaypoint->respawnstatus != WPSTATUS_BADWAYPOINT) &&
+	    (stplyr->nextwaypoint->mobj != NULL) &&
+		K_SafeRespawnPosition(stplyr->nextwaypoint->mobj))
 	{
 		V_DrawString(8, 130, 0, va("Waypoint %d (Next) Safe: True", K_GetWaypointID(stplyr->nextwaypoint)));
 	}
@@ -6627,6 +6740,8 @@ void K_drawKartHUD(void)
 		}
 
 		islonesome = K_drawKartPositionFaces();
+
+		RR_drawRidersFinishTicker();
 	}
 
 	if (!stplyr->spectator && !freecam) // Bottom of the screen elements, don't need in spectate mode
@@ -6984,7 +7099,7 @@ void K_DrawDriftGauge(void)
 	UINT8 *cmap = R_GetTranslationColormap(TC_RAINBOW, rainbow ? (INT32)(1 + (leveltime % FIRSTSUPERCOLOR)) : driftskins[level], GTC_CACHE);
 
 	INT32 afterimage = stplyr->karthud[khud_afterimagetime];
-	if (!stplyr->drift)
+	if (!stplyr->drift && !stplyr->airthrustdir)
 	{
 		if (afterimage)
 			goto doafterimage;

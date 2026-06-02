@@ -46,6 +46,12 @@
 #include "k_specialstage.h"
 #include "k_grandprix.h"
 
+#include "radio_finish.h"
+
+#include "i_gamepad.h"
+
+#include <tracy/tracy/TracyC.h>
+
 #ifdef PARANOIA
 #include "deh_tables.h" // MOBJTYPE_LIST
 #endif
@@ -479,6 +485,7 @@ mobj_t *P_SetTarget2(mobj_t **mop, mobj_t *targ
 //
 static void P_RunThinkers(void)
 {
+	TracyCZone(__zone, true);
 	size_t i;
 
 	for (i = 0; i < NUM_ACTIVETHINKERLISTS; i++)
@@ -500,6 +507,8 @@ static void P_RunThinkers(void)
 	ps_acs_time = I_GetPreciseTime();
 	ACS_Tick();
 	ps_acs_time = I_GetPreciseTime() - ps_acs_time;
+	
+	TracyCZoneEnd(__zone);
 }
 
 //
@@ -642,6 +651,108 @@ static inline void P_DoTeamStuff(void)
 	}
 }
 
+static inline fixed_t WrapFixed(fixed_t value, fixed_t min, fixed_t max)
+{
+	return ((value - min) % (max - min)) + min;
+}
+static fixed_t FixedAngleDifference(fixed_t angle1, fixed_t angle2 )
+{
+    fixed_t diff = ( angle2 - angle1 + (180<<FRACBITS) ) % (360<<FRACBITS) - (180<<FRACBITS);
+    return diff < -(180<<FRACBITS) ? diff + (360<<FRACBITS) : diff;
+}
+
+static void P_HandleCameraFreelookYaw(UINT8 pnum, player_t *player, camera_t *cam)
+{
+	if (P_IsDisplayPlayer(player))
+	{
+		fixed_t angle = 0;
+
+		if (cv_freelookrequiresbutton[pnum].value && (!cam->freelook_held))
+		{
+			angle = -cam->freelook_yaw;
+		}
+		else
+		{
+			switch (cv_freelookstyle[pnum].value)
+			{
+				case FREELOOKSTYLE_FLICK:
+					{
+						INT32 flickstick_xaxis = G_PlayerInputAnalog(pnum, gc_flickstick_right, false, DEADZONE_NONE) - G_PlayerInputAnalog(pnum, gc_flickstick_left, false, DEADZONE_NONE);
+						INT32 flickstick_yaxis = G_PlayerInputAnalog(pnum, gc_flickstick_back, false, DEADZONE_NONE) - G_PlayerInputAnalog(pnum, gc_flickstick_forward, false, DEADZONE_NONE);
+						fixed_t tilt = FixedHypot(abs(flickstick_xaxis) * FRACUNIT, abs(flickstick_yaxis) * FRACUNIT);
+
+						if (abs(tilt) >= ((JOYAXISRANGE * G_GetDeadZoneType(pnum, DEADZONE_2D))))
+						{
+							double radians = atan2(-flickstick_xaxis, -flickstick_yaxis);
+							angle = WrapFixed(FixedAngleDifference(cam->freelook_yaw, FloatToFixed(radians * (180.0 / M_PI))), 0<<FRACBITS, 360<<FRACBITS);
+						}
+						else
+						{
+							angle = -cam->freelook_yaw;
+						}
+					}
+					break;
+				case FREELOOKSTYLE_ROTATIONAL:
+					{
+						INT32 flickstick_xaxis = G_PlayerInputAnalog(pnum, gc_flickstick_right, false, DEADZONE_X) - G_PlayerInputAnalog(pnum, gc_flickstick_left, false, DEADZONE_X);
+						if (flickstick_xaxis == 0 && 
+							(((player->cmd.buttons & (BT_ACCELERATE|BT_BRAKE)) != 0 && !(player->spectator || cam->freecam)) ||
+							((player->spectator || cam->freecam) && G_PlayerInputDown(pnum, gc_camreset, false, DEADZONE_BUTTON)))
+						)
+						{
+							angle = -cam->freelook_yaw;
+						}
+						else
+						{
+							angle = FixedMul((TICRATE<<FRACBITS)/8, FixedDiv(abs(flickstick_xaxis), JOYAXISRANGE)) * -intsign(flickstick_xaxis);
+						}
+					}
+					break;
+				default:
+					angle = -cam->freelook_yaw;
+					break;
+			}
+		}
+		angle = min(abs(angle), TICRATE<<FRACBITS) * intsign(angle);
+
+		// gyro aiming
+		if (G_GetGamepadCanUseTilt(pnum)
+			&& (cv_tiltcontrol[pnum].value == TILTCONTROL_CAME || cv_tiltcontrol[pnum].value == TILTCONTROL_ON)
+			&& G_PlayerInputDown(pnum, gc_freelook, false, DEADZONE_BUTTON)
+		)
+		{
+			fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
+			fixed_t yawRelaxFactor = 141*FRACUNIT/100;
+			vector3_t gyro = G_GetGamepadCalibratedGyro(pnum);
+			vector3_t gravnorm = G_GetGamepadGravity(pnum);
+			vector2_t gyroYZ = {gyro.y, gyro.z};
+			
+			// use world yaw for yaw direction, local combined yaw for magnitude
+			FV3_Normalize(&gravnorm);
+			fixed_t worldYaw = FixedMul(gyro.y, gravnorm.y) + FixedMul(gyro.z, gravnorm.z); // dot product but just yaw and roll
+			
+			fixed_t yaw = intsign(worldYaw) * (encoremode ? -1 : 1) *
+			min(FixedMul(-abs(worldYaw), yawRelaxFactor), FV2_Magnitude(&gyroYZ));
+			
+			cam->freelook_yaw_add = (cam->freelook_yaw_add - FixedMul(yaw, deltaseconds)) % (360<<FRACBITS);
+		}
+		else
+		{
+			cam->freelook_yaw_add = 0;
+		}
+
+		if (cam->freelook_yaw+angle < -180*FRACUNIT)
+		{
+			cam->freelook_yaw += 360*FRACUNIT;
+		}
+		else if (cam->freelook_yaw+angle > 180*FRACUNIT)
+		{
+			cam->freelook_yaw -= 360*FRACUNIT;
+		}
+		cam->freelook_yaw = (cam->freelook_yaw + angle) % (360<<FRACBITS);
+	}
+}
+
 void P_RunChaseCameras(void)
 {
 	UINT8 i;
@@ -655,45 +766,28 @@ void P_RunChaseCameras(void)
 			camera_t *cam = &camera[i];
 
 			// client sided
-			if (P_IsMachineLocalPlayer(p) && p->mo && G_PlayerInputDown(i, gc_freelook, false, DEADZONE_BUTTON))
+			if (P_IsDisplayPlayer(p) && G_PlayerInputDown(i, gc_freelook, false, DEADZONE_BUTTON))
 			{
 				// instantly able to move camera
-				if (p->speed < 6 * p->mo->scale && abs(cam->freelook_held) < 2*TICRATE)
-				{
-					cam->freelook_held = 2*TICRATE;
-				}
+				cam->freelook_held = true;
 
-				if (abs(cam->freelook_held) >= 2*TICRATE)
+				// gamecontrol aiming
+				cam->freelook_pitch = (45*FixedDiv(p->cmd.throwdir, KART_FULLTURN));
+				// gyro aiming
+				if (G_GetGamepadCanUseTilt(i) && (cv_tiltcontrol[i].value == TILTCONTROL_CAME || cv_tiltcontrol[i].value == TILTCONTROL_ON))
 				{
-					cam->freelook_pitch = (45*FixedDiv(p->cmd.throwdir, KART_FULLTURN));
-
-					// gyro aiming
-					if (G_GetGamepadCanUseTilt(i) && cv_tiltcontrol[i].value == 1)
-					{
-						fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
-						vector3_t gyro = G_GetGamepadCalibratedGyro(i);
-						cam->freelook_pitch_add -= FixedMul(gyro.x, deltaseconds);
-					}
-				}
-			}
-			else if (p->mo && p->cmd.throwdir != 0)
-			{
-				if (p->speed < 6 * p->mo->scale && abs(cam->freelook_held) < 2*TICRATE)
-				{
-					cam->freelook_held += intsign(p->cmd.throwdir);
-				}
-				
-				if (abs(cam->freelook_held) >= 2*TICRATE)
-				{
-					cam->freelook_pitch = 45*FRACUNIT*intsign(p->cmd.throwdir);
+					fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
+					vector3_t gyro = G_GetGamepadCalibratedGyro(i);
+					cam->freelook_pitch_add -= FixedMul(gyro.x, deltaseconds);
 				}
 			}
 			else
 			{
-				cam->freelook_held = 0;
+				cam->freelook_held = false;
 				cam->freelook_pitch = 0;
 				cam->freelook_pitch_add = 0;
 			}
+			P_HandleCameraFreelookYaw(i, p, cam);
 
 			P_MoveChaseCamera(p, cam, false);
 		}
@@ -705,6 +799,8 @@ void P_RunChaseCameras(void)
 //
 void P_Ticker(boolean run)
 {
+	TracyCZone(__zone, true);
+
 	INT32 i;
 
 	thinkersCompleted = false;
@@ -735,6 +831,8 @@ void P_Ticker(boolean run)
 			R_UpdateViewInterpolation();
 			P_MapEnd();
 			S_SetStackAdjustmentStart();
+
+			TracyCZoneEnd(__zone);
 			return;
 		}
 	}
@@ -751,6 +849,9 @@ void P_Ticker(boolean run)
 		}
 		else
 			P_RunChaseCameras();	// special case: allow freecam to MOVE during pause!
+		
+			
+		TracyCZoneEnd(__zone);
 		return;
 	}
 
@@ -786,7 +887,11 @@ void P_Ticker(boolean run)
 		ps_lua_mobjhooks = 0;
 		ps_checkposition_calls = 0;
 
-		LUA_HOOK(PreThinkFrame);
+		{
+			TracyCZoneN(__zone, "LUA_PreThinkFrame", true);
+			LUA_HOOK(PreThinkFrame);
+			TracyCZoneEnd(__zone);
+		}
 
 		ps_playerthink_time = I_GetPreciseTime();
 
@@ -795,16 +900,21 @@ void P_Ticker(boolean run)
 
 		// OK! Now that we got all of that sorted, players can think!
 		UINT8 p = 0;
-		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+			TracyCZoneN(__zone, "PlayerThink", true);
+			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				P_PlayerThink(&players[i]);
-				K_KartPlayerHUDUpdate(&players[i]);
-
-				if (!players[i].spectator)
+				if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+				{
+					TracyCMessage(player_names[i], strlen(player_names[i]));
+					P_PlayerThink(&players[i]);
+					K_KartPlayerHUDUpdate(&players[i]);
+					
+					if (!players[i].spectator)
 					p++;
+				}
 			}
+			TracyCZoneEnd(__zone);
 		}
 
 		if (p > (MAXPLAYERS / 2))
@@ -1021,6 +1131,11 @@ void P_Ticker(boolean run)
 		P_RunChaseCameras();
 	}
 
+	if (run && !levelloading && leveltime)
+	{
+		RR_ridersFinishTick();
+	}
+
 	if (run)
 	{
 		LUA_HOOK(PostThinkFrame);
@@ -1061,4 +1176,5 @@ void P_Ticker(boolean run)
 	}
 
 //	Z_CheckMemCleanup();
+	TracyCZoneEnd(__zone);
 }

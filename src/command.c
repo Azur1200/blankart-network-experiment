@@ -1443,15 +1443,6 @@ void VS_Print(vsbuf_t *buf, const char *data)
 //
 // =========================================================================
 
-static UINT32 xxHashString32(const char *name)
-{
-	size_t len = strlen(name);
-	char *uname = (char *)alloca(len + 1);
-	strlcpy(uname, name, len + 1);
-	strlwr(uname);
-	return HASH32(uname, len);
-}
-
 #define NAME      cvar_map_t
 #define KEY_TY    const char *
 #define VAL_TY    consvar_t *

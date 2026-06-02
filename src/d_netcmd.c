@@ -12,6 +12,7 @@
 ///        commands are executed through the command buffer
 ///	       like console commands, other miscellaneous commands (at the end)
 
+#include "d_netcmd.h"
 #include "d_player.h"
 #include "doomdef.h"
 
@@ -111,8 +112,8 @@ static void Got_ScheduleClearcmd(UINT8 **cp, INT32 playernum);
 static void Got_Automatecmd(UINT8 **cp, INT32 playernum);
 static void Got_MapQueuecmd(UINT8 **cp, INT32 playernum);
 static void Got_Cheat(UINT8 **cp, INT32 playernum);
-static void Command_ScoreboardAdd(void);
-static void Command_ScoreboardClear(void);
+static void Got_ClanTagSet(UINT8 **cp, INT32 playernum);
+static void Got_ClanTagClear(UINT8 **cp, INT32 playernum);
 
 static void PointLimit_OnChange(void);
 static void TimeLimit_OnChange(void);
@@ -183,6 +184,18 @@ static void KartTrailSlow_OnChange(void);
 static void PlayerBump_OnChange(void);
 
 static void Schedule_OnChange(void);
+
+static void Command_ScoreboardAdd(void);
+static void Command_ScoreboardClear(void);
+
+static void Command_ClantagSet(void);
+static void Command_ClantagSet2(void);
+static void Command_ClantagSet3(void);
+static void Command_ClantagSet4(void);
+static void Command_ClantagClear(void);
+static void Command_ClantagClear2(void);
+static void Command_ClantagClear3(void);
+static void Command_ClantagClear4(void);
 
 static void Command_Playdemo_f(void);
 static void Command_Timedemo_f(void);
@@ -256,7 +269,6 @@ static void Got_Removal(UINT8 **cp, INT32 playernum);
 static void Command_Verify_f(void);
 static void Command_RemoveAdmin_f(void);
 static void Command_MotD_f(void);
-static void Got_MotD_f(UINT8 **cp, INT32 playernum);
 
 static void Command_ShowScores_f(void);
 static void Command_ShowTime_f(void);
@@ -569,8 +581,8 @@ consvar_t cv_kartstacking_start_accelboost = CVAR_INIT ("vanillaboost_start_acce
 consvar_t cv_kartstacking_start_handleboost = CVAR_INIT ("vanillaboost_start_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_start_stackable = CVAR_INIT ("vanillaboost_start_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_walltransfer_speedboost = CVAR_INIT ("vanillaboost_walltransfer_speedboost", "0.10", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_walltransfer_accelboost = CVAR_INIT ("vanillaboost_walltransfer_accelboost", "5.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_walltransfer_speedboost = CVAR_INIT ("vanillaboost_walltransfer_speedboost", "0.12", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_walltransfer_accelboost = CVAR_INIT ("vanillaboost_walltransfer_accelboost", "12.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_walltransfer_handleboost = CVAR_INIT ("vanillaboost_walltransfer_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_walltransfer_stackable = CVAR_INIT ("vanillaboost_walltransfer_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
@@ -657,12 +669,19 @@ static CV_PossibleValue_t airdrop_cons_t[] = {{AIRDROP_NONE, "Off"},
 						{0, NULL}};
 consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "Off", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, airdrop_cons_t, KartAirDrop_OnChange);
 
-consvar_t cv_kartairthrust = CVAR_INIT ("kartairthrust", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartAirThrust_OnChange);
+static CV_PossibleValue_t airthrust_cons_t[] = {{AIRTHRUST_NONE, "Off"},
+						{AIRTHRUST_BURST, "Burst"},
+						{AIRTHRUST_FLASH, "Flash"},
+						{0, NULL}};
+consvar_t cv_kartairthrust = CVAR_INIT ("kartairthrust", "Off", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, airthrust_cons_t, KartAirThrust_OnChange);
 consvar_t cv_kartairthrust_reductionrate = CVAR_INIT ("kartairthrust_reductionrate", "0.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartairthrust_flashreductionrate = CVAR_INIT ("kartairthrust_reductionrate_flash", "1.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power1 = CVAR_INIT ("kartairthrust_power1", "0.2", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power2 = CVAR_INIT ("kartairthrust_power2", "0.35", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power3 = CVAR_INIT ("kartairthrust_power3", "0.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartairthrust_power4 = CVAR_INIT ("kartairthrust_power4", "0.75", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+
+consvar_t cv_kartairsuperring_reductionrate = CVAR_INIT ("kartairsuperring_reductionrate", "0.6", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 
 consvar_t cv_kartwaterskiplock = CVAR_INIT ("kartwaterskiplock", "Yes", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartWaterSkipLock_OnChange);
 
@@ -720,6 +739,10 @@ consvar_t cv_kartinvindamage = CVAR_INIT ("kartinvindamage", "Wipe-out", CV_NETV
 // How far the player must be from the cluster to roll an S-Monitor.
 static CV_PossibleValue_t smonitordist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
 consvar_t cv_kartsmonitordist = CVAR_INIT ("smonitor_startdist", "12000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
+
+// Conga is extremely finicky, so we need a separate threshold to preserve the S-Monitor's reliability
+consvar_t cv_kartsmonitor_congadist = CVAR_INIT("smonitor_startdist_conga", "10000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
+
 consvar_t cv_kartsmonitor_decaydist = CVAR_INIT ("smonitor_decaydist", "3600", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
 
 static CV_PossibleValue_t smonitordecaytime_cons_t[] = {{1, "MIN"}, {6, "MAX"}, {0, NULL}};
@@ -748,6 +771,9 @@ consvar_t cv_kartaltshrink_arrowbullet = CVAR_INIT ("kart_altshrink_arrowbullet"
 
 static CV_PossibleValue_t altshrink_arrowbullet_threshold_cons_t[] = {{0, "MIN"}, {2 * FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_kartaltshrink_arrowbulletthres = CVAR_INIT ("kart_altshrink_arrowbullet_threshold", "1.45", CV_NETVAR|CV_FLOAT, altshrink_arrowbullet_threshold_cons_t, NULL);
+
+// If you're in Alt. Shrink state, you'll roll KRF_RUNNERAUGMENT items at earlier distances with this on.
+consvar_t cv_kartaltshrink_runneranger = CVAR_INIT ("kart_altshrink_runneranger", "Off", CV_NETVAR, CV_OnOff, NULL);
 
 static CV_PossibleValue_t kartairsquish_cons_t[] = {{1, "Squish"}, {2, "Flip-over"}, {0, "None"}, {0, NULL}};
 consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kartairsquish_cons_t, NULL);
@@ -960,7 +986,6 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"RANDOMSEED", // XD_RANDOMSEED
 	"RUNSOC", // XD_RUNSOC
 	"REQADDFILE", // XD_REQADDFILE
-	"SETMOTD", // XD_SETMOTD
 	"RESPAWN", // XD_RESPAWN
 	"DEMOTED", // XD_DEMOTED
 	"LUACMD", // XD_LUACMD
@@ -985,6 +1010,8 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"AUTOMATE", // XD_AUTOMATE
 	"CHEAT", // XD_CHEAT
 	"MAPQUEUE", // XD_MAPQUEUE
+	"CLANTAGSET", // XD_CLANTAGSET
+	"CLANTAGCLEAR", // XD_CLANTAGCLEAR
 };
 
 // =========================================================================
@@ -1036,6 +1063,17 @@ void D_RegisterServerCommands(void)
 	RegisterNetXCmd(XD_AUTOMATE, Got_Automatecmd);
 	RegisterNetXCmd(XD_MAPQUEUE, Got_MapQueuecmd);
 
+	COM_AddCommand("clantag_set", Command_ClantagSet);
+	COM_AddCommand("clantag2_set", Command_ClantagSet2);
+	COM_AddCommand("clantag3_set", Command_ClantagSet3);
+	COM_AddCommand("clantag4_set", Command_ClantagSet4);
+	COM_AddCommand("clantag_clear", Command_ClantagClear);
+	COM_AddCommand("clantag2_clear", Command_ClantagClear2);
+	COM_AddCommand("clantag3_clear", Command_ClantagClear3);
+	COM_AddCommand("clantag4_clear", Command_ClantagClear4);
+	RegisterNetXCmd(XD_CLANTAGSET, Got_ClanTagSet);
+	RegisterNetXCmd(XD_CLANTAGCLEAR, Got_ClanTagClear);
+
 	RegisterNetXCmd(XD_CHEAT, Got_Cheat);
 	COM_AddCommand("scoreboard_addline", Command_ScoreboardAdd);
 	COM_AddCommand("scoreboard_clear", Command_ScoreboardClear);
@@ -1050,7 +1088,6 @@ void D_RegisterServerCommands(void)
 	RegisterNetXCmd(XD_DEMOTED, Got_Removal);
 
 	COM_AddCommand("motd", Command_MotD_f);
-	RegisterNetXCmd(XD_SETMOTD, Got_MotD_f); // For remote admin
 
 	RegisterNetXCmd(XD_TEAMCHANGE, Got_Teamchange);
 	COM_AddCommand("serverchangeteam", Command_ServerTeamChange_f);
@@ -1462,7 +1499,10 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_deadzonex[i]);
 		CV_RegisterVar(&cv_deadzoney[i]);
 		CV_RegisterVar(&cv_deadzonet[i]);
+		CV_RegisterVar(&cv_deadzonetwod[i]);
 		CV_RegisterVar(&cv_deadzonestyle[i]);
+		CV_RegisterVar(&cv_freelookstyle[i]);
+		CV_RegisterVar(&cv_freelookrequiresbutton[i]);
 		CV_RegisterVar(&cv_litesteer[i]);
 		CV_RegisterVar(&cv_turnsmooth[i]);
 		CV_RegisterVar(&cv_controllerrumble[i]);
@@ -5753,24 +5793,26 @@ static void Command_MotD_f(void)
 		return;
 	}
 
-	if (!(server || (IsPlayerAdmin(consoleplayer))))
+	// TODO: make PT_ServerInfoUpdate support external admin players.
+	if (!(server /*|| (IsPlayerAdmin(consoleplayer))*/))
 	{
-		CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
+		//CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
+		CONS_Printf(M_GetText("Only the server can use this.\n"));
 		return;
 	}
 
-	mymotd = Z_Malloc(sizeof(motd), PU_STATIC, NULL);
+	mymotd = Z_Malloc(MAXSERVERMOTD, PU_STATIC, NULL);
 
 	if (!mymotd)
 		return;
 		//I_Error("Command_MotD_f: Out of memory!\n"); // idk if this aint a bit too much lel
 
-	strlcpy(mymotd, COM_Argv(1), sizeof(motd));
+	strlcpy(mymotd, COM_Argv(1), MAXSERVERMOTD);
 
 	for (i = 2; i < j; i++)
 	{
-		strlcat(mymotd, " ", sizeof(motd));
-		strlcat(mymotd, COM_Argv(i), sizeof(motd));
+		strlcat(mymotd, " ", MAXSERVERMOTD);
+		strlcat(mymotd, COM_Argv(i), MAXSERVERMOTD);
 	}
 
 	// Disallow non-printing characters and semicolons.
@@ -5779,47 +5821,13 @@ static void Command_MotD_f(void)
 		if (!isprint(mymotd[i]) || mymotd[i] == ';')
 		{
 			Z_Free(mymotd);
+			CONS_Alert(CONS_WARNING, M_GetText("Invalid characters in message of the day.\n"));
 			return;
 		}
 	}
 
-	if ((netgame || multiplayer) && client)
-	{
-		SendNetXCmd(XD_SETMOTD, mymotd, i); // send the actual size of the motd string, not the full buffer's size
-	}
-	else
-	{
-		strcpy(motd, mymotd);
-		CONS_Printf(M_GetText("Message of the day set.\n"));
-	}
-
-	Z_Free(mymotd);
-}
-
-static void Got_MotD_f(UINT8 **cp, INT32 playernum)
-{
-	char *mymotd = Z_Malloc(sizeof(motd), PU_STATIC, NULL);
-	INT32 i;
-	boolean kick = false;
-
-	READSTRINGN(*cp, mymotd, sizeof(motd));
-
-	// Disallow non-printing characters and semicolons.
-	for (i = 0; mymotd[i] != '\0'; i++)
-		if (!isprint(mymotd[i]) || mymotd[i] == ';')
-			kick = true;
-
-	if ((playernum != serverplayer && !IsPlayerAdmin(playernum)) || kick)
-	{
-		CONS_Alert(CONS_WARNING, M_GetText("Illegal motd change received from %s\n"), player_names[playernum]);
-		if (server)
-			SendKick(playernum, KICK_MSG_CON_FAIL);
-		Z_Free(mymotd);
-		return;
-	}
-
-	strcpy(motd, mymotd);
-
+	strcpy(connectedservermotd, mymotd);
+	ServerInfoUpdateSend();
 	CONS_Printf(M_GetText("Message of the day set.\n"));
 
 	Z_Free(mymotd);
@@ -7522,6 +7530,161 @@ static void Got_PlaySound(UINT8 **cp, INT32 playernum)
 	}
 
 	S_StartSound(NULL, sound_id);
+}
+
+static void HandleClantagSetCommand(UINT8 localplayer)
+{
+	char buf[sizeof(UINT8)+MAXCLANTAG];
+	char *cp = buf;
+	char temp[MAXCLANTAG*4];
+	char clantag[MAXCLANTAG];
+	size_t i, j = COM_Argc();
+
+	if (COM_Argc() < 2)
+	{
+		CONS_Printf("%s <text>: Set your clantag to this.\n", localplayer == 0 ? "clantag_set" : va("clantag%d_set", localplayer+1));
+		return;
+	}
+
+	if (!(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
+	{
+		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
+		return;
+	}
+
+	if (localplayer != 0 && !g_localplayers[localplayer])
+	{
+		CONS_Printf(M_GetText("There is no player to set a clantag for.\n"));
+		return;
+	}
+
+	strlcpy(temp, COM_Argv(1), sizeof temp);
+	for (i = 2; i < j; i++)
+	{
+		strlcat(temp, " ", sizeof temp);
+		strlcat(temp, COM_Argv(i), sizeof temp);
+	}
+
+	if (strlen(temp) >= MAXCLANTAG)
+	{
+		CONS_Printf(M_GetText("Supplied clantag is too long.\n"));
+		return;
+	}
+
+	if ((fasticmp("@", temp)
+		|| fasticmp("~", temp)
+		|| fasticmp("staff", temp)
+		|| fasticmp("admin", temp))
+	)
+	{
+		CONS_Printf(M_GetText("Nice try.\n"));
+		return;
+	}
+
+	strncpy(clantag, temp, MAXCLANTAG);
+
+	WRITEUINT8(cp, g_localplayers[localplayer]);
+	WRITESTRINGN(cp, clantag, MAXCLANTAG);
+	SendNetXCmdForPlayer(localplayer, XD_CLANTAGSET, &buf, cp - buf);
+}
+
+static void Command_ClantagSet(void)
+{
+	HandleClantagSetCommand(0);
+}
+
+static void Command_ClantagSet2(void)
+{
+	HandleClantagSetCommand(1);
+}
+
+static void Command_ClantagSet3(void)
+{
+	HandleClantagSetCommand(2);
+}
+
+static void Command_ClantagSet4(void)
+{
+	HandleClantagSetCommand(3);
+}
+
+static void Got_ClanTagSet(UINT8 **cp, INT32 playernum)
+{
+	char clantag[MAXCLANTAG];
+	UINT8 targetPlayer = READUINT8(*cp);
+	READSTRINGN(*cp, clantag, MAXCLANTAG);
+
+	if (targetPlayer >= MAXPLAYERS
+		|| playernode[targetPlayer] != playernode[playernum]
+		|| (fasticmp("@", clantag)
+		|| fasticmp("~", clantag)
+		|| fasticmp("staff", clantag)
+		|| fasticmp("admin", clantag))
+	)
+	{
+		CONS_Alert(CONS_WARNING,
+			M_GetText ("Illegal Clantag Set command received from %s\n"),
+			player_names[playernum]);
+		return;
+	}
+
+	strncpy(players[targetPlayer].clan, clantag, MAXCLANTAG);
+}
+
+static void HandleClantagClearCommand(UINT8 localplayer)
+{
+	char buf[1];
+	char *cp = buf;
+
+	if (!(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
+	{
+		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
+		return;
+	}
+
+	if (localplayer != 0 && !g_localplayers[localplayer])
+	{
+		CONS_Printf(M_GetText("There is no player to set a clantag for.\n"));
+		return;
+	}
+
+	WRITEUINT8(cp, g_localplayers[localplayer]);
+	SendNetXCmdForPlayer(localplayer, XD_CLANTAGCLEAR, &buf, cp - buf);
+}
+
+static void Command_ClantagClear(void)
+{
+	HandleClantagClearCommand(0);
+}
+
+static void Command_ClantagClear2(void)
+{
+	HandleClantagClearCommand(1);
+}
+
+static void Command_ClantagClear3(void)
+{
+	HandleClantagClearCommand(2);
+}
+
+static void Command_ClantagClear4(void)
+{
+	HandleClantagClearCommand(3);
+}
+
+static void Got_ClanTagClear(UINT8 **cp, INT32 playernum)
+{
+	UINT8 targetPlayer = READUINT8(*cp);
+
+	if (targetPlayer >= MAXPLAYERS || playernode[targetPlayer] != playernode[playernum])
+	{
+		CONS_Alert(CONS_WARNING,
+				   M_GetText ("Illegal Clantag Clear command received from %s\n"),
+				   player_names[playernum]);
+		return;
+	}
+
+	memset(players[targetPlayer].clan, 0, MAXCLANTAG);
 }
 
 static const char *displayplayer_compose_col(int playernum)
@@ -9638,28 +9801,16 @@ static void KartAirThrust_OnChange(void)
 		return;
 	}
 
-	if (!K_AirThrustActive() && cv_kartairthrust.value)
+	if (K_AirThrustActive() != cv_kartairthrust.value)
 	{
 		if (leveltime < starttime)
 		{
-			airthrustactive = true;
-			CONS_Printf(M_GetText("Air Thrust has been turned \"On\".\n"));
+			airthrustactive = cv_kartairthrust.value;
+			CONS_Printf(M_GetText("Air Thrust has been set to \"%s\".\n"), cv_kartairthrust.string);
 		}
 		else
 		{
-			CONS_Printf(M_GetText("Air Thrust will be turned \"On\" Next Round.\n"));
-		}
-	}
-	else if (K_AirThrustActive() && !cv_kartairthrust.value)
-	{
-		if (leveltime < starttime)
-		{
-			airthrustactive = false;
-			CONS_Printf(M_GetText("Air Thrust has been turned \"Off\".\n"));
-		}
-		else
-		{
-			CONS_Printf(M_GetText("Air Thrust will be turned \"Off\" next round.\n"));
+			CONS_Printf(M_GetText("Air Thrust will be set to \"%s\" next round.\n"), cv_kartairthrust.string);
 		}
 	}
 }

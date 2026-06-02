@@ -357,6 +357,7 @@ void V_DrawRightAlignedThinString(INT32 x, INT32 y, INT32 option, const char *st
 
 #define V_DrawThinStringAtFixed( x,y,option,string ) \
 	V__DrawOneScaleString (x,y,FRACUNIT,option,TINY_FONT,string)
+
 void V_DrawCenteredThinStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
 void V_DrawRightAlignedThinStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
 
@@ -379,6 +380,7 @@ void V_DrawPaddedTallColorNumAtFixed(fixed_t x, fixed_t y, INT32 flags, INT32 nu
 // This is a separate function because IMO lua should have access to it as well.
 INT32 V_DrawPingNum(INT32 x, INT32 y, INT32 flags, INT32 num, const UINT8 *colormap);
 INT32 V_DrawPingNumAtFixed(fixed_t x, fixed_t y, INT32 flags, INT32 num, const UINT8 *colormap);
+INT32 V_DrawPingNumScaled(fixed_t x, fixed_t y, fixed_t scale, INT32 flags, INT32 num, const UINT8 *colormap);
 
 // Rank numbers.
 void V_DrawRankNum(INT32 x, INT32 y, INT32 flags, INT32 num, INT32 digits, const UINT8 *colormap);

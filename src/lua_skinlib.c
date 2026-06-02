@@ -81,10 +81,12 @@ static const char *const skin_opt[] = {
 	break; \
 }
 
+int skin_fields_ref = LUA_NOREF;
+
 static int skin_get(lua_State *L)
 {
 	skin_t *skin = *((skin_t **)luaL_checkudata(L, 1, META_SKIN));
-	enum skin field = luaL_checkoption(L, 2, NULL, skin_opt);
+	enum skin field = Lua_optoption(L, 2, -1, skin_fields_ref);
 
 	// skins are always valid, only added, never removed
 	I_Assert(skin != NULL);
@@ -323,10 +325,12 @@ static int lib_numSkinsSprites(lua_State *L)
 	return 1;
 }
 
+int sprites_fields_ref = LUA_NOREF;
+
 static int sprite_get(lua_State *L)
 {
 	spritedef_t *sprite = *(spritedef_t **)luaL_checkudata(L, 1, META_SKINSPRITESLIST);
-	enum spritesopt field = luaL_checkoption(L, 2, NULL, sprites_opt);
+	enum spritesopt field = Lua_optoption(L, 2, -1, sprites_fields_ref);
 
 	switch (field)
 	{
@@ -340,6 +344,9 @@ static int sprite_get(lua_State *L)
 
 int LUA_SkinLib(lua_State *L)
 {
+	skin_fields_ref = Lua_CreateFieldTable(L, skin_opt);
+	sprites_fields_ref = Lua_CreateFieldTable(L, sprites_opt);
+
 	luaL_newmetatable(L, META_SKIN);
 		lua_pushcfunction(L, skin_get);
 		lua_setfield(L, -2, "__index");

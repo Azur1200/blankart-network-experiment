@@ -41,6 +41,8 @@
 #include "g_state.h"
 #include "m_argv.h"
 
+#include <tracy/tracy/TracyC.h>
+
 lua_State *gL = NULL;
 boolean lua_compatmode = false;
 
@@ -164,500 +166,690 @@ int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, boole
 	return err;
 }
 
-// Moved here from lib_getenum.
-int LUA_PushGlobals(lua_State *L, const char *word)
+// global fields
+#define GLOBALFIELDS(X) \
+	X(gamemap) \
+	X(udmf) \
+	X(maptol) \
+	X(circuitmap) \
+	X(stoppedclock) \
+	X(netgame) \
+	X(multiplayer) \
+	X(modeattacking) \
+	X(splitscreen) \
+	X(gamecomplete) \
+	X(marathonmode) \
+	X(devparm) \
+	X(modifiedgame) \
+	X(menuactive) \
+	X(paused) \
+	X(bluescore) \
+	X(redscore) \
+	X(timelimit) \
+	X(pointlimit) \
+	X(titlemap) \
+	X(titlemapinaction) \
+	X(bootmap) \
+	X(tutorialmap) \
+	X(tutorialmode) \
+	X(skincolor_redteam) \
+	X(skincolor_blueteam) \
+	X(skincolor_redring) \
+	X(skincolor_bluering) \
+	X(invulntics) \
+	X(sneakertics) \
+	X(flashingtics) \
+	X(tailsflytics) \
+	X(underwatertics) \
+	X(spacetimetics) \
+	X(extralifetics) \
+	X(nightslinktics) \
+	X(gameovertics) \
+	X(ammoremovaltics) \
+	X(gametype) \
+	X(gametyperules) \
+	X(leveltime) \
+	X(introtime) \
+	X(starttime) \
+	X(curWeather) \
+	X(globalweather) \
+	X(levelskytexture) \
+	X(globallevelskytexture) \
+	X(mapmusname) \
+	X(mapmusflags) \
+	X(mapmusposition) \
+	X(mapmusrng) \
+	X(consoleplayer) \
+	X(isserver) \
+	X(isdedicatedserver) \
+	X(server) \
+	X(gravity) \
+	X(VERSION) \
+	X(SUBVERSION) \
+	X(VERSIONSTRING) \
+	X(MAXSKINCOLORS) \
+	X(MAXTRANSLATIONS) \
+	X(gamespeed) \
+	X(nummapboxes) \
+	X(numgotboxes) \
+	X(itembreaker) \
+	X(battleprisons) \
+	X(ringsactive) \
+	X(stackingactive) \
+	X(chainingactive) \
+	X(slipdashactive) \
+	X(slopeboostactive) \
+	X(draftingactive) \
+	X(airdropactive) \
+	X(bumpsparkactive) \
+	X(purpledriftactive) \
+	X(recoverydashactive) \
+	X(keepstuffactive) \
+	X(itemlittering) \
+	X(itempushing) \
+	X(trailslow_active) \
+	X(trailslowactive) \
+	X(playerbumpactive) \
+	X(hyubgone) \
+	X(encoremode) \
+	X(franticitems) \
+	X(comeback) \
+	X(wantedcalcdelay) \
+	X(indirectitemcooldown) \
+	X(thwompsactive) \
+	X(lastLowestLap) \
+	X(spbplace) \
+	X(mapobjectscale) \
+	X(numlaps) \
+	X(racecountdown) \
+	X(exitcountdown) \
+	X(replayplayback) \
+	X(gamestate) \
+	X(compatmode) \
+	X(hyudorotime) \
+	X(stealtime) \
+	X(sneakertime) \
+	X(waterpaneltime) \
+	X(bubbletime) \
+	X(flametime) \
+	X(comebacktime) \
+	X(greasetics) \
+	X(wipeoutslowtime) \
+	X(wantedreduce) \
+	X(wantedfrequency) \
+	X(mapnamespace) \
+	X(emeralds) \
+	X(token)
+
+enum global_e
 {
-	if (fastcmp(word,"gamemap")) {
-		lua_pushinteger(L, lua_compatmode ? G_NativeMapToKart(gamemap) : gamemap);
-		return 1;
-	} else if (fastcmp(word,"udmf")) {
-		lua_pushboolean(L, udmf);
-		return 1;
-	} else if (fastcmp(word,"maptol")) {
-		lua_pushinteger(L, maptol);
-		return 1;
-	} else if (fastcmp(word,"circuitmap")) {
-		lua_pushboolean(L, circuitmap);
-		return 1;
-	} else if (fastcmp(word,"stoppedclock")) {
-		lua_pushboolean(L, stoppedclock);
-		return 1;
-	} else if (fastcmp(word,"netgame")) {
-		lua_pushboolean(L, netgame);
-		return 1;
-	} else if (fastcmp(word,"multiplayer")) {
-		lua_pushboolean(L, multiplayer);
-		return 1;
-	} else if (fastcmp(word,"modeattacking")) {
-		lua_pushboolean(L, modeattacking);
-		return 1;
-	} else if (fastcmp(word,"splitscreen")) {
-		// You may be wondering why?
-		// Kart lua scripts expects splitscreen to mean "number of split views"
-		// not "number of local players"
-		if (lua_compatmode)
-			lua_pushinteger(L, r_splitscreen);
-		else
-			lua_pushinteger(L, splitscreen);
-		return 1;
-	} else if (fastcmp(word,"gamecomplete")) {
-		lua_pushboolean(L, (gamecomplete != 0));
-		return 1;
-	} else if (fastcmp(word,"marathonmode")) {
-		lua_pushinteger(L, marathonmode);
-		return 1;
-	} else if (fastcmp(word,"devparm")) {
-		lua_pushboolean(L, devparm);
-		return 1;
-	} else if (fastcmp(word,"modifiedgame")) {
-		lua_pushboolean(L, modifiedgame && !savemoddata);
-		return 1;
-	} else if (fastcmp(word,"menuactive")) {
-		lua_pushboolean(L, menustack[0]);
-		return 1;
-	} else if (fastcmp(word,"paused")) {
-		lua_pushboolean(L, paused);
-		return 1;
-	} else if (fastcmp(word,"bluescore")) {
-		lua_pushinteger(L, bluescore);
-		return 1;
-	} else if (fastcmp(word,"redscore")) {
-		lua_pushinteger(L, redscore);
-		return 1;
-	} else if (fastcmp(word,"timelimit")) {
-		lua_pushinteger(L, timelimitintics);
-		return 1;
-	} else if (fastcmp(word,"pointlimit")) {
-		lua_pushinteger(L, cv_pointlimit.value);
-		return 1;
-	// begin map vars
-	} else if (fastcmp(word,"titlemap")) {
-		lua_pushstring(L, titlemap);
-		return 1;
-	} else if (fastcmp(word,"titlemapinaction")) {
-		lua_pushboolean(L, (titlemapinaction != TITLEMAP_OFF));
-		return 1;
-	} else if (fastcmp(word,"bootmap")) {
-		lua_pushstring(L, bootmap);
-		return 1;
-	} else if (fastcmp(word,"tutorialmap")) {
-		lua_pushstring(L, tutorialmap);
-		return 1;
-	} else if (fastcmp(word,"tutorialmode")) {
-		lua_pushboolean(L, tutorialmode);
-		return 1;
-	// end map vars
-	// begin CTF colors
-	} else if (fastcmp(word,"skincolor_redteam")) {
-		lua_pushinteger(L, skincolor_redteam);
-		return 1;
-	} else if (fastcmp(word,"skincolor_blueteam")) {
-		lua_pushinteger(L, skincolor_blueteam);
-		return 1;
-	} else if (fastcmp(word,"skincolor_redring")) {
-		lua_pushinteger(L, skincolor_redring);
-		return 1;
-	} else if (fastcmp(word,"skincolor_bluering")) {
-		lua_pushinteger(L, skincolor_bluering);
-		return 1;
-	// end CTF colors
-	// begin timers
-	} else if (fastcmp(word,"invulntics")) {
-		lua_pushinteger(L, invulntics);
-		return 1;
-	} else if (fastcmp(word,"sneakertics")) {
-		lua_pushinteger(L, sneakertics);
-		return 1;
-	} else if (fastcmp(word,"flashingtics")) {
-		lua_pushinteger(L, flashingtics);
-		return 1;
-	} else if (fastcmp(word,"tailsflytics")) {
-		lua_pushinteger(L, tailsflytics);
-		return 1;
-	} else if (fastcmp(word,"underwatertics")) {
-		lua_pushinteger(L, underwatertics);
-		return 1;
-	} else if (fastcmp(word,"spacetimetics")) {
-		lua_pushinteger(L, spacetimetics);
-		return 1;
-	} else if (fastcmp(word,"extralifetics")) {
-		lua_pushinteger(L, extralifetics);
-		return 1;
-	} else if (fastcmp(word,"nightslinktics")) {
-		lua_pushinteger(L, nightslinktics);
-		return 1;
-	} else if (fastcmp(word,"gameovertics")) {
-		lua_pushinteger(L, gameovertics);
-		return 1;
-	} else if (fastcmp(word,"ammoremovaltics")) {
-		lua_pushinteger(L, ammoremovaltics);
-		return 1;
-	// end timers
-	} else if (fastcmp(word,"gametype")) {
-		lua_pushinteger(L, gametype);
-		return 1;
-	} else if (fastcmp(word,"gametyperules")) {
-		lua_pushinteger(L, gametypes[gametype]->rules);
-		return 1;
-	} else if (fastcmp(word,"leveltime")) {
-		lua_pushinteger(L, leveltime);
-		return 1;
-	} else if (fastcmp(word,"introtime")) {
-		lua_pushinteger(L, introtime);
-		return 1;
-	} else if (fastcmp(word,"starttime")) {
-		lua_pushinteger(L, starttime);
-		return 1;
-	} else if (fastcmp(word,"curWeather")) {
-		lua_pushinteger(L, curWeather);
-		return 1;
-	} else if (fastcmp(word,"globalweather")) {
-		lua_pushinteger(L, globalweather);
-		return 1;
-	} else if (fastcmp(word,"levelskytexture")) {
-		lua_pushstring(L, levelskytexture);
-		return 1;
-	} else if (fastcmp(word,"globallevelskytexture")) {
-		lua_pushstring(L, globallevelskytexture);
-		return 1;
-	} else if (fastcmp(word,"mapmusname")) {
-		lua_pushstring(L, mapmusname);
-		return 1;
-	} else if (fastcmp(word,"mapmusflags")) {
-		lua_pushinteger(L, mapmusflags);
-		return 1;
-	} else if (fastcmp(word,"mapmusposition")) {
-		lua_pushinteger(L, mapmusposition);
-		return 1;
-	} else if (fastcmp(word,"mapmusrng")) {
-		lua_pushinteger(L, mapmusrng);
-		return 1;
-	// local player variables, by popular request
-	} else if (fastcmp(word,"consoleplayer")) { // player controlling console (aka local player 1)
-		if (!addedtogame || consoleplayer < 0 || !playeringame[consoleplayer])
+#define ENUMITEM(name) global_##name,
+	GLOBALFIELDS(ENUMITEM)
+	NUMGLOBALFIELDS,
+};
+
+const char *const global_opt[] = {
+#define ENUMITEMNAME(name) #name,
+	GLOBALFIELDS(ENUMITEMNAME)
+	NULL,
+};
+
+int global_fields_ref = LUA_NOREF;
+
+// Moved here from lib_getenum.
+int LUA_PushGlobals(lua_State *L)
+{
+	enum global_e field = Lua_optoption(L, 2, -1, global_fields_ref);
+	lua_settop(L, 2);
+
+	switch (field)
+	{
+		case global_gamemap:
+			lua_pushinteger(L, lua_compatmode ? G_NativeMapToKart(gamemap) : gamemap);
+			return 1;
+		case global_udmf:
+			lua_pushboolean(L, udmf);
+			return 1;
+		case global_maptol:
+			lua_pushinteger(L, maptol);
+			return 1;
+		case global_circuitmap:
+			lua_pushboolean(L, circuitmap);
+			return 1;
+		case global_stoppedclock:
+			lua_pushboolean(L, stoppedclock);
+			return 1;
+		case global_netgame:
+			lua_pushboolean(L, netgame);
+			return 1;
+		case global_multiplayer:
+			lua_pushboolean(L, multiplayer);
+			return 1;
+		case global_modeattacking:
+			lua_pushboolean(L, modeattacking);
+			return 1;
+		case global_splitscreen:
+		{
+			// You may be wondering why?
+			// Kart lua scripts expects splitscreen to mean "number of split views"
+			// not "number of local players"
+			if (lua_compatmode)
+				lua_pushinteger(L, r_splitscreen);
+			else
+				lua_pushinteger(L, splitscreen);
+			return 1;
+		}
+		case global_gamecomplete:
+			lua_pushboolean(L, (gamecomplete != 0));
+			return 1;
+		case global_marathonmode:
+			lua_pushinteger(L, marathonmode);
+			return 1;
+		case global_devparm:
+			lua_pushboolean(L, devparm);
+			return 1;
+		case global_modifiedgame:
+			lua_pushboolean(L, modifiedgame && !savemoddata);
+			return 1;
+		case global_menuactive:
+			lua_pushboolean(L, menustack[0]);
+			return 1;
+		case global_paused:
+			lua_pushboolean(L, paused);
+			return 1;
+		case global_bluescore:
+			lua_pushinteger(L, bluescore);
+			return 1;
+		case global_redscore:
+			lua_pushinteger(L, redscore);
+			return 1;
+		case global_timelimit:
+			lua_pushinteger(L, timelimitintics);
+			return 1;
+		case global_pointlimit:
+			lua_pushinteger(L, cv_pointlimit.value);
+			return 1;
+		// begin map vars
+		case global_titlemap:
+			lua_pushstring(L, titlemap);
+			return 1;
+		case global_titlemapinaction:
+			lua_pushboolean(L, (titlemapinaction != TITLEMAP_OFF));
+			return 1;
+		case global_bootmap:
+			lua_pushstring(L, bootmap);
+			return 1;
+		case global_tutorialmap:
+			lua_pushstring(L, tutorialmap);
+			return 1;
+		case global_tutorialmode:
+			lua_pushboolean(L, tutorialmode);
+			return 1;
+		// end map vars
+		// begin CTF colors
+		case global_skincolor_redteam:
+			lua_pushinteger(L, skincolor_redteam);
+			return 1;
+		case global_skincolor_blueteam:
+			lua_pushinteger(L, skincolor_blueteam);
+			return 1;
+		case global_skincolor_redring:
+			lua_pushinteger(L, skincolor_redring);
+			return 1;
+		case global_skincolor_bluering:
+			lua_pushinteger(L, skincolor_bluering);
+			return 1;
+		// end CTF colors
+		// begin timers
+		case global_invulntics:
+			lua_pushinteger(L, invulntics);
+			return 1;
+		case global_sneakertics:
+			lua_pushinteger(L, sneakertics);
+			return 1;
+		case global_flashingtics:
+			lua_pushinteger(L, flashingtics);
+			return 1;
+		case global_tailsflytics:
+			lua_pushinteger(L, tailsflytics);
+			return 1;
+		case global_underwatertics:
+			lua_pushinteger(L, underwatertics);
+			return 1;
+		case global_spacetimetics:
+			lua_pushinteger(L, spacetimetics);
+			return 1;
+		case global_extralifetics:
+			lua_pushinteger(L, extralifetics);
+			return 1;
+		case global_nightslinktics:
+			lua_pushinteger(L, nightslinktics);
+			return 1;
+		case global_gameovertics:
+			lua_pushinteger(L, gameovertics);
+			return 1;
+		case global_ammoremovaltics:
+			lua_pushinteger(L, ammoremovaltics);
+			return 1;
+		// end timers
+		case global_gametype:
+			lua_pushinteger(L, gametype);
+			return 1;
+		case global_gametyperules:
+			lua_pushinteger(L, gametypes[gametype]->rules);
+			return 1;
+		case global_leveltime:
+			lua_pushinteger(L, leveltime);
+			return 1;
+		case global_introtime:
+			lua_pushinteger(L, introtime);
+			return 1;
+		case global_starttime:
+			lua_pushinteger(L, starttime);
+			return 1;
+		case global_curWeather:
+			lua_pushinteger(L, curWeather);
+			return 1;
+		case global_globalweather:
+			lua_pushinteger(L, globalweather);
+			return 1;
+		case global_levelskytexture:
+			lua_pushstring(L, levelskytexture);
+			return 1;
+		case global_globallevelskytexture:
+			lua_pushstring(L, globallevelskytexture);
+			return 1;
+		case global_mapmusname:
+			lua_pushstring(L, mapmusname);
+			return 1;
+		case global_mapmusflags:
+			lua_pushinteger(L, mapmusflags);
+			return 1;
+		case global_mapmusposition:
+			lua_pushinteger(L, mapmusposition);
+			return 1;
+		case global_mapmusrng:
+			lua_pushinteger(L, mapmusrng);
+			return 1;
+		// local player variables, by popular request
+		case global_consoleplayer: // player controlling console (aka local player 1)
+			if (!addedtogame || consoleplayer < 0 || !playeringame[consoleplayer] || dedicated)
+				return 0;
+			LUA_PushUserdata(L, &players[consoleplayer], META_PLAYER);
+			return 1;
+		case global_isserver:
+			lua_pushboolean(L, server);
+			return 1;
+		case global_isdedicatedserver:
+			lua_pushboolean(L, dedicated);
+			return 1;
+		// end local player variables
+		case global_server:
+			if ((!multiplayer || !netgame) && !playeringame[serverplayer])
+				return 0;
+			LUA_PushUserdata(L, &players[serverplayer], META_PLAYER);
+			return 1;
+		case global_gravity:
+			lua_pushinteger(L, gravity);
+			return 1;
+		case global_VERSION:
+			if (lua_compatmode)
+				lua_pushinteger(L, 1);
+			else
+				lua_pushinteger(L, VERSION);
+			return 1;
+		case global_SUBVERSION:
+			if (lua_compatmode)
+				lua_pushinteger(L, 6);
+			else
+				lua_pushinteger(L, SUBVERSION);
+			return 1;
+		case global_VERSIONSTRING:
+			lua_pushstring(L, VERSIONSTRING);
+			return 1;
+		case global_MAXSKINCOLORS:
+			if (lua_compatmode)
+				lua_pushinteger(L, numskincolors);
+			else
+				lua_pushinteger(L, MAXSKINCOLORS);
+			return 1;
+		case global_MAXTRANSLATIONS:
+			if (lua_compatmode)
+			{
+				lua_pushinteger(L, numskincolors);
+				return 1;
+			}
 			return 0;
-		LUA_PushUserdata(L, &players[consoleplayer], META_PLAYER);
-		return 1;
-	} else if (fastcmp(word,"isserver")) {
-		lua_pushboolean(L, server);
-		return 1;
-	} else if (fastcmp(word,"isdedicatedserver")) {
-		lua_pushboolean(L, dedicated);
-		return 1;
-	// end local player variables
-	} else if (fastcmp(word,"server")) {
-		if ((!multiplayer || !netgame) && !playeringame[serverplayer])
+		case global_gamespeed:
+			lua_pushinteger(L, gamespeed);
+			return 1;
+		case global_nummapboxes:
+			lua_pushinteger(L, nummapboxes);
+			return 1;
+		case global_numgotboxes:
+			lua_pushinteger(L, numgotboxes);
+			return 1;
+		case global_itembreaker:
+			lua_pushboolean(L, itembreaker);
+			return 1;
+		case global_battleprisons:
+			lua_pushboolean(L, itembreaker);
+			return 1;
+		case global_ringsactive:
+			lua_pushboolean(L, ringsactive);
+			return 1;
+		case global_stackingactive:
+			lua_pushboolean(L, stackingactive);
+			return 1;
+		case global_chainingactive:
+			lua_pushboolean(L, chainingactive);
+			return 1;
+		case global_slipdashactive:
+			lua_pushboolean(L, slipdashactive);
+			return 1;
+		case global_slopeboostactive:
+			lua_pushboolean(L, slopeboostactive);
+			return 1;
+		case global_draftingactive:
+			lua_pushboolean(L, draftingactive);
+			return 1;
+		case global_airdropactive:
+			lua_pushinteger(L, airdropactive);
+			return 1;
+		case global_bumpsparkactive:
+			lua_pushinteger(L, bumpsparkactive);
+			return 1;
+		case global_purpledriftactive:
+			lua_pushboolean(L, purpledriftactive);
+			return 1;
+		case global_recoverydashactive:
+			lua_pushboolean(L, recoverydashactive);
+			return 1;
+		case global_keepstuffactive:
+			lua_pushboolean(L, keepstuffactive);
+			return 1;
+		case global_itemlittering:
+			lua_pushboolean(L, itemlittering);
+			return 1;
+		case global_itempushing:
+			lua_pushboolean(L, itempushing); // hmm... i think this should be a boolean
+			return 1;
+		case global_trailslow_active:
+		case global_trailslowactive:
+			lua_pushboolean(L, trailslow_active); // I agree!
+			return 1;
+		case global_playerbumpactive:
+			lua_pushinteger(L, playerbumpactive);
+			return 1;
+		case global_hyubgone:
+			lua_pushinteger(L, K_GetKartResult("hyudoro")->cooldown);
+			return 1;
+		case global_encoremode:
+			lua_pushboolean(L, encoremode);
+			return 1;
+		case global_franticitems:
+			lua_pushboolean(L, franticitems);
+			return 1;
+		case global_comeback:
+			lua_pushboolean(L, comeback);
+			return 1;
+		case global_wantedcalcdelay:
+			lua_pushinteger(L, wantedcalcdelay);
+			return 1;
+		case global_indirectitemcooldown:
+			lua_pushinteger(L, K_GetIndirectItemCooldown());
+			return 1;
+		case global_thwompsactive:
+			lua_pushboolean(L, thwompsactive);
+			return 1;
+		case global_lastLowestLap:
+			lua_pushinteger(L, lastLowestLap);
+			return 1;
+		case global_spbplace:
+			lua_pushinteger(L, spbplace);
+			return 1;
+		case global_mapobjectscale:
+			lua_pushinteger(L, mapobjectscale);
+			return 1;
+		case global_numlaps:
+			lua_pushinteger(L, numlaps);
+			return 1;
+		case global_racecountdown:
+			lua_pushinteger(L, racecountdown);
+			return 1;
+		case global_exitcountdown:
+			lua_pushinteger(L, exitcountdown);	// This name is pretty dumb. Hence why we'll prefer more descriptive names at least in Lua...
+			return 1;
+		case global_replayplayback:
+			lua_pushboolean(L, demo.playback);
+			return 1;
+		case global_gamestate:
+			lua_pushinteger(L, gamestate);
+			return 1;
+		case global_compatmode:
+			lua_pushboolean(L, lua_compatmode);
+			return 1;
+		case global_hyudorotime:
+			lua_pushinteger(L, hyudorotime);
+			return 1;
+		case global_stealtime:
+			lua_pushinteger(L, stealtime);
+			return 1;
+		case global_sneakertime:
+			lua_pushinteger(L, sneakertime);
+			return 1;
+		case global_waterpaneltime:
+			lua_pushinteger(L, waterpaneltime);
+			return 1;
+		case global_bubbletime:
+			lua_pushinteger(L, bubbletime);
+			return 1;
+		case global_flametime:
+			lua_pushinteger(L, flametime);
+			return 1;
+		case global_comebacktime:
+			lua_pushinteger(L, comebacktime);
+			return 1;
+		case global_greasetics:
+			lua_pushinteger(L, greasetics);
+			return 1;
+		case global_wipeoutslowtime:
+			lua_pushinteger(L, wipeoutslowtime);
+			return 1;
+		case global_wantedreduce:
+			lua_pushinteger(L, wantedreduce);
+			return 1;
+		case global_wantedfrequency:
+			lua_pushinteger(L, wantedfrequency);
+			return 1;
+		case global_mapnamespace:
+			lua_pushstring(L, P_MapNamespaceString(mapnamespace));
+			return 1;
+		default:
 			return 0;
-		LUA_PushUserdata(L, &players[serverplayer], META_PLAYER);
-		return 1;
-	} else if (fastcmp(word,"gravity")) {
-		lua_pushinteger(L, gravity);
-		return 1;
-	} else if (fastcmp(word,"VERSION")) {
-		if (lua_compatmode)
-			lua_pushinteger(L, 1);
-		else
-			lua_pushinteger(L, VERSION);
-		return 1;
-	} else if (fastcmp(word,"SUBVERSION")) {
-		if (lua_compatmode)
-			lua_pushinteger(L, 6);
-		else
-			lua_pushinteger(L, SUBVERSION);
-		return 1;
-	} else if (fastcmp(word,"VERSIONSTRING")) {
-		lua_pushstring(L, VERSIONSTRING);
-		return 1;
-	} else if (fastcmp(word,"MAXSKINCOLORS")) {
-		if (lua_compatmode)
-			lua_pushinteger(L, numskincolors);
-		else
-			lua_pushinteger(L, MAXSKINCOLORS);
-		return 1;
-	} else if (fastcmp(word,"MAXTRANSLATIONS")) {
-		if (lua_compatmode)
-			lua_pushinteger(L, numskincolors);
-		return 1;
-	} else if (fastcmp(word,"gamespeed")) {
-		lua_pushinteger(L, gamespeed);
-		return 1;
-	} else if (fastcmp(word,"nummapboxes")) {
-		lua_pushinteger(L, nummapboxes);
-		return 1;
-	} else if (fastcmp(word,"numgotboxes")) {
-		lua_pushinteger(L, numgotboxes);
-		return 1;
-	} else if (fastcmp(word,"itembreaker")) {
-		lua_pushboolean(L, itembreaker);
-		return 1;
-	} else if (fastcmp(word,"battleprisons")) {
-		lua_pushboolean(L, itembreaker);
-		return 1;
-	} else if (fastcmp(word,"ringsactive")) {
-		lua_pushboolean(L, ringsactive);
-		return 1;
-	} else if (fastcmp(word,"stackingactive")) {
-		lua_pushboolean(L, stackingactive);
-		return 1;
-	} else if (fastcmp(word,"chainingactive")) {
-		lua_pushboolean(L, chainingactive);
-		return 1;
-	} else if (fastcmp(word,"slipdashactive")) {
-		lua_pushboolean(L, slipdashactive);
-		return 1;
-	} else if (fastcmp(word,"slopeboostactive")) {
-		lua_pushboolean(L, slopeboostactive);
-		return 1;
-	} else if (fastcmp(word,"draftingactive")) {
-		lua_pushboolean(L, draftingactive);
-		return 1;
-	} else if (fastcmp(word,"airdropactive")) {
-		lua_pushinteger(L, airdropactive);
-		return 1;
-	} else if (fastcmp(word,"bumpsparkactive")) {
-		lua_pushinteger(L, bumpsparkactive);
-		return 1;
-	} else if (fastcmp(word,"purpledriftactive")) {
-		lua_pushboolean(L, purpledriftactive);
-		return 1;
-	} else if (fastcmp(word,"recoverydashactive")) {
-		lua_pushboolean(L, recoverydashactive);
-		return 1;
-	} else if (fastcmp(word,"keepstuffactive")) {
-		lua_pushboolean(L, keepstuffactive);
-		return 1;
-	} else if (fastcmp(word,"itemlittering")) {
-		lua_pushboolean(L, itemlittering);
-		return 1;
-	} else if (fastcmp(word,"itempushing")) {
-		lua_pushboolean(L, itempushing); // hmm... i think this should be a boolean
-		return 1;
-	} else if (fastcmp(word,"trailslow_active") || fastcmp(word,"trailslowactive")) {
-		lua_pushboolean(L, trailslow_active); // I agree!
-		return 1;
-	} else if (fastcmp(word,"playerbumpactive")) {
-		lua_pushinteger(L, playerbumpactive);
-		return 1;
-	} else if (fastcmp(word,"hyubgone")) {
-		lua_pushinteger(L, K_GetKartResult("hyudoro")->cooldown);
-		return 1;
-	} else if (fastcmp(word,"encoremode")) {
-		lua_pushboolean(L, encoremode);
-		return 1;
-	} else if (fastcmp(word,"franticitems")) {
-		lua_pushboolean(L, franticitems);
-		return 1;
-	} else if (fastcmp(word,"comeback")) {
-		lua_pushboolean(L, comeback);
-		return 1;
-	} else if (fastcmp(word,"wantedcalcdelay")) {
-		lua_pushinteger(L, wantedcalcdelay);
-		return 1;
-	} else if (fastcmp(word,"indirectitemcooldown")) {
-		lua_pushinteger(L, K_GetIndirectItemCooldown());
-		return 1;
-	} else if (fastcmp(word,"thwompsactive")) {
-		lua_pushboolean(L, thwompsactive);
-		return 1;
-	} else if (fastcmp(word,"lastLowestLap")) {
-		lua_pushinteger(L, lastLowestLap);
-		return 1;
-	} else if (fastcmp(word,"spbplace")) {
-		lua_pushinteger(L, spbplace);
-		return 1;
-	} else if (fastcmp(word,"mapobjectscale")) {
-		lua_pushinteger(L, mapobjectscale);
-		return 1;
-	} else if (fastcmp(word,"numlaps")) {
-		lua_pushinteger(L, numlaps);
-		return 1;
-	} else if (fastcmp(word,"racecountdown")) {
-		lua_pushinteger(L, racecountdown);
-		return 1;
-	} else if (fastcmp(word,"exitcountdown")) {
-		lua_pushinteger(L, exitcountdown);	// This name is pretty dumb. Hence why we'll prefer more descriptive names at least in Lua...
-		return 1;
-	} else if (fastcmp(word,"replayplayback")) {
-		lua_pushboolean(L, demo.playback);
-		return 1;
-	} else if (fastcmp(word, "gamestate")) {
-		lua_pushinteger(L, gamestate);
-		return 1;
-	} else if (fastcmp(word, "compatmode")) {
-		lua_pushboolean(L, lua_compatmode);
-		return 1;
-	} else if (fastcmp(word, "hyudorotime")) {
-		lua_pushinteger(L, hyudorotime);
-		return 1;
-	} else if (fastcmp(word, "stealtime")) {
-		lua_pushinteger(L, stealtime);
-		return 1;
-	} else if (fastcmp(word, "sneakertime")) {
-		lua_pushinteger(L, sneakertime);
-		return 1;
-	} else if (fastcmp(word, "waterpaneltime")) {
-		lua_pushinteger(L, waterpaneltime);
-		return 1;
-	} else if (fastcmp(word, "bubbletime")) {
-		lua_pushinteger(L, bubbletime);
-		return 1;
-	} else if (fastcmp(word, "flametime")) {
-		lua_pushinteger(L, flametime);
-		return 1;
-	} else if (fastcmp(word, "comebacktime")) {
-		lua_pushinteger(L, comebacktime);
-		return 1;
-	} else if (fastcmp(word, "greasetics")) {
-		lua_pushinteger(L, greasetics);
-		return 1;
-	} else if (fastcmp(word, "wipeoutslowtime")) {
-		lua_pushinteger(L, wipeoutslowtime);
-		return 1;
-	} else if (fastcmp(word, "wantedreduce")) {
-		lua_pushinteger(L, wantedreduce);
-		return 1;
-	} else if (fastcmp(word, "wantedfrequency")) {
-		lua_pushinteger(L, wantedfrequency);
-		return 1;
-	} else if (fastcmp(word, "mapnamespace")) {
-		lua_pushstring(L, P_MapNamespaceString(mapnamespace));
-		return 1;
 	}
 
 	return 0;
 }
 
 // See the above.
-int LUA_WriteGlobals(lua_State *L, const char *word)
+int LUA_WriteGlobals(lua_State *L)
 {
-	if (fastcmp(word, "redscore"))
-		redscore = (UINT32)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "bluescore"))
-		bluescore = (UINT32)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "skincolor_redteam"))
-		skincolor_redteam = (UINT16)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "skincolor_blueteam"))
-		skincolor_blueteam = (UINT16)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "skincolor_redring"))
-		skincolor_redring = (UINT16)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "skincolor_bluering"))
-		skincolor_bluering = (UINT16)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "emeralds"))
-		emeralds = (UINT16)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "token"))
-		token = (UINT32)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "gravity"))
-		gravity = (fixed_t)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "stoppedclock"))
-		stoppedclock = luaL_checkboolean(L, 2);
-	/*
-	// KART TODO: displayplayers is a table...
-	else if (fastcmp(word, "displayplayer"))
+	enum global_e field = Lua_optoption(L, 1, -1, global_fields_ref);
+	lua_settop(L, 2);
+
+	switch (field)
 	{
-		player_t *player = *((player_t **)luaL_checkudata(L, 2, META_PLAYER));
+		case global_redscore:
+			redscore = (UINT32)luaL_checkinteger(L, 2);
+			break;
+		case global_bluescore:
+			bluescore = (UINT32)luaL_checkinteger(L, 2);
+			break;
+		case global_skincolor_redteam:
+			skincolor_redteam = (UINT16)luaL_checkinteger(L, 2);
+			break;
+		case global_skincolor_blueteam:
+			skincolor_blueteam = (UINT16)luaL_checkinteger(L, 2);
+			break;
+		case global_skincolor_redring:
+			skincolor_redring = (UINT16)luaL_checkinteger(L, 2);
+			break;
+		case global_skincolor_bluering:
+			skincolor_bluering = (UINT16)luaL_checkinteger(L, 2);
+			break;
+		case global_emeralds:
+			emeralds = (UINT16)luaL_checkinteger(L, 2);
+			break;
+		case global_token:
+			token = (UINT32)luaL_checkinteger(L, 2);
+			break;
+		case global_gravity:
+			gravity = (fixed_t)luaL_checkinteger(L, 2);
+			break;
+		case global_stoppedclock:
+			stoppedclock = luaL_checkboolean(L, 2);
+			break;
+		case global_mapmusname:
+		{
+			size_t strlength;
+			const char *str = luaL_checklstring(L, 2, &strlength);
 
-		if (player)
-			displayplayer = player - players;
+			if (strlength > 6)
+				return luaL_error(L, "string length out of range (maximum 6 characters)");
+
+			if (strlen(str) < strlength)
+				return luaL_error(L, "string must not contain embedded zeros!");
+
+			strncpy(mapmusname, str, strlength);
+			break;
+		}
+		case global_mapmusflags:
+			mapmusflags = (UINT16)luaL_checkinteger(L, 2);
+			break;
+		case global_mapmusrng:
+			mapmusrng = (UINT8)luaL_checkinteger(L, 2);
+			break;
+		// SRB2Kart
+		case global_racecountdown:
+			racecountdown = (tic_t)luaL_checkinteger(L, 2);
+			break;
+		case global_exitcountdown:
+			exitcountdown = (tic_t)luaL_checkinteger(L, 2);
+			break;
+		case global_indirectitemcooldown:
+			K_SetIndirectItemCooldown(luaL_checkinteger(L, 2));
+			break;
+		case global_hyubgone:
+			K_GetKartResult("hyudoro")->cooldown = (tic_t)luaL_checkinteger(L, 2);
+			break;
+		case global_starttime:
+			starttime = (tic_t)luaL_checkinteger(L, 2);
+			break;
+		case global_introtime:
+			introtime = (tic_t)luaL_checkinteger(L, 2);
+			break;
+		case global_itembreaker:
+		case global_battleprisons:
+			itembreaker = luaL_checkboolean(L, 2);
+			break;
+		case global_ringsactive:
+			ringsactive = luaL_checkboolean(L, 2);
+			break;
+		case global_stackingactive:
+			stackingactive = luaL_checkboolean(L, 2);
+			break;
+		case global_chainingactive:
+			chainingactive = luaL_checkboolean(L, 2);
+			break;
+		case global_slipdashactive:
+			slipdashactive = luaL_checkboolean(L, 2);
+			break;
+		case global_slopeboostactive:
+			slopeboostactive = luaL_checkboolean(L, 2);
+			break;
+		case global_draftingactive:
+			draftingactive = luaL_checkboolean(L, 2);
+			break;
+		case global_airdropactive:
+			airdropactive = luaL_checkinteger(L, 2);
+			break;
+		case global_bumpsparkactive:
+			bumpsparkactive = luaL_checkinteger(L, 2);
+			break;
+		case global_purpledriftactive:
+			purpledriftactive = luaL_checkboolean(L, 2);
+			break;
+		case global_recoverydashactive:
+			recoverydashactive = luaL_checkboolean(L, 2);
+			break;
+		case global_itemlittering:
+			itemlittering = luaL_checkboolean(L, 2);
+			break;
+		case global_keepstuffactive:
+			keepstuffactive = luaL_checkboolean(L, 2);
+			break;
+		case global_itempushing:
+			itempushing = luaL_checkboolean(L, 2);
+			break;
+		case global_trailslowactive:
+			trailslow_active = luaL_checkboolean(L, 2);
+			break;
+		case global_trailslow_active:
+			trailslow_active = luaL_checkboolean(L, 2);
+			break;
+		case global_playerbumpactive:
+			playerbumpactive = (playerbumptype_t)luaL_checkinteger(L, 2);
+			break;
+		case global_gamespeed:
+			gamespeed = (UINT8)luaL_checkinteger(L, 2);
+			break;
+		case global_nummapboxes:
+			nummapboxes = (INT32)luaL_checkinteger(L, 2);
+			break;
+		case global_numgotboxes:
+			numgotboxes = (INT32)luaL_checkinteger(L, 2);
+			break;
+		case global_hyudorotime:
+			hyudorotime = (INT32)luaL_checkinteger(L, 2);
+			break;
+		case global_stealtime:
+			stealtime = (INT32)luaL_checkinteger(L, 2);
+			break;
+		case global_sneakertime:
+			sneakertime = (INT32)luaL_checkinteger(L, 2);
+			break;
+		case global_waterpaneltime:
+			waterpaneltime = (INT32)luaL_checkinteger(L, 2);
+			break;
+		case global_bubbletime:
+			bubbletime = (INT32)luaL_checkinteger(L, 2);
+			break;
+		case global_flametime:
+			flametime = (INT32)luaL_checkinteger(L, 2);
+			break;
+		case global_comebacktime:
+			comebacktime = (INT32)luaL_checkinteger(L, 2);
+			break;
+		case global_greasetics:
+			greasetics = (INT32)luaL_checkinteger(L, 2);
+			break;
+		case global_wipeoutslowtime:
+			wipeoutslowtime = (INT32)luaL_checkinteger(L, 2);
+			break;
+		case global_wantedreduce:
+			wantedreduce = (INT32)luaL_checkinteger(L, 2);
+			break;
+		case global_wantedfrequency:
+			wantedfrequency = (INT32)luaL_checkinteger(L, 2);
+			break;
+		case global_compatmode:
+			lua_compatmode = luaL_checkboolean(L, 2); // you'd BETTER not forget to change it back afterwards!
+			break;
+		default:
+			return 0;
 	}
-	*/
-	else if (fastcmp(word, "mapmusname"))
-	{
-		size_t strlength;
-		const char *str = luaL_checklstring(L, 2, &strlength);
 
-		if (strlength > 6)
-			return luaL_error(L, "string length out of range (maximum 6 characters)");
-
-		if (strlen(str) < strlength)
-			return luaL_error(L, "string must not contain embedded zeros!");
-
-		strncpy(mapmusname, str, strlength);
-	}
-	else if (fastcmp(word, "mapmusflags"))
-		mapmusflags = (UINT16)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "mapmusrng"))
-		mapmusrng = (UINT8)luaL_checkinteger(L, 2);
-	// SRB2Kart
-	else if (fastcmp(word,"racecountdown"))
-		racecountdown = (tic_t)luaL_checkinteger(L, 2);
-	else if (fastcmp(word,"exitcountdown"))
-		exitcountdown = (tic_t)luaL_checkinteger(L, 2);
-	else if (fastcmp(word,"indirectitemcooldown"))
-		K_SetIndirectItemCooldown(luaL_checkinteger(L, 2));
-	else if (fastcmp(word,"hyubgone"))
-		K_GetKartResult("hyudoro")->cooldown = (tic_t)luaL_checkinteger(L, 2);
-	else if (fastcmp(word,"starttime"))
-		starttime = (tic_t)luaL_checkinteger(L, 2);
-	else if (fastcmp(word,"introtime"))
-		introtime = (tic_t)luaL_checkinteger(L, 2);
-	else if (fastcmp(word,"itembreaker"))
-		itembreaker = luaL_checkboolean(L, 2);
-	else if (fastcmp(word,"battleprisons"))
-		itembreaker = luaL_checkboolean(L, 2);
-	else if (fastcmp(word,"ringsactive"))
-		ringsactive = luaL_checkboolean(L, 2);
-	else if (fastcmp(word,"stackingactive"))
-		stackingactive = luaL_checkboolean(L, 2);
-	else if (fastcmp(word,"chainingactive"))
-		chainingactive = luaL_checkboolean(L, 2);
-	else if (fastcmp(word,"slipdashactive"))
-		slipdashactive = luaL_checkboolean(L, 2);
-	else if (fastcmp(word,"slopeboostactive"))
-		slopeboostactive = luaL_checkboolean(L, 2);
-	else if (fastcmp(word,"draftingactive"))
-		draftingactive = luaL_checkboolean(L, 2);
-	else if (fastcmp(word,"airdropactive"))
-		airdropactive = luaL_checkinteger(L, 2);
-	else if (fastcmp(word,"bumpsparkactive"))
-		bumpsparkactive = luaL_checkinteger(L, 2);
-	else if (fastcmp(word,"purpledriftactive"))
-		purpledriftactive = luaL_checkboolean(L, 2);
-	else if (fastcmp(word,"recoverydashactive"))
-		recoverydashactive = luaL_checkboolean(L, 2);
-	else if (fastcmp(word,"itemlittering"))
-		itemlittering = luaL_checkboolean(L, 2);
-	else if (fastcmp(word,"keepstuffactive"))
-		keepstuffactive = luaL_checkboolean(L, 2);
-	else if (fastcmp(word,"itempushing"))
-		itempushing = luaL_checkboolean(L, 2);
-	else if (fastcmp(word,"trailslowactive"))
-		trailslow_active = luaL_checkboolean(L, 2);
-	else if (fastcmp(word,"trailslow_active"))
-		trailslow_active = luaL_checkboolean(L, 2);
-	else if (fastcmp(word,"playerbumpactive"))
-		playerbumpactive = (playerbumptype_t)luaL_checkinteger(L, 2);
-	else if (fastcmp(word,"gamespeed"))
-		gamespeed = (UINT8)luaL_checkinteger(L, 2);
-	else if (fastcmp(word,"nummapboxes"))
-		nummapboxes = (INT32)luaL_checkinteger(L, 2);
-	else if (fastcmp(word,"numgotboxes"))
-		numgotboxes = (INT32)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "hyudorotime"))
-		hyudorotime = (INT32)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "stealtime"))
-		stealtime = (INT32)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "sneakertime"))
-		sneakertime = (INT32)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "waterpaneltime"))
-		waterpaneltime = (INT32)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "bubbletime"))
-		bubbletime = (INT32)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "flametime"))
-		flametime = (INT32)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "comebacktime"))
-		comebacktime = (INT32)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "greasetics"))
-		greasetics = (INT32)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "wipeoutslowtime"))
-		wipeoutslowtime = (INT32)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "wantedreduce"))
-		wantedreduce = (INT32)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "wantedfrequency"))
-		wantedfrequency = (INT32)luaL_checkinteger(L, 2);
-	else if (fastcmp(word, "compatmode"))
-		lua_compatmode = luaL_checkboolean(L, 2); // you'd BETTER not forget to change it back afterwards!
-	else
-		return 0;
 
 	// Global variable set, so return and don't error.
 	return 1;
@@ -695,7 +887,7 @@ static int setglobals(lua_State *L)
 		return 0;
 	}
 
-	if (LUA_WriteGlobals(L, csname))
+	if (LUA_WriteGlobals(L))
 		return 0;
 
 	Z_Free(name);
@@ -1960,19 +2152,20 @@ static void UnArchiveTables(UINT8 **p, boolean compat)
 	}
 }
 
-void LUA_Step(void)
-{
-	if (!gL)
-		return;
+// void LUA_Step(void)
+// {
+// 	if (!gL)
+// 		return;
 
-	if (lua_gettop(gL) != 0)
-	{
-		// TODO: Fix lua stack garbage so print can be always on.
-		//CONS_Alert(CONS_WARNING, "Eek, there is garbage on lua stack!\n");
-		lua_settop(gL, 0);
-		lua_gc(gL, LUA_GCSTEP, 1);
-	}
-}
+// 	if (lua_gettop(gL) != 0)
+// 	{
+// 		// TODO: Fix lua stack garbage so print can be always on.
+// 		TracyCMessage("garbage on lua stack!", strlen("garbage on lua stack!"));
+// 		CONS_Alert(CONS_WARNING, "Eek, there is garbage on lua stack!\n");
+// 		lua_settop(gL, 0);
+// 		lua_gc(gL, LUA_GCSTEP, 1);
+// 	}
+// }
 
 void LUA_Sync(savebuffer_t *save, boolean network, boolean compat)
 {
@@ -2080,15 +2273,43 @@ void LUA_RegisterUserdataMetatable(
 }
 
 // For mobj_t, player_t, etc. to take custom variables.
-int Lua_optoption(lua_State *L, int narg,
-	const char *def, const char *const lst[])
+int Lua_optoption(lua_State *L, int narg, int def, int list_ref)
 {
-	const char *name = (def) ? luaL_optstring(L, narg, def) :  luaL_checkstring(L, narg);
+	int result = -1;
+
+	if (lua_isnoneornil(L, narg))
+		return def;
+
+	I_Assert(lua_checkstack(L, 2));
+	luaL_checkstring(L, narg);
+
+	lua_rawgeti(L, LUA_REGISTRYINDEX, list_ref);
+	I_Assert(lua_istable(L, -1));
+	lua_pushvalue(L, narg);
+	lua_rawget(L, -2);
+
+	if (lua_isnumber(L, -1))
+		result = lua_tointeger(L, -1);
+
+	lua_pop(L, 2); // Pop result and fields table
+
+	return result;
+}
+
+
+int Lua_CreateFieldTable(lua_State *L, const char *const lst[])
+{
 	int i;
-	for (i=0; lst[i]; i++)
-		if (fastcmp(lst[i], name))
-			return i;
-	return -1;
+
+	lua_newtable(L);
+	for (i = 0; lst[i] != NULL; i++)
+	{
+		lua_pushstring(L, lst[i]);
+		lua_pushinteger(L, i);
+		lua_settable(L, -3);
+	}
+
+	return luaL_ref(L, LUA_REGISTRYINDEX);
 }
 
 void LUA_PushTaggableObjectArray

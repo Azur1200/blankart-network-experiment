@@ -77,6 +77,7 @@ struct playersort_t
 	char string[48];
 	INT32 num;
 	const char *name;
+	char clan;
 };
 
 //------------------------------------

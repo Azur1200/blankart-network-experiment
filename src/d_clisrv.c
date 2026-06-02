@@ -106,7 +106,7 @@ boolean nodownload = false;
 boolean serverrunning = false;
 boolean connectedtodedicated = false;
 INT32 serverplayer = 0;
-char motd[254], server_context[8]; // Message of the Day, Unique Context (even without Mumble support)
+char server_context[8]; // Unique Context (even without Mumble support)
 
 UINT8 playerconsole[MAXPLAYERS];
 plrinfo playerinfo[MAXPLAYERINFO];
@@ -183,6 +183,7 @@ SINT8 joinnode = 0; // used for CL_VIEWSERVER
 char connectedservername[MAXSERVERNAME];
 char connectedservercontact[MAXSERVERCONTACT];
 char connectedserverdescription[MAXSERVERDESCRIPTION];
+char connectedservermotd[MAXSERVERMOTD];
 
 /// \brief do we accept new players?
 /// \todo WORK!
@@ -3976,6 +3977,7 @@ void SV_ResetServer(void)
 	// clear server_context
 	memset(server_context, '-', 8);
 
+	memset(connectedservermotd, 0, MAXSERVERNAME);
 	memset(connectedservername, 0, MAXSERVERNAME);
 	memset(connectedservercontact, 0, MAXSERVERCONTACT);
 	memset(connectedserverdescription, 0, MAXSERVERDESCRIPTION);
@@ -4183,8 +4185,8 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 		HU_AddChatText(joinmsg, false);
 	}
 
-	if (server && multiplayer && motd[0] != '\0')
-		COM_BufAddText(va("sayto %d %s\n", newplayernum, motd));
+	if (server && multiplayer && connectedservermotd[0] != '\0')
+		COM_BufAddText(va("sayto %d %s\n", newplayernum, connectedservermotd));
 
 	LUA_HookInt(newplayernum, HOOK(PlayerJoin));
 
@@ -4851,6 +4853,7 @@ void ServerInfoUpdateSend(void)
 		// Do Shit
 		if (nodeingame[n])
 		{
+			strncpy(netbuffer->u.serverinfoupdate.servermotd, connectedservermotd, MAXSERVERMOTD);
 			CopyCaretColors(netbuffer->u.serverinfoupdate.servername, cv_servername.string, MAXSERVERNAME);
 			CopyCaretColors(netbuffer->u.serverinfoupdate.servercontact, cv_server_contact.string, MAXSERVERCONTACT);
 			strncpy(netbuffer->u.serverinfoupdate.serverdescription, connectedserverdescription, MAXSERVERDESCRIPTION);
@@ -4871,6 +4874,7 @@ static void PT_ServerInfoUpdate(SINT8 node)
 	if ((size_t)doomcom->datalength < sizeof(netbuffer->u.serverinfoupdate))/* ignore partial sends */
 		return;
 
+	strncpy(connectedservermotd, netbuffer->u.serverinfoupdate.servermotd, MAXSERVERMOTD);
 	CopyCaretColors(connectedservername, netbuffer->u.serverinfoupdate.servername, MAXSERVERNAME);
 	CopyCaretColors(connectedservercontact, netbuffer->u.serverinfoupdate.servercontact, MAXSERVERCONTACT);
 	strncpy(connectedserverdescription, netbuffer->u.serverinfoupdate.serverdescription, MAXSERVERDESCRIPTION);

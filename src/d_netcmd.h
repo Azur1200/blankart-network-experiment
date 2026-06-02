@@ -229,6 +229,7 @@ extern consvar_t cv_kartslopeboost;
 extern consvar_t cv_kartinvintheme;
 extern consvar_t cv_kartinvindamage;
 extern consvar_t cv_kartsmonitordist;
+extern consvar_t cv_kartsmonitor_congadist;
 extern consvar_t cv_kartsmonitor_decaydist;
 extern consvar_t cv_kartsmonitor_decaytime;
 
@@ -244,17 +245,20 @@ extern consvar_t cv_kartattraction_aoedmg;
 extern consvar_t cv_kartattraction_aoeemp;
 extern consvar_t cv_kartaltshrink_arrowbullet;
 extern consvar_t cv_kartaltshrink_arrowbulletthres;
+extern consvar_t cv_kartaltshrink_runneranger;
 
 extern consvar_t cv_kartairsquish;
 
 extern consvar_t cv_kartairdrop;
 
 extern consvar_t cv_kartairthrust;
-extern consvar_t cv_kartairthrust_reductionrate;
+extern consvar_t cv_kartairthrust_reductionrate, cv_kartairthrust_flashreductionrate;
 extern consvar_t cv_kartairthrust_power1;
 extern consvar_t cv_kartairthrust_power2;
 extern consvar_t cv_kartairthrust_power3;
 extern consvar_t cv_kartairthrust_power4;
+
+extern consvar_t cv_kartairsuperring_reductionrate;
 
 extern consvar_t cv_kartwaterskiplock;
 
@@ -360,31 +364,32 @@ typedef enum
 	XD_RANDOMSEED,  // 14
 	XD_RUNSOC,      // 15
 	XD_REQADDFILE,  // 16
-	XD_SETMOTD,     // 17
-	XD_RESPAWN,     // 18
-	XD_DEMOTED,     // 19
-	XD_LUACMD,      // 20
-	XD_LUAVAR,      // 21
-	XD_LUAFILE,     // 22
+	XD_RESPAWN,     // 17
+	XD_DEMOTED,     // 18
+	XD_LUACMD,      // 19
+	XD_LUAVAR,      // 20
+	XD_LUAFILE,     // 21
 
 	// SRB2Kart
-	XD_SETUPVOTE,   // 23
-	XD_MODIFYVOTE,  // 24
-	XD_PICKVOTE,    // 25
-	XD_REMOVEPLAYER,// 26
-	XD_POWERLEVEL,  // 27
-	XD_PARTYINVITE, // 28
-	XD_ACCEPTPARTYINVITE, // 29
-	XD_LEAVEPARTY,  // 30
-	XD_CANCELPARTYINVITE, // 31
-	XD_ADDBOT,      // 32
-	XD_DISCORD,     // 33
-	XD_PLAYSOUND,   // 34
-	XD_SCHEDULETASK, // 35
-	XD_SCHEDULECLEAR, // 36
-	XD_AUTOMATE,    // 37
-	XD_CHEAT,       // 38
-	XD_MAPQUEUE,	// 39
+	XD_SETUPVOTE,   // 22
+	XD_MODIFYVOTE,  // 23
+	XD_PICKVOTE,    // 24
+	XD_REMOVEPLAYER,// 25
+	XD_POWERLEVEL,  // 26
+	XD_PARTYINVITE, // 27
+	XD_ACCEPTPARTYINVITE, // 28
+	XD_LEAVEPARTY,  // 29
+	XD_CANCELPARTYINVITE, // 30
+	XD_ADDBOT,      // 31
+	XD_DISCORD,     // 32
+	XD_PLAYSOUND,   // 33
+	XD_SCHEDULETASK, // 34
+	XD_SCHEDULECLEAR, // 35
+	XD_AUTOMATE,    // 36
+	XD_CHEAT,       // 37
+	XD_MAPQUEUE,	// 38
+	XD_CLANTAGSET,	// 39
+	XD_CLANTAGCLEAR,// 40
 
 	MAXNETXCMD
 } netxcmd_t;

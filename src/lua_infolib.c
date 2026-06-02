@@ -1385,6 +1385,8 @@ static int lib_getSfxInfo(lua_State *L)
 	return 1;
 }
 
+int sfxinfow_fields_ref = LUA_NOREF;
+
 // stack: dummy, S_sfx[] table index, table of values to set.
 static int lib_setSfxInfo(lua_State *L)
 {
@@ -1413,7 +1415,7 @@ static int lib_setSfxInfo(lua_State *L)
 		if (lua_isnumber(L, 2))
 			i = lua_tointeger(L, 2) - 1; // lua is one based, this enum is zero based.
 		else
-			i = luaL_checkoption(L, 2, NULL, sfxinfo_wopt);
+			i = Lua_optoption(L, 2, -1, sfxinfow_fields_ref);
 
 		switch(i)
 		{
@@ -1447,11 +1449,13 @@ static int lib_sfxlen(lua_State *L)
 	return 1;
 }
 
+int sfxinfor_fields_ref = LUA_NOREF;
+
 // sfxinfo_t *, field
 static int sfxinfo_get(lua_State *L)
 {
 	sfxinfo_t *sfx = *((sfxinfo_t **)luaL_checkudata(L, 1, META_SFXINFO));
-	enum sfxinfo_read field = luaL_checkoption(L, 2, NULL, sfxinfo_ropt);
+	enum sfxinfo_read field = Lua_optoption(L, 2, -1, sfxinfor_fields_ref);
 
 	I_Assert(sfx != NULL);
 
@@ -1498,7 +1502,7 @@ static int sfxinfo_get(lua_State *L)
 static int sfxinfo_set(lua_State *L)
 {
 	sfxinfo_t *sfx = *((sfxinfo_t **)luaL_checkudata(L, 1, META_SFXINFO));
-	enum sfxinfo_write field = luaL_checkoption(L, 2, NULL, sfxinfo_wopt);
+	enum sfxinfo_write field = Lua_optoption(L, 2, -1, sfxinfow_fields_ref);
 
 	if (hud_running)
 		return luaL_error(L, "Do not alter S_sfx in HUD rendering code!");
@@ -2021,6 +2025,9 @@ int LUA_InfoLib(lua_State *L)
 	// index of globally available Lua actions by function name
 	lua_newtable(L);
 	lua_setfield(L, LUA_REGISTRYINDEX, LREG_ACTIONS);
+
+	sfxinfow_fields_ref = Lua_CreateFieldTable(L, sfxinfo_wopt);
+	sfxinfor_fields_ref = Lua_CreateFieldTable(L, sfxinfo_ropt);
 
 	luaL_newmetatable(L, META_STATE);
 		lua_pushcfunction(L, state_get);

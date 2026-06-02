@@ -3604,7 +3604,12 @@ INT32 V_DrawPingNum(INT32 x, INT32 y, INT32 flags, INT32 num, const UINT8 *color
 
 INT32 V_DrawPingNumAtFixed(fixed_t x, fixed_t y, INT32 flags, INT32 num, const UINT8 *colormap)
 {
-	INT32 w = SHORT(fontv[PINGNUM_FONT].font[0]->width);	// this SHOULD always be 5 but I guess custom graphics exist.
+	return V_DrawPingNumScaled(x, y, FRACUNIT, flags, num, colormap);
+}
+
+INT32 V_DrawPingNumScaled(fixed_t x, fixed_t y, fixed_t scale, INT32 flags, INT32 num, const UINT8 *colormap)
+{
+	INT32 w = SHORT(fontv[PINGNUM_FONT].font[0]->width);
 
 	if (flags & V_NOSCALESTART)
 		w *= vid.dup;
@@ -3615,8 +3620,8 @@ INT32 V_DrawPingNumAtFixed(fixed_t x, fixed_t y, INT32 flags, INT32 num, const U
 	// draw the number
 	do
 	{
-		x -= (w-1)*FRACUNIT;	// Oni wanted their outline to intersect.
-		V_DrawFixedPatch(x, y, FRACUNIT, flags, fontv[PINGNUM_FONT].font[num%10], colormap);
+		x -= (w-1)*scale;
+		V_DrawFixedPatch(x, y, scale, flags, fontv[PINGNUM_FONT].font[num%10], colormap);
 		num /= 10;
 	} while (num);
 
@@ -4307,12 +4312,12 @@ void V_Recalc(void)
 	// Set dup based on width or height, whichever is less
 	if (((vid.width*FRACUNIT) / BASEVIDWIDTH) < ((vid.height*FRACUNIT) / BASEVIDHEIGHT))
 	{
-		vid.dup = vid.width / BASEVIDWIDTH;
+		vid.dup = max(vid.width / BASEVIDWIDTH, 1);
 		vid.fdup = (vid.width*FRACUNIT) / BASEVIDWIDTH;
 	}
 	else
 	{
-		vid.dup = vid.height / BASEVIDHEIGHT;
+		vid.dup = max(vid.height / BASEVIDHEIGHT, 1);
 		vid.fdup = (vid.height*FRACUNIT) / BASEVIDHEIGHT;
 	}
 

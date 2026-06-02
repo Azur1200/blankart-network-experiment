@@ -73,6 +73,8 @@
 #include "k_vote.h"
 #include "d_clisrv.h"
 
+#include <tracy/tracy/TracyC.h>
+
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
 #endif
@@ -480,12 +482,34 @@ consvar_t cv_deadzonet[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("tdeadzone4", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL)
 };
 
+consvar_t cv_deadzonetwod[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("twoddeadzone", "0.8", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("twoddeadzone2", "0.8", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("twoddeadzone3", "0.8", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
+	CVAR_INIT ("twoddeadzone4", "0.8", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL)
+};
+
 static CV_PossibleValue_t deadzonestyle_cons_t[] = {{0, "Kart"}, {1, "RR"}, {0, NULL}};
 consvar_t cv_deadzonestyle[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("deadzonestyle", "Kart",  CV_SAVE, deadzonestyle_cons_t, NULL),
 	CVAR_INIT ("deadzonestyle2", "Kart", CV_SAVE, deadzonestyle_cons_t, NULL),
 	CVAR_INIT ("deadzonestyle3", "Kart", CV_SAVE, deadzonestyle_cons_t, NULL),
 	CVAR_INIT ("deadzonestyle4", "Kart", CV_SAVE, deadzonestyle_cons_t, NULL)
+};
+
+static CV_PossibleValue_t freelookstyle_cons_t[] = {{FREELOOKSTYLE_OFF, "Off"}, {FREELOOKSTYLE_FLICK, "Flick Turn"}, {FREELOOKSTYLE_ROTATIONAL, "Rotational Turn"}, {0, NULL}};
+consvar_t cv_freelookstyle[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("freelookstyle", "Flick Turn",  CV_SAVE, freelookstyle_cons_t, NULL),
+	CVAR_INIT ("freelookstyle2", "Flick Turn", CV_SAVE, freelookstyle_cons_t, NULL),
+	CVAR_INIT ("freelookstyle3", "Flick Turn", CV_SAVE, freelookstyle_cons_t, NULL),
+	CVAR_INIT ("freelookstyle4", "Flick Turn", CV_SAVE, freelookstyle_cons_t, NULL)
+};
+
+consvar_t cv_freelookrequiresbutton[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("freelookrequiresbutton", "Off",  CV_SAVE, CV_YesNo, NULL),
+	CVAR_INIT ("freelookrequiresbutton2", "Off", CV_SAVE, CV_YesNo, NULL),
+	CVAR_INIT ("freelookrequiresbutton3", "Off", CV_SAVE, CV_YesNo, NULL),
+	CVAR_INIT ("freelookrequiresbutton4", "Off", CV_SAVE, CV_YesNo, NULL)
 };
 
 // allows players to use restat (server toggle)
@@ -1227,6 +1251,12 @@ fixed_t G_GetDeadZoneType(INT32 p, SINT8 type)
 		case DEADZONE_Y:
 			return cv_deadzoney[p].value;
 			break;
+		case DEADZONE_2D:
+			return cv_deadzonetwod[p].value;
+			break;
+		case DEADZONE_NONE:
+			return 0;
+			break;
 		case DEADZONE_BUTTON:
 		default:
 			return cv_deadzonet[p].value;
@@ -1239,6 +1269,7 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital, SINT8 type)
 	INT32 deviceID;
 	INT32 i;
 	INT32 deadzone = 0;
+	INT32 value = 0;
 
 	if (p >= MAXSPLITSCREENPLAYERS)
 	{
@@ -1265,7 +1296,7 @@ retrygetcontrol:
 	for (i = 0; i < MAXINPUTMAPPING; i++)
 	{
 		INT32 key = gamecontrol[p][gc][i];
-		INT32 value = 0;
+		INT32 keyvalue = 0;
 
 		// Invalid key number.
 		if (!G_KeyIsAvailable(key, deviceID, digital))
@@ -1273,11 +1304,10 @@ retrygetcontrol:
 			continue;
 		}
 
-		value = gamekeydown[deviceID][key];
-
-		if (value > deadzone)
+		keyvalue = gamekeydown[deviceID][key];
+		if (abs(keyvalue) > abs(value))
 		{
-			return value;
+			value = keyvalue;
 		}
 	}
 
@@ -1287,7 +1317,11 @@ retrygetcontrol:
 		deviceID = 0;
 		goto retrygetcontrol;
 	}
-
+	
+	if (value > deadzone)
+	{
+		return value;
+	}
 	return 0;
 }
 
@@ -1497,7 +1531,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 	// tilt control never has deadzone
 	// if stick input is used gradually cancel out tilt based on stick intensity
-	if (cv_tiltcontrol[forplayer].value == 1)
+	if (cv_tiltcontrol[forplayer].value == TILTCONTROL_STEER || cv_tiltcontrol[forplayer].value == TILTCONTROL_ON)
 	{
 		fixed_t rate = FixedDiv(abs(joystickvector.xaxis), JOYAXISRANGE);
 		accelerometertilt = 
@@ -1519,7 +1553,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	}
 
 	forward = side = 0;
-	if (cv_tiltcontrol[forplayer].value == 1 && (!spectating))
+	if ((cv_tiltcontrol[forplayer].value == TILTCONTROL_STEER || cv_tiltcontrol[forplayer].value == TILTCONTROL_ON) && (!spectating))
 	{
 		tspeed = accelerometertilt;
 	}
@@ -1552,32 +1586,11 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 	cmd->turning = 0;
 
-	if (cv_tiltcontrol[forplayer].value == 1)
+	if ((!spectating) && (cv_tiltcontrol[forplayer].value == TILTCONTROL_STEER || cv_tiltcontrol[forplayer].value == TILTCONTROL_ON))
 	{
 		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		side += (accelerometertilt * 4) / JOYAXISRANGE;
-
-		//control spectator camera using the gyro
-		// player space gyro from http://gyrowiki.jibbsmart.com/blog:player-space-gyro-and-alternatives-explained
-		if (spectating)
-		{
-			fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
-			fixed_t yawRelaxFactor = 141*FRACUNIT/100;
-			vector3_t gyro = G_GetGamepadCalibratedGyro(forplayer);
-			vector3_t gravnorm = G_GetGamepadGravity(forplayer);
-			vector2_t gyroYZ = {gyro.y, gyro.z};
-
-			// use world yaw for yaw direction, local combined yaw for magnitude
-			FV3_Normalize(&gravnorm);
-			fixed_t worldYaw = FixedMul(gyro.y, gravnorm.y) + FixedMul(gyro.z, gravnorm.z); // dot product but just yaw and roll
-
-			fixed_t yaw = intsign(worldYaw) * (encoremode ? -1 : 1) *
-				min(FixedMul(-abs(worldYaw), yawRelaxFactor), FV2_Magnitude(&gyroYZ));
-
-			cmd->angle -= FixedMul(yaw, deltaseconds*180)/FRACUNIT;
-			cmd->aiming -= FixedMul(gyro.x, deltaseconds*180)/FRACUNIT;
-		}
 	}
 	else if (joystickvector.xaxis != 0)
 	{
@@ -1591,6 +1604,27 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	{
 		INT32 mousex = gamekeydown[0][KEY_MOUSEMOVE+3] - gamekeydown[0][KEY_MOUSEMOVE+2];
 		cmd->angle -= (mousex * 8) * (encoremode ? -1 : 1);
+	}
+
+	//control spectator camera using the gyro
+	// player space gyro from http://gyrowiki.jibbsmart.com/blog:player-space-gyro-and-alternatives-explained
+	if (spectating && (cv_tiltcontrol[forplayer].value == TILTCONTROL_CAME || cv_tiltcontrol[forplayer].value == TILTCONTROL_ON))
+	{
+		fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
+		fixed_t yawRelaxFactor = 141*FRACUNIT/100;
+		vector3_t gyro = G_GetGamepadCalibratedGyro(forplayer);
+		vector3_t gravnorm = G_GetGamepadGravity(forplayer);
+		vector2_t gyroYZ = {gyro.y, gyro.z};
+
+		// use world yaw for yaw direction, local combined yaw for magnitude
+		FV3_Normalize(&gravnorm);
+		fixed_t worldYaw = FixedMul(gyro.y, gravnorm.y) + FixedMul(gyro.z, gravnorm.z); // dot product but just yaw and roll
+
+		fixed_t yaw = intsign(worldYaw) * (encoremode ? -1 : 1) *
+			min(FixedMul(-abs(worldYaw), yawRelaxFactor), FV2_Magnitude(&gyroYZ));
+
+		cmd->angle -= FixedMul(yaw, deltaseconds*180)/FRACUNIT;
+		cmd->aiming -= FixedMul(gyro.x, deltaseconds*180)/FRACUNIT;
 	}
 
 	// Digital users can input diagonal-back for shallow turns.
@@ -1783,19 +1817,15 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	else if (cmd->throwdir < -KART_FULLTURN)
 		cmd->throwdir = -KART_FULLTURN;
 
-	if (G_GetGamepadCanUseTilt(forplayer) && cv_tiltcontrol[forplayer].value)
+	if (G_GetGamepadCanUseTilt(forplayer) && (cv_tiltcontrol[forplayer].value == TILTCONTROL_STEER || cv_tiltcontrol[forplayer].value == TILTCONTROL_ON))
 	{
 		fixed_t tilt = G_GetGamepadGravity(forplayer).x;
 		// vector3_t shake = G_GetGamepadShake(forplayer);
 
-		if (cv_tiltcontrol[forplayer].value == 1)
-		{
-			//cmd->tilt = INT8_MAX*tilt/FRACUNIT;
+		cmd->flags |= TICCMD_USINGTILT;
+		if (abs(tilt) > MAXGAMEPADTILT)
+			cmd->flags |= TICCMD_EXCESSTILT;
 
-			cmd->flags |= TICCMD_USINGTILT;
-			if (abs(tilt) > MAXGAMEPADTILT)
-				cmd->flags |= TICCMD_EXCESSTILT;
-		}
 		//cmd->shake = CLAMP((GAMEPADSHAKETHRESHOLD*FV3_Length(&shake))/FRACUNIT, 0, UINT8_MAX);
 
 		//CONS_Debug(DBG_IMU, "CMD Tilt: %d, Shake: %d\n", cmd->tilt, cmd->shake);
@@ -1928,6 +1958,13 @@ void G_DoLoadLevel(boolean resetplayer)
 	{
 		if (camera[i].chase)
 			P_ResetCamera(&players[displayplayers[i]], &camera[i]);
+		
+		// reset freelook stuff
+		camera[i].freelook_held = false;
+		camera[i].freelook_pitch = 0;
+		camera[i].freelook_pitch_add = 0;
+		camera[i].freelook_yaw = 0;
+		camera[i].freelook_yaw_add = 0;
 	}
 
 	// clear cmd building stuff
@@ -2557,6 +2594,8 @@ void G_ResetViews(boolean resetfreecam)
 //
 void G_Ticker(boolean run)
 {
+	TracyCZone(__zone, true);
+
 	UINT32 i;
 	INT32 buf;
 	ticcmd_t *cmd;
@@ -2805,6 +2844,8 @@ void G_Ticker(boolean run)
 			memset(player_name_changes, 0, sizeof player_name_changes);
 		}
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 //
@@ -2974,9 +3015,13 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	uint8_t public_key[PUBKEYLENGTH];
 
+	char clan[MAXCLANTAG];
+
 	// SRB2kart
 	INT32 itemtype;
 	INT32 itemamount;
+	INT32 itemreservetype;
+	INT32 itemreserveamount;
 	INT32 itemroulette;
 	INT32 previtemroulette;
 	INT32 roulettetype;
@@ -3071,6 +3116,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	pflags = (players[player].pflags & (PF_WANTSTOJOIN|PF_KICKSTARTACCEL|PF_SHRINKME|PF_SHRINKACTIVE|PF_FLIPCAM));
 
 	memcpy(&public_key, &players[player].public_key, sizeof(public_key));
+	strncpy(clan, players[player].clan, MAXCLANTAG);
 
 	// SRB2kart
 	if (betweenmaps || leveltime <= starttime || spectator == true)
@@ -3080,6 +3126,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		roulettetype = KROULETTETYPE_NORMAL;
 		itemtype = 0;
 		itemamount = 0;
+		itemreservetype = 0;
+		itemreserveamount = 0;
 		growshrinktimer = 0;
 		bubblehealth = 0;
 		bumper = ((gametypes[gametype]->rules & GTR_BUMPERS) ? K_StartingBumperCount() : 0);
@@ -3176,6 +3224,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 			itemtype = players[player].itemtype;
 			itemamount = players[player].itemamount;
 		}
+
+		itemreservetype = players[player].itemreservetype;
+		itemreserveamount = players[player].itemreserveamount;
 
 		// Keep Shrink status, remove Grow status
 		// Alt. Shrink is a powerup, so don't keep that.
@@ -3355,6 +3406,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->roulettetype = roulettetype;
 	p->itemtype = itemtype;
 	p->itemamount = itemamount;
+	p->itemreservetype = itemreservetype;
+	p->itemreserveamount = itemreserveamount;
 	p->growshrinktimer = growshrinktimer;
 	p->bubblehealth = bubblehealth;
 	p->bumper = bumper;
@@ -3390,6 +3443,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	K_BotReborn(p);
 
 	memcpy(&p->public_key, &public_key, sizeof(p->public_key));
+	strncpy(p->clan, clan, MAXCLANTAG);
 
 	if (follower)
 		P_RemoveMobj(follower);
@@ -5612,7 +5666,7 @@ static void DataCorrupt(UINT8 *corrupted)
 			gdfolder = srb2home;
 
 		I_Error(*corrupted == 1
-		      ? "Game data is not for SRB2Kart v2.\nDelete %s (maybe in %s) and try again."
+		      ? "Game data is not for BlanKart.\nDelete %s (maybe in %s) and try again."
 		      : "Corrupt game data file.\nDelete %s (maybe in %s) and try again.",
 		        gamedatafilename, gdfolder);
 	}

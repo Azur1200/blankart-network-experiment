@@ -192,8 +192,8 @@ void K_getTimersDrawinfo(drawinfo_t *out)
 		flags |= V_HUDTRANSHALF;
 	}
 
-	out->x = fx;
-	out->y = fy;
+	out->x = fx+stplyr->karthud[khud_itemtimer_xoff];
+	out->y = fy+stplyr->karthud[khud_itemtimer_yoff];
 	out->flags = flags;
 }
 

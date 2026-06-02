@@ -37,10 +37,12 @@ static const char *const botvars_opt[] = {
 
 #define UNIMPLEMENTED luaL_error(L, LUA_QL("botvars_t") " field " LUA_QS " is not implemented for Lua and cannot be accessed.", follower_opt[field])
 
+int botvars_fields_ref = LUA_NOREF;
+
 static int botvars_get(lua_State *L)
 {
 	botvars_t *botvars = *((botvars_t **)luaL_checkudata(L, 1, META_BOTVARS));
-	enum botvars field = luaL_checkoption(L, 2, NULL, botvars_opt);
+	enum botvars field = Lua_optoption(L, 2, -1, botvars_fields_ref);
 
 	// This is a property that always exists in a player.
 	I_Assert(botvars != NULL);
@@ -74,7 +76,7 @@ static int botvars_get(lua_State *L)
 static int botvars_set(lua_State *L)
 {
 	botvars_t *botvars = *((botvars_t **)luaL_checkudata(L, 1, META_BOTVARS));
-	enum botvars field = luaL_checkoption(L, 2, botvars_opt[0], botvars_opt);
+	enum botvars field = Lua_optoption(L, 2, botvars_valid, botvars_fields_ref);
 
 	// This is a property that always exists in a player.
 	I_Assert(botvars != NULL);
@@ -155,10 +157,12 @@ static const char *const botdata_opt[] = {
 	NULL
 };
 
+int botdata_fields_ref = LUA_NOREF;
+
 static int botdata_get(lua_State *L)
 {
 	botdata_t *botdata = *((botdata_t **)luaL_checkudata(L, 1, META_BOTDATA));
-	enum botdata field = luaL_checkoption(L, 2, NULL, botdata_opt);
+	enum botdata field = Lua_optoption(L, 2, -1, botdata_fields_ref);
 
 	// it's a static array... i think...
 	I_Assert(botdata != NULL);
@@ -252,7 +256,7 @@ static int botdata_get(lua_State *L)
 static int botdata_set(lua_State *L)
 {
 	botdata_t *botdata = *((botdata_t **)luaL_checkudata(L, 1, META_BOTDATA));
-	enum botdata field = luaL_checkoption(L, 2, NULL, botdata_opt);
+	enum botdata field = Lua_optoption(L, 2, -1, botdata_fields_ref);
 
 	I_Assert(botdata != NULL);
 
@@ -403,6 +407,9 @@ static int lib_numBotData(lua_State *L)
 
 int LUA_BotVarsLib(lua_State *L)
 {
+	botvars_fields_ref = Lua_CreateFieldTable(L, botvars_opt);
+	botdata_fields_ref = Lua_CreateFieldTable(L, botdata_opt);
+
 	luaL_newmetatable(L, META_BOTVARS);
 		lua_pushcfunction(L, botvars_get);
 		lua_setfield(L, -2, "__index");

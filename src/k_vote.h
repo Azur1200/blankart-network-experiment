@@ -66,6 +66,7 @@ typedef enum
 	VOTE_NOT_PICKED = -1,
 } votetype_e;
 
+void Y_VoteScreenCheck(void);
 
 #ifdef __cplusplus
 } // extern "C"

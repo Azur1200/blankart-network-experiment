@@ -91,6 +91,7 @@ extern vector3_t clusterpoint, clusterdtf;
 
 // S-Monitor distance value
 #define SMONITORDIST CV_Get(&cv_kartsmonitordist)
+#define SMONITORCONGADIST CV_Get(&cv_kartsmonitor_congadist)
 #define SMONITORDECAYDIST CV_Get(&cv_kartsmonitor_decaydist)
 #define SMONITORDECAYTIME CV_Get(&cv_kartsmonitor_decaytime)
 
@@ -382,7 +383,7 @@ boolean K_SlipdashActive(void);
 boolean K_SlopeBoostActive(void);
 boolean K_DraftingActive(void);
 SINT8 K_AirDropActive(void);
-boolean K_AirThrustActive(void);
+SINT8 K_AirThrustActive(void);
 boolean K_RecoveryDashActive(void);
 boolean K_WaterskipBricksActive(void);
 boolean K_KeepStuffActive(void);
@@ -430,6 +431,16 @@ typedef enum
 	AIRDROP_FUSION,
 } airdroptype_t;
 
+typedef enum
+{
+	AIRTHRUST_NONE = 0,
+	AIRTHRUST_BURST,
+	AIRTHRUST_FLASH,
+} airthrusttype_t;
+
+#define AIRTHRUST_SPAMFACTOR 6 // higher makes it harder to spam
+#define AIRTHRUST_FLASHEFXTIME (TICRATE/3) // base timer for vfx
+
 void K_KillAirDrop(player_t *player, p_airdropflags_t airdropflags);
 
 boolean K_NullDriftTiltEnabled(void);
@@ -447,6 +458,8 @@ void K_AddTiltImpulse(player_t *player, fixed_t distance, fixed_t force);
 void K_KartAttractHomingAttack(player_t *player);
 
 void K_KartPlayerBumpyRoad(player_t *player);
+
+fixed_t K_HandleAirDrag(player_t *player, boolean onground, fixed_t speed, fixed_t airdrag);
 
 #ifdef __cplusplus
 } // extern "C"
