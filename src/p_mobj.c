@@ -13966,6 +13966,11 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		*doangle = false;
 		break;
 	}
+	case MT_AMBIENT:
+		if (mthing->stringargs[0])
+			mobj->threshold = get_number(mthing->stringargs[0]);
+		mobj->health = mthing->args[0] ? mthing->args[0] : TICRATE;
+		break;
 	case MT_DASHRING:
 	case MT_RAINBOWDASHRING:
 	{
