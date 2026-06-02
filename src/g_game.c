@@ -3015,6 +3015,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	uint8_t public_key[PUBKEYLENGTH];
 
+	char clan[MAXCLANTAG];
+
 	// SRB2kart
 	INT32 itemtype;
 	INT32 itemamount;
@@ -3114,6 +3116,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	pflags = (players[player].pflags & (PF_WANTSTOJOIN|PF_KICKSTARTACCEL|PF_SHRINKME|PF_SHRINKACTIVE|PF_FLIPCAM));
 
 	memcpy(&public_key, &players[player].public_key, sizeof(public_key));
+	strncpy(clan, players[player].clan, MAXCLANTAG);
 
 	// SRB2kart
 	if (betweenmaps || leveltime <= starttime || spectator == true)
@@ -3440,6 +3443,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	K_BotReborn(p);
 
 	memcpy(&p->public_key, &public_key, sizeof(p->public_key));
+	strncpy(p->clan, clan, MAXCLANTAG);
 
 	if (follower)
 		P_RemoveMobj(follower);

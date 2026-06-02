@@ -2491,6 +2491,7 @@ static void HU_DrawRankings(void)
 		completed[i] = true;
 
 		tab[scorelines].name = player_names[i];
+		strncpy(&tab[scorelines].clan, players[i].clan, MAXCLANTAG);
 
 		if (gametypes[gametype]->rules & GTR_CIRCUIT)
 		{

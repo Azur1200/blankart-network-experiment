@@ -12,6 +12,7 @@
 ///        commands are executed through the command buffer
 ///	       like console commands, other miscellaneous commands (at the end)
 
+#include "d_netcmd.h"
 #include "d_player.h"
 #include "doomdef.h"
 
@@ -111,8 +112,8 @@ static void Got_ScheduleClearcmd(UINT8 **cp, INT32 playernum);
 static void Got_Automatecmd(UINT8 **cp, INT32 playernum);
 static void Got_MapQueuecmd(UINT8 **cp, INT32 playernum);
 static void Got_Cheat(UINT8 **cp, INT32 playernum);
-static void Command_ScoreboardAdd(void);
-static void Command_ScoreboardClear(void);
+static void Got_ClanTagSet(UINT8 **cp, INT32 playernum);
+static void Got_ClanTagClear(UINT8 **cp, INT32 playernum);
 
 static void PointLimit_OnChange(void);
 static void TimeLimit_OnChange(void);
@@ -183,6 +184,18 @@ static void KartTrailSlow_OnChange(void);
 static void PlayerBump_OnChange(void);
 
 static void Schedule_OnChange(void);
+
+static void Command_ScoreboardAdd(void);
+static void Command_ScoreboardClear(void);
+
+static void Command_ClantagSet(void);
+static void Command_ClantagSet2(void);
+static void Command_ClantagSet3(void);
+static void Command_ClantagSet4(void);
+static void Command_ClantagClear(void);
+static void Command_ClantagClear2(void);
+static void Command_ClantagClear3(void);
+static void Command_ClantagClear4(void);
 
 static void Command_Playdemo_f(void);
 static void Command_Timedemo_f(void);
@@ -997,6 +1010,8 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"AUTOMATE", // XD_AUTOMATE
 	"CHEAT", // XD_CHEAT
 	"MAPQUEUE", // XD_MAPQUEUE
+	"CLANTAGSET", // XD_CLANTAGSET
+	"CLANTAGCLEAR", // XD_CLANTAGCLEAR
 };
 
 // =========================================================================
@@ -1047,6 +1062,17 @@ void D_RegisterServerCommands(void)
 	RegisterNetXCmd(XD_SCHEDULECLEAR, Got_ScheduleClearcmd);
 	RegisterNetXCmd(XD_AUTOMATE, Got_Automatecmd);
 	RegisterNetXCmd(XD_MAPQUEUE, Got_MapQueuecmd);
+
+	COM_AddCommand("clantag_set", Command_ClantagSet);
+	COM_AddCommand("clantag2_set", Command_ClantagSet2);
+	COM_AddCommand("clantag3_set", Command_ClantagSet3);
+	COM_AddCommand("clantag4_set", Command_ClantagSet4);
+	COM_AddCommand("clantag_clear", Command_ClantagClear);
+	COM_AddCommand("clantag2_clear", Command_ClantagClear2);
+	COM_AddCommand("clantag3_clear", Command_ClantagClear3);
+	COM_AddCommand("clantag4_clear", Command_ClantagClear4);
+	RegisterNetXCmd(XD_CLANTAGSET, Got_ClanTagSet);
+	RegisterNetXCmd(XD_CLANTAGCLEAR, Got_ClanTagClear);
 
 	RegisterNetXCmd(XD_CHEAT, Got_Cheat);
 	COM_AddCommand("scoreboard_addline", Command_ScoreboardAdd);
@@ -7504,6 +7530,161 @@ static void Got_PlaySound(UINT8 **cp, INT32 playernum)
 	}
 
 	S_StartSound(NULL, sound_id);
+}
+
+static void HandleClantagSetCommand(UINT8 localplayer)
+{
+	char buf[sizeof(UINT8)+MAXCLANTAG];
+	char *cp = buf;
+	char temp[MAXCLANTAG*4];
+	char clantag[MAXCLANTAG];
+	size_t i, j = COM_Argc();
+
+	if (COM_Argc() < 2)
+	{
+		CONS_Printf("%s <text>: Set your clantag to this.\n", localplayer == 0 ? "clantag_set" : va("clantag%d_set", localplayer));
+		return;
+	}
+
+	if (!(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
+	{
+		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
+		return;
+	}
+
+	if (localplayer != 0 && !g_localplayers[localplayer])
+	{
+		CONS_Printf(M_GetText("There is no player to set a clantag for.\n"));
+		return;
+	}
+
+	strlcpy(temp, COM_Argv(1), sizeof temp);
+	for (i = 2; i < j; i++)
+	{
+		strlcat(temp, " ", sizeof temp);
+		strlcat(temp, COM_Argv(i), sizeof temp);
+	}
+
+	if (strlen(temp) >= MAXCLANTAG)
+	{
+		CONS_Printf(M_GetText("Supplied clantag is too long.\n"));
+		return;
+	}
+
+	if ((fasticmp("@", temp)
+		|| fasticmp("~", temp)
+		|| fasticmp("staff", temp)
+		|| fasticmp("admin", temp))
+	)
+	{
+		CONS_Printf(M_GetText("Nice try.\n"));
+		return;
+	}
+
+	strncpy(clantag, temp, MAXCLANTAG);
+
+	WRITEUINT8(cp, g_localplayers[localplayer]);
+	WRITESTRINGN(cp, clantag, MAXCLANTAG);
+	SendNetXCmdForPlayer(localplayer, XD_CLANTAGSET, &buf, cp - buf);
+}
+
+static void Command_ClantagSet(void)
+{
+	HandleClantagSetCommand(0);
+}
+
+static void Command_ClantagSet2(void)
+{
+	HandleClantagSetCommand(1);
+}
+
+static void Command_ClantagSet3(void)
+{
+	HandleClantagSetCommand(2);
+}
+
+static void Command_ClantagSet4(void)
+{
+	HandleClantagSetCommand(3);
+}
+
+static void Got_ClanTagSet(UINT8 **cp, INT32 playernum)
+{
+	char clantag[MAXCLANTAG];
+	UINT8 targetPlayer = READUINT8(*cp);
+	READSTRINGN(*cp, clantag, MAXCLANTAG);
+
+	if (targetPlayer >= MAXPLAYERS
+		|| playernode[targetPlayer] != playernode[playernum]
+		|| (fasticmp("@", clantag)
+		|| fasticmp("~", clantag)
+		|| fasticmp("staff", clantag)
+		|| fasticmp("admin", clantag))
+	)
+	{
+		CONS_Alert(CONS_WARNING,
+			M_GetText ("Illegal Clantag Set command received from %s\n"),
+			player_names[playernum]);
+		return;
+	}
+
+	strncpy(players[targetPlayer].clan, clantag, MAXCLANTAG);
+}
+
+static void HandleClantagClearCommand(UINT8 localplayer)
+{
+	char buf[1];
+	char *cp = buf;
+
+	if (!(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
+	{
+		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
+		return;
+	}
+
+	if (localplayer != 0 && !g_localplayers[localplayer])
+	{
+		CONS_Printf(M_GetText("There is no player to set a clantag for.\n"));
+		return;
+	}
+
+	WRITEUINT8(cp, g_localplayers[localplayer]);
+	SendNetXCmdForPlayer(localplayer, XD_CLANTAGCLEAR, &buf, cp - buf);
+}
+
+static void Command_ClantagClear(void)
+{
+	HandleClantagClearCommand(0);
+}
+
+static void Command_ClantagClear2(void)
+{
+	HandleClantagClearCommand(1);
+}
+
+static void Command_ClantagClear3(void)
+{
+	HandleClantagClearCommand(2);
+}
+
+static void Command_ClantagClear4(void)
+{
+	HandleClantagClearCommand(3);
+}
+
+static void Got_ClanTagClear(UINT8 **cp, INT32 playernum)
+{
+	UINT8 targetPlayer = READUINT8(*cp);
+
+	if (targetPlayer >= MAXPLAYERS || playernode[targetPlayer] != playernode[playernum])
+	{
+		CONS_Alert(CONS_WARNING,
+				   M_GetText ("Illegal Clantag Clear command received from %s\n"),
+				   player_names[playernum]);
+		return;
+	}
+
+	memset(players[targetPlayer].clan, 0, MAXCLANTAG);
 }
 
 static const char *displayplayer_compose_col(int playernum)

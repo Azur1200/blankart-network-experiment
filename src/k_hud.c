@@ -2645,6 +2645,7 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 	{
 		INT32 pos = CLAMP(players[tab[i].num].position, 0 , MAXPLAYERS);
 		char playername[MAXPLAYERNAME+1];
+		char clanname[MAXCLANTAG];
 
 		if (players[tab[i].num].spectator || !players[tab[i].num].mo)
 			continue; //ignore them.
@@ -2668,6 +2669,7 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 		}
 
 		STRBUFCPY(playername, tab[i].name);
+		strncpy(clanname, &tab[i].clan, MAXCLANTAG);
 
 		if (players[tab[i].num].mo->color)
 		{
@@ -2688,7 +2690,15 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 		x2 = netgame ? x + (BASEVIDWIDTH/20) : x;
 		y2 = y;
 
-		V_DrawThinString(x2 + 20, y2, ((tab[i].num == whiteplayer) ? hightlightcolor : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, playername);
+		if (clanname[0] != 0)
+		{
+			UINT8 length = V_ThinStringWidth(clanname, V_ALLOWLOWERCASE|V_6WIDTHSPACE);
+			V_DrawThinString(x2 + 20, y2, V_SKYMAP|V_ALLOWLOWERCASE|V_6WIDTHSPACE, clanname);
+			V_DrawThinString(x2 + 20 + length + 2, y2, ((tab[i].num == whiteplayer) ? hightlightcolor : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, playername);
+
+		}
+		else
+			V_DrawThinString(x2 + 20, y2, ((tab[i].num == whiteplayer) ? hightlightcolor : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, playername);
 
 		patch_t *facerank = faceprefix[players[tab[i].num].skin][FACE_RANK];
 		fixed_t scale = FRACUNIT/2;
@@ -4050,7 +4060,10 @@ static void K_DrawTypingNotifier(fixed_t x, fixed_t y, player_t *p, UINT8 flags)
 static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p, UINT8 flags)
 {
 	const INT32 clr = skincolors[p->skincolor].chatcolor;
-	const INT32 namelen = V_ThinStringWidth(player_names[p - players], V_6WIDTHSPACE|V_ALLOWLOWERCASE);
+	INT32 namelen = V_ThinStringWidth(player_names[p - players], V_6WIDTHSPACE|V_ALLOWLOWERCASE);
+
+	if (p->clan != 0)
+		namelen = V_ThinStringWidth(va("%s%s", p->clan, player_names[p - players]), V_6WIDTHSPACE|V_ALLOWLOWERCASE)+2;
 
 	UINT8 *colormap = V_GetStringColormap(clr);
 	INT32 barx = x + 6*FRACUNIT, bary = y - 16*FRACUNIT, barw = namelen*FRACUNIT;
@@ -4144,11 +4157,30 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p, UINT8 flag
 	// Draw the name itself
 	if (cv_seenames.value == NT_DEFAULT)
 	{
-		V_DrawThinStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+		if (p->clan != 0)
+		{
+			UINT8 length = V_ThinStringWidth(p->clan, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE)+2;
+			V_DrawThinStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|V_SKYMAP, p->clan);
+			V_DrawThinStringAtFixed(x + (5*FRACUNIT) + textxoffset + (length*FRACUNIT), y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+		}
+		else
+		{
+			V_DrawThinStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+		}
 	}
 	else
 	{
-		V_DrawSmallStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+		if (p->clan != 0)
+		{
+			UINT8 length = V_SmallStringWidth(p->clan, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE)+2;
+			V_DrawSmallStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|V_SKYMAP, p->clan);
+			V_DrawSmallStringAtFixed(x + (5*FRACUNIT) + textxoffset + (length*FRACUNIT), y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+		}
+		else
+		{
+			V_DrawSmallStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (26*FRACUNIT) + textyoffset, vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+		}
+
 	}
 
 	// Also draw stats of restated players.

@@ -944,6 +944,8 @@ struct player_t
 
 	keepstuff_t keepstuff;
 
+	char clan[MAXCLANTAG];
+
 #ifdef HWRENDER
 	fixed_t fovadd; // adjust FOV for hw rendering
 #endif

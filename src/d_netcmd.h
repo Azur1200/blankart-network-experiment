@@ -388,6 +388,8 @@ typedef enum
 	XD_AUTOMATE,    // 36
 	XD_CHEAT,       // 37
 	XD_MAPQUEUE,	// 38
+	XD_CLANTAGSET,	// 39
+	XD_CLANTAGCLEAR,// 40
 
 	MAXNETXCMD
 } netxcmd_t;
