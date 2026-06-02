@@ -1762,7 +1762,7 @@ static void K_UpdateKeepstuff(player_t *player)
 
 			for (moloop = 0; moloop < 2; moloop++)
 			{
-				mo = K_SpawnEquippedItem(player, KITEMEQUIP_ROCKETS, MT_ROCKETSNEAKER, moloop, prev);
+				mo = K_SpawnEquippedItem(player, KITEMEQUIP_ROCKETS, MT_ROCKETSNEAKER, moloop, 2, prev);
 				prev = mo;
 			}
 		}
@@ -1806,7 +1806,7 @@ static void K_UpdateKeepstuff(player_t *player)
 	{
 		if (!player->flametimer)
 		{
-			K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, NULL);
+			K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, 1, NULL);
 			S_StartSound(player->mo, sfx_s3k3e);
 			// make sure this is after K_DecrementCurrentItem so that equip state stays set properly
 			K_SetItemOut(player, KITEM_FLAMESHIELD, IF_HOLDREADY);

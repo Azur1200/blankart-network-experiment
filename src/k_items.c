@@ -2553,7 +2553,7 @@ player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
 }
 
 // after using this you must handle setting any additional values on the mobj (like skincolour)
-mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, INT32 moloop, mobj_t *prev)
+mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, INT32 moloop, INT32 totalamount, mobj_t *prev)
 {
 	mobj_t *mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, type);
 	angle_t newangle;
@@ -2568,19 +2568,19 @@ mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjty
 	switch (equipstyle)
 	{
 		case KITEMEQUIP_ORBIT: // Kart orbit items
-			newangle = (player->mo->angle + ANGLE_157h) + FixedAngle(((360 / player->itemamount) * moloop) << FRACBITS) + ANGLE_90;
+			newangle = (player->mo->angle + ANGLE_157h) + FixedAngle(((360 / totalamount) * moloop) << FRACBITS) + ANGLE_90;
 			mo->angle = newangle;
-			mo->movecount = player->itemamount;
+			mo->movecount = totalamount;
 			mo->movedir = mo->lastlook = moloop+1;
 			break;
 		case KITEMEQUIP_TRAIL: // Kart trailing items
-			mo->movecount = player->itemamount;
+			mo->movecount = totalamount;
 			mo->movedir = moloop+1;
 			break;
 		case KITEMEQUIP_ROCKETS: // Rocket Sneaker et autres side-by-side style items
 			K_MatchGenericExtraFlags(mo, player->mo);
 			mo->angle = player->mo->angle;
-			mo->movecount = moloop%2;
+			mo->movecount = moloop%totalamount;
 			mo->movedir = mo->lastlook = moloop+1;
 			break;
 		case KITEMEQUIP_SHIELD: // Force Field Shields
@@ -2658,7 +2658,7 @@ void K_UseItem_RocketSneaker(player_t *player, boolean itemjustdown, boolean ong
 
 			for (moloop = 0; moloop < 2; moloop++)
 			{
-				mo = K_SpawnEquippedItem(player, KITEMEQUIP_ROCKETS, MT_ROCKETSNEAKER, moloop, prev);
+				mo = K_SpawnEquippedItem(player, KITEMEQUIP_ROCKETS, MT_ROCKETSNEAKER, moloop, 2, prev);
 				prev = mo;
 			}
 			K_BotResetItemConfirm(player, false);
@@ -2735,7 +2735,7 @@ void K_UseItem_Banana(player_t *player, boolean itemjustdown, boolean onground, 
 
 		for (moloop = 0; moloop < player->itemamount; moloop++)
 		{
-			mo = K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_BANANA_SHIELD, moloop, prev);
+			mo = K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_BANANA_SHIELD, moloop, player->itemamount, prev);
 			if (!mo)
 			{
 				player->itemamount = moloop;
@@ -2769,7 +2769,7 @@ void K_UseItem_Eggman(player_t *player, boolean itemjustdown, boolean onground, 
 		K_DecrementAndCheckCurrentItem(player);
 		K_SetItemOut(player, KITEM_EGGMAN, IF_EGGMANOUT);
 		S_StartSound(player->mo, sfx_s254);
-		mo = K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_EGGMANITEM_SHIELD, 0, player->mo);
+		mo = K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_EGGMANITEM_SHIELD, 0, 1, player->mo);
 		if (mo)
 		{
 			K_FlipFromObject(mo, player->mo);
@@ -2828,7 +2828,7 @@ void K_UseItem_EggMine(player_t *player, boolean itemjustdown, boolean onground,
 
 		for (moloop = 0; moloop < player->itemamount; moloop++)
 		{
-			mo = K_SpawnEquippedItem(player, KITEMEQUIP_ORBIT, MT_EGGMINE_SHIELD, moloop, prev);
+			mo = K_SpawnEquippedItem(player, KITEMEQUIP_ORBIT, MT_EGGMINE_SHIELD, moloop, player->itemamount, prev);
 			if (!mo)
 			{
 				player->itemamount = moloop;
@@ -2866,7 +2866,7 @@ void K_UseItem_Orbinaut(player_t *player, boolean itemjustdown, boolean onground
 
 		for (moloop = 0; moloop < player->itemamount; moloop++)
 		{
-			mo = K_SpawnEquippedItem(player, KITEMEQUIP_ORBIT, MT_ORBINAUT_SHIELD, moloop, prev);
+			mo = K_SpawnEquippedItem(player, KITEMEQUIP_ORBIT, MT_ORBINAUT_SHIELD, moloop, player->itemamount, prev);
 			if (!mo)
 			{
 				player->itemamount = moloop;
@@ -2913,7 +2913,7 @@ void K_UseItem_Jawz(player_t *player, boolean itemjustdown, boolean onground, bo
 
 		for (moloop = 0; moloop < player->itemamount; moloop++)
 		{
-			mo = K_SpawnEquippedItem(player, KITEMEQUIP_ORBIT, MT_JAWZ_SHIELD, moloop, prev);
+			mo = K_SpawnEquippedItem(player, KITEMEQUIP_ORBIT, MT_JAWZ_SHIELD, moloop, player->itemamount, prev);
 			if (!mo)
 			{
 				player->itemamount = moloop;
@@ -2941,6 +2941,7 @@ void K_UseItem_Mine(player_t *player, boolean itemjustdown, boolean onground, bo
 			mo->extravalue1 = 49; // Pads the start-up length from 21 frames to a full 2 seconds
 		}
 		K_PlayAttackTaunt(player->mo);
+		K_UnsetItemOut(player);
 		K_UpdateHnextList(player, true);
 		K_BotResetItemConfirm(player, false);
 	}
@@ -2948,7 +2949,7 @@ void K_UseItem_Mine(player_t *player, boolean itemjustdown, boolean onground, bo
 	{
 		K_SetItemOut(player, KITEM_MINE, IF_ITEMOUT);
 		S_StartSound(player->mo, sfx_s254);
-		K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_SSMINE_SHIELD, 0, player->mo);
+		K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_SSMINE_SHIELD, 0, 1, player->mo);
 		K_BotResetItemConfirm(player, false);
 	}
 }
@@ -3248,7 +3249,7 @@ void K_UseItem_FlameShield(player_t *player, boolean itemjustdown, boolean ongro
 			K_DecrementAndCheckCurrentItem(player);
 			player->flametimer = flametime;
 			player->flamedash = 0;
-			K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, NULL);
+			K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, 1, NULL);
 			S_StartSound(player->mo, sfx_s3k3e);
 			// make sure this is after K_DecrementCurrentItem so that equip state stays set properly
 			K_SetItemOut(player, KITEM_FLAMESHIELD, IF_HOLDREADY);
@@ -3402,6 +3403,7 @@ void K_UseItem_KitchenSink(player_t *player, boolean itemjustdown, boolean ongro
 		K_DecrementAndCheckCurrentItem(player);
 		K_ThrowKartItem(player, false, MT_SINK, 1, 2);
 		K_PlayAttackTaunt(player->mo);
+		K_UnsetItemOut(player);
 		K_UpdateHnextList(player, true);
 		K_BotResetItemConfirm(player, false);
 	}
@@ -3409,7 +3411,7 @@ void K_UseItem_KitchenSink(player_t *player, boolean itemjustdown, boolean ongro
 	{
 		K_SetItemOut(player, KITEM_KITCHENSINK, IF_ITEMOUT);
 		S_StartSound(player->mo, sfx_s254);
-		K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_SINK_SHIELD, 0, player->mo);
+		K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_SINK_SHIELD, 0, 1, player->mo);
 		K_BotResetItemConfirm(player, false);
 
 		// Woah this could be big, lets get the inside scoop...
@@ -3451,7 +3453,7 @@ void K_ItemThink_ThunderShield(player_t *player)
 {
 	if (K_GetShieldFromPlayer(player) != KSHIELD_THUNDER)
 	{
-		K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_THUNDERSHIELD, 0, NULL);
+		K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_THUNDERSHIELD, 0, 1, NULL);
 		S_StartSound(player->mo, sfx_s3k41);
 		K_SetItemOut(player, KITEM_THUNDERSHIELD, 0);
 	}
@@ -3461,7 +3463,7 @@ void K_ItemThink_AttractionShield(player_t *player)
 {
 	if (K_GetShieldFromPlayer(player) != KSHIELD_ATTRACTION)
 	{
-		K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_ATTRACTIONSHIELD, 0, NULL);
+		K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_ATTRACTIONSHIELD, 0, 1, NULL);
 		S_StartSound(player->mo, sfx_attrsg);
 		K_SetItemOut(player, KITEM_THUNDERSHIELD, 0);
 	}
@@ -3471,7 +3473,7 @@ void K_ItemThink_BubbleShield(player_t *player)
 {
 	if (K_GetShieldFromPlayer(player) != KSHIELD_BUBBLE)
 	{
-		K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_BUBBLESHIELD, 0, NULL);
+		K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_BUBBLESHIELD, 0, 1, NULL);
 		S_StartSound(player->mo, sfx_s3k3f);
 		if (player->bubblehealth <= 0 || player->bubblehealth > MAXBUBBLEHEALTH)
 			player->bubblehealth = MAXBUBBLEHEALTH;

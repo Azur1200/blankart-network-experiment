@@ -5569,14 +5569,19 @@ static int lib_kSpawnEquippedItem(lua_State *L)
 	kartitemequip_e equipstyle = luaL_checkint(L, 2);
 	mobjtype_t type = luaL_checkint(L, 3);
 	INT32 moloop = luaL_optinteger(L, 4, 0);
+	INT32 totalamount = 1;
 	mobj_t *prev = NULL;
 	mobj_t *mo = NULL;
 	NOHUD
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	if ((!lua_isnone(L, 5)) && lua_isuserdata(L, 5))
-		prev = *((mobj_t **)luaL_checkudata(L, 5, META_MOBJ));
-	mo = K_SpawnEquippedItem(player, equipstyle, type, moloop, prev);
+
+	totalamount = luaL_optinteger(L, 5, player->itemamount);
+
+	if ((!lua_isnone(L, 6)) && lua_isuserdata(L, 6))
+		prev = *((mobj_t **)luaL_checkudata(L, 6, META_MOBJ));
+
+	mo = K_SpawnEquippedItem(player, equipstyle, type, moloop, totalamount, prev);
 	if (mo)
 		LUA_PushUserdata(L, mo, META_MOBJ);
 	else
