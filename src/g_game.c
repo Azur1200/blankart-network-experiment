@@ -1892,9 +1892,9 @@ void weaponPrefChange4(void)
 }
 
 //
-// G_DoLoadLevel
+// G_DoLoadLevelEx
 //
-void G_DoLoadLevel(boolean resetplayer)
+void G_DoLoadLevelEx(boolean resetplayer, gamestate_t newstate)
 {
 	boolean doAutomate = false;
 	INT32 i;
@@ -1912,27 +1912,27 @@ void G_DoLoadLevel(boolean resetplayer)
 	if (gamestate == GS_VOTING)
 		Y_EndVote();
 
-	// cleanup
-	if (titlemapinaction == TITLEMAP_LOADING)
+	// Is this actually necessary? Doesn't F_StartTitleScreen already do a significantly more comprehensive check?
+	if (newstate == GS_TITLESCREEN)
 	{
 		if (gamemap < 1 || gamemap > nummapheaders)
 		{
+			G_SetGamestate(GS_TITLESCREEN);
+			titlemapinaction = false;
+
 			Z_Free(titlemap);
 			titlemap = NULL; // let's not infinite recursion ok
+
 			Command_ExitGame_f();
 			return;
 		}
-
-		titlemapinaction = TITLEMAP_RUNNING;
 	}
-	else
-		titlemapinaction = TITLEMAP_OFF;
 
 	// Doing this matches HOSTMOD behavior.
 	// Is that desired? IDK
-	doAutomate = (gamestate != GS_LEVEL);
+	doAutomate = (gamestate != GS_LEVEL && newstate == GS_LEVEL);
 
-	G_SetGamestate(GS_LEVEL);
+	G_SetGamestate(newstate);
 	I_UpdateMouseGrab();
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -1990,6 +1990,11 @@ void G_DoLoadLevel(boolean resetplayer)
 	Automate_Run(AEV_LEVELSTART);
 }
 
+void G_DoLoadLevel(boolean resetplayer)
+{
+	G_DoLoadLevelEx(resetplayer, GS_LEVEL);
+}
+
 //
 // Start the title card.
 //
@@ -2010,7 +2015,7 @@ void G_StartTitleCard(void)
 	ST_startTitleCard();
 
 	// start the title card
-	WipeStageTitle = (!titlemapinaction);
+	WipeStageTitle = (gamestate == GS_LEVEL);
 }
 
 //
@@ -2752,10 +2757,6 @@ void G_Ticker(boolean run)
 			HU_Ticker();
 			break;
 
-		case GS_TIMEATTACK:
-			F_MenuPresTicker(run);
-			break;
-
 		case GS_INTRO:
 			if (run)
 				F_IntroTicker();
@@ -2797,6 +2798,10 @@ void G_Ticker(boolean run)
 
 			F_MenuPresTicker(run);
 			F_TitleScreenTicker(run);
+			break;
+
+		case GS_MENU:
+			F_MenuPresTicker(run);
 			break;
 
 		case GS_WAITINGPLAYERS:
@@ -4473,8 +4478,7 @@ INT16 G_SometimesGetDifferentGametype(UINT8 prefgametype)
 //
 UINT8 G_GetGametypeColor(INT16 gt)
 {
-	if (modeattacking // == ATTACKING_TIME
-	|| gamestate == GS_TIMEATTACK)
+	if (modeattacking)
 		return orangemap[0];
 
 	if (gametypes[gt]->color)
@@ -5459,9 +5463,16 @@ void G_AfterIntermission(void)
 		G_StopDemo();
 
 		if (demo.inreplayhut)
-			M_EnterMenu(MN_MISC_REPLAYHUT, true, 0);
+		{
+			// Setup menu stack so we can back out of the menu as per usual.
+			M_RestoreMenuStack(false);
+			modeattacking = ATTACKING_MENU;
+		}
 		else
-			D_StartTitle();
+		{
+			D_ResetGameState();
+			M_StartControlPanel();
+		}
 
 		return;
 	}
@@ -5626,7 +5637,8 @@ void G_EndGame(void)
 	{
 		if (nextmap == NEXTMAP_CEREMONY) // end game with ceremony
 		{
-			D_StartTitle(); //F_StartEnding(); -- temporary
+			//D_StartTitle(); //F_StartEnding(); -- temporary
+			M_RestoreMenuStack(false);
 			return;
 		}
 		if (nextmap == NEXTMAP_CREDITS) // end game with credits
@@ -5641,8 +5653,28 @@ void G_EndGame(void)
 		}
 	}
 
-	// direct or competitive multiplayer, so go back to title screen.
-	D_StartTitle();
+	// In a netgame, don't unwittingly boot everyone.
+	if (netgame)
+	{
+		S_StopMusic();
+		G_SetGamestate(GS_WAITINGPLAYERS); // hack to prevent a command repeat
+
+		if (server)
+		{
+			UINT16 map = G_GetFirstMapOfGametype(gametype)+1;
+
+			if (map > nummapheaders)
+				I_Error("G_EndGame: No valid map ID found!?");
+
+			COM_BufAddText(va("map %s\n", G_BuildMapName(map)));
+		}
+
+		return;
+	}
+
+	// Time to return to the menu.
+	D_ResetGameState();
+	M_StartControlPanel();
 }
 
 //

@@ -48,7 +48,7 @@
 INT32 finalecount;
 INT32 titlescrollxspeed = 16;
 INT32 titlescrollyspeed = 0;
-UINT8 titlemapinaction = TITLEMAP_OFF;
+boolean titlemapinaction = false;
 
 static INT32 timetonext; // Delay between screen changes
 
@@ -1452,7 +1452,7 @@ void F_StartTitleScreen(void)
 		maptol = mapheaderinfo[titleMapNum]->typeoflevel;
 		globalweather = mapheaderinfo[titleMapNum]->weather;
 
-		G_DoLoadLevel(true);
+		G_DoLoadLevelEx(true, GS_TITLESCREEN);
 		if (!titlemap)
 			return;
 
@@ -1492,7 +1492,8 @@ void F_StartTitleScreen(void)
 	}
 	else
 	{
-		titlemapinaction = TITLEMAP_OFF;
+		G_SetGamestate(GS_TITLESCREEN);
+		titlemapinaction = false;
 		gamemap = 1; // g_game.c
 		CON_ClearHUD();
 	}
@@ -1626,7 +1627,7 @@ luahook:
 }
 
 // separate animation timer for backgrounds, since we also count
-// during GS_TIMEATTACK
+// during GS_MENU
 void F_MenuPresTicker(boolean run)
 {
 	if (run)
@@ -1638,6 +1639,9 @@ void F_TitleScreenTicker(boolean run)
 {
 	if (run)
 	{
+		if (finalecount == 0)
+			S_StopMusicCredit();
+
 		finalecount++;
 
 		if (finalecount == 10)
@@ -1647,7 +1651,8 @@ void F_TitleScreenTicker(boolean run)
 		else if (finalecount == 50)
 		{
 			// Now start the music
-			M_ChangeMenuMusic();
+			S_ChangeMusicInternal("titles", true);
+			S_ShowMusicCredit(0, 5*TICRATE, 0);
 			S_StartSound(NULL, sfx_s23c);
 		}
 	}

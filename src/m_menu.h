@@ -55,6 +55,7 @@ typedef enum
 } menutype_t;
 
 extern menutype_t menustack[NUMMENULEVELS];
+extern menutype_t restoremenustack[NUMMENULEVELS];
 
 void M_InitMenuPresTables(void);
 void M_ChangeMenuMusic(void);
@@ -328,11 +329,13 @@ extern size_t nummenuitemstyles;
 
 void M_EnterMenu(menutype_t menu, boolean callexit, INT32 arg);
 void M_ExitMenu(void);
-void M_ClearMenus(boolean callexitmenufunc);
+void M_ClearMenusEx(boolean callexitmenufunc, boolean notitle);
+#define M_ClearMenus(callexitmenufunc) M_ClearMenusEx(callexitmenufunc, false)
 /*FNONULL*/ menupaneldef_t *M_AllocateMenuPanelDef(const char *name);
 /*RNONULL INONULL1(1)*/ menuitemstyle_t *M_AllocateMenuItemStyle(const char *name, const menuitemstyle_t *parent);
 /*ANONULL*/ menuitem_t *M_CheckMenuItemDef(const menupaneldef_t *pd, const char *name);
 /*FNONULL*/ menuitem_t *M_GetMenuItemDef(const menupaneldef_t *pd, const char *name);
+void M_RestoreMenuStack(boolean backup);
 
 panelfunc_f
 MP_SinglePlayerMain, MP_Options, MP_GameOptions, MP_SetupControls, MP_CameraSetup,
@@ -441,6 +444,9 @@ void MD_DrawDiscordRequests(menupanelinst_t *pi);
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);
+
+boolean M_AttackOnStack(void);
+void M_ReturnToConnectMenu(void);
 
 #ifdef HAVE_THREADS
 extern I_mutex m_menu_mutex;

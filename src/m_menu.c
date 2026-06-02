@@ -160,6 +160,7 @@ size_t nummenupanels;
 menuitemstyle_t menuitemstyles[MAXMENUITEMSTYLES];
 size_t nummenuitemstyles;
 menutype_t menustack[NUMMENULEVELS]; // stack of active menus, [0] == current menu
+menutype_t restoremenustack[NUMMENULEVELS]; // stack of active menus, [0] == current menu
 static menu_t *currentMenu; // current menudef
 static size_t numcurpanels;
 static menupanelinst_t *curpanels; // pointers to instantiated menu panels
@@ -735,8 +736,7 @@ inline static void M_GetGametypeColor(void)
 	warningflags = V_REDMAP;
 	recommendedflags = V_GREENMAP;
 
-	if (modeattacking // == ATTACKING_TIME
-		|| gamestate == GS_TIMEATTACK)
+	if (modeattacking)
 	{
 		highlightflags = V_ORANGEMAP;
 		return;
@@ -1203,7 +1203,7 @@ static void M_HandleMenuPresState(menutype_t newMenuType)
 	F_InitMenuPresValues(false);
 
 	// don't do the below during the in-game menus
-	if (gamestate != GS_TITLESCREEN && gamestate != GS_TIMEATTACK)
+	if (gamestate != GS_TITLESCREEN && gamestate != GS_MENU)
 		return;
 
 	// 0. Get the type and level of each menu, and level of common ancestor
@@ -1466,6 +1466,23 @@ static INT32 MR_Dummy(INT32 ch) { (void)ch; return true; }
 
 static fixed_t M_GetItemAbsY(const menupanelinst_t *pi, size_t index);
 
+static boolean M_GamestateCanOpenMenu(void)
+{
+	switch (gamestate)
+	{
+		case GS_INTRO:
+		case GS_CUTSCENE:
+		case GS_CREDITS:
+		case GS_BLANCREDITS:
+		case GS_SECRETCREDITS:
+		case GS_EVALUATION:
+			return false;
+
+		default:
+			return true;
+	}
+}
+
 static INT32 RemapGamepadButton(event_t *ev)
 {
 	// remap to keyboard keys if needed
@@ -1513,7 +1530,6 @@ static INT32 RemapGamepadButton(event_t *ev)
 	return ev->data1;
 }
 
-
 //
 // M_Responder
 //
@@ -1526,12 +1542,12 @@ boolean M_Responder(event_t *ev)
 	static INT32 lastx = 0, lasty = 0;
 	INT32 deviceplayer = G_GetDevicePlayer(ev->device);
 
-	if (dedicated || (demo.playback && demo.title)
-	|| gamestate == GS_INTRO || gamestate == GS_CUTSCENE
-	|| gamestate == GS_CREDITS || gamestate == GS_EVALUATION
-	|| gamestate == GS_BLANCREDITS || gamestate == GS_SECRETCREDITS
-	)
+	if (dedicated
+		|| (demo.playback && demo.title)
+		|| M_GamestateCanOpenMenu() == false)
+	{
 		return false;
+	}
 
 	if (CON_Ready() && gamestate != GS_WAITINGPLAYERS)
 		return false;
@@ -2082,7 +2098,7 @@ void M_Drawer(void)
 	if (menustack[0] || messagebox.active)
 	{
 		// now that's more readable with a faded background (yeah like Quake...)
-		if (gamestate == GS_TIMEATTACK)
+		if (gamestate == GS_MENU)
 		{
 			if (curbgcolor >= 0)
 				V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, curbgcolor);
@@ -2249,13 +2265,21 @@ void MP_MultiplayerPause(menupanelinst_t *pi)
 void M_StartControlPanel(void)
 {
 	// intro might call this repeatedly
-	if (menustack[0])
+	if (menustack[0] && gamestate != GS_NULL)
 	{
 		CON_ToggleOff(); // move away console
 		return;
 	}
 
 	menupanelinst_t *pi;
+
+	if (gamestate == GS_TITLESCREEN) // Set up menu state
+	{
+		// No instantly skipping the titlescreen.
+		// (We can change this timer later when extra animation is added.)
+		if (finalecount < 1)
+			return;
+	}
 
 	if (demo.playback)
 	{
@@ -2264,6 +2288,24 @@ void M_StartControlPanel(void)
 	}
 	else if (!Playing())
 	{
+		if (gamestate != GS_MENU)
+		{
+			if (titlemapinaction)
+			{
+				// We clear a LITTLE bit of state, but not a full D_ClearState.
+				// Just enough to guarantee SV_ResetServer is called before session start.
+				SV_StopServer();
+				SV_ResetServer();
+			}
+
+			G_SetGamestate(GS_MENU);
+			gameaction = ga_nothing;
+			paused = false;
+			CON_ToggleOff();
+
+			modeattacking = ATTACKING_NONE;
+		}
+
 		M_EnterMenu(MN_MAIN, true, 0);
 		pi = M_GetPanel("MAIN");
 		M_SetItemOn(pi, "SINGLEPLAYER");
@@ -2323,10 +2365,11 @@ static void M_ClearPanelInstances(void)
 }
 
 //
-// M_ClearMenus
+// M_ClearMenusEx
 //
-void M_ClearMenus(boolean callexitmenufunc)
+void M_ClearMenusEx(boolean callexitmenufunc, boolean notitle)
 {
+	CON_ClearHUD();
 	I_SetTextInput(false);
 
 	if (currentMenu)
@@ -2352,9 +2395,12 @@ void M_ClearMenus(boolean callexitmenufunc)
 	messagebox.active = false;
 	hidetitlemap = false;
 
-	// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
-	if (gamestate == GS_TIMEATTACK)
-		D_StartTitle();
+	if (!notitle)
+	{
+		// D_StartTitle does its own wipe, since GS_MENU is now a complete gamestate.
+		if (gamestate == GS_MENU)
+			D_StartTitle();
+	}
 }
 
 // corrects the value of cv_nextmap if it can't show its current map
@@ -2534,6 +2580,35 @@ void M_EnterMenu(menutype_t menunum, boolean callexit, INT32 arg)
 		menustack[0] = menunum; // M_ClearMenus got called, put it back on the stack
 
 	M_SetupNextMenu(menunum);
+}
+
+// Use for menus you return to.
+// Backs up the stack so you can place it back into place
+void M_RestoreMenuStack(boolean backup)
+{
+	if (backup)
+	{
+		memcpy(restoremenustack, menustack, sizeof(menustack));
+		return;
+	}
+
+	D_ResetGameState();
+	M_ClearMenusEx(true, false);
+	M_StartControlPanel();
+
+	// Put the stack back into place and wipe the restore stack
+	memcpy(menustack, restoremenustack, sizeof(restoremenustack));
+	memset(restoremenustack, MN_NONE, sizeof(restoremenustack));
+
+	if (menustack[0])
+		M_SetupNextMenu(menustack[0]);
+	else
+	{
+		CONS_Alert(CONS_WARNING, "Could not restore menu stack, returning to main menu.\n");
+
+		D_ResetGameState();
+		M_StartControlPanel();
+	}
 }
 
 // Guess I'll put this here, idk
@@ -5015,8 +5090,8 @@ INT32 MR_ReplayHut(INT32 choice)
 		dir_on[menudepthleft] = 0;
 	demo.inreplayhut = true;
 
-	M_ClearMenus(true);
-	G_SetGamestate(GS_TIMEATTACK); // do this before M_SetupNextMenu so that menu meta state knows that we're switching
+	//M_ClearMenus(true);
+	modeattacking = ATTACKING_MENU;
 	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
 
 	demo.rewinding = false;
@@ -5385,6 +5460,12 @@ INT32 MR_QuitReplayHut(INT32 choice)
 	demolist = NULL;
 
 	demo.inreplayhut = false;
+
+	if (!M_AttackOnStack())
+	{
+		modeattacking = ATTACKING_NONE;
+	}
+
 	S_StopMusicCredit();
 	return true;
 }
@@ -5393,6 +5474,7 @@ INT32 MR_HutStartReplay(INT32 choice)
 {
 	(void)choice;
 
+	M_RestoreMenuStack(true);
 	COM_BufAddText(va("playdemo \"%s\" %s",
 	               demolist[dir_on[menudepthleft]].filepath + strlen(srb2home) + 1, // dumb hack
 	               M_IsItemOn(&curpanels[panelOn], "LOADWATCH") ? "-addfiles" : "-force"));
@@ -5694,16 +5776,22 @@ INT32 MR_PlaybackToggleDirector(INT32 choice)
 INT32 MR_PlaybackQuit(INT32 choice)
 {
 	(void)choice;
+	UINT8 wasmodeattacking = modeattacking;
 	G_StopDemo();
 
 	if (demo.inreplayhut)
-		M_EnterMenu(MN_MISC_REPLAYHUT, true, 0);
-	else if (modeattacking)
+	{
+		// Setup menu stack so we can back out of the menu as per usual.
+		M_RestoreMenuStack(false);
+		modeattacking = ATTACKING_MENU;
+	}
+	else if (wasmodeattacking)
 		MR_ModeAttackEndGame(0);
 	else
 	{
 		M_ClearMenus(true);
-		D_StartTitle();
+		D_ResetGameState();
+		M_StartControlPanel();
 	}
 	return true;
 }
@@ -6662,7 +6750,8 @@ INT32 MR_StartGrandPrix(INT32 choice)
 
 	(void)choice;
 
-	M_ClearMenus(true);
+	M_RestoreMenuStack(true);
+	M_ClearMenusEx(true, true);
 
 	memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
 
@@ -6731,6 +6820,10 @@ INT32 MR_StartGrandPrix(INT32 choice)
 
 	return true;
 }
+
+// ===========
+//  MAIN MENU
+// ===========
 
 // ===========
 // MODE ATTACK
@@ -6808,6 +6901,22 @@ void MP_TimeAttackPresets(menupanelinst_t *pi)
 	M_SetItemTextRaw(item, "Back");
 }
 
+boolean M_AttackOnStack(void)
+{
+	UINT16 i;
+
+	for (i = 0; i < sizeof(menustack)/sizeof(menustack[0]); i++)
+	{
+		if (menustack[i] == MN_SP_TIMEATTACK)
+			return true;
+		// shhh this isnt time attack but it also uses modeattacking menu...
+		if (menustack[i] == MN_MISC_REPLAYHUT)
+			return true;
+	}
+
+	return false;
+}
+
 // Drawing function for Time Attack
 void MD_DrawTimeAttackMenu(menupanelinst_t *pi)
 {
@@ -6857,10 +6966,10 @@ INT32 MR_TimeAttack(INT32 arg)
 	}
 
 	M_PatchSkinNameTable();
-	M_ClearMenus(true);
+	//M_ClearMenus(true);
 
-	G_SetGamestate(GS_TIMEATTACK); // do this before M_SetupNextMenu so that menu meta state knows that we're switching
-	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
+	modeattacking = ATTACKING_MENU;
+	titlemapinaction = false; // Nope don't give us HOMs please
 
 	// FIXME
 	// M_SetItemOn(&curpanels[panelOn], "START"); // "Start" is selected.
@@ -6874,6 +6983,12 @@ INT32 MR_QuitTimeAttackMenu(INT32 choice)
 
 	// you know what? always putting these in the buffer won't hurt anything.
 	COM_BufAddText(va("skin \"%s\"\n", skins[cv_chooseskin.value].name));
+
+	if (!M_AttackOnStack())
+	{
+		modeattacking = ATTACKING_NONE;
+	}
+
 	S_StopMusicCredit();
 	return true;
 }
@@ -6884,9 +6999,10 @@ INT32 MR_ChooseTimeAttack(INT32 choice)
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
 	CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_LAST);
 
-	(void)choice;
 	emeralds = 0;
-	M_ClearMenus(true);
+	if (choice != 1)
+		M_RestoreMenuStack(true);
+	M_ClearMenusEx(true, true);
 	G_SetPresetCvars(G_GetRecordPresetVersion(currentrecordpreset, currentrecordpresetversion));
 	modeattacking = (levellistmode == LLM_ITEMBREAKER ? ATTACKING_ITEMBREAK : ATTACKING_TIME);
 	M_MkdirEach(gpath, M_PathParts(gpath) - 4, 0755);
@@ -6907,6 +7023,7 @@ INT32 MR_ReplayStaff(INT32 choice)
 	if (l == LUMPERROR)
 		return false;
 
+	M_RestoreMenuStack(true);
 	COM_BufAddText(va("playdemo %sS%02u -force", G_BuildMapName(cv_nextmap.value), cv_dummystaff.value));
 	return true;
 }
@@ -6932,6 +7049,8 @@ INT32 MR_ReplayTimeAttack(INT32 arg)
 
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(false, levellistmode == LLM_ITEMBREAKER);
 	CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, arg);
+
+	M_RestoreMenuStack(true);
 	COM_BufAddText(va("playdemo \"%s\" -force", demopath));
 	return true;
 }
@@ -7018,7 +7137,7 @@ INT32 MR_ModeAttackRetry(INT32 choice)
 	if (!modeattacking)
 		return false;
 
-	MR_ChooseTimeAttack(0);
+	MR_ChooseTimeAttack(1);
 	return true;
 }
 
@@ -7030,9 +7149,10 @@ INT32 MR_ModeAttackEndGame(INT32 choice)
 	if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING)
 		Command_ExitGame_f();
 
-	modeattacking = ATTACKING_NONE;
+	// Setup menu stack so we can back out of the menu as per usual.
+	M_RestoreMenuStack(false);
+	modeattacking = ATTACKING_MENU;
 
-	M_EnterMenu(MN_SP_TIMEATTACK, true, -1);
 	return true;
 }
 
@@ -7617,7 +7737,7 @@ INT32 MR_ConnectIP(INT32 choice)
 		return false;
 	}
 
-	M_ClearMenus(true);
+	M_ClearMenusEx(true, true);
 
 	CV_Set(&cv_lastserver,cv_dummyip.string);
 	COM_BufAddText(va("connect \"%s\"\n", cv_dummyip.string));
@@ -9461,6 +9581,14 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 	return true;
 }
 
+void M_ReturnToConnectMenu(void)
+{
+	M_ClearMenus(false);
+	D_ResetGameState();
+	M_StartControlPanel();
+	M_EnterMenu(MN_MP_MAIN, true, 0);
+}
+
 void MP_SetupViewServer(menupanelinst_t *pi)
 {
 	char *servermap = serverlist[joinnode].info.maptitle;
@@ -9563,8 +9691,8 @@ INT32 MR_HandleViewServer(INT32 choice)
 		case KEY_ENTER:
 			S_StartSound(NULL, sfx_menu1);
 			ChangeClientMode(CL_CHECKFILES);
-			ChangeServMusic(SERVMUS_2, true, true);
-			M_ClearMenus(false);
+			ChangeServMusic(SERVMUS_2, true,true);
+			M_ClearMenusEx(false, true);
 			return true;
 
 		case KEY_SPACE:

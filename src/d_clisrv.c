@@ -1543,7 +1543,7 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	paused = false;
 	demo.playback = false;
 	demo.title = false;
-	titlemapinaction = TITLEMAP_OFF;
+	titlemapinaction = false;
 	automapactive = false;
 
 	// load a base level
@@ -1837,13 +1837,10 @@ static void M_ConfirmConnect(event_t *ev)
 			}
 			else
 				cl_mode = CL_LOADFILES;
-
-			M_ClearMenus(true);
 		}
 		else if (ev->data1 == 'n' || ev->data1 == KEY_ESCAPE || (ev->device != 0 && G_ControlBoundToKey(0, gc_brake, ev->data1, true)))
 		{
 			cl_mode = CL_ABORTED;
-			M_ClearMenus(true);
 		}
 	}
 }
@@ -1862,7 +1859,7 @@ static boolean CL_FinishedFileList(void)
 	{
 		D_QuitNetGame();
 		CL_Reset();
-		D_StartTitle();
+		M_ReturnToConnectMenu();
 		M_StartMessage(M_GetText(
 			"You have too many WAD files loaded\n"
 			"to add ones the server is using.\n"
@@ -1875,7 +1872,7 @@ static boolean CL_FinishedFileList(void)
 	{
 		D_QuitNetGame();
 		CL_Reset();
-		D_StartTitle();
+		M_ReturnToConnectMenu();
 		M_StartMessage(M_GetText(
 			"You have the wrong addons loaded.\n\n"
 			"To play on this server, restart\n"
@@ -1915,7 +1912,7 @@ static boolean CL_FinishedFileList(void)
 			{
 				D_QuitNetGame();
 				CL_Reset();
-				D_StartTitle();
+				M_ReturnToConnectMenu();
 				M_StartMessage(M_GetText(
 					"An error occured when trying to\n"
 					"download missing addons.\n"
@@ -2041,7 +2038,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 
 				D_QuitNetGame();
 				CL_Reset();
-				D_StartTitle();
+				M_ReturnToConnectMenu();
 				M_StartMessage(
 							va(
 							"Connection failed.\n\nYour binary differs from the server.\n"
@@ -2196,7 +2193,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
 				D_QuitNetGame();
 				CL_Reset();
-				D_StartTitle();
+				M_ReturnToConnectMenu();
 				M_StartMessage(M_GetText(
 					"The direct download encountered an error.\n"
 					"See the logfile for more info.\n"
@@ -2225,7 +2222,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
 				D_QuitNetGame();
 				CL_Reset();
-				D_StartTitle();
+				M_ReturnToConnectMenu();
 				M_StartMessage(va(
 					"%d minute wait time exceeded.\n"
 					"You may retry connection.\n"
@@ -2341,7 +2338,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 
 			D_QuitNetGame();
 			CL_Reset();
-			D_StartTitle();
+			M_ReturnToConnectMenu();
 			return false;
 		}
 
@@ -2358,10 +2355,11 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		{
 			if (cl_mode != CL_DOWNLOADFILES && cl_mode != CL_DOWNLOADSAVEGAME)
 			{
-				F_CacheTitleScreen();
-				F_MenuPresTicker(true); // title sky
-				F_TitleScreenTicker(true);
-				F_TitleScreenDrawer();
+				// Draw something please!
+				F_MenuPresTicker(true);
+
+				if (!menustack[0])
+					F_SkyScroll(curbgxspeed, curbgyspeed, curbgname); // title sky
 			}
 			CL_DrawConnectionStatus();
 			HU_TickSongCredits();
@@ -2427,8 +2425,9 @@ static void CL_ConnectToServer(void)
 		Y_EndVote();
 
 	DEBFILE(va("waiting %d nodes\n", doomcom->numnodes));
-	M_ClearMenus(true);
 	G_SetGamestate(GS_WAITINGPLAYERS);
+	if (wipegamestate == GS_MENU)
+		M_ClearMenus(true);
 	wipegamestate = GS_WAITINGPLAYERS;
 
 	ClearAdminPlayers();
@@ -2454,11 +2453,15 @@ static void CL_ConnectToServer(void)
 	}
 	SL_ClearServerList(servernode);
 
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		CL_ClearPlayer(i);
+	}
+
 	do
 	{
 		// If the connection was aborted for some reason, leave
 		if (!CL_ServerConnectionTicker(tmpsave, &oldtic, &asksent))
-
 		{
 			if (P_PartialAddGetStage() >= 0)
 				P_MultiSetupWadFiles(true); // in case any partial adds were done
@@ -2778,7 +2781,6 @@ static void Command_connect(void)
 
 	if (Playing() || demo.title)
 	{
-		M_ClearMenus(true);
 		if (demo.playback && demo.title)
 			G_CheckDemoStatus();
 
@@ -2788,7 +2790,7 @@ static void Command_connect(void)
 			CL_Reset();
 		}
 
-		D_StartTitle();
+		M_ReturnToConnectMenu();
 	}
 
 	// modified game check: no longer handled
@@ -2797,16 +2799,6 @@ static void Command_connect(void)
 	server = false;
 	connectedtodedicated = false;
 
-/*
-	if (fasticmp(COM_Argv(1), "self"))
-	{
-		servernode = 0;
-		server = true;
-		/// \bug should be but...
-		//SV_SpawnServer();
-	}
-	else
-*/
 	{
 		// used in menu to connect to a server in the list
 		if (netgame && fasticmp(COM_Argv(1), "node"))
@@ -2815,12 +2807,9 @@ static void Command_connect(void)
 		}
 		else if (netgame)
 		{
-			M_ClearMenus(true);
 			D_QuitNetGame();
 			CL_Reset();
-
 			D_StartTitle();
-
 		}
 		else if (I_NetOpenSocket)
 		{
@@ -3018,9 +3007,6 @@ void CL_Reset(void)
 		G_StopMetalDemo();
 	if (demo.recording)
 		G_CheckDemoStatus();
-
-	// don't carry menus into the title screen (or wherever we're going)
-	M_ClearMenus(true);
 
 	// reset client/server code
 	DEBFILE(va("\n-=-=-=-=-=-=-= Client reset =-=-=-=-=-=-=-\n\n"));
@@ -3638,7 +3624,7 @@ static void Got_KickCmd(UINT8 **p, INT32 playernum)
 
 		D_QuitNetGame();
 		CL_Reset();
-		D_StartTitle();
+		M_ReturnToConnectMenu();
 
 		if (msg == KICK_MSG_CON_FAIL)
 			M_StartMessage(M_GetText("Server closed connection\n(Synch failure)\nPress ESC\n"), NULL, MM_NOTHING);
@@ -4839,7 +4825,7 @@ static void HandleShutdown(SINT8 node)
 	LUA_HookBool(false, HOOK(GameQuit));
 	D_QuitNetGame();
 	CL_Reset();
-	D_StartTitle();
+	M_ReturnToConnectMenu();
 	M_StartMessage(M_GetText("Server has shutdown\n\nPress Esc\n"), NULL, MM_NOTHING);
 }
 
@@ -4891,7 +4877,7 @@ static void HandleTimeout(SINT8 node)
 	LUA_HookBool(false, HOOK(GameQuit));
 	D_QuitNetGame();
 	CL_Reset();
-	D_StartTitle();
+	M_ReturnToConnectMenu();
 	M_StartMessage(M_GetText("Server Timeout\n\nPress Esc\n"), NULL, MM_NOTHING);
 }
 

@@ -249,7 +249,7 @@ void D_ProcessEvents(void)
 		if (M_ScreenshotResponder(ev))
 			continue; // ate the event
 
-		if (gameaction == ga_nothing && gamestate == GS_TITLESCREEN)
+		if (gameaction == ga_nothing && gamestate == GS_MENU)
 		{
 			if (cht_Responder(ev))
 				continue;
@@ -490,8 +490,8 @@ static void D_Display(void)
 	{
 		// set for all later
 		wipedefindex = gamestate; // wipe_xxx_toblack
-		if (gamestate == GS_TITLESCREEN && wipegamestate != GS_INTRO)
-			wipedefindex = wipe_timeattack_toblack;
+		if (gamestate == GS_MENU && wipegamestate != GS_INTRO)
+			wipedefindex = wipe_menu_toblack;
 
 		if (wipetypepre < 0 || !F_WipeExists(wipetypepre))
 			wipetypepre = wipedefs[wipedefindex];
@@ -506,7 +506,7 @@ static void D_Display(void)
 				F_WipeColorFill(31);
 				F_WipeEndScreen();
 			}
-			F_RunWipe(wipetypepre, gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
+			F_RunWipe(wipetypepre, gamestate != GS_TITLESCREEN && gamestate != GS_MENU);
 		}
 
 		if (rendermode != render_none)
@@ -553,6 +553,9 @@ static void D_Display(void)
 			AM_Drawer();
 			break;
 
+		case GS_MENU:
+			break;
+
 		case GS_INTERMISSION:
 			Y_IntermissionDrawer();
 			HU_Drawer();
@@ -561,9 +564,6 @@ static void D_Display(void)
 		case GS_VOTING:
 			Y_VoteDrawer();
 			HU_Drawer();
-			break;
-
-		case GS_TIMEATTACK:
 			break;
 
 		case GS_INTRO:
@@ -620,21 +620,28 @@ static void D_Display(void)
 
 		// clean up border stuff
 		// see if the border needs to be initially drawn
-		if (gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction && curbghide && (!hidetitlemap)))
+		if (G_GamestateUsesLevel() == true || (gamestate == GS_TITLESCREEN && titlemapinaction && curbghide && (!hidetitlemap)))
 		{
 
 			D_RenderLevel();
 
 			ps_uitime = I_GetPreciseTime();
 
-			if (gamestate == GS_LEVEL)
+			switch (gamestate)
 			{
-				ST_Drawer();
-				F_TextPromptDrawer();
-				HU_Drawer();
+				case GS_LEVEL:
+					ST_Drawer();
+					F_TextPromptDrawer();
+					HU_Drawer();
+					break;
+
+				case GS_TITLESCREEN:
+					F_TitleScreenDrawer();
+					break;
+
+				default:
+					break;
 			}
-			else
-				F_TitleScreenDrawer();
 		}
 		else
 		{
@@ -697,7 +704,7 @@ dedipostwipe:
 		if (rendermode != render_none)
 			F_WipeEndScreen();
 
-		F_RunWipe(wipetypepost, gamestate != GS_TIMEATTACK && gamestate != GS_INTRO);
+		F_RunWipe(wipetypepost, gamestate != GS_MENU && gamestate != GS_INTRO);
 
 		// reset counters so timedemo doesn't count the wipe duration
 		if (demo.timing)
@@ -868,7 +875,7 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 	nowtime = lastwipetic = I_GetTime();
 	endtime = nowtime + endtimes[type];
 
-	if (gamestate != GS_TITLESCREEN && gamestate != GS_TIMEATTACK && gamestate != GS_INTRO)
+	if (gamestate != GS_TITLESCREEN && gamestate != GS_INTRO && gamestate != GS_MENU)
 		drawMenu = true;
 
 	WipeInAction = 1 + !drawMenu;
@@ -1175,37 +1182,20 @@ void D_SRB2Loop(void)
 // =========================================================================
 
 //
-// D_StartTitle
+// D_ResetGameState
 //
-void D_StartTitle(void)
+void D_ResetGameState(void)
 {
 	if (dedicated)
 		I_Error("D_StartTitle is called on dedicated server");
 
 	INT32 i;
 
-	S_StopMusic();
-
-	if (netgame)
-	{
-		G_SetGamestate(GS_WAITINGPLAYERS); // hack to prevent a command repeat
-
-		if (server)
-		{
-			i = G_GetFirstMapOfGametype(gametype)+1;
-
-			if (i > nummapheaders)
-				I_Error("D_StartTitle: No valid map ID found!?");
-
-			COM_BufAddText(va("map %s\n", G_BuildMapName((mapnum_t)(i))));
-		}
-
-		return;
-	}
-
 	// okay, stop now
 	// (otherwise the game still thinks we're playing!)
+#ifdef HAVE_CURL
 	CURLAbortFile();
+#endif
 	SV_StopServer();
 	SV_ResetServer();
 
@@ -1246,7 +1236,7 @@ void D_StartTitle(void)
 	memset(displayplayers, 0, sizeof(displayplayers));
 	memset(g_localplayers, 0, sizeof g_localplayers);
 	consoleplayer = 0;
-	//demosequence = -1;
+	demo.title = false;
 	G_SetGametype(GT_RACE); // SRB2kart
 	paused = false;
 	F_InitMenuPresValues(true);
@@ -1254,19 +1244,37 @@ void D_StartTitle(void)
 	// clear cmd building stuff
 	memset(gamekeydown, 0, sizeof(gamekeydown));
 
-	F_StartTitleScreen();
-
 	// Reset the palette
 	if (rendermode != render_none)
 		V_SetPaletteLump("PLAYPAL");
 
 	G_ResetAllControllerRumbles();
 
+	// map palettes affect this
+	G_ResetControllerLED();
+
 	// The title screen is obviously not a tutorial! (Unless I'm mistaken)
 	tutorialmode = false;
 
-	// map palettes affect this
-	G_ResetControllerLED();
+	P_FreeLevelState();
+	P_InvalidateThinkersWithoutInit();
+
+	G_SetGamestate(GS_NULL);
+	wipegamestate = GS_NULL;
+}
+
+//
+// D_StartTitle
+//
+
+void D_StartTitle(void)
+{
+	if (!demo.title)
+		S_StopMusic();
+
+	D_ResetGameState();
+	F_StartTitleScreen();
+	M_ClearMenus(false);
 }
 
 //

@@ -202,6 +202,7 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost);
 void G_DeferedInitNew(boolean pencoremode, mapnum_t map, INT32 pickedchar,
 	UINT8 ssplayers, boolean FLS);
 void G_DoLoadLevel(boolean resetplayer);
+void G_DoLoadLevelEx(boolean resetplayer, gamestate_t newstate);
 
 void G_StartTitleCard(void);
 void G_PreLevelTitleCard(void);
@@ -275,8 +276,6 @@ void G_LoadGameData(void);
 void G_LoadGameSettings(void);
 
 void G_SetGameModified(boolean silent, boolean major);
-
-void G_SetGamestate(gamestate_t newstate);
 
 boolean G_GamestateUsesLevel(void);
 

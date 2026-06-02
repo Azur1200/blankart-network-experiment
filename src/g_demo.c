@@ -3592,7 +3592,6 @@ static void PrintDemoError(const char (*msg)[1024])
 
 	CONS_Alert(CONS_ERROR, "%s", *msg);
 	demo.playback = false;
-	demo.title = false;
 	if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
 		M_StartMessage(*msg, NULL, MM_NOTHING);
 }
@@ -3617,7 +3616,7 @@ void G_DoPlayDemo(char *defdemoname)
 #endif
 
 	msg[0] = '\0';
-	M_ClearMenus(true);
+	M_ClearMenusEx(true, true);
 	G_InitDemoRewind();
 	gameaction = ga_nothing;
 
@@ -4465,7 +4464,10 @@ static void G_StopTimingDemo(void)
 	if (timedemo_quit)
 		COM_ImmedExecute("quit");
 	else
-		D_StartTitle();
+	{
+		D_ResetGameState();
+		M_StartControlPanel();
+	}
 }
 
 // reset engine variable set for the demos
@@ -4476,7 +4478,6 @@ void G_StopDemo(void)
 	demo.playback = false;
 	if (demo.title)
 		modeattacking = false;
-	demo.title = false;
 	demo.timing = false;
 	singletics = false;
 
@@ -4488,16 +4489,7 @@ void G_StopDemo(void)
 		}
 	}
 
-	if (gamestate == GS_INTERMISSION)
-		Y_EndIntermission(); // cleanup
-
-	if (gamestate == GS_VOTING)
-		Y_EndVote();
-
-	G_SetGamestate(GS_NULL);
-	wipegamestate = GS_NULL;
-	SV_StopServer();
-	SV_ResetServer();
+	D_ResetGameState();
 }
 
 boolean G_CheckDemoStatus(void)
@@ -4521,14 +4513,18 @@ boolean G_CheckDemoStatus(void)
 			G_FinishExitLevel();
 		else
 		{
+			UINT8 wasmodeattacking = modeattacking;
 			G_StopDemo();
 
 			if (timedemo_quit)
 				COM_ImmedExecute("quit");
-			else if (modeattacking)
+			else if (wasmodeattacking)
 				MR_ModeAttackEndGame(0);
 			else
-				D_StartTitle();
+			{
+				D_ResetGameState();
+				M_StartControlPanel();
+			}
 		}
 
 		return true;
