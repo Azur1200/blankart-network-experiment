@@ -305,6 +305,8 @@ static void Got_PlaySound(UINT8 **cp, INT32 playernum);
 
 static void Command_WriteTextmap(void);
 
+static void Command_Eval(void);
+
 // =========================================================================
 //                           CLIENT VARIABLES
 // =========================================================================
@@ -1153,6 +1155,8 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("automate_set", Command_Automate_Set);
 
 	COM_AddCommand("writetextmap", Command_WriteTextmap);
+
+	COM_AddCommand("eval", Command_Eval);
 
 	// for master server connection
 	AddMServCommands();
@@ -8250,6 +8254,18 @@ ROUNDQUEUE_MAX
 	D_MapChange(1 + roundqueue.entries[0].mapnum, roundqueue.entries[0].gametype, false, true, 1, false, false);
 
 	CON_ToggleOff();
+}
+
+static void Command_Eval(void)
+{
+	const char *args = COM_Args();
+
+	if (args)
+	{
+		const fixed_t n = LUA_EvalMath(args);
+
+		CONS_Printf("%f (%d)\n", FixedToFloat(n), n);
+	}
 }
 
 /** Makes a change to ::cv_forceskin take effect immediately.
