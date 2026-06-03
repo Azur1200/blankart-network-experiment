@@ -579,7 +579,8 @@ struct ranklog_t
 	// PENALTIES
 	//
 
-	INT32 timeoffroad; // Time in tics spent offroad.
+	INT32 timeoffroadcurrent; // Current time (in tics) spent offroad. Affects timeoffroadtotal
+	INT32 timeoffroadtotal; // Time in tics spent offroad.
 	INT32 wallbonks; // Number of times the player hit a wall.
 	UINT16 hitdamagingsector; // Hit a damaging sector or stray course hazard.
 	UINT16 numrespawns; // If you manage to respawn over 65535 times, color me impressed.

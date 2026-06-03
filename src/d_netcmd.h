@@ -233,6 +233,15 @@ extern consvar_t cv_kartsmonitor_congadist;
 extern consvar_t cv_kartsmonitor_decaydist;
 extern consvar_t cv_kartsmonitor_decaytime;
 
+// Ranking values, since this is overall opinionated
+extern consvar_t cv_kartrank_partimepoints, cv_kartrank_spbtimepoints, cv_kartrank_startboostpoints,
+    cv_kartrank_driftboostpoints, cv_kartrank_hitconfirmpoints, cv_kartrank_offroad_divisor,
+    cv_kartrank_lawnmowerthreshold, cv_kartrank_wallbonkpenalty, cv_kartrank_hazardpenalty,
+    cv_kartrank_respawnpenalty, cv_kartrank_hazardmercy, cv_kartrank_respawnmercy,
+    cv_kartrank_lapgrademul, cv_kartrank_lapgrademul_penaltiesoff, cv_kartrank_leadertimepoints;
+
+extern consvar_t cv_kartrank_partimehelper;
+
 // opinionated stuff for testing
 extern consvar_t cv_kartbubble_defense_canidle;
 extern consvar_t cv_kartbubble_defense_damagerate;
@@ -286,6 +295,7 @@ extern consvar_t cv_kartspbrush;
 
 extern consvar_t cv_itemlist;
 extern consvar_t cv_kartraceranks;
+extern consvar_t cv_kartrankpenalties;
 
 extern consvar_t cv_encorevotes;
 

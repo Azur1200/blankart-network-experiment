@@ -1303,6 +1303,8 @@ mobj_t *P_SpawnGhostMobjEX(mobj_t *mobj, boolean legacy)
 // Player exits the map via sector trigger
 void P_DoPlayerExit(player_t *player, pflags_t flags)
 {
+	char parhelper_buffer[256] = {0};
+
 	if (player->exiting || mapreset)
 		return;
 
@@ -1323,6 +1325,27 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			K_GetPlayerNumber();
 			K_CalculateLapGrading(player);
 			K_UpdatePositionFactorAndPlayerRanks();
+
+			if (cv_kartrank_partimehelper.value && (player == &players[consoleplayer]))
+			{
+				tic_t possiblepartime = player->realtime + PARTIMEMERCY;
+
+				snprintf(parhelper_buffer, 256, "%02i'%02i\"%02i",
+					G_TicsToMinutes(player->realtime, true),
+					G_TicsToSeconds(player->realtime),
+					G_TicsToCentiseconds(player->realtime));
+
+				CONS_Printf("Finished race in %u tics (%s)\n", player->realtime, parhelper_buffer);
+
+				memset(parhelper_buffer, 0, sizeof(parhelper_buffer));
+
+				snprintf(parhelper_buffer, 256, "%02i'%02i\"%02i",
+					G_TicsToMinutes(possiblepartime, true),
+					G_TicsToSeconds(possiblepartime),
+					G_TicsToCentiseconds(possiblepartime));
+
+				CONS_Printf("Possible par time: %u tics (%s)\n", possiblepartime, parhelper_buffer);
+			}
 
 			if (player->ranklog.prankeligible && (player->ranktier == RTIER_P) && P_IsDisplayPlayer(player))
 			{

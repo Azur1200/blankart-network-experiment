@@ -178,6 +178,8 @@ extern CV_PossibleValue_t CV_YesNo[];
 extern CV_PossibleValue_t CV_Signed[];
 extern CV_PossibleValue_t CV_Unsigned[];
 extern CV_PossibleValue_t CV_Natural[];
+extern CV_PossibleValue_t CV_FloatingTicrate[];
+extern CV_PossibleValue_t CV_FloatingTicrateDiv[];
 
 // SRB2kart
 #define KARTSPEED_AUTO -1

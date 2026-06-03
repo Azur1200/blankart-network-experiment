@@ -183,6 +183,7 @@ static void KartItemList_OnChange(void);
 static void KartTrailSlow_OnChange(void);
 static void PlayerBump_OnChange(void);
 static void KartRaceRanks_OnChange(void);
+static void KartRankPenalties_OnChange(void);
 
 static void Schedule_OnChange(void);
 
@@ -735,6 +736,56 @@ consvar_t cv_kartaltshrinktime = CVAR_INIT ("kartaltshrinktime", "14", CV_NETVAR
 static CV_PossibleValue_t kartinvintheme_cons_t[] = {{0, "Standard"}, {1, "Full"}, {0, NULL}};
 consvar_t cv_kartinvintheme = CVAR_INIT ("kartinvintheme", "Standard", CV_SAVE, kartinvintheme_cons_t, NULL);
 
+static CV_PossibleValue_t kartrankpts_f_cons_t[] = {{0, "MIN"},  {(INT32_MAX / 2), "MAX"}, {0, NULL}};
+static CV_PossibleValue_t kartrankpts_cons_t[] = {{0, "MIN"},  {0x3fff, "MAX"}, {0, NULL}};
+
+consvar_t cv_kartraceranks = CVAR_INIT ("raceranks", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRaceRanks_OnChange);
+consvar_t cv_kartrankpenalties = CVAR_INIT ("racerankpenalties", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRankPenalties_OnChange);
+
+// Tracks time in a race and displays a potential par time. Helps if you want to manually make par times!
+consvar_t cv_kartrank_partimehelper = CVAR_INIT ("partimehelper", "Off", 0, CV_OnOff, NULL);
+
+// Ranks: the point value constantly decreasing due to a set course's time limit (the "par time")
+consvar_t cv_kartrank_partimepoints = CVAR_INIT ("rank_partimepoints", "550.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+
+// Ranks: the point value constantly decreasing due to a set course's time limit (the "par time")
+consvar_t cv_kartrank_leadertimepoints = CVAR_INIT ("rank_leadertimepoints", "850.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+
+// Ranks: the point bonus given for being chased by an SPB; varies by distance
+consvar_t cv_kartrank_spbtimepoints = CVAR_INIT ("rank_spbtimepoints", "450.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+
+// Ranks: the point bonus given, based on how well you perform the starting boost.
+consvar_t cv_kartrank_startboostpoints = CVAR_INIT ("rank_startboostpoints", "50", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+
+// Ranks: the point bonus given with each drift boost.
+// Higher driftboost tiers multiply this value to give more points.
+consvar_t cv_kartrank_driftboostpoints = CVAR_INIT ("rank_driftboostpoints", "6", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+
+// Ranks: the point bonus given for hitting other players.
+consvar_t cv_kartrank_hitconfirmpoints = CVAR_INIT ("rank_hitconfirmpoints", "10", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+
+static CV_PossibleValue_t kartoffroadpenaltydiv_cons_t[] = {{1, "MIN"},  {256, "MAX"}, {0, NULL}};
+
+// Ranks: the value the tics spent offroad is divided by, to determine the amount of points taken for going offroad.
+consvar_t cv_kartrank_offroad_divisor = CVAR_INIT ("rank_offroad_divisor", "6", CV_NETVAR|CV_CHEAT|CV_GUARD, kartoffroadpenaltydiv_cons_t, NULL);
+
+consvar_t cv_kartrank_lawnmowerthreshold = CVAR_INIT ("rank_lawnmowerthreshold", "3.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_FloatingTicrateDiv, NULL);
+
+consvar_t cv_kartrank_wallbonkpenalty = CVAR_INIT ("rank_wallbonkpenalty", "5", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+
+static CV_PossibleValue_t kartrank_mercy_cons_t[] = {{0, "MIN"}, {0x7FFF, "MAX"}, {0, NULL}};
+
+consvar_t cv_kartrank_hazardmercy = CVAR_INIT ("rank_hazardmercy", "5", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_mercy_cons_t, NULL);
+consvar_t cv_kartrank_hazardpenalty = CVAR_INIT ("rank_hazardpenalty", "56", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+
+consvar_t cv_kartrank_respawnmercy = CVAR_INIT ("rank_respawnmercy", "6", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_mercy_cons_t, NULL);
+consvar_t cv_kartrank_respawnpenalty = CVAR_INIT ("rank_respawnpenalty", "200", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+
+static CV_PossibleValue_t kartrank_lapgrademul_cons_t[] = {{0, "MIN"}, {100, "MAX"}, {0, NULL}};
+
+consvar_t cv_kartrank_lapgrademul = CVAR_INIT ("rank_lapgrademul", "9", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_lapgrademul_cons_t, NULL);
+consvar_t cv_kartrank_lapgrademul_penaltiesoff = CVAR_INIT ("rank_lapgrademul_penaltiesoff", "14", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_lapgrademul_cons_t, NULL);
+
 // Invincibility damage toggles
 static CV_PossibleValue_t kartinvindmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {0, NULL}};
 
@@ -935,8 +986,6 @@ consvar_t cv_automate = CVAR_INIT ("automate", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_debugmappatch = CVAR_INIT ("debugmappatch", "", 0, NULL, NULL);
 
 consvar_t cv_allowmismatchmappatch = CVAR_INIT ("allowmismatchmappatch", "No", CV_NETVAR, CV_YesNo, NULL);
-
-consvar_t cv_kartraceranks = CVAR_INIT ("raceranks", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRaceRanks_OnChange);
 
 char timedemo_name[256];
 boolean timedemo_csv;
@@ -1255,6 +1304,7 @@ void D_RegisterServerCommands(void)
 
 	CV_RegisterVar(&cv_itemlist);
 	CV_RegisterVar(&cv_kartraceranks);
+	CV_RegisterVar(&cv_kartrankpenalties);
 
 #ifdef USE_STUN
 	CV_RegisterVar(&cv_stunserver);
@@ -10232,6 +10282,39 @@ static void KartRaceRanks_OnChange(void)
 		else
 		{
 			CONS_Printf(M_GetText("Player performance will not be ranked next round.\n"));
+		}
+	}
+}
+
+static void KartRankPenalties_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_RankPenaltiesActive() && cv_kartrankpenalties.value)
+	{
+		if (leveltime < starttime)
+		{
+			ranking_penaltyactive = true;
+			CONS_Printf(M_GetText("Penalties will be applied to ranks.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Penalties will be applied to ranks next round.\n"));
+		}
+	}
+	else if (K_RankPenaltiesActive() && !cv_kartrankpenalties.value)
+	{
+		if (leveltime < starttime)
+		{
+			ranking_penaltyactive = false;
+			CONS_Printf(M_GetText("Penalties will not be applied to ranks.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Penalties will not be applied to ranks next round.\n"));
 		}
 	}
 }

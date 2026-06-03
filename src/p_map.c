@@ -4013,11 +4013,11 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	if (mo->player)
 	{
-		if (impactspeed >= FixedMul(K_GetKartSpeed(mo->player, false, false), VALIDLOGBUMPPCT))
+		if ((impactspeed >= FixedMul(K_GetKartSpeed(mo->player, false, false), VALIDLOGBUMPPCT)) && (!mo->player->ranklog.ijustgothitasshole))
 		{
 			// We check impact speed to make things a bit more fair.
 			// You can have a tendency to "glue-wall", which can make you bonk SEVERAL times in quick succession.
-			//I_OutputMsg("[%s] logged wall bump\n", player_names[mo->player - players]);
+			// Not only that, but sometimes a more optimal line requires bumping a wall.
 			mo->player->ranklog.wallbonks += bump_penalty;
 		}
 

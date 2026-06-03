@@ -86,6 +86,47 @@ extern vector3_t clusterpoint, clusterdtf;
 // Bump weight for a Bubble Shield
 #define BUBBLEMINWEIGHT (5 * FRACUNIT)
 
+// Ranks: Worst possible score
+#define LOWESTRANKSCORE (-200)
+
+// Ranks: Best possible score
+#define HIGHESTRANKSCORE (1000)
+
+#if (LOWESTRANKSCORE < 0)
+#define LOWESTRANKSCORE_ABS (-LOWESTRANKSCORE)
+#else
+#define LOWESTRANKSCORE_ABS (LOWESTRANKSCORE)
+#endif
+
+// "Mercy value" for par times
+#define PARTIMEMERCY (33 * TICRATE)
+
+#define RANKPOINTS_PARTIME CV_Get(&cv_kartrank_partimepoints)
+
+#define RANKPOINTS_LEADERTIME CV_Get(&cv_kartrank_leadertimepoints)
+#define RANKPOINTS_SPBTIME CV_Get(&cv_kartrank_spbtimepoints)
+#define RANKPOINTS_STARTBOOST CV_Get(&cv_kartrank_startboostpoints)
+#define RANKPOINTS_DRIFTBOOST CV_Get(&cv_kartrank_driftboostpoints)
+#define RANKPOINTS_HITCONFIRM CV_Get(&cv_kartrank_hitconfirmpoints)
+
+// Ranks: The value that the tics spent offroad are divided by, for score penalties.
+// Was TICRATE / 20 rounded up, but it seemed too aggressive of a penalty.
+#define OFFROADPENALTYDIV CV_Get(&cv_kartrank_offroad_divisor)
+
+// Ranks: At this point, the game thinks you're mowing the offroad and penalizes you more harshly.
+#define LAWNMOWERTHRESHOLD \
+	((INT32)(FixedToFloat(CV_Get(&cv_kartrank_lawnmowerthreshold)) * TICRATE))
+
+#define RANKPOINTS_WALLPENALTY CV_Get(&cv_kartrank_wallbonkpenalty)
+#define RANKPOINTS_HZRDPENALTY CV_Get(&cv_kartrank_hazardpenalty)
+#define RANKPOINTS_RSPWPENALTY CV_Get(&cv_kartrank_respawnpenalty)
+
+#define RANKPOINTS_HZRDMERCY CV_Get(&cv_kartrank_hazardmercy)
+#define RANKPOINTS_RSPWMERCY CV_Get(&cv_kartrank_respawnmercy)
+
+#define RANKPOINTS_LAPGRADEMUL_WITHPENALTIES CV_Get(&cv_kartrank_lapgrademul)
+#define RANKPOINTS_LAPGRADEMUL_NOPENALTIES CV_Get(&cv_kartrank_lapgrademul_penaltiesoff)
+
 // Invincibility damage value
 #define INVINDAMAGE CV_Get(&cv_kartinvindamage)
 
@@ -399,6 +440,7 @@ boolean K_ItemListActive(void);
 boolean K_ItemPushingActive(void);
 boolean K_TrailSlowActive(void);
 boolean K_RankingsActive(void);
+boolean K_RankPenaltiesActive(void);
 INT32 K_GetBumpSpark(void);
 playerbumptype_t K_GetPlayerBump(void);
 boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);

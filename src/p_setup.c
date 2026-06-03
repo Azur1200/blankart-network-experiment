@@ -179,6 +179,7 @@ boolean itemlistactive;
 boolean trailslow_active = false;
 playerbumptype_t playerbumpactive = PBUMP_STANDARD;
 boolean rankingactive = false;
+boolean ranking_penaltyactive = false;
 boolean cannotrank = false; // We can't rank this race!
 UINT16 bossdisabled;
 boolean stoppedclock;
@@ -482,6 +483,10 @@ static void P_ClearSingleMapHeaderInfo(mapnum_t num)
 	mapheaderinfo[num]->menuflags = 0;
 	mapheaderinfo[num]->mobj_scale = FRACUNIT;
 	mapheaderinfo[num]->default_waypoint_radius = 0;
+	mapheaderinfo[num]->par_time[0] = 0;
+	mapheaderinfo[num]->par_time[1] = 0;
+	mapheaderinfo[num]->par_time[2] = 0;
+	mapheaderinfo[num]->par_time[3] = 0;
 	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting);
 	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting_encore);
 	mapheaderinfo[num]->use_encore_lighting = false;
@@ -546,11 +551,6 @@ void P_AllocMapHeader(mapnum_t i)
 		mapheaderinfo[i]->cup = NULL;
 		mapheaderinfo[i]->flickies = NULL;
 		mapheaderinfo[i]->globalEFX =  Z_Calloc(sizeof(efx_t), PU_STATIC, NULL);
-
-		mapheaderinfo[i]->par_time[0] = 0;
-		mapheaderinfo[i]->par_time[1] = 0;
-		mapheaderinfo[i]->par_time[2] = 0;
-		mapheaderinfo[i]->par_time[3] = 0;
 
 		if (mapheaderinfo[i]->globalEFX == NULL)
 			I_Error("P_AllocMapHeader: Not enough memory to allocate new global mapheader EFX (ID %d).", i);
@@ -8271,6 +8271,8 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	itempushing = false;
 	itemlistactive = false;
 	trailslow_active = false;
+	rankingactive = false;
+	ranking_penaltyactive = false;
 	bumpsparkactive = 0;
 	antibumptime = 0;
 	playerbumpactive = PBUMP_STANDARD;
@@ -8319,7 +8321,12 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 		itemlistactive = true;
 	
 	if (cv_kartraceranks.value || grandprixinfo.gp)
+	{
 		rankingactive = true;
+
+		if (cv_kartrankpenalties.value || grandprixinfo.gp)
+			ranking_penaltyactive = true;
+	}
 
 	if (cv_trailslow.value)
 		trailslow_active = true;
@@ -8648,7 +8655,6 @@ static void P_InitPlayers(void)
 
 
 #define DIST_TO_SECONDS (60.3904821429)
-#define MERCYTIME (TICRATE * 5)
 
 static tic_t P_GenerateAutoParTime(void)
 {
@@ -8657,15 +8663,16 @@ static tic_t P_GenerateAutoParTime(void)
 	double divisor = DIST_TO_SECONDS / max(1.0, FIXED_TO_FLOAT(K_GetKartGameSpeedScalar(gamespeed)));
 	tic_t result = 0;
 
-	// Resulting par time is the course length divided by the divisor, rounded up and given 5 extra seconds
-	result = (tic_t)(max(0.0, round(course_length_f / divisor))) + MERCYTIME;
+	// Resulting par time is the course length divided by the divisor, rounded up and given extra seconds
+	result = (tic_t)(max(0.0, round(course_length_f / divisor))) + PARTIMEMERCY;
 
-	I_OutputMsg("generated a par time of %u\n", result);
+	if (cv_kartrank_partimehelper.value)
+		CONS_Alert(CONS_NOTICE, "P_GenerateAutoParTime generated a par time of %u\n", result);
+
 	return result;
 }
 
 #undef DIST_TO_SECONDS
-#undef MERCYTIME
 
 static void P_InitGametype(void)
 {

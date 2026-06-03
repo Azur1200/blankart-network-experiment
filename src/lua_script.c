@@ -250,6 +250,9 @@ int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, boole
 	X(trailslow_active) \
 	X(trailslowactive) \
 	X(playerbumpactive) \
+	X(rankingactive) \
+	X(ranking_penaltyactive) \
+	X(cannotrank) \
 	X(hyubgone) \
 	X(encoremode) \
 	X(franticitems) \
@@ -295,6 +298,8 @@ const char *const global_opt[] = {
 };
 
 int global_fields_ref = LUA_NOREF;
+
+#define NOSET luaL_error(L, "global field " LUA_QS " cannot be set.", field)
 
 // Moved here from lib_getenum.
 int LUA_PushGlobals(lua_State *L)
@@ -581,6 +586,15 @@ int LUA_PushGlobals(lua_State *L)
 		case global_playerbumpactive:
 			lua_pushinteger(L, playerbumpactive);
 			return 1;
+		case global_rankingactive:
+			lua_pushboolean(L, rankingactive);
+			return 1;
+		case global_ranking_penaltyactive:
+			lua_pushboolean(L, ranking_penaltyactive);
+			return 1;
+		case global_cannotrank:
+			lua_pushboolean(L, cannotrank);
+			return 1;
 		case global_hyubgone:
 			lua_pushinteger(L, K_GetKartResult("hyudoro")->cooldown);
 			return 1;
@@ -800,6 +814,15 @@ int LUA_WriteGlobals(lua_State *L)
 			break;
 		case global_playerbumpactive:
 			playerbumpactive = (playerbumptype_t)luaL_checkinteger(L, 2);
+			break;
+		case global_rankingactive:
+			rankingactive = luaL_checkboolean(L, 2);
+			break;
+		case global_ranking_penaltyactive:
+			ranking_penaltyactive = luaL_checkboolean(L, 2);
+			break;
+		case global_cannotrank:
+			return NOSET;
 			break;
 		case global_gamespeed:
 			gamespeed = (UINT8)luaL_checkinteger(L, 2);

@@ -533,7 +533,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].ranklog.spbattack);
 		SYNC(players[i].ranklog.startboostgrading);
 		SYNC(players[i].ranklog.lapgrading);
-		SYNC(players[i].ranklog.timeoffroad);
+		SYNC(players[i].ranklog.timeoffroadcurrent);
+		SYNC(players[i].ranklog.timeoffroadtotal);
 		SYNC(players[i].ranklog.wallbonks);
 		SYNC(players[i].ranklog.hitdamagingsector);
 		SYNC(players[i].ranklog.numrespawns);
@@ -4384,6 +4385,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(itemlistactive);
 	SYNCBOOLEAN(trailslow_active);
 	SYNCBOOLEAN(rankingactive);
+	SYNCBOOLEAN(ranking_penaltyactive);
 	SYNCBOOLEAN(cannotrank);
 	SYNC(airdropactive);
 	SYNC(bumpsparkactive);
