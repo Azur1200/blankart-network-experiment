@@ -308,6 +308,10 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_highresportrait);
 
+	// h_timers.cpp
+	CV_RegisterVar(&cv_itemtimers);
+	CV_RegisterVar(&cv_itemtimers_mode);
+
 	// k_items.c
 	CV_RegisterVar(&cv_fancyroulette);
 	CV_RegisterVar(&cv_fancyroulettespeed);

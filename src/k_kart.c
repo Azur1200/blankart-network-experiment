@@ -480,7 +480,6 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartsplashefx);
 	CV_RegisterVar(&cv_hidefollowers);
 	CV_RegisterVar(&cv_driftsparkpulse);
-	CV_RegisterVar(&cv_itemtimers);
 	CV_RegisterVar(&cv_saltyhop);
 
 	CV_RegisterVar(&cv_naturalcamera);
