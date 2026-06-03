@@ -1954,6 +1954,32 @@ void G_DoLoadLevelEx(boolean resetplayer, gamestate_t newstate)
 	Z_CheckHeap(-2);
 #endif
 
+	if (roundqueue.writetextmap == true)
+	{
+		if (roundqueue.size > 0)
+		{
+			G_GetNextMap();
+
+			// roundqueue is wiped after the last round, but
+			// preserve this to track state into the Podium!
+			roundqueue.writetextmap = true;
+
+			G_NextLevel();
+			return;
+		}
+		/*else // TODO: restore when we have podium.
+		{
+			// Podium: writetextmap is finished. Yay!
+			HU_DoCEcho(va("Congratulations,\\%s!\\Check the console!", cv_playername[0].string));
+
+			S_StartSound(NULL, sfx_yeeeah);
+
+			CONS_Printf("\n\n\x83""writetextmap: Find your TEXTMAPs in %s\n", srb2home);
+
+			roundqueue.writetextmap = false;
+		}*/
+	}
+
 	for (i = 0; i <= r_splitscreen; i++)
 	{
 		if (camera[i].chase)
@@ -5513,6 +5539,16 @@ void G_NextLevel(void)
 	}
 	else if (nextmap >= NEXTMAP_SPECIAL)
 	{
+		// TODO: remove when we have podium
+		if (roundqueue.writetextmap == true && roundqueue.size == 0)
+		{
+			S_StartSound(NULL, sfx_yeeeah);
+
+			CONS_Printf("\n\n\x83""writetextmap: Find your TEXTMAPs in %s\n", srb2home);
+
+			roundqueue.writetextmap = false;
+		}
+
 		G_EndGame();
 		return;
 	}

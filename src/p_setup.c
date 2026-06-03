@@ -2423,6 +2423,11 @@ typedef struct
 	mapthing_t *angleanchor;
 } sectorspecialthings_t;
 
+static boolean P_CanWriteTextmap(void)
+{
+	return roundqueue.writetextmap == true && roundqueue.size > 0;
+}
+
 static FILE *P_OpenTextmap(const char *mode, const char *error)
 {
 	FILE *f;
@@ -8170,7 +8175,7 @@ static boolean P_LoadMapFromFile(void)
 
 	if (cv_writetextmap_includemappatch.value)
 	{
-		if (M_CheckParm("-writetextmap"))
+		if (P_CanWriteTextmap())
 			P_WriteTextmap();
 	}
 
@@ -9119,7 +9124,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		// Backwards compatibility for non-UDMF maps
 		K_AdjustWaypointsParameters();
 
-		if (M_CheckParm("-writetextmap"))
+		if (P_CanWriteTextmap())
 			P_WriteTextmapWaypoints();
 	}
 
