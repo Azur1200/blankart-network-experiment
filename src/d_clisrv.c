@@ -2809,7 +2809,7 @@ static void Command_connect(void)
 		{
 			D_QuitNetGame();
 			CL_Reset();
-			D_StartTitle();
+			M_ReturnToConnectMenu();
 		}
 		else if (I_NetOpenSocket)
 		{
@@ -4892,7 +4892,7 @@ void HandleSigfail(const char *string)
 	LUA_HookBool(false, HOOK(GameQuit));
 	D_QuitNetGame();
 	CL_Reset();
-	D_StartTitle();
+	M_ReturnToConnectMenu();
 	M_StartMessage(va(M_GetText("Signature check failed\n(%s)\nPress Esc\n"),string), NULL, MM_NOTHING);
 }
 
@@ -5020,7 +5020,7 @@ static void PT_ServerRefuse(SINT8 node)
 
 		D_QuitNetGame();
 		CL_Reset();
-		D_StartTitle();
+		M_ReturnToConnectMenu();
 
 		if (reason[1] == '|')
 		{

@@ -7315,7 +7315,7 @@ Fetch_servers_thread (int *id)
 INT32 MR_Connect(INT32 arg)
 {
 	// do not call menuexitfunc
-	M_ClearMenus(false);
+	M_ClearMenusEx(false, true);
 
 	CV_Set(&cv_lastserver, I_GetNodeAddress(serverlist[arg + cv_dummyserverpage.value * M_ServersPerPage()].node));
 
