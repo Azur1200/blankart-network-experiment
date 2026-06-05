@@ -499,6 +499,7 @@ consvar_t cv_kartbot = CVAR_INIT ("kartbot", "0", CV_NETVAR, kartbot_cons_t, NUL
 consvar_t cv_kartbot_cap = CVAR_INIT ("kartbot_cap", "0", CV_NETVAR, kartbot_cap_cons_t, NULL);
 consvar_t cv_kartbot_modifiermax = CVAR_INIT ("kartbot_modifiermax", "1.0", CV_NETVAR|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartbot_basetrackcomplexity = CVAR_INIT ("kartbot_basetrackcomplexity", "-7000", CV_NETVAR, CV_Signed, NULL);
+consvar_t cv_kartbot_finish = CVAR_INIT ("kartbot_finish", "Off", CV_NETVAR, CV_OnOff, NULL);
 
 consvar_t cv_karteliminatelast = CVAR_INIT ("karteliminatelast", "Yes", CV_NETVAR|CV_CALL, CV_YesNo, KartEliminateLast_OnChange);
 

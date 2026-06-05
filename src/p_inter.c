@@ -11,6 +11,7 @@
 /// \file  p_inter.c
 /// \brief Handling interactions (i.e., collisions)
 
+#include "d_netcmd.h"
 #include "doomdef.h"
 #include "doomstat.h"
 #include "i_system.h"
@@ -1297,7 +1298,7 @@ boolean P_CheckRacers(void)
 		return true;
 	}
 
-	if (numHumans > 0 && allHumansDone == true)
+	if (numHumans > 0 && allHumansDone == true && !cv_kartbot_finish.value)
 	{
 		// There might be bots that are still going,
 		// but all of the humans are done, so we can exit now.
