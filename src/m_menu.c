@@ -4798,6 +4798,22 @@ static boolean M_AddonsRefresh(void)
 	return false;
 }
 
+INT32 MR_TickAddons(INT32 choice)
+{
+	menupanelinst_t *pi;
+
+	pi = M_GetPanel("URL");
+	M_SetItemVisible(pi, "LOCATION1", !Playing());
+	M_SetItemVisible(pi, "LOCATION2", !Playing());
+	M_SetItemVisible(pi, "MIDGAME", Playing());
+
+	pi = M_GetPanel("BACK");
+	M_SetItemText(pi, "HEADERPATH", M_AddonsHeaderPath());
+	M_SetItemDisabled(pi, "SEARCHICON", menusearch.length == 0);
+	M_SetItemDisabled(pi, "DISKICON", majormods);
+	M_SetItemVisible(pi, "ADDONSLOADED", modifiedgame);
+}
+
 void MD_DrawAddons(menupanelinst_t *pi)
 {
 	INT32 x, y;
@@ -4828,17 +4844,6 @@ void MD_DrawAddons(menupanelinst_t *pi)
 		M_DrawTextInput(x - 18, y + 8, &menusearch, V_ALLOWLOWERCASE);
 	else
 		V_DrawString(x - 18, y + 8, V_ALLOWLOWERCASE|V_TRANSLUCENT, "Type to search...");
-
-	pi = M_GetPanel("URL");
-	M_SetItemVisible(pi, "LOCATION1", !Playing());
-	M_SetItemVisible(pi, "LOCATION2", !Playing());
-	M_SetItemVisible(pi, "MIDGAME", Playing());
-
-	pi = M_GetPanel("BACK");
-	M_SetItemText(pi, "HEADERPATH", M_AddonsHeaderPath());
-	M_SetItemDisabled(pi, "SEARCHICON", menusearch.length == 0);
-	M_SetItemDisabled(pi, "DISKICON", majormods);
-	M_SetItemVisible(pi, "ADDONSLOADED", modifiedgame);
 }
 
 static void M_AddonExec(INT32 ch)

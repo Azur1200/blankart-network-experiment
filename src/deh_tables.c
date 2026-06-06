@@ -899,6 +899,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{"TICKTIMEATTACKMENU", &MR_TickTimeAttackMenu},
 	{"TICKIMAGEDEF", &MR_TickImageDef},
 	{"TICKMULTIPLAYERMENU", &MR_TickMultiPlayerMenu},
+	{"TICKADDONS", &MR_TickAddons},
 
 	{ NULL, NULL }
 };
