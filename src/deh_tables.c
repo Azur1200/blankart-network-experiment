@@ -894,6 +894,8 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 #ifdef HAVE_DISCORDRPC
 	{ "HANDLEDISCORDREQUESTS", &MR_HandleDiscordRequests },
 #endif
+	// Start tickers
+	{"TICKPLAYBACKMENU", &MR_TickPlayBackMenu },
 
 	{ NULL, NULL }
 };

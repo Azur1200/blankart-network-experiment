@@ -5501,13 +5501,11 @@ void M_SetPlaybackMenuPointer(void)
 	//M_SetItemOn(&curpanels[panelOn], "PAUSE");
 }
 
-void MD_DrawPlaybackMenu(menupanelinst_t *pi)
+INT32 MR_TickPlayBackMenu(INT32 choice)
 {
-	INT16 i;
-	patch_t *icon;
-	UINT8 *activemap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_GOLD, GTC_MENUCACHE);
-	UINT32 transmap = max(0, (INT32)(leveltime - playback_last_menu_interaction_leveltime - 4*TICRATE)) / 5;
-	transmap = min(8, transmap) << V_ALPHASHIFT;
+	(void)choice;
+
+	menupanelinst_t *pi = M_GetPanel("MAIN");
 
 	pi->visible = false;
 
@@ -5564,6 +5562,16 @@ void MD_DrawPlaybackMenu(menupanelinst_t *pi)
 		M_SetItemX(pi, "QUIT", 188*FRACUNIT);
 		pi->x = (BASEVIDWIDTH/2 - 98)*FRACUNIT;
 	}
+	return true;
+}
+
+void MD_DrawPlaybackMenu(menupanelinst_t *pi)
+{
+	INT16 i;
+	patch_t *icon;
+	UINT8 *activemap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_GOLD, GTC_MENUCACHE);
+	UINT32 transmap = max(0, (INT32)(leveltime - playback_last_menu_interaction_leveltime - 4*TICRATE)) / 5;
+	transmap = min(8, transmap) << V_ALPHASHIFT;
 
 	// wip
 	//M_DrawTextBox(currentMenu->x-68, currentMenu->y-7, 15, 15);

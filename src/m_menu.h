@@ -443,6 +443,9 @@ void MD_DrawReplayHutReplayInfo(menupanelinst_t *pi);
 void MD_DrawDiscordRequests(menupanelinst_t *pi);
 #endif
 
+// Tickers
+INT32 MR_TickPlayBackMenu(INT32 choice);
+
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);
 
