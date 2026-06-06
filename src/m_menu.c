@@ -2636,6 +2636,11 @@ void M_Ticker(void)
 	else if (noFurtherInput == -1 || !WipeInAction)
 		noFurtherInput = 0;
 
+	if (currentMenu != NULL && currentMenu->tickroutine != NULL)
+	{
+		currentMenu->tickroutine(0);
+	}
+
 	if (dedicated)
 		return;
 

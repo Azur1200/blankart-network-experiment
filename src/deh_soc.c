@@ -2938,6 +2938,16 @@ void readmenu(MYFILE *f, INT32 num)
 				}
 				menudef->quitroutine = routine;
 			}
+			else if (fastcmp(word, "TICKROUTINE"))
+			{
+				menufunc_f *routine = get_menuroutine(word2);
+				if (!routine)
+				{
+					WARN("unknown tick routine '%s'", word2);
+					continue;
+				}
+				menudef->tickroutine = routine;
+			}
 			else
 				WARN("unknown word '%s'", word);
 		}

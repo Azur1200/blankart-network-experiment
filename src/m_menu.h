@@ -277,6 +277,7 @@ struct menu_t
 	char          *headerpic;
 	menufunc_f    *enterroutine;       // called before enter a menu
 	menufunc_f    *quitroutine;        // called before quit a menu
+	menufunc_f    *tickroutine;        // ticker routine
 	size_t         numpanels;
 	menupanelinst_t *panels;
 
