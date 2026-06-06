@@ -7747,7 +7747,7 @@ INT32 MR_StartServer(INT32 choice)
 		COM_BufAddText("dummyconsvar 1\n");
 	}
 
-	M_ClearMenus(true);
+	M_ClearMenusEx(true, true);
 	return true;
 }
 
