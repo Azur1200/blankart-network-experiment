@@ -4506,8 +4506,11 @@ static void M_DrawMessageMenu(void)
 // Draw an Image Def.  Aka, Help images.
 // Defines what image is used in (menuitem_t)->text.
 // You can even put multiple images in one menu!
-void MD_DrawImageDef(menupanelinst_t *pi)
+
+INT32 MR_TickImageDef(INT32 choice)
 {
+	menupanelinst_t *pi = M_GetPanel("MAIN");
+
 	for (size_t i = 0; i < pi->numitems; i++)
 	{
 		if (i == pi->itemon)
@@ -4515,7 +4518,10 @@ void MD_DrawImageDef(menupanelinst_t *pi)
 		else
 			pi->items[i].status |= IT_HIDDEN;
 	}
+}
 
+void MD_DrawImageDef(menupanelinst_t *pi)
+{
 	if (!pi->items[pi->itemon].argument)
 	{
 		V_DrawString(2,BASEVIDHEIGHT-10, MENUCAPS|V_YELLOWMAP, va("%d", (pi->itemon<<1)-1)); // intentionally not highlightflags, unlike below
@@ -6939,6 +6945,15 @@ boolean M_AttackOnStack(void)
 	return false;
 }
 
+INT32 MR_TickTimeAttackMenu(INT32 choice)
+{
+	menupanelinst_t *pi = M_GetPanel("COMMON");
+
+	// Character face!
+	M_SetItemPatch(pi, "PLAYERICON", skins[cv_chooseskin.value].name);
+	M_SetItemExtra(pi, "PLAYERICON", DEH_SkincolorName(cv_playercolor[0].value));
+}
+
 // Drawing function for Time Attack
 void MD_DrawTimeAttackMenu(menupanelinst_t *pi)
 {
@@ -6946,10 +6961,6 @@ void MD_DrawTimeAttackMenu(menupanelinst_t *pi)
 	maprecord_t *record = G_GetMapRecord(G_BuildMapName(cv_nextmap.value));
 	if (record != NULL)
 		preset = G_GetMapRecordPreset(record, currentrecordpreset);
-
-	// Character face!
-	M_SetItemPatch(pi, "PLAYERICON", skins[cv_chooseskin.value].name);
-	M_SetItemExtra(pi, "PLAYERICON", DEH_SkincolorName(cv_playercolor[0].value));
 
 	// Level record list
 	if (cv_nextmap.value)
@@ -8578,8 +8589,10 @@ INT32 MR_SetupMultiPlayer(INT32 arg)
 	return true;
 }
 
-void MP_SetupMultiPlayer(menupanelinst_t *pi)
+INT32 MR_TickMultiPlayerMenu(INT32 choice)
 {
+	menupanelinst_t *pi = M_GetPanel("MAIN");
+
 	// disable skin changes if we can't actually change skins
 	INT32 pnum = setupplayer;
 	M_SetItemDisabled(pi, "SKIN", splitscreen >= pnum && !CanChangeSkin(pnum == 0 ? consoleplayer : g_localplayers[pnum]));

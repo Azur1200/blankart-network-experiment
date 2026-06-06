@@ -896,6 +896,9 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 #endif
 	// Start tickers
 	{"TICKPLAYBACKMENU", &MR_TickPlayBackMenu },
+	{"TICKTIMEATTACKMENU", &MR_TickTimeAttackMenu},
+	{"TICKIMAGEDEF", &MR_TickImageDef},
+	{"TICKMULTIPLAYERMENU", &MR_TickMultiPlayerMenu},
 
 	{ NULL, NULL }
 };
@@ -931,7 +934,6 @@ struct panel_func_s const PANEL_FUNCS[] = {
 	{ "CAMERASETUP", &MP_CameraSetup },
 	{ "SCREENSHOTOPTIONS", &MP_ScreenshotOptions },
 	{ "ADDONSOPTIONS", &MP_AddonsOptions },
-	{ "SETUPMULTIPLAYER", &MP_SetupMultiPlayer },
 	{ "SETUPMONITORTOGGLES", &MP_SetupMonitorToggles },
 	{ "PREPREPLAYLIST", &MP_PrepReplayList },
 	{ "REPLAYHUTSTART", &MP_ReplayHutStart },

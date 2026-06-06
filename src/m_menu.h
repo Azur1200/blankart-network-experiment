@@ -445,6 +445,9 @@ void MD_DrawDiscordRequests(menupanelinst_t *pi);
 
 // Tickers
 INT32 MR_TickPlayBackMenu(INT32 choice);
+INT32 MR_TickTimeAttackMenu(INT32 choice);
+INT32 MR_TickImageDef(INT32 choice);
+INT32 MR_TickMultiPlayerMenu(INT32 choice);
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);
