@@ -1001,10 +1001,13 @@ void G_SetGameModified(boolean silent, boolean major)
 		CONS_Alert(CONS_NOTICE, M_GetText("Record Attack data will be saved to seperate save.\n"));
 
 	// If in record attack recording, cancel it.
-	if (modeattacking)
-		MR_ModeAttackEndGame(0);
-	else if (marathonmode)
-		Command_ExitGame_f();
+	if (gamestate != GS_MENU)
+	{
+		if (modeattacking)
+			MR_ModeAttackEndGame(0);
+		else if (marathonmode)
+			Command_ExitGame_f();
+	}
 }
 
 /** Builds an original game map name from a map number.
