@@ -1182,9 +1182,9 @@ void D_SRB2Loop(void)
 // =========================================================================
 
 //
-// D_ResetGameState
+// D_ClearState
 //
-void D_ResetGameState(void)
+void D_ClearState(void)
 {
 	if (dedicated)
 		I_Error("D_StartTitle is called on dedicated server");
@@ -1272,7 +1272,7 @@ void D_StartTitle(void)
 	if (!demo.title)
 		S_StopMusic();
 
-	D_ResetGameState();
+	D_ClearState();
 	F_StartTitleScreen();
 	M_ClearMenus(false);
 }

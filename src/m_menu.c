@@ -2609,7 +2609,7 @@ void M_RestoreMenuStack(boolean backup)
 		return;
 	}
 
-	D_ResetGameState();
+	D_ClearState();
 	M_ClearMenusEx(true, false);
 	M_StartControlPanel();
 
@@ -2623,7 +2623,7 @@ void M_RestoreMenuStack(boolean backup)
 	{
 		CONS_Alert(CONS_WARNING, "Could not restore menu stack, returning to main menu.\n");
 
-		D_ResetGameState();
+		D_ClearState();
 		M_StartControlPanel();
 	}
 }
@@ -5860,7 +5860,7 @@ INT32 MR_PlaybackQuit(INT32 choice)
 	else
 	{
 		M_ClearMenus(true);
-		D_ResetGameState();
+		D_ClearState();
 		M_StartControlPanel();
 	}
 	return true;
@@ -9685,7 +9685,7 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 void M_ReturnToConnectMenu(void)
 {
 	M_ClearMenus(false);
-	D_ResetGameState();
+	D_ClearState();
 	M_StartControlPanel();
 	M_EnterMenu(MN_MP_MAIN, true, 0);
 }

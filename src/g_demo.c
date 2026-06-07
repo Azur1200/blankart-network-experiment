@@ -4465,7 +4465,7 @@ static void G_StopTimingDemo(void)
 		COM_ImmedExecute("quit");
 	else
 	{
-		D_ResetGameState();
+		D_ClearState();
 		M_StartControlPanel();
 	}
 }
@@ -4489,7 +4489,7 @@ void G_StopDemo(void)
 		}
 	}
 
-	D_ResetGameState();
+	D_ClearState();
 }
 
 boolean G_CheckDemoStatus(void)
@@ -4522,7 +4522,7 @@ boolean G_CheckDemoStatus(void)
 				MR_ModeAttackEndGame(0);
 			else
 			{
-				D_ResetGameState();
+				D_ClearState();
 				M_StartControlPanel();
 			}
 		}
