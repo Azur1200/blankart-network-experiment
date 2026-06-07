@@ -243,6 +243,7 @@ struct menupaneldef_t
 	INT16         numitems;           // # of menu items
 	menuitem_t   *items;              // menu items
 	menudrawer_f *drawroutine;        // draw routine
+	boolean       scrollbar;          // draw scrollbar
 	INT16         scrollheight;       // height of scrolling area
 	INT16         cursoroffset;       // X offset of cursor
 	INT16         lineheight;         // default Y offset to add for each item
@@ -451,6 +452,8 @@ INT32 MR_TickImageDef(INT32 choice);
 INT32 MR_TickMultiPlayerMenu(INT32 choice);
 INT32 MR_TickAddons(INT32 choice);
 INT32 MR_TickStats(INT32 choice);
+INT32 MR_TickReplayHutReplayInfo(INT32 choice);
+INT32 MR_TickReplayHut(INT32 choice);
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);

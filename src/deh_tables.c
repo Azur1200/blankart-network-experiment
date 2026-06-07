@@ -901,18 +901,18 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{"TICKMULTIPLAYERMENU", &MR_TickMultiPlayerMenu},
 	{"TICKADDONS", &MR_TickAddons},
 	{"TICKSTATS", &MR_TickStats},
+	{"TICKREPLAYHUT", &MR_TickReplayHut},
+	//{"TICKREPLAYHUTREPLAYINFO", &MR_TickReplayHutReplayInfo},
 
 	{ NULL, NULL }
 };
 
 struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWLEVELSTATS", &MD_DrawLevelStats },
-	{ "DRAWREPLAYHUT", &MD_DrawReplayHut },
 	{ "DRAWTIMEATTACKMENU", &MD_DrawTimeAttackMenu },
 	{ "DRAWSETUPMULTIPLAYERMENU", &MD_DrawSetupMultiPlayerMenu },
 	{ "DRAWVIDEOMODE", &MD_DrawVideoMode },
 	{ "DRAWADDONS", &MD_DrawAddons },
-	{ "DRAWREPLAYSTARTMENU", &MD_DrawReplayStartMenu },
 	{ "DRAWPLAYBACKMENU", &MD_DrawPlaybackMenu },
 	{ "DRAWIMAGEDEF", &MD_DrawImageDef },
 	{ "DRAWMUSICTEST", &MD_DrawMusicTest },
@@ -921,7 +921,6 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWCONNECTMENU", &MD_DrawConnectMenu },
 	{ "DRAWVIEWSERVER", &MD_DrawViewServer },
 	{ "DRAWLEVELPLATTERMENU", &MD_DrawLevelPlatterMenu },
-	{ "DRAWREPLAYHUTREPLAYINFO", &MD_DrawReplayHutReplayInfo },
 #ifdef HAVE_DISCORDRPC
 	{ "DRAWDISCORDREQUESTS", &MD_DrawDiscordRequests },
 #endif

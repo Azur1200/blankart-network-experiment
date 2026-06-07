@@ -3449,8 +3449,7 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 		V__DrawOneScaleString(cursorx, cursory + 3*FRACUNIT, FRACUNIT/2, pflags, HU_FONT, "WAIT");
 
 	// Draw scrollbar
-	// FIXME make replay hut scrollbar an option?
-	if (pd->drawroutine == MD_DrawReplayHut)
+	if (pd->scrollbar == true)
 	{
 		INT32 bh = (vid.scaledheight - 80)*FRACUNIT;
 		x = (BASEVIDWIDTH - 4)*FRACUNIT;
@@ -5247,10 +5246,10 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 	return true;
 }
 
-void MD_DrawReplayHutReplayInfo(menupanelinst_t *pi)
+INT32 MR_TickReplayHutReplayInfo(INT32 choice)
 {
 	menupanelinst_t *bg = M_GetPanel("DEMOINFOBG");
-	menupanelinst_t *fg = pi;//M_GetPanel("DEMOINFOFG");
+	menupanelinst_t *fg = M_GetPanel("DEMOINFOFG");
 
 	fg->visible = false;
 	M_SetItemVisible(fg, "OUTDATED", false);
@@ -5333,9 +5332,9 @@ void MD_DrawReplayHutReplayInfo(menupanelinst_t *pi)
 		else if (mdemo->gametype == GT_RACE)
 		{
 			M_SetItemText(fg, "SCORE", va("%d'%02d\"%02d",
-			                              G_TicsToMinutes(score, true),
-			                              G_TicsToSeconds(score),
-			                              G_TicsToCentiseconds(score)));
+				G_TicsToMinutes(score, true),
+				G_TicsToSeconds(score),
+				G_TicsToCentiseconds(score)));
 		}
 		else
 		{
@@ -5349,6 +5348,8 @@ void MD_DrawReplayHutReplayInfo(menupanelinst_t *pi)
 		M_SetItemExtra(fg, "FACE", color >= 0 && color < numskincolors ? DEH_SkincolorName(color) : "");
 		break;
 	}
+
+	return true;
 }
 
 // TODO: generalize, i can't do math ugh
@@ -5378,110 +5379,120 @@ static fixed_t M_ReplayHutScroll(fixed_t scrollamt, tic_t timer)
 	return scrollx / 2;
 }
 
-void MD_DrawReplayHut(menupanelinst_t *pi)
+INT32 MR_TickReplayHut(INT32 choice)
 {
+	(void)choice;
 	size_t i;
 
-	pi->scrollheight = (vid.scaledheight - 90)*FRACUNIT;
+	MR_TickReplayHutReplayInfo(0);
 
-	for (i = 0; i < 50; i++)
+	if (M_CheckPanel("DEMOLIST"))
 	{
-		size_t demoi = pi->itemon + (i/2 * (i & 1 ? -1 : 1));
-		if (demoi < sizedirmenu && demolist[demoi].type == MD_NOTLOADED)
+		menupanelinst_t *pi = M_GetPanel("DEMOLIST");
+
+		pi->scrollheight = (vid.scaledheight - 90)*FRACUNIT;
+
+		for (i = 0; i < 50; i++)
 		{
-			G_LoadDemoInfo(&demolist[demoi]);
-			M_SetItemTextRaw(&pi->items[demoi], demolist[demoi].title);
-			break;
+			size_t demoi = pi->itemon + (i/2 * (i & 1 ? -1 : 1));
+			if (demoi < sizedirmenu && demolist[demoi].type == MD_NOTLOADED)
+			{
+				G_LoadDemoInfo(&demolist[demoi]);
+				M_SetItemTextRaw(&pi->items[demoi], demolist[demoi].title);
+				break;
+			}
+		}
+
+		menuitemstyle_t *style = DEH_FindMenuItemStyle("REPLAYSELECT");
+		if (style == NULL)
+			return false;
+
+		style->parts[0].xofs = 0;
+		for (i = 0; i < pi->numitems; i++)
+		{
+			if (pi->items[i].style == style)
+				pi->items[i].style = NULL;
+
+			if (i != pi->itemon || demolist[i].type == MD_SUBDIR)
+				continue;
+
+			pi->items[i].style = style;
+			style->parts[0].xofs = -M_ReplayHutScroll(M_ItemWidth(pi, i) - vid.scaledwidth*FRACUNIT + pi->x*2, cursortimer);
 		}
 	}
 
-	menuitemstyle_t *style = DEH_FindMenuItemStyle("REPLAYSELECT");
-	if (style == NULL)
-		return;
-
-	style->parts[0].xofs = 0;
-	for (i = 0; i < pi->numitems; i++)
+	if (M_CheckPanel("RANKINGS"))
 	{
-		if (pi->items[i].style == style)
-			pi->items[i].style = NULL;
+		UINT8 i;
+		menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
 
-		if (i != pi->itemon || demolist[i].type == MD_SUBDIR)
-			continue;
+		// Draw rankings beyond first
+		menupanelinst_t *pi = M_GetPanel("RANKINGS");
+		M_ClearPanelItems(pi);
 
-		pi->items[i].style = style;
-		style->parts[0].xofs = -M_ReplayHutScroll(M_ItemWidth(pi, i) - vid.scaledwidth*FRACUNIT + pi->x*2, cursortimer);
-	}
-}
+		for (i = 1; i < MAXPLAYERS && mdemo->standings[i].ranking; i++)
+		{
+			menuitem_t *item;
+			INT32 y = i*20*FRACUNIT;
+			UINT32 score = mdemo->standings[i].timeorscore;
 
-void MD_DrawReplayStartMenu(menupanelinst_t *pi)
-{
-	UINT8 i;
-	menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
+			item = M_AppendMenuItem(pi, 1, y, 0);
+			item->style = DEH_FindMenuItemStyle(score == UINT32_MAX-1 ? "REPLAYRANKINGTHIN" : "REPLAYRANKING");
+			M_SetItemTextRaw(item, va("%2d", mdemo->standings[i].ranking));
+			M_SetItemPatchRaw(item, mdemo->standings[i].name);
 
-	// Draw rankings beyond first
-	pi = M_GetPanel("RANKINGS");
-	M_ClearPanelItems(pi);
+			if (score == UINT32_MAX-1)
+				M_SetItemExtraRaw(item, "No Contest");
+			else if (mdemo->gametype == GT_RACE)
+				M_SetItemExtraRaw(item, va("%d'%02d\"%02d",
+										   G_TicsToMinutes(score, true),
+										   G_TicsToSeconds(score),
+										   G_TicsToCentiseconds(score)));
+				else
+					M_SetItemExtraRaw(item, va("%d", score));
 
-	for (i = 1; i < MAXPLAYERS && mdemo->standings[i].ranking; i++)
-	{
-		menuitem_t *item;
-		INT32 y = i*20*FRACUNIT;
-		UINT32 score = mdemo->standings[i].timeorscore;
+			// Character face!
+			item = M_AppendMenuItem(pi, 95*FRACUNIT, y, 0);
+			item->style = DEH_FindMenuItemStyle("REPLAYRANKINGICON");
+			INT32 skin = mdemo->standings[i].skin;
+			skincolornum_t color = mdemo->standings[i].color;
+			M_SetItemPatchRaw(item, skin >= 0 && skin < numskins ? skins[skin].name : "");
+			M_SetItemExtraRaw(item, color >= 0 && color < numskincolors ? DEH_SkincolorName(color) : "");
+		}
 
-		item = M_AppendMenuItem(pi, 1, y, 0);
-		item->style = DEH_FindMenuItemStyle(score == UINT32_MAX-1 ? "REPLAYRANKINGTHIN" : "REPLAYRANKING");
-		M_SetItemTextRaw(item, va("%2d", mdemo->standings[i].ranking));
-		M_SetItemPatchRaw(item, mdemo->standings[i].name);
+		pi->y = 62*FRACUNIT - M_ReplayHutScroll((100 + i*20 - vid.scaledheight)*FRACUNIT, menutimer);
 
-		if (score == UINT32_MAX-1)
-			M_SetItemExtraRaw(item, "No Contest");
-		else if (mdemo->gametype == GT_RACE)
-			M_SetItemExtraRaw(item, va("%d'%02d\"%02d",
-			                         G_TicsToMinutes(score, true),
-			                         G_TicsToSeconds(score),
-			                         G_TicsToCentiseconds(score)));
-		else
-			M_SetItemExtraRaw(item, va("%d", score));
+		// Draw a warning prompt if needed
+		const char *warning;
+		switch (mdemo->addonstatus)
+		{
+			case DFILE_ERROR_CANNOTLOAD:
+				warning = "Some addons in this replay cannot be loaded.\nYou can watch anyway, but desyncs may occur.";
+				break;
 
-		// Character face!
-		item = M_AppendMenuItem(pi, 95*FRACUNIT, y, 0);
-		item->style = DEH_FindMenuItemStyle("REPLAYRANKINGICON");
-		INT32 skin = mdemo->standings[i].skin;
-		skincolornum_t color = mdemo->standings[i].color;
-		M_SetItemPatchRaw(item, skin >= 0 && skin < numskins ? skins[skin].name : "");
-		M_SetItemExtraRaw(item, color >= 0 && color < numskincolors ? DEH_SkincolorName(color) : "");
-	}
+			case DFILE_ERROR_NOTLOADED:
+			case DFILE_ERROR_INCOMPLETEOUTOFORDER:
+				warning = "Loading addons will mark your game as modified, and Record Attack may be unavailable.\nYou can watch without loading addons, but desyncs may occur.";
+				break;
 
-	pi->y = 62*FRACUNIT - M_ReplayHutScroll((100 + i*20 - vid.scaledheight)*FRACUNIT, menutimer);
+			case DFILE_ERROR_EXTRAFILES:
+				warning = "You have addons loaded that were not present in this replay.\nYou can watch anyway, but desyncs may occur.";
+				break;
 
-	// Draw a warning prompt if needed
-	const char *warning;
-	switch (mdemo->addonstatus)
-	{
-	case DFILE_ERROR_CANNOTLOAD:
-		warning = "Some addons in this replay cannot be loaded.\nYou can watch anyway, but desyncs may occur.";
-		break;
+			case DFILE_ERROR_OUTOFORDER:
+				warning = "You have this replay's addons loaded, but they are out of order.\nYou can watch anyway, but desyncs may occur.";
+				break;
 
-	case DFILE_ERROR_NOTLOADED:
-	case DFILE_ERROR_INCOMPLETEOUTOFORDER:
-		warning = "Loading addons will mark your game as modified, and Record Attack may be unavailable.\nYou can watch without loading addons, but desyncs may occur.";
-		break;
+			default:
+				warning = "";
+				break;
+		}
 
-	case DFILE_ERROR_EXTRAFILES:
-		warning = "You have addons loaded that were not present in this replay.\nYou can watch anyway, but desyncs may occur.";
-		break;
-
-	case DFILE_ERROR_OUTOFORDER:
-		warning = "You have this replay's addons loaded, but they are out of order.\nYou can watch anyway, but desyncs may occur.";
-		break;
-
-	default:
-		warning = "";
-		break;
+		pi = M_GetPanel("WARNING");
+		M_SetItemText(pi, "WARNING", warning);
 	}
 
-	pi = M_GetPanel("WARNING");
-	M_SetItemText(pi, "WARNING", warning);
+	return true;
 }
 
 INT32 MR_QuitReplayHut(INT32 choice)

@@ -2531,6 +2531,10 @@ void readmenupanel(MYFILE *f, menupaneldef_t *pd)
 			}
 			pd->drawroutine = drawer;
 		}
+		else if (fastcmp(word, "SCROLLBAR"))
+		{
+			pd->scrollbar = (boolean)(word2[0] == 'T' || word2[0] == 'Y' || get_number(word2));
+		}
 		else if (fastcmp(word, "SCROLLHEIGHT"))
 		{
 			pd->scrollheight = get_number(word2);
