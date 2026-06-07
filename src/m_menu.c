@@ -2126,7 +2126,7 @@ void M_Drawer(void)
 			sortedpanels[i] = i;
 		qs22j(sortedpanels, numcurpanels, sizeof(*sortedpanels), SortPanels);
 
-		if (currentMenu && currentMenu->vhs)
+		if (currentMenu && currentMenu->vhs && cv_vhseffect.value)
 			V_DrawVhsEffect(false);
 
 		M_GetGametypeColor();
