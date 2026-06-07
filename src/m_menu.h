@@ -35,6 +35,12 @@ extern "C" {
 // MENUS
 //
 
+extern INT32 menuKey; // keyboard key pressed for menu
+
+#define MENUDELAYTIME 3
+
+extern INT16 menuInputDelay;
+
 // max size of menu stack
 #define NUMMENULEVELS 8
 

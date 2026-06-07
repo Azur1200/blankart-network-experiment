@@ -169,6 +169,9 @@ static size_t panelOn;
 static INT16 skullAnimCounter = 10; // skull animation counter
 static tic_t menutimer = 0, cursortimer = 0; // tics since menu change/menu movement
 
+INT32 menuKey = -1; // keyboard key pressed for menu
+INT16 menuInputDelay = 0; // Delay before registering multiple inputs.
+
 static struct
 {
 	boolean active;
@@ -1547,13 +1550,14 @@ static INT32 RemapGamepadButton(event_t *ev)
 //
 // M_Responder
 //
+static boolean M_BasicMenuInput(INT32 gc)
+{
+	return G_PlayerInputDown(0, gc, true, DEADZONE_BUTTON);
+}
+
 boolean M_Responder(event_t *ev)
 {
-	INT32 ch = -1;
-	static tic_t mousewait = 0, joyxwait = 0, joyywait = 0;
-	static INT32 pjoyx = 0, pjoyy = 0;
-	static INT32 pmousex = 0, pmousey = 0;
-	static INT32 lastx = 0, lasty = 0;
+	menuKey = -1;
 	INT32 deviceplayer = G_GetDevicePlayer(ev->device);
 
 	if (dedicated
@@ -1572,161 +1576,23 @@ boolean M_Responder(event_t *ev)
 		// (but still allow shift keyup so caps doesn't get stuck)
 		return false;
 	}
-	else if (ev->type == ev_keydown)
+
+	if (ev->type == ev_keydown && ev->data1 < KEY_JOY1)
 	{
-		ch = ev->data1;
-
-		// added 5-2-98 remap virtual keys (mouse buttons)
-		switch (ch)
-		{
-			case KEY_MOUSE1:
-				ch = KEY_ENTER;
-				break;
-			case KEY_MOUSE1 + 1:
-				ch = KEY_ESCAPE;
-				break;
-			default:
-				ch = RemapGamepadButton(ev);
-				break;
-		}
-	}
-	else if (menustack[0])
-	{
-		if (ev->type == ev_joystick && deviceplayer == 0)
-		{
-			fixed_t rate = 0;
-			UINT32 repeat = 0;
-
-			if (ev->data1 == 1)
-			{
-				pjoyy = (abs(ev->data2) > JOYAXISRANGE/4) ? ev->data2 : 0;
-			}
-			else
-			{
-				pjoyx = (abs(ev->data2) > JOYAXISRANGE/4) ? ev->data2 : 0;
-			}
-			
-			if (pjoyx == 0 && pjoyy == 0)
-			{
-				joyywait = 0;
-			}
-			else if (abs(pjoyy) > abs(pjoyx))
-			{
-				rate = FixedDiv(abs(pjoyy), JOYAXISRANGE);
-				repeat = (FixedMul(2*FRACUNIT, rate) + FixedMul(FRACUNIT - rate, (NEWTICRATE/2)*FRACUNIT))/FRACUNIT;
-			
-				if (pjoyy > 0)
-				{
-					if (joyywait < I_GetTime())
-					{
-						ch = KEY_DOWNARROW;
-						joyywait = I_GetTime() + repeat;
-					}
-				}
-				else if (pjoyy < 0)
-				{
-					if (joyywait < I_GetTime())
-					{
-						ch = KEY_UPARROW;
-						joyywait = I_GetTime() + repeat;
-					}
-				}
-			}
-			else
-			{
-				rate = FixedDiv(abs(pjoyx), JOYAXISRANGE);
-				repeat = (FixedMul(2*FRACUNIT, rate) + FixedMul(FRACUNIT - rate, (NEWTICRATE/2)*FRACUNIT))/FRACUNIT;
-				
-				if (pjoyx > 0)
-				{
-					if (joyxwait < I_GetTime())
-					{
-						ch = KEY_RIGHTARROW;
-						joyxwait = I_GetTime() + repeat;
-					}
-				}
-				else if (pjoyx < 0)
-				{
-					if (joyxwait < I_GetTime())
-					{
-						ch = KEY_LEFTARROW;
-						joyxwait = I_GetTime() + repeat;
-					}
-				}
-			}
-		}
-		// pass through other joysticks
-		else if (ev->type == ev_joystick)
-		{
-			if (!G_AxisInDeadzone(deviceplayer, ev))
-				ch = 0;
-			else
-				return false;
-		}
-		else if (ev->type == ev_mouse && mousewait < I_GetTime())
-		{
-			pmousey += ev->data3;
-			if (pmousey < lasty-30)
-			{
-				ch = KEY_DOWNARROW;
-				mousewait = I_GetTime() + NEWTICRATE/7;
-				pmousey = lasty -= 30;
-			}
-			else if (pmousey > lasty + 30)
-			{
-				ch = KEY_UPARROW;
-				mousewait = I_GetTime() + NEWTICRATE/7;
-				pmousey = lasty += 30;
-			}
-
-			pmousex += ev->data2;
-			if (pmousex < lastx - 30)
-			{
-				ch = KEY_LEFTARROW;
-				mousewait = I_GetTime() + NEWTICRATE/7;
-				pmousex = lastx -= 30;
-			}
-			else if (pmousex > lastx+30)
-			{
-				ch = KEY_RIGHTARROW;
-				mousewait = I_GetTime() + NEWTICRATE/7;
-				pmousex = lastx += 30;
-			}
-		}
+		// Record keyboard presses
+		menuKey = ev->data1;
 	}
 
-	if (ch == -1)
-		return false;
+	// update keys current state
+	G_MapEventsToControls(ev);
 
-	if (messagebox.active)
-	{
-		if (messagebox.messagetype != MM_EVENTHANDLER)
-		{
-			if (ch == ' ' || ch == 'n' || ch == 'y' || ch == KEY_ESCAPE || ch == KEY_ENTER)
-			{
-				if (M_WipeBuffer(ch, MR_Dummy))
-					return true;
-				if (messagebox.routine)
-					messagebox.routine(ch);
-				messagebox.active = false;
-				noFurtherInput = -1;
-			}
-		}
-		else
-		{
-			// dirty hack: for customising controls, I want only buttons/keys/axes, not mouse
-			if (messagebox.handler && !(ev->type == ev_mouse || (ev->type == ev_joystick && messagebox.handler != M_ChangecontrolResponse)))
-				messagebox.handler(ev);
-		}
-		return true;
-	}
-
-	// F-Keys
+	// Handle menu handling in-game.
 	if (!menustack[0])
 	{
 		noFurtherInput = -1;
 
-		switch (ch)
+		// The Fx keys.
+		switch (menuKey)
 		{
 			case KEY_F1: // Help key
 				Command_Manual_f();
@@ -1779,294 +1645,27 @@ boolean M_Responder(event_t *ev)
 				return true;
 
 			// Spymode on F12 handled in game logic
-
-			case KEY_ESCAPE: // Pop up menu
-				if (chat_on)
-				{
-					HU_clearChatChars();
-					chat_on = false;
-				}
-				else
-					M_StartControlPanel();
-				return true;
 		}
+
+		if (M_BasicMenuInput(gc_systemmenu) == true)
+		{
+			if (chat_on)
+			{
+				HU_clearChatChars();
+				chat_on = false;
+			}
+			else
+				M_StartControlPanel();
+			return true;
+		}
+
 		noFurtherInput = 0; // turns out we didn't care
 		return false;
 	}
 
-	// BP: one of the more big hack i have never made
-	// G: not so hacky anymore...?
-	// G: nevermind we have combi menuitems now
-	// G: OH DEAR GOD
-	menupanelinst_t *curpi = panelOn < numcurpanels ? &curpanels[panelOn] : NULL;
-	menupaneldef_t *curpd = curpi != NULL ? M_GetDefFromInst(curpi) : NULL;
-	menuitem_t *item = curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;
-
-	// Handle menuitems which need a specific key handling
-	if (curpd != NULL && curpd->keyhandler != NULL)
-	{
-		if (M_WipeBuffer(ch, curpd->keyhandler))
-			return true;
-		if (curpd->keyhandler(ch))
-			return true;
-	}
-
-	if (menustack[0] == MN_PLAYBACK && !con_destlines)
-	{
-		playback_last_menu_interaction_leveltime = leveltime;
-		M_DemoBinds(ch);
-	}
-
-	// binds that don't require an item
-	switch (ch)
-	{
-	case KEY_ESCAPE:
-		noFurtherInput = -1;
-
-		if (M_WipeBuffer(ch, currentMenu->quitroutine))
-			return true;
-
-		//If we entered the game search menu, but didn't enter a game,
-		//make sure the game doesn't still think we're in a netgame.
-		if (!Playing() && netgame && multiplayer)
-		{
-			netgame = false;
-			multiplayer = false;
-		}
-		M_ExitMenu();
-
-		return true;
-	}
-
-	if (item == NULL)
-		return CON_Responder(ev), true;
-
-	// string cvars accept any keyboard input
-	if (item->cvar && !item->cvar->PossibleValue)
-	{
-		if (item->cvar->flags & CV_CALL && M_WipeBuffer(ch, MR_Dummy))
-			return true;
-
-		if (M_TextInputHandle(&menuinput, ch))
-		{
-			S_StartSound(NULL, sfx_menu1); // Tails
-			CV_Set(item->cvar, menuinput.buffer);
-			return true;
-		}
-	}
-
-	// HMMM WHERE WAS THIS COPY PASTED FROM, I WONDER
-	INT32 hmove = 0, vmove = 0;
-
-	switch (ch)
-	{
-	case KEY_UPARROW:
-	case KEY_DOWNARROW:
-		vmove = ch == KEY_UPARROW ? -1 : 1;
-		break;
-
-	case KEY_PGUP:
-	case KEY_PGDN:
-		vmove = ch == KEY_PGUP ? -3 : 3;
-		break;
-
-	case KEY_LEFTARROW:
-	case KEY_RIGHTARROW:
-		hmove = ch == KEY_LEFTARROW ? -1 : 1;
-		break;
-	}
-
-	// Flip left/right with up/down for the playback menu, since it's a horizontal icon row.
-	if (curpd->horizontal)
-	{
-		INT32 tmp = hmove;
-		hmove = vmove;
-		vmove = tmp;
-	}
-
-	size_t oldPanelOn = panelOn;
-	size_t newPanelOn = panelOn;
-	INT16 oldItemOn = curpi->itemon; // prevent infinite loop
-	INT16 newItemOn = curpi->itemon;
-	INT16 altScrollOn;
-
-	// Keys usable within menu
-	if (vmove != 0)
-	{
-		INT32 dir = intsign(vmove);
-		do
-		{
-			if (curpd->multinav)
-			{
-				if (newItemOn + dir >= curpi->numitems)
-					newItemOn = curpi->numitems - (curpi->numitems % curpi->navitemcount);
-				else
-					newItemOn = newItemOn - (newItemOn % curpi->navitemcount) + intmod(newItemOn + dir, curpi->navitemcount);
-				newItemOn = min(newItemOn, curpi->numitems - 1);
-			}
-			else
-			{
-				// i don't care anymore, get me out of this hell already
-				// ...WOAH! i decided to use my brain for five seconds and look, scroll stops aren't broken now!
-				if (curpi->altscroll)
-				{
-					altScrollOn = newItemOn;
-					if (newItemOn + dir < 0 || (dir > 0 && M_GetItemAbsY(curpi, curpi->numitems-1) - M_GetItemAbsY(curpi, newItemOn) <= curpi->scrollheight))
-						break;
-				}
-				newItemOn += dir;
-			}
-
-			newPanelOn = panelOn;
-			if (curpi->disabled)
-			{
-				// can't change panels here or we'll get stuck in an infinite loop...
-			}
-			else if (newItemOn >= curpi->numitems)
-			{
-				do
-					if (++panelOn == numcurpanels) panelOn = 0;
-				while (panelOn != newPanelOn && curpanels[panelOn].disabled);
-				newItemOn -= curpi->numitems == 0 ? newItemOn : curpi->numitems;
-			}
-			else if (newItemOn < 0)
-			{
-				do
-					if (panelOn-- == 0) panelOn = numcurpanels - 1;
-				while (panelOn != newPanelOn && curpanels[panelOn].disabled);
-			}
-			curpi = &curpanels[panelOn];
-			curpd = M_GetDefFromInst(curpi);
-			newItemOn = curpi->numitems == 0 ? 0 : intmod(newItemOn, curpi->numitems);
-		}
-		while (!(oldPanelOn == panelOn && oldItemOn == newItemOn)
-		       && (curpi->numitems == 0
-		         || (curpi->altscroll ? M_GetItemAbsY(curpi, altScrollOn) == M_GetItemAbsY(curpi, newItemOn) : !M_ItemSelectable(&curpi->items[newItemOn]))
-		         || (vmove -= intsign(vmove)) != 0));
-
-		M_RawSetItemOn(curpi, newItemOn);
-		if (curpd->keyhandler == MR_HandleLevelPlatter)
-			return curpd->keyhandler(ch); // dumb hack until i figure this out
-		else if (oldPanelOn != panelOn || oldItemOn != newItemOn)
-			S_StartSound(NULL, sfx_menu1);
-		return true;
-	}
-	else if (hmove != 0)
-	{
-		if (curpd->multinav)
-		{
-			INT32 dir = intsign(hmove) * curpi->navitemcount;
-			do
-			{
-				newItemOn += dir;
-				if (newItemOn >= curpi->numitems)
-				{
-					newItemOn %= curpi->navitemcount;
-				}
-				else if (newItemOn < 0)
-				{
-					newItemOn = curpi->numitems - (curpi->numitems % curpi->navitemcount) + curpi->navitemcount + newItemOn;
-					if (newItemOn >= curpi->numitems) // wrap around properly if the last column isn't full
-						newItemOn -= curpi->navitemcount;
-				}
-				newItemOn = CLAMP(newItemOn, 0, curpi->numitems - 1);
-			}
-			while (oldItemOn != newItemOn && !M_ItemSelectable(&curpi->items[newItemOn]));
-
-			M_RawSetItemOn(curpi, newItemOn);
-			S_StartSound(NULL, sfx_menu1);
-			return true;
-		}
-		else
-		{
-			if (!(item->cvar || item->status & IT_ARROWS) || item->cvar == &cv_nextmap || item->cvar == &cv_nextcup)
-				return true;
-
-			if (M_WipeBuffer(ch, item->cvar ? (item->cvar->flags & CV_CALL ? MR_Dummy : NULL) : item->routine))
-				return true;
-
-			if (menustack[0] != MN_OP_SOUND || curpi->itemon > 3)
-				S_StartSound(NULL, sfx_menu1);
-
-			if (item->cvar)
-				M_ChangeCvar(item, hmove);
-			else
-				item->routine(hmove > 0 ? 1 : 0);
-
-			return true;
-		}
-	}
-	else switch (ch)
-	{
-		case KEY_ENTER:
-			noFurtherInput = -1;
-
-			if (menustack[0] == MN_PLAYBACK)
-			{
-				boolean held = (boolean)playback_enterheld;
-				if (held)
-					return true;
-				playback_enterheld = 3;
-			}
-
-			INT32 argument = item->argument;
-			if (item->cvar && item->cvar != &cv_nextmap && item->cvar != &cv_nextcup)
-				argument = item->cvar->value;
-
-			if (item->submenu)
-			{
-				if (M_WipeBuffer(ch, menudefs[item->submenu].enterroutine))
-					return true;
-				S_StartSound(NULL, sfx_menu1);
-				M_EnterMenu(item->submenu, true, argument);
-			}
-			else if (item->routine)
-			{
-				if (M_WipeBuffer(ch, item->routine))
-					return true;
-				S_StartSound(NULL, sfx_menu1);
-				item->routine(argument);
-			}
-			else if (item->cvar && item->cvar->PossibleValue) // not for string cvars!
-			{
-				if (item->cvar == &cv_nextmap || item->cvar == &cv_nextcup)
-					return true;
-				if (item->cvar->flags & CV_CALL && M_WipeBuffer(ch, MR_Dummy))
-					return true;
-				S_StartSound(NULL, sfx_menu1);
-				M_ChangeCvar(item, 1); // right arrow
-			}
-			return true;
-
-		case KEY_BACKSPACE:
-			// detach any keys associated with the game control
-			if (item->routine == MR_ChangeControl)
-			{
-				G_ClearControlKeys(setupcontrols, item->argument);
-				S_StartSound(NULL, sfx_shldls);
-				return true;
-			}
-
-			if (item->cvar == NULL
-			 || item->cvar == &cv_chooseskin
-			 || item->cvar == &cv_dummystaff
-			 || item->cvar == &cv_nextmap
-			 || item->cvar == &cv_nextcup
-			 || item->cvar == &cv_newgametype
-			 || item->cvar == &cv_dummymultiplayer)
-				return true;
-
-			if (item->cvar->flags & CV_CALL && M_WipeBuffer(ch, MR_Dummy))
-				return true;
-
-			if (menustack[0] != MN_OP_SOUND || curpi->itemon > 3)
-				S_StartSound(NULL, sfx_menu1);
-			M_ResetCvar(item);
-			return true;
-
-		default:
-			return CON_Responder(ev), true;
-	}
+	// We're in the menu itself now.
+	// M_Ticker will take care of the rest.
+	return true;
 }
 
 // special responder for demos
@@ -2637,6 +2236,318 @@ boolean M_MouseNeeded(void)
 //
 // M_Ticker
 //
+static boolean M_HandleMenuInput(void)
+{
+	if (menuInputDelay > 0)
+	{
+		return false;
+	}
+
+	if (messagebox.active)
+	{
+		if (messagebox.messagetype != MM_EVENTHANDLER)
+		{
+			if (M_BasicMenuInput(gc_accelerate) || M_BasicMenuInput(gc_brake) || M_BasicMenuInput(gc_systemmenu))
+			{
+				if (M_WipeBuffer(menuKey, MR_Dummy))
+					return true;
+				if (messagebox.routine)
+					messagebox.routine(menuKey);
+				messagebox.active = false;
+				noFurtherInput = -1;
+			}
+		}
+		/*else
+		{
+			// dirty hack: for customising controls, I want only buttons/keys/axes, not mouse
+			if (messagebox.handler && !(ev->type == ev_mouse || (ev->type == ev_joystick && messagebox.handler != M_ChangecontrolResponse)))
+				messagebox.handler(ev);
+		}*/
+
+		return true;
+	}
+
+	// BP: one of the more big hack i have never made
+	// G: not so hacky anymore...?
+	// G: nevermind we have combi menuitems now
+	// G: OH DEAR GOD
+	menupanelinst_t *curpi = panelOn < numcurpanels ? &curpanels[panelOn] : NULL;
+	menupaneldef_t *curpd = curpi != NULL ? M_GetDefFromInst(curpi) : NULL;
+	menuitem_t *item = curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;
+
+	// Handle menuitems which need a specific key handling
+	if (curpd != NULL && curpd->keyhandler != NULL)
+	{
+		if (M_WipeBuffer(menuKey, curpd->keyhandler))
+			return false;
+		if (curpd->keyhandler(menuKey))
+			return false;
+	}
+
+	if (menustack[0] == MN_PLAYBACK && !con_destlines)
+	{
+		playback_last_menu_interaction_leveltime = leveltime;
+		M_DemoBinds(menuKey);
+	}
+
+	if (M_BasicMenuInput(gc_brake) == true)
+	{
+		if (M_WipeBuffer(menuKey, currentMenu->quitroutine))
+			return false;
+
+		//If we entered the game search menu, but didn't enter a game,
+		//make sure the game doesn't still think we're in a netgame.
+		if (!Playing() && netgame && multiplayer)
+		{
+			netgame = false;
+			multiplayer = false;
+		}
+		M_ExitMenu();
+	}
+
+	if (item == NULL)
+		 return false;
+		//return CON_Responder(ev), true;
+
+	// string cvars accept any keyboard input
+	if (item->cvar && !item->cvar->PossibleValue)
+	{
+		if (item->cvar->flags & CV_CALL && M_WipeBuffer(menuKey, MR_Dummy))
+			return false;
+
+		if (M_TextInputHandle(&menuinput, menuKey))
+		{
+			S_StartSound(NULL, sfx_menu1); // Tails
+			CV_Set(item->cvar, menuinput.buffer);
+			return true;
+		}
+	}
+
+	// HMMM WHERE WAS THIS COPY PASTED FROM, I WONDER
+	INT32 hmove = 0, vmove = 0;
+
+	if (M_BasicMenuInput(gc_aimforward) == true)
+	{
+		vmove = -1;
+	}
+	else if (M_BasicMenuInput(gc_aimbackward) == true)
+	{
+		vmove = 1;
+	}
+	else if (M_BasicMenuInput(gc_turnleft) == true)
+	{
+		hmove = -1;
+	}
+	else if (M_BasicMenuInput(gc_turnright) == true)
+	{
+		hmove = 1;
+	}
+
+	switch (menuKey)
+	{
+		case KEY_PGUP:
+		case KEY_PGDN:
+			vmove = menuKey == KEY_PGUP ? -3 : 3;
+			break;
+	}
+
+	// Flip left/right with up/down for the playback menu, since it's a horizontal icon row.
+	if (curpd->horizontal)
+	{
+		INT32 tmp = hmove;
+		hmove = vmove;
+		vmove = tmp;
+	}
+
+	size_t oldPanelOn = panelOn;
+	size_t newPanelOn = panelOn;
+	INT16 oldItemOn = curpi->itemon; // prevent infinite loop
+	INT16 newItemOn = curpi->itemon;
+	INT16 altScrollOn;
+
+	// Keys usable within menu
+	if (vmove != 0)
+	{
+		INT32 dir = intsign(vmove);
+		do
+		{
+			if (curpd->multinav)
+			{
+				if (newItemOn + dir >= curpi->numitems)
+					newItemOn = curpi->numitems - (curpi->numitems % curpi->navitemcount);
+				else
+					newItemOn = newItemOn - (newItemOn % curpi->navitemcount) + intmod(newItemOn + dir, curpi->navitemcount);
+				newItemOn = min(newItemOn, curpi->numitems - 1);
+			}
+			else
+			{
+				// i don't care anymore, get me out of this hell already
+				// ...WOAH! i decided to use my brain for five seconds and look, scroll stops aren't broken now!
+				if (curpi->altscroll)
+				{
+					altScrollOn = newItemOn;
+					if (newItemOn + dir < 0 || (dir > 0 && M_GetItemAbsY(curpi, curpi->numitems-1) - M_GetItemAbsY(curpi, newItemOn) <= curpi->scrollheight))
+						break;
+				}
+				newItemOn += dir;
+			}
+
+			newPanelOn = panelOn;
+			if (curpi->disabled)
+			{
+				// can't change panels here or we'll get stuck in an infinite loop...
+			}
+			else if (newItemOn >= curpi->numitems)
+			{
+				do
+					if (++panelOn == numcurpanels) panelOn = 0;
+					while (panelOn != newPanelOn && curpanels[panelOn].disabled);
+					newItemOn -= curpi->numitems == 0 ? newItemOn : curpi->numitems;
+			}
+			else if (newItemOn < 0)
+			{
+				do
+					if (panelOn-- == 0) panelOn = numcurpanels - 1;
+					while (panelOn != newPanelOn && curpanels[panelOn].disabled);
+			}
+			curpi = &curpanels[panelOn];
+			curpd = M_GetDefFromInst(curpi);
+			newItemOn = curpi->numitems == 0 ? 0 : intmod(newItemOn, curpi->numitems);
+		}
+		while (!(oldPanelOn == panelOn && oldItemOn == newItemOn)
+			&& (curpi->numitems == 0
+			|| (curpi->altscroll ? M_GetItemAbsY(curpi, altScrollOn) == M_GetItemAbsY(curpi, newItemOn) : !M_ItemSelectable(&curpi->items[newItemOn]))
+			|| (vmove -= intsign(vmove)) != 0));
+
+		M_RawSetItemOn(curpi, newItemOn);
+		if (curpd->keyhandler == MR_HandleLevelPlatter)
+			return curpd->keyhandler(menuKey); // dumb hack until i figure this out
+		else if (oldPanelOn != panelOn || oldItemOn != newItemOn)
+			S_StartSound(NULL, sfx_menu1);
+		return true;
+	}
+	else if (hmove != 0)
+	{
+		if (curpd->multinav)
+		{
+			INT32 dir = intsign(hmove) * curpi->navitemcount;
+			do
+			{
+				newItemOn += dir;
+				if (newItemOn >= curpi->numitems)
+				{
+					newItemOn %= curpi->navitemcount;
+				}
+				else if (newItemOn < 0)
+				{
+					newItemOn = curpi->numitems - (curpi->numitems % curpi->navitemcount) + curpi->navitemcount + newItemOn;
+					if (newItemOn >= curpi->numitems) // wrap around properly if the last column isn't full
+						newItemOn -= curpi->navitemcount;
+				}
+				newItemOn = CLAMP(newItemOn, 0, curpi->numitems - 1);
+			}
+			while (oldItemOn != newItemOn && !M_ItemSelectable(&curpi->items[newItemOn]));
+
+			M_RawSetItemOn(curpi, newItemOn);
+			S_StartSound(NULL, sfx_menu1);
+			return true;
+		}
+		else
+		{
+			if (!(item->cvar || item->status & IT_ARROWS) || item->cvar == &cv_nextmap || item->cvar == &cv_nextcup)
+				return true;
+
+			if (M_WipeBuffer(menuKey, item->cvar ? (item->cvar->flags & CV_CALL ? MR_Dummy : NULL) : item->routine))
+				return true;
+
+			if (menustack[0] != MN_OP_SOUND || curpi->itemon > 3)
+				S_StartSound(NULL, sfx_menu1);
+
+			if (item->cvar)
+				M_ChangeCvar(item, hmove);
+			else
+				item->routine(hmove > 0 ? 1 : 0);
+
+			return true;
+		}
+	}
+	else
+	{
+		if (M_BasicMenuInput(gc_accelerate) == true)
+		{
+			noFurtherInput = -1;
+
+			if (menustack[0] == MN_PLAYBACK)
+			{
+				boolean held = (boolean)playback_enterheld;
+				if (held)
+					return true;
+				playback_enterheld = 3;
+			}
+
+			INT32 argument = item->argument;
+			if (item->cvar && item->cvar != &cv_nextmap && item->cvar != &cv_nextcup)
+				argument = item->cvar->value;
+
+			if (item->submenu)
+			{
+				if (M_WipeBuffer(menuKey, menudefs[item->submenu].enterroutine))
+					return true;
+				S_StartSound(NULL, sfx_menu1);
+				M_EnterMenu(item->submenu, true, argument);
+			}
+			else if (item->routine)
+			{
+				if (M_WipeBuffer(menuKey, item->routine))
+					return true;
+				S_StartSound(NULL, sfx_menu1);
+				item->routine(argument);
+			}
+			else if (item->cvar && item->cvar->PossibleValue) // not for string cvars!
+			{
+				if (item->cvar == &cv_nextmap || item->cvar == &cv_nextcup)
+					return true;
+				if (item->cvar->flags & CV_CALL && M_WipeBuffer(menuKey, MR_Dummy))
+					return true;
+				S_StartSound(NULL, sfx_menu1);
+				M_ChangeCvar(item, 1); // right arrow
+			}
+			return true;
+		}
+		else if (M_BasicMenuInput(gc_fire) == true)
+		{
+			if (item->routine == MR_ChangeControl)
+			{
+				G_ClearControlKeys(setupcontrols, item->argument);
+				S_StartSound(NULL, sfx_shldls);
+				return true;
+			}
+
+			if (item->cvar == NULL
+				|| item->cvar == &cv_chooseskin
+				|| item->cvar == &cv_dummystaff
+				|| item->cvar == &cv_nextmap
+				|| item->cvar == &cv_nextcup
+				|| item->cvar == &cv_newgametype
+				|| item->cvar == &cv_dummymultiplayer)
+				return true;
+
+			if (item->cvar->flags & CV_CALL && M_WipeBuffer(menuKey, MR_Dummy))
+				return true;
+
+			if (menustack[0] != MN_OP_SOUND || curpi->itemon > 3)
+				S_StartSound(NULL, sfx_menu1);
+			M_ResetCvar(item);
+			return true;
+		}
+		else
+		{
+			return false;
+			//return CON_Responder(ev), true;
+		}
+	}
+}
+
 void M_Ticker(void)
 {
 	// send buffered input from wipe?
@@ -2652,13 +2563,28 @@ void M_Ticker(void)
 	else if (noFurtherInput == -1 || !WipeInAction)
 		noFurtherInput = 0;
 
+	if (menuInputDelay > 0)
+	{
+		menuInputDelay--;
+	}
+
+	if (noFurtherInput <= 0)
+	{
+		if (M_HandleMenuInput() == true)
+		{
+			menuInputDelay = MENUDELAYTIME;
+		}
+	}
+
 	if (currentMenu != NULL && currentMenu->tickroutine != NULL)
 	{
 		currentMenu->tickroutine(0);
 	}
 
 	if (dedicated)
+	{
 		return;
+	}
 
 	if (--skullAnimCounter <= 0)
 		skullAnimCounter = 8;
