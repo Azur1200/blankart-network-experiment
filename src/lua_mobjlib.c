@@ -62,9 +62,7 @@ enum mobj_e {
 	mobj_flags2,
 	mobj_eflags,
 	mobj_renderflags,
-#if 0
 	mobj_renderflags2,
-#endif
 	mobj_skin,
 	mobj_voice,
 	mobj_color,
@@ -163,9 +161,7 @@ static const char *const mobj_opt[] = {
 	"flags2",
 	"eflags",
 	"renderflags",
-#if 0
 	"renderflags2",
-#endif
 	"skin",
 	"voice",
 	"color",
@@ -487,11 +483,9 @@ static int mobj_get(lua_State *L)
 	case mobj_renderflags:
 		lua_pushinteger(L, mo->renderflags);
 		break;
-#if 0
 	case mobj_renderflags2:
 		lua_pushinteger(L, mo->renderflags2);
 		break;
-#endif
 	case mobj_skin: // skin name or nil, not struct
 		if (!mo->skin)
 			return 0;
@@ -964,11 +958,9 @@ static int mobj_set(lua_State *L)
 	case mobj_renderflags:
 		mo->renderflags = (uint32_t)luaL_checkinteger(L, 3);
 		break;
-#if 0
 	case mobj_renderflags2:
 		mo->renderflags2 = (uint32_t)luaL_checkinteger(L, 3);
 		break;
-#endif
 	case mobj_skin: // set skin by name
 	{
 		int32_t i;

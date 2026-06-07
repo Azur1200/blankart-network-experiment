@@ -301,7 +301,7 @@ patch_t *Patch_GetRotated(patch_t *patch, int32_t angle, dboolean flip)
 patch_t *Patch_GetRotatedSprite(
 	spriteframe_t *sprite,
 	size_t frame, size_t spriteangle,
-	dboolean flip, dboolean adjustfeet,
+	dboolean flip, dboolean adjustfeet, dboolean offsetspivot,
 	void *info, int32_t rotationangle)
 {
 	rotsprite_t *rotsprite;
@@ -344,9 +344,14 @@ patch_t *Patch_GetRotatedSprite(
 			xpivot = sprinfo->pivot[SPRINFO_DEFAULT_PIVOT].x;
 			ypivot = sprinfo->pivot[SPRINFO_DEFAULT_PIVOT].y;
 		}
-		else
+		else if (offsetspivot)
 		{
 			xpivot = patch->leftoffset;
+			ypivot = patch->topoffset;
+		}
+		else
+		{
+			xpivot = patch->width / 2;
 			ypivot = patch->height / 2;
 		}
 

@@ -88,7 +88,7 @@ typedef enum
 	KIF_HIDEFROMROULETTE = 1<<5, // don't show this item in the roulette (inversion of xItem's showInRoulette item flag)
 	KIF_HYUCANTSTEAL = 1<<7,     // Prevents the item from being stolen by a Hyudoro
 	KIF_SINGLEFROMRESERVE = 1<<8,// If multiple of this item is in the reserve item slot, transfer them one at a time as they are used instead of all at once
-	KIF_DESTROYONDROP = 1<<9,	 // Destroy the item entirely when it would be dropped
+	KIF_DESTROYONDROP = 1<<9,	 // Destroy the item entirely when it would be dropped as a pickup
 } ATTRPACK kartitemflags_e;
 
 // result flags relevant to the roulette

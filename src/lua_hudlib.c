@@ -486,7 +486,7 @@ static int libd_getSpritePatch(lua_State *L)
 		int32_t rot = R_GetRollAngle(rollangle);
 
 		if (rot) {
-			patch_t *rotsprite = Patch_GetRotatedSprite(sprframe, frame, angle, sprframe->flip & (1<<angle), true, &spriteinfo[i], rot);
+			patch_t *rotsprite = Patch_GetRotatedSprite(sprframe, frame, angle, sprframe->flip & (1<<angle), true, false, &spriteinfo[i], rot);
 			LUA_PushUserdata(L, rotsprite, META_PATCH);
 			lua_pushdboolean(L, false);
 			lua_pushdboolean(L, true);
@@ -597,6 +597,7 @@ static int libd_getSprite2Patch(lua_State *L)
 	if (angle >= ((sprframe->rotate & SRF_3DGE) ? 16 : 8)) // out of range?
 		return 0;
 
+	// todo: vehicles
 #ifdef ROTSPRITE
 	if (lua_isnumber(L, 4))
 	{
@@ -605,7 +606,7 @@ static int libd_getSprite2Patch(lua_State *L)
 		int32_t rot = R_GetRollAngle(rollangle);
 
 		if (rot) {
-			patch_t *rotsprite = Patch_GetRotatedSprite(sprframe, frame, angle, sprframe->flip & (1<<angle), true, &skins[i]->sprinfo[j], rot);
+			patch_t *rotsprite = Patch_GetRotatedSprite(sprframe, frame, angle, sprframe->flip & (1<<angle), true, false, &skins[i]->sprinfo[j], rot);
 			LUA_PushUserdata(L, rotsprite, META_PATCH);
 			lua_pushdboolean(L, false);
 			lua_pushdboolean(L, true);
