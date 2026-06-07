@@ -2833,6 +2833,11 @@ void readmenu(MYFILE *f, INT32 num)
 				menudefs[num].titlescrollyspeed = get_number(word2);
 				titlechanged = true;
 			}
+			else if (fastcmp(word, "VHS"))
+			{
+				menudefs[num].vhs = (boolean)(value || word2[0] == 'T' || word2[0] == 'Y');
+				titlechanged = true;
+			}
 			else if (fastcmp(word, "MUSIC"))
 			{
 				strncpy(menudefs[num].musname, word2, 7);

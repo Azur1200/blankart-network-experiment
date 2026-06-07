@@ -2126,6 +2126,9 @@ void M_Drawer(void)
 			sortedpanels[i] = i;
 		qs22j(sortedpanels, numcurpanels, sizeof(*sortedpanels), SortPanels);
 
+		if (currentMenu && currentMenu->vhs)
+			V_DrawVhsEffect(false);
+
 		M_GetGametypeColor();
 		for (i = 0; i < numcurpanels; i++)
 			M_DrawMenuPanel(&curpanels[sortedpanels[i]], panelOn == sortedpanels[i] && !curpanels[sortedpanels[i]].disabled);
@@ -3302,9 +3305,6 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 {
 	const menupaneldef_t *pd = M_GetDefFromInst(pi);
 	INT32 pflags = pi->vflags & ~V_FLIP;
-
-	if (pd->drawroutine == MD_DrawReplayHut && cv_vhseffect.value)
-		V_DrawVhsEffect(false); // FIXME a menudef flag for this!?!?
 
 	if (pi->visible == false || cv_debugpanels.value == 1)
 		goto justdrawroutine;

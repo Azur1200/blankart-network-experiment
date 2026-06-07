@@ -287,6 +287,7 @@ struct menu_t
 	INT32 titlescrollxspeed; // background gfx scroll per menu; inherits global setting
 	INT32 titlescrollyspeed; // y scroll
 	boolean bghide; // for titlemaps, hide the background.
+	boolean vhs; // Do the VHS effect.
 
 	SINT8 hidetitlepics; // hide title gfx per menu; -1 means undefined, inherits global setting
 	ttmode_enum ttmode; // title wing animation mode; default TTMODE_KART
