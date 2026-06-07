@@ -170,7 +170,7 @@ static INT16 skullAnimCounter = 10; // skull animation counter
 static tic_t menutimer = 0, cursortimer = 0; // tics since menu change/menu movement
 
 INT32 menuKey = -1; // keyboard key pressed for menu
-INT16 menuInputDelay = 0; // Delay before registering multiple inputs.
+menucmd_t menucmd[MAXSPLITSCREENPLAYERS];
 
 static struct
 {
@@ -1550,11 +1550,6 @@ static INT32 RemapGamepadButton(event_t *ev)
 //
 // M_Responder
 //
-static boolean M_BasicMenuInput(INT32 gc)
-{
-	return G_PlayerInputDown(0, gc, true, DEADZONE_BUTTON);
-}
-
 boolean M_Responder(event_t *ev)
 {
 	menuKey = -1;
@@ -1647,7 +1642,7 @@ boolean M_Responder(event_t *ev)
 			// Spymode on F12 handled in game logic
 		}
 
-		if (M_BasicMenuInput(gc_systemmenu) == true)
+		if (G_PlayerInputDown(0, gc_systemmenu, true, DEADZONE_BUTTON) == true)
 		{
 			if (chat_on)
 			{
@@ -1880,6 +1875,8 @@ void MP_MultiplayerPause(menupanelinst_t *pi)
 //
 void M_StartControlPanel(void)
 {
+	INT32 i;
+
 	// intro might call this repeatedly
 	if (menustack[0] && gamestate != GS_NULL)
 	{
@@ -1895,6 +1892,11 @@ void M_StartControlPanel(void)
 		// (We can change this timer later when extra animation is added.)
 		if (finalecount < 1)
 			return;
+	}
+
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		menucmd[i].delay = MENUDELAYTIME;
 	}
 
 	if (demo.playback)
@@ -2081,6 +2083,11 @@ static void M_SetupNextMenu(menutype_t menunum)
 	size_t i, j;
 	menu_t *menudef = &menudefs[menunum];
 
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		menucmd[i].delay = MENUDELAYTIME;
+	}
+
 	M_HandleMenuPresState(menunum);
 	M_ClearPanelInstances();
 	menutimer = cursortimer = 0;
@@ -2236,25 +2243,86 @@ boolean M_MouseNeeded(void)
 //
 // M_Ticker
 //
-static boolean M_HandleMenuInput(void)
+
+static void M_SetMenuDelay(UINT8 i)
 {
-	if (menuInputDelay > 0)
+	menucmd[i].delayCount++;
+	if (menucmd[i].delayCount < 1)
+	{
+		// Shouldn't happen, but for safety.
+		menucmd[i].delayCount = 1;
+	}
+
+	menucmd[i].delay = (MENUDELAYTIME / menucmd[i].delayCount);
+
+	if (menucmd[i].delay < 1)
+	{
+		menucmd[i].delay = 1;
+	}
+}
+
+static void M_UpdateMenuCMD(UINT8 i)
+{
+	menucmd[i].dpad_ud = 0;
+	menucmd[i].dpad_lr = 0;
+
+	menucmd[i].buttonsHeld = menucmd[i].buttons;
+	menucmd[i].buttons = 0;
+
+	if (G_PlayerInputDown(i, gc_aimforward, true, DEADZONE_BUTTON)) { menucmd[i].dpad_ud--; }
+	if (G_PlayerInputDown(i, gc_aimbackward, true, DEADZONE_BUTTON)) { menucmd[i].dpad_ud++; }
+
+	if (G_PlayerInputDown(i, gc_turnleft, true, DEADZONE_BUTTON)) { menucmd[i].dpad_lr--; }
+	if (G_PlayerInputDown(i, gc_turnright, true, DEADZONE_BUTTON)) { menucmd[i].dpad_lr++; }
+
+	if (G_PlayerInputDown(i, gc_accelerate, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_CONFIRM; }
+	if (G_PlayerInputDown(i, gc_brake, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_CANCEL; }
+	if (G_PlayerInputDown(i, gc_fire, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_INFO1; }
+	if (G_PlayerInputDown(i, gc_drift, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_INFO2; }
+	if (G_PlayerInputDown(i, gc_systemmenu, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_HOME; }
+
+	if (menucmd[i].dpad_ud == 0 && menucmd[i].dpad_lr == 0 && menucmd[i].buttons == 0)
+	{
+		// Reset delay count with no buttons.
+		menucmd[i].delayCount = 0;
+	}
+}
+
+boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt)
+{
+	if (menucmd[pid].buttonsHeld & bt)
 	{
 		return false;
+	}
+
+	return (menucmd[pid].buttons & bt);
+}
+
+static void M_HandleMenuInput(void)
+{
+	INT32 i;
+	UINT8 pid = 0; // todo: Add ability for any splitscreen player to bring up the menu.
+
+	// Update menu CMD
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		M_UpdateMenuCMD(i);
 	}
 
 	if (messagebox.active)
 	{
 		if (messagebox.messagetype != MM_EVENTHANDLER)
 		{
-			if (M_BasicMenuInput(gc_accelerate) || M_BasicMenuInput(gc_brake) || M_BasicMenuInput(gc_systemmenu))
+			if (menucmd[pid].buttons != 0 && menucmd[pid].buttonsHeld == 0)
 			{
 				if (M_WipeBuffer(menuKey, MR_Dummy))
-					return true;
+					return;
 				if (messagebox.routine)
 					messagebox.routine(menuKey);
 				messagebox.active = false;
 				noFurtherInput = -1;
+				M_SetMenuDelay(pid);
+				return;
 			}
 		}
 		/*else
@@ -2264,7 +2332,7 @@ static boolean M_HandleMenuInput(void)
 				messagebox.handler(ev);
 		}*/
 
-		return true;
+		return;
 	}
 
 	// BP: one of the more big hack i have never made
@@ -2279,9 +2347,14 @@ static boolean M_HandleMenuInput(void)
 	if (curpd != NULL && curpd->keyhandler != NULL)
 	{
 		if (M_WipeBuffer(menuKey, curpd->keyhandler))
-			return false;
+			return;
 		if (curpd->keyhandler(menuKey))
-			return false;
+			return;
+	}
+
+	if (menucmd[pid].delay > 0)
+	{
+		return;
 	}
 
 	if (menustack[0] == MN_PLAYBACK && !con_destlines)
@@ -2290,10 +2363,10 @@ static boolean M_HandleMenuInput(void)
 		M_DemoBinds(menuKey);
 	}
 
-	if (M_BasicMenuInput(gc_brake) == true)
+	if (menucmd[pid].buttons & MBT_CANCEL)
 	{
 		if (M_WipeBuffer(menuKey, currentMenu->quitroutine))
-			return false;
+			return;
 
 		//If we entered the game search menu, but didn't enter a game,
 		//make sure the game doesn't still think we're in a netgame.
@@ -2306,42 +2379,30 @@ static boolean M_HandleMenuInput(void)
 	}
 
 	if (item == NULL)
-		 return false;
-		//return CON_Responder(ev), true;
+	{
+		return;
+		//CON_Responder(ev), true;
+	}
 
 	// string cvars accept any keyboard input
 	if (item->cvar && !item->cvar->PossibleValue)
 	{
 		if (item->cvar->flags & CV_CALL && M_WipeBuffer(menuKey, MR_Dummy))
-			return false;
+			return;
 
 		if (M_TextInputHandle(&menuinput, menuKey))
 		{
 			S_StartSound(NULL, sfx_menu1); // Tails
 			CV_Set(item->cvar, menuinput.buffer);
-			return true;
+			return;
 		}
 	}
 
 	// HMMM WHERE WAS THIS COPY PASTED FROM, I WONDER
 	INT32 hmove = 0, vmove = 0;
 
-	if (M_BasicMenuInput(gc_aimforward) == true)
-	{
-		vmove = -1;
-	}
-	else if (M_BasicMenuInput(gc_aimbackward) == true)
-	{
-		vmove = 1;
-	}
-	else if (M_BasicMenuInput(gc_turnleft) == true)
-	{
-		hmove = -1;
-	}
-	else if (M_BasicMenuInput(gc_turnright) == true)
-	{
-		hmove = 1;
-	}
+	vmove = menucmd[pid].dpad_ud;
+	hmove = menucmd[pid].dpad_lr;
 
 	switch (menuKey)
 	{
@@ -2421,10 +2482,16 @@ static boolean M_HandleMenuInput(void)
 
 		M_RawSetItemOn(curpi, newItemOn);
 		if (curpd->keyhandler == MR_HandleLevelPlatter)
-			return curpd->keyhandler(menuKey); // dumb hack until i figure this out
+		{
+			curpd->keyhandler(menuKey); // dumb hack until i figure this out
+			return;
+		}
 		else if (oldPanelOn != panelOn || oldItemOn != newItemOn)
+		{
 			S_StartSound(NULL, sfx_menu1);
-		return true;
+			M_SetMenuDelay(pid);
+		}
+		return;
 	}
 	else if (hmove != 0)
 	{
@@ -2450,15 +2517,16 @@ static boolean M_HandleMenuInput(void)
 
 			M_RawSetItemOn(curpi, newItemOn);
 			S_StartSound(NULL, sfx_menu1);
-			return true;
+			M_SetMenuDelay(pid);
+			return;
 		}
 		else
 		{
 			if (!(item->cvar || item->status & IT_ARROWS) || item->cvar == &cv_nextmap || item->cvar == &cv_nextcup)
-				return true;
+				return;
 
 			if (M_WipeBuffer(menuKey, item->cvar ? (item->cvar->flags & CV_CALL ? MR_Dummy : NULL) : item->routine))
-				return true;
+				return;
 
 			if (menustack[0] != MN_OP_SOUND || curpi->itemon > 3)
 				S_StartSound(NULL, sfx_menu1);
@@ -2468,12 +2536,13 @@ static boolean M_HandleMenuInput(void)
 			else
 				item->routine(hmove > 0 ? 1 : 0);
 
-			return true;
+			M_SetMenuDelay(pid);
+			return;
 		}
 	}
 	else
 	{
-		if (M_BasicMenuInput(gc_accelerate) == true)
+		if (menucmd[pid].buttons & MBT_CONFIRM)
 		{
 			noFurtherInput = -1;
 
@@ -2481,7 +2550,7 @@ static boolean M_HandleMenuInput(void)
 			{
 				boolean held = (boolean)playback_enterheld;
 				if (held)
-					return true;
+					return;
 				playback_enterheld = 3;
 			}
 
@@ -2492,35 +2561,38 @@ static boolean M_HandleMenuInput(void)
 			if (item->submenu)
 			{
 				if (M_WipeBuffer(menuKey, menudefs[item->submenu].enterroutine))
-					return true;
+					return;
 				S_StartSound(NULL, sfx_menu1);
 				M_EnterMenu(item->submenu, true, argument);
 			}
 			else if (item->routine)
 			{
 				if (M_WipeBuffer(menuKey, item->routine))
-					return true;
+					return;
 				S_StartSound(NULL, sfx_menu1);
 				item->routine(argument);
 			}
 			else if (item->cvar && item->cvar->PossibleValue) // not for string cvars!
 			{
 				if (item->cvar == &cv_nextmap || item->cvar == &cv_nextcup)
-					return true;
+					return;
 				if (item->cvar->flags & CV_CALL && M_WipeBuffer(menuKey, MR_Dummy))
-					return true;
+					return;
 				S_StartSound(NULL, sfx_menu1);
 				M_ChangeCvar(item, 1); // right arrow
 			}
-			return true;
+
+			M_SetMenuDelay(pid);
+			return;
 		}
-		else if (M_BasicMenuInput(gc_fire) == true)
+		else if (menucmd[pid].buttons & MBT_HOME)
 		{
 			if (item->routine == MR_ChangeControl)
 			{
 				G_ClearControlKeys(setupcontrols, item->argument);
 				S_StartSound(NULL, sfx_shldls);
-				return true;
+				M_SetMenuDelay(pid);
+				return;
 			}
 
 			if (item->cvar == NULL
@@ -2530,26 +2602,29 @@ static boolean M_HandleMenuInput(void)
 				|| item->cvar == &cv_nextcup
 				|| item->cvar == &cv_newgametype
 				|| item->cvar == &cv_dummymultiplayer)
-				return true;
+				return;
 
 			if (item->cvar->flags & CV_CALL && M_WipeBuffer(menuKey, MR_Dummy))
-				return true;
+				return;
 
 			if (menustack[0] != MN_OP_SOUND || curpi->itemon > 3)
 				S_StartSound(NULL, sfx_menu1);
 			M_ResetCvar(item);
-			return true;
+
+			M_SetMenuDelay(pid);
+			return;
 		}
 		else
 		{
-			return false;
-			//return CON_Responder(ev), true;
+			//CON_Responder(ev), true;
+			return;
 		}
 	}
 }
 
 void M_Ticker(void)
 {
+	INT32 i;
 	// send buffered input from wipe?
 	if (noFurtherInput > 0 && !WipeInAction)
 	{
@@ -2563,17 +2638,17 @@ void M_Ticker(void)
 	else if (noFurtherInput == -1 || !WipeInAction)
 		noFurtherInput = 0;
 
-	if (menuInputDelay > 0)
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		menuInputDelay--;
+		if (menucmd[i].delay > 0)
+		{
+			menucmd[i].delay--;
+		}
 	}
 
 	if (noFurtherInput <= 0)
 	{
-		if (M_HandleMenuInput() == true)
-		{
-			menuInputDelay = MENUDELAYTIME;
-		}
+		M_HandleMenuInput();
 	}
 
 	if (currentMenu != NULL && currentMenu->tickroutine != NULL)

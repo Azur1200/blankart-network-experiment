@@ -37,9 +37,28 @@ extern "C" {
 
 extern INT32 menuKey; // keyboard key pressed for menu
 
-#define MENUDELAYTIME 3
+#define MENUDELAYTIME 7
 
-extern INT16 menuInputDelay;
+typedef enum
+{
+	MBT_CONFIRM = 1,
+	MBT_CANCEL = 1<<1,
+	MBT_HOME = 1<<2,
+	MBT_INFO1 = 1<<3,
+	MBT_INFO2 = 1<<4,
+} menuButtonCode_t;
+
+typedef struct menucmd_s
+{
+	SINT8 dpad_ud; // up / down dpad
+	SINT8 dpad_lr; // left / right
+	UINT32 buttons; // buttons
+	UINT32 buttonsHeld; // prev frame's buttons
+	UINT16 delay; // menu wait
+	UINT32 delayCount; // num times ya did menu wait (to make the wait shorter each time)
+} menucmd_t;
+
+extern menucmd_t menucmd[MAXSPLITSCREENPLAYERS];
 
 // max size of menu stack
 #define NUMMENULEVELS 8
@@ -75,6 +94,8 @@ void M_SetMenuCurTitlePics(void);
 // this can resize the view and change game parameters.
 // Does all the real work of the menu interaction.
 boolean M_Responder(event_t *ev);
+
+boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt);
 
 // Called by main loop, runs for demo playback. If this returns true, nullify any further user input.
 boolean M_DemoResponder(event_t *ev);
