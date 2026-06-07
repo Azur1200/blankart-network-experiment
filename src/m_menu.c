@@ -10148,6 +10148,8 @@ INT32 MR_TickDiscordRequests(INT32 choice)
 
 void MD_DrawDiscordRequests(menupanelinst_t *pi)
 {
+	(void)pi;
+
 	discordRequest_t *curRequest = discordRequestList;
 	UINT8 *colormap;
 	patch_t *hand = NULL;
