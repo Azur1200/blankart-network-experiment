@@ -237,6 +237,9 @@ void V_DrawBlock(INT32 x, INT32 y, INT32 scrn, INT32 width, INT32 height, const 
 #define V_DrawFill(x,y,w,h,c) V_DrawFixedFill((x)<<FRACBITS, (y)<<FRACBITS, (w)<<FRACBITS, (h)<<FRACBITS, c)
 void V_DrawFixedFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c);
 void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c);
+// draw a line from {x1,y1} to {x2,y2}
+void V_DrawFixedLine(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, fixed_t width, INT32 c);
+#define V_DrawLine(x1,y1,x2,y2,w,c) V_DrawFixedLine((x1)<<FRACBITS, (y1)<<FRACBITS, (x2)<<FRACBITS, (y2)<<FRACBITS, w, c)
 // fill a triangle with a single color
 void V_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 c);
 // fill a box with a flat as a pattern

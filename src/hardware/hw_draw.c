@@ -1106,6 +1106,83 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 		flags);
 }
 
+// -------------------+
+// HWR_DrawFixedLine  : draw flat coloured rectangle, with no texture
+// -------------------+
+void HWR_DrawFixedLine(INT32 x1, INT32 y1, INT32 x2, INT32 y2, fixed_t w, INT32 color)
+{
+	FOutVector v[4];
+	FBITFIELD flags;
+	FSurfaceInfo Surf = {};
+	float fx, fy, fx2, fy2, fw, fh;
+	UINT8 alphalevel = ((color & V_ALPHAMASK) >> V_ALPHASHIFT);
+	UINT8 blendmode = ((color & V_BLENDMASK) >> V_BLENDSHIFT);
+	RGBA_t *palette = HWR_GetTexturePalette();
+
+//     7-6
+//    /| |
+//   / 4-5
+//  /   /
+// 3-2 /
+// | |/
+// 0-1
+
+	fx = (float)x1;
+	fy = (float)y1;
+	fx2 = (float)x2;
+	fy2 = (float)y2;
+	fw = FIXED_TO_FLOAT(w);
+
+	if (!(color & V_NOSCALESTART))
+	{
+		if (x == 0 && y == 0 && w == BASEVIDWIDTH*FRACUNIT && h == BASEVIDHEIGHT*FRACUNIT)
+		{
+			RGBA_t rgbaColour = palette[color&0xFF];
+			FRGBAFloat clearColour;
+			clearColour.red = (float)rgbaColour.s.red / 255;
+			clearColour.green = (float)rgbaColour.s.green / 255;
+			clearColour.blue = (float)rgbaColour.s.blue / 255;
+			clearColour.alpha = 1;
+			GL_ClearBuffer(true, false, false, &clearColour);
+			return;
+		}
+	}
+
+	fx = -1 + fx / (vid.width / 2);
+	fy = 1 - fy / (vid.height / 2);
+	fx2 = -1 + fx2 / (vid.width / 2);
+	fy2 = 1 - fy2 / (vid.height / 2);
+	fw = fw / (vid.width / 2);
+
+	v[0].x = v[3].x = fx;
+	v[2].x = v[1].x = fx + fw;
+	v[0].y = v[1].y = fy;
+	v[2].y = v[3].y = fy - fw;
+
+	v[0].z = v[1].z = v[2].z = v[3].z = 1.0f;
+
+	v[0].s = v[3].s = 0.0f;
+	v[2].s = v[1].s = 1.0f;
+	v[0].t = v[1].t = 0.0f;
+	v[2].t = v[3].t = 1.0f;
+
+	Surf.PolyColor = palette[color&0xFF];
+
+	flags = HWR_GetBlendModeFlag(blendmode+1)|PF_Modulated|PF_NoDepthTest|PF_NoTexture;
+
+	if (alphalevel)
+	{
+		if (alphalevel == 13) Surf.PolyColor.s.alpha = softwaretranstogl_lo[st_translucency]; // V_HUDTRANSHALF
+		else if (alphalevel == 14) Surf.PolyColor.s.alpha = softwaretranstogl[st_translucency]; // V_HUDTRANS
+		else if (alphalevel == 15) Surf.PolyColor.s.alpha = softwaretranstogl_hi[st_translucency]; // V_HUDTRANSDOUBLE
+		else if (alphalevel < 10) Surf.PolyColor.s.alpha = softwaretranstogl[min(max((10 - alphalevel), 0), 10)];
+		else Surf.PolyColor.s.alpha = 0;
+	}
+
+	GL_DrawPolygon(&Surf, v, 4,
+		flags);
+}
+
 #ifdef HAVE_PNG
 
 #ifndef _LARGEFILE64_SOURCE
