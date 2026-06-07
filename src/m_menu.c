@@ -4509,6 +4509,8 @@ static void M_DrawMessageMenu(void)
 
 INT32 MR_TickImageDef(INT32 choice)
 {
+	(void)choice;
+
 	menupanelinst_t *pi = M_GetPanel("MAIN");
 
 	for (size_t i = 0; i < pi->numitems; i++)
@@ -4518,6 +4520,8 @@ INT32 MR_TickImageDef(INT32 choice)
 		else
 			pi->items[i].status |= IT_HIDDEN;
 	}
+
+	return true;
 }
 
 void MD_DrawImageDef(menupanelinst_t *pi)
@@ -4800,6 +4804,8 @@ static boolean M_AddonsRefresh(void)
 
 INT32 MR_TickAddons(INT32 choice)
 {
+	(void)choice;
+
 	menupanelinst_t *pi;
 
 	pi = M_GetPanel("URL");
@@ -4812,6 +4818,8 @@ INT32 MR_TickAddons(INT32 choice)
 	M_SetItemDisabled(pi, "SEARCHICON", menusearch.length == 0);
 	M_SetItemDisabled(pi, "DISKICON", majormods);
 	M_SetItemVisible(pi, "ADDONSLOADED", modifiedgame);
+
+	return true;
 }
 
 void MD_DrawAddons(menupanelinst_t *pi)
@@ -5573,6 +5581,7 @@ INT32 MR_TickPlayBackMenu(INT32 choice)
 		M_SetItemX(pi, "QUIT", 188*FRACUNIT);
 		pi->x = (BASEVIDWIDTH/2 - 98)*FRACUNIT;
 	}
+
 	return true;
 }
 
@@ -6532,7 +6541,7 @@ void MP_StatsRecords(menupanelinst_t *pi)
 			G_TicsToMinutes(preset->besttime, true),
 			G_TicsToSeconds(preset->besttime),
 			G_TicsToCentiseconds(preset->besttime)));
-		M_SetItemExtraRaw(item, preset == NULL || preset->playtime == 0 ? "" :
+		M_SetItemExtraRaw(item, preset == NULL || preset->playtime == 0 ? "-:--:--" :
 			va("%d:%02d:%02d",
 			G_TicsToHours(preset->playtime),
 			G_TicsToMinutes(preset->playtime, false),
@@ -6693,20 +6702,22 @@ void MP_StatsExtra(menupanelinst_t *pi)
 
 void MD_DrawLevelStats(menupanelinst_t *pi)
 {
-	// cursoroffset != 0 means the panel can be navigated to
-	// yup!
-	M_GetPanel("EXTRA")->cursoroffset = kartstats.vanilla ? 0 : 3*FRACUNIT;
-
-	// FIXME
-	//title = "Play Time Statistics"; break;
-	//title = "Level Statistics"; break;
-	//title = "Extra Statistics"; break;
-	M_SetItemText(pi, "HEADING", curpanels[panelOn].name);
 	INT32 w = V_StringWidth(curpanels[panelOn].name, highlightflags);
 	V_DrawCharacter(BASEVIDWIDTH/2 - w/2 - 10 - (skullAnimCounter/5), 28,
 			'\x1C' | highlightflags, false); // left arrow
 	V_DrawCharacter(BASEVIDWIDTH/2 + w/2 + 2 + (skullAnimCounter/5), 28,
 			'\x1D' | highlightflags, false); // right arrow
+}
+
+INT32 MR_TickStats(INT32 choice)
+{
+	(void)choice;
+
+	menupanelinst_t *pi = M_GetPanel("MAIN");
+
+	// cursoroffset != 0 means the panel can be navigated to
+	// yup!
+	M_GetPanel("EXTRA")->cursoroffset = kartstats.vanilla ? 0 : 3*FRACUNIT;
 
 	for (size_t i = 0; i < numcurpanels; i++)
 		if (i != (size_t)(pi - curpanels))
@@ -6714,6 +6725,14 @@ void MD_DrawLevelStats(menupanelinst_t *pi)
 
 	if (M_CheckPanel("RECORDS") == &curpanels[panelOn])
 		M_GetPanel("RECORDSBG")->visible = true; // ugh
+
+	// FIXME
+	//title = "Play Time Statistics"; break;
+	//title = "Level Statistics"; break;
+	//title = "Extra Statistics"; break;
+	M_SetItemText(pi, "HEADING", curpanels[panelOn].name);
+
+	return true;
 }
 
 // Handle statistics.
@@ -6952,11 +6971,15 @@ boolean M_AttackOnStack(void)
 
 INT32 MR_TickTimeAttackMenu(INT32 choice)
 {
+	(void)choice;
+
 	menupanelinst_t *pi = M_GetPanel("COMMON");
 
 	// Character face!
 	M_SetItemPatch(pi, "PLAYERICON", skins[cv_chooseskin.value].name);
 	M_SetItemExtra(pi, "PLAYERICON", DEH_SkincolorName(cv_playercolor[0].value));
+
+	return true;
 }
 
 // Drawing function for Time Attack
@@ -8596,6 +8619,8 @@ INT32 MR_SetupMultiPlayer(INT32 arg)
 
 INT32 MR_TickMultiPlayerMenu(INT32 choice)
 {
+	(void)choice;
+
 	menupanelinst_t *pi = M_GetPanel("MAIN");
 
 	// disable skin changes if we can't actually change skins
@@ -8612,6 +8637,8 @@ INT32 MR_TickMultiPlayerMenu(INT32 choice)
 	M_SetItemVisible(pi, "STATBG", visible);
 
 	M_SetItemVisible(pi, "STATBAR", !visible);
+
+	return true;
 }
 
 INT32 MR_QuitMultiPlayerMenu(INT32 choice)
