@@ -218,9 +218,11 @@ static boolean recursioncheck = false;
 //
 void D_ProcessEvents(void)
 {
+	INT32 i;
 	event_t *ev;
 
 	boolean eaten = false;
+	boolean menuresponse = false;
 
 	if (recursioncheck == true)
 		I_Error("D_ProcessEvents recursion detected");
@@ -262,6 +264,7 @@ void D_ProcessEvents(void)
 		}
 
 		// Menu input
+		menuresponse = true;
 		if (WipeInAction < 2)
 		{
 #ifdef HAVE_THREADS
@@ -299,6 +302,18 @@ void D_ProcessEvents(void)
 		}
 
 		G_Responder(ev);
+	}
+
+	// Reset menu controls when no event is processed
+	if (!menuresponse)
+	{
+		M_MapMenuControls(NULL);
+	}
+
+	// Update menu CMD
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		M_UpdateMenuCMD(i);
 	}
 
 	recursioncheck = false;

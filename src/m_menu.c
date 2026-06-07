@@ -1552,7 +1552,6 @@ static INT32 RemapGamepadButton(event_t *ev)
 //
 boolean M_Responder(event_t *ev)
 {
-	menuKey = -1;
 	INT32 deviceplayer = G_GetDevicePlayer(ev->device);
 
 	if (dedicated
@@ -1572,14 +1571,14 @@ boolean M_Responder(event_t *ev)
 		return false;
 	}
 
-	if (ev->type == ev_keydown && ev->data1 < KEY_JOY1)
+	if (ev->type == ev_keydown && ev->data1 > 0 && ev->data1 < KEY_JOY1)
 	{
 		// Record keyboard presses
 		menuKey = ev->data1;
 	}
 
 	// update keys current state
-	G_MapEventsToControls(ev);
+	M_MapMenuControls(ev);
 
 	// Handle menu handling in-game.
 	if (!menustack[0])
@@ -2261,13 +2260,23 @@ static void M_SetMenuDelay(UINT8 i)
 	}
 }
 
-static void M_UpdateMenuCMD(UINT8 i)
+void M_UpdateMenuCMD(UINT8 i)
 {
+	menucmd[i].prev_dpad_ud = menucmd[i].dpad_ud;
+	menucmd[i].prev_dpad_lr = menucmd[i].dpad_lr;
+
 	menucmd[i].dpad_ud = 0;
 	menucmd[i].dpad_lr = 0;
 
 	menucmd[i].buttonsHeld = menucmd[i].buttons;
 	menucmd[i].buttons = 0;
+
+	if (G_PlayerInputDown(i, gc_screenshot, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_SCREENSHOT; }
+	if (G_PlayerInputDown(i, gc_recordgif, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_MOVIE; }
+
+	// Screenshot et al take priority
+	if (menucmd[i].buttons != 0)
+		return;
 
 	if (G_PlayerInputDown(i, gc_aimforward, true, DEADZONE_BUTTON)) { menucmd[i].dpad_ud--; }
 	if (G_PlayerInputDown(i, gc_aimbackward, true, DEADZONE_BUTTON)) { menucmd[i].dpad_ud++; }
@@ -2288,6 +2297,17 @@ static void M_UpdateMenuCMD(UINT8 i)
 	}
 }
 
+void M_MapMenuControls(event_t *ev)
+{
+	INT32 i;
+
+	if (ev)
+	{
+		// update keys current state
+		G_MapEventsToControls(ev);
+	}
+}
+
 boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt)
 {
 	if (menucmd[pid].buttonsHeld & bt)
@@ -2300,14 +2320,10 @@ boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt)
 
 static void M_HandleMenuInput(void)
 {
-	INT32 i;
 	UINT8 pid = 0; // todo: Add ability for any splitscreen player to bring up the menu.
+	INT32 thisMenuKey = menuKey;
 
-	// Update menu CMD
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		M_UpdateMenuCMD(i);
-	}
+	menuKey = -1;
 
 	if (messagebox.active)
 	{
@@ -2315,10 +2331,10 @@ static void M_HandleMenuInput(void)
 		{
 			if (menucmd[pid].buttons != 0 && menucmd[pid].buttonsHeld == 0)
 			{
-				if (M_WipeBuffer(menuKey, MR_Dummy))
+				if (M_WipeBuffer(thisMenuKey, MR_Dummy))
 					return;
 				if (messagebox.routine)
-					messagebox.routine(menuKey);
+					messagebox.routine(thisMenuKey);
 				messagebox.active = false;
 				noFurtherInput = -1;
 				M_SetMenuDelay(pid);
@@ -2346,9 +2362,9 @@ static void M_HandleMenuInput(void)
 	// Handle menuitems which need a specific key handling
 	if (curpd != NULL && curpd->keyhandler != NULL)
 	{
-		if (M_WipeBuffer(menuKey, curpd->keyhandler))
+		if (M_WipeBuffer(thisMenuKey, curpd->keyhandler))
 			return;
-		if (curpd->keyhandler(menuKey))
+		if (curpd->keyhandler(thisMenuKey))
 			return;
 	}
 
@@ -2360,12 +2376,32 @@ static void M_HandleMenuInput(void)
 	if (menustack[0] == MN_PLAYBACK && !con_destlines)
 	{
 		playback_last_menu_interaction_leveltime = leveltime;
-		M_DemoBinds(menuKey);
+		M_DemoBinds(thisMenuKey);
+	}
+
+	if (item == NULL)
+	{
+		return;
+		//CON_Responder(ev), true;
+	}
+
+	// string cvars accept any keyboard input
+	if (item->cvar && !item->cvar->PossibleValue)
+	{
+		if (item->cvar->flags & CV_CALL && M_WipeBuffer(thisMenuKey, MR_Dummy))
+			return;
+
+		if (M_TextInputHandle(&menuinput, thisMenuKey))
+		{
+			S_StartSound(NULL, sfx_menu1); // Tails
+			CV_Set(item->cvar, menuinput.buffer);
+			return;
+		}
 	}
 
 	if (menucmd[pid].buttons & MBT_CANCEL)
 	{
-		if (M_WipeBuffer(menuKey, currentMenu->quitroutine))
+		if (M_WipeBuffer(thisMenuKey, currentMenu->quitroutine))
 			return;
 
 		//If we entered the game search menu, but didn't enter a game,
@@ -2378,37 +2414,17 @@ static void M_HandleMenuInput(void)
 		M_ExitMenu();
 	}
 
-	if (item == NULL)
-	{
-		return;
-		//CON_Responder(ev), true;
-	}
-
-	// string cvars accept any keyboard input
-	if (item->cvar && !item->cvar->PossibleValue)
-	{
-		if (item->cvar->flags & CV_CALL && M_WipeBuffer(menuKey, MR_Dummy))
-			return;
-
-		if (M_TextInputHandle(&menuinput, menuKey))
-		{
-			S_StartSound(NULL, sfx_menu1); // Tails
-			CV_Set(item->cvar, menuinput.buffer);
-			return;
-		}
-	}
-
 	// HMMM WHERE WAS THIS COPY PASTED FROM, I WONDER
 	INT32 hmove = 0, vmove = 0;
 
 	vmove = menucmd[pid].dpad_ud;
 	hmove = menucmd[pid].dpad_lr;
 
-	switch (menuKey)
+	switch (thisMenuKey)
 	{
 		case KEY_PGUP:
 		case KEY_PGDN:
-			vmove = menuKey == KEY_PGUP ? -3 : 3;
+			vmove = thisMenuKey == KEY_PGUP ? -3 : 3;
 			break;
 	}
 
@@ -2483,7 +2499,7 @@ static void M_HandleMenuInput(void)
 		M_RawSetItemOn(curpi, newItemOn);
 		if (curpd->keyhandler == MR_HandleLevelPlatter)
 		{
-			curpd->keyhandler(menuKey); // dumb hack until i figure this out
+			curpd->keyhandler(thisMenuKey); // dumb hack until i figure this out
 			return;
 		}
 		else if (oldPanelOn != panelOn || oldItemOn != newItemOn)
@@ -2525,7 +2541,7 @@ static void M_HandleMenuInput(void)
 			if (!(item->cvar || item->status & IT_ARROWS) || item->cvar == &cv_nextmap || item->cvar == &cv_nextcup)
 				return;
 
-			if (M_WipeBuffer(menuKey, item->cvar ? (item->cvar->flags & CV_CALL ? MR_Dummy : NULL) : item->routine))
+			if (M_WipeBuffer(thisMenuKey, item->cvar ? (item->cvar->flags & CV_CALL ? MR_Dummy : NULL) : item->routine))
 				return;
 
 			if (menustack[0] != MN_OP_SOUND || curpi->itemon > 3)
@@ -2560,14 +2576,14 @@ static void M_HandleMenuInput(void)
 
 			if (item->submenu)
 			{
-				if (M_WipeBuffer(menuKey, menudefs[item->submenu].enterroutine))
+				if (M_WipeBuffer(thisMenuKey, menudefs[item->submenu].enterroutine))
 					return;
 				S_StartSound(NULL, sfx_menu1);
 				M_EnterMenu(item->submenu, true, argument);
 			}
 			else if (item->routine)
 			{
-				if (M_WipeBuffer(menuKey, item->routine))
+				if (M_WipeBuffer(thisMenuKey, item->routine))
 					return;
 				S_StartSound(NULL, sfx_menu1);
 				item->routine(argument);
@@ -2576,7 +2592,7 @@ static void M_HandleMenuInput(void)
 			{
 				if (item->cvar == &cv_nextmap || item->cvar == &cv_nextcup)
 					return;
-				if (item->cvar->flags & CV_CALL && M_WipeBuffer(menuKey, MR_Dummy))
+				if (item->cvar->flags & CV_CALL && M_WipeBuffer(thisMenuKey, MR_Dummy))
 					return;
 				S_StartSound(NULL, sfx_menu1);
 				M_ChangeCvar(item, 1); // right arrow
@@ -2604,7 +2620,7 @@ static void M_HandleMenuInput(void)
 				|| item->cvar == &cv_dummymultiplayer)
 				return;
 
-			if (item->cvar->flags & CV_CALL && M_WipeBuffer(menuKey, MR_Dummy))
+			if (item->cvar->flags & CV_CALL && M_WipeBuffer(thisMenuKey, MR_Dummy))
 				return;
 
 			if (menustack[0] != MN_OP_SOUND || curpi->itemon > 3)

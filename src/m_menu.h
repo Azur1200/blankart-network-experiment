@@ -46,14 +46,23 @@ typedef enum
 	MBT_HOME = 1<<2,
 	MBT_INFO1 = 1<<3,
 	MBT_INFO2 = 1<<4,
+
+	MBT_SCREENSHOT = 1<<5,
+	MBT_MOVIE = 1<<6,
 } menuButtonCode_t;
 
 typedef struct menucmd_s
 {
+	// Current frame's data
 	SINT8 dpad_ud; // up / down dpad
 	SINT8 dpad_lr; // left / right
 	UINT32 buttons; // buttons
+
+	// Previous frame's data
+	SINT8 prev_dpad_ud;
+	SINT8 prev_dpad_lr;
 	UINT32 buttonsHeld; // prev frame's buttons
+
 	UINT16 delay; // menu wait
 	UINT32 delayCount; // num times ya did menu wait (to make the wait shorter each time)
 } menucmd_t;
@@ -95,6 +104,8 @@ void M_SetMenuCurTitlePics(void);
 // Does all the real work of the menu interaction.
 boolean M_Responder(event_t *ev);
 
+void M_MapMenuControls(event_t *ev);
+void M_UpdateMenuCMD(UINT8 i);
 boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt);
 
 // Called by main loop, runs for demo playback. If this returns true, nullify any further user input.
