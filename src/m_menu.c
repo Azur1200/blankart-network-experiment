@@ -812,6 +812,8 @@ fixed_t M_GetMapThumbnail(mapnum_t mapnum, patch_t **out)
 
 INT32 MR_Options(INT32 choice)
 {
+	(void)choice;
+
 	if (gamestate == GS_MENU)
 		menudefs[MN_OP_MAIN].fadestrength = menudefs[MN_MAIN].fadestrength;
 	else
@@ -4273,6 +4275,8 @@ static void M_DrawLevelPlatterRow(UINT8 row, fixed_t y)
 
 void MD_DrawLevelPlatterMenu(menupanelinst_t *pi)
 {
+	(void)pi;
+
 	UINT8 row = levelselect.row;
 	INT32 y = lsbasey + levelselect.offsety - getheadingoffset(row);
 	INT32 hiliy = INT32_MIN;
@@ -5259,6 +5263,8 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 
 INT32 MR_TickReplayHutReplayInfo(INT32 choice)
 {
+	(void)choice;
+
 	menupanelinst_t *bg = M_GetPanel("DEMOINFOBG");
 	menupanelinst_t *fg = M_GetPanel("DEMOINFOFG");
 
@@ -5393,6 +5399,7 @@ static fixed_t M_ReplayHutScroll(fixed_t scrollamt, tic_t timer)
 INT32 MR_TickReplayHut(INT32 choice)
 {
 	(void)choice;
+
 	size_t i;
 
 	MR_TickReplayHutReplayInfo(0);
@@ -5434,7 +5441,6 @@ INT32 MR_TickReplayHut(INT32 choice)
 
 	if (M_CheckPanel("RANKINGS"))
 	{
-		UINT8 i;
 		menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
 
 		// Draw rankings beyond first
@@ -6164,6 +6170,8 @@ INT32 MR_MusicTest(INT32 choice)
 
 void MD_DrawMusicTest(menupanelinst_t *pi)
 {
+	(void)pi;
+
 	INT32 x, y, i;
 
 	// let's handle the ticker first. ideally we'd tick this somewhere else, BUT...
@@ -6724,6 +6732,8 @@ void MP_StatsExtra(menupanelinst_t *pi)
 
 void MD_DrawLevelStats(menupanelinst_t *pi)
 {
+	(void)pi;
+
 	INT32 w = V_StringWidth(curpanels[panelOn].name, highlightflags);
 	V_DrawCharacter(BASEVIDWIDTH/2 - w/2 - 10 - (skullAnimCounter/5), 28,
 			'\x1C' | highlightflags, false); // left arrow
@@ -7007,6 +7017,8 @@ INT32 MR_TickTimeAttackMenu(INT32 choice)
 // Drawing function for Time Attack
 void MD_DrawTimeAttackMenu(menupanelinst_t *pi)
 {
+	(void)pi;
+
 	maprecordpreset_t *preset = NULL;
 	maprecord_t *record = G_GetMapRecord(G_BuildMapName(cv_nextmap.value));
 	if (record != NULL)
@@ -10054,6 +10066,7 @@ static void M_DrawSticker(INT32 x, INT32 y, INT32 width, INT32 flags, boolean is
 static const tic_t confirmLength = 3*TICRATE/4;
 static tic_t confirmDelay = 0;
 static boolean confirmAccept = false;
+boolean removeRequest = false;
 
 INT32 MR_HandleDiscordRequests(INT32 choice)
 {
@@ -10099,13 +10112,45 @@ static const char *M_GetDiscordName(discordRequest_t *r)
 	return r->username;
 }
 
+INT32 MR_TickDiscordRequests(INT32 choice)
+{
+	(void)choice;
+
+	if (confirmDelay > 0)
+	{
+		confirmDelay--;
+
+		if (confirmDelay == 0)
+			removeRequest = true;
+	}
+
+	if (removeRequest == true)
+	{
+		DRPC_RemoveRequest(discordRequestList);
+
+		removeRequest = false;
+
+		if (discordRequestList == NULL)
+		{
+			// No other requests
+			// TODO:
+			M_ExitMenu(); // <------ the problem in question
+			if (menustack[0] == MN_MPAUSE)
+			{
+				menupanelinst_t *pi = M_GetPanel("MAIN");
+				M_SetItemOn(pi, "CONTINUE");
+			};
+		}
+	}
+
+	return true;
+}
+
 void MD_DrawDiscordRequests(menupanelinst_t *pi)
 {
-	I_Error("FIXME menu ticker funcs PLEASE!");
 	discordRequest_t *curRequest = discordRequestList;
 	UINT8 *colormap;
 	patch_t *hand = NULL;
-	boolean removeRequest = false;
 
 	INT32 x = 100;
 	INT32 y = 133;
@@ -10127,11 +10172,6 @@ void MD_DrawDiscordRequests(menupanelinst_t *pi)
 		}
 
 		slide = confirmLength - confirmDelay;
-
-		confirmDelay--;
-
-		if (confirmDelay == 0)
-			removeRequest = true;
 	}
 	else
 	{
@@ -10146,10 +10186,11 @@ void MD_DrawDiscordRequests(menupanelinst_t *pi)
 		V_DrawFixedPatch(56*FRACUNIT, 150*FRACUNIT + handoffset, FRACUNIT, 0, hand, NULL);
 	}
 
-	M_DrawSticker(x + (slide * 32), y - 1, V_ThinStringWidth(M_GetDiscordName(curRequest), V_ALLOWLOWERCASE|V_6WIDTHSPACE), 0, false);
-	V_DrawThinString(x + (slide * 32), y, V_ALLOWLOWERCASE|V_6WIDTHSPACE|V_YELLOWMAP, M_GetDiscordName(curRequest));
+	const char *name = M_GetDiscordName(curRequest);
+	const INT32 flags = V_ALLOWLOWERCASE|V_6WIDTHSPACE;
 
-	//MD_DrawGenericMenu();
+	M_DrawSticker(x + (slide * 32), y - 1, V_ThinStringWidth(name, flags), 0, false);
+	V_DrawThinString(x + (slide * 32), y, flags|V_YELLOWMAP, name);
 
 	y -= 18;
 
@@ -10159,24 +10200,13 @@ void MD_DrawDiscordRequests(menupanelinst_t *pi)
 
 		curRequest = curRequest->next;
 
-		M_DrawSticker(x, y - 1 + ySlide, V_ThinStringWidth(M_GetDiscordName(curRequest), V_ALLOWLOWERCASE|V_6WIDTHSPACE), 0, false);
-		V_DrawThinString(x, y + ySlide, V_ALLOWLOWERCASE|V_6WIDTHSPACE, M_GetDiscordName(curRequest));
+		name = M_GetDiscordName(curRequest);
+
+		M_DrawSticker(x, y - 1 + ySlide, V_ThinStringWidth(name, flags), 0, false);
+		V_DrawThinString(x, y + ySlide, flags, name);
 
 		y -= 12;
 		maxYSlide = 12;
-	}
-
-	if (removeRequest == true)
-	{
-		DRPC_RemoveRequest(discordRequestList);
-
-		if (discordRequestList == NULL)
-		{
-			// No other requests
-			// FIXME
-			M_ExitMenu(); // <------ the problem in question
-			return;
-		}
 	}
 }
 #endif

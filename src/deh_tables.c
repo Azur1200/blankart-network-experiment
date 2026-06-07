@@ -904,6 +904,9 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{"TICKSTATS", &MR_TickStats},
 	{"TICKREPLAYHUT", &MR_TickReplayHut},
 	//{"TICKREPLAYHUTREPLAYINFO", &MR_TickReplayHutReplayInfo},
+#ifdef HAVE_DISCORDRPC
+	{"TICKDISCORDREQUESTS", &MR_TickDiscordRequests},
+#endif
 
 	{ NULL, NULL }
 };
