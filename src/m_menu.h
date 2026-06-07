@@ -454,6 +454,7 @@ INT32 MR_TickAddons(INT32 choice);
 INT32 MR_TickStats(INT32 choice);
 INT32 MR_TickReplayHutReplayInfo(INT32 choice);
 INT32 MR_TickReplayHut(INT32 choice);
+INT32 MR_Options(INT32 choice);
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);
