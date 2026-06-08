@@ -1515,8 +1515,10 @@ void F_TitleScreenDrawer(void)
 {
 	boolean hidepics = false;
 
+#if 0
 	if (modeattacking)
 		return; // We likely came here from retrying. Don't do a damn thing.
+#endif
 
 	// Draw that sky!
 	if (curbgcolor >= 0)
@@ -1528,16 +1530,12 @@ void F_TitleScreenDrawer(void)
 	if (gamestate != GS_TITLESCREEN && gamestate != GS_WAITINGPLAYERS)
 		return;
 
-	// Don't draw if title mode is set to Old/None and the patch isn't there
-	/*
-	if (!ttwing && (curttmode == TTMODE_OLD || curttmode == TTMODE_NONE))
-		return;
-	*/
-
 	// rei|miru: use title pics?
 	hidepics = curhidepics;
 	if (hidepics)
+	{
 		goto luahook;
+	}
 
 	switch(curttmode)
 	{
