@@ -7893,7 +7893,7 @@ INT32 MR_ConnectLastServer(INT32 choice)
 		return false;
 	}
 
-	M_ClearMenus(true);
+	M_ClearMenusEx(true, true);
 	COM_BufAddText(va("connect \"%s\"\n", cv_lastserver.string));
 	return true;
 }
