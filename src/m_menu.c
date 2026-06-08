@@ -2647,7 +2647,7 @@ static void M_HandleMenuInput(void)
 			M_SetMenuDelay(pid);
 			return;
 		}
-		else if (M_MenuButtonPressed(0, MBT_HOME))
+		else if (M_MenuButtonPressed(0, MBT_INFO2))
 		{
 			if (item->routine == MR_ChangeControl)
 			{
