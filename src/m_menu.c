@@ -5257,25 +5257,25 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 	menupanelinst_t *pi = &curpanels[panelOn];
 	menuitem_t *item = &pi->items[pi->itemon];
 	panelfunc_f *initializer = M_GetDefFromInst(pi)->initializer;
-	switch (choice)
+
+	if (menucmd[0].dpad_lr < 0)
 	{
-	case KEY_UPARROW:
 		if (dir_on[menudepthleft])
+		{
 			dir_on[menudepthleft]--;
-		else
-			break;
-
-		return false;
-
-	case KEY_DOWNARROW:
+			return false;
+		}
+	}
+	else if (menucmd[0].dpad_lr > 0)
+	{
 		if (dir_on[menudepthleft] < sizedirmenu-1)
+		{
 			dir_on[menudepthleft]++;
-		else
-			break;
-
-		return false;
-
-	case KEY_ENTER:
+			return false;
+		}
+	}
+	else if (M_MenuButtonPressed(0, MBT_CONFIRM))
+	{
 		switch (item->argument)
 		{
 			case EXT_FOLDER:
@@ -5324,12 +5324,10 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 			default:
 				return false;
 		}
-
-		break;
-
-	default:
-		return false;
 	}
+	else
+		return false;
+
 	return true;
 }
 

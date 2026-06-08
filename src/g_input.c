@@ -289,11 +289,6 @@ void G_MapEventsToControls(event_t *ev)
 			break;
 
 		case ev_mouse: // buttons are virtual keys
-			if (menustack[0])
-			{
-				break;
-			}
-
 			// X axis
 			if (ev->data2 < 0)
 			{
@@ -324,11 +319,6 @@ void G_MapEventsToControls(event_t *ev)
 			break;
 
 		case ev_joystick: // buttons are virtual keys
-			if (menustack[0])
-			{
-				break;
-			}
-
 			if (ev->data1 >= JOYAXISES)
 			{
 #ifdef PARANOIA
