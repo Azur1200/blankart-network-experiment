@@ -37,7 +37,7 @@ extern "C" {
 
 extern INT32 menuKey; // keyboard key pressed for menu
 
-#define MENUDELAYTIME 7
+#define MENUDELAYTIME 12
 #define MENUMINDELAY 2
 
 typedef enum
@@ -588,8 +588,6 @@ UINT16 M_GetColorBefore(UINT16 color);
 UINT16 M_GetColorAfter(UINT16 color);
 void M_InitPlayerSetupColors(void);
 void M_FreePlayerSetupColors(void);
-
-extern boolean menu_text_input;
 
 #ifdef __cplusplus
 } // extern "C"

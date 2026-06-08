@@ -1370,7 +1370,7 @@ vector3_t G_PlayerInputSensor(UINT8 p, motionsensortype_e sensor)
 
 boolean G_PlayerInputDown(UINT8 p, INT32 gc, boolean digital, SINT8 type)
 {
-	return (G_PlayerInputAnalog(p, gc, digital, type) != 0);
+	return (abs(G_PlayerInputAnalog(p, gc, digital, type)) >= JOYAXISRANGE/2);
 }
 
 // Take a magnitude of two axes, and adjust it to take out the deadzone
