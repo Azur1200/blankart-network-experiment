@@ -4144,24 +4144,10 @@ INT32 MR_HandleLevelPlatter(INT32 choice)
 	if (levelselect.selectdelay > 0)
 		return choice != KEY_CONSOLE; // let me open the console at least lol
 
-	switch (choice)
-	{
-	case KEY_UPARROW:
-	case KEY_DOWNARROW:
-		vmove = choice == KEY_UPARROW ? -1 : 1;
-		break;
+	vmove = menucmd[0].dpad_ud;
+	hmove = menucmd[0].dpad_lr;
 
-	case KEY_PGUP:
-	case KEY_PGDN:
-		vmove = choice == KEY_PGUP ? -3 : 3;
-		break;
-
-	case KEY_LEFTARROW:
-	case KEY_RIGHTARROW:
-		hmove = choice == KEY_LEFTARROW ? -1 : 1;
-		break;
-
-	case KEY_BACKSPACE: // return to home
+	if (M_MenuButtonPressed(0, MBT_INFO2))
 	{
 		INT32 dest;
 		if (levelselect.row > 0)
@@ -4188,25 +4174,44 @@ INT32 MR_HandleLevelPlatter(INT32 choice)
 			vmove = dest - levelselect.row;
 
 		panelOn = M_GetPanel("OPTIONS") - curpanels;
-		break;
-	}
 
-	case KEY_ENTER:
+		M_SetMenuDelay(0);
+	}
+	else if (M_MenuButtonPressed(0, MBT_CONFIRM))
+	{
 		if (levelselect.row == 0)
 			return false;
 
 		M_LevelPlatterSelect(false);
+
+		M_SetMenuDelay(0);
 		return true;
+	}
+	else
+	{
+		switch (choice)
+		{
+			case KEY_PGUP:
+			case KEY_PGDN:
+				vmove = choice == KEY_PGUP ? -3 : 3;
+				M_SetMenuDelay(0);
+				break;
+		}
 	}
 
 	if (levelselect.numrows <= 1)
 		vmove = 0;
 
 	if (vmove != 0)
+	{
+		M_SetMenuDelay(0);
 		M_MoveLevelPlatter(vmove);
+	}
 
 	if (hmove != 0)
 	{
+		M_SetMenuDelay(0);
+
 		if (levelselect.rows[levelselect.row].wide)
 			return levelselect.row > 0;
 		levelselect.namescroll = 0;
