@@ -2303,6 +2303,24 @@ boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt)
 	return (menucmd[pid].buttons & bt);
 }
 
+static void M_HandleGoBack(INT32 thisMenuKey)
+{
+	if (M_MenuButtonPressed(0, MBT_CANCEL))
+	{
+		if (M_WipeBuffer(thisMenuKey, currentMenu->quitroutine))
+			return;
+
+		//If we entered the game search menu, but didn't enter a game,
+		//make sure the game doesn't still think we're in a netgame.
+		if (!Playing() && netgame && multiplayer)
+		{
+			netgame = false;
+			multiplayer = false;
+		}
+		M_ExitMenu();
+	}
+}
+
 static void M_HandleMenuInput(void)
 {
 	UINT8 pid = 0; // todo: Add ability for any splitscreen player to bring up the menu.
@@ -2372,6 +2390,7 @@ static void M_HandleMenuInput(void)
 
 	if (item == NULL)
 	{
+		M_HandleGoBack(thisMenuKey);
 		return;
 	}
 
@@ -2389,20 +2408,7 @@ static void M_HandleMenuInput(void)
 		}
 	}
 
-	if (M_MenuButtonPressed(0, MBT_CANCEL))
-	{
-		if (M_WipeBuffer(thisMenuKey, currentMenu->quitroutine))
-			return;
-
-		//If we entered the game search menu, but didn't enter a game,
-		//make sure the game doesn't still think we're in a netgame.
-		if (!Playing() && netgame && multiplayer)
-		{
-			netgame = false;
-			multiplayer = false;
-		}
-		M_ExitMenu();
-	}
+	M_HandleGoBack(thisMenuKey);
 
 	// HMMM WHERE WAS THIS COPY PASTED FROM, I WONDER
 	INT32 hmove = 0, vmove = 0;
