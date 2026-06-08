@@ -1500,53 +1500,6 @@ static boolean M_GamestateCanOpenMenu(void)
 	}
 }
 
-static INT32 RemapGamepadButton(event_t *ev)
-{
-	// remap to keyboard keys if needed
-	if (ev->data1 < KEY_JOY1 || ev->data1 >= JOYINPUTEND)
-		return ev->data1;
-
-	static INT32 joyremap[][2] = {
-		{ gc_accelerate,  KEY_ENTER      }, // these two first
-		{ gc_brake,       KEY_ESCAPE     }, // in case of conflicts
-		{ gc_systemmenu,  KEY_ESCAPE     },
-		{ gc_aimforward,  KEY_UPARROW    },
-		{ gc_aimbackward, KEY_DOWNARROW  },
-		{ gc_turnleft,    KEY_LEFTARROW  },
-		{ gc_turnright,   KEY_RIGHTARROW },
-		{ gc_fire,        KEY_BACKSPACE  },
-		{ gc_horncode,	  KEY_BACKSPACE  },
-		{ gc_drift,       KEY_SPACE      },
-		{ gc_lookback,	  KEY_TAB		 },
-	};
-
-	for (size_t r = 0; r < sizeof(joyremap)/sizeof(*joyremap); r++)
-	{
-		INT32 gc = joyremap[r][0];
-		if (gc == gc_brake && !menustack[0])
-			continue; // don't open the menu with brake!
-
-		if (G_ControlBoundToKey(0, gc, ev->data1, true))
-		{
-			return joyremap[r][1];
-		}
-	}
-
-	// remap the hats too
-	switch (ev->data1)
-	{
-		case KEY_HAT1+0:
-			return KEY_UPARROW;
-		case KEY_HAT1+1:
-			return KEY_DOWNARROW;
-		case KEY_HAT1+2:
-			return KEY_LEFTARROW;
-		case KEY_HAT1+3:
-			return KEY_RIGHTARROW;
-	}
-	return ev->data1;
-}
-
 //
 // M_Responder
 //
@@ -2328,8 +2281,6 @@ void M_UpdateMenuCMD(UINT8 i)
 	{
 		if (G_PlayerInputDown(i, gc_aimforward, false, DEADZONE_Y)) { menucmd[i].dpad_ud--; }
 		if (G_PlayerInputDown(i, gc_aimbackward, false, DEADZONE_Y)) { menucmd[i].dpad_ud++; }
-
-		CONS_Printf("%dupdown\n", menucmd[i].dpad_ud);
 
 		if (G_PlayerInputDown(i, gc_turnleft, false, DEADZONE_X)) { menucmd[i].dpad_lr--; }
 		if (G_PlayerInputDown(i, gc_turnright, false, DEADZONE_X)) { menucmd[i].dpad_lr++; }
@@ -6463,72 +6414,83 @@ void MD_DrawMusicTest(menupanelinst_t *pi)
 
 INT32 MR_HandleMusicTest(INT32 choice)
 {
-	switch (choice)
+	if (menucmd[0].dpad_ud > 0)
 	{
-		case KEY_DOWNARROW:
-			if (st_sel++ >= numsoundtestdefs-1)
-				st_sel = 0;
-			{
-				S_StartSound(NULL, sfx_menu1);
-			}
-			st_namescroll = 0;
-			st_namescrollstate = 0;
-			break;
-		case KEY_UPARROW:
-			if (!st_sel--)
-				st_sel = numsoundtestdefs-1;
-			{
-				S_StartSound(NULL, sfx_menu1);
-			}
-			st_namescroll = 0;
-			st_namescrollstate = 0;
-			break;
-		case KEY_PGDN:
-			if (st_sel < numsoundtestdefs-1)
-			{
-				st_sel += 3;
-				if (st_sel >= numsoundtestdefs-1)
-					st_sel = numsoundtestdefs-1;
-				S_StartSound(NULL, sfx_menu1);
-			}
-			st_namescroll = 0;
-			st_namescrollstate = 0;
-			break;
-		case KEY_PGUP:
-			if (st_sel)
-			{
-				st_sel -= 3;
-				if (st_sel < 0)
-					st_sel = 0;
-				S_StartSound(NULL, sfx_menu1);
-			}
-			st_namescroll = 0;
-			st_namescrollstate = 0;
-			break;
-		case KEY_BACKSPACE:
-			if (curplaying)
-			{
-				S_StopSounds();
-				S_StopMusic();
-				curplaying = NULL;
-				st_time = 0;
-				S_StartSound(NULL, sfx_skid);
-			}
-			break;
-
-		case KEY_RIGHTARROW:
-		case KEY_LEFTARROW:
-		case KEY_ENTER:
+		if (st_sel++ >= numsoundtestdefs-1)
+			st_sel = 0;
+		{
+			S_StartSound(NULL, sfx_menu1);
+		}
+		st_namescroll = 0;
+		st_namescrollstate = 0;
+		M_SetMenuDelay(0);
+	}
+	else if (menucmd[0].dpad_ud < 0)
+	{
+		if (!st_sel--)
+			st_sel = numsoundtestdefs-1;
+		{
+			S_StartSound(NULL, sfx_menu1);
+		}
+		st_namescroll = 0;
+		st_namescrollstate = 0;
+		M_SetMenuDelay(0);
+	}
+	else if (M_MenuButtonPressed(0, MBT_INFO2))
+	{
+		if (curplaying)
+		{
 			S_StopSounds();
 			S_StopMusic();
+			curplaying = NULL;
 			st_time = 0;
-			curplaying = soundtestdefs[st_sel];
-			S_ChangeMusicInternal(&curplaying->name[0][0], true);
-			break;
-
-		default:
-			return false;
+			S_StartSound(NULL, sfx_skid);
+			M_SetMenuDelay(0);
+		}
 	}
+	else if (menucmd[0].dpad_lr != 0 || M_MenuButtonPressed(0, MBT_CONFIRM))
+	{
+		S_StopSounds();
+		S_StopMusic();
+		st_time = 0;
+		curplaying = soundtestdefs[st_sel];
+		S_ChangeMusicInternal(&curplaying->name[0][0], true);
+		M_SetMenuDelay(0);
+	}
+	else
+	{
+		switch (choice)
+		{
+			case KEY_PGDN:
+				if (st_sel < numsoundtestdefs-1)
+				{
+					st_sel += 3;
+					if (st_sel >= numsoundtestdefs-1)
+						st_sel = numsoundtestdefs-1;
+					S_StartSound(NULL, sfx_menu1);
+				}
+				st_namescroll = 0;
+				st_namescrollstate = 0;
+				M_SetMenuDelay(0);
+				break;
+			case KEY_PGUP:
+				if (st_sel)
+				{
+					st_sel -= 3;
+					if (st_sel < 0)
+						st_sel = 0;
+					S_StartSound(NULL, sfx_menu1);
+				}
+				st_namescroll = 0;
+				st_namescrollstate = 0;
+				M_SetMenuDelay(0);
+				break;
+
+			default:
+				return false;
+		}
+	}
+
 	return true;
 }
 
@@ -6844,48 +6806,55 @@ INT32 MR_TickStats(INT32 choice)
 // Handle statistics.
 INT32 MR_HandleLevelStats(INT32 choice)
 {
-	switch (choice)
+	if (menucmd[0].dpad_lr > 0)
 	{
-		case KEY_RIGHTARROW:
-			S_StartSound(NULL, sfx_menu1);
-			do
-				panelOn = intmod(panelOn + 1, numcurpanels);
-			while (curpanels[panelOn].cursoroffset == 0);
-			break;
-
-		case KEY_LEFTARROW:
-			S_StartSound(NULL, sfx_menu1);
-			do
-				// sadly, panelOn is size_t, which means integer promotion does not
-				// convert it from unsigned to signed, which means this line doesn't work:
-				//panelOn = intmod(panelOn - 1, numcurpanels);
-				// fuck this chud ass language
-				if (panelOn-- == 0) panelOn = numcurpanels-1;
-			while (curpanels[panelOn].cursoroffset == 0);
-			break;
-
-		case KEY_BACKSPACE:;
-			menupanelinst_t *maps = M_CheckPanel("RECORDS");
-			if (&curpanels[panelOn] != maps)
-				break;
-			S_StartSound(NULL, sfx_menu1);
-			recordpresetnum_e i, j;
-			for (i = 0; i < numrecordpresets; i++)
-				if (fastcmp(currentrecordpreset, recordpresets[i]->name))
-					break;
-			for (j = i; (i = (i + 1) % numrecordpresets) != j;)
-				if (recordpresets[i]->numversions)
-				{
-					G_SetCurrentRecordPreset(recordpresets[i]);
-					break;
-				}
-			M_GetDefFromInst(maps)->initializer(maps);
-			M_GetDefFromInst(M_GetPanel("RECORDSBG"))->initializer(M_GetPanel("RECORDSBG"));
-			break;
-
-		default:
-			return false;
+		S_StartSound(NULL, sfx_menu1);
+		M_SetMenuDelay(0);
+		do
+			panelOn = intmod(panelOn + 1, numcurpanels);
+		while (curpanels[panelOn].cursoroffset == 0);
 	}
+	else if (menucmd[0].dpad_lr < 0)
+	{
+		S_StartSound(NULL, sfx_menu1);
+		M_SetMenuDelay(0);
+		do
+			// sadly, panelOn is size_t, which means integer promotion does not
+			// convert it from unsigned to signed, which means this line doesn't work:
+			//panelOn = intmod(panelOn - 1, numcurpanels);
+			// fuck this chud ass language
+			if (panelOn-- == 0) panelOn = numcurpanels-1;
+		while (curpanels[panelOn].cursoroffset == 0);
+	}
+	else if (M_MenuButtonPressed(0, MBT_INFO2))
+	{
+		menupanelinst_t *maps = M_CheckPanel("RECORDS");
+		if (&curpanels[panelOn] != maps)
+			return true;
+		S_StartSound(NULL, sfx_menu1);
+		M_SetMenuDelay(0);
+		recordpresetnum_e i, j;
+		for (i = 0; i < numrecordpresets; i++)
+		{
+			if (fastcmp(currentrecordpreset, recordpresets[i]->name))
+				break;
+		}
+
+		for (j = i; (i = (i + 1) % numrecordpresets) != j;)
+		{
+			if (recordpresets[i]->numversions)
+			{
+				G_SetCurrentRecordPreset(recordpresets[i]);
+				break;
+			}
+		}
+
+		M_GetDefFromInst(maps)->initializer(maps);
+		M_GetDefFromInst(M_GetPanel("RECORDSBG"))->initializer(M_GetPanel("RECORDSBG"));
+	}
+	else
+		return false;
+
 	return true;
 }
 
@@ -9448,18 +9417,17 @@ INT32 MR_HandleVideoMode(INT32 ch)
 	if (vidm_testingmode <= 0)
 		return false;
 
-	switch (ch)
+	if (M_MenuButtonPressed(0, MBT_CANCEL))
 	{
-	// change back to the previous mode quickly
-	case KEY_ESCAPE:
 		setmodeneeded = vidm_previousmode + 1;
 		vidm_testingmode = 0;
-		break;
-	case KEY_ENTER:
+	}
+	else if (M_MenuButtonPressed(0, MBT_CONFIRM))
+	{
 		S_StartSound(NULL, sfx_menu1);
 		vidm_testingmode = 0; // stop testing
-		break;
 	}
+
 	return true;
 }
 
@@ -9720,62 +9688,67 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 	menupanelinst_t *pi = &curpanels[panelOn];
 	kartresult_t *result = K_GetKartResult(pi->items[pi->itemon].patch);
 
-	switch (choice)
+	if (M_MenuButtonPressed(0, MBT_CONFIRM))
 	{
-		case KEY_ENTER:
-			if (pi->items[pi->itemon].argument == 2)
+		if (pi->items[pi->itemon].argument == 2)
+		{
+			//S_StartSound(NULL, sfx_s26d);
+			if (!shitsfree)
 			{
-				//S_StartSound(NULL, sfx_s26d);
-				if (!shitsfree)
-				{
-					shitsfree = TICRATE;
-					S_StartSound(NULL, sfx_itfree);
-				}
+				shitsfree = TICRATE;
+				S_StartSound(NULL, sfx_itfree);
 			}
-			else if (pi->items[pi->itemon].argument == 1)
-			{
-				INT32 v = K_ItemResultEnabled(K_GetKartResult("sneaker")) ? 1 : 0;
-				S_StartSound(NULL, sfx_s1b4);
-				for (UINT8 i = 0; i < numkartresults; i++)
-				{
-					if (kartresults[i].cvar->value == v)
-						CV_AddValue(kartresults[i].cvar, 1);
-				}
-			}
-			else if (result != NULL)
-			{
-				if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
-				{
-					S_StartSound(NULL, sfx_s231);
-				}
-				else
-				{
-					S_StartSound(NULL, sfx_s1ba);
-					CV_AddValue(result->cvar, 1);
-				}
-			}
-			break;
 
-		case KEY_BACKSPACE:
-			if (result != NULL && kartitems[result->type].altcvar != NULL)
+			M_SetMenuDelay(0);
+		}
+		else if (pi->items[pi->itemon].argument == 1)
+		{
+			INT32 v = K_ItemResultEnabled(K_GetKartResult("sneaker")) ? 1 : 0;
+			S_StartSound(NULL, sfx_s1b4);
+			M_SetMenuDelay(0);
+			for (UINT8 i = 0; i < numkartresults; i++)
 			{
-				if (K_ShowAltItemIcon(result->type, false))
-				{
-					S_StartSound(NULL, sfx_s3kb7);
-				}
-				else
-				{
-					S_StartSound(NULL, sfx_mds0a);
-					fliptic[result->type] = FLIPTIC_TIME;
-				}
-
-				CV_AddValue(kartitems[result->type].altcvar, 1);
+				if (kartresults[i].cvar->value == v)
+					CV_AddValue(kartresults[i].cvar, 1);
 			}
-			break;
+		}
+		else if (result != NULL)
+		{
+			if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
+			{
+				S_StartSound(NULL, sfx_s231);
+			}
+			else
+			{
+				S_StartSound(NULL, sfx_s1ba);
+				CV_AddValue(result->cvar, 1);
+			}
 
-		default:
-			return false;
+			M_SetMenuDelay(0);
+		}
 	}
+	else if (M_MenuButtonPressed(0, MBT_INFO2))
+	{
+		if (result != NULL && kartitems[result->type].altcvar != NULL)
+		{
+			if (K_ShowAltItemIcon(result->type, false))
+			{
+				S_StartSound(NULL, sfx_s3kb7);
+			}
+			else
+			{
+				S_StartSound(NULL, sfx_mds0a);
+				fliptic[result->type] = FLIPTIC_TIME;
+			}
+
+			CV_AddValue(kartitems[result->type].altcvar, 1);
+
+			M_SetMenuDelay(0);
+		}
+	}
+	else
+		return false;
+
 	return true;
 }
 
@@ -9884,25 +9857,24 @@ static boolean viewserver_showaddons = false;
 
 INT32 MR_HandleViewServer(INT32 choice)
 {
-	switch (choice)
+
+	if (M_MenuButtonPressed(0, MBT_CONFIRM))
 	{
-		case KEY_ENTER:
-			S_StartSound(NULL, sfx_menu1);
-			ChangeClientMode(CL_CHECKFILES);
-			ChangeServMusic(SERVMUS_2, true,true);
-			M_ClearMenusEx(false, true);
-			return true;
-
-		case KEY_SPACE:
-			S_StartSound(NULL, sfx_menu1);
-			viewserver_showaddons = !viewserver_showaddons;
-			return true;
-
-		default:
-			break;
+		S_StartSound(NULL, sfx_menu1);
+		ChangeClientMode(CL_CHECKFILES);
+		ChangeServMusic(SERVMUS_2, true,true);
+		M_ClearMenusEx(false, true);
+		M_SetMenuDelay(0);
 	}
+	else if (M_MenuButtonPressed(0, MBT_INFO1))
+	{
+		S_StartSound(NULL, sfx_menu1);
+		viewserver_showaddons = !viewserver_showaddons;
+	}
+	else
+		return false;
 
-	return false;
+	return true;
 }
 
 void MP_ViewServerPlayers(menupanelinst_t *pi)
@@ -10167,33 +10139,33 @@ boolean removeRequest = false;
 
 INT32 MR_HandleDiscordRequests(INT32 choice)
 {
-	switch (choice)
+	if (menucmd[0].dpad_lr || menucmd[0].dpad_ud)
 	{
-		case KEY_UPARROW:
-		case KEY_DOWNARROW:
-			break;
-
-		case KEY_ENTER:
-			if (confirmDelay > 0)
-				break;
-			Discord_Respond(discordRequestList->userID, DISCORD_REPLY_YES);
-			confirmAccept = true;
-			confirmDelay = confirmLength;
-			S_StartSound(NULL, sfx_s3k63);
-			break;
-
-		case KEY_ESCAPE:
-			if (confirmDelay > 0)
-				break;
-			Discord_Respond(discordRequestList->userID, DISCORD_REPLY_NO);
-			confirmAccept = false;
-			confirmDelay = confirmLength;
-			S_StartSound(NULL, sfx_s3kb2);
-			break;
-
-		default:
-			return false;
+		// Do nothing.
+		;
 	}
+	else if (M_MenuButtonPressed(0, MBT_CONFIRM))
+	{
+		if (confirmDelay > 0)
+			return true;
+		Discord_Respond(discordRequestList->userID, DISCORD_REPLY_YES);
+		confirmAccept = true;
+		confirmDelay = confirmLength;
+		S_StartSound(NULL, sfx_s3k63);
+		M_SetMenuDelay(0);
+	}
+	else if (M_MenuButtonPressed(0, MBT_CANCEL))
+	{
+		if (confirmDelay > 0)
+			return true;
+		Discord_Respond(discordRequestList->userID, DISCORD_REPLY_NO);
+		confirmAccept = false;
+		confirmDelay = confirmLength;
+		S_StartSound(NULL, sfx_s3kb2);
+		M_SetMenuDelay(0);
+	}
+	else
+		return false;
 
 	return true;
 }
