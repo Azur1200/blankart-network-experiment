@@ -2196,9 +2196,9 @@ static void M_SetMenuDelay(UINT8 i)
 		// Shouldn't happen, but for safety.
 		menucmd[i].delayCount = 1;
 	}
-	else if (menucmd[i].delayCount > 6)
+	else if (menucmd[i].delayCount > MENUDMAXDELAYCOUNT)
 	{
-		menucmd[i].delayCount = 6;
+		menucmd[i].delayCount = MENUDMAXDELAYCOUNT;
 	}
 
 	menucmd[i].delay = (MENUDELAYTIME / menucmd[i].delayCount);

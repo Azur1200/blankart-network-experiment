@@ -37,8 +37,9 @@ extern "C" {
 
 extern INT32 menuKey; // keyboard key pressed for menu
 
-#define MENUDELAYTIME 12
+#define MENUDELAYTIME 7
 #define MENUMINDELAY 2
+#define MENUDMAXDELAYCOUNT 2
 
 typedef enum
 {
