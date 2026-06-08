@@ -279,12 +279,12 @@ void D_ProcessEvents(void)
 				continue;
 		}
 
-		// update keys current state
-		G_MapEventsToControls(ev);
-
 		// Menu input
 		if (WipeInAction < 2)
 		{
+			// update keys current state
+			G_MapEventsToControls(ev);
+
 #ifdef HAVE_THREADS
 			I_lock_mutex(&m_menu_mutex);
 #endif
