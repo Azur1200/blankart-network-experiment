@@ -2296,7 +2296,7 @@ boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt)
 
 static void M_HandleGoBack(INT32 thisMenuKey)
 {
-	if (M_MenuButtonPressed(0, MBT_CANCEL))
+	if (M_MenuButtonPressed(0, MBT_CANCEL) || M_MenuButtonPressed(0, MBT_HOME))
 	{
 		noFurtherInput = -1;
 
