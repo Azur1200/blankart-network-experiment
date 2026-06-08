@@ -6630,7 +6630,7 @@ static void SV_SendServerKeepAlive(void)
 { \
 	ca.checksum = cb.checksum; \
 	INT32 ii = 0; \
-	for (ii = 1; ii <= PRNUMCLASS; ii++) {ca.rngseed[ii] = cb.rngseed[ii];}; \
+	for (ii = 0; ii < PRNUMCLASS; ii++) {ca.rngseed[ii] = cb.rngseed[ii];}; \
 	ca.seed_checksum = cb.seed_checksum; \
 	ca.itemsum = cb.itemsum; \
 \
