@@ -1028,6 +1028,7 @@ static void Impl_HandleControllerButtonEvent(SDL_GamepadButtonEvent evt, Uint32 
 	}
 
 	event.data1 = KEY_JOY1 + button;
+	event.data2 = 0;
 
 	if (event.type != ev_console)
 	{

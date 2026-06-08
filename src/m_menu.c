@@ -1505,20 +1505,12 @@ static boolean M_GamestateCanOpenMenu(void)
 //
 boolean M_Responder(event_t *ev)
 {
-	INT32 deviceplayer = G_GetDevicePlayer(ev->device);
-
 	if (dedicated
 		|| (demo.playback && demo.title)
 		|| M_GamestateCanOpenMenu() == false)
 	{
 		return false;
 	}
-
-	if (CON_Ready() && gamestate != GS_WAITINGPLAYERS)
-		return false;
-
-	if (gamestate == GS_TITLESCREEN && finalecount < TICRATE)
-		return false;
 
 	if (noFurtherInput)
 	{
@@ -1527,7 +1519,7 @@ boolean M_Responder(event_t *ev)
 		return false;
 	}
 
-	if (ev->type == ev_keydown && ev->data1 > 0 && ev->data1 < KEY_JOY1)
+	if (ev->type == ev_keydown && ev->data1 > 0 && ev->data1 < NUMKEYS)
 	{
 		// Record keyboard presses
 		menuKey = ev->data1;
