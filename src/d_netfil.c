@@ -616,7 +616,7 @@ INT32 CL_CheckFiles(void)
 		if (fileneeded[i].status != FS_OPEN)
 			filestoload++;
 
-		if (fileneeded[i].status != FS_NOTCHECKED) //since we're running this over multiple tics now, its possible for us to come across files checked in previous tics
+		if (fileneeded[i].status != FS_NOTCHECKED) // since we're running this over multiple tics now, its possible for us to come across files checked in previous tics
 			continue;
 		
 		CONS_Debug(DBG_NETPLAY, "searching for '%s' ", fileneeded[i].filename);
@@ -629,13 +629,16 @@ INT32 CL_CheckFiles(void)
 #endif
 		for (; wadfiles[j]; j++)
 		{
-			nameonly(strcpy(wadfilename, wadfiles[j]->filename));
-			if (fasticmp(wadfilename, fileneeded[i].filename) &&
-				wadfiles[j]->hash == fileneeded[i].hash)
+			if (wadfiles[j]->hash != fileneeded[i].hash)
 			{
-				CONS_Debug(DBG_NETPLAY, "already loaded\n");
-				fileneeded[i].status = FS_OPEN;
-				return 4;
+				nameonly(strcpy(wadfilename, wadfiles[j]->filename));
+				if (fasticmp(wadfilename, fileneeded[i].filename) &&
+					wadfiles[j]->hash == fileneeded[i].hash)
+				{
+					CONS_Debug(DBG_NETPLAY, "already loaded\n");
+					fileneeded[i].status = FS_OPEN;
+					return 4;
+				}
 			}
 		}
 
@@ -680,7 +683,7 @@ boolean CL_LoadServerFiles(void)
 		else
 		{
 			const char *s;
-			switch(fileneeded[i].status)
+			switch (fileneeded[i].status)
 			{
 			case FS_NOTFOUND:
 				s = "FS_NOTFOUND";
