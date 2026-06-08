@@ -4514,10 +4514,13 @@ boolean G_CheckDemoStatus(void)
 		else
 		{
 			UINT8 wasmodeattacking = modeattacking;
+			boolean wastitledemo = demo.title;
 			G_StopDemo();
 
 			if (timedemo_quit)
 				COM_ImmedExecute("quit");
+			else if (wastitledemo)
+				D_StartTitle();
 			else if (wasmodeattacking)
 				MR_ModeAttackEndGame(0);
 			else
