@@ -601,6 +601,8 @@ extern INT32 luabanks[NUM_LUABANKS];
 
 extern INT32 nummaprings; //keep track of spawned rings/coins
 
+extern UINT32 initial_seed; ///< Log the first randomization seed the server gets
+
 extern UINT32 token; ///< Number of tokens collected in a level
 extern UINT32 tokenlist; ///< List of tokens collected
 extern boolean gottoken; ///< Did you get a token? Used for end of act

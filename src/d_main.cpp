@@ -140,6 +140,8 @@ UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
 // platform independant focus loss
 UINT8 window_notinfocus = false;
 
+UINT32 initial_seed = 0;
+
 //
 // DEMO LOOP
 //

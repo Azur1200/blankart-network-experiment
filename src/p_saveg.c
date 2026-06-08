@@ -4113,15 +4113,20 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 		}
 	}
 
-	P_SetRandSeed(P_SyncUINT32(save, P_GetRandSeed()));
-
 	SYNC(tokenlist);
 
 	SYNCBOOLEAN(encoremode);
+
+	SYNC(initial_seed);
 	SYNC(mapmusrng);
 
 	if (!save->write)
 	{
+		// Regardless of if the RNG has already been initialized or not, initialize
+		// the seeds *right now* to prevent infinite-loops.
+		I_OutputMsg("[NetSyncMisc] initial seed: %u\n", initial_seed);
+		P_SetRandSeed(initial_seed);
+
 		// Only reload the level during a gamestate reload
 		// if the map is horribly mismatched somehow. Minor
 		// differences in level state are already handled
@@ -4325,6 +4330,9 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 			Taglist_InitGlobalTables();
 		}
 	}
+
+	// yama: Sync RNG *diirectly after* the map loads in, to prevent on-spawn desynchs
+	P_SetRandSeed(P_SyncUINT32(save, P_GetRandSeed()));
 
 	SYNC(leveltime);
 	SYNC(lastmap);

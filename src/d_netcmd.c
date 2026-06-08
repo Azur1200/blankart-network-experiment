@@ -4424,7 +4424,12 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	}
 
 	if (netgame)
-		P_SetRandSeed(READUINT32(*cp));
+	{
+		initial_seed = READUINT32(*cp);
+
+		I_OutputMsg("[Got_Mapcmd] initial seed: %u\n", initial_seed);
+		P_SetRandSeed(initial_seed);
+	}
 
 	if (!skipprecutscene)
 	{
