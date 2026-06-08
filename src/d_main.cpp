@@ -250,6 +250,23 @@ void D_ProcessEvents(void)
 		if (M_ScreenshotResponder(ev))
 			continue; // ate the event
 
+		// console input
+#ifdef HAVE_THREADS
+		I_lock_mutex(&con_mutex);
+#endif
+		{
+			eaten = CON_Responder(ev);
+		}
+#ifdef HAVE_THREADS
+		I_unlock_mutex(con_mutex);
+#endif
+
+		if (eaten)
+		{
+			hu_keystrokes = true;
+			continue; // ate the event
+		}
+
 		if (gameaction == ga_nothing && gamestate == GS_MENU)
 		{
 			if (cht_Responder(ev))
@@ -284,23 +301,6 @@ void D_ProcessEvents(void)
 		if (demo.playback)
 			if (M_DemoResponder(ev))
 				continue;	// demo ate the event
-
-		// console input
-#ifdef HAVE_THREADS
-		I_lock_mutex(&con_mutex);
-#endif
-		{
-			eaten = CON_Responder(ev);
-		}
-#ifdef HAVE_THREADS
-		I_unlock_mutex(con_mutex);
-#endif
-
-		if (eaten)
-		{
-			hu_keystrokes = true;
-			continue; // ate the event
-		}
 
 		G_Responder(ev);
 	}
