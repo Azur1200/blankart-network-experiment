@@ -2396,6 +2396,11 @@ static void M_HandleMenuInput(void)
 		return;
 	}
 
+	if (menucmd[pid].delay > 0)
+	{
+		return;
+	}
+
 	// BP: one of the more big hack i have never made
 	// G: not so hacky anymore...?
 	// G: nevermind we have combi menuitems now
@@ -2411,11 +2416,6 @@ static void M_HandleMenuInput(void)
 			return;
 		if (curpd->keyhandler(thisMenuKey))
 			return;
-	}
-
-	if (menucmd[pid].delay > 0)
-	{
-		return;
 	}
 
 	if (menustack[0] == MN_PLAYBACK && !con_destlines)
@@ -8472,7 +8472,9 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 {
 	INT32 sortedIndex = 0;
 
-	if (M_IsItemOn(&curpanels[panelOn], "FOLLOWER") && (choice == KEY_BACKSPACE || choice == KEY_ENTER))
+	if (M_IsItemOn(&curpanels[panelOn], "FOLLOWER")
+		&& (M_MenuButtonPressed(0, MBT_INFO2) || M_MenuButtonPressed(0, MBT_CONFIRM))
+	)
 	{
 		if (cv_dummyfollower.value > -1)
 		{
@@ -8489,13 +8491,13 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 
 	if (!gridcss_active)
 	{
-		if (choice == KEY_ENTER)
+		if (M_MenuButtonPressed(0, MBT_CONFIRM))
 		{
 			gridcss_active = true;
 			S_StartSound(NULL, sfx_menu1);
 			return true;
 		}
-		if (choice == KEY_LEFTARROW || choice == KEY_RIGHTARROW)
+		if (menucmd[0].dpad_lr != 0)
 		{
 			gridcss_active = true;
 			// fall-thru into navigation
@@ -8506,160 +8508,179 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 		}
 	}
 
-	switch (choice)
+	if (menucmd[0].dpad_ud > 0)
 	{
-		case KEY_DOWNARROW:
-			if (gridcss_column == (numskins - 1) / SKINGRIDWIDTH)
-			{
-				M_SetItemOn(&curpanels[panelOn], "FOLLOWER");
-				CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
-				sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
-				gridcss_row = sortedIndex % SKINGRIDWIDTH;
-				gridcss_column = sortedIndex / SKINGRIDWIDTH;
-			
-				gridcss_active = false;
-
-				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
-			}
-			else
-			{
-				gridcss_column++;
-
-				if (MapGridSelectToSkin(gridcss_row, gridcss_column) > (numskins - 1))
-				{
-					gridcss_row = (numskins - 1) % SKINGRIDWIDTH;
-					gridcss_column = (numskins - 1) / SKINGRIDWIDTH;
-				}
-
-				if ((gridcss_column - gridcss_skinydrag) > SKINGRIDHEIGHT - 1)
-					gridcss_skinydrag++;
-			}
-			S_StartSound(NULL, sfx_menu1);
-			break;
-		case KEY_UPARROW:
-			if (gridcss_column == 0)
-			{
-				M_SetItemOn(&curpanels[panelOn], "NAME");
-				CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
-				sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
-				gridcss_row = sortedIndex % SKINGRIDWIDTH;
-				gridcss_column = sortedIndex / SKINGRIDWIDTH;
-			
-				gridcss_active = false;
-
-				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
-			}
-			else
-			{
-				gridcss_column--;
-
-				if (gridcss_column < gridcss_skinydrag)
-					gridcss_skinydrag--;
-			}
-			S_StartSound(NULL, sfx_menu1);
-			break;
-		case KEY_LEFTARROW:
-			if (gridcss_row == 0)
-			{
-				if (MapGridSelectToSkin(SKINGRIDWIDTH - 1, gridcss_column) > (numskins-1))
-					gridcss_row = numskins - (gridcss_column * SKINGRIDWIDTH) - 1;
-				else
-					gridcss_row = SKINGRIDWIDTH - 1;
-				if (gridcss_column > 0)
-				{
-					gridcss_row = SKINGRIDWIDTH - 1;
-					gridcss_column--;
-
-					if (gridcss_column < gridcss_skinydrag)
-						gridcss_skinydrag--;
-				}
-			}
-			else
-			{
-				gridcss_row--;
-			}
-			S_StartSound(NULL, sfx_menu1);
-			break;
-		case KEY_RIGHTARROW:
-			if ((gridcss_row + 1 == SKINGRIDWIDTH) || (MapGridSelectToSkin(gridcss_row + 1, gridcss_column) > (numskins - 1)))
-			{
-				gridcss_row = 0;
-				if (MapGridSelectToSkin(gridcss_row, gridcss_column + 1) <= (numskins - 1))
-				{
-					gridcss_column++;
-
-					if ((gridcss_column - gridcss_skinydrag) > SKINGRIDHEIGHT - 1)
-						gridcss_skinydrag++;
-				}
-			}
-			else
-			{
-				gridcss_row++;
-			}
-			S_StartSound(NULL, sfx_menu1);
-			break;
-		case KEY_PGDN:
-			if (gridcss_column <= (numskins - 1) / SKINGRIDWIDTH)
-			{
-				gridcss_column = min(gridcss_column + SKINGRIDHEIGHT - 1, (numskins - 1) / SKINGRIDWIDTH);
-
-				if (MapGridSelectToSkin(gridcss_row, gridcss_column) > (numskins - 1))
-				{
-					gridcss_row = (numskins - 1) % SKINGRIDWIDTH;
-					gridcss_column = (numskins - 1) / SKINGRIDWIDTH;
-				}
-
-				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
-
-				S_StartSound(NULL, sfx_menu1);
-			}
-			break;
-		case KEY_PGUP:
-			if (gridcss_column > 0)
-			{
-				gridcss_column = max(gridcss_column - SKINGRIDHEIGHT + 1, 0);
-				gridcss_skinydrag = max(gridcss_column, 0);
-				S_StartSound(NULL, sfx_menu1);
-			}
-			break;
-		case KEY_ENTER:
-			if (cv_chooseskin.value < numskins)
-			{
-				skin_t *skin = &skins[cv_chooseskin.value];
-				INT32 voxid = R_GetLocalPreferredVoiceForSkin(setupplayer, skin->name);
-				kartvoice_t *voice = NULL;
-				gridcss_skinmemory = cv_chooseskin.value;
-				gridcss_active = false;
-
-				if (voxid == MAXSKINVOICES)
-				{
-					// Couldn't find a voice.
-					// try current setting
-					voxid = R_FindIDForVoice(skin, localvoicedata[setupplayer].name);
-					// sorry nothing
-					if (voxid == MAXSKINVOICES) voxid = 0;
-				}
-				voice = &skin->voices[voxid];
-				S_StopSounds();
-				S_StartSound(NULL, sfx_s221);
-				if (voice != NULL)
-					S_StartSound(NULL, R_GetLegacySkinSound(voice, sfx_kslow));
-			}
-			break;
-		case KEY_ESCAPE:
+		if (gridcss_column == (numskins - 1) / SKINGRIDWIDTH)
+		{
+			M_SetItemOn(&curpanels[panelOn], "FOLLOWER");
 			CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
 			sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
 			gridcss_row = sortedIndex % SKINGRIDWIDTH;
 			gridcss_column = sortedIndex / SKINGRIDWIDTH;
 
-			gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
-			
 			gridcss_active = false;
 
-			S_StartSound(NULL, sfx_menu1);
-			break;
-		default:
-			return false;
+			gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
+		}
+		else
+		{
+			gridcss_column++;
+
+			if (MapGridSelectToSkin(gridcss_row, gridcss_column) > (numskins - 1))
+			{
+				gridcss_row = (numskins - 1) % SKINGRIDWIDTH;
+				gridcss_column = (numskins - 1) / SKINGRIDWIDTH;
+			}
+
+			if ((gridcss_column - gridcss_skinydrag) > SKINGRIDHEIGHT - 1)
+				gridcss_skinydrag++;
+		}
+
+		S_StartSound(NULL, sfx_menu1);
+		M_SetMenuDelay(0);
+	}
+	else if (menucmd[0].dpad_ud < 0)
+	{
+		if (gridcss_column == 0)
+		{
+			M_SetItemOn(&curpanels[panelOn], "NAME");
+			CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
+			sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
+			gridcss_row = sortedIndex % SKINGRIDWIDTH;
+			gridcss_column = sortedIndex / SKINGRIDWIDTH;
+
+			gridcss_active = false;
+
+			gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
+		}
+		else
+		{
+			gridcss_column--;
+
+			if (gridcss_column < gridcss_skinydrag)
+				gridcss_skinydrag--;
+		}
+
+		S_StartSound(NULL, sfx_menu1);
+		M_SetMenuDelay(0);
+	}
+	else if (menucmd[0].dpad_lr < 0)
+	{
+		if (gridcss_row == 0)
+		{
+			if (MapGridSelectToSkin(SKINGRIDWIDTH - 1, gridcss_column) > (numskins-1))
+				gridcss_row = numskins - (gridcss_column * SKINGRIDWIDTH) - 1;
+			else
+				gridcss_row = SKINGRIDWIDTH - 1;
+			if (gridcss_column > 0)
+			{
+				gridcss_row = SKINGRIDWIDTH - 1;
+				gridcss_column--;
+
+				if (gridcss_column < gridcss_skinydrag)
+					gridcss_skinydrag--;
+			}
+		}
+		else
+		{
+			gridcss_row--;
+		}
+
+		S_StartSound(NULL, sfx_menu1);
+		M_SetMenuDelay(0);
+	}
+	else if (menucmd[0].dpad_lr > 0)
+	{
+		if ((gridcss_row + 1 == SKINGRIDWIDTH) || (MapGridSelectToSkin(gridcss_row + 1, gridcss_column) > (numskins - 1)))
+		{
+			gridcss_row = 0;
+			if (MapGridSelectToSkin(gridcss_row, gridcss_column + 1) <= (numskins - 1))
+			{
+				gridcss_column++;
+
+				if ((gridcss_column - gridcss_skinydrag) > SKINGRIDHEIGHT - 1)
+					gridcss_skinydrag++;
+			}
+		}
+		else
+		{
+			gridcss_row++;
+		}
+
+		S_StartSound(NULL, sfx_menu1);
+		M_SetMenuDelay(0);
+	}
+	else if (M_MenuButtonPressed(0, MBT_CONFIRM))
+	{
+		if (cv_chooseskin.value < numskins)
+		{
+			skin_t *skin = &skins[cv_chooseskin.value];
+			INT32 voxid = R_GetLocalPreferredVoiceForSkin(setupplayer, skin->name);
+			kartvoice_t *voice = NULL;
+			gridcss_skinmemory = cv_chooseskin.value;
+			gridcss_active = false;
+
+			if (voxid == MAXSKINVOICES)
+			{
+				// Couldn't find a voice.
+				// try current setting
+				voxid = R_FindIDForVoice(skin, localvoicedata[setupplayer].name);
+				// sorry nothing
+				if (voxid == MAXSKINVOICES) voxid = 0;
+			}
+			voice = &skin->voices[voxid];
+			S_StopSounds();
+			S_StartSound(NULL, sfx_s221);
+			if (voice != NULL)
+				S_StartSound(NULL, R_GetLegacySkinSound(voice, sfx_kslow));
+			M_SetMenuDelay(0);
+		}
+	}
+	else if (M_MenuButtonPressed(0, MBT_CANCEL))
+	{
+		CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
+		sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
+		gridcss_row = sortedIndex % SKINGRIDWIDTH;
+		gridcss_column = sortedIndex / SKINGRIDWIDTH;
+
+		gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
+
+		gridcss_active = false;
+
+		S_StartSound(NULL, sfx_menu1);
+		M_SetMenuDelay(0);
+	}
+	else
+	{
+		switch (choice)
+		{
+			case KEY_PGDN:
+				if (gridcss_column <= (numskins - 1) / SKINGRIDWIDTH)
+				{
+					gridcss_column = min(gridcss_column + SKINGRIDHEIGHT - 1, (numskins - 1) / SKINGRIDWIDTH);
+
+					if (MapGridSelectToSkin(gridcss_row, gridcss_column) > (numskins - 1))
+					{
+						gridcss_row = (numskins - 1) % SKINGRIDWIDTH;
+						gridcss_column = (numskins - 1) / SKINGRIDWIDTH;
+					}
+
+					gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
+
+					S_StartSound(NULL, sfx_menu1);
+				}
+				break;
+			case KEY_PGUP:
+				if (gridcss_column > 0)
+				{
+					gridcss_column = max(gridcss_column - SKINGRIDHEIGHT + 1, 0);
+					gridcss_skinydrag = max(gridcss_column, 0);
+					S_StartSound(NULL, sfx_menu1);
+				}
+				break;
+			default:
+				return false;
+		}
 	}
 
 	CV_SetValue(&cv_chooseskin, skinsorted[MapGridSelectToSkin(gridcss_row, gridcss_column)]);
