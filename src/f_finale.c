@@ -1447,7 +1447,7 @@ void F_StartTitleScreen(void)
 		mapthing_t *startpos;
 
 		gamestate_t prevwipegamestate = wipegamestate;
-		titlemapinaction = TITLEMAP_LOADING;
+		titlemapinaction = true;
 		titlemapcameraref = NULL;
 		gamemap = titleMapNum+1;
 		g_reloadingMap = false;
@@ -1498,8 +1498,6 @@ void F_StartTitleScreen(void)
 		g_reloadingMap = false;
 		CON_ClearHUD();
 	}
-
-	G_SetGamestate(GS_TITLESCREEN);
 
 	// IWAD dependent stuff.
 
@@ -1568,7 +1566,8 @@ void F_TitleScreenDrawer(void)
 				if (finalecount <= (50+(9<<1)))
 					transval = (finalecount - 50)>>1;
 
-				F_TitleBGScroll(5);
+				if (titlemapinaction == false)
+					F_TitleBGScroll(5);
 
 				V_DrawSciencePatch(0, -40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetTimeFrac(RTF_MENU), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTOLEFT, ttcheckers, FRACUNIT);
 				V_DrawSciencePatch(280<<FRACBITS, -(40<<FRACBITS) + 40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetTimeFrac(RTF_MENU), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTORIGHT, ttcheckers, FRACUNIT);
