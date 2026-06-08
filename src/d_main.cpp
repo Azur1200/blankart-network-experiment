@@ -16,6 +16,7 @@
 ///        parameters, and call the startup functions.
 
 #include "g_mapnum.h"
+#include "g_state.h"
 #if (defined (__unix__) && !defined (MSDOS)) || defined(__APPLE__) || defined (UNIXCOMMON)
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -777,7 +778,10 @@ dedipostwipe:
 static void D_WipeTick(boolean menu)
 {
 	I_OsPolling();
-	D_ProcessEvents();
+
+	// Lets not get all recursive now.
+	if (titlemapinaction == false)
+		D_ProcessEvents();
 
 	// Update the network so we don't cause timeouts
 	NetKeepAlive();

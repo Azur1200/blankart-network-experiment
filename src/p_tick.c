@@ -15,6 +15,7 @@
 #include "doomstat.h"
 #include "g_game.h"
 #include "g_input.h"
+#include "g_state.h"
 #include "p_local.h"
 #include "z_zone.h"
 #include "s_sound.h"
@@ -969,52 +970,55 @@ void P_Ticker(boolean run)
 			}
 		}
 
-		// Bosses have a punchy start, so no position.
-		if (bossinfo.boss == true)
+		if (gamestate == GS_LEVEL)
 		{
-			if (leveltime == 0)
+			// Bosses have a punchy start, so no position.
+			if (bossinfo.boss == true)
 			{
-				S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
-				S_ShowMusicCredit(0, 5*TICRATE, 0);
-			}
-		}
-		// Plays the music after the starting countdown.
-		else
-		{
-			// Change timing of start music based on gametypes[gametype]->rules
-			tic_t startingtime = (gametypes[gametype]->rules & GTR_NOCOUNTDOWN) ? introtime : starttime;
-
-			if (!(titlemapinaction == TITLEMAP_RUNNING))
-			{
-				if (leveltime == (startingtime + (TICRATE/2)))
+				if (leveltime == 0)
 				{
-					// Plays the music after the starting countdown.
 					S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
 					S_ShowMusicCredit(0, 5*TICRATE, 0);
 				}
-				else if (startingtime != introtime)
-				{
-					if (!(gametypes[gametype]->rules & GTR_NOCOUNTDOWN))
-					{
-						if (leveltime == startingtime-(3*TICRATE))
-						{
-							S_StartSound(NULL, sfx_s3ka7); // 3,
-						}
-						else if ((leveltime == startingtime-(2*TICRATE)) || (leveltime == starttime-TICRATE))
-						{
-							S_StartSound(NULL, sfx_s3ka7); // 2, 1,
-						}
-						else if (leveltime == startingtime)
-						{
-							S_StartSound(NULL, sfx_s3kad); // GO!
-						}
-					}
+			}
+			// Plays the music after the starting countdown.
+			else
+			{
+				// Change timing of start music based on gametypes[gametype]->rules
+				tic_t startingtime = (gametypes[gametype]->rules & GTR_NOCOUNTDOWN) ? introtime : starttime;
 
-					if (leveltime < startingtime) // SRB2Kart
-						S_ChangeMusicInternal(((grandprixinfo.gp == true
-						) ? "gpstrt" : (encoremode ? "estart" : "kstart")), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
-					else if (leveltime == startingtime) // The GO! sound stops the level start ambience
-						S_StopMusic();
+				if (!(titlemapinaction == TITLEMAP_RUNNING))
+				{
+					if (leveltime == (startingtime + (TICRATE/2)))
+					{
+						// Plays the music after the starting countdown.
+						S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+						S_ShowMusicCredit(0, 5*TICRATE, 0);
+					}
+					else if (startingtime != introtime)
+					{
+						if (!(gametypes[gametype]->rules & GTR_NOCOUNTDOWN))
+						{
+							if (leveltime == startingtime-(3*TICRATE))
+							{
+								S_StartSound(NULL, sfx_s3ka7); // 3,
+							}
+							else if ((leveltime == startingtime-(2*TICRATE)) || (leveltime == starttime-TICRATE))
+							{
+								S_StartSound(NULL, sfx_s3ka7); // 2, 1,
+							}
+							else if (leveltime == startingtime)
+							{
+								S_StartSound(NULL, sfx_s3kad); // GO!
+							}
+						}
+
+						if (leveltime < startingtime) // SRB2Kart
+							S_ChangeMusicInternal(((grandprixinfo.gp == true
+							) ? "gpstrt" : (encoremode ? "estart" : "kstart")), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
+							else if (leveltime == startingtime) // The GO! sound stops the level start ambience
+								S_StopMusic();
+					}
 				}
 			}
 		}
