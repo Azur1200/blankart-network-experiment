@@ -2230,13 +2230,6 @@ void M_UpdateMenuCMD(UINT8 i)
 	menucmd[i].buttonsHeld = menucmd[i].buttons;
 	menucmd[i].buttons = 0;
 
-	if (G_PlayerInputDown(i, gc_screenshot, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_SCREENSHOT; }
-	if (G_PlayerInputDown(i, gc_recordgif, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_MOVIE; }
-
-	// Screenshot et al take priority
-	if (menucmd[i].buttons != 0)
-		return;
-
 	if (thisMenuKey > 0) // TODO: replace this shitty Keyboard hack.....
 	{
 		switch (thisMenuKey)

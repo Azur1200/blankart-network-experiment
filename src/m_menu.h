@@ -47,9 +47,6 @@ typedef enum
 	MBT_HOME = 1<<2,
 	MBT_INFO1 = 1<<3,
 	MBT_INFO2 = 1<<4,
-
-	MBT_SCREENSHOT = 1<<5,
-	MBT_MOVIE = 1<<6,
 } menuButtonCode_t;
 
 typedef struct menucmd_s
