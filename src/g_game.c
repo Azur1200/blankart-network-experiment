@@ -1528,6 +1528,21 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		return;
 	}
 
+	// This is what RR does so I guess its fine???
+	if (menustack[0] || chat_on || CON_Ready())
+	{
+		cmd->flags |= TICCMD_TYPING;
+
+		if (hu_keystrokes)
+		{
+			cmd->flags |= TICCMD_KEYSTROKE;
+		}
+
+		G_DoCameraTurn(cmd, realtics, ssplayer, player);
+
+		return;
+	}
+
 	joystickvector.xaxis = G_PlayerInputAnalog(forplayer, gc_turnright, false, DEADZONE_X) - G_PlayerInputAnalog(forplayer, gc_turnleft, false, DEADZONE_X);
 	joystickvector.yaxis = 0;
 	G_HandleAxisDeadZone(forplayer, &joystickvector);
@@ -1762,16 +1777,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	cmd->forwardmove += (SINT8)forward;
 	cmd->sidemove	 += (SINT8)side;
 	cmd->flags = 0;
-
-	if (chat_on || CON_Ready())
-	{
-		cmd->flags |= TICCMD_TYPING;
-
-		if (hu_keystrokes)
-		{
-			cmd->flags |= TICCMD_KEYSTROKE;
-		}
-	}
 
 	/* 	Lua: Allow this hook to overwrite ticcmd.
 		We check if we're actually in a level because for some reason this Hook would run in menus and on the titlescreen otherwise.

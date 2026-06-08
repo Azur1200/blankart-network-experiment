@@ -2298,6 +2298,8 @@ static void M_HandleGoBack(INT32 thisMenuKey)
 {
 	if (M_MenuButtonPressed(0, MBT_CANCEL))
 	{
+		noFurtherInput = -1;
+
 		if (M_WipeBuffer(thisMenuKey, currentMenu->quitroutine))
 			return;
 
@@ -8420,7 +8422,7 @@ static void MD_DrawGridCssSelector(menupanelinst_t *pi)
 		face = faceprefix[skintodisplay][FACE_RANK];
 		colmap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
 		V_DrawFixedPatch((cursorx + face->leftoffset) * FRACUNIT, (cursory + face->topoffset) * FRACUNIT, FRACUNIT, 0, face, colmap);
-		
+
 		if (skullAnimCounter < 4)
 		{
 			cursor = W_CachePatchName("M_FSEL", PU_CACHE);
