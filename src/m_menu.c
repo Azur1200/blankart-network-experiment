@@ -1641,7 +1641,7 @@ boolean M_Responder(event_t *ev)
 			// Spymode on F12 handled in game logic
 		}
 
-		if (G_PlayerInputDown(0, gc_systemmenu, true, DEADZONE_BUTTON) == true)
+		if (G_PlayerInputDown(0, gc_systemmenu, true, DEADZONE_BUTTON) == true || menuKey == KEY_ESCAPE)
 		{
 			if (chat_on)
 			{
@@ -2262,6 +2262,8 @@ static void M_SetMenuDelay(UINT8 i)
 
 void M_UpdateMenuCMD(UINT8 i)
 {
+	INT32 thisMenuKey = menuKey;
+
 	menucmd[i].prev_dpad_ud = menucmd[i].dpad_ud;
 	menucmd[i].prev_dpad_lr = menucmd[i].dpad_lr;
 
@@ -2278,17 +2280,60 @@ void M_UpdateMenuCMD(UINT8 i)
 	if (menucmd[i].buttons != 0)
 		return;
 
-	if (G_PlayerInputDown(i, gc_aimforward, true, DEADZONE_BUTTON)) { menucmd[i].dpad_ud--; }
-	if (G_PlayerInputDown(i, gc_aimbackward, true, DEADZONE_BUTTON)) { menucmd[i].dpad_ud++; }
+	if (thisMenuKey > 0) // TODO: replace this shitty Keyboard hack.....
+	{
+		switch (thisMenuKey)
+		{
+			case KEY_UPARROW:
+				menucmd[i].dpad_ud--;
+				break;
+			case KEY_DOWNARROW:
+				menucmd[i].dpad_ud++;
+				break;
 
-	if (G_PlayerInputDown(i, gc_turnleft, true, DEADZONE_BUTTON)) { menucmd[i].dpad_lr--; }
-	if (G_PlayerInputDown(i, gc_turnright, true, DEADZONE_BUTTON)) { menucmd[i].dpad_lr++; }
+			case KEY_LEFTARROW:
+				menucmd[i].dpad_lr--;
+				break;
 
-	if (G_PlayerInputDown(i, gc_accelerate, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_CONFIRM; }
-	if (G_PlayerInputDown(i, gc_brake, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_CANCEL; }
-	if (G_PlayerInputDown(i, gc_fire, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_INFO1; }
-	if (G_PlayerInputDown(i, gc_drift, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_INFO2; }
-	if (G_PlayerInputDown(i, gc_systemmenu, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_HOME; }
+			case KEY_RIGHTARROW:
+				menucmd[i].dpad_lr++;
+				break;
+
+			case KEY_ENTER:
+				menucmd[i].buttons |= MBT_CONFIRM;
+				break;
+
+			case KEY_ESCAPE:
+				if (menustack[0])
+					menucmd[i].buttons |= MBT_CANCEL;
+				else
+					menucmd[i].buttons |= MBT_HOME;
+				break;
+
+			case KEY_SPACE:
+				menucmd[i].buttons |= MBT_INFO1;
+				break;
+
+			case KEY_BACKSPACE:
+				menucmd[i].buttons |= MBT_INFO2;
+				break;
+		}
+
+	}
+	else
+	{
+		if (G_PlayerInputDown(i, gc_aimforward, false, DEADZONE_Y)) { menucmd[i].dpad_ud--; }
+		if (G_PlayerInputDown(i, gc_aimbackward, false, DEADZONE_Y)) { menucmd[i].dpad_ud++; }
+
+		if (G_PlayerInputDown(i, gc_turnleft, false, DEADZONE_X)) { menucmd[i].dpad_lr--; }
+		if (G_PlayerInputDown(i, gc_turnright, false, DEADZONE_X)) { menucmd[i].dpad_lr++; }
+
+		if (G_PlayerInputDown(i, gc_accelerate, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_CONFIRM; }
+		if (G_PlayerInputDown(i, gc_brake, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_CANCEL; }
+		if (G_PlayerInputDown(i, gc_fire, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_INFO1; }
+		if (G_PlayerInputDown(i, gc_drift, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_INFO2; }
+		if (G_PlayerInputDown(i, gc_systemmenu, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_HOME; }
+	}
 
 	if (menucmd[i].dpad_ud == 0 && menucmd[i].dpad_lr == 0 && menucmd[i].buttons == 0)
 	{
@@ -2399,7 +2444,7 @@ static void M_HandleMenuInput(void)
 		}
 	}
 
-	if (menucmd[pid].buttons & MBT_CANCEL)
+	if (M_MenuButtonPressed(0, MBT_CANCEL))
 	{
 		if (M_WipeBuffer(thisMenuKey, currentMenu->quitroutine))
 			return;
@@ -2500,6 +2545,7 @@ static void M_HandleMenuInput(void)
 		if (curpd->keyhandler == MR_HandleLevelPlatter)
 		{
 			curpd->keyhandler(thisMenuKey); // dumb hack until i figure this out
+			M_SetMenuDelay(pid);
 			return;
 		}
 		else if (oldPanelOn != panelOn || oldItemOn != newItemOn)
@@ -2558,7 +2604,7 @@ static void M_HandleMenuInput(void)
 	}
 	else
 	{
-		if (menucmd[pid].buttons & MBT_CONFIRM)
+		if (M_MenuButtonPressed(0, MBT_CONFIRM))
 		{
 			noFurtherInput = -1;
 
@@ -2601,7 +2647,7 @@ static void M_HandleMenuInput(void)
 			M_SetMenuDelay(pid);
 			return;
 		}
-		else if (menucmd[pid].buttons & MBT_HOME)
+		else if (M_MenuButtonPressed(0, MBT_HOME))
 		{
 			if (item->routine == MR_ChangeControl)
 			{
