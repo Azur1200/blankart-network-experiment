@@ -2230,7 +2230,7 @@ void M_UpdateMenuCMD(UINT8 i)
 	menucmd[i].buttonsHeld = menucmd[i].buttons;
 	menucmd[i].buttons = 0;
 
-	if (thisMenuKey > 0) // TODO: replace this shitty Keyboard hack.....
+	if (thisMenuKey > 0 && i == 0) // TODO: replace this shitty Keyboard hack.....
 	{
 		switch (thisMenuKey)
 		{
@@ -2268,7 +2268,6 @@ void M_UpdateMenuCMD(UINT8 i)
 				menucmd[i].buttons |= MBT_INFO2;
 				break;
 		}
-
 	}
 	else
 	{
@@ -5212,7 +5211,7 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 	menuitem_t *item = &pi->items[pi->itemon];
 	panelfunc_f *initializer = M_GetDefFromInst(pi)->initializer;
 
-	if (menucmd[0].dpad_lr < 0)
+	if (menucmd[0].dpad_ud < 0)
 	{
 		if (dir_on[menudepthleft])
 		{
@@ -5220,7 +5219,7 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 			return false;
 		}
 	}
-	else if (menucmd[0].dpad_lr > 0)
+	else if (menucmd[0].dpad_ud > 0)
 	{
 		if (dir_on[menudepthleft] < sizedirmenu-1)
 		{
