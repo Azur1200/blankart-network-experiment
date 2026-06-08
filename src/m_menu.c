@@ -1564,6 +1564,9 @@ boolean M_Responder(event_t *ev)
 	if (CON_Ready() && gamestate != GS_WAITINGPLAYERS)
 		return false;
 
+	if (gamestate == GS_TITLESCREEN && finalecount < TICRATE)
+		return false;
+
 	if (noFurtherInput)
 	{
 		// Ignore input after enter/escape/other buttons
@@ -1576,9 +1579,6 @@ boolean M_Responder(event_t *ev)
 		// Record keyboard presses
 		menuKey = ev->data1;
 	}
-
-	// update keys current state
-	M_MapMenuControls(ev);
 
 	// Handle menu handling in-game.
 	if (!menustack[0])
@@ -2325,6 +2325,8 @@ void M_UpdateMenuCMD(UINT8 i)
 		if (G_PlayerInputDown(i, gc_aimforward, false, DEADZONE_Y)) { menucmd[i].dpad_ud--; }
 		if (G_PlayerInputDown(i, gc_aimbackward, false, DEADZONE_Y)) { menucmd[i].dpad_ud++; }
 
+		CONS_Printf("%dupdown\n", menucmd[i].dpad_ud);
+
 		if (G_PlayerInputDown(i, gc_turnleft, false, DEADZONE_X)) { menucmd[i].dpad_lr--; }
 		if (G_PlayerInputDown(i, gc_turnright, false, DEADZONE_X)) { menucmd[i].dpad_lr++; }
 
@@ -2338,18 +2340,8 @@ void M_UpdateMenuCMD(UINT8 i)
 	if (menucmd[i].dpad_ud == 0 && menucmd[i].dpad_lr == 0 && menucmd[i].buttons == 0)
 	{
 		// Reset delay count with no buttons.
+		menucmd[i].delay = min(menucmd[i].delay, MENUMINDELAY);
 		menucmd[i].delayCount = 0;
-	}
-}
-
-void M_MapMenuControls(event_t *ev)
-{
-	INT32 i;
-
-	if (ev)
-	{
-		// update keys current state
-		G_MapEventsToControls(ev);
 	}
 }
 
@@ -2369,6 +2361,12 @@ static void M_HandleMenuInput(void)
 	INT32 thisMenuKey = menuKey;
 
 	menuKey = -1;
+
+	if (!menustack[0])
+	{
+		// We're not in the menu.
+		return;
+	}
 
 	if (messagebox.active)
 	{
@@ -2427,7 +2425,6 @@ static void M_HandleMenuInput(void)
 	if (item == NULL)
 	{
 		return;
-		//CON_Responder(ev), true;
 	}
 
 	// string cvars accept any keyboard input
@@ -2674,11 +2671,6 @@ static void M_HandleMenuInput(void)
 			M_ResetCvar(item);
 
 			M_SetMenuDelay(pid);
-			return;
-		}
-		else
-		{
-			//CON_Responder(ev), true;
 			return;
 		}
 	}
@@ -4631,25 +4623,25 @@ void MD_DrawImageDef(menupanelinst_t *pi)
 INT32 MR_HandleImageDef(INT32 choice)
 {
 	menupanelinst_t *pi = &curpanels[panelOn];
-	switch (choice)
+
+	if (menucmd[0].dpad_lr > 0)
 	{
-		case KEY_RIGHTARROW:
-			if (pi->itemon >= pi->numitems-1)
-				break;
-			S_StartSound(NULL, sfx_menu1);
-			M_RawSetItemOn(pi, pi->itemon + 1);
-			break;
-
-		case KEY_LEFTARROW:
-			if (!pi->itemon)
-				break;
-			S_StartSound(NULL, sfx_menu1);
-			M_RawSetItemOn(pi, pi->itemon - 1);
-			break;
-
-		default:
-			return false;
+		if (pi->itemon >= pi->numitems-1)
+			return true;
+		S_StartSound(NULL, sfx_menu1);
+		M_RawSetItemOn(pi, pi->itemon + 1);
+		M_SetMenuDelay(0);
 	}
+	else if (menucmd[0].dpad_lr < 0)
+	{
+		if (!pi->itemon)
+			return true;
+		S_StartSound(NULL, sfx_menu1);
+		M_RawSetItemOn(pi, pi->itemon - 1);
+		M_SetMenuDelay(0);
+	}
+	else
+		return false;
 
 	return true;
 }
@@ -5013,118 +5005,130 @@ INT32 MR_HandleAddons(INT32 choice)
 		return true;
 	}
 
-	switch (choice)
+	if (menucmd[0].dpad_ud > 0)
 	{
-	case KEY_DOWNARROW:
 		if (dir_on[menudepthleft] < sizedirmenu-1)
+		{
 			dir_on[menudepthleft]++;
-		else
-			break;
-
-		return false;
-
-	case KEY_UPARROW:
+			M_SetMenuDelay(0);
+			return false;
+		}
+	}
+	else if (menucmd[0].dpad_ud < 0)
+	{
 		if (dir_on[menudepthleft])
+		{
 			dir_on[menudepthleft]--;
-		else
-			break;
-
-		return false;
-
-	case KEY_PGDN:
-		{
-			UINT8 i;
-			for (i = numaddonsshown; i && (dir_on[menudepthleft] < sizedirmenu-1); i--)
-				dir_on[menudepthleft]++;
+			M_SetMenuDelay(0);
+			return false;
 		}
-		S_StartSound(NULL, sfx_menu1);
-		break;
+	}
+	else if (M_MenuButtonPressed(0, MBT_CONFIRM))
+	{
+		M_SetMenuDelay(0);
 
-	case KEY_PGUP:
-		{
-			UINT8 i;
-			for (i = numaddonsshown; i && (dir_on[menudepthleft]); i--)
-				dir_on[menudepthleft]--;
-		}
-		S_StartSound(NULL, sfx_menu1);
-		break;
-
-	case KEY_ENTER:
 		if (!dirmenu[dir_on[menudepthleft]])
 		{
 			refreshdirmenu |= REFRESHDIR_NORMAL;
 			S_StartSound(NULL, FILENOTADDSFX);
-			break;
+			M_SetMenuDelay(0);
+			return true;
 		}
 
 		switch (dirmenu[dir_on[menudepthleft]][DIR_TYPE])
 		{
-		case EXT_FOLDER:
-			strcpy(&menupath[menupathindex[menudepthleft]],filename);
-			if (menudepthleft)
-			{
-				menupathindex[--menudepthleft] = strlen(menupath);
-				menupath[menupathindex[menudepthleft]] = 0;
-
-				if (!preparefilemenu(false, false))
+			case EXT_FOLDER:
+				strcpy(&menupath[menupathindex[menudepthleft]],filename);
+				if (menudepthleft)
 				{
-					S_StartSound(NULL, FILEERRORSFX);
-					M_StartMessage(va("%c%s\x80\nThis folder is empty.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING);
-					menupath[menupathindex[++menudepthleft]] = 0;
+					menupathindex[--menudepthleft] = strlen(menupath);
+					menupath[menupathindex[menudepthleft]] = 0;
 
-					if (!preparefilemenu(true, false))
+					if (!preparefilemenu(false, false))
 					{
-						UNEXIST;
-						return true;
+						S_StartSound(NULL, FILEERRORSFX);
+						M_StartMessage(va("%c%s\x80\nThis folder is empty.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING);
+						menupath[menupathindex[++menudepthleft]] = 0;
+
+						if (!preparefilemenu(true, false))
+						{
+							UNEXIST;
+							return true;
+						}
 					}
+					else
+					{
+						S_StartSound(NULL, sfx_menu1);
+						dir_on[menudepthleft] = 1;
+					}
+					Reinitialize();
 				}
 				else
 				{
-					S_StartSound(NULL, sfx_menu1);
-					dir_on[menudepthleft] = 1;
+					S_StartSound(NULL, FILENOTADDSFX);
+					M_StartMessage(va("%c%s\x80\nThis folder is too deep to navigate to!\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING);
+					menupath[menupathindex[menudepthleft]] = 0;
+				}
+				break;
+			case EXT_UP:
+				S_StartSound(NULL, sfx_menu1);
+				menupath[menupathindex[++menudepthleft]] = 0;
+				if (!preparefilemenu(false, false))
+				{
+					UNEXIST;
+					return true;
 				}
 				Reinitialize();
-			}
-			else
-			{
-				S_StartSound(NULL, FILENOTADDSFX);
-				M_StartMessage(va("%c%s\x80\nThis folder is too deep to navigate to!\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING);
-				menupath[menupathindex[menudepthleft]] = 0;
-			}
-			break;
-		case EXT_UP:
-			S_StartSound(NULL, sfx_menu1);
-			menupath[menupathindex[++menudepthleft]] = 0;
-			if (!preparefilemenu(false, false))
-			{
-				UNEXIST;
-				return true;
-			}
-			Reinitialize();
-			break;
-		case EXT_TXT:
-			M_StartMessage(va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways? \n\n(Press 'Y' to confirm)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), filename), M_AddonExec ,MM_YESNO);
-			break;
-		case EXT_CFG:
-			M_AddonExec(KEY_ENTER);
-			break;
-		case EXT_LUA:
-		case EXT_SOC:
-		case EXT_WAD:
+				break;
+			case EXT_TXT:
+				M_StartMessage(va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways? \n\n(Press 'Y' to confirm)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), filename), M_AddonExec ,MM_YESNO);
+				break;
+			case EXT_CFG:
+				M_AddonExec(KEY_ENTER);
+				break;
+			case EXT_LUA:
+			case EXT_SOC:
+			case EXT_WAD:
 #ifdef USE_KART
-		case EXT_KART:
+			case EXT_KART:
 #endif
-		case EXT_PK3:
-			COM_BufAddText(va("addfile \"%s%s\"", menupath, filename));
-			break;
-		default:
-			S_StartSound(NULL, FILENOTADDSFX);
+			case EXT_PK3:
+				COM_BufAddText(va("addfile \"%s%s\"", menupath, filename));
+				break;
+			default:
+				S_StartSound(NULL, FILENOTADDSFX);
 		}
-		break;
-
-	default:
-		return false;
 	}
+	else
+	{
+		switch (choice)
+		{
+			case KEY_PGDN:
+			{
+				UINT8 i;
+				for (i = numaddonsshown; i && (dir_on[menudepthleft] < sizedirmenu-1); i--)
+					dir_on[menudepthleft]++;
+
+				S_StartSound(NULL, sfx_menu1);
+				M_SetMenuDelay(0);
+			}
+			break;
+
+			case KEY_PGUP:
+			{
+				UINT8 i;
+				for (i = numaddonsshown; i && (dir_on[menudepthleft]); i--)
+					dir_on[menudepthleft]--;
+				S_StartSound(NULL, sfx_menu1);
+				M_SetMenuDelay(0);
+			}
+			break;
+
+			default:
+				return false;
+		}
+	}
+
 	return true;
 }
 
@@ -8673,6 +8677,7 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 					gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
 
 					S_StartSound(NULL, sfx_menu1);
+					M_SetMenuDelay(0);
 				}
 				break;
 			case KEY_PGUP:
@@ -8681,6 +8686,7 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 					gridcss_column = max(gridcss_column - SKINGRIDHEIGHT + 1, 0);
 					gridcss_skinydrag = max(gridcss_column, 0);
 					S_StartSound(NULL, sfx_menu1);
+					M_SetMenuDelay(0);
 				}
 				break;
 			default:

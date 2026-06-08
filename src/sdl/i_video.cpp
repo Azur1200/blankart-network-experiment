@@ -808,6 +808,8 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 			break;
 	}
 
+	event.data2 = evt.repeat;
+
 	if (event.data1) D_PostEvent(&event);
 }
 

@@ -260,6 +260,11 @@ void G_MapEventsToControls(event_t *ev)
 		case ev_keydown:
 			if (ev->data1 < NUMINPUTS)
 			{
+				if (ev->data2) // OS repeat? We handle that ourselves
+				{
+					break;
+				}
+
 				gamekeydown[device][ev->data1] = JOYAXISRANGE;
 			}
 #ifdef PARANOIA
@@ -349,14 +354,14 @@ void G_MapEventsToControls(event_t *ev)
 			gamekeydown[device][i] = max(0, ev->data2);
 
 			break;
-		
+
 		case ev_accelerometer:
 			// average out accel events recieved for this tick (favouring the newer data)
 			gamekeydown[device][KEY_ACCELEROMETER1+0] = (gamekeydown[device][KEY_ACCELEROMETER1+0] + (3*ev->data1))/4;
 			gamekeydown[device][KEY_ACCELEROMETER1+1] = (gamekeydown[device][KEY_ACCELEROMETER1+1] + (3*ev->data2))/4;
 			gamekeydown[device][KEY_ACCELEROMETER1+2] = (gamekeydown[device][KEY_ACCELEROMETER1+2] + (3*ev->data3))/4;
 			break;
-			
+
 		case ev_gyroscope:
 			// average out gyro events recieved for this tick
 			gamekeydown[device][KEY_GYROSCOPE1+0] = (gamekeydown[device][KEY_GYROSCOPE1+0] + ev->data1)/2;
@@ -1357,7 +1362,7 @@ void G_UpdateGamepadGyro(INT32 p, vector3_t gyro)
 		return;
 	}
 	if (!I_ControllerSupportsSensorGyro(p)) return;
-	
+
 	if (localgyrocalibrating[p])
 	{
 		localgyrocalibrationsamples[p]++;
@@ -1419,15 +1424,15 @@ void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 
 	invRotation = AngleAxis(
 		FixedMul(FixedMul(FV3_Magnitude(&gyro), deltaseconds), 190*FRACUNIT/100),
-		-gyro.x, 
-		-gyro.y, 
+		-gyro.x,
+		-gyro.y,
 		-gyro.z
 	);
 
 	// rotate gravity vector
 	QuaternionMulVec3(&localgravityvectors[p], &localgravityvectors[p], &invRotation);
 	QuaternionMulVec3(&localsmoothedaccel[p], &localsmoothedaccel[p], &invRotation);
-	localshakinessfac[p] = FixedMul(localshakinessfac[p], smoothFactor), 
+	localshakinessfac[p] = FixedMul(localshakinessfac[p], smoothFactor),
 	FV3_SubEx(&accel, &localsmoothedaccel[p], &correction);
 	localshakinessfac[p] = max(localshakinessfac[p], FV3_Magnitude(&correction));
 	FV3_Load(&localsmoothedaccel[p],
@@ -1435,7 +1440,7 @@ void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 		Easing_Linear(smoothFactor, accel.y, localsmoothedaccel[p].y),
 		Easing_Linear(smoothFactor, accel.z, localsmoothedaccel[p].z)
 	);
-	
+
 	CONS_Debug(DBG_IMU, "Shakiness: %4.2f\n", FixedToFloat(localshakinessfac[p]));
 
 	FV3_SubEx(&invAccel, &localgravityvectors[p], &gravityDelta);
@@ -1480,7 +1485,7 @@ void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 		{
 			closeEnoughFactor = 0;
 		}
-		
+
 		CONS_Debug(DBG_IMU, "'Close Enough' Fac: %4.3f\n", FixedToFloat(closeEnoughFactor));
 		correctionRate = correctionLimit + FixedMul((correctionRate - correctionLimit), closeEnoughFactor);
 	}
@@ -1505,16 +1510,16 @@ void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 }
 
 INT32 G_GetGamepadTilt(INT32 p)
-{	
+{
 	fixed_t tilt;
 	fixed_t curve;
 	if (!G_GetGamepadCanUseTilt(p)) return 0;
 	tilt = CLAMP(FixedDiv(G_GetGamepadGravity(p).x + MAXGAMEPADTILT, 2*MAXGAMEPADTILT), 0, FRACUNIT);
 	CONS_Debug(DBG_IMU, "Tilt: %4.2f\n", FixedToFloat(tilt));
-	
+
 	curve = FSIN(FixedAngle(180*(tilt-FRACUNIT/2)));
 	CONS_Debug(DBG_IMU, "Pinched Tilt: %4.2f\n", FixedToFloat(curve));
-	
+
 	return (JOYAXISRANGE * curve)/FRACUNIT;
 }
 

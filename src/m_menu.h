@@ -38,6 +38,7 @@ extern "C" {
 extern INT32 menuKey; // keyboard key pressed for menu
 
 #define MENUDELAYTIME 7
+#define MENUMINDELAY 2
 
 typedef enum
 {
@@ -104,7 +105,6 @@ void M_SetMenuCurTitlePics(void);
 // Does all the real work of the menu interaction.
 boolean M_Responder(event_t *ev);
 
-void M_MapMenuControls(event_t *ev);
 void M_UpdateMenuCMD(UINT8 i);
 boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt);
 
