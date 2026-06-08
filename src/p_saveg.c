@@ -868,7 +868,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].itemusecooldownmax);
 
 		P_SyncMem(save, players[i].public_key, PUBKEYLENGTH);
-		
+
 		SYNC(players[i].bumpyroadside);
 
 		// keepstuff_t
@@ -4094,6 +4094,8 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	}
 	else
 	{
+		g_reloadingMap = false;
+
 		if (!gamemap || gamemap > nummapheaders || !mapheaderinfo[gamemap-1])
 			I_Error("P_NetUnArchiveMisc: Internal map ID %d not found (nummapheaders = %d)", gamemap-1, nummapheaders);
 

@@ -1450,6 +1450,7 @@ void F_StartTitleScreen(void)
 		titlemapinaction = TITLEMAP_LOADING;
 		titlemapcameraref = NULL;
 		gamemap = titleMapNum+1;
+		g_reloadingMap = false;
 
 		G_DoLoadLevelEx(true, GS_TITLESCREEN);
 		if (!titlemap)
@@ -1494,6 +1495,7 @@ void F_StartTitleScreen(void)
 		G_SetGamestate(GS_TITLESCREEN);
 		titlemapinaction = false;
 		gamemap = 1; // g_game.c
+		g_reloadingMap = false;
 		CON_ClearHUD();
 	}
 

@@ -107,6 +107,7 @@ UINT32 mapmusresume;
 UINT8 mapmusrng; // Random selection result
 
 mapnum_t gamemap = 1;
+boolean g_reloadingMap;
 UINT32 maptol;
 
 preciptype_t globalweather = PRECIP_NONE;
@@ -6498,11 +6499,11 @@ void G_InitNew(UINT8 pencoremode, mapnum_t map, boolean resetplayer, boolean ski
 		return;
 	}
 
+	g_reloadingMap = (map == gamemap);
 	gamemap = map;
 
 	// Don't carry over custom music change to another map.
 	mapmusflags |= MUSIC_RELOADRESET;
-
 	automapactive = false;
 	imcontinuing = false;
 
