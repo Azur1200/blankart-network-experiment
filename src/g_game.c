@@ -1539,6 +1539,12 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			cmd->flags |= TICCMD_KEYSTROKE;
 		}
 
+		if (!(spectating || objectplacing))
+		{
+			if (player->sneakertimer || player->recoverydash)
+				cmd->forwardmove = MAXPLMOVE;	// 50
+		}
+
 		G_DoCameraTurn(cmd, realtics, ssplayer, player);
 
 		return;
