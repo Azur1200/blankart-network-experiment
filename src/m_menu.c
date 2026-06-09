@@ -835,7 +835,7 @@ INT32 MR_OpenGLOptionsMenu(INT32 choice)
 
 	if (rendermode != render_opengl)
 	{
-		M_StartMessage(M_GetText("You must be in OpenGL mode\nto access this menu.\n\n(Press a key)\n"), NULL, MM_NOTHING);
+		M_StartMessage2("Options", M_GetText("You must be in OpenGL mode\nto access this menu.\n\n(Press a key)\n"), NULL, MM_NOTHING, "Press any key", NULL);
 		return false;
 	}
 
@@ -4725,7 +4725,7 @@ INT32 MR_Addons(INT32 choice)
 
 	if (!preparefilemenu(false, false))
 	{
-		M_StartMessage(va("No files/folders found.\n\n%s\n\n(Press a key)\n", (recommendedflags == V_SKYMAP ? LOCATIONSTRING2 : LOCATIONSTRING1)),NULL,MM_NOTHING);
+		M_StartMessage2("Addons", va("No files/folders found.\n\n%s\n", (recommendedflags == V_SKYMAP ? LOCATIONSTRING2 : LOCATIONSTRING1)),NULL,MM_NOTHING, "Press any key", NULL);
 		return false;
 	}
 	else
@@ -4827,7 +4827,7 @@ static char *M_AddonsHeaderPath(void)
 
 #define UNEXIST S_StartSound(NULL, sfx_s26d);\
 		M_ExitMenu();\
-		M_StartMessage(va("\x82%s\x80\nThis folder no longer exists!\nAborting to main menu.\n\n(Press a key)\n", M_AddonsHeaderPath()),NULL,MM_NOTHING)
+		M_StartMessage2("Addons", va("\x82%s\x80\nThis folder no longer exists!\nAborting to main menu.\n", M_AddonsHeaderPath()),NULL,MM_NOTHING, "Press any key", NULL)
 
 #define CLEARNAME Z_Free(refreshdirname);\
 					refreshdirname = NULL
@@ -4901,7 +4901,7 @@ static boolean M_AddonsRefresh(void)
 
 		if (message)
 		{
-			M_StartMessage2("Warning", message, EVENTHANDLE(M_AddonsClearName), MM_EVENTHANDLER, "Press any key", NULL);
+			M_StartMessage2("Warning", message, ROUTINECAST(M_AddonsClearName), MM_EVENTHANDLER, "Press any key", NULL);
 			return true;
 		}
 
@@ -5083,7 +5083,7 @@ INT32 MR_HandleAddons(INT32 choice)
 					if (!preparefilemenu(false, false))
 					{
 						S_StartSound(NULL, FILEERRORSFX);
-						M_StartMessage(va("%c%s\x80\nThis folder is empty.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING);
+						M_StartMessage2("Addons", va("%c%s\x80\nThis folder is empty.\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING, "Press any key", NULL);
 						menupath[menupathindex[++menudepthleft]] = 0;
 
 						if (!preparefilemenu(true, false))
@@ -5102,7 +5102,7 @@ INT32 MR_HandleAddons(INT32 choice)
 				else
 				{
 					S_StartSound(NULL, FILENOTADDSFX);
-					M_StartMessage(va("%c%s\x80\nThis folder is too deep to navigate to!\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING);
+					M_StartMessage2("Addons", va("%c%s\x80\nThis folder is too deep to navigate to!\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING, "Press any key", NULL);
 					menupath[menupathindex[menudepthleft]] = 0;
 				}
 				break;
@@ -5117,7 +5117,7 @@ INT32 MR_HandleAddons(INT32 choice)
 				Reinitialize();
 				break;
 			case EXT_TXT:
-				M_StartMessage(va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways? \n\n(Press 'Y' to confirm)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), filename), M_AddonExec ,MM_YESNO);
+				M_StartMessage2("Addons", va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways?\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), filename), ROUTINECAST(M_AddonExec) ,MM_YESNO, "Y to Confirm", "N to Cancel");
 				break;
 			case EXT_CFG:
 				M_AddonExec(KEY_ENTER);
@@ -5238,7 +5238,7 @@ INT32 MR_ReplayHut(INT32 choice)
 	}
 	if (!preparefilemenu(false, true))
 	{
-		M_StartMessage("No replays found.\n\n(Press a key)\n", NULL, MM_NOTHING);
+		M_StartMessage2("Replay Hut", "No replays found.\n", NULL, MM_NOTHING, "Press any key", NULL);
 		return false;
 	}
 	else if (!demo.inreplayhut)
@@ -5324,7 +5324,7 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 					if (!preparefilemenu(false, true))
 					{
 						S_StartSound(NULL, sfx_s224);
-						M_StartMessage(va("%c%s\x80\nThis folder is empty.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING);
+						M_StartMessage2("Replay Hut", va("%c%s\x80\nThis folder is empty.\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING, "Press any key", NULL);
 						menupath[menupathindex[++menudepthleft]] = 0;
 
 						if (!preparefilemenu(true, true))
@@ -5343,7 +5343,7 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 				else
 				{
 					S_StartSound(NULL, sfx_s26d);
-					M_StartMessage(va("%c%s\x80\nThis folder is too deep to navigate to!\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING);
+					M_StartMessage2("Replay Hut", va("%c%s\x80\nThis folder is too deep to navigate to!\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),NULL,MM_NOTHING, "Press any key", NULL);
 					menupath[menupathindex[menudepthleft]] = 0;
 				}
 				break;
@@ -5994,7 +5994,7 @@ INT32 MR_ConfirmEnterGame(INT32 choice)
 	(void)choice;
 	if (!cv_allowteamchange.value)
 	{
-		M_StartMessage(M_GetText("The server is not allowing\nteam changes at this time.\nPress a key.\n"), NULL, MM_NOTHING);
+		M_StartMessage2("Team Change", M_GetText("The server is not allowing\nteam changes at this time.\n"), NULL, MM_NOTHING, "Press any key", NULL);
 		return false;
 	}
 	M_ClearMenus(true);
@@ -6020,7 +6020,7 @@ INT32 MR_ConfirmTeamChange(INT32 choice)
 
 	if (!cv_allowteamchange.value && cv_dummyteam.value)
 	{
-		M_StartMessage(M_GetText("The server is not allowing\nteam changes at this time.\nPress a key.\n"), NULL, MM_NOTHING);
+		M_StartMessage2("Team Change", M_GetText("The server is not allowing\nteam changes at this time.\n"), NULL, MM_NOTHING, "Press any key", NULL);
 		return false;
 	}
 
@@ -6055,7 +6055,7 @@ INT32 MR_ConfirmSpectateChange(INT32 choice)
 
 	if (!cv_allowteamchange.value && cv_dummyspectate.value)
 	{
-		M_StartMessage(M_GetText("The server is not allowing\nteam changes at this time.\nPress a key.\n"), NULL, MM_NOTHING);
+		M_StartMessage2("Team Change", M_GetText("The server is not allowing\nteam changes at this time.\n"), NULL, MM_NOTHING, "Press any key", NULL);
 		return false;
 	}
 
@@ -6126,7 +6126,7 @@ static void M_RetryResponse(INT32 ch)
 INT32 MR_Retry(INT32 choice)
 {
 	(void)choice;
-	M_StartMessage(va("Start this %s over?\n\n(Press 'Y' to confirm)\n", (gametypes[gametype]->rules & GTR_CIRCUIT) ? "race" : "battle"),M_RetryResponse,MM_YESNO);
+	M_StartMessage2("Retry?", va("Start this %s over?\n", (gametypes[gametype]->rules & GTR_CIRCUIT) ? "race" : "battle"), ROUTINECAST(M_RetryResponse),MM_YESNO, "Y to Continue", "N to Cancel");
 	return true;
 }
 
@@ -6264,7 +6264,7 @@ INT32 MR_MusicTest(INT32 choice)
 
 	if (!S_PrepareSoundTest())
 	{
-		M_StartMessage(M_GetText("No selectable tracks found.\n"),NULL,MM_NOTHING);
+		M_StartMessage2("Music Test", M_GetText("No selectable tracks found.\n"),NULL,MM_NOTHING, "Press any Key", NULL);
 		return false;
 	}
 
@@ -6944,7 +6944,7 @@ INT32 MR_GrandPrixTemp(INT32 choice)
 	(void)choice;
 	if (!M_CheckNextCup(NULL))
 	{
-		M_StartMessage(M_GetText("No cups found for Grand Prix.\n"),NULL,MM_NOTHING);
+		M_StartMessage2("GrandPrix", M_GetText("No cups found for Grand Prix.\n"),NULL,MM_NOTHING, "Press any key", NULL);
 		return false;
 	}
 	M_PatchSkinNameTable();
@@ -7179,7 +7179,9 @@ INT32 MR_TimeAttack(INT32 arg)
 		levellistmode = arg;
 		if (!M_CheckNextMap(NULL))
 		{
-			M_StartMessage(M_GetText(va("No levels found for %s.\n", arg == LLM_ITEMBREAKER ? "Item Breaker" : "Time Attack")), NULL, MM_NOTHING);
+			const char * string = arg == LLM_ITEMBREAKER ? "Item Breaker" : "Time Attack";
+
+			M_StartMessage2(string, M_GetText(va("No levels found for %s.\n", string)), NULL, MM_NOTHING, "Press any key", NULL);
 			return false;
 		}
 	}
@@ -7282,7 +7284,7 @@ static void M_EraseGuest(INT32 choice)
 	if (FIL_FileExists(rguest))
 		remove(rguest);
 	M_ExitMenu();
-	M_StartMessage(M_GetText("Guest replay data erased.\n"),NULL,MM_NOTHING);
+	M_StartMessage2("Guest", M_GetText("Guest replay data erased.\n"),NULL,MM_NOTHING, "Press any key", NULL);
 }
 
 static void M_OverwriteGuest(recordreplay_e which)
@@ -7301,7 +7303,7 @@ static void M_OverwriteGuest(recordreplay_e which)
 	}
 	FIL_WriteFile(rguest, buf, len);
 	M_ExitMenu();
-	M_StartMessage(M_GetText("Guest replay data saved.\n"),NULL,MM_NOTHING);
+	M_StartMessage2("Guest", M_GetText("Guest replay data saved.\n"),NULL,MM_NOTHING, "Press any key", NULL);
 }
 
 static void M_OverwriteGuest_Time(INT32 choice)
@@ -7338,12 +7340,12 @@ INT32 MR_SetGuestReplay(INT32 arg)
 		break;
 	case 3: // guest
 	default:
-		M_StartMessage(M_GetText("Are you sure you want to\ndelete the guest replay data?\n\n(Press 'Y' to confirm)\n"), M_EraseGuest, MM_YESNO);
+		M_StartMessage2("Guest", M_GetText("Are you sure you want to\ndelete the guest replay data?\n"), ROUTINECAST(M_EraseGuest), MM_YESNO, "Y to confirm", "N to canel");
 		return true;
 	}
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
 	if (G_CheckRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, REPLAY_GUEST))
-		M_StartMessage(M_GetText("Are you sure you want to\noverwrite the guest replay data?\n\n(Press 'Y' to confirm)\n"), which, MM_YESNO);
+		M_StartMessage2("Guest", M_GetText("Are you sure you want to\noverwrite the guest replay data?\n"), ROUTINECAST(which), MM_YESNO, "Y to confirm", "N to canel");
 	else
 		which(0);
 	return true;
@@ -7398,7 +7400,7 @@ INT32 MR_EndGame(INT32 choice)
 	if (!Playing())
 		return false;
 
-	M_StartMessage(M_GetText("Are you sure you want to end the game?\n\n(Press 'Y' to confirm)\n"), M_ExitGameResponse, MM_YESNO);
+	M_StartMessage2("End Game", M_GetText("Are you sure you want to end the game?\n"), ROUTINECAST(M_ExitGameResponse), MM_YESNO, "Y to confirm", "N to canel");
 	return true;
 }
 
@@ -7795,7 +7797,7 @@ static void M_CheckMODVersion(int id)
 #ifdef HAVE_THREADS
 		I_lock_mutex(&m_menu_mutex);
 #endif
-		M_StartMessage(updatestring, NULL, MM_NOTHING);
+		M_StartMessage2("Master Server", updatestring, NULL, MM_NOTHING, "Press any key", NULL);
 #ifdef HAVE_THREADS
 		I_unlock_mutex(m_menu_mutex);
 #endif
@@ -7874,7 +7876,7 @@ INT32 MR_ConnectMenuModChecks(INT32 choice)
 
 	if (modifiedgame)
 	{
-		M_StartMessage(M_GetText("You have addons loaded.\nYou won't be able to join netgames!\n\nTo play online, restart the game\nand don't load any addons.\nSRB2Kart will automatically add\neverything you need when you join.\n\n(Press a key)\n"), M_ConnectMenu, MM_EVENTHANDLER);
+		M_StartMessage2("Noitce", M_GetText("You have addons loaded.\nYou won't be able to join netgames!\n\nTo play online, restart the game\nand don't load any addons.\nSRB2Kart will automatically add\neverything you need when you join.\n"), ROUTINECAST(M_ConnectMenu), MM_EVENTHANDLER, "Press any key", NULL);
 		return true;
 	}
 
@@ -7952,7 +7954,7 @@ INT32 MR_ConnectIP(INT32 choice)
 
 	if (*cv_dummyip.string == 0)
 	{
-		M_StartMessage("You must specify an IP address.\n", NULL, MM_NOTHING);
+		M_StartMessage2("Connect", "You must specify an IP address.\n", NULL, MM_NOTHING, "Press any key", NULL);
 		return false;
 	}
 
@@ -7978,7 +7980,7 @@ INT32 MR_ConnectLastServer(INT32 choice)
 
 	if (!*cv_lastserver.string)
 	{
-		M_StartMessage("You haven't previosuly joined a server.\n", NULL, MM_NOTHING);
+		M_StartMessage2("Connect", "You haven't previosuly joined a server.\n", NULL, MM_NOTHING, "Press any key", NULL);
 		return false;
 	}
 
@@ -9045,7 +9047,7 @@ static void M_EraseDataResponse(INT32 ch)
 
 INT32 MR_EraseData(INT32 arg)
 {
-	const char *eschoice, *esstr = M_GetText("Are you sure you want to erase\n%s?\n\n(Press 'Y' to confirm)\n");
+	const char *eschoice, *esstr = M_GetText("Are you sure you want to erase\n%s?\n");
 
 	erasecontext = (UINT8)arg;
 
@@ -9056,7 +9058,7 @@ INT32 MR_EraseData(INT32 arg)
 	else
 		eschoice = M_GetText("ALL game data");
 
-	M_StartMessage(va(esstr, eschoice), M_EraseDataResponse, MM_YESNO);
+	M_StartMessage2("Delete Data?", va(esstr, eschoice), ROUTINECAST(M_EraseDataResponse), MM_YESNO, "Y to confirm", "N to Cancel");
 	return true;
 }
 
@@ -9169,10 +9171,9 @@ INT32 MR_AssignJoystick(INT32 arg)
 
 			if (oldstringchoice ==
 				(atoi(cv_usecontroller[p].string) > numcontrollers ? atoi(cv_usecontroller[p].string) : cv_usecontroller[p].value))
-				M_StartMessage("This joystick is used by another\n"
+				M_StartMessage2("Controls", "This joystick is used by another\n"
 							   "player. Reset the joystick\n"
-							   "for that player first.\n\n"
-							   "(Press a key)\n", NULL, MM_NOTHING);
+							   "for that player first.\n", NULL, MM_NOTHING, "Press any key", NULL);
 		}
 	}
 #else
@@ -9300,13 +9301,13 @@ static void M_ChangecontrolResponse(event_t *ev)
 	// 	static char tmp[158];
 
 	// 	if (controltochange == gc_pause)
-	// 		sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nyou may select another key. \n\nHit another key for\n%s\nESC for Cancel"),
+	// 		sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nyou may select another key. \n\nHit another key for\n%s\n"),
 	// 			controltochangetext);
 	// 	else
-	// 		sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nit is not configurable. \n\nHit another key for\n%s\nESC for Cancel"),
+	// 		sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nit is not configurable. \n\nHit another key for\n%s\n"),
 	// 			controltochangetext);
 
-	// 	M_StartMessage(tmp, M_ChangecontrolResponse, MM_EVENTHANDLER);
+	// 	M_StartMessage2("Rebinding Control", tmp, ROUTINECAST(M_ChangecontrolResponse), MM_EVENTHANDLER, NULL, "ESC to Cancel");
 
 	// 	S_StartSound(NULL, sfx_s3k42);
 	// 	return;
@@ -9329,7 +9330,7 @@ INT32 MR_ChangeControl(INT32 arg)
 		pi->items[pi->itemon].text);
 	strlcpy(controltochangetext, pi->items[pi->itemon].text, 33);
 
-	M_StartMessage2("Rebinding Control", tmp, EVENTHANDLE(M_ChangecontrolResponse), MM_EVENTHANDLER, NULL, "ESC to Cancel");
+	M_StartMessage2("Rebinding Control", tmp, ROUTINECAST(M_ChangecontrolResponse), MM_EVENTHANDLER, NULL, "ESC to Cancel");
 	return true;
 }
 
@@ -9359,7 +9360,7 @@ static void M_ResetControlsResponse(INT32 ch)
 INT32 MR_ResetControls(INT32 choice)
 {
 	(void)choice;
-	M_StartMessage(va(M_GetText("Reset Player %d's controls to defaults?\n\n(Press 'Y' to confirm)\n"), setupcontrolplayer), M_ResetControlsResponse, MM_YESNO);
+	M_StartMessage2("Cnntrols", va(M_GetText("Reset Player %d's controls to defaults?\n"), setupcontrolplayer), ROUTINECAST(M_ResetControlsResponse), MM_YESNO, "Y to confirm", "N to cancel");
 	return true;
 }
 
@@ -10186,7 +10187,7 @@ INT32 MR_QuitSRB2(INT32 choice)
 	// We pick index 0 which is language sensitive, or one at random,
 	// between 1 and maximum number.
 	(void)choice;
-	M_StartMessage2("Leave Game?", quitmsg[M_RandomKey(NUM_QUITMESSAGES)], EVENTHANDLE(M_QuitResponse), MM_YESNO, "Press Y to Quit", "Press N to Return");
+	M_StartMessage2("Leave Game?", quitmsg[M_RandomKey(NUM_QUITMESSAGES)], ROUTINECAST(M_QuitResponse), MM_YESNO, "Press Y to Quit", "Press N to Return");
 	return true;
 }
 

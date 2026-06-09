@@ -1890,7 +1890,7 @@ static boolean CL_FinishedFileList(void)
 				"This server is full!\n"
 				"\n"
 				"You may load server addons (if any), and wait for a slot.\n"
-			), EVENTHANDLE(M_ConfirmConnect), MM_EVENTHANDLER, "ACCEL to continue", "BRAKE to cancel");
+			), ROUTINECAST(M_ConfirmConnect), MM_EVENTHANDLER, "ACCEL to continue", "BRAKE to cancel");
 			cl_mode = CL_CONFIRMCONNECT;
 			ChangeServMusic(SERVMUS_2, true,true);
 		}
@@ -1949,11 +1949,11 @@ static boolean CL_FinishedFileList(void)
 					"Download of %s additional content is required to join.\n"
 					"\n"
 					"You may download, load server addons, and wait for a slot.\n"
-				), downloadsize), EVENTHANDLE(M_ConfirmConnect), MM_EVENTHANDLER, "ACCEL to continue", "BRAKE to cancel");
+				), downloadsize), ROUTINECAST(M_ConfirmConnect), MM_EVENTHANDLER, "ACCEL to continue", "BRAKE to cancel");
 			else
 				M_StartMessage2("Downloading Content", va(M_GetText(
 					"Download of %s additional content is required to join.\n"
-				), downloadsize), EVENTHANDLE(M_ConfirmConnect), MM_EVENTHANDLER, "ACCEL to continue", "BRAKE to cancel");
+				), downloadsize), ROUTINECAST(M_ConfirmConnect), MM_EVENTHANDLER, "ACCEL to continue", "BRAKE to cancel");
 
 			Z_Free(downloadsize);
 			cl_mode = CL_CONFIRMCONNECT;

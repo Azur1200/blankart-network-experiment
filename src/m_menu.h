@@ -142,9 +142,9 @@ typedef enum
 	                // and routine is void routine(event_t *) (ex: set control)
 } menumessagetype_t;
 
-#define EVENTHANDLE(func) (void (*)(void))func
+#define ROUTINECAST(func) (void (*)(void))func
 
-#define M_StartMessage(string, routine, itemtype) M_StartMessage2(NULL, string, EVENTHANDLE(routine), itemtype, NULL, NULL)
+//#define M_StartMessage(string, routine, itemtype) M_StartMessage2(NULL, string, ROUTINECAST(routine), itemtype, NULL, NULL)
 void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(void),
 					 menumessagetype_t itemtype, const char *confirmstr, const char *declinestr);
 
