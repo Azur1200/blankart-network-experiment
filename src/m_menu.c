@@ -170,7 +170,7 @@ static INT16 skullAnimCounter = 10; // skull animation counter
 static tic_t menutimer = 0, cursortimer = 0; // tics since menu change/menu movement
 
 INT32 menuKey = -1; // keyboard key pressed for menu
-menucmd_t menucmd[MAXSPLITSCREENPLAYERS];
+menucmd_t menucmd[MAXSPLITSCREENPLAYERS] = {0};
 
 static struct
 {
