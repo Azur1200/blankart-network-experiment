@@ -1477,6 +1477,7 @@ static boolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
 		return false;
 
 	noFurtherInput = ch;
+	menucmd[0].wipebuffer = true;
 	S_StartSound(NULL, sfx_kc50);
 	return true;
 }
@@ -2218,6 +2219,15 @@ void M_UpdateMenuCMD(UINT8 i)
 {
 	INT32 thisMenuKey = menuKey;
 
+	if (menucmd[i].wipebuffer && WipeInAction)
+		return;
+	else if (menucmd[i].wipebuffer && !WipeInAction)
+	{
+		menucmd[i].wipebuffer = false;
+		return; // Lets do our last action now.
+	}
+
+
 	menucmd[i].prev_dpad_ud = menucmd[i].dpad_ud;
 	menucmd[i].prev_dpad_lr = menucmd[i].dpad_lr;
 
@@ -2355,6 +2365,11 @@ static void M_HandleMenuInput(void)
 				messagebox.handler(ev);
 		}*/
 
+		return;
+	}
+
+	if (menucmd[pid].wipebuffer)
+	{
 		return;
 	}
 
@@ -3449,6 +3464,8 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 		y += pd->lineheight*FRACUNIT + M_ItemExtraOffset(item);
 	}
 
+	boolean wipebuffer = (noFurtherInput > 0 || menucmd[0].wipebuffer);
+
 	// DRAW THE SKULL CURSOR
 	if (!hidecursor && M_ItemSelectable(&pi->items[pi->itemon]))
 	{
@@ -3463,9 +3480,9 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 			if (skullAnimCounter < 4)
 				cmap = V_GetStringColormap(highlightflags);
 		}
-		V_DrawFixedPatch(cursorx, cursory, scale, (noFurtherInput > 0 ? V_TRANSLUCENT : 0) | pflags, W_CachePatchName(pname, PU_CACHE), cmap);
+		V_DrawFixedPatch(cursorx, cursory, scale, (wipebuffer ? V_TRANSLUCENT : 0) | pflags, W_CachePatchName(pname, PU_CACHE), cmap);
 	}
-	if (noFurtherInput > 0)
+	if (wipebuffer)
 		V__DrawOneScaleString(cursorx, cursory + 3*FRACUNIT, FRACUNIT/2, pflags, HU_FONT, "WAIT");
 
 	// Draw scrollbar

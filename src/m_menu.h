@@ -64,6 +64,8 @@ typedef struct menucmd_s
 
 	UINT16 delay; // menu wait
 	UINT32 delayCount; // num times ya did menu wait (to make the wait shorter each time)
+
+	boolean wipebuffer; // Hold the last input sent.
 } menucmd_t;
 
 extern menucmd_t menucmd[MAXSPLITSCREENPLAYERS];
