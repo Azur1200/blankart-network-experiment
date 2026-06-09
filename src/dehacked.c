@@ -927,7 +927,8 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 		{
 			M_ClearMenus(true);
 			I_UpdateMouseGrab();
-			COM_BufAddText("exitgame"); // Command_ExitGame_f() but delayed
+			//COM_BufAddText("exitgame"); // Command_ExitGame_f() but delayed
+			D_StartTitle();
 		}
 	}
 
