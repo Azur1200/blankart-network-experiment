@@ -6182,7 +6182,7 @@ static void M_RetryResponse(INT32 ch)
 INT32 MR_Retry(INT32 choice)
 {
 	(void)choice;
-	M_StartMessage2("Retry?", va("Start this %s over?\n", (gametypes[gametype]->rules & GTR_CIRCUIT) ? "race" : "battle"), ROUTINECAST(M_RetryResponse),MM_YESNO, "Y to Continue", M_MessageCancelText(false));
+	M_StartMessage2("Retry?", va("Start this %s over?\n", (gametypes[gametype]->rules & GTR_CIRCUIT) ? "race" : "battle"), ROUTINECAST(M_RetryResponse),MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
 	return true;
 }
 
