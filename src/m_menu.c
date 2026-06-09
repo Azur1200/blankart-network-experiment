@@ -172,23 +172,8 @@ static tic_t menutimer = 0, cursortimer = 0; // tics since menu change/menu move
 INT32 menuKey = -1; // keyboard key pressed for menu
 menucmd_t menucmd[MAXSPLITSCREENPLAYERS] = {0};
 
-static struct
-{
-	boolean active;
-	const char *headertext;
-	const char *text;
-	const char *confirmtext;
-	const char *declinetext;
-	union
-	{
-		void (*routine)(INT32 choice); // MM_YESNO
-		void (*handler)(event_t *ev);  // MM_EVENTHANDLER
-	};
-	menumessagetype_t messagetype;
-	INT16 x, y;
-	INT16 numlines;
-	INT16 maxlength;
-} messagebox;
+messagebox_t messagebox = {0};
+messagebox_t messageboxqueue = {0};
 
 static  UINT8 setupcontrolplayer;
 static  INT32   (*setupcontrols)[MAXINPUTMAPPING];  // pointer to the gamecontrols of the player being edited
@@ -2674,6 +2659,8 @@ void M_Ticker(void)
 		}
 	}
 
+	M_TickMessagebox();
+
 	if (noFurtherInput <= 0)
 	{
 		M_HandleMenuInput();
@@ -4441,6 +4428,48 @@ char *M_MessageCancelText(boolean gamequit)
 	return DeclineString;
 }
 
+void M_TickMessagebox(void)
+{
+	if (!messagebox.active)
+	{
+		Z_Free(messagebox.headertext);
+		Z_Free(messagebox.text);
+		Z_Free(messagebox.confirmtext);
+		Z_Free(messagebox.declinetext);
+
+		memset(&messagebox, 0, sizeof(messagebox));
+
+		if (messageboxqueue.active)
+		{
+			memcpy(&messagebox, &messageboxqueue, sizeof (messagebox));
+
+			if (messageboxqueue.headertext)
+				messagebox.headertext = Z_StrDup(messageboxqueue.headertext);
+			else
+				messagebox.headertext = NULL;
+
+			messagebox.text = Z_StrDup(messageboxqueue.text);
+
+			if (messageboxqueue.confirmtext)
+				messagebox.confirmtext = Z_StrDup(messageboxqueue.confirmtext);
+			else
+				messagebox.confirmtext = NULL;
+
+			if (messageboxqueue.declinetext)
+				messagebox.declinetext = Z_StrDup(messageboxqueue.declinetext);
+			else
+				messagebox.declinetext = NULL;
+
+			Z_Free(messageboxqueue.headertext);
+			Z_Free(messageboxqueue.text);
+			Z_Free(messageboxqueue.confirmtext);
+			Z_Free(messageboxqueue.declinetext);
+
+			memset(&messageboxqueue, 0, sizeof(messageboxqueue));
+		}
+	}
+}
+
 // ==================================================
 // MESSAGE BOX (aka: a hacked, cobbled together menu)
 // ==================================================
@@ -4448,30 +4477,12 @@ void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(voi
 	menumessagetype_t itemtype, const char *confirmstr, const char *declinestr)
 {
 	size_t max = 0, start = 0, i, strlines;
-	static char *headermessage = NULL;
+
 	static char *message = NULL;
-	static char *confirmmessage = NULL;
-	static char *declinemessage = NULL;
-	Z_Free(headermessage);
-	Z_Free(message);
-	Z_Free(confirmmessage);
-	Z_Free(declinemessage);
-	if (headerstr)
-		headermessage = Z_StrDup(headerstr);
-	else
-		headermessage = NULL;
+
+	messagebox_t *messageboxset = messagebox.active ? &messageboxqueue : &messagebox;
 
 	message = Z_StrDup(str);
-
-	if (confirmstr)
-		confirmmessage = Z_StrDup(confirmstr);
-	else
-		confirmmessage = NULL;
-
-	if (declinestr)
-		declinemessage = Z_StrDup(declinestr);
-	else
-		declinemessage = NULL;
 
 	DEBFILE(message);
 
@@ -4510,15 +4521,31 @@ void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(voi
 
 	M_StartControlPanel(); // can't put menuactive to true
 
-	messagebox.headertext = headermessage;
-	messagebox.text = message;
-	messagebox.confirmtext = confirmmessage;
-	messagebox.declinetext = declinemessage;
-	messagebox.messagetype = itemtype;
-	if (itemtype == MM_EVENTHANDLER)
-		messagebox.handler = (void (*)(event_t *))routine;
+	if (headerstr)
+		messageboxset->headertext = Z_StrDup(headerstr);
 	else
-		messagebox.routine = (void (*)(INT32))routine;
+		messageboxset->headertext = NULL;
+
+	messageboxset->text = Z_StrDup(message);
+
+	Z_Free(message);
+
+	if (confirmstr)
+		messageboxset->confirmtext = Z_StrDup(confirmstr);
+	else
+		messageboxset->confirmtext = NULL;
+
+	if (declinestr)
+		messageboxset->declinetext = Z_StrDup(declinestr);
+	else
+		messageboxset->declinetext = NULL;
+
+	messageboxset->messagetype = itemtype;
+
+	if (itemtype == MM_EVENTHANDLER)
+		messageboxset->handler = (void (*)(event_t *))routine;
+	else
+		messageboxset->routine = (void (*)(INT32))routine;
 
 	//added : 06-02-98: now draw a textbox around the message
 	// compute lenght max and the numbers of lines
@@ -4541,20 +4568,20 @@ void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(voi
 			start += i;
 	}
 
-	if (headermessage)
+	if (headerstr)
 		strlines++;
 
-	if (confirmmessage || declinemessage)
+	if (confirmstr || declinestr)
 		strlines++;
 
-	messagebox.x = (BASEVIDWIDTH  - 8*max-16)/2;
-	messagebox.y = (BASEVIDHEIGHT - M_StringHeight(message))/2;
+	messageboxset->x = (BASEVIDWIDTH  - 8*max-16)/2;
+	messageboxset->y = (BASEVIDHEIGHT - M_StringHeight(message))/2;
 
-	messagebox.numlines = strlines;
+	messageboxset->numlines = strlines;
 
-	messagebox.maxlength = max;
+	messageboxset->maxlength = max;
 
-	messagebox.active = true;
+	messageboxset->active = true;
 }
 
 #define MAXMSGLINELEN 256

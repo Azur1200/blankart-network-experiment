@@ -137,18 +137,39 @@ INT32 MR_ModeAttackRetry(INT32 choice);
 // the function to show a message box typing with the string inside
 // string must be static (not in the stack)
 // routine is a function taking a INT32 in parameter
+
 typedef enum
 {
 	MM_NOTHING = 0, // is just displayed until the user do someting
 	MM_YESNO,       // routine is called with only 'y' or 'n' in param
 	MM_EVENTHANDLER // the same of above but without 'y' or 'n' restriction
-	                // and routine is void routine(event_t *) (ex: set control)
+	// and routine is void routine(event_t *) (ex: set control)
 } menumessagetype_t;
+
+typedef struct
+{
+	boolean active;
+	char *headertext;
+	char *text;
+	char *confirmtext;
+	char *declinetext;
+	union
+	{
+		void (*routine)(INT32 choice); // MM_YESNO
+		void (*handler)(event_t *ev);  // MM_EVENTHANDLER
+	};
+	menumessagetype_t messagetype;
+	INT16 x, y;
+	INT16 numlines;
+	INT16 maxlength;
+} messagebox_t;
 
 #define ROUTINECAST(func) (void (*)(void))func
 
 char *M_MessageConfirmText(boolean gamequit);
 char *M_MessageCancelText(boolean gamequit);
+
+void M_TickMessagebox(void);
 
 //#define M_StartMessage(string, routine, itemtype) M_StartMessage2(NULL, string, ROUTINECAST(routine), itemtype, NULL, NULL)
 void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(void),
