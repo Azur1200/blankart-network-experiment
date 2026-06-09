@@ -835,7 +835,7 @@ INT32 MR_OpenGLOptionsMenu(INT32 choice)
 
 	if (rendermode != render_opengl)
 	{
-		M_StartMessage2("Options", M_GetText("You must be in OpenGL mode\nto access this menu.\n\n(Press a key)\n"), NULL, MM_NOTHING, "Press any key", NULL);
+		M_StartMessage2("Options", M_GetText("You must be in OpenGL mode\nto access this menu.\n"), NULL, MM_NOTHING, "Press any key", NULL);
 		return false;
 	}
 
@@ -4895,7 +4895,7 @@ static boolean M_AddonsRefresh(void)
 		else if (majormods && !prevmajormods)
 		{
 			S_StartSound(NULL, FILEADDSFX);
-			message = va("%c%s\x80\nYou've loaded a gameplay-modifying addon.\n\nRecord Attack data will be saved to seperate save.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
+			message = va("%c%s\x80\nYou've loaded a gameplay-modifying addon.\n\nRecord Attack data will be saved to seperate save.\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
 			prevmajormods = majormods;
 		}
 

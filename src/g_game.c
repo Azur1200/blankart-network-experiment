@@ -6167,7 +6167,7 @@ void G_LoadGame(UINT32 slot, mapnum_t mapoverride)
 		//Freeing done by the callback function of the above message
 #else
 		M_ClearMenus(true); // so ESC backs out to title
-		M_StartMessage2("Invalid Save", M_GetText("Save game from different version\n"), NULL, MM_NOTHING, NULL, "Press ESC");
+		M_StartMessage2("Invalid Save", M_GetText("Save game from different version\n"), NULL, MM_NOTHING, "Press any key", NULL);
 		Command_ExitGame_f();
 		P_SaveBufferFree(&save);
 
@@ -6188,7 +6188,7 @@ void G_LoadGame(UINT32 slot, mapnum_t mapoverride)
 	if (!P_LoadGame(&save, mapoverride))
 	{
 		M_ClearMenus(true); // so ESC backs out to title
-		M_StartMessage2("Invalid Save", M_GetText("Savegame file corrupted\n"), NULL, MM_NOTHING, NULL, "Press ESC");
+		M_StartMessage2("Invalid Save", M_GetText("Savegame file corrupted\n"), NULL, MM_NOTHING, "Press any key", NULL);
 		Command_ExitGame_f();
 		Z_Free(save.buffer);
 		save.p = save.buffer = NULL;

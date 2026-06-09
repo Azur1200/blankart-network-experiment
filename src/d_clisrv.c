@@ -1865,7 +1865,7 @@ static boolean CL_FinishedFileList(void)
 			"You have too many addons loaded\n"
 			"to add ones the server is using.\n"
 			"Please restart SRB2Kart before connecting.\n\n"
-		), NULL, MM_NOTHING, NULL, "Press ESC");
+		), NULL, MM_NOTHING, "Press any key", NULL);
 		return false;
 	}
 	else if (i == 2) // cannot join for some reason
@@ -1879,7 +1879,7 @@ static boolean CL_FinishedFileList(void)
 			"the game and don't load any addons.\n"
 			"SRB2Kart will automatically add\n"
 			"everything you need when you join.\n\n"
-		), NULL, MM_NOTHING, NULL, "Press ESC");
+		), NULL, MM_NOTHING, "Press any key", NULL);
 		return false;
 	}
 	else if (i == 1)
@@ -1917,7 +1917,7 @@ static boolean CL_FinishedFileList(void)
 					"with the server, not your game.)\n\n"
 					"See the console or log file\n"
 					"for additional details.\n\n"
-				), NULL, MM_NOTHING, NULL, "Press ESC");
+				), NULL, MM_NOTHING, "Press any key", NULL);
 				return false;
 			}
 		}
@@ -2035,7 +2035,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 							"Your binary differs from the server.\n"
 							"  Yours: %.*s\n"
 							"Theirs: %s\n",
-							GIT_SHA_ABBREV * 2, comprevision, theirs), NULL, MM_NOTHING, NULL, "Press ESC");
+							GIT_SHA_ABBREV * 2, comprevision, theirs), NULL, MM_NOTHING, "Press any key", NULL);
 				return false;
 			}
 #endif
@@ -2188,7 +2188,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				M_StartMessage2("Download Failed", M_GetText(
 					"The direct download encountered an error.\n"
 					"See the logfile for more info.\n"
-				), NULL, MM_NOTHING, NULL, "Press ESC");
+				), NULL, MM_NOTHING, "Press any key", NULL);
 				return false;
 			}
 		case CL_LOADFILES:
@@ -2216,7 +2216,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 					"%d minute wait time exceeded.\n"
 					"You may retry connection.\n",
 					cv_connectawaittime.value
-				), NULL, MM_NOTHING, NULL, "Press ESC");
+				), NULL, MM_NOTHING, "Press any key", NULL);
 				return false;
 			}
 			// prepare structures to save the file
@@ -2321,7 +2321,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		if (cl_mode == CL_ABORTED)
 		{
 			CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
-//			M_StartMessage2("Sync Aborted", M_GetText("Network game synchronization aborted.\n"), NULL, MM_NOTHING, NULL, "Press ESC");
+//			M_StartMessage2("Sync Aborted", M_GetText("Network game synchronization aborted.\n"), NULL, MM_NOTHING, "Press any key", NULL);
 
 			D_QuitNetGame();
 			CL_Reset();
@@ -2830,7 +2830,7 @@ static void Command_connect(void)
 			CL_Reset();
 			servernode = 0; // not sure if this is cool, but if this is -1 then bad things happen in alot of networking code
 			M_ReturnToConnectMenu();
-			M_StartMessage2("Connection failed", M_GetText("Failed to connect to server\nMake sure you put in a valid Address!\n"), NULL, MM_NOTHING, NULL, "Press ESC");
+			M_StartMessage2("Connection failed", M_GetText("Failed to connect to server\nMake sure you put in a valid Address!\n"), NULL, MM_NOTHING, "Press any key", NULL);
 			return;
 		}
 	}
@@ -3614,19 +3614,19 @@ static void Got_KickCmd(UINT8 **p, INT32 playernum)
 		M_ReturnToConnectMenu();
 
 		if (msg == KICK_MSG_CON_FAIL)
-			M_StartMessage2("Game Kick", M_GetText("Server closed connection\n(Synch failure)\n"), NULL, MM_NOTHING, NULL, "Press ESC");
+			M_StartMessage2("Game Kick", M_GetText("Server closed connection\n(Synch failure)\n"), NULL, MM_NOTHING, "Press any key", NULL);
 		else if (msg == KICK_MSG_PING_HIGH)
-			M_StartMessage2("Game Kick", M_GetText("Server closed connection\n(Broke delay limit)\n"), NULL, MM_NOTHING, NULL, "Press ESC");
+			M_StartMessage2("Game Kick", M_GetText("Server closed connection\n(Broke delay limit)\n"), NULL, MM_NOTHING, "Press any key", NULL);
 		else if (msg == KICK_MSG_BANNED)
-			M_StartMessage2("Game Kick", M_GetText("You have been banned by the server\n"), NULL, MM_NOTHING, NULL, "Press ESC");
+			M_StartMessage2("Game Kick", M_GetText("You have been banned by the server\n"), NULL, MM_NOTHING, "Press any key", NULL);
 		else if (msg == KICK_MSG_CUSTOM_KICK)
-			M_StartMessage2("Game Kick", va(M_GetText("You have been kicked\n(%s)\n"), reason), NULL, MM_NOTHING, NULL, "Press ESC");
+			M_StartMessage2("Game Kick", va(M_GetText("You have been kicked\n(%s)\n"), reason), NULL, MM_NOTHING, "Press any key", NULL);
 		else if (msg == KICK_MSG_CUSTOM_BAN)
-			M_StartMessage2("Game Kick", va(M_GetText("You have been banned\n(%s)\n"), reason), NULL, MM_NOTHING, NULL, "Press ESC");
+			M_StartMessage2("Game Kick", va(M_GetText("You have been banned\n(%s)\n"), reason), NULL, MM_NOTHING, "Press any key", NULL);
 		else if (msg == KICK_MSG_SIGFAIL)
-			M_StartMessage2("Game Kick", M_GetText("Server closed connection\n(Invalid signature)\n"), NULL, MM_NOTHING, NULL, "Press ESC");
+			M_StartMessage2("Game Kick", M_GetText("Server closed connection\n(Invalid signature)\n"), NULL, MM_NOTHING, "Press any key", NULL);
 		else
-			M_StartMessage2("Game Kick", M_GetText("You have been kicked by the server\n"), NULL, MM_NOTHING, NULL, "Press ESC");
+			M_StartMessage2("Game Kick", M_GetText("You have been kicked by the server\n"), NULL, MM_NOTHING, "Press any key", NULL);
 	}
 	else if (server)
 	{
@@ -4814,7 +4814,7 @@ static void HandleShutdown(SINT8 node)
 	D_QuitNetGame();
 	CL_Reset();
 	M_ReturnToConnectMenu();
-	M_StartMessage2("Server Shutdown", M_GetText("Server has shutdown\n"), NULL, MM_NOTHING, NULL, "Press ESC");
+	M_StartMessage2("Server Shutdown", M_GetText("Server has shutdown\n"), NULL, MM_NOTHING, "Press any key", NULL);
 }
 
 void ServerInfoUpdateSend(void)
@@ -4866,7 +4866,7 @@ static void HandleTimeout(SINT8 node)
 	D_QuitNetGame();
 	CL_Reset();
 	M_ReturnToConnectMenu();
-	M_StartMessage2("Server Timeout", M_GetText("Server Timeout\n"), NULL, MM_NOTHING, NULL, "Press ESC");
+	M_StartMessage2("Server Timeout", M_GetText("Server Timeout\n"), NULL, MM_NOTHING, "Press any key", NULL);
 }
 
 void HandleSigfail(const char *string)
@@ -4881,7 +4881,7 @@ void HandleSigfail(const char *string)
 	D_QuitNetGame();
 	CL_Reset();
 	M_ReturnToConnectMenu();
-	M_StartMessage2("Signature Failed", va(M_GetText("Signature check failed\n(%s)\n"),string), NULL, MM_NOTHING, NULL, "Press ESC");
+	M_StartMessage2("Signature Failed", va(M_GetText("Signature check failed\n(%s)\n"),string), NULL, MM_NOTHING, "Press any key", NULL);
 }
 
 /** Called when a PT_SERVERINFO packet is received
@@ -5014,7 +5014,7 @@ static void PT_ServerRefuse(SINT8 node)
 		{
 			M_StartMessage2("Join Failed", va("You have been %sfrom the server\n\nReason:\n%s",
 							  (reason[0] == 'B') ? "banned\n" : "temporarily\nkicked ",
-							  reason+2), NULL, MM_NOTHING, NULL, "Press ESC");
+							  reason+2), NULL, MM_NOTHING, "Press any key", NULL);
 			CONS_Alert(CONS_NOTICE, "You have been %sfrom the server\n\nReason:\n%s",
 						 (reason[0] == 'B') ? "banned\n" : "temporarily\nkicked ",
 						 reason+2);
@@ -5022,7 +5022,7 @@ static void PT_ServerRefuse(SINT8 node)
 		else
 		{
 			M_StartMessage2("Join Failed", va(M_GetText("Server refuses connection\n\nReason:\n%s"),
-							  reason), NULL, MM_NOTHING, NULL, "Press ESC");
+							  reason), NULL, MM_NOTHING, "Press any key", NULL);
 			CONS_Alert(CONS_NOTICE, "Server refuses connection\n\nReason:\n%s",
 						   reason);
 		}
