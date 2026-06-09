@@ -1532,6 +1532,19 @@ boolean M_Responder(event_t *ev)
 		menuKey = ev->data1;
 	}
 
+	if (messagebox.active && messagebox.messagetype == MM_EVENTHANDLER)
+	{
+		if (menucmd[0].delay > 0)
+			return true;
+
+		// dirty hack: for customising controls, I want only buttons/keys/axes, not mouse
+		if (messagebox.handler && !(ev->type == ev_mouse || (ev->type == ev_joystick && messagebox.handler != M_ChangecontrolResponse)))
+			messagebox.handler(ev);
+
+		M_SetMenuDelay(0);
+		return true;
+	}
+
 	// Handle menu handling in-game.
 	if (!menustack[0])
 	{
@@ -2194,7 +2207,7 @@ boolean M_MouseNeeded(void)
 // M_Ticker
 //
 
-static void M_SetMenuDelay(UINT8 i)
+void M_SetMenuDelay(UINT8 i)
 {
 	menucmd[i].delayCount++;
 	if (menucmd[i].delayCount < 1)
@@ -2358,12 +2371,6 @@ static void M_HandleMenuInput(void)
 				return;
 			}
 		}
-		/*else
-		{
-			// dirty hack: for customising controls, I want only buttons/keys/axes, not mouse
-			if (messagebox.handler && !(ev->type == ev_mouse || (ev->type == ev_joystick && messagebox.handler != M_ChangecontrolResponse)))
-				messagebox.handler(ev);
-		}*/
 
 		return;
 	}
