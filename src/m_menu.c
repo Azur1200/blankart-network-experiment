@@ -1532,7 +1532,7 @@ boolean M_Responder(event_t *ev)
 		menuKey = ev->data1;
 	}
 
-	if (messagebox.active && messagebox.messagetype == MM_EVENTHANDLER)
+	if (ev->type == ev_keydown && messagebox.active && messagebox.messagetype == MM_EVENTHANDLER)
 	{
 		if (menucmd[0].delay > 0)
 			return true;
