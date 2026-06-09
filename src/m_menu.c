@@ -175,7 +175,10 @@ menucmd_t menucmd[MAXSPLITSCREENPLAYERS];
 static struct
 {
 	boolean active;
+	const char *headertext;
 	const char *text;
+	const char *confirmtext;
+	const char *declinetext;
 	union
 	{
 		void (*routine)(INT32 choice); // MM_YESNO
@@ -1650,7 +1653,7 @@ static int SortPanels(const void *a, const void *b)
 //
 void M_Drawer(void)
 {
-	if (menustack[0] || messagebox.active)
+	if (menustack[0])
 	{
 		// now that's more readable with a faded background (yeah like Quake...)
 		if (gamestate == GS_MENU)
@@ -1666,67 +1669,66 @@ void M_Drawer(void)
 			V_DrawFadeScreen(0xFF00, curfadevalue);
 	}
 
-	if (messagebox.active)
+	size_t i;
+	UINT16 sortedpanels[UINT16_MAX];
+	if (numcurpanels >= UINT16_MAX)
+		I_Error("You have way too many panels, man!");
+	for (i = 0; i < numcurpanels; i++)
+		sortedpanels[i] = i;
+	qs22j(sortedpanels, numcurpanels, sizeof(*sortedpanels), SortPanels);
+
+	if (currentMenu && currentMenu->vhs && cv_vhseffect.value)
+		V_DrawVhsEffect(false);
+
+	M_GetGametypeColor();
+	for (i = 0; i < numcurpanels; i++)
+		M_DrawMenuPanel(&curpanels[sortedpanels[i]], panelOn == sortedpanels[i] && !curpanels[sortedpanels[i]].disabled);
+
+	if (menustack[0] == MN_MAIN)
 	{
-		M_DrawMessageMenu();
-	}
-	else
-	{
-		size_t i;
-		UINT16 sortedpanels[UINT16_MAX];
-		if (numcurpanels >= UINT16_MAX)
-			I_Error("You have way too many panels, man!");
-		for (i = 0; i < numcurpanels; i++)
-			sortedpanels[i] = i;
-		qs22j(sortedpanels, numcurpanels, sizeof(*sortedpanels), SortPanels);
-
-		if (currentMenu && currentMenu->vhs && cv_vhseffect.value)
-			V_DrawVhsEffect(false);
-
-		M_GetGametypeColor();
-		for (i = 0; i < numcurpanels; i++)
-			M_DrawMenuPanel(&curpanels[sortedpanels[i]], panelOn == sortedpanels[i] && !curpanels[sortedpanels[i]].disabled);
-
-		if (menustack[0] == MN_MAIN)
-		{
-			INT32 texty = vid.height - 10*vid.dup;
+		INT32 texty = vid.height - 10*vid.dup;
 #define addtext(f, str) {\
 V_DrawThinString(vid.dup, texty, MENUCAPS|V_NOSCALESTART|f, str);\
 texty -= 10*vid.dup;\
 }
-			if (customversionstring[0] != '\0')
-			{
-				addtext(V_ALLOWLOWERCASE, customversionstring);
-				addtext(0, "Mod version:");
-			}
-			else
-			{
+		if (customversionstring[0] != '\0')
+		{
+			addtext(V_ALLOWLOWERCASE, customversionstring);
+			addtext(0, "Mod version:");
+		}
+		else
+		{
 // Development -- show revision / branch info
 #if defined(DEVELOP) || defined(COMMITVERSION)
-				addtext(V_ALLOWLOWERCASE|V_YELLOWMAP|V_TRANSLUCENT, D_GetFancyBranchName());
-				V_DrawThinString(0, 0, V_ALLOWLOWERCASE|V_ORANGEMAP|V_TRANSLUCENT|V_SNAPTOTOP, va("%s", complast));
+			addtext(V_ALLOWLOWERCASE|V_YELLOWMAP|V_TRANSLUCENT, D_GetFancyBranchName());
+			V_DrawThinString(0, 0, V_ALLOWLOWERCASE|V_ORANGEMAP|V_TRANSLUCENT|V_SNAPTOTOP, va("%s", complast));
 #else // Regular build
-				addtext(V_ALLOWLOWERCASE|V_TRANSLUCENT, va("%s", VERSIONSTRING));
+			addtext(V_ALLOWLOWERCASE|V_TRANSLUCENT, va("%s", VERSIONSTRING));
 #endif
-				if (compuncommitted)
-					addtext(V_REDMAP|V_STRINGDANCE|V_TRANSLUCENT, "! UNCOMMITTED CHANGES !");
-			}
+			if (compuncommitted)
+				addtext(V_REDMAP|V_STRINGDANCE|V_TRANSLUCENT, "! UNCOMMITTED CHANGES !");
+		}
 #undef addtext
-		}
+	}
 
-		// draw menuitem tooltip
-		if (numcurpanels > 0)
+	// draw menuitem tooltip
+	if (numcurpanels > 0)
+	{
+		const menupanelinst_t *pi = &curpanels[panelOn];
+		if (pi->itemon < pi->numitems && pi->items[pi->itemon].tooltip != NULL)
 		{
-			const menupanelinst_t *pi = &curpanels[panelOn];
-			if (pi->itemon < pi->numitems && pi->items[pi->itemon].tooltip != NULL)
-			{
-				M_DrawSplitText(pi->items[pi->itemon].tooltip,
-				                BASEVIDWIDTH / 2,
-				                BASEVIDHEIGHT-50,
-				                V_SNAPTOBOTTOM|V_6WIDTHSPACE|MENUCAPS,
-				                cursortimer <= 9 ? 9 - cursortimer : 0);
-			}
+			M_DrawSplitText(pi->items[pi->itemon].tooltip,
+			                BASEVIDWIDTH / 2,
+			                BASEVIDHEIGHT-50,
+			                V_SNAPTOBOTTOM|V_6WIDTHSPACE|MENUCAPS,
+			                cursortimer <= 9 ? 9 - cursortimer : 0);
 		}
+	}
+
+	if (messagebox.active)
+	{
+		V_DrawFadeScreen(0xFF00, 16);
+		M_DrawMessageMenu();
 	}
 
 	boolean mainpause_open = menustack[0]
@@ -2768,30 +2770,30 @@ void M_Init(void)
 	CV_RegisterVar(&cv_dummycolor);
 	CV_RegisterVar(&cv_dummyserverpage);
 
-	quitmsg[QUITMSG] = M_GetText("Eggman's tied explosives\nto your girlfriend, and\nwill activate them if\nyou press the 'Y' key!\nPress 'N' to save her!\n\n(Press 'Y' to quit)");
-	quitmsg[QUITMSG1] = M_GetText("What would Tails say if\nhe saw you quitting the game?\n\n(Press 'Y' to quit)");
-	quitmsg[QUITMSG2] = M_GetText("Hey!\nWhere do ya think you're goin'?\n\n(Press 'Y' to quit)");
-	quitmsg[QUITMSG3] = M_GetText("Forget your studies!\nPlay some more!\n\n(Press 'Y' to quit)");
-	quitmsg[QUITMSG4] = M_GetText("You're trying to say you\nlike Sonic R better than\nthis, aren't you?\n\n(Press 'Y' to quit)");
-	quitmsg[QUITMSG5] = M_GetText("Don't leave yet -- there's a\nsuper emerald around that corner!\n\n(Press 'Y' to quit)");
-	quitmsg[QUITMSG6] = M_GetText("You'd rather work than play?\n\n(Press 'Y' to quit)");
-	quitmsg[QUITMSG7] = M_GetText("Go ahead and leave. See if I care...\n*sniffle*\n\n(Press 'Y' to quit)");
+	quitmsg[QUITMSG] = M_GetText("Eggman's tied explosives\nto your girlfriend, and\nwill activate them if\nyou press the 'Y' key!\nPress 'N' to save her!\n");
+	quitmsg[QUITMSG1] = M_GetText("What would Tails say if\nhe saw you quitting the game?\n");
+	quitmsg[QUITMSG2] = M_GetText("Hey!\nWhere do ya think you're goin'?\n");
+	quitmsg[QUITMSG3] = M_GetText("Forget your studies!\nPlay some more!\n");
+	quitmsg[QUITMSG4] = M_GetText("You're trying to say you\nlike Sonic R better than\nthis, aren't you?\n");
+	quitmsg[QUITMSG5] = M_GetText("Don't leave yet -- there's a\nsuper emerald around that corner!\n");
+	quitmsg[QUITMSG6] = M_GetText("You'd rather work than play?\n");
+	quitmsg[QUITMSG7] = M_GetText("Go ahead and leave. See if I care...\n*sniffle*\n");
 
-	quitmsg[QUIT2MSG] = M_GetText("If you leave now,\nEggman will take over the world!\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT2MSG1] = M_GetText("On your mark,\nget set,\nhit the 'N' key!\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT2MSG2] = M_GetText("Aw c'mon, just\na few more laps!\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT2MSG3] = M_GetText("Did you get all those Chaos Emeralds?\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT2MSG4] = M_GetText("If you leave, I'll use\nmy Jawz on you!\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT2MSG5] = M_GetText("Don't go!\nYou might find the hidden\nlevels!\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT2MSG6] = M_GetText("Hit the 'N' key, Sonic!\nThe 'N' key!\n\n(Press 'Y' to quit)");
+	quitmsg[QUIT2MSG] = M_GetText("If you leave now,\nEggman will take over the world!\n");
+	quitmsg[QUIT2MSG1] = M_GetText("On your mark,\nget set,\nhit the 'N' key!\n");
+	quitmsg[QUIT2MSG2] = M_GetText("Aw c'mon, just\na few more laps!\n");
+	quitmsg[QUIT2MSG3] = M_GetText("Did you get all those Chaos Emeralds?\n");
+	quitmsg[QUIT2MSG4] = M_GetText("If you leave, I'll use\nmy Jawz on you!\n");
+	quitmsg[QUIT2MSG5] = M_GetText("Don't go!\nYou might find the hidden\nlevels!\n");
+	quitmsg[QUIT2MSG6] = M_GetText("Hit the 'N' key, Sonic!\nThe 'N' key!\n");
 
-	quitmsg[QUIT3MSG] = M_GetText("Are you really going to give up?\nWe certainly would never give you up.\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT3MSG1] = M_GetText("Come on, just ONE more netgame!\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT3MSG2] = M_GetText("Press 'N' to unlock\nthe Golden Kart!\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT3MSG3] = M_GetText("Couldn't handle\nthe banana meta?\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT3MSG4] = M_GetText("Every time you press 'Y', an\nSRB2Kart Developer cries...\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT3MSG5] = M_GetText("You'll be back to play soon, though...\n...right?\n\n(Press 'Y' to quit)");
-	quitmsg[QUIT3MSG6] = M_GetText("Aww, is Eggman's Nightclub too\ndifficult for you?\n\n(Press 'Y' to quit)");
+	quitmsg[QUIT3MSG] = M_GetText("Are you really going to give up?\nWe certainly would never give you up.\n");
+	quitmsg[QUIT3MSG1] = M_GetText("Come on, just ONE more netgame!\n");
+	quitmsg[QUIT3MSG2] = M_GetText("Press 'N' to unlock\nthe Golden Kart!\n");
+	quitmsg[QUIT3MSG3] = M_GetText("Couldn't handle\nthe banana meta?\n");
+	quitmsg[QUIT3MSG4] = M_GetText("Every time you press 'Y', an\nSRB2Kart Developer cries...\n");
+	quitmsg[QUIT3MSG5] = M_GetText("You'll be back to play soon, though...\n...right?\n");
+	quitmsg[QUIT3MSG6] = M_GetText("Aww, is Eggman's Nightclub too\ndifficult for you?\n");
 
 	CV_RegisterVar(&cv_serversort);
 	CV_RegisterVar(&cv_menucaps);
@@ -4386,13 +4388,35 @@ boolean M_CanShowLevelInList(mapnum_t mapnum)
 // ==================================================
 // MESSAGE BOX (aka: a hacked, cobbled together menu)
 // ==================================================
-void M_StartMessage2(const char *string, void (*routine)(void),
-	menumessagetype_t itemtype)
+void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(void),
+	menumessagetype_t itemtype, const char *confirmstr, const char *declinestr)
 {
 	size_t max = 0, start = 0, i, strlines;
+	static char *headermessage = NULL;
 	static char *message = NULL;
+	static char *confirmmessage = NULL;
+	static char *declinemessage = NULL;
+	Z_Free(headermessage);
 	Z_Free(message);
-	message = Z_StrDup(string);
+	Z_Free(confirmmessage);
+	Z_Free(declinemessage);
+	if (headerstr)
+		headermessage = Z_StrDup(headerstr);
+	else
+		headermessage = NULL;
+
+	message = Z_StrDup(str);
+
+	if (confirmstr)
+		confirmmessage = Z_StrDup(confirmstr);
+	else
+		confirmmessage = NULL;
+
+	if (declinestr)
+		declinemessage = Z_StrDup(declinestr);
+	else
+		declinemessage = NULL;
+
 	DEBFILE(message);
 
 	// Rudementary word wrapping.
@@ -4430,7 +4454,10 @@ void M_StartMessage2(const char *string, void (*routine)(void),
 
 	M_StartControlPanel(); // can't put menuactive to true
 
+	messagebox.headertext = headermessage;
 	messagebox.text = message;
+	messagebox.confirmtext = confirmmessage;
+	messagebox.declinetext = declinemessage;
 	messagebox.messagetype = itemtype;
 	if (itemtype == MM_EVENTHANDLER)
 		messagebox.handler = (void (*)(event_t *))routine;
@@ -4458,10 +4485,17 @@ void M_StartMessage2(const char *string, void (*routine)(void),
 			start += i;
 	}
 
+	if (headermessage)
+		strlines++;
+
+	if (confirmmessage || declinemessage)
+		strlines++;
+
 	messagebox.x = (BASEVIDWIDTH  - 8*max-16)/2;
 	messagebox.y = (BASEVIDHEIGHT - M_StringHeight(message))/2;
 
 	messagebox.numlines = strlines;
+
 	messagebox.maxlength = max;
 
 	messagebox.active = true;
@@ -4475,8 +4509,60 @@ static void M_DrawMessageMenu(void)
 	size_t i, start = 0;
 	char string[MAXMSGLINELEN];
 	const char *msg = messagebox.text;
+	INT16 numboxlines = messagebox.numlines;
+	INT32 boxwidth = messagebox.maxlength*8+6;
+	INT32 boxheight = messagebox.numlines*8+8;
+	const INT32 thinflags = V_6WIDTHSPACE|V_ALLOWLOWERCASE;
 
-	M_DrawTextBox(messagebox.x, y - 8, messagebox.maxlength, messagebox.numlines);
+	boolean headervalid = !!(messagebox.headertext);
+	boolean confirmvalid = !!(messagebox.confirmtext);
+	boolean declinevalid = !!(messagebox.declinetext);
+
+	if (confirmvalid || declinevalid)
+		boxheight += 4;
+
+	V_DrawFill(messagebox.x+5, (y+5) - 8, boxwidth, boxheight, 159);
+
+	if (headervalid)
+	{
+		numboxlines--;
+		V_DrawCenteredThinString(messagebox.x + boxwidth/2, y, thinflags, messagebox.headertext);
+		y += 11;
+	}
+
+	if ((confirmvalid && !declinevalid) || (declinevalid && !confirmvalid))
+	{
+		const char *textstring = NULL;
+
+		numboxlines--;
+
+		INT32 textx = messagebox.x + boxwidth/2;
+		INT32 texty = y+(numboxlines*8) + 2;
+
+		if (confirmvalid && !declinevalid)
+			textstring = messagebox.confirmtext;
+		else
+			textstring = messagebox.declinetext;
+
+		V_DrawCenteredThinString(textx, texty, thinflags, textstring);
+	}
+	else if (confirmvalid && declinevalid)
+	{
+		numboxlines--;
+
+		const INT32 spacing = 10;
+
+		INT32 offset = spacing + V_ThinStringWidth(messagebox.confirmtext, thinflags) + V_ThinStringWidth(messagebox.declinetext, thinflags);
+		offset = offset / 4;
+
+		INT32 textx = (messagebox.x + boxwidth/2) - offset;
+		INT32 text2x = (messagebox.x + boxwidth/2) + offset;
+		INT32 texty = y+(numboxlines*8) + 2;
+
+		V_DrawCenteredThinString(textx, texty, thinflags, messagebox.confirmtext);
+
+		V_DrawCenteredThinString(text2x, texty, thinflags, messagebox.declinetext);
+	}
 
 	while (*(msg+start))
 	{
@@ -4518,7 +4604,7 @@ static void M_DrawMessageMenu(void)
 			}
 		}
 
-		V_DrawString((BASEVIDWIDTH - V_StringWidth(string, 0))/2,y,V_ALLOWLOWERCASE,string);
+		V_DrawString((BASEVIDWIDTH - V_StringWidth(string, V_ALLOWLOWERCASE|V_6WIDTHSPACE))/2,y,V_ALLOWLOWERCASE|V_6WIDTHSPACE,string);
 		y += 8; //SHORT(hu_font[0]->height);
 	}
 }
@@ -4797,14 +4883,14 @@ static boolean M_AddonsRefresh(void)
 		{
 			S_StartSound(NULL, FILENOTADDSFX);
 			if (refreshdirmenu & REFRESHDIR_MAX)
-				message = va("%c%s\x80\nMaximum number of addons reached.\nA file could not be loaded.\nIf you wish to play with this addon, restart the game to clear existing ones.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
+				message = va("%c%s\x80\nMaximum number of addons reached.\nA file could not be loaded.\nIf you wish to play with this addon, restart the game to clear existing ones.", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
 			else
-				message = va("%c%s\x80\nA file was not loaded.\nCheck the console log for more information.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
+				message = va("%c%s\x80\nA file was not loaded.\nCheck the console log for more information.", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname);
 		}
 		else if (refreshdirmenu & (REFRESHDIR_WARNING|REFRESHDIR_ERROR))
 		{
 			S_StartSound(NULL, FILEERRORSFX);
-			message = va("%c%s\x80\nA file was loaded with %s.\nCheck the console log for more information.\n\n(Press a key)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname, ((refreshdirmenu & REFRESHDIR_ERROR) ? "errors" : "warnings"));
+			message = va("%c%s\x80\nA file was loaded with %s.\nCheck the console log for more information.", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), refreshdirname, ((refreshdirmenu & REFRESHDIR_ERROR) ? "errors" : "warnings"));
 		}
 		else if (majormods && !prevmajormods)
 		{
@@ -4815,7 +4901,7 @@ static boolean M_AddonsRefresh(void)
 
 		if (message)
 		{
-			M_StartMessage(message, M_AddonsClearName, MM_EVENTHANDLER);
+			M_StartMessage2("Warning", message, EVENTHANDLE(M_AddonsClearName), MM_EVENTHANDLER, "Press any key", NULL);
 			return true;
 		}
 
@@ -9239,11 +9325,11 @@ INT32 MR_ChangeControl(INT32 arg)
 	static char tmp[68];
 
 	controltochange = arg;
-	sprintf(tmp, M_GetText("Hit the new key for\n%s\nESC for Cancel"),
+	sprintf(tmp, M_GetText("Hit the new key for\n%s\n"),
 		pi->items[pi->itemon].text);
 	strlcpy(controltochangetext, pi->items[pi->itemon].text, 33);
 
-	M_StartMessage(tmp, M_ChangecontrolResponse, MM_EVENTHANDLER);
+	M_StartMessage2("Rebinding Control", tmp, EVENTHANDLE(M_ChangecontrolResponse), MM_EVENTHANDLER, NULL, "ESC to Cancel");
 	return true;
 }
 
@@ -10100,7 +10186,7 @@ INT32 MR_QuitSRB2(INT32 choice)
 	// We pick index 0 which is language sensitive, or one at random,
 	// between 1 and maximum number.
 	(void)choice;
-	M_StartMessage(quitmsg[M_RandomKey(NUM_QUITMESSAGES)], M_QuitResponse, MM_YESNO);
+	M_StartMessage2("Leave Game?", quitmsg[M_RandomKey(NUM_QUITMESSAGES)], EVENTHANDLE(M_QuitResponse), MM_YESNO, "Press Y to Quit", "Press N to Return");
 	return true;
 }
 
