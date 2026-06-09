@@ -311,6 +311,7 @@ boolean K_IsPlayerRingBurnt(const player_t *player, UINT16 ringpower);
 INT32 K_GetKartRingPower(const player_t *player, boolean boosted);
 size_t K_NextRespawnWaypointIndex(waypoint_t *waypoint);
 boolean K_CheckPlayersRespawnColliding(INT32 playernum, fixed_t x, fixed_t y);
+boolean K_SafeRespawnWaypoint(waypoint_t *waypoint);
 void K_SetRespawnAtNextWaypoint(player_t * player);
 INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue);
 INT32 K_GetKartDriftSparkValue(const player_t *player);

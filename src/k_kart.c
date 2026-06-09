@@ -8995,7 +8995,7 @@ static void K_FudgeRespawn(player_t *player, const waypoint_t *const waypoint)
 	player->starposty += FixedMul(16, FINESINE(from));
 }
 
-static boolean K_SafeRespawnWaypoint(waypoint_t *waypoint)
+boolean K_SafeRespawnWaypoint(waypoint_t *waypoint)
 {
 	if (!waypoint || !waypoint->mobj)
 		return false;
