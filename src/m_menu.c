@@ -4402,6 +4402,38 @@ boolean M_CanShowLevelInList(mapnum_t mapnum)
 	return M_CanShowLevelOnPlatter(mapnum) && M_LevelAvailableOnPlatter(mapnum);
 }
 
+// Can't use va twice in the same line.
+char ConfirmString[25];
+char DeclineString[25];
+
+char *M_MessageConfirmText(boolean gamequit)
+{
+	const char *item1 = gamecontrol[0][gc_accelerate][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_accelerate][0]) : "ACCEL";
+
+	memset(&ConfirmString, 0, sizeof(ConfirmString));
+
+	if (gamequit)
+		snprintf(ConfirmString, 25, "%s to quit", item1);
+	else
+		snprintf(ConfirmString, 25, "%s to confirm", item1);
+
+	return ConfirmString;
+}
+
+char *M_MessageCancelText(boolean gamequit)
+{
+	const char *item1 = gamecontrol[0][gc_brake][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_brake][0]) : "BRAKE";
+
+	memset(&DeclineString, 0, sizeof(DeclineString));
+
+	if (gamequit)
+		snprintf(DeclineString, 25, "%s to return", item1);
+	else
+		snprintf(DeclineString, 25, "%s to cancel", item1);
+
+	return DeclineString;
+}
+
 // ==================================================
 // MESSAGE BOX (aka: a hacked, cobbled together menu)
 // ==================================================
@@ -4983,7 +5015,7 @@ void MD_DrawAddons(menupanelinst_t *pi)
 
 static void M_AddonExec(INT32 ch)
 {
-	if (ch != 'y' && ch != KEY_ENTER)
+	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
 		return;
 
 	S_StartSound(NULL, sfx_zoom);
@@ -5134,7 +5166,7 @@ INT32 MR_HandleAddons(INT32 choice)
 				Reinitialize();
 				break;
 			case EXT_TXT:
-				M_StartMessage2("Addons", va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways?\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), filename), ROUTINECAST(M_AddonExec) ,MM_YESNO, "Y to Confirm", "N to Cancel");
+				M_StartMessage2("Addons", va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways?\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), filename), ROUTINECAST(M_AddonExec) ,MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
 				break;
 			case EXT_CFG:
 				M_AddonExec(KEY_ENTER);
@@ -6130,7 +6162,7 @@ void MP_GameOptions(menupanelinst_t *pi)
 
 static void M_RetryResponse(INT32 ch)
 {
-	if (ch != 'y' && ch != KEY_ENTER)
+	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
 		return;
 
 	if (netgame) // Should never happen!
@@ -6143,7 +6175,7 @@ static void M_RetryResponse(INT32 ch)
 INT32 MR_Retry(INT32 choice)
 {
 	(void)choice;
-	M_StartMessage2("Retry?", va("Start this %s over?\n", (gametypes[gametype]->rules & GTR_CIRCUIT) ? "race" : "battle"), ROUTINECAST(M_RetryResponse),MM_YESNO, "Y to Continue", "N to Cancel");
+	M_StartMessage2("Retry?", va("Start this %s over?\n", (gametypes[gametype]->rules & GTR_CIRCUIT) ? "race" : "battle"), ROUTINECAST(M_RetryResponse),MM_YESNO, "Y to Continue", M_MessageCancelText(false));
 	return true;
 }
 
@@ -7295,6 +7327,9 @@ INT32 MR_ReplayTimeAttack(INT32 arg)
 
 static void M_EraseGuest(INT32 choice)
 {
+	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
+		return;
+
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
 	CLEANUP(pfree) char *rguest = G_GetRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, REPLAY_GUEST);
 	(void)choice;
@@ -7357,12 +7392,12 @@ INT32 MR_SetGuestReplay(INT32 arg)
 		break;
 	case 3: // guest
 	default:
-		M_StartMessage2("Guest", M_GetText("Are you sure you want to\ndelete the guest replay data?\n"), ROUTINECAST(M_EraseGuest), MM_YESNO, "Y to confirm", "N to canel");
+		M_StartMessage2("Guest", M_GetText("Are you sure you want to\ndelete the guest replay data?\n"), ROUTINECAST(M_EraseGuest), MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
 		return true;
 	}
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
 	if (G_CheckRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, REPLAY_GUEST))
-		M_StartMessage2("Guest", M_GetText("Are you sure you want to\noverwrite the guest replay data?\n"), ROUTINECAST(which), MM_YESNO, "Y to confirm", "N to canel");
+		M_StartMessage2("Guest", M_GetText("Are you sure you want to\noverwrite the guest replay data?\n"), ROUTINECAST(which), MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
 	else
 		which(0);
 	return true;
@@ -7400,7 +7435,7 @@ INT32 MR_ModeAttackEndGame(INT32 choice)
 
 static void M_ExitGameResponse(INT32 ch)
 {
-	if (ch != 'y' && ch != KEY_ENTER)
+	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
 		return;
 
 	//Command_ExitGame_f();
@@ -7417,7 +7452,7 @@ INT32 MR_EndGame(INT32 choice)
 	if (!Playing())
 		return false;
 
-	M_StartMessage2("End Game", M_GetText("Are you sure you want to end the game?\n"), ROUTINECAST(M_ExitGameResponse), MM_YESNO, "Y to confirm", "N to canel");
+	M_StartMessage2("End Game", M_GetText("Are you sure you want to end the game?\n"), ROUTINECAST(M_ExitGameResponse), MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
 	return true;
 }
 
@@ -9041,7 +9076,7 @@ static void M_EraseDataResponse(INT32 ch)
 {
 	UINT8 i;
 
-	if (ch != 'y' && ch != KEY_ENTER)
+	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
 		return;
 
 	S_StartSound(NULL, sfx_itrole); // bweh heh heh
@@ -9075,7 +9110,7 @@ INT32 MR_EraseData(INT32 arg)
 	else
 		eschoice = M_GetText("ALL game data");
 
-	M_StartMessage2("Delete Data?", va(esstr, eschoice), ROUTINECAST(M_EraseDataResponse), MM_YESNO, "Y to confirm", "N to Cancel");
+	M_StartMessage2("Delete Data?", va(esstr, eschoice), ROUTINECAST(M_EraseDataResponse), MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
 	return true;
 }
 
@@ -9356,7 +9391,7 @@ static void M_ResetControlsResponse(INT32 ch)
 	const UINT8 p = setupcontrolplayer-1;
 	INT32 i;
 
-	if (ch != 'y' && ch != KEY_ENTER)
+	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
 		return;
 
 	// clear all controls
@@ -9377,7 +9412,7 @@ static void M_ResetControlsResponse(INT32 ch)
 INT32 MR_ResetControls(INT32 choice)
 {
 	(void)choice;
-	M_StartMessage2("Cnntrols", va(M_GetText("Reset Player %d's controls to defaults?\n"), setupcontrolplayer), ROUTINECAST(M_ResetControlsResponse), MM_YESNO, "Y to confirm", "N to cancel");
+	M_StartMessage2("Cnntrols", va(M_GetText("Reset Player %d's controls to defaults?\n"), setupcontrolplayer), ROUTINECAST(M_ResetControlsResponse), MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
 	return true;
 }
 
@@ -10177,7 +10212,7 @@ void M_QuitResponse(INT32 ch)
 	tic_t ptime;
 	INT32 mrand;
 
-	if (ch != 'y' && ch != KEY_ENTER)
+	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
 		return;
 	if (!(netgame || cht_debug))
 	{
@@ -10204,7 +10239,7 @@ INT32 MR_QuitSRB2(INT32 choice)
 	// We pick index 0 which is language sensitive, or one at random,
 	// between 1 and maximum number.
 	(void)choice;
-	M_StartMessage2("Leave Game?", quitmsg[M_RandomKey(NUM_QUITMESSAGES)], ROUTINECAST(M_QuitResponse), MM_YESNO, "Press Y to Quit", "Press N to Return");
+	M_StartMessage2("Leave Game?", quitmsg[M_RandomKey(NUM_QUITMESSAGES)], ROUTINECAST(M_QuitResponse), MM_YESNO, M_MessageConfirmText(true), M_MessageCancelText(true));
 	return true;
 }
 

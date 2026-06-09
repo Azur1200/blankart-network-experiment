@@ -146,6 +146,9 @@ typedef enum
 
 #define ROUTINECAST(func) (void (*)(void))func
 
+char *M_MessageConfirmText(boolean gamequit);
+char *M_MessageCancelText(boolean gamequit);
+
 //#define M_StartMessage(string, routine, itemtype) M_StartMessage2(NULL, string, ROUTINECAST(routine), itemtype, NULL, NULL)
 void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(void),
 					 menumessagetype_t itemtype, const char *confirmstr, const char *declinestr);
