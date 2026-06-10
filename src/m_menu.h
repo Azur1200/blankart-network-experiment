@@ -52,6 +52,7 @@ typedef struct menutyping_s
 	SINT8 keyboardy;
 	boolean keyboardcapslock;
 	boolean keyboardshift;
+	boolean doroutine;
 } menutyping_t;
 // While typing, we'll have a fade strongly darken the screen to overlay the typing menu instead
 

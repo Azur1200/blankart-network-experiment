@@ -2589,7 +2589,8 @@ void M_MenuTypingInput(INT32 key)
 				menutyping.menutypingclose = true;	// close menu.
 				CV_Set(item->cvar, menuinput.buffer);
 				M_SetMenuDelay(pid);
-				S_StartSound(NULL, sfx_s3k5b);
+				S_StartSound(NULL, M_MenuTypingSounds(key));
+				menutyping.doroutine = true;
 				return;
 			}
 
@@ -2727,6 +2728,7 @@ void M_MenuTypingInput(INT32 key)
 					menutyping.menutypingclose = true;	// close menu.
 					CV_Set(item->cvar, menuinput.buffer);
 					S_StartSound(NULL, M_MenuTypingSounds(c));
+					menutyping.doroutine = true;
 					return;
 				}
 				else
@@ -2806,6 +2808,11 @@ static void M_HandleMenuInput(void)
 	menupanelinst_t *curpi = panelOn < numcurpanels ? &curpanels[panelOn] : NULL;
 	menupaneldef_t *curpd = curpi != NULL ? M_GetDefFromInst(curpi) : NULL;
 	menuitem_t *item = curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;
+
+	if (menutyping.doroutine == true && item != NULL)
+		goto doroutine;
+	else
+		menutyping.doroutine = false;
 
 	// Handle menuitems which need a specific key handling
 	if (curpd != NULL && curpd->keyhandler != NULL)
@@ -2991,7 +2998,8 @@ static void M_HandleMenuInput(void)
 	}
 	else
 	{
-		if (M_MenuButtonPressed(0, MBT_CONFIRM))
+doroutine:
+		if (menutyping.doroutine == true || M_MenuButtonPressed(0, MBT_CONFIRM))
 		{
 			noFurtherInput = -1;
 
@@ -3031,6 +3039,8 @@ static void M_HandleMenuInput(void)
 				M_ChangeCvar(item, 1); // right arrow
 			}
 
+			if (menutyping.doroutine == true)
+				menutyping.doroutine = false;
 			M_SetMenuDelay(pid);
 			return;
 		}
