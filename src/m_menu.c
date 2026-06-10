@@ -1702,6 +1702,11 @@ static void M_DrawMenuTyping(void)
 	M_DrawTextBox((BASEVIDWIDTH-offset)/2 - 8, y-48 + 12 - 8, M_StringCvarLength(item->cvar), 1, tflag);
 	M_DrawTextInput((BASEVIDWIDTH-offset)/2, y-48 + 12, &menuinput, tflag|V_ALLOWLOWERCASE);
 
+	if (item->text)
+	{
+		V_DrawThinString((BASEVIDWIDTH-offset)/2 - 8, y-48 + 12 - 8 - 10, tflag|highlightflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE, item->text);
+	}
+
 	// Some contextual stuff
 	if (menutyping.keyboardtyping)
 		V_DrawThinString(10, 175, V_ALLOWLOWERCASE|V_6WIDTHSPACE|tflag|V_GRAYMAP, "Type using your keyboard. Press Enter to confirm & exit.\nUse your controller or any directional input to use the Virtual Keyboard.\n");
@@ -2742,6 +2747,13 @@ static void M_MenuTypingInput(INT32 key)
 				M_SetMenuDelay(pid);
 				S_StartSound(NULL, M_MenuTypingSounds(c));
 			}
+		}
+		else if (M_MenuButtonPressed(pid, MBT_HOME))
+		{
+			menutyping.menutypingclose = true;	// close menu.
+			CV_Set(item->cvar, menuinput.buffer);
+			S_StartSound(NULL, M_MenuTypingSounds(KEY_ENTER));
+			return;
 		}
 	}
 }
