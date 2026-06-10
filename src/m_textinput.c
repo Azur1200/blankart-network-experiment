@@ -63,7 +63,7 @@ static void M_TextInputAddString(textinput_t *input, const char *c)
 	input->buffer[input->length] = 0;
 }
 
-static void M_TextInputAddChar(textinput_t *input, char c)
+void M_TextInputAddChar(textinput_t *input, char c)
 {
 	if (input->length >= input->buffer_size-1)
 		return;
@@ -75,7 +75,7 @@ static void M_TextInputAddChar(textinput_t *input, char c)
 	input->select = input->cursor;
 }
 
-static void M_TextInputDelChar(textinput_t *input)
+void M_TextInputDelChar(textinput_t *input)
 {
 	if (!input->cursor)
 		return;

@@ -172,6 +172,35 @@ static tic_t menutimer = 0, cursortimer = 0; // tics since menu change/menu move
 INT32 menuKey = -1; // keyboard key pressed for menu
 menucmd_t menucmd[MAXSPLITSCREENPLAYERS] = {0};
 
+// Typing "sub"-menu
+boolean menutyping = false;
+boolean menutypingclose = false;
+SINT8 menutypingfade = 0;
+boolean keyboardtyping = false;
+
+SINT8 keyboardx = 0;
+SINT8 keyboardy = 0;
+boolean keyboardcapslock = false;
+boolean keyboardshift = false;
+
+INT16 virtualKeyboard[5][13] = {
+
+	{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 0},
+	{'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', 0},
+	{'a', 's', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'l', ';', '\'', '\\'},
+	{'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 0, 0, 0},
+	{KEY_SPACE, KEY_RSHIFT, KEY_BACKSPACE, KEY_CAPSLOCK, KEY_ENTER, 0, 0, 0, 0, 0, 0, 0, 0}
+};
+
+INT16 shift_virtualKeyboard[5][13] = {
+
+	{'!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', 0},
+	{'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', 0},
+	{'A', 'S', 'D', 'F', 'G', 'H', 'I', 'J', 'K', 'L', ':', '\"', '|'},
+	{'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0, 0, 0},
+	{KEY_SPACE, KEY_RSHIFT, KEY_BACKSPACE, KEY_CAPSLOCK, KEY_ENTER, 0, 0, 0, 0, 0, 0, 0, 0}
+};
+
 messagebox_t messagebox = {0};
 messagebox_t messageboxqueue[NUMMENULEVELS] = {0};
 UINT8 messageboxqueuesize = 0;
@@ -1646,6 +1675,78 @@ static int SortPanels(const void *a, const void *b)
 	return c != 0 ? c : p1 - p2;
 }
 
+// Draws the typing submenu
+static void M_DrawMenuTyping(void)
+{
+	INT32 i, j;
+
+	INT32 x = 60;
+	INT32 y = 100 + (9-menutypingfade)*8;
+	INT32 tflag = (9 - menutypingfade)<<V_ALPHASHIFT;
+
+	char buf[8];	// We write there to use drawstring for convenience.
+
+	V_DrawFadeScreen(31, menutypingfade);
+
+	// Draw the string we're editing at the top.
+	V_DrawString(x, y-48 + 12, V_ALLOWLOWERCASE|tflag, menuinput.buffer);
+	if (skullAnimCounter < 4)
+		V_DrawCharacter(x + V_StringWidth(menuinput.buffer, 0), y - 35, '_' | 0x80, false);
+
+	// Some contextual stuff
+	if (keyboardtyping)
+		V_DrawThinString(10, 175, V_ALLOWLOWERCASE|tflag|V_GRAYMAP, "Type using your keyboard. Press Enter to confirm & exit.\nUse your controller or any directional input to use the Virtual Keyboard.\n");
+	else
+		V_DrawThinString(10, 175, V_ALLOWLOWERCASE|tflag|V_GRAYMAP, "Type using the Virtual Keyboard. Use the \'OK\' button to confirm & exit.\nPress any keyboard key not bound to a control to use it.");
+
+
+	// Now the keyboard itself
+	for (i=0; i < 5; i++)
+	{
+		for (j=0; j < 13; j++)
+		{
+			INT32 mflag = 0;
+			INT16 c = virtualKeyboard[i][j];
+			if (keyboardshift ^ keyboardcapslock)
+				c = shift_virtualKeyboard[i][j];
+
+
+			if (c == KEY_BACKSPACE)
+				strcpy(buf, "DEL");
+
+			else if (c == KEY_RSHIFT)
+				strcpy(buf, "SHIFT");
+
+			else if (c == KEY_CAPSLOCK)
+				strcpy(buf, "CAPS");
+
+			else if (c == KEY_ENTER)
+				strcpy(buf, "OK");
+
+			else if (c == KEY_SPACE)
+				strcpy(buf, "SPACE");
+
+			else
+			{
+				buf[0] = c;
+				buf[1] = '\0';
+			}
+
+			// highlight:
+			if (keyboardx == j && keyboardy == i && !keyboardtyping)
+				mflag |= highlightflags;
+			else if (keyboardtyping)
+				mflag |= V_TRANSLUCENT;	// grey it out if we can't use it.
+
+			V_DrawString(x, y, V_ALLOWLOWERCASE|tflag|mflag, buf);
+
+			x += V_StringWidth(buf, 0)+8;
+		}
+		x = 60;
+		y += 12;
+	}
+}
+
 //
 // M_Drawer
 // Called after the view has been rendered,
@@ -1724,6 +1825,9 @@ texty -= 10*vid.dup;\
 			                cursortimer <= 9 ? 9 - cursortimer : 0);
 		}
 	}
+
+	if (menutyping)
+		M_DrawMenuTyping();
 
 	if (messagebox.active)
 	{
@@ -2328,6 +2432,180 @@ static void M_HandleGoBack(INT32 thisMenuKey)
 	}
 }
 
+// Updates the x coordinate of the keybord so prevent it from going in weird places
+static void M_UpdateKeyboardX(void)
+{
+	// 0s are only at the rightmost edges of the keyboard table, so just go backwards until we get something.
+	while (!virtualKeyboard[keyboardy][keyboardx])
+		keyboardx--;
+}
+
+// Hack...
+// This is used to prevent keyboard inputs from being processed when they shouldn't.
+// We need to find why this is needed so that I can remove this disgusting thing
+static INT32 lastkey = 0;
+static tic_t lastkeyheldfor = 0;
+
+static void M_MenuTypingInput(INT32 key)
+{
+
+	const UINT8 pid = 0;
+
+	menupanelinst_t *curpi = panelOn < numcurpanels ? &curpanels[panelOn] : NULL;
+	menupaneldef_t *curpd = curpi != NULL ? M_GetDefFromInst(curpi) : NULL;
+	menuitem_t *item = curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;
+
+	// Fade-in
+
+	if (menutypingclose)	// closing
+	{
+		menutypingfade--;
+		if (!menutypingfade)
+			menutyping = false;
+
+		return;	// prevent inputs while closing the menu.
+	}
+	else					// opening
+	{
+		menutypingfade++;
+		if (menutypingfade > 9)	// Don't fade all the way, but have it VERY strong to be readable
+			menutypingfade = 9;
+		else if (menutypingfade < 9)
+			return;	// Don't allow typing until it's fully opened.
+	}
+
+	// Now handle the inputs.
+	// HACK: TODO: REMOVE THIS
+	// This prevents the same key from being processed multiple times. ev_keydown should account for this but it seems like it doesn't.
+	if (lastkey != key)
+	{
+		lastkey = key;
+		lastkeyheldfor = 0;
+	}
+	else
+	{
+		lastkeyheldfor++;
+		if (lastkeyheldfor > 0 && lastkeyheldfor < TICRATE/2)
+			key = -1;
+	}
+	// END OF HACK.
+
+	// Determine when to check for keyboard inputs or controller inputs using menuKey, which is the key passed here as argument.
+	if (!keyboardtyping)	// controller inputs
+	{
+		// we pressed a keyboard input that's not any of our buttons
+		if (key != -1 && menucmd[pid].dpad_lr == 0 && menucmd[pid].dpad_ud == 0
+			&& !M_MenuButtonPressed(pid, MBT_CONFIRM)
+			&& !M_MenuButtonPressed(pid, MBT_CANCEL)
+			&& !M_MenuButtonPressed(pid, MBT_HOME)
+			&& !M_MenuButtonPressed(pid, MBT_INFO1)
+			&& !M_MenuButtonPressed(pid, MBT_INFO2))
+		{
+			keyboardtyping = true;
+		}
+	}
+	else	// Keyboard inputs.
+	{
+		// On the flipside, if we're pressing any keyboard input, switch to controller inputs.
+		if (key == -1 && (
+			M_MenuButtonPressed(pid, MBT_CONFIRM)
+			|| M_MenuButtonPressed(pid, MBT_CANCEL)
+			|| M_MenuButtonPressed(pid, MBT_HOME)
+			|| M_MenuButtonPressed(pid, MBT_INFO1)
+			|| M_MenuButtonPressed(pid, MBT_INFO2)
+			|| menucmd[pid].dpad_lr != 0
+			|| menucmd[pid].dpad_ud != 0
+		))
+		{
+			keyboardtyping = false;
+			return;
+		}
+
+		// OTHERWISE, process keyboard inputs for typing!
+		if (key == KEY_ENTER)
+		{
+			menutypingclose = true;	// close menu.
+			CV_Set(item->cvar, menuinput.buffer);
+			return;
+		}
+		else // process everything else as input for typing
+		{
+			M_TextInputHandle(&menuinput, key);
+		}
+	}
+
+	if (menucmd[pid].delay == 0 && !keyboardtyping)	// We must check for this here because we bypass the normal delay check to allow for normal keyboard inputs
+	{
+		if (menucmd[pid].dpad_ud > 0)	// down
+		{
+			keyboardy++;
+			if (keyboardy > 4)
+				keyboardy = 0;
+
+			M_UpdateKeyboardX();
+			M_SetMenuDelay(pid);
+			S_StartSound(NULL, sfx_menu1);
+		}
+		else if (menucmd[pid].dpad_ud < 0) // up
+		{
+			keyboardy--;
+			if (keyboardy < 0)
+				keyboardy = 4;
+
+			M_UpdateKeyboardX();
+			M_SetMenuDelay(pid);
+			S_StartSound(NULL, sfx_menu1);
+		}
+		else if (menucmd[pid].dpad_lr > 0)	// right
+		{
+			keyboardx++;
+			if (!virtualKeyboard[keyboardy][keyboardx])
+				keyboardx = 0;
+
+			M_SetMenuDelay(pid);
+			S_StartSound(NULL, sfx_menu1);
+		}
+		else if (menucmd[pid].dpad_lr < 0)	// left
+		{
+			keyboardx--;
+			if (keyboardx < 0)
+			{
+				keyboardx = 13;
+				M_UpdateKeyboardX();
+			}
+			M_SetMenuDelay(pid);
+			S_StartSound(NULL, sfx_menu1);
+		}
+		else if (M_MenuButtonPressed(pid, MBT_CONFIRM))
+		{
+			// Add the character. First though, check what we're pressing....
+			INT16 c = virtualKeyboard[keyboardy][keyboardx];
+			if (keyboardshift ^ keyboardcapslock)
+				c = shift_virtualKeyboard[keyboardy][keyboardx];
+
+			if (c == KEY_RSHIFT)
+				keyboardshift = !keyboardshift;
+			else if (c == KEY_CAPSLOCK)
+				keyboardcapslock = !keyboardcapslock;
+			else if (c == KEY_ENTER)
+			{
+				menutypingclose = true;	// close menu.
+				CV_Set(item->cvar, menuinput.buffer);
+				return;
+			}
+			else
+			{
+				//M_ChangeStringCvar((INT32)c);	// Write!
+				M_TextInputHandle(&menuinput, (INT32)c);
+				keyboardshift = false;			// undo shift if it had been pressed
+			}
+
+			M_SetMenuDelay(pid);
+			S_StartSound(NULL, sfx_menu1);
+		}
+	}
+}
+
 static void M_HandleMenuInput(void)
 {
 	UINT8 pid = 0; // todo: Add ability for any splitscreen player to bring up the menu.
@@ -2365,6 +2643,14 @@ static void M_HandleMenuInput(void)
 	{
 		return;
 	}
+
+	// Typing for text input
+	if (menutyping)
+	{
+		M_MenuTypingInput(menuKey);
+		return;
+	}
+
 
 	if (menucmd[pid].delay > 0)
 	{
@@ -2406,10 +2692,12 @@ static void M_HandleMenuInput(void)
 		if (item->cvar->flags & CV_CALL && M_WipeBuffer(thisMenuKey, MR_Dummy))
 			return;
 
-		if (M_TextInputHandle(&menuinput, thisMenuKey))
+		// If we're hovering over a IT_CV_STRING option, pressing A/X opens the typing submenu
+		if (M_MenuButtonPressed(pid, MBT_CONFIRM))
 		{
-			S_StartSound(NULL, sfx_menu1); // Tails
-			CV_Set(item->cvar, menuinput.buffer);
+			keyboardtyping = thisMenuKey != 0 ? true : false;	// If we entered this menu by pressing a menu Key, default to keyboard typing, otherwise use controller.
+			menutyping = true;
+			menutypingclose = false;
 			return;
 		}
 	}
