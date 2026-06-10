@@ -935,14 +935,14 @@ void ST_DrawDemoTitleEntry(void)
 {
 	#define x (BASEVIDWIDTH/2 - 139)
 	#define y (BASEVIDHEIGHT/2)
-	M_DrawTextBox(x, y + 4, MAXSTRINGLENGTH, 1);
+	M_DrawTextBox(x, y + 4, MAXSTRINGLENGTH, 1, 0);
 
 	M_DrawTextInputScroll(x + 8, y + 12, &demo.titlenameinput, V_ALLOWLOWERCASE, (MAXSTRINGLENGTH-1)*8);
 
-	M_DrawTextBox(x + 30, y - 24, 26, 1);
+	M_DrawTextBox(x + 30, y - 24, 26, 1, 0);
 	V_DrawString(x + 38, y - 16, V_ALLOWLOWERCASE, "Enter the name of the replay.");
 
-	M_DrawTextBox(x + 50, y + 20, 20, 1);
+	M_DrawTextBox(x + 50, y + 20, 20, 1, 0);
 	V_DrawThinString(x + 58, y + 28, V_ALLOWLOWERCASE, "Escape - Cancel");
 	V_DrawRightAlignedThinString(x + 220, y + 28, V_ALLOWLOWERCASE, "Enter - Confirm");
 	#undef x

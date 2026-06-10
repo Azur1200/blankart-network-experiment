@@ -2035,7 +2035,7 @@ static void loading_status(void)
 	y = BASEVIDHEIGHT/2;
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, levelfadecol); // Black background to match fade in effect
 	//V_DrawPatchFill(srb2back); // SRB2 background, ehhh too bright.
-	M_DrawTextBox(x-58, y-8, 13, 1);
+	M_DrawTextBox(x-58, y-8, 13, 1, 0);
 	V_DrawString(x-50, y, V_YELLOWMAP, "Loading...");
 	V_DrawRightAlignedString(x+50, y, V_YELLOWMAP, s);
 

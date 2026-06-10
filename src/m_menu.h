@@ -145,7 +145,7 @@ void M_StartControlPanel(void);
 void M_SortServerList(void);
 
 // Draws a box with a texture inside as background for messages
-void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines);
+void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines, INT32 flags);
 
 // Used in d_netcmd to restart time attack
 INT32 MR_ModeAttackRetry(INT32 choice);

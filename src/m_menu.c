@@ -1700,10 +1700,15 @@ static void M_DrawMenuTyping(void)
 
 	char buf[8];	// We write there to use drawstring for convenience.
 
+	menupanelinst_t *curpi = panelOn < numcurpanels ? &curpanels[panelOn] : NULL;
+	menuitem_t *item = curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;
+
 	V_DrawFadeScreen(31, menutypingfade);
 
 	// Draw the string we're editing at the top.
-	M_DrawTextInput(x, y-48 + 12, &menuinput, tflag|V_ALLOWLOWERCASE);
+	UINT16 offset = (M_StringCvarLength(item->cvar) + 1) * 8;
+	M_DrawTextBox((320-offset)/2 - 8, y-48 + 12 - 8, M_StringCvarLength(item->cvar), 1, tflag);
+	M_DrawTextInput((320-offset)/2, y-48 + 12, &menuinput, tflag|V_ALLOWLOWERCASE);
 
 	// Some contextual stuff
 	if (keyboardtyping)
@@ -1866,7 +1871,7 @@ texty -= 10*vid.dup;\
 	// focus lost notification goes on top of everything, even the former everything
 	if (window_notinfocus && cv_showfocuslost.value)
 	{
-		M_DrawTextBox((BASEVIDWIDTH/2) - (60), (BASEVIDHEIGHT/2) - (16), 13, 2);
+		M_DrawTextBox((BASEVIDWIDTH/2) - (60), (BASEVIDHEIGHT/2) - (16), 13, 2, 0);
 		if (gamestate == GS_LEVEL && (P_AutoPause() || paused))
 			V_DrawCenteredString(BASEVIDWIDTH/2, (BASEVIDHEIGHT/2) - (4), highlightflags, "Game Paused");
 		else
@@ -3172,10 +3177,10 @@ static void M_DrawSplitText(const char *text, INT32 x, INT32 y, INT32 option, IN
 //  Draw a textbox, like Quake does, because sometimes it's difficult
 //  to read the text with all the stuff in the background...
 //
-void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines)
+void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines, INT32 flags)
 {
 	// Solid color textbox.
-	V_DrawFill(x+5, y+5, width*8+6, boxlines*8+6, 159);
+	V_DrawFill(x+5, y+5, width*8+6, boxlines*8+6, 159|flags);
 }
 
 static void M_DrawMenuTitle(void)
@@ -3429,7 +3434,7 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 			INT32 xofs = side ? 32*FRACUNIT : 0;
 			INT32 yofs = side ? -8*FRACUNIT : 4*FRACUNIT;
 
-			M_DrawTextBox((x + xofs)/FRACUNIT, (y + yofs)/FRACUNIT, M_StringCvarLength(cv), 1);
+			M_DrawTextBox((x + xofs)/FRACUNIT, (y + yofs)/FRACUNIT, M_StringCvarLength(cv), 1, 0);
 			V_DrawStringAtFixed(x + xofs + 8*FRACUNIT, y + yofs + 8*FRACUNIT, vflags|V_ALLOWLOWERCASE, cv->string);
 		}
 		else if (item->status & IT_SLIDER)
@@ -5354,7 +5359,7 @@ void MD_DrawAddons(menupanelinst_t *pi)
 	x = pi->x/FRACUNIT;
 	y = BASEVIDHEIGHT - pi->y/FRACUNIT;
 
-	M_DrawTextBox(x - (21 + 5), y, MAXSTRINGLENGTH, 1);
+	M_DrawTextBox(x - (21 + 5), y, MAXSTRINGLENGTH, 1, 0);
 
 	if (menusearch.length)
 		M_DrawTextInput(x - 18, y + 8, &menusearch, V_ALLOWLOWERCASE);
@@ -6126,7 +6131,7 @@ void MD_DrawPlaybackMenu(menupanelinst_t *pi)
 	transmap = min(8, transmap) << V_ALPHASHIFT;
 
 	// wip
-	//M_DrawTextBox(currentMenu->x-68, currentMenu->y-7, 15, 15);
+	//M_DrawTextBox(currentMenu->x-68, currentMenu->y-7, 15, 15, 0);
 	//M_DrawCenteredMenu();
 
 	for (i = 0; i < pi->numitems; i++)
@@ -8365,7 +8370,7 @@ INT32 MR_ConnectIP(INT32 choice)
 	COM_BufAddText(va("connect \"%s\"\n", cv_dummyip.string));
 
 	// A little "please wait" message.
-	M_DrawTextBox(56, BASEVIDHEIGHT/2-12, 24, 2);
+	M_DrawTextBox(56, BASEVIDHEIGHT/2-12, 24, 2, 0);
 	V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT/2, MENUCAPS, "Connecting to server...");
 	I_OsPolling();
 	I_UpdateNoBlit();
