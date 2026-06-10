@@ -2598,7 +2598,7 @@ void M_MenuTypingInput(INT32 key)
 
 			if (menutyping.keyboardtyping)
 			{
-				if (M_TextInputHandle(&menuinput, key))
+				if (key > 0 && M_TextInputHandle(&menuinput, key))
 				{
 					S_StartSound(NULL, M_MenuTypingSounds(key));
 				}
