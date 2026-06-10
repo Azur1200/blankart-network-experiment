@@ -2573,6 +2573,18 @@ static void M_MenuTypingInput(INT32 key)
 			M_SetMenuDelay(pid);
 			S_StartSound(NULL, sfx_menu1);
 		}
+		else if (M_MenuButtonPressed(pid, MBT_INFO1))
+		{
+			M_TextInputHandle(&menuinput, KEY_LEFTARROW);
+			M_SetMenuDelay(pid);
+			S_StartSound(NULL, sfx_menu1);
+		}
+		else if (M_MenuButtonPressed(pid, MBT_INFO2))
+		{
+			M_TextInputHandle(&menuinput, KEY_RIGHTARROW);
+			M_SetMenuDelay(pid);
+			S_StartSound(NULL, sfx_menu1);
+		}
 		else if (M_MenuButtonPressed(pid, MBT_CONFIRM))
 		{
 			// Add the character. First though, check what we're pressing....
