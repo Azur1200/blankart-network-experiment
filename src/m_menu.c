@@ -9677,10 +9677,12 @@ void MP_SetupMonitorToggles(menupanelinst_t *pi)
 		}
 		else
 		{
+			const char *item1 = gamecontrol[0][gc_drift][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_drift][0]) : "DRIFT";
+
 			item->argument = 0;
 			M_SetItemPatchRaw(item, result->cvar->name);
 			if (kartitems[result->type].altcvar != NULL)
-				M_SetItemTooltipRaw(item, "Press BACKSPACE to swap variants.");
+				M_SetItemTooltipRaw(item, va("Press %s to swap variants.", item1));
 			else if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
 				M_SetItemTooltipRaw(item, "Rings must be enabled in Gameplay Mods!");
 		}
