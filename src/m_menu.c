@@ -3908,15 +3908,30 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 		const char *pname = "M_CURSOR";
 		UINT8 *cmap = NULL;
 		fixed_t scale = FRACUNIT;
-		if (pd->drawroutine == MD_DrawAddons)
+
+		if (pi->items[pi->itemon].cvar && !pi->items[pi->itemon].cvar->PossibleValue)
 		{
-			pname = "M_FSEL";
-			cursorx += 15*FRACUNIT;
-			scale /= 2;
-			if (skullAnimCounter < 4)
-				cmap = V_GetStringColormap(highlightflags);
+			if (wipebuffer)
+				cursorx += (5*FRACUNIT);
+			else
+				cursorx += (5*FRACUNIT) + (skullAnimCounter/5)*FRACUNIT;
+
+			V_DrawFixedCharacter(cursorx, cursory,
+							'\x1D' | highlightflags, false); // right arrow
 		}
-		V_DrawFixedPatch(cursorx, cursory, scale, (wipebuffer ? V_TRANSLUCENT : 0) | pflags, W_CachePatchName(pname, PU_CACHE), cmap);
+		else
+		{
+			if (pd->drawroutine == MD_DrawAddons)
+			{
+				pname = "M_FSEL";
+				cursorx += 15*FRACUNIT;
+				scale /= 2;
+				if (skullAnimCounter < 4)
+					cmap = V_GetStringColormap(highlightflags);
+			}
+
+			V_DrawFixedPatch(cursorx, cursory, scale, (wipebuffer ? V_TRANSLUCENT : 0) | pflags, W_CachePatchName(pname, PU_CACHE), cmap);
+		}
 	}
 	if (wipebuffer)
 		V__DrawOneScaleString(cursorx, cursory + 3*FRACUNIT, FRACUNIT/2, pflags, HU_FONT, "WAIT");
