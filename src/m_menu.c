@@ -174,22 +174,23 @@ menucmd_t menucmd[MAXSPLITSCREENPLAYERS] = {0};
 
 menutyping_t menutyping = {0};
 
-INT16 virtualKeyboard[5][13] = {
+// keyboard layouts
+INT16 virtualKeyboard[5][NUMVIRTUALKEYSINROW] = {
 
-	{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 0},
-	{'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', 0},
-	{'a', 's', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'l', ';', '\'', '\\'},
-	{'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 0, 0, 0},
-	{KEY_SPACE, KEY_RSHIFT, KEY_BACKSPACE, KEY_CAPSLOCK, KEY_ENTER, 0, 0, 0, 0, 0, 0, 0, 0}
+	{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', KEY_BACKSPACE, 1},
+	{'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '-', '='},
+	{'a', 's', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'l', '[', ']'},
+	{'z', 'x', 'c', 'v', 'b', 'n', 'm', 0, ',', '.', ';', '\''},
+	{KEY_RSHIFT, 1, 1, KEY_SPACE, 1, 1, 1, 1, '/', '\\', KEY_ENTER, 1}
 };
 
-INT16 shift_virtualKeyboard[5][13] = {
+INT16 shift_virtualKeyboard[5][NUMVIRTUALKEYSINROW] = {
 
-	{'!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', 0},
-	{'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', 0},
-	{'A', 'S', 'D', 'F', 'G', 'H', 'I', 'J', 'K', 'L', ':', '\"', '|'},
-	{'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0, 0, 0},
-	{KEY_SPACE, KEY_RSHIFT, KEY_BACKSPACE, KEY_CAPSLOCK, KEY_ENTER, 0, 0, 0, 0, 0, 0, 0, 0}
+	{'!', '@', '#', '$', '%', '^', '&', '*', '(', ')', KEY_BACKSPACE, 1},
+	{'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '_', '+'},
+	{'A', 'S', 'D', 'F', 'G', 'H', 'I', 'J', 'K', 'L', '{', '}'},
+	{'Z', 'X', 'C', 'V', 'B', 'N', 'M', 0, '<', '>', ':', '\"'},
+	{KEY_RSHIFT, 1, 1, KEY_SPACE, 1, 1, 1, 1, '?', '|', KEY_ENTER, 1}
 };
 
 messagebox_t messagebox = {0};
@@ -1685,7 +1686,7 @@ static void M_DrawMenuTyping(void)
 {
 	INT32 i, j;
 
-	INT32 x = 60;
+	INT32 x;
 	INT32 y = 100 + (9-menutyping.menutypingfade)*8;
 	INT32 tflag = (9 - menutyping.menutypingfade)<<V_ALPHASHIFT;
 
@@ -1707,53 +1708,135 @@ static void M_DrawMenuTyping(void)
 	else
 		V_DrawThinString(10, 175, V_ALLOWLOWERCASE|V_6WIDTHSPACE|tflag|V_GRAYMAP, "Type using the Virtual Keyboard. Use the \'OK\' button to confirm & exit.\nPress any keyboard key not bound to a control to use it.");
 
+#define BUTTONWIDTH (14)
+#define BUTTONHEIGHT (11)
 
 	// Now the keyboard itself
+	INT32 returnx = (BASEVIDWIDTH - (((BUTTONWIDTH + 1)*NUMVIRTUALKEYSINROW)-1))/2;
+	INT32 tempkeyboardx = menutyping.keyboardx;
+	while (virtualKeyboard[menutyping.keyboardy][tempkeyboardx] == 1
+	&& tempkeyboardx > 0)
+		tempkeyboardx--;
+
+	x = returnx;
+
 	for (i=0; i < 5; i++)
 	{
-		for (j=0; j < 13; j++)
+		j = 0;
+
+		while (j < NUMVIRTUALKEYSINROW)
 		{
-			INT32 mflag = 0;
+			INT32 mflag = V_ALLOWLOWERCASE|V_6WIDTHSPACE;
 			INT16 c = virtualKeyboard[i][j];
+
+			INT32 buttonspacing = 1;
+
+			UINT8 col = 27;
+
+			INT32 arrowoffset = 0;
+
+			while (j + buttonspacing < NUMVIRTUALKEYSINROW
+			&& virtualKeyboard[i][j + buttonspacing] == 1)
+			{
+				buttonspacing++;
+			}
+
 			if (menutyping.keyboardshift ^ menutyping.keyboardcapslock)
 				c = shift_virtualKeyboard[i][j];
 
+			if (i < 4 && j < NUMVIRTUALKEYSINROW-2)
+			{
+				col = 25;
+			}
 
 			if (c == KEY_BACKSPACE)
-				strcpy(buf, "DEL");
-
+			{
+				arrowoffset = 1;
+				buf[0] = '\x1C'; // left arrow
+				buf[1] = '\0';
+			}
 			else if (c == KEY_RSHIFT)
-				strcpy(buf, "SHIFT");
+			{
+				arrowoffset = 2;
+				buf[0] = '\x1A'; // up arrow
+				buf[1] = '\0';
 
-			else if (c == KEY_CAPSLOCK)
-				strcpy(buf, "CAPS");
-
+				if (menutyping.keyboardcapslock || menutyping.keyboardshift)
+				{
+					col = 22;
+				}
+			}
 			else if (c == KEY_ENTER)
+			{
 				strcpy(buf, "OK");
-
+			}
 			else if (c == KEY_SPACE)
-				strcpy(buf, "SPACE");
-
+			{
+				strcpy(buf, "Space");
+			}
 			else
 			{
 				buf[0] = c;
 				buf[1] = '\0';
 			}
 
+			INT32 width = ((BUTTONWIDTH + 1) * buttonspacing) - 1;
+
 			// highlight:
-			if (menutyping.keyboardx == j && menutyping.keyboardy == i && !menutyping.keyboardtyping)
-				mflag |= highlightflags;
-			else if (menutyping.keyboardtyping)
+			if (menutyping.keyboardtyping)
+			{
 				mflag |= V_TRANSLUCENT;	// grey it out if we can't use it.
+			}
+			else
+			{
+				if (tempkeyboardx == j && menutyping.keyboardy == i)
+				{
+					V_DrawFill(x + 1, y + 1, width - 2, BUTTONHEIGHT - 2, col - 3);
 
-			V_DrawString(x, y, V_ALLOWLOWERCASE|tflag|mflag, buf);
+					V_DrawFill(x, y,                    width, 1, 121);
+					V_DrawFill(x, y + BUTTONHEIGHT - 1, width, 1, 121);
 
-			x += (buf[1] ? V_StringWidth(buf, 0) : 8) + 8;
+					V_DrawFill(x,             y + 1, 1, BUTTONHEIGHT - 2, 121);
+					V_DrawFill(x + width - 1, y + 1, 1, BUTTONHEIGHT - 2, 121);
+
+					mflag |= highlightflags;
+				}
+				else
+				{
+					V_DrawFill(x, y, width, BUTTONHEIGHT, col);
+				}
+			}
+
+			if (arrowoffset != 0)
+			{
+				if (c == KEY_RSHIFT)
+				{
+					V_DrawFill(x + width - 5, y + 1, 4, 4, 31);
+
+					if (menutyping.keyboardcapslock)
+					{
+						V_DrawFill(x + width - 4, y + 2, 2, 2, 121);
+					}
+				}
+
+				V_DrawCenteredString(x + (width/2), y + 1 + arrowoffset, tflag|mflag, buf);
+			}
+			else
+			{
+				V_DrawCenteredThinString(x + (width/2), y + 1, tflag|mflag, buf);
+			}
+
+			x += width + 1;
+			j += buttonspacing;
 		}
-		x = 60;
-		y += 12;
+		x = returnx;
+		y += BUTTONHEIGHT + 1;
 	}
+
+#undef BUTTONWIDTH
+
 }
+
 
 //
 // M_Drawer
@@ -2440,14 +2523,6 @@ static void M_HandleGoBack(INT32 thisMenuKey)
 	}
 }
 
-// Updates the x coordinate of the keybord so prevent it from going in weird places
-static void M_UpdateKeyboardX(void)
-{
-	// 0s are only at the rightmost edges of the keyboard table, so just go backwards until we get something.
-	while (!virtualKeyboard[menutyping.keyboardy][menutyping.keyboardx])
-		menutyping.keyboardx--;
-}
-
 static boolean M_IsTypingKey(INT32 key)
 {
 	return key == KEY_BACKSPACE || key == KEY_ENTER ||
@@ -2547,9 +2622,8 @@ static void M_MenuTypingInput(INT32 key)
 			if (menutyping.keyboardy > 4)
 				menutyping.keyboardy = 0;
 
-			M_UpdateKeyboardX();
 			M_SetMenuDelay(pid);
-			S_StartSound(NULL, sfx_menu1);
+			S_StartSound(NULL, sfx_s3k5b);
 		}
 		else if (menucmd[pid].dpad_ud < 0) // up
 		{
@@ -2557,41 +2631,57 @@ static void M_MenuTypingInput(INT32 key)
 			if (menutyping.keyboardy < 0)
 				menutyping.keyboardy = 4;
 
-			M_UpdateKeyboardX();
 			M_SetMenuDelay(pid);
-			S_StartSound(NULL, sfx_menu1);
+			S_StartSound(NULL, sfx_s3k5b);
 		}
 		else if (menucmd[pid].dpad_lr > 0)	// right
 		{
-			menutyping.keyboardx++;
-			if (!virtualKeyboard[menutyping.keyboardy][menutyping.keyboardx])
-				menutyping.keyboardx = 0;
+			do
+			{
+				menutyping.keyboardx++;
+				if (menutyping.keyboardx > NUMVIRTUALKEYSINROW-1)
+				{
+					menutyping.keyboardx = 0;
+					break;
+				}
+			}
+			while (virtualKeyboard[menutyping.keyboardy][menutyping.keyboardx] == 1);
 
 			M_SetMenuDelay(pid);
-			S_StartSound(NULL, sfx_menu1);
+			S_StartSound(NULL, sfx_s3k5b);
 		}
 		else if (menucmd[pid].dpad_lr < 0)	// left
 		{
+			while (virtualKeyboard[menutyping.keyboardy][menutyping.keyboardx] == 1)
+			{
+				menutyping.keyboardx--;
+				if (menutyping.keyboardx < 0)
+				{
+					menutyping.keyboardx = NUMVIRTUALKEYSINROW-1;
+					break;
+				}
+			}
+
 			menutyping.keyboardx--;
 			if (menutyping.keyboardx < 0)
 			{
-				menutyping.keyboardx = 12;
-				M_UpdateKeyboardX();
+				menutyping.keyboardx = NUMVIRTUALKEYSINROW-1;
 			}
+
 			M_SetMenuDelay(pid);
-			S_StartSound(NULL, sfx_menu1);
+			S_StartSound(NULL, sfx_s3k5b);
 		}
 		else if (M_MenuButtonPressed(pid, MBT_INFO1))
 		{
 			M_TextInputHandle(&menuinput, KEY_LEFTARROW);
 			M_SetMenuDelay(pid);
-			S_StartSound(NULL, sfx_menu1);
+			S_StartSound(NULL, sfx_s3k5b);
 		}
 		else if (M_MenuButtonPressed(pid, MBT_INFO2))
 		{
 			M_TextInputHandle(&menuinput, KEY_RIGHTARROW);
 			M_SetMenuDelay(pid);
-			S_StartSound(NULL, sfx_menu1);
+			S_StartSound(NULL, sfx_s3k5b);
 		}
 		else if (M_MenuButtonPressed(pid, MBT_CANCEL))
 		{
@@ -2602,31 +2692,56 @@ static void M_MenuTypingInput(INT32 key)
 		else if (M_MenuButtonPressed(pid, MBT_CONFIRM))
 		{
 			// Add the character. First though, check what we're pressing....
-			INT16 c = virtualKeyboard[menutyping.keyboardy][menutyping.keyboardx];
-			if (menutyping.keyboardshift ^ menutyping.keyboardcapslock)
-				c = shift_virtualKeyboard[menutyping.keyboardy][menutyping.keyboardx];
+			INT32 tempkeyboardx = menutyping.keyboardx;
+			INT16 c = 0;
+			while ((c = virtualKeyboard[menutyping.keyboardy][tempkeyboardx]) == 1
+				&& tempkeyboardx > 0)
+				tempkeyboardx--;
 
-			if (c == KEY_RSHIFT)
-				menutyping.keyboardshift = !menutyping.keyboardshift;
-			else if (c == KEY_CAPSLOCK)
-				menutyping.keyboardcapslock = !menutyping.keyboardcapslock;
-			else if (c == KEY_ENTER)
+			if (c > 1)
 			{
-				menutyping.menutypingclose = true;	// close menu.
-				CV_Set(item->cvar, menuinput.buffer);
+				if (menutyping.keyboardshift ^ menutyping.keyboardcapslock)
+					c = shift_virtualKeyboard[menutyping.keyboardy][tempkeyboardx];
+
+				if (c == KEY_RSHIFT)
+				{
+					if (menutyping.keyboardcapslock == true)
+					{
+						menutyping.keyboardcapslock = false;
+					}
+					else
+					{
+						menutyping.keyboardshift ^= true;
+						if (menutyping.keyboardshift == false)
+						{
+							menutyping.keyboardcapslock = true;
+						}
+					}
+
+					M_SetMenuDelay(pid);
+					S_StartSound(NULL, M_MenuTypingSounds(menutyping.keyboardcapslock ? KEY_CAPSLOCK : KEY_RSHIFT));
+					return;
+				}
+				/*
+				 *	else if (c == KEY_CAPSLOCK)
+				 *		menutyping.keyboardcapslock = !menutyping.keyboardcapslock;
+				 */
+				else if (c == KEY_ENTER)
+				{
+					menutyping.menutypingclose = true;	// close menu.
+					CV_Set(item->cvar, menuinput.buffer);
+					S_StartSound(NULL, M_MenuTypingSounds(c));
+					return;
+				}
+				else
+				{
+					M_TextInputHandle(&menuinput, (INT32)c); // Write!
+					menutyping.keyboardshift = false;		// undo shift if it had been pressed
+				}
+
+				M_SetMenuDelay(pid);
 				S_StartSound(NULL, M_MenuTypingSounds(c));
-				return;
 			}
-			else
-			{
-				//M_ChangeStringCvar((INT32)c);	// Write!
-				M_TextInputHandle(&menuinput, (INT32)c);
-				menutyping.keyboardshift = false;			// undo shift if it had been pressed
-			}
-
-			M_SetMenuDelay(pid);
-
-			S_StartSound(NULL, M_MenuTypingSounds(c));
 		}
 	}
 }

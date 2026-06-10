@@ -37,8 +37,9 @@ extern "C" {
 
 extern INT32 menuKey; // keyboard key pressed for menu
 
-extern INT16 virtualKeyboard[5][13];
-extern INT16 shift_virtualKeyboard[5][13];
+#define NUMVIRTUALKEYSINROW (10+2) // 1-9, 0, and a right-side gutter of two keys' width
+extern INT16 virtualKeyboard[5][NUMVIRTUALKEYSINROW];
+extern INT16 shift_virtualKeyboard[5][NUMVIRTUALKEYSINROW];
 
 typedef struct menutyping_s
 {
