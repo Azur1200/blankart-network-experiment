@@ -36,10 +36,4 @@ boolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_autocomplet
 #define M_DrawTextInput(x, y, input, flags) M_DrawTextInputScroll((x), (y), (input), (flags), ((input)->buffer_size-1)*8)
 void M_DrawTextInputScroll(INT32 x, INT32 y, textinput_t *input, INT32 flags, INT32 MAXINPUTWIDTH);
 
-
-void M_TextInputAddChar(textinput_t *input, char c);
-
-void M_TextInputDelChar(textinput_t *input);
-
-
 #endif
