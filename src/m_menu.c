@@ -1637,6 +1637,20 @@ boolean M_Responder(event_t *ev)
 		return false;
 	}
 
+	// Typing for CV_IT_STRING
+	if (menutyping && !menutypingclose && keyboardtyping)
+	{
+		menupanelinst_t *curpi = panelOn < numcurpanels ? &curpanels[panelOn] : NULL;
+		menuitem_t *item = curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;
+
+		if (M_TextInputHandle(&menuinput, menuKey))
+		{
+			S_StartSound(NULL, sfx_menu1); // Tails
+			CV_Set(item->cvar, menuinput.buffer);
+			return true;
+		}
+	}
+
 	// We're in the menu itself now.
 	// M_Ticker will take care of the rest.
 	return true;
@@ -2440,11 +2454,12 @@ static void M_UpdateKeyboardX(void)
 		keyboardx--;
 }
 
-// Hack...
-// This is used to prevent keyboard inputs from being processed when they shouldn't.
-// We need to find why this is needed so that I can remove this disgusting thing
-static INT32 lastkey = 0;
-static tic_t lastkeyheldfor = 0;
+static boolean M_IsTypingKey(INT32 key)
+{
+	return key == KEY_BACKSPACE || key == KEY_ENTER ||
+		key == KEY_DEL || isprint(key);
+}
+
 
 static void M_MenuTypingInput(INT32 key)
 {
@@ -2452,7 +2467,6 @@ static void M_MenuTypingInput(INT32 key)
 	const UINT8 pid = 0;
 
 	menupanelinst_t *curpi = panelOn < numcurpanels ? &curpanels[panelOn] : NULL;
-	menupaneldef_t *curpd = curpi != NULL ? M_GetDefFromInst(curpi) : NULL;
 	menuitem_t *item = curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;
 
 	// Fade-in
@@ -2474,32 +2488,16 @@ static void M_MenuTypingInput(INT32 key)
 			return;	// Don't allow typing until it's fully opened.
 	}
 
-	// Now handle the inputs.
-	// HACK: TODO: REMOVE THIS
-	// This prevents the same key from being processed multiple times. ev_keydown should account for this but it seems like it doesn't.
-	if (lastkey != key)
-	{
-		lastkey = key;
-		lastkeyheldfor = 0;
-	}
-	else
-	{
-		lastkeyheldfor++;
-		if (lastkeyheldfor > 0 && lastkeyheldfor < TICRATE/2)
-			key = -1;
-	}
-	// END OF HACK.
-
 	// Determine when to check for keyboard inputs or controller inputs using menuKey, which is the key passed here as argument.
 	if (!keyboardtyping)	// controller inputs
 	{
 		// we pressed a keyboard input that's not any of our buttons
-		if (key != -1 && menucmd[pid].dpad_lr == 0 && menucmd[pid].dpad_ud == 0
-			&& !M_MenuButtonPressed(pid, MBT_CONFIRM)
-			&& !M_MenuButtonPressed(pid, MBT_CANCEL)
-			&& !M_MenuButtonPressed(pid, MBT_HOME)
-			&& !M_MenuButtonPressed(pid, MBT_INFO1)
-			&& !M_MenuButtonPressed(pid, MBT_INFO2))
+		if (M_IsTypingKey(key) && menucmd[pid].dpad_lr == 0 && menucmd[pid].dpad_ud == 0
+			&& !(menucmd[pid].buttons & MBT_CONFIRM)
+			&& !(menucmd[pid].buttons & MBT_CANCEL)
+			&& !(menucmd[pid].buttons & MBT_HOME)
+			&& !(menucmd[pid].buttons & MBT_INFO1)
+			&& !(menucmd[pid].buttons & MBT_INFO2))
 		{
 			keyboardtyping = true;
 		}
@@ -2507,7 +2505,7 @@ static void M_MenuTypingInput(INT32 key)
 	else	// Keyboard inputs.
 	{
 		// On the flipside, if we're pressing any keyboard input, switch to controller inputs.
-		if (key == -1 && (
+		if (!M_IsTypingKey(key) && (
 			M_MenuButtonPressed(pid, MBT_CONFIRM)
 			|| M_MenuButtonPressed(pid, MBT_CANCEL)
 			|| M_MenuButtonPressed(pid, MBT_HOME)
@@ -2527,10 +2525,6 @@ static void M_MenuTypingInput(INT32 key)
 			menutypingclose = true;	// close menu.
 			CV_Set(item->cvar, menuinput.buffer);
 			return;
-		}
-		else // process everything else as input for typing
-		{
-			M_TextInputHandle(&menuinput, key);
 		}
 	}
 
@@ -2570,7 +2564,7 @@ static void M_MenuTypingInput(INT32 key)
 			keyboardx--;
 			if (keyboardx < 0)
 			{
-				keyboardx = 13;
+				keyboardx = 12;
 				M_UpdateKeyboardX();
 			}
 			M_SetMenuDelay(pid);
