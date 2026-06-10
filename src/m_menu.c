@@ -3028,6 +3028,9 @@ static void M_HandleMenuInput(void)
 			if (!(item->cvar || item->status & IT_ARROWS) || item->cvar == &cv_nextmap || item->cvar == &cv_nextcup)
 				return;
 
+			if (item->cvar && !item->cvar->PossibleValue)
+				return;
+
 			if (M_WipeBuffer(thisMenuKey, item->cvar ? (item->cvar->flags & CV_CALL ? MR_Dummy : NULL) : item->routine))
 				return;
 
