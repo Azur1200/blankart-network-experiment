@@ -1637,7 +1637,6 @@ boolean M_Responder(event_t *ev)
 
 		if (M_TextInputHandle(&menuinput, menuKey))
 		{
-			CV_Set(item->cvar, menuinput.buffer);
 			S_StartSound(NULL, M_MenuTypingSounds(menuKey)); // Tails
 			return true;
 		}
