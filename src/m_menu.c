@@ -2882,12 +2882,12 @@ static void M_HandleMenuInput(void)
 	// string cvars accept any keyboard input
 	if (item->cvar && !item->cvar->PossibleValue)
 	{
-		if (item->cvar->flags & CV_CALL && M_WipeBuffer(thisMenuKey, MR_Dummy))
-			return;
-
 		// If we're hovering over a IT_CV_STRING option, pressing A/X opens the typing submenu
 		if (M_MenuButtonPressed(pid, MBT_CONFIRM))
 		{
+			if (item->cvar->flags & CV_CALL && M_WipeBuffer(thisMenuKey, MR_Dummy))
+				return;
+
 			menutyping.keyboardtyping = thisMenuKey != 0 ? true : false;	// If we entered this menu by pressing a menu Key, default to keyboard typing, otherwise use controller.
 			menutyping.active = true;
 			menutyping.menutypingclose = false;
