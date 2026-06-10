@@ -4496,6 +4496,13 @@ void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(voi
 	if (messagebox.active)
 		messageboxqueuesize++;
 
+	if (messageboxqueuesize > NUMMENULEVELS)
+	{
+		CONS_Alert(CONS_WARNING, "Too many messageboxes queued, dropping newest added.\n");
+		messageboxqueuesize--;
+		return;
+	}
+
 	if (str)
 	{
 		message = Z_StrDup(str);
