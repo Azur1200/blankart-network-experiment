@@ -1703,9 +1703,7 @@ static void M_DrawMenuTyping(void)
 	V_DrawFadeScreen(31, menutypingfade);
 
 	// Draw the string we're editing at the top.
-	V_DrawString(x, y-48 + 12, V_ALLOWLOWERCASE|tflag, menuinput.buffer);
-	if (skullAnimCounter < 4)
-		V_DrawCharacter(x + V_StringWidth(menuinput.buffer, 0), y - 35, '_' | 0x80, false);
+	M_DrawTextInput(x, y-48 + 12, &menuinput, tflag|V_ALLOWLOWERCASE);
 
 	// Some contextual stuff
 	if (keyboardtyping)
@@ -3432,10 +3430,7 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 			INT32 yofs = side ? -8*FRACUNIT : 4*FRACUNIT;
 
 			M_DrawTextBox((x + xofs)/FRACUNIT, (y + yofs)/FRACUNIT, M_StringCvarLength(cv), 1);
-			if (selected)
-				M_DrawTextInput((x + xofs)/FRACUNIT + 8, (y + yofs)/FRACUNIT + 8, &menuinput, vflags|V_ALLOWLOWERCASE);
-			else
-				V_DrawStringAtFixed(x + xofs + 8*FRACUNIT, y + yofs + 8*FRACUNIT, vflags|V_ALLOWLOWERCASE, cv->string);
+			V_DrawStringAtFixed(x + xofs + 8*FRACUNIT, y + yofs + 8*FRACUNIT, vflags|V_ALLOWLOWERCASE, cv->string);
 		}
 		else if (item->status & IT_SLIDER)
 		{
