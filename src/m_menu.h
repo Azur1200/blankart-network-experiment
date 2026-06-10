@@ -124,6 +124,7 @@ boolean M_Responder(event_t *ev);
 void M_SetMenuDelay(UINT8 i);
 void M_UpdateMenuCMD(UINT8 i);
 boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt);
+sfxenum_t M_MenuTypingSounds(INT32 key);
 
 // Called by main loop, runs for demo playback. If this returns true, nullify any further user input.
 boolean M_DemoResponder(event_t *ev);

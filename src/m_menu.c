@@ -1645,8 +1645,8 @@ boolean M_Responder(event_t *ev)
 
 		if (M_TextInputHandle(&menuinput, menuKey))
 		{
-			S_StartSound(NULL, sfx_menu1); // Tails
 			CV_Set(item->cvar, menuinput.buffer);
+			S_StartSound(NULL, M_MenuTypingSounds(menuKey)); // Tails
 			return true;
 		}
 	}
@@ -2463,6 +2463,23 @@ static boolean M_IsTypingKey(INT32 key)
 		key == KEY_ESCAPE || key == KEY_DEL || isprint(key);
 }
 
+sfxenum_t M_MenuTypingSounds(INT32 key)
+{
+	switch (key)
+	{
+		case KEY_BACKSPACE:
+			return sfx_s1b8;
+		case KEY_LSHIFT:
+		case KEY_RSHIFT:
+			return sfx_s3k52;
+		case KEY_CAPSLOCK:
+			return sfx_s1ba;
+		case KEY_ENTER:
+			return sfx_s3k63;
+		default:
+			return sfx_s1bb;
+	}
+}
 
 static void M_MenuTypingInput(INT32 key)
 {
@@ -2585,6 +2602,12 @@ static void M_MenuTypingInput(INT32 key)
 			M_SetMenuDelay(pid);
 			S_StartSound(NULL, sfx_menu1);
 		}
+		else if (M_MenuButtonPressed(pid, MBT_CANCEL))
+		{
+			M_TextInputHandle(&menuinput, KEY_BACKSPACE);
+			M_SetMenuDelay(pid);
+			S_StartSound(NULL, M_MenuTypingSounds(KEY_BACKSPACE));
+		}
 		else if (M_MenuButtonPressed(pid, MBT_CONFIRM))
 		{
 			// Add the character. First though, check what we're pressing....
@@ -2600,6 +2623,7 @@ static void M_MenuTypingInput(INT32 key)
 			{
 				menutypingclose = true;	// close menu.
 				CV_Set(item->cvar, menuinput.buffer);
+				S_StartSound(NULL, M_MenuTypingSounds(c));
 				return;
 			}
 			else
@@ -2610,7 +2634,8 @@ static void M_MenuTypingInput(INT32 key)
 			}
 
 			M_SetMenuDelay(pid);
-			S_StartSound(NULL, sfx_menu1);
+
+			S_StartSound(NULL, M_MenuTypingSounds(c));
 		}
 	}
 }
@@ -5440,7 +5465,7 @@ INT32 MR_HandleAddons(INT32 choice)
 
 	if (M_TextInputHandle(&menusearch, choice))
 	{
-		S_StartSound(NULL,sfx_menu1);
+		S_StartSound(NULL, M_MenuTypingSounds(choice));
 
 		char *tempname = Z_StrDup(filename);
 #if 0 // much slower
