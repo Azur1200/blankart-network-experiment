@@ -2149,6 +2149,7 @@ void M_ClearMenusEx(boolean callexitmenufunc, boolean notitle)
 	currentMenu = NULL;
 	M_MessageboxClose(true);
 	hidetitlemap = false;
+	M_AbortVirtualKeyboard();
 
 	if (!notitle)
 	{
@@ -2534,9 +2535,45 @@ sfxenum_t M_MenuTypingSounds(INT32 key)
 	}
 }
 
+void M_OpenVirtualKeyboard(void)
+{
+	menutyping.active = true;
+	menutyping.menutypingclose = false;
+}
+
 void M_SwitchVirtualKeyboard(boolean gamepad)
 {
 	menutyping.keyboardtyping = cv_debugvirtualkeyboard.value ? false : !gamepad;
+}
+
+static void M_CloseVirtualKeyboard(void)
+{
+	menutyping.menutypingclose = true;	// close menu.
+}
+
+void M_AbortVirtualKeyboard(void)
+{
+	if (!menutyping.active)
+		return;
+
+	menutyping.active = false;
+	menutyping.menutypingfade = 0;
+}
+
+static void M_ToggleVirtualShift(void)
+{
+	if (menutyping.keyboardcapslock == true)
+	{
+		menutyping.keyboardcapslock = false;
+	}
+	else
+	{
+		menutyping.keyboardshift ^= true;
+		if (menutyping.keyboardshift == false)
+		{
+			menutyping.keyboardcapslock = true;
+		}
+	}
 }
 
 void M_MenuTypingInput(INT32 key)
@@ -2566,7 +2603,7 @@ void M_MenuTypingInput(INT32 key)
 		menutyping.menutypingfade--;
 		if (!menutyping.menutypingfade)
 		{
-			menutyping.active = false;
+			M_AbortVirtualKeyboard();
 			M_DoItemRoutine(item, key);
 		}
 
@@ -2590,7 +2627,7 @@ void M_MenuTypingInput(INT32 key)
 		{
 			if (key == KEY_ENTER || key == KEY_ESCAPE)
 			{
-				menutyping.menutypingclose = true;	// close menu.
+				M_CloseVirtualKeyboard();
 				CV_Set(item->cvar, menuinput.buffer);
 				M_SetMenuDelay(pid);
 				S_StartSound(NULL, M_MenuTypingSounds(key));
@@ -2705,19 +2742,7 @@ void M_MenuTypingInput(INT32 key)
 
 				if (c == KEY_RSHIFT)
 				{
-					if (menutyping.keyboardcapslock == true)
-					{
-						menutyping.keyboardcapslock = false;
-					}
-					else
-					{
-						menutyping.keyboardshift ^= true;
-						if (menutyping.keyboardshift == false)
-						{
-							menutyping.keyboardcapslock = true;
-						}
-					}
-
+					M_ToggleVirtualShift();
 					M_SetMenuDelay(pid);
 					S_StartSound(NULL, M_MenuTypingSounds(menutyping.keyboardcapslock ? KEY_CAPSLOCK : KEY_RSHIFT));
 					return;
@@ -2728,7 +2753,7 @@ void M_MenuTypingInput(INT32 key)
 				 */
 				else if (c == KEY_ENTER)
 				{
-					menutyping.menutypingclose = true;	// close menu.
+					M_CloseVirtualKeyboard();
 					CV_Set(item->cvar, menuinput.buffer);
 					S_StartSound(NULL, M_MenuTypingSounds(c));
 					return;
@@ -2745,7 +2770,7 @@ void M_MenuTypingInput(INT32 key)
 		}
 		else if (M_MenuButtonPressed(pid, MBT_HOME))
 		{
-			menutyping.menutypingclose = true;	// close menu.
+			M_CloseVirtualKeyboard();
 			CV_Set(item->cvar, menuinput.buffer);
 			S_StartSound(NULL, M_MenuTypingSounds(KEY_ENTER));
 			return;

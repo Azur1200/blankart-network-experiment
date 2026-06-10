@@ -131,6 +131,8 @@ boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt);
 sfxenum_t M_MenuTypingSounds(INT32 key);
 void M_MenuTypingInput(INT32 key);
 void M_SwitchVirtualKeyboard(boolean gamepad);
+void M_AbortVirtualKeyboard(void);
+void M_OpenVirtualKeyboard(void);
 
 void M_DoItemRoutine(menuitem_t *item, INT32 thisMenuKey);
 
