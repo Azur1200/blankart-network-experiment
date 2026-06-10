@@ -52,7 +52,6 @@ typedef struct menutyping_s
 	SINT8 keyboardy;
 	boolean keyboardcapslock;
 	boolean keyboardshift;
-	boolean doroutine;
 } menutyping_t;
 // While typing, we'll have a fade strongly darken the screen to overlay the typing menu instead
 
@@ -132,6 +131,8 @@ boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt);
 sfxenum_t M_MenuTypingSounds(INT32 key);
 void M_MenuTypingInput(INT32 key);
 void M_SwitchVirtualKeyboard(boolean gamepad);
+
+void M_DoItemRoutine(menuitem_t *item, INT32 thisMenuKey);
 
 // Called by main loop, runs for demo playback. If this returns true, nullify any further user input.
 boolean M_DemoResponder(event_t *ev);

@@ -2564,7 +2564,10 @@ void M_MenuTypingInput(INT32 key)
 		// Closing
 		menutyping.menutypingfade--;
 		if (!menutyping.menutypingfade)
+		{
 			menutyping.active = false;
+			M_DoItemRoutine(item, key);
+		}
 
 		return;	// prevent inputs while closing the menu.
 	}
@@ -2590,7 +2593,6 @@ void M_MenuTypingInput(INT32 key)
 				CV_Set(item->cvar, menuinput.buffer);
 				M_SetMenuDelay(pid);
 				S_StartSound(NULL, M_MenuTypingSounds(key));
-				menutyping.doroutine = true;
 				return;
 			}
 
@@ -2728,7 +2730,6 @@ void M_MenuTypingInput(INT32 key)
 					menutyping.menutypingclose = true;	// close menu.
 					CV_Set(item->cvar, menuinput.buffer);
 					S_StartSound(NULL, M_MenuTypingSounds(c));
-					menutyping.doroutine = true;
 					return;
 				}
 				else
@@ -2751,9 +2752,57 @@ void M_MenuTypingInput(INT32 key)
 	}
 }
 
+void M_DoItemRoutine(menuitem_t *item, INT32 thisMenuKey)
+{
+	if (item == NULL)
+		return;
+
+	UINT8 pid = 0;
+
+	noFurtherInput = -1;
+
+	if (menustack[0] == MN_PLAYBACK)
+	{
+		boolean held = (boolean)playback_enterheld;
+		if (held)
+			return;
+		playback_enterheld = 3;
+	}
+
+	INT32 argument = item->argument;
+	if (item->cvar && item->cvar != &cv_nextmap && item->cvar != &cv_nextcup)
+		argument = item->cvar->value;
+
+	if (item->submenu)
+	{
+		if (M_WipeBuffer(thisMenuKey, menudefs[item->submenu].enterroutine))
+			return;
+		S_StartSound(NULL, sfx_menu1);
+		M_EnterMenu(item->submenu, true, argument);
+	}
+	else if (item->routine)
+	{
+		if (M_WipeBuffer(thisMenuKey, item->routine))
+			return;
+		S_StartSound(NULL, sfx_menu1);
+		item->routine(argument);
+	}
+	else if (item->cvar && item->cvar->PossibleValue) // not for string cvars!
+	{
+		if (item->cvar == &cv_nextmap || item->cvar == &cv_nextcup)
+			return;
+		if (item->cvar->flags & CV_CALL && M_WipeBuffer(thisMenuKey, MR_Dummy))
+			return;
+		S_StartSound(NULL, sfx_menu1);
+		M_ChangeCvar(item, 1); // right arrow
+	}
+
+	M_SetMenuDelay(pid);
+}
+
 static void M_HandleMenuInput(void)
 {
-	UINT8 pid = 0; // todo: Add ability for any splitscreen player to bring up the menu.
+	UINT8 pid = 0;
 	INT32 thisMenuKey = menuKey;
 
 	menuKey = -1;
@@ -2808,11 +2857,6 @@ static void M_HandleMenuInput(void)
 	menupanelinst_t *curpi = panelOn < numcurpanels ? &curpanels[panelOn] : NULL;
 	menupaneldef_t *curpd = curpi != NULL ? M_GetDefFromInst(curpi) : NULL;
 	menuitem_t *item = curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;
-
-	if (menutyping.doroutine == true && item != NULL)
-		goto doroutine;
-	else
-		menutyping.doroutine = false;
 
 	// Handle menuitems which need a specific key handling
 	if (curpd != NULL && curpd->keyhandler != NULL)
@@ -2998,50 +3042,9 @@ static void M_HandleMenuInput(void)
 	}
 	else
 	{
-doroutine:
-		if (menutyping.doroutine == true || M_MenuButtonPressed(0, MBT_CONFIRM))
+		if (M_MenuButtonPressed(0, MBT_CONFIRM))
 		{
-			noFurtherInput = -1;
-
-			if (menustack[0] == MN_PLAYBACK)
-			{
-				boolean held = (boolean)playback_enterheld;
-				if (held)
-					return;
-				playback_enterheld = 3;
-			}
-
-			INT32 argument = item->argument;
-			if (item->cvar && item->cvar != &cv_nextmap && item->cvar != &cv_nextcup)
-				argument = item->cvar->value;
-
-			if (item->submenu)
-			{
-				if (M_WipeBuffer(thisMenuKey, menudefs[item->submenu].enterroutine))
-					return;
-				S_StartSound(NULL, sfx_menu1);
-				M_EnterMenu(item->submenu, true, argument);
-			}
-			else if (item->routine)
-			{
-				if (M_WipeBuffer(thisMenuKey, item->routine))
-					return;
-				S_StartSound(NULL, sfx_menu1);
-				item->routine(argument);
-			}
-			else if (item->cvar && item->cvar->PossibleValue) // not for string cvars!
-			{
-				if (item->cvar == &cv_nextmap || item->cvar == &cv_nextcup)
-					return;
-				if (item->cvar->flags & CV_CALL && M_WipeBuffer(thisMenuKey, MR_Dummy))
-					return;
-				S_StartSound(NULL, sfx_menu1);
-				M_ChangeCvar(item, 1); // right arrow
-			}
-
-			if (menutyping.doroutine == true)
-				menutyping.doroutine = false;
-			M_SetMenuDelay(pid);
+			M_DoItemRoutine(item, thisMenuKey);
 			return;
 		}
 		else if (M_MenuButtonPressed(0, MBT_INFO2))
