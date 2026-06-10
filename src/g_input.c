@@ -233,6 +233,12 @@ INT32 G_AxisToKey(event_t *ev)
 						: ev->data1*2 + (ev->data2 >= 0)); // analog sticks
 }
 
+static void update_vkb_axis(INT32 axis)
+{
+	if (axis > JOYAXISRANGE/2)
+		M_SwitchVirtualKeyboard(true);
+}
+
 //
 // Remaps the inputs to game controls.
 //
@@ -260,6 +266,8 @@ void G_MapEventsToControls(event_t *ev)
 		case ev_keydown:
 			if (ev->data1 < NUMINPUTS)
 			{
+				M_MenuTypingInput(ev->data1);
+
 				if (ev->data2) // OS repeat? We handle that ourselves
 				{
 					break;
@@ -340,8 +348,10 @@ void G_MapEventsToControls(event_t *ev)
 				// analog stick axes have a negative and positive keydown
 				i -= ev->data2 >= 0;
 				gamekeydown[device][i++] = max(0, -ev->data2);
+				update_vkb_axis(max(0, -ev->data2));
 			}
 			gamekeydown[device][i] = max(0, ev->data2);
+			update_vkb_axis(max(0, ev->data2));
 
 			break;
 

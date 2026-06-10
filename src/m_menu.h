@@ -55,6 +55,7 @@ typedef struct menutyping_s
 } menutyping_t;
 // While typing, we'll have a fade strongly darken the screen to overlay the typing menu instead
 
+extern menutyping_t menutyping;
 
 #define MENUDELAYTIME 9
 #define MENUMINDELAY 3
@@ -128,6 +129,8 @@ void M_SetMenuDelay(UINT8 i);
 void M_UpdateMenuCMD(UINT8 i);
 boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt);
 sfxenum_t M_MenuTypingSounds(INT32 key);
+void M_MenuTypingInput(INT32 key);
+void M_SwitchVirtualKeyboard(boolean gamepad);
 
 // Called by main loop, runs for demo playback. If this returns true, nullify any further user input.
 boolean M_DemoResponder(event_t *ev);

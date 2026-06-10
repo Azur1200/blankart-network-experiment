@@ -1629,19 +1629,6 @@ boolean M_Responder(event_t *ev)
 		return false;
 	}
 
-	// Typing for CV_IT_STRING
-	if (menutyping.active && !menutyping.menutypingclose && menutyping.keyboardtyping)
-	{
-		menupanelinst_t *curpi = panelOn < numcurpanels ? &curpanels[panelOn] : NULL;
-		menuitem_t *item = curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;
-
-		if (M_TextInputHandle(&menuinput, menuKey))
-		{
-			S_StartSound(NULL, M_MenuTypingSounds(menuKey)); // Tails
-			return true;
-		}
-	}
-
 	// We're in the menu itself now.
 	// M_Ticker will take care of the rest.
 	return true;
@@ -1708,9 +1695,9 @@ static void M_DrawMenuTyping(void)
 
 	// Some contextual stuff
 	if (menutyping.keyboardtyping)
-		V_DrawThinString(10, 175, V_ALLOWLOWERCASE|V_6WIDTHSPACE|tflag|V_GRAYMAP, "Type using your keyboard. Press Enter to confirm & exit.\nUse your controller or any directional input to use the Virtual Keyboard.\n");
+		V_DrawThinString(10, 175, V_ALLOWLOWERCASE|V_6WIDTHSPACE|tflag|V_GRAYMAP, "Type using your keyboard. Press Enter to confirm & exit.\n");
 	else
-		V_DrawThinString(10, 175, V_ALLOWLOWERCASE|V_6WIDTHSPACE|tflag|V_GRAYMAP, "Type using the Virtual Keyboard. Use the \'OK\' button to confirm & exit.\nPress any keyboard key not bound to a control to use it.");
+		V_DrawThinString(10, 175, V_ALLOWLOWERCASE|V_6WIDTHSPACE|tflag|V_GRAYMAP, "Type using the Virtual Keyboard. Use the \'OK\' button to confirm & exit.\n");
 
 #define BUTTONWIDTH (14)
 #define BUTTONHEIGHT (11)
@@ -2527,12 +2514,6 @@ static void M_HandleGoBack(INT32 thisMenuKey)
 	}
 }
 
-static boolean M_IsTypingKey(INT32 key)
-{
-	return key == KEY_BACKSPACE || key == KEY_ENTER ||
-		key == KEY_ESCAPE || key == KEY_DEL || isprint(key);
-}
-
 sfxenum_t M_MenuTypingSounds(INT32 key)
 {
 	switch (key)
@@ -2551,69 +2532,80 @@ sfxenum_t M_MenuTypingSounds(INT32 key)
 	}
 }
 
-static void M_MenuTypingInput(INT32 key)
+void M_SwitchVirtualKeyboard(boolean gamepad)
 {
+	//extern consvar_t cv_debugvirtualkeyboard;
+	menutyping.keyboardtyping = /*cv_debugvirtualkeyboard.value ? false : */!gamepad;
+}
 
+void M_MenuTypingInput(INT32 key)
+{
 	const UINT8 pid = 0;
 
 	menupanelinst_t *curpi = panelOn < numcurpanels ? &curpanels[panelOn] : NULL;
 	menuitem_t *item = curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;
 
+	// Determine when to check for keyboard inputs or controller inputs using menuKey, which is the key passed here as argument.
+	if (key > 0)
+	{
+		boolean gamepad = (key >= NUMKEYS);
+		M_SwitchVirtualKeyboard(gamepad);
+		if (gamepad)
+			return;
+	}
+
+	if (!menutyping.active)
+		return;
+
 	// Fade-in
 
-	if (menutyping.menutypingclose)	// closing
+	if (menutyping.menutypingclose)
 	{
+		// Closing
 		menutyping.menutypingfade--;
 		if (!menutyping.menutypingfade)
 			menutyping.active = false;
 
 		return;	// prevent inputs while closing the menu.
 	}
-	else					// opening
+	else
 	{
-		menutyping.menutypingfade++;
-		if (menutyping.menutypingfade > 9)	// Don't fade all the way, but have it VERY strong to be readable
-			menutyping.menutypingfade = 9;
-		else if (menutyping.menutypingfade < 9)
-			return;	// Don't allow typing until it's fully opened.
-	}
+		// Opening
+		const UINT8 destination = 9;
 
-	// Determine when to check for keyboard inputs or controller inputs using menuKey, which is the key passed here as argument.
-	if (!menutyping.keyboardtyping)	// controller inputs
-	{
-		// we pressed a keyboard input that's not any of our buttons
-		if (M_IsTypingKey(key) && menucmd[pid].dpad_lr == 0 && menucmd[pid].dpad_ud == 0
-			&& !(menucmd[pid].buttons & MBT_CONFIRM)
-			&& !(menucmd[pid].buttons & MBT_CANCEL)
-			&& !(menucmd[pid].buttons & MBT_HOME)
-			&& !(menucmd[pid].buttons & MBT_INFO1)
-			&& !(menucmd[pid].buttons & MBT_INFO2))
+		if (menutyping.menutypingfade > destination)
 		{
-			menutyping.keyboardtyping = true;
+			menutyping.menutypingfade--;
 		}
-	}
-	else	// Keyboard inputs.
-	{
-		// On the flipside, if we're pressing any keyboard input, switch to controller inputs.
-		if (!M_IsTypingKey(key) && (
-			M_MenuButtonPressed(pid, MBT_CONFIRM)
-			|| M_MenuButtonPressed(pid, MBT_CANCEL)
-			|| M_MenuButtonPressed(pid, MBT_HOME)
-			|| M_MenuButtonPressed(pid, MBT_INFO1)
-			|| M_MenuButtonPressed(pid, MBT_INFO2)
-			|| menucmd[pid].dpad_lr != 0
-			|| menucmd[pid].dpad_ud != 0
-		))
+		else if (menutyping.menutypingfade < destination)
 		{
-			menutyping.keyboardtyping = false;
-			return;
+			menutyping.menutypingfade++;
 		}
 
-		// OTHERWISE, process keyboard inputs for typing!
-		if (key == KEY_ENTER || key == KEY_ESCAPE)
+		if (menutyping.menutypingfade >= 9) // either is visible
 		{
-			menutyping.menutypingclose = true;	// close menu.
-			CV_Set(item->cvar, menuinput.buffer);
+			if (key == KEY_ENTER || key == KEY_ESCAPE)
+			{
+				menutyping.menutypingclose = true;	// close menu.
+				CV_Set(item->cvar, menuinput.buffer);
+				M_SetMenuDelay(pid);
+				S_StartSound(NULL, sfx_s3k5b);
+				return;
+			}
+
+			if (menutyping.keyboardtyping)
+			{
+				if (M_TextInputHandle(&menuinput, key))
+				{
+					S_StartSound(NULL, M_MenuTypingSounds(key));
+				}
+				return;
+			}
+		}
+
+		if (menutyping.menutypingfade != destination)
+		{
+			// Don't allow typing until it's fully opened.
 			return;
 		}
 	}
@@ -2798,7 +2790,7 @@ static void M_HandleMenuInput(void)
 	// Typing for text input
 	if (menutyping.active)
 	{
-		M_MenuTypingInput(menuKey);
+		M_MenuTypingInput(-1);
 		return;
 	}
 
