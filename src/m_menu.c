@@ -2585,9 +2585,6 @@ void M_MenuTypingInput(INT32 key)
 			menutyping.menutypingfade++;
 		}
 
-		if (key == -1)
-			return;
-
 		if (menutyping.menutypingfade >= 9) // either is visible
 		{
 			if (key == KEY_ENTER || key == KEY_ESCAPE)
