@@ -169,7 +169,7 @@ typedef struct
 char *M_MessageConfirmText(boolean gamequit);
 char *M_MessageCancelText(boolean gamequit);
 
-void M_TickMessagebox(void);
+void M_MessageboxClose(boolean clearstack);
 
 //#define M_StartMessage(string, routine, itemtype) M_StartMessage2(NULL, string, ROUTINECAST(routine), itemtype, NULL, NULL)
 void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(void),

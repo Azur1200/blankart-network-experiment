@@ -173,7 +173,8 @@ INT32 menuKey = -1; // keyboard key pressed for menu
 menucmd_t menucmd[MAXSPLITSCREENPLAYERS] = {0};
 
 messagebox_t messagebox = {0};
-messagebox_t messageboxqueue = {0};
+messagebox_t messageboxqueue[NUMMENULEVELS] = {0};
+UINT8 messageboxqueuesize = 0;
 
 static  UINT8 setupcontrolplayer;
 static  INT32   (*setupcontrols)[MAXINPUTMAPPING];  // pointer to the gamecontrols of the player being edited
@@ -1958,7 +1959,7 @@ void M_ClearMenusEx(boolean callexitmenufunc, boolean notitle)
 	M_ClearPanelInstances();
 	memset(menustack, 0, sizeof(menustack));
 	currentMenu = NULL;
-	messagebox.active = false;
+	M_MessageboxClose(true);
 	hidetitlemap = false;
 
 	if (!notitle)
@@ -2350,7 +2351,7 @@ static void M_HandleMenuInput(void)
 					return;
 				if (messagebox.routine)
 					messagebox.routine(thisMenuKey);
-				messagebox.active = false;
+				M_MessageboxClose(false);
 				noFurtherInput = -1;
 				M_SetMenuDelay(pid);
 				return;
@@ -2658,8 +2659,6 @@ void M_Ticker(void)
 			menucmd[i].delay--;
 		}
 	}
-
-	M_TickMessagebox();
 
 	if (noFurtherInput <= 0)
 	{
@@ -4428,46 +4427,58 @@ char *M_MessageCancelText(boolean gamequit)
 	return DeclineString;
 }
 
-void M_TickMessagebox(void)
+void M_MessageboxClose(boolean clearstack)
 {
-	if (!messagebox.active)
+	messagebox.active = false;
+
+	Z_Free(messagebox.headertext);
+	Z_Free(messagebox.text);
+	Z_Free(messagebox.confirmtext);
+	Z_Free(messagebox.declinetext);
+
+	memset(&messagebox, 0, sizeof(messagebox_t));
+
+	if (messageboxqueue[messageboxqueuesize-1].active || clearstack)
 	{
-		Z_Free(messagebox.headertext);
-		Z_Free(messagebox.text);
-		Z_Free(messagebox.confirmtext);
-		Z_Free(messagebox.declinetext);
+		if (!clearstack)
+			memcpy(&messagebox, &messageboxqueue[messageboxqueuesize-1], sizeof (messagebox_t));
 
-		memset(&messagebox, 0, sizeof(messagebox));
+		if (messageboxqueue[messageboxqueuesize-1].headertext && !clearstack)
+			messagebox.headertext = Z_StrDup(messageboxqueue[messageboxqueuesize-1].headertext);
+		else
+			messagebox.headertext = NULL;
 
-		if (messageboxqueue.active)
-		{
-			memcpy(&messagebox, &messageboxqueue, sizeof (messagebox));
+		if (messageboxqueue[messageboxqueuesize-1].headertext && !clearstack)
+			messagebox.text = Z_StrDup(messageboxqueue[messageboxqueuesize-1].text);
+		else
+			messagebox.text = NULL;
 
-			if (messageboxqueue.headertext)
-				messagebox.headertext = Z_StrDup(messageboxqueue.headertext);
-			else
-				messagebox.headertext = NULL;
+		if (messageboxqueue[messageboxqueuesize-1].confirmtext && !clearstack)
+			messagebox.confirmtext = Z_StrDup(messageboxqueue[messageboxqueuesize-1].confirmtext);
+		else
+			messagebox.confirmtext = NULL;
 
-			messagebox.text = Z_StrDup(messageboxqueue.text);
+		if (messageboxqueue[messageboxqueuesize-1].declinetext && !clearstack)
+			messagebox.declinetext = Z_StrDup(messageboxqueue[messageboxqueuesize-1].declinetext);
+		else
+			messagebox.declinetext = NULL;
 
-			if (messageboxqueue.confirmtext)
-				messagebox.confirmtext = Z_StrDup(messageboxqueue.confirmtext);
-			else
-				messagebox.confirmtext = NULL;
+		Z_Free(messageboxqueue[messageboxqueuesize-1].headertext);
+		Z_Free(messageboxqueue[messageboxqueuesize-1].text);
+		Z_Free(messageboxqueue[messageboxqueuesize-1].confirmtext);
+		Z_Free(messageboxqueue[messageboxqueuesize-1].declinetext);
 
-			if (messageboxqueue.declinetext)
-				messagebox.declinetext = Z_StrDup(messageboxqueue.declinetext);
-			else
-				messagebox.declinetext = NULL;
-
-			Z_Free(messageboxqueue.headertext);
-			Z_Free(messageboxqueue.text);
-			Z_Free(messageboxqueue.confirmtext);
-			Z_Free(messageboxqueue.declinetext);
-
+		if (clearstack)
 			memset(&messageboxqueue, 0, sizeof(messageboxqueue));
-		}
+		else
+			memset(&messageboxqueue[messageboxqueuesize-1], 0, sizeof(messagebox_t));
+
+		if (clearstack)
+			messageboxqueuesize = 0;
+		else
+			messageboxqueuesize--;
 	}
+
 }
 
 // ==================================================
@@ -4476,48 +4487,56 @@ void M_TickMessagebox(void)
 void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(void),
 	menumessagetype_t itemtype, const char *confirmstr, const char *declinestr)
 {
-	size_t max = 0, start = 0, i, strlines;
+	size_t max = 0, start = 0, i = 0, strlines = 0;
 
 	static char *message = NULL;
 
-	messagebox_t *messageboxset = messagebox.active ? &messageboxqueue : &messagebox;
+	messagebox_t *messageboxset = messagebox.active ? &messageboxqueue[messageboxqueuesize] : &messagebox;
 
-	message = Z_StrDup(str);
+	if (messagebox.active)
+		messageboxqueuesize++;
 
-	DEBFILE(message);
-
-	// Rudementary word wrapping.
-	// Simple and effective. Does not handle nonuniform letter sizes, colors, etc. but who cares.
-	strlines = 0;
-	for (i = 0; message[i]; i++)
+	if (str)
 	{
-		if (message[i] == ' ')
-		{
-			start = i;
-			max += 4;
-		}
-		else if (message[i] == '\n')
-		{
-			strlines = i;
-			start = 0;
-			max = 0;
-			continue;
-		}
-		else
-			max += 8;
-
-		// Start trying to wrap if presumed length exceeds the screen width.
-		if (max >= BASEVIDWIDTH && start > 0)
-		{
-			message[start] = '\n';
-			max -= (start-strlines)*8;
-			strlines = start;
-			start = 0;
-		}
+		message = Z_StrDup(str);
+		DEBFILE(message);
 	}
 
-	start = 0;
-	max = 0;
+	if (str)
+	{
+		// Rudementary word wrapping.
+		// Simple and effective. Does not handle nonuniform letter sizes, colors, etc. but who cares.
+		strlines = 0;
+		for (i = 0; message[i]; i++)
+		{
+			if (message[i] == ' ')
+			{
+				start = i;
+				max += 4;
+			}
+			else if (message[i] == '\n')
+			{
+				strlines = i;
+				start = 0;
+				max = 0;
+				continue;
+			}
+			else
+				max += 8;
+
+			// Start trying to wrap if presumed length exceeds the screen width.
+			if (max >= BASEVIDWIDTH && start > 0)
+			{
+				message[start] = '\n';
+				max -= (start-strlines)*8;
+				strlines = start;
+				start = 0;
+			}
+		}
+
+		start = 0;
+		max = 0;
+	}
 
 	M_StartControlPanel(); // can't put menuactive to true
 
@@ -4526,9 +4545,10 @@ void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(voi
 	else
 		messageboxset->headertext = NULL;
 
-	messageboxset->text = Z_StrDup(message);
-
-	Z_Free(message);
+	if (message)
+		messageboxset->text = Z_StrDup(message);
+	else
+		messageboxset->text = NULL;
 
 	if (confirmstr)
 		messageboxset->confirmtext = Z_StrDup(confirmstr);
@@ -4547,25 +4567,29 @@ void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(voi
 	else
 		messageboxset->routine = (void (*)(INT32))routine;
 
-	//added : 06-02-98: now draw a textbox around the message
-	// compute lenght max and the numbers of lines
-	for (strlines = 0; *(message+start); strlines++)
-	{
-		for (i = 0;i < strlen(message+start);i++)
-		{
-			if (*(message+start+i) == '\n')
-			{
-				if (i > max)
-					max = i;
-				start += i;
-				i = (size_t)-1; //added : 07-02-98 : damned!
-				start++;
-				break;
-			}
-		}
 
-		if (i == strlen(message+start))
-			start += i;
+	if (message)
+	{
+		//added : 06-02-98: now draw a textbox around the message
+		// compute lenght max and the numbers of lines
+		for (strlines = 0; *(message+start); strlines++)
+		{
+			for (i = 0;i < strlen(message+start);i++)
+			{
+				if (*(message+start+i) == '\n')
+				{
+					if (i > max)
+						max = i;
+					start += i;
+					i = (size_t)-1; //added : 07-02-98 : damned!
+					start++;
+					break;
+				}
+			}
+
+			if (i == strlen(message+start))
+				start += i;
+		}
 	}
 
 	if (headerstr)
@@ -4575,13 +4599,15 @@ void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(voi
 		strlines++;
 
 	messageboxset->x = (BASEVIDWIDTH  - 8*max-16)/2;
-	messageboxset->y = (BASEVIDHEIGHT - M_StringHeight(message))/2;
+	messageboxset->y = (BASEVIDHEIGHT - (message ? M_StringHeight(message) : 0))/2;
 
 	messageboxset->numlines = strlines;
 
 	messageboxset->maxlength = max;
 
 	messageboxset->active = true;
+
+	Z_Free(message);
 }
 
 #define MAXMSGLINELEN 256
@@ -4597,6 +4623,7 @@ static void M_DrawMessageMenu(void)
 	INT32 boxheight = messagebox.numlines*8+8;
 	const INT32 thinflags = V_6WIDTHSPACE|V_ALLOWLOWERCASE;
 
+	boolean messagevalid = !!(messagebox.text);
 	boolean headervalid = !!(messagebox.headertext);
 	boolean confirmvalid = !!(messagebox.confirmtext);
 	boolean declinevalid = !!(messagebox.declinetext);
@@ -4647,15 +4674,37 @@ static void M_DrawMessageMenu(void)
 		V_DrawCenteredThinString(text2x, texty, thinflags, messagebox.declinetext);
 	}
 
-	while (*(msg+start))
-	{
-		size_t len = strlen(msg+start);
 
-		for (i = 0; i < len; i++)
+	if (messagevalid)
+	{
+		while (*(msg+start))
 		{
-			if (*(msg+start+i) == '\n')
+			size_t len = strlen(msg+start);
+
+			for (i = 0; i < len; i++)
 			{
-				memset(string, 0, MAXMSGLINELEN);
+				if (*(msg+start+i) == '\n')
+				{
+					memset(string, 0, MAXMSGLINELEN);
+					if (i >= MAXMSGLINELEN)
+					{
+						CONS_Printf("M_DrawMessageMenu: too long segment in %s\n", msg);
+						return;
+					}
+					else
+					{
+						strncpy(string,msg+start, i);
+						string[i] = '\0';
+						start += i;
+						i = (size_t)-1; //added : 07-02-98 : damned!
+						start++;
+					}
+					break;
+				}
+			}
+
+			if (i == strlen(msg+start))
+			{
 				if (i >= MAXMSGLINELEN)
 				{
 					CONS_Printf("M_DrawMessageMenu: too long segment in %s\n", msg);
@@ -4663,32 +4712,14 @@ static void M_DrawMessageMenu(void)
 				}
 				else
 				{
-					strncpy(string,msg+start, i);
-					string[i] = '\0';
+					strcpy(string, msg + start);
 					start += i;
-					i = (size_t)-1; //added : 07-02-98 : damned!
-					start++;
 				}
-				break;
 			}
-		}
 
-		if (i == strlen(msg+start))
-		{
-			if (i >= MAXMSGLINELEN)
-			{
-				CONS_Printf("M_DrawMessageMenu: too long segment in %s\n", msg);
-				return;
-			}
-			else
-			{
-				strcpy(string, msg + start);
-				start += i;
-			}
+			V_DrawString((BASEVIDWIDTH - V_StringWidth(string, V_ALLOWLOWERCASE|V_6WIDTHSPACE))/2,y,V_ALLOWLOWERCASE|V_6WIDTHSPACE,string);
+			y += 8; //SHORT(hu_font[0]->height);
 		}
-
-		V_DrawString((BASEVIDWIDTH - V_StringWidth(string, V_ALLOWLOWERCASE|V_6WIDTHSPACE))/2,y,V_ALLOWLOWERCASE|V_6WIDTHSPACE,string);
-		y += 8; //SHORT(hu_font[0]->height);
 	}
 }
 
@@ -4924,7 +4955,7 @@ static void M_AddonsClearName(INT32 choice)
 	{
 		CLEARNAME;
 	}
-	messagebox.active = false;
+	M_MessageboxClose(false);
 }
 
 #define FILEADDSFX sfx_addfil
@@ -7384,7 +7415,7 @@ static void M_OverwriteGuest(recordreplay_e which)
 		return;
 	}
 	if (FIL_FileExists(rguest)) {
-		messagebox.active = false;
+		M_MessageboxClose(false);
 		remove(rguest);
 	}
 	FIL_WriteFile(rguest, buf, len);
@@ -7913,7 +7944,7 @@ Check_new_version_thread (int *id)
 static void M_ConnectMenu(INT32 choice)
 {
 	(void)choice;
-	messagebox.active = false;
+	M_MessageboxClose(false);
 	// modified game check: no longer handled
 	// we don't request a restart unless the filelist differs
 
@@ -9401,7 +9432,7 @@ static void M_ChangecontrolResponse(event_t *ev)
 	else
 		S_StartSound(NULL, sfx_s224);
 
-	messagebox.active = false;
+	M_MessageboxClose(false);
 }
 
 INT32 MR_ChangeControl(INT32 arg)
