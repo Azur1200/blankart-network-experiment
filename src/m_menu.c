@@ -2582,7 +2582,7 @@ static void M_MenuTypingInput(INT32 key)
 	if (!menutyping.keyboardtyping)	// controller inputs
 	{
 		// we pressed a keyboard input that's not any of our buttons
-		if (M_IsTypingKey(key) && menucmd[pid].dpad_lr == 0 && menucmd[pid].dpad_ud == 0
+		if (key >= 0 && M_IsTypingKey(key) && menucmd[pid].dpad_lr == 0 && menucmd[pid].dpad_ud == 0
 			&& !(menucmd[pid].buttons & MBT_CONFIRM)
 			&& !(menucmd[pid].buttons & MBT_CANCEL)
 			&& !(menucmd[pid].buttons & MBT_HOME)
@@ -2595,7 +2595,7 @@ static void M_MenuTypingInput(INT32 key)
 	else	// Keyboard inputs.
 	{
 		// On the flipside, if we're pressing any keyboard input, switch to controller inputs.
-		if (!M_IsTypingKey(key) && (
+		if (key >= 0 && !M_IsTypingKey(key) && (
 			M_MenuButtonPressed(pid, MBT_CONFIRM)
 			|| M_MenuButtonPressed(pid, MBT_CANCEL)
 			|| M_MenuButtonPressed(pid, MBT_HOME)
