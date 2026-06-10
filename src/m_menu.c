@@ -709,6 +709,8 @@ consvar_t cv_menucaps = CVAR_INIT ("menucaps", "Off", CV_SAVE, CV_OnOff, NULL);
 
 static tic_t playback_last_menu_interaction_leveltime = 0;
 
+consvar_t cv_debugvirtualkeyboard = CVAR_INIT ("debugvirtualkeyboard", "Off", 0, CV_OnOff, NULL);
+
 // ==========================================================================
 // ALL MENU DEFINITIONS GO HERE
 // ==========================================================================
@@ -2534,8 +2536,7 @@ sfxenum_t M_MenuTypingSounds(INT32 key)
 
 void M_SwitchVirtualKeyboard(boolean gamepad)
 {
-	//extern consvar_t cv_debugvirtualkeyboard;
-	menutyping.keyboardtyping = /*cv_debugvirtualkeyboard.value ? false : */!gamepad;
+	menutyping.keyboardtyping = cv_debugvirtualkeyboard.value ? false : !gamepad;
 }
 
 void M_MenuTypingInput(INT32 key)
@@ -3253,6 +3254,8 @@ void M_Init(void)
 	CV_RegisterVar(&cv_menucaps);
 
 	CV_RegisterVar(&cv_debugpanels);
+
+	CV_RegisterVar(&cv_debugvirtualkeyboard);
 }
 
 // ==========================================================================

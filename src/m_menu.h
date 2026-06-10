@@ -586,6 +586,8 @@ extern consvar_t cv_menucaps;
 #define MENUCAPS (!cv_menucaps.value ? V_ALLOWLOWERCASE : 0)
 extern CV_PossibleValue_t gametype_cons_t[];
 
+extern consvar_t cv_debugvirtualkeyboard;
+
 void M_UpdateNumServerPages(void);
 
 extern char dummystaffname[22];
