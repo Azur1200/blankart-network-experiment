@@ -2529,6 +2529,10 @@ void M_UpdateMenuCMD(UINT8 i)
 			case KEY_BACKSPACE:
 				menucmd[i].buttons |= MBT_INFO2;
 				break;
+
+			case KEY_EQUALS:
+				menucmd[i].buttons |= MBT_INFO3;
+				break;
 		}
 	}
 	else
@@ -2543,6 +2547,7 @@ void M_UpdateMenuCMD(UINT8 i)
 		if (G_PlayerInputDown(i, gc_brake, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_CANCEL; }
 		if (G_PlayerInputDown(i, gc_fire, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_INFO1; }
 		if (G_PlayerInputDown(i, gc_drift, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_INFO2; }
+		if (G_PlayerInputDown(i, gc_pause, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_INFO3; }
 		if (G_PlayerInputDown(i, gc_systemmenu, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_HOME; }
 	}
 
@@ -2810,6 +2815,12 @@ void M_MenuTypingInput(INT32 key)
 			M_TextInputHandle(menutyping.textinput, KEY_RIGHTARROW);
 			M_SetMenuDelay(pid);
 			S_StartSound(NULL, sfx_s3k5b);
+		}
+		else if (M_MenuButtonPressed(pid, MBT_INFO3))
+		{
+			M_ToggleVirtualShift();
+			M_SetMenuDelay(pid);
+			S_StartSound(NULL, M_MenuTypingSounds(menutyping.keyboardcapslock ? KEY_CAPSLOCK : KEY_RSHIFT));
 		}
 		else if (M_MenuButtonPressed(pid, MBT_CANCEL))
 		{
