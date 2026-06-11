@@ -477,19 +477,6 @@ static void M_RawSetItemOn(menupanelinst_t *pi, INT16 index)
 			}
 		}
 	}
-
-	// update text input for string cvars
-	consvar_t *cv = pi->items[pi->itemon].cvar;
-	if (cv && !cv->PossibleValue)
-	{
-		M_TextInputInit(&menuinput, menu_text_input_buf, M_StringCvarLength(cv));
-		M_TextInputSetString(&menuinput, cv->string);
-		I_SetTextInput(true);
-	}
-	else
-	{
-		I_SetTextInput(false);
-	}
 }
 
 static void M_ChangeItemStatus(menupanelinst_t *pi, const char *name, menuitemflags_t flag, boolean cond)
@@ -1693,13 +1680,12 @@ static void M_DrawMenuTyping(void)
 	else
 		y += (9-menutyping.menutypingfade);
 
-	menupanelinst_t *curpi = M_GetCurrentMenuPanelInst();
-	menuitem_t *item = M_GetCurrentMenuItem(curpi);
+	menuitem_t *item = menutyping.item;
 
     // Draw the string we're editing at the top.
 	UINT16 offset = (M_StringCvarLength(item->cvar) + 1) * 8;
 	M_DrawTextBox((BASEVIDWIDTH-offset)/2 - 8, y + 12 - 8, M_StringCvarLength(item->cvar), 1, 0);
-	M_DrawTextInput((BASEVIDWIDTH-offset)/2, y + 12, &menuinput, V_ALLOWLOWERCASE);
+	M_DrawTextInput((BASEVIDWIDTH-offset)/2, y + 12, menutyping.textinput, V_ALLOWLOWERCASE);
 
 	if (item->text)
 	{
@@ -2599,10 +2585,23 @@ sfxenum_t M_MenuTypingSounds(INT32 key)
 	}
 }
 
-void M_OpenVirtualKeyboard(void)
+void M_OpenVirtualKeyboard(textinput_t *textinput, char *buffer, menuitem_t *item)
 {
+	if (item == NULL)
+	{
+		M_StartMessage2("Failed to open Keyboard", "Failed to open Keyboard dialog.\nSupplied item does not exist.\n", NULL, MM_NOTHING, "Press any key", NULL);
+		return;
+	}
+
 	menutyping.active = true;
 	menutyping.menutypingclose = false;
+
+	menutyping.textinput = textinput;
+	menutyping.item = item;
+
+	M_TextInputInit(menutyping.textinput, buffer, M_StringCvarLength(menutyping.item->cvar));
+	M_TextInputSetString(menutyping.textinput, menutyping.item->cvar->string);
+	I_SetTextInput(true);
 }
 
 void M_SwitchVirtualKeyboard(boolean gamepad)
@@ -2622,6 +2621,11 @@ void M_AbortVirtualKeyboard(void)
 
 	menutyping.active = false;
 	menutyping.menutypingfade = 0;
+
+	menutyping.textinput = NULL;
+	I_SetTextInput(false);
+
+	menutyping.item = NULL;
 }
 
 static void M_ToggleVirtualShift(void)
@@ -2643,9 +2647,7 @@ static void M_ToggleVirtualShift(void)
 void M_MenuTypingInput(INT32 key)
 {
 	const UINT8 pid = 0;
-
-	menupanelinst_t *curpi = M_GetCurrentMenuPanelInst();
-	menuitem_t *item = M_GetCurrentMenuItem(curpi);
+	menuitem_t *item = menutyping.item;
 
 	// Determine when to check for keyboard inputs or controller inputs using menuKey, which is the key passed here as argument.
 	if (key > 0)
@@ -2692,7 +2694,7 @@ void M_MenuTypingInput(INT32 key)
 			if (key == KEY_ENTER || key == KEY_ESCAPE)
 			{
 				M_CloseVirtualKeyboard();
-				CV_Set(item->cvar, menuinput.buffer);
+				CV_Set(item->cvar, menutyping.textinput->buffer);
 				M_SetMenuDelay(pid);
 				S_StartSound(NULL, M_MenuTypingSounds(key));
 				return;
@@ -2700,7 +2702,7 @@ void M_MenuTypingInput(INT32 key)
 
 			if (menutyping.keyboardtyping)
 			{
-				if (key > 0 && M_TextInputHandle(&menuinput, key))
+				if (key > 0 && M_TextInputHandle(menutyping.textinput, key))
 				{
 					S_StartSound(NULL, M_MenuTypingSounds(key));
 				}
@@ -2774,19 +2776,19 @@ void M_MenuTypingInput(INT32 key)
 		}
 		else if (M_MenuButtonPressed(pid, MBT_INFO1))
 		{
-			M_TextInputHandle(&menuinput, KEY_LEFTARROW);
+			M_TextInputHandle(menutyping.textinput, KEY_LEFTARROW);
 			M_SetMenuDelay(pid);
 			S_StartSound(NULL, sfx_s3k5b);
 		}
 		else if (M_MenuButtonPressed(pid, MBT_INFO2))
 		{
-			M_TextInputHandle(&menuinput, KEY_RIGHTARROW);
+			M_TextInputHandle(menutyping.textinput, KEY_RIGHTARROW);
 			M_SetMenuDelay(pid);
 			S_StartSound(NULL, sfx_s3k5b);
 		}
 		else if (M_MenuButtonPressed(pid, MBT_CANCEL))
 		{
-			M_TextInputHandle(&menuinput, KEY_BACKSPACE);
+			M_TextInputHandle(menutyping.textinput, KEY_BACKSPACE);
 			M_SetMenuDelay(pid);
 			S_StartSound(NULL, M_MenuTypingSounds(KEY_BACKSPACE));
 		}
@@ -2824,7 +2826,7 @@ void M_MenuTypingInput(INT32 key)
 				}
 				else
 				{
-					M_TextInputHandle(&menuinput, (INT32)c); // Write!
+					M_TextInputHandle(menutyping.textinput, (INT32)c); // Write!
 					menutyping.keyboardshift = false;		// undo shift if it had been pressed
 				}
 
@@ -2994,8 +2996,7 @@ static void M_HandleMenuInput(void)
 				return;
 
 			menutyping.keyboardtyping = thisMenuKey != 0 ? true : false;	// If we entered this menu by pressing a menu Key, default to keyboard typing, otherwise use controller.
-			menutyping.active = true;
-			menutyping.menutypingclose = false;
+			M_OpenVirtualKeyboard(&menuinput, menu_text_input_buf, item);
 			return;
 		}
 	}

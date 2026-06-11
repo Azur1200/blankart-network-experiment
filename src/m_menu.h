@@ -23,6 +23,7 @@
 #include "i_threads.h"
 #include "mserv.h"
 #include "r_skins.h" // for SKINNAMESIZE
+#include "m_textinput.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,6 +53,9 @@ typedef struct menutyping_s
 	SINT8 keyboardy;
 	boolean keyboardcapslock;
 	boolean keyboardshift;
+
+	textinput_t *textinput;
+	menuitem_t *item;
 } menutyping_t;
 // While typing, we'll have a fade strongly darken the screen to overlay the typing menu instead
 
@@ -136,7 +140,7 @@ sfxenum_t M_MenuTypingSounds(INT32 key);
 void M_MenuTypingInput(INT32 key);
 void M_SwitchVirtualKeyboard(boolean gamepad);
 void M_AbortVirtualKeyboard(void);
-void M_OpenVirtualKeyboard(void);
+void M_OpenVirtualKeyboard(textinput_t *textinput, char *buffer, menuitem_t *item);
 
 void M_DoItemRoutine(menuitem_t *item, INT32 thisMenuKey);
 
