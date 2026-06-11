@@ -16,6 +16,7 @@
 #include "g_game.h"
 #include "g_input.h"
 #include "g_state.h"
+#include "m_menu.h"
 #include "p_local.h"
 #include "z_zone.h"
 #include "s_sound.h"
@@ -1104,7 +1105,12 @@ void P_Ticker(boolean run)
 
 			if (cv_recordmultiplayerdemos.value && (demo.savemode == DSM_NOTSAVING || demo.savemode == DSM_WILLAUTOSAVE))
 				if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON))
+				{
 					demo.savemode = DSM_TITLEENTRY;
+					M_OpenVirtualKeyboard(&demo.titlenameinput, demo.titlename, &replaysave);
+					M_StartControlPanel();
+					M_EnterMenu(MN_TYPINGDUMMY, false, 0);
+				}
 		}
 		else if (demo.playback) // Use Ghost data for consistency checks.
 		{

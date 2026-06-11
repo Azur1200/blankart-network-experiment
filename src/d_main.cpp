@@ -274,12 +274,6 @@ void D_ProcessEvents(void)
 				continue;
 		}
 
-		if (demo.savemode == demovars_s::DSM_TITLEENTRY)
-		{
-			if (G_DemoTitleResponder(ev))
-				continue;
-		}
-
 		// Menu input
 		if (WipeInAction < 2)
 		{

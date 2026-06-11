@@ -5499,6 +5499,9 @@ void G_AfterIntermission(void)
 
 	HU_ClearCEcho();
 
+	if (demo.savemode == DSM_TITLEENTRY)
+		M_AbortVirtualKeyboard();
+
 	if (demo.playback)
 	{
 		G_StopDemo();

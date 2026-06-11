@@ -931,24 +931,6 @@ static void ST_overlayDrawer(void)
 	}
 }
 
-void ST_DrawDemoTitleEntry(void)
-{
-	#define x (BASEVIDWIDTH/2 - 139)
-	#define y (BASEVIDHEIGHT/2)
-	M_DrawTextBox(x, y + 4, MAXSTRINGLENGTH, 1, 0);
-
-	M_DrawTextInputScroll(x + 8, y + 12, &demo.titlenameinput, V_ALLOWLOWERCASE, (MAXSTRINGLENGTH-1)*8);
-
-	M_DrawTextBox(x + 30, y - 24, 26, 1, 0);
-	V_DrawString(x + 38, y - 16, V_ALLOWLOWERCASE, "Enter the name of the replay.");
-
-	M_DrawTextBox(x + 50, y + 20, 20, 1, 0);
-	V_DrawThinString(x + 58, y + 28, V_ALLOWLOWERCASE, "Escape - Cancel");
-	V_DrawRightAlignedThinString(x + 220, y + 28, V_ALLOWLOWERCASE, "Enter - Confirm");
-	#undef x
-	#undef y
-}
-
 // MayonakaStatic: draw Midnight Channel's TV-like borders
 static void ST_MayonakaStatic(void)
 {
@@ -1280,10 +1262,6 @@ void ST_Drawer(void)
 
 		case DSM_WILLSAVE:
 			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_HUDTRANS|V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|gtc, "Replay will be saved.");
-			break;
-
-		case DSM_TITLEENTRY:
-			ST_DrawDemoTitleEntry();
 			break;
 
 		default: // Don't render anything

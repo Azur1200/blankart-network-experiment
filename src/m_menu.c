@@ -15,6 +15,7 @@
 
 #include "command.h"
 #include "doomstat.h"
+#include "g_demo.h"
 #include "g_state.h"
 #include "screen.h"
 #ifdef __GNUC__
@@ -440,6 +441,8 @@ static UINT32 M_StringCvarLength(consvar_t *cv)
 		return 28;
 	else if (cv == &cv_dummyname || cv == &cv_playername[0] || cv == &cv_playername[1] || cv == &cv_playername[2] || cv == &cv_playername[3])
 		return MAXPLAYERNAME + 1;
+	else if (cv == &cv_dummyreplaysave)
+		return 65;
 	else
 		return MAXSTRINGLENGTH;
 }
@@ -1688,10 +1691,23 @@ static void M_DrawMenuTyping(void)
 
 	menuitem_t *item = menutyping.item;
 
-    // Draw the string we're editing at the top.
-	UINT16 offset = (M_StringCvarLength(item->cvar) + 1) * 8;
-	M_DrawTextBox((BASEVIDWIDTH-offset)/2 - 8, y + 12 - 8, M_StringCvarLength(item->cvar), 1, 0);
-	M_DrawTextInput((BASEVIDWIDTH-offset)/2, y + 12, menutyping.textinput, V_ALLOWLOWERCASE);
+	boolean scrolltextbox = false;
+	INT32 length = M_StringCvarLength(item->cvar);
+
+	if (length > MAXSTRINGLENGTH)
+	{
+		length = MAXSTRINGLENGTH;
+		scrolltextbox = true;
+	}
+
+	// Draw the string we're editing at the top.
+	UINT16 offset = (length + 1) * 8;
+	M_DrawTextBox((BASEVIDWIDTH-offset)/2 - 8, y + 12 - 8, length, 1, 0);
+
+	if (scrolltextbox)
+		M_DrawTextInputScroll((BASEVIDWIDTH-offset)/2, y + 12, menutyping.textinput, V_ALLOWLOWERCASE, (MAXSTRINGLENGTH-1)*8);
+	else
+		M_DrawTextInput((BASEVIDWIDTH-offset)/2, y + 12, menutyping.textinput, V_ALLOWLOWERCASE);
 
 	if (item->text)
 	{
@@ -2632,6 +2648,9 @@ void M_AbortVirtualKeyboard(void)
 	I_SetTextInput(false);
 
 	menutyping.item = NULL;
+
+	if (menustack[0] == MN_TYPINGDUMMY)
+		M_ClearMenusEx(false, true);
 }
 
 static void M_ToggleVirtualShift(void)
@@ -3336,6 +3355,7 @@ void M_Init(void)
 	CV_RegisterVar(&cv_dummycolor);
 	CV_RegisterVar(&cv_dummyserverpage);
 	CV_RegisterVar(&cv_dummyaddonsearch);
+	CV_RegisterVar(&cv_dummyreplaysave);
 
 	quitmsg[QUITMSG] = M_GetText("Eggman's tied explosives\nto your girlfriend, and\nwill activate them if\nyou press the 'Y' key!\nPress 'N' to save her!\n");
 	quitmsg[QUITMSG1] = M_GetText("What would Tails say if\nhe saw you quitting the game?\n");

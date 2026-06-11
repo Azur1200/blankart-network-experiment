@@ -819,10 +819,6 @@ skiptallydrawer:
 			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|hilicol, "Replay saved!");
 			break;
 
-		case DSM_TITLEENTRY:
-			ST_DrawDemoTitleEntry();
-			break;
-
 		default: // Don't render any text here
 			break;
 		}
@@ -852,7 +848,12 @@ void Y_Ticker(void)
 	if (demo.recording)
 	{
 		if (demo.savemode == DSM_NOTSAVING && G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON))
+		{
 			demo.savemode = DSM_TITLEENTRY;
+			M_OpenVirtualKeyboard(&demo.titlenameinput, demo.titlename, &replaysave);
+			M_StartControlPanel();
+			M_EnterMenu(MN_TYPINGDUMMY, false, 0);
+		}
 
 		if (demo.savemode == DSM_WILLSAVE || demo.savemode == DSM_WILLAUTOSAVE)
 			G_SaveDemo();

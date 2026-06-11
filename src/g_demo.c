@@ -11,6 +11,7 @@
 /// \file  g_demo.c
 /// \brief Demo recording and playback
 
+#include "command.h"
 #include "doomdef.h"
 #include "console.h"
 #include "d_main.h"
@@ -71,6 +72,14 @@ consvar_t cv_netdemosyncquality = CVAR_INIT ("netdemo_syncquality", "1", CV_SAVE
 
 consvar_t cv_netdemosize = CVAR_INIT ("netdemo_size", "6", CV_SAVE, CV_Natural, NULL);
 consvar_t cv_resyncdemo = CVAR_INIT("democonsistency", "On", 0, CV_OnOff, NULL);
+
+static void ReplaySave(void)
+{
+	demo.savemode = DSM_WILLSAVE;
+}
+
+consvar_t cv_dummyreplaysave = CVAR_INIT ("dummyreplaysave", "", CV_HIDEN|CV_CALL|CV_NOINIT, NULL, ReplaySave);
+menuitem_t replaysave = {.text = "Enter the name of the replay.", .cvar = &cv_dummyreplaysave};
 
 boolean nodrawers; // for comparative timing purposes
 boolean noblit; // for comparative timing purposes
@@ -2942,12 +2951,7 @@ void G_BeginRecording(void)
 		char *title = G_BuildMapTitle(gamemap);
 		// Print to a separate temp buffer instead of demo.titlename, so we can use it in M_TextInputSetString
 		snprintf(demotitlename, sizeof(demotitlename), "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
-
-		// Init just in case it isn't initialized already
-		M_TextInputInit(&demo.titlenameinput, demo.titlename, sizeof(demo.titlename));
-
-		// This will indirectly assign to demo.titlename too
-		M_TextInputSetString(&demo.titlenameinput, demotitlename);
+		CV_StealthSet(&cv_dummyreplaysave, demotitlename); // Setup so its used when saving later.
 		Z_Free(title);
 	}
 
@@ -4643,33 +4647,6 @@ void G_SaveDemo(void)
 		else
 			CONS_Alert(CONS_WARNING, M_GetText("Demo %s not saved\n"), demoname);
 	}
-}
-
-boolean G_DemoTitleResponder(event_t *ev)
-{
-	INT32 ch;
-
-	if (ev->type != ev_keydown)
-		return false;
-
-	ch = (INT32)ev->data1;
-
-	// Only ESC and non-keyboard keys abort connection
-	if (ch == KEY_ESCAPE)
-	{
-		demo.savemode = (G_DemoWillAutoSave()) ? DSM_WILLAUTOSAVE : DSM_NOTSAVING;
-		return true;
-	}
-
-	if (ch == KEY_ENTER || ch >= NUMKEYS)
-	{
-		demo.savemode = DSM_WILLSAVE;
-		return true;
-	}
-
-	M_TextInputHandle(&demo.titlenameinput, ch);
-
-	return true;
 }
 
 void G_SyncDemoParty(INT32 rem, INT32 newsplitscreen)
