@@ -907,6 +907,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 #ifdef HAVE_DISCORDRPC
 	{"TICKDISCORDREQUESTS", &MR_TickDiscordRequests},
 #endif
+	{"TICKVIEWSERVER", &MR_TickViewServer},
 
 	{ NULL, NULL }
 };
@@ -923,7 +924,6 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWJOYSTICK", &MD_DrawJoystick },
 	{ "DRAWMONITORTOGGLES", &MD_DrawMonitorToggles },
 	{ "DRAWCONNECTMENU", &MD_DrawConnectMenu },
-	{ "DRAWVIEWSERVER", &MD_DrawViewServer },
 	{ "DRAWLEVELPLATTERMENU", &MD_DrawLevelPlatterMenu },
 #ifdef HAVE_DISCORDRPC
 	{ "DRAWDISCORDREQUESTS", &MD_DrawDiscordRequests },

@@ -65,6 +65,7 @@
 #include "g_party.h"
 #include "k_vote.h"
 #include "stun.h"
+#include "m_menu.h"
 
 // cl loading screen
 #include "v_video.h"
@@ -1810,39 +1811,38 @@ void CL_UpdateServerList (void)
 		SendAskInfo(BROADCASTADDR);
 }
 
-static void M_ConfirmConnect(event_t *ev)
+static void M_ConfirmConnect(INT32 choice)
 {
-	if (ev->type == ev_keydown)
+	if (M_MenuButtonPressed(0, MBT_CONFIRM))
 	{
-		if (ev->data1 == ' ' || ev->data1 == 'y' || ev->data1 == KEY_ENTER || (ev->device != 0 && G_ControlBoundToKey(0, gc_accelerate, ev->data1, true)))
+		if (totalfilesrequestednum > 0)
 		{
-			if (totalfilesrequestednum > 0)
+#ifdef HAVE_CURL
+			if (http_source[0] == '\0' || curl_failedwebdownload)
+#endif
 			{
-#ifdef HAVE_CURL
-				if (http_source[0] == '\0' || curl_failedwebdownload)
-#endif
+				if (CL_SendFileRequest())
 				{
-					if (CL_SendFileRequest())
-					{
-						cl_mode = CL_DOWNLOADFILES;
-					}
-					else
-					{
-						cl_mode = CL_DOWNLOADFAILED;
-					}
+					cl_mode = CL_DOWNLOADFILES;
 				}
-#ifdef HAVE_CURL
 				else
-					cl_mode = CL_PREPAREHTTPFILES;
-#endif
+				{
+					cl_mode = CL_DOWNLOADFAILED;
+				}
 			}
+#ifdef HAVE_CURL
 			else
-				cl_mode = CL_LOADFILES;
+				cl_mode = CL_PREPAREHTTPFILES;
+#endif
 		}
-		else if (ev->data1 == 'n' || ev->data1 == KEY_ESCAPE || (ev->device != 0 && G_ControlBoundToKey(0, gc_brake, ev->data1, true)))
-		{
-			cl_mode = CL_ABORTED;
-		}
+		else
+			cl_mode = CL_LOADFILES;
+
+		M_ClearMenusEx(false, true);
+	}
+	else if (M_MenuButtonPressed(0, MBT_CANCEL) || M_MenuButtonPressed(0, MBT_HOME))
+	{
+		cl_mode = CL_ABORTED;
 	}
 }
 
@@ -1890,7 +1890,7 @@ static boolean CL_FinishedFileList(void)
 				"This server is full!\n"
 				"\n"
 				"You may load server addons (if any), and wait for a slot.\n"
-			), ROUTINECAST(M_ConfirmConnect), MM_EVENTHANDLER, "ACCEL to continue", "BRAKE to cancel");
+			), ROUTINECAST(M_ConfirmConnect), MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
 			cl_mode = CL_CONFIRMCONNECT;
 			ChangeServMusic(SERVMUS_2, true,true);
 		}
@@ -1949,11 +1949,11 @@ static boolean CL_FinishedFileList(void)
 					"Download of %s additional content is required to join.\n"
 					"\n"
 					"You may download, load server addons, and wait for a slot.\n"
-				), downloadsize), ROUTINECAST(M_ConfirmConnect), MM_EVENTHANDLER, "ACCEL to continue", "BRAKE to cancel");
+				), downloadsize), ROUTINECAST(M_ConfirmConnect), MM_EVENTHANDLER, M_MessageConfirmText(false), M_MessageCancelText(false));
 			else
 				M_StartMessage2("Downloading Content", va(M_GetText(
 					"Download of %s additional content is required to join.\n"
-				), downloadsize), ROUTINECAST(M_ConfirmConnect), MM_EVENTHANDLER, "ACCEL to continue", "BRAKE to cancel");
+				), downloadsize), ROUTINECAST(M_ConfirmConnect), MM_EVENTHANDLER, M_MessageConfirmText(false), M_MessageCancelText(false));
 
 			Z_Free(downloadsize);
 			cl_mode = CL_CONFIRMCONNECT;
@@ -2288,34 +2288,48 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		renderdeltatics = FRACUNIT;
 		R_SetTimeFrac(FRACUNIT);
 
-		if (cl_mode == CL_CONFIRMCONNECT)
-		{
-			D_ProcessEvents(); //needed for menu system to receive inputs
-		}
-		else if (netgame)
+		if (netgame)
 		{
 			event_t *ev;
-			INT32 key;
 			for (; eventtail != eventhead; eventtail = (eventtail+1) & (MAXEVENTS-1))
 			{
 				ev = &events[eventtail];
-				if (ev->type == ev_joystick && G_GetDevicePlayer(ev->device) == 0 && !G_AxisInDeadzone(0, ev))
-					key = G_AxisToKey(ev);
-				else if (ev->type == ev_keydown)
-					key = ev->data1;
-				else
-					continue;
 
-				if (cl_mode == CL_VIEWSERVER && menustack[0])
+				G_MapEventsToControls(ev);
+
+				if (!messagebox.active)
 				{
-					M_Responder(ev);
-				}
-				else
-				{
-					if (key == KEY_ESCAPE || G_ControlBoundToKey(0, gc_brake, key, true))
-						cl_mode = CL_ABORTED;
+					if (ev->type == ev_keydown && ev->data1 > 0 && ev->data1 < NUMKEYS)
+					{
+						// Record keyboard presses
+						menuKey = ev->data1;
+					}
 				}
 			}
+
+#ifdef HAVE_THREADS
+			I_lock_mutex(&m_menu_mutex);
+#endif
+			M_UpdateMenuCMD(0, true);
+
+			if (cl_mode == CL_CONFIRMCONNECT)
+			{
+				if (messagebox.active)
+					M_HandleMessageBox(menuKey);
+			}
+			else
+			{
+				if (menustack[0] && cl_mode == CL_VIEWSERVER)
+				{
+					M_Ticker();
+				}
+				else if (M_MenuButtonPressed(0, MBT_CANCEL))
+					cl_mode = CL_ABORTED;
+			}
+
+#ifdef HAVE_THREADS
+			I_unlock_mutex(m_menu_mutex);
+#endif
 		}
 
 		if (cl_mode == CL_ABORTED)

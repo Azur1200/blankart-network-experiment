@@ -14,6 +14,7 @@
 /// \brief XMOD's extremely revamped menu system, revamped again for BlanKart
 
 #include "command.h"
+#include "d_clisrv.h"
 #include "doomstat.h"
 #include "g_demo.h"
 #include "g_state.h"
@@ -1920,59 +1921,66 @@ void M_Drawer(void)
 			V_DrawFadeScreen(0xFF00, curfadevalue);
 	}
 
-	size_t i;
-	UINT16 sortedpanels[UINT16_MAX];
-	if (numcurpanels >= UINT16_MAX)
-		I_Error("You have way too many panels, man!");
-	for (i = 0; i < numcurpanels; i++)
-		sortedpanels[i] = i;
-	qs22j(sortedpanels, numcurpanels, sizeof(*sortedpanels), SortPanels);
-
-	if (currentMenu && currentMenu->vhs && cv_vhseffect.value)
-		V_DrawVhsEffect(false);
-
-	M_GetGametypeColor();
-	for (i = 0; i < numcurpanels; i++)
-		M_DrawMenuPanel(&curpanels[sortedpanels[i]], panelOn == sortedpanels[i] && !curpanels[sortedpanels[i]].disabled);
-
-	if (menustack[0] == MN_MAIN)
-	{
-		INT32 texty = vid.height - 10*vid.dup;
-#define addtext(f, str) {\
-V_DrawThinString(vid.dup, texty, MENUCAPS|V_NOSCALESTART|f, str);\
-texty -= 10*vid.dup;\
-}
-		if (customversionstring[0] != '\0')
-		{
-			addtext(V_ALLOWLOWERCASE, customversionstring);
-			addtext(0, "Mod version:");
-		}
-		else
-		{
-// Development -- show revision / branch info
-#if defined(DEVELOP) || defined(COMMITVERSION)
-			addtext(V_ALLOWLOWERCASE|V_YELLOWMAP|V_TRANSLUCENT, D_GetFancyBranchName());
-			V_DrawThinString(0, 0, V_ALLOWLOWERCASE|V_ORANGEMAP|V_TRANSLUCENT|V_SNAPTOTOP, va("%s", complast));
-#else // Regular build
-			addtext(V_ALLOWLOWERCASE|V_TRANSLUCENT, va("%s", VERSIONSTRING));
+	if (GetClientMode() != CL_DOWNLOADFILES && GetClientMode() != CL_LOADFILES && GetClientMode() != CL_CHECKFILES
+#ifdef HAVE_CURL
+		&& GetClientMode() != CL_DOWNLOADHTTPFILES
 #endif
-			if (compuncommitted)
-				addtext(V_REDMAP|V_STRINGDANCE|V_TRANSLUCENT, "! UNCOMMITTED CHANGES !");
-		}
-#undef addtext
-	}
-
-	// draw menuitem tooltip
-	if (numcurpanels > 0)
+		&& GetClientMode() != CL_CONFIRMCONNECT)
 	{
-		const menupanelinst_t *pi = &curpanels[panelOn];
-		if (pi->itemon < pi->numitems && pi->items[pi->itemon].tooltip != NULL)
+		size_t i;
+		UINT16 sortedpanels[UINT16_MAX];
+		if (numcurpanels >= UINT16_MAX)
+			I_Error("You have way too many panels, man!");
+		for (i = 0; i < numcurpanels; i++)
+			sortedpanels[i] = i;
+		qs22j(sortedpanels, numcurpanels, sizeof(*sortedpanels), SortPanels);
+
+		if (currentMenu && currentMenu->vhs && cv_vhseffect.value)
+			V_DrawVhsEffect(false);
+
+		M_GetGametypeColor();
+		for (i = 0; i < numcurpanels; i++)
+			M_DrawMenuPanel(&curpanels[sortedpanels[i]], panelOn == sortedpanels[i] && !curpanels[sortedpanels[i]].disabled);
+
+		if (menustack[0] == MN_MAIN)
 		{
-			M_DrawSplitText(pi->items[pi->itemon].tooltip,
-			                BASEVIDWIDTH / 2,
-			                BASEVIDHEIGHT-50,
-			                V_SNAPTOBOTTOM|V_6WIDTHSPACE|MENUCAPS,
-			                cursortimer <= 9 ? 9 - cursortimer : 0);
+			INT32 texty = vid.height - 10*vid.dup;
+			#define addtext(f, str) {\
+			V_DrawThinString(vid.dup, texty, MENUCAPS|V_NOSCALESTART|f, str);\
+			texty -= 10*vid.dup;\
+			}
+			if (customversionstring[0] != '\0')
+			{
+				addtext(V_ALLOWLOWERCASE, customversionstring);
+				addtext(0, "Mod version:");
+			}
+			else
+			{
+				// Development -- show revision / branch info
+#if defined(DEVELOP) || defined(COMMITVERSION)
+				addtext(V_ALLOWLOWERCASE|V_YELLOWMAP|V_TRANSLUCENT, D_GetFancyBranchName());
+				V_DrawThinString(0, 0, V_ALLOWLOWERCASE|V_ORANGEMAP|V_TRANSLUCENT|V_SNAPTOTOP, va("%s", complast));
+#else // Regular build
+				addtext(V_ALLOWLOWERCASE|V_TRANSLUCENT, va("%s", VERSIONSTRING));
+#endif
+				if (compuncommitted)
+					addtext(V_REDMAP|V_STRINGDANCE|V_TRANSLUCENT, "! UNCOMMITTED CHANGES !");
+			}
+#undef addtext
+		}
+
+		// draw menuitem tooltip
+		if (numcurpanels > 0)
+		{
+			const menupanelinst_t *pi = &curpanels[panelOn];
+			if (pi->itemon < pi->numitems && pi->items[pi->itemon].tooltip != NULL)
+			{
+				M_DrawSplitText(pi->items[pi->itemon].tooltip,
+								BASEVIDWIDTH / 2,
+					BASEVIDHEIGHT-50,
+					V_SNAPTOBOTTOM|V_6WIDTHSPACE|MENUCAPS,
+					cursortimer <= 9 ? 9 - cursortimer : 0);
+			}
 		}
 	}
 
@@ -2470,7 +2478,7 @@ void M_SetMenuDelay(UINT8 i)
 	}
 }
 
-void M_UpdateMenuCMD(UINT8 i)
+void M_UpdateMenuCMD(UINT8 i, boolean bailrequired)
 {
 	INT32 thisMenuKey = menuKey;
 
@@ -2491,6 +2499,11 @@ void M_UpdateMenuCMD(UINT8 i)
 
 	menucmd[i].buttonsHeld = menucmd[i].buttons;
 	menucmd[i].buttons = 0;
+
+	if (bailrequired && i == 0)
+	{
+		if (gamekeydown[0][KEY_ESCAPE] > 0) { menucmd[i].buttons |= MBT_CANCEL; }
+	}
 
 	if (thisMenuKey > 0 && i == 0) // TODO: replace this shitty Keyboard hack.....
 	{
@@ -2943,6 +2956,26 @@ menuitem_t *M_GetCurrentMenuItem(menupanelinst_t *curpi)
 	return curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;
 }
 
+void M_HandleMessageBox(INT32 thisMenuKey)
+{
+	const UINT8 pid = 0;
+
+	if (messagebox.messagetype != MM_EVENTHANDLER)
+	{
+		if (menucmd[pid].buttons != 0 && menucmd[pid].buttonsHeld == 0)
+		{
+			if (M_WipeBuffer(thisMenuKey, MR_Dummy))
+				return;
+			if (messagebox.routine)
+				messagebox.routine(thisMenuKey);
+			M_MessageboxClose(false);
+			noFurtherInput = -1;
+			M_SetMenuDelay(pid);
+			return;
+		}
+	}
+}
+
 static void M_HandleMenuInput(void)
 {
 	UINT8 pid = 0;
@@ -2958,21 +2991,7 @@ static void M_HandleMenuInput(void)
 
 	if (messagebox.active)
 	{
-		if (messagebox.messagetype != MM_EVENTHANDLER)
-		{
-			if (menucmd[pid].buttons != 0 && menucmd[pid].buttonsHeld == 0)
-			{
-				if (M_WipeBuffer(thisMenuKey, MR_Dummy))
-					return;
-				if (messagebox.routine)
-					messagebox.routine(thisMenuKey);
-				M_MessageboxClose(false);
-				noFurtherInput = -1;
-				M_SetMenuDelay(pid);
-				return;
-			}
-		}
-
+		M_HandleMessageBox(thisMenuKey);
 		return;
 	}
 
@@ -10678,7 +10697,6 @@ static boolean viewserver_showaddons = false;
 
 INT32 MR_HandleViewServer(INT32 choice)
 {
-
 	if (M_MenuButtonPressed(0, MBT_CONFIRM))
 	{
 		S_StartSound(NULL, sfx_menu1);
@@ -10835,8 +10853,10 @@ void MP_ViewServerAddons(menupanelinst_t *pi)
 #undef charsonside
 }
 
-void MD_DrawViewServer(menupanelinst_t *pi)
+INT32 MR_TickViewServer(INT32 choice)
 {
+	menupanelinst_t *pi = M_GetPanel("MAIN");;
+
 	// Buttons
 	M_SetItemVisible(pi, "TOGGLEBUTTON1", viewserver_showaddons);
 	M_SetItemVisible(pi, "TOGGLEBUTTON2", !viewserver_showaddons);

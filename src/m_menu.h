@@ -133,8 +133,9 @@ boolean M_Responder(event_t *ev);
 menupanelinst_t *M_GetCurrentMenuPanelInst(void);
 menupaneldef_t *M_GetCurrentMenuPanelDef(menupanelinst_t *curpi);
 menuitem_t *M_GetCurrentMenuItem(menupanelinst_t *curpi);
+void M_HandleMessageBox(INT32 thisMenuKey);
 void M_SetMenuDelay(UINT8 i);
-void M_UpdateMenuCMD(UINT8 i);
+void M_UpdateMenuCMD(UINT8 i, boolean bailrequired);
 boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt);
 boolean M_MenuButtonHeld(UINT8 pid, UINT32 bt);
 sfxenum_t M_MenuTypingSounds(INT32 key);
@@ -199,6 +200,9 @@ typedef struct
 	INT16 numlines;
 	INT16 maxlength;
 } messagebox_t;
+
+extern messagebox_t messagebox;
+extern messagebox_t messageboxqueue[NUMMENULEVELS];
 
 #define ROUTINECAST(func) (void (*)(void))func
 
@@ -541,7 +545,6 @@ void MD_DrawImageDef(menupanelinst_t *pi);
 void MD_DrawMusicTest(menupanelinst_t *pi);
 void MD_DrawJoystick(menupanelinst_t *pi);
 void MD_DrawMonitorToggles(menupanelinst_t *pi);
-void MD_DrawViewServer(menupanelinst_t *pi);
 void MD_DrawLevelPlatterMenu(menupanelinst_t *pi);
 void MD_DrawReplayHutReplayInfo(menupanelinst_t *pi);
 #ifdef HAVE_DISCORDRPC
@@ -558,6 +561,7 @@ INT32 MR_TickStats(INT32 choice);
 INT32 MR_TickReplayHutReplayInfo(INT32 choice);
 INT32 MR_TickReplayHut(INT32 choice);
 INT32 MR_TickDiscordRequests(INT32 choice);
+INT32 MR_TickViewServer(INT32 choice);
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);
