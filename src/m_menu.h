@@ -131,6 +131,7 @@ menuitem_t *M_GetCurrentMenuItem(menupanelinst_t *curpi);
 void M_SetMenuDelay(UINT8 i);
 void M_UpdateMenuCMD(UINT8 i);
 boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt);
+boolean M_MenuButtonHeld(UINT8 pid, UINT32 bt);
 sfxenum_t M_MenuTypingSounds(INT32 key);
 void M_MenuTypingInput(INT32 key);
 void M_SwitchVirtualKeyboard(boolean gamepad);

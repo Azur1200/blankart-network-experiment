@@ -1673,161 +1673,218 @@ static int SortPanels(const void *a, const void *b)
 // Draws the typing submenu
 static void M_DrawMenuTyping(void)
 {
+	const UINT8 pid = 0;
+
 	INT32 i, j;
 
-	INT32 x;
-	INT32 y = 100 + (9-menutyping.menutypingfade)*8;
-	INT32 tflag = (9 - menutyping.menutypingfade)<<V_ALPHASHIFT;
+	INT32 x, y;
 
 	char buf[8];	// We write there to use drawstring for convenience.
+
+	V_DrawFadeScreen(31, (menutyping.menutypingfade+1)/2);
+
+	// Draw the string we're editing at the top.
+
+	const INT32 boxwidth = (8*(MAXSTRINGLENGTH + 1)) + 7;
+	x = (BASEVIDWIDTH - boxwidth)/2;
+	y = 80;
+	if (menutyping.menutypingfade < 9)
+		y += floor(pow(2, (double)(9 - menutyping.menutypingfade)));
+	else
+		y += (9-menutyping.menutypingfade);
 
 	menupanelinst_t *curpi = M_GetCurrentMenuPanelInst();
 	menuitem_t *item = M_GetCurrentMenuItem(curpi);
 
-	V_DrawFadeScreen(31, menutyping.menutypingfade);
-
-	// Draw the string we're editing at the top.
+    // Draw the string we're editing at the top.
 	UINT16 offset = (M_StringCvarLength(item->cvar) + 1) * 8;
-	M_DrawTextBox((BASEVIDWIDTH-offset)/2 - 8, y-48 + 12 - 8, M_StringCvarLength(item->cvar), 1, tflag);
-	M_DrawTextInput((BASEVIDWIDTH-offset)/2, y-48 + 12, &menuinput, tflag|V_ALLOWLOWERCASE);
+	M_DrawTextBox((BASEVIDWIDTH-offset)/2 - 8, y + 12 - 8, M_StringCvarLength(item->cvar), 1, 0);
+	M_DrawTextInput((BASEVIDWIDTH-offset)/2, y + 12, &menuinput, V_ALLOWLOWERCASE);
 
 	if (item->text)
 	{
-		V_DrawThinString((BASEVIDWIDTH-offset)/2 - 8, y-48 + 12 - 8 - 10, tflag|highlightflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE, item->text);
+		V_DrawThinString((BASEVIDWIDTH-offset)/2 - 8, y + 12 - 8 - 10, highlightflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE, item->text);
+	}
+
+	const INT32 buttonwidth = ((boxwidth + 1)/NUMVIRTUALKEYSINROW);
+#define BUTTONHEIGHT (11)
+
+	// Now the keyboard itself
+	x += 5;
+	INT32 returnx = x;
+
+	if (menutyping.menutypingfade > 9)
+	{
+		y += 26;
+
+		if (menutyping.menutypingfade < 18)
+		{
+			y += floor(pow(2, (double)(18 - menutyping.menutypingfade))); // double yoffs for animation
+		}
+
+		INT32 tempkeyboardx = menutyping.keyboardx;
+
+		while (virtualKeyboard[menutyping.keyboardy][tempkeyboardx] == 1
+		&& tempkeyboardx > 0)
+			tempkeyboardx--;
+
+		for (i = 0; i < 5; i++)
+		{
+			j = 0;
+			while (j < NUMVIRTUALKEYSINROW)
+			{
+				INT32 mflag = V_ALLOWLOWERCASE;
+				INT16 c = virtualKeyboard[i][j];
+
+				INT32 buttonspacing = 1;
+
+				UINT8 col = 27;
+
+				INT32 arrowoffset = 0;
+
+				while (j + buttonspacing < NUMVIRTUALKEYSINROW
+				&& virtualKeyboard[i][j + buttonspacing] == 1)
+				{
+					buttonspacing++;
+				}
+
+				if (menutyping.keyboardshift ^ menutyping.keyboardcapslock)
+					c = shift_virtualKeyboard[i][j];
+
+				if (i < 4 && j < NUMVIRTUALKEYSINROW-2)
+				{
+					col = 25;
+				}
+
+				boolean canmodifycol = (menutyping.menutypingfade == 18);
+
+				if (c == KEY_BACKSPACE)
+				{
+					arrowoffset = 1;
+					buf[0] = '\x1C'; // left arrow
+					buf[1] = '\0';
+
+					if (canmodifycol && M_MenuButtonHeld(pid, MBT_CANCEL))
+					{
+						col -= 4;
+						canmodifycol = false;
+					}
+				}
+				else if (c == KEY_RSHIFT)
+				{
+					arrowoffset = 2;
+					buf[0] = '\x1A'; // up arrow
+					buf[1] = '\0';
+
+					if (menutyping.keyboardcapslock || menutyping.keyboardshift)
+					{
+						col = 22;
+					}
+				}
+				else if (c == KEY_ENTER)
+				{
+					strcpy(buf, "OK");
+
+					if (menutyping.menutypingclose)
+					{
+						col -= 4;
+						canmodifycol = false;
+					}
+				}
+				else if (c == KEY_SPACE)
+				{
+					strcpy(buf, "Space");
+				}
+				else
+				{
+					buf[0] = c;
+					buf[1] = '\0';
+				}
+
+				INT32 width = (buttonwidth * buttonspacing) - 1;
+
+				// highlight:
+				/*if (menutyping.keyboardtyping)
+				{
+					mflag |= V_TRANSLUCENT;	// grey it out if we can't use it.
+				}
+				else*/
+				{
+					if (tempkeyboardx == j && menutyping.keyboardy == i)
+					{
+						if (canmodifycol && M_MenuButtonHeld(pid, MBT_CONFIRM))
+						{
+							col -= 4;
+							canmodifycol = false;
+						}
+
+						V_DrawFill(x + 1, y + 1, width - 2, BUTTONHEIGHT - 2, col - 3);
+
+						V_DrawFill(x, y,                    width, 1, 121);
+						V_DrawFill(x, y + BUTTONHEIGHT - 1, width, 1, 121);
+
+						V_DrawFill(x,             y + 1, 1, BUTTONHEIGHT - 2, 121);
+						V_DrawFill(x + width - 1, y + 1, 1, BUTTONHEIGHT - 2, 121);
+
+						mflag |= highlightflags;
+					}
+					else
+					{
+						V_DrawFill(x, y, width, BUTTONHEIGHT, col);
+					}
+				}
+
+				if (arrowoffset != 0)
+				{
+					if (c == KEY_RSHIFT)
+					{
+						V_DrawFill(x + width - 5, y + 1, 4, 4, 31);
+
+						if (menutyping.keyboardcapslock)
+						{
+							V_DrawFill(x + width - 4, y + 2, 2, 2, 121);
+						}
+					}
+
+					V_DrawCenteredString(x + (width/2), y + 1 + arrowoffset, mflag, buf);
+				}
+				else
+				{
+					V_DrawCenteredThinString(x + (width/2), y + 1, mflag, buf);
+				}
+
+				x += width + 1;
+				j += buttonspacing;
+			}
+			x = returnx;
+			y += BUTTONHEIGHT + 1;
+		}
+	}
+
+#undef BUTTONHEIGHT
+
+	y = 187;
+
+	if (menutyping.menutypingfade < 9)
+	{
+		y += 3 * (9 - menutyping.menutypingfade);
 	}
 
 	// Some contextual stuff
 	if (menutyping.keyboardtyping)
-		V_DrawThinString(10, 175, V_ALLOWLOWERCASE|V_6WIDTHSPACE|tflag|V_GRAYMAP, "Type using your keyboard. Press Enter to confirm & exit.\n");
-	else
-		V_DrawThinString(10, 175, V_ALLOWLOWERCASE|V_6WIDTHSPACE|tflag|V_GRAYMAP, "Type using the Virtual Keyboard. Use the \'OK\' button to confirm & exit.\n");
-
-#define BUTTONWIDTH (14)
-#define BUTTONHEIGHT (11)
-
-	// Now the keyboard itself
-	INT32 returnx = (BASEVIDWIDTH - (((BUTTONWIDTH + 1)*NUMVIRTUALKEYSINROW)-1))/2;
-	INT32 tempkeyboardx = menutyping.keyboardx;
-	while (virtualKeyboard[menutyping.keyboardy][tempkeyboardx] == 1
-	&& tempkeyboardx > 0)
-		tempkeyboardx--;
-
-	x = returnx;
-
-	for (i=0; i < 5; i++)
 	{
-		j = 0;
-
-		while (j < NUMVIRTUALKEYSINROW)
-		{
-			INT32 mflag = V_ALLOWLOWERCASE|V_6WIDTHSPACE;
-			INT16 c = virtualKeyboard[i][j];
-
-			INT32 buttonspacing = 1;
-
-			UINT8 col = 27;
-
-			INT32 arrowoffset = 0;
-
-			while (j + buttonspacing < NUMVIRTUALKEYSINROW
-			&& virtualKeyboard[i][j + buttonspacing] == 1)
-			{
-				buttonspacing++;
-			}
-
-			if (menutyping.keyboardshift ^ menutyping.keyboardcapslock)
-				c = shift_virtualKeyboard[i][j];
-
-			if (i < 4 && j < NUMVIRTUALKEYSINROW-2)
-			{
-				col = 25;
-			}
-
-			if (c == KEY_BACKSPACE)
-			{
-				arrowoffset = 1;
-				buf[0] = '\x1C'; // left arrow
-				buf[1] = '\0';
-			}
-			else if (c == KEY_RSHIFT)
-			{
-				arrowoffset = 2;
-				buf[0] = '\x1A'; // up arrow
-				buf[1] = '\0';
-
-				if (menutyping.keyboardcapslock || menutyping.keyboardshift)
-				{
-					col = 22;
-				}
-			}
-			else if (c == KEY_ENTER)
-			{
-				strcpy(buf, "OK");
-			}
-			else if (c == KEY_SPACE)
-			{
-				strcpy(buf, "Space");
-			}
-			else
-			{
-				buf[0] = c;
-				buf[1] = '\0';
-			}
-
-			INT32 width = ((BUTTONWIDTH + 1) * buttonspacing) - 1;
-
-			// highlight:
-			if (menutyping.keyboardtyping)
-			{
-				mflag |= V_TRANSLUCENT;	// grey it out if we can't use it.
-			}
-			else
-			{
-				if (tempkeyboardx == j && menutyping.keyboardy == i)
-				{
-					V_DrawFill(x + 1, y + 1, width - 2, BUTTONHEIGHT - 2, col - 3);
-
-					V_DrawFill(x, y,                    width, 1, 121);
-					V_DrawFill(x, y + BUTTONHEIGHT - 1, width, 1, 121);
-
-					V_DrawFill(x,             y + 1, 1, BUTTONHEIGHT - 2, 121);
-					V_DrawFill(x + width - 1, y + 1, 1, BUTTONHEIGHT - 2, 121);
-
-					mflag |= highlightflags;
-				}
-				else
-				{
-					V_DrawFill(x, y, width, BUTTONHEIGHT, col);
-				}
-			}
-
-			if (arrowoffset != 0)
-			{
-				if (c == KEY_RSHIFT)
-				{
-					V_DrawFill(x + width - 5, y + 1, 4, 4, 31);
-
-					if (menutyping.keyboardcapslock)
-					{
-						V_DrawFill(x + width - 4, y + 2, 2, 2, 121);
-					}
-				}
-
-				V_DrawCenteredString(x + (width/2), y + 1 + arrowoffset, tflag|mflag, buf);
-			}
-			else
-			{
-				V_DrawCenteredThinString(x + (width/2), y + 1, tflag|mflag, buf);
-			}
-
-			x += width + 1;
-			j += buttonspacing;
-		}
-		x = returnx;
-		y += BUTTONHEIGHT + 1;
+		V_DrawThinString(returnx, y-10, V_GRAYMAP|V_ALLOWLOWERCASE|V_6WIDTHSPACE,
+			"Type using your keyboard. Press Enter to confirm & exit."
+			"\nPress any button on your controller to use the Virtual Keyboard."
+		);
 	}
-
-#undef BUTTONWIDTH
+	else
+	{
+		V_DrawThinString(returnx, y-10, V_GRAYMAP|V_ALLOWLOWERCASE|V_6WIDTHSPACE,
+			"Type using the Virtual Keyboard. Use the \'OK\' button to confirm & exit."
+			"\nPress any keyboard key to type normally."
+		);
+	}
 
 }
 
@@ -2499,6 +2556,11 @@ boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt)
 	return (menucmd[pid].buttons & bt);
 }
 
+boolean M_MenuButtonHeld(UINT8 pid, UINT32 bt)
+{
+	return !!(menucmd[pid].buttons & bt);
+}
+
 static void M_HandleGoBack(INT32 thisMenuKey)
 {
 	if (M_MenuButtonPressed(0, MBT_CANCEL) || M_MenuButtonPressed(0, MBT_HOME))
@@ -2614,7 +2676,7 @@ void M_MenuTypingInput(INT32 key)
 	else
 	{
 		// Opening
-		const UINT8 destination = 9;
+		const UINT8 destination = (menutyping.keyboardtyping ? 9 : 18);
 
 		if (menutyping.menutypingfade > destination)
 		{
