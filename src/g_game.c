@@ -5511,6 +5511,7 @@ void G_AfterIntermission(void)
 		}
 		else
 		{
+			M_ClearMenusEx(false, true);
 			D_ClearState();
 			M_StartControlPanel();
 		}
@@ -5724,6 +5725,7 @@ void G_EndGame(void)
 	}
 
 	// Time to return to the menu.
+	M_ClearMenusEx(false, true);
 	D_ClearState();
 	M_StartControlPanel();
 }

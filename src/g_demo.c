@@ -4465,6 +4465,7 @@ static void G_StopTimingDemo(void)
 		COM_ImmedExecute("quit");
 	else
 	{
+		M_ClearMenusEx(false, true);
 		D_ClearState();
 		M_StartControlPanel();
 	}
@@ -4525,6 +4526,7 @@ boolean G_CheckDemoStatus(void)
 				MR_ModeAttackEndGame(0);
 			else
 			{
+				M_ClearMenusEx(false, true);
 				D_ClearState();
 				M_StartControlPanel();
 			}

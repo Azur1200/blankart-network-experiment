@@ -7817,6 +7817,7 @@ void Command_ExitGame_f(void)
 		}
 		else
 		{
+			M_ClearMenusEx(false, true);
 			D_ClearState();
 			M_StartControlPanel();
 		}

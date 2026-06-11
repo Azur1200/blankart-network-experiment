@@ -2368,6 +2368,7 @@ void M_RestoreMenuStack(boolean backup)
 	{
 		CONS_Alert(CONS_WARNING, "Could not restore menu stack, returning to main menu.\n");
 
+		M_ClearMenusEx(false, true);
 		D_ClearState();
 		M_StartControlPanel();
 	}
