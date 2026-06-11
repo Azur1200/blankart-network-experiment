@@ -864,6 +864,8 @@ struct player_t
 	fixed_t lastspeed;
 
 	INT32 deadtimer; // End game if game over lasts too long
+	INT32 deadbounces; // Bounce like a beach ball all over
+	boolean extendeddeath; // Bouncing more than one time
 	tic_t exiting; // Exitlevel timer
 
 	////////////////////////////

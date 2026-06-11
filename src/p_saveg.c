@@ -526,6 +526,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].speed);
 		SYNC(players[i].lastspeed);
 		SYNC(players[i].deadtimer);
+		SYNC(players[i].deadbounces);
+		SYNCBOOLEAN(players[i].extendeddeath);
 		SYNC(players[i].exiting);
 
 		////////////////////////////

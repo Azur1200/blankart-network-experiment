@@ -2700,7 +2700,9 @@ static void P_DeathThink(player_t *player)
 
 		if (player->mo)
 		{
-			player->mo->flags |= (MF_NOGRAVITY|MF_NOCLIP);
+			UINT32 intangibility = (player->extendeddeath) ? 0 : MF_NOCLIP;
+
+			player->mo->flags |= (MF_NOGRAVITY|intangibility);
 			if (skins[player->skin].flags & SF_OLDDEATH)
 				player->mo->renderflags |= RF_DONTDRAW;
 		}

@@ -99,7 +99,7 @@ extern consvar_t cv_kartbot_cap;
 extern consvar_t cv_kartbot_modifiermax;
 extern consvar_t cv_kartbot_basetrackcomplexity;
 extern consvar_t cv_kartbot_finish;
-extern consvar_t cv_karteliminatelast;
+extern consvar_t cv_karteliminatelast, cv_kartdeathbounces;
 extern consvar_t cv_kartusepwrlv;
 extern consvar_t cv_kartrings;
 extern consvar_t cv_kartringsmin;
