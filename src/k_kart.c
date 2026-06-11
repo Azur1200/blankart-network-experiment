@@ -260,6 +260,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_botcanvote);
 	CV_RegisterVar(&cv_botdrifting);
 	CV_RegisterVar(&cv_karteliminatelast);
+	CV_RegisterVar(&cv_kartdeathbounces);
 	CV_RegisterVar(&cv_kartusepwrlv);
 	CV_RegisterVar(&cv_votetime);
 
@@ -8995,7 +8996,7 @@ static void K_FudgeRespawn(player_t *player, const waypoint_t *const waypoint)
 	player->starposty += FixedMul(16, FINESINE(from));
 }
 
-static boolean K_SafeRespawnWaypoint(waypoint_t *waypoint)
+boolean K_SafeRespawnWaypoint(waypoint_t *waypoint)
 {
 	if (!waypoint || !waypoint->mobj)
 		return false;
