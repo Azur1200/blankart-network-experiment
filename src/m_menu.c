@@ -1681,8 +1681,8 @@ static void M_DrawMenuTyping(void)
 
 	char buf[8];	// We write there to use drawstring for convenience.
 
-	menupanelinst_t *curpi = panelOn < numcurpanels ? &curpanels[panelOn] : NULL;
-	menuitem_t *item = curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;
+	menupanelinst_t *curpi = M_GetCurrentMenuPanelInst();
+	menuitem_t *item = M_GetCurrentMenuItem(curpi);
 
 	V_DrawFadeScreen(31, menutyping.menutypingfade);
 
@@ -2581,8 +2581,8 @@ void M_MenuTypingInput(INT32 key)
 {
 	const UINT8 pid = 0;
 
-	menupanelinst_t *curpi = panelOn < numcurpanels ? &curpanels[panelOn] : NULL;
-	menuitem_t *item = curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;
+	menupanelinst_t *curpi = M_GetCurrentMenuPanelInst();
+	menuitem_t *item = M_GetCurrentMenuItem(curpi);
 
 	// Determine when to check for keyboard inputs or controller inputs using menuKey, which is the key passed here as argument.
 	if (key > 0)
@@ -2827,6 +2827,21 @@ void M_DoItemRoutine(menuitem_t *item, INT32 thisMenuKey)
 	M_SetMenuDelay(pid);
 }
 
+menupanelinst_t *M_GetCurrentMenuPanelInst(void)
+{
+	return panelOn < numcurpanels ? &curpanels[panelOn] : NULL;
+}
+
+menupaneldef_t *M_GetCurrentMenuPanelDef(menupanelinst_t *curpi)
+{
+	return curpi != NULL ? M_GetDefFromInst(curpi) : NULL;
+}
+
+menuitem_t *M_GetCurrentMenuItem(menupanelinst_t *curpi)
+{
+	return curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;;
+}
+
 static void M_HandleMenuInput(void)
 {
 	UINT8 pid = 0;
@@ -2881,9 +2896,9 @@ static void M_HandleMenuInput(void)
 	// G: not so hacky anymore...?
 	// G: nevermind we have combi menuitems now
 	// G: OH DEAR GOD
-	menupanelinst_t *curpi = panelOn < numcurpanels ? &curpanels[panelOn] : NULL;
-	menupaneldef_t *curpd = curpi != NULL ? M_GetDefFromInst(curpi) : NULL;
-	menuitem_t *item = curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;
+	menupanelinst_t *curpi = M_GetCurrentMenuPanelInst();
+	menupaneldef_t *curpd = M_GetCurrentMenuPanelDef(curpi);
+	menuitem_t *item = M_GetCurrentMenuItem(curpi);
 
 	// Handle menuitems which need a specific key handling
 	if (curpd != NULL && curpd->keyhandler != NULL)

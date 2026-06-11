@@ -125,6 +125,9 @@ void M_SetMenuCurTitlePics(void);
 // Does all the real work of the menu interaction.
 boolean M_Responder(event_t *ev);
 
+menupanelinst_t *M_GetCurrentMenuPanelInst(void);
+menupaneldef_t *M_GetCurrentMenuPanelDef(menupanelinst_t *curpi);
+menuitem_t *M_GetCurrentMenuItem(menupanelinst_t *curpi);
 void M_SetMenuDelay(UINT8 i);
 void M_UpdateMenuCMD(UINT8 i);
 boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt);
