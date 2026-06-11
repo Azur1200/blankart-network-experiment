@@ -1478,6 +1478,7 @@ static boolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
 	if (routine == NULL
 	 || (routine == MR_SelectableClearMenus && !currentMenu->quitroutine)
 	 || routine == MR_SetupMultiPlayer
+	 || routine == MR_HandleSetupMultiPlayerMenu
 	 || routine == MR_SetupControlsMenu
 	 || routine == MR_ChangeControl
 	 || routine == MR_SetLevelListMode
