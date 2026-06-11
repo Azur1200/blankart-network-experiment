@@ -13,6 +13,7 @@
 /// \file  m_menu.c
 /// \brief XMOD's extremely revamped menu system, revamped again for BlanKart
 
+#include "command.h"
 #include "doomstat.h"
 #include "g_state.h"
 #include "screen.h"
@@ -697,6 +698,11 @@ consvar_t cv_menucaps = CVAR_INIT ("menucaps", "Off", CV_SAVE, CV_OnOff, NULL);
 static tic_t playback_last_menu_interaction_leveltime = 0;
 
 consvar_t cv_debugvirtualkeyboard = CVAR_INIT ("debugvirtualkeyboard", "Off", 0, CV_OnOff, NULL);
+
+static void AddonSearch(void);
+
+consvar_t cv_dummyaddonsearch = CVAR_INIT ("dummymenusearch", "", CV_HIDEN|CV_CALL|CV_NOINIT, NULL, AddonSearch);
+
 
 // ==========================================================================
 // ALL MENU DEFINITIONS GO HERE
@@ -2820,7 +2826,7 @@ void M_MenuTypingInput(INT32 key)
 				else if (c == KEY_ENTER)
 				{
 					M_CloseVirtualKeyboard();
-					CV_Set(item->cvar, menuinput.buffer);
+					CV_Set(item->cvar, menutyping.textinput->buffer);
 					S_StartSound(NULL, M_MenuTypingSounds(c));
 					return;
 				}
@@ -3329,6 +3335,7 @@ void M_Init(void)
 	CV_RegisterVar(&cv_dummyfollower);
 	CV_RegisterVar(&cv_dummycolor);
 	CV_RegisterVar(&cv_dummyserverpage);
+	CV_RegisterVar(&cv_dummyaddonsearch);
 
 	quitmsg[QUITMSG] = M_GetText("Eggman's tied explosives\nto your girlfriend, and\nwill activate them if\nyou press the 'Y' key!\nPress 'N' to save her!\n");
 	quitmsg[QUITMSG1] = M_GetText("What would Tails say if\nhe saw you quitting the game?\n");
@@ -5612,9 +5619,20 @@ INT32 MR_TickAddons(INT32 choice)
 
 	pi = M_GetPanel("BACK");
 	M_SetItemText(pi, "HEADERPATH", M_AddonsHeaderPath());
-	M_SetItemDisabled(pi, "SEARCHICON", menusearch.length == 0);
+	M_SetItemDisabled(pi, "SEARCHICON", *cv_dummyaddonsearch.string == 0);
 	M_SetItemDisabled(pi, "DISKICON", majormods);
 	M_SetItemVisible(pi, "ADDONSLOADED", modifiedgame);
+
+	M_SetItemDisabled(pi, "SEARCHTEXT", *cv_dummyaddonsearch.string == 0);
+	if (*cv_dummyaddonsearch.string == 0)
+	{
+		const char *item1 = gamecontrol[0][gc_drift][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_drift][0]) : "DRIFT";
+		M_SetItemText(pi, "SEARCHTEXT", va("Press %s to Search", item1));
+	}
+	else
+	{
+		M_SetItemText(pi, "SEARCHTEXT", cv_dummyaddonsearch.string);
+	}
 
 	return true;
 }
@@ -5638,17 +5656,6 @@ void MD_DrawAddons(menupanelinst_t *pi)
 	}
 
 	M_DrawTemperature(BASEVIDWIDTH - 19 - 5, y);
-
-	// DRAW MENU
-	x = pi->x/FRACUNIT;
-	y = BASEVIDHEIGHT - pi->y/FRACUNIT;
-
-	M_DrawTextBox(x - (21 + 5), y, MAXSTRINGLENGTH, 1, 0);
-
-	if (menusearch.length)
-		M_DrawTextInput(x - 18, y + 8, &menusearch, V_ALLOWLOWERCASE);
-	else
-		V_DrawString(x - 18, y + 8, V_ALLOWLOWERCASE|V_TRANSLUCENT, "Type to search...");
 }
 
 static void M_AddonExec(INT32 ch)
@@ -5706,27 +5713,28 @@ void MP_PrepAddonList(menupanelinst_t *pi)
 	M_RawSetItemOn(pi, dir_on[menudepthleft]);
 }
 
+static void AddonSearch(void)
+{
+	const char *filename = curpanels[panelOn].items[curpanels[panelOn].itemon].extra;
+	char *tempname = Z_StrDup(filename);
+#if 0 // much slower
+	if (!preparefilemenu(true, false))
+	{
+		UNEXIST;
+		return true;
+	}
+#else // streamlined
+	searchfilemenu(tempname);
+#endif
+	Reinitialize();
+}
+
+// lolololol
+static menuitem_t addonsearch = {.text = "Search for files and folders", .cvar = &cv_dummyaddonsearch};
+
 INT32 MR_HandleAddons(INT32 choice)
 {
 	const char *filename = curpanels[panelOn].items[curpanels[panelOn].itemon].extra;
-
-	if (M_TextInputHandle(&menusearch, choice))
-	{
-		S_StartSound(NULL, M_MenuTypingSounds(choice));
-
-		char *tempname = Z_StrDup(filename);
-#if 0 // much slower
-		if (!preparefilemenu(true, false))
-		{
-			UNEXIST;
-			return true;
-		}
-#else // streamlined
-		searchfilemenu(tempname);
-#endif
-		Reinitialize();
-		return true;
-	}
 
 	if (menucmd[0].dpad_ud > 0)
 	{
@@ -5784,6 +5792,8 @@ INT32 MR_HandleAddons(INT32 choice)
 						S_StartSound(NULL, sfx_menu1);
 						dir_on[menudepthleft] = 1;
 					}
+
+					CV_StealthSet(&cv_dummyaddonsearch, "");
 					Reinitialize();
 				}
 				else
@@ -5801,6 +5811,7 @@ INT32 MR_HandleAddons(INT32 choice)
 					UNEXIST;
 					return true;
 				}
+				CV_StealthSet(&cv_dummyaddonsearch, "");
 				Reinitialize();
 				break;
 			case EXT_TXT:
@@ -5821,6 +5832,10 @@ INT32 MR_HandleAddons(INT32 choice)
 			default:
 				S_StartSound(NULL, FILENOTADDSFX);
 		}
+	}
+	else if (M_MenuButtonPressed(0, MBT_INFO2))
+	{
+		M_OpenVirtualKeyboard(&menusearch, menusearchbuf, &addonsearch);
 	}
 	else
 	{
@@ -5858,6 +5873,7 @@ INT32 MR_HandleAddons(INT32 choice)
 INT32 MR_QuitAddons(INT32 choice)
 {
 	(void)choice;
+	CV_StealthSet(&cv_dummyaddonsearch, "");
 	closefilemenu(true);
 	return true;
 }
