@@ -2839,7 +2839,7 @@ menupaneldef_t *M_GetCurrentMenuPanelDef(menupanelinst_t *curpi)
 
 menuitem_t *M_GetCurrentMenuItem(menupanelinst_t *curpi)
 {
-	return curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;;
+	return curpi && curpi->numitems ? &curpi->items[curpi->itemon] : NULL;
 }
 
 static void M_HandleMenuInput(void)
