@@ -3454,8 +3454,6 @@ void K_ItemThink_BubbleShield(player_t *player)
 	if ((player->cmd.buttons & BT_ATTACK && !((player->itemflags & IF_HOLDREADY) == IF_HOLDREADY))
 			|| (player->bubbleblowup > 0 && player->bubblecool <= bubbletime/2)) // auto
 	{
-		CONS_Printf("bubbleblowup = %d, bubblecool = %d, holdready = %s\n", player->bubbleblowup, player->bubblecool, (player->itemflags & IF_HOLDREADY) ? "true" : "false");
-
 		if (player->bubbleblowup <= 0 && player->bubblecool <= 0)
 		{
 			S_StartSound(player->mo, sfx_s3k75);
