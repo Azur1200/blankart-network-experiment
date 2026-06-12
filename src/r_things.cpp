@@ -2508,7 +2508,7 @@ static void R_ProjectSprite(mobj_t *thing)
 #endif
 	}
 
-	if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
+	if (flip)
 		offset = spr_offset - spr_width;
 	else
 		offset = -spr_offset;
