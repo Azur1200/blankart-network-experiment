@@ -1900,12 +1900,24 @@ static int lib_pDamageMobj(lua_State *L)
 		source = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
 	damage = (INT32)luaL_optinteger(L, 4, 1);
 
-	if ((damage == 10000) && lua_isnil(L, 5))
-		damagetype = DMG_INSTAKILL;
-	else if ((damage == 42000) && lua_isnil(L, 5))
+	if ((damage == 10000) && lua_isnoneornil(L, 5))
+	{
+		// COMPATIBILITY: Check if the damage type is a time-over kill.
+		// If it is, use DMG_TIMEOVER
+		UINT8 killdmg = DMG_INSTAKILL;
+
+		if (target->player && (target->player->pflags & PF_NOCONTEST))
+			killdmg = DMG_TIMEOVER;
+
+		damagetype = killdmg;
+	}
+	else if ((damage == 42000) && lua_isnoneornil(L, 5))
 		damagetype = DMG_SPECTATOR;
 	else
 		damagetype = (UINT8)luaL_optinteger(L, 5, 0);
+
+	if (damagetype == DMG_TIMEOVER)
+		S_StopSound(target);
 
 	lua_pushboolean(L, P_DamageMobj(target, inflictor, source, damage, damagetype));
 	return 1;

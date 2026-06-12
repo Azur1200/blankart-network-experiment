@@ -504,6 +504,25 @@ consvar_t cv_kartbot_finish = CVAR_INIT ("kartbot_finish", "Off", CV_NETVAR, CV_
 
 consvar_t cv_karteliminatelast = CVAR_INIT ("karteliminatelast", "Yes", CV_NETVAR|CV_CALL, CV_YesNo, KartEliminateLast_OnChange);
 
+// Defined in multiples of 10 to keep the minimal sanity I have remaining
+static CV_PossibleValue_t deathbounce_cons_t[] = {
+	{-1, "Infinite"},
+	{0, "None"},
+	{5, "5"},
+	{10, "10"},
+	{15, "15"},
+	{20, "20"},
+	{30, "30"},
+	{40, "40"},
+	{50, "50"},
+	{60, "60"},
+	{70, "70"},
+	{80, "80"},
+	{90, "90"},
+	{100, "MAX"},
+	{0, NULL}};
+consvar_t cv_kartdeathbounces = CVAR_INIT ("deathbounces", "Infinite", CV_NETVAR, deathbounce_cons_t, NULL);
+
 // Toggles for new features
 consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartRings_OnChange);
 

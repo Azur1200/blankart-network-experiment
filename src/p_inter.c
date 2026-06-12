@@ -1344,6 +1344,9 @@ boolean P_CheckRacers(void)
 	return false;
 }
 
+#define DEADFLINGSPEED(mo) (4 * mo->scale)
+#define DEADFLINGMINSPD (24 * FRACUNIT)
+
 /** Kills an object.
   *
   * \param target    The victim.
@@ -1610,7 +1613,33 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			if (damagetype == DMG_SPECTATOR)
 				break;
 
-			target->fuse = 3*TICRATE; // timer before mobj disappears from view (even if not an actual player)
+			const boolean nocontest = (damagetype == DMG_TIMEOVER);
+
+			const boolean despawnme = (cv_kartdeathbounces.value == 0) || ((!nocontest) || (nocontest && (target->renderflags & RF_DONTDRAW)));
+
+			fixed_t playerspeed = K_Momentum2D(target);
+
+			// Comically launch the player out the kart and make them pinball around
+			boolean flatout2 = false;
+
+			if (despawnme)
+			{
+				target->fuse = 3*TICRATE; // timer before mobj disappears from view (even if not an actual player)
+
+				if (target->player && (target->player->deadbounces != 0))
+				{
+					target->player->deadbounces = 0;
+				}
+			}
+			else if (target->player)
+			{
+				target->fuse = -1;
+
+				const INT32 numbounces = (cv_kartdeathbounces.value > 0) ? cv_kartdeathbounces.value - 1 : cv_kartdeathbounces.value;
+				target->player->deadbounces = numbounces; // FIXME: Customizable bounce lengths...
+				flatout2 = true;
+			}
+
 			target->momx = target->momy = target->momz = 0;
 			P_SetObjectMomZ(target, 14*FRACUNIT, false);
 			P_PlayDeathSound(target);
@@ -1618,14 +1647,18 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			if (target->player == NULL || skins[target->player->skin].flags & SF_OLDDEATH)
 				break;
 
-			angle_t flingangle = target->angle + ANGLE_180;
+			target->player->extendeddeath = false;
+
+			angle_t flingangle = (flatout2) ? target->angle : target->angle + ANGLE_180;
 			fixed_t angleoffset = P_RandomRange(PR_DEADFLING, 20, 40)*FRACUNIT;
+
 			if (angleoffset < 30*FRACUNIT)
 				angleoffset -= 60*FRACUNIT;
 
 			if (target->player->pflags & PF_NOCONTEST)
 			{
-				target->flags &= ~MF_NOCLIPHEIGHT; // do the bounce!
+				UINT32 bounceflags = (flatout2) ? MF_NOCLIP : 0;
+				target->flags &= ~(MF_NOCLIPHEIGHT|bounceflags); // do the bounce!
 				target->friction = 4*FRACUNIT/5; // reduce momentum if we die on the ground
 				angleoffset /= 2;
 			}
@@ -1652,14 +1685,24 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 
 				if (damagetype != DMG_TIMEOVER)
 				{
-					kart->angle = flingangle + ANGLE_180;
+					kart->angle = (flatout2) ? flingangle : (flingangle + ANGLE_180);
 					P_KillMobj(kart, inflictor, source, damagetype);
 				}
 				else
 					P_SetMobjState(kart, kart->info->deathstate);
 			}
 
-			P_InstaThrust(target, flingangle, 4 * target->scale);
+			if (!flatout2)
+			{
+				playerspeed = DEADFLINGSPEED(target);
+			}
+			else
+			{
+				target->player->extendeddeath = true;
+				playerspeed = max(FixedMul(FixedMul(K_GetKartGameSpeedScalar(gamespeed), DEADFLINGMINSPD), target->scale), playerspeed);
+			}
+
+			P_InstaThrust(target, flingangle, playerspeed);
 			target->player->rmomx = target->momx; // fix friction
 			target->player->rmomy = target->momy;
 			break;
