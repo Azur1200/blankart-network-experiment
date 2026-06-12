@@ -3494,7 +3494,6 @@ void K_ItemThink_BubbleShield(player_t *player)
 	}
 	else
 	{
-		CONS_Printf("bubbleblowup = %d, bubblecool = %d, holdready = %s, no bt\n", player->bubbleblowup, player->bubblecool, (player->itemflags & IF_HOLDREADY) ? "true" : "false");
 		if (player->bubblecool > bubbletime)
 			player->bubblecool = bubbletime;
 	
