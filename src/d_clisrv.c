@@ -6330,6 +6330,8 @@ static UINT32 GenerateConsistancySum(consistancy_t *c)
 	return sum;
 }
 
+#define RESETSEED(seed) c->rngseed[PR_##seed] = 0;
+
 static void ResetConsistancy(consistancy_t *c)
 {
 	c->checksum = 0;
@@ -6347,6 +6349,7 @@ static void ResetConsistancy(consistancy_t *c)
 
 	c->itemsum = 0; // Player item checksum
 
+	{RNGSEEDS(RESETSEED)};
 	c->seed_checksum = 0;
 
 	// Object data checksum
