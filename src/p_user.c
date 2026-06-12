@@ -1322,7 +1322,7 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			player->exiting = raceexittime+2;
 			K_UpdateAllPlayerPositions();
 
-			if (!modeattacking)
+			if (!(modeattacking||dedicated))
 				RR_addPlayerToFinshTicker(player);
 
 			losing = K_IsPlayerLosing(player); // HEY!!!! Set it AFTER K_UpdateAllPlayerPositions!!!!
