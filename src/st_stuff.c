@@ -66,7 +66,8 @@ consvar_t cv_stagetitle = CVAR_INIT ("maptitle", "On", CV_SAVE, CV_OnOff, NULL);
 
 #define IMPL_RNGSEED_POSSIBLEVALUE(name) {PR_##name, #name},
 
-static CV_PossibleValue_t rngseed_cons_t[] = {
+static CV_PossibleValue_t rngseed_cons_t[] = {\
+	{-1, "Off"},
 	{PR_UNDEFINED, "LEGACY"},
 	RNGSEEDS(IMPL_RNGSEED_POSSIBLEVALUE)
 	{0, NULL}
@@ -74,7 +75,7 @@ static CV_PossibleValue_t rngseed_cons_t[] = {
 
 #undef IMPL_RNGSEED_POSSIBLEVALUE
 
-consvar_t cv_rngpeek = CVAR_INIT("rngpeek", "LEGACY", CV_SAVE, rngseed_cons_t, NULL);
+consvar_t cv_rngpeek = CVAR_INIT("rngpeek", "Off", CV_SAVE, rngseed_cons_t, NULL);
 
 UINT16 objectsdrawn = 0;
 
@@ -592,19 +593,22 @@ static void ST_drawDebugInfo(void)
 		height -= 120;
 	}
 
-	if (cht_debug & DBG_RNG) // randomizer testing
-	{
-		// TODO: this only accounts for the undefined class,
-		// which should be phased out as much as possible anyway.
-		// Figure out some other way to display all of the RNG classes.
-		// yama: Maybe a cvar will do?
-		pr_class_t debug_class = cv_rngpeek.value;
+	// TODO: this only accounts for the undefined class,
+	// which should be phased out as much as possible anyway.
+	// Figure out some other way to display all of the RNG classes.
+	// yama: Maybe a cvar will do?
+	INT32 rngdebug = cv_rngpeek.value;
 
+	// The actual seed we're debugging.
+	pr_class_t debug_class = (pr_class_t)(rngdebug);
+
+	if (rngdebug >= 0) // randomizer testing
+	{
 		fixed_t peekres = P_RandomPeek(debug_class);
 
-		V_DrawRightAlignedString(320, height - 24, V_MONOSPACE, va("Class: %s", cv_rngpeek.string));
-		V_DrawRightAlignedString(320, height - 16, V_MONOSPACE, va("Init : %08x", P_GetInitSeed(debug_class)));
-		V_DrawRightAlignedString(320, height - 8,  V_MONOSPACE, va("Seed : %08x", P_GetRandSeed(debug_class)));
+		V_DrawRightAlignedString(320, height - 24, V_MONOSPACE|V_ALLOWLOWERCASE, va("Class: %s", cv_rngpeek.string));
+		V_DrawRightAlignedString(320, height - 16, V_MONOSPACE|V_ALLOWLOWERCASE, va("Init : %08X", P_GetInitSeed(debug_class)));
+		V_DrawRightAlignedString(320, height - 8,  V_MONOSPACE|V_ALLOWLOWERCASE, va("Seed : %08X", P_GetRandSeed(debug_class)));
 		V_DrawRightAlignedString(320, height,      V_MONOSPACE, va("==   : %08x", peekres));
 
 		height -= 40;
