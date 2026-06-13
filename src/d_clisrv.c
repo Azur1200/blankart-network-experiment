@@ -6340,18 +6340,9 @@ static void GetPackets(void)
 static UINT32 GenerateConsistancySum(consistancy_t *c)
 {
 	UINT32 sum = 0;
-	UINT32 seed_sum[2] = {0}; // Split the seed checksum into two UINT32s; subtract the lower half by the upper half
 
 	// RNG seed checksum
-
-	// Lower
-	seed_sum[0] = (UINT32)(c->seed_checksum & 0xFFFFFFFF);
-
-	// Higher
-	seed_sum[1] = (UINT32)(c->seed_checksum >> 32);
-
-	// Finally, add the difference to our sum
-	sum += (UINT32)(seed_sum[0] - seed_sum[1]);
+	sum += c->seed_checksum;
 
 	// Player data
 	sum += c->playerpos[0];
@@ -6418,7 +6409,7 @@ void SPrintConsistancy(char *out, consistancy_t *c)
 {
 	snprintf(out,
 		 CONSISTANCYDBGSIZE,
-		 "------------\nChecksum: %d\nRandomization Seed Checksum: 0x%" PRIX64 "\n------------\n[Player Position] X: %d, Y: %d\nItem Checksum: %d\n[Position] X: %d, Y: %d, Z: %d\n[Speed] X: %d, Y: %d, Z: %d\nObject Type: %d\nAngle: %d\n[Flags] Flags1: %d, Flags2: %d, EFlags: %d\n[Animation] State: %d, Tics %d, Sprite: %d, Frame: %d\n------------\n",
+		 "------------\nChecksum: %d\nRandomization Seed Checksum: 0x%" PRIX32 "\n------------\n[Player Position] X: %d, Y: %d\nItem Checksum: %d\n[Position] X: %d, Y: %d, Z: %d\n[Speed] X: %d, Y: %d, Z: %d\nObject Type: %d\nAngle: %d\n[Flags] Flags1: %d, Flags2: %d, EFlags: %d\n[Animation] State: %d, Tics %d, Sprite: %d, Frame: %d\n------------\n",
 		 c->checksum,
 		 c->seed_checksum,
 		 c->playerpos[0], c->playerpos[1],
@@ -6524,9 +6515,7 @@ static INT16 Consistancy(consistancy_t *c, UINT32 idx)
 			serverseedarchive[idx][seed] = P_GetRandSeed(seed);
 		}
 
-		// We're using a 64-bit integer for seeds, so the sky's pretty much the limit
-		// for numbers.
-		// However, to make the checksum a bit more reliable, we're going to loop through
+		// To make the checksum a bit more reliable, we're going to loop through
 		// every seed, and do the "add-subtract" sampling as-per mobjs.
 		for (i = 0; i < PRNUMCLASS; i++)
 		{
