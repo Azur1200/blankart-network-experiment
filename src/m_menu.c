@@ -5086,10 +5086,25 @@ void M_MessageboxClose(boolean clearstack)
 		else
 			messagebox.declinetext = NULL;
 
-		Z_Free(messageboxqueue[messageboxqueuesize-1].headertext);
-		Z_Free(messageboxqueue[messageboxqueuesize-1].text);
-		Z_Free(messageboxqueue[messageboxqueuesize-1].confirmtext);
-		Z_Free(messageboxqueue[messageboxqueuesize-1].declinetext);
+		if (clearstack)
+		{
+			INT32 i;
+
+			for (i = 0; i < NUMMENULEVELS; i++)
+			{
+				Z_Free(messageboxqueue[i].headertext);
+				Z_Free(messageboxqueue[i].text);
+				Z_Free(messageboxqueue[i].confirmtext);
+				Z_Free(messageboxqueue[i].declinetext);
+			}
+		}
+		else
+		{
+			Z_Free(messageboxqueue[messageboxqueuesize-1].headertext);
+			Z_Free(messageboxqueue[messageboxqueuesize-1].text);
+			Z_Free(messageboxqueue[messageboxqueuesize-1].confirmtext);
+			Z_Free(messageboxqueue[messageboxqueuesize-1].declinetext);
+		}
 
 		if (clearstack)
 			memset(&messageboxqueue, 0, sizeof(messageboxqueue));
@@ -5119,7 +5134,7 @@ void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(voi
 	if (messagebox.active)
 		messageboxqueuesize++;
 
-	if (messageboxqueuesize > NUMMENULEVELS)
+	if (messageboxqueuesize >= NUMMENULEVELS)
 	{
 		CONS_Alert(CONS_WARNING, "Too many messageboxes queued, dropping newest added.\n");
 		messageboxqueuesize--;
