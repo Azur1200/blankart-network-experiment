@@ -2665,7 +2665,7 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 	// Little water sound while touching water - just a nicety.
 	if ((mobj->eflags & MFE_TOUCHWATER) && !(mobj->eflags & MFE_UNDERWATER))
 	{
-		if (P_RandomChance(PR_SFX, FRACUNIT/2) && leveltime % TICRATE == 0)
+		if (P_RandomChance(PR_SFX_TOUCHWATER, FRACUNIT/2) && leveltime % TICRATE == 0)
 			S_StartSound(mobj, sfx_floush);
 	}
 }

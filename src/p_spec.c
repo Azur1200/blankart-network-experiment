@@ -5334,7 +5334,7 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 
 	S_StartSound(player->mo, sfxnum);
 	{
-		sfxenum_t pick = P_RandomKey(PR_SFX, 2); // Gotta roll the RNG every time this is called for sync reasons
+		sfxenum_t pick = P_RandomKey(PR_VOICES, 2); // Gotta roll the RNG every time this is called for sync reasons
 		if (cv_kartvoices.value)
 			S_StartSound(player->mo, sfx_kbost1+pick);
 		//K_TauntVoiceTimers(player);

@@ -76,6 +76,8 @@ extern "C" {
 	X(RANDOMSTATE) \
 	\
 	X(SFX) \
+	X(SFX_TOUCHWATER) \
+	X(SFX_ALT) \
 	X(VOICES) \
 	X(BOSSSCREAM) \
 	\

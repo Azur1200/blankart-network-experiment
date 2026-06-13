@@ -7344,7 +7344,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 		{
 			mobj->health = 0;
 			P_SetMobjState(mobj, mobj->info->deathstate);
-			S_StartSound(mobj, mobj->info->deathsound + P_RandomKey(PR_SFX, mobj->info->mass));
+			S_StartSound(mobj, mobj->info->deathsound + P_RandomKey(PR_SFX_ALT, mobj->info->mass));
 			return;
 		}
 		break;
