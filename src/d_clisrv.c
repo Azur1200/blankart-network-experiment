@@ -3816,6 +3816,7 @@ static CV_PossibleValue_t resynchattempts_cons_t[] = {{1, "MIN"}, {20, "MAX"}, {
 
 consvar_t cv_resynchattempts = CVAR_INIT ("resynchattempts", "5", CV_SAVE, resynchattempts_cons_t, NULL);
 consvar_t cv_blamecfail = CVAR_INIT ("blamecfail", "Off", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_logconsistency = CVAR_INIT ("logconsistency", "Off", CV_SAVE, CV_OnOff, NULL);
 
 // max file size to send to a player (in kilobytes)
 static CV_PossibleValue_t maxsend_cons_t[] = {{-1, "MIN"}, {999999999, "MAX"}, {0, NULL}};
@@ -5300,6 +5301,19 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 	}
 
 	consistancy_t clientconsistancy = netbuffer->u.clientpak.consistancy;
+
+	if (cv_logconsistency.value)
+	{
+		if (realstart <= gametic && realstart + BACKUPTICS - 1 > gametic && gamestate == GS_LEVEL && dedicated && (netconsole != serverplayer))
+		{
+			I_OutputMsg("------------\n");
+			I_OutputMsg(M_GetText("Testing consistency of player %d (%s)...\n"), netconsole+1, player_names[netconsole]);
+			I_OutputMsg("Synching: %s\n", (consistancy[realstart%BACKUPTICS].checksum != SHORT(clientconsistancy.checksum)) ? "false" : "true");
+			I_OutputMsg("Checksum (Server): %d\n", consistancy[realstart%BACKUPTICS].checksum);
+			I_OutputMsg("Checksum (Player %d): %d\n", netconsole+1, SHORT(clientconsistancy.checksum));
+			I_OutputMsg("------------\n");
+		}
+	}
 
 	// Check player consistancy during the level
 	if (realstart <= gametic && realstart + BACKUPTICS - 1 > gametic && gamestate == GS_LEVEL

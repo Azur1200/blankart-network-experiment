@@ -1240,6 +1240,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_showjoinaddress);
 	CV_RegisterVar(&cv_shownodeip);
 	CV_RegisterVar(&cv_blamecfail);
+	CV_RegisterVar(&cv_logconsistency);
 
 	COM_AddCommand("ping", Command_Ping_f);
 	CV_RegisterVar(&cv_nettimeout);
