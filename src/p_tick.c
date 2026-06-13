@@ -665,6 +665,9 @@ static fixed_t FixedAngleDifference(fixed_t angle1, fixed_t angle2 )
 
 static void P_HandleCameraFreelookYaw(UINT8 pnum, player_t *player, camera_t *cam)
 {
+	if (menustack[0])
+		return;
+
 	if (P_IsDisplayPlayer(player))
 	{
 		fixed_t angle = 0;
