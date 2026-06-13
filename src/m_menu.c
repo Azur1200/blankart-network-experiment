@@ -2325,6 +2325,12 @@ static void M_SetupNextMenu(menutype_t menunum)
 		pi->vflags = src->vflags;
 		pi->disabled = src->disabled;
 		pi->layer = src->layer;
+		pi->cliprect = src->cliprect;
+		pi->cliprect_relative = src->cliprect_relative;
+		pi->cliprect_x = src->cliprect_x * FRACUNIT;
+		pi->cliprect_y = src->cliprect_y * FRACUNIT;
+		pi->cliprect_width = src->cliprect_width * FRACUNIT;
+		pi->cliprect_height = src->cliprect_height * FRACUNIT;
 
 		// copy items from the panel definition (TODO menuitem def/inst)
 		if (pd->numitems > 0)
@@ -3952,6 +3958,14 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 	if (pi->visible == false || cv_debugpanels.value == 1)
 		goto justdrawroutine;
 
+	if (pi->cliprect)
+	{
+		fixed_t x_clip = pi->cliprect_relative ? pi->x : pi->cliprect_x;
+		fixed_t y_clip = pi->cliprect_relative ? pi->y : pi->cliprect_y;
+
+		V_SetClipRect(x_clip, y_clip, pi->cliprect_width, pi->cliprect_height, pflags);
+	}
+
 	fixed_t scrollx = pi->x, scrolly = pi->y;
 	fixed_t scrollheight = pi->scrollheight;
 	if (!scrollheight)
@@ -4156,6 +4170,9 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 justdrawroutine:
 	if (cv_debugpanels.value != 2 && pd->drawroutine)
 		pd->drawroutine(pi);
+
+	if (pi->cliprect)
+		V_ClearClipRect();
 }
 
 //
@@ -5025,13 +5042,46 @@ boolean M_CanShowLevelInList(mapnum_t mapnum)
 	return M_CanShowLevelOnPlatter(mapnum) && M_LevelAvailableOnPlatter(mapnum);
 }
 
+const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback)
+{
+	if (p == 0 && keyboardcontrolled && (messagebox.active || menustack[0]))
+	{
+		switch (gc)
+		{
+			case gc_accelerate:
+				return "Enter";
+			case gc_systemmenu:
+			case gc_brake:
+				return "ESC";
+			case gc_fire:
+				return "Space";
+			case gc_drift:
+				return "Backspace";
+			case gc_pause:
+				return "=";
+			default:
+				goto fallback;
+		}
+	}
+	else
+fallback:
+	{
+		const char *item1 = gamecontrol[p][gc][0] != 0 ? G_KeynumToString(gamecontrol[p][gc][0]) : NULL;
+		const char *item2 = gamecontrol[p][gc][1] != 0 ? G_KeynumToString(gamecontrol[p][gc][1]) : NULL;
+		const char *item3 = gamecontrol[p][gc][2] != 0 ? G_KeynumToString(gamecontrol[p][gc][2]) : NULL;
+		const char *item4 = gamecontrol[p][gc][3] != 0 ? G_KeynumToString(gamecontrol[p][gc][3]) : NULL;
+
+		return item1 != NULL ? item1 : item2 != NULL ? item2 : item3 != NULL ? item3 : item4 != NULL ? item4 : fallback;
+	}
+}
+
 // Can't use va twice in the same line.
 char ConfirmString[25];
 char DeclineString[25];
 
 char *M_MessageConfirmText(boolean gamequit)
 {
-	const char *item1 = gamecontrol[0][gc_accelerate][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_accelerate][0]) : "ACCEL";
+	const char *item1 = M_ButtonName(0, gc_accelerate, "ACCEL");
 
 	memset(&ConfirmString, 0, sizeof(ConfirmString));
 
@@ -5045,7 +5095,7 @@ char *M_MessageConfirmText(boolean gamequit)
 
 char *M_MessageCancelText(boolean gamequit)
 {
-	const char *item1 = gamecontrol[0][gc_brake][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_brake][0]) : "BRAKE";
+	const char *item1 = M_ButtonName(0, gc_brake, "BRAKE");
 
 	memset(&DeclineString, 0, sizeof(DeclineString));
 
@@ -5698,8 +5748,8 @@ INT32 MR_TickAddons(INT32 choice)
 	M_SetItemDisabled(pi, "SEARCHTEXT", *cv_dummyaddonsearch.string == 0);
 	if (*cv_dummyaddonsearch.string == 0)
 	{
-		const char *item1 = gamecontrol[0][gc_drift][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_drift][0]) : "DRIFT";
-		M_SetItemText(pi, "SEARCHTEXT", va("Press %s to Search", item1));
+		const char *button = M_ButtonName(0, gc_drift, "DRIFT");
+		M_SetItemText(pi, "SEARCHTEXT", va("Press %s to Search", button));
 	}
 	else
 	{
@@ -6328,6 +6378,9 @@ INT32 MR_TickReplayHut(INT32 choice)
 		menupanelinst_t *pi = M_GetPanel("RANKINGS");
 		M_ClearPanelItems(pi);
 
+		//pi->cliprect_x = (BASEVIDWIDTH-100)*FRACUNIT;
+		//pi->cliprect_y = 62*FRACUNIT;
+
 		for (i = 1; i < MAXPLAYERS && mdemo->standings[i].ranking; i++)
 		{
 			menuitem_t *item;
@@ -6359,35 +6412,6 @@ INT32 MR_TickReplayHut(INT32 choice)
 		}
 
 		pi->y = 62*FRACUNIT - M_ReplayHutScroll((100 + i*20 - vid.scaledheight)*FRACUNIT, menutimer);
-
-		// Draw a warning prompt if needed
-		const char *warning;
-		switch (mdemo->addonstatus)
-		{
-			case DFILE_ERROR_CANNOTLOAD:
-				warning = "Some addons in this replay cannot be loaded.\nYou can watch anyway, but desyncs may occur.";
-				break;
-
-			case DFILE_ERROR_NOTLOADED:
-			case DFILE_ERROR_INCOMPLETEOUTOFORDER:
-				warning = "Loading addons will mark your game as modified, and Record Attack may be unavailable.\nYou can watch without loading addons, but desyncs may occur.";
-				break;
-
-			case DFILE_ERROR_EXTRAFILES:
-				warning = "You have addons loaded that were not present in this replay.\nYou can watch anyway, but desyncs may occur.";
-				break;
-
-			case DFILE_ERROR_OUTOFORDER:
-				warning = "You have this replay's addons loaded, but they are out of order.\nYou can watch anyway, but desyncs may occur.";
-				break;
-
-			default:
-				warning = "";
-				break;
-		}
-
-		pi = M_GetPanel("WARNING");
-		M_SetItemText(pi, "WARNING", warning);
 	}
 
 	return true;
@@ -6412,14 +6436,98 @@ INT32 MR_QuitReplayHut(INT32 choice)
 	return true;
 }
 
+static void M_LoadAddonsResponse(INT32 ch)
+{
+	UINT8 i;
+
+	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
+		return;
+
+	M_RestoreMenuStack(true);
+		COM_BufAddText(va("playdemo \"%s\" %s",
+		demolist[dir_on[menudepthleft]].filepath + strlen(srb2home) + 1, // dumb hack
+		M_IsItemOn(&curpanels[panelOn], "LOADWATCH") ? "-addfiles" : "-force"));
+}
+
 INT32 MR_HutStartReplay(INT32 choice)
 {
 	(void)choice;
 
-	M_RestoreMenuStack(true);
-	COM_BufAddText(va("playdemo \"%s\" %s",
-	               demolist[dir_on[menudepthleft]].filepath + strlen(srb2home) + 1, // dumb hack
-	               M_IsItemOn(&curpanels[panelOn], "LOADWATCH") ? "-addfiles" : "-force"));
+	const char *loadheader = M_IsItemOn(&curpanels[panelOn], "LOADWATCH" )  ? "Load Addons and Watch" : "Watch Without Addons";
+
+	menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
+
+	// Draw a warning prompt if needed
+	const char *warning = "";
+	boolean warningpopup = true;
+	switch (mdemo->addonstatus)
+	{
+		case DFILE_ERROR_CANNOTLOAD:
+			if (M_IsItemOn(&curpanels[panelOn], "LOADWATCH" ))
+			{
+				warning = "Some addons in this replay cannot be loaded.\nYou can watch anyway, but desyncs may occur.";
+			}
+			else if (M_IsItemOn(&curpanels[panelOn], "NOLOADWATCH" ))
+			{
+				warning = "You can watch without loading addons, but desyncs may occur.";
+			}
+			else
+			{
+				warningpopup = false;
+			}
+			break;
+
+		case DFILE_ERROR_NOTLOADED:
+		case DFILE_ERROR_INCOMPLETEOUTOFORDER:
+			if (M_IsItemOn(&curpanels[panelOn], "LOADWATCH" ))
+			{
+				warning = "Loading addons will mark your game as modified, and Record Attack may be unavailable.";
+			}
+			else if (M_IsItemOn(&curpanels[panelOn], "NOLOADWATCH" ))
+			{
+				warning = "You can watch without loading addons, but desyncs may occur.";
+			}
+			break;
+
+		case DFILE_ERROR_EXTRAFILES:
+			if (M_IsItemOn(&curpanels[panelOn], "LOADWATCH" ))
+			{
+				warning = "You have addons loaded that were not present in this replay.\nYou can watch anyway, but desyncs may occur.";
+			}
+			else if (M_IsItemOn(&curpanels[panelOn], "NOLOADWATCH" ))
+			{
+				warning = "You can watch without loading addons, but desyncs may occur.";
+			}
+			else
+			{
+				warningpopup = false;
+			}
+			break;
+
+		case DFILE_ERROR_OUTOFORDER:
+			if (M_IsItemOn(&curpanels[panelOn], "LOADWATCH" ))
+			{
+				warning = "You have this replay's addons loaded, but they are out of order.\nYou can watch anyway, but desyncs may occur.";
+			}
+			else if (M_IsItemOn(&curpanels[panelOn], "NOLOADWATCH" ))
+			{
+				warning = "You can watch without loading addons, but desyncs may occur.";
+			}
+			else
+			{
+				warningpopup = false;
+			}
+			break;
+
+		default:
+			warningpopup = false;
+			break;
+	}
+
+	if (warningpopup)
+		M_StartMessage2(loadheader, warning, ROUTINECAST(M_LoadAddonsResponse), MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
+	else
+		M_LoadAddonsResponse(0);
 	return true;
 }
 
@@ -10331,12 +10439,12 @@ void MP_SetupMonitorToggles(menupanelinst_t *pi)
 		}
 		else
 		{
-			const char *item1 = gamecontrol[0][gc_drift][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_drift][0]) : "DRIFT";
+			const char *button = M_ButtonName(0, gc_drift, "DRIFT");
 
 			item->argument = 0;
 			M_SetItemPatchRaw(item, result->cvar->name);
 			if (kartitems[result->type].altcvar != NULL)
-				M_SetItemTooltipRaw(item, va("Press %s to swap variants.", item1));
+				M_SetItemTooltipRaw(item, va("Press %s to swap variants.", button));
 			else if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
 				M_SetItemTooltipRaw(item, "Rings must be enabled in Gameplay Mods!");
 		}

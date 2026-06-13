@@ -24,6 +24,7 @@
 #include "mserv.h"
 #include "r_skins.h" // for SKINNAMESIZE
 #include "m_textinput.h"
+#include "g_input.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -206,6 +207,7 @@ extern messagebox_t messageboxqueue[NUMMENULEVELS];
 
 #define ROUTINECAST(func) (void (*)(void))func
 
+const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback);
 char *M_MessageConfirmText(boolean gamequit);
 char *M_MessageCancelText(boolean gamequit);
 
@@ -376,6 +378,10 @@ struct menupanelinst_t
 	boolean disabled; // can't be selected
 	boolean altscroll; // viewserver hell (list scrolling, usually paired with disabled = true)
 	INT32 layer; // higher number draws on top
+	boolean cliprect; // Clips everything contained inside it
+	boolean cliprect_relative; // use the x and y position of the panel for the cliprect
+	fixed_t cliprect_x, cliprect_y; // X and Y of a cliprect when not relative
+	fixed_t cliprect_width, cliprect_height; // Width and Height of added cliprect
 };
 
 struct menu_t

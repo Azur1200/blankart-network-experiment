@@ -1268,6 +1268,8 @@ fixed_t G_GetDeadZoneType(INT32 p, SINT8 type)
 	}
 }
 
+boolean keyboardcontrolled = false;
+
 INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital, SINT8 type)
 {
 	INT32 deviceID;
@@ -1295,6 +1297,15 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital, SINT8 type)
 	// then its a keyboard or mouse
 	if (deviceID == INVALID_DEVICE)
 		deviceID = KEYBOARD_MOUSE_DEVICE;
+
+	if (p == 0 && deviceID == KEYBOARD_MOUSE_DEVICE)
+	{
+		keyboardcontrolled = true;
+	}
+	else if (p == 0)
+	{
+		keyboardcontrolled = false;
+	}
 
 retrygetcontrol:
 	for (i = 0; i < MAXINPUTMAPPING; i++)

@@ -756,10 +756,9 @@ void V_SetClipRect(fixed_t x, fixed_t y, fixed_t w, fixed_t h, INT32 flags)
 	cliprect.flags = flags;
 	cliprect.enabled = true;
 
-	/*
-	V_DrawFill(cliprect.l, cliprect.t, cliprect.r - cliprect.l, cliprect.b - cliprect.t, V_NOSCALESTART);
-	CONS_Printf("[(%d, %d), (%d, %d)]\n", cliprect.l, cliprect.t, cliprect.r, cliprect.b);
-	*/
+
+	//V_DrawFill(cliprect.left, cliprect.top, cliprect.right - cliprect.left, cliprect.bottom - cliprect.top, V_NOSCALESTART);
+	//CONS_Printf("[(%d, %d), (%d, %d)]\n", cliprect.left, cliprect.top, cliprect.right, cliprect.bottom);
 }
 
 // sets up a cliprect for a splitscreen player (and actually accounts for non-green res)

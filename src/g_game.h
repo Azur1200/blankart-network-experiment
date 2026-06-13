@@ -397,6 +397,8 @@ typedef enum
 
 extern playerbumptype_t playerbumpactive;
 
+extern boolean keyboardcontrolled;
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

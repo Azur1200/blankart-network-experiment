@@ -2696,11 +2696,35 @@ static void readmenupanelinstances(MYFILE *f, INT32 num)
 		}
 		else if (fastcmp(word, "DISABLED"))
 		{
-			pi->disabled = word2[0] == 'T' || word2[0] == 'Y';;
+			pi->disabled = word2[0] == 'T' || word2[0] == 'Y';
 		}
 		else if (fastcmp(word, "LAYER"))
 		{
 			pi->layer = get_number(word2);
+		}
+		else if (fastcmp(word, "CLIPRECT"))
+		{
+			pi->cliprect = word2[0] == 'T' || word2[0] == 'Y';
+		}
+		else if (fastcmp(word, "CLIPRECT_RELATIVE"))
+		{
+			pi->cliprect_relative = word2[0] == 'T' || word2[0] == 'Y';
+		}
+		else if (fastcmp(word, "CLIPRECT_X"))
+		{
+			pi->cliprect_x = get_number(word2);
+		}
+		else if (fastcmp(word, "CLIPRECT_Y"))
+		{
+			pi->cliprect_y = get_number(word2);
+		}
+		else if (fastcmp(word, "CLIPRECT_WIDTH"))
+		{
+			pi->cliprect_width = get_number(word2);
+		}
+		else if (fastcmp(word, "CLIPRECT_HEIGHT"))
+		{
+			pi->cliprect_height = get_number(word2);
 		}
 		else
 			WARN("unknown word '%s'", word);
