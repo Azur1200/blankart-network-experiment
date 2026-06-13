@@ -2587,14 +2587,14 @@ boolean M_MenuButtonHeld(UINT8 pid, UINT32 bt)
 	return !!(menucmd[pid].buttons & bt);
 }
 
-static void M_HandleGoBack(INT32 thisMenuKey)
+static boolean M_HandleGoBack(INT32 thisMenuKey)
 {
 	if (M_MenuButtonPressed(0, MBT_CANCEL) || M_MenuButtonPressed(0, MBT_HOME))
 	{
 		noFurtherInput = -1;
 
 		if (M_WipeBuffer(thisMenuKey, currentMenu->quitroutine))
-			return;
+			return true;
 
 		//If we entered the game search menu, but didn't enter a game,
 		//make sure the game doesn't still think we're in a netgame.
@@ -2604,7 +2604,11 @@ static void M_HandleGoBack(INT32 thisMenuKey)
 			multiplayer = false;
 		}
 		M_ExitMenu();
+
+		return true;
 	}
+
+	return false;
 }
 
 sfxenum_t M_MenuTypingSounds(INT32 key)
@@ -3056,7 +3060,10 @@ static void M_HandleMenuInput(void)
 		}
 	}
 
-	M_HandleGoBack(thisMenuKey);
+	if (M_HandleGoBack(thisMenuKey))
+	{
+		return;
+	}
 
 	// HMMM WHERE WAS THIS COPY PASTED FROM, I WONDER
 	INT32 hmove = 0, vmove = 0;
@@ -5066,22 +5073,22 @@ void M_MessageboxClose(boolean clearstack)
 		if (!clearstack)
 			memcpy(&messagebox, &messageboxqueue[messageboxqueuesize-1], sizeof (messagebox_t));
 
-		if (messageboxqueue[messageboxqueuesize-1].headertext && !clearstack)
+		if (!clearstack && messageboxqueue[messageboxqueuesize-1].headertext && messageboxqueue[messageboxqueuesize-1].headertext[0] != 0)
 			messagebox.headertext = Z_StrDup(messageboxqueue[messageboxqueuesize-1].headertext);
 		else
 			messagebox.headertext = NULL;
 
-		if (messageboxqueue[messageboxqueuesize-1].headertext && !clearstack)
+		if (!clearstack && messageboxqueue[messageboxqueuesize-1].text && messageboxqueue[messageboxqueuesize-1].text[0] != 0)
 			messagebox.text = Z_StrDup(messageboxqueue[messageboxqueuesize-1].text);
 		else
 			messagebox.text = NULL;
 
-		if (messageboxqueue[messageboxqueuesize-1].confirmtext && !clearstack)
+		if (!clearstack && messageboxqueue[messageboxqueuesize-1].confirmtext && messageboxqueue[messageboxqueuesize-1].confirmtext[0] != 0)
 			messagebox.confirmtext = Z_StrDup(messageboxqueue[messageboxqueuesize-1].confirmtext);
 		else
 			messagebox.confirmtext = NULL;
 
-		if (messageboxqueue[messageboxqueuesize-1].declinetext && !clearstack)
+		if (!clearstack && messageboxqueue[messageboxqueuesize-1].declinetext && messageboxqueue[messageboxqueuesize-1].declinetext[0] != 0)
 			messagebox.declinetext = Z_StrDup(messageboxqueue[messageboxqueuesize-1].declinetext);
 		else
 			messagebox.declinetext = NULL;
@@ -5141,13 +5148,13 @@ void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(voi
 		return;
 	}
 
-	if (str)
+	if (str && str[0] != 0)
 	{
 		message = Z_StrDup(str);
 		DEBFILE(message);
 	}
 
-	if (str)
+	if (message)
 	{
 		// Rudementary word wrapping.
 		// Simple and effective. Does not handle nonuniform letter sizes, colors, etc. but who cares.
@@ -5185,7 +5192,7 @@ void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(voi
 
 	M_StartControlPanel(); // can't put menuactive to true
 
-	if (headerstr)
+	if (headerstr && headerstr[0] != 0)
 		messageboxset->headertext = Z_StrDup(headerstr);
 	else
 		messageboxset->headertext = NULL;
@@ -5195,12 +5202,12 @@ void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(voi
 	else
 		messageboxset->text = NULL;
 
-	if (confirmstr)
+	if (confirmstr && confirmstr[0] != 0)
 		messageboxset->confirmtext = Z_StrDup(confirmstr);
 	else
 		messageboxset->confirmtext = NULL;
 
-	if (declinestr)
+	if (declinestr && declinestr[0] != 0)
 		messageboxset->declinetext = Z_StrDup(declinestr);
 	else
 		messageboxset->declinetext = NULL;
@@ -5237,10 +5244,10 @@ void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(voi
 		}
 	}
 
-	if (headerstr)
+	if (headerstr && headerstr[0] != 0)
 		strlines++;
 
-	if (confirmstr || declinestr)
+	if (confirmstr && confirmstr[0] != 0 || declinestr && declinestr[0] != 0)
 		strlines++;
 
 	messageboxset->x = (BASEVIDWIDTH  - 8*max-16)/2;
