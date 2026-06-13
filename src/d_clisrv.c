@@ -155,6 +155,9 @@ static tic_t tictoclear = 0; // optimize d_clearticcmd
 static tic_t maketic;
 
 static consistancy_t consistancy[BACKUPTICS];
+static UINT32 serverseedarchive[BACKUPTICS][PRNUMCLASS] = {0};
+
+static INT32 numdesynchingseeds = 0;
 
 #define CONSISTANCYDBGSIZE 4096
 
@@ -678,7 +681,7 @@ void ReadLmpExtraData(UINT8 **demo_pointer, INT32 playernum)
 // end extra data function for lmps
 // -----------------------------------------------------------------
 
-static INT16 Consistancy(consistancy_t *c);
+static INT16 Consistancy(consistancy_t *c, UINT32 idx);
 
 static void GetPackets(void);
 
@@ -1579,7 +1582,7 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 		CONS_Alert(CONS_ERROR, M_GetText("Can't delete %s\n"), tmpsave);
 	}
 
-	Consistancy(&consistancy[gametic%BACKUPTICS]);
+	Consistancy(&consistancy[gametic%BACKUPTICS], gametic%BACKUPTICS);
 	CON_ToggleOff();
 
 	// Tell the server we have received and reloaded the gamestate
@@ -5202,14 +5205,15 @@ static void PT_Say(int node)
 
 // Blast-print the seeds; very much not feasible with dynamic seed allocation
 #define PRINTSEEDSMISMATCH(seed)                                                               \
-	if (consistancy[realstart % BACKUPTICS].rngseed[PR_##seed] !=                          \
-	    clientconsistancy.rngseed[PR_##seed])                                              \
+	if (serverseedarchive[realstart % BACKUPTICS][PR_##seed] !=                            \
+	    netbuffer->u.clientpak.seeds[PR_##seed])                                           \
 	{                                                                                      \
 		CONS_Printf("Seed desynch for RNG class %d (" #seed "); expected 0x%08" PRIX32 \
 			    ", got 0x%08" PRIX32 "\n",                                         \
 			    PR_##seed,                                                         \
-			    clientconsistancy.rngseed[PR_##seed],                              \
-			    consistancy[realstart % BACKUPTICS].rngseed[PR_##seed]);           \
+			    serverseedarchive[realstart % BACKUPTICS][PR_##seed],              \
+			    netbuffer->u.clientpak.seeds[PR_##seed]);                          \
+		numdesynchingseeds++;                                                          \
 	};
 
 static void PT_ClientCmd(SINT8 node, INT32 netconsole)
@@ -5327,7 +5331,24 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 				// Extremely elaborate debug!
 				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
 				CONS_Printf(M_GetText("RECEIVED\n%s"), cfailrecieved);
+
+				// RNG debug...
+				numdesynchingseeds = 0;
 				{RNGSEEDS(PRINTSEEDSMISMATCH)}
+
+				if (numdesynchingseeds < 1)
+				{
+					if (consistancy[realstart%BACKUPTICS].seed_checksum !=
+					    clientconsistancy.seed_checksum)
+					{
+						CONS_Alert(CONS_ERROR, "Checksums mismatch, but"
+							   "  no RNG seed mismatches found!\n");
+					}
+					else
+					{
+						CONS_Printf("No RNG seed mismatches found.\n");
+					}
+				}
 				CONS_Printf("------------\n");
 			}
 			DEBFILE(va("Restoring player %d (synch failure) [%update] %d!=%d\n",
@@ -5353,7 +5374,24 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 				// Extremely elaborate debug!
 				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
 				CONS_Printf(M_GetText("RECEIVED\n%s"), cfailrecieved);
+
+				// RNG debug...
+				numdesynchingseeds = 0;
 				{RNGSEEDS(PRINTSEEDSMISMATCH)}
+
+				if (numdesynchingseeds < 1)
+				{
+					if (consistancy[realstart%BACKUPTICS].seed_checksum !=
+					    clientconsistancy.seed_checksum)
+					{
+						CONS_Alert(CONS_ERROR, "Checksums mismatch, but"
+							   "  no RNG seed mismatches found!\n");
+					}
+					else
+					{
+						CONS_Printf("No RNG seed mismatches found.\n");
+					}
+				}
 				CONS_Printf("------------\n");
 			}
 			SendKick(netconsole, KICK_MSG_CON_FAIL);
@@ -6330,8 +6368,6 @@ static UINT32 GenerateConsistancySum(consistancy_t *c)
 	return sum;
 }
 
-#define RESETSEED(seed) c->rngseed[PR_##seed] = 0;
-
 static void ResetConsistancy(consistancy_t *c)
 {
 	c->checksum = 0;
@@ -6349,7 +6385,6 @@ static void ResetConsistancy(consistancy_t *c)
 
 	c->itemsum = 0; // Player item checksum
 
-	{RNGSEEDS(RESETSEED)};
 	c->seed_checksum = 0;
 
 	// Object data checksum
@@ -6415,9 +6450,6 @@ void SPrintConsistancy(char *out, consistancy_t *c)
 	c->mobjframe ^= value;
 }*/
 
-#define WRITERNGSEEDTOCONSISTANCY(seed) c->rngseed[PR_##seed] = P_GetRandSeed(PR_##seed);
-#define ADDTORNGCHECKSUM(seed) c->seed_checksum += c->rngseed[PR_##seed];
-
 //
 // NetUpdate
 // Builds ticcmds for console player,
@@ -6426,13 +6458,13 @@ void SPrintConsistancy(char *out, consistancy_t *c)
 // no more use random generator, because at very first tic isn't yet synchronized
 // Note: It is called consistAncy on purpose.
 //
-static INT16 Consistancy(consistancy_t *c)
+static INT16 Consistancy(consistancy_t *c, UINT32 idx)
 {
-	INT32 i;
+	INT32 i = 0;
 	UINT32 ret = 0;
 #ifdef MOBJCONSISTANCY
-	thinker_t *th;
-	mobj_t *mo;
+	thinker_t *th = NULL;
+	mobj_t *mo = NULL;
 #endif
 
 	DEBFILE(va("TIC %u ", gametic));
@@ -6444,6 +6476,7 @@ static INT16 Consistancy(consistancy_t *c)
 	}
 
 	ResetConsistancy(c);
+	memset(serverseedarchive[idx], 0, sizeof(serverseedarchive[idx]));
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -6470,12 +6503,28 @@ static INT16 Consistancy(consistancy_t *c)
 	// Coop desynching enemies is painful
 	if (gamestate == GS_LEVEL)
 	{
-		// Not using a for-loop for this (at least not until dynamic seeds become a thing);
-		// blast all seeds into the consistancy struct
-		{RNGSEEDS(WRITERNGSEEDTOCONSISTANCY)};
-		// We're using a 64-bit integer for seeds, so the sky's pretty much the limit for how much we can add!
-		// (In theory: you'd need 4 billion maxed-out seeds to risk an overflow, for context)
-		{RNGSEEDS(ADDTORNGCHECKSUM)};
+		// Write seeds before consistancy
+		INT32 seed = 0;
+		for (seed = 0; seed < PRNUMCLASS; seed++)
+		{
+			serverseedarchive[idx][seed] = P_GetRandSeed(seed);
+		}
+
+		// We're using a 64-bit integer for seeds, so the sky's pretty much the limit
+		// for numbers.
+		// However, to make the checksum a bit more reliable, we're going to loop through
+		// every seed, and do the "add-subtract" sampling as-per mobjs.
+		for (i = 0; i < PRNUMCLASS; i++)
+		{
+			if (i & 1)
+			{
+				c->seed_checksum -= P_GetRandSeed(i);
+			}
+			else
+			{
+				c->seed_checksum += P_GetRandSeed(i);
+			}
+		}
 	}
 
 #ifdef MOBJCONSISTANCY
@@ -6601,9 +6650,6 @@ static INT16 Consistancy(consistancy_t *c)
 	return (INT16)(ret & 0xFFFF);
 }
 
-#undef WRITERNGSEEDTOCONSISTANCY
-#undef ADDTORNGCHECKSUM
-
 // confusing, but this DOESN'T send PT_NODEKEEPALIVE, it sends PT_BASICKEEPALIVE
 // used during wipes to tell the server that a node is still connected
 static void CL_SendClientKeepAlive(void)
@@ -6633,8 +6679,6 @@ static void SV_SendServerKeepAlive(void)
 #define CloneConsistancy(ca, cb) \
 { \
 	ca.checksum = cb.checksum; \
-	INT32 ii = 0; \
-	for (ii = 0; ii < PRNUMCLASS; ii++) {ca.rngseed[ii] = cb.rngseed[ii];}; \
 	ca.seed_checksum = cb.seed_checksum; \
 	ca.itemsum = cb.itemsum; \
 \
@@ -6695,7 +6739,17 @@ static void CL_SendClientCmd(void)
 
 		packetsize = sizeof (clientcmd_pak);
 		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds[0][lagDelay], 1);
-		CloneConsistancy(netbuffer->u.clientpak.consistancy, consistancy[gametic % BACKUPTICS]);
+
+		// Write seeds before consistancy
+		INT32 seed = 0;
+		for (seed = 0; seed < PRNUMCLASS; seed++)
+		{
+			netbuffer->u.clientpak.seeds[seed] =
+				serverseedarchive[gametic % BACKUPTICS][seed];
+		}
+
+		CloneConsistancy(netbuffer->u.clientpak.consistancy,
+				 consistancy[gametic % BACKUPTICS]);
 
 		if (splitscreen) // Send a special packet with 2 cmd for splitscreen
 		{
@@ -7056,7 +7110,7 @@ boolean TryRunTics(tic_t realtics)
 				}
 
 				gametic++;
-				Consistancy(&consistancy[gametic%BACKUPTICS]);
+				Consistancy(&consistancy[gametic%BACKUPTICS], gametic%BACKUPTICS);
 
 				ps_tictime = I_GetPreciseTime() - ps_tictime;
 
