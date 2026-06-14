@@ -6362,8 +6362,9 @@ INT32 MR_TickReplayHut(INT32 choice)
 		else
 		{
 			pi->cliprect = true;
-			pi->x = 10*FRACUNIT - M_ReplayHutScroll((V_StringWidth(item->text, 0) - vid.scaledheight)*FRACUNIT, menutimer);
 		}
+
+		pi->x = 10*FRACUNIT - M_ReplayHutScroll((V_StringWidth(item->text, 0) - vid.scaledheight)*FRACUNIT, menutimer);
 	}
 
 	if (M_CheckPanel("DEMOLIST"))
