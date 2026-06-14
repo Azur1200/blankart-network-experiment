@@ -6204,8 +6204,6 @@ INT32 MR_TickReplayHutReplayInfo(INT32 choice)
 	M_SetItemVisible(bg, "CENTERTEXT", false);
 
 	menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
-	M_SetItemText(fg, "DEMOTITLE", mdemo->title);
-	M_SetItemVisible(fg, "DEMOTITLE", M_CheckPanel("DEMOLIST") == NULL);
 
 	switch (mdemo->type)
 	{
@@ -6335,6 +6333,39 @@ INT32 MR_TickReplayHut(INT32 choice)
 
 	MR_TickReplayHutReplayInfo(0);
 
+	if (M_CheckPanel("MAIN"))
+	{
+		menupanelinst_t *pi = M_GetPanel("MAIN");
+
+		if (M_CheckPanel("RANKINGS"))
+		{
+			menupanelinst_t *rk = M_GetPanel("RANKINGS");
+			menuitem_t *box = M_GetMenuItem(pi, "RANKINGBG");
+
+			M_SetItemVisible(pi, "RANKINGBG", rk->numitems);
+		}
+	}
+
+	if (M_CheckPanel("DEMOTITLE"))
+	{
+		menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
+		menupanelinst_t *pi = M_GetPanel("DEMOTITLE");
+
+		M_SetItemText(pi, "DEMOTITLE", mdemo->title);
+
+		menuitem_t *item = M_GetMenuItem(pi, "DEMOTITLE");
+
+		if (M_CheckPanel("RANKINGS") && M_GetPanel("RANKINGS")->numitems == 0)
+		{
+			pi->cliprect = false;
+		}
+		else
+		{
+			pi->cliprect = true;
+			pi->x = 10*FRACUNIT - M_ReplayHutScroll((V_StringWidth(item->text, 0) - vid.scaledheight)*FRACUNIT, menutimer);
+		}
+	}
+
 	if (M_CheckPanel("DEMOLIST"))
 	{
 		menupanelinst_t *pi = M_GetPanel("DEMOLIST");
@@ -6411,7 +6442,7 @@ INT32 MR_TickReplayHut(INT32 choice)
 			M_SetItemExtraRaw(item, color >= 0 && color < numskincolors ? DEH_SkincolorName(color) : "");
 		}
 
-		pi->y = 62*FRACUNIT - M_ReplayHutScroll((100 + i*20 - vid.scaledheight)*FRACUNIT, menutimer);
+		pi->y = 52*FRACUNIT - M_ReplayHutScroll((100 + i*20 - vid.scaledheight)*FRACUNIT, menutimer);
 	}
 
 	return true;
