@@ -888,7 +888,7 @@ boolean CON_Responder(event_t *ev)
 	// check for console toggle key
 	if (ev->type != ev_console)
 	{
-		if ((modeattacking && !demo.playback) || metalrecording || marathonmode)
+		if ((modeattacking != ATTACKING_NONE && modeattacking != ATTACKING_MENU && !demo.playback) || metalrecording || marathonmode)
 			return false;
 
 		if (ev->data1 >= NUMKEYS) // See also: HUD_Responder
