@@ -5333,12 +5333,6 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 				// Tell the client we are about to resend them the gamestate
 				netbuffer->u.rngdiagnosis.nextpacket = PT_WILLRESENDGAMESTATE;
 			}
-			else
-			{
-				// Prepare to kick the client
-				// Usiung PT_SERVERREFUSE as a codename of sorts
-				netbuffer->u.rngdiagnosis.nextpacket = PT_SERVERREFUSE;
-			}
 
 			// ...and send that over to the client
 			HSendPacket(node, true, 0, sizeof(netbuffer->u.rngdiagnosis));
