@@ -5204,19 +5204,6 @@ static void PT_Say(int node)
 	DoSayCommand(say.message, say.target, say.flags, say.source);
 }
 
-// Blast-print the seeds; very much not feasible with dynamic seed allocation
-#define PRINTSEEDSMISMATCH(seed)                                                               \
-	if (serverseedarchive[realstart % BACKUPTICS][PR_##seed] !=                            \
-	    netbuffer->u.clientpak.seeds[PR_##seed])                                           \
-	{                                                                                      \
-		CONS_Printf("Seed desynch for RNG class %d (" #seed "); expected 0x%08" PRIX32 \
-			    ", got 0x%08" PRIX32 "\n",                                         \
-			    PR_##seed,                                                         \
-			    serverseedarchive[realstart % BACKUPTICS][PR_##seed],              \
-			    netbuffer->u.clientpak.seeds[PR_##seed]);                          \
-		numdesynchingseeds++;                                                          \
-	};
-
 static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
@@ -5321,13 +5308,53 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 		&& !resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime()
 		&& !SV_ResendingSavegameToAnyone())
 	{
+		if (cv_blamecfail.value)
+		{
+			netbuffer->packettype = PT_WILLDIAGNOSERNG;
+
+			// Free up some space for the RNG diagnosis
+			memset(&netbuffer->u.rngdiagnosis, 0, sizeof(netbuffer->u.rngdiagnosis));
+
+			// Copy over OUR seeds...
+			INT32 _seed = 0;
+			for (_seed = 0; _seed < PRNUMCLASS; _seed++)
+			{
+				netbuffer->u.rngdiagnosis.server_seeds[_seed] = P_GetRandSeed(_seed);
+			}
+
+			// ...and our current checksum...
+			netbuffer->u.rngdiagnosis.checksums[0] = consistancy[realstart%BACKUPTICS].seed_checksum;
+
+			// ...and where we remember the client being...
+			netbuffer->u.rngdiagnosis.client_id = netconsole;
+
+			if (cv_resynchattempts.value)
+			{
+				// Tell the client we are about to resend them the gamestate
+				netbuffer->u.rngdiagnosis.nextpacket = PT_WILLRESENDGAMESTATE;
+			}
+			else
+			{
+				// Prepare to kick the client
+				// Usiung PT_SERVERREFUSE as a codename of sorts
+				netbuffer->u.rngdiagnosis.nextpacket = PT_SERVERREFUSE;
+			}
+
+			// ...and send that over to the client
+			HSendPacket(node, true, 0, sizeof(netbuffer->u.rngdiagnosis));
+		}
+
 		if (cv_resynchattempts.value)
 		{
 			// Tell the client we are about to resend them the gamestate
-			netbuffer->packettype = PT_WILLRESENDGAMESTATE;
-			HSendPacket(node, true, 0, 0);
 
-			resendingsavegame[node] = true;
+			if (netbuffer->packettype != PT_WILLDIAGNOSERNG)
+			{
+				netbuffer->packettype = PT_WILLRESENDGAMESTATE;
+				HSendPacket(node, true, 0, 0);
+
+				resendingsavegame[node] = true;
+			}
 
 			if (cv_blamecfail.value)
 			{
@@ -5345,25 +5372,6 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 				// Extremely elaborate debug!
 				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
 				CONS_Printf(M_GetText("RECEIVED\n%s"), cfailrecieved);
-
-				// RNG debug...
-				numdesynchingseeds = 0;
-				{RNGSEEDS(PRINTSEEDSMISMATCH)}
-
-				if (numdesynchingseeds < 1)
-				{
-					if (consistancy[realstart%BACKUPTICS].seed_checksum !=
-					    clientconsistancy.seed_checksum)
-					{
-						CONS_Alert(CONS_ERROR, "Checksums mismatch, but"
-							   "  no RNG seed mismatches found!\n");
-					}
-					else
-					{
-						CONS_Printf("No RNG seed mismatches found.\n");
-					}
-				}
-				CONS_Printf("------------\n");
 			}
 			DEBFILE(va("Restoring player %d (synch failure) [%update] %d!=%d\n",
 				netconsole, realstart, consistancy[realstart%BACKUPTICS].checksum,
@@ -5389,6 +5397,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
 				CONS_Printf(M_GetText("RECEIVED\n%s"), cfailrecieved);
 
+				/*
 				// RNG debug...
 				numdesynchingseeds = 0;
 				{RNGSEEDS(PRINTSEEDSMISMATCH)}
@@ -5407,6 +5416,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 					}
 				}
 				CONS_Printf("------------\n");
+				*/
 			}
 			SendKick(netconsole, KICK_MSG_CON_FAIL);
 			DEBFILE(va("player %d kicked (synch failure) [%u] %d!=%d\n",
@@ -5416,8 +5426,6 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 		}
 	}
 }
-
-#undef PRINTSEEDSMISMATCH
 
 static void PT_BasicKeepAlive(SINT8 node, INT32 netconsole)
 {
@@ -5763,6 +5771,100 @@ static void PT_Ping(SINT8 node, INT32 netconsole)
 		servermaxping = (tic_t)netbuffer->u.netinfo.pingtable[MAXPLAYERS];
 	}
 }
+
+static void PT_WillDiagnoseRNG(SINT8 node, INT32 netconsole)
+{
+	I_OutputMsg(M_GetText("Preparing RNG diagnosis...\n"));
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	if (server)
+		return;
+
+	if (node != servernode)
+		return; // Not the server, so we don't care.
+
+	// Gather our seeds and send that to the server again.
+
+	INT32 _seed = 0;
+	for (_seed = 0; _seed < PRNUMCLASS; _seed++)
+	{
+		netbuffer->u.rngdiagnosis.client_seeds[_seed] = P_GetRandSeed(_seed);
+
+		if (_seed & 1)
+		{
+			netbuffer->u.rngdiagnosis.checksums[1] -= netbuffer->u.rngdiagnosis.client_seeds[_seed];
+		}
+		else
+		{
+			netbuffer->u.rngdiagnosis.checksums[1] += netbuffer->u.rngdiagnosis.client_seeds[_seed];
+		}
+	}
+
+	netbuffer->packettype = PT_RNGDIAGNOSIS;
+
+	if (!HSendPacket(servernode, true, 0, sizeof(netbuffer->u.rngdiagnosis)))
+	{
+		I_OutputMsg(M_GetText("ERROR: Wasn't able to send our seeds to the server!\n"));
+		return;
+	}
+
+	I_OutputMsg(M_GetText("Sent our seeds to the server.\n"));
+}
+
+// Blast-print the seeds; very much not feasible with dynamic seed allocation
+#define PRINTSEEDSMISMATCH(seed)                                                               \
+	if (netbuffer->u.rngdiagnosis.server_seeds[PR_##seed] !=                               \
+	    netbuffer->u.rngdiagnosis.client_seeds[PR_##seed])                                 \
+	{                                                                                      \
+		CONS_Printf("Seed desynch for RNG class %d (" #seed "); expected 0x%08" PRIX32 \
+			    ", got 0x%08" PRIX32 "\n",                                         \
+			    PR_##seed,                                                         \
+			    netbuffer->u.rngdiagnosis.server_seeds[PR_##seed],                 \
+			    netbuffer->u.rngdiagnosis.client_seeds[PR_##seed]);                \
+		numdesynchingseeds++;                                                          \
+	};
+
+static void PT_RNGDiagnosis(SINT8 node)
+{
+	(void)node;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	UINT16 pid = netbuffer->u.rngdiagnosis.client_id;
+
+	CONS_Printf(M_GetText("Diagnosing RNG for player %d (%s)...\n"), pid+1, player_names[pid]);
+
+	numdesynchingseeds = 0;
+	{RNGSEEDS(PRINTSEEDSMISMATCH)}
+
+	if (numdesynchingseeds < 1)
+	{
+		if (netbuffer->u.rngdiagnosis.checksums[0] !=
+		    netbuffer->u.rngdiagnosis.checksums[1])
+		{
+			CONS_Alert(CONS_ERROR, "Checksums mismatch, but"
+				   " no RNG seed mismatches found!\n");
+		}
+		else
+		{
+			CONS_Printf("No RNG seed mismatches found.\n");
+		}
+	}
+	CONS_Printf("------------\n");
+
+	if (netbuffer->u.rngdiagnosis.nextpacket == PT_WILLRESENDGAMESTATE)
+	{
+		// Resend the gamestate to the player
+		I_OutputMsg("Gamestate resend queued.\n");
+		netbuffer->packettype = PT_WILLRESENDGAMESTATE;
+		HSendPacket(node, true, 0, 0);
+
+		resendingsavegame[node] = true;
+	}
+}
+
+#undef PRINTSEEDSMISMATCH
 
 static void PT_WillResendGamestate(SINT8 node)
 {
@@ -6263,6 +6365,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_ASKLUAFILE         : PT_AskLuaFile         (node            ); break;
 		case PT_HASLUAFILE         : PT_HasLuaFile         (node            ); break;
 		case PT_RECEIVEDGAMESTATE  : PT_ReceivedGamestate  (node            ); break;
+		case PT_RNGDIAGNOSIS       : PT_RNGDiagnosis       (node            ); break;
 		// CLIENT RECEIVE
 		case PT_SERVERTICS         : PT_ServerTics         (node, netconsole); break;
 		case PT_PING               : PT_Ping               (node, netconsole); break;
@@ -6272,6 +6375,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_LOGINCHALLENGE     : PT_LoginChallenge     (node            ); break;
 		case PT_SERVERINFOUPDATE   : PT_ServerInfoUpdate   (node            ); break;
 		case PT_WILLRESENDGAMESTATE: PT_WillResendGamestate(node            ); break;
+		case PT_WILLDIAGNOSERNG    : PT_WillDiagnoseRNG    (node, netconsole); break;
 		case PT_SENDINGLUAFILE     : PT_SendingLuaFile     (node            ); break;
 		case PT_SERVERCFG          :                                           break;
 		// CHALLENGE
@@ -6742,14 +6846,6 @@ static void CL_SendClientCmd(void)
 
 		packetsize = sizeof (clientcmd_pak);
 		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds[0][lagDelay], 1);
-
-		// Write seeds before consistancy
-		INT32 seed = 0;
-		for (seed = 0; seed < PRNUMCLASS; seed++)
-		{
-			netbuffer->u.clientpak.seeds[seed] =
-				serverseedarchive[gametic % BACKUPTICS][seed];
-		}
 
 		CloneConsistancy(netbuffer->u.clientpak.consistancy,
 				 consistancy[gametic % BACKUPTICS]);
