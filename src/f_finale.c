@@ -60,7 +60,7 @@ static tic_t stoptimer;
 
 static boolean keypressed = false;
 
-static INT32 menuanimtimer; // Title screen: background animation timing
+INT32 menuanimtimer; // Title screen: background animation timing
 mobj_t *titlemapcameraref = NULL;
 
 // menu presentation state
@@ -226,7 +226,7 @@ static void F_NewCutscene(const char *basetext)
 // F_TitleBGScroll
 //
 
-static void F_TitleBGScroll(INT32 scrollspeed)
+void F_TitleBGScroll(INT32 scrollspeed, INT32 ticker)
 {
 	INT32 x, y, w;
 	patch_t *pat, *pat2;
@@ -238,8 +238,8 @@ static void F_TitleBGScroll(INT32 scrollspeed)
 	w = (vid.scaledwidth << FRACBITS);
 
 	// The scroll offset MUST be clamped before shifting by FRACBITS, or else it'll overflow in about 3 minutes
-	animtimer = ((((finalecount * scrollspeed) % (SHORT(pat->width)*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
-	anim2 = (SHORT(pat2->width)<<FRACBITS) - ((((finalecount * scrollspeed) % (SHORT(pat2->width)*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
+	animtimer = ((((ticker * scrollspeed) % (SHORT(pat->width)*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
+	anim2 = (SHORT(pat2->width)<<FRACBITS) - ((((ticker * scrollspeed) % (SHORT(pat2->width)*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
 
 	// SRB2Kart: F_DrawPatchCol is over-engineered; recoded to be less shitty and error-prone
 	if (rendermode != render_none)
@@ -1568,7 +1568,7 @@ void F_TitleScreenDrawer(void)
 					transval = (finalecount - 50)>>1;
 
 				if (titlemapinaction == false)
-					F_TitleBGScroll(5);
+					F_TitleBGScroll(5, finalecount);
 
 				V_DrawSciencePatch(0, -40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetTimeFrac(RTF_MENU), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTOLEFT, ttcheckers, FRACUNIT);
 				V_DrawSciencePatch(280<<FRACBITS, -(40<<FRACBITS) + 40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetTimeFrac(RTF_MENU), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTORIGHT, ttcheckers, FRACUNIT);
