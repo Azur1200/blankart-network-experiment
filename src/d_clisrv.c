@@ -2359,7 +2359,9 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				// Draw something please!
 				F_MenuPresTicker(true);
 
-				if (!menustack[0])
+				if (!menustack[0] && fastcmp(curbgname, "SRB2KTTL"))
+					F_TitleBGScroll(5, menuanimtimer);
+				else if (!menustack[0])
 					F_SkyScroll(curbgxspeed, curbgyspeed, curbgname); // title sky
 			}
 			CL_DrawConnectionStatus();
