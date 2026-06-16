@@ -111,7 +111,6 @@ itemusefunc_f *KI_ItemUseFunctions[][2] =
 	[KITEM_GROW] =	 			{K_UseItem_Grow, NULL},
 	[KITEM_SHRINK] =	 		{K_UseItem_Shrink, K_UseItem_Mini},
 	[KITEM_THUNDERSHIELD] =	 	{K_UseItem_ThunderShield, K_UseItem_AttractionShield},
-	[KITEM_BUBBLESHIELD] =	 	{K_UseItem_BubbleShield, NULL},
 	[KITEM_FLAMESHIELD] =	 	{K_UseItem_FlameShield, NULL},
 	[KITEM_HYUDORO] =		 	{K_UseItem_Hyudoro, NULL},
 	[KITEM_POGOSPRING] =	 	{K_UseItem_PogoSpring, NULL},
@@ -129,7 +128,6 @@ itemusefunc_f *KI_ItemHoldUseFunctions[][2] =
 itemusefunc_f *KI_ItemReleaseUseFunctions[][2] =
 {
 	[KITEM_THUNDERSHIELD] = 	{NULL, K_ReleaseUseItem_AttractionShield},
-	[KITEM_BUBBLESHIELD] = 		{K_ReleaseUseItem_BubbleShield, NULL},
 	[KITEM_FLAMESHIELD] = 		{K_ReleaseUseItem_FlameShield, NULL},
 	[MAXKARTITEMS] = 			{NULL,NULL}
 };
@@ -3211,35 +3209,6 @@ void K_ReleaseUseItem_AttractionShield(player_t *player, boolean itemjustdown, b
 	player->attractioncharge = 0;
 }
 
-void K_UseItem_BubbleShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
-{
-	(void)onground;
-	(void)force;
-	(void)itemjustdown;
-	
-	if (nohyudoro)
-	{
-		S_StartSound(player->mo, sfx_s3k75);
-	}
-
-	if ((player->itemflags & IF_HOLDREADY))
-	{
-		player->itemflags &= ~IF_HOLDREADY;
-	}
-}
-
-void K_ReleaseUseItem_BubbleShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
-{
-	(void)onground;
-	(void)force;
-	(void)itemjustdown;
-
-	if ((player->itemflags & IF_HOLDREADY))
-	{
-		player->itemflags &= ~IF_HOLDREADY;
-	}
-}
-
 void K_UseItem_FlameShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {	
 	if (nohyudoro)
@@ -3252,7 +3221,8 @@ void K_UseItem_FlameShield(player_t *player, boolean itemjustdown, boolean ongro
 			K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, 1, NULL);
 			S_StartSound(player->mo, sfx_s3k3e);
 			// make sure this is after K_DecrementCurrentItem so that equip state stays set properly
-			K_SetItemOut(player, KITEM_FLAMESHIELD, IF_HOLDREADY);
+			K_SetItemOut(player, KITEM_FLAMESHIELD, 0);
+			player->itemflags &= ~IF_HOLDREADY;
 		}
 		K_HoldUseItem_FlameShield(player, itemjustdown, onground, force, nohyudoro);
 	}
@@ -3264,7 +3234,7 @@ void K_HoldUseItem_FlameShield(player_t *player, boolean itemjustdown, boolean o
 	(void)force;
 	(void)itemjustdown;
 	
-	if (player->equippeditem == KITEM_FLAMESHIELD && !(player->itemflags & IF_HOLDREADY))
+	if (player->equippeditem == KITEM_FLAMESHIELD && (player->itemflags & IF_HOLDREADY))
 	{
 		SINT8 incr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 3 : 2;
 		SINT8 metincr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 4 : 3;
@@ -3313,9 +3283,9 @@ void K_ReleaseUseItem_FlameShield(player_t *player, boolean itemjustdown, boolea
 	(void)force;
 	(void)itemjustdown;
 
-	if ((player->itemflags & IF_HOLDREADY))
+	if (!(player->itemflags & IF_HOLDREADY))
 	{
-		player->itemflags &= ~IF_HOLDREADY;
+		player->itemflags |= IF_HOLDREADY;
 	}
 }
 
@@ -3479,12 +3449,19 @@ void K_ItemThink_BubbleShield(player_t *player)
 			player->bubblehealth = MAXBUBBLEHEALTH;
 		// bit of mercy so bubble doesn't get instantly killed on creation
 		player->bubblebuffer = TICRATE/2;
-		K_SetItemOut(player, KITEM_BUBBLESHIELD, IF_HOLDREADY);
+		K_SetItemOut(player, KITEM_BUBBLESHIELD, 0);
+		player->itemflags &= ~IF_HOLDREADY;
+		return;
 	}
 
-	if ((player->cmd.buttons & BT_ATTACK && (!(player->itemflags & IF_HOLDREADY)))
+	if ((player->cmd.buttons & BT_ATTACK && (player->itemflags & IF_HOLDREADY))
 			|| (player->bubbleblowup > 0 && player->bubblecool <= bubbletime/2)) // auto
 	{
+		if (player->bubbleblowup <= 0 && player->bubblecool <= 0)
+		{
+			S_StartSound(player->mo, sfx_s3k75);
+		}
+
 		if (player->bubblecool < bubbletime && player->bubblehealth > 0)
 		{
 			player->bubbleblowup += 3;
@@ -3525,7 +3502,9 @@ void K_ItemThink_BubbleShield(player_t *player)
 		{
 			player->bubbleblowup--;
 			if (player->bubbleblowup == 0)
+			{
 				K_BotResetItemConfirm(player, false);
+			}
 			if (player->bubblecool < bubbletime)
 				player->bubblecool++;
 		}
@@ -3537,6 +3516,15 @@ void K_ItemThink_BubbleShield(player_t *player)
 			if (player->bubblecool == 0 && player->bubblehealth <= 0)
 				K_PopPlayerShield(player);
 		}
+	}
+
+	if (player->bubblecool > 0 && !(player->cmd.buttons & BT_ATTACK))
+	{
+		player->itemflags &= ~IF_HOLDREADY;
+	}
+	else if (player->bubblecool <= 0 && !(player->cmd.buttons & BT_ATTACK))
+	{
+		player->itemflags |= IF_HOLDREADY;
 	}
 }
 

@@ -11,6 +11,7 @@
 
 #include "k_hud.h"
 #include "command.h"
+#include "g_mapnum.h"
 #include "info.h"
 #include "k_kart.h"
 #include "k_battle.h"
@@ -2109,7 +2110,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 			break;
 
 bademblem:
-			emblem = M_GetLevelEmblems(-1);
+			emblem = M_GetLevelEmblems(NEXTMAP_INVALID);
 		}
 
 		if (!mode)

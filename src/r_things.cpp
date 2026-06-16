@@ -2507,10 +2507,21 @@ static void R_ProjectSprite(mobj_t *thing)
 #endif
 	}
 
-	if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
-		offset = spr_offset - spr_width;
+	if (papersprite)
+	{
+		// yama: No, seriously -- why the FUCK do I need to do this?!
+		if (flip)
+			offset = spr_offset - spr_width;
+		else
+			offset = -spr_offset;
+	}
 	else
-		offset = -spr_offset;
+	{
+		if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
+			offset = spr_offset - spr_width;
+		else
+			offset = -spr_offset;
+	}
 
 #ifdef ROTSPRITE
 	if (visoffs.x)

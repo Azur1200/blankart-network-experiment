@@ -7653,7 +7653,7 @@ void MP_StatsRecords(menupanelinst_t *pi)
 		fixed_t x = 275*FRACUNIT;
 		UINT8 lasttype = UINT8_MAX, curtype;
 		emblem_t *emblem = M_GetLevelEmblems(mnum);
-		for (; emblem != NULL; emblem = M_GetLevelEmblems(-1), x -= 8*FRACUNIT)
+		for (; emblem != NULL; emblem = M_GetLevelEmblems(NEXTMAP_INVALID), x -= 8*FRACUNIT)
 		{
 			menuitem_t *itemblem = M_AppendMenuItem(pi, x, y, 0);
 			itemblem->style = DEH_FindMenuItemStyle("PATCH-SMALL");

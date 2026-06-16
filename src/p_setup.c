@@ -9018,6 +9018,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	R_InitMobjInterpolators();
 	P_InitCachedActions();
 
+	// This ticker isn't EVER supposed to run for dedis, but just in case...
 	RR_resetRidersFinishTicker();
 
 	if (!fromnetsave && savedata.lives > 0)

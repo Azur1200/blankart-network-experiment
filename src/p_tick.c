@@ -1144,7 +1144,7 @@ void P_Ticker(boolean run)
 		P_RunChaseCameras();
 	}
 
-	if (run && !levelloading && leveltime)
+	if (run && !levelloading && leveltime && (!dedicated))
 	{
 		RR_ridersFinishTick();
 	}
