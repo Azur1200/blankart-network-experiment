@@ -1813,7 +1813,7 @@ void CL_UpdateServerList (void)
 
 static void M_ConfirmConnect(INT32 choice)
 {
-	if (M_MenuButtonPressed(0, MBT_CONFIRM))
+	if (choice == MA_YES)
 	{
 		if (totalfilesrequestednum > 0)
 		{
@@ -1840,7 +1840,7 @@ static void M_ConfirmConnect(INT32 choice)
 
 		M_ClearMenusEx(false, true);
 	}
-	else if (M_MenuButtonPressed(0, MBT_CANCEL) || M_MenuButtonPressed(0, MBT_HOME))
+	else if (choice == MA_NO)
 	{
 		cl_mode = CL_ABORTED;
 	}

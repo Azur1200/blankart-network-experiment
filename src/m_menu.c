@@ -2631,6 +2631,11 @@ sfxenum_t M_MenuTypingSounds(INT32 key)
 			return sfx_s1ba;
 		case KEY_ENTER:
 			return sfx_s3k63;
+		case KEY_LEFTARROW:
+		case KEY_RIGHTARROW:
+			return sfx_s3k5b;
+		case KEY_ESCAPE:
+			return sfx_s3k63;
 		default:
 			return sfx_s1bb;
 	}
@@ -2978,7 +2983,26 @@ void M_HandleMessageBox(INT32 thisMenuKey)
 			if (M_WipeBuffer(thisMenuKey, MR_Dummy))
 				return;
 			if (messagebox.routine)
-				messagebox.routine(thisMenuKey);
+			{
+				if (messagebox.messagetype == MM_YESNO)
+				{
+					if (M_MenuButtonPressed(0, MBT_CONFIRM))
+					{
+						messagebox.routine(MA_YES);
+						S_StartSound(NULL, sfx_s3k63);
+					}
+					else if (M_MenuButtonPressed(0, MBT_CANCEL) || M_MenuButtonPressed(0, MBT_HOME))
+					{
+						messagebox.routine(MA_NO);
+						S_StartSound(NULL, sfx_s1b8);
+					}
+				}
+				else
+				{
+					messagebox.routine(thisMenuKey);
+				}
+			}
+
 			M_MessageboxClose(false);
 			noFurtherInput = -1;
 			M_SetMenuDelay(pid);
@@ -5792,9 +5816,7 @@ void MD_DrawAddons(menupanelinst_t *pi)
 
 static void M_AddonExec(INT32 ch)
 {
-	(void)ch;
-
-	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
+	if (ch != MA_YES)
 		return;
 
 	S_StartSound(NULL, sfx_zoom);
@@ -5952,7 +5974,7 @@ INT32 MR_HandleAddons(INT32 choice)
 				M_StartMessage2("Addons", va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways?\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), filename), ROUTINECAST(M_AddonExec) ,MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
 				break;
 			case EXT_CFG:
-				M_AddonExec(KEY_ENTER);
+				M_AddonExec(MA_YES);
 				break;
 			case EXT_LUA:
 			case EXT_SOC:
@@ -6494,9 +6516,7 @@ INT32 MR_QuitReplayHut(INT32 choice)
 
 static void M_LoadAddonsResponse(INT32 ch)
 {
-	(void)ch;
-
-	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
+	if (ch != MA_YES)
 		return;
 
 	M_RestoreMenuStack(true);
@@ -6583,7 +6603,7 @@ INT32 MR_HutStartReplay(INT32 choice)
 	if (warningpopup)
 		M_StartMessage2(loadheader, warning, ROUTINECAST(M_LoadAddonsResponse), MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
 	else
-		M_LoadAddonsResponse(0);
+		M_LoadAddonsResponse(MA_YES);
 	return true;
 }
 
@@ -7046,9 +7066,7 @@ void MP_GameOptions(menupanelinst_t *pi)
 
 static void M_RetryResponse(INT32 ch)
 {
-	(void)ch;
-
-	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
+	if (ch != MA_YES)
 		return;
 
 	if (netgame) // Should never happen!
@@ -8209,12 +8227,12 @@ INT32 MR_ReplayTimeAttack(INT32 arg)
 
 static void M_EraseGuest(INT32 choice)
 {
-	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
+	if (choice != MA_YES)
 		return;
 
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
 	CLEANUP(pfree) char *rguest = G_GetRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, REPLAY_GUEST);
-	(void)choice;
+
 	if (FIL_FileExists(rguest))
 		remove(rguest);
 	M_ExitMenu();
@@ -8242,19 +8260,25 @@ static void M_OverwriteGuest(recordreplay_e which)
 
 static void M_OverwriteGuest_Time(INT32 choice)
 {
-	(void)choice;
+	if (choice != MA_YES)
+		return;
+
 	M_OverwriteGuest(REPLAY_BESTTIME);
 }
 
 static void M_OverwriteGuest_Lap(INT32 choice)
 {
-	(void)choice;
+	if (choice != MA_YES)
+		return;
+
 	M_OverwriteGuest(REPLAY_BESTLAP);
 }
 
 static void M_OverwriteGuest_Last(INT32 choice)
 {
-	(void)choice;
+	if (choice != MA_YES)
+		return;
+
 	M_OverwriteGuest(REPLAY_LAST);
 }
 
@@ -8281,7 +8305,7 @@ INT32 MR_SetGuestReplay(INT32 arg)
 	if (G_CheckRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, REPLAY_GUEST))
 		M_StartMessage2("Guest", M_GetText("Are you sure you want to\noverwrite the guest replay data?\n"), ROUTINECAST(which), MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
 	else
-		which(0);
+		which(MA_YES);
 	return true;
 }
 
@@ -8317,9 +8341,7 @@ INT32 MR_ModeAttackEndGame(INT32 choice)
 
 static void M_ExitGameResponse(INT32 ch)
 {
-	(void)ch;
-
-	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
+	if (ch != MA_YES)
 		return;
 
 	//Command_ExitGame_f();
@@ -9952,9 +9974,7 @@ static UINT8 erasecontext = 0;
 
 static void M_EraseDataResponse(INT32 ch)
 {
-	(void)ch;
-
-	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
+	if (ch != MA_YES)
 		return;
 
 	S_StartSound(NULL, sfx_itrole); // bweh heh heh
@@ -10267,13 +10287,11 @@ INT32 MR_ChangeControl(INT32 arg)
 
 static void M_ResetControlsResponse(INT32 ch)
 {
-	(void)ch;
+	if (ch != MA_YES)
+		return;
 
 	const UINT8 p = setupcontrolplayer-1;
 	INT32 i;
-
-	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
-		return;
 
 	// clear all controls
 	for (i = 0; i < num_gamecontrols; i++)
@@ -11103,13 +11121,12 @@ static INT32 quitsounds[] =
 
 void M_QuitResponse(INT32 ch)
 {
-	(void)ch;
+	if (ch != MA_YES)
+		return;
 
 	tic_t ptime;
 	INT32 mrand;
 
-	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
-		return;
 	if (!(netgame || cht_debug))
 	{
 		mrand = M_RandomKey(sizeof(quitsounds)/sizeof(INT32));

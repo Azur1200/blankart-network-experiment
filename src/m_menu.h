@@ -202,6 +202,13 @@ typedef struct
 	INT16 maxlength;
 } messagebox_t;
 
+typedef enum
+{
+	MA_NONE = 0,
+	MA_YES,
+	MA_NO
+} manswer_e;
+
 extern messagebox_t messagebox;
 extern messagebox_t messageboxqueue[NUMMENULEVELS];
 
