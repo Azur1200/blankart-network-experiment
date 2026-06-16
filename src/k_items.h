@@ -225,6 +225,12 @@ itemthinkfunc_f K_ItemThink_AttractionShield;
 itemthinkfunc_f K_ItemThink_BubbleShield;
 itemthinkfunc_f K_ItemThink_BonusRoll;
 
+UINT32 K_IntDistanceForMap(fixed_t curx,
+			   fixed_t cury,
+			   fixed_t curz,
+			   fixed_t destx,
+			   fixed_t desty,
+			   fixed_t destz);
 void K_RegisterItem(kartitemtype_e itemtype);
 kartresult_t *K_RegisterResult(const char *name, boolean alternate);
 kartresult_t *K_GetKartResultAlt(const char *name, boolean alternate);
