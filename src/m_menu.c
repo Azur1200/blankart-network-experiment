@@ -6199,110 +6199,127 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 	return true;
 }
 
-INT32 MR_TickReplayHutReplayInfo(INT32 choice)
+void MP_TickReplayHutInfoForeground(menupanelinst_t *pi)
 {
-	(void)choice;
-
-	menupanelinst_t *bg = M_GetPanel("DEMOINFOBG");
-	menupanelinst_t *fg = M_GetPanel("DEMOINFOFG");
-
-	fg->visible = false;
-	M_SetItemVisible(fg, "OUTDATED", false);
-	M_SetItemVisible(bg, "CENTERTEXT", false);
+	pi->visible = false;
+	M_SetItemVisible(pi, "OUTDATED", false);
 
 	menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
 
 	switch (mdemo->type)
 	{
-	case MD_NOTLOADED:
-		M_SetItemVisible(bg, "CENTERTEXT", true);
-		M_SetItemText(bg, "CENTERTEXT", "Loading replay information...");
-		M_GetMenuItem(bg, "CENTERTEXT")->status &= ~ITH_WARNING;
-		break;
-
-	case MD_INVALID:
-		M_SetItemVisible(bg, "CENTERTEXT", true);
-		M_SetItemText(bg, "CENTERTEXT", "This replay cannot be played.");
-		M_GetMenuItem(bg, "CENTERTEXT")->status |= ITH_WARNING;
-		break;
-
-	case MD_SUBDIR:
-		break; // Can't think of anything to draw here right now
-
-	case MD_OUTDATED:
-		M_SetItemVisible(fg, "OUTDATED", true);
-		/* FALLTHRU */
-	default:
-		fg->visible = true;
-
-		INT32 mapnum = mdemo->map + 1;
-		char *mapname;
-		if (mapnum <= nummapheaders)
-		{
-			M_SetItemPatch(fg, "THUMBNAIL", G_BuildMapName(mapnum));
-			mapname = G_BuildMapTitle(mapnum);
-			M_SetItemDisabled(fg, "MAPNAME", false);
-		}
-		else
-		{
-			M_SetItemPatch(fg, "THUMBNAIL", "?");
-			mapname = Z_StrDup("Level is not loaded.");
-			M_SetItemDisabled(fg, "MAPNAME", true);
-		}
-		M_SetItemText(fg, "MAPNAME", mapname);
-		Z_Free(mapname);
-
-		INT32 laps = mdemo->numlaps;
-		M_SetItemText(fg, "NUMLAPS", laps ? va("(%d laps)", laps) : "");
-
-		M_SetItemText(fg, "GAMETYPE", mdemo->gametype == GT_RACE
-		                            ? va("Race (%s speed)", kartspeed_cons_t[(mdemo->kartspeed & ~DF_ENCORE) + 1].strvalue)
-		                            : "Battle Mode");
-
-		boolean hidescore = !mdemo->standings[0].ranking;
-		M_SetItemVisible(fg, "NOSTANDINGS", hidescore);
-		M_SetItemVisible(fg, "WINNER", !hidescore);
-		M_SetItemVisible(fg, "WINNERNAME", !hidescore);
-		M_SetItemVisible(fg, "SCORE", !hidescore);
-		M_SetItemVisible(fg, "SCORENAME", !hidescore);
-		M_SetItemVisible(fg, "FACE", !hidescore);
-
-		// No standings were loaded!
-		if (hidescore)
+		case MD_NOTLOADED:
 			break;
 
-		M_SetItemText(fg, "WINNERNAME", mdemo->standings[0].name);
+		case MD_INVALID:
+			break;
+
+		case MD_SUBDIR:
+			break; // Can't think of anything to draw here right now
+
+		case MD_OUTDATED:
+			M_SetItemVisible(pi, "OUTDATED", true);
+			/* FALLTHRU */
+			default:
+				pi->visible = true;
+
+				INT32 mapnum = mdemo->map + 1;
+				char *mapname;
+				if (mapnum <= nummapheaders)
+				{
+					M_SetItemPatch(pi, "THUMBNAIL", G_BuildMapName(mapnum));
+					mapname = G_BuildMapTitle(mapnum);
+					M_SetItemDisabled(pi, "MAPNAME", false);
+				}
+				else
+				{
+					M_SetItemPatch(pi, "THUMBNAIL", "?");
+					mapname = Z_StrDup("Level is not loaded.");
+					M_SetItemDisabled(pi, "MAPNAME", true);
+				}
+				M_SetItemText(pi, "MAPNAME", mapname);
+				Z_Free(mapname);
+
+				INT32 laps = mdemo->numlaps;
+				M_SetItemText(pi, "NUMLAPS", laps ? va("(%d laps)", laps) : "");
+
+				M_SetItemText(pi, "GAMETYPE", mdemo->gametype == GT_RACE
+				? va("Race (%s speed)", kartspeed_cons_t[(mdemo->kartspeed & ~DF_ENCORE) + 1].strvalue)
+				: "Battle Mode");
+
+				boolean hidescore = !mdemo->standings[0].ranking;
+				M_SetItemVisible(pi, "NOSTANDINGS", hidescore);
+				M_SetItemVisible(pi, "WINNER", !hidescore);
+				M_SetItemVisible(pi, "WINNERNAME", !hidescore);
+				M_SetItemVisible(pi, "SCORE", !hidescore);
+				M_SetItemVisible(pi, "SCORENAME", !hidescore);
+				M_SetItemVisible(pi, "FACE", !hidescore);
+
+				// No standings were loaded!
+				if (hidescore)
+					break;
+
+		M_SetItemText(pi, "WINNERNAME", mdemo->standings[0].name);
 
 		UINT32 score = mdemo->standings[0].timeorscore;
-		M_SetItemText(fg, "SCORENAME", mdemo->gametype == GT_RACE ? "Time" : "Score");
+		M_SetItemText(pi, "SCORENAME", mdemo->gametype == GT_RACE ? "Time" : "Score");
 
-		M_GetMenuItem(fg, "SCORE")->style = NULL;
+		M_GetMenuItem(pi, "SCORE")->style = NULL;
 		if (score == UINT32_MAX-1)
 		{
-			M_SetItemText(fg, "SCORE", "No Contest");
-			M_GetMenuItem(fg, "SCORE")->style = DEH_FindMenuItemStyle("THIN");
+			M_SetItemText(pi, "SCORE", "No Contest");
+			M_GetMenuItem(pi, "SCORE")->style = DEH_FindMenuItemStyle("THIN");
 		}
 		else if (mdemo->gametype == GT_RACE)
 		{
-			M_SetItemText(fg, "SCORE", va("%d'%02d\"%02d",
-				G_TicsToMinutes(score, true),
-				G_TicsToSeconds(score),
-				G_TicsToCentiseconds(score)));
+			M_SetItemText(pi, "SCORE", va("%d'%02d\"%02d",
+										  G_TicsToMinutes(score, true),
+										  G_TicsToSeconds(score),
+										  G_TicsToCentiseconds(score)));
 		}
 		else
 		{
-			M_SetItemText(fg, "SCORE", va("%d", score));
+			M_SetItemText(pi, "SCORE", va("%d", score));
 		}
 
 		// Character face!
 		INT32 skin = mdemo->standings[0].skin;
 		skincolornum_t color = mdemo->standings[0].color;
-		M_SetItemPatch(fg, "FACE", skin >= 0 && skin < numskins ? skins[skin].name : "");
-		M_SetItemExtra(fg, "FACE", color >= 0 && color < numskincolors ? DEH_SkincolorName(color) : "");
+		M_SetItemPatch(pi, "FACE", skin >= 0 && skin < numskins ? skins[skin].name : "");
+		M_SetItemExtra(pi, "FACE", color >= 0 && color < numskincolors ? DEH_SkincolorName(color) : "");
 		break;
 	}
+}
 
-	return true;
+void MP_TickReplayHutInfoBackground(menupanelinst_t *pi)
+{
+	M_SetItemVisible(pi, "CENTERTEXT", false);
+
+	menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
+
+	switch (mdemo->type)
+	{
+		case MD_NOTLOADED:
+			M_SetItemVisible(pi, "CENTERTEXT", true);
+			M_SetItemText(pi, "CENTERTEXT", "Loading replay information...");
+			M_GetMenuItem(pi, "CENTERTEXT")->status &= ~ITH_WARNING;
+			break;
+
+		case MD_INVALID:
+			M_SetItemVisible(pi, "CENTERTEXT", true);
+			M_SetItemText(pi, "CENTERTEXT", "This replay cannot be played.");
+			M_GetMenuItem(pi, "CENTERTEXT")->status |= ITH_WARNING;
+			break;
+
+		case MD_SUBDIR:
+			break; // Can't think of anything to draw here right now
+
+		case MD_OUTDATED:
+			break;
+
+		default:
+			break;
+	}
 }
 
 // TODO: generalize, i can't do math ugh
@@ -6332,128 +6349,110 @@ static fixed_t M_ReplayHutScroll(fixed_t scrollamt, tic_t timer)
 	return scrollx / 2;
 }
 
-INT32 MR_TickReplayHut(INT32 choice)
+void MP_TickReplayHutMain(menupanelinst_t *pi)
 {
-	(void)choice;
-
-	size_t i;
-
-	MR_TickReplayHutReplayInfo(0);
-
-	if (M_CheckPanel("MAIN"))
-	{
-		menupanelinst_t *pi = M_GetPanel("MAIN");
-
-		if (M_CheckPanel("RANKINGS"))
-		{
-			menupanelinst_t *rk = M_GetPanel("RANKINGS");
-			menuitem_t *box = M_GetMenuItem(pi, "RANKINGBG");
-
-			M_SetItemVisible(pi, "RANKINGBG", rk->numitems);
-		}
-	}
-
-	if (M_CheckPanel("DEMOTITLE"))
-	{
-		menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
-		menupanelinst_t *pi = M_GetPanel("DEMOTITLE");
-
-		M_SetItemText(pi, "DEMOTITLE", mdemo->title);
-
-		menuitem_t *item = M_GetMenuItem(pi, "DEMOTITLE");
-
-		if (M_CheckPanel("RANKINGS") && M_GetPanel("RANKINGS")->numitems == 0)
-		{
-			pi->cliprect = false;
-		}
-		else
-		{
-			pi->cliprect = true;
-		}
-
-		pi->x = 10*FRACUNIT - M_ReplayHutScroll((V_StringWidth(item->text, 0) - vid.scaledheight)*FRACUNIT, menutimer);
-	}
-
-	if (M_CheckPanel("DEMOLIST"))
-	{
-		menupanelinst_t *pi = M_GetPanel("DEMOLIST");
-
-		pi->scrollheight = (vid.scaledheight - 90)*FRACUNIT;
-
-		for (i = 0; i < 50; i++)
-		{
-			size_t demoi = pi->itemon + (i/2 * (i & 1 ? -1 : 1));
-			if (demoi < sizedirmenu && demolist[demoi].type == MD_NOTLOADED)
-			{
-				G_LoadDemoInfo(&demolist[demoi]);
-				M_SetItemTextRaw(&pi->items[demoi], demolist[demoi].title);
-				break;
-			}
-		}
-
-		menuitemstyle_t *style = DEH_FindMenuItemStyle("REPLAYSELECT");
-		if (style == NULL)
-			return false;
-
-		style->parts[0].xofs = 0;
-		for (i = 0; i < pi->numitems; i++)
-		{
-			if (pi->items[i].style == style)
-				pi->items[i].style = NULL;
-
-			if (i != pi->itemon || demolist[i].type == MD_SUBDIR)
-				continue;
-
-			pi->items[i].style = style;
-			style->parts[0].xofs = -M_ReplayHutScroll(M_ItemWidth(pi, i) - vid.scaledwidth*FRACUNIT + pi->x*2, cursortimer);
-		}
-	}
-
 	if (M_CheckPanel("RANKINGS"))
 	{
-		menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
+		menupanelinst_t *rk = M_GetPanel("RANKINGS");
+		menuitem_t *box = M_GetMenuItem(pi, "RANKINGBG");
 
-		// Draw rankings beyond first
-		menupanelinst_t *pi = M_GetPanel("RANKINGS");
-		M_ClearPanelItems(pi);
+		M_SetItemVisible(pi, "RANKINGBG", rk->numitems);
+	}
+}
 
-		//pi->cliprect_x = (BASEVIDWIDTH-100)*FRACUNIT;
-		//pi->cliprect_y = 62*FRACUNIT;
+void MP_TickReplayHutDemoList(menupanelinst_t *pi)
+{
+	size_t i;
+	pi->scrollheight = (vid.scaledheight - 90)*FRACUNIT;
 
-		for (i = 1; i < MAXPLAYERS && mdemo->standings[i].ranking; i++)
+	for (i = 0; i < 50; i++)
+	{
+		size_t demoi = pi->itemon + (i/2 * (i & 1 ? -1 : 1));
+		if (demoi < sizedirmenu && demolist[demoi].type == MD_NOTLOADED)
 		{
-			menuitem_t *item;
-			INT32 y = i*20*FRACUNIT;
-			UINT32 score = mdemo->standings[i].timeorscore;
-
-			item = M_AppendMenuItem(pi, 1, y, 0);
-			item->style = DEH_FindMenuItemStyle(score == UINT32_MAX-1 ? "REPLAYRANKINGTHIN" : "REPLAYRANKING");
-			M_SetItemTextRaw(item, va("%2d", mdemo->standings[i].ranking));
-			M_SetItemPatchRaw(item, mdemo->standings[i].name);
-
-			if (score == UINT32_MAX-1)
-				M_SetItemExtraRaw(item, "No Contest");
-			else if (mdemo->gametype == GT_RACE)
-				M_SetItemExtraRaw(item, va("%d'%02d\"%02d",
-										   G_TicsToMinutes(score, true),
-										   G_TicsToSeconds(score),
-										   G_TicsToCentiseconds(score)));
-				else
-					M_SetItemExtraRaw(item, va("%d", score));
-
-			// Character face!
-			item = M_AppendMenuItem(pi, 95*FRACUNIT, y, 0);
-			item->style = DEH_FindMenuItemStyle("REPLAYRANKINGICON");
-			INT32 skin = mdemo->standings[i].skin;
-			skincolornum_t color = mdemo->standings[i].color;
-			M_SetItemPatchRaw(item, skin >= 0 && skin < numskins ? skins[skin].name : "");
-			M_SetItemExtraRaw(item, color >= 0 && color < numskincolors ? DEH_SkincolorName(color) : "");
+			G_LoadDemoInfo(&demolist[demoi]);
+			M_SetItemTextRaw(&pi->items[demoi], demolist[demoi].title);
+			break;
 		}
-
-		pi->y = 52*FRACUNIT - M_ReplayHutScroll((100 + i*20 - vid.scaledheight)*FRACUNIT, menutimer);
 	}
 
-	return true;
+	menuitemstyle_t *style = DEH_FindMenuItemStyle("REPLAYSELECT");
+	if (style == NULL)
+		return;
+
+	style->parts[0].xofs = 0;
+	for (i = 0; i < pi->numitems; i++)
+	{
+		if (pi->items[i].style == style)
+			pi->items[i].style = NULL;
+
+		if (i != pi->itemon || demolist[i].type == MD_SUBDIR)
+			continue;
+
+		pi->items[i].style = style;
+		style->parts[0].xofs = -M_ReplayHutScroll(M_ItemWidth(pi, i) - vid.scaledwidth*FRACUNIT + pi->x*2, cursortimer);
+	}
+}
+
+void MP_TickReplayHutRankings(menupanelinst_t *pi)
+{
+	size_t i;
+	menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
+
+	// Draw rankings beyond first
+	M_ClearPanelItems(pi);
+
+	for (i = 1; i < MAXPLAYERS && mdemo->standings[i].ranking; i++)
+	{
+		menuitem_t *item;
+		INT32 y = i*20*FRACUNIT;
+		UINT32 score = mdemo->standings[i].timeorscore;
+
+		item = M_AppendMenuItem(pi, 1, y, 0);
+		item->style = DEH_FindMenuItemStyle(score == UINT32_MAX-1 ? "REPLAYRANKINGTHIN" : "REPLAYRANKING");
+		M_SetItemTextRaw(item, va("%2d", mdemo->standings[i].ranking));
+		M_SetItemPatchRaw(item, mdemo->standings[i].name);
+
+		if (score == UINT32_MAX-1)
+			M_SetItemExtraRaw(item, "No Contest");
+		else if (mdemo->gametype == GT_RACE)
+			M_SetItemExtraRaw(item, va("%d'%02d\"%02d",
+									   G_TicsToMinutes(score, true),
+									   G_TicsToSeconds(score),
+									   G_TicsToCentiseconds(score)));
+			else
+				M_SetItemExtraRaw(item, va("%d", score));
+
+		// Character face!
+		item = M_AppendMenuItem(pi, 95*FRACUNIT, y, 0);
+		item->style = DEH_FindMenuItemStyle("REPLAYRANKINGICON");
+		INT32 skin = mdemo->standings[i].skin;
+		skincolornum_t color = mdemo->standings[i].color;
+		M_SetItemPatchRaw(item, skin >= 0 && skin < numskins ? skins[skin].name : "");
+		M_SetItemExtraRaw(item, color >= 0 && color < numskincolors ? DEH_SkincolorName(color) : "");
+	}
+
+	pi->y = 52*FRACUNIT - M_ReplayHutScroll((100 + i*20 - vid.scaledheight)*FRACUNIT, menutimer);
+}
+
+void MP_TickReplayHutDemoTitle(menupanelinst_t *pi)
+{
+	menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
+
+	M_SetItemText(pi, "DEMOTITLE", mdemo->title);
+
+	menuitem_t *item = M_GetMenuItem(pi, "DEMOTITLE");
+
+	if (M_CheckPanel("RANKINGS") && M_GetPanel("RANKINGS")->numitems == 0)
+	{
+		pi->cliprect = false;
+	}
+	else
+	{
+		pi->cliprect = true;
+	}
+
+	pi->x = 10*FRACUNIT - M_ReplayHutScroll((V_StringWidth(item->text, 0) - vid.scaledheight)*FRACUNIT, menutimer);
 }
 
 INT32 MR_QuitReplayHut(INT32 choice)

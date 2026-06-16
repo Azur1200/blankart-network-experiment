@@ -561,7 +561,6 @@ void MD_DrawDiscordRequests(menupanelinst_t *pi);
 // Tickers
 INT32 MR_TickStats(INT32 choice);
 INT32 MR_TickReplayHutReplayInfo(INT32 choice);
-INT32 MR_TickReplayHut(INT32 choice);
 INT32 MR_TickDiscordRequests(INT32 choice);
 INT32 MR_TickViewServer(INT32 choice);
 
@@ -572,6 +571,13 @@ void MP_TickImageDef(menupanelinst_t *pi);
 void MP_TickMultiPlayerMenu(menupanelinst_t *pi);
 void MP_TickAddonsURL(menupanelinst_t *pi);
 void MP_TickAddonsBackground(menupanelinst_t *pi);
+
+void MP_TickReplayHutInfoForeground(menupanelinst_t *pi);
+void MP_TickReplayHutInfoBackground(menupanelinst_t *pi);
+void MP_TickReplayHutMain(menupanelinst_t *pi);
+void MP_TickReplayHutDemoList(menupanelinst_t *pi);
+void MP_TickReplayHutRankings(menupanelinst_t *pi);
+void MP_TickReplayHutDemoTitle(menupanelinst_t *pi);
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);

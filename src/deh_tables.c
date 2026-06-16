@@ -897,8 +897,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{"OPTIONS", &MR_Options},
 	// Start tickers
 	{"TICKSTATS", &MR_TickStats},
-	{"TICKREPLAYHUT", &MR_TickReplayHut},
-	//{"TICKREPLAYHUTREPLAYINFO", &MR_TickReplayHutReplayInfo},
 #ifdef HAVE_DISCORDRPC
 	{"TICKDISCORDREQUESTS", &MR_TickDiscordRequests},
 #endif
@@ -961,6 +959,12 @@ struct panel_func_s const PANEL_FUNCS[] = {
 	{"TICKMULTIPLAYERMENU", &MP_TickMultiPlayerMenu},
 	{"TICKADDONSURL", &MP_TickAddonsURL},
 	{"TICKADDONSBACKGROUND", &MP_TickAddonsBackground},
+	{"TICKREPLAYHUTINFOFOREGROUND", &MP_TickReplayHutInfoForeground},
+	{"TICKREPLAYHUTINFOBACKGROUND", &MP_TickReplayHutInfoBackground},
+	{"TICKREPLAYHUTMAIN", &MP_TickReplayHutMain},
+	{"TICKREPLAYHUTDEMOLIST", &MP_TickReplayHutDemoList},
+	{"TICKREPLAYHUTRANKINGS", &MP_TickReplayHutRankings},
+	{"TICKREPLAYHUTDEMOTITLE", &MP_TickReplayHutDemoTitle},
 
 	{ NULL, NULL }
 };
