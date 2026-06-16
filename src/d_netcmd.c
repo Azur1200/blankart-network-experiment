@@ -762,7 +762,7 @@ consvar_t cv_kartinvindamage = CVAR_INIT ("kartinvindamage", "Wipe-out", CV_NETV
 
 // How far the player must be from the cluster to roll an S-Monitor.
 static CV_PossibleValue_t smonitordist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartsmonitordist = CVAR_INIT ("smonitor_startdist", "12000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
+consvar_t cv_kartsmonitordist = CVAR_INIT ("smonitor_startdist", "10000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
 
 // Conga is extremely finicky, so we need a separate threshold to preserve the S-Monitor's reliability
 consvar_t cv_kartsmonitor_congadist = CVAR_INIT("smonitor_startdist_conga", "10000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
