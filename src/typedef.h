@@ -180,6 +180,10 @@ TYPEDEF (botcontroller_t);
 // k_brightmap.h
 TYPEDEF (brightmapStorage_t);
 
+// k_cluster.hpp
+TYPEDEF (clusternode_t);
+TYPEDEF (clusterdata_t);
+
 // k_follower.h
 TYPEDEF (follower_t);
 TYPEDEF (followercategory_t);
@@ -245,6 +249,7 @@ TYPEDEF (vector2_t);
 TYPEDEF (f_vector2_t);
 TYPEDEF (vector3_t);
 TYPEDEF (f_vector3_t);
+TYPEDEF (vector3_64_t);
 TYPEDEF (vector4_t);
 TYPEDEF (matrix_t);
 

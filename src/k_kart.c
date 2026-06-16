@@ -52,7 +52,7 @@
 #include "m_cheat.h"	// objectplacing
 #include "p_spec.h"
 #include "m_easing.h"   // Invincibility gradienting
-
+#include "qs22j.h" // Cluster list sorting
 
 #include "k_stats.h"
 #include "k_waypoint.h"
@@ -10415,7 +10415,7 @@ static boolean K_CheckBestRankForCluster(player_t *player, UINT32 pingame)
 			}
 			else
 			{
-				const UINT32 podium = (pingame > 7) ? 3 : 2;
+				const UINT32 podium = pingame / 8; // 1/8th the playercount for parity with cluster allocation
 				if (player->position <= podium)
 				{
 					// Ignore the top players.
@@ -10440,6 +10440,8 @@ static boolean K_CheckBestRankForCluster(player_t *player, UINT32 pingame)
 
 	return true;
 }
+
+#define FARTHESTCLUSDIS (3584)
 
 static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 {
@@ -10547,6 +10549,52 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 		}
 	}
 
+	if (pingame > 9)
+	{
+		// We're not done yet! Get the best-fitting node from the global cluster database,
+		// and compare ourselves to them
+		if (num_player_clusters > 0)
+		{
+			// At least one node exists. Since these nodes are sorted by player
+			// position averages, the best-fit is right at the front!
+			clusterdata_t bestfit = player_clusters[0];
+
+			UINT32 distancetobest = 0;
+
+			if (bestfit.nucleus.player && (players[clusterid].position <= bestfit.nucleus.player->position))
+			{
+				I_OutputMsg("cluster player is ahead of best-fit player\n");
+			}
+
+			// Ignore the best-fit if we're actually *ahead* of it
+			if (bestfit.nucleus.player && (players[clusterid].position > bestfit.nucleus.player->position))
+			{
+				if (K_LegacyOddsMode())
+				{
+					distancetobest = K_GetCongaLineDistance(&players[clusterid], bestfit.nucleus.player->position);
+				}
+				else
+				{
+					distancetobest = K_UndoMapScaling(K_GetDTFDifference(&players[clusterid], bestfit.nucleus.player));
+				}
+
+				I_OutputMsg("distancetobest: %d, FARTHESTCLUSDIS: %d\n", distancetobest, FARTHESTCLUSDIS);
+				I_OutputMsg("out of range: %s\n", (distancetobest > FARTHESTCLUSDIS) ? "yes" : "no");
+
+				if (distancetobest > FARTHESTCLUSDIS)
+				{
+					// We're way too far away! Let the best-fit take over...
+
+					clusterid = (UINT32)(bestfit.nucleus.player - players);
+				}
+			}
+		}
+	}
+	else
+	{
+		// Use the same "best fit vs. center" system, but avoid clustering since the data pool is comparatively smaller
+	}
+
 	if (K_LegacyOddsMode())
 	{
 		// Compare yourself against the cluster player to determine the distance.
@@ -10629,6 +10677,8 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 		return K_UndoMapScaling(player->distancetofinish - targetdtf);
 	}
 }
+
+#undef FARTHESTCLUSDIS
 
 #undef MINCLUSTERPLAYERS
 
@@ -10817,8 +10867,6 @@ void K_KartLegacyUpdatePosition(player_t *player)
 
 UINT32 clusterid = 0;
 
-#define FARTHESTCLUSDIS (4096)
-
 // Uses distance averaging to find a player cluster.
 static vector3_t* K_FindPlayerCluster(vector3_t* out)
 {
@@ -10936,17 +10984,67 @@ static vector3_t* K_FindPlayerCluster(vector3_t* out)
 	return out;
 }
 
-#undef FARTHESTCLUSDIS
-
-#define CLUSTER_EPSILON (960*FRACUNIT)
-#define CLUSTER_EPSILON_PATHFIND (320*FRACUNIT)
+#define CLUSTER_EPSILON (1280*FRACUNIT)
+#define CLUSTER_EPSILON_PATHFIND (1280*FRACUNIT)
 
 #define CLUSTER_ACTIVE_EPSILON (K_LegacyOddsMode() ? CLUSTER_EPSILON : CLUSTER_EPSILON_PATHFIND)
 #define USECLUSEPS (FixedMul(FixedMul(CLUSTER_ACTIVE_EPSILON, K_GetKartGameSpeedScalar(gamespeed)), mapobjectscale))
 
+#define CLUSTER_ACTIVE_NODEFUNC (K_LegacyOddsMode()) ? &K_FilterNodeByEuclideanDistance : &K_FilterNodeByDTF
+
+static int sortByClusterID(const void *a, const void *b)
+{
+    const clusterdata_t * cluster_a = (const clusterdata_t *)(a);
+    const clusterdata_t * cluster_b = (const clusterdata_t *)(b);
+
+    if (cluster_a->id < cluster_b->id)
+        return -1;
+    else if (cluster_a->id > cluster_b->id)
+        return 1;
+
+    return 0;
+}
+
 void K_UpdateClusterPoints(void)
 {
-    // Get the player cluster.
+	INT32 i = 0;
+
+	// FIXME: CAN WE GET A **FUCKING** GENERALIZED FUNCTION ALREADY?!
+	// I'LL PORT THE SHIT FROM `gprank` IF I HAVE TO
+	// THERE ARE T W O OF THESE STUPID ASS PLAYER HEADCOUNT LOOPS IN THIS ROUTINE *ALONE*!
+	INT32 pcount = 0;
+
+    for (i = 0; i < MAXPLAYERS; i++)
+    {
+        player_t* player = NULL;
+
+        if (!playeringame[i])
+            continue;
+
+        player = &players[i];
+
+        if (player->spectator)
+            continue;  // spectator
+
+        if (!player->mo)
+            continue;
+
+		pcount++;
+    }
+
+	if (pcount > 9)
+	{
+		// First: update the Big Dumb Cluster List
+		K_UpdateGlobalClusters(CLUSTER_ACTIVE_EPSILON, 3, CLUSTER_ACTIVE_NODEFUNC, &K_ClusterFilter_BaseFilter, pcount);
+	}
+
+	// Then: sort the list (the linker hates me using qs22j in C++...)
+    if (num_player_clusters > 1)
+    {
+        qs22j((void *)(player_clusters), num_player_clusters, sizeof(clusterdata_t), &sortByClusterID);
+    }
+
+    // Then: get the player cluster
 	K_FindPlayerCluster(&clusterpoint);
 }
 

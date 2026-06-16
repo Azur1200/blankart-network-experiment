@@ -377,6 +377,11 @@ struct vector3_t
 	fixed_t x, y, z;
 };
 
+struct vector3_64_t
+{
+	INT64 x, y, z;
+};
+
 struct f_vector3_t
 {
 	float x;
