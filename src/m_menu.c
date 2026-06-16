@@ -2504,7 +2504,7 @@ static void M_DrawMapEmblems(mapnum_t mapnum, INT32 x, INT32 y)
 		else
 			V_DrawSmallScaledPatch(x, y, 0, W_CachePatchName("NEEDIT", PU_CACHE));
 
-		emblem = M_GetLevelEmblems(-1);
+		emblem = M_GetLevelEmblems(NEXTMAP_INVALID);
 		x -= 8;
 	}
 }

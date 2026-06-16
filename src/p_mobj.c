@@ -13086,7 +13086,7 @@ static boolean P_SetupEmblem(mapthing_t *mthing, mobj_t *mobj)
 		if (emblem->type == ET_GLOBAL && emblem->tag == tagnum)
 			break;
 
-		emblem = M_GetLevelEmblems(-1);
+		emblem = M_GetLevelEmblems(NEXTMAP_INVALID);
 	}
 
 	if (!emblem)
