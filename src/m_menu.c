@@ -3287,6 +3287,22 @@ void M_Ticker(void)
 		M_HandleMenuInput();
 	}
 
+	if (menustack[0])
+	{
+		for (i = 0; i < numcurpanels; i++)
+		{
+			menupaneldef_t *pd = M_GetDefFromInst(&curpanels[i]);
+
+			if (pd == NULL)
+				continue;
+
+			if (pd->tickroutine == NULL)
+				continue;
+
+			pd->tickroutine(&curpanels[i]);
+		}
+	}
+
 	if (currentMenu != NULL && currentMenu->tickroutine != NULL)
 	{
 		currentMenu->tickroutine(0);
@@ -5435,12 +5451,8 @@ static void M_DrawMessageMenu(void)
 // Defines what image is used in (menuitem_t)->text.
 // You can even put multiple images in one menu!
 
-INT32 MR_TickImageDef(INT32 choice)
+void MP_TickImageDef(menupanelinst_t *pi)
 {
-	(void)choice;
-
-	menupanelinst_t *pi = M_GetPanel("MAIN");
-
 	for (size_t i = 0; i < pi->numitems; i++)
 	{
 		if (i == pi->itemon)
@@ -5448,8 +5460,6 @@ INT32 MR_TickImageDef(INT32 choice)
 		else
 			pi->items[i].status |= IT_HIDDEN;
 	}
-
-	return true;
 }
 
 void MD_DrawImageDef(menupanelinst_t *pi)
@@ -5730,18 +5740,15 @@ static boolean M_AddonsRefresh(void)
 	return false;
 }
 
-INT32 MR_TickAddons(INT32 choice)
+void MP_TickAddonsURL(menupanelinst_t *pi)
 {
-	(void)choice;
-
-	menupanelinst_t *pi;
-
-	pi = M_GetPanel("URL");
 	M_SetItemVisible(pi, "LOCATION1", !Playing());
 	M_SetItemVisible(pi, "LOCATION2", !Playing());
 	M_SetItemVisible(pi, "MIDGAME", Playing());
+}
 
-	pi = M_GetPanel("BACK");
+void MP_TickAddonsBackground(menupanelinst_t *pi)
+{
 	M_SetItemText(pi, "HEADERPATH", M_AddonsHeaderPath());
 	M_SetItemDisabled(pi, "SEARCHICON", *cv_dummyaddonsearch.string == 0);
 	M_SetItemDisabled(pi, "DISKICON", majormods);
@@ -5757,8 +5764,6 @@ INT32 MR_TickAddons(INT32 choice)
 	{
 		M_SetItemText(pi, "SEARCHTEXT", cv_dummyaddonsearch.string);
 	}
-
-	return true;
 }
 
 void MD_DrawAddons(menupanelinst_t *pi)
@@ -6571,12 +6576,8 @@ void M_SetPlaybackMenuPointer(void)
 	//M_SetItemOn(&curpanels[panelOn], "PAUSE");
 }
 
-INT32 MR_TickPlayBackMenu(INT32 choice)
+void MP_TickPlayBackMenu(menupanelinst_t *pi)
 {
-	(void)choice;
-
-	menupanelinst_t *pi = M_GetPanel("MAIN");
-
 	pi->visible = false;
 
 	if (leveltime - playback_last_menu_interaction_leveltime >= 6*TICRATE)
@@ -6632,8 +6633,6 @@ INT32 MR_TickPlayBackMenu(INT32 choice)
 		M_SetItemX(pi, "QUIT", 188*FRACUNIT);
 		pi->x = (BASEVIDWIDTH/2 - 98)*FRACUNIT;
 	}
-
-	return true;
 }
 
 void MD_DrawPlaybackMenu(menupanelinst_t *pi)
@@ -8042,17 +8041,11 @@ boolean M_AttackOnStack(void)
 	return false;
 }
 
-INT32 MR_TickTimeAttackMenu(INT32 choice)
+void MP_TickTimeAttackMenu(menupanelinst_t *pi)
 {
-	(void)choice;
-
-	menupanelinst_t *pi = M_GetPanel("COMMON");
-
 	// Character face!
 	M_SetItemPatch(pi, "PLAYERICON", skins[cv_chooseskin.value].name);
 	M_SetItemExtra(pi, "PLAYERICON", DEH_SkincolorName(cv_playercolor[0].value));
-
-	return true;
 }
 
 // Drawing function for Time Attack
@@ -9720,12 +9713,8 @@ INT32 MR_SetupMultiPlayer(INT32 arg)
 	return true;
 }
 
-INT32 MR_TickMultiPlayerMenu(INT32 choice)
+void MP_TickMultiPlayerMenu(menupanelinst_t *pi)
 {
-	(void)choice;
-
-	menupanelinst_t *pi = M_GetPanel("MAIN");
-
 	// disable skin changes if we can't actually change skins
 	INT32 pnum = setupplayer;
 	M_SetItemDisabled(pi, "SKIN", splitscreen >= pnum && !CanChangeSkin(pnum == 0 ? consoleplayer : g_localplayers[pnum]));
@@ -9740,8 +9729,6 @@ INT32 MR_TickMultiPlayerMenu(INT32 choice)
 	M_SetItemVisible(pi, "STATBG", visible);
 
 	M_SetItemVisible(pi, "STATBAR", !visible);
-
-	return true;
 }
 
 INT32 MR_QuitMultiPlayerMenu(INT32 choice)

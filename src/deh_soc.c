@@ -2531,6 +2531,16 @@ void readmenupanel(MYFILE *f, menupaneldef_t *pd)
 			}
 			pd->drawroutine = drawer;
 		}
+		else if (fastcmp(word, "TICKROUTINE"))
+		{
+			panelfunc_f *tickroutine = get_panelfunc(word2);
+			if (tickroutine == NULL)
+			{
+				WARN("unknown panel tick func '%s'", word2);
+				continue;
+			}
+			pd->tickroutine = tickroutine;
+		}
 		else if (fastcmp(word, "SCROLLBAR"))
 		{
 			pd->scrollbar = (boolean)(word2[0] == 'T' || word2[0] == 'Y' || get_number(word2));

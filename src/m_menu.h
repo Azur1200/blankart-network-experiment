@@ -357,6 +357,7 @@ struct menupaneldef_t
 	INT16         lineheight;         // default Y offset to add for each item
 	menufunc_f   *keyhandler;         // called before key press is processed
 	panelfunc_f  *initializer;        // called when panel instance is setup
+	panelfunc_f  *tickroutine;        // called when panel is active
 	boolean multinav;                 // navigation in two dimensions!? (disables cvar arrows)
 	INT32 navitemcount;               // items per column (or row if horizontal is true)
 	boolean horizontal;               // navigate with left/right instead of up/down
@@ -558,16 +559,19 @@ void MD_DrawDiscordRequests(menupanelinst_t *pi);
 #endif
 
 // Tickers
-INT32 MR_TickPlayBackMenu(INT32 choice);
-INT32 MR_TickTimeAttackMenu(INT32 choice);
-INT32 MR_TickImageDef(INT32 choice);
-INT32 MR_TickMultiPlayerMenu(INT32 choice);
-INT32 MR_TickAddons(INT32 choice);
 INT32 MR_TickStats(INT32 choice);
 INT32 MR_TickReplayHutReplayInfo(INT32 choice);
 INT32 MR_TickReplayHut(INT32 choice);
 INT32 MR_TickDiscordRequests(INT32 choice);
 INT32 MR_TickViewServer(INT32 choice);
+
+// Panel Tickers
+void MP_TickPlayBackMenu(menupanelinst_t *pi);
+void MP_TickTimeAttackMenu(menupanelinst_t *pi);
+void MP_TickImageDef(menupanelinst_t *pi);
+void MP_TickMultiPlayerMenu(menupanelinst_t *pi);
+void MP_TickAddonsURL(menupanelinst_t *pi);
+void MP_TickAddonsBackground(menupanelinst_t *pi);
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);

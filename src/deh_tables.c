@@ -896,11 +896,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 #endif
 	{"OPTIONS", &MR_Options},
 	// Start tickers
-	{"TICKPLAYBACKMENU", &MR_TickPlayBackMenu },
-	{"TICKTIMEATTACKMENU", &MR_TickTimeAttackMenu},
-	{"TICKIMAGEDEF", &MR_TickImageDef},
-	{"TICKMULTIPLAYERMENU", &MR_TickMultiPlayerMenu},
-	{"TICKADDONS", &MR_TickAddons},
 	{"TICKSTATS", &MR_TickStats},
 	{"TICKREPLAYHUT", &MR_TickReplayHut},
 	//{"TICKREPLAYHUTREPLAYINFO", &MR_TickReplayHutReplayInfo},
@@ -959,6 +954,14 @@ struct panel_func_s const PANEL_FUNCS[] = {
 	{ "STATSPLAYTIME", &MP_StatsPlaytime },
 	{ "STATSEXTRA", &MP_StatsExtra },
 	{ "UNLOCKABLESCHECKLIST", &MP_UnlockablesChecklist },
+	// Start tickers
+	{"TICKPLAYBACKMENU", &MP_TickPlayBackMenu },
+	{"TICKTIMEATTACKMENU", &MP_TickTimeAttackMenu},
+	{"TICKIMAGEDEF", &MP_TickImageDef},
+	{"TICKMULTIPLAYERMENU", &MP_TickMultiPlayerMenu},
+	{"TICKADDONSURL", &MP_TickAddonsURL},
+	{"TICKADDONSBACKGROUND", &MP_TickAddonsBackground},
+
 	{ NULL, NULL }
 };
 
