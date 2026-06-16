@@ -2150,7 +2150,6 @@ void M_StartControlPanel(void)
 	else if (grandprixinfo.gp) // Single Player
 	{
 		boolean retryallowed = false;
-		INT32 i;
 		for (i = 0; i <= splitscreen; i++)
 		{
 			if (G_GametypeUsesLives() && players[g_localplayers[i]].lives <= 1)
@@ -3260,7 +3259,7 @@ static void M_HandleMenuInput(void)
 
 void M_Ticker(void)
 {
-	INT32 i;
+	size_t i;
 	// send buffered input from wipe?
 	if (noFurtherInput > 0 && !WipeInAction)
 	{
@@ -5315,7 +5314,7 @@ void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(voi
 	if (headerstr && headerstr[0] != 0)
 		strlines++;
 
-	if (confirmstr && confirmstr[0] != 0 || declinestr && declinestr[0] != 0)
+	if ((confirmstr && confirmstr[0] != 0) || (declinestr && declinestr[0] != 0))
 		strlines++;
 
 	messageboxset->x = (BASEVIDWIDTH  - 8*max-16)/2;
@@ -5486,6 +5485,8 @@ void MD_DrawImageDef(menupanelinst_t *pi)
 // uses left and right movement.
 INT32 MR_HandleImageDef(INT32 choice)
 {
+	(void)choice;
+
 	menupanelinst_t *pi = &curpanels[panelOn];
 
 	if (menucmd[0].dpad_lr > 0)
@@ -5768,7 +5769,9 @@ void MP_TickAddonsBackground(menupanelinst_t *pi)
 
 void MD_DrawAddons(menupanelinst_t *pi)
 {
-	INT32 x, y;
+	(void)pi;
+
+	INT32 y;
 
 	// hack - need to refresh at end of frame to handle addfile...
 	M_AddonsRefresh();
@@ -5789,6 +5792,8 @@ void MD_DrawAddons(menupanelinst_t *pi)
 
 static void M_AddonExec(INT32 ch)
 {
+	(void)ch;
+
 	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
 		return;
 
@@ -6122,6 +6127,8 @@ void MP_ReplayHutStart(menupanelinst_t *pi)
 
 INT32 MR_HandleReplayHutList(INT32 choice)
 {
+	(void)choice;
+
 	menupanelinst_t *pi = &curpanels[panelOn];
 	menuitem_t *item = &pi->items[pi->itemon];
 	panelfunc_f *initializer = M_GetDefFromInst(pi)->initializer;
@@ -6487,7 +6494,7 @@ INT32 MR_QuitReplayHut(INT32 choice)
 
 static void M_LoadAddonsResponse(INT32 ch)
 {
-	UINT8 i;
+	(void)ch;
 
 	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
 		return;
@@ -7039,6 +7046,8 @@ void MP_GameOptions(menupanelinst_t *pi)
 
 static void M_RetryResponse(INT32 ch)
 {
+	(void)ch;
+
 	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
 		return;
 
@@ -7813,6 +7822,8 @@ INT32 MR_TickStats(INT32 choice)
 // Handle statistics.
 INT32 MR_HandleLevelStats(INT32 choice)
 {
+	(void)choice;
+
 	if (menucmd[0].dpad_lr > 0)
 	{
 		S_StartSound(NULL, sfx_menu1);
@@ -8306,6 +8317,8 @@ INT32 MR_ModeAttackEndGame(INT32 choice)
 
 static void M_ExitGameResponse(INT32 ch)
 {
+	(void)ch;
+
 	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
 		return;
 
@@ -9939,7 +9952,7 @@ static UINT8 erasecontext = 0;
 
 static void M_EraseDataResponse(INT32 ch)
 {
-	UINT8 i;
+	(void)ch;
 
 	if (!M_MenuButtonPressed(0, MBT_CONFIRM))
 		return;
@@ -9949,6 +9962,7 @@ static void M_EraseDataResponse(INT32 ch)
 	// Delete the data
 	if (erasecontext == 2)
 	{
+		UINT8 i;
 		// SRB2Kart: This actually needs to be done FIRST, so that you don't immediately regain playtime/matches secrets
 		K_EraseStats();
 		for (i = 0; i < PWRLV_NUMTYPES; i++)
@@ -10253,6 +10267,8 @@ INT32 MR_ChangeControl(INT32 arg)
 
 static void M_ResetControlsResponse(INT32 ch)
 {
+	(void)ch;
+
 	const UINT8 p = setupcontrolplayer-1;
 	INT32 i;
 
@@ -10413,6 +10429,8 @@ INT32 MR_SetVideoMode(INT32 choice)
 // special menuitem key handler for video mode list
 INT32 MR_HandleVideoMode(INT32 ch)
 {
+	(void)ch;
+
 	if (vidm_testingmode <= 0)
 		return false;
 
@@ -10686,6 +10704,8 @@ void MD_DrawMonitorToggles(menupanelinst_t *pi)
 
 INT32 MR_HandleMonitorToggles(INT32 choice)
 {
+	(void)choice;
+
 	menupanelinst_t *pi = &curpanels[panelOn];
 	kartresult_t *result = K_GetKartResult(pi->items[pi->itemon].patch);
 
@@ -10858,6 +10878,8 @@ static boolean viewserver_showaddons = false;
 
 INT32 MR_HandleViewServer(INT32 choice)
 {
+	(void)choice;
+
 	if (M_MenuButtonPressed(0, MBT_CONFIRM))
 	{
 		S_StartSound(NULL, sfx_menu1);
@@ -11016,6 +11038,8 @@ void MP_ViewServerAddons(menupanelinst_t *pi)
 
 INT32 MR_TickViewServer(INT32 choice)
 {
+	(void)choice;
+
 	menupanelinst_t *pi = M_GetPanel("MAIN");;
 
 	// Buttons
@@ -11036,6 +11060,8 @@ INT32 MR_TickViewServer(INT32 choice)
 	paddons->altscroll = true;
 
 	panelOn = (viewserver_showaddons ? paddons : pplayers) - curpanels;
+
+	return true;
 }
 
 // =========
@@ -11077,6 +11103,8 @@ static INT32 quitsounds[] =
 
 void M_QuitResponse(INT32 ch)
 {
+	(void)ch;
+
 	tic_t ptime;
 	INT32 mrand;
 
@@ -11141,6 +11169,8 @@ boolean removeRequest = false;
 
 INT32 MR_HandleDiscordRequests(INT32 choice)
 {
+	(void)choice;
+
 	if (menucmd[0].dpad_lr || menucmd[0].dpad_ud)
 	{
 		// Do nothing.
