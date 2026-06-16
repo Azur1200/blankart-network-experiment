@@ -6349,15 +6349,26 @@ static fixed_t M_ReplayHutScroll(fixed_t scrollamt, tic_t timer)
 	return scrollx / 2;
 }
 
+static boolean M_CurrentReplayRankingCount(void)
+{
+	menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
+	UINT8 i;
+	UINT8 rankingcount = 0;
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!mdemo->standings[i].ranking)
+			continue;
+
+		rankingcount++;
+	}
+
+	return rankingcount;
+}
+
 void MP_TickReplayHutMain(menupanelinst_t *pi)
 {
-	if (M_CheckPanel("RANKINGS"))
-	{
-		menupanelinst_t *rk = M_GetPanel("RANKINGS");
-		menuitem_t *box = M_GetMenuItem(pi, "RANKINGBG");
-
-		M_SetItemVisible(pi, "RANKINGBG", rk->numitems);
-	}
+	M_SetItemVisible(pi, "RANKINGBG", (M_CurrentReplayRankingCount() > 1));
 }
 
 void MP_TickReplayHutDemoList(menupanelinst_t *pi)
@@ -6417,11 +6428,11 @@ void MP_TickReplayHutRankings(menupanelinst_t *pi)
 			M_SetItemExtraRaw(item, "No Contest");
 		else if (mdemo->gametype == GT_RACE)
 			M_SetItemExtraRaw(item, va("%d'%02d\"%02d",
-									   G_TicsToMinutes(score, true),
-									   G_TicsToSeconds(score),
-									   G_TicsToCentiseconds(score)));
-			else
-				M_SetItemExtraRaw(item, va("%d", score));
+				G_TicsToMinutes(score, true),
+				G_TicsToSeconds(score),
+				G_TicsToCentiseconds(score)));
+		else
+			M_SetItemExtraRaw(item, va("%d", score));
 
 		// Character face!
 		item = M_AppendMenuItem(pi, 95*FRACUNIT, y, 0);
@@ -6443,13 +6454,13 @@ void MP_TickReplayHutDemoTitle(menupanelinst_t *pi)
 
 	menuitem_t *item = M_GetMenuItem(pi, "DEMOTITLE");
 
-	if (M_CheckPanel("RANKINGS") && M_GetPanel("RANKINGS")->numitems == 0)
+	if (M_CurrentReplayRankingCount() > 1)
 	{
-		pi->cliprect = false;
+		pi->cliprect = true;
 	}
 	else
 	{
-		pi->cliprect = true;
+		pi->cliprect = false;
 	}
 
 	pi->x = 10*FRACUNIT - M_ReplayHutScroll((V_StringWidth(item->text, 0) - vid.scaledheight)*FRACUNIT, menutimer);
