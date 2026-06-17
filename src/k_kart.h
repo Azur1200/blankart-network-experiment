@@ -331,6 +331,7 @@ INT32 K_GetDriftAngleOffset(player_t *player);
 void K_KartUpdatePosition(player_t *player);
 void K_KartLegacyUpdatePosition(player_t *player);
 void K_UpdateClusterPoints(void);
+UINT32 K_GetClusterDistanceForPlayer(player_t * player);
 void K_UpdateAllPlayerPositions(void);
 mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 flip, UINT8 type, UINT8 amount);
 void K_DropItems(player_t *player);

@@ -7621,16 +7621,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			// Value to subtract from the S-Monitor timer.
 			INT16 smonitor_subtrahend = (pingame > 1) ? SMONITORDECAYTIME : 1;
 
-			UINT32 usedist = player->distancefromcluster;
+			UINT32 usedist = K_GetClusterDistanceForPlayer(player);
 
 			INT16 podium = max(2, min(4, (3 * pingame / 8)));
-
-			if (clusterjustchanged)
-			{
-				// Losing SMon immediately because of cluster jank sucks and is stupid, so let's
-				// give some leeway while NOT letting it be too OP
-				usedist = max(player->distancefrombestfit, player->distancefromcluster);
-			}
 
 			boolean nodecay = ((usedist > (UINT32)SMONITORDECAYDIST) && (player->position > podium));
 
@@ -10908,6 +10901,19 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 }
 
 #undef FARTHESTCLUSDIS
+
+UINT32 K_GetClusterDistanceForPlayer(player_t * player)
+{
+	if (clusterjustchanged)
+	{
+		// Losing SMon immediately because of cluster jank sucks and is stupid, so let's
+		// give some leeway while NOT letting it be too OP
+		return max(player->distancefrombestfit, player->distancefromcluster);
+	}
+
+	// In every other case, return standard distances
+	return player->distancefromcluster;
+}
 
 #undef MINCLUSTERPLAYERS
 
