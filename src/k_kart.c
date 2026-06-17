@@ -320,6 +320,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_invincibility_stackable);
 
     CV_RegisterVar(&cv_kartstacking_smonitor_speedboost);
+	CV_RegisterVar(&cv_kartstacking_smonitor_fastestspeed);
 	CV_RegisterVar(&cv_kartstacking_smonitor_accelboost);
 	CV_RegisterVar(&cv_kartstacking_smonitor_handleboost);
 	CV_RegisterVar(&cv_kartstacking_smonitor_stackable);
@@ -2545,7 +2546,7 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 	}
 	else
 	{
-		topspeed = FixedMul(mobj->scale, K_GetKartSpeedFromStat(5, false));
+		topspeed = FixedMul(mobj->scale, K_GetKartSpeedFromStat(5, false, 0));
 	}
 
 	speed = P_AproxDistance(mobj->momx, mobj->momy);
@@ -2945,12 +2946,13 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->smonitortimer) // S-Monitor
 	{
-        fixed_t smntrspeedboost = K_GetSMonitorSpeed(player->smonitortimer);
+        //fixed_t smntrspeedboost = K_GetSMonitorSpeed(player->smonitortimer);
         fixed_t smntraccelboost = K_GetSMonitorAccel(player->smonitortimer);
 		fixed_t smntrhandleboost = K_GetSMonitorHandling(player->smonitortimer);
 
-		// + ???% top speed, + ???% acceleration
-		K_DoBoost(player, smntrspeedboost, smntraccelboost, smntrhandleboost, SMNTRSTACKABLE, SMNTRSTACKABLE);
+		// + ???% acceleration, + ??? handling
+		// Top speed is handled in K_KartMagnetThinker
+		K_DoBoost(player, 0, smntraccelboost, smntrhandleboost, SMNTRSTACKABLE, SMNTRSTACKABLE);
 	}
 
 	if (player->growshrinktimer > 0) // Grow
@@ -3166,7 +3168,7 @@ static fixed_t K_GrowShrinkOrNormal(const player_t *player)
 }
 
 // Returns kart speed from a stat. Boost power and scale are NOT taken into account, no player or object is necessary.
-fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb)
+fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb, fixed_t extrapct)
 {
 	const fixed_t xspd = (3*FRACUNIT)/64;
 	fixed_t g_cc = K_GetKartGameSpeedScalar(gamespeed) + xspd;
@@ -3178,7 +3180,7 @@ fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb)
 
 	k_speed += kartspeed*3; // 153 - 177
 
-	finalspeed = FixedMul(k_speed<<14, g_cc);
+	finalspeed = FixedMul(FixedMul(k_speed<<14, g_cc), (FRACUNIT + extrapct));
 	return finalspeed;
 }
 
@@ -3193,7 +3195,7 @@ fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dor
 	if (doboostpower && !player->pogospring && !P_IsObjectOnGround(player->mo) && (player->airdriftspeed == 0))
 		return (75*mapobjectscale); // air speed cap
 
-	finalspeed = K_GetKartSpeedFromStat(player->kartspeed, karmabomb);
+	finalspeed = K_GetKartSpeedFromStat(player->kartspeed, karmabomb, player->kartmagnet.factor);
 
 	if (K_PlayerUsesBotMovement(player))
 	{
@@ -3210,9 +3212,13 @@ fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dor
 		finalspeed = FixedMul(finalspeed, player->botvars.rubberband);
 	}
 
+	fixed_t speedboost = player->speedboost;
+
+	speedboost = FixedDiv(speedboost, FRACUNIT + (player->kartmagnet.factor / 2));
+
 	if (doboostpower)
 	{
-		finalspeed = FixedMul(finalspeed, player->boostpower+player->speedboost);
+		finalspeed = FixedMul(finalspeed, player->boostpower+speedboost);
 	}
 
 	if (player->outrun != 0)
@@ -7341,6 +7347,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (!K_IsPlayerDamaged(player) && !player->wipeoutslow)
 		player->boostangle = player->mo->angle;
 
+	K_KartMagnetThinker(player);
+	K_DoKartMagnetGradient(player);
+
 	K_UpdateSlopeBoost(player);
 	K_GetKartBoostPower(player);
 
@@ -9564,6 +9573,85 @@ static boolean K_SMonitorSliptideCondition(player_t *player)
 	return (K_SMonitorGradient(player->smonitortimer) > (FRACUNIT/2));
 }
 
+void K_KartMagnetThinker(player_t *player)
+{
+	if (!player)
+		return;
+
+	boolean karmabomb = ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0);
+
+	// Need this to determine the base magnet speed
+	fixed_t statspeed = K_GetKartSpeedFromStat(player->kartspeed, karmabomb, 0);
+
+	fixed_t gamespeedscalar = K_GetKartGameSpeedScalar(gamespeed);
+
+	fixed_t speedfac = 0;
+	fixed_t maxspeed = FixedDiv(max(player->kartmagnet.target_speed, statspeed), gamespeedscalar);
+
+	if (player->smonitortimer) // S-Monitor
+	{
+        fixed_t smntrspeedboost = K_GetSMonitorSpeed(player->smonitortimer);
+
+		// + ???% top speed
+
+		if (SMNTRSTACKABLE && K_StackingActive())
+		{
+			speedfac += smntrspeedboost;
+		}
+		else
+		{
+			speedfac = max(speedfac, smntrspeedboost);
+		}
+
+		maxspeed = max(maxspeed, SMNTRFASTESTSPEED);
+	}
+
+	maxspeed = FixedMul(maxspeed, gamespeedscalar);
+
+	player->kartmagnet.base_speed = max(player->kartmagnet.base_speed, FixedMul(statspeed, FRACUNIT + speedfac));
+
+	maxspeed = max(player->kartmagnet.base_speed, maxspeed);
+
+	player->kartmagnet.target_speed = max(player->kartmagnet.target_speed, maxspeed);
+}
+
+#define TURNLENGTH (3000)
+#define TURNCOUNT (16)
+
+#define MAGNET_TURNS (TURNLENGTH * TURNCOUNT)
+
+// Handles cluster-distance gradienting for players; affects their base top speed
+void K_DoKartMagnetGradient(player_t *player)
+{
+	if (!player)
+		return;
+
+	if (P_MobjWasRemoved(player->mo))
+		return;
+
+	INT64 distfactor = (INT64)(K_GetClusterDistanceForPlayer(player));
+
+	distfactor = max(0, min(FRACUNIT, (distfactor * FRACUNIT) / MAGNET_TURNS));
+
+	player->kartmagnet.target_gradient = distfactor;
+
+	boolean karmabomb = ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0);
+	fixed_t target_pct = 0;
+	fixed_t base_pct = 0;
+
+	// Need to divide the intended speeds by the player's actual stat-speeds...
+	fixed_t statspeed = K_GetKartSpeedFromStat(player->kartspeed, karmabomb, 0);
+
+	base_pct = max(0, FixedDiv(player->kartmagnet.base_speed, statspeed)) - FRACUNIT;
+	target_pct = max(0, FixedDiv(player->kartmagnet.target_speed, statspeed)) - FRACUNIT;
+
+	player->kartmagnet.factor = max(0, Easing_InCubic(player->kartmagnet.target_gradient, base_pct, target_pct));
+
+	// Always kill magnets if we're successfully calling this
+	player->kartmagnet.base_speed = 0;
+	player->kartmagnet.target_speed = 0;
+}
+
 fixed_t K_GetSpeedPercentage(const player_t *player)
 {
 	if (!player)
@@ -11526,7 +11614,7 @@ static void K_AdjustPlayerFriction(player_t *player)
 	player->mo->friction = prevfriction;
 
 	if ((player->pflags & PF_RECOVERYSPIN) && 
-		player->speed < K_GetKartSpeedFromStat(player->kartspeed, false) &&
+		player->speed < K_GetKartSpeedFromStat(player->kartspeed, false, player->kartmagnet.factor) &&
 		player->speed >= 10*player->mo->scale
 	)
 	{

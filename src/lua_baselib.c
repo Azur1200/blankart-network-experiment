@@ -4763,7 +4763,7 @@ static int lib_kGetKartSpeedFromStat(lua_State *L)
 	UINT16 kartspeed = luaL_checkinteger(L, 1);
 
 	//HUDSAFE
-	lua_pushinteger(L, K_GetKartSpeedFromStat(kartspeed, false));
+	lua_pushinteger(L, K_GetKartSpeedFromStat(kartspeed, false,  0));
 	return 1;
 }
 
@@ -4771,9 +4771,10 @@ static int lib_kGetKartSpeedFromStatEx(lua_State *L)
 {
 	UINT16 kartspeed = luaL_checkinteger(L, 1);
 	boolean karmabomb = lua_optboolean(L, 2);
+	fixed_t extrapct = lua_isnoneornil(L, 3) ? 0 : luaL_checkinteger(L, 3);
 
 	//HUDSAFE
-	lua_pushinteger(L, K_GetKartSpeedFromStat(kartspeed, karmabomb));
+	lua_pushinteger(L, K_GetKartSpeedFromStat(kartspeed, karmabomb, extrapct));
 	return 1;
 }
 

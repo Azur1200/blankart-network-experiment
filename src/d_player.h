@@ -529,6 +529,15 @@ typedef enum
 	KARMAMODE_EGGMAN,
 } karmamode_e;
 
+struct playermagnet_t
+{
+	fixed_t factor; // How much extra speed do we want to give the player?
+	fixed_t base_speed; // Base speed; adjusts `magnet.factor` to attempt to match this speed
+	fixed_t target_speed; // Desired speed; Adjusts `magnet.factor` to attempt to match this speed
+	fixed_t target_gradient; // Gradient value for moving `factor` towards `target_speed`
+	fixed_t friction_weights; // So you don't go sliding like mad when going too fast.
+};
+
 // ========================================================================
 //                          PLAYER STRUCTURE
 // ========================================================================
@@ -594,6 +603,10 @@ struct player_t
 	UINT8 kartspeedrestat; // Player's wanted kart speed from restat
 	UINT8 kartweightrestat; // Player's wanted kart weight from restat
 	boolean randomrestat; // Randomly set the restat values of the player every game
+
+	// Blan: Adjusts speeds in an attempt to "magnetize" the player towards a target position.
+	// This affects the BASE SPEED, and is not a traditional speed boost.
+	playermagnet_t kartmagnet;
 
 	INT32 followerskin;		// Kart: This player's follower "skin"
 	boolean followerready;	// Kart: Used to know when we can have a follower or not. (This is set on the first NameAndColor follower update)

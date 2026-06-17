@@ -131,6 +131,7 @@ extern consvar_t cv_kartstacking_invincibility_handleboost;
 extern consvar_t cv_kartstacking_invincibility_stackable;
 
 extern consvar_t cv_kartstacking_smonitor_speedboost;
+extern consvar_t cv_kartstacking_smonitor_fastestspeed;
 extern consvar_t cv_kartstacking_smonitor_accelboost;
 extern consvar_t cv_kartstacking_smonitor_handleboost;
 extern consvar_t cv_kartstacking_smonitor_stackable;

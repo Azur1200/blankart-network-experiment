@@ -131,6 +131,7 @@ extern vector3_t clusterpoint, clusterdtf;
 #define INVINSTACKABLE CV_Get(&cv_kartstacking_invincibility_stackable)
 
 #define SMNTRSPEEDBOOST CV_Get(&cv_kartstacking_smonitor_speedboost)
+#define SMNTRFASTESTSPEED CV_Get(&cv_kartstacking_smonitor_fastestspeed)
 #define SMNTRACCELBOOST CV_Get(&cv_kartstacking_smonitor_accelboost)
 #define SMNTRHANDLEBOOST CV_Get(&cv_kartstacking_smonitor_handleboost)
 #define SMNTRSTACKABLE CV_Get(&cv_kartstacking_smonitor_stackable)
@@ -354,9 +355,11 @@ boolean K_SlopeResistance(const player_t *player);
 void K_RemoveGrowShrink(player_t *player);
 void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 void K_ApplyTripWire(player_t *player, tripwirestate_t state);
-fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb);
+fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb, fixed_t extrapct);
 fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dorubberbanding);
 fixed_t K_GetKartAccel(const player_t *player);
+void K_DoKartMagnetGradient(player_t *player);
+void K_KartMagnetThinker(player_t *player);
 UINT16 K_GetKartFlashing(const player_t *player);
 boolean K_PlayerShrinkCheat(const player_t *player);
 void K_UpdateShrinkCheat(player_t *player);
