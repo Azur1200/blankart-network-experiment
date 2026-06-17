@@ -77,6 +77,8 @@ static INT32 ReplaySave(INT32 choice)
 {
 	(void)choice;
 	demo.savemode = DSM_WILLSAVE;
+
+	return true;
 }
 
 consvar_t cv_dummyreplaysave = CVAR_INIT ("dummyreplaysave", "", CV_HIDEN, NULL, NULL);
