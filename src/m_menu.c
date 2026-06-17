@@ -372,7 +372,7 @@ static void Dummystaff_OnChange(void);
 // menus now use short names rather than hardcoded indices to identify menuitems
 /*ANONULL*/ menuitem_t *M_CheckMenuItemDef(const menupaneldef_t *pd, const char *name)
 {
-	INT16 i;
+	UINT16 i;
 	UINT32 hash = HASH32(name, strlen(name));
 
 	for (i = 0; i < pd->numitems; i++) {
@@ -386,7 +386,7 @@ static void Dummystaff_OnChange(void);
 
 /*ANONULL*/ static menuitem_t *M_CheckMenuItem(const menupanelinst_t *pi, const char *name)
 {
-	INT16 i;
+	UINT16 i;
 	UINT32 hash = HASH32(name, strlen(name));
 
 	for (i = 0; i < pi->numitems; i++) {
@@ -414,12 +414,12 @@ static void Dummystaff_OnChange(void);
 	return item;
 }
 
-static INT16 M_GetMenuIndexDef(const menupaneldef_t *pd, const char *name)
+static UINT16 M_GetMenuIndexDef(const menupaneldef_t *pd, const char *name)
 {
 	return M_GetMenuItemDef(pd, name) - pd->items;
 }
 
-static INT16 M_GetMenuIndex(const menupanelinst_t *pi, const char *name)
+static UINT16 M_GetMenuIndex(const menupanelinst_t *pi, const char *name)
 {
 	return M_GetMenuItem(pi, name) - pi->items;
 }
@@ -457,10 +457,10 @@ static UINT32 M_StringCvarLength(consvar_t *cv)
 #define M_GetItemX(f, n)              (M_GetMenuItem(f, n)->x)
 #define M_GetItemY(f, n)              (M_GetMenuItem(f, n)->y)
 
-static void M_RawSetItemOn(menupanelinst_t *pi, INT16 index)
+static void M_RawSetItemOn(menupanelinst_t *pi, UINT16 index)
 {
 	size_t i;
-	INT16 old = pi->itemon;
+	UINT16 old = pi->itemon;
 	pi->itemon = max(0, min(index, pi->numitems - 1));
 
 	if (pi->numitems == 0)
@@ -3120,9 +3120,9 @@ static void M_HandleMenuInput(void)
 
 	size_t oldPanelOn = panelOn;
 	size_t newPanelOn = panelOn;
-	INT16 oldItemOn = curpi->itemon; // prevent infinite loop
-	INT16 newItemOn = curpi->itemon;
-	INT16 altScrollOn;
+	UINT16 oldItemOn = curpi->itemon; // prevent infinite loop
+	INT32 newItemOn = curpi->itemon;
+	UINT16 altScrollOn;
 
 	// Keys usable within menu
 	if (vmove != 0)
@@ -4169,12 +4169,13 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 		INT32 bh = (vid.scaledheight - 80)*FRACUNIT;
 		x = (BASEVIDWIDTH - 4)*FRACUNIT;
 		y = 75*FRACUNIT;
+		INT32 barheight = max(FRACUNIT,FixedDiv(FixedMul(bh, bh) - 1, boty) - FRACUNIT);
 		if (boty > bh)
 		{
 			boty += scrollheight + 10*FRACUNIT;
 			V_DrawFixedFill(x, y, 4*FRACUNIT, bh, V_SNAPTOTOP|V_SNAPTORIGHT|159);
 			x += FRACUNIT, y += FRACUNIT;
-			V_DrawFixedFill(x, y + FixedMul(bh, FixedDiv(M_GetItemAbsY(pi, pi->itemon), boty)), 2*FRACUNIT, FixedDiv(FixedMul(bh, bh) - 1, boty) - FRACUNIT, V_SNAPTOTOP|V_SNAPTORIGHT|149);
+			V_DrawFixedFill(x, y + FixedMul(bh, FixedDiv(M_GetItemAbsY(pi, pi->itemon), boty)), 2*FRACUNIT, barheight, V_SNAPTOTOP|V_SNAPTORIGHT|149);
 		}
 	}
 	else
@@ -6074,7 +6075,10 @@ void MP_PrepReplayList(menupanelinst_t *pi)
 		M_SetItemExtraRaw(item, dirmenu[i] + DIR_STRING);
 		item->argument = dirmenu[i][DIR_TYPE];
 		if (item->argument != EXT_FOLDER && item->argument != EXT_UP)
+		{
 			item->submenu = MN_MISC_REPLAYSTART;
+			item->status |= IT_HIDDEN;
+		}
 
 		if (demolist[i].type == MD_SUBDIR)
 		{
@@ -6405,13 +6409,13 @@ void MP_TickReplayHutDemoList(menupanelinst_t *pi)
 	size_t i;
 	pi->scrollheight = (vid.scaledheight - 90)*FRACUNIT;
 
-	for (i = 0; i < 50; i++)
+	for (i = 0; i < sizedirmenu; i++)
 	{
-		size_t demoi = pi->itemon + (i/2 * (i & 1 ? -1 : 1));
-		if (demoi < sizedirmenu && demolist[demoi].type == MD_NOTLOADED)
+		if (demolist[i].type == MD_NOTLOADED)
 		{
-			G_LoadDemoInfo(&demolist[demoi]);
-			M_SetItemTextRaw(&pi->items[demoi], demolist[demoi].title);
+			G_LoadDemoInfo(&demolist[i]);
+			M_SetItemTextRaw(&pi->items[i], demolist[i].title);
+			pi->items[i].status &= ~IT_HIDDEN;
 			break;
 		}
 	}
@@ -8566,7 +8570,7 @@ static void M_DrawServerLines(const menupanelinst_t *pi, INT32 x, INT32 page)
 	UINT16 i;
 	char servergametype[30];
 	char pwr[13];
-	INT16 firstserverline = M_GetMenuIndex(pi, "LINE1");
+	UINT16 firstserverline = M_GetMenuIndex(pi, "LINE1");
 	UINT32 serversperpage = M_ServersPerPage(); // server sperpage?
 
 	for (i = 0; i < min(serverlistcount - page * serversperpage, serversperpage); i++)
@@ -8617,7 +8621,7 @@ static void M_DrawServerLines(const menupanelinst_t *pi, INT32 x, INT32 page)
 void MD_DrawConnectMenu(menupanelinst_t *pi)
 {
 	UINT16 i;
-	INT16 firstserverline = M_GetMenuIndex(pi, "LINE1");
+	UINT16 firstserverline = M_GetMenuIndex(pi, "LINE1");
 	UINT32 serversperpage = M_ServersPerPage(); // server sperpage?
 	INT32 mservflags = V_ALLOWLOWERCASE;
 

@@ -355,7 +355,7 @@ struct menuitem_t
 struct menupaneldef_t
 {
 	dehinfo_t     info;
-	INT16         numitems;           // # of menu items
+	UINT16         numitems;           // # of menu items
 	menuitem_t   *items;              // menu items
 	menudrawer_f *drawroutine;        // draw routine
 	boolean       scrollbar;          // draw scrollbar
