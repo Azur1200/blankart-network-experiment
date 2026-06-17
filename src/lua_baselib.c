@@ -4870,6 +4870,18 @@ static int lib_kMomentum3D(lua_State *L)
 	return 1;
 }
 
+static int lib_kGetClusterDistanceForPlayer(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	
+	lua_pushinteger(L, K_GetClusterDistanceForPlayer(player));
+	return 1;
+}
+
 static int lib_kAddTiltImpulse(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -6118,6 +6130,7 @@ static luaL_Reg lib[] = {
 	{"K_GetShieldFromPlayer", lib_kGetShieldFromPlayer},
 	{"K_PlayerCanPunt", lib_kPlayerCanPunt},
 	{"K_Momentum3D", lib_kMomentum3D},
+	{"K_GetClusterDistanceForPlayer", lib_kGetClusterDistanceForPlayer},
 	{"K_GetKartBaseRingPower", lib_kGetKartBaseRingPower},
 	{"K_GetKartRingCap", lib_kGetKartRingCap},
 	{"K_IsPlayerRingBurnt", lib_kIsPlayerRingBurnt},
