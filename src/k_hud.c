@@ -6548,6 +6548,9 @@ static void K_DrawClusterDebugger(void)
 		V_DrawThinString(8, y, vflags, va("X: %f, Y: %f, Z: %f, Dist. from cluster: %d", FIXED_TO_FLOAT(clusterpoint.x), FIXED_TO_FLOAT(clusterpoint.y), FIXED_TO_FLOAT(clusterpoint.z), stplyr->distancefromcluster));
 		y -= 10;
 
+		V_DrawThinString(8, y, vflags, va("Dist. from best-fit: %d", stplyr->distancefrombestfit));
+		y -= 10;
+
 		if (num_player_clusters)
 		{
 			V_DrawThinString(8, y, vflags, va("Clusters active: %d", num_player_clusters));
@@ -6567,6 +6570,9 @@ static void K_DrawClusterDebugger(void)
 	else
 	{
 		V_DrawThinString(8, y, vflags, va("Dist. from cluster: %d", stplyr->distancefromcluster));
+		y -= 10;
+
+		V_DrawThinString(8, y, vflags, va("Dist. from best-fit: %d", stplyr->distancefrombestfit));
 		y -= 10;
 
 		V_DrawThinString(8, y, vflags, va("Cluster DtF: %d, Your DtF: %d", (UINT32)(clusterdtf.x), stplyr->distancetofinish));

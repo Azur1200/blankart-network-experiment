@@ -70,8 +70,18 @@ Make sure this matches the actual number of states
       ((grav >> 1) * (FLIPOVERHALFTICS * FLIPOVERHALFTICS))) / \
      FLIPOVERHALFTICS)
 
+typedef enum
+{
+	CLSMODE_AVERAGES,
+	CLSMODE_BESTFIT
+} ATTRPACK clustermode_e;
+
+#define CLUSTERCHANGEDTIME (6 * TICRATE)
+
 extern boolean clusterplayer[MAXPLAYERS];
 extern UINT32 clusterid; // ID of the "cluster player", the one closest to the cluster point.
+extern clustermode_e clustermode;
+extern tic_t clusterjustchanged;
 extern vector3_t clusterpoint, clusterdtf;
 
 // Bubble Shield's maximum health (determines how many times it can be fully inflated)

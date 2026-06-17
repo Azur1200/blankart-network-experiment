@@ -38,6 +38,7 @@
 #include "p_slopes.h"
 
 // SRB2Kart
+#include "k_kart.h"
 #include "k_battle.h"
 #include "k_pwrlv.h"
 #include "k_terrain.h"
@@ -620,6 +621,9 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].bigwaypointgap);
 		SYNC(players[i].airtime);
 		SYNC(players[i].startboost);
+
+		SYNC(players[i].distancefromcluster);
+		SYNC(players[i].distancefrombestfit);
 
 		SYNC(players[i].dropdash);
 		SYNC(players[i].respawn);
@@ -4366,6 +4370,10 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNC(bumpsparkactive);
 	SYNC(antibumptime);
 	SYNC(playerbumpactive);
+
+	SYNC(clusterid);
+	SYNC(clustermode);
+	SYNC(clusterjustchanged);
 
 	for (i = 0; i < sizeof(g_voteLevels)/sizeof(*g_voteLevels); i++)
 	{

@@ -628,7 +628,10 @@ struct player_t
 	UINT8 positiondelay;	// Used for position number, so it can grow when passing/being passed
 	UINT32 distancetofinish;
 	UINT32 distancetofinishprev;
+
 	UINT32 distancefromcluster;
+	UINT32 distancefrombestfit;
+
 	waypoint_t *currentwaypoint;
 	waypoint_t *nextwaypoint;
 	boolean onbadwaypoint;	// This waypoint is bad, so we need to find a better one
