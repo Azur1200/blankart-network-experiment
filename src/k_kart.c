@@ -10454,7 +10454,7 @@ static boolean K_CheckBestRankForCluster(player_t *player, UINT32 pingame)
 	return true;
 }
 
-#define FARTHESTCLUSDIS (3072)
+#define FARTHESTCLUSDIS (4224)
 
 static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 {
@@ -10498,7 +10498,8 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 			else if (players[i].position == 2 && second == -1)
 				second = i;
 
-			if ((players[i].position < bestposcluster) && (players[i].position < pingame) &&
+			if ((players[i].position < bestposcluster) &&
+			    (players[i].position < pingame) &&
 			    (K_ClusterFilter_BaseFilter(&players[i], pingame)))
 			{
 				// This player is the best fit, per the cluster filter
@@ -10577,72 +10578,74 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 
 	UINT32 distancetobest = 0;
 
-	if (pingame > 9)
+	// We're not done yet! Get the best-fitting node from the global cluster database, and
+	// compare ourselves to them
+	if (pingame > 9 && num_player_clusters > 0)
 	{
-		// We're not done yet! Get the best-fitting node from the global cluster database,
-		// and compare ourselves to them
-		if (num_player_clusters > 0)
+		// At least one node exists. Since these nodes are sorted by player
+		// position averages, the best-fit is right at the front!
+		clusterdata_t bestfit = player_clusters[0];
+
+		if (bestfit.nucleus.player)
 		{
-			// At least one node exists. Since these nodes are sorted by player
-			// position averages, the best-fit is right at the front!
-			clusterdata_t bestfit = player_clusters[0];
+			distancetobest = 0;
 
-			if (bestfit.nucleus.player)
+			if (players[clusterid].position <= bestfit.nucleus.player->position)
 			{
-				distancetobest = 0;
+				I_OutputMsg("cluster player is ahead of best-fit player\n");
+			}
 
-				if (players[clusterid].position <= bestfit.nucleus.player->position)
+			// Ignore the best-fit if we're actually AHEAD of it
+			if (players[clusterid].position > bestfit.nucleus.player->position)
+			{
+				bestfitid = (UINT32)(bestfit.nucleus.player - players);
+
+				if (K_LegacyOddsMode())
 				{
-					I_OutputMsg("cluster player is ahead of best-fit player\n");
+					distancetobest = K_GetCongaLineDistance(
+					    &players[clusterid], bestfit.nucleus.player->position);
+				}
+				else
+				{
+					distancetobest = K_UndoMapScaling(K_GetDTFDifference(
+					    &players[clusterid], bestfit.nucleus.player));
 				}
 
-				// Ignore the best-fit if we're actually *ahead* of it
-				if (players[clusterid].position > bestfit.nucleus.player->position)
+				if (distancetobest > FARTHESTCLUSDIS)
 				{
-					bestfitid = (UINT32)(bestfit.nucleus.player - players);
+					// We're way too far away! Let the best-fit take over...
+					clusterid = (UINT32)(bestfit.nucleus.player - players);
 
-					if (K_LegacyOddsMode())
+					if (clustermode != CLSMODE_BESTFIT)
 					{
-						distancetobest = K_GetCongaLineDistance(&players[clusterid], bestfit.nucleus.player->position);
-					}
-					else
-					{
-						distancetobest = K_UndoMapScaling(K_GetDTFDifference(&players[clusterid], bestfit.nucleus.player));
+						clustermode = CLSMODE_BESTFIT;
+						clusterjustchanged = CLUSTERCHANGEDTIME;
 					}
 
-					if (distancetobest > FARTHESTCLUSDIS)
-					{
-						// We're way too far away! Let the best-fit take over...
-						clusterid = (UINT32)(bestfit.nucleus.player - players);
-
-						if (clustermode != CLSMODE_BESTFIT)
-						{
-							clustermode = CLSMODE_BESTFIT;
-							clusterjustchanged = CLUSTERCHANGEDTIME;
-						}
-
-						usedbestfit = true;
-					}
+					usedbestfit = true;
 				}
 			}
 		}
 	}
 	else if (bestpidcluster >= 0)
 	{
-		// Use the same "best fit vs. center" system, but avoid clustering since the data pool is comparatively smaller
+		// Use the same "best fit vs. center" system, but avoid clustering since we either
+		// have no clusters, or the data pool is comparatively smaller
 
-		// Ignore the best-fit if we're actually *ahead* of it
+		// Ignore the best-fit if we're actually AHEAD of it
 		if (players[clusterid].position > players[bestpidcluster].position)
 		{
 			bestfitid = bestpidcluster;
 
 			if (K_LegacyOddsMode())
 			{
-				distancetobest = K_GetCongaLineDistance(&players[clusterid], players[bestpidcluster].position);
+				distancetobest = K_GetCongaLineDistance(
+				    &players[clusterid], players[bestpidcluster].position);
 			}
 			else
 			{
-				distancetobest = K_UndoMapScaling(K_GetDTFDifference(&players[clusterid], &players[bestpidcluster]));
+				distancetobest = K_UndoMapScaling(K_GetDTFDifference(
+				    &players[clusterid], &players[bestpidcluster]));
 			}
 
 			if (distancetobest > FARTHESTCLUSDIS)
@@ -10701,23 +10704,35 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 				else
 				{
 					// Return the 3D distance from the cluster player.
-					// Multiply by a multiplier to make up for shoddy euclidean distance checks.
+					// Multiply by a multiplier to make up for shoddy euclidean
+					// distance checks.
 					bestfit_pos = players[bestfitid].position;
-					player->distancefrombestfit = FixedMul(K_GetCongaLineDistance(player, bestfit_pos), LEGACYCLUSTERMUL) / (bestfitdiv);
+					player->distancefrombestfit =
+					    FixedMul(K_GetCongaLineDistance(player, bestfit_pos),
+						     LEGACYCLUSTERMUL) /
+					    (bestfitdiv);
 				}
 			}
 			else if (bestfitid != UINT32_MAX)
 			{
 				if (player == &players[bestfitid])
+				{
 					player->distancefrombestfit = 0;  // We ARE the best-fit
+				}
 				else if (player->position <= players[bestfitid].position)
+				{
 					player->distancefrombestfit = 0;  // Ahead, or tying.
+				}
 				else
 				{
 					// Return the 3D distance from the cluster player.
-					// Multiply by a multiplier to make up for shoddy euclidean distance checks.
+					// Multiply by a multiplier to make up for shoddy euclidean
+					// distance checks.
 					bestfit_pos = players[bestfitid].position;
-					player->distancefrombestfit = FixedMul(K_GetCongaLineDistance(player, bestfit_pos), LEGACYCLUSTERMUL) / (bestfitdiv);
+					player->distancefrombestfit =
+					    FixedMul(K_GetCongaLineDistance(player, bestfit_pos),
+						     LEGACYCLUSTERMUL) /
+					    (bestfitdiv);
 				}
 			}
 		}
@@ -10725,26 +10740,31 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 		{
 			if ((pingame < MINCLUSTERPLAYERS) && (tinypopbest != -1))
 			{
-				// In very small lobbies, compare against first place/second to last's
-				// distance to finish.
+				// In very small lobbies, compare against first place/second to
+				// last's distance to finish.
 
 				// In a 1v1, this is theoretically impossible; but what do I know?
-				if (player->distancetofinish <= players[tinypopbest].distancetofinish)
+				if (player->distancetofinish <=
+				    players[tinypopbest].distancetofinish)
 				{
 					player->distancefrombestfit = 0;  // Ahead, or tying.
 				}
 				else if (pingame < 3)
 				{
-					// In 1v1s, half the cluster distance so that the losing player
-					// doesn't get overly pitied.
-					// Otherwise, just use the raw distancing.
-					player->distancefrombestfit =  K_UndoMapScaling(player->distancetofinish -
+					// In 1v1s, half the cluster distance so that the losing
+					// player doesn't get overly pitied. Otherwise, just use the
+					// raw distancing.
+					player->distancefrombestfit =
+					    K_UndoMapScaling(
+						player->distancetofinish -
 						players[tinypopbest].distancetofinish) /
-						2;
+					    2;
 				}
 				else
 				{
-					player->distancefrombestfit = K_UndoMapScaling(player->distancetofinish - players[tinypopbest].distancetofinish);
+					player->distancefrombestfit =
+					    K_UndoMapScaling(player->distancetofinish -
+							     players[tinypopbest].distancetofinish);
 				}
 			}
 
@@ -10753,7 +10773,9 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 				if (player->distancetofinish <= players[bestfitid].distancetofinish)
 					player->distancefrombestfit = 0;  // Ahead, or tying.
 				else
-					player->distancefrombestfit = K_UndoMapScaling(player->distancetofinish - players[bestfitid].distancetofinish);
+					player->distancefrombestfit =
+					    K_UndoMapScaling(player->distancetofinish -
+							     players[bestfitid].distancetofinish);
 			}
 		}
 	}
@@ -10809,7 +10831,10 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 		UINT8 cluster_pos = cluster_p->position;
 
 		if (bestfitid == clusterid)
-			player->distancefrombestfit = FixedMul(K_GetCongaLineDistance(player, cluster_pos), LEGACYCLUSTERMUL) / (divmul);
+			player->distancefrombestfit =
+			    FixedMul(K_GetCongaLineDistance(player, cluster_pos),
+				     LEGACYCLUSTERMUL) /
+			    (divmul);
 
 		return FixedMul(K_GetCongaLineDistance(player, cluster_pos), LEGACYCLUSTERMUL) /
 		       (divmul);
@@ -10836,17 +10861,24 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 			if (pingame < 3)
 			{
 				if (bestfitid == clusterid)
-					player->distancefrombestfit = K_UndoMapScaling(player->distancetofinish - players[tinypoptarget].distancetofinish) / 2;
+					player->distancefrombestfit =
+					    K_UndoMapScaling(
+						player->distancetofinish -
+						players[tinypoptarget].distancetofinish) /
+					    2;
 
 				return K_UndoMapScaling(player->distancetofinish -
-					players[tinypoptarget].distancetofinish) /
+							players[tinypoptarget].distancetofinish) /
 				       2;
 			}
 
 			if (bestfitid == clusterid)
-				player->distancefrombestfit = K_UndoMapScaling(player->distancetofinish - players[tinypoptarget].distancetofinish);
+				player->distancefrombestfit =
+				    K_UndoMapScaling(player->distancetofinish -
+						     players[tinypoptarget].distancetofinish);
 
-			return K_UndoMapScaling(player->distancetofinish - players[tinypoptarget].distancetofinish);
+			return K_UndoMapScaling(player->distancetofinish -
+						players[tinypoptarget].distancetofinish);
 		}
 
 		UINT32 targetdtf;
@@ -10873,7 +10905,8 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 
 		// Return the difference between us and the cluster distance.
 		if (bestfitid == clusterid)
-			player->distancefrombestfit = K_UndoMapScaling(player->distancetofinish - targetdtf);
+			player->distancefrombestfit =
+			    K_UndoMapScaling(player->distancetofinish - targetdtf);
 
 		return K_UndoMapScaling(player->distancetofinish - targetdtf);
 	}
@@ -11187,13 +11220,16 @@ static vector3_t* K_FindPlayerCluster(vector3_t* out)
 	return out;
 }
 
-#define CLUSTER_EPSILON (1280*FRACUNIT)
-#define CLUSTER_EPSILON_PATHFIND (1280*FRACUNIT)
+#define CLUSTER_EPSILON (1280 * FRACUNIT)
+#define CLUSTER_EPSILON_PATHFIND (1280 * FRACUNIT)
 
 #define CLUSTER_ACTIVE_EPSILON (K_LegacyOddsMode() ? CLUSTER_EPSILON : CLUSTER_EPSILON_PATHFIND)
-#define USECLUSEPS (FixedMul(FixedMul(CLUSTER_ACTIVE_EPSILON, K_GetKartGameSpeedScalar(gamespeed)), mapobjectscale))
+#define USECLUSEPS                                                                       \
+	(FixedMul(FixedMul(CLUSTER_ACTIVE_EPSILON, K_GetKartGameSpeedScalar(gamespeed)), \
+		  mapobjectscale))
 
-#define CLUSTER_ACTIVE_NODEFUNC (K_LegacyOddsMode()) ? &K_FilterNodeByEuclideanDistance : &K_FilterNodeByDTF
+#define CLUSTER_ACTIVE_NODEFUNC \
+	(K_LegacyOddsMode()) ? &K_FilterNodeByEuclideanDistance : &K_FilterNodeByDTF
 
 static int sortByClusterID(const void *a, const void *b)
 {
@@ -11217,23 +11253,23 @@ void K_UpdateClusterPoints(void)
 	// THERE ARE T W O OF THESE STUPID ASS PLAYER HEADCOUNT LOOPS IN THIS ROUTINE *ALONE*!
 	INT32 pcount = 0;
 
-    for (i = 0; i < MAXPLAYERS; i++)
-    {
-        player_t* player = NULL;
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		player_t* player = NULL;
 
-        if (!playeringame[i])
-            continue;
+		if (!playeringame[i])
+			continue;
 
-        player = &players[i];
+		player = &players[i];
 
-        if (player->spectator)
-            continue;  // spectator
+		if (player->spectator)
+			continue;  // spectator
 
-        if (!player->mo)
-            continue;
+		if (!player->mo)
+			continue;
 
 		pcount++;
-    }
+	}
 
 	// Tick down the "just updated" timer
 	if (clusterjustchanged)
@@ -11242,16 +11278,23 @@ void K_UpdateClusterPoints(void)
 	if (pcount > 9)
 	{
 		// First: update the Big Dumb Cluster List
-		K_UpdateGlobalClusters(CLUSTER_ACTIVE_EPSILON, 3, CLUSTER_ACTIVE_NODEFUNC, &K_ClusterFilter_BaseFilter, pcount);
+		K_UpdateGlobalClusters(CLUSTER_ACTIVE_EPSILON,
+				       3,
+				       CLUSTER_ACTIVE_NODEFUNC,
+				       &K_ClusterFilter_BaseFilter,
+				       pcount);
 
 		// Then: sort the list (the linker hates me using qs22j in C++...)
 		if (num_player_clusters > 1)
 		{
-			qs22j((void *)(player_clusters), num_player_clusters, sizeof(clusterdata_t), &sortByClusterID);
+			qs22j((void*)(player_clusters),
+			      num_player_clusters,
+			      sizeof(clusterdata_t),
+			      &sortByClusterID);
 		}
 	}
 
-    // Then: get the player cluster
+	// Then: get the player cluster
 	K_FindPlayerCluster(&clusterpoint);
 }
 
