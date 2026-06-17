@@ -268,6 +268,18 @@ void G_MapEventsToControls(event_t *ev)
 			{
 				M_MenuTypingInput(ev->data1);
 
+				if (ev->data1 > 0)
+				{
+					if (ev->data1 >= NUMKEYS)
+					{
+						keyboardcontrolled = false;
+					}
+					else
+					{
+						keyboardcontrolled = true;
+					}
+				}
+
 				if (ev->data2) // OS repeat? We handle that ourselves
 				{
 					break;
@@ -349,9 +361,19 @@ void G_MapEventsToControls(event_t *ev)
 				i -= ev->data2 >= 0;
 				gamekeydown[device][i++] = max(0, -ev->data2);
 				update_vkb_axis(max(0, -ev->data2));
+
+				if (device != KEYBOARD_MOUSE_DEVICE)
+				{
+					keyboardcontrolled = false;
+				}
 			}
 			gamekeydown[device][i] = max(0, ev->data2);
 			update_vkb_axis(max(0, ev->data2));
+
+			if (device != KEYBOARD_MOUSE_DEVICE)
+			{
+				keyboardcontrolled = false;
+			}
 
 			break;
 

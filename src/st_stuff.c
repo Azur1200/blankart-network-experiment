@@ -1225,7 +1225,7 @@ void ST_Drawer(void)
 		{
 			char replaytext[40] = {0};
 			INT32 flags = V_6WIDTHSPACE;
-			const char *button = M_ButtonName(0, gc_lookback, "Look Backwards");
+			const char *button = M_ButtonName(0, gc_lookback, "Look Backwards", false);
 			snprintf(replaytext, 40, "%s: Save Replay", button);
 			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|gtc|flags, replaytext);
 			break;
@@ -1235,7 +1235,7 @@ void ST_Drawer(void)
 		{
 			char replaytext[100] = {0};
 			INT32 flags = 0;
-			const char *button = M_ButtonName(0, gc_lookback, "Look Backwards");
+			const char *button = M_ButtonName(0, gc_lookback, "Look Backwards", false);
 
 			snprintf(replaytext, 100, "Replay will be saved. (%s: Change title)", button);
 

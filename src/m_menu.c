@@ -2497,7 +2497,6 @@ void M_UpdateMenuCMD(UINT8 i, boolean bailrequired)
 		return; // Lets do our last action now.
 	}
 
-
 	menucmd[i].prev_dpad_ud = menucmd[i].dpad_ud;
 	menucmd[i].prev_dpad_lr = menucmd[i].dpad_lr;
 
@@ -2512,7 +2511,7 @@ void M_UpdateMenuCMD(UINT8 i, boolean bailrequired)
 		if (gamekeydown[0][KEY_ESCAPE] > 0) { menucmd[i].buttons |= MBT_CANCEL; }
 	}
 
-	if (thisMenuKey > 0 && i == 0) // TODO: replace this shitty Keyboard hack.....
+	if (keyboardcontrolled && i == 0) // TODO: replace this shitty Keyboard hack.....
 	{
 		switch (thisMenuKey)
 		{
@@ -5084,9 +5083,9 @@ boolean M_CanShowLevelInList(mapnum_t mapnum)
 	return M_CanShowLevelOnPlatter(mapnum) && M_LevelAvailableOnPlatter(mapnum);
 }
 
-const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback)
+const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback, boolean forcekeyboard)
 {
-	if (p == 0 && keyboardcontrolled && (messagebox.active || menustack[0]))
+	if (forcekeyboard || (p == 0 && keyboardcontrolled && (messagebox.active || menustack[0])))
 	{
 		switch (gc)
 		{
@@ -5121,9 +5120,9 @@ fallback:
 char ConfirmString[25];
 char DeclineString[25];
 
-char *M_MessageConfirmText(boolean gamequit)
+char *M_MessageConfirmText(boolean gamequit, boolean forcekeyboard)
 {
-	const char *item1 = M_ButtonName(0, gc_accelerate, "ACCEL");
+	const char *item1 = M_ButtonName(0, gc_accelerate, "ACCEL", forcekeyboard);
 
 	memset(&ConfirmString, 0, sizeof(ConfirmString));
 
@@ -5135,9 +5134,9 @@ char *M_MessageConfirmText(boolean gamequit)
 	return ConfirmString;
 }
 
-char *M_MessageCancelText(boolean gamequit)
+char *M_MessageCancelText(boolean gamequit, boolean forcekeyboard)
 {
-	const char *item1 = M_ButtonName(0, gc_brake, "BRAKE");
+	const char *item1 = M_ButtonName(0, gc_brake, "BRAKE", forcekeyboard);
 
 	memset(&DeclineString, 0, sizeof(DeclineString));
 
@@ -5783,7 +5782,7 @@ void MP_TickAddonsBackground(menupanelinst_t *pi)
 	M_SetItemDisabled(pi, "SEARCHTEXT", *cv_dummyaddonsearch.string == 0);
 	if (*cv_dummyaddonsearch.string == 0)
 	{
-		const char *button = M_ButtonName(0, gc_drift, "DRIFT");
+		const char *button = M_ButtonName(0, gc_drift, "DRIFT", false);
 		M_SetItemText(pi, "SEARCHTEXT", va("Press %s to Search", button));
 	}
 	else
@@ -5972,7 +5971,7 @@ INT32 MR_HandleAddons(INT32 choice)
 				Reinitialize();
 				break;
 			case EXT_TXT:
-				M_StartMessage2("Addons", va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways?\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), filename), ROUTINECAST(M_AddonExec) ,MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
+				M_StartMessage2("Addons", va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways?\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), filename), ROUTINECAST(M_AddonExec) ,MM_YESNO, M_MessageConfirmText(false, false), M_MessageCancelText(false, false));
 				break;
 			case EXT_CFG:
 				M_AddonExec(MA_YES);
@@ -6605,7 +6604,7 @@ INT32 MR_HutStartReplay(INT32 choice)
 	}
 
 	if (warningpopup)
-		M_StartMessage2(loadheader, warning, ROUTINECAST(M_LoadAddonsResponse), MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
+		M_StartMessage2(loadheader, warning, ROUTINECAST(M_LoadAddonsResponse), MM_YESNO, M_MessageConfirmText(false, false), M_MessageCancelText(false, false));
 	else
 		M_LoadAddonsResponse(MA_YES);
 	return true;
@@ -7083,7 +7082,7 @@ static void M_RetryResponse(INT32 ch)
 INT32 MR_Retry(INT32 choice)
 {
 	(void)choice;
-	M_StartMessage2("Retry?", va("Start this %s over?\n", (gametypes[gametype]->rules & GTR_CIRCUIT) ? "race" : "battle"), ROUTINECAST(M_RetryResponse),MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
+	M_StartMessage2("Retry?", va("Start this %s over?\n", (gametypes[gametype]->rules & GTR_CIRCUIT) ? "race" : "battle"), ROUTINECAST(M_RetryResponse),MM_YESNO, M_MessageConfirmText(false, false), M_MessageCancelText(false, false));
 	return true;
 }
 
@@ -8302,12 +8301,12 @@ INT32 MR_SetGuestReplay(INT32 arg)
 		break;
 	case 3: // guest
 	default:
-		M_StartMessage2("Guest", M_GetText("Are you sure you want to\ndelete the guest replay data?\n"), ROUTINECAST(M_EraseGuest), MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
+		M_StartMessage2("Guest", M_GetText("Are you sure you want to\ndelete the guest replay data?\n"), ROUTINECAST(M_EraseGuest), MM_YESNO, M_MessageConfirmText(false, false), M_MessageCancelText(false, false));
 		return true;
 	}
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
 	if (G_CheckRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, REPLAY_GUEST))
-		M_StartMessage2("Guest", M_GetText("Are you sure you want to\noverwrite the guest replay data?\n"), ROUTINECAST(which), MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
+		M_StartMessage2("Guest", M_GetText("Are you sure you want to\noverwrite the guest replay data?\n"), ROUTINECAST(which), MM_YESNO, M_MessageConfirmText(false, false), M_MessageCancelText(false, false));
 	else
 		which(MA_YES);
 	return true;
@@ -8362,7 +8361,7 @@ INT32 MR_EndGame(INT32 choice)
 	if (!Playing())
 		return false;
 
-	M_StartMessage2("End Game", M_GetText("Are you sure you want to end the game?\n"), ROUTINECAST(M_ExitGameResponse), MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
+	M_StartMessage2("End Game", M_GetText("Are you sure you want to end the game?\n"), ROUTINECAST(M_ExitGameResponse), MM_YESNO, M_MessageConfirmText(false, false), M_MessageCancelText(false, false));
 	return true;
 }
 
@@ -10013,7 +10012,7 @@ INT32 MR_EraseData(INT32 arg)
 	else
 		eschoice = M_GetText("ALL game data");
 
-	M_StartMessage2("Delete Data?", va(esstr, eschoice), ROUTINECAST(M_EraseDataResponse), MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
+	M_StartMessage2("Delete Data?", va(esstr, eschoice), ROUTINECAST(M_EraseDataResponse), MM_YESNO, M_MessageConfirmText(false, false), M_MessageCancelText(false, false));
 	return true;
 }
 
@@ -10315,7 +10314,7 @@ static void M_ResetControlsResponse(INT32 ch)
 INT32 MR_ResetControls(INT32 choice)
 {
 	(void)choice;
-	M_StartMessage2("Cnntrols", va(M_GetText("Reset Player %d's controls to defaults?\n"), setupcontrolplayer), ROUTINECAST(M_ResetControlsResponse), MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
+	M_StartMessage2("Cnntrols", va(M_GetText("Reset Player %d's controls to defaults?\n"), setupcontrolplayer), ROUTINECAST(M_ResetControlsResponse), MM_YESNO, M_MessageConfirmText(false, false), M_MessageCancelText(false, false));
 	return true;
 }
 
@@ -10510,7 +10509,7 @@ void MP_SetupMonitorToggles(menupanelinst_t *pi)
 		}
 		else
 		{
-			const char *button = M_ButtonName(0, gc_drift, "DRIFT");
+			const char *button = M_ButtonName(0, gc_drift, "DRIFT", false);
 
 			item->argument = 0;
 			M_SetItemPatchRaw(item, result->cvar->name);
@@ -11156,7 +11155,7 @@ INT32 MR_QuitSRB2(INT32 choice)
 	// We pick index 0 which is language sensitive, or one at random,
 	// between 1 and maximum number.
 	(void)choice;
-	M_StartMessage2("Leave Game?", quitmsg[M_RandomKey(NUM_QUITMESSAGES)], ROUTINECAST(M_QuitResponse), MM_YESNO, M_MessageConfirmText(true), M_MessageCancelText(true));
+	M_StartMessage2("Leave Game?", quitmsg[M_RandomKey(NUM_QUITMESSAGES)], ROUTINECAST(M_QuitResponse), MM_YESNO, M_MessageConfirmText(true, false), M_MessageCancelText(true, false));
 	return true;
 }
 

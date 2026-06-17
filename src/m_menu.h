@@ -214,9 +214,9 @@ extern messagebox_t messageboxqueue[NUMMENULEVELS];
 
 #define ROUTINECAST(func) (void (*)(void))func
 
-const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback);
-char *M_MessageConfirmText(boolean gamequit);
-char *M_MessageCancelText(boolean gamequit);
+const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback, boolean forcekeyboard);
+char *M_MessageConfirmText(boolean gamequit, boolean forcekeyboard);
+char *M_MessageCancelText(boolean gamequit, boolean forcekeyboard);
 
 void M_MessageboxClose(boolean clearstack);
 

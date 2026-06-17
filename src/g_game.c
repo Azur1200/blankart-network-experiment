@@ -1298,15 +1298,6 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital, SINT8 type)
 	if (deviceID == INVALID_DEVICE)
 		deviceID = KEYBOARD_MOUSE_DEVICE;
 
-	if (p == 0 && deviceID == KEYBOARD_MOUSE_DEVICE)
-	{
-		keyboardcontrolled = true;
-	}
-	else if (p == 0)
-	{
-		keyboardcontrolled = false;
-	}
-
 retrygetcontrol:
 	for (i = 0; i < MAXINPUTMAPPING; i++)
 	{
@@ -6185,7 +6176,7 @@ void G_LoadGame(UINT32 slot, mapnum_t mapoverride)
 	{
 #ifdef SAVEGAME_OTHERVERSIONS
 		M_StartMessage2("Save Version Mismatch", M_GetText("Save game from different version.\nYou can load this savegame, but\nsaving afterwards will be disabled.\n\nDo you want to continue anyway?\n"),
-		               M_ForceLoadGameResponse, MM_YESNO, M_MessageConfirmText(false), M_MessageCancelText(false));
+		               M_ForceLoadGameResponse, MM_YESNO, M_MessageConfirmText(false, false), M_MessageCancelText(false, false));
 		//Freeing done by the callback function of the above message
 #else
 		M_ClearMenus(true); // so ESC backs out to title
