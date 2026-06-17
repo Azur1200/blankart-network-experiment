@@ -73,13 +73,14 @@ consvar_t cv_netdemosyncquality = CVAR_INIT ("netdemo_syncquality", "1", CV_SAVE
 consvar_t cv_netdemosize = CVAR_INIT ("netdemo_size", "6", CV_SAVE, CV_Natural, NULL);
 consvar_t cv_resyncdemo = CVAR_INIT("democonsistency", "On", 0, CV_OnOff, NULL);
 
-static void ReplaySave(void)
+static INT32 ReplaySave(INT32 choice)
 {
+	(void)choice;
 	demo.savemode = DSM_WILLSAVE;
 }
 
-consvar_t cv_dummyreplaysave = CVAR_INIT ("dummyreplaysave", "", CV_HIDEN|CV_CALL|CV_NOINIT, NULL, ReplaySave);
-menuitem_t replaysave = {.text = "Enter the name of the replay", .cvar = &cv_dummyreplaysave};
+consvar_t cv_dummyreplaysave = CVAR_INIT ("dummyreplaysave", "", CV_HIDEN, NULL, NULL);
+menuitem_t replaysave = {.text = "Enter the name of the replay", .cvar = &cv_dummyreplaysave, .routine = &ReplaySave};
 
 boolean nodrawers; // for comparative timing purposes
 boolean noblit; // for comparative timing purposes
