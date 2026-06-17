@@ -79,7 +79,7 @@ static void ReplaySave(void)
 }
 
 consvar_t cv_dummyreplaysave = CVAR_INIT ("dummyreplaysave", "", CV_HIDEN|CV_CALL|CV_NOINIT, NULL, ReplaySave);
-menuitem_t replaysave = {.text = "Enter the name of the replay.", .cvar = &cv_dummyreplaysave};
+menuitem_t replaysave = {.text = "Enter the name of the replay", .cvar = &cv_dummyreplaysave};
 
 boolean nodrawers; // for comparative timing purposes
 boolean noblit; // for comparative timing purposes

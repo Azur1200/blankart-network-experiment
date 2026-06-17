@@ -797,10 +797,33 @@ skiptallydrawer:
 		{
 		case DSM_NOTSAVING:
 		{
-			char replaytext[40] = {0};
-			INT32 flags = V_6WIDTHSPACE;
-			const char *button = M_ButtonName(0, gc_lookback, "Look Backwards", false);
-			snprintf(replaytext, 40, "%s: Save Replay", button);
+			char replaytext[60] = {0};
+			INT32 flags = 0;
+			const char *item1 = gamecontrol[0][gc_lookback][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][0]) : NULL;
+			const char *item2 = gamecontrol[0][gc_lookback][1] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][1]) : NULL;
+			const char *item3 = gamecontrol[0][gc_lookback][2] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][2]) : NULL;
+			const char *item4 = gamecontrol[0][gc_lookback][3] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][3]) : NULL;
+
+			if (item1 && item2 && item3 && item4)
+			{
+				snprintf(replaytext, 60, "%s/%s/%s/%s: Save Replay", item1,item2,item3,item4);
+				flags = V_6WIDTHSPACE;
+			}
+			else if (item1 && item2 && item3)
+			{
+				snprintf(replaytext, 60, "%s/%s/%s: Save Replay", item1,item2,item3);
+				flags = V_6WIDTHSPACE;
+			}
+			else if (item1 && item2)
+			{
+				snprintf(replaytext, 60, "%s/%s: Save Replay", item1,item2);
+				flags = V_6WIDTHSPACE;
+			}
+			else
+			{
+				snprintf(replaytext, 60, "%s: Save Replay", item1 ? item1 : "Look Backwards");
+			}
+
 			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|hilicol|flags, replaytext);
 			break;
 		}
