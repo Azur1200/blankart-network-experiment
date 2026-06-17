@@ -1921,7 +1921,7 @@ static void K_drawKartItem(void)
 	}
 }
 
-void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UINT8 mode)
+void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, mapnum_t emblemmap, UINT8 mode)
 {
 	// TIME_X = BASEVIDWIDTH-124;	// 196
 	// TIME_Y = 6;					//   6
@@ -6723,7 +6723,7 @@ void K_drawKartHUD(void)
 		{
 			if (!(K_GetRaceSplitsToggle() || K_doDrawSplits()))
 			{
-				K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap, 0);
+				K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
 			}
 			else
 			{
@@ -6733,11 +6733,11 @@ void K_drawKartHUD(void)
 					if (K_doDrawSplits())
 						K_drawLapSplitTimestamp();
 					else
-						K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap, 0);
+						K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
 				}
 				else
 				{
-					K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap, 0);
+					K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
 					// mine: moved this here to avoid redundant comparisions
 					K_drawLapSplitComparison();
 				}
