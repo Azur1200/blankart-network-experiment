@@ -57,7 +57,6 @@ typedef struct
 typedef struct
 {
     SINT8 selection;
-    UINT8 delay;
 } y_voteplayer;
 
 typedef struct
@@ -841,20 +840,16 @@ void Y_VoteTicker(void)
 						break;
 				}
 
-				if (voteclient.playerinfo[i].delay)
-					voteclient.playerinfo[i].delay--;
-
 				if (Y_PlayerIDCanVote(p)
-						&& !voteclient.playerinfo[i].delay
+						&& !menucmd[i].delay
 						&& g_pickedVote == VOTE_NOT_PICKED && g_votes[p] == VOTE_NOT_PICKED)
 				{
-					if (G_PlayerInputDown(i, gc_aimforward, false, DEADZONE_Y))
+					if (menucmd[i].dpad_ud < 0)
 					{
 						voteclient.playerinfo[i].selection--;
 						pressed = true;
 					}
-
-					if (G_PlayerInputDown(i, gc_aimbackward, false, DEADZONE_Y) && pressed == false)
+					else if (menucmd[i].dpad_ud > 0)
 					{
 						voteclient.playerinfo[i].selection++;
 						pressed = true;
@@ -863,7 +858,7 @@ void Y_VoteTicker(void)
 					if (votemax > 1) // only allow side-movements for multi-row selections
 					{
 						// HORRIBLE hack, my GOD
-						if (G_PlayerInputDown(i, gc_turnright, false, DEADZONE_X) && !pressed) // move right
+						if (menucmd[i].dpad_lr > 0) // move right
 						{
 							if (voteclient.playerinfo[i].selection <= votewrap)
 								voteclient.playerinfo[i].selection += 4;
@@ -871,8 +866,7 @@ void Y_VoteTicker(void)
 								voteclient.playerinfo[i].selection -= ((votemax-1)*4);
 							pressed = true;
 						}
-
-						if (G_PlayerInputDown(i, gc_turnleft, false, DEADZONE_X) && !pressed) // move left
+						else if (menucmd[i].dpad_lr < 0) // move left
 						{
 							if (voteclient.playerinfo[i].selection > 3)
 								voteclient.playerinfo[i].selection -= 4;
@@ -887,7 +881,7 @@ void Y_VoteTicker(void)
 					if (voteclient.playerinfo[i].selection > ((votemax*3)+((votemax > 1) ? (votemax-1) : 0)) )
 						voteclient.playerinfo[i].selection = 0;
 
-					if (G_PlayerInputDown(i, gc_accelerate, false, DEADZONE_BUTTON) && pressed == false)
+					if (M_MenuButtonPressed(i, MBT_CONFIRM))
 					{
 						D_ModifyClientVote(g_localplayers[i], voteclient.playerinfo[i].selection);
 						pressed = true;
@@ -897,7 +891,7 @@ void Y_VoteTicker(void)
 				if (pressed)
 				{
 					S_StartSound(NULL, sfx_kc4a);
-					voteclient.playerinfo[i].delay = NEWTICRATE/7;
+					M_SetMenuDelay(p);
 				}
 			}
 		}
@@ -1015,7 +1009,6 @@ void Y_StartVote(void)
 	for (i = 0; i < 3; i++)
 	{
 		voteclient.playerinfo[i].selection = 0;
-		voteclient.playerinfo[i].delay = 0;
 	}
 
 	voteclient.ranim = 0;

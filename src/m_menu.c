@@ -2511,7 +2511,7 @@ void M_UpdateMenuCMD(UINT8 i, boolean bailrequired)
 		if (gamekeydown[0][KEY_ESCAPE] > 0) { menucmd[i].buttons |= MBT_CANCEL; }
 	}
 
-	if (keyboardcontrolled && i == 0) // TODO: replace this shitty Keyboard hack.....
+	if (keyboardcontrolled && i == 0 && (menustack[0] || messagebox.active))
 	{
 		switch (thisMenuKey)
 		{
