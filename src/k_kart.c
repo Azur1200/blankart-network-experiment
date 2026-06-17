@@ -10460,9 +10460,10 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 {
 	player_t* cluster_p;
 	UINT32 i, pingame;
-	SINT8 first, second, bestpid, worstloser, tinypoptarget;
+	SINT8 first, second, bestpid, bestpidcluster, worstloser, tinypoptarget;
 
 	INT16 bestpos, worstloserpos;
+	INT16 bestposcluster = INT16_MAX;
 
 	INT32 divmul;
 
@@ -10472,7 +10473,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 	worstloserpos = 0;
 
 	first = -1;
-	bestpid = worstloser = second = -1;
+	bestpidcluster = bestpid = worstloser = second = -1;
 	tinypoptarget = -1;
 
 	divmul = 1;
@@ -10496,6 +10497,14 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 				first = i;
 			else if (players[i].position == 2 && second == -1)
 				second = i;
+
+			if ((players[i].position < bestposcluster) && (players[i].position < pingame) &&
+			    (K_ClusterFilter_BaseFilter(&players[i], pingame)))
+			{
+				// This player is the best fit, per the cluster filter
+				bestposcluster = players[i].position;
+				bestpidcluster = (SINT8)i;
+			}
 
 			if ((players[i].position < bestpos) && (players[i].position < pingame) &&
 			    (K_CheckBestRankForCluster(&players[i], pingame)))
@@ -10566,6 +10575,8 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 
 	UINT32 bestfitid = clusterid;
 
+	UINT32 distancetobest = 0;
+
 	if (pingame > 9)
 	{
 		// We're not done yet! Get the best-fitting node from the global cluster database,
@@ -10578,7 +10589,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 
 			if (bestfit.nucleus.player)
 			{
-				UINT32 distancetobest = 0;
+				distancetobest = 0;
 
 				if (players[clusterid].position <= bestfit.nucleus.player->position)
 				{
@@ -10616,12 +10627,41 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 			}
 		}
 	}
-	else
+	else if (bestpidcluster >= 0)
 	{
 		// Use the same "best fit vs. center" system, but avoid clustering since the data pool is comparatively smaller
+
+		// Ignore the best-fit if we're actually *ahead* of it
+		if (players[clusterid].position > players[bestpidcluster].position)
+		{
+			bestfitid = bestpidcluster;
+
+			if (K_LegacyOddsMode())
+			{
+				distancetobest = K_GetCongaLineDistance(&players[clusterid], players[bestpidcluster].position);
+			}
+			else
+			{
+				distancetobest = K_UndoMapScaling(K_GetDTFDifference(&players[clusterid], &players[bestpidcluster]));
+			}
+
+			if (distancetobest > FARTHESTCLUSDIS)
+			{
+				// We're way too far away! Let the best-fit take over...
+				clusterid = bestpidcluster;
+
+				if (clustermode != CLSMODE_BESTFIT)
+				{
+					clustermode = CLSMODE_BESTFIT;
+					clusterjustchanged = CLUSTERCHANGEDTIME;
+				}
+
+				usedbestfit = true;
+			}
+		}
 	}
 
-	if (usedbestfit && (clustermode != CLSMODE_AVERAGES))
+	if ((!usedbestfit) && (clustermode != CLSMODE_AVERAGES))
 	{
 		clustermode = CLSMODE_AVERAGES;
 		clusterjustchanged = CLUSTERCHANGEDTIME;
