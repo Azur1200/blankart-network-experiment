@@ -2297,13 +2297,10 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 
 				G_MapEventsToControls(ev);
 
-				if (!messagebox.active)
+				if (ev->type == ev_keydown && ev->data1 > 0 && ev->data1 < NUMKEYS)
 				{
-					if (ev->type == ev_keydown && ev->data1 > 0 && ev->data1 < NUMKEYS)
-					{
-						// Record keyboard presses
-						menuKey = ev->data1;
-					}
+					// Record keyboard presses
+					menuKey = ev->data1;
 				}
 			}
 
