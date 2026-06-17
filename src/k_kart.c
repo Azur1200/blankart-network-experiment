@@ -10590,11 +10590,6 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 		{
 			distancetobest = 0;
 
-			if (players[clusterid].position <= bestfit.nucleus.player->position)
-			{
-				I_OutputMsg("cluster player is ahead of best-fit player\n");
-			}
-
 			// Ignore the best-fit if we're actually AHEAD of it
 			if (players[clusterid].position > bestfit.nucleus.player->position)
 			{
