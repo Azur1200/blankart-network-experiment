@@ -544,7 +544,6 @@ INT32 MR_LevelPlatterRandom(INT32 choice);
 #ifdef HAVE_DISCORDRPC
 INT32 MR_HandleDiscordRequests(INT32 choice);
 #endif
-INT32 MR_Options(INT32 choice);
 
 void MD_DrawLevelStats(menupanelinst_t *pi);
 void MD_DrawReplayHut(menupanelinst_t *pi);
@@ -585,6 +584,8 @@ void MP_TickReplayHutMain(menupanelinst_t *pi);
 void MP_TickReplayHutDemoList(menupanelinst_t *pi);
 void MP_TickReplayHutRankings(menupanelinst_t *pi);
 void MP_TickReplayHutDemoTitle(menupanelinst_t *pi);
+
+void MP_TickOptions(menupanelinst_t *pi);
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);

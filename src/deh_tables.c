@@ -894,7 +894,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 #ifdef HAVE_DISCORDRPC
 	{ "HANDLEDISCORDREQUESTS", &MR_HandleDiscordRequests },
 #endif
-	{"OPTIONS", &MR_Options},
 	// Start tickers
 	{"TICKSTATS", &MR_TickStats},
 #ifdef HAVE_DISCORDRPC
@@ -965,6 +964,7 @@ struct panel_func_s const PANEL_FUNCS[] = {
 	{"TICKREPLAYHUTDEMOLIST", &MP_TickReplayHutDemoList},
 	{"TICKREPLAYHUTRANKINGS", &MP_TickReplayHutRankings},
 	{"TICKREPLAYHUTDEMOTITLE", &MP_TickReplayHutDemoTitle},
+	{"TICKOPTIONS", &MP_TickOptions},
 
 	{ NULL, NULL }
 };

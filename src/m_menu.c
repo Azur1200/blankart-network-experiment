@@ -822,16 +822,14 @@ fixed_t M_GetMapThumbnail(mapnum_t mapnum, patch_t **out)
 
 // Options
 
-INT32 MR_Options(INT32 choice)
+void MP_TickOptions(menupanelinst_t *pi)
 {
-	(void)choice;
-
 	if (gamestate == GS_MENU)
 		menudefs[MN_OP_MAIN].fadestrength = menudefs[MN_MAIN].fadestrength;
 	else
 		menudefs[MN_OP_MAIN].fadestrength = menudefs[MN_MPAUSE].fadestrength;;
 
-	return true;
+	M_SetItemDisabled(pi, "CUSTOM", menudefs[MN_OP_CUSTOM].numpanels == 0);
 }
 
 #ifdef HWRENDER
