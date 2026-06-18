@@ -3822,17 +3822,6 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 			vflags &= ~(V_FLIP|V_PARAMMASK);
 			x = BASEVIDWIDTH*FRACUNIT - x - SLIDER_RANGE*FRACUNIT - 6*FRACUNIT;
 
-			if (selected)
-			{
-				V_DrawFixedCharacter(x - 16*FRACUNIT - (skullAnimCounter/5)*FRACUNIT, y,
-					'\x1C' | highlightflags | vflags, false); // left arrow
-				V_DrawFixedCharacter(x + SLIDER_RANGE*FRACUNIT + 8*FRACUNIT + (skullAnimCounter/5)*FRACUNIT, y,
-					'\x1D' | highlightflags | vflags, false); // right arrow
-			}
-
-			if (atoi(cv->defaultvalue) != cv->value)
-				M_DrawSliderCursor(x, y, vflags, cv, atoi(cv->defaultvalue));
-
 			p = W_CachePatchName("M_SLIDEL", PU_CACHE);
 			V_DrawSciencePatch(x - 8*FRACUNIT, y, vflags, p, FRACUNIT);
 
@@ -3843,7 +3832,22 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 			p = W_CachePatchName("M_SLIDER", PU_CACHE);
 			V_DrawSciencePatch(x + i*FRACUNIT, y, vflags, p, FRACUNIT);
 
+			if (atoi(cv->defaultvalue) != cv->value)
+				M_DrawSliderCursor(x, y, vflags|V_TRANSLUCENT, cv, atoi(cv->defaultvalue));
+
 			M_DrawSliderCursor(x, y, vflags, cv, cv->value);
+
+			if (selected)
+			{
+				V_DrawFixedCharacter(x - 16*FRACUNIT - (skullAnimCounter/5)*FRACUNIT, y,
+									 '\x1C' | highlightflags | vflags, false); // left arrow
+				V_DrawFixedCharacter(x + SLIDER_RANGE*FRACUNIT + 8*FRACUNIT + (skullAnimCounter/5)*FRACUNIT, y,
+									 '\x1D' | highlightflags | vflags, false); // right arrow
+
+				fixed_t range = FixedDiv(atoi(cv->defaultvalue) - cv->PossibleValue[0].value, cv->PossibleValue[1].value - cv->PossibleValue[0].value);
+				V_DrawCenteredStringAtFixed(x - 4*FRACUNIT + (SLIDER_RANGE+4)*range, y, V_30TRANS,
+									 (cv->flags & CV_FLOAT) ? va("%.2f", FIXED_TO_FLOAT(cv->value)) : va("%d", cv->value));
+			}
 		}
 		else
 		{
