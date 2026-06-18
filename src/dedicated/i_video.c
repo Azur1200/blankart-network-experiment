@@ -1,6 +1,7 @@
 #include "../doomdef.h"
 #include "../command.h"
 #include "../i_video.h"
+#include "dedimain.h"
 
 rendermode_t rendermode = render_none;
 rendermode_t chosenrendermode = render_none;
@@ -75,7 +76,8 @@ void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 
 void I_OsPolling(void)
 {
-
+	if (consolevent)
+		I_GetConsoleEvents();
 }
 
 void I_SetBorderlessWindow(void)
