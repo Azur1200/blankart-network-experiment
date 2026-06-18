@@ -9616,7 +9616,7 @@ void K_KartMagnetThinker(player_t *player)
 }
 
 #define TURNLENGTH (3000)
-#define TURNCOUNT (16)
+#define TURNCOUNT (7)
 
 #define MAGNET_TURNS (TURNLENGTH * TURNCOUNT)
 
