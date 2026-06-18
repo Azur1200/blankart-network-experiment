@@ -11,6 +11,7 @@
 
 #include "k_hud.h"
 #include "command.h"
+#include "g_mapnum.h"
 #include "info.h"
 #include "k_kart.h"
 #include "k_battle.h"
@@ -977,7 +978,11 @@ void K_ObjectTracking(trackingResult_t *result, const vector3_t *point, boolean 
 
 	// Calculate FOV adjustments.
 	fovDiff = cv_fov[cameraNum].value - baseFov;
+#ifdef HWRENDER
 	fov = ((baseFov - fovDiff) / 2) - (stplyr->fovadd / 2);
+#else
+	fov = ((baseFov - fovDiff) / 2);
+#endif
 	fovTangent = NEWTAN(FixedAngle(fov));
 
 	if (r_splitscreen == 1)
@@ -1922,7 +1927,7 @@ static void K_drawKartItem(void)
 	}
 }
 
-void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UINT8 mode)
+void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, mapnum_t emblemmap, UINT8 mode)
 {
 	// TIME_X = BASEVIDWIDTH-124;	// 196
 	// TIME_Y = 6;					//   6
@@ -2111,7 +2116,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 			break;
 
 bademblem:
-			emblem = M_GetLevelEmblems(-1);
+			emblem = M_GetLevelEmblems(NEXTMAP_INVALID);
 		}
 
 		if (!mode)
@@ -6779,7 +6784,7 @@ void K_drawKartHUD(void)
 		{
 			if (!(K_GetRaceSplitsToggle() || K_doDrawSplits()))
 			{
-				K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap, 0);
+				K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
 			}
 			else
 			{
@@ -6789,11 +6794,11 @@ void K_drawKartHUD(void)
 					if (K_doDrawSplits())
 						K_drawLapSplitTimestamp();
 					else
-						K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap, 0);
+						K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
 				}
 				else
 				{
-					K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap, 0);
+					K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
 					// mine: moved this here to avoid redundant comparisions
 					K_drawLapSplitComparison();
 				}

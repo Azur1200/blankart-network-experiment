@@ -519,10 +519,10 @@ INT32 M_UnlockableSkinNum(unlockable_t *unlock)
 // note that this goes in reverse!!
 emblem_t *M_GetLevelEmblems(mapnum_t mapnum)
 {
-	static mapnum_t map = NEXTMAP_INVALID;
+	static INT32 map = -1;
 	static INT32 i = -1;
 
-	//if (mapnum >= 0)
+	if (mapnum != NEXTMAP_INVALID)
 	{
 		map = mapnum;
 		i = numemblems;

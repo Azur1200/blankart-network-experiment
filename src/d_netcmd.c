@@ -956,6 +956,9 @@ consvar_t cv_debugmappatch = CVAR_INIT ("debugmappatch", "", 0, NULL, NULL);
 
 consvar_t cv_allowmismatchmappatch = CVAR_INIT ("allowmismatchmappatch", "No", CV_NETVAR, CV_YesNo, NULL);
 
+// NOTE: this should be in hw_main.c, but we can't put it there as it breaks dedicated build
+consvar_t cv_glallowshaders = CVAR_INIT ("gr_allowclientshaders", "On", CV_NETVAR, CV_OnOff, NULL);
+
 char timedemo_name[256];
 boolean timedemo_csv;
 char timedemo_csv_id[256];
@@ -1181,6 +1184,8 @@ void D_RegisterServerCommands(void)
 
 	// for master server connection
 	AddMServCommands();
+
+	CV_RegisterVar(&cv_glallowshaders);
 
 	// p_mobj.c
 	CV_RegisterVar(&cv_itemrespawntime);

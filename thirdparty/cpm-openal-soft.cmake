@@ -4,7 +4,6 @@ CPMAddPackage(
 	URL "https://github.com/kcat/openal-soft/archive/refs/tags/1.25.1.zip"
 	EXCLUDE_FROM_ALL ON
 	OPTIONS
-		"AL_LIBTYPE_STATIC ON"
 		"ALSOFT_BACKEND_SDL3 ON"
 		"ALSOFT_BACKEND_SDL2 OFF"
 		"ALSOFT_REQUIRE_SDL2 OFF"

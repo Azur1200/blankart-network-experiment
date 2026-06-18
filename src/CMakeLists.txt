@@ -289,7 +289,13 @@ endif()
 
 add_subdirectory(blua)
 add_subdirectory(blan)
-add_subdirectory(sdl)
+
+if (SRB2_CONFIG_DEDICATED)
+	add_subdirectory(dedicated)
+else()
+	add_subdirectory(sdl)
+endif()
+
 add_subdirectory(objects)
 add_subdirectory(core)
 add_subdirectory(acs)

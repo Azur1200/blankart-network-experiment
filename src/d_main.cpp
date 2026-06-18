@@ -1537,7 +1537,8 @@ void D_SRB2Main(void)
 #endif
 
 	// for dedicated server
-	dedicated = M_CheckParm("-dedicated") != 0;
+	if (!dedicated)
+		dedicated = M_CheckParm("-dedicated") != 0;
 	connectedtodedicated = dedicated;
 
 	if (devparm)
