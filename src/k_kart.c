@@ -10542,7 +10542,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 	if (!player)
 	{
 		// No player?!
-		return;
+		return 0;
 	}
 
 	player_t* cluster_p;
@@ -10686,26 +10686,81 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 		{
 			distancetobest = 0;
 
-			// Ignore the best-fit if we're actually AHEAD of it
-			if (players[clusterid].position > bestfit.nucleus.player->position)
+			if (clusterid != UINT32_MAX)
 			{
-				bestfitid = (UINT32)(bestfit.nucleus.player - players);
+				// Ignore the best-fit if we're actually AHEAD of it
+				if (players[clusterid].position > bestfit.nucleus.player->position)
+				{
+					bestfitid = (UINT32)(bestfit.nucleus.player - players);
+
+					if (K_LegacyOddsMode())
+					{
+						distancetobest = K_GetCongaLineDistance(
+							&players[clusterid], bestfit.nucleus.player->position);
+					}
+					else
+					{
+						distancetobest = K_UndoMapScaling(K_GetDTFDifference(
+							&players[clusterid], bestfit.nucleus.player));
+					}
+
+					if (distancetobest > FARTHESTCLUSDIS)
+					{
+						// We're way too far away! Let the best-fit take over...
+						clusterid = (UINT32)(bestfit.nucleus.player - players);
+
+						if (clustermode != CLSMODE_BESTFIT)
+						{
+							clustermode = CLSMODE_BESTFIT;
+							clusterjustchanged = CLUSTERCHANGEDTIME;
+						}
+
+						usedbestfit = true;
+					}
+				}
+			}
+			else
+			{
+				// Cluster player is nonexistent, but we exist. By default, we're the cluster player!
+				clusterid = (UINT32)(bestfit.nucleus.player - players);
+
+				if (clustermode != CLSMODE_BESTFIT)
+				{
+					clustermode = CLSMODE_BESTFIT;
+					clusterjustchanged = CLUSTERCHANGEDTIME;
+				}
+
+				usedbestfit = true;
+			}
+		}
+	}
+	else if (bestpidcluster >= 0)
+	{
+		// Use the same "best fit vs. center" system, but avoid clustering since we either
+		// have no clusters, or the data pool is comparatively smaller
+
+		if (clusterid != UINT32_MAX)
+		{
+			// Ignore the best-fit if we're actually AHEAD of it
+			if (players[clusterid].position > players[bestpidcluster].position)
+			{
+				bestfitid = bestpidcluster;
 
 				if (K_LegacyOddsMode())
 				{
 					distancetobest = K_GetCongaLineDistance(
-					    &players[clusterid], bestfit.nucleus.player->position);
+						&players[clusterid], players[bestpidcluster].position);
 				}
 				else
 				{
 					distancetobest = K_UndoMapScaling(K_GetDTFDifference(
-					    &players[clusterid], bestfit.nucleus.player));
+						&players[clusterid], &players[bestpidcluster]));
 				}
 
 				if (distancetobest > FARTHESTCLUSDIS)
 				{
 					// We're way too far away! Let the best-fit take over...
-					clusterid = (UINT32)(bestfit.nucleus.player - players);
+					clusterid = bestpidcluster;
 
 					if (clustermode != CLSMODE_BESTFIT)
 					{
@@ -10717,41 +10772,19 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 				}
 			}
 		}
-	}
-	else if (bestpidcluster >= 0)
-	{
-		// Use the same "best fit vs. center" system, but avoid clustering since we either
-		// have no clusters, or the data pool is comparatively smaller
-
-		// Ignore the best-fit if we're actually AHEAD of it
-		if (players[clusterid].position > players[bestpidcluster].position)
+		else
 		{
-			bestfitid = bestpidcluster;
+			// Cluster player is nonexistent, but we exist. By default, we're the
+			// cluster player!
+			clusterid = bestpidcluster;
 
-			if (K_LegacyOddsMode())
+			if (clustermode != CLSMODE_BESTFIT)
 			{
-				distancetobest = K_GetCongaLineDistance(
-				    &players[clusterid], players[bestpidcluster].position);
-			}
-			else
-			{
-				distancetobest = K_UndoMapScaling(K_GetDTFDifference(
-				    &players[clusterid], &players[bestpidcluster]));
+				clustermode = CLSMODE_BESTFIT;
+				clusterjustchanged = CLUSTERCHANGEDTIME;
 			}
 
-			if (distancetobest > FARTHESTCLUSDIS)
-			{
-				// We're way too far away! Let the best-fit take over...
-				clusterid = bestpidcluster;
-
-				if (clustermode != CLSMODE_BESTFIT)
-				{
-					clustermode = CLSMODE_BESTFIT;
-					clusterjustchanged = CLUSTERCHANGEDTIME;
-				}
-
-				usedbestfit = true;
-			}
+			usedbestfit = true;
 		}
 	}
 
@@ -10769,7 +10802,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 
 	player->distancefrombestfit = 0;
 
-	if (bestfitid != clusterid)
+	if ((bestfitid != clusterid) && (bestfitid != UINT32_MAX))
 	{
 		if (K_LegacyOddsMode())
 		{
@@ -10869,6 +10902,15 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 							     players[bestfitid].distancetofinish);
 			}
 		}
+	}
+
+	if (clusterid == UINT32_MAX)
+	{
+		// If we're down here, and the cluster player doesn't exist, bail immediately!
+		if (bestfitid == clusterid)
+			player->distancefrombestfit = 0;
+
+		return 0;
 	}
 
 	if (K_LegacyOddsMode())
