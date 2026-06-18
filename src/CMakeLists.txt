@@ -330,7 +330,7 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES "FreeBSD")
 	target_link_libraries(BLANKART PRIVATE execinfo)
 endif()
 
-if("${SRB2_CONFIG_USE_GME}")
+if("${SRB2_CONFIG_USE_GME}" AND NOT SRB2_CONFIG_DEDICATED)
 	target_link_libraries(BLANKART PRIVATE gme)
 	target_compile_definitions(BLANKART PRIVATE -DHAVE_GME)
 	if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}")
