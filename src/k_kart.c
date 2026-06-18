@@ -11658,6 +11658,23 @@ static void K_AdjustPlayerFriction(player_t *player)
 		K_RecalculateMovefactor(player->mo);
 	}
 
+	// smon simple lateral tyre friction
+	if (K_SMonitorSliptideCondition(player) && player->speed > 10*player->mo->scale)
+	{
+		angle_t pangle = player->mo->angle;
+		vector2_t facingdirection = {P_ReturnThrustX(NULL, pangle, FRACUNIT), P_ReturnThrustY(NULL, pangle, FRACUNIT)};
+		vector2_t movedirection = {player->mo->momx, player->mo->momy};
+		FV2_Normalize(&facingdirection);
+		FV2_Normalize(&movedirection);
+		// this makes slipping backwards also treated as moving parallel to your facing direction
+		// maybe use the difference and compare to a threshold instead if we only want to count forwards as forwards?
+		fixed_t sliprate = abs(FV2_Dot(&movedirection, &facingdirection));
+		fixed_t speedrate = CLAMP(FixedDiv(player->speed, K_GetKartSpeed(player, false, false)), FRACUNIT/2, 2*FRACUNIT);
+		player->mo->friction -= Easing_InOutQuad(sliprate, FixedMul(2500, speedrate), 0);
+
+		K_RecalculateMovefactor(player->mo);
+	}
+
 	// Wipeout slowdown, or getting flipped over
 	if ((player->speed > 0 && player->spinouttimer && player->wipeoutslow) || (player->flipovertimer))
 	{
