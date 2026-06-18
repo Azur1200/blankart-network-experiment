@@ -1977,7 +1977,8 @@ void D_SRB2Main(void)
 				I_Error("Cannot find a map remotely named '%s'\n", word);
 		}
 
-		if (!M_CheckParm("-server") && !M_CheckParm("-dedicated") && !M_CheckParm("-nograndprix"))
+		// Using a direct dedicated check here since servers can be built in dedicated only mode.
+		if (!M_CheckParm("-server") && !dedicated && !M_CheckParm("-nograndprix"))
 		{
 			G_SetGameModified(true, true);
 

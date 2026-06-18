@@ -27,7 +27,7 @@
 //
 void I_ShutdownController(UINT8 index)
 {
-
+	(void)index;
 }
 
 void I_ShutdownControllerSystem(void)
@@ -40,7 +40,7 @@ void I_ShutdownControllerSystem(void)
 //
 void I_InitController(UINT8 playernum)
 {
-
+	(void)playernum;
 }
 
 void I_InitController1(void)
@@ -98,11 +98,13 @@ void I_UpdateControllerList(void)
 //
 INT32 I_GetControllerID(void *dev)
 {
+	(void)dev;
 	return -1;
 }
 
 INT32 I_GetControllerSlotfromID(INT32 id)
 {
+	(void)id;
 	return -1;
 }
 
@@ -112,6 +114,7 @@ INT32 I_GetControllerSlotfromID(INT32 id)
 //
 INT32 I_GetControllerIDForPlayer(UINT8 pnum)
 {
+	(void)pnum;
 	return -1;
 }
 
@@ -130,6 +133,7 @@ INT32 I_NumControllers(void)
 //
 const char *I_GetControllerName(INT32 joyid)
 {
+	(void)joyid;
 	return NULL;
 }
 
@@ -139,50 +143,64 @@ const char *I_GetControllerName(INT32 joyid)
 
 boolean I_ControllerSupportsRumble(INT32 playernum)
 {
+	(void)playernum;
 	return false;
 }
 
 boolean I_ControllerSupportsIndicatorMono(INT32 playernum)
 {
+	(void)playernum;
 	return false;
 }
 
 boolean I_ControllerSupportsIndicatorColor(INT32 playernum)
 {
+	(void)playernum;
 	return false;
 }
 
 boolean I_ControllerSupportsIndicatorPlayer(INT32 playernum)
 {
+	(void)playernum;
 	return false;
 }
 
 boolean I_ControllerSupportsSensorAccelerometer(INT32 playernum)
 {
+	(void)playernum;
 	return false;
 }
 
 boolean I_ControllerSupportsSensorGyro(INT32 playernum)
 {
+	(void)playernum;
 	return false;
 }
 
 void I_ControllerRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
 {
-
+	(void)playernum;
+	(void)low_strength;
+	(void)high_strength;
+	(void)duration;
 }
 
 void I_SetControllerIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 blue)
 {
-
+	(void)playernum;
+	(void)red;
+	(void)green;
+	(void)blue;
 }
 
 void I_SetControllerIndicatorMonochrome(INT32 playernum, UINT8 brightness)
 {
-
+	(void)playernum;
+	(void)brightness;
 }
 
 void I_SetControllerPlayerNumber(INT32 playernum, INT32 number)
 {
-
+	(void)playernum;
+	(void)number;
 }
