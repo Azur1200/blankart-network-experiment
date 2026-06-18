@@ -919,6 +919,8 @@ const char *blancredits[] = {
 	"",
 	"\1Ring Racers Programming",
 	"Kart Krew Dev",
+	"Ronald \"Eidolon\" Kinard", // Interp, Virtual keyboard, So many other things
+	"\"Lat'\"", // Followers, Virutal Keyboard
 	"\"JugadorXEI\"",
 	"\"Kimberly\"",
 	"\"Chearii\"",
@@ -928,7 +930,7 @@ const char *blancredits[] = {
 	"AJ \"Tyron\" Martinez", // Horncode, PT_SAY, RRID, Virtual Keyboard
 	"\"Superstarxalien\"", // Horncode
 	"\"Freaky Mutant Man\"", // Color profiles menu
-	"\"blondedradio\"", // Screen-tracking item roulette, lifted near-directly from RadioRacers
+	"\"blondedradio\"", // Screen-tracking item roulette, Sonic Riders Race ticker
 	"\"Antoine De Grandpré\"", // Zero Deadzone fix
 	"\"Skirlez\"", // PT_SAY packet fixes
 	"Sally \"TehRealSalt\" Cochenour", // Map Buffer rewrite, Voting rewrites
