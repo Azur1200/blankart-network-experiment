@@ -160,6 +160,10 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	lonesha256.c
 )
 
+if (SRB2_CONFIG_DEDICATED AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+	target_compile_options(BLANKART PRIVATE -mconsole)
+endif()
+
 if(("${CMAKE_COMPILER_IS_GNUCC}" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
 	target_link_options(BLANKART PRIVATE "-Wl,--disable-dynamicbase")
 	if("${SRB2_CONFIG_STATIC_STDLIB}")
