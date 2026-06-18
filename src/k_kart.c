@@ -10539,6 +10539,12 @@ static boolean K_CheckBestRankForCluster(player_t *player, UINT32 pingame)
 
 static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 {
+	if (!player)
+	{
+		// No player?!
+		return;
+	}
+
 	player_t* cluster_p;
 	UINT32 i, pingame;
 	SINT8 first, second, bestpid, bestpidcluster, worstloser, tinypoptarget;
@@ -10566,6 +10572,15 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 		if (!(gametypes[gametype]->rules & GTR_BUMPERS) || players[i].bumper)
 			pingame++;
 	}
+
+	if ((!(gametypes[gametype]->rules & GTR_CIRCUIT)) || (pingame <= 1))
+	{
+		// No way for us to cluster...
+		player->distancefrombestfit = 0;
+		player->distancefromcluster = 0;
+		return 0;
+	}
+
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -11335,6 +11350,14 @@ static int sortByClusterID(const void *a, const void *b)
 
 void K_UpdateClusterPoints(void)
 {
+	if (!(gametypes[gametype]->rules & GTR_CIRCUIT))
+	{
+		// No means for us to cluster players...
+		clusterid = UINT32_MAX;
+		num_player_clusters = 0;
+		return;
+	}
+
 	INT32 i = 0;
 
 	// FIXME: CAN WE GET A **FUCKING** GENERALIZED FUNCTION ALREADY?!
@@ -11358,6 +11381,14 @@ void K_UpdateClusterPoints(void)
 			continue;
 
 		pcount++;
+	}
+
+	if (pcount <= 1)
+	{
+		// Only one player in the race
+		clusterid = UINT32_MAX;
+		num_player_clusters = 0;
+		return;
 	}
 
 	// Tick down the "just updated" timer

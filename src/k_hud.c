@@ -6570,7 +6570,8 @@ static void K_DrawClusterDebugger(void)
 			}
 		}
 
-		V_DrawThinString(8, y, vflags, va("Cluster player: %s", player_names[clusterid]));
+		if (clusterid != UINT32_MAX)
+			V_DrawThinString(8, y, vflags, va("Cluster player: %s", player_names[clusterid]));
 	}
 	else
 	{
@@ -6597,7 +6598,8 @@ static void K_DrawClusterDebugger(void)
 			}
 		}
 
-		V_DrawThinString(8, y, vflags, va("Cluster player: %s", player_names[clusterid]));
+		if (clusterid != UINT32_MAX)
+			V_DrawThinString(8, y, vflags, va("Cluster player: %s", player_names[clusterid]));
 	}
 }
 
