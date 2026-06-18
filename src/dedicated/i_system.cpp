@@ -133,6 +133,8 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #define UNIXBACKTRACE
 #endif
 
+#include "dedimain.h"
+
 const char *wadDefaultPaths[] = {
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 	"/usr/local/share/games/SRB2Kart-V2",
@@ -208,8 +210,8 @@ static char returnWadPath[256];
 
 static std::thread::id g_main_thread_id;
 
-bool consolevent = false;
-bool framebuffer = false;
+boolean consolevent = false;
+boolean framebuffer = false;
 
 UINT8 keyboard_started = false;
 static volatile sig_atomic_t g_in_exiting_signal_handler = false;
@@ -450,7 +452,7 @@ static void quit_handler(int num)
 
 #ifdef HAVE_TERMIOS
 // TERMIOS console code from Quake3: thank you!
-bool stdin_active = true;
+boolean stdin_active = true;
 
 typedef struct
 {
@@ -571,8 +573,8 @@ static void I_StartupConsole(void)
 	signal(SIGTTIN, SIG_IGN);
 	signal(SIGTTOU, SIG_IGN);
 
-	consolevent = static_cast<bool>(!M_CheckParm("-noconsole"));
-	framebuffer = static_cast<bool>(M_CheckParm("-framebuffer"));
+	consolevent = static_cast<boolean>(!M_CheckParm("-noconsole"));
+	framebuffer = static_cast<boolean>(M_CheckParm("-framebuffer"));
 
 	if (framebuffer)
 		consolevent = false;
@@ -743,7 +745,7 @@ void I_GetConsoleEvents(void)
 static void I_StartupConsole(void)
 {
 	HANDLE ci, co;
-	const INT32 ded = M_CheckParm("-dedicated");
+	const INT32 ded = true;
 	BOOL gotConsole = FALSE;
 	if (M_CheckParm("-console") || ded)
 		gotConsole = AllocConsole();
