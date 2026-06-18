@@ -43,6 +43,7 @@
 #include "m_argv.h"
 #include "i_system.h"
 #include "command.h" // cv_execversion
+#include "am_map.h"
 
 #include "m_anigif.h"
 
