@@ -652,6 +652,11 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].karttiltmomentum);
 		SYNC(players[i].nulldrifttime);
 
+		SYNC(players[i].kartmagnet.factor);
+		SYNC(players[i].kartmagnet.base_speed);
+		SYNC(players[i].kartmagnet.target_speed);
+		SYNC(players[i].kartmagnet.target_gradient);
+
 		SYNC(players[i].recoverydashcharge);
 		SYNC(players[i].recoverydash);
 
