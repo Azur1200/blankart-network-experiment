@@ -756,10 +756,9 @@ void V_SetClipRect(fixed_t x, fixed_t y, fixed_t w, fixed_t h, INT32 flags)
 	cliprect.flags = flags;
 	cliprect.enabled = true;
 
-	/*
-	V_DrawFill(cliprect.l, cliprect.t, cliprect.r - cliprect.l, cliprect.b - cliprect.t, V_NOSCALESTART);
-	CONS_Printf("[(%d, %d), (%d, %d)]\n", cliprect.l, cliprect.t, cliprect.r, cliprect.b);
-	*/
+
+	//V_DrawFill(cliprect.left, cliprect.top, cliprect.right - cliprect.left, cliprect.bottom - cliprect.top, V_NOSCALESTART);
+	//CONS_Printf("[(%d, %d), (%d, %d)]\n", cliprect.left, cliprect.top, cliprect.right, cliprect.bottom);
 }
 
 // sets up a cliprect for a splitscreen player (and actually accounts for non-green res)
@@ -2601,9 +2600,9 @@ static boolean V_CharacterValid(font_t *font, int c)
 
 // Writes a single character (draw WHITE if bit 7 set)
 //
-void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed)
+void V_DrawFixedCharacter(fixed_t x, fixed_t y, INT32 c, boolean lowercaseallowed)
 {
-	INT32 w, flags;
+	INT32 flags;
 	const UINT8 *colormap = V_GetStringColormap(c);
 
 	flags = c & ~(V_CHARCOLORMASK | V_PARAMMASK);
@@ -2615,14 +2614,7 @@ void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed)
 	if (c < 0 || c >= HU_FONTSIZE || !fontv[HU_FONT].font[c])
 		return;
 
-	w = fontv[HU_FONT].font[c]->width;
-	if (x + w > vid.width)
-		return;
-
-	if (colormap != NULL)
-		V_DrawMappedPatch(x, y, flags, fontv[HU_FONT].font[c], colormap);
-	else
-		V_DrawScaledPatch(x, y, flags, fontv[HU_FONT].font[c]);
+	V_DrawFixedPatch(x, y, FRACUNIT, flags, fontv[HU_FONT].font[c], colormap);
 }
 
 // Writes a single character for the chat (half scaled). (draw WHITE if bit 7 set)
@@ -3529,6 +3521,12 @@ void V_DrawRightAlignedString(INT32 x, INT32 y, INT32 option, const char *string
 {
 	x -= V_StringWidth(string, option);
 	V_DrawString(x, y, option, string);
+}
+
+void V_DrawRightAlignedStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
+{
+	x -= V_StringWidth(string, option)*FRACUNIT;
+	V_DrawStringAtFixed(x, y, option, string);
 }
 
 void V_DrawCenteredSmallString(INT32 x, INT32 y, INT32 option, const char *string)

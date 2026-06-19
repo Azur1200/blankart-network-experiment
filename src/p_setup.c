@@ -8682,7 +8682,7 @@ static void P_InitGametype(void)
 
 	// Start recording replay in multiplayer with a temp filename
 	//@TODO I'd like to fix dedis crashing when recording replays for the future too...
-	if (!demo.playback && multiplayer && !dedicated)
+	if (gamestate == GS_LEVEL && !demo.playback && multiplayer && !dedicated)
 	{
 		char buf[MAX_WADPATH];
 		char ver[128];
@@ -8804,6 +8804,45 @@ static void P_InitMinimapInfo(void)
 	minimapinfo.offs_y = FixedMul((minimapinfo.min_y + minimapinfo.map_h/2) << FRACBITS, minimapinfo.zoom);
 }
 
+void P_FreeLevelState(void)
+{
+	if (numsectors)
+	{
+		// Close text prompt before freeing the old level
+		F_EndTextPrompt(false, true);
+
+		ACS_InvalidateMapScope();
+
+		LUA_InvalidateLevel();
+
+		sector_t *ss;
+		for (ss = sectors; sectors+numsectors != ss; ss++)
+		{
+			Z_Free(ss->attached);
+			Z_Free(ss->attachedsolid);
+		}
+
+		// This is the simplest guard against double frees.
+		// No valid map has zero sectors. Or, come to think
+		// of it, less than two in general! ~toast 310525
+		numsectors = 0;
+	}
+
+	// Clear pointers that would be left dangling by the purge
+	R_FlushTranslationColormapCache();
+
+#ifdef HWRENDER
+	// Free GPU textures before freeing patches.
+	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
+		HWR_ClearAllTextures();
+#endif
+
+	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
+	Patch_FreeTag(PU_PATCH_ROTATED);
+	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
+
+}
+
 /** Loads a level from a lump or external wad.
   *
   * \param fromnetsave If true, skip some stuff because we're loading a netgame snapshot.
@@ -8817,7 +8856,6 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// 99% of the things already did, so.
 	// Map header should always be in place at this point
 	INT32 i, ranspecialwipe = 0;
-	sector_t *ss;
 	virtlump_t *encoreLump = NULL;
 	lumpnum_t oldEncore = LUMPERROR;
 
@@ -8926,7 +8964,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 			//V_ReloadPalette(); // Set the level palette
 			V_SetPaletteLump(GetPalette()); // the above does not *set* the screen palette
 
-		if (!(reloadinggamestate || titlemapinaction))
+		if (!(reloadinggamestate || gamestate != GS_LEVEL))
 		{
 			if (ranspecialwipe == 2)
 			{
@@ -8971,39 +9009,8 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 				F_RunWipe(wipedefs[wipe], false);
 		}
 	}
-	/*if (!titlemapinaction)
-		wipegamestate = GS_LEVEL;*/
 
-	// Close text prompt before freeing the old level
-	F_EndTextPrompt(false, true);
-
-	ACS_InvalidateMapScope();
-
-	LUA_InvalidateLevel();
-
-	for (ss = sectors; sectors+numsectors != ss; ss++)
-	{
-		Z_Free(ss->attached);
-		Z_Free(ss->attachedsolid);
-	}
-
-	// Clear pointers that would be left dangling by the purge
-	R_FlushTranslationColormapCache();
-
-#ifdef HWRENDER
-	// Free GPU textures before freeing patches.
-	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
-		HWR_ClearAllTextures();
-
-	// Delete light table textures
-	HWR_ClearLightTables();
-#endif
-
-	G_FreeGhosts(); // ghosts are allocated with PU_LEVEL
-	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
-	Patch_FreeTag(PU_PATCH_ROTATED);
-	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
-
+	P_FreeLevelState();
 	R_InitializeLevelInterpolators();
 
 	P_InitThinkers();
@@ -9202,7 +9209,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	P_MapEnd(); // g_tm.thing is no longer needed from this point onwards
 
 	// Took me 3 hours to figure out why my progression kept on getting overwritten with the titlemap...
-	if (!titlemapinaction)
+	if (gamestate == GS_LEVEL)
 	{
 		if (!lastmaploaded) // Start a new game?
 		{

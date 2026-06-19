@@ -5927,12 +5927,12 @@ static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum)
 			if (ncs == FS_NOTFOUND)
 			{
 				CONS_Printf(M_GetText("The server tried to add %s,\nbut you don't have this file.\nYou need to find it in order\nto play on this server.\n"), filename);
-				M_StartMessage(va("The server added a file\n(%s)\nthat you do not have.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+				M_StartMessage2("Game Leave", va("The server added a file\n(%s)\nthat you do not have.\n",filename), NULL, MM_NOTHING, "Press any key", NULL);
 			}
 			else
 			{
 				CONS_Printf(M_GetText("Unknown error finding soc file (%s) the server added.\n"), filename);
-				M_StartMessage(va("Unknown error trying to load a file\nthat the server added\n(%s).\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+				M_StartMessage2("Game Leave", va("Unknown error trying to load a file\nthat the server added\n(%s).\n",filename), NULL, MM_NOTHING, "Press any key", NULL);
 			}
 			return;
 		}
@@ -6219,22 +6219,22 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 		if (ncs == FS_FOUND)
 		{
 			CONS_Printf(M_GetText("The server tried to add %s,\nbut you have too many files added.\nRestart the game to clear loaded files\nand play on this server."), filename);
-			M_StartMessage(va("The server added a file \n(%s)\nbut you have too many files added.\nRestart the game to clear loaded files.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+			M_StartMessage2("Game Leave", va("The server added a file \n(%s)\nbut you have too many files added.\nRestart the game to clear loaded files.\n",filename), NULL, MM_NOTHING, "Press any key", NULL);
 		}
 		else if (ncs == FS_NOTFOUND)
 		{
 			CONS_Printf(M_GetText("The server tried to add %s,\nbut you don't have this file.\nYou need to find it in order\nto play on this server."), filename);
-			M_StartMessage(va("The server added a file \n(%s)\nthat you do not have.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+			M_StartMessage2("Game Leave", va("The server added a file\n(%s)\nthat you do not have.\n",filename), NULL, MM_NOTHING, "Press any key", NULL);
 		}
 		else if (ncs == FS_BADHASH)
 		{
 			CONS_Printf(M_GetText("Checksum mismatch while loading %s.\nMake sure you have the copy of\nthis file that the server has.\n"), filename);
-			M_StartMessage(va("Checksum mismatch while loading \n%s.\nThe server seems to have a\ndifferent version of this file.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+			M_StartMessage2("Game Leave", va("Checksum mismatch while loading \n%s.\nThe server seems to have a\ndifferent version of this file.\n",filename), NULL, MM_NOTHING, "Press any key", NULL);
 		}
 		else
 		{
 			CONS_Printf(M_GetText("Unknown error finding wad file (%s) the server added.\n"), filename);
-			M_StartMessage(va("Unknown error trying to load a file\nthat the server added \n(%s).\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+			M_StartMessage2("Game Leave", va("Unknown error trying to load a file\nthat the server added\n(%s).\n",filename), NULL, MM_NOTHING, "Press any key", NULL);
 		}
 		return;
 	}
@@ -7834,7 +7834,18 @@ void Command_ExitGame_f(void)
 		closefilemenu(true);
 
 	if (!modeattacking)
-		D_StartTitle();
+	{
+		if (restoremenustack[0])
+		{
+			M_RestoreMenuStack(false);
+		}
+		else
+		{
+			M_ClearMenusEx(false, true);
+			D_ClearState();
+			M_StartControlPanel();
+		}
+	}
 }
 
 void Command_Retry_f(void)

@@ -276,7 +276,8 @@ void V_DrawPromptBack(INT32 boxheight, INT32 color);
 INT32 V_DanceYOffset(INT32 counter);
 
 // draw a single character
-void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed);
+#define V_DrawCharacter(x, y, c, l) V_DrawFixedCharacter((x)*FRACUNIT, (y)*FRACUNIT, c, l)
+void V_DrawFixedCharacter(fixed_t x, fixed_t y, INT32 c, boolean lowercaseallowed);
 // draw a single character, but for the chat
 void V_DrawChatCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed, UINT8 *colormap);
 
@@ -331,6 +332,7 @@ char * V_ScaledWordWrap(
 	V__DrawOneScaleString (x,y,sc,option,KART_FONT,string)
 void V_DrawCenteredString(INT32 x, INT32 y, INT32 option, const char *string);
 void V_DrawRightAlignedString(INT32 x, INT32 y, INT32 option, const char *string);
+void V_DrawRightAlignedStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
 
 // draw a string using the hu_font, 0.5x scale
 #define V_DrawSmallString( x,y,option,string ) \

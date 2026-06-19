@@ -99,7 +99,7 @@ void M_ClearSecrets(void)
 // ----------------------
 // Condition set checking
 // ----------------------
-UINT8 M_CheckCondition(condition_t *cn)
+UINT8 M_CheckCondition(const condition_t *cn)
 {
 	switch (cn->type)
 	{
