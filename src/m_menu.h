@@ -62,9 +62,9 @@ typedef struct menutyping_s
 
 extern menutyping_t menutyping;
 
-#define MENUDELAYTIME 9
+#define MENUDELAYTIME 10
 #define MENUMINDELAY 3
-#define MENUDMAXDELAYCOUNT 2
+#define MENUDMAXDELAYCOUNT 3
 
 typedef enum
 {
