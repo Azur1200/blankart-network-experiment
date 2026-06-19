@@ -78,6 +78,9 @@ typedef enum
 
 typedef struct menucmd_s
 {
+	SINT8 ev_dpad_ud; // Handles up and down for the actual dpad set by events
+	SINT8 ev_dpad_lr; // Handles left and right for the actual dpad set by events
+
 	// Current frame's data
 	SINT8 dpad_ud; // up / down dpad
 	SINT8 dpad_lr; // left / right

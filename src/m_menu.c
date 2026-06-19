@@ -2554,6 +2554,16 @@ void M_UpdateMenuCMD(UINT8 i, boolean bailrequired)
 	}
 	else
 	{
+		// DPAD
+		if (menustack[0])
+		{
+			if (menucmd[i].ev_dpad_ud < 0) { menucmd[i].dpad_ud--; }
+			if (menucmd[i].ev_dpad_ud > 0) { menucmd[i].dpad_ud++; }
+
+			if (menucmd[i].ev_dpad_lr < 0) { menucmd[i].dpad_lr--; }
+			if (menucmd[i].ev_dpad_lr > 0) { menucmd[i].dpad_lr++; }
+		}
+
 		if (G_PlayerInputDown(i, gc_aimforward, false, DEADZONE_Y)) { menucmd[i].dpad_ud--; }
 		if (G_PlayerInputDown(i, gc_aimbackward, false, DEADZONE_Y)) { menucmd[i].dpad_ud++; }
 
@@ -2574,6 +2584,9 @@ void M_UpdateMenuCMD(UINT8 i, boolean bailrequired)
 		menucmd[i].delay = min(menucmd[i].delay, MENUMINDELAY);
 		menucmd[i].delayCount = 0;
 	}
+
+	menucmd[i].ev_dpad_ud = 0;
+	menucmd[i].ev_dpad_lr = 0;
 }
 
 boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt)
