@@ -187,6 +187,12 @@ typedef enum
 	// and routine is void routine(event_t *) (ex: set control)
 } menumessagetype_t;
 
+typedef union
+{
+	void (*routine)(INT32); // MM_YESNO
+	void (*handler)(event_t *); // MM_EVENTHANDLER
+} messagebox_callback;
+
 typedef struct
 {
 	boolean active;
@@ -194,11 +200,7 @@ typedef struct
 	char *text;
 	char *confirmtext;
 	char *declinetext;
-	union
-	{
-		void (*routine)(INT32 choice); // MM_YESNO
-		void (*handler)(event_t *ev);  // MM_EVENTHANDLER
-	};
+	messagebox_callback callback;
 	menumessagetype_t messagetype;
 	INT16 x, y;
 	INT16 numlines;
@@ -215,7 +217,9 @@ typedef enum
 extern messagebox_t messagebox;
 extern messagebox_t messageboxqueue[NUMMENULEVELS];
 
-#define ROUTINECAST(func) (void (*)(void))func
+#define MB_ROUTINE(func) (messagebox_callback){.routine = func}
+#define MB_HANDLER(func) (messagebox_callback){.handler = func}
+#define MB_NONE (messagebox_callback){0}
 
 const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback, boolean forcekeyboard);
 char *M_MessageConfirmText(boolean gamequit, boolean forcekeyboard);
@@ -224,7 +228,7 @@ char *M_MessageCancelText(boolean gamequit, boolean forcekeyboard);
 void M_MessageboxClose(boolean clearstack);
 
 //#define M_StartMessage(string, routine, itemtype) M_StartMessage2(NULL, string, ROUTINECAST(routine), itemtype, NULL, NULL)
-void M_StartMessage2(const char *headerstr, const char *str, void (*routine)(void),
+void M_StartMessage2(const char *headerstr, const char *str, messagebox_callback callback,
 					 menumessagetype_t itemtype, const char *confirmstr, const char *declinestr);
 
 typedef enum

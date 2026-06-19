@@ -3251,7 +3251,7 @@ static void G_LoadDemoExtraFiles(demoheader_t *header)
 			{
 				CONS_Alert(CONS_WARNING, M_GetText("Too many files loaded to add anymore for demo playback\n"));
 				if (!CON_Ready())
-					M_StartMessage2("Replay", M_GetText("There are too many files loaded to add this demo's addons.\n\nDemo playback may desync.\n"), NULL, MM_NOTHING, "Press any key", NULL);
+					M_StartMessage2("Replay", M_GetText("There are too many files loaded to add this demo's addons.\n\nDemo playback may desync.\n"), MB_NONE, MM_NOTHING, "Press any key", NULL);
 			}
 			else if (ncs != FS_FOUND)
 			{
@@ -3263,7 +3263,7 @@ static void G_LoadDemoExtraFiles(demoheader_t *header)
 					CONS_Alert(CONS_NOTICE, M_GetText("Unknown error finding file %s\n"), file->filename);
 
 				if (!CON_Ready())
-					M_StartMessage2("Replay", M_GetText("There were errors trying to add this demo's addons. Check the console for more information.\n\nDemo playback may desync.\n"), NULL, MM_NOTHING, "Press any key", NULL);
+					M_StartMessage2("Replay", M_GetText("There were errors trying to add this demo's addons. Check the console for more information.\n\nDemo playback may desync.\n"), MB_NONE, MM_NOTHING, "Press any key", NULL);
 			}
 			else
 			{
@@ -3600,7 +3600,7 @@ static void PrintDemoError(const char (*msg)[1024])
 	CONS_Alert(CONS_ERROR, "%s", *msg);
 	demo.playback = false;
 	if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
-		M_StartMessage2("Replay", *msg, NULL, MM_NOTHING, "Press any key", NULL);
+		M_StartMessage2("Replay", *msg, MB_NONE, MM_NOTHING, "Press any key", NULL);
 }
 
 static void FreeDemoBuffer(savebuffer_t **freebuffer)
@@ -3858,7 +3858,7 @@ void G_DoPlayDemo(char *defdemoname)
 		{
 			const char *faulted = G_CheckPresetCvars(pv);
 			if (faulted && !G_CompatLevel(0x000C))
-				M_StartMessage2("Replay", va("Demo cvar %s doesn't match the preset! This may be a mistake, or the demo is cheated!\n", faulted), NULL, MM_NOTHING, "Press any key", NULL);
+				M_StartMessage2("Replay", va("Demo cvar %s doesn't match the preset! This may be a mistake, or the demo is cheated!\n", faulted), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		}
 		else
 			CONS_Alert(CONS_WARNING, "Couldn't find record preset '%s' version %d\n", header.rapreset, header.rapresetversion);
