@@ -6081,6 +6081,8 @@ void MP_PrepReplayList(menupanelinst_t *pi)
 		}
 	}
 
+	dir_on[menudepthleft] = 0;
+
 	M_RawSetItemOn(pi, dir_on[menudepthleft]);
 }
 
