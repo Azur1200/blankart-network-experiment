@@ -7526,9 +7526,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	K_AirDrop(player, cmd);
 
-	if (player->superringdrag && !onground && !player->pogospring)
+	if (player->superringdrag && !onground)
 		player->superringdrag = K_HandleAirDrag(player, onground, player->superringdrag, cv_kartairsuperring_reductionrate.value);
-	else if ((onground || player->pogospring) && player->superringdrag && !player->superringleeway)
+	else if (onground && player->superringdrag && !player->superringleeway)
 		player->superringdrag = 0;
 
 	if (player->superringleeway)

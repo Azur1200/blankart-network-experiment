@@ -3326,17 +3326,23 @@ void K_UseItem_SuperRing(player_t *player, boolean itemjustdown, boolean ongroun
 	{
 		boolean offroad = (player->offroad && K_ApplyOffroad(player));
 		player->superringdrag = max(K_GetKartSpeed(player, true, false), player->speed);
+		INT32 thrustspeed = 12*player->mo->scale;
 
 		if (onground && !offroad)
 		{
-			P_Thrust(player->mo, player->mo->angle, 12*player->mo->scale);
-			P_Thrust(player->mo, K_MomentumAngle(player->mo), 12*player->mo->scale);
+			P_Thrust(player->mo, player->mo->angle, thrustspeed);
+			P_Thrust(player->mo, K_MomentumAngle(player->mo), thrustspeed);
 		}
 		else
 		{
+			thrustspeed = 6*player->mo->scale;
+
+			if (player->pogospring > 0)
+				thrustspeed /= 4;
+
 			if (offroad)
-				P_Thrust(player->mo, player->mo->angle, 6*player->mo->scale);
-			P_Thrust(player->mo, K_MomentumAngle(player->mo), 6*player->mo->scale);
+				P_Thrust(player->mo, player->mo->angle, thrustspeed);
+			P_Thrust(player->mo, K_MomentumAngle(player->mo), thrustspeed);
 		}
 
 		// LOUDER!
@@ -3349,7 +3355,8 @@ void K_UseItem_SuperRing(player_t *player, boolean itemjustdown, boolean ongroun
 		UINT8 modifier = 32 / (player->kartspeed + player->kartweight + 2);
 
 		player->ringboost += (TICRATE/6) + modifier;
-		player->outruntime += (TICRATE/6) + modifier;
+		if (onground)
+			player->outruntime += (TICRATE/6) + modifier;
 		player->superringleeway = 5;
 
 		// make friction not instantly kill the new momentum
