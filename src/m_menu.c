@@ -3112,14 +3112,6 @@ static void M_HandleMenuInput(void)
 	vmove = menucmd[pid].dpad_ud;
 	hmove = menucmd[pid].dpad_lr;
 
-	switch (thisMenuKey)
-	{
-		case KEY_PGUP:
-		case KEY_PGDN:
-			vmove = thisMenuKey == KEY_PGUP ? -3 : 3;
-			break;
-	}
-
 	// Flip left/right with up/down for the playback menu, since it's a horizontal icon row.
 	if (curpd->horizontal)
 	{
@@ -4844,17 +4836,6 @@ INT32 MR_HandleLevelPlatter(INT32 choice)
 		M_SetMenuDelay(0);
 		return true;
 	}
-	else
-	{
-		switch (choice)
-		{
-			case KEY_PGUP:
-			case KEY_PGDN:
-				vmove = choice == KEY_PGUP ? -3 : 3;
-				M_SetMenuDelay(0);
-				break;
-		}
-	}
 
 	if (levelselect.numrows <= 1)
 		vmove = 0;
@@ -6012,27 +5993,6 @@ INT32 MR_HandleAddons(INT32 choice)
 	{
 		switch (choice)
 		{
-			case KEY_PGDN:
-			{
-				UINT8 i;
-				for (i = numaddonsshown; i && (dir_on[menudepthleft] < sizedirmenu-1); i--)
-					dir_on[menudepthleft]++;
-
-				S_StartSound(NULL, sfx_menu1);
-				M_SetMenuDelay(0);
-			}
-			break;
-
-			case KEY_PGUP:
-			{
-				UINT8 i;
-				for (i = numaddonsshown; i && (dir_on[menudepthleft]); i--)
-					dir_on[menudepthleft]--;
-				S_StartSound(NULL, sfx_menu1);
-				M_SetMenuDelay(0);
-			}
-			break;
-
 			default:
 				return false;
 		}
@@ -7513,31 +7473,6 @@ INT32 MR_HandleMusicTest(INT32 choice)
 	{
 		switch (choice)
 		{
-			case KEY_PGDN:
-				if (st_sel < numsoundtestdefs-1)
-				{
-					st_sel += 3;
-					if (st_sel >= numsoundtestdefs-1)
-						st_sel = numsoundtestdefs-1;
-					S_StartSound(NULL, sfx_menu1);
-				}
-				st_namescroll = 0;
-				st_namescrollstate = 0;
-				M_SetMenuDelay(0);
-				break;
-			case KEY_PGUP:
-				if (st_sel)
-				{
-					st_sel -= 3;
-					if (st_sel < 0)
-						st_sel = 0;
-					S_StartSound(NULL, sfx_menu1);
-				}
-				st_namescroll = 0;
-				st_namescrollstate = 0;
-				M_SetMenuDelay(0);
-				break;
-
 			default:
 				return false;
 		}
