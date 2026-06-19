@@ -2912,7 +2912,7 @@ void M_MenuTypingInput(INT32 key)
 		else if (M_MenuButtonPressed(pid, MBT_HOME))
 		{
 			M_CloseVirtualKeyboard();
-			CV_Set(item->cvar, menuinput.buffer);
+			CV_Set(item->cvar, menutyping.textinput->buffer);
 			S_StartSound(NULL, M_MenuTypingSounds(KEY_ENTER));
 			return;
 		}
