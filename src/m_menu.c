@@ -6153,24 +6153,28 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 	menuitem_t *item = &pi->items[pi->itemon];
 	panelfunc_f *initializer = M_GetDefFromInst(pi)->initializer;
 
-	if (menucmd[0].dpad_ud < 0)
-	{
-		if (dir_on[menudepthleft])
-		{
-			dir_on[menudepthleft]--;
-			return false;
-		}
-	}
-	else if (menucmd[0].dpad_ud > 0)
+	if (menucmd[0].dpad_ud > 0)
 	{
 		if (dir_on[menudepthleft] < sizedirmenu-1)
 		{
 			dir_on[menudepthleft]++;
+			M_SetMenuDelay(0);
+			return false;
+		}
+	}
+	else if (menucmd[0].dpad_ud < 0)
+	{
+		if (dir_on[menudepthleft])
+		{
+			dir_on[menudepthleft]--;
+			M_SetMenuDelay(0);
 			return false;
 		}
 	}
 	else if (M_MenuButtonPressed(0, MBT_CONFIRM))
 	{
+		M_SetMenuDelay(0);
+
 		switch (item->argument)
 		{
 			case EXT_FOLDER:
@@ -6195,7 +6199,7 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 					else
 					{
 						S_StartSound(NULL, sfx_menu1);
-						dir_on[menudepthleft] = 1;
+						dir_on[menudepthleft] = 0;
 						initializer(pi);
 					}
 				}
@@ -6403,13 +6407,14 @@ void MP_TickReplayHutDemoList(menupanelinst_t *pi)
 	size_t i;
 	pi->scrollheight = (vid.scaledheight - 90)*FRACUNIT;
 
-	for (i = 0; i < sizedirmenu; i++)
+	for (i = 0; i < 50; i++)
 	{
-		if (demolist[i].type == MD_NOTLOADED)
+		size_t demoi = pi->itemon + (i/2 * (i & 1 ? -1 : 1));
+		if (demoi < sizedirmenu && demolist[demoi].type == MD_NOTLOADED)
 		{
-			G_LoadDemoInfo(&demolist[i]);
-			M_SetItemTextRaw(&pi->items[i], demolist[i].title);
-			pi->items[i].status &= ~IT_HIDDEN;
+			G_LoadDemoInfo(&demolist[demoi]);
+			M_SetItemTextRaw(&pi->items[demoi], demolist[demoi].title);
+			pi->items[demoi].status &= ~IT_HIDDEN;
 			break;
 		}
 	}
