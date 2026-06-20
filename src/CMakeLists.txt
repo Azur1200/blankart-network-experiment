@@ -160,6 +160,10 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	lonesha256.c
 )
 
+if (SRB2_CONFIG_DEDICATED)
+	target_compile_definitions(BLANKART PRIVATE -DDEDICATED_BUILD)
+endif()
+
 if (SRB2_CONFIG_DEDICATED AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
 	target_compile_options(BLANKART PRIVATE -mconsole)
 endif()
@@ -330,7 +334,7 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES "FreeBSD")
 	target_link_libraries(BLANKART PRIVATE execinfo)
 endif()
 
-if("${SRB2_CONFIG_USE_GME}")
+if("${SRB2_CONFIG_USE_GME}" AND NOT SRB2_CONFIG_DEDICATED)
 	target_link_libraries(BLANKART PRIVATE gme)
 	target_compile_definitions(BLANKART PRIVATE -DHAVE_GME)
 	if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}")

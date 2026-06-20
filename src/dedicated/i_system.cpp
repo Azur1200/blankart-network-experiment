@@ -281,74 +281,6 @@ static void write_backtrace(INT32 signal)
 #undef CRASHLOG_STDERR_WRITE
 #endif // UNIXBACKTRACE
 
-static void I_ShowErrorMessageBox(const char *messagefordevelopers, boolean dumpmade)
-{
-	static char finalmessage[2048];
-	size_t firstimpressionsline = 3; // "BlanKart" has encountered...
-
-	if (M_CheckParm("-dedicated"))
-		return;
-
-	snprintf(
-		finalmessage,
-		sizeof(finalmessage),
-			"\"BlanKart\" has encountered an unrecoverable error and needs to close.\n"
-			"The %slog file is located at (%s).\n"
-			"\n"
-			"\n"
-			"%s",
-		dumpmade ?
-#if defined (UNIXBACKTRACE)
-			"crash-log.txt "
-#elif defined (_WIN32)
-			".rpt crash dump "
-#endif
-			: "",
-		logfilename,
-		messagefordevelopers);
-
-	// Rudementary word wrapping.
-	// Simple and effective. Does not handle nonuniform letter sizes, etc. but who cares.
-	{
-		size_t max = 0, maxatstart = 0, start = 0, width = 0, i;
-
-		for (i = 0; finalmessage[i]; i++)
-		{
-			if (finalmessage[i] == ' ')
-			{
-				start = i;
-				max += 4;
-				maxatstart = max;
-			}
-			else if (finalmessage[i] == '\n')
-			{
-				if (firstimpressionsline > 0)
-				{
-					firstimpressionsline--;
-					if (firstimpressionsline == 0)
-					{
-						width = max;
-					}
-				}
-				start = 0;
-				max = 0;
-				maxatstart = 0;
-				continue;
-			}
-			else
-				max += 8;
-
-			// Start trying to wrap if presumed length exceeds the space we want.
-			if (width > 0 && max >= width && start > 0)
-			{
-				finalmessage[start] = '\n';
-				max -= maxatstart;
-				start = 0;
-			}
-		}
-	}
-}
-
 static void I_ReportSignal(int num, int coredumped)
 {
 	//static char msg[] = "oh no! back to reality!\r\n";
@@ -396,16 +328,6 @@ static void I_ReportSignal(int num, int coredumped)
 	}
 
 	I_OutputMsg("\nProcess killed by signal: %s\n\n", sigmsg);
-
-	I_ShowErrorMessageBox(sigmsg,
-#if defined (UNIXBACKTRACE)
-		true
-#elif defined (_WIN32)
-		!M_CheckParm("-noexchndl")
-#else
-		false
-#endif
-	);
 }
 
 boolean I_In_Exiting_Signal_Handler(void)
@@ -1547,8 +1469,6 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 
 	I_ShutdownMusic();
 	I_ShutdownGraphics();
-
-	I_ShowErrorMessageBox(buffer, false);
 
 	// We wait until now to do this so the funny sound can be heard
 	I_ShutdownSound();

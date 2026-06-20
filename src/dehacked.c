@@ -403,6 +403,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 	char textline[MAXLINELEN];
 	char *word;
 	char *word2;
+	char *word3;
 	INT32 i;
 
 	deh_num_warning = 0;
@@ -462,6 +463,13 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 			}
 			else
 				i = 0;
+
+			word3 = strtok(NULL, " : ");
+			if (word3) {
+				strupr(word3);
+				if (word3[strlen(word3) - 1] == '\n')
+					word3[strlen(word3) - 1] = '\0';
+			}
 
 			if (fastcmp(word, "EMBLEM"))
 			{
@@ -685,6 +693,32 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 						ignorelines(f);
 					}
 				}
+				else if (fastcmp(word, "MENUPANEL"))
+				{
+					if (dedicated)
+					{
+						ignoremenulines(f);
+						continue; // dedis don't need menus, silly!
+					}
+
+					menupaneldef_t *pd = DEH_FindMenuPanel(word2);
+					if (pd == NULL)
+						pd = M_AllocateMenuPanelDef(word2);
+					readmenupanel(f, pd);
+				}
+				else if (fastcmp(word, "MENUITEMSTYLE"))
+				{
+					if (dedicated)
+					{
+						ignoremenulines(f);
+						continue; // dedis don't need menus, silly!
+					}
+
+					menuitemstyle_t *style = DEH_FindMenuItemStyle(word2);
+					if (style == NULL)
+						style = M_AllocateMenuItemStyle(word2, word3 != NULL ? DEH_FindMenuItemStyle(word3) : NULL);
+					readmenuitemstyle(f, style);
+				}
 				else if (fastcmp(word, "UNLOCKABLE"))
 				{
 					if (!mainfile && !gamedataadded)
@@ -881,7 +915,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 	if (gamedataadded)
 		G_LoadGameData();
 
-	if (gamestate == GS_TITLESCREEN)
+	if (gamestate == GS_MENU || gamestate == GS_TITLESCREEN)
 	{
 		if (introchanged)
 		{
@@ -893,7 +927,8 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 		{
 			M_ClearMenus(true);
 			I_UpdateMouseGrab();
-			COM_BufAddText("exitgame"); // Command_ExitGame_f() but delayed
+			//COM_BufAddText("exitgame"); // Command_ExitGame_f() but delayed
+			D_StartTitle();
 		}
 	}
 
