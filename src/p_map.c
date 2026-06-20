@@ -3793,7 +3793,7 @@ void P_SlideMove(mobj_t *mo, TryMoveResult_t *result)
 	if (bestslideline == NULL)
 		return;
 
-	if (bestslideline && mo->player && bestslideline->sidenum[1] != 0xffff)
+	if (bestslideline && mo->player && bestslideline->sidenum[1] != NO_INDEX)
 	{
 		sector_t *sec = P_PointOnLineSide(mo->x, mo->y, bestslideline) ? bestslideline->frontsector : bestslideline->backsector;
 		P_CheckLavaWall(mo, sec);

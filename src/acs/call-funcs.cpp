@@ -1099,7 +1099,7 @@ bool CallFunc_SetLineTexture(ACSVM::Thread *thread, const ACSVM::Word *argV, ACS
 		line_t *line = &lines[lineId];
 		side_t *side = NULL;
 
-		if (line->sidenum[sideId] != 0xffff)
+		if (line->sidenum[sideId] != NO_INDEX)
 		{
 			side = &sides[line->sidenum[sideId]];
 		}
@@ -2915,7 +2915,7 @@ bool CallFunc_GetSideProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, AC
 		}
 	}
 
-	if (line != NULL && line->sidenum[sideID] != 0xffff)
+	if (line != NULL && line->sidenum[sideID] != NO_INDEX)
 	{
 		side = &sides[line->sidenum[sideID]];
 	}
@@ -3024,7 +3024,7 @@ bool CallFunc_SetSideProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, AC
 		}
 	}
 
-	if (line != NULL && line->sidenum[sideID] != 0xffff)
+	if (line != NULL && line->sidenum[sideID] != NO_INDEX)
 	{
 		side = &sides[line->sidenum[sideID]];
 	}
@@ -3114,7 +3114,7 @@ bool CallFunc_SetSideProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, AC
 		{
 			sideID = SIDE_BACK;
 
-			if (line->sidenum[sideID] != 0xffff)
+			if (line->sidenum[sideID] != NO_INDEX)
 			{
 				side = &sides[line->sidenum[sideID]];
 				continue;
@@ -3135,7 +3135,7 @@ bool CallFunc_SetSideProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, AC
 			line = NULL;
 		}
 
-		if (line != NULL && line->sidenum[sideID] != 0xffff)
+		if (line != NULL && line->sidenum[sideID] != NO_INDEX)
 		{
 			side = &sides[line->sidenum[sideID]];
 		}
@@ -4098,7 +4098,7 @@ bool CallFunc_GetSideUserProperty(ACSVM::Thread *thread, const ACSVM::Word *argV
 		sideID = info->side;
 	}
 
-	if (line != NULL && line->sidenum[sideID] != 0xffff)
+	if (line != NULL && line->sidenum[sideID] != NO_INDEX)
 	{
 		side = &sides[line->sidenum[sideID]];
 	}
