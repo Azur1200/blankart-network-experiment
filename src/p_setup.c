@@ -4450,6 +4450,7 @@ static void P_LoadMapBSP(const virtres_t *virt)
 	}
 }
 
+#if 0
 //
 // P_VerifyBlockMap
 //
@@ -4595,6 +4596,7 @@ static boolean P_LoadBlockMap(UINT8 *data, size_t count)
 
 	return true;
 }
+#endif
 
 static boolean LineInBlock(fixed_t cx1, fixed_t cy1, fixed_t cx2, fixed_t cy2, fixed_t bx1, fixed_t by1)
 {
@@ -4882,7 +4884,9 @@ static void P_LoadReject(UINT8 *data, size_t rejectsize)
 
 static void P_LoadMapLUT(const virtres_t *virt)
 {
+#if 0
 	virtlump_t* virtblockmap = vres_Find(virt, "BLOCKMAP");
+#endif
 	virtlump_t* virtreject   = vres_Find(virt, "REJECT");
 
 	// Lookup tables
@@ -4895,7 +4899,9 @@ static void P_LoadMapLUT(const virtres_t *virt)
 		rejectmatrix = NULL;
 	}
 
+#if 0
 	if (!(virtblockmap && P_LoadBlockMap(virtblockmap->data, virtblockmap->size)))
+#endif
 		P_CreateBlockMap();
 }
 
