@@ -8376,6 +8376,9 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	antibumptime = 0;
 	playerbumpactive = PBUMP_STANDARD;
 
+	clusterjustchanged = 0;
+	clustermode = CLSMODE_AVERAGES;
+
 	if (cv_kartrings.value)
 		ringsactive = true;
 

@@ -48,6 +48,8 @@
 #include "k_bot.h" // K_DrawBotDebugger
 #include "k_waypoint.h"
 
+#include "k_cluster.hpp"
+
 #include "radio_finish.h"
 
 #define NUMPOSNUMS 10
@@ -4591,11 +4593,24 @@ static void K_drawKartMinimapRings(mobj_t *mobj, INT32 hudx, INT32 hudy, INT32 f
 static void K_drawKartMinimapCluster(INT32 hudx, INT32 hudy, INT32 flags)
 {
 	UINT8 pal = 180; // Strong pink color.
+	UINT8 pal2 = 0x95; // Miscellaneous clusters get a blue color (FIXME: rainbow-color by ID?)
 	UINT8 size = 6;
+	UINT8 size2 = 3;
 
 	fixed_t clusterx, clustery;
 
 	clusterx = clustery = 0;
+
+	if (num_player_clusters)
+	{
+		// More than just the main cluster is in this race!
+
+		INT32 i = 0;
+		for (i = 0; i < num_player_clusters; i++)
+		{
+			K_drawKartMinimapDot(player_clusters[i].nucleus.x, player_clusters[i].nucleus.y, hudx, hudy, flags, pal2, size2);
+		}
+	}
 
 	if ((clusterid != UINT32_MAX) && (players[clusterid].mo) && (!P_MobjWasRemoved(players[clusterid].mo)))
 	{
@@ -6531,16 +6546,66 @@ static void K_DrawClusterDebugger(void)
 
 	INT32 vflags = V_6WIDTHSPACE|V_ALLOWLOWERCASE;
 
+	INT32 y = 146;
+
 	if (K_LegacyOddsMode())
 	{
-		V_DrawThinString(8, 136, vflags, va("Cluster player: %s", player_names[clusterid]));
-		V_DrawThinString(8, 146, vflags, va("X: %f, Y: %f, Z: %f, Dist. from cluster: %d", FIXED_TO_FLOAT(clusterpoint.x), FIXED_TO_FLOAT(clusterpoint.y), FIXED_TO_FLOAT(clusterpoint.z), stplyr->distancefromcluster));
+		if (clusterid != UINT32_MAX)
+		{
+			V_DrawThinString(8, y, vflags, va("X: %f, Y: %f, Z: %f, Dist. from cluster: %d", FIXED_TO_FLOAT(clusterpoint.x), FIXED_TO_FLOAT(clusterpoint.y), FIXED_TO_FLOAT(clusterpoint.z), stplyr->distancefromcluster));
+			y -= 10;
+
+			V_DrawThinString(8, y, vflags, va("Dist. from best-fit: %d", stplyr->distancefrombestfit));
+			y -= 10;
+		}
+
+		if (num_player_clusters)
+		{
+			V_DrawThinString(8, y, vflags, va("Clusters active: %d", num_player_clusters));
+			y -= 10;
+
+			const player_t * bestfitplayer = player_clusters[0].nucleus.player;
+
+			if (bestfitplayer)
+			{
+				V_DrawThinString(8, y, vflags, va("Best-fit player: %s", player_names[bestfitplayer - players]));
+				y -= 10;
+			}
+		}
+
+		if (clusterid != UINT32_MAX)
+			V_DrawThinString(8, y, vflags, va("Cluster player: %s", player_names[clusterid]));
 	}
 	else
 	{
-		V_DrawThinString(8, 126, vflags, va("Cluster player: %s", player_names[clusterid]));
-		V_DrawThinString(8, 136, vflags, va("Cluster DtF: %d, Your DtF: %d", (UINT32)(clusterdtf.x), stplyr->distancetofinish));
-		V_DrawThinString(8, 146, vflags, va("Distance from Cluster: %d", stplyr->distancefromcluster));
+		V_DrawThinString(8, y, vflags, va("Dist. from cluster: %d", stplyr->distancefromcluster));
+		y -= 10;
+
+		V_DrawThinString(8, y, vflags, va("Dist. from best-fit: %d", stplyr->distancefrombestfit));
+		y -= 10;
+
+		if (clusterid != UINT32_MAX)
+		{
+			V_DrawThinString(8, y, vflags, va("Cluster DtF: %d, Your DtF: %d", (UINT32)(clusterdtf.x), stplyr->distancetofinish));
+			y -= 10;
+		}
+
+		if (num_player_clusters)
+		{
+			V_DrawThinString(8, y, vflags, va("Clusters active: %d", num_player_clusters));
+			y -= 10;
+
+			const player_t * bestfitplayer = player_clusters[0].nucleus.player;
+
+			if (bestfitplayer)
+			{
+				V_DrawThinString(8, y, vflags, va("Best-fit player: %s", player_names[bestfitplayer - players]));
+				y -= 10;
+			}
+		}
+
+		if (clusterid != UINT32_MAX)
+			V_DrawThinString(8, y, vflags, va("Cluster player: %s", player_names[clusterid]));
 	}
 }
 

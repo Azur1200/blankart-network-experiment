@@ -4763,7 +4763,7 @@ static int lib_kGetKartSpeedFromStat(lua_State *L)
 	UINT16 kartspeed = luaL_checkinteger(L, 1);
 
 	//HUDSAFE
-	lua_pushinteger(L, K_GetKartSpeedFromStat(kartspeed, false));
+	lua_pushinteger(L, K_GetKartSpeedFromStat(kartspeed, false,  0));
 	return 1;
 }
 
@@ -4771,9 +4771,10 @@ static int lib_kGetKartSpeedFromStatEx(lua_State *L)
 {
 	UINT16 kartspeed = luaL_checkinteger(L, 1);
 	boolean karmabomb = lua_optboolean(L, 2);
+	fixed_t extrapct = lua_isnoneornil(L, 3) ? 0 : luaL_checkinteger(L, 3);
 
 	//HUDSAFE
-	lua_pushinteger(L, K_GetKartSpeedFromStat(kartspeed, karmabomb));
+	lua_pushinteger(L, K_GetKartSpeedFromStat(kartspeed, karmabomb, extrapct));
 	return 1;
 }
 
@@ -4867,6 +4868,18 @@ static int lib_kMomentum3D(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 
 	lua_pushinteger(L, K_Momentum3D(mo));
+	return 1;
+}
+
+static int lib_kGetClusterDistanceForPlayer(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	
+	lua_pushinteger(L, K_GetClusterDistanceForPlayer(player));
 	return 1;
 }
 
@@ -6118,6 +6131,7 @@ static luaL_Reg lib[] = {
 	{"K_GetShieldFromPlayer", lib_kGetShieldFromPlayer},
 	{"K_PlayerCanPunt", lib_kPlayerCanPunt},
 	{"K_Momentum3D", lib_kMomentum3D},
+	{"K_GetClusterDistanceForPlayer", lib_kGetClusterDistanceForPlayer},
 	{"K_GetKartBaseRingPower", lib_kGetKartBaseRingPower},
 	{"K_GetKartRingCap", lib_kGetKartRingCap},
 	{"K_IsPlayerRingBurnt", lib_kIsPlayerRingBurnt},
