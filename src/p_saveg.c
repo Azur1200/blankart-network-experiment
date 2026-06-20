@@ -11,6 +11,7 @@
 /// \file  p_saveg.c
 /// \brief Archiving: SaveGame I/O
 
+#include "doomdata.h"
 #include "doomdef.h"
 #include "byteptr.h"
 #include "d_main.h"
@@ -1670,7 +1671,7 @@ static void DiffLines(const line_t *li, const line_t *spawnli, UINT8 diff[])
 
 	DIFFNE(li, activation, LD_ACTIVATION);
 
-	if (li->sidenum[0] != 0xffff)
+	if (li->sidenum[0] != NO_INDEX)
 	{
 		si = &sides[li->sidenum[0]];
 		spawnsi = &spawnsides[li->sidenum[0]];
@@ -1680,7 +1681,7 @@ static void DiffLines(const line_t *li, const line_t *spawnli, UINT8 diff[])
 		DIFFNE(si, bottomtexture, LD_S1BOTTEX);
 		DIFFNE(si, midtexture, LD_S1MIDTEX);
 	}
-	if (li->sidenum[1] != 0xffff)
+	if (li->sidenum[1] != NO_INDEX)
 	{
 		si = &sides[li->sidenum[1]];
 		spawnsi = &spawnsides[li->sidenum[1]];
@@ -4317,7 +4318,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 				li->executordelay = spawnli->executordelay;
 				li->activation = spawnli->activation;
 
-				if (li->sidenum[0] != 0xffff)
+				if (li->sidenum[0] != NO_INDEX)
 				{
 					si = &sides[li->sidenum[0]];
 					spawnsi = &spawnsides[li->sidenum[0]];
@@ -4328,7 +4329,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 					si->midtexture = spawnsi->midtexture;
 				}
 
-				if (li->sidenum[1] != 0xffff)
+				if (li->sidenum[1] != NO_INDEX)
 				{
 					si = &sides[li->sidenum[1]];
 					spawnsi = &spawnsides[li->sidenum[1]];

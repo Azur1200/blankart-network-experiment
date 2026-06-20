@@ -293,7 +293,7 @@ void P_CameraLineOpening(line_t *linedef, opening_t *open)
 	open->floor = open->lowfloor = INT32_MIN;
 	open->range = 0;
 
-	if (linedef->sidenum[1] == 0xffff)
+	if (linedef->sidenum[1] == NO_INDEX)
 	{
 		// single sided line
 		return;
@@ -676,7 +676,7 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj, opening_t *open)
 	open->ceilingstep = open->floorstep = 0;
 	open->ceilingdrop = open->floordrop = 0;
 
-	if (linedef->sidenum[1] == 0xffff)
+	if (linedef->sidenum[1] == NO_INDEX)
 	{
 		// single sided line
 		return;

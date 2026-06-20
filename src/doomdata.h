@@ -96,9 +96,11 @@ struct maplinedef_t
 	INT16 flags;
 	INT16 special;
 	INT16 tag;
-	// sidenum[1] will be 0xffff if one sided
+	// sidenum[1] will be NO_INDEX if one sided
 	UINT16 sidenum[2];
 } ATTRPACK;
+
+#define NO_INDEX 0xffff
 
 //
 // LineDef attributes.

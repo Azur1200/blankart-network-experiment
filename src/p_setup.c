@@ -1058,33 +1058,33 @@ static void P_InitializeLinedef(line_t *ld)
 	// cph 2006/09/30 - fix sidedef errors right away.
 	// cph 2002/07/20 - these errors are fatal if not fixed, so apply them
 	for (j = 0; j < 2; j++)
-		if (ld->sidenum[j] != 0xffff && ld->sidenum[j] >= (UINT16)numsides)
+		if (ld->sidenum[j] != NO_INDEX && ld->sidenum[j] >= (UINT16)numsides)
 		{
-			ld->sidenum[j] = 0xffff;
+			ld->sidenum[j] = NO_INDEX;
 			CONS_Debug(DBG_SETUP, "P_InitializeLinedef: Linedef %s has out-of-range sidedef number\n", sizeu1((size_t)(ld - lines)));
 		}
 
 	// killough 11/98: fix common wad errors (missing sidedefs):
-	if (ld->sidenum[0] == 0xffff)
+	if (ld->sidenum[0] == NO_INDEX)
 	{
 		ld->sidenum[0] = 0;  // Substitute dummy sidedef for missing right side
 		// cph - print a warning about the bug
 		CONS_Debug(DBG_SETUP, "P_InitializeLinedef: Linedef %s missing first sidedef\n", sizeu1((size_t)(ld - lines)));
 	}
 
-	if ((ld->sidenum[1] == 0xffff) && (ld->flags & ML_TWOSIDED))
+	if ((ld->sidenum[1] == NO_INDEX) && (ld->flags & ML_TWOSIDED))
 	{
 		ld->flags &= ~ML_TWOSIDED;  // Clear 2s flag for missing left side
 		// cph - print a warning about the bug
 		CONS_Debug(DBG_SETUP, "P_InitializeLinedef: Linedef %s has two-sided flag set, but no second sidedef\n", sizeu1((size_t)(ld - lines)));
 	}
 
-	if (ld->sidenum[0] != 0xffff)
+	if (ld->sidenum[0] != NO_INDEX)
 	{
 		sides[ld->sidenum[0]].special = ld->special;
 		sides[ld->sidenum[0]].line = ld;
 	}
-	if (ld->sidenum[1] != 0xffff)
+	if (ld->sidenum[1] != NO_INDEX)
 	{
 		sides[ld->sidenum[1]].special = ld->special;
 		sides[ld->sidenum[1]].line = ld;
@@ -2867,7 +2867,7 @@ static void P_WriteTextmap(void)
 		fprintf(f, "v1 = %s;\n", sizeu1(wlines[i].v1 - vertexes));
 		fprintf(f, "v2 = %s;\n", sizeu1(wlines[i].v2 - vertexes));
 		fprintf(f, "sidefront = %d;\n", wlines[i].sidenum[0]);
-		if (wlines[i].sidenum[1] != 0xffff)
+		if (wlines[i].sidenum[1] != NO_INDEX)
 			fprintf(f, "sideback = %d;\n", wlines[i].sidenum[1]);
 		firsttag = Tag_FGet(&wlines[i].tags);
 		if (firsttag != 0)
@@ -3511,8 +3511,8 @@ static void P_LoadTextmap(boolean patch)
 		memset(ld->stringargs, 0x00, NUM_SCRIPT_STRINGARGS*sizeof(*ld->stringargs));
 		ld->alpha = FRACUNIT;
 		ld->executordelay = 0;
-		ld->sidenum[0] = 0xffff;
-		ld->sidenum[1] = 0xffff;
+		ld->sidenum[0] = NO_INDEX;
+		ld->sidenum[1] = NO_INDEX;
 
 		ld->activation = 0;
 		K_UserPropertiesClear(&ld->user);
@@ -3523,7 +3523,7 @@ static void P_LoadTextmap(boolean patch)
 			I_Error("P_LoadTextmap: linedef %s has no v1 value set!\n", sizeu1(i));
 		if (!ld->v2)
 			I_Error("P_LoadTextmap: linedef %s has no v2 value set!\n", sizeu1(i));
-		if (ld->sidenum[0] == 0xffff)
+		if (ld->sidenum[0] == NO_INDEX)
 			I_Error("P_LoadTextmap: linedef %s has no sidefront value set!\n", sizeu1(i));
 
 		P_InitializeLinedef(ld);
@@ -3613,7 +3613,7 @@ static boolean P_CheckLineSideTripWire(line_t *ld, int p)
 
 	n = ld->sidenum[p];
 
-	if (n == 0xffff)
+	if (n == NO_INDEX)
 		return false;
 
 	sda = &sides[n];
@@ -3627,7 +3627,7 @@ static boolean P_CheckLineSideTripWire(line_t *ld, int p)
 		// copy midtexture to other side
 		n = ld->sidenum[!p];
 
-		if (n != 0xffff)
+		if (n != NO_INDEX)
 		{
 			fixed_t linelength = FixedHypot(ld->dx, ld->dy);
 			texture_t *tex = textures[sda->midtexture];
@@ -3656,7 +3656,7 @@ static void P_ProcessLinedefsAfterSidedefs(void)
 	for (; i--; ld++)
 	{
 		ld->frontsector = sides[ld->sidenum[0]].sector; //e6y: Can't be -1 here
-		ld->backsector = ld->sidenum[1] != 0xffff ? sides[ld->sidenum[1]].sector : 0;
+		ld->backsector = ld->sidenum[1] != NO_INDEX ? sides[ld->sidenum[1]].sector : 0;
 
 		// Check for tripwire, if either side matches a terraindef then
 		// copy that (mid)texture to the other side.
@@ -3687,7 +3687,7 @@ static void P_ProcessLinedefsAfterSidedefs(void)
 				len[0] = strlen(sides[ld->sidenum[0]].text) + 1;
 				len[1] = 0;
 
-				if (ld->sidenum[1] != 0xffff && sides[ld->sidenum[1]].text)
+				if (ld->sidenum[1] != NO_INDEX && sides[ld->sidenum[1]].text)
 					len[1] = strlen(sides[ld->sidenum[1]].text);
 
 				ld->text = Z_Malloc(len[0] + len[1], PU_LEVEL, NULL);
@@ -4045,7 +4045,7 @@ static void P_InitializeSeg(seg_t *seg)
 	{
 		UINT16 side = seg->linedef->sidenum[seg->side];
 
-		if (side == 0xffff)
+		if (side == NO_INDEX)
 			I_Error("P_InitializeSeg: Seg %s refers to side %d of linedef %s, which doesn't exist!\n", sizeu1((size_t)(seg - segs)), seg->side, sizeu1((size_t)(seg->linedef - lines)));
 
 		seg->sidedef = &sides[side];
@@ -4297,10 +4297,10 @@ static boolean P_LoadExtendedSubsectorsAndSegs(UINT8 **data, nodetype_t nodetype
 				else
 				{
 					UINT16 linenum = READUINT16((*data));
-					if (linenum != 0xFFFF && linenum >= numlines)
+					if (linenum != NO_INDEX && linenum >= numlines)
 						I_Error("P_LoadExtendedSubsectorsAndSegs: Seg %s in subsector %s has invalid linedef %d!\n", sizeu1(k), sizeu2(i), linenum);
-					segs[k].glseg = linenum == 0xFFFF;
-					segs[k].linedef = linenum == 0xFFFF ? NULL : &lines[linenum];
+					segs[k].glseg = linenum == NO_INDEX;
+					segs[k].linedef = linenum == NO_INDEX ? NULL : &lines[linenum];
 				}
 
 				segs[k].side = READUINT8((*data));
@@ -5910,7 +5910,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 
 			break;
 		case 259: //Custom FOF
-			if (lines[i].sidenum[1] == 0xffff)
+			if (lines[i].sidenum[1] == NO_INDEX)
 				I_Error("Custom FOF (tag %d) found without a linedef back side!", tag);
 
 			lines[i].args[0] = tag;
@@ -6257,8 +6257,8 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[2] = sides[lines[i].sidenum[0]].midtexture;
 			lines[i].args[3] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			lines[i].args[4] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
-			lines[i].args[5] = (lines[i].sidenum[1] != 0xffff) ? sides[lines[i].sidenum[1]].textureoffset >> FRACBITS : 0;
-			lines[i].args[6] = (lines[i].sidenum[1] != 0xffff) ? sides[lines[i].sidenum[1]].rowoffset >> FRACBITS : -1;
+			lines[i].args[5] = (lines[i].sidenum[1] != NO_INDEX) ? sides[lines[i].sidenum[1]].textureoffset >> FRACBITS : 0;
+			lines[i].args[6] = (lines[i].sidenum[1] != NO_INDEX) ? sides[lines[i].sidenum[1]].rowoffset >> FRACBITS : -1;
 			lines[i].args[7] = sides[lines[i].sidenum[0]].bottomtexture;
 			P_WriteDuplicateText(sides[lines[i].sidenum[0]].text, &lines[i].stringargs[0]);
 			break;
@@ -6347,7 +6347,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[1] = max(sides[lines[i].sidenum[0]].textureoffset >> FRACBITS, 0);
 				// failsafe: if user specifies Back Y Offset and NOT Front Y Offset, use the Back Offset
 				// to be consistent with other light and fade specials
-				lines[i].args[2] = ((lines[i].sidenum[1] != 0xFFFF && !(sides[lines[i].sidenum[0]].rowoffset >> FRACBITS)) ?
+				lines[i].args[2] = ((lines[i].sidenum[1] != NO_INDEX && !(sides[lines[i].sidenum[0]].rowoffset >> FRACBITS)) ?
 					max(min(sides[lines[i].sidenum[1]].rowoffset >> FRACBITS, 255), 0)
 					: max(min(sides[lines[i].sidenum[0]].rowoffset >> FRACBITS, 255), 0));
 			}
@@ -6420,7 +6420,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				memcpy(lines[i].stringargs[0], sides[lines[i].sidenum[0]].text, strlen(sides[lines[i].sidenum[0]].text) + 1);
 			}
 
-			if (lines[i].sidenum[1] != 0xffff && lines[i].flags & ML_BLOCKMONSTERS) // read power from back sidedef
+			if (lines[i].sidenum[1] != NO_INDEX && lines[i].flags & ML_BLOCKMONSTERS) // read power from back sidedef
 			{
 				lines[i].stringargs[1] = Z_Malloc(strlen(sides[lines[i].sidenum[1]].text) + 1, PU_LEVEL, NULL);
 				memcpy(lines[i].stringargs[1], sides[lines[i].sidenum[1]].text, strlen(sides[lines[i].sidenum[1]].text) + 1);
@@ -6455,7 +6455,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 		case 442: //Change object type state
 			lines[i].args[0] = tag;
 			P_WriteDuplicateText(sides[lines[i].sidenum[0]].text, &lines[i].stringargs[0]);
-			if (lines[i].sidenum[1] == 0xffff)
+			if (lines[i].sidenum[1] == NO_INDEX)
 				lines[i].args[1] = 1;
 			else
 			{
@@ -6528,7 +6528,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 		case 452: //Set FOF translucency
 			lines[i].args[0] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			lines[i].args[1] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
-			lines[i].args[2] = lines[i].sidenum[1] != 0xffff ? (sides[lines[i].sidenum[1]].textureoffset >> FRACBITS) : (P_AproxDistance(lines[i].dx, lines[i].dy) >> FRACBITS);
+			lines[i].args[2] = lines[i].sidenum[1] != NO_INDEX ? (sides[lines[i].sidenum[1]].textureoffset >> FRACBITS) : (P_AproxDistance(lines[i].dx, lines[i].dy) >> FRACBITS);
 			if (lines[i].flags & ML_MIDPEG)
 				lines[i].args[3] |= TMST_RELATIVE;
 			if (lines[i].flags & ML_NOCLIMB)
@@ -6537,8 +6537,8 @@ static void P_ConvertBinaryLinedefTypes(void)
 		case 453: //Fade FOF
 			lines[i].args[0] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			lines[i].args[1] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
-			lines[i].args[2] = lines[i].sidenum[1] != 0xffff ? (sides[lines[i].sidenum[1]].textureoffset >> FRACBITS) : (lines[i].dx >> FRACBITS);
-			lines[i].args[3] = lines[i].sidenum[1] != 0xffff ? (sides[lines[i].sidenum[1]].rowoffset >> FRACBITS) : (abs(lines[i].dy) >> FRACBITS);
+			lines[i].args[2] = lines[i].sidenum[1] != NO_INDEX ? (sides[lines[i].sidenum[1]].textureoffset >> FRACBITS) : (lines[i].dx >> FRACBITS);
+			lines[i].args[3] = lines[i].sidenum[1] != NO_INDEX ? (sides[lines[i].sidenum[1]].rowoffset >> FRACBITS) : (abs(lines[i].dy) >> FRACBITS);
 			if (lines[i].flags & ML_MIDPEG)
 				lines[i].args[4] |= TMFT_RELATIVE;
 			if (lines[i].flags & ML_WRAPMIDTEX)
@@ -6565,7 +6565,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			break;
 		case 455: //Fade colormap
 		{
-			INT32 speed = (INT32)((((lines[i].flags & ML_DONTPEGBOTTOM) || !sides[lines[i].sidenum[0]].rowoffset) && lines[i].sidenum[1] != 0xFFFF) ?
+			INT32 speed = (INT32)((((lines[i].flags & ML_DONTPEGBOTTOM) || !sides[lines[i].sidenum[0]].rowoffset) && lines[i].sidenum[1] != NO_INDEX) ?
 				abs(sides[lines[i].sidenum[1]].rowoffset >> FRACBITS)
 				: abs(sides[lines[i].sidenum[0]].rowoffset >> FRACBITS));
 
@@ -6595,7 +6595,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[0] = tag;
 			lines[i].args[1] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			lines[i].args[2] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
-			lines[i].args[3] = (lines[i].sidenum[1] != 0xffff) ? sides[lines[i].sidenum[1]].textureoffset >> FRACBITS : 0;
+			lines[i].args[3] = (lines[i].sidenum[1] != NO_INDEX) ? sides[lines[i].sidenum[1]].textureoffset >> FRACBITS : 0;
 			lines[i].args[4] = !!(lines[i].flags & ML_NOSKEW);
 			break;
 		case 459: //Control text prompt
@@ -6615,7 +6615,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[2] |= TMP_ALLPLAYERS;
 			if (lines[i].flags & ML_MIDSOLID)
 				lines[i].args[3] |= TMP_FREEZETHINKERS;*/
-			lines[i].args[4] = (lines[i].sidenum[1] != 0xFFFF) ? sides[lines[i].sidenum[1]].textureoffset >> FRACBITS : tag;
+			lines[i].args[4] = (lines[i].sidenum[1] != NO_INDEX) ? sides[lines[i].sidenum[1]].textureoffset >> FRACBITS : tag;
 			P_WriteDuplicateText(sides[lines[i].sidenum[0]].text, &lines[i].stringargs[0]);
 			break;
 		case 460: //Award rings
@@ -6630,7 +6630,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[3] = (lines[i].flags & ML_SKEWTD) ? AngleFixed(R_PointToAngle2(lines[i].v1->x, lines[i].v1->y, lines[i].v2->x, lines[i].v2->y)) >> FRACBITS : 0;
 			if (lines[i].flags & ML_NOCLIMB)
 			{
-				if (lines[i].sidenum[1] != 0xffff) // Make sure the linedef has a back side
+				if (lines[i].sidenum[1] != NO_INDEX) // Make sure the linedef has a back side
 				{
 					lines[i].args[4] = 1;
 					lines[i].args[5] = sides[lines[i].sidenum[1]].textureoffset >> FRACBITS;
@@ -6678,14 +6678,14 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[1] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			lines[i].args[2] = AngleFixed(R_PointToAngle2(lines[i].v1->x, lines[i].v1->y, lines[i].v2->x, lines[i].v2->y)) >> FRACBITS;
 			lines[i].args[3] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
-			if (lines[i].sidenum[1] != 0xffff)
+			if (lines[i].sidenum[1] != NO_INDEX)
 				lines[i].args[4] = sides[lines[i].sidenum[1]].textureoffset >> FRACBITS;
 			break;
 		case 481: //Polyobject - door swing
 			lines[i].args[0] = tag;
 			lines[i].args[1] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			lines[i].args[2] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
-			if (lines[i].sidenum[1] != 0xffff)
+			if (lines[i].sidenum[1] != NO_INDEX)
 				lines[i].args[3] = sides[lines[i].sidenum[1]].textureoffset >> FRACBITS;
 			break;
 		case 482: //Polyobject - move
@@ -6766,7 +6766,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			if (!(lines[i].flags & ML_DONTPEGBOTTOM))
 				lines[i].args[1] /= 100;
 			// allow Back Y Offset to be consistent with other fade specials
-			lines[i].args[2] = (lines[i].sidenum[1] != 0xffff && !sides[lines[i].sidenum[0]].rowoffset) ?
+			lines[i].args[2] = (lines[i].sidenum[1] != NO_INDEX && !sides[lines[i].sidenum[0]].rowoffset) ?
 				abs(sides[lines[i].sidenum[1]].rowoffset >> FRACBITS)
 				: abs(sides[lines[i].sidenum[0]].rowoffset >> FRACBITS);
 			if (lines[i].flags & ML_MIDPEG)
@@ -6797,7 +6797,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[0] = tag;
 			if (lines[i].flags & ML_MIDPEG)
 			{
-				if (lines[i].sidenum[1] == 0xffff)
+				if (lines[i].sidenum[1] == NO_INDEX)
 				{
 					CONS_Debug(DBG_GAMELOGIC, "Line special %d (line #%s) missing back side!\n", lines[i].special, sizeu1(i));
 					lines[i].special = 0;
@@ -6833,7 +6833,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[0] = lines[i].special >= 507;
 			if (lines[i].special % 2 == 0)
 			{
-				if (lines[i].sidenum[1] == 0xffff)
+				if (lines[i].sidenum[1] == NO_INDEX)
 				{
 					CONS_Debug(DBG_GAMELOGIC, "Line special %d (line #%s) missing back side!\n", lines[i].special, sizeu1(i));
 					lines[i].special = 0;
@@ -6980,7 +6980,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			{
 				UINT8 side = lines[i].special >= 714;
 
-				if (side == 1 && lines[i].sidenum[1] == 0xffff)
+				if (side == 1 && lines[i].sidenum[1] == NO_INDEX)
 					CONS_Debug(DBG_GAMELOGIC, "P_ConvertBinaryMap: Line special %d (line #%s) missing 2nd side!\n", lines[i].special, sizeu1(i));
 				else
 				{
