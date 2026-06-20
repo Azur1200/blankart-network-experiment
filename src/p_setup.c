@@ -4767,17 +4767,26 @@ static void P_CreateBlockMap(void)
 
 // PK3 version
 // -- Monster Iestyn 09/01/18
-static void P_LoadReject(UINT8 *data, size_t count)
+static void P_LoadReject(UINT8 *data, size_t rejectsize)
 {
-	if (!count) // zero length, someone probably used ZDBSP
+	const size_t neededsize = (numsectors * numsectors + 7) >> 3;
+	size_t allocsize = rejectsize;
+
+	if (!rejectsize) // zero length, someone probably used ZDBSP
 	{
 		rejectmatrix = NULL;
 		CONS_Debug(DBG_SETUP, "P_LoadReject: REJECT lump has size 0, will not be loaded\n");
 	}
 	else
 	{
-		rejectmatrix = Z_Malloc(count, PU_LEVEL, NULL); // allocate memory for the reject matrix
-		memcpy(rejectmatrix, data, count); // copy the data into it
+		if (rejectsize < neededsize)
+		{
+			CONS_Alert(CONS_WARNING, "REJECT is %lu byte%s too small. REJECT might be invalid and might crash vanilla clients!\n", (neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
+			allocsize = neededsize;
+		}
+
+		rejectmatrix = Z_Calloc(allocsize, PU_LEVEL, NULL); // allocate memory for the reject matrix
+		memcpy(rejectmatrix, data, rejectsize); // copy the data into it
 	}
 }
 
@@ -4788,9 +4797,13 @@ static void P_LoadMapLUT(const virtres_t *virt)
 
 	// Lookup tables
 	if (virtreject)
+	{
 		P_LoadReject(virtreject->data, virtreject->size);
+	}
 	else
+	{
 		rejectmatrix = NULL;
+	}
 
 	if (!(virtblockmap && P_LoadBlockMap(virtblockmap->data, virtblockmap->size)))
 		P_CreateBlockMap();
