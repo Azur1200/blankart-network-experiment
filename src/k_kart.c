@@ -2946,7 +2946,6 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->smonitortimer) // S-Monitor
 	{
-        //fixed_t smntrspeedboost = K_GetSMonitorSpeed(player->smonitortimer);
         fixed_t smntraccelboost = K_GetSMonitorAccel(player->smonitortimer);
 		fixed_t smntrhandleboost = K_GetSMonitorHandling(player->smonitortimer);
 
