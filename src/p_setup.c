@@ -4576,11 +4576,9 @@ static boolean P_LoadBlockMap(UINT8 *data, size_t count)
 		I_Error("P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
 #endif
 		CONS_Alert(CONS_ERROR, "P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
-		//Z_Free(blockmaplump);
-		//blockmaplump = NULL;
-		//return false; // ideally we would just let the game rebuild the blockmap
-		// but this has a chance of desynching vanilla clients
-		// not sure whats worse honestly and i do not want to decide that :chaosleep:
+		Z_Free(blockmaplump);
+		blockmaplump = NULL;
+		return false;
 	}
 
 	// clear out mobj chains
