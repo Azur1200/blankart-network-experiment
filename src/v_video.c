@@ -1807,6 +1807,7 @@ void V_DrawFixedLine(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, fixed_t wid
 	const UINT8 *deststop;
 	UINT32 alphalevel = ((c & V_ALPHAMASK) >> V_ALPHASHIFT);
 	UINT32 blendmode = ((c & V_BLENDMASK) >> V_BLENDSHIFT);
+	fixed_t hwr_width = width;
 	//INT32 u;
 	vector2_t p1 = {0}, p2 = {0};
 	if (rendermode == render_none)
@@ -1843,6 +1844,8 @@ void V_DrawFixedLine(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, fixed_t wid
 	{
 		INT32 dup = vid.dup;
 
+		hwr_width = FixedMul(width, dup);
+
 		width *= dup;
 
 		p1.x = FixedMul(x1, dup);
@@ -1860,12 +1863,22 @@ void V_DrawFixedLine(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, fixed_t wid
 		p2.x = x2 >> FRACBITS;
 		p1.y = y1 >> FRACBITS;
 		p2.y = y2 >> FRACBITS;
+		hwr_width = width >> FRACBITS;
 	}
 
 	boolean wideline = (width > FRACUNIT);
 
 	INT32 left, right, top, bottom;
 	V_GetClipBounds(&left, &right, &top, &bottom);
+
+#ifdef HWRENDER
+	//if (rendermode != render_soft && !con_startup)		// Not this again
+	if (rendermode == render_opengl)
+	{
+		HWR_DrawFixedLine(p1.x, p1.y, p2.x, p2.y, hwr_width, c);
+		return;
+	}
+#endif
 
 	deststop = vid.screens[0] + vid.rowbytes * vid.height;
 
