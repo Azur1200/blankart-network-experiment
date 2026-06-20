@@ -4857,7 +4857,6 @@ static void P_CreateBlockMap(void)
 static void P_LoadReject(UINT8 *data, size_t rejectsize)
 {
 	const size_t neededsize = (numsectors * numsectors + 7) >> 3;
-	size_t allocsize = rejectsize;
 
 	if (!rejectsize) // zero length, someone probably used ZDBSP
 	{
@@ -4872,10 +4871,11 @@ static void P_LoadReject(UINT8 *data, size_t rejectsize)
 //			I_Error("REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
 //#endif
 			CONS_Alert(CONS_ERROR, "REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
-			allocsize = neededsize;
+			rejectmatrix = NULL;
+			return;
 		}
 
-		rejectmatrix = Z_Calloc(allocsize, PU_LEVEL, NULL); // allocate memory for the reject matrix
+		rejectmatrix = Z_Calloc(rejectsize, PU_LEVEL, NULL); // allocate memory for the reject matrix
 		memcpy(rejectmatrix, data, rejectsize); // copy the data into it
 	}
 }
