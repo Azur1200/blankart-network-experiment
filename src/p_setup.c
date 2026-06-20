@@ -4572,9 +4572,9 @@ static boolean P_LoadBlockMap(UINT8 *data, size_t count)
 	// http://www.doomworld.com/idgames/index.php?id=12935
 	if (!P_VerifyBlockMap(count))
 	{
-#ifdef PARANOIA
-		I_Error("P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
-#endif
+//#ifdef PARANOIA
+//		I_Error("P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
+//#endif
 		CONS_Alert(CONS_ERROR, "P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
 		Z_Free(blockmaplump);
 		blockmaplump = NULL;
@@ -4868,9 +4868,9 @@ static void P_LoadReject(UINT8 *data, size_t rejectsize)
 	{
 		if (rejectsize < neededsize)
 		{
-#ifdef PARANOIA
-			I_Error("REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
-#endif
+//#ifdef PARANOIA
+//			I_Error("REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
+//#endif
 			CONS_Alert(CONS_ERROR, "REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
 			allocsize = neededsize;
 		}
