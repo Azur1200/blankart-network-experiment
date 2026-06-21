@@ -64,7 +64,7 @@ extern menutyping_t menutyping;
 
 #define MENUDELAYTIME 10
 #define MENUMINDELAY 3
-#define MENUDMAXDELAYCOUNT 3
+#define MENUDMAXDELAYCOUNT 4
 
 typedef enum
 {
