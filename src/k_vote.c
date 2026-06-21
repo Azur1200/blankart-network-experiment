@@ -807,6 +807,9 @@ void Y_VoteTicker(void)
 		if (votetic < 3*(NEWTICRATE/7)) // give it some time before letting you control it :V
 			return;
 
+		if (menustack[0] || chat_on) // You can't control voting with menu or chat open.
+			return;
+
 		/*
 		The vote ended, but it will take at least a tic for that to reach us from
 		the server. Don't let me change the vote now, it won't matter anyway!
