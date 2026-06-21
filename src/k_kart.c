@@ -7631,7 +7631,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 			UINT32 usedist = K_GetClusterDistanceForPlayer(player);
 
-			INT16 podium = max(2, min(4, (3 * pingame / 8)));
+			boolean tinypop = (pingame <= 3);
+
+			INT16 podium = (tinypop) ? 1 : max(2, min(4, (3 * pingame / 8)));
 
 			boolean nodecay = ((usedist > (UINT32)SMONITORDECAYDIST) && (player->position > podium));
 
