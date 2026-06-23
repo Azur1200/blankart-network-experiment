@@ -4793,6 +4793,34 @@ static void Command_ReplayMarker(void)
 	}
 }
 
+static boolean JawzCheck(mobj_t *playermo)
+{
+	mobj_t *mobj, *next;
+
+	for (mobj = kitemcap; mobj; mobj = next)
+	{
+		next = mobj->itnext;
+
+		if (mobj->health <= 0)
+			continue;
+
+		switch (mobj->type)
+		{
+			case MT_JAWZ:
+				if (mobj->tracer && mobj->tracer == playermo)
+				{
+					return true;
+				}
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	return false;
+}
+
 // Command for stuck characters in netgames, griefing, etc.
 static void HandleRespawnCommand(UINT8 localplayer)
 {
@@ -4812,6 +4840,12 @@ static void HandleRespawnCommand(UINT8 localplayer)
 	}
 
 	if (players[g_localplayers[localplayer]].mo && (P_PlayerInPain(&players[g_localplayers[localplayer]]) || spbplace == players[g_localplayers[localplayer]].position)) // KART: Nice try, but no, you won't be cheesing spb anymore (x2)
+	{
+		CONS_Printf(M_GetText("Nice try.\n"));
+		return;
+	}
+
+	if (JawzCheck(players[g_localplayers[localplayer]].mo)) // KART: You can't cheese Jawz, Nice try :)
 	{
 		CONS_Printf(M_GetText("Nice try.\n"));
 		return;
@@ -4857,6 +4891,14 @@ static void Got_Respawn(UINT8 **cp, INT32 playernum)
 	if (players[respawnplayer].bot
 	  ? playernum != serverplayer
 	  : respawnplayer != playernum || P_PlayerInPain(&players[respawnplayer]) || spbplace == players[respawnplayer].position)
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Illegal respawn command received from %s\n"), player_names[playernum]);
+		if (server)
+			SendKick(playernum, KICK_MSG_CON_FAIL);
+		return;
+	}
+
+	if (JawzCheck(players[respawnplayer].mo))
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal respawn command received from %s\n"), player_names[playernum]);
 		if (server)
