@@ -1,5 +1,4 @@
 #include "m_textinput.h"
-#include "m_menu.h" // MAXSTRINGLENGTH
 #include "v_video.h"
 #include "r_main.h" // renderisnewtic
 #include "i_system.h"

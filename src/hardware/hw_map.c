@@ -1673,7 +1673,7 @@ static void CutOutSubsecPoly(INT32 ssindex, /*INOUT*/ wpoly_t* poly)
 		if (!line || lseg->glseg)
 			continue;
 
-		if (line->sidenum[1] != 0xffff)
+		if (line->sidenum[1] != NO_INDEX)
 		{
 			if (sides[line->sidenum[0]].sector == sides[line->sidenum[1]].sector)
 			{
@@ -2035,7 +2035,7 @@ static void loading_status(void)
 	y = BASEVIDHEIGHT/2;
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, levelfadecol); // Black background to match fade in effect
 	//V_DrawPatchFill(srb2back); // SRB2 background, ehhh too bright.
-	M_DrawTextBox(x-58, y-8, 13, 1);
+	M_DrawTextBox(x-58, y-8, 13, 1, 0);
 	V_DrawString(x-50, y, V_YELLOWMAP, "Loading...");
 	V_DrawRightAlignedString(x+50, y, V_YELLOWMAP, s);
 
@@ -2680,7 +2680,7 @@ static void AdjustSegs(void)
 			if (!line)
 				continue;
 
-			if (line->sidenum[1] != 0xffff)
+			if (line->sidenum[1] != NO_INDEX)
 			{
 				if (sides[line->sidenum[0]].sector == sides[line->sidenum[1]].sector)
 				{
@@ -2693,7 +2693,7 @@ static void AdjustSegs(void)
 			}
 
 #ifdef CHANGESUBSEC
-			if (line->sidenum[lseg->side] != 0xffff)
+			if (line->sidenum[lseg->side] != NO_INDEX)
 			{
 				// Get the sector from the seg.
 				lseg_sector = sides[line->sidenum[lseg->side]].sector;

@@ -1849,12 +1849,24 @@ static int lib_pDamageMobj(lua_State *L)
 		source = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
 	damage = (INT32)luaL_optinteger(L, 4, 1);
 
-	if ((damage == 10000) && lua_isnil(L, 5))
-		damagetype = DMG_INSTAKILL;
-	else if ((damage == 42000) && lua_isnil(L, 5))
+	if ((damage == 10000) && lua_isnoneornil(L, 5))
+	{
+		// COMPATIBILITY: Check if the damage type is a time-over kill.
+		// If it is, use DMG_TIMEOVER
+		UINT8 killdmg = DMG_INSTAKILL;
+
+		if (target->player && (target->player->pflags & PF_NOCONTEST))
+			killdmg = DMG_TIMEOVER;
+
+		damagetype = killdmg;
+	}
+	else if ((damage == 42000) && lua_isnoneornil(L, 5))
 		damagetype = DMG_SPECTATOR;
 	else
 		damagetype = (UINT8)luaL_optinteger(L, 5, 0);
+
+	if (damagetype == DMG_TIMEOVER)
+		S_StopSound(target);
 
 	lua_pushboolean(L, P_DamageMobj(target, inflictor, source, damage, damagetype));
 	return 1;
@@ -4759,7 +4771,7 @@ static int lib_kGetKartSpeedFromStat(lua_State *L)
 	UINT16 kartspeed = luaL_checkinteger(L, 1);
 
 	//HUDSAFE
-	lua_pushinteger(L, K_GetKartSpeedFromStat(kartspeed, false));
+	lua_pushinteger(L, K_GetKartSpeedFromStat(kartspeed, false,  0));
 	return 1;
 }
 
@@ -4767,9 +4779,10 @@ static int lib_kGetKartSpeedFromStatEx(lua_State *L)
 {
 	UINT16 kartspeed = luaL_checkinteger(L, 1);
 	boolean karmabomb = lua_optboolean(L, 2);
+	fixed_t extrapct = lua_isnoneornil(L, 3) ? 0 : luaL_checkinteger(L, 3);
 
 	//HUDSAFE
-	lua_pushinteger(L, K_GetKartSpeedFromStat(kartspeed, karmabomb));
+	lua_pushinteger(L, K_GetKartSpeedFromStat(kartspeed, karmabomb, extrapct));
 	return 1;
 }
 
@@ -4863,6 +4876,18 @@ static int lib_kMomentum3D(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 
 	lua_pushinteger(L, K_Momentum3D(mo));
+	return 1;
+}
+
+static int lib_kGetClusterDistanceForPlayer(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	
+	lua_pushinteger(L, K_GetClusterDistanceForPlayer(player));
 	return 1;
 }
 
@@ -6115,6 +6140,7 @@ static luaL_Reg lib[] = {
 	{"K_GetShieldFromPlayer", lib_kGetShieldFromPlayer},
 	{"K_PlayerCanPunt", lib_kPlayerCanPunt},
 	{"K_Momentum3D", lib_kMomentum3D},
+	{"K_GetClusterDistanceForPlayer", lib_kGetClusterDistanceForPlayer},
 	{"K_GetKartBaseRingPower", lib_kGetKartBaseRingPower},
 	{"K_GetKartRingCap", lib_kGetKartRingCap},
 	{"K_IsPlayerRingBurnt", lib_kIsPlayerRingBurnt},

@@ -194,6 +194,8 @@ static char returnWadPath[256];
 
 #include "../m_argv.h"
 
+#include "../m_menu.h"
+
 // SRB2Kart
 #include "../k_pwrlv.h"
 #include "../r_main.h" // Frame interpolation/uncapped

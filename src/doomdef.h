@@ -127,8 +127,6 @@ extern char logfilename[1024];
 "\n"\
 "You are using version: %s\n"\
 "The newest version is: %s\n"\
-"\n"\
-"(Press a key)\n"
 
 // For future use, the codebase is the version of SRB2 that the modification is based on,
 // and should not be changed unless you have merged changes between versions of SRB2
@@ -556,6 +554,9 @@ extern int compuncommitted;
 
 // p_sight.c
 #define TRAVERSE_MAX 8
+
+// m_menu.h
+#define MAXSTRINGLENGTH 32
 
 #ifdef __cplusplus
 } // extern "C"

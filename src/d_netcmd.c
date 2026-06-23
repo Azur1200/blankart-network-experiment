@@ -501,8 +501,28 @@ consvar_t cv_kartbot = CVAR_INIT ("kartbot", "0", CV_NETVAR, kartbot_cons_t, NUL
 consvar_t cv_kartbot_cap = CVAR_INIT ("kartbot_cap", "0", CV_NETVAR, kartbot_cap_cons_t, NULL);
 consvar_t cv_kartbot_modifiermax = CVAR_INIT ("kartbot_modifiermax", "1.0", CV_NETVAR|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartbot_basetrackcomplexity = CVAR_INIT ("kartbot_basetrackcomplexity", "-7000", CV_NETVAR, CV_Signed, NULL);
+consvar_t cv_kartbot_finish = CVAR_INIT ("kartbot_finish", "Off", CV_NETVAR, CV_OnOff, NULL);
 
 consvar_t cv_karteliminatelast = CVAR_INIT ("karteliminatelast", "Yes", CV_NETVAR|CV_CALL, CV_YesNo, KartEliminateLast_OnChange);
+
+// Defined in multiples of 10 to keep the minimal sanity I have remaining
+static CV_PossibleValue_t deathbounce_cons_t[] = {
+	{-1, "Infinite"},
+	{0, "None"},
+	{5, "5"},
+	{10, "10"},
+	{15, "15"},
+	{20, "20"},
+	{30, "30"},
+	{40, "40"},
+	{50, "50"},
+	{60, "60"},
+	{70, "70"},
+	{80, "80"},
+	{90, "90"},
+	{100, "MAX"},
+	{0, NULL}};
+consvar_t cv_kartdeathbounces = CVAR_INIT ("deathbounces", "Infinite", CV_NETVAR, deathbounce_cons_t, NULL);
 
 // Toggles for new features
 consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartRings_OnChange);
@@ -549,8 +569,9 @@ consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_inv
 // S-Monitor
 //
 consvar_t cv_kartstacking_smonitor_speedboost = CVAR_INIT ("vanillaboost_smonitor_speedboost", "0.75", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_smonitor_fastestspeed = CVAR_INIT ("vanillaboost_smonitor_fastestspeed", "86.07", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_smonitor_accelboost = CVAR_INIT ("vanillaboost_smonitor_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_smonitor_handleboost = CVAR_INIT ("vanillaboost_smonitor_handleboost", "0.48", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_smonitor_handleboost = CVAR_INIT ("vanillaboost_smonitor_handleboost", "0.38", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_smonitor_stackable = CVAR_INIT ("vanillaboost_smonitor_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
@@ -794,7 +815,7 @@ consvar_t cv_kartinvindamage = CVAR_INIT ("kartinvindamage", "Wipe-out", CV_NETV
 
 // How far the player must be from the cluster to roll an S-Monitor.
 static CV_PossibleValue_t smonitordist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartsmonitordist = CVAR_INIT ("smonitor_startdist", "12000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
+consvar_t cv_kartsmonitordist = CVAR_INIT ("smonitor_startdist", "9216", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
 
 // Conga is extremely finicky, so we need a separate threshold to preserve the S-Monitor's reliability
 consvar_t cv_kartsmonitor_congadist = CVAR_INIT("smonitor_startdist_conga", "10000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
@@ -803,6 +824,8 @@ consvar_t cv_kartsmonitor_decaydist = CVAR_INIT ("smonitor_decaydist", "3600", C
 
 static CV_PossibleValue_t smonitordecaytime_cons_t[] = {{1, "MIN"}, {6, "MAX"}, {0, NULL}};
 consvar_t cv_kartsmonitor_decaytime = CVAR_INIT ("smonitor_decaytime", "2", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordecaytime_cons_t, NULL);
+
+consvar_t cv_kartsmonitor_intangible = CVAR_INIT ("smonitor_intangible", "On", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
 
 // opinionated stuff for testing balance tweaks on the shields
 consvar_t cv_kartbubble_defense_canidle = CVAR_INIT ("kartbubble_defense_canidle", "On", CV_NETVAR, CV_OnOff, NULL);
@@ -986,6 +1009,9 @@ consvar_t cv_automate = CVAR_INIT ("automate", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_debugmappatch = CVAR_INIT ("debugmappatch", "", 0, NULL, NULL);
 
 consvar_t cv_allowmismatchmappatch = CVAR_INIT ("allowmismatchmappatch", "No", CV_NETVAR, CV_YesNo, NULL);
+
+// NOTE: this should be in hw_main.c, but we can't put it there as it breaks dedicated build
+consvar_t cv_glallowshaders = CVAR_INIT ("gr_allowclientshaders", "On", CV_NETVAR, CV_OnOff, NULL);
 
 char timedemo_name[256];
 boolean timedemo_csv;
@@ -1212,6 +1238,8 @@ void D_RegisterServerCommands(void)
 
 	// for master server connection
 	AddMServCommands();
+
+	CV_RegisterVar(&cv_glallowshaders);
 
 	// p_mobj.c
 	CV_RegisterVar(&cv_itemrespawntime);
@@ -3949,7 +3977,7 @@ static void Command_Map_f(void)
 
 	mustmodifygame = !(netgame || multiplayer) && !majormods;
 
-	if (mustmodifygame)
+	if (mustmodifygame && !option_force)
 	{
 		/* May want to be more descriptive? */
 		CONS_Printf(M_GetText("Sorry, level change disabled in single player.\n"));
@@ -5956,12 +5984,12 @@ static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum)
 			if (ncs == FS_NOTFOUND)
 			{
 				CONS_Printf(M_GetText("The server tried to add %s,\nbut you don't have this file.\nYou need to find it in order\nto play on this server.\n"), filename);
-				M_StartMessage(va("The server added a file\n(%s)\nthat you do not have.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+				M_StartMessage2("Game Leave", va("The server added a file\n(%s)\nthat you do not have.\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 			}
 			else
 			{
 				CONS_Printf(M_GetText("Unknown error finding soc file (%s) the server added.\n"), filename);
-				M_StartMessage(va("Unknown error trying to load a file\nthat the server added\n(%s).\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+				M_StartMessage2("Game Leave", va("Unknown error trying to load a file\nthat the server added\n(%s).\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 			}
 			return;
 		}
@@ -6248,22 +6276,22 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 		if (ncs == FS_FOUND)
 		{
 			CONS_Printf(M_GetText("The server tried to add %s,\nbut you have too many files added.\nRestart the game to clear loaded files\nand play on this server."), filename);
-			M_StartMessage(va("The server added a file \n(%s)\nbut you have too many files added.\nRestart the game to clear loaded files.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+			M_StartMessage2("Game Leave", va("The server added a file \n(%s)\nbut you have too many files added.\nRestart the game to clear loaded files.\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		}
 		else if (ncs == FS_NOTFOUND)
 		{
 			CONS_Printf(M_GetText("The server tried to add %s,\nbut you don't have this file.\nYou need to find it in order\nto play on this server."), filename);
-			M_StartMessage(va("The server added a file \n(%s)\nthat you do not have.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+			M_StartMessage2("Game Leave", va("The server added a file\n(%s)\nthat you do not have.\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		}
 		else if (ncs == FS_BADHASH)
 		{
 			CONS_Printf(M_GetText("Checksum mismatch while loading %s.\nMake sure you have the copy of\nthis file that the server has.\n"), filename);
-			M_StartMessage(va("Checksum mismatch while loading \n%s.\nThe server seems to have a\ndifferent version of this file.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+			M_StartMessage2("Game Leave", va("Checksum mismatch while loading \n%s.\nThe server seems to have a\ndifferent version of this file.\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		}
 		else
 		{
 			CONS_Printf(M_GetText("Unknown error finding wad file (%s) the server added.\n"), filename);
-			M_StartMessage(va("Unknown error trying to load a file\nthat the server added \n(%s).\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+			M_StartMessage2("Game Leave", va("Unknown error trying to load a file\nthat the server added\n(%s).\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		}
 		return;
 	}
@@ -7863,7 +7891,18 @@ void Command_ExitGame_f(void)
 		closefilemenu(true);
 
 	if (!modeattacking)
-		D_StartTitle();
+	{
+		if (restoremenustack[0])
+		{
+			M_RestoreMenuStack(false);
+		}
+		else
+		{
+			M_ClearMenusEx(false, true);
+			D_ClearState();
+			M_StartControlPanel();
+		}
+	}
 }
 
 void Command_Retry_f(void)

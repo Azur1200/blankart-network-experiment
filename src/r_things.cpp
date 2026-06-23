@@ -20,7 +20,6 @@
 #include "st_stuff.h"
 #include "w_wad.h"
 #include "z_zone.h"
-#include "m_menu.h" // character select
 #include "m_misc.h"
 #include "info.h" // spr2names
 #include "i_video.h" // rendermode
@@ -2508,10 +2507,21 @@ static void R_ProjectSprite(mobj_t *thing)
 #endif
 	}
 
-	if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
-		offset = spr_offset - spr_width;
+	if (papersprite)
+	{
+		// yama: No, seriously -- why the FUCK do I need to do this?!
+		if (flip)
+			offset = spr_offset - spr_width;
+		else
+			offset = -spr_offset;
+	}
 	else
-		offset = -spr_offset;
+	{
+		if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
+			offset = spr_offset - spr_width;
+		else
+			offset = -spr_offset;
+	}
 
 #ifdef ROTSPRITE
 	if (visoffs.x)

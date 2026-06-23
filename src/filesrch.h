@@ -6,7 +6,6 @@
 
 #include "doomdef.h"
 #include "d_netfil.h"
-#include "m_menu.h" // MAXSTRINGLENGTH
 #include "m_textinput.h"
 
 #ifdef __cplusplus

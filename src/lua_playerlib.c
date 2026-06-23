@@ -318,6 +318,8 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(nextwaypoint) \
 	X(airtime) \
 	X(bigwaypointgap) \
+	X(distancefromcluster) \
+	X(distancefrombestfit) \
 	X(flashing) \
 	X(spinouttimer) \
 	X(spinouttype) \
@@ -634,6 +636,12 @@ static int player_get(lua_State *L)
 		break;
 	case player_bigwaypointgap:
 		lua_pushinteger(L, plr->bigwaypointgap);
+		break;
+	case player_distancefromcluster:
+		lua_pushinteger(L, plr->distancefromcluster);
+		break;
+	case player_distancefrombestfit:
+		lua_pushinteger(L, plr->distancefrombestfit);
 		break;
 	case player_flashing:
 		lua_pushinteger(L, plr->flashing);
@@ -1480,6 +1488,12 @@ static int player_set(lua_State *L)
 		break;
 	case player_bigwaypointgap:
 		plr->bigwaypointgap = luaL_checkinteger(L, 3);
+		break;
+	case player_distancefromcluster:
+		plr->distancefromcluster = luaL_checkfixed(L, 3);
+		break;
+	case player_distancefrombestfit:
+		plr->distancefrombestfit = luaL_checkfixed(L, 3);
 		break;
 	case player_flashing:
 		plr->flashing = luaL_checkinteger(L, 3);
