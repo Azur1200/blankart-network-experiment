@@ -104,6 +104,7 @@ extern vector3_t clusterpoint, clusterdtf;
 #define SMONITORCONGADIST CV_Get(&cv_kartsmonitor_congadist)
 #define SMONITORDECAYDIST CV_Get(&cv_kartsmonitor_decaydist)
 #define SMONITORDECAYTIME CV_Get(&cv_kartsmonitor_decaytime)
+#define SMONITORINTANGIBLE CV_Get(&cv_kartsmonitor_intangible)
 
 // Precalculated constants for stacked boost diminishing
 // *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent

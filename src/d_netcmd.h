@@ -234,6 +234,7 @@ extern consvar_t cv_kartsmonitordist;
 extern consvar_t cv_kartsmonitor_congadist;
 extern consvar_t cv_kartsmonitor_decaydist;
 extern consvar_t cv_kartsmonitor_decaytime;
+extern consvar_t cv_kartsmonitor_intangible;
 
 // opinionated stuff for testing
 extern consvar_t cv_kartbubble_defense_canidle;

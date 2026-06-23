@@ -457,6 +457,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartsmonitor_decaydist);
 	CV_RegisterVar(&cv_kartsmonitor_decaytime);
 
+	CV_RegisterVar(&cv_kartsmonitor_intangible);
+
 	// experimental stuff
 	CV_RegisterVar(&cv_kartbubble_defense_canidle);
 	CV_RegisterVar(&cv_kartbubble_defense_damagerate);

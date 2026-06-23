@@ -1431,6 +1431,12 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 					break;
 			}
 
+			if (SMONITORINTANGIBLE)
+			{
+				// Mage suggestion: ALWAYS ignore bumps if you have an S-Monitor active
+				cannotbump = ((thing->player->smonitortimer) || (g_tm.thing->player->smonitortimer));
+			}
+
 			// see if it went over / under
 			if (g_tm.thing->z > thing->z + thing->height)
 				return BMIT_CONTINUE; // overhead

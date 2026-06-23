@@ -773,6 +773,8 @@ consvar_t cv_kartsmonitor_decaydist = CVAR_INIT ("smonitor_decaydist", "3600", C
 static CV_PossibleValue_t smonitordecaytime_cons_t[] = {{1, "MIN"}, {6, "MAX"}, {0, NULL}};
 consvar_t cv_kartsmonitor_decaytime = CVAR_INIT ("smonitor_decaytime", "2", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordecaytime_cons_t, NULL);
 
+consvar_t cv_kartsmonitor_intangible = CVAR_INIT ("smonitor_intangible", "On", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
+
 // opinionated stuff for testing balance tweaks on the shields
 consvar_t cv_kartbubble_defense_canidle = CVAR_INIT ("kartbubble_defense_canidle", "On", CV_NETVAR, CV_OnOff, NULL);
 static CV_PossibleValue_t bubble_defense_damagerate_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
