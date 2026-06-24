@@ -156,7 +156,6 @@ static char menu_text_input_buf[MAXSTRINGLENGTH];
 static textinput_t menuinput;
 
 static levellistmode_e levellistmode = LLM_CREATESERVER;
-static levellistmode_e levellistmode_defered = LLM__MAX;
 
 menu_t menudefs[MAXMENUTYPES]; // array of all menudefs
 UINT16 nummenutypes;
@@ -2239,7 +2238,6 @@ static boolean M_CheckNextMap(const menupanelinst_t *pi)
 {
 	size_t i;
 
-
 	if (pi != NULL)
 	{
 		for (i = 0; i < pi->numitems; i++)
@@ -2247,12 +2245,6 @@ static boolean M_CheckNextMap(const menupanelinst_t *pi)
 				break;
 		if (i == pi->numitems)
 			return true;
-
-		if (levellistmode_defered != LLM__MAX)
-		{
-			pi->items[i].argument = levellistmode_defered;
-			levellistmode_defered = LLM__MAX;
-		}
 
 		levellistmode = pi->items[i].argument;
 	}
@@ -4674,7 +4666,7 @@ INT32 MR_SetLevelListMode(INT32 choice)
 	if (choice < 0 || choice >= LLM__MAX)
 		return false;
 
-	levellistmode_defered = choice;
+	levellistmode = choice;
 	return true;
 }
 
@@ -7891,8 +7883,6 @@ INT32 MR_GrandPrixTemp(INT32 choice)
 		return false;
 	}
 	M_PatchSkinNameTable();
-
-	levellistmode = LLM_CUPSELECT;
 	return true;
 }
 
@@ -8115,7 +8105,7 @@ INT32 MR_TimeAttack(INT32 arg)
 
 	if (arg >= 0)
 	{
-		levellistmode_defered = arg; // yucky
+		levellistmode = arg;
 		if (!M_CheckNextMap(NULL))
 		{
 			const char * string = arg == LLM_ITEMBREAKER ? "Item Breaker" : "Time Attack";
