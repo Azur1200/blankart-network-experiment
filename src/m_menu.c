@@ -156,6 +156,7 @@ static char menu_text_input_buf[MAXSTRINGLENGTH];
 static textinput_t menuinput;
 
 static levellistmode_e levellistmode = LLM_CREATESERVER;
+static levellistmode_e levellistmode_ta = LLM__MAX;
 
 menu_t menudefs[MAXMENUTYPES]; // array of all menudefs
 UINT16 nummenutypes;
@@ -2245,6 +2246,9 @@ static boolean M_CheckNextMap(const menupanelinst_t *pi)
 				break;
 		if (i == pi->numitems)
 			return true;
+
+		if (levellistmode_ta != LLM__MAX)
+			pi->items[i].argument = levellistmode_ta;
 
 		levellistmode = pi->items[i].argument;
 	}
@@ -8018,11 +8022,6 @@ void MP_TimeAttackMenu(menupanelinst_t *pi)
 	// show the actual replay/guest options, for the main TA menu
 	M_MaybeSetItemVisible(pi, "SHOWREPLAY", showreplay);
 	M_MaybeSetItemVisible(pi, "SHOWGUEST", showguest);
-
-	// ugh, what do i do...
-	menuitem_t *item = M_CheckMenuItem(pi, "LEVEL");
-	if (item != NULL)
-		item->argument = levellistmode;
 }
 
 void MP_TimeAttackPresets(menupanelinst_t *pi)
@@ -8105,7 +8104,7 @@ INT32 MR_TimeAttack(INT32 arg)
 
 	if (arg >= 0)
 	{
-		levellistmode = arg;
+		levellistmode_ta = arg;
 		if (!M_CheckNextMap(NULL))
 		{
 			const char * string = arg == LLM_ITEMBREAKER ? "Item Breaker" : "Time Attack";
@@ -8140,6 +8139,7 @@ INT32 MR_QuitTimeAttackMenu(INT32 choice)
 	}
 
 	S_StopMusicCredit();
+	levellistmode_ta = LLM__MAX;
 	return true;
 }
 
