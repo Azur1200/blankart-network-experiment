@@ -8138,8 +8138,10 @@ INT32 MR_QuitTimeAttackMenu(INT32 choice)
 		modeattacking = ATTACKING_NONE;
 	}
 
+	if (modeattacking == ATTACKING_NONE)
+		levellistmode_ta = LLM__MAX;
+
 	S_StopMusicCredit();
-	levellistmode_ta = LLM__MAX;
 	return true;
 }
 
