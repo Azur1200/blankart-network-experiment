@@ -1176,6 +1176,43 @@ UINT32 ApproachUINT32(UINT32 current, UINT32 target, UINT32 inc, UINT32 dec)
 	return current;
 }
 
+/** \brief Returns the signed 64-bit value 'current' after it tries to approach target, going up at most
+ 'inc' and going down at most 'dec'.
+ *
+ * If target is close to the max or min of INT64, then it's possible to overflow past it without
+ stopping.
+
+	\param current	(INT64) current value
+
+	\param target	(INT64) target value
+
+	\param inc	(INT64) value to increment by
+
+	\param dec	(INT64) value to decrement by
+
+	\return		(INT64) current value after incrementing/decrementing
+*/
+INT64 ApproachINT64(INT64 current, INT64 target, INT64 inc, INT64 dec)
+{
+	if (current < target)
+	{
+		current += inc;
+		if (current > target)
+		{
+			current = target;
+		}
+	}
+	else
+	{
+		current -= dec;
+		if (current < target)
+		{
+			current = target;
+		}
+	}
+	return current;
+}
+
 /** \brief Returns the fixed-point value 'current' after it tries to approach target, going up at
  most 'inc' and going down at most 'dec'.
  *

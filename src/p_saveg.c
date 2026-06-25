@@ -636,6 +636,12 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].flipovertimer);
 		SYNC(players[i].flipoverangle);
 		SYNC(players[i].squishedtimer);
+		SYNC(players[i].crash_state);
+		SYNC(players[i].crash_rot);
+		SYNC(players[i].crash_yaw);
+		SYNC(players[i].crash_elapsed);
+		SYNCBOOLEAN(players[i].crash_bumpme);
+		SYNC(players[i].crashtimer);
 		SYNC(players[i].instashield);
 		SYNC(players[i].wipeoutslow);
 		SYNC(players[i].justbumped);

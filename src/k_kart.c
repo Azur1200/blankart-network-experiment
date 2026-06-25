@@ -449,6 +449,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartaltshrinktime);
 
 	CV_RegisterVar(&cv_kartinvindamage);
+	CV_RegisterVar(&cv_kartorbijawzdmg);
+
 	CV_RegisterVar(&cv_kartinvintheme);
 
 	CV_RegisterVar(&cv_kartsmonitordist);
@@ -908,6 +910,19 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 	}
 
 	if (mobj2->player && mobj2->player->flipovertimer)
+	{
+		mobj2->player->justbumped = bumptime;
+		return false;
+	}
+
+	// Don't bump if you're crashing
+	if (mobj1->player && mobj1->player->crash_state && (!mobj1->player->crash_bumpme))
+	{
+		mobj1->player->justbumped = bumptime;
+		return false;
+	}
+
+	if (mobj2->player && mobj2->player->crash_state && (!mobj2->player->crash_bumpme))
 	{
 		mobj2->player->justbumped = bumptime;
 		return false;
@@ -3330,7 +3345,7 @@ SINT8 K_GetForwardMove(const player_t *player)
 	if ((player->exiting || mapreset) ||
 		player->pflags & PF_STASIS ||
 		player->spinouttimer ||
-		player->flipovertimer) // pw_introcam?
+		player->flipovertimer || player->crash_state) // pw_introcam?
 	{
 		forwardmove = 0;
 		if (player->sneakertimer)
@@ -3347,7 +3362,7 @@ SINT8 K_GetSideMove(const player_t *player)
 	if ((player->exiting || mapreset) ||
 		player->pflags & PF_STASIS ||
 		player->spinouttimer ||
-		player->flipovertimer) // pw_introcam?
+		player->flipovertimer || player->crash_state) // pw_introcam?
 	{
 		sidemove = 0;
 	}
@@ -3651,6 +3666,12 @@ void K_SpinPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 typ
 	(void)inflictor;
 	(void)source;
 
+	if (player->crash_state)
+	{
+		// Player is crashing, don't spin them out!
+		return;
+	}
+
 	K_DirectorFollowAttack(player, inflictor, source);
 
 	player->spinouttype = type;
@@ -3703,6 +3724,191 @@ void K_FlipPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 	P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
 }
 
+#define TUMBLESTART_DIV (60303) // 0.920161
+
+// This makes the player "roll over" along the ground for some time
+void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
+{
+	if (!player)
+		return;
+
+	if (P_MobjWasRemoved(player->mo))
+		return;
+
+	if (player->crash_state)
+		return; // Already crashing; don't combo!
+	
+	K_DirectorFollowAttack(player, inflictor, source);
+
+	K_StatPlayerHit(player, source ? source->player : NULL);
+
+	{
+		// Cut the momentum in half so the hit still feels punishing
+		fixed_t momentum = FixedMul(min(K_GetKartSpeedFromStat(player->kartspeed, false, 0), K_Momentum2D(player->mo)), 3 * FRACUNIT / 4);
+
+		angle_t momentum_angle = K_MomentumAngle(player->mo);
+
+		// At spinout, player speed is increased to 1/4 their regular speed, moving them forward
+		fixed_t min_spd = K_GetKartSpeed(player, true, true) / 4;
+
+		if (momentum < min_spd)
+		{
+			P_InstaThrust(player->mo, momentum_angle, FixedMul(min_spd, player->mo->scale));
+		}
+		else
+		{
+			P_InstaThrust(player->mo, momentum_angle, FixedMul(momentum, TUMBLESTART_DIV));
+		}
+
+		fixed_t my_gravity = abs(P_GetMobjGravity(player->mo));
+
+		fixed_t zjump = CrashZMomentum(my_gravity);
+
+		I_OutputMsg("crash jump: %f (fixedpt: %d), gravity: %f, global grav: %f\n",
+			FIXED_TO_FLOAT(zjump), zjump, FIXED_TO_FLOAT(my_gravity), FIXED_TO_FLOAT(gravity));
+
+		player->mo->momz = FixedMul(zjump, player->mo->scale) * P_MobjFlip(player->mo);
+
+		// Start tumbling!
+		player->crash_state = CRASH_TURNTOSIDE;
+
+		// Goofy sound for the tumble
+		S_StartSound(player->mo, sfx_s3k9b);
+
+		// This only decrements during the actual tumbling
+		player->crashtimer = CRASH_TUMBLETIME;
+	}
+
+	P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
+}
+
+#undef TUMBLESTART_DIV
+
+void K_ResetCrashData(player_t *player)
+{
+	if (!player)
+		return; // No player
+
+	if (!player->crash_state)
+	{
+		return; // Not even crashing
+	}
+
+	player->crash_elapsed = 0;
+	player->crash_rot = 0;
+	player->crash_state = 0;
+	player->crash_yaw = 0;
+	player->crashtimer = 0;
+	player->crash_bumpme = false;
+}
+
+void K_Player_CrashThinker(player_t *player)
+{
+	if (!player)
+		return; // No player
+
+	if (P_MobjWasRemoved(player->mo))
+		return; // No object
+
+	if (!player->crash_state)
+	{
+		player->crash_bumpme = false;
+		return; // Not even crashing
+	}
+
+	// Crashing/tumbling overrides both getting spun out and flipped over
+	player->flipovertimer = 0;
+	player->spinouttimer = 0;
+
+	// Update time spent crashing
+	player->crash_elapsed++;
+
+	switch(player->crash_state)
+	{
+		case CRASH_FINISH:
+			// Clear all datapoints
+			K_ResetCrashData(player);
+			break;
+		case CRASH_REORIENT:
+			if (P_IsObjectOnGround(player->mo) && (!player->crashtimer))
+			{
+				player->crashtimer = 1;
+
+				fixed_t my_gravity = abs(P_GetMobjGravity(player->mo));
+				player->mo->momz = FixedMul(CrashFinishZMomentum(my_gravity), player->mo->scale) * P_MobjFlip(player->mo);
+			}
+
+			if (player->crash_yaw)
+			{
+				// Reorient by 7 degrees every tic
+				player->crash_yaw = (angle_t)(ApproachOneWayINT64((INT64)(player->crash_yaw), 0, (INT64)(ANG1 * 7)));
+			}
+			else
+			{
+				// We're reoriented, stop crashing
+				player->crash_state = CRASH_FINISH;
+			}
+			break;
+		case CRASH_TUMBLING:
+			player->crash_rot += CRASH_TUMBLE_ROTDELTA;
+
+			if (player->crashtimer)
+				player->crashtimer--;
+
+			if (P_IsObjectOnGround(player->mo) && (player->crash_rot >= (90 * FRACUNIT)) && (player->crash_rot < (135 * FRACUNIT)))
+			{
+				fixed_t my_gravity = abs(P_GetMobjGravity(player->mo));
+				player->mo->momz = FixedMul(CrashFinishZMomentum(my_gravity), player->mo->scale) * P_MobjFlip(player->mo);
+
+				if (S_SoundPlaying(player->mo, sfx_s3k6f))
+				{
+					S_StopSoundByID(player->mo, sfx_s3k6f);
+				}
+
+				S_StartSound(player->mo, sfx_s3kae);
+			}
+
+			if (player->crash_rot >= (360 * FRACUNIT))
+			{
+				if (player->crashtimer)
+				{
+					UINT8 num_revolutions = ((player->crash_rot / FRACUNIT) / 360);
+
+					// Reset to in-between [0, 359]
+					player->crash_rot -= ((360 * num_revolutions) * FRACUNIT);
+				}
+				else
+				{
+					// We need to stop tumbling!
+					player->crash_rot = 0;
+					player->crash_state = CRASH_REORIENT;
+				}
+			}
+
+			if (P_IsObjectOnGround(player->mo) && (!S_SoundPlaying(player->mo, sfx_s3k6f)))
+			{
+				S_StartSoundAtVolume(player->mo, sfx_s3k6f, 128);
+			}
+
+			break;
+		case CRASH_TURNTOSIDE:
+			// Turn the crashing player to the side before we actually start tumbling
+			if (player->crash_yaw >= CRASH_TUMBLE_TARGETANGLE)
+			{
+				player->crash_state = CRASH_TUMBLING;
+			}
+			else
+			{
+				if ((player->crash_yaw + CRASH_TUMBLE_YAWDELTA) >= CRASH_TUMBLE_TARGETANGLE)
+					player->crash_yaw = CRASH_TUMBLE_TARGETANGLE;
+				else
+					player->crash_yaw += CRASH_TUMBLE_YAWDELTA;
+			}
+		default:
+			break;
+	}
+}
+
 void K_RemoveGrowShrink(player_t *player)
 {
 	if (player->mo && !P_MobjWasRemoved(player->mo))
@@ -3733,6 +3939,12 @@ void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
 	(void)inflictor;
 	(void)source;
+
+	if (player->crash_state)
+	{
+		// Getting squished while crashing; kill the crash and let explosion damage take over
+		K_ResetCrashData(player);
+	}
 
 	player->squishedtimer = TICRATE;
 
@@ -3779,6 +3991,12 @@ INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source) // A 
 
 	K_DirectorFollowAttack(player, inflictor, source);
 
+	if (player->crash_state)
+	{
+		// Getting blown up while crashing; kill the crash and let explosion damage take over
+		K_ResetCrashData(player);
+	}
+
 	player->mo->momz = 18*mapobjectscale*P_MobjFlip(player->mo); // please stop forgetting mobjflip checks!!!!
 	if (player->mo->eflags & MFE_UNDERWATER)
 		player->mo->momz = (117 * player->mo->momz) / 200;
@@ -3813,7 +4031,7 @@ INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source) // A 
 
 boolean K_IsPlayerDamaged(const player_t *player)
 {
-	return ((player->spinouttimer > 0) || (player->flipovertimer > 0));
+	return ((player->spinouttimer > 0) || (player->flipovertimer > 0) || (player->crash_state != 0));
 }
 
 void K_HandleBumperChanges(player_t *player, UINT8 prevBumpers)
@@ -7441,7 +7659,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->spinouttimer != 0
 		|| player->wipeoutslow != 0
 		|| player->squishedtimer != 0
-		|| player->flipovertimer != 0)
+		|| player->flipovertimer != 0
+		|| player->crash_state != 0)
 	{
 		if ((player->spinouttimer || player->wipeoutslow) && ( player->spinouttype & KSPIN_IFRAMES ) == 0)
 			player->flashing = 0;
@@ -7452,6 +7671,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	{
 		player->flashing--;
 	}
+
+	K_Player_CrashThinker(player);
 
 	if (player->flipovertimer)
 	{

@@ -325,6 +325,12 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(spinouttype) \
 	X(flipovertimer) \
 	X(flipoverangle) \
+	X(crashtimer) \
+	X(crash_elapsed) \
+	X(crash_state) \
+	X(crash_yaw) \
+	X(crash_rot) \
+	X(crash_bumpme) \
 	X(instashield) \
 	X(wipeoutslow) \
 	X(justbumped) \
@@ -655,6 +661,24 @@ static int player_get(lua_State *L)
 		break;
 	case player_flipoverangle:
 		lua_pushinteger(L, plr->flipoverangle);
+		break;
+	case player_crashtimer:
+		lua_pushinteger(L, plr->crashtimer);
+		break;
+	case player_crash_state:
+		lua_pushinteger(L, plr->crash_state);
+		break;
+	case player_crash_elapsed:
+		lua_pushinteger(L, plr->crash_elapsed);
+		break;
+	case player_crash_rot:
+		lua_pushinteger(L, plr->crash_rot);
+		break;
+	case player_crash_yaw:
+		lua_pushinteger(L, plr->crash_yaw);
+		break;
+	case player_crash_bumpme:
+		lua_pushboolean(L, plr->crash_bumpme);
 		break;
 	case player_instashield:
 		lua_pushinteger(L, plr->instashield);
@@ -1501,6 +1525,24 @@ static int player_set(lua_State *L)
 		break;
 	case player_flipoverangle:
 		plr->flipoverangle = luaL_checkinteger(L, 3);
+		break;
+	case player_crashtimer:
+		plr->crashtimer = luaL_checkinteger(L, 3);
+		break;
+	case player_crash_state:
+		plr->crash_state = (crashstate_e)(luaL_checkinteger(L, 3));
+		break;
+	case player_crash_elapsed:
+		return NOSET;
+		break;
+	case player_crash_rot:
+		plr->crash_rot = luaL_checkfixed(L, 3);
+		break;
+	case player_crash_yaw:
+		plr->crash_yaw = luaL_checkinteger(L, 3);
+		break;
+	case player_crash_bumpme:
+		plr->crash_bumpme = luaL_checkboolean(L, 3);
 		break;
 	case player_instashield:
 		plr->instashield = luaL_checkinteger(L, 3);

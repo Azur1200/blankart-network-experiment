@@ -3929,6 +3929,50 @@ static int lib_kExplodePlayer(lua_State *L)
 	return 1;
 }
 
+static int lib_kFlipPlayer(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	mobj_t *source = NULL;
+	mobj_t *inflictor = NULL;
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	if (!lua_isnone(L, 2) && lua_isuserdata(L, 2))
+		inflictor = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+	if (!lua_isnone(L, 3) && lua_isuserdata(L, 3))
+		source = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
+	K_FlipPlayer(player, inflictor, source);
+	return 0;
+}
+
+static int lib_kTumblePlayer(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	mobj_t *source = NULL;
+	mobj_t *inflictor = NULL;
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	if (!lua_isnone(L, 2) && lua_isuserdata(L, 2))
+		inflictor = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+	if (!lua_isnone(L, 3) && lua_isuserdata(L, 3))
+		source = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
+	K_TumblePlayer(player, inflictor, source);
+	return 0;
+}
+
+static int lib_kResetCrashData(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	K_ResetCrashData(player);
+	return 0;
+}
+
 static int lib_kTakeBumpersFromPlayer(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -3941,6 +3985,12 @@ static int lib_kTakeBumpersFromPlayer(lua_State *L)
 		return LUA_ErrInvalid(L, "player_t");
 	K_TakeBumpersFromPlayer(player, victim, amount);
 	return 0;
+}
+
+static int lib_kGetOrbiJawzDamage(lua_State *L)
+{
+	lua_pushinteger(L, K_GetOrbiJawzDamage());
+	return 1;
 }
 
 static int lib_kSpawnKartExplosion(lua_State *L)
@@ -5735,6 +5785,8 @@ static int lib_kGetItemListEntry(lua_State *L)
 	return 1;
 }
 
+
+
 // G_INPUT
 ////////////
 
@@ -6065,6 +6117,10 @@ static luaL_Reg lib[] = {
 	{"K_SpawnBattlePoints",lib_kSpawnBattlePoints},
 	{"K_SpinPlayer",lib_kSpinPlayer},
 	{"K_ExplodePlayer",lib_kExplodePlayer},
+	{"K_FlipPlayer",lib_kFlipPlayer},
+	{"K_TumblePlayer",lib_kTumblePlayer},
+	{"K_ResetCrashData",lib_kResetCrashData},
+	{"K_GetOrbiJawzDamage",lib_kGetOrbiJawzDamage},
 	{"K_TakeBumpersFromPlayer",lib_kTakeBumpersFromPlayer},
 	{"K_SpawnKartExplosion",lib_kSpawnKartExplosion},
 	{"K_SpawnMineExplosion",lib_kSpawnMineExplosion},

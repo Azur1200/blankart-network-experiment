@@ -70,6 +70,31 @@ Make sure this matches the actual number of states
       ((grav >> 1) * (FLIPOVERHALFTICS * FLIPOVERHALFTICS))) / \
      FLIPOVERHALFTICS)
 
+#define CRASHJUMPHEIGHT (36 << FRACBITS)
+
+#define CRASHJUMPTICS (14)
+#define CRASHJUMPHALFTICS (7)
+
+#define CRASHFINISHHEIGHT (675840) // 10.3125 * FRACUNIT
+
+#define CRASH_TUMBLETIME (11 * TICRATE / 10)
+
+#define CRASH_TUMBLE_ROTDELTA (1348169) // 20.5714285714 * FRACUNIT
+#define CRASH_TUMBLE_YAWDELTA (155891405) // 13.066... deg
+
+#define CRASH_TUMBLE_TARGETANGLE (56 * ANG1)
+
+// The initial "crash jump" after a DMG_CRASH tumble starts
+#define CrashZMomentum(grav)                                     \
+    ((CRASHJUMPHEIGHT +                                          \
+      ((grav >> 1) * (CRASHJUMPHALFTICS * CRASHJUMPHALFTICS))) / \
+     CRASHJUMPHALFTICS)
+
+#define CrashFinishZMomentum(grav)                                   \
+    ((CRASHFINISHHEIGHT +                                            \
+      ((grav >> 1) * (CRASHJUMPHALFTICS * CRASHJUMPHALFTICS))) /     \
+     CRASHJUMPHALFTICS)
+
 typedef enum
 {
 	CLSMODE_AVERAGES,
@@ -266,8 +291,11 @@ void K_DoInstashield(player_t *player);
 void K_BattleAwardHit(player_t *player, player_t *victim, mobj_t *inflictor, UINT8 bumpersRemoved);
 void K_SpinPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 type);
 void K_FlipPlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
+void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 boolean K_IsPlayerDamaged(const player_t *player);
+void K_ResetCrashData(player_t *player);
+void K_Player_CrashThinker(player_t *player);
 void K_HandleBumperChanges(player_t *player, UINT8 prevBumpers);
 void K_DestroyBumpers(player_t *player, UINT8 amount);
 void K_TakeBumpersFromPlayer(player_t *player, player_t *victim, UINT8 amount);
