@@ -468,6 +468,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbubble_boost_offroadignore);
 	CV_RegisterVar(&cv_kartflame_fastfuel);
 	CV_RegisterVar(&cv_kartflame_offroadburn);
+	CV_RegisterVar(&cv_kartflame_shove);
 	CV_RegisterVar(&cv_kartattraction_assistpower);
 	CV_RegisterVar(&cv_kartattraction_aoedmg);
 	CV_RegisterVar(&cv_kartattraction_aoeemp);
@@ -13039,4 +13040,29 @@ void K_KartPlayerBumpyRoad(player_t *player)
 	}
 }
 
+void K_ShoveObject(mobj_t *victim, mobj_t *source, fixed_t force)
+{
+	vector3_t fwd = {P_ReturnThrustX(victim, victim->angle, FRACUNIT), P_ReturnThrustY(victim, victim->angle, FRACUNIT), 0};
+	vector3_t side = {source->x - victim->x, source->y - victim->y, 0};
+	vector3_t cross = {0};
+	SINT8 direction = 0;
+
+	FV3_Cross(&fwd, &side, &cross);
+	// pick using victim's left/right (negative is right of the victim here)
+	direction = -intsign(cross.z);
+	if (direction == 0) direction = 1;
+
+	P_Thrust(victim, victim->angle + (direction * ANGLE_90), force);
+	
+	if (victim->player && (!victim->player->justbumped))
+	{
+		S_StartSound(victim, sfx_vclgna);
+		FV3_Load(&fwd, P_ReturnThrustX(victim, victim->angle + (direction * ANGLE_90), FRACUNIT), P_ReturnThrustY(victim, victim->angle + (direction * ANGLE_90), FRACUNIT), 0);
+		// intentionally not normalized, we wanna keep magnitude too
+		FV3_Load(&side, victim->momx, victim->momy, 0);
+		FV3_Load(&cross, source->momx, source->momy, 0);
+		K_AddTiltImpulse(victim->player, victim->radius, CLAMP(abs(FixedMul(FV3_Dot(&side, &fwd), FV3_Magnitude(&cross)))/2, 8*victim->scale, 32*victim->scale)*direction);
+		K_SetPlayerBumped(victim->player, source);
+	}
+}
 //}

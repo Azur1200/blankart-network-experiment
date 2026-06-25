@@ -425,6 +425,8 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 			}
 			else if (P_IsObjectOnGround(t2))
 			{
+				K_ShoveObject(t1, t2, t1->scale/2);
+				K_ShoveObject(t2, t1, t1->scale);
 				S_StartSound(t2, sfx_cdfm37);
 				K_SpawnEggMineBumpEffect(t1);
 				t1->extravalue1 = 6;
@@ -1274,17 +1276,50 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	}
 
 	// Flame Shield dash damage
-	t1Condition = flameT1;
-	t2Condition = flameT2;
+	if (cv_kartflame_shove.value)
+	{
+		if (flameT1 == true && flameT2 == false)
+		{
+			K_ShoveObject(t2, t1, 5*t1->scale);
+			return true;
+		}
+		else if (flameT1 == false && flameT2 == true)
+		{
+			K_ShoveObject(t1, t2, 5*t1->scale);
+			return true;
+		}
+		else
+		{
+			// non-overheating / "residual" flame, shove is much weaker
+			t1Condition = ((t1->player->flamestore >= 1));
+			t2Condition = ((t2->player->flamestore >= 1));
+			if (t1Condition == true && t2Condition == false)
+			{
+				K_ShoveObject(t2, t1, 2*t1->scale);
+				return true;
+			}
+			else if (t1Condition == false && t2Condition == true)
+			{
+				K_ShoveObject(t1, t2, 2*t1->scale);
+				return true;
+			}
+		}
+	}
+	else
+	{
+		t1Condition = flameT1;
+		t2Condition = flameT2;
 
-	if (t1Condition == true && t2Condition == false)
-	{
-		return P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
+		if (t1Condition == true && t2Condition == false)
+		{
+			return P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
+		}
+		else if (t1Condition == false && t2Condition == true)
+		{
+			return P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
+		}
 	}
-	else if (t1Condition == false && t2Condition == true)
-	{
-		return P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
-	}
+
 
 	// Attraction Shield tackle damage
 	// players with Bubble Shield equipped are protected

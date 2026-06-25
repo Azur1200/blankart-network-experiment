@@ -4954,6 +4954,19 @@ static int lib_kAddTiltMomentum(lua_State *L)
 	return 0;
 }
 
+static int lib_kShoveObject(lua_State *L)
+{
+	mobj_t *victim = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	mobj_t *source = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
+	fixed_t force = luaL_checkinteger(L, 3);
+	if (!victim)
+		return LUA_ErrInvalid(L, "mobj_t");
+	if (!source)
+		return LUA_ErrInvalid(L, "mobj_t");
+	K_ShoveObject(victim, source, force);
+	return 0;
+}
+
 static int lib_kMissileOrKartItem(lua_State *L)
 {
 	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
@@ -6197,6 +6210,8 @@ static luaL_Reg lib[] = {
 	
 	{"K_AddTiltImpulse", lib_kAddTiltImpulse},
 	{"K_AddTiltMomentum", lib_kAddTiltMomentum},
+
+	{"K_ShoveObject", lib_kShoveObject},
 
 	// kart stuff that's in other places for some reason
 	{"K_IsMissileOrKartItem", lib_kMissileOrKartItem},
