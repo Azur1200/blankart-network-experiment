@@ -63,10 +63,47 @@ static void K_SetHitThing(mobj_t *t1, mobj_t *t2)
 	P_SetTarget(&g_tm.hitthing, t1 == g_tm.thing ? t2 : t1);
 }
 
+#define NOMOREWIPEOUTS (10) // This is when wipeout damage becomes egregious
+
+static UINT8 K_GetOrbiJawzDamage(void)
+{
+	if (cv_kartorbijawzdmg.value)
+		return (UINT8)(cv_kartorbijawzdmg.value); // Just return the raw damage value, since it's part of the cvar
+
+	// Otherwise, we're likely doing automatic damage balancing
+
+	// FIXME: Do I need to say it?
+
+	INT32 i = 0;
+	INT32 numplaying = 0;
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue; // Not playing
+
+		if (players[i].spectator || P_MobjWasRemoved(players[i].mo))
+			continue; // Spectating, or has no object
+
+		numplaying++;
+	}
+
+	if (numplaying >= NOMOREWIPEOUTS)
+	{
+		// Using wipeout damage at this point would feel plain _bad_, so let's use crash damage
+		return DMG_CRASH;
+	}
+
+	return DMG_WIPEOUT;
+}
+
+#undef NOMOREWIPEOUTS
+
 boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 {
 	boolean damageitem = false;
 	boolean sprung = false;
+
+	UINT8 orbidamage = K_GetOrbiJawzDamage();
 
 	if (itempushing && t2->type == MT_RANDOMITEM
 	 && (t1->type == MT_JAWZ_DUD || (t1->type == MT_ORBINAUT && t1->flags2 & MF2_AMBUSH)))
@@ -106,8 +143,15 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 		}
 		else
 		{
+			if ((!P_IsObjectOnGround(t1)) && (!P_IsObjectOnGround(t2)) && ((orbidamage & DMG_TYPEMASK) == DMG_CRASH))
+			{
+				// If *both* the Orbinaut and the player are in the air, activate bumping
+				t2->player->crash_bumpme = true;
+			}
+
+
 			// Player Damage
-			P_DamageMobj(t2, t1, t1->target, 1, DMG_WIPEOUT);
+			P_DamageMobj(t2, t1, t1->target, 1, orbidamage);
 			K_SetHitThing(t2, t1);
 			S_StartSound(t2, sfx_s3k7b);
 			//damageitem = true; // delayed until K_KartBouncing, don't mess with the orbi's momentum
