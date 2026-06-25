@@ -2282,6 +2282,13 @@ void P_MovePlayer(player_t *player)
 		player->glanceDir = 0;
 		player->pflags &= ~PF_GAINAX;
 	}
+	else if (player->crash_state)
+	{
+		P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
+
+		player->drawangle = player->mo->angle - player->crash_yaw;
+		player->mo->rollangle = FixedAngle(player->crash_rot);
+	}
 	else if (player->flipovertimer > 0)
 	{
 		player->mo->rollangle = (angle_t)(player->flipovertimer - 1) * FLIPOVERANG;

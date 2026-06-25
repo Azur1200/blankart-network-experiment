@@ -470,6 +470,7 @@ void FM_Scale(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z);
 
 INT32 ApproachINT32(INT32 current, INT32 target, INT32 inc, INT32 dec);
 UINT32 ApproachUINT32(UINT32 current, UINT32 target, UINT32 inc, UINT32 dec);
+INT64 ApproachINT64(INT64 current, INT64 target, INT64 inc, INT64 dec);
 fixed_t ApproachFixed(fixed_t current, fixed_t target, fixed_t inc, fixed_t dec);
 
 /** \brief Returns the INT32 value ``current`` after it tries to approach ``target``, going up
@@ -503,6 +504,8 @@ fixed_t ApproachFixed(fixed_t current, fixed_t target, fixed_t inc, fixed_t dec)
 	\return		(UINT32) current value after incrementing/decrementing
 */
 #define ApproachOneWayUINT32(current, target, delta) (ApproachUINT32(current, target, delta, delta))
+
+#define ApproachOneWayINT64(current, target, delta) (ApproachINT64(current, target, delta, delta))
 
 #define ApproachOneWayFixed(current, target, delta) (ApproachFixed(current, target, delta, delta))
 

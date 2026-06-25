@@ -529,6 +529,14 @@ typedef enum
 	KARMAMODE_EGGMAN,
 } karmamode_e;
 
+typedef enum
+{
+	CRASH_TURNTOSIDE = 1,
+	CRASH_TUMBLING,
+	CRASH_REORIENT,
+	CRASH_FINISH
+} ATTRPACK crashstate_e;
+
 struct playermagnet_t
 {
 	fixed_t factor; // How much extra speed do we want to give the player?
@@ -657,11 +665,20 @@ struct player_t
 	UINT8 respawn;			// Timer given when you die.
 	
 	UINT16 flashing;
+
+	// Damage
 	UINT16 spinouttimer;	// Spin-out from a banana peel or oil slick (was "pw_bananacam")
 	UINT8 spinouttype;		// Determines the mode of spinout/wipeout, see kartspinoutflags_t
 
-	UINT16 flipovertimer;   // Flipped over by a player using Invincibility.
+	UINT16 flipovertimer;   // Flipped over by a player.
 	angle_t flipoverangle;  // Movement angle for a flipped-over player.
+
+	crashstate_e crash_state; // Current state of the crash animation
+	UINT16 crashtimer;		// Crashing and tumbling due to an Orbinaut or other wipeout item
+	tic_t crash_elapsed;	// How long you've spent tumbling
+	fixed_t crash_rot;		// Current tumble rotation. Need to rotate 360 degrees before you reorient!
+	angle_t crash_yaw;		// Current angle offset for the tumble
+	boolean crash_bumpme;	// "Bump me!" This crashing player should bump for this interaction only
 
 	UINT8 instashield;		// Instashield no-damage animation timer
 	UINT8 wipeoutslow;		// Timer before you slowdown when getting wiped out

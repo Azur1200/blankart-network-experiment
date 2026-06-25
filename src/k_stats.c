@@ -39,7 +39,9 @@ void K_StatTicker(void)
 		if (p->position == spbplace)
 			kartstats.spbtargettime++;
 
-		if (p->flipovertimer > 0)
+		if (p->crash_state != 0)
+			kartstats.spinouttime++;
+		else if (p->flipovertimer > 0)
 			kartstats.spinouttime++;
 		else if (max(p->spinouttimer, p->wipeoutslow) > 0)
 			kartstats.spinouttime++;
