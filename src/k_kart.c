@@ -12832,14 +12832,15 @@ void K_ShoveObject(mobj_t *victim, mobj_t *source, fixed_t force)
 	if (direction == 0) direction = 1;
 
 	P_Thrust(victim, victim->angle + (direction * ANGLE_90), force);
-	K_SpawnBumpsForMobj(victim, source);
 	
 	if (victim->player && (!victim->player->justbumped))
 	{
 		S_StartSound(victim, sfx_vclgna);
 		FV3_Load(&fwd, P_ReturnThrustX(victim, victim->angle + (direction * ANGLE_90), FRACUNIT), P_ReturnThrustY(victim, victim->angle + (direction * ANGLE_90), FRACUNIT), 0);
+		// intentionally not normalized, we wanna keep magnitude too
 		FV3_Load(&side, victim->momx, victim->momy, 0);
-		K_AddTiltImpulse(victim->player, victim->radius, CLAMP(abs(FV3_Dot(&side, &fwd))/5, 8*victim->scale, 32*victim->scale)*direction);
+		FV3_Load(&cross, source->momx, source->momy, 0);
+		K_AddTiltImpulse(victim->player, victim->radius, CLAMP(abs(FixedMul(FV3_Dot(&side, &fwd), FV3_Magnitude(&cross)))/2, 8*victim->scale, 32*victim->scale)*direction);
 		K_SetPlayerBumped(victim->player, source);
 	}
 }

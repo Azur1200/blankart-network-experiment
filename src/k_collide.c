@@ -381,10 +381,11 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 			}
 			else if (P_IsObjectOnGround(t2))
 			{
+				K_ShoveObject(t1, t2, t1->scale/2);
+				K_ShoveObject(t2, t1, t1->scale);
 				S_StartSound(t2, sfx_cdfm37);
 				K_SpawnEggMineBumpEffect(t1);
 				t1->extravalue1 = 6;
-				K_ShoveObject(t2, t1, t1->scale);
 				return true;
 			}
 		}
