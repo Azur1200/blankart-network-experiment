@@ -477,7 +477,7 @@ void K_KartPlayerBumpyRoad(player_t *player);
 
 fixed_t K_HandleAirDrag(player_t *player, boolean onground, fixed_t speed, fixed_t airdrag);
 
-void K_ShovePlayer(mobj_t *victim, mobj_t *source, fixed_t force);
+void K_ShoveObject(mobj_t *victim, mobj_t *source, fixed_t force);
 
 #ifdef __cplusplus
 } // extern "C"

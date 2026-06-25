@@ -384,6 +384,7 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 				S_StartSound(t2, sfx_cdfm37);
 				K_SpawnEggMineBumpEffect(t1);
 				t1->extravalue1 = 6;
+				K_ShoveObject(t2, t1, t1->scale);
 				return true;
 			}
 		}
@@ -1234,12 +1235,12 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	{
 		if (flameT1 == true && flameT2 == false)
 		{
-			K_ShovePlayer(t2, t1, 5*t1->scale);
+			K_ShoveObject(t2, t1, 5*t1->scale);
 			return true;
 		}
 		else if (flameT1 == false && flameT2 == true)
 		{
-			K_ShovePlayer(t1, t2, 5*t1->scale);
+			K_ShoveObject(t1, t2, 5*t1->scale);
 			return true;
 		}
 		else
@@ -1249,12 +1250,12 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 			t2Condition = ((t2->player->flamestore >= 1));
 			if (t1Condition == true && t2Condition == false)
 			{
-				K_ShovePlayer(t2, t1, 2*t1->scale);
+				K_ShoveObject(t2, t1, 2*t1->scale);
 				return true;
 			}
 			else if (t1Condition == false && t2Condition == true)
 			{
-				K_ShovePlayer(t1, t2, 2*t1->scale);
+				K_ShoveObject(t1, t2, 2*t1->scale);
 				return true;
 			}
 		}

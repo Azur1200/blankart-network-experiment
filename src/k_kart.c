@@ -12819,7 +12819,7 @@ void K_KartPlayerBumpyRoad(player_t *player)
 	}
 }
 
-void K_ShovePlayer(mobj_t *victim, mobj_t *source, fixed_t force)
+void K_ShoveObject(mobj_t *victim, mobj_t *source, fixed_t force)
 {
 	vector3_t fwd = {P_ReturnThrustX(victim, victim->angle, FRACUNIT), P_ReturnThrustY(victim, victim->angle, FRACUNIT), 0};
 	vector3_t side = {source->x - victim->x, source->y - victim->y, 0};
