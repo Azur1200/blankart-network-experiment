@@ -12833,13 +12833,13 @@ void K_ShovePlayer(mobj_t *victim, mobj_t *source, fixed_t force)
 
 	P_Thrust(victim, victim->angle + (direction * ANGLE_90), force);
 	K_SpawnBumpsForMobj(victim, source);
-
-	if (victim->player)
+	
+	if (victim->player && (!victim->player->justbumped))
 	{
-		// use the speed difference between the two objects for angular impulse calc
-		// this may or may not look awkward in some cases? will be looked into as we develop this effect more
-		FV3_Load(&side, victim->momx - source->momx, victim->momy - source->momy, victim->momz - source->momz);
-		K_AddTiltImpulse(victim->player, victim->radius, CLAMP(FV3_Magnitude(&side)/10, 8*victim->scale, 32*victim->scale)*direction);
+		S_StartSound(victim, sfx_vclgna);
+		FV3_Load(&fwd, P_ReturnThrustX(victim, victim->angle + (direction * ANGLE_90), FRACUNIT), P_ReturnThrustY(victim, victim->angle + (direction * ANGLE_90), FRACUNIT), 0);
+		FV3_Load(&side, victim->momx, victim->momy, 0);
+		K_AddTiltImpulse(victim->player, victim->radius, CLAMP(abs(FV3_Dot(&side, &fwd))/5, 8*victim->scale, 32*victim->scale)*direction);
 		K_SetPlayerBumped(victim->player, source);
 	}
 }
