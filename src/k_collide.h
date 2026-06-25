@@ -10,6 +10,7 @@ extern "C" {
 
 angle_t K_GetCollideAngle(mobj_t *t1, mobj_t *t2);
 void K_ItemDamage(mobj_t *t1, mobj_t *t2, boolean clash);
+UINT8 K_GetOrbiJawzDamage(void);
 boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2);
 boolean K_BananaBallhogCollide(mobj_t *t1, mobj_t *t2);
 boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2);

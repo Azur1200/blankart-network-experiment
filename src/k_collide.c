@@ -65,7 +65,7 @@ static void K_SetHitThing(mobj_t *t1, mobj_t *t2)
 
 #define NOMOREWIPEOUTS (10) // This is when wipeout damage becomes egregious
 
-static UINT8 K_GetOrbiJawzDamage(void)
+UINT8 K_GetOrbiJawzDamage(void)
 {
 	if (cv_kartorbijawzdmg.value)
 		return (UINT8)(cv_kartorbijawzdmg.value); // Just return the raw damage value, since it's part of the cvar
