@@ -137,7 +137,7 @@ skincolornum_t K_GetHudColor(void);
 void K_LoadKartHUDGraphics(void);
 void K_drawKartHUD(void);
 void K_drawKartFreePlay(void);
-void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UINT8 mode);
+void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, mapnum_t emblemmap, UINT8 mode);
 INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer, INT32 hilicol, boolean split);
 void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer, INT32 hilicol);
 
@@ -192,6 +192,9 @@ extern patch_t *kp_itemtarget_far_text[2];
 extern patch_t *kp_itemtarget_near[2][8];
 
 boolean K_UseHighResPortraits(void);
+
+extern patch_t *kp_splitlapflag;
+extern consvar_t cv_show_riders_finish_ticker;
 
 #ifdef __cplusplus
 } // extern "C"

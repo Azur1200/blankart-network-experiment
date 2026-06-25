@@ -37,7 +37,21 @@
 #include <vector>
 #include <algorithm>
 
+typedef enum
+{
+	ITM_HUD = 0,
+	ITM_FOLLOW,
+} itemtimermode_e;
+
+static CV_PossibleValue_t itemtimermode_cons_t[]= {
+	{ITM_HUD, "HUD"},
+	{ITM_FOLLOW, "Follow"},
+	{0, NULL}
+};
+
 consvar_t cv_itemtimers = CVAR_INIT ("itemtimers", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_itemtimers_mode = CVAR_INIT ("itemtimers_mode", "HUD", CV_SAVE, itemtimermode_cons_t, NULL);
+
 
 typedef struct itimer_s
 {
@@ -166,6 +180,26 @@ void K_AddItemTimerEx(
 		addTimers.push_back(t);
 }
 
+static trackingResult_t K_getTimersPositionForTrackingPlayer(void)
+{
+	trackingResult_t result = {0};
+
+	// No player object? Not bothering.
+	const boolean doesPlayerHaveMo = !((stplyr->mo == NULL || P_MobjWasRemoved(stplyr->mo)));
+	if (!doesPlayerHaveMo)
+		return result;
+
+	vector3_t v = {
+		R_InterpolateFixed(stplyr->mo->old_x, stplyr->mo->x) + stplyr->mo->sprxoff,
+		R_InterpolateFixed(stplyr->mo->old_y, stplyr->mo->y) + stplyr->mo->spryoff,
+		R_InterpolateFixed(stplyr->mo->old_z, stplyr->mo->z) + stplyr->mo->sprzoff + (stplyr->mo->height >> 1),
+	};
+
+	K_ObjectTracking(&result, &v, false);
+
+	return result;
+}
+
 void K_getTimersDrawinfo(drawinfo_t *out)
 {
 	INT32 fx, fy, flags = V_HUDTRANS|V_SNAPTOBOTTOM|V_SPLITSCREEN;
@@ -173,17 +207,36 @@ void K_getTimersDrawinfo(drawinfo_t *out)
 	fx = 160 + cv_timers_xoffset.value;
 	fy = 170 + cv_timers_yoffset.value;
 
-	if (r_splitscreen == 1)
+	if (cv_itemtimers_mode.value == ITM_HUD)
 	{
-		flags &= ~V_SNAPTOBOTTOM;
-		fx = 160;
-		fy = 75;
+		if (r_splitscreen == 1)
+		{
+			flags &= ~V_SNAPTOBOTTOM;
+			fx = 160;
+			fy = 75;
+		}
+		else if (r_splitscreen > 1)
+		{
+			flags &= ~V_SNAPTOBOTTOM;
+			fy = 75;
+			fx = 80;
+		}
 	}
-	else if (r_splitscreen > 1)
+	else
 	{
-		flags &= ~V_SNAPTOBOTTOM;
-		fy = 75;
-		fx = 80;
+		trackingResult_t result = K_getTimersPositionForTrackingPlayer();
+
+		if(result.x != 0 && result.y != 0)
+		{
+			INT32 base_x = 15;
+			INT32 base_y = 18;
+			INT32 baseUpsideDown_y = 18;
+
+			const boolean isupsidedown = (stplyr->mo->eflags & MFE_VERTICALFLIP);
+
+			fx = (result.x / FRACUNIT) + base_x;
+			fy = (result.y / FRACUNIT) - (isupsidedown ? baseUpsideDown_y : base_y);
+		}
 	}
 
 	if (r_splitscreen > 0)
@@ -192,8 +245,8 @@ void K_getTimersDrawinfo(drawinfo_t *out)
 		flags |= V_HUDTRANSHALF;
 	}
 
-	out->x = fx;
-	out->y = fy;
+	out->x = fx+stplyr->karthud[khud_itemtimer_xoff];
+	out->y = fy+stplyr->karthud[khud_itemtimer_yoff];
 	out->flags = flags;
 }
 
@@ -376,8 +429,8 @@ void K_DisplayItemTimers(void)
 	{
 		INT32 itemx = 0, itemy = 0;
 		INT32 flags = 0;
-		INT32 stepx = 25;
-		//INT32 viewnum = R_GetViewNumber();
+		INT32 step = 25;
+		INT32 offs = 0;
 
 		drawinfo_t info;
 		K_getTimersDrawinfo(&info);
@@ -385,28 +438,28 @@ void K_DisplayItemTimers(void)
 		itemy = info.y;
 		flags = info.flags;
 
-		// Move it up to account for viewpoint text
-		//if (cv_showviewpointtext.value && !demo.title && !P_IsLocalPlayer(stplyr) && !camera[viewnum].freecam && !r_splitscreen)
-			//itemy -= 12;
+		if (cv_itemtimers_mode.value == ITM_FOLLOW)
+			step = 10;
 
-		// flags |= V_HUDTRANS;
+		offs = -step;
 
-		INT32 offs = -stepx;
 		for (itimer_t& t : timers)
 		{
 			INT32 timer = t.timer;
 			if (t.timer_func_ref != LUA_NOREF) timer = getLuaTimer(&t);
-			if (stplyr->deadtimer && !fastcmp(t.name, "spr_realisticexplosion")) continue;
+			if (stplyr->deadtimer) continue;
 			if (timer > 0)
-				offs += stepx;
+				offs += step;
 		}
 
-		itemx -= offs/2;
+		if (cv_itemtimers_mode.value == ITM_HUD)
+			itemx -= offs/2;
+
 		// draw relevant timers
 		for (itimer_t& t : timers)
 		{
 			if (t.timer <= 0) continue;
-			if (stplyr->deadtimer && !fastcmp(t.name, "spr_realisticexplosion")) continue;
+			if (stplyr->deadtimer) continue;
 			INT32 timer = t.timer;
 			INT32 seconds = timer / TICRATE, _centiseconds = G_TicsToCentiseconds(timer);
 
@@ -463,25 +516,55 @@ void K_DisplayItemTimers(void)
 			COLORTIMER(TAN);
 
 			patch_t *item = t.patches[patchnum];
-			V_DrawFixedPatch((itemx - (item->width/2))<<FRACBITS, (itemy - 2)<<FRACBITS, FRACUNIT, flags, t.patches[patchnum], cmap);
 
-			if (!(t.flags & TIMER_NONUMBER))
+
+			if (cv_itemtimers_mode.value == ITM_HUD)
 			{
-				V_DrawStringScaledEx(
-					(itemx - (width/2) - item->leftoffset) << FRACBITS,
-					(itemy + 12) << FRACBITS,
-					FRACUNIT,
-					FRACUNIT,
-					FRACUNIT,
-					FRACUNIT,
-					flags|V_MONOSPACE,
-					textcmap,
-					font,
-					str
-				);
+				V_DrawFixedPatch((itemx - (item->width/2))<<FRACBITS, (itemy - 2)<<FRACBITS, FRACUNIT, flags, t.patches[patchnum], cmap);
+
+				if (!(t.flags & TIMER_NONUMBER))
+				{
+					V_DrawStringScaledEx(
+						(itemx - (width/2) - item->leftoffset) << FRACBITS,
+						(itemy + 12) << FRACBITS,
+						FRACUNIT,
+						FRACUNIT,
+						FRACUNIT,
+						FRACUNIT,
+						flags|V_MONOSPACE,
+						textcmap,
+						font,
+						str
+					);
+				}
+			}
+			else
+			{
+				V_DrawFixedPatch((itemx - (item->width/2))<<FRACBITS, (itemy)<<FRACBITS, FRACUNIT/2, flags, t.patches[patchnum], cmap);
+
+				if (!(t.flags & TIMER_NONUMBER))
+				{
+					V_DrawStringScaledEx(
+						(itemx) << FRACBITS,
+						(t.flags & TIMER_COUNTER ? itemy + 2 : itemy) << FRACBITS,
+						FRACUNIT,
+						FRACUNIT,
+						FRACUNIT,
+						FRACUNIT,
+						flags|V_MONOSPACE,
+						textcmap,
+						font,
+						str
+					);
+				}
+
 			}
 
-			itemx += stepx;
+
+			if (cv_itemtimers_mode.value == ITM_HUD)
+				itemx += step;
+			else
+				itemy += step;
 		}
 	}
 }

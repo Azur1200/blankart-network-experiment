@@ -808,6 +808,8 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 			break;
 	}
 
+	event.data2 = evt.repeat;
+
 	if (event.data1) D_PostEvent(&event);
 }
 
@@ -1026,6 +1028,7 @@ static void Impl_HandleControllerButtonEvent(SDL_GamepadButtonEvent evt, Uint32 
 	}
 
 	event.data1 = KEY_JOY1 + button;
+	event.data2 = 0;
 
 	if (event.type != ev_console)
 	{
@@ -1101,8 +1104,7 @@ static void Impl_HandleControllerAddEvent(SDL_Event evt)
 	I_UpdateControllerList();
 
 	// update the menu
-	if (menustack[0] == MN_OP_JOYSTICKSET)
-		MR_SetupJoystickMenu(0);
+	M_UpdateJoystickMenu();
 
 	CONS_Debug(DBG_GAMELOGIC, "Controller device index %d added\n", joystick_id);
 }
@@ -1130,8 +1132,7 @@ static void Impl_HandleControllerRemoveEvent(SDL_Event evt)
 	I_UpdateControllerList();
 
 	// update the menu
-	if (menustack[0] == MN_OP_JOYSTICKSET)
-		MR_SetupJoystickMenu(0);
+	M_UpdateJoystickMenu();
 }
 
 void I_GetEvent(void)

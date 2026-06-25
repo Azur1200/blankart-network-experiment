@@ -1385,7 +1385,7 @@ static INT32 K_HandleBotTrack(botdata_t *bd, const player_t *player, angle_t des
 		{
 			bd->driftdown = true;
 
-			fixed_t angofs = K_GetKartSpeedFromStat(5 - (player->kartspeed - 5), false) * -bd->driftturn;
+			fixed_t angofs = K_GetKartSpeedFromStat(5 - (player->kartspeed - 5), false, player->kartmagnet.factor) * -bd->driftturn;
 
 			// adjust for speed
 			angofs = FixedMul(angofs, speedfactor - (2-gamespeed)*FRACUNIT/4);

@@ -65,6 +65,16 @@ const char *DEH_MenutypeName(menutype_t i)
 	return strbuf_get(menunames, menudefs[i].info.nameofs);
 }
 
+const char *DEH_MenuPanelName(const menupaneldef_t *pd)
+{
+	return strbuf_get(menunames, pd->info.nameofs);
+}
+
+const char *DEH_MenuItemStyleName(const menuitemstyle_t *style)
+{
+	return strbuf_get(menunames, style->info.nameofs);
+}
+
 const char *DEH_KartItemName(kartitemtype_e i)
 {
 	return strbuf_get(kartitemnames, kartitems[i].info.nameofs);
@@ -120,6 +130,32 @@ menutype_t DEH_FindMenutype(const char *word)
 			return i;
 	}
 	return MAXMENUTYPES;
+}
+
+menupaneldef_t *DEH_FindMenuPanel(const char *word)
+{
+	UINT32 hash = HASH32(word, strlen(word));
+	for (size_t i = 0; i < nummenupanels; i++) {
+		menupaneldef_t *pd = &menupanels[i];
+		if (hash != pd->info.namehash)
+			continue;
+		if (fastcmp(word, DEH_MenuPanelName(pd)))
+			return pd;
+	}
+	return NULL;
+}
+
+menuitemstyle_t *DEH_FindMenuItemStyle(const char *word)
+{
+	UINT32 hash = HASH32(word, strlen(word));
+	for (size_t i = 0; i < nummenuitemstyles; i++) {
+		menuitemstyle_t *style = &menuitemstyles[i];
+		if (hash != style->info.namehash)
+			continue;
+		if (fastcmp(word, DEH_MenuItemStyleName(style)))
+			return style;
+	}
+	return NULL;
 }
 
 kartitemtype_e DEH_FindKartItem(const char *word)
@@ -736,6 +772,19 @@ const char *const KARTHUD_LIST[] = {
 
 	"CARDANIMATION",
 	"YOUGOTEM",
+
+	"SPLITTIME",
+	"SPLITWIN",
+	"SPLITTIMER",
+	"SPLITSKIN",
+	"SPLITCOLOR",
+	"SPLITPOSITION",
+
+	"AFTERIMAGETIME",
+	"AFTERIMAGEVALUE",
+
+	"ITEMTIMER_XOFF",
+	"ITEMTIMER_YOFF",
 };
 
 const char *const HUDITEMS_LIST[] = {
@@ -767,12 +816,9 @@ const char *const HUDITEMS_LIST[] = {
 };
 
 struct menu_routine_s const MENU_ROUTINES[] = {
-	{ "SINGLEPLAYERMENU", &MR_SinglePlayerMenu },
-	{ "OPTIONS", &MR_Options },
 	{ "ADDONS", &MR_Addons },
 	{ "QUITADDONS", &MR_QuitAddons },
 	{ "QUITSRB2", &MR_QuitSRB2 },
-	{ "STATISTICS", &MR_Statistics },
 	{ "HANDLELEVELSTATS", &MR_HandleLevelStats },
 	{ "REPLAYHUT", &MR_ReplayHut },
 	{ "QUITREPLAYHUT", &MR_QuitReplayHut },
@@ -795,7 +841,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "SETUPCONTROLSMENU", &MR_SetupControlsMenu },
 	{ "REFRESH", &MR_Refresh },
 	{ "CONNECT", &MR_Connect },
-	{ "VIDEOMODEMENU", &MR_VideoModeMenu },
+	{ "SETVIDEOMODE", &MR_SetVideoMode },
 #ifdef HWRENDER
 	{ "OPENGLOPTIONSMENU", &MR_OpenGLOptionsMenu },
 #endif
@@ -803,8 +849,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "PLAYSOUND", &MR_PlaySound },
 	{ "MUSICTEST", &MR_MusicTest },
 	{ "QUITMUSICTEST", &MR_QuitMusicTest },
-	{ "SCREENSHOTOPTIONS", &MR_ScreenshotOptions },
-	{ "ADDONSOPTIONS", &MR_AddonsOptions },
 	{ "ERASEDATA", &MR_EraseData },
 	{ "CREDITS", &MR_Credits },
 	{ "BLANCREDITS", &MR_BlanCredits },
@@ -835,54 +879,93 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "PLAYBACKQUIT", &MR_PlaybackQuit },
 	{ "HANDLEIMAGEDEF", &MR_HandleImageDef },
 	{ "HANDLEMUSICTEST", &MR_HandleMusicTest },
-	{ "SETUPJOYSTICKMENU", &MR_SetupJoystickMenu },
 	{ "RESETCONTROLS", &MR_ResetControls },
 	{ "CHANGECONTROL", &MR_ChangeControl },
 	{ "ASSIGNJOYSTICK", &MR_AssignJoystick },
-	{ "SETUPMONITORTOGGLES", &MR_SetupMonitorToggles },
 	{ "HANDLEMONITORTOGGLES", &MR_HandleMonitorToggles },
 	{ "RESTARTAUDIO", &MR_RestartAudio },
-	{ "ENTERVIEWSERVER", &MR_EnterViewServer },
 	{ "QUITVIEWSERVER", &MR_QuitViewServer },
 	{ "HANDLEVIEWSERVER", &MR_HandleViewServer },
-	{ "CAMERASETUP", &MR_CameraSetup },
 	// { "BARCSS", &MR_HandleBarCss },
 	{ "HANDLESETUPMULTIPLAYERMENU", &MR_HandleSetupMultiPlayerMenu },
-	{ "PREPARELEVELPLATTER", &MR_PrepareLevelPlatter },
+	{ "SETLEVELLISTMODE", &MR_SetLevelListMode },
 	{ "HANDLELEVELPLATTER", &MR_HandleLevelPlatter },
 	{ "LEVELPLATTERRANDOM", &MR_LevelPlatterRandom },
 #ifdef HAVE_DISCORDRPC
 	{ "HANDLEDISCORDREQUESTS", &MR_HandleDiscordRequests },
 #endif
+	// Start tickers
+	{"TICKSTATS", &MR_TickStats},
+#ifdef HAVE_DISCORDRPC
+	{"TICKDISCORDREQUESTS", &MR_TickDiscordRequests},
+#endif
+	{"TICKVIEWSERVER", &MR_TickViewServer},
 
 	{ NULL, NULL }
 };
 
 struct menu_drawer_s const MENU_DRAWERS[] = {
-	{ "DRAWGENERICMENU", &MD_DrawGenericMenu },
-	{ "DRAWCHECKLIST", &MD_DrawChecklist },
 	{ "DRAWLEVELSTATS", &MD_DrawLevelStats },
-	{ "DRAWREPLAYHUT", &MD_DrawReplayHut },
 	{ "DRAWTIMEATTACKMENU", &MD_DrawTimeAttackMenu },
-	{ "DRAWMPMAINMENU", &MD_DrawMPMainMenu },
 	{ "DRAWSETUPMULTIPLAYERMENU", &MD_DrawSetupMultiPlayerMenu },
-	// { "DRAWCSSCHARACTER", &MD_DrawCssCharacter },
-	// { "DRAWBARCSSSELECTOR", &MD_DrawBarCssSelector },
-	// { "DRAWGRIDCSSSELECTOR", &MD_DrawGridCssSelector },
 	{ "DRAWVIDEOMODE", &MD_DrawVideoMode },
 	{ "DRAWADDONS", &MD_DrawAddons },
-	{ "DRAWREPLAYSTARTMENU", &MD_DrawReplayStartMenu },
 	{ "DRAWPLAYBACKMENU", &MD_DrawPlaybackMenu },
 	{ "DRAWIMAGEDEF", &MD_DrawImageDef },
 	{ "DRAWMUSICTEST", &MD_DrawMusicTest },
 	{ "DRAWJOYSTICK", &MD_DrawJoystick },
 	{ "DRAWMONITORTOGGLES", &MD_DrawMonitorToggles },
 	{ "DRAWCONNECTMENU", &MD_DrawConnectMenu },
-	{ "DRAWVIEWSERVER", &MD_DrawViewServer },
 	{ "DRAWLEVELPLATTERMENU", &MD_DrawLevelPlatterMenu },
 #ifdef HAVE_DISCORDRPC
 	{ "DRAWDISCORDREQUESTS", &MD_DrawDiscordRequests },
 #endif
+	{ NULL, NULL }
+};
+
+struct panel_func_s const PANEL_FUNCS[] = {
+	{ "SINGLEPLAYERMAIN", &MP_SinglePlayerMain },
+	{ "OPTIONS", &MP_Options },
+	{ "GAMEOPTIONS", &MP_GameOptions },
+	{ "SETUPCONTROLS", &MP_SetupControls },
+	{ "CAMERASETUP", &MP_CameraSetup },
+	{ "SCREENSHOTOPTIONS", &MP_ScreenshotOptions },
+	{ "ADDONSOPTIONS", &MP_AddonsOptions },
+	{ "SETUPMONITORTOGGLES", &MP_SetupMonitorToggles },
+	{ "PREPREPLAYLIST", &MP_PrepReplayList },
+	{ "REPLAYHUTSTART", &MP_ReplayHutStart },
+	{ "VIDEOMODELIST", &MP_VideoModeList },
+	{ "MULTIPLAYERPAUSE", &MP_MultiplayerPause },
+	{ "PLAYERSPLITSCREEN", &MP_PlayerSplitscreen },
+	{ "SETUPJOYSTICK", &MP_SetupJoystick },
+	{ "PREPARELEVELPLATTER", &MP_PrepareLevelPlatter },
+	{ "LEVELPLATTEROPTIONS", &MP_LevelPlatterOptions },
+	{ "TIMEATTACKMENU", &MP_TimeAttackMenu },
+	{ "TIMEATTACKPRESETS", &MP_TimeAttackPresets },
+	{ "SETUPVIEWSERVER", &MP_SetupViewServer },
+	{ "VIEWSERVERPLAYERS", &MP_ViewServerPlayers },
+	{ "VIEWSERVERADDONS", &MP_ViewServerAddons },
+	{ "PREPADDONLIST", &MP_PrepAddonList },
+	{ "STATSRECORDS", &MP_StatsRecords },
+	{ "STATSRECORDSBG", &MP_StatsRecordsBG },
+	{ "STATSPLAYTIME", &MP_StatsPlaytime },
+	{ "STATSEXTRA", &MP_StatsExtra },
+	{ "UNLOCKABLESCHECKLIST", &MP_UnlockablesChecklist },
+	// Start tickers
+	{"TICKPLAYBACKMENU", &MP_TickPlayBackMenu },
+	{"TICKTIMEATTACKMENU", &MP_TickTimeAttackMenu},
+	{"TICKIMAGEDEF", &MP_TickImageDef},
+	{"TICKMULTIPLAYERMENU", &MP_TickMultiPlayerMenu},
+	{"TICKADDONSURL", &MP_TickAddonsURL},
+	{"TICKADDONSBACKGROUND", &MP_TickAddonsBackground},
+	{"TICKREPLAYHUTINFOFOREGROUND", &MP_TickReplayHutInfoForeground},
+	{"TICKREPLAYHUTINFOBACKGROUND", &MP_TickReplayHutInfoBackground},
+	{"TICKREPLAYHUTMAIN", &MP_TickReplayHutMain},
+	{"TICKREPLAYHUTDEMOLIST", &MP_TickReplayHutDemoList},
+	{"TICKREPLAYHUTRANKINGS", &MP_TickReplayHutRankings},
+	{"TICKREPLAYHUTDEMOTITLE", &MP_TickReplayHutDemoTitle},
+	{"TICKOPTIONS", &MP_TickOptions},
+
 	{ NULL, NULL }
 };
 
@@ -1534,15 +1617,15 @@ struct int_const_s const INT_CONST[] = {
 	{"GS_LEVEL",GS_LEVEL},
 	{"GS_INTERMISSION",GS_INTERMISSION},
 	{"GS_TITLESCREEN",GS_TITLESCREEN},
-	{"GS_TIMEATTACK",GS_TIMEATTACK},
+	{"GS_MENU",GS_MENU},
 	{"GS_CREDITS",GS_CREDITS},
+	{"GS_BLANCREDITS",GS_BLANCREDITS},
+	{"GS_SECRETCREDITS",GS_SECRETCREDITS},
 	{"GS_EVALUATION",GS_EVALUATION},
 	{"GS_INTRO",GS_INTRO},
 	{"GS_CUTSCENE",GS_CUTSCENE},
 	{"GS_DEDICATEDSERVER",GS_DEDICATEDSERVER},
 	{"GS_WAITINGPLAYERS",GS_WAITINGPLAYERS},
-	{"GS_BLANCREDITS",GS_BLANCREDITS},
-	{"GS_SECRETCREDITS",GS_SECRETCREDITS},
 
 	// Game controls
 	{"GC_NULL",gc_null},

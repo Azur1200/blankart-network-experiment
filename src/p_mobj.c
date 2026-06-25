@@ -2437,6 +2437,8 @@ boolean P_ZMovement(mobj_t *mo)
 		mom.y = mo->momy;
 		mom.z = mo->momz;
 
+		fixed_t preclipz = mo->z;
+
 		if (mo->eflags & MFE_VERTICALFLIP)
 			mo->z = mo->ceilingz - mo->height;
 		else
@@ -2468,9 +2470,48 @@ boolean P_ZMovement(mobj_t *mo)
 			;
 		else if (mo->type == MT_PLAYER) // only DEAD players
 		{
+			boolean lastdeathbounce = false;
+
 			if (!P_CheckDeathPitFOFs(mo))
-				mom.z = -4*mom.z/5;
-			mo->flags |= MF_NOCLIPHEIGHT; // fall through floor next time
+				mom.z = max(56 * mo->scale / 5, -4*mom.z/5);
+			else if (P_CheckDeathPitCollide(mo))
+			{
+				mo->z = preclipz;
+
+				mo->player->extendeddeath = false;
+				mo->flags |= (MF_NOCLIP|MF_NOCLIPHEIGHT); // Hit a deathpit, fall through the floor
+
+				// Since we're falling into oblivion, NOW we can set the fuse!
+				mo->fuse = 3 * TICRATE;
+
+				return false;
+			}
+
+			if (mo->player)
+			{
+				if (mo->player->deadbounces == 0)
+				{
+					lastdeathbounce = true; // fall through floor next time
+					mo->player->extendeddeath = false;
+				}
+				else if (mo->player->deadbounces > 0)
+				{
+					mo->player->deadbounces--; // Take away a bounce
+
+					if (mo->player->deadbounces == 0)
+					{
+						// Our next bounce makes us fall off the screen; set the fuse.
+						mo->fuse = 3 * TICRATE;
+					}
+
+					// FIXME: Slow players down when they bounce...
+				}
+			}
+
+			if (lastdeathbounce)
+			{
+				mo->flags |= (MF_NOCLIP|MF_NOCLIPHEIGHT); // Bye bye!
+			}
 		}
 		else if (mo->flags & MF_MISSILE)
 		{
@@ -13045,7 +13086,7 @@ static boolean P_SetupEmblem(mapthing_t *mthing, mobj_t *mobj)
 		if (emblem->type == ET_GLOBAL && emblem->tag == tagnum)
 			break;
 
-		emblem = M_GetLevelEmblems(-1);
+		emblem = M_GetLevelEmblems(NEXTMAP_INVALID);
 	}
 
 	if (!emblem)
@@ -13966,6 +14007,11 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		*doangle = false;
 		break;
 	}
+	case MT_AMBIENT:
+		if (mthing->stringargs[0])
+			mobj->threshold = get_number(mthing->stringargs[0]);
+		mobj->health = mthing->args[0] ? mthing->args[0] : TICRATE;
+		break;
 	case MT_DASHRING:
 	case MT_RAINBOWDASHRING:
 	{

@@ -55,6 +55,7 @@ extern struct roundqueue
 	UINT8 position;							// Head position in the round queue
 	UINT8 size;								// Number of entries in the round queue
 	boolean netcommunicate;					// As server, should we net-communicate this in XD_MAP?
+	boolean writetextmap;					// This queue is for automated map conversion
 	roundentry_t entries[ROUNDQUEUE_MAX];	// Entries in the round queue
 } roundqueue;
 
@@ -202,6 +203,7 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost);
 void G_DeferedInitNew(boolean pencoremode, mapnum_t map, INT32 pickedchar,
 	UINT8 ssplayers, boolean FLS);
 void G_DoLoadLevel(boolean resetplayer);
+void G_DoLoadLevelEx(boolean resetplayer, gamestate_t newstate);
 
 void G_StartTitleCard(void);
 void G_PreLevelTitleCard(void);
@@ -275,8 +277,6 @@ void G_LoadGameData(void);
 void G_LoadGameSettings(void);
 
 void G_SetGameModified(boolean silent, boolean major);
-
-void G_SetGamestate(gamestate_t newstate);
 
 boolean G_GamestateUsesLevel(void);
 
@@ -396,6 +396,8 @@ typedef enum
 } ATTRPACK playerbumptype_t;
 
 extern playerbumptype_t playerbumpactive;
+
+extern boolean keyboardcontrolled;
 
 #ifdef __cplusplus
 } // extern "C"

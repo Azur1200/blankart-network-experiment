@@ -7,9 +7,11 @@
 #include "doomstat.h"
 #include "g_game.h"
 #include "hu_stuff.h"
+#include "k_items.h"
 #include "k_kart.h"
 #include "m_fixed.h"
 #include "r_main.h"
+#include "z_zone.h"
 
 static fixed_t K_PlayerDistance3D(player_t* source, player_t* destination)
 {
@@ -26,372 +28,772 @@ static fixed_t K_PlayerDistance3D(player_t* source, player_t* destination)
 
 extern "C"
 {
-    player_t* closesttocluster;
 
-    fixed_t K_Distance3D(fixed_t x1, fixed_t y1, fixed_t z1, fixed_t x2, fixed_t y2, fixed_t z2)
+clusterdata_t* player_clusters = NULL;
+
+INT32 num_player_clusters = 0;
+
+player_t* closesttocluster;
+
+fixed_t K_Distance3D(fixed_t x1, fixed_t y1, fixed_t z1, fixed_t x2, fixed_t y2, fixed_t z2)
+{
+    fixed_t dist_xy = R_PointToDist2(x1, y1, x2, y2);
+
+    return R_PointToDist2(0, z1, dist_xy, z2);
+}
+
+UINT32 K_GetDTFDifference(player_t* source, player_t* destination)
+{
+    if ((!source->mo) || (!destination->mo))
+        return INT16_MAX;  // Return a garbage value.
+
+    if (destination->distancetofinish > source->distancetofinish)
+        return (destination->distancetofinish - source->distancetofinish);
+
+    return (source->distancetofinish - destination->distancetofinish);
+}
+
+boolean K_ClusterFilter_NoFilter(player_t* player, UINT32 fval)
+{
+    // Ignores literally every parameter and returns true.
+    return true;
+}
+
+// Store our last memory of the cluster player (because we're clearing it out for the second
+// cluster).
+// static boolean clusterplayer_memory[MAXPLAYERS];
+
+// Filters players based on various factors, such as playercount and position.
+// fval = pingame
+boolean K_ClusterFilter_BaseFilter(player_t* player, UINT32 fval)
+{
+    UINT8 pingame = static_cast<UINT8>(fval & 0xFF);
+
+    if (player->position >= pingame)
     {
-        fixed_t dist_xy = R_PointToDist2(x1, y1, x2, y2);
-
-        return R_PointToDist2(0, z1, dist_xy, z2);
+        return false;  // Ignore last place. *They* need help the most!
     }
 
-    UINT32 K_GetDTFDifference(player_t* source, player_t* destination)
+    if (pingame > 9)
     {
-        if ((!source->mo) || (!destination->mo))
-            return INT16_MAX;  // Return a garbage value.
+        // ALWAYS ignore first and second for the double-digit lobbies
+        // As playercounts get bigger, the "top" player threshold does as well
+        // Just in case, let's cap THAT at 4
+        UINT8 top_positions = std::min(4, std::max(2, pingame / 8));
 
-        if (destination->distancetofinish > source->distancetofinish)
-            return (destination->distancetofinish - source->distancetofinish);
-
-        return (source->distancetofinish - destination->distancetofinish);
+        if (player->position <= top_positions)
+        {
+            return false;  // Ignore winning players to prevent sandbagging.
+        }
+    }
+    else if (pingame > 4)
+    {
+        if (player->position <= 1)
+        {
+            return false;  // Ignore the frontrunner.
+        }
     }
 
-    boolean K_ClusterFilter_NoFilter(player_t* player, UINT32 fval)
+    // Nothing to filter.
+    return true;
+}
+
+INT32 K_CountNeighboringPlayersByDistance(player_t* sourcePlayer,
+                                          fixed_t eps,
+                                          playerfilter_f* cluster_filter,
+                                          UINT32 filterval,
+                                          vector3_t* out,
+                                          void* nodevec)
+{
+    INT64 meanx, meany, meanz;
+    INT32 N;
+    N = 0;
+    vector3_t neighborvector;
+    std::vector<player_t*> clusternodes;
+
+    if (!sourcePlayer->mo)
+        return 0;
+
+    meanx = meany = meanz = 0;
+
+    INT32 i;
+    UINT8 pingame = 0;
+
+    // To hell with this; scan for ourselves and pre-emptively flag ourselves.
+    for (i = 0; i < MAXPLAYERS; i++)
     {
-        // Ignores literally every parameter and returns true.
-        return true;
+        if (!playeringame[i])
+            continue;
+
+        if (&players[i] == sourcePlayer)
+        {
+            clusterplayer[i] = true;
+        }
+
+        if (players[i].spectator)
+            continue;  // spectator
+
+        if (!players[i].mo)
+            continue;
+
+        pingame++;
     }
 
-    // Store our last memory of the cluster player (because we're clearing it out for the second
-    // cluster).
-    //static boolean clusterplayer_memory[MAXPLAYERS];
-
-    // Filters players based on various factors, such as playercount and position.
-    // fval = pingame
-    boolean K_ClusterFilter_BaseFilter(player_t* player, UINT32 fval)
+    for (i = 0; i < MAXPLAYERS; i++)
     {
-        UINT8 pingame = static_cast<UINT8>(fval & 0xFF);
+        player_t* player;
 
-        if (player->position >= pingame)
+        if (!playeringame[i])
+            continue;
+
+        player = &players[i];
+
+        if (player == sourcePlayer)
         {
-            return false;  // Ignore last place. *They* need help the most!
+            // Ignore ourselves.
+            continue;
         }
 
-        if (pingame > 6)
+        if (clusterplayer[i])
+            continue;  // Ignore players we've scanned already.
+
+        if (player->spectator)
+            continue;  // spectator
+
+        if (!player->mo)
+            continue;
+
+        if (cluster_filter)
         {
-            // FIXME: Double-cluster algorithm.
-            // Can't do it from within this function, or we're going to have too much overhead.
-            // However: at above 18 players, we shouldn't even *consider* double-clustering.
-            if (!K_IsPlayerLosing(player))
-            {
-                return false;  // Ignore winning players to prevent sandbagging.
-            }
-        }
-        else if (pingame > 4)
-        {
-            if (player->position <= 1)
-            {
-                return false;  // Ignore the frontrunner.
-            }
+            if (!cluster_filter(player, filterval))
+                continue;
         }
 
-        // Nothing to filter.
-        return true;
+        // Scan all points in the database
+        fixed_t dist = K_PlayerDistance3D(sourcePlayer, player);
+
+        /*CONS_Printf("%s: checking %f against epsilon value %f\n",
+            player_names[i],
+            FIXED_TO_FLOAT(dist), FIXED_TO_FLOAT(eps)
+        );*/
+        if (dist <= eps)
+        {
+            clusterplayer[i] = true;
+            // CONS_Printf("%s is in this cluster\n", player_names[i]);
+
+            if (nodevec)
+                static_cast<std::vector<player_t*>*>(nodevec)->push_back(player);
+
+            // Scan our neighbor for any players close to them.
+            K_CountNeighboringPlayersByDistance(
+                player, eps, cluster_filter, filterval, &neighborvector, nodevec);
+        }
     }
 
-    INT32 K_CountNeighboringPlayersByDistance(player_t* sourcePlayer,
-                                              fixed_t eps,
-                                              playerfilter_f* cluster_filter,
-                                              UINT32 filterval,
-                                              vector3_t* out,
-                                              void* nodevec)
+    clusternodes = *static_cast<std::vector<player_t*>*>(nodevec);
+
+    N = clusternodes.size();
+
+    if (N != 0)
     {
-        INT64 meanx, meany, meanz;
-        INT32 N;
-        N = 0;
-        vector3_t neighborvector;
-        std::vector<player_t*> clusternodes;
-
-        if (!sourcePlayer->mo)
-            return 0;
-
-        meanx = meany = meanz = 0;
-
-        INT32 i;
-        UINT8 pingame = 0;
-
-        // To hell with this; scan for ourselves and pre-emptively flag ourselves.
-        for (i = 0; i < MAXPLAYERS; i++)
+        // Return the average center point of this cluster.
+        for (i = 0; i < N; i++)
         {
-            if (!playeringame[i])
+            if (!clusternodes[i])
                 continue;
 
-            if (&players[i] == sourcePlayer)
-            {
-                clusterplayer[i] = true;
-            }
-
-            if (players[i].spectator)
-                continue;  // spectator
-
-            if (!players[i].mo)
+            if (!clusternodes[i]->mo)
                 continue;
 
-            pingame++;
+            meanx += clusternodes[i]->mo->x / FRACUNIT;
+            meany += clusternodes[i]->mo->y / FRACUNIT;
+            meanz += clusternodes[i]->mo->z / FRACUNIT;
         }
 
-        for (i = 0; i < MAXPLAYERS; i++)
+        meanx /= N;
+        meany /= N;
+        meanz /= N;
+
+        // CONS_Printf("mean x: %lld, mean y: %lld, mean z: %lld\n", meanx, meany, meanz);
+
+        out->x = (fixed_t)(meanx) << FRACBITS;
+        out->y = (fixed_t)(meany) << FRACBITS;
+        out->z = (fixed_t)(meanz) << FRACBITS;
+
+        // Get the player closest to the cluster.
+        fixed_t disttocluster, bestdist;
+        bestdist = INT32_MAX;
+        for (i = 0; i < N; i++)
         {
-            player_t* player;
-
-            if (!playeringame[i])
+            if (!clusternodes[i])
                 continue;
 
-            player = &players[i];
-
-            if (player == sourcePlayer)
-            {
-                // Ignore ourselves.
-                continue;
-            }
-
-            if (clusterplayer[i])
-                continue;  // Ignore players we've scanned already.
-
-            if (player->spectator)
-                continue;  // spectator
-
-            if (!player->mo)
+            if (!clusternodes[i]->mo)
                 continue;
 
-            if (cluster_filter)
+            disttocluster = K_Distance3D(clusternodes[i]->mo->x,
+                                         clusternodes[i]->mo->y,
+                                         clusternodes[i]->mo->z,
+                                         out->x,
+                                         out->y,
+                                         out->z);
+
+            if (disttocluster < bestdist)
             {
-                if (!cluster_filter(player, filterval))
-                    continue;
-            }
-
-            // Scan all points in the database
-            fixed_t dist = K_PlayerDistance3D(sourcePlayer, player);
-
-            /*CONS_Printf("%s: checking %f against epsilon value %f\n",
-                player_names[i],
-                FIXED_TO_FLOAT(dist), FIXED_TO_FLOAT(eps)
-            );*/
-            if (dist <= eps)
-            {
-                clusterplayer[i] = true;
-                // CONS_Printf("%s is in this cluster\n", player_names[i]);
-
-                if (nodevec)
-                    static_cast<std::vector<player_t*>*>(nodevec)->push_back(player);
-
-                // Scan our neighbor for any players close to them.
-                K_CountNeighboringPlayersByDistance(
-                    player, eps, cluster_filter, filterval, &neighborvector, nodevec);
+                closesttocluster = clusternodes[i];
+                bestdist = disttocluster;
             }
         }
+    }
+    else
+    {
+        out->z = out->y = out->x = 0;
+    }
 
-        clusternodes = *static_cast<std::vector<player_t*>*>(nodevec);
+    return N;
+}
 
-        N = clusternodes.size();
+static std::vector<player_t*> dtf_vec;
+static boolean cleardtf = true;
 
-        if (N != 0)
+static UINT32 K_GetU32Diff(UINT32 a, UINT32 b)
+{
+    return (b > a) ? (b - a) : (a - b);
+}
+
+INT32 K_CountNeighboringPlayersByDTFEx(player_t* sourcePlayer,
+                                       fixed_t eps,
+                                       playerfilter_f* cluster_filter,
+                                       UINT32 filterval,
+                                       vector3_t* out,
+                                       void* nodevec)
+{
+    INT64 mean;
+    INT32 N = 0;
+    vector3_t neighborvector;
+
+    if (!nodevec)
+    {
+        // Nice goddamn try.
+        return 0;
+    }
+
+    if (!sourcePlayer->mo)
+        return 0;
+
+    mean = 0;
+
+    INT32 i;
+    for (i = 0; i < MAXPLAYERS; i++)
+    {
+        player_t* player;
+
+        if (!playeringame[i])
+            continue;
+
+        player = &players[i];
+
+        if (player == sourcePlayer)
+            continue;  // Ignore ourselves.
+
+        if (clusterplayer[i])
+            continue;  // Ignore players we've scanned already.
+
+        if (player->spectator)
+            continue;  // spectator
+
+        if (!player->mo)
+            continue;
+
+        if (cluster_filter)
         {
-            // Return the average center point of this cluster.
-            for (i = 0; i < N; i++)
+            if (!cluster_filter(player, filterval))
+                continue;
+        }
+
+        // Scan all points in the database
+        if ((fixed_t)K_GetDTFDifference(sourcePlayer, player) <= eps)
+        {
+            // CONS_Printf("%d is less than %d, adding to nodes vector\n",
+            // K_GetDTFDifference(sourcePlayer, player), eps);
+            clusterplayer[i] = true;
+
+            if (nodevec)
             {
-                if (!clusternodes[i])
-                    continue;
-
-                if (!clusternodes[i]->mo)
-                    continue;
-
-                meanx += clusternodes[i]->mo->x / FRACUNIT;
-                meany += clusternodes[i]->mo->y / FRACUNIT;
-                meanz += clusternodes[i]->mo->z / FRACUNIT;
+                // Add to the result.
+                static_cast<std::vector<player_t*>*>(nodevec)->push_back(player);
             }
 
-            meanx /= N;
-            meany /= N;
-            meanz /= N;
+            // Scan our neighbor for any players close to them.
+            K_CountNeighboringPlayersByDTFEx(
+                player, eps, cluster_filter, filterval, &neighborvector, nodevec);
+        }
+    }
 
-            // CONS_Printf("mean x: %lld, mean y: %lld, mean z: %lld\n", meanx, meany, meanz);
+    N = static_cast<std::vector<player_t*>*>(nodevec)->size();
 
-            out->x = (fixed_t)(meanx) << FRACBITS;
-            out->y = (fixed_t)(meany) << FRACBITS;
-            out->z = (fixed_t)(meanz) << FRACBITS;
+    if (N != 0)
+    {
+        // Return the average center point of this cluster.
+        for (i = 0; i < N; i++)
+        {
+            if (!static_cast<std::vector<player_t*>*>(nodevec)->at(i))
+                continue;
 
-            // Get the player closest to the cluster.
-            fixed_t disttocluster, bestdist;
-            bestdist = INT32_MAX;
-            for (i = 0; i < N; i++)
+            if (!static_cast<std::vector<player_t*>*>(nodevec)->at(i)->mo)
+                continue;
+
+            mean += static_cast<std::vector<player_t*>*>(nodevec)->at(i)->distancetofinish;
+        }
+        mean /= N;
+
+        out->x = (fixed_t)(mean);
+        out->y = 0;
+        out->z = 0;
+
+        // Get the player closest to the cluster.
+        UINT32 disttocluster, bestdist;
+        bestdist = UINT32_MAX;
+        for (i = 0; i < N; i++)
+        {
+            disttocluster = K_GetU32Diff(
+                static_cast<std::vector<player_t*>*>(nodevec)->at(i)->distancetofinish, mean);
+
+            if (disttocluster < bestdist)
             {
-                if (!clusternodes[i])
-                    continue;
+                closesttocluster = static_cast<std::vector<player_t*>*>(nodevec)->at(i);
+                bestdist = disttocluster;
+            }
+        }
+    }
+    else
+    {
+        out->z = out->y = out->x = 0;
+    }
 
-                if (!clusternodes[i]->mo)
-                    continue;
+    return N;
+}
 
-                disttocluster = K_Distance3D(clusternodes[i]->mo->x,
-                                             clusternodes[i]->mo->y,
-                                             clusternodes[i]->mo->z,
-                                             out->x,
-                                             out->y,
-                                             out->z);
+INT32 K_CountNeighboringPlayersByDTF(player_t* sourcePlayer,
+                                     fixed_t eps,
+                                     playerfilter_f* cluster_filter,
+                                     UINT32 filterval,
+                                     vector3_t* out)
+{
+    if (cleardtf)
+        dtf_vec.clear();
 
-                if (disttocluster < bestdist)
+    return K_CountNeighboringPlayersByDTFEx(
+        sourcePlayer, eps, cluster_filter, filterval, out, &dtf_vec);
+}
+
+INT32 K_CountNeighboringPlayers(player_t* sourcePlayer,
+                                fixed_t eps,
+                                playerfilter_f* cluster_filter,
+                                UINT32 filterval,
+                                vector3_t* out)
+{
+    // Dummy vector so the game doesn't SIGSEGV.
+    // Turns out, it's also necessary for this system not to be placebo!
+    std::vector<player_t*> dummy = {0};
+
+    dummy.clear();
+    INT32 result = K_CountNeighboringPlayersByDistance(
+        sourcePlayer, eps, cluster_filter, filterval, out, &dummy);
+
+    return result;
+}
+
+boolean K_FilterNodeByEuclideanDistance(clusternode_t* a, clusternode_t* b, fixed_t eps)
+{
+    INT64 eps_integer = (INT32)(eps / FRACUNIT);
+
+    return (static_cast<INT64>(K_IntDistanceForMap(a->x, a->y, a->z, b->x, b->y, b->z)) <=
+            eps_integer);
+}
+
+boolean K_FilterNodeByDTF(clusternode_t* a, clusternode_t* b, fixed_t eps)
+{
+    if (!a)
+        return false;
+
+    if (!b)
+        return false;
+
+    if (!a->player)
+        return false;
+
+    if (!b->player)
+        return false;
+
+    INT32 eps_integer = (INT32)(eps / FRACUNIT);
+
+    // C++ is such an unserious language...
+    INT32 dtf_diff = static_cast<INT32>(
+        std::min(static_cast<UINT32>(0x3FFFFFFF), K_GetDTFDifference(a->player, b->player)));
+
+    dtf_diff = FixedDiv(dtf_diff, mapobjectscale);
+
+    return (dtf_diff <= eps_integer);
+}
+
+static void GetNodesInRange(std::vector<clusternode_t>* dest,
+                            std::vector<clusternode_t>* DB,
+                            clusternode_t node,
+                            nodefunc_f* neighbor_func,
+                            fixed_t eps)
+{
+    if (dest == nullptr)
+        return;  // Null destination vector
+
+    // Whatever is in this vector... it's gone now
+    dest->clear();
+
+    INT32 i = 0;
+    for (i = 0; i < static_cast<INT32>(DB->size()); i++)
+    {
+        if (DB->at(i).id == node.id)
+        {
+            // Don't count OURSELVES!
+            continue;
+        }
+
+        if ((DB->at(i).visited) || (DB->at(i).in_cluster))
+        {
+            // Don't retrace steps!
+            continue;
+        }
+
+        if (neighbor_func(&node, &DB->at(i), eps))
+        {
+            DB->at(i).visited = true;
+            // We're neighbors now! :)
+            dest->push_back(DB->at(i));
+        }
+    }
+}
+
+// ACTUAL DBSCAN clustering! Used to compile a dynamic array of data structures containing summaries
+// of all present clusters.
+static void K_DBSCAN(std::vector<clusternode_t> DB,
+                     nodefunc_f* neighbor_func,
+                     fixed_t eps,
+                     INT32 minPts)
+{
+    INT32 num_clusters = 0;  // Cluster counter
+    INT32 numneighbors = 0;
+    INT32 i = 0;
+    INT32 j = 0;
+    INT32 k = 0;
+
+    std::vector<clusternode_t> cluster;
+    std::vector<clusternode_t> neighbors;
+    std::vector<clusternode_t> neighbors2;
+
+    std::vector<clusterdata_t> pending_globals;
+    clusterdata_t new_data = {0};
+    vector3_64_t average_point = {0};
+
+    INT32 average_player_pos = 0;
+
+    fixed_t dist = 0;
+    fixed_t closest = INT32_MAX;
+
+    num_player_clusters = 0;
+
+    for (i = 0; i < static_cast<INT32>(DB.size()); i++)
+    {
+        if (DB[i].label)
+        {
+            // Previously processed in inner loop
+            continue;
+        }
+
+        if (DB[i].in_cluster)
+        {
+            // Already in a cluster; ignore us
+            continue;
+        }
+
+        GetNodesInRange(&neighbors, &DB, DB[i], neighbor_func, eps);  // Find neighbors
+
+        numneighbors = neighbors.size();
+
+        if ((numneighbors + 1) < minPts)  // Density check (factor ourselves in)
+        {
+            if (!DB[i].in_cluster)  // As long as we're in a cluster, we're NOT noise
+            {
+                // Bring the Noise!
+                DB[i].label = NODETYPE_NOISE;  // Label as Noise
+                DB[i].visited = false;
+            }
+            continue;
+        }
+
+        num_clusters++;  // next cluster label
+
+        DB[i].label = NODETYPE_CORE;  // Label initial point
+        DB[i].visited = true;
+
+        if (!DB[i].in_cluster)
+        {
+            DB[i].in_cluster = true;
+            cluster.push_back(DB[i]);
+        }
+
+        // SeedSet S := N \ {P} means creating a vector S with all nodes N excluding point P
+        // GetNodesInRange already does this, so we can just use the neighbors vector
+
+        j = 0;
+        UINT8 stuck = 0;
+        while (j < numneighbors)
+        {
+            stuck++;
+
+            if (stuck >= 8)
+            {
+                // Immediately bail
+                I_Error(
+                    "DBSCAN while loop got stuck trying to process neighbors (iterated 8 times "
+                    "with no progress)\n");
+                return;
+            }
+
+            // Process every seed point Q
+            if (neighbors[j].label == NODETYPE_NOISE)
+            {
+                // Change Noise to border point
+                DB[neighbors[j].id].label = NODETYPE_BORDER;
+                neighbors[j].label = NODETYPE_BORDER;
+
+                // Just in case: mark the source node as visited
+                DB[neighbors[j].id].visited = true;
+
+                if (!DB[neighbors[j].id].in_cluster)
                 {
-                    closesttocluster = clusternodes[i];
-                    bestdist = disttocluster;
+                    DB[neighbors[j].id].in_cluster = true;
+                    neighbors[j].in_cluster = true;
+                    cluster.push_back(neighbors[j]);
                 }
             }
+
+            if (neighbors[j].label)
+            {
+                // Previously processed (e.g., border point)
+                j++;
+                stuck--;
+                continue;
+            }
+
+            if (!neighbors[j].in_cluster)
+            {
+                // Label neighbor
+                DB[neighbors[j].id].label = NODETYPE_CORE;
+                neighbors[j].label = NODETYPE_CORE;
+
+                DB[neighbors[j].id].in_cluster = true;
+                neighbors[j].in_cluster = true;
+
+                cluster.push_back(neighbors[j]);
+            }
+
+            GetNodesInRange(&neighbors2, &DB, neighbors[j], neighbor_func, eps);  // Find neighbors
+
+            if ((static_cast<INT32>(neighbors2.size()) + 1) >=
+                minPts)  // Density check (if Q is a core point)
+            {
+                // Add new neighbors to seed set
+                // S := S ∪ N
+
+                for (k = 0; k < static_cast<INT32>(neighbors2.size()); k++)
+                {
+                    DB[neighbors2[k].id].label = NODETYPE_CORE;
+                    neighbors2[k].label = NODETYPE_CORE;  // Label neighbor
+                    neighbors.push_back(neighbors2[k]);
+                }
+            }
+
+            neighbors2.clear();
+
+            if (static_cast<INT32>(neighbors.size()) != numneighbors)
+            {
+                numneighbors = static_cast<INT32>(neighbors.size());
+                j = 0;  // Start the loop over
+                stuck--;
+                continue;
+            }
+
+            j++;
+            stuck--;
+        }
+        // Empty our neighbor datasets
+        neighbors.clear();
+        neighbors2.clear();
+
+        if (cluster.size() > 0)
+        {
+            // We have a populated cluster, so let's add it to our clusters list!
+
+            // First, empty the temp data.
+
+            memset(&new_data, 0, sizeof(new_data));
+            memset(&average_point, 0, sizeof(average_point));
+
+            // Set density
+            new_data.density = cluster.size();
+
+            // Now, get the average position for this cluster, and gather the player IDs
+            for (j = 0; j < new_data.density; j++)
+            {
+                average_point.x += cluster[j].x;
+                average_point.y += cluster[j].y;
+                average_point.z += cluster[j].z;
+
+                new_data.pids[j] = -1;
+
+                if (cluster[j].player)
+                {
+                    new_data.pids[j] = static_cast<INT16>(cluster[j].player - players);
+                    average_player_pos += cluster[j].player->position;
+                }
+            }
+
+            if (new_data.density > 1)
+            {
+                average_point.x /= new_data.density;
+                average_point.y /= new_data.density;
+                average_point.z /= new_data.density;
+
+                average_player_pos /= new_data.density;
+            }
+
+            closest = INT32_MAX;
+
+            // And get the node closest to this average point (the nucleus)
+            for (j = 0; j < new_data.density; j++)
+            {
+                dist = K_IntDistanceForMap(cluster[j].x,
+                                           cluster[j].y,
+                                           cluster[j].z,
+                                           static_cast<fixed_t>(average_point.x),
+                                           static_cast<fixed_t>(average_point.y),
+                                           static_cast<fixed_t>(average_point.z));
+
+                if (dist < closest)
+                {
+                    new_data.nucleus.x = cluster[j].x;
+                    new_data.nucleus.y = cluster[j].y;
+                    new_data.nucleus.z = cluster[j].z;
+
+                    new_data.nucleus.label = cluster[j].label;
+
+                    new_data.nucleus.player = cluster[j].player;
+
+                    new_data.id = average_player_pos;
+
+                    closest = dist;
+                }
+            }
+
+            // Finally, add it to the global vector
+            pending_globals.push_back(new_data);
+
+            // Before we go: empty this cluster
+            cluster.clear();
+        }
+    }
+
+    neighbors.clear();
+    neighbors2.clear();
+    DB.clear();
+
+    // If we've cached a player cluster array, allocate, then sort them
+
+    INT32 numglobals = pending_globals.size();
+
+    if (numglobals > 0)
+    {
+        if (player_clusters)
+        {
+            player_clusters = static_cast<clusterdata_t*>(
+                Z_Realloc(player_clusters, sizeof(clusterdata_t) * numglobals, PU_STATIC, NULL));
         }
         else
         {
-            out->z = out->y = out->x = 0;
+            player_clusters = static_cast<clusterdata_t*>(
+                Z_Malloc(sizeof(clusterdata_t) * numglobals, PU_STATIC, NULL));
         }
 
-        return N;
-    }
+        memset(player_clusters, 0, sizeof(clusterdata_t) * numglobals);
 
-    static std::vector<player_t*> dtf_vec;
-    static boolean cleardtf = true;
-
-    static UINT32 K_GetU32Diff(UINT32 a, UINT32 b)
-    {
-        return (b > a) ? (b - a) : (a - b);
-    }
-
-    INT32 K_CountNeighboringPlayersByDTFEx(player_t* sourcePlayer,
-                                           fixed_t eps,
-                                           playerfilter_f* cluster_filter,
-                                           UINT32 filterval,
-                                           vector3_t* out,
-                                           void* nodevec)
-    {
-        INT64 mean;
-        INT32 N = 0;
-        vector3_t neighborvector;
-
-        if (!nodevec)
+        // Now: add ALL our datapoints to the table
+        for (i = 0; i < numglobals; i++)
         {
-            // Nice goddamn try.
-            return 0;
+            player_clusters[i] = pending_globals.at(i);
         }
+    }
+    else if (player_clusters)
+    {
+        Z_Free(player_clusters);
+        player_clusters = NULL;
+    }
 
-        if (!sourcePlayer->mo)
-            return 0;
+    num_player_clusters = numglobals;
+}
 
-        mean = 0;
+// Updates the `player_clusters` list via DBSCAN clustering; compiles multiple clusters at once,
+// instead of a single one
+void K_UpdateGlobalClusters(fixed_t eps,
+                            INT32 min_pts,
+                            nodefunc_f* neighbor_func,
+                            playerfilter_f* cluster_filter,
+                            UINT32 filterval)
+{
+    std::vector<clusternode_t> playernodes;
 
-        INT32 i;
-        for (i = 0; i < MAXPLAYERS; i++)
+    playernodes.clear();
+
+    clusternode_t temp_node = {0};
+
+    INT32 i = 0;
+    for (i = 0; i < MAXPLAYERS; i++)
+    {
+        player_t* player = NULL;
+
+        if (!playeringame[i])
+            continue;
+
+        player = &players[i];
+
+        if (player->spectator)
+            continue;  // spectator
+
+        if (!player->mo)
+            continue;
+
+        if (cluster_filter)
         {
-            player_t* player;
-
-            if (!playeringame[i])
+            if (!cluster_filter(player, filterval))
                 continue;
-
-            player = &players[i];
-
-            if (player == sourcePlayer)
-                continue;  // Ignore ourselves.
-
-            if (clusterplayer[i])
-                continue;  // Ignore players we've scanned already.
-
-            if (player->spectator)
-                continue;  // spectator
-
-            if (!player->mo)
-                continue;
-
-            if (cluster_filter)
-            {
-                if (!cluster_filter(player, filterval))
-                    continue;
-            }
-
-            // Scan all points in the database
-            if ((fixed_t)K_GetDTFDifference(sourcePlayer, player) <= eps)
-            {
-                // CONS_Printf("%d is less than %d, adding to nodes vector\n",
-                // K_GetDTFDifference(sourcePlayer, player), eps);
-                clusterplayer[i] = true;
-
-                if (nodevec)
-                {
-                    // Add to the result.
-                    static_cast<std::vector<player_t*>*>(nodevec)->push_back(player);
-                }
-
-                // Scan our neighbor for any players close to them.
-                K_CountNeighboringPlayersByDTFEx(
-                    player, eps, cluster_filter, filterval, &neighborvector, nodevec);
-            }
         }
 
-        N = static_cast<std::vector<player_t*>*>(nodevec)->size();
+        // Add this player to the vector, since they aren't filtered out
 
-        if (N != 0)
-        {
-            // Return the average center point of this cluster.
-            for (i = 0; i < N; i++)
-            {
-                if (!static_cast<std::vector<player_t*>*>(nodevec)->at(i))
-                    continue;
+        memset(&temp_node, 0, sizeof(temp_node));
 
-                if (!static_cast<std::vector<player_t*>*>(nodevec)->at(i)->mo)
-                    continue;
+        temp_node.player = player;
+        temp_node.x = player->mo->x;
+        temp_node.y = player->mo->y;
+        temp_node.z = player->mo->z;
 
-                mean += static_cast<std::vector<player_t*>*>(nodevec)->at(i)->distancetofinish;
-            }
-            mean /= N;
+        temp_node.id = static_cast<UINT16>(playernodes.size());
 
-            out->x = (fixed_t)(mean);
-            out->y = 0;
-            out->z = 0;
+        temp_node.in_cluster = false;
+        temp_node.visited = false;
 
-            // Get the player closest to the cluster.
-            UINT32 disttocluster, bestdist;
-            bestdist = UINT32_MAX;
-            for (i = 0; i < N; i++)
-            {
-                disttocluster = K_GetU32Diff(
-                    static_cast<std::vector<player_t*>*>(nodevec)->at(i)->distancetofinish, mean);
-
-                if (disttocluster < bestdist)
-                {
-                    closesttocluster = static_cast<std::vector<player_t*>*>(nodevec)->at(i);
-                    bestdist = disttocluster;
-                }
-            }
-        }
-        else
-        {
-            out->z = out->y = out->x = 0;
-        }
-
-        return N;
+        playernodes.push_back(temp_node);
     }
 
-    INT32 K_CountNeighboringPlayersByDTF(player_t* sourcePlayer,
-                                         fixed_t eps,
-                                         playerfilter_f* cluster_filter,
-                                         UINT32 filterval,
-                                         vector3_t* out)
-    {
-        if (cleardtf)
-            dtf_vec.clear();
-
-        return K_CountNeighboringPlayersByDTFEx(
-            sourcePlayer, eps, cluster_filter, filterval, out, &dtf_vec);
-    }
-
-    INT32 K_CountNeighboringPlayers(player_t* sourcePlayer,
-                                    fixed_t eps,
-                                    playerfilter_f* cluster_filter,
-                                    UINT32 filterval,
-                                    vector3_t* out)
-    {
-        // Dummy vector so the game doesn't SIGSEGV.
-        // Turns out, it's also necessary for this system not to be placebo!
-        std::vector<player_t*> dummy = {0};
-
-        dummy.clear();
-        INT32 result = K_CountNeighboringPlayersByDistance(
-            sourcePlayer, eps, cluster_filter, filterval, out, &dummy);
-
-        return result;
-    }
+    K_DBSCAN(playernodes, neighbor_func, eps, min_pts);
+}
 }

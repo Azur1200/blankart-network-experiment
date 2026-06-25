@@ -64,6 +64,8 @@
 #include "k_items.h"
 #include "g_party.h"
 
+#include "radio_finish.h"
+
 #include "m_easing.h" // Arrow Bullet aura
 
 #include "acs/interface.h"
@@ -1319,6 +1321,10 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 		{
 			player->exiting = raceexittime+2;
 			K_UpdateAllPlayerPositions();
+
+			if (!(modeattacking||dedicated))
+				RR_addPlayerToFinshTicker(player);
+
 			losing = K_IsPlayerLosing(player); // HEY!!!! Set it AFTER K_UpdateAllPlayerPositions!!!!
 
 			if (cv_kartvoices.value)
@@ -2694,7 +2700,9 @@ static void P_DeathThink(player_t *player)
 
 		if (player->mo)
 		{
-			player->mo->flags |= (MF_NOGRAVITY|MF_NOCLIP);
+			UINT32 intangibility = (player->extendeddeath) ? 0 : MF_NOCLIP;
+
+			player->mo->flags |= (MF_NOGRAVITY|intangibility);
 			if (skins[player->skin].flags & SF_OLDDEATH)
 				player->mo->renderflags |= RF_DONTDRAW;
 		}
@@ -3127,7 +3135,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		return true;
 
 	if (P_IsMachineLocalPlayer(player) || (demo.playback && cv_lookbackinreplays.value))
-		lookback = G_PlayerInputDown(num, gc_lookback, false, DEADZONE_BUTTON);
+		lookback = (!menustack[0] && G_PlayerInputDown(num, gc_lookback, false, DEADZONE_BUTTON));
 	else
 		lookback = player->cmd.buttons & BT_LOOKBACK;
 

@@ -12,6 +12,7 @@
 ///        commands are executed through the command buffer
 ///	       like console commands, other miscellaneous commands (at the end)
 
+#include "d_netcmd.h"
 #include "d_player.h"
 #include "doomdef.h"
 
@@ -111,8 +112,8 @@ static void Got_ScheduleClearcmd(UINT8 **cp, INT32 playernum);
 static void Got_Automatecmd(UINT8 **cp, INT32 playernum);
 static void Got_MapQueuecmd(UINT8 **cp, INT32 playernum);
 static void Got_Cheat(UINT8 **cp, INT32 playernum);
-static void Command_ScoreboardAdd(void);
-static void Command_ScoreboardClear(void);
+static void Got_ClanTagSet(UINT8 **cp, INT32 playernum);
+static void Got_ClanTagClear(UINT8 **cp, INT32 playernum);
 
 static void PointLimit_OnChange(void);
 static void TimeLimit_OnChange(void);
@@ -183,6 +184,18 @@ static void KartTrailSlow_OnChange(void);
 static void PlayerBump_OnChange(void);
 
 static void Schedule_OnChange(void);
+
+static void Command_ScoreboardAdd(void);
+static void Command_ScoreboardClear(void);
+
+static void Command_ClantagSet(void);
+static void Command_ClantagSet2(void);
+static void Command_ClantagSet3(void);
+static void Command_ClantagSet4(void);
+static void Command_ClantagClear(void);
+static void Command_ClantagClear2(void);
+static void Command_ClantagClear3(void);
+static void Command_ClantagClear4(void);
 
 static void Command_Playdemo_f(void);
 static void Command_Timedemo_f(void);
@@ -289,6 +302,10 @@ static void Command_Automate_Set(void);
 static void Command_PlaySound(void);
 
 static void Got_PlaySound(UINT8 **cp, INT32 playernum);
+
+static void Command_WriteTextmap(void);
+
+static void Command_Eval(void);
 
 // =========================================================================
 //                           CLIENT VARIABLES
@@ -482,8 +499,28 @@ consvar_t cv_kartbot = CVAR_INIT ("kartbot", "0", CV_NETVAR, kartbot_cons_t, NUL
 consvar_t cv_kartbot_cap = CVAR_INIT ("kartbot_cap", "0", CV_NETVAR, kartbot_cap_cons_t, NULL);
 consvar_t cv_kartbot_modifiermax = CVAR_INIT ("kartbot_modifiermax", "1.0", CV_NETVAR|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartbot_basetrackcomplexity = CVAR_INIT ("kartbot_basetrackcomplexity", "-7000", CV_NETVAR, CV_Signed, NULL);
+consvar_t cv_kartbot_finish = CVAR_INIT ("kartbot_finish", "Off", CV_NETVAR, CV_OnOff, NULL);
 
 consvar_t cv_karteliminatelast = CVAR_INIT ("karteliminatelast", "Yes", CV_NETVAR|CV_CALL, CV_YesNo, KartEliminateLast_OnChange);
+
+// Defined in multiples of 10 to keep the minimal sanity I have remaining
+static CV_PossibleValue_t deathbounce_cons_t[] = {
+	{-1, "Infinite"},
+	{0, "None"},
+	{5, "5"},
+	{10, "10"},
+	{15, "15"},
+	{20, "20"},
+	{30, "30"},
+	{40, "40"},
+	{50, "50"},
+	{60, "60"},
+	{70, "70"},
+	{80, "80"},
+	{90, "90"},
+	{100, "MAX"},
+	{0, NULL}};
+consvar_t cv_kartdeathbounces = CVAR_INIT ("deathbounces", "Infinite", CV_NETVAR, deathbounce_cons_t, NULL);
 
 // Toggles for new features
 consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartRings_OnChange);
@@ -530,8 +567,9 @@ consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_inv
 // S-Monitor
 //
 consvar_t cv_kartstacking_smonitor_speedboost = CVAR_INIT ("vanillaboost_smonitor_speedboost", "0.75", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_smonitor_fastestspeed = CVAR_INIT ("vanillaboost_smonitor_fastestspeed", "86.07", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_smonitor_accelboost = CVAR_INIT ("vanillaboost_smonitor_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_smonitor_handleboost = CVAR_INIT ("vanillaboost_smonitor_handleboost", "0.48", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_smonitor_handleboost = CVAR_INIT ("vanillaboost_smonitor_handleboost", "0.38", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_smonitor_stackable = CVAR_INIT ("vanillaboost_smonitor_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
@@ -725,7 +763,7 @@ consvar_t cv_kartinvindamage = CVAR_INIT ("kartinvindamage", "Wipe-out", CV_NETV
 
 // How far the player must be from the cluster to roll an S-Monitor.
 static CV_PossibleValue_t smonitordist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartsmonitordist = CVAR_INIT ("smonitor_startdist", "12000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
+consvar_t cv_kartsmonitordist = CVAR_INIT ("smonitor_startdist", "9216", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
 
 // Conga is extremely finicky, so we need a separate threshold to preserve the S-Monitor's reliability
 consvar_t cv_kartsmonitor_congadist = CVAR_INIT("smonitor_startdist_conga", "10000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
@@ -734,6 +772,8 @@ consvar_t cv_kartsmonitor_decaydist = CVAR_INIT ("smonitor_decaydist", "3600", C
 
 static CV_PossibleValue_t smonitordecaytime_cons_t[] = {{1, "MIN"}, {6, "MAX"}, {0, NULL}};
 consvar_t cv_kartsmonitor_decaytime = CVAR_INIT ("smonitor_decaytime", "2", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordecaytime_cons_t, NULL);
+
+consvar_t cv_kartsmonitor_intangible = CVAR_INIT ("smonitor_intangible", "On", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
 
 // opinionated stuff for testing balance tweaks on the shields
 consvar_t cv_kartbubble_defense_canidle = CVAR_INIT ("kartbubble_defense_canidle", "On", CV_NETVAR, CV_OnOff, NULL);
@@ -920,6 +960,9 @@ consvar_t cv_debugmappatch = CVAR_INIT ("debugmappatch", "", 0, NULL, NULL);
 
 consvar_t cv_allowmismatchmappatch = CVAR_INIT ("allowmismatchmappatch", "No", CV_NETVAR, CV_YesNo, NULL);
 
+// NOTE: this should be in hw_main.c, but we can't put it there as it breaks dedicated build
+consvar_t cv_glallowshaders = CVAR_INIT ("gr_allowclientshaders", "On", CV_NETVAR, CV_OnOff, NULL);
+
 char timedemo_name[256];
 boolean timedemo_csv;
 char timedemo_csv_id[256];
@@ -999,6 +1042,8 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"AUTOMATE", // XD_AUTOMATE
 	"CHEAT", // XD_CHEAT
 	"MAPQUEUE", // XD_MAPQUEUE
+	"CLANTAGSET", // XD_CLANTAGSET
+	"CLANTAGCLEAR", // XD_CLANTAGCLEAR
 };
 
 // =========================================================================
@@ -1049,6 +1094,17 @@ void D_RegisterServerCommands(void)
 	RegisterNetXCmd(XD_SCHEDULECLEAR, Got_ScheduleClearcmd);
 	RegisterNetXCmd(XD_AUTOMATE, Got_Automatecmd);
 	RegisterNetXCmd(XD_MAPQUEUE, Got_MapQueuecmd);
+
+	COM_AddCommand("clantag_set", Command_ClantagSet);
+	COM_AddCommand("clantag2_set", Command_ClantagSet2);
+	COM_AddCommand("clantag3_set", Command_ClantagSet3);
+	COM_AddCommand("clantag4_set", Command_ClantagSet4);
+	COM_AddCommand("clantag_clear", Command_ClantagClear);
+	COM_AddCommand("clantag2_clear", Command_ClantagClear2);
+	COM_AddCommand("clantag3_clear", Command_ClantagClear3);
+	COM_AddCommand("clantag4_clear", Command_ClantagClear4);
+	RegisterNetXCmd(XD_CLANTAGSET, Got_ClanTagSet);
+	RegisterNetXCmd(XD_CLANTAGCLEAR, Got_ClanTagClear);
 
 	RegisterNetXCmd(XD_CHEAT, Got_Cheat);
 	COM_AddCommand("scoreboard_addline", Command_ScoreboardAdd);
@@ -1126,8 +1182,14 @@ void D_RegisterServerCommands(void)
 
 	COM_AddCommand("automate_set", Command_Automate_Set);
 
+	COM_AddCommand("writetextmap", Command_WriteTextmap);
+
+	COM_AddCommand("eval", Command_Eval);
+
 	// for master server connection
 	AddMServCommands();
+
+	CV_RegisterVar(&cv_glallowshaders);
 
 	// p_mobj.c
 	CV_RegisterVar(&cv_itemrespawntime);
@@ -3863,7 +3925,7 @@ static void Command_Map_f(void)
 
 	mustmodifygame = !(netgame || multiplayer) && !majormods;
 
-	if (mustmodifygame)
+	if (mustmodifygame && !option_force)
 	{
 		/* May want to be more descriptive? */
 		CONS_Printf(M_GetText("Sorry, level change disabled in single player.\n"));
@@ -4679,6 +4741,34 @@ static void Command_ReplayMarker(void)
 	}
 }
 
+static boolean JawzCheck(mobj_t *playermo)
+{
+	mobj_t *mobj, *next;
+
+	for (mobj = kitemcap; mobj; mobj = next)
+	{
+		next = mobj->itnext;
+
+		if (mobj->health <= 0)
+			continue;
+
+		switch (mobj->type)
+		{
+			case MT_JAWZ:
+				if (mobj->tracer && mobj->tracer == playermo)
+				{
+					return true;
+				}
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	return false;
+}
+
 // Command for stuck characters in netgames, griefing, etc.
 static void HandleRespawnCommand(UINT8 localplayer)
 {
@@ -4698,6 +4788,12 @@ static void HandleRespawnCommand(UINT8 localplayer)
 	}
 
 	if (players[g_localplayers[localplayer]].mo && (P_PlayerInPain(&players[g_localplayers[localplayer]]) || spbplace == players[g_localplayers[localplayer]].position)) // KART: Nice try, but no, you won't be cheesing spb anymore (x2)
+	{
+		CONS_Printf(M_GetText("Nice try.\n"));
+		return;
+	}
+
+	if (JawzCheck(players[g_localplayers[localplayer]].mo)) // KART: You can't cheese Jawz, Nice try :)
 	{
 		CONS_Printf(M_GetText("Nice try.\n"));
 		return;
@@ -4743,6 +4839,14 @@ static void Got_Respawn(UINT8 **cp, INT32 playernum)
 	if (players[respawnplayer].bot
 	  ? playernum != serverplayer
 	  : respawnplayer != playernum || P_PlayerInPain(&players[respawnplayer]) || spbplace == players[respawnplayer].position)
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Illegal respawn command received from %s\n"), player_names[playernum]);
+		if (server)
+			SendKick(playernum, KICK_MSG_CON_FAIL);
+		return;
+	}
+
+	if (JawzCheck(players[respawnplayer].mo))
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal respawn command received from %s\n"), player_names[playernum]);
 		if (server)
@@ -5870,12 +5974,12 @@ static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum)
 			if (ncs == FS_NOTFOUND)
 			{
 				CONS_Printf(M_GetText("The server tried to add %s,\nbut you don't have this file.\nYou need to find it in order\nto play on this server.\n"), filename);
-				M_StartMessage(va("The server added a file\n(%s)\nthat you do not have.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+				M_StartMessage2("Game Leave", va("The server added a file\n(%s)\nthat you do not have.\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 			}
 			else
 			{
 				CONS_Printf(M_GetText("Unknown error finding soc file (%s) the server added.\n"), filename);
-				M_StartMessage(va("Unknown error trying to load a file\nthat the server added\n(%s).\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+				M_StartMessage2("Game Leave", va("Unknown error trying to load a file\nthat the server added\n(%s).\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 			}
 			return;
 		}
@@ -6162,22 +6266,22 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 		if (ncs == FS_FOUND)
 		{
 			CONS_Printf(M_GetText("The server tried to add %s,\nbut you have too many files added.\nRestart the game to clear loaded files\nand play on this server."), filename);
-			M_StartMessage(va("The server added a file \n(%s)\nbut you have too many files added.\nRestart the game to clear loaded files.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+			M_StartMessage2("Game Leave", va("The server added a file \n(%s)\nbut you have too many files added.\nRestart the game to clear loaded files.\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		}
 		else if (ncs == FS_NOTFOUND)
 		{
 			CONS_Printf(M_GetText("The server tried to add %s,\nbut you don't have this file.\nYou need to find it in order\nto play on this server."), filename);
-			M_StartMessage(va("The server added a file \n(%s)\nthat you do not have.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+			M_StartMessage2("Game Leave", va("The server added a file\n(%s)\nthat you do not have.\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		}
 		else if (ncs == FS_BADHASH)
 		{
 			CONS_Printf(M_GetText("Checksum mismatch while loading %s.\nMake sure you have the copy of\nthis file that the server has.\n"), filename);
-			M_StartMessage(va("Checksum mismatch while loading \n%s.\nThe server seems to have a\ndifferent version of this file.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+			M_StartMessage2("Game Leave", va("Checksum mismatch while loading \n%s.\nThe server seems to have a\ndifferent version of this file.\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		}
 		else
 		{
 			CONS_Printf(M_GetText("Unknown error finding wad file (%s) the server added.\n"), filename);
-			M_StartMessage(va("Unknown error trying to load a file\nthat the server added \n(%s).\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+			M_StartMessage2("Game Leave", va("Unknown error trying to load a file\nthat the server added\n(%s).\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		}
 		return;
 	}
@@ -7508,6 +7612,161 @@ static void Got_PlaySound(UINT8 **cp, INT32 playernum)
 	S_StartSound(NULL, sound_id);
 }
 
+static void HandleClantagSetCommand(UINT8 localplayer)
+{
+	char buf[sizeof(UINT8)+MAXCLANTAG];
+	char *cp = buf;
+	char temp[MAXCLANTAG*4];
+	char clantag[MAXCLANTAG];
+	size_t i, j = COM_Argc();
+
+	if (COM_Argc() < 2)
+	{
+		CONS_Printf("%s <text>: Set your clantag to this.\n", localplayer == 0 ? "clantag_set" : va("clantag%d_set", localplayer+1));
+		return;
+	}
+
+	if (!(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
+	{
+		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
+		return;
+	}
+
+	if (localplayer != 0 && !g_localplayers[localplayer])
+	{
+		CONS_Printf(M_GetText("There is no player to set a clantag for.\n"));
+		return;
+	}
+
+	strlcpy(temp, COM_Argv(1), sizeof temp);
+	for (i = 2; i < j; i++)
+	{
+		strlcat(temp, " ", sizeof temp);
+		strlcat(temp, COM_Argv(i), sizeof temp);
+	}
+
+	if (strlen(temp) >= MAXCLANTAG)
+	{
+		CONS_Printf(M_GetText("Supplied clantag is too long.\n"));
+		return;
+	}
+
+	if ((fasticmp("@", temp)
+		|| fasticmp("~", temp)
+		|| fasticmp("staff", temp)
+		|| fasticmp("admin", temp))
+	)
+	{
+		CONS_Printf(M_GetText("Nice try.\n"));
+		return;
+	}
+
+	strncpy(clantag, temp, MAXCLANTAG);
+
+	WRITEUINT8(cp, g_localplayers[localplayer]);
+	WRITESTRINGN(cp, clantag, MAXCLANTAG);
+	SendNetXCmdForPlayer(localplayer, XD_CLANTAGSET, &buf, cp - buf);
+}
+
+static void Command_ClantagSet(void)
+{
+	HandleClantagSetCommand(0);
+}
+
+static void Command_ClantagSet2(void)
+{
+	HandleClantagSetCommand(1);
+}
+
+static void Command_ClantagSet3(void)
+{
+	HandleClantagSetCommand(2);
+}
+
+static void Command_ClantagSet4(void)
+{
+	HandleClantagSetCommand(3);
+}
+
+static void Got_ClanTagSet(UINT8 **cp, INT32 playernum)
+{
+	char clantag[MAXCLANTAG];
+	UINT8 targetPlayer = READUINT8(*cp);
+	READSTRINGN(*cp, clantag, MAXCLANTAG);
+
+	if (targetPlayer >= MAXPLAYERS
+		|| playernode[targetPlayer] != playernode[playernum]
+		|| (fasticmp("@", clantag)
+		|| fasticmp("~", clantag)
+		|| fasticmp("staff", clantag)
+		|| fasticmp("admin", clantag))
+	)
+	{
+		CONS_Alert(CONS_WARNING,
+			M_GetText ("Illegal Clantag Set command received from %s\n"),
+			player_names[playernum]);
+		return;
+	}
+
+	strncpy(players[targetPlayer].clan, clantag, MAXCLANTAG);
+}
+
+static void HandleClantagClearCommand(UINT8 localplayer)
+{
+	char buf[1];
+	char *cp = buf;
+
+	if (!(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
+	{
+		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
+		return;
+	}
+
+	if (localplayer != 0 && !g_localplayers[localplayer])
+	{
+		CONS_Printf(M_GetText("There is no player to set a clantag for.\n"));
+		return;
+	}
+
+	WRITEUINT8(cp, g_localplayers[localplayer]);
+	SendNetXCmdForPlayer(localplayer, XD_CLANTAGCLEAR, &buf, cp - buf);
+}
+
+static void Command_ClantagClear(void)
+{
+	HandleClantagClearCommand(0);
+}
+
+static void Command_ClantagClear2(void)
+{
+	HandleClantagClearCommand(1);
+}
+
+static void Command_ClantagClear3(void)
+{
+	HandleClantagClearCommand(2);
+}
+
+static void Command_ClantagClear4(void)
+{
+	HandleClantagClearCommand(3);
+}
+
+static void Got_ClanTagClear(UINT8 **cp, INT32 playernum)
+{
+	UINT8 targetPlayer = READUINT8(*cp);
+
+	if (targetPlayer >= MAXPLAYERS || playernode[targetPlayer] != playernode[playernum])
+	{
+		CONS_Alert(CONS_WARNING,
+				   M_GetText ("Illegal Clantag Clear command received from %s\n"),
+				   player_names[playernum]);
+		return;
+	}
+
+	memset(players[targetPlayer].clan, 0, MAXCLANTAG);
+}
+
 static const char *displayplayer_compose_col(int playernum)
 {
 	return va("\x84(%d) \x83%s\x80", playernum, player_names[playernum]);
@@ -7622,7 +7881,18 @@ void Command_ExitGame_f(void)
 		closefilemenu(true);
 
 	if (!modeattacking)
-		D_StartTitle();
+	{
+		if (restoremenustack[0])
+		{
+			M_RestoreMenuStack(false);
+		}
+		else
+		{
+			M_ClearMenusEx(false, true);
+			D_ClearState();
+			M_StartControlPanel();
+		}
+	}
 }
 
 void Command_Retry_f(void)
@@ -7988,6 +8258,87 @@ static void Command_PlaySound(void)
 
 	WRITEINT32(buf_p, sfx);
 	SendNetXCmd(XD_PLAYSOUND, buf, buf_p - buf);
+}
+
+static void Command_WriteTextmap(void)
+{
+	if (COM_Argc() < 2)
+	{
+		CONS_Printf(
+"writetextmap <map> [map2...]: Update a map to the latest UDMF version.\n"
+"- Use the full map name, e.g. RR_TestRun.\n"
+"- You can give this command UP TO %d map names and it will convert all of them.\n"
+"- This command generates TEXTMAP files.\n"
+"- The location of the generated TEXTMAPs will appear in the console.\n",
+ROUNDQUEUE_MAX
+		);
+		return;
+	}
+
+	if (Playing())
+	{
+		CONS_Alert(CONS_ERROR, "This command cannot be used in-game. Return to the titlescreen first!\n");
+		return;
+	}
+
+	if (COM_Argc() - 1 > ROUNDQUEUE_MAX)
+	{
+		CONS_Alert(CONS_ERROR, "Cannot convert more than %d maps. Try again.\n", ROUNDQUEUE_MAX);
+		return;
+	}
+
+	// Start up a "minor" grand prix session
+	memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
+	memset(&roundqueue, 0, sizeof(struct roundqueue));
+
+	grandprixinfo.gamespeed = KARTSPEED_NORMAL;
+	grandprixinfo.masterbots = false;
+
+	grandprixinfo.gp = true;
+	grandprixinfo.cup = NULL;
+	grandprixinfo.wonround = false;
+
+	grandprixinfo.initalize = true;
+
+	roundqueue.position = 1;
+	roundqueue.roundnum = 1;
+	roundqueue.writetextmap = true;
+
+	size_t i;
+
+	for (i = 1; i < COM_Argc(); ++i)
+	{
+		INT32 map = G_MapNumber(COM_Argv(i));
+
+		if (map < 0 || map >= nummapheaders)
+		{
+			CONS_Alert(CONS_WARNING, "%s: Map doesn't exist. Not doing anything.\n", COM_Argv(i));
+
+			// clear round queue (to be safe)
+			memset(&roundqueue, 0, sizeof(struct roundqueue));
+			return;
+		}
+
+		INT32 gt = G_GuessGametypeByTOL(mapheaderinfo[map]->typeoflevel);
+
+		G_MapIntoRoundQueue(map, gt != -1 ? gt : GT_RACE, false, false);
+	}
+
+	D_MapChange(1 + roundqueue.entries[0].mapnum, roundqueue.entries[0].gametype, false, true, 1, false, false);
+
+	CON_ToggleOff();
+}
+
+static void Command_Eval(void)
+{
+	const char *args = COM_Args();
+
+	if (args)
+	{
+		const fixed_t n = LUA_EvalMath(args);
+
+		CONS_Printf("%f (%d)\n", FixedToFloat(n), n);
+	}
 }
 
 /** Makes a change to ::cv_forceskin take effect immediately.

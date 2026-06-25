@@ -127,8 +127,6 @@ extern char logfilename[1024];
 "\n"\
 "You are using version: %s\n"\
 "The newest version is: %s\n"\
-"\n"\
-"(Press a key)\n"
 
 // For future use, the codebase is the version of SRB2 that the modification is based on,
 // and should not be changed unless you have merged changes between versions of SRB2
@@ -157,6 +155,7 @@ extern char logfilename[1024];
 
 #define MAXPLAYERS 32	// 32 + host slot
 #define MAXPLAYERNAME 21
+#define MAXCLANTAG 11
 #define MAXSPLITSCREENPLAYERS 4 // Max number of players on a single computer
 #define MAXGAMEPADS (MAXSPLITSCREENPLAYERS * 2) // Number of gamepads we'll be allowing
 #define PACKETLOSSCYCLES 4 // amount of cycles to do when measuring packet loss
@@ -555,6 +554,9 @@ extern int compuncommitted;
 
 // p_sight.c
 #define TRAVERSE_MAX 8
+
+// m_menu.h
+#define MAXSTRINGLENGTH 32
 
 #ifdef __cplusplus
 } // extern "C"

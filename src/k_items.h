@@ -225,6 +225,12 @@ itemthinkfunc_f K_ItemThink_AttractionShield;
 itemthinkfunc_f K_ItemThink_BubbleShield;
 itemthinkfunc_f K_ItemThink_BonusRoll;
 
+UINT32 K_IntDistanceForMap(fixed_t curx,
+			   fixed_t cury,
+			   fixed_t curz,
+			   fixed_t destx,
+			   fixed_t desty,
+			   fixed_t destz);
 void K_RegisterItem(kartitemtype_e itemtype);
 kartresult_t *K_RegisterResult(const char *name, boolean alternate);
 kartresult_t *K_GetKartResultAlt(const char *name, boolean alternate);
@@ -244,7 +250,7 @@ void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags);
 void K_UnsetItemOutEx(player_t *player, itemflags_t flags);
 #define K_UnsetItemOut(player) K_UnsetItemOutEx(player, IF_ITEMOUT|IF_EGGMANOUT)
 
-mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, INT32 moloop, mobj_t *prev);
+mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, INT32 moloop, INT32 totalamount, mobj_t *prev);
 void K_RemoveEquippedItem(mobj_t *equipmo);
 
 void K_DecrementAndCheckCurrentItem(player_t *player);

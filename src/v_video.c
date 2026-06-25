@@ -756,10 +756,9 @@ void V_SetClipRect(fixed_t x, fixed_t y, fixed_t w, fixed_t h, INT32 flags)
 	cliprect.flags = flags;
 	cliprect.enabled = true;
 
-	/*
-	V_DrawFill(cliprect.l, cliprect.t, cliprect.r - cliprect.l, cliprect.b - cliprect.t, V_NOSCALESTART);
-	CONS_Printf("[(%d, %d), (%d, %d)]\n", cliprect.l, cliprect.t, cliprect.r, cliprect.b);
-	*/
+
+	//V_DrawFill(cliprect.left, cliprect.top, cliprect.right - cliprect.left, cliprect.bottom - cliprect.top, V_NOSCALESTART);
+	//CONS_Printf("[(%d, %d), (%d, %d)]\n", cliprect.left, cliprect.top, cliprect.right, cliprect.bottom);
 }
 
 // sets up a cliprect for a splitscreen player (and actually accounts for non-green res)
@@ -1793,6 +1792,210 @@ fillscreen:
 	}
 }
 
+// When drawing translucent lines, this prevents overlapping pixels.
+UINT8 occupied_pixels[MAXVIDWIDTH * MAXVIDHEIGHT] = {0};
+
+//
+// Draws a line from the point (x1, y1) to the point (x2, y2).
+// Based on Milo Yip's C implementation of Bresenham's line drawing algorithm
+// https://github.com/miloyip/line
+//
+void V_DrawFixedLine(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, fixed_t width, INT32 c)
+{
+	UINT8 *dest;
+	UINT8 _dest = 0;
+	const UINT8 *deststop;
+	UINT32 alphalevel = ((c & V_ALPHAMASK) >> V_ALPHASHIFT);
+	UINT32 blendmode = ((c & V_BLENDMASK) >> V_BLENDSHIFT);
+	fixed_t hwr_width = width;
+	//INT32 u;
+	vector2_t p1 = {0}, p2 = {0};
+	if (rendermode == render_none)
+		return;
+
+	if (width <= 0)
+		return;
+
+	double width_half_d = (FixedToDouble(width) / 2.0);
+
+	v_translevel = NULL;
+	if (alphalevel || blendmode)
+	{
+		if (alphalevel == 13) // V_HUDTRANSHALF
+			alphalevel = hudminusalpha[st_translucency];
+		else if (alphalevel == 14) // V_HUDTRANS
+			alphalevel = 10 - st_translucency;
+		else if (alphalevel == 15) // V_HUDTRANSDOUBLE
+			alphalevel = hudplusalpha[st_translucency];
+
+		if (alphalevel >= 10)
+			return; // invis
+
+		if (alphalevel || blendmode)
+		{
+			// Only clear to the actual width of what we want to draw to;
+			// drawing the LINE is expensive enough!
+			memset(occupied_pixels, 0, vid.rowbytes * vid.height);
+			v_translevel = R_GetBlendTable(blendmode+1, alphalevel);
+		}
+	}
+
+	if (!(c & V_NOSCALESTART))
+	{
+		INT32 dup = vid.dup;
+
+		hwr_width = FixedMul(width, dup);
+
+		width *= dup;
+
+		p1.x = FixedMul(x1, dup);
+		p1.y = FixedMul(y1, dup);
+		p2.x = FixedMul(x2, dup);
+		p2.y = FixedMul(y2, dup);
+
+		// Center it if necessary
+		V_AdjustXYWithSnap(&p1.x, &p1.y, c, dup);
+		V_AdjustXYWithSnap(&p2.x, &p2.y, c, dup);
+	}
+	else
+	{
+		p1.x = x1 >> FRACBITS;
+		p2.x = x2 >> FRACBITS;
+		p1.y = y1 >> FRACBITS;
+		p2.y = y2 >> FRACBITS;
+		hwr_width = width >> FRACBITS;
+	}
+
+	boolean wideline = (width > FRACUNIT);
+
+	INT32 left, right, top, bottom;
+	V_GetClipBounds(&left, &right, &top, &bottom);
+
+#ifdef HWRENDER
+	//if (rendermode != render_soft && !con_startup)		// Not this again
+	if (rendermode == render_opengl)
+	{
+		HWR_DrawFixedLine(p1.x, p1.y, p2.x, p2.y, hwr_width, c);
+		return;
+	}
+#endif
+
+	deststop = vid.screens[0] + vid.rowbytes * vid.height;
+
+	c &= 255;
+
+	int dx = abs(p2.x - p1.x), sx = p1.x < p2.x ? 1 : -1;
+	int dy = abs(p2.y - p1.y), sy = p1.y < p2.y ? 1 : -1;
+	int err = (dx > dy ? dx : -dy) / 2;
+
+	INT32 xx = p1.x;
+	INT32 yy = p1.y;
+	INT32 _x = 0;
+	INT32 _y = yy;
+	INT32 h = 1;
+
+	INT32 leftmost = 0, rightmost = 0, realwidth = 0;
+
+	INT32 index = 0;
+
+	if (alphalevel)
+		v_translevel += c<<8; // :patrick_mouth:
+
+	while (xx != p2.x || yy != p2.y)
+	{
+		int e2 = err;
+
+		if (wideline)
+		{
+			_y = (INT32)((double)(yy) - width_half_d);
+			h = width >> FRACBITS;
+		}
+		else
+		{
+			_y = yy;
+		}
+
+		if (xx < left || xx >= right || _y < top || _y >= bottom)
+		{
+			if (e2 > -dx) { err -= dy; xx += sx; }
+			if (e2 <  dy) { err += dx; yy += sy; }
+			continue; // Out of screen bounds
+		}
+
+		leftmost = CLAMP((INT32)((double)(xx) - width_half_d), left, right - 1);
+		rightmost = CLAMP(leftmost + (width >> FRACBITS), left, right - 1);
+
+		if (wideline)
+		{
+			dest = vid.screens[0] + _y*vid.width + leftmost;
+			index = _y*vid.width + leftmost;
+		}
+		else
+		{
+			dest = vid.screens[0] + _y*vid.width + xx;
+			index = _y*vid.width + xx;
+		}
+
+		if (leftmost >= rightmost)
+		{
+			if (e2 > -dx) { err -= dy; xx += sx; }
+			if (e2 <  dy) { err += dx; yy += sy; }
+			continue; // Inverted
+		}
+
+		realwidth = rightmost - leftmost;
+
+		if (alphalevel)
+		{
+			// borrowing this from jimitia's new hud drawing functions rq
+
+			if (wideline)
+			{
+				for (;(--h >= 0) && dest < deststop; dest += vid.width)
+				{
+					for (_x = 0; _x < (width >> FRACBITS); _x++)
+					{
+						if (!occupied_pixels[index + _x])
+						{
+							// Gotta do this, otherwise pixels will
+							// overlap one another and it'll look
+							// all gross
+							dest[_x] = v_translevel[dest[_x]];
+							occupied_pixels[index + _x] = 1;
+						}
+					}
+
+					index += vid.width;
+				}
+			}
+			else
+			{
+				_dest = *dest;
+
+				*dest = v_translevel[_dest];
+			}
+
+			if (e2 > -dx) { err -= dy; xx += sx; }
+			if (e2 <  dy) { err += dx; yy += sy; }
+		}
+		else
+		{
+			if (wideline)
+			{
+				for (;(--h >= 0) && dest < deststop; dest += vid.width)
+					memset(dest, c, realwidth);
+			}
+			else
+			{
+				*dest = (UINT8)(c);
+			}
+
+			if (e2 > -dx) { err -= dy; xx += sx; }
+			if (e2 <  dy) { err += dx; yy += sy; }
+		}
+	}
+}
+
 #ifdef HWRENDER
 // This is now a function since it's otherwise repeated 2 times and honestly looks retarded:
 static UINT32 V_GetHWConsBackColor(void)
@@ -2601,9 +2804,9 @@ static boolean V_CharacterValid(font_t *font, int c)
 
 // Writes a single character (draw WHITE if bit 7 set)
 //
-void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed)
+void V_DrawFixedCharacter(fixed_t x, fixed_t y, INT32 c, boolean lowercaseallowed)
 {
-	INT32 w, flags;
+	INT32 flags;
 	const UINT8 *colormap = V_GetStringColormap(c);
 
 	flags = c & ~(V_CHARCOLORMASK | V_PARAMMASK);
@@ -2615,14 +2818,7 @@ void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed)
 	if (c < 0 || c >= HU_FONTSIZE || !fontv[HU_FONT].font[c])
 		return;
 
-	w = fontv[HU_FONT].font[c]->width;
-	if (x + w > vid.width)
-		return;
-
-	if (colormap != NULL)
-		V_DrawMappedPatch(x, y, flags, fontv[HU_FONT].font[c], colormap);
-	else
-		V_DrawScaledPatch(x, y, flags, fontv[HU_FONT].font[c]);
+	V_DrawFixedPatch(x, y, FRACUNIT, flags, fontv[HU_FONT].font[c], colormap);
 }
 
 // Writes a single character for the chat (half scaled). (draw WHITE if bit 7 set)
@@ -3529,6 +3725,12 @@ void V_DrawRightAlignedString(INT32 x, INT32 y, INT32 option, const char *string
 {
 	x -= V_StringWidth(string, option);
 	V_DrawString(x, y, option, string);
+}
+
+void V_DrawRightAlignedStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
+{
+	x -= V_StringWidth(string, option)*FRACUNIT;
+	V_DrawStringAtFixed(x, y, option, string);
 }
 
 void V_DrawCenteredSmallString(INT32 x, INT32 y, INT32 option, const char *string)

@@ -65,6 +65,7 @@
 #include "g_party.h"
 #include "k_vote.h"
 #include "stun.h"
+#include "m_menu.h"
 
 // cl loading screen
 #include "v_video.h"
@@ -412,12 +413,13 @@ void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_
 
 		if (2+nparam > MAXTEXTCMD)
 		{
-			CONS_Alert(CONS_ERROR, M_GetText("packet too large to fit NetXCmd, cannot add netcmd %d! (size: %s, max: %d)\n"), id, sizeu1(2+nparam), MAXTEXTCMD);
+			CONS_Alert(CONS_ERROR, M_GetText("packet too large to fit NetXCmd, cannot add netcmd %s with id %d! (size: %s, max: %d)\n"), netxcmdnames[id-1], id, sizeu1(2+nparam), MAXTEXTCMD);
 			return;
 		}
 
 		// for future reference: if (cv_debug) != debug disabled.
-		CONS_Alert(CONS_NOTICE, M_GetText("NetXCmd buffer full, delaying netcmd %d... (size: %d, needed: %s)\n"), id, localtextcmd[playerid][0], sizeu1(nparam));
+		CONS_Alert(CONS_NOTICE, M_GetText("NetXCmd buffer full, delaying netcmd %s with id %d... (size: %d, needed: %s)\n"), netxcmdnames[id-1], id, localtextcmd[playerid][0], sizeu1(nparam));
+
 		if (buf == NULL)
 		{
 			textcmdbuf[playerid] = Z_Malloc(sizeof(textcmdbuf_t), PU_STATIC, NULL);
@@ -738,7 +740,7 @@ static inline void CL_DrawConnectionStatus(void)
 		const char *cltext;
 
 		// Draw bottom box
-		M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
+		M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1, 0);
 		V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-24, MENUCAPS|V_YELLOWMAP, "Press ESC to abort");
 
 		for (i = 0; i < 16; ++i)
@@ -818,7 +820,7 @@ static inline void CL_DrawConnectionStatus(void)
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32, MENUCAPS|V_YELLOWMAP, "Checking server addons...");
 			if (fileneedednum != 0)
 				totalfileslength = (INT32)((checkednum/(double)fileneedednum) * 256);
-			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
+			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1, 0);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 96);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE,
@@ -841,7 +843,7 @@ static inline void CL_DrawConnectionStatus(void)
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32, MENUCAPS|V_YELLOWMAP, "Loading server addons...");
 			if (fileneedednum != 0)
 				totalfileslength = (INT32)((loadcompletednum/(double)(fileneedednum)) * 256);
-			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
+			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1, 0);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 96);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, MENUCAPS|V_20TRANS|V_MONOSPACE,
@@ -867,7 +869,7 @@ static inline void CL_DrawConnectionStatus(void)
 			UINT32 currentsize = min(file->currentsize, file->totalsize);
 
 			// Draw the bottom box.
-			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-58-8, 32, 1);
+			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-58-8, 32, 1, 0);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-58-14,  MENUCAPS|V_YELLOWMAP, "Press ESC to abort");
 
 			Net_GetNetStat();
@@ -918,7 +920,7 @@ static inline void CL_DrawConnectionStatus(void)
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-14,  MENUCAPS|V_YELLOWMAP, "Overall Download Progress");
 			if (totaldldsize != 0)
 				totalfileslength = (INT32)((totaldldsize/(double)totalfilesrequestedsize) * 256);
-			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
+			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1, 0);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 96);
 
@@ -939,7 +941,7 @@ static inline void CL_DrawConnectionStatus(void)
 			// 15 pal entries total.
 
 			//Draw bottom box
-			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
+			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1, 0);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-24,  MENUCAPS|V_YELLOWMAP, "Press ESC to abort");
 
 			for (i = 0; i < 16; ++i)
@@ -1543,7 +1545,7 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	paused = false;
 	demo.playback = false;
 	demo.title = false;
-	titlemapinaction = TITLEMAP_OFF;
+	titlemapinaction = false;
 	automapactive = false;
 
 	// load a base level
@@ -1809,42 +1811,38 @@ void CL_UpdateServerList (void)
 		SendAskInfo(BROADCASTADDR);
 }
 
-static void M_ConfirmConnect(event_t *ev)
+static void M_ConfirmConnect(INT32 choice)
 {
-	if (ev->type == ev_keydown)
+	if (choice == MA_YES)
 	{
-		if (ev->data1 == ' ' || ev->data1 == 'y' || ev->data1 == KEY_ENTER || (ev->device != 0 && G_ControlBoundToKey(0, gc_accelerate, ev->data1, true)))
+		if (totalfilesrequestednum > 0)
 		{
-			if (totalfilesrequestednum > 0)
+#ifdef HAVE_CURL
+			if (http_source[0] == '\0' || curl_failedwebdownload)
+#endif
 			{
-#ifdef HAVE_CURL
-				if (http_source[0] == '\0' || curl_failedwebdownload)
-#endif
+				if (CL_SendFileRequest())
 				{
-					if (CL_SendFileRequest())
-					{
-						cl_mode = CL_DOWNLOADFILES;
-					}
-					else
-					{
-						cl_mode = CL_DOWNLOADFAILED;
-					}
+					cl_mode = CL_DOWNLOADFILES;
 				}
-#ifdef HAVE_CURL
 				else
-					cl_mode = CL_PREPAREHTTPFILES;
-#endif
+				{
+					cl_mode = CL_DOWNLOADFAILED;
+				}
 			}
+#ifdef HAVE_CURL
 			else
-				cl_mode = CL_LOADFILES;
+				cl_mode = CL_PREPAREHTTPFILES;
+#endif
+		}
+		else
+			cl_mode = CL_LOADFILES;
 
-			M_ClearMenus(true);
-		}
-		else if (ev->data1 == 'n' || ev->data1 == KEY_ESCAPE || (ev->device != 0 && G_ControlBoundToKey(0, gc_brake, ev->data1, true)))
-		{
-			cl_mode = CL_ABORTED;
-			M_ClearMenus(true);
-		}
+		M_ClearMenusEx(false, true);
+	}
+	else if (choice == MA_NO)
+	{
+		cl_mode = CL_ABORTED;
 	}
 }
 
@@ -1862,41 +1860,37 @@ static boolean CL_FinishedFileList(void)
 	{
 		D_QuitNetGame();
 		CL_Reset();
-		D_StartTitle();
-		M_StartMessage(M_GetText(
-			"You have too many WAD files loaded\n"
+		M_ReturnToConnectMenu();
+		M_StartMessage2("Too many addons", M_GetText(
+			"You have too many addons loaded\n"
 			"to add ones the server is using.\n"
 			"Please restart SRB2Kart before connecting.\n\n"
-			"Press ESC\n"
-		), NULL, MM_NOTHING);
+		), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		return false;
 	}
 	else if (i == 2) // cannot join for some reason
 	{
 		D_QuitNetGame();
 		CL_Reset();
-		D_StartTitle();
-		M_StartMessage(M_GetText(
+		M_ReturnToConnectMenu();
+		M_StartMessage2("Wrong Addons", M_GetText(
 			"You have the wrong addons loaded.\n\n"
 			"To play on this server, restart\n"
 			"the game and don't load any addons.\n"
 			"SRB2Kart will automatically add\n"
 			"everything you need when you join.\n\n"
-			"Press ESC\n"
-		), NULL, MM_NOTHING);
+		), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		return false;
 	}
 	else if (i == 1)
 	{
 		if (serverisfull)
 		{
-			M_StartMessage(M_GetText(
+			M_StartMessage2("Full Server" ,M_GetText(
 				"This server is full!\n"
 				"\n"
 				"You may load server addons (if any), and wait for a slot.\n"
-				"\n"
-				"Press ACCEL to continue or BRAKE to cancel.\n\n"
-			), M_ConfirmConnect, MM_EVENTHANDLER);
+			), MB_ROUTINE(M_ConfirmConnect), MM_YESNO, M_MessageConfirmText(false, keyboardcontrolled), M_MessageCancelText(false, keyboardcontrolled));
 			cl_mode = CL_CONFIRMCONNECT;
 			ChangeServMusic(SERVMUS_2, true,true);
 		}
@@ -1915,16 +1909,15 @@ static boolean CL_FinishedFileList(void)
 			{
 				D_QuitNetGame();
 				CL_Reset();
-				D_StartTitle();
-				M_StartMessage(M_GetText(
+				M_ReturnToConnectMenu();
+				M_StartMessage2("Download Failed", M_GetText(
 					"An error occured when trying to\n"
 					"download missing addons.\n"
 					"(This is almost always a problem\n"
 					"with the server, not your game.)\n\n"
 					"See the console or log file\n"
 					"for additional details.\n\n"
-					"Press ESC\n"
-				), NULL, MM_NOTHING);
+				), MB_NONE, MM_NOTHING, "Press any key", NULL);
 				return false;
 			}
 		}
@@ -1951,20 +1944,16 @@ static boolean CL_FinishedFileList(void)
 				downloadsize = Z_StrDup(va("%uK",totalfilesrequestedsize>>10));
 
 			if (serverisfull)
-				M_StartMessage(va(M_GetText(
+				M_StartMessage2("Full Server", va(M_GetText(
 					"This server is full!\n"
 					"Download of %s additional content is required to join.\n"
 					"\n"
 					"You may download, load server addons, and wait for a slot.\n"
-					"\n"
-					"Press ACCEL to continue or BRAKE to cancel.\n\n"
-				), downloadsize), M_ConfirmConnect, MM_EVENTHANDLER);
+				), downloadsize), MB_ROUTINE(M_ConfirmConnect), MM_YESNO, M_MessageConfirmText(false, keyboardcontrolled), M_MessageCancelText(false, keyboardcontrolled));
 			else
-				M_StartMessage(va(M_GetText(
+				M_StartMessage2("Downloading Content", va(M_GetText(
 					"Download of %s additional content is required to join.\n"
-					"\n"
-					"Press ACCEL to continue or BRAKE to cancel.\n\n"
-				), downloadsize), M_ConfirmConnect, MM_EVENTHANDLER);
+				), downloadsize), MB_ROUTINE(M_ConfirmConnect), MM_YESNO, M_MessageConfirmText(false, keyboardcontrolled), M_MessageCancelText(false, keyboardcontrolled));
 
 			Z_Free(downloadsize);
 			cl_mode = CL_CONFIRMCONNECT;
@@ -2041,13 +2030,12 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 
 				D_QuitNetGame();
 				CL_Reset();
-				D_StartTitle();
-				M_StartMessage(
-							va(
-							"Connection failed.\n\nYour binary differs from the server.\n"
+				M_ReturnToConnectMenu();
+				M_StartMessage2("Connection Failed", va(
+							"Your binary differs from the server.\n"
 							"  Yours: %.*s\n"
-							"Theirs: %s\n\n\nPress ESC\n",
-							GIT_SHA_ABBREV * 2, comprevision, theirs), NULL, MM_NOTHING);
+							"Theirs: %s\n",
+							GIT_SHA_ABBREV * 2, comprevision, theirs), MB_NONE, MM_NOTHING, "Press any key", NULL);
 				return false;
 			}
 #endif
@@ -2196,13 +2184,11 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
 				D_QuitNetGame();
 				CL_Reset();
-				D_StartTitle();
-				M_StartMessage(M_GetText(
+				M_ReturnToConnectMenu();
+				M_StartMessage2("Download Failed", M_GetText(
 					"The direct download encountered an error.\n"
 					"See the logfile for more info.\n"
-					"\n"
-					"Press (B)\n"
-				), NULL, MM_NOTHING);
+				), MB_NONE, MM_NOTHING, "Press any key", NULL);
 				return false;
 			}
 		case CL_LOADFILES:
@@ -2225,14 +2211,12 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
 				D_QuitNetGame();
 				CL_Reset();
-				D_StartTitle();
-				M_StartMessage(va(
+				M_ReturnToConnectMenu();
+				M_StartMessage2("Time Exceeded", va(
 					"%d minute wait time exceeded.\n"
-					"You may retry connection.\n"
-					"\n"
-					"Press ESC\n",
-                    cv_connectawaittime.value
-				), NULL, MM_NOTHING);
+					"You may retry connection.\n",
+					cv_connectawaittime.value
+				), MB_NONE, MM_NOTHING, "Press any key", NULL);
 				return false;
 			}
 			// prepare structures to save the file
@@ -2304,44 +2288,55 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		renderdeltatics = FRACUNIT;
 		R_SetTimeFrac(FRACUNIT);
 
-		if (cl_mode == CL_CONFIRMCONNECT)
-		{
-			D_ProcessEvents(); //needed for menu system to receive inputs
-		}
-		else if (netgame)
+		if (netgame)
 		{
 			event_t *ev;
-			INT32 key;
 			for (; eventtail != eventhead; eventtail = (eventtail+1) & (MAXEVENTS-1))
 			{
 				ev = &events[eventtail];
-				if (ev->type == ev_joystick && G_GetDevicePlayer(ev->device) == 0 && !G_AxisInDeadzone(0, ev))
-					key = G_AxisToKey(ev);
-				else if (ev->type == ev_keydown)
-					key = ev->data1;
-				else
-					continue;
 
-				if (cl_mode == CL_VIEWSERVER && menustack[0])
+				G_MapEventsToControls(ev);
+
+				if (ev->type == ev_keydown && ev->data1 > 0 && ev->data1 < NUMKEYS)
 				{
-					M_Responder(ev);
-				}
-				else
-				{
-					if (key == KEY_ESCAPE || G_ControlBoundToKey(0, gc_brake, key, true))
-						cl_mode = CL_ABORTED;
+					// Record keyboard presses
+					menuKey = ev->data1;
 				}
 			}
+
+#ifdef HAVE_THREADS
+			I_lock_mutex(&m_menu_mutex);
+#endif
+			M_UpdateMenuCMD(0, true);
+
+			if (cl_mode == CL_CONFIRMCONNECT)
+			{
+				if (messagebox.active)
+					M_HandleMessageBox(menuKey);
+			}
+			else
+			{
+				if (menustack[0] && cl_mode == CL_VIEWSERVER)
+				{
+					M_Ticker();
+				}
+				else if (M_MenuButtonPressed(0, MBT_CANCEL))
+					cl_mode = CL_ABORTED;
+			}
+
+#ifdef HAVE_THREADS
+			I_unlock_mutex(m_menu_mutex);
+#endif
 		}
 
 		if (cl_mode == CL_ABORTED)
 		{
 			CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
-//				M_StartMessage(M_GetText("Network game synchronization aborted.\n\nPress ESC\n"), NULL, MM_NOTHING);
+//			M_StartMessage2("Sync Aborted", M_GetText("Network game synchronization aborted.\n"), MB_NONE, MM_NOTHING, "Press any key", NULL);
 
 			D_QuitNetGame();
 			CL_Reset();
-			D_StartTitle();
+			M_ReturnToConnectMenu();
 			return false;
 		}
 
@@ -2358,10 +2353,13 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		{
 			if (cl_mode != CL_DOWNLOADFILES && cl_mode != CL_DOWNLOADSAVEGAME)
 			{
-				F_CacheTitleScreen();
-				F_MenuPresTicker(true); // title sky
-				F_TitleScreenTicker(true);
-				F_TitleScreenDrawer();
+				// Draw something please!
+				F_MenuPresTicker(true);
+
+				if (!menustack[0] && fastcmp(curbgname, "SRB2KTTL"))
+					F_TitleBGScroll(5, menuanimtimer);
+				else if (!menustack[0])
+					F_SkyScroll(curbgxspeed, curbgyspeed, curbgname); // title sky
 			}
 			CL_DrawConnectionStatus();
 			HU_TickSongCredits();
@@ -2427,8 +2425,9 @@ static void CL_ConnectToServer(void)
 		Y_EndVote();
 
 	DEBFILE(va("waiting %d nodes\n", doomcom->numnodes));
-	M_ClearMenus(true);
 	G_SetGamestate(GS_WAITINGPLAYERS);
+	if (wipegamestate == GS_MENU)
+		M_ClearMenus(true);
 	wipegamestate = GS_WAITINGPLAYERS;
 
 	ClearAdminPlayers();
@@ -2454,11 +2453,15 @@ static void CL_ConnectToServer(void)
 	}
 	SL_ClearServerList(servernode);
 
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		CL_ClearPlayer(i);
+	}
+
 	do
 	{
 		// If the connection was aborted for some reason, leave
 		if (!CL_ServerConnectionTicker(tmpsave, &oldtic, &asksent))
-
 		{
 			if (P_PartialAddGetStage() >= 0)
 				P_MultiSetupWadFiles(true); // in case any partial adds were done
@@ -2778,7 +2781,6 @@ static void Command_connect(void)
 
 	if (Playing() || demo.title)
 	{
-		M_ClearMenus(true);
 		if (demo.playback && demo.title)
 			G_CheckDemoStatus();
 
@@ -2788,7 +2790,7 @@ static void Command_connect(void)
 			CL_Reset();
 		}
 
-		D_StartTitle();
+		M_ReturnToConnectMenu();
 	}
 
 	// modified game check: no longer handled
@@ -2797,16 +2799,6 @@ static void Command_connect(void)
 	server = false;
 	connectedtodedicated = false;
 
-/*
-	if (fasticmp(COM_Argv(1), "self"))
-	{
-		servernode = 0;
-		server = true;
-		/// \bug should be but...
-		//SV_SpawnServer();
-	}
-	else
-*/
 	{
 		// used in menu to connect to a server in the list
 		if (netgame && fasticmp(COM_Argv(1), "node"))
@@ -2815,12 +2807,9 @@ static void Command_connect(void)
 		}
 		else if (netgame)
 		{
-			M_ClearMenus(true);
 			D_QuitNetGame();
 			CL_Reset();
-
-			D_StartTitle();
-
+			M_ReturnToConnectMenu();
 		}
 		else if (I_NetOpenSocket)
 		{
@@ -2853,8 +2842,8 @@ static void Command_connect(void)
 			D_QuitNetGame(); // this will also call D_CloseConnection for us
 			CL_Reset();
 			servernode = 0; // not sure if this is cool, but if this is -1 then bad things happen in alot of networking code
-			D_StartTitle();
-			M_StartMessage(M_GetText("Failed to connect to server\nMake sure you put in a valid Address!\n"), NULL, MM_NOTHING);
+			M_ReturnToConnectMenu();
+			M_StartMessage2("Connection failed", M_GetText("Failed to connect to server\nMake sure you put in a valid Address!\n"), MB_NONE, MM_NOTHING, "Press any key", NULL);
 			return;
 		}
 	}
@@ -3018,9 +3007,6 @@ void CL_Reset(void)
 		G_StopMetalDemo();
 	if (demo.recording)
 		G_CheckDemoStatus();
-
-	// don't carry menus into the title screen (or wherever we're going)
-	M_ClearMenus(true);
 
 	// reset client/server code
 	DEBFILE(va("\n-=-=-=-=-=-=-= Client reset =-=-=-=-=-=-=-\n\n"));
@@ -3638,22 +3624,22 @@ static void Got_KickCmd(UINT8 **p, INT32 playernum)
 
 		D_QuitNetGame();
 		CL_Reset();
-		D_StartTitle();
+		M_ReturnToConnectMenu();
 
 		if (msg == KICK_MSG_CON_FAIL)
-			M_StartMessage(M_GetText("Server closed connection\n(Synch failure)\nPress ESC\n"), NULL, MM_NOTHING);
+			M_StartMessage2("Game Kick", M_GetText("Server closed connection\n(Synch failure)\n"), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		else if (msg == KICK_MSG_PING_HIGH)
-			M_StartMessage(M_GetText("Server closed connection\n(Broke delay limit)\nPress ESC\n"), NULL, MM_NOTHING);
+			M_StartMessage2("Game Kick", M_GetText("Server closed connection\n(Broke delay limit)\n"), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		else if (msg == KICK_MSG_BANNED)
-			M_StartMessage(M_GetText("You have been banned by the server\n\nPress ESC\n"), NULL, MM_NOTHING);
+			M_StartMessage2("Game Kick", M_GetText("You have been banned by the server\n"), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		else if (msg == KICK_MSG_CUSTOM_KICK)
-			M_StartMessage(va(M_GetText("You have been kicked\n(%s)\n\nPress ESC\n"), reason), NULL, MM_NOTHING);
+			M_StartMessage2("Game Kick", va(M_GetText("You have been kicked\n(%s)\n"), reason), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		else if (msg == KICK_MSG_CUSTOM_BAN)
-			M_StartMessage(va(M_GetText("You have been banned\n(%s)\n\nPress ESC\n"), reason), NULL, MM_NOTHING);
+			M_StartMessage2("Game Kick", va(M_GetText("You have been banned\n(%s)\n"), reason), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		else if (msg == KICK_MSG_SIGFAIL)
-			M_StartMessage(M_GetText("Server closed connection\n(Invalid signature)\nPress ESC\n"), NULL, MM_NOTHING);
+			M_StartMessage2("Game Kick", M_GetText("Server closed connection\n(Invalid signature)\n"), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		else
-			M_StartMessage(M_GetText("You have been kicked by the server\n\nPress ESC\n"), NULL, MM_NOTHING);
+			M_StartMessage2("Game Kick", M_GetText("You have been kicked by the server\n"), MB_NONE, MM_NOTHING, "Press any key", NULL);
 	}
 	else if (server)
 	{
@@ -4547,6 +4533,7 @@ void SV_StopServer(void)
 	maketic = gametic+1;
 	neededtic = maketic;
 	serverrunning = false;
+	titlemapinaction = false;
 }
 
 // called at singleplayer start and stopdemo
@@ -4839,8 +4826,8 @@ static void HandleShutdown(SINT8 node)
 	LUA_HookBool(false, HOOK(GameQuit));
 	D_QuitNetGame();
 	CL_Reset();
-	D_StartTitle();
-	M_StartMessage(M_GetText("Server has shutdown\n\nPress Esc\n"), NULL, MM_NOTHING);
+	M_ReturnToConnectMenu();
+	M_StartMessage2("Server Shutdown", M_GetText("Server has shutdown\n"), MB_NONE, MM_NOTHING, "Press any key", NULL);
 }
 
 void ServerInfoUpdateSend(void)
@@ -4891,8 +4878,8 @@ static void HandleTimeout(SINT8 node)
 	LUA_HookBool(false, HOOK(GameQuit));
 	D_QuitNetGame();
 	CL_Reset();
-	D_StartTitle();
-	M_StartMessage(M_GetText("Server Timeout\n\nPress Esc\n"), NULL, MM_NOTHING);
+	M_ReturnToConnectMenu();
+	M_StartMessage2("Server Timeout", M_GetText("Server Timeout\n"), MB_NONE, MM_NOTHING, "Press any key", NULL);
 }
 
 void HandleSigfail(const char *string)
@@ -4906,8 +4893,8 @@ void HandleSigfail(const char *string)
 	LUA_HookBool(false, HOOK(GameQuit));
 	D_QuitNetGame();
 	CL_Reset();
-	D_StartTitle();
-	M_StartMessage(va(M_GetText("Signature check failed\n(%s)\nPress Esc\n"),string), NULL, MM_NOTHING);
+	M_ReturnToConnectMenu();
+	M_StartMessage2("Signature Failed", va(M_GetText("Signature check failed\n(%s)\n"),string), MB_NONE, MM_NOTHING, "Press any key", NULL);
 }
 
 /** Called when a PT_SERVERINFO packet is received
@@ -5034,21 +5021,21 @@ static void PT_ServerRefuse(SINT8 node)
 
 		D_QuitNetGame();
 		CL_Reset();
-		D_StartTitle();
+		M_ReturnToConnectMenu();
 
 		if (reason[1] == '|')
 		{
-			M_StartMessage(va("You have been %sfrom the server\n\nReason:\n%s",
+			M_StartMessage2("Join Failed", va("You have been %sfrom the server\n\nReason:\n%s",
 							  (reason[0] == 'B') ? "banned\n" : "temporarily\nkicked ",
-							  reason+2), NULL, MM_NOTHING);
+							  reason+2), MB_NONE, MM_NOTHING, "Press any key", NULL);
 			CONS_Alert(CONS_NOTICE, "You have been %sfrom the server\n\nReason:\n%s",
 						 (reason[0] == 'B') ? "banned\n" : "temporarily\nkicked ",
 						 reason+2);
 		}
 		else
 		{
-			M_StartMessage(va(M_GetText("Server refuses connection\n\nReason:\n%s"),
-							  reason), NULL, MM_NOTHING);
+			M_StartMessage2("Join Failed", va(M_GetText("Server refuses connection\n\nReason:\n%s"),
+							  reason), MB_NONE, MM_NOTHING, "Press any key", NULL);
 			CONS_Alert(CONS_NOTICE, "Server refuses connection\n\nReason:\n%s",
 						   reason);
 		}

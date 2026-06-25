@@ -11,6 +11,7 @@
 /// \file  p_saveg.c
 /// \brief Archiving: SaveGame I/O
 
+#include "doomdata.h"
 #include "doomdef.h"
 #include "byteptr.h"
 #include "d_main.h"
@@ -38,6 +39,7 @@
 #include "p_slopes.h"
 
 // SRB2Kart
+#include "k_kart.h"
 #include "k_battle.h"
 #include "k_pwrlv.h"
 #include "k_terrain.h"
@@ -526,6 +528,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].speed);
 		SYNC(players[i].lastspeed);
 		SYNC(players[i].deadtimer);
+		SYNC(players[i].deadbounces);
+		SYNCBOOLEAN(players[i].extendeddeath);
 		SYNC(players[i].exiting);
 
 		////////////////////////////
@@ -619,6 +623,9 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].airtime);
 		SYNC(players[i].startboost);
 
+		SYNC(players[i].distancefromcluster);
+		SYNC(players[i].distancefrombestfit);
+
 		SYNC(players[i].dropdash);
 		SYNC(players[i].respawn);
 
@@ -645,6 +652,11 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].karttilt);
 		SYNC(players[i].karttiltmomentum);
 		SYNC(players[i].nulldrifttime);
+
+		SYNC(players[i].kartmagnet.factor);
+		SYNC(players[i].kartmagnet.base_speed);
+		SYNC(players[i].kartmagnet.target_speed);
+		SYNC(players[i].kartmagnet.target_gradient);
 
 		SYNC(players[i].recoverydashcharge);
 		SYNC(players[i].recoverydash);
@@ -868,7 +880,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].itemusecooldownmax);
 
 		P_SyncMem(save, players[i].public_key, PUBKEYLENGTH);
-		
+
 		SYNC(players[i].bumpyroadside);
 
 		// keepstuff_t
@@ -1668,7 +1680,7 @@ static void DiffLines(const line_t *li, const line_t *spawnli, UINT8 diff[])
 
 	DIFFNE(li, activation, LD_ACTIVATION);
 
-	if (li->sidenum[0] != 0xffff)
+	if (li->sidenum[0] != NO_INDEX)
 	{
 		si = &sides[li->sidenum[0]];
 		spawnsi = &spawnsides[li->sidenum[0]];
@@ -1678,7 +1690,7 @@ static void DiffLines(const line_t *li, const line_t *spawnli, UINT8 diff[])
 		DIFFNE(si, bottomtexture, LD_S1BOTTEX);
 		DIFFNE(si, midtexture, LD_S1MIDTEX);
 	}
-	if (li->sidenum[1] != 0xffff)
+	if (li->sidenum[1] != NO_INDEX)
 	{
 		si = &sides[li->sidenum[1]];
 		spawnsi = &spawnsides[li->sidenum[1]];
@@ -4094,6 +4106,8 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	}
 	else
 	{
+		g_reloadingMap = false;
+
 		if (!gamemap || gamemap > nummapheaders || !mapheaderinfo[gamemap-1])
 			I_Error("P_NetUnArchiveMisc: Internal map ID %d not found (nummapheaders = %d)", gamemap-1, nummapheaders);
 
@@ -4313,7 +4327,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 				li->executordelay = spawnli->executordelay;
 				li->activation = spawnli->activation;
 
-				if (li->sidenum[0] != 0xffff)
+				if (li->sidenum[0] != NO_INDEX)
 				{
 					si = &sides[li->sidenum[0]];
 					spawnsi = &spawnsides[li->sidenum[0]];
@@ -4324,7 +4338,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 					si->midtexture = spawnsi->midtexture;
 				}
 
-				if (li->sidenum[1] != 0xffff)
+				if (li->sidenum[1] != NO_INDEX)
 				{
 					si = &sides[li->sidenum[1]];
 					spawnsi = &spawnsides[li->sidenum[1]];
@@ -4362,6 +4376,10 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNC(bumpsparkactive);
 	SYNC(antibumptime);
 	SYNC(playerbumpactive);
+
+	SYNC(clusterid);
+	SYNC(clustermode);
+	SYNC(clusterjustchanged);
 
 	for (i = 0; i < sizeof(g_voteLevels)/sizeof(*g_voteLevels); i++)
 	{

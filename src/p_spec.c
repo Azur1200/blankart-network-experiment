@@ -469,7 +469,7 @@ static inline sector_t *getSector(INT32 currentSector, INT32 line, INT32 side)
   */
 static inline boolean twoSided(INT32 sector, INT32 line)
 {
-	return (sectors[sector].lines[line])->sidenum[1] != 0xffff;
+	return (sectors[sector].lines[line])->sidenum[1] != NO_INDEX;
 }
 #endif
 
@@ -3408,7 +3408,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 					}
 
 					// Back side
-					if (args[2] != TMSD_FRONT && lines[linenum].sidenum[1] != 0xffff)
+					if (args[2] != TMSD_FRONT && lines[linenum].sidenum[1] != NO_INDEX)
 					{
 						this = &sides[lines[linenum].sidenum[1]];
 						if (always || this->toptexture) this->toptexture = set->toptexture;
@@ -3652,7 +3652,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 
 				if (args[2] & TMCF_RELATIVE)
 				{
-					extracolormap_t *target = (!udmf && (line->flags & ML_TFERLINE) && line->sidenum[1] != 0xFFFF) ?
+					extracolormap_t *target = (!udmf && (line->flags & ML_TFERLINE) && line->sidenum[1] != NO_INDEX) ?
 						sides[line->sidenum[1]].colormap_data : sectors[secnum].extra_colormap; // use back colormap instead of target sector
 
 						extracolormap_t *exc = R_AddColormaps(
@@ -3990,7 +3990,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 				}
 
 				if (!udmf && (line->flags & ML_TFERLINE)) // use back colormap instead of target sector
-					sectors[secnum].extra_colormap = (line->sidenum[1] != 0xFFFF) ?
+					sectors[secnum].extra_colormap = (line->sidenum[1] != NO_INDEX) ?
 					sides[line->sidenum[1]].colormap_data : NULL;
 
 				exc = sectors[secnum].extra_colormap;
@@ -8765,7 +8765,7 @@ static void P_SpawnScrollers(void)
 						{
 							if (l->args[1] != TMSD_BACK)
 								Add_Scroller(sc_side, l->args[2] << (FRACBITS - SCROLL_SHIFT), l->args[3] << (FRACBITS - SCROLL_SHIFT), control, lines[s].sidenum[0], accel, 0);
-							if (l->args[1] != TMSD_FRONT && lines[s].sidenum[1] != 0xffff)
+							if (l->args[1] != TMSD_FRONT && lines[s].sidenum[1] != NO_INDEX)
 								Add_Scroller(sc_side, l->args[2] << (FRACBITS - SCROLL_SHIFT), l->args[3] << (FRACBITS - SCROLL_SHIFT), control, lines[s].sidenum[1], accel, 0);
 						}
 					}
@@ -8781,7 +8781,7 @@ static void P_SpawnScrollers(void)
 
 				if (l->args[0] != TMSD_FRONT)
 				{
-					if (l->sidenum[1] != 0xffff)
+					if (l->sidenum[1] != NO_INDEX)
 					{
 						Add_Scroller(sc_side, -l->args[1] << (FRACBITS - SCROLL_SHIFT), l->args[2] << (FRACBITS - SCROLL_SHIFT), -1, l->sidenum[1], accel, 0);
 					}

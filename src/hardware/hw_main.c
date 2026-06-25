@@ -874,6 +874,7 @@ CV_PossibleValue_t glshaders_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Ignore cust
 static CV_PossibleValue_t glmodelinterpolation_cons_t[] = {{0, "Off"}, {1, "Sometimes"}, {2, "Always"}, {0, NULL}};
 #endif
 static CV_PossibleValue_t glshearing_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Third-person"}, {0, NULL}};
+static CV_PossibleValue_t glsprbillboard_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Players"}, {0, NULL}};
 
 static void CV_glfiltermode_OnChange(void);
 static void CV_glanisotropic_OnChange(void);
@@ -889,7 +890,6 @@ CV_PossibleValue_t glanisotropicmode_cons_t[] = {{1, "MIN"}, {16, "MAX"}, {0, NU
 static CV_PossibleValue_t glsecbright_cons_t[] = {{0, "MIN"}, {255, "MAX"}, {0, NULL}};
 
 consvar_t cv_glshaders = CVAR_INIT ("gr_shaders", "On", CV_SAVE, glshaders_cons_t, NULL);
-consvar_t cv_glallowshaders = CVAR_INIT ("gr_allowclientshaders", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_fovchange = CVAR_INIT ("gr_fovchange", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_glsecbright = CVAR_INIT("gr_secbright", "0", CV_SAVE, glsecbright_cons_t, NULL);
 
@@ -910,7 +910,7 @@ consvar_t cv_glmodellighting = CVAR_INIT ("gr_modellighting", "On", CV_SAVE, CV_
 #endif
 
 consvar_t cv_glshearing = CVAR_INIT ("gr_shearing", "Off", CV_SAVE, glshearing_cons_t, NULL);
-consvar_t cv_glspritebillboarding = CVAR_INIT ("gr_spritebillboarding", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_glspritebillboarding = CVAR_INIT ("gr_spritebillboarding", "On", CV_SAVE, glsprbillboard_cons_t, NULL);
 consvar_t cv_glskydome = CVAR_INIT ("gr_skydome", "On", CV_SAVE, CV_OnOff, NULL);
 
 consvar_t cv_glfiltermode = CVAR_INIT ("gr_filtermode", "Nearest", CV_SAVE|CV_CALL, glfiltermode_cons_t, CV_glfiltermode_OnChange);
@@ -1056,7 +1056,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_glshearing);
 	CV_RegisterVar(&cv_glshaders);
 	CV_RegisterVar(&cv_glsecbright);
-	CV_RegisterVar(&cv_glallowshaders);
 
 	CV_RegisterVar(&cv_glfiltermode);
 

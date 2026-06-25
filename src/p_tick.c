@@ -15,6 +15,8 @@
 #include "doomstat.h"
 #include "g_game.h"
 #include "g_input.h"
+#include "g_state.h"
+#include "m_menu.h"
 #include "p_local.h"
 #include "z_zone.h"
 #include "s_sound.h"
@@ -45,6 +47,8 @@
 #include "k_items.h" // ItemBGone
 #include "k_specialstage.h"
 #include "k_grandprix.h"
+
+#include "radio_finish.h"
 
 #include "i_gamepad.h"
 
@@ -661,6 +665,9 @@ static fixed_t FixedAngleDifference(fixed_t angle1, fixed_t angle2 )
 
 static void P_HandleCameraFreelookYaw(UINT8 pnum, player_t *player, camera_t *cam)
 {
+	if (menustack[0])
+		return;
+
 	if (P_IsDisplayPlayer(player))
 	{
 		fixed_t angle = 0;
@@ -967,52 +974,55 @@ void P_Ticker(boolean run)
 			}
 		}
 
-		// Bosses have a punchy start, so no position.
-		if (bossinfo.boss == true)
+		if (gamestate == GS_LEVEL)
 		{
-			if (leveltime == 0)
+			// Bosses have a punchy start, so no position.
+			if (bossinfo.boss == true)
 			{
-				S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
-				S_ShowMusicCredit(0, 5*TICRATE, 0);
-			}
-		}
-		// Plays the music after the starting countdown.
-		else
-		{
-			// Change timing of start music based on gametypes[gametype]->rules
-			tic_t startingtime = (gametypes[gametype]->rules & GTR_NOCOUNTDOWN) ? introtime : starttime;
-
-			if (!(titlemapinaction == TITLEMAP_RUNNING))
-			{
-				if (leveltime == (startingtime + (TICRATE/2)))
+				if (leveltime == 0)
 				{
-					// Plays the music after the starting countdown.
 					S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
 					S_ShowMusicCredit(0, 5*TICRATE, 0);
 				}
-				else if (startingtime != introtime)
-				{
-					if (!(gametypes[gametype]->rules & GTR_NOCOUNTDOWN))
-					{
-						if (leveltime == startingtime-(3*TICRATE))
-						{
-							S_StartSound(NULL, sfx_s3ka7); // 3,
-						}
-						else if ((leveltime == startingtime-(2*TICRATE)) || (leveltime == starttime-TICRATE))
-						{
-							S_StartSound(NULL, sfx_s3ka7); // 2, 1,
-						}
-						else if (leveltime == startingtime)
-						{
-							S_StartSound(NULL, sfx_s3kad); // GO!
-						}
-					}
+			}
+			// Plays the music after the starting countdown.
+			else
+			{
+				// Change timing of start music based on gametypes[gametype]->rules
+				tic_t startingtime = (gametypes[gametype]->rules & GTR_NOCOUNTDOWN) ? introtime : starttime;
 
-					if (leveltime < startingtime) // SRB2Kart
-						S_ChangeMusicInternal(((grandprixinfo.gp == true
-						) ? "gpstrt" : (encoremode ? "estart" : "kstart")), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
-					else if (leveltime == startingtime) // The GO! sound stops the level start ambience
-						S_StopMusic();
+				if (!(titlemapinaction == TITLEMAP_RUNNING))
+				{
+					if (leveltime == (startingtime + (TICRATE/2)))
+					{
+						// Plays the music after the starting countdown.
+						S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+						S_ShowMusicCredit(0, 5*TICRATE, 0);
+					}
+					else if (startingtime != introtime)
+					{
+						if (!(gametypes[gametype]->rules & GTR_NOCOUNTDOWN))
+						{
+							if (leveltime == startingtime-(3*TICRATE))
+							{
+								S_StartSound(NULL, sfx_s3ka7); // 3,
+							}
+							else if ((leveltime == startingtime-(2*TICRATE)) || (leveltime == starttime-TICRATE))
+							{
+								S_StartSound(NULL, sfx_s3ka7); // 2, 1,
+							}
+							else if (leveltime == startingtime)
+							{
+								S_StartSound(NULL, sfx_s3kad); // GO!
+							}
+						}
+
+						if (leveltime < startingtime) // SRB2Kart
+							S_ChangeMusicInternal(((grandprixinfo.gp == true
+							) ? "gpstrt" : (encoremode ? "estart" : "kstart")), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
+							else if (leveltime == startingtime) // The GO! sound stops the level start ambience
+								S_StopMusic();
+					}
 				}
 			}
 		}
@@ -1097,8 +1107,13 @@ void P_Ticker(boolean run)
 			G_WriteAllGhostTics();
 
 			if (cv_recordmultiplayerdemos.value && (demo.savemode == DSM_NOTSAVING || demo.savemode == DSM_WILLAUTOSAVE))
-				if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON))
+				if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON) && !menustack[0])
+				{
 					demo.savemode = DSM_TITLEENTRY;
+					M_OpenVirtualKeyboard(&demo.titlenameinput, demo.titlename, &replaysave);
+					M_StartControlPanel();
+					M_EnterMenu(MN_TYPINGDUMMY, false, 0);
+				}
 		}
 		else if (demo.playback) // Use Ghost data for consistency checks.
 		{
@@ -1127,6 +1142,11 @@ void P_Ticker(boolean run)
 		// Move the camera during levels.
 		K_UpdateDirector();
 		P_RunChaseCameras();
+	}
+
+	if (run && !levelloading && leveltime && (!dedicated))
+	{
+		RR_ridersFinishTick();
 	}
 
 	if (run)

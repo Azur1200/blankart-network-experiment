@@ -849,7 +849,7 @@ static void HWR_PrecacheLevelTextures(void)
 			side_t *side = &sides[line->sidenum[j]];
 
 			// Single-side linedef
-			if (line->sidenum[j] == 0xffff)
+			if (line->sidenum[j] == NO_INDEX)
 				continue;
 
 			if (side->toptexture >= 0 && side->toptexture < numtextures)

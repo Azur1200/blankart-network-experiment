@@ -529,13 +529,13 @@ void SCR_ChangeRenderer(void)
 		{
 			CONS_Alert(CONS_ERROR, "OpenGL rendering was disabled!\n");
 			if (menustack[0])
-				M_StartMessage(M_GetText("OpenGL rendering was disabled!\n\n(Press a key)\n"), NULL, MM_NOTHING);
+				M_StartMessage2("OpenGL", M_GetText("OpenGL rendering was disabled!\n"), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		}
 		else
 		{
 			CONS_Alert(CONS_ERROR, "OpenGL never loaded\n");
 			if (menustack[0])
-				M_StartMessage(M_GetText("OpenGL never loaded\n\n(Press a key)\n"), NULL, MM_NOTHING);
+				M_StartMessage2("OpenGL", M_GetText("OpenGL never loaded\n"), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		}
 		CV_SetValue(&cv_renderer, render_soft);
 		return;

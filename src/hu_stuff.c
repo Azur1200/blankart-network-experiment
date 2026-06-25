@@ -869,7 +869,7 @@ void HU_Ticker(void)
 	hu_tick &= 7; // currently only to blink chat input cursor
 
 	if (G_PlayerInputDown(0, gc_scores, false, DEADZONE_BUTTON))
-		hu_showscores = !chat_on;
+		hu_showscores = (!chat_on && !menustack[0]);
 	else
 		hu_showscores = false;
 
@@ -2406,7 +2406,7 @@ static void HU_DrawRankings(void)
 	else
 	{
 		// draw the current gametype in the lower left
-		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, (modeattacking) ? "Record Attack" : gametype_cons_t[gametype].strvalue);
+		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, (modeattacking) ? "Record Attack" : gametypes[gametype]->name);
 	}
 
 	if ((gametypes[gametype]->rules & (GTR_TIMELIMIT|GTR_POINTLIMIT)) && !bossinfo.boss)
@@ -2491,6 +2491,7 @@ static void HU_DrawRankings(void)
 		completed[i] = true;
 
 		tab[scorelines].name = player_names[i];
+		strncpy(&tab[scorelines].clan, players[i].clan, MAXCLANTAG);
 
 		if (gametypes[gametype]->rules & GTR_CIRCUIT)
 		{

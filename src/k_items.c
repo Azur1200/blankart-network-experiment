@@ -111,7 +111,6 @@ itemusefunc_f *KI_ItemUseFunctions[][2] =
 	[KITEM_GROW] =	 			{K_UseItem_Grow, NULL},
 	[KITEM_SHRINK] =	 		{K_UseItem_Shrink, K_UseItem_Mini},
 	[KITEM_THUNDERSHIELD] =	 	{K_UseItem_ThunderShield, K_UseItem_AttractionShield},
-	[KITEM_BUBBLESHIELD] =	 	{K_UseItem_BubbleShield, NULL},
 	[KITEM_FLAMESHIELD] =	 	{K_UseItem_FlameShield, NULL},
 	[KITEM_HYUDORO] =		 	{K_UseItem_Hyudoro, NULL},
 	[KITEM_POGOSPRING] =	 	{K_UseItem_PogoSpring, NULL},
@@ -129,7 +128,6 @@ itemusefunc_f *KI_ItemHoldUseFunctions[][2] =
 itemusefunc_f *KI_ItemReleaseUseFunctions[][2] =
 {
 	[KITEM_THUNDERSHIELD] = 	{NULL, K_ReleaseUseItem_AttractionShield},
-	[KITEM_BUBBLESHIELD] = 		{K_ReleaseUseItem_BubbleShield, NULL},
 	[KITEM_FLAMESHIELD] = 		{K_ReleaseUseItem_FlameShield, NULL},
 	[MAXKARTITEMS] = 			{NULL,NULL}
 };
@@ -382,21 +380,22 @@ static UINT32 K_Dist2D(INT32 x1, INT32 y1, INT32 x2, INT32 y2)
 }*/
 
 // This one uses map scaling instead, use in case of loss of depth on mobjscaled maps.
-static UINT32 K_IntDistanceForMap(fixed_t curx,
-			       fixed_t cury,
-			       fixed_t curz,
-			       fixed_t destx,
-			       fixed_t desty,
-			       fixed_t destz)
+UINT32 K_IntDistanceForMap(fixed_t curx,
+			   fixed_t cury,
+			   fixed_t curz,
+			   fixed_t destx,
+			   fixed_t desty,
+			   fixed_t destz)
 {
 	return K_Dist2D(0,
-		      curz / mapobjectscale,
-		      K_Dist2D(curx / mapobjectscale,
-			     cury / mapobjectscale,
-			     destx / mapobjectscale,
-			     desty / mapobjectscale),
-		      destz / mapobjectscale);
+			curz / mapobjectscale,
+			K_Dist2D(curx / mapobjectscale,
+				 cury / mapobjectscale,
+				 destx / mapobjectscale,
+				 desty / mapobjectscale),
+			destz / mapobjectscale);
 }
+
 
 /**	\brief	Prevent overpowered rolls while under the effects of Alt. Shrink.
 
@@ -2553,7 +2552,7 @@ player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
 }
 
 // after using this you must handle setting any additional values on the mobj (like skincolour)
-mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, INT32 moloop, mobj_t *prev)
+mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, INT32 moloop, INT32 totalamount, mobj_t *prev)
 {
 	mobj_t *mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, type);
 	angle_t newangle;
@@ -2568,19 +2567,19 @@ mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjty
 	switch (equipstyle)
 	{
 		case KITEMEQUIP_ORBIT: // Kart orbit items
-			newangle = (player->mo->angle + ANGLE_157h) + FixedAngle(((360 / player->itemamount) * moloop) << FRACBITS) + ANGLE_90;
+			newangle = (player->mo->angle + ANGLE_157h) + FixedAngle(((360 / totalamount) * moloop) << FRACBITS) + ANGLE_90;
 			mo->angle = newangle;
-			mo->movecount = player->itemamount;
+			mo->movecount = totalamount;
 			mo->movedir = mo->lastlook = moloop+1;
 			break;
 		case KITEMEQUIP_TRAIL: // Kart trailing items
-			mo->movecount = player->itemamount;
+			mo->movecount = totalamount;
 			mo->movedir = moloop+1;
 			break;
 		case KITEMEQUIP_ROCKETS: // Rocket Sneaker et autres side-by-side style items
 			K_MatchGenericExtraFlags(mo, player->mo);
 			mo->angle = player->mo->angle;
-			mo->movecount = moloop%2;
+			mo->movecount = moloop%totalamount;
 			mo->movedir = mo->lastlook = moloop+1;
 			break;
 		case KITEMEQUIP_SHIELD: // Force Field Shields
@@ -2658,7 +2657,7 @@ void K_UseItem_RocketSneaker(player_t *player, boolean itemjustdown, boolean ong
 
 			for (moloop = 0; moloop < 2; moloop++)
 			{
-				mo = K_SpawnEquippedItem(player, KITEMEQUIP_ROCKETS, MT_ROCKETSNEAKER, moloop, prev);
+				mo = K_SpawnEquippedItem(player, KITEMEQUIP_ROCKETS, MT_ROCKETSNEAKER, moloop, 2, prev);
 				prev = mo;
 			}
 			K_BotResetItemConfirm(player, false);
@@ -2735,7 +2734,7 @@ void K_UseItem_Banana(player_t *player, boolean itemjustdown, boolean onground, 
 
 		for (moloop = 0; moloop < player->itemamount; moloop++)
 		{
-			mo = K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_BANANA_SHIELD, moloop, prev);
+			mo = K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_BANANA_SHIELD, moloop, player->itemamount, prev);
 			if (!mo)
 			{
 				player->itemamount = moloop;
@@ -2769,7 +2768,7 @@ void K_UseItem_Eggman(player_t *player, boolean itemjustdown, boolean onground, 
 		K_DecrementAndCheckCurrentItem(player);
 		K_SetItemOut(player, KITEM_EGGMAN, IF_EGGMANOUT);
 		S_StartSound(player->mo, sfx_s254);
-		mo = K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_EGGMANITEM_SHIELD, 0, player->mo);
+		mo = K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_EGGMANITEM_SHIELD, 0, 1, player->mo);
 		if (mo)
 		{
 			K_FlipFromObject(mo, player->mo);
@@ -2828,7 +2827,7 @@ void K_UseItem_EggMine(player_t *player, boolean itemjustdown, boolean onground,
 
 		for (moloop = 0; moloop < player->itemamount; moloop++)
 		{
-			mo = K_SpawnEquippedItem(player, KITEMEQUIP_ORBIT, MT_EGGMINE_SHIELD, moloop, prev);
+			mo = K_SpawnEquippedItem(player, KITEMEQUIP_ORBIT, MT_EGGMINE_SHIELD, moloop, player->itemamount, prev);
 			if (!mo)
 			{
 				player->itemamount = moloop;
@@ -2866,7 +2865,7 @@ void K_UseItem_Orbinaut(player_t *player, boolean itemjustdown, boolean onground
 
 		for (moloop = 0; moloop < player->itemamount; moloop++)
 		{
-			mo = K_SpawnEquippedItem(player, KITEMEQUIP_ORBIT, MT_ORBINAUT_SHIELD, moloop, prev);
+			mo = K_SpawnEquippedItem(player, KITEMEQUIP_ORBIT, MT_ORBINAUT_SHIELD, moloop, player->itemamount, prev);
 			if (!mo)
 			{
 				player->itemamount = moloop;
@@ -2913,7 +2912,7 @@ void K_UseItem_Jawz(player_t *player, boolean itemjustdown, boolean onground, bo
 
 		for (moloop = 0; moloop < player->itemamount; moloop++)
 		{
-			mo = K_SpawnEquippedItem(player, KITEMEQUIP_ORBIT, MT_JAWZ_SHIELD, moloop, prev);
+			mo = K_SpawnEquippedItem(player, KITEMEQUIP_ORBIT, MT_JAWZ_SHIELD, moloop, player->itemamount, prev);
 			if (!mo)
 			{
 				player->itemamount = moloop;
@@ -2941,6 +2940,7 @@ void K_UseItem_Mine(player_t *player, boolean itemjustdown, boolean onground, bo
 			mo->extravalue1 = 49; // Pads the start-up length from 21 frames to a full 2 seconds
 		}
 		K_PlayAttackTaunt(player->mo);
+		K_UnsetItemOut(player);
 		K_UpdateHnextList(player, true);
 		K_BotResetItemConfirm(player, false);
 	}
@@ -2948,7 +2948,7 @@ void K_UseItem_Mine(player_t *player, boolean itemjustdown, boolean onground, bo
 	{
 		K_SetItemOut(player, KITEM_MINE, IF_ITEMOUT);
 		S_StartSound(player->mo, sfx_s254);
-		K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_SSMINE_SHIELD, 0, player->mo);
+		K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_SSMINE_SHIELD, 0, 1, player->mo);
 		K_BotResetItemConfirm(player, false);
 	}
 }
@@ -3210,35 +3210,6 @@ void K_ReleaseUseItem_AttractionShield(player_t *player, boolean itemjustdown, b
 	player->attractioncharge = 0;
 }
 
-void K_UseItem_BubbleShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
-{
-	(void)onground;
-	(void)force;
-	(void)itemjustdown;
-	
-	if (nohyudoro)
-	{
-		S_StartSound(player->mo, sfx_s3k75);
-	}
-
-	if ((player->itemflags & IF_HOLDREADY))
-	{
-		player->itemflags &= ~IF_HOLDREADY;
-	}
-}
-
-void K_ReleaseUseItem_BubbleShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
-{
-	(void)onground;
-	(void)force;
-	(void)itemjustdown;
-
-	if ((player->itemflags & IF_HOLDREADY))
-	{
-		player->itemflags &= ~IF_HOLDREADY;
-	}
-}
-
 void K_UseItem_FlameShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
 {	
 	if (nohyudoro)
@@ -3248,10 +3219,11 @@ void K_UseItem_FlameShield(player_t *player, boolean itemjustdown, boolean ongro
 			K_DecrementAndCheckCurrentItem(player);
 			player->flametimer = flametime;
 			player->flamedash = 0;
-			K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, NULL);
+			K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, 1, NULL);
 			S_StartSound(player->mo, sfx_s3k3e);
 			// make sure this is after K_DecrementCurrentItem so that equip state stays set properly
-			K_SetItemOut(player, KITEM_FLAMESHIELD, IF_HOLDREADY);
+			K_SetItemOut(player, KITEM_FLAMESHIELD, 0);
+			player->itemflags &= ~IF_HOLDREADY;
 		}
 		K_HoldUseItem_FlameShield(player, itemjustdown, onground, force, nohyudoro);
 	}
@@ -3263,7 +3235,7 @@ void K_HoldUseItem_FlameShield(player_t *player, boolean itemjustdown, boolean o
 	(void)force;
 	(void)itemjustdown;
 	
-	if (player->equippeditem == KITEM_FLAMESHIELD && !(player->itemflags & IF_HOLDREADY))
+	if (player->equippeditem == KITEM_FLAMESHIELD && (player->itemflags & IF_HOLDREADY))
 	{
 		SINT8 incr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 3 : 2;
 		SINT8 metincr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 4 : 3;
@@ -3312,9 +3284,9 @@ void K_ReleaseUseItem_FlameShield(player_t *player, boolean itemjustdown, boolea
 	(void)force;
 	(void)itemjustdown;
 
-	if ((player->itemflags & IF_HOLDREADY))
+	if (!(player->itemflags & IF_HOLDREADY))
 	{
-		player->itemflags &= ~IF_HOLDREADY;
+		player->itemflags |= IF_HOLDREADY;
 	}
 }
 
@@ -3355,17 +3327,23 @@ void K_UseItem_SuperRing(player_t *player, boolean itemjustdown, boolean ongroun
 	{
 		boolean offroad = (player->offroad && K_ApplyOffroad(player));
 		player->superringdrag = max(K_GetKartSpeed(player, true, false), player->speed);
+		INT32 thrustspeed = 12*player->mo->scale;
 
 		if (onground && !offroad)
 		{
-			P_Thrust(player->mo, player->mo->angle, 12*player->mo->scale);
-			P_Thrust(player->mo, K_MomentumAngle(player->mo), 12*player->mo->scale);
+			P_Thrust(player->mo, player->mo->angle, thrustspeed);
+			P_Thrust(player->mo, K_MomentumAngle(player->mo), thrustspeed);
 		}
 		else
 		{
+			thrustspeed = 6*player->mo->scale;
+
+			if (player->pogospring > 0)
+				thrustspeed /= 4;
+
 			if (offroad)
-				P_Thrust(player->mo, player->mo->angle, 6*player->mo->scale);
-			P_Thrust(player->mo, K_MomentumAngle(player->mo), 6*player->mo->scale);
+				P_Thrust(player->mo, player->mo->angle, thrustspeed);
+			P_Thrust(player->mo, K_MomentumAngle(player->mo), thrustspeed);
 		}
 
 		// LOUDER!
@@ -3378,7 +3356,8 @@ void K_UseItem_SuperRing(player_t *player, boolean itemjustdown, boolean ongroun
 		UINT8 modifier = 32 / (player->kartspeed + player->kartweight + 2);
 
 		player->ringboost += (TICRATE/6) + modifier;
-		player->outruntime += (TICRATE/6) + modifier;
+		if (onground)
+			player->outruntime += (TICRATE/6) + modifier;
 		player->superringleeway = 5;
 
 		// make friction not instantly kill the new momentum
@@ -3402,6 +3381,7 @@ void K_UseItem_KitchenSink(player_t *player, boolean itemjustdown, boolean ongro
 		K_DecrementAndCheckCurrentItem(player);
 		K_ThrowKartItem(player, false, MT_SINK, 1, 2);
 		K_PlayAttackTaunt(player->mo);
+		K_UnsetItemOut(player);
 		K_UpdateHnextList(player, true);
 		K_BotResetItemConfirm(player, false);
 	}
@@ -3409,7 +3389,7 @@ void K_UseItem_KitchenSink(player_t *player, boolean itemjustdown, boolean ongro
 	{
 		K_SetItemOut(player, KITEM_KITCHENSINK, IF_ITEMOUT);
 		S_StartSound(player->mo, sfx_s254);
-		K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_SINK_SHIELD, 0, player->mo);
+		K_SpawnEquippedItem(player, KITEMEQUIP_TRAIL, MT_SINK_SHIELD, 0, 1, player->mo);
 		K_BotResetItemConfirm(player, false);
 
 		// Woah this could be big, lets get the inside scoop...
@@ -3451,7 +3431,7 @@ void K_ItemThink_ThunderShield(player_t *player)
 {
 	if (K_GetShieldFromPlayer(player) != KSHIELD_THUNDER)
 	{
-		K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_THUNDERSHIELD, 0, NULL);
+		K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_THUNDERSHIELD, 0, 1, NULL);
 		S_StartSound(player->mo, sfx_s3k41);
 		K_SetItemOut(player, KITEM_THUNDERSHIELD, 0);
 	}
@@ -3461,7 +3441,7 @@ void K_ItemThink_AttractionShield(player_t *player)
 {
 	if (K_GetShieldFromPlayer(player) != KSHIELD_ATTRACTION)
 	{
-		K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_ATTRACTIONSHIELD, 0, NULL);
+		K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_ATTRACTIONSHIELD, 0, 1, NULL);
 		S_StartSound(player->mo, sfx_attrsg);
 		K_SetItemOut(player, KITEM_THUNDERSHIELD, 0);
 	}
@@ -3471,18 +3451,25 @@ void K_ItemThink_BubbleShield(player_t *player)
 {
 	if (K_GetShieldFromPlayer(player) != KSHIELD_BUBBLE)
 	{
-		K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_BUBBLESHIELD, 0, NULL);
+		K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_BUBBLESHIELD, 0, 1, NULL);
 		S_StartSound(player->mo, sfx_s3k3f);
 		if (player->bubblehealth <= 0 || player->bubblehealth > MAXBUBBLEHEALTH)
 			player->bubblehealth = MAXBUBBLEHEALTH;
 		// bit of mercy so bubble doesn't get instantly killed on creation
 		player->bubblebuffer = TICRATE/2;
-		K_SetItemOut(player, KITEM_BUBBLESHIELD, IF_HOLDREADY);
+		K_SetItemOut(player, KITEM_BUBBLESHIELD, 0);
+		player->itemflags &= ~IF_HOLDREADY;
+		return;
 	}
 
-	if ((player->cmd.buttons & BT_ATTACK && (!(player->itemflags & IF_HOLDREADY)))
+	if ((player->cmd.buttons & BT_ATTACK && (player->itemflags & IF_HOLDREADY))
 			|| (player->bubbleblowup > 0 && player->bubblecool <= bubbletime/2)) // auto
 	{
+		if (player->bubbleblowup <= 0 && player->bubblecool <= 0)
+		{
+			S_StartSound(player->mo, sfx_s3k75);
+		}
+
 		if (player->bubblecool < bubbletime && player->bubblehealth > 0)
 		{
 			player->bubbleblowup += 3;
@@ -3523,7 +3510,9 @@ void K_ItemThink_BubbleShield(player_t *player)
 		{
 			player->bubbleblowup--;
 			if (player->bubbleblowup == 0)
+			{
 				K_BotResetItemConfirm(player, false);
+			}
 			if (player->bubblecool < bubbletime)
 				player->bubblecool++;
 		}
@@ -3535,6 +3524,15 @@ void K_ItemThink_BubbleShield(player_t *player)
 			if (player->bubblecool == 0 && player->bubblehealth <= 0)
 				K_PopPlayerShield(player);
 		}
+	}
+
+	if (player->bubblecool > 0 && !(player->cmd.buttons & BT_ATTACK))
+	{
+		player->itemflags &= ~IF_HOLDREADY;
+	}
+	else if (player->bubblecool <= 0 && !(player->cmd.buttons & BT_ATTACK))
+	{
+		player->itemflags |= IF_HOLDREADY;
 	}
 }
 

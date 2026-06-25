@@ -98,7 +98,8 @@ extern consvar_t cv_kartbot;
 extern consvar_t cv_kartbot_cap;
 extern consvar_t cv_kartbot_modifiermax;
 extern consvar_t cv_kartbot_basetrackcomplexity;
-extern consvar_t cv_karteliminatelast;
+extern consvar_t cv_kartbot_finish;
+extern consvar_t cv_karteliminatelast, cv_kartdeathbounces;
 extern consvar_t cv_kartusepwrlv;
 extern consvar_t cv_kartrings;
 extern consvar_t cv_kartringsmin;
@@ -130,6 +131,7 @@ extern consvar_t cv_kartstacking_invincibility_handleboost;
 extern consvar_t cv_kartstacking_invincibility_stackable;
 
 extern consvar_t cv_kartstacking_smonitor_speedboost;
+extern consvar_t cv_kartstacking_smonitor_fastestspeed;
 extern consvar_t cv_kartstacking_smonitor_accelboost;
 extern consvar_t cv_kartstacking_smonitor_handleboost;
 extern consvar_t cv_kartstacking_smonitor_stackable;
@@ -232,6 +234,7 @@ extern consvar_t cv_kartsmonitordist;
 extern consvar_t cv_kartsmonitor_congadist;
 extern consvar_t cv_kartsmonitor_decaydist;
 extern consvar_t cv_kartsmonitor_decaytime;
+extern consvar_t cv_kartsmonitor_intangible;
 
 // opinionated stuff for testing
 extern consvar_t cv_kartbubble_defense_canidle;
@@ -389,6 +392,8 @@ typedef enum
 	XD_AUTOMATE,    // 36
 	XD_CHEAT,       // 37
 	XD_MAPQUEUE,	// 38
+	XD_CLANTAGSET,	// 39
+	XD_CLANTAGCLEAR,// 40
 
 	MAXNETXCMD
 } netxcmd_t;

@@ -245,6 +245,9 @@ typedef enum
 	khud_afterimagetime, // tics left for displaying afterimage
 	khud_afterimagevalue, // what value the drift ended at
 
+	khud_itemtimer_xoff, // used to move itemtimers, useful for mods that want stuff in the middle.
+	khud_itemtimer_yoff, // ^
+
 	NUMKARTHUD
 } karthudtype_t;
 
@@ -526,6 +529,15 @@ typedef enum
 	KARMAMODE_EGGMAN,
 } karmamode_e;
 
+struct playermagnet_t
+{
+	fixed_t factor; // How much extra speed do we want to give the player?
+	fixed_t base_speed; // Base speed; adjusts `magnet.factor` to attempt to match this speed
+	fixed_t target_speed; // Desired speed; Adjusts `magnet.factor` to attempt to match this speed
+	fixed_t target_gradient; // Gradient value for moving `factor` towards `target_speed`
+	fixed_t friction_weights; // So you don't go sliding like mad when going too fast.
+};
+
 // ========================================================================
 //                          PLAYER STRUCTURE
 // ========================================================================
@@ -592,6 +604,10 @@ struct player_t
 	UINT8 kartweightrestat; // Player's wanted kart weight from restat
 	boolean randomrestat; // Randomly set the restat values of the player every game
 
+	// Blan: Adjusts speeds in an attempt to "magnetize" the player towards a target position.
+	// This affects the BASE SPEED, and is not a traditional speed boost.
+	playermagnet_t kartmagnet;
+
 	INT32 followerskin;		// Kart: This player's follower "skin"
 	boolean followerready;	// Kart: Used to know when we can have a follower or not. (This is set on the first NameAndColor follower update)
 	UINT16 followercolor;	// Kart: Used to store the follower colour the player wishes to use
@@ -625,7 +641,10 @@ struct player_t
 	UINT8 positiondelay;	// Used for position number, so it can grow when passing/being passed
 	UINT32 distancetofinish;
 	UINT32 distancetofinishprev;
+
 	UINT32 distancefromcluster;
+	UINT32 distancefrombestfit;
+
 	waypoint_t *currentwaypoint;
 	waypoint_t *nextwaypoint;
 	boolean onbadwaypoint;	// This waypoint is bad, so we need to find a better one
@@ -861,6 +880,8 @@ struct player_t
 	fixed_t lastspeed;
 
 	INT32 deadtimer; // End game if game over lasts too long
+	INT32 deadbounces; // Bounce like a beach ball all over
+	boolean extendeddeath; // Bouncing more than one time
 	tic_t exiting; // Exitlevel timer
 
 	////////////////////////////
@@ -943,6 +964,8 @@ struct player_t
 	uint8_t public_key[PUBKEYLENGTH];
 
 	keepstuff_t keepstuff;
+
+	char clan[MAXCLANTAG];
 
 #ifdef HWRENDER
 	fixed_t fovadd; // adjust FOV for hw rendering

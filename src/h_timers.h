@@ -44,6 +44,7 @@ typedef enum timerflags_e
 } timerflags_t;
 
 extern consvar_t cv_itemtimers;
+extern consvar_t cv_itemtimers_mode;
 extern tic_t spbTimers[MAXPLAYERS];
 UINT8 K_GetBestRank(void);
 void K_UpdateSPBTimer(void);

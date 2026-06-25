@@ -997,6 +997,33 @@ static int libd_drawFill(lua_State *L)
 	return 0;
 }
 
+static int libd_drawFixedLine(lua_State *L)
+{
+	huddrawlist_h list;
+	INT32 x1 = luaL_optinteger(L, 1, 0);
+	INT32 y1 = luaL_optinteger(L, 2, 0);
+	INT32 x2 = luaL_optinteger(L, 3, 0);
+	INT32 y2 = luaL_optinteger(L, 4, 0);
+	INT32 width = luaL_optinteger(L, 5, FRACUNIT);
+	INT32 c = luaL_optinteger(L, 6, 31);
+
+	HUDONLY
+
+	if (lua_compatmode)
+		c = (c & ~0xff) | R_GetPaletteRemap(c & 0xff);
+
+	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
+	list = (huddrawlist_h)lua_touserdata(L, -1);
+	lua_pop(L, 1);
+
+	if (LUA_HUD_IsDrawListValid(list))
+		LUA_HUD_AddDrawFixedLine(list, x1, y1, x2, y2, width, c);
+	else
+		V_DrawFixedLine(x1, y1, x2, y2, width, c);
+
+	return 0;
+}
+
 static int libd_getSectorColormap(lua_State *L)
 {
 	boolean has_sector = false;
@@ -1692,6 +1719,7 @@ static luaL_Reg lib_draw[] = {
 	{"drawPaddedNum", libd_drawPaddedNum},
 	{"drawPingNum", libd_drawPingNum},
 	{"drawFill", libd_drawFill},
+	{"drawLine", libd_drawFixedLine},
 	{"fadeScreen", libd_fadeScreen},
 	{"drawString", libd_drawString},
 	{"drawTitleCardString", libd_drawTitleCardString},

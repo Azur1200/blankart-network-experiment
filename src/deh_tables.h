@@ -39,12 +39,16 @@ const char *DEH_MobjtypeName(mobjtype_t i);
 const char *DEH_StateName(statenum_t i);
 const char *DEH_SkincolorName(skincolornum_t i);
 const char *DEH_MenutypeName(menutype_t i);
+const char *DEH_MenuPanelName(const menupaneldef_t *pd);
+const char *DEH_MenuItemStyleName(const menuitemstyle_t *style);
 const char *DEH_KartItemName(kartitemtype_e i);
 
 mobjtype_t DEH_FindMobjtype(const char *word);
 statenum_t DEH_FindState(const char *word);
 skincolornum_t DEH_FindSkincolor(const char *word);
 menutype_t DEH_FindMenutype(const char *word);
+menupaneldef_t *DEH_FindMenuPanel(const char *word);
+menuitemstyle_t *DEH_FindMenuItemStyle(const char *word);
 kartitemtype_e DEH_FindKartItem(const char *word);
 
 struct flickytypes_s {
@@ -70,6 +74,11 @@ struct menu_routine_s {
 struct menu_drawer_s {
 	const char *name;
 	menudrawer_f *drawer;
+};
+
+struct panel_func_s {
+	const char *name;
+	panelfunc_f *func;
 };
 
 struct odds_func_s {
@@ -109,6 +118,7 @@ extern const char *const KARTHUD_LIST[];
 extern const char *const HUDITEMS_LIST[];
 extern struct menu_routine_s const MENU_ROUTINES[];
 extern struct menu_drawer_s const MENU_DRAWERS[];
+extern struct panel_func_s const PANEL_FUNCS[];
 extern struct odds_func_s const USEODDS_FUNCS[];
 
 extern struct int_const_s const INT_CONST[];

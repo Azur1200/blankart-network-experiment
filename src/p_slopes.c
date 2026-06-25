@@ -43,7 +43,11 @@ void P_UpdateSlopeLightOffset(pslope_t *slope)
 
 	if (slope->normal.z == 0)
 	{
+#ifdef HWRENDER
 		slope->lightOffset = slope->hwLightOffset = 0;
+#else
+		slope->lightOffset = 0;
+#endif
 		return;
 	}
 
@@ -55,7 +59,11 @@ void P_UpdateSlopeLightOffset(pslope_t *slope)
 
 		if (nLen == 0)
 		{
+#ifdef HWRENDER
 			slope->lightOffset = slope->hwLightOffset = 0;
+#else
+			slope->lightOffset = 0;
+#endif
 			return;
 		}
 

@@ -52,7 +52,7 @@
 #include "m_cheat.h"	// objectplacing
 #include "p_spec.h"
 #include "m_easing.h"   // Invincibility gradienting
-
+#include "qs22j.h" // Cluster list sorting
 
 #include "k_stats.h"
 #include "k_waypoint.h"
@@ -253,12 +253,14 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbot_cap);
 	CV_RegisterVar(&cv_kartbot_modifiermax);
 	CV_RegisterVar(&cv_kartbot_basetrackcomplexity);
+	CV_RegisterVar(&cv_kartbot_finish);
 	CV_RegisterVar(&cv_forcebots);
 	CV_RegisterVar(&cv_botcontrol);
 	CV_RegisterVar(&cv_forcerival);
 	CV_RegisterVar(&cv_botcanvote);
 	CV_RegisterVar(&cv_botdrifting);
 	CV_RegisterVar(&cv_karteliminatelast);
+	CV_RegisterVar(&cv_kartdeathbounces);
 	CV_RegisterVar(&cv_kartusepwrlv);
 	CV_RegisterVar(&cv_votetime);
 
@@ -318,6 +320,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_invincibility_stackable);
 
     CV_RegisterVar(&cv_kartstacking_smonitor_speedboost);
+	CV_RegisterVar(&cv_kartstacking_smonitor_fastestspeed);
 	CV_RegisterVar(&cv_kartstacking_smonitor_accelboost);
 	CV_RegisterVar(&cv_kartstacking_smonitor_handleboost);
 	CV_RegisterVar(&cv_kartstacking_smonitor_stackable);
@@ -454,6 +457,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartsmonitor_decaydist);
 	CV_RegisterVar(&cv_kartsmonitor_decaytime);
 
+	CV_RegisterVar(&cv_kartsmonitor_intangible);
+
 	// experimental stuff
 	CV_RegisterVar(&cv_kartbubble_defense_canidle);
 	CV_RegisterVar(&cv_kartbubble_defense_damagerate);
@@ -481,7 +486,6 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartsplashefx);
 	CV_RegisterVar(&cv_hidefollowers);
 	CV_RegisterVar(&cv_driftsparkpulse);
-	CV_RegisterVar(&cv_itemtimers);
 	CV_RegisterVar(&cv_saltyhop);
 
 	CV_RegisterVar(&cv_naturalcamera);
@@ -1763,7 +1767,7 @@ static void K_UpdateKeepstuff(player_t *player)
 
 			for (moloop = 0; moloop < 2; moloop++)
 			{
-				mo = K_SpawnEquippedItem(player, KITEMEQUIP_ROCKETS, MT_ROCKETSNEAKER, moloop, prev);
+				mo = K_SpawnEquippedItem(player, KITEMEQUIP_ROCKETS, MT_ROCKETSNEAKER, moloop, 2, prev);
 				prev = mo;
 			}
 		}
@@ -1807,10 +1811,11 @@ static void K_UpdateKeepstuff(player_t *player)
 	{
 		if (!player->flametimer)
 		{
-			K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, NULL);
+			K_SpawnEquippedItem(player, KITEMEQUIP_SHIELD, MT_FLAMESHIELD, 0, 1, NULL);
 			S_StartSound(player->mo, sfx_s3k3e);
 			// make sure this is after K_DecrementCurrentItem so that equip state stays set properly
-			K_SetItemOut(player, KITEM_FLAMESHIELD, IF_HOLDREADY);
+			K_SetItemOut(player, KITEM_FLAMESHIELD, 0);
+			player->itemflags &= ~IF_HOLDREADY;
 		}
 
 		player->flametimer = player->keepstuff.flametimer;
@@ -2544,7 +2549,7 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 	}
 	else
 	{
-		topspeed = FixedMul(mobj->scale, K_GetKartSpeedFromStat(5, false));
+		topspeed = FixedMul(mobj->scale, K_GetKartSpeedFromStat(5, false, 0));
 	}
 
 	speed = P_AproxDistance(mobj->momx, mobj->momy);
@@ -2944,12 +2949,12 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->smonitortimer) // S-Monitor
 	{
-        fixed_t smntrspeedboost = K_GetSMonitorSpeed(player->smonitortimer);
         fixed_t smntraccelboost = K_GetSMonitorAccel(player->smonitortimer);
 		fixed_t smntrhandleboost = K_GetSMonitorHandling(player->smonitortimer);
 
-		// + ???% top speed, + ???% acceleration
-		K_DoBoost(player, smntrspeedboost, smntraccelboost, smntrhandleboost, SMNTRSTACKABLE, SMNTRSTACKABLE);
+		// + ???% acceleration, + ??? handling
+		// Top speed is handled in K_KartMagnetThinker
+		K_DoBoost(player, 0, smntraccelboost, smntrhandleboost, SMNTRSTACKABLE, SMNTRSTACKABLE);
 	}
 
 	if (player->growshrinktimer > 0) // Grow
@@ -3165,7 +3170,7 @@ static fixed_t K_GrowShrinkOrNormal(const player_t *player)
 }
 
 // Returns kart speed from a stat. Boost power and scale are NOT taken into account, no player or object is necessary.
-fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb)
+fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb, fixed_t extrapct)
 {
 	const fixed_t xspd = (3*FRACUNIT)/64;
 	fixed_t g_cc = K_GetKartGameSpeedScalar(gamespeed) + xspd;
@@ -3177,7 +3182,7 @@ fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb)
 
 	k_speed += kartspeed*3; // 153 - 177
 
-	finalspeed = FixedMul(k_speed<<14, g_cc);
+	finalspeed = FixedMul(FixedMul(k_speed<<14, g_cc), (FRACUNIT + extrapct));
 	return finalspeed;
 }
 
@@ -3192,7 +3197,7 @@ fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dor
 	if (doboostpower && !player->pogospring && !P_IsObjectOnGround(player->mo) && (player->airdriftspeed == 0))
 		return (75*mapobjectscale); // air speed cap
 
-	finalspeed = K_GetKartSpeedFromStat(player->kartspeed, karmabomb);
+	finalspeed = K_GetKartSpeedFromStat(player->kartspeed, karmabomb, player->kartmagnet.factor);
 
 	if (K_PlayerUsesBotMovement(player))
 	{
@@ -3209,9 +3214,13 @@ fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dor
 		finalspeed = FixedMul(finalspeed, player->botvars.rubberband);
 	}
 
+	fixed_t speedboost = player->speedboost;
+
+	speedboost = FixedDiv(speedboost, FRACUNIT + (player->kartmagnet.factor / 2));
+
 	if (doboostpower)
 	{
-		finalspeed = FixedMul(finalspeed, player->boostpower+player->speedboost);
+		finalspeed = FixedMul(finalspeed, player->boostpower+speedboost);
 	}
 
 	if (player->outrun != 0)
@@ -7340,6 +7349,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (!K_IsPlayerDamaged(player) && !player->wipeoutslow)
 		player->boostangle = player->mo->angle;
 
+	K_KartMagnetThinker(player);
+	K_DoKartMagnetGradient(player);
+
 	K_UpdateSlopeBoost(player);
 	K_GetKartBoostPower(player);
 
@@ -7525,9 +7537,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	K_AirDrop(player, cmd);
 
-	if (player->superringdrag && !onground && !player->pogospring)
+	if (player->superringdrag && !onground)
 		player->superringdrag = K_HandleAirDrag(player, onground, player->superringdrag, cv_kartairsuperring_reductionrate.value);
-	else if ((onground || player->pogospring) && player->superringdrag && !player->superringleeway)
+	else if (onground && player->superringdrag && !player->superringleeway)
 		player->superringdrag = 0;
 
 	if (player->superringleeway)
@@ -7620,7 +7632,15 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			// Value to subtract from the S-Monitor timer.
 			INT16 smonitor_subtrahend = (pingame > 1) ? SMONITORDECAYTIME : 1;
 
-			if (player->distancefromcluster > (UINT32)SMONITORDECAYDIST)
+			UINT32 usedist = K_GetClusterDistanceForPlayer(player);
+
+			boolean tinypop = (pingame <= 3);
+
+			INT16 podium = (tinypop) ? 1 : max(2, min(4, (3 * pingame / 8)));
+
+			boolean nodecay = ((usedist > (UINT32)SMONITORDECAYDIST) && (player->position > podium));
+
+			if (nodecay)
 			{
 				if ((!player->smonitorexpiring) && (pingame > 1))
 				{
@@ -8996,7 +9016,7 @@ static void K_FudgeRespawn(player_t *player, const waypoint_t *const waypoint)
 	player->starposty += FixedMul(16, FINESINE(from));
 }
 
-static boolean K_SafeRespawnWaypoint(waypoint_t *waypoint)
+boolean K_SafeRespawnWaypoint(waypoint_t *waypoint)
 {
 	if (!waypoint || !waypoint->mobj)
 		return false;
@@ -9555,6 +9575,85 @@ static boolean K_SMonitorSliptideCondition(player_t *player)
 {
 	// Allow sliptides if you're above half power.
 	return (K_SMonitorGradient(player->smonitortimer) > (FRACUNIT/2));
+}
+
+void K_KartMagnetThinker(player_t *player)
+{
+	if (!player)
+		return;
+
+	boolean karmabomb = ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0);
+
+	// Need this to determine the base magnet speed
+	fixed_t statspeed = K_GetKartSpeedFromStat(player->kartspeed, karmabomb, 0);
+
+	fixed_t gamespeedscalar = K_GetKartGameSpeedScalar(gamespeed);
+
+	fixed_t speedfac = 0;
+	fixed_t maxspeed = FixedDiv(max(player->kartmagnet.target_speed, statspeed), gamespeedscalar);
+
+	if (player->smonitortimer) // S-Monitor
+	{
+        fixed_t smntrspeedboost = K_GetSMonitorSpeed(player->smonitortimer);
+
+		// + ???% top speed
+
+		if (SMNTRSTACKABLE && K_StackingActive())
+		{
+			speedfac += smntrspeedboost;
+		}
+		else
+		{
+			speedfac = max(speedfac, smntrspeedboost);
+		}
+
+		maxspeed = max(maxspeed, SMNTRFASTESTSPEED);
+	}
+
+	maxspeed = FixedMul(maxspeed, gamespeedscalar);
+
+	player->kartmagnet.base_speed = max(player->kartmagnet.base_speed, FixedMul(statspeed, FRACUNIT + speedfac));
+
+	maxspeed = max(player->kartmagnet.base_speed, maxspeed);
+
+	player->kartmagnet.target_speed = max(player->kartmagnet.target_speed, maxspeed);
+}
+
+#define TURNLENGTH (3000)
+#define TURNCOUNT (7)
+
+#define MAGNET_TURNS (TURNLENGTH * TURNCOUNT)
+
+// Handles cluster-distance gradienting for players; affects their base top speed
+void K_DoKartMagnetGradient(player_t *player)
+{
+	if (!player)
+		return;
+
+	if (P_MobjWasRemoved(player->mo))
+		return;
+
+	INT64 distfactor = (INT64)(K_GetClusterDistanceForPlayer(player));
+
+	distfactor = max(0, min(FRACUNIT, (distfactor * FRACUNIT) / MAGNET_TURNS));
+
+	player->kartmagnet.target_gradient = distfactor;
+
+	boolean karmabomb = ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0);
+	fixed_t target_pct = 0;
+	fixed_t base_pct = 0;
+
+	// Need to divide the intended speeds by the player's actual stat-speeds...
+	fixed_t statspeed = K_GetKartSpeedFromStat(player->kartspeed, karmabomb, 0);
+
+	base_pct = max(0, FixedDiv(player->kartmagnet.base_speed, statspeed)) - FRACUNIT;
+	target_pct = max(0, FixedDiv(player->kartmagnet.target_speed, statspeed)) - FRACUNIT;
+
+	player->kartmagnet.factor = max(0, Easing_InCubic(player->kartmagnet.target_gradient, base_pct, target_pct));
+
+	// Always kill magnets if we're successfully calling this
+	player->kartmagnet.base_speed = 0;
+	player->kartmagnet.target_speed = 0;
 }
 
 fixed_t K_GetSpeedPercentage(const player_t *player)
@@ -10414,7 +10513,7 @@ static boolean K_CheckBestRankForCluster(player_t *player, UINT32 pingame)
 			}
 			else
 			{
-				const UINT32 podium = (pingame > 7) ? 3 : 2;
+				const UINT32 podium = pingame / 8; // 1/8th the playercount for parity with cluster allocation
 				if (player->position <= podium)
 				{
 					// Ignore the top players.
@@ -10440,13 +10539,22 @@ static boolean K_CheckBestRankForCluster(player_t *player, UINT32 pingame)
 	return true;
 }
 
+#define FARTHESTCLUSDIS (4224)
+
 static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 {
+	if (!player)
+	{
+		// No player?!
+		return 0;
+	}
+
 	player_t* cluster_p;
 	UINT32 i, pingame;
-	SINT8 first, second, bestpid, worstloser, tinypoptarget;
+	SINT8 first, second, bestpid, bestpidcluster, worstloser, tinypoptarget;
 
 	INT16 bestpos, worstloserpos;
+	INT16 bestposcluster = INT16_MAX;
 
 	INT32 divmul;
 
@@ -10456,7 +10564,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 	worstloserpos = 0;
 
 	first = -1;
-	bestpid = worstloser = second = -1;
+	bestpidcluster = bestpid = worstloser = second = -1;
 	tinypoptarget = -1;
 
 	divmul = 1;
@@ -10469,6 +10577,15 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 			pingame++;
 	}
 
+	if ((!(gametypes[gametype]->rules & GTR_CIRCUIT)) || (pingame <= 1))
+	{
+		// No way for us to cluster...
+		player->distancefrombestfit = 0;
+		player->distancefromcluster = 0;
+		return 0;
+	}
+
+
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator)
@@ -10480,6 +10597,15 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 				first = i;
 			else if (players[i].position == 2 && second == -1)
 				second = i;
+
+			if ((players[i].position < bestposcluster) &&
+			    (players[i].position < pingame) &&
+			    (K_ClusterFilter_BaseFilter(&players[i], pingame)))
+			{
+				// This player is the best fit, per the cluster filter
+				bestposcluster = players[i].position;
+				bestpidcluster = (SINT8)i;
+			}
 
 			if ((players[i].position < bestpos) && (players[i].position < pingame) &&
 			    (K_CheckBestRankForCluster(&players[i], pingame)))
@@ -10546,6 +10672,251 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 		}
 	}
 
+	boolean usedbestfit = false;
+
+	UINT32 bestfitid = clusterid;
+
+	UINT32 distancetobest = 0;
+
+	// We're not done yet! Get the best-fitting node from the global cluster database, and
+	// compare ourselves to them
+	if (pingame > 9 && num_player_clusters > 0)
+	{
+		// At least one node exists. Since these nodes are sorted by player
+		// position averages, the best-fit is right at the front!
+		clusterdata_t bestfit = player_clusters[0];
+
+		if (bestfit.nucleus.player)
+		{
+			distancetobest = 0;
+
+			if (clusterid != UINT32_MAX)
+			{
+				// Ignore the best-fit if we're actually AHEAD of it
+				if (players[clusterid].position > bestfit.nucleus.player->position)
+				{
+					bestfitid = (UINT32)(bestfit.nucleus.player - players);
+
+					if (K_LegacyOddsMode())
+					{
+						distancetobest = K_GetCongaLineDistance(
+							&players[clusterid], bestfit.nucleus.player->position);
+					}
+					else
+					{
+						distancetobest = K_UndoMapScaling(K_GetDTFDifference(
+							&players[clusterid], bestfit.nucleus.player));
+					}
+
+					if (distancetobest > FARTHESTCLUSDIS)
+					{
+						// We're way too far away! Let the best-fit take over...
+						clusterid = (UINT32)(bestfit.nucleus.player - players);
+
+						if (clustermode != CLSMODE_BESTFIT)
+						{
+							clustermode = CLSMODE_BESTFIT;
+							clusterjustchanged = CLUSTERCHANGEDTIME;
+						}
+
+						usedbestfit = true;
+					}
+				}
+			}
+			else
+			{
+				// Cluster player is nonexistent, but we exist. By default, we're the cluster player!
+				clusterid = (UINT32)(bestfit.nucleus.player - players);
+
+				if (clustermode != CLSMODE_BESTFIT)
+				{
+					clustermode = CLSMODE_BESTFIT;
+					clusterjustchanged = CLUSTERCHANGEDTIME;
+				}
+
+				usedbestfit = true;
+			}
+		}
+	}
+	else if (bestpidcluster >= 0)
+	{
+		// Use the same "best fit vs. center" system, but avoid clustering since we either
+		// have no clusters, or the data pool is comparatively smaller
+
+		if (clusterid != UINT32_MAX)
+		{
+			// Ignore the best-fit if we're actually AHEAD of it
+			if (players[clusterid].position > players[bestpidcluster].position)
+			{
+				bestfitid = bestpidcluster;
+
+				if (K_LegacyOddsMode())
+				{
+					distancetobest = K_GetCongaLineDistance(
+						&players[clusterid], players[bestpidcluster].position);
+				}
+				else
+				{
+					distancetobest = K_UndoMapScaling(K_GetDTFDifference(
+						&players[clusterid], &players[bestpidcluster]));
+				}
+
+				if (distancetobest > FARTHESTCLUSDIS)
+				{
+					// We're way too far away! Let the best-fit take over...
+					clusterid = bestpidcluster;
+
+					if (clustermode != CLSMODE_BESTFIT)
+					{
+						clustermode = CLSMODE_BESTFIT;
+						clusterjustchanged = CLUSTERCHANGEDTIME;
+					}
+
+					usedbestfit = true;
+				}
+			}
+		}
+		else
+		{
+			// Cluster player is nonexistent, but we exist. By default, we're the
+			// cluster player!
+			clusterid = bestpidcluster;
+
+			if (clustermode != CLSMODE_BESTFIT)
+			{
+				clustermode = CLSMODE_BESTFIT;
+				clusterjustchanged = CLUSTERCHANGEDTIME;
+			}
+
+			usedbestfit = true;
+		}
+	}
+
+	if ((!usedbestfit) && (clustermode != CLSMODE_AVERAGES))
+	{
+		clustermode = CLSMODE_AVERAGES;
+		clusterjustchanged = CLUSTERCHANGEDTIME;
+	}
+
+	// Compare against best-fit first
+	INT32 bestfitdiv = divmul;
+
+	SINT8 tinypopbest = 0;
+	UINT8 bestfit_pos = -1;
+
+	player->distancefrombestfit = 0;
+
+	if ((bestfitid != clusterid) && (bestfitid != UINT32_MAX))
+	{
+		if (K_LegacyOddsMode())
+		{
+			tinypopbest = (pingame < 2) ? first : second;
+			if ((pingame < MINCLUSTERPLAYERS) && (tinypopbest != -1))
+			{
+				// In very small lobbies, the best-fit is first/second place
+				// In 1v1s, half the cluster distance so that the losing player
+				// doesn't get overly pitied.
+				if (pingame < 3)
+				{
+					bestfitdiv = 2;
+				}
+
+				if (player == &players[tinypopbest])
+				{
+					player->distancefrombestfit = 0;  // We ARE the best-fit
+				}
+				else if (player->position <= players[tinypopbest].position)
+				{
+					player->distancefrombestfit = 0;  // Ahead, or tying.
+				}
+				else
+				{
+					// Return the 3D distance from the cluster player.
+					// Multiply by a multiplier to make up for shoddy euclidean
+					// distance checks.
+					bestfit_pos = players[bestfitid].position;
+					player->distancefrombestfit =
+					    FixedMul(K_GetCongaLineDistance(player, bestfit_pos),
+						     LEGACYCLUSTERMUL) /
+					    (bestfitdiv);
+				}
+			}
+			else if (bestfitid != UINT32_MAX)
+			{
+				if (player == &players[bestfitid])
+				{
+					player->distancefrombestfit = 0;  // We ARE the best-fit
+				}
+				else if (player->position <= players[bestfitid].position)
+				{
+					player->distancefrombestfit = 0;  // Ahead, or tying.
+				}
+				else
+				{
+					// Return the 3D distance from the cluster player.
+					// Multiply by a multiplier to make up for shoddy euclidean
+					// distance checks.
+					bestfit_pos = players[bestfitid].position;
+					player->distancefrombestfit =
+					    FixedMul(K_GetCongaLineDistance(player, bestfit_pos),
+						     LEGACYCLUSTERMUL) /
+					    (bestfitdiv);
+				}
+			}
+		}
+		else
+		{
+			if ((pingame < MINCLUSTERPLAYERS) && (tinypopbest != -1))
+			{
+				// In very small lobbies, compare against first place/second to
+				// last's distance to finish.
+
+				// In a 1v1, this is theoretically impossible; but what do I know?
+				if (player->distancetofinish <=
+				    players[tinypopbest].distancetofinish)
+				{
+					player->distancefrombestfit = 0;  // Ahead, or tying.
+				}
+				else if (pingame < 3)
+				{
+					// In 1v1s, half the cluster distance so that the losing
+					// player doesn't get overly pitied. Otherwise, just use the
+					// raw distancing.
+					player->distancefrombestfit =
+					    K_UndoMapScaling(
+						player->distancetofinish -
+						players[tinypopbest].distancetofinish) /
+					    2;
+				}
+				else
+				{
+					player->distancefrombestfit =
+					    K_UndoMapScaling(player->distancetofinish -
+							     players[tinypopbest].distancetofinish);
+				}
+			}
+
+			if (bestfitid != UINT32_MAX)
+			{
+				if (player->distancetofinish <= players[bestfitid].distancetofinish)
+					player->distancefrombestfit = 0;  // Ahead, or tying.
+				else
+					player->distancefrombestfit =
+					    K_UndoMapScaling(player->distancetofinish -
+							     players[bestfitid].distancetofinish);
+			}
+		}
+	}
+
+	if (clusterid == UINT32_MAX)
+	{
+		// If we're down here, and the cluster player doesn't exist, bail immediately!
+		if (bestfitid == clusterid)
+			player->distancefrombestfit = 0;
+
+		return 0;
+	}
+
 	if (K_LegacyOddsMode())
 	{
 		// Compare yourself against the cluster player to determine the distance.
@@ -10569,17 +10940,39 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 		}
 
 		if ((clusterid == UINT32_MAX) || (!cluster_p))
+		{
+			if (bestfitid == clusterid)
+				player->distancefrombestfit = 0;
+
 			return 0;  // No cluster player; not good!
+		}
 
 		if (player == cluster_p)
+		{
+			if (bestfitid == clusterid)
+				player->distancefrombestfit = 0;
+
 			return 0;  // We ARE the cluster player.
+		}
 
 		if (player->position <= cluster_p->position)
+		{
+			if (bestfitid == clusterid)
+				player->distancefrombestfit = 0;
+
 			return 0;  // Ahead, or tying.
+		}
 
 		// Return the 3D distance from the cluster player.
 		// Multiply by a multiplier to make up for shoddy euclidean distance checks.
 		UINT8 cluster_pos = cluster_p->position;
+
+		if (bestfitid == clusterid)
+			player->distancefrombestfit =
+			    FixedMul(K_GetCongaLineDistance(player, cluster_pos),
+				     LEGACYCLUSTERMUL) /
+			    (divmul);
+
 		return FixedMul(K_GetCongaLineDistance(player, cluster_pos), LEGACYCLUSTERMUL) /
 		       (divmul);
 	}
@@ -10592,19 +10985,37 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 
 			// In a 1v1, this is theoretically impossible; but what do I know?
 			if (player->distancetofinish <= players[tinypoptarget].distancetofinish)
+			{
+				if (bestfitid == clusterid)
+					player->distancefrombestfit = 0;
+
 				return 0;  // Ahead, or tying.
+			}
 
 			// In 1v1s, half the cluster distance so that the losing player
 			// doesn't get overly pitied.
 			// Otherwise, just use the raw distancing.
 			if (pingame < 3)
 			{
+				if (bestfitid == clusterid)
+					player->distancefrombestfit =
+					    K_UndoMapScaling(
+						player->distancetofinish -
+						players[tinypoptarget].distancetofinish) /
+					    2;
+
 				return K_UndoMapScaling(player->distancetofinish -
-					players[tinypoptarget].distancetofinish) /
+							players[tinypoptarget].distancetofinish) /
 				       2;
 			}
 
-			return K_UndoMapScaling(player->distancetofinish - players[tinypoptarget].distancetofinish);
+			if (bestfitid == clusterid)
+				player->distancefrombestfit =
+				    K_UndoMapScaling(player->distancetofinish -
+						     players[tinypoptarget].distancetofinish);
+
+			return K_UndoMapScaling(player->distancetofinish -
+						players[tinypoptarget].distancetofinish);
 		}
 
 		UINT32 targetdtf;
@@ -10622,11 +11033,35 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 		}
 
 		if (player->distancetofinish <= targetdtf)
+		{
+			if (bestfitid == clusterid)
+				player->distancefrombestfit = 0;
+
 			return 0;  // Ahead, or tying.
+		}
 
 		// Return the difference between us and the cluster distance.
+		if (bestfitid == clusterid)
+			player->distancefrombestfit =
+			    K_UndoMapScaling(player->distancetofinish - targetdtf);
+
 		return K_UndoMapScaling(player->distancetofinish - targetdtf);
 	}
+}
+
+#undef FARTHESTCLUSDIS
+
+UINT32 K_GetClusterDistanceForPlayer(player_t * player)
+{
+	if (clusterjustchanged)
+	{
+		// Losing SMon immediately because of cluster jank sucks and is stupid, so let's
+		// give some leeway while NOT letting it be too OP
+		return max(player->distancefrombestfit, player->distancefromcluster);
+	}
+
+	// In every other case, return standard distances
+	return player->distancefromcluster;
 }
 
 #undef MINCLUSTERPLAYERS
@@ -10815,8 +11250,8 @@ void K_KartLegacyUpdatePosition(player_t *player)
 }
 
 UINT32 clusterid = 0;
-
-#define FARTHESTCLUSDIS (4096)
+clustermode_e clustermode = CLSMODE_AVERAGES;
+tic_t clusterjustchanged = 0;
 
 // Uses distance averaging to find a player cluster.
 static vector3_t* K_FindPlayerCluster(vector3_t* out)
@@ -10935,17 +11370,97 @@ static vector3_t* K_FindPlayerCluster(vector3_t* out)
 	return out;
 }
 
-#undef FARTHESTCLUSDIS
-
-#define CLUSTER_EPSILON (960*FRACUNIT)
-#define CLUSTER_EPSILON_PATHFIND (320*FRACUNIT)
+#define CLUSTER_EPSILON (1280 * FRACUNIT)
+#define CLUSTER_EPSILON_PATHFIND (1280 * FRACUNIT)
 
 #define CLUSTER_ACTIVE_EPSILON (K_LegacyOddsMode() ? CLUSTER_EPSILON : CLUSTER_EPSILON_PATHFIND)
-#define USECLUSEPS (FixedMul(FixedMul(CLUSTER_ACTIVE_EPSILON, K_GetKartGameSpeedScalar(gamespeed)), mapobjectscale))
+#define USECLUSEPS                                                                       \
+	(FixedMul(FixedMul(CLUSTER_ACTIVE_EPSILON, K_GetKartGameSpeedScalar(gamespeed)), \
+		  mapobjectscale))
+
+#define CLUSTER_ACTIVE_NODEFUNC \
+	(K_LegacyOddsMode()) ? &K_FilterNodeByEuclideanDistance : &K_FilterNodeByDTF
+
+static int sortByClusterID(const void *a, const void *b)
+{
+    const clusterdata_t * cluster_a = (const clusterdata_t *)(a);
+    const clusterdata_t * cluster_b = (const clusterdata_t *)(b);
+
+    if (cluster_a->id < cluster_b->id)
+        return -1;
+    else if (cluster_a->id > cluster_b->id)
+        return 1;
+
+    return 0;
+}
 
 void K_UpdateClusterPoints(void)
 {
-    // Get the player cluster.
+	if (!(gametypes[gametype]->rules & GTR_CIRCUIT))
+	{
+		// No means for us to cluster players...
+		clusterid = UINT32_MAX;
+		num_player_clusters = 0;
+		return;
+	}
+
+	INT32 i = 0;
+
+	// FIXME: CAN WE GET A **FUCKING** GENERALIZED FUNCTION ALREADY?!
+	// I'LL PORT THE SHIT FROM `gprank` IF I HAVE TO
+	// THERE ARE T W O OF THESE STUPID ASS PLAYER HEADCOUNT LOOPS IN THIS ROUTINE *ALONE*!
+	INT32 pcount = 0;
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		player_t* player = NULL;
+
+		if (!playeringame[i])
+			continue;
+
+		player = &players[i];
+
+		if (player->spectator)
+			continue;  // spectator
+
+		if (!player->mo)
+			continue;
+
+		pcount++;
+	}
+
+	if (pcount <= 1)
+	{
+		// Only one player in the race
+		clusterid = UINT32_MAX;
+		num_player_clusters = 0;
+		return;
+	}
+
+	// Tick down the "just updated" timer
+	if (clusterjustchanged)
+		clusterjustchanged--;
+
+	if (pcount > 9)
+	{
+		// First: update the Big Dumb Cluster List
+		K_UpdateGlobalClusters(CLUSTER_ACTIVE_EPSILON,
+				       3,
+				       CLUSTER_ACTIVE_NODEFUNC,
+				       &K_ClusterFilter_BaseFilter,
+				       pcount);
+
+		// Then: sort the list (the linker hates me using qs22j in C++...)
+		if (num_player_clusters > 1)
+		{
+			qs22j((void*)(player_clusters),
+			      num_player_clusters,
+			      sizeof(clusterdata_t),
+			      &sortByClusterID);
+		}
+	}
+
+	// Then: get the player cluster
 	K_FindPlayerCluster(&clusterpoint);
 }
 
@@ -11176,7 +11691,7 @@ static void K_AdjustPlayerFriction(player_t *player)
 	player->mo->friction = prevfriction;
 
 	if ((player->pflags & PF_RECOVERYSPIN) && 
-		player->speed < K_GetKartSpeedFromStat(player->kartspeed, false) &&
+		player->speed < K_GetKartSpeedFromStat(player->kartspeed, false, player->kartmagnet.factor) &&
 		player->speed >= 10*player->mo->scale
 	)
 	{
@@ -11216,6 +11731,23 @@ static void K_AdjustPlayerFriction(player_t *player)
 	if (P_WaterRunning(player->mo))
 	{
 		player->mo->friction += 614;
+
+		K_RecalculateMovefactor(player->mo);
+	}
+
+	// smon simple lateral tyre friction
+	if (K_SMonitorSliptideCondition(player) && player->speed > 10*player->mo->scale)
+	{
+		angle_t pangle = player->mo->angle;
+		vector2_t facingdirection = {P_ReturnThrustX(NULL, pangle, FRACUNIT), P_ReturnThrustY(NULL, pangle, FRACUNIT)};
+		vector2_t movedirection = {player->mo->momx, player->mo->momy};
+		FV2_Normalize(&facingdirection);
+		FV2_Normalize(&movedirection);
+		// this makes slipping backwards also treated as moving parallel to your facing direction
+		// maybe use the difference and compare to a threshold instead if we only want to count forwards as forwards?
+		fixed_t sliprate = abs(FV2_Dot(&movedirection, &facingdirection));
+		fixed_t speedrate = CLAMP(FixedDiv(player->speed, K_GetKartSpeed(player, false, false)), FRACUNIT/2, 2*FRACUNIT);
+		player->mo->friction -= Easing_InOutQuad(sliprate, FixedMul(2500, speedrate), 0);
 
 		K_RecalculateMovefactor(player->mo);
 	}

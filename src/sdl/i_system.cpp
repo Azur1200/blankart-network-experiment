@@ -194,6 +194,8 @@ static char returnWadPath[256];
 
 #include "../m_argv.h"
 
+#include "../m_menu.h"
+
 // SRB2Kart
 #include "../k_pwrlv.h"
 #include "../r_main.h" // Frame interpolation/uncapped
@@ -287,7 +289,7 @@ static void write_backtrace(INT32 signal)
 static void I_ShowErrorMessageBox(const char *messagefordevelopers, boolean dumpmade)
 {
 	static char finalmessage[2048];
-	size_t firstimpressionsline = 3; // "SRB2Kart V2" has encountered...
+	size_t firstimpressionsline = 3; // "BlanKart" has encountered...
 
 	if (M_CheckParm("-dedicated"))
 		return;
@@ -295,7 +297,7 @@ static void I_ShowErrorMessageBox(const char *messagefordevelopers, boolean dump
 	snprintf(
 		finalmessage,
 		sizeof(finalmessage),
-			"\"SRB2Kart V2\" has encountered an unrecoverable error and needs to close.\n"
+			"\"BlanKart\" has encountered an unrecoverable error and needs to close.\n"
 			"The %slog file is located at (%s).\n"
 			"\n"
 			"\n"
@@ -356,7 +358,7 @@ static void I_ShowErrorMessageBox(const char *messagefordevelopers, boolean dump
 	// on the target system
 	if (!M_CheckParm("-dedicated"))
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-			"SRB2Kart V2 " VERSIONSTRING " Error",
+			"BlanKart " VERSIONSTRING " Error",
 			finalmessage, NULL);
 
 	// Note that SDL_ShowSimpleMessageBox does *not* require SDL to be
@@ -1593,7 +1595,7 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 			// on the target system
 			if (!M_CheckParm("-dedicated"))
 				SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-					"SRB2Kart V2 " VERSIONSTRING " Recursive Error",
+					"BlanKart " VERSIONSTRING " Recursive Error",
 					buffer, NULL);
 
 			exit(-1); // recursive errors detected

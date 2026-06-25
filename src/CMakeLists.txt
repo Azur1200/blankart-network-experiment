@@ -155,9 +155,18 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	k_specialstage.c
 	k_vote.c
 	h_timers.cpp
+	radio_finish.cpp
 	stun.c
 	lonesha256.c
 )
+
+if (SRB2_CONFIG_DEDICATED)
+	target_compile_definitions(BLANKART PRIVATE -DDEDICATED_BUILD)
+endif()
+
+if (SRB2_CONFIG_DEDICATED AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+	target_compile_options(BLANKART PRIVATE -mconsole)
+endif()
 
 if(("${CMAKE_COMPILER_IS_GNUCC}" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
 	target_link_options(BLANKART PRIVATE "-Wl,--disable-dynamicbase")
@@ -288,7 +297,13 @@ endif()
 
 add_subdirectory(blua)
 add_subdirectory(blan)
-add_subdirectory(sdl)
+
+if (SRB2_CONFIG_DEDICATED)
+	add_subdirectory(dedicated)
+else()
+	add_subdirectory(sdl)
+endif()
+
 add_subdirectory(objects)
 add_subdirectory(core)
 add_subdirectory(acs)
@@ -319,7 +334,7 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES "FreeBSD")
 	target_link_libraries(BLANKART PRIVATE execinfo)
 endif()
 
-if("${SRB2_CONFIG_USE_GME}")
+if("${SRB2_CONFIG_USE_GME}" AND NOT SRB2_CONFIG_DEDICATED)
 	target_link_libraries(BLANKART PRIVATE gme)
 	target_compile_definitions(BLANKART PRIVATE -DHAVE_GME)
 	if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}")
@@ -328,8 +343,10 @@ if("${SRB2_CONFIG_USE_GME}")
 	endif()
 endif()
 
-target_link_libraries(BLANKART PRIVATE openmpt)
-target_compile_definitions(BLANKART PRIVATE -DHAVE_OPENMPT)
+if (NOT SRB2_CONFIG_DEDICATED)
+	target_link_libraries(BLANKART PRIVATE openmpt)
+	target_compile_definitions(BLANKART PRIVATE -DHAVE_OPENMPT)
+endif()
 
 target_link_libraries(BLANKART PRIVATE ZLIB::ZLIB PNG::PNG CURL::libcurl)
 target_compile_definitions(BLANKART PRIVATE -DHAVE_ZLIB -DHAVE_PNG -DHAVE_CURL -D_LARGEFILE64_SOURCE)
@@ -339,7 +356,7 @@ target_link_libraries(BLANKART PRIVATE tcbrindle::span)
 target_link_libraries(BLANKART PRIVATE fmt::fmt-header-only)
 target_link_libraries(BLANKART PRIVATE Tracy::TracyClient)
 
-if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}")
+if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}" AND NOT SRB2_CONFIG_DEDICATED)
 target_link_libraries(BLANKART PRIVATE sndfile)
 target_link_libraries(BLANKART PRIVATE Vorbis::vorbis Vorbis::vorbisenc)
 target_link_libraries(BLANKART PRIVATE Opus::opus)

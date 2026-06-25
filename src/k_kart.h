@@ -70,8 +70,18 @@ Make sure this matches the actual number of states
       ((grav >> 1) * (FLIPOVERHALFTICS * FLIPOVERHALFTICS))) / \
      FLIPOVERHALFTICS)
 
+typedef enum
+{
+	CLSMODE_AVERAGES,
+	CLSMODE_BESTFIT
+} ATTRPACK clustermode_e;
+
+#define CLUSTERCHANGEDTIME (6 * TICRATE)
+
 extern boolean clusterplayer[MAXPLAYERS];
 extern UINT32 clusterid; // ID of the "cluster player", the one closest to the cluster point.
+extern clustermode_e clustermode;
+extern tic_t clusterjustchanged;
 extern vector3_t clusterpoint, clusterdtf;
 
 // Bubble Shield's maximum health (determines how many times it can be fully inflated)
@@ -94,6 +104,7 @@ extern vector3_t clusterpoint, clusterdtf;
 #define SMONITORCONGADIST CV_Get(&cv_kartsmonitor_congadist)
 #define SMONITORDECAYDIST CV_Get(&cv_kartsmonitor_decaydist)
 #define SMONITORDECAYTIME CV_Get(&cv_kartsmonitor_decaytime)
+#define SMONITORINTANGIBLE CV_Get(&cv_kartsmonitor_intangible)
 
 // Precalculated constants for stacked boost diminishing
 // *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent
@@ -121,6 +132,7 @@ extern vector3_t clusterpoint, clusterdtf;
 #define INVINSTACKABLE CV_Get(&cv_kartstacking_invincibility_stackable)
 
 #define SMNTRSPEEDBOOST CV_Get(&cv_kartstacking_smonitor_speedboost)
+#define SMNTRFASTESTSPEED CV_Get(&cv_kartstacking_smonitor_fastestspeed)
 #define SMNTRACCELBOOST CV_Get(&cv_kartstacking_smonitor_accelboost)
 #define SMNTRHANDLEBOOST CV_Get(&cv_kartstacking_smonitor_handleboost)
 #define SMNTRSTACKABLE CV_Get(&cv_kartstacking_smonitor_stackable)
@@ -311,6 +323,7 @@ boolean K_IsPlayerRingBurnt(const player_t *player, UINT16 ringpower);
 INT32 K_GetKartRingPower(const player_t *player, boolean boosted);
 size_t K_NextRespawnWaypointIndex(waypoint_t *waypoint);
 boolean K_CheckPlayersRespawnColliding(INT32 playernum, fixed_t x, fixed_t y);
+boolean K_SafeRespawnWaypoint(waypoint_t *waypoint);
 void K_SetRespawnAtNextWaypoint(player_t * player);
 INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue);
 INT32 K_GetKartDriftSparkValue(const player_t *player);
@@ -320,6 +333,7 @@ INT32 K_GetDriftAngleOffset(player_t *player);
 void K_KartUpdatePosition(player_t *player);
 void K_KartLegacyUpdatePosition(player_t *player);
 void K_UpdateClusterPoints(void);
+UINT32 K_GetClusterDistanceForPlayer(player_t * player);
 void K_UpdateAllPlayerPositions(void);
 mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 flip, UINT8 type, UINT8 amount);
 void K_DropItems(player_t *player);
@@ -342,9 +356,11 @@ boolean K_SlopeResistance(const player_t *player);
 void K_RemoveGrowShrink(player_t *player);
 void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 void K_ApplyTripWire(player_t *player, tripwirestate_t state);
-fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb);
+fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb, fixed_t extrapct);
 fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dorubberbanding);
 fixed_t K_GetKartAccel(const player_t *player);
+void K_DoKartMagnetGradient(player_t *player);
+void K_KartMagnetThinker(player_t *player);
 UINT16 K_GetKartFlashing(const player_t *player);
 boolean K_PlayerShrinkCheat(const player_t *player);
 void K_UpdateShrinkCheat(player_t *player);

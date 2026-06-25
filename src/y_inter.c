@@ -797,19 +797,32 @@ skiptallydrawer:
 		{
 		case DSM_NOTSAVING:
 		{
-			char replaytext[40] = {0};
+			char replaytext[60] = {0};
 			INT32 flags = 0;
 			const char *item1 = gamecontrol[0][gc_lookback][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][0]) : NULL;
 			const char *item2 = gamecontrol[0][gc_lookback][1] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][1]) : NULL;
+			const char *item3 = gamecontrol[0][gc_lookback][2] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][2]) : NULL;
+			const char *item4 = gamecontrol[0][gc_lookback][3] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][3]) : NULL;
 
-			if (item1 != NULL && item2 != NULL)
+			if (item1 && item2 && item3 && item4)
 			{
-				flags |= V_6WIDTHSPACE;
-				snprintf(replaytext, 40, "%s/%s: Save Replay", item1, item2);
+				snprintf(replaytext, 60, "%s/%s/%s/%s: Save Replay", item1,item2,item3,item4);
+				flags = V_6WIDTHSPACE;
+			}
+			else if (item1 && item2 && item3)
+			{
+				snprintf(replaytext, 60, "%s/%s/%s: Save Replay", item1,item2,item3);
+				flags = V_6WIDTHSPACE;
+			}
+			else if (item1 && item2)
+			{
+				snprintf(replaytext, 60, "%s/%s: Save Replay", item1,item2);
+				flags = V_6WIDTHSPACE;
 			}
 			else
-				snprintf(replaytext, 40, "%s: Save Replay", item1 != NULL ? item1 : item2 != NULL ? item2 : "Look Backwards");
-
+			{
+				snprintf(replaytext, 60, "%s: Save Replay", item1 ? item1 : "Look Backwards");
+			}
 
 			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|hilicol|flags, replaytext);
 			break;
@@ -817,10 +830,6 @@ skiptallydrawer:
 
 		case DSM_SAVED:
 			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|hilicol, "Replay saved!");
-			break;
-
-		case DSM_TITLEENTRY:
-			ST_DrawDemoTitleEntry();
 			break;
 
 		default: // Don't render any text here
@@ -851,8 +860,13 @@ void Y_Ticker(void)
 
 	if (demo.recording)
 	{
-		if (demo.savemode == DSM_NOTSAVING && G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON))
+		if (demo.savemode == DSM_NOTSAVING && G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON) && !menustack[0])
+		{
 			demo.savemode = DSM_TITLEENTRY;
+			M_OpenVirtualKeyboard(&demo.titlenameinput, demo.titlename, &replaysave);
+			M_StartControlPanel();
+			M_EnterMenu(MN_TYPINGDUMMY, false, 0);
+		}
 
 		if (demo.savemode == DSM_WILLSAVE || demo.savemode == DSM_WILLAUTOSAVE)
 			G_SaveDemo();

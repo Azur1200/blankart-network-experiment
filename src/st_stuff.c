@@ -931,24 +931,6 @@ static void ST_overlayDrawer(void)
 	}
 }
 
-void ST_DrawDemoTitleEntry(void)
-{
-	#define x (BASEVIDWIDTH/2 - 139)
-	#define y (BASEVIDHEIGHT/2)
-	M_DrawTextBox(x, y + 4, MAXSTRINGLENGTH, 1);
-
-	M_DrawTextInputScroll(x + 8, y + 12, &demo.titlenameinput, V_ALLOWLOWERCASE, (MAXSTRINGLENGTH-1)*8);
-
-	M_DrawTextBox(x + 30, y - 24, 26, 1);
-	V_DrawString(x + 38, y - 16, V_ALLOWLOWERCASE, "Enter the name of the replay.");
-
-	M_DrawTextBox(x + 50, y + 20, 20, 1);
-	V_DrawThinString(x + 58, y + 28, V_ALLOWLOWERCASE, "Escape - Cancel");
-	V_DrawRightAlignedThinString(x + 220, y + 28, V_ALLOWLOWERCASE, "Enter - Confirm");
-	#undef x
-	#undef y
-}
-
 // MayonakaStatic: draw Midnight Channel's TV-like borders
 static void ST_MayonakaStatic(void)
 {
@@ -1091,7 +1073,7 @@ void ST_DrawServerSplash(boolean timelimited)
 			V_DrawFixedPatch(
 				gridX, gridY,
 				FRACUNIT,
-				(V_SNAPTOLEFT|V_SNAPTOBOTTOM) | V_SUBTRACT | V_VFLIP | gridOpacity,
+				(V_SNAPTOLEFT|V_SNAPTOTOP) | V_SUBTRACT | V_VFLIP | gridOpacity,
 				gridPatch,
 				NULL
 			);
@@ -1109,7 +1091,7 @@ void ST_DrawServerSplash(boolean timelimited)
 	V_DrawFixedPatch(
 		iconX, iconY,
 		FRACUNIT,
-		(V_SNAPTORIGHT|V_SNAPTOBOTTOM) | opacityFlag,
+		(V_SNAPTORIGHT|V_SNAPTOTOP) | opacityFlag,
 		iconPatch,
 		NULL
 	);
@@ -1119,7 +1101,7 @@ void ST_DrawServerSplash(boolean timelimited)
 
 	V_DrawRightAlignedString(
 		textX, textY,
-		(V_SNAPTORIGHT|V_SNAPTOBOTTOM|V_ALLOWLOWERCASE) | opacityFlag,
+		(V_SNAPTORIGHT|V_SNAPTOTOP|V_ALLOWLOWERCASE) | opacityFlag,
 		connectedservername
 	);
 
@@ -1129,7 +1111,7 @@ void ST_DrawServerSplash(boolean timelimited)
 	{
 		V_DrawRightAlignedThinString(
 			textX, textY,
-			(V_SNAPTORIGHT|V_SNAPTOBOTTOM|V_ALLOWLOWERCASE) | opacityFlag,
+			(V_SNAPTORIGHT|V_SNAPTOTOP|V_ALLOWLOWERCASE) | opacityFlag,
 			va("Contact: %c%s", '\x80' + cv_shoutcolor.value, connectedservercontact)
 		);
 	}
@@ -1141,7 +1123,7 @@ void ST_DrawServerSplash(boolean timelimited)
 	{
 		V_DrawSmallString(
 			textX, textY,
-			(V_SNAPTORIGHT|V_SNAPTOBOTTOM|V_ALLOWLOWERCASE) | opacityFlag,
+			(V_SNAPTORIGHT|V_SNAPTOTOP|V_ALLOWLOWERCASE) | opacityFlag,
 			va("%s", connectedservermotd)
 		);
 	}
@@ -1241,19 +1223,32 @@ void ST_Drawer(void)
 		{
 		case DSM_NOTSAVING:
 		{
-			char replaytext[40] = {0};
+			char replaytext[60] = {0};
 			INT32 flags = 0;
 			const char *item1 = gamecontrol[0][gc_lookback][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][0]) : NULL;
 			const char *item2 = gamecontrol[0][gc_lookback][1] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][1]) : NULL;
+			const char *item3 = gamecontrol[0][gc_lookback][2] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][2]) : NULL;
+			const char *item4 = gamecontrol[0][gc_lookback][3] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][3]) : NULL;
 
-			if (item1 != NULL && item2 != NULL)
+			if (item1 && item2 && item3 && item4)
 			{
-				flags |= V_6WIDTHSPACE;
-				snprintf(replaytext, 40, "%s/%s: Save Replay", item1, item2);
+				snprintf(replaytext, 60, "%s/%s/%s/%s: Save Replay", item1,item2,item3,item4);
+				flags = V_6WIDTHSPACE;
+			}
+			else if (item1 && item2 && item3)
+			{
+				snprintf(replaytext, 60, "%s/%s/%s: Save Replay", item1,item2,item3);
+				flags = V_6WIDTHSPACE;
+			}
+			else if (item1 && item2)
+			{
+				snprintf(replaytext, 60, "%s/%s: Save Replay", item1,item2);
+				flags = V_6WIDTHSPACE;
 			}
 			else
-				snprintf(replaytext, 40, "%s: Save Replay", item1 != NULL ? item1 : item2 != NULL ? item2 : "Look Backwards");
-
+			{
+				snprintf(replaytext, 60, "%s: Save Replay", item1 ? item1 : "Look Backwards");
+			}
 
 			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|gtc|flags, replaytext);
 			break;
@@ -1263,16 +1258,9 @@ void ST_Drawer(void)
 		{
 			char replaytext[100] = {0};
 			INT32 flags = 0;
-			const char *item1 = gamecontrol[0][gc_lookback][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][0]) : NULL;
-			const char *item2 = gamecontrol[0][gc_lookback][1] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][1]) : NULL;
+			const char *button = M_ButtonName(0, gc_lookback, "Look Backwards", false);
 
-			if (item1 != NULL && item2 != NULL)
-			{
-				flags |= V_6WIDTHSPACE;
-				snprintf(replaytext, 100, "Replay will be saved. (%s/%s: Change title)", item1, item2);
-			}
-			else
-				snprintf(replaytext, 100, "Replay will be saved. (%s: Change title)", item1 != NULL ? item1 : item2 != NULL ? item2 : "Look Backwards");
+			snprintf(replaytext, 100, "Replay will be saved. (%s: Change title)", button);
 
 			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_HUDTRANS|V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|gtc|flags, replaytext);
 			break;
@@ -1280,10 +1268,6 @@ void ST_Drawer(void)
 
 		case DSM_WILLSAVE:
 			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_HUDTRANS|V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|gtc, "Replay will be saved.");
-			break;
-
-		case DSM_TITLEENTRY:
-			ST_DrawDemoTitleEntry();
 			break;
 
 		default: // Don't render anything

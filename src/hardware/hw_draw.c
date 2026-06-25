@@ -1106,6 +1106,143 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 		flags);
 }
 
+// -------------------+
+// HWR_DrawFixedLine  : draw flat coloured rectangle, with no texture
+// -------------------+
+void HWR_DrawFixedLine(INT32 x1, INT32 y1, INT32 x2, INT32 y2, fixed_t w, INT32 color)
+{
+	FOutVector v1[4] = {0};
+	FOutVector v2[4] = {0};
+	FOutVector fuse[4] = {0};
+	FBITFIELD flags;
+	FSurfaceInfo Surf[3] = {0};
+	float fx, fy, fx2, fy2, fw, fh;
+	UINT8 alphalevel = ((color & V_ALPHAMASK) >> V_ALPHASHIFT);
+	UINT8 blendmode = ((color & V_BLENDMASK) >> V_BLENDSHIFT);
+	RGBA_t *palette = HWR_GetTexturePalette();
+
+//     3-4
+//    / \|
+//   /   5
+//  /   /
+// 2   /
+// |\ /
+// 0-1
+//
+// Need to flip the triangles depending on the quadrant
+// Q1 and Q3 are not flipped, but Q2 and Q4 are
+
+
+	fx = ((float)x1);
+	fy = (float)y1;
+	fx2 = (float)x2;
+	fy2 = (float)y2;
+
+	fw = (float)w / 2.0f;
+	fh = fw;
+	
+	// Get the angle between the two points to determine the quadrant
+	UINT8 quadrant = (UINT8)((R_PointToAngleFloat2(x1, y1, x2, y2) >> 30));
+
+	float sx = (((quadrant >= 1) && (quadrant < 3)) ? -1.0f : 1.0f);
+	float sy = (((quadrant >> 1) & 1) ? -1.0f : 1.0f);
+
+	fx = -1 + fx / (vid.width / 2);
+	fy = 1 - fy / (vid.height / 2);
+	fx2 = -1 + fx2 / (vid.width / 2);
+	fy2 = 1 - fy2 / (vid.height / 2);
+	fw = fw / (vid.width / 2);
+	fh = fh / (vid.height / 2);
+
+	v1[0].x = v1[2].x = fx - (fw * sx);
+	v1[1].x = fx + (fw * sx);
+	v1[0].y = v1[1].y = fy + (fh * sy);
+	v1[2].y = fy - (fh * sy);
+
+	v2[0].x = fx2 - (fw * sx);
+	v2[1].x = v2[2].x = fx2 + (fw * sx);
+	v2[0].y = v2[1].y = fy2 - (fh * sy);
+	v2[2].y = fy2 + (fh * sy);
+
+	fuse[0].x = v1[2].x;
+	fuse[0].y = v1[2].y;
+
+	fuse[1].x = v1[1].x;
+	fuse[1].y = v1[1].y;
+
+	fuse[2].x = v2[2].x;
+	fuse[2].y = v2[2].y;
+
+	fuse[3].x = v2[0].x;
+	fuse[3].y = v2[0].y;
+
+	v1[0].z = v1[1].z = v1[2].z = v1[3].z = 1.0f;
+	v2[0].z = v2[1].z = v2[2].z = v2[3].z = 1.0f;
+	fuse[0].z = fuse[1].z = fuse[2].z = fuse[3].z = 1.0f;
+
+	v1[0].s = 0.0f;
+	v1[2].s = v1[1].s = 1.0f;
+	v1[0].t = v1[1].t = 0.0f;
+	v1[2].t = 1.0f;
+
+	v2[0].s = 0.0f;
+	v2[2].s = v2[1].s = 1.0f;
+	v2[0].t = v2[1].t = 0.0f;
+	v2[2].t = 1.0f;
+
+	fuse[0].s = fuse[3].s = 0.0f;
+	fuse[2].s = fuse[1].s = 1.0f;
+	fuse[0].t = fuse[1].t = 0.0f;
+	fuse[2].t = fuse[3].t = 1.0f;
+
+	Surf[0].PolyColor = palette[color&0xFF];
+	Surf[1].PolyColor = palette[color&0xFF];
+	Surf[2].PolyColor = palette[color&0xFF];
+
+	flags = HWR_GetBlendModeFlag(blendmode+1)|PF_Modulated|PF_NoDepthTest|PF_NoTexture;
+
+	if (alphalevel)
+	{
+		if (alphalevel == 13)
+		{
+			// V_HUDTRANSHALF
+			Surf[0].PolyColor.s.alpha = softwaretranstogl_lo[st_translucency];
+			Surf[1].PolyColor.s.alpha = softwaretranstogl_lo[st_translucency];
+			Surf[2].PolyColor.s.alpha = softwaretranstogl_lo[st_translucency];
+		}
+		else if (alphalevel == 14)
+		{
+			// V_HUDTRANS
+			Surf[0].PolyColor.s.alpha = softwaretranstogl[st_translucency];
+			Surf[1].PolyColor.s.alpha = softwaretranstogl[st_translucency];
+			Surf[2].PolyColor.s.alpha = softwaretranstogl[st_translucency];
+		}
+		else if (alphalevel == 15)
+		{
+			// V_HUDTRANSDOUBLE
+			Surf[0].PolyColor.s.alpha = softwaretranstogl_hi[st_translucency];
+			Surf[1].PolyColor.s.alpha = softwaretranstogl_hi[st_translucency];
+			Surf[2].PolyColor.s.alpha = softwaretranstogl_hi[st_translucency];
+		}
+		else if (alphalevel < 10)
+		{
+			Surf[0].PolyColor.s.alpha = softwaretranstogl[min(max((10 - alphalevel), 0), 10)];
+			Surf[1].PolyColor.s.alpha = softwaretranstogl[min(max((10 - alphalevel), 0), 10)];
+			Surf[2].PolyColor.s.alpha = softwaretranstogl[min(max((10 - alphalevel), 0), 10)];
+		}
+		else
+		{
+			Surf[0].PolyColor.s.alpha = 0;
+			Surf[1].PolyColor.s.alpha = 0;
+			Surf[2].PolyColor.s.alpha = 0;
+		}
+	}
+
+	GL_DrawPolygon(&Surf[0], v1, 3, flags);
+	GL_DrawPolygon(&Surf[1], v2, 3, flags);
+	GL_DrawPolygon(&Surf[2], fuse, 4, flags);
+}
+
 #ifdef HAVE_PNG
 
 #ifndef _LARGEFILE64_SOURCE
