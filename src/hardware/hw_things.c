@@ -215,11 +215,6 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	interp.y += thing->spryoff;
 	interp.z += thing->sprzoff;
 
-	if (thing->player)
-	{
-		interp.z += thing->player->crash_zoffset;
-	}
-
 	groundz = R_GetShadowZ(thing, &groundslope);
 
 	heightsec = thing->subsector->sector->heightsec;
@@ -1643,6 +1638,11 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	interp.x += thing->sprxoff;
 	interp.y += thing->spryoff;
 	interp.z += thing->sprzoff;
+
+	if (thing->player)
+	{
+		interp.z += thing->player->crash_zoffset;
+	}
 
 	if (interp.spritexscale < 1 || interp.spriteyscale < 1)
 		return;

@@ -3769,6 +3769,20 @@ void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 
 		player->crash_zoffset_delta = FixedMul(zjump, player->mo->scale) * P_MobjFlip(player->mo);
 
+		SINT8 direction = 1;
+		{
+			vector3_t fwd = {P_ReturnThrustX(player->mo, momentum_angle, FRACUNIT), P_ReturnThrustY(player->mo, momentum_angle, FRACUNIT), 0};
+			vector3_t side = {inflictor->x - player->mo->x, inflictor->y - player->mo->y, 0};
+			vector3_t cross = {0};
+
+			FV3_Cross(&fwd, &side, &cross);
+			// pick using victim's left/right (negative is right of the victim here)
+			direction = -intsign(cross.z);
+			if (direction == 0) direction = 1;
+
+		}
+		player->crash_side = direction;
+
 		// Start tumbling!
 		player->crash_state = CRASH_TURNTOSIDE;
 
@@ -3898,66 +3912,68 @@ void K_Player_CrashThinker(player_t *player)
 				player->crash_zoffset = Easing_InOutCubic((FRACUNIT/4) * reorient_elapsed, player->crash_zoffset_lerp, 0);
 			}
 
-			if (player->crash_yaw)
+			if (player->crash_rot)
 			{
-				// Reorient by 7 degrees every tic
-				player->crash_yaw = (angle_t)(ApproachOneWayINT64((INT64)(player->crash_yaw), 0, (INT64)(ANG1 * 7)));
+				player->crash_rot = (ApproachFixed(player->crash_rot, 0, CRASH_TUMBLE_ROTRETURNDELTA, CRASH_TUMBLE_ROTRETURNDELTA));
 			}
 			else
 			{
 				// We're reoriented, stop crashing
+				player->crash_rot = 0;
 				player->crash_state = CRASH_FINISH;
 			}
 			break;
 		case CRASH_TUMBLING:
-			player->crash_rot += CRASH_TUMBLE_ROTDELTA;
+			player->crash_yaw += player->crashtimer ? 2*CRASH_TUMBLE_YAWDELTA : CRASH_TUMBLE_YAWDELTA;
 
 			if (player->crashtimer)
 				player->crashtimer--;
 
-			if (crashing_grounded && (player->crash_rot >= (90 * FRACUNIT)) && (player->crash_rot < (135 * FRACUNIT)))
+			if (crashing_grounded)
 			{
-				fixed_t my_gravity = abs(P_GetMobjGravity(player->mo));
-				player->crash_zoffset_delta = FixedMul(CrashFinishZMomentum(my_gravity), player->mo->scale) * P_MobjFlip(player->mo);
-
-				S_StartSoundAtVolume(player->mo, sfx_s3kae, 192);
-			}
-
-			if (player->crash_rot >= (360 * FRACUNIT))
-			{
-				if (player->crashtimer)
+				if ((player->crash_yaw >= (90 * ANG1)) && (player->crash_yaw < (135 * ANG1)))
 				{
-					UINT8 num_revolutions = ((player->crash_rot / FRACUNIT) / 360);
-
-					// Reset to in-between [0, 359]
-					player->crash_rot -= ((360 * num_revolutions) * FRACUNIT);
+					fixed_t bounce = abs(P_GetMobjGravity(player->mo));
+					player->crash_zoffset_delta = FixedMul(CrashFinishZMomentum(bounce), player->mo->scale) * P_MobjFlip(player->mo);
+	
+					S_StartSoundAtVolume(player->mo, sfx_s3kae, 192);
+					player->crash_rot += player->crashtimer*CRASH_TUMBLE_ROTDELTA;
 				}
-				else
+				if (!S_SoundPlaying(player->mo, sfx_s3k6f))
 				{
-					// We need to stop tumbling!
-					player->crash_rot = 0;
-					player->crash_zoffset_lerp = player->crash_zoffset;
-					player->crash_reorient_start = player->crash_elapsed;
-					player->crash_state = CRASH_REORIENT;
+					S_StartSoundAtVolume(player->mo, sfx_s3k6f, 192);
 				}
-			}
-
-			if (crashing_grounded && (!S_SoundPlaying(player->mo, sfx_s3k6f)))
-			{
-				S_StartSoundAtVolume(player->mo, sfx_s3k6f, 192);
-			}
-
-			break;
-		case CRASH_TURNTOSIDE:
-			// Turn the crashing player to the side before we actually start tumbling
-			if (player->crash_yaw >= CRASH_TUMBLE_TARGETANGLE)
-			{
-				player->crash_state = CRASH_TUMBLING;
 			}
 			else
 			{
-				if ((player->crash_yaw + CRASH_TUMBLE_YAWDELTA) >= CRASH_TUMBLE_TARGETANGLE)
-					player->crash_yaw = CRASH_TUMBLE_TARGETANGLE;
+				player->crash_rot -= CRASH_TUMBLE_ROTDELTA;
+			}
+
+			if (player->crash_rot < -CRASH_TUMBLE_MAXROT)
+			{
+				player->crash_rot = -CRASH_TUMBLE_MAXROT;
+			}
+			
+			if ((!player->crashtimer) && (AngleFixed(player->crash_yaw) + AngleFixed(2*CRASH_TUMBLE_YAWDELTA) > (360*FRACUNIT)))
+			{
+				// We need to stop tumbling!
+				player->crash_yaw = 0;
+				player->crash_zoffset_lerp = player->crash_zoffset;
+				player->crash_reorient_start = player->crash_elapsed;
+				player->crash_state = CRASH_REORIENT;
+			}
+			break;
+		case CRASH_TURNTOSIDE:
+			// Turn the crashing player to the side before we actually start tumbling
+			if (player->crash_yaw >= CRASH_TUMBLE_STARTYAW)
+			{
+				player->crash_state = CRASH_TUMBLING;
+				player->crash_rot = CRASH_TUMBLE_STARTROT;
+			}
+			else
+			{
+				if ((player->crash_yaw + CRASH_TUMBLE_YAWDELTA) >= CRASH_TUMBLE_STARTYAW)
+					player->crash_yaw = CRASH_TUMBLE_STARTYAW;
 				else
 					player->crash_yaw += CRASH_TUMBLE_YAWDELTA;
 			}
