@@ -1955,7 +1955,7 @@ void P_XYMovement(mobj_t *mo)
 	if (mo->player && (mo->player->spinouttimer && !mo->player->wipeoutslow) && mo->player->speed <= K_GetKartSpeed(mo->player, false, true)/2)
 		return;
 
-	if (mo->player && (mo->player->crash_state) && mo->player->speed <= FixedMul(K_GetKartSpeed(mo->player, false, true), 2 * FRACUNIT / 3))
+	if (mo->player && (mo->player->crash_state && !mo->player->wipeoutslow) && mo->player->speed <= FixedMul(K_GetKartSpeed(mo->player, false, true), 2 * FRACUNIT / 3))
 	{
 		// If we're crashing, cut friction at below 66%
 		// Crashing should keep you moving a bit faster for the sake of game flow

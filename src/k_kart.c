@@ -3742,6 +3742,8 @@ void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 
 	K_StatPlayerHit(player, source ? source->player : NULL);
 
+	player->spinouttype = KSPIN_CRASH;
+
 	{
 		// Cut the momentum in half so the hit still feels punishing
 		fixed_t momentum = min(FixedMul(K_GetKartSpeedFromStat(player->kartspeed, false, 0), mapobjectscale), K_Momentum2D(player->mo));
@@ -3877,6 +3879,7 @@ void K_Player_CrashThinker(player_t *player)
 	// Crashing/tumbling overrides both getting spun out and flipped over
 	player->flipovertimer = 0;
 	player->spinouttimer = 0;
+	// but doesn't override wipeout (used by recovery dash for example to give extra friction)
 
 	// Update time spent crashing
 	player->crash_elapsed++;
@@ -7791,13 +7794,17 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 				player->wipeoutslow--;
 		}
 	}
+	else if (player->crashtimer)
+	{
+		if (player->wipeoutslow > 1)
+			player->wipeoutslow--;
+	}
 	else
 	{
 		if (player->wipeoutslow >= 1)
 			player->mo->friction = ORIG_FRICTION;
 		player->wipeoutslow = 0;
 	}
-
 
 	if ((K_RingsActive() == false))
 	{
@@ -10577,11 +10584,10 @@ static void K_RecoveryDash(player_t *player)
 {
 	if (K_RecoveryDashActive() && K_PlayerWantsRecoverySpin(player) && K_IsPlayerDamaged(player) && player->wipeoutslow == 0)
 	{
-		player->wipeoutslow = max(wipeoutslowtime + 1, player->spinouttimer + 4);
+		player->wipeoutslow = max(wipeoutslowtime + 1, max(player->spinouttimer + 4, player->crashtimer + 4));
 	}
 
-	if (!K_PlayerCanRecoverySpin(player)
-	 || ((player->pflags & PF_RECOVERYSPIN) && player->forcedtopspeed == 0 && player->speed >= 10*player->mo->scale))
+	if (!K_PlayerCanRecoverySpin(player))
 	{
 		player->pflags &= ~PF_RECOVERYSPIN;
 		player->forcedtopspeed = 0;
