@@ -79,13 +79,14 @@ Make sure this matches the actual number of states
 
 #define CRASH_TUMBLETIME (9 * TICRATE / 10)
 
-#define CRASH_TUMBLE_ROTRETURNDELTA (674074) // ~180*FRACUNIT/TICRATE
-#define CRASH_TUMBLE_ROTDELTA (337037) // ~180*FRACUNIT/TICRATE
+#define CRASH_TUMBLE_ROTRETURNDELTA (420 * FRACUNIT / TICRATE)
+#define CRASH_TUMBLE_ROTDELTA (180 * FRACUNIT / TICRATE)
 #define CRASH_TUMBLE_YAWDELTA (155891405) // 13.066... deg
 
 #define CRASH_TUMBLE_STARTYAW (56 * ANG1)
 #define CRASH_TUMBLE_STARTROT (-60 * FRACUNIT)
 #define CRASH_TUMBLE_MAXROT (115 * FRACUNIT)
+#define CRASH_TUMBLE_MAXROT_AIR (160 * FRACUNIT)
 
 // The initial "crash jump" after a DMG_CRASH tumble starts
 #define CrashZMomentum(grav)                                     \

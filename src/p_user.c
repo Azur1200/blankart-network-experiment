@@ -2286,7 +2286,7 @@ void P_MovePlayer(player_t *player)
 	{
 		P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
 
-		player->drawangle = player->mo->angle - player->crash_yaw;
+		player->drawangle = player->mo->angle - (player->crash_yaw * player->crash_side);
 		player->mo->rollangle = FixedAngle(player->crash_rot);
 	}
 	else if (player->flipovertimer > 0)

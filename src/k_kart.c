@@ -3771,7 +3771,7 @@ void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 
 		SINT8 direction = 1;
 		{
-			vector3_t fwd = {P_ReturnThrustX(player->mo, momentum_angle, FRACUNIT), P_ReturnThrustY(player->mo, momentum_angle, FRACUNIT), 0};
+			vector3_t fwd = {P_ReturnThrustX(player->mo, player->mo->angle, FRACUNIT), P_ReturnThrustY(player->mo, player->mo->angle, FRACUNIT), 0};
 			vector3_t side = {inflictor->x - player->mo->x, inflictor->y - player->mo->y, 0};
 			vector3_t cross = {0};
 
@@ -3937,21 +3937,34 @@ void K_Player_CrashThinker(player_t *player)
 					player->crash_zoffset_delta = FixedMul(CrashFinishZMomentum(bounce), player->mo->scale) * P_MobjFlip(player->mo);
 	
 					S_StartSoundAtVolume(player->mo, sfx_s3kae, 192);
-					player->crash_rot += player->crashtimer*CRASH_TUMBLE_ROTDELTA;
+					player->crash_rot += player->crashtimer*CRASH_TUMBLE_ROTDELTA * player->crash_side;
+
+					if (player->crashtimer)
+					{
+						K_SpawnBumpEffect(player->mo);
+					}
 				}
 				if (!S_SoundPlaying(player->mo, sfx_s3k6f))
 				{
 					S_StartSoundAtVolume(player->mo, sfx_s3k6f, 192);
 				}
+				if (!player->crashtimer)
+				{
+					K_SpawnWipeoutTrail(player->mo, true);
+				}
 			}
 			else
 			{
-				player->crash_rot -= CRASH_TUMBLE_ROTDELTA;
+				player->crash_rot -= CRASH_TUMBLE_ROTDELTA * player->crash_side;
 			}
-
-			if (player->crash_rot < -CRASH_TUMBLE_MAXROT)
+			
+			if (P_IsObjectOnGround(player->mo))
 			{
-				player->crash_rot = -CRASH_TUMBLE_MAXROT;
+				player->crash_rot = CLAMP(player->crash_rot, -CRASH_TUMBLE_MAXROT, CRASH_TUMBLE_MAXROT);
+			}
+			else
+			{
+				player->crash_rot = CLAMP(player->crash_rot, -CRASH_TUMBLE_MAXROT_AIR, CRASH_TUMBLE_MAXROT_AIR);
 			}
 			
 			if ((!player->crashtimer) && (AngleFixed(player->crash_yaw) + AngleFixed(2*CRASH_TUMBLE_YAWDELTA) > (360*FRACUNIT)))
@@ -3968,7 +3981,7 @@ void K_Player_CrashThinker(player_t *player)
 			if (player->crash_yaw >= CRASH_TUMBLE_STARTYAW)
 			{
 				player->crash_state = CRASH_TUMBLING;
-				player->crash_rot = CRASH_TUMBLE_STARTROT;
+				player->crash_rot = CRASH_TUMBLE_STARTROT * player->crash_side;
 			}
 			else
 			{
