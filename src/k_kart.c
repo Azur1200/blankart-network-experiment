@@ -3859,8 +3859,8 @@ void K_Player_CrashThinker(player_t *player)
 	{
 		player->crash_bumpme = false;
 
-		if (!P_IsObjectOnGround(player->mo))
-			player->crash_zoffset = ApproachOneWayFixed(player->crash_zoffset, 0, mapobjectscale / 4);
+		// if (!P_IsObjectOnGround(player->mo))
+		player->crash_zoffset = ApproachOneWayFixed(player->crash_zoffset, 0, mapobjectscale / 4);
 		return;
 	}
 
@@ -3872,8 +3872,8 @@ void K_Player_CrashThinker(player_t *player)
 	}
 	else
 	{
-		// At least set the delta to our current momentum
-		player->crash_zoffset_delta = player->mo->momz;
+		player->crash_zoffset_delta = 
+			ApproachOneWayFixed(player->crash_zoffset_delta, -player->crash_zoffset, my_gravity);
 	}
 
 	// Crashing/tumbling overrides both getting spun out and flipped over
@@ -3951,10 +3951,7 @@ void K_Player_CrashThinker(player_t *player)
 				{
 					S_StartSoundAtVolume(player->mo, sfx_s3k6f, 192);
 				}
-				if (!player->crashtimer)
-				{
-					K_SpawnWipeoutTrail(player->mo, true);
-				}
+				K_SpawnWipeoutTrail(player->mo, true);
 			}
 			else
 			{
