@@ -676,8 +676,12 @@ struct player_t
 	crashstate_e crash_state; // Current state of the crash animation
 	UINT16 crashtimer;		// Crashing and tumbling due to an Orbinaut or other wipeout item
 	tic_t crash_elapsed;	// How long you've spent tumbling
+	tic_t crash_reorient_start;
 	fixed_t crash_rot;		// Current tumble rotation. Need to rotate 360 degrees before you reorient!
 	angle_t crash_yaw;		// Current angle offset for the tumble
+	fixed_t crash_zoffset;	// Not using sprzoff because it'd just lead to upkeep tedium
+	fixed_t crash_zoffset_delta; // How much we should modify the Z offset while crashing
+	fixed_t crash_zoffset_lerp; // When reorienting, play a fancy animation of our offset "fixing" itself
 	boolean crash_bumpme;	// "Bump me!" This crashing player should bump for this interaction only
 
 	UINT8 instashield;		// Instashield no-damage animation timer

@@ -3973,6 +3973,18 @@ static int lib_kResetCrashData(lua_State *L)
 	return 0;
 }
 
+static int lib_kResetCrashOffsetData(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	NOHUD
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	K_ResetCrashOffsetData(player);
+	return 0;
+}
+
 static int lib_kTakeBumpersFromPlayer(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -6120,6 +6132,7 @@ static luaL_Reg lib[] = {
 	{"K_FlipPlayer",lib_kFlipPlayer},
 	{"K_TumblePlayer",lib_kTumblePlayer},
 	{"K_ResetCrashData",lib_kResetCrashData},
+	{"K_ResetCrashOffsetData",lib_kResetCrashOffsetData},
 	{"K_GetOrbiJawzDamage",lib_kGetOrbiJawzDamage},
 	{"K_TakeBumpersFromPlayer",lib_kTakeBumpersFromPlayer},
 	{"K_SpawnKartExplosion",lib_kSpawnKartExplosion},

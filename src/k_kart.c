@@ -3744,7 +3744,7 @@ void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 
 	{
 		// Cut the momentum in half so the hit still feels punishing
-		fixed_t momentum = FixedMul(min(K_GetKartSpeedFromStat(player->kartspeed, false, 0), K_Momentum2D(player->mo)), 3 * FRACUNIT / 4);
+		fixed_t momentum = min(FixedMul(K_GetKartSpeedFromStat(player->kartspeed, false, 0), mapobjectscale), K_Momentum2D(player->mo));
 
 		angle_t momentum_angle = K_MomentumAngle(player->mo);
 
@@ -3767,7 +3767,7 @@ void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 		I_OutputMsg("crash jump: %f (fixedpt: %d), gravity: %f, global grav: %f\n",
 			FIXED_TO_FLOAT(zjump), zjump, FIXED_TO_FLOAT(my_gravity), FIXED_TO_FLOAT(gravity));
 
-		player->mo->momz = FixedMul(zjump, player->mo->scale) * P_MobjFlip(player->mo);
+		player->crash_zoffset_delta = FixedMul(zjump, player->mo->scale) * P_MobjFlip(player->mo);
 
 		// Start tumbling!
 		player->crash_state = CRASH_TURNTOSIDE;
@@ -3784,6 +3784,13 @@ void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 
 #undef TUMBLESTART_DIV
 
+void K_ResetCrashOffsetData(player_t *player)
+{
+	player->crash_zoffset = 0;
+	player->crash_zoffset_delta = 0;
+	player->crash_zoffset_lerp = 0;
+}
+
 void K_ResetCrashData(player_t *player)
 {
 	if (!player)
@@ -3794,11 +3801,14 @@ void K_ResetCrashData(player_t *player)
 		return; // Not even crashing
 	}
 
+	player->crashtimer = 0;
 	player->crash_elapsed = 0;
+	player->crash_reorient_start = 0;
+
 	player->crash_rot = 0;
 	player->crash_state = 0;
 	player->crash_yaw = 0;
-	player->crashtimer = 0;
+
 	player->crash_bumpme = false;
 }
 
@@ -3810,10 +3820,44 @@ void K_Player_CrashThinker(player_t *player)
 	if (P_MobjWasRemoved(player->mo))
 		return; // No object
 
+	// Handle offsetting regardless of if we're crashing or not
+	fixed_t my_gravity = abs(P_GetMobjGravity(player->mo));
+
+	if (P_IsObjectOnGround(player->mo))
+	{
+		if (player->crash_zoffset_delta)
+		{
+			player->crash_zoffset += player->crash_zoffset_delta;
+		}
+	}
+
+	if (player->crash_zoffset < 0)
+	{
+		// Don't let this go into the negatives
+		player->crash_zoffset = 0;
+		player->crash_zoffset_delta = 0;
+	}
+
+	// Early-exit if we're not crashing
 	if (!player->crash_state)
 	{
 		player->crash_bumpme = false;
-		return; // Not even crashing
+
+		if (!P_IsObjectOnGround(player->mo))
+			player->crash_zoffset = ApproachOneWayFixed(player->crash_zoffset, 0, mapobjectscale / 4);
+		return;
+	}
+
+	// Handle offset deltas here
+	if (P_IsObjectOnGround(player->mo))
+	{
+		player->crash_zoffset_delta =
+			ApproachOneWayFixed(player->crash_zoffset_delta, (-64 * mapobjectscale), my_gravity);
+	}
+	else
+	{
+		// At least set the delta to our current momentum
+		player->crash_zoffset_delta = player->mo->momz;
 	}
 
 	// Crashing/tumbling overrides both getting spun out and flipped over
@@ -3823,6 +3867,13 @@ void K_Player_CrashThinker(player_t *player)
 	// Update time spent crashing
 	player->crash_elapsed++;
 
+	boolean crashing_grounded = (P_IsObjectOnGround(player->mo) && (!player->crash_zoffset));
+
+	if ((!crashing_grounded) && S_SoundPlaying(player->mo, sfx_s3k6f))
+	{
+		S_StopSoundByID(player->mo, sfx_s3k6f);
+	}
+
 	switch(player->crash_state)
 	{
 		case CRASH_FINISH:
@@ -3830,12 +3881,21 @@ void K_Player_CrashThinker(player_t *player)
 			K_ResetCrashData(player);
 			break;
 		case CRASH_REORIENT:
-			if (P_IsObjectOnGround(player->mo) && (!player->crashtimer))
+			if (P_IsObjectOnGround(player->mo))
 			{
-				player->crashtimer = 1;
+				if (!player->crashtimer)
+				{
+					player->crashtimer = 1;
 
-				fixed_t my_gravity = abs(P_GetMobjGravity(player->mo));
-				player->mo->momz = FixedMul(CrashFinishZMomentum(my_gravity), player->mo->scale) * P_MobjFlip(player->mo);
+					player->crash_zoffset_delta = FixedMul(CrashFinishZMomentum(my_gravity), player->mo->scale) * P_MobjFlip(player->mo);
+				}
+			}
+			else
+			{
+				tic_t reorient_elapsed = max(0, (signed)player->crash_elapsed - (signed)player->crash_reorient_start);
+
+				// Fix our offset in 4 tics
+				player->crash_zoffset = Easing_InOutCubic((FRACUNIT/4) * reorient_elapsed, player->crash_zoffset_lerp, 0);
 			}
 
 			if (player->crash_yaw)
@@ -3855,17 +3915,12 @@ void K_Player_CrashThinker(player_t *player)
 			if (player->crashtimer)
 				player->crashtimer--;
 
-			if (P_IsObjectOnGround(player->mo) && (player->crash_rot >= (90 * FRACUNIT)) && (player->crash_rot < (135 * FRACUNIT)))
+			if (crashing_grounded && (player->crash_rot >= (90 * FRACUNIT)) && (player->crash_rot < (135 * FRACUNIT)))
 			{
 				fixed_t my_gravity = abs(P_GetMobjGravity(player->mo));
-				player->mo->momz = FixedMul(CrashFinishZMomentum(my_gravity), player->mo->scale) * P_MobjFlip(player->mo);
+				player->crash_zoffset_delta = FixedMul(CrashFinishZMomentum(my_gravity), player->mo->scale) * P_MobjFlip(player->mo);
 
-				if (S_SoundPlaying(player->mo, sfx_s3k6f))
-				{
-					S_StopSoundByID(player->mo, sfx_s3k6f);
-				}
-
-				S_StartSound(player->mo, sfx_s3kae);
+				S_StartSoundAtVolume(player->mo, sfx_s3kae, 192);
 			}
 
 			if (player->crash_rot >= (360 * FRACUNIT))
@@ -3881,13 +3936,15 @@ void K_Player_CrashThinker(player_t *player)
 				{
 					// We need to stop tumbling!
 					player->crash_rot = 0;
+					player->crash_zoffset_lerp = player->crash_zoffset;
+					player->crash_reorient_start = player->crash_elapsed;
 					player->crash_state = CRASH_REORIENT;
 				}
 			}
 
-			if (P_IsObjectOnGround(player->mo) && (!S_SoundPlaying(player->mo, sfx_s3k6f)))
+			if (crashing_grounded && (!S_SoundPlaying(player->mo, sfx_s3k6f)))
 			{
-				S_StartSoundAtVolume(player->mo, sfx_s3k6f, 128);
+				S_StartSoundAtVolume(player->mo, sfx_s3k6f, 192);
 			}
 
 			break;
@@ -3944,6 +4001,7 @@ void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 	{
 		// Getting squished while crashing; kill the crash and let explosion damage take over
 		K_ResetCrashData(player);
+		K_ResetCrashOffsetData(player);
 	}
 
 	player->squishedtimer = TICRATE;
@@ -3995,6 +4053,7 @@ INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source) // A 
 	{
 		// Getting blown up while crashing; kill the crash and let explosion damage take over
 		K_ResetCrashData(player);
+		K_ResetCrashOffsetData(player);
 	}
 
 	player->mo->momz = 18*mapobjectscale*P_MobjFlip(player->mo); // please stop forgetting mobjflip checks!!!!

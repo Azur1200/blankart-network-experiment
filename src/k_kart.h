@@ -77,7 +77,7 @@ Make sure this matches the actual number of states
 
 #define CRASHFINISHHEIGHT (675840) // 10.3125 * FRACUNIT
 
-#define CRASH_TUMBLETIME (11 * TICRATE / 10)
+#define CRASH_TUMBLETIME (9 * TICRATE / 10)
 
 #define CRASH_TUMBLE_ROTDELTA (1348169) // 20.5714285714 * FRACUNIT
 #define CRASH_TUMBLE_YAWDELTA (155891405) // 13.066... deg
@@ -294,6 +294,7 @@ void K_FlipPlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 boolean K_IsPlayerDamaged(const player_t *player);
+void K_ResetCrashOffsetData(player_t *player);
 void K_ResetCrashData(player_t *player);
 void K_Player_CrashThinker(player_t *player);
 void K_HandleBumperChanges(player_t *player, UINT8 prevBumpers);
