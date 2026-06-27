@@ -3858,9 +3858,7 @@ void K_Player_CrashThinker(player_t *player)
 	if (!player->crash_state)
 	{
 		player->crash_bumpme = false;
-
-		// if (!P_IsObjectOnGround(player->mo))
-		player->crash_zoffset = ApproachOneWayFixed(player->crash_zoffset, 0, mapobjectscale / 4);
+		player->crash_zoffset = 0;
 		return;
 	}
 
