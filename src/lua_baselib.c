@@ -35,6 +35,7 @@
 #include "k_hud.h"
 #include "k_waypoint.h"
 #include "k_items.h"
+#include "k_cluster.hpp"
 #include "k_itemlist.hpp"
 #include "d_netcmd.h" // IsPlayerAdmin
 #include "m_menu.h" // Player Setup menu color stuff
@@ -5728,6 +5729,95 @@ static int lib_kDontDoubleMyItems(lua_State *L)
 	return 1;
 }
 
+static int lib_kLegacyOddsMode(lua_State *L)
+{
+	//HUDSAFE
+
+	lua_pushboolean(L, K_LegacyOddsMode());
+	return 1;
+}
+
+static int lib_kIntDistanceForMap(lua_State *L)
+{
+	fixed_t curx = luaL_checkfixed(L, 1);
+	fixed_t cury = luaL_checkfixed(L, 2);
+	fixed_t curz = luaL_checkfixed(L, 3);
+	fixed_t destx = luaL_checkfixed(L, 4);
+	fixed_t desty = luaL_checkfixed(L, 5);
+	fixed_t destz = luaL_checkfixed(L, 6);
+
+	//HUDSAFE
+
+	lua_pushinteger(L, K_IntDistanceForMap(curx, cury, curz, destx, desty, destz));
+	return 1;
+}
+
+static int lib_kGetCongaLineDistance(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	UINT8 target_pos = (UINT8)(luaL_checkint(L, 2));
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	lua_pushinteger(L, K_GetCongaLineDistance(player, target_pos));
+	return 1;
+}
+
+static int lib_kGetDTFDifference(lua_State *L)
+{
+	player_t *src = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	player_t *dest = *((player_t **)luaL_checkudata(L, 2, META_PLAYER));
+
+	//HUDSAFE
+	if (!src)
+		return LUA_ErrInvalid(L, "player_t");
+
+	if (!dest)
+		return LUA_ErrInvalid(L, "player_t");
+
+	lua_pushinteger(L, K_GetDTFDifference(src, dest));
+	return 1;
+}
+
+// Not an actual hardcode function, but good for convenience!
+static int lib_kGetDistanceBetweenPlayers(lua_State *L)
+{
+	player_t *src = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	player_t *dest = *((player_t **)luaL_checkudata(L, 2, META_PLAYER));
+
+	//HUDSAFE
+	if (!src)
+		return LUA_ErrInvalid(L, "player_t");
+
+	if (!dest)
+		return LUA_ErrInvalid(L, "player_t");
+
+	UINT32 distance = 0;
+
+	if (dest->position < src->position)
+	{
+		if (K_LegacyOddsMode())
+		{
+			distance = K_GetCongaLineDistance(src, dest->position);
+		}
+		else
+		{
+			distance = K_GetDTFDifference(src, dest);
+
+			if (mapobjectscale != FRACUNIT)
+			{
+				// Rescale to better fit smaller-scale maps
+				distance = FixedDiv(distance, mapobjectscale);
+			}
+		}
+	}
+
+	lua_pushinteger(L, distance);
+	return 1;
+}
+
 static int lib_kAddItemRollToList(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -6299,6 +6389,11 @@ static luaL_Reg lib[] = {
 	{"K_DisableSeekingReticule",lib_kDisableSeekingReticule},
 	{"K_DecrementAndCheckCurrentItem",lib_kDecrementAndCheckCurrentItem},
 	{"K_DontDoubleMyItems",lib_kDontDoubleMyItems},
+	{"K_LegacyOddsMode",lib_kLegacyOddsMode},
+	{"K_IntDistanceForMap",lib_kIntDistanceForMap},
+	{"K_GetCongaLineDistance",lib_kGetCongaLineDistance},
+	{"K_GetDTFDifference",lib_kGetDTFDifference},
+	{"K_GetDistanceBetweenPlayers",lib_kGetDistanceBetweenPlayers},
 
 	// k_itemlist
 	{"K_AddItemRollToList", lib_kAddItemRollToList},
