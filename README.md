@@ -20,7 +20,7 @@ This is still in active development and things are going to change. If you find 
 - Better Lua and SOC exposure for things such as adding custom boosts, custom boost chains, custom items+item odds, custom menus, and many more things.
 - More Lua hooks for ease of scripting.
 - Most features from SRB2Kart Saturn.
-- New gameplay features that can be toggled such as Rings, New/Alternative Items, 4 tier drifting, stacking+chaining and many more!
+- New gameplay features that can be toggled such as Retooled Rings, New/Alternative Items, 4 tier drifting, stacking+chaining and many more!
 - Many cvars to allow server hosts to tune their own personal settings just right!
 - Proper dedicated server build for easier deployment in server hosting enviroments.
 
@@ -84,8 +84,7 @@ make -j$(nproc)
 
 ## How to install
 - Obtain an executable
-- Grab the assets from the [blankart-assets repo](https://codeberg.org/NepDisk/blankart-assets) 
-- Compile the pk3s by running buildall.bat on windows or buildall.sh on *nix.
+- Grab the assets from a release build or manually build them with the [blankart-assets repo](https://codeberg.org/NepDisk/blankart-assets) 
 - Copy the generated pk3s from the folder `out/` and your compiled executable into a folder with the [SRB2Kart 1.6 assets](https://github.com/STJr/Kart-Public/releases/download/v1.6/AssetsLinuxOnly.zip) (such as an existing install).
 
 # Disclaimer
