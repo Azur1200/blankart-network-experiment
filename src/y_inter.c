@@ -860,7 +860,7 @@ void Y_Ticker(void)
 
 	if (demo.recording)
 	{
-		if (demo.savemode == DSM_NOTSAVING && G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON) && !menustack[0])
+		if (demo.savemode == DSM_NOTSAVING && G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON) && !(menustack[0] || chat_on))
 		{
 			demo.savemode = DSM_TITLEENTRY;
 			M_OpenVirtualKeyboard(&demo.titlenameinput, demo.titlename, &replaysave);
