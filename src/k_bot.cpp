@@ -1429,6 +1429,7 @@ static void K_IncrementBotRespawn(const player_t *player, UINT8 *respawn, const 
 		(leveltime < starttime)
 		|| player->flashing != 0
 		|| player->spinouttimer != 0
+		|| player->crash_state != 0
 		|| player->airtime > 3*TICRATE/2
 		|| (player->justbumped > 0 && player->justbumped < bumptime-1)
 	);

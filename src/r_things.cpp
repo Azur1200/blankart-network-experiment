@@ -2144,6 +2144,11 @@ static void R_ProjectSprite(mobj_t *thing)
 	interp.y += thing->spryoff;
 	interp.z += thing->sprzoff;
 
+	if (thing->player)
+	{
+		interp.z += thing->player->crash_zoffset;
+	}
+
 	radius = interp.radius; // For drop shadows
 	height = interp.height; // Ditto
 

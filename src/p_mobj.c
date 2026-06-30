@@ -1951,8 +1951,16 @@ void P_XYMovement(mobj_t *mo)
 	if (mo->type == MT_FLINGRING || mo->type == MT_BALLHOG || mo->type == MT_BUBBLESHIELDTRAP)
 		return;
 
+	// If we're spinning out, cut friction at below 50%
 	if (mo->player && (mo->player->spinouttimer && !mo->player->wipeoutslow) && mo->player->speed <= K_GetKartSpeed(mo->player, false, true)/2)
 		return;
+
+	if (mo->player && (mo->player->crash_state && !mo->player->wipeoutslow) && mo->player->speed <= FixedMul(K_GetKartSpeed(mo->player, false, true), 2 * FRACUNIT / 3))
+	{
+		// If we're crashing, cut friction at below 66%
+		// Crashing should keep you moving a bit faster for the sake of game flow
+		return;
+	}
 	//}
 
 	if (((!(mo->eflags & MFE_VERTICALFLIP) && mo->z > mo->floorz) || (mo->eflags & MFE_VERTICALFLIP && mo->z+mo->height < mo->ceilingz))

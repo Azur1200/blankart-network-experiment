@@ -813,6 +813,10 @@ static CV_PossibleValue_t kartinvindmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "W
 // Experiment: Let's allow changing the damage type
 consvar_t cv_kartinvindamage = CVAR_INIT ("kartinvindamage", "Wipe-out", CV_NETVAR|CV_CHEAT|CV_GUARD, kartinvindmg_cons_t, NULL);
 
+// Orbi/Jawz damage type setting; "Auto" chooses between the two types by playercount
+static CV_PossibleValue_t kartorbidmg_cons_t[] = {{0, "Auto"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_CRASH, "Crash"}, {0, NULL}};
+consvar_t cv_kartorbijawzdmg = CVAR_INIT ("orbijawzdamage", "Auto", CV_NETVAR|CV_CHEAT|CV_GUARD, kartorbidmg_cons_t, NULL);
+
 // How far the player must be from the cluster to roll an S-Monitor.
 static CV_PossibleValue_t smonitordist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
 consvar_t cv_kartsmonitordist = CVAR_INIT ("smonitor_startdist", "9216", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
@@ -836,6 +840,8 @@ consvar_t cv_kartbubble_boost_offroadignore = CVAR_INIT ("kartbubble_boost_offro
 
 consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartflame_shove = CVAR_INIT ("kartflame_shove", "Off", CV_NETVAR, CV_OnOff, NULL);
+
 consvar_t cv_kartattraction_assistpower = CVAR_INIT ("kartattraction_assistpower", "0.2", CV_NETVAR|CV_FLOAT, CV_Unsigned, NULL);
 
 // Attraction Shield damage toggles

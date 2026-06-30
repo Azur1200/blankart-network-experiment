@@ -449,6 +449,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartaltshrinktime);
 
 	CV_RegisterVar(&cv_kartinvindamage);
+	CV_RegisterVar(&cv_kartorbijawzdmg);
+
 	CV_RegisterVar(&cv_kartinvintheme);
 
 	CV_RegisterVar(&cv_kartsmonitordist);
@@ -486,6 +488,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbubble_boost_offroadignore);
 	CV_RegisterVar(&cv_kartflame_fastfuel);
 	CV_RegisterVar(&cv_kartflame_offroadburn);
+	CV_RegisterVar(&cv_kartflame_shove);
 	CV_RegisterVar(&cv_kartattraction_assistpower);
 	CV_RegisterVar(&cv_kartattraction_aoedmg);
 	CV_RegisterVar(&cv_kartattraction_aoeemp);
@@ -933,6 +936,19 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 	}
 
 	if (mobj2->player && mobj2->player->flipovertimer)
+	{
+		mobj2->player->justbumped = bumptime;
+		return false;
+	}
+
+	// Don't bump if you're crashing
+	if (mobj1->player && mobj1->player->crash_state && (!mobj1->player->crash_bumpme))
+	{
+		mobj1->player->justbumped = bumptime;
+		return false;
+	}
+
+	if (mobj2->player && mobj2->player->crash_state && (!mobj2->player->crash_bumpme))
 	{
 		mobj2->player->justbumped = bumptime;
 		return false;
@@ -3355,7 +3371,7 @@ SINT8 K_GetForwardMove(const player_t *player)
 	if ((player->exiting || mapreset) ||
 		player->pflags & PF_STASIS ||
 		player->spinouttimer ||
-		player->flipovertimer) // pw_introcam?
+		player->flipovertimer || player->crash_state) // pw_introcam?
 	{
 		forwardmove = 0;
 		if (player->sneakertimer)
@@ -3372,7 +3388,7 @@ SINT8 K_GetSideMove(const player_t *player)
 	if ((player->exiting || mapreset) ||
 		player->pflags & PF_STASIS ||
 		player->spinouttimer ||
-		player->flipovertimer) // pw_introcam?
+		player->flipovertimer || player->crash_state) // pw_introcam?
 	{
 		sidemove = 0;
 	}
@@ -3676,6 +3692,12 @@ void K_SpinPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 typ
 	(void)inflictor;
 	(void)source;
 
+	if (player->crash_state)
+	{
+		// Player is crashing, don't spin them out!
+		return;
+	}
+
 	K_DirectorFollowAttack(player, inflictor, source);
 
 	player->spinouttype = type;
@@ -3728,6 +3750,279 @@ void K_FlipPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 	P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
 }
 
+#define TUMBLESTART_DIV (60303) // 0.920161
+
+// This makes the player "roll over" along the ground for some time
+void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
+{
+	if (!player)
+		return;
+
+	if (P_MobjWasRemoved(player->mo))
+		return;
+
+	if (player->crash_state)
+		return; // Already crashing; don't combo!
+	
+	K_DirectorFollowAttack(player, inflictor, source);
+
+	K_StatPlayerHit(player, source ? source->player : NULL);
+
+	player->spinouttype = KSPIN_CRASH;
+
+	{
+		// Cut the momentum in half so the hit still feels punishing
+		fixed_t momentum = min(FixedMul(K_GetKartSpeedFromStat(player->kartspeed, false, 0), mapobjectscale), K_Momentum2D(player->mo));
+
+		angle_t momentum_angle = K_MomentumAngle(player->mo);
+
+		// At spinout, player speed is increased to 1/4 their regular speed, moving them forward
+		fixed_t min_spd = K_GetKartSpeed(player, true, true) / 4;
+
+		if (momentum < min_spd)
+		{
+			P_InstaThrust(player->mo, momentum_angle, FixedMul(min_spd, player->mo->scale));
+		}
+		else
+		{
+			P_InstaThrust(player->mo, momentum_angle, FixedMul(momentum, TUMBLESTART_DIV));
+		}
+
+		fixed_t my_gravity = abs(P_GetMobjGravity(player->mo));
+
+		fixed_t zjump = CrashZMomentum(my_gravity, player->mo->scale);
+
+		I_OutputMsg("crash jump: %f (fixedpt: %d), gravity: %f, global grav: %f\n",
+			FIXED_TO_FLOAT(zjump), zjump, FIXED_TO_FLOAT(my_gravity), FIXED_TO_FLOAT(gravity));
+
+		player->crash_zoffset_delta = zjump * P_MobjFlip(player->mo);
+
+		SINT8 direction = 1;
+		{
+			vector3_t fwd = {P_ReturnThrustX(player->mo, player->mo->angle, FRACUNIT), P_ReturnThrustY(player->mo, player->mo->angle, FRACUNIT), 0};
+			vector3_t side = {inflictor->x - player->mo->x, inflictor->y - player->mo->y, 0};
+			vector3_t cross = {0};
+
+			FV3_Cross(&fwd, &side, &cross);
+			// pick using victim's left/right (negative is right of the victim here)
+			direction = -intsign(cross.z);
+			if (direction == 0) direction = 1;
+
+		}
+		player->crash_side = direction;
+
+		// Start tumbling!
+		player->crash_state = CRASH_TURNTOSIDE;
+
+		// Goofy sound for the tumble
+		S_StartSound(player->mo, sfx_s3k9b);
+
+		// This only decrements during the actual tumbling
+		player->crashtimer = CRASH_TUMBLETIME;
+	}
+
+	P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
+}
+
+#undef TUMBLESTART_DIV
+
+void K_ResetCrashOffsetData(player_t *player)
+{
+	player->crash_zoffset = 0;
+	player->crash_zoffset_delta = 0;
+	player->crash_zoffset_lerp = 0;
+}
+
+void K_ResetCrashData(player_t *player)
+{
+	if (!player)
+		return; // No player
+
+	if (!player->crash_state)
+	{
+		return; // Not even crashing
+	}
+
+	player->crashtimer = 0;
+	player->crash_elapsed = 0;
+	player->crash_reorient_start = 0;
+
+	player->crash_rot = 0;
+	player->crash_state = 0;
+	player->crash_yaw = 0;
+
+	player->crash_bumpme = false;
+}
+
+void K_Player_CrashThinker(player_t *player)
+{
+	if (!player)
+		return; // No player
+
+	if (P_MobjWasRemoved(player->mo))
+		return; // No object
+
+	// Handle offsetting regardless of if we're crashing or not
+	fixed_t my_gravity = abs(P_GetMobjGravity(player->mo));
+
+	if (P_IsObjectOnGround(player->mo))
+	{
+		if (player->crash_zoffset_delta)
+		{
+			player->crash_zoffset += player->crash_zoffset_delta;
+		}
+	}
+
+	if (player->crash_zoffset < 0)
+	{
+		// Don't let this go into the negatives
+		player->crash_zoffset = 0;
+		player->crash_zoffset_delta = 0;
+	}
+
+	// Early-exit if we're not crashing
+	if (player->crash_state == 0)
+	{
+		player->crash_bumpme = false;
+
+		if (P_IsObjectOnGround(player->mo))
+			player->crash_zoffset = ApproachOneWayFixed(player->crash_zoffset, 0, 4*mapobjectscale);
+		else
+			player->crash_zoffset = 0;
+		return;
+	}
+
+	// Handle offset deltas here
+	if (P_IsObjectOnGround(player->mo))
+	{
+		player->crash_zoffset_delta =
+			ApproachOneWayFixed(player->crash_zoffset_delta, (-64 * mapobjectscale), my_gravity);
+	}
+	else
+	{
+		player->crash_zoffset_delta = 
+			ApproachOneWayFixed(player->crash_zoffset_delta, -player->crash_zoffset, my_gravity);
+	}
+
+	// Crashing/tumbling overrides both getting spun out and flipped over
+	player->flipovertimer = 0;
+	player->spinouttimer = 0;
+	// but doesn't override wipeout (used by recovery dash for example to give extra friction)
+
+	// Update time spent crashing
+	player->crash_elapsed++;
+
+	boolean crashing_grounded = (P_IsObjectOnGround(player->mo) && (!player->crash_zoffset));
+
+	if ((!crashing_grounded) && S_SoundPlaying(player->mo, sfx_s3k6f))
+	{
+		S_StopSoundByID(player->mo, sfx_s3k6f);
+	}
+
+	switch(player->crash_state)
+	{
+		case CRASH_FINISH:
+			// Clear all datapoints
+			K_ResetCrashData(player);
+			break;
+		case CRASH_REORIENT:
+			if (P_IsObjectOnGround(player->mo))
+			{
+				if (!player->crashtimer)
+				{
+					player->crashtimer = 1;
+
+					player->crash_zoffset_delta = CrashFinishZMomentum(my_gravity, player->mo->scale) * P_MobjFlip(player->mo);
+				}
+			}
+			else
+			{
+				tic_t reorient_elapsed = max(0, (signed)player->crash_elapsed - (signed)player->crash_reorient_start);
+
+				// Fix our offset in 4 tics
+				player->crash_zoffset = Easing_InOutCubic((FRACUNIT/4) * reorient_elapsed, player->crash_zoffset_lerp, 0);
+			}
+
+			if (player->crash_rot)
+			{
+				player->crash_rot = (ApproachFixed(player->crash_rot, 0, CRASH_TUMBLE_ROTRETURNDELTA, CRASH_TUMBLE_ROTRETURNDELTA));
+			}
+			else
+			{
+				// We're reoriented, stop crashing
+				player->crash_rot = 0;
+				player->crash_state = CRASH_FINISH;
+			}
+			break;
+		case CRASH_TUMBLING:
+			player->crash_yaw += player->crashtimer ? 2*CRASH_TUMBLE_YAWDELTA : CRASH_TUMBLE_YAWDELTA;
+
+			if (player->crashtimer)
+				player->crashtimer--;
+
+			if (crashing_grounded)
+			{
+				if ((player->crash_yaw >= (90 * ANG1)) && (player->crash_yaw < (180 * ANG1)))
+				{
+					fixed_t bounce = abs(P_GetMobjGravity(player->mo));
+					player->crash_zoffset_delta = CrashFinishZMomentum(bounce, player->mo->scale) * P_MobjFlip(player->mo);
+	
+					S_StartSoundAtVolume(player->mo, sfx_s3kae, 192);
+					player->crash_rot += player->crashtimer * CRASH_TUMBLE_ROTBOUNCEDELTA * player->crash_side;
+
+					if (player->crashtimer)
+					{
+						K_SpawnBumpEffect(player->mo);
+					}
+				}
+				if (!S_SoundPlaying(player->mo, sfx_s3k6f))
+				{
+					S_StartSoundAtVolume(player->mo, sfx_s3k6f, 192);
+				}
+				K_SpawnWipeoutTrail(player->mo, true);
+			}
+			else
+			{
+				player->crash_rot -= CRASH_TUMBLE_ROTDELTA * player->crash_side;
+			}
+			
+			if (P_IsObjectOnGround(player->mo))
+			{
+				player->crash_rot = CLAMP(player->crash_rot, -CRASH_TUMBLE_MAXROT, CRASH_TUMBLE_MAXROT);
+			}
+			else
+			{
+				player->crash_rot = CLAMP(player->crash_rot, -CRASH_TUMBLE_MAXROT_AIR, CRASH_TUMBLE_MAXROT_AIR);
+			}
+			
+			if ((!player->crashtimer) && (AngleFixed(player->crash_yaw) + AngleFixed(2*CRASH_TUMBLE_YAWDELTA) > (360*FRACUNIT)))
+			{
+				// We need to stop tumbling!
+				player->crash_yaw = 0;
+				player->crash_zoffset_lerp = player->crash_zoffset;
+				player->crash_reorient_start = player->crash_elapsed;
+				player->crash_state = CRASH_REORIENT;
+			}
+			break;
+		case CRASH_TURNTOSIDE:
+			// Turn the crashing player to the side before we actually start tumbling
+			if (player->crash_yaw >= CRASH_TUMBLE_STARTYAW)
+			{
+				player->crash_state = CRASH_TUMBLING;
+				player->crash_rot = CRASH_TUMBLE_STARTROT * player->crash_side;
+			}
+			else
+			{
+				if ((player->crash_yaw + CRASH_TUMBLE_YAWDELTA) >= CRASH_TUMBLE_STARTYAW)
+					player->crash_yaw = CRASH_TUMBLE_STARTYAW;
+				else
+					player->crash_yaw += CRASH_TUMBLE_YAWDELTA;
+			}
+		default:
+			break;
+	}
+}
+
 void K_RemoveGrowShrink(player_t *player)
 {
 	if (player->mo && !P_MobjWasRemoved(player->mo))
@@ -3758,6 +4053,13 @@ void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
 	(void)inflictor;
 	(void)source;
+
+	if (player->crash_state)
+	{
+		// Getting squished while crashing; kill the crash and let explosion damage take over
+		K_ResetCrashData(player);
+		K_ResetCrashOffsetData(player);
+	}
 
 	player->squishedtimer = TICRATE;
 
@@ -3804,6 +4106,13 @@ INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source) // A 
 
 	K_DirectorFollowAttack(player, inflictor, source);
 
+	if (player->crash_state)
+	{
+		// Getting blown up while crashing; kill the crash and let explosion damage take over
+		K_ResetCrashData(player);
+		K_ResetCrashOffsetData(player);
+	}
+
 	player->mo->momz = 18*mapobjectscale*P_MobjFlip(player->mo); // please stop forgetting mobjflip checks!!!!
 	if (player->mo->eflags & MFE_UNDERWATER)
 		player->mo->momz = (117 * player->mo->momz) / 200;
@@ -3838,7 +4147,7 @@ INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source) // A 
 
 boolean K_IsPlayerDamaged(const player_t *player)
 {
-	return ((player->spinouttimer > 0) || (player->flipovertimer > 0));
+	return ((player->spinouttimer > 0) || (player->flipovertimer > 0) || (player->crash_state != 0));
 }
 
 void K_HandleBumperChanges(player_t *player, UINT8 prevBumpers)
@@ -7504,7 +7813,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->spinouttimer != 0
 		|| player->wipeoutslow != 0
 		|| player->squishedtimer != 0
-		|| player->flipovertimer != 0)
+		|| player->flipovertimer != 0
+		|| player->crash_state != 0)
 	{
 		if ((player->spinouttimer || player->wipeoutslow) && ( player->spinouttype & KSPIN_IFRAMES ) == 0)
 			player->flashing = 0;
@@ -7515,6 +7825,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	{
 		player->flashing--;
 	}
+
+	K_Player_CrashThinker(player);
 
 	if (player->flipovertimer)
 	{
@@ -7545,13 +7857,17 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 				player->wipeoutslow--;
 		}
 	}
+	else if (player->crash_state)
+	{
+		if (player->wipeoutslow > 1)
+			player->wipeoutslow--;
+	}
 	else
 	{
 		if (player->wipeoutslow >= 1)
 			player->mo->friction = ORIG_FRICTION;
 		player->wipeoutslow = 0;
 	}
-
 
 	if ((K_RingsActive() == false))
 	{
@@ -10337,11 +10653,10 @@ static void K_RecoveryDash(player_t *player)
 {
 	if (K_RecoveryDashActive() && K_PlayerWantsRecoverySpin(player) && K_IsPlayerDamaged(player) && player->wipeoutslow == 0)
 	{
-		player->wipeoutslow = max(wipeoutslowtime + 1, player->spinouttimer + 4);
+		player->wipeoutslow = max(wipeoutslowtime + 1, max(player->spinouttimer + 4, player->crashtimer + 4));
 	}
 
-	if (!K_PlayerCanRecoverySpin(player)
-	 || ((player->pflags & PF_RECOVERYSPIN) && player->forcedtopspeed == 0 && player->speed >= 10*player->mo->scale))
+	if (!K_PlayerCanRecoverySpin(player))
 	{
 		player->pflags &= ~PF_RECOVERYSPIN;
 		player->forcedtopspeed = 0;
@@ -11870,7 +12185,7 @@ static void K_AdjustPlayerFriction(player_t *player)
 	}
 
 	// Wipeout slowdown, or getting flipped over
-	if ((player->speed > 0 && player->spinouttimer && player->wipeoutslow) || (player->flipovertimer))
+	if ((player->speed > 0 && (player->spinouttimer || player->crash_state) && player->wipeoutslow) || (player->flipovertimer))
 	{
 		if (player->offroad)
 			player->mo->friction -= 4912;
@@ -13220,4 +13535,29 @@ void K_KartPlayerBumpyRoad(player_t *player)
 	}
 }
 
+void K_ShoveObject(mobj_t *victim, mobj_t *source, fixed_t force)
+{
+	vector3_t fwd = {P_ReturnThrustX(victim, victim->angle, FRACUNIT), P_ReturnThrustY(victim, victim->angle, FRACUNIT), 0};
+	vector3_t side = {source->x - victim->x, source->y - victim->y, 0};
+	vector3_t cross = {0};
+	SINT8 direction = 0;
+
+	FV3_Cross(&fwd, &side, &cross);
+	// pick using victim's left/right (negative is right of the victim here)
+	direction = -intsign(cross.z);
+	if (direction == 0) direction = 1;
+
+	P_Thrust(victim, victim->angle + (direction * ANGLE_90), force);
+	
+	if (victim->player && (!victim->player->justbumped))
+	{
+		S_StartSound(victim, sfx_vclgna);
+		FV3_Load(&fwd, P_ReturnThrustX(victim, victim->angle + (direction * ANGLE_90), FRACUNIT), P_ReturnThrustY(victim, victim->angle + (direction * ANGLE_90), FRACUNIT), 0);
+		// intentionally not normalized, we wanna keep magnitude too
+		FV3_Load(&side, victim->momx, victim->momy, 0);
+		FV3_Load(&cross, source->momx, source->momy, 0);
+		K_AddTiltImpulse(victim->player, victim->radius, CLAMP(abs(FixedMul(FV3_Dot(&side, &fwd), FV3_Magnitude(&cross)))/2, 8*victim->scale, 32*victim->scale)*direction);
+		K_SetPlayerBumped(victim->player, source);
+	}
+}
 //}
