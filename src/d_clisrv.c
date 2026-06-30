@@ -1579,7 +1579,8 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	}
 
 	Consistancy(&consistancy[gametic%BACKUPTICS]);
-	CON_ToggleOff();
+	if (!reloading)
+		CON_ToggleOff();
 
 	// Tell the server we have received and reloaded the gamestate
 	// so they know they can resume the game
