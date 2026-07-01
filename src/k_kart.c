@@ -3936,7 +3936,7 @@ void K_Player_CrashThinker(player_t *player)
 
 			if (crashing_grounded)
 			{
-				if ((player->crash_yaw >= (90 * ANG1)) && (player->crash_yaw < (180 * ANG1)))
+				if ((player->crash_yaw >= (90u * ANG1)) && (player->crash_yaw < (180u * ANG1)))
 				{
 					fixed_t bounce = abs(P_GetMobjGravity(player->mo));
 					player->crash_zoffset_delta = CrashFinishZMomentum(bounce, player->mo->scale) * P_MobjFlip(player->mo);
@@ -8042,8 +8042,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->growshrinktimer != 0)
 	{
-		INT16 lastgrowshrink = player->growshrinktimer;
-
 		if (player->growshrinktimer > 0)
 			player->growshrinktimer--;
 		if (player->growshrinktimer < 0)
