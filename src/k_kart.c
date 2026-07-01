@@ -8256,6 +8256,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		if (player->stealingtimer == 0 && player->stolentimer == 0 && player->position == 1)
 			player->flametimer--;
 
+		if (!S_SoundPlaying(player->mo, sfx_s3kd3l) && player->flamestore > 0)
+			S_StartSound(player->mo, sfx_s3kd3l);
+
 		if (player->flametimer == 0)
 			K_PopPlayerShield(player);
 	}
