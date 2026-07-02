@@ -11,6 +11,7 @@
 /// \file  hu_stuff.c
 /// \brief Heads up display
 
+#include "command.h"
 #include "doomdef.h"
 #include "byteptr.h"
 #include "hu_stuff.h"
@@ -111,6 +112,11 @@ static patch_t *songcreditbg;
 // protos.
 // -------
 static void HU_DrawRankings(void);
+
+// stuff from SRB2-Banpyura thx alot! :3
+consvar_t cv_chat_xoffset = CVAR_INIT ("chat_xoffset", "0", CV_SAVE, CV_Signed, NULL);
+consvar_t cv_chat_yoffset = CVAR_INIT ("chat_yoffset", "0", CV_SAVE, CV_Signed, NULL);
+consvar_t cv_chat_showlimit = CVAR_INIT ("chat_showlimit", "Yes", CV_SAVE, CV_YesNo, NULL);
 
 //======================================================================
 //                 KEYBOARD LAYOUTS FOR ENTERING TEXT
@@ -869,7 +875,7 @@ void HU_Ticker(void)
 	hu_tick &= 7; // currently only to blink chat input cursor
 
 	if (G_PlayerInputDown(0, gc_scores, false, DEADZONE_BUTTON))
-		hu_showscores = (!chat_on && !menustack[0]);
+		hu_showscores = !menustack[0] && !chat_on;
 	else
 		hu_showscores = false;
 
@@ -1197,7 +1203,12 @@ static char *CHAT_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 
 // 30/7/18: chaty is now the distance at which the lowest point of the chat will be drawn if that makes any sense.
 
-INT16 chatx = 13, chaty = 169; // let's use this as our coordinates
+// let's use this as our coordinates
+// :chao: guess this just works lol
+#define chatx ((INT16)(13 + (cv_chat_xoffset.value)))
+#define chaty ((INT16)(169 + (cv_chat_yoffset.value)))
+
+#define CHATSNAP (V_SNAPTOBOTTOM|V_SNAPTOLEFT)
 
 // chat stuff by VincyTM LOL XD!
 
@@ -1224,7 +1235,7 @@ static void HU_drawMiniChat(void)
 
 	for (; i>0; i--)
 	{
-		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, chat_mini[i-1]);
+		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), CHATSNAP|V_ALLOWLOWERCASE, chat_mini[i-1]);
 		size_t j = 0;
 		INT32 linescount = 0;
 		emote_t *emote = NULL;
@@ -1305,7 +1316,7 @@ static void HU_drawMiniChat(void)
 		INT32 timer = ((cv_chattime.value*TICRATE)-chat_timers[i]) - cv_chattime.value*TICRATE+9; // see below...
 		INT32 transflag = (timer >= 0 && timer <= 9) ? (timer*V_10TRANS) : 0; // you can make bad jokes out of this one.
 		size_t j = 0;
-		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, chat_mini[i]); // get the current message, and word wrap it.
+		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), CHATSNAP|V_ALLOWLOWERCASE, chat_mini[i]); // get the current message, and word wrap it.
 		UINT8 *colormap = NULL;
 		emote_t *emote = NULL;
 		int emotelen = 0;
@@ -1338,9 +1349,9 @@ static void HU_drawMiniChat(void)
 			else if ((emote = M_VerifyEmote(msg+j, &emotelen)))
 			{
 				if (cv_chatbacktint.value) // on request of wolfy
-					V_DrawFillConsoleMap(x + dx + 2, y+dy, EMOTEWIDTH, charheight, 239|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+					V_DrawFillConsoleMap(x + dx + 2, y+dy, EMOTEWIDTH, charheight, 239|CHATSNAP);
 
-				M_DrawEmote(x+dx+2, y+dy, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|transflag);
+				M_DrawEmote(x+dx+2, y+dy, emote, CHATSNAP|transflag);
 				dx += EMOTEWIDTH - charwidth;
 
 				j += emotelen;
@@ -1348,9 +1359,9 @@ static void HU_drawMiniChat(void)
 			else
 			{
 				if (cv_chatbacktint.value) // on request of wolfy
-					V_DrawFillConsoleMap(x + dx + 2, y+dy, charwidth, charheight, 159|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+					V_DrawFillConsoleMap(x + dx + 2, y+dy, charwidth, charheight, 159|CHATSNAP);
 
-				V_DrawChatCharacter(x + dx + 2, y+dy+1, msg[j++] |V_SNAPTOBOTTOM|V_SNAPTOLEFT|transflag, true, colormap);
+				V_DrawChatCharacter(x + dx + 2, y+dy+1, msg[j++] |CHATSNAP|transflag, true, colormap);
 			}
 
 			dx += charwidth;
@@ -1417,13 +1428,13 @@ static void HU_drawChatLog(INT32 offset)
 	chat_topy = y + chat_scroll*charheight;
 	chat_bottomy = chat_topy + boxh*charheight;
 
-	V_DrawFillConsoleMap(chatx, chat_topy, boxw, boxh*charheight +2, 159|V_SNAPTOBOTTOM|V_SNAPTOLEFT); // log box
+	V_DrawFillConsoleMap(chatx, chat_topy, boxw, boxh*charheight +2, 159|CHATSNAP); // log box
 
 	for (i = 0; i < chat_nummsg_log; i++) // iterate through our chatlog
 	{
 		INT32 clrflag = 0;
 		INT32 j = 0;
-		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, chat_log[i]); // get the current message, and word wrap it.
+		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), CHATSNAP|V_ALLOWLOWERCASE, chat_log[i]); // get the current message, and word wrap it.
 		UINT8 *colormap = NULL;
 		emote_t *emote = NULL;
 		int emotelen = 0;
@@ -1453,7 +1464,7 @@ static void HU_drawChatLog(INT32 offset)
 			{
 				if ((y+dy+2 >= chat_topy) && (y+dy < (chat_bottomy)))
 				{
-					M_DrawEmote(x+dx+2, y+dy+1, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+					M_DrawEmote(x+dx+2, y+dy+1, emote, CHATSNAP);
 					dx += EMOTEWIDTH - charwidth;
 				}
 				j += emotelen;
@@ -1461,7 +1472,7 @@ static void HU_drawChatLog(INT32 offset)
 			else
 			{
 				if ((y+dy+2 >= chat_topy) && (y+dy < (chat_bottomy)))
-					V_DrawChatCharacter(x + dx + 2, y+dy+2, msg[j++] |V_SNAPTOBOTTOM|V_SNAPTOLEFT, true, colormap);
+					V_DrawChatCharacter(x + dx + 2, y+dy+2, msg[j++] |CHATSNAP, true, colormap);
 				else
 					j++; // don't forget to increment this or we'll get stuck in the limbo.
 			}
@@ -1497,9 +1508,9 @@ static void HU_drawChatLog(INT32 offset)
 	// draw arrows to indicate that we can (or not) scroll.
 	// account for Y = -1 offset in tinyfont
 	if (chat_scroll > 0)
-		V_DrawCharacter(chatx-9, ((justscrolledup) ? (chat_topy-1) : (chat_topy)), V_SNAPTOBOTTOM | V_SNAPTOLEFT | highlight | '\x1A', false); // up arrow
+		V_DrawCharacter(chatx-9, ((justscrolledup) ? (chat_topy-1) : (chat_topy)), CHATSNAP | highlight | '\x1A', false); // up arrow
 	if (chat_scroll < chat_maxscroll)
-		V_DrawCharacter(chatx-9, chat_bottomy-((justscrolleddown) ? 5 : 6), V_SNAPTOBOTTOM | V_SNAPTOLEFT | highlight | '\x1B', false); // down arrow
+		V_DrawCharacter(chatx-9, chat_bottomy-((justscrolleddown) ? 5 : 6), CHATSNAP | highlight | '\x1B', false); // down arrow
 
 	justscrolleddown = false;
 	justscrolledup = false;
@@ -1517,6 +1528,7 @@ static void HU_DrawChat(void)
 	INT32 boxw = cv_chatwidth.value;
 	INT32 t = 0, c = 0, y = chaty - (typelines*charheight);
 	UINT32 i = 0, saylen = strlen(w_chat_buf); // You learn new things everyday!
+	UINT32 charcount = 0;
 	INT32 cflag = 0;\
 	size_t select_start = 0, select_end = 0;
 	const char *ntalk = "Say: ", *ttalk = "Team: ";
@@ -1557,7 +1569,7 @@ static void HU_DrawChat(void)
 		cflag = V_GRAYMAP; // set text in gray if chat is muted.
 	}
 
-	V_DrawFillConsoleMap(chatx, y-1, boxw, (typelines*charheight), 159 | V_SNAPTOBOTTOM | V_SNAPTOLEFT);
+	V_DrawFillConsoleMap(chatx, y-1, boxw, (typelines*charheight), 159 | CHATSNAP);
 
 	while (talk[i])
 	{
@@ -1565,7 +1577,7 @@ static void HU_DrawChat(void)
 			++i;
 		else
 		{
-			V_DrawChatCharacter(chatx + c + 2, y, talk[i] |V_SNAPTOBOTTOM|V_SNAPTOLEFT|cflag, true, V_GetStringColormap(talk[i]|cflag));
+			V_DrawChatCharacter(chatx + c + 2, y, talk[i] |CHATSNAP|cflag, true, V_GetStringColormap(talk[i]|cflag));
 			i++;
 		}
 
@@ -1583,7 +1595,7 @@ static void HU_DrawChat(void)
 	typelines = 1;
 
 	if ((w_chat.cursor == 0 || w_chat.length == 0) && hu_tick < 4)
-		V_DrawChatCharacter(chatx+2+c, y+1, '_'|V_SNAPTOBOTTOM|V_SNAPTOLEFT|t, true, NULL);
+		V_DrawChatCharacter(chatx+2+c, y+1, '_'|CHATSNAP|t, true, NULL);
 
 	if (w_chat.select != w_chat.cursor)
 	{
@@ -1600,17 +1612,23 @@ static void HU_DrawChat(void)
 
 		if ((emote = M_VerifyEmote(w_chat_buf+i, &emotelen)))
 		{
-			M_DrawEmote(chatx + c + 2, y-1, emote, V_SNAPTOBOTTOM|V_SNAPTOLEFT|t);
+			M_DrawEmote(chatx + c + 2, y-1, emote, CHATSNAP|t);
 			c += EMOTEWIDTH - charwidth;
 			i += emotelen-1;
 			drawwidth = EMOTEWIDTH;
+			if (cv_chat_showlimit.value)
+				charcount += emotelen;
 		}
 		else if (w_chat_buf[i] >= HU_FONTSTART) //Hurdler: isn't it better like that?
-			V_DrawChatCharacter(chatx + c + 2, y, w_chat_buf[i] | V_SNAPTOBOTTOM|V_SNAPTOLEFT | t, true, NULL);
+		{
+			V_DrawChatCharacter(chatx + c + 2, y, w_chat_buf[i] | CHATSNAP | t, true, NULL);
+			if (cv_chat_showlimit.value)
+				charcount++;
+		}
 
 		// Draw selection
 		if (i >= select_start && i < select_end)
-			V_DrawFill(chatx + c + 2 - (drawwidth-charwidth), y-1, drawwidth, charheight, 103|V_TRANSLUCENT|V_SNAPTOBOTTOM|V_SNAPTOLEFT|t);
+			V_DrawFill(chatx + c + 2 - (drawwidth-charwidth), y-1, drawwidth, charheight, 103|V_TRANSLUCENT|CHATSNAP|t);
 
 		++i;
 
@@ -1619,7 +1637,7 @@ static void HU_DrawChat(void)
 			INT32 cursorx = (c+charwidth < boxw-charwidth) ? (chatx + 2 + c+charwidth) : (chatx+1); // we may have to go down.
 			INT32 cursory = (cursorx != chatx+1) ? (y) : (y+charheight);
 			if (hu_tick < 4)
-				V_DrawChatCharacter(cursorx, cursory+1, '_' |V_SNAPTOBOTTOM|V_SNAPTOLEFT|t, true, NULL);
+				V_DrawChatCharacter(cursorx, cursory+1, '_' |CHATSNAP|t, true, NULL);
 
 			if (cursorx == chatx+1 && saylen == i-1) // a weirdo hack
 			{
@@ -1681,18 +1699,25 @@ static void HU_DrawChat(void)
 
 		while ((suggest = M_FindEmote(complete, complete_len, skip)) != NULL)
 		{
-			V_DrawFillConsoleMap(chatx + boxw + 2, suggesty - (7*skip), (longest_suggestion_length+2)*4 + EMOTEWIDTH, 6, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+			V_DrawFillConsoleMap(chatx + boxw + 2, suggesty - (7*skip), (longest_suggestion_length+2)*4 + EMOTEWIDTH, 6, CHATSNAP);
 
 			// Highlight currently suggested emote
 			int hlflag = 0;
 			if (skip == emote_autocomplete.skip && emote_autocomplete.complete[0])
 				hlflag = V_YELLOWMAP;
 
-			V_DrawSmallString(chatx + boxw + 4 + EMOTEWIDTH, suggesty - (7*skip), hlflag|V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, va(":%s:", suggest->name));
-			M_DrawEmote(chatx + boxw + 2, suggesty - skip*7, suggest, V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+			V_DrawSmallString(chatx + boxw + 4 + EMOTEWIDTH, suggesty - (7*skip), hlflag|CHATSNAP|V_ALLOWLOWERCASE, va(":%s:", suggest->name));
+			M_DrawEmote(chatx + boxw + 2, suggesty - skip*7, suggest, CHATSNAP);
 
 			++skip;
 		}
+	}
+
+	if (cv_chat_showlimit.value)
+	{
+		// Limit
+		const INT32 clr = ((HU_MAXMSGLEN - charcount) > 64 ? V_TRANSLUCENT : (charcount == HU_MAXMSGLEN ? V_REDMAP : V_YELLOWMAP));
+		V_DrawSmallString(chatx, y+7, CHATSNAP|clr, va("%d/%d", charcount, HU_MAXMSGLEN));
 	}
 
 	// handle /pm list. It's messy, horrible and I don't care.
@@ -1760,15 +1785,15 @@ static void HU_DrawChat(void)
 			{
 				char name[MAXPLAYERNAME+1];
 				strlcpy(name, player_names[i], 7); // shorten name to 7 characters.
-				V_DrawFillConsoleMap(chatx+ boxw + 2, p_dispy- (6*count), 48, 6, 159 | V_SNAPTOBOTTOM | V_SNAPTOLEFT); // fill it like the chat so the text doesn't become hard to read because of the hud.
-				V_DrawSmallString(chatx+ boxw + 4, p_dispy- (6*count), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, va("\x82%d\x80 - %s", i, name));
+				V_DrawFillConsoleMap(chatx+ boxw + 2, p_dispy- (6*count), 48, 6, 159 | CHATSNAP); // fill it like the chat so the text doesn't become hard to read because of the hud.
+				V_DrawSmallString(chatx+ boxw + 4, p_dispy- (6*count), CHATSNAP|V_ALLOWLOWERCASE, va("\x82%d\x80 - %s", i, name));
 				count++;
 			}
 		}
 		if (count == 0) // no results.
 		{
-			V_DrawFillConsoleMap(chatx+boxw+2, p_dispy- (6*count), 48, 6, 159 | V_SNAPTOBOTTOM | V_SNAPTOLEFT); // fill it like the chat so the text doesn't become hard to read because of the hud.
-			V_DrawSmallString(chatx+boxw+4, p_dispy- (6*count), V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, "NO RESULT.");
+			V_DrawFillConsoleMap(chatx+boxw+2, p_dispy- (6*count), 48, 6, 159 | CHATSNAP); // fill it like the chat so the text doesn't become hard to read because of the hud.
+			V_DrawSmallString(chatx+boxw+4, p_dispy- (6*count), CHATSNAP|V_ALLOWLOWERCASE, "NO RESULT.");
 		}
 	}
 
@@ -1782,6 +1807,7 @@ static void HU_DrawChat(void)
 static void HU_DrawChat_Old(void)
 {
 	INT32 t = 0, c = 0, y = HU_INPUTY;
+	UINT32 charcount = 0;
 	size_t i = 0;
 	const char *ntalk = "Say: ", *ttalk = "Say-Team: ";
 	const char *talk = ntalk;
@@ -1833,11 +1859,17 @@ static void HU_DrawChat_Old(void)
 		{
 			M_DrawScaledEmote((HU_INPUTX + c)<<FRACBITS, (y+con_scalefactor*2)<<FRACBITS, charwidth*FRACUNIT/EMOTEWIDTH, emote, V_NOSCALESTART | V_NOSCALEPATCH | t);
 			i += emotelen-1;
+
+			if (cv_chat_showlimit.value)
+				charcount += emotelen;
 		}
 		else if (w_chat_buf[i] >= HU_FONTSTART) //Hurdler: isn't it better like that?
 		{
 			//charwidth = (fontv[HU_FONT].font[w_chat[i]-HU_FONTSTART]->width) * con_scalefactor;
 			V_DrawCharacter(HU_INPUTX + c, y, w_chat_buf[i] | cv_constextsize.value | V_NOSCALESTART | t, true);
+
+			if (cv_chat_showlimit.value)
+				charcount++;
 		}
 
 		// Draw selection
@@ -1858,6 +1890,23 @@ static void HU_DrawChat_Old(void)
 		{
 			c = 0;
 			y += charheight;
+		}
+	}
+
+	// console chat users are FINALLY being fed!
+	if (cv_chat_showlimit.value)
+	{
+		const char *lim = va(" (%i/%i)", charcount, HU_MAXMSGLEN);
+		for (i = 0; lim[i]; i++)
+		{
+			V_DrawCharacter(HU_INPUTX + c, y, lim[i] | cv_constextsize.value | V_NOSCALESTART | t, true);
+
+			c += charwidth;
+			if (c >= vid.width) // text wrapping
+			{
+				c = 0;
+				y += charheight;
+			}
 		}
 	}
 }

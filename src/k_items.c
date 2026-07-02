@@ -3262,13 +3262,11 @@ void K_HoldUseItem_FlameShield(player_t *player, boolean itemjustdown, boolean o
 
 				if (player->karthud[khud_flamecamtime] == 0)
 					player->karthud[khud_flamecamtime] = TICRATE/2;
-
-				if (!S_SoundPlaying(player->mo, sfx_s3kd3l))
-					S_StartSound(player->mo, sfx_s3kd3l);
 			}
 
 			player->flamedash += incr;
 		}
+
 		// allow burning in the air
 		player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
 		player->flametimer -= comincr;
