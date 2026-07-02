@@ -106,7 +106,6 @@
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
 #define ASSET_HASH_MAIN_PK3            0xd948f51b9453f5d7
-#define ASSET_HASH_MAPPATCH_PK3        0xdfb3c9da6c8c3adf
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
 #define ASSET_HASH_PATCH_PK3           0x0000000000000000
@@ -1438,7 +1437,6 @@ static void IdentifyVersion(void)
 	D_AddFile(startupiwads, va(pandf,srb2waddir,CHARSNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,MAPSNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,MAINNAME));
-	D_AddFile(startupiwads, va(pandf,srb2waddir,MAPPATCHNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,BONUSCHARSNAME));
 #ifdef USE_PATCH_FILE
 	D_AddFile(startupiwads, va(pandf,srb2waddir,PATCHNAME));
@@ -1768,7 +1766,6 @@ void D_SRB2Main(void)
 	W_VerifyFileHash(MAINWAD_CHARS, ASSET_HASH_CHARS_KART);
 	W_VerifyFileHash(MAINWAD_MAPS, ASSET_HASH_MAPS_KART);
 	W_VerifyFileHash(MAINWAD_MAIN, ASSET_HASH_MAIN_PK3);
-	W_VerifyFileHash(MAINWAD_MAPPATCH, ASSET_HASH_MAPPATCH_PK3);
 	W_VerifyFileHash(MAINWAD_BONUSCHARS, ASSET_HASH_BONUSCHARS_KART);
 #ifdef USE_PATCH_FILE
 	W_VerifyFileHash(MAINWAD_PATCH, ASSET_HASH_PATCH_PK3);
@@ -1781,7 +1778,6 @@ void D_SRB2Main(void)
 	wadfiles[MAINWAD_CHARS]->compatmode = true;
 	wadfiles[MAINWAD_MAPS]->compatmode = true;
 	wadfiles[MAINWAD_MAIN]->compatmode = false;
-	wadfiles[MAINWAD_MAPPATCH]->compatmode = false;
 	wadfiles[MAINWAD_BONUSCHARS]->compatmode = true;
 #ifdef USE_PATCH_FILE
 	wadfiles[MAINWAD_PATCH]->compatmode = false;
