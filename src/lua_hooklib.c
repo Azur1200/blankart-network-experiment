@@ -554,7 +554,7 @@ static int call_mobj_type_hooks(Hook_State *hook, mobjtype_t mobj_type)
 		// print which script triggered it, ty indev <3
 		for (int k = 0; k < mobjHookIds[mobj_type][hook->hook_type].numHooks; ++k)
 		{
-			lua_getref(gL, hookRefs[mobjHookIds[mobj_type][hook->hook_type].ids[k].id]);
+			lua_getref(gL, hookRefs[mobjHookIds[mobj_type][hook->hook_type].ids[k]]);
 
 			lua_Debug ar;
 			lua_getinfo(gL, ">S", &ar);
