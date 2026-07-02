@@ -41,6 +41,34 @@ static int lib_colorPaletteToRgb(lua_State *L)
 	return 3;
 }
 
+static int lib_paletteFromSkincolor(lua_State *L)
+{
+	skincolornum_t skincolor = luaL_checkinteger(L, 1);
+	UINT8 table_index = 4;
+
+	if (!lua_isnoneornil(L, 2))
+	{
+		table_index = (UINT8)luaL_checkinteger(L, 2);
+	}
+
+	UINT8 pal_index = V_GetColorFromSkinColorEx(skincolor, table_index);
+
+	lua_pushinteger(L, pal_index);
+	return 1;
+}
+
+static int lib_paletteFromSkincolorDimmed(lua_State *L)
+{
+	skincolornum_t skincolor = luaL_checkinteger(L, 1);
+	UINT8 table_index = (UINT8)luaL_checkinteger(L, 2);
+	fixed_t brightness = luaL_checkfixed(L, 3);
+
+	UINT8 pal_index = V_GetColorFromSkinColorWithBrightness(skincolor, table_index, brightness);
+
+	lua_pushinteger(L, pal_index);
+	return 1;
+}
+
 #define IS_HEX_CHAR(x) ((x >= '0' && x <= '9') || (x >= 'a' && x <= 'f') || (x >= 'A' && x <= 'F'))
 #define ARE_HEX_CHARS(str, i) IS_HEX_CHAR(str[i]) && IS_HEX_CHAR(str[i + 1])
 
@@ -401,6 +429,8 @@ static luaL_Reg color_lib[] = {
 	{"packRgb", lib_colorPackRgb},
 	{"packRgba", lib_colorPackRgba},
 	{"unpackRgb", lib_colorUnpackRgb},
+	{"paletteFromSkincolor", lib_paletteFromSkincolor},
+	{"paletteFromSkincolorDimmed",lib_paletteFromSkincolorDimmed},
 	{NULL, NULL}
 };
 

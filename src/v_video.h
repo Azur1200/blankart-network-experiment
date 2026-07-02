@@ -189,6 +189,11 @@ UINT32 V_GetHUDTranslucency(INT32 scrn);
 
 void V_AdjustXYWithSnap(INT32 *x, INT32 *y, UINT32 options, INT32 dup);
 
+UINT8 V_GetColorFromSkinColorEx(skincolornum_t skincolor, UINT8 idx);
+UINT8 V_GetColorFromSkinColorWithBrightness(skincolornum_t skincolor, UINT8 idx, fixed_t brightness);
+
+#define V_GetColorFromSkinColor(skincolor) (V_GetColorFromSkinColorEx(skincolor, 4))
+
 struct cliprect_t
 {
 	fixed_t left, right, top, bottom;
