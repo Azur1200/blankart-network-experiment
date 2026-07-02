@@ -769,8 +769,8 @@ consvar_t cv_kartrank_partimehelper = CVAR_INIT ("partimehelper", "Off", 0, CV_O
 // Ranks: the point value constantly decreasing due to a set course's time limit (the "par time")
 consvar_t cv_kartrank_partimepoints = CVAR_INIT ("rank_partimepoints", "550.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
-// Ranks: the point value constantly decreasing due to a set course's time limit (the "par time")
-consvar_t cv_kartrank_leadertimepoints = CVAR_INIT ("rank_leadertimepoints", "850.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+// Ranks: the point bonus given dependent on position (1st place gets the raw value), meant to offset the par-time deficit
+consvar_t cv_kartrank_leadertimepoints = CVAR_INIT ("rank_leadertimepoints", "350.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
 // Ranks: the point bonus given for being chased by an SPB; varies by distance
 consvar_t cv_kartrank_spbtimepoints = CVAR_INIT ("rank_spbtimepoints", "450.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
@@ -790,6 +790,7 @@ static CV_PossibleValue_t kartoffroadpenaltydiv_cons_t[] = {{1, "MIN"},  {256, "
 // Ranks: the value the tics spent offroad is divided by, to determine the amount of points taken for going offroad.
 consvar_t cv_kartrank_offroad_divisor = CVAR_INIT ("rank_offroad_divisor", "6", CV_NETVAR|CV_CHEAT|CV_GUARD, kartoffroadpenaltydiv_cons_t, NULL);
 
+// Ranks: the time, in seconds, before the player is fully penalzied for driving through offroad.
 consvar_t cv_kartrank_lawnmowerthreshold = CVAR_INIT ("rank_lawnmowerthreshold", "3.5", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_FloatingTicrateDiv, NULL);
 
 consvar_t cv_kartrank_wallbonkpenalty = CVAR_INIT ("rank_wallbonkpenalty", "5", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
@@ -804,7 +805,7 @@ consvar_t cv_kartrank_respawnpenalty = CVAR_INIT ("rank_respawnpenalty", "200", 
 
 static CV_PossibleValue_t kartrank_lapgrademul_cons_t[] = {{0, "MIN"}, {100, "MAX"}, {0, NULL}};
 
-consvar_t cv_kartrank_lapgrademul = CVAR_INIT ("rank_lapgrademul", "9", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_lapgrademul_cons_t, NULL);
+consvar_t cv_kartrank_lapgrademul = CVAR_INIT ("rank_lapgrademul", "8", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_lapgrademul_cons_t, NULL);
 consvar_t cv_kartrank_lapgrademul_penaltiesoff = CVAR_INIT ("rank_lapgrademul_penaltiesoff", "14", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_lapgrademul_cons_t, NULL);
 
 // Invincibility damage toggles
