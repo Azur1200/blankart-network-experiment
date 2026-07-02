@@ -545,6 +545,69 @@ void VID_BlitLinearScreen(const UINT8 *restrict srcptr, UINT8 *restrict destptr,
 	}
 }
 
+// Returns the palette index representing the specific skin color.
+UINT8 V_GetColorFromSkinColorEx(skincolornum_t skincolor, UINT8 idx)
+{
+	if (dedicated)
+	{
+		return TRANSPARENTPIXEL; // Fuck off
+	}
+
+	idx = min(idx, 15); // Do not EVER let this go out of bounds!
+
+	if (skincolor >= numskincolors)
+	{
+		return TRANSPARENTPIXEL; // Out of range, don't bother
+	}
+
+	skincolor_t *color = &skincolors[skincolor];
+
+	return color->ramp[idx];
+}
+
+static colorlookup_t colormix_lut;
+
+// Returns the palette index representing the specific skin color, plus a brightness value that can
+// dim the given color.
+UINT8 V_GetColorFromSkinColorWithBrightness(skincolornum_t skincolor, UINT8 idx, fixed_t brightness)
+{
+	if (dedicated)
+	{
+		return TRANSPARENTPIXEL; // Fuck off
+	}
+
+	if (brightness == FRACUNIT)
+	{
+		// At full brightness, so no need for complicated color dimming
+		return V_GetColorFromSkinColorEx(skincolor, idx);
+	}
+
+	idx = min(idx, 15); // Do not EVER let this go out of bounds!
+
+	brightness = CLAMP(brightness, 0, FRACUNIT);
+
+	if (skincolor >= numskincolors)
+	{
+		return TRANSPARENTPIXEL; // Out of range, don't bother
+	}
+
+	skincolor_t *color = &skincolors[skincolor];
+
+	// Get the color from our skincolor
+	RGBA_t my_color = V_GetMasterColor(color->ramp[idx]);
+
+	// Dim the colors
+	my_color.s.red = FixedMul(my_color.s.red, brightness);
+	my_color.s.green = FixedMul(my_color.s.green, brightness);
+	my_color.s.blue = FixedMul(my_color.s.blue, brightness);
+
+	// Get the finalized color value
+	InitColorLUT(&colormix_lut, pMasterPalette, false);
+	UINT8 my_pal_index = GetColorLUT(&colormix_lut, my_color.s.red, my_color.s.green, my_color.s.blue);
+
+	return my_pal_index;
+}
+
 void V_AdjustXYWithSnap(INT32 *x, INT32 *y, UINT32 options, INT32 dup)
 {
 	// dup adjustments pretend that screen width is BASEVIDWIDTH * dup
