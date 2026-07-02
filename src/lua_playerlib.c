@@ -490,7 +490,8 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(karttiltmomentum) \
 	X(itemreservetype) \
 	X(itemreserveamount) \
-	X(clan)
+	X(clan) \
+	X(playerid)
 
 enum player_e
 {
@@ -1319,6 +1320,11 @@ static int player_get(lua_State *L)
 		break;
 	case player_clan:
 		lua_pushstring(L, plr->clan);
+		break;
+	case player_playerid:
+		// Doesn't actually exist in hardcode, but this is very useful and relevant
+		// to prototyping nonetheless
+		lua_pushinteger(L, (UINT32)(plr - players));
 		break;
 #ifdef HWRENDER
 	case player_fovadd:
@@ -2164,6 +2170,8 @@ static int player_set(lua_State *L)
 	case player_karttiltmomentum:
 		plr->karttiltmomentum = lua_tointeger(L, 3);
 		break;
+	case player_playerid:
+		return NOSET;
 #ifdef HWRENDER
 	case player_fovadd:
 		plr->fovadd = luaL_checkfixed(L, 3);
