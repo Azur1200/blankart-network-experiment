@@ -11457,13 +11457,15 @@ void K_KartUpdatePosition(player_t *player)
 void K_KartLegacyUpdatePosition(player_t *player)
 {
 	fixed_t position = 1;
-	fixed_t oldposition = player->position;
+	fixed_t oldposition;
 	fixed_t i, ppcd, pncd, ipcd, incd;
 	fixed_t pmo, imo;
 	mobj_t *mo;
 
 	if (player->spectator || !player->mo)
 		return;
+
+	oldposition = player->position;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -11472,11 +11474,12 @@ void K_KartLegacyUpdatePosition(player_t *player)
 
 		if (gametypes[gametype]->rules & GTR_CIRCUIT)
 		{
-			if ((((players[i].starpostnum) + (numstarposts + 1) * players[i].laps) >
-				((player->starpostnum) + (numstarposts + 1) * player->laps)))
+			const INT32 iplayerlaps = (players[i].starpostnum + (numstarposts + 1) * players[i].laps);
+			const INT32 pplayerlaps = (player->starpostnum + (numstarposts + 1) * player->laps);
+
+			if (iplayerlaps > pplayerlaps)
 				position++;
-			else if (((players[i].starpostnum) + (numstarposts+1)*players[i].laps) ==
-				((player->starpostnum) + (numstarposts+1)*player->laps))
+			else if (iplayerlaps == pplayerlaps)
 			{
 				ppcd = pncd = ipcd = incd = 0;
 
@@ -11493,20 +11496,27 @@ void K_KartLegacyUpdatePosition(player_t *player)
 					{
 						pmo = P_AproxDistance(P_AproxDistance(	mo->x - player->mo->x,
 																mo->y - player->mo->y),
-							mo->z - player->mo->z) / FRACUNIT;
+																mo->z - player->mo->z) / FRACUNIT;
 
-							if (isprevcheckpointp)
-							{
-								player->prevcheck += pmo;
-								ppcd++;
-							}
+						if (isprevcheckpointp)
+						{
+							player->prevcheck += pmo;
+							ppcd++;
+						}
 
-							if (isnextcheckpointp)
-							{
-								player->nextcheck += pmo;
-								pncd++;
-							}
+						if (isnextcheckpointp)
+						{
+							player->nextcheck += pmo;
+							pncd++;
+						}
 					}
+
+					// the player should NOT be checked against themselves! lol
+					// otherwise prevcheck will effectively be halved
+					// sadly this stuff is exposed to lua and atleast one script uses those so we cant fix it
+					// oh well
+					//if (player == &players[i])
+						//continue;
 
 					const boolean isprevcheckpointi = mo->health == players[i].starpostnum;
 					const boolean isnextcheckpointi = mo->health == (players[i].starpostnum + 1);
@@ -11515,18 +11525,19 @@ void K_KartLegacyUpdatePosition(player_t *player)
 					{
 						imo = P_AproxDistance(P_AproxDistance(	mo->x - players[i].mo->x,
 																mo->y - players[i].mo->y),
-							mo->z - players[i].mo->z) / FRACUNIT;
+																mo->z - players[i].mo->z) / FRACUNIT;
 
-							if (isprevcheckpointi)
-							{
-								players[i].prevcheck += imo;
-								ipcd++;
-							}
-							if (isnextcheckpointi )
-							{
-								players[i].nextcheck += imo;
-								incd++;
-							}
+						if (isprevcheckpointi)
+						{
+							players[i].prevcheck += imo;
+							ipcd++;
+						}
+
+						if (isnextcheckpointi)
+						{
+							players[i].nextcheck += imo;
+							incd++;
+						}
 					}
 				}
 
