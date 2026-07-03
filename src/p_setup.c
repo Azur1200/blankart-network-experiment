@@ -8253,7 +8253,7 @@ static boolean P_LoadMapFromFile(void)
 
 	if (!cv_writetextmap_includemappatch.value)
 	{
-		if (M_CheckParm("-writetextmap"))
+		if (P_CanWriteTextmap())
 			P_WriteTextmap();
 	}
 
