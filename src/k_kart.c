@@ -3244,6 +3244,10 @@ fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dor
 		finalspeed += FixedMul(player->outrun, K_GrowShrinkOrNormal(player));
 	}
 
+	if (player->dashareapower != 0)
+	{
+		finalspeed += FixedMul(player->dashareapower, K_GrowShrinkOrNormal(player));
+	}
 
 	return finalspeed;
 }
@@ -3252,13 +3256,21 @@ fixed_t K_GetKartAccel(const player_t *player)
 {
 	fixed_t k_accel = 32; // 36;
 	UINT8 kartspeed = player->kartspeed;
+	fixed_t finalaccel = FRACUNIT;
 
 	if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 		kartspeed = 1;
 
 	k_accel += 4 * (9 - kartspeed); // 32 - 64
 
-	return FixedMul(k_accel, FRACUNIT+player->accelboost);
+	finalaccel += player->accelboost;
+	
+	if (player->dashareapower != 0)
+	{
+		finalaccel += FixedMul(player->dashareapower, k_accel);
+	}
+
+	return FixedMul(k_accel, finalaccel);
 }
 
 UINT16 K_GetKartFlashing(const player_t *player)
@@ -9789,6 +9801,11 @@ INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
 	if (player->handleboost > 0)
 	{
 		turnvalue = FixedMul(turnvalue, FRACUNIT + player->handleboost);
+	}
+
+	if (player->dashareapower > 0)
+	{
+		turnvalue += FixedMul(turnvalue, player->dashareapower);
 	}
 
 	turnvalue = FixedMul(turnvalue, adjustangle); // Weight has a small effect on turning
