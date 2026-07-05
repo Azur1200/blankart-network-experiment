@@ -1153,6 +1153,24 @@ static void K_UpdateOffroad(player_t *player)
 		player->offroad = 0;
 }
 
+static void K_UpdateDashArea(player_t *player)
+{
+	terrain_t *terrain = player->mo->terrain;
+
+	if (player->mo == NULL) return;
+	if (P_MobjWasRemoved(player->mo)) return;
+	if (player->mo->subsector == NULL || player->mo->subsector->sector == NULL) return;
+
+	if (terrain != NULL && terrain->offroad > 0 && K_AffectingTerrainActive())
+	{
+		player->dashareapower = (terrain->dashareapower << FRACBITS);
+	}
+	else
+	{
+		player->dashareapower = player->mo->subsector->sector->dashareapower;
+	}
+}
+
 /**	\brief	Updates the player's drafting values once per frame
  *
  *	\param	player	player object passed from K_KartPlayerThink
@@ -7652,6 +7670,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	}
 
 	K_UpdateOffroad(player);
+	K_UpdateDashArea(player);
 	K_UpdateDraft(player);
 
 	if (player->draftpower > 0)
