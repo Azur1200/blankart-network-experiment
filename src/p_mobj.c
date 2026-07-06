@@ -9127,7 +9127,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 	case MT_BRAKEDRIFT:
 	{
 		// Letting go of accel functions about the same as brake-drifting
-		boolean nullDrift = (!(K_GetKartButtons(mobj->target->player) & BT_ACCELERATE));
+		boolean nullDrift = (mobj->target && mobj->target->player && !(K_GetKartButtons(mobj->target->player) & BT_ACCELERATE));
 
 		if ((!mobj->target || !mobj->target->health || !mobj->target->player || !P_IsObjectOnGround(mobj->target))
 			|| !mobj->target->player->drift || !(mobj->target->player->pflags & PF_BRAKEDRIFT)
