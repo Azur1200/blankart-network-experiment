@@ -28,6 +28,7 @@ extern "C" {
 #define CHARSNAME "chars.kart"
 #define MAPSNAME "maps.kart"
 #define MAINNAME "main.pk3"
+#define MAPPATCHNAME "mappatch.pk3"
 #define BLANMUSICNAME "blanmusic.pk3"
 #define BONUSCHARSNAME "bonuschars.kart"
 #define PATCHNAME "patch.pk3"
@@ -42,6 +43,7 @@ typedef enum
 	MAINWAD_CHARS,
 	MAINWAD_MAPS,
 	MAINWAD_MAIN,
+	MAINWAD_MAPPATCH,
 	MAINWAD_BONUSCHARS,
 #ifdef USE_PATCH_FILE
 	MAINWAD_PATCH,
