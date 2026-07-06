@@ -1156,14 +1156,16 @@ static void K_UpdateOffroad(player_t *player)
 static void K_UpdateDashArea(player_t *player)
 {
 	terrain_t *terrain = player->mo->terrain;
+	player->dashareapower = 0;
 
 	if (player->mo == NULL) return;
 	if (P_MobjWasRemoved(player->mo)) return;
+	if (!P_IsObjectOnGround(player->mo)) return;
 	if (player->mo->subsector == NULL || player->mo->subsector->sector == NULL) return;
 
-	if (terrain != NULL && terrain->offroad > 0 && K_AffectingTerrainActive())
+	if (terrain != NULL && terrain->dashareapower > 0 && K_AffectingTerrainActive())
 	{
-		player->dashareapower = (terrain->dashareapower << FRACBITS);
+		player->dashareapower = terrain->dashareapower;
 	}
 	else
 	{
@@ -1589,18 +1591,17 @@ void K_SpawnDraftSpeedLines(player_t *player, fixed_t scale, skincolornum_t colo
 	}
 }
 
-void K_SpawnInvincibilitySpeedLines(mobj_t *mo)
+void K_SpawnDashAreaSpeedLines(mobj_t *mo)
 {
 	fixed_t rand_x;
 	fixed_t rand_y;
 	fixed_t rand_z;
 
-	rand_z = P_RandomRange(0, 64) * FRACUNIT;
-	rand_y = P_RandomRange(-48, 48) * FRACUNIT;
-	rand_x = P_RandomRange(-48, 48) * FRACUNIT;
+	rand_z = P_RandomRange(0, mo->info->height/3);
+	rand_y = P_RandomRange(-56, 56) * FRACUNIT;
+	rand_x = P_RandomRange(-56, 56) * FRACUNIT;
 
 	mobj_t *fast = P_SpawnMobjFromMobj(mo, rand_x, rand_y, rand_z, MT_FASTLINE);
-	P_SetMobjState(fast, S_KARTINVLINES1);
 
 	P_SetTarget(&fast->target, mo);
 	fast->angle = K_MomentumAngle(mo);
@@ -1613,9 +1614,7 @@ void K_SpawnInvincibilitySpeedLines(mobj_t *mo)
 
 	fast->color = mo->color;
 	fast->colorized = true;
-
-	if (mo->player->invincibilitytimer < 10*TICRATE)
-		fast->destscale = 6*((mo->player->invincibilitytimer/TICRATE)*FRACUNIT)/8;
+	fast->renderflags |= RF_ADD;
 }
 
 static void K_SpawnStackingEffect(player_t *player)
@@ -3250,6 +3249,7 @@ fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dor
 	fixed_t speedboost = player->speedboost;
 
 	speedboost = FixedDiv(speedboost, FRACUNIT + (player->kartmagnet.factor / 2));
+	speedboost += player->dashareapower;
 
 	if (doboostpower)
 	{
@@ -3260,11 +3260,6 @@ fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dor
 	{
 		// Milky Way's roads
 		finalspeed += FixedMul(player->outrun, K_GrowShrinkOrNormal(player));
-	}
-
-	if (player->dashareapower != 0)
-	{
-		finalspeed += FixedMul(player->dashareapower, K_GrowShrinkOrNormal(player));
 	}
 
 	return finalspeed;
@@ -3282,11 +3277,7 @@ fixed_t K_GetKartAccel(const player_t *player)
 	k_accel += 4 * (9 - kartspeed); // 32 - 64
 
 	finalaccel += player->accelboost;
-	
-	if (player->dashareapower != 0)
-	{
-		finalaccel += FixedMul(player->dashareapower, k_accel);
-	}
+	finalaccel += player->dashareapower;
 
 	return FixedMul(k_accel, finalaccel);
 }
@@ -7717,13 +7708,11 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 				|| player->walltransferboost
 				|| player->bubbleboost)
 			{
-#if 0
-				if (player->invincibilitytimer)
-					K_SpawnInvincibilitySpeedLines(player->mo);
-				else
-#endif
-					K_SpawnNormalSpeedLines(player);
+				K_SpawnNormalSpeedLines(player);
 			}
+
+			if (player->dashareapower)
+				K_SpawnDashAreaSpeedLines(player->mo);
 
 			// Could probably be moved somewhere else.
 			K_HandleFootstepParticles(player->mo);
@@ -9797,6 +9786,11 @@ INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
 	if (player->spectator)
 		return turnvalue;
 
+	if (player->dashareapower > 0)
+	{
+		turnvalue += FixedMul(turnvalue, player->dashareapower);
+	}
+
 	if (player->drift != 0 && P_IsObjectOnGround(player->mo))
 	{
 		// If we're drifting we have a completely different turning value
@@ -9820,11 +9814,6 @@ INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
 	if (player->handleboost > 0)
 	{
 		turnvalue = FixedMul(turnvalue, FRACUNIT + player->handleboost);
-	}
-
-	if (player->dashareapower > 0)
-	{
-		turnvalue += FixedMul(turnvalue, player->dashareapower);
 	}
 
 	turnvalue = FixedMul(turnvalue, adjustangle); // Weight has a small effect on turning

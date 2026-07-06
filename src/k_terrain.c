@@ -601,8 +601,6 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 		//CONS_Printf("Adding outruntime!\n");
 		player->outruntime = sneakertime;
 	}
-	
-	player->dashareapower = terrain->dashareapower;
 
 	// Damage effects
 	if (terrain->damageType > 0)
