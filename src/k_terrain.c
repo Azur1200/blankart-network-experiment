@@ -1835,6 +1835,10 @@ static void K_ParseTerrainParameter(size_t i, char *param, char *val)
 	{
 		K_FlagBoolean(&terrain->flags, TRF_BUMPY, val);
 	}
+	else if (fasticmp(param, "dasharea") || fasticmp(param, "dashareapower"))
+	{
+		terrain->dashareapower = FLOAT_TO_FIXED(atof(val));
+	}
 }
 
 /*--------------------------------------------------

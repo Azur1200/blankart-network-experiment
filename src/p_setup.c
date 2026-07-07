@@ -1993,6 +1993,10 @@ static void ParseTextmapSectorParameter(UINT32 i, const char *param, const char 
 		else
 			sectors[i].offroad = FLOAT_TO_FIXED(atof(val));
 	}
+	else if (fasticmp(param, "dasharea") || fasticmp(param, "dashareapower"))
+	{
+		sectors[i].dashareapower = FLOAT_TO_FIXED(atof(val));
+	}
 	else if (fastcmp(param, "triggertag"))
 		sectors[i].triggertag = atol(val);
 	else if (fastcmp(param, "triggerer"))

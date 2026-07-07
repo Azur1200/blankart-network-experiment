@@ -326,3 +326,6 @@ BK 1.0 21.04.2026
 
 BK 1.0 09.05.2026
 - Added blockintransfer line flag.
+
+BK 1.0 05.07.2026
+- Added dash area effect.
