@@ -275,7 +275,7 @@ if(openmpt_ADDED)
 	if("${CMAKE_SYSTEM_NAME}" STREQUAL Windows AND "${CMAKE_C_COMPILER_ID}" STREQUAL MSVC)
 		target_link_libraries(openmpt PRIVATE Rpcrt4)
 	endif()
-	target_compile_features(openmpt PRIVATE cxx_std_11)
+	target_compile_features(openmpt PRIVATE cxx_std_17)
 	target_compile_definitions(openmpt PRIVATE -DLIBOPENMPT_BUILD)
 
 	target_include_directories(openmpt PRIVATE "${openmpt_SOURCE_DIR}/common")
