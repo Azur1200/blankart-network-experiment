@@ -767,13 +767,13 @@ consvar_t cv_kartrankpenalties = CVAR_INIT ("racerankpenalties", "On", CV_NETVAR
 consvar_t cv_kartrank_partimehelper = CVAR_INIT ("partimehelper", "Off", 0, CV_OnOff, NULL);
 
 // Ranks: the point value constantly decreasing due to a set course's time limit (the "par time")
-consvar_t cv_kartrank_partimepoints = CVAR_INIT ("rank_partimepoints", "550.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+consvar_t cv_kartrank_partimepoints = CVAR_INIT ("rank_partimepoints", "500.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
 // Ranks: the point bonus given dependent on position (1st place gets the raw value), meant to offset the par-time deficit
-consvar_t cv_kartrank_leadertimepoints = CVAR_INIT ("rank_leadertimepoints", "350.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+consvar_t cv_kartrank_leadertimepoints = CVAR_INIT ("rank_leadertimepoints", "150.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
 // Ranks: the point bonus given for being chased by an SPB; varies by distance
-consvar_t cv_kartrank_spbtimepoints = CVAR_INIT ("rank_spbtimepoints", "450.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+consvar_t cv_kartrank_spbtimepoints = CVAR_INIT ("rank_spbtimepoints", "350.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
 // Ranks: the point bonus given, based on how well you perform the starting boost.
 consvar_t cv_kartrank_startboostpoints = CVAR_INIT ("rank_startboostpoints", "50", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
