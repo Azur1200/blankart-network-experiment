@@ -323,7 +323,7 @@ void K_GenericExtraFlagsNoZAdjust(mobj_t *mo, mobj_t *master);
 void K_SpawnDashDustRelease(player_t *player, boolean force);
 void K_SpawnNormalSpeedLines(player_t *player);
 void K_SpawnDraftSpeedLines(player_t *player, fixed_t scale, skincolornum_t color, boolean translucent);
-void K_SpawnInvincibilitySpeedLines(mobj_t *mo);
+void K_SpawnDashAreaSpeedLines(mobj_t *mo);
 void K_SpawnBumpEffect(mobj_t *mo);
 void K_KartMoveAnimation(player_t *player);
 void K_KartPlayerHUDUpdate(player_t *player);

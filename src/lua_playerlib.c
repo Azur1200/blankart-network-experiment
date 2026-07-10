@@ -341,6 +341,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(itemflags) \
 	X(outrun) \
 	X(outruntime) \
+	X(dashareapower) \
 	X(drift) \
 	X(driftcharge) \
 	X(driftboost) \
@@ -716,6 +717,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_outruntime:
 		lua_pushinteger(L, plr->outruntime);
+		break;
+	case player_dashareapower:
+		lua_pushinteger(L, plr->dashareapower);
 		break;
 	case player_drift:
 		lua_pushinteger(L, plr->drift);

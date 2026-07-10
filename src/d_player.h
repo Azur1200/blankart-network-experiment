@@ -1032,6 +1032,8 @@ struct player_t
 
 	fixed_t outrun; // Milky Way road effect
 	UINT8 outruntime; // Used to bypass the speed cap for fall off
+
+	fixed_t dashareapower; // boosts speed, acceleration, and handling
 	
 	sonicloopvars_t loop;
 
