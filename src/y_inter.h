@@ -32,6 +32,15 @@ void Y_DetermineIntermissionType(void);
 
 typedef enum
 {
+	INTERSCREEN_SCORETALLY = 0, // The fancy score tally; interpoints affect this screen
+	INTERSCREEN_FINALRESULTS, // Finalized results, appears before the score tally
+	INTERSCREEN_ITEMROLLS, // The item rolls list
+	INTERSCREEN_RANKCHART, // The big graph representing players' ranks across the race
+	INTERSCREEN_RANKTALLY, // The total tally for all player ranks
+} interscreen_t;
+
+typedef enum
+{
 	int_none,
 	int_race,		// Race
 	int_battle,		// Battle (score-based)
