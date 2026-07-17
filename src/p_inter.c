@@ -617,7 +617,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				}
 			}
 			return;
-		case MT_BUBBLESHIELDTRAP:
+		case MT_TRAPBUBBLE:
 			if ((special->target == toucher || special->target == toucher->target) && (special->threshold > 0))
 				return;
 
@@ -630,10 +630,19 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (!player->mo || player->spectator)
 				return;
 
+			if (special->extravalue3)
+				return; // Popped bubbles should not be run into EVER
+
 			// attach to player!
 			P_SetTarget(&special->tracer, toucher);
 			toucher->flags |= MF_NOGRAVITY;
 			toucher->momz = (8*toucher->scale) * P_MobjFlip(toucher);
+
+			fixed_t toucher_speed = K_Momentum2D(toucher);
+
+			// Force the player to our angle
+			// If you setpiece-fail, someone's either being an ass or did something REALLY WRONG
+			P_InstaThrust(toucher, special->angle, toucher_speed);
 
 			// Snap to the unfortunate player and quit moving laterally, or we can end up quite far away
 			special->momx = 0;

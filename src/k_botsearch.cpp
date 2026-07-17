@@ -468,7 +468,6 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 		case MT_LANDMINE:
 		case MT_BALLHOG:
 		case MT_SPB:
-		case MT_BUBBLESHIELDTRAP:
 			K_AddDodgeObject(thing, side, 20);
 			break;
 		case MT_RANDOMITEM:
