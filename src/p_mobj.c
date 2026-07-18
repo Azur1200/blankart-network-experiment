@@ -10259,8 +10259,13 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->momz = 0;
 			mobj->destscale = ((5*mobj->tracer->scale)>>2) + (mobj->tracer->scale>>3);
 
+			fixed_t extrarise = 0;
+			extrarise = (fixed_t)(mobj->script_args[1]);
+
 			// Rise really fast!
-			mobj->tracer->momz = (8*mobj->tracer->scale) * P_MobjFlip(mobj->tracer);
+			fixed_t risespeed = 16 + extrarise;
+
+			mobj->tracer->momz = (risespeed * max(mapobjectscale, mobj->tracer->scale)) * P_MobjFlip(mobj->tracer);
 
 			mobj->tracer->momx = (31*mobj->tracer->momx)/32;
 			mobj->tracer->momy = (31*mobj->tracer->momy)/32;

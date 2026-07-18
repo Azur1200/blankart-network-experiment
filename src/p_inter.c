@@ -633,10 +633,15 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (special->extravalue3)
 				return; // Popped bubbles should not be run into EVER
 
+			fixed_t extrarise = 0;
+			extrarise = (fixed_t)(special->script_args[1]);
+
+			fixed_t risespeed = 16 + extrarise;
+
 			// attach to player!
 			P_SetTarget(&special->tracer, toucher);
 			toucher->flags |= MF_NOGRAVITY;
-			toucher->momz = (8*toucher->scale) * P_MobjFlip(toucher);
+			toucher->momz = ((risespeed + 4) * max(mapobjectscale, toucher->scale)) * P_MobjFlip(toucher);
 
 			fixed_t toucher_speed = K_Momentum2D(toucher);
 
