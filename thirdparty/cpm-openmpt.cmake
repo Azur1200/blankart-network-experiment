@@ -2,6 +2,7 @@ CPMAddPackage(
 		NAME openmpt
 		VERSION 0.4.30
 		URL "https://github.com/OpenMPT/openmpt/archive/refs/tags/libopenmpt-0.4.30.zip"
+		PATCHES "openmpt-fix.patch" # work around this nonsense I think?
 		DOWNLOAD_ONLY ON
 	)
 
