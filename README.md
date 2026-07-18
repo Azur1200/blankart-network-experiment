@@ -36,6 +36,7 @@ This is still in active development and things are going to change. If you find 
 - SDL3 (Client only, Linux/OS X only)
 - libsndfile (Client only, Linux/OS X only)
 - OpenAL-Soft (Client only, Linux/OS X only)
+- patch (Client only, Windows Only, MSYS2)
 
 ## Compiling
 MSVC is unsupported, so please use GCC, Clang or Zig as your compiler.
