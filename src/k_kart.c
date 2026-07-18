@@ -472,6 +472,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartattraction_assistpower);
 	CV_RegisterVar(&cv_kartattraction_aoedmg);
 	CV_RegisterVar(&cv_kartattraction_aoeemp);
+	CV_RegisterVar(&cv_kartattraction_aoeshove);
 	CV_RegisterVar(&cv_kartaltshrink_arrowbullet);
 	CV_RegisterVar(&cv_kartaltshrink_arrowbulletthres);
 	CV_RegisterVar(&cv_kartaltshrink_runneranger);
@@ -5920,7 +5921,7 @@ void K_PopPlayerShield(player_t *player)
 			player->itemamount = 0;
 			break;
 		case KSHIELD_ATTRACTION:
-			K_DoAttractionShield(player, false);
+			K_DoAttractionShield(player, 0);
 			player->itemtype = KITEM_NONE;
 			player->itemamount = 0;
 			player->attractioncharge = 0;

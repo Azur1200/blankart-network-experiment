@@ -247,6 +247,7 @@ extern consvar_t cv_kartflame_shove;
 extern consvar_t cv_kartattraction_assistpower;
 extern consvar_t cv_kartattraction_aoedmg;
 extern consvar_t cv_kartattraction_aoeemp;
+extern consvar_t cv_kartattraction_aoeshove;
 extern consvar_t cv_kartaltshrink_arrowbullet;
 extern consvar_t cv_kartaltshrink_arrowbulletthres;
 extern consvar_t cv_kartaltshrink_runneranger;

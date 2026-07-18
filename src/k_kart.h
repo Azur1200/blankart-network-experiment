@@ -184,6 +184,7 @@ extern vector3_t clusterpoint, clusterdtf;
 
 #define ATTRACTIONAOEEMP CV_Get(&cv_kartattraction_aoeemp)
 #define ATTRACTIONAOEDAMAGE CV_Get(&cv_kartattraction_aoedmg)
+#define ATTRACTIONAOESHOVE CV_Get(&cv_kartattraction_aoeshove)
 #define ATTRACTIONSPEEDHIMIN CV_Get(&cv_kartstacking_attraction_speedboost_himin)
 #define ATTRACTIONSPEEDHIMAX CV_Get(&cv_kartstacking_attraction_speedboost_himax)
 #define ATTRACTIONSPEEDNORMMIN CV_Get(&cv_kartstacking_attraction_speedboost_normmin)

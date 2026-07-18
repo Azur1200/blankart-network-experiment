@@ -2077,7 +2077,7 @@ void K_DoThunderShield(player_t *player)
 	}
 }
 
-void K_DoAttractionShield(player_t *player, boolean hipower)
+void K_DoAttractionShield(player_t *player, fixed_t power)
 {
 	mobj_t *mo;
 	int i = 0;
@@ -2091,7 +2091,7 @@ void K_DoAttractionShield(player_t *player, boolean hipower)
 	}
 
 	S_StartSound(player->mo, sfx_zio3);
-	K_AttractionShieldAttack(player->mo, (cv_kartthunder_radius.value + THUNDERSPRITE) * FRACUNIT, hipower);
+	K_AttractionShieldAttack(player->mo, (cv_kartthunder_radius.value + THUNDERSPRITE) * FRACUNIT, power, power >= FRACUNIT);
 
 	// spawn vertical bolt
 	mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
@@ -3195,7 +3195,7 @@ void K_ReleaseUseItem_AttractionShield(player_t *player, boolean itemjustdown, b
 				ATTRACTIONATTACKTIME_MAX * FRACUNIT
 			)/FRACUNIT;
 		}
-		K_DoAttractionShield(player, player->attractionattack_hipower);
+		K_DoAttractionShield(player, CLAMP(FixedDiv(player->attractioncharge, ATTRACTIONCHARGETIME), 0, FRACUNIT));
 		S_StartSound(player->mo, sfx_s3k81);
 
 		if (player->itemamount > 0)

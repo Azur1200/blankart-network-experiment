@@ -285,7 +285,7 @@ useoddsfunc_f KO_SPBRaceOdds;
 useoddsfunc_f KO_GrowRaceOdds;
 
 void K_DoThunderShield(player_t *player);
-void K_DoAttractionShield(player_t *player, boolean hipower);
+void K_DoAttractionShield(player_t *player, fixed_t power);
 void K_BreakBubbleShield(player_t* player);
 INT16 K_GetShrinkTime(const player_t *player);
 boolean K_IsAltShrunk(const player_t *player);
