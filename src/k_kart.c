@@ -2604,19 +2604,29 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 
 		if (trailScale > 0)
 		{
+			const vector3_t forwardvector = {P_ReturnThrustX(mobj, mobj->angle, FRACUNIT), P_ReturnThrustY(mobj, mobj->angle, FRACUNIT), 0};
+			vector3_t momentumvector = {mobj->momx, mobj->momy, 0};
+			
 			const angle_t forwardangle = K_MomentumAngle(mobj);
-			const fixed_t visualradius = mobj->radius + (8 * mobj->scale);
+			const fixed_t visualradius = mobj->radius + (4 * mobj->scale);
 			const SINT8 numFrames = 5;
 			const INT32 curFrame = (leveltime % numFrames)|FF_PAPERSPRITE;
 			fixed_t x1, x2, y1, y2;
+			fixed_t sideScale;
+			vector3_t cross = {0};
 
-			x1 = mobj->x + mobj->momx + P_ReturnThrustX(mobj, forwardangle + ANGLE_90, visualradius);
-			y1 = mobj->y + mobj->momy + P_ReturnThrustY(mobj, forwardangle + ANGLE_90, visualradius);
+			FV3_Normalize(&momentumvector);
+			FV3_Cross(&forwardvector, &momentumvector, &cross);
+			// (-1.0, 1.0) -> (-0.5, 0.5)
+			sideScale = FixedMul((cross.z)/2, mapobjectscale);
+
+			x1 = mobj->x + P_ReturnThrustX(mobj, forwardangle + ANGLE_90, visualradius);
+			y1 = mobj->y + P_ReturnThrustY(mobj, forwardangle + ANGLE_90, visualradius);
 			x1 = x1 + P_ReturnThrustX(mobj, forwardangle, visualradius);
 			y1 = y1 + P_ReturnThrustY(mobj, forwardangle, visualradius);
 
-			x2 = mobj->x + mobj->momx + P_ReturnThrustX(mobj, forwardangle - ANGLE_90, visualradius);
-			y2 = mobj->y + mobj->momy + P_ReturnThrustY(mobj, forwardangle - ANGLE_90, visualradius);
+			x2 = mobj->x + P_ReturnThrustX(mobj, forwardangle - ANGLE_90, visualradius);
+			y2 = mobj->y + P_ReturnThrustY(mobj, forwardangle - ANGLE_90, visualradius);
 			x2 = x2 + P_ReturnThrustX(mobj, forwardangle, visualradius);
 			y2 = y2 + P_ReturnThrustY(mobj, forwardangle, visualradius);
 
@@ -2624,12 +2634,12 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 			// underlay
 			water = P_SpawnMobj(x1, y1,
 				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAILUNDERLAY].height, mobj->scale) : mobj->watertop), MT_WATERTRAILUNDERLAY);
-			water->angle = forwardangle - ANGLE_180 - ANGLE_22h;
-			water->destscale = trailScale;
+			water->angle = forwardangle - ANGLE_180 - ANG15;
+			water->destscale = max(trailScale + sideScale, mapobjectscale/5);
 			water->momx = mobj->momx;
 			water->momy = mobj->momy;
 			water->momz = mobj->momz;
-			P_SetScale(water, trailScale);
+			P_SetScale(water, max(trailScale + sideScale, mapobjectscale/5));
 			P_SetMobjState(water, S_WATERTRAILSUNDERLAY);
 			water->frame = curFrame|FF_ADD|FF_TRANS40;
 			water->flags2 |= MF2_DONTSYNC;
@@ -2637,12 +2647,12 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 			// overlay
 			water = P_SpawnMobj(x1, y1,
 				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAIL].height, mobj->scale) : mobj->watertop), MT_WATERTRAIL);
-			water->angle = forwardangle - ANGLE_180 - ANGLE_22h;
-			water->destscale = trailScale;
+			water->angle = forwardangle - ANGLE_180 - ANG15;
+			water->destscale = max(trailScale + sideScale, mapobjectscale/5);
 			water->momx = mobj->momx;
 			water->momy = mobj->momy;
 			water->momz = mobj->momz;
-			P_SetScale(water, trailScale);
+			P_SetScale(water, max(trailScale + sideScale, mapobjectscale/5));
 			P_SetMobjState(water, S_WATERTRAILS);
 			water->frame = curFrame;
 			water->flags2 |= MF2_DONTSYNC;
@@ -2651,12 +2661,12 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 			// Underlay
 			water = P_SpawnMobj(x2, y2,
 				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAILUNDERLAY].height, mobj->scale) : mobj->watertop), MT_WATERTRAILUNDERLAY);
-			water->angle = forwardangle - ANGLE_180 + ANGLE_22h;
-			water->destscale = trailScale;
+			water->angle = forwardangle - ANGLE_180 + ANG15;
+			water->destscale = max(trailScale - sideScale, mapobjectscale/5);
 			water->momx = mobj->momx;
 			water->momy = mobj->momy;
 			water->momz = mobj->momz;
-			P_SetScale(water, trailScale);
+			P_SetScale(water, max(trailScale - sideScale, mapobjectscale/5));
 			P_SetMobjState(water, S_WATERTRAILSUNDERLAY);
 			water->frame = curFrame|FF_ADD|FF_TRANS40;
 			water->flags2 |= MF2_DONTSYNC;
@@ -2664,12 +2674,12 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 			// Overlay
 			water = P_SpawnMobj(x2, y2,
 				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAIL].height, mobj->scale) : mobj->watertop), MT_WATERTRAIL);
-			water->angle = forwardangle - ANGLE_180 + ANGLE_22h;
-			water->destscale = trailScale;
+			water->angle = forwardangle - ANGLE_180 + ANG15;
+			water->destscale = max(trailScale - sideScale, mapobjectscale/5);
 			water->momx = mobj->momx;
 			water->momy = mobj->momy;
 			water->momz = mobj->momz;
-			P_SetScale(water, trailScale);
+			P_SetScale(water, max(trailScale - sideScale, mapobjectscale/5));
 			P_SetMobjState(water, S_WATERTRAILS);
 			water->frame = curFrame;
 			water->flags2 |= MF2_DONTSYNC;
@@ -13157,9 +13167,11 @@ void K_KartPlayerBumpyRoad(player_t *player)
 			dust->destscale = player->mo->scale / 2;
 			P_SetTarget(&dust->target, player->mo);
 			dust->renderflags |= RF_GHOSTLY;
-
+			
 			dust->momx = FixedMul(player->mo->momx + (P_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(player->mo->scale)/4);
 			dust->momy = FixedMul(player->mo->momy + (P_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(player->mo->scale)/4);
+
+			dust->flags2 |= MF2_DONTSYNC;
 		}
 	}
 }
