@@ -277,6 +277,7 @@ static void Command_Isgamemodified_f(void);
 static void Command_Cheats_f(void);
 
 static void Command_ListSkins(void);
+static void Command_SkinSearch(void);
 
 static void Command_Voice(void);
 static void Command_Voice2(void);
@@ -1660,6 +1661,7 @@ void D_RegisterClientCommands(void)
 	COM_AddCommand("voice4", Command_Voice4);
 
 	COM_AddCommand("listskins", Command_ListSkins);
+	COM_AddCommand("skinsearch", Command_SkinSearch);
 	COM_AddCommand("listvoices", Command_ListVoices);
 	COM_AddCommand("listvoiceprefs", Command_ListVoicePrefs);
 
@@ -8775,6 +8777,41 @@ static void Command_ListSkins(void)
 	{
 		CONS_Printf("There are no more pages.\n");
 	}
+}
+
+static void Command_SkinSearch(void)
+{
+	size_t i;
+	UINT16 s;
+	UINT16 ic = 0;
+
+	for (i = 1; i < COM_Argc(); i++)
+	{
+		for (s = 0; s < numskins; s++)
+		{
+			skin_t *skininput = &skins[s];
+
+			if (strcasestr(skininput->realname, COM_Argv(i)))
+			{
+				UINT16 chatcolor = skincolors[skininput->prefcolor].chatcolor;
+				char color_prefix[2];
+
+				if (chatcolor > V_TANMAP)
+				{
+					sprintf(color_prefix, "%c", '\x80');
+				}
+				else
+				{
+					sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+				}
+
+				ic++;
+				CONS_Printf("%d. %s%s:\x80 %s\n", ic, color_prefix, skininput->realname, skininput->name);
+			}
+		}
+	}
+
+	CONS_Printf("Total %d skins.\n", ic);
 }
 
 static void __voice_cmd_func(INT32 pid, UINT8 pnum)
