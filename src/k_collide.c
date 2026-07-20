@@ -1095,7 +1095,17 @@ boolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
 boolean K_FallingRockCollide(mobj_t *t1, mobj_t *t2)
 {
 	if ((t2->player && (G_CompatLevel(0x0008) || !t2->player->hyudorotimer)) || t2->type == MT_FALLINGROCK)
-		K_SetHitThing(t1, t2);
+	{
+		if (cv_rockshove.value)
+		{
+			// masakit feels like rock
+			K_ShoveObject(t2, t1, 4*t2->scale);
+		}
+		else
+		{
+			K_SetHitThing(t1, t2);
+		}
+	}
 
 	return true;
 }

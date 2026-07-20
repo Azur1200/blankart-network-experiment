@@ -508,6 +508,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartkeepstuff);
 	CV_RegisterVar(&cv_trailslow);
 	CV_RegisterVar(&cv_playerbump);
+
+	CV_RegisterVar(&cv_rockshove);
 }
 
 //}

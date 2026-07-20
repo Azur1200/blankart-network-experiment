@@ -275,6 +275,8 @@ extern consvar_t cv_trailslow;
 
 extern consvar_t cv_playerbump;
 
+extern consvar_t cv_rockshove;
+
 extern consvar_t cv_kartforcelegacyodds;
 
 extern consvar_t cv_handleboostslip;

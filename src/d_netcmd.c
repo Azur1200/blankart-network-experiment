@@ -731,6 +731,8 @@ static CV_PossibleValue_t playerbump_cons_t[] = {{PBUMP_STANDARD, "Standard"},
 						 {0, NULL}};
 consvar_t cv_playerbump = CVAR_INIT ("playerbump", "Standard", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, playerbump_cons_t, PlayerBump_OnChange);
 
+consvar_t cv_rockshove = CVAR_INIT ("rockshove", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
+
 #define ANTIBUMP_MAX (UINT32_MAX / TICRATE)
 static CV_PossibleValue_t antibump_cons_t[] = {{0, "MIN"}, {ANTIBUMP_MAX, "MAX"}, {0, NULL}};
 consvar_t cv_kartantibump = CVAR_INIT ("kartantibump", "0", CV_NETVAR|CV_CALL|CV_NOINIT, antibump_cons_t, KartAntiBump_OnChange);
@@ -797,7 +799,7 @@ consvar_t cv_kartattraction_assistpower = CVAR_INIT ("kartattraction_assistpower
 static CV_PossibleValue_t kartattractiondmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {DMG_EXPLODE, "Explode"}, {DMG_CRASH, "Crash"}, {0, NULL}};
 consvar_t cv_kartattraction_aoedmg = CVAR_INIT ("kartattraction_aoedmg", "None", CV_NETVAR|CV_CHEAT|CV_GUARD, kartattractiondmg_cons_t, NULL);
 consvar_t cv_kartattraction_aoeemp = CVAR_INIT ("kartattraction_aoeemp", "0", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartattraction_aoeshove = CVAR_INIT ("kartattraction_aoeshove", "8.0", CV_NETVAR|CV_CHEAT|CV_GUARD|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartattraction_aoeshove = CVAR_INIT ("kartattraction_aoeshove", "5.0", CV_NETVAR|CV_CHEAT|CV_GUARD|CV_FLOAT, CV_Unsigned, NULL);
 
 // "Arrow Bullet": above a certain speed threshold, an aura in the shape of the Shrink arrow
 // covers you, signaling protection from (most) items and players.
