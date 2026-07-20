@@ -1096,7 +1096,7 @@ boolean K_FallingRockCollide(mobj_t *t1, mobj_t *t2)
 {
 	if ((t2->player && (G_CompatLevel(0x0008) || !t2->player->hyudorotimer)) || t2->type == MT_FALLINGROCK)
 	{
-		if (!cv_rockshove.value)
+		if ((!cv_rockshove.value) || G_CompatLevel(0x0008))
 		{
 			K_SetHitThing(t1, t2);
 		}
