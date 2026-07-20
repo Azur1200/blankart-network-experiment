@@ -161,6 +161,7 @@ FUNCINLINE static ATTRINLINE void pfree(void *p)
 //
 // Specialty allocation functions
 //
+size_t Z_LevelPoolUsage(void);
 void *Z_LevelPoolMalloc(size_t size);
 void *Z_LevelPoolCalloc(size_t size);
 void Z_LevelPoolFree(void *p, size_t size);
