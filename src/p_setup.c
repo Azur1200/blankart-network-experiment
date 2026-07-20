@@ -832,7 +832,7 @@ static void P_SpawnMapThings(boolean spawnemblems, boolean patch)
 
 		if (mt->type >= 600 && mt->type <= 611) // item patterns
 			P_SpawnItemPattern(mt);
-		else if (mt->type == 1713) // hoops
+		else if (mt->type == 1713 && spawnemblems) // hoops
 			P_SpawnHoop(mt);
 		else // Everything else
 			P_SpawnMapThing(mt);
