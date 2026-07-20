@@ -1096,14 +1096,16 @@ boolean K_FallingRockCollide(mobj_t *t1, mobj_t *t2)
 {
 	if ((t2->player && (G_CompatLevel(0x0008) || !t2->player->hyudorotimer)) || t2->type == MT_FALLINGROCK)
 	{
-		if (cv_rockshove.value)
-		{
-			// masakit feels like rock
-			K_ShoveObject(t2, t1, 4*t2->scale);
-		}
-		else
+		if (!cv_rockshove.value)
 		{
 			K_SetHitThing(t1, t2);
+		}
+		else if (!t2->player->justbumped)
+		{
+			// masakit feels like rocks
+			K_ShoveObject(t2, t1, 16*t2->scale);
+			K_SpawnBumpEffect(t2);
+			t2->player->justbumped = 6;
 		}
 	}
 
