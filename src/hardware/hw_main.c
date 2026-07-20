@@ -521,6 +521,8 @@ void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolean is_sk
 	unsigned int i;
 	gl_portal_array_t *portal_array;
 
+	const boolean wireframe = HWR_IsWireframeMode();
+
 	HWR_PrepareTransform(player, is_skybox);
 	// we need to set our transformations now so portal clipping
 	// has the projectionmatrix set up with our actual view
@@ -532,7 +534,7 @@ void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolean is_sk
 	if (rootportal)
 		HWR_PortalClipping(rootportal);
 
-	if (HWR_IsWireframeMode())
+	if (wireframe)
 		GL_SetSpecialState(HWD_SET_WIREFRAME, 1);
 
 	if (timing)
@@ -678,7 +680,7 @@ void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolean is_sk
 
 	HWR_RenderDrawNodes(); //Hurdler: render 3D water and transparent walls after everything
 
-	if (HWR_IsWireframeMode())
+	if (wireframe)
 		GL_SetSpecialState(HWD_SET_WIREFRAME, 0);
 
 	// hack for debugportal, see earlier comment
