@@ -731,7 +731,7 @@ static CV_PossibleValue_t playerbump_cons_t[] = {{PBUMP_STANDARD, "Standard"},
 						 {0, NULL}};
 consvar_t cv_playerbump = CVAR_INIT ("playerbump", "Standard", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, playerbump_cons_t, PlayerBump_OnChange);
 
-consvar_t cv_rockshove = CVAR_INIT ("rockshove", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
+consvar_t cv_rockshove = CVAR_INIT ("rockshove", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 #define ANTIBUMP_MAX (UINT32_MAX / TICRATE)
 static CV_PossibleValue_t antibump_cons_t[] = {{0, "MIN"}, {ANTIBUMP_MAX, "MAX"}, {0, NULL}};
