@@ -53,6 +53,7 @@ void HWR_DrawFadeFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT16 ac
 void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT32 actualcolor);	// Lat: separate flags from color since color needs to be an uint to work right.
 void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color);
 void HWR_DrawPic(INT32 x,INT32 y,lumpnum_t lumpnum);
+boolean HWR_IsWireframeMode(void);
 
 UINT8 *HWR_GetScreenshot(INT32 scale);
 
@@ -112,6 +113,7 @@ extern consvar_t cv_glskydome;
 extern consvar_t cv_glsolvetjoin, cv_glpolytile, cv_glpolyshape;
 
 extern consvar_t cv_glbatching;
+extern consvar_t cv_glwireframe;
 extern consvar_t cv_glpaletterendering;
 extern consvar_t cv_glpalettedepth;
 extern consvar_t cv_gllightdither;

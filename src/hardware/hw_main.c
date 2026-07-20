@@ -120,6 +120,11 @@ boolean HWR_UseShader(void)
 	return (cv_glshaders.value && gl_shadersavailable);
 }
 
+boolean HWR_IsWireframeMode(void)
+{
+	return (cv_glwireframe.value /*&& cv_debug*/);
+}
+
 boolean HWR_OverrideObjectLightLevel(mobj_t *thing, INT32 *lightlevel)
 {
 	if (R_ThingIsFullBright(thing))
@@ -527,6 +532,9 @@ void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolean is_sk
 	if (rootportal)
 		HWR_PortalClipping(rootportal);
 
+	if (HWR_IsWireframeMode())
+		GL_SetSpecialState(HWD_SET_WIREFRAME, 1);
+
 	if (timing)
 	{
 		ps_numbspcalls = 0;
@@ -669,6 +677,9 @@ void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolean is_sk
 	}
 
 	HWR_RenderDrawNodes(); //Hurdler: render 3D water and transparent walls after everything
+
+	if (HWR_IsWireframeMode())
+		GL_SetSpecialState(HWD_SET_WIREFRAME, 0);
 
 	// hack for debugportal, see earlier comment
 	if (gl_debugportal && !gl_portal_level)
@@ -931,6 +942,8 @@ consvar_t cv_glpolyshape = CVAR_INIT ("gr_polygon_shape", "Trim", CV_SAVE, grpol
 
 consvar_t cv_glbatching = CVAR_INIT ("gr_batching", "On", 0, CV_OnOff, NULL);
 
+consvar_t cv_glwireframe = CVAR_INIT ("gr_wireframe", "Off", 0, CV_OnOff, NULL);
+
 CV_PossibleValue_t glpalettedepth_cons_t[] = {{16, "16 bits"}, {24, "24 bits"}, {0, NULL}};
 void CV_glpaletterendering_OnChange(void);
 void CV_glpalettedepth_OnChange(void);
@@ -1064,6 +1077,8 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_glpolyshape);
 
 	CV_RegisterVar(&cv_glbatching);
+
+	CV_RegisterVar(&cv_glwireframe);
 
 	CV_RegisterVar(&cv_glanisotropicmode);
 
