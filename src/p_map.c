@@ -3534,6 +3534,78 @@ static void P_HitSlideLine(line_t *ld)
 	tmymove -= FixedMul(ny, d);
 }
 
+static void P_ClipPlayerMoveToLine(line_t *ld)
+{
+	INT32 side;
+	angle_t lineangle;
+	fixed_t nx, ny;
+	fixed_t d, radius;
+	boolean success;
+
+	side = P_PointOnLineSide(slidemo->x, slidemo->y, ld);
+	lineangle = R_PointToAngle2(0, 0, ld->dx, ld->dy);
+
+	if (side == 1)
+		lineangle += ANGLE_180;
+
+	lineangle >>= ANGLETOFINESHIFT;
+
+	nx = FINECOSINE(lineangle);
+	ny = FINESINE(lineangle);
+
+	d = FixedMul(tmxmove, nx) + FixedMul(tmymove, ny);
+
+	tmxmove -= FixedMul(nx, d);
+	tmymove -= FixedMul(ny, d);
+
+	radius = slidemo->radius/2;
+	do {
+		if (tmxmove > radius)
+		{
+			nx = slidemo->x + radius;
+			tmxmove -= radius;
+		}
+		else if (tmxmove < -radius)
+		{
+			nx = slidemo->x - radius;
+			tmxmove += radius;
+		}
+		else
+		{
+			nx = slidemo->x + tmxmove;
+			tmxmove = 0;
+		}
+
+		if (tmymove > radius)
+		{
+			ny = slidemo->y + radius;
+			tmymove -= radius;
+		}
+		else if (tmymove < -radius)
+		{
+			ny = slidemo->y - radius;
+			tmymove += radius;
+		}
+		else
+		{
+			ny = slidemo->y + tmymove;
+			tmymove = 0;
+		}
+
+		if (!P_TryMove(slidemo, nx, ny, true, NULL))
+		{
+			if (success || P_MobjWasRemoved(slidemo))
+				return; // Good enough!!
+
+			// the move must have hit the middle, so stairstep
+			if (!P_TryMove(slidemo, slidemo->x, slidemo->y + slidemo->momy, true, NULL)) // Allow things to drop off.
+				P_TryMove(slidemo, slidemo->x + slidemo->momx, slidemo->y, true, NULL);
+			return;
+		}
+		success = true;
+	} while(tmxmove || tmymove);
+}
+
 //
 // P_PlayerHitBounceLine
 //
@@ -3602,7 +3674,7 @@ static void P_HitBounceLine(line_t *ld)
 	tmxmove = FixedMul(movelen, FINECOSINE(deltaangle));
 	tmymove = FixedMul(movelen, FINESINE(deltaangle));
 
-	deltaangle = R_PointToAngle2(0, 0, tmxmove, tmymove);
+	// deltaangle = R_PointToAngle2(0, 0, tmxmove, tmymove);
 }
 
 /*
@@ -3914,6 +3986,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 {
 	fixed_t mmomx = 0, mmomy = 0;
 	fixed_t oldmomx = mo->momx, oldmomy = mo->momy;
+	vector3_t slopemom = {0,0,0};
 
 	if (P_MobjWasRemoved(mo) == true)
 		return;
@@ -3969,6 +4042,32 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	slidemo = mo;
 
+	if (tripwire)
+	{
+		// TRIPWIRE CANNOT BE MADE NONBOUNCY
+		K_ApplyTripWire(mo->player, TRIPSTATE_BLOCKED);
+	}
+	else
+	{
+		// Some walls aren't bouncy even if you are
+		// wall transfer only lines always make players slide along em even if they'd be bouncy otherwise
+		// todo: let wall transfer override the tripwire case too?
+		if (slideline)
+		{
+			// SRB2Kart: Non-bouncy line!
+			P_SlideMove(mo, result);
+			return;
+		}
+		if (result->line != NULL)
+		{
+			tmxmove = mmomx;
+			tmymove = mmomy;
+			P_ClipPlayerMoveToLine(result->line); // clip the moves
+		}
+
+		K_SpawnBumpEffect(mo);
+	}
+
 	/*if (mo->health <= 0)
 	{
 		tmxmove = mo->momx;
@@ -3986,26 +4085,6 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
 	}
 
-	if (tripwire)
-	{
-		// TRIPWIRE CANNOT BE MADE NONBOUNCY
-		K_ApplyTripWire(mo->player, TRIPSTATE_BLOCKED);
-	}
-	else
-	{
-		// Some walls aren't bouncy even if you are
-		// wall transfer only lines always make players slide along em even if they'd be bouncy otherwise
-		// todo: let wall transfer override the tripwire case too?
-		if (slideline)
-		{
-			// SRB2Kart: Non-bouncy line!
-			P_SlideMove(mo, result);
-			return;
-		}
-
-		K_SpawnBumpEffect(mo);
-	}
-
 	P_PlayerHitBounceLine(&result->normal, tripwire);
 	mo->eflags |= MFE_JUSTBOUNCEDWALL;
 
@@ -4014,7 +4093,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	if (mo->standingslope)
 	{
-		vector3_t slopemom = {0,0,0};
+		FV3_Load(&slopemom, 0, 0, 0);
 		slopemom.x = tmxmove;
 		slopemom.y = tmymove;
 		slopemom.z = mo->momz;
@@ -4022,7 +4101,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 		tmxmove = slopemom.x;
 		tmymove = slopemom.y;
-		mo->momz = slopemom.z;
+		// mo->momz = slopemom.z;
 	}
 
 	mo->momx = tmxmove;
@@ -4034,25 +4113,8 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	{
 		if (!P_TryMove(mo, mo->x + tmxmove, mo->y + tmymove, true, NULL))
 		{
-			if (((mo->eflags & MFE_VERTICALFLIP && mo->z < mo->floorz) || (!(mo->eflags & MFE_VERTICALFLIP) && mo->z + mo->height > mo->ceilingz))
-				&& !(mo->flags & MF_NOCLIPHEIGHT))
-			{
-				if (mo->eflags & MFE_VERTICALFLIP)
-					mo->z = mo->floorz;
-				else
-					mo->z = mo->ceilingz - mo->height;
-			}
 			P_TryMove(mo, mo->x - oldmomx, mo->y - oldmomy, true, NULL);
 		}
-	}
-
-	if (((mo->eflags & MFE_VERTICALFLIP && mo->z < mo->floorz) || (!(mo->eflags & MFE_VERTICALFLIP) && mo->z + mo->height > mo->ceilingz))
-		&& !(mo->flags & MF_NOCLIPHEIGHT))
-	{
-		if (mo->eflags & MFE_VERTICALFLIP)
-			mo->z = mo->floorz;
-		else
-			mo->z = mo->ceilingz - mo->height;
 	}
 }
 
