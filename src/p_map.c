@@ -3558,7 +3558,7 @@ static void P_ClipPlayerMoveToLine(line_t *ld)
 	tmxmove -= FixedMul(nx, d);
 	tmymove -= FixedMul(ny, d);
 
-	radius = slidemo->radius/2;
+	radius = slidemo->radius;
 	do {
 		if (tmxmove > radius)
 		{
@@ -3986,7 +3986,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 {
 	fixed_t mmomx = 0, mmomy = 0;
 	fixed_t oldmomx = mo->momx, oldmomy = mo->momy;
-	vector3_t slopemom = {0,0,0};
+	vector3_t slopemom = {0};
 
 	if (P_MobjWasRemoved(mo) == true)
 		return;
@@ -4091,19 +4091,6 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	if (mo->player)
 		mo->player->bumpUnstuck += 5;
 
-	if (mo->standingslope)
-	{
-		FV3_Load(&slopemom, 0, 0, 0);
-		slopemom.x = tmxmove;
-		slopemom.y = tmymove;
-		slopemom.z = mo->momz;
-		P_QuantizeMomentumToSlope(&slopemom, mo->standingslope);
-
-		tmxmove = slopemom.x;
-		tmymove = slopemom.y;
-		// mo->momz = slopemom.z;
-	}
-
 	mo->momx = tmxmove;
 	mo->momy = tmymove;
 	mo->player->cmomx = tmxmove;
@@ -4116,6 +4103,14 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 			P_TryMove(mo, mo->x - oldmomx, mo->y - oldmomy, true, NULL);
 		}
 	}
+
+	P_ThingHeightClip(mo);
+	if (P_MobjWasRemoved(mo)) return;
+
+	mo->momx = tmxmove;
+	mo->momy = tmymove;
+	mo->player->cmomx = tmxmove;
+	mo->player->cmomy = tmymove;
 }
 
 //
