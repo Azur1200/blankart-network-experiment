@@ -1553,6 +1553,24 @@ static boolean P_CheckSkyHit(mobj_t *mo)
 	return false;
 }
 
+// P_LostSoulReset
+static boolean P_SkullFlyReset(mobj_t *mo)
+{
+	if (!mo->momx && !mo->momy && (mo->flags2 & MF2_SKULLFLY))
+	{
+		// the skull slammed into something
+		mo->flags2 &= ~MF2_SKULLFLY;
+		mo->momx = mo->momy = mo->momz = 0;
+
+		// set in 'search new direction' state?
+		if (mo->type != MT_EGGMOBILE)
+			P_SetMobjState(mo, mo->info->spawnstate);
+		
+		return true;
+	}
+	return false;
+}
+
 //
 // P_XYMovement
 //
@@ -1571,21 +1589,7 @@ void P_XYMovement(mobj_t *mo)
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	// if it's stopped
-	if (!mo->momx && !mo->momy)
-	{
-		if (mo->flags2 & MF2_SKULLFLY)
-		{
-			// the skull slammed into something
-			mo->flags2 &= ~MF2_SKULLFLY;
-			mo->momx = mo->momy = mo->momz = 0;
-
-			// set in 'search new direction' state?
-			if (mo->type != MT_EGGMOBILE)
-				P_SetMobjState(mo, mo->info->spawnstate);
-
-			return;
-		}
-	}
+	if (P_SkullFlyReset(mo)) return;
 
 	player = mo->player; //valid only if player avatar
 
@@ -1739,7 +1743,7 @@ void P_XYMovement(mobj_t *mo)
 				pslope_t *transferslope = NULL;
 				fixed_t transfermomz = 0;
 				// Wall transfer part 1.
-				if (oldslope && (P_MobjFlip(mo)*(predictedz - mo->z) > 0)) // Only for moving up (relative to gravity), otherwise there's a failed launch when going down slopes and hitting walls
+				if (oldslope && (P_MobjFlip(mo)*(predictedz - mo->z) > FRACUNIT>>8)) // Only for moving up (relative to gravity), otherwise there's a failed launch when going down slopes and hitting walls
 				{
 					transferslope = ((mo->standingslope) ? mo->standingslope : oldslope);
 					if (((transferslope->zangle < ANGLE_180) ? transferslope->zangle : InvAngle(transferslope->zangle)) >= ANGLE_45) // Prevent some weird stuff going on on shallow slopes.
@@ -2859,6 +2863,7 @@ void P_PlayerZMovement(mobj_t *mo)
 	if (mo->eflags & MFE_APPLYPMOMZ && !P_IsObjectOnGround(mo))
 	{
 		mo->momz += mo->pmomz;
+		mo->pmomz = 0;
 		mo->eflags &= ~MFE_APPLYPMOMZ;
 	}
 
@@ -2870,14 +2875,6 @@ void P_PlayerZMovement(mobj_t *mo)
 	|| mo->player->playerstate == PST_REBORN)
 		return;
 
-	if (mo->standingslope)
-	{
-		if (mo->flags & MF_NOCLIPHEIGHT)
-			mo->standingslope = NULL;
-		else if (!onground)
-			P_SlopeLaunch(mo);
-	}
-
 	// clip movement
 	if (onground && !(mo->flags & MF_NOCLIPHEIGHT))
 	{
@@ -2888,6 +2885,14 @@ void P_PlayerZMovement(mobj_t *mo)
 		else
 		{
 			mo->z = mo->floorz;
+		}
+
+		if (mo->standingslope)
+		{
+			if (mo->flags & MF_NOCLIPHEIGHT)
+				mo->standingslope = NULL;
+			else if (!onground)
+				P_SlopeLaunch(mo);
 		}
 
 		K_UpdateMobjTerrain(mo, (mo->eflags & MFE_VERTICALFLIP ? g_tm.ceilingpic : g_tm.floorpic));
@@ -2946,6 +2951,14 @@ void P_PlayerZMovement(mobj_t *mo)
 			/// \todo may not be needed (done in P_MobjThinker normally)
 			mo->eflags &= ~MFE_JUSTHITFLOOR;
 			P_CheckGravity(mo, true);
+		}
+		
+		if (mo->standingslope)
+		{
+			if (mo->flags & MF_NOCLIPHEIGHT)
+				mo->standingslope = NULL;
+			else if (!onground)
+				P_SlopeLaunch(mo);
 		}
 	}
 

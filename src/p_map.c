@@ -3516,7 +3516,9 @@ static void P_HitSlideLine(line_t *ld)
 	fixed_t d;
 
 	side = P_PointOnLineSide(slidemo->x, slidemo->y, ld);
-	lineangle = ld->angle - ANGLE_90;
+	// lineangle = ld->angle - ANGLE_90;
+	lineangle = R_PointToAngle2(0, 0, ld->dx, ld->dy) - ANGLE_90;
+	
 
 	if (side == 1)
 		lineangle += ANGLE_180;
@@ -4010,6 +4012,19 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	if (mo->player)
 		mo->player->bumpUnstuck += 5;
 
+	if (mo->standingslope)
+	{
+		vector3_t slopemom = {0,0,0};
+		slopemom.x = tmxmove;
+		slopemom.y = tmymove;
+		slopemom.z = mo->momz;
+		P_QuantizeMomentumToSlope(&slopemom, mo->standingslope);
+
+		tmxmove = slopemom.x;
+		tmymove = slopemom.y;
+		mo->momz = slopemom.z;
+	}
+
 	mo->momx = tmxmove;
 	mo->momy = tmymove;
 	mo->player->cmomx = tmxmove;
@@ -4019,8 +4034,25 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	{
 		if (!P_TryMove(mo, mo->x + tmxmove, mo->y + tmymove, true, NULL))
 		{
+			if (((mo->eflags & MFE_VERTICALFLIP && mo->z < mo->floorz) || (!(mo->eflags & MFE_VERTICALFLIP) && mo->z + mo->height > mo->ceilingz))
+				&& !(mo->flags & MF_NOCLIPHEIGHT))
+			{
+				if (mo->eflags & MFE_VERTICALFLIP)
+					mo->z = mo->floorz;
+				else
+					mo->z = mo->ceilingz - mo->height;
+			}
 			P_TryMove(mo, mo->x - oldmomx, mo->y - oldmomy, true, NULL);
 		}
+	}
+
+	if (((mo->eflags & MFE_VERTICALFLIP && mo->z < mo->floorz) || (!(mo->eflags & MFE_VERTICALFLIP) && mo->z + mo->height > mo->ceilingz))
+		&& !(mo->flags & MF_NOCLIPHEIGHT))
+	{
+		if (mo->eflags & MFE_VERTICALFLIP)
+			mo->z = mo->floorz;
+		else
+			mo->z = mo->ceilingz - mo->height;
 	}
 }
 
