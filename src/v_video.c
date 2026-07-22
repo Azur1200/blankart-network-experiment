@@ -3918,16 +3918,21 @@ void V_DrawRankNum(INT32 x, INT32 y, INT32 flags, INT32 num, INT32 digits, const
 
 // Find string width from cred_font chars
 //
-INT32 V_CreditStringWidth(const char *string)
+INT32 V_CreditSubStringWidth(const char *string, INT32 length, INT32 option)
 {
 	INT32 c, w = 0;
-	size_t i;
+	INT32 i;
+
+	(void)option;
 
 	// It's possible for string to be a null pointer
 	if (!string)
 		return 0;
 
-	for (i = 0; i < strlen(string); i++)
+	if (length < 0)
+		length = strlen(string);
+
+	for (i = 0; i < length; i++)
 	{
 		c = toupper(string[i]) - CRED_FONTSTART;
 		if (c < 0 || c >= CRED_FONTSIZE)

@@ -3719,6 +3719,9 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 			case TINY_FONT:
 				widthfunc = V_ThinSubStringWidth;
 				break;
+			case CRED_FONT:
+				widthfunc = V_CreditSubStringWidth;
+				break;
 			default:
 				I_Error("unknown font %d", part->font);
 				break;
