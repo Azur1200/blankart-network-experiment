@@ -10757,7 +10757,7 @@ void P_MobjThinker(mobj_t *mobj)
 	}
 
 	// Special thinker for scenery objects
-	if (mobj->flags & MF_SCENERY)
+	if (mobj->flags & MF_SCENERY && !mobj->player)
 	{
 		P_MobjSceneryThink(mobj);
 		return;
