@@ -816,10 +816,9 @@ void LUA_HookPlayerThink(player_t *player)
 	TracyCZoneEnd(__zone);
 }
 
-void LUA_HookThinkFrame(void)
+static void thinkframe_hook_base(const int type, INT32 ps_type, const char *debugstring, void (*perfstatfunc)(int, precise_t, char *))
 {
 	TracyCZone(__zone, true);
-	const int type = HOOK(ThinkFrame);
 
 	// variables used by perf stats
 	int hook_index = 0;
@@ -838,22 +837,22 @@ void LUA_HookThinkFrame(void)
 		{
 			get_hook(&hook, map->ids, k);
 
-			if (cv_perfstats.value == PS_THINKFRAME)
+			if (cv_perfstats.value == ps_type)
 			{
 				lua_pushvalue(gL, -1);/* need the function again */
 				time_taken = I_GetPreciseTime();
 			}
 
 			{
-				TracyCZoneN(__zone, "LUA_HookThinkFrame (call_single_hook)", true);
+				TracyCZoneN(__zone, debugstring, true);
 				call_single_hook(&hook);
 
-				if (cv_perfstats.value == PS_THINKFRAME)
+				if (cv_perfstats.value == ps_type)
 				{
 					lua_Debug ar;
 					time_taken = I_GetPreciseTime() - time_taken;
 					lua_getinfo(gL, ">S", &ar);
-					PS_SetThinkFrameHookInfo(hook_index, time_taken, ar.short_src);
+					perfstatfunc(hook_index, time_taken, ar.short_src);
 					TracyCMessage(ar.short_src, strlen(ar.short_src));
 					hook_index++;
 				}
@@ -864,8 +863,23 @@ void LUA_HookThinkFrame(void)
 
 		lua_settop(gL, 0);
 	}
-	
+
 	TracyCZoneEnd(__zone);
+}
+
+void LUA_HookPreThinkFrame(void)
+{
+	thinkframe_hook_base(HOOK(PreThinkFrame), PS_PRETHINKFRAME, "LUA_HookPreThinkFrame (call_single_hook)", PS_SetPreThinkFrameHookInfo);
+}
+
+void LUA_HookThinkFrame(void)
+{
+	thinkframe_hook_base(HOOK(ThinkFrame), PS_THINKFRAME, "LUA_HookThinkFrame (call_single_hook)", PS_SetThinkFrameHookInfo);
+}
+
+void LUA_HookPostThinkFrame(void)
+{
+	thinkframe_hook_base(HOOK(PostThinkFrame), PS_POSTTHINKFRAME, "LUA_HookPostThinkFrame (call_single_hook)", PS_SetPostThinkFrameHookInfo);
 }
 
 int LUA_HookMobjLineCollide(mobj_t *mobj, line_t *line)

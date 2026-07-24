@@ -954,6 +954,8 @@ static CV_PossibleValue_t perfstats_cons_t[] = {
 	{PS_LOGIC, "Logic"},
 	{PS_BOT, "Bots"},
 	{PS_THINKFRAME, "ThinkFrame"},
+	{PS_PRETHINKFRAME, "PreThinkFrame"},
+	{PS_POSTTHINKFRAME, "PostThinkFrame"},
 	{0, NULL}
 };
 consvar_t cv_perfstats = CVAR_INIT ("perfstats", "Off", 0, perfstats_cons_t, NULL);

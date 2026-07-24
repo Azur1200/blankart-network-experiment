@@ -895,7 +895,9 @@ void P_Ticker(boolean run)
 
 		{
 			TracyCZoneN(__zone, "LUA_PreThinkFrame", true);
-			LUA_HOOK(PreThinkFrame);
+			PS_START_TIMING(ps_lua_prethinkframe_time);
+			LUA_HookPreThinkFrame();
+			PS_STOP_TIMING(ps_lua_prethinkframe_time);
 			TracyCZoneEnd(__zone);
 		}
 
@@ -1152,7 +1154,9 @@ void P_Ticker(boolean run)
 
 	if (run)
 	{
-		LUA_HOOK(PostThinkFrame);
+		PS_START_TIMING(ps_lua_postthinkframe_time);
+		LUA_HookPostThinkFrame();
+		PS_STOP_TIMING(ps_lua_postthinkframe_time);
 
 		R_UpdateLevelInterpolators();
 

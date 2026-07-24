@@ -72,7 +72,9 @@ static ps_metric_t ps_removecount = {0};
 
 ps_metric_t ps_checkposition_calls = {0};
 
+ps_metric_t ps_lua_prethinkframe_time = {0};
 ps_metric_t ps_lua_thinkframe_time = {0};
+ps_metric_t ps_lua_postthinkframe_time = {0};
 
 ps_metric_t ps_lua_mobjhooks = {0};
 
@@ -167,7 +169,9 @@ perfstatrow_t gamelogic_rows[] = {
 	{"  dynslop", "  Dynamic slopes: ", &ps_thlist_times[THINK_DYNSLOPE], PS_TIME|PS_LEVEL},
 	{"  precip ", "  Precipitation:  ", &ps_thlist_times[THINK_PRECIP], PS_TIME|PS_LEVEL},
 	{"  botcmd ", " Bot logic:      ", &ps_botticcmd_time, PS_TIME|PS_LEVEL},
+	{" lprethinkf", " LUAh_PreThinkFrame:", &ps_lua_prethinkframe_time, PS_TIME|PS_LEVEL},
 	{" lthinkf", " LUAh_ThinkFrame:", &ps_lua_thinkframe_time, PS_TIME|PS_LEVEL},
+	{" lpostthinkf", " LUAh_PostThinkFrame:", &ps_lua_postthinkframe_time, PS_TIME|PS_LEVEL},
 	{" acs    ", " ACS_Tick:       ", &ps_acs_time, PS_TIME|PS_LEVEL},
 	{" other  ", " Other:          ", &ps_otherlogictime, PS_TIME|PS_LEVEL},
 	{}
@@ -204,11 +208,47 @@ int ps_tick_samples_left = 0;
 int ps_frame_index = 0;
 int ps_tick_index = 0;
 
+// dynamically allocated resizeable array for thinkframe hook stats
+ps_hookinfo_t *prethinkframe_hooks = NULL;
+int prethinkframe_hooks_length = 0;
+int prethinkframe_hooks_capacity = 16;
+
 ps_hookinfo_t *thinkframe_hooks = NULL;
 int thinkframe_hooks_length = 0;
 int thinkframe_hooks_capacity = 16;
 
+ps_hookinfo_t *postthinkframe_hooks = NULL;
+int postthinkframe_hooks_length = 0;
+int postthinkframe_hooks_capacity = 16;
+
 ps_botinfo_t ps_bots[MAXPLAYERS];
+
+void PS_SetPreThinkFrameHookInfo(int index, precise_t time_taken, char* short_src)
+{
+	if (!prethinkframe_hooks)
+	{
+		// array needs to be initialized
+		prethinkframe_hooks = Z_Calloc(sizeof(ps_hookinfo_t) * prethinkframe_hooks_capacity, PU_STATIC, NULL);
+	}
+
+	if (index >= prethinkframe_hooks_capacity)
+	{
+		// array needs more space, realloc with double size
+		int new_capacity = prethinkframe_hooks_capacity * 2;
+		prethinkframe_hooks = Z_Realloc(prethinkframe_hooks,
+										sizeof(ps_hookinfo_t) * new_capacity, PU_STATIC, NULL);
+		// initialize new memory with zeros so the pointers in the structs are null
+		memset(&prethinkframe_hooks[prethinkframe_hooks_capacity], 0,
+			   sizeof(ps_hookinfo_t) * prethinkframe_hooks_capacity);
+		prethinkframe_hooks_capacity = new_capacity;
+	}
+
+	prethinkframe_hooks[index].time_taken.value.p = time_taken;
+	memcpy(prethinkframe_hooks[index].short_src, short_src, LUA_IDSIZE * sizeof(char));
+	// since the values are set sequentially from begin to end, the last call should leave
+	// the correct value to this variable
+	prethinkframe_hooks_length = index + 1;
+}
 
 void PS_SetThinkFrameHookInfo(int index, precise_t time_taken, char* short_src)
 {
@@ -223,10 +263,10 @@ void PS_SetThinkFrameHookInfo(int index, precise_t time_taken, char* short_src)
 		// array needs more space, realloc with double size
 		int new_capacity = thinkframe_hooks_capacity * 2;
 		thinkframe_hooks = Z_Realloc(thinkframe_hooks,
-			sizeof(ps_hookinfo_t) * new_capacity, PU_STATIC, NULL);
+									 sizeof(ps_hookinfo_t) * new_capacity, PU_STATIC, NULL);
 		// initialize new memory with zeros so the pointers in the structs are null
 		memset(&thinkframe_hooks[thinkframe_hooks_capacity], 0,
-			sizeof(ps_hookinfo_t) * thinkframe_hooks_capacity);
+			   sizeof(ps_hookinfo_t) * thinkframe_hooks_capacity);
 		thinkframe_hooks_capacity = new_capacity;
 	}
 
@@ -235,6 +275,33 @@ void PS_SetThinkFrameHookInfo(int index, precise_t time_taken, char* short_src)
 	// since the values are set sequentially from begin to end, the last call should leave
 	// the correct value to this variable
 	thinkframe_hooks_length = index + 1;
+}
+
+void PS_SetPostThinkFrameHookInfo(int index, precise_t time_taken, char* short_src)
+{
+	if (!postthinkframe_hooks)
+	{
+		// array needs to be initialized
+		postthinkframe_hooks = Z_Calloc(sizeof(ps_hookinfo_t) * postthinkframe_hooks_capacity, PU_STATIC, NULL);
+	}
+
+	if (index >= postthinkframe_hooks_capacity)
+	{
+		// array needs more space, realloc with double size
+		int new_capacity = postthinkframe_hooks_capacity * 2;
+		postthinkframe_hooks = Z_Realloc(postthinkframe_hooks,
+										 sizeof(ps_hookinfo_t) * new_capacity, PU_STATIC, NULL);
+		// initialize new memory with zeros so the pointers in the structs are null
+		memset(&postthinkframe_hooks[postthinkframe_hooks_capacity], 0,
+			   sizeof(ps_hookinfo_t) * postthinkframe_hooks_capacity);
+		postthinkframe_hooks_capacity = new_capacity;
+	}
+
+	postthinkframe_hooks[index].time_taken.value.p = time_taken;
+	memcpy(postthinkframe_hooks[index].short_src, short_src, LUA_IDSIZE * sizeof(char));
+	// since the values are set sequentially from begin to end, the last call should leave
+	// the correct value to this variable
+	postthinkframe_hooks_length = index + 1;
 }
 
 void PS_ResetBotInfo(void)
@@ -638,6 +705,18 @@ void PS_UpdateTickStats(void)
 						PS_UpdateMetricHistory(&thinkframe_hooks[i].time_taken, true, false);
 					}
 					break;
+				case PS_PRETHINKFRAME:
+					for (i = 0; i < prethinkframe_hooks_length; i++)
+					{
+						PS_UpdateMetricHistory(&prethinkframe_hooks[i].time_taken, true, false);
+					}
+					break;
+				case PS_POSTTHINKFRAME:
+					for (i = 0; i < postthinkframe_hooks_length; i++)
+					{
+						PS_UpdateMetricHistory(&postthinkframe_hooks[i].time_taken, true, false);
+					}
+					break;
 				default:
 					break;
 			}
@@ -801,6 +880,24 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 				V_DrawSmallString(MAX_X-50, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, "ThinkFrame");
 			}
 			break;
+		case PS_PRETHINKFRAME:
+			{
+				maxpage = prethinkframe_hooks_length/PAGE_ENTRIES + 1;
+				page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
+				pagestart = min((page - 1)*PAGE_ENTRIES, prethinkframe_hooks_length);
+				pageend   = min(pagestart + PAGE_ENTRIES, prethinkframe_hooks_length);
+				V_DrawSmallString(MAX_X-60, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, "PreThinkFrame");
+			}
+			break;
+		case PS_POSTTHINKFRAME:
+			{
+				maxpage = postthinkframe_hooks_length/PAGE_ENTRIES + 1;
+				page = max(1, min(cv_ps_thinkframe_page.value, maxpage));
+				pagestart = min((page - 1)*PAGE_ENTRIES, postthinkframe_hooks_length);
+				pageend   = min(pagestart + PAGE_ENTRIES, postthinkframe_hooks_length);
+				V_DrawSmallString(MAX_X-65, MAX_Y+2*HEIGHT, V_MONOSPACE | V_GREENMAP, "PostThinkFrame");
+			}
+			break;
 		default:
 			break;
 	}
@@ -880,7 +977,22 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 
 void PS_ThinkFrame_Page_OnChange(void)
 {
-	int maxpage = thinkframe_hooks_length/PAGE_ENTRIES + 1;
+	int maxpage = 0;
+
+	switch (cv_perfstats.value)
+	{
+		case PS_THINKFRAME:
+			maxpage = thinkframe_hooks_length/PAGE_ENTRIES + 1;
+			break;
+		case PS_PRETHINKFRAME:
+			maxpage = prethinkframe_hooks_length/PAGE_ENTRIES + 1;
+			break;
+		case PS_POSTTHINKFRAME:
+			maxpage = postthinkframe_hooks_length/PAGE_ENTRIES + 1;
+			break;
+		default:
+			break;
+	}
 
 	if (cv_ps_thinkframe_page.value > maxpage)
 		CV_StealthSetValue(&cv_ps_thinkframe_page, maxpage);
@@ -895,9 +1007,19 @@ void PS_ThinkFrame_Page_OnChange(void)
 
 #undef PAGE_ENTRIES
 
+static void PS_DrawPreThinkFrameStats(void)
+{
+	draw_think_frame_stats(prethinkframe_hooks_length, prethinkframe_hooks);
+}
+
 static void PS_DrawThinkFrameStats(void)
 {
 	draw_think_frame_stats(thinkframe_hooks_length, thinkframe_hooks);
+}
+
+static void PS_DrawPostThinkFrameStats(void)
+{
+	draw_think_frame_stats(postthinkframe_hooks_length, postthinkframe_hooks);
 }
 
 void M_DrawPerfStats(void)
@@ -1050,6 +1172,12 @@ void M_DrawPerfStats(void)
 			case PS_THINKFRAME:
 				PS_DrawThinkFrameStats();
 				break;
+			case PS_PRETHINKFRAME:
+				PS_DrawPreThinkFrameStats();
+				break;
+			case PS_POSTTHINKFRAME:
+				PS_DrawPostThinkFrameStats();
+				break;
 			default:
 				break;
 		}
@@ -1063,9 +1191,20 @@ static void PS_ClearHistory(void)
 
 	Z_FreeTags(PU_PERFSTATS, PU_PERFSTATS);
 
+	// thinkframe hook metric history pointers need to be cleared manually
+	for (i = 0; i < prethinkframe_hooks_length; i++)
+	{
+		prethinkframe_hooks[i].time_taken.history = NULL;
+	}
+
 	for (i = 0; i < thinkframe_hooks_length; i++)
 	{
 		thinkframe_hooks[i].time_taken.history = NULL;
+	}
+
+	for (i = 0; i < postthinkframe_hooks_length; i++)
+	{
+		postthinkframe_hooks[i].time_taken.history = NULL;
 	}
 
 	ps_frame_index = ps_tick_index = 0;
