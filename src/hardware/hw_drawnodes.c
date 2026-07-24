@@ -215,9 +215,9 @@ void HWR_RenderDrawNodes(void)
 	if (!cst->numdrawnodes)
 		return;
 
-	ps_numdrawnodes = cst->numdrawnodes;
+	ps_numdrawnodes.value.i = cst->numdrawnodes;
 
-	ps_hw_nodesorttime = I_GetPreciseTime();
+	PS_START_TIMING(ps_hw_nodesorttime);
 
 	sortindex = Z_Malloc(sizeof(INT32) * cst->numdrawnodes, PU_STATIC, NULL);
 
@@ -256,9 +256,9 @@ void HWR_RenderDrawNodes(void)
 		}
 	}
 
-	ps_hw_nodesorttime = I_GetPreciseTime() - ps_hw_nodesorttime;
+	PS_STOP_TIMING(ps_hw_nodesorttime);
 
-	ps_hw_nodedrawtime = I_GetPreciseTime();
+	PS_START_TIMING(ps_hw_nodedrawtime);
 
 	// Okay! Let's draw it all! Woo!
 	GL_SetTransform(&atransform);
@@ -305,7 +305,7 @@ void HWR_RenderDrawNodes(void)
 		}
 	}
 
-	ps_hw_nodedrawtime = I_GetPreciseTime() - ps_hw_nodedrawtime;
+	PS_STOP_TIMING(ps_hw_nodedrawtime);
 
 	cst->numdrawnodes = 0;
 

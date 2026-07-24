@@ -493,7 +493,7 @@ static void P_RunThinkers(void)
 
 	for (i = 0; i < NUM_ACTIVETHINKERLISTS; i++)
 	{
-		ps_thlist_times[i] = I_GetPreciseTime();
+		PS_START_TIMING(ps_thlist_times[i]);
 		for (currentthinker = thlist[i].next; currentthinker != &thlist[i]; currentthinker = currentthinker->next)
 		{
 #ifdef PARANOIA
@@ -501,15 +501,15 @@ static void P_RunThinkers(void)
 #endif
 			currentthinker->function(currentthinker);
 		}
-		ps_thlist_times[i] = I_GetPreciseTime() - ps_thlist_times[i];
+		PS_STOP_TIMING(ps_thlist_times[i]);
 	}
 
 	if (gametypes[gametype]->rules & GTR_PAPERITEMS)
 		K_RunPaperItemSpawners();
 
-	ps_acs_time = I_GetPreciseTime();
+	PS_START_TIMING(ps_acs_time);
 	ACS_Tick();
-	ps_acs_time = I_GetPreciseTime() - ps_acs_time;
+	PS_STOP_TIMING(ps_acs_time);
 	
 	TracyCZoneEnd(__zone);
 }
@@ -890,8 +890,8 @@ void P_Ticker(boolean run)
 			}
 		}
 
-		ps_lua_mobjhooks = 0;
-		ps_checkposition_calls = 0;
+		ps_lua_mobjhooks.value.i = 0;
+		ps_checkposition_calls.value.i = 0;
 
 		{
 			TracyCZoneN(__zone, "LUA_PreThinkFrame", true);
@@ -899,7 +899,7 @@ void P_Ticker(boolean run)
 			TracyCZoneEnd(__zone);
 		}
 
-		ps_playerthink_time = I_GetPreciseTime();
+		PS_START_TIMING(ps_playerthink_time);
 
 		K_UpdateClusterPoints();
 		K_UpdateAllPlayerPositions();
@@ -931,7 +931,7 @@ void P_Ticker(boolean run)
 			antibumptime = max(p, antibumptime);
 		}
 
-		ps_playerthink_time = I_GetPreciseTime() - ps_playerthink_time;
+		PS_STOP_TIMING(ps_playerthink_time);
 	}
 
 	// Keep track of how long they've been playing!
@@ -939,9 +939,9 @@ void P_Ticker(boolean run)
 
 	if (run)
 	{
-		ps_thinkertime = I_GetPreciseTime();
+		PS_START_TIMING(ps_thinkertime);
 		P_RunThinkers();
-		ps_thinkertime = I_GetPreciseTime() - ps_thinkertime;
+		PS_STOP_TIMING(ps_thinkertime);
 		thinkersCompleted = true;
 
 		// Run any "after all the other thinkers" stuff
@@ -970,7 +970,7 @@ void P_Ticker(boolean run)
 
 					ps_bots[i].total = I_GetPreciseTime() - t;
 					ps_bots[i].isBot = true;
-					ps_botticcmd_time += ps_bots[i].total;
+					ps_botticcmd_time.value.p += ps_bots[i].total;
 				}
 			}
 		}
@@ -1028,9 +1028,9 @@ void P_Ticker(boolean run)
 			}
 		}
 
-		ps_lua_thinkframe_time = I_GetPreciseTime();
+		PS_START_TIMING(ps_lua_thinkframe_time);
 		LUA_HookThinkFrame();
-		ps_lua_thinkframe_time = I_GetPreciseTime() - ps_lua_thinkframe_time;
+		PS_STOP_TIMING(ps_lua_thinkframe_time);
 	}
 
 	// Run shield positioning

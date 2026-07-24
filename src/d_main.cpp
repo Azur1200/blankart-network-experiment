@@ -348,7 +348,7 @@ boolean D_RenderLevel(void)
 
 	objectsdrawn = 0;
 
-	ps_rendercalltime = I_GetPreciseTime();
+	PS_START_TIMING(ps_rendercalltime);
 
 	if (rendermode == render_soft)
 	{
@@ -438,7 +438,7 @@ boolean D_RenderLevel(void)
 		}
 	}
 
-	ps_rendercalltime = I_GetPreciseTime() - ps_rendercalltime;
+	PS_STOP_TIMING(ps_rendercalltime);
 	R_RestoreLevelInterpolators();
 	return true;
 }
@@ -655,7 +655,7 @@ static void D_Display(void)
 
 			D_RenderLevel();
 
-			ps_uitime = I_GetPreciseTime();
+			PS_START_TIMING(ps_uitime);
 
 			switch (gamestate)
 			{
@@ -675,7 +675,7 @@ static void D_Display(void)
 		}
 		else
 		{
-			ps_uitime = I_GetPreciseTime();
+			PS_START_TIMING(ps_uitime);
 		}
 	}
 
@@ -716,7 +716,7 @@ static void D_Display(void)
 
 	CON_Drawer();
 
-	ps_uitime = I_GetPreciseTime() - ps_uitime;
+	PS_STOP_TIMING(ps_uitime);
 
 	//
 	// wipe update
@@ -788,9 +788,9 @@ dedipostwipe:
 			M_DrawPerfStats();
 		}
 
-		ps_swaptime = I_GetPreciseTime();
+		PS_START_TIMING(ps_swaptime);
 		I_FinishUpdate(); // page flip or blit buffer
-		ps_swaptime = I_GetPreciseTime() - ps_swaptime;
+		PS_STOP_TIMING(ps_swaptime);
 	}
 }
 
@@ -884,6 +884,12 @@ static double D_EndFrame(precise_t enterprecise, int *frameskip)
 	// Capture the time once more to get the real delta time.
 	finishprecise = I_GetPreciseTime();
 	deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
+
+	// I looked at the possibility of putting in a float drawer for
+	// perfstats and it's very complicated, so we'll just do this instead...
+	ps_interp_frac.value.p = (precise_t)((FIXED_TO_FLOAT(g_time.timefrac)) * 1000.0f);
+	ps_interp_lag.value.p = (precise_t)((deltasecs) * 1000.0);
+
 	return deltasecs * NEWTICRATE;
 }
 
@@ -1090,7 +1096,7 @@ void D_SRB2Loop(void)
 				debugload--;
 #endif
 
-		interp = !dedicated && (R_GetFramerateCap() != TICRATE || cv_timescale.value < FRACUNIT);
+		interp = !dedicated && R_UsingFrameInterpolation();
 		doDisplay = false;
 
 		if (realtics > 0 || singletics)

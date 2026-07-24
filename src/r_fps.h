@@ -19,11 +19,16 @@
 #include "p_local.h"
 #include "r_state.h"
 
+#include "m_perfstats.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 extern consvar_t cv_fpscap;
+
+extern ps_metric_t ps_interp_frac;
+extern ps_metric_t ps_interp_lag;
 
 typedef enum
 {
@@ -34,6 +39,7 @@ typedef enum
 } timefrac_e;
 
 UINT32 R_GetFramerateCap(void);
+boolean R_UsingFrameInterpolation(void);
 fixed_t R_GetTimeFrac(timefrac_e level);
 void R_SetTimeFrac(fixed_t frac);
 

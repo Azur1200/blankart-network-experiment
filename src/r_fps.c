@@ -46,6 +46,9 @@ static CV_PossibleValue_t fpscap_cons_t[] = {
 };
 consvar_t cv_fpscap = CVAR_INIT ("fpscap", "Match refresh rate", CV_SAVE, fpscap_cons_t, NULL);
 
+ps_metric_t ps_interp_frac = {};
+ps_metric_t ps_interp_lag  = {};
+
 UINT32 R_GetFramerateCap(void)
 {
 	if (rendermode == render_none)
@@ -68,6 +71,11 @@ UINT32 R_GetFramerateCap(void)
 	}
 
 	return cv_fpscap.value;
+}
+
+boolean R_UsingFrameInterpolation(void)
+{
+	return (R_GetFramerateCap() != TICRATE || cv_timescale.value < FRACUNIT);
 }
 
 // this wacky function exists now because rendertimefrac is stopped outside levels

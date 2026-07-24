@@ -958,6 +958,17 @@ static CV_PossibleValue_t perfstats_cons_t[] = {
 };
 consvar_t cv_perfstats = CVAR_INIT ("perfstats", "Off", 0, perfstats_cons_t, NULL);
 
+consvar_t cv_ps_thinkframe_page = CVAR_INIT ("ps_thinkframe_page", "1", CV_CALL, CV_Natural, PS_ThinkFrame_Page_OnChange);
+
+static CV_PossibleValue_t ps_samplesize_cons_t[] = {
+	{1, "MIN"}, {1000, "MAX"}, {0, NULL}};
+consvar_t cv_ps_samplesize = CVAR_INIT ("ps_samplesize", "1", CV_CALL, ps_samplesize_cons_t, PS_SampleSize_OnChange);
+
+static CV_PossibleValue_t ps_descriptor_cons_t[] = {
+	{1, "Average"}, {2, "SD"}, {3, "Minimum"}, {4, "Maximum"}, {0, NULL}};
+
+consvar_t cv_ps_descriptor = CVAR_INIT ("ps_descriptor", "Average", 0, ps_descriptor_cons_t, NULL);
+
 consvar_t cv_director = CVAR_INIT ("director", "Off", 0, CV_OnOff, NULL);
 
 consvar_t cv_schedule = CVAR_INIT ("schedule", "On", CV_NETVAR|CV_CALL, CV_OnOff, Schedule_OnChange);
@@ -1615,6 +1626,9 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_resume);
 	CV_RegisterVar(&cv_perfstats);
+	CV_RegisterVar(&cv_ps_thinkframe_page);
+	CV_RegisterVar(&cv_ps_samplesize);
+	CV_RegisterVar(&cv_ps_descriptor);
 
 	//Value used to store last server player has joined
 	CV_RegisterVar(&cv_lastserver);
