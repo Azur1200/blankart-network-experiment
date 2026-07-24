@@ -214,7 +214,7 @@ int main(int argc, char **argv)
 #endif
 
 	// startup SRB2
-	CONS_Printf("Setting up SRB2Kart...\n");
+	CONS_Printf("Setting up BlanKart...\n");
 	D_SRB2Main();
 #ifdef LOGMESSAGES
 	if (!M_CheckParm("-nolog"))
