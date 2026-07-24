@@ -175,10 +175,14 @@ perfstatrow_t gamelogic_rows[] = {
 
 perfstatrow_t thinkercount_rows[] = {
 	{"thnkers", "Thinkers:       ", &ps_thinkercount, PS_LEVEL},
+	{" dynslope ", " Dynamic Slopes:  ", &ps_polythcount, PS_LEVEL},
+	{" plyobjs ", " Polyobjects:  ", &ps_polythcount, PS_LEVEL},
+	{" main ", " Main:           ", &ps_mainthcount, PS_LEVEL},
 	{" mobjs  ", " Mobjs:          ", &ps_mobjcount, PS_LEVEL},
 	{"  regular", "  Regular:        ", &ps_regularcount, PS_LEVEL},
 	{"  scenery", "  Scenery:        ", &ps_scenerycount, PS_LEVEL},
 	{"  nothink", "  Nothink:        ", &ps_nothinkcount, PS_HIDE_ZERO|PS_LEVEL},
+	{" mflor  ", " Moving Floors (Compat) ", &ps_floorthcount, PS_HIDE_ZERO|PS_LEVEL},
 	{" precip ", " Precipitation:  ", &ps_precipcount, PS_LEVEL},
 	{" other  ", " Other:          ", &ps_otherthcount, PS_LEVEL},
 	{" remove ", " Pending removal:", &ps_removecount, PS_LEVEL},
@@ -548,7 +552,11 @@ static void PS_CountThinkers(void)
 	ps_otherthcount.value.i = 0;
 	ps_removecount.value.i = 0;
 
-	// TODO UPDATE FOR BLANKART, WE HAVE A DIFFERENT ORDER.
+	ps_dynslopethcount.value.i = 0;
+	ps_polythcount.value.i = 0;
+	ps_mainthcount.value.i = 0;
+	ps_floorthcount.value.i = 0;
+
 	for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
 		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
