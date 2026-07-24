@@ -3064,6 +3064,12 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	mo = player->mo;
 
+	if (LUA_HookCameraThinker(player, thiscam))
+	{
+		P_CalcChasePostImg(player, thiscam);
+		return true;
+	}
+
 	if (player->playerstate != PST_LIVE && !(skins[player->skin].flags & SF_OLDDEATH))
 	{
 		// Do not move the camera while dead!
