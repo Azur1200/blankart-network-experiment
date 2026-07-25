@@ -98,6 +98,8 @@ static patch_t *bgtile = NULL;      // SPECTILE/SRB2BACK
 static patch_t *interpic = NULL;    // custom picture defined in map header
 
 static INT32 timer;
+static INT32 rankscreentimer = 0;
+static boolean freezetimer = false;
 
 static boolean useinterpic;
 
@@ -758,10 +760,12 @@ skiptallydrawer:
 	if (!LUA_HudEnabled(hud_intermissionmessages))
 		return;
 
-	if (timer && grandprixinfo.gp == false && bossinfo.boss == false)
+	const INT32 total_timer = (timer + rankscreentimer);
+
+	if (total_timer && grandprixinfo.gp == false && bossinfo.boss == false)
 	{
 		char *string;
-		INT32 tickdown = (timer+1)/TICRATE;
+		INT32 tickdown = (total_timer+1)/TICRATE;
 
 		if (multiplayer && demo.playback)
 			string = va("Replay ends in %d", tickdown);
@@ -878,11 +882,17 @@ void Y_Ticker(void)
 
 	LUA_HOOK(IntermissionThinker);
 
-	intertic++;
+	if (freezetimer)
+	{
+		intertic = max(0, intertic); // Prevent the instant-quit intermission
+	}
+	else
+	{
+		intertic++;
+	}
 
 	if (listscroll_length && (intertic > (TICRATE * 2)) && (intertic <= rolltic))
 	{
-
 		if (!listscroll_reverse)
 		{
 			if ((xscroll >= listscroll_length))
@@ -937,7 +947,20 @@ void Y_Ticker(void)
 			P_DoTeamscrambling();
 	}*/
 
-	if ((timer && !--timer)
+	boolean timerfinish = false;
+
+	if (timer)
+	{
+		if (!freezetimer)
+		{
+			if (!--timer)
+			{
+				timerfinish = true;
+			}
+		}
+	}
+
+	if ((timerfinish)
 		|| (intertic == endtic))
 	{
 		Y_EndIntermission();
@@ -1079,6 +1102,8 @@ void Y_StartIntermission(void)
 	}
 
 	intertic = -1;
+
+	freezetimer = true;
 
 #ifdef PARANOIA
 	if (endtic != -1)

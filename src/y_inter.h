@@ -32,12 +32,16 @@ void Y_DetermineIntermissionType(void);
 
 typedef enum
 {
-	INTERSCREEN_SCORETALLY = 0, // The fancy score tally; interpoints affect this screen
+	INTERSCREEN_NONE = 0,
+	INTERSCREEN_SCORETALLY, // The fancy score tally; interpoints affect this screen
 	INTERSCREEN_FINALRESULTS, // Finalized results, appears before the score tally
 	INTERSCREEN_ITEMROLLS, // The item rolls list
 	INTERSCREEN_RANKCHART, // The big graph representing players' ranks across the race
 	INTERSCREEN_RANKTALLY, // The total tally for all player ranks
-} interscreen_t;
+	INTERSCREEN_FINISH, // Not actually an intermission screen; finishes the intermission as a replacement for the old timer system
+	INTERSCREEN_GOTORESULTS, // Not actually an intermission screen; goes to either FINALRESULTS or RANKTALLY based on the scoring mode
+	NUMINTERSCREENS,
+} ATTRPACK interscreen_t;
 
 typedef enum
 {
@@ -48,6 +52,7 @@ typedef enum
 } intertype_t;
 
 extern intertype_t intertype;
+extern interscreen_t interscreen;
 
 void Y_FollowIntermission(void);
 
