@@ -1,0 +1,20 @@
+diff --git a/common/mptStringFormat.cpp b/common/mptStringFormat.cpp
+index d951fdd6f..d9f553c24 100644
+--- a/common/mptStringFormat.cpp
++++ b/common/mptStringFormat.cpp
+@@ -10,11 +10,11 @@
+ #include "stdafx.h"
+ #include "mptStringFormat.h"
+ 
+-#if MPT_CXX_AT_LEAST(17) && MPT_COMPILER_MSVC
++//#if MPT_CXX_AT_LEAST(17) && MPT_COMPILER_MSVC
+ #define MPT_FORMAT_CXX17_INT 1
+-#else
+-#define MPT_FORMAT_CXX17_INT 0
+-#endif
++//#else
++//#define MPT_FORMAT_CXX17_INT 0
++//#endif
+ 
+ #if MPT_FORMAT_CXX17_INT
+ #if MPT_MSVC_AT_LEAST(2019,0) && MPT_MSVC_BEFORE(2019,2)

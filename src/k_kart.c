@@ -4586,12 +4586,6 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 		case MT_SPB:
 			missile->movefactor = finalspeed;
 			break;
-		case MT_BUBBLESHIELDTRAP:
-			P_SetScale(missile, ((5*missile->destscale)>>2)*4);
-			missile->destscale = (5*missile->destscale)>>2;
-			S_StartSound(missile, sfx_s3kbfl);
-			S_StartSound(missile, sfx_cdfm35);
-			break;
 		case MT_EGGMINE:
 			// eggmines should spawn closer to the source
 			P_SetOrigin(missile,
@@ -4615,15 +4609,12 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 			break;
 	}
 
-	if (type != MT_BUBBLESHIELDTRAP)
-	{
-		x = x + P_ReturnThrustX(source, an, source->radius + missile->radius);
-		y = y + P_ReturnThrustY(source, an, source->radius + missile->radius);
-		throwmo = P_SpawnMobj(x, y, z, MT_FIREDITEM);
-		throwmo->movecount = 1;
-		throwmo->movedir = source->angle - an;
-		P_SetTarget(&throwmo->target, source);
-	}
+	x = x + P_ReturnThrustX(source, an, source->radius + missile->radius);
+	y = y + P_ReturnThrustY(source, an, source->radius + missile->radius);
+	throwmo = P_SpawnMobj(x, y, z, MT_FIREDITEM);
+	throwmo->movecount = 1;
+	throwmo->movedir = source->angle - an;
+	P_SetTarget(&throwmo->target, source);
 
 	return missile;
 }

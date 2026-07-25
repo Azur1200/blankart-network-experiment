@@ -405,6 +405,7 @@ _(SMOKE)
 _(SMALLBUBBLE) // small bubble
 _(MEDIUMBUBBLE) // medium bubble
 _(EXTRALARGEBUBBLE) // extra large bubble
+_(TRAPBUBBLE) // Ye olde unused Bubble Shield trap given a new lease on life
 _(WATERZAP)
 _(SPINDUST) // Spindash dust
 _(TFOG)
@@ -618,7 +619,6 @@ _(THUNDERSHIELD) // Shields
 _(BUBBLESHIELD)
 _(FLAMESHIELD)
 _(ATTRACTIONSHIELD)
-_(BUBBLESHIELDTRAP)
 _(BUBBLESHIELD_DEBRIS)
 
 _(SINK) // Kitchen Sink Stuff
