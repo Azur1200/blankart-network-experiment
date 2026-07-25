@@ -70,8 +70,48 @@ Make sure this matches the actual number of states
       ((grav >> 1) * (FLIPOVERHALFTICS * FLIPOVERHALFTICS))) / \
      FLIPOVERHALFTICS)
 
+#define CRASHJUMPHEIGHT (36 << FRACBITS)
+
+#define CRASHJUMPTICS (14)
+#define CRASHJUMPHALFTICS (7)
+
+#define CRASHFINISHHEIGHT (675840) // 10.3125 * FRACUNIT
+
+#define CRASH_TUMBLETIME (9 * TICRATE / 10)
+
+#define CRASH_TUMBLE_ROTRETURNDELTA (420 * FRACUNIT / TICRATE)
+#define CRASH_TUMBLE_ROTBOUNCEDELTA (166 * FRACUNIT / TICRATE)
+#define CRASH_TUMBLE_ROTDELTA (180 * FRACUNIT / TICRATE)
+#define CRASH_TUMBLE_YAWDELTA (13 * ANG1)
+
+#define CRASH_TUMBLE_STARTYAW (56 * ANG1)
+#define CRASH_TUMBLE_STARTROT (-60 * FRACUNIT)
+#define CRASH_TUMBLE_MAXROT (115 * FRACUNIT)
+#define CRASH_TUMBLE_MAXROT_AIR (160 * FRACUNIT)
+
+// The initial "crash jump" after a DMG_CRASH tumble starts
+#define CrashZMomentum(grav, scale)                                     \
+    ((FixedMul(CRASHJUMPHEIGHT, scale) +                                          \
+      ((grav >> 1) * (CRASHJUMPHALFTICS * CRASHJUMPHALFTICS))) / \
+     CRASHJUMPHALFTICS)
+
+#define CrashFinishZMomentum(grav, scale)                                   \
+    ((FixedMul(CRASHFINISHHEIGHT, scale) +                                            \
+      ((grav >> 1) * (CRASHJUMPHALFTICS * CRASHJUMPHALFTICS))) /     \
+     CRASHJUMPHALFTICS)
+
+typedef enum
+{
+	CLSMODE_AVERAGES,
+	CLSMODE_BESTFIT
+} ATTRPACK clustermode_e;
+
+#define CLUSTERCHANGEDTIME (6 * TICRATE)
+
 extern boolean clusterplayer[MAXPLAYERS];
 extern UINT32 clusterid; // ID of the "cluster player", the one closest to the cluster point.
+extern clustermode_e clustermode;
+extern tic_t clusterjustchanged;
 extern vector3_t clusterpoint, clusterdtf;
 
 // Bubble Shield's maximum health (determines how many times it can be fully inflated)
@@ -94,6 +134,7 @@ extern vector3_t clusterpoint, clusterdtf;
 #define SMONITORCONGADIST CV_Get(&cv_kartsmonitor_congadist)
 #define SMONITORDECAYDIST CV_Get(&cv_kartsmonitor_decaydist)
 #define SMONITORDECAYTIME CV_Get(&cv_kartsmonitor_decaytime)
+#define SMONITORINTANGIBLE CV_Get(&cv_kartsmonitor_intangible)
 
 // Precalculated constants for stacked boost diminishing
 // *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent
@@ -121,6 +162,7 @@ extern vector3_t clusterpoint, clusterdtf;
 #define INVINSTACKABLE CV_Get(&cv_kartstacking_invincibility_stackable)
 
 #define SMNTRSPEEDBOOST CV_Get(&cv_kartstacking_smonitor_speedboost)
+#define SMNTRFASTESTSPEED CV_Get(&cv_kartstacking_smonitor_fastestspeed)
 #define SMNTRACCELBOOST CV_Get(&cv_kartstacking_smonitor_accelboost)
 #define SMNTRHANDLEBOOST CV_Get(&cv_kartstacking_smonitor_handleboost)
 #define SMNTRSTACKABLE CV_Get(&cv_kartstacking_smonitor_stackable)
@@ -142,6 +184,7 @@ extern vector3_t clusterpoint, clusterdtf;
 
 #define ATTRACTIONAOEEMP CV_Get(&cv_kartattraction_aoeemp)
 #define ATTRACTIONAOEDAMAGE CV_Get(&cv_kartattraction_aoedmg)
+#define ATTRACTIONAOESHOVE CV_Get(&cv_kartattraction_aoeshove)
 #define ATTRACTIONSPEEDHIMIN CV_Get(&cv_kartstacking_attraction_speedboost_himin)
 #define ATTRACTIONSPEEDHIMAX CV_Get(&cv_kartstacking_attraction_speedboost_himax)
 #define ATTRACTIONSPEEDNORMMIN CV_Get(&cv_kartstacking_attraction_speedboost_normmin)
@@ -234,7 +277,7 @@ void K_GenericExtraFlagsNoZAdjust(mobj_t *mo, mobj_t *master);
 void K_SpawnDashDustRelease(player_t *player, boolean force);
 void K_SpawnNormalSpeedLines(player_t *player);
 void K_SpawnDraftSpeedLines(player_t *player, fixed_t scale, skincolornum_t color, boolean translucent);
-void K_SpawnInvincibilitySpeedLines(mobj_t *mo);
+void K_SpawnDashAreaSpeedLines(mobj_t *mo);
 void K_SpawnBumpEffect(mobj_t *mo);
 void K_KartMoveAnimation(player_t *player);
 void K_KartPlayerHUDUpdate(player_t *player);
@@ -254,8 +297,12 @@ void K_DoInstashield(player_t *player);
 void K_BattleAwardHit(player_t *player, player_t *victim, mobj_t *inflictor, UINT8 bumpersRemoved);
 void K_SpinPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 type);
 void K_FlipPlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
+void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 boolean K_IsPlayerDamaged(const player_t *player);
+void K_ResetCrashOffsetData(player_t *player);
+void K_ResetCrashData(player_t *player);
+void K_Player_CrashThinker(player_t *player);
 void K_HandleBumperChanges(player_t *player, UINT8 prevBumpers);
 void K_DestroyBumpers(player_t *player, UINT8 amount);
 void K_TakeBumpersFromPlayer(player_t *player, player_t *victim, UINT8 amount);
@@ -321,6 +368,7 @@ INT32 K_GetDriftAngleOffset(player_t *player);
 void K_KartUpdatePosition(player_t *player);
 void K_KartLegacyUpdatePosition(player_t *player);
 void K_UpdateClusterPoints(void);
+UINT32 K_GetClusterDistanceForPlayer(player_t * player);
 void K_UpdateAllPlayerPositions(void);
 mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 flip, UINT8 type, UINT8 amount);
 void K_DropItems(player_t *player);
@@ -343,9 +391,11 @@ boolean K_SlopeResistance(const player_t *player);
 void K_RemoveGrowShrink(player_t *player);
 void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 void K_ApplyTripWire(player_t *player, tripwirestate_t state);
-fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb);
+fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb, fixed_t extrapct);
 fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dorubberbanding);
 fixed_t K_GetKartAccel(const player_t *player);
+void K_DoKartMagnetGradient(player_t *player);
+void K_KartMagnetThinker(player_t *player);
 UINT16 K_GetKartFlashing(const player_t *player);
 boolean K_PlayerShrinkCheat(const player_t *player);
 void K_UpdateShrinkCheat(player_t *player);
@@ -461,6 +511,8 @@ void K_KartAttractHomingAttack(player_t *player);
 void K_KartPlayerBumpyRoad(player_t *player);
 
 fixed_t K_HandleAirDrag(player_t *player, boolean onground, fixed_t speed, fixed_t airdrag);
+
+void K_ShoveObject(mobj_t *victim, mobj_t *source, fixed_t force);
 
 #ifdef __cplusplus
 } // extern "C"

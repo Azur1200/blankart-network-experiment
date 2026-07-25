@@ -23,6 +23,8 @@
 #include "i_threads.h"
 #include "mserv.h"
 #include "r_skins.h" // for SKINNAMESIZE
+#include "m_textinput.h"
+#include "g_input.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,8 +37,74 @@ extern "C" {
 // MENUS
 //
 
+extern INT32 menuKey; // keyboard key pressed for menu
+
+#define NUMVIRTUALKEYSINROW (10+2) // 1-9, 0, and a right-side gutter of two keys' width
+extern INT16 virtualKeyboard[5][NUMVIRTUALKEYSINROW];
+extern INT16 shift_virtualKeyboard[5][NUMVIRTUALKEYSINROW];
+
+typedef struct menutyping_s
+{
+	boolean active;                         // Active
+	boolean menutypingclose;        // Closing
+	boolean keyboardtyping;         // If true, all keystrokes are treated as typing (ignores MBT_A etc). This is unset if you try moving the cursor on the virtual keyboard or use your controller
+	SINT8 menutypingfade;           // fade in and out
+
+	SINT8 keyboardx;
+	SINT8 keyboardy;
+	boolean keyboardcapslock;
+	boolean keyboardshift;
+
+	textinput_t *textinput;
+	menuitem_t *item;
+} menutyping_t;
+// While typing, we'll have a fade strongly darken the screen to overlay the typing menu instead
+
+extern menutyping_t menutyping;
+
+#define MENUDELAYTIME 10
+#define MENUMINDELAY 3
+#define MENUDMAXDELAYCOUNT 4
+
+typedef enum
+{
+	MBT_CONFIRM = 1,
+	MBT_CANCEL = 1<<1,
+	MBT_HOME = 1<<2,
+	MBT_INFO1 = 1<<3,
+	MBT_INFO2 = 1<<4,
+	MBT_INFO3 = 1<<5,
+} menuButtonCode_t;
+
+typedef struct menucmd_s
+{
+	SINT8 ev_dpad_ud; // Handles up and down for the actual dpad set by events
+	SINT8 ev_dpad_lr; // Handles left and right for the actual dpad set by events
+
+	// Current frame's data
+	SINT8 dpad_ud; // up / down dpad
+	SINT8 dpad_lr; // left / right
+	UINT32 buttons; // buttons
+
+	// Previous frame's data
+	SINT8 prev_dpad_ud;
+	SINT8 prev_dpad_lr;
+	UINT32 buttonsHeld; // prev frame's buttons
+
+	UINT16 delay; // menu wait
+	UINT32 delayCount; // num times ya did menu wait (to make the wait shorter each time)
+
+	boolean wipebuffer; // Hold the last input sent.
+} menucmd_t;
+
+extern menucmd_t menucmd[MAXSPLITSCREENPLAYERS];
+
 // max size of menu stack
 #define NUMMENULEVELS 8
+
+#define MAXMENUPANELNAME 16
+
+#define MAXMENUITEMPARTS 4
 
 // Menu IDs sectioned by numeric places to signify hierarchy
 typedef enum
@@ -51,6 +119,7 @@ typedef enum
 } menutype_t;
 
 extern menutype_t menustack[NUMMENULEVELS];
+extern menutype_t restoremenustack[NUMMENULEVELS];
 
 void M_InitMenuPresTables(void);
 void M_ChangeMenuMusic(void);
@@ -64,6 +133,22 @@ void M_SetMenuCurTitlePics(void);
 // this can resize the view and change game parameters.
 // Does all the real work of the menu interaction.
 boolean M_Responder(event_t *ev);
+
+menupanelinst_t *M_GetCurrentMenuPanelInst(void);
+menupaneldef_t *M_GetCurrentMenuPanelDef(menupanelinst_t *curpi);
+menuitem_t *M_GetCurrentMenuItem(menupanelinst_t *curpi);
+void M_HandleMessageBox(INT32 thisMenuKey);
+void M_SetMenuDelay(UINT8 i);
+void M_UpdateMenuCMD(UINT8 i, boolean bailrequired);
+boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt);
+boolean M_MenuButtonHeld(UINT8 pid, UINT32 bt);
+sfxenum_t M_MenuTypingSounds(INT32 key);
+void M_MenuTypingInput(INT32 key);
+void M_SwitchVirtualKeyboard(boolean gamepad);
+void M_AbortVirtualKeyboard(void);
+void M_OpenVirtualKeyboard(textinput_t *textinput, char *buffer, menuitem_t *item);
+
+void M_DoItemRoutine(menuitem_t *item, INT32 thisMenuKey);
 
 // Called by main loop, runs for demo playback. If this returns true, nullify any further user input.
 boolean M_DemoResponder(event_t *ev);
@@ -85,7 +170,7 @@ void M_StartControlPanel(void);
 void M_SortServerList(void);
 
 // Draws a box with a texture inside as background for messages
-void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines);
+void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines, INT32 flags);
 
 // Used in d_netcmd to restart time attack
 INT32 MR_ModeAttackRetry(INT32 choice);
@@ -93,16 +178,58 @@ INT32 MR_ModeAttackRetry(INT32 choice);
 // the function to show a message box typing with the string inside
 // string must be static (not in the stack)
 // routine is a function taking a INT32 in parameter
+
 typedef enum
 {
 	MM_NOTHING = 0, // is just displayed until the user do someting
 	MM_YESNO,       // routine is called with only 'y' or 'n' in param
 	MM_EVENTHANDLER // the same of above but without 'y' or 'n' restriction
-	                // and routine is void routine(event_t *) (ex: set control)
+	// and routine is void routine(event_t *) (ex: set control)
 } menumessagetype_t;
 
-#define M_StartMessage(string, routine, itemtype) M_StartMessage2(string, (void (*)(void))routine, itemtype)
-void M_StartMessage2(const char *string, void (*routine)(void), menumessagetype_t itemtype);
+typedef union
+{
+	void (*routine)(INT32); // MM_YESNO
+	void (*handler)(event_t *); // MM_EVENTHANDLER
+} messagebox_callback;
+
+typedef struct
+{
+	boolean active;
+	char *headertext;
+	char *text;
+	char *confirmtext;
+	char *declinetext;
+	messagebox_callback callback;
+	menumessagetype_t messagetype;
+	INT16 x, y;
+	INT16 numlines;
+	INT16 maxlength;
+} messagebox_t;
+
+typedef enum
+{
+	MA_NONE = 0,
+	MA_YES,
+	MA_NO
+} manswer_e;
+
+extern messagebox_t messagebox;
+extern messagebox_t messageboxqueue[NUMMENULEVELS];
+
+#define MB_ROUTINE(func) (messagebox_callback){.routine = func}
+#define MB_HANDLER(func) (messagebox_callback){.handler = func}
+#define MB_NONE (messagebox_callback){0}
+
+const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback, boolean forcekeyboard);
+char *M_MessageConfirmText(boolean gamequit, boolean forcekeyboard);
+char *M_MessageCancelText(boolean gamequit, boolean forcekeyboard);
+
+void M_MessageboxClose(boolean clearstack);
+
+//#define M_StartMessage(string, routine, itemtype) M_StartMessage2(NULL, string, ROUTINECAST(routine), itemtype, NULL, NULL)
+void M_StartMessage2(const char *headerstr, const char *str, messagebox_callback callback,
+					 menumessagetype_t itemtype, const char *confirmstr, const char *declinestr);
 
 typedef enum
 {
@@ -144,79 +271,143 @@ typedef enum
 	IT_OFSX      = 1<<6, // X coordinate is relative to current position
 	IT_OFSY      = 1<<7, // ditto
 	IT_TEMPORARY = 1<<8, // with IT_OFS*, offset applies only to this item
-	IT_OVERLAY   = 1<<9, // item is drawn at screen coordinates, without scrolling
-
-	IT_CENTER    = 1<<10, // center the text/patch
-	IT_RIGHT     = 1<<11, // right-align the text/patch
-	IT_SMALL     = 1<<12, // draw at half scale
-	IT_STICKER   = 1<<13, // draw a sticker behind the text
-
-#define sh 14
-	ITH_NONE      = 0<<sh, // no highlight
-	ITH_HIGHLIGHT = 1<<sh, // add highlightflags to text/patch
-	ITH_RECOMMEND = 2<<sh, // add recommendedflags to text/patch
-	ITH_WARNING   = 3<<sh, // add warningflags to text/patch
-	ITH_MASK      = 0x3<<sh,
-#undef sh
-
-#define sh 16
-	ITF_STANDARD  = 0<<sh, // standard font
-	ITF_HEADER    = 1<<sh, // standard font, with an offset to the left
-	ITF_THIN      = 2<<sh, // thin font
-	ITF_THIN2     = 3<<sh, // thin font with tighter spacing
-	ITF_FILL      = 4<<sh, // call drawfill using parameters in item->patch
-	ITF_PATCH     = 5<<sh, // display a patch instead of text
-	ITF_THUMBNAIL = 6<<sh, // display the thumbnail of the mapname in item->patch
-	ITF_IMAGETYPE = ITF_PATCH,
-	ITF_MASK      = 0x7<<sh,
-#undef sh
-
-	IT_STYLE     = IT_CENTER|IT_RIGHT|IT_SMALL|IT_STICKER|ITH_MASK|ITF_MASK,
 } menuitemflags_t;
 
-#define MAXSTRINGLENGTH 32
+typedef enum
+{
+	ITT_STRING,     // draws the text source directly using the font in part->font
+	ITT_FILL,       // parses the text source and calls drawfill
+	ITT_PATCH,      // draws a patch named by the text source
+	ITT_THUMBNAIL,  // draws the thumbnail of the named map
+	ITT_SKINICON,   // draws the icon of the skin in the text source, with skincolor in extra
+} ATTRPACK itemparttype_e;
+
+typedef enum
+{
+	ITH_NONE,        // no highlight
+	ITH_HIGHLIGHT,   // highlightflags
+	ITH_RECOMMENDED, // recommendedflags
+	ITH_WARNING,     // warningflags
+} ATTRPACK itemparthighlight_e;
+
+typedef enum
+{
+	ITA_LEFT,     // align to left
+	ITA_CENTER,   // align to center
+	ITA_RIGHT,    // align to right
+	ITA_EDGE,     // align to right edge of panel
+} ATTRPACK itempartalign_e;
+
+typedef enum
+{
+	ITS_TEXT,    // item->text
+	ITS_PATCH,   // item->patch
+	ITS_EXTRA,   // item->extra
+	ITS_FIXED,   // part->fixedstring
+	ITS_FIXED2,  // part->fixedstring2
+	ITS_DERIVED, // (parent style's source)
+} ATTRPACK itempartsource_e;
 
 typedef INT32 (menufunc_f)(INT32);
-typedef void  (menudrawer_f)(void);
+typedef void  (menudrawer_f)(menupanelinst_t *);
+typedef void  (panelfunc_f)(menupanelinst_t *);
 
 //
 // MENU TYPEDEFS
 //
+struct menuitempart_t
+{
+	itemparttype_e type;
+	itemparthighlight_e highlight;
+	itempartalign_e align;
+	itempartsource_e source, source2;
+
+	UINT8 font;
+	boolean fontalt; // V_6WIDTHSPACE
+	boolean small;
+	boolean translucent;
+	boolean nohighlight;
+	fixed_t xofs, yofs;
+	char *fixedstring, *fixedstring2;
+};
+
+struct menuitemstyle_t
+{
+	dehinfo_t info;
+	size_t parent;
+	menuitempart_t parts[MAXMENUITEMPARTS];
+	boolean partenabled[MAXMENUITEMPARTS];
+};
+
 struct menuitem_t
 {
 	dehinfo_t info;
 
-	char *text;    // left-side string
-	char *patch;   // name of patch lump to draw, OR right-side string
+	char *text;
+	char *patch;
 	char *tooltip; // help text displayed at bottom
+	char *extra;   // used by some styles
 
 	consvar_t *cvar;     // console variable to modify
 	menufunc_f *routine; // menu routine to call
 	menutype_t submenu;  // navigate to another menu
 
 	menuitemflags_t status; // show IT_xxx
+	const menuitemstyle_t *style;
 
 	INT32 argument; // passed to routine/submenu, OR step size for cvars
-	INT16 x, y;     // coordinates, see menuitemflags
+	fixed_t x, y;     // coordinates, see menuitemflags
+};
+
+struct menupaneldef_t
+{
+	dehinfo_t     info;
+	UINT16         numitems;           // # of menu items
+	menuitem_t   *items;              // menu items
+	menudrawer_f *drawroutine;        // draw routine
+	boolean       scrollbar;          // draw scrollbar
+	INT16         scrollheight;       // height of scrolling area
+	INT16         cursoroffset;       // X offset of cursor
+	INT16         lineheight;         // default Y offset to add for each item
+	menufunc_f   *keyhandler;         // called before key press is processed
+	panelfunc_f  *initializer;        // called when panel instance is setup
+	panelfunc_f  *tickroutine;        // called when panel is active
+	boolean multinav;                 // navigation in two dimensions!? (disables cvar arrows)
+	INT32 navitemcount;               // items per column (or row if horizontal is true)
+	boolean horizontal;               // navigate with left/right instead of up/down
+};
+
+struct menupanelinst_t
+{
+	char name[MAXMENUPANELNAME+1];
+	size_t defnum; // index in menupanels[]
+	fixed_t x, y;
+	fixed_t scrollheight;
+	fixed_t cursoroffset;
+	UINT16 numitems;
+	menuitem_t *items;
+	UINT16 itemon; // currently selected item, OR last selected item for menudef panels
+	INT32 vflags;
+	boolean visible;
+	INT32 navitemcount;
+	boolean disabled; // can't be selected
+	boolean altscroll; // viewserver hell (list scrolling, usually paired with disabled = true)
+	INT32 layer; // higher number draws on top
+	boolean cliprect; // Clips everything contained inside it
+	boolean cliprect_relative; // use the x and y position of the panel for the cliprect
+	fixed_t cliprect_x, cliprect_y; // X and Y of a cliprect when not relative
+	fixed_t cliprect_width, cliprect_height; // Width and Height of added cliprect
 };
 
 struct menu_t
 {
 	dehinfo_t      info;
 	char          *headerpic;
-	INT16          numitems;           // # of menu items
-	menuitem_t    *menuitems;          // menu items
-	menudrawer_f  *drawroutine;        // draw routine
-	INT16          x, y;               // x, y of menu
-	INT16          scrollheight;       // height of scrolling area
-	INT16          lastOn;             // last item user was on in menu
-	INT16          cursoroffset;       // X offset of cursor
-	INT16          lineheight;         // default Y offset to add for each item
 	menufunc_f    *enterroutine;       // called before enter a menu
 	menufunc_f    *quitroutine;        // called before quit a menu
-	menufunc_f    *keyhandler;         // called before key press is processed
-
-	// MENUPRES STUFF BELOW
+	menufunc_f    *tickroutine;        // ticker routine
+	size_t         numpanels;
+	menupanelinst_t *panels;
 
 	char bgname[8]; // name for background gfx lump; lays over titlemap if this is set
 	SINT8 fadestrength;  // darken background when displaying this menu, strength 0-31 or -1 for undefined
@@ -224,6 +415,7 @@ struct menu_t
 	INT32 titlescrollxspeed; // background gfx scroll per menu; inherits global setting
 	INT32 titlescrollyspeed; // y scroll
 	boolean bghide; // for titlemaps, hide the background.
+	boolean vhs; // Do the VHS effect.
 
 	SINT8 hidetitlepics; // hide title gfx per menu; -1 means undefined, inherits global setting
 	ttmode_enum ttmode; // title wing animation mode; default TTMODE_KART
@@ -257,18 +449,36 @@ struct menu_t
 extern menu_t menudefs[MAXMENUTYPES];
 extern UINT16 nummenutypes;
 
+#define MAXMENUPANELS 4096
+extern menupaneldef_t menupanels[MAXMENUPANELS];
+extern size_t nummenupanels;
+
+#define MAXMENUITEMSTYLES 256
+extern menuitemstyle_t menuitemstyles[MAXMENUITEMSTYLES];
+extern size_t nummenuitemstyles;
+
 void M_EnterMenu(menutype_t menu, boolean callexit, INT32 arg);
 void M_ExitMenu(void);
-void M_ClearMenus(boolean callexitmenufunc);
-menuitem_t *M_CheckMenuItem(menutype_t type, const char *name);
-menuitem_t *M_GetMenuItem(menutype_t type, const char *name);
+void M_ClearMenusEx(boolean callexitmenufunc, boolean notitle);
+#define M_ClearMenus(callexitmenufunc) M_ClearMenusEx(callexitmenufunc, false)
+/*FNONULL*/ menupaneldef_t *M_AllocateMenuPanelDef(const char *name);
+/*RNONULL INONULL1(1)*/ menuitemstyle_t *M_AllocateMenuItemStyle(const char *name, const menuitemstyle_t *parent);
+/*ANONULL*/ menuitem_t *M_CheckMenuItemDef(const menupaneldef_t *pd, const char *name);
+/*FNONULL*/ menuitem_t *M_GetMenuItemDef(const menupaneldef_t *pd, const char *name);
+void M_RestoreMenuStack(boolean backup);
 
-INT32 MR_SinglePlayerMenu(INT32 choice);
-INT32 MR_Options(INT32 choice);
+panelfunc_f
+MP_SinglePlayerMain, MP_Options, MP_GameOptions, MP_SetupControls, MP_CameraSetup,
+MP_ScreenshotOptions, MP_AddonsOptions, MP_SetupMultiPlayer, MP_SetupMonitorToggles,
+MP_PrepReplayList, MP_ReplayHutStart, MP_VideoModeList, MP_MultiplayerPause,
+MP_PlayerSplitscreen, MP_SetupJoystick, MP_PrepareLevelPlatter, MP_LevelPlatterOptions,
+MP_TimeAttackMenu, MP_TimeAttackPresets, MP_SetupViewServer, MP_ViewServerPlayers,
+MP_ViewServerAddons, MP_PrepAddonList, MP_StatsRecords, MP_StatsRecordsBG,
+MP_StatsPlaytime, MP_StatsExtra, MP_UnlockablesChecklist
+;
 INT32 MR_Addons(INT32 choice);
 INT32 MR_QuitAddons(INT32 choice);
 INT32 MR_QuitSRB2(INT32 choice);
-INT32 MR_Statistics(INT32 choice);
 INT32 MR_HandleLevelStats(INT32 choice);
 INT32 MR_QuitReplayHut(INT32 choice);
 INT32 MR_HandleReplayHutList(INT32 choice);
@@ -290,7 +500,7 @@ INT32 MR_CancelConnect(INT32 choice);
 INT32 MR_SetupControlsMenu(INT32 arg);
 INT32 MR_Refresh(INT32 choice);
 INT32 MR_Connect(INT32 arg);
-INT32 MR_VideoModeMenu(INT32 choice);
+INT32 MR_SetVideoMode(INT32 choice);
 #ifdef HWRENDER
 INT32 MR_OpenGLOptionsMenu(INT32 choice);
 #endif
@@ -298,8 +508,6 @@ INT32 MR_HandleVideoMode(INT32 ch);
 INT32 MR_PlaySound(INT32 choice);
 INT32 MR_MusicTest(INT32 choice);
 INT32 MR_QuitMusicTest(INT32 choice);
-INT32 MR_ScreenshotOptions(INT32 choice);
-INT32 MR_AddonsOptions(INT32 choice);
 INT32 MR_EraseData(INT32 arg);
 INT32 MR_Credits(INT32 choice);
 INT32 MR_BlanCredits(INT32 choice);
@@ -333,65 +541,71 @@ INT32 MR_HandleMusicTest(INT32 choice);
 INT32 MR_ResetControls(INT32 choice);
 INT32 MR_ChangeControl(INT32 arg);
 INT32 MR_AssignJoystick(INT32 arg);
-INT32 MR_SetupMonitorToggles(INT32 choice);
 INT32 MR_HandleMonitorToggles(INT32 choice);
 INT32 MR_RestartAudio(INT32 choice);
-INT32 MR_EnterViewServer(INT32 choice);
 INT32 MR_QuitViewServer(INT32 choice);
 INT32 MR_HandleViewServer(INT32 choice);
-INT32 MR_CameraSetup(INT32 arg);
-INT32 MR_PrepareLevelPlatter(INT32 choice);
+INT32 MR_SetLevelListMode(INT32 choice);
 INT32 MR_HandleLevelPlatter(INT32 choice);
 INT32 MR_LevelPlatterRandom(INT32 choice);
 #ifdef HAVE_DISCORDRPC
 INT32 MR_HandleDiscordRequests(INT32 choice);
 #endif
 
-void MD_DrawGenericMenu(void);
-void MD_DrawChecklist(void);
-void MD_DrawLevelStats(void);
-void MD_DrawReplayHut(void);
-void MD_DrawTimeAttackMenu(void);
-void MD_DrawMPMainMenu(void);
-void MD_DrawSetupMultiPlayerMenu(void);
-void MD_DrawCssStatBacker(void);
-void MD_DrawCssStatBars(void);
-void MD_DrawCssColourBar(void);
-void MD_DrawCssCharacter(void);
-void MD_DrawBarCssSelector(void);
-void MD_DrawGridCssSelector(void);
-void MD_DrawConnectMenu(void);
-void MD_DrawVideoMode(void);
-void MD_DrawAddons(void);
-void MD_DrawReplayStartMenu(void);
-void MD_DrawPlaybackMenu(void);
-void MD_DrawImageDef(void);
-void MD_DrawMusicTest(void);
-void MD_DrawJoystick(void);
-void MD_DrawMonitorToggles(void);
-void MD_DrawViewServer(void);
-void MD_DrawLevelPlatterMenu(void);
+void MD_DrawLevelStats(menupanelinst_t *pi);
+void MD_DrawReplayHut(menupanelinst_t *pi);
+void MD_DrawTimeAttackMenu(menupanelinst_t *pi);
+void MD_DrawSetupMultiPlayerMenu(menupanelinst_t *pi);
+void MD_DrawConnectMenu(menupanelinst_t *pi);
+void MD_DrawVideoMode(menupanelinst_t *pi);
+void MD_DrawAddons(menupanelinst_t *pi);
+void MD_DrawReplayStartMenu(menupanelinst_t *pi);
+void MD_DrawPlaybackMenu(menupanelinst_t *pi);
+void MD_DrawImageDef(menupanelinst_t *pi);
+void MD_DrawMusicTest(menupanelinst_t *pi);
+void MD_DrawJoystick(menupanelinst_t *pi);
+void MD_DrawMonitorToggles(menupanelinst_t *pi);
+void MD_DrawLevelPlatterMenu(menupanelinst_t *pi);
+void MD_DrawReplayHutReplayInfo(menupanelinst_t *pi);
 #ifdef HAVE_DISCORDRPC
-void MD_DrawDiscordRequests(void);
+void MD_DrawDiscordRequests(menupanelinst_t *pi);
 #endif
+
+// Tickers
+INT32 MR_TickStats(INT32 choice);
+INT32 MR_TickReplayHutReplayInfo(INT32 choice);
+INT32 MR_TickDiscordRequests(INT32 choice);
+INT32 MR_TickViewServer(INT32 choice);
+
+// Panel Tickers
+void MP_TickPlayBackMenu(menupanelinst_t *pi);
+void MP_TickTimeAttackMenu(menupanelinst_t *pi);
+void MP_TickImageDef(menupanelinst_t *pi);
+void MP_TickMultiPlayerMenu(menupanelinst_t *pi);
+void MP_TickAddonsURL(menupanelinst_t *pi);
+void MP_TickAddonsBackground(menupanelinst_t *pi);
+
+void MP_TickReplayHutInfoForeground(menupanelinst_t *pi);
+void MP_TickReplayHutInfoBackground(menupanelinst_t *pi);
+void MP_TickReplayHutMain(menupanelinst_t *pi);
+void MP_TickReplayHutDemoList(menupanelinst_t *pi);
+void MP_TickReplayHutRankings(menupanelinst_t *pi);
+void MP_TickReplayHutDemoTitle(menupanelinst_t *pi);
+
+void MP_TickOptions(menupanelinst_t *pi);
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);
+
+boolean M_AttackOnStack(void);
+void M_ReturnToConnectMenu(void);
 
 #ifdef HAVE_THREADS
 extern I_mutex m_menu_mutex;
 #endif
 
 // Call upon joystick hotplug
-INT32 MR_SetupJoystickMenu(INT32 arg);
-
-// mode descriptions for video mode menu
-struct modedesc_t
-{
-	INT32 modenum; // video mode number in the vidmodes list
-	const char *desc;  // XXXxYYY
-	UINT8 goodratio; // aspect correct if 1
-};
+void M_UpdateJoystickMenu(void);
 
 // savegame struct for save game menu
 typedef struct
@@ -417,6 +631,8 @@ extern consvar_t cv_menucaps;
 // allow menu text to be displayed in lowercase
 #define MENUCAPS (!cv_menucaps.value ? V_ALLOWLOWERCASE : 0)
 extern CV_PossibleValue_t gametype_cons_t[];
+
+extern consvar_t cv_debugvirtualkeyboard;
 
 void M_UpdateNumServerPages(void);
 
@@ -473,8 +689,6 @@ UINT16 M_GetColorBefore(UINT16 color);
 UINT16 M_GetColorAfter(UINT16 color);
 void M_InitPlayerSetupColors(void);
 void M_FreePlayerSetupColors(void);
-
-extern boolean menu_text_input;
 
 #ifdef __cplusplus
 } // extern "C"

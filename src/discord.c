@@ -20,7 +20,7 @@
 #include "i_net.h"
 #include "g_game.h"
 #include "p_tick.h"
-#include "m_menu.h" // gametype_cons_t
+#include "m_menu.h" // M_ClearMenus
 #include "r_things.h" // skins
 #include "mserv.h" // cv_advertise
 #include "z_zone.h"
@@ -599,7 +599,7 @@ void DRPC_UpdatePresence(void)
 			if (grandprixinfo.gp == true)
 			{
 				snprintf(detailstr, 48, "%s%s%s",
-					gametype_cons_t[gametype].strvalue,
+					gametypes[gametype]->name,
 					va(" | %s", cv_dummygpdifficulty.string),
 					(encoremode == true) ? " | Encore" : ""
 				);
@@ -607,7 +607,7 @@ void DRPC_UpdatePresence(void)
 			else
 			{
 				snprintf(detailstr, 48, "%s%s%s",
-					gametype_cons_t[gametype].strvalue,
+					gametypes[gametype]->name,
 					va(" | %s", kartspeed_cons_t[gamespeed+1].strvalue),
 					(encoremode == true) ? " | Encore" : ""
 				);

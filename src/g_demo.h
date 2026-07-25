@@ -37,6 +37,8 @@ typedef enum {
 
 extern consvar_t cv_recordmultiplayerdemos, cv_netdemosyncquality, cv_netdemosize;
 extern consvar_t cv_resyncdemo;
+extern consvar_t cv_dummyreplaysave;
+extern menuitem_t replaysave;
 
 extern tic_t demostarttime;
 
@@ -212,8 +214,6 @@ void G_LoadDemoInfo(menudemo_t *pdemo);
 void G_DeferedPlayDemo(const char *demo);
 
 void G_SaveDemo(void);
-
-boolean G_DemoTitleResponder(event_t *ev);
 
 void G_SyncDemoParty(INT32 rem, INT32 newsplitscreen);
 

@@ -594,6 +594,7 @@ extern struct minimapinfo
 #define DMG_VOLTAGE  0x04 // Normal but for killing the spb
 #define DMG_KARMA    0x05 // Karma Bomb explosion -- works like DMG_EXPLODE, but steals half of their bumpers & deletes the rest
 #define DMG_FLIPOVER 0x06 // Makes a player flip around in the air at a fixed speed.
+#define DMG_CRASH    0x07 // Makes a player tumble and roll along the ground
 //// Death types - cannot be combined with damage types
 #define DMG_INSTAKILL  0x80
 #define DMG_DEATHPIT   0x81

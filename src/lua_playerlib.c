@@ -318,17 +318,30 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(nextwaypoint) \
 	X(airtime) \
 	X(bigwaypointgap) \
+	X(distancefromcluster) \
+	X(distancefrombestfit) \
 	X(flashing) \
 	X(spinouttimer) \
 	X(spinouttype) \
 	X(flipovertimer) \
 	X(flipoverangle) \
+	X(crashtimer) \
+	X(crash_elapsed) \
+	X(crash_state) \
+	X(crash_yaw) \
+	X(crash_zoffset) \
+	X(crash_zoffset_delta) \
+	X(crash_zoffset_lerp) \
+	X(crash_reorient_start) \
+	X(crash_rot) \
+	X(crash_bumpme) \
 	X(instashield) \
 	X(wipeoutslow) \
 	X(justbumped) \
 	X(itemflags) \
 	X(outrun) \
 	X(outruntime) \
+	X(dashareapower) \
 	X(drift) \
 	X(driftcharge) \
 	X(driftboost) \
@@ -478,7 +491,8 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(karttiltmomentum) \
 	X(itemreservetype) \
 	X(itemreserveamount) \
-	X(clan)
+	X(clan) \
+	X(playerid)
 
 enum player_e
 {
@@ -633,6 +647,12 @@ static int player_get(lua_State *L)
 	case player_bigwaypointgap:
 		lua_pushinteger(L, plr->bigwaypointgap);
 		break;
+	case player_distancefromcluster:
+		lua_pushinteger(L, plr->distancefromcluster);
+		break;
+	case player_distancefrombestfit:
+		lua_pushinteger(L, plr->distancefrombestfit);
+		break;
 	case player_flashing:
 		lua_pushinteger(L, plr->flashing);
 		break;
@@ -647,6 +667,36 @@ static int player_get(lua_State *L)
 		break;
 	case player_flipoverangle:
 		lua_pushinteger(L, plr->flipoverangle);
+		break;
+	case player_crashtimer:
+		lua_pushinteger(L, plr->crashtimer);
+		break;
+	case player_crash_state:
+		lua_pushinteger(L, plr->crash_state);
+		break;
+	case player_crash_elapsed:
+		lua_pushinteger(L, plr->crash_elapsed);
+		break;
+	case player_crash_rot:
+		lua_pushinteger(L, plr->crash_rot);
+		break;
+	case player_crash_yaw:
+		lua_pushinteger(L, plr->crash_yaw);
+		break;
+	case player_crash_zoffset:
+		lua_pushinteger(L, plr->crash_zoffset);
+		break;
+	case player_crash_zoffset_delta:
+		lua_pushinteger(L, plr->crash_zoffset_delta);
+		break;
+	case player_crash_zoffset_lerp:
+		lua_pushinteger(L, plr->crash_zoffset_lerp);
+		break;
+	case player_crash_reorient_start:
+		lua_pushinteger(L, plr->crash_reorient_start);
+		break;
+	case player_crash_bumpme:
+		lua_pushboolean(L, plr->crash_bumpme);
 		break;
 	case player_instashield:
 		lua_pushinteger(L, plr->instashield);
@@ -665,6 +715,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_outruntime:
 		lua_pushinteger(L, plr->outruntime);
+		break;
+	case player_dashareapower:
+		lua_pushinteger(L, plr->dashareapower);
 		break;
 	case player_drift:
 		lua_pushinteger(L, plr->drift);
@@ -1272,6 +1325,11 @@ static int player_get(lua_State *L)
 	case player_clan:
 		lua_pushstring(L, plr->clan);
 		break;
+	case player_playerid:
+		// Doesn't actually exist in hardcode, but this is very useful and relevant
+		// to prototyping nonetheless
+		lua_pushinteger(L, (UINT32)(plr - players));
+		break;
 #ifdef HWRENDER
 	case player_fovadd:
 		lua_pushfixed(L, plr->fovadd);
@@ -1473,6 +1531,12 @@ static int player_set(lua_State *L)
 	case player_bigwaypointgap:
 		plr->bigwaypointgap = luaL_checkinteger(L, 3);
 		break;
+	case player_distancefromcluster:
+		plr->distancefromcluster = luaL_checkfixed(L, 3);
+		break;
+	case player_distancefrombestfit:
+		plr->distancefrombestfit = luaL_checkfixed(L, 3);
+		break;
 	case player_flashing:
 		plr->flashing = luaL_checkinteger(L, 3);
 		break;
@@ -1487,6 +1551,36 @@ static int player_set(lua_State *L)
 		break;
 	case player_flipoverangle:
 		plr->flipoverangle = luaL_checkinteger(L, 3);
+		break;
+	case player_crashtimer:
+		plr->crashtimer = luaL_checkinteger(L, 3);
+		break;
+	case player_crash_state:
+		plr->crash_state = (crashstate_e)(luaL_checkinteger(L, 3));
+		break;
+	case player_crash_elapsed:
+		return NOSET;
+		break;
+	case player_crash_rot:
+		plr->crash_rot = luaL_checkfixed(L, 3);
+		break;
+	case player_crash_yaw:
+		plr->crash_yaw = luaL_checkinteger(L, 3);
+		break;
+	case player_crash_zoffset:
+		plr->crash_zoffset = luaL_checkfixed(L, 3);
+		break;
+	case player_crash_zoffset_delta:
+		plr->crash_zoffset_delta = luaL_checkfixed(L, 3);
+		break;
+	case player_crash_zoffset_lerp:
+		plr->crash_zoffset_lerp = luaL_checkfixed(L, 3);
+		break;
+	case player_crash_reorient_start:
+		plr->crash_reorient_start = luaL_checkinteger(L, 3);
+		break;
+	case player_crash_bumpme:
+		plr->crash_bumpme = luaL_checkboolean(L, 3);
 		break;
 	case player_instashield:
 		plr->instashield = luaL_checkinteger(L, 3);
@@ -2080,6 +2174,8 @@ static int player_set(lua_State *L)
 	case player_karttiltmomentum:
 		plr->karttiltmomentum = lua_tointeger(L, 3);
 		break;
+	case player_playerid:
+		return NOSET;
 #ifdef HWRENDER
 	case player_fovadd:
 		plr->fovadd = luaL_checkfixed(L, 3);

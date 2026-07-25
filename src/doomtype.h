@@ -344,6 +344,8 @@ typedef UINT64 precise_t;
 #define intsign(n) \
 	((n) < 0 ? -1 : (n) > 0 ? 1 : 0)
 
+#define intmod(x, y) (((x) % (y) + (y)) % (y))
+
 // ISO C forbids function pointer -> void pointer cast but
 // if it's wrapped in a struct, we can take a pointer to
 // that struct and it's fine...

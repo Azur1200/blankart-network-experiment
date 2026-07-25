@@ -87,6 +87,7 @@ automatically.
 	X (BotJoin),\
 	X (GPRankPoints),/* K_CalculateGPRankPoints */\
 	X (AddonLoaded),\
+	X (CameraThinker),/* P_MoveChaseCamera */\
 	X (PlayerItem),/*SRB2KART*/\
 	X (PlayerItemThink),/*SRB2KART*/\
 	X (PlayerItemUse),/*SRB2KART*/\
@@ -154,7 +155,9 @@ int  LUA_HookTiccmd(player_t *, ticcmd_t *, int hook);
 int  LUA_HookKey(event_t *event, int hook); // Hooks for key events
 
 void LUA_HookPlayerThink(player_t *player);
+void LUA_HookPreThinkFrame(void);
 void LUA_HookThinkFrame(void);
+void LUA_HookPostThinkFrame(void);
 int  LUA_HookMobjLineCollide(mobj_t *, line_t *);
 int  LUA_HookTouchSpecial(mobj_t *special, mobj_t *toucher);
 int  LUA_HookShouldDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
@@ -173,6 +176,7 @@ int  LUA_HookPlayerMsg(int source, int target, int flags, char *msg);
 int  LUA_HookHurtMsg(player_t *, mobj_t *inflictor, mobj_t *source, UINT8 damagetype);
 int  LUA_HookMapThingSpawn(mobj_t *, mapthing_t *);
 int  LUA_HookFollowMobj(player_t *, mobj_t *);
+int  LUA_HookCameraThinker(player_t *, camera_t *);
 int  LUA_HookPlayerCanDamage(player_t *, mobj_t *);
 void LUA_HookPlayerQuit(player_t *, kickreason_t);
 int  LUA_HookNameChange(player_t *plr, const char *name);

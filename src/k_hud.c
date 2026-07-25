@@ -11,6 +11,7 @@
 
 #include "k_hud.h"
 #include "command.h"
+#include "g_mapnum.h"
 #include "info.h"
 #include "k_kart.h"
 #include "k_battle.h"
@@ -46,6 +47,8 @@
 #include "h_timers.h"
 #include "k_bot.h" // K_DrawBotDebugger
 #include "k_waypoint.h"
+
+#include "k_cluster.hpp"
 
 #include "radio_finish.h"
 
@@ -643,15 +646,10 @@ void K_LoadKartHUDGraphics(void)
 			kartitemgraphics_t *graphics = &item->graphics[j];
 			for (INT32 k = 0; k < graphics->numpatches; k++)
 			{
-				if (graphics->patches[k] == NULL)
-				{
-					// have to manually do this because HU_UpdatePatch only checks graphics from added WADs during partadd
-					// UUUUUGGGGGGGHHHHHHHHHHHHHHHHHHh
-					lumpnum_t lump = W_CheckNumForName(graphics->patchnames[k]);
-					graphics->patches[k] = lump == LUMPERROR ? missingpat : W_CachePatchNum(lump, PU_HUDGFX);
-				}
-				else
-					HU_UpdatePatch(&graphics->patches[k], graphics->patchnames[k]);
+				// have to manually do this because HU_UpdatePatch only checks graphics from added WADs during partadd
+				// UUUUUGGGGGGGHHHHHHHHHHHHHHHHHHh
+				lumpnum_t lump = W_CheckNumForName(graphics->patchnames[k]);
+				graphics->patches[k] = lump == LUMPERROR ? missingpat : W_CachePatchNum(lump, PU_HUDGFX);
 			}
 		}
 		R_AddKartItemSprites(item);
@@ -975,7 +973,11 @@ void K_ObjectTracking(trackingResult_t *result, const vector3_t *point, boolean 
 
 	// Calculate FOV adjustments.
 	fovDiff = cv_fov[cameraNum].value - baseFov;
+#ifdef HWRENDER
 	fov = ((baseFov - fovDiff) / 2) - (stplyr->fovadd / 2);
+#else
+	fov = ((baseFov - fovDiff) / 2);
+#endif
 	fovTangent = NEWTAN(FixedAngle(fov));
 
 	if (r_splitscreen == 1)
@@ -1920,7 +1922,7 @@ static void K_drawKartItem(void)
 	}
 }
 
-void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UINT8 mode)
+void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, mapnum_t emblemmap, UINT8 mode)
 {
 	// TIME_X = BASEVIDWIDTH-124;	// 196
 	// TIME_Y = 6;					//   6
@@ -2047,7 +2049,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 		V_DrawKartStringAtFixed((TX+84)<<FRACBITS, ((TY+3)<<FRACBITS)-jitter, splitflags, va("%d", worktime%10));
 	}
 
-	if ((modeattacking || (mode == 1)) && G_EmblemsEnabled()) // emblem time!
+	if (mode != 2 && (modeattacking || (mode == 1)) && G_EmblemsEnabled()) // emblem time!
 	{
 		INT32 workx = TX + 96, worky = TY+18;
 		SINT8 curemb = 0;
@@ -2109,7 +2111,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 			break;
 
 bademblem:
-			emblem = M_GetLevelEmblems(-1);
+			emblem = M_GetLevelEmblems(NEXTMAP_INVALID);
 		}
 
 		if (!mode)
@@ -4586,11 +4588,24 @@ static void K_drawKartMinimapRings(mobj_t *mobj, INT32 hudx, INT32 hudy, INT32 f
 static void K_drawKartMinimapCluster(INT32 hudx, INT32 hudy, INT32 flags)
 {
 	UINT8 pal = 180; // Strong pink color.
+	UINT8 pal2 = 0x95; // Miscellaneous clusters get a blue color (FIXME: rainbow-color by ID?)
 	UINT8 size = 6;
+	UINT8 size2 = 3;
 
 	fixed_t clusterx, clustery;
 
 	clusterx = clustery = 0;
+
+	if (num_player_clusters)
+	{
+		// More than just the main cluster is in this race!
+
+		INT32 i = 0;
+		for (i = 0; i < num_player_clusters; i++)
+		{
+			K_drawKartMinimapDot(player_clusters[i].nucleus.x, player_clusters[i].nucleus.y, hudx, hudy, flags, pal2, size2);
+		}
+	}
 
 	if ((clusterid != UINT32_MAX) && (players[clusterid].mo) && (!P_MobjWasRemoved(players[clusterid].mo)))
 	{
@@ -6526,16 +6541,66 @@ static void K_DrawClusterDebugger(void)
 
 	INT32 vflags = V_6WIDTHSPACE|V_ALLOWLOWERCASE;
 
+	INT32 y = 146;
+
 	if (K_LegacyOddsMode())
 	{
-		V_DrawThinString(8, 136, vflags, va("Cluster player: %s", player_names[clusterid]));
-		V_DrawThinString(8, 146, vflags, va("X: %f, Y: %f, Z: %f, Dist. from cluster: %d", FIXED_TO_FLOAT(clusterpoint.x), FIXED_TO_FLOAT(clusterpoint.y), FIXED_TO_FLOAT(clusterpoint.z), stplyr->distancefromcluster));
+		if (clusterid != UINT32_MAX)
+		{
+			V_DrawThinString(8, y, vflags, va("X: %f, Y: %f, Z: %f, Dist. from cluster: %d", FIXED_TO_FLOAT(clusterpoint.x), FIXED_TO_FLOAT(clusterpoint.y), FIXED_TO_FLOAT(clusterpoint.z), stplyr->distancefromcluster));
+			y -= 10;
+
+			V_DrawThinString(8, y, vflags, va("Dist. from best-fit: %d", stplyr->distancefrombestfit));
+			y -= 10;
+		}
+
+		if (num_player_clusters)
+		{
+			V_DrawThinString(8, y, vflags, va("Clusters active: %d", num_player_clusters));
+			y -= 10;
+
+			const player_t * bestfitplayer = player_clusters[0].nucleus.player;
+
+			if (bestfitplayer)
+			{
+				V_DrawThinString(8, y, vflags, va("Best-fit player: %s", player_names[bestfitplayer - players]));
+				y -= 10;
+			}
+		}
+
+		if (clusterid != UINT32_MAX)
+			V_DrawThinString(8, y, vflags, va("Cluster player: %s", player_names[clusterid]));
 	}
 	else
 	{
-		V_DrawThinString(8, 126, vflags, va("Cluster player: %s", player_names[clusterid]));
-		V_DrawThinString(8, 136, vflags, va("Cluster DtF: %d, Your DtF: %d", (UINT32)(clusterdtf.x), stplyr->distancetofinish));
-		V_DrawThinString(8, 146, vflags, va("Distance from Cluster: %d", stplyr->distancefromcluster));
+		V_DrawThinString(8, y, vflags, va("Dist. from cluster: %d", stplyr->distancefromcluster));
+		y -= 10;
+
+		V_DrawThinString(8, y, vflags, va("Dist. from best-fit: %d", stplyr->distancefrombestfit));
+		y -= 10;
+
+		if (clusterid != UINT32_MAX)
+		{
+			V_DrawThinString(8, y, vflags, va("Cluster DtF: %d, Your DtF: %d", (UINT32)(clusterdtf.x), stplyr->distancetofinish));
+			y -= 10;
+		}
+
+		if (num_player_clusters)
+		{
+			V_DrawThinString(8, y, vflags, va("Clusters active: %d", num_player_clusters));
+			y -= 10;
+
+			const player_t * bestfitplayer = player_clusters[0].nucleus.player;
+
+			if (bestfitplayer)
+			{
+				V_DrawThinString(8, y, vflags, va("Best-fit player: %s", player_names[bestfitplayer - players]));
+				y -= 10;
+			}
+		}
+
+		if (clusterid != UINT32_MAX)
+			V_DrawThinString(8, y, vflags, va("Cluster player: %s", player_names[clusterid]));
 	}
 }
 
@@ -6722,7 +6787,7 @@ void K_drawKartHUD(void)
 		{
 			if (!(K_GetRaceSplitsToggle() || K_doDrawSplits()))
 			{
-				K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap, 0);
+				K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
 			}
 			else
 			{
@@ -6732,11 +6797,11 @@ void K_drawKartHUD(void)
 					if (K_doDrawSplits())
 						K_drawLapSplitTimestamp();
 					else
-						K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap, 0);
+						K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
 				}
 				else
 				{
-					K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap, 0);
+					K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
 					// mine: moved this here to avoid redundant comparisions
 					K_drawLapSplitComparison();
 				}

@@ -78,7 +78,10 @@ void F_StartCredits(void);
 void F_BlanStartCredits(void);
 void F_StartSecretCredits(void);
 
+void F_TitleBGScroll(INT32 scrollspeed, INT32 ticker);
+
 extern INT32 finalecount;
+extern INT32 menuanimtimer;
 extern INT32 titlescrollxspeed;
 extern INT32 titlescrollyspeed;
 
@@ -166,7 +169,7 @@ enum
 	wipe_intermission_toblack,
 	wipe_voting_toblack,
 	wipe_titlescreen_toblack,
-	wipe_timeattack_toblack,
+	wipe_menu_toblack,
 	wipe_credits_toblack,
 	wipe_blancredits_toblack,
 	wipe_fullcredits_toblack,
@@ -183,7 +186,7 @@ enum
 	wipe_intermission_final,
 	wipe_voting_final,
 	wipe_titlescreen_final,
-	wipe_timeattack_final,
+	wipe_menu_final,
 	wipe_credits_final,
 	wipe_blancredits_final,
 	wipe_fullcredits_final,

@@ -15,6 +15,8 @@
 #include "doomstat.h"
 #include "g_game.h"
 #include "g_input.h"
+#include "g_state.h"
+#include "m_menu.h"
 #include "p_local.h"
 #include "z_zone.h"
 #include "s_sound.h"
@@ -30,6 +32,7 @@
 #include "r_fps.h"
 #include "r_main.h"
 #include "f_finale.h"
+#include "hu_stuff.h"
 
 // Object place
 #include "m_cheat.h"
@@ -49,6 +52,8 @@
 #include "radio_finish.h"
 
 #include "i_gamepad.h"
+
+#include "lua_profile.h"
 
 #include <tracy/tracy/TracyC.h>
 
@@ -490,7 +495,7 @@ static void P_RunThinkers(void)
 
 	for (i = 0; i < NUM_ACTIVETHINKERLISTS; i++)
 	{
-		ps_thlist_times[i] = I_GetPreciseTime();
+		PS_START_TIMING(ps_thlist_times[i]);
 		for (currentthinker = thlist[i].next; currentthinker != &thlist[i]; currentthinker = currentthinker->next)
 		{
 #ifdef PARANOIA
@@ -498,15 +503,15 @@ static void P_RunThinkers(void)
 #endif
 			currentthinker->function(currentthinker);
 		}
-		ps_thlist_times[i] = I_GetPreciseTime() - ps_thlist_times[i];
+		PS_STOP_TIMING(ps_thlist_times[i]);
 	}
 
 	if (gametypes[gametype]->rules & GTR_PAPERITEMS)
 		K_RunPaperItemSpawners();
 
-	ps_acs_time = I_GetPreciseTime();
+	PS_START_TIMING(ps_acs_time);
 	ACS_Tick();
-	ps_acs_time = I_GetPreciseTime() - ps_acs_time;
+	PS_STOP_TIMING(ps_acs_time);
 	
 	TracyCZoneEnd(__zone);
 }
@@ -663,6 +668,9 @@ static fixed_t FixedAngleDifference(fixed_t angle1, fixed_t angle2 )
 
 static void P_HandleCameraFreelookYaw(UINT8 pnum, player_t *player, camera_t *cam)
 {
+	if (menustack[0])
+		return;
+
 	if (P_IsDisplayPlayer(player))
 	{
 		fixed_t angle = 0;
@@ -884,16 +892,20 @@ void P_Ticker(boolean run)
 			}
 		}
 
-		ps_lua_mobjhooks = 0;
-		ps_checkposition_calls = 0;
+		LUA_ResetTicTimers();
+
+		ps_lua_mobjhooks.value.i = 0;
+		ps_checkposition_calls.value.i = 0;
 
 		{
 			TracyCZoneN(__zone, "LUA_PreThinkFrame", true);
-			LUA_HOOK(PreThinkFrame);
+			PS_START_TIMING(ps_lua_prethinkframe_time);
+			LUA_HookPreThinkFrame();
+			PS_STOP_TIMING(ps_lua_prethinkframe_time);
 			TracyCZoneEnd(__zone);
 		}
 
-		ps_playerthink_time = I_GetPreciseTime();
+		PS_START_TIMING(ps_playerthink_time);
 
 		K_UpdateClusterPoints();
 		K_UpdateAllPlayerPositions();
@@ -925,7 +937,7 @@ void P_Ticker(boolean run)
 			antibumptime = max(p, antibumptime);
 		}
 
-		ps_playerthink_time = I_GetPreciseTime() - ps_playerthink_time;
+		PS_STOP_TIMING(ps_playerthink_time);
 	}
 
 	// Keep track of how long they've been playing!
@@ -933,9 +945,9 @@ void P_Ticker(boolean run)
 
 	if (run)
 	{
-		ps_thinkertime = I_GetPreciseTime();
+		PS_START_TIMING(ps_thinkertime);
 		P_RunThinkers();
-		ps_thinkertime = I_GetPreciseTime() - ps_thinkertime;
+		PS_STOP_TIMING(ps_thinkertime);
 		thinkersCompleted = true;
 
 		// Run any "after all the other thinkers" stuff
@@ -964,64 +976,67 @@ void P_Ticker(boolean run)
 
 					ps_bots[i].total = I_GetPreciseTime() - t;
 					ps_bots[i].isBot = true;
-					ps_botticcmd_time += ps_bots[i].total;
+					ps_botticcmd_time.value.p += ps_bots[i].total;
 				}
 			}
 		}
 
-		// Bosses have a punchy start, so no position.
-		if (bossinfo.boss == true)
+		if (gamestate == GS_LEVEL)
 		{
-			if (leveltime == 0)
+			// Bosses have a punchy start, so no position.
+			if (bossinfo.boss == true)
 			{
-				S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
-				S_ShowMusicCredit(0, 5*TICRATE, 0);
-			}
-		}
-		// Plays the music after the starting countdown.
-		else
-		{
-			// Change timing of start music based on gametypes[gametype]->rules
-			tic_t startingtime = (gametypes[gametype]->rules & GTR_NOCOUNTDOWN) ? introtime : starttime;
-
-			if (!(titlemapinaction == TITLEMAP_RUNNING))
-			{
-				if (leveltime == (startingtime + (TICRATE/2)))
+				if (leveltime == 0)
 				{
-					// Plays the music after the starting countdown.
 					S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
 					S_ShowMusicCredit(0, 5*TICRATE, 0);
 				}
-				else if (startingtime != introtime)
-				{
-					if (!(gametypes[gametype]->rules & GTR_NOCOUNTDOWN))
-					{
-						if (leveltime == startingtime-(3*TICRATE))
-						{
-							S_StartSound(NULL, sfx_s3ka7); // 3,
-						}
-						else if ((leveltime == startingtime-(2*TICRATE)) || (leveltime == starttime-TICRATE))
-						{
-							S_StartSound(NULL, sfx_s3ka7); // 2, 1,
-						}
-						else if (leveltime == startingtime)
-						{
-							S_StartSound(NULL, sfx_s3kad); // GO!
-						}
-					}
+			}
+			// Plays the music after the starting countdown.
+			else
+			{
+				// Change timing of start music based on gametypes[gametype]->rules
+				tic_t startingtime = (gametypes[gametype]->rules & GTR_NOCOUNTDOWN) ? introtime : starttime;
 
-					if (leveltime < startingtime) // SRB2Kart
-						S_ChangeMusicInternal(((grandprixinfo.gp == true
-						) ? "gpstrt" : (encoremode ? "estart" : "kstart")), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
-					else if (leveltime == startingtime) // The GO! sound stops the level start ambience
-						S_StopMusic();
+				if (!(titlemapinaction == TITLEMAP_RUNNING))
+				{
+					if (leveltime == (startingtime + (TICRATE/2)))
+					{
+						// Plays the music after the starting countdown.
+						S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+						S_ShowMusicCredit(0, 5*TICRATE, 0);
+					}
+					else if (startingtime != introtime)
+					{
+						if (!(gametypes[gametype]->rules & GTR_NOCOUNTDOWN))
+						{
+							if (leveltime == startingtime-(3*TICRATE))
+							{
+								S_StartSound(NULL, sfx_s3ka7); // 3,
+							}
+							else if ((leveltime == startingtime-(2*TICRATE)) || (leveltime == starttime-TICRATE))
+							{
+								S_StartSound(NULL, sfx_s3ka7); // 2, 1,
+							}
+							else if (leveltime == startingtime)
+							{
+								S_StartSound(NULL, sfx_s3kad); // GO!
+							}
+						}
+
+						if (leveltime < startingtime) // SRB2Kart
+							S_ChangeMusicInternal(((grandprixinfo.gp == true
+							) ? "gpstrt" : (encoremode ? "estart" : "kstart")), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
+							else if (leveltime == startingtime) // The GO! sound stops the level start ambience
+								S_StopMusic();
+					}
 				}
 			}
 		}
 
-		ps_lua_thinkframe_time = I_GetPreciseTime();
+		PS_START_TIMING(ps_lua_thinkframe_time);
 		LUA_HookThinkFrame();
-		ps_lua_thinkframe_time = I_GetPreciseTime() - ps_lua_thinkframe_time;
+		PS_STOP_TIMING(ps_lua_thinkframe_time);
 	}
 
 	// Run shield positioning
@@ -1099,8 +1114,13 @@ void P_Ticker(boolean run)
 			G_WriteAllGhostTics();
 
 			if (cv_recordmultiplayerdemos.value && (demo.savemode == DSM_NOTSAVING || demo.savemode == DSM_WILLAUTOSAVE))
-				if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON))
+				if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON) && !menustack[0] && !chat_on)
+				{
 					demo.savemode = DSM_TITLEENTRY;
+					M_OpenVirtualKeyboard(&demo.titlenameinput, demo.titlename, &replaysave);
+					M_StartControlPanel();
+					M_EnterMenu(MN_TYPINGDUMMY, false, 0);
+				}
 		}
 		else if (demo.playback) // Use Ghost data for consistency checks.
 		{
@@ -1138,7 +1158,9 @@ void P_Ticker(boolean run)
 
 	if (run)
 	{
-		LUA_HOOK(PostThinkFrame);
+		PS_START_TIMING(ps_lua_postthinkframe_time);
+		LUA_HookPostThinkFrame();
+		PS_STOP_TIMING(ps_lua_postthinkframe_time);
 
 		R_UpdateLevelInterpolators();
 

@@ -9734,13 +9734,15 @@ void A_NapalmScatter(void *thing)
 // Description: Spawns a copy of the mobj. x, y, z, angle, scale, target and tracer carry over; everything else starts anew.
 //				Mostly writing this because I want to do multiple actions to pass these along in a single frame instead of several.
 //
-// var1 = unused
+// var1 = Boolean: copy spawnpoint?
 // var2 = unused
 //
 void A_SpawnFreshCopy(void *thing)
 {
 	mobj_t *actor = thing;
 	mobj_t *newObject;
+
+	const boolean copyspawn = (boolean)(var1 != 0);
 
 	if (LUA_CallAction(A_SPAWNFRESHCOPY, actor))
 		return;
@@ -9757,10 +9759,50 @@ void A_SpawnFreshCopy(void *thing)
 	P_SetTarget(&newObject->target, actor->target);
 	P_SetTarget(&newObject->tracer, actor->tracer);
 
+	if (copyspawn)
+	{
+		newObject->spawnpoint = actor->spawnpoint;
+	}
+
 	if (newObject->info->seesound)
 		S_StartSound(newObject, newObject->info->seesound);
 
 	newObject->color = actor->color; // SRB2Kart
+}
+
+// Function: A_WarpToSpawnpoint
+//
+// Description: Warps an object to its in-map spawnpoint, and resets all speed values in the process.
+//				If a spawnpoint doesn't exist, the function does nothing.
+//
+// var1 = unused
+// var2 = unused
+//
+void A_WarpToSpawnpoint(void *thing)
+{
+	mobj_t *actor = thing;
+
+	if (LUA_CallAction(A_WARPTOSPAWNPOINT, actor))
+		return;
+
+	if (P_MobjWasRemoved(actor))
+		return;
+
+	if (!actor->spawnpoint)
+		return;
+
+	actor->momx = 0;
+	actor->momy = 0;
+	actor->momz = 0;
+
+	vector3_t warp_pos = {0};
+	mobjtype_t actor_type = P_GetMobjtype(actor->spawnpoint->type);
+
+	warp_pos.x = actor->spawnpoint->x << FRACBITS;
+	warp_pos.y = actor->spawnpoint->y << FRACBITS;
+	warp_pos.z = P_GetMapThingSpawnHeight(actor_type, actor->spawnpoint, warp_pos.x, warp_pos.y);
+
+	P_SetOrigin(actor, warp_pos.x, warp_pos.y, warp_pos.z);
 }
 
 // Internal Flicky spawning function.

@@ -133,58 +133,58 @@ consvar_t cv_writetextmap_includemappatch = CVAR_INIT ("writetextmap_includemapp
 // Map hash, calculated on level load.
 // Sent to clients in PT_SERVERINFO.
 //
-UINT64 maphash;
+UINT64 maphash = 0;
 
 //
 // MAP related Lookup tables.
 // Store VERTEXES, LINEDEFS, SIDEDEFS, etc.
 //
 
-boolean udmf;
-INT32 udmf_version, patch_version;
+boolean udmf = false;
+INT32 udmf_version = 0, patch_version = 0;
 mapnamespace_t mapnamespace = MNS_UNKNOWN;
-size_t numvertexes, numsegs, numsectors, numsubsectors, numnodes, numlines, numsides, nummapthings;
-static size_t numpatchmapthings;
-size_t num_orig_vertexes;
-vertex_t *vertexes;
-seg_t *segs;
-sector_t *sectors;
-subsector_t *subsectors;
-node_t *nodes;
-line_t *lines;
-side_t *sides;
-mapthing_t *mapthings;
-static boolean basemaptyperemoval[65536];
-sector_t *spawnsectors;
-line_t *spawnlines;
-side_t *spawnsides;
-INT32 numstarposts;
-INT32 numbosswaypoints;
-boolean ringsactive;
-boolean stackingactive;
-boolean chainingactive;
-boolean slipdashactive;
-boolean purpledriftactive;
-boolean slopeboostactive;
-boolean draftingactive;
-UINT8	airdropactive;
-UINT8 airthrustactive;
-boolean recoverydashactive;
-boolean keepstuffactive;
-boolean waterskipbricks;
-boolean itemlittering;
-boolean itempushing;
-UINT8   bumpsparkactive;
-boolean itemlistactive;
+size_t numvertexes = 0, numsegs = 0, numsectors = 0, numsubsectors = 0, numnodes = 0, numlines = 0, numsides = 0, nummapthings = 0;
+static size_t numpatchmapthings = 0;
+size_t num_orig_vertexes =  0;
+vertex_t *vertexes = 0;
+seg_t *segs = NULL;
+sector_t *sectors = NULL;
+subsector_t *subsectors = NULL;
+node_t *nodes = NULL;
+line_t *lines = NULL;
+side_t *sides = NULL;
+mapthing_t *mapthings = NULL;
+static boolean basemaptyperemoval[65536] = {};
+sector_t *spawnsectors = NULL;
+line_t *spawnlines = NULL;
+side_t *spawnsides = NULL;
+INT32 numstarposts = 0;
+INT32 numbosswaypoints = 0;
+boolean ringsactive = false;
+boolean stackingactive = false;
+boolean chainingactive = false;
+boolean slipdashactive = false;
+boolean purpledriftactive = false;
+boolean slopeboostactive = false;
+boolean draftingactive = false;
+UINT8	airdropactive = 0;
+UINT8 airthrustactive = 0;
+boolean recoverydashactive = false;
+boolean keepstuffactive = false;
+boolean waterskipbricks = false;
+boolean itemlittering = false;
+boolean itempushing = false;
+UINT8   bumpsparkactive = 0;
+boolean itemlistactive = false;
 boolean trailslow_active = false;
 playerbumptype_t playerbumpactive = PBUMP_STANDARD;
-UINT16 bossdisabled;
-boolean stoppedclock;
-boolean levelloading;
+UINT16 bossdisabled = 0;
+boolean stoppedclock = false;
+boolean levelloading = false;
 boolean levelloaded = false;
-UINT8 levelfadecol;
+UINT8 levelfadecol = 0;
 
-virtres_t *curmapvirt;
+virtres_t *curmapvirt = NULL;
 
 // BLOCKMAP
 // Created from axis aligned bounding box
@@ -194,32 +194,32 @@ virtres_t *curmapvirt;
 // by spatial subdivision in 2D.
 //
 // Blockmap size.
-INT32 bmapwidth, bmapheight; // size in mapblocks
+INT32 bmapwidth = 0, bmapheight = 0; // size in mapblocks
 
-INT32 *blockmap; // INT32 for large maps
+INT32 *blockmap = NULL; // INT32 for large maps
 // offsets in blockmap are from here
-INT32 *blockmaplump; // Big blockmap
+INT32 *blockmaplump = NULL; // Big blockmap
 
 // origin of block map
-fixed_t bmaporgx, bmaporgy;
+fixed_t bmaporgx = 0, bmaporgy = 0;
 // for thing chains
-mobj_t **blocklinks;
-precipmobj_t **precipblocklinks;
+mobj_t **blocklinks = NULL;
+precipmobj_t **precipblocklinks = NULL;
 
 // REJECT
 // For fast sight rejection.
 // Speeds up enemy AI by skipping detailed LineOf Sight calculation.
 // Without special effect, this could be used as a PVS lookup as well.
 //
-UINT8 *rejectmatrix;
+UINT8 *rejectmatrix = NULL;
 
 // Maintain single and multi player starting spots.
-INT32 numdmstarts, numcoopstarts, numredctfstarts, numbluectfstarts;
+INT32 numdmstarts = 0, numcoopstarts = 0, numredctfstarts = 0, numbluectfstarts = 0;
 
-mapthing_t *deathmatchstarts[MAX_DM_STARTS];
-mapthing_t *playerstarts[MAXPLAYERS];
-mapthing_t *bluectfstarts[MAXPLAYERS];
-mapthing_t *redctfstarts[MAXPLAYERS];
+mapthing_t *deathmatchstarts[MAX_DM_STARTS] = {};
+mapthing_t *playerstarts[MAXPLAYERS] = {};
+mapthing_t *bluectfstarts[MAXPLAYERS] = {};
+mapthing_t *redctfstarts[MAXPLAYERS] = {};
 
 // Global state for PartialAddWadFile/MultiSetupWadFiles
 // Might be replacable with parameters, but non-trivial when the functions are called on separate tics
@@ -231,9 +231,8 @@ UINT16 partadd_earliestfile = UINT16_MAX;
 
 // Maintain *ZOOM TUBE* waypoints
 // Renamed because SRB2Kart owns real waypoints.
-mobj_t *tubewaypoints[NUMTUBEWAYPOINTSEQUENCES][TUBEWAYPOINTSEQUENCESIZE];
-UINT16 numtubewaypoints[NUMTUBEWAYPOINTSEQUENCES];
-
+mobj_t *tubewaypoints[NUMTUBEWAYPOINTSEQUENCES][TUBEWAYPOINTSEQUENCESIZE] = {};
+UINT16 numtubewaypoints[NUMTUBEWAYPOINTSEQUENCES] = {};
 // for warnings
 boolean usedspawnfinishline = false;
 
@@ -833,7 +832,7 @@ static void P_SpawnMapThings(boolean spawnemblems, boolean patch)
 
 		if (mt->type >= 600 && mt->type <= 611) // item patterns
 			P_SpawnItemPattern(mt);
-		else if (mt->type == 1713) // hoops
+		else if (mt->type == 1713 && spawnemblems) // hoops
 			P_SpawnHoop(mt);
 		else // Everything else
 			P_SpawnMapThing(mt);
@@ -1059,33 +1058,33 @@ static void P_InitializeLinedef(line_t *ld)
 	// cph 2006/09/30 - fix sidedef errors right away.
 	// cph 2002/07/20 - these errors are fatal if not fixed, so apply them
 	for (j = 0; j < 2; j++)
-		if (ld->sidenum[j] != 0xffff && ld->sidenum[j] >= (UINT16)numsides)
+		if (ld->sidenum[j] != NO_INDEX && ld->sidenum[j] >= (UINT16)numsides)
 		{
-			ld->sidenum[j] = 0xffff;
+			ld->sidenum[j] = NO_INDEX;
 			CONS_Debug(DBG_SETUP, "P_InitializeLinedef: Linedef %s has out-of-range sidedef number\n", sizeu1((size_t)(ld - lines)));
 		}
 
 	// killough 11/98: fix common wad errors (missing sidedefs):
-	if (ld->sidenum[0] == 0xffff)
+	if (ld->sidenum[0] == NO_INDEX)
 	{
 		ld->sidenum[0] = 0;  // Substitute dummy sidedef for missing right side
 		// cph - print a warning about the bug
 		CONS_Debug(DBG_SETUP, "P_InitializeLinedef: Linedef %s missing first sidedef\n", sizeu1((size_t)(ld - lines)));
 	}
 
-	if ((ld->sidenum[1] == 0xffff) && (ld->flags & ML_TWOSIDED))
+	if ((ld->sidenum[1] == NO_INDEX) && (ld->flags & ML_TWOSIDED))
 	{
 		ld->flags &= ~ML_TWOSIDED;  // Clear 2s flag for missing left side
 		// cph - print a warning about the bug
 		CONS_Debug(DBG_SETUP, "P_InitializeLinedef: Linedef %s has two-sided flag set, but no second sidedef\n", sizeu1((size_t)(ld - lines)));
 	}
 
-	if (ld->sidenum[0] != 0xffff)
+	if (ld->sidenum[0] != NO_INDEX)
 	{
 		sides[ld->sidenum[0]].special = ld->special;
 		sides[ld->sidenum[0]].line = ld;
 	}
-	if (ld->sidenum[1] != 0xffff)
+	if (ld->sidenum[1] != NO_INDEX)
 	{
 		sides[ld->sidenum[1]].special = ld->special;
 		sides[ld->sidenum[1]].line = ld;
@@ -1994,6 +1993,10 @@ static void ParseTextmapSectorParameter(UINT32 i, const char *param, const char 
 		else
 			sectors[i].offroad = FLOAT_TO_FIXED(atof(val));
 	}
+	else if (fasticmp(param, "dasharea") || fasticmp(param, "dashareapower"))
+	{
+		sectors[i].dashareapower = FLOAT_TO_FIXED(atof(val));
+	}
 	else if (fastcmp(param, "triggertag"))
 		sectors[i].triggertag = atol(val);
 	else if (fastcmp(param, "triggerer"))
@@ -2868,7 +2871,7 @@ static void P_WriteTextmap(void)
 		fprintf(f, "v1 = %s;\n", sizeu1(wlines[i].v1 - vertexes));
 		fprintf(f, "v2 = %s;\n", sizeu1(wlines[i].v2 - vertexes));
 		fprintf(f, "sidefront = %d;\n", wlines[i].sidenum[0]);
-		if (wlines[i].sidenum[1] != 0xffff)
+		if (wlines[i].sidenum[1] != NO_INDEX)
 			fprintf(f, "sideback = %d;\n", wlines[i].sidenum[1]);
 		firsttag = Tag_FGet(&wlines[i].tags);
 		if (firsttag != 0)
@@ -3512,8 +3515,8 @@ static void P_LoadTextmap(boolean patch)
 		memset(ld->stringargs, 0x00, NUM_SCRIPT_STRINGARGS*sizeof(*ld->stringargs));
 		ld->alpha = FRACUNIT;
 		ld->executordelay = 0;
-		ld->sidenum[0] = 0xffff;
-		ld->sidenum[1] = 0xffff;
+		ld->sidenum[0] = NO_INDEX;
+		ld->sidenum[1] = NO_INDEX;
 
 		ld->activation = 0;
 		K_UserPropertiesClear(&ld->user);
@@ -3524,7 +3527,7 @@ static void P_LoadTextmap(boolean patch)
 			I_Error("P_LoadTextmap: linedef %s has no v1 value set!\n", sizeu1(i));
 		if (!ld->v2)
 			I_Error("P_LoadTextmap: linedef %s has no v2 value set!\n", sizeu1(i));
-		if (ld->sidenum[0] == 0xffff)
+		if (ld->sidenum[0] == NO_INDEX)
 			I_Error("P_LoadTextmap: linedef %s has no sidefront value set!\n", sizeu1(i));
 
 		P_InitializeLinedef(ld);
@@ -3614,7 +3617,7 @@ static boolean P_CheckLineSideTripWire(line_t *ld, int p)
 
 	n = ld->sidenum[p];
 
-	if (n == 0xffff)
+	if (n == NO_INDEX)
 		return false;
 
 	sda = &sides[n];
@@ -3628,7 +3631,7 @@ static boolean P_CheckLineSideTripWire(line_t *ld, int p)
 		// copy midtexture to other side
 		n = ld->sidenum[!p];
 
-		if (n != 0xffff)
+		if (n != NO_INDEX)
 		{
 			fixed_t linelength = FixedHypot(ld->dx, ld->dy);
 			texture_t *tex = textures[sda->midtexture];
@@ -3657,7 +3660,7 @@ static void P_ProcessLinedefsAfterSidedefs(void)
 	for (; i--; ld++)
 	{
 		ld->frontsector = sides[ld->sidenum[0]].sector; //e6y: Can't be -1 here
-		ld->backsector = ld->sidenum[1] != 0xffff ? sides[ld->sidenum[1]].sector : 0;
+		ld->backsector = ld->sidenum[1] != NO_INDEX ? sides[ld->sidenum[1]].sector : 0;
 
 		// Check for tripwire, if either side matches a terraindef then
 		// copy that (mid)texture to the other side.
@@ -3688,7 +3691,7 @@ static void P_ProcessLinedefsAfterSidedefs(void)
 				len[0] = strlen(sides[ld->sidenum[0]].text) + 1;
 				len[1] = 0;
 
-				if (ld->sidenum[1] != 0xffff && sides[ld->sidenum[1]].text)
+				if (ld->sidenum[1] != NO_INDEX && sides[ld->sidenum[1]].text)
 					len[1] = strlen(sides[ld->sidenum[1]].text);
 
 				ld->text = Z_Malloc(len[0] + len[1], PU_LEVEL, NULL);
@@ -4046,7 +4049,7 @@ static void P_InitializeSeg(seg_t *seg)
 	{
 		UINT16 side = seg->linedef->sidenum[seg->side];
 
-		if (side == 0xffff)
+		if (side == NO_INDEX)
 			I_Error("P_InitializeSeg: Seg %s refers to side %d of linedef %s, which doesn't exist!\n", sizeu1((size_t)(seg - segs)), seg->side, sizeu1((size_t)(seg->linedef - lines)));
 
 		seg->sidedef = &sides[side];
@@ -4298,19 +4301,28 @@ static boolean P_LoadExtendedSubsectorsAndSegs(UINT8 **data, nodetype_t nodetype
 				else
 				{
 					UINT16 linenum = READUINT16((*data));
-					if (linenum != 0xFFFF && linenum >= numlines)
+					if (linenum != NO_INDEX && linenum >= numlines)
 						I_Error("P_LoadExtendedSubsectorsAndSegs: Seg %s in subsector %s has invalid linedef %d!\n", sizeu1(k), sizeu2(i), linenum);
-					segs[k].glseg = linenum == 0xFFFF;
-					segs[k].linedef = linenum == 0xFFFF ? NULL : &lines[linenum];
+					segs[k].glseg = linenum == NO_INDEX;
+					segs[k].linedef = linenum == NO_INDEX ? NULL : &lines[linenum];
 				}
 
 				segs[k].side = READUINT8((*data));
 			}
-			while (segs[subsectors[i].firstline].glseg)
+			// Validate that at least one seg in this subsector is a full (non-gl) segment.
 			{
-				subsectors[i].firstline++;
-				if (subsectors[i].firstline == k)
+				size_t checkline;
+				for (checkline = subsectors[i].firstline; checkline < k; checkline++)
+				{
+					if (!segs[checkline].glseg)
+					{
+						break;
+					}
+				}
+				if (checkline == k)
+				{
 					I_Error("P_LoadExtendedSubsectorsAndSegs: Subsector %s does not have any valid segs!", sizeu1(i));
+				}
 			}
 			break;
 
@@ -4451,6 +4463,81 @@ static void P_LoadMapBSP(const virtres_t *virt)
 	}
 }
 
+#if 0
+//
+// P_VerifyBlockMap
+//
+// haleyjd 03/04/10: do verification on validity of blockmap.
+//
+static boolean P_VerifyBlockMap(INT32 count)
+{
+	// FIXME: should any of this shit be unsinged?
+	INT32 x, y;
+	INT32 *maxoffs = blockmaplump + count;
+
+	//skipblstart = true;
+
+	for (y = 0; y < bmapheight; y++)
+	{
+		for (x = 0; x < bmapwidth; x++)
+		{
+			INT32 offset;
+			INT32 *list, *tmplist;
+			INT32 *blockoffset;
+
+			offset = y * bmapwidth + x;
+			blockoffset = blockmaplump + offset + 4;
+
+			// check that block offset is in bounds
+			if (blockoffset >= maxoffs)
+			{
+				CONS_Alert(CONS_ERROR, "P_VerifyBlockMap: block offset overflow\n");
+				return false;
+			}
+
+			offset = *blockoffset;
+
+			// check that list offset is in bounds
+			if (offset < 4 || offset >= count)
+			{
+				CONS_Alert(CONS_ERROR, "P_VerifyBlockMap: list offset overflow\n");
+				return false;
+			}
+
+			list = blockmaplump + offset;
+
+			//if (*list != 0)
+				//skipblstart = false;
+
+			// scan forward for a -1 terminator before maxoffs
+			for (tmplist = list; ; tmplist++)
+			{
+				// we have overflowed the lump?
+				if (tmplist >= maxoffs)
+				{
+					CONS_Alert(CONS_ERROR, "P_VerifyBlockMap: open blocklist\n");
+					return false;
+				}
+
+				if (*tmplist == -1) // found -1
+					break;
+			}
+
+			// scan the list for out-of-range linedef indicies in list
+			for (tmplist = list; *tmplist != -1; tmplist++)
+			{
+				if (*tmplist < 0 || *tmplist >= (INT32)numlines)
+				{
+					CONS_Alert(CONS_ERROR, "P_VerifyBlockMap: index >= numlines\n");
+					return false;
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
 // Split from P_LoadBlockMap for convenience
 // -- Monster Iestyn 08/01/18
 static void P_ReadBlockMapLump(INT16 *wadblockmaplump, size_t count)
@@ -4495,6 +4582,19 @@ static boolean P_LoadBlockMap(UINT8 *data, size_t count)
 	bmapwidth = blockmaplump[2];
 	bmapheight = blockmaplump[3];
 
+	// haleyjd 03/04/10: check for blockmap problems
+	// http://www.doomworld.com/idgames/index.php?id=12935
+	if (!P_VerifyBlockMap(count))
+	{
+//#ifdef PARANOIA
+//		I_Error("P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
+//#endif
+		CONS_Alert(CONS_ERROR, "P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
+		Z_Free(blockmaplump);
+		blockmaplump = NULL;
+		return false;
+	}
+
 	// clear out mobj chains
 	count = sizeof (*blocklinks)* bmapwidth*bmapheight;
 	blocklinks = Z_Calloc(count, PU_LEVEL, NULL);
@@ -4509,6 +4609,7 @@ static boolean P_LoadBlockMap(UINT8 *data, size_t count)
 
 	return true;
 }
+#endif
 
 static boolean LineInBlock(fixed_t cx1, fixed_t cy1, fixed_t cx2, fixed_t cy2, fixed_t bx1, fixed_t by1)
 {
@@ -4768,32 +4869,52 @@ static void P_CreateBlockMap(void)
 
 // PK3 version
 // -- Monster Iestyn 09/01/18
-static void P_LoadReject(UINT8 *data, size_t count)
+static void P_LoadReject(UINT8 *data, size_t rejectsize)
 {
-	if (!count) // zero length, someone probably used ZDBSP
+	const size_t neededsize = (numsectors * numsectors + 7) >> 3;
+
+	if (!rejectsize) // zero length, someone probably used ZDBSP
 	{
 		rejectmatrix = NULL;
 		CONS_Debug(DBG_SETUP, "P_LoadReject: REJECT lump has size 0, will not be loaded\n");
 	}
 	else
 	{
-		rejectmatrix = Z_Malloc(count, PU_LEVEL, NULL); // allocate memory for the reject matrix
-		memcpy(rejectmatrix, data, count); // copy the data into it
+		if (rejectsize < neededsize)
+		{
+//#ifdef PARANOIA
+//			I_Error("REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
+//#endif
+			CONS_Alert(CONS_ERROR, "REJECT is %s byte%s too small. REJECT might be invalid and crash vanilla clients!\n", sizeu1(neededsize - rejectsize), (neededsize - rejectsize) == 1 ? "" : "s");
+			rejectmatrix = NULL;
+			return;
+		}
+
+		rejectmatrix = Z_Calloc(rejectsize, PU_LEVEL, NULL); // allocate memory for the reject matrix
+		memcpy(rejectmatrix, data, rejectsize); // copy the data into it
 	}
 }
 
 static void P_LoadMapLUT(const virtres_t *virt)
 {
+#if 0
 	virtlump_t* virtblockmap = vres_Find(virt, "BLOCKMAP");
+#endif
 	virtlump_t* virtreject   = vres_Find(virt, "REJECT");
 
 	// Lookup tables
 	if (virtreject)
+	{
 		P_LoadReject(virtreject->data, virtreject->size);
+	}
 	else
+	{
 		rejectmatrix = NULL;
+	}
 
+#if 0
 	if (!(virtblockmap && P_LoadBlockMap(virtblockmap->data, virtblockmap->size)))
+#endif
 		P_CreateBlockMap();
 }
 
@@ -5808,7 +5929,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 
 			break;
 		case 259: //Custom FOF
-			if (lines[i].sidenum[1] == 0xffff)
+			if (lines[i].sidenum[1] == NO_INDEX)
 				I_Error("Custom FOF (tag %d) found without a linedef back side!", tag);
 
 			lines[i].args[0] = tag;
@@ -6155,8 +6276,8 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[2] = sides[lines[i].sidenum[0]].midtexture;
 			lines[i].args[3] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			lines[i].args[4] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
-			lines[i].args[5] = (lines[i].sidenum[1] != 0xffff) ? sides[lines[i].sidenum[1]].textureoffset >> FRACBITS : 0;
-			lines[i].args[6] = (lines[i].sidenum[1] != 0xffff) ? sides[lines[i].sidenum[1]].rowoffset >> FRACBITS : -1;
+			lines[i].args[5] = (lines[i].sidenum[1] != NO_INDEX) ? sides[lines[i].sidenum[1]].textureoffset >> FRACBITS : 0;
+			lines[i].args[6] = (lines[i].sidenum[1] != NO_INDEX) ? sides[lines[i].sidenum[1]].rowoffset >> FRACBITS : -1;
 			lines[i].args[7] = sides[lines[i].sidenum[0]].bottomtexture;
 			P_WriteDuplicateText(sides[lines[i].sidenum[0]].text, &lines[i].stringargs[0]);
 			break;
@@ -6245,7 +6366,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[1] = max(sides[lines[i].sidenum[0]].textureoffset >> FRACBITS, 0);
 				// failsafe: if user specifies Back Y Offset and NOT Front Y Offset, use the Back Offset
 				// to be consistent with other light and fade specials
-				lines[i].args[2] = ((lines[i].sidenum[1] != 0xFFFF && !(sides[lines[i].sidenum[0]].rowoffset >> FRACBITS)) ?
+				lines[i].args[2] = ((lines[i].sidenum[1] != NO_INDEX && !(sides[lines[i].sidenum[0]].rowoffset >> FRACBITS)) ?
 					max(min(sides[lines[i].sidenum[1]].rowoffset >> FRACBITS, 255), 0)
 					: max(min(sides[lines[i].sidenum[0]].rowoffset >> FRACBITS, 255), 0));
 			}
@@ -6318,7 +6439,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				memcpy(lines[i].stringargs[0], sides[lines[i].sidenum[0]].text, strlen(sides[lines[i].sidenum[0]].text) + 1);
 			}
 
-			if (lines[i].sidenum[1] != 0xffff && lines[i].flags & ML_BLOCKMONSTERS) // read power from back sidedef
+			if (lines[i].sidenum[1] != NO_INDEX && lines[i].flags & ML_BLOCKMONSTERS) // read power from back sidedef
 			{
 				lines[i].stringargs[1] = Z_Malloc(strlen(sides[lines[i].sidenum[1]].text) + 1, PU_LEVEL, NULL);
 				memcpy(lines[i].stringargs[1], sides[lines[i].sidenum[1]].text, strlen(sides[lines[i].sidenum[1]].text) + 1);
@@ -6353,7 +6474,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 		case 442: //Change object type state
 			lines[i].args[0] = tag;
 			P_WriteDuplicateText(sides[lines[i].sidenum[0]].text, &lines[i].stringargs[0]);
-			if (lines[i].sidenum[1] == 0xffff)
+			if (lines[i].sidenum[1] == NO_INDEX)
 				lines[i].args[1] = 1;
 			else
 			{
@@ -6426,7 +6547,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 		case 452: //Set FOF translucency
 			lines[i].args[0] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			lines[i].args[1] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
-			lines[i].args[2] = lines[i].sidenum[1] != 0xffff ? (sides[lines[i].sidenum[1]].textureoffset >> FRACBITS) : (P_AproxDistance(lines[i].dx, lines[i].dy) >> FRACBITS);
+			lines[i].args[2] = lines[i].sidenum[1] != NO_INDEX ? (sides[lines[i].sidenum[1]].textureoffset >> FRACBITS) : (P_AproxDistance(lines[i].dx, lines[i].dy) >> FRACBITS);
 			if (lines[i].flags & ML_MIDPEG)
 				lines[i].args[3] |= TMST_RELATIVE;
 			if (lines[i].flags & ML_NOCLIMB)
@@ -6435,8 +6556,8 @@ static void P_ConvertBinaryLinedefTypes(void)
 		case 453: //Fade FOF
 			lines[i].args[0] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			lines[i].args[1] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
-			lines[i].args[2] = lines[i].sidenum[1] != 0xffff ? (sides[lines[i].sidenum[1]].textureoffset >> FRACBITS) : (lines[i].dx >> FRACBITS);
-			lines[i].args[3] = lines[i].sidenum[1] != 0xffff ? (sides[lines[i].sidenum[1]].rowoffset >> FRACBITS) : (abs(lines[i].dy) >> FRACBITS);
+			lines[i].args[2] = lines[i].sidenum[1] != NO_INDEX ? (sides[lines[i].sidenum[1]].textureoffset >> FRACBITS) : (lines[i].dx >> FRACBITS);
+			lines[i].args[3] = lines[i].sidenum[1] != NO_INDEX ? (sides[lines[i].sidenum[1]].rowoffset >> FRACBITS) : (abs(lines[i].dy) >> FRACBITS);
 			if (lines[i].flags & ML_MIDPEG)
 				lines[i].args[4] |= TMFT_RELATIVE;
 			if (lines[i].flags & ML_WRAPMIDTEX)
@@ -6463,7 +6584,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			break;
 		case 455: //Fade colormap
 		{
-			INT32 speed = (INT32)((((lines[i].flags & ML_DONTPEGBOTTOM) || !sides[lines[i].sidenum[0]].rowoffset) && lines[i].sidenum[1] != 0xFFFF) ?
+			INT32 speed = (INT32)((((lines[i].flags & ML_DONTPEGBOTTOM) || !sides[lines[i].sidenum[0]].rowoffset) && lines[i].sidenum[1] != NO_INDEX) ?
 				abs(sides[lines[i].sidenum[1]].rowoffset >> FRACBITS)
 				: abs(sides[lines[i].sidenum[0]].rowoffset >> FRACBITS));
 
@@ -6493,7 +6614,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[0] = tag;
 			lines[i].args[1] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			lines[i].args[2] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
-			lines[i].args[3] = (lines[i].sidenum[1] != 0xffff) ? sides[lines[i].sidenum[1]].textureoffset >> FRACBITS : 0;
+			lines[i].args[3] = (lines[i].sidenum[1] != NO_INDEX) ? sides[lines[i].sidenum[1]].textureoffset >> FRACBITS : 0;
 			lines[i].args[4] = !!(lines[i].flags & ML_NOSKEW);
 			break;
 		case 459: //Control text prompt
@@ -6513,7 +6634,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[2] |= TMP_ALLPLAYERS;
 			if (lines[i].flags & ML_MIDSOLID)
 				lines[i].args[3] |= TMP_FREEZETHINKERS;*/
-			lines[i].args[4] = (lines[i].sidenum[1] != 0xFFFF) ? sides[lines[i].sidenum[1]].textureoffset >> FRACBITS : tag;
+			lines[i].args[4] = (lines[i].sidenum[1] != NO_INDEX) ? sides[lines[i].sidenum[1]].textureoffset >> FRACBITS : tag;
 			P_WriteDuplicateText(sides[lines[i].sidenum[0]].text, &lines[i].stringargs[0]);
 			break;
 		case 460: //Award rings
@@ -6528,7 +6649,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[3] = (lines[i].flags & ML_SKEWTD) ? AngleFixed(R_PointToAngle2(lines[i].v1->x, lines[i].v1->y, lines[i].v2->x, lines[i].v2->y)) >> FRACBITS : 0;
 			if (lines[i].flags & ML_NOCLIMB)
 			{
-				if (lines[i].sidenum[1] != 0xffff) // Make sure the linedef has a back side
+				if (lines[i].sidenum[1] != NO_INDEX) // Make sure the linedef has a back side
 				{
 					lines[i].args[4] = 1;
 					lines[i].args[5] = sides[lines[i].sidenum[1]].textureoffset >> FRACBITS;
@@ -6576,14 +6697,14 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[1] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			lines[i].args[2] = AngleFixed(R_PointToAngle2(lines[i].v1->x, lines[i].v1->y, lines[i].v2->x, lines[i].v2->y)) >> FRACBITS;
 			lines[i].args[3] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
-			if (lines[i].sidenum[1] != 0xffff)
+			if (lines[i].sidenum[1] != NO_INDEX)
 				lines[i].args[4] = sides[lines[i].sidenum[1]].textureoffset >> FRACBITS;
 			break;
 		case 481: //Polyobject - door swing
 			lines[i].args[0] = tag;
 			lines[i].args[1] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			lines[i].args[2] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
-			if (lines[i].sidenum[1] != 0xffff)
+			if (lines[i].sidenum[1] != NO_INDEX)
 				lines[i].args[3] = sides[lines[i].sidenum[1]].textureoffset >> FRACBITS;
 			break;
 		case 482: //Polyobject - move
@@ -6664,7 +6785,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			if (!(lines[i].flags & ML_DONTPEGBOTTOM))
 				lines[i].args[1] /= 100;
 			// allow Back Y Offset to be consistent with other fade specials
-			lines[i].args[2] = (lines[i].sidenum[1] != 0xffff && !sides[lines[i].sidenum[0]].rowoffset) ?
+			lines[i].args[2] = (lines[i].sidenum[1] != NO_INDEX && !sides[lines[i].sidenum[0]].rowoffset) ?
 				abs(sides[lines[i].sidenum[1]].rowoffset >> FRACBITS)
 				: abs(sides[lines[i].sidenum[0]].rowoffset >> FRACBITS);
 			if (lines[i].flags & ML_MIDPEG)
@@ -6695,7 +6816,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[0] = tag;
 			if (lines[i].flags & ML_MIDPEG)
 			{
-				if (lines[i].sidenum[1] == 0xffff)
+				if (lines[i].sidenum[1] == NO_INDEX)
 				{
 					CONS_Debug(DBG_GAMELOGIC, "Line special %d (line #%s) missing back side!\n", lines[i].special, sizeu1(i));
 					lines[i].special = 0;
@@ -6731,7 +6852,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[0] = lines[i].special >= 507;
 			if (lines[i].special % 2 == 0)
 			{
-				if (lines[i].sidenum[1] == 0xffff)
+				if (lines[i].sidenum[1] == NO_INDEX)
 				{
 					CONS_Debug(DBG_GAMELOGIC, "Line special %d (line #%s) missing back side!\n", lines[i].special, sizeu1(i));
 					lines[i].special = 0;
@@ -6878,7 +6999,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			{
 				UINT8 side = lines[i].special >= 714;
 
-				if (side == 1 && lines[i].sidenum[1] == 0xffff)
+				if (side == 1 && lines[i].sidenum[1] == NO_INDEX)
 					CONS_Debug(DBG_GAMELOGIC, "P_ConvertBinaryMap: Line special %d (line #%s) missing 2nd side!\n", lines[i].special, sizeu1(i));
 				else
 				{
@@ -8145,7 +8266,7 @@ static boolean P_LoadMapFromFile(void)
 
 	if (!cv_writetextmap_includemappatch.value)
 	{
-		if (M_CheckParm("-writetextmap"))
+		if (P_CanWriteTextmap())
 			P_WriteTextmap();
 	}
 
@@ -8267,6 +8388,9 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	bumpsparkactive = 0;
 	antibumptime = 0;
 	playerbumpactive = PBUMP_STANDARD;
+
+	clusterjustchanged = 0;
+	clustermode = CLSMODE_AVERAGES;
 
 	if (cv_kartrings.value)
 		ringsactive = true;
@@ -8682,7 +8806,7 @@ static void P_InitGametype(void)
 
 	// Start recording replay in multiplayer with a temp filename
 	//@TODO I'd like to fix dedis crashing when recording replays for the future too...
-	if (!demo.playback && multiplayer && !dedicated)
+	if (gamestate == GS_LEVEL && !demo.playback && multiplayer && !dedicated)
 	{
 		char buf[MAX_WADPATH];
 		char ver[128];
@@ -8804,6 +8928,45 @@ static void P_InitMinimapInfo(void)
 	minimapinfo.offs_y = FixedMul((minimapinfo.min_y + minimapinfo.map_h/2) << FRACBITS, minimapinfo.zoom);
 }
 
+void P_FreeLevelState(void)
+{
+	if (numsectors)
+	{
+		// Close text prompt before freeing the old level
+		F_EndTextPrompt(false, true);
+
+		ACS_InvalidateMapScope();
+
+		LUA_InvalidateLevel();
+
+		sector_t *ss;
+		for (ss = sectors; sectors+numsectors != ss; ss++)
+		{
+			Z_Free(ss->attached);
+			Z_Free(ss->attachedsolid);
+		}
+
+		// This is the simplest guard against double frees.
+		// No valid map has zero sectors. Or, come to think
+		// of it, less than two in general! ~toast 310525
+		numsectors = 0;
+	}
+
+	// Clear pointers that would be left dangling by the purge
+	R_FlushTranslationColormapCache();
+
+#ifdef HWRENDER
+	// Free GPU textures before freeing patches.
+	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
+		HWR_ClearAllTextures();
+#endif
+
+	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
+	Patch_FreeTag(PU_PATCH_ROTATED);
+	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
+
+}
+
 /** Loads a level from a lump or external wad.
   *
   * \param fromnetsave If true, skip some stuff because we're loading a netgame snapshot.
@@ -8817,7 +8980,6 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// 99% of the things already did, so.
 	// Map header should always be in place at this point
 	INT32 i, ranspecialwipe = 0;
-	sector_t *ss;
 	virtlump_t *encoreLump = NULL;
 	lumpnum_t oldEncore = LUMPERROR;
 
@@ -8926,7 +9088,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 			//V_ReloadPalette(); // Set the level palette
 			V_SetPaletteLump(GetPalette()); // the above does not *set* the screen palette
 
-		if (!(reloadinggamestate || titlemapinaction))
+		if (!(reloadinggamestate || gamestate != GS_LEVEL))
 		{
 			if (ranspecialwipe == 2)
 			{
@@ -8971,39 +9133,8 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 				F_RunWipe(wipedefs[wipe], false);
 		}
 	}
-	/*if (!titlemapinaction)
-		wipegamestate = GS_LEVEL;*/
 
-	// Close text prompt before freeing the old level
-	F_EndTextPrompt(false, true);
-
-	ACS_InvalidateMapScope();
-
-	LUA_InvalidateLevel();
-
-	for (ss = sectors; sectors+numsectors != ss; ss++)
-	{
-		Z_Free(ss->attached);
-		Z_Free(ss->attachedsolid);
-	}
-
-	// Clear pointers that would be left dangling by the purge
-	R_FlushTranslationColormapCache();
-
-#ifdef HWRENDER
-	// Free GPU textures before freeing patches.
-	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
-		HWR_ClearAllTextures();
-
-	// Delete light table textures
-	HWR_ClearLightTables();
-#endif
-
-	G_FreeGhosts(); // ghosts are allocated with PU_LEVEL
-	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
-	Patch_FreeTag(PU_PATCH_ROTATED);
-	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
-
+	P_FreeLevelState();
 	R_InitializeLevelInterpolators();
 
 	P_InitThinkers();
@@ -9202,7 +9333,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	P_MapEnd(); // g_tm.thing is no longer needed from this point onwards
 
 	// Took me 3 hours to figure out why my progression kept on getting overwritten with the titlemap...
-	if (!titlemapinaction)
+	if (gamestate == GS_LEVEL)
 	{
 		if (!lastmaploaded) // Start a new game?
 		{

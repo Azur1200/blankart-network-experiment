@@ -19,6 +19,7 @@
 #include "doomdef.h"
 #include "g_game.h"
 #include "g_input.h"
+#include "m_perfstats.h"
 #include "r_local.h"
 #include "r_splats.h" // faB(21jan): testing
 #include "r_sky.h"
@@ -27,7 +28,6 @@
 #include "p_local.h"
 #include "keys.h"
 #include "i_video.h"
-#include "m_menu.h"
 #include "am_map.h"
 #include "d_main.h"
 #include "v_video.h"
@@ -110,22 +110,24 @@ lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 extracolormap_t *extra_colormaps = NULL;
 
 // Render stats
-precise_t ps_prevframetime = 0;
-precise_t ps_rendercalltime = 0;
-precise_t ps_uitime = 0;
-precise_t ps_swaptime = 0;
+ps_metric_t ps_prevframetime = {};
+ps_metric_t ps_rendercalltime = {};
+ps_metric_t ps_otherrendertime = {};
+ps_metric_t ps_uitime = {};;
+ps_metric_t ps_swaptime = {};
 
-precise_t ps_bsptime = 0;
+ps_metric_t ps_skyboxtime = {};
+ps_metric_t ps_bsptime = {};
 
-precise_t ps_sw_spritecliptime = 0;
-precise_t ps_sw_portaltime = 0;
-precise_t ps_sw_planetime = 0;
-precise_t ps_sw_maskedtime = 0;
+ps_metric_t ps_sw_spritecliptime = {};
+ps_metric_t ps_sw_portaltime = {};
+ps_metric_t ps_sw_planetime = {};
+ps_metric_t ps_sw_maskedtime = {};
 
-int ps_numbspcalls = 0;
-int ps_numsprites = 0;
-int ps_numdrawnodes = 0;
-int ps_numpolyobjects = 0;
+ps_metric_t ps_numbspcalls = {};
+ps_metric_t ps_numsprites = {};
+ps_metric_t ps_numdrawnodes = {};
+ps_metric_t ps_numpolyobjects = {};
 
 struct RenderStats g_renderstats;
 
@@ -1589,9 +1591,11 @@ void R_RenderPlayerView(void)
 	// using sky portals on kart maps usually results in pretty bad performance
 	skyVisible = oldsky && skyVisiblePerPlayer[viewssnum];
 
+	PS_START_TIMING(ps_skyboxtime);
 	if (skyVisible)
 	{
 		R_SkyboxFrame(viewssnum);
+
 		R_ClearClipSegs();
 		R_ClearDrawSegs();
 		R_ClearSegTables();
@@ -1606,6 +1610,7 @@ void R_RenderPlayerView(void)
 		R_DrawPlanes();
 		R_DrawMasked(masks, nummasks);
 	}
+	PS_STOP_TIMING(ps_skyboxtime);
 
 	R_SetupFrame(viewssnum, skybox);
 	skyVisible = false;
@@ -1640,14 +1645,14 @@ void R_RenderPlayerView(void)
 
 	// The head node is the last node output.
 	R_SetColumnContext(COLUMNCONTEXT_FLUSH);
-	ps_numbspcalls = ps_numpolyobjects = ps_numdrawnodes = 0;
-	ps_bsptime = I_GetPreciseTime();
+	ps_numbspcalls.value.i = ps_numpolyobjects.value.i = ps_numdrawnodes.value.i = 0;
+	PS_START_TIMING(ps_bsptime);
 	R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1, true);
-	ps_bsptime = I_GetPreciseTime() - ps_bsptime;
+	PS_STOP_TIMING(ps_bsptime);
 
-	ps_sw_spritecliptime = I_GetPreciseTime();
+	PS_START_TIMING(ps_sw_spritecliptime);
 	R_ClipSprites(drawsegs, NULL);
-	ps_sw_spritecliptime = I_GetPreciseTime() - ps_sw_spritecliptime;
+	PS_STOP_TIMING(ps_sw_spritecliptime);
 	R_ResetColumnBuffer();
 
 	// Add skybox portals caused by sky visplanes.
@@ -1655,7 +1660,7 @@ void R_RenderPlayerView(void)
 		Portal_AddSkyboxPortals();
 
 	// Portal rendering. Hijacks the BSP traversal.
-	ps_sw_portaltime = I_GetPreciseTime();
+	PS_START_TIMING(ps_sw_portaltime);
 	if (portal_base && !cv_debugrender_portal.value)
 	{
 		// tp_sema = srb2::g_main_threadpool->end_sema();
@@ -1703,19 +1708,19 @@ void R_RenderPlayerView(void)
 		// srb2::g_main_threadpool->wait_sema(tp_sema);
 		// srb2::g_main_threadpool->begin_sema();
 	}
-	ps_sw_portaltime = I_GetPreciseTime() - ps_sw_portaltime;
+	PS_STOP_TIMING(ps_sw_portaltime);
 
 	R_SetColumnContext(COLUMNCONTEXT_DIRECT);
-	ps_sw_planetime = I_GetPreciseTime();
+	PS_START_TIMING(ps_sw_planetime);
 	R_DrawSkyPlanes();
 	R_DrawPlanes();
-	ps_sw_planetime = I_GetPreciseTime() - ps_sw_planetime;
+	PS_STOP_TIMING(ps_sw_planetime);
 
 	// draw mid texture and sprite
 	// And now 3D floors/sides!
-	ps_sw_maskedtime = I_GetPreciseTime();
+	PS_START_TIMING(ps_sw_maskedtime);
 	R_DrawMasked(masks, nummasks);
-	ps_sw_maskedtime = I_GetPreciseTime() - ps_sw_maskedtime;
+	PS_STOP_TIMING(ps_sw_maskedtime);
 
 	if (cv_debugrender_visplanes.value)
 	{

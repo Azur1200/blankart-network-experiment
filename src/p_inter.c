@@ -617,7 +617,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				}
 			}
 			return;
-		case MT_BUBBLESHIELDTRAP:
+		case MT_TRAPBUBBLE:
 			if ((special->target == toucher || special->target == toucher->target) && (special->threshold > 0))
 				return;
 
@@ -630,10 +630,24 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (!player->mo || player->spectator)
 				return;
 
+			if (special->extravalue3)
+				return; // Popped bubbles should not be run into EVER
+
+			fixed_t extrarise = 0;
+			extrarise = (fixed_t)(special->script_args[1]);
+
+			fixed_t risespeed = 16 + extrarise;
+
 			// attach to player!
 			P_SetTarget(&special->tracer, toucher);
 			toucher->flags |= MF_NOGRAVITY;
-			toucher->momz = (8*toucher->scale) * P_MobjFlip(toucher);
+			toucher->momz = ((risespeed + 4) * max(mapobjectscale, toucher->scale)) * P_MobjFlip(toucher);
+
+			fixed_t toucher_speed = K_Momentum2D(toucher);
+
+			// Force the player to our angle
+			// If you setpiece-fail, someone's either being an ass or did something REALLY WRONG
+			P_InstaThrust(toucher, special->angle, toucher_speed);
 
 			// Snap to the unfortunate player and quit moving laterally, or we can end up quite far away
 			special->momx = 0;
@@ -742,17 +756,20 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			return;
 		case MT_HOOPCOLLIDE:
 			// This produces a kind of 'domino effect' with the hoop's pieces.
-			for (; special->hprev != NULL; special = special->hprev); // Move to the first sprite in the hoop
+			for (; special != NULL && special->hprev != NULL; special = special->hprev); // Move to the first sprite in the hoop
 			i = 0;
-			for (; special->type == MT_HOOP; special = special->hnext)
+			for (; special != NULL && special->type == MT_HOOP; special = special->hnext)
 			{
-				if (!P_MobjWasRemoved(special->target))
+				if (!P_MobjWasRemoved(special))
 				{
 					special->fuse = 11;
 					special->movedir = i;
-					special->extravalue1 = special->target->extravalue1;
-					special->extravalue2 = special->target->extravalue2;
-					special->target->threshold = 4242;
+					if (!P_MobjWasRemoved(special->target))
+					{
+						special->extravalue1 = special->target->extravalue1;
+						special->extravalue2 = special->target->extravalue2;
+						special->target->threshold = 4242;
+					}
 				}
 				i++;
 			}
@@ -2478,6 +2495,13 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					if (P_IsDisplayPlayer(player))
 						P_StartQuake(32<<FRACBITS, 5);
 					K_FlipPlayer(player, inflictor, source);
+					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
+					K_KartPainEnergyFling(player);
+					break;
+				case DMG_CRASH:
+					if (P_IsDisplayPlayer(player))
+						P_StartQuake(32<<FRACBITS, 5);
+					K_TumblePlayer(player, inflictor, source);
 					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
 					K_KartPainEnergyFling(player);
 					break;

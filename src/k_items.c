@@ -380,21 +380,22 @@ static UINT32 K_Dist2D(INT32 x1, INT32 y1, INT32 x2, INT32 y2)
 }*/
 
 // This one uses map scaling instead, use in case of loss of depth on mobjscaled maps.
-static UINT32 K_IntDistanceForMap(fixed_t curx,
-			       fixed_t cury,
-			       fixed_t curz,
-			       fixed_t destx,
-			       fixed_t desty,
-			       fixed_t destz)
+UINT32 K_IntDistanceForMap(fixed_t curx,
+			   fixed_t cury,
+			   fixed_t curz,
+			   fixed_t destx,
+			   fixed_t desty,
+			   fixed_t destz)
 {
 	return K_Dist2D(0,
-		      curz / mapobjectscale,
-		      K_Dist2D(curx / mapobjectscale,
-			     cury / mapobjectscale,
-			     destx / mapobjectscale,
-			     desty / mapobjectscale),
-		      destz / mapobjectscale);
+			curz / mapobjectscale,
+			K_Dist2D(curx / mapobjectscale,
+				 cury / mapobjectscale,
+				 destx / mapobjectscale,
+				 desty / mapobjectscale),
+			destz / mapobjectscale);
 }
+
 
 /**	\brief	Prevent overpowered rolls while under the effects of Alt. Shrink.
 
@@ -2076,7 +2077,7 @@ void K_DoThunderShield(player_t *player)
 	}
 }
 
-void K_DoAttractionShield(player_t *player, boolean hipower)
+void K_DoAttractionShield(player_t *player, fixed_t power)
 {
 	mobj_t *mo;
 	int i = 0;
@@ -2090,7 +2091,7 @@ void K_DoAttractionShield(player_t *player, boolean hipower)
 	}
 
 	S_StartSound(player->mo, sfx_zio3);
-	K_AttractionShieldAttack(player->mo, (cv_kartthunder_radius.value + THUNDERSPRITE) * FRACUNIT, hipower);
+	K_AttractionShieldAttack(player->mo, (cv_kartthunder_radius.value + THUNDERSPRITE) * FRACUNIT, power, power >= FRACUNIT);
 
 	// spawn vertical bolt
 	mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
@@ -3194,7 +3195,7 @@ void K_ReleaseUseItem_AttractionShield(player_t *player, boolean itemjustdown, b
 				ATTRACTIONATTACKTIME_MAX * FRACUNIT
 			)/FRACUNIT;
 		}
-		K_DoAttractionShield(player, player->attractionattack_hipower);
+		K_DoAttractionShield(player, CLAMP(FixedDiv(player->attractioncharge, ATTRACTIONCHARGETIME), 0, FRACUNIT));
 		S_StartSound(player->mo, sfx_s3k81);
 
 		if (player->itemamount > 0)
@@ -3261,13 +3262,11 @@ void K_HoldUseItem_FlameShield(player_t *player, boolean itemjustdown, boolean o
 
 				if (player->karthud[khud_flamecamtime] == 0)
 					player->karthud[khud_flamecamtime] = TICRATE/2;
-
-				if (!S_SoundPlaying(player->mo, sfx_s3kd3l))
-					S_StartSound(player->mo, sfx_s3kd3l);
 			}
 
 			player->flamedash += incr;
 		}
+
 		// allow burning in the air
 		player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
 		player->flametimer -= comincr;
@@ -3326,17 +3325,23 @@ void K_UseItem_SuperRing(player_t *player, boolean itemjustdown, boolean ongroun
 	{
 		boolean offroad = (player->offroad && K_ApplyOffroad(player));
 		player->superringdrag = max(K_GetKartSpeed(player, true, false), player->speed);
+		INT32 thrustspeed = 12*player->mo->scale;
 
 		if (onground && !offroad)
 		{
-			P_Thrust(player->mo, player->mo->angle, 12*player->mo->scale);
-			P_Thrust(player->mo, K_MomentumAngle(player->mo), 12*player->mo->scale);
+			P_Thrust(player->mo, player->mo->angle, thrustspeed);
+			P_Thrust(player->mo, K_MomentumAngle(player->mo), thrustspeed);
 		}
 		else
 		{
+			thrustspeed = 6*player->mo->scale;
+
+			if (player->pogospring > 0)
+				thrustspeed /= 4;
+
 			if (offroad)
-				P_Thrust(player->mo, player->mo->angle, 6*player->mo->scale);
-			P_Thrust(player->mo, K_MomentumAngle(player->mo), 6*player->mo->scale);
+				P_Thrust(player->mo, player->mo->angle, thrustspeed);
+			P_Thrust(player->mo, K_MomentumAngle(player->mo), thrustspeed);
 		}
 
 		// LOUDER!
@@ -3349,7 +3354,8 @@ void K_UseItem_SuperRing(player_t *player, boolean itemjustdown, boolean ongroun
 		UINT8 modifier = 32 / (player->kartspeed + player->kartweight + 2);
 
 		player->ringboost += (TICRATE/6) + modifier;
-		player->outruntime += (TICRATE/6) + modifier;
+		if (onground)
+			player->outruntime += (TICRATE/6) + modifier;
 		player->superringleeway = 5;
 
 		// make friction not instantly kill the new momentum

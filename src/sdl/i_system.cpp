@@ -75,6 +75,12 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #if defined (__unix__) || defined(__APPLE__) || (defined (UNIXCOMMON) && !defined (__HAIKU__))
 #if defined (__linux__)
 #include <sys/vfs.h>
+#elif defined(__APPLE__)
+#include <sys/param.h>
+#include <sys/mount.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <mach/mach.h>
 #else
 #include <sys/param.h>
 #include <sys/mount.h>
@@ -194,6 +200,8 @@ static char returnWadPath[256];
 
 #include "../m_argv.h"
 
+#include "../m_menu.h"
+
 // SRB2Kart
 #include "../k_pwrlv.h"
 #include "../r_main.h" // Frame interpolation/uncapped
@@ -238,8 +246,8 @@ static void write_backtrace(INT32 signal)
 	void *array[BT_SIZE];
 	char timestr[STR_SIZE];
 
-	const char *error = "An error occurred within SRB2Kart! Send this stack trace to someone who can help!\n";
-	const char *error2 = "(Or find crash-log.txt in your SRB2Kart directory.)\n"; // Shown only to stderr.
+	const char *error = "An error occurred within BlanKart! Send this stack trace to someone who can help!\n";
+	const char *error2 = "(Or find crash-log.txt in your BlanKart directory.)\n"; // Shown only to stderr.
 
 	fd = open(va("%s" PATHSEP "%s", srb2home, "crash-log.txt"), O_CREAT|O_APPEND|O_RDWR, S_IRUSR|S_IWUSR);
 
@@ -778,7 +786,7 @@ static void I_StartupConsole(void)
 
 	if (gotConsole)
 	{
-		SetConsoleTitleA("SRB2Kart Console");
+		SetConsoleTitleA("BlanKart Console");
 		consolevent = true;
 	}
 
@@ -1074,8 +1082,8 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 		return;
 
 	if(mumble->uiVersion != 2) {
-		wcsncpy(mumble->name, L"SRB2Kart " VERSIONSTRINGW, 256);
-		wcsncpy(mumble->description, L"Sonic Robo Blast 2 Kart with integrated Mumble Link support.", 2048);
+		wcsncpy(mumble->name, L"BlanKart " VERSIONSTRINGW, 256);
+		wcsncpy(mumble->description, L"BlanKart with integrated Mumble Link support.", 2048);
 		mumble->uiVersion = 2;
 	}
 	mumble->uiTick++;
@@ -1462,7 +1470,7 @@ INT32 I_StartupSystem(void)
 	SDL_SetHint(SDL_HINT_APP_NAME, "BlanKart");
 #endif
 	if (!SDL_Init(0))
-		I_Error("SRB2Kart: SDL System Error: %s", SDL_GetError()); //Alam: Oh no....
+		I_Error("BlanKart: SDL System Error: %s", SDL_GetError()); //Alam: Oh no....
 #ifndef NOMUMBLE
 	I_SetupMumble();
 #endif
@@ -2167,19 +2175,19 @@ UINT32 I_GetFreeMem(UINT32 *total)
 		*total = 32 << 20;
 	return 32 << 20;
 #elif defined (_WIN32)
-	MEMORYSTATUS info;
+	MEMORYSTATUSEX info;
 
-	info.dwLength = sizeof (MEMORYSTATUS);
-	GlobalMemoryStatus( &info );
+	info.dwLength = sizeof (MEMORYSTATUSEX);
+	GlobalMemoryStatusEx( &info );
 	if (total)
-		*total = (UINT32)info.dwTotalPhys;
-	return (UINT32)info.dwAvailPhys;
+		*total = (size_t)info.ullTotalPhys;
+	return (size_t)info.ullAvailPhys;
 #elif defined (__linux__)
 	/* Linux */
 	char buf[1024];
 	char *memTag;
-	UINT32 freeKBytes;
-	UINT32 totalKBytes;
+	size_t freeKBytes;
+	size_t totalKBytes;
 	INT32 n;
 	INT32 meminfo_fd = -1;
 	long Cached;
@@ -2196,7 +2204,7 @@ UINT32 I_GetFreeMem(UINT32 *total)
 	{
 		// Error
 		if (total)
-			*total = 0L;
+			*total = 0;
 		return 0;
 	}
 
@@ -2205,12 +2213,12 @@ UINT32 I_GetFreeMem(UINT32 *total)
 	{
 		// Error
 		if (total)
-			*total = 0L;
+			*total = 0;
 		return 0;
 	}
 
 	memTag += sizeof (MEMTOTAL);
-	totalKBytes = atoi(memTag);
+	totalKBytes = strtoul(memTag, NULL, 10);
 
 	if ((memTag = strstr(buf, MEMAVAILABLE)) == NULL)
 	{
@@ -2224,7 +2232,7 @@ UINT32 I_GetFreeMem(UINT32 *total)
 		{
 			// Error
 			if (total)
-				*total = 0L;
+				*total = 0;
 			return 0;
 		}
 		freeKBytes = MemAvailable;
@@ -2232,12 +2240,40 @@ UINT32 I_GetFreeMem(UINT32 *total)
 	else
 	{
 		memTag += sizeof (MEMAVAILABLE);
-		freeKBytes = atoi(memTag);
+		freeKBytes = strtoul(memTag, NULL, 10);
 	}
 
 	if (total)
 		*total = totalKBytes << 10;
 	return freeKBytes << 10;
+#elif defined(__APPLE__)
+	/* macOS */
+	mach_port_t host = mach_host_self();
+	kern_return_t kr;
+	mach_msg_type_number_t count;
+	vm_size_t v_page_size;
+	struct vm_statistics64 vm_stats;
+	uint64_t total_mem, free_mem;
+	size_t size;
+
+	size = sizeof(total_mem);
+	if (sysctlbyname("hw.memsize", &total_mem, &size, NULL, 0) < 0)
+		total_mem = 0;
+
+	kr = host_page_size(host, &v_page_size);
+	if (kr != KERN_SUCCESS)
+		v_page_size = 4096;
+
+	count = HOST_VM_INFO64_COUNT;
+	kr = host_statistics64(host, HOST_VM_INFO64, (host_info64_t)&vm_stats, &count);
+	if (kr == KERN_SUCCESS)
+		free_mem = (uint64_t)(vm_stats.free_count + vm_stats.inactive_count) * v_page_size;
+	else
+		free_mem = 0;
+
+	if (total)
+		*total = (size_t)total_mem;
+	return (size_t)free_mem;
 #else
 	// Guess 48 MB.
 	if (total)

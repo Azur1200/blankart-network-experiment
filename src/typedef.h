@@ -49,6 +49,7 @@ TYPEDEF (sonicloopcamvars_t);
 TYPEDEF (sonicloopvars_t);
 TYPEDEF (saltyhop_t);
 TYPEDEF (keepstuff_t);
+TYPEDEF (playermagnet_t);
 
 // d_clisrv.h
 TYPEDEF (clientcmd_pak);
@@ -181,6 +182,10 @@ TYPEDEF (botcontroller_t);
 // k_brightmap.h
 TYPEDEF (brightmapStorage_t);
 
+// k_cluster.hpp
+TYPEDEF (clusternode_t);
+TYPEDEF (clusterdata_t);
+
 // k_follower.h
 TYPEDEF (follower_t);
 TYPEDEF (followercategory_t);
@@ -189,13 +194,14 @@ TYPEDEF (followercategory_t);
 TYPEDEF (trackingResult_t);
 TYPEDEF (servermods_t);
 
-// k_menu.h
+// m_menu.h
 TYPEDEF (menucolor_t);
+TYPEDEF (menuitempart_t);
+TYPEDEF (menuitemstyle_t);
 TYPEDEF (menuitem_t);
+TYPEDEF (menupaneldef_t);
+TYPEDEF (menupanelinst_t);
 TYPEDEF (menu_t);
-TYPEDEF (menucmd_t);
-TYPEDEF (setup_player_t);
-TYPEDEF (modedesc_t);
 
 // k_pathfind.h
 TYPEDEF (pathfindnode_t);
@@ -228,6 +234,9 @@ TYPEDEF (kartroulette_t);
 // lua_hudlib_drawlist.h
 typedef struct huddrawlist_s *huddrawlist_h;
 
+// lua_profile.h
+TYPEDEF (lua_timer_t);
+
 // m_aatree.h
 TYPEDEF (aatree_t);
 
@@ -246,6 +255,7 @@ TYPEDEF (vector2_t);
 TYPEDEF (f_vector2_t);
 TYPEDEF (vector3_t);
 TYPEDEF (f_vector3_t);
+TYPEDEF (vector3_64_t);
 TYPEDEF (vector4_t);
 TYPEDEF (matrix_t);
 

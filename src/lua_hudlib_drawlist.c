@@ -37,6 +37,7 @@ enum drawitem_e {
 	DI_DrawTitleCardString,
 	DI_DrawTitleCardStringBoss,
 	DI_DrawKartString,
+	DI_DrawFixedLine,
 	DI_SetClipRect,
 	DI_ClearClipRect,
 	DI_MAX,
@@ -48,6 +49,7 @@ typedef struct drawitem_s {
 	enum drawitem_e type;
 	fixed_t x;
 	fixed_t y;
+	fixed_t line_width;
 	union {
 		INT32 flags;
 		INT32 c;
@@ -56,6 +58,7 @@ typedef struct drawitem_s {
 		fixed_t scale;  // drawScaled
 		fixed_t hscale; // drawStretched
 		fixed_t w;      // drawFill
+		fixed_t x2;     // drawFixedLine
 		INT32 align;    // drawString
 		INT32 num;      // drawNum, drawPaddedNum, drawPingNum
 		UINT16 color;   // fadeScreen
@@ -64,6 +67,7 @@ typedef struct drawitem_s {
 	union {
 		fixed_t vscale; // drawStretched
 		fixed_t h;      // drawFill
+		fixed_t y2;     // drawFixedLine
 		INT32 digits;   // drawPaddedNum
 		UINT8 strength; // fadeScreen
 		INT32 threshold; // drawTitleCardString
@@ -181,8 +185,11 @@ static size_t CopyString(huddrawlist_h list, const char* str)
 	lenstr = strlen(str);
 	if (list->strbuf_capacity <= list->strbuf_len + lenstr + 1)
 	{
-		if (list->strbuf_capacity == 0) list->strbuf_capacity = 256;
-		else list->strbuf_capacity *= 2;
+		while (list->strbuf_capacity <= list->strbuf_len + lenstr + 1)
+		{
+			if (list->strbuf_capacity == 0) list->strbuf_capacity = 256;
+			else list->strbuf_capacity *= 2;
+		}
 		list->strbuf = (char*) Z_Realloc(list->strbuf, sizeof(char) * list->strbuf_capacity, PU_STATIC, NULL);
 	}
 
@@ -467,6 +474,28 @@ void LUA_HUD_AddDrawFill(
 	// CalcFillCoords(item);
 }
 
+void LUA_HUD_AddDrawFixedLine(
+	huddrawlist_h list,
+	fixed_t x1,
+	fixed_t y1,
+	fixed_t x2,
+	fixed_t y2,
+	fixed_t width,
+	INT32 c
+)
+{
+	size_t i = AllocateDrawItem(list);
+	drawitem_t *item = &list->items[i];
+	item->id = GetItemId();
+	item->type = DI_DrawFixedLine;
+	item->x = x1;
+	item->y = y1;
+	item->x2 = x2;
+	item->y2 = y2;
+	item->line_width = width;
+	item->c = c;
+}
+
 void LUA_HUD_AddDrawString(
 	huddrawlist_h list,
 	fixed_t x,
@@ -664,6 +693,9 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 				break;
 			case DI_DrawFill:
 				V_DrawFill(LERPS(x), LERPS(y), LERP(w), LERP(h), item->c);
+				break;
+			case DI_DrawFixedLine:
+				V_DrawFixedLine(LERPS(x), LERPS(y), LERP(x2), LERP(y2), item->line_width, item->c);
 				break;
 			case DI_DrawString:
 				switch(item->align)

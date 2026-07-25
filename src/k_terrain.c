@@ -975,12 +975,12 @@ static void K_SpawnFootstepParticle(mobj_t *mo, t_footstep_t *fs, tic_t timer)
 	{
 		boolean karmabomb = ((gametypes[gametype]->rules & GTR_BUMPERS) && mo->player->bumper <= 0);
 		tireAngle = (mo->player->drawangle + ANGLE_180);
-		speedValue = K_GetKartSpeedFromStat(mo->player->kartspeed, karmabomb);
+		speedValue = K_GetKartSpeedFromStat(mo->player->kartspeed, karmabomb, mo->player->kartmagnet.factor);
 	}
 	else
 	{
 		tireAngle = (mo->angle + ANGLE_180);
-		speedValue = K_GetKartSpeedFromStat(5, false);
+		speedValue = K_GetKartSpeedFromStat(5, false, 0);
 	}
 
 	speedValue = FixedMul(speedValue, mo->scale);
@@ -1834,6 +1834,10 @@ static void K_ParseTerrainParameter(size_t i, char *param, char *val)
 	else if (fasticmp(param, "bumpy") || fasticmp(param, "stairJank"))
 	{
 		K_FlagBoolean(&terrain->flags, TRF_BUMPY, val);
+	}
+	else if (fasticmp(param, "dasharea") || fasticmp(param, "dashareapower"))
+	{
+		terrain->dashareapower = FLOAT_TO_FIXED(atof(val));
 	}
 }
 

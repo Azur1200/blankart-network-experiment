@@ -11,6 +11,7 @@
 /// \file  g_demo.c
 /// \brief Demo recording and playback
 
+#include "command.h"
 #include "doomdef.h"
 #include "console.h"
 #include "d_main.h"
@@ -71,6 +72,17 @@ consvar_t cv_netdemosyncquality = CVAR_INIT ("netdemo_syncquality", "1", CV_SAVE
 
 consvar_t cv_netdemosize = CVAR_INIT ("netdemo_size", "6", CV_SAVE, CV_Natural, NULL);
 consvar_t cv_resyncdemo = CVAR_INIT("democonsistency", "On", 0, CV_OnOff, NULL);
+
+static INT32 ReplaySave(INT32 choice)
+{
+	(void)choice;
+	demo.savemode = DSM_WILLSAVE;
+
+	return true;
+}
+
+consvar_t cv_dummyreplaysave = CVAR_INIT ("dummyreplaysave", "", CV_HIDEN, NULL, NULL);
+menuitem_t replaysave = {.text = "Enter the name of the replay", .cvar = &cv_dummyreplaysave, .routine = &ReplaySave};
 
 boolean nodrawers; // for comparative timing purposes
 boolean noblit; // for comparative timing purposes
@@ -2979,12 +2991,7 @@ void G_BeginRecording(void)
 		char *title = G_BuildMapTitle(gamemap);
 		// Print to a separate temp buffer instead of demo.titlename, so we can use it in M_TextInputSetString
 		snprintf(demotitlename, sizeof(demotitlename), "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
-
-		// Init just in case it isn't initialized already
-		M_TextInputInit(&demo.titlenameinput, demo.titlename, sizeof(demo.titlename));
-
-		// This will indirectly assign to demo.titlename too
-		M_TextInputSetString(&demo.titlenameinput, demotitlename);
+		CV_StealthSet(&cv_dummyreplaysave, demotitlename); // Setup so its used when saving later.
 		Z_Free(title);
 	}
 
@@ -3284,7 +3291,7 @@ static void G_LoadDemoExtraFiles(demoheader_t *header)
 			{
 				CONS_Alert(CONS_WARNING, M_GetText("Too many files loaded to add anymore for demo playback\n"));
 				if (!CON_Ready())
-					M_StartMessage(M_GetText("There are too many files loaded to add this demo's addons.\n\nDemo playback may desync.\n\nPress ESC\n"), NULL, MM_NOTHING);
+					M_StartMessage2("Replay", M_GetText("There are too many files loaded to add this demo's addons.\n\nDemo playback may desync.\n"), MB_NONE, MM_NOTHING, "Press any key", NULL);
 			}
 			else if (ncs != FS_FOUND)
 			{
@@ -3296,7 +3303,7 @@ static void G_LoadDemoExtraFiles(demoheader_t *header)
 					CONS_Alert(CONS_NOTICE, M_GetText("Unknown error finding file %s\n"), file->filename);
 
 				if (!CON_Ready())
-					M_StartMessage(M_GetText("There were errors trying to add this demo's addons. Check the console for more information.\n\nDemo playback may desync.\n\nPress ESC\n"), NULL, MM_NOTHING);
+					M_StartMessage2("Replay", M_GetText("There were errors trying to add this demo's addons. Check the console for more information.\n\nDemo playback may desync.\n"), MB_NONE, MM_NOTHING, "Press any key", NULL);
 			}
 			else
 			{
@@ -3634,8 +3641,9 @@ static void PrintDemoError(const char (*msg)[1024])
 	demo.playback = false;
 	demo.single_seed = false;
 	demo.title = false;
+
 	if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
-		M_StartMessage(*msg, NULL, MM_NOTHING);
+		M_StartMessage2("Replay", *msg, MB_NONE, MM_NOTHING, "Press any key", NULL);
 }
 
 static void FreeDemoBuffer(savebuffer_t **freebuffer)
@@ -3658,7 +3666,7 @@ void G_DoPlayDemo(char *defdemoname)
 #endif
 
 	msg[0] = '\0';
-	M_ClearMenus(true);
+	M_ClearMenusEx(true, true);
 	G_InitDemoRewind();
 	gameaction = ga_nothing;
 
@@ -3893,7 +3901,7 @@ void G_DoPlayDemo(char *defdemoname)
 		{
 			const char *faulted = G_CheckPresetCvars(pv);
 			if (faulted && !G_CompatLevel(0x000C))
-				M_StartMessage(va("Demo cvar %s doesn't match the preset! This may be a mistake, or the demo is cheated!\n", faulted), NULL, MM_NOTHING);
+				M_StartMessage2("Replay", va("Demo cvar %s doesn't match the preset! This may be a mistake, or the demo is cheated!\n", faulted), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		}
 		else
 			CONS_Alert(CONS_WARNING, "Couldn't find record preset '%s' version %d\n", header.rapreset, header.rapresetversion);
@@ -4519,7 +4527,11 @@ static void G_StopTimingDemo(void)
 	if (timedemo_quit)
 		COM_ImmedExecute("quit");
 	else
-		D_StartTitle();
+	{
+		M_ClearMenusEx(false, true);
+		D_ClearState();
+		M_StartControlPanel();
+	}
 }
 
 // reset engine variable set for the demos
@@ -4531,7 +4543,6 @@ void G_StopDemo(void)
 	demo.single_seed = false;
 	if (demo.title)
 		modeattacking = false;
-	demo.title = false;
 	demo.timing = false;
 	singletics = false;
 
@@ -4543,16 +4554,7 @@ void G_StopDemo(void)
 		}
 	}
 
-	if (gamestate == GS_INTERMISSION)
-		Y_EndIntermission(); // cleanup
-
-	if (gamestate == GS_VOTING)
-		Y_EndVote();
-
-	G_SetGamestate(GS_NULL);
-	wipegamestate = GS_NULL;
-	SV_StopServer();
-	SV_ResetServer();
+	D_ClearState();
 }
 
 boolean G_CheckDemoStatus(void)
@@ -4576,14 +4578,22 @@ boolean G_CheckDemoStatus(void)
 			G_FinishExitLevel();
 		else
 		{
+			UINT8 wasmodeattacking = modeattacking;
+			boolean wastitledemo = demo.title;
 			G_StopDemo();
 
 			if (timedemo_quit)
 				COM_ImmedExecute("quit");
-			else if (modeattacking)
+			else if (wastitledemo)
+				D_StartTitle();
+			else if (wasmodeattacking)
 				MR_ModeAttackEndGame(0);
 			else
-				D_StartTitle();
+			{
+				M_ClearMenusEx(false, true);
+				D_ClearState();
+				M_StartControlPanel();
+			}
 		}
 
 		return true;
@@ -4697,33 +4707,6 @@ void G_SaveDemo(void)
 		else
 			CONS_Alert(CONS_WARNING, M_GetText("Demo %s not saved\n"), demoname);
 	}
-}
-
-boolean G_DemoTitleResponder(event_t *ev)
-{
-	INT32 ch;
-
-	if (ev->type != ev_keydown)
-		return false;
-
-	ch = (INT32)ev->data1;
-
-	// Only ESC and non-keyboard keys abort connection
-	if (ch == KEY_ESCAPE)
-	{
-		demo.savemode = (G_DemoWillAutoSave()) ? DSM_WILLAUTOSAVE : DSM_NOTSAVING;
-		return true;
-	}
-
-	if (ch == KEY_ENTER || ch >= NUMKEYS)
-	{
-		demo.savemode = DSM_WILLSAVE;
-		return true;
-	}
-
-	M_TextInputHandle(&demo.titlenameinput, ch);
-
-	return true;
 }
 
 void G_SyncDemoParty(INT32 rem, INT32 newsplitscreen)

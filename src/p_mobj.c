@@ -1842,7 +1842,7 @@ void P_XYMovement(mobj_t *mo)
 							}
 							break;
 
-						case MT_BUBBLESHIELDTRAP:
+						case MT_TRAPBUBBLE:
 							S_StartSound(mo, sfx_s3k44); // Bubble bounce
 							break;
 
@@ -1948,11 +1948,19 @@ void P_XYMovement(mobj_t *mo)
 		return;
 
 	//{ SRB2kart stuff
-	if (mo->type == MT_FLINGRING || mo->type == MT_BALLHOG || mo->type == MT_BUBBLESHIELDTRAP)
+	if (mo->type == MT_FLINGRING || mo->type == MT_BALLHOG)
 		return;
 
+	// If we're spinning out, cut friction at below 50%
 	if (mo->player && (mo->player->spinouttimer && !mo->player->wipeoutslow) && mo->player->speed <= K_GetKartSpeed(mo->player, false, true)/2)
 		return;
+
+	if (mo->player && (mo->player->crash_state && !mo->player->wipeoutslow) && mo->player->speed <= FixedMul(K_GetKartSpeed(mo->player, false, true), 2 * FRACUNIT / 3))
+	{
+		// If we're crashing, cut friction at below 66%
+		// Crashing should keep you moving a bit faster for the sake of game flow
+		return;
+	}
 	//}
 
 	if (((!(mo->eflags & MFE_VERTICALFLIP) && mo->z > mo->floorz) || (mo->eflags & MFE_VERTICALFLIP && mo->z+mo->height < mo->ceilingz))
@@ -6606,7 +6614,6 @@ boolean P_IsKartFieldItem(INT32 type)
 		case MT_LANDMINE:
 		case MT_EGGMINE:
 		case MT_BALLHOG:
-		case MT_BUBBLESHIELDTRAP:
 		case MT_SINK:
 			return true;
 
@@ -8225,6 +8232,28 @@ static void P_TracerAngleThink(mobj_t *mobj)
 		mobj->cvmem = mobj->cusval; // reset failure timer
 }
 
+static void P_CleanTrapBubble(mobj_t *trapbbl)
+{
+	if (P_MobjWasRemoved(trapbbl))
+		return; // *loud coughing*
+
+	// Reset movecount time limit
+	trapbbl->movecount = 0;
+
+	if (!P_MobjWasRemoved(trapbbl->tracer))
+	{
+		// Remove our tracer, since SpawnFreshCopy will preserve that
+		// Don't want players getting trapped all over again, now do we?
+		P_SetTarget(&trapbbl->tracer, NULL);
+	}
+
+	if (!P_MobjWasRemoved(trapbbl->target))
+	{
+		// Same for targets
+		P_SetTarget(&trapbbl->target, NULL);
+	}
+}
+
 static boolean P_MobjRegularThink(mobj_t *mobj)
 {
 	if ((mobj->flags & MF_ENEMY) && (mobj->state->nextstate == mobj->info->spawnstate && mobj->tics == 1))
@@ -9119,7 +9148,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 	case MT_BRAKEDRIFT:
 	{
 		// Letting go of accel functions about the same as brake-drifting
-		boolean nullDrift = (!(K_GetKartButtons(mobj->target->player) & BT_ACCELERATE));
+		boolean nullDrift = (mobj->target && mobj->target->player && !(K_GetKartButtons(mobj->target->player) & BT_ACCELERATE));
 
 		if ((!mobj->target || !mobj->target->health || !mobj->target->player || !P_IsObjectOnGround(mobj->target))
 			|| !mobj->target->player->drift || !(mobj->target->player->pflags & PF_BRAKEDRIFT)
@@ -10213,8 +10242,8 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 		}
 		break;
-	case MT_BUBBLESHIELDTRAP:
-		if (leveltime % 180 == 0)
+	case MT_TRAPBUBBLE:
+		if ((leveltime % 180 == 0) && (!mobj->extravalue3))
 			S_StartSound(mobj, sfx_s3kbfl);
 
 		if (mobj->tracer && !P_MobjWasRemoved(mobj->tracer) && mobj->tracer->player)
@@ -10230,7 +10259,13 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->momz = 0;
 			mobj->destscale = ((5*mobj->tracer->scale)>>2) + (mobj->tracer->scale>>3);
 
-			mobj->tracer->momz = (5*mobj->tracer->scale) * P_MobjFlip(mobj->tracer);
+			fixed_t extrarise = 0;
+			extrarise = (fixed_t)(mobj->script_args[1]);
+
+			// Rise really fast!
+			fixed_t risespeed = 16 + extrarise;
+
+			mobj->tracer->momz = (risespeed * max(mapobjectscale, mobj->tracer->scale)) * P_MobjFlip(mobj->tracer);
 
 			mobj->tracer->momx = (31*mobj->tracer->momx)/32;
 			mobj->tracer->momy = (31*mobj->tracer->momy)/32;
@@ -10267,34 +10302,64 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				mobj->tracer->flags &= ~MF_NOGRAVITY;
 				P_KillMobj(mobj, mobj->tracer, mobj->tracer, DMG_NORMAL);
 
+				P_CleanTrapBubble(mobj);
+
+				mobj->flags |= (MF_NOCLIP|MF_NOCLIPTHING);
+				mobj->extravalue3 = 1;
+
 				break;
 			}
-
-			// Uses cmd.turning over steering intentionally.
-			if (abs(player->cmd.turning) > 100)
+			else
 			{
-				INT32 lastsign = 0;
-				if (mobj->lastlook > 0)
-					lastsign = 1;
-				else if (mobj->lastlook < 0)
-					lastsign = -1;
+				// Check if the player hits Accel; if they have, pop and launch 'em out with a boost!
+				// FIXME: A "HIT THE GAS!" prompt to tell players what to do in the moment
+				UINT16 buttons = K_GetKartButtons(player);
+				boolean pressing_accel = ((buttons & BT_ACCELERATE) && !(player->oldcmd.buttons & BT_ACCELERATE));
 
-				if ((player->cmd.turning > 0 && lastsign < 0)
-					|| (player->cmd.turning < 0 && lastsign > 0))
+				if (pressing_accel)
 				{
-					mobj->movecount += (TICRATE/4);
-					mobj->cvmem = 8*lastsign;
-					S_StartSound(mobj, sfx_s3k7a);
-				}
+					// Play the sound of us popping, first
+					S_StartSound(mobj->tracer, sfx_s3k77);
 
-				mobj->lastlook = player->cmd.turning;
+					// Have the player announce their boost!
+					S_StartSoundAtVolume(mobj->tracer, sfx_cdfm57, 170);
+					K_PlayBoostTaunt(mobj->tracer);
+
+					const fixed_t speedscalar = K_GetKartGameSpeedScalar(gamespeed);
+
+					// Unlike the normal Bubble Shield boost, this sould fling you at a constant midair speed
+					P_InstaThrust(mobj->tracer, mobj->tracer->angle, FixedMul(45 * mobj->tracer->scale, speedscalar));
+
+					// Just in case...
+					player->pogospring = 1;
+
+					// Set generic popboost values
+					// EVER SO SLIGHTLY longer, in case you're in the air for a while
+					player->bubbleboost = 3 * BUBBLEBOOSTTIME / 2;
+					player->flashing = 6*TICRATE/7;
+
+					// Finally, exit stage left
+					mobj->tracer->flags &= ~MF_NOGRAVITY;
+					P_KillMobj(mobj, mobj->tracer, mobj->tracer, DMG_NORMAL);
+
+					// Clean up after ourselves
+					P_CleanTrapBubble(mobj);
+
+					mobj->flags |= (MF_NOCLIP|MF_NOCLIPTHING);
+					mobj->extravalue3 = 1;
+
+					break;
+				}
 			}
 
 			mobj->movecount++;
 		}
 		else if (mobj->extravalue1) // lost your player somehow, DIE
 		{
+			P_CleanTrapBubble(mobj); // ...I'm paranoid, okay?!
 			P_KillMobj(mobj, NULL, NULL, DMG_NORMAL);
+			mobj->flags |= (MF_NOCLIP|MF_NOCLIPTHING);
+			mobj->extravalue3 = 1;
 			break;
 		}
 		else
@@ -10692,7 +10757,7 @@ void P_MobjThinker(mobj_t *mobj)
 	}
 
 	// Special thinker for scenery objects
-	if (mobj->flags & MF_SCENERY)
+	if (mobj->flags & MF_SCENERY && !mobj->player)
 	{
 		P_MobjSceneryThink(mobj);
 		return;
@@ -10743,7 +10808,6 @@ void P_MobjThinker(mobj_t *mobj)
 		if (mobj->health > 0 && P_MobjTouchingSectorSpecialFlag(mobj, SSF_DELETEITEMS))
 		{
 			if (mobj->type == MT_SSMINE
-			|| mobj->type == MT_BUBBLESHIELDTRAP
 			|| mobj->type == MT_BALLHOG)
 			{
 				S_StartSound(mobj, mobj->info->deathsound);
@@ -13086,7 +13150,7 @@ static boolean P_SetupEmblem(mapthing_t *mthing, mobj_t *mobj)
 		if (emblem->type == ET_GLOBAL && emblem->tag == tagnum)
 			break;
 
-		emblem = M_GetLevelEmblems(-1);
+		emblem = M_GetLevelEmblems(NEXTMAP_INVALID);
 	}
 
 	if (!emblem)

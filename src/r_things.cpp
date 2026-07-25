@@ -20,7 +20,6 @@
 #include "st_stuff.h"
 #include "w_wad.h"
 #include "z_zone.h"
-#include "m_menu.h" // character select
 #include "m_misc.h"
 #include "info.h" // spr2names
 #include "i_video.h" // rendermode
@@ -2145,6 +2144,11 @@ static void R_ProjectSprite(mobj_t *thing)
 	interp.y += thing->spryoff;
 	interp.z += thing->sprzoff;
 
+	if (thing->player)
+	{
+		interp.z += thing->player->crash_zoffset;
+	}
+
 	radius = interp.radius; // For drop shadows
 	height = interp.height; // Ditto
 
@@ -3942,7 +3946,7 @@ static drawnode_t *R_CreateDrawNode(drawnode_t *link)
 	node->ffloor = NULL;
 	node->sprite = NULL;
 
-	ps_numdrawnodes++;
+	ps_numdrawnodes.value.i++;
 	return node;
 }
 

@@ -11,6 +11,7 @@
 /// \file  p_saveg.c
 /// \brief Archiving: SaveGame I/O
 
+#include "doomdata.h"
 #include "doomdef.h"
 #include "byteptr.h"
 #include "d_main.h"
@@ -38,6 +39,7 @@
 #include "p_slopes.h"
 
 // SRB2Kart
+#include "k_kart.h"
 #include "k_battle.h"
 #include "k_pwrlv.h"
 #include "k_terrain.h"
@@ -621,6 +623,9 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].airtime);
 		SYNC(players[i].startboost);
 
+		SYNC(players[i].distancefromcluster);
+		SYNC(players[i].distancefrombestfit);
+
 		SYNC(players[i].dropdash);
 		SYNC(players[i].respawn);
 
@@ -631,6 +636,17 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].flipovertimer);
 		SYNC(players[i].flipoverangle);
 		SYNC(players[i].squishedtimer);
+		SYNC(players[i].crash_state);
+		SYNC(players[i].crash_rot);
+		SYNC(players[i].crash_yaw);
+		SYNC(players[i].crash_elapsed);
+		SYNC(players[i].crash_reorient_start);
+		SYNC(players[i].crash_zoffset);
+		SYNC(players[i].crash_zoffset_delta);
+		SYNC(players[i].crash_zoffset_lerp);
+		SYNC(players[i].crash_side);
+		SYNCBOOLEAN(players[i].crash_bumpme);
+		SYNC(players[i].crashtimer);
 		SYNC(players[i].instashield);
 		SYNC(players[i].wipeoutslow);
 		SYNC(players[i].justbumped);
@@ -647,6 +663,11 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].karttilt);
 		SYNC(players[i].karttiltmomentum);
 		SYNC(players[i].nulldrifttime);
+
+		SYNC(players[i].kartmagnet.factor);
+		SYNC(players[i].kartmagnet.base_speed);
+		SYNC(players[i].kartmagnet.target_speed);
+		SYNC(players[i].kartmagnet.target_gradient);
 
 		SYNC(players[i].recoverydashcharge);
 		SYNC(players[i].recoverydash);
@@ -885,6 +906,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		SYNC(players[i].itemreservetype);
 		SYNC(players[i].itemreserveamount);
+
+		SYNC(players[i].dashareapower);
 	}
 	TracyCZoneEnd(__zone);
 }
@@ -1670,7 +1693,7 @@ static void DiffLines(const line_t *li, const line_t *spawnli, UINT8 diff[])
 
 	DIFFNE(li, activation, LD_ACTIVATION);
 
-	if (li->sidenum[0] != 0xffff)
+	if (li->sidenum[0] != NO_INDEX)
 	{
 		si = &sides[li->sidenum[0]];
 		spawnsi = &spawnsides[li->sidenum[0]];
@@ -1680,7 +1703,7 @@ static void DiffLines(const line_t *li, const line_t *spawnli, UINT8 diff[])
 		DIFFNE(si, bottomtexture, LD_S1BOTTEX);
 		DIFFNE(si, midtexture, LD_S1MIDTEX);
 	}
-	if (li->sidenum[1] != 0xffff)
+	if (li->sidenum[1] != NO_INDEX)
 	{
 		si = &sides[li->sidenum[1]];
 		spawnsi = &spawnsides[li->sidenum[1]];
@@ -4340,7 +4363,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 				li->executordelay = spawnli->executordelay;
 				li->activation = spawnli->activation;
 
-				if (li->sidenum[0] != 0xffff)
+				if (li->sidenum[0] != NO_INDEX)
 				{
 					si = &sides[li->sidenum[0]];
 					spawnsi = &spawnsides[li->sidenum[0]];
@@ -4351,7 +4374,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 					si->midtexture = spawnsi->midtexture;
 				}
 
-				if (li->sidenum[1] != 0xffff)
+				if (li->sidenum[1] != NO_INDEX)
 				{
 					si = &sides[li->sidenum[1]];
 					spawnsi = &spawnsides[li->sidenum[1]];
@@ -4392,6 +4415,10 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNC(bumpsparkactive);
 	SYNC(antibumptime);
 	SYNC(playerbumpactive);
+
+	SYNC(clusterid);
+	SYNC(clustermode);
+	SYNC(clusterjustchanged);
 
 	for (i = 0; i < sizeof(g_voteLevels)/sizeof(*g_voteLevels); i++)
 	{

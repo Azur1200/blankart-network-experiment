@@ -131,6 +131,7 @@ extern consvar_t cv_kartstacking_invincibility_handleboost;
 extern consvar_t cv_kartstacking_invincibility_stackable;
 
 extern consvar_t cv_kartstacking_smonitor_speedboost;
+extern consvar_t cv_kartstacking_smonitor_fastestspeed;
 extern consvar_t cv_kartstacking_smonitor_accelboost;
 extern consvar_t cv_kartstacking_smonitor_handleboost;
 extern consvar_t cv_kartstacking_smonitor_stackable;
@@ -228,11 +229,12 @@ extern consvar_t cv_kartexplosion_limitlifetime_cap;
 extern consvar_t cv_kartslipdash;
 extern consvar_t cv_kartslopeboost;
 extern consvar_t cv_kartinvintheme;
-extern consvar_t cv_kartinvindamage;
+extern consvar_t cv_kartinvindamage, cv_kartorbijawzdmg;
 extern consvar_t cv_kartsmonitordist;
 extern consvar_t cv_kartsmonitor_congadist;
 extern consvar_t cv_kartsmonitor_decaydist;
 extern consvar_t cv_kartsmonitor_decaytime;
+extern consvar_t cv_kartsmonitor_intangible;
 
 // opinionated stuff for testing
 extern consvar_t cv_kartbubble_defense_canidle;
@@ -241,9 +243,11 @@ extern consvar_t cv_kartbubble_boost_allow;
 extern consvar_t cv_kartbubble_boost_offroadignore;
 extern consvar_t cv_kartflame_fastfuel;
 extern consvar_t cv_kartflame_offroadburn;
+extern consvar_t cv_kartflame_shove;
 extern consvar_t cv_kartattraction_assistpower;
 extern consvar_t cv_kartattraction_aoedmg;
 extern consvar_t cv_kartattraction_aoeemp;
+extern consvar_t cv_kartattraction_aoeshove;
 extern consvar_t cv_kartaltshrink_arrowbullet;
 extern consvar_t cv_kartaltshrink_arrowbulletthres;
 extern consvar_t cv_kartaltshrink_runneranger;
@@ -270,6 +274,8 @@ extern consvar_t cv_kartantibump;
 extern consvar_t cv_trailslow;
 
 extern consvar_t cv_playerbump;
+
+extern consvar_t cv_rockshove;
 
 extern consvar_t cv_kartforcelegacyodds;
 
@@ -333,6 +339,12 @@ extern consvar_t cv_skipmapcheck;
 extern consvar_t cv_sleep;
 
 extern consvar_t cv_perfstats;
+extern consvar_t cv_ps_thinkframe_page;
+extern consvar_t cv_ps_samplesize;
+extern consvar_t cv_ps_descriptor;
+
+void lua_profile_OnChange(void);
+extern consvar_t cv_lua_profile;
 
 extern consvar_t cv_director;
 

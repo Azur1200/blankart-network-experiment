@@ -13,6 +13,7 @@
 #include "doomdef.h"
 #include "d_main.h" // for srb2home
 #include "g_game.h"
+#include "hu_stuff.h"
 #include "sounds.h"
 #include "info.h"
 #include "d_think.h"
@@ -183,6 +184,32 @@ void clear_levels(void)
 	// Exit the current gamemap as a safeguard
 	if (Playing())
 		COM_BufAddText("exitgame"); // Command_ExitGame_f() but delayed
+}
+
+// TODO: use this everywhere PLEASE!
+static char *parsesocline(char *s)
+{
+	// First remove trailing newline, if there is one
+	char *tmp = strchr(s, '\n');
+	if (tmp)
+		*tmp = '\0';
+
+	tmp = strchr(s, '#');
+	if (tmp)
+		*tmp = '\0';
+	if (s == tmp)
+		return tmp; // Skip comment lines, but don't break.
+
+	// Get the part before the " = "
+	tmp = strchr(s, '=');
+	if (tmp)
+		*(tmp-1) = '\0';
+	else
+		return NULL;
+	strupr(s);
+
+	// Now get the part after
+	return tmp + 2;
 }
 
 // TODO: Figure out how to do undolines for this....
@@ -1189,7 +1216,9 @@ void readlevelheader(MYFILE *f, char * name)
 			}
 			else if (fastcmp(word, "TYPEOFLEVEL"))
 			{
-				if (i) // it's just a number
+				if (fastcmp(word2, "NONE")) // No type of level? Sure!
+					mapheaderinfo[num]->typeoflevel = 0;
+				else if (i) // it's just a number
 					mapheaderinfo[num]->typeoflevel = (UINT32)i;
 				else
 				{
@@ -2058,53 +2087,16 @@ static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ NULL, NULL }
 };
 
-// parses an item style in the form of "<font>-SMALL-<align>-<highlight>-STICKER"
-// each component is optional, and the style cannot be written in arbitrary order
-// returns IT_HIDDEN if style is invalid
-static menuitemflags_t parsestyle(const char *p)
-{
-	menuitemflags_t style = 0;
-
-	// yeah yeah, macro hell, but it's more economical than 100 entries in a table
-#define STYLE(string, flag) \
-	(!strncmp(p, string, sizeof(string)-1)) { \
-		style |= flag; \
-		p += sizeof(string)-1; \
-		if (*p == '\0') return style; \
-		if (*p++ != '-') return IT_HIDDEN; \
-	}
-
-	if STYLE("THIN2", ITF_THIN2)
-	else if STYLE("THIN", ITF_THIN)
-	else if STYLE("HEADER", ITF_HEADER|ITH_HIGHLIGHT)
-	else if STYLE("PATCH", ITF_PATCH)
-	else if STYLE("MAPTHUMBNAIL", ITF_THUMBNAIL)
-	else if STYLE("FILL", ITF_FILL)
-
-	if STYLE("SMALL", IT_SMALL)
-
-	if STYLE("CENTER", IT_CENTER)
-	else if STYLE("RIGHT", IT_RIGHT)
-
-	if STYLE("HIGHLIGHT", ITH_HIGHLIGHT)
-	else if STYLE("RECOMMENDEDHIGHLIGHT", ITH_RECOMMEND)
-	else if STYLE("WARNINGHIGHLIGHT", ITH_WARNING)
-
-	if STYLE("STICKER", IT_STICKER)
-
-	return IT_HIDDEN;
-#undef STYLE
-}
-
-#define WARN(str, ...) deh_warning("MenuItem %s: " str, strbuf_get(menunames, menuitem->info.nameofs), __VA_ARGS__)
-#define WARN0(str) deh_warning("MenuItem %s: " str, strbuf_get(menunames, menuitem->info.nameofs))
-static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
+#define WARN(str, ...) deh_warning("MenuItem %s: " str, strbuf_get(menunames, item->info.nameofs), __VA_ARGS__)
+#define WARN0(str) deh_warning("MenuItem %s: " str, strbuf_get(menunames, item->info.nameofs))
+static void readmenuitems(MYFILE *f, menupaneldef_t *pd)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word = s;
 	char *word2;
 	char *tmp;
 
+	menuitem_t *item = NULL;
 	menuitemflags_t status = 0;
 
 	// taking quite possibly the only opportunity i'll ever get
@@ -2127,11 +2119,46 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 
 		// Get the part before the " = "
 		tmp = strchr(s, '=');
-		if (tmp)
-			*(tmp-1) = '\0';
-		else
-			break;
+		if (tmp == NULL)
+		{
+			// new item definition
+			tmp = s;
+			while (isalnum(*tmp) || *tmp == '_')
+				tmp++;
+			if (*tmp != '\0')
+			{
+				deh_warning("Syntax error in menuitem name");
+				break;
+			}
+			strupr(s);
+
+			if (item != NULL && status != 0)
+				item->status = status;
+			status = 0;
+			item = M_CheckMenuItemDef(pd, s);
+			if (item == NULL)
+			{
+				Z_Realloc(pd->items, sizeof(menuitem_t)*(pd->numitems+1), PU_STATIC, &pd->items);
+				item = pd->items + pd->numitems++;
+				memset(item, 0, sizeof(*item));
+				DEH_Link(s, &item->info, &menunames);
+			}
+			continue;
+		}
+
+		*(tmp-1) = '\0';
+
+		// Remove leading indentation (an unique feature of menuitems to help readability!)
+		word = s;
+		while (isspace(*word))
+			word++;
 		strupr(word);
+
+		if (item == NULL)
+		{
+			WARN("cannot use %s without defining an item", word);
+			break;
+		}
 
 		// Now get the part after
 		word2 = tmp + 2;
@@ -2139,25 +2166,21 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 
 		if (fastcmp(word, "X"))
 		{
-			menuitem->x = get_number(word2);
+			item->x = get_number(word2);
 		}
 		else if (fastcmp(word, "OFSX"))
 		{
-			menuitem->x = get_number(word2);
+			item->x = get_number(word2);
 			status |= IT_OFSX;
 		}
 		else if (fastcmp(word, "Y"))
 		{
-			menuitem->y = get_number(word2);
+			item->y = get_number(word2);
 		}
 		else if (fastcmp(word, "OFSY"))
 		{
-			menuitem->y = get_number(word2);
+			item->y = get_number(word2);
 			status |= IT_OFSY;
-		}
-		else if (fastcmp(word, "OVERLAY"))
-		{
-			status |= IT_OVERLAY;
 		}
 		else if (fastcmp(word, "TEMPOFFSET"))
 		{
@@ -2165,40 +2188,42 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		}
 		else if (fastcmp(word, "ARGUMENT"))
 		{
-			menuitem->argument = get_number(word2);
+			item->argument = get_number(word2);
 		}
 		else if (fastcmp(word, "TEXT"))
 		{
-			if (menuitem->text)
-				Z_Free(menuitem->text);
-			menuitem->text = Z_StrDup(word2);
+			if (item->text)
+				Z_Free(item->text);
+			item->text = Z_StrDup(word2);
 		}
 		else if (fastcmp(word, "PATCH"))
 		{
-			if (menuitem->patch)
-				Z_Free(menuitem->patch);
-			menuitem->patch = Z_StrDup(word2);
+			if (item->patch)
+				Z_Free(item->patch);
+			item->patch = Z_StrDup(word2);
 		}
 		else if (fastcmp(word, "TOOLTIP"))
 		{
-			if (menuitem->tooltip)
-				Z_Free(menuitem->tooltip);
-			menuitem->tooltip = Z_StrDup(word2);
+			if (item->tooltip)
+				Z_Free(item->tooltip);
+			item->tooltip = Z_StrDup(word2);
+		}
+		else if (fastcmp(word, "EXTRA"))
+		{
+			if (item->extra)
+				Z_Free(item->extra);
+			item->extra = Z_StrDup(word2);
 		}
 		else if (fastcmp(word, "STYLE"))
 		{
-			menuitemflags_t style = 0;
-			if (status & IT_STYLE)
+			strupr(word2);
+			menuitemstyle_t *style = DEH_FindMenuItemStyle(word2);
+			if (style == NULL)
 			{
-				WARN0("style already set!");
+				WARN("unknown style %s", word2);
 				continue;
 			}
-			strupr(word2);
-			style = parsestyle(word2);
-			if (style == IT_HIDDEN)
-				WARN("unknown style '%s'", word2);
-			else
-				status |= style;
+			item->style = style;
 		}
 		else if (fastcmp(word, "CVAR") || fastcmp(word, "SLIDER"))
 		{
@@ -2218,7 +2243,7 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 			status |= IT_INTERACT;
 			if (word[0] == 'S')
 				status |= IT_SLIDER;
-			menuitem->cvar = cvar;
+			item->cvar = cvar;
 		}
 		else if (fastcmp(word, "SUBMENU"))
 		{
@@ -2240,7 +2265,7 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 				continue;
 			}
 			status |= IT_INTERACT;
-			menuitem->submenu = mn;
+			item->submenu = mn;
 		}
 		else if (fastcmp(word, "CALL") || fastcmp(word, "ARROWS"))
 		{
@@ -2253,15 +2278,313 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 			status |= IT_INTERACT;
 			if (word[0] == 'A')
 				status |= IT_ARROWS;
-			menuitem->routine = routine;
+			item->routine = routine;
 		}
 		else
 			WARN("unknown word '%s'", word);
 	}
 	while (!myfeof(f)); // finish when the line is empty
 
-	if (status)
-		menuitem->status = status;
+	if (item != NULL && status != 0)
+		item->status = status;
+
+	Z_Free(s);
+}
+#undef WARN
+#undef WARN0
+
+#define WARN(str, ...) deh_warning("Menu style %s: " str, strbuf_get(menunames, style->info.nameofs), __VA_ARGS__)
+#define WARN0(str) deh_warning("Menu style %s: " str, strbuf_get(menunames, style->info.nameofs))
+void readmenuitemstyle(MYFILE *f, menuitemstyle_t *style)
+{
+	CLEANUP(Z_Pfree) char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
+	char *word = s;
+	char *word2;
+	menuitempart_t *part = NULL;
+
+	do if (myfgets(s, MAXLINELEN, f))
+	{
+		if (s[0] == '\n')
+			break;
+
+		word2 = parsesocline(s);
+		if (word2 == s)
+		{
+			continue;
+		}
+		else if (word2 == NULL && !strnicmp(s, "PART ", 5))
+		{
+			INT32 index = atoi(s + 5);
+			if (index < 0 || index >= MAXMENUITEMPARTS)
+			{
+				deh_warning("Part index out of range");
+				break;
+			}
+			part = &style->parts[index];
+			style->partenabled[index] = true;
+			continue;
+		}
+		else if (word2 == NULL)
+		{
+			break;
+		}
+
+		// Remove leading indentation (no longer an unique feature)
+		word = s;
+		while (isspace(*word))
+			word++;
+
+		if (part == NULL)
+		{
+			WARN("cannot use %s without selecting a part", word);
+			break;
+		}
+
+		if (fastcmp(word, "FIXEDSTRING"))
+		{
+			Z_Free(part->fixedstring);
+			part->fixedstring = Z_StrDup(word2);
+			continue;
+		}
+		else if (fastcmp(word, "FIXEDSTRING2"))
+		{
+			Z_Free(part->fixedstring2);
+			part->fixedstring2 = Z_StrDup(word2);
+			continue;
+		}
+
+		strupr(word2);
+
+		if (fastcmp(word, "X"))
+		{
+			part->xofs = get_number(word2);
+		}
+		else if (fastcmp(word, "Y"))
+		{
+			part->yofs = get_number(word2);
+		}
+		else if (fastcmp(word, "SMALL"))
+		{
+			part->small = word2[0] == 'T' || word2[0] == 'Y';
+		}
+		else if (fastcmp(word, "TRANSLUCENT"))
+		{
+			part->translucent = word2[0] == 'T' || word2[0] == 'Y';
+		}
+		else if (fastcmp(word, "NOHIGHLIGHT"))
+		{
+			part->nohighlight = word2[0] == 'T' || word2[0] == 'Y';
+		}
+		else if (fastcmp(word, "FONT") || fastcmp(word, "FONTALT"))
+		{
+			if (fastcmp(word2, "HU"))
+				part->font = HU_FONT;
+			else if (fastcmp(word2, "TINY"))
+				part->font = TINY_FONT;
+			else if (fastcmp(word2, "KART"))
+				part->font = KART_FONT;
+			else if (fastcmp(word2, "CRED"))
+				part->font = CRED_FONT;
+			else if (fastcmp(word2, "GTOL"))
+				part->font = GTOL_FONT;
+			else if (fastcmp(word2, "GTFN"))
+				part->font = GTFN_FONT;
+			else
+				WARN("unknown font '%s'", word2);
+
+			part->fontalt = word[4] == 'A';
+		}
+		else if (fastcmp(word, "TYPE"))
+		{
+			if (fastcmp(word2, "STRING"))
+				part->type = ITT_STRING;
+			else if (fastcmp(word2, "FILL"))
+				part->type = ITT_FILL;
+			else if (fastcmp(word2, "PATCH"))
+				part->type = ITT_PATCH;
+			else if (fastcmp(word2, "THUMBNAIL"))
+				part->type = ITT_THUMBNAIL;
+			else if (fastcmp(word2, "SKINICON"))
+				part->type = ITT_SKINICON;
+			else
+				WARN("unknown type '%s'", word2);
+		}
+		else if (fastcmp(word, "HIGHLIGHT"))
+		{
+			if (fastcmp(word2, "NONE"))
+				part->highlight = ITH_NONE;
+			else if (fastcmp(word2, "HIGHLIGHT"))
+				part->highlight = ITH_HIGHLIGHT;
+			else if (fastcmp(word2, "RECOMMENDED"))
+				part->highlight = ITH_RECOMMENDED;
+			else if (fastcmp(word2, "WARNING"))
+				part->highlight = ITH_WARNING;
+			else
+				WARN("unknown highlight '%s'", word2);
+		}
+		else if (fastcmp(word, "ALIGN"))
+		{
+			if (fastcmp(word2, "LEFT"))
+				part->align = ITA_LEFT;
+			else if (fastcmp(word2, "CENTER"))
+				part->align = ITA_CENTER;
+			else if (fastcmp(word2, "RIGHT"))
+				part->align = ITA_RIGHT;
+			else if (fastcmp(word2, "EDGE"))
+				part->align = ITA_EDGE;
+			else
+				WARN("unknown alignment '%s'", word2);
+		}
+
+		else if (fastcmp(word, "SOURCE") || fastcmp(word, "SOURCE2"))
+		{
+			itempartsource_e source;
+			if (fastcmp(word2, "TEXT"))
+				source = ITS_TEXT;
+			else if (fastcmp(word2, "PATCH"))
+				source = ITS_PATCH;
+			else if (fastcmp(word2, "EXTRA"))
+				source = ITS_EXTRA;
+			else if (fastcmp(word2, "FIXED"))
+				source = ITS_FIXED;
+			else if (fastcmp(word2, "FIXED2"))
+				source = ITS_FIXED2;
+			else
+			{
+				WARN("unknown source '%s'", word2);
+				continue;
+			}
+			if (word[6] == '2')
+				part->source2 = source;
+			else
+				part->source = source;
+		}
+		else
+			WARN("unknown word '%s'", word);
+	}
+	while (!myfeof(f)); // finish when the line is empty
+}
+#undef WARN
+#undef WARN0
+
+#define WARN(str, ...) deh_warning("Menu panel %s: " str, DEH_MenuPanelName(pd), __VA_ARGS__)
+#define WARN0(str) deh_warning("Menu panel %s: " str, DEH_MenuPanelName(pd))
+void readmenupanel(MYFILE *f, menupaneldef_t *pd)
+{
+	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
+	char *word = s;
+	char *word2;
+	char *tmp;
+
+	do if (myfgets(s, MAXLINELEN, f))
+	{
+		if (s[0] == '\n')
+			break;
+
+		// First remove trailing newline, if there is one
+		tmp = strchr(s, '\n');
+		if (tmp)
+			*tmp = '\0';
+
+		tmp = strchr(s, '#');
+		if (tmp)
+			*tmp = '\0';
+		if (s == tmp)
+			continue; // Skip comment lines, but don't break.
+
+		// Get the part before the " = "
+		tmp = strchr(s, '=');
+		if (tmp)
+		{
+			*(tmp-1) = '\0';
+		}
+		else if (fasticmp(s, "ITEMS"))
+		{
+			readmenuitems(f, pd);
+			break;
+		}
+		else
+		{
+			break;
+		}
+		strupr(word);
+
+		// Now get the part after
+		word2 = (tmp += 2);
+		strupr(word2);
+
+		if (fastcmp(word, "INITIALIZER"))
+		{
+			panelfunc_f *initializer = get_panelfunc(word2);
+			if (initializer == NULL)
+			{
+				WARN("unknown panel func '%s'", word2);
+				continue;
+			}
+			pd->initializer = initializer;
+		}
+		else if (fastcmp(word, "DRAWROUTINE"))
+		{
+			menudrawer_f *drawer = get_menudrawer(word2);
+			if (drawer == NULL)
+			{
+				WARN("unknown draw routine '%s'", word2);
+				continue;
+			}
+			pd->drawroutine = drawer;
+		}
+		else if (fastcmp(word, "TICKROUTINE"))
+		{
+			panelfunc_f *tickroutine = get_panelfunc(word2);
+			if (tickroutine == NULL)
+			{
+				WARN("unknown panel tick func '%s'", word2);
+				continue;
+			}
+			pd->tickroutine = tickroutine;
+		}
+		else if (fastcmp(word, "SCROLLBAR"))
+		{
+			pd->scrollbar = (boolean)(word2[0] == 'T' || word2[0] == 'Y' || get_number(word2));
+		}
+		else if (fastcmp(word, "SCROLLHEIGHT"))
+		{
+			pd->scrollheight = get_number(word2);
+		}
+		else if (fastcmp(word, "CURSOROFFSET"))
+		{
+			pd->cursoroffset = get_number(word2);
+		}
+		else if (fastcmp(word, "LINEHEIGHT"))
+		{
+			pd->lineheight = get_number(word2);
+		}
+		else if (fastcmp(word, "KEYHANDLER"))
+		{
+			menufunc_f *routine = get_menuroutine(word2);
+			if (!routine)
+			{
+				WARN("unknown key handler '%s'", word2);
+				continue;
+			}
+			pd->keyhandler = routine;
+		}
+		else if (fastcmp(word, "MULTINAV"))
+		{
+			pd->multinav = word2[0] == 'T' || word2[0] == 'Y';
+		}
+		else if (fastcmp(word, "NAVITEMCOUNT"))
+		{
+			pd->navitemcount = get_number(word2);
+		}
+		else if (fastcmp(word, "HORIZONTAL"))
+		{
+			pd->horizontal = word2[0] == 'T' || word2[0] == 'Y';
+		}
+		else
+			WARN("unknown word '%s'", word);
+	} while (!myfeof(f)); // finish when the line is empty
+
 	Z_Free(s);
 }
 #undef WARN
@@ -2269,6 +2592,159 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 
 #define WARN(str, ...) deh_warning("Menu %s: " str, DEH_MenutypeName(num), __VA_ARGS__)
 #define WARN0(str) deh_warning("Menu %s: " str, DEH_MenutypeName(num))
+static void readmenupanelinstances(MYFILE *f, INT32 num)
+{
+	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
+	char *word = s;
+	char *word2;
+	char *tmp;
+
+	menu_t *menudef = &menudefs[num];
+	menupanelinst_t *pi = NULL;
+
+	do if (myfgets(s, MAXLINELEN, f))
+	{
+		if (s[0] == '\n')
+			break;
+
+		// First remove trailing newline, if there is one
+		tmp = strchr(s, '\n');
+		if (tmp)
+			*tmp = '\0';
+
+		tmp = strchr(s, '#');
+		if (tmp)
+			*tmp = '\0';
+		if (s == tmp)
+			continue; // Skip comment lines, but don't break.
+
+		// Get the part before the " = "
+		tmp = strchr(s, '=');
+		if (tmp == NULL)
+		{
+			// new panel definition
+			char *srcname = NULL;
+			tmp = s;
+			while (isalnum(*tmp) || *tmp == '_')
+				tmp++;
+			if (fastncmp(tmp, " : ", 3))
+			{
+				*tmp = '\0';
+				tmp += 3;
+				srcname = tmp;
+				while (isalnum(*tmp) || *tmp == '_')
+					tmp++;
+			}
+			if (srcname == NULL)
+			{
+				WARN0("no source panel specified");
+				break;
+			}
+			if (*tmp != '\0')
+			{
+				WARN("invalid character '%c' in panel instance name", *tmp);
+				break;
+			}
+			if (strlen(s) > MAXMENUPANELNAME)
+			{
+				WARN("panel instance name '%s' is longer than %d characters", s, MAXMENUPANELNAME);
+				break;
+			}
+			for (size_t i = 0; i < menudef->numpanels; i++)
+			{
+				if (fastcmp(menudef->panels[i].name, s))
+				{
+					WARN("panel instance name '%s' already exists", s);
+					break;
+				}
+			}
+
+			menupaneldef_t *pd = DEH_FindMenuPanel(srcname);
+			if (pd == NULL)
+			{
+				WARN("couldn't find panel named '%s'", srcname);
+				break;
+			}
+			Z_Realloc(menudef->panels, sizeof(*menudef->panels)*(menudef->numpanels+1), PU_STATIC, &menudef->panels);
+			pi = menudef->panels + menudef->numpanels++;
+			memset(pi, 0, sizeof(*pi));
+			strlcpy(pi->name, s, sizeof(pi->name));
+			pi->defnum = pd - menupanels;
+			continue;
+		}
+
+		*(tmp-1) = '\0';
+
+		// Remove leading indentation (an unique feature of menuitems to help readability!)
+		word = s;
+		while (isspace(*word))
+			word++;
+		strupr(word);
+
+		if (pi == NULL)
+		{
+			WARN("cannot use %s without defining a panel", word);
+			break;
+		}
+
+		// Now get the part after
+		word2 = (tmp += 2);
+		strupr(word2);
+
+		if (fastcmp(word, "X"))
+		{
+			pi->x = get_number(word2);
+		}
+		else if (fastcmp(word, "Y"))
+		{
+			pi->y = get_number(word2);
+		}
+		else if (fastcmp(word, "FLAGS"))
+		{
+			UINT32 allow = V_SNAPTOTOP|V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_SNAPTORIGHT
+			              |V_ALLOWLOWERCASE // overrides menucaps
+			              |V_ALPHAMASK; // woah, transparency!
+			pi->vflags = get_number(word2) & allow;
+		}
+		else if (fastcmp(word, "DISABLED"))
+		{
+			pi->disabled = word2[0] == 'T' || word2[0] == 'Y';
+		}
+		else if (fastcmp(word, "LAYER"))
+		{
+			pi->layer = get_number(word2);
+		}
+		else if (fastcmp(word, "CLIPRECT"))
+		{
+			pi->cliprect = word2[0] == 'T' || word2[0] == 'Y';
+		}
+		else if (fastcmp(word, "CLIPRECT_RELATIVE"))
+		{
+			pi->cliprect_relative = word2[0] == 'T' || word2[0] == 'Y';
+		}
+		else if (fastcmp(word, "CLIPRECT_X"))
+		{
+			pi->cliprect_x = get_number(word2);
+		}
+		else if (fastcmp(word, "CLIPRECT_Y"))
+		{
+			pi->cliprect_y = get_number(word2);
+		}
+		else if (fastcmp(word, "CLIPRECT_WIDTH"))
+		{
+			pi->cliprect_width = get_number(word2);
+		}
+		else if (fastcmp(word, "CLIPRECT_HEIGHT"))
+		{
+			pi->cliprect_height = get_number(word2);
+		}
+		else
+			WARN("unknown word '%s'", word);
+	} while (!myfeof(f)); // finish when the line is empty
+
+	Z_Free(s);
+}
+
 void readmenu(MYFILE *f, INT32 num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -2300,34 +2776,17 @@ void readmenu(MYFILE *f, INT32 num)
 			// Get the part before the " = "
 			tmp = strchr(s, '=');
 			if (tmp)
+			{
 				*(tmp-1) = '\0';
+			}
+			else if (fasticmp(s, "PANELS"))
+			{
+				readmenupanelinstances(f, num);
+				break;
+			}
 			else
 			{
-				// ...or get the word after the space. yay special syntax!
-				word2 = strchr(s, ' ');
-				if (!word2 || *word2 == '\0' || word2[1] == ' ') // trailing space(s) after MenuItem doesn't count
-				{
-					WARN0("missing name for menuitem");
-					continue;
-				}
-				*word2++ = '\0';
-				strupr(word2);
-				strupr(word);
-
-				if (fastcmp(word, "MENUITEM"))
-				{
-					menuitem_t *item = M_CheckMenuItem(num, word2);
-					if (item == NULL)
-					{
-						menudef->menuitems = Z_Realloc(menudef->menuitems, sizeof(menuitem_t)*(menudef->numitems+1), PU_STATIC, NULL);
-						item = menudef->menuitems + menudef->numitems++;
-						DEH_Link(word2, &item->info, &menunames);
-					}
-					readmenuitem(f, item);
-				}
-				else
-					WARN("unknown word '%s'", word);
-				continue;
+				break;
 			}
 			strupr(word);
 
@@ -2414,6 +2873,11 @@ void readmenu(MYFILE *f, INT32 num)
 				menudefs[num].titlescrollyspeed = get_number(word2);
 				titlechanged = true;
 			}
+			else if (fastcmp(word, "VHS"))
+			{
+				menudefs[num].vhs = (boolean)(value || word2[0] == 'T' || word2[0] == 'Y');
+				titlechanged = true;
+			}
 			else if (fastcmp(word, "MUSIC"))
 			{
 				strncpy(menudefs[num].musname, word2, 7);
@@ -2493,42 +2957,11 @@ void readmenu(MYFILE *f, INT32 num)
 				menudefs[num].exitwipe = get_number(word2);
 				titlechanged = true;
 			}
-			// MENUDEF STARTS HERE
 			else if (fastcmp(word, "HEADERPIC"))
 			{
 				if (menudef->headerpic)
 					Z_Free(menudef->headerpic);
 				menudef->headerpic = Z_StrDup(word2);
-			}
-			else if (fastcmp(word, "DRAWROUTINE"))
-			{
-				menudrawer_f *drawer = get_menudrawer(word2);
-				if (drawer == NULL)
-				{
-					WARN("unknown draw routine '%s'", word2);
-					continue;
-				}
-				menudef->drawroutine = drawer;
-			}
-			else if (fastcmp(word, "X"))
-			{
-				menudef->x = get_number(word2);
-			}
-			else if (fastcmp(word, "Y"))
-			{
-				menudef->y = get_number(word2);
-			}
-			else if (fastcmp(word, "SCROLLHEIGHT"))
-			{
-				menudef->scrollheight = get_number(word2);
-			}
-			else if (fastcmp(word, "CURSOROFFSET"))
-			{
-				menudef->cursoroffset = get_number(word2);
-			}
-			else if (fastcmp(word, "LINEHEIGHT"))
-			{
-				menudef->lineheight = get_number(word2);
 			}
 			else if (fastcmp(word, "ENTERROUTINE"))
 			{
@@ -2550,24 +2983,20 @@ void readmenu(MYFILE *f, INT32 num)
 				}
 				menudef->quitroutine = routine;
 			}
-			else if (fastcmp(word, "KEYHANDLER"))
+			else if (fastcmp(word, "TICKROUTINE"))
 			{
 				menufunc_f *routine = get_menuroutine(word2);
 				if (!routine)
 				{
-					WARN("unknown key handler '%s'", word2);
+					WARN("unknown tick routine '%s'", word2);
 					continue;
 				}
-				menudef->keyhandler = routine;
+				menudef->tickroutine = routine;
 			}
 			else
 				WARN("unknown word '%s'", word);
 		}
 	} while (!myfeof(f)); // finish when the line is empty
-
-	// default line height
-	if (!menudef->lineheight)
-		menudef->lineheight = 8;
 
 	Z_Free(s);
 }
@@ -3761,14 +4190,6 @@ void readwipes(MYFILE *f)
 				else if (fastcmp(pword, "FINAL"))
 					wipeoffset = wipe_titlescreen_final;
 			}
-			else if (fastncmp(word, "TIMEATTACK_", 11))
-			{
-				pword = word + 11;
-				if (fastcmp(pword, "TOBLACK"))
-					wipeoffset = wipe_timeattack_toblack;
-				else if (fastcmp(pword, "FINAL"))
-					wipeoffset = wipe_timeattack_final;
-			}
 			else if (fastncmp(word, "CREDITS_", 8))
 			{
 				pword = word + 8;
@@ -4708,6 +5129,18 @@ menudrawer_f *get_menudrawer(const char *word)
 		if (fasticmp(word, MENU_DRAWERS[i].name))
 			return MENU_DRAWERS[i].drawer;
 	deh_warning("Couldn't find menu drawer named 'MD_%s'",word);
+	return NULL;
+}
+
+panelfunc_f *get_panelfunc(const char *word)
+{ // Returns the value of MP_ enumerations
+	size_t i;
+	if (fastncmp("MP_",word,3))
+		word += 3; // take off the MP_
+	for (i = 0; PANEL_FUNCS[i].name; i++)
+		if (fasticmp(word, PANEL_FUNCS[i].name))
+			return PANEL_FUNCS[i].func;
+	deh_warning("Couldn't find panel func named 'MP_%s'",word);
 	return NULL;
 }
 

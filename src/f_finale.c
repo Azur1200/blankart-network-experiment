@@ -48,7 +48,7 @@
 INT32 finalecount;
 INT32 titlescrollxspeed = 16;
 INT32 titlescrollyspeed = 0;
-UINT8 titlemapinaction = TITLEMAP_OFF;
+boolean titlemapinaction = false;
 
 static INT32 timetonext; // Delay between screen changes
 
@@ -60,7 +60,7 @@ static tic_t stoptimer;
 
 static boolean keypressed = false;
 
-static INT32 menuanimtimer; // Title screen: background animation timing
+INT32 menuanimtimer; // Title screen: background animation timing
 mobj_t *titlemapcameraref = NULL;
 
 // menu presentation state
@@ -226,7 +226,7 @@ static void F_NewCutscene(const char *basetext)
 // F_TitleBGScroll
 //
 
-static void F_TitleBGScroll(INT32 scrollspeed)
+void F_TitleBGScroll(INT32 scrollspeed, INT32 ticker)
 {
 	INT32 x, y, w;
 	patch_t *pat, *pat2;
@@ -238,8 +238,8 @@ static void F_TitleBGScroll(INT32 scrollspeed)
 	w = (vid.scaledwidth << FRACBITS);
 
 	// The scroll offset MUST be clamped before shifting by FRACBITS, or else it'll overflow in about 3 minutes
-	animtimer = ((((finalecount * scrollspeed) % (SHORT(pat->width)*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
-	anim2 = (SHORT(pat2->width)<<FRACBITS) - ((((finalecount * scrollspeed) % (SHORT(pat2->width)*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
+	animtimer = ((((ticker * scrollspeed) % (SHORT(pat->width)*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
+	anim2 = (SHORT(pat2->width)<<FRACBITS) - ((((ticker * scrollspeed) % (SHORT(pat2->width)*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
 
 	// SRB2Kart: F_DrawPatchCol is over-engineered; recoded to be less shitty and error-prone
 	if (rendermode != render_none)
@@ -919,20 +919,23 @@ const char *blancredits[] = {
 	"",
 	"\1Ring Racers Programming",
 	"Kart Krew Dev",
+	"Ronald \"Eidolon\" Kinard", // Interp, Virtual keyboard, So many other things
+	"\"Lat'\"", // Followers, Virutal Keyboard
 	"\"JugadorXEI\"",
 	"\"Kimberly\"",
 	"\"Chearii\"",
 	"\"hayaunderscore\" aka \"DeltaKanyx\"",
 	"\"Guilmon35249vr\"",
-	"Vivian \"toaster\" Grannell", // Horncode, fix for Followers in demos
-	"AJ \"Tyron\" Martinez", // Horncode, PT_SAY, RRID
+	"Vivian \"toaster\" Grannell", // Horncode, fix for Followers in demos, Virtual Keyboard
+	"AJ \"Tyron\" Martinez", // Horncode, PT_SAY, RRID, Virtual Keyboard
 	"\"Superstarxalien\"", // Horncode
 	"\"Freaky Mutant Man\"", // Color profiles menu
-	"\"blondedradio\"", // Screen-tracking item roulette, lifted near-directly from RadioRacers
+	"\"blondedradio\"", // Screen-tracking item roulette, Sonic Riders Race ticker
 	"\"Antoine De Grandpré\"", // Zero Deadzone fix
 	"\"Skirlez\"", // PT_SAY packet fixes
-	"Sally \"TehRealSalt\" Cochenour", // Map Buffer rewrite, Voting rewrites, multi-seed PRNG
-	"\"Jartha\"", // Various bugfixes, RRID
+	"Sally \"TehRealSalt\" Cochenour", // Map Buffer rewrite, Voting rewrites
+	"\"Jartha\"", // Various bugfixes, RRID, Virtual Keyboard
+	"\"Lat'\"", // Virtual Keyboard
 	"",
 	"\1Item Design",
 	"\"NepDisk\"",
@@ -1428,6 +1431,8 @@ void F_StartTitleScreen(void)
 {
 	INT32 titleMapNum;
 
+	encoremode = false;
+
 	if (gamestate != GS_TITLESCREEN && gamestate != GS_WAITINGPLAYERS)
 	{
 		ttuser_count = 0;
@@ -1445,15 +1450,12 @@ void F_StartTitleScreen(void)
 		mapthing_t *startpos;
 
 		gamestate_t prevwipegamestate = wipegamestate;
-		titlemapinaction = TITLEMAP_LOADING;
+		titlemapinaction = true;
 		titlemapcameraref = NULL;
 		gamemap = titleMapNum+1;
 		g_reloadingMap = false;
 
-		maptol = mapheaderinfo[titleMapNum]->typeoflevel;
-		globalweather = mapheaderinfo[titleMapNum]->weather;
-
-		G_DoLoadLevel(true);
+		G_DoLoadLevelEx(true, GS_TITLESCREEN);
 		if (!titlemap)
 			return;
 
@@ -1493,13 +1495,12 @@ void F_StartTitleScreen(void)
 	}
 	else
 	{
-		titlemapinaction = TITLEMAP_OFF;
-		gamemap = 1; // g_game.c
+		G_SetGamestate(GS_TITLESCREEN);
+		titlemapinaction = false;
+		gamemap = 2; // g_game.c
 		g_reloadingMap = false;
 		CON_ClearHUD();
 	}
-
-	G_SetGamestate(GS_TITLESCREEN);
 
 	// IWAD dependent stuff.
 
@@ -1516,8 +1517,10 @@ void F_TitleScreenDrawer(void)
 {
 	boolean hidepics = false;
 
+#if 0
 	if (modeattacking)
 		return; // We likely came here from retrying. Don't do a damn thing.
+#endif
 
 	// Draw that sky!
 	if (curbgcolor >= 0)
@@ -1529,16 +1532,12 @@ void F_TitleScreenDrawer(void)
 	if (gamestate != GS_TITLESCREEN && gamestate != GS_WAITINGPLAYERS)
 		return;
 
-	// Don't draw if title mode is set to Old/None and the patch isn't there
-	/*
-	if (!ttwing && (curttmode == TTMODE_OLD || curttmode == TTMODE_NONE))
-		return;
-	*/
-
 	// rei|miru: use title pics?
 	hidepics = curhidepics;
 	if (hidepics)
+	{
 		goto luahook;
+	}
 
 	switch(curttmode)
 	{
@@ -1570,7 +1569,8 @@ void F_TitleScreenDrawer(void)
 				if (finalecount <= (50+(9<<1)))
 					transval = (finalecount - 50)>>1;
 
-				F_TitleBGScroll(5);
+				if (titlemapinaction == false)
+					F_TitleBGScroll(5, finalecount);
 
 				V_DrawSciencePatch(0, -40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetTimeFrac(RTF_MENU), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTOLEFT, ttcheckers, FRACUNIT);
 				V_DrawSciencePatch(280<<FRACBITS, -(40<<FRACBITS) + 40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetTimeFrac(RTF_MENU), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTORIGHT, ttcheckers, FRACUNIT);
@@ -1628,7 +1628,7 @@ luahook:
 }
 
 // separate animation timer for backgrounds, since we also count
-// during GS_TIMEATTACK
+// during GS_MENU
 void F_MenuPresTicker(boolean run)
 {
 	if (run)
@@ -1640,6 +1640,9 @@ void F_TitleScreenTicker(boolean run)
 {
 	if (run)
 	{
+		if (finalecount == 0)
+			S_StopMusicCredit();
+
 		finalecount++;
 
 		if (finalecount == 10)
@@ -1649,7 +1652,8 @@ void F_TitleScreenTicker(boolean run)
 		else if (finalecount == 50)
 		{
 			// Now start the music
-			M_ChangeMenuMusic();
+			S_ChangeMusicInternal("titles", true);
+			S_ShowMusicCredit(0, 5*TICRATE, 0);
 			S_StartSound(NULL, sfx_s23c);
 		}
 	}

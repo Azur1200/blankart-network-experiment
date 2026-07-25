@@ -75,6 +75,13 @@ option(SRB2_CONFIG_TIDY "Enable clang tiny, checks compiled code for issues at t
 option(SRB2_CONFIG_UPNP "Enable UPnP support for networking." ON)
 option(SRB2_CONFIG_NOAPPENDBUILD "Don't append the build type to the executable name" OFF)
 
+option(SRB2_CONFIG_DEDICATED "Build a dedicated server that requires less resources." OFF)
+
+if (SRB2_CONFIG_DEDICATED)
+	set(SRB2_CONFIG_HWRENDER "OFF")
+endif()
+
+
 if(SRB2_CONFIG_ENABLE_TESTS)
 	# https://github.com/catchorg/Catch2
 	CPMAddPackage(
@@ -122,15 +129,19 @@ add_subdirectory(thirdparty)
 if("${SRB2_CONFIG_SYSTEM_LIBRARIES}")
 	find_package(ZLIB REQUIRED)
 	find_package(PNG REQUIRED)
-	find_package(SDL3 REQUIRED)
 	find_package(CURL REQUIRED)
-	find_package(OPENMPT REQUIRED)
-if("${SRB2_CONFIG_USE_GME}")
-	find_package(libgme QUIET)
-endif()
-if("${SRB2_CONFIG_UPNP}")
-	find_package(miniupnpc REQUIRED)
-endif()
+
+	if (NOT SRB2_CONFIG_DEDICATED)
+		find_package(OPENMPT REQUIRED)
+		if("${SRB2_CONFIG_USE_GME}")
+			find_package(libgme QUIET)
+		endif()
+		find_package(SDL3 REQUIRED)
+	endif()
+
+	if("${SRB2_CONFIG_UPNP}")
+		find_package(miniupnpc REQUIRED)
+	endif()
 endif()
 
 if(${PROJECT_SOURCE_DIR} MATCHES ${PROJECT_BINARY_DIR})

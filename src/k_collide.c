@@ -63,10 +63,47 @@ static void K_SetHitThing(mobj_t *t1, mobj_t *t2)
 	P_SetTarget(&g_tm.hitthing, t1 == g_tm.thing ? t2 : t1);
 }
 
+#define NOMOREWIPEOUTS (10) // This is when wipeout damage becomes egregious
+
+UINT8 K_GetOrbiJawzDamage(void)
+{
+	if (cv_kartorbijawzdmg.value)
+		return (UINT8)(cv_kartorbijawzdmg.value); // Just return the raw damage value, since it's part of the cvar
+
+	// Otherwise, we're likely doing automatic damage balancing
+
+	// FIXME: Do I need to say it?
+
+	INT32 i = 0;
+	INT32 numplaying = 0;
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue; // Not playing
+
+		if (players[i].spectator || P_MobjWasRemoved(players[i].mo))
+			continue; // Spectating, or has no object
+
+		numplaying++;
+	}
+
+	if (numplaying >= NOMOREWIPEOUTS)
+	{
+		// Using wipeout damage at this point would feel plain _bad_, so let's use crash damage
+		return DMG_CRASH;
+	}
+
+	return DMG_WIPEOUT;
+}
+
+#undef NOMOREWIPEOUTS
+
 boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 {
 	boolean damageitem = false;
 	boolean sprung = false;
+
+	UINT8 orbidamage = K_GetOrbiJawzDamage();
 
 	if (itempushing && t2->type == MT_RANDOMITEM
 	 && (t1->type == MT_JAWZ_DUD || (t1->type == MT_ORBINAUT && t1->flags2 & MF2_AMBUSH)))
@@ -106,8 +143,15 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 		}
 		else
 		{
+			if ((!P_IsObjectOnGround(t1)) && (!P_IsObjectOnGround(t2)) && ((orbidamage & DMG_TYPEMASK) == DMG_CRASH))
+			{
+				// If *both* the Orbinaut and the player are in the air, activate bumping
+				t2->player->crash_bumpme = true;
+			}
+
+
 			// Player Damage
-			P_DamageMobj(t2, t1, t1->target, 1, DMG_WIPEOUT);
+			P_DamageMobj(t2, t1, t1->target, 1, orbidamage);
 			K_SetHitThing(t2, t1);
 			S_StartSound(t2, sfx_s3k7b);
 			//damageitem = true; // delayed until K_KartBouncing, don't mess with the orbi's momentum
@@ -381,6 +425,8 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 			}
 			else if (P_IsObjectOnGround(t2))
 			{
+				K_ShoveObject(t1, t2, t1->scale/2);
+				K_ShoveObject(t2, t1, t1->scale);
 				S_StartSound(t2, sfx_cdfm37);
 				K_SpawnEggMineBumpEffect(t1);
 				t1->extravalue1 = 6;
@@ -597,6 +643,7 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 static mobj_t *lightningSource;
 static fixed_t lightningDist;
 static boolean attractionhipower;
+static fixed_t attractionPowerRate;
 
 static inline BlockItReturn_t PIT_ThunderShieldAttack(mobj_t *thing)
 {
@@ -757,6 +804,10 @@ static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
 			//todo: filter out teammates
 			K_SetPlayerItemCooldown(thing->player, TICRATE * ATTRACTIONAOEEMP, false);
 		}
+		if (ATTRACTIONAOESHOVE)
+		{
+			K_ShoveObject(thing, lightningSource, FixedMul(ATTRACTIONAOESHOVE, attractionPowerRate));
+		}
 	}
 	else
 	{
@@ -765,13 +816,14 @@ static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
 	return BMIT_CONTINUE;
 }
 
-void K_AttractionShieldAttack(mobj_t *actor, fixed_t size, boolean hipower)
+void K_AttractionShieldAttack(mobj_t *actor, fixed_t size, fixed_t powerrate, boolean hipower)
 {
 	INT32 bx, by, xl, xh, yl, yh;
 
 	lightningDist = FixedMul(size, actor->scale);
 	lightningSource = actor;
 	attractionhipower = hipower;
+	attractionPowerRate = powerrate;
 
 	// Use blockmap to check for nearby shootables
 	yh = (unsigned)(actor->y + lightningDist - bmaporgy)>>MAPBLOCKSHIFT;
@@ -1043,7 +1095,19 @@ boolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
 boolean K_FallingRockCollide(mobj_t *t1, mobj_t *t2)
 {
 	if ((t2->player && (G_CompatLevel(0x0008) || !t2->player->hyudorotimer)) || t2->type == MT_FALLINGROCK)
-		K_SetHitThing(t1, t2);
+	{
+		if ((!cv_rockshove.value) || G_CompatLevel(0x0012))
+		{
+			K_SetHitThing(t1, t2);
+		}
+		else if (!t2->player->justbumped)
+		{
+			// masakit feels like rocks
+			K_ShoveObject(t2, t1, 16*t2->scale);
+			K_SpawnBumpEffect(t2);
+			t2->player->justbumped = 6;
+		}
+	}
 
 	return true;
 }
@@ -1230,17 +1294,50 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	}
 
 	// Flame Shield dash damage
-	t1Condition = flameT1;
-	t2Condition = flameT2;
+	if (cv_kartflame_shove.value)
+	{
+		if (flameT1 == true && flameT2 == false)
+		{
+			K_ShoveObject(t2, t1, 5*t1->scale);
+			return true;
+		}
+		else if (flameT1 == false && flameT2 == true)
+		{
+			K_ShoveObject(t1, t2, 5*t1->scale);
+			return true;
+		}
+		else
+		{
+			// non-overheating / "residual" flame, shove is much weaker
+			t1Condition = ((t1->player->flamestore >= 1));
+			t2Condition = ((t2->player->flamestore >= 1));
+			if (t1Condition == true && t2Condition == false)
+			{
+				K_ShoveObject(t2, t1, 2*t1->scale);
+				return true;
+			}
+			else if (t1Condition == false && t2Condition == true)
+			{
+				K_ShoveObject(t1, t2, 2*t1->scale);
+				return true;
+			}
+		}
+	}
+	else
+	{
+		t1Condition = flameT1;
+		t2Condition = flameT2;
 
-	if (t1Condition == true && t2Condition == false)
-	{
-		return P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
+		if (t1Condition == true && t2Condition == false)
+		{
+			return P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
+		}
+		else if (t1Condition == false && t2Condition == true)
+		{
+			return P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
+		}
 	}
-	else if (t1Condition == false && t2Condition == true)
-	{
-		return P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
-	}
+
 
 	// Attraction Shield tackle damage
 	// players with Bubble Shield equipped are protected

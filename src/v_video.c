@@ -545,6 +545,69 @@ void VID_BlitLinearScreen(const UINT8 *restrict srcptr, UINT8 *restrict destptr,
 	}
 }
 
+// Returns the palette index representing the specific skin color.
+UINT8 V_GetColorFromSkinColorEx(skincolornum_t skincolor, UINT8 idx)
+{
+	if (dedicated)
+	{
+		return TRANSPARENTPIXEL; // Fuck off
+	}
+
+	idx = min(idx, 15); // Do not EVER let this go out of bounds!
+
+	if (skincolor >= numskincolors)
+	{
+		return TRANSPARENTPIXEL; // Out of range, don't bother
+	}
+
+	skincolor_t *color = &skincolors[skincolor];
+
+	return color->ramp[idx];
+}
+
+static colorlookup_t colormix_lut;
+
+// Returns the palette index representing the specific skin color, plus a brightness value that can
+// dim the given color.
+UINT8 V_GetColorFromSkinColorWithBrightness(skincolornum_t skincolor, UINT8 idx, fixed_t brightness)
+{
+	if (dedicated)
+	{
+		return TRANSPARENTPIXEL; // Fuck off
+	}
+
+	if (brightness == FRACUNIT)
+	{
+		// At full brightness, so no need for complicated color dimming
+		return V_GetColorFromSkinColorEx(skincolor, idx);
+	}
+
+	idx = min(idx, 15); // Do not EVER let this go out of bounds!
+
+	brightness = CLAMP(brightness, 0, FRACUNIT);
+
+	if (skincolor >= numskincolors)
+	{
+		return TRANSPARENTPIXEL; // Out of range, don't bother
+	}
+
+	skincolor_t *color = &skincolors[skincolor];
+
+	// Get the color from our skincolor
+	RGBA_t my_color = V_GetMasterColor(color->ramp[idx]);
+
+	// Dim the colors
+	my_color.s.red = FixedMul(my_color.s.red, brightness);
+	my_color.s.green = FixedMul(my_color.s.green, brightness);
+	my_color.s.blue = FixedMul(my_color.s.blue, brightness);
+
+	// Get the finalized color value
+	InitColorLUT(&colormix_lut, pMasterPalette, false);
+	UINT8 my_pal_index = GetColorLUT(&colormix_lut, my_color.s.red, my_color.s.green, my_color.s.blue);
+
+	return my_pal_index;
+}
+
 void V_AdjustXYWithSnap(INT32 *x, INT32 *y, UINT32 options, INT32 dup)
 {
 	// dup adjustments pretend that screen width is BASEVIDWIDTH * dup
@@ -756,10 +819,9 @@ void V_SetClipRect(fixed_t x, fixed_t y, fixed_t w, fixed_t h, INT32 flags)
 	cliprect.flags = flags;
 	cliprect.enabled = true;
 
-	/*
-	V_DrawFill(cliprect.l, cliprect.t, cliprect.r - cliprect.l, cliprect.b - cliprect.t, V_NOSCALESTART);
-	CONS_Printf("[(%d, %d), (%d, %d)]\n", cliprect.l, cliprect.t, cliprect.r, cliprect.b);
-	*/
+
+	//V_DrawFill(cliprect.left, cliprect.top, cliprect.right - cliprect.left, cliprect.bottom - cliprect.top, V_NOSCALESTART);
+	//CONS_Printf("[(%d, %d), (%d, %d)]\n", cliprect.left, cliprect.top, cliprect.right, cliprect.bottom);
 }
 
 // sets up a cliprect for a splitscreen player (and actually accounts for non-green res)
@@ -1793,6 +1855,210 @@ fillscreen:
 	}
 }
 
+// When drawing translucent lines, this prevents overlapping pixels.
+UINT8 occupied_pixels[MAXVIDWIDTH * MAXVIDHEIGHT] = {0};
+
+//
+// Draws a line from the point (x1, y1) to the point (x2, y2).
+// Based on Milo Yip's C implementation of Bresenham's line drawing algorithm
+// https://github.com/miloyip/line
+//
+void V_DrawFixedLine(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, fixed_t width, INT32 c)
+{
+	UINT8 *dest;
+	UINT8 _dest = 0;
+	const UINT8 *deststop;
+	UINT32 alphalevel = ((c & V_ALPHAMASK) >> V_ALPHASHIFT);
+	UINT32 blendmode = ((c & V_BLENDMASK) >> V_BLENDSHIFT);
+	fixed_t hwr_width = width;
+	//INT32 u;
+	vector2_t p1 = {0}, p2 = {0};
+	if (rendermode == render_none)
+		return;
+
+	if (width <= 0)
+		return;
+
+	double width_half_d = (FixedToDouble(width) / 2.0);
+
+	v_translevel = NULL;
+	if (alphalevel || blendmode)
+	{
+		if (alphalevel == 13) // V_HUDTRANSHALF
+			alphalevel = hudminusalpha[st_translucency];
+		else if (alphalevel == 14) // V_HUDTRANS
+			alphalevel = 10 - st_translucency;
+		else if (alphalevel == 15) // V_HUDTRANSDOUBLE
+			alphalevel = hudplusalpha[st_translucency];
+
+		if (alphalevel >= 10)
+			return; // invis
+
+		if (alphalevel || blendmode)
+		{
+			// Only clear to the actual width of what we want to draw to;
+			// drawing the LINE is expensive enough!
+			memset(occupied_pixels, 0, vid.rowbytes * vid.height);
+			v_translevel = R_GetBlendTable(blendmode+1, alphalevel);
+		}
+	}
+
+	if (!(c & V_NOSCALESTART))
+	{
+		INT32 dup = vid.dup;
+
+		hwr_width = FixedMul(width, dup);
+
+		width *= dup;
+
+		p1.x = FixedMul(x1, dup);
+		p1.y = FixedMul(y1, dup);
+		p2.x = FixedMul(x2, dup);
+		p2.y = FixedMul(y2, dup);
+
+		// Center it if necessary
+		V_AdjustXYWithSnap(&p1.x, &p1.y, c, dup);
+		V_AdjustXYWithSnap(&p2.x, &p2.y, c, dup);
+	}
+	else
+	{
+		p1.x = x1 >> FRACBITS;
+		p2.x = x2 >> FRACBITS;
+		p1.y = y1 >> FRACBITS;
+		p2.y = y2 >> FRACBITS;
+		hwr_width = width >> FRACBITS;
+	}
+
+	boolean wideline = (width > FRACUNIT);
+
+	INT32 left, right, top, bottom;
+	V_GetClipBounds(&left, &right, &top, &bottom);
+
+#ifdef HWRENDER
+	//if (rendermode != render_soft && !con_startup)		// Not this again
+	if (rendermode == render_opengl)
+	{
+		HWR_DrawFixedLine(p1.x, p1.y, p2.x, p2.y, hwr_width, c);
+		return;
+	}
+#endif
+
+	deststop = vid.screens[0] + vid.rowbytes * vid.height;
+
+	c &= 255;
+
+	int dx = abs(p2.x - p1.x), sx = p1.x < p2.x ? 1 : -1;
+	int dy = abs(p2.y - p1.y), sy = p1.y < p2.y ? 1 : -1;
+	int err = (dx > dy ? dx : -dy) / 2;
+
+	INT32 xx = p1.x;
+	INT32 yy = p1.y;
+	INT32 _x = 0;
+	INT32 _y = yy;
+	INT32 h = 1;
+
+	INT32 leftmost = 0, rightmost = 0, realwidth = 0;
+
+	INT32 index = 0;
+
+	if (alphalevel)
+		v_translevel += c<<8; // :patrick_mouth:
+
+	while (xx != p2.x || yy != p2.y)
+	{
+		int e2 = err;
+
+		if (wideline)
+		{
+			_y = (INT32)((double)(yy) - width_half_d);
+			h = width >> FRACBITS;
+		}
+		else
+		{
+			_y = yy;
+		}
+
+		if (xx < left || xx >= right || _y < top || _y >= bottom)
+		{
+			if (e2 > -dx) { err -= dy; xx += sx; }
+			if (e2 <  dy) { err += dx; yy += sy; }
+			continue; // Out of screen bounds
+		}
+
+		leftmost = CLAMP((INT32)((double)(xx) - width_half_d), left, right - 1);
+		rightmost = CLAMP(leftmost + (width >> FRACBITS), left, right - 1);
+
+		if (wideline)
+		{
+			dest = vid.screens[0] + _y*vid.width + leftmost;
+			index = _y*vid.width + leftmost;
+		}
+		else
+		{
+			dest = vid.screens[0] + _y*vid.width + xx;
+			index = _y*vid.width + xx;
+		}
+
+		if (leftmost >= rightmost)
+		{
+			if (e2 > -dx) { err -= dy; xx += sx; }
+			if (e2 <  dy) { err += dx; yy += sy; }
+			continue; // Inverted
+		}
+
+		realwidth = rightmost - leftmost;
+
+		if (alphalevel)
+		{
+			// borrowing this from jimitia's new hud drawing functions rq
+
+			if (wideline)
+			{
+				for (;(--h >= 0) && dest < deststop; dest += vid.width)
+				{
+					for (_x = 0; _x < (width >> FRACBITS); _x++)
+					{
+						if (!occupied_pixels[index + _x])
+						{
+							// Gotta do this, otherwise pixels will
+							// overlap one another and it'll look
+							// all gross
+							dest[_x] = v_translevel[dest[_x]];
+							occupied_pixels[index + _x] = 1;
+						}
+					}
+
+					index += vid.width;
+				}
+			}
+			else
+			{
+				_dest = *dest;
+
+				*dest = v_translevel[_dest];
+			}
+
+			if (e2 > -dx) { err -= dy; xx += sx; }
+			if (e2 <  dy) { err += dx; yy += sy; }
+		}
+		else
+		{
+			if (wideline)
+			{
+				for (;(--h >= 0) && dest < deststop; dest += vid.width)
+					memset(dest, c, realwidth);
+			}
+			else
+			{
+				*dest = (UINT8)(c);
+			}
+
+			if (e2 > -dx) { err -= dy; xx += sx; }
+			if (e2 <  dy) { err += dx; yy += sy; }
+		}
+	}
+}
+
 #ifdef HWRENDER
 // This is now a function since it's otherwise repeated 2 times and honestly looks retarded:
 static UINT32 V_GetHWConsBackColor(void)
@@ -2601,9 +2867,9 @@ static boolean V_CharacterValid(font_t *font, int c)
 
 // Writes a single character (draw WHITE if bit 7 set)
 //
-void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed)
+void V_DrawFixedCharacter(fixed_t x, fixed_t y, INT32 c, boolean lowercaseallowed)
 {
-	INT32 w, flags;
+	INT32 flags;
 	const UINT8 *colormap = V_GetStringColormap(c);
 
 	flags = c & ~(V_CHARCOLORMASK | V_PARAMMASK);
@@ -2615,14 +2881,7 @@ void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed)
 	if (c < 0 || c >= HU_FONTSIZE || !fontv[HU_FONT].font[c])
 		return;
 
-	w = fontv[HU_FONT].font[c]->width;
-	if (x + w > vid.width)
-		return;
-
-	if (colormap != NULL)
-		V_DrawMappedPatch(x, y, flags, fontv[HU_FONT].font[c], colormap);
-	else
-		V_DrawScaledPatch(x, y, flags, fontv[HU_FONT].font[c]);
+	V_DrawFixedPatch(x, y, FRACUNIT, flags, fontv[HU_FONT].font[c], colormap);
 }
 
 // Writes a single character for the chat (half scaled). (draw WHITE if bit 7 set)
@@ -3531,6 +3790,12 @@ void V_DrawRightAlignedString(INT32 x, INT32 y, INT32 option, const char *string
 	V_DrawString(x, y, option, string);
 }
 
+void V_DrawRightAlignedStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
+{
+	x -= V_StringWidth(string, option)*FRACUNIT;
+	V_DrawStringAtFixed(x, y, option, string);
+}
+
 void V_DrawCenteredSmallString(INT32 x, INT32 y, INT32 option, const char *string)
 {
 	x -= V_SmallStringWidth(string, option)/2;
@@ -3653,16 +3918,21 @@ void V_DrawRankNum(INT32 x, INT32 y, INT32 flags, INT32 num, INT32 digits, const
 
 // Find string width from cred_font chars
 //
-INT32 V_CreditStringWidth(const char *string)
+INT32 V_CreditSubStringWidth(const char *string, INT32 length, INT32 option)
 {
 	INT32 c, w = 0;
-	size_t i;
+	INT32 i;
+
+	(void)option;
 
 	// It's possible for string to be a null pointer
 	if (!string)
 		return 0;
 
-	for (i = 0; i < strlen(string); i++)
+	if (length < 0)
+		length = strlen(string);
+
+	for (i = 0; i < length; i++)
 	{
 		c = toupper(string[i]) - CRED_FONTSTART;
 		if (c < 0 || c >= CRED_FONTSIZE)

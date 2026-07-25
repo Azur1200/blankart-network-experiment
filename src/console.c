@@ -888,7 +888,7 @@ boolean CON_Responder(event_t *ev)
 	// check for console toggle key
 	if (ev->type != ev_console)
 	{
-		if ((modeattacking && !demo.playback) || metalrecording || marathonmode)
+		if ((modeattacking != ATTACKING_NONE && modeattacking != ATTACKING_MENU && !demo.playback) || metalrecording || marathonmode)
 			return false;
 
 		if (ev->data1 >= NUMKEYS) // See also: HUD_Responder
@@ -1678,6 +1678,26 @@ static void CON_DrawConsole(void)
 		CON_DrawInput();
 }
 
+static boolean CON_GamestateDrawHudLines(void)
+{
+	switch (gamestate)
+	{
+		case GS_LEVEL:
+		case GS_INTERMISSION:
+		case GS_VOTING:
+		case GS_CUTSCENE:
+		case GS_CREDITS:
+		case GS_BLANCREDITS:
+		case GS_SECRETCREDITS:
+		case GS_EVALUATION:
+		case GS_WAITINGPLAYERS:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 // Console refresh drawer, call each frame
 //
 void CON_Drawer(void)
@@ -1702,8 +1722,7 @@ void CON_Drawer(void)
 
 	if (con_curlines > 0)
 		CON_DrawConsole();
-	else if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_CUTSCENE || gamestate == GS_CREDITS || gamestate == GS_BLANCREDITS
-		|| gamestate == GS_SECRETCREDITS || gamestate == GS_VOTING || gamestate == GS_EVALUATION || gamestate == GS_WAITINGPLAYERS)
+	else if (CON_GamestateDrawHudLines() == true)
 		CON_DrawHudlines();
 
 	Unlock_state();

@@ -2282,6 +2282,13 @@ void P_MovePlayer(player_t *player)
 		player->glanceDir = 0;
 		player->pflags &= ~PF_GAINAX;
 	}
+	else if (player->crash_state)
+	{
+		P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
+
+		player->drawangle = player->mo->angle - (player->crash_yaw * player->crash_side);
+		player->mo->rollangle = FixedAngle(player->crash_rot);
+	}
 	else if (player->flipovertimer > 0)
 	{
 		player->mo->rollangle = (angle_t)(player->flipovertimer - 1) * FLIPOVERANG;
@@ -3057,6 +3064,12 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	mo = player->mo;
 
+	if (LUA_HookCameraThinker(player, thiscam))
+	{
+		P_CalcChasePostImg(player, thiscam);
+		return true;
+	}
+
 	if (player->playerstate != PST_LIVE && !(skins[player->skin].flags & SF_OLDDEATH))
 	{
 		// Do not move the camera while dead!
@@ -3135,7 +3148,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		return true;
 
 	if (P_IsMachineLocalPlayer(player) || (demo.playback && cv_lookbackinreplays.value))
-		lookback = G_PlayerInputDown(num, gc_lookback, false, DEADZONE_BUTTON);
+		lookback = (!menustack[0] && G_PlayerInputDown(num, gc_lookback, false, DEADZONE_BUTTON));
 	else
 		lookback = player->cmd.buttons & BT_LOOKBACK;
 

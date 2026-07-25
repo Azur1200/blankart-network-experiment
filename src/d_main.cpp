@@ -16,6 +16,7 @@
 ///        parameters, and call the startup functions.
 
 #include "g_mapnum.h"
+#include "g_state.h"
 #if (defined (__unix__) && !defined (MSDOS)) || defined(__APPLE__) || defined (UNIXCOMMON)
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -47,6 +48,7 @@
 #include "i_time.h"
 #include "i_threads.h"
 #include "i_video.h"
+#include "i_gamepad.h"
 #include "m_argv.h"
 #include "m_menu.h"
 #include "m_misc.h"
@@ -103,8 +105,8 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x4521efd34371fab9
-#define ASSET_HASH_MAPPATCH_PK3        0xdfb3c9da6c8c3adf
+#define ASSET_HASH_MAIN_PK3            0x32a19f0d750c6270
+#define ASSET_HASH_MAPPATCH_PK3        0x0d2ebf812a5bf60d
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
 #define ASSET_HASH_PATCH_PK3           0x0000000000000000
@@ -121,6 +123,8 @@
 #endif
 
 #include "lua_script.h"
+
+#include "lua_profile.h"
 
 // Version numbers for netplay :upside_down_face:
 int    VERSION;
@@ -220,6 +224,7 @@ static boolean recursioncheck = false;
 //
 void D_ProcessEvents(void)
 {
+	INT32 i;
 	event_t *ev;
 
 	boolean eaten = false;
@@ -251,38 +256,6 @@ void D_ProcessEvents(void)
 		if (M_ScreenshotResponder(ev))
 			continue; // ate the event
 
-		if (gameaction == ga_nothing && gamestate == GS_TITLESCREEN)
-		{
-			if (cht_Responder(ev))
-				continue;
-		}
-
-		if (demo.savemode == demovars_s::DSM_TITLEENTRY)
-		{
-			if (G_DemoTitleResponder(ev))
-				continue;
-		}
-
-		// Menu input
-		if (WipeInAction < 2)
-		{
-#ifdef HAVE_THREADS
-			I_lock_mutex(&m_menu_mutex);
-#endif
-			eaten = M_Responder(ev);
-#ifdef HAVE_THREADS
-			I_unlock_mutex(m_menu_mutex);
-#endif
-		}
-
-		if (eaten)
-			continue; // menu ate the event
-
-		// Demo input:
-		if (demo.playback)
-			if (M_DemoResponder(ev))
-				continue;	// demo ate the event
-
 		// console input
 #ifdef HAVE_THREADS
 		I_lock_mutex(&con_mutex);
@@ -300,7 +273,66 @@ void D_ProcessEvents(void)
 			continue; // ate the event
 		}
 
+		if (gameaction == ga_nothing && gamestate == GS_MENU)
+		{
+			if (cht_Responder(ev))
+				continue;
+		}
+
+		// Menu input
+		if (WipeInAction < 2)
+		{
+			// FIXME: Make this support 4p if we ever add menus that allow multiple controllers at once.
+			if (ev->type == ev_keydown && ev->data1 >= KEY_JOY1 && ev->data1 < JOYINPUTEND)
+			{
+				// Record dpad presses
+				switch (ev->data1)
+				{
+					case KEY_HAT1+0:
+						menucmd[0].ev_dpad_ud = -1;
+						break;
+					case KEY_HAT1+1:
+						menucmd[0].ev_dpad_ud = 1;
+						break;
+					case KEY_HAT1+2:
+						menucmd[0].ev_dpad_lr = -1;
+						break;
+					case KEY_HAT1+3:
+						menucmd[0].ev_dpad_lr = 1;
+						break;
+					default:
+						break;
+				}
+
+			}
+
+			// update keys current state
+			G_MapEventsToControls(ev);
+
+#ifdef HAVE_THREADS
+			I_lock_mutex(&m_menu_mutex);
+#endif
+			eaten = M_Responder(ev);
+#ifdef HAVE_THREADS
+			I_unlock_mutex(m_menu_mutex);
+#endif
+		}
+
+		if (eaten)
+			continue; // menu ate the event
+
+		// Demo input:
+		if (demo.playback)
+			if (M_DemoResponder(ev))
+				continue;	// demo ate the event
+
 		G_Responder(ev);
+	}
+
+	// Update menu CMD
+	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
+		M_UpdateMenuCMD(i, false);
 	}
 
 	recursioncheck = false;
@@ -320,7 +352,7 @@ boolean D_RenderLevel(void)
 
 	objectsdrawn = 0;
 
-	ps_rendercalltime = I_GetPreciseTime();
+	PS_START_TIMING(ps_rendercalltime);
 
 	if (rendermode == render_soft)
 	{
@@ -410,7 +442,7 @@ boolean D_RenderLevel(void)
 		}
 	}
 
-	ps_rendercalltime = I_GetPreciseTime() - ps_rendercalltime;
+	PS_STOP_TIMING(ps_rendercalltime);
 	R_RestoreLevelInterpolators();
 	return true;
 }
@@ -492,8 +524,8 @@ static void D_Display(void)
 	{
 		// set for all later
 		wipedefindex = gamestate; // wipe_xxx_toblack
-		if (gamestate == GS_TITLESCREEN && wipegamestate != GS_INTRO)
-			wipedefindex = wipe_timeattack_toblack;
+		if (gamestate == GS_MENU && wipegamestate != GS_INTRO)
+			wipedefindex = wipe_menu_toblack;
 
 		if (wipetypepre < 0 || !F_WipeExists(wipetypepre))
 			wipetypepre = wipedefs[wipedefindex];
@@ -508,7 +540,7 @@ static void D_Display(void)
 				F_WipeColorFill(31);
 				F_WipeEndScreen();
 			}
-			F_RunWipe(wipetypepre, gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
+			F_RunWipe(wipetypepre, gamestate != GS_TITLESCREEN && gamestate != GS_MENU);
 		}
 
 		if (rendermode != render_none)
@@ -555,6 +587,9 @@ static void D_Display(void)
 			AM_Drawer();
 			break;
 
+		case GS_MENU:
+			break;
+
 		case GS_INTERMISSION:
 			Y_IntermissionDrawer();
 			HU_Drawer();
@@ -563,9 +598,6 @@ static void D_Display(void)
 		case GS_VOTING:
 			Y_VoteDrawer();
 			HU_Drawer();
-			break;
-
-		case GS_TIMEATTACK:
 			break;
 
 		case GS_INTRO:
@@ -622,25 +654,32 @@ static void D_Display(void)
 
 		// clean up border stuff
 		// see if the border needs to be initially drawn
-		if (gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction && curbghide && (!hidetitlemap)))
+		if (G_GamestateUsesLevel() == true || (gamestate == GS_TITLESCREEN && titlemapinaction && curbghide && (!hidetitlemap)))
 		{
 
 			D_RenderLevel();
 
-			ps_uitime = I_GetPreciseTime();
+			PS_START_TIMING(ps_uitime);
 
-			if (gamestate == GS_LEVEL)
+			switch (gamestate)
 			{
-				ST_Drawer();
-				F_TextPromptDrawer();
-				HU_Drawer();
+				case GS_LEVEL:
+					ST_Drawer();
+					F_TextPromptDrawer();
+					HU_Drawer();
+					break;
+
+				case GS_TITLESCREEN:
+					F_TitleScreenDrawer();
+					break;
+
+				default:
+					break;
 			}
-			else
-				F_TitleScreenDrawer();
 		}
 		else
 		{
-			ps_uitime = I_GetPreciseTime();
+			PS_START_TIMING(ps_uitime);
 		}
 	}
 
@@ -681,7 +720,7 @@ static void D_Display(void)
 
 	CON_Drawer();
 
-	ps_uitime = I_GetPreciseTime() - ps_uitime;
+	PS_STOP_TIMING(ps_uitime);
 
 	//
 	// wipe update
@@ -699,7 +738,7 @@ dedipostwipe:
 		if (rendermode != render_none)
 			F_WipeEndScreen();
 
-		F_RunWipe(wipetypepost, gamestate != GS_TIMEATTACK && gamestate != GS_INTRO);
+		F_RunWipe(wipetypepost, gamestate != GS_MENU && gamestate != GS_INTRO);
 
 		// reset counters so timedemo doesn't count the wipe duration
 		if (demo.timing)
@@ -753,16 +792,24 @@ dedipostwipe:
 			M_DrawPerfStats();
 		}
 
-		ps_swaptime = I_GetPreciseTime();
+		if (cv_lua_profile.value > 0)
+		{
+			LUA_RenderTimers();
+		}
+
+		PS_START_TIMING(ps_swaptime);
 		I_FinishUpdate(); // page flip or blit buffer
-		ps_swaptime = I_GetPreciseTime() - ps_swaptime;
+		PS_STOP_TIMING(ps_swaptime);
 	}
 }
 
 static void D_WipeTick(boolean menu)
 {
 	I_OsPolling();
-	D_ProcessEvents();
+
+	// Lets not get all recursive now.
+	if (titlemapinaction == false)
+		D_ProcessEvents();
 
 	// Update the network so we don't cause timeouts
 	NetKeepAlive();
@@ -846,6 +893,12 @@ static double D_EndFrame(precise_t enterprecise, int *frameskip)
 	// Capture the time once more to get the real delta time.
 	finishprecise = I_GetPreciseTime();
 	deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
+
+	// I looked at the possibility of putting in a float drawer for
+	// perfstats and it's very complicated, so we'll just do this instead...
+	ps_interp_frac.value.p = (precise_t)((FIXED_TO_FLOAT(g_time.timefrac)) * 1000.0f);
+	ps_interp_lag.value.p = (precise_t)((deltasecs) * 1000.0);
+
 	return deltasecs * NEWTICRATE;
 }
 
@@ -870,7 +923,7 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 	nowtime = lastwipetic = I_GetTime();
 	endtime = nowtime + endtimes[type];
 
-	if (gamestate != GS_TITLESCREEN && gamestate != GS_TIMEATTACK && gamestate != GS_INTRO)
+	if (gamestate != GS_TITLESCREEN && gamestate != GS_INTRO && gamestate != GS_MENU)
 		drawMenu = true;
 
 	WipeInAction = 1 + !drawMenu;
@@ -1052,7 +1105,7 @@ void D_SRB2Loop(void)
 				debugload--;
 #endif
 
-		interp = !dedicated && (R_GetFramerateCap() != TICRATE || cv_timescale.value < FRACUNIT);
+		interp = !dedicated && R_UsingFrameInterpolation();
 		doDisplay = false;
 
 		if (realtics > 0 || singletics)
@@ -1177,37 +1230,20 @@ void D_SRB2Loop(void)
 // =========================================================================
 
 //
-// D_StartTitle
+// D_ClearState
 //
-void D_StartTitle(void)
+void D_ClearState(void)
 {
 	if (dedicated)
 		I_Error("D_StartTitle is called on dedicated server");
 
 	INT32 i;
 
-	S_StopMusic();
-
-	if (netgame)
-	{
-		G_SetGamestate(GS_WAITINGPLAYERS); // hack to prevent a command repeat
-
-		if (server)
-		{
-			i = G_GetFirstMapOfGametype(gametype)+1;
-
-			if (i > nummapheaders)
-				I_Error("D_StartTitle: No valid map ID found!?");
-
-			COM_BufAddText(va("map %s\n", G_BuildMapName((mapnum_t)(i))));
-		}
-
-		return;
-	}
-
 	// okay, stop now
 	// (otherwise the game still thinks we're playing!)
+#ifdef HAVE_CURL
 	CURLAbortFile();
+#endif
 	SV_StopServer();
 	SV_ResetServer();
 
@@ -1248,7 +1284,7 @@ void D_StartTitle(void)
 	memset(displayplayers, 0, sizeof(displayplayers));
 	memset(g_localplayers, 0, sizeof g_localplayers);
 	consoleplayer = 0;
-	//demosequence = -1;
+	demo.title = false;
 	G_SetGametype(GT_RACE); // SRB2kart
 	paused = false;
 	F_InitMenuPresValues(true);
@@ -1256,19 +1292,37 @@ void D_StartTitle(void)
 	// clear cmd building stuff
 	memset(gamekeydown, 0, sizeof(gamekeydown));
 
-	F_StartTitleScreen();
-
 	// Reset the palette
 	if (rendermode != render_none)
 		V_SetPaletteLump("PLAYPAL");
 
 	G_ResetAllControllerRumbles();
 
+	// map palettes affect this
+	G_ResetControllerLED();
+
 	// The title screen is obviously not a tutorial! (Unless I'm mistaken)
 	tutorialmode = false;
 
-	// map palettes affect this
-	G_ResetControllerLED();
+	P_FreeLevelState();
+	P_InvalidateThinkersWithoutInit();
+
+	G_SetGamestate(GS_NULL);
+	wipegamestate = GS_NULL;
+}
+
+//
+// D_StartTitle
+//
+
+void D_StartTitle(void)
+{
+	if (!demo.title)
+		S_StopMusic();
+
+	D_ClearState();
+	F_StartTitleScreen();
+	M_ClearMenus(false);
 }
 
 //
@@ -1539,7 +1593,8 @@ void D_SRB2Main(void)
 #endif
 
 	// for dedicated server
-	dedicated = M_CheckParm("-dedicated") != 0;
+	if (!dedicated)
+		dedicated = M_CheckParm("-dedicated") != 0;
 	connectedtodedicated = dedicated;
 
 	if (devparm)
@@ -1978,7 +2033,8 @@ void D_SRB2Main(void)
 				I_Error("Cannot find a map remotely named '%s'\n", word);
 		}
 
-		if (!M_CheckParm("-server") && !M_CheckParm("-dedicated") && !M_CheckParm("-nograndprix"))
+		// Using a direct dedicated check here since servers can be built in dedicated only mode.
+		if (!M_CheckParm("-server") && !dedicated && !M_CheckParm("-nograndprix"))
 		{
 			G_SetGameModified(true, true);
 

@@ -399,6 +399,7 @@ typedef enum
 	SSF_GRAVITYOVERRIDE = 1<<19, // combine with MSF_GRAVITYFLIP
 	SSF_WALLTRANSFER = 1<<20,
 	SSF_BUMPYROAD = 1<<21,
+	SSF_DASHAREA = 1<<22,
 } sectorspecialflags_t;
 
 typedef enum
@@ -560,6 +561,8 @@ struct sector_t
 
 	fixed_t offroad; // Ring Racers
 
+	fixed_t dashareapower;
+
 	// Linedef executor triggering
 	mtag_t triggertag; // tag to call upon triggering
 	UINT8 triggerer; // who can trigger?
@@ -630,7 +633,7 @@ struct line_t
 	char *stringargs[NUM_SCRIPT_STRINGARGS];
 
 	// Visual appearance: sidedefs.
-	UINT16 sidenum[2]; // sidenum[1] will be 0xffff if one-sided
+	UINT16 sidenum[2]; // sidenum[1] will be NO_INDEX if one-sided
 	fixed_t alpha; // translucency
 	UINT8 blendmode; // blendmode
 	INT32 executordelay;

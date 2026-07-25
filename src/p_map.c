@@ -1431,6 +1431,12 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 					break;
 			}
 
+			if (SMONITORINTANGIBLE)
+			{
+				// Mage suggestion: ALWAYS ignore bumps if you have an S-Monitor active
+				cannotbump = ((thing->player->smonitortimer) || (g_tm.thing->player->smonitortimer));
+			}
+
 			// see if it went over / under
 			if (g_tm.thing->z > thing->z + thing->height)
 				return BMIT_CONTINUE; // overhead
@@ -2077,7 +2083,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 	subsector_t *newsubsec;
 	boolean blockval = true;
 
-	ps_checkposition_calls++;
+	ps_checkposition_calls.value.i++;
 
 	I_Assert(thing != NULL);
 #ifdef PARANOIA
@@ -3793,7 +3799,7 @@ void P_SlideMove(mobj_t *mo, TryMoveResult_t *result)
 	if (bestslideline == NULL)
 		return;
 
-	if (bestslideline && mo->player && bestslideline->sidenum[1] != 0xffff)
+	if (bestslideline && mo->player && bestslideline->sidenum[1] != NO_INDEX)
 	{
 		sector_t *sec = P_PointOnLineSide(mo->x, mo->y, bestslideline) ? bestslideline->frontsector : bestslideline->backsector;
 		P_CheckLavaWall(mo, sec);

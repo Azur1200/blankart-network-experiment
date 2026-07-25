@@ -33,9 +33,6 @@ extern "C" {
 // Called by main loop.
 void ST_Ticker(boolean run);
 
-// Called when naming a replay.
-void ST_DrawDemoTitleEntry(void);
-
 #ifdef HAVE_DISCORDRPC
 // Called when you have Discord asks
 void ST_AskToJoinEnvelope(void);
@@ -59,8 +56,6 @@ void ST_LoadGraphics(void);
 // face load graphics, called when skin changes
 void ST_LoadFaceGraphics(INT32 playernum);
 void ST_ReloadSkinFaceGraphics(void);
-
-void ST_doPaletteStuff(void);
 
 // title card
 void ST_startTitleCard(void);

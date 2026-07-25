@@ -278,6 +278,7 @@ static void Command_Isgamemodified_f(void);
 static void Command_Cheats_f(void);
 
 static void Command_ListSkins(void);
+static void Command_SkinSearch(void);
 
 static void Command_Voice(void);
 static void Command_Voice2(void);
@@ -568,8 +569,9 @@ consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_inv
 // S-Monitor
 //
 consvar_t cv_kartstacking_smonitor_speedboost = CVAR_INIT ("vanillaboost_smonitor_speedboost", "0.75", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_smonitor_fastestspeed = CVAR_INIT ("vanillaboost_smonitor_fastestspeed", "86.07", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_smonitor_accelboost = CVAR_INIT ("vanillaboost_smonitor_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_smonitor_handleboost = CVAR_INIT ("vanillaboost_smonitor_handleboost", "0.48", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_smonitor_handleboost = CVAR_INIT ("vanillaboost_smonitor_handleboost", "0.38", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_smonitor_stackable = CVAR_INIT ("vanillaboost_smonitor_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
@@ -730,6 +732,8 @@ static CV_PossibleValue_t playerbump_cons_t[] = {{PBUMP_STANDARD, "Standard"},
 						 {0, NULL}};
 consvar_t cv_playerbump = CVAR_INIT ("playerbump", "Standard", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, playerbump_cons_t, PlayerBump_OnChange);
 
+consvar_t cv_rockshove = CVAR_INIT ("rockshove", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
+
 #define ANTIBUMP_MAX (UINT32_MAX / TICRATE)
 static CV_PossibleValue_t antibump_cons_t[] = {{0, "MIN"}, {ANTIBUMP_MAX, "MAX"}, {0, NULL}};
 consvar_t cv_kartantibump = CVAR_INIT ("kartantibump", "0", CV_NETVAR|CV_CALL|CV_NOINIT, antibump_cons_t, KartAntiBump_OnChange);
@@ -761,9 +765,13 @@ static CV_PossibleValue_t kartinvindmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "W
 // Experiment: Let's allow changing the damage type
 consvar_t cv_kartinvindamage = CVAR_INIT ("kartinvindamage", "Wipe-out", CV_NETVAR|CV_CHEAT|CV_GUARD, kartinvindmg_cons_t, NULL);
 
+// Orbi/Jawz damage type setting; "Auto" chooses between the two types by playercount
+static CV_PossibleValue_t kartorbidmg_cons_t[] = {{0, "Auto"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_CRASH, "Crash"}, {0, NULL}};
+consvar_t cv_kartorbijawzdmg = CVAR_INIT ("orbijawzdamage", "Auto", CV_NETVAR|CV_CHEAT|CV_GUARD, kartorbidmg_cons_t, NULL);
+
 // How far the player must be from the cluster to roll an S-Monitor.
 static CV_PossibleValue_t smonitordist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartsmonitordist = CVAR_INIT ("smonitor_startdist", "12000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
+consvar_t cv_kartsmonitordist = CVAR_INIT ("smonitor_startdist", "9216", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
 
 // Conga is extremely finicky, so we need a separate threshold to preserve the S-Monitor's reliability
 consvar_t cv_kartsmonitor_congadist = CVAR_INIT("smonitor_startdist_conga", "10000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
@@ -772,6 +780,8 @@ consvar_t cv_kartsmonitor_decaydist = CVAR_INIT ("smonitor_decaydist", "3600", C
 
 static CV_PossibleValue_t smonitordecaytime_cons_t[] = {{1, "MIN"}, {6, "MAX"}, {0, NULL}};
 consvar_t cv_kartsmonitor_decaytime = CVAR_INIT ("smonitor_decaytime", "2", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordecaytime_cons_t, NULL);
+
+consvar_t cv_kartsmonitor_intangible = CVAR_INIT ("smonitor_intangible", "On", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
 
 // opinionated stuff for testing balance tweaks on the shields
 consvar_t cv_kartbubble_defense_canidle = CVAR_INIT ("kartbubble_defense_canidle", "On", CV_NETVAR, CV_OnOff, NULL);
@@ -782,12 +792,15 @@ consvar_t cv_kartbubble_boost_offroadignore = CVAR_INIT ("kartbubble_boost_offro
 
 consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartflame_shove = CVAR_INIT ("kartflame_shove", "Off", CV_NETVAR, CV_OnOff, NULL);
+
 consvar_t cv_kartattraction_assistpower = CVAR_INIT ("kartattraction_assistpower", "0.2", CV_NETVAR|CV_FLOAT, CV_Unsigned, NULL);
 
 // Attraction Shield damage toggles
-static CV_PossibleValue_t kartattractiondmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {DMG_EXPLODE, "Explode"}, {0, NULL}};
+static CV_PossibleValue_t kartattractiondmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {DMG_EXPLODE, "Explode"}, {DMG_CRASH, "Crash"}, {0, NULL}};
 consvar_t cv_kartattraction_aoedmg = CVAR_INIT ("kartattraction_aoedmg", "None", CV_NETVAR|CV_CHEAT|CV_GUARD, kartattractiondmg_cons_t, NULL);
 consvar_t cv_kartattraction_aoeemp = CVAR_INIT ("kartattraction_aoeemp", "0", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartattraction_aoeshove = CVAR_INIT ("kartattraction_aoeshove", "5.0", CV_NETVAR|CV_CHEAT|CV_GUARD|CV_FLOAT, CV_Unsigned, NULL);
 
 // "Arrow Bullet": above a certain speed threshold, an aura in the shape of the Shrink arrow
 // covers you, signaling protection from (most) items and players.
@@ -942,9 +955,25 @@ static CV_PossibleValue_t perfstats_cons_t[] = {
 	{PS_LOGIC, "Logic"},
 	{PS_BOT, "Bots"},
 	{PS_THINKFRAME, "ThinkFrame"},
+	{PS_PRETHINKFRAME, "PreThinkFrame"},
+	{PS_POSTTHINKFRAME, "PostThinkFrame"},
 	{0, NULL}
 };
 consvar_t cv_perfstats = CVAR_INIT ("perfstats", "Off", 0, perfstats_cons_t, NULL);
+
+consvar_t cv_ps_thinkframe_page = CVAR_INIT ("ps_thinkframe_page", "1", CV_CALL, CV_Natural, PS_ThinkFrame_Page_OnChange);
+
+static CV_PossibleValue_t ps_samplesize_cons_t[] = {
+	{1, "MIN"}, {1000, "MAX"}, {0, NULL}};
+consvar_t cv_ps_samplesize = CVAR_INIT ("ps_samplesize", "1", CV_CALL, ps_samplesize_cons_t, PS_SampleSize_OnChange);
+
+static CV_PossibleValue_t ps_descriptor_cons_t[] = {
+	{1, "Average"}, {2, "SD"}, {3, "Minimum"}, {4, "Maximum"}, {0, NULL}};
+
+consvar_t cv_ps_descriptor = CVAR_INIT ("ps_descriptor", "Average", 0, ps_descriptor_cons_t, NULL);
+
+void lua_profile_OnChange(void);
+consvar_t cv_lua_profile = CVAR_INIT ("lua_profile", "0", 0, CV_Unsigned, lua_profile_OnChange);
 
 consvar_t cv_director = CVAR_INIT ("director", "Off", 0, CV_OnOff, NULL);
 
@@ -955,6 +984,9 @@ consvar_t cv_automate = CVAR_INIT ("automate", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_debugmappatch = CVAR_INIT ("debugmappatch", "", 0, NULL, NULL);
 
 consvar_t cv_allowmismatchmappatch = CVAR_INIT ("allowmismatchmappatch", "No", CV_NETVAR, CV_YesNo, NULL);
+
+// NOTE: this should be in hw_main.c, but we can't put it there as it breaks dedicated build
+consvar_t cv_glallowshaders = CVAR_INIT ("gr_allowclientshaders", "On", CV_NETVAR, CV_OnOff, NULL);
 
 char timedemo_name[256];
 boolean timedemo_csv;
@@ -1181,6 +1213,8 @@ void D_RegisterServerCommands(void)
 
 	// for master server connection
 	AddMServCommands();
+
+	CV_RegisterVar(&cv_glallowshaders);
 
 	// p_mobj.c
 	CV_RegisterVar(&cv_itemrespawntime);
@@ -1512,6 +1546,9 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chatspamprotection);
 	CV_RegisterVar(&cv_consolechat);
 	CV_RegisterVar(&cv_chatnotifications);
+	CV_RegisterVar(&cv_chat_xoffset);
+	CV_RegisterVar(&cv_chat_yoffset);
+	CV_RegisterVar(&cv_chat_showlimit);
 	CV_RegisterVar(&cv_chatbacktint);
 
 	CV_RegisterVar(&cv_growmusic);
@@ -1598,6 +1635,10 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_resume);
 	CV_RegisterVar(&cv_perfstats);
+	CV_RegisterVar(&cv_ps_thinkframe_page);
+	CV_RegisterVar(&cv_ps_samplesize);
+	CV_RegisterVar(&cv_ps_descriptor);
+	CV_RegisterVar(&cv_lua_profile);
 
 	//Value used to store last server player has joined
 	CV_RegisterVar(&cv_lastserver);
@@ -1646,6 +1687,7 @@ void D_RegisterClientCommands(void)
 	COM_AddCommand("voice4", Command_Voice4);
 
 	COM_AddCommand("listskins", Command_ListSkins);
+	COM_AddCommand("skinsearch", Command_SkinSearch);
 	COM_AddCommand("listvoices", Command_ListVoices);
 	COM_AddCommand("listvoiceprefs", Command_ListVoicePrefs);
 
@@ -1783,18 +1825,68 @@ static void Command_Restat4(void)
  */
 static void Skin_FindRealNameSkin(consvar_t *cvar)
 {
-	// Not the best way to implements this but it will do.
+	INT32 matches[MAXSKINS] = {0}; // Skin numbers of matching skins
+	INT32 matches_pos[MAXSKINS] = {0}; // Index of matching substring
+	INT32 nummatches = 0;
 
-	int i;
+	INT32 i;
 	const char *value = cvar->string;
+
 	for (i = 0; i < numskins; i++)
 	{
-		if (strncmp(value, skins[i].realname, sizeof skins[i].realname) == 0)
-		{
-			// Change the cvar to be the value of the name.
-			CV_StealthSet(cvar, skins[i].name);
+		// Perfect match with some skin name, no need to find matching realname
+		if (strncasecmp(value, skins[i].name, sizeof skins[i].name) == 0)
 			return;
+
+		const char *match = strcasestr(skins[i].realname, value);
+		if (match != NULL)
+		{
+			matches[nummatches] = i;
+			matches_pos[nummatches] = match - skins[i].realname;
+			++nummatches;
 		}
+	}
+
+	if (nummatches == 1)
+	{
+		// Change the cvar to be the value of the name.
+		CV_StealthSet(cvar, skins[matches[0]].name);
+	}
+	else if (nummatches > 1)
+	{
+		size_t query_length = strlen(value);
+
+		char start[SKINNAMESIZE+1] = {0}; // Start of name, printed with normal color
+		char match[SKINNAMESIZE+1] = {0}; // Matching part of name, highlighted in red
+		const char *end = NULL; // End of the name, printed with normal color. Can be just a pointer into realname part
+
+		CONS_Printf("\x86Multiple matches found:\n");
+
+		for (i = 0; i < nummatches; ++i)
+		{
+			const char *realname = skins[matches[i]].realname;
+
+			if (matches_pos[i] == 0)
+				start[0] = 0;
+			else
+			{
+				memcpy(start, realname, matches_pos[i]);
+				start[matches_pos[i]] = 0;
+			}
+
+			memcpy(match, realname+matches_pos[i], query_length);
+			match[matches_pos[i] + query_length] = 0;
+
+			end = realname + matches_pos[i] + query_length;
+
+			CONS_Printf("%s\x85%s\x80%s (%s)\n", start, match, end, skins[matches[i]].name);
+		}
+
+		CONS_Printf("\x86Try be more specific\n");
+	}
+	else
+	{
+		CONS_Printf("\x86Skin not found\n");
 	}
 }
 
@@ -4740,6 +4832,34 @@ static void Command_ReplayMarker(void)
 	}
 }
 
+static boolean JawzCheck(mobj_t *playermo)
+{
+	mobj_t *mobj, *next;
+
+	for (mobj = kitemcap; mobj; mobj = next)
+	{
+		next = mobj->itnext;
+
+		if (mobj->health <= 0)
+			continue;
+
+		switch (mobj->type)
+		{
+			case MT_JAWZ:
+				if (mobj->tracer && mobj->tracer == playermo)
+				{
+					return true;
+				}
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	return false;
+}
+
 // Command for stuck characters in netgames, griefing, etc.
 static void HandleRespawnCommand(UINT8 localplayer)
 {
@@ -4759,6 +4879,12 @@ static void HandleRespawnCommand(UINT8 localplayer)
 	}
 
 	if (players[g_localplayers[localplayer]].mo && (P_PlayerInPain(&players[g_localplayers[localplayer]]) || spbplace == players[g_localplayers[localplayer]].position)) // KART: Nice try, but no, you won't be cheesing spb anymore (x2)
+	{
+		CONS_Printf(M_GetText("Nice try.\n"));
+		return;
+	}
+
+	if (JawzCheck(players[g_localplayers[localplayer]].mo)) // KART: You can't cheese Jawz, Nice try :)
 	{
 		CONS_Printf(M_GetText("Nice try.\n"));
 		return;
@@ -4804,6 +4930,14 @@ static void Got_Respawn(UINT8 **cp, INT32 playernum)
 	if (players[respawnplayer].bot
 	  ? playernum != serverplayer
 	  : respawnplayer != playernum || P_PlayerInPain(&players[respawnplayer]) || spbplace == players[respawnplayer].position)
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Illegal respawn command received from %s\n"), player_names[playernum]);
+		if (server)
+			SendKick(playernum, KICK_MSG_CON_FAIL);
+		return;
+	}
+
+	if (JawzCheck(players[respawnplayer].mo))
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal respawn command received from %s\n"), player_names[playernum]);
 		if (server)
@@ -5933,12 +6067,12 @@ static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum)
 			if (ncs == FS_NOTFOUND)
 			{
 				CONS_Printf(M_GetText("The server tried to add %s,\nbut you don't have this file.\nYou need to find it in order\nto play on this server.\n"), filename);
-				M_StartMessage(va("The server added a file\n(%s)\nthat you do not have.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+				M_StartMessage2("Game Leave", va("The server added a file\n(%s)\nthat you do not have.\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 			}
 			else
 			{
 				CONS_Printf(M_GetText("Unknown error finding soc file (%s) the server added.\n"), filename);
-				M_StartMessage(va("Unknown error trying to load a file\nthat the server added\n(%s).\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+				M_StartMessage2("Game Leave", va("Unknown error trying to load a file\nthat the server added\n(%s).\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 			}
 			return;
 		}
@@ -6225,22 +6359,22 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 		if (ncs == FS_FOUND)
 		{
 			CONS_Printf(M_GetText("The server tried to add %s,\nbut you have too many files added.\nRestart the game to clear loaded files\nand play on this server."), filename);
-			M_StartMessage(va("The server added a file \n(%s)\nbut you have too many files added.\nRestart the game to clear loaded files.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+			M_StartMessage2("Game Leave", va("The server added a file \n(%s)\nbut you have too many files added.\nRestart the game to clear loaded files.\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		}
 		else if (ncs == FS_NOTFOUND)
 		{
 			CONS_Printf(M_GetText("The server tried to add %s,\nbut you don't have this file.\nYou need to find it in order\nto play on this server."), filename);
-			M_StartMessage(va("The server added a file \n(%s)\nthat you do not have.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+			M_StartMessage2("Game Leave", va("The server added a file\n(%s)\nthat you do not have.\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		}
 		else if (ncs == FS_BADHASH)
 		{
 			CONS_Printf(M_GetText("Checksum mismatch while loading %s.\nMake sure you have the copy of\nthis file that the server has.\n"), filename);
-			M_StartMessage(va("Checksum mismatch while loading \n%s.\nThe server seems to have a\ndifferent version of this file.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+			M_StartMessage2("Game Leave", va("Checksum mismatch while loading \n%s.\nThe server seems to have a\ndifferent version of this file.\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		}
 		else
 		{
 			CONS_Printf(M_GetText("Unknown error finding wad file (%s) the server added.\n"), filename);
-			M_StartMessage(va("Unknown error trying to load a file\nthat the server added \n(%s).\n\nPress ESC\n",filename), NULL, MM_NOTHING);
+			M_StartMessage2("Game Leave", va("Unknown error trying to load a file\nthat the server added\n(%s).\n",filename), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		}
 		return;
 	}
@@ -7840,7 +7974,18 @@ void Command_ExitGame_f(void)
 		closefilemenu(true);
 
 	if (!modeattacking)
-		D_StartTitle();
+	{
+		if (restoremenustack[0])
+		{
+			M_RestoreMenuStack(false);
+		}
+		else
+		{
+			M_ClearMenusEx(false, true);
+			D_ClearState();
+			M_StartControlPanel();
+		}
+	}
 }
 
 void Command_Retry_f(void)
@@ -8715,6 +8860,41 @@ static void Command_ListSkins(void)
 	{
 		CONS_Printf("There are no more pages.\n");
 	}
+}
+
+static void Command_SkinSearch(void)
+{
+	size_t i;
+	UINT16 s;
+	UINT16 ic = 0;
+
+	for (i = 1; i < COM_Argc(); i++)
+	{
+		for (s = 0; s < numskins; s++)
+		{
+			skin_t *skininput = &skins[s];
+
+			if (strcasestr(skininput->realname, COM_Argv(i)))
+			{
+				UINT16 chatcolor = skincolors[skininput->prefcolor].chatcolor;
+				char color_prefix[2];
+
+				if (chatcolor > V_TANMAP)
+				{
+					sprintf(color_prefix, "%c", '\x80');
+				}
+				else
+				{
+					sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+				}
+
+				ic++;
+				CONS_Printf("%d. %s%s:\x80 %s\n", ic, color_prefix, skininput->realname, skininput->name);
+			}
+		}
+	}
+
+	CONS_Printf("Total %d skins.\n", ic);
 }
 
 static void __voice_cmd_func(INT32 pid, UINT8 pnum)

@@ -50,7 +50,6 @@
 #include "byteptr.h"
 #include "p_setup.h"
 #include "m_misc.h"
-#include "m_menu.h"
 #include "filesrch.h"
 #include "stun.h"
 
