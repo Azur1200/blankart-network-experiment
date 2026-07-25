@@ -1297,11 +1297,16 @@ static boolean P_SectorStringArgsEqual(const sector_t *sc, const sector_t *spawn
 	UINT8 i;
 	for (i = 0; i < NUM_SCRIPT_STRINGARGS; i++)
 	{
-		if (!sc->stringargs[i])
-			return !spawnsc->stringargs[i];
-
-		if (!fastcmp(sc->stringargs[i], spawnsc->stringargs[i]))
-			return false;
+		if (sc->stringargs[i] == NULL || spawnsc->stringargs[i] == NULL)
+		{
+			if (sc->stringargs[i] != spawnsc->stringargs[i])
+				return false;
+		}
+		else
+		{
+			if (strcmp(sc->stringargs[i], spawnsc->stringargs[i]))
+				return false;
+		}
 	}
 
 	return true;
@@ -1361,11 +1366,16 @@ static boolean P_LineStringArgsEqual(const line_t *li, const line_t *spawnli)
 	UINT8 i;
 	for (i = 0; i < NUM_SCRIPT_STRINGARGS; i++)
 	{
-		if (!li->stringargs[i])
-			return !spawnli->stringargs[i];
-
-		if (!fastcmp(li->stringargs[i], spawnli->stringargs[i]))
-			return false;
+		if (li->stringargs[i] == NULL || spawnli->stringargs[i] == NULL)
+		{
+			if (li->stringargs[i] != spawnli->stringargs[i])
+				return false;
+		}
+		else
+		{
+			if (strcmp(li->stringargs[i], spawnli->stringargs[i]))
+				return false;
+		}
 	}
 
 	return true;
@@ -2338,6 +2348,10 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 			mobj->stringargs[j][len] = '\0';
 		}
 	}
+	else if (!save->write && mobj->spawnpoint)
+	{
+		P_CopyMapThingBehaviorFieldsToMobj(mobj->spawnpoint, mobj);
+	}
 
 	SYNCF(MD2_CUSVAL, mobj->cusval);
 	SYNCF(MD2_CVMEM, mobj->cvmem);
@@ -2421,6 +2435,10 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 			P_SyncMem(save, mobj->script_stringargs[j], len);
 			mobj->script_stringargs[j][len] = '\0';
 		}
+	}
+	else if (!save->write && mobj->spawnpoint)
+	{
+		P_CopyMapThingSpecialFieldsToMobj(mobj->spawnpoint, mobj);
 	}
 	if (GETB(MD2_FLOORSPRITESLOPE))
 	{

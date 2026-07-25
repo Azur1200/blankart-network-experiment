@@ -14170,37 +14170,9 @@ static void P_SetAmbush(mapthing_t *mthing, mobj_t *mobj)
 	mobj->flags2 |= MF2_AMBUSH;
 }
 
-static mobj_t *P_SpawnMobjFromMapThing(mapthing_t *mthing, fixed_t x, fixed_t y, fixed_t z, mobjtype_t i)
+void P_CopyMapThingBehaviorFieldsToMobj(const mapthing_t *mthing, mobj_t *mobj)
 {
-	mobj_t *mobj = NULL;
-	boolean doangle = true;
 	size_t arg = SIZE_MAX;
-
-	mobj = P_SpawnMobj(x, y, z, i);
-
-	if (mobj == NULL || P_MobjWasRemoved(mobj))
-		return NULL;
-
-	mobj->spawnpoint = mthing;
-
-	if (doangle)
-	{
-		mobj->angle = FixedAngle(mthing->angle << FRACBITS);
-	}
-
-	mobj->pitch = FixedAngle(mthing->pitch << FRACBITS);
-	mobj->roll = FixedAngle(mthing->roll << FRACBITS);
-
-	P_SetScale(mobj, FixedMul(mobj->scale, mthing->scale));
-	mobj->destscale = FixedMul(mobj->destscale, mthing->scale);
-
-	mobj->spritexscale = mthing->spritexscale;
-	mobj->spriteyscale = mthing->spriteyscale;
-
-	mobj->tid = mthing->tid;
-	P_AddThingTID(mobj);
-
-	mobj->special = mthing->special;
 
 	for (arg = 0; arg < NUM_MAPTHING_ARGS; arg++)
 	{
@@ -14226,6 +14198,13 @@ static mobj_t *P_SpawnMobjFromMapThing(mapthing_t *mthing, fixed_t x, fixed_t y,
 		mobj->stringargs[arg] = Z_Realloc(mobj->stringargs[arg], len + 1, PU_LEVEL, NULL);
 		memcpy(mobj->stringargs[arg], mthing->stringargs[arg], len + 1);
 	}
+}
+
+void P_CopyMapThingSpecialFieldsToMobj(const mapthing_t *mthing, mobj_t *mobj)
+{
+	size_t arg = SIZE_MAX;
+
+	mobj->special = mthing->special;
 
 	for (arg = 0; arg < NUM_SCRIPT_ARGS; arg++)
 	{
@@ -14251,6 +14230,39 @@ static mobj_t *P_SpawnMobjFromMapThing(mapthing_t *mthing, fixed_t x, fixed_t y,
 		mobj->script_stringargs[arg] = Z_Realloc(mobj->script_stringargs[arg], len + 1, PU_LEVEL, NULL);
 		memcpy(mobj->script_stringargs[arg], mthing->script_stringargs[arg], len + 1);
 	}
+}
+
+static mobj_t *P_SpawnMobjFromMapThing(mapthing_t *mthing, fixed_t x, fixed_t y, fixed_t z, mobjtype_t i)
+{
+	mobj_t *mobj = NULL;
+	boolean doangle = true;
+
+	mobj = P_SpawnMobj(x, y, z, i);
+
+	if (mobj == NULL || P_MobjWasRemoved(mobj))
+		return NULL;
+
+	mobj->spawnpoint = mthing;
+
+	if (doangle)
+	{
+		mobj->angle = FixedAngle(mthing->angle << FRACBITS);
+	}
+
+	mobj->pitch = FixedAngle(mthing->pitch << FRACBITS);
+	mobj->roll = FixedAngle(mthing->roll << FRACBITS);
+
+	P_SetScale(mobj, FixedMul(mobj->scale, mthing->scale));
+	mobj->destscale = FixedMul(mobj->destscale, mthing->scale);
+
+	mobj->spritexscale = mthing->spritexscale;
+	mobj->spriteyscale = mthing->spriteyscale;
+
+	mobj->tid = mthing->tid;
+	P_AddThingTID(mobj);
+
+	P_CopyMapThingBehaviorFieldsToMobj(mthing, mobj);
+	P_CopyMapThingSpecialFieldsToMobj(mthing, mobj);
 
 	if (!P_SetupSpawnedMapThing(mthing, mobj, &doangle))
 	{
