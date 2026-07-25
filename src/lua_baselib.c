@@ -5933,6 +5933,8 @@ static int lib_gPlayerControllerRumble(lua_State *L)
 	if (!plr)
 		return LUA_ErrInvalid(L, "player_t");
 
+	if (demo.playback) return 0;
+
 	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
 	{
 		if (plr - players == displayplayers[i])
