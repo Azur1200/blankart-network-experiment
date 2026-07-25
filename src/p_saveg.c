@@ -1622,38 +1622,21 @@ static void SyncSectors(savebuffer_t *save)
 		{
 			for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
 			{
-				if (save->write)
+				size_t len = P_SyncINT32(save, sec->stringargs[j] ? strlen(sec->stringargs[j]) : 0);
+				if (!len)
 				{
-					size_t len, k;
-
-					if (!sec->stringargs[j])
+					if (!save->write)
 					{
-						WRITEINT32(save->p, 0);
-						continue;
+						Z_Free(sec->stringargs[j]);
+						sec->stringargs[j] = NULL;
 					}
-
-					len = strlen(sec->stringargs[j]);
-					WRITEINT32(save->p, len);
-					for (k = 0; k < len; k++)
-						WRITECHAR(save->p, sec->stringargs[j][k]);
+					continue;
 				}
-				else
-				{
-					size_t len = READINT32(save->p);
-					size_t k;
 
-					if (!len)
-					{
-						Z_Free(sectors[i].stringargs[j]);
-						sectors[i].stringargs[j] = NULL;
-						continue;
-					}
-
-					sectors[i].stringargs[j] = Z_Realloc(sectors[i].stringargs[j], len + 1, PU_LEVEL, NULL);
-					for (k = 0; k < len; k++)
-						sectors[i].stringargs[j][k] = READCHAR(save->p);
-					sectors[i].stringargs[j][len] = '\0';
-				}
+				if (!save->write)
+					sec->stringargs[j] = Z_Realloc(sec->stringargs[j], len + 1, PU_LEVEL, NULL);
+				P_SyncMem(save, sec->stringargs[j], len);
+				sec->stringargs[j][len] = '\0';
 			}
 		}
 
@@ -1806,43 +1789,23 @@ static void SyncLines(savebuffer_t *save)
 		}
 		if (GETB(LD_STRINGARGS))
 		{
-			if (save->write)
+			for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
 			{
-				for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
+				size_t len = P_SyncINT32(save, li->stringargs[j] ? strlen(li->stringargs[j]) : 0);
+				if (!len)
 				{
-					size_t len, k;
-
-					if (!li->stringargs[j])
-					{
-						WRITEINT32(save->p, 0);
-						continue;
-					}
-
-					len = strlen(li->stringargs[j]);
-					WRITEINT32(save->p, len);
-					for (k = 0; k < len; k++)
-						WRITECHAR(save->p, li->stringargs[j][k]);
-				}
-			}
-			else
-			{
-				for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
-				{
-					size_t len = READINT32(save->p);
-					size_t k;
-
-					if (!len)
+					if (!save->write)
 					{
 						Z_Free(li->stringargs[j]);
 						li->stringargs[j] = NULL;
-						continue;
 					}
-
-					li->stringargs[j] = Z_Realloc(li->stringargs[j], len + 1, PU_LEVEL, NULL);
-					for (k = 0; k < len; k++)
-						li->stringargs[j][k] = READCHAR(save->p);
-					li->stringargs[j][len] = '\0';
+					continue;
 				}
+
+				if (!save->write)
+					li->stringargs[j] = Z_Realloc(li->stringargs[j], len + 1, PU_LEVEL, NULL);
+				P_SyncMem(save, li->stringargs[j], len);
+				li->stringargs[j][len] = '\0';
 			}
 		}
 
