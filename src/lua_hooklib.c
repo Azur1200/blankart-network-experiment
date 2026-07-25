@@ -882,7 +882,7 @@ static void thinkframe_hook_base(const int type, INT32 ps_type, const char *debu
 			}
 
 			{
-				TracyCZoneN(__zone, debugstring, true);
+				TracyCZoneN(__zone, "thinkframe_hook_base (call_single_hook)", true);
 				call_single_hook(&hook);
 
 				if (cv_perfstats.value == ps_type)
