@@ -770,15 +770,6 @@ void HWR_RenderPlayerView(void)
 	}
 	PS_STOP_TIMING(ps_skyboxtime);
 
-	if (!HWR_ShouldUsePaletteRendering())
-	{
-		// do we really need to save player (is it not the same)?
-		player_t *saved_player = stplyr;
-		stplyr = player;
-		ST_doPaletteStuff();
-		stplyr = saved_player;
-	}
-
 	// Reset the shader state.
 	HWR_SetShaderState();
 

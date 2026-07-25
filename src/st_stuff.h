@@ -57,8 +57,6 @@ void ST_LoadGraphics(void);
 void ST_LoadFaceGraphics(INT32 playernum);
 void ST_ReloadSkinFaceGraphics(void);
 
-void ST_doPaletteStuff(void);
-
 // title card
 void ST_startTitleCard(void);
 void ST_runTitleCard(void);

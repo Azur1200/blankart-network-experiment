@@ -122,6 +122,29 @@ boolean ST_SameTeam(player_t *a, player_t *b)
 
 static boolean st_stopped = true;
 
+static void ST_doPaletteStuff(void)
+{
+	INT32 palette = 0;
+
+	#ifdef HWRENDER
+	if (rendermode == render_opengl && !HWR_ShouldUsePaletteRendering())
+		return;
+	#endif
+
+	if (stplyr && stplyr->flashcount)
+		palette = min(stplyr->flashpal, 13);
+
+	if (palette != st_palette)
+	{
+		st_palette = palette;
+
+		if (!splitscreen)
+		{
+			V_SetPalette(palette);
+		}
+	}
+}
+
 void ST_Ticker(boolean run)
 {
 	if (st_stopped)
@@ -129,37 +152,18 @@ void ST_Ticker(boolean run)
 
 	if (run)
 		ST_runTitleCard();
+
+	// Do red-/gold-shifts from damage/items
+	//25/08/99: Hurdler: palette changes is done for all players,
+	//                   not only player1! That's why this part
+	//                   of code is moved somewhere else.
+	ST_doPaletteStuff();
 }
 
 // 0 is default, any others are special palettes.
 INT32 st_palette = 0;
 UINT32 st_translucency = 10;
 fixed_t st_fadein = 0;
-
-void ST_doPaletteStuff(void)
-{
-	INT32 palette;
-
-	if (stplyr && stplyr->flashcount)
-		palette = stplyr->flashpal;
-	else
-		palette = 0;
-
-#ifdef HWRENDER
-	if (rendermode == render_opengl && !HWR_ShouldUsePaletteRendering())
-		palette = 0; // Don't set the palette to a flashpal in OpenGL's truecolor mode
-#endif
-
-	if (palette != st_palette)
-	{
-		st_palette = palette;
-
-		if (!r_splitscreen)
-		{
-			V_SetPalette(palette);
-		}
-	}
-}
 
 void ST_UnloadGraphics(void)
 {
@@ -1140,15 +1144,6 @@ void ST_Drawer(void)
 	// force a set of the palette by using doPaletteStuff()
 	if (vid.recalc)
 		st_palette = -1;
-
-	// Do red-/gold-shifts from damage/items
-#ifdef HWRENDER
-	//25/08/99: Hurdler: palette changes is done for all players,
-	//                   not only player1! That's why this part
-	//                   of code is moved somewhere else.
-	if (rendermode == render_soft || HWR_ShouldUsePaletteRendering())
-#endif
-		if (rendermode != render_none) ST_doPaletteStuff();
 
 	fixed_t localfadein[MAXSPLITSCREENPLAYERS];
 
