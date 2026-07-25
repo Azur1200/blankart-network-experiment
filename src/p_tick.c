@@ -53,6 +53,8 @@
 
 #include "i_gamepad.h"
 
+#include "lua_profile.h"
+
 #include <tracy/tracy/TracyC.h>
 
 #ifdef PARANOIA
@@ -889,6 +891,8 @@ void P_Ticker(boolean run)
 						G_ReadDemoTiccmd(&players[i].cmd, i);
 			}
 		}
+
+		LUA_ResetTicTimers();
 
 		ps_lua_mobjhooks.value.i = 0;
 		ps_checkposition_calls.value.i = 0;

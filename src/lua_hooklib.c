@@ -22,7 +22,9 @@
 #include "lua_libs.h"
 #include "lua_hook.h"
 #include "lua_hud.h" // hud_running errors
+#include "lua_profile.h"
 
+#include "command.h"
 #include "m_perfstats.h"
 #include "d_netcmd.h" // for cv_perfstats
 #include "i_system.h" // I_GetPreciseTime
@@ -417,11 +419,47 @@ static void get_hook_from_table(Hook_State *hook, int n)
 	lua_getref(gL, hookRefs[hook->id]);
 }
 
+static const char *hook_name(Hook_State *hook)
+{
+	if (hud_running)
+	{
+		return hudHookNames[hook->hook_type];
+	}
+	else if (hook->string)
+	{
+		return stringHookNames[hook->hook_type];
+	}
+	else if (hook->mobj_type > 0)
+	{
+		return mobjHookNames[hook->hook_type];
+	}
+	else
+	{
+		return hookNames[hook->hook_type];
+	}
+}
+
+static int call_timed_or_untimed(Hook_State *hook, boolean compat, boolean printerror)
+{
+	if (!hud_running && cv_lua_profile.value > 0)
+	{
+		lua_timer_t *timer = LUA_BeginFunctionTimer(gL, -1 - hook->values, hook_name(hook));
+		int k = LUA_Call(gL, hook->values, hook->results, EINDEX, compat, printerror);
+		LUA_EndFunctionTimer(timer);
+
+		return k;
+	}
+	else
+	{
+		return LUA_Call(gL, hook->values, hook->results, EINDEX, compat, printerror);
+	}
+}
+
 static int call_single_hook_no_copy(Hook_State *hook)
 {
 	boolean compat = in_bit_array(hookCompat, hook->id);
 	boolean printerror = cht_debug & DBG_LUA || !in_bit_array(hooksErrored, hook->id);
-	if (LUA_Call(gL, hook->values, hook->results, EINDEX, compat, printerror) == 0)
+	if (call_timed_or_untimed(hook, compat, printerror) == 0)
 	{
 		if (hook->results > 0)
 		{

@@ -124,6 +124,8 @@
 
 #include "lua_script.h"
 
+#include "lua_profile.h"
+
 // Version numbers for netplay :upside_down_face:
 int    VERSION;
 int SUBVERSION;
@@ -786,6 +788,11 @@ dedipostwipe:
 		if (cv_perfstats.value)
 		{
 			M_DrawPerfStats();
+		}
+
+		if (cv_lua_profile.value > 0)
+		{
+			LUA_RenderTimers();
 		}
 
 		PS_START_TIMING(ps_swaptime);

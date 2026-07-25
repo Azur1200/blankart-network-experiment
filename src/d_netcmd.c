@@ -971,6 +971,9 @@ static CV_PossibleValue_t ps_descriptor_cons_t[] = {
 
 consvar_t cv_ps_descriptor = CVAR_INIT ("ps_descriptor", "Average", 0, ps_descriptor_cons_t, NULL);
 
+void lua_profile_OnChange(void);
+consvar_t cv_lua_profile = CVAR_INIT ("lua_profile", "0", 0, CV_Unsigned, lua_profile_OnChange);
+
 consvar_t cv_director = CVAR_INIT ("director", "Off", 0, CV_OnOff, NULL);
 
 consvar_t cv_schedule = CVAR_INIT ("schedule", "On", CV_NETVAR|CV_CALL, CV_OnOff, Schedule_OnChange);
@@ -1631,6 +1634,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_ps_thinkframe_page);
 	CV_RegisterVar(&cv_ps_samplesize);
 	CV_RegisterVar(&cv_ps_descriptor);
+	CV_RegisterVar(&cv_lua_profile);
 
 	//Value used to store last server player has joined
 	CV_RegisterVar(&cv_lastserver);

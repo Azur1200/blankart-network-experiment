@@ -50,6 +50,7 @@ struct ps_hookinfo_t
 #define PS_START_TIMING(metric) metric.value.p = I_GetPreciseTime()
 #define PS_STOP_TIMING(metric) metric.value.p = I_GetPreciseTime() - metric.value.p
 
+extern ps_metric_t ps_prevtictime;
 extern ps_metric_t ps_tictime;
 
 extern ps_metric_t ps_playerthink_time;

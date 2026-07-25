@@ -46,6 +46,7 @@ struct perfstatrow {
 
 static ps_metric_t ps_frametime = {0};
 
+ps_metric_t ps_prevtictime = {0};
 ps_metric_t ps_tictime = {0};
 
 ps_metric_t ps_playerthink_time = {0};

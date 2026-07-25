@@ -7006,7 +7006,11 @@ boolean TryRunTics(tic_t realtics)
 				DEBFILE(va("============ Running tic %d (local %d)\n", gametic, localgametic));
 
 				if (update_stats)
+				{
+					ps_prevtictime.value.p = ps_tictime.value.p;
 					PS_START_TIMING(ps_tictime);
+				}
+
 
 				dontRun = ExtraDataTicker();
 

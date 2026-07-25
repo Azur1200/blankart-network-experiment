@@ -343,6 +343,9 @@ extern consvar_t cv_ps_thinkframe_page;
 extern consvar_t cv_ps_samplesize;
 extern consvar_t cv_ps_descriptor;
 
+void lua_profile_OnChange(void);
+extern consvar_t cv_lua_profile;
+
 extern consvar_t cv_director;
 
 extern consvar_t cv_schedule;
