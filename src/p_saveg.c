@@ -1888,19 +1888,18 @@ static boolean P_ThingArgsEqual(const mobj_t *mobj, const mapthing_t *mapthing)
 		if (mobj->args[i] != mapthing->args[i])
 			return false;
 
-	return true;
-}
-
-static boolean P_ThingStringArgsEqual(const mobj_t *mobj, const mapthing_t *mapthing)
-{
-	UINT8 i;
 	for (i = 0; i < NUM_MAPTHING_STRINGARGS; i++)
 	{
-		if (!mobj->stringargs[i])
-			return !mapthing->stringargs[i];
-
-		if (!fastcmp(mobj->stringargs[i], mapthing->stringargs[i]))
-			return false;
+		if (mobj->stringargs[i] == NULL || mapthing->stringargs[i] == NULL)
+		{
+			if (mobj->stringargs[i] != mapthing->stringargs[i])
+				return false;
+		}
+		else
+		{
+			if (strcmp(mobj->stringargs[i], mapthing->stringargs[i]))
+				return false;
+		}
 	}
 
 	return true;
@@ -1960,7 +1959,7 @@ enum mobj_diff_t
 	MD_SCALE,
 	MD_DSCALE,
 	MD_ARGS,
-	MD_STRINGARGS,
+	MD__UNUSED,
 
 	MD2_CUSVAL = 1<<5,
 	MD2_CVMEM,
@@ -2035,7 +2034,6 @@ static void DiffMobj(const mobj_t *mobj, UINT32 diff[])
 
 		DIFF(mobj->info->doomednum != mobj->spawnpoint->type, MD_TYPE);
 		DIFF(!P_ThingArgsEqual(mobj, mobj->spawnpoint), MD_ARGS);
-		DIFF(!P_ThingStringArgsEqual(mobj, mobj->spawnpoint), MD_STRINGARGS);
 		DIFF(!P_ThingScriptEqual(mobj, mobj->spawnpoint), MD2_SPECIAL);
 	}
 	else
@@ -2059,7 +2057,7 @@ static void DiffMobj(const mobj_t *mobj, UINT32 diff[])
 		{
 			if (mobj->stringargs[j] != NULL)
 			{
-				SETB(MD_STRINGARGS);
+				SETB(MD_ARGS);
 				break;
 			}
 		}
@@ -2357,9 +2355,7 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	{
 		for (j = 0; j < NUM_MAPTHING_ARGS; j++)
 			SYNC(mobj->args[j]);
-	}
-	if (GETB(MD_STRINGARGS))
-	{
+
 		for (j = 0; j < NUM_MAPTHING_STRINGARGS; j++)
 		{
 			size_t len = P_SyncINT32(save, mobj->stringargs[j] ? strlen(mobj->stringargs[j]) : 0);
