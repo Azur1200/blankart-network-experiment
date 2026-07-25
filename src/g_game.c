@@ -106,7 +106,7 @@ UINT32 mapmusposition; // Position to jump to
 UINT32 mapmusresume;
 UINT8 mapmusrng; // Random selection result
 
-mapnum_t gamemap = 1;
+mapnum_t gamemap = 2; // GHZ
 boolean g_reloadingMap;
 UINT32 maptol;
 
