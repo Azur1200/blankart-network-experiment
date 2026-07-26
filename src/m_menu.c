@@ -2487,6 +2487,54 @@ void M_SetMenuDelay(UINT8 i)
 	}
 }
 
+static void handle_dpad(event_t* ev, INT32 device, boolean keyup)
+{
+	SINT8 pid = G_GetDevicePlayer(device);
+
+	if (pid == -1)
+		return;
+
+	switch (ev->data1)
+	{
+		case KEY_HAT1+0:
+			menucmd[pid].ev_dpad_ud =  keyup ? 0 : -1;
+			break;
+		case KEY_HAT1+1:
+			menucmd[pid].ev_dpad_ud = keyup ? 0 : 1;
+			break;
+		case KEY_HAT1+2:
+			menucmd[pid].ev_dpad_lr = keyup ? 0 : -1;
+			break;
+		case KEY_HAT1+3:
+			menucmd[pid].ev_dpad_lr = keyup ? 0 : 1;
+			break;
+		default:
+			break;
+	}
+}
+
+void M_HandleDpadEvent(event_t* ev)
+{
+	INT32 device = ev->device;
+
+	if (ev->data1 < KEY_JOY1 || ev->data1 >= JOYINPUTEND)
+		return;
+
+	switch (ev->type)
+	{
+		case ev_keydown:
+			handle_dpad(ev, device, false);
+			break;
+
+		case ev_keyup:
+			handle_dpad(ev, device, true);
+			break;
+
+		default:
+			break;
+	}
+}
+
 void M_UpdateMenuCMD(UINT8 i, boolean bailrequired)
 {
 	INT32 thisMenuKey = menuKey;
@@ -2588,9 +2636,6 @@ void M_UpdateMenuCMD(UINT8 i, boolean bailrequired)
 		menucmd[i].delay = min(menucmd[i].delay, MENUMINDELAY);
 		menucmd[i].delayCount = 0;
 	}
-
-	menucmd[i].ev_dpad_ud = 0;
-	menucmd[i].ev_dpad_lr = 0;
 }
 
 boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt)
