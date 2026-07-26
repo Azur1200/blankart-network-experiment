@@ -10453,7 +10453,7 @@ INT32 MR_HandleVideoMode(INT32 ch)
 
 void MP_CameraSetup(menupanelinst_t *pi)
 {
-	INT32 pnum = setupcontrolplayer + 1;
+	INT32 pnum = setupcontrolplayer-1;
 	M_SetItemCvar(pi, "FLIPCAM", &cv_flipcam[pnum]);
 	M_SetItemCvar(pi, "CAMFOV", &cv_fov[pnum]);
 	M_SetItemCvar(pi, "CAMDISTANCE", &cv_cam_dist[pnum]);
