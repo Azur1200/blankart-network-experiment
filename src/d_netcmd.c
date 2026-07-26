@@ -56,6 +56,7 @@
 #include "lua_hook.h"
 #include "m_cond.h"
 #include "m_anigif.h"
+#include "st_stuff.h"
 
 // SRB2kart
 #include "k_kart.h"
@@ -1237,6 +1238,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_downloading);
 	CV_RegisterVar(&cv_votemaxrows);
 
+	CV_RegisterVar(&cv_rngpeek);
+
 	K_RegisterKartStuff(); // SRB2kart
 
 	CV_RegisterVar(&cv_startinglives);
@@ -1271,6 +1274,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_showjoinaddress);
 	CV_RegisterVar(&cv_shownodeip);
 	CV_RegisterVar(&cv_blamecfail);
+	CV_RegisterVar(&cv_logconsistency);
 
 	COM_AddCommand("ping", Command_Ping_f);
 	CV_RegisterVar(&cv_nettimeout);
@@ -4428,7 +4432,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 		initial_seed = READUINT32(*cp);
 
 		I_OutputMsg("[Got_Mapcmd] initial seed: %u\n", initial_seed);
-		P_SetRandSeed(initial_seed);
+		P_ClearRandom(initial_seed);
 	}
 
 	if (!skipprecutscene)
@@ -4972,7 +4976,9 @@ static void Got_RandomSeed(UINT8 **cp, INT32 playernum)
 	if (playernum != serverplayer) // it's not from the server, wtf?
 		return;
 
-	P_SetRandSeed(seed);
+	// Sal: this seems unused, so this is probably fine?
+	// If it needs specific RNG classes, then it should be easy to add.
+	P_ClearRandom(seed);
 }
 
 /** Clears all players' scores in a netgame.

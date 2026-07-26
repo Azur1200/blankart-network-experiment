@@ -4071,6 +4071,24 @@ static inline void P_UnArchiveSPGame(savebuffer_t *save, mapnum_t mapoverride)
 	TracyCZoneEnd(__zone);
 }
 
+static void P_NetSyncRNG(savebuffer_t *save)
+{
+	size_t i;
+	UINT32 init = 0;
+	UINT32 seed = 0;
+
+	const boolean reading_netsave = (!save->write);
+
+	for (i = 0; i < PRNUMCLASS; i++)
+	{
+		init = P_SyncUINT32(save, P_GetInitSeed(i));
+		seed = P_SyncUINT32(save, P_GetRandSeed(i));
+
+		if (reading_netsave)
+			P_SetRandSeedNet(i, init, seed);
+	}
+}
+
 static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 {
 	TracyCZone(__zone, true);
@@ -4143,7 +4161,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 		// Regardless of if the RNG has already been initialized or not, initialize
 		// the seeds *right now* to prevent infinite-loops.
 		I_OutputMsg("[NetSyncMisc] initial seed: %u\n", initial_seed);
-		P_SetRandSeed(initial_seed);
+		P_ClearRandom(initial_seed);
 
 		// Only reload the level during a gamestate reload
 		// if the map is horribly mismatched somehow. Minor
@@ -4350,7 +4368,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	}
 
 	// yama: Sync RNG *diirectly after* the map loads in, to prevent on-spawn desynchs
-	P_SetRandSeed(P_SyncUINT32(save, P_GetRandSeed()));
+	P_NetSyncRNG(save);
 
 	SYNC(leveltime);
 	SYNC(lastmap);
@@ -4704,9 +4722,6 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 
 	ACS_UnArchive(save);
 	LUA_Sync(save, true, false);
-
-	// This is stupid and hacky, but maybe it'll work!
-	P_SetRandSeed(P_GetInitSeed());
 
 	// The precipitation would normally be spawned in P_SetupLevel, which is called by
 	// P_NetUnArchiveMisc above. However, that would place it up before P_NetUnArchiveThinkers,

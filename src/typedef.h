@@ -56,6 +56,7 @@ TYPEDEF (clientcmd_pak);
 TYPEDEF (client2cmd_pak);
 TYPEDEF (client3cmd_pak);
 TYPEDEF (client4cmd_pak);
+TYPEDEF (rngdiagnosis_pak);
 TYPEDEF (servertics_pak);
 TYPEDEF (serverconfig_pak);
 TYPEDEF (filetx_pak);

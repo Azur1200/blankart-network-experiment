@@ -297,7 +297,8 @@ typedef struct
 		UINT32 lap;
 	} attacking;
 
-	UINT32 randseed;
+	UINT32 randseed[PRNUMCLASS];
+	boolean single_seed;
 	UINT32 extrainfo;
 
 	UINT16 numcvars;
@@ -364,7 +365,7 @@ typedef struct
 	UINT8 flags; // DXD flags if playernum < DW_EXTRASTUFF
 
 	// DW_RNG
-	UINT32 randseed;
+	UINT32 randseed[PRNUMCLASS];
 
 	struct // DXD_JOINDATA
 	{
@@ -595,13 +596,24 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 	UINT8 extradata;
 	extra->playernum = READUINT8(dp);
 	boolean kart = version <= 0x0002;
+	boolean singleseed = version <= 0x0011;
 
 	if (extra->playernum >= DW_EXTRASTUFF)
 	{
 		extra->flags = 0;
 		if (extra->playernum == DW_RNG)
 		{
-			extra->randseed = READUINT32(dp);
+			if (singleseed)
+			{
+				extra->randseed[PR_LEGACY] = READUINT32(dp);
+			}
+			else
+			{
+				for (i = 0; i < PRNUMCLASS; i++)
+				{
+					extra->randseed[i] = READUINT32(dp);
+				}
+			}
 		}
 		// DW_END has no data
 		return dp;
@@ -747,6 +759,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	boolean dubs = true; // Multiple voices
 	boolean availabilities = true; // Store player availabilities
 	boolean gplunatic = true; // Grand Prix: Lunatic mode
+	boolean multiseed = true; // Multi-seeded RNG
 	INT32 i;
 
 	// these may not be present in old demo formats, so initialize them
@@ -794,13 +807,12 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 			gplunatic = false;
 			/* FALLTHRU */
 		case 0x0010:
-			// no header changes (yet), just DXD_WEAPONPREF
+			/* FALLTHRU */
 		case 0x0011:
 			servermotd = false;
 			/* FALLTHRU */
 		case 0x0012:
-			// no header changes (yet)
-			/* FALLTHRU */
+			multiseed = false;
 			break;
 
 		default: // too old, cannot support.
@@ -811,6 +823,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	{
 		dubs = rapreset = raflag = false;
 		gplunatic = serverinfo = availabilities = false;
+		multiseed = false;
 		switch (header->demoversion)
 		{
 		case 0x0001: // SRB2Kart 1.0.x (only staff ghosts supported)
@@ -941,7 +954,20 @@ skipfiles:
 	header->attacking.lap = attack == ATTACKING_TIME ? READUINT32(dp) : UINT32_MAX;
 
 	// Random seed
-	header->randseed = READUINT32(dp);
+	header->single_seed = false;
+
+	if (multiseed)
+	{
+		for (i = 0; i < PRNUMCLASS; i++)
+		{
+			header->randseed[i] = READUINT32(dp);
+		}
+	}
+	else
+	{
+		header->single_seed = true;
+		header->randseed[PR_LEGACY] = READUINT32(dp);
+	}
 
 	if (oldkart)
 	{
@@ -1274,13 +1300,16 @@ void G_ReadDemoExtraData(void)
 		if (p >= DW_EXTRASTUFF) switch (p)
 		{
 		case DW_RNG:
-			if (P_GetRandSeed() != extra.randseed)
+			for (i = 0; i < PRNUMCLASS; i++)
 			{
-				P_SetRandSeed(extra.randseed);
+				if (P_GetRandSeed(i) != extra.randseed[i])
+				{
+					P_SetRandSeed(i, extra.randseed[i]);
 
-				if (demosynced)
-					CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced (RNG)!\n"));
-				demosynced = false;
+					if (demosynced)
+						CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced (RNG class \"%s\")!\n"), pr_class_name[i]);
+					demosynced = false;
+				}
 			}
 			continue;
 		}
@@ -1538,7 +1567,12 @@ void G_WriteDemoExtraData(void)
 			demo_writerng = 0;
 			timeout = 16;
 			WRITEUINT8(demobuf.p, DW_RNG);
-			WRITEUINT32(demobuf.p, P_GetRandSeed());
+
+			//WRITEUINT32(demobuf.p, P_GetRandSeed());
+			for (i = 0; i < PRNUMCLASS; i++)
+			{
+				WRITEUINT32(demobuf.p, P_GetRandSeed(i));
+			}
 		}
 	}
 
@@ -3014,7 +3048,10 @@ void G_BeginRecording(void)
 			break;
 	}
 
-	WRITEUINT32(demobuf.p,P_GetInitSeed());
+	for (i = 0; i < PRNUMCLASS; i++)
+	{
+		WRITEUINT32(demobuf.p, P_GetInitSeed(i));
+	}
 
 	// Reserved for extrainfo location from start of file
 	demoinfo_p = demobuf.p;
@@ -3602,6 +3639,9 @@ static void PrintDemoError(const char (*msg)[1024])
 
 	CONS_Alert(CONS_ERROR, "%s", *msg);
 	demo.playback = false;
+	demo.single_seed = false;
+	demo.title = false;
+
 	if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
 		M_StartMessage2("Replay", *msg, MB_NONE, MM_NOTHING, "Press any key", NULL);
 }
@@ -4031,7 +4071,20 @@ void G_DoPlayDemo(char *defdemoname)
 
 	R_ExecuteSetViewSize();
 
-	P_SetRandSeed(header.randseed);
+	demo.single_seed = false;
+
+	if (header.demoversion < 0x0012)
+	{
+		demo.single_seed = true;
+		P_SetRandSeed(PR_LEGACY, header.randseed[PR_LEGACY]);
+	}
+	else
+	{
+		for (i = 0; i < PRNUMCLASS; i++)
+		{
+			P_SetRandSeed(i, header.randseed[i]);
+		}
+	}
 	G_InitNew(demoflags & DF_ENCORE, gamemap, true, true); // Doesn't matter whether you reset or not here, given changes to resetplayer.
 
 	// Setup server name, contact and description.
@@ -4487,6 +4540,7 @@ void G_StopDemo(void)
 {
 	P_SaveBufferFree(&demobuf);
 	demo.playback = false;
+	demo.single_seed = false;
 	if (demo.title)
 		modeattacking = false;
 	demo.timing = false;

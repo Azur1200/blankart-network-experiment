@@ -1861,12 +1861,12 @@ static void P_DoBubbleBreath(player_t *player)
 
 	if (player->charflags & SF_MACHINE)
 	{
-		if (P_RandomChance(FRACUNIT/5))
+		if (P_RandomChance(PR_BUBBLE, FRACUNIT/5))
 		{
 			fixed_t r = player->mo->radius>>FRACBITS;
-			x += (P_RandomRange(r, -r)<<FRACBITS);
-			y += (P_RandomRange(r, -r)<<FRACBITS);
-			z += (P_RandomKey(player->mo->height>>FRACBITS)<<FRACBITS);
+			x += (P_RandomRange(PR_BUBBLE, r, -r)<<FRACBITS);
+			y += (P_RandomRange(PR_BUBBLE, r, -r)<<FRACBITS);
+			z += (P_RandomKey(PR_BUBBLE, player->mo->height>>FRACBITS)<<FRACBITS);
 			bubble = P_SpawnMobj(x, y, z, MT_WATERZAP);
 			S_StartSound(bubble, sfx_beelec);
 		}
@@ -1878,9 +1878,9 @@ static void P_DoBubbleBreath(player_t *player)
 		else
 			z += FixedDiv(player->mo->height,5*(FRACUNIT/4));
 
-		if (P_RandomChance(FRACUNIT/16))
+		if (P_RandomChance(PR_BUBBLE, FRACUNIT/16))
 			bubble = P_SpawnMobj(x, y, z, MT_SMALLBUBBLE);
-		else if (P_RandomChance(3*FRACUNIT/256))
+		else if (P_RandomChance(PR_BUBBLE, 3*FRACUNIT/256))
 			bubble = P_SpawnMobj(x, y, z, MT_MEDIUMBUBBLE);
 	}
 
@@ -3578,7 +3578,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 		else if (redscore > bluescore)
 			changeto = 2;
 		else
-			changeto = (P_RandomFixed() & 1) + 1;
+			changeto = (P_RandomFixed(PR_PLAYERSTARTS) & 1) + 1;
 
 		if (!LUA_HookTeamSwitch(player, changeto, true, false, false))
 			return false;

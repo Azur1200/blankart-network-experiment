@@ -94,6 +94,8 @@ extern tic_t directortoggletimer;
 extern consvar_t cv_lessflicker;
 extern consvar_t cv_stagetitle;
 
+extern consvar_t cv_rngpeek;
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
