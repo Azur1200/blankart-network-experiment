@@ -10829,6 +10829,8 @@ void M_ReturnToConnectMenu(void)
 	M_EnterMenu(MN_MP_MAIN, true, 0);
 }
 
+static boolean viewserver_showaddons = false;
+
 void MP_SetupViewServer(menupanelinst_t *pi)
 {
 	char *servermap = serverlist[joinnode].info.maptitle;
@@ -10836,6 +10838,25 @@ void MP_SetupViewServer(menupanelinst_t *pi)
 	const char *speedstring = "Auto";
 	UINT32 ping = serverlist[joinnode].info.time;
 	UINT8 kartvars = serverlist[joinnode].info.kartvars;
+
+	M_SetItemVisible(pi, "TOGGLEBUTTON1", viewserver_showaddons);
+	M_SetItemVisible(pi, "TOGGLEBUTTON2", !viewserver_showaddons);
+
+	M_SetItemVisible(pi, "PLAYERSHEADING", !viewserver_showaddons);
+	M_SetItemVisible(pi, "PLAYERSCOUNT", !viewserver_showaddons);
+	M_SetItemVisible(pi, "ADDONSHEADING", viewserver_showaddons);
+	M_SetItemVisible(pi, "ADDONSCOUNT", viewserver_showaddons);
+
+	const char *item1 = M_ButtonName(0, gc_accelerate, "ACCEL", keyboardcontrolled);
+	const char *item2 = M_ButtonName(0, gc_brake, "BRAKE", keyboardcontrolled);
+	const char *item3 = M_ButtonName(0, gc_fire, "ITEM", keyboardcontrolled);
+
+	M_SetItemText(pi, "TOGGLEBUTTON1", va("[%s] = Players", item3));
+	M_SetItemText(pi, "TOGGLEBUTTON2", va("[%s] = Addons", item3));
+
+	M_SetItemText(pi, "EXITBUTTON", va("[%s] = Return", item2));
+
+	M_SetItemText(pi, "JOINBUTTON", va("[%s] = Join", item1));
 
 	switch (kartvars & SV_SPEEDMASK)
 	{
@@ -10922,8 +10943,6 @@ INT32 MR_QuitViewServer(INT32 choice)
 	return true;
 }
 
-static boolean viewserver_showaddons = false;
-
 INT32 MR_HandleViewServer(INT32 choice)
 {
 	(void)choice;
@@ -10954,6 +10973,9 @@ void MP_ViewServerPlayers(menupanelinst_t *pi)
 	fixed_t x = 1, y = 1; // FIXME auto
 
 	M_ClearPanelItems(pi);
+
+	pi->visible = !viewserver_showaddons;
+	pi->disabled = true;
 
 	for (i = 0; i < MAXPLAYERINFO; i++)
 	{
@@ -11019,6 +11041,10 @@ void MP_ViewServerAddons(menupanelinst_t *pi)
 	INT32 count = 0;
 	fixed_t x = 1, y = 1; // FIXME auto
 	boolean small_mode = fileneedednum <= 11;
+
+	pi->visible = viewserver_showaddons;
+	pi->disabled = true;
+	pi->altscroll = true;
 
 	M_ClearPanelItems(pi);
 
@@ -11098,6 +11124,17 @@ INT32 MR_TickViewServer(INT32 choice)
 	M_SetItemVisible(pi, "PLAYERSCOUNT", !viewserver_showaddons);
 	M_SetItemVisible(pi, "ADDONSHEADING", viewserver_showaddons);
 	M_SetItemVisible(pi, "ADDONSCOUNT", viewserver_showaddons);
+
+	const char *item1 = M_ButtonName(0, gc_accelerate, "ACCEL", keyboardcontrolled);
+	const char *item2 = M_ButtonName(0, gc_brake, "BRAKE", keyboardcontrolled);
+	const char *item3 = M_ButtonName(0, gc_fire, "ITEM", keyboardcontrolled);
+
+	M_SetItemText(pi, "TOGGLEBUTTON1", va("[%s] = Players", item3));
+	M_SetItemText(pi, "TOGGLEBUTTON2", va("[%s] = Addons", item3));
+
+	M_SetItemText(pi, "EXITBUTTON", va("[%s] = Return", item2));
+
+	M_SetItemText(pi, "JOINBUTTON", va("[%s] = Join", item1));
 
 	menupanelinst_t *pplayers = M_GetPanel("PLAYERS");
 	menupanelinst_t *paddons = M_GetPanel("ADDONS");
