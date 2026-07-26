@@ -643,6 +643,7 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 static mobj_t *lightningSource;
 static fixed_t lightningDist;
 static boolean attractionhipower;
+static fixed_t attractionPowerRate;
 
 static inline BlockItReturn_t PIT_ThunderShieldAttack(mobj_t *thing)
 {
@@ -803,6 +804,10 @@ static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
 			//todo: filter out teammates
 			K_SetPlayerItemCooldown(thing->player, TICRATE * ATTRACTIONAOEEMP, false);
 		}
+		if (ATTRACTIONAOESHOVE)
+		{
+			K_ShoveObject(thing, lightningSource, FixedMul(ATTRACTIONAOESHOVE, attractionPowerRate));
+		}
 	}
 	else
 	{
@@ -811,13 +816,14 @@ static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
 	return BMIT_CONTINUE;
 }
 
-void K_AttractionShieldAttack(mobj_t *actor, fixed_t size, boolean hipower)
+void K_AttractionShieldAttack(mobj_t *actor, fixed_t size, fixed_t powerrate, boolean hipower)
 {
 	INT32 bx, by, xl, xh, yl, yh;
 
 	lightningDist = FixedMul(size, actor->scale);
 	lightningSource = actor;
 	attractionhipower = hipower;
+	attractionPowerRate = powerrate;
 
 	// Use blockmap to check for nearby shootables
 	yh = (unsigned)(actor->y + lightningDist - bmaporgy)>>MAPBLOCKSHIFT;
@@ -1089,7 +1095,19 @@ boolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
 boolean K_FallingRockCollide(mobj_t *t1, mobj_t *t2)
 {
 	if ((t2->player && (G_CompatLevel(0x0008) || !t2->player->hyudorotimer)) || t2->type == MT_FALLINGROCK)
-		K_SetHitThing(t1, t2);
+	{
+		if ((!cv_rockshove.value) || G_CompatLevel(0x0012))
+		{
+			K_SetHitThing(t1, t2);
+		}
+		else if (!t2->player->justbumped)
+		{
+			// masakit feels like rocks
+			K_ShoveObject(t2, t1, 16*t2->scale);
+			K_SpawnBumpEffect(t2);
+			t2->player->justbumped = 6;
+		}
+	}
 
 	return true;
 }

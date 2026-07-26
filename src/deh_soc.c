@@ -1216,7 +1216,9 @@ void readlevelheader(MYFILE *f, char * name)
 			}
 			else if (fastcmp(word, "TYPEOFLEVEL"))
 			{
-				if (i) // it's just a number
+				if (fastcmp(word2, "NONE")) // No type of level? Sure!
+					mapheaderinfo[num]->typeoflevel = 0;
+				else if (i) // it's just a number
 					mapheaderinfo[num]->typeoflevel = (UINT32)i;
 				else
 				{

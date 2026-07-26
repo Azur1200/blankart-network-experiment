@@ -1895,12 +1895,12 @@ static void P_DoBubbleBreath(player_t *player)
 
 	if (player->charflags & SF_MACHINE)
 	{
-		if (P_RandomChance(FRACUNIT/5))
+		if (P_RandomChance(PR_BUBBLE, FRACUNIT/5))
 		{
 			fixed_t r = player->mo->radius>>FRACBITS;
-			x += (P_RandomRange(r, -r)<<FRACBITS);
-			y += (P_RandomRange(r, -r)<<FRACBITS);
-			z += (P_RandomKey(player->mo->height>>FRACBITS)<<FRACBITS);
+			x += (P_RandomRange(PR_BUBBLE, r, -r)<<FRACBITS);
+			y += (P_RandomRange(PR_BUBBLE, r, -r)<<FRACBITS);
+			z += (P_RandomKey(PR_BUBBLE, player->mo->height>>FRACBITS)<<FRACBITS);
 			bubble = P_SpawnMobj(x, y, z, MT_WATERZAP);
 			S_StartSound(bubble, sfx_beelec);
 		}
@@ -1912,9 +1912,9 @@ static void P_DoBubbleBreath(player_t *player)
 		else
 			z += FixedDiv(player->mo->height,5*(FRACUNIT/4));
 
-		if (P_RandomChance(FRACUNIT/16))
+		if (P_RandomChance(PR_BUBBLE, FRACUNIT/16))
 			bubble = P_SpawnMobj(x, y, z, MT_SMALLBUBBLE);
-		else if (P_RandomChance(3*FRACUNIT/256))
+		else if (P_RandomChance(PR_BUBBLE, 3*FRACUNIT/256))
 			bubble = P_SpawnMobj(x, y, z, MT_MEDIUMBUBBLE);
 	}
 
@@ -3098,6 +3098,12 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	mo = player->mo;
 
+	if (LUA_HookCameraThinker(player, thiscam))
+	{
+		P_CalcChasePostImg(player, thiscam);
+		return true;
+	}
+
 	if (player->playerstate != PST_LIVE && !(skins[player->skin].flags & SF_OLDDEATH))
 	{
 		// Do not move the camera while dead!
@@ -3176,7 +3182,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		return true;
 
 	if (P_IsMachineLocalPlayer(player) || (demo.playback && cv_lookbackinreplays.value))
-		lookback = (!menustack[0] && G_PlayerInputDown(num, gc_lookback, false, DEADZONE_BUTTON));
+		lookback = (!menustack[0] && !chat_on &&  G_PlayerInputDown(num, gc_lookback, false, DEADZONE_BUTTON));
 	else
 		lookback = player->cmd.buttons & BT_LOOKBACK;
 
@@ -3606,7 +3612,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 		else if (redscore > bluescore)
 			changeto = 2;
 		else
-			changeto = (P_RandomFixed() & 1) + 1;
+			changeto = (P_RandomFixed(PR_PLAYERSTARTS) & 1) + 1;
 
 		if (!LUA_HookTeamSwitch(player, changeto, true, false, false))
 			return false;

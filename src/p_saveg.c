@@ -1323,11 +1323,16 @@ static boolean P_SectorStringArgsEqual(const sector_t *sc, const sector_t *spawn
 	UINT8 i;
 	for (i = 0; i < NUM_SCRIPT_STRINGARGS; i++)
 	{
-		if (!sc->stringargs[i])
-			return !spawnsc->stringargs[i];
-
-		if (!fastcmp(sc->stringargs[i], spawnsc->stringargs[i]))
-			return false;
+		if (sc->stringargs[i] == NULL || spawnsc->stringargs[i] == NULL)
+		{
+			if (sc->stringargs[i] != spawnsc->stringargs[i])
+				return false;
+		}
+		else
+		{
+			if (strcmp(sc->stringargs[i], spawnsc->stringargs[i]))
+				return false;
+		}
 	}
 
 	return true;
@@ -1387,11 +1392,16 @@ static boolean P_LineStringArgsEqual(const line_t *li, const line_t *spawnli)
 	UINT8 i;
 	for (i = 0; i < NUM_SCRIPT_STRINGARGS; i++)
 	{
-		if (!li->stringargs[i])
-			return !spawnli->stringargs[i];
-
-		if (!fastcmp(li->stringargs[i], spawnli->stringargs[i]))
-			return false;
+		if (li->stringargs[i] == NULL || spawnli->stringargs[i] == NULL)
+		{
+			if (li->stringargs[i] != spawnli->stringargs[i])
+				return false;
+		}
+		else
+		{
+			if (strcmp(li->stringargs[i], spawnli->stringargs[i]))
+				return false;
+		}
 	}
 
 	return true;
@@ -1648,38 +1658,21 @@ static void SyncSectors(savebuffer_t *save)
 		{
 			for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
 			{
-				if (save->write)
+				size_t len = P_SyncINT32(save, sec->stringargs[j] ? strlen(sec->stringargs[j]) : 0);
+				if (!len)
 				{
-					size_t len, k;
-
-					if (!sec->stringargs[j])
+					if (!save->write)
 					{
-						WRITEINT32(save->p, 0);
-						continue;
+						Z_Free(sec->stringargs[j]);
+						sec->stringargs[j] = NULL;
 					}
-
-					len = strlen(sec->stringargs[j]);
-					WRITEINT32(save->p, len);
-					for (k = 0; k < len; k++)
-						WRITECHAR(save->p, sec->stringargs[j][k]);
+					continue;
 				}
-				else
-				{
-					size_t len = READINT32(save->p);
-					size_t k;
 
-					if (!len)
-					{
-						Z_Free(sectors[i].stringargs[j]);
-						sectors[i].stringargs[j] = NULL;
-						continue;
-					}
-
-					sectors[i].stringargs[j] = Z_Realloc(sectors[i].stringargs[j], len + 1, PU_LEVEL, NULL);
-					for (k = 0; k < len; k++)
-						sectors[i].stringargs[j][k] = READCHAR(save->p);
-					sectors[i].stringargs[j][len] = '\0';
-				}
+				if (!save->write)
+					sec->stringargs[j] = Z_Realloc(sec->stringargs[j], len + 1, PU_LEVEL, NULL);
+				P_SyncMem(save, sec->stringargs[j], len);
+				sec->stringargs[j][len] = '\0';
 			}
 		}
 
@@ -1832,43 +1825,23 @@ static void SyncLines(savebuffer_t *save)
 		}
 		if (GETB(LD_STRINGARGS))
 		{
-			if (save->write)
+			for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
 			{
-				for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
+				size_t len = P_SyncINT32(save, li->stringargs[j] ? strlen(li->stringargs[j]) : 0);
+				if (!len)
 				{
-					size_t len, k;
-
-					if (!li->stringargs[j])
-					{
-						WRITEINT32(save->p, 0);
-						continue;
-					}
-
-					len = strlen(li->stringargs[j]);
-					WRITEINT32(save->p, len);
-					for (k = 0; k < len; k++)
-						WRITECHAR(save->p, li->stringargs[j][k]);
-				}
-			}
-			else
-			{
-				for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
-				{
-					size_t len = READINT32(save->p);
-					size_t k;
-
-					if (!len)
+					if (!save->write)
 					{
 						Z_Free(li->stringargs[j]);
 						li->stringargs[j] = NULL;
-						continue;
 					}
-
-					li->stringargs[j] = Z_Realloc(li->stringargs[j], len + 1, PU_LEVEL, NULL);
-					for (k = 0; k < len; k++)
-						li->stringargs[j][k] = READCHAR(save->p);
-					li->stringargs[j][len] = '\0';
+					continue;
 				}
+
+				if (!save->write)
+					li->stringargs[j] = Z_Realloc(li->stringargs[j], len + 1, PU_LEVEL, NULL);
+				P_SyncMem(save, li->stringargs[j], len);
+				li->stringargs[j][len] = '\0';
 			}
 		}
 
@@ -1914,19 +1887,18 @@ static boolean P_ThingArgsEqual(const mobj_t *mobj, const mapthing_t *mapthing)
 		if (mobj->args[i] != mapthing->args[i])
 			return false;
 
-	return true;
-}
-
-static boolean P_ThingStringArgsEqual(const mobj_t *mobj, const mapthing_t *mapthing)
-{
-	UINT8 i;
 	for (i = 0; i < NUM_MAPTHING_STRINGARGS; i++)
 	{
-		if (!mobj->stringargs[i])
-			return !mapthing->stringargs[i];
-
-		if (!fastcmp(mobj->stringargs[i], mapthing->stringargs[i]))
-			return false;
+		if (mobj->stringargs[i] == NULL || mapthing->stringargs[i] == NULL)
+		{
+			if (mobj->stringargs[i] != mapthing->stringargs[i])
+				return false;
+		}
+		else
+		{
+			if (strcmp(mobj->stringargs[i], mapthing->stringargs[i]))
+				return false;
+		}
 	}
 
 	return true;
@@ -1986,7 +1958,7 @@ enum mobj_diff_t
 	MD_SCALE,
 	MD_DSCALE,
 	MD_ARGS,
-	MD_STRINGARGS,
+	MD__UNUSED,
 
 	MD2_CUSVAL = 1<<5,
 	MD2_CVMEM,
@@ -2061,7 +2033,6 @@ static void DiffMobj(const mobj_t *mobj, UINT32 diff[])
 
 		DIFF(mobj->info->doomednum != mobj->spawnpoint->type, MD_TYPE);
 		DIFF(!P_ThingArgsEqual(mobj, mobj->spawnpoint), MD_ARGS);
-		DIFF(!P_ThingStringArgsEqual(mobj, mobj->spawnpoint), MD_STRINGARGS);
 		DIFF(!P_ThingScriptEqual(mobj, mobj->spawnpoint), MD2_SPECIAL);
 	}
 	else
@@ -2085,7 +2056,7 @@ static void DiffMobj(const mobj_t *mobj, UINT32 diff[])
 		{
 			if (mobj->stringargs[j] != NULL)
 			{
-				SETB(MD_STRINGARGS);
+				SETB(MD_ARGS);
 				break;
 			}
 		}
@@ -2383,9 +2354,7 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	{
 		for (j = 0; j < NUM_MAPTHING_ARGS; j++)
 			SYNC(mobj->args[j]);
-	}
-	if (GETB(MD_STRINGARGS))
-	{
+
 		for (j = 0; j < NUM_MAPTHING_STRINGARGS; j++)
 		{
 			size_t len = P_SyncINT32(save, mobj->stringargs[j] ? strlen(mobj->stringargs[j]) : 0);
@@ -2404,6 +2373,10 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 			P_SyncMem(save, mobj->stringargs[j], len);
 			mobj->stringargs[j][len] = '\0';
 		}
+	}
+	else if (!save->write && mobj->spawnpoint)
+	{
+		P_CopyMapThingBehaviorFieldsToMobj(mobj->spawnpoint, mobj);
 	}
 
 	SYNCF(MD2_CUSVAL, mobj->cusval);
@@ -2488,6 +2461,10 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 			P_SyncMem(save, mobj->script_stringargs[j], len);
 			mobj->script_stringargs[j][len] = '\0';
 		}
+	}
+	else if (!save->write && mobj->spawnpoint)
+	{
+		P_CopyMapThingSpecialFieldsToMobj(mobj->spawnpoint, mobj);
 	}
 	if (GETB(MD2_FLOORSPRITESLOPE))
 	{
@@ -4120,6 +4097,24 @@ static inline void P_UnArchiveSPGame(savebuffer_t *save, mapnum_t mapoverride)
 	TracyCZoneEnd(__zone);
 }
 
+static void P_NetSyncRNG(savebuffer_t *save)
+{
+	size_t i;
+	UINT32 init = 0;
+	UINT32 seed = 0;
+
+	const boolean reading_netsave = (!save->write);
+
+	for (i = 0; i < PRNUMCLASS; i++)
+	{
+		init = P_SyncUINT32(save, P_GetInitSeed(i));
+		seed = P_SyncUINT32(save, P_GetRandSeed(i));
+
+		if (reading_netsave)
+			P_SetRandSeedNet(i, init, seed);
+	}
+}
+
 static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 {
 	TracyCZone(__zone, true);
@@ -4180,15 +4175,20 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 		}
 	}
 
-	P_SetRandSeed(P_SyncUINT32(save, P_GetRandSeed()));
-
 	SYNC(tokenlist);
 
 	SYNCBOOLEAN(encoremode);
+
+	SYNC(initial_seed);
 	SYNC(mapmusrng);
 
 	if (!save->write)
 	{
+		// Regardless of if the RNG has already been initialized or not, initialize
+		// the seeds *right now* to prevent infinite-loops.
+		I_OutputMsg("[NetSyncMisc] initial seed: %u\n", initial_seed);
+		P_ClearRandom(initial_seed);
+
 		// Only reload the level during a gamestate reload
 		// if the map is horribly mismatched somehow. Minor
 		// differences in level state are already handled
@@ -4392,6 +4392,9 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 			Taglist_InitGlobalTables();
 		}
 	}
+
+	// yama: Sync RNG *diirectly after* the map loads in, to prevent on-spawn desynchs
+	P_NetSyncRNG(save);
 
 	SYNC(leveltime);
 	SYNC(lastmap);
@@ -4749,9 +4752,6 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 
 	ACS_UnArchive(save);
 	LUA_Sync(save, true, false);
-
-	// This is stupid and hacky, but maybe it'll work!
-	P_SetRandSeed(P_GetInitSeed());
 
 	// The precipitation would normally be spawned in P_SetupLevel, which is called by
 	// P_NetUnArchiveMisc above. However, that would place it up before P_NetUnArchiveThinkers,

@@ -276,6 +276,8 @@ int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, boole
 	X(bubbletime) \
 	X(flametime) \
 	X(comebacktime) \
+	X(initial_seed) \
+	X(initialseed) \
 	X(greasetics) \
 	X(wipeoutslowtime) \
 	X(wantedreduce) \
@@ -663,6 +665,10 @@ int LUA_PushGlobals(lua_State *L)
 			return 1;
 		case global_comebacktime:
 			lua_pushinteger(L, comebacktime);
+			return 1;
+		case global_initial_seed:
+		case global_initialseed:
+			lua_pushinteger(L, initial_seed);
 			return 1;
 		case global_greasetics:
 			lua_pushinteger(L, greasetics);

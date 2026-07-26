@@ -15,11 +15,19 @@
 #include "doomdef.h"
 #include "doomtype.h"
 #include "k_stats.h" // kartstats.totalplaytime
+#include "g_demo.h" // demo struct
 
 #include "m_random.h"
 #include "m_fixed.h"
 
+char pr_class_name[PRNUMCLASS][33] = {
+	"LEGACY", // PR_LEGACY is PR_UNDEFINED; "LEGACY" is just more elegant
+#define SEEDNAME(name) #name"\0",
+	RNGSEEDS(SEEDNAME)
+	"\0",
+};
 
+#undef SEEDNAME
 
 // ---------------------------
 // RNG functions (not synched)
@@ -128,48 +136,77 @@ INT32 M_RandomRange(INT32 a, INT32 b)
 // PRNG functions (synched)
 // ------------------------
 
-// Holds the current seed.
-static UINT32 randomseed = 0xBADE4404;
+#define DEFAULT_SEED (0xBADE4404)
 
-// Holds the INITIAL seed value.  Used for demos, possibly other debugging.
-static UINT32 initialseed = 0xBADE4404;
+typedef struct
+{
+	UINT32 seed[PRNUMCLASS]; // Holds each block's current seed.
+	UINT32 init[PRNUMCLASS]; // Holds the INITIAL seed value. Used for demos, possibly other debugging
+} rng_t;
+
+static rng_t rng = {0}; // The entire PRNG state
 
 /** Provides a random 32 bit integer.
   * This is a variant of an xorshift PRNG; state fits in a 32 bit integer structure.
   *
   * \return A random, uniformly distributed number from [0,UINT32_MAX].
   */
-ATTRINLINE static UINT32 FUNCINLINE __internal_prng__(void)
+ATTRINLINE static UINT32 FUNCINLINE __internal_prng__(pr_class_t pr_class)
 {
-	randomseed ^= randomseed >> 13;
-	randomseed ^= randomseed >> 11;
-	randomseed ^= randomseed << 21;
-	return (randomseed*36548569);
+	pr_class_t _class = pr_class;
+	if (demo.single_seed)
+	{
+		// Legacy demo being played; reroute the seed to our legacy monolith
+		_class = PR_LEGACY;
+	}
+
+	rng.seed[_class] ^= rng.seed[_class] >> 13;
+	rng.seed[_class] ^= rng.seed[_class] >> 11;
+	rng.seed[_class] ^= rng.seed[_class] << 21;
+	return (rng.seed[_class] * 36548569);
 }
 
 /** Provides a random number within a specified range.
  *
  * \return A random, uniformly distributed number from [0,bound].
  */
-ATTRINLINE static UINT32 FUNCINLINE __internal_prng_bound__(UINT32 bound)
+ATTRINLINE static UINT32 FUNCINLINE __internal_prng_bound__(pr_class_t pr_class, UINT32 bound)
 {
+	pr_class_t _class = pr_class;
+	if (demo.single_seed)
+	{
+		// Legacy demo being played; reroute the seed to our legacy monolith
+		_class = PR_LEGACY;
+	}
+
   // Handle zero like it would previously.
   if (bound == 0)
   {
-    (void)__internal_prng__();
+    (void)__internal_prng__(_class);
     return 0;
   }
   else
   {
     // Do rejection sampling to remove the modulo bias.
     UINT32 threshold = -bound % bound;
+		UINT32 r = __internal_prng__(_class);
+		UINT32 stuck = 0; // Ideally, this never happens, but if it *does*...
     for (;;)
     {
-      UINT32 r = __internal_prng__();
+      UINT32 r = __internal_prng__(_class);
       if (r >= threshold)
       {
         return r % bound;
       }
+
+			stuck++;
+
+			if (stuck > 8)
+			{
+				// We got stuck :(
+				CONS_Alert(CONS_ERROR, "__internal_prng_bound__: PRNG class %s infinitely-looped\n", pr_class_name[_class]);
+				return DEFAULT_SEED;
+			}
     }
   }
 }
@@ -181,14 +218,14 @@ ATTRINLINE static UINT32 FUNCINLINE __internal_prng_bound__(UINT32 bound)
   */
 
 #ifndef DEBUGRANDOM
-UINT32 P_Random(void)
+UINT32 P_Random(pr_class_t pr_class)
 {
 #else
 UINT32 P_RandomD(const char *rfile, INT32 rline, pr_class_t pr_class)
 {
 	CONS_Printf("P_Random(%u) at: %sp %d\n", pr_class, rfile, rline);
 #endif
-	return __internal_prng__();
+	return __internal_prng__(pr_class);
 }
 
 /** Provides a random fixed point number. Distribution is uniform.
@@ -197,14 +234,14 @@ UINT32 P_RandomD(const char *rfile, INT32 rline, pr_class_t pr_class)
   */
 
 #ifndef DEBUGRANDOM
-fixed_t P_RandomFixed(void)
+fixed_t P_RandomFixed(pr_class_t pr_class)
 {
 #else
-fixed_t P_RandomFixedD(const char *rfile, INT32 rline)
+fixed_t P_RandomFixedD(const char *rfile, INT32 rline, pr_class_t pr_class)
 {
-	CONS_Printf("P_RandomFixed() at: %sp %d\n", rfile, rline);
+	CONS_Printf("P_RandomFixed(%u) at: %sp %d\n", pr_class, rfile, rline);
 #endif
-    return (fixed_t)(__internal_prng_bound__(FRACUNIT));
+  return (fixed_t)(__internal_prng_bound__(pr_class, FRACUNIT));
 }
 
 /** Provides a random byte. Distribution is uniform.
@@ -215,14 +252,14 @@ fixed_t P_RandomFixedD(const char *rfile, INT32 rline)
   * \sa __internal_prng__
   */
 #ifndef DEBUGRANDOM
-UINT8 P_RandomByte(void)
+UINT8 P_RandomByte(pr_class_t pr_class)
 {
 #else
-UINT8 P_RandomByteD(const char *rfile, INT32 rline)
+UINT8 P_RandomByteD(const char *rfile, INT32 rline, pr_class_t pr_class)
 {
-	CONS_Printf("P_RandomByte() at: %sp %d\n", rfile, rline);
+	CONS_Printf("P_RandomByte(%u) at: %sp %d\n", pr_class, rfile, rline);
 #endif
-    return (UINT8)(__internal_prng_bound__(UINT8_MAX));
+  return (UINT8)(__internal_prng_bound__(pr_class, UINT8_MAX));
 }
 
 /** Provides a random integer for picking random elements from an array.
@@ -234,14 +271,14 @@ UINT8 P_RandomByteD(const char *rfile, INT32 rline)
   * \sa __internal_prng__
   */
 #ifndef DEBUGRANDOM
-UINT32 P_RandomKey(UINT32 a)
+INT32 P_RandomKey(pr_class_t pr_class, INT32 a)
 {
 #else
-UINT32 P_RandomKeyD(const char *rfile, INT32 rline, UINT32 a)
+INT32 P_RandomKeyD(const char *rfile, INT32 rline, pr_class_t pr_class, INT32 a)
 {
-	CONS_Printf("P_RandomKey() at: %sp %d\n", rfile, rline);
+	CONS_Printf("P_RandomKey(%u) at: %sp %d\n", pr_class, rfile, rline);
 #endif
-    return __internal_prng_bound__(a);
+  return __internal_prng_bound__(pr_class, a);
 }
 
 /** Provides a random integer in a given range.
@@ -254,14 +291,14 @@ UINT32 P_RandomKeyD(const char *rfile, INT32 rline, UINT32 a)
   * \sa __internal_prng__
   */
 #ifndef DEBUGRANDOM
-INT32 P_RandomRange(INT32 a, INT32 b)
+INT32 P_RandomRange(pr_class_t pr_class, INT32 a, INT32 b)
 {
 #else
-INT32 P_RandomRangeD(const char *rfile, INT32 rline, INT32 a, INT32 b)
+INT32 P_RandomRangeD(const char *rfile, INT32 rline, pr_class_t pr_class, INT32 a, INT32 b)
 {
-	CONS_Printf("P_RandomRange() at: %sp %d\n", rfile, rline);
+	CONS_Printf("P_RandomRange(%u) at: %sp %d\n", pr_class, rfile, rline);
 #endif
-    return (INT32)(__internal_prng_bound__((b - a) + 1)) + a;
+  return (INT32)(__internal_prng_bound__(pr_class, (b - a) + 1)) + a;
 }
 
 
@@ -276,11 +313,11 @@ INT32 P_RandomRangeD(const char *rfile, INT32 rline, INT32 a, INT32 b)
   * \return A 'random' number from [0,UINT32_MAX]
   * \sa __internal_prng__
   */
-UINT32 P_RandomPeek(void)
+UINT32 P_RandomPeek(pr_class_t pr_class)
 {
-	UINT32 r = randomseed;
-	UINT32 ret = __internal_prng__();
-	randomseed = r;
+	UINT32 r = rng.seed[pr_class];
+	UINT32 ret = __internal_prng__(pr_class);
+	rng.seed[pr_class] = r;
 	return ret;
 }
 
@@ -290,14 +327,14 @@ UINT32 P_RandomPeek(void)
   * \sa P_SetRandSeed
   */
 #ifndef DEBUGRANDOM
-UINT32 P_GetRandSeed(void)
+UINT32 P_GetRandSeed(pr_class_t pr_class)
 {
 #else
-UINT32 P_GetRandSeedD(const char *rfile, INT32 rline)
+UINT32 P_GetRandSeedD(const char *rfile, INT32 rline, pr_class_t pr_class)
 {
-	CONS_Printf("P_GetRandSeed() at: %sp %d\n", rfile, rline);
+	CONS_Printf("P_GetRandSeed(%u) at: %sp %d\n", pr_class, rfile, rline);
 #endif
-	return randomseed;
+	return rng.seed[pr_class];
 }
 
 /** Gets the initial random seed.  Used by demos.
@@ -306,34 +343,82 @@ UINT32 P_GetRandSeedD(const char *rfile, INT32 rline)
   * \sa P_SetRandSeed
   */
 #ifndef DEBUGRANDOM
-UINT32 P_GetInitSeed(void)
+UINT32 P_GetInitSeed(pr_class_t pr_class)
 {
 #else
-UINT32 P_GetInitSeedD(const char *rfile, INT32 rline)
+UINT32 P_GetInitSeedD(const char *rfile, INT32 rline, pr_class_t pr_class)
 {
-	CONS_Printf("P_GetInitSeed() at: %sp %d\n", rfile, rline);
+	CONS_Printf("P_GetInitSeed(%u) at: %sp %d\n", pr_class, rfile, rline);
 #endif
-	return initialseed;
+	return rng.init[pr_class];
 }
 
 /** Sets the random seed.
-  * Used at the beginning of the game, and also for netgames.
+  * Used at the beginning of a game.
   *
-  * \param rindex New random index.
+  * \param pr_class RNG class to adjust.
+  * \param seed New random seed.
   * \sa P_GetRandSeed
   */
 #ifndef DEBUGRANDOM
-void P_SetRandSeed(UINT32 seed)
+void P_SetRandSeed(pr_class_t pr_class, UINT32 seed)
 {
 #else
-void P_SetRandSeedD(const char *rfile, INT32 rline, UINT32 seed)
+void P_SetRandSeedD(const char *rfile, INT32 rline, pr_class_t pr_class, UINT32 seed)
 {
-	CONS_Printf("P_SetRandSeed() at: %sp %d\n", rfile, rline);
+	CONS_Printf("P_SetRandSeed(%u) at: %sp %d\n", pr_class, rfile, rline);
 #endif
 	// xorshift requires a nonzero seed
 	// this should never happen, but just in case it DOES, we check
-	if (!seed) seed = 0xBADE4404;
-	randomseed = initialseed = seed;
+	if (!seed) seed = DEFAULT_SEED;
+	rng.seed[pr_class] = rng.init[pr_class] = seed;
+}
+
+/** Sets both the initial seed and the current seed.
+  * Used for netgame sync.
+  *
+  * \param pr_class RNG class to adjust.
+  * \param init Sent initial seed.
+  * \param seed Sent current seed.
+  * \sa P_SetRandSeed
+  */
+#ifndef DEBUGRANDOM
+void P_SetRandSeedNet(pr_class_t pr_class, UINT32 init, UINT32 seed)
+{
+#else
+void P_SetRandSeedNetD(const char *rfile, INT32 rline, pr_class_t pr_class, UINT32 init, UINT32 seed)
+{
+	CONS_Printf("P_SetRandSeedNet(%u) at: %sp %d\n", pr_class, rfile, rline);
+#endif
+	if (!init) init = DEFAULT_SEED;
+	rng.init[pr_class] = init;
+
+	if (!seed) seed = DEFAULT_SEED;
+	rng.seed[pr_class] = seed;
+}
+
+/** Initializes random seeds for all classes.
+  * Used at the beginning of a game.
+  *
+  * \param rindex New random index.
+  * \sa P_SetRandSeed
+  */
+void P_ClearRandom(UINT32 seed)
+{
+	size_t i;
+
+	if (!seed) seed = DEFAULT_SEED;
+
+	for (i = 0; i < PRNUMCLASS; i++)
+	{
+		P_SetRandSeed(i, seed);
+
+		// Different XOR from __internal_prng__
+		// so that it's not as predictable.
+		seed ^= seed >> 13;
+		seed ^= seed << 25;
+		seed ^= seed >> 11;
+	}
 }
 
 /** Gets a randomized seed for setting the random seed.

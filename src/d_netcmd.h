@@ -256,6 +256,7 @@ extern consvar_t cv_kartflame_shove;
 extern consvar_t cv_kartattraction_assistpower;
 extern consvar_t cv_kartattraction_aoedmg;
 extern consvar_t cv_kartattraction_aoeemp;
+extern consvar_t cv_kartattraction_aoeshove;
 extern consvar_t cv_kartaltshrink_arrowbullet;
 extern consvar_t cv_kartaltshrink_arrowbulletthres;
 extern consvar_t cv_kartaltshrink_runneranger;
@@ -282,6 +283,8 @@ extern consvar_t cv_kartantibump;
 extern consvar_t cv_trailslow;
 
 extern consvar_t cv_playerbump;
+
+extern consvar_t cv_rockshove;
 
 extern consvar_t cv_kartforcelegacyodds;
 
@@ -347,6 +350,12 @@ extern consvar_t cv_skipmapcheck;
 extern consvar_t cv_sleep;
 
 extern consvar_t cv_perfstats;
+extern consvar_t cv_ps_thinkframe_page;
+extern consvar_t cv_ps_samplesize;
+extern consvar_t cv_ps_descriptor;
+
+void lua_profile_OnChange(void);
+extern consvar_t cv_lua_profile;
 
 extern consvar_t cv_director;
 

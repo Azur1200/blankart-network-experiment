@@ -627,6 +627,7 @@ static void Command_Memfree_f(void)
 	CONS_Printf(M_GetText("HUD graphics           : %7s KB\n"), sizeu1(Z_TagUsage(PU_HUDGFX)>>10));
 	CONS_Printf(M_GetText("Locked cache           : %7s KB\n"), sizeu1(Z_TagUsage(PU_CACHE)>>10));
 	CONS_Printf(M_GetText("Level                  : %7s KB\n"), sizeu1(Z_TagUsage(PU_LEVEL)>>10));
+	CONS_Printf(M_GetText("Level (pooled)         : %7s KB\n"), sizeu1(Z_LevelPoolUsage()>>10));
 	CONS_Printf(M_GetText("Special thinker        : %7s KB\n"), sizeu1(Z_TagUsage(PU_LEVSPEC)>>10));
 	CONS_Printf(M_GetText("All purgable           : %7s KB\n"),
 		sizeu1(Z_TagsUsage(PU_PURGELEVEL, INT32_MAX)>>10));
@@ -681,6 +682,14 @@ static void Command_Memdump_f(void)
 char *Z_StrDup(const char *s)
 {
 	return strcpy((char*)ZZ_Alloc(strlen(s) + 1), s);
+}
+
+size_t Z_LevelPoolUsage(void)
+{
+	return g_level_large_pool.allocated_bytes()
+	+ g_level_med_pool.allocated_bytes()
+	+ g_level_small_pool.allocated_bytes()
+	+ g_level_tiny_pool.allocated_bytes();
 }
 
 void* Z_LevelPoolMalloc(size_t size)

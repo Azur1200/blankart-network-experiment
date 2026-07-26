@@ -105,8 +105,8 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x9aa386ff71812fc1
-#define ASSET_HASH_MAPPATCH_PK3        0x14ed207421361d14
+#define ASSET_HASH_MAIN_PK3            0x32cc7798a54b6706
+#define ASSET_HASH_MAPPATCH_PK3        0xa279dcd392d0cfc9
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
 #define ASSET_HASH_PATCH_PK3           0x0000000000000000
@@ -124,6 +124,8 @@
 
 #include "lua_script.h"
 
+#include "lua_profile.h"
+
 // Version numbers for netplay :upside_down_face:
 int    VERSION;
 int SUBVERSION;
@@ -137,6 +139,8 @@ UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
 
 // platform independant focus loss
 UINT8 window_notinfocus = false;
+
+UINT32 initial_seed = 0;
 
 //
 // DEMO LOOP
@@ -348,7 +352,7 @@ boolean D_RenderLevel(void)
 
 	objectsdrawn = 0;
 
-	ps_rendercalltime = I_GetPreciseTime();
+	PS_START_TIMING(ps_rendercalltime);
 
 	if (rendermode == render_soft)
 	{
@@ -438,7 +442,7 @@ boolean D_RenderLevel(void)
 		}
 	}
 
-	ps_rendercalltime = I_GetPreciseTime() - ps_rendercalltime;
+	PS_STOP_TIMING(ps_rendercalltime);
 	R_RestoreLevelInterpolators();
 	return true;
 }
@@ -655,7 +659,7 @@ static void D_Display(void)
 
 			D_RenderLevel();
 
-			ps_uitime = I_GetPreciseTime();
+			PS_START_TIMING(ps_uitime);
 
 			switch (gamestate)
 			{
@@ -675,7 +679,7 @@ static void D_Display(void)
 		}
 		else
 		{
-			ps_uitime = I_GetPreciseTime();
+			PS_START_TIMING(ps_uitime);
 		}
 	}
 
@@ -716,7 +720,7 @@ static void D_Display(void)
 
 	CON_Drawer();
 
-	ps_uitime = I_GetPreciseTime() - ps_uitime;
+	PS_STOP_TIMING(ps_uitime);
 
 	//
 	// wipe update
@@ -788,9 +792,14 @@ dedipostwipe:
 			M_DrawPerfStats();
 		}
 
-		ps_swaptime = I_GetPreciseTime();
+		if (cv_lua_profile.value > 0)
+		{
+			LUA_RenderTimers();
+		}
+
+		PS_START_TIMING(ps_swaptime);
 		I_FinishUpdate(); // page flip or blit buffer
-		ps_swaptime = I_GetPreciseTime() - ps_swaptime;
+		PS_STOP_TIMING(ps_swaptime);
 	}
 }
 
@@ -884,6 +893,12 @@ static double D_EndFrame(precise_t enterprecise, int *frameskip)
 	// Capture the time once more to get the real delta time.
 	finishprecise = I_GetPreciseTime();
 	deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
+
+	// I looked at the possibility of putting in a float drawer for
+	// perfstats and it's very complicated, so we'll just do this instead...
+	ps_interp_frac.value.p = (precise_t)((FIXED_TO_FLOAT(g_time.timefrac)) * 1000.0f);
+	ps_interp_lag.value.p = (precise_t)((deltasecs) * 1000.0);
+
 	return deltasecs * NEWTICRATE;
 }
 
@@ -1090,7 +1105,7 @@ void D_SRB2Loop(void)
 				debugload--;
 #endif
 
-		interp = !dedicated && (R_GetFramerateCap() != TICRATE || cv_timescale.value < FRACUNIT);
+		interp = !dedicated && R_UsingFrameInterpolation();
 		doDisplay = false;
 
 		if (realtics > 0 || singletics)

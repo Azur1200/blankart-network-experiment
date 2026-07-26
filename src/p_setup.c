@@ -839,7 +839,7 @@ static void P_SpawnMapThings(boolean spawnemblems, boolean patch)
 
 		if (mt->type >= 600 && mt->type <= 611) // item patterns
 			P_SpawnItemPattern(mt);
-		else if (mt->type == 1713) // hoops
+		else if (mt->type == 1713 && spawnemblems) // hoops
 			P_SpawnHoop(mt);
 		else // Everything else
 			P_SpawnMapThing(mt);
@@ -4316,11 +4316,20 @@ static boolean P_LoadExtendedSubsectorsAndSegs(UINT8 **data, nodetype_t nodetype
 
 				segs[k].side = READUINT8((*data));
 			}
-			while (segs[subsectors[i].firstline].glseg)
+			// Validate that at least one seg in this subsector is a full (non-gl) segment.
 			{
-				subsectors[i].firstline++;
-				if (subsectors[i].firstline == k)
+				size_t checkline;
+				for (checkline = subsectors[i].firstline; checkline < k; checkline++)
+				{
+					if (!segs[checkline].glseg)
+					{
+						break;
+					}
+				}
+				if (checkline == k)
+				{
 					I_Error("P_LoadExtendedSubsectorsAndSegs: Subsector %s does not have any valid segs!", sizeu1(i));
+				}
 			}
 			break;
 

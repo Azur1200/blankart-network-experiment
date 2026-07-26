@@ -56,6 +56,7 @@
 #include "lua_hook.h"
 #include "m_cond.h"
 #include "m_anigif.h"
+#include "st_stuff.h"
 
 // SRB2kart
 #include "k_kart.h"
@@ -279,6 +280,7 @@ static void Command_Isgamemodified_f(void);
 static void Command_Cheats_f(void);
 
 static void Command_ListSkins(void);
+static void Command_SkinSearch(void);
 
 static void Command_Voice(void);
 static void Command_Voice2(void);
@@ -732,6 +734,8 @@ static CV_PossibleValue_t playerbump_cons_t[] = {{PBUMP_STANDARD, "Standard"},
 						 {0, NULL}};
 consvar_t cv_playerbump = CVAR_INIT ("playerbump", "Standard", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, playerbump_cons_t, PlayerBump_OnChange);
 
+consvar_t cv_rockshove = CVAR_INIT ("rockshove", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
+
 #define ANTIBUMP_MAX (UINT32_MAX / TICRATE)
 static CV_PossibleValue_t antibump_cons_t[] = {{0, "MIN"}, {ANTIBUMP_MAX, "MAX"}, {0, NULL}};
 consvar_t cv_kartantibump = CVAR_INIT ("kartantibump", "0", CV_NETVAR|CV_CALL|CV_NOINIT, antibump_cons_t, KartAntiBump_OnChange);
@@ -846,9 +850,10 @@ consvar_t cv_kartflame_shove = CVAR_INIT ("kartflame_shove", "Off", CV_NETVAR, C
 consvar_t cv_kartattraction_assistpower = CVAR_INIT ("kartattraction_assistpower", "0.2", CV_NETVAR|CV_FLOAT, CV_Unsigned, NULL);
 
 // Attraction Shield damage toggles
-static CV_PossibleValue_t kartattractiondmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {DMG_EXPLODE, "Explode"}, {0, NULL}};
+static CV_PossibleValue_t kartattractiondmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {DMG_EXPLODE, "Explode"}, {DMG_CRASH, "Crash"}, {0, NULL}};
 consvar_t cv_kartattraction_aoedmg = CVAR_INIT ("kartattraction_aoedmg", "None", CV_NETVAR|CV_CHEAT|CV_GUARD, kartattractiondmg_cons_t, NULL);
 consvar_t cv_kartattraction_aoeemp = CVAR_INIT ("kartattraction_aoeemp", "0", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartattraction_aoeshove = CVAR_INIT ("kartattraction_aoeshove", "5.0", CV_NETVAR|CV_CHEAT|CV_GUARD|CV_FLOAT, CV_Unsigned, NULL);
 
 // "Arrow Bullet": above a certain speed threshold, an aura in the shape of the Shrink arrow
 // covers you, signaling protection from (most) items and players.
@@ -1003,9 +1008,25 @@ static CV_PossibleValue_t perfstats_cons_t[] = {
 	{PS_LOGIC, "Logic"},
 	{PS_BOT, "Bots"},
 	{PS_THINKFRAME, "ThinkFrame"},
+	{PS_PRETHINKFRAME, "PreThinkFrame"},
+	{PS_POSTTHINKFRAME, "PostThinkFrame"},
 	{0, NULL}
 };
 consvar_t cv_perfstats = CVAR_INIT ("perfstats", "Off", 0, perfstats_cons_t, NULL);
+
+consvar_t cv_ps_thinkframe_page = CVAR_INIT ("ps_thinkframe_page", "1", CV_CALL, CV_Natural, PS_ThinkFrame_Page_OnChange);
+
+static CV_PossibleValue_t ps_samplesize_cons_t[] = {
+	{1, "MIN"}, {1000, "MAX"}, {0, NULL}};
+consvar_t cv_ps_samplesize = CVAR_INIT ("ps_samplesize", "1", CV_CALL, ps_samplesize_cons_t, PS_SampleSize_OnChange);
+
+static CV_PossibleValue_t ps_descriptor_cons_t[] = {
+	{1, "Average"}, {2, "SD"}, {3, "Minimum"}, {4, "Maximum"}, {0, NULL}};
+
+consvar_t cv_ps_descriptor = CVAR_INIT ("ps_descriptor", "Average", 0, ps_descriptor_cons_t, NULL);
+
+void lua_profile_OnChange(void);
+consvar_t cv_lua_profile = CVAR_INIT ("lua_profile", "0", 0, CV_Unsigned, lua_profile_OnChange);
 
 consvar_t cv_director = CVAR_INIT ("director", "Off", 0, CV_OnOff, NULL);
 
@@ -1270,6 +1291,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_downloading);
 	CV_RegisterVar(&cv_votemaxrows);
 
+	CV_RegisterVar(&cv_rngpeek);
+
 	K_RegisterKartStuff(); // SRB2kart
 
 	CV_RegisterVar(&cv_startinglives);
@@ -1304,6 +1327,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_showjoinaddress);
 	CV_RegisterVar(&cv_shownodeip);
 	CV_RegisterVar(&cv_blamecfail);
+	CV_RegisterVar(&cv_logconsistency);
 
 	COM_AddCommand("ping", Command_Ping_f);
 	CV_RegisterVar(&cv_nettimeout);
@@ -1666,6 +1690,10 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_resume);
 	CV_RegisterVar(&cv_perfstats);
+	CV_RegisterVar(&cv_ps_thinkframe_page);
+	CV_RegisterVar(&cv_ps_samplesize);
+	CV_RegisterVar(&cv_ps_descriptor);
+	CV_RegisterVar(&cv_lua_profile);
 
 	//Value used to store last server player has joined
 	CV_RegisterVar(&cv_lastserver);
@@ -1714,6 +1742,7 @@ void D_RegisterClientCommands(void)
 	COM_AddCommand("voice4", Command_Voice4);
 
 	COM_AddCommand("listskins", Command_ListSkins);
+	COM_AddCommand("skinsearch", Command_SkinSearch);
 	COM_AddCommand("listvoices", Command_ListVoices);
 	COM_AddCommand("listvoiceprefs", Command_ListVoicePrefs);
 
@@ -1851,18 +1880,68 @@ static void Command_Restat4(void)
  */
 static void Skin_FindRealNameSkin(consvar_t *cvar)
 {
-	// Not the best way to implements this but it will do.
+	INT32 matches[MAXSKINS] = {0}; // Skin numbers of matching skins
+	INT32 matches_pos[MAXSKINS] = {0}; // Index of matching substring
+	INT32 nummatches = 0;
 
-	int i;
+	INT32 i;
 	const char *value = cvar->string;
+
 	for (i = 0; i < numskins; i++)
 	{
-		if (strncmp(value, skins[i].realname, sizeof skins[i].realname) == 0)
-		{
-			// Change the cvar to be the value of the name.
-			CV_StealthSet(cvar, skins[i].name);
+		// Perfect match with some skin name, no need to find matching realname
+		if (strncasecmp(value, skins[i].name, sizeof skins[i].name) == 0)
 			return;
+
+		const char *match = strcasestr(skins[i].realname, value);
+		if (match != NULL)
+		{
+			matches[nummatches] = i;
+			matches_pos[nummatches] = match - skins[i].realname;
+			++nummatches;
 		}
+	}
+
+	if (nummatches == 1)
+	{
+		// Change the cvar to be the value of the name.
+		CV_StealthSet(cvar, skins[matches[0]].name);
+	}
+	else if (nummatches > 1)
+	{
+		size_t query_length = strlen(value);
+
+		char start[SKINNAMESIZE+1] = {0}; // Start of name, printed with normal color
+		char match[SKINNAMESIZE+1] = {0}; // Matching part of name, highlighted in red
+		const char *end = NULL; // End of the name, printed with normal color. Can be just a pointer into realname part
+
+		CONS_Printf("\x86Multiple matches found:\n");
+
+		for (i = 0; i < nummatches; ++i)
+		{
+			const char *realname = skins[matches[i]].realname;
+
+			if (matches_pos[i] == 0)
+				start[0] = 0;
+			else
+			{
+				memcpy(start, realname, matches_pos[i]);
+				start[matches_pos[i]] = 0;
+			}
+
+			memcpy(match, realname+matches_pos[i], query_length);
+			match[matches_pos[i] + query_length] = 0;
+
+			end = realname + matches_pos[i] + query_length;
+
+			CONS_Printf("%s\x85%s\x80%s (%s)\n", start, match, end, skins[matches[i]].name);
+		}
+
+		CONS_Printf("\x86Try be more specific\n");
+	}
+	else
+	{
+		CONS_Printf("\x86Skin not found\n");
 	}
 }
 
@@ -4404,7 +4483,12 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	}
 
 	if (netgame)
-		P_SetRandSeed(READUINT32(*cp));
+	{
+		initial_seed = READUINT32(*cp);
+
+		I_OutputMsg("[Got_Mapcmd] initial seed: %u\n", initial_seed);
+		P_ClearRandom(initial_seed);
+	}
 
 	if (!skipprecutscene)
 	{
@@ -4947,7 +5031,9 @@ static void Got_RandomSeed(UINT8 **cp, INT32 playernum)
 	if (playernum != serverplayer) // it's not from the server, wtf?
 		return;
 
-	P_SetRandSeed(seed);
+	// Sal: this seems unused, so this is probably fine?
+	// If it needs specific RNG classes, then it should be easy to add.
+	P_ClearRandom(seed);
 }
 
 /** Clears all players' scores in a netgame.
@@ -8829,6 +8915,41 @@ static void Command_ListSkins(void)
 	{
 		CONS_Printf("There are no more pages.\n");
 	}
+}
+
+static void Command_SkinSearch(void)
+{
+	size_t i;
+	UINT16 s;
+	UINT16 ic = 0;
+
+	for (i = 1; i < COM_Argc(); i++)
+	{
+		for (s = 0; s < numskins; s++)
+		{
+			skin_t *skininput = &skins[s];
+
+			if (strcasestr(skininput->realname, COM_Argv(i)))
+			{
+				UINT16 chatcolor = skincolors[skininput->prefcolor].chatcolor;
+				char color_prefix[2];
+
+				if (chatcolor > V_TANMAP)
+				{
+					sprintf(color_prefix, "%c", '\x80');
+				}
+				else
+				{
+					sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+				}
+
+				ic++;
+				CONS_Printf("%d. %s%s:\x80 %s\n", ic, color_prefix, skininput->realname, skininput->name);
+			}
+		}
+	}
+
+	CONS_Printf("Total %d skins.\n", ic);
 }
 
 static void __voice_cmd_func(INT32 pid, UINT8 pnum)

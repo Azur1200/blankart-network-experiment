@@ -163,6 +163,9 @@ void HWR_BuildSkyDome(void)
 
 void HWR_DrawSkyBackground(player_t *player)
 {
+	if (HWR_IsWireframeMode())
+		return;
+
 	GL_SetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
 
 	if (cv_glskydome.value)

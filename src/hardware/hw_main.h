@@ -20,6 +20,8 @@
 #include "../d_player.h"
 #include "../r_defs.h"
 
+#include "../m_perfstats.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -53,6 +55,7 @@ void HWR_DrawFadeFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT16 ac
 void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT32 actualcolor);	// Lat: separate flags from color since color needs to be an uint to work right.
 void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color);
 void HWR_DrawPic(INT32 x,INT32 y,lumpnum_t lumpnum);
+boolean HWR_IsWireframeMode(void);
 
 UINT8 *HWR_GetScreenshot(INT32 scale);
 
@@ -112,6 +115,7 @@ extern consvar_t cv_glskydome;
 extern consvar_t cv_glsolvetjoin, cv_glpolytile, cv_glpolyshape;
 
 extern consvar_t cv_glbatching;
+extern consvar_t cv_glwireframe;
 extern consvar_t cv_glpaletterendering;
 extern consvar_t cv_glpalettedepth;
 extern consvar_t cv_gllightdither;
@@ -135,22 +139,21 @@ extern float gl_viewsin, gl_viewcos;
 extern float gl_viewludsin, gl_viewludcos;
 
 // Render stats
-extern precise_t ps_hw_skyboxtime;
-extern precise_t ps_hw_nodesorttime;
-extern precise_t ps_hw_nodedrawtime;
-extern precise_t ps_hw_spritesorttime;
-extern precise_t ps_hw_spritedrawtime;
+extern ps_metric_t ps_hw_nodesorttime;
+extern ps_metric_t ps_hw_nodedrawtime;
+extern ps_metric_t ps_hw_spritesorttime;
+extern ps_metric_t ps_hw_spritedrawtime;
 
 // Render stats for batching
-extern int ps_hw_numpolys;
-extern int ps_hw_numverts;
-extern int ps_hw_numcalls;
-extern int ps_hw_numshaders;
-extern int ps_hw_numtextures;
-extern int ps_hw_numpolyflags;
-extern int ps_hw_numcolors;
-extern precise_t ps_hw_batchsorttime;
-extern precise_t ps_hw_batchdrawtime;
+extern ps_metric_t ps_hw_numpolys;
+extern ps_metric_t ps_hw_numverts;
+extern ps_metric_t ps_hw_numcalls;
+extern ps_metric_t ps_hw_numshaders;
+extern ps_metric_t ps_hw_numtextures;
+extern ps_metric_t ps_hw_numpolyflags;
+extern ps_metric_t ps_hw_numcolors;
+extern ps_metric_t ps_hw_batchsorttime;
+extern ps_metric_t ps_hw_batchdrawtime;
 
 extern boolean gl_init;
 extern boolean gl_maploaded;

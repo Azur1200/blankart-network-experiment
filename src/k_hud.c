@@ -648,15 +648,10 @@ void K_LoadKartHUDGraphics(void)
 			kartitemgraphics_t *graphics = &item->graphics[j];
 			for (INT32 k = 0; k < graphics->numpatches; k++)
 			{
-				if (graphics->patches[k] == NULL)
-				{
-					// have to manually do this because HU_UpdatePatch only checks graphics from added WADs during partadd
-					// UUUUUGGGGGGGHHHHHHHHHHHHHHHHHHh
-					lumpnum_t lump = W_CheckNumForName(graphics->patchnames[k]);
-					graphics->patches[k] = lump == LUMPERROR ? missingpat : W_CachePatchNum(lump, PU_HUDGFX);
-				}
-				else
-					HU_UpdatePatch(&graphics->patches[k], graphics->patchnames[k]);
+				// have to manually do this because HU_UpdatePatch only checks graphics from added WADs during partadd
+				// UUUUUGGGGGGGHHHHHHHHHHHHHHHHHHh
+				lumpnum_t lump = W_CheckNumForName(graphics->patchnames[k]);
+				graphics->patches[k] = lump == LUMPERROR ? missingpat : W_CachePatchNum(lump, PU_HUDGFX);
 			}
 		}
 		R_AddKartItemSprites(item);

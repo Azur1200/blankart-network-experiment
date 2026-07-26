@@ -1557,7 +1557,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// This Gametype never specified an odds type. Roll something random please!
 	if (!(gametypes[gametype]->rules & GTR_RACEODDS) && !(gametypes[gametype]->rules & GTR_BATTLEODDS))
 	{
-		UINT8 itemroll = P_RandomRange(0, numkartresults - 1);
+		UINT8 itemroll = P_RandomRange(PR_ITEM_ROULETTE, 0, numkartresults - 1);
 		K_AwardPlayerResult(player, &kartresults[itemroll], KITEMBLINK_NORMAL);
 		return;
 	}
@@ -1599,7 +1599,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	if (K_ItemResultEnabled(K_GetKartResult("superring")) && mashed && player->rings < 0)
 	{
 		INT32 debtamount = min(abs(player->ringmin), abs(player->rings));
-		if (P_RandomChance((debtamount*FRACUNIT)/abs(player->ringmin)))
+		if (P_RandomChance(PR_ITEM_ROULETTE, (debtamount*FRACUNIT)/abs(player->ringmin)))
 		{
 			K_AwardPlayerResult(player, K_GetKartResult("superring"), KITEMBLINK_MASHED);
 			return;
@@ -1673,7 +1673,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	kartresult_t *result = NULL;
 	if (totalspawnchance > 0)
 	{
-		totalspawnchance = P_RandomKey(totalspawnchance);
+		totalspawnchance = P_RandomKey(PR_ITEM_ROULETTE, totalspawnchance);
 		for (i = 0; i < numkartresults && spawnchance[i] <= totalspawnchance; i++);
 		result = &kartresults[i];
 	}
@@ -1918,7 +1918,7 @@ static void K_DoHyudoroSteal(player_t *player)
 	INT32 playerswappable[MAXPLAYERS];
 	INT32 stealplayer = -1; // The player that's getting stolen from
 	INT32 prandom = 0;
-	boolean sink = P_RandomChance(FRACUNIT/64);
+	boolean sink = P_RandomChance(PR_ITEM_HYUDORO, FRACUNIT/64);
 	boolean force_sink = false;
 	INT32 hyu = hyudorotime;
 
@@ -1957,7 +1957,7 @@ static void K_DoHyudoroSteal(player_t *player)
 		}
 	}
 
-	prandom = P_RandomFixed();
+	prandom = P_RandomFixed(PR_ITEM_HYUDORO);
 	S_StartSound(player->mo, sfx_s3k92);
 
 	if (numplayers == 1) // With just 2 players, we just need to set the other player to be the one to steal from
@@ -2056,8 +2056,8 @@ void K_DoThunderShield(player_t *player)
 	for (i=0; i<7; i++)
 	{
 		mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
-		mo->angle = P_RandomRange(0, 359)*ANG1;
-		mo->fuse = P_RandomRange(20, 50);
+		mo->angle = P_RandomRange(PR_ITEM_ROULETTE, 0, 359)*ANG1;
+		mo->fuse = P_RandomRange(PR_ITEM_ROULETTE, 20, 50);
 		P_SetTarget(&mo->target, player->mo);
 		P_SetMobjState(mo, S_KLIT1);
 	}
@@ -2077,7 +2077,7 @@ void K_DoThunderShield(player_t *player)
 	}
 }
 
-void K_DoAttractionShield(player_t *player, boolean hipower)
+void K_DoAttractionShield(player_t *player, fixed_t power)
 {
 	mobj_t *mo;
 	int i = 0;
@@ -2091,7 +2091,7 @@ void K_DoAttractionShield(player_t *player, boolean hipower)
 	}
 
 	S_StartSound(player->mo, sfx_zio3);
-	K_AttractionShieldAttack(player->mo, (cv_kartthunder_radius.value + THUNDERSPRITE) * FRACUNIT, hipower);
+	K_AttractionShieldAttack(player->mo, (cv_kartthunder_radius.value + THUNDERSPRITE) * FRACUNIT, power, power >= FRACUNIT);
 
 	// spawn vertical bolt
 	mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
@@ -2145,9 +2145,9 @@ void K_BreakBubbleShield(player_t* player)
 		vector2_t mul_vec = { FRACUNIT, 0 };
 
 		fixed_t randang = SHARDROT * (i + 1);
-		fixed_t randzang = P_RandomRange(10, 120) * FRACUNIT;
+		fixed_t randzang = P_RandomRange(PR_ITEM_ROULETTE, 10, 120) * FRACUNIT;
 		fixed_t move_magnitude =
-		    FixedMul((P_RandomRange(4, 16) * FRACUNIT), mapobjectscale + (scalediff / 4));
+		    FixedMul((P_RandomRange(PR_ITEM_ROULETTE, 4, 16) * FRACUNIT), mapobjectscale + (scalediff / 4));
 
 		FV2_Rotate(&mul_vec, randzang);
 
@@ -3133,12 +3133,12 @@ void K_HoldUseItem_AttractionShield(player_t *player, boolean itemjustdown, bool
 	}
 
 	// stolen from machine water breathing
-	if (P_RandomChance(FRACUNIT/5))
+	if (P_RandomChance(PR_ITEM_ATTRACT, FRACUNIT/5))
 	{
 		fixed_t r = player->mo->radius>>FRACBITS;
-		fixed_t x = player->mo->x + (P_RandomRange(r, -r)<<FRACBITS);
-		fixed_t y = player->mo->y + (P_RandomRange(r, -r)<<FRACBITS);
-		fixed_t z = player->mo->z + (P_RandomKey(player->mo->height>>FRACBITS)<<FRACBITS);
+		fixed_t x = player->mo->x + (P_RandomRange(PR_ITEM_ATTRACT, r, -r)<<FRACBITS);
+		fixed_t y = player->mo->y + (P_RandomRange(PR_ITEM_ATTRACT, r, -r)<<FRACBITS);
+		fixed_t z = player->mo->z + (P_RandomKey(PR_ITEM_ATTRACT, player->mo->height>>FRACBITS)<<FRACBITS);
 		mobj_t *spark = P_SpawnMobj(x, y, z, MT_WATERZAP);
 		S_StartSound(spark, sfx_beelec);
 		spark->color = SKINCOLOR_YELLOW;
@@ -3148,8 +3148,8 @@ void K_HoldUseItem_AttractionShield(player_t *player, boolean itemjustdown, bool
 	if (player->attractioncharge % 8 == 0)
 	{
 		mobj_t *mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
-		mo->angle = P_RandomRange(0, 359)*ANG1;
-		mo->fuse = P_RandomRange(20, 50);
+		mo->angle = P_RandomRange(PR_ITEM_ATTRACT, 0, 359)*ANG1;
+		mo->fuse = P_RandomRange(PR_ITEM_ATTRACT, 20, 50);
 		P_SetScale(mo, effectscale);
 		mo->destscale = mo->scale/2;
 		mo->color = SKINCOLOR_YELLOW;
@@ -3195,7 +3195,7 @@ void K_ReleaseUseItem_AttractionShield(player_t *player, boolean itemjustdown, b
 				ATTRACTIONATTACKTIME_MAX * FRACUNIT
 			)/FRACUNIT;
 		}
-		K_DoAttractionShield(player, player->attractionattack_hipower);
+		K_DoAttractionShield(player, CLAMP(FixedDiv(player->attractioncharge, ATTRACTIONCHARGETIME), 0, FRACUNIT));
 		S_StartSound(player->mo, sfx_s3k81);
 
 		if (player->itemamount > 0)

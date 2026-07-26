@@ -57,6 +57,7 @@ struct demovars_s {
 	boolean quitafterplaying; // quit after playing a demo from cmdline
 	boolean deferstart; // don't start playing demo right away
 	boolean netgame; // multiplayer netgame
+	boolean single_seed; // During playback, only has one RNG seed
 
 	tic_t savebutton; // Used to determine when the local player can choose to save the replay while the race is still going
 	enum {

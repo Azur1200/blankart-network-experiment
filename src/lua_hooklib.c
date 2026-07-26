@@ -22,7 +22,9 @@
 #include "lua_libs.h"
 #include "lua_hook.h"
 #include "lua_hud.h" // hud_running errors
+#include "lua_profile.h"
 
+#include "command.h"
 #include "m_perfstats.h"
 #include "d_netcmd.h" // for cv_perfstats
 #include "i_system.h" // I_GetPreciseTime
@@ -417,11 +419,47 @@ static void get_hook_from_table(Hook_State *hook, int n)
 	lua_getref(gL, hookRefs[hook->id]);
 }
 
+static const char *hook_name(Hook_State *hook)
+{
+	if (hud_running)
+	{
+		return hudHookNames[hook->hook_type];
+	}
+	else if (hook->string)
+	{
+		return stringHookNames[hook->hook_type];
+	}
+	else if (hook->mobj_type > 0)
+	{
+		return mobjHookNames[hook->hook_type];
+	}
+	else
+	{
+		return hookNames[hook->hook_type];
+	}
+}
+
+static int call_timed_or_untimed(Hook_State *hook, boolean compat, boolean printerror)
+{
+	if (!hud_running && cv_lua_profile.value > 0)
+	{
+		lua_timer_t *timer = LUA_BeginFunctionTimer(gL, -1 - hook->values, hook_name(hook));
+		int k = LUA_Call(gL, hook->values, hook->results, EINDEX, compat, printerror);
+		LUA_EndFunctionTimer(timer);
+
+		return k;
+	}
+	else
+	{
+		return LUA_Call(gL, hook->values, hook->results, EINDEX, compat, printerror);
+	}
+}
+
 static int call_single_hook_no_copy(Hook_State *hook)
 {
 	boolean compat = in_bit_array(hookCompat, hook->id);
 	boolean printerror = cht_debug & DBG_LUA || !in_bit_array(hooksErrored, hook->id);
-	if (LUA_Call(gL, hook->values, hook->results, EINDEX, compat, printerror) == 0)
+	if (call_timed_or_untimed(hook, compat, printerror) == 0)
 	{
 		if (hook->results > 0)
 		{
@@ -593,7 +631,7 @@ static int call_hooks
 		calls += call_mobj_type_hooks(hook, MT_NULL);
 		calls += call_mobj_type_hooks(hook, hook->mobj_type);
 
-		ps_lua_mobjhooks += calls;
+		ps_lua_mobjhooks.value.i += calls;
 	}
 	else
 		calls += call_mapped(hook, &hookIds[hook->hook_type]);
@@ -816,10 +854,9 @@ void LUA_HookPlayerThink(player_t *player)
 	TracyCZoneEnd(__zone);
 }
 
-void LUA_HookThinkFrame(void)
+static void thinkframe_hook_base(const int type, INT32 ps_type, const char *debugstring, void (*perfstatfunc)(int, precise_t, char *))
 {
 	TracyCZone(__zone, true);
-	const int type = HOOK(ThinkFrame);
 
 	// variables used by perf stats
 	int hook_index = 0;
@@ -838,22 +875,22 @@ void LUA_HookThinkFrame(void)
 		{
 			get_hook(&hook, map->ids, k);
 
-			if (cv_perfstats.value == PS_THINKFRAME)
+			if (cv_perfstats.value == ps_type)
 			{
 				lua_pushvalue(gL, -1);/* need the function again */
 				time_taken = I_GetPreciseTime();
 			}
 
 			{
-				TracyCZoneN(__zone, "LUA_HookThinkFrame (call_single_hook)", true);
+				TracyCZoneN(__zone, "thinkframe_hook_base (call_single_hook)", true);
 				call_single_hook(&hook);
 
-				if (cv_perfstats.value == PS_THINKFRAME)
+				if (cv_perfstats.value == ps_type)
 				{
 					lua_Debug ar;
 					time_taken = I_GetPreciseTime() - time_taken;
 					lua_getinfo(gL, ">S", &ar);
-					PS_SetThinkFrameHookInfo(hook_index, time_taken, ar.short_src);
+					perfstatfunc(hook_index, time_taken, ar.short_src);
 					TracyCMessage(ar.short_src, strlen(ar.short_src));
 					hook_index++;
 				}
@@ -864,8 +901,23 @@ void LUA_HookThinkFrame(void)
 
 		lua_settop(gL, 0);
 	}
-	
+
 	TracyCZoneEnd(__zone);
+}
+
+void LUA_HookPreThinkFrame(void)
+{
+	thinkframe_hook_base(HOOK(PreThinkFrame), PS_PRETHINKFRAME, "LUA_HookPreThinkFrame (call_single_hook)", PS_SetPreThinkFrameHookInfo);
+}
+
+void LUA_HookThinkFrame(void)
+{
+	thinkframe_hook_base(HOOK(ThinkFrame), PS_THINKFRAME, "LUA_HookThinkFrame (call_single_hook)", PS_SetThinkFrameHookInfo);
+}
+
+void LUA_HookPostThinkFrame(void)
+{
+	thinkframe_hook_base(HOOK(PostThinkFrame), PS_POSTTHINKFRAME, "LUA_HookPostThinkFrame (call_single_hook)", PS_SetPostThinkFrameHookInfo);
 }
 
 int LUA_HookMobjLineCollide(mobj_t *mobj, line_t *line)
@@ -1018,7 +1070,7 @@ void LUA_HookLinedefExecute(line_t *line, mobj_t *mo, sector_t *sector)
 		LUA_PushUserdata(gL, sector, META_SECTOR);
 #if 0
 		// but this isn't a mobj hook...?
-		ps_lua_mobjhooks += call_hooks(&hook, 0, res_none);
+		ps_lua_mobjhooks.value.i += call_hooks(&hook, 0, res_none);
 #else
 		call_hooks(&hook, 0, res_none);
 #endif
@@ -1043,7 +1095,7 @@ void LUA_HookSpecialExecute(activator_t *activator, INT32 *args, char **stringar
 		LUA_PushUserdata(gL, stringargs, META_LINESTRINGARGS);
 #if 0
 		// but this isn't a mobj hook...?
-		ps_lua_mobjhooks += call_hooks(&hook, 0, res_none);
+		ps_lua_mobjhooks.value.i += call_hooks(&hook, 0, res_none);
 #else
 		call_hooks(&hook, 0, res_none);
 #endif
@@ -1144,6 +1196,18 @@ int LUA_HookFollowMobj(player_t *player, mobj_t *mobj)
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
 		LUA_PushUserdata(gL, mobj, META_MOBJ);
+		call_hooks(&hook, 1, res_true);
+	}
+	return hook.status;
+}
+
+int LUA_HookCameraThinker(player_t *player, camera_t *thiscam)
+{
+	Hook_State hook;
+	if (prepare_hook(&hook, false, HOOK(CameraThinker)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		LUA_PushUserdata(gL, thiscam, META_CAMERA);
 		call_hooks(&hook, 1, res_true);
 	}
 	return hook.status;

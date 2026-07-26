@@ -22,6 +22,8 @@
 #include "d_player.h"
 #include "mserv.h"
 
+#include "m_random.h" // PRNUMCLASS
+
 #include "k_pwrlv.h" // PWRLV_NUMTYPES
 #include "p_saveg.h" // NETSAVEGAMESIZE
 
@@ -99,6 +101,9 @@ typedef enum
 	PT_CANRECEIVEGAMESTATE, // Okay Server, I'm ready to receive it, you can go ahead.
 	PT_RECEIVEDGAMESTATE,   // Thank you Server, I am ready to play again!
 
+	PT_WILLDIAGNOSERNG, // Hey Client, I need to look at your seeds before we resend. Here are my seeds!
+	PT_RNGDIAGNOSIS,	// Hey Server, I've got your request. Here are MY seeds!
+
 	PT_SENDINGLUAFILE, // Server telling a client Lua needs to open a file
 	PT_ASKLUAFILE,     // Client telling the server they don't have the file
 	PT_HASLUAFILE,     // Client telling the server they have the file
@@ -168,7 +173,8 @@ typedef struct consistancy_s
 
 	INT32 itemsum; // Player item checksum
 
-	UINT32 rngseed;
+	UINT32 rngseed[PRNUMCLASS];
+	INT32 seed_checksum; // Sum of all RNG seeds
 
 	// Object data checksum
 	INT32 mobjtype;
@@ -227,6 +233,17 @@ struct client4cmd_pak
 	UINT8 resendfrom;
 	consistancy_t consistancy;
 	ticcmd_t cmd, cmd2, cmd3, cmd4;
+} ATTRPACK;
+
+struct rngdiagnosis_pak
+{
+	UINT32 server_seeds[PRNUMCLASS];
+	UINT32 client_seeds[PRNUMCLASS];
+	UINT32 checksums[2];
+	UINT16 client_id;
+	UINT8 client_node;
+	tic_t ticmemory;
+	packettype_t nextpacket;
 } ATTRPACK;
 
 // Server to client packet
@@ -460,6 +477,7 @@ struct doomdata_t
 		client3cmd_pak client3pak; // 124 bytes
 		client4cmd_pak client4pak; // 138 bytes
 		servertics_pak serverpak; // 633 bytes
+		rngdiagnosis_pak rngdiagnosis; // 412 bytes
 		serverconfig_pak servercfg; // 33 bytes
 		UINT8 textcmd[MAXTEXTCMD+1]; // 257 bytes
 		char filetxpak[sizeof (filetx_pak)]; // 12 bytes
@@ -576,7 +594,7 @@ extern SINT8 server_lagless;
 extern consvar_t cv_mindelay;
 
 extern consvar_t cv_netticbuffer, cv_allownewplayer, cv_maxplayers, cv_joindelay;
-extern consvar_t cv_resynchattempts, cv_blamecfail;
+extern consvar_t cv_resynchattempts, cv_blamecfail, cv_logconsistency;
 extern consvar_t cv_maxsend, cv_noticedownload, cv_downloadspeed;
 
 #ifdef VANILLAJOINNEXTROUND

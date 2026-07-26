@@ -64,6 +64,19 @@ consvar_t cv_lessflicker = CVAR_INIT ("lessflicker", "Off", CV_SAVE, CV_OnOff, N
 
 consvar_t cv_stagetitle = CVAR_INIT ("maptitle", "On", CV_SAVE, CV_OnOff, NULL);
 
+#define IMPL_RNGSEED_POSSIBLEVALUE(name) {PR_##name, #name},
+
+static CV_PossibleValue_t rngseed_cons_t[] = {\
+	{-1, "Off"},
+	{PR_UNDEFINED, "LEGACY"},
+	RNGSEEDS(IMPL_RNGSEED_POSSIBLEVALUE)
+	{0, NULL}
+};
+
+#undef IMPL_RNGSEED_POSSIBLEVALUE
+
+consvar_t cv_rngpeek = CVAR_INIT("rngpeek", "Off", CV_SAVE, rngseed_cons_t, NULL);
+
 UINT16 objectsdrawn = 0;
 
 // dumb fade thing for director toggle
@@ -122,6 +135,29 @@ boolean ST_SameTeam(player_t *a, player_t *b)
 
 static boolean st_stopped = true;
 
+static void ST_doPaletteStuff(void)
+{
+	INT32 palette = 0;
+
+	#ifdef HWRENDER
+	if (rendermode == render_opengl && !HWR_ShouldUsePaletteRendering())
+		return;
+	#endif
+
+	if (stplyr && stplyr->flashcount)
+		palette = min(stplyr->flashpal, 13);
+
+	if (palette != st_palette)
+	{
+		st_palette = palette;
+
+		if (!splitscreen)
+		{
+			V_SetPalette(palette);
+		}
+	}
+}
+
 void ST_Ticker(boolean run)
 {
 	if (st_stopped)
@@ -129,37 +165,18 @@ void ST_Ticker(boolean run)
 
 	if (run)
 		ST_runTitleCard();
+
+	// Do red-/gold-shifts from damage/items
+	//25/08/99: Hurdler: palette changes is done for all players,
+	//                   not only player1! That's why this part
+	//                   of code is moved somewhere else.
+	ST_doPaletteStuff();
 }
 
 // 0 is default, any others are special palettes.
 INT32 st_palette = 0;
 UINT32 st_translucency = 10;
 fixed_t st_fadein = 0;
-
-void ST_doPaletteStuff(void)
-{
-	INT32 palette;
-
-	if (stplyr && stplyr->flashcount)
-		palette = stplyr->flashpal;
-	else
-		palette = 0;
-
-#ifdef HWRENDER
-	if (rendermode == render_opengl && !HWR_ShouldUsePaletteRendering())
-		palette = 0; // Don't set the palette to a flashpal in OpenGL's truecolor mode
-#endif
-
-	if (palette != st_palette)
-	{
-		st_palette = palette;
-
-		if (!r_splitscreen)
-		{
-			V_SetPalette(palette);
-		}
-	}
-}
 
 void ST_UnloadGraphics(void)
 {
@@ -580,15 +597,25 @@ static void ST_drawDebugInfo(void)
 		height -= 120;
 	}
 
-	if (cht_debug & DBG_RNG) // randomizer testing
+	// TODO: this only accounts for the undefined class,
+	// which should be phased out as much as possible anyway.
+	// Figure out some other way to display all of the RNG classes.
+	// yama: Maybe a cvar will do?
+	INT32 rngdebug = cv_rngpeek.value;
+
+	// The actual seed we're debugging.
+	pr_class_t debug_class = (pr_class_t)(rngdebug);
+
+	if (rngdebug >= 0) // randomizer testing
 	{
-		fixed_t peekres = P_RandomPeek();
+		fixed_t peekres = P_RandomPeek(debug_class);
 
-		V_DrawRightAlignedString(320, height - 16, V_MONOSPACE, va("Init: %08x", P_GetInitSeed()));
-		V_DrawRightAlignedString(320, height - 8,  V_MONOSPACE, va("Seed: %08x", P_GetRandSeed()));
-		V_DrawRightAlignedString(320, height,      V_MONOSPACE, va("==  : %08x", peekres));
+		V_DrawRightAlignedString(320, height - 24, V_MONOSPACE|V_ALLOWLOWERCASE, va("Class: %s", cv_rngpeek.string));
+		V_DrawRightAlignedString(320, height - 16, V_MONOSPACE|V_ALLOWLOWERCASE, va("Init : %08X", P_GetInitSeed(debug_class)));
+		V_DrawRightAlignedString(320, height - 8,  V_MONOSPACE|V_ALLOWLOWERCASE, va("Seed : %08X", P_GetRandSeed(debug_class)));
+		V_DrawRightAlignedString(320, height,      V_MONOSPACE, va("==   : %08x", peekres));
 
-		height -= 32;
+		height -= 40;
 	}
 
 	if (cht_debug & DBG_IMU)
@@ -1140,15 +1167,6 @@ void ST_Drawer(void)
 	// force a set of the palette by using doPaletteStuff()
 	if (vid.recalc)
 		st_palette = -1;
-
-	// Do red-/gold-shifts from damage/items
-#ifdef HWRENDER
-	//25/08/99: Hurdler: palette changes is done for all players,
-	//                   not only player1! That's why this part
-	//                   of code is moved somewhere else.
-	if (rendermode == render_soft || HWR_ShouldUsePaletteRendering())
-#endif
-		if (rendermode != render_none) ST_doPaletteStuff();
 
 	fixed_t localfadein[MAXSPLITSCREENPLAYERS];
 
