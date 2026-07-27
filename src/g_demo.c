@@ -596,7 +596,7 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 	UINT8 extradata;
 	extra->playernum = READUINT8(dp);
 	boolean kart = version <= 0x0002;
-	boolean singleseed = version <= 0x0011;
+	boolean singleseed = version <= 0x0012;
 
 	if (extra->playernum >= DW_EXTRASTUFF)
 	{
