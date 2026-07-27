@@ -5133,6 +5133,8 @@ boolean M_CanShowLevelInList(mapnum_t mapnum)
 
 const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback, boolean forcekeyboard)
 {
+	INT32 i;
+
 	if (forcekeyboard || (p == 0 && keyboardcontrolled && (messagebox.active || menustack[0])))
 	{
 		switch (gc)
@@ -5155,12 +5157,19 @@ const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback, boole
 	else
 fallback:
 	{
-		const char *item1 = gamecontrol[p][gc][0] != 0 ? G_KeynumToString(gamecontrol[p][gc][0]) : NULL;
-		const char *item2 = gamecontrol[p][gc][1] != 0 ? G_KeynumToString(gamecontrol[p][gc][1]) : NULL;
-		const char *item3 = gamecontrol[p][gc][2] != 0 ? G_KeynumToString(gamecontrol[p][gc][2]) : NULL;
-		const char *item4 = gamecontrol[p][gc][3] != 0 ? G_KeynumToString(gamecontrol[p][gc][3]) : NULL;
+		for (i = 0; i < MAXINPUTMAPPING; i++)
+		{
+			if (gamecontrol[p][gc][i] == 0)
+				continue;
 
-		return item1 != NULL ? item1 : item2 != NULL ? item2 : item3 != NULL ? item3 : item4 != NULL ? item4 : fallback;
+			if (gamecontrol[p][gc][i] < KEY_JOY1 || gamecontrol[p][gc][i] >= JOYINPUTEND)
+				continue;
+
+			return G_KeynumToString(gamecontrol[p][gc][i]);
+
+		}
+
+		return fallback;
 	}
 }
 
