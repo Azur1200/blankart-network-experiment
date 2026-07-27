@@ -254,6 +254,8 @@ extern consvar_t cv_kartaltshrink_runneranger;
 
 extern consvar_t cv_kartairsquish;
 
+extern consvar_t cv_karthyudorostealbehind;
+
 extern consvar_t cv_kartairdrop;
 
 extern consvar_t cv_kartairthrust;

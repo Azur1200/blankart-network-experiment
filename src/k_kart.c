@@ -479,6 +479,8 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartairsquish);
 
+	CV_RegisterVar(&cv_karthyudorostealbehind);
+
 	CV_RegisterVar(&cv_kartoddsdist);
 	CV_RegisterVar(&cv_kartlegacyoddsdist);
 
