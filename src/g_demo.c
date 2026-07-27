@@ -4603,6 +4603,7 @@ boolean G_CheckDemoStatus(void)
 	{
 		if (demobuf.p)
 		{
+			G_SetAutoSaveName();
 			G_SaveDemo();
 		}
 		return true;
@@ -4612,6 +4613,18 @@ boolean G_CheckDemoStatus(void)
 		P_SaveBufferFree(&demobuf);
 	demo.recording = false;
 	return false;
+}
+
+void G_SetAutoSaveName(void)
+{
+	if (demo.savemode == DSM_WILLAUTOSAVE)
+	{
+		// Init just in case it isn't initialized already
+		M_TextInputInit(&demo.titlenameinput, demo.titlename, sizeof(demo.titlename));
+
+		// This will indirectly assign to demo.titlename too
+		M_TextInputSetString(&demo.titlenameinput, cv_dummyreplaysave.string);
+	}
 }
 
 void G_SaveDemo(void)
