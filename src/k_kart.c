@@ -3828,9 +3828,6 @@ void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 
 		fixed_t zjump = CrashZMomentum(my_gravity, player->mo->scale);
 
-		I_OutputMsg("crash jump: %f (fixedpt: %d), gravity: %f, global grav: %f\n",
-			FIXED_TO_FLOAT(zjump), zjump, FIXED_TO_FLOAT(my_gravity), FIXED_TO_FLOAT(gravity));
-
 		player->crash_zoffset_delta = zjump * P_MobjFlip(player->mo);
 
 		SINT8 direction = 1;
