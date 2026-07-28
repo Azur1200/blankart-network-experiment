@@ -4073,7 +4073,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 	demo.single_seed = false;
 
-	if (header.demoversion < 0x0012)
+	if (header.demoversion <= 0x0012)
 	{
 		demo.single_seed = true;
 		P_SetRandSeed(PR_LEGACY, header.randseed[PR_LEGACY]);
