@@ -139,6 +139,7 @@ menupaneldef_t *M_GetCurrentMenuPanelDef(menupanelinst_t *curpi);
 menuitem_t *M_GetCurrentMenuItem(menupanelinst_t *curpi);
 void M_HandleMessageBox(INT32 thisMenuKey);
 void M_SetMenuDelay(UINT8 i);
+void M_HandleDpadEvent(event_t* ev);
 void M_UpdateMenuCMD(UINT8 i, boolean bailrequired);
 boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt);
 boolean M_MenuButtonHeld(UINT8 pid, UINT32 bt);

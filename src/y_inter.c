@@ -873,7 +873,11 @@ void Y_Ticker(void)
 		}
 
 		if (demo.savemode == DSM_WILLSAVE || demo.savemode == DSM_WILLAUTOSAVE)
+		{
+			G_SetAutoSaveName();
 			G_SaveDemo();
+		}
+
 	}
 
 	// Check for pause or menu up in single player

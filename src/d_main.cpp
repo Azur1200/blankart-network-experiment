@@ -282,29 +282,8 @@ void D_ProcessEvents(void)
 		// Menu input
 		if (WipeInAction < 2)
 		{
-			// FIXME: Make this support 4p if we ever add menus that allow multiple controllers at once.
-			if (ev->type == ev_keydown && ev->data1 >= KEY_JOY1 && ev->data1 < JOYINPUTEND)
-			{
-				// Record dpad presses
-				switch (ev->data1)
-				{
-					case KEY_HAT1+0:
-						menucmd[0].ev_dpad_ud = -1;
-						break;
-					case KEY_HAT1+1:
-						menucmd[0].ev_dpad_ud = 1;
-						break;
-					case KEY_HAT1+2:
-						menucmd[0].ev_dpad_lr = -1;
-						break;
-					case KEY_HAT1+3:
-						menucmd[0].ev_dpad_lr = 1;
-						break;
-					default:
-						break;
-				}
-
-			}
+			// update menu d-pad handling
+			M_HandleDpadEvent(ev);
 
 			// update keys current state
 			G_MapEventsToControls(ev);

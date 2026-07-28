@@ -5544,7 +5544,10 @@ void G_AfterIntermission(void)
 		return;
 	}
 	else if (demo.recording && (modeattacking || demo.savemode != DSM_NOTSAVING))
+	{
+		G_SetAutoSaveName();
 		G_SaveDemo();
+	}
 
 	if (modeattacking) // End the run.
 	{

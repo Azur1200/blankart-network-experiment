@@ -869,6 +869,8 @@ consvar_t cv_kartaltshrink_runneranger = CVAR_INIT ("kart_altshrink_runneranger"
 static CV_PossibleValue_t kartairsquish_cons_t[] = {{1, "Squish"}, {2, "Flip-over"}, {0, "None"}, {0, NULL}};
 consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kartairsquish_cons_t, NULL);
 
+consvar_t cv_karthyudorostealbehind = CVAR_INIT ("karthyudorostealbehind", "On", CV_NETVAR, CV_OnOff, NULL);
+
 consvar_t cv_kartdebugshrink = CVAR_INIT ("kartdebugshrink", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 consvar_t cv_kartdebugdistribution = CVAR_INIT ("kartdebugdistribution", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);

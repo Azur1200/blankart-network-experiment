@@ -215,6 +215,8 @@ void G_DeferedPlayDemo(const char *demo);
 
 void G_SaveDemo(void);
 
+void G_SetAutoSaveName(void);
+
 void G_SyncDemoParty(INT32 rem, INT32 newsplitscreen);
 
 #ifdef __cplusplus

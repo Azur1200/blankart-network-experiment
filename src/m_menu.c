@@ -2487,6 +2487,54 @@ void M_SetMenuDelay(UINT8 i)
 	}
 }
 
+static void handle_dpad(event_t* ev, INT32 device, boolean keyup)
+{
+	SINT8 pid = G_GetDevicePlayer(device);
+
+	if (pid == -1)
+		return;
+
+	switch (ev->data1)
+	{
+		case KEY_HAT1+0:
+			menucmd[pid].ev_dpad_ud =  keyup ? 0 : -1;
+			break;
+		case KEY_HAT1+1:
+			menucmd[pid].ev_dpad_ud = keyup ? 0 : 1;
+			break;
+		case KEY_HAT1+2:
+			menucmd[pid].ev_dpad_lr = keyup ? 0 : -1;
+			break;
+		case KEY_HAT1+3:
+			menucmd[pid].ev_dpad_lr = keyup ? 0 : 1;
+			break;
+		default:
+			break;
+	}
+}
+
+void M_HandleDpadEvent(event_t* ev)
+{
+	INT32 device = ev->device;
+
+	if (ev->data1 < KEY_JOY1 || ev->data1 >= JOYINPUTEND)
+		return;
+
+	switch (ev->type)
+	{
+		case ev_keydown:
+			handle_dpad(ev, device, false);
+			break;
+
+		case ev_keyup:
+			handle_dpad(ev, device, true);
+			break;
+
+		default:
+			break;
+	}
+}
+
 void M_UpdateMenuCMD(UINT8 i, boolean bailrequired)
 {
 	INT32 thisMenuKey = menuKey;
@@ -2588,9 +2636,6 @@ void M_UpdateMenuCMD(UINT8 i, boolean bailrequired)
 		menucmd[i].delay = min(menucmd[i].delay, MENUMINDELAY);
 		menucmd[i].delayCount = 0;
 	}
-
-	menucmd[i].ev_dpad_ud = 0;
-	menucmd[i].ev_dpad_lr = 0;
 }
 
 boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt)
@@ -5088,6 +5133,8 @@ boolean M_CanShowLevelInList(mapnum_t mapnum)
 
 const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback, boolean forcekeyboard)
 {
+	INT32 i;
+
 	if (forcekeyboard || (p == 0 && keyboardcontrolled && (messagebox.active || menustack[0])))
 	{
 		switch (gc)
@@ -5110,12 +5157,19 @@ const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback, boole
 	else
 fallback:
 	{
-		const char *item1 = gamecontrol[p][gc][0] != 0 ? G_KeynumToString(gamecontrol[p][gc][0]) : NULL;
-		const char *item2 = gamecontrol[p][gc][1] != 0 ? G_KeynumToString(gamecontrol[p][gc][1]) : NULL;
-		const char *item3 = gamecontrol[p][gc][2] != 0 ? G_KeynumToString(gamecontrol[p][gc][2]) : NULL;
-		const char *item4 = gamecontrol[p][gc][3] != 0 ? G_KeynumToString(gamecontrol[p][gc][3]) : NULL;
+		for (i = 0; i < MAXINPUTMAPPING; i++)
+		{
+			if (gamecontrol[p][gc][i] == 0)
+				continue;
 
-		return item1 != NULL ? item1 : item2 != NULL ? item2 : item3 != NULL ? item3 : item4 != NULL ? item4 : fallback;
+			if (gamecontrol[p][gc][i] < KEY_JOY1 || gamecontrol[p][gc][i] >= JOYINPUTEND)
+				continue;
+
+			return G_KeynumToString(gamecontrol[p][gc][i]);
+
+		}
+
+		return fallback;
 	}
 }
 
@@ -10453,7 +10507,7 @@ INT32 MR_HandleVideoMode(INT32 ch)
 
 void MP_CameraSetup(menupanelinst_t *pi)
 {
-	INT32 pnum = setupcontrolplayer + 1;
+	INT32 pnum = setupcontrolplayer-1;
 	M_SetItemCvar(pi, "FLIPCAM", &cv_flipcam[pnum]);
 	M_SetItemCvar(pi, "CAMFOV", &cv_fov[pnum]);
 	M_SetItemCvar(pi, "CAMDISTANCE", &cv_cam_dist[pnum]);
@@ -10784,6 +10838,8 @@ void M_ReturnToConnectMenu(void)
 	M_EnterMenu(MN_MP_MAIN, true, 0);
 }
 
+static boolean viewserver_showaddons = false;
+
 void MP_SetupViewServer(menupanelinst_t *pi)
 {
 	char *servermap = serverlist[joinnode].info.maptitle;
@@ -10791,6 +10847,25 @@ void MP_SetupViewServer(menupanelinst_t *pi)
 	const char *speedstring = "Auto";
 	UINT32 ping = serverlist[joinnode].info.time;
 	UINT8 kartvars = serverlist[joinnode].info.kartvars;
+
+	M_SetItemVisible(pi, "TOGGLEBUTTON1", viewserver_showaddons);
+	M_SetItemVisible(pi, "TOGGLEBUTTON2", !viewserver_showaddons);
+
+	M_SetItemVisible(pi, "PLAYERSHEADING", !viewserver_showaddons);
+	M_SetItemVisible(pi, "PLAYERSCOUNT", !viewserver_showaddons);
+	M_SetItemVisible(pi, "ADDONSHEADING", viewserver_showaddons);
+	M_SetItemVisible(pi, "ADDONSCOUNT", viewserver_showaddons);
+
+	const char *item1 = M_ButtonName(0, gc_accelerate, "ACCEL", keyboardcontrolled);
+	const char *item2 = M_ButtonName(0, gc_brake, "BRAKE", keyboardcontrolled);
+	const char *item3 = M_ButtonName(0, gc_fire, "ITEM", keyboardcontrolled);
+
+	M_SetItemText(pi, "TOGGLEBUTTON1", va("[%s] = Players", item3));
+	M_SetItemText(pi, "TOGGLEBUTTON2", va("[%s] = Addons", item3));
+
+	M_SetItemText(pi, "EXITBUTTON", va("[%s] = Return", item2));
+
+	M_SetItemText(pi, "JOINBUTTON", va("[%s] = Join", item1));
 
 	switch (kartvars & SV_SPEEDMASK)
 	{
@@ -10877,8 +10952,6 @@ INT32 MR_QuitViewServer(INT32 choice)
 	return true;
 }
 
-static boolean viewserver_showaddons = false;
-
 INT32 MR_HandleViewServer(INT32 choice)
 {
 	(void)choice;
@@ -10909,6 +10982,9 @@ void MP_ViewServerPlayers(menupanelinst_t *pi)
 	fixed_t x = 1, y = 1; // FIXME auto
 
 	M_ClearPanelItems(pi);
+
+	pi->visible = !viewserver_showaddons;
+	pi->disabled = true;
 
 	for (i = 0; i < MAXPLAYERINFO; i++)
 	{
@@ -10974,6 +11050,10 @@ void MP_ViewServerAddons(menupanelinst_t *pi)
 	INT32 count = 0;
 	fixed_t x = 1, y = 1; // FIXME auto
 	boolean small_mode = fileneedednum <= 11;
+
+	pi->visible = viewserver_showaddons;
+	pi->disabled = true;
+	pi->altscroll = true;
 
 	M_ClearPanelItems(pi);
 
@@ -11053,6 +11133,17 @@ INT32 MR_TickViewServer(INT32 choice)
 	M_SetItemVisible(pi, "PLAYERSCOUNT", !viewserver_showaddons);
 	M_SetItemVisible(pi, "ADDONSHEADING", viewserver_showaddons);
 	M_SetItemVisible(pi, "ADDONSCOUNT", viewserver_showaddons);
+
+	const char *item1 = M_ButtonName(0, gc_accelerate, "ACCEL", keyboardcontrolled);
+	const char *item2 = M_ButtonName(0, gc_brake, "BRAKE", keyboardcontrolled);
+	const char *item3 = M_ButtonName(0, gc_fire, "ITEM", keyboardcontrolled);
+
+	M_SetItemText(pi, "TOGGLEBUTTON1", va("[%s] = Players", item3));
+	M_SetItemText(pi, "TOGGLEBUTTON2", va("[%s] = Addons", item3));
+
+	M_SetItemText(pi, "EXITBUTTON", va("[%s] = Return", item2));
+
+	M_SetItemText(pi, "JOINBUTTON", va("[%s] = Join", item1));
 
 	menupanelinst_t *pplayers = M_GetPanel("PLAYERS");
 	menupanelinst_t *paddons = M_GetPanel("ADDONS");

@@ -1928,7 +1928,7 @@ static void K_DoHyudoroSteal(player_t *player)
 			&& player != &players[i] && !players[i].exiting && !players[i].spectator // Player in-game
 
 			// Can steal from this player
-			&& (gametype == GT_RACE //&& players[i].position < player->position)
+			&& ((gametype == GT_RACE && (cv_karthyudorostealbehind.value || players[i].position < player->position))
 			|| ((gametypes[gametype]->rules & GTR_BUMPERS) && players[i].bumper > 0))
 
 			// Has an item
