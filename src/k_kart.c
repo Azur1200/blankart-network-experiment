@@ -13003,10 +13003,9 @@ void K_CalculateLapGrading(player_t *player)
 	const INT64 posfac_64 = min(POSGRADEFACTOR, (INT64)(positionfactor) * max(0, players_racing - player->position));
 	const fixed_t realposfac = (fixed_t)(posfac_64 / 256);
 
+	// +100 for leading, -100 for trailing
+	// Before: +100 for leading, -50 for trailing
 	INT32 lapgrade_addend = FixedMul(200, realposfac) - 100;
-
-	if (lapgrade_addend < 0)
-		lapgrade_addend /= 2; // +100 for leading, -50 for trailing
 
 	if (player->ranklog.prankeligible && player->position > 1)
 	{
@@ -13114,8 +13113,9 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 	const float partimepoints = FIXED_TO_FLOAT(RANKPOINTS_PARTIME);
 
 	// Calculate time bonus
-	raceStarRankScore +=
-	    partimepoints * (krtTime - max(0, (INT64)(player->realtime) - TIMECHECKOFFSET)) / krtTime;
+	player->rankscorefactor.partimescore =
+	    partimepoints * (krtTime - max(0, (INT64)(player->realtime) - TIMECHECKOFFSET)) /
+	    krtTime;
 
 	if (leveltime > (starttime + TIMECHECKOFFSET))
 	{
@@ -13125,37 +13125,40 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 
 		// Calculate time bonus corresponding to the time spent in 1st place,
 		// and the time spent being targeted by an SPB.
-		raceStarRankScore +=
-		    (((player->ranklog.leadertics / max(1, players_racing - 1)) * leadertimepoints) +
-		     (player->ranklog.spbattack *
-		      ((grandprixinfo.lunaticmode) ? spbtimepoints_lunatic : spbtimepoints))) /
+		player->rankscorefactor.positionbonus =
+		    ((player->ranklog.leadertics / max(1, players_racing - 1)) * leadertimepoints) /
+		    krtTime;
+		player->rankscorefactor.spbattackbonus =
+		    (player->ranklog.spbattack *
+		     ((grandprixinfo.lunaticmode) ? spbtimepoints_lunatic : spbtimepoints)) /
 		    krtTime;
 	}
 
 	// Apply bonus for successful rocket start.
 	if (player->ranklog.startboostgrading)
 	{
-		raceStarRankScore +=
+		player->rankscorefactor.startbonus =
 		    FixedMul(RANKPOINTS_STARTBOOST, player->ranklog.startboostgrading);
 	}
 
 	// Apply bonus for number of miniturbos performed.
 	INT32 miniturbos = K_GetDriftBoostRankScore(player);
-	raceStarRankScore += (miniturbos * RANKPOINTS_DRIFTBOOST);
+	player->rankscorefactor.driftbonus = (miniturbos * RANKPOINTS_DRIFTBOOST);
 
 	// Apply bonus for number of times the player hits a CPU with items.
 	UINT16 hitOthersWithItemsCount = player->ranklog.numhitconfirms;
-	raceStarRankScore += (hitOthersWithItemsCount * RANKPOINTS_HITCONFIRM);
+	player->rankscorefactor.hitbonus = (hitOthersWithItemsCount * RANKPOINTS_HITCONFIRM);
 
 	if (penalizing)
 	{
 		// Apply penalty for the time spent offroad.
-		raceStarRankScore -= (player->ranklog.timeoffroadtotal / OFFROADPENALTYDIV);
+		player->rankscorefactor.offroadpenalty =
+		    (player->ranklog.timeoffroadtotal / OFFROADPENALTYDIV);
 
 		// Apply penalty for number of times the player hits a wall.
 		// Adjusting this because you're going to hit walls in BlanKart... a LOT.
 		INT32 numWallCollision = (player->ranklog.wallbonks / WALLBONKPENALTYDIV);
-		raceStarRankScore -= (numWallCollision * RANKPOINTS_WALLPENALTY);
+		player->rankscorefactor.wallpenalty = (numWallCollision * RANKPOINTS_WALLPENALTY);
 
 		// Apply penalty for number of times the player gets damaged by a course object.
 		// Some maps will force you to tank hits (looking at you, UINST Hell!), so we need a
@@ -13164,7 +13167,8 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 
 		UINT16 numObjectCollision =
 		    (UINT16)(max(0, (INT32)(player->ranklog.hitdamagingsector) - hazardMercy));
-		raceStarRankScore -= (numObjectCollision * RANKPOINTS_HZRDPENALTY);
+		player->rankscorefactor.hazardpenalty =
+		    (numObjectCollision * RANKPOINTS_HZRDPENALTY);
 
 		// Let's allow you to respawn a few times before they're counted against you.
 		// This is BlanKart; some stupid thing WILL force you to eat a respawn or two.
@@ -13174,7 +13178,7 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 		// Also adjusting this because letting people freely rank-grief by weightchecking
 		// does not sound fun.
 		INT32 outOfBounds = max(0, player->ranklog.numrespawns - respawnMercy);
-		raceStarRankScore -= (outOfBounds * RANKPOINTS_RSPWPENALTY);
+		player->rankscorefactor.respawnpenalty = (outOfBounds * RANKPOINTS_RSPWPENALTY);
 	}
 
 	// Apply bonus/penalty based on lap grading.
@@ -13183,8 +13187,19 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 	INT32 lapgradeweight = (penalizing) ? RANKPOINTS_LAPGRADEMUL_WITHPENALTIES
 					    : RANKPOINTS_LAPGRADEMUL_NOPENALTIES;
 
-	raceStarRankScore += (player->ranklog.lapgrading * lapgradeweight / numlaps);
+	player->rankscorefactor.lapgradescore =
+	    (player->ranklog.lapgrading * lapgradeweight / numlaps);
 
+	// FINALLY, apply all bonuses, penalties, and volatile scores...
+	raceStarRankScore =
+	    (player->rankscorefactor.partimescore + player->rankscorefactor.lapgradescore) +
+	    (player->rankscorefactor.positionbonus + player->rankscorefactor.spbattackbonus +
+	     player->rankscorefactor.startbonus + player->rankscorefactor.driftbonus +
+	     player->rankscorefactor.hitbonus) -
+	    (player->rankscorefactor.offroadpenalty + player->rankscorefactor.wallpenalty +
+	     player->rankscorefactor.hazardpenalty + player->rankscorefactor.respawnpenalty);
+
+	// ...and make that our total
 	player->realrankscore = raceStarRankScore;
 
 	// Clamp the start rank score for this race between [-200, 1000]

@@ -3094,6 +3094,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	boolean jitterlegacy = false;
 
 	ranklog_t rankdata = {0};
+	rankscorefactor_t rankfactor = {0};
 	INT32 rankpts = 0;
 	INT32 real_rankpts = 0;
 
@@ -3175,6 +3176,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	// BlanKart: Ranks
 	memcpy(&rankdata, &players[player].ranklog, sizeof(rankdata));
+	memcpy(&rankfactor, &players[player].rankscorefactor, sizeof(rankfactor));
 	rankpts = players[player].rankscore;
 	real_rankpts = players[player].realrankscore;
 
@@ -3494,6 +3496,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->keepstuff.flametimer = ksflametimer;
 
 	memcpy(&p->ranklog, &rankdata, sizeof(p->ranklog));
+	memcpy(&p->rankscorefactor, &rankfactor, sizeof(p->rankscorefactor));
 	p->rankscore = rankpts;
 	p->realrankscore = real_rankpts;
 

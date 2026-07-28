@@ -605,6 +605,35 @@ struct ranklog_t
 	UINT16 numrespawns; // If you manage to respawn over 65535 times, color me impressed.
 };
 
+struct rankscorefactor_t
+{
+	//
+	// VOLATILE (can increment or decrement)
+	//
+
+	INT32 lapgradescore; // Points earned/lost dependent on the player's position at tne end of each lap
+	INT32 partimescore; // Points earned/lost against the par-time for the course
+
+	//
+	// BONUSES
+	//
+
+	INT32 hitbonus; // Points earned for each hitconfirm
+	INT32 driftbonus; // Points earned for driftboosts performed
+	INT32 positionbonus; // Points earned based on "leadertics"; you earn the most for leading the pack!
+	INT32 spbattackbonus; // Points earned for having a Self-Propelled Bomb trail you
+	INT32 startbonus; // Points earned based on how well you did the initial startboost
+
+	//
+	// PENALTIES
+	//
+
+	INT32 offroadpenalty; // Points lost based on time spent offroad
+	INT32 wallpenalty; // Points lost for hitting walls past a speed threshold
+	INT32 hazardpenalty; // Points lost for running into course hazards or damaging sectors
+	INT32 respawnpenalty; // Points lost for respawning past a grace threshold
+};
+
 // ========================================================================
 //                          PLAYER STRUCTURE
 // ========================================================================
@@ -750,6 +779,7 @@ struct player_t
 	boolean noclip;			// Fix Grow breaking the "noclip" cheat. Also applies noclip as a bonus.
 
 	ranklog_t ranklog;		// Data relevant to a player's rank.
+	rankscorefactor_t rankscorefactor;	// The point values that factor into your final rank
 	INT32 realrankscore;    // Un-clamped ranking score.
 	INT32 rankscore;		// Final rank score.
 	ranktier_e ranktier;         // The actual rank.

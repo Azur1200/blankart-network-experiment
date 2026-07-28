@@ -525,6 +525,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		//////////////////////
 		// Player Rank Data //
 		//////////////////////
+		// Ranklog
 		SYNC(players[i].ranklog.numhitconfirms);
 		// Not using a loop for driftboostcount for micro-optimization reasons
 		SYNC(players[i].ranklog.driftboostcount[0]);
@@ -544,6 +545,19 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].ranklog.numlapgrades);
 		SYNCBOOLEAN(players[i].ranklog.lapwasgraded);
 		SYNCBOOLEAN(players[i].ranklog.prankeligible);
+		// Rankscore Factor
+		SYNC(players[i].rankscorefactor.lapgradescore);
+		SYNC(players[i].rankscorefactor.partimescore);
+		SYNC(players[i].rankscorefactor.hitbonus);
+		SYNC(players[i].rankscorefactor.driftbonus);
+		SYNC(players[i].rankscorefactor.positionbonus);
+		SYNC(players[i].rankscorefactor.spbattackbonus);
+		SYNC(players[i].rankscorefactor.startbonus);
+		SYNC(players[i].rankscorefactor.offroadpenalty);
+		SYNC(players[i].rankscorefactor.wallpenalty);
+		SYNC(players[i].rankscorefactor.hazardpenalty);
+		SYNC(players[i].rankscorefactor.respawnpenalty);
+		// Rankscores and Final Rank
 		SYNC(players[i].rankscore);
 		SYNC(players[i].realrankscore);
 		SYNC(players[i].ranktier);
