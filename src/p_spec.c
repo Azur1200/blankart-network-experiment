@@ -1371,6 +1371,7 @@ boolean P_CanActivateSpecial(INT16 special)
 		case 2001: // Finish line
 		case 2003: // Respawn line
 		case 2004: // Bot controller
+		case 4000: // Enable WaterRun
 		{
 			return true;
 		}
@@ -4534,6 +4535,33 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 		case 2004: // Bot Controller.
 		{
 			K_UpdateBotControllers(args);
+			break;
+		}
+
+		case 4000: // Enable WaterRun
+		{
+			if (mo->player == NULL || !K_ItemMobjAllowedtoWaterRun(mo))
+			{
+				return false;
+			}
+
+			if (mo->player)
+			{
+				if (mo->player->sneakertimer > 0)
+				{
+					mo->flags2 |= MF2_WATERRUN;
+				}
+			}
+			else
+			{
+				if (P_AproxDistance(mo->momx, mo->momy) > 14*mo->scale)
+				{
+					mo->flags2 |= MF2_WATERRUN;
+				}
+			}
+
+			S_StopSoundByID(mo, sfx_kc3c);
+			S_StartSound(mo, sfx_kc3c);
 			break;
 		}
 

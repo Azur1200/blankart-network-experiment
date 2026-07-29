@@ -2509,6 +2509,7 @@ boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item)
 		case MT_JAWZ_DUD:
 		case MT_BANANA_SHIELD:
 		case MT_SSMINE_SHIELD:
+		case MT_SINK_SHIELD:
 			return true;
 			break;
 		default:
@@ -2525,6 +2526,7 @@ boolean K_WaterRun(mobj_t *mobj)
 	{
 		case MT_BANANA_SHIELD:
 		case MT_SSMINE_SHIELD:
+		case MT_SINK_SHIELD:
 			if (mobj->target && (mobj->target->flags2 & MF2_WATERRUN))
 				return true;
 			break;
