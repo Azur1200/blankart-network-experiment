@@ -2798,6 +2798,10 @@ static void Command_connect(void)
 
 		M_ReturnToConnectMenu();
 	}
+	else
+	{
+		M_ClearMenusEx(true, true);
+	}
 
 	// modified game check: no longer handled
 	// we don't request a restart unless the filelist differs
