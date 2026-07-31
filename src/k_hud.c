@@ -4846,7 +4846,6 @@ static void K_drawKartMinimap(void)
 	{
 		for (i = MAXPLAYERS-1; i >= 0; i--)
 		{
-
 			if (!playeringame[i])
 				continue;
 			if (!players[i].mo || players[i].spectator || !players[i].mo->skin || (!cv_showfinishedplayers.value && players[i].exiting))
@@ -4875,6 +4874,16 @@ static void K_drawKartMinimap(void)
 
 			if (mobj->health <= 0 && (players[i].pflags & PF_NOCONTEST))
 			{
+				if (P_MobjWasRemoved(mobj->tracer))
+				{
+					continue;
+				}
+
+				if (mobj->tracer->renderflags & RF_DONTDRAW)
+				{
+					continue;
+				}
+
 				workingPic = kp_nocontestminimap;
 
 				widthhalf = ((workingPic->width) / 2);
@@ -5203,6 +5212,16 @@ static void K_drawKartMinimap(void)
 
 		if (mobj->health <= 0 && (players[localplayers[i]].pflags & PF_NOCONTEST))
 		{
+			if (P_MobjWasRemoved(mobj->tracer))
+			{
+				continue;
+			}
+
+			if (mobj->tracer->renderflags & RF_DONTDRAW)
+			{
+				continue;
+			}
+
 			workingPic = kp_nocontestminimap;
 
 			widthhalf = ((workingPic->width) / 2);
@@ -5297,17 +5316,13 @@ static void K_drawKartMinimap(void)
 			if (encoremode)
 				ang = ANGLE_180 - ang;
 
-			if (skin && mobj->color && !mobj->colorized // relevant to redo
-				&& skins[skin].starttranscolor != skins[0].starttranscolor) // redoing would have an affect
-			{
-				colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
-			}
-
 			interpx = R_InterpolateFixed(mobj->old_x, mobj->x);
 			interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
 			if (!nocontest)
 			{
+				UINT8 *misccolormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
+
 				if (cv_showminimapangle.value == 1)
 				{
 					K_drawKartMinimapIcon(
@@ -5317,7 +5332,7 @@ static void K_drawKartMinimap(void)
 							y - FixedMul(FSIN(ang), ICON_DOT_RADIUS),
 							splitflags,
 							kp_minimapdot,
-							colormap,
+							misccolormap,
 							NULL
 					);
 				}
@@ -5330,9 +5345,8 @@ static void K_drawKartMinimap(void)
 						y,
 						splitflags,
 						ang,
-						colormap
+						misccolormap
 					);
-
 				}
 			}
 
