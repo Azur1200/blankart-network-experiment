@@ -4477,11 +4477,28 @@ void P_PlayerThink(player_t *player)
 		UINT8 i;
 		mobj_t *gmobj = P_SpawnGhostMobj(player->mo);
 
-		gmobj->fuse = 2;
-		if (leveltime & 1)
 		{
-			gmobj->frame &= ~FF_TRANSMASK;
-			gmobj->frame |= tr_trans70<<FF_TRANSSHIFT;
+			boolean stacking = (player->numboosts > 1);
+			gmobj->fuse = min(stacking ? player->numboosts+1 : 2, 5);
+
+			if (stacking)
+			{
+				gmobj->colorized = true;
+				gmobj->renderflags |= RF_FULLBRIGHT;
+			}
+
+			if (leveltime & 1)
+			{
+				gmobj->frame &= ~FF_TRANSMASK;
+				if (stacking)
+				{
+					gmobj->frame |= tr_trans40<<FF_TRANSSHIFT;
+				}
+				else
+				{
+					gmobj->frame |= tr_trans70<<FF_TRANSSHIFT;
+				}
+			}
 		}
 
 		// Hide the mobj from our sights if we're the displayplayer and chasecam is off.
