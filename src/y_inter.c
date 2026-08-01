@@ -760,7 +760,7 @@ skiptallydrawer:
 
 	if (timer && grandprixinfo.gp == false && bossinfo.boss == false)
 	{
-		char *string;
+		const char *string;
 		INT32 tickdown = (timer+1)/TICRATE;
 
 		if (multiplayer && demo.playback)

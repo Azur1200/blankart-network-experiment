@@ -805,7 +805,7 @@ int LUA_WriteGlobals(lua_State *L)
 			trailslow_active = luaL_checkboolean(L, 2);
 			break;
 		case global_playerbumpactive:
-			playerbumpactive = (playerbumptype_t)luaL_checkinteger(L, 2);
+			playerbumpactive = luaL_checkinteger(L, 2);
 			break;
 		case global_gamespeed:
 			gamespeed = (UINT8)luaL_checkinteger(L, 2);

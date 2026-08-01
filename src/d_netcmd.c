@@ -2897,8 +2897,8 @@ static void Got_WeaponPref(UINT8 **cp,INT32 playernum)
 	}
 	UINT8 kartspeedrestat = READUINT8(*cp);
 	UINT8 kartweightrestat = READUINT8(*cp);
-	if (kartspeedrestat < 0 || kartspeedrestat > 9 ||
-		kartweightrestat < 0 || kartweightrestat > 9)
+	if (/*kartspeedrestat < 0 || */kartspeedrestat > 9 ||
+		/*kartweightrestat < 0 || */kartweightrestat > 9)
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal restat values received from %s\n"), player_names[playernum]);
 		if (server)

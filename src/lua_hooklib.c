@@ -854,7 +854,7 @@ void LUA_HookPlayerThink(player_t *player)
 	TracyCZoneEnd(__zone);
 }
 
-static void thinkframe_hook_base(const int type, INT32 ps_type, const char *debugstring, void (*perfstatfunc)(int, precise_t, char *))
+static void thinkframe_hook_base(const int type, INT32 ps_type, void (*perfstatfunc)(int, precise_t, char *))
 {
 	TracyCZone(__zone, true);
 
@@ -907,17 +907,17 @@ static void thinkframe_hook_base(const int type, INT32 ps_type, const char *debu
 
 void LUA_HookPreThinkFrame(void)
 {
-	thinkframe_hook_base(HOOK(PreThinkFrame), PS_PRETHINKFRAME, "LUA_HookPreThinkFrame (call_single_hook)", PS_SetPreThinkFrameHookInfo);
+	thinkframe_hook_base(HOOK(PreThinkFrame), PS_PRETHINKFRAME, PS_SetPreThinkFrameHookInfo);
 }
 
 void LUA_HookThinkFrame(void)
 {
-	thinkframe_hook_base(HOOK(ThinkFrame), PS_THINKFRAME, "LUA_HookThinkFrame (call_single_hook)", PS_SetThinkFrameHookInfo);
+	thinkframe_hook_base(HOOK(ThinkFrame), PS_THINKFRAME, PS_SetThinkFrameHookInfo);
 }
 
 void LUA_HookPostThinkFrame(void)
 {
-	thinkframe_hook_base(HOOK(PostThinkFrame), PS_POSTTHINKFRAME, "LUA_HookPostThinkFrame (call_single_hook)", PS_SetPostThinkFrameHookInfo);
+	thinkframe_hook_base(HOOK(PostThinkFrame), PS_POSTTHINKFRAME, PS_SetPostThinkFrameHookInfo);
 }
 
 int LUA_HookMobjLineCollide(mobj_t *mobj, line_t *line)

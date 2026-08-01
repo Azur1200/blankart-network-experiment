@@ -1556,7 +1556,7 @@ static int player_set(lua_State *L)
 		plr->crashtimer = luaL_checkinteger(L, 3);
 		break;
 	case player_crash_state:
-		plr->crash_state = (crashstate_e)(luaL_checkinteger(L, 3));
+		plr->crash_state = luaL_checkinteger(L, 3);
 		break;
 	case player_crash_elapsed:
 		return NOSET;

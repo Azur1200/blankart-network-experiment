@@ -24,7 +24,6 @@ char pr_class_name[PRNUMCLASS][33] = {
 	"LEGACY", // PR_LEGACY is PR_UNDEFINED; "LEGACY" is just more elegant
 #define SEEDNAME(name) #name"\0",
 	RNGSEEDS(SEEDNAME)
-	"\0",
 };
 
 #undef SEEDNAME
@@ -189,11 +188,10 @@ ATTRINLINE static UINT32 FUNCINLINE __internal_prng_bound__(pr_class_t pr_class,
   {
     // Do rejection sampling to remove the modulo bias.
     UINT32 threshold = -bound % bound;
-		UINT32 r = __internal_prng__(_class);
-		UINT32 stuck = 0; // Ideally, this never happens, but if it *does*...
+    UINT32 r = __internal_prng__(_class);
+    UINT32 stuck = 0; // Ideally, this never happens, but if it *does*...
     for (;;)
     {
-      UINT32 r = __internal_prng__(_class);
       if (r >= threshold)
       {
         return r % bound;
