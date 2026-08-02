@@ -102,6 +102,11 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 			}
 			else
 			{
+				if (weapon == PICKUPITEM_ITEM && K_SMonitorSlotHogging(player) && player->itemreserveamount == 0)
+				{
+					return true;
+				}
+
 				// Item-specific timer going off
 				if (player->stealingtimer || player->stolentimer
 					|| player->rocketsneakertimer
@@ -326,32 +331,18 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			return;
 		case MT_RANDOMITEM:
 			if (!itembreaker && !P_CanPickupItem(player, PICKUPITEM_ITEM))
+				return;
+
+			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 			{
-				if (K_SMonitorSlotHogging(player) && player->itemreserveamount == 0)
-				{
-					special->momx = special->momy = special->momz = 0;
-					// P_SetTarget(&special->target, toucher);
-					P_KillMobj(special, toucher, NULL, DMG_NORMAL);
-					K_AddPlayerReserveItem(player, KITEM_BONUSITEMROLL, 1);
-				}
-				else
-				{
+				if (player->karmamode || player->karmadelay)
 					return;
-				}
+				player->karmamode = KARMAMODE_ITEM;
 			}
-			else
-			{
-				if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
-				{
-					if (player->karmamode || player->karmadelay)
-						return;
-					player->karmamode = KARMAMODE_ITEM;
-				}
-	
-				special->momx = special->momy = special->momz = 0;
-				P_SetTarget(&special->target, toucher);
-				P_KillMobj(special, toucher, toucher, DMG_NORMAL);
-			}
+
+			special->momx = special->momy = special->momz = 0;
+			P_SetTarget(&special->target, toucher);
+			P_KillMobj(special, toucher, toucher, DMG_NORMAL);
 			break;
 		case MT_ITEMCAPSULE:
 			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
