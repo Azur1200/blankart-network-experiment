@@ -523,7 +523,7 @@
     * as it seems it doesn't agree with <fp.h>, yet we should really use
     * <fp.h> if possible.
     */
-#    if !defined(__MATH_H__) && !defined(__MATH_H) && !defined(__cmath__)
+#    if !defined(__MATH_H__) && !defined(__MATH_H) && !defined(__cmath__) && !defined(MACOSX) // FUCK OFF APPLE
 #      include <fp.h>
 #    endif
 #  else
