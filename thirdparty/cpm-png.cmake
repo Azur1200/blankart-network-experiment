@@ -2,7 +2,7 @@ CPMAddPackage(
 	NAME png
 	VERSION 1.6.38
 	URL "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.38.zip"
-	PATCHES "libpng-fix.patch" # work around this nonsense I think?
+	PATCHES "remove-fp-h.patch"
 	# png cmake build is broken on msys/mingw32
 	DOWNLOAD_ONLY YES
 )
