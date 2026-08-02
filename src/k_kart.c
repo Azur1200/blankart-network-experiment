@@ -7987,7 +7987,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 			UINT32 usedist = K_GetClusterDistanceForPlayer(player);
 
-			boolean tinypop = (pingame <= 3);
+			// First place is an S-Monitor candidate in 4P lobbies and lower, so anything in that
+			// range is "tinypop"
+			boolean tinypop = (pingame <= 4);
 
 			INT16 podium = (tinypop) ? 1 : max(2, min(4, (3 * pingame / 8)));
 
