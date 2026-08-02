@@ -1161,11 +1161,18 @@ static void K_UpdateOffroad(player_t *player)
 static void K_UpdateDashArea(player_t *player)
 {
 	terrain_t *terrain = player->mo->terrain;
+	
+	if (player->mo == NULL)
+	{
+		player->dashareapower = 0;
+		return;
+	}
+	
+	// dash area power persists in the air
+	if (!P_IsObjectOnGround(player->mo)) return;
 	player->dashareapower = 0;
 
-	if (player->mo == NULL) return;
 	if (P_MobjWasRemoved(player->mo)) return;
-	if (!P_IsObjectOnGround(player->mo)) return;
 	if (player->mo->subsector == NULL || player->mo->subsector->sector == NULL) return;
 
 	if (terrain != NULL && terrain->dashareapower > 0 && K_AffectingTerrainActive())
@@ -3244,7 +3251,10 @@ fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dor
 		return FixedMul(player->forcedtopspeed, player->mo->scale);
 
 	if (doboostpower && !player->pogospring && !P_IsObjectOnGround(player->mo) && (player->airdriftspeed == 0))
-		return (75*mapobjectscale); // air speed cap
+	{
+		// dash areas raise the air speed cap at the same rate
+		return (75 * FixedMul(mapobjectscale, FRACUNIT + player->dashareapower)); // air speed cap
+	}
 
 	finalspeed = K_GetKartSpeedFromStat(player->kartspeed, karmabomb, player->kartmagnet.factor);
 
