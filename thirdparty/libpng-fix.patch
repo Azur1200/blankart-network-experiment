@@ -1,8 +1,8 @@
 diff --git a/pngpriv.h b/pngpriv.h
-index 2e426cf47..fc685097c 100644
+index 2e426cf47..3ee28b9e6 100644
 --- a/pngpriv.h
 +++ b/pngpriv.h
-@@ -514,18 +514,8 @@
+@@ -514,18 +514,9 @@
      */
  #  include <float.h>
  
@@ -16,9 +16,9 @@ index 2e426cf47..fc685097c 100644
 -#      include <fp.h>
 -#    endif
 -#  else
--#    include <math.h>
++// just use this man.
+ #    include <math.h>
 -#  endif
-+#  include <math.h>
 +
  #  if defined(_AMIGA) && defined(__SASC) && defined(_M68881)
     /* Amiga SAS/C: We must include builtin FPU functions when compiling using
