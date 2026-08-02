@@ -309,6 +309,17 @@ angle_t K_ReflectAngle(angle_t angle, angle_t against, fixed_t maxspeed, fixed_t
 
 void K_RegisterKartStuff(void);
 
+// Clears all rankscore tracker arrays.
+void K_InitRankScoreTrackers(void);
+
+// Adds the provided point value to the `rankscore_trackers` array of the given player ID.
+void K_AddScoreToTracker(UINT16 pid, INT32 score);
+
+// Logs all players' current rank-scores over a set interval once the race starts.
+// External factors (such as laps and race finishes) are instead handled in their
+// respective functions.
+void K_LogPlayerRankScores(void);
+
 void K_TimerReset(void);
 void K_TimerInit(void);
 UINT32 K_GetPlayerDontDrawFlag(player_t *player);
@@ -569,6 +580,10 @@ void K_KartPlayerBumpyRoad(player_t *player);
 fixed_t K_HandleAirDrag(player_t *player, boolean onground, fixed_t speed, fixed_t airdrag);
 
 void K_ShoveObject(mobj_t *victim, mobj_t *source, fixed_t force);
+
+// Array containing each player's rank-scores over the course of the race.
+// During end-of-race intermissions, this is used for a chart display.
+extern INT32 *rankscore_tracker[MAXPLAYERS];
 
 #ifdef __cplusplus
 } // extern "C"

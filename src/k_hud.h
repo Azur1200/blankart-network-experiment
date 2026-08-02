@@ -191,6 +191,8 @@ extern patch_t *kp_itemtarget_far[2][2];
 extern patch_t *kp_itemtarget_far_text[2];
 extern patch_t *kp_itemtarget_near[2][8];
 
+extern patch_t *kp_ranktier[NUMRANKTIERS];
+
 boolean K_UseHighResPortraits(void);
 
 extern patch_t *kp_splitlapflag;

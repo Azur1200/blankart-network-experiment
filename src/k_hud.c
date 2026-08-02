@@ -256,7 +256,7 @@ static patch_t *kp_dialbase[4] = {NULL};
 static patch_t *kp_speedpatchesdial[8] = {NULL};
 static patch_t *kp_dialnum[20] = {NULL};
 
-static patch_t *kp_ranktier[NUMRANKTIERS];
+patch_t *kp_ranktier[NUMRANKTIERS];
 
 void K_RegisterKartHUDStuff(void)
 {

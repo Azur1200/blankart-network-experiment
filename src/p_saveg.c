@@ -50,6 +50,8 @@
 #include "k_itemlist.hpp"
 #include "k_vote.h"
 
+#include "cvector.h"
+
 #include <tracy/tracy/TracyC.h>
 
 savedata_t savedata;
@@ -434,7 +436,51 @@ static void P_RelinkWaypoint(savebuffer_t *save, waypoint_t **ptr)
 #define ARCHIVEBLOCK_WAYPOINTS	0x7F46498F
 
 // Specialized netsynch markers
-#define PLYRSYNC_ITEMLIST (1)
+#define PLYRSYNC_TOKEN (0x504C0000) // Upper bytes: "PL"
+#define PLYRSYNC_ITEMLIST (PLYRSYNC_TOKEN|1)
+#define PLYRSYNC_RANKPTLOG (PLYRSYNC_TOKEN|2)
+
+static UINT32 P_SyncRankScoreLog(savebuffer_t* save, INT32 pid)
+{
+	UINT32 buffer_size = 0;
+	UINT32 i = 0;
+
+    if (save->write)
+    {
+		buffer_size = cvector_size(rankscore_tracker[pid]);
+
+		// First, write the size of the buffer we're about to send over.
+        WRITEUINT32(save->p, buffer_size);
+
+		// Then, comb through the list and write every entry in it to the save buffer.
+		for (i = 0; i < buffer_size; i++)
+		{
+			WRITEINT32(save->p, rankscore_tracker[pid][i]);
+		}
+
+		return buffer_size;
+	}
+	else
+    {
+        // Get the buffer size.
+        buffer_size = READUINT32(save->p);
+
+		INT32 this_rankscore = 0;
+
+        for (i = 0; i < buffer_size; i++)
+        {
+            // Loop through the save buffer and write everything we find into the
+			// rankscore tracker.
+            this_rankscore = READUINT32(save->p);
+
+            rankscore_tracker[pid][i] = this_rankscore;
+        }
+
+        return buffer_size;
+    }
+
+    return 0;
+}
 
 static inline void P_ArchivePlayer(savebuffer_t *save)
 {
@@ -525,6 +571,11 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		//////////////////////
 		// Player Rank Data //
 		//////////////////////
+		// Rankscore Trackers
+		if (P_SyncUINT32(save, ((rankscore_tracker[i] != NULL) ? PLYRSYNC_RANKPTLOG : 0)))
+		{
+			P_SyncRankScoreLog(save, i);
+		}
 		// Ranklog
 		SYNC(players[i].ranklog.numhitconfirms);
 		// Not using a loop for driftboostcount for micro-optimization reasons

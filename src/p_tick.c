@@ -845,6 +845,8 @@ void P_Ticker(boolean run)
 		}
 	}
 
+	S_TickMusicQueue();
+
 	// Check for pause or menu up in single player
 	if (paused || P_AutoPause())
 	{
@@ -911,6 +913,7 @@ void P_Ticker(boolean run)
 		K_GetPlayerNumber();
 		K_UpdateAllPlayerPositions();
 		K_UpdatePositionFactorAndPlayerRanks();
+		K_LogPlayerRankScores();
 
 		// OK! Now that we got all of that sorted, players can think!
 		UINT8 p = 0;

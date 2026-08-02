@@ -53,6 +53,7 @@
 #include "p_spec.h"
 #include "m_easing.h"   // Invincibility gradienting
 #include "qs22j.h" // Cluster list sorting
+#include "cvector.h"
 
 #include "k_stats.h"
 #include "k_waypoint.h"
@@ -100,6 +101,70 @@ consvar_t cv_karthitemdialog = CVAR_INIT ("karthitemdialog", "On", CV_SAVE, CV_O
 // the distance to finish with the most active number of players.
 boolean clusterplayer[MAXPLAYERS];
 vector3_t clusterpoint, clusterdtf;
+
+cvector(INT32) rankscore_tracker[MAXPLAYERS] = {NULL};
+
+void K_InitRankScoreTrackers(void)
+{
+	I_OutputMsg("init rankscore trackers\n");
+
+	INT32 i = 0;
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		// Initialize the rankscore trackers for each player by clearing them out
+		// This seems counterproductive... but the cvector allocators will solve the problem for us!
+		if (rankscore_tracker[i] != NULL)
+		{
+			cvector_free(rankscore_tracker[i]);
+			rankscore_tracker[i] = NULL;
+		}
+	}
+}
+
+void K_AddScoreToTracker(UINT16 pid, INT32 score)
+{
+	if (cannotrank)
+		return; // Can't rank, don't do this
+
+    cvector_push_back(rankscore_tracker[pid], score);
+}
+
+#define SCORELOG_INTERVAL (5 * TICRATE)
+
+void K_LogPlayerRankScores(void)
+{
+	if (cannotrank)
+		return; // We can't rank in the first place...
+
+    INT32 elapsed = max(0, leveltime - starttime);
+    INT32 elapsed_interval = (elapsed % SCORELOG_INTERVAL);
+
+    boolean logme = false;
+
+    if (!elapsed)
+		return; // Race hasn't started yet
+
+	INT32 i = 0;
+    for (i = 0; i < MAXPLAYERS; i++)
+	{
+        logme = false;
+
+		if (!playeringame[i])
+			continue; // Not in game
+
+        if (players[i].spectator)
+            continue; // Spectating
+
+        if (P_MobjWasRemoved(players[i].mo))
+            continue; // No object
+
+        if ((elapsed_interval == 0) && (!players[i].exiting))
+            logme = true;
+
+        if (logme)
+            K_AddScoreToTracker(i, players[i].rankscore + LOWESTRANKSCORE_ABS);
+    }
+}
 
 void K_TimerReset(void)
 {

@@ -2092,7 +2092,16 @@ static void K_HandleLapIncrement(player_t *player)
 					K_HandleRaceSplits(player, leveltime - starttime, fakegradingpoint);
 
 					if (!player->exiting)
+					{
+						// Grade this lap
 						K_CalculateLapGrading(player);
+
+						// Update ranks with the new data
+						K_UpdateIndividualPlayerRank(player); 
+
+						// Log this
+						K_AddScoreToTracker((UINT16)(player - players), player->rankscore + LOWESTRANKSCORE_ABS);
+					}
 				}
 			}
 

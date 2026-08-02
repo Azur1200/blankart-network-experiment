@@ -5475,6 +5475,8 @@ static void G_DoCompleted(void)
 		}
 	}
 
+	//const boolean grademusicqueued = (!stricmp("grade", musicqueue_string));
+
 	// See Y_StartIntermission timer handling
 	if ((gametypes[gametype]->rules & GTR_CIRCUIT) && ((multiplayer && demo.playback) || j == r_splitscreen+1) && (!K_CanChangeRules(false) || cv_inttime.value > 0))
 	// play some generic music if there's no win/cool/lose music going on (for exitlevel commands)

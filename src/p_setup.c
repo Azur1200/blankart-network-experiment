@@ -8463,6 +8463,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
 
 	K_ClearItemRollLists();
+	K_InitRankScoreTrackers();
 
 	// emerald hunt
 	hunt1 = hunt2 = hunt3 = NULL;

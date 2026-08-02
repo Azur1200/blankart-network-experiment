@@ -76,6 +76,11 @@ consvar_t cv_numChannels = CVAR_INIT ("snd_channels", "64", CV_SAVE|CV_CALL, CV_
 
 consvar_t surround = CVAR_INIT ("surround", "Off", CV_SAVE, CV_OnOff, NULL);
 
+char musicqueue_string[9] = {0};
+INT64 musicqueue_time = -1;
+boolean musicqueue_loops = false;
+UINT16 musicqueue_flags = 0;
+
 static void Captioning_OnChange(void)
 {
 	S_ResetCaptions();
@@ -2478,6 +2483,39 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 	{
 		I_StopFadingSong();
 		I_FadeSong(100, 500, NULL);
+	}
+}
+
+void S_SetMusicQueue(const char *mmusic, boolean looping, tic_t time)
+{
+	memset(musicqueue_string, 0, sizeof(musicqueue_string));
+	UINT8 musstrlen = min(7, (UINT8)(strlen(mmusic) + 1));
+	snprintf(musicqueue_string, musstrlen, mmusic);
+
+	musicqueue_loops = looping;
+	musicqueue_time = (INT64)(time);
+}
+
+void S_ClearMusicQueue(void)
+{
+	memset(musicqueue_string, 0, sizeof(musicqueue_string));
+	musicqueue_flags = 0;
+	musicqueue_loops = false;
+	musicqueue_time = -1;
+}
+
+void S_TickMusicQueue(void)
+{
+	if (musicqueue_time > 0)
+	{
+		musicqueue_time--;
+
+		if (musicqueue_time == 0)
+		{
+			S_ChangeMusicInternal(musicqueue_string, musicqueue_loops);
+
+			S_ClearMusicQueue();
+		}
 	}
 }
 

@@ -719,6 +719,9 @@ boolean P_EndingMusic(player_t *player)
 	if (multiplayer && demo.playback) // Don't play this in multiplayer replays
 		return false;
 
+	const boolean racemode = (gametypes[gametype]->rules & GTR_CIRCUIT);
+	const boolean racewasgraded = (!cannotrank);
+
 	// Event - Level Finish
 	// Check for if this is valid or not
 #define getplayerpos(p) \
@@ -763,8 +766,21 @@ boolean P_EndingMusic(player_t *player)
 
 #undef getplayerpos
 
-	if ((gametypes[gametype]->rules & GTR_CIRCUIT) && bestlocalpos == MAXPLAYERS+1)
+	if (racemode && bestlocalpos == MAXPLAYERS+1)
 		sprintf(buffer, "k*fail"); // F-Zero death results theme
+	else if (racemode && racewasgraded)
+	{
+		// Race used ranks; play a fanfare and prepare the ticker for the intermission music
+		looping = false;
+		if (K_IsPlayerLosing(bestlocalplayer))
+			sprintf(buffer, "pgdbad");
+		else if (bestlocalpos == 1)
+			sprintf(buffer, "pgdfst");
+		else
+			sprintf(buffer, "pgdgud");
+
+		S_SetMusicQueue("grade", true, (9 * TICRATE / 2));
+	}
 	else
 	{
 		if (K_IsPlayerLosing(bestlocalplayer))
@@ -777,7 +793,7 @@ boolean P_EndingMusic(player_t *player)
 
 	S_SpeedMusic(1.0f);
 
-	if ((gametypes[gametype]->rules & GTR_CIRCUIT))
+	if (racemode && (!racewasgraded))
 		buffer[1] = 'r';
 	else if ((gametypes[gametype]->rules & GTR_BUMPERS))
 	{
@@ -1325,6 +1341,7 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			K_GetPlayerNumber();
 			K_CalculateLapGrading(player);
 			K_UpdatePositionFactorAndPlayerRanks();
+			K_AddScoreToTracker((UINT16)(player - players), player->rankscore + LOWESTRANKSCORE_ABS);
 
 			if (cv_kartrank_partimehelper.value && (player == &players[consoleplayer]))
 			{
@@ -3797,6 +3814,9 @@ void P_DoTimeOver(player_t *player)
 		// Punish the player's rank dearly for their folly
 		player->ranklog.lapgrading -= 100; // Flat lap grading of -100
 		K_UpdateIndividualPlayerRank(player); // Update ranks with the new data
+
+		// Log this
+		K_AddScoreToTracker((UINT16)(player - players), player->rankscore + LOWESTRANKSCORE_ABS);
 
 		S_StopSound(player->mo);
 		if (P_DamageMobj(player->mo, NULL, NULL, 1, DMG_TIMEOVER))
