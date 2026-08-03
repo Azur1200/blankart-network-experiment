@@ -571,9 +571,9 @@ consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_inv
 // S-Monitor
 //
 consvar_t cv_kartstacking_smonitor_speedboost = CVAR_INIT ("vanillaboost_smonitor_speedboost", "0.75", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_smonitor_fastestspeed = CVAR_INIT ("vanillaboost_smonitor_fastestspeed", "86.07", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_smonitor_fastestspeed = CVAR_INIT ("vanillaboost_smonitor_fastestspeed", "62.50", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_smonitor_accelboost = CVAR_INIT ("vanillaboost_smonitor_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_smonitor_handleboost = CVAR_INIT ("vanillaboost_smonitor_handleboost", "0.38", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_smonitor_handleboost = CVAR_INIT ("vanillaboost_smonitor_handleboost", "0.35", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_smonitor_stackable = CVAR_INIT ("vanillaboost_smonitor_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
@@ -2952,8 +2952,8 @@ static void Got_WeaponPref(UINT8 **cp,INT32 playernum)
 	}
 	UINT8 kartspeedrestat = READUINT8(*cp);
 	UINT8 kartweightrestat = READUINT8(*cp);
-	if (kartspeedrestat < 0 || kartspeedrestat > 9 ||
-		kartweightrestat < 0 || kartweightrestat > 9)
+	if (/*kartspeedrestat < 0 || */kartspeedrestat > 9 ||
+		/*kartweightrestat < 0 || */kartweightrestat > 9)
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal restat values received from %s\n"), player_names[playernum]);
 		if (server)

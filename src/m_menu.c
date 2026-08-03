@@ -2474,16 +2474,11 @@ void M_SetMenuDelay(UINT8 i)
 		// Shouldn't happen, but for safety.
 		menucmd[i].delayCount = 1;
 	}
-	else if (menucmd[i].delayCount > MENUDMAXDELAYCOUNT)
-	{
-		menucmd[i].delayCount = MENUDMAXDELAYCOUNT;
-	}
 
-	menucmd[i].delay = (MENUDELAYTIME / menucmd[i].delayCount);
-
-	if (menucmd[i].delay < 1)
+	menucmd[i].delay = (MENUDELAYTIME - min(MENUDELAYTIME - 1, menucmd[i].delayCount));
+	if (menucmd[i].delay < MENUMINDELAY)
 	{
-		menucmd[i].delay = 1;
+		menucmd[i].delay = MENUMINDELAY;
 	}
 }
 
@@ -3669,6 +3664,8 @@ static fixed_t M_GetAlignment(const menuitempart_t *part, fixed_t x, fixed_t wid
 	case ITA_EDGE:
 		return width - (BASEVIDWIDTH*FRACUNIT - x*2);
 	}
+
+	return INT32_MAX;
 }
 
 static const char *M_GetPartString(const menuitempart_t *part, const menuitem_t *item, itempartsource_e source)
@@ -3688,6 +3685,8 @@ static const char *M_GetPartString(const menuitempart_t *part, const menuitem_t 
 	case ITS_DERIVED:
 		I_Error("ITS_DERIVED is the caller's problem, silly");
 	}
+
+	return NULL;
 }
 
 static const menuitemstyle_t defaultstyle = { .partenabled = { true } };
@@ -5963,7 +5962,8 @@ static void AddonSearch(void)
 }
 
 // lolololol
-static menuitem_t addonsearch = {.text = "Search for files and folders", .cvar = &cv_dummyaddonsearch};
+static char searchtext[] = "Search for files and folders";
+static menuitem_t addonsearch = {.text = searchtext, .cvar = &cv_dummyaddonsearch};
 
 INT32 MR_HandleAddons(INT32 choice)
 {

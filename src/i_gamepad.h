@@ -117,6 +117,8 @@ boolean I_ControllerSupportsSensorGyro(INT32 playernum);
 
 void I_ControllerRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
 void I_SetControllerIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 blue);
+void I_SetControllerIndicatorMonochrome(INT32 playernum, UINT8 brightness);
+void I_SetControllerPlayerNumber(INT32 playernum, INT32 number);
 
 #ifdef __cplusplus
 } // extern "C"

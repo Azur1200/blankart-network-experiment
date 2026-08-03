@@ -106,7 +106,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 				if (player->stealingtimer || player->stolentimer
 					|| player->rocketsneakertimer
 					|| player->eggmanexplode
-					|| (K_SMonitorSlotHogging(player))
+					|| (K_SMonitorSlotHogging(player) && player->itemreserveamount > 0)
 					|| (player->growshrinktimer > 0)
 					|| player->flametimer)
 					return false;
@@ -114,9 +114,10 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 				// Item slot already taken up
 				if (player->itemroulette
 					|| (weapon != PICKUPITEM_FLOATING && player->itemamount)
+					|| (weapon == PICKUPITEM_ITEM && player->itemreservetype == KITEM_BONUSITEMROLL)
 					|| (player->itemflags & IF_ITEMOUT))
 					return false;
-
+				
 				if (weapon == PICKUPITEM_FLOATING && K_GetShieldFromPlayer(player) != KSHIELD_NONE)
 					return false; // No stacking shields!
 			}
@@ -301,18 +302,25 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 				return;
 
-			player->itemtype = special->threshold;
-			if ((UINT16)(player->itemamount) + special->movecount > 255)
-				player->itemamount = 255;
-			else
-				player->itemamount += special->movecount;
-
-			// Add the pickup to our roll list
-			if (itemlistactive)
+			if (K_SMonitorSlotHogging(player) && (player->itemreservetype == KITEM_NONE || player->itemreservetype == special->threshold))
 			{
-				K_AddItemRollToList((INT32)(player - players),
-						    player->itemtype,
-						    player->itemamount);
+				K_AddPlayerReserveItem(player, special->threshold, special->movecount);
+			}
+			else
+			{
+				player->itemtype = special->threshold;
+				if ((UINT16)(player->itemamount) + special->movecount > 255)
+					player->itemamount = 255;
+				else
+					player->itemamount += special->movecount;
+	
+				// Add the pickup to our roll list
+				if (itemlistactive)
+				{
+					K_AddItemRollToList((INT32)(player - players),
+								player->itemtype,
+								player->itemamount);
+				}
 			}
 
 			S_StartSound(special, special->info->deathsound);
@@ -326,32 +334,18 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			return;
 		case MT_RANDOMITEM:
 			if (!itembreaker && !P_CanPickupItem(player, PICKUPITEM_ITEM))
+				return;
+
+			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 			{
-				if (K_SMonitorSlotHogging(player) && player->itemreserveamount == 0)
-				{
-					special->momx = special->momy = special->momz = 0;
-					// P_SetTarget(&special->target, toucher);
-					P_KillMobj(special, toucher, NULL, DMG_NORMAL);
-					K_AddPlayerReserveItem(player, KITEM_BONUSITEMROLL, 1);
-				}
-				else
-				{
+				if (player->karmamode || player->karmadelay)
 					return;
-				}
+				player->karmamode = KARMAMODE_ITEM;
 			}
-			else
-			{
-				if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
-				{
-					if (player->karmamode || player->karmadelay)
-						return;
-					player->karmamode = KARMAMODE_ITEM;
-				}
-	
-				special->momx = special->momy = special->momz = 0;
-				P_SetTarget(&special->target, toucher);
-				P_KillMobj(special, toucher, toucher, DMG_NORMAL);
-			}
+
+			special->momx = special->momy = special->momz = 0;
+			P_SetTarget(&special->target, toucher);
+			P_KillMobj(special, toucher, toucher, DMG_NORMAL);
 			break;
 		case MT_ITEMCAPSULE:
 			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
@@ -1790,7 +1784,14 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 					break;
 				}
 
-				K_AwardPlayerItem(player, target->threshold, max(1, target->movecount), true, KITEMBLINK_NORMAL);
+				if (K_SMonitorSlotHogging(player) && (player->itemreservetype == KITEM_NONE || player->itemreservetype == target->threshold))
+				{
+					K_AddPlayerReserveItem(player, target->threshold, max(1, target->movecount));
+				}
+				else
+				{
+					K_AwardPlayerItem(player, target->threshold, max(1, target->movecount), true, KITEMBLINK_NORMAL);
+				}
 			}
 			break;
 		}

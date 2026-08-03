@@ -508,7 +508,7 @@ void K_TransferPlayerReserveItem(player_t *player)
 	if (player->itemreservetype == KITEM_BONUSITEMROLL)
 	{
 		S_StartSound(player->mo, sfx_kc2e);
-		K_StartRoulette(player, KROULETTETYPE_NORMAL);
+		K_StartRoulette(player, KROULETTETYPE_BONUS);
 	}
 	else
 	{
@@ -1683,7 +1683,14 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 void K_StartRoulette(player_t *player, kartroulettetype_e roulettetype)
 {
 	if (roulettetype == KROULETTETYPE_EGGMAN)
+	{
 		K_DropItems(player);
+	}
+	else if (roulettetype != KROULETTETYPE_BONUS && K_SMonitorSlotHogging(player) && player->itemreserveamount == 0)
+	{
+		K_AddPlayerReserveItem(player, KITEM_BONUSITEMROLL, 1);
+		return;
+	}
 
 	player->itemroulette = 1;
 	player->roulettetype = roulettetype;

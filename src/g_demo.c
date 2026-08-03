@@ -82,7 +82,9 @@ static INT32 ReplaySave(INT32 choice)
 }
 
 consvar_t cv_dummyreplaysave = CVAR_INIT ("dummyreplaysave", "", CV_HIDEN, NULL, NULL);
-menuitem_t replaysave = {.text = "Enter the name of the replay", .cvar = &cv_dummyreplaysave, .routine = &ReplaySave};
+
+static char replaytext[] = "Enter the name of the replay";
+menuitem_t replaysave = {.text = replaytext, .cvar = &cv_dummyreplaysave, .routine = &ReplaySave};
 
 boolean nodrawers; // for comparative timing purposes
 boolean noblit; // for comparative timing purposes
@@ -4073,7 +4075,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 	demo.single_seed = false;
 
-	if (header.demoversion < 0x0012)
+	if (header.demoversion <= 0x0012)
 	{
 		demo.single_seed = true;
 		P_SetRandSeed(PR_LEGACY, header.randseed[PR_LEGACY]);

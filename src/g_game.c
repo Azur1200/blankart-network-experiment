@@ -4740,7 +4740,7 @@ tryAgain:
 				// to avoid duplicates on the voting screen.
 				for (j = 0; j < (maphell ? 3 : extBufferCount); j++)
 				{
-					if (extBuffer[j] < 0 || extBuffer[j] >= nummapheaders)
+					if (/*extBuffer[j] < 0 ||*/extBuffer[j] >= nummapheaders)
 					{
 						// Rest of buffer SHOULD be empty.
 						break;

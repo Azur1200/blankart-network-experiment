@@ -59,6 +59,7 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump, boolean noresults);
 #ifdef LUA_ALLOW_BYTECODE
 void LUA_DumpFile(const char *filename);
 #endif
+fixed_t LUA_EvalMathEx(const char *word, const char **error);
 fixed_t LUA_EvalMath(const char *word);
 // void LUA_Step(void);
 void LUA_Sync(savebuffer_t *save, boolean network, boolean compat);

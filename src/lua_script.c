@@ -819,7 +819,7 @@ int LUA_WriteGlobals(lua_State *L)
 			trailslow_active = luaL_checkboolean(L, 2);
 			break;
 		case global_playerbumpactive:
-			playerbumpactive = (playerbumptype_t)luaL_checkinteger(L, 2);
+			playerbumpactive = luaL_checkinteger(L, 2);
 			break;
 		case global_rankingactive:
 			rankingactive = luaL_checkboolean(L, 2);
@@ -1137,7 +1137,7 @@ void LUA_DumpFile(const char *filename)
 }
 #endif
 
-fixed_t LUA_EvalMath(const char *word)
+fixed_t LUA_EvalMathEx(const char *word, const char **error)
 {
 	static lua_State *L = NULL;
 	char buf[1024], *b;
@@ -1166,6 +1166,9 @@ fixed_t LUA_EvalMath(const char *word)
 		if (*p == '^')
 			*b++ = '^';
 	}
+	// length of word is zero!?
+	if (p == word)
+		return 0;
 	*b = '\0';
 
 	// eval string.
@@ -1173,12 +1176,29 @@ fixed_t LUA_EvalMath(const char *word)
 	if (luaL_dostring(L, buf))
 	{
 		p = lua_tostring(L, -1);
-		while (*p++ != ':' && *p) ;
-		p += 3; // "1: "
-		CONS_Alert(CONS_WARNING, "%s\n", p);
+
+		// If there is [string "..."]:1: text, skip it
+		if (strstr(p, ":") != NULL)
+		{
+			while (*p++ != ':' && *p);
+
+			p += 3; // "1: "
+		}
+		if (error) *error = p;
 	}
 	else
 		res = lua_tointeger(L, -1);
+
+	return res;
+}
+
+fixed_t LUA_EvalMath(const char *word)
+{
+	const char *error = NULL;
+	fixed_t res = LUA_EvalMathEx(word, &error);
+
+	if (error)
+		CONS_Alert(CONS_WARNING, "%s\n", error);
 
 	return res;
 }

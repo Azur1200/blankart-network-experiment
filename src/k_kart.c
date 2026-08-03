@@ -1329,11 +1329,18 @@ static void K_UpdateOffroad(player_t *player)
 static void K_UpdateDashArea(player_t *player)
 {
 	terrain_t *terrain = player->mo->terrain;
+	
+	if (player->mo == NULL)
+	{
+		player->dashareapower = 0;
+		return;
+	}
+	
+	// dash area power persists in the air
+	if (!P_IsObjectOnGround(player->mo)) return;
 	player->dashareapower = 0;
 
-	if (player->mo == NULL) return;
 	if (P_MobjWasRemoved(player->mo)) return;
-	if (!P_IsObjectOnGround(player->mo)) return;
 	if (player->mo->subsector == NULL || player->mo->subsector->sector == NULL) return;
 
 	if (terrain != NULL && terrain->dashareapower > 0 && K_AffectingTerrainActive())
@@ -1770,9 +1777,9 @@ void K_SpawnDashAreaSpeedLines(mobj_t *mo)
 	fixed_t rand_y;
 	fixed_t rand_z;
 
-	rand_z = P_RandomRange(PR_DECORATION,0, mo->info->height/3) * FRACUNIT;
-	rand_y = P_RandomRange(PR_DECORATION,-56, 56) * FRACUNIT;
-	rand_x = P_RandomRange(PR_DECORATION,-56, 56) * FRACUNIT;
+	rand_z = P_RandomRange(PR_DECORATION, 0, mo->info->height/3);
+	rand_y = P_RandomRange(PR_DECORATION, -56, 56) * FRACUNIT;
+	rand_x = P_RandomRange(PR_DECORATION, -56, 56) * FRACUNIT;
 
 	mobj_t *fast = P_SpawnMobjFromMobj(mo, rand_x, rand_y, rand_z, MT_FASTLINE);
 
@@ -2677,6 +2684,7 @@ boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item)
 		case MT_JAWZ_DUD:
 		case MT_BANANA_SHIELD:
 		case MT_SSMINE_SHIELD:
+		case MT_SINK_SHIELD:
 			return true;
 			break;
 		default:
@@ -2693,6 +2701,7 @@ boolean K_WaterRun(mobj_t *mobj)
 	{
 		case MT_BANANA_SHIELD:
 		case MT_SSMINE_SHIELD:
+		case MT_SINK_SHIELD:
 			if (mobj->target && (mobj->target->flags2 & MF2_WATERRUN))
 				return true;
 			break;
@@ -3410,7 +3419,10 @@ fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dor
 		return FixedMul(player->forcedtopspeed, player->mo->scale);
 
 	if (doboostpower && !player->pogospring && !P_IsObjectOnGround(player->mo) && (player->airdriftspeed == 0))
-		return (75*mapobjectscale); // air speed cap
+	{
+		// dash areas raise the air speed cap at the same rate
+		return (75 * FixedMul(mapobjectscale, FRACUNIT + player->dashareapower)); // air speed cap
+	}
 
 	finalspeed = K_GetKartSpeedFromStat(player->kartspeed, karmabomb, player->kartmagnet.factor);
 
@@ -8178,7 +8190,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 			UINT32 usedist = K_GetClusterDistanceForPlayer(player);
 
-			boolean tinypop = (pingame <= 3);
+			// First place is an S-Monitor candidate in 4P lobbies and lower, so anything in that
+			// range is "tinypop"
+			boolean tinypop = (pingame <= 4);
 
 			INT16 podium = (tinypop) ? 1 : max(2, min(4, (3 * pingame / 8)));
 
@@ -8797,8 +8811,6 @@ void K_KartPlayerAfterThink(player_t *player)
 		player->attractionboost = 0;
 		player->attractionattack_hipower = false;
 	}
-
-	K_TransferPlayerReserveItem(player);
 
 	TracyCZoneEnd(__zone);
 }
@@ -13715,7 +13727,7 @@ void K_KartPlayerBumpyRoad(player_t *player)
 			S_StartSoundAtVolume(player->mo, sfx_s3k56, CLAMP((180*rate)/FRACUNIT, 0, 180));
 		}
 
-		// dust ptcl
+		// dust ptcl (not netsynched)
 		{
 			INT32 speedrange = 1;
 			fixed_t sidex = P_ReturnThrustX(NULL, player->mo->angle + (ANGLE_90 * player->bumpyroadside), player->mo->radius);
@@ -13723,6 +13735,7 @@ void K_KartPlayerBumpyRoad(player_t *player)
 			fixed_t backoffsetx = P_ReturnThrustX(NULL, player->mo->angle + ANGLE_180, player->mo->radius);
 			fixed_t backoffsety = P_ReturnThrustY(NULL, player->mo->angle + ANGLE_180, player->mo->radius);
 			mobj_t *dust = P_SpawnMobj(player->mo->x + sidex + backoffsetx, player->mo->y + sidey + backoffsety, player->mo->z, MT_WIPEOUTTRAIL);
+			dust->flags2 |= MF2_DONTSYNC;
 
 			dust->angle = K_MomentumAngle(player->mo);
 			K_FlipFromObject(dust, player->mo);
@@ -13731,10 +13744,8 @@ void K_KartPlayerBumpyRoad(player_t *player)
 			P_SetTarget(&dust->target, player->mo);
 			dust->renderflags |= RF_GHOSTLY;
 			
-			dust->momx = FixedMul(player->mo->momx + (P_RandomRange(PR_DECORATION, -speedrange, speedrange)<<FRACBITS), 3*(player->mo->scale)/4);
-			dust->momy = FixedMul(player->mo->momy + (P_RandomRange(PR_DECORATION, -speedrange, speedrange)<<FRACBITS), 3*(player->mo->scale)/4);
-
-			dust->flags2 |= MF2_DONTSYNC;
+			dust->momx = FixedMul(player->mo->momx + (M_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(player->mo->scale)/4);
+			dust->momy = FixedMul(player->mo->momy + (M_RandomRange(-speedrange, speedrange)<<FRACBITS), 3*(player->mo->scale)/4);
 		}
 	}
 }
