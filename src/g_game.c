@@ -5448,14 +5448,26 @@ static void G_DoCompleted(void)
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;
 
+	INT32 numplayers = 0;
+	INT32 numforfeit = 0;
+
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (playeringame[i])
 		{
+			if ((!players[i].spectator) && (!P_MobjWasRemoved(players[i].mo)))
+			{
+				// Generic headcount routine
+				numplayers++;
+			}
+
 			// SRB2Kart: exitlevel shouldn't get you the points
 			if (!players[i].exiting && !(players[i].pflags & PF_NOCONTEST))
 			{
 				clientPowerAdd[i] = 0;
+
+				// Add to the "forfeit players" counter
+				numforfeit++;
 
 				if (players[i].bot)
 				{
@@ -5474,6 +5486,12 @@ static void G_DoCompleted(void)
 
 			G_PlayerFinishLevel(i); // take away cards and stuff
 		}
+	}
+
+	if (numforfeit >= numplayers)
+	{
+		// This was likely an "exitlevel" call or RTV; DO NOT rank this race!
+		cannotrank = true;
 	}
 
 	if (!cannotrank)
