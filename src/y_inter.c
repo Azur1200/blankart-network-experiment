@@ -102,7 +102,6 @@ static patch_t *bgtile = NULL;      // SPECTILE/SRB2BACK
 static patch_t *interpic = NULL;    // custom picture defined in map header
 
 static INT32 timer;
-static INT32 rankscreentimer = 0;
 static boolean freezetimer = false;
 
 static boolean useinterpic;
@@ -447,12 +446,11 @@ static boolean RankScreenVis_ShowGrade(void)
 	char finrankstring[12] = "FINAL RANK:";
 	patch_t *rankpatch = NULL;
 
-	boolean half_x = false;
 	boolean half_y = false;
 
 	if (r_splitscreen)
 	{
-		half_x = true; // Horizontally compress the score listing
+		// Horizontally compress the score listing
 		curwidth = BACKINGWIDTH_HALF;
 		base_x = screen_x + 13;
 		finrank_xoffs = 18;
@@ -710,12 +708,12 @@ static void Y_DrawChartForPlayer(UINT16 pid, INT32 screen_x, UINT8 linecolor, UI
 	if (filltic)
 	{
 		INT32 i = 0;
-		for (i = 1; i < scorelog_len; i++)
+		for (i = 1; i < (signed)(scorelog_len); i++)
 		{
 			x = base_x + (chartwidthdiv * i);
 			y = base_y - FixedDiv(rankscore_tracker[pid][i] * FRACUNIT, CHARTHEIGHTDIV);
 
-			const double thisfilltime = (filltimeperlog * i);
+			const double thisfilltime = (filltimeperlog * (double)(i));
 
 			// Slope = rise/run
 			m = (FixedToDouble(y) - FixedToDouble(prev_y)) / widthdiv_d;
@@ -771,8 +769,6 @@ static void Y_DrawChartForPlayer(UINT16 pid, INT32 screen_x, UINT8 linecolor, UI
 
 static ATTRUSED boolean RankScreenVis_Graph(void)
 {
-	INT32 dupadjust = (vid.scaledwidth), duptweak = (dupadjust - BASEVIDWIDTH)/2;
-
 	INT32 screen_x = 0;
 
 	if (slidetic && (slidetic < 16))
@@ -878,16 +874,14 @@ static void Y_DrawGradingResults(void)
 		// GET OUT!!
 		return;
 	}
-	
-	boolean drewscreen = false;
-	
+
 	if (rankresultsmode == RANKRESULTS_SHOWGRADE)
 	{
-		drewscreen = RankScreenVis_ShowGrade();
+		RankScreenVis_ShowGrade();
 	}
 	else if (rankresultsmode == RANKRESULTS_GRAPH)
 	{
-		drewscreen = RankScreenVis_Graph();
+		RankScreenVis_Graph();
 	}
 }
 
