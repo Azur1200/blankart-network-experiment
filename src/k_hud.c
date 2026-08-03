@@ -1917,7 +1917,7 @@ static void K_drawKartItem(void)
 		// numbers
 		if (stplyr->itemreserveamount >= K_GetItemNumberDisplayMin(stplyr->itemreservetype, true))
 		{
-			V_DrawPingNumScaled((fx<<FRACBITS) + (26*info.hudScale), (fy<<FRACBITS) + (26*info.hudScale), info.hudScale, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, stplyr->itemreserveamount, colmap);
+			V_DrawPingNumScaled(fx + (26*info.hudScale), fy + (26*info.hudScale), info.hudScale, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, stplyr->itemreserveamount, colmap);
 		}
 	}
 }

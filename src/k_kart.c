@@ -8607,8 +8607,6 @@ void K_KartPlayerAfterThink(player_t *player)
 		player->attractionattack_hipower = false;
 	}
 
-	K_TransferPlayerReserveItem(player);
-
 	TracyCZoneEnd(__zone);
 }
 

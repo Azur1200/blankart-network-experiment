@@ -4428,6 +4428,9 @@ void P_PlayerThink(player_t *player)
 			player->linkcount = 0;
 	}
 
+	// runs before movement and collision checks
+	K_TransferPlayerReserveItem(player);
+
 	if (player->mo->reactiontime)
 	{
 		// Reactiontime is used to prevent movement
