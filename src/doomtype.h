@@ -217,6 +217,8 @@ typedef int32_t boolean;
 		#define ATTRPACK __attribute__((packed))
 	#endif
 
+	#define ATTRUSED __attribute__((used))
+
 	#define ATTRUNUSED __attribute__((unused))
 #endif
 
