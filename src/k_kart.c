@@ -104,6 +104,8 @@ vector3_t clusterpoint, clusterdtf;
 
 cvector(INT32) rankscore_tracker[MAXPLAYERS] = {NULL};
 
+UINT16 ranksort_positions[MAXPLAYERS] = {0};
+
 void K_InitRankScoreTrackers(void)
 {
 	I_OutputMsg("init rankscore trackers\n");
@@ -164,6 +166,49 @@ void K_LogPlayerRankScores(void)
         if (logme)
             K_AddScoreToTracker(i, players[i].rankscore + LOWESTRANKSCORE_ABS);
     }
+}
+
+static int compareRankScores(const void *a, const void *b)
+{
+	const UINT16 * a16 = (const UINT16 *)(a);
+	const UINT16 * b16 = (const UINT16 *)(b);
+
+	if (players[*a16].rankscore > players[*b16].rankscore)
+        return -1;
+    else if (players[*a16].rankscore < players[*b16].rankscore)
+        return 1;
+
+    return 0;
+}
+
+void K_GetRankBasedPositions(void)
+{
+	UINT16 sorted_pids[MAXPLAYERS] = {0};
+
+	INT32 i = 0;
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		sorted_pids[i] = i;
+		ranksort_positions[i] = MAXPLAYERS;
+	}
+
+	qs22j((void *)(sorted_pids), MAXPLAYERS, sizeof(UINT16), &compareRankScores);
+
+	// Best rank always lead the pack
+	ranksort_positions[&players[sorted_pids[0]] - players] = 1;
+
+	UINT16 position = 1;
+	for (i = 1; i < MAXPLAYERS; i++)
+	{
+		// We've sorted the players by their rank scores, so it's impossible for a lower score to be in front of a higher one
+		// ...hopefully
+		if (players[sorted_pids[i - 1]].rankscore > players[sorted_pids[i]].rankscore)
+		{
+			position++;
+		}
+
+		ranksort_positions[&players[sorted_pids[i]] - players] = position;
+	}
 }
 
 void K_TimerReset(void)
@@ -631,6 +676,38 @@ boolean K_IsPlayerLosing(const player_t *player)
 		winningpos++;
 
 	return (player->position > winningpos);
+}
+
+boolean K_IsPlayerLosingByRank(const player_t *player)
+{
+	INT32 winningpos = 1;
+	UINT8 i, pcount = 0;
+
+	if (itembreaker && numtargets == 0)
+		return true; // Didn't even TRY?
+
+	if (itembreaker || bossinfo.boss)
+		return (player->bumper <= 0); // anything short of DNF is COOL
+
+	if (ranksort_positions[player - players] == 1)
+		return false;
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator)
+			continue;
+		if (players[i].position > pcount)
+			pcount = players[i].position;
+	}
+
+	if (pcount <= 1)
+		return false;
+
+	winningpos = pcount/2;
+	if (pcount % 2) // any remainder?
+		winningpos++;
+
+	return (ranksort_positions[player - players] > winningpos);
 }
 
 fixed_t K_GetKartGameSpeedScalar(SINT8 value)
@@ -12019,6 +12096,9 @@ void K_UpdatePositionFactorAndPlayerRanks(void)
 
 	// And then update ranks
 	K_UpdateRankScore();
+
+	// ...and THEN update the ranking positions
+	K_GetRankBasedPositions();
 }
 
 INT32 players_racing = 0;

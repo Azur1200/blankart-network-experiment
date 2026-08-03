@@ -3818,6 +3818,9 @@ void P_DoTimeOver(player_t *player)
 		// Log this
 		K_AddScoreToTracker((UINT16)(player - players), player->rankscore + LOWESTRANKSCORE_ABS);
 
+		// ...and THEN update the ranking positions
+		K_GetRankBasedPositions();
+
 		S_StopSound(player->mo);
 		if (P_DamageMobj(player->mo, NULL, NULL, 1, DMG_TIMEOVER))
 		{

@@ -324,6 +324,7 @@ void K_TimerReset(void);
 void K_TimerInit(void);
 UINT32 K_GetPlayerDontDrawFlag(player_t *player);
 boolean K_IsPlayerLosing(const player_t *player);
+boolean K_IsPlayerLosingByRank(const player_t *player);
 fixed_t K_GetKartGameSpeedScalar(SINT8 value);
 
 fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against);
@@ -584,6 +585,10 @@ void K_ShoveObject(mobj_t *victim, mobj_t *source, fixed_t force);
 // Array containing each player's rank-scores over the course of the race.
 // During end-of-race intermissions, this is used for a chart display.
 extern INT32 *rankscore_tracker[MAXPLAYERS];
+
+extern UINT16 ranksort_positions[MAXPLAYERS];
+
+void K_GetRankBasedPositions(void);
 
 #ifdef __cplusplus
 } // extern "C"

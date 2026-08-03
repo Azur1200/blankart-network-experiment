@@ -2097,10 +2097,13 @@ static void K_HandleLapIncrement(player_t *player)
 						K_CalculateLapGrading(player);
 
 						// Update ranks with the new data
-						K_UpdateIndividualPlayerRank(player); 
+						K_UpdateIndividualPlayerRank(player);
 
 						// Log this
 						K_AddScoreToTracker((UINT16)(player - players), player->rankscore + LOWESTRANKSCORE_ABS);
+
+						// ...and THEN update the ranking positions
+						K_GetRankBasedPositions();
 					}
 				}
 			}

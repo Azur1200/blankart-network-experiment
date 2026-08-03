@@ -494,6 +494,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(clan) \
 	X(rankscore) \
 	X(realrankscore) \
+	X(rankposition) \
 	X(playerid)
 
 enum player_e
@@ -1332,6 +1333,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_realrankscore:
 		lua_pushinteger(L, plr->realrankscore);
+		break;
+	case player_rankposition:
+		lua_pushinteger(L, ranksort_positions[(UINT32)(plr - players)]);
 		break;
 	case player_playerid:
 		// Doesn't actually exist in hardcode, but this is very useful and relevant
@@ -2188,6 +2192,8 @@ static int player_set(lua_State *L)
 	case player_realrankscore:
 		plr->realrankscore = lua_tointeger(L, 3);
 		break;
+	case player_rankposition:
+		return NOSET; // At least, not for now. No, this isn't consistent with player.position...
 	case player_playerid:
 		return NOSET;
 #ifdef HWRENDER

@@ -3230,6 +3230,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		ksflametimer = 0;
 
 		memset(&rankdata, 0, sizeof (rankdata));
+		memset(&rankfactor, 0, sizeof(rankfactor));
 		rankpts = 0;
 		real_rankpts = 0;
 
@@ -5474,6 +5475,9 @@ static void G_DoCompleted(void)
 			G_PlayerFinishLevel(i); // take away cards and stuff
 		}
 	}
+
+	if (!cannotrank)
+		K_GetRankBasedPositions();
 
 	//const boolean grademusicqueued = (!stricmp("grade", musicqueue_string));
 
