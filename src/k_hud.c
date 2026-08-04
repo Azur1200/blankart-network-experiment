@@ -86,6 +86,7 @@ IMPL_HUD_OFFSET(want); // Wanted
 IMPL_HUD_OFFSET(lapem); // Lap emblem
 IMPL_HUD_OFFSET(rank); // Rank score
 IMPL_HUD_OFFSET(dialrank); // Rank score (Dial speedometer)
+IMPL_HUD_OFFSET(bigrank); // Rank score (Big speedometer)
 //IMPL_HUD_OFFSET(stat); // Stats
 
 #undef IMPL_HUD_OFFSET
@@ -294,6 +295,7 @@ void K_RegisterKartHUDStuff(void)
 	REG_HUD_OFFSET(lapem); // Lap emblem
 	REG_HUD_OFFSET(rank); // Rank score
 	REG_HUD_OFFSET(dialrank); // Rank score (Dial speedometer)
+	REG_HUD_OFFSET(bigrank); // Rank score (Big speedometer)
 	//REG_HUD_OFFSET(stat); // Stats
 
 #undef REG_HUD_OFFSET
@@ -1164,6 +1166,7 @@ static void K_initKartHUD(void)
 	RANK_Y = BASEVIDHEIGHT - 50 + cv_rank_yoffset.value;		// 150
 
 	const boolean dialspeedometer = (cv_newspeedometer.value == 3 && r_splitscreen < 1);
+	const boolean bigspeedometer = (cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2);
 
 	if (dialspeedometer)  // Dial Speedometer
 	{
@@ -1179,6 +1182,15 @@ static void K_initKartHUD(void)
 		{
 			RANK_X = 41 + cv_dialrank_xoffset.value;
 			RANK_Y = (BASEVIDHEIGHT) - 42 + cv_dialrank_yoffset.value;
+		}
+	}
+	else if (bigspeedometer)  // Classic/Default or P-Meter Speedometer
+	{
+		if (K_RingsActive() == false)
+		{
+			// THREE OFFSET VALUES FOR ONE HUD ELEMENT?!
+			RANK_X = 61 + cv_bigrank_xoffset.value;
+			RANK_Y = (BASEVIDHEIGHT) - 72 + cv_bigrank_yoffset.value;
 		}
 	}
 
