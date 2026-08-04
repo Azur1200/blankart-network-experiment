@@ -51,6 +51,7 @@ IMPL_HUD_OFFSET_Y(chek); // Check gfx
 IMPL_HUD_OFFSET(mini); // Minimap
 IMPL_HUD_OFFSET(want); // Wanted
 IMPL_HUD_OFFSET(rank); // Rank score
+IMPL_HUD_OFFSET(dialrank); // Rank score (Dial speedometer)
 //IMPL_HUD_OFFSET(stat); // Stats
 
 #undef IMPL_HUD_OFFSET

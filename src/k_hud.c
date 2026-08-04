@@ -85,6 +85,7 @@ IMPL_HUD_OFFSET(mini); // Minimap
 IMPL_HUD_OFFSET(want); // Wanted
 IMPL_HUD_OFFSET(lapem); // Lap emblem
 IMPL_HUD_OFFSET(rank); // Rank score
+IMPL_HUD_OFFSET(dialrank); // Rank score (Dial speedometer)
 //IMPL_HUD_OFFSET(stat); // Stats
 
 #undef IMPL_HUD_OFFSET
@@ -292,6 +293,7 @@ void K_RegisterKartHUDStuff(void)
 	REG_HUD_OFFSET(want); // Wanted
 	REG_HUD_OFFSET(lapem); // Lap emblem
 	REG_HUD_OFFSET(rank); // Rank score
+	REG_HUD_OFFSET(dialrank); // Rank score (Dial speedometer)
 	//REG_HUD_OFFSET(stat); // Stats
 
 #undef REG_HUD_OFFSET
@@ -1160,6 +1162,25 @@ static void K_initKartHUD(void)
 	// Rank Score
 	RANK_X = 96 + cv_rank_xoffset.value;						//  96
 	RANK_Y = BASEVIDHEIGHT - 50 + cv_rank_yoffset.value;		// 150
+
+	const boolean dialspeedometer = (cv_newspeedometer.value == 3 && r_splitscreen < 1);
+
+	if (dialspeedometer)  // Dial Speedometer
+	{
+		// This sits on top of the speedometer, so we need to adjust FURTHER for rings
+		// Also: dial-unique offsets! What joy...
+
+		if (K_RingsActive() == true)
+		{
+			RANK_X = 40 + cv_dialrank_xoffset.value;
+			RANK_Y = (BASEVIDHEIGHT) - 53 + cv_dialrank_yoffset.value;
+		}
+		else
+		{
+			RANK_X = 41 + cv_dialrank_xoffset.value;
+			RANK_Y = (BASEVIDHEIGHT) - 42 + cv_dialrank_yoffset.value;
+		}
+	}
 
 	if (r_splitscreen)	// Splitscreen
 	{
