@@ -462,6 +462,7 @@ static boolean RankScreenVis_ShowGrade(void)
 	UINT8* cmap = NULL;
 
 	char finrankstring[12] = "FINAL RANK:";
+	char norankstring[11] = "No rank..."; // Spectators aren't ranked
 	patch_t* rankpatch = NULL;
 
 	boolean half_y = false;
@@ -664,17 +665,25 @@ static boolean RankScreenVis_ShowGrade(void)
 			if (rankresultsphase >= 4)
 			{
 				yy += 17;
-				V_DrawString(xx + finrank_xoffs, yy, textflags, finrankstring);
 
-				cmap = R_GetTranslationColormap(TC_DEFAULT, usecolor, GTC_CACHE);
-
-				if (rankpatch)
+				if (players[pid].spectator)
 				{
-					V_DrawMappedPatch(xx + finrank_xoffs + strwidth + 2,
-							  yy - 4,
-							  0,
-							  rankpatch,
-							  cmap);
+					V_DrawString(xx + finrank_xoffs, yy, textflags, norankstring);
+				}
+				else
+				{
+					V_DrawString(xx + finrank_xoffs, yy, textflags, finrankstring);
+
+					cmap = R_GetTranslationColormap(TC_DEFAULT, usecolor, GTC_CACHE);
+
+					if (rankpatch)
+					{
+						V_DrawMappedPatch(xx + finrank_xoffs + strwidth + 2,
+								yy - 4,
+								0,
+								rankpatch,
+								cmap);
+					}
 				}
 			}
 		}
@@ -1605,10 +1614,23 @@ static void RankTick_Graph(void)
 			INT32 i = 0;
 			UINT16 bestlocalplayer = 0;
 			UINT16 bestlocalpos = MAXPLAYERS;
+			boolean everyonespectates = true;
 			for (i = 0; i < (r_splitscreen + 1); i++)
 			{
 				if (ranksort_positions[displayplayers[i]] < bestlocalpos)
 				{
+					if (!P_IsLocalPlayer(&players[displayplayers[i]]))
+					{
+						// Not on this machine
+						continue;
+					}
+
+					if (!players[displayplayers[i]].spectator)
+					{
+						// By virtue of at least ONE player being in the
+						// game, everyone *isn't* spectating
+						everyonespectates = false;
+					}
 					bestlocalpos = ranksort_positions[displayplayers[i]];
 					bestlocalplayer = displayplayers[i];
 				}
@@ -1616,7 +1638,7 @@ static void RankTick_Graph(void)
 
 			char buffer[9] = {0};
 
-			if (!demo.playback)
+			if (!(demo.playback || everyonespectates))
 			{
 				if (K_IsPlayerLosingByRank(&players[bestlocalplayer]))
 					sprintf(buffer, "krlose");
@@ -1659,15 +1681,15 @@ static void RankTick_ShowGrade(void)
 	else if (ranktic == (3 * TICRATE))
 	{
 		// Display rank
+		const INT32 useplayer = demo.playback ? displayplayers[0] : consoleplayer;
 
-		if (r_splitscreen)
+		if (r_splitscreen || (players[useplayer].spectator))
 		{
 			S_StartSound(NULL, sfx_dda96);
 		}
 		else
 		{
 			// If we're playing alone, play a sound based on our performance
-			const INT32 useplayer = demo.playback ? displayplayers[0] : consoleplayer;
 			const ranklevel_e myranklevel =
 			    ranktiertolevel[players[useplayer].ranktier];
 			sfxenum_t ranksound = ranklvlsounds[myranklevel];

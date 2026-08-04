@@ -766,8 +766,13 @@ boolean P_EndingMusic(player_t *player)
 
 #undef getplayerpos
 
+	boolean forcestandardresults = false;
+
 	if (racemode && bestlocalpos == MAXPLAYERS+1)
+	{
 		sprintf(buffer, "k*fail"); // F-Zero death results theme
+		forcestandardresults = true;
+	}
 	else if (racemode && racewasgraded)
 	{
 		// Race used ranks; play a fanfare and prepare the ticker for the intermission music
@@ -793,7 +798,7 @@ boolean P_EndingMusic(player_t *player)
 
 	S_SpeedMusic(1.0f);
 
-	if (racemode && (!racewasgraded))
+	if (racemode && ((!racewasgraded) || forcestandardresults))
 		buffer[1] = 'r';
 	else if ((gametypes[gametype]->rules & GTR_BUMPERS))
 	{
