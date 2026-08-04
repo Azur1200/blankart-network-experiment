@@ -386,7 +386,10 @@ void V_DrawPaddedTallColorNumAtFixed(fixed_t x, fixed_t y, INT32 flags, INT32 nu
 
 // Draw ping numbers. Used by the scoreboard and that one ping option. :P
 // This is a separate function because IMO lua should have access to it as well.
-INT32 V_DrawPingNum(INT32 x, INT32 y, INT32 flags, INT32 num, const UINT8 *colormap);
+INT32 V_DrawPingNumPadded(INT32 x, INT32 y, INT32 flags, INT32 num, UINT16 padding, const UINT8 *colormap);
+#define V_DrawPingNum(x, y, flags, num, colormap) \
+	V_DrawPingNumPadded(x, y, flags, num, 0, colormap)
+
 INT32 V_DrawPingNumAtFixed(fixed_t x, fixed_t y, INT32 flags, INT32 num, const UINT8 *colormap);
 INT32 V_DrawPingNumScaled(fixed_t x, fixed_t y, fixed_t scale, INT32 flags, INT32 num, const UINT8 *colormap);
 
