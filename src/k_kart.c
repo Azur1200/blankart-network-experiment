@@ -13264,7 +13264,7 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 		return;
 	}
 
-	if (player->exiting)
+	if (player->exiting || (player->pflags & PF_NOCONTEST))
 	{
 		// We finished, doofus!
 		return;

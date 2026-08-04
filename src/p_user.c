@@ -3816,15 +3816,23 @@ void P_DoTimeOver(player_t *player)
 
 	if (player->mo)
 	{
-		// Punish the player's rank dearly for their folly
-		player->ranklog.lapgrading -= 100; // Flat lap grading of -100
-		K_UpdateIndividualPlayerRank(player); // Update ranks with the new data
+		if (!cannotrank)
+		{
+			player->pflags &= ~PF_NOCONTEST;
 
-		// Log this
-		K_AddScoreToTracker((UINT16)(player - players), player->rankscore + LOWESTRANKSCORE_ABS);
+			// Punish the player's rank dearly for their folly
+			player->ranklog.lapgrading -= 100; // Flat lap grading of -100
+			K_UpdateIndividualPlayerRank(player); // Update ranks with the new data
 
-		// ...and THEN update the ranking positions
-		K_GetRankBasedPositions();
+			// Log this
+			K_AddScoreToTracker((UINT16)(player - players), player->rankscore + LOWESTRANKSCORE_ABS);
+
+			// ...and THEN update the ranking positions
+			K_GetRankBasedPositions();
+
+			// Reset the NOCONTEST flag after
+			player->pflags |= PF_NOCONTEST;
+		}
 
 		S_StopSound(player->mo);
 		if (P_DamageMobj(player->mo, NULL, NULL, 1, DMG_TIMEOVER))
