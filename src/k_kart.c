@@ -114,7 +114,8 @@ void K_InitRankScoreTrackers(void)
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		// Initialize the rankscore trackers for each player by clearing them out
-		// This seems counterproductive... but the cvector allocators will solve the problem for us!
+		// This seems counterproductive... but the cvector allocators will solve the problem
+		// for us!
 		if (rankscore_tracker[i] != NULL)
 		{
 			cvector_free(rankscore_tracker[i]);
@@ -126,9 +127,9 @@ void K_InitRankScoreTrackers(void)
 void K_AddScoreToTracker(UINT16 pid, INT32 score)
 {
 	if (cannotrank)
-		return; // Can't rank, don't do this
+		return;  // Can't rank, don't do this
 
-    cvector_push_back(rankscore_tracker[pid], score);
+	cvector_push_back(rankscore_tracker[pid], score);
 }
 
 #define SCORELOG_INTERVAL (5 * TICRATE)
@@ -136,49 +137,49 @@ void K_AddScoreToTracker(UINT16 pid, INT32 score)
 void K_LogPlayerRankScores(void)
 {
 	if (cannotrank)
-		return; // We can't rank in the first place...
+		return;  // We can't rank in the first place...
 
-    INT32 elapsed = max(0, (signed)(leveltime) - (signed)(starttime));
-    INT32 elapsed_interval = (elapsed % SCORELOG_INTERVAL);
+	INT32 elapsed = max(0, (signed)(leveltime) - (signed)(starttime));
+	INT32 elapsed_interval = (elapsed % SCORELOG_INTERVAL);
 
-    boolean logme = false;
+	boolean logme = false;
 
-    if (!elapsed)
-		return; // Race hasn't started yet
+	if (!elapsed)
+		return;  // Race hasn't started yet
 
 	INT32 i = 0;
-    for (i = 0; i < MAXPLAYERS; i++)
+	for (i = 0; i < MAXPLAYERS; i++)
 	{
-        logme = false;
+		logme = false;
 
 		if (!playeringame[i])
-			continue; // Not in game
+			continue;  // Not in game
 
-        if (players[i].spectator)
-            continue; // Spectating
+		if (players[i].spectator)
+			continue;  // Spectating
 
-        if (P_MobjWasRemoved(players[i].mo))
-            continue; // No object
+		if (P_MobjWasRemoved(players[i].mo))
+			continue;  // No object
 
-        if ((elapsed_interval == 0) && (!players[i].exiting))
-            logme = true;
+		if ((elapsed_interval == 0) && (!players[i].exiting))
+			logme = true;
 
-        if (logme)
-            K_AddScoreToTracker(i, players[i].rankscore + LOWESTRANKSCORE_ABS);
-    }
+		if (logme)
+			K_AddScoreToTracker(i, players[i].rankscore + LOWESTRANKSCORE_ABS);
+	}
 }
 
-static int compareRankScores(const void *a, const void *b)
+static int compareRankScores(const void* a, const void* b)
 {
-	const UINT16 * a16 = (const UINT16 *)(a);
-	const UINT16 * b16 = (const UINT16 *)(b);
+	const UINT16* a16 = (const UINT16*)(a);
+	const UINT16* b16 = (const UINT16*)(b);
 
 	if (players[*a16].rankscore > players[*b16].rankscore)
-        return -1;
-    else if (players[*a16].rankscore < players[*b16].rankscore)
-        return 1;
+		return -1;
+	else if (players[*a16].rankscore < players[*b16].rankscore)
+		return 1;
 
-    return 0;
+	return 0;
 }
 
 void K_GetRankBasedPositions(void)
@@ -192,7 +193,7 @@ void K_GetRankBasedPositions(void)
 		ranksort_positions[i] = MAXPLAYERS;
 	}
 
-	qs22j((void *)(sorted_pids), MAXPLAYERS, sizeof(UINT16), &compareRankScores);
+	qs22j((void*)(sorted_pids), MAXPLAYERS, sizeof(UINT16), &compareRankScores);
 
 	// Best rank always lead the pack
 	ranksort_positions[&players[sorted_pids[0]] - players] = 1;
@@ -200,8 +201,8 @@ void K_GetRankBasedPositions(void)
 	UINT16 position = 1;
 	for (i = 1; i < MAXPLAYERS; i++)
 	{
-		// We've sorted the players by their rank scores, so it's impossible for a lower score to be in front of a higher one
-		// ...hopefully
+		// We've sorted the players by their rank scores, so it's impossible for a lower
+		// score to be in front of a higher one...hopefully 🥹
 		if (players[sorted_pids[i - 1]].rankscore > players[sorted_pids[i]].rankscore)
 		{
 			position++;
@@ -11706,14 +11707,19 @@ void K_KartUpdatePosition(player_t *player)
 	player->position = position;
 
 	const INT32 playerseed = max(0, players_racing - 1);
-	const INT32 leaderfactor = max(0, playerseed - max(0, position - 1));
-	const INT32 convtopercent = ((1<<24) / playerseed);
 
-	// There's always a chance some off-kilter value fucks up the multiplier, so we "round up" by a tiiny bit...
-	const fixed_t leadermul = min(FRACUNIT, ((convtopercent / 256) * leaderfactor) + 2);
+	if (playerseed > 0)
+	{
+		const INT32 leaderfactor = max(0, playerseed - max(0, position - 1));
+		const INT32 convtopercent = ((1 << 24) / playerseed);
 
-	// ...let's just make this consistent
-	player->ranklog.leadertics += max(0, FixedMul(32, leadermul));
+		// There's always a chance some off-kilter value fucks up the multiplier, so we
+		// "round up" by a tiiny bit...
+		const fixed_t leadermul = min(FRACUNIT, ((convtopercent / 256) * leaderfactor) + 2);
+
+		// ...let's just make this consistent
+		player->ranklog.leadertics += max(0, FixedMul(32, leadermul));
+	}
 }
 
 void K_KartLegacyUpdatePosition(player_t *player)
@@ -11839,14 +11845,19 @@ void K_KartLegacyUpdatePosition(player_t *player)
 	player->position = position;
 
 	const INT32 playerseed = max(0, players_racing - 1);
-	const INT32 leaderfactor = max(0, playerseed - max(0, position - 1));
-	const INT32 convtopercent = ((1<<24) / playerseed);
 
-	// There's always a chance some off-kilter value fucks up the multiplier, so we "round up" by a tiiny bit...
-	const fixed_t leadermul = min(FRACUNIT, ((convtopercent / 256) * leaderfactor) + 2);
+	if (playerseed > 0)
+	{
+		const INT32 leaderfactor = max(0, playerseed - max(0, position - 1));
+		const INT32 convtopercent = ((1 << 24) / playerseed);
 
-	// ...let's just make this consistent
-	player->ranklog.leadertics += max(0, FixedMul(32, leadermul));
+		// There's always a chance some off-kilter value fucks up the multiplier, so we
+		// "round up" by a tiiny bit...
+		const fixed_t leadermul = min(FRACUNIT, ((convtopercent / 256) * leaderfactor) + 2);
+
+		// ...let's just make this consistent
+		player->ranklog.leadertics += max(0, FixedMul(32, leadermul));
+	}
 }
 
 UINT32 clusterid = 0;
