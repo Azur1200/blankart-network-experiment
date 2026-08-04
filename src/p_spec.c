@@ -4559,16 +4559,26 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 
 		case 4000: // Enable WaterRun
 		{
-			if (mo->player == NULL || !K_ItemMobjAllowedtoWaterRun(mo))
+			if (mo->player == NULL || (mo->player == NULL && !K_ItemMobjAllowedtoWaterRun(mo)))
 			{
 				return false;
 			}
 
 			if (mo->player)
 			{
-				if (mo->player->sneakertimer > 0)
+				if (mo->player->realsneakertimer > 0
+					|| mo->player->invincibilitytimer > 0
+					|| mo->player->smonitortimer > 0
+					|| mo->player->flametimer > 0
+					|| mo->player->growshrinktimer > 0
+					|| mo->player->bubbleboost > 0
+					|| K_IsAltShrunk(mo->player)
+				)
 				{
 					mo->flags2 |= MF2_WATERRUN;
+
+					S_StopSoundByID(mo, sfx_kc3c);
+					S_StartSound(mo, sfx_kc3c);
 				}
 			}
 			else
@@ -4576,11 +4586,11 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 				if (P_AproxDistance(mo->momx, mo->momy) > 14*mo->scale)
 				{
 					mo->flags2 |= MF2_WATERRUN;
+
+					S_StopSoundByID(mo, sfx_kc3c);
+					S_StartSound(mo, sfx_kc3c);
 				}
 			}
-
-			S_StopSoundByID(mo, sfx_kc3c);
-			S_StartSound(mo, sfx_kc3c);
 			break;
 		}
 
