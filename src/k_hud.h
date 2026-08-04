@@ -192,6 +192,7 @@ extern patch_t *kp_itemtarget_far_text[2];
 extern patch_t *kp_itemtarget_near[2][8];
 
 extern patch_t *kp_ranktier[NUMRANKTIERS];
+extern patch_t *kp_ranktier4p[NUMRANKTIERS];
 
 boolean K_UseHighResPortraits(void);
 

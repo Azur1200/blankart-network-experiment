@@ -256,7 +256,8 @@ static patch_t *kp_dialbase[4] = {NULL};
 static patch_t *kp_speedpatchesdial[8] = {NULL};
 static patch_t *kp_dialnum[20] = {NULL};
 
-patch_t *kp_ranktier[NUMRANKTIERS];
+patch_t *kp_ranktier[NUMRANKTIERS] = {NULL};
+patch_t *kp_ranktier4p[NUMRANKTIERS] = {NULL};
 
 void K_RegisterKartHUDStuff(void)
 {
@@ -828,6 +829,14 @@ void K_LoadKartHUDGraphics(void)
 		buffer[5] = '0'+((i+1)/10);
 		buffer[6] = '0'+((i+1)%10);
 		HU_UpdatePatch(&kp_ranktier[i], "%s", buffer);
+	}
+
+	sprintf(buffer, "BKRNSxx");
+	for (i = 0; i < NUMRANKTIERS; i++)
+	{
+		buffer[5] = '0'+((i+1)/10);
+		buffer[6] = '0'+((i+1)%10);
+		HU_UpdatePatch(&kp_ranktier4p[i], "%s", buffer);
 	}
 }
 
@@ -1933,7 +1942,9 @@ static void K_drawKartItem(void)
 	}
 }
 
-static void k_drawKartRaceRank(player_t *p, INT32 x, INT32 y, UINT32 flags, UINT8 *colormap, boolean splitscreen)
+#define BASEPADDING (4)
+
+static void k_drawKartRaceRank(player_t *p, INT32 x, INT32 y, UINT32 flags, UINT8 *colormap)
 {
 	if (dedicated)
 		return; // Not for dedis, stupid!
@@ -1944,7 +1955,11 @@ static void k_drawKartRaceRank(player_t *p, INT32 x, INT32 y, UINT32 flags, UINT
 	if (!p)
 		return; // ...of course.
 
-	const patch_t *rankpic = kp_ranktier[p->ranktier];
+	const boolean draw4p = (r_splitscreen >= 2) ? true : false;
+
+	patch_t **rankpicarray = (draw4p) ? &kp_ranktier4p[0] : &kp_ranktier[0];
+
+	patch_t *rankpic = rankpicarray[p->ranktier];
 
 	if (!rankpic)
 	{
@@ -1953,13 +1968,51 @@ static void k_drawKartRaceRank(player_t *p, INT32 x, INT32 y, UINT32 flags, UINT
 	}
 
 	const boolean is_negative = (p->rankscore < 0);
+	INT32 num = abs(p->rankscore);
+	INT32 xx = 0;
+
+	if (draw4p)
+	{
+		// Draw the rank patch first
+		V_DrawMappedPatch(x, y, flags, rankpic, colormap);
+
+		UINT16 align = BASEPADDING;
+		UINT16 numdiv = num;
+
+		// Padding = 10 ^ (BASEPADDING - 1)
+		const double maxpad_d = min((double)(INT32_MAX), pow(10.0, (double)(max(0, BASEPADDING))));
+		INT32 maxpadding = (INT32)(maxpad_d);
+
+		// If we're over the base padding, increase our padding
+		while (numdiv > maxpadding)
+		{
+			align++;
+			numdiv /= 10;
+		}
+
+		if (is_negative)
+		{
+			// If this is a negative number, draw the minus right before the actual numbers
+			V_DrawScaledPatch(x + 16, y + 2, flags, kp_ringdebtminussmall);
+			xx = 4;
+
+			// Reduce the padding a little so we're not clipping into the other player's screen
+			align--;
+		}
+
+		const INT32 pingwidth = SHORT(fontv[PINGNUM_FONT].font[0]->width);
+
+		// Pingnums are only ever right-aligned, so we have to force it to be left-aligned
+		xx += (pingwidth - 1) * align;
+
+		V_DrawPingNumPadded(x + 16 + xx, y, flags, num, align, NULL);
+
+		return;
+	}
 
 	const INT16 basewidth = kp_facenum[0]->width;
 	const INT16 rnknumwidth = basewidth - 1;
 	INT16 rnkstringwidth = 0;
-
-	INT32 num = abs(p->rankscore);
-	INT32 xx = 0;
 
 	// First loop: get the "width" of the numbers
 	do
@@ -3381,17 +3434,11 @@ static void K_DrawDialSpeedometer(fixed_t speed,
 {
 	const UINT8* colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 
-	INT32 ringoffset = 0;
 	const UINT8 infoidx = (infoactive) ? 1 : 0;
 
 	const fixed_t spd = FixedDiv(speed, divisor);
 	const angle_t speedangle =
 		FixedAngle(((min(135 * FRACUNIT, spd) - (45 * FRACUNIT))));
-
-	if (K_RingsActive() == true)
-	{
-		ringoffset = -16;
-	}
 
 	if (colorized)  // Colourized hud
 	{
@@ -6960,26 +7007,28 @@ void K_drawKartHUD(void)
 			}
 
 			// Draw the player's rank score
-			// FIXME: Splitscreen disply 🫠
-			if (r_splitscreen < 1)
+			// FIXME: 2P splitscreen display 🫠
+			if (!(dedicated || cannotrank))
 			{
-				const skincolornum_t ranktier_color =
-				    (stplyr->ranktier >= RTIER_ONESTAR) ? SKINCOLOR_GOLD
-									: SKINCOLOR_SILVER;
+				const skincolornum_t ranktier_color = (stplyr->ranktier >= RTIER_ONESTAR) ? SKINCOLOR_GOLD : SKINCOLOR_SILVER;
+				UINT8* cmap = (stplyr->ranklog.prankeligible && stplyr->ranktier == RTIER_P) ? R_GetTranslationColormap(TC_RAINBOW, K_SMonitorColor(leveltime / 2), GTC_CACHE) : R_GetTranslationColormap(TC_RAINBOW, ranktier_color, GTC_CACHE);
 
-				UINT8* cmap =
-				    (stplyr->ranklog.prankeligible && stplyr->ranktier == RTIER_P)
-					? R_GetTranslationColormap(
-					      TC_RAINBOW, K_SMonitorColor(leveltime / 2), GTC_CACHE)
-					: R_GetTranslationColormap(
-					      TC_RAINBOW, ranktier_color, GTC_CACHE);
+				if (r_splitscreen < 1)
+				{
+					k_drawKartRaceRank(stplyr,
+							96,
+							150,
+							V_HUDTRANS | V_SNAPTOBOTTOM | V_SNAPTOLEFT,
+							cmap);
+				}
+				else if (r_splitscreen >= 2)
+				{
+					const boolean oppositeside = ((stplyrnum & 1) == 1);
+					const boolean onbottom = (stplyrnum >= 2);
+					const UINT32 snapflags = (onbottom) ? V_SNAPTOBOTTOM : V_SNAPTOTOP;
 
-				k_drawKartRaceRank(stplyr,
-						   96,
-						   150,
-						   V_HUDTRANS | V_SNAPTOBOTTOM | V_SNAPTOLEFT,
-						   cmap,
-						   (r_splitscreen >= 1));
+					k_drawKartRaceRank(stplyr, (oppositeside) ? 164 : 123, (onbottom) ? 188 : 4, V_HUDTRANS | snapflags, cmap);
+				}
 			}
 
 			if (LUA_HudEnabled(hud_rings) && K_RingsActive() == true)
