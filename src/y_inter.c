@@ -394,18 +394,24 @@ void Y_CleanupScreenBuffer(void)
 	y_screenbuffer = NULL;
 }
 
-static void Y_DrawThinStringWithBacking(INT32 x, INT32 y, INT32 backwidth, UINT32 flags, UINT32 backflags, skincolornum_t color, const char *text)
+static void Y_DrawThinStringWithBacking(INT32 x,
+					INT32 y,
+					INT32 backwidth,
+					UINT32 flags,
+					UINT32 backflags,
+					skincolornum_t color,
+					const char* text)
 {
-	UINT8 *cmap = R_GetTranslationColormap(TC_DEFAULT, color, GTC_CACHE);
+	UINT8* cmap = R_GetTranslationColormap(TC_DEFAULT, color, GTC_CACHE);
 	UINT8 fillcolor = V_GetColorFromSkinColorEx(color, 9);
 
-	patch_t *backpatch_left = W_CachePatchName("RNKST1", PU_CACHE);
-	patch_t *backpatch_right = W_CachePatchName("RNKST2", PU_CACHE);
+	patch_t* backpatch_left = W_CachePatchName("RNKST1", PU_CACHE);
+	patch_t* backpatch_right = W_CachePatchName("RNKST2", PU_CACHE);
 
-	V_DrawMappedPatch(x-5, y+5, backflags, backpatch_left, cmap);
-	V_DrawMappedPatch(x+backwidth, y+5, backflags, backpatch_right, cmap);
+	V_DrawMappedPatch(x - 5, y + 5, backflags, backpatch_left, cmap);
+	V_DrawMappedPatch(x + backwidth, y + 5, backflags, backpatch_right, cmap);
 
-	V_DrawFill(x,y+5,backwidth,5,fillcolor);
+	V_DrawFill(x, y + 5, backwidth, 5, fillcolor);
 
 	V_DrawThinString(x, y, flags, text);
 }
@@ -415,7 +421,7 @@ static void Y_DrawThinStringWithBacking(INT32 x, INT32 y, INT32 backwidth, UINT3
 
 static boolean RankScreenVis_ShowGrade(void)
 {
-	INT32 dupadjust = (vid.scaledwidth), duptweak = (dupadjust - BASEVIDWIDTH)/2;
+	INT32 dupadjust = (vid.scaledwidth), duptweak = (dupadjust - BASEVIDWIDTH) / 2;
 
 	INT32 screen_x = 0;
 
@@ -424,11 +430,23 @@ static boolean RankScreenVis_ShowGrade(void)
 		INT32 count = slidetic;
 
 		if (count < 8)
-			screen_x -= ((((count<<FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dup);
+		{
+			screen_x -=
+			    ((((count << FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width) >>
+			     FRACBITS) /
+			    (8 * vid.dup);
+		}
 		else if (count == 8)
+		{
 			return false;
+		}
 		else if (count < 16)
-			screen_x += (((((16 - count)<<FRACBITS) - R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dup);
+		{
+			screen_x += (((((16 - count) << FRACBITS) - R_GetTimeFrac(RTF_INTER)) *
+				      vid.width) >>
+				     FRACBITS) /
+				    (8 * vid.dup);
+		}
 	}
 
 	INT32 base_x = screen_x + 32;
@@ -439,12 +457,12 @@ static boolean RankScreenVis_ShowGrade(void)
 	INT32 curwidth = BACKINGWIDTH;
 	INT32 finrank_xoffs = 79;
 	INT32 strwidth = 80;
-	UINT32 textflags = V_ALLOWLOWERCASE|V_6WIDTHSPACE;
+	UINT32 textflags = V_ALLOWLOWERCASE | V_6WIDTHSPACE;
 	skincolornum_t usecolor = SKINCOLOR_GREEN;
-	UINT8 *cmap = NULL;
+	UINT8* cmap = NULL;
 
 	char finrankstring[12] = "FINAL RANK:";
-	patch_t *rankpatch = NULL;
+	patch_t* rankpatch = NULL;
 
 	boolean half_y = false;
 
@@ -456,12 +474,13 @@ static boolean RankScreenVis_ShowGrade(void)
 		finrank_xoffs = 18;
 
 		// Draw a divider line between the two rank displays
-		V_DrawFill(screen_x+159, 34, 1, 165, 0);
+		V_DrawFill(screen_x + 159, 34, 1, 165, 0);
 	}
 
 	if (r_splitscreen >= 2)
 	{
-		// Gotta use compact drawing for this; means we can't show ALL the specifics on bonuses/penalties...
+		// Gotta use compact drawing for this; means we can't show ALL the specifics on
+		// bonuses/penalties...
 		half_y = true;
 
 		memset(finrankstring, 0, sizeof(finrankstring));
@@ -472,12 +491,12 @@ static boolean RankScreenVis_ShowGrade(void)
 		finrank_xoffs = 40;
 
 		// Draw ANOTHER divider line...
-		V_DrawFill((screen_x + 1) - duptweak, 116, dupadjust-2, 1, 0);
+		V_DrawFill((screen_x + 1) - duptweak, 116, dupadjust - 2, 1, 0);
 	}
 
 	const INT32 drawcnt = min(MAXSPLITSCREENPLAYERS, r_splitscreen + 1);
 
-	//I_OutputMsg("drawcnt: %d", drawcnt);
+	// I_OutputMsg("drawcnt: %d", drawcnt);
 
 	INT32 i = 0;
 	for (i = 0; i < drawcnt; i++)
@@ -490,7 +509,7 @@ static boolean RankScreenVis_ShowGrade(void)
 
 		rankpatch = kp_ranktier[players[pid].ranktier];
 
-		//I_OutputMsg("i: %d", i);
+		// I_OutputMsg("i: %d", i);
 
 		xx = base_x + ((i & 1) ? 160 : 0);
 		yy = base_y + ((i > 1) ? 82 : 0);
@@ -501,7 +520,6 @@ static boolean RankScreenVis_ShowGrade(void)
 
 		if (!half_y)
 		{
-
 			//
 			// BONUSES
 			//
@@ -509,28 +527,53 @@ static boolean RankScreenVis_ShowGrade(void)
 			if (rankresultsphase >= 1)
 			{
 				// Hit Bonus
-				Y_DrawThinStringWithBacking(xx, yy, curwidth, textflags, 0, usecolor, "Hit Bonus");
-				V_DrawRightAlignedString(point_x, yy, textflags|V_SKYMAP, va("%d", players[pid].rankscorefactor.hitbonus));
+				Y_DrawThinStringWithBacking(
+				    xx, yy, curwidth, textflags, 0, usecolor, "Hit Bonus");
+				V_DrawRightAlignedString(
+				    point_x,
+				    yy,
+				    textflags | V_SKYMAP,
+				    va("%d", players[pid].rankscorefactor.hitbonus));
 
 				// Drift Bonus
 				yy += 11;
-				Y_DrawThinStringWithBacking(xx, yy, curwidth, textflags, 0, usecolor, "Drift Bonus");
-				V_DrawRightAlignedString(point_x, yy, textflags|V_SKYMAP, va("%d", players[pid].rankscorefactor.driftbonus));
+				Y_DrawThinStringWithBacking(
+				    xx, yy, curwidth, textflags, 0, usecolor, "Drift Bonus");
+				V_DrawRightAlignedString(
+				    point_x,
+				    yy,
+				    textflags | V_SKYMAP,
+				    va("%d", players[pid].rankscorefactor.driftbonus));
 
 				// Position Bonus
 				yy += 11;
-				Y_DrawThinStringWithBacking(xx, yy, curwidth, textflags, 0, usecolor, "Position Bonus");
-				V_DrawRightAlignedString(point_x, yy, textflags|V_SKYMAP, va("%d", players[pid].rankscorefactor.positionbonus));
+				Y_DrawThinStringWithBacking(
+				    xx, yy, curwidth, textflags, 0, usecolor, "Position Bonus");
+				V_DrawRightAlignedString(
+				    point_x,
+				    yy,
+				    textflags | V_SKYMAP,
+				    va("%d", players[pid].rankscorefactor.positionbonus));
 
 				// SPB Bonus
 				yy += 11;
-				Y_DrawThinStringWithBacking(xx, yy, curwidth, textflags, 0, usecolor, "SPB-Attack Bonus");
-				V_DrawRightAlignedString(point_x, yy, textflags|V_SKYMAP, va("%d", players[pid].rankscorefactor.spbattackbonus));
+				Y_DrawThinStringWithBacking(
+				    xx, yy, curwidth, textflags, 0, usecolor, "SPB-Attack Bonus");
+				V_DrawRightAlignedString(
+				    point_x,
+				    yy,
+				    textflags | V_SKYMAP,
+				    va("%d", players[pid].rankscorefactor.spbattackbonus));
 
 				// Start Bonus
 				yy += 11;
-				Y_DrawThinStringWithBacking(xx, yy, curwidth, textflags, 0, usecolor, "Start Bonus");
-				V_DrawRightAlignedString(point_x, yy, textflags|V_SKYMAP, va("%d", players[pid].rankscorefactor.startbonus));
+				Y_DrawThinStringWithBacking(
+				    xx, yy, curwidth, textflags, 0, usecolor, "Start Bonus");
+				V_DrawRightAlignedString(
+				    point_x,
+				    yy,
+				    textflags | V_SKYMAP,
+				    va("%d", players[pid].rankscorefactor.startbonus));
 			}
 
 			//
@@ -541,13 +584,23 @@ static boolean RankScreenVis_ShowGrade(void)
 			{
 				// Lap Grading
 				yy += 14;
-				Y_DrawThinStringWithBacking(xx, yy, curwidth, textflags, 0, usecolor, "Lap Grading");
-				V_DrawRightAlignedString(point_x, yy, textflags, va("%d", players[pid].rankscorefactor.lapgradescore));
+				Y_DrawThinStringWithBacking(
+				    xx, yy, curwidth, textflags, 0, usecolor, "Lap Grading");
+				V_DrawRightAlignedString(
+				    point_x,
+				    yy,
+				    textflags,
+				    va("%d", players[pid].rankscorefactor.lapgradescore));
 
 				// Par-time Score
 				yy += 11;
-				Y_DrawThinStringWithBacking(xx, yy, curwidth, textflags, 0, usecolor, "Par-time Score");
-				V_DrawRightAlignedString(point_x, yy, textflags, va("%d", players[pid].rankscorefactor.partimescore));
+				Y_DrawThinStringWithBacking(
+				    xx, yy, curwidth, textflags, 0, usecolor, "Par-time Score");
+				V_DrawRightAlignedString(
+				    point_x,
+				    yy,
+				    textflags,
+				    va("%d", players[pid].rankscorefactor.partimescore));
 			}
 
 			//
@@ -558,28 +611,50 @@ static boolean RankScreenVis_ShowGrade(void)
 			{
 				// Offroad Penalty
 				yy += 14;
-				Y_DrawThinStringWithBacking(xx, yy, curwidth, textflags, 0, usecolor, "Offroad Penalty");
-				V_DrawRightAlignedString(point_x, yy, textflags|V_REDMAP, va("%d", players[pid].rankscorefactor.offroadpenalty * -1));
+				Y_DrawThinStringWithBacking(
+				    xx, yy, curwidth, textflags, 0, usecolor, "Offroad Penalty");
+				V_DrawRightAlignedString(
+				    point_x,
+				    yy,
+				    textflags | V_REDMAP,
+				    va("%d", players[pid].rankscorefactor.offroadpenalty * -1));
 
 				// Wall Penalty
 				yy += 11;
-				Y_DrawThinStringWithBacking(xx, yy, curwidth, textflags, 0, usecolor, "Wall Penalty");
-				V_DrawRightAlignedString(point_x, yy, textflags|V_REDMAP, va("%d", players[pid].rankscorefactor.wallpenalty * -1));
+				Y_DrawThinStringWithBacking(
+				    xx, yy, curwidth, textflags, 0, usecolor, "Wall Penalty");
+				V_DrawRightAlignedString(
+				    point_x,
+				    yy,
+				    textflags | V_REDMAP,
+				    va("%d", players[pid].rankscorefactor.wallpenalty * -1));
 
 				// Hazard Penalty
 				yy += 11;
-				Y_DrawThinStringWithBacking(xx, yy, curwidth, textflags, 0, usecolor, "Hazard Penalty");
-				V_DrawRightAlignedString(point_x, yy, textflags|V_REDMAP, va("%d", players[pid].rankscorefactor.hazardpenalty * -1));
+				Y_DrawThinStringWithBacking(
+				    xx, yy, curwidth, textflags, 0, usecolor, "Hazard Penalty");
+				V_DrawRightAlignedString(
+				    point_x,
+				    yy,
+				    textflags | V_REDMAP,
+				    va("%d", players[pid].rankscorefactor.hazardpenalty * -1));
 
 				// Respawn Penalty
 				yy += 11;
-				Y_DrawThinStringWithBacking(xx, yy, curwidth, textflags, 0, usecolor, "Respawn Penalty");
-				V_DrawRightAlignedString(point_x, yy, textflags|V_REDMAP, va("%d", players[pid].rankscorefactor.respawnpenalty * -1));
+				Y_DrawThinStringWithBacking(
+				    xx, yy, curwidth, textflags, 0, usecolor, "Respawn Penalty");
+				V_DrawRightAlignedString(
+				    point_x,
+				    yy,
+				    textflags | V_REDMAP,
+				    va("%d", players[pid].rankscorefactor.respawnpenalty * -1));
 
 				// Final Score
 				yy += 13;
-				Y_DrawThinStringWithBacking(xx, yy, curwidth, textflags, 0, usecolor, "Final Score");
-				V_DrawRightAlignedString(point_x, yy, textflags, va("%d", players[pid].rankscore));
+				Y_DrawThinStringWithBacking(
+				    xx, yy, curwidth, textflags, 0, usecolor, "Final Score");
+				V_DrawRightAlignedString(
+				    point_x, yy, textflags, va("%d", players[pid].rankscore));
 			}
 
 			//
@@ -589,20 +664,33 @@ static boolean RankScreenVis_ShowGrade(void)
 			if (rankresultsphase >= 4)
 			{
 				yy += 17;
-				V_DrawString(xx+finrank_xoffs, yy, textflags, finrankstring);
+				V_DrawString(xx + finrank_xoffs, yy, textflags, finrankstring);
 
 				cmap = R_GetTranslationColormap(TC_DEFAULT, usecolor, GTC_CACHE);
 
 				if (rankpatch)
-					V_DrawMappedPatch(xx+finrank_xoffs+strwidth+2, yy-4, 0, rankpatch, cmap);
+				{
+					V_DrawMappedPatch(xx + finrank_xoffs + strwidth + 2,
+							  yy - 4,
+							  0,
+							  rankpatch,
+							  cmap);
+				}
 			}
 		}
 		else
 		{
 			// Compress this down to 3 score displays
 
-			const INT32 bonustotal = (players[pid].rankscorefactor.hitbonus + players[pid].rankscorefactor.driftbonus + players[pid].rankscorefactor.positionbonus + players[pid].rankscorefactor.spbattackbonus + players[pid].rankscorefactor.startbonus);
-			const INT32 penaltytotal = (players[pid].rankscorefactor.offroadpenalty + players[pid].rankscorefactor.wallpenalty + players[pid].rankscorefactor.hazardpenalty + players[pid].rankscorefactor.respawnpenalty);
+			const INT32 bonustotal = (players[pid].rankscorefactor.hitbonus +
+						  players[pid].rankscorefactor.driftbonus +
+						  players[pid].rankscorefactor.positionbonus +
+						  players[pid].rankscorefactor.spbattackbonus +
+						  players[pid].rankscorefactor.startbonus);
+			const INT32 penaltytotal = (players[pid].rankscorefactor.offroadpenalty +
+						    players[pid].rankscorefactor.wallpenalty +
+						    players[pid].rankscorefactor.hazardpenalty +
+						    players[pid].rankscorefactor.respawnpenalty);
 
 			//
 			// BONUSES
@@ -611,8 +699,10 @@ static boolean RankScreenVis_ShowGrade(void)
 			if (rankresultsphase >= 1)
 			{
 				// Hit Bonus
-				Y_DrawThinStringWithBacking(xx, yy, curwidth, textflags, 0, usecolor, "Bonus");
-				V_DrawRightAlignedString(point_x, yy, textflags|V_SKYMAP, va("%d", bonustotal));
+				Y_DrawThinStringWithBacking(
+				    xx, yy, curwidth, textflags, 0, usecolor, "Bonus");
+				V_DrawRightAlignedString(
+				    point_x, yy, textflags | V_SKYMAP, va("%d", bonustotal));
 			}
 
 			//
@@ -623,13 +713,23 @@ static boolean RankScreenVis_ShowGrade(void)
 			{
 				// Lap Grading
 				yy += 14;
-				Y_DrawThinStringWithBacking(xx, yy, curwidth, textflags, 0, usecolor, "Lap Grading");
-				V_DrawRightAlignedString(point_x, yy, textflags, va("%d", players[pid].rankscorefactor.lapgradescore));
+				Y_DrawThinStringWithBacking(
+				    xx, yy, curwidth, textflags, 0, usecolor, "Lap Grading");
+				V_DrawRightAlignedString(
+				    point_x,
+				    yy,
+				    textflags,
+				    va("%d", players[pid].rankscorefactor.lapgradescore));
 
 				// Par-time Score
 				yy += 11;
-				Y_DrawThinStringWithBacking(xx, yy, curwidth, textflags, 0, usecolor, "Par-time Score");
-				V_DrawRightAlignedString(point_x, yy, textflags, va("%d", players[pid].rankscorefactor.partimescore));
+				Y_DrawThinStringWithBacking(
+				    xx, yy, curwidth, textflags, 0, usecolor, "Par-time Score");
+				V_DrawRightAlignedString(
+				    point_x,
+				    yy,
+				    textflags,
+				    va("%d", players[pid].rankscorefactor.partimescore));
 			}
 
 			//
@@ -640,8 +740,10 @@ static boolean RankScreenVis_ShowGrade(void)
 			{
 				// Penalty
 				yy += 14;
-				Y_DrawThinStringWithBacking(xx, yy, curwidth, textflags, 0, usecolor, "Penalty");
-				V_DrawRightAlignedString(point_x, yy, textflags|V_REDMAP, va("%d", penaltytotal * -1));
+				Y_DrawThinStringWithBacking(
+				    xx, yy, curwidth, textflags, 0, usecolor, "Penalty");
+				V_DrawRightAlignedString(
+				    point_x, yy, textflags | V_REDMAP, va("%d", penaltytotal * -1));
 			}
 
 			//
@@ -651,12 +753,18 @@ static boolean RankScreenVis_ShowGrade(void)
 			if (rankresultsphase >= 4)
 			{
 				yy += 17;
-				V_DrawString(xx+finrank_xoffs, yy, textflags, finrankstring);
+				V_DrawString(xx + finrank_xoffs, yy, textflags, finrankstring);
 
 				cmap = R_GetTranslationColormap(TC_DEFAULT, usecolor, GTC_CACHE);
 
 				if (rankpatch)
-					V_DrawMappedPatch(xx+finrank_xoffs+strwidth+2, yy-4, 0, rankpatch, cmap);
+				{
+					V_DrawMappedPatch(xx + finrank_xoffs + strwidth + 2,
+							  yy - 4,
+							  0,
+							  rankpatch,
+							  cmap);
+				}
 			}
 		}
 	}
@@ -670,18 +778,23 @@ static boolean RankScreenVis_ShowGrade(void)
 #define CHARTLINEWIDTH (FRACUNIT * 3)
 #define CHART_HEIGHT (128)
 #define CHART_WIDTH (224)
-#define CHARTHEIGHTDIV (629145) // 9.6; 1200 / 125 = 9.6
+#define CHARTHEIGHTDIV (629145)  // 9.6; 1200 / 125 = 9.6
 #define FILLTIMETOTICS ((tic_t)(2.30 * TICRATE))
 #define FILLSTARTTIC (TICRATE * 1)
 
-static void Y_DrawChartForPlayer(UINT16 pid, INT32 screen_x, UINT8 linecolor, UINT32 drawflags, UINT8 * colormap)
+static void Y_DrawChartForPlayer(UINT16 pid,
+				 INT32 screen_x,
+				 UINT8 linecolor,
+				 UINT32 drawflags,
+				 UINT8* colormap)
 {
 	UINT32 scorelog_len = cvector_size(rankscore_tracker[pid]);
 
 	if ((!scorelog_len) || (scorelog_len < 2))
 		return;
 
-	INT32 chartwidthdiv = ((CHART_WIDTH * FRACUNIT) - CHARTLINEWIDTH) / max(1, scorelog_len - 1);
+	INT32 chartwidthdiv =
+	    ((CHART_WIDTH * FRACUNIT) - CHARTLINEWIDTH) / max(1, scorelog_len - 1);
 	const double widthdiv_d = FixedToDouble(chartwidthdiv);
 
 	INT32 base_y = 166 * FRACUNIT;
@@ -695,8 +808,8 @@ static void Y_DrawChartForPlayer(UINT16 pid, INT32 screen_x, UINT8 linecolor, UI
 	INT32 vis_x = x;
 	INT32 vis_y = y;
 
-	double m = 0.0; // Slope
-	double xdelta = 0.0; // Difference (in pixels) between the two X values
+	double m = 0.0;       // Slope
+	double xdelta = 0.0;  // Difference (in pixels) between the two X values
 	double filltimeperlog = ((double)(FILLTIMETOTICS) / (double)(max(1, scorelog_len)));
 	const INT32 filltime32 = (INT32)(filltimeperlog);
 
@@ -725,7 +838,7 @@ static void Y_DrawChartForPlayer(UINT16 pid, INT32 screen_x, UINT8 linecolor, UI
 			}
 			else
 			{
-				thistic = max(0.0, (double)(filltic) - thisfilltime);
+				thistic = max(0.0, (double)(filltic)-thisfilltime);
 				xdelta = (thistic * perlogmul);
 			}
 
@@ -737,7 +850,8 @@ static void Y_DrawChartForPlayer(UINT16 pid, INT32 screen_x, UINT8 linecolor, UI
 				// y = mx + b
 				vis_y = DoubleToFixed(m * xdelta) + prev_y;
 
-				V_DrawFixedLine(prev_x, prev_y, vis_x, vis_y, CHARTLINEWIDTH, linecolor);
+				V_DrawFixedLine(
+				    prev_x, prev_y, vis_x, vis_y, CHARTLINEWIDTH, linecolor);
 			}
 
 			prev_x = x;
@@ -745,11 +859,12 @@ static void Y_DrawChartForPlayer(UINT16 pid, INT32 screen_x, UINT8 linecolor, UI
 		}
 	}
 
-	patch_t *facegraph = faceprefix[players[pid].skin][FACE_MINIMAP];
+	patch_t* facegraph = faceprefix[players[pid].skin][FACE_MINIMAP];
 
 	if (facegraph)
-	{	
-		const vector2_t offsets = {.x = ((facegraph->width) / 2) + facegraph->leftoffset, .y = ((facegraph->height) / 2) + facegraph->topoffset};
+	{
+		const vector2_t offsets = {.x = ((facegraph->width) / 2) + facegraph->leftoffset,
+					   .y = ((facegraph->height) / 2) + facegraph->topoffset};
 		V_DrawFixedPatch(vis_x - (offsets.x * FRACUNIT),
 				 vis_y - (offsets.y * FRACUNIT),
 				 FRACUNIT,
@@ -776,16 +891,28 @@ static ATTRUSED boolean RankScreenVis_Graph(void)
 		INT32 count = slidetic;
 
 		if (count < 8)
-			screen_x -= ((((count<<FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dup);
+		{
+			screen_x -=
+			    ((((count << FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width) >>
+			     FRACBITS) /
+			    (8 * vid.dup);
+		}
 		else if (count == 8)
+		{
 			return false;
+		}
 		else if (count < 16)
-			screen_x += (((((16 - count)<<FRACBITS) - R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dup);
+		{
+			screen_x += (((((16 - count) << FRACBITS) - R_GetTimeFrac(RTF_INTER)) *
+				      vid.width) >>
+				     FRACBITS) /
+				    (8 * vid.dup);
+		}
 	}
 
 	UINT8 my_pal_index = 0;
 
-	patch_t * chartpatch = NULL;
+	patch_t* chartpatch = NULL;
 	chartpatch = W_CachePatchName("RNKCHT", PU_CACHE);
 
 	if (chartpatch)
@@ -830,18 +957,20 @@ static ATTRUSED boolean RankScreenVis_Graph(void)
 		}
 	}
 
-	UINT8 *cmap = NULL;
+	UINT8* cmap = NULL;
 
 	// Second loop: Draw the miscellaneous players
 	i = 0;
 	for (i = 0; i < num_bgplayers; i++)
 	{
 		if (players[bg_players[i]].spectator)
-			continue; // Spectating
+			continue;  // Spectating
 
-		my_pal_index = V_GetColorFromSkinColorWithBrightness(players[bg_players[i]].skincolor, LINECOLORINDEX, LINEDIM);
+		my_pal_index = V_GetColorFromSkinColorWithBrightness(
+		    players[bg_players[i]].skincolor, LINECOLORINDEX, LINEDIM);
 
-		cmap = R_GetTranslationColormap(TC_DEFAULT, players[bg_players[i]].skincolor, GTC_CACHE);
+		cmap = R_GetTranslationColormap(
+		    TC_DEFAULT, players[bg_players[i]].skincolor, GTC_CACHE);
 
 		Y_DrawChartForPlayer(bg_players[i], screen_x, my_pal_index, V_40TRANS, cmap);
 	}
@@ -851,11 +980,13 @@ static ATTRUSED boolean RankScreenVis_Graph(void)
 	for (i = 0; i < num_displayplayers; i++)
 	{
 		if (players[disp_players[i]].spectator)
-			continue; // Spectating
-		
-		my_pal_index = V_GetColorFromSkinColorEx(players[disp_players[i]].skincolor, LINECOLORINDEX);
+			continue;  // Spectating
 
-		cmap = R_GetTranslationColormap(TC_DEFAULT, players[disp_players[i]].skincolor, GTC_CACHE);
+		my_pal_index =
+		    V_GetColorFromSkinColorEx(players[disp_players[i]].skincolor, LINECOLORINDEX);
+
+		cmap = R_GetTranslationColormap(
+		    TC_DEFAULT, players[disp_players[i]].skincolor, GTC_CACHE);
 
 		Y_DrawChartForPlayer(disp_players[i], screen_x, my_pal_index, 0, cmap);
 	}
@@ -1537,7 +1668,8 @@ static void RankTick_ShowGrade(void)
 		{
 			// If we're playing alone, play a sound based on our performance
 			const INT32 useplayer = demo.playback ? displayplayers[0] : consoleplayer;
-			const ranklevel_e myranklevel = ranktiertolevel[players[useplayer].ranktier];
+			const ranklevel_e myranklevel =
+			    ranktiertolevel[players[useplayer].ranktier];
 			sfxenum_t ranksound = ranklvlsounds[myranklevel];
 
 			S_StartSound(NULL, ranksound);

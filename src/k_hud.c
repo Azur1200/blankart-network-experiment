@@ -1993,22 +1993,22 @@ static void K_drawKartItem(void)
 
 #define BASEPADDING (4)
 
-static void k_drawKartRaceRank(player_t *p, INT32 x, INT32 y, UINT32 flags, UINT8 *colormap)
+static void k_drawKartRaceRank(player_t* p, INT32 x, INT32 y, UINT32 flags, UINT8* colormap)
 {
 	if (dedicated)
-		return; // Not for dedis, stupid!
+		return;  // Not for dedis, stupid!
 
 	if (cannotrank)
-		return; // No point in displaying something irrelevant!
+		return;  // No point in displaying something irrelevant!
 
 	if (!p)
-		return; // ...of course.
+		return;  // ...of course.
 
 	const boolean drawcompact = (r_splitscreen >= 1) ? true : false;
 
-	patch_t **rankpicarray = (drawcompact) ? &kp_ranktier4p[0] : &kp_ranktier[0];
+	patch_t** rankpicarray = (drawcompact) ? &kp_ranktier4p[0] : &kp_ranktier[0];
 
-	patch_t *rankpic = rankpicarray[p->ranktier];
+	patch_t* rankpic = rankpicarray[p->ranktier];
 
 	if (!rankpic)
 	{
@@ -2029,7 +2029,8 @@ static void k_drawKartRaceRank(player_t *p, INT32 x, INT32 y, UINT32 flags, UINT
 		UINT16 numdiv = num;
 
 		// Padding = 10 ^ (BASEPADDING - 1)
-		const double maxpad_d = min((double)(INT32_MAX), pow(10.0, (double)(max(0, BASEPADDING))));
+		const double maxpad_d =
+		    min((double)(INT32_MAX), pow(10.0, (double)(max(0, BASEPADDING))));
 		INT32 maxpadding = (INT32)(maxpad_d);
 
 		// If we're over the base padding, increase our padding
@@ -2041,11 +2042,13 @@ static void k_drawKartRaceRank(player_t *p, INT32 x, INT32 y, UINT32 flags, UINT
 
 		if (is_negative)
 		{
-			// If this is a negative number, draw the minus right before the actual numbers
+			// If this is a negative number, draw the minus right before the actual
+			// numbers
 			V_DrawScaledPatch(x + 16, y + 2, flags, kp_ringdebtminussmall);
 			xx = 4;
 
-			// Reduce the padding a little so we're not clipping into the other player's screen
+			// Reduce the padding a little so we're not clipping into the other player's
+			// screen
 			align--;
 		}
 
@@ -2080,18 +2083,21 @@ static void k_drawKartRaceRank(player_t *p, INT32 x, INT32 y, UINT32 flags, UINT
 
 	// If this is a negative number, draw the minus right before the actual numbers
 	if (is_negative)
-		V_DrawScaledPatch(x + 15 - ((rnkstringwidth / 2) + 5), y + 16, flags, kp_ringdebtminus);
+		V_DrawScaledPatch(
+		    x + 15 - ((rnkstringwidth / 2) + 5), y + 16, flags, kp_ringdebtminus);
 
 	num = abs(p->rankscore);
 
 	// Second loop: actually fucking draw the numbers
 	do
 	{
-		V_DrawScaledPatch(x + centering - xx, y + 16, flags, kp_facenum[num%10]);
+		V_DrawScaledPatch(x + centering - xx, y + 16, flags, kp_facenum[num % 10]);
 		xx += (rnknumwidth - 1);
 		num /= 10;
 	} while (num);
 }
+
+#undef BASEPADDING
 
 void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, mapnum_t emblemmap, UINT8 mode)
 {
@@ -7056,31 +7062,48 @@ void K_drawKartHUD(void)
 			}
 
 			// Draw the player's rank score
-			// FIXME: 2P splitscreen display 🫠
 			if (!(dedicated || cannotrank))
 			{
-				const skincolornum_t ranktier_color = (stplyr->ranktier >= RTIER_ONESTAR) ? SKINCOLOR_GOLD : SKINCOLOR_SILVER;
-				UINT8* cmap = (stplyr->ranklog.prankeligible && stplyr->ranktier == RTIER_P) ? R_GetTranslationColormap(TC_RAINBOW, K_SMonitorColor(leveltime / 2), GTC_CACHE) : R_GetTranslationColormap(TC_RAINBOW, ranktier_color, GTC_CACHE);
+				const skincolornum_t ranktier_color =
+				    (stplyr->ranktier >= RTIER_ONESTAR) ? SKINCOLOR_GOLD
+									: SKINCOLOR_SILVER;
+				UINT8* cmap =
+				    (stplyr->ranklog.prankeligible && stplyr->ranktier == RTIER_P)
+					? R_GetTranslationColormap(
+					      TC_RAINBOW, K_SMonitorColor(leveltime / 2), GTC_CACHE)
+					: R_GetTranslationColormap(
+					      TC_RAINBOW, ranktier_color, GTC_CACHE);
 
 				if (r_splitscreen < 1)
 				{
-					k_drawKartRaceRank(stplyr,
-							RANK_X,
-							RANK_Y,
-							V_HUDTRANS | V_SNAPTOBOTTOM | V_SNAPTOLEFT,
-							cmap);
+					k_drawKartRaceRank(
+					    stplyr,
+					    RANK_X,
+					    RANK_Y,
+					    V_HUDTRANS | V_SNAPTOBOTTOM | V_SNAPTOLEFT,
+					    cmap);
 				}
 				else if (r_splitscreen == 1)
 				{
-					k_drawKartRaceRank(stplyr, RANK_X, RANK_Y, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANS|V_SPLITSCREEN, cmap);
+					k_drawKartRaceRank(stplyr,
+							   RANK_X,
+							   RANK_Y,
+							   V_SNAPTOBOTTOM | V_SNAPTOLEFT |
+							       V_HUDTRANS | V_SPLITSCREEN,
+							   cmap);
 				}
 				else if (r_splitscreen >= 2)
 				{
 					const boolean oppositeside = ((stplyrnum & 1) == 1);
 					const boolean onbottom = (stplyrnum >= 2);
-					const UINT32 snapflags = (onbottom) ? V_SNAPTOBOTTOM : V_SNAPTOTOP;
+					const UINT32 snapflags =
+					    (onbottom) ? V_SNAPTOBOTTOM : V_SNAPTOTOP;
 
-					k_drawKartRaceRank(stplyr, (oppositeside) ? RANK2_X : RANK_X, (onbottom) ? RANK2_Y : RANK_Y, V_HUDTRANS | snapflags, cmap);
+					k_drawKartRaceRank(stplyr,
+							   (oppositeside) ? RANK2_X : RANK_X,
+							   (onbottom) ? RANK2_Y : RANK_Y,
+							   V_HUDTRANS | snapflags,
+							   cmap);
 				}
 			}
 
