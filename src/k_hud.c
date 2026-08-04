@@ -84,6 +84,7 @@ IMPL_HUD_OFFSET_Y(chek); // Check gfx
 IMPL_HUD_OFFSET(mini); // Minimap
 IMPL_HUD_OFFSET(want); // Wanted
 IMPL_HUD_OFFSET(lapem); // Lap emblem
+IMPL_HUD_OFFSET(rank); // Rank score
 //IMPL_HUD_OFFSET(stat); // Stats
 
 #undef IMPL_HUD_OFFSET
@@ -290,6 +291,7 @@ void K_RegisterKartHUDStuff(void)
 	REG_HUD_OFFSET(mini); // Minimap
 	REG_HUD_OFFSET(want); // Wanted
 	REG_HUD_OFFSET(lapem); // Lap emblem
+	REG_HUD_OFFSET(rank); // Rank score
 	//REG_HUD_OFFSET(stat); // Stats
 
 #undef REG_HUD_OFFSET
@@ -856,6 +858,7 @@ INT32 STCD_X, STCD_Y;	// Starting countdown
 INT32 CHEK_Y;			// CHECK graphic
 INT32 MINI_X, MINI_Y;	// Minimap
 INT32 WANT_X, WANT_Y;	// Battle WANTED poster
+INT32 RANK_X, RANK_Y;	// Race ranks
 
 // This is for the P2 and P4 side of splitscreen. Then we'll flip P1's and P2's to the bottom with V_SPLITSCREEN.
 INT32 ITEM2_X, ITEM2_Y;
@@ -864,6 +867,7 @@ INT32 RING2_X, RING2_Y;
 INT32 POSI2_X, POSI2_Y;
 INT32 DRAT2_X, DRAT2_Y;
 INT32 LIVE2_X, LIVE2_Y;
+INT32 RANK2_X, RANK2_Y;
 
 void K_ReloadHUDColorCvar(void)
 {
@@ -1153,6 +1157,9 @@ static void K_initKartHUD(void)
 	// Battle WANTED poster
 	WANT_X = BASEVIDWIDTH - 55 + cv_want_xoffset.value;			// 270
 	WANT_Y = BASEVIDHEIGHT- 71 + cv_want_yoffset.value;			// 176
+	// Rank Score
+	RANK_X = 96 + cv_rank_xoffset.value;						//  96
+	RANK_Y = BASEVIDHEIGHT - 50 + cv_rank_yoffset.value;		// 150
 
 	if (r_splitscreen)	// Splitscreen
 	{
@@ -1184,6 +1191,9 @@ static void K_initKartHUD(void)
 		MINI_X = BASEVIDWIDTH - 50;
 		MINI_Y = (BASEVIDHEIGHT/2);
 
+		RANK_X = 91;
+		RANK_Y = (BASEVIDHEIGHT/2)-32;
+
 		if (r_splitscreen > 1)	// 3P/4P Small Splitscreen
 		{
 			// 1P (top left)
@@ -1205,6 +1215,9 @@ static void K_initKartHUD(void)
 			LIVE_X = 3;
 			LIVE_Y = (BASEVIDHEIGHT/2)-12;
 
+			RANK_X = (BASEVIDWIDTH/2)-37;
+			RANK_Y = 4;
+
 			// 2P (top right)
 			ITEM2_X = (BASEVIDWIDTH/2)-39;
 			ITEM2_Y = -8;
@@ -1223,6 +1236,9 @@ static void K_initKartHUD(void)
 
 			LIVE2_X = (BASEVIDWIDTH/2)-43;
 			LIVE2_Y = (BASEVIDHEIGHT/2)-12;
+
+			RANK2_X = (BASEVIDWIDTH/2)+4;
+			RANK2_Y = (BASEVIDHEIGHT)-12; // Bottom of the screen, for this
 
 			// Reminder that 3P and 4P are just 1P and 2P splitscreen'd to the bottom.
 
@@ -1955,9 +1971,9 @@ static void k_drawKartRaceRank(player_t *p, INT32 x, INT32 y, UINT32 flags, UINT
 	if (!p)
 		return; // ...of course.
 
-	const boolean draw4p = (r_splitscreen >= 2) ? true : false;
+	const boolean drawcompact = (r_splitscreen >= 1) ? true : false;
 
-	patch_t **rankpicarray = (draw4p) ? &kp_ranktier4p[0] : &kp_ranktier[0];
+	patch_t **rankpicarray = (drawcompact) ? &kp_ranktier4p[0] : &kp_ranktier[0];
 
 	patch_t *rankpic = rankpicarray[p->ranktier];
 
@@ -1971,7 +1987,7 @@ static void k_drawKartRaceRank(player_t *p, INT32 x, INT32 y, UINT32 flags, UINT
 	INT32 num = abs(p->rankscore);
 	INT32 xx = 0;
 
-	if (draw4p)
+	if (drawcompact)
 	{
 		// Draw the rank patch first
 		V_DrawMappedPatch(x, y, flags, rankpic, colormap);
@@ -7016,10 +7032,14 @@ void K_drawKartHUD(void)
 				if (r_splitscreen < 1)
 				{
 					k_drawKartRaceRank(stplyr,
-							96,
-							150,
+							RANK_X,
+							RANK_Y,
 							V_HUDTRANS | V_SNAPTOBOTTOM | V_SNAPTOLEFT,
 							cmap);
+				}
+				else if (r_splitscreen == 1)
+				{
+					k_drawKartRaceRank(stplyr, RANK_X, RANK_Y, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANS|V_SPLITSCREEN, cmap);
 				}
 				else if (r_splitscreen >= 2)
 				{
@@ -7027,7 +7047,7 @@ void K_drawKartHUD(void)
 					const boolean onbottom = (stplyrnum >= 2);
 					const UINT32 snapflags = (onbottom) ? V_SNAPTOBOTTOM : V_SNAPTOTOP;
 
-					k_drawKartRaceRank(stplyr, (oppositeside) ? 164 : 123, (onbottom) ? 188 : 4, V_HUDTRANS | snapflags, cmap);
+					k_drawKartRaceRank(stplyr, (oppositeside) ? RANK2_X : RANK_X, (onbottom) ? RANK2_Y : RANK_Y, V_HUDTRANS | snapflags, cmap);
 				}
 			}
 
