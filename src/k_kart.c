@@ -138,7 +138,7 @@ void K_LogPlayerRankScores(void)
 	if (cannotrank)
 		return; // We can't rank in the first place...
 
-    INT32 elapsed = max(0, leveltime - starttime);
+    INT32 elapsed = max(0, (signed)(leveltime) - (signed)(starttime));
     INT32 elapsed_interval = (elapsed % SCORELOG_INTERVAL);
 
     boolean logme = false;
@@ -11705,7 +11705,15 @@ void K_KartUpdatePosition(player_t *player)
 
 	player->position = position;
 
-	player->ranklog.leadertics += max(0, (players_racing - 1) - position);
+	const INT32 playerseed = max(0, players_racing - 1);
+	const INT32 leaderfactor = max(0, playerseed - max(0, position - 1));
+	const INT32 convtopercent = ((1<<24) / playerseed);
+
+	// There's always a chance some off-kilter value fucks up the multiplier, so we "round up" by a tiiny bit...
+	const fixed_t leadermul = min(FRACUNIT, ((convtopercent / 256) * leaderfactor) + 2);
+
+	// ...let's just make this consistent
+	player->ranklog.leadertics += max(0, FixedMul(32, leadermul));
 }
 
 void K_KartLegacyUpdatePosition(player_t *player)
@@ -11830,7 +11838,15 @@ void K_KartLegacyUpdatePosition(player_t *player)
 
 	player->position = position;
 
-	player->ranklog.leadertics += max(0, (players_racing - 1) - position);
+	const INT32 playerseed = max(0, players_racing - 1);
+	const INT32 leaderfactor = max(0, playerseed - max(0, position - 1));
+	const INT32 convtopercent = ((1<<24) / playerseed);
+
+	// There's always a chance some off-kilter value fucks up the multiplier, so we "round up" by a tiiny bit...
+	const fixed_t leadermul = min(FRACUNIT, ((convtopercent / 256) * leaderfactor) + 2);
+
+	// ...let's just make this consistent
+	player->ranklog.leadertics += max(0, FixedMul(32, leadermul));
 }
 
 UINT32 clusterid = 0;
@@ -13245,7 +13261,6 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 
 	// Get this map's time limit
 	INT32 engineClass = (grandprixinfo.gp) ? grandprixinfo.gamespeed : gamespeed;
-	mapnum_t courseId = gamemap;
 
 	krtTime = mapheaderinfo[gamemap - 1]->par_time[engineClass];
 
@@ -13280,7 +13295,7 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 		// Calculate time bonus corresponding to the time spent in 1st place,
 		// and the time spent being targeted by an SPB.
 		player->rankscorefactor.positionbonus =
-		    ((player->ranklog.leadertics / max(1, players_racing - 1)) * leadertimepoints) /
+		    ((player->ranklog.leadertics / 32) * leadertimepoints) /
 		    krtTime;
 		player->rankscorefactor.spbattackbonus =
 		    (player->ranklog.spbattack *
