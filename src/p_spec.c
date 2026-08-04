@@ -4552,6 +4552,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 					|| mo->player->smonitortimer > 0
 					|| mo->player->flametimer > 0
 					|| mo->player->growshrinktimer > 0
+					|| mo->player->bubbleboost > 0
 					|| K_IsAltShrunk(mo->player)
 				)
 				{
