@@ -161,7 +161,9 @@ void K_LogPlayerRankScores(void)
 		if (P_MobjWasRemoved(players[i].mo))
 			continue;  // No object
 
-		if ((elapsed_interval == 0) && (!players[i].exiting))
+		const boolean playerfinishing = ((players[i].exiting > 0) || (players[i].pflags & PF_NOCONTEST));
+
+		if ((elapsed_interval == 0) && (!playerfinishing))
 			logme = true;
 
 		if (logme)
