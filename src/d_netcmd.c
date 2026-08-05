@@ -2322,6 +2322,11 @@ static void SendNameAndColor(UINT8 n)
 
 	UINT16 i = 0;
 
+	if (!Playing())
+	{
+		return;
+	}
+
 	if (splitscreen < n)
 		return;  // can happen if skin4/color4/name4 changed
 
