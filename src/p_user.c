@@ -1386,7 +1386,7 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			if (cv_kartvoices.value)
 			{
 				//const INT32 sfx_id = (losing ? sfx_klose : sfx_kwin);
-				skin_t *playerskin = &skins[player->skin];
+				skin_t *playerskin = skins[player->skin];
 
 				const kartvoice_t *playervoice = (!P_MobjWasRemoved(player->mo) ? P_GetMobjVoice(player->mo) : &playerskin->voices[0]);
 
@@ -2766,7 +2766,7 @@ static void P_DeathThink(player_t *player)
 			UINT32 intangibility = (player->extendeddeath) ? 0 : MF_NOCLIP;
 
 			player->mo->flags |= (MF_NOGRAVITY|intangibility);
-			if (skins[player->skin].flags & SF_OLDDEATH)
+			if (skins[player->skin]->flags & SF_OLDDEATH)
 				player->mo->renderflags |= RF_DONTDRAW;
 		}
 	}
@@ -3126,7 +3126,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		return true;
 	}
 
-	if (player->playerstate != PST_LIVE && !(skins[player->skin].flags & SF_OLDDEATH))
+	if (player->playerstate != PST_LIVE && !(skins[player->skin]->flags & SF_OLDDEATH))
 	{
 		// Do not move the camera while dead!
 		if (thiscam->chase)

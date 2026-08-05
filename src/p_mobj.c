@@ -8060,7 +8060,7 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 			}
 		}
 		// Apply gravity to fall downwards.
-		else if (mobj->player == NULL || skins[mobj->player->skin].flags & SF_OLDDEATH)
+		else if (mobj->player == NULL || skins[mobj->player->skin]->flags & SF_OLDDEATH)
 		{
 			P_SetObjectMomZ(mobj, -3*FRACUNIT/2, true);
 			if (mobj->player != NULL)
@@ -12617,7 +12617,7 @@ void P_SpawnPlayer(INT32 playernum)
 	// set 'spritedef' override in mobj for player skins.. (see ProjectSprite)
 	// (usefulness: when body mobj is detached from player (who respawns),
 	// the dead body mobj retains the skin through the 'spritedef' override).
-	R_ApplySkin(mobj, &skins[p->skin]);
+	R_ApplySkin(mobj, skins[p->skin]);
 	P_SetupStateAnimation(mobj, mobj->state);
 
 	if (p->voice_id)
@@ -12625,7 +12625,7 @@ void P_SpawnPlayer(INT32 playernum)
 		// During respawns, do a quick check on our voice ID to make sure
 		// our skin can use it.
 		// This should prevent bots from always having Sonic's voice.
-		mobj->voice = &skins[p->skin].voices[p->voice_id];
+		mobj->voice = &skins[p->skin]->voices[p->voice_id];
 	}
 
 	mobj->health = 1;
@@ -12636,7 +12636,7 @@ void P_SpawnPlayer(INT32 playernum)
 		p->realtime = leveltime;
 	}
 
-	p->followitem = skins[p->skin].followitem;
+	p->followitem = skins[p->skin]->followitem;
 
 	if (K_PlayerShrinkCheat(p) == true)
 	{

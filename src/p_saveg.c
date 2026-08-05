@@ -2451,9 +2451,9 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	if (GETB(MD2_SKIN))
 	{
 		if (save->write)
-			WRITEUINT16(save->p, (UINT16)((skin_t *)mobj->skin - skins));
+			WRITEUINT16(save->p, (UINT16)((skin_t *)mobj->skin)->skinnum);
 		else
-			R_ApplySkin(mobj, &skins[READUINT16(save->p)]);
+			R_ApplySkin(mobj, skins[READUINT16(save->p)]);
 	}
 	SYNCF(MD2_COLOR, mobj->color);
 	SYNCF(MD2_EXTVAL1, mobj->extravalue1);

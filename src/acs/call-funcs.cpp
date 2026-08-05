@@ -242,7 +242,7 @@ static bool ACS_GetSkinFromString(const char *word, INT32 *type)
 {
 	for (int i = 0; i < numskins; i++)
 	{
-		if (fastcmp(word, skins[i].name))
+		if (fastcmp(word, skins[i]->name))
 		{
 			*type = i;
 			return true;
@@ -1624,7 +1624,7 @@ bool CallFunc_PlayerSkin(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::
 		&& (info->mo->player != NULL))
 	{
 		UINT16 skin = info->mo->player->skin;
-		thread->dataStk.push(~env->getString( skins[skin].name )->idx);
+		thread->dataStk.push(~env->getString( skins[skin]->name )->idx);
 		return false;
 	}
 
@@ -1650,7 +1650,7 @@ bool CallFunc_PlayerSkinRealName(ACSVM::Thread *thread, const ACSVM::Word *argV,
 		&& (info->mo->player != NULL))
 	{
 		UINT16 skin = info->mo->player->skin;
-		thread->dataStk.push(~env->getString( skins[skin].realname )->idx);
+		thread->dataStk.push(~env->getString( skins[skin]->realname )->idx);
 		return false;
 	}
 
@@ -3838,7 +3838,7 @@ bool CallFunc_SetThingProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, A
 #define PROP_SKIN(x, y) \
 	case x: \
 	{ \
-		INT32 newSkin = (mobj->skin != NULL) ? (static_cast<skin_t *>(mobj->skin)) - skins : -1; \
+		INT32 newSkin = (mobj->skin != NULL) ? (static_cast<skin_t *>(mobj->skin))->skinnum: -1; \
 		bool success = ACS_GetSkinFromString(thread->scopeMap->getString( value )->str, &newSkin); \
 		if (success == true) \
 		{ \

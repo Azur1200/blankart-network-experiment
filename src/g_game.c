@@ -840,7 +840,7 @@ char *G_GetRecordReplay(const char *folder, mapnum_t mapnum, UINT16 skinnum, rec
 {
 	const char *map = G_BuildMapName(mapnum), *suf = replaysuffixes[which];
 	if (which != REPLAY_GUEST)
-		return strdup(va("%s"PATHSEP"%s-%s-%s.lmp", folder, map, skins[skinnum].name, suf));
+		return strdup(va("%s"PATHSEP"%s-%s-%s.lmp", folder, map, skins[skinnum]->name, suf));
 	else
 		return strdup(va("%s"PATHSEP"%s-%s.lmp", folder, map, suf));
 }
@@ -849,7 +849,7 @@ boolean G_CheckRecordReplay(const char *folder, mapnum_t mapnum, UINT16 skinnum,
 {
 	const char *map = G_BuildMapName(mapnum), *suf = replaysuffixes[which];
 	if (which != REPLAY_GUEST)
-		return FIL_FileExists(va("%s"PATHSEP"%s-%s-%s.lmp", folder, map, skins[skinnum].name, suf));
+		return FIL_FileExists(va("%s"PATHSEP"%s-%s-%s.lmp", folder, map, skins[skinnum]->name, suf));
 	else
 		return FIL_FileExists(va("%s"PATHSEP"%s-%s.lmp", folder, map, suf));
 }
@@ -3266,12 +3266,12 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		}
 		else
 		{
-			kartspeed = skins[players[player].skin].kartspeed;
-			kartweight = skins[players[player].skin].kartweight;
+			kartspeed = skins[players[player].skin]->kartspeed;
+			kartweight = skins[players[player].skin]->kartweight;
 			
 			notifyrestat = (
-				players[player].kartspeed != skins[players[player].skin].kartspeed ||
-				players[player].kartweight != skins[players[player].skin].kartweight
+				players[player].kartspeed != skins[players[player].skin]->kartspeed ||
+				players[player].kartweight != skins[players[player].skin]->kartweight
 			) && cv_notifyrestat.value;
 		}
 	}
@@ -6481,7 +6481,7 @@ void G_DeferedInitNew(boolean pencoremode, mapnum_t map, INT32 pickedchar, UINT8
 	}
 
 	SetPlayerSkinByNum(consoleplayer, pickedchar);
-	CV_StealthSet(&cv_skin[0], skins[pickedchar].name);
+	CV_StealthSet(&cv_skin[0], skins[pickedchar]->name);
 
 	if (color != SKINCOLOR_NONE)
 	{

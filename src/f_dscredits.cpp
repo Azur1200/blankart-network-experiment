@@ -523,9 +523,9 @@ void F_SecretCreditsTicker(void)
         UINT16 grabskins[MAXSKINS];
         UINT16 rand, rivalskin;
 
-        grabskins[0] = R_SkinAvailable(skins[pskin].rivals[0]);
-        grabskins[1] = R_SkinAvailable(skins[pskin].rivals[1]);
-        grabskins[2] = R_SkinAvailable(skins[pskin].rivals[2]);
+        grabskins[0] = R_SkinAvailable(skins[pskin]->rivals[0]);
+        grabskins[1] = R_SkinAvailable(skins[pskin]->rivals[1]);
+        grabskins[2] = R_SkinAvailable(skins[pskin]->rivals[2]);
 
         // Pick a random initial point to find the rival.
         rand = M_RandomKey(SKINRIVALS);
@@ -602,7 +602,7 @@ void F_SecretCreditsTicker(void)
         {
             // Allocate the remaining skins from the skin list.
             credits_skins[credskins] = grabskins[((rand + credskins) % usableskins)];
-            credits_colors[credskins] = skins[credits_skins[credskins]].prefcolor;
+            credits_colors[credskins] = skins[credits_skins[credskins]]->prefcolor;
             credskins--;
 
             if (credskins < 0)
@@ -841,7 +841,7 @@ void F_SecretCreditsTicker(void)
                                     (-vidydiff) + h - (SHORT(dsground->height) >> 1) - 1,
                                     FRACUNIT >> 1,
                                     credits_skins[rival_idx],
-                                    skins[credits_skins[rival_idx]].prefcolor,
+                                    skins[credits_skins[rival_idx]]->prefcolor,
                                     INFLONGTICS);
 
                 dscredits.creditsobj[rival_idx + MAXMISCOBJS].speed[0] = -RIVALAPPROACH;
@@ -1182,8 +1182,8 @@ static boolean M_DrawCharacterSprite(INT16 x, INT16 y, fixed_t scale, UINT8 fade
 	spriteframe_t *sprframe;
 	patch_t *sprpatch;
 
-	spr = P_GetSkinSprite2(&skins[skin], spr2, NULL);
-	sprdef = &skins[skin].sprites[spr];
+	spr = P_GetSkinSprite2(skins[skin], spr2, NULL);
+	sprdef = &skins[skin]->sprites[spr];
 
     UINT8 *fademap = R_GetTranslationColormap(TC_BLINK, SKINCOLOR_BLACK, GTC_MENUCACHE);
     INT16 fadealpha = 10 - fade;
@@ -1201,18 +1201,18 @@ static boolean M_DrawCharacterSprite(INT16 x, INT16 y, fixed_t scale, UINT8 fade
 		addflags ^= V_FLIP; // This sprite is left/right flipped!
 	}
 
-	if ((skins[skin].highresscale != FRACUNIT)||(scale != FRACUNIT))
+	if ((skins[skin]->highresscale != FRACUNIT)||(scale != FRACUNIT))
 	{
 		V_DrawFixedPatch(x<<FRACBITS,
 					y<<FRACBITS,
-					FixedMul(scale, skins[skin].highresscale),
+					FixedMul(scale, skins[skin]->highresscale),
 					addflags, sprpatch, colormap);
 
         if (fadealpha < 10)
         {
             V_DrawFixedPatch(x<<FRACBITS,
 					y<<FRACBITS,
-					FixedMul(scale, skins[skin].highresscale),
+					FixedMul(scale, skins[skin]->highresscale),
 					addflags|(fadealpha << V_ALPHASHIFT), sprpatch, fademap);
         }
 	}

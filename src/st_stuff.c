@@ -214,7 +214,7 @@ static boolean ST_IconCanSpinout(UINT8 icon)
 void ST_LoadFaceGraphics(INT32 skinnum)
 {
 #define FACE_MAX (FACE_MINIMAP + 1)
-	spritedef_t* sprdef = &skins[skinnum].sprites[SPR2_XTRA];
+	spritedef_t* sprdef = &skins[skinnum]->sprites[SPR2_XTRA];
 	spriteframe_t* sprframe;
 	UINT8 i = 0, maxer = min(sprdef->numframes, FACE_MAX);
 	INT16 baseleftoffs, basetopoffs;

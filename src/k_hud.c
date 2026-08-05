@@ -1986,7 +1986,7 @@ static void K_drawKartItem(void)
 		// numbers
 		if (stplyr->itemreserveamount >= K_GetItemNumberDisplayMin(stplyr->itemreservetype, true))
 		{
-			V_DrawPingNumScaled(fx + (26*info.hudScale), fy + (26*info.hudScale), info.hudScale, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, stplyr->itemreserveamount, colmap);
+			V_DrawPingNumScaled(fx + (26*(flipamount ? -info.hudScale : info.hudScale)), fy + (26*info.hudScale), info.hudScale, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, stplyr->itemreserveamount, colmap);
 		}
 	}
 }
@@ -3353,8 +3353,8 @@ static void K_drawKartStatsnLives(void)
 				UINT8 *colormapstat = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUE, GTC_CACHE);
 				UINT8 *colormapstat2 = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_ORANGE, GTC_CACHE);
 
-				if (stplyr->kartspeed != skins[stplyr->skin].kartspeed
-					|| stplyr->kartweight != skins[stplyr->skin].kartweight)
+				if (stplyr->kartspeed != skins[stplyr->skin]->kartspeed
+					|| stplyr->kartweight != skins[stplyr->skin]->kartweight)
 				{
 					colormapstat = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE);
 					colormapstat2 = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MUSTARD, GTC_CACHE);
@@ -4361,8 +4361,8 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p, UINT8 flag
 	}
 
 	// Also draw stats of restated players.
-	if (cv_seenamerestat.value && (p->kartspeed != skins[p->skin].kartspeed
-		|| p->kartweight != skins[p->skin].kartweight))
+	if (cv_seenamerestat.value && (p->kartspeed != skins[p->skin]->kartspeed
+		|| p->kartweight != skins[p->skin]->kartweight))
 	{
 		V_DrawSmallStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (31*FRACUNIT) + textyoffset, vflags, va("\x84S%d ", p->kartspeed));
 		V_DrawSmallStringAtFixed(x + (15*FRACUNIT) + textxoffset, y - (31*FRACUNIT) + textyoffset, vflags, va("\x87W%d ", p->kartweight));
@@ -4696,7 +4696,7 @@ static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, INT32 hudx, INT
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	skin = ((skin_t*)player->mo->skin)-skins;
+	skin = ((skin_t*)player->mo->skin)->skinnum;
 
 	amxpos = amnumxpos + ((hudx + (minimapinfo.minimap_pic->width-faceprefix[skin][FACE_MINIMAP]->width)/2)<<FRACBITS);
 	amypos = amnumypos + ((hudy + (minimapinfo.minimap_pic->height-faceprefix[skin][FACE_MINIMAP]->height)/2)<<FRACBITS);
@@ -4973,7 +4973,7 @@ static void K_drawKartMinimap(void)
 		while (g)
 		{
 			if (g->mo->skin)
-				skin = ((skin_t*)g->mo->skin)-skins;
+				skin = ((skin_t*)g->mo->skin)->skinnum;
 			else
 				skin = 0;
 			if (g->mo->color)
@@ -5077,7 +5077,7 @@ static void K_drawKartMinimap(void)
 			}
 			else
 			{
-				skin = ((skin_t*)mobj->skin)-skins;
+				skin = ((skin_t*)mobj->skin)->skinnum;
 
 				workingPic = faceprefix[skin][FACE_MINIMAP];
 
@@ -5417,7 +5417,7 @@ static void K_drawKartMinimap(void)
 		}
 		else
 		{
-			skin = ((skin_t*)mobj->skin)-skins;
+			skin = ((skin_t*)mobj->skin)->skinnum;
 
 			workingPic = faceprefix[skin][FACE_MINIMAP];
 

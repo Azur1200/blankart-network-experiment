@@ -1780,11 +1780,12 @@ void K_SpawnDashAreaSpeedLines(mobj_t *mo)
 	fixed_t rand_y;
 	fixed_t rand_z;
 
-	rand_z = P_RandomRange(PR_DECORATION, 0, mo->info->height/3);
-	rand_y = P_RandomRange(PR_DECORATION, -56, 56) * FRACUNIT;
-	rand_x = P_RandomRange(PR_DECORATION, -56, 56) * FRACUNIT;
+	rand_y = M_RandomRange(-56, 56) * FRACUNIT;
+	rand_x = M_RandomRange(-56, 56) * FRACUNIT;
+	rand_z = FixedMul(M_RandomFixed(), mo->info->height/3);
 
 	mobj_t *fast = P_SpawnMobjFromMobj(mo, rand_x, rand_y, rand_z, MT_FASTLINE);
+	fast->flags2 |= MF2_DONTSYNC; // No desyncs pls!
 
 	P_SetTarget(&fast->target, mo);
 	fast->angle = K_MomentumAngle(mo);
@@ -2713,6 +2714,56 @@ boolean K_WaterRun(mobj_t *mobj)
 	}
 
 	if (mobj->flags2 & MF2_WATERRUN)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+boolean K_CanPlayerMaintainWaterRun(player_t *player)
+{
+	if (!player)
+	{
+		return false;
+	}
+
+	if (player->realsneakertimer > 0)
+	{
+		return true;
+	}
+
+	if (player->invincibilitytimer > 0)
+	{
+		return true;
+	}
+
+	if (player->smonitortimer > 0)
+	{
+		return true;
+	}
+
+	if (player->flametimer > 0)
+	{
+		return true;
+	}
+
+	if (player->growshrinktimer > 0)
+	{
+		return true;
+	}
+
+	if (player->bubbleboost > 0)
+	{
+		return true;
+	}
+
+	if (K_IsAltShrunk(player))
+	{
+		return true;
+	}
+
+	if (player->dashareapower > 0 && player->speed >= 10*player->mo->scale)
 	{
 		return true;
 	}
@@ -8135,9 +8186,13 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->sneakertimer <= 0)
 	{
-		player->mo->flags2 &= ~MF2_WATERRUN;
 		player->numsneakers = 0;
 		player->numpanels = 0;
+	}
+
+	if (!K_CanPlayerMaintainWaterRun(player))
+	{
+		player->mo->flags2 &= ~MF2_WATERRUN;
 	}
 
 	if (player->realsneakertimer)
@@ -11008,7 +11063,7 @@ INT32 K_GetDriftAngleOffset(player_t *player)
 {
 	INT32 a = 0;
 	boolean onground = P_IsObjectOnGround(player->mo);
-	boolean compat = wadfiles[skins[player->skin].wadnum]->compatmode;
+	boolean compat = wadfiles[skins[player->skin]->wadnum]->compatmode;
 
 	if (player->pogospring)
 		return a; // not if you're spinning
@@ -12396,7 +12451,7 @@ static void K_AdjustPlayerFriction(player_t *player)
 	}
 
 	// smon simple lateral tyre friction
-	if (K_SMonitorSliptideCondition(player) && player->speed > 10*player->mo->scale)
+	if (K_SMonitorSliptideCondition(player) && player->speed >= 10*player->mo->scale)
 	{
 		angle_t pangle = player->mo->angle;
 		vector2_t facingdirection = {P_ReturnThrustX(NULL, pangle, FRACUNIT), P_ReturnThrustY(NULL, pangle, FRACUNIT)};

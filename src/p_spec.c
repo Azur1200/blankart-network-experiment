@@ -1569,7 +1569,7 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 				return false;
 			if (!triggerline->stringargs[0])
 				return false;
-			if (!(fasticmp(triggerline->stringargs[0], skins[actor->player->skin].name)) ^ !!(triggerline->args[1]))
+			if (!(fasticmp(triggerline->stringargs[0], skins[actor->player->skin]->name)) ^ !!(triggerline->args[1]))
 				return false;
 			break;
 		case 334: // object dye
@@ -4566,14 +4566,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 
 			if (mo->player)
 			{
-				if (mo->player->realsneakertimer > 0
-					|| mo->player->invincibilitytimer > 0
-					|| mo->player->smonitortimer > 0
-					|| mo->player->flametimer > 0
-					|| mo->player->growshrinktimer > 0
-					|| mo->player->bubbleboost > 0
-					|| K_IsAltShrunk(mo->player)
-				)
+				if (K_CanPlayerMaintainWaterRun(mo->player))
 				{
 					mo->flags2 |= MF2_WATERRUN;
 

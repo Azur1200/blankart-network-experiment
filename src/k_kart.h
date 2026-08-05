@@ -444,6 +444,7 @@ tripwirepass_t K_TripwirePassConditions(const player_t *player);
 boolean K_TripwirePass(const player_t *player);
 boolean K_PlayerCanPunt(const player_t *player);
 boolean K_WaterRun(mobj_t *mobj);
+boolean K_CanPlayerMaintainWaterRun(player_t *player);
 void K_SpawnWaterTrail(mobj_t *mobj);
 boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item);
 void K_SetTireGrease(player_t *player, tic_t tics);

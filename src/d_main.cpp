@@ -105,7 +105,7 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x64adcca4103e84c7
+#define ASSET_HASH_MAIN_PK3            0x23007d9dd92121af
 #define ASSET_HASH_MAPPATCH_PK3        0x0d2ebf812a5bf60d
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
@@ -1843,11 +1843,6 @@ void D_SRB2Main(void)
 
 	CON_SetLoadingProgress(LOADED_PWAD);
 
-	//--------------------------------------------------------- CONFIG.CFG
-	M_FirstLoadConfig(); // WARNING : this do a "COM_BufExecute()"
-
-	R_LoadVoicePreferences();
-
 	VID_PrepareModeList(); // Regenerate Modelist according to cv_fullscreen
 
 	// set user default mode or mode set at cmdline
@@ -1881,6 +1876,11 @@ void D_SRB2Main(void)
 	CONS_Printf("R_Init(): Init SRB2 refresh daemon.\n");
 	R_Init();
 	CON_SetLoadingProgress(LOADED_RINIT);
+
+	//--------------------------------------------------------- CONFIG.CFG
+	M_FirstLoadConfig(); // WARNING : this do a "COM_BufExecute()"
+
+	R_LoadVoicePreferences();
 
 	// setting up sound
 	if (dedicated)

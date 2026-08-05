@@ -73,7 +73,8 @@ struct kartvoice_t
 /// The skin_t struct
 struct skin_t
 {
-	char name[SKINNAMESIZE+1]; // INT16 descriptive name of the skin
+	char name[SKINNAMESIZE+1]; // name of skin
+	UINT16 skinnum;
 	UINT16 wadnum;
 	skinflags_t flags;
 
@@ -134,7 +135,7 @@ enum skinmenusortoption
 
 /// Externs
 extern INT32 numskins;
-extern skin_t skins[MAXSKINS];
+extern skin_t **skins;
 
 extern INT32 num_multivoiceskins;
 extern skin_t * multivoiceskins[MAXSKINS];

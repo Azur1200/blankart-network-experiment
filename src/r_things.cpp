@@ -970,7 +970,7 @@ UINT8 *R_GetSpriteTranslation(vissprite_t *vis)
 		}
 		else if (!(vis->cut & SC_PRECIP) && vis->mobj->skin && vis->mobj->sprite == SPR_PLAY) // This thing is a player!
 		{
-			size_t skinnum = (skin_t*)vis->mobj->skin-skins;
+			size_t skinnum = ((skin_t*)vis->mobj->skin)->skinnum;
 			return R_GetTranslationColormap((INT32)skinnum, static_cast<skincolornum_t>(vis->mobj->color), GTC_CACHE);
 		}
 		else // Use the defaults
