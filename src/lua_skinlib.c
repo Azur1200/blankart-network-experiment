@@ -202,7 +202,7 @@ static int lib_iterateSkins(lua_State *L)
 	// skins are always valid, only added, never removed
 	if (i < numskins)
 	{
-		LUA_PushUserdata(L, &skins[i], META_SKIN);
+		LUA_PushUserdata(L, skins[i], META_SKIN);
 		return 1;
 	}
 
@@ -222,7 +222,7 @@ static int lib_getSkin(lua_State *L)
 			return luaL_error(L, "skins[] index %d out of range (0 - %d)", i, MAXSKINS-1);
 		if (i >= numskins)
 			return 0;
-		LUA_PushUserdata(L, &skins[i], META_SKIN);
+		LUA_PushUserdata(L, skins[i], META_SKIN);
 		return 1;
 	}
 
@@ -239,7 +239,7 @@ static int lib_getSkin(lua_State *L)
 	for (i = 0; i < numskins; i++)
 		if (fastcmp(skins[i]->name, field))
 		{
-			LUA_PushUserdata(L, &skins[i], META_SKIN);
+			LUA_PushUserdata(L, skins[i], META_SKIN);
 			return 1;
 		}
 
