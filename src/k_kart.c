@@ -2591,6 +2591,11 @@ boolean K_CanPlayerMaintainWaterRun(player_t *player)
 		return true;
 	}
 
+	if (player->dashareapower > 0)
+	{
+		return true;
+	}
+
 	return false;
 }
 
