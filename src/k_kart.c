@@ -2549,6 +2549,51 @@ boolean K_WaterRun(mobj_t *mobj)
 	return false;
 }
 
+boolean K_CanPlayerMaintainWaterRun(player_t *player)
+{
+	if (!player)
+	{
+		return false;
+	}
+
+	if (player->realsneakertimer > 0)
+	{
+		return true;
+	}
+
+	if (player->invincibilitytimer > 0)
+	{
+		return true;
+	}
+
+	if (player->smonitortimer > 0)
+	{
+		return true;
+	}
+
+	if (player->flametimer > 0)
+	{
+		return true;
+	}
+
+	if (player->growshrinktimer > 0)
+	{
+		return true;
+	}
+
+	if (player->bubbleboost > 0)
+	{
+		return true;
+	}
+
+	if (K_IsAltShrunk(player))
+	{
+		return true;
+	}
+
+	return false;
+}
+
 void K_SpawnWaterTrail(mobj_t *mobj)
 {
 	fixed_t topspeed = INT32_MAX;
@@ -7929,9 +7974,13 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->sneakertimer <= 0)
 	{
-		player->mo->flags2 &= ~MF2_WATERRUN;
 		player->numsneakers = 0;
 		player->numpanels = 0;
+	}
+
+	if (!K_CanPlayerMaintainWaterRun(player))
+	{
+		player->mo->flags2 &= ~MF2_WATERRUN;
 	}
 
 	if (player->realsneakertimer)
