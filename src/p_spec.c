@@ -1569,7 +1569,7 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 				return false;
 			if (!triggerline->stringargs[0])
 				return false;
-			if (!(fasticmp(triggerline->stringargs[0], skins[actor->player->skin].name)) ^ !!(triggerline->args[1]))
+			if (!(fasticmp(triggerline->stringargs[0], skins[actor->player->skin]->name)) ^ !!(triggerline->args[1]))
 				return false;
 			break;
 		case 334: // object dye

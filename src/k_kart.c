@@ -10851,7 +10851,7 @@ INT32 K_GetDriftAngleOffset(player_t *player)
 {
 	INT32 a = 0;
 	boolean onground = P_IsObjectOnGround(player->mo);
-	boolean compat = wadfiles[skins[player->skin].wadnum]->compatmode;
+	boolean compat = wadfiles[skins[player->skin]->wadnum]->compatmode;
 
 	if (player->pogospring)
 		return a; // not if you're spinning

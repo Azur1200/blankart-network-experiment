@@ -176,7 +176,7 @@ static int skin_num(lua_State *L)
 	// skins are always valid, only added, never removed
 	I_Assert(skin != NULL);
 
-	lua_pushinteger(L, skin-skins);
+	lua_pushinteger(L, skin->skinnum);
 	return 1;
 }
 
@@ -195,7 +195,7 @@ static int lib_iterateSkins(lua_State *L)
 	lua_remove(L, 1); // state is unused.
 
 	if (!lua_isnil(L, 1))
-		i = (INT32)(*((skin_t **)luaL_checkudata(L, 1, META_SKIN)) - skins) + 1;
+		i = (INT32)((*((skin_t **)luaL_checkudata(L, 1, META_SKIN)))->skinnum) + 1;
 	else
 		i = 0;
 
@@ -237,7 +237,7 @@ static int lib_getSkin(lua_State *L)
 
 	// find skin by name
 	for (i = 0; i < numskins; i++)
-		if (fastcmp(skins[i].name, field))
+		if (fastcmp(skins[i]->name, field))
 		{
 			LUA_PushUserdata(L, &skins[i], META_SKIN);
 			return 1;

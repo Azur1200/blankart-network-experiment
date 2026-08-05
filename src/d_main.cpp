@@ -1843,11 +1843,6 @@ void D_SRB2Main(void)
 
 	CON_SetLoadingProgress(LOADED_PWAD);
 
-	//--------------------------------------------------------- CONFIG.CFG
-	M_FirstLoadConfig(); // WARNING : this do a "COM_BufExecute()"
-
-	R_LoadVoicePreferences();
-
 	VID_PrepareModeList(); // Regenerate Modelist according to cv_fullscreen
 
 	// set user default mode or mode set at cmdline
@@ -1881,6 +1876,11 @@ void D_SRB2Main(void)
 	CONS_Printf("R_Init(): Init SRB2 refresh daemon.\n");
 	R_Init();
 	CON_SetLoadingProgress(LOADED_RINIT);
+
+	//--------------------------------------------------------- CONFIG.CFG
+	M_FirstLoadConfig(); // WARNING : this do a "COM_BufExecute()"
+
+	R_LoadVoicePreferences();
 
 	// setting up sound
 	if (dedicated)

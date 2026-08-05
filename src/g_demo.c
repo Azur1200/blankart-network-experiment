@@ -1238,7 +1238,7 @@ static INT32 GetSkinNumClosestToStats(UINT8 kartspeed, UINT8 kartweight)
 
 	for (i = 0; i < numskins; i++)
 	{
-		stat_diff = abs(skins[i].kartspeed - kartspeed) + abs(skins[i].kartweight - kartweight);
+		stat_diff = abs(skins[i]->kartspeed - kartspeed) + abs(skins[i]->kartweight - kartweight);
 		if (stat_diff < closest_stats)
 		{
 			closest_stats = stat_diff;
@@ -1388,11 +1388,11 @@ void G_ReadDemoExtraData(void)
 			// Skin
 			SetPlayerSkin(p, extra.skinname);
 
-			if (!fasticmp(skins[player->skin].name, extra.skinname))
+			if (!fasticmp(skins[player->skin]->name, extra.skinname))
 				FindClosestSkinForStats(p, extra.kartspeed, extra.kartweight);
 
 			// Voice
-			const INT32 vce = R_FindIDForVoice(&skins[player->skin], extra.voicename);
+			const INT32 vce = R_FindIDForVoice(skins[player->skin], extra.voicename);
 
 			if (vce == MAXSKINVOICES)
 			{
@@ -1408,7 +1408,7 @@ void G_ReadDemoExtraData(void)
 			if (!P_MobjWasRemoved(player->mo))
 			{
 				// This player's mobj exists. So, attach the voice to the mobj!
-				player->mo->voice = &skins[player->skin].voices[player->voice_id];
+				player->mo->voice = &skins[player->skin]->voices[player->voice_id];
 			}
 
 			player->kartspeed = extra.kartspeed;
@@ -1517,10 +1517,10 @@ void G_WriteDemoExtraData(void)
 			if (demo_extradata[i] & DXD_SKIN)
 			{
 				// Skin
-				WRITESTRINGL(demobuf.p, skins[players[i].skin].name, 16+1);
+				WRITESTRINGL(demobuf.p, skins[players[i].skin]->name, 16+1);
 
 				// Voice
-				WRITESTRINGL(demobuf.p, skins[players[i].skin].voices[players[i].voice_id].name, 32+1);
+				WRITESTRINGL(demobuf.p, skins[players[i].skin]->voices[players[i].voice_id].name, 32+1);
 
 				// Stats
 				WRITEUINT8(demobuf.p, players[i].kartspeed);
@@ -1939,7 +1939,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 			if (ghost->player->followmobj->colorized)
 				followtic |= FZT_COLORIZED;
 			if (followtic & FZT_SKIN)
-				WRITEUINT16(demobuf.p,(UINT16)(((skin_t *)(ghost->player->followmobj->skin))-skins));
+				WRITEUINT16(demobuf.p,(UINT16)(((skin_t *)(ghost->player->followmobj->skin))->skinnum));
 			oldghost[playernum].flags2 |= MF2_AMBUSH;
 		}
 
@@ -2295,7 +2295,7 @@ void G_GhostTicker(void)
 					fmo->colorized = true;
 
 				if (zt.followflags & FZT_SKIN)
-					R_ApplySkin(fmo, &skins[zt.follow.skin]);
+					R_ApplySkin(fmo, skins[zt.follow.skin]);
 			}
 			if (fmo)
 			{
@@ -2698,7 +2698,7 @@ void G_ReadMetalTic(mobj_t *metal)
 					follow->colorized = true;
 
 				if (followtic & FZT_SKIN)
-					R_ApplySkin(follow, &skins[READUINT8(metal_p)]);
+					R_ApplySkin(follow, skins[READUINT8(metal_p)]);
 			}
 			if (follow)
 			{
@@ -2872,7 +2872,7 @@ void G_WriteMetalTic(mobj_t *metal)
 			if (metal->player->followmobj->colorized)
 				followtic |= FZT_COLORIZED;
 			if (followtic & FZT_SKIN)
-				WRITEUINT8(demobuf.p,(UINT8)(((skin_t *)(metal->player->followmobj->skin))-skins));
+				WRITEUINT8(demobuf.p,(UINT8)(((skin_t *)(metal->player->followmobj->skin))->skinnum));
 			oldmetal.flags2 |= MF2_AMBUSH;
 		}
 
@@ -3107,13 +3107,13 @@ void G_BeginRecording(void)
 			WRITESTRINGL(demobuf.p, player_names[p], 21+1);
 
 			// Skin
-			WRITESTRINGL(demobuf.p, skins[player->skin].name, 16+1);
+			WRITESTRINGL(demobuf.p, skins[player->skin]->name, 16+1);
 
 			// Color
 			WRITESTRINGL(demobuf.p, skincolors[player->skincolor].name, 16+1);
 
 			// Voice
-			WRITESTRINGL(demobuf.p, skins[player->skin].voices[player->voice_id].name, 32+1);
+			WRITESTRINGL(demobuf.p, skins[player->skin]->voices[player->voice_id].name, 32+1);
 
 			// Save follower's skin name
 			if (player->followerskin == -1)
@@ -3231,7 +3231,7 @@ void G_WriteStanding(UINT8 ranking, char *name, INT32 skinnum, UINT16 color, UIN
 	WRITESTRINGL(demobuf.p, name, 21+1);
 
 	// Skin
-	WRITESTRINGL(demobuf.p, skins[skinnum].name, 16+1);
+	WRITESTRINGL(demobuf.p, skins[skinnum]->name, 16+1);
 
 	// Color
 	WRITESTRINGL(demobuf.p, skincolors[color].name, 16+1);
@@ -3585,7 +3585,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		pdemo->standings[count].skin = UINT16_MAX;
 		for (i = 0; i < numskins; i++)
 		{
-			if (fasticmp(skins[i].name, temp))
+			if (fasticmp(skins[i]->name, temp))
 			{
 				pdemo->standings[count].skin = i;
 				break;
@@ -4004,7 +4004,7 @@ void G_DoPlayDemo(char *defdemoname)
 		// We'll only assign IDs, since the actual voice assignment happens during
 		// player spawn.
 
-		const INT32 vce = R_FindIDForVoice(&skins[player->skin], plr->voice);
+		const INT32 vce = R_FindIDForVoice(skins[player->skin], plr->voice);
 
 		if (vce == MAXSKINVOICES)
 		{
@@ -4036,7 +4036,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 		// Kart stats (set later)
 
-		if (!fasticmp(skins[player->skin].name, plr->skin))
+		if (!fasticmp(skins[player->skin]->name, plr->skin))
 			FindClosestSkinForStats(p, plr->kartspeed, plr->kartweight);
 
 		// Followitem
@@ -4129,7 +4129,7 @@ void G_AddGhost(char *defdemoname)
 	UINT8 flags;
 	CLEANUP(Z_Pfree) UINT8 *buffer = NULL;
 	mapthing_t *mthing;
-	skin_t *ghskin = &skins[0];
+	skin_t *ghskin = skins[0];
 
 	n = defdemoname+strlen(defdemoname);
 	while (*n != '/' && *n != '\\' && n != defdemoname)
@@ -4226,16 +4226,16 @@ void G_AddGhost(char *defdemoname)
 	}
 
 	for (i = 0; i < numskins; i++)
-		if (fasticmp(skins[i].name, plr->skin))
+		if (fasticmp(skins[i]->name, plr->skin))
 		{
-			ghskin = &skins[i];
+			ghskin = skins[i];
 			break;
 		}
 
 	if (i == numskins)
 	{
 		if (plr->kartspeed != UINT8_MAX && plr->kartweight != UINT8_MAX)
-			ghskin = &skins[GetSkinNumClosestToStats(plr->kartspeed, plr->kartweight)];
+			ghskin = skins[GetSkinNumClosestToStats(plr->kartspeed, plr->kartweight)];
 
 		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: Invalid character. Falling back to %s.\n"), pdemoname, ghskin->name);
 	}

@@ -1837,14 +1837,14 @@ static void Skin_FindRealNameSkin(consvar_t *cvar)
 	for (i = 0; i < numskins; i++)
 	{
 		// Perfect match with some skin name, no need to find matching realname
-		if (strncasecmp(value, skins[i].name, sizeof skins[i].name) == 0)
+		if (strncasecmp(value, skins[i]->name, sizeof skins[i]->name) == 0)
 			return;
 
-		const char *match = strcasestr(skins[i].realname, value);
+		const char *match = strcasestr(skins[i]->realname, value);
 		if (match != NULL)
 		{
 			matches[nummatches] = i;
-			matches_pos[nummatches] = match - skins[i].realname;
+			matches_pos[nummatches] = match - skins[i]->realname;
 			++nummatches;
 		}
 	}
@@ -1852,7 +1852,7 @@ static void Skin_FindRealNameSkin(consvar_t *cvar)
 	if (nummatches == 1)
 	{
 		// Change the cvar to be the value of the name.
-		CV_StealthSet(cvar, skins[matches[0]].name);
+		CV_StealthSet(cvar, skins[matches[0]]->name);
 	}
 	else if (nummatches > 1)
 	{
@@ -1866,7 +1866,7 @@ static void Skin_FindRealNameSkin(consvar_t *cvar)
 
 		for (i = 0; i < nummatches; ++i)
 		{
-			const char *realname = skins[matches[i]].realname;
+			const char *realname = skins[matches[i]]->realname;
 
 			if (matches_pos[i] == 0)
 				start[0] = 0;
@@ -1881,7 +1881,7 @@ static void Skin_FindRealNameSkin(consvar_t *cvar)
 
 			end = realname + matches_pos[i] + query_length;
 
-			CONS_Printf("%s\x85%s\x80%s (%s)\n", start, match, end, skins[matches[i]].name);
+			CONS_Printf("%s\x85%s\x80%s (%s)\n", start, match, end, skins[matches[i]]->name);
 		}
 
 		CONS_Printf("\x86Try be more specific\n");
@@ -2203,7 +2203,7 @@ static void ForceAllSkins(INT32 forcedskin)
 		{
 			if (i == g_localplayers[j])
 			{
-				CV_StealthSet(&cv_skin[j], skins[forcedskin].name);
+				CV_StealthSet(&cv_skin[j], skins[forcedskin]->name);
 				break;
 			}
 		}
@@ -2280,9 +2280,9 @@ static void SendNameAndColor(UINT8 n)
 	{
 		if (player->skincolor && skincolors[player->skincolor].accessible)
 			CV_StealthSetValue(&cv_playercolor[n], player->skincolor);
-		else if (skins[player->skin].prefcolor &&
-			 skincolors[skins[player->skin].prefcolor].accessible)
-			CV_StealthSetValue(&cv_playercolor[n], skins[player->skin].prefcolor);
+		else if (skins[player->skin]->prefcolor &&
+			 skincolors[skins[player->skin]->prefcolor].accessible)
+			CV_StealthSetValue(&cv_playercolor[n], skins[player->skin]->prefcolor);
 		else if (skincolors[atoi(cv_playercolor[n].defaultvalue)].accessible)
 			CV_StealthSet(&cv_playercolor[n], cv_playercolor[n].defaultvalue);
 		else
@@ -2312,12 +2312,12 @@ static void SendNameAndColor(UINT8 n)
 	if (!voice)
 	{
 		// ...how?!
-		voice = &skins[player->skin].voices[0];
+		voice = &skins[player->skin]->voices[0];
 	}
 
 	if (fastcmp(cv_playername[n].string, player_names[playernum]) &&
 	    cv_playercolor[n].value == player->skincolor &&
-	    fastcmp(cv_skin[n].string, skins[player->skin].name) &&
+	    fastcmp(cv_skin[n].string, skins[player->skin]->name) &&
 	    cv_follower[n].value == player->followerskin &&
 	    cv_followercolor[n].value == player->followercolor &&
 	    fasticmp(localvoicedata[n].name, voice->name))
@@ -2348,7 +2348,7 @@ static void SendNameAndColor(UINT8 n)
 		if (metalrecording && n == 0)
 		{  // Starring Metal Sonic as themselves, obviously.
 			SetPlayerSkinByNum(playernum, 5);
-			CV_StealthSet(&cv_skin[n], skins[5].name);
+			CV_StealthSet(&cv_skin[n], skins[5]->name);
 		}
 		else if ((foundskin = R_SkinAvailable(cv_skin[n].string)) != -1 &&
 			 R_SkinUsable(playernum, foundskin))
@@ -2357,14 +2357,14 @@ static void SendNameAndColor(UINT8 n)
 
 			cv_skin[n].value = foundskin;
 			SetPlayerSkin(playernum, cv_skin[n].string);
-			CV_StealthSet(&cv_skin[n], skins[cv_skin[n].value].name);
+			CV_StealthSet(&cv_skin[n], skins[cv_skin[n].value]->name);
 
 			// Reset the voice.
 			if (prevskin != player->skin)
 			{
 				// First off: Check for a preferred voice for this skin
 				prefvox =
-				    R_GetLocalPreferredVoiceForSkin(n, skins[player->skin].name);
+				    R_GetLocalPreferredVoiceForSkin(n, skins[player->skin]->name);
 
 				if (localvoicedata[n].name[0] != 0)
 				{
@@ -2377,8 +2377,8 @@ static void SendNameAndColor(UINT8 n)
 						    CONS_NOTICE,
 						    M_GetText("Using preferred voice \"%s\" for "
 							      "this skin.\n"),
-						    skins[player->skin].voices[prefvox].name);
-						valuevoice = &skins[player->skin].voices[prefvox];
+						    skins[player->skin]->voices[prefvox].name);
+						valuevoice = &skins[player->skin]->voices[prefvox];
 
 						// Preferences get to set local data for free!
 						setVoiceDataByName(n, valuevoice->name);
@@ -2386,13 +2386,13 @@ static void SendNameAndColor(UINT8 n)
 					else
 					{
 						// No dice; use the default voice.
-						valuevoice = &skins[player->skin].voices[0];
+						valuevoice = &skins[player->skin]->voices[0];
 					}
 				}
 				else
 				{
 					// NULL string; default to the skin's default.
-					valuevoice = &skins[player->skin].voices[0];
+					valuevoice = &skins[player->skin]->voices[0];
 				}
 
 				if (player->jointime > 1)
@@ -2408,7 +2408,7 @@ static void SendNameAndColor(UINT8 n)
 			prevskin = player->skin;
 
 			cv_skin[n].value = players[playernum].skin;
-			CV_StealthSet(&cv_skin[n], skins[player->skin].name);
+			CV_StealthSet(&cv_skin[n], skins[player->skin]->name);
 			// will always be same as current
 			SetPlayerSkin(playernum, cv_skin[n].string);
 
@@ -2417,7 +2417,7 @@ static void SendNameAndColor(UINT8 n)
 			{
 				// First off: Check for a preferred voice for this skin
 				prefvox =
-				    R_GetLocalPreferredVoiceForSkin(n, skins[player->skin].name);
+				    R_GetLocalPreferredVoiceForSkin(n, skins[player->skin]->name);
 
 				if (localvoicedata[n].name[0] != 0)
 				{
@@ -2430,8 +2430,8 @@ static void SendNameAndColor(UINT8 n)
 						    CONS_NOTICE,
 						    M_GetText("Using preferred voice "
 							      "\"%s\" for this skin.\n"),
-						    skins[player->skin].voices[prefvox].name);
-						valuevoice = &skins[player->skin].voices[prefvox];
+						    skins[player->skin]->voices[prefvox].name);
+						valuevoice = &skins[player->skin]->voices[prefvox];
 
 						// Preferences get to set local data for free!
 						setVoiceDataByName(n, valuevoice->name);
@@ -2439,13 +2439,13 @@ static void SendNameAndColor(UINT8 n)
 					else
 					{
 						// No dice; use the default voice.
-						valuevoice = &skins[player->skin].voices[0];
+						valuevoice = &skins[player->skin]->voices[0];
 					}
 				}
 				else
 				{
 					// NULL string; default to the skin's default.
-					valuevoice = &skins[player->skin].voices[0];
+					valuevoice = &skins[player->skin]->voices[0];
 				}
 
 				if (player->jointime > 1)
@@ -2460,7 +2460,7 @@ static void SendNameAndColor(UINT8 n)
 		// Need to update voices after the fact.
 		if (localvoicedata[n].name[0] == 0)
 		{
-			setVoiceDataByName(n, skins[player->skin].voices[0].name);
+			setVoiceDataByName(n, skins[player->skin]->voices[0].name);
 		}
 
 		SetPlayerVoice(playernum, localvoicedata[n].name);
@@ -2475,7 +2475,7 @@ static void SendNameAndColor(UINT8 n)
 		{
 			// Get the voice from our ID.
 			// No need to compare parents,
-			valuevoice = &skins[player->skin].voices[player->voice_id];
+			valuevoice = &skins[player->skin]->voices[player->voice_id];
 
 			if (valuevoice)
 			{
@@ -2484,7 +2484,7 @@ static void SendNameAndColor(UINT8 n)
 			else
 			{
 				// ...still nothing?
-				setVoiceDataByName(n, skins[player->skin].voices[0].name);
+				setVoiceDataByName(n, skins[player->skin]->voices[0].name);
 			}
 		}
 
@@ -2494,7 +2494,7 @@ static void SendNameAndColor(UINT8 n)
 			// Auto-assign a preference based on our final voice.
 			// This overwrites anything currently present
 			R_SetLocalPreferredVoiceForSkin(
-			    n, skins[player->skin].name, localvoicedata[n].name);
+			    n, skins[player->skin]->name, localvoicedata[n].name);
 		}
 
 		return;
@@ -2516,23 +2516,23 @@ static void SendNameAndColor(UINT8 n)
 	// Don't change skin if the server doesn't want you to.
 	if (!CanChangeSkin(playernum))
 	{
-		CV_StealthSet(&cv_skin[n], skins[player->skin].name);
+		CV_StealthSet(&cv_skin[n], skins[player->skin]->name);
 
-		if (R_FindIDForVoice(&skins[player->skin], localvoicedata[n].name) == MAXSKINVOICES)
+		if (R_FindIDForVoice(skins[player->skin], localvoicedata[n].name) == MAXSKINVOICES)
 		{
 			// Our voice is no longer valid.
 
 			// Check if we have a preference
-			prefvox = R_GetLocalPreferredVoiceForSkin(n, skins[player->skin].name);
+			prefvox = R_GetLocalPreferredVoiceForSkin(n, skins[player->skin]->name);
 
 			// If we don't, set it to that of our skin's.
 			if (prefvox != MAXSKINVOICES)
 			{
-				setVoiceDataByName(n, skins[player->skin].voices[prefvox].name);
+				setVoiceDataByName(n, skins[player->skin]->voices[prefvox].name);
 			}
 			else
 			{
-				setVoiceDataByName(n, skins[player->skin].voices[0].name);
+				setVoiceDataByName(n, skins[player->skin]->voices[0].name);
 			}
 		}
 	}
@@ -2552,7 +2552,7 @@ static void SendNameAndColor(UINT8 n)
 	// Need to update voices after the fact.
 	if (localvoicedata[n].name[0] == 0)
 	{
-		setVoiceDataByName(n, skins[cv_skin[n].value].voices[0].name);
+		setVoiceDataByName(n, skins[cv_skin[n].value]->voices[0].name);
 	}
 
 	const boolean skinmightchange = (player->skin != cv_skin[n].value);
@@ -2560,28 +2560,28 @@ static void SendNameAndColor(UINT8 n)
 	if (skinmightchange)
 	{
 		// We're very likely changing skins. Check for preferences!
-		prefvox = R_GetLocalPreferredVoiceForSkin(n, skins[cv_skin[n].value].name);
+		prefvox = R_GetLocalPreferredVoiceForSkin(n, skins[cv_skin[n].value]->name);
 
 		if (prefvox != MAXSKINVOICES)
 		{
 			// Update local voice data
-			setVoiceDataByName(n, skins[cv_skin[n].value].voices[prefvox].name);
+			setVoiceDataByName(n, skins[cv_skin[n].value]->voices[prefvox].name);
 
 			// Give the player a heads-up
 			CONS_Alert(CONS_NOTICE,
 				   M_GetText("Using preferred voice \"%s\" for this skin.\n"),
-				   skins[cv_skin[n].value].voices[prefvox].name);
+				   skins[cv_skin[n].value]->voices[prefvox].name);
 		}
 		else if (player->jointime >= 1)
 		{
 			// Nothing found; fall back to the default voice.
-			setVoiceDataByName(n, skins[cv_skin[n].value].voices[0].name);
+			setVoiceDataByName(n, skins[cv_skin[n].value]->voices[0].name);
 		}
 
 		// Then, let it lead into the standard finder for verification.
 	}
 
-	if (R_FindIDForVoice(&skins[cv_skin[n].value], localvoicedata[n].name) == MAXSKINVOICES)
+	if (R_FindIDForVoice(skins[cv_skin[n].value], localvoicedata[n].name) == MAXSKINVOICES)
 	{
 		// In the chance our current voice isn't valid,
 		// rescan our current voice and send that over the network.
@@ -2595,10 +2595,10 @@ static void SendNameAndColor(UINT8 n)
 		{
 			// Get the voice from our ID.
 			// No need to compare parents.
-			valuevoice = &skins[cv_skin[n].value].voices[player->voice_id];
+			valuevoice = &skins[cv_skin[n].value]->voices[player->voice_id];
 
 			// Once again: check preferences
-			prefvox = R_GetLocalPreferredVoiceForSkin(n, skins[cv_skin[n].value].name);
+			prefvox = R_GetLocalPreferredVoiceForSkin(n, skins[cv_skin[n].value]->name);
 
 			if (valuevoice)
 			{
@@ -2606,18 +2606,18 @@ static void SendNameAndColor(UINT8 n)
 			}
 			else if (prefvox != MAXSKINVOICES)
 			{
-				setVoiceDataByName(n, skins[cv_skin[n].value].voices[prefvox].name);
+				setVoiceDataByName(n, skins[cv_skin[n].value]->voices[prefvox].name);
 			}
 			else
 			{
 				// ...still nothing?
-				setVoiceDataByName(n, skins[cv_skin[n].value].voices[0].name);
+				setVoiceDataByName(n, skins[cv_skin[n].value]->voices[0].name);
 			}
 		}
 	}
 
 	// After EVERYTHING, do one last check on our voice so we can set the value.
-	INT32 cvar_voxid = R_FindIDForVoice(&skins[cv_skin[n].value], localvoicedata[n].name);
+	INT32 cvar_voxid = R_FindIDForVoice(skins[cv_skin[n].value], localvoicedata[n].name);
 
 	if (cvar_voxid == MAXSKINVOICES)
 	{
@@ -2635,7 +2635,7 @@ static void SendNameAndColor(UINT8 n)
 		// Defaults should be manually set. This overwrites anything currently present
 		// (again, given it's not the default voice).
 		R_SetLocalPreferredVoiceForSkin(
-		    n, skins[cv_skin[n].value].name, localvoicedata[n].name);
+		    n, skins[cv_skin[n].value]->name, localvoicedata[n].name);
 	}
 
 	// Finally write out the complete packet and send it off.
@@ -2745,7 +2745,7 @@ static void Got_NameAndColor(UINT8** cp, INT32 playernum)
 		{
 			// You know the drill: check for preferences
 			forcedvox =
-			    R_GetLocalPreferredVoiceForSkin(localplayer, skins[forcedskin].name);
+			    R_GetLocalPreferredVoiceForSkin(localplayer, skins[forcedskin]->name);
 
 			if (forcedvox == MAXSKINVOICES)
 			{
@@ -2753,12 +2753,12 @@ static void Got_NameAndColor(UINT8** cp, INT32 playernum)
 				forcedvox = 0;
 			}
 
-			CV_StealthSet(&cv_skin[localplayer], skins[forcedskin].name);
-			setVoiceDataByName(localplayer, skins[forcedskin].voices[forcedvox].name);
+			CV_StealthSet(&cv_skin[localplayer], skins[forcedskin]->name);
+			setVoiceDataByName(localplayer, skins[forcedskin]->voices[forcedvox].name);
 		}
 
 		// set voice
-		SetPlayerVoiceByNum(playernum, skins[forcedskin].voices[forcedvox].id);
+		SetPlayerVoiceByNum(playernum, skins[forcedskin]->voices[forcedvox].id);
 	}
 	else
 	{
@@ -2769,7 +2769,7 @@ static void Got_NameAndColor(UINT8** cp, INT32 playernum)
 
 		if (localplayer != -1)
 		{
-			setVoiceDataByName(localplayer, skins[p->skin].voices[p->voice_id].name);
+			setVoiceDataByName(localplayer, skins[p->skin]->voices[p->voice_id].name);
 		}
 	}
 
@@ -8720,7 +8720,7 @@ static void Skin_OnChange(void)
 	if (!(cht_debug || devparm) && !(multiplayer || netgame) // In single player.
 		&& (gamestate != GS_WAITINGPLAYERS)) // allows command line -warp x +skin y
 	{
-		CV_StealthSet(&cv_skin[0], skins[players[consoleplayer].skin].name);
+		CV_StealthSet(&cv_skin[0], skins[players[consoleplayer].skin]->name);
 		return;
 	}
 
@@ -8729,7 +8729,7 @@ static void Skin_OnChange(void)
 	else
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your skin at the moment.\n"));
-		CV_StealthSet(&cv_skin[0], skins[players[consoleplayer].skin].name);
+		CV_StealthSet(&cv_skin[0], skins[players[consoleplayer].skin]->name);
 	}
 }
 
@@ -8750,7 +8750,7 @@ static void Skin2_OnChange(void)
 	else
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your skin at the moment.\n"));
-		CV_StealthSet(&cv_skin[1], skins[players[g_localplayers[1]].skin].name);
+		CV_StealthSet(&cv_skin[1], skins[players[g_localplayers[1]].skin]->name);
 	}
 }
 
@@ -8766,7 +8766,7 @@ static void Skin3_OnChange(void)
 	else
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your skin at the moment.\n"));
-		CV_StealthSet(&cv_skin[2], skins[players[g_localplayers[2]].skin].name);
+		CV_StealthSet(&cv_skin[2], skins[players[g_localplayers[2]].skin]->name);
 	}
 }
 
@@ -8782,7 +8782,7 @@ static void Skin4_OnChange(void)
 	else
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your skin at the moment.\n"));
-		CV_StealthSet(&cv_skin[3], skins[players[g_localplayers[3]].skin].name);
+		CV_StealthSet(&cv_skin[3], skins[players[g_localplayers[3]].skin]->name);
 	}
 }
 
@@ -8825,7 +8825,7 @@ static void Command_ListSkins(void)
 	for (i = page * 10; i < numskins && i < (page + 1) * 10; i++)
 	{
 		int length;
-		skin_t *skin = &skins[i];
+		skin_t *skin = skins[i];
 
 		if ((length = strlen(skin->name)) > longest_name)
 			longest_name = length;
@@ -8833,7 +8833,7 @@ static void Command_ListSkins(void)
 
 	for (i = page * 10; i < numskins && i < (page + 1) * 10; i++)
 	{
-		skin_t *skin = &skins[i];
+		skin_t *skin = skins[i];
 		UINT16 chatcolor = skincolors[skin->prefcolor].chatcolor;
 		char color_prefix[2];
 
@@ -8874,7 +8874,7 @@ static void Command_SkinSearch(void)
 	{
 		for (s = 0; s < numskins; s++)
 		{
-			skin_t *skininput = &skins[s];
+			skin_t *skininput = skins[s];
 
 			if (strcasestr(skininput->realname, COM_Argv(i)))
 			{
@@ -8916,7 +8916,7 @@ static void __voice_cmd_func(INT32 pid, UINT8 pnum)
 	if (!myvoice)
 	{
 		// ...how?!
-		myvoice = &skins[players[pid].skin].voices[0];
+		myvoice = &skins[players[pid].skin]->voices[0];
 	}
 
 	if (Playing() && (pnum < 1 || splitscreen))
@@ -8983,21 +8983,21 @@ static void __voice_cmd_func(INT32 pid, UINT8 pnum)
 		if (sscanf(COM_Argv(2), " %d", &vo_id) == 0)
 		{
 			// Assume the player is searching by voice name instead
-			vo_id = R_FindIDForVoice(&skins[skin_id], COM_Argv(2));
+			vo_id = R_FindIDForVoice(skins[skin_id], COM_Argv(2));
 
 			if (vo_id == MAXSKINVOICES)
 			{
 				// Found nothing. Make sure we're not playing as this skin, or at
 				// least not playing yet!
 				if (!ingame ||
-				    !fasticmp(skins[skin_id].name, skins[players[pid].skin].name))
+				    !fasticmp(skins[skin_id]->name, skins[players[pid].skin]->name))
 				{
 					// Okay, good, we're not, Set a preference.
 					CONS_Printf(
 					    "Set local player %d's preferred voice for skin \"%s\" "
 					    "to %s.\n",
 					    pnum + 1,
-					    skins[skin_id].name,
+					    skins[skin_id]->name,
 					    COM_Argv(2));
 				}
 				else
@@ -9009,13 +9009,13 @@ static void __voice_cmd_func(INT32 pid, UINT8 pnum)
 						      "%s. A preference has been set "
 						      "instead.\n(TIP: Type \"listvoices %s\" in "
 						      "the console to see this skin's voices!)\n"),
-					    skins[skin_id].name,
+					    skins[skin_id]->name,
 					    COM_Argv(2),
-					    skins[skin_id].name);
+					    skins[skin_id]->name);
 				}
 
 				R_SetLocalPreferredVoiceForSkin(
-				    pnum, skins[skin_id].name, va("%s", COM_Argv(2)));
+				    pnum, skins[skin_id]->name, va("%s", COM_Argv(2)));
 				return;
 			}
 		}
@@ -9024,41 +9024,41 @@ static void __voice_cmd_func(INT32 pid, UINT8 pnum)
 			CONS_Alert(CONS_NOTICE, M_GetText("Voice ID cannot be negative.\n"));
 			return;
 		}
-		else if (vo_id >= skins[skin_id].numvoices)
+		else if (vo_id >= skins[skin_id]->numvoices)
 		{
 			// Make sure the ID isn't invalid
 			CONS_Alert(CONS_NOTICE,
 				   M_GetText("Voice ID is out of range (0 to %d).\n"),
-				   skins[skin_id].numvoices - 1);
+				   skins[skin_id]->numvoices - 1);
 			return;
 		}
 
 		// Check if we're PLAYING AS the skin we're about to set a voice for
-		if (!fasticmp(skins[skin_id].name, skins[players[pid].skin].name))
+		if (!fasticmp(skins[skin_id]->name, skins[players[pid].skin]->name))
 		{
 			// No? Well, at least set a preference for the voice we want...
 			R_SetLocalPreferredVoiceForSkin(
-			    pnum, skins[skin_id].name, skins[skin_id].voices[vo_id].name);
+			    pnum, skins[skin_id]->name, skins[skin_id]->voices[vo_id].name);
 
 			CONS_Printf(
 			    "Set local player %d's preferred voice for skin \"%s\" to %s.\n",
 			    pnum + 1,
-			    skins[skin_id].name,
-			    skins[skin_id].voices[vo_id].name);
+			    skins[skin_id]->name,
+			    skins[skin_id]->voices[vo_id].name);
 			return;
 		}
 
 		// Yes? Even still, set a preference!
 		R_SetLocalPreferredVoiceForSkin(
-		    pnum, skins[skin_id].name, skins[skin_id].voices[vo_id].name);
+		    pnum, skins[skin_id]->name, skins[skin_id]->voices[vo_id].name);
 
 		// FINALLY... set the damn voice, and send it over the network
-		setVoiceDataByName(pnum, skins[skin_id].voices[vo_id].name);
+		setVoiceDataByName(pnum, skins[skin_id]->voices[vo_id].name);
 		SendNameAndColor(pnum);
 	}
 	else if (COM_Argc() > 1)  // More standard, "cvar-like" behavior
 	{
-		skin_t* set_skin = &skins[players[pid].skin];
+		skin_t* set_skin = skins[players[pid].skin];
 
 		if (sscanf(COM_Argv(1), " %d", &vo_id) != 0)
 		{
@@ -9066,10 +9066,10 @@ static void __voice_cmd_func(INT32 pid, UINT8 pnum)
 			{
 				// Not in a game, and certainly not playing. Use what
 				// the player's cvar has
-				set_skin = &skins[cv_skin[pnum].value];
+				set_skin = skins[cv_skin[pnum].value];
 
 				if (!set_skin)
-					set_skin = &skins[0];
+					set_skin = skins[0];
 			}
 			// Setting our voice by ID
 			if (vo_id < 0)
@@ -9365,7 +9365,7 @@ static void Command_ListVoices(void)
 	if (sid == -1)
 		return;
 
-	skin_t* source_skin = &skins[sid];
+	skin_t* source_skin = skins[sid];
 
 	int numpages = source_skin->numvoices / 10 + (source_skin->numvoices % 10 ? 1 : 0);
 
@@ -9567,7 +9567,7 @@ static void Color_OnChange(void)
 	{
 		if (!(cht_debug || devparm) && !(multiplayer || netgame)) // In single player.
 		{
-			CV_StealthSet(&cv_skin[0], skins[players[consoleplayer].skin].name);
+			CV_StealthSet(&cv_skin[0], skins[players[consoleplayer].skin]->name);
 			return;
 		}
 

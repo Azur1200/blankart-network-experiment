@@ -1655,7 +1655,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			P_SetObjectMomZ(target, 14*FRACUNIT, false);
 			P_PlayDeathSound(target);
 
-			if (target->player == NULL || skins[target->player->skin].flags & SF_OLDDEATH)
+			if (target->player == NULL || skins[target->player->skin]->flags & SF_OLDDEATH)
 				break;
 
 			target->player->extendeddeath = false;
@@ -2104,7 +2104,7 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 			boom->angle = player->mo->angle;
 			P_SetTarget(&boom->target, player->mo);
 
-			if (skins[player->skin].flags & SF_OLDDEATH)
+			if (skins[player->skin]->flags & SF_OLDDEATH)
 			{
 				player->mo->flags |= (MF_NOGRAVITY|MF_NOCLIP);
 				player->mo->renderflags |= RF_DONTDRAW;

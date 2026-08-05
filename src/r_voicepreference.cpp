@@ -77,7 +77,7 @@ extern "C"
 
             // Return whatever the search result gives us. If it's nothing, it'll return
             // MAXSKINVOICES
-            return R_FindIDForVoice(&skins[skin_id], check_vox);
+            return R_FindIDForVoice(skins[skin_id], check_vox);
         }
 
         // Nope, no dice!
@@ -94,7 +94,7 @@ extern "C"
         }
 
         // Preferred voice exists in this map; make sure the skin's loaded in, then overwrite
-        const INT32 _skin_id = R_SkinAvailable(skins[skin_id].name);
+        const INT32 _skin_id = R_SkinAvailable(skins[skin_id]->name);
 
         if (_skin_id < 0)  // Doing a less-than-zero check so any garbage data in the negatives gets
                            // ensnared by this...
@@ -106,16 +106,16 @@ extern "C"
         // Okay, this skin exists! Write them in!
         // This does things unconditionally; if it already exists, the current preference is
         // overwritten. If it *doesn't*, the unordered map will add a new entry. It's a win-win!
-        if (auto search = localvoiceprefs[local_pid].find(skins[_skin_id].name);
+        if (auto search = localvoiceprefs[local_pid].find(skins[_skin_id]->name);
             search != localvoiceprefs[local_pid].end())
         {
             // Voice exists; overwrite the current preference
-            localvoiceprefs[local_pid][skins[_skin_id].name].assign(
+            localvoiceprefs[local_pid][skins[_skin_id]->name].assign(
                 vox_name, std::max(static_cast<size_t>(VOICENAMESIZE), strlen(vox_name)));
             return;
         }
 
-        localvoiceprefs[local_pid][skins[_skin_id].name] = vox_name;
+        localvoiceprefs[local_pid][skins[_skin_id]->name] = vox_name;
     }
 
     // Search through a local (non-netsynched) hashmap for a player's preferred voice for the given
@@ -129,7 +129,7 @@ extern "C"
         }
 
         // Preferred voice exists in this map; make sure the skin's loaded in, then overwrite
-        const INT32 _skin_id = R_SkinAvailable(skins[skin_id].name);
+        const INT32 _skin_id = R_SkinAvailable(skins[skin_id]->name);
 
         if (_skin_id < 0)  // Doing a less-than-zero check so any garbage data in the negatives gets
                            // ensnared by this...
@@ -140,12 +140,12 @@ extern "C"
 
         // We are now 100% sure the skin 100% exists. Make sure it exists in the player's preference
         // list
-        if (auto search = localvoiceprefs[local_pid].find(skins[_skin_id].name);
+        if (auto search = localvoiceprefs[local_pid].find(skins[_skin_id]->name);
             search != localvoiceprefs[local_pid].end())
         {
             // Preferred voice exists in this map; begin searching through the skin's voices to make
             // sure we can load it in for real
-            const std::string_view found_vox = localvoiceprefs[local_pid][skins[_skin_id].name];
+            const std::string_view found_vox = localvoiceprefs[local_pid][skins[_skin_id]->name];
 
             char check_vox[VOICENAMESIZE + 1] = {0};
 
@@ -154,7 +154,7 @@ extern "C"
 
             // Return whatever the search result gives us. If it's nothing, it'll return
             // MAXSKINVOICES
-            return R_FindIDForVoice(&skins[_skin_id], check_vox);
+            return R_FindIDForVoice(skins[_skin_id], check_vox);
         }
 
         // Nope, no dice!
@@ -227,7 +227,7 @@ extern "C"
             n.second.copy(temp_vox_name, VOICENAMESIZE);
             temp_vox_name[VOICENAMESIZE] = 0;
 
-            chatcolor = skincolors[skins[skin_id].prefcolor].chatcolor;
+            chatcolor = skincolors[skins[skin_id]->prefcolor].chatcolor;
 
             if (chatcolor > V_TANMAP)
             {
@@ -254,8 +254,8 @@ extern "C"
                        "%s\n\n",
                        local_pid + 1,
                        color_prefix,
-                       skins[skin_id].realname,
-                       skins[skin_id].name,
+                       skins[skin_id]->realname,
+                       skins[skin_id]->name,
                        temp_vox_name);
         }
 
@@ -389,7 +389,7 @@ extern "C"
 
                 // Write the entire output in a single go
                 file_output += va("VoicePref %s %s\n",
-                                  (noskin) ? temp_skin_name : skins[skin_id].name,
+                                  (noskin) ? temp_skin_name : skins[skin_id]->name,
                                   temp_vox_name);
             }
 

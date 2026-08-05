@@ -1448,7 +1448,7 @@ static void R_ParseSpriteInfoSkin(struct ParseSpriteInfoState *parser)
 
 static void copy_to_skin (struct ParseSpriteInfoState *parser, INT32 skinnum)
 {
-	skin_t *skin = &skins[skinnum];
+	skin_t *skin = skins[skinnum];
 	spriteinfo_t *sprinfo = skin->sprinfo;
 
 	if (parser->any)
@@ -1593,7 +1593,7 @@ static boolean R_ParseSpriteInfoFrame(struct ParseSpriteInfoState *parser, boole
 			for (i = 0; i < numskins; i++)
 			{
 				// ignore v1 skins or else they will break
-				boolean compat = wadfiles[skins[i].wadnum]->compatmode;
+				boolean compat = wadfiles[skins[i]->wadnum]->compatmode;
 				if (!compat)
 				{
 					copy_to_skin(parser, i);
