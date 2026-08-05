@@ -2591,7 +2591,7 @@ boolean K_CanPlayerMaintainWaterRun(player_t *player)
 		return true;
 	}
 
-	if (player->dashareapower > 0)
+	if (player->dashareapower > 0 && player->speed >= 10*player->mo->scale)
 	{
 		return true;
 	}
@@ -12161,7 +12161,7 @@ static void K_AdjustPlayerFriction(player_t *player)
 	}
 
 	// smon simple lateral tyre friction
-	if (K_SMonitorSliptideCondition(player) && player->speed > 10*player->mo->scale)
+	if (K_SMonitorSliptideCondition(player) && player->speed >= 10*player->mo->scale)
 	{
 		angle_t pangle = player->mo->angle;
 		vector2_t facingdirection = {P_ReturnThrustX(NULL, pangle, FRACUNIT), P_ReturnThrustY(NULL, pangle, FRACUNIT)};
