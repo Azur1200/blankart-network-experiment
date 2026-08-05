@@ -1609,11 +1609,12 @@ void K_SpawnDashAreaSpeedLines(mobj_t *mo)
 	fixed_t rand_y;
 	fixed_t rand_z;
 
-	rand_z = P_RandomRange(PR_DECORATION, 0, mo->info->height/3);
-	rand_y = P_RandomRange(PR_DECORATION, -56, 56) * FRACUNIT;
-	rand_x = P_RandomRange(PR_DECORATION, -56, 56) * FRACUNIT;
+	rand_y = M_RandomRange(-56, 56) * FRACUNIT;
+	rand_x = M_RandomRange(-56, 56) * FRACUNIT;
+	rand_z = FixedMul(M_RandomFixed(), mo->info->height/3);
 
 	mobj_t *fast = P_SpawnMobjFromMobj(mo, rand_x, rand_y, rand_z, MT_FASTLINE);
+	fast->flags2 |= MF2_DONTSYNC; // No desyncs pls!
 
 	P_SetTarget(&fast->target, mo);
 	fast->angle = K_MomentumAngle(mo);
