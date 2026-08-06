@@ -11124,7 +11124,7 @@ void A_SPBChase(void *thing)
 					// gradually scale this with dash area (but not outrun, it's in the name lol)
 					if (actor->extravalue3 != actor->tracer->player->dashareapower)
 					{
-						actor->extravalue3 = ApproachFixed(actor->extravalue3, actor->tracer->player->dashareapower, actor->tracer->player->dashareapower/(2*TICRATE), 25*FRACUNIT/TICRATE);
+						actor->extravalue3 = ApproachFixed(actor->extravalue3, actor->tracer->player->dashareapower, actor->tracer->player->dashareapower/(2*TICRATE), actor->extravalue3);
 					}
 					defspeed = FixedMul(defspeed, FRACUNIT + actor->extravalue3);
 				}
