@@ -3732,7 +3732,7 @@ void G_DoPlayDemo(char *defdemoname)
 				// vres GHOST_%u
 				virtres_t *vRes;
 				virtlump_t *vLump;
-				UINT16 mapnum;
+				mapnum_t mapnum;
 				size_t step = 0;
 				char mapname[MAXMAPLUMPNAME];
 
