@@ -197,6 +197,10 @@ static void M_AATreeBegin_Node(aatree_node_t *node, mqueue_t *node_queue)
     if (node->left) M_AATreeBegin_Node(node->left, node_queue);
 
     aatree_iterator_node_t *itnode = calloc(1, sizeof(aatree_iterator_node_t));
+
+	if (itnode == NULL)
+		I_Error("M_AATreeBegin_Node: Out of memory!\n");
+
     itnode->node = node;
     M_QueueInsert((mqueueitem_t*)itnode, node_queue);
 
@@ -223,6 +227,10 @@ static void M_AATreeRBegin_Node(aatree_node_t *node, mqueue_t *node_queue)
     if (node->left) M_AATreeRBegin_Node(node->left, node_queue);
 
     aatree_iterator_node_t *itnode = calloc(1, sizeof(aatree_iterator_node_t));
+
+	if (itnode == NULL)
+		I_Error("M_AATreeRBegin_Node: Out of memory!\n");
+
     itnode->node = node;
     M_QueueInsert((mqueueitem_t*)itnode, node_queue);
 

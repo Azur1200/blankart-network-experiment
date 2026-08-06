@@ -105,8 +105,8 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x23007d9dd92121af
-#define ASSET_HASH_MAPPATCH_PK3        0x0d2ebf812a5bf60d
+#define ASSET_HASH_MAIN_PK3            0x665a90c4364a7aba
+#define ASSET_HASH_MAPPATCH_PK3        0xa279dcd392d0cfc9
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
 #define ASSET_HASH_PATCH_PK3           0x0000000000000000
@@ -1283,7 +1283,6 @@ void D_ClearState(void)
 	// The title screen is obviously not a tutorial! (Unless I'm mistaken)
 	tutorialmode = false;
 
-	P_FreeLevelState();
 	P_InvalidateThinkersWithoutInit();
 
 	G_SetGamestate(GS_NULL);
@@ -1516,7 +1515,7 @@ void D_SRB2Main(void)
 {
 	INT32 p;
 
-	mapnum_t pstartmap = (mapnum_t)1;
+	mapnum_t pstartmap = (mapnum_t)0;
 	boolean autostart = false;
 
 	/* break the version string into version numbers, for netplay */
@@ -1970,6 +1969,10 @@ void D_SRB2Main(void)
 		else
 		{
 			uint8_t *keybuffer = (uint8_t *)malloc(totalsize);
+
+			if (keybuffer == NULL)
+				I_Error("Failed to allocate keybuffer.");
+
 			memcpy(keybuffer, g_secret_key[snum], sk_size);
 			memcpy(keybuffer + sk_size, g_public_key[snum], pk_size);
 			if (!FIL_WriteFile(file, keybuffer, totalsize))
@@ -2239,8 +2242,12 @@ void D_SRB2Main(void)
 				CV_SetValue(&cv_kartspeed, newskill);
 		}
 
-		if (server && !M_CheckParm("+map"))
+		if (server && (dedicated || !M_CheckParm("+map")))
 		{
+			if (!pstartmap && (pstartmap = (mapnum_t)(G_GetFirstMapOfGametype(gametype)+1)) > nummapheaders)
+			{
+				I_Error("Can't get first map of gametype\n");
+			}
 			// Prevent warping to locked levels
 			// ... unless you're in a dedicated server.  Yes, technically this means you can view any level by
 			// running a dedicated server and joining it yourself, but that's better than making dedicated server's

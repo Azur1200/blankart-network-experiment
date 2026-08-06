@@ -11,6 +11,9 @@
 /// \file  r_voicepreference.hpp
 /// \brief Voice preference system and file I/O
 
+#ifndef __R_VOICEPREF__
+#define __R_VOICEPREF__
+
 #include "r_skins.h"  // kartvoicenum_t
 
 #ifdef __cplusplus
@@ -46,3 +49,5 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
+
+#endif // __R_VOICEPREF__

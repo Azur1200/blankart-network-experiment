@@ -477,6 +477,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartaltshrink_arrowbulletthres);
 	CV_RegisterVar(&cv_kartaltshrink_runneranger);
 
+	CV_RegisterVar(&cv_kartstartboost_runnerbonus);
+
 	CV_RegisterVar(&cv_kartairsquish);
 
 	CV_RegisterVar(&cv_karthyudorostealbehind);
@@ -2592,7 +2594,7 @@ boolean K_CanPlayerMaintainWaterRun(player_t *player)
 		return true;
 	}
 
-	if (player->dashareapower > 0 && player->speed >= 10*player->mo->scale)
+	if (player->dashareapower > 0 && player->speed >= 20*player->mo->scale)
 	{
 		return true;
 	}
@@ -3299,7 +3301,7 @@ fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dor
 	fixed_t finalspeed;
 
 	if (doboostpower && player->forcedtopspeed > 0)
-		return FixedMul(player->forcedtopspeed, player->mo->scale);
+		return FixedMul(FixedMul(player->forcedtopspeed, FRACUNIT + player->dashareapower), player->mo->scale);
 
 	if (doboostpower && !player->pogospring && !P_IsObjectOnGround(player->mo) && (player->airdriftspeed == 0))
 	{
@@ -7213,6 +7215,10 @@ static void K_RaceStart(player_t *player)
 		else if (player->boostcharge <= 50)
 		{
 			player->startboost = (50-player->boostcharge)+20;
+			if (cv_kartstartboost_runnerbonus.value && player->position < 4)
+			{
+				player->startboost += (4 - player->position) * 8;
+			}
 
 			if (player->boostcharge <= 36)
 			{
@@ -7220,6 +7226,11 @@ static void K_RaceStart(player_t *player)
 				K_DoSneaker(player, SNEAKERTYPE_PANEL);
 				player->sneakertimer = 70; // PERFECT BOOST!!
 				player->realsneakertimer = 70;
+				if (cv_kartstartboost_runnerbonus.value && player->position < 4)
+				{
+					player->sneakertimer += (4 - player->position) * 8;
+					player->realsneakertimer += (4 - player->position) * 8;
+				}
 
 				if (!player->floorboost || player->floorboost == 3) // Let everyone hear this one
 					S_StartSound(player->mo, sfx_s25f);
@@ -9859,7 +9870,7 @@ INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
 	if (player->spectator)
 		return turnvalue;
 
-	if (player->dashareapower > 0)
+	if (player->dashareapower)
 	{
 		turnvalue += FixedMul(turnvalue, player->dashareapower);
 	}

@@ -240,8 +240,13 @@ static bool ACS_GetStateFromString(const char *word, statenum_t *type)
 --------------------------------------------------*/
 static bool ACS_GetSkinFromString(const char *word, INT32 *type)
 {
+	UINT32 hash = HASH32(word, strlen(word));
+
 	for (int i = 0; i < numskins; i++)
 	{
+		if (skins[i]->namehash != hash)
+			continue;
+
 		if (fastcmp(word, skins[i]->name))
 		{
 			*type = i;

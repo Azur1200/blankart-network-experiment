@@ -2439,12 +2439,15 @@ boolean M_IsPathAbsolute(const char *path)
 */
 void M_MkdirEachUntil(const char *cpath, int start, int end, int mode)
 {
-	char path[256];
-	char *p;
+	char path[256] = {0};
+	char *p = NULL;
 	int n;
 	int c;
 
 	if (end > 0 && end <= start)
+		return;
+
+	if (cpath == NULL)
 		return;
 
 	strlcpy(path, cpath, sizeof path);

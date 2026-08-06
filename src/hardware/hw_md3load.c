@@ -179,6 +179,10 @@ model_t *MD3_LoadModel(const char *fileName, int ztag, boolean useFloat)
 
 	// read in file
 	buffer = malloc(fileLen);
+
+	if (buffer == NULL)
+		I_Error("Failled to allocate md3load buffer");
+
 	fileReadLen = fread(buffer, fileLen, 1, f);
 	fclose(f);
 

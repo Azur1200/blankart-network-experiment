@@ -490,7 +490,7 @@ void GL_GetModeList(vmode_t** pvidmodes, INT32 *numvidmodes)
 		video_modes[i].setmode = SetRes;
 	}
 #endif
-	video_modes[(*numvidmodes)-1].pnext = NULL;
+	video_modes[(*numvidmodes) == 0 ? 0 : (*numvidmodes)-1].pnext = NULL;
 }
 
 

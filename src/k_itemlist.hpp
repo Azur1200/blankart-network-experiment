@@ -1,3 +1,6 @@
+#ifndef __K_ITEMLIST__
+#define __K_ITEMLIST__
+
 #include "doomdef.h"
 #include "k_items.h"
 
@@ -22,3 +25,5 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
+
+#endif // __K_ITEMLIST__

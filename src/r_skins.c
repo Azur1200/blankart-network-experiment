@@ -551,13 +551,20 @@ boolean R_SkinUsable(INT32 playernum, INT32 skinnum)
 
 // returns the skin number if the skin name is found (loaded from pwad)
 // warning return -1 if not found
-INT32 R_SkinAvailable(const char *name)
+INT32 R_SkinAvailableEx(const char *name, boolean usehash)
 {
 	INT32 i;
 
+	if (name == NULL)
+		return -1;
+
+	UINT32 hash = usehash == false ? 0 : HASH32(name, strlen(name));
+
 	for (i = 0; i < numskins; i++)
 	{
-		// search in the skin list
+		if (usehash && skins[i]->namehash != hash)
+			continue;
+
 		if (fasticmp(skins[i]->name,name))
 			return i;
 	}
@@ -684,6 +691,9 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 INT32 R_FindIDForVoice(skin_t *skin, const char* voicename)
 {
 	INT32 i;
+
+	if (skin == NULL || voicename == NULL)
+		return MAXSKINVOICES;
 
 	// Scan through our allocated skin voices for the wanted voice.
 
@@ -1001,6 +1011,7 @@ static void R_IHateThatHedgehog(UINT16 wadnum)
 	skin->skinnum = numskins;
 	skin->wadnum = wadnum;
 	strcpy(skin->name, "sonic");
+	skin->namehash = HASH32(skin->name, strlen(skin->name));
 
 	Forceskin_cons_t[1].value = 0;
 	Forceskin_cons_t[1].strvalue = skin->name;
@@ -1403,6 +1414,7 @@ void R_AddSkins(UINT16 wadnum)
 				if (skinnum == -1)
 				{
 					STRBUFCPY(skin->name, value);
+					skin->namehash = HASH32(skin->name, strlen(skin->name));
 				}
 				// the skin name must uniquely identify a single skin
 				// if the name is already used I make the name 'namex'
@@ -1420,6 +1432,7 @@ void R_AddSkins(UINT16 wadnum)
 						// I'm lazy so if NEW name is already used I leave the 'skin x'
 						// default skin name set in Sk_SetDefaultValue
 						STRBUFCPY(skin->name, value2);
+						skin->namehash = HASH32(skin->name, strlen(skin->name));
 					}
 					Z_Free(value2);
 				}

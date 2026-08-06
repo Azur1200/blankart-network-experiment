@@ -2227,6 +2227,16 @@ static void readmenuitems(MYFILE *f, menupaneldef_t *pd)
 		}
 		else if (fastcmp(word, "CVAR") || fastcmp(word, "SLIDER"))
 		{
+#ifndef HAVE_DISCORDRPC
+			if (fasticmp(word2, "DISCORDRP")
+				|| fasticmp(word2, "DISCORDSTREAMER")
+				|| fasticmp(word2, "DISCORDASKS")
+				|| fasticmp(word2, "DISCORDINVITES")
+			)
+			{
+				continue;
+			}
+#endif
 			consvar_t *cvar = CV_FindVar(word2);
 			if (!cvar)
 				for (size_t i = 0; HIDDENVARS[i].name; i++)
@@ -4926,6 +4936,10 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 				var->name = cvname;
 
 				char *defval = malloc(5+1); // UINT16_MAX + NUL
+
+				if (defval == NULL)
+					I_Error("readkartresult: Out of memory!\n");
+
 				snprintf(defval, 6, "%u", result->baserunneraug[idx]);
 				var->defaultvalue = defval;
 
