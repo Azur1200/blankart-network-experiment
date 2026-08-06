@@ -1970,6 +1970,10 @@ void D_SRB2Main(void)
 		else
 		{
 			uint8_t *keybuffer = (uint8_t *)malloc(totalsize);
+
+			if (keybuffer == NULL)
+				I_Error("Failed to allocate keybuffer.");
+
 			memcpy(keybuffer, g_secret_key[snum], sk_size);
 			memcpy(keybuffer + sk_size, g_public_key[snum], pk_size);
 			if (!FIL_WriteFile(file, keybuffer, totalsize))

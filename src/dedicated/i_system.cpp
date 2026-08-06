@@ -1874,6 +1874,10 @@ static const char *locateWad(void)
 	if ((envstr = I_GetEnv("HOME")) != NULL)
 	{
 		char *tmp = static_cast<char*>(malloc(strlen(envstr) + sizeof(PATHSEP) + sizeof(DEFAULTDIR)));
+
+		if (tmp == NULL)
+			I_Error("Failed to allocate tmp for HOME");
+
 		strcpy(tmp, envstr);
 		strcat(tmp, PATHSEP);
 		strcat(tmp, DEFAULTDIR);

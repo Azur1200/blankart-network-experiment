@@ -61,6 +61,10 @@ void I_spawn_thread(const char *name, I_thread_fn entry, void *userdata)
 	if (thread == NULL)
 	{
 		thread = malloc(sizeof(thread_t));
+
+		if (thread == NULL)
+			I_Error("Failed to allocate thread");
+
 		thread->next = thread_list;
 		thread_list = thread;
 	}
