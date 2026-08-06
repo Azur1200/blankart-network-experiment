@@ -1292,7 +1292,7 @@ void G_ReadDemoExtraData(void)
 
 	while (true)
 	{
-		extradata_t extra;
+		extradata_t extra = {0};
 		demobuf.p = G_ReadRawExtraData(&extra, demobuf.p, demo.version);
 		p = extra.playernum;
 

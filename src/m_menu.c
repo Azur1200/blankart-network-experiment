@@ -6110,6 +6110,9 @@ void MP_PrepReplayList(menupanelinst_t *pi)
 
 	demolist = Z_Calloc(sizeof(menudemo_t) * sizedirmenu, PU_STATIC, NULL);
 
+	if (demolist == NULL)
+		I_Error("MP_PrepReplayList: Ran out of Memory!\n");
+
 	for (i = 0; i < sizedirmenu; i++)
 	{
 		if (dirmenu[i][DIR_TYPE] == EXT_UP)

@@ -218,6 +218,9 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors)
 {
 	FILE *handle;
 
+	if (filename == NULL)
+		return NULL;
+
 	// Officially, strncpy should not have overlapping buffers, since W_VerifyNMUSlumps is called after this, and it
 	// changes filename to point at filenamebuf, it would technically be doing that. I doubt any issue will occur since
 	// they point to the same location, but it's better to be safe and this is a simple change.
