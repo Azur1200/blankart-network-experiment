@@ -106,7 +106,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 				if (player->stealingtimer || player->stolentimer
 					|| player->rocketsneakertimer
 					|| player->eggmanexplode
-					|| (K_SMonitorSlotHogging(player))
+					|| (K_SMonitorSlotHogging(player) && player->itemreserveamount > 0)
 					|| (player->growshrinktimer > 0)
 					|| player->flametimer)
 					return false;
@@ -114,9 +114,10 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 				// Item slot already taken up
 				if (player->itemroulette
 					|| (weapon != PICKUPITEM_FLOATING && player->itemamount)
+					|| (weapon == PICKUPITEM_ITEM && player->itemreservetype == KITEM_BONUSITEMROLL)
 					|| (player->itemflags & IF_ITEMOUT))
 					return false;
-
+				
 				if (weapon == PICKUPITEM_FLOATING && K_GetShieldFromPlayer(player) != KSHIELD_NONE)
 					return false; // No stacking shields!
 			}
@@ -301,18 +302,25 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 				return;
 
-			player->itemtype = special->threshold;
-			if ((UINT16)(player->itemamount) + special->movecount > 255)
-				player->itemamount = 255;
-			else
-				player->itemamount += special->movecount;
-
-			// Add the pickup to our roll list
-			if (itemlistactive)
+			if (K_SMonitorSlotHogging(player) && (player->itemreservetype == KITEM_NONE || player->itemreservetype == special->threshold))
 			{
-				K_AddItemRollToList((INT32)(player - players),
-						    player->itemtype,
-						    player->itemamount);
+				K_AddPlayerReserveItem(player, special->threshold, special->movecount);
+			}
+			else
+			{
+				player->itemtype = special->threshold;
+				if ((UINT16)(player->itemamount) + special->movecount > 255)
+					player->itemamount = 255;
+				else
+					player->itemamount += special->movecount;
+	
+				// Add the pickup to our roll list
+				if (itemlistactive)
+				{
+					K_AddItemRollToList((INT32)(player - players),
+								player->itemtype,
+								player->itemamount);
+				}
 			}
 
 			S_StartSound(special, special->info->deathsound);
@@ -326,32 +334,18 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			return;
 		case MT_RANDOMITEM:
 			if (!itembreaker && !P_CanPickupItem(player, PICKUPITEM_ITEM))
+				return;
+
+			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 			{
-				if (K_SMonitorSlotHogging(player) && player->itemreserveamount == 0)
-				{
-					special->momx = special->momy = special->momz = 0;
-					// P_SetTarget(&special->target, toucher);
-					P_KillMobj(special, toucher, NULL, DMG_NORMAL);
-					K_AddPlayerReserveItem(player, KITEM_BONUSITEMROLL, 1);
-				}
-				else
-				{
+				if (player->karmamode || player->karmadelay)
 					return;
-				}
+				player->karmamode = KARMAMODE_ITEM;
 			}
-			else
-			{
-				if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
-				{
-					if (player->karmamode || player->karmadelay)
-						return;
-					player->karmamode = KARMAMODE_ITEM;
-				}
-	
-				special->momx = special->momy = special->momz = 0;
-				P_SetTarget(&special->target, toucher);
-				P_KillMobj(special, toucher, toucher, DMG_NORMAL);
-			}
+
+			special->momx = special->momy = special->momz = 0;
+			P_SetTarget(&special->target, toucher);
+			P_KillMobj(special, toucher, toucher, DMG_NORMAL);
 			break;
 		case MT_ITEMCAPSULE:
 			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
@@ -428,8 +422,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 					firework->momx = (special->target->momx + toucher->momx) / 2;
 					firework->momy = (special->target->momy + toucher->momy) / 2;
 					firework->momz = (special->target->momz + toucher->momz) / 2;
-					P_Thrust(firework, FixedAngle((72*i)<<FRACBITS), P_RandomRange(1,8)*special->scale);
-					P_SetObjectMomZ(firework, P_RandomRange(1,8)*special->scale, false);
+					P_Thrust(firework, FixedAngle((72*i)<<FRACBITS), P_RandomRange(PR_DECORATION,1,8)*special->scale);
+					P_SetObjectMomZ(firework, P_RandomRange(PR_DECORATION,1,8)*special->scale, false);
 					firework->color = special->target->color;
 				}
 
@@ -584,8 +578,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				firework->momx = toucher->momx;
 				firework->momy = toucher->momy;
 				firework->momz = toucher->momz;
-				P_Thrust(firework, FixedAngle((72*i)<<FRACBITS), P_RandomRange(1,8)*special->scale);
-				P_SetObjectMomZ(firework, P_RandomRange(1,8)*special->scale, false);
+				P_Thrust(firework, FixedAngle((72*i)<<FRACBITS), P_RandomRange(PR_DECORATION, 1,8)*special->scale);
+				P_SetObjectMomZ(firework, P_RandomRange(PR_DECORATION, 1,8)*special->scale, false);
 				firework->color = toucher->color;
 			}
 
@@ -864,7 +858,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				special->momz = 0;
 				special->flags |= MF_NOGRAVITY;
 				P_SetMobjState (special, special->info->deathstate);
-				S_StartSound (special, special->info->deathsound+(P_RandomKey(special->info->mass)));
+				S_StartSound (special, special->info->deathsound+(P_RandomKey(PR_SFX, special->info->mass)));
 			}
 			return;
 
@@ -1661,13 +1655,14 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			P_SetObjectMomZ(target, 14*FRACUNIT, false);
 			P_PlayDeathSound(target);
 
-			if (target->player == NULL || skins[target->player->skin].flags & SF_OLDDEATH)
+			if (target->player == NULL || skins[target->player->skin]->flags & SF_OLDDEATH)
 				break;
 
 			target->player->extendeddeath = false;
 
 			angle_t flingangle = (flatout2) ? target->angle : target->angle + ANGLE_180;
-			fixed_t angleoffset = P_RandomRange(20, 40)*FRACUNIT;
+			fixed_t angleoffset = P_RandomRange(PR_DEADFLING, 20, 40)*FRACUNIT;
+
 			if (angleoffset < 30*FRACUNIT)
 				angleoffset -= 60*FRACUNIT;
 
@@ -1789,7 +1784,14 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 					break;
 				}
 
-				K_AwardPlayerItem(player, target->threshold, max(1, target->movecount), true, KITEMBLINK_NORMAL);
+				if (K_SMonitorSlotHogging(player) && (player->itemreservetype == KITEM_NONE || player->itemreservetype == target->threshold))
+				{
+					K_AddPlayerReserveItem(player, target->threshold, max(1, target->movecount));
+				}
+				else
+				{
+					K_AwardPlayerItem(player, target->threshold, max(1, target->movecount), true, KITEMBLINK_NORMAL);
+				}
 			}
 			break;
 		}
@@ -1949,7 +1951,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 
 		if (target->info->xdeathstate != S_NULL)
 		{
-			sprflip = P_RandomChance(FRACUNIT/2);
+			sprflip = P_RandomChance(PR_DECORATION, FRACUNIT/2);
 
 #define makechunk(angtweak, xmov, ymov) \
 			chunk = P_SpawnMobjFromMobj(target, 0, 0, 0, MT_WALLSPIKE);\
@@ -1962,7 +1964,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			chunk->y += ymov - forwardyoffs;\
 			P_SetThingPosition(chunk);\
 			P_InstaThrust(chunk, angtweak, 4*scale);\
-			chunk->momz = P_RandomRange(5, 7)*scale;\
+			chunk->momz = P_RandomRange(PR_DECORATION, 5, 7)*scale;\
 			if (flip)\
 				chunk->momz *= -1;\
 			if (sprflip)\
@@ -1975,7 +1977,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 #undef makechunk
 		}
 
-		sprflip = P_RandomChance(FRACUNIT/2);
+		sprflip = P_RandomChance(PR_DECORATION, FRACUNIT/2);
 
 		chunk = P_SpawnMobjFromMobj(target, 0, 0, 0, MT_WALLSPIKE);
 
@@ -1988,7 +1990,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 		chunk->y += forwardyoffs - yoffs;
 		P_SetThingPosition(chunk);
 		P_InstaThrust(chunk, ang + ANGLE_180, 2*scale);
-		chunk->momz = P_RandomRange(5, 7)*scale;
+		chunk->momz = P_RandomRange(PR_DECORATION, 5, 7)*scale;
 		if (flip)
 			chunk->momz *= -1;
 		if (sprflip)
@@ -2002,7 +2004,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 		target->y += forwardyoffs + yoffs;
 		P_SetThingPosition(target);
 		P_InstaThrust(target, ang, 2*scale);
-		target->momz = P_RandomRange(5, 7)*scale;
+		target->momz = P_RandomRange(PR_DECORATION, 5, 7)*scale;
 		if (flip)
 			target->momz *= -1;
 		if (!sprflip)
@@ -2102,7 +2104,7 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 			boom->angle = player->mo->angle;
 			P_SetTarget(&boom->target, player->mo);
 
-			if (skins[player->skin].flags & SF_OLDDEATH)
+			if (skins[player->skin]->flags & SF_OLDDEATH)
 			{
 				player->mo->flags |= (MF_NOGRAVITY|MF_NOCLIP);
 				player->mo->renderflags |= RF_DONTDRAW;
@@ -2689,7 +2691,7 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 	num_fling_rings = spill_total + min(0, player->rings);
 
 	// determine first angle
-	fa = player->mo->angle + ((P_RandomByte() & 1) ? -ANGLE_90 : ANGLE_90);
+	fa = player->mo->angle + ((P_RandomByte(PR_ITEM_RINGS) & 1) ? -ANGLE_90 : ANGLE_90);
 
 	for (i = 0; i < num_fling_rings; i++)
 	{

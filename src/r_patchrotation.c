@@ -154,7 +154,7 @@ INT32 R_GetRollAngle(angle_t rollangle)
 // Simulates "rollangle" angling
 angle_t R_ConvToRollAngle(angle_t ang)
 {
-	return (cv_fakerollangle.value) ? (R_GetRollAngle(ang) * VISROTMUL) : ang;
+	return (cv_fakerollangle.value) ? ((angle_t)R_GetRollAngle(ang) * VISROTMUL) : ang;
 }
 
 vector2_t* R_RotateSpriteOffsetsByPitchRoll(

@@ -421,7 +421,7 @@ static void HWR_ExecuteStateChanges(unsigned int stateChanges, DrawCallInfo *dc)
 	if ((stateChanges & SHADER_CHANGED) && cv_glshaders.value && gl_shadersavailable)
 	{
 		GL_SetShader(dc->shader);
-		ps_hw_numshaders++;
+		ps_hw_numshaders.value.i++;
 	}
 
 	if (stateChanges & TEXTURE_CHANGED)
@@ -435,23 +435,23 @@ static void HWR_ExecuteStateChanges(unsigned int stateChanges, DrawCallInfo *dc)
 			if (dc->brightmap)
 				GL_SetTexture(dc->brightmap);
 		}
-		ps_hw_numtextures++;
+		ps_hw_numtextures.value.i++;
 	}
 
 	// these two are just parameters to DrawIndexedTriangles
 	// (changes to polyflags states are tracked in r_opengl.c though)
 	if (stateChanges & POLYFLAGS_CHANGED)
-		ps_hw_numpolyflags++;
+		ps_hw_numpolyflags.value.i++;
 	if (stateChanges & SURFACEINFO_CHANGED)
-		ps_hw_numcolors++;
+		ps_hw_numcolors.value.i++;
 }
 
 static void HWR_InitBatchingStats(void)
 {
-	ps_hw_numpolys = cst->drawCallsSize;
-	ps_hw_numcalls = ps_hw_numverts
-	= ps_hw_numshaders = ps_hw_numtextures
-	= ps_hw_numpolyflags = ps_hw_numcolors = 0;
+	ps_hw_numpolys.value.i = cst->drawCallsSize;
+	ps_hw_numcalls.value.i = ps_hw_numverts.value.i
+	= ps_hw_numshaders.value.i = ps_hw_numtextures.value.i
+	= ps_hw_numpolyflags.value.i = ps_hw_numcolors.value.i = 0;
 }
 
 // This function organizes the geometry and draw calls collected by HWR_ProcessPolygon
@@ -476,12 +476,12 @@ void HWR_RenderBatches(void)
 		drawCallOrder[i] = i;
 
 	// sort the draw calls
-	ps_hw_batchsorttime = I_GetPreciseTime();
+	PS_START_TIMING(ps_hw_batchsorttime);
 	if (cv_glshaders.value && gl_shadersavailable)
 		qs22j(drawCallOrder, cst->drawCallsSize, sizeof(UINT32), compareDrawCalls);
 	else
 		qs22j(drawCallOrder, cst->drawCallsSize, sizeof(UINT32), compareDrawCallsNoShaders);
-	ps_hw_batchsorttime = I_GetPreciseTime() - ps_hw_batchsorttime;
+	PS_STOP_TIMING(ps_hw_batchsorttime);
 	// sort grouping order
 	// 1. shader
 	// 2. texture
@@ -490,7 +490,7 @@ void HWR_RenderBatches(void)
 	// 5. colors + light level
 	// not sure about what order of the last 2 should be, or if it even matters
 
-	ps_hw_batchdrawtime = I_GetPreciseTime();
+	PS_START_TIMING(ps_hw_batchdrawtime);
 
 	// set state for first batch
 	HWR_ExecuteStateChanges(0xFFFF, &cst->drawCalls[drawCallOrder[0]]);
@@ -535,8 +535,8 @@ void HWR_RenderBatches(void)
 			GL_DrawIndexedTriangles(&currentDrawCall->surf, finalVertices,
 										finalIndicesSize, currentDrawCall->polyFlags, finalIndices);
 			// update stats
-			ps_hw_numcalls++;
-			ps_hw_numverts += finalIndicesSize;
+			ps_hw_numcalls.value.i++;
+			ps_hw_numverts.value.i += finalIndicesSize;
 			// reset final geometry collection arrays
 			finalVerticesSize = 0;
 			finalIndicesSize = 0;
@@ -554,7 +554,7 @@ void HWR_RenderBatches(void)
 	cst->drawCallsSize = 0;
 	cst->unsortedVerticesSize = 0;
 
-	ps_hw_batchdrawtime = I_GetPreciseTime() - ps_hw_batchdrawtime;
+	PS_STOP_TIMING(ps_hw_batchdrawtime);
 }
 
 

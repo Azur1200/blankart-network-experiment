@@ -201,7 +201,7 @@ UINT16 K_GetEffectiveFollowerColor(UINT16 followercolor, follower_t *follower, U
 		if (playerskin == NULL)
 		{
 			// Nothing from this line down is valid if playerskin is invalid, just guess Eggman?
-			playerskin = &skins[0];
+			playerskin = skins[0];
 		}
 
 		playercolor = playerskin->prefcolor;

@@ -455,18 +455,36 @@ static int lib_gMapNumber(lua_State *L)
 // M_RANDOM
 //////////////
 
+// FIXME: Allow RNG class freeslotting
+
 static int lib_pRandomFixed(lua_State *L)
 {
+	INT32 seed_offset = lua_isnoneornil(L, 1) ? 0 : luaL_checkinteger(L, 1);
+	pr_class_t use_seed = (pr_class_t)(PR_LUA_1 + seed_offset);
+
+	if (use_seed > PRLASTLUACLASS || use_seed < PR_LUA_1 || seed_offset < 0)
+	{
+		return luaL_error(L, "prng class out of range (0 - %d)", (PRLASTLUACLASS - PR_LUA_1));
+	}
+
 	NOHUD
-	lua_pushfixed(L, P_RandomFixed());
+	lua_pushfixed(L, P_RandomFixed(use_seed));
 	demo_writerng = 2;
 	return 1;
 }
 
 static int lib_pRandomByte(lua_State *L)
 {
+	INT32 seed_offset = lua_isnoneornil(L, 1) ? 0 : luaL_checkinteger(L, 1);
+	pr_class_t use_seed = (pr_class_t)(PR_LUA_1 + seed_offset);
+
+	if (use_seed > PRLASTLUACLASS || use_seed < PR_LUA_1 || seed_offset < 0)
+	{
+		return luaL_error(L, "prng class out of range (0 - %d)", (PRLASTLUACLASS - PR_LUA_1));
+	}
+
 	NOHUD
-	lua_pushinteger(L, P_RandomByte());
+	lua_pushinteger(L, P_RandomByte(use_seed));
 	demo_writerng = 2;
 	return 1;
 }
@@ -474,8 +492,17 @@ static int lib_pRandomByte(lua_State *L)
 static int lib_pRandomKey(lua_State *L)
 {
 	INT32 a = (INT32)luaL_checkinteger(L, 1);
+
+	INT32 seed_offset = lua_isnoneornil(L, 2) ? 0 : luaL_checkinteger(L, 2);
+	pr_class_t use_seed = (pr_class_t)(PR_LUA_1 + seed_offset);
+
+	if (use_seed > PRLASTLUACLASS || use_seed < PR_LUA_1 || seed_offset < 0)
+	{
+		return luaL_error(L, "prng class out of range (0 - %d)", (PRLASTLUACLASS - PR_LUA_1));
+	}
+
 	NOHUD
-	lua_pushinteger(L, P_RandomKey(a));
+	lua_pushinteger(L, P_RandomKey(use_seed, a));
 	demo_writerng = 2;
 	return 1;
 }
@@ -485,6 +512,14 @@ static int lib_pRandomRange(lua_State *L)
 	INT32 a = (INT32)luaL_checkinteger(L, 1);
 	INT32 b = (INT32)luaL_checkinteger(L, 2);
 
+	INT32 seed_offset = lua_isnoneornil(L, 3) ? 0 : luaL_checkinteger(L, 3);
+	pr_class_t use_seed = (pr_class_t)(PR_LUA_1 + seed_offset);
+
+	if (use_seed > PRLASTLUACLASS || use_seed < PR_LUA_1 || seed_offset < 0)
+	{
+		return luaL_error(L, "prng class out of range (0 - %d)", (PRLASTLUACLASS - PR_LUA_1));
+	}
+
 	NOHUD
 	if (b < a)
 	{
@@ -492,7 +527,7 @@ static int lib_pRandomRange(lua_State *L)
 		a = b;
 		b = c;
 	}
-	lua_pushinteger(L, P_RandomRange(a, b));
+	lua_pushinteger(L, P_RandomRange(use_seed, a, b));
 	demo_writerng = 2;
 	return 1;
 }
@@ -500,8 +535,16 @@ static int lib_pRandomRange(lua_State *L)
 // Macros.
 static int lib_pSignedRandom(lua_State *L)
 {
+	INT32 seed_offset = lua_isnoneornil(L, 1) ? 0 : luaL_checkinteger(L, 1);
+	pr_class_t use_seed = (pr_class_t)(PR_LUA_1 + seed_offset);
+
+	if (use_seed > PRLASTLUACLASS || use_seed < PR_LUA_1 || seed_offset < 0)
+	{
+		return luaL_error(L, "prng class out of range (0 - %d)", (PRLASTLUACLASS - PR_LUA_1));
+	}
+
 	NOHUD
-	lua_pushinteger(L, P_SignedRandom());
+	lua_pushinteger(L, P_SignedRandom(use_seed));
 	demo_writerng = 2;
 	return 1;
 }
@@ -509,8 +552,16 @@ static int lib_pSignedRandom(lua_State *L)
 static int lib_pRandomChance(lua_State *L)
 {
 	fixed_t p = luaL_checkfixed(L, 1);
+	INT32 seed_offset = lua_isnoneornil(L, 2) ? 0 : luaL_checkinteger(L, 2);
+	pr_class_t use_seed = (pr_class_t)(PR_LUA_1 + seed_offset);
+
+	if (use_seed > PRLASTLUACLASS || use_seed < PR_LUA_1 || seed_offset < 0)
+	{
+		return luaL_error(L, "prng class out of range (0 - %d)", (PRLASTLUACLASS - PR_LUA_1));
+	}
+
 	NOHUD
-	lua_pushboolean(L, P_RandomChance(p));
+	lua_pushboolean(L, P_RandomChance(use_seed, p));
 	demo_writerng = 2;
 	return 1;
 }
@@ -5932,6 +5983,8 @@ static int lib_gPlayerControllerRumble(lua_State *L)
 
 	if (!plr)
 		return LUA_ErrInvalid(L, "player_t");
+
+	if (demo.playback) return 0;
 
 	for (int i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
 	{

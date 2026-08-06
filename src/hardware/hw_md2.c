@@ -589,17 +589,17 @@ loadmodelfile:
 
 addskinmodel:
 		// add player model
-		for (s = 0; s < MAXSKINS; s++)
+		for (s = 0; s < numskins; s++)
 		{
-			if (fasticmp(skinname, skins[s].name))
+			if (fasticmp(skinname, skins[s]->name))
 			{
-				boolean iscompatskin = wadfiles[skins[s].wadnum]->compatmode;
+				boolean iscompatskin = wadfiles[skins[s]->wadnum]->compatmode;
 				md2_playermodels[s].skin = s;
 				md2_playermodels[s].scale = scale;
 				md2_playermodels[s].offset = offset;
 				md2_playermodels[s].notfound = false;
 				strcpy(md2_playermodels[s].filename, filename);
-				CONS_Printf("Added 3D model for skin '%s' %s\n", skins[s].name, iscompatskin ? "in compatibility mode" : "");
+				CONS_Printf("Added 3D model for skin '%s' %s\n", skins[s]->name, iscompatskin ? "in compatibility mode" : "");
 				goto modelfound;
 			}
 		}
@@ -665,15 +665,15 @@ void HWR_AddPlayerModel(int skin) // For skins that were added after startup
 		if (!strnicmp(name, PLAYERMODELPREFIX, prefixlen) && (len > prefixlen))
 			skinname += prefixlen;
 
-		if (fasticmp(skinname, skins[skin].name))
+		if (fasticmp(skinname, skins[skin]->name))
 		{
-			boolean iscompatskin = wadfiles[skins[skin].wadnum]->compatmode;
+			boolean iscompatskin = wadfiles[skins[skin]->wadnum]->compatmode;
 			md2_playermodels[skin].skin = skin;
 			md2_playermodels[skin].scale = scale;
 			md2_playermodels[skin].offset = offset;
 			md2_playermodels[skin].notfound = false;
 			strcpy(md2_playermodels[skin].filename, filename);
-			CONS_Printf("Added 3D model for skin '%s' %s\n", skins[skin].name, iscompatskin ? "in compatibility mode" : "");
+			CONS_Printf("Added 3D model for skin '%s' %s\n", skins[skin]->name, iscompatskin ? "in compatibility mode" : "");
 			goto playermodelfound;
 		}
 	}
@@ -1437,10 +1437,10 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 
 		// 1. load model+texture if not already loaded
 		// 2. draw model with correct position, rotation,...
-		if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY && !md2_playermodels[(skin_t*)spr->mobj->skin-skins].notfound) // Use the player MD2 list if the mobj has a skin and is using the player sprites
+		if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY && !md2_playermodels[((skin_t*)spr->mobj->skin)->skinnum].notfound) // Use the player MD2 list if the mobj has a skin and is using the player sprites
 		{
-			md2 = &md2_playermodels[(skin_t*)spr->mobj->skin-skins];
-			md2->skin = (skin_t*)spr->mobj->skin-skins;
+			md2 = &md2_playermodels[((skin_t*)spr->mobj->skin)->skinnum];
+			md2->skin = ((skin_t*)spr->mobj->skin)->skinnum;
 			modeltype = wadfiles[((skin_t*)spr->mobj->skin)->wadnum]->compatmode ? MODELTYPE_OLDPLAYER : MODELTYPE_PLAYER;
 		}
 		else
@@ -1530,7 +1530,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 				if (spr->mobj->colorized)
 					skinnum = TC_RAINBOW;
 				else if (spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
-					skinnum = (INT32)((skin_t*)spr->mobj->skin-skins);
+					skinnum = (INT32)(((skin_t*)spr->mobj->skin)->skinnum);
 				else
 					skinnum = TC_DEFAULT;
 			}

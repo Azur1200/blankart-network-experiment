@@ -1371,6 +1371,7 @@ boolean P_CanActivateSpecial(INT16 special)
 		case 2001: // Finish line
 		case 2003: // Respawn line
 		case 2004: // Bot controller
+		case 4000: // Enable WaterRun
 		{
 			return true;
 		}
@@ -1568,7 +1569,7 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 				return false;
 			if (!triggerline->stringargs[0])
 				return false;
-			if (!(fasticmp(triggerline->stringargs[0], skins[actor->player->skin].name)) ^ !!(triggerline->args[1]))
+			if (!(fasticmp(triggerline->stringargs[0], skins[actor->player->skin]->name)) ^ !!(triggerline->args[1]))
 				return false;
 			break;
 		case 334: // object dye
@@ -3751,9 +3752,9 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 			INT32 result;
 
 			if (rvalue1 <= rvalue2)
-				result = P_RandomRange(rvalue1, rvalue2);
+				result = P_RandomRange(PR_EXECUTOR, rvalue1, rvalue2);
 			else
-				result = P_RandomRange(rvalue2, rvalue1);
+				result = P_RandomRange(PR_EXECUTOR, rvalue2, rvalue1);
 
 			P_LinedefExecute((INT16)result, mo, NULL);
 			break;
@@ -4163,9 +4164,9 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 
 				if (args[4]) // If args[4] is set, spawn randomly within a range
 				{
-					x = P_RandomRange(args[0], args[5])<<FRACBITS;
-					y = P_RandomRange(args[1], args[6])<<FRACBITS;
-					z = P_RandomRange(args[2], args[7])<<FRACBITS;
+					x = P_RandomRange(PR_EXECUTOR, args[0], args[5])<<FRACBITS;
+					y = P_RandomRange(PR_EXECUTOR, args[1], args[6])<<FRACBITS;
+					z = P_RandomRange(PR_EXECUTOR, args[2], args[7])<<FRACBITS;
 				}
 				else
 				{
@@ -4534,6 +4535,36 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 		case 2004: // Bot Controller.
 		{
 			K_UpdateBotControllers(args);
+			break;
+		}
+
+		case 4000: // Enable WaterRun
+		{
+			if (mo->player == NULL || (mo->player == NULL && !K_ItemMobjAllowedtoWaterRun(mo)))
+			{
+				return false;
+			}
+
+			if (mo->player)
+			{
+				if (K_CanPlayerMaintainWaterRun(mo->player))
+				{
+					mo->flags2 |= MF2_WATERRUN;
+
+					S_StopSoundByID(mo, sfx_kc3c);
+					S_StartSound(mo, sfx_kc3c);
+				}
+			}
+			else
+			{
+				if (P_AproxDistance(mo->momx, mo->momy) > 14*mo->scale)
+				{
+					mo->flags2 |= MF2_WATERRUN;
+
+					S_StopSoundByID(mo, sfx_kc3c);
+					S_StartSound(mo, sfx_kc3c);
+				}
+			}
 			break;
 		}
 
@@ -5334,7 +5365,7 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 
 	S_StartSound(player->mo, sfxnum);
 	{
-		sfxenum_t pick = P_RandomKey(2); // Gotta roll the RNG every time this is called for sync reasons
+		sfxenum_t pick = P_RandomKey(PR_VOICES, 2); // Gotta roll the RNG every time this is called for sync reasons
 		if (cv_kartvoices.value)
 			S_StartSound(player->mo, sfx_kbost1+pick);
 		//K_TauntVoiceTimers(player);

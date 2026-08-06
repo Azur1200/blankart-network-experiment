@@ -18,6 +18,7 @@
 #include "p_local.h"
 #include "d_clisrv.h"
 #include "k_kart.h" // K_GetDriftAngleOffset
+#include "k_items.h" // K_GetDriftAngleOffset
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -1556,7 +1557,7 @@ static int player_set(lua_State *L)
 		plr->crashtimer = luaL_checkinteger(L, 3);
 		break;
 	case player_crash_state:
-		plr->crash_state = (crashstate_e)(luaL_checkinteger(L, 3));
+		plr->crash_state = luaL_checkinteger(L, 3);
 		break;
 	case player_crash_elapsed:
 		return NOSET;
@@ -1718,7 +1719,13 @@ static int player_set(lua_State *L)
 		plr->tripwireReboundDelay = luaL_checkinteger(L, 3);
 		break;
 	case player_itemroulette:
-		plr->itemroulette = luaL_checkinteger(L, 3);
+		{
+			if (plr->itemroulette == 0 && lua_compatmode)
+			{
+				K_StartRoulette(plr, KROULETTETYPE_NORMAL);
+			}
+			plr->itemroulette = luaL_checkinteger(L, 3);
+		}
 		break;
 	case player_previtemroulette:
 		plr->previtemroulette = luaL_checkinteger(L, 3);

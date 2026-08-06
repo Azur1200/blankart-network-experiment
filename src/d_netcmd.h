@@ -254,6 +254,8 @@ extern consvar_t cv_kartaltshrink_runneranger;
 
 extern consvar_t cv_kartairsquish;
 
+extern consvar_t cv_karthyudorostealbehind;
+
 extern consvar_t cv_kartairdrop;
 
 extern consvar_t cv_kartairthrust;
@@ -339,6 +341,12 @@ extern consvar_t cv_skipmapcheck;
 extern consvar_t cv_sleep;
 
 extern consvar_t cv_perfstats;
+extern consvar_t cv_ps_thinkframe_page;
+extern consvar_t cv_ps_samplesize;
+extern consvar_t cv_ps_descriptor;
+
+void lua_profile_OnChange(void);
+extern consvar_t cv_lua_profile;
 
 extern consvar_t cv_director;
 

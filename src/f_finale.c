@@ -414,7 +414,7 @@ void F_IntroTicker(void)
 			INT32 rskin = M_RandomKey(numskins);
 			UINT8 rtaunt = M_RandomKey(2);
 
-			sfxenum_t rsound = skins[rskin].voices[0].boost[rtaunt];
+			sfxenum_t rsound = skins[rskin]->voices[0].boost[rtaunt];
 			S_StartSound(NULL, rsound);
 		}
 	}
@@ -449,7 +449,7 @@ void F_IntroTicker(void)
 			SINT8 random = M_RandomRange(0, 4);
 			const INT32 rskin = R_SkinAvailable(chars[random]);
 			
-			sfxenum_t rsound = skins[rskin].voices[0].win;
+			sfxenum_t rsound = skins[rskin]->voices[0].win;
 			S_StartSound(NULL, sfx_flgcap);
 			S_StartSound(NULL, rsound);
 		}
@@ -1497,7 +1497,7 @@ void F_StartTitleScreen(void)
 	{
 		G_SetGamestate(GS_TITLESCREEN);
 		titlemapinaction = false;
-		gamemap = 1; // g_game.c
+		gamemap = 2; // g_game.c
 		g_reloadingMap = false;
 		CON_ClearHUD();
 	}
@@ -1826,9 +1826,9 @@ void F_StartWaitingPlayers(void)
 	randskin = M_RandomKey(numskins);
 
 	Z_Free(waitcolormap);
-	waitcolormap = R_GetTranslationColormap(randskin, skins[randskin].prefcolor, 0);
+	waitcolormap = R_GetTranslationColormap(randskin, skins[randskin]->prefcolor, 0);
 
-	sprdef = &skins[randskin].sprites[P_GetSkinSprite2(&skins[randskin], SPR2_FSTN, NULL)];
+	sprdef = &skins[randskin]->sprites[P_GetSkinSprite2(skins[randskin], SPR2_FSTN, NULL)];
 
 	for (i = 0; i < 2; i++)
 	{

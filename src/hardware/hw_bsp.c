@@ -821,7 +821,7 @@ static void HWR_Subsector(size_t num)
 		}
 
 		// for render stats
-		ps_numpolyobjects += numpolys;
+		ps_numpolyobjects.value.i += numpolys;
 
 		// Sort polyobjects
 		R_SortPolyObjects(sub);
@@ -876,7 +876,7 @@ void HWR_RenderBSPNode(INT32 bspnum)
 {
 	const node_t *bsp;
 	INT32 side;
-	ps_numbspcalls++;
+	ps_numbspcalls.value.i++;
 
 	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
 	{

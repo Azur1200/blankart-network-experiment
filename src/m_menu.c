@@ -1358,9 +1358,9 @@ static void M_ResetCvar(menuitem_t *item)
 
 	if (cv == &cv_playercolor[0] || cv == &cv_playercolor[1] || cv == &cv_playercolor[2] || cv == &cv_playercolor[3] || cv == &cv_dummycolor)
 	{
-		INT32 skinno = R_SkinAvailable(skins[cv_chooseskin.value].name);
-		if (skinno != -1 && skincolors[skins[skinno].prefcolor].accessible)
-			CV_SetValue(cv, skins[skinno].prefcolor);
+		INT32 skinno = R_SkinAvailable(skins[cv_chooseskin.value]->name);
+		if (skinno != -1 && skincolors[skins[skinno]->prefcolor].accessible)
+			CV_SetValue(cv, skins[skinno]->prefcolor);
 	}
 	else
 		CV_Set(cv, cv->defaultvalue);
@@ -1383,7 +1383,7 @@ static void M_ChangeCvar(menuitem_t *item, SINT8 direction)
 		CV_AddValue(cv, amount);
 
 	if (cv == &cv_chooseskin)
-		multi_spr2 = P_GetSkinSprite2(&skins[cv->value], SPR2_FSTN, NULL);
+		multi_spr2 = P_GetSkinSprite2(skins[cv->value], SPR2_FSTN, NULL);
 	else if (cv == &cv_dummyfollower)
 		M_GetFollowerState();	// update follower state
 }
@@ -2474,16 +2474,59 @@ void M_SetMenuDelay(UINT8 i)
 		// Shouldn't happen, but for safety.
 		menucmd[i].delayCount = 1;
 	}
-	else if (menucmd[i].delayCount > MENUDMAXDELAYCOUNT)
+
+	menucmd[i].delay = (MENUDELAYTIME - min(MENUDELAYTIME - 1, menucmd[i].delayCount));
+	if (menucmd[i].delay < MENUMINDELAY)
 	{
-		menucmd[i].delayCount = MENUDMAXDELAYCOUNT;
+		menucmd[i].delay = MENUMINDELAY;
 	}
+}
 
-	menucmd[i].delay = (MENUDELAYTIME / menucmd[i].delayCount);
+static void handle_dpad(event_t* ev, INT32 device, boolean keyup)
+{
+	SINT8 pid = G_GetDevicePlayer(device);
 
-	if (menucmd[i].delay < 1)
+	if (pid == -1)
+		return;
+
+	switch (ev->data1)
 	{
-		menucmd[i].delay = 1;
+		case KEY_HAT1+0:
+			menucmd[pid].ev_dpad_ud =  keyup ? 0 : -1;
+			break;
+		case KEY_HAT1+1:
+			menucmd[pid].ev_dpad_ud = keyup ? 0 : 1;
+			break;
+		case KEY_HAT1+2:
+			menucmd[pid].ev_dpad_lr = keyup ? 0 : -1;
+			break;
+		case KEY_HAT1+3:
+			menucmd[pid].ev_dpad_lr = keyup ? 0 : 1;
+			break;
+		default:
+			break;
+	}
+}
+
+void M_HandleDpadEvent(event_t* ev)
+{
+	INT32 device = ev->device;
+
+	if (ev->data1 < KEY_JOY1 || ev->data1 >= JOYINPUTEND)
+		return;
+
+	switch (ev->type)
+	{
+		case ev_keydown:
+			handle_dpad(ev, device, false);
+			break;
+
+		case ev_keyup:
+			handle_dpad(ev, device, true);
+			break;
+
+		default:
+			break;
 	}
 }
 
@@ -2588,9 +2631,6 @@ void M_UpdateMenuCMD(UINT8 i, boolean bailrequired)
 		menucmd[i].delay = min(menucmd[i].delay, MENUMINDELAY);
 		menucmd[i].delayCount = 0;
 	}
-
-	menucmd[i].ev_dpad_ud = 0;
-	menucmd[i].ev_dpad_lr = 0;
 }
 
 boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt)
@@ -3624,6 +3664,8 @@ static fixed_t M_GetAlignment(const menuitempart_t *part, fixed_t x, fixed_t wid
 	case ITA_EDGE:
 		return width - (BASEVIDWIDTH*FRACUNIT - x*2);
 	}
+
+	return INT32_MAX;
 }
 
 static const char *M_GetPartString(const menuitempart_t *part, const menuitem_t *item, itempartsource_e source)
@@ -3643,6 +3685,8 @@ static const char *M_GetPartString(const menuitempart_t *part, const menuitem_t 
 	case ITS_DERIVED:
 		I_Error("ITS_DERIVED is the caller's problem, silly");
 	}
+
+	return NULL;
 }
 
 static const menuitemstyle_t defaultstyle = { .partenabled = { true } };
@@ -3718,6 +3762,9 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 				break;
 			case TINY_FONT:
 				widthfunc = V_ThinSubStringWidth;
+				break;
+			case CRED_FONT:
+				widthfunc = V_CreditSubStringWidth;
 				break;
 			default:
 				I_Error("unknown font %d", part->font);
@@ -3864,7 +3911,7 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 			boolean warning = (cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv);
 
 			if (cv == &cv_chooseskin)
-				str = skins[cv_chooseskin.value].realname;
+				str = skins[cv_chooseskin.value]->realname;
 			else if (cv == &cv_dummyfollower)
 				str = cv_dummyfollower.value == -1 ? "None" : followers[cv_dummyfollower.value].name;
 			else if (cv == &cv_dummystaff && cv_dummystaff.value)
@@ -5085,6 +5132,8 @@ boolean M_CanShowLevelInList(mapnum_t mapnum)
 
 const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback, boolean forcekeyboard)
 {
+	INT32 i;
+
 	if (forcekeyboard || (p == 0 && keyboardcontrolled && (messagebox.active || menustack[0])))
 	{
 		switch (gc)
@@ -5107,12 +5156,19 @@ const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback, boole
 	else
 fallback:
 	{
-		const char *item1 = gamecontrol[p][gc][0] != 0 ? G_KeynumToString(gamecontrol[p][gc][0]) : NULL;
-		const char *item2 = gamecontrol[p][gc][1] != 0 ? G_KeynumToString(gamecontrol[p][gc][1]) : NULL;
-		const char *item3 = gamecontrol[p][gc][2] != 0 ? G_KeynumToString(gamecontrol[p][gc][2]) : NULL;
-		const char *item4 = gamecontrol[p][gc][3] != 0 ? G_KeynumToString(gamecontrol[p][gc][3]) : NULL;
+		for (i = 0; i < MAXINPUTMAPPING; i++)
+		{
+			if (gamecontrol[p][gc][i] == 0)
+				continue;
 
-		return item1 != NULL ? item1 : item2 != NULL ? item2 : item3 != NULL ? item3 : item4 != NULL ? item4 : fallback;
+			if (gamecontrol[p][gc][i] < KEY_JOY1 || gamecontrol[p][gc][i] >= JOYINPUTEND)
+				continue;
+
+			return G_KeynumToString(gamecontrol[p][gc][i]);
+
+		}
+
+		return fallback;
 	}
 }
 
@@ -5906,7 +5962,8 @@ static void AddonSearch(void)
 }
 
 // lolololol
-static menuitem_t addonsearch = {.text = "Search for files and folders", .cvar = &cv_dummyaddonsearch};
+static char searchtext[] = "Search for files and folders";
+static menuitem_t addonsearch = {.text = searchtext, .cvar = &cv_dummyaddonsearch};
 
 INT32 MR_HandleAddons(INT32 choice)
 {
@@ -6322,7 +6379,7 @@ void MP_TickReplayHutInfoForeground(menupanelinst_t *pi)
 		// Character face!
 		INT32 skin = mdemo->standings[0].skin;
 		skincolornum_t color = mdemo->standings[0].color;
-		M_SetItemPatch(pi, "FACE", skin >= 0 && skin < numskins ? skins[skin].name : "");
+		M_SetItemPatch(pi, "FACE", skin >= 0 && skin < numskins ? skins[skin]->name : "");
 		M_SetItemExtra(pi, "FACE", color >= 0 && color < numskincolors ? DEH_SkincolorName(color) : "");
 		break;
 	}
@@ -6477,7 +6534,7 @@ void MP_TickReplayHutRankings(menupanelinst_t *pi)
 		item->style = DEH_FindMenuItemStyle("REPLAYRANKINGICON");
 		INT32 skin = mdemo->standings[i].skin;
 		skincolornum_t color = mdemo->standings[i].color;
-		M_SetItemPatchRaw(item, skin >= 0 && skin < numskins ? skins[skin].name : "");
+		M_SetItemPatchRaw(item, skin >= 0 && skin < numskins ? skins[skin]->name : "");
 		M_SetItemExtraRaw(item, color >= 0 && color < numskincolors ? DEH_SkincolorName(color) : "");
 	}
 
@@ -8062,7 +8119,7 @@ boolean M_AttackOnStack(void)
 void MP_TickTimeAttackMenu(menupanelinst_t *pi)
 {
 	// Character face!
-	M_SetItemPatch(pi, "PLAYERICON", skins[cv_chooseskin.value].name);
+	M_SetItemPatch(pi, "PLAYERICON", skins[cv_chooseskin.value]->name);
 	M_SetItemExtra(pi, "PLAYERICON", DEH_SkincolorName(cv_playercolor[0].value));
 }
 
@@ -8131,7 +8188,7 @@ INT32 MR_QuitTimeAttackMenu(INT32 choice)
 	(void)choice;
 
 	// you know what? always putting these in the buffer won't hurt anything.
-	COM_BufAddText(va("skin \"%s\"\n", skins[cv_chooseskin.value].name));
+	COM_BufAddText(va("skin \"%s\"\n", skins[cv_chooseskin.value]->name));
 
 	if (!M_AttackOnStack())
 	{
@@ -8994,16 +9051,16 @@ static void MD_DrawCssStatBacker(menupanelinst_t *pi)
 	// SRB2Kart: draw the stat backer
 	for (i = 0; i < numskins; i++) // draw the stat dots
 	{
-		if (i != skintodisplay && R_SkinAvailable(skins[i].name) != -1)
+		if (i != skintodisplay && R_SkinAvailable(skins[i]->name) != -1)
 		{
-			speed = skins[i].kartspeed;
-			weight = skins[i].kartweight;
+			speed = skins[i]->kartspeed;
+			weight = skins[i]->kartweight;
 			V_DrawFixedPatch(((BASEVIDWIDTH - mx - 80) + ((speed-1)*8))<<FRACBITS, ((my+76) + ((weight-1)*8))<<FRACBITS, FRACUNIT, 0, statdot, NULL);
 		}
 	}
 
-	speed = skins[skintodisplay].kartspeed;
-	weight = skins[skintodisplay].kartweight;
+	speed = skins[skintodisplay]->kartspeed;
+	weight = skins[skintodisplay]->kartweight;
 
 	statdot = W_CachePatchName("K_SDOT1", PU_CACHE);
 	if (skullAnimCounter < 4) // SRB2Kart: we draw this dot later so that it's not covered if there's multiple skins with the same stats
@@ -9050,8 +9107,8 @@ static void MD_DrawCssStatBars(menupanelinst_t *pi)
 	UINT8 *subcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_BLACK, GTC_MENUCACHE);
 
 	INT32 skintodisplay = cv_chooseskin.value;
-	UINT8 speed = skins[skintodisplay].kartspeed;
-	UINT8 weight = skins[skintodisplay].kartweight;
+	UINT8 speed = skins[skintodisplay]->kartspeed;
+	UINT8 weight = skins[skintodisplay]->kartweight;
 
 	mx = item->x;
 	my = item->y;
@@ -9172,7 +9229,7 @@ static void MD_DrawCssCharacter(menupanelinst_t *pi)
 	}
 
 	// skin 0 is default player sprite
-	sprdef = &skins[skintodisplay].sprites[multi_spr2];
+	sprdef = &skins[skintodisplay]->sprites[multi_spr2];
 
 	if (!sprdef->numframes) // No frames ??
 		return; // Can't render!
@@ -9194,7 +9251,7 @@ static void MD_DrawCssCharacter(menupanelinst_t *pi)
 	UINT8 *colormap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
 	V_DrawFixedPatch((mx+43)<<FRACBITS,
 				(my+136)<<FRACBITS,
-				skins[skintodisplay].highresscale,
+				skins[skintodisplay]->highresscale,
 				flags, patch, colormap);
 
 	// draw their follower if there is one
@@ -9259,7 +9316,7 @@ static void MD_DrawCssCharacter(menupanelinst_t *pi)
 		// draw follower sprite
 		{
 			// Fake the follower's in game appearance by now also applying some of its variables! coolio, eh?
-			UINT16 color = K_GetEffectiveFollowerColor(cv_followercolor[setupplayer].value, &fl, cv_dummycolor.value, &skins[skintodisplay]);
+			UINT16 color = K_GetEffectiveFollowerColor(cv_followercolor[setupplayer].value, &fl, cv_dummycolor.value, skins[skintodisplay]);
 			colormap = R_GetTranslationColormap(TC_DEFAULT, color, 0); // why does GTC_MENUCACHE not work here...?
 
 			INT32 x = (mx+65)*FRACUNIT;
@@ -9430,7 +9487,7 @@ static void MD_DrawGridCssSelector(menupanelinst_t *pi)
 		else
 		{
 			face = faceprefix[skinn][FACE_RANK];
-			colmap = R_GetTranslationColormap(skinn, skins[skinn].prefcolor, GTC_MENUCACHE);
+			colmap = R_GetTranslationColormap(skinn, skins[skinn]->prefcolor, GTC_MENUCACHE);
 			V_DrawFixedPatch((gridx + face->leftoffset) * FRACUNIT, (gridy + face->topoffset) * FRACUNIT, FRACUNIT, 0, face, colmap);
 		}
 	}
@@ -9617,7 +9674,7 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 	{
 		if (cv_chooseskin.value < numskins)
 		{
-			skin_t *skin = &skins[cv_chooseskin.value];
+			skin_t *skin = skins[cv_chooseskin.value];
 			INT32 voxid = R_GetLocalPreferredVoiceForSkin(setupplayer, skin->name);
 			kartvoice_t *voice = NULL;
 			gridcss_skinmemory = cv_chooseskin.value;
@@ -9770,7 +9827,7 @@ INT32 MR_QuitMultiPlayerMenu(INT32 choice)
 	COM_BufInsertText(va(
 		"%s \"%s\"; %s \"%s\"; %s \"%s\"; %s \"%s\"\n",
 		cv_playername[setupplayer].name,  cv_dummyname.string,
-		cv_skin[setupplayer].name,        skins[cv_chooseskin.value].name,
+		cv_skin[setupplayer].name,        skins[cv_chooseskin.value]->name,
 		cv_playercolor[setupplayer].name, skincolors[cv_dummycolor.value].name,
 		cv_follower[setupplayer].name,    followername
 	));
@@ -10450,7 +10507,7 @@ INT32 MR_HandleVideoMode(INT32 ch)
 
 void MP_CameraSetup(menupanelinst_t *pi)
 {
-	INT32 pnum = setupcontrolplayer + 1;
+	INT32 pnum = setupcontrolplayer-1;
 	M_SetItemCvar(pi, "FLIPCAM", &cv_flipcam[pnum]);
 	M_SetItemCvar(pi, "CAMFOV", &cv_fov[pnum]);
 	M_SetItemCvar(pi, "CAMDISTANCE", &cv_cam_dist[pnum]);
@@ -10781,6 +10838,8 @@ void M_ReturnToConnectMenu(void)
 	M_EnterMenu(MN_MP_MAIN, true, 0);
 }
 
+static boolean viewserver_showaddons = false;
+
 void MP_SetupViewServer(menupanelinst_t *pi)
 {
 	char *servermap = serverlist[joinnode].info.maptitle;
@@ -10788,6 +10847,25 @@ void MP_SetupViewServer(menupanelinst_t *pi)
 	const char *speedstring = "Auto";
 	UINT32 ping = serverlist[joinnode].info.time;
 	UINT8 kartvars = serverlist[joinnode].info.kartvars;
+
+	M_SetItemVisible(pi, "TOGGLEBUTTON1", viewserver_showaddons);
+	M_SetItemVisible(pi, "TOGGLEBUTTON2", !viewserver_showaddons);
+
+	M_SetItemVisible(pi, "PLAYERSHEADING", !viewserver_showaddons);
+	M_SetItemVisible(pi, "PLAYERSCOUNT", !viewserver_showaddons);
+	M_SetItemVisible(pi, "ADDONSHEADING", viewserver_showaddons);
+	M_SetItemVisible(pi, "ADDONSCOUNT", viewserver_showaddons);
+
+	const char *item1 = M_ButtonName(0, gc_accelerate, "ACCEL", keyboardcontrolled);
+	const char *item2 = M_ButtonName(0, gc_brake, "BRAKE", keyboardcontrolled);
+	const char *item3 = M_ButtonName(0, gc_fire, "ITEM", keyboardcontrolled);
+
+	M_SetItemText(pi, "TOGGLEBUTTON1", va("[%s] = Players", item3));
+	M_SetItemText(pi, "TOGGLEBUTTON2", va("[%s] = Addons", item3));
+
+	M_SetItemText(pi, "EXITBUTTON", va("[%s] = Return", item2));
+
+	M_SetItemText(pi, "JOINBUTTON", va("[%s] = Join", item1));
 
 	switch (kartvars & SV_SPEEDMASK)
 	{
@@ -10874,8 +10952,6 @@ INT32 MR_QuitViewServer(INT32 choice)
 	return true;
 }
 
-static boolean viewserver_showaddons = false;
-
 INT32 MR_HandleViewServer(INT32 choice)
 {
 	(void)choice;
@@ -10907,6 +10983,9 @@ void MP_ViewServerPlayers(menupanelinst_t *pi)
 
 	M_ClearPanelItems(pi);
 
+	pi->visible = !viewserver_showaddons;
+	pi->disabled = true;
+
 	for (i = 0; i < MAXPLAYERINFO; i++)
 	{
 		if (playerinfo[i].num == 255)
@@ -10930,7 +11009,7 @@ void MP_ViewServerPlayers(menupanelinst_t *pi)
 			if (playerinfo[i].team == 255)
 				item->status |= IT_GRAYEDOUT;
 
-			if (R_SkinAvailable(skins[skinum].name) == -1)
+			if (R_SkinAvailable(skins[skinum]->name) == -1)
 			{
 				item->style = DEH_FindMenuItemStyle("VIEWSERVER_PLAYER_MISSING");
 				M_SetItemPatchRaw(item, va("16x16,%u", statuscolor));
@@ -10938,10 +11017,10 @@ void MP_ViewServerPlayers(menupanelinst_t *pi)
 			else
 			{
 				item->style = DEH_FindMenuItemStyle("VIEWSERVER_PLAYER");
-				M_SetItemPatchRaw(item, skins[skinum].name);
+				M_SetItemPatchRaw(item, skins[skinum]->name);
 			}
 
-			M_SetItemExtraRaw(item, DEH_SkincolorName(skins[skinum].prefcolor));
+			M_SetItemExtraRaw(item, DEH_SkincolorName(skins[skinum]->prefcolor));
 
 			y += 22*FRACUNIT;
 			if (++count % 4 == 0)
@@ -10971,6 +11050,10 @@ void MP_ViewServerAddons(menupanelinst_t *pi)
 	INT32 count = 0;
 	fixed_t x = 1, y = 1; // FIXME auto
 	boolean small_mode = fileneedednum <= 11;
+
+	pi->visible = viewserver_showaddons;
+	pi->disabled = true;
+	pi->altscroll = true;
 
 	M_ClearPanelItems(pi);
 
@@ -11050,6 +11133,17 @@ INT32 MR_TickViewServer(INT32 choice)
 	M_SetItemVisible(pi, "PLAYERSCOUNT", !viewserver_showaddons);
 	M_SetItemVisible(pi, "ADDONSHEADING", viewserver_showaddons);
 	M_SetItemVisible(pi, "ADDONSCOUNT", viewserver_showaddons);
+
+	const char *item1 = M_ButtonName(0, gc_accelerate, "ACCEL", keyboardcontrolled);
+	const char *item2 = M_ButtonName(0, gc_brake, "BRAKE", keyboardcontrolled);
+	const char *item3 = M_ButtonName(0, gc_fire, "ITEM", keyboardcontrolled);
+
+	M_SetItemText(pi, "TOGGLEBUTTON1", va("[%s] = Players", item3));
+	M_SetItemText(pi, "TOGGLEBUTTON2", va("[%s] = Addons", item3));
+
+	M_SetItemText(pi, "EXITBUTTON", va("[%s] = Return", item2));
+
+	M_SetItemText(pi, "JOINBUTTON", va("[%s] = Join", item1));
 
 	menupanelinst_t *pplayers = M_GetPanel("PLAYERS");
 	menupanelinst_t *paddons = M_GetPanel("ADDONS");

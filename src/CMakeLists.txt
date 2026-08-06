@@ -128,6 +128,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	lua_quaternionlib.c
 	lua_voicelib.c
 	lua_itemlib.c
+	lua_profile.cpp
 	k_kart.c
 	k_collide.c
 	k_color.c

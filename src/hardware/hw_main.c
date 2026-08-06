@@ -67,22 +67,21 @@ sector_t *gl_frontsector;
 sector_t *gl_backsector;
 
 // Render stats
-precise_t ps_hw_skyboxtime = 0;
-precise_t ps_hw_nodesorttime = 0;
-precise_t ps_hw_nodedrawtime = 0;
-precise_t ps_hw_spritesorttime = 0;
-precise_t ps_hw_spritedrawtime = 0;
+ps_metric_t ps_hw_nodesorttime = {0};
+ps_metric_t ps_hw_nodedrawtime = {0};
+ps_metric_t ps_hw_spritesorttime = {0};
+ps_metric_t ps_hw_spritedrawtime = {0};
 
 // Render stats for batching
-int ps_hw_numpolys = 0;
-int ps_hw_numverts = 0;
-int ps_hw_numcalls = 0;
-int ps_hw_numshaders = 0;
-int ps_hw_numtextures = 0;
-int ps_hw_numpolyflags = 0;
-int ps_hw_numcolors = 0;
-precise_t ps_hw_batchsorttime = 0;
-precise_t ps_hw_batchdrawtime = 0;
+ps_metric_t ps_hw_numpolys = {0};
+ps_metric_t ps_hw_numverts = {0};
+ps_metric_t ps_hw_numcalls = {0};
+ps_metric_t ps_hw_numshaders = {0};
+ps_metric_t ps_hw_numtextures = {0};
+ps_metric_t ps_hw_numpolyflags = {0};
+ps_metric_t ps_hw_numcolors = {0};
+ps_metric_t ps_hw_batchsorttime = {0};
+ps_metric_t ps_hw_batchdrawtime = {0};
 
 boolean gl_init = false;
 boolean gl_maploaded = false;
@@ -539,9 +538,9 @@ void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolean is_sk
 
 	if (timing)
 	{
-		ps_numbspcalls = 0;
-		ps_numpolyobjects = 0;
-		ps_bsptime = I_GetPreciseTime();
+		ps_numbspcalls.value.i = 0;
+		ps_numpolyobjects.value.i = 0;
+		PS_START_TIMING(ps_bsptime);
 	}
 
 	validcount++;
@@ -557,14 +556,14 @@ void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolean is_sk
 
 	if (timing)
 	{
-		ps_bsptime = I_GetPreciseTime() - ps_bsptime;
+		PS_STOP_TIMING(ps_bsptime);
 	}
 
 	if (gl_printportals && !gl_portal_level && !gl_rendering_skybox)
 		CONS_Printf("Portal recursion summary:\n");
 
 	//if (gl_printportals)
-	//	CONS_Printf("%d bsp calls\n", ps_numbspcalls);
+	//	CONS_Printf("%d bsp calls\n", ps_numbspcalls.value.i);
 
 	{
 		// HWR_DrawSkyBackground is not able to set the texture without
@@ -645,25 +644,25 @@ void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolean is_sk
 
 	if (timing)
 	{
-		ps_hw_spritesorttime = I_GetPreciseTime();
+		PS_START_TIMING(ps_hw_spritesorttime);
 	}
 
 	UINT32 count = HWR_SortVisSprites();
 
 	if (timing)
-		ps_numsprites = count;
+		ps_numsprites.value.i = count;
 
 	if (timing)
 	{
-		ps_hw_spritesorttime = I_GetPreciseTime() - ps_hw_spritesorttime;
-		ps_hw_spritedrawtime = I_GetPreciseTime();
+		PS_STOP_TIMING(ps_hw_spritesorttime);
+		PS_START_TIMING(ps_hw_spritedrawtime);
 	}
 
 	HWR_DrawSprites();
 
 	if (timing)
 	{
-		ps_hw_spritedrawtime = I_GetPreciseTime() - ps_hw_spritedrawtime;
+		PS_STOP_TIMING(ps_hw_spritedrawtime);
 	}
 
 #ifdef NEWCORONAS
@@ -673,9 +672,9 @@ void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolean is_sk
 
 	if (timing)
 	{
-		ps_numdrawnodes = 0;
-		ps_hw_nodesorttime = 0;
-		ps_hw_nodedrawtime = 0;
+		ps_numdrawnodes.value.i = 0;
+		ps_hw_nodesorttime.value.p = 0;
+		ps_hw_nodedrawtime.value.p = 0;
 	}
 
 	HWR_RenderDrawNodes(); //Hurdler: render 3D water and transparent walls after everything
@@ -757,7 +756,7 @@ void HWR_RenderPlayerView(void)
 	if (viewssnum == 0) // Only do it if it's the first screen being rendered
 		GL_ClearBuffer(true, true, true, &ClearColor); // Clear the Color Buffer, stops HOMs. Also seems to fix the skybox issue on Intel GPUs.
 
-	ps_hw_skyboxtime = I_GetPreciseTime();
+	PS_START_TIMING(ps_skyboxtime);
 	if (skybox) // If there's a skybox and we should be drawing the sky, draw the skybox
 	{
 		// Check for new console commands.
@@ -769,16 +768,7 @@ void HWR_RenderPlayerView(void)
 		// Check for new console commands.
 		NetUpdate();
 	}
-	ps_hw_skyboxtime = I_GetPreciseTime() - ps_hw_skyboxtime;
-
-	if (!HWR_ShouldUsePaletteRendering())
-	{
-		// do we really need to save player (is it not the same)?
-		player_t *saved_player = stplyr;
-		stplyr = player;
-		ST_doPaletteStuff();
-		stplyr = saved_player;
-	}
+	PS_STOP_TIMING(ps_skyboxtime);
 
 	// Reset the shader state.
 	HWR_SetShaderState();

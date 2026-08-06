@@ -894,7 +894,7 @@ void Y_VoteTicker(void)
 				if (pressed)
 				{
 					S_StartSound(NULL, sfx_kc4a);
-					M_SetMenuDelay(p);
+					M_SetMenuDelay(i);
 				}
 			}
 		}

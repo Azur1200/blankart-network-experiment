@@ -82,7 +82,9 @@ static INT32 ReplaySave(INT32 choice)
 }
 
 consvar_t cv_dummyreplaysave = CVAR_INIT ("dummyreplaysave", "", CV_HIDEN, NULL, NULL);
-menuitem_t replaysave = {.text = "Enter the name of the replay", .cvar = &cv_dummyreplaysave, .routine = &ReplaySave};
+
+static char replaytext[] = "Enter the name of the replay";
+menuitem_t replaysave = {.text = replaytext, .cvar = &cv_dummyreplaysave, .routine = &ReplaySave};
 
 boolean nodrawers; // for comparative timing purposes
 boolean noblit; // for comparative timing purposes
@@ -297,7 +299,8 @@ typedef struct
 		UINT32 lap;
 	} attacking;
 
-	UINT32 randseed;
+	UINT32 randseed[PRNUMCLASS];
+	boolean single_seed;
 	UINT32 extrainfo;
 
 	UINT16 numcvars;
@@ -364,7 +367,7 @@ typedef struct
 	UINT8 flags; // DXD flags if playernum < DW_EXTRASTUFF
 
 	// DW_RNG
-	UINT32 randseed;
+	UINT32 randseed[PRNUMCLASS];
 
 	struct // DXD_JOINDATA
 	{
@@ -595,13 +598,24 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 	UINT8 extradata;
 	extra->playernum = READUINT8(dp);
 	boolean kart = version <= 0x0002;
+	boolean singleseed = version <= 0x0012;
 
 	if (extra->playernum >= DW_EXTRASTUFF)
 	{
 		extra->flags = 0;
 		if (extra->playernum == DW_RNG)
 		{
-			extra->randseed = READUINT32(dp);
+			if (singleseed)
+			{
+				extra->randseed[PR_LEGACY] = READUINT32(dp);
+			}
+			else
+			{
+				for (i = 0; i < PRNUMCLASS; i++)
+				{
+					extra->randseed[i] = READUINT32(dp);
+				}
+			}
 		}
 		// DW_END has no data
 		return dp;
@@ -747,6 +761,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	boolean dubs = true; // Multiple voices
 	boolean availabilities = true; // Store player availabilities
 	boolean gplunatic = true; // Grand Prix: Lunatic mode
+	boolean multiseed = true; // Multi-seeded RNG
 	INT32 i;
 
 	// these may not be present in old demo formats, so initialize them
@@ -794,13 +809,12 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 			gplunatic = false;
 			/* FALLTHRU */
 		case 0x0010:
-			// no header changes (yet), just DXD_WEAPONPREF
+			/* FALLTHRU */
 		case 0x0011:
 			servermotd = false;
 			/* FALLTHRU */
 		case 0x0012:
-			// no header changes (yet)
-			/* FALLTHRU */
+			multiseed = false;
 			break;
 
 		default: // too old, cannot support.
@@ -811,6 +825,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	{
 		dubs = rapreset = raflag = false;
 		gplunatic = serverinfo = availabilities = false;
+		multiseed = false;
 		switch (header->demoversion)
 		{
 		case 0x0001: // SRB2Kart 1.0.x (only staff ghosts supported)
@@ -941,7 +956,20 @@ skipfiles:
 	header->attacking.lap = attack == ATTACKING_TIME ? READUINT32(dp) : UINT32_MAX;
 
 	// Random seed
-	header->randseed = READUINT32(dp);
+	header->single_seed = false;
+
+	if (multiseed)
+	{
+		for (i = 0; i < PRNUMCLASS; i++)
+		{
+			header->randseed[i] = READUINT32(dp);
+		}
+	}
+	else
+	{
+		header->single_seed = true;
+		header->randseed[PR_LEGACY] = READUINT32(dp);
+	}
 
 	if (oldkart)
 	{
@@ -1210,7 +1238,7 @@ static INT32 GetSkinNumClosestToStats(UINT8 kartspeed, UINT8 kartweight)
 
 	for (i = 0; i < numskins; i++)
 	{
-		stat_diff = abs(skins[i].kartspeed - kartspeed) + abs(skins[i].kartweight - kartweight);
+		stat_diff = abs(skins[i]->kartspeed - kartspeed) + abs(skins[i]->kartweight - kartweight);
 		if (stat_diff < closest_stats)
 		{
 			closest_stats = stat_diff;
@@ -1274,13 +1302,16 @@ void G_ReadDemoExtraData(void)
 		if (p >= DW_EXTRASTUFF) switch (p)
 		{
 		case DW_RNG:
-			if (P_GetRandSeed() != extra.randseed)
+			for (i = 0; i < PRNUMCLASS; i++)
 			{
-				P_SetRandSeed(extra.randseed);
+				if (P_GetRandSeed(i) != extra.randseed[i])
+				{
+					P_SetRandSeed(i, extra.randseed[i]);
 
-				if (demosynced)
-					CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced (RNG)!\n"));
-				demosynced = false;
+					if (demosynced)
+						CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced (RNG class \"%s\")!\n"), pr_class_name[i]);
+					demosynced = false;
+				}
 			}
 			continue;
 		}
@@ -1357,11 +1388,11 @@ void G_ReadDemoExtraData(void)
 			// Skin
 			SetPlayerSkin(p, extra.skinname);
 
-			if (!fasticmp(skins[player->skin].name, extra.skinname))
+			if (!fasticmp(skins[player->skin]->name, extra.skinname))
 				FindClosestSkinForStats(p, extra.kartspeed, extra.kartweight);
 
 			// Voice
-			const INT32 vce = R_FindIDForVoice(&skins[player->skin], extra.voicename);
+			const INT32 vce = R_FindIDForVoice(skins[player->skin], extra.voicename);
 
 			if (vce == MAXSKINVOICES)
 			{
@@ -1377,7 +1408,7 @@ void G_ReadDemoExtraData(void)
 			if (!P_MobjWasRemoved(player->mo))
 			{
 				// This player's mobj exists. So, attach the voice to the mobj!
-				player->mo->voice = &skins[player->skin].voices[player->voice_id];
+				player->mo->voice = &skins[player->skin]->voices[player->voice_id];
 			}
 
 			player->kartspeed = extra.kartspeed;
@@ -1486,10 +1517,10 @@ void G_WriteDemoExtraData(void)
 			if (demo_extradata[i] & DXD_SKIN)
 			{
 				// Skin
-				WRITESTRINGL(demobuf.p, skins[players[i].skin].name, 16+1);
+				WRITESTRINGL(demobuf.p, skins[players[i].skin]->name, 16+1);
 
 				// Voice
-				WRITESTRINGL(demobuf.p, skins[players[i].skin].voices[players[i].voice_id].name, 32+1);
+				WRITESTRINGL(demobuf.p, skins[players[i].skin]->voices[players[i].voice_id].name, 32+1);
 
 				// Stats
 				WRITEUINT8(demobuf.p, players[i].kartspeed);
@@ -1538,7 +1569,12 @@ void G_WriteDemoExtraData(void)
 			demo_writerng = 0;
 			timeout = 16;
 			WRITEUINT8(demobuf.p, DW_RNG);
-			WRITEUINT32(demobuf.p, P_GetRandSeed());
+
+			//WRITEUINT32(demobuf.p, P_GetRandSeed());
+			for (i = 0; i < PRNUMCLASS; i++)
+			{
+				WRITEUINT32(demobuf.p, P_GetRandSeed(i));
+			}
 		}
 	}
 
@@ -1903,7 +1939,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 			if (ghost->player->followmobj->colorized)
 				followtic |= FZT_COLORIZED;
 			if (followtic & FZT_SKIN)
-				WRITEUINT16(demobuf.p,(UINT16)(((skin_t *)(ghost->player->followmobj->skin))-skins));
+				WRITEUINT16(demobuf.p,(UINT16)(((skin_t *)(ghost->player->followmobj->skin))->skinnum));
 			oldghost[playernum].flags2 |= MF2_AMBUSH;
 		}
 
@@ -2259,7 +2295,7 @@ void G_GhostTicker(void)
 					fmo->colorized = true;
 
 				if (zt.followflags & FZT_SKIN)
-					R_ApplySkin(fmo, &skins[zt.follow.skin]);
+					R_ApplySkin(fmo, skins[zt.follow.skin]);
 			}
 			if (fmo)
 			{
@@ -2662,7 +2698,7 @@ void G_ReadMetalTic(mobj_t *metal)
 					follow->colorized = true;
 
 				if (followtic & FZT_SKIN)
-					R_ApplySkin(follow, &skins[READUINT8(metal_p)]);
+					R_ApplySkin(follow, skins[READUINT8(metal_p)]);
 			}
 			if (follow)
 			{
@@ -2836,7 +2872,7 @@ void G_WriteMetalTic(mobj_t *metal)
 			if (metal->player->followmobj->colorized)
 				followtic |= FZT_COLORIZED;
 			if (followtic & FZT_SKIN)
-				WRITEUINT8(demobuf.p,(UINT8)(((skin_t *)(metal->player->followmobj->skin))-skins));
+				WRITEUINT8(demobuf.p,(UINT8)(((skin_t *)(metal->player->followmobj->skin))->skinnum));
 			oldmetal.flags2 |= MF2_AMBUSH;
 		}
 
@@ -3014,7 +3050,10 @@ void G_BeginRecording(void)
 			break;
 	}
 
-	WRITEUINT32(demobuf.p,P_GetInitSeed());
+	for (i = 0; i < PRNUMCLASS; i++)
+	{
+		WRITEUINT32(demobuf.p, P_GetInitSeed(i));
+	}
 
 	// Reserved for extrainfo location from start of file
 	demoinfo_p = demobuf.p;
@@ -3068,13 +3107,13 @@ void G_BeginRecording(void)
 			WRITESTRINGL(demobuf.p, player_names[p], 21+1);
 
 			// Skin
-			WRITESTRINGL(demobuf.p, skins[player->skin].name, 16+1);
+			WRITESTRINGL(demobuf.p, skins[player->skin]->name, 16+1);
 
 			// Color
 			WRITESTRINGL(demobuf.p, skincolors[player->skincolor].name, 16+1);
 
 			// Voice
-			WRITESTRINGL(demobuf.p, skins[player->skin].voices[player->voice_id].name, 32+1);
+			WRITESTRINGL(demobuf.p, skins[player->skin]->voices[player->voice_id].name, 32+1);
 
 			// Save follower's skin name
 			if (player->followerskin == -1)
@@ -3192,7 +3231,7 @@ void G_WriteStanding(UINT8 ranking, char *name, INT32 skinnum, UINT16 color, UIN
 	WRITESTRINGL(demobuf.p, name, 21+1);
 
 	// Skin
-	WRITESTRINGL(demobuf.p, skins[skinnum].name, 16+1);
+	WRITESTRINGL(demobuf.p, skins[skinnum]->name, 16+1);
 
 	// Color
 	WRITESTRINGL(demobuf.p, skincolors[color].name, 16+1);
@@ -3546,7 +3585,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		pdemo->standings[count].skin = UINT16_MAX;
 		for (i = 0; i < numskins; i++)
 		{
-			if (fasticmp(skins[i].name, temp))
+			if (fasticmp(skins[i]->name, temp))
 			{
 				pdemo->standings[count].skin = i;
 				break;
@@ -3602,6 +3641,9 @@ static void PrintDemoError(const char (*msg)[1024])
 
 	CONS_Alert(CONS_ERROR, "%s", *msg);
 	demo.playback = false;
+	demo.single_seed = false;
+	demo.title = false;
+
 	if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
 		M_StartMessage2("Replay", *msg, MB_NONE, MM_NOTHING, "Press any key", NULL);
 }
@@ -3962,7 +4004,7 @@ void G_DoPlayDemo(char *defdemoname)
 		// We'll only assign IDs, since the actual voice assignment happens during
 		// player spawn.
 
-		const INT32 vce = R_FindIDForVoice(&skins[player->skin], plr->voice);
+		const INT32 vce = R_FindIDForVoice(skins[player->skin], plr->voice);
 
 		if (vce == MAXSKINVOICES)
 		{
@@ -3994,7 +4036,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 		// Kart stats (set later)
 
-		if (!fasticmp(skins[player->skin].name, plr->skin))
+		if (!fasticmp(skins[player->skin]->name, plr->skin))
 			FindClosestSkinForStats(p, plr->kartspeed, plr->kartweight);
 
 		// Followitem
@@ -4031,7 +4073,20 @@ void G_DoPlayDemo(char *defdemoname)
 
 	R_ExecuteSetViewSize();
 
-	P_SetRandSeed(header.randseed);
+	demo.single_seed = false;
+
+	if (header.demoversion <= 0x0012)
+	{
+		demo.single_seed = true;
+		P_SetRandSeed(PR_LEGACY, header.randseed[PR_LEGACY]);
+	}
+	else
+	{
+		for (i = 0; i < PRNUMCLASS; i++)
+		{
+			P_SetRandSeed(i, header.randseed[i]);
+		}
+	}
 	G_InitNew(demoflags & DF_ENCORE, gamemap, true, true); // Doesn't matter whether you reset or not here, given changes to resetplayer.
 
 	// Setup server name, contact and description.
@@ -4074,7 +4129,7 @@ void G_AddGhost(char *defdemoname)
 	UINT8 flags;
 	CLEANUP(Z_Pfree) UINT8 *buffer = NULL;
 	mapthing_t *mthing;
-	skin_t *ghskin = &skins[0];
+	skin_t *ghskin = skins[0];
 
 	n = defdemoname+strlen(defdemoname);
 	while (*n != '/' && *n != '\\' && n != defdemoname)
@@ -4171,16 +4226,16 @@ void G_AddGhost(char *defdemoname)
 	}
 
 	for (i = 0; i < numskins; i++)
-		if (fasticmp(skins[i].name, plr->skin))
+		if (fasticmp(skins[i]->name, plr->skin))
 		{
-			ghskin = &skins[i];
+			ghskin = skins[i];
 			break;
 		}
 
 	if (i == numskins)
 	{
 		if (plr->kartspeed != UINT8_MAX && plr->kartweight != UINT8_MAX)
-			ghskin = &skins[GetSkinNumClosestToStats(plr->kartspeed, plr->kartweight)];
+			ghskin = skins[GetSkinNumClosestToStats(plr->kartspeed, plr->kartweight)];
 
 		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: Invalid character. Falling back to %s.\n"), pdemoname, ghskin->name);
 	}
@@ -4487,6 +4542,7 @@ void G_StopDemo(void)
 {
 	P_SaveBufferFree(&demobuf);
 	demo.playback = false;
+	demo.single_seed = false;
 	if (demo.title)
 		modeattacking = false;
 	demo.timing = false;
@@ -4549,6 +4605,7 @@ boolean G_CheckDemoStatus(void)
 	{
 		if (demobuf.p)
 		{
+			G_SetAutoSaveName();
 			G_SaveDemo();
 		}
 		return true;
@@ -4558,6 +4615,18 @@ boolean G_CheckDemoStatus(void)
 		P_SaveBufferFree(&demobuf);
 	demo.recording = false;
 	return false;
+}
+
+void G_SetAutoSaveName(void)
+{
+	if (demo.savemode == DSM_WILLAUTOSAVE)
+	{
+		// Init just in case it isn't initialized already
+		M_TextInputInit(&demo.titlenameinput, demo.titlename, sizeof(demo.titlename));
+
+		// This will indirectly assign to demo.titlename too
+		M_TextInputSetString(&demo.titlenameinput, cv_dummyreplaysave.string);
+	}
 }
 
 void G_SaveDemo(void)

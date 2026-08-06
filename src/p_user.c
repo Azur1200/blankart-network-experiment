@@ -1330,7 +1330,7 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			if (cv_kartvoices.value)
 			{
 				//const INT32 sfx_id = (losing ? sfx_klose : sfx_kwin);
-				skin_t *playerskin = &skins[player->skin];
+				skin_t *playerskin = skins[player->skin];
 
 				const kartvoice_t *playervoice = (!P_MobjWasRemoved(player->mo) ? P_GetMobjVoice(player->mo) : &playerskin->voices[0]);
 
@@ -1861,12 +1861,12 @@ static void P_DoBubbleBreath(player_t *player)
 
 	if (player->charflags & SF_MACHINE)
 	{
-		if (P_RandomChance(FRACUNIT/5))
+		if (P_RandomChance(PR_BUBBLE, FRACUNIT/5))
 		{
 			fixed_t r = player->mo->radius>>FRACBITS;
-			x += (P_RandomRange(r, -r)<<FRACBITS);
-			y += (P_RandomRange(r, -r)<<FRACBITS);
-			z += (P_RandomKey(player->mo->height>>FRACBITS)<<FRACBITS);
+			x += (P_RandomRange(PR_BUBBLE, r, -r)<<FRACBITS);
+			y += (P_RandomRange(PR_BUBBLE, r, -r)<<FRACBITS);
+			z += (P_RandomKey(PR_BUBBLE, player->mo->height>>FRACBITS)<<FRACBITS);
 			bubble = P_SpawnMobj(x, y, z, MT_WATERZAP);
 			S_StartSound(bubble, sfx_beelec);
 		}
@@ -1878,9 +1878,9 @@ static void P_DoBubbleBreath(player_t *player)
 		else
 			z += FixedDiv(player->mo->height,5*(FRACUNIT/4));
 
-		if (P_RandomChance(FRACUNIT/16))
+		if (P_RandomChance(PR_BUBBLE, FRACUNIT/16))
 			bubble = P_SpawnMobj(x, y, z, MT_SMALLBUBBLE);
-		else if (P_RandomChance(3*FRACUNIT/256))
+		else if (P_RandomChance(PR_BUBBLE, 3*FRACUNIT/256))
 			bubble = P_SpawnMobj(x, y, z, MT_MEDIUMBUBBLE);
 	}
 
@@ -2710,7 +2710,7 @@ static void P_DeathThink(player_t *player)
 			UINT32 intangibility = (player->extendeddeath) ? 0 : MF_NOCLIP;
 
 			player->mo->flags |= (MF_NOGRAVITY|intangibility);
-			if (skins[player->skin].flags & SF_OLDDEATH)
+			if (skins[player->skin]->flags & SF_OLDDEATH)
 				player->mo->renderflags |= RF_DONTDRAW;
 		}
 	}
@@ -3064,7 +3064,13 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	mo = player->mo;
 
-	if (player->playerstate != PST_LIVE && !(skins[player->skin].flags & SF_OLDDEATH))
+	if (LUA_HookCameraThinker(player, thiscam))
+	{
+		P_CalcChasePostImg(player, thiscam);
+		return true;
+	}
+
+	if (player->playerstate != PST_LIVE && !(skins[player->skin]->flags & SF_OLDDEATH))
 	{
 		// Do not move the camera while dead!
 		if (thiscam->chase)
@@ -3142,7 +3148,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		return true;
 
 	if (P_IsMachineLocalPlayer(player) || (demo.playback && cv_lookbackinreplays.value))
-		lookback = (!menustack[0] && G_PlayerInputDown(num, gc_lookback, false, DEADZONE_BUTTON));
+		lookback = (!menustack[0] && !chat_on &&  G_PlayerInputDown(num, gc_lookback, false, DEADZONE_BUTTON));
 	else
 		lookback = player->cmd.buttons & BT_LOOKBACK;
 
@@ -3572,7 +3578,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 		else if (redscore > bluescore)
 			changeto = 2;
 		else
-			changeto = (P_RandomFixed() & 1) + 1;
+			changeto = (P_RandomFixed(PR_PLAYERSTARTS) & 1) + 1;
 
 		if (!LUA_HookTeamSwitch(player, changeto, true, false, false))
 			return false;
@@ -4422,6 +4428,9 @@ void P_PlayerThink(player_t *player)
 			player->linkcount = 0;
 	}
 
+	// runs before movement and collision checks
+	K_TransferPlayerReserveItem(player);
+
 	if (player->mo->reactiontime)
 	{
 		// Reactiontime is used to prevent movement
@@ -4471,11 +4480,28 @@ void P_PlayerThink(player_t *player)
 		UINT8 i;
 		mobj_t *gmobj = P_SpawnGhostMobj(player->mo);
 
-		gmobj->fuse = 2;
-		if (leveltime & 1)
 		{
-			gmobj->frame &= ~FF_TRANSMASK;
-			gmobj->frame |= tr_trans70<<FF_TRANSSHIFT;
+			boolean stacking = (player->numboosts > 1);
+			gmobj->fuse = min(stacking ? player->numboosts+1 : 2, 5);
+
+			if (stacking)
+			{
+				gmobj->colorized = true;
+				gmobj->renderflags |= RF_FULLBRIGHT;
+			}
+
+			if (leveltime & 1)
+			{
+				gmobj->frame &= ~FF_TRANSMASK;
+				if (stacking)
+				{
+					gmobj->frame |= tr_trans40<<FF_TRANSSHIFT;
+				}
+				else
+				{
+					gmobj->frame |= tr_trans70<<FF_TRANSSHIFT;
+				}
+			}
 		}
 
 		// Hide the mobj from our sights if we're the displayplayer and chasecam is off.

@@ -214,7 +214,7 @@ void K_InitGrandPrixBots(void)
 				player_t *p = &players[competitors[j]];
 
 				INT32 rivalnum;
-				const char *rivalname = skins[p->skin].rivals[i];
+				const char *rivalname = skins[p->skin]->rivals[i];
 				rivalnum = R_SkinAvailable(rivalname);
 
 				// Intentionally referenced before (currently dummied out) unlock check. Such a tease!
@@ -253,7 +253,7 @@ void K_InitGrandPrixBots(void)
 
 			if (usableskins > 0)
 			{
-				UINT16 index = P_RandomKey(usableskins);
+				UINT16 index = P_RandomKey(PR_BOTS, numskins);
 				skinnum = grabskins[index];
 				if (usableskins >= K_GetGPPlayerCount(1))
 				{
@@ -644,7 +644,7 @@ void K_RetireBots(void)
 
 			if (usableskins > 0)
 			{
-				UINT16 index = P_RandomKey(usableskins);
+				UINT16 index = P_RandomKey(PR_BOTS, numskins);
 				skinnum = grabskins[index];
 				if (usableskins+1 >= K_GetGPPlayerCount(1))
 				{
@@ -656,8 +656,8 @@ void K_RetireBots(void)
 			bot->botvars.diffincrease = 0;
 
 			SetPlayerSkinByNum(i, skinnum);
-			bot->skincolor = skins[skinnum].prefcolor;
-			K_SetNameForBot(i, skins[skinnum].realname);
+			bot->skincolor = skins[skinnum]->prefcolor;
+			K_SetNameForBot(i, skins[skinnum]->realname);
 
 			bot->score = 0;
 			LUA_HookPlayer(bot, HOOK(BotJoin));

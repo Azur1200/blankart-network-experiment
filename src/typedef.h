@@ -56,6 +56,7 @@ TYPEDEF (clientcmd_pak);
 TYPEDEF (client2cmd_pak);
 TYPEDEF (client3cmd_pak);
 TYPEDEF (client4cmd_pak);
+TYPEDEF (rngdiagnosis_pak);
 TYPEDEF (servertics_pak);
 TYPEDEF (serverconfig_pak);
 TYPEDEF (filetx_pak);
@@ -232,6 +233,9 @@ TYPEDEF (kartroulette_t);
 
 // lua_hudlib_drawlist.h
 typedef struct huddrawlist_s *huddrawlist_h;
+
+// lua_profile.h
+TYPEDEF (lua_timer_t);
 
 // m_aatree.h
 TYPEDEF (aatree_t);

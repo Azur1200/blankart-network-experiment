@@ -57,8 +57,6 @@ void ST_LoadGraphics(void);
 void ST_LoadFaceGraphics(INT32 playernum);
 void ST_ReloadSkinFaceGraphics(void);
 
-void ST_doPaletteStuff(void);
-
 // title card
 void ST_startTitleCard(void);
 void ST_runTitleCard(void);
@@ -95,6 +93,8 @@ extern tic_t directortoggletimer;
 // variable to stop mayonaka static from flickering
 extern consvar_t cv_lessflicker;
 extern consvar_t cv_stagetitle;
+
+extern consvar_t cv_rngpeek;
 
 #ifdef __cplusplus
 } // extern "C"

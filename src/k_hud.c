@@ -646,15 +646,10 @@ void K_LoadKartHUDGraphics(void)
 			kartitemgraphics_t *graphics = &item->graphics[j];
 			for (INT32 k = 0; k < graphics->numpatches; k++)
 			{
-				if (graphics->patches[k] == NULL)
-				{
-					// have to manually do this because HU_UpdatePatch only checks graphics from added WADs during partadd
-					// UUUUUGGGGGGGHHHHHHHHHHHHHHHHHHh
-					lumpnum_t lump = W_CheckNumForName(graphics->patchnames[k]);
-					graphics->patches[k] = lump == LUMPERROR ? missingpat : W_CachePatchNum(lump, PU_HUDGFX);
-				}
-				else
-					HU_UpdatePatch(&graphics->patches[k], graphics->patchnames[k]);
+				// have to manually do this because HU_UpdatePatch only checks graphics from added WADs during partadd
+				// UUUUUGGGGGGGHHHHHHHHHHHHHHHHHHh
+				lumpnum_t lump = W_CheckNumForName(graphics->patchnames[k]);
+				graphics->patches[k] = lump == LUMPERROR ? missingpat : W_CachePatchNum(lump, PU_HUDGFX);
 			}
 		}
 		R_AddKartItemSprites(item);
@@ -1922,7 +1917,7 @@ static void K_drawKartItem(void)
 		// numbers
 		if (stplyr->itemreserveamount >= K_GetItemNumberDisplayMin(stplyr->itemreservetype, true))
 		{
-			V_DrawPingNumScaled((fx<<FRACBITS) + (26*info.hudScale), (fy<<FRACBITS) + (26*info.hudScale), info.hudScale, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, stplyr->itemreserveamount, colmap);
+			V_DrawPingNumScaled(fx + (26*(flipamount ? -info.hudScale : info.hudScale)), fy + (26*info.hudScale), info.hudScale, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, stplyr->itemreserveamount, colmap);
 		}
 	}
 }
@@ -3181,8 +3176,8 @@ static void K_drawKartStatsnLives(void)
 				UINT8 *colormapstat = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUE, GTC_CACHE);
 				UINT8 *colormapstat2 = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_ORANGE, GTC_CACHE);
 
-				if (stplyr->kartspeed != skins[stplyr->skin].kartspeed
-					|| stplyr->kartweight != skins[stplyr->skin].kartweight)
+				if (stplyr->kartspeed != skins[stplyr->skin]->kartspeed
+					|| stplyr->kartweight != skins[stplyr->skin]->kartweight)
 				{
 					colormapstat = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE);
 					colormapstat2 = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MUSTARD, GTC_CACHE);
@@ -4195,8 +4190,8 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p, UINT8 flag
 	}
 
 	// Also draw stats of restated players.
-	if (cv_seenamerestat.value && (p->kartspeed != skins[p->skin].kartspeed
-		|| p->kartweight != skins[p->skin].kartweight))
+	if (cv_seenamerestat.value && (p->kartspeed != skins[p->skin]->kartspeed
+		|| p->kartweight != skins[p->skin]->kartweight))
 	{
 		V_DrawSmallStringAtFixed(x + (5*FRACUNIT) + textxoffset, y - (31*FRACUNIT) + textyoffset, vflags, va("\x84S%d ", p->kartspeed));
 		V_DrawSmallStringAtFixed(x + (15*FRACUNIT) + textxoffset, y - (31*FRACUNIT) + textyoffset, vflags, va("\x87W%d ", p->kartweight));
@@ -4530,7 +4525,7 @@ static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, INT32 hudx, INT
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	skin = ((skin_t*)player->mo->skin)-skins;
+	skin = ((skin_t*)player->mo->skin)->skinnum;
 
 	amxpos = amnumxpos + ((hudx + (minimapinfo.minimap_pic->width-faceprefix[skin][FACE_MINIMAP]->width)/2)<<FRACBITS);
 	amypos = amnumypos + ((hudy + (minimapinfo.minimap_pic->height-faceprefix[skin][FACE_MINIMAP]->height)/2)<<FRACBITS);
@@ -4807,7 +4802,7 @@ static void K_drawKartMinimap(void)
 		while (g)
 		{
 			if (g->mo->skin)
-				skin = ((skin_t*)g->mo->skin)-skins;
+				skin = ((skin_t*)g->mo->skin)->skinnum;
 			else
 				skin = 0;
 			if (g->mo->color)
@@ -4851,7 +4846,6 @@ static void K_drawKartMinimap(void)
 	{
 		for (i = MAXPLAYERS-1; i >= 0; i--)
 		{
-
 			if (!playeringame[i])
 				continue;
 			if (!players[i].mo || players[i].spectator || !players[i].mo->skin || (!cv_showfinishedplayers.value && players[i].exiting))
@@ -4880,6 +4874,16 @@ static void K_drawKartMinimap(void)
 
 			if (mobj->health <= 0 && (players[i].pflags & PF_NOCONTEST))
 			{
+				if (P_MobjWasRemoved(mobj->tracer))
+				{
+					continue;
+				}
+
+				if (mobj->tracer->renderflags & RF_DONTDRAW)
+				{
+					continue;
+				}
+
 				workingPic = kp_nocontestminimap;
 
 				widthhalf = ((workingPic->width) / 2);
@@ -4902,7 +4906,7 @@ static void K_drawKartMinimap(void)
 			}
 			else
 			{
-				skin = ((skin_t*)mobj->skin)-skins;
+				skin = ((skin_t*)mobj->skin)->skinnum;
 
 				workingPic = faceprefix[skin][FACE_MINIMAP];
 
@@ -5208,6 +5212,16 @@ static void K_drawKartMinimap(void)
 
 		if (mobj->health <= 0 && (players[localplayers[i]].pflags & PF_NOCONTEST))
 		{
+			if (P_MobjWasRemoved(mobj->tracer))
+			{
+				continue;
+			}
+
+			if (mobj->tracer->renderflags & RF_DONTDRAW)
+			{
+				continue;
+			}
+
 			workingPic = kp_nocontestminimap;
 
 			widthhalf = ((workingPic->width) / 2);
@@ -5232,7 +5246,7 @@ static void K_drawKartMinimap(void)
 		}
 		else
 		{
-			skin = ((skin_t*)mobj->skin)-skins;
+			skin = ((skin_t*)mobj->skin)->skinnum;
 
 			workingPic = faceprefix[skin][FACE_MINIMAP];
 
@@ -5302,17 +5316,13 @@ static void K_drawKartMinimap(void)
 			if (encoremode)
 				ang = ANGLE_180 - ang;
 
-			if (skin && mobj->color && !mobj->colorized // relevant to redo
-				&& skins[skin].starttranscolor != skins[0].starttranscolor) // redoing would have an affect
-			{
-				colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
-			}
-
 			interpx = R_InterpolateFixed(mobj->old_x, mobj->x);
 			interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
 			if (!nocontest)
 			{
+				UINT8 *misccolormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
+
 				if (cv_showminimapangle.value == 1)
 				{
 					K_drawKartMinimapIcon(
@@ -5322,7 +5332,7 @@ static void K_drawKartMinimap(void)
 							y - FixedMul(FSIN(ang), ICON_DOT_RADIUS),
 							splitflags,
 							kp_minimapdot,
-							colormap,
+							misccolormap,
 							NULL
 					);
 				}
@@ -5335,9 +5345,8 @@ static void K_drawKartMinimap(void)
 						y,
 						splitflags,
 						ang,
-						colormap
+						misccolormap
 					);
-
 				}
 			}
 

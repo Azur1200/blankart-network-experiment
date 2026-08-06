@@ -489,6 +489,8 @@ static void P_ClearSingleMapHeaderInfo(mapnum_t num)
 	P_DeleteFlickies(num);
 #endif
 
+	mapheaderinfo[num]->justPlayed = 0;
+
 	mapheaderinfo[num]->customopts = NULL;
 	mapheaderinfo[num]->numCustomOptions = 0;
 }

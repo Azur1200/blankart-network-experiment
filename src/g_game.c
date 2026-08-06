@@ -106,7 +106,7 @@ UINT32 mapmusposition; // Position to jump to
 UINT32 mapmusresume;
 UINT8 mapmusrng; // Random selection result
 
-mapnum_t gamemap = 1;
+mapnum_t gamemap = 2; // GHZ
 boolean g_reloadingMap;
 UINT32 maptol;
 
@@ -839,7 +839,7 @@ char *G_GetRecordReplay(const char *folder, mapnum_t mapnum, UINT16 skinnum, rec
 {
 	const char *map = G_BuildMapName(mapnum), *suf = replaysuffixes[which];
 	if (which != REPLAY_GUEST)
-		return strdup(va("%s"PATHSEP"%s-%s-%s.lmp", folder, map, skins[skinnum].name, suf));
+		return strdup(va("%s"PATHSEP"%s-%s-%s.lmp", folder, map, skins[skinnum]->name, suf));
 	else
 		return strdup(va("%s"PATHSEP"%s-%s.lmp", folder, map, suf));
 }
@@ -848,7 +848,7 @@ boolean G_CheckRecordReplay(const char *folder, mapnum_t mapnum, UINT16 skinnum,
 {
 	const char *map = G_BuildMapName(mapnum), *suf = replaysuffixes[which];
 	if (which != REPLAY_GUEST)
-		return FIL_FileExists(va("%s"PATHSEP"%s-%s-%s.lmp", folder, map, skins[skinnum].name, suf));
+		return FIL_FileExists(va("%s"PATHSEP"%s-%s-%s.lmp", folder, map, skins[skinnum]->name, suf));
 	else
 		return FIL_FileExists(va("%s"PATHSEP"%s-%s.lmp", folder, map, suf));
 }
@@ -3230,8 +3230,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 		if (randomrestat)
 		{
-			kartspeedrestat = P_RandomRange(1, 9);
-			kartweightrestat = P_RandomRange(1, 9);
+			kartspeedrestat = P_RandomRange(PR_RESTAT, 1, 9);
+			kartweightrestat = P_RandomRange(PR_RESTAT, 1, 9);
 		}
 
 		if (kartspeedrestat != 0 && kartweightrestat != 0)
@@ -3247,12 +3247,12 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		}
 		else
 		{
-			kartspeed = skins[players[player].skin].kartspeed;
-			kartweight = skins[players[player].skin].kartweight;
+			kartspeed = skins[players[player].skin]->kartspeed;
+			kartweight = skins[players[player].skin]->kartweight;
 			
 			notifyrestat = (
-				players[player].kartspeed != skins[players[player].skin].kartspeed ||
-				players[player].kartweight != skins[players[player].skin].kartweight
+				players[player].kartspeed != skins[players[player].skin]->kartspeed ||
+				players[player].kartweight != skins[players[player].skin]->kartweight
 			) && cv_notifyrestat.value;
 		}
 	}
@@ -3640,7 +3640,7 @@ mapthing_t *G_FindTeamStart(INT32 playernum)
 		return NULL;
 	}
 
-	if ((!players[playernum].ctfteam && numredctfstarts && (!numbluectfstarts || P_RandomChance(FRACUNIT/2))) || players[playernum].ctfteam == 1) //red
+	if ((!players[playernum].ctfteam && numredctfstarts && (!numbluectfstarts || P_RandomChance(PR_PLAYERSTARTS, FRACUNIT/2))) || players[playernum].ctfteam == 1) //red
 	{
 		if (!numredctfstarts)
 		{
@@ -3651,7 +3651,7 @@ mapthing_t *G_FindTeamStart(INT32 playernum)
 
 		for (j = 0; j < 32; j++)
 		{
-			i = P_RandomKey(numredctfstarts);
+			i = P_RandomKey(PR_PLAYERSTARTS, numredctfstarts);
 			if (G_CheckSpot(playernum, redctfstarts[i]))
 				return redctfstarts[i];
 		}
@@ -3671,7 +3671,7 @@ mapthing_t *G_FindTeamStart(INT32 playernum)
 
 		for (j = 0; j < 32; j++)
 		{
-			i = P_RandomKey(numbluectfstarts);
+			i = P_RandomKey(PR_PLAYERSTARTS, numbluectfstarts);
 			if (G_CheckSpot(playernum, bluectfstarts[i]))
 				return bluectfstarts[i];
 		}
@@ -3705,7 +3705,7 @@ mapthing_t *G_FindBattleStart(INT32 playernum)
 
 			for (j = 0; j < 64; j++)
 			{
-				i = P_RandomKey(numdmstarts);
+				i = P_RandomKey(PR_PLAYERSTARTS, numdmstarts);
 				if (G_CheckSpot(playernum, deathmatchstarts[i]))
 					return deathmatchstarts[i];
 			}
@@ -4716,7 +4716,7 @@ tryAgain:
 				// to avoid duplicates on the voting screen.
 				for (j = 0; j < (maphell ? 3 : extBufferCount); j++)
 				{
-					if (extBuffer[j] < 0 || extBuffer[j] >= nummapheaders)
+					if (/*extBuffer[j] < 0 ||*/extBuffer[j] >= nummapheaders)
 					{
 						// Rest of buffer SHOULD be empty.
 						break;
@@ -5524,7 +5524,10 @@ void G_AfterIntermission(void)
 		return;
 	}
 	else if (demo.recording && (modeattacking || demo.savemode != DSM_NOTSAVING))
+	{
+		G_SetAutoSaveName();
 		G_SaveDemo();
+	}
 
 	if (modeattacking) // End the run.
 	{
@@ -6431,7 +6434,7 @@ void G_DeferedInitNew(boolean pencoremode, mapnum_t map, INT32 pickedchar, UINT8
 	}
 
 	SetPlayerSkinByNum(consoleplayer, pickedchar);
-	CV_StealthSet(&cv_skin[0], skins[pickedchar].name);
+	CV_StealthSet(&cv_skin[0], skins[pickedchar]->name);
 
 	if (color != SKINCOLOR_NONE)
 	{
@@ -6466,7 +6469,7 @@ void G_InitNew(UINT8 pencoremode, mapnum_t map, boolean resetplayer, boolean ski
 	comebackshowninfo = false;
 
 	if (!demo.playback && !netgame) // Netgame sets random seed elsewhere, demo playback sets seed just before us!
-		P_SetRandSeed(M_RandomizedSeed()); // Use a more "Random" random seed
+		P_ClearRandom(M_RandomizedSeed()); // Use a more "Random" random seed
 
 	// Clear a bunch of variables
 	redscore = bluescore = lastmap = 0;

@@ -246,8 +246,8 @@ static void write_backtrace(INT32 signal)
 	void *array[BT_SIZE];
 	char timestr[STR_SIZE];
 
-	const char *error = "An error occurred within SRB2Kart! Send this stack trace to someone who can help!\n";
-	const char *error2 = "(Or find crash-log.txt in your SRB2Kart directory.)\n"; // Shown only to stderr.
+	const char *error = "An error occurred within BlanKart! Send this stack trace to someone who can help!\n";
+	const char *error2 = "(Or find crash-log.txt in your BlanKart directory.)\n"; // Shown only to stderr.
 
 	fd = open(va("%s" PATHSEP "%s", srb2home, "crash-log.txt"), O_CREAT|O_APPEND|O_RDWR, S_IRUSR|S_IWUSR);
 
@@ -786,7 +786,7 @@ static void I_StartupConsole(void)
 
 	if (gotConsole)
 	{
-		SetConsoleTitleA("SRB2Kart Console");
+		SetConsoleTitleA("BlanKart Console");
 		consolevent = true;
 	}
 
@@ -1082,8 +1082,8 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 		return;
 
 	if(mumble->uiVersion != 2) {
-		wcsncpy(mumble->name, L"SRB2Kart " VERSIONSTRINGW, 256);
-		wcsncpy(mumble->description, L"Sonic Robo Blast 2 Kart with integrated Mumble Link support.", 2048);
+		wcsncpy(mumble->name, L"BlanKart " VERSIONSTRINGW, 256);
+		wcsncpy(mumble->description, L"BlanKart with integrated Mumble Link support.", 2048);
 		mumble->uiVersion = 2;
 	}
 	mumble->uiTick++;
@@ -1470,7 +1470,7 @@ INT32 I_StartupSystem(void)
 	SDL_SetHint(SDL_HINT_APP_NAME, "BlanKart");
 #endif
 	if (!SDL_Init(0))
-		I_Error("SRB2Kart: SDL System Error: %s", SDL_GetError()); //Alam: Oh no....
+		I_Error("BlanKart: SDL System Error: %s", SDL_GetError()); //Alam: Oh no....
 #ifndef NOMUMBLE
 	I_SetupMumble();
 #endif

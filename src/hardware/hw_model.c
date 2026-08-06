@@ -242,7 +242,7 @@ void HWR_ReloadModels(void)
 	for (s = 0; s < MAXSKINS; s++)
 	{
 		if (md2_playermodels[s].model)
-			LoadModelSprite2(md2_playermodels[s].model, wadfiles[skins[s].wadnum]->compatmode ? MODELTYPE_OLDPLAYER : MODELTYPE_PLAYER);
+			LoadModelSprite2(md2_playermodels[s].model, wadfiles[skins[s]->wadnum]->compatmode ? MODELTYPE_OLDPLAYER : MODELTYPE_PLAYER);
 	}
 
 	for (i = 0; i < NUMSPRITES; i++)

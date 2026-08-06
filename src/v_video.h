@@ -400,7 +400,10 @@ INT16 V_LevelActNumWidth(UINT8 num); // act number width
 
 #define V_DrawCreditString( x,y,option,string ) \
 	V__DrawOneScaleString (x,y,FRACUNIT,option,CRED_FONT,string)
-INT32 V_CreditStringWidth(const char *string);
+
+
+INT32 V_CreditSubStringWidth(const char *string, INT32 length, INT32 option);
+#define V_CreditStringWidth(string) V_ThinSubStringWidth(string, -1, 0)
 
 // Find string width from hu_font chars
 INT32 V_SubStringWidth(const char *string, INT32 length, INT32 option);

@@ -44,7 +44,7 @@
 INT32 numskins = 0;
 INT32 num_multivoiceskins = 0;
 
-skin_t skins[MAXSKINS];
+skin_t **skins;
 skin_t * multivoiceskins[MAXSKINS];
 
 INT32 skinsorted[MAXSKINS];
@@ -256,7 +256,7 @@ static void Sk_SetDefaultValue(skin_t *skin)
 	//
 	memset(skin, 0, sizeof (skin_t));
 	snprintf(skin->name,
-		sizeof skin->name, "skin %u", (UINT32)(skin-skins));
+		sizeof skin->name, "skin %u", (UINT32)(skin->skinnum));
 	skin->name[sizeof skin->name - 1] = '\0';
 	skin->wadnum = INT16_MAX;
 
@@ -288,20 +288,10 @@ void R_InitSkins(void)
 {
 	size_t i;
 
-	// it can be is do before loading config for skin cvar possible value
-	// (... what the fuck did you just say to me? "it can be is do"?)
-#ifdef SKINVALUES
-	for (i = 0; i <= MAXSKINS; i++)
-	{
-		skin_cons_t[i].value = 0;
-		skin_cons_t[i].strvalue = NULL;
-	}
-#endif
-
 	// doesn't seem right but it's what the original did
 	memset(skinsorted, 0, sizeof(skinsorted));
-	// yes default skin!
-	numskins = 1;
+	// no default skin.
+	numskins = 0;
 
 	for (i = 0; i < numwadfiles; i++)
 	{
@@ -368,15 +358,15 @@ static int CompareSkinIds(const void *a, const void *b)
 
 static int CompareSkinNames(const void *a, const void *b)
 {
-	const skin_t *in1 = &skins[*(const INT32 *)a];
-	const skin_t *in2 = &skins[*(const INT32 *)b];
+	const skin_t *in1 = skins[*(const INT32 *)a];
+	const skin_t *in2 = skins[*(const INT32 *)b];
 	return strcmp(in1->realname, in2->realname);
 }
 
 static int CompareSkinSpeeds(const void *a, const void *b)
 {
-	const skin_t *in1 = &skins[*(const INT32 *)a];
-	const skin_t *in2 = &skins[*(const INT32 *)b];
+	const skin_t *in1 = skins[*(const INT32 *)a];
+	const skin_t *in2 = skins[*(const INT32 *)b];
 	INT32 temp = 0;
 	// check speed
 	if (in1->kartspeed < in2->kartspeed)
@@ -397,22 +387,22 @@ static int CompareSkinSpeeds(const void *a, const void *b)
 
 static int CompareSkinWeights(const void *a, const void *b)
 {
-	const skin_t *in1 = &skins[*(const INT32 *)a];
-	const skin_t *in2 = &skins[*(const INT32 *)b];
+	const skin_t *in1 = skins[*(const INT32 *)a];
+	const skin_t *in2 = skins[*(const INT32 *)b];
 	INT32 temp = 0;
 	// check weight
 	if (in1->kartweight < in2->kartweight)
-	return -1;
+		return -1;
 	else if (in2->kartweight < in1->kartweight)
-	return 1;
+		return 1;
 	// then check speed
 	if (in1->kartspeed < in2->kartspeed)
-	return -1;
+		return -1;
 	else if (in2->kartspeed < in1->kartspeed)
-	return 1;
+		return 1;
 	// then check name
 	if ((temp = strcmp(in1->realname, in2->realname)))
-	return temp;
+		return temp;
 	// sort by internal name
 	return strcmp(in1->name, in2->name);
 }
@@ -429,8 +419,8 @@ static int CompareSkinHandlings(const void *a, const void *b)
 
 static int CompareSkinColours(const void *a, const void *b)
 {
-	const skin_t *in1 = &skins[*(const INT32 *)a];
-	const skin_t *in2 = &skins[*(const INT32 *)b];
+	const skin_t *in1 = skins[*(const INT32 *)a];
+	const skin_t *in2 = skins[*(const INT32 *)b];
 	INT32 temp = 0;
 
 	// check prefcolor
@@ -559,7 +549,7 @@ boolean R_SkinUsable(INT32 playernum, INT32 skinnum)
 	return (boolean)(unlockables[i].unlocked);
 }
 
-// returns true if the skin name is found (loaded from pwad)
+// returns the skin number if the skin name is found (loaded from pwad)
 // warning return -1 if not found
 INT32 R_SkinAvailable(const char *name)
 {
@@ -568,7 +558,7 @@ INT32 R_SkinAvailable(const char *name)
 	for (i = 0; i < numskins; i++)
 	{
 		// search in the skin list
-		if (fasticmp(skins[i].name,name))
+		if (fasticmp(skins[i]->name,name))
 			return i;
 	}
 	return -1;
@@ -617,7 +607,7 @@ void SetPlayerSkin(INT32 playernum, const char *skinname)
 void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 {
 	player_t *player = &players[playernum];
-	skin_t *skin = &skins[skinnum];
+	skin_t *skin = skins[skinnum];
 	//UINT16 newcolor = 0;
 	//UINT8 i;
 
@@ -725,7 +715,7 @@ INT32 R_FindIDForVoice(skin_t *skin, const char* voicename)
 // network code calls this when a 'voice change' is received
 void SetPlayerVoice(INT32 playernum, const char *voicename)
 {
-	INT32 voxid = R_FindIDForVoice(&skins[players[playernum].skin], voicename);
+	INT32 voxid = R_FindIDForVoice(skins[players[playernum].skin], voicename);
 
 	if (voxid == MAXSKINVOICES)
 	{
@@ -752,7 +742,7 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 			return; // We somehow have no voice either!
 
 		// Check the actual voice structs to be absolutely sure.
-		if (player->mo->voice == &skins[player->skin].voices[voicenum])
+		if (player->mo->voice == &skins[player->skin]->voices[voicenum])
 		{
 			// Hey... this voice is the same as before!
 			return;
@@ -762,7 +752,7 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 	player->voice_id = voicenum;
 
 	if (!P_MobjWasRemoved(player->mo))
-		player->mo->voice = &skins[player->skin].voices[voicenum];
+		player->mo->voice = &skins[player->skin]->voices[voicenum];
 
 	// Tell the demo that we've updated our voice_id as well.
 	demo_extradata[playernum] |= DXD_SKIN;
@@ -1003,15 +993,15 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 
 static void R_IHateThatHedgehog(UINT16 wadnum)
 {
-	skin_t *skin = &skins[0];
+	skin_t *skin;;
+
+	skins = Z_Realloc(skins, sizeof(skin_t*) * (numskins + 1), PU_STATIC, NULL);
+	skin = skins[numskins] = Z_Calloc(sizeof(skin_t), PU_STATIC, NULL);
 	Sk_SetDefaultValue(skin);
+	skin->skinnum = numskins;
 	skin->wadnum = wadnum;
 	strcpy(skin->name, "sonic");
 
-#ifdef SKINVALUES
-	skin_cons_t[0].value = 0;
-	skin_cons_t[0].strvalue = skin->name;
-#endif
 	Forceskin_cons_t[1].value = 0;
 	Forceskin_cons_t[1].strvalue = skin->name;
 
@@ -1019,6 +1009,7 @@ static void R_IHateThatHedgehog(UINT16 wadnum)
 	if (rendermode == render_opengl)
 		HWR_AddPlayerModel(0);
 #endif
+	numskins++;
 }
 
 static kartvoice_t *allocvoice;
@@ -1378,9 +1369,11 @@ void R_AddSkins(UINT16 wadnum)
 		buf2[size] = '\0';
 
 		// set defaults
-		skin = &skins[numskins];
+		skins = Z_Realloc(skins, sizeof(skin_t*) * (numskins + 1), PU_STATIC, NULL);
+		skin = skins[numskins] = Z_Calloc(sizeof(skin_t), PU_STATIC, NULL);
 		allocvoice = NULL;
 		Sk_SetDefaultValue(skin);
+		skin->skinnum = numskins;
 		skin->wadnum = wadnum;
 		realname = false;
 
@@ -1464,14 +1457,9 @@ void R_AddSkins(UINT16 wadnum)
 
 		CONS_Printf(M_GetText("Added skin '%s' %s\n"), skin->name, iscompatskin ? "in compatibility mode" : "");
 
-#ifdef SKINVALUES
-		skin_cons_t[numskins].value = numskins;
-		skin_cons_t[numskins].strvalue = skin->name;
-#endif
-
 		// Update the forceskin possiblevalues
 		Forceskin_cons_t[numskins+1].value = numskins;
-		Forceskin_cons_t[numskins+1].strvalue = skins[numskins].name;
+		Forceskin_cons_t[numskins+1].strvalue = skins[numskins]->name;
 
 #ifdef HWRENDER
 		if (rendermode == render_opengl)
@@ -1552,7 +1540,7 @@ void R_PatchSkins(UINT16 wadnum)
 					skinnum = R_SkinAvailable(value);
 					if (skinnum != -1)
 					{
-						skin = &skins[skinnum];
+						skin = skins[skinnum];
 					}
 					else
 					{

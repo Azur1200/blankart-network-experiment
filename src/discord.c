@@ -792,7 +792,7 @@ void DRPC_UpdatePresence(void)
 		// Character image
 		if ((unsigned)players[consoleplayer].skin < g_discord_skins) // Supported skins
 		{
-			snprintf(charimg, 22, "char_%s", skins[ players[consoleplayer].skin ].name);
+			snprintf(charimg, 22, "char_%s", skins[ players[consoleplayer].skin ]->name);
 			discordPresence.smallImageKey = charimg;
 		}
 		else
@@ -801,7 +801,7 @@ void DRPC_UpdatePresence(void)
 			discordPresence.smallImageKey = "charcustom";
 		}
 
-		snprintf(charname, 28, "Character: %s", skins[players[consoleplayer].skin].realname);
+		snprintf(charname, 28, "Character: %s", skins[players[consoleplayer].skin]->realname);
 		discordPresence.smallImageText = charname; // Character name
 	}
 

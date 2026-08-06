@@ -12,6 +12,7 @@
 
 #include "d_clisrv.h"
 #include "doomdef.h"
+#include "inttypes.h" // PRIX64
 #include <time.h>
 #ifdef __GNUC__
 #include <unistd.h> //for unlink
@@ -155,6 +156,9 @@ static tic_t tictoclear = 0; // optimize d_clearticcmd
 static tic_t maketic;
 
 static consistancy_t consistancy[BACKUPTICS];
+static UINT32 serverseedarchive[BACKUPTICS][PRNUMCLASS] = {0};
+
+static INT32 numdesynchingseeds = 0;
 
 #define CONSISTANCYDBGSIZE 4096
 
@@ -678,7 +682,7 @@ void ReadLmpExtraData(UINT8 **demo_pointer, INT32 playernum)
 // end extra data function for lmps
 // -----------------------------------------------------------------
 
-static INT16 Consistancy(consistancy_t *c);
+static INT16 Consistancy(consistancy_t *c, UINT32 idx);
 
 static void GetPackets(void);
 
@@ -1544,6 +1548,7 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 
 	paused = false;
 	demo.playback = false;
+	demo.single_seed = false;
 	demo.title = false;
 	titlemapinaction = false;
 	automapactive = false;
@@ -1578,7 +1583,7 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 		CONS_Alert(CONS_ERROR, M_GetText("Can't delete %s\n"), tmpsave);
 	}
 
-	Consistancy(&consistancy[gametic%BACKUPTICS]);
+	Consistancy(&consistancy[gametic%BACKUPTICS], gametic%BACKUPTICS);
 	if (!reloading)
 		CON_ToggleOff();
 
@@ -2793,6 +2798,10 @@ static void Command_connect(void)
 
 		M_ReturnToConnectMenu();
 	}
+	else
+	{
+		M_ClearMenusEx(true, true);
+	}
 
 	// modified game check: no longer handled
 	// we don't request a restart unless the filelist differs
@@ -3832,6 +3841,7 @@ static CV_PossibleValue_t resynchattempts_cons_t[] = {{1, "MIN"}, {20, "MAX"}, {
 
 consvar_t cv_resynchattempts = CVAR_INIT ("resynchattempts", "5", CV_SAVE, resynchattempts_cons_t, NULL);
 consvar_t cv_blamecfail = CVAR_INIT ("blamecfail", "Off", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_logconsistency = CVAR_INIT ("logconsistency", "Off", CV_SAVE, CV_OnOff, NULL);
 
 // max file size to send to a player (in kilobytes)
 static CV_PossibleValue_t maxsend_cons_t[] = {{-1, "MIN"}, {999999999, "MAX"}, {0, NULL}};
@@ -5305,19 +5315,66 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 
 	consistancy_t clientconsistancy = netbuffer->u.clientpak.consistancy;
 
+	if (cv_logconsistency.value)
+	{
+		if (realstart <= gametic && realstart + BACKUPTICS - 1 > gametic && gamestate == GS_LEVEL && dedicated && (netconsole != serverplayer))
+		{
+			I_OutputMsg("------------\n");
+			I_OutputMsg(M_GetText("Testing consistency of player %d (%s)...\n"), netconsole+1, player_names[netconsole]);
+			I_OutputMsg("Synching: %s\n", (consistancy[realstart%BACKUPTICS].checksum != SHORT(clientconsistancy.checksum)) ? "false" : "true");
+			I_OutputMsg("Checksum (Server): %d\n", consistancy[realstart%BACKUPTICS].checksum);
+			I_OutputMsg("Checksum (Player %d): %d\n", netconsole+1, SHORT(clientconsistancy.checksum));
+			I_OutputMsg("------------\n");
+		}
+	}
+
 	// Check player consistancy during the level
 	if (realstart <= gametic && realstart + BACKUPTICS - 1 > gametic && gamestate == GS_LEVEL
 		&& consistancy[realstart%BACKUPTICS].checksum != SHORT(clientconsistancy.checksum)
 		&& !resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime()
 		&& !SV_ResendingSavegameToAnyone())
 	{
+		if (cv_blamecfail.value)
+		{
+			netbuffer->packettype = PT_WILLDIAGNOSERNG;
+
+			// Free up some space for the RNG diagnosis
+			memset(&netbuffer->u.rngdiagnosis, 0, sizeof(netbuffer->u.rngdiagnosis));
+
+			// Copy over OUR seeds...
+			INT32 _seed = 0;
+			for (_seed = 0; _seed < PRNUMCLASS; _seed++)
+			{
+				netbuffer->u.rngdiagnosis.server_seeds[_seed] = P_GetRandSeed(_seed);
+			}
+
+			// ...and our current checksum...
+			netbuffer->u.rngdiagnosis.checksums[0] = consistancy[realstart%BACKUPTICS].seed_checksum;
+
+			// ...and where we remember the client being...
+			netbuffer->u.rngdiagnosis.client_id = netconsole;
+
+			if (cv_resynchattempts.value)
+			{
+				// Tell the client we are about to resend them the gamestate
+				netbuffer->u.rngdiagnosis.nextpacket = PT_WILLRESENDGAMESTATE;
+			}
+
+			// ...and send that over to the client
+			HSendPacket(node, true, 0, sizeof(netbuffer->u.rngdiagnosis));
+		}
+
 		if (cv_resynchattempts.value)
 		{
 			// Tell the client we are about to resend them the gamestate
-			netbuffer->packettype = PT_WILLRESENDGAMESTATE;
-			HSendPacket(node, true, 0, 0);
 
-			resendingsavegame[node] = true;
+			if (netbuffer->packettype != PT_WILLDIAGNOSERNG)
+			{
+				netbuffer->packettype = PT_WILLRESENDGAMESTATE;
+				HSendPacket(node, true, 0, 0);
+
+				resendingsavegame[node] = true;
+			}
 
 			if (cv_blamecfail.value)
 			{
@@ -5359,6 +5416,27 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 				// Extremely elaborate debug!
 				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
 				CONS_Printf(M_GetText("RECEIVED\n%s"), cfailrecieved);
+
+				/*
+				// RNG debug...
+				numdesynchingseeds = 0;
+				{RNGSEEDS(PRINTSEEDSMISMATCH)}
+
+				if (numdesynchingseeds < 1)
+				{
+					if (consistancy[realstart%BACKUPTICS].seed_checksum !=
+					    clientconsistancy.seed_checksum)
+					{
+						CONS_Alert(CONS_ERROR, "Checksums mismatch, but"
+							   "  no RNG seed mismatches found!\n");
+					}
+					else
+					{
+						CONS_Printf("No RNG seed mismatches found.\n");
+					}
+				}
+				CONS_Printf("------------\n");
+				*/
 			}
 			SendKick(netconsole, KICK_MSG_CON_FAIL);
 			DEBFILE(va("player %d kicked (synch failure) [%u] %d!=%d\n",
@@ -5713,6 +5791,100 @@ static void PT_Ping(SINT8 node, INT32 netconsole)
 		servermaxping = (tic_t)netbuffer->u.netinfo.pingtable[MAXPLAYERS];
 	}
 }
+
+static void PT_WillDiagnoseRNG(SINT8 node, INT32 netconsole)
+{
+	I_OutputMsg(M_GetText("Preparing RNG diagnosis...\n"));
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	if (server)
+		return;
+
+	if (node != servernode)
+		return; // Not the server, so we don't care.
+
+	// Gather our seeds and send that to the server again.
+
+	INT32 _seed = 0;
+	for (_seed = 0; _seed < PRNUMCLASS; _seed++)
+	{
+		netbuffer->u.rngdiagnosis.client_seeds[_seed] = P_GetRandSeed(_seed);
+
+		if (_seed & 1)
+		{
+			netbuffer->u.rngdiagnosis.checksums[1] -= netbuffer->u.rngdiagnosis.client_seeds[_seed];
+		}
+		else
+		{
+			netbuffer->u.rngdiagnosis.checksums[1] += netbuffer->u.rngdiagnosis.client_seeds[_seed];
+		}
+	}
+
+	netbuffer->packettype = PT_RNGDIAGNOSIS;
+
+	if (!HSendPacket(servernode, true, 0, sizeof(netbuffer->u.rngdiagnosis)))
+	{
+		I_OutputMsg(M_GetText("ERROR: Wasn't able to send our seeds to the server!\n"));
+		return;
+	}
+
+	I_OutputMsg(M_GetText("Sent our seeds to the server.\n"));
+}
+
+// Blast-print the seeds; very much not feasible with dynamic seed allocation
+#define PRINTSEEDSMISMATCH(seed)                                                               \
+	if (netbuffer->u.rngdiagnosis.server_seeds[PR_##seed] !=                               \
+	    netbuffer->u.rngdiagnosis.client_seeds[PR_##seed])                                 \
+	{                                                                                      \
+		CONS_Printf("Seed desynch for RNG class %d (" #seed "); expected 0x%08" PRIX32 \
+			    ", got 0x%08" PRIX32 "\n",                                         \
+			    PR_##seed,                                                         \
+			    netbuffer->u.rngdiagnosis.server_seeds[PR_##seed],                 \
+			    netbuffer->u.rngdiagnosis.client_seeds[PR_##seed]);                \
+		numdesynchingseeds++;                                                          \
+	};
+
+static void PT_RNGDiagnosis(SINT8 node)
+{
+	(void)node;
+
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	UINT16 pid = netbuffer->u.rngdiagnosis.client_id;
+
+	CONS_Printf(M_GetText("Diagnosing RNG for player %d (%s)...\n"), pid+1, player_names[pid]);
+
+	numdesynchingseeds = 0;
+	{RNGSEEDS(PRINTSEEDSMISMATCH)}
+
+	if (numdesynchingseeds < 1)
+	{
+		if (netbuffer->u.rngdiagnosis.checksums[0] !=
+		    netbuffer->u.rngdiagnosis.checksums[1])
+		{
+			CONS_Alert(CONS_ERROR, "Checksums mismatch, but"
+				   " no RNG seed mismatches found!\n");
+		}
+		else
+		{
+			CONS_Printf("No RNG seed mismatches found.\n");
+		}
+	}
+	CONS_Printf("------------\n");
+
+	if (netbuffer->u.rngdiagnosis.nextpacket == PT_WILLRESENDGAMESTATE)
+	{
+		// Resend the gamestate to the player
+		I_OutputMsg("Gamestate resend queued.\n");
+		netbuffer->packettype = PT_WILLRESENDGAMESTATE;
+		HSendPacket(node, true, 0, 0);
+
+		resendingsavegame[node] = true;
+	}
+}
+
+#undef PRINTSEEDSMISMATCH
 
 static void PT_WillResendGamestate(SINT8 node)
 {
@@ -6213,6 +6385,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_ASKLUAFILE         : PT_AskLuaFile         (node            ); break;
 		case PT_HASLUAFILE         : PT_HasLuaFile         (node            ); break;
 		case PT_RECEIVEDGAMESTATE  : PT_ReceivedGamestate  (node            ); break;
+		case PT_RNGDIAGNOSIS       : PT_RNGDiagnosis       (node            ); break;
 		// CLIENT RECEIVE
 		case PT_SERVERTICS         : PT_ServerTics         (node, netconsole); break;
 		case PT_PING               : PT_Ping               (node, netconsole); break;
@@ -6222,6 +6395,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 		case PT_LOGINCHALLENGE     : PT_LoginChallenge     (node            ); break;
 		case PT_SERVERINFOUPDATE   : PT_ServerInfoUpdate   (node            ); break;
 		case PT_WILLRESENDGAMESTATE: PT_WillResendGamestate(node            ); break;
+		case PT_WILLDIAGNOSERNG    : PT_WillDiagnoseRNG    (node, netconsole); break;
 		case PT_SENDINGLUAFILE     : PT_SendingLuaFile     (node            ); break;
 		case PT_SERVERCFG          :                                           break;
 		// CHALLENGE
@@ -6291,8 +6465,8 @@ static UINT32 GenerateConsistancySum(consistancy_t *c)
 {
 	UINT32 sum = 0;
 
-	// RNG seed
-	sum += c->rngseed;
+	// RNG seed checksum
+	sum += c->seed_checksum;
 
 	// Player data
 	sum += c->playerpos[0];
@@ -6340,7 +6514,7 @@ static void ResetConsistancy(consistancy_t *c)
 
 	c->itemsum = 0; // Player item checksum
 
-	c->rngseed = 0;
+	c->seed_checksum = 0;
 
 	// Object data checksum
 	c->mobjtype = 0;
@@ -6358,21 +6532,21 @@ static void ResetConsistancy(consistancy_t *c)
 void SPrintConsistancy(char *out, consistancy_t *c)
 {
 	snprintf(out,
-			 CONSISTANCYDBGSIZE,
-			 "------------\nChecksum: %d\nRandomization Seed: %d\n[Player Position] X: %d, Y: %d\nItem Checksum: %d\n[Position] X: %d, Y: %d, Z: %d\n[Speed] X: %d, Y: %d, Z: %d\nObject Type: %d\nAngle: %d\n[Flags] Flags1: %d, Flags2: %d, EFlags: %d\n[Animation] State: %d, Tics %d, Sprite: %d, Frame: %d\n------------\n",
-			 c->checksum,
-			 c->rngseed,
-			 c->playerpos[0], c->playerpos[1],
-			 c->itemsum,
-			 c->position[0], c->position[1], c->position[2],
-			 c->momentum[0], c->momentum[1], c->momentum[2],
-			 c->mobjtype,
-			 c->mobjangle,
-			 c->mobjflags, c->mobjflags2, c->mobjeflags,
-			 c->mobjstate,
-			 c->mobjtics,
-			 c->mobjsprite,
-			 c->mobjframe);
+		 CONSISTANCYDBGSIZE,
+		 "------------\nChecksum: %d\nRandomization Seed Checksum: 0x%" PRIX32 "\n------------\n[Player Position] X: %d, Y: %d\nItem Checksum: %d\n[Position] X: %d, Y: %d, Z: %d\n[Speed] X: %d, Y: %d, Z: %d\nObject Type: %d\nAngle: %d\n[Flags] Flags1: %d, Flags2: %d, EFlags: %d\n[Animation] State: %d, Tics %d, Sprite: %d, Frame: %d\n------------\n",
+		 c->checksum,
+		 c->seed_checksum,
+		 c->playerpos[0], c->playerpos[1],
+		 c->itemsum,
+		 c->position[0], c->position[1], c->position[2],
+		 c->momentum[0], c->momentum[1], c->momentum[2],
+		 c->mobjtype,
+		 c->mobjangle,
+		 c->mobjflags, c->mobjflags2, c->mobjeflags,
+		 c->mobjstate,
+		 c->mobjtics,
+		 c->mobjsprite,
+		 c->mobjframe);
 }
 
 // I'm losing my sanity fast, just do this.
@@ -6413,13 +6587,13 @@ void SPrintConsistancy(char *out, consistancy_t *c)
 // no more use random generator, because at very first tic isn't yet synchronized
 // Note: It is called consistAncy on purpose.
 //
-static INT16 Consistancy(consistancy_t *c)
+static INT16 Consistancy(consistancy_t *c, UINT32 idx)
 {
-	INT32 i;
+	INT32 i = 0;
 	UINT32 ret = 0;
 #ifdef MOBJCONSISTANCY
-	thinker_t *th;
-	mobj_t *mo;
+	thinker_t *th = NULL;
+	mobj_t *mo = NULL;
 #endif
 
 	DEBFILE(va("TIC %u ", gametic));
@@ -6431,6 +6605,7 @@ static INT16 Consistancy(consistancy_t *c)
 	}
 
 	ResetConsistancy(c);
+	memset(serverseedarchive[idx], 0, sizeof(serverseedarchive[idx]));
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -6456,7 +6631,28 @@ static INT16 Consistancy(consistancy_t *c)
 	// I give up
 	// Coop desynching enemies is painful
 	if (gamestate == GS_LEVEL)
-		c->rngseed += P_GetRandSeed();
+	{
+		// Write seeds before consistancy
+		INT32 seed = 0;
+		for (seed = 0; seed < PRNUMCLASS; seed++)
+		{
+			serverseedarchive[idx][seed] = P_GetRandSeed(seed);
+		}
+
+		// To make the checksum a bit more reliable, we're going to loop through
+		// every seed, and do the "add-subtract" sampling as-per mobjs.
+		for (i = 0; i < PRNUMCLASS; i++)
+		{
+			if (i & 1)
+			{
+				c->seed_checksum -= P_GetRandSeed(i);
+			}
+			else
+			{
+				c->seed_checksum += P_GetRandSeed(i);
+			}
+		}
+	}
 
 #ifdef MOBJCONSISTANCY
 	if (gamestate == GS_LEVEL)
@@ -6610,7 +6806,7 @@ static void SV_SendServerKeepAlive(void)
 #define CloneConsistancy(ca, cb) \
 { \
 	ca.checksum = cb.checksum; \
-	ca.rngseed = cb.rngseed; \
+	ca.seed_checksum = cb.seed_checksum; \
 	ca.itemsum = cb.itemsum; \
 \
 	ca.playerpos[0] = cb.playerpos[0]; \
@@ -6670,7 +6866,9 @@ static void CL_SendClientCmd(void)
 
 		packetsize = sizeof (clientcmd_pak);
 		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds[0][lagDelay], 1);
-		CloneConsistancy(netbuffer->u.clientpak.consistancy, consistancy[gametic % BACKUPTICS]);
+
+		CloneConsistancy(netbuffer->u.clientpak.consistancy,
+				 consistancy[gametic % BACKUPTICS]);
 
 		if (splitscreen) // Send a special packet with 2 cmd for splitscreen
 		{
@@ -7001,9 +7199,16 @@ boolean TryRunTics(tic_t realtics)
 			{
 				boolean dontRun = false;
 
+				boolean update_stats = !(paused || P_AutoPause());
+
 				DEBFILE(va("============ Running tic %d (local %d)\n", gametic, localgametic));
 
-				ps_tictime = I_GetPreciseTime();
+				if (update_stats)
+				{
+					ps_prevtictime.value.p = ps_tictime.value.p;
+					PS_START_TIMING(ps_tictime);
+				}
+
 
 				dontRun = ExtraDataTicker();
 
@@ -7031,9 +7236,13 @@ boolean TryRunTics(tic_t realtics)
 				}
 
 				gametic++;
-				Consistancy(&consistancy[gametic%BACKUPTICS]);
+				Consistancy(&consistancy[gametic%BACKUPTICS], gametic%BACKUPTICS);
 
-				ps_tictime = I_GetPreciseTime() - ps_tictime;
+				if (update_stats)
+				{
+					PS_STOP_TIMING(ps_tictime);
+					PS_UpdateTickStats();
+				}
 
 				// Leave a certain amount of tics present in the net buffer as long as we've ran at least one tic this frame.
 				if (client && gamestate == GS_LEVEL && leveltime > 1 && neededtic <= gametic + cv_netticbuffer.value)
