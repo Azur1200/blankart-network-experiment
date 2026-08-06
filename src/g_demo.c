@@ -1318,143 +1318,148 @@ void G_ReadDemoExtraData(void)
 			continue;
 		}
 
-		player_t *player = &players[p];
-
-		if (extra.flags & DXD_JOINDATA)
+		// FIXME: i have no fucking clue if this is fine
+		// but some replays had this set to whatever
+		if (extra.playernum < MAXPLAYERS)
 		{
-			if (!playeringame[extra.playernum])
-			{
-				G_AddPlayer(extra.playernum, extra.playernum);
-			}
+			player_t *player = &players[p];
 
-			player->bot = extra.joindata.bot;
-			if (player->bot)
+			if (extra.flags & DXD_JOINDATA)
 			{
-				player->botvars.difficulty = extra.joindata.difficulty;
-				player->botvars.diffincrease = extra.joindata.diffincrease; // needed to avoid having to duplicate logic
-				player->botvars.rival = extra.joindata.rival;
-			}
-		}
-		if (extra.flags & DXD_PLAYSTATE)
-		{
-			switch (extra.playstate) {
-			case DXD_PST_PLAYING:
-				if (player->spectator == true)
+				if (!playeringame[extra.playernum])
 				{
-					if (player->bot)
-					{
-						player->spectator = false;
-					}
-					else
-					{
-						player->pflags |= PF_WANTSTOJOIN;
-					}
+					G_AddPlayer(extra.playernum, extra.playernum);
 				}
-				//CONS_Printf("player %s is despectating on tic %d\n", player_names[p], leveltime);
-				break;
 
-			case DXD_PST_SPECTATING:
-				if (player->spectator)
+				player->bot = extra.joindata.bot;
+				if (player->bot)
 				{
-					player->pflags &= ~PF_WANTSTOJOIN;
+					player->botvars.difficulty = extra.joindata.difficulty;
+					player->botvars.diffincrease = extra.joindata.diffincrease; // needed to avoid having to duplicate logic
+					player->botvars.rival = extra.joindata.rival;
+				}
+			}
+			if (extra.flags & DXD_PLAYSTATE)
+			{
+				switch (extra.playstate) {
+					case DXD_PST_PLAYING:
+						if (player->spectator == true)
+						{
+							if (player->bot)
+							{
+								player->spectator = false;
+							}
+							else
+							{
+								player->pflags |= PF_WANTSTOJOIN;
+							}
+						}
+						//CONS_Printf("player %s is despectating on tic %d\n", player_names[p], leveltime);
+						break;
+
+					case DXD_PST_SPECTATING:
+						if (player->spectator)
+						{
+							player->pflags &= ~PF_WANTSTOJOIN;
+						}
+						else
+						{
+							if (player->mo)
+							{
+								P_DamageMobj(player->mo, NULL, NULL, 1, DMG_SPECTATOR);
+							}
+							P_SetPlayerSpectator(p);
+						}
+
+						break;
+
+					case DXD_PST_LEFT:
+						CL_RemovePlayer(p, 0);
+						break;
+				}
+
+				G_ResetViews(false); // dont reset our freecam pls thx!
+
+				// maybe these are necessary?
+				K_CheckBumpers();
+				P_CheckRacers();
+			}
+			if (extra.flags & DXD_NAME)
+			{
+				// Name
+				strcpy(player_names[p], extra.playername);
+			}
+			if (extra.flags & DXD_SKIN)
+			{
+				// Skin
+				SetPlayerSkin(p, extra.skinname);
+
+				if (!fasticmp(skins[player->skin]->name, extra.skinname))
+					FindClosestSkinForStats(p, extra.kartspeed, extra.kartweight);
+
+				// Voice
+				const INT32 vce = R_FindIDForVoice(skins[player->skin], extra.voicename);
+
+				if (vce == MAXSKINVOICES)
+				{
+					// The above function didn't find a voice, so we'll just fall back
+					// to the skin's voice.
+					player->voice_id = 0;
 				}
 				else
 				{
-					if (player->mo)
+					player->voice_id = (UINT16)vce;
+				}
+
+				if (!P_MobjWasRemoved(player->mo))
+				{
+					// This player's mobj exists. So, attach the voice to the mobj!
+					player->mo->voice = &skins[player->skin]->voices[player->voice_id];
+				}
+
+				player->kartspeed = extra.kartspeed;
+				player->kartweight = extra.kartweight;
+			}
+			if (extra.flags & DXD_COLOR)
+			{
+				// Color
+				for (i = 0; i < numskincolors; i++)
+					if (fasticmp(skincolors[i].name, extra.colorname)) // SRB2kart
 					{
-						P_DamageMobj(player->mo, NULL, NULL, 1, DMG_SPECTATOR);
+						player->skincolor = i;
+						if (player->mo)
+							player->mo->color = i;
+						break;
 					}
-					P_SetPlayerSpectator(p);
-				}
-
-				break;
-
-			case DXD_PST_LEFT:
-				CL_RemovePlayer(p, 0);
-				break;
 			}
-
-			G_ResetViews(false); // dont reset our freecam pls thx!
-
-			// maybe these are necessary?
-			K_CheckBumpers();
-			P_CheckRacers();
-		}
-		if (extra.flags & DXD_NAME)
-		{
-			// Name
-			strcpy(player_names[p], extra.playername);
-		}
-		if (extra.flags & DXD_SKIN)
-		{
-			// Skin
-			SetPlayerSkin(p, extra.skinname);
-
-			if (!fasticmp(skins[player->skin]->name, extra.skinname))
-				FindClosestSkinForStats(p, extra.kartspeed, extra.kartweight);
-
-			// Voice
-			const INT32 vce = R_FindIDForVoice(skins[player->skin], extra.voicename);
-
-			if (vce == MAXSKINVOICES)
+			if (extra.flags & DXD_FOLLOWER)
 			{
-				// The above function didn't find a voice, so we'll just fall back
-				// to the skin's voice.
-				player->voice_id = 0;
-			}
-			else
-			{
-				player->voice_id = (UINT16)vce;
-			}
+				// Set our follower
+				K_SetFollowerByName(p, extra.followername);
 
-			if (!P_MobjWasRemoved(player->mo))
-			{
-				// This player's mobj exists. So, attach the voice to the mobj!
-				player->mo->voice = &skins[player->skin]->voices[player->voice_id];
+				// Follower's color
+				for (i = 0; i < numskincolors +2; i++)	// +2 because of Match and Opposite
+					if (fasticmp(Followercolor_cons_t[i].strvalue, extra.followercolor))
+					{
+						player->followercolor = i;
+						break;
+					}
 			}
-
-			player->kartspeed = extra.kartspeed;
-			player->kartweight = extra.kartweight;
-		}
-		if (extra.flags & DXD_COLOR)
-		{
-			// Color
-			for (i = 0; i < numskincolors; i++)
-				if (fasticmp(skincolors[i].name, extra.colorname)) // SRB2kart
+			if (extra.flags & DXD_RESPAWN)
+			{
+				if (player->mo)
 				{
-					player->skincolor = i;
-					if (player->mo)
-						player->mo->color = i;
-					break;
+					// Is this how this should work..?
+					P_DamageMobj(player->mo, NULL, NULL, 1, DMG_INSTAKILL);
 				}
-		}
-		if (extra.flags & DXD_FOLLOWER)
-		{
-			// Set our follower
-			K_SetFollowerByName(p, extra.followername);
-
-			// Follower's color
-			for (i = 0; i < numskincolors +2; i++)	// +2 because of Match and Opposite
-				if (fasticmp(Followercolor_cons_t[i].strvalue, extra.followercolor))
-				{
-					player->followercolor = i;
-					break;
-				}
-		}
-		if (extra.flags & DXD_RESPAWN)
-		{
-			if (player->mo)
-			{
-				// Is this how this should work..?
-				P_DamageMobj(player->mo, NULL, NULL, 1, DMG_INSTAKILL);
 			}
-		}
-		if (extra.flags & DXD_WEAPONPREF)
-		{
-			UINT8 *bruh = &extra.weaponpref;
-			WeaponPref_Parse(&bruh, p);
-			player->driftmode = extra.driftmode;
-			//CONS_Printf("weaponpref is %d for player %d\n", i, p);
+			if (extra.flags & DXD_WEAPONPREF)
+			{
+				UINT8 *bruh = &extra.weaponpref;
+				WeaponPref_Parse(&bruh, p);
+				player->driftmode = extra.driftmode;
+				//CONS_Printf("weaponpref is %d for player %d\n", i, p);
+			}
 		}
 	}
 
