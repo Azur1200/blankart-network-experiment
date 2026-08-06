@@ -11120,6 +11120,13 @@ void A_SPBChase(void *thing)
 				{
 					// 7/8ths max speed for Knuckles, 3/4ths max speed for min accel, exactly max speed for max accel
 					defspeed = FixedMul(((fracmax+1)<<FRACBITS) - easiness, K_GetKartSpeed(actor->tracer->player, false, false)) / fracmax;
+
+					// gradually scale this with dash area (but not outrun, it's in the name lol)
+					if (actor->extravalue3 != actor->tracer->player->dashareapower)
+					{
+						actor->extravalue3 = ApproachFixed(actor->extravalue3, actor->tracer->player->dashareapower, actor->tracer->player->dashareapower/(2*TICRATE), 25*FRACUNIT/TICRATE);
+					}
+					defspeed = FixedMul(defspeed, FRACUNIT + actor->extravalue3);
 				}
 
 				// Be fairer on conveyors

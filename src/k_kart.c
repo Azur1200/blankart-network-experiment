@@ -2592,7 +2592,7 @@ boolean K_CanPlayerMaintainWaterRun(player_t *player)
 		return true;
 	}
 
-	if (player->dashareapower > 0 && player->speed >= 10*player->mo->scale)
+	if (player->dashareapower > 0 && player->speed >= 20*player->mo->scale)
 	{
 		return true;
 	}
@@ -3299,7 +3299,7 @@ fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dor
 	fixed_t finalspeed;
 
 	if (doboostpower && player->forcedtopspeed > 0)
-		return FixedMul(player->forcedtopspeed, player->mo->scale);
+		return FixedMul(FixedMul(player->forcedtopspeed, FRACUNIT + player->dashareapower), player->mo->scale);
 
 	if (doboostpower && !player->pogospring && !P_IsObjectOnGround(player->mo) && (player->airdriftspeed == 0))
 	{
@@ -9859,7 +9859,7 @@ INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
 	if (player->spectator)
 		return turnvalue;
 
-	if (player->dashareapower > 0)
+	if (player->dashareapower)
 	{
 		turnvalue += FixedMul(turnvalue, player->dashareapower);
 	}
