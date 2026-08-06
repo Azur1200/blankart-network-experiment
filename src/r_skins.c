@@ -693,7 +693,7 @@ INT32 R_FindIDForVoice(skin_t *skin, const char* voicename)
 	INT32 i;
 
 	if (skin == NULL || voicename == NULL)
-			return MAXSKINVOICES;;
+		return MAXSKINVOICES;
 
 	// Scan through our allocated skin voices for the wanted voice.
 

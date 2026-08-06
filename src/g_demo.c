@@ -987,6 +987,7 @@ skipfiles:
 		plr->color[16] = '\0';
 		strcpy(plr->follower, "None");
 		strcpy(plr->followercolor, "Default");
+		strcpy(plr->voice, "Default");
 		plr->followitem = MT_NULL;
 
 		dp += 5; // Backwards compat - some stats
@@ -1102,6 +1103,7 @@ skipfiles:
 			{
 				strcpy(plr->follower, "None");
 				strcpy(plr->followercolor, "Default");
+				strcpy(plr->voice, "Default");
 			}
 		}
 
@@ -2147,7 +2149,7 @@ void G_GhostTicker(void)
 
 		while (true) // Get rid of extradata stuff
 		{
-			extradata_t extra;
+			extradata_t extra = {0};
 			g->p = G_ReadRawExtraData(&extra, g->p, g->version);
 
 			if (extra.playernum < MAXPLAYERS)
