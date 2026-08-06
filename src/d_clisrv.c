@@ -5062,7 +5062,7 @@ static void PT_ServerRefuse(SINT8 node)
 			//Special timeout for when refusing due to player cap. The client will wait 3 seconds between join requests when waiting for a slot, so we need this to be much longer
 			//We set it back to the value of cv_nettimeout.value in CL_Reset
 			connectiontimeout = NEWTICRATE*7;
-			cl_mode = CL_ASKJOIN;
+			cl_mode = CL_SENDKEY;
 			free(reason);
 			return;
 		}
