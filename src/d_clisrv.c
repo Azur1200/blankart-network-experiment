@@ -4319,6 +4319,7 @@ const char *name3, uint8_t *key3, const char *name4, uint8_t *key4)
 
 				nobotoverwrite = newplayernum;
 
+				// FIXME This code here can access out of bounds equal to MAXPLAYERS
 				while (playeringame[nobotoverwrite]
 				&& players[nobotoverwrite].bot
 				&& nobotoverwrite < MAXPLAYERS)
@@ -4335,6 +4336,7 @@ const char *name3, uint8_t *key3, const char *name4, uint8_t *key4)
 
 			// should never happen since we check the playernum
 			// before accepting the join
+			// FIXME Possibly related to above?
 			I_Assert(newplayernum < MAXPLAYERS);
 
 			playernode[newplayernum] = (UINT8)node;

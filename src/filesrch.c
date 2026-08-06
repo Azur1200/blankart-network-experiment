@@ -82,6 +82,12 @@ filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash
 	dirhandle = (DIR**)malloc(maxsearchdepth * sizeof(DIR*));
 	searchpathindex = (size_t *)malloc(maxsearchdepth * sizeof(size_t));
 
+	if (dirhandle == NULL)
+		I_Error("Failed to allocate dirhandle");
+
+	if (searchpathindex == NULL)
+		I_Error("Failed to allocate searchpathindex");
+
 	strcpy(searchpath, startpath);
 	searchpathindex[--depthleft] = strlen(searchpath) + 1;
 
