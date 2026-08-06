@@ -3618,7 +3618,7 @@ void A_SignPlayer(void *thing)
 	ov = P_SpawnMobj(actor->x, actor->y, actor->z, MT_OVERLAY);
 	P_SetTarget(&ov->target, actor);
 	ov->color = actor->target->player->skincolor;
-	ov->skin = &skins[actor->target->player->skin];
+	ov->skin = skins[actor->target->player->skin];
 	P_SetMobjState(ov, actor->info->seestate); // S_KART_SIGN
 }
 
