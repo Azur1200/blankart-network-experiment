@@ -4928,7 +4928,7 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 				char *defval = malloc(5+1); // UINT16_MAX + NUL
 
 				if (defval == NULL)
-					I_Error("Failed to allocate defval for baserunneraug");
+					I_Error("readkartresult: Out of memory!\n");
 
 				snprintf(defval, 6, "%u", result->baserunneraug[idx]);
 				var->defaultvalue = defval;

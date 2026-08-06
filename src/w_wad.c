@@ -825,6 +825,10 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 		lump_p->size = zentry.size;
 
 		fullname = (char *)malloc(zentry.namelen + 1);
+
+		if (fullname == NULL)
+			I_Error("ResGetLumpsZip: Out of memory!\n");
+
 		if (fgets(fullname, zentry.namelen + 1, handle) != fullname)
 		{
 			CONS_Alert(CONS_ERROR, "Unable to read lumpname (%s)\n", M_FileError(handle));
@@ -1461,6 +1465,9 @@ UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 	UINT16 i;
 	size_t namelen;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
+
+	if (name == NULL)
+		return INT16_MAX;
 
 	folder_map_itr it = folder_map_get(&wadfiles[wad]->endfolders->map, name);
 	if (!folder_map_is_end(it))
@@ -2530,6 +2537,10 @@ W_VerifyPK3 (FILE *fp, lumpchecklist_t *checklist, boolean status)
 		if (verified == true)
 		{
 			fullname = (char *)malloc(zentry.namelen + 1);
+
+			if (fullname == NULL)
+				I_Error("W_VerifyPK3: No more free memory\n");
+
 			if (fgets(fullname, zentry.namelen + 1, fp) != fullname)
 				return true;
 

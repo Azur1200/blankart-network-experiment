@@ -318,6 +318,10 @@ void R_ReInitColormaps(UINT16 num, void *newencoremap, size_t encoremapsize, boo
 	if (remap)
 	{
 		lighttable_t *copy = malloc(W_LumpLength(basecolormaplump));
+
+		if (copy == NULL)
+			I_Error("R_ReInitColormaps: Out of memory!\n");
+
 		memcpy(copy, colormaps, W_LumpLength(basecolormaplump));
 		for (int p = 0; p < LIGHTLEVELS; p++)
 		{
@@ -342,6 +346,10 @@ void R_ReInitColormaps(UINT16 num, void *newencoremap, size_t encoremapsize, boo
 		if (compat)
 		{
 			UINT8 *copy = malloc(256);
+
+			if (copy == NULL)
+				I_Error("R_ReInitColormaps: Out of memory!\n");
+
 			memcpy(copy, encoremap, 256);
 			for (i = 0; i < 256; i++)
 				encoremap[i] = R_GetPaletteRemap(copy[R_InvPaletteRemap(i)]);

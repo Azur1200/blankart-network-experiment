@@ -3168,7 +3168,7 @@ static void M_HandleMenuInput(void)
 	size_t newPanelOn = panelOn;
 	UINT16 oldItemOn = curpi->itemon; // prevent infinite loop
 	INT32 newItemOn = curpi->itemon;
-	UINT16 altScrollOn;
+	UINT16 altScrollOn = curpi->itemon;
 
 	// Keys usable within menu
 	if (vmove != 0)
@@ -4461,6 +4461,12 @@ static int Cupsort_Name(const void *a, const void *b)
 {
 	const cupheader_t *c1 = *(const cupheader_t **)a, *c2 = *(const cupheader_t **)b;
 	CLEANUP(pfree) char *name1 = strdup(CupName(c1, false)), *name2 = strdup(CupName(c2, false));
+
+	if (name1 == NULL || name2 == NULL)
+	{
+		I_Error("Cupsort_Name: Out of memory!\n");
+	}
+
 	int c = strcmp(name1, name2);
 	return c != 0 ? c : c1->id - c2->id;
 }

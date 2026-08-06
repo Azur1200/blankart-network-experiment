@@ -292,6 +292,10 @@ Server_id (void)
 {
 	int *id;
 	id = malloc(sizeof *id);
+
+	if (id == NULL)
+		I_Error("Server_id: Out of memory!\n");
+
 	Lock_state();
 	{
 		*id = MSId;
@@ -305,6 +309,10 @@ New_server_id (void)
 {
 	int *id;
 	id = malloc(sizeof *id);
+
+	if (id == NULL)
+		I_Error("New_server_id: Out of memory!\n");
+
 	Lock_state();
 	{
 		*id = ++MSId;
@@ -486,8 +494,8 @@ static void
 Update_parameters (void)
 {
 #ifdef MASTERSERVER
-	int registered;
-	int delayed;
+	int registered = 0;
+	int delayed = 0;
 
 	if (Online())
 	{

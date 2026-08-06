@@ -452,7 +452,7 @@ static void R_RasterizeFloorSplat(floorsplat_t *pSplat, vector2_t *verts, visspr
 
 	for (y = miny; y <= maxy; y++)
 	{
-		boolean cliptab[MAXVIDWIDTH+1];
+		boolean cliptab[MAXVIDWIDTH+1] = {0};
 
 		x1 = rastertab[y].minx>>FRACBITS;
 		x2 = rastertab[y].maxx>>FRACBITS;

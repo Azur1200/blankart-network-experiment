@@ -1880,6 +1880,10 @@ static int lib_hudaddtimer(lua_State *L)
 
 	INT32 patches_size = lua_objlen(L, 3);
 	CLEANUP(pfree) const char **patches = calloc(patches_size, sizeof(const char*));
+
+	if (patches == NULL)
+		I_Error("lib_hudaddtimer: Out of memory!\n");
+
 	for (INT32 i = 0; i < patches_size; ++i)
 	{
 		lua_rawgeti(L, 3, i+1);
