@@ -3583,8 +3583,14 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		else
 			READSTRINGL(extrainfo_p, temp, 16+1);
 		pdemo->standings[count].skin = UINT16_MAX;
+
+		UINT32 hash = HASH32(temp, strlen(temp));
+
 		for (i = 0; i < numskins; i++)
 		{
+			if (skins[i]->namehash != hash)
+				continue;
+
 			if (fasticmp(skins[i]->name, temp))
 			{
 				pdemo->standings[count].skin = i;
@@ -4225,12 +4231,19 @@ void G_AddGhost(char *defdemoname)
 		return;
 	}
 
+	UINT32 hash = HASH32(plr->skin, strlen(plr->skin));
+
 	for (i = 0; i < numskins; i++)
+	{
+		if (skins[i]->namehash != hash)
+			continue;
+
 		if (fasticmp(skins[i]->name, plr->skin))
 		{
 			ghskin = skins[i];
 			break;
 		}
+	}
 
 	if (i == numskins)
 	{

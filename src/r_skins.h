@@ -74,6 +74,7 @@ struct kartvoice_t
 struct skin_t
 {
 	char name[SKINNAMESIZE+1]; // name of skin
+	UINT32 namehash;
 	UINT16 skinnum;
 	UINT16 wadnum;
 	skinflags_t flags;

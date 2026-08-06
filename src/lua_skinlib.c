@@ -235,13 +235,21 @@ static int lib_getSkin(lua_State *L)
 		return 1;
 	}
 
+	UINT32 hash = HASH32(field, strlen(field));
+
 	// find skin by name
 	for (i = 0; i < numskins; i++)
+	{
+		if (skins[i]->namehash != hash)
+			continue;
+
 		if (fastcmp(skins[i]->name, field))
 		{
 			LUA_PushUserdata(L, skins[i], META_SKIN);
 			return 1;
 		}
+	}
+
 
 	return 0;
 }

@@ -975,7 +975,12 @@ static int mobj_set(lua_State *L)
 		char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
 		strlcpy(skin, luaL_checkstring(L, 3), sizeof skin);
 		strlwr(skin); // all skin names are lowercase
+		UINT32 hash = HASH32(skin, strlen(skin));
 		for (i = 0; i < numskins; i++)
+		{
+			if (skins[i]->namehash != hash)
+				continue;
+
 			if (fastcmp(skins[i]->name, skin))
 			{
 				if (!mo->player || R_SkinUsable(mo->player-players, i))
@@ -984,6 +989,7 @@ static int mobj_set(lua_State *L)
 				}
 				return 0;
 			}
+		}
 		return luaL_error(L, "mobj.skin '%s' not found!", skin);
 	}
 	case mobj_voice:
