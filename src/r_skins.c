@@ -554,6 +554,10 @@ boolean R_SkinUsable(INT32 playernum, INT32 skinnum)
 INT32 R_SkinAvailable(const char *name)
 {
 	INT32 i;
+
+	if (name == NULL)
+		return -1;
+
 	UINT32 hash = HASH32(name, strlen(name));
 
 	for (i = 0; i < numskins; i++)
