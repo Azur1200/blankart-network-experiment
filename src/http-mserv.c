@@ -198,6 +198,10 @@ HMS_connect (const char *format, ...)
 	Printf_url(url);
 
 	buffer = malloc(sizeof *buffer);
+
+	if (buffer == NULL
+		I_Error("Failed to allocate HMS_connect buffer");
+
 	buffer->curl = curl;
 	buffer->end = DEFAULT_BUFFER_SIZE;
 	buffer->buffer = malloc(buffer->end);
