@@ -1516,7 +1516,7 @@ void D_SRB2Main(void)
 {
 	INT32 p;
 
-	mapnum_t pstartmap = (mapnum_t)1;
+	mapnum_t pstartmap = (mapnum_t)0;
 	boolean autostart = false;
 
 	/* break the version string into version numbers, for netplay */
@@ -2243,8 +2243,12 @@ void D_SRB2Main(void)
 				CV_SetValue(&cv_kartspeed, newskill);
 		}
 
-		if (server && !M_CheckParm("+map"))
+		if (server && (dedicated || !M_CheckParm("+map")))
 		{
+			if (!pstartmap && (pstartmap = (mapnum_t)(G_GetFirstMapOfGametype(gametype)+1)) > nummapheaders)
+			{
+				I_Error("Can't get first map of gametype\n");
+			}
 			// Prevent warping to locked levels
 			// ... unless you're in a dedicated server.  Yes, technically this means you can view any level by
 			// running a dedicated server and joining it yourself, but that's better than making dedicated server's
