@@ -398,7 +398,7 @@ static int libd_cachePatch(lua_State *L)
 	if (name[0] && name[0] <= NUMFACES)
 	{
 		// skin.facerank has a secret message for us
-		INT32 skin = R_SkinAvailable(name+1);
+		INT32 skin = R_SkinAvailableEx(name+1, false);
 		if (skin != -1)
 			patch = faceprefix[skin][(UINT8)name[0]-1];
 		else

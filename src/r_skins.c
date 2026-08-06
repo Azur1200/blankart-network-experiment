@@ -551,18 +551,18 @@ boolean R_SkinUsable(INT32 playernum, INT32 skinnum)
 
 // returns the skin number if the skin name is found (loaded from pwad)
 // warning return -1 if not found
-INT32 R_SkinAvailable(const char *name)
+INT32 R_SkinAvailableEx(const char *name, boolean usehash)
 {
 	INT32 i;
 
 	if (name == NULL)
 		return -1;
 
-	UINT32 hash = HASH32(name, strlen(name));
+	UINT32 hash = usehash == false ? 0 : HASH32(name, strlen(name));
 
 	for (i = 0; i < numskins; i++)
 	{
-		if (skins[i]->namehash != hash)
+		if (usehash && skins[i]->namehash != hash)
 			continue;
 
 		if (fasticmp(skins[i]->name,name))

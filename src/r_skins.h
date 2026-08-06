@@ -156,7 +156,8 @@ void SetPlayerSkin(INT32 playernum,const char *skinname);
 void SetPlayerSkinByNum(INT32 playernum,INT32 skinnum); // Tails 03-16-2002
 boolean R_SkinUsable(INT32 playernum, INT32 skinnum);
 UINT8 *R_GetSkinAvailabilities(void);
-INT32 R_SkinAvailable(const char *name);
+INT32 R_SkinAvailableEx(const char *name, boolean usehash);
+#define R_SkinAvailable(name) R_SkinAvailableEx(name, true)
 void R_PatchSkins(UINT16 wadnum);
 void R_AddSkins(UINT16 wadnum);
 void R_ApplySkin(mobj_t *mo, skin_t *skin);
