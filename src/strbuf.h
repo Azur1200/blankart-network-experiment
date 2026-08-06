@@ -9,6 +9,9 @@
 /// \file  strbuf.h
 /// \brief string buffer library, for making chunks of many small strings
 
+#ifndef __BK_STRBUF__
+#define __BK_STRBUF__
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -56,3 +59,5 @@ FUNCINLINE static ATTRINLINE UINT32 strbuf_len(strbuf_t *strbuf)
 #ifdef __cplusplus
 }
 #endif
+
+#endif // __BK_STRBUF__

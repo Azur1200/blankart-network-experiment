@@ -230,8 +230,7 @@ char exttable[NUM_EXT_TABLE][7] = { // maximum extension length (currently 4) pl
 #endif
 	"\5.pk3", "\5.soc", "\5.lua"}; // addfile
 
-char filenamebuf[MAX_WADFILES][MAX_WADPATH];
-
+char filenamebuf[MAX_WADFILES][MAX_WADPATH] = {0};
 
 static boolean filemenucmp(char *haystack, char *needle)
 {

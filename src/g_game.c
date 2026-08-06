@@ -6505,13 +6505,11 @@ void G_InitNew(UINT8 pencoremode, mapnum_t map, boolean resetplayer, boolean ski
 	if (!mapname)
 	{
 		I_Error("Internal game map with ID %d not found\n", map);
-		Command_ExitGame_f();
 		return;
 	}
 	if (mapheaderinfo[map-1]->lumpnum == LUMPERROR)
 	{
 		I_Error("Internal game map '%s' not found\n", mapname);
-		Command_ExitGame_f();
 		return;
 	}
 

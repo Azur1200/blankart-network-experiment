@@ -2447,6 +2447,9 @@ void M_MkdirEachUntil(const char *cpath, int start, int end, int mode)
 	if (end > 0 && end <= start)
 		return;
 
+	if (cpath == NULL)
+		return;
+
 	strlcpy(path, cpath, sizeof path);
 
 #ifdef _WIN32

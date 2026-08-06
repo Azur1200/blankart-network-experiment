@@ -9,6 +9,9 @@
 /// \file  r_patchrotation.h
 /// \brief Patch rotation.
 
+#ifndef __R_PATCHROTATION__
+#define __R_PATCHROTATION__
+
 #include "r_patch.h"
 #include "r_picformats.h"
 
@@ -28,3 +31,5 @@ extern fixed_t rollsinang[ROTANGLES];
 #endif
 
 #endif
+
+#endif // __R_PATCHROTATION__
