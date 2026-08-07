@@ -231,6 +231,12 @@ void F_DoWipe(fademask_t *fademask)
 		UINT16 maskx, masky;
 		UINT32 relativepos;
 
+		if (scrxpos == NULL)
+			I_Error("Failed to allocae scrxpos");
+
+		if (scrypos == NULL)
+			I_Error("Failed to allocae scrypos");
+
 		// ---
 		// Screw it, we do the fixed point math ourselves up front.
 		scrxpos[0] = 0;

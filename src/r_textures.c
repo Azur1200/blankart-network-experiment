@@ -1967,7 +1967,12 @@ static void PaletteTextureHack(const char **name)
 	if (mapnamespace == MNS_SRB2KART)
 	{
 		unsigned num;
-		if (sscanf(*name, "~%03u", &num) && num < 256)
+
+		char tmp[9];
+		strncpy(tmp, *name, 8);
+		tmp[8] = '\0';
+
+		if (sscanf(tmp, "~%03u", &num) && num < 256)
 		{
 			snprintf(uberhack, 5, "~%03u", R_GetPaletteRemap(num));
 			*name = uberhack;

@@ -3618,7 +3618,7 @@ void A_SignPlayer(void *thing)
 	ov = P_SpawnMobj(actor->x, actor->y, actor->z, MT_OVERLAY);
 	P_SetTarget(&ov->target, actor);
 	ov->color = actor->target->player->skincolor;
-	ov->skin = &skins[actor->target->player->skin];
+	ov->skin = skins[actor->target->player->skin];
 	P_SetMobjState(ov, actor->info->seestate); // S_KART_SIGN
 }
 
@@ -11143,6 +11143,13 @@ void A_SPBChase(void *thing)
 				{
 					// 7/8ths max speed for Knuckles, 3/4ths max speed for min accel, exactly max speed for max accel
 					defspeed = FixedMul(((fracmax+1)<<FRACBITS) - easiness, K_GetKartSpeed(actor->tracer->player, false, false)) / fracmax;
+
+					// gradually scale this with dash area (but not outrun, it's in the name lol)
+					if (actor->extravalue3 != actor->tracer->player->dashareapower)
+					{
+						actor->extravalue3 = ApproachFixed(actor->extravalue3, actor->tracer->player->dashareapower, actor->tracer->player->dashareapower/(2*TICRATE), actor->extravalue3);
+					}
+					defspeed = FixedMul(defspeed, FRACUNIT + actor->extravalue3);
 				}
 
 				// Be fairer on conveyors

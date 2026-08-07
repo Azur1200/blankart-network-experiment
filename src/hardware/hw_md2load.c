@@ -311,6 +311,10 @@ model_t *MD2_LoadModel(const char *fileName, int ztag, boolean useFloat)
 
 	// read in file
 	buffer = malloc(fileLen);
+
+	if (buffer == NULL)
+		I_Error("Failled to allocate md2load buffer");
+
 	if (fread(buffer, fileLen, 1, f)) { } // squash ignored fread error
 	fclose(f);
 

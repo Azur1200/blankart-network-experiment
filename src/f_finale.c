@@ -1730,9 +1730,9 @@ void F_TitleScreenTicker(boolean run)
 	// is it time?
 	if (!(--demoIdleLeft))
 	{
-		char dname[MAXMAPLUMPNAME+1+8+1];
-		UINT16 mapnum;
-		UINT8 numstaff;
+		char dname[MAXMAPLUMPNAME+1+8+1] = {0};
+		mapnum_t mapnum = 0;
+		UINT8 numstaff = 0;
 		static boolean use_netreplay = false;
 
 		if ((use_netreplay = !use_netreplay))
@@ -1765,7 +1765,7 @@ void F_TitleScreenTicker(boolean run)
 		}
 		else
 		{
-			numstaff++;;
+			numstaff++;
 		}
 
 		// Setup demo name

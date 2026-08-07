@@ -353,6 +353,10 @@ static void LoadPalette(const char *lumpname)
 	if (wadfiles[WADFILENUM(lumpnum)]->compatmode)
 	{
 		palcopy = malloc(sizeof(*palcopy)*palsize);
+
+		if (palcopy == NULL)
+			I_Error("LoadPalette: Out of memory!\n");
+
 		memcpy(palcopy, pMasterPalette, sizeof(*palcopy)*palsize);
 	}
 

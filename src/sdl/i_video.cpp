@@ -273,13 +273,11 @@ static bool Impl_RenderContextReset(void)
 static void Impl_SetSoftwareVsync(int vsync)
 {
 	static int oldvsync = 0;
-#if SDL_VERSION_ATLEAST(2,0,18)
 	if (oldvsync != vsync)
 	{
 		SDL_SetRenderVSync(renderer, vsync);
 	}
 	oldvsync = vsync;
-#endif
 }
 
 static void Impl_VideoSetupSurfaces(int width, int height)

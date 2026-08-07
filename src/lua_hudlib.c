@@ -398,7 +398,7 @@ static int libd_cachePatch(lua_State *L)
 	if (name[0] && name[0] <= NUMFACES)
 	{
 		// skin.facerank has a secret message for us
-		INT32 skin = R_SkinAvailable(name+1);
+		INT32 skin = R_SkinAvailableEx(name+1, false);
 		if (skin != -1)
 			patch = faceprefix[skin][(UINT8)name[0]-1];
 		else
@@ -525,9 +525,16 @@ static int libd_getSprite2Patch(lua_State *L)
 	else // find skin by name
 	{
 		const char *name = luaL_checkstring(L, 1);
+		UINT32 hash = HASH32(name, strlen(name));
 		for (i = 0; i < numskins; i++)
+		{
+			if (skins[i]->namehash != hash)
+				continue;
+
 			if (fastcmp(skins[i]->name, name))
 				break;
+		}
+
 		if (i >= numskins)
 			return 0;
 	}
@@ -1873,6 +1880,10 @@ static int lib_hudaddtimer(lua_State *L)
 
 	INT32 patches_size = lua_objlen(L, 3);
 	CLEANUP(pfree) const char **patches = calloc(patches_size, sizeof(const char*));
+
+	if (patches == NULL)
+		I_Error("lib_hudaddtimer: Out of memory!\n");
+
 	for (INT32 i = 0; i < patches_size; ++i)
 	{
 		lua_rawgeti(L, 3, i+1);

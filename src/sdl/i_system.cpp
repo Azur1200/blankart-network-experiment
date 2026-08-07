@@ -1466,9 +1466,7 @@ INT32 I_StartupSystem(void)
 	 SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_MICRO_VERSION);
 	I_OutputMsg("Linked with SDL version: %d.%d.%d\n",
 	  SDL_VERSIONNUM_MAJOR(SDLlinked), SDL_VERSIONNUM_MINOR(SDLlinked), SDL_VERSIONNUM_MICRO(SDLlinked));
-#if SDL_VERSION_ATLEAST(2,0,22)
 	SDL_SetHint(SDL_HINT_APP_NAME, "BlanKart");
-#endif
 	if (!SDL_Init(0))
 		I_Error("BlanKart: SDL System Error: %s", SDL_GetError()); //Alam: Oh no....
 #ifndef NOMUMBLE

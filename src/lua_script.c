@@ -1964,6 +1964,10 @@ static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX, boolean compat)
 	{
 		UINT16 len = READUINT16(*p);
 		char *value = malloc(len);
+
+		if (value == NULL)
+			I_Error("UnArchiveValue: Out of memory!\n");
+
 		READMEM(*p, value, len);
 		lua_pushlstring(gL, value, len);
 		free(value);
@@ -2017,6 +2021,10 @@ static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX, boolean compat)
 		else
 			len = READUINT32(*p); // length of string, including embedded zeros
 		value = malloc(len); // make temp buffer of size len
+
+		if (value == NULL)
+			I_Error("UnArchiveValue: Out of memory!\n");
+
 		// now read the actual string
 		while (i < len)
 			value[i++] = READCHAR(*p); // read chars individually, including the embedded zeros

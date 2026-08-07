@@ -1316,6 +1316,10 @@ void Polyobj_InitLevel(void)
 			++numPolyObjects;
 
 			qitem = malloc(sizeof(mobjqitem_t));
+
+			if (qitem == NULL)
+				I_Error("Polyobj_InitLevel: Out of memory!\n");
+
 			memset(qitem, 0, sizeof(mobjqitem_t));
 			qitem->mo = mo;
 			M_QueueInsert(&(qitem->mqitem), &spawnqueue);
@@ -1325,6 +1329,10 @@ void Polyobj_InitLevel(void)
 			++numAnchors;
 
 			qitem = malloc(sizeof(mobjqitem_t));
+
+			if (qitem == NULL)
+				I_Error("Polyobj_InitLevel: Out of memory!\n");
+
 			memset(qitem, 0, sizeof(mobjqitem_t));
 			qitem->mo = mo;
 			M_QueueInsert(&(qitem->mqitem), &anchorqueue);

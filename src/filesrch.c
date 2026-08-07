@@ -82,6 +82,12 @@ filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash
 	dirhandle = (DIR**)malloc(maxsearchdepth * sizeof(DIR*));
 	searchpathindex = (size_t *)malloc(maxsearchdepth * sizeof(size_t));
 
+	if (dirhandle == NULL)
+		I_Error("Failed to allocate dirhandle");
+
+	if (searchpathindex == NULL)
+		I_Error("Failed to allocate searchpathindex");
+
 	strcpy(searchpath, startpath);
 	searchpathindex[--depthleft] = strlen(searchpath) + 1;
 
@@ -230,8 +236,7 @@ char exttable[NUM_EXT_TABLE][7] = { // maximum extension length (currently 4) pl
 #endif
 	"\5.pk3", "\5.soc", "\5.lua"}; // addfile
 
-char filenamebuf[MAX_WADFILES][MAX_WADPATH];
-
+char filenamebuf[MAX_WADFILES][MAX_WADPATH] = {0};
 
 static boolean filemenucmp(char *haystack, char *needle)
 {

@@ -9013,6 +9013,8 @@ void P_FreeLevelState(void)
 	Patch_FreeTag(PU_PATCH_ROTATED);
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
 
+	R_InitMobjInterpolators();
+	R_InitializeLevelInterpolators();
 }
 
 /** Loads a level from a lump or external wad.
@@ -9183,11 +9185,9 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	}
 
 	P_FreeLevelState();
-	R_InitializeLevelInterpolators();
 
 	P_InitThinkers();
 	P_InitTIDHash();
-	R_InitMobjInterpolators();
 	P_InitCachedActions();
 
 	// This ticker isn't EVER supposed to run for dedis, but just in case...

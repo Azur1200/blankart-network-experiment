@@ -1779,6 +1779,9 @@ void nameonly(char *s)
 	size_t j, len;
 	void *ns;
 
+	if (s == NULL)
+		return;
+
 	for (j = strlen(s); j != (size_t)-1; j--)
 		if ((s[j] == '\\') || (s[j] == ':') || (s[j] == '/'))
 		{
@@ -2069,6 +2072,10 @@ void CURLGetFile(void)
 				easyres = m->data.result;
 
 				char *filename = malloc(strlen(curl_realname)+1);
+
+				if (filename == NULL)
+					I_Error("Failled to allocate curl_realname");
+
 				strcpy(filename, curl_realname);
 				nameonly(filename);
 

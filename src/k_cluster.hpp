@@ -1,3 +1,6 @@
+#ifndef __K_CLUSTER__
+#define __K_CLUSTER__
+
 #include "cvector.h"
 #include "doomdef.h"
 #include "d_player.h"
@@ -67,3 +70,5 @@ INT32 K_CountNeighboringPlayers(player_t *sourcePlayer, fixed_t eps, playerfilte
 #ifdef __cplusplus
 }
 #endif
+
+#endif // __K_CLUSTER__

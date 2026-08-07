@@ -9,6 +9,9 @@
 /// \file  i_threads.h
 /// \brief Multithreading abstraction
 
+#ifndef __I_THREADS__
+#define __I_THREADS__
+
 #ifdef HAVE_THREADS
 
 #ifndef I_THREADS_H
@@ -45,3 +48,4 @@ void      I_wake_all_cond   (I_cond *);
 
 #endif/*I_THREADS_H*/
 #endif/*HAVE_THREADS*/
+#endif // __I_THREADS__

@@ -189,6 +189,10 @@ void COM_Lua_f(void)
 			len = (argc+1)*256;
 
 		buf = malloc(len);
+
+		if (buf == NULL)
+			I_Error("Failed to allocate buffer for COM_Lua_f");
+
 		p = buf;
 		WRITEUINT8(p, argc);
 		for (i = 0; i < argc; i++)

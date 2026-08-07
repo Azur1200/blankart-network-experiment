@@ -64,6 +64,8 @@ static hook_t mobjHookIds[NUMMOBJTYPES][MOBJ_HOOK(MAX)];
 // Lua tables are used to lookup string hook ids.
 static stringhook_t stringHooks[STRING_HOOK(MAX)];
 
+#define NONMOHOOK ((mobjtype_t)-1)
+
 // This will be indexed by hook id, the value of which fetches the registry.
 static int * hookRefs;
 static int   nextid;
@@ -287,7 +289,7 @@ struct Hook_State {
 	INT32        status;/* return status to calling function */
 	void       * userdata;
 	int          hook_type;
-	mobjtype_t   mobj_type;/* >0 if mobj hook */
+	mobjtype_t    mobj_type;  /* != NONMOHOOK if mobj hook */
 	const char * string;/* used to fetch table, ran first if set */
 	int          top;/* index of last argument passed to hook */
 	int          id;/* id to fetch ref */
@@ -354,7 +356,7 @@ static boolean prepare_hook
 		int hook_type
 ){
 	return init_hook_type(hook, default_status,
-			hook_type, 0, NULL,
+			hook_type, NONMOHOOK, NULL,
 			hookIds[hook_type].numHooks);
 }
 
@@ -382,7 +384,7 @@ static boolean prepare_string_hook
 		const char * string
 ){
 	if (init_hook_type(hook, default_status,
-				hook_type, 0, string,
+				hook_type, NONMOHOOK, string,
 				stringHooks[hook_type].ref))
 	{
 		lua_pushstring(gL, string);
@@ -429,7 +431,8 @@ static const char *hook_name(Hook_State *hook)
 	{
 		return stringHookNames[hook->hook_type];
 	}
-	else if (hook->mobj_type > 0)
+	//else if (hook->mobj_type > 0)
+	else if (hook->mobj_type != NONMOHOOK)
 	{
 		return mobjHookNames[hook->hook_type];
 	}
@@ -625,11 +628,13 @@ static int call_hooks
 	{
 		calls += call_string_hooks(hook);
 	}
-	else if (hook->mobj_type > 0)
+	//else if (hook->mobj_type > 0)
+	else if (hook->mobj_type != NONMOHOOK)
 	{
 		/* call generic mobj hooks first */
 		calls += call_mobj_type_hooks(hook, MT_NULL);
-		calls += call_mobj_type_hooks(hook, hook->mobj_type);
+		if (hook->mobj_type < NUMMOBJTYPES)
+			calls += call_mobj_type_hooks(hook, hook->mobj_type);
 
 		ps_lua_mobjhooks.value.i += calls;
 	}
@@ -1168,6 +1173,9 @@ void LUA_HookNetArchive(lua_CFunction archFunc, savebuffer_t *save)
 		lua_pushcclosure(gL, archFunc, 2);
 		// stack: tables, savebuffer_t, archFunc
 
+		// Manually set the hook's variables here since we don't call prepare_hook
+		hook.hook_type = HOOK(NetVars);
+		hook.mobj_type = NONMOHOOK; // Force mobj_type to be NONMOHOOK so the mobj_type check get skipped
 		init_hook_call(&hook, 0, res_none);
 		call_mapped(&hook, map);
 

@@ -198,6 +198,10 @@ HMS_connect (const char *format, ...)
 	Printf_url(url);
 
 	buffer = malloc(sizeof *buffer);
+
+	if (buffer == NULL)
+		I_Error("Failed to allocate HMS_connect buffer");
+
 	buffer->curl = curl;
 	buffer->end = DEFAULT_BUFFER_SIZE;
 	buffer->buffer = malloc(buffer->end);
@@ -570,8 +574,7 @@ static void
 MasterServer_Debug_OnChange (void)
 {
 #ifdef MASTERSERVER
-	/* TODO: change to 'latest-log.txt' for log files revision. */
 	if (cv_masterserver_debug.value)
-		CONS_Printf("Master server debug messages will appear in log.txt\n");
+		CONS_Printf("Master server debug messages will appear in latest-log.txt\n");
 #endif
 }

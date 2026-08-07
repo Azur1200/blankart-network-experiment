@@ -43,7 +43,7 @@ extern mapnum_t prevmap, nextmap;
 
 struct roundentry_t
 {
-	UINT16 mapnum;				// Map number at this position
+	mapnum_t mapnum;				// Map number at this position
 	UINT16 gametype;				// Gametype we want to play this in
 	boolean encore;				// Whether this will be flipped
 	boolean rankrestricted;		// For grand prix progression
