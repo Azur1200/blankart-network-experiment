@@ -264,15 +264,14 @@ static tic_t stop_spamming[MAXPLAYERS];
 // Generate a message for an authenticating client to sign, with some guarantees about who we are.
 void GenerateChallenge(uint8_t *buf)
 {
-#ifndef SRB2_LITTLE_ENDIAN
-	#error  "FIXME: 64-bit timestamp field is not supported on Big Endian"
+	uint64_t now = LONGLONG(time(NULL));
+#if 0 // im sorry I have to do this but....
+	uint32_t our_ip_le = LONG(ourIP);
 #endif
-
-	UINT64 now = time(NULL);
 	csprng(buf, CHALLENGELENGTH); // Random noise as a baseline, but...
 	memcpy(buf, &now, sizeof(now)); // Timestamp limits the reuse window.
 #if 0 // im sorry I have to do this but....
-	memcpy(buf + sizeof(now), &ourIP, sizeof(ourIP)); // IP prevents captured signatures from being used elsewhere.
+	memcpy(buf + sizeof(now), &our_ip_le, sizeof(our_ip_le)); // IP prevents captured signatures from being used elsewhere.
 #else
 	UINT32 dummy = UINT32_MAX;
 	memcpy(buf + sizeof(now), &dummy, sizeof(dummy)); // Dummy since ip breaks VPN and other check is not good enough.
@@ -299,10 +298,6 @@ void GenerateChallenge(uint8_t *buf)
 // Don't sign anything that wasn't generated just for us!
 shouldsign_t ShouldSignChallenge(uint8_t *message)
 {
-#ifndef SRB2_LITTLE_ENDIAN
-	#error  "FIXME: 64-bit timestamp field is not supported on Big Endian"
-#endif
-
 #if 1
 	(void)message;
 #endif
@@ -313,7 +308,9 @@ shouldsign_t ShouldSignChallenge(uint8_t *message)
 
 	now = time(NULL);
 	memcpy(&then, message, sizeof(then));
+	then = LONGLONG(then); // LE 64
 	memcpy(&claimedIP, message + sizeof(then), sizeof(claimedIP));
+	claimedIP = LONG(claimedIP); // LE 32 - TODO needs to be BE 128 bit for ipv6
 	realIP = I_GetNodeAddressInt(servernode);
 
 	if ((max(now, then) - min(now, then)) > 60*15)
