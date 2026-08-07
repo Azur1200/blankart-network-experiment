@@ -764,7 +764,7 @@ consvar_t cv_kartinvintheme = CVAR_INIT ("kartinvintheme", "Standard", CV_SAVE, 
 static CV_PossibleValue_t kartrankpts_f_cons_t[] = {{0, "MIN"},  {(INT32_MAX / 2), "MAX"}, {0, NULL}};
 static CV_PossibleValue_t kartrankpts_cons_t[] = {{0, "MIN"},  {0x3fff, "MAX"}, {0, NULL}};
 
-consvar_t cv_kartraceranks = CVAR_INIT ("raceranks", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRaceRanks_OnChange);
+consvar_t cv_kartraceranks = CVAR_INIT ("raceranks", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRaceRanks_OnChange);
 consvar_t cv_kartrankpenalties = CVAR_INIT ("racerankpenalties", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRankPenalties_OnChange);
 
 // Tracks time in a race and displays a potential par time. Helps if you want to manually make par times!
