@@ -1720,7 +1720,7 @@ static int player_set(lua_State *L)
 		break;
 	case player_itemroulette:
 		{
-			if (plr->itemroulette == 0 && lua_compatmode)
+			if (plr->itemroulette == 0)
 			{
 				K_StartRoulette(plr, KROULETTETYPE_NORMAL);
 			}
@@ -2689,7 +2689,13 @@ static int kartstuff_set(lua_State *L)
 					plr->pflags |= PF_BRAKEDRIFT;
 				break;
 			case k_itemroulette:
-				plr->itemroulette = i;
+				{
+					if (plr->itemroulette == 0)
+					{
+						K_StartRoulette(plr, KROULETTETYPE_NORMAL);
+					}
+					plr->itemroulette = i;
+				}
 				break;
 			case k_roulettetype:
 				plr->roulettetype = i;
