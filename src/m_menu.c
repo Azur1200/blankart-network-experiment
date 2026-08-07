@@ -11012,11 +11012,13 @@ void MP_ViewServerPlayers(menupanelinst_t *pi)
 		if (serverlist[joinnode].info.numberofplayer <= 16)
 		{
 			UINT16 skinum = playerinfo[i].skin;
+			boolean validskin = skinum < numskins;
+
 
 			if (playerinfo[i].team == 255)
 				item->status |= IT_GRAYEDOUT;
 
-			if (R_SkinAvailable(skins[skinum]->name) == -1)
+			if (!validskin || R_SkinAvailable(skins[skinum]->name) == -1)
 			{
 				item->style = DEH_FindMenuItemStyle("VIEWSERVER_PLAYER_MISSING");
 				M_SetItemPatchRaw(item, va("16x16,%u", statuscolor));
@@ -11027,7 +11029,8 @@ void MP_ViewServerPlayers(menupanelinst_t *pi)
 				M_SetItemPatchRaw(item, skins[skinum]->name);
 			}
 
-			M_SetItemExtraRaw(item, DEH_SkincolorName(skins[skinum]->prefcolor));
+			if (validskin)
+				M_SetItemExtraRaw(item, DEH_SkincolorName(skins[skinum]->prefcolor));
 
 			y += 22*FRACUNIT;
 			if (++count % 4 == 0)
