@@ -1723,8 +1723,15 @@ static int player_set(lua_State *L)
 			if (plr->itemroulette == 0)
 			{
 				K_StartRoulette(plr, KROULETTETYPE_NORMAL);
+				if (plr->itemroulette)
+				{
+					plr->itemroulette = luaL_checkinteger(L, 3);
+				}
 			}
-			plr->itemroulette = luaL_checkinteger(L, 3);
+			else
+			{
+				plr->itemroulette = luaL_checkinteger(L, 3);
+			}
 		}
 		break;
 	case player_previtemroulette:
@@ -2693,8 +2700,15 @@ static int kartstuff_set(lua_State *L)
 					if (plr->itemroulette == 0)
 					{
 						K_StartRoulette(plr, KROULETTETYPE_NORMAL);
+						if (plr->itemroulette)
+						{
+							plr->itemroulette = luaL_checkinteger(L, 3);
+						}
 					}
-					plr->itemroulette = i;
+					else
+					{
+						plr->itemroulette = luaL_checkinteger(L, 3);
+					}
 				}
 				break;
 			case k_roulettetype:
