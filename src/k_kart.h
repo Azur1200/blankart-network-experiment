@@ -505,6 +505,8 @@ boolean K_ItemPushingActive(void);
 boolean K_TrailSlowActive(void);
 boolean K_RankingsActive(void);
 boolean K_RankPenaltiesActive(void);
+boolean K_RankDriftBonusActive(void);
+boolean K_RankHitBonusActive(void);
 INT32 K_GetBumpSpark(void);
 playerbumptype_t K_GetPlayerBump(void);
 boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);
