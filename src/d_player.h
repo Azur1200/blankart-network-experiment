@@ -632,6 +632,7 @@ struct rankscorefactor_t
 	INT32 wallpenalty; // Points lost for hitting walls past a speed threshold
 	INT32 hazardpenalty; // Points lost for running into course hazards or damaging sectors
 	INT32 respawnpenalty; // Points lost for respawning past a grace threshold
+	INT32 dnfpenalty; // Points lost when the player retires (NO CONTEST)
 };
 
 // ========================================================================

@@ -13233,6 +13233,16 @@ boolean K_RankPenaltiesActive(void)
 	return ranking_penaltyactive;
 }
 
+boolean K_RankDriftBonusActive(void)
+{
+	return ranking_driftbonusactive;
+}
+
+boolean K_RankHitBonusActive(void)
+{
+	return ranking_hitbonusactive;
+}
+
 #define WALLBONKPENALTYDIV (3) // Every 3 bumps, since hitting walls is inevitable.
 #define GENERICPARTIME (TICRATE * 145) // 2 minutes 25 seconds; an average Kart race is 2 minutes, so this is an overshoot
 #define TIMECHECKOFFSET (5 * TICRATE / 2)
@@ -13389,13 +13399,27 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 		    FixedMul(RANKPOINTS_STARTBOOST, player->ranklog.startboostgrading);
 	}
 
-	// Apply bonus for number of miniturbos performed.
-	INT32 miniturbos = K_GetDriftBoostRankScore(player);
-	player->rankscorefactor.driftbonus = (miniturbos * RANKPOINTS_DRIFTBOOST);
+	if (ranking_driftbonusactive)
+	{
+		// Apply bonus for number of miniturbos performed.
+		INT32 miniturbos = K_GetDriftBoostRankScore(player);
+		player->rankscorefactor.driftbonus = (miniturbos * RANKPOINTS_DRIFTBOOST);
+	}
+	else
+	{
+		player->rankscorefactor.driftbonus = 0;
+	}
 
-	// Apply bonus for number of times the player hits a CPU with items.
-	UINT16 hitOthersWithItemsCount = player->ranklog.numhitconfirms;
-	player->rankscorefactor.hitbonus = (hitOthersWithItemsCount * RANKPOINTS_HITCONFIRM);
+	if (ranking_hitbonusactive)
+	{
+		// Apply bonus for number of times the player hits another player with items.
+		UINT16 hitOthersWithItemsCount = player->ranklog.numhitconfirms;
+		player->rankscorefactor.hitbonus = (hitOthersWithItemsCount * RANKPOINTS_HITCONFIRM);
+	}
+	else
+	{
+		player->rankscorefactor.hitbonus = 0;
+	}
 
 	if (penalizing)
 	{
@@ -13440,7 +13464,8 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 
 	// FINALLY, apply all bonuses, penalties, and volatile scores...
 	raceStarRankScore =
-	    (player->rankscorefactor.partimescore + player->rankscorefactor.lapgradescore) +
+	    (player->rankscorefactor.partimescore + player->rankscorefactor.lapgradescore -
+	     player->rankscorefactor.dnfpenalty) +
 	    (player->rankscorefactor.positionbonus + player->rankscorefactor.spbattackbonus +
 	     player->rankscorefactor.startbonus + player->rankscorefactor.driftbonus +
 	     player->rankscorefactor.hitbonus) -

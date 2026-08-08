@@ -308,6 +308,9 @@ extern consvar_t cv_itemlist;
 extern consvar_t cv_kartraceranks;
 extern consvar_t cv_kartrankpenalties;
 
+// These are a bit more opinionated, so let's let hosts toggle these
+extern consvar_t cv_kartrank_driftbonus, cv_kartrank_hitbonus;
+
 extern consvar_t cv_encorevotes;
 
 extern consvar_t cv_votetime;

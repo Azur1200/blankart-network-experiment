@@ -180,6 +180,8 @@ boolean trailslow_active = false;
 playerbumptype_t playerbumpactive = PBUMP_STANDARD;
 boolean rankingactive = false;
 boolean ranking_penaltyactive = false;
+boolean ranking_hitbonusactive = false;
+boolean ranking_driftbonusactive = false;
 boolean cannotrank = false; // We can't rank this race!
 UINT16 bossdisabled = 0;
 boolean stoppedclock = false;
@@ -8395,6 +8397,8 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	itemlistactive = false;
 	trailslow_active = false;
 	rankingactive = false;
+	ranking_hitbonusactive = false;
+	ranking_driftbonusactive = false;
 	ranking_penaltyactive = false;
 	bumpsparkactive = 0;
 	antibumptime = 0;
@@ -8449,6 +8453,16 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	if (cv_kartraceranks.value || grandprixinfo.gp)
 	{
 		rankingactive = true;
+
+		if (cv_kartrank_driftbonus.value)
+		{
+			ranking_driftbonusactive = true;
+		}
+
+		if (cv_kartrank_hitbonus.value)
+		{
+			ranking_hitbonusactive = true;
+		}
 
 		if (cv_kartrankpenalties.value || grandprixinfo.gp)
 			ranking_penaltyactive = true;

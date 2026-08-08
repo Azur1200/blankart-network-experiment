@@ -527,14 +527,22 @@ static boolean RankScreenVis_ShowGrade(void)
 
 			if (rankresultsphase >= 1)
 			{
+				const UINT32 hitbonuscolor =
+				    (ranking_hitbonusactive) ? V_SKYMAP : V_BLUEMAP;
+
+				const UINT32 driftbonuscolor =
+				    (ranking_driftbonusactive) ? V_SKYMAP : V_BLUEMAP;
+
 				// Hit Bonus
 				Y_DrawThinStringWithBacking(
 				    xx, yy, curwidth, textflags, 0, usecolor, "Hit Bonus");
 				V_DrawRightAlignedString(
 				    point_x,
 				    yy,
-				    textflags | V_SKYMAP,
-				    va("%d", players[pid].rankscorefactor.hitbonus));
+				    textflags | hitbonuscolor,
+				    (ranking_hitbonusactive)
+					? va("%d", players[pid].rankscorefactor.hitbonus)
+					: "N/A");
 
 				// Drift Bonus
 				yy += 11;
@@ -543,8 +551,10 @@ static boolean RankScreenVis_ShowGrade(void)
 				V_DrawRightAlignedString(
 				    point_x,
 				    yy,
-				    textflags | V_SKYMAP,
-				    va("%d", players[pid].rankscorefactor.driftbonus));
+				    textflags | driftbonuscolor,
+				    (ranking_driftbonusactive)
+					? va("%d", players[pid].rankscorefactor.driftbonus)
+					: "N/A");
 
 				// Position Bonus
 				yy += 11;
@@ -583,6 +593,10 @@ static boolean RankScreenVis_ShowGrade(void)
 
 			if (rankresultsphase >= 2)
 			{
+				const INT32 totallapgrade =
+				    (players[pid].rankscorefactor.lapgradescore -
+				     players[pid].rankscorefactor.dnfpenalty);
+
 				// Lap Grading
 				yy += 14;
 				Y_DrawThinStringWithBacking(
@@ -591,7 +605,7 @@ static boolean RankScreenVis_ShowGrade(void)
 				    point_x,
 				    yy,
 				    textflags,
-				    va("%d", players[pid].rankscorefactor.lapgradescore));
+				    va("%d", totallapgrade));
 
 				// Par-time Score
 				yy += 11;

@@ -252,6 +252,8 @@ int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, boole
 	X(playerbumpactive) \
 	X(rankingactive) \
 	X(ranking_penaltyactive) \
+	X(ranking_driftbonusactive) \
+	X(ranking_hitbonusactive) \
 	X(cannotrank) \
 	X(hyubgone) \
 	X(encoremode) \
@@ -594,6 +596,12 @@ int LUA_PushGlobals(lua_State *L)
 		case global_ranking_penaltyactive:
 			lua_pushboolean(L, ranking_penaltyactive);
 			return 1;
+		case global_ranking_hitbonusactive:
+			lua_pushboolean(L, ranking_hitbonusactive);
+			return 1;
+		case global_ranking_driftbonusactive:
+			lua_pushboolean(L, ranking_driftbonusactive);
+			return 1;
 		case global_cannotrank:
 			lua_pushboolean(L, cannotrank);
 			return 1;
@@ -826,6 +834,12 @@ int LUA_WriteGlobals(lua_State *L)
 			break;
 		case global_ranking_penaltyactive:
 			ranking_penaltyactive = luaL_checkboolean(L, 2);
+			break;
+		case global_ranking_hitbonusactive:
+			ranking_hitbonusactive = luaL_checkboolean(L, 2);
+			break;
+		case global_ranking_driftbonusactive:
+			ranking_driftbonusactive = luaL_checkboolean(L, 2);
 			break;
 		case global_cannotrank:
 			return NOSET;

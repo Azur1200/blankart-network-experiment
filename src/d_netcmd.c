@@ -185,6 +185,8 @@ static void KartTrailSlow_OnChange(void);
 static void PlayerBump_OnChange(void);
 static void KartRaceRanks_OnChange(void);
 static void KartRankPenalties_OnChange(void);
+static void KartRankDriftBonus_OnChange(void);
+static void KartRankHitBonus_OnChange(void);
 
 static void Schedule_OnChange(void);
 
@@ -765,7 +767,9 @@ static CV_PossibleValue_t kartrankpts_f_cons_t[] = {{0, "MIN"},  {(INT32_MAX / 2
 static CV_PossibleValue_t kartrankpts_cons_t[] = {{0, "MIN"},  {0x3fff, "MAX"}, {0, NULL}};
 
 consvar_t cv_kartraceranks = CVAR_INIT ("raceranks", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRaceRanks_OnChange);
-consvar_t cv_kartrankpenalties = CVAR_INIT ("racerankpenalties", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRankPenalties_OnChange);
+consvar_t cv_kartrankpenalties = CVAR_INIT ("racerankpenalties", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRankPenalties_OnChange);
+consvar_t cv_kartrank_driftbonus = CVAR_INIT ("rank_driftbonus", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRankDriftBonus_OnChange);
+consvar_t cv_kartrank_hitbonus = CVAR_INIT ("rank_hitbonus", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRankHitBonus_OnChange);
 
 // Tracks time in a race and displays a potential par time. Helps if you want to manually make par times!
 consvar_t cv_kartrank_partimehelper = CVAR_INIT ("partimehelper", "Off", 0, CV_OnOff, NULL);
@@ -10536,6 +10540,72 @@ static void KartRankPenalties_OnChange(void)
 		else
 		{
 			CONS_Printf(M_GetText("Penalties will not be applied to ranks next round.\n"));
+		}
+	}
+}
+
+static void KartRankDriftBonus_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_RankDriftBonusActive() && cv_kartrank_driftbonus.value)
+	{
+		if (leveltime < starttime)
+		{
+			ranking_driftbonusactive = true;
+			CONS_Printf(M_GetText("Players will now earn points for drifts.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Players will earn points for drifts next round.\n"));
+		}
+	}
+	else if (K_RankDriftBonusActive() && !cv_kartrank_driftbonus.value)
+	{
+		if (leveltime < starttime)
+		{
+			ranking_driftbonusactive = false;
+			CONS_Printf(M_GetText("Players will no longer earn points for drifts.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Players will no longer earn points for drifts next round.\n"));
+		}
+	}
+}
+
+static void KartRankHitBonus_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_RankHitBonusActive() && cv_kartrank_hitbonus.value)
+	{
+		if (leveltime < starttime)
+		{
+			ranking_hitbonusactive = true;
+			CONS_Printf(M_GetText("Players will now earn points for item hits.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Players will earn points for item hits next round.\n"));
+		}
+	}
+	else if (K_RankHitBonusActive() && !cv_kartrank_hitbonus.value)
+	{
+		if (leveltime < starttime)
+		{
+			ranking_hitbonusactive = false;
+			CONS_Printf(M_GetText("Players will no longer earn points for item hits.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Players will no longer earn points for item hits next round.\n"));
 		}
 	}
 }

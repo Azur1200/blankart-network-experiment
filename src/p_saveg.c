@@ -610,6 +610,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].rankscorefactor.wallpenalty);
 		SYNC(players[i].rankscorefactor.hazardpenalty);
 		SYNC(players[i].rankscorefactor.respawnpenalty);
+		SYNC(players[i].rankscorefactor.dnfpenalty);
 		// Rankscores and Final Rank
 		SYNC(players[i].rankscore);
 		SYNC(players[i].realrankscore);
@@ -4483,6 +4484,8 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(trailslow_active);
 	SYNCBOOLEAN(rankingactive);
 	SYNCBOOLEAN(ranking_penaltyactive);
+	SYNCBOOLEAN(ranking_hitbonusactive);
+	SYNCBOOLEAN(ranking_driftbonusactive);
 	SYNCBOOLEAN(cannotrank);
 	SYNC(airdropactive);
 	SYNC(bumpsparkactive);

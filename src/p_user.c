@@ -3821,7 +3821,8 @@ void P_DoTimeOver(player_t *player)
 			player->pflags &= ~PF_NOCONTEST;
 
 			// Punish the player's rank dearly for their folly
-			player->ranklog.lapgrading -= 100; // Flat lap grading of -100
+			player->rankscorefactor.dnfpenalty = 100;
+
 			K_UpdateIndividualPlayerRank(player); // Update ranks with the new data
 
 			// Log this
