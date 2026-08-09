@@ -586,6 +586,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartrank_wallbonkpenalty);
 	CV_RegisterVar(&cv_kartrank_hazardpenalty);
 	CV_RegisterVar(&cv_kartrank_respawnpenalty);
+	CV_RegisterVar(&cv_kartrank_retirepenalty);
 	CV_RegisterVar(&cv_kartrank_hazardmercy);
 	CV_RegisterVar(&cv_kartrank_respawnmercy);
 	CV_RegisterVar(&cv_kartrank_lapgrademul);

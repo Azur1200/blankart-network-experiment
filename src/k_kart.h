@@ -160,6 +160,7 @@ extern vector3_t clusterpoint, clusterdtf;
 #define RANKPOINTS_WALLPENALTY CV_Get(&cv_kartrank_wallbonkpenalty)
 #define RANKPOINTS_HZRDPENALTY CV_Get(&cv_kartrank_hazardpenalty)
 #define RANKPOINTS_RSPWPENALTY CV_Get(&cv_kartrank_respawnpenalty)
+#define RANKPOINTS_DNFPENALTY CV_Get(&cv_kartrank_retirepenalty)
 
 #define RANKPOINTS_HZRDMERCY CV_Get(&cv_kartrank_hazardmercy)
 #define RANKPOINTS_RSPWMERCY CV_Get(&cv_kartrank_respawnmercy)

@@ -810,6 +810,7 @@ consvar_t cv_kartrank_hazardpenalty = CVAR_INIT ("rank_hazardpenalty", "56", CV_
 
 consvar_t cv_kartrank_respawnmercy = CVAR_INIT ("rank_respawnmercy", "5", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_mercy_cons_t, NULL);
 consvar_t cv_kartrank_respawnpenalty = CVAR_INIT ("rank_respawnpenalty", "100", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+consvar_t cv_kartrank_retirepenalty = CVAR_INIT ("rank_dnfpenalty", "100", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
 
 static CV_PossibleValue_t kartrank_lapgrademul_cons_t[] = {{0, "MIN"}, {100, "MAX"}, {0, NULL}};
 
