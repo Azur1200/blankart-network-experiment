@@ -13245,7 +13245,7 @@ boolean K_RankHitBonusActive(void)
 }
 
 #define WALLBONKPENALTYDIV (3) // Every 3 bumps, since hitting walls is inevitable.
-#define GENERICPARTIME (TICRATE * 145) // 2 minutes 25 seconds; an average Kart race is 2 minutes, so this is an overshoot
+#define GENERICPARTIME (TICRATE * 205) // 3 minutes 25 seconds; an average Kart race is 2 minutes, so this is an overshoot
 #define TIMECHECKOFFSET (5 * TICRATE / 2)
 
 static INT32 K_GetDriftBoostRankScore(player_t * player)
@@ -13365,7 +13365,7 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 		else
 		{
 			// Nope? Use a flat rate.
-			krtTime = FixedMul(GENERICPARTIME, K_GetKartGameSpeedScalar(engineClass));
+			krtTime = FixedDiv(GENERICPARTIME, K_GetKartGameSpeedScalar(engineClass));
 		}
 	}
 
