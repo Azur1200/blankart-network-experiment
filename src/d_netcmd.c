@@ -813,7 +813,7 @@ consvar_t cv_kartrank_respawnpenalty = CVAR_INIT ("rank_respawnpenalty", "100", 
 
 static CV_PossibleValue_t kartrank_lapgrademul_cons_t[] = {{0, "MIN"}, {100, "MAX"}, {0, NULL}};
 
-consvar_t cv_kartrank_lapgrademul = CVAR_INIT ("rank_lapgrademul", "5", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_lapgrademul_cons_t, NULL);
+consvar_t cv_kartrank_lapgrademul = CVAR_INIT ("rank_lapgrademul", "6", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_lapgrademul_cons_t, NULL);
 consvar_t cv_kartrank_lapgrademul_penaltiesoff = CVAR_INIT ("rank_lapgrademul_penaltiesoff", "8", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_lapgrademul_cons_t, NULL);
 
 // Invincibility damage toggles
