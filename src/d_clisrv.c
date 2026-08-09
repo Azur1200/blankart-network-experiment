@@ -6943,7 +6943,7 @@ static void SV_SendTics(void)
 	tic_t realfirsttic, lasttictosend, i;
 	UINT32 n;
 	INT32 j;
-	size_t packsize;
+	size_t packsize, packnum;
 	UINT8 *bufpos;
 	UINT8 *ntextcmd;
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
@@ -6952,10 +6952,14 @@ static void SV_SendTics(void)
 	// for each node create a packet with x tics and send it
 	// x is computed using supposedtics[n], max packet size and maketic
 	for (n = 1; n < MAXNETNODES; n++)
-		if (nodeingame[n])
+	{
+		if (!nodeingame[n])
+			continue;
+
+		for (packnum = 0; packnum < 3; packnum++)
 		{
 			// assert supposedtics[n]>=nettics[n]
-			realfirsttic = max(supposedtics[n], firstticstosend);
+			realfirsttic = supposedtics[n];
 			lasttictosend = min(maketic, nettics[n] + CLIENTBACKUPTICS);
 
 			if (realfirsttic >= lasttictosend)
@@ -6965,9 +6969,9 @@ static void SV_SendTics(void)
 				// packet detection work when we have received packet with firsttic > neededtic
 				// (getpacket servertics case)
 				DEBFILE(va("Nothing to send node %u mak=%u sup=%u net=%u \n",
-					n, lasttictosend, supposedtics[n], nettics[n]));
+						   n, lasttictosend, supposedtics[n], nettics[n]));
 				realfirsttic = nettics[n];
-				if (realfirsttic >= lasttictosend || (I_GetTime() + n)&3)
+				if (realfirsttic >= maketic || packnum > 0 || (I_GetTime() + n)&3)
 					// all tic are ok
 					continue;
 				DEBFILE(va("Sent %d anyway\n", realfirsttic));
@@ -6985,7 +6989,7 @@ static void SV_SendTics(void)
 				if (packsize > software_MAXPACKETLENGTH)
 				{
 					DEBFILE(va("packet too large (%s) at tic %d (should be from %d to %d)\n",
-						sizeu1(packsize), i, realfirsttic, lasttictosend));
+							   sizeu1(packsize), i, realfirsttic, lasttictosend));
 					lasttictosend = i;
 
 					// too bad: too much player have send extradata and there is too
@@ -6996,8 +7000,8 @@ static void SV_SendTics(void)
 					{
 						if (packsize > MAXPACKETLENGTH)
 							I_Error("Too many players: can't send %s data for %d players to node %d\n"
-							        "Well sorry nobody is perfect....\n",
-							        sizeu1(packsize), doomcom->numslots, n);
+							"Well sorry nobody is perfect....\n",
+							sizeu1(packsize), doomcom->numslots, n);
 						else
 						{
 							lasttictosend++; // send it anyway!
@@ -7041,6 +7045,10 @@ static void SV_SendTics(void)
 			}
 			packsize = bufpos - (UINT8 *)&(netbuffer->u);
 
+			// packet size warning here?
+			if (packsize > software_MAXPACKETLENGTH)
+				CONS_Alert(CONS_ERROR, "Servertics packet went beyond allocated packet size (%" PRIuPTR "/%d), and may have corrupted some memory...\n", packsize, software_MAXPACKETLENGTH);
+
 			HSendPacket(n, false, 0, packsize);
 			// when tic are too large, only one tic is sent so don't go backward!
 			if (lasttictosend-doomcom->extratics > realfirsttic)
@@ -7050,6 +7058,7 @@ static void SV_SendTics(void)
 
 			supposedtics[n] = max(supposedtics[n], nettics[n]);
 		}
+	}
 	// node 0 is me!
 	supposedtics[0] = maketic;
 }
