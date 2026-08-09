@@ -520,7 +520,7 @@ ranktier_e K_GetRankTier(INT32 rank_score, SINT8 prankoverride);
 void K_UpdateIndividualPlayerRank(player_t *player);
 void K_UpdateRankScore(void);
 void K_UpdatePositionFactorAndPlayerRanks(void);
-void K_CalculateLapGrading(player_t *player);
+void K_CalculateLapGrading(player_t *player, INT32 addmulpct, INT32 submulpct);
 
 fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmin,fixed_t newmax);
 void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, fixed_t handleboost, boolean stack, boolean visible);

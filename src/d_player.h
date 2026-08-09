@@ -593,6 +593,7 @@ struct ranklog_t
 	//
 
 	INT32 lapgrading; // "Pseudo-EXP"; grading points calculated based on a percentage value (race position) each lap.
+	INT32 gaining; // Gaining/losing value
 
 	//
 	// PENALTIES

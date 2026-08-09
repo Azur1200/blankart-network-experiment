@@ -1344,7 +1344,14 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 		{
 			// Handle the player headcount and grading BEFORE positions are finalized
 			K_GetPlayerNumber();
-			K_CalculateLapGrading(player);
+
+			// Let last-minute comebacks happen by doubling the gains of losing players
+			const INT32 gainmul = (player->ranklog.gaining < 0) ? 250 : 100;
+
+			// And punish fuckups from the top players less
+			const INT32 lossmul = (player->ranklog.gaining > 0) ? 50 : 100;
+
+			K_CalculateLapGrading(player, gainmul, lossmul);
 			K_UpdatePositionFactorAndPlayerRanks();
 			K_AddScoreToTracker((UINT16)(player - players), player->rankscore + LOWESTRANKSCORE_ABS);
 

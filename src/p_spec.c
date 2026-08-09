@@ -2095,7 +2095,7 @@ static void K_HandleLapIncrement(player_t *player)
 					if (!player->exiting)
 					{
 						// Grade this lap
-						K_CalculateLapGrading(player);
+						K_CalculateLapGrading(player, 100);
 
 						// Update ranks with the new data
 						K_UpdateIndividualPlayerRank(player);

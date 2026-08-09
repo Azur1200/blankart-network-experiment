@@ -589,6 +589,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].ranklog.spbattack);
 		SYNC(players[i].ranklog.startboostgrading);
 		SYNC(players[i].ranklog.lapgrading);
+		SYNC(players[i].ranklog.gaining);
 		SYNC(players[i].ranklog.timeoffroadcurrent);
 		SYNC(players[i].ranklog.timeoffroadtotal);
 		SYNC(players[i].ranklog.wallbonks);

@@ -13257,7 +13257,7 @@ static INT32 K_GetDriftBoostRankScore(player_t * player)
 	return bluepoints + redpoints + purplepoints + rainbowpoints;
 }
 
-void K_CalculateLapGrading(player_t *player)
+void K_CalculateLapGrading(player_t *player, INT32 addmulpct, INT32 submulpct)
 {
 	// Calculate rank score.
 	const INT64 posfac_64 = min(POSGRADEFACTOR, (INT64)(positionfactor) * max(0, players_racing - player->position));
@@ -13282,6 +13282,22 @@ void K_CalculateLapGrading(player_t *player)
 
 	// The rank thinker will zero this out; just blind-set it
 	player->ranklog.lapwasgraded = true;
+
+	// Update gaining values
+	player->ranklog.gaining += intsign(lapgrade_addend);
+
+	if (lapgrade_addend > 0)
+	{
+		// If we're adding: multiply the addend by this percentage
+		lapgrade_addend *= addmulpct;
+		lapgrade_addend /= 100;
+	}
+	else if (lapgrade_addend < 0)
+	{
+		// If we're subtracting: multiply the subtrahend by this percentage
+		lapgrade_addend *= submulpct;
+		lapgrade_addend /= 100;
+	}
 
 	player->ranklog.lapgrading += lapgrade_addend;
 }
