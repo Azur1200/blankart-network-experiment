@@ -13365,7 +13365,7 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 		else
 		{
 			// Nope? Use a flat rate.
-			krtTime = FixedDiv(GENERICPARTIME, K_GetKartGameSpeedScalar(engineClass));
+			krtTime = (INT64)((double)(GENERICPARTIME) / FixedToDouble(K_GetKartGameSpeedScalar(engineClass)));
 		}
 	}
 
