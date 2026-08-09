@@ -395,6 +395,7 @@ angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 #define ANGLE_360_DOUBLE (ANGLE_180_DOUBLE * 2)
 
 // For absolute accuracy. Please don't use this outside of renderers.
+// Yes, this is redundant with PointToAngle2Precise, but doubles have better precision :^)
 angle_t R_PointToAngleFloat2(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 {
 	double deltax = FixedToDouble(x2 - x1);

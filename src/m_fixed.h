@@ -76,6 +76,11 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t DoubleToFixed(double f)
 	return (fixed_t)(f * FRACUNIT);
 }
 
+FUNCMATH FUNCINLINE static ATTRINLINE tic_t DoubleToTicrate(double f)
+{
+	return (tic_t)(f * TICRATE);
+}
+
 /** \brief Converts seconds (in tics) to fixed-point number values; 1 second is 1 fracunit.
 
 	\param t	(tic_t) time

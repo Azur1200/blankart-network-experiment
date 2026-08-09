@@ -323,7 +323,7 @@ extern consvar_t cv_gptest;
 
 extern consvar_t cv_itemfinder;
 
-extern consvar_t cv_inttime, cv_rolltime, cv_advancemap;
+extern consvar_t cv_inttime, cv_rolltime, cv_graphtime, cv_rankscoretime, cv_advancemap;
 extern consvar_t cv_overtime;
 extern consvar_t cv_startinglives;
 

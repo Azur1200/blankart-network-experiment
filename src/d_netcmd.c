@@ -997,6 +997,10 @@ static CV_PossibleValue_t inttime_cons_t[] = {{0, "MIN"}, {3600, "MAX"}, {0, NUL
 consvar_t cv_inttime = CVAR_INIT ("inttime", "10", CV_SAVE|CV_NETVAR, inttime_cons_t, NULL);
 consvar_t cv_rolltime = CVAR_INIT ("rolltime", "10", CV_SAVE|CV_NETVAR, inttime_cons_t, NULL);
 
+static CV_PossibleValue_t inttime_f_cons_t[] = {{0, "MIN"}, {(3600 * FRACUNIT), "MAX"}, {0, NULL}};
+consvar_t cv_graphtime = CVAR_INIT ("graphtime", "6.5", CV_SAVE|CV_NETVAR|CV_FLOAT, inttime_f_cons_t, NULL);
+consvar_t cv_rankscoretime = CVAR_INIT ("rankscoretime", "7.0", CV_SAVE|CV_NETVAR|CV_FLOAT, inttime_f_cons_t, NULL);
+
 static CV_PossibleValue_t advancemap_cons_t[] = {{0, "Same"}, {1, "Next"}, {2, "Random"}, {3, "Vote"}, {0, NULL}};
 consvar_t cv_advancemap = CVAR_INIT ("advancemap", "Vote", CV_NETVAR, advancemap_cons_t, NULL);
 
@@ -1292,6 +1296,8 @@ void D_RegisterServerCommands(void)
 
 	CV_RegisterVar(&cv_inttime);
 	CV_RegisterVar(&cv_rolltime);
+	CV_RegisterVar(&cv_graphtime);
+	CV_RegisterVar(&cv_rankscoretime);
 	CV_RegisterVar(&cv_advancemap);
 	CV_RegisterVar(&cv_timelimit);
 	CV_RegisterVar(&cv_playbackspeed);
@@ -1372,6 +1378,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_itemlist);
 	CV_RegisterVar(&cv_kartraceranks);
 	CV_RegisterVar(&cv_kartrankpenalties);
+	CV_RegisterVar(&cv_kartrank_driftbonus);
+	CV_RegisterVar(&cv_kartrank_hitbonus);
 
 #ifdef USE_STUN
 	CV_RegisterVar(&cv_stunserver);

@@ -1605,7 +1605,7 @@ static void RankTick_Graph(void)
 	{
 		const INT32 phase2tic = max(0, ranktic - graphstoptic);
 
-		if (phase2tic >= (7 * TICRATE / 2))
+		if (phase2tic >= (signed)(DoubleToTicrate(FixedToDouble(cv_graphtime.value))))
 		{
 			slidetic = 1;
 		}
@@ -2103,7 +2103,23 @@ void Y_StartIntermission(void)
 	else
 	{
 		// Minimum two seconds for match results, then two second slideover approx halfway through
-		sorttic = max((timer/2) - 2*TICRATE, 2*TICRATE);
+		INT32 sorttimer = (timer/2) - 2*TICRATE;
+
+		if (!cannotrank)
+		{
+			const INT32 _rankscoretime = (signed)(DoubleToTicrate(FixedToDouble(cv_rankscoretime.value)));
+
+			if (_rankscoretime > sorttimer)
+			{
+				// If the custom-set timer goes over the standard timer,
+				// then add that to the intermission timer
+				timer += max(0, _rankscoretime - sorttimer);
+			}
+
+			sorttimer = max(sorttimer, _rankscoretime);
+		}
+
+		sorttic = max(sorttimer, 2*TICRATE);
 	}
 
 	// We couldn't display the intermission even if we wanted to.
