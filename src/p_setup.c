@@ -8802,6 +8802,7 @@ static tic_t P_GenerateAutoParTime(void)
 	if (waypointcap == NULL)
 	{
 		// No length or waypoints, don't do anything
+		I_OutputMsg("map is not waypointed\n");
 		return 0;
 	}
 
