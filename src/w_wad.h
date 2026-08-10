@@ -18,6 +18,8 @@
 #include "hardware/hw_data.h"
 #endif
 
+#include "doomtype.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
