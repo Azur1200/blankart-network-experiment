@@ -288,7 +288,7 @@ void M_TokenizerClose(void);
 const char *M_TokenizerRead(UINT32 i);
 UINT32 M_TokenizerGetEndPos(void);
 void M_TokenizerSetEndPos(UINT32 newPos);
-boolean M_TokenizerJustReadString(void);
+dboolean M_TokenizerJustReadString(void);
 
 char *sizeu1(size_t num);
 char *sizeu2(size_t num);
@@ -310,7 +310,7 @@ extern int SUBVERSION;
 extern UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
 // #endif
 
-extern boolean devparm; // development mode (-debug)
+extern dboolean devparm; // development mode (-debug)
 
 // m_cheat.c
 extern UINT32 cht_debug;
@@ -354,7 +354,7 @@ extern struct debugFlagNames_s const debug_flag_names[];
 
 // Modifier key variables, accessible anywhere
 extern UINT8 shiftdown, ctrldown, altdown;
-extern boolean capslock;
+extern dboolean capslock;
 
 // WARNING: a should be unsigned but to add with 2048, it isn't!
 #define AIMINGTODY(a) FixedDiv((FINETANGENT((2048+(((INT32)a)>>ANGLETOFINESHIFT)) & FINEMASK)*160), fovtan[viewssnum])

@@ -140,7 +140,7 @@ UINT64 maphash = 0;
 // Store VERTEXES, LINEDEFS, SIDEDEFS, etc.
 //
 
-boolean udmf = false;
+dboolean udmf = false;
 INT32 udmf_version = 0, patch_version = 0;
 mapnamespace_t mapnamespace = MNS_UNKNOWN;
 size_t numvertexes = 0, numsegs = 0, numsectors = 0, numsubsectors = 0, numnodes = 0, numlines = 0, numsides = 0, nummapthings = 0;
@@ -154,34 +154,34 @@ node_t *nodes = NULL;
 line_t *lines = NULL;
 side_t *sides = NULL;
 mapthing_t *mapthings = NULL;
-static boolean basemaptyperemoval[65536] = {};
+static dboolean basemaptyperemoval[65536] = {};
 sector_t *spawnsectors = NULL;
 line_t *spawnlines = NULL;
 side_t *spawnsides = NULL;
 INT32 numstarposts = 0;
 INT32 numbosswaypoints = 0;
-boolean ringsactive = false;
-boolean stackingactive = false;
-boolean chainingactive = false;
-boolean slipdashactive = false;
-boolean purpledriftactive = false;
-boolean slopeboostactive = false;
-boolean draftingactive = false;
+dboolean ringsactive = false;
+dboolean stackingactive = false;
+dboolean chainingactive = false;
+dboolean slipdashactive = false;
+dboolean purpledriftactive = false;
+dboolean slopeboostactive = false;
+dboolean draftingactive = false;
 UINT8	airdropactive = 0;
 UINT8 airthrustactive = 0;
-boolean recoverydashactive = false;
-boolean keepstuffactive = false;
-boolean waterskipbricks = false;
-boolean itemlittering = false;
-boolean itempushing = false;
+dboolean recoverydashactive = false;
+dboolean keepstuffactive = false;
+dboolean waterskipbricks = false;
+dboolean itemlittering = false;
+dboolean itempushing = false;
 UINT8   bumpsparkactive = 0;
-boolean itemlistactive = false;
-boolean trailslow_active = false;
+dboolean itemlistactive = false;
+dboolean trailslow_active = false;
 playerbumptype_t playerbumpactive = PBUMP_STANDARD;
 UINT16 bossdisabled = 0;
-boolean stoppedclock = false;
-boolean levelloading = false;
-boolean levelloaded = false;
+dboolean stoppedclock = false;
+dboolean levelloading = false;
+dboolean levelloaded = false;
 UINT8 levelfadecol = 0;
 
 virtres_t *curmapvirt = NULL;
@@ -224,9 +224,9 @@ mapthing_t *redctfstarts[MAXPLAYERS] = {};
 // Global state for PartialAddWadFile/MultiSetupWadFiles
 // Might be replacable with parameters, but non-trivial when the functions are called on separate tics
 static SINT8 partadd_stage = -1;
-static boolean partadd_replacescurrentmap = false;
-static boolean partadd_terrainloaded = false;
-static boolean partadd_important = false;
+static dboolean partadd_replacescurrentmap = false;
+static dboolean partadd_terrainloaded = false;
+static dboolean partadd_important = false;
 UINT16 partadd_earliestfile = UINT16_MAX;
 
 // Maintain *ZOOM TUBE* waypoints
@@ -234,7 +234,7 @@ UINT16 partadd_earliestfile = UINT16_MAX;
 mobj_t *tubewaypoints[NUMTUBEWAYPOINTSEQUENCES][TUBEWAYPOINTSEQUENCESIZE] = {};
 UINT16 numtubewaypoints[NUMTUBEWAYPOINTSEQUENCES] = {};
 // for warnings
-boolean usedspawnfinishline = false;
+dboolean usedspawnfinishline = false;
 
 void P_AddTubeWaypoint(UINT8 sequence, UINT8 id, mobj_t *waypoint)
 {
@@ -265,7 +265,7 @@ mobj_t *P_GetLastTubeWaypoint(UINT8 sequence)
 	return tubewaypoints[sequence][numtubewaypoints[sequence] - 1];
 }
 
-mobj_t *P_GetPreviousTubeWaypoint(mobj_t *current, boolean wrap)
+mobj_t *P_GetPreviousTubeWaypoint(mobj_t *current, dboolean wrap)
 {
 	UINT8 sequence = current->threshold;
 	UINT8 id = current->health;
@@ -283,7 +283,7 @@ mobj_t *P_GetPreviousTubeWaypoint(mobj_t *current, boolean wrap)
 	return tubewaypoints[sequence][id];
 }
 
-mobj_t *P_GetNextTubeWaypoint(mobj_t *current, boolean wrap)
+mobj_t *P_GetNextTubeWaypoint(mobj_t *current, dboolean wrap)
 {
 	UINT8 sequence = current->threshold;
 	UINT8 id = current->health;
@@ -328,7 +328,7 @@ mobj_t *P_GetClosestTubeWaypoint(UINT8 sequence, mobj_t *mo)
 }
 
 // Return true if all waypoints are in the same location
-boolean P_IsDegeneratedTubeWaypointSequence(UINT8 sequence)
+dboolean P_IsDegeneratedTubeWaypointSequence(UINT8 sequence)
 {
 	mobj_t *first, *waypoint;
 	UINT8 wp;
@@ -583,9 +583,9 @@ levelflat refers to an array of level flats,
 or NULL if we want to allocate it now.
 */
 static INT32
-Ploadflat (levelflat_t *levelflat, const char *flatname, boolean resize)
+Ploadflat (levelflat_t *levelflat, const char *flatname, dboolean resize)
 {
-	boolean ranOutOfSpace = (!!(numlevelflats >= nummaxflats));
+	dboolean ranOutOfSpace = (!!(numlevelflats >= nummaxflats));
 	// Scan through the already found flats, return if it matches.
 	for (size_t i = 0; i < numlevelflats; i++)
 	{
@@ -761,7 +761,7 @@ static int cmp_loopends(const void *a, const void *b)
 	return maincomp != 0 ? maincomp : intsign((mt1 - mapthings) - (mt2 - mapthings));
 }
 
-static void P_SpawnMapThings(boolean spawnemblems, boolean patch)
+static void P_SpawnMapThings(dboolean spawnemblems, dboolean patch)
 {
 	size_t i;
 	mapthing_t *mt;
@@ -1224,7 +1224,7 @@ static void P_LoadSidedefs(UINT8 *data)
 	for (i = 0; i < numsides; i++, sd++, msd++)
 	{
 		INT16 textureoffset = SHORT(msd->textureoffset);
-		boolean isfrontside;
+		dboolean isfrontside;
 
 		P_InitializeSidedef(sd);
 
@@ -1471,7 +1471,7 @@ static void TextmapStorePos(textmap_block_t *blocks, size_t *count)
 }
 
 // Determine total amount of map data in TEXTMAP.
-static boolean TextmapCount(size_t size, boolean patch)
+static dboolean TextmapCount(size_t size, dboolean patch)
 {
 	TracyCZone(__zone, true);
 
@@ -1532,7 +1532,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 		}
 
 		tkn = M_TokenizerRead(0);
-		boolean foundhash = false;
+		dboolean foundhash = false;
 		const char *hashstr = tkn;
 		char *end;
 
@@ -1657,7 +1657,7 @@ static void ParseUserProperty(mapUserProperties_t *user, const char *param, cons
 {
 	if (fastncmp(param, "user_", 5) && strlen(param) > 5)
 	{
-		const boolean valIsString = M_TokenizerJustReadString();
+		const dboolean valIsString = M_TokenizerJustReadString();
 		const char *key = param + 5;
 		const size_t valLen = strlen(val);
 		UINT8 numberType = PROP_NUM_TYPE_INT;
@@ -1705,10 +1705,10 @@ static void ParseUserProperty(mapUserProperties_t *user, const char *param, cons
 				// Value is some other kind of type.
 				// Currently we just support bool.
 
-				boolean vBool = fastcmp("true", val);
+				dboolean vBool = fastcmp("true", val);
 				if (vBool == true || fastcmp("false", val))
 				{
-					// Value is a boolean.
+					// Value is a dboolean.
 					K_UserPropertyPush(user, key, USER_PROP_BOOL, &vBool);
 				}
 				else
@@ -1741,7 +1741,7 @@ static void ParseTextmapVertexParameter(UINT32 i, const char *param, const char 
 }
 
 typedef struct textmap_colormap_s {
-	boolean used;
+	dboolean used;
 	INT32 lightcolor;
 	UINT8 lightalpha;
 	INT32 fadecolor;
@@ -2428,7 +2428,7 @@ typedef struct
 	mapthing_t *angleanchor;
 } sectorspecialthings_t;
 
-static boolean P_CanWriteTextmap(void)
+static dboolean P_CanWriteTextmap(void)
 {
 	return roundqueue.writetextmap == true && roundqueue.size > 0;
 }
@@ -2525,7 +2525,7 @@ static void P_WriteTextmap(void)
 	side_t *wsides;
 	mtag_t freetag;
 	sectorspecialthings_t *specialthings;
-	boolean *wusedvertexes;
+	dboolean *wusedvertexes;
 
 	f = P_OpenTextmap("w", "Couldn't save map file");
 	if (!f)
@@ -2539,7 +2539,7 @@ static void P_WriteTextmap(void)
 	wlines = Z_Calloc(numlines * sizeof(*lines), PU_LEVEL, NULL);
 	wsides = Z_Calloc(numsides * sizeof(*sides), PU_LEVEL, NULL);
 	specialthings = Z_Calloc(numsectors * sizeof(*sectors), PU_LEVEL, NULL);
-	wusedvertexes = Z_Calloc(num_orig_vertexes * sizeof(boolean), PU_LEVEL, NULL);
+	wusedvertexes = Z_Calloc(num_orig_vertexes * sizeof(dboolean), PU_LEVEL, NULL);
 
 	memcpy(wmapthings, mapthings, nummapthings * sizeof(*mapthings));
 	memcpy(wvertexes, vertexes, num_orig_vertexes * sizeof(*vertexes));
@@ -3375,7 +3375,7 @@ static void P_WriteTextmapWaypoints(void)
 
 /** Loads the textmap data, after obtaining the elements count and allocating their respective space.
   */
-static void P_LoadTextmap(boolean patch)
+static void P_LoadTextmap(dboolean patch)
 {
 	TracyCZone(__zone, true);
 
@@ -3605,7 +3605,7 @@ P_MirrorTextureOffset
 	return source_width - actual_width - offset;
 }
 
-static boolean P_CheckLineSideTripWire(line_t *ld, int p)
+static dboolean P_CheckLineSideTripWire(line_t *ld, int p)
 {
 	INT32 n;
 
@@ -3614,8 +3614,8 @@ static boolean P_CheckLineSideTripWire(line_t *ld, int p)
 
 	terrain_t *terrain;
 
-	boolean tripwire;
-	boolean terraintripwire;
+	dboolean tripwire;
+	dboolean terraintripwire;
 
 	n = ld->sidenum[p];
 
@@ -3657,7 +3657,7 @@ static void P_ProcessLinedefsAfterSidedefs(void)
 {
 	size_t i = numlines;
 	register line_t *ld = lines;
-	const boolean subtractTripwire = ((mapheaderinfo[gamemap - 1]->levelflags & LF_SUBTRACTNUM) == LF_SUBTRACTNUM);
+	const dboolean subtractTripwire = ((mapheaderinfo[gamemap - 1]->levelflags & LF_SUBTRACTNUM) == LF_SUBTRACTNUM);
 
 	for (; i--; ld++)
 	{
@@ -3739,7 +3739,7 @@ static void P_ProcessLinedefsAfterSidedefs(void)
 	}
 }
 
-static boolean P_LoadMapData(const virtres_t *virt)
+static dboolean P_LoadMapData(const virtres_t *virt)
 {
 	TracyCZone(__zone, true);
 
@@ -3833,7 +3833,7 @@ static boolean P_LoadMapData(const virtres_t *virt)
 	return true;
 }
 
-static boolean P_LoadMapPatchData(const char *patchdata, size_t patchlen)
+static dboolean P_LoadMapPatchData(const char *patchdata, size_t patchlen)
 {
 	TracyCZone(__zone, true);
 
@@ -3973,7 +3973,7 @@ void P_UpdateSegLightOffset(seg_t *li)
 #endif
 }
 
-boolean P_SectorUsesDirectionalLighting(const sector_t *sector)
+dboolean P_SectorUsesDirectionalLighting(const sector_t *sector)
 {
 	if (sector != NULL)
 	{
@@ -4001,7 +4001,7 @@ boolean P_SectorUsesDirectionalLighting(const sector_t *sector)
 	return false;
 }
 
-boolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector)
+dboolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector)
 {
 	mapheader_lighting_t *lighting = &mapheaderinfo[gamemap-1]->lighting;
 
@@ -4023,7 +4023,7 @@ boolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector)
 	return (baselightnum < LIGHTLEVELS-1 && baselightnum > 0);
 }
 
-boolean P_ApplyLightOffsetFine(UINT8 baselightlevel, const sector_t *sector)
+dboolean P_ApplyLightOffsetFine(UINT8 baselightlevel, const sector_t *sector)
 {
 	mapheader_lighting_t *lighting = &mapheaderinfo[gamemap-1]->lighting;
 
@@ -4121,7 +4121,7 @@ typedef enum {
 // Find out the BSP format.
 static nodetype_t P_GetNodetype(const virtres_t *virt, UINT8 **nodedata, char signature[4 + 1])
 {
-	boolean supported[NUMNODETYPES] = {0};
+	dboolean supported[NUMNODETYPES] = {0};
 	nodetype_t nodetype = NT_UNSUPPORTED;
 
 	*nodedata = NULL;
@@ -4218,7 +4218,7 @@ static nodetype_t P_GetNodetype(const virtres_t *virt, UINT8 **nodedata, char si
 }
 
 // Extended node formats feature additional vertices; useful for OpenGL, but totally useless in gamelogic.
-static boolean P_LoadExtraVertices(UINT8 **data)
+static dboolean P_LoadExtraVertices(UINT8 **data)
 {
 	UINT32 origvrtx = READUINT32((*data));
 	UINT32 xtrvrtx = READUINT32((*data));
@@ -4255,7 +4255,7 @@ static boolean P_LoadExtraVertices(UINT8 **data)
 	return true;
 }
 
-static boolean P_LoadExtendedSubsectorsAndSegs(UINT8 **data, nodetype_t nodetype)
+static dboolean P_LoadExtendedSubsectorsAndSegs(UINT8 **data, nodetype_t nodetype)
 {
 	size_t i, k;
 	size_t m;
@@ -4386,7 +4386,7 @@ static void P_LoadExtendedNodes(UINT8 **data, nodetype_t nodetype)
 {
 	node_t *mn;
 	size_t i, j, k;
-	boolean xgl3 = (nodetype == NT_XGL3);
+	dboolean xgl3 = (nodetype == NT_XGL3);
 
 	numnodes = READINT32((*data));
 	nodes = Z_Calloc(numnodes*sizeof(*nodes), PU_LEVEL, NULL);
@@ -4471,7 +4471,7 @@ static void P_LoadMapBSP(const virtres_t *virt)
 //
 // haleyjd 03/04/10: do verification on validity of blockmap.
 //
-static boolean P_VerifyBlockMap(INT32 count)
+static dboolean P_VerifyBlockMap(INT32 count)
 {
 	// FIXME: should any of this shit be unsinged?
 	INT32 x, y;
@@ -4568,7 +4568,7 @@ static void P_ReadBlockMapLump(INT16 *wadblockmaplump, size_t count)
 // because making both the WAD and PK3 loading code use
 // the same functions is trickier than it looks for blockmap
 // -- Monster Iestyn 09/01/18
-static boolean P_LoadBlockMap(UINT8 *data, size_t count)
+static dboolean P_LoadBlockMap(UINT8 *data, size_t count)
 {
 	if (!count || count >= 0x20000)
 		return false;
@@ -4613,7 +4613,7 @@ static boolean P_LoadBlockMap(UINT8 *data, size_t count)
 }
 #endif
 
-static boolean LineInBlock(fixed_t cx1, fixed_t cy1, fixed_t cx2, fixed_t cy2, fixed_t bx1, fixed_t by1)
+static dboolean LineInBlock(fixed_t cx1, fixed_t cy1, fixed_t cx2, fixed_t cy2, fixed_t bx1, fixed_t by1)
 {
 	fixed_t bbox[4];
 	line_t testline;
@@ -4725,7 +4725,7 @@ static void P_CreateBlockMap(void)
 
 		size_t tot = bmapwidth * bmapheight; // size of blockmap
 		bmap_t *bmap = calloc(tot, sizeof (*bmap)); // array of blocklists
-		boolean straight;
+		dboolean straight;
 
 		if (bmap == NULL) I_Error("%s: Out of memory making blockmap", "P_CreateBlockMap");
 
@@ -5073,7 +5073,7 @@ static void P_AddBinaryMapTags(void)
 		}
 
 		for (j = 0; j < numsectors; j++) {
-			boolean matches_target_tag = target_tag && Tag_Find(&sectors[j].tags, target_tag);
+			dboolean matches_target_tag = target_tag && Tag_Find(&sectors[j].tags, target_tag);
 			size_t k;
 			for (k = 0; k < 4; k++) {
 				if (lines[i].flags & ML_WRAPMIDTEX) {
@@ -6963,10 +6963,10 @@ static void P_ConvertBinaryLinedefTypes(void)
 		case 712: //Slope back sector floor and ceiling
 		case 713: //Slope back sector floor and front sector ceiling
 		{
-			boolean frontfloor = (lines[i].special == 700 || lines[i].special == 702 || lines[i].special == 703);
-			boolean backfloor = (lines[i].special == 710 || lines[i].special == 712 || lines[i].special == 713);
-			boolean frontceil = (lines[i].special == 701 || lines[i].special == 702 || lines[i].special == 713);
-			boolean backceil = (lines[i].special == 711 || lines[i].special == 712 || lines[i].special == 703);
+			dboolean frontfloor = (lines[i].special == 700 || lines[i].special == 702 || lines[i].special == 703);
+			dboolean backfloor = (lines[i].special == 710 || lines[i].special == 712 || lines[i].special == 713);
+			dboolean frontceil = (lines[i].special == 701 || lines[i].special == 702 || lines[i].special == 713);
+			dboolean backceil = (lines[i].special == 711 || lines[i].special == 712 || lines[i].special == 703);
 
 			lines[i].args[0] = backfloor ? TMS_BACK : (frontfloor ? TMS_FRONT : TMS_NONE);
 			lines[i].args[1] = backceil ? TMS_BACK : (frontceil ? TMS_FRONT : TMS_NONE);
@@ -8075,7 +8075,7 @@ static void P_MakeMapHash(virtres_t *virt, UINT64 *dest)
 	}
 }
 
-static boolean P_SetMapNamespace(void)
+static dboolean P_SetMapNamespace(void)
 {
 	TracyCZone(__zone, true);
 
@@ -8140,7 +8140,7 @@ const char *P_MapNamespaceString(mapnamespace_t mns)
 	return names[mns];
 }
 
-static void P_RemapDoomedNum(boolean mappatch)
+static void P_RemapDoomedNum(dboolean mappatch)
 {
 	if (mapnamespace != MNS_RINGRACERS && mapnamespace != MNS_BLANKART && !mappatch)
 		return;
@@ -8228,7 +8228,7 @@ static void P_SetCompatArgs(void)
 	}
 }
 
-static boolean P_LoadMapFromFile(void)
+static dboolean P_LoadMapFromFile(void)
 {
 	TracyCZone(__zone, true);
 
@@ -8320,7 +8320,7 @@ static boolean P_LoadMapFromFile(void)
 /** Sets up a sky texture to use for the level.
   * The sky texture is used instead of F_SKY1.
   */
-void P_SetupLevelSky(const char *skytexname, boolean global)
+void P_SetupLevelSky(const char *skytexname, dboolean global)
 {
 	char tex[9];
 	if (!skytexname || !skytexname[0])
@@ -8352,7 +8352,7 @@ lumpnum_t lastloadedmaplumpnum = LUMPERROR; // for comparative savegame
 //
 // Some player initialization for map start.
 //
-static void P_InitLevelSettings(boolean reloadinggamestate)
+static void P_InitLevelSettings(dboolean reloadinggamestate)
 {
 	INT32 i;
 	UINT8 p = 0;
@@ -8534,8 +8534,8 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 			else
 				gamespeed = (UINT8)cv_kartspeed.value;
 		}
-		franticitems = (boolean)cv_kartfrantic.value;
-		comeback = (boolean)cv_kartcomeback.value;
+		franticitems = (dboolean)cv_kartfrantic.value;
+		comeback = (dboolean)cv_kartcomeback.value;
 	}
 
 	memset(battlewanted, -1, sizeof (battlewanted));
@@ -8630,7 +8630,7 @@ static void P_ResetSpawnpoints(void)
 		skyboxviewpnts[i] = skyboxcenterpnts[i] = NULL;
 }
 
-static void P_TryAddGhosts(const char *gpath, boolean all, recordreplay_e which)
+static void P_TryAddGhosts(const char *gpath, dboolean all, recordreplay_e which)
 {
 	for (INT32 i = 0; i < numskins; i++)
 	{
@@ -8976,7 +8976,7 @@ void P_FreeLevelState(void)
   * \param fromnetsave If true, skip some stuff because we're loading a netgame snapshot.
   * \todo Clean up, refactor, split up; get rid of the bloat.
   */
-boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
+dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 {
 	TracyCZone(__zone, true);
 
@@ -9502,7 +9502,7 @@ void P_UnloadLevel(void)
 //
 // Runs a SOC file or a lump, depending on if ".SOC" exists in the filename
 //
-boolean P_RunSOC(const char *socfilename)
+dboolean P_RunSOC(const char *socfilename)
 {
 	lumpnum_t lump;
 
@@ -9589,7 +9589,7 @@ lumpnum_t wadnamelump = LUMPERROR;
 mapnum_t wadnamemap = 0; // gamemap based
 
 // Initialising map data...
-UINT8 P_InitMapData(boolean existingmapheaders)
+UINT8 P_InitMapData(dboolean existingmapheaders)
 {
 	UINT8 ret = 0;
 	INT32 i, j;
@@ -9728,7 +9728,7 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 // Add a wadfile to the active wad files,
 // replace sounds, musics, patches, textures, sprites and maps
 //
-boolean P_AddWadFile(const char *wadfilename, wadcompat_t compat, boolean local)
+dboolean P_AddWadFile(const char *wadfilename, wadcompat_t compat, dboolean local)
 {
 	UINT16 wadnum;
 
@@ -9745,7 +9745,7 @@ static size_t sreplaces = 0, mreplaces = 0, digmreplaces = 0;
 //
 // search for sound replacements
 //
-static boolean P_CheckSoundReplacements(char *name, size_t i)
+static dboolean P_CheckSoundReplacements(char *name, size_t i)
 {
 	if (name[0] == 'D')
 	{
@@ -9789,7 +9789,7 @@ static boolean P_CheckSoundReplacements(char *name, size_t i)
 //
 // check for non Lua votescreen replacements
 //
-static boolean P_CheckVoteReplacements(char *name)
+static dboolean P_CheckVoteReplacements(char *name)
 {
 	// widescreen patch Race
 	if (!VoteScreen.replaced.widerace && !memcmp(name, "INTERSCW", 8))
@@ -9830,12 +9830,12 @@ static boolean P_CheckVoteReplacements(char *name)
 // Add a WAD file and do the per-WAD setup stages.
 // Call P_MultiSetupWadFiles as soon as possible after any number of these.
 //
-UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat, boolean local)
+UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat, dboolean local)
 {
 	size_t i;
 	UINT16 numlumps, wadnum;
 	char *name;
-	static boolean allvotereplaced = false;
+	static dboolean allvotereplaced = false;
 	lumpinfo_t *lumpinfo;
 
 	sreplaces = mreplaces = digmreplaces = 0;
@@ -10000,7 +10000,7 @@ SINT8 P_PartialAddGetStage(void)
 // Setup functions that iterate over every loaded WAD go here.
 // If fullsetup false, only do one stage per call.
 //
-boolean P_MultiSetupWadFiles(boolean fullsetup)
+dboolean P_MultiSetupWadFiles(dboolean fullsetup)
 {
 	if (partadd_stage < 0)
 		I_Error(M_GetText("P_MultiSetupWadFiles: Post-load addon setup attempted without loading any addons first"));

@@ -40,7 +40,7 @@ angle_t K_GetCollideAngle(mobj_t *t1, mobj_t *t2)
 }
 
 // This/Other Item Damage
-void K_ItemDamage(mobj_t *t1, mobj_t *t2, boolean clash)
+void K_ItemDamage(mobj_t *t1, mobj_t *t2, dboolean clash)
 {
 	if (t1->eflags & MFE_VERTICALFLIP)
 		t1->z -= t1->height;
@@ -98,10 +98,10 @@ UINT8 K_GetOrbiJawzDamage(void)
 
 #undef NOMOREWIPEOUTS
 
-boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
+dboolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 {
-	boolean damageitem = false;
-	boolean sprung = false;
+	dboolean damageitem = false;
+	dboolean sprung = false;
 
 	UINT8 orbidamage = K_GetOrbiJawzDamage();
 
@@ -198,9 +198,9 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 	return true;
 }
 
-boolean K_BananaBallhogCollide(mobj_t *t1, mobj_t *t2)
+dboolean K_BananaBallhogCollide(mobj_t *t1, mobj_t *t2)
 {
-	boolean damageitem = false;
+	dboolean damageitem = false;
 
 	if (itempushing && t2->type == MT_RANDOMITEM && t1->type == MT_BANANA)
 	{
@@ -277,7 +277,7 @@ boolean K_BananaBallhogCollide(mobj_t *t1, mobj_t *t2)
 	return true;
 }
 
-boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
+dboolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 {
 	// Push fakes out of other item boxes
 	if (t2->type == MT_RANDOMITEM || t2->type == MT_EGGMANITEM)
@@ -384,10 +384,10 @@ void K_EggMineBounce(mobj_t *t1, mobj_t *t2)
 	}
 }
 
-boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
+dboolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 {
-	boolean damageitem = false;
-	boolean sprung = false;
+	dboolean damageitem = false;
+	dboolean sprung = false;
 
 	if (t1->health <= 0 || t2->health <= 0)
 		return true;
@@ -474,7 +474,7 @@ boolean K_EggMineCollide(mobj_t *t1, mobj_t *t2)
 	return true;
 }
 
-boolean K_EggMineShieldCollide(mobj_t *t1, mobj_t *t2)
+dboolean K_EggMineShieldCollide(mobj_t *t1, mobj_t *t2)
 {
 	if (t1->health <= 0 || t2->health <= 0)
 		return true;
@@ -496,7 +496,7 @@ boolean K_EggMineShieldCollide(mobj_t *t1, mobj_t *t2)
 	return true;
 }
 
-boolean K_MineCollide(mobj_t *t1, mobj_t *t2)
+dboolean K_MineCollide(mobj_t *t1, mobj_t *t2)
 {
 	if (((t1->target == t2) || (!(t2->flags & (MF_ENEMY|MF_BOSS)) && (t1->target == t2->target))) && (t1->threshold > 0 || (t2->type != MT_PLAYER && t2->threshold > 0)))
 		return true;
@@ -546,7 +546,7 @@ boolean K_MineCollide(mobj_t *t1, mobj_t *t2)
 	return true;
 }
 
-boolean K_MineExplosionCollide(mobj_t *t1, mobj_t *t2)
+dboolean K_MineExplosionCollide(mobj_t *t1, mobj_t *t2)
 {
 	if (t2->player)
 	{
@@ -572,7 +572,7 @@ boolean K_MineExplosionCollide(mobj_t *t1, mobj_t *t2)
 	return true;
 }
 
-boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
+dboolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 {
 	if (((t1->target == t2) || (!(t2->flags & (MF_ENEMY|MF_BOSS)) && (t1->target == t2->target))) && (t1->threshold > 0 || (t2->type != MT_PLAYER && t2->threshold > 0)))
 		return true;
@@ -642,7 +642,7 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 
 static mobj_t *lightningSource;
 static fixed_t lightningDist;
-static boolean attractionhipower;
+static dboolean attractionhipower;
 static fixed_t attractionPowerRate;
 
 static inline BlockItReturn_t PIT_ThunderShieldAttack(mobj_t *thing)
@@ -816,7 +816,7 @@ static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
 	return BMIT_CONTINUE;
 }
 
-void K_AttractionShieldAttack(mobj_t *actor, fixed_t size, fixed_t powerrate, boolean hipower)
+void K_AttractionShieldAttack(mobj_t *actor, fixed_t size, fixed_t powerrate, dboolean hipower)
 {
 	INT32 bx, by, xl, xh, yl, yh;
 
@@ -869,7 +869,7 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, INT16 d
 		player->bubbleblowup /= 2;
 }
 
-boolean K_BubbleShieldReflectSpecialCase(const mobj_t *t)
+dboolean K_BubbleShieldReflectSpecialCase(const mobj_t *t)
 {
 	if ((!t) || (P_MobjWasRemoved(t)))
 		return false; // Object doesn't even exist
@@ -877,7 +877,7 @@ boolean K_BubbleShieldReflectSpecialCase(const mobj_t *t)
 	return t->type == MT_FALLINGROCK; // TODO: Maybe an object flag (MF_BUBBLEREFLECT)?
 }
 
-static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
+static dboolean K_BubbleReflectingTrapItem(const mobj_t *t)
 {
 	// slow orbis are traps
 	if ((t->type == MT_ORBINAUT) && (FixedHypot(t->momx, t->momy) < 24*mapobjectscale))
@@ -888,13 +888,13 @@ static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 		   t->type == MT_EGGMINE || K_BubbleShieldReflectSpecialCase(t);
 }
 
-static boolean K_StrongPlayerBump(const player_t *player)
+static dboolean K_StrongPlayerBump(const player_t *player)
 {
 	return ((player->invincibilitytimer)
 	    || (player->growshrinktimer > 0));
 }
 
-boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
+dboolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 {
 	if (t2->threshold && !t2->player)
 		return false;
@@ -950,7 +950,7 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 	return true;
 }
 
-boolean K_BubbleShieldCanReflect(mobj_t *t)
+dboolean K_BubbleShieldCanReflect(mobj_t *t)
 {
 	return (t->type == MT_ORBINAUT || t->type == MT_JAWZ || t->type == MT_JAWZ_DUD
 		|| t->type == MT_BANANA || t->type == MT_EGGMANITEM || t->type == MT_BALLHOG
@@ -1009,7 +1009,7 @@ static INT16 K_GetBubbleDamage(mobj_t* itm)
 	return dmg;
 }
 
-boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
+dboolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 {
 	// don't bump yourself
 	if (t1->target == t2)
@@ -1017,7 +1017,7 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 
 	if (K_BubbleShieldCanReflect(t2))
 	{
-		boolean reflected = K_BubbleShieldReflect(t1, t2);
+		dboolean reflected = K_BubbleShieldReflect(t1, t2);
 
 		if (reflected)
 		{
@@ -1035,7 +1035,7 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 
 	if (t2->flags & MF_SHOOTABLE)
 	{
-		boolean shootable = P_DamageMobj(t2, t1, t1->target, 1, DMG_NORMAL);
+		dboolean shootable = P_DamageMobj(t2, t1, t1->target, 1, DMG_NORMAL);
 
 		if (shootable)
 		{
@@ -1057,7 +1057,7 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 	return true;
 }
 
-boolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
+dboolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
 {
 	if (((t1->target == t2) || (!(t2->flags & (MF_ENEMY|MF_BOSS)) && (t1->target == t2->target))) && (t1->threshold > 0 || (t2->type != MT_PLAYER && t2->threshold > 0)))
 		return true;
@@ -1092,7 +1092,7 @@ boolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
 	return true;
 }
 
-boolean K_FallingRockCollide(mobj_t *t1, mobj_t *t2)
+dboolean K_FallingRockCollide(mobj_t *t1, mobj_t *t2)
 {
 	if ((t2->player && (G_CompatLevel(0x0008) || !t2->player->hyudorotimer)) || t2->type == MT_FALLINGROCK)
 	{
@@ -1112,7 +1112,7 @@ boolean K_FallingRockCollide(mobj_t *t1, mobj_t *t2)
 	return true;
 }
 
-boolean K_SMKIceBlockCollide(mobj_t *t1, mobj_t *t2)
+dboolean K_SMKIceBlockCollide(mobj_t *t1, mobj_t *t2)
 {
 	if (!(t2->flags & MF_SOLID || t2->flags & MF_SHOOTABLE || t2->flags & MF_BOUNCE))
 		return true;
@@ -1140,19 +1140,19 @@ boolean K_SMKIceBlockCollide(mobj_t *t1, mobj_t *t2)
 	return false;
 }
 
-boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
+dboolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 {
 	// What the fuck is calling this with stale refs? Whatever, validation's cheap.
 	if (P_MobjWasRemoved(t1) || P_MobjWasRemoved(t2) || !t1->player || !t2->player)
 		return false;
 
-	const boolean flameT1 = ((t1->player->flamestore >= FLAMESTOREMAX-1) && (t1->player->flametimer > 0));
-	const boolean flameT2 = ((t2->player->flamestore >= FLAMESTOREMAX-1) && (t2->player->flametimer > 0));
-	const boolean hyudoroT1 = (t1->player->hyudorotimer > 0);
-	const boolean hyudoroT2 = (t2->player->hyudorotimer > 0);
+	const dboolean flameT1 = ((t1->player->flamestore >= FLAMESTOREMAX-1) && (t1->player->flametimer > 0));
+	const dboolean flameT2 = ((t2->player->flamestore >= FLAMESTOREMAX-1) && (t2->player->flametimer > 0));
+	const dboolean hyudoroT1 = (t1->player->hyudorotimer > 0);
+	const dboolean hyudoroT2 = (t2->player->hyudorotimer > 0);
 
-	boolean t1Condition = false;
-	boolean t2Condition = false;
+	dboolean t1Condition = false;
+	dboolean t2Condition = false;
 
 	UINT8 invindamage = INVINDAMAGE;
 

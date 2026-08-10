@@ -62,7 +62,7 @@
 #endif
 
 tic_t leveltime;
-boolean thinkersCompleted;
+dboolean thinkersCompleted;
 
 UINT32 thinker_era = 0;
 
@@ -805,7 +805,7 @@ void P_RunChaseCameras(void)
 //
 // P_Ticker
 //
-void P_Ticker(boolean run)
+void P_Ticker(dboolean run)
 {
 	TracyCZone(__zone, true);
 
@@ -1176,7 +1176,7 @@ void P_Ticker(boolean run)
 				if (!player->mo)
 					continue;
 
-				const boolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
+				const dboolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
 
 				if (skyVisiblePerPlayer[i] && skybox)
 				{

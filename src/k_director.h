@@ -27,13 +27,13 @@ extern "C" {
 #define DIRECTORWALKBACKDIST 400			// how close should a trailing player be before we switch?
 #define DIRECTORPINCHDIST 20000				// how close should the leader be to be considered "end of race"?
 
-boolean K_DirectorIsAvailable(void);
+dboolean K_DirectorIsAvailable(void);
 void K_InitDirector(void);
 void K_UpdateDirector(void);
 void K_DrawDirectorDebugger(void);
 void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source);
 void K_ToggleDirector(void);
-void K_DirectorSwitch(INT32 player, boolean force);
+void K_DirectorSwitch(INT32 player, dboolean force);
 void K_DirectorForceSwitch(INT32 player, INT32 time);
 
 

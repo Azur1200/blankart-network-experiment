@@ -32,7 +32,7 @@
 extern CV_PossibleValue_t Color_cons_t[];
 extern UINT8 skincolor_modified[];
 
-boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor);
+dboolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor);
 state_t *astate = NULL;
 
 enum sfxinfo_read {
@@ -71,7 +71,7 @@ const char *const sfxinfo_wopt[] = {
 	"caption",
 	NULL};
 
-boolean actionsoverridden[NUMACTIONS] = {false};
+dboolean actionsoverridden[NUMACTIONS] = {false};
 
 //
 // Sprite Names
@@ -351,7 +351,7 @@ static int PopPivotSubTable(spriteframepivot_t *pivot, lua_State *L, int stk, in
 						value = lua_tonumber(L, stk+2);
 						break;
 					case LUA_TBOOLEAN:
-						value = (UINT8)lua_toboolean(L, stk+2);
+						value = (UINT8)lua_todboolean(L, stk+2);
 						break;
 					default:
 						TYPEERROR("pivot value", LUA_TNUMBER, lua_type(L, stk+2))
@@ -674,7 +674,7 @@ static int brightlist_set(lua_State *L)
 // Then looks up which Lua action is assigned to that state and calls it
 static void A_Lua(mobj_t *actor)
 {
-	boolean found = false;
+	dboolean found = false;
 	I_Assert(actor != NULL);
 
 	lua_settop(gL, 0); // Just in case...
@@ -828,7 +828,7 @@ static int lib_statelen(lua_State *L)
 	return 1;
 }
 
-boolean LUA_SetLuaAction(void *stv, const char *action)
+dboolean LUA_SetLuaAction(void *stv, const char *action)
 {
 	state_t *st = (state_t *)stv;
 
@@ -863,7 +863,7 @@ boolean LUA_SetLuaAction(void *stv, const char *action)
 	return true; // action successfully set.
 }
 
-boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor)
+dboolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor)
 {
 	I_Assert(actor != NULL);
 
@@ -1420,7 +1420,7 @@ static int lib_setSfxInfo(lua_State *L)
 		switch(i)
 		{
 		case sfxinfow_singular:
-			info->singularity = luaL_checkboolean(L, 3);
+			info->singularity = luaL_checkdboolean(L, 3);
 			break;
 		case sfxinfow_priority:
 			info->priority = (INT32)luaL_checkinteger(L, 3);
@@ -1465,7 +1465,7 @@ static int sfxinfo_get(lua_State *L)
 		lua_pushstring(L, sfx->name);
 		return 1;
 	case sfxinfor_singular:
-		lua_pushboolean(L, sfx->singularity);
+		lua_pushdboolean(L, sfx->singularity);
 		return 1;
 	case sfxinfor_priority:
 		lua_pushinteger(L, sfx->priority);
@@ -1518,7 +1518,7 @@ static int sfxinfo_set(lua_State *L)
 	switch (field)
 	{
 	case sfxinfow_singular:
-		sfx->singularity = luaL_checkboolean(L, 1);
+		sfx->singularity = luaL_checkdboolean(L, 1);
 		break;
 	case sfxinfow_priority:
 		sfx->priority = luaL_checkinteger(L, 1);
@@ -1711,7 +1711,7 @@ static int lib_setSkinColor(lua_State *L)
 		else if (i == 5 || (str && fastcmp(str,"chatcolor")))
 			info->chatcolor = (UINT16)luaL_checkinteger(L, 3);
 		else if (i == 6 || (str && fastcmp(str,"accessible"))) {
-			boolean v = lua_toboolean(L, 3);
+			dboolean v = lua_todboolean(L, 3);
 			if (cnum < FIRSTSUPERCOLOR && v != skincolors[cnum].accessible)
 				return luaL_error(L, "skincolors[] index %d is a standard color; accessibility changes are prohibited.", cnum);
 			else
@@ -1749,7 +1749,7 @@ static int skincolor_get(lua_State *L)
 	else if (fastcmp(field,"chatcolor"))
 		lua_pushinteger(L, info->chatcolor);
 	else if (fastcmp(field,"accessible"))
-		lua_pushboolean(L, info->accessible);
+		lua_pushdboolean(L, info->accessible);
 	else {
 		CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "skincolor_t", field);
 		return 0;
@@ -1806,7 +1806,7 @@ static int skincolor_set(lua_State *L)
 	else if (fastcmp(field,"chatcolor"))
 		info->chatcolor = (UINT16)luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"accessible")) {
-		boolean v = lua_toboolean(L, 3);
+		dboolean v = lua_todboolean(L, 3);
 		if (cnum < FIRSTSUPERCOLOR && v != skincolors[cnum].accessible)
 			return luaL_error(L, "skincolors[] index %d is a standard color; accessibility changes are prohibited.", cnum);
 		else

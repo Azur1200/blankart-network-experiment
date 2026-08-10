@@ -173,10 +173,10 @@ consvar_t cv_apng_delay = CVAR_INIT ("apng_speed", "1x", CV_SAVE, apng_delay_t, 
 consvar_t cv_apng_downscale = CVAR_INIT ("apng_downscale", "On", CV_SAVE, CV_OnOff, NULL);
 
 #ifdef USE_APNG
-static boolean apng_downscale = false; // So nobody can do something dumb like changing cvars mid output
+static dboolean apng_downscale = false; // So nobody can do something dumb like changing cvars mid output
 #endif
 
-boolean takescreenshot = false; // Take a screenshot this tic
+dboolean takescreenshot = false; // Take a screenshot this tic
 
 moviemode_t moviemode = MM_OFF;
 
@@ -222,7 +222,7 @@ int access(const char *path, int amode)
   * \param length How many bytes to write.
   * \return True on success, false on failure.
   */
-boolean FIL_WriteFile(char const *name, const void *source, size_t length)
+dboolean FIL_WriteFile(char const *name, const void *source, size_t length)
 {
 	FILE *handle = NULL;
 	size_t count;
@@ -288,13 +288,13 @@ size_t FIL_ReadFileTag(char const *name, UINT8 **buffer, INT32 tag)
   * \param textfilename The name of the source file
   * \param binfilename The name of the destination file
   */
-boolean FIL_ConvertTextFileToBinary(const char *textfilename, const char *binfilename)
+dboolean FIL_ConvertTextFileToBinary(const char *textfilename, const char *binfilename)
 {
 	FILE *textfile;
 	FILE *binfile;
 	UINT8 buffer[1024];
 	size_t count;
-	boolean success;
+	dboolean success;
 
 	textfile = fopen(textfilename, "r");
 	if (!textfile)
@@ -326,7 +326,7 @@ boolean FIL_ConvertTextFileToBinary(const char *textfilename, const char *binfil
   * \param name   Filename to check.
   * \return true if file exists, false if it doesn't.
   */
-boolean FIL_FileExists(char const *name)
+dboolean FIL_FileExists(char const *name)
 {
 	return access(name,0)+1; //F_OK
 }
@@ -337,7 +337,7 @@ boolean FIL_FileExists(char const *name)
   * \param name   Filename to check.
   * \return true if file write-able, false if it doesn't.
   */
-boolean FIL_WriteFileOK(char const *name)
+dboolean FIL_WriteFileOK(char const *name)
 {
 	return access(name,2)+1; //W_OK
 }
@@ -348,7 +348,7 @@ boolean FIL_WriteFileOK(char const *name)
   * \param name   Filename to check.
   * \return true if file read-able, false if it doesn't.
   */
-boolean FIL_ReadFileOK(char const *name)
+dboolean FIL_ReadFileOK(char const *name)
 {
 	return access(name,4)+1; //R_OK
 }
@@ -358,7 +358,7 @@ boolean FIL_ReadFileOK(char const *name)
   * \param name   Filename to check.
   * \return true if file (read/write)-able, false if it doesn't.
   */
-boolean FIL_FileOK(char const *name)
+dboolean FIL_FileOK(char const *name)
 {
 	return access(name,6)+1; //R_OK|W_OK
 }
@@ -369,7 +369,7 @@ boolean FIL_FileOK(char const *name)
  * \param dst   File to write into
  * \return true if copy was succesful, false if it doesn't.
  */
-boolean FIL_CopyFile(const char *src, const char *dst)
+dboolean FIL_CopyFile(const char *src, const char *dst)
 {
 	FILE *srcFile = fopen(src, "rb");
 
@@ -445,7 +445,7 @@ void FIL_ForceExtension(char *path, const char *extension)
   * \param in String to check.
   * \return True if an extension is found, otherwise false.
   */
-boolean FIL_CheckExtension(const char *in)
+dboolean FIL_CheckExtension(const char *in)
 {
 	while (*in++)
 		if (*in == '.')
@@ -467,7 +467,7 @@ char configfile[MAX_WADPATH];
 // ==========================================================================
 //                          CONFIGURATION
 // ==========================================================================
-boolean gameconfig_loaded = false; // true once config.cfg loaded AND executed
+dboolean gameconfig_loaded = false; // true once config.cfg loaded AND executed
 
 /** Saves a player's config, possibly to a particular file.
   *
@@ -919,7 +919,7 @@ static png_uint_32 apng_frames = 0;
 #define aPNG_write_frame_head png_write_frame_head
 #define aPNG_write_frame_tail png_write_frame_tail
 
-static inline boolean M_PNGLib(void)
+static inline dboolean M_PNGLib(void)
 {
 	return true;
 }
@@ -980,7 +980,7 @@ static void M_PNGfix_acTL(png_structp png_ptr, png_infop png_info_ptr,
 #endif
 }
 
-static boolean M_SetupaPNG(png_const_charp filename, png_bytep pal)
+static dboolean M_SetupaPNG(png_const_charp filename, png_bytep pal)
 {
 	png_uint_16 downscale;
 
@@ -1064,7 +1064,7 @@ static inline moviemode_t M_StartMovieAPNG(const char *pathname)
 #ifdef USE_APNG
 	UINT8 *palette = NULL;
 	const char *freename = NULL;
-	boolean ret = false;
+	dboolean ret = false;
 
 	if (!M_PNGLib())
 	{
@@ -1292,7 +1292,7 @@ void M_StopMovie(void)
   * \param palette  Palette of image data.
   *  \note if palette is NULL, BGR888 format
   */
-boolean M_SavePNG(const char *filename, void *data, int width, int height, const UINT8 *palette)
+dboolean M_SavePNG(const char *filename, void *data, int width, int height, const UINT8 *palette)
 {
 	png_structp png_ptr;
 	png_infop png_info_ptr;
@@ -1404,7 +1404,7 @@ typedef struct
   * \param palette  Palette of image data
   */
 #if NUMSCREENS > 2
-static boolean WritePCXfile(const char *filename, const UINT8 *data, int width, int height, const UINT8 *pal)
+static dboolean WritePCXfile(const char *filename, const UINT8 *data, int width, int height, const UINT8 *pal)
 {
 	int i;
 	size_t length;
@@ -1482,7 +1482,7 @@ void M_DoScreenShot(void)
 #if NUMSCREENS > 2
 	const char *freename = NULL;
 	char pathname[MAX_WADPATH];
-	boolean ret = false;
+	dboolean ret = false;
 	UINT8 *linear = NULL;
 	UINT8 *palette;
 
@@ -1565,7 +1565,7 @@ failure:
 #endif
 }
 
-boolean M_ScreenshotResponder(event_t *ev)
+dboolean M_ScreenshotResponder(event_t *ev)
 {
 	INT32 ch = -1;
 	if (dedicated || ev->type != ev_keydown)
@@ -1589,7 +1589,7 @@ void M_MinimapGenerate(void)
 {
 #ifdef USE_PNG
 	char *filepath;
-	boolean ret = false;
+	dboolean ret = false;
 	minigen_t *minigen = NULL;
 	size_t option_scale;
 	INT32 mul = 1;
@@ -2003,7 +2003,7 @@ static UINT32 tokenizerStartPos = 0;
 static UINT32 tokenizerEndPos = 0;
 static UINT32 tokenizerInputLength = 0;
 static UINT8 tokenizerInComment = 0; // 0 = not in comment, 1 = // Single-line, 2 = /* Multi-line */
-static boolean tokenizerIsString = false; // did we strip quotes from this token?
+static dboolean tokenizerIsString = false; // did we strip quotes from this token?
 
 void M_TokenizerOpen(const char *inputString, size_t inputLength)
 {
@@ -2170,7 +2170,7 @@ void M_TokenizerSetEndPos(UINT32 newPos)
 	tokenizerEndPos = newPos;
 }
 
-boolean M_TokenizerJustReadString(void)
+dboolean M_TokenizerJustReadString(void)
 {
 	return tokenizerIsString;
 }
@@ -2335,7 +2335,7 @@ int M_PathParts(const char *p)
 
 /** Check whether a path is an absolute path.
 */
-boolean M_IsPathAbsolute(const char *path)
+dboolean M_IsPathAbsolute(const char *path)
 {
 #ifdef _WIN32
 	return ( strncmp(&path[1], ":\\", 2) == 0 );
@@ -2485,7 +2485,7 @@ UINT32 FNV1a_HashLowercaseString(const char *message)
 }
 
 // Returns true if the string is empty.
-boolean M_IsStringEmpty(const char *s)
+dboolean M_IsStringEmpty(const char *s)
 {
 	const char *ch = s;
 
@@ -2519,7 +2519,7 @@ int M_RoundUp(double number)
 
 static char rrid_buf[256];
 
-char *GetPrettyRRID(const unsigned char *bin, boolean brief)
+char *GetPrettyRRID(const unsigned char *bin, dboolean brief)
 {
 	size_t i;
 	size_t len = PUBKEYLENGTH;

@@ -23,7 +23,7 @@
 extern "C" {
 #endif
 
-boolean GL_Init(void);
+dboolean GL_Init(void);
 void GL_SetPalette(RGBA_t *palette);
 void GL_FinishUpdate(INT32 waitvbl);
 void GL_Draw2DLine(F2DCoord *v1, F2DCoord *v2, RGBA_t Color);
@@ -58,9 +58,9 @@ void GL_DrawScreenFinalTexture(int tex, int width, int height);
 #define SCREENVERTS 10
 void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2]);
 
-boolean GL_InitShaders(void);
+dboolean GL_InitShaders(void);
 void GL_LoadShader(int slot, char *code, hwdshaderstage_t stage);
-boolean GL_CompileShader(int slot);
+dboolean GL_CompileShader(int slot);
 void GL_SetShader(int slot);
 void GL_UnSetShader(void);
 

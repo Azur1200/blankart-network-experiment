@@ -107,12 +107,12 @@ toast 18/04/17
 */
 
 float Cubepal[2][2][2][3];
-boolean Cubeapply = false;
+dboolean Cubeapply = false;
 
 // returns whether to apply cube, selectively avoiding expensive operations
-static boolean InitCube(void)
+static dboolean InitCube(void)
 {
-	boolean apply = false;
+	dboolean apply = false;
 	UINT8 q;
 	float working[2][2][2][3] = // the initial positions of the corners of the colour cube!
 	{
@@ -139,7 +139,7 @@ static boolean InitCube(void)
 	};
 	float desatur[3]; // grey
 	float globalgammamul, globalgammaoffs;
-	boolean doinggamma;
+	dboolean doinggamma;
 
 	if (loaded_config == false)
 		return false;
@@ -685,7 +685,7 @@ void V_AdjustXYWithSnap(INT32 *x, INT32 *y, UINT32 options, INT32 dup)
 		{
 			if ((options & (V_SNAPTORIGHT|V_SNAPTOLEFT|V_SPLITSCREEN)) != 0)
 			{
-				boolean slidefromright = false;
+				dboolean slidefromright = false;
 
 				const fixed_t offsetAmount = (screenwidth * FRACUNIT/2);
 				INT32 offset = (offsetAmount - FixedMul(offsetAmount, st_fadein)) / FRACUNIT;
@@ -882,7 +882,7 @@ affine_bounding_t* V_GetAffineBounds(const affine_t* transform,
 				     patch_t* patch,
 					 fixed_t divisor,
 				     affine_bounding_t* out,
-					 boolean unrestrict_bound)
+					 dboolean unrestrict_bound)
 {
 	// A decent chunk of this code is just fixedpointizing stuff
 	// from HWR_GetAffinePatch; That system's near flawless, why fix what isn't broken?
@@ -1933,7 +1933,7 @@ void V_DrawFixedLine(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, fixed_t wid
 		hwr_width = width >> FRACBITS;
 	}
 
-	boolean wideline = (width > FRACUNIT);
+	dboolean wideline = (width > FRACUNIT);
 
 	INT32 left, right, top, bottom;
 	V_GetClipBounds(&left, &right, &top, &bottom);
@@ -2510,7 +2510,7 @@ void V_DrawHorizontallyScaledFullScreenPatch(patch_t *patch)
 	V_DrawFixedPatch(0, y, scale, V_NOSCALEPATCH, patch, NULL);
 }
 
-void V_DrawVhsEffect(boolean rewind)
+void V_DrawVhsEffect(dboolean rewind)
 {
 	fixed_t uby, dby;
 	// upbary is the bar going from top to bottom for some reason
@@ -2864,14 +2864,14 @@ INT32 V_DanceYOffset(INT32 counter)
 	return abs(step - (duration / 2)) - (duration / 4);
 }
 
-static boolean V_CharacterValid(font_t *font, int c)
+static dboolean V_CharacterValid(font_t *font, int c)
 {
 	return (c >= 0 && c < font->size && font->font[c] != NULL);
 }
 
 // Writes a single character (draw WHITE if bit 7 set)
 //
-void V_DrawFixedCharacter(fixed_t x, fixed_t y, INT32 c, boolean lowercaseallowed)
+void V_DrawFixedCharacter(fixed_t x, fixed_t y, INT32 c, dboolean lowercaseallowed)
 {
 	INT32 flags;
 	const UINT8 *colormap = V_GetStringColormap(c);
@@ -2891,7 +2891,7 @@ void V_DrawFixedCharacter(fixed_t x, fixed_t y, INT32 c, boolean lowercaseallowe
 // Writes a single character for the chat (half scaled). (draw WHITE if bit 7 set)
 // 16/02/19: Scratch the scaling thing, chat doesn't work anymore under 2x res -Lat'
 //
-void V_DrawChatCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed, UINT8 *colormap)
+void V_DrawChatCharacter(INT32 x, INT32 y, INT32 c, dboolean lowercaseallowed, UINT8 *colormap)
 {
 	INT32 w, flags;
 	//const UINT8 *colormap = V_GetStringColormap(c);
@@ -2954,7 +2954,7 @@ INT32 V_TitleCardStringWidth(const char *str)
 // V_DrawTitleCardScreen.
 // see v_video.h's prototype for more information.
 //
-void V_DrawTitleCardString(INT32 x, INT32 y, const char *str, INT32 flags, boolean bossmode, INT32 timer, INT32 threshold)
+void V_DrawTitleCardString(INT32 x, INT32 y, const char *str, INT32 flags, dboolean bossmode, INT32 timer, INT32 threshold)
 {
 
 	INT32 xoffs = 0;
@@ -3335,12 +3335,12 @@ void V_DrawStringScaledEx(
 
 	font_t   *font;
 
-	boolean uppercase;
-	boolean notcolored;
-	boolean vflip;
+	dboolean uppercase;
+	dboolean notcolored;
+	dboolean vflip;
 
-	boolean   dance;
-	boolean nodanceoverride;
+	dboolean   dance;
+	dboolean nodanceoverride;
 	INT32     dancecounter;
 
 	fixed_t cx, cy;
@@ -3513,7 +3513,7 @@ fixed_t V_StringScaledWidth(
 
 	font_t   *font;
 
-	boolean uppercase;
+	dboolean uppercase;
 
 	fixed_t cx;
 	fixed_t right;
@@ -3632,7 +3632,7 @@ char * V_ScaledWordWrap(
 
 	font_t   *font;
 
-	boolean uppercase;
+	dboolean uppercase;
 
 	fixed_t cx;
 	fixed_t right;
@@ -3952,7 +3952,7 @@ INT32 V_CreditSubStringWidth(const char *string, INT32 length, INT32 option)
 void V_DrawTallNum(INT32 x, INT32 y, INT32 flags, INT32 num)
 {
 	INT32 w = SHORT(fontv[TALLNUM_FONT].font[0]->width);
-	boolean neg;
+	dboolean neg;
 
 	if (flags & V_NOSCALESTART)
 		w *= vid.dup;
@@ -4170,7 +4170,7 @@ INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option)
 {
 	INT32 c, w = 0, lw = 0;
 	INT32 spacewidth = 2, charwidth = 0;
-	boolean lowercase = (option & V_ALLOWLOWERCASE);
+	dboolean lowercase = (option & V_ALLOWLOWERCASE);
 	ssize_t i;
 
 	if (length < 0)
@@ -4281,7 +4281,7 @@ INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option)
 	return max(i-1, 0);
 }
 
-boolean *heatshifter = NULL;
+dboolean *heatshifter = NULL;
 INT32 lastheight = 0;
 INT32 heatindex[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 
@@ -4394,7 +4394,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 		if (heatshifter == NULL || lastheight != viewheight)
 		{
 			Z_Free(heatshifter);
-			heatshifter = Z_Calloc(viewheight * sizeof(boolean), PU_STATIC, NULL);
+			heatshifter = Z_Calloc(viewheight * sizeof(dboolean), PU_STATIC, NULL);
 
 			for (y = 0; y < viewheight; y++)
 			{
@@ -4487,7 +4487,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 }
 
 // Generates a RGB565 color look-up table
-void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors)
+void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, dboolean makecolors)
 {
 	size_t palsize = (sizeof(RGBA_t) * 256);
 

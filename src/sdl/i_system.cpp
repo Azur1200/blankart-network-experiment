@@ -293,7 +293,7 @@ static void write_backtrace(INT32 signal)
 #undef CRASHLOG_STDERR_WRITE
 #endif // UNIXBACKTRACE
 
-static void I_ShowErrorMessageBox(const char *messagefordevelopers, boolean dumpmade)
+static void I_ShowErrorMessageBox(const char *messagefordevelopers, dboolean dumpmade)
 {
 	static char finalmessage[2048];
 	size_t firstimpressionsline = 3; // "BlanKart" has encountered...
@@ -434,7 +434,7 @@ static void I_ReportSignal(int num, int coredumped)
 	);
 }
 
-boolean I_In_Exiting_Signal_Handler(void)
+dboolean I_In_Exiting_Signal_Handler(void)
 {
 	return g_in_exiting_signal_handler;
 }
@@ -465,7 +465,7 @@ static ATTRNORETURN void signal_handler(INT32 num)
 
 static volatile sig_atomic_t interrupted = false;
 
-boolean I_Interrupted(void)
+dboolean I_Interrupted(void)
 {
 	return interrupted;
 }
@@ -698,7 +698,7 @@ static BOOL I_ReadyConsole(HANDLE ci)
 	return (GetNumberOfConsoleInputEvents(ci, &gotinput) && gotinput);
 }
 
-static boolean entering_con_command = false;
+static dboolean entering_con_command = false;
 
 static void Impl_HandleKeyboardConsoleEvent(KEY_EVENT_RECORD evt, HANDLE co)
 {
@@ -1476,7 +1476,7 @@ INT32 I_StartupSystem(void)
 	return 0;
 }
 
-boolean is_quitting = false;
+dboolean is_quitting = false;
 
 //
 // I_Quit
@@ -1554,7 +1554,7 @@ static INT32 errorcount = 0;
 
 /**	\brief recursive error detecting
 */
-static boolean shutdowning = false;
+static dboolean shutdowning = false;
 
 FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 {
@@ -1800,7 +1800,7 @@ void I_GetDiskFreeSpace(INT64 *freespace)
 #endif
 #elif defined (_WIN32)
 	static p_GetDiskFreeSpaceExA pfnGetDiskFreeSpaceEx = NULL;
-	static boolean testwin95 = false;
+	static dboolean testwin95 = false;
 	ULARGE_INTEGER usedbytes, lfreespace;
 
 	if (!testwin95)
@@ -1995,7 +1995,7 @@ const char *I_ClipboardPaste(void)
 
 
 */
-static boolean isWadPathOk(const char *path)
+static dboolean isWadPathOk(const char *path)
 {
 	char *wad3path = static_cast<char*>(malloc(256));
 

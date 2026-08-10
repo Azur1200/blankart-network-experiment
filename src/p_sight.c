@@ -37,13 +37,13 @@ typedef struct
 	fixed_t bbox[4];
 
 	mobj_t *t1, *t2;
-	boolean alreadyHates;				// For bot traversal, for if the bot is already in a sector it doesn't want to be
+	dboolean alreadyHates;				// For bot traversal, for if the bot is already in a sector it doesn't want to be
 	UINT8 traversed;
 } los_t;
 
-typedef boolean (*los_init_t)(mobj_t *, mobj_t *, register los_t *);
-typedef boolean (*los_valid_t)(seg_t *, divline_t *, register los_t *);
-typedef boolean (*los_valid_poly_t)(polyobj_t *, divline_t *, register los_t *);
+typedef dboolean (*los_init_t)(mobj_t *, mobj_t *, register los_t *);
+typedef dboolean (*los_valid_t)(seg_t *, divline_t *, register los_t *);
+typedef dboolean (*los_valid_poly_t)(polyobj_t *, divline_t *, register los_t *);
 
 typedef struct
 {
@@ -83,7 +83,7 @@ static INT32 P_DivlineCrossed(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, co
 	return (P_DivlineSide(x1, y1, node) == P_DivlineSide(x2, y2, node));
 }
 
-static boolean P_IsVisiblePolyObj(polyobj_t *po, divline_t *divl, register los_t *los)
+static dboolean P_IsVisiblePolyObj(polyobj_t *po, divline_t *divl, register los_t *los)
 {
 	sector_t *polysec = po->lines[0]->backsector;
 	fixed_t frac;
@@ -126,7 +126,7 @@ static boolean P_IsVisiblePolyObj(polyobj_t *po, divline_t *divl, register los_t
 	return true;
 }
 
-static boolean P_CrossSubsecPolyObj(polyobj_t *po, register los_t *los, register los_funcs_t *funcs)
+static dboolean P_CrossSubsecPolyObj(polyobj_t *po, register los_t *los, register los_funcs_t *funcs)
 {
 	size_t i;
 
@@ -172,7 +172,7 @@ static boolean P_CrossSubsecPolyObj(polyobj_t *po, register los_t *los, register
 	return true;
 }
 
-static boolean P_IsVisible(seg_t *seg, divline_t *divl, register los_t *los)
+static dboolean P_IsVisible(seg_t *seg, divline_t *divl, register los_t *los)
 {
 	line_t *line = seg->linedef;
 	fixed_t popentop, popenbottom;
@@ -291,7 +291,7 @@ static boolean P_IsVisible(seg_t *seg, divline_t *divl, register los_t *los)
 	return true;
 }
 
-static boolean P_CanTraceBlockingLine(seg_t *seg, divline_t *divl, register los_t *los)
+static dboolean P_CanTraceBlockingLine(seg_t *seg, divline_t *divl, register los_t *los)
 {
 	line_t *line = seg->linedef;
 
@@ -321,12 +321,12 @@ static boolean P_CanTraceBlockingLine(seg_t *seg, divline_t *divl, register los_
 	return true;
 }
 
-static boolean P_CanBotTraverse(seg_t *seg, divline_t *divl, register los_t *los)
+static dboolean P_CanBotTraverse(seg_t *seg, divline_t *divl, register los_t *los)
 {
-	const boolean flip = ((los->t1->eflags & MFE_VERTICALFLIP) == MFE_VERTICALFLIP);
+	const dboolean flip = ((los->t1->eflags & MFE_VERTICALFLIP) == MFE_VERTICALFLIP);
 	line_t *line = seg->linedef;
 	fixed_t frac = 0;
-	boolean canStepUp, canDropOff;
+	dboolean canStepUp, canDropOff;
 	fixed_t maxstep = 0;
 	opening_t open = {0};
 
@@ -382,12 +382,12 @@ static boolean P_CanBotTraverse(seg_t *seg, divline_t *divl, register los_t *los
 	return (los->traversed < TRAVERSE_MAX);
 }
 
-static boolean P_CanWaypointTraverse(seg_t *seg, divline_t *divl, register los_t *los)
+static dboolean P_CanWaypointTraverse(seg_t *seg, divline_t *divl, register los_t *los)
 {
-	const boolean flip = ((los->t1->eflags & MFE_VERTICALFLIP) == MFE_VERTICALFLIP);
+	const dboolean flip = ((los->t1->eflags & MFE_VERTICALFLIP) == MFE_VERTICALFLIP);
 	line_t *line = seg->linedef;
 	fixed_t frac = 0;
-	boolean canStepUp, canDropOff;
+	dboolean canStepUp, canDropOff;
 	fixed_t maxstep = 0;
 	opening_t open = {0};
 
@@ -463,7 +463,7 @@ static boolean P_CanWaypointTraverse(seg_t *seg, divline_t *divl, register los_t
 //
 // Returns true if strace crosses the given subsector successfully.
 //
-static boolean P_CrossSubsector(size_t num, register los_t *los, register los_funcs_t *funcs)
+static dboolean P_CrossSubsector(size_t num, register los_t *los, register los_funcs_t *funcs)
 {
 	seg_t *seg;
 	INT32 count;
@@ -553,7 +553,7 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, register los_fu
 //  could return 2 which was ambigous, and the former is
 //  better optimised; also removes two casts :-)
 
-static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los, register los_funcs_t *funcs)
+static dboolean P_CrossBSPNode(INT32 bspnum, register los_t *los, register los_funcs_t *funcs)
 {
 	while (!(bspnum & NF_SUBSECTOR))
 	{
@@ -583,7 +583,7 @@ static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los, register los_fu
 	return P_CrossSubsector((bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR), los, funcs);
 }
 
-static boolean P_InitCheckSight(mobj_t *t1, mobj_t *t2, register los_t *los)
+static dboolean P_InitCheckSight(mobj_t *t1, mobj_t *t2, register los_t *los)
 {
 	const sector_t *s1, *s2;
 
@@ -663,7 +663,7 @@ static boolean P_InitCheckSight(mobj_t *t1, mobj_t *t2, register los_t *los)
 	return true;
 }
 
-static boolean P_InitTraceBotTraversal(mobj_t *t1, mobj_t *t2, register los_t *los)
+static dboolean P_InitTraceBotTraversal(mobj_t *t1, mobj_t *t2, register los_t *los)
 {
 	(void)t2;
 
@@ -682,7 +682,7 @@ static boolean P_InitTraceBotTraversal(mobj_t *t1, mobj_t *t2, register los_t *l
 	return true;
 }
 
-static boolean P_CompareMobjsAcrossLines(mobj_t *t1, mobj_t *t2, register los_funcs_t *funcs)
+static dboolean P_CompareMobjsAcrossLines(mobj_t *t1, mobj_t *t2, register los_funcs_t *funcs)
 {
 	los_t los;
 	const sector_t *s1, *s2;
@@ -767,7 +767,7 @@ static boolean P_CompareMobjsAcrossLines(mobj_t *t1, mobj_t *t2, register los_fu
 // Returns true if a straight line between t1 and t2 is unobstructed.
 // Uses REJECT.
 //
-boolean P_CheckSight(mobj_t *t1, mobj_t *t2)
+dboolean P_CheckSight(mobj_t *t1, mobj_t *t2)
 {
 	los_funcs_t funcs = {0};
 
@@ -778,7 +778,7 @@ boolean P_CheckSight(mobj_t *t1, mobj_t *t2)
 	return P_CompareMobjsAcrossLines(t1, t2, &funcs);
 }
 
-boolean P_TraceBlockingLines(mobj_t *t1, mobj_t *t2)
+dboolean P_TraceBlockingLines(mobj_t *t1, mobj_t *t2)
 {
 	los_funcs_t funcs = {0};
 
@@ -787,7 +787,7 @@ boolean P_TraceBlockingLines(mobj_t *t1, mobj_t *t2)
 	return P_CompareMobjsAcrossLines(t1, t2, &funcs);
 }
 
-boolean P_TraceBotTraversal(mobj_t *t1, mobj_t *t2)
+dboolean P_TraceBotTraversal(mobj_t *t1, mobj_t *t2)
 {
 	los_funcs_t funcs = {0};
 
@@ -797,7 +797,7 @@ boolean P_TraceBotTraversal(mobj_t *t1, mobj_t *t2)
 	return P_CompareMobjsAcrossLines(t1, t2, &funcs);
 }
 
-boolean P_TraceWaypointTraversal(mobj_t *t1, mobj_t *t2)
+dboolean P_TraceWaypointTraversal(mobj_t *t1, mobj_t *t2)
 {
 	los_funcs_t funcs = {0};
 

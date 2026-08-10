@@ -58,19 +58,19 @@ I_mutex con_mutex;
 #  define Unlock_state()
 #endif/*HAVE_THREADS*/
 
-static boolean con_started = false; // console has been initialised
-       boolean con_startup = false; // true at game startup
+static dboolean con_started = false; // console has been initialised
+       dboolean con_startup = false; // true at game startup
 
        con_loadprogress_t con_startup_loadprogress = 0; // Progress for startup load bar
 
-static boolean con_forcepic = true; // at startup toggle console translucency when first off
-       boolean con_recalc;          // set true when screen size has changed
+static dboolean con_forcepic = true; // at startup toggle console translucency when first off
+       dboolean con_recalc;          // set true when screen size has changed
 
 static tic_t con_tick; // console ticker for blinking prompt cursor
                         // con_scrollup should use time (currenttime - lasttime)..
 
-static boolean consoletoggle; // true when console key pushed, ticker will handle
-static boolean consoleready;  // console prompt is ready
+static dboolean consoletoggle; // true when console key pushed, ticker will handle
+static dboolean consoleready;  // console prompt is ready
 
        INT32 con_destlines; // vid lines used by console at final position
 static INT32 con_curlines;  // vid lines currently used by console
@@ -283,7 +283,7 @@ UINT8 *consolebgmap = NULL;
 UINT8 *promptbgmap = NULL;
 static UINT8 promptbgcolor = UINT8_MAX;
 
-void CON_SetupBackColormapEx(INT32 color, boolean prompt)
+void CON_SetupBackColormapEx(INT32 color, dboolean prompt)
 {
 	UINT16 i, palsum;
 	UINT8 j, palindex;
@@ -713,7 +713,7 @@ INT32 CON_ShiftChar(INT32 ch)
 	if (I_UseNativeKeyboard() || ch >= (INT32)sizeof(shiftxform))
 		return ch;
 
-	// warning: shiftdown is NOT a boolean, it's 1 or 2 for lshift/rshift
+	// warning: shiftdown is NOT a dboolean, it's 1 or 2 for lshift/rshift
 	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
 		return !!shiftdown != capslock ? shiftxform[ch] : ch;
 	else	// if we're holding shift we should still shift non letter symbols
@@ -758,9 +758,9 @@ void CON_ToggleOff(void)
 	Unlock_state();
 }
 
-boolean CON_Ready(void)
+dboolean CON_Ready(void)
 {
-	boolean ready;
+	dboolean ready;
 	Lock_state();
 	{
 		ready = consoleready;
@@ -855,7 +855,7 @@ static void AdjustTextSize(INT32 n)
 
 // Handles console key input
 //
-boolean CON_Responder(event_t *ev)
+dboolean CON_Responder(event_t *ev)
 {
 	static UINT8 consdown = false; // console is treated differently due to rare usage
 
@@ -1678,7 +1678,7 @@ static void CON_DrawConsole(void)
 		CON_DrawInput();
 }
 
-static boolean CON_GamestateDrawHudLines(void)
+static dboolean CON_GamestateDrawHudLines(void)
 {
 	switch (gamestate)
 	{

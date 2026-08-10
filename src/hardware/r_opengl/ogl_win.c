@@ -140,7 +140,7 @@ void *GetGLFunc(const char *proc)
 }
 #endif
 
-boolean LoadGL(void)
+dboolean LoadGL(void)
 {
 #ifndef STATIC_OPENGL
 	OGL32 = LoadLibrary("OPENGL32.DLL");

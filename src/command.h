@@ -85,8 +85,8 @@ void COM_Init(void);
 
 struct vsbuf_t
 {
-	boolean allowoverflow; // if false, do a I_Error
-	boolean overflowed; // set to true if the buffer size failed
+	dboolean allowoverflow; // if false, do a I_Error
+	dboolean overflowed; // set to true if the buffer size failed
 	UINT8 *data;
 	size_t maxsize;
 	size_t cursize;
@@ -212,7 +212,7 @@ extern consvar_t cv_execversion;
 extern consvar_t cv_resetnetvars;
 
 void CV_InitFilterVar(void);
-void CV_ToggleExecVersion(boolean enable);
+void CV_ToggleExecVersion(dboolean enable);
 
 // register a variable for use at the console
 void CV_RegisterVar(consvar_t *variable);
@@ -233,7 +233,7 @@ const char *CV_CompleteVar(char *partial, INT32 skips);
 // var. If an exact string value exists, it is returned in
 // valstrp. An integer value is returned in intval if it
 // is not NULL.
-boolean CV_CompleteValue(consvar_t *var, const char **valstrp, INT32 *intval);
+dboolean CV_CompleteValue(consvar_t *var, const char **valstrp, INT32 *intval);
 
 // equivalent to "<varname> <value>" typed at the console
 void CV_Set(consvar_t *var, const char *value);
@@ -258,7 +258,7 @@ void CV_ResetGuardVars(void);
 void CV_SaveVariables(FILE *f);
 
 // load/save gamesate (load and save option and for network join in game)
-void CV_SaveVars(UINT8 **p, boolean in_demo);
+void CV_SaveVars(UINT8 **p, dboolean in_demo);
 
 #define CV_SaveNetVars(p) CV_SaveVars(p, false)
 void CV_LoadNetVars(UINT8 **p);
@@ -272,7 +272,7 @@ void CV_LoadDemoVars(void *p);
 // reset cheat netvars after cheats is deactivated
 void CV_ResetCheatNetVars(void);
 
-boolean CV_IsSetToDefault(consvar_t *v);
+dboolean CV_IsSetToDefault(consvar_t *v);
 UINT8 CV_CheatsEnabled(void);
 
 // Returns cvar by name. Exposed here for Lua.

@@ -311,18 +311,18 @@ void PS_ResetBotInfo(void)
 	ps_botticcmd_time.value.p = 0;
 }
 
-static boolean PS_HighResolution(void)
+static dboolean PS_HighResolution(void)
 {
 	return (vid.width >= 640 && vid.height >= 400);
 }
 
-static boolean PS_IsLevelActive(void)
+static dboolean PS_IsLevelActive(void)
 {
 	return gamestate == GS_LEVEL;
 }
 
 // Is the row valid in the current context?
-static boolean PS_IsRowValid(perfstatrow_t *row)
+static dboolean PS_IsRowValid(perfstatrow_t *row)
 {
 	return !((row->flags & PS_LEVEL && !PS_IsLevelActive())
 		|| (row->flags & PS_SW && rendermode != render_soft)
@@ -334,9 +334,9 @@ static boolean PS_IsRowValid(perfstatrow_t *row)
 }
 
 // Should the row be visible on the screen?
-static boolean PS_IsRowVisible(perfstatrow_t *row)
+static dboolean PS_IsRowVisible(perfstatrow_t *row)
 {
-	boolean value_is_zero;
+	dboolean value_is_zero;
 
 	if (row->flags & PS_TIME)
 		value_is_zero = row->metric->value.p == 0;
@@ -354,7 +354,7 @@ typedef union
 	precise_t *p;
 } history_read_pos_t;
 
-static INT32 PS_GetMetricAverage(ps_metric_t *metric, boolean time_metric)
+static INT32 PS_GetMetricAverage(ps_metric_t *metric, dboolean time_metric)
 {
 	history_read_pos_t history_read_pos;
 	history_read_pos.c = metric->history; // char* used for pointer arithmetic
@@ -374,7 +374,7 @@ static INT32 PS_GetMetricAverage(ps_metric_t *metric, boolean time_metric)
 	return sum / cv_ps_samplesize.value;
 }
 
-static INT32 PS_GetMetricMinOrMax(ps_metric_t *metric, boolean time_metric, boolean get_max)
+static INT32 PS_GetMetricMinOrMax(ps_metric_t *metric, dboolean time_metric, dboolean get_max)
 {
 	history_read_pos_t history_read_pos;
 	history_read_pos.c = metric->history; // char* used for pointer arithmetic
@@ -404,7 +404,7 @@ static INT32 PS_GetMetricMinOrMax(ps_metric_t *metric, boolean time_metric, bool
 }
 
 // Calculates the standard deviation for metric.
-static INT32 PS_GetMetricSD(ps_metric_t *metric, boolean time_metric)
+static INT32 PS_GetMetricSD(ps_metric_t *metric, dboolean time_metric)
 {
 	history_read_pos_t history_read_pos;
 	history_read_pos.c = metric->history; // char* used for pointer arithmetic
@@ -432,7 +432,7 @@ static INT32 PS_GetMetricSD(ps_metric_t *metric, boolean time_metric)
 }
 
 // Returns the value to show on screen for metric.
-static INT32 PS_GetMetricScreenValue(ps_metric_t *metric, boolean time_metric)
+static INT32 PS_GetMetricScreenValue(ps_metric_t *metric, dboolean time_metric)
 {
 	if (cv_ps_samplesize.value > 1 && metric->history)
 	{
@@ -459,7 +459,7 @@ static INT32 PS_GetMetricScreenValue(ps_metric_t *metric, boolean time_metric)
 
 static int PS_DrawPerfRows(int x, int y, int color, perfstatrow_t *rows)
 {
-	const boolean hires = PS_HighResolution();
+	const dboolean hires = PS_HighResolution();
 	INT32 draw_flags = V_MONOSPACE | color;
 	perfstatrow_t * row;
 	int draw_y = y;
@@ -495,7 +495,7 @@ static int PS_DrawPerfRows(int x, int y, int color, perfstatrow_t *rows)
 	return draw_y;
 }
 
-static void PS_UpdateMetricHistory(ps_metric_t *metric, boolean time_metric, boolean frame_metric)
+static void PS_UpdateMetricHistory(ps_metric_t *metric, dboolean time_metric, dboolean frame_metric)
 {
 	int index = frame_metric ? ps_frame_index : ps_tick_index;
 
@@ -527,7 +527,7 @@ static void PS_UpdateMetricHistory(ps_metric_t *metric, boolean time_metric, boo
 	}
 }
 
-static void PS_UpdateRowHistories(perfstatrow_t *rows, boolean frame_metric)
+static void PS_UpdateRowHistories(perfstatrow_t *rows, dboolean frame_metric)
 {
 	perfstatrow_t *row;
 	for (row = rows; row->lores_label; row++)
@@ -746,7 +746,7 @@ static void PS_DrawDescriptorHeader(void)
 			"maximum"
 		};
 
-		const boolean hires = PS_HighResolution();
+		const dboolean hires = PS_HighResolution();
 		char* str;
 		INT32 flags = V_MONOSPACE | V_ALLOWLOWERCASE;
 		int samples_left = max(ps_frame_samples_left, ps_tick_samples_left);
@@ -784,7 +784,7 @@ static void PS_DrawDescriptorHeader(void)
 
 static void PS_DrawRenderStats(void)
 {
-	const boolean hires = PS_HighResolution();
+	const dboolean hires = PS_HighResolution();
 	const int half_row = hires ? 5 : 4;
 	int x, y, cy = 10;
 
@@ -821,7 +821,7 @@ static void PS_DrawRenderStats(void)
 
 static void PS_DrawGameLogicStats(void)
 {
-	const boolean hires = PS_HighResolution();
+	const dboolean hires = PS_HighResolution();
 	int x, y;
 
 	PS_DrawDescriptorHeader();

@@ -22,8 +22,12 @@ extern "C" {
 #endif
 
 #ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef RPC_NO_WINDOWS_H
 #define RPC_NO_WINDOWS_H
+#endif
 #include <windows.h>
 // win32 sucks
 #undef min
@@ -106,15 +110,11 @@ extern "C" {
 
 /* Boolean type definition */
 
-// Note: C++ bool and C99/C11 _Bool are NOT compatible.
-// Historically, boolean was win32 BOOL on Windows. For equivalence, it's now
-// int32_t. "true" and "false" are only declared for C code; in C++, conversion
-// between "bool" and "int32_t" takes over.
-#ifndef _WIN32
-typedef int32_t boolean;
-#else
-#define boolean BOOL
+#ifndef __cplusplus
+#include <stdbool.h>
 #endif
+
+typedef int32_t dboolean;
 
 #ifndef __cplusplus
 #ifndef _WIN32

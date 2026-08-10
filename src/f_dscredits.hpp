@@ -41,8 +41,8 @@ typedef struct dscredits_s {
     UINT16 creditsscene; // "Scene" number of credits, iterated by 1 for each timing.
 	struct dscreditsobj_s
 	{
-        boolean active;
-        boolean player; // Are we a player?
+        dboolean active;
+        dboolean player; // Are we a player?
 		UINT16 skin;
         UINT16 color;
         patch_t *patch; // Patch.
@@ -55,7 +55,7 @@ typedef struct dscredits_s {
         INT32 movestartspd[2]; // Speed to apply on movestart
 
         UINT8 glance; // They look at one another as they drive
-		boolean spinout; // Spinning out?
+		dboolean spinout; // Spinning out?
 	} creditsobj[MAXDSOBJECTS + DSUNIQUEPLAYERS];
     
 } dscredits_t;

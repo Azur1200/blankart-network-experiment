@@ -61,7 +61,7 @@ typedef struct itimer_s
 	INT32 anim_frames = 1;					// tic duration for each graphic
 	UINT32 flags = 0;						// settings for timer
 	lua_Integer timer_func_ref = LUA_NOREF; // if set, calls a function from registry to get timer value
-	boolean timer_func_error = false;       // don't print error every frame
+	dboolean timer_func_error = false;       // don't print error every frame
 } itimer_t;
 
 static bool sorttimers(itimer_t a, itimer_t b)
@@ -159,7 +159,7 @@ void K_AddItemTimerEx(
 	const char **patches,
 	INT32 patches_size,
 	INT32 anim_duration,
-	UINT32 flags, boolean unsorted)
+	UINT32 flags, dboolean unsorted)
 {
 	itimer_t t; // woo yeah baby
 
@@ -185,7 +185,7 @@ static trackingResult_t K_getTimersPositionForTrackingPlayer(void)
 	trackingResult_t result = {0};
 
 	// No player object? Not bothering.
-	const boolean doesPlayerHaveMo = !((stplyr->mo == NULL || P_MobjWasRemoved(stplyr->mo)));
+	const dboolean doesPlayerHaveMo = !((stplyr->mo == NULL || P_MobjWasRemoved(stplyr->mo)));
 	if (!doesPlayerHaveMo)
 		return result;
 
@@ -232,7 +232,7 @@ void K_getTimersDrawinfo(drawinfo_t *out)
 			INT32 base_y = 18;
 			INT32 baseUpsideDown_y = 18;
 
-			const boolean isupsidedown = (stplyr->mo->eflags & MFE_VERTICALFLIP);
+			const dboolean isupsidedown = (stplyr->mo->eflags & MFE_VERTICALFLIP);
 
 			fx = (result.x / FRACUNIT) + base_x;
 			fy = (result.y / FRACUNIT) - (isupsidedown ? baseUpsideDown_y : base_y);

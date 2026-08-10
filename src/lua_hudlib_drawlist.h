@@ -30,7 +30,7 @@ huddrawlist_h LUA_HUD_CreateDrawList(void);
 void LUA_HUD_ClearDrawList(huddrawlist_h list);
 // Destroys the drawlist, invalidating the given handle
 void LUA_HUD_DestroyDrawList(huddrawlist_h list);
-boolean LUA_HUD_IsDrawListValid(huddrawlist_h list);
+dboolean LUA_HUD_IsDrawListValid(huddrawlist_h list);
 
 void LUA_HUD_AddDraw(
 	huddrawlist_h list,
@@ -118,7 +118,7 @@ void LUA_HUD_AddDrawTitleCardString(
 	INT32 y,
 	INT32 flags,
 	const char *str,
-	boolean bossmode,
+	dboolean bossmode,
 	INT32 timer,
 	INT32 threshold
 );

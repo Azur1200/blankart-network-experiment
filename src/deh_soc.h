@@ -79,7 +79,7 @@ void readcutscene(MYFILE *f, INT32 num);
 void readlevelheader(MYFILE *f, char * name);
 void readgametype(MYFILE *f, char *gtname);
 void readsprite2(MYFILE *f, INT32 num);
-void readskincolor(MYFILE *f, INT32 num, boolean mainfile);
+void readskincolor(MYFILE *f, INT32 num, dboolean mainfile);
 void readthing(MYFILE *f, INT32 num);
 void readfreeslots(MYFILE *f);
 void clear_emblems(void);

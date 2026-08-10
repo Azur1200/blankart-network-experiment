@@ -142,7 +142,7 @@ static int vector3d_eq(lua_State *L)
 {
 	vector3_t *vec1 = luaL_checkudata(L, 1, META_VECTOR3);
 	vector3_t *vec2 = luaL_checkudata(L, 2, META_VECTOR3);
-	lua_pushboolean(L, FV3_Equal(vec1, vec2));
+	lua_pushdboolean(L, FV3_Equal(vec1, vec2));
 	return 1;
 }
 

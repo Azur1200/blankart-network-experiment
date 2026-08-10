@@ -136,7 +136,7 @@ extern lua_State *gL;
 #define META_KARTITEMGRAPHICS "KARTITEMGRAPHICS_T*"
 #define META_BOOSTINFO "BOOSTINFO_T*"
 
-boolean luaL_checkboolean(lua_State *L, int narg);
+dboolean luaL_checkdboolean(lua_State *L, int narg);
 
 int LUA_EnumLib(lua_State *L);
 int LUA_SOCLib(lua_State *L);

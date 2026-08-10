@@ -169,14 +169,14 @@ static int has_valid_field(lua_State *L)
 	return equal;
 }
 
-static taglist_t * valid_taglist(lua_State *L, int idx, boolean getting)
+static taglist_t * valid_taglist(lua_State *L, int idx, dboolean getting)
 {
 	taglist_t *list = *(taglist_t **)lua_touserdata(L, idx);
 
 	if (list == NULL)
 	{
 		if (getting && has_valid_field(L))
-			lua_pushboolean(L, 0);
+			lua_pushdboolean(L, 0);
 		else
 			LUA_ErrInvalid(L, "taglist");/* doesn't actually return */
 		return NULL;
@@ -223,7 +223,7 @@ static int taglist_get(lua_State *L)
 	}
 	else if (has_valid_field(L))
 	{
-		lua_pushboolean(L, 1);
+		lua_pushdboolean(L, 1);
 		return 1;
 	}
 	else
@@ -246,7 +246,7 @@ static int taglist_equal(lua_State *L)
 {
 	const taglist_t *lhs = check_taglist(L, 1);
 	const taglist_t *rhs = check_taglist(L, 2);
-	lua_pushboolean(L, Tag_Compare(lhs, rhs));
+	lua_pushdboolean(L, Tag_Compare(lhs, rhs));
 	return 1;
 }
 
@@ -280,7 +280,7 @@ static int taglist_find(lua_State *L)
 {
 	const taglist_t *list = check_taglist(L, 1);
 	const mtag_t tag = luaL_checknumber(L, 2);
-	lua_pushboolean(L, Tag_Find(list, tag));
+	lua_pushdboolean(L, Tag_Find(list, tag));
 	return 1;
 }
 
@@ -288,7 +288,7 @@ static int taglist_shares(lua_State *L)
 {
 	const taglist_t *lhs = check_taglist(L, 1);
 	const taglist_t *rhs = check_taglist(L, 2);
-	lua_pushboolean(L, Tag_Share(lhs, rhs));
+	lua_pushdboolean(L, Tag_Share(lhs, rhs));
 	return 1;
 }
 

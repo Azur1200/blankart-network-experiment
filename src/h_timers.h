@@ -55,7 +55,7 @@ void K_AddItemTimerEx(
 	const char **patches,
 	INT32 patches_size,
 	INT32 anim_duration,
-	UINT32 flags, boolean unsorted);
+	UINT32 flags, dboolean unsorted);
 void K_DisplayItemTimers(void);
 void K_getTimersDrawinfo(drawinfo_t *out);
 

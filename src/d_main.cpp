@@ -135,10 +135,10 @@ UINT32 initial_seed = 0;
 static char *startupiwads[MAX_WADFILES];
 static char *startuppwads[MAX_WADFILES];
 
-boolean devparm = false; // started game with -devparm
+dboolean devparm = false; // started game with -devparm
 
-boolean singletics = false; // timedemo
-boolean lastdraw = false;
+dboolean singletics = false; // timedemo
+dboolean lastdraw = false;
 
 static INT32 lastwipetic = 0;
 
@@ -148,8 +148,8 @@ INT32 postimgparam[MAXSPLITSCREENPLAYERS];
 // whether the respective sound system is disabled
 // or they're init'ed, but the player just toggled them
 
-boolean sound_disabled = false;
-boolean digital_disabled = false;
+dboolean sound_disabled = false;
+dboolean digital_disabled = false;
 
 #ifdef DEBUGFILE
 INT32 debugload = 0;
@@ -163,7 +163,7 @@ char liveeventbackup[256];
 
 char srb2home[256] = ".";
 char srb2path[256] = ".";
-boolean usehome = true;
+dboolean usehome = true;
 const char *pandf = "%s" PATHSEP "%s";
 static char addonsdir[MAX_WADPATH];
 char downloaddir[sizeof addonsdir + sizeof DOWNLOADDIR_PART] = "DOWNLOAD";
@@ -178,13 +178,13 @@ char downloaddir[sizeof addonsdir + sizeof DOWNLOADDIR_PART] = "DOWNLOAD";
 event_t events[MAXEVENTS];
 INT32 eventhead, eventtail;
 
-boolean dedicated = false;
+dboolean dedicated = false;
 
 // For identity negotiation with netgame servers
 uint8_t	g_public_key[MAXSPLITSCREENPLAYERS][PUBKEYLENGTH];
 uint8_t	g_secret_key[MAXSPLITSCREENPLAYERS][PRIVKEYLENGTH];
 
-boolean loaded_config = false;
+dboolean loaded_config = false;
 
 //
 // D_PostEvent
@@ -201,9 +201,9 @@ void D_PostEvent(const event_t *ev)
 UINT8 shiftdown = 0; // 0x1 left, 0x2 right
 UINT8 ctrldown = 0; // 0x1 left, 0x2 right
 UINT8 altdown = 0; // 0x1 left, 0x2 right
-boolean capslock = 0;	// gee i wonder what this does.
+dboolean capslock = 0;	// gee i wonder what this does.
 
-static boolean recursioncheck = false;
+static dboolean recursioncheck = false;
 
 //
 // D_ProcessEvents
@@ -214,7 +214,7 @@ void D_ProcessEvents(void)
 	INT32 i;
 	event_t *ev;
 
-	boolean eaten = false;
+	dboolean eaten = false;
 
 	if (recursioncheck == true)
 		I_Error("D_ProcessEvents recursion detected");
@@ -304,7 +304,7 @@ void D_ProcessEvents(void)
 	recursioncheck = false;
 }
 
-boolean D_RenderLevel(void)
+dboolean D_RenderLevel(void)
 {
 	UINT8 i;
 
@@ -427,8 +427,8 @@ INT16 wipetypepost = -1;
 
 static void D_Display(void)
 {
-	boolean forcerefresh = false;
-	static boolean wipe = false;
+	dboolean forcerefresh = false;
+	static dboolean wipe = false;
 	INT32 wipedefindex = 0;
 	UINT8 i;
 
@@ -769,7 +769,7 @@ dedipostwipe:
 	}
 }
 
-static void D_WipeTick(boolean menu)
+static void D_WipeTick(dboolean menu)
 {
 	I_OsPolling();
 
@@ -794,7 +794,7 @@ static void D_WipeTick(boolean menu)
 	CON_Ticker();
 }
 
-static void D_WipeDraw(boolean menu)
+static void D_WipeDraw(dboolean menu)
 {
 	if (rendermode == render_none)
 		return;
@@ -848,7 +848,7 @@ static double D_EndFrame(precise_t enterprecise, int *frameskip)
 		double capbudget = ((R_GetFramerateCap() == 0) ? 0.0 : round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision()));
 
 		// in the case of "match refresh rate" + vsync, don't sleep at all
-		const boolean vsync_with_match_refresh = cv_vidwait.value && cv_fpscap.value == 0;
+		const dboolean vsync_with_match_refresh = cv_vidwait.value && cv_fpscap.value == 0;
 
 		if (elapsed > 0 && capbudget > elapsed && !vsync_with_match_refresh)
 		{
@@ -879,7 +879,7 @@ static bool ranwipe = false;
 
 // one single function for all the extra main loops in this god-forsaken codebase
 // should make it easier to fold these back into D_SRB2Loop at some point...
-void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
+void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, dboolean drawMenu)
 {
 	tic_t nowtime, endtime;
 	UINT8 wipeframe = 0;
@@ -977,8 +977,8 @@ void D_SRB2Loop(void)
 	tic_t entertic = 0, oldentertics = 0, realtics = 0, rendertimeout = INFTICS;
 	double deltatics = 0.0;
 
-	boolean interp = false;
-	boolean doDisplay = false;
+	dboolean interp = false;
+	dboolean doDisplay = false;
 	int frameskip = 0;
 
 	if (dedicated)
@@ -1125,7 +1125,7 @@ void D_SRB2Loop(void)
 		{
 			renderdeltatics = FLOAT_TO_FIXED(deltatics);
 
-			const boolean lagging = ((deltatics >= 1.0) || hu_stopped);
+			const dboolean lagging = ((deltatics >= 1.0) || hu_stopped);
 
 			R_SetTimeFrac(lagging ? FRACUNIT : I_GetTimeFrac());
 		}
@@ -1355,7 +1355,7 @@ static void ChangeDirForUrlHandler(void)
 // Identify the SRB2 version, and IWAD file to use.
 // ==========================================================================
 
-static boolean AddIWAD(void)
+static dboolean AddIWAD(void)
 {
 	char * path = va(pandf,srb2path, SRB2NAME);
 
@@ -1499,7 +1499,7 @@ void D_SRB2Main(void)
 	INT32 p;
 
 	mapnum_t pstartmap = (mapnum_t)0;
-	boolean autostart = false;
+	dboolean autostart = false;
 
 	/* break the version string into version numbers, for netplay */
 	D_ConvertVersionNumbers();

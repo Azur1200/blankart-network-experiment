@@ -308,8 +308,8 @@ void LoadModelSprite2(model_t *model, modeltype_t modeltype)
 		const char *framechars;
 		UINT8 frame;
 		UINT8 spr2idx;
-		boolean interpolate;
-		boolean super;
+		dboolean interpolate;
+		dboolean super;
 
 		if (modeltype == MODELTYPE_OLDPLAYER)
 		{
@@ -476,7 +476,7 @@ typedef struct materiallist_s
 	material_t *material;
 } materiallist_t;
 
-static boolean AddMaterialToList(materiallist_t **head, material_t *material)
+static dboolean AddMaterialToList(materiallist_t **head, material_t *material)
 {
 	materiallist_t *node, *newMatNode;
 	for (node = *head; node; node = node->next)

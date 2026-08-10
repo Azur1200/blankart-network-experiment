@@ -272,7 +272,7 @@ static UINT8 *R_AllocateDummyTextureBlock(size_t width, UINT8 **user)
 	return block;
 }
 
-static boolean R_CheckTextureLumpLength(texture_t *texture, size_t patch)
+static dboolean R_CheckTextureLumpLength(texture_t *texture, size_t patch)
 {
 	UINT16 wadnum = texture->patches[patch].wad;
 	UINT16 lumpnum = texture->patches[patch].lump;
@@ -356,7 +356,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 	UINT16 wadnum;
 	lumpnum_t lumpnum;
 	size_t lumplength;
-	boolean doremap;
+	dboolean doremap;
 
 	I_Assert(texnum <= (size_t)numtextures);
 	texture = textures[texnum];
@@ -371,7 +371,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 	// so check if there's holes and if not strip the posts.
 	if (texture->patchcount == 1)
 	{
-		boolean holey = false;
+		dboolean holey = false;
 		patch = texture->patches;
 
 		wadnum = patch->wad;
@@ -480,7 +480,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 	// Composite the columns together.
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
-		boolean dealloc = true;
+		dboolean dealloc = true;
 		static void (*ColumnDrawerPointer)(column_t *, UINT8 *, texpatch_t *, INT32, INT32); // Column drawing function pointer.
 		if (patch->style != AST_COPY)
 			ColumnDrawerPointer = (patch->flip & 2) ? R_DrawBlendFlippedColumnInCache : R_DrawBlendColumnInCache;
@@ -578,7 +578,7 @@ UINT8 *R_GetFlatForTexture(size_t texnum)
 		texpatch_t *patch = &texture->patches[0];
 		UINT16 wadnum = patch->wad;
 		lumpnum_t lumpnum = patch->lump;
-		boolean doremap = W_NeedPaletteRemapPwad(wadnum, lumpnum, false);
+		dboolean doremap = W_NeedPaletteRemapPwad(wadnum, lumpnum, false);
 		UINT8 *pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_CACHE);
 		size_t lumplength = W_LumpLengthPwad(wadnum, lumpnum);
 
@@ -725,7 +725,7 @@ struct rawcheckcolumn_state
 {
 	softwarepatch_t *patch;
 	size_t data_size;
-	boolean error;
+	dboolean error;
 	const char *name;
 };
 
@@ -897,12 +897,12 @@ INT32 R_GetTextureBrightmap(INT32 texnum)
 	return texturebrightmaps[texnum];
 }
 
-boolean R_TextureHasBrightmap(INT32 texnum)
+dboolean R_TextureHasBrightmap(INT32 texnum)
 {
 	return R_GetTextureBrightmap(texnum) != 0;
 }
 
-boolean R_TextureCanRemap(INT32 texnum)
+dboolean R_TextureCanRemap(INT32 texnum)
 {
 	const terrain_t *t = K_GetTerrainForTextureNum(texnum);
 	return !t || t->flags & TRF_REMAP;
@@ -969,10 +969,10 @@ void *R_GetFlat(levelflat_t *levelflat)
 //
 // Sets ds_powersoftwo true if the flat's dimensions are powers of two, and returns that.
 //
-boolean R_CheckPowersOfTwo(drawspandata_t* ds)
+dboolean R_CheckPowersOfTwo(drawspandata_t* ds)
 {
-	boolean wpow2 = (!(ds->flatwidth & (ds->flatwidth - 1)));
-	boolean hpow2 = (!(ds->flatheight & (ds->flatheight - 1)));
+	dboolean wpow2 = (!(ds->flatwidth & (ds->flatwidth - 1)));
+	dboolean hpow2 = (!(ds->flatheight & (ds->flatheight - 1)));
 
 	// Initially, the flat isn't powers-of-two-sized.
 	ds->powersoftwo = false;
@@ -1494,7 +1494,7 @@ void R_LoadTexturesPwad(UINT16 wadnum)
 	R_FinishLoadingTextures(newtextures);
 }
 
-static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
+static texpatch_t *R_ParsePatch(dboolean actuallyLoadPatch)
 {
 	char *texturesToken;
 	size_t texturesTokenLength;
@@ -1688,7 +1688,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 	}
 }
 
-static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
+static texture_t *R_ParseTexture(dboolean actuallyLoadTexture)
 {
 	char *texturesToken;
 	size_t texturesTokenLength;
@@ -1980,7 +1980,7 @@ static void PaletteTextureHack(const char **name)
 	}
 }
 
-void R_ClearTextureNumCache(boolean btell)
+void R_ClearTextureNumCache(dboolean btell)
 {
 	Z_Free(tidcache);
 	tidcache = NULL;
@@ -2040,7 +2040,7 @@ INT32 R_CheckTextureNumForName(const char *name, UINT8 type)
 //
 // Calls R_CheckTextureNumForName. Returns REDWALL if not found.
 //
-INT32 R_TextureNumForNameEx(const char *name, boolean lua)
+INT32 R_TextureNumForNameEx(const char *name, dboolean lua)
 {
 	INT32 i = R_CheckTextureNumForName(name, TEXTURETYPE_TEXTURE);
 

@@ -29,14 +29,14 @@ typedef enum
 
 extern struct grandprixinfo
 {
-	boolean gp;				///< If true, then we are in a Grand Prix.
+	dboolean gp;				///< If true, then we are in a Grand Prix.
 	cupheader_t *cup;		///< Which cup are we playing?
 	UINT8 gamespeed;		///< Copy of gamespeed, just to make sure you can't cheat it with cvars
-	boolean encore;			///< Ditto, but for encore mode
-	boolean masterbots;		///< If true, all bots should be max difficulty (Master Mode)
-	boolean lunaticmode;	///< If true, make this GP especially difficult (Lunatic Mode)
-	boolean initalize;		///< If true, we need to initialize a new session.
-	boolean wonround;		///< If false, then we retry the map instead of going to the next.
+	dboolean encore;			///< Ditto, but for encore mode
+	dboolean masterbots;		///< If true, all bots should be max difficulty (Master Mode)
+	dboolean lunaticmode;	///< If true, make this GP especially difficult (Lunatic Mode)
+	dboolean initalize;		///< If true, we need to initialize a new session.
+	dboolean wonround;		///< If false, then we retry the map instead of going to the next.
 	UINT8 eventmode;		///< See GPEVENT_ constants
 } grandprixinfo;
 
@@ -174,7 +174,7 @@ void K_PlayerLoseLife(player_t *player);
 
 
 /*--------------------------------------------------
-	boolean K_CanChangeRules(boolean allowdemos);
+	dboolean K_CanChangeRules(dboolean allowdemos);
 
 		Returns whenver or not the server is allowed
 		to change the game rules.
@@ -186,15 +186,15 @@ void K_PlayerLoseLife(player_t *player);
 		true if can change important gameplay rules, otherwise false.
 --------------------------------------------------*/
 
-boolean K_CanChangeRules(boolean allowdemos);
+dboolean K_CanChangeRules(dboolean allowdemos);
 
 /*--------------------------------------------------
-	boolean K_BotDefaultSpectator(void)
+	dboolean K_BotDefaultSpectator(void)
 
 		Check whether bots should spectate this round.
 --------------------------------------------------*/
 
-boolean K_BotDefaultSpectator(void);
+dboolean K_BotDefaultSpectator(void);
 
 
 #ifdef __cplusplus

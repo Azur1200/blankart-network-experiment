@@ -69,17 +69,17 @@ INT32 net_bandwidth;
 /// \brief max length per packet
 INT16 hardware_MAXPACKETLENGTH = 0;
 
-boolean (*I_NetGet)(void) = NULL;
+dboolean (*I_NetGet)(void) = NULL;
 void (*I_NetSend)(void) = NULL;
-boolean (*I_NetCanSend)(void) = NULL;
-boolean (*I_NetCanGet)(void) = NULL;
+dboolean (*I_NetCanSend)(void) = NULL;
+dboolean (*I_NetCanGet)(void) = NULL;
 void (*I_NetCloseSocket)(void) = NULL;
 void (*I_NetFreeNodenum)(INT32 nodenum) = NULL;
 SINT8 (*I_NetMakeNodewPort)(const char *address, const char* port) = NULL;
 void (*I_NetRequestHolePunch)(INT32 node) = NULL;
 void (*I_NetRegisterHolePunch)(void) = NULL;
-boolean (*I_NetOpenSocket)(void) = NULL;
-boolean (*I_Ban) (INT32 node) = NULL;
+dboolean (*I_NetOpenSocket)(void) = NULL;
+dboolean (*I_Ban) (INT32 node) = NULL;
 void (*I_ClearBans)(void) = NULL;
 const char *(*I_GetNodeAddress) (INT32 node) = NULL;
 UINT32 (*I_GetNodeAddressInt) (INT32 node) = NULL;
@@ -88,11 +88,11 @@ const char *(*I_GetBanMask) (size_t ban) = NULL;
 const char *(*I_GetBanUsername) (size_t ban) = NULL;
 const char *(*I_GetBanReason) (size_t ban) = NULL;
 time_t (*I_GetUnbanTime) (size_t ban) = NULL;
-boolean (*I_SetBanAddress) (const char *address, const char *mask) = NULL;
-boolean (*I_SetBanUsername) (const char *username) = NULL;
-boolean (*I_SetBanReason) (const char *reason) = NULL;
-boolean (*I_SetUnbanTime) (time_t timestamp) = NULL;
-boolean (*I_IsExternalAddress) (const void *p) = NULL;
+dboolean (*I_SetBanAddress) (const char *address, const char *mask) = NULL;
+dboolean (*I_SetBanUsername) (const char *username) = NULL;
+dboolean (*I_SetBanReason) (const char *reason) = NULL;
+dboolean (*I_SetUnbanTime) (time_t timestamp) = NULL;
+dboolean (*I_IsExternalAddress) (const void *p) = NULL;
 bannednode_t *bannednode = NULL;
 
 
@@ -112,7 +112,7 @@ INT32 getbps, sendbps;
 float lostpercent = 0.0f, duppercent = 0.0f, gamelostpercent = 0.0f;
 INT32 packetheaderlength;
 
-boolean Net_GetNetStat(void)
+dboolean Net_GetNetStat(void)
 {
 	const tic_t t = I_GetTime();
 	static INT64 oldsendbyte = 0;
@@ -213,7 +213,7 @@ FUNCMATH static inline INT32 cmpack(UINT8 a, UINT8 b)
   * \param freeack  The address to store the free acknum at
   * \return True if a free acknum was found
   */
-static boolean GetFreeAcknum(UINT8 *freeack)
+static dboolean GetFreeAcknum(UINT8 *freeack)
 {
 	netnode_t *node = &nodes[doomcom->remotenode];
 	INT32 i, numfreeslot = 0;
@@ -279,10 +279,10 @@ static void RemoveAck(INT32 i)
 }
 
 // We have got a packet, proceed the ack request and ack return
-static boolean Processackpak(void)
+static dboolean Processackpak(void)
 {
 	INT32 i;
-	boolean goodpacket = true;
+	dboolean goodpacket = true;
 	netnode_t *node = &nodes[doomcom->remotenode];
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
@@ -420,7 +420,7 @@ void Net_UnAcknowledgePacket(INT32 node)
   * \return True if all acks have been received
   *
   */
-static boolean Net_AllAcksReceived(void)
+static dboolean Net_AllAcksReceived(void)
 {
 	INT32 i;
 
@@ -505,7 +505,7 @@ void Net_AbortPacketType(UINT8 packettype)
 void Net_CloseConnection(INT32 node)
 {
 	INT32 i;
-	boolean forceclose = (node & FORCECLOSE) != 0;
+	dboolean forceclose = (node & FORCECLOSE) != 0;
 
 	if (node == -1)
 	{
@@ -857,7 +857,7 @@ void Command_Droprate(void)
 	packetdroprate = droprate;
 }
 
-static boolean ShouldDropPacket(void)
+static dboolean ShouldDropPacket(void)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	return (packetdropquantity[netbuffer->packettype])
@@ -867,7 +867,7 @@ static boolean ShouldDropPacket(void)
 
 // Unused because Eidolon correctly pointed out that +512b on every packet was scary.
 #ifdef SIGNGAMETRAFFIC
-boolean IsPacketSigned(int packettype)
+dboolean IsPacketSigned(int packettype)
 {
 	switch (packettype)
 	{
@@ -896,7 +896,7 @@ boolean IsPacketSigned(int packettype)
 //
 // HSendPacket
 //
-boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlength)
+dboolean HSendPacket(INT32 node, dboolean reliable, UINT8 acknum, size_t packetlength)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	doomcom->datalength = (INT16)(packetlength + BASEPACKETSIZE);
@@ -1019,7 +1019,7 @@ boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlen
 // Returns false if no packet is waiting
 // Check Datalength and checksum
 //
-boolean HGetPacket(void)
+dboolean HGetPacket(void)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
@@ -1117,7 +1117,7 @@ boolean HGetPacket(void)
 	return true;
 }
 
-static boolean Internal_Get(void)
+static dboolean Internal_Get(void)
 {
 	doomcom->remotenode = -1;
 	return false;
@@ -1135,7 +1135,7 @@ static void Internal_FreeNodenum(INT32 nodenum)
 
 static char *I_NetSplitAddress(char *host, char **port)
 {
-	boolean v4 = (host[0] != '[');
+	dboolean v4 = (host[0] != '[');
 
 	host = strtok(host, v4 ? ":" : "[]");
 
@@ -1179,9 +1179,9 @@ void D_SetDoomcom(void)
 // D_CheckNetGame
 // Works out player numbers among the net participants
 //
-boolean D_CheckNetGame(void)
+dboolean D_CheckNetGame(void)
 {
-	boolean ret = false;
+	dboolean ret = false;
 
 	InitAck();
 	rebound_tail = rebound_head = 0;

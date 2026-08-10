@@ -175,7 +175,7 @@ static int lib_getsecspecial(lua_State *L)
 
 static int lib_all7emeralds(lua_State *L)
 {
-	lua_pushboolean(L, ALL7EMERALDS(luaL_checkinteger(L, 1)));
+	lua_pushdboolean(L, ALL7EMERALDS(luaL_checkinteger(L, 1)));
 	return 1;
 }
 
@@ -290,7 +290,7 @@ static int lib_easeinoutexpo(lua_State *L) { EASINGFUNC(InOutExpo) }
 
 #define EASINGFUNC(easetype) \
 { \
-	boolean useparam = false; \
+	dboolean useparam = false; \
 	fixed_t param = 0; \
 	fixed_t start = 0; \
 	fixed_t end = FRACUNIT; \

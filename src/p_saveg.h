@@ -30,9 +30,9 @@ extern "C" {
 // These are the load / save game routines.
 
 void P_SaveGame(savebuffer_t *save, mapnum_t mapnum);
-void P_SaveNetGame(savebuffer_t *save, boolean resending);
-boolean P_LoadGame(savebuffer_t *save, mapnum_t mapoverride);
-boolean P_LoadNetGame(savebuffer_t *save, boolean reloading);
+void P_SaveNetGame(savebuffer_t *save, dboolean resending);
+dboolean P_LoadGame(savebuffer_t *save, mapnum_t mapoverride);
+dboolean P_LoadNetGame(savebuffer_t *save, dboolean reloading);
 
 mobj_t *P_FindNewPosition(UINT32 oldposition);
 
@@ -53,17 +53,17 @@ struct savebuffer_t
 	UINT8 *p;
 	UINT8 *end;
 	size_t size;
-	boolean write;
+	dboolean write;
 };
 
-boolean P_SaveBufferZAlloc(savebuffer_t *save, size_t alloc_size, INT32 tag, void *user);
+dboolean P_SaveBufferZAlloc(savebuffer_t *save, size_t alloc_size, INT32 tag, void *user);
 #define P_SaveBufferAlloc(a,b) P_SaveBufferZAlloc(a, b, PU_STATIC, NULL)
-boolean P_SaveBufferFromExisting(savebuffer_t *save, UINT8 *existing_buffer, size_t existing_size);
-boolean P_SaveBufferFromLump(savebuffer_t *save, lumpnum_t lump);
+dboolean P_SaveBufferFromExisting(savebuffer_t *save, UINT8 *existing_buffer, size_t existing_size);
+dboolean P_SaveBufferFromLump(savebuffer_t *save, lumpnum_t lump);
 size_t P_SaveBufferFromFile(savebuffer_t *save, char const *name);
 void P_SaveBufferFree(savebuffer_t *save);
 
-boolean MobjIsNetSynced(mobj_t *mobj);
+dboolean MobjIsNetSynced(mobj_t *mobj);
 
 #ifdef __cplusplus
 } // extern "C"

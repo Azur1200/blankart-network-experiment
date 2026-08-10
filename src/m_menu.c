@@ -223,13 +223,13 @@ typedef struct
 	mapnum_t mapnum;
 	char mapname[MAXMAPNAME];
 	UINT8 color;
-	boolean available;
+	dboolean available;
 } levelselectmap_t;
 
 typedef struct
 {
 	char header[MAXMAPNAME];
-	boolean wide;
+	dboolean wide;
 	UINT16 cupid;
 	UINT8 numcolumns;
 	levelselectmap_t maps[MAPSPERROW];
@@ -429,7 +429,7 @@ static fixed_t M_ItemWidth(const menupanelinst_t *pi, size_t index)
 	return V_StringWidth(pi->items[index].text, pi->vflags|MENUCAPS)*FRACUNIT;
 }
 
-static boolean M_ItemSelectable(const menuitem_t *item)
+static dboolean M_ItemSelectable(const menuitem_t *item)
 {
 	return (item->status & IT_INTERACT) && !(item->status & (IT_HIDDEN|IT_GRAYEDOUT|IT_SECRET));
 }
@@ -483,7 +483,7 @@ static void M_RawSetItemOn(menupanelinst_t *pi, UINT16 index)
 	}
 }
 
-static void M_ChangeItemStatus(menupanelinst_t *pi, const char *name, menuitemflags_t flag, boolean cond)
+static void M_ChangeItemStatus(menupanelinst_t *pi, const char *name, menuitemflags_t flag, dboolean cond)
 {
 	if (cond)
 		M_GetMenuItem(pi, name)->status |= flag;
@@ -558,7 +558,7 @@ static UINT32 M_ServersPerPage(void)
 }
 
 // TODO: port cup->realname
-static const char *CupName(const cupheader_t *cup, boolean suffix)
+static const char *CupName(const cupheader_t *cup, dboolean suffix)
 {
 	const char *name = strchr(cup->name, '_');
 	if (name != NULL)
@@ -724,7 +724,7 @@ inline static void M_GetGametypeColor(void)
 {
 	INT16 gt;
 	size_t i, j;
-	boolean usenewgametype = false;
+	dboolean usenewgametype = false;
 
 	warningflags = V_REDMAP;
 	recommendedflags = V_GREENMAP;
@@ -990,7 +990,7 @@ void Moviemode_option_Onchange(void)
 #define SKINGRIDWIDTH 9
 #define SKINGRIDHEIGHT 6
 
-static boolean gridcss_active;
+static dboolean gridcss_active;
 static INT32 gridcss_skinydrag;
 static INT32 gridcss_skinmemory;
 static INT32 gridcss_row;
@@ -1215,10 +1215,10 @@ static void M_HandleMenuPresState(menutype_t newMenuType)
 {
 	INT32 i;
 	menutype_t menutype, exittype = currentMenu ? currentMenu - menudefs : MN_NONE;
-	boolean noancestor = menustack[0] == MN_NONE;
+	dboolean noancestor = menustack[0] == MN_NONE;
 	INT16 exittag = 0, entertag = 0;
 	INT16 exitwipe = -1, enterwipe = -1;
-	boolean exitbubble = true, enterbubble = true;
+	dboolean exitbubble = true, enterbubble = true;
 
 	if (newMenuType == exittype) // same menu?
 		return;
@@ -1400,7 +1400,7 @@ static void Command_Manual_f(void)
 }
 
 // arbitrary keyboard shortcuts because fuck you
-static boolean M_DemoBinds(INT32 ch)
+static dboolean M_DemoBinds(INT32 ch)
 {
 	switch (ch)
 	{
@@ -1462,7 +1462,7 @@ static boolean M_DemoBinds(INT32 ch)
 
 // if the menu is being used during a wipe, running routines can be dangerous!
 // buffer a single input, then wait for the wipe to end
-static boolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
+static dboolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
 {
 	if (!WipeInAction)
 		return false;
@@ -1491,7 +1491,7 @@ static INT32 MR_Dummy(INT32 ch) { (void)ch; return true; }
 
 static fixed_t M_GetItemAbsY(const menupanelinst_t *pi, size_t index);
 
-static boolean M_GamestateCanOpenMenu(void)
+static dboolean M_GamestateCanOpenMenu(void)
 {
 	switch (gamestate)
 	{
@@ -1511,7 +1511,7 @@ static boolean M_GamestateCanOpenMenu(void)
 //
 // M_Responder
 //
-boolean M_Responder(event_t *ev)
+dboolean M_Responder(event_t *ev)
 {
 	if (dedicated
 		|| (demo.playback && demo.title)
@@ -1632,9 +1632,9 @@ boolean M_Responder(event_t *ev)
 }
 
 // special responder for demos
-boolean M_DemoResponder(event_t *ev)
+dboolean M_DemoResponder(event_t *ev)
 {
-	boolean eatinput = false;	// :omnom:
+	dboolean eatinput = false;	// :omnom:
 
 	//should be accounted for beforehand but just to be safe...
 	if (!demo.playback || demo.title)
@@ -1654,7 +1654,7 @@ boolean M_DemoResponder(event_t *ev)
 	return eatinput;
 }
 
-static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected);
+static void M_DrawMenuPanel(menupanelinst_t *pi, dboolean selected);
 static void M_DrawSplitText(const char *text, INT32 x, INT32 y, INT32 option, INT32 alpha);
 
 static int SortPanels(const void *a, const void *b)
@@ -1689,7 +1689,7 @@ static void M_DrawMenuTyping(void)
 
 	menuitem_t *item = menutyping.item;
 
-	boolean scrolltextbox = false;
+	dboolean scrolltextbox = false;
 	INT32 length = M_StringCvarLength(item->cvar);
 
 	if (length > MAXSTRINGLENGTH)
@@ -1762,7 +1762,7 @@ static void M_DrawMenuTyping(void)
 					col = 25;
 				}
 
-				boolean canmodifycol = (menutyping.menutypingfade == 18);
+				dboolean canmodifycol = (menutyping.menutypingfade == 18);
 
 				if (c == KEY_BACKSPACE)
 				{
@@ -1992,7 +1992,7 @@ void M_Drawer(void)
 		M_DrawMessageMenu();
 	}
 
-	boolean mainpause_open = menustack[0]
+	dboolean mainpause_open = menustack[0]
 		&& (menustack[0] == MN_MPAUSE ||
 			menustack[0] == MN_MAPAUSE ||
 			menustack[0] == MN_SPAUSE
@@ -2146,7 +2146,7 @@ void M_StartControlPanel(void)
 	}
 	else if (grandprixinfo.gp) // Single Player
 	{
-		boolean retryallowed = false;
+		dboolean retryallowed = false;
 		for (i = 0; i <= splitscreen; i++)
 		{
 			if (G_GametypeUsesLives() && players[g_localplayers[i]].lives <= 1)
@@ -2194,7 +2194,7 @@ static void M_ClearPanelInstances(void)
 //
 // M_ClearMenusEx
 //
-void M_ClearMenusEx(boolean callexitmenufunc, boolean notitle)
+void M_ClearMenusEx(dboolean callexitmenufunc, dboolean notitle)
 {
 	CON_ClearHUD();
 	I_SetTextInput(false);
@@ -2233,7 +2233,7 @@ void M_ClearMenusEx(boolean callexitmenufunc, boolean notitle)
 
 // corrects the value of cv_nextmap if it can't show its current map
 // returns false if there's no map to show
-static boolean M_CheckNextMap(const menupanelinst_t *pi)
+static dboolean M_CheckNextMap(const menupanelinst_t *pi)
 {
 	size_t i;
 
@@ -2263,7 +2263,7 @@ static boolean M_CheckNextMap(const menupanelinst_t *pi)
 }
 
 // ditto, but for cv_nextcup
-static boolean M_CheckNextCup(const menupanelinst_t *pi)
+static dboolean M_CheckNextCup(const menupanelinst_t *pi)
 {
 	(void)pi;
 
@@ -2276,7 +2276,7 @@ static boolean M_CheckNextCup(const menupanelinst_t *pi)
 	return true;
 }
 
-static void M_MaybeSetItemVisible(menupanelinst_t *pi, const char *name, boolean cond)
+static void M_MaybeSetItemVisible(menupanelinst_t *pi, const char *name, dboolean cond)
 {
 	menuitem_t *item = M_CheckMenuItem(pi, name);
 	if (item == NULL)
@@ -2397,7 +2397,7 @@ void M_ExitMenu(void)
 }
 
 // push a new menu to the stack (if the menu's enterroutine allows it)
-void M_EnterMenu(menutype_t menunum, boolean callexit, INT32 arg)
+void M_EnterMenu(menutype_t menunum, dboolean callexit, INT32 arg)
 {
 	(void)callexit; // quitroutines are only called when exiting menus now, not entering!
 	size_t i;
@@ -2426,7 +2426,7 @@ void M_EnterMenu(menutype_t menunum, boolean callexit, INT32 arg)
 
 // Use for menus you return to.
 // Backs up the stack so you can place it back into place
-void M_RestoreMenuStack(boolean backup)
+void M_RestoreMenuStack(dboolean backup)
 {
 	if (backup)
 	{
@@ -2455,7 +2455,7 @@ void M_RestoreMenuStack(boolean backup)
 }
 
 // Guess I'll put this here, idk
-boolean M_MouseNeeded(void)
+dboolean M_MouseNeeded(void)
 {
 	return false;
 }
@@ -2480,7 +2480,7 @@ void M_SetMenuDelay(UINT8 i)
 	}
 }
 
-static void handle_dpad(event_t* ev, INT32 device, boolean keyup)
+static void handle_dpad(event_t* ev, INT32 device, dboolean keyup)
 {
 	SINT8 pid = G_GetDevicePlayer(device);
 
@@ -2528,7 +2528,7 @@ void M_HandleDpadEvent(event_t* ev)
 	}
 }
 
-void M_UpdateMenuCMD(UINT8 i, boolean bailrequired)
+void M_UpdateMenuCMD(UINT8 i, dboolean bailrequired)
 {
 	INT32 thisMenuKey = menuKey;
 
@@ -2631,7 +2631,7 @@ void M_UpdateMenuCMD(UINT8 i, boolean bailrequired)
 	}
 }
 
-boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt)
+dboolean M_MenuButtonPressed(UINT8 pid, UINT32 bt)
 {
 	if (menucmd[pid].buttonsHeld & bt)
 	{
@@ -2641,12 +2641,12 @@ boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt)
 	return (menucmd[pid].buttons & bt);
 }
 
-boolean M_MenuButtonHeld(UINT8 pid, UINT32 bt)
+dboolean M_MenuButtonHeld(UINT8 pid, UINT32 bt)
 {
 	return !!(menucmd[pid].buttons & bt);
 }
 
-static boolean M_HandleGoBack(INT32 thisMenuKey)
+static dboolean M_HandleGoBack(INT32 thisMenuKey)
 {
 	if (M_MenuButtonPressed(0, MBT_CANCEL) || M_MenuButtonPressed(0, MBT_HOME))
 	{
@@ -2712,7 +2712,7 @@ void M_OpenVirtualKeyboard(textinput_t *textinput, char *buffer, menuitem_t *ite
 	I_SetTextInput(true);
 }
 
-void M_SwitchVirtualKeyboard(boolean gamepad)
+void M_SwitchVirtualKeyboard(dboolean gamepad)
 {
 	menutyping.keyboardtyping = cv_debugvirtualkeyboard.value ? false : !gamepad;
 }
@@ -2763,7 +2763,7 @@ void M_MenuTypingInput(INT32 key)
 	// Determine when to check for keyboard inputs or controller inputs using menuKey, which is the key passed here as argument.
 	if (key > 0)
 	{
-		boolean gamepad = (key >= NUMKEYS);
+		dboolean gamepad = (key >= NUMKEYS);
 		M_SwitchVirtualKeyboard(gamepad);
 		if (gamepad)
 			return;
@@ -2972,7 +2972,7 @@ void M_DoItemRoutine(menuitem_t *item, INT32 thisMenuKey)
 
 	if (menustack[0] == MN_PLAYBACK)
 	{
-		boolean held = (boolean)playback_enterheld;
+		dboolean held = (dboolean)playback_enterheld;
 		if (held)
 			return;
 		playback_enterheld = 3;
@@ -3647,7 +3647,7 @@ static void M_DrawSliderCursor(fixed_t x, fixed_t y, INT32 vflags, consvar_t *cv
 	V_DrawSciencePatch(x - 4*FRACUNIT + (SLIDER_RANGE+4)*range, y, vflags, W_CachePatchName("M_SLIDEC", PU_CACHE), FRACUNIT);
 }
 
-static void M_DrawSticker(INT32 x, INT32 y, INT32 width, INT32 flags, boolean isSmall);
+static void M_DrawSticker(INT32 x, INT32 y, INT32 width, INT32 flags, dboolean isSmall);
 
 static fixed_t M_GetAlignment(const menuitempart_t *part, fixed_t x, fixed_t width)
 {
@@ -3690,7 +3690,7 @@ static const char *M_GetPartString(const menuitempart_t *part, const menuitem_t 
 static const menuitemstyle_t defaultstyle = { .partenabled = { true } };
 
 // draws a menu item, returns cursor offset
-static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed_t x, fixed_t y, INT32 vflags, boolean selected)
+static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed_t x, fixed_t y, INT32 vflags, dboolean selected)
 {
 	fixed_t width = 0;
 	fixed_t retwidth = 0;
@@ -3861,7 +3861,7 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 				return retwidth;
 
 			// see M_ItemExtraOffset
-			boolean side = cv == &cv_dummyname || cv == &cv_playername[0];
+			dboolean side = cv == &cv_dummyname || cv == &cv_playername[0];
 			INT32 xofs = side ? 32*FRACUNIT : 0;
 			INT32 yofs = side ? -8*FRACUNIT : 4*FRACUNIT;
 
@@ -3906,7 +3906,7 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 		else
 		{
 			const char *str = cv->string;
-			boolean warning = (cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv);
+			dboolean warning = (cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv);
 
 			if (cv == &cv_chooseskin)
 				str = skins[cv_chooseskin.value]->realname;
@@ -3957,7 +3957,7 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 static fixed_t M_ItemExtraOffset(const menuitem_t *item)
 {
 	// see M_DrawRightString
-	boolean side = item->cvar == &cv_dummyname || item->cvar == &cv_playername[0];
+	dboolean side = item->cvar == &cv_dummyname || item->cvar == &cv_playername[0];
 	return item->cvar && !item->cvar->PossibleValue && !side ? 16*FRACUNIT : 0;
 }
 
@@ -4046,7 +4046,7 @@ static void M_UpdateStyleFixedStrings(void)
 	}
 }
 
-static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
+static void M_DrawMenuPanel(menupanelinst_t *pi, dboolean selected)
 {
 	const menupaneldef_t *pd = M_GetDefFromInst(pi);
 	INT32 pflags = pi->vflags & ~V_FLIP;
@@ -4067,7 +4067,7 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 	if (!scrollheight)
 		scrollheight = INT32_MAX;
 
-	boolean hidecursor = !selected || pi->numitems == 0 || pd->drawroutine == MD_DrawMonitorToggles || pd->drawroutine == MD_DrawLevelPlatterMenu;
+	dboolean hidecursor = !selected || pi->numitems == 0 || pd->drawroutine == MD_DrawMonitorToggles || pd->drawroutine == MD_DrawLevelPlatterMenu;
 
 	fixed_t topy = M_GetItemAbsY(pi, 0);
 	fixed_t boty = M_GetItemAbsY(pi, pi->numitems-1);
@@ -4088,7 +4088,7 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 
 	size_t i;
 	fixed_t w, x = scrollx, y = scrolly, cursorx = 0, cursory = 0;
-	boolean clipbot = false, cliptop = false;
+	dboolean clipbot = false, cliptop = false;
 
 	// levelselect no longer needs a special drawer!
 	for (i = 0; i < pi->numitems; i++)
@@ -4182,7 +4182,7 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, boolean selected)
 		y += pd->lineheight*FRACUNIT + M_ItemExtraOffset(item);
 	}
 
-	boolean wipebuffer = (noFurtherInput > 0 || menucmd[0].wipebuffer);
+	dboolean wipebuffer = (noFurtherInput > 0 || menucmd[0].wipebuffer);
 
 	// DRAW THE SKULL CURSOR
 	if (!hidecursor && M_ItemSelectable(&pi->items[pi->itemon]))
@@ -4329,7 +4329,7 @@ static INT32 M_GetLevelListTOL(void)
 	}
 }
 
-static boolean M_LevelAvailableOnPlatter(mapnum_t mapnum)
+static dboolean M_LevelAvailableOnPlatter(mapnum_t mapnum)
 {
 	// don't care
 	(void)mapnum;
@@ -4341,7 +4341,7 @@ static boolean M_LevelAvailableOnPlatter(mapnum_t mapnum)
 //
 // Determines whether to show a given map in the various level-select lists.
 //
-static boolean M_CanShowLevelOnPlatter(mapnum_t mapnum)
+static dboolean M_CanShowLevelOnPlatter(mapnum_t mapnum)
 {
 	// Does the map exist?
 	if (/*mapnum < 0 || */mapnum >= nummapheaders || !mapheaderinfo[mapnum])
@@ -4402,7 +4402,7 @@ static boolean M_CanShowLevelOnPlatter(mapnum_t mapnum)
 	}
 }
 
-static boolean M_CanShowCupOnPlatter(const cupheader_t *cup)
+static dboolean M_CanShowCupOnPlatter(const cupheader_t *cup)
 {
 	(void)cup;
 	return true;
@@ -4490,7 +4490,7 @@ static qsort_f *cupsortfuncs[] = {
 	[LEVELSORT_FILE] = Cupsort_File,
 };
 
-static boolean M_MakeLevelSelectHeader(levelselectrow_t *row, mapheader_t *prev, mapheader_t *iter)
+static dboolean M_MakeLevelSelectHeader(levelselectrow_t *row, mapheader_t *prev, mapheader_t *iter)
 {
 	const char *header = NULL;
 
@@ -4590,7 +4590,7 @@ static void M_UpdateLevelPlatter(void)
 {
 	INT32 i, row = 0, headerRow = -1;
 	mapheader_t *previtermap = NULL; // prevmap AND lastmap are taken...!
-	boolean forceNewRow = true;
+	dboolean forceNewRow = true;
 	INT16 sortedmaps[INT16_MAX];
 	INT16 numsortedmaps = 0;
 	INT16 randommap = -3; // need at least 2 available maps to safely randomize
@@ -4632,7 +4632,7 @@ static void M_UpdateLevelPlatter(void)
 	{
 		mapnum_t mapnum = sortedmaps[i];
 		mapheader_t *itermap = mapheaderinfo[mapnum];
-		boolean wide = false;//(headermap->menuflags & LF2_WIDEICON);
+		dboolean wide = false;//(headermap->menuflags & LF2_WIDEICON);
 
 		if (headerRow != -1 && M_MakeLevelSelectHeader(&levelselect.rows[headerRow], previtermap, itermap))
 		{
@@ -4791,7 +4791,7 @@ static void M_MoveLevelPlatter(INT32 vmove)
 	levelselect.namescroll = 0;
 }
 
-static void M_LevelPlatterSelect(boolean delay)
+static void M_LevelPlatterSelect(dboolean delay)
 {
 	if (levellistmode == LLM_CUPSELECT)
 	{
@@ -4921,7 +4921,7 @@ INT32 MR_HandleLevelPlatter(INT32 choice)
 	return false;
 }
 
-static void M_DrawLevelPlatterHeader(fixed_t y, const char *header, boolean headerhighlight, boolean allowlowercase)
+static void M_DrawLevelPlatterHeader(fixed_t y, const char *header, dboolean headerhighlight, dboolean allowlowercase)
 {
 	y -= (lsmapheight + lsmapnameheight + FRACUNIT)/2;
 	y += lsheadingheight - 12*FRACUNIT;
@@ -4934,7 +4934,7 @@ static void M_DrawLevelPlatterHeader(fixed_t y, const char *header, boolean head
 }
 
 // draws a map CENTERED around the given coordinates
-static void M_DrawLevelPlatterMap(const levelselectmap_t *lsmap, fixed_t x, fixed_t y, boolean highlight, boolean wide)
+static void M_DrawLevelPlatterMap(const levelselectmap_t *lsmap, fixed_t x, fixed_t y, dboolean highlight, dboolean wide)
 {
 	fixed_t scale = highlight ? FRACUNIT : FRACUNIT/2;
 	fixed_t width = wide ? 282*FRACUNIT : FixedMul(lsmapwidth, scale);
@@ -4942,7 +4942,7 @@ static void M_DrawLevelPlatterMap(const levelselectmap_t *lsmap, fixed_t x, fixe
 
 	// wide thumbnails? mmm... i dunno... maybe...
 	patch_t *patch;
-	boolean encore = cv_kartencore.value == 1 && levellistmode == LLM_CREATESERVER && cv_newgametype.value == GT_RACE;
+	dboolean encore = cv_kartencore.value == 1 && levellistmode == LLM_CREATESERVER && cv_newgametype.value == GT_RACE;
 	fixed_t thumbscale = M_GetMapThumbnail(lsmap->available ? lsmap->mapnum : NEXTMAP_INVALID, &patch);
 	thumbscale = FixedMul(thumbscale/4, scale);
 
@@ -4995,7 +4995,7 @@ static void M_DrawLevelPlatterMap(const levelselectmap_t *lsmap, fixed_t x, fixe
 
 static void M_DrawLevelPlatterRow(UINT8 row, fixed_t y)
 {
-	const boolean rowhighlight = (row == levelselect.row);
+	const dboolean rowhighlight = (row == levelselect.row);
 	const levelselectrow_t *lsrow = &levelselect.rows[row];
 
 	if (lsrow->header[0])
@@ -5129,12 +5129,12 @@ void MD_DrawLevelPlatterMenu(menupanelinst_t *pi)
 // Determines whether to show a given map in the various level-select lists.
 // Set gt = -1 to ignore gametype.
 //
-boolean M_CanShowLevelInList(mapnum_t mapnum)
+dboolean M_CanShowLevelInList(mapnum_t mapnum)
 {
 	return M_CanShowLevelOnPlatter(mapnum) && M_LevelAvailableOnPlatter(mapnum);
 }
 
-const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback, boolean forcekeyboard)
+const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback, dboolean forcekeyboard)
 {
 	INT32 i;
 
@@ -5180,7 +5180,7 @@ fallback:
 char ConfirmString[25];
 char DeclineString[25];
 
-char *M_MessageConfirmText(boolean gamequit, boolean forcekeyboard)
+char *M_MessageConfirmText(dboolean gamequit, dboolean forcekeyboard)
 {
 	const char *item1 = M_ButtonName(0, gc_accelerate, "ACCEL", forcekeyboard);
 
@@ -5194,7 +5194,7 @@ char *M_MessageConfirmText(boolean gamequit, boolean forcekeyboard)
 	return ConfirmString;
 }
 
-char *M_MessageCancelText(boolean gamequit, boolean forcekeyboard)
+char *M_MessageCancelText(dboolean gamequit, dboolean forcekeyboard)
 {
 	const char *item1 = M_ButtonName(0, gc_brake, "BRAKE", forcekeyboard);
 
@@ -5208,7 +5208,7 @@ char *M_MessageCancelText(boolean gamequit, boolean forcekeyboard)
 	return DeclineString;
 }
 
-void M_MessageboxClose(boolean clearstack)
+void M_MessageboxClose(dboolean clearstack)
 {
 	messagebox.active = false;
 
@@ -5443,10 +5443,10 @@ static void M_DrawMessageMenu(void)
 	INT32 boxheight = messagebox.numlines*8+8;
 	const INT32 thinflags = V_6WIDTHSPACE|V_ALLOWLOWERCASE;
 
-	boolean messagevalid = !!(messagebox.text);
-	boolean headervalid = !!(messagebox.headertext);
-	boolean confirmvalid = !!(messagebox.confirmtext);
-	boolean declinevalid = !!(messagebox.declinetext);
+	dboolean messagevalid = !!(messagebox.text);
+	dboolean headervalid = !!(messagebox.headertext);
+	dboolean confirmvalid = !!(messagebox.confirmtext);
+	dboolean declinevalid = !!(messagebox.declinetext);
 
 	if (confirmvalid || declinevalid)
 		boxheight += 4;
@@ -5762,7 +5762,7 @@ static char *M_AddonsHeaderPath(void)
 #define CLEARNAME Z_Free(refreshdirname);\
 					refreshdirname = NULL
 
-static boolean prevmajormods = false;
+static dboolean prevmajormods = false;
 
 static void M_AddonsClearName(INT32 choice)
 {
@@ -5779,7 +5779,7 @@ static void M_AddonsClearName(INT32 choice)
 #define FILEERRORSFX sfx_adderr
 
 // returns whether to do message draw
-static boolean M_AddonsRefresh(void)
+static dboolean M_AddonsRefresh(void)
 {
 	if (refreshdirmenu & REFRESHDIR_NORMAL)
 	{
@@ -6348,7 +6348,7 @@ void MP_TickReplayHutInfoForeground(menupanelinst_t *pi)
 				? va("Race (%s speed)", kartspeed_cons_t[(mdemo->kartspeed & ~DF_ENCORE) + 1].strvalue)
 				: "Battle Mode");
 
-				boolean hidescore = !mdemo->standings[0].ranking;
+				dboolean hidescore = !mdemo->standings[0].ranking;
 				M_SetItemVisible(pi, "NOSTANDINGS", hidescore);
 				M_SetItemVisible(pi, "WINNER", !hidescore);
 				M_SetItemVisible(pi, "WINNERNAME", !hidescore);
@@ -6450,7 +6450,7 @@ static fixed_t M_ReplayHutScroll(fixed_t scrollamt, tic_t timer)
 	return scrollx / 2;
 }
 
-static boolean M_CurrentReplayRankingCount(void)
+static dboolean M_CurrentReplayRankingCount(void)
 {
 	menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
 	UINT8 i;
@@ -6608,7 +6608,7 @@ INT32 MR_HutStartReplay(INT32 choice)
 
 	// Draw a warning prompt if needed
 	const char *warning = "";
-	boolean warningpopup = true;
+	dboolean warningpopup = true;
 	switch (mdemo->addonstatus)
 	{
 		case DFILE_ERROR_CANNOTLOAD:
@@ -6694,7 +6694,7 @@ void MP_TickPlayBackMenu(menupanelinst_t *pi)
 		playback_last_menu_interaction_leveltime = leveltime - 6*TICRATE;
 
 	// Toggle items
-	boolean showpause = paused && !demo.rewinding;
+	dboolean showpause = paused && !demo.rewinding;
 
 	M_SetItemVisible(pi, "PAUSE", !showpause);
 	M_SetItemVisible(pi, "FASTFORWARD", !showpause);
@@ -7109,7 +7109,7 @@ INT32 MR_ConfirmSpectateChange(INT32 choice)
 
 void MP_Options(menupanelinst_t *pi)
 {
-	boolean gamecheck = (Playing() || demo.playback);
+	dboolean gamecheck = (Playing() || demo.playback);
 
 	// if the player is not admin or server, disable gameplay & server options
 	M_SetItemDisabled(pi, "GAMEPLAY", Playing() && !(server || IsPlayerAdmin(consoleplayer)));
@@ -7234,7 +7234,7 @@ void MP_UnlockablesChecklist(menupanelinst_t *pi)
 
 	for (UINT32 i = 0; i < MAXUNLOCKABLES; i++)
 	{
-		boolean secret = !M_Achieved(unlockables[i].showconditionset - 1) && !unlockables[i].unlocked;
+		dboolean secret = !M_Achieved(unlockables[i].showconditionset - 1) && !unlockables[i].unlocked;
 
 		if (unlockables[i].name[0] == 0 || unlockables[i].nochecklist
 		|| !unlockables[i].conditionset || unlockables[i].conditionset > MAXCONDITIONSETS
@@ -7640,7 +7640,7 @@ void MP_StatsRecords(menupanelinst_t *pi)
 	menuitem_t *item;
 	fixed_t y = 0;
 	INT32 i;
-	boolean showemblems = G_EmblemsEnabled();
+	dboolean showemblems = G_EmblemsEnabled();
 
 	CLEANUP(pfree) INT16 *statsMapList = malloc(nummapheaders * sizeof(*statsMapList));
 	INT16 statsMapListLen = 0;
@@ -7793,7 +7793,7 @@ void MP_StatsRecordsBG(menupanelinst_t *pi)
 		M_GetMenuItem(pi, "MAPSFINISHED")->style = DEH_FindMenuItemStyle("EDGE-RECOMMENDEDHIGHLIGHT");
 	}
 
-	boolean showemblems = G_EmblemsEnabled();
+	dboolean showemblems = G_EmblemsEnabled();
 	M_SetItemText(pi, "EMBLEMCOUNT", va("x %d/%d", M_CountEmblems(), numemblems+numextraemblems));
 	M_SetItemVisible(pi, "EMBLEMCOUNT", showemblems);
 	M_SetItemVisible(pi, "GOTIT", showemblems);
@@ -8013,7 +8013,7 @@ INT32 MR_StartGrandPrix(INT32 choice)
 
 	// Populate the roundqueue
 	memset(&roundqueue, 0, sizeof(struct roundqueue));
-	G_GPCupIntoRoundQueue(gpcup, GT_RACE/*levellist.newgametype*/, (boolean)cv_dummygpencore.value);
+	G_GPCupIntoRoundQueue(gpcup, GT_RACE/*levellist.newgametype*/, (dboolean)cv_dummygpencore.value);
 	roundqueue.position = roundqueue.roundnum = 1;
 	roundqueue.netcommunicate = true; // relevant for future Online GP
 
@@ -8045,8 +8045,8 @@ void MP_TimeAttackMenu(menupanelinst_t *pi)
 	// see also p_setup.c's P_LoadRecordGhosts
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
 
-	boolean visible;
-	boolean showreplay = false, showguest = false;
+	dboolean visible;
+	dboolean showreplay = false, showguest = false;
 
 	// best time
 	visible = G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_BESTTIME);
@@ -8107,7 +8107,7 @@ void MP_TimeAttackPresets(menupanelinst_t *pi)
 	M_SetItemTextRaw(item, "Back");
 }
 
-boolean M_AttackOnStack(void)
+dboolean M_AttackOnStack(void)
 {
 	UINT16 i;
 
@@ -9810,7 +9810,7 @@ void MP_TickMultiPlayerMenu(menupanelinst_t *pi)
 	INT32 pnum = setupplayer;
 	M_SetItemDisabled(pi, "SKIN", splitscreen >= pnum && !CanChangeSkin(pnum == 0 ? consoleplayer : g_localplayers[pnum]));
 
-	boolean visible = cv_skinselectstyle.value == 0;
+	dboolean visible = cv_skinselectstyle.value == 0;
 	M_SetItemVisible(pi, "ACCELERATION", visible);
 	M_SetItemVisible(pi, "MAXSPEED", visible);
 	M_SetItemVisible(pi, "HANDLING", visible);
@@ -10196,7 +10196,7 @@ INT32 MR_SetupControlsMenu(INT32 arg)
 void MP_SetupControls(menupanelinst_t *pi)
 {
 	INT32 pnum = setupcontrolplayer - 1;
-	boolean player1 = pnum == 0;
+	dboolean player1 = pnum == 0;
 
 	// Set proper gamepad options
 	M_SetItemArgument(pi, "SETJOY", pnum);
@@ -10437,7 +10437,7 @@ void MP_VideoModeList(menupanelinst_t *pi)
 // Draw the video modes list, a-la-Quake
 void MD_DrawVideoMode(menupanelinst_t *pi)
 {
-	boolean testing = vidm_testingmode > 0;
+	dboolean testing = vidm_testingmode > 0;
 	menupanelinst_t *ptesting = M_GetPanel("TESTING");
 	menupanelinst_t *pinfo = M_GetPanel("INFO");
 	if (testing)
@@ -10638,7 +10638,7 @@ void MD_DrawMonitorToggles(menupanelinst_t *pi)
 			const kartresult_t* result = K_GetKartResult(pi->items[thisitem].patch);
 			const kartitem_t* item = &kartitems[result->type];
 
-			boolean enabled = result->cvar->value == 1;
+			dboolean enabled = result->cvar->value == 1;
 
 			if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
 				enabled = false;
@@ -10650,7 +10650,7 @@ void MD_DrawMonitorToggles(menupanelinst_t *pi)
 			else
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISBGD", PU_CACHE));
 
-			boolean shownum = result->amount >= K_GetItemNumberDisplayMin(result->type, true);
+			dboolean shownum = result->amount >= K_GetItemNumberDisplayMin(result->type, true);
 			SINT8 showalt = item->altcvar != NULL && !K_ShowAltItemIcon(result->type, false) ? item->altcvar->value : -1;
 			if (shownum)
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISMUL", PU_CACHE));
@@ -10698,7 +10698,7 @@ void MD_DrawMonitorToggles(menupanelinst_t *pi)
 	{
 		const kartresult_t* result = K_GetKartResult(pi->items[pi->itemon].patch);
 		const kartitem_t* item = &kartitems[result->type];
-		boolean enabled = result->cvar->value == 1;
+		dboolean enabled = result->cvar->value == 1;
 
 		fixed_t fancyflip = abs(FCOS(FixedAngle(Easing_InOutCubic(
 		                        fliptic[result->type] * FRACUNIT / FLIPTIC_TIME, 0, 180 * FRACUNIT))));
@@ -10717,7 +10717,7 @@ void MD_DrawMonitorToggles(menupanelinst_t *pi)
 			V_DrawScaledPatch(
 			    onx - 1, ony - 2, 0, W_CachePatchName("K_ITBGD", PU_CACHE));
 
-		boolean shownum = result->amount >= K_GetItemNumberDisplayMin(result->type, true);
+		dboolean shownum = result->amount >= K_GetItemNumberDisplayMin(result->type, true);
 		SINT8 showalt = item->altcvar != NULL && !K_ShowAltItemIcon(result->type, false) ? item->altcvar->value : -1;
 		if (fliptic[result->type] > FLIPTIC_TIME/2)
 			showalt = !showalt;
@@ -10845,7 +10845,7 @@ void M_ReturnToConnectMenu(void)
 	M_EnterMenu(MN_MP_MAIN, true, 0);
 }
 
-static boolean viewserver_showaddons = false;
+static dboolean viewserver_showaddons = false;
 
 void MP_SetupViewServer(menupanelinst_t *pi)
 {
@@ -11012,7 +11012,7 @@ void MP_ViewServerPlayers(menupanelinst_t *pi)
 		if (serverlist[joinnode].info.numberofplayer <= 16)
 		{
 			UINT16 skinum = playerinfo[i].skin;
-			boolean validskin = skinum < numskins;
+			dboolean validskin = skinum < numskins;
 
 
 			if (playerinfo[i].team == 255)
@@ -11059,7 +11059,7 @@ void MP_ViewServerAddons(menupanelinst_t *pi)
 	INT32 i;
 	INT32 count = 0;
 	fixed_t x = 1, y = 1; // FIXME auto
-	boolean small_mode = fileneedednum <= 11;
+	dboolean small_mode = fileneedednum <= 11;
 
 	pi->visible = viewserver_showaddons;
 	pi->disabled = true;
@@ -11243,7 +11243,7 @@ INT32 MR_QuitSRB2(INT32 choice)
 }
 
 // (this goes in k_hud.c when merged into v2)
-static void M_DrawSticker(INT32 x, INT32 y, INT32 width, INT32 flags, boolean isSmall)
+static void M_DrawSticker(INT32 x, INT32 y, INT32 width, INT32 flags, dboolean isSmall)
 {
 	patch_t *stickerEnd;
 	INT32 height;
@@ -11267,8 +11267,8 @@ static void M_DrawSticker(INT32 x, INT32 y, INT32 width, INT32 flags, boolean is
 #ifdef HAVE_DISCORDRPC
 static const tic_t confirmLength = 3*TICRATE/4;
 static tic_t confirmDelay = 0;
-static boolean confirmAccept = false;
-boolean removeRequest = false;
+static dboolean confirmAccept = false;
+dboolean removeRequest = false;
 
 INT32 MR_HandleDiscordRequests(INT32 choice)
 {

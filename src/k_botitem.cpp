@@ -36,7 +36,7 @@
 // Looks for players around the bot, and presses the item button
 // if there is one in range.
 // Returns true if a player was found & we can press the item button, otherwise false.
-static boolean K_BotUseItemNearPlayer(botdata_t *bd, const player_t *player, fixed_t radius)
+static dboolean K_BotUseItemNearPlayer(botdata_t *bd, const player_t *player, fixed_t radius)
 {
 	ZoneScoped;
 
@@ -161,7 +161,7 @@ static player_t *K_PlayerPredictThrow(const player_t *player, UINT8 extra)
 }
 
 /*--------------------------------------------------
-	static player_t *K_PlayerInCone(const player_t *player, UINT16 cone, boolean flip)
+	static player_t *K_PlayerInCone(const player_t *player, UINT16 cone, dboolean flip)
 
 		Looks for players in the .
 
@@ -174,7 +174,7 @@ static player_t *K_PlayerPredictThrow(const player_t *player, UINT8 extra)
 	Return:-
 		true if a player was found in the cone, otherwise false.
 --------------------------------------------------*/
-static player_t *K_PlayerInCone(const player_t *player, fixed_t radius, UINT16 cone, boolean flip)
+static player_t *K_PlayerInCone(const player_t *player, fixed_t radius, UINT16 cone, dboolean flip)
 {
 	ZoneScoped;
 
@@ -243,7 +243,7 @@ static player_t *K_PlayerInCone(const player_t *player, fixed_t radius, UINT16 c
 }
 
 /*--------------------------------------------------
-	static boolean K_RivalBotAggression(const player_t *bot, const player_t *target)
+	static dboolean K_RivalBotAggression(const player_t *bot, const player_t *target)
 
 		Returns if a bot is a rival & wants to be aggressive to a player.
 
@@ -254,7 +254,7 @@ static player_t *K_PlayerInCone(const player_t *player, fixed_t radius, UINT16 c
 	Return:-
 		false if not the rival. false if the target is another bot. Otherwise, true.
 --------------------------------------------------*/
-static boolean K_RivalBotAggression(const player_t *bot, const player_t *target)
+static dboolean K_RivalBotAggression(const player_t *bot, const player_t *target)
 {
 	if (bot == NULL || target == NULL)
 	{
@@ -309,7 +309,7 @@ static void K_ItemConfirmForTarget(botdata_t *bd, const player_t *bot, const pla
 /// @brief checks if given bot isn't prevented from using items due to item cooldowns
 /// @param bot bot to check cooldowns for
 /// @return if bot is able to use item-related actions (using items or mashing the roulette)
-static boolean K_CheckBotItemCooldown(const player_t *bot)
+static dboolean K_CheckBotItemCooldown(const player_t *bot)
 {
 	return bot->itemusecooldown <= 0;
 }
@@ -318,7 +318,7 @@ static boolean K_CheckBotItemCooldown(const player_t *bot)
 // Presses the item button & aim buttons for the bot.
 // dir - Aiming direction: 1 for forwards, -1 for backwards, 0 for neutral.
 // Returns true if we could press, false if not.
-static boolean K_BotGenericPressItem(botdata_t *bd, SINT8 dir)
+static dboolean K_BotGenericPressItem(botdata_t *bd, SINT8 dir)
 {
 	ZoneScoped;
 
@@ -347,7 +347,7 @@ static void K_BotItemGenericTap(botdata_t *bd)
 
 // Decides if a bot is ready to reveal their trap item or not.
 // mine - Set to true to handle Mine-specific behaviors.
-static boolean K_BotRevealsGenericTrap(botdata_t *bd, const player_t *player, boolean mine)
+static dboolean K_BotRevealsGenericTrap(botdata_t *bd, const player_t *player, dboolean mine)
 {
 	ZoneScoped;
 
@@ -385,7 +385,7 @@ static boolean K_BotRevealsGenericTrap(botdata_t *bd, const player_t *player, bo
 
 // Item usage for Eggman shields.
 // mine - Set to true to handle Mine-specific behaviors.
-static void K_BotItemGenericTrapShield(botdata_t *bd, const player_t *player, boolean mine)
+static void K_BotItemGenericTrapShield(botdata_t *bd, const player_t *player, dboolean mine)
 {
 	ZoneScoped;
 
@@ -435,8 +435,8 @@ static void K_BotItemSneaker(botdata_t *bd, const player_t *player)
 		return;
 	}
 
-	boolean stack = K_StackingActive();
-	boolean sneakerstack = (stack && (cv_kartstacking_sneaker_maxgrade.value > 1));
+	dboolean stack = K_StackingActive();
+	dboolean sneakerstack = (stack && (cv_kartstacking_sneaker_maxgrade.value > 1));
 	const SINT8 stacktime = K_BotSneakerStackThreshold(player->botvars.difficulty);
 
 	if ((player->offroad && K_ApplyOffroad(player)) // Stuck in offroad, use it NOW
@@ -500,7 +500,7 @@ static void K_BotItemBanana(botdata_t *bd, const player_t *player)
 
 	const fixed_t coneDist = FixedMul(1280 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
 	SINT8 throwdir = -1;
-	boolean tryLookback = false;
+	dboolean tryLookback = false;
 	player_t *target = NULL;
 
 	bd->itemconfirm++;
@@ -547,7 +547,7 @@ static void K_BotItemMine(botdata_t *bd, const player_t *player)
 
 	const fixed_t coneDist = FixedMul(1280 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
 	SINT8 throwdir = 0;
-	boolean tryLookback = false;
+	dboolean tryLookback = false;
 	player_t *target = NULL;
 
 	bd->itemconfirm++;
@@ -629,7 +629,7 @@ static void K_BotItemEggman(botdata_t *bd, const player_t *player)
 	const fixed_t coneDist = FixedMul(1280 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
 	const UINT8 stealth = K_EggboxStealth(player->mo->x, player->mo->y);
 	SINT8 throwdir = -1;
-	boolean tryLookback = false;
+	dboolean tryLookback = false;
 	player_t *target = NULL;
 
 	bd->itemconfirm++;
@@ -667,7 +667,7 @@ static void K_BotItemEggman(botdata_t *bd, const player_t *player)
 }
 
 /*--------------------------------------------------
-	static boolean K_BotRevealsEggbox(const player_t *player)
+	static dboolean K_BotRevealsEggbox(const player_t *player)
 
 		Decides if a bot is ready to place their Eggman item or not.
 
@@ -677,7 +677,7 @@ static void K_BotItemEggman(botdata_t *bd, const player_t *player)
 	Return:-
 		true if we want the bot to reveal their eggbox, otherwise false.
 --------------------------------------------------*/
-static boolean K_BotRevealsEggbox(const player_t *player)
+static dboolean K_BotRevealsEggbox(const player_t *player)
 {
 	ZoneScoped;
 
@@ -749,7 +749,7 @@ static void K_BotItemOrbinaut(botdata_t *bd, const player_t *player)
 	const fixed_t topspeed = K_GetKartSpeed(player, false, true);
 	fixed_t radius = FixedMul(2560 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
 	SINT8 throwdir = -1;
-	boolean tryLookback = false;
+	dboolean tryLookback = false;
 	UINT8 snipeMul = 2;
 	player_t *target = NULL;
 
@@ -798,10 +798,10 @@ static void K_BotItemBallhog(botdata_t *bd, const player_t *player)
 	const fixed_t topspeed = K_GetKartSpeed(player, false, true);
 	fixed_t radius = FixedMul(2560 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
 	SINT8 throwdir = -1;
-	boolean tryLookback = false;
+	dboolean tryLookback = false;
 	UINT8 snipeMul = 2;
 	player_t *target = NULL;
-	boolean hold = false;
+	dboolean hold = false;
 
 	if (player->speed > topspeed)
 	{
@@ -863,7 +863,7 @@ static void K_BotItemJawz(botdata_t *bd, const player_t *player)
 	const fixed_t topspeed = K_GetKartSpeed(player, false, true);
 	fixed_t radius = FixedMul(2560 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
 	SINT8 throwdir = 1;
-	boolean tryLookback = false;
+	dboolean tryLookback = false;
 	UINT8 snipeMul = 2;
 	INT32 lastTarg = player->lastitemtarget;
 	player_t *target = NULL;
@@ -892,7 +892,7 @@ static void K_BotItemJawz(botdata_t *bd, const player_t *player)
 	{
 		mobj_t *targMo = players[lastTarg].mo;
 		mobj_t *mobj = NULL, *next = NULL;
-		boolean targettedAlready = false;
+		dboolean targettedAlready = false;
 
 		target = &players[lastTarg];
 
@@ -952,7 +952,7 @@ static void K_BotItemBubble(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
-	boolean hold = false;
+	dboolean hold = false;
 
 	// We are holding this thing too long, lets get rid of it.
 	if (bd->itemconfirm > 15*TICRATE)
@@ -991,7 +991,7 @@ static void K_BotItemFlame(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
-	boolean forceoverheat = ((player->offroad && K_ApplyOffroad(player)) || (K_GetWaypointIsShortcut(player->nextwaypoint) == true));
+	dboolean forceoverheat = ((player->offroad && K_ApplyOffroad(player)) || (K_GetWaypointIsShortcut(player->nextwaypoint) == true));
 
 	// if we're smart enough, allow overheating the flame shield if we want to go off-road
 	if (player->flametimer >= (itemtime*3)-5 && !(forceoverheat && player->botvars.difficulty >= 6))
@@ -1097,7 +1097,7 @@ static UINT32 K_BotCalculateUseodds(const player_t *player)
 {
 	UINT32 pdis = 0;
 	UINT8 pingame = 0, bestbumper = 0;
-	boolean spbrush = false;
+	dboolean spbrush = false;
 	UINT8 i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -1142,7 +1142,7 @@ static UINT32 K_BotCalculateUseodds(const player_t *player)
 // Item usage for item roulette mashing.
 static void K_BotItemRouletteMash(botdata_t *bd, const player_t *player)
 {
-	boolean mash = false;
+	dboolean mash = false;
 
 	if (bd->itemwasdown)
 	{
@@ -1181,7 +1181,7 @@ static void K_BotItemRouletteMash(botdata_t *bd, const player_t *player)
 }
 
 // Determines if we should use the Regular Item Delay Logic.
-static boolean K_CanHandleItemDelay(botdata_t *bd, const player_t *player)
+static dboolean K_CanHandleItemDelay(botdata_t *bd, const player_t *player)
 {
 	if (!bd->itemdelay)
 	{

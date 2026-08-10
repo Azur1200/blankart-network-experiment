@@ -40,7 +40,7 @@ enum actionnum {
 #include "info/actions.h"
 #undef _
 
-extern boolean actionsoverridden[NUMACTIONS];
+extern dboolean actionsoverridden[NUMACTIONS];
 
 // ratio of states to sprites to mobj types is roughly 6 : 1 : 1
 #define NUMMOBJFREESLOTS 4096
@@ -135,7 +135,7 @@ struct mobjinfo_t
 	sfxenum_t activesound;
 	UINT32 flags;
 	statenum_t raisestate;
-	boolean compatmode;
+	dboolean compatmode;
 };
 
 extern mobjinfo_t mobjinfo[NUMMOBJTYPES];
@@ -163,7 +163,7 @@ struct skincolor_t
 	UINT16 invcolor;            // Signpost color
 	UINT8 invshade;             // Signpost color shade
 	UINT16 chatcolor;           // Chat color
-	boolean accessible;         // Accessible by the color command + setup menu
+	dboolean accessible;         // Accessible by the color command + setup menu
 };
 
 extern skincolor_t skincolors[MAXSKINCOLORS];

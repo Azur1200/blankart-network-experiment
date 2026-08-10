@@ -35,7 +35,7 @@ extern UINT8 graphics_started;
 extern UINT8 keyboard_started;
 
 /** \brief Set to true when inside a signal handler that will exit the program. */
-boolean I_In_Exiting_Signal_Handler(void);
+dboolean I_In_Exiting_Signal_Handler(void);
 
 /**	\brief	The I_GetFreeMem function
 
@@ -76,7 +76,7 @@ double I_GetFrameTime(void);
 */
 void I_Sleep(UINT32 ms);
 
-boolean I_CheckFrameCap(precise_t start, precise_t end);
+dboolean I_CheckFrameCap(precise_t start, precise_t end);
 
 /**	\brief Get events
 
@@ -162,7 +162,7 @@ INT32 I_StartupSystem(void);
 */
 void I_ShutdownSystem(void);
 
-boolean I_Interrupted(void);
+dboolean I_Interrupted(void);
 
 /**	\brief	The I_GetDiskFreeSpace function
 

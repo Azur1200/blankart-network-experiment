@@ -523,7 +523,7 @@ static int player_get(lua_State *L)
 	{
 		if (field == player_valid)
 		{
-			lua_pushboolean(L, false);
+			lua_pushdboolean(L, false);
 			return 1;
 		}
 		return LUA_ErrInvalid(L, "player_t");
@@ -536,7 +536,7 @@ static int player_get(lua_State *L)
 	switch (field)
 	{
 	case player_valid:
-		lua_pushboolean(L, true);
+		lua_pushdboolean(L, true);
 		break;
 	case player_name:
 		lua_pushstring(L, player_names[plr-players]);
@@ -697,7 +697,7 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->crash_reorient_start);
 		break;
 	case player_crash_bumpme:
-		lua_pushboolean(L, plr->crash_bumpme);
+		lua_pushdboolean(L, plr->crash_bumpme);
 		break;
 	case player_instashield:
 		lua_pushinteger(L, plr->instashield);
@@ -994,7 +994,7 @@ static int player_get(lua_State *L)
 		LUA_PushUserdata(L, plr->arrowbullet, META_MOBJ);
 		break;
 	case player_inarrowbullet:
-		lua_pushboolean(L, plr->inarrowbullet);
+		lua_pushdboolean(L, plr->inarrowbullet);
 		break;
 	case player_rocketsneakertimer:
 		lua_pushinteger(L, plr->rocketsneakertimer);
@@ -1016,7 +1016,7 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->smonitorcancel);
 		break;
 	case player_smonitorwarning:
-		lua_pushboolean(L, (boolean)plr->smonitorwarning);
+		lua_pushdboolean(L, (dboolean)plr->smonitorwarning);
 		break;
 	case player_eggmanexplode:
 		lua_pushinteger(L, plr->eggmanexplode);
@@ -1123,7 +1123,7 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->followerskin);
 		break;
 	case player_followerready:
-		lua_pushboolean(L, plr->followerready);
+		lua_pushdboolean(L, plr->followerready);
 		break;
 	case player_followercolor:
 		lua_pushinteger(L, plr->followercolor);
@@ -1213,7 +1213,7 @@ static int player_get(lua_State *L)
 		lua_pushangle(L, plr->starpostangle);
 		break;
 	case player_starpostflip:
-		lua_pushboolean(L, plr->starpostflip);
+		lua_pushdboolean(L, plr->starpostflip);
 		break;
 	case player_starpostnum:
 		lua_pushinteger(L, plr->starpostnum);
@@ -1240,13 +1240,13 @@ static int player_get(lua_State *L)
 		lua_pushangle(L, plr->awayviewaiming);
 		break;
 	case player_spectator:
-		lua_pushboolean(L, plr->spectator);
+		lua_pushdboolean(L, plr->spectator);
 		break;
 	case player_spectatewait:
 		lua_pushinteger(L, plr->spectatewait);
 		break;
 	case player_bot:
-		lua_pushboolean(L, plr->bot);
+		lua_pushdboolean(L, plr->bot);
 		break;
 	case player_botvars:
 		LUA_PushUserdata(L, &plr->botvars, META_BOTVARS);
@@ -1291,10 +1291,10 @@ static int player_get(lua_State *L)
 		LUA_PushUserdata(L, &plr->loop, META_SONICLOOPVARS);
 		break;
 	case player_prevonground:
-		lua_pushboolean(L, plr->prevonground);
+		lua_pushdboolean(L, plr->prevonground);
 		break;
 	case player_walltransfered:
-		lua_pushboolean(L, plr->walltransfered);
+		lua_pushdboolean(L, plr->walltransfered);
 		break;
 	case player_walltransferboost:
 		lua_pushinteger(L, plr->walltransferboost);
@@ -1581,7 +1581,7 @@ static int player_set(lua_State *L)
 		plr->crash_reorient_start = luaL_checkinteger(L, 3);
 		break;
 	case player_crash_bumpme:
-		plr->crash_bumpme = luaL_checkboolean(L, 3);
+		plr->crash_bumpme = luaL_checkdboolean(L, 3);
 		break;
 	case player_instashield:
 		plr->instashield = luaL_checkinteger(L, 3);
@@ -1891,7 +1891,7 @@ static int player_set(lua_State *L)
 	case player_arrowbullet:
 		return NOSET;
 	case player_inarrowbullet:
-		plr->inarrowbullet = luaL_checkboolean(L, 3);
+		plr->inarrowbullet = luaL_checkdboolean(L, 3);
 		break;
 	case player_rocketsneakertimer:
 		plr->rocketsneakertimer = luaL_checkinteger(L, 3);
@@ -1915,7 +1915,7 @@ static int player_set(lua_State *L)
 		plr->smonitorcancel = (INT16)luaL_checkinteger(L, 3);
 		break;
 	case player_smonitorwarning:
-		plr->smonitorwarning = (UINT8)luaL_checkboolean(L, 3);
+		plr->smonitorwarning = (UINT8)luaL_checkdboolean(L, 3);
 		break;
 	case player_eggmanexplode:
 		plr->eggmanexplode = luaL_checkinteger(L, 3);
@@ -1984,7 +1984,7 @@ static int player_set(lua_State *L)
 		plr->followercolor = luaL_checkinteger(L, 3);
 		break;
 	case player_followerready:
-		plr->followerready = luaL_checkboolean(L, 3);
+		plr->followerready = luaL_checkdboolean(L, 3);
 		break;
 	case player_follower:	// it's probably best we don't allow the follower mobj to change.
 		return NOSET;
@@ -2080,7 +2080,7 @@ static int player_set(lua_State *L)
 		plr->starpostangle = luaL_checkangle(L, 3);
 		break;
 	case player_starpostflip:
-		plr->starpostflip = luaL_checkboolean(L, 3);
+		plr->starpostflip = luaL_checkdboolean(L, 3);
 		break;
 	case player_starpostnum:
 		plr->starpostnum = (INT32)luaL_checkinteger(L, 3);
@@ -2116,7 +2116,7 @@ static int player_set(lua_State *L)
 		plr->awayviewaiming = luaL_checkangle(L, 3);
 		break;
 	case player_spectator:
-		plr->spectator = lua_toboolean(L, 3);
+		plr->spectator = lua_todboolean(L, 3);
 		break;
 	case player_spectatewait:
 		plr->spectatewait = luaL_checkinteger(L, 3);
@@ -2159,7 +2159,7 @@ static int player_set(lua_State *L)
 	case player_prevonground:
 		return NOSET;
 	case player_walltransfered:
-		plr->walltransfered = lua_toboolean(L, 3);
+		plr->walltransfered = lua_todboolean(L, 3);
 		break;
 	case player_walltransferboost:
 		plr->walltransferboost = lua_tointeger(L, 3);
@@ -3104,7 +3104,7 @@ static int sonicloopvars_get(lua_State *L)
 		lua_pushfixed(L, sonicloopvars->shift.y);
 		break;
 	case sonicloopvars_flip:
-		lua_pushboolean(L, sonicloopvars->flip);
+		lua_pushdboolean(L, sonicloopvars->flip);
 		break;
 	case sonicloopvars_camera:
 		LUA_PushUserdata(L, &sonicloopvars->camera, META_SONICLOOPCAMVARS);

@@ -464,7 +464,7 @@ static UINT8 *MakeBlock(GLMipmap_t *grMipmap)
 // Create a composite texture from patches, adapt the texture size to a power of 2
 // height and width for the hardware texture cache.
 //
-static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, boolean noencoremap)
+static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, dboolean noencoremap)
 {
 	UINT8 *block;
 	texture_t *texture;
@@ -476,7 +476,7 @@ static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, boolean noe
 	UINT8 *colormap = colormaps;
 
 	INT32 i, idx;
-	boolean skyspecial = false; //poor hack for Legacy large skies..
+	dboolean skyspecial = false; //poor hack for Legacy large skies..
 
 	RGBA_t *palette;
 	palette = HWR_GetTexturePalette();
@@ -535,8 +535,8 @@ static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, boolean noe
 	// Composite the columns together.
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
-		boolean dealloc = true;
-		boolean doremap = W_NeedPaletteRemapPwad(patch->wad, patch->lump, false);
+		dboolean dealloc = true;
+		dboolean doremap = W_NeedPaletteRemapPwad(patch->wad, patch->lump, false);
 		size_t lumplength = W_LumpLengthPwad(patch->wad, patch->lump);
 		pdata = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
 		realpatch = (softwarepatch_t *)pdata;
@@ -582,7 +582,7 @@ static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, boolean noe
 }
 
 // patch may be NULL if grMipmap has been initialised already and makebitmap is false
-void HWR_MakePatch (const patch_t *patch, GLPatch_t *grPatch, GLMipmap_t *grMipmap, boolean makebitmap)
+void HWR_MakePatch (const patch_t *patch, GLPatch_t *grPatch, GLMipmap_t *grMipmap, dboolean makebitmap)
 {
 	if (grMipmap->width == 0)
 	{
@@ -706,23 +706,23 @@ void HWR_FreeTextureColormaps(patch_t *patch)
 	}
 }
 
-static boolean FreeTextureCallback(void *mem)
+static dboolean FreeTextureCallback(void *mem)
 {
 	patch_t *patch = (patch_t *)mem;
 	HWR_FreeTexture(patch);
 	return false;
 }
 
-static boolean FreeColormapsCallback(void *mem)
+static dboolean FreeColormapsCallback(void *mem)
 {
 	patch_t *patch = (patch_t *)mem;
 	HWR_FreeTextureColormaps(patch);
 	return false;
 }
 
-static void HWR_FreePatchCache(boolean freeall)
+static void HWR_FreePatchCache(dboolean freeall)
 {
-	boolean (*callback)(void *mem) = FreeTextureCallback;
+	dboolean (*callback)(void *mem) = FreeTextureCallback;
 
 	if (!freeall)
 		callback = FreeColormapsCallback;
@@ -800,7 +800,7 @@ static void HWR_PrecacheLevelFlats(void)
 			// gotta check sector floor and ceiling
 			for (j = 0; j < 2; j++)
 			{
-				const boolean ceiling = (j == 0);
+				const dboolean ceiling = (j == 0);
 				INT32 pic = ceiling ? sec->ceilingpic : sec->floorpic;
 
 				levelflat = levelflats[pic];
@@ -1027,7 +1027,7 @@ void HWR_LoadMapTextures(size_t pnumtextures)
 // --------------------------------------------------------------------------
 // Make sure texture is downloaded and set it as the source
 // --------------------------------------------------------------------------
-GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencoremap)
+GLMapTexture_t *HWR_GetTexture(INT32 tex, dboolean noencoremap)
 {
 	GLMapTexture_t *grtex;
 #ifdef PARANOIA
@@ -1082,7 +1082,7 @@ static void HWR_CacheFlat(GLMipmap_t *grMipmap, lumpnum_t flatlumpnum)
 	UINT8 *flat;
 	size_t steppy;
 	size_t size, pflatsize;
-	boolean doremap;
+	dboolean doremap;
 
 
 	// setup the texture info
@@ -1135,7 +1135,7 @@ static void HWR_CacheFlat(GLMipmap_t *grMipmap, lumpnum_t flatlumpnum)
 }
 
 // Download a Doom 'flat' to the hardware cache and make it ready for use
-void HWR_GetRawFlat(lumpnum_t flatlumpnum, boolean noencoremap)
+void HWR_GetRawFlat(lumpnum_t flatlumpnum, dboolean noencoremap)
 {
 	GLMipmap_t *grmip;
 	patch_t *patch;
@@ -1172,7 +1172,7 @@ void HWR_GetRawFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 	Z_ChangeTag(grmip->data, PU_HWRCACHE_UNLOCKED);
 }
 
-void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
+void HWR_GetLevelFlat(levelflat_t *levelflat, dboolean noencoremap)
 {
 	if (levelflat->type == LEVELFLAT_NONE)
 	{
@@ -1795,7 +1795,7 @@ UINT32 HWR_CreateLightTable(UINT8 *lighttable)
 // get hwr lighttable id for colormap, create it if it doesn't already exist
 UINT32 HWR_GetLightTableID(extracolormap_t *colormap)
 {
-	boolean default_colormap = false;
+	dboolean default_colormap = false;
 	if (!colormap)
 	{
 		colormap = R_GetDefaultColormap(); // a place to store the hw lighttable id

@@ -8,9 +8,9 @@ rendermode_t chosenrendermode = render_none;
 
 UINT8 graphics_started = 0; // Is used in console.c and screen.c
 
-boolean highcolor = false;
+dboolean highcolor = false;
 
-boolean allow_fullscreen = false;
+dboolean allow_fullscreen = false;
 
 consvar_t cv_vidwait = CVAR_INIT ("vid_wait", "On", CV_SAVE, CV_OnOff, NULL);
 
@@ -44,7 +44,7 @@ INT32 VID_SetMode(INT32 modenum)
 	return 0;
 }
 
-boolean VID_CheckRenderer(void)
+dboolean VID_CheckRenderer(void)
 {
 	return false;
 }
@@ -90,7 +90,7 @@ void I_UpdateMouseGrab(void)
 
 }
 
-void I_SetTextInput(boolean enable)
+void I_SetTextInput(dboolean enable)
 {
 
 }
@@ -105,7 +105,7 @@ void I_StartupMouse(void)
 
 }
 
-boolean I_UseNativeKeyboard(void)
+dboolean I_UseNativeKeyboard(void)
 {
 	return false;
 }

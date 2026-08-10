@@ -71,7 +71,7 @@ static fixed_t blancredits_height;
 static longtic_t finalescene;
 static INT32 finalesecs, finalespeed;
 
-static boolean dscredits_running = false;
+static dboolean dscredits_running = false;
 
 // Title Screen
 static patch_t *ttbanner; // SONIC ROBO BLAST 2
@@ -135,7 +135,7 @@ static longtic_t player_delay;
 static UINT16 numbuildings;
 static UINT16 numplayerobjs;
 
-static boolean spawnplayers;
+static dboolean spawnplayers;
 static INT32 playersadded;
 static INT32 player_iterate;
 
@@ -1175,7 +1175,7 @@ static void F_DrawBannerPatch(fixed_t x, fixed_t y, fixed_t scale, INT32 scrn, p
 #undef sign
 
 // returns false if the character couldn't be rendered
-static boolean M_DrawCharacterSprite(INT16 x, INT16 y, fixed_t scale, UINT8 fade, INT16 skin, UINT8 spr2, UINT8 rotation, UINT32 frame, INT32 addflags, UINT8 *colormap)
+static dboolean M_DrawCharacterSprite(INT16 x, INT16 y, fixed_t scale, UINT8 fade, INT16 skin, UINT8 spr2, UINT8 rotation, UINT32 frame, INT32 addflags, UINT8 *colormap)
 {
 	UINT8 spr;
 	spritedef_t *sprdef;

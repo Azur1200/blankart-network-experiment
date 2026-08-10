@@ -502,7 +502,7 @@ static int str_find_aux (lua_State *L, int find) {
   ptrdiff_t init = posrelat(luaL_optinteger(L, 3, 1), l1) - 1;
   if (init < 0) init = 0;
   else if ((size_t)(init) > l1) init = (ptrdiff_t)l1;
-  if (find && (lua_toboolean(L, 4) ||  /* explicit request? */
+  if (find && (lua_todboolean(L, 4) ||  /* explicit request? */
       strpbrk(p, SPECIALS) == NULL)) {  /* or no special characters? */
     /* do a plain search */
     const char *s2 = lmemfind(s+init, l1-init, p, l2);
@@ -634,7 +634,7 @@ static void add_value (MatchState *ms, luaL_Buffer *b, const char *s,
       break;
     }
   }
-  if (!lua_toboolean(L, -1)) {  /* nil or false? */
+  if (!lua_todboolean(L, -1)) {  /* nil or false? */
     lua_pop(L, 1);
     lua_pushlstring(L, s, e - s);  /* keep original text */
   }

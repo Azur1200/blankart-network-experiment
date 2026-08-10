@@ -34,9 +34,9 @@
 static int     MSId;
 static int     MSRegisteredId = -1;
 
-static boolean MSRegistered;
-static boolean MSInProgress;
-static boolean MSUpdateAgain;
+static dboolean MSRegistered;
+static dboolean MSInProgress;
+static dboolean MSUpdateAgain;
 
 static time_t  MSLastPing;
 
@@ -434,7 +434,7 @@ void UnregisterServer(void)
 #endif/*MASTERSERVER*/
 }
 
-static boolean
+static dboolean
 Online (void)
 {
 	return ( serverrunning && netgame && cv_advertise.value );

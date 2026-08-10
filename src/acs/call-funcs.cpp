@@ -495,7 +495,7 @@ static UINT32 ACS_SectorThingCounter(sector_t *sec, mtag_t thingTag, bool (*filt
 static UINT32 ACS_SectorIterateThingCounter(sector_t *sec, mtag_t thingTag, bool (*filter)(mobj_t *))
 {
 	UINT32 count = 0;
-	boolean FOFsector = false;
+	dboolean FOFsector = false;
 	size_t i;
 
 	if (sec == nullptr)
@@ -1748,7 +1748,7 @@ bool CallFunc_Teleport(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Wo
 
 	if (mobj != NULL && dest != mobj)
 	{
-		boolean silent = argC >= 3 ? (argV[2] != 0) : false;
+		dboolean silent = argC >= 3 ? (argV[2] != 0) : false;
 
 		P_Teleport(mobj, dest->x, dest->y, dest->z, dest->angle, !silent, false);
 
@@ -2350,7 +2350,7 @@ bool CallFunc_MusicPlay(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::W
 		return false;
 	}
 
-	boolean musicsame = !strnicmp(map->getString(argV[0])->str, mapmusname, 7);
+	dboolean musicsame = !strnicmp(map->getString(argV[0])->str, mapmusname, 7);
 
 	if (!musicsame)
 	{
@@ -2401,7 +2401,7 @@ bool CallFunc_MusicRemap(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::
 		return false;
 	}
 
-	boolean musicsame = !strnicmp(map->getString(argV[0])->str, mapmusname, 7);
+	dboolean musicsame = !strnicmp(map->getString(argV[0])->str, mapmusname, 7);
 
 	if (!musicsame)
 	{
@@ -2990,7 +2990,7 @@ bool CallFunc_SetSideProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, AC
 
 	UINT8 sideID = 0;
 	side_t *side = NULL;
-	boolean tryBoth = false;
+	dboolean tryBoth = false;
 
 	INT32 property = SIDE_PROP__MAX;
 	INT32 value = 0;

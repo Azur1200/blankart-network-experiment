@@ -143,7 +143,7 @@ static void HWR_LinkDrawHackFinish(void)
 // HWR_DoCulling
 // Hardware version of R_DoCulling
 // (see r_main.c)
-static boolean HWR_DoCulling(line_t *cullheight, line_t *viewcullheight, float vz, float bottomh, float toph)
+static dboolean HWR_DoCulling(line_t *cullheight, line_t *viewcullheight, float vz, float bottomh, float toph)
 {
 	float cullplane;
 
@@ -338,9 +338,9 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 }
 
 // This is expecting a pointer to an array containing 4 wallVerts for a sprite
-static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean precip)
+static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts, const dboolean precip)
 {
-	const boolean affine = ((spr->mobj && !P_MobjWasRemoved(spr->mobj)) && ((spr->mobj->player != NULL) || R_ThingIsAffineSprite(spr->mobj)));
+	const dboolean affine = ((spr->mobj && !P_MobjWasRemoved(spr->mobj)) && ((spr->mobj->player != NULL) || R_ThingIsAffineSprite(spr->mobj)));
 
 	if ((cv_glspritebillboarding.value == 1 || (cv_glspritebillboarding.value == 2 &&
 		(spr->mobj->player)))
@@ -418,11 +418,11 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 	FSurfaceInfo Surf = {};
 	extracolormap_t *colormap = NULL;
 	INT32 lightlevel;
-	boolean lightset = true;
+	dboolean lightset = true;
 	FBITFIELD blend = 0;
 	FBITFIELD occlusion;
 	INT32 shader = SHADER_NONE;
-	boolean use_linkdraw_hack = false;
+	dboolean use_linkdraw_hack = false;
 	UINT8 alpha;
 
 	INT32 i;
@@ -776,8 +776,8 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	patch_t *gpatch;
 	GLPatch_t *hwrpatch;
 	FSurfaceInfo Surf = {};
-	const boolean affine = ((spr->mobj && !P_MobjWasRemoved(spr->mobj)) && ((spr->mobj->player != NULL) || R_ThingIsAffineSprite(spr->mobj)) && (!R_ThingIsFloorSprite(spr->mobj)));
-	const boolean splat = R_ThingIsFloorSprite(spr->mobj);
+	const dboolean affine = ((spr->mobj && !P_MobjWasRemoved(spr->mobj)) && ((spr->mobj->player != NULL) || R_ThingIsAffineSprite(spr->mobj)) && (!R_ThingIsFloorSprite(spr->mobj)));
+	const dboolean splat = R_ThingIsFloorSprite(spr->mobj);
 
 	if (!spr->mobj || !spr->mobj->subsector)
 		return;
@@ -1039,7 +1039,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	{
 		sector_t *sector = spr->mobj->subsector->sector;
 		INT32 lightlevel = 0;
-		boolean lightset = HWR_OverrideObjectLightLevel(spr->mobj, &lightlevel);
+		dboolean lightset = HWR_OverrideObjectLightLevel(spr->mobj, &lightlevel);
 		extracolormap_t *colormap = NULL;
 
 		if (!R_ThingIsFullBright(spr->mobj) && !(spr->mobj->renderflags & RF_NOCOLORMAPS))
@@ -1080,7 +1080,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		INT32 shader = SHADER_NONE;
 		FBITFIELD blend = 0;
 		FBITFIELD occlusion;
-		boolean use_linkdraw_hack = false;
+		dboolean use_linkdraw_hack = false;
 
 		// if sprite has linkdraw, then dont write to z-buffer (by not using PF_Occlude)
 		// this will result in sprites drawn afterwards to be drawn on top like intended when using linkdraw.
@@ -1394,7 +1394,7 @@ UINT32 HWR_SortVisSprites(void)
 void HWR_DrawSprites(void)
 {
 	UINT32 i;
-	boolean skipshadow = false; // skip shadow if it was drawn already for a linkdraw sprite encountered earlier in the list
+	dboolean skipshadow = false; // skip shadow if it was drawn already for a linkdraw sprite encountered earlier in the list
 
 #ifdef BAD_MODEL_OPTIONS
 	GL_SetSpecialState(HWD_SET_MODEL_LIGHTING, cv_glmodellighting.value);
@@ -1582,15 +1582,15 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	size_t lumpoff;
 	unsigned rot;
 	UINT16 flip;
-	boolean vflip = (!(thing->eflags & MFE_VERTICALFLIP) != !R_ThingVerticallyFlipped(thing));
-	boolean mirrored = thing->mirrored;
-	boolean hflip = (!R_ThingHorizontallyFlipped(thing) != !mirrored);
+	dboolean vflip = (!(thing->eflags & MFE_VERTICALFLIP) != !R_ThingVerticallyFlipped(thing));
+	dboolean mirrored = thing->mirrored;
+	dboolean hflip = (!R_ThingHorizontallyFlipped(thing) != !mirrored);
 	INT32 dispoffset;
 
 	angle_t ang;
 	INT32 heightsec, phs;
-	const boolean splat = R_ThingIsFloorSprite(thing);
-	const boolean papersprite = (R_ThingIsPaperSprite(thing) && !splat);
+	const dboolean splat = R_ThingIsFloorSprite(thing);
+	const dboolean papersprite = (R_ThingIsPaperSprite(thing) && !splat);
 	float z1, z2;
 
 	fixed_t spr_width, spr_height;
@@ -1603,7 +1603,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 #endif
 
 	// Affines
-	boolean affinesprite = (((thing->player != NULL) || R_ThingIsAffineSprite(thing)) && (!splat));
+	dboolean affinesprite = (((thing->player != NULL) || R_ThingIsAffineSprite(thing)) && (!splat));
 	affine_t affine_transform = {0};
 	vector2_t affine_scale = {0};
 	f_vector2_t affine_pivotoffsetdiff = {0};
@@ -1875,7 +1875,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 		angle = R_ConvToRollAngle(spriterotangle) * flipsign;
 
-		const boolean renderflip = ((thing->renderflags & RF_FLIPOFFSETS) == RF_FLIPOFFSETS);
+		const dboolean renderflip = ((thing->renderflags & RF_FLIPOFFSETS) == RF_FLIPOFFSETS);
 		const fixed_t rolloffs_x = FixedDiv(interptarg->rollingxoffset * FRACUNIT, highresscale) * (((!renderflip) && flip) ? -1 : 1);
 		const fixed_t rolloffs_y = FixedDiv(interptarg->rollingyoffset * FRACUNIT, highresscale) * (((!renderflip) && vflip) ? -1 : 1);
 		fixed_t y_piv = affine_pivot.y;

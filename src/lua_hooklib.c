@@ -78,7 +78,7 @@ static UINT8 * hookCompat;
 
 static int errorRef;
 
-static boolean mobj_hook_available(int hook_type, mobjtype_t mobj_type)
+static dboolean mobj_hook_available(int hook_type, mobjtype_t mobj_type)
 {
 	return
 		(
@@ -314,7 +314,7 @@ static void push_string(void)
 	lua_pushvalue(gL, SINDEX);
 }
 
-static boolean begin_hook_values(Hook_State *hook)
+static dboolean begin_hook_values(Hook_State *hook)
 {
 	hook->top = lua_gettop(gL);
 	return true;
@@ -326,7 +326,7 @@ static void start_hook_stack(void)
 	push_error_handler();
 }
 
-static boolean init_hook_type
+static dboolean init_hook_type
 (
 		Hook_State * hook,
 		int          status,
@@ -349,7 +349,7 @@ static boolean init_hook_type
 		return false;
 }
 
-static boolean prepare_hook
+static dboolean prepare_hook
 (
 		Hook_State * hook,
 		int default_status,
@@ -360,7 +360,7 @@ static boolean prepare_hook
 			hookIds[hook_type].numHooks);
 }
 
-static boolean prepare_mobj_hook
+static dboolean prepare_mobj_hook
 (
 		Hook_State * hook,
 		int          default_status,
@@ -376,7 +376,7 @@ static boolean prepare_mobj_hook
 			mobj_hook_available(hook_type, mobj_type));
 }
 
-static boolean prepare_string_hook
+static dboolean prepare_string_hook
 (
 		Hook_State * hook,
 		int          default_status,
@@ -442,7 +442,7 @@ static const char *hook_name(Hook_State *hook)
 	}
 }
 
-static int call_timed_or_untimed(Hook_State *hook, boolean compat, boolean printerror)
+static int call_timed_or_untimed(Hook_State *hook, dboolean compat, dboolean printerror)
 {
 	if (!hud_running && cv_lua_profile.value > 0)
 	{
@@ -460,8 +460,8 @@ static int call_timed_or_untimed(Hook_State *hook, boolean compat, boolean print
 
 static int call_single_hook_no_copy(Hook_State *hook)
 {
-	boolean compat = in_bit_array(hookCompat, hook->id);
-	boolean printerror = cht_debug & DBG_LUA || !in_bit_array(hooksErrored, hook->id);
+	dboolean compat = in_bit_array(hookCompat, hook->id);
+	dboolean printerror = cht_debug & DBG_LUA || !in_bit_array(hooksErrored, hook->id);
 	if (call_timed_or_untimed(hook, compat, printerror) == 0)
 	{
 		if (hook->results > 0)
@@ -545,7 +545,7 @@ static int call_mapped_gamemap(Hook_State *hook, const hook_t *map)
 	for (k = 0; k < map->numHooks; ++k)
 	{
 		get_hook(hook, map->ids, k);
-		boolean compat = in_bit_array(hookCompat, hook->id);
+		dboolean compat = in_bit_array(hookCompat, hook->id);
 		lua_pushvalue(gL, hook->top - !compat);
 		call_single_hook_no_copy(hook);
 	}
@@ -654,13 +654,13 @@ static int call_hooks
 
 static void res_true(Hook_State *hook)
 {
-	if (lua_toboolean(gL, -1))
+	if (lua_todboolean(gL, -1))
 		hook->status = true;
 }
 
 static void res_false(Hook_State *hook)
 {
-	if (!lua_isnil(gL, -1) && !lua_toboolean(gL, -1))
+	if (!lua_isnil(gL, -1) && !lua_todboolean(gL, -1))
 		hook->status = false;
 }
 
@@ -668,7 +668,7 @@ static void res_force(Hook_State *hook)
 {
 	if (!lua_isnil(gL, -1))
 	{
-		if (lua_toboolean(gL, -1))
+		if (lua_todboolean(gL, -1))
 			hook->status = 1; // Force yes
 		else
 			hook->status = 2; // Force no
@@ -733,12 +733,12 @@ void LUA_HookGamemap(int hook_type)
 	}
 }
 
-void LUA_HookBool(boolean value, int hook_type)
+void LUA_HookBool(dboolean value, int hook_type)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, 0, hook_type))
 	{
-		lua_pushboolean(gL, value);
+		lua_pushdboolean(gL, value);
 		call_hooks(&hook, 0, res_none);
 	}
 }
@@ -1130,7 +1130,7 @@ int LUA_HookPlayerMsg(int source, int target, int flags, char *msg)
 
 		// stand-in for spam protect that doesn't exist here
 		// todo / need help: compatmode?
-		lua_pushboolean(gL, false);
+		lua_pushdboolean(gL, false);
 
 		call_hooks(&hook, 1, res_true);
 	}
@@ -1256,29 +1256,29 @@ int LUA_HookNameChange(player_t *plr, const char *name)
 	return hook.status;
 }
 
-int LUA_HookTeamSwitch(player_t *player, int newteam, boolean fromspectators, boolean tryingautobalance, boolean tryingscramble)
+int LUA_HookTeamSwitch(player_t *player, int newteam, dboolean fromspectators, dboolean tryingautobalance, dboolean tryingscramble)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, true, HOOK(TeamSwitch)))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
 		lua_pushinteger(gL, newteam);
-		lua_pushboolean(gL, fromspectators);
-		lua_pushboolean(gL, tryingautobalance);
-		lua_pushboolean(gL, tryingscramble);
+		lua_pushdboolean(gL, fromspectators);
+		lua_pushdboolean(gL, tryingautobalance);
+		lua_pushdboolean(gL, tryingscramble);
 		call_hooks(&hook, 1, res_false);
 	}
 	return hook.status;
 }
 
-int LUA_HookViewpointSwitch(player_t *player, player_t *newdisplayplayer, boolean forced)
+int LUA_HookViewpointSwitch(player_t *player, player_t *newdisplayplayer, dboolean forced)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, 0, HOOK(ViewpointSwitch)))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
 		LUA_PushUserdata(gL, newdisplayplayer, META_PLAYER);
-		lua_pushboolean(gL, forced);
+		lua_pushdboolean(gL, forced);
 
 		hud_running = true; // local hook
 		call_hooks(&hook, 1, res_force);
@@ -1342,7 +1342,7 @@ int LUA_HookGPRankPoints(UINT8 position, UINT8 numplayers, INT16 *points)
 	return hook.status;
 }
 
-boolean hook_cmd_running = false;
+dboolean hook_cmd_running = false;
 
 static void update_music_name(struct MusicChange *musicchange)
 {
@@ -1371,15 +1371,15 @@ static void res_musicchange(Hook_State *hook)
 	// output 1: true, false, or string musicname override
 	if (lua_isstring(gL, -6))
 		update_music_name(musicchange);
-	else if (lua_isboolean(gL, -6) && lua_toboolean(gL, -6))
+	else if (lua_isdboolean(gL, -6) && lua_todboolean(gL, -6))
 		hook->status = true;
 
 	// output 2: mflags override
 	if (lua_isnumber(gL, -5))
 		*musicchange->mflags = lua_tonumber(gL, -5);
 	// output 3: looping override
-	if (lua_isboolean(gL, -4))
-		*musicchange->looping = lua_toboolean(gL, -4);
+	if (lua_isdboolean(gL, -4))
+		*musicchange->looping = lua_todboolean(gL, -4);
 	// output 4: position override
 	if (lua_isnumber(gL, -3))
 		*musicchange->position = lua_tonumber(gL, -3);
@@ -1416,7 +1416,7 @@ int LUA_HookMusicChange(const char *oldname, struct MusicChange *param)
 			lua_pushvalue(gL, -3);
 			lua_pushvalue(gL, -3);
 			lua_pushinteger(gL, *param->mflags);
-			lua_pushboolean(gL, *param->looping);
+			lua_pushdboolean(gL, *param->looping);
 			lua_pushinteger(gL, *param->position);
 			lua_pushinteger(gL, *param->prefadems);
 			lua_pushinteger(gL, *param->fadeinms);
@@ -1433,22 +1433,22 @@ int LUA_HookMusicChange(const char *oldname, struct MusicChange *param)
 // Allows to both override default behavior and force action. I don't like it but thats how it works
 // in CEP and neptune. Fuckal whyyyyyyyyy
 typedef struct {
-	boolean override;
-	boolean force;
+	dboolean override;
+	dboolean force;
 } TrueForce_State;
 
 static void res_trueforce(Hook_State *hook)
 {
 	TrueForce_State *state = (TrueForce_State*)hook->userdata;
 
-	if (lua_isboolean(gL, -2))
-		state->override = lua_toboolean(gL, -2);
+	if (lua_isdboolean(gL, -2))
+		state->override = lua_todboolean(gL, -2);
 
-	if (lua_isboolean(gL, -1))
-		state->force = lua_toboolean(gL, -1);
+	if (lua_isdboolean(gL, -1))
+		state->force = lua_todboolean(gL, -1);
 };
 
-boolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, boolean wasHoldingItem, boolean *force)
+dboolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, dboolean wasHoldingItem, dboolean *force)
 {
 	Hook_State hook = {};
 	TrueForce_State state = {0};
@@ -1457,7 +1457,7 @@ boolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, boolean wasHoldingI
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
 		lua_pushinteger(gL, itemType);
-		lua_pushboolean(gL, wasHoldingItem);
+		lua_pushdboolean(gL, wasHoldingItem);
 
 		hook.userdata = &state;
 
@@ -1468,7 +1468,7 @@ boolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, boolean wasHoldingI
 	return state.override;
 }
 
-boolean LUA_HookPlayerItemThink(player_t *player, UINT8 itemType)
+dboolean LUA_HookPlayerItemThink(player_t *player, UINT8 itemType)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(PlayerItemThink)))
@@ -1482,17 +1482,17 @@ boolean LUA_HookPlayerItemThink(player_t *player, UINT8 itemType)
 	return hook.status;
 }
 
-boolean LUA_HookPlayerItemUse(player_t *player, UINT8 itemType, boolean attackJustDown, boolean onground, boolean force, boolean noHyudoro)
+dboolean LUA_HookPlayerItemUse(player_t *player, UINT8 itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(PlayerItemUse)))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
 		lua_pushinteger(gL, itemType);
-		lua_pushboolean(gL, attackJustDown);
-		lua_pushboolean(gL, onground);
-		lua_pushboolean(gL, force);
-		lua_pushboolean(gL, noHyudoro);
+		lua_pushdboolean(gL, attackJustDown);
+		lua_pushdboolean(gL, onground);
+		lua_pushdboolean(gL, force);
+		lua_pushdboolean(gL, noHyudoro);
 
 		call_hooks(&hook, 1, res_true);
 	}
@@ -1500,17 +1500,17 @@ boolean LUA_HookPlayerItemUse(player_t *player, UINT8 itemType, boolean attackJu
 	return hook.status;
 }
 
-boolean LUA_HookPlayerItemHoldUse(player_t *player, UINT8 itemType, boolean attackJustDown, boolean onground, boolean force, boolean noHyudoro)
+dboolean LUA_HookPlayerItemHoldUse(player_t *player, UINT8 itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(PlayerItemHoldUse)))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
 		lua_pushinteger(gL, itemType);
-		lua_pushboolean(gL, attackJustDown);
-		lua_pushboolean(gL, onground);
-		lua_pushboolean(gL, force);
-		lua_pushboolean(gL, noHyudoro);
+		lua_pushdboolean(gL, attackJustDown);
+		lua_pushdboolean(gL, onground);
+		lua_pushdboolean(gL, force);
+		lua_pushdboolean(gL, noHyudoro);
 
 		call_hooks(&hook, 1, res_true);
 	}
@@ -1518,17 +1518,17 @@ boolean LUA_HookPlayerItemHoldUse(player_t *player, UINT8 itemType, boolean atta
 	return hook.status;
 }
 
-boolean LUA_HookPlayerItemReleaseUse(player_t *player, UINT8 itemType, boolean attackJustDown, boolean onground, boolean force, boolean noHyudoro)
+dboolean LUA_HookPlayerItemReleaseUse(player_t *player, UINT8 itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(PlayerItemReleaseUse)))
 	{
 		LUA_PushUserdata(gL, player, META_PLAYER);
 		lua_pushinteger(gL, itemType);
-		lua_pushboolean(gL, attackJustDown);
-		lua_pushboolean(gL, onground);
-		lua_pushboolean(gL, force);
-		lua_pushboolean(gL, noHyudoro);
+		lua_pushdboolean(gL, attackJustDown);
+		lua_pushdboolean(gL, onground);
+		lua_pushdboolean(gL, force);
+		lua_pushdboolean(gL, noHyudoro);
 
 		call_hooks(&hook, 1, res_true);
 	}
@@ -1538,7 +1538,7 @@ boolean LUA_HookPlayerItemReleaseUse(player_t *player, UINT8 itemType, boolean a
 
 typedef struct {
 	INT32 *target;
-	boolean force_sink;
+	dboolean force_sink;
 } KartHyudoro_State;
 
 static void res_karthyudoro(Hook_State *hook)
@@ -1553,11 +1553,11 @@ static void res_karthyudoro(Hook_State *hook)
 		*state->target = player - players;
 	}
 
-	if (lua_isboolean(gL, -1))
-		state->force_sink = lua_toboolean(gL, -1);
+	if (lua_isdboolean(gL, -1))
+		state->force_sink = lua_todboolean(gL, -1);
 }
 
-boolean LUA_HookKartHyudoro(player_t *player, INT32 *target, boolean sink)
+dboolean LUA_HookKartHyudoro(player_t *player, INT32 *target, dboolean sink)
 {
 	Hook_State hook = {};
 	KartHyudoro_State state = {0};
@@ -1570,7 +1570,7 @@ boolean LUA_HookKartHyudoro(player_t *player, INT32 *target, boolean sink)
 			LUA_PushUserdata(gL, &players[*target], META_PLAYER);
 		else
 			lua_pushnil(gL);
-		lua_pushboolean(gL, sink);
+		lua_pushdboolean(gL, sink);
 
 		hook.userdata = &state;
 
@@ -1581,7 +1581,7 @@ boolean LUA_HookKartHyudoro(player_t *player, INT32 *target, boolean sink)
 
 }
 
-boolean LUA_HookMobjScaleChange(mobj_t *target, fixed_t newscale, fixed_t oldscale)
+dboolean LUA_HookMobjScaleChange(mobj_t *target, fixed_t newscale, fixed_t oldscale)
 {
 	Hook_State hook = {};
 	if (prepare_mobj_hook(&hook, false, MOBJ_HOOK(MobjScaleChange), target->type))
@@ -1595,7 +1595,7 @@ boolean LUA_HookMobjScaleChange(mobj_t *target, fixed_t newscale, fixed_t oldsca
 	return hook.status;
 }
 
-boolean LUA_HookKartSneaker(player_t *player, int type)
+dboolean LUA_HookKartSneaker(player_t *player, int type)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(KartSneaker)))
@@ -1610,7 +1610,7 @@ boolean LUA_HookKartSneaker(player_t *player, int type)
 	return hook.status;
 }
 
-boolean LUA_HookKartStripItems(player_t* player, UINT8 item)
+dboolean LUA_HookKartStripItems(player_t* player, UINT8 item)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(KartStripItems)))
@@ -1624,7 +1624,7 @@ boolean LUA_HookKartStripItems(player_t* player, UINT8 item)
 	return hook.status;
 }
 
-boolean LUA_HookKartStripOther(player_t* player)
+dboolean LUA_HookKartStripOther(player_t* player)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(KartStripOther)))
@@ -1637,7 +1637,7 @@ boolean LUA_HookKartStripOther(player_t* player)
 	return hook.status;
 }
 
-boolean LUA_HookCanPickupItem(player_t *player, UINT8 weapon, boolean *force)
+dboolean LUA_HookCanPickupItem(player_t *player, UINT8 weapon, dboolean *force)
 {
 	Hook_State hook = {};
 	TrueForce_State state = {0};
@@ -1658,8 +1658,8 @@ boolean LUA_HookCanPickupItem(player_t *player, UINT8 weapon, boolean *force)
 
 typedef struct {
 	mobjtype_t droptype;
-	boolean *orbit;
-	boolean *dropall;
+	dboolean *orbit;
+	dboolean *dropall;
 } KartDropHnextList_State;
 
 static void res_kartdrophnext(Hook_State *hook)
@@ -1669,18 +1669,18 @@ static void res_kartdrophnext(Hook_State *hook)
 	{
 		state->droptype = luaL_checkinteger(gL, -3);
 
-		if (lua_isboolean(gL, -2))
+		if (lua_isdboolean(gL, -2))
 		{
-			*state->orbit = lua_toboolean(gL, -2);
+			*state->orbit = lua_todboolean(gL, -2);
 		}
-		if (lua_isboolean(gL, -1))
+		if (lua_isdboolean(gL, -1))
 		{
-			*state->dropall = lua_toboolean(gL, -1);
+			*state->dropall = lua_todboolean(gL, -1);
 		}
 	}
 }
 
-int LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t droptype, boolean *orbit, boolean *dropall)
+int LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t droptype, dboolean *orbit, dboolean *dropall)
 {
 	Hook_State hook = {};
 	KartDropHnextList_State state = {0};

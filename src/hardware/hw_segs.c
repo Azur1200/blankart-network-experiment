@@ -33,7 +33,7 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg)
     return (FUINT)finallight;
 }
 
-void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
+void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, dboolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
 {
 	FBITFIELD blendmode = blend;
 	UINT8 alpha = pSurf->PolyColor.s.alpha; // retain the alpha
@@ -111,7 +111,7 @@ static void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIEL
 // SoM: split up and light walls according to the lightlist.
 // This may also include leaving out parts of the wall that can't be seen
 //
-static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, boolean noencore, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags)
+static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, dboolean noencore, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags)
 {
 	float realtop, realbot, top, bot;
 	float pegt, pegb, pegmul;
@@ -180,7 +180,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 			}
 		}
 
-		boolean solid = false;
+		dboolean solid = false;
 
 		if ((sector->lightlist[i].flags & FOF_CUTSOLIDS) && !(cutflag & FOF_EXTRA))
 			solid = true;
@@ -331,7 +331,7 @@ typedef struct
 	end2 = P_GetZAt(slope, v2x, v2y, normalheight);
 
 static void HWR_ProcessTwoSidedSegTop(FOutVector *wallVerts, FSurfaceInfo *Surf, gl_seg_bounds *b,
-		float cliplow, float cliphigh, FUINT lightnum, INT32 gl_toptexture, boolean noencore)
+		float cliplow, float cliphigh, FUINT lightnum, INT32 gl_toptexture, dboolean noencore)
 {
 	GLMapTexture_t *grTex = HWR_GetTexture(gl_toptexture, noencore);
 
@@ -400,7 +400,7 @@ static void HWR_ProcessTwoSidedSegTop(FOutVector *wallVerts, FSurfaceInfo *Surf,
 }
 
 static void HWR_ProcessTwoSidedSegBottom(FOutVector *wallVerts, FSurfaceInfo *Surf, gl_seg_bounds *b,
-										 float cliplow, float cliphigh, FUINT lightnum, INT32 gl_bottomtexture, boolean noencore)
+										 float cliplow, float cliphigh, FUINT lightnum, INT32 gl_bottomtexture, dboolean noencore)
 {
 	GLMapTexture_t *grTex = HWR_GetTexture(gl_bottomtexture, noencore);
 
@@ -471,7 +471,7 @@ static void HWR_ProcessTwoSidedSegBottom(FOutVector *wallVerts, FSurfaceInfo *Su
 // gl_midtexture can be inactive for this function
 // when rendering twosided portal midtextures
 static void HWR_ProcessTwoSidedSegMiddle(FOutVector *wallVerts, FSurfaceInfo *Surf, gl_seg_bounds *b,
-										 float cliplow, float cliphigh, FUINT lightnum, INT32 gl_midtexture, boolean noencore, boolean tripwire)
+										 float cliplow, float cliphigh, FUINT lightnum, INT32 gl_midtexture, dboolean noencore, dboolean tripwire)
 {
 	GLMapTexture_t *grTex = NULL;
 
@@ -718,14 +718,14 @@ static void HWR_ProcessTwoSidedSegMiddle(FOutVector *wallVerts, FSurfaceInfo *Su
 }
 
 static void HWR_ProcessTwoSidedSeg(FOutVector *wallVerts, gl_seg_bounds *b,
-								   float cliplow, float cliphigh, FUINT lightnum, boolean noencore, boolean tripwire)
+								   float cliplow, float cliphigh, FUINT lightnum, dboolean noencore, dboolean tripwire)
 {
 	FSurfaceInfo Surf = {};
 
 	INT32 gl_toptexture = 0, gl_bottomtexture = 0;
 	INT32 gl_midtexture;
-	boolean bothceilingssky = false; // turned on if both back and front ceilings are sky
-	boolean bothfloorssky = false; // likewise, but for floors
+	dboolean bothceilingssky = false; // turned on if both back and front ceilings are sky
+	dboolean bothfloorssky = false; // likewise, but for floors
 
 	Surf.PolyColor.s.alpha = 255;
 
@@ -883,7 +883,7 @@ static void HWR_ProcessTwoSidedSeg(FOutVector *wallVerts, gl_seg_bounds *b,
 }
 
 static void HWR_ProcessSingleSidedSeg(FOutVector *wallVerts, gl_seg_bounds *b,
-									  float cliplow, float cliphigh, FUINT lightnum, boolean noencore)
+									  float cliplow, float cliphigh, FUINT lightnum, dboolean noencore)
 {
 	FSurfaceInfo Surf;
 	GLMapTexture_t *grTex = NULL;
@@ -995,7 +995,7 @@ typedef struct
 static void HWR_ProcessSegFOFsSector(FOutVector *wallVerts, gl_fof_cuts *c,
 									 float cliplow, float cliphigh, FUINT lightnum,
 									 fixed_t v1x, fixed_t v1y, fixed_t v2x, fixed_t v2y,
-									 sector_t *this_sector, sector_t *other_sector, boolean is_front_sector, boolean noencore)
+									 sector_t *this_sector, sector_t *other_sector, dboolean is_front_sector, dboolean noencore)
 {
 	FSurfaceInfo Surf;
 	GLMapTexture_t *grTex = NULL;
@@ -1115,8 +1115,8 @@ static void HWR_ProcessSegFOFsSector(FOutVector *wallVerts, gl_fof_cuts *c,
 		else
 		{
 			fixed_t texturevpeg;
-			boolean attachtobottom = false;
-			boolean slopeskew = false; // skew FOF walls with slopes?
+			dboolean attachtobottom = false;
+			dboolean slopeskew = false; // skew FOF walls with slopes?
 
 			// Wow, how was this missing from OpenGL for so long?
 			// ...Oh well, anyway, Lower Unpegged now changes pegging of FOFs like in software
@@ -1209,7 +1209,7 @@ static void HWR_ProcessSegFOFsSector(FOutVector *wallVerts, gl_fof_cuts *c,
 // is_front_sector is true when this_sector is the front sector
 static void HWR_ProcessSegFOFs(FOutVector *wallVerts, gl_seg_bounds *b,
 							   float cliplow, float cliphigh, FUINT lightnum,
-							   fixed_t v1x, fixed_t v1y, fixed_t v2x, fixed_t v2y, boolean noencore)
+							   fixed_t v1x, fixed_t v1y, fixed_t v2x, fixed_t v2y, dboolean noencore)
 {
 	gl_fof_cuts c;
 
@@ -1243,8 +1243,8 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	FUINT lightnum = 255;
 
-	boolean tripwire;
-	boolean noencore;
+	dboolean tripwire;
+	dboolean noencore;
 
 	gl_sidedef = gl_curline->sidedef;
 	gl_linedef = gl_curline->linedef;

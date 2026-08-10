@@ -83,16 +83,16 @@ ps_metric_t ps_hw_numcolors = {0};
 ps_metric_t ps_hw_batchsorttime = {0};
 ps_metric_t ps_hw_batchdrawtime = {0};
 
-boolean gl_init = false;
-boolean gl_maploaded = false;
-boolean gl_sessioncommandsadded = false;
+dboolean gl_init = false;
+dboolean gl_maploaded = false;
+dboolean gl_sessioncommandsadded = false;
 // false if shaders have not been initialized yet, or if shaders are not available
-boolean gl_shadersavailable = false;
+dboolean gl_shadersavailable = false;
 
 // Whether the internal state is set to palette rendering or not.
-static boolean gl_palette_rendering_state = false;
+static dboolean gl_palette_rendering_state = false;
 
-boolean gl_rendering_skybox = false;
+dboolean gl_rendering_skybox = false;
 
 // --------------------------------------------------------------------------
 //                                              STUFF FOR THE PROJECTION CODE
@@ -114,17 +114,17 @@ static angle_t gl_aimingangle;
 // ==========================================================================
 
 // Returns true if shaders can be used.
-boolean HWR_UseShader(void)
+dboolean HWR_UseShader(void)
 {
 	return (cv_glshaders.value && gl_shadersavailable);
 }
 
-boolean HWR_IsWireframeMode(void)
+dboolean HWR_IsWireframeMode(void)
 {
 	return (cv_glwireframe.value /*&& cv_debug*/);
 }
 
-boolean HWR_OverrideObjectLightLevel(mobj_t *thing, INT32 *lightlevel)
+dboolean HWR_OverrideObjectLightLevel(mobj_t *thing, INT32 *lightlevel)
 {
 	if (R_ThingIsFullBright(thing))
 		*lightlevel = 255;
@@ -138,10 +138,10 @@ boolean HWR_OverrideObjectLightLevel(mobj_t *thing, INT32 *lightlevel)
 	return true;
 }
 
-void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model)
+void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, dboolean model)
 {
-	const boolean semibright = R_ThingIsSemiBright(spr->mobj);
-	const boolean papersprite = R_ThingIsPaperSprite(spr->mobj);
+	const dboolean semibright = R_ThingIsSemiBright(spr->mobj);
+	const dboolean papersprite = R_ThingIsPaperSprite(spr->mobj);
 
 	*lightlevel += R_ThingLightLevel(spr->mobj);
 
@@ -191,7 +191,7 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 	}
 }
 
-void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap, const boolean directional)
+void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap, const dboolean directional)
 {
 	RGBA_t poly_color, tint_color, fade_color;
 
@@ -362,7 +362,7 @@ FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf)
 }
 
 // Returns true if the midtexture is visible, and false if... it isn't...
-boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
+dboolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 {
 	FUINT blendmode = PF_Masked;
 
@@ -407,7 +407,7 @@ void HWR_SetViewSize(void)
 
 // Set view aiming, for the sky dome, the skybox,
 // and the normal view, all with a single function.
-void HWR_SetTransformAiming(FTransform *trans, player_t *player, boolean skybox, boolean side_effect)
+void HWR_SetTransformAiming(FTransform *trans, player_t *player, dboolean skybox, dboolean side_effect)
 {
 	angle_t temp_aimingangle;
 	// 1 = always on
@@ -450,7 +450,7 @@ static void HWR_SetShaderState(void)
 
 // prepare all transform related variables based on the current "frame"
 // (R_SetupFrame etc)
-void HWR_PrepareTransform(player_t *player, boolean is_skybox)
+void HWR_PrepareTransform(player_t *player, dboolean is_skybox)
 {
 	UINT8 viewnum = R_GetViewNumber();
 	camera_t *thiscam = &camera[viewnum];
@@ -515,12 +515,12 @@ static void HWR_LeaveSkyboxState(void)
 	gl_rendering_skybox = false;
 }
 
-void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolean is_skybox, boolean timing, gl_portal_t *rootportal)
+void HWR_RenderViewpoint(player_t *player, dboolean drawSkyTexture, dboolean is_skybox, dboolean timing, gl_portal_t *rootportal)
 {
 	unsigned int i;
 	gl_portal_array_t *portal_array;
 
-	const boolean wireframe = HWR_IsWireframeMode();
+	const dboolean wireframe = HWR_IsWireframeMode();
 
 	HWR_PrepareTransform(player, is_skybox);
 	// we need to set our transformations now so portal clipping
@@ -731,7 +731,7 @@ void HWR_RenderPlayerView(void)
 {
 	player_t * player = &players[displayplayers[viewssnum]];
 
-	const boolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
+	const dboolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
 
 	FRGBAFloat ClearColor;
 
@@ -806,7 +806,7 @@ void HWR_RenderPlayerView(void)
 
 // Returns whether palette rendering is "actually enabled."
 // Can't have palette rendering if shaders are disabled.
-boolean HWR_ShouldUsePaletteRendering(void)
+dboolean HWR_ShouldUsePaletteRendering(void)
 {
 	return (pMasterPalette != NULL && cv_glpaletterendering.value && HWR_UseShader());
 }
@@ -1304,7 +1304,7 @@ void HWR_DrawIntermissionBG(void)
 static lumpnum_t wipelumpnum;
 
 // puts wipe lumpname in wipename[9]
-static boolean HWR_WipeCheck(UINT8 wipenum, UINT8 scrnnum)
+static dboolean HWR_WipeCheck(UINT8 wipenum, UINT8 scrnnum)
 {
 	static char lumpname[9] = "FADEmmss";
 	size_t lsize;

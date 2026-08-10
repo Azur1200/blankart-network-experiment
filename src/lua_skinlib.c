@@ -94,7 +94,7 @@ static int skin_get(lua_State *L)
 	switch (field)
 	{
 	case skin_valid:
-		lua_pushboolean(L, skin != NULL);
+		lua_pushdboolean(L, skin != NULL);
 		break;
 	case skin_name:
 		lua_pushstring(L, skin->name);
@@ -156,7 +156,7 @@ static int skin_get(lua_State *L)
 		LUA_PushUserdata(L, skin->sprites, META_SKINSPRITES);
 		break;
 	case skin_compatmode:
-		lua_pushboolean(L, wadfiles[skin->wadnum]->compatmode);
+		lua_pushdboolean(L, wadfiles[skin->wadnum]->compatmode);
 		break;
 	}
 	return 1;

@@ -85,7 +85,7 @@ UINT8 wipedefs[NUMWIPEDEFS] = {
 //--------------------------------------------------------------------------
 
 UINT8 WipeInAction = 0;
-boolean WipeStageTitle = false;
+dboolean WipeStageTitle = false;
 
 #ifndef NOWIPE
 
@@ -360,7 +360,7 @@ void F_WipeStageTitle(void)
 /** After setting up the screens you want to wipe,
   * calling this will do a 'typical' wipe.
   */
-void F_RunWipe(UINT8 wipetype, boolean drawMenu)
+void F_RunWipe(UINT8 wipetype, dboolean drawMenu)
 {
 #ifdef NOWIPE
 	(void)wipetype;
@@ -405,7 +405,7 @@ tic_t F_GetWipeLength(UINT8 wipetype)
 
 /** Does the specified wipe exist?
   */
-boolean F_WipeExists(UINT8 wipetype)
+dboolean F_WipeExists(UINT8 wipetype)
 {
 #ifdef NOWIPE
 	(void)wipetype;

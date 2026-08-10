@@ -75,7 +75,7 @@ typedef struct
 static UINT8 cheatf_warp(void)
 {
 	UINT8 i;
-	boolean success = false;
+	dboolean success = false;
 
 	/*if (modifiedgame)
 	 *	return 0;*/
@@ -217,7 +217,7 @@ static UINT8 cht_CheckCheat(cheatseq_t *cht, char key)
 	return rc;
 }
 
-boolean cht_Responder(event_t *ev)
+dboolean cht_Responder(event_t *ev)
 {
 	UINT8 ret = 0, ch = 0;
 	if (ev->type != ev_keydown)
@@ -847,7 +847,7 @@ consvar_t cv_speed = CVAR_INIT ("op_speed", "16", CV_NOTINNET, op_speed_t, NULL)
 consvar_t cv_opflags = CVAR_INIT ("op_flags", "0", CV_NOTINNET, op_flags_t, NULL);
 consvar_t cv_ophoopflags = CVAR_INIT ("op_hoopflags", "4", CV_NOTINNET, op_hoopflags_t, NULL);
 
-boolean objectplacing = false;
+dboolean objectplacing = false;
 mobjtype_t op_currentthing = 0; // For the object placement mode
 UINT16 op_currentdoomednum = 0; // For display, etc
 UINT32 op_displayflags = 0; // for display in ST_stuff
@@ -905,7 +905,7 @@ static void OP_CycleThings(INT32 amt)
 	op_currentdoomednum = mobjinfo[op_currentthing].doomednum;
 }
 
-static boolean OP_HeightOkay(player_t *player, UINT8 ceiling)
+static dboolean OP_HeightOkay(player_t *player, UINT8 ceiling)
 {
 	sector_t *sec = player->mo->subsector->sector;
 
@@ -935,7 +935,7 @@ static boolean OP_HeightOkay(player_t *player, UINT8 ceiling)
 	return true;
 }
 
-static mapthing_t *OP_CreateNewMapThing(player_t *player, UINT16 type, boolean ceiling)
+static mapthing_t *OP_CreateNewMapThing(player_t *player, UINT16 type, dboolean ceiling)
 {
 	mapthing_t *mt = mapthings;
 	sector_t *sec = player->mo->subsector->sector;
@@ -995,7 +995,7 @@ static mapthing_t *OP_CreateNewMapThing(player_t *player, UINT16 type, boolean c
 //
 // Helper functions
 //
-boolean OP_FreezeObjectplace(void)
+dboolean OP_FreezeObjectplace(void)
 {
 	if (!objectplacing)
 		return false;
@@ -1101,7 +1101,7 @@ void OP_ObjectplaceMovement(player_t *player)
 		mapthing_t *mt;
 		mobjtype_t spawnmid = op_currentthing;
 		mobjtype_t spawnthing = op_currentdoomednum;
-		boolean ceiling;
+		dboolean ceiling;
 
 		player->pflags |= PF_STASIS;
 

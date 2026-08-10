@@ -86,7 +86,7 @@ static void M_TextInputDelChar(textinput_t *input)
 	input->select = --input->cursor;
 }
 
-static void M_TextInputToWordEnd(textinput_t *input, boolean move_sel)
+static void M_TextInputToWordEnd(textinput_t *input, dboolean move_sel)
 {
 	// Skip spaces
 	while (input->cursor < input->length && isspace(input->buffer[input->cursor]))
@@ -99,7 +99,7 @@ static void M_TextInputToWordEnd(textinput_t *input, boolean move_sel)
 	if (move_sel) input->select = input->cursor;
 }
 
-static void M_TextInputToWordBegin(textinput_t *input, boolean move_sel)
+static void M_TextInputToWordBegin(textinput_t *input, dboolean move_sel)
 {
 	// Hack, always move back 1 character if possible so if we press ctrl-left at a word beginning
 	// we move to previous word
@@ -129,7 +129,7 @@ static void M_TextInputPaste(textinput_t *input)
 		M_TextInputAddString(input, paste);
 }
 
-static void M_TextInputLeft(textinput_t *input, boolean emotes)
+static void M_TextInputLeft(textinput_t *input, dboolean emotes)
 {
 	// Just do it simple way if possible
 	if (!emotes || input->cursor < 2 || input->buffer[input->cursor-1] != ':')
@@ -162,7 +162,7 @@ static void M_TextInputLeft(textinput_t *input, boolean emotes)
 		M_TextInputLeft(input, false); // Not a valid emote, do the simple thing
 }
 
-static void M_TextInputRight(textinput_t *input, boolean emotes)
+static void M_TextInputRight(textinput_t *input, dboolean emotes)
 {
 	// Just do it simple way if possible
 	if (!emotes || input->cursor == input->length || input->buffer[input->cursor] != ':')
@@ -180,7 +180,7 @@ static void M_TextInputRight(textinput_t *input, boolean emotes)
 }
 
 // Check if we're inside a valid emote
-static boolean M_TextInputCheckEmote(textinput_t *input)
+static dboolean M_TextInputCheckEmote(textinput_t *input)
 {
 	int start = input->cursor;
 
@@ -231,7 +231,7 @@ void M_TextInputSetString(textinput_t *input, const char *c)
 	input->cursor = input->select = input->length = strlen(input->buffer);
 }
 
-static boolean M_TextInputHandleBase(textinput_t *input, INT32 key, boolean emotes)
+static dboolean M_TextInputHandleBase(textinput_t *input, INT32 key, dboolean emotes)
 {
 	if (key == KEY_LSHIFT || key == KEY_RSHIFT
 		|| key == KEY_LCTRL || key == KEY_RCTRL
@@ -394,7 +394,7 @@ static boolean M_TextInputHandleBase(textinput_t *input, INT32 key, boolean emot
 }
 
 // Just an alias, more or less
-boolean M_TextInputHandle(textinput_t *input, INT32 key)
+dboolean M_TextInputHandle(textinput_t *input, INT32 key)
 {
 	return M_TextInputHandleBase(input, key, false);
 }
@@ -423,7 +423,7 @@ static int M_TextInputEmoteStart(textinput_t *input)
 	return emotestart;
 }
 
-static boolean M_TextInputCompleteEmote(textinput_t *input, emote_autocomplete_t *autocomplete)
+static dboolean M_TextInputCompleteEmote(textinput_t *input, emote_autocomplete_t *autocomplete)
 {
 	if (input->cursor == 0)
 		return false;
@@ -480,9 +480,9 @@ static boolean M_TextInputCompleteEmote(textinput_t *input, emote_autocomplete_t
 	return true;
 }
 
-boolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_autocomplete_t *autocomplete)
+dboolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_autocomplete_t *autocomplete)
 {
-	boolean ret = M_TextInputHandleBase(input, key, true);
+	dboolean ret = M_TextInputHandleBase(input, key, true);
 
 	// After this handled key we ended up inside an emote, lets fix that
 	if (M_TextInputCheckEmote(input))

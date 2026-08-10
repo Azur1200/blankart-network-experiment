@@ -165,7 +165,7 @@ static int luaB_setfenv (lua_State *L) {
 static int luaB_rawequal (lua_State *L) {
   luaL_checkany(L, 1);
   luaL_checkany(L, 2);
-  lua_pushboolean(L, lua_rawequal(L, 1, 2));
+  lua_pushdboolean(L, lua_rawequal(L, 1, 2));
   return 1;
 }
 
@@ -209,7 +209,7 @@ static int luaB_collectgarbage (lua_State *L) {
       return 1;
     }
     case LUA_GCSTEP: {
-      lua_pushboolean(L, res);
+      lua_pushdboolean(L, res);
       return 1;
     }
     default: {
@@ -290,7 +290,7 @@ static int luaB_dofile (lua_State *L) {
 
 static int luaB_assert (lua_State *L) {
   luaL_checkany(L, 1);
-  if (!lua_toboolean(L, 1))
+  if (!lua_todboolean(L, 1))
     return luaL_error(L, "%s", luaL_optstring(L, 2, "assertion failed!"));
   return lua_gettop(L);
 }
@@ -332,7 +332,7 @@ static int luaB_pcall (lua_State *L) {
   int status;
   luaL_checkany(L, 1);
   status = lua_pcall(L, lua_gettop(L) - 1, LUA_MULTRET, 0);
-  lua_pushboolean(L, (status == 0));
+  lua_pushdboolean(L, (status == 0));
   lua_insert(L, 1);
   return lua_gettop(L);  /* return status + all results */
 }
@@ -344,7 +344,7 @@ static int luaB_xpcall (lua_State *L) {
   lua_settop(L, 2);
   lua_insert(L, 1);  /* put error function under function to be called */
   status = lua_pcall(L, 0, LUA_MULTRET, 1);
-  lua_pushboolean(L, (status == 0));
+  lua_pushdboolean(L, (status == 0));
   lua_replace(L, 1);
   return lua_gettop(L);  /* return status + all results */
 }
@@ -362,7 +362,7 @@ static int luaB_tostring (lua_State *L) {
       lua_pushvalue(L, 1);
       break;
     case LUA_TBOOLEAN:
-      lua_pushstring(L, (lua_toboolean(L, 1) ? "true" : "false"));
+      lua_pushstring(L, (lua_todboolean(L, 1) ? "true" : "false"));
       break;
     case LUA_TNIL:
       lua_pushliteral(L, "nil");
@@ -378,22 +378,22 @@ static int luaB_tostring (lua_State *L) {
 static int luaB_newproxy (lua_State *L) {
   lua_settop(L, 1);
   lua_newuserdata(L, 0);  /* create proxy */
-  if (lua_toboolean(L, 1) == 0)
+  if (lua_todboolean(L, 1) == 0)
     return 1;  /* no metatable */
-  else if (lua_isboolean(L, 1)) {
+  else if (lua_isdboolean(L, 1)) {
     lua_newtable(L);  /* create a new metatable `m' ... */
     lua_pushvalue(L, -1);  /* ... and mark `m' as a valid metatable */
-    lua_pushboolean(L, 1);
+    lua_pushdboolean(L, 1);
     lua_rawset(L, lua_upvalueindex(1));  /* weaktable[m] = true */
   }
   else {
     int validproxy = 0;  /* to check if weaktable[metatable(u)] == true */
     if (lua_getmetatable(L, 1)) {
       lua_rawget(L, lua_upvalueindex(1));
-      validproxy = lua_toboolean(L, -1);
+      validproxy = lua_todboolean(L, -1);
       lua_pop(L, 1);  /* remove value */
     }
-    luaL_argcheck(L, validproxy, 1, "boolean or proxy expected");
+    luaL_argcheck(L, validproxy, 1, "dboolean or proxy expected");
     lua_getmetatable(L, 1);  /* metatable is valid; get it */
   }
   lua_setmetatable(L, 2);
@@ -500,12 +500,12 @@ static int luaB_coresume (lua_State *L) {
   luaL_argcheck(L, co, 1, "coroutine expected");
   r = auxresume(L, co, lua_gettop(L) - 1);
   if (r < 0) {
-    lua_pushboolean(L, 0);
+    lua_pushdboolean(L, 0);
     lua_insert(L, -2);
     return 2;  /* return false + error message */
   }
   else {
-    lua_pushboolean(L, 1);
+    lua_pushdboolean(L, 1);
     lua_insert(L, -(r + 1));
     return r + 1;  /* return true + `resume' returns */
   }

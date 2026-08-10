@@ -50,7 +50,7 @@ static int botvars_get(lua_State *L)
 	switch (field)
 	{
 	case botvars_valid:
-		lua_pushboolean(L, botvars != NULL);
+		lua_pushdboolean(L, botvars != NULL);
 		break;
 	case botvars_style:
 		lua_pushinteger(L, botvars->style);
@@ -62,7 +62,7 @@ static int botvars_get(lua_State *L)
 		lua_pushinteger(L, botvars->diffincrease);
 		break;
 	case botvars_rival:
-		lua_pushboolean(L, botvars->rival);
+		lua_pushdboolean(L, botvars->rival);
 		break;
 	case botvars_rubberband:
 		lua_pushfixed(L, botvars->rubberband);
@@ -97,7 +97,7 @@ static int botvars_set(lua_State *L)
 		botvars->diffincrease = luaL_checkinteger(L, 3);
 		break;
 	case botvars_rival:
-		botvars->rival = luaL_checkboolean(L, 3);
+		botvars->rival = luaL_checkdboolean(L, 3);
 		break;
 	case botvars_rubberband:
 		botvars->rubberband = luaL_checkfixed(L, 3);
@@ -170,7 +170,7 @@ static int botdata_get(lua_State *L)
 	switch (field)
 	{
 	case botdata_valid:
-		lua_pushboolean(L, botdata != NULL);
+		lua_pushdboolean(L, botdata != NULL);
 		break;
 	case botdata_itemdelay:
 		lua_pushinteger(L, botdata->itemdelay);
@@ -209,22 +209,22 @@ static int botdata_get(lua_State *L)
 		lua_pushfixed(L, botdata->driftskill);
 		break;
 	case botdata_acceldown:
-		lua_pushboolean(L, botdata->acceldown);
+		lua_pushdboolean(L, botdata->acceldown);
 		break;
 	case botdata_brakedown:
-		lua_pushboolean(L, botdata->brakedown);
+		lua_pushdboolean(L, botdata->brakedown);
 		break;
 	case botdata_driftdown:
-		lua_pushboolean(L, botdata->driftdown);
+		lua_pushdboolean(L, botdata->driftdown);
 		break;
 	case botdata_itemdown:
-		lua_pushboolean(L, botdata->itemdown);
+		lua_pushdboolean(L, botdata->itemdown);
 		break;
 	case botdata_dolookback:
-		lua_pushboolean(L, botdata->dolookback);
+		lua_pushdboolean(L, botdata->dolookback);
 		break;
 	case botdata_itemwasdown:
-		lua_pushboolean(L, botdata->itemwasdown);
+		lua_pushdboolean(L, botdata->itemwasdown);
 		break;
 	case botdata_itemthrow:
 		lua_pushinteger(L, botdata->itemthrow);
@@ -301,22 +301,22 @@ static int botdata_set(lua_State *L)
 		botdata->driftskill = luaL_checkfixed(L, 3);
 		break;
 	case botdata_acceldown:
-		botdata->acceldown = luaL_checkboolean(L, 3);
+		botdata->acceldown = luaL_checkdboolean(L, 3);
 		break;
 	case botdata_brakedown:
-		botdata->brakedown = luaL_checkboolean(L, 3);
+		botdata->brakedown = luaL_checkdboolean(L, 3);
 		break;
 	case botdata_driftdown:
-		botdata->driftdown = luaL_checkboolean(L, 3);
+		botdata->driftdown = luaL_checkdboolean(L, 3);
 		break;
 	case botdata_itemdown:
-		botdata->itemdown = luaL_checkboolean(L, 3);
+		botdata->itemdown = luaL_checkdboolean(L, 3);
 		break;
 	case botdata_dolookback:
-		botdata->dolookback = luaL_checkboolean(L, 3);
+		botdata->dolookback = luaL_checkdboolean(L, 3);
 		break;
 	case botdata_itemwasdown:
-		botdata->itemwasdown = luaL_checkboolean(L, 3);
+		botdata->itemwasdown = luaL_checkdboolean(L, 3);
 		break;
 	case botdata_itemthrow:
 		botdata->itemthrow = luaL_checkinteger(L, 3);

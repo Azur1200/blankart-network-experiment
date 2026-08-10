@@ -37,24 +37,24 @@ void *Patch_CreateGL(patch_t *patch);
 #endif
 
 #ifdef ROTSPRITE
-void Patch_Rotate(patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, boolean flip);
-patch_t *Patch_GetRotated(patch_t *patch, INT32 angle, boolean flip);
+void Patch_Rotate(patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, dboolean flip);
+patch_t *Patch_GetRotated(patch_t *patch, INT32 angle, dboolean flip);
 patch_t *Patch_GetRotatedSprite(
 	spriteframe_t *sprite,
 	size_t frame, size_t spriteangle,
-	boolean flip, boolean adjustfeet,
+	dboolean flip, dboolean adjustfeet,
 	void *info, INT32 rotationangle);
 
 INT32 R_GetRollAngle(angle_t rollangle);
-boolean R_IsOverlayingSMonitorPlayer(mobj_t* mobj);
+dboolean R_IsOverlayingSMonitorPlayer(mobj_t* mobj);
 angle_t R_GetPitchRollAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_t *interp);
-angle_t R_ModelRotationAngle(mobj_t *mobj, player_t *viewPlayer, boolean fliptilt);
-angle_t R_SpriteRotationAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_t *interp, boolean fliptilt);
+angle_t R_ModelRotationAngle(mobj_t *mobj, player_t *viewPlayer, dboolean fliptilt);
+angle_t R_SpriteRotationAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_t *interp, dboolean fliptilt);
 vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 	mobj_t* mobj,
-	boolean vflip,
-	boolean hflip,
-	boolean affine,
+	dboolean vflip,
+	dboolean hflip,
+	dboolean affine,
 	interpmobjstate_t *interp, 
 	vector2_t* out,
 	vector2_t* rolloffs);

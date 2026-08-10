@@ -45,7 +45,7 @@ typedef enum {
 //
 // Cheat sequences
 //
-boolean cht_Responder(event_t *ev);
+dboolean cht_Responder(event_t *ev);
 void cht_Init(void);
 
 //
@@ -57,12 +57,12 @@ void Command_ObjectPlace_f(void);
 extern consvar_t cv_opflags, cv_ophoopflags, cv_mapthingnum, cv_speed;
 //extern consvar_t cv_snapto, cv_grid;
 
-extern boolean objectplacing;
+extern dboolean objectplacing;
 extern mobjtype_t op_currentthing;
 extern UINT16 op_currentdoomednum;
 extern UINT32 op_displayflags;
 
-boolean OP_FreezeObjectplace(void);
+dboolean OP_FreezeObjectplace(void);
 void OP_ResetObjectplace(void);
 void OP_ObjectplaceMovement(player_t *player);
 

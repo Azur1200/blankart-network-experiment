@@ -111,7 +111,7 @@ void Patch_Free(patch_t *patch)
 // Frees patches with a tag range.
 //
 
-static boolean Patch_FreeTagsCallback(void *mem)
+static dboolean Patch_FreeTagsCallback(void *mem)
 {
 	patch_t *patch = (patch_t *)mem;
 	Patch_FreeData(patch);

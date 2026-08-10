@@ -605,12 +605,12 @@ static int sectorlines_get(lua_State *L)
 		if (!seclines || !(*seclines))
 		{
 			if (field == 0) {
-				lua_pushboolean(L, 0);
+				lua_pushdboolean(L, 0);
 				return 1;
 			}
 			return luaL_error(L, "accessed sector_t.lines doesn't exist anymore.");
 		} else if (field == 0) {
-			lua_pushboolean(L, 1);
+			lua_pushdboolean(L, 1);
 			return 1;
 		}
 	}
@@ -712,7 +712,7 @@ static int sector_get(lua_State *L)
 	if (!sector)
 	{
 		if (field == sector_valid) {
-			lua_pushboolean(L, 0);
+			lua_pushdboolean(L, 0);
 			return 1;
 		}
 		return luaL_error(L, "accessed sector_t doesn't exist anymore.");
@@ -721,7 +721,7 @@ static int sector_get(lua_State *L)
 	switch(field)
 	{
 	case sector_valid: // valid
-		lua_pushboolean(L, 1);
+		lua_pushdboolean(L, 1);
 		return 1;
 	case sector_floorheight:
 		lua_pushfixed(L, sector->floorheight);
@@ -754,13 +754,13 @@ static int sector_get(lua_State *L)
 		lua_pushinteger(L, sector->floorlightlevel);
 		return 1;
 	case sector_floorlightabsolute:
-		lua_pushboolean(L, sector->floorlightabsolute);
+		lua_pushdboolean(L, sector->floorlightabsolute);
 		return 1;
 	case sector_ceilinglightlevel:
 		lua_pushinteger(L, sector->ceilinglightlevel);
 		return 1;
 	case sector_ceilinglightabsolute:
-		lua_pushboolean(L, sector->ceilinglightabsolute);
+		lua_pushdboolean(L, sector->ceilinglightabsolute);
 		return 1;
 	case sector_special:
 		lua_pushinteger(L, sector->special);
@@ -881,7 +881,7 @@ static int sector_set(lua_State *L)
 	default:
 		return luaL_error(L, "sector_t has no field named " LUA_QS ".", lua_tostring(L, 2));
 	case sector_floorheight: { // floorheight
-		boolean flag;
+		dboolean flag;
 		tm_t ptm = g_tm;
 
 		fixed_t lastpos = sector->floorheight;
@@ -896,7 +896,7 @@ static int sector_set(lua_State *L)
 		break;
 	}
 	case sector_ceilingheight: { // ceilingheight
-		boolean flag;
+		dboolean flag;
 		tm_t ptm = g_tm;
 
 		fixed_t lastpos = sector->ceilingheight;
@@ -923,13 +923,13 @@ static int sector_set(lua_State *L)
 		sector->floorlightlevel = (INT16)luaL_checkinteger(L, 3);
 		break;
 	case sector_floorlightabsolute:
-		sector->floorlightabsolute = luaL_checkboolean(L, 3);
+		sector->floorlightabsolute = luaL_checkdboolean(L, 3);
 		break;
 	case sector_ceilinglightlevel:
 		sector->ceilinglightlevel = (INT16)luaL_checkinteger(L, 3);
 		break;
 	case sector_ceilinglightabsolute:
-		sector->ceilinglightabsolute = luaL_checkboolean(L, 3);
+		sector->ceilinglightabsolute = luaL_checkdboolean(L, 3);
 		break;
 	case sector_special:
 		sector->special = (INT16)luaL_checkinteger(L, 3);
@@ -992,7 +992,7 @@ static int subsector_get(lua_State *L)
 	if (!subsector)
 	{
 		if (field == subsector_valid) {
-			lua_pushboolean(L, 0);
+			lua_pushdboolean(L, 0);
 			return 1;
 		}
 		return luaL_error(L, "accessed subsector_t doesn't exist anymore.");
@@ -1001,7 +1001,7 @@ static int subsector_get(lua_State *L)
 	switch(field)
 	{
 	case subsector_valid: // valid
-		lua_pushboolean(L, 1);
+		lua_pushdboolean(L, 1);
 		return 1;
 	case subsector_sector:
 		LUA_PushUserdata(L, subsector->sector, META_SECTOR);
@@ -1078,7 +1078,7 @@ static int line_get(lua_State *L)
 	if (!line)
 	{
 		if (field == line_valid) {
-			lua_pushboolean(L, 0);
+			lua_pushdboolean(L, 0);
 			return 1;
 		}
 		return luaL_error(L, "accessed line_t doesn't exist anymore.");
@@ -1087,7 +1087,7 @@ static int line_get(lua_State *L)
 	switch(field)
 	{
 	case line_valid: // valid
-		lua_pushboolean(L, 1);
+		lua_pushdboolean(L, 1);
 		return 1;
 	case line_v1:
 		LUA_PushUserdata(L, line->v1, META_VERTEX);
@@ -1211,12 +1211,12 @@ static int sidenum_get(lua_State *L)
 		if (!sidenum)
 		{
 			if (field == 0) {
-				lua_pushboolean(L, 0);
+				lua_pushdboolean(L, 0);
 				return 1;
 			}
 			return luaL_error(L, "accessed line_t doesn't exist anymore.");
 		} else if (field == 0) {
-			lua_pushboolean(L, 1);
+			lua_pushdboolean(L, 1);
 			return 1;
 		}
 	}
@@ -1242,7 +1242,7 @@ static int side_get(lua_State *L)
 	if (!side)
 	{
 		if (field == side_valid) {
-			lua_pushboolean(L, 0);
+			lua_pushdboolean(L, 0);
 			return 1;
 		}
 		return luaL_error(L, "accessed side_t doesn't exist anymore.");
@@ -1251,7 +1251,7 @@ static int side_get(lua_State *L)
 	switch(field)
 	{
 	case side_valid: // valid
-		lua_pushboolean(L, 1);
+		lua_pushdboolean(L, 1);
 		return 1;
 	case side_textureoffset:
 		lua_pushfixed(L, side->textureoffset);
@@ -1313,7 +1313,7 @@ static int side_set(lua_State *L)
 	if (!side)
 	{
 		if (field == side_valid) {
-			lua_pushboolean(L, 0);
+			lua_pushdboolean(L, 0);
 			return 1;
 		}
 		return luaL_error(L, "accessed side_t doesn't exist anymore.");
@@ -1390,7 +1390,7 @@ static int vertex_get(lua_State *L)
 	if (!vertex)
 	{
 		if (field == vertex_valid) {
-			lua_pushboolean(L, 0);
+			lua_pushdboolean(L, 0);
 			return 1;
 		}
 		return luaL_error(L, "accessed vertex_t doesn't exist anymore.");
@@ -1399,7 +1399,7 @@ static int vertex_get(lua_State *L)
 	switch(field)
 	{
 	case vertex_valid: // valid
-		lua_pushboolean(L, 1);
+		lua_pushdboolean(L, 1);
 		return 1;
 	case vertex_x:
 		lua_pushfixed(L, vertex->x);
@@ -1408,10 +1408,10 @@ static int vertex_get(lua_State *L)
 		lua_pushfixed(L, vertex->y);
 		return 1;
 	case vertex_floorzset:
-		lua_pushboolean(L, vertex->floorzset);
+		lua_pushdboolean(L, vertex->floorzset);
 		return 1;
 	case vertex_ceilingzset:
-		lua_pushboolean(L, vertex->ceilingzset);
+		lua_pushdboolean(L, vertex->ceilingzset);
 		return 1;
 	case vertex_floorz:
 		lua_pushfixed(L, vertex->floorz);
@@ -1448,7 +1448,7 @@ static int seg_get(lua_State *L)
 	if (!seg)
 	{
 		if (field == seg_valid) {
-			lua_pushboolean(L, 0);
+			lua_pushdboolean(L, 0);
 			return 1;
 		}
 		return luaL_error(L, "accessed seg_t doesn't exist anymore.");
@@ -1457,7 +1457,7 @@ static int seg_get(lua_State *L)
 	switch(field)
 	{
 	case seg_valid: // valid
-		lua_pushboolean(L, 1);
+		lua_pushdboolean(L, 1);
 		return 1;
 	case seg_v1:
 		LUA_PushUserdata(L, seg->v1, META_VERTEX);
@@ -1514,7 +1514,7 @@ static int node_get(lua_State *L)
 	if (!node)
 	{
 		if (field == node_valid) {
-			lua_pushboolean(L, 0);
+			lua_pushdboolean(L, 0);
 			return 1;
 		}
 		return luaL_error(L, "accessed node_t doesn't exist anymore.");
@@ -1523,7 +1523,7 @@ static int node_get(lua_State *L)
 	switch(field)
 	{
 	case node_valid: // valid
-		lua_pushboolean(L, 1);
+		lua_pushdboolean(L, 1);
 		return 1;
 	case node_x:
 		lua_pushfixed(L, node->x);
@@ -1574,12 +1574,12 @@ static int nodebbox_get(lua_State *L)
 		if (!bbox)
 		{
 			if (field == 0) {
-				lua_pushboolean(L, 0);
+				lua_pushdboolean(L, 0);
 				return 1;
 			}
 			return luaL_error(L, "accessed node_t doesn't exist anymore.");
 		} else if (field == 0) {
-			lua_pushboolean(L, 1);
+			lua_pushdboolean(L, 1);
 			return 1;
 		}
 	}
@@ -1656,12 +1656,12 @@ static int nodechildren_get(lua_State *L)
 		if (!children)
 		{
 			if (field == nodechild_valid) {
-				lua_pushboolean(L, 0);
+				lua_pushdboolean(L, 0);
 				return 1;
 			}
 			return luaL_error(L, "accessed node_t doesn't exist anymore.");
 		} else if (field == nodechild_valid) {
-			lua_pushboolean(L, 1);
+			lua_pushdboolean(L, 1);
 			return 1;
 		} else switch (field) {
 			case nodechild_right: i = 0; break;
@@ -1696,12 +1696,12 @@ static int bbox_get(lua_State *L)
 		if (!bbox)
 		{
 			if (field == bbox_valid) {
-				lua_pushboolean(L, 0);
+				lua_pushdboolean(L, 0);
 				return 1;
 			}
 			return luaL_error(L, "accessed bbox doesn't exist anymore.");
 		} else if (field == bbox_valid) {
-			lua_pushboolean(L, 1);
+			lua_pushdboolean(L, 1);
 			return 1;
 		} else switch (field) {
 			case bbox_top:    i = BOXTOP;    break;
@@ -2158,7 +2158,7 @@ static int ffloor_get(lua_State *L)
 	if (!ffloor)
 	{
 		if (field == ffloor_valid) {
-			lua_pushboolean(L, 0);
+			lua_pushdboolean(L, 0);
 			return 1;
 		}
 		return luaL_error(L, "accessed ffloor_t doesn't exist anymore.");
@@ -2167,7 +2167,7 @@ static int ffloor_get(lua_State *L)
 	switch(field)
 	{
 	case ffloor_valid: // valid
-		lua_pushboolean(L, 1);
+		lua_pushdboolean(L, 1);
 		return 1;
 	case ffloor_topheight:
 		lua_pushfixed(L, *ffloor->topheight);
@@ -2358,7 +2358,7 @@ static int ffloor_set(lua_State *L)
 	default:
 		return luaL_error(L, "ffloor_t has no field named " LUA_QS ".", lua_tostring(L, 2));
 	case ffloor_topheight: { // topheight
-		boolean flag;
+		dboolean flag;
 		fixed_t lastpos = *ffloor->topheight;
 		tm_t ptm = g_tm;
 
@@ -2380,7 +2380,7 @@ static int ffloor_set(lua_State *L)
 		*ffloor->toplightlevel = (INT16)luaL_checkinteger(L, 3);
 		break;
 	case ffloor_bottomheight: { // bottomheight
-		boolean flag;
+		dboolean flag;
 		fixed_t lastpos = *ffloor->bottomheight;
 		tm_t ptm = g_tm;
 
@@ -2439,7 +2439,7 @@ static int slope_get(lua_State *L)
 	if (!slope)
 	{
 		if (field == slope_valid) {
-			lua_pushboolean(L, 0);
+			lua_pushdboolean(L, 0);
 			return 1;
 		}
 		return luaL_error(L, "accessed pslope_t doesn't exist anymore.");
@@ -2448,7 +2448,7 @@ static int slope_get(lua_State *L)
 	switch(field)
 	{
 	case slope_valid: // valid
-		lua_pushboolean(L, 1);
+		lua_pushdboolean(L, 1);
 		return 1;
 	case slope_o: // o
 	{
@@ -2718,9 +2718,9 @@ static int mapheaderinfo_get(lua_State *L)
 	else if (fastcmp(field, "gravity"))
 		lua_pushfixed(L, header->gravity);
 	else if (fastcmp(field, "use_walltransfer"))
-		lua_pushboolean(L, header->use_walltransfer);
+		lua_pushdboolean(L, header->use_walltransfer);
 	else if (fastcmp(field, "use_terrain"))
-		lua_pushboolean(L, header->use_terrain);
+		lua_pushdboolean(L, header->use_terrain);
 	else {
 		// Read custom vars now
 		// (note: don't include the "LUA." in your lua scripts!)
@@ -2750,7 +2750,7 @@ static int activator_get(lua_State *L)
 	{
 		if (field == activator_valid)
 		{
-			lua_pushboolean(L, 0);
+			lua_pushdboolean(L, 0);
 			return 1;
 		}
 
@@ -2760,7 +2760,7 @@ static int activator_get(lua_State *L)
 	switch (field)
 	{
 		case activator_valid:
-			lua_pushboolean(L, 1);
+			lua_pushdboolean(L, 1);
 			return 1;
 
 		case activator_mo:
@@ -2804,7 +2804,7 @@ static int botcontroller_get(lua_State *L)
 	if (!botcontroller)
 	{
 		if (field == botcontroller_valid) {
-			lua_pushboolean(L, false);
+			lua_pushdboolean(L, false);
 			return 1;
 		}
 		return luaL_error(L, "accessed botcontroller_t doesn't exist anymore.");
@@ -2813,7 +2813,7 @@ static int botcontroller_get(lua_State *L)
 	switch (field)
 	{
 		case botcontroller_valid:
-			lua_pushboolean(L, true);
+			lua_pushdboolean(L, true);
 			return 1;
 
 		//case botcontroller_trick:

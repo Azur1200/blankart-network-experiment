@@ -232,7 +232,7 @@ static void Portal_ClipVisplane(const visplane_t* plane, portal_t* portal)
 
 extern INT32 viewwidth;
 
-static boolean TrimVisplaneBounds(const visplane_t* plane, INT16* start, INT16* end)
+static dboolean TrimVisplaneBounds(const visplane_t* plane, INT16* start, INT16* end)
 {
 	*start = plane->minx;
 	*end = plane->maxx + 1;
