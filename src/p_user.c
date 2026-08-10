@@ -1345,11 +1345,23 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			// Handle the player headcount and grading BEFORE positions are finalized
 			K_GetPlayerNumber();
 
-			// Let last-minute comebacks happen by doubling the gains of losing players
-			const INT32 gainmul = (player->ranklog.gaining < 0) ? 250 : 100;
+			// Gaining percentage
+			INT32 gainmul = 100;
 
-			// And punish fuckups from the top players less
-			const INT32 lossmul = (player->ranklog.gaining > 0) ? 50 : 100;
+			if (player->ranklog.gaining < 0)
+			{
+				// If you're on a downward trend, your gain is proportional to your current loss
+				gainmul = (INT32)(abs(player->ranklog.gaining) * (FixedToDouble(cv_kartrank_gainmul.value)));
+			}
+
+			// Losing percentage
+			INT32 lossmul = 100;
+
+			if (player->ranklog.gaining > 0)
+			{
+				// If you're on an upward trend, your loss is cut by your current gain
+				lossmul = (INT32)(abs(player->ranklog.gaining) * FixedToDouble(cv_kartrank_lossmul.value));
+			}
 
 			K_CalculateLapGrading(player, gainmul, lossmul);
 			K_UpdatePositionFactorAndPlayerRanks();

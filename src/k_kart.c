@@ -591,6 +591,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartrank_respawnmercy);
 	CV_RegisterVar(&cv_kartrank_lapgrademul);
 	CV_RegisterVar(&cv_kartrank_lapgrademul_penaltiesoff);
+	CV_RegisterVar(&cv_kartrank_lossmul);
+	CV_RegisterVar(&cv_kartrank_gainmul);
 
 	// Ranks: Helper cvar for par times
 	CV_RegisterVar(&cv_kartrank_partimehelper);

@@ -242,7 +242,7 @@ extern consvar_t cv_kartrank_partimepoints, cv_kartrank_spbtimepoints, cv_kartra
     cv_kartrank_lawnmowerthreshold, cv_kartrank_wallbonkpenalty, cv_kartrank_hazardpenalty,
     cv_kartrank_respawnpenalty, cv_kartrank_hazardmercy, cv_kartrank_respawnmercy,
     cv_kartrank_lapgrademul, cv_kartrank_lapgrademul_penaltiesoff, cv_kartrank_leadertimepoints,
-    cv_kartrank_retirepenalty;
+    cv_kartrank_retirepenalty, cv_kartrank_lossmul, cv_kartrank_gainmul;
 
 extern consvar_t cv_kartrank_partimehelper;
 

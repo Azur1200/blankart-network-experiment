@@ -817,6 +817,11 @@ static CV_PossibleValue_t kartrank_lapgrademul_cons_t[] = {{0, "MIN"}, {100, "MA
 consvar_t cv_kartrank_lapgrademul = CVAR_INIT ("rank_lapgrademul", "6", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_lapgrademul_cons_t, NULL);
 consvar_t cv_kartrank_lapgrademul_penaltiesoff = CVAR_INIT ("rank_lapgrademul_penaltiesoff", "8", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_lapgrademul_cons_t, NULL);
 
+static CV_PossibleValue_t kartrank_gainlossmul_cons_t[] = {{0, "MIN"}, {1000 * FRACUNIT, "MAX"}, {0, NULL}};
+
+consvar_t cv_kartrank_gainmul = CVAR_INIT ("rank_comeback_gainpct", "125.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrank_gainlossmul_cons_t, NULL);
+consvar_t cv_kartrank_lossmul = CVAR_INIT ("rank_comeback_losspct", "25.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrank_gainlossmul_cons_t, NULL);
+
 // Invincibility damage toggles
 static CV_PossibleValue_t kartinvindmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {0, NULL}};
 
