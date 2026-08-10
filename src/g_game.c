@@ -1873,11 +1873,11 @@ ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
 	{
 		dest[i].forwardmove = src[i].forwardmove;
 		dest[i].sidemove = src[i].sidemove;
-		dest[i].turning = (INT16)SHORT(src[i].turning);
-		dest[i].angle = (INT16)SHORT(src[i].angle);
-		dest[i].throwdir = (INT16)SHORT(src[i].throwdir);
-		dest[i].aiming = (INT16)SHORT(src[i].aiming);
-		dest[i].buttons = (UINT16)SHORT(src[i].buttons);
+		dest[i].turning = (INT16)LSBF_SHORT(src[i].turning);
+		dest[i].angle = (INT16)LSBF_SHORT(src[i].angle);
+		dest[i].throwdir = (INT16)LSBF_SHORT(src[i].throwdir);
+		dest[i].aiming = (INT16)LSBF_SHORT(src[i].aiming);
+		dest[i].buttons = (UINT16)LSBF_SHORT(src[i].buttons);
 		dest[i].latency = src[i].latency;
 		dest[i].flags = src[i].flags;
 	}

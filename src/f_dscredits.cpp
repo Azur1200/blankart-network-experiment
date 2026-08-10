@@ -664,7 +664,7 @@ void F_SecretCreditsTicker(void)
 
         F_SpawnCreditsPlayer(player1_idx + MAXMISCOBJS,
                              (-vidxdiff) + w - 77,
-                             (-vidydiff) + h - (SHORT(dsground->height) >> 1) - 1,
+                             (-vidydiff) + h - (LSBF_SHORT(dsground->height) >> 1) - 1,
                              FRACUNIT >> 1,
                              credits_skins[player1_idx],
                              credits_colors[player1_idx],
@@ -765,8 +765,8 @@ void F_SecretCreditsTicker(void)
             patch_t *bld = dsbuildings[M_RandomKey(NUMDSBUILDINGS)];
 
             F_SpawnCreditsObject(idx,
-                                 (-vidxdiff) - SHORT(bld->width),
-                                 (-vidydiff) + h - (SHORT(dsground->height) >> 1) - SHORT(bld->height),
+                                 (-vidxdiff) - LSBF_SHORT(bld->width),
+                                 (-vidydiff) + h - (LSBF_SHORT(dsground->height) >> 1) - LSBF_SHORT(bld->height),
                                  FRACUNIT,
                                  bld,
                                  INFLONGTICS);
@@ -790,7 +790,7 @@ void F_SecretCreditsTicker(void)
 
                 F_SpawnCreditsPlayer(idx,
                                     (-vidxdiff) + w + 128,
-                                    (-vidydiff) + h - (SHORT(dsground->height) >> 1) - 1,
+                                    (-vidydiff) + h - (LSBF_SHORT(dsground->height) >> 1) - 1,
                                     FRACUNIT >> 1,
                                     credits_skins[player_iterate],
                                     credits_colors[player_iterate],
@@ -838,7 +838,7 @@ void F_SecretCreditsTicker(void)
             {
                 F_SpawnCreditsPlayer(rival_idx + MAXMISCOBJS,
                                     (-vidxdiff) + w + 128,
-                                    (-vidydiff) + h - (SHORT(dsground->height) >> 1) - 1,
+                                    (-vidydiff) + h - (LSBF_SHORT(dsground->height) >> 1) - 1,
                                     FRACUNIT >> 1,
                                     credits_skins[rival_idx],
                                     skins[credits_skins[rival_idx]]->prefcolor,
@@ -902,7 +902,7 @@ void F_SecretCreditsTicker(void)
             idx = F_FindFirstFreePlayer();
             F_SpawnCreditsPlayer(idx,
                                  (-vidxdiff) + w + 128,
-                                 (-vidydiff) + h - (SHORT(dsground->height) >> 1) - 1,
+                                 (-vidydiff) + h - (LSBF_SHORT(dsground->height) >> 1) - 1,
                                  FRACUNIT >> 1,
                                  credits_skins[player_iterate],
                                  credits_colors[player_iterate],
@@ -928,7 +928,7 @@ void F_SecretCreditsTicker(void)
 
             F_SpawnCreditsPlayer(idx,
                                  (-vidxdiff) + w + 128,
-                                 (-vidydiff) + h - (SHORT(dsground->height) >> 1) - 1,
+                                 (-vidydiff) + h - (LSBF_SHORT(dsground->height) >> 1) - 1,
                                  FRACUNIT >> 1,
                                  credits_skins[special_idx],
                                  credits_colors[special_idx],
@@ -991,7 +991,7 @@ void F_SecretCreditsTicker(void)
 
                     F_SpawnCreditsPlayer(idx,
                                         (-vidxdiff) - 128,
-                                        (-vidydiff) + h - (SHORT(dsground->height) >> 1) - 1,
+                                        (-vidydiff) + h - (LSBF_SHORT(dsground->height) >> 1) - 1,
                                         FRACUNIT >> 1,
                                         credits_skins[player_iterate],
                                         credits_colors[player_iterate],
@@ -1161,7 +1161,7 @@ static void F_DrawBannerPatch(fixed_t x, fixed_t y, fixed_t scale, INT32 scrn, p
 {
     fixed_t w = vid.scaledwidth;
     fixed_t vidxdiff = ((w - BASEVIDWIDTH) << FRACBITS) / 2;
-    fixed_t pw = (static_cast<fixed_t>(SHORT(patch->width)) * scale);
+    fixed_t pw = (static_cast<fixed_t>(LSBF_SHORT(patch->width)) * scale);
 
     fixed_t xx = ((-vidxdiff + absmod(x * FRACUNIT, pw)) - (pw << 1));
     
@@ -1290,10 +1290,10 @@ static void F_DrawCreditsArea(fixed_t y_root, fixed_t height, fixed_t xdiff)
     y = y_root;
 
     // Store the ground area
-    y -= static_cast<fixed_t>(SHORT(dsground->height) >> 1);
+    y -= static_cast<fixed_t>(LSBF_SHORT(dsground->height) >> 1);
     ground_y = sky_y = y;
 
-    sky_y -= static_cast<fixed_t>(SHORT(dssky->height) >> 1);
+    sky_y -= static_cast<fixed_t>(LSBF_SHORT(dssky->height) >> 1);
 
     // Draw the sky
     F_DrawBannerPatch(scene_scroll[0] >> 1, sky_y, FRACUNIT >> 1, 0, dssky, NULL);
@@ -1301,7 +1301,7 @@ static void F_DrawCreditsArea(fixed_t y_root, fixed_t height, fixed_t xdiff)
     // Draw Tyler
     if (tylermemoriam)
     {
-        V_DrawPatch(-xdiff - SHORT(tylergag->width) + ((tylerscroll * 3) >> 1), ground_y - (height >> 1), V_TRANSLUCENT, tylergag);
+        V_DrawPatch(-xdiff - LSBF_SHORT(tylergag->width) + ((tylerscroll * 3) >> 1), ground_y - (height >> 1), V_TRANSLUCENT, tylergag);
     }
 
     // Draw the game objects (buildings, players)
@@ -1310,7 +1310,7 @@ static void F_DrawCreditsArea(fixed_t y_root, fixed_t height, fixed_t xdiff)
     // Draw the ground and grass
     F_DrawBannerPatch(scene_scroll[0], ground_y, FRACUNIT >> 1, 0, dsground, NULL);
 
-    ground_y -= static_cast<fixed_t>(SHORT(dsgrass->height) >> 1);
+    ground_y -= static_cast<fixed_t>(LSBF_SHORT(dsgrass->height) >> 1);
 
     F_DrawBannerPatch(scene_scroll[0], ground_y, FRACUNIT >> 1, 0, dsgrass, NULL);
 }

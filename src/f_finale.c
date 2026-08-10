@@ -238,8 +238,8 @@ void F_TitleBGScroll(INT32 scrollspeed, INT32 ticker)
 	w = (vid.scaledwidth << FRACBITS);
 
 	// The scroll offset MUST be clamped before shifting by FRACBITS, or else it'll overflow in about 3 minutes
-	animtimer = ((((ticker * scrollspeed) % (SHORT(pat->width)*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
-	anim2 = (SHORT(pat2->width)<<FRACBITS) - ((((ticker * scrollspeed) % (SHORT(pat2->width)*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
+	animtimer = ((((ticker * scrollspeed) % (LSBF_SHORT(pat->width)*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
+	anim2 = (LSBF_SHORT(pat2->width)<<FRACBITS) - ((((ticker * scrollspeed) % (LSBF_SHORT(pat2->width)*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
 
 	// SRB2Kart: F_DrawPatchCol is over-engineered; recoded to be less shitty and error-prone
 	if (rendermode != render_none)
@@ -251,15 +251,15 @@ void F_TitleBGScroll(INT32 scrollspeed, INT32 ticker)
 		while (x < w)
 		{
 			V_DrawFixedPatch(x, y, FRACUNIT, V_SNAPTOTOP|V_SNAPTOLEFT, pat, NULL);
-			x += SHORT(pat->width)<<FRACBITS;
+			x += LSBF_SHORT(pat->width)<<FRACBITS;
 		}
 
 		x = -anim2;
-		y = (BASEVIDHEIGHT - SHORT(pat2->height))<<FRACBITS;
+		y = (BASEVIDHEIGHT - LSBF_SHORT(pat2->height))<<FRACBITS;
 		while (x < w)
 		{
 			V_DrawFixedPatch(x, y, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTOLEFT, pat2, NULL);
-			x += SHORT(pat2->width)<<FRACBITS;
+			x += LSBF_SHORT(pat2->width)<<FRACBITS;
 		}
 	}
 

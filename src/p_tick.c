@@ -582,7 +582,7 @@ static void P_DoAutobalanceTeams(void)
 			NetPacket.packet.verification = true;
 			NetPacket.packet.autobalance = true;
 
-			usvalue  = SHORT(NetPacket.value.l|NetPacket.value.b);
+			usvalue  = LSBF_SHORT(NetPacket.value.l|NetPacket.value.b);
 			SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 		}
 		else //if (totalblue > totalred)
@@ -593,7 +593,7 @@ static void P_DoAutobalanceTeams(void)
 			NetPacket.packet.verification = true;
 			NetPacket.packet.autobalance = true;
 
-			usvalue  = SHORT(NetPacket.value.l|NetPacket.value.b);
+			usvalue  = LSBF_SHORT(NetPacket.value.l|NetPacket.value.b);
 			SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 		}
 	}
@@ -625,7 +625,7 @@ void P_DoTeamscrambling(void)
 			NetPacket.packet.verification = true;
 			NetPacket.packet.scrambled = true;
 
-			usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
+			usvalue = LSBF_SHORT(NetPacket.value.l|NetPacket.value.b);
 			SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 		}
 

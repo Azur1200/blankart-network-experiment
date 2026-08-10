@@ -5200,7 +5200,7 @@ static void HandleTeamChangeCommand(UINT8 localplayer)
 		return;
 	}
 
-	usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
+	usvalue = LSBF_SHORT(NetPacket.value.l|NetPacket.value.b);
 	SendNetXCmdForPlayer(localplayer, XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 }
 
@@ -5319,7 +5319,7 @@ static void Command_ServerTeamChange_f(void)
 
 	NetPacket.packet.verification = true; // This signals that it's a server change
 
-	usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
+	usvalue = LSBF_SHORT(NetPacket.value.l|NetPacket.value.b);
 	SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 }
 

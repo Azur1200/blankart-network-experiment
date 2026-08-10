@@ -3483,8 +3483,8 @@ void V_DrawStringScaledEx(
 					if (V_CharacterValid(font, c) == true)
 					{
 						// Remove offsets from patch
-						fixed_t patchxofs = SHORT (font->font[c]->leftoffset) * dup * scale;
-						cw = SHORT (font->font[c]->width) * dup;
+						fixed_t patchxofs = LSBF_SHORT (font->font[c]->leftoffset) * dup * scale;
+						cw = LSBF_SHORT (font->font[c]->width) * dup;
 						cxoff = (*fontspec.dim_fn)(scale, fontspec.chw, hchw, dup, &cw);
 						V_DrawStretchyFixedPatch(cx + cxoff + patchxofs, cy + cyoff, scale, vscale,
 								flags, font->font[c], colormap);
@@ -3596,7 +3596,7 @@ fixed_t V_StringScaledWidth(
 				c -= font->start;
 				if (V_CharacterValid(font, c) == true)
 				{
-					cw = SHORT (font->font[c]->width) * dup;
+					cw = LSBF_SHORT (font->font[c]->width) * dup;
 
 					// How bunched dims work is by incrementing cx slightly less than a full character width.
 					// This causes the next character to be drawn overlapping the previous.
@@ -3729,7 +3729,7 @@ char * V_ScaledWordWrap(
 					c -= font->start;
 					if (V_CharacterValid(font, c) == true)
 					{
-						cw = SHORT (font->font[c]->width) * dup;
+						cw = LSBF_SHORT (font->font[c]->width) * dup;
 
 						// How bunched dims work is by incrementing cx slightly less than a full character width.
 						// This causes the next character to be drawn overlapping the previous.
@@ -3853,7 +3853,7 @@ void V_DrawCenteredStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char 
 
 INT32 V_DrawPingNum(INT32 x, INT32 y, INT32 flags, INT32 num, const UINT8 *colormap)
 {
-	INT32 w = SHORT(fontv[PINGNUM_FONT].font[0]->width);	// this SHOULD always be 5 but I guess custom graphics exist.
+	INT32 w = LSBF_SHORT(fontv[PINGNUM_FONT].font[0]->width);	// this SHOULD always be 5 but I guess custom graphics exist.
 
 	if (flags & V_NOSCALESTART)
 		w *= vid.dup;
@@ -3879,7 +3879,7 @@ INT32 V_DrawPingNumAtFixed(fixed_t x, fixed_t y, INT32 flags, INT32 num, const U
 
 INT32 V_DrawPingNumScaled(fixed_t x, fixed_t y, fixed_t scale, INT32 flags, INT32 num, const UINT8 *colormap)
 {
-	INT32 w = SHORT(fontv[PINGNUM_FONT].font[0]->width);
+	INT32 w = LSBF_SHORT(fontv[PINGNUM_FONT].font[0]->width);
 
 	if (flags & V_NOSCALESTART)
 		w *= vid.dup;
@@ -3902,7 +3902,7 @@ INT32 V_DrawPingNumScaled(fixed_t x, fixed_t y, fixed_t scale, INT32 flags, INT3
 //
 void V_DrawRankNum(INT32 x, INT32 y, INT32 flags, INT32 num, INT32 digits, const UINT8 *colormap)
 {
-	INT32 w = SHORT(fontv[PINGNUM_FONT].font[0]->width) - 1;
+	INT32 w = LSBF_SHORT(fontv[PINGNUM_FONT].font[0]->width) - 1;
 
 	if (flags & V_NOSCALESTART)
 		w *= vid.dup;
@@ -3951,7 +3951,7 @@ INT32 V_CreditSubStringWidth(const char *string, INT32 length, INT32 option)
 // Draws a tallnum.  Replaces two functions in y_inter and st_stuff
 void V_DrawTallNum(INT32 x, INT32 y, INT32 flags, INT32 num)
 {
-	INT32 w = SHORT(fontv[TALLNUM_FONT].font[0]->width);
+	INT32 w = LSBF_SHORT(fontv[TALLNUM_FONT].font[0]->width);
 	dboolean neg;
 
 	if (flags & V_NOSCALESTART)

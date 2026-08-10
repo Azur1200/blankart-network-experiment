@@ -3615,8 +3615,8 @@ static void M_DrawMenuTitle(void)
 
 		if (p->height > 24) // title is larger than normal
 		{
-			INT32 xtitle = (BASEVIDWIDTH - (SHORT(p->width)/2))/2;
-			INT32 ytitle = (30 - (SHORT(p->height)/2))/2;
+			INT32 xtitle = (BASEVIDWIDTH - (LSBF_SHORT(p->width)/2))/2;
+			INT32 ytitle = (30 - (LSBF_SHORT(p->height)/2))/2;
 
 			if (xtitle < 0)
 				xtitle = 0;
@@ -3627,8 +3627,8 @@ static void M_DrawMenuTitle(void)
 		}
 		else
 		{
-			INT32 xtitle = (BASEVIDWIDTH - SHORT(p->width))/2;
-			INT32 ytitle = (30 - SHORT(p->height))/2;
+			INT32 xtitle = (BASEVIDWIDTH - LSBF_SHORT(p->width))/2;
+			INT32 ytitle = (30 - LSBF_SHORT(p->height))/2;
 
 			if (xtitle < 0)
 				xtitle = 0;
@@ -5538,7 +5538,7 @@ static void M_DrawMessageMenu(void)
 			}
 
 			V_DrawString((BASEVIDWIDTH - V_StringWidth(string, V_ALLOWLOWERCASE|V_6WIDTHSPACE))/2,y,V_ALLOWLOWERCASE|V_6WIDTHSPACE,string);
-			y += 8; //SHORT(hu_font[0]->height);
+			y += 8; //LSBF_SHORT(hu_font[0]->height);
 		}
 	}
 }
@@ -8631,7 +8631,7 @@ static void M_DrawServerLines(const menupanelinst_t *pi, INT32 x, INT32 page)
 		V_DrawString(x, S_LINEY(i), globalflags, serverlist[slindex].info.servername);
 
 		V_DrawSmallString(x, S_LINEY(i)+8, globalflags,
-						  va("Ping: %u", (UINT32)LONG(serverlist[slindex].info.time)));
+						  va("Ping: %u", (UINT32)LSBF_LONG(serverlist[slindex].info.time)));
 
 		V_DrawSmallString(x+44,S_LINEY(i)+8, globalflags,
 						  va("Players: %02d/%02d", serverlist[slindex].info.numberofplayer, serverlist[slindex].info.maxplayer));

@@ -4297,7 +4297,7 @@ void P_PlayerThink(player_t *player)
 							NetPacket.packet.playernum = n;
 							NetPacket.packet.verification = true;
 
-							usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
+							usvalue = LSBF_SHORT(NetPacket.value.l|NetPacket.value.b);
 							SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 						}
 					}

@@ -4786,10 +4786,10 @@ static void K_drawKartMinimap(void)
 
 	// let offsets transfer to the heads, too!
 	if (encoremode)
-		x += SHORT(minimapinfo.minimap_pic->leftoffset);
+		x += LSBF_SHORT(minimapinfo.minimap_pic->leftoffset);
 	else
-		x -= SHORT(minimapinfo.minimap_pic->leftoffset);
-	y -= SHORT(minimapinfo.minimap_pic->topoffset);
+		x -= LSBF_SHORT(minimapinfo.minimap_pic->leftoffset);
+	y -= LSBF_SHORT(minimapinfo.minimap_pic->topoffset);
 
 	// initialize
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
@@ -5507,7 +5507,7 @@ static void K_drawKartFinish(void)
 
 	if (r_splitscreen >= minsplitstationary) // 3/4p, stationary FIN
 	{
-		V_DrawScaledPatch(STCD_X - (SHORT(kptodraw[pnum]->width)/2), STCD_Y - (SHORT(kptodraw[pnum]->height)/2), splitflags, kptodraw[pnum]);
+		V_DrawScaledPatch(STCD_X - (LSBF_SHORT(kptodraw[pnum]->width)/2), STCD_Y - (LSBF_SHORT(kptodraw[pnum]->height)/2), splitflags, kptodraw[pnum]);
 		return;
 	}
 
@@ -5516,7 +5516,7 @@ static void K_drawKartFinish(void)
 		INT32 x, xval, ox, interpx, pwidth;
 
 		x = ((vid.width<<FRACBITS)/vid.dup);
-		xval = (SHORT(kptodraw[pnum]->width)<<FRACBITS);
+		xval = (LSBF_SHORT(kptodraw[pnum]->width)<<FRACBITS);
 
 		pwidth = max(xval, x);
 
@@ -5529,7 +5529,7 @@ static void K_drawKartFinish(void)
 			interpx = -interpx;
 
 		V_DrawFixedPatch(interpx + (STCD_X<<FRACBITS) - (pwidth / 2),
-			(STCD_Y<<FRACBITS) - (SHORT(kptodraw[pnum]->height)<<(FRACBITS-1)),
+			(STCD_Y<<FRACBITS) - (LSBF_SHORT(kptodraw[pnum]->height)<<(FRACBITS-1)),
 			FRACUNIT,
 			splitflags, kptodraw[pnum], NULL);
 	}

@@ -264,9 +264,9 @@ static tic_t stop_spamming[MAXPLAYERS];
 // Generate a message for an authenticating client to sign, with some guarantees about who we are.
 void GenerateChallenge(uint8_t *buf)
 {
-	uint64_t now = LONGLONG(time(NULL));
+	uint64_t now = LSBF_LONGLONG(time(NULL));
 #if 0 // im sorry I have to do this but....
-	uint32_t our_ip_le = LONG(ourIP);
+	uint32_t our_ip_le = LSBF_LONG(ourIP);
 #endif
 	csprng(buf, CHALLENGELENGTH); // Random noise as a baseline, but...
 	memcpy(buf, &now, sizeof(now)); // Timestamp limits the reuse window.
@@ -308,9 +308,9 @@ shouldsign_t ShouldSignChallenge(uint8_t *message)
 
 	now = time(NULL);
 	memcpy(&then, message, sizeof(then));
-	then = LONGLONG(then); // LE 64
+	then = LSBF_LONGLONG(then); // LE 64
 	memcpy(&claimedIP, message + sizeof(then), sizeof(claimedIP));
-	claimedIP = LONG(claimedIP); // LE 32 - TODO needs to be BE 128 bit for ipv6
+	claimedIP = LSBF_LONG(claimedIP); // LE 32 - TODO needs to be BE 128 bit for ipv6
 	realIP = I_GetNodeAddressInt(servernode);
 
 	if ((max(now, then) - min(now, then)) > 60*15)
@@ -1158,8 +1158,8 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 	strncpy(netbuffer->u.serverinfo.application, SRB2APPLICATION,
 			sizeof netbuffer->u.serverinfo.application);
 	// return back the time value so client can compute their ping
-	netbuffer->u.serverinfo.time = (tic_t)LONG(servertime);
-	netbuffer->u.serverinfo.leveltime = (tic_t)LONG(leveltime);
+	netbuffer->u.serverinfo.time = (tic_t)LSBF_LONG(servertime);
+	netbuffer->u.serverinfo.leveltime = (tic_t)LSBF_LONG(leveltime);
 
 	netbuffer->u.serverinfo.numberofplayer = (UINT8)D_NumPlayers();
 	netbuffer->u.serverinfo.maxplayer = (UINT8)(min((dedicated ? MAXPLAYERS-1 : MAXPLAYERS), cv_maxplayers.value));
@@ -1300,8 +1300,8 @@ static void SV_SendPlayerInfo(INT32 node)
 				netbuffer->u.playerinfo[i].team = 0;
 		}
 
-		netbuffer->u.playerinfo[i].score = LONG(players[i].score);
-		netbuffer->u.playerinfo[i].timeinserver = SHORT((UINT16)(players[i].jointime / TICRATE));
+		netbuffer->u.playerinfo[i].score = LSBF_LONG(players[i].score);
+		netbuffer->u.playerinfo[i].timeinserver = LSBF_SHORT((UINT16)(players[i].jointime / TICRATE));
 		netbuffer->u.playerinfo[i].skin = (UINT16)(players[i].skin);
 
 		// Extra data
@@ -1331,7 +1331,7 @@ static dboolean SV_SendServerConfig(INT32 node)
 
 	netbuffer->u.servercfg.serverplayer = (UINT8)serverplayer;
 	netbuffer->u.servercfg.totalslotnum = (UINT8)(doomcom->numslots);
-	netbuffer->u.servercfg.gametic = (tic_t)LONG(gametic);
+	netbuffer->u.servercfg.gametic = (tic_t)LSBF_LONG(gametic);
 	netbuffer->u.servercfg.clientnode = (UINT8)node;
 	netbuffer->u.servercfg.gamestate = (UINT8)gamestate;
 	netbuffer->u.servercfg.gametype = (UINT8)gametype;
@@ -1654,7 +1654,7 @@ static void SendAskInfo(INT32 node)
 
 	netbuffer->packettype = PT_ASKINFO;
 	netbuffer->u.askinfo.version = VERSION;
-	netbuffer->u.askinfo.time = (tic_t)LONG(asktime);
+	netbuffer->u.askinfo.time = (tic_t)LSBF_LONG(asktime);
 
 	// Even if this never arrives due to the host being firewalled, we've
 	// now allowed traffic from the host to us in, so once the MS relays
@@ -4954,9 +4954,9 @@ static void HandleServerInfo(SINT8 node)
 	char servername[MAXSERVERNAME];
 	// compute ping in ms
 	const tic_t ticnow = I_GetTime();
-	const tic_t ticthen = (tic_t)LONG(netbuffer->u.serverinfo.time);
+	const tic_t ticthen = (tic_t)LSBF_LONG(netbuffer->u.serverinfo.time);
 	const tic_t ticdiff = (ticnow - ticthen)*1000/NEWTICRATE;
-	netbuffer->u.serverinfo.time = (tic_t)LONG(ticdiff);
+	netbuffer->u.serverinfo.time = (tic_t)LSBF_LONG(ticdiff);
 	netbuffer->u.serverinfo.servername[MAXSERVERNAME-1] = 0;
 	netbuffer->u.serverinfo.application
 		[sizeof netbuffer->u.serverinfo.application - 1] = '\0';
@@ -5029,7 +5029,7 @@ static void PT_AskInfo(SINT8 node)
 
 	if (server && serverrunning)
 	{
-		SV_SendServerInfo(node, (tic_t)LONG(netbuffer->u.askinfo.time));
+		SV_SendServerInfo(node, (tic_t)LSBF_LONG(netbuffer->u.askinfo.time));
 		SV_SendPlayerInfo(node); // Send extra info
 	}
 	Net_CloseConnection(node);
@@ -5109,7 +5109,7 @@ static void PT_ServerCFG(SINT8 node)
 
 	if (client)
 	{
-		maketic = gametic = neededtic = (tic_t)LONG(netbuffer->u.servercfg.gametic);
+		maketic = gametic = neededtic = (tic_t)LSBF_LONG(netbuffer->u.servercfg.gametic);
 
 		G_SetGametype(netbuffer->u.servercfg.gametype);
 
@@ -5127,7 +5127,7 @@ static void PT_ServerCFG(SINT8 node)
 
 	nodeingame[(UINT8)servernode] = true;
 	serverplayer = netbuffer->u.servercfg.serverplayer;
-	doomcom->numslots = SHORT(netbuffer->u.servercfg.totalslotnum);
+	doomcom->numslots = LSBF_SHORT(netbuffer->u.servercfg.totalslotnum);
 	mynode = netbuffer->u.servercfg.clientnode;
 	if (serverplayer >= 0)
 		playernode[(UINT8)serverplayer] = servernode;
@@ -5320,16 +5320,16 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 		{
 			I_OutputMsg("------------\n");
 			I_OutputMsg(M_GetText("Testing consistency of player %d (%s)...\n"), netconsole+1, player_names[netconsole]);
-			I_OutputMsg("Synching: %s\n", (consistancy[realstart%BACKUPTICS].checksum != SHORT(clientconsistancy.checksum)) ? "false" : "true");
+			I_OutputMsg("Synching: %s\n", (consistancy[realstart%BACKUPTICS].checksum != LSBF_SHORT(clientconsistancy.checksum)) ? "false" : "true");
 			I_OutputMsg("Checksum (Server): %d\n", consistancy[realstart%BACKUPTICS].checksum);
-			I_OutputMsg("Checksum (Player %d): %d\n", netconsole+1, SHORT(clientconsistancy.checksum));
+			I_OutputMsg("Checksum (Player %d): %d\n", netconsole+1, LSBF_SHORT(clientconsistancy.checksum));
 			I_OutputMsg("------------\n");
 		}
 	}
 
 	// Check player consistancy during the level
 	if (realstart <= gametic && realstart + BACKUPTICS - 1 > gametic && gamestate == GS_LEVEL
-		&& consistancy[realstart%BACKUPTICS].checksum != SHORT(clientconsistancy.checksum)
+		&& consistancy[realstart%BACKUPTICS].checksum != LSBF_SHORT(clientconsistancy.checksum)
 		&& !resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime()
 		&& !SV_ResendingSavegameToAnyone())
 	{
@@ -5386,7 +5386,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 				CONS_Printf(M_GetText("Synch failure for player %d (%s); expected %hd, got %hd\n"),
 					netconsole+1, player_names[netconsole],
 					consistancy[realstart%BACKUPTICS].checksum,
-					SHORT(clientconsistancy.checksum));
+					LSBF_SHORT(clientconsistancy.checksum));
 
 				// Extremely elaborate debug!
 				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
@@ -5394,7 +5394,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 			}
 			DEBFILE(va("Restoring player %d (synch failure) [%update] %d!=%d\n",
 				netconsole, realstart, consistancy[realstart%BACKUPTICS].checksum,
-			SHORT(clientconsistancy.checksum)));
+			LSBF_SHORT(clientconsistancy.checksum)));
 			return;
 		}
 		else
@@ -5410,7 +5410,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 				CONS_Printf(M_GetText("Kicking desynching player %d (%s); expected %hd, got %hd\n"),
 					netconsole+1, player_names[netconsole],
 					consistancy[realstart%BACKUPTICS].checksum,
-					SHORT(clientconsistancy.checksum));
+					LSBF_SHORT(clientconsistancy.checksum));
 
 				// Extremely elaborate debug!
 				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
@@ -5440,7 +5440,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 			SendKick(netconsole, KICK_MSG_CON_FAIL);
 			DEBFILE(va("player %d kicked (synch failure) [%u] %d!=%d\n",
 						netconsole, realstart, consistancy[realstart%BACKUPTICS].checksum,
-						SHORT(clientconsistancy.checksum)));
+						LSBF_SHORT(clientconsistancy.checksum)));
 			return;
 		}
 	}
@@ -7016,7 +7016,7 @@ static void SV_SendTics(void)
 			netbuffer->packettype = PT_SERVERTICS;
 			netbuffer->u.serverpak.starttic = (UINT8)realfirsttic;
 			netbuffer->u.serverpak.numtics = (UINT8)(lasttictosend - realfirsttic);
-			netbuffer->u.serverpak.numslots = (UINT8)SHORT(doomcom->numslots);
+			netbuffer->u.serverpak.numslots = (UINT8)LSBF_SHORT(doomcom->numslots);
 			bufpos = (UINT8 *)&netbuffer->u.serverpak.cmds;
 
 			for (i = realfirsttic; i < lasttictosend; i++)

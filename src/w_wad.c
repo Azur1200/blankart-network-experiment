@@ -555,8 +555,8 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 		return NULL;
 	}
 
-	header.numlumps = LONG(header.numlumps);
-	header.infotableofs = LONG(header.infotableofs);
+	header.numlumps = LSBF_LONG(header.numlumps);
+	header.infotableofs = LSBF_LONG(header.infotableofs);
 
 	// read wad file directory
 	i = header.numlumps * sizeof (*fileinfo);
@@ -575,8 +575,8 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 	lump_p = lumpinfo = (lumpinfo_t *)Z_Malloc(numlumps * sizeof (*lumpinfo), PU_STATIC, NULL);
 	for (i = 0; i < numlumps; i++, lump_p++, fileinfo++)
 	{
-		lump_p->position = LONG(fileinfo->filepos);
-		lump_p->size = lump_p->disksize = LONG(fileinfo->size);
+		lump_p->position = LSBF_LONG(fileinfo->filepos);
+		lump_p->size = lump_p->disksize = LSBF_LONG(fileinfo->size);
 		if (compressed) // wad is compressed, lump might be
 		{
 			UINT32 realsize = 0;
@@ -587,7 +587,7 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 				I_Error("corrupt compressed file: %s; maybe %s", /// \todo Avoid the bailout?
 					filename, M_FileError(handle));
 			}
-			realsize = LONG(realsize);
+			realsize = LSBF_LONG(realsize);
 			if (realsize != 0)
 			{
 				lump_p->size = realsize;
@@ -2445,8 +2445,8 @@ W_VerifyWAD (FILE *fp, lumpchecklist_t *checklist, dboolean status)
 		return true;
 	}
 
-	header.numlumps = LONG(header.numlumps);
-	header.infotableofs = LONG(header.infotableofs);
+	header.numlumps = LSBF_LONG(header.numlumps);
+	header.infotableofs = LSBF_LONG(header.infotableofs);
 
 	// let seek to the lumpinfo list
 	if (fseek(fp, header.infotableofs, SEEK_SET) == -1)
@@ -2458,8 +2458,8 @@ W_VerifyWAD (FILE *fp, lumpchecklist_t *checklist, dboolean status)
 		if (fread(&lumpinfo, sizeof (lumpinfo), 1 , fp) != 1)
 			return true;
 
-		lumpinfo.filepos = LONG(lumpinfo.filepos);
-		lumpinfo.size = LONG(lumpinfo.size);
+		lumpinfo.filepos = LSBF_LONG(lumpinfo.filepos);
+		lumpinfo.size = LSBF_LONG(lumpinfo.size);
 
 		if (lumpinfo.size == 0)
 			continue;

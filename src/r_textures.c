@@ -401,12 +401,12 @@ UINT8 *R_GenerateTexture(size_t texnum)
 			R_DoPaletteRemapPatch(realpatch, lumplength);
 
 		// Check the patch for holes.
-		if (texture->width > SHORT(realpatch->width) || texture->height > SHORT(realpatch->height))
+		if (texture->width > LSBF_SHORT(realpatch->width) || texture->height > LSBF_SHORT(realpatch->height))
 			holey = true;
 		colofs = (UINT8 *)realpatch->columnofs;
 		for (x = 0; x < texture->width && !holey; x++)
 		{
-			column_t *col = (column_t *)((UINT8 *)realpatch + LONG(*(UINT32 *)&colofs[x<<2]));
+			column_t *col = (column_t *)((UINT8 *)realpatch + LSBF_LONG(*(UINT32 *)&colofs[x<<2]));
 			INT32 topdelta, prevdelta = -1, y = 0;
 			while (col->topdelta != 0xff)
 			{
@@ -447,7 +447,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 			// we can't as easily flip the patch vertically sadly though,
 			//  we have wait until the texture itself is drawn to do that
 			for (x = 0; x < texture->width; x++)
-				*(UINT32 *)&colofs[x<<2] = LONG(LONG(*(UINT32 *)&colofs[x<<2]) + 3);
+				*(UINT32 *)&colofs[x<<2] = LSBF_LONG(LSBF_LONG(*(UINT32 *)&colofs[x<<2]) + 3);
 			goto done;
 		}
 
@@ -474,7 +474,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 	for (x = 0; x < texture->width; ++x)
 	{
 		// generate column ofset lookup
-		*(UINT32 *)&colofs[x<<2] = LONG((x * texture->height) + (texture->width*4));
+		*(UINT32 *)&colofs[x<<2] = LSBF_LONG((x * texture->height) + (texture->width*4));
 	}
 
 	// Composite the columns together.
@@ -514,8 +514,8 @@ UINT8 *R_GenerateTexture(size_t texnum)
 		}
 
 		x1 = patch->originx;
-		width = SHORT(realpatch->width);
-		height = SHORT(realpatch->height);
+		width = LSBF_SHORT(realpatch->width);
+		height = LSBF_SHORT(realpatch->height);
 		x2 = x1 + width;
 
 		if (x1 > texture->width || x2 < 0)
@@ -548,11 +548,11 @@ UINT8 *R_GenerateTexture(size_t texnum)
 		for (; x < x2; x++)
 		{
 			if (patch->flip & 1)
-				patchcol = (column_t *)((UINT8 *)realpatch + LONG(realpatch->columnofs[(x1+width-1)-x]));
+				patchcol = (column_t *)((UINT8 *)realpatch + LSBF_LONG(realpatch->columnofs[(x1+width-1)-x]));
 			else
-				patchcol = (column_t *)((UINT8 *)realpatch + LONG(realpatch->columnofs[x-x1]));
+				patchcol = (column_t *)((UINT8 *)realpatch + LSBF_LONG(realpatch->columnofs[x-x1]));
 
-			ColumnDrawerPointer(patchcol, block + LONG(*(UINT32 *)&colofs[x<<2]), patch, texture->height, height);
+			ColumnDrawerPointer(patchcol, block + LSBF_LONG(*(UINT32 *)&colofs[x<<2]), patch, texture->height, height);
 		}
 
 		if (dealloc)
@@ -763,9 +763,9 @@ static column_t *R_CheckRawColumn(struct rawcheckcolumn_state *state, INT32 x)
 		return &empty;
 	}
 
-	if (x < SHORT(state->patch->width))
+	if (x < LSBF_SHORT(state->patch->width))
 	{
-		size_t ofs = LONG(state->patch->columnofs[x]);
+		size_t ofs = LSBF_LONG(state->patch->columnofs[x]);
 
 		if (ofs < state->data_size)
 		{
@@ -838,7 +838,7 @@ UINT8 *R_GenerateTextureBrightmap(size_t texnum)
 			const column_t *tcol = (column_t*)(R_GetColumn(texnum, x) - 3);
 			const column_t *bcol = R_CheckRawColumn(&rchk, x);
 
-			R_ConvertBrightmapColumn(block + LONG(texturecolumnofs[texnum][x]), tcol, bcol);
+			R_ConvertBrightmapColumn(block + LSBF_LONG(texturecolumnofs[texnum][x]), tcol, bcol);
 		}
 	}
 	else
@@ -856,10 +856,10 @@ UINT8 *R_GenerateTextureBrightmap(size_t texnum)
 		{
 			R_DrawColumnInCache(
 					R_CheckRawColumn(&rchk, x),
-					block + LONG(texturecolumnofs[texnum][x]),
+					block + LSBF_LONG(texturecolumnofs[texnum][x]),
 					&origin,
 					texture->height,
-					SHORT(bmap->height)
+					LSBF_SHORT(bmap->height)
 			);
 		}
 	}
@@ -937,7 +937,7 @@ static inline INT32 wrap_column(fixed_t tex, INT32 col)
 //
 UINT8 *R_GetColumn(fixed_t tex, INT32 col)
 {
-	return texturecache[tex] + LONG(texturecolumnofs[tex][wrap_column(tex, col)]);
+	return texturecache[tex] + LSBF_LONG(texturecolumnofs[tex][wrap_column(tex, col)]);
 }
 
 //
@@ -948,7 +948,7 @@ UINT8 *R_GetBrightmapColumn(fixed_t tex, INT32 col)
 	if (!texturebrightmapcache[tex])
 		R_GenerateTextureBrightmap(tex);
 
-	return texturebrightmapcache[tex] + LONG(texturecolumnofs[tex][wrap_column(tex, col)]);
+	return texturebrightmapcache[tex] + LSBF_LONG(texturecolumnofs[tex][wrap_column(tex, col)]);
 }
 
 INT32 R_GetTextureNumForFlat(levelflat_t *levelflat)
@@ -1276,8 +1276,8 @@ Rloadtextures (INT32 i, INT32 w)
 			else
 #endif
 			{
-				texture->width = SHORT(patchlump.width);
-				texture->height = SHORT(patchlump.height);
+				texture->width = LSBF_SHORT(patchlump.width);
+				texture->height = LSBF_SHORT(patchlump.height);
 			}
 
 			texture->type = TEXTURETYPE_TEXTURE;

@@ -12589,7 +12589,7 @@ void P_SpawnPlayer(INT32 playernum)
 			NetPacket.packet.verification = true;
 			NetPacket.packet.newteam = !(playernum&1) + 1;
 
-			usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
+			usvalue = LSBF_SHORT(NetPacket.value.l|NetPacket.value.b);
 			SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 		}
 

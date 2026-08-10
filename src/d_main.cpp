@@ -339,7 +339,7 @@ dboolean D_RenderLevel(void)
 		if (r_splitscreen == 2) // Draw over the fourth screen so you don't have to stare at a HOM :V
 		{
 			// V_DrawPatchFill, but for the fourth screen only
-			INT32 x, y, pw = SHORT(srb2back->width) * vid.dup, ph = SHORT(srb2back->height) * vid.dup;
+			INT32 x, y, pw = LSBF_SHORT(srb2back->width) * vid.dup, ph = LSBF_SHORT(srb2back->height) * vid.dup;
 
 			for (x = vid.width>>1; x < vid.width; x += pw)
 			{
