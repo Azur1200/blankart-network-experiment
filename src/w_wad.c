@@ -178,7 +178,7 @@ static char filenamebuf[MAX_WADPATH];
 // This #if is copied from filesrch.c, so not sure if it is 100% suitable for
 // this
 #if defined (_WIN32) && !defined (_XBOX)
-//#define WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
 

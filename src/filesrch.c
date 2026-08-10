@@ -12,16 +12,12 @@
 ///	        FS_BADHASH;
 ///	        FS_FOUND
 
-#ifdef _MSC_VER
-#define _CRT_NONSTDC_NO_WARNINGS // stat, etc.
-#endif
-
 #include <stdio.h>
 #ifdef __GNUC__
 #include <dirent.h>
 #endif
 #if defined (_WIN32) && !defined (_XBOX)
-//#define WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
 #endif

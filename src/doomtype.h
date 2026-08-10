@@ -22,9 +22,12 @@ extern "C" {
 #endif
 
 #ifdef _WIN32
-//#define WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
+// win32 sucks
+#undef min
+#undef max
 #endif
 
 /* 7.18.1.1  Exact-width integer types */
@@ -33,8 +36,6 @@ extern "C" {
 #include <stdint.h>
 
 #define UINT8 uint8_t
-#define SINT8 int8_t
-
 #define UINT16 uint16_t
 #define INT16 int16_t
 
@@ -42,6 +43,8 @@ extern "C" {
 #define UINT32 uint32_t
 #define INT64  int64_t
 #define UINT64 uint64_t
+
+#define SINT8 int8_t
 
 #ifdef __APPLE_CC__
 #define DEBUG_LOG

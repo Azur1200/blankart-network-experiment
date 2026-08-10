@@ -24,10 +24,6 @@
 #include "version.h"
 #include "doomtype.h"
 
-#ifdef _MSC_VER
-#define _CRT_SECURE_NO_WARNINGS // sprintf, strcpy, fopen, etc.
-#endif
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>

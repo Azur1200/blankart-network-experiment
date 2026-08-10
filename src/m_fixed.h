@@ -17,10 +17,7 @@
 
 #include "doomtype.h"
 #include "doomdef.h"
-
-#ifdef __GNUC__
 #include <stdlib.h>
-#endif
 
 #ifdef __cplusplus
 extern "C" {
