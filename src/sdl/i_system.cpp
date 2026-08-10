@@ -1489,7 +1489,9 @@ void I_Quit(void)
 	is_quitting = true;
 	SDLforceUngrabMouse();
 
-	R_SaveVoicePreferences();
+	if (initedvoiceprefs)
+		R_SaveVoicePreferences();
+
 	M_SaveConfig(NULL); //save game config, cvars..
 	D_SaveBan(); // save the ban list
 
@@ -1585,7 +1587,9 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 			SDL_Quit();
 		if (errorcount == 8)
 		{
-			R_SaveVoicePreferences();
+			if (initedvoiceprefs)
+				R_SaveVoicePreferences();
+
 			M_SaveConfig(NULL);
 			G_SaveGameData();
 		}
@@ -1621,7 +1625,9 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 	I_OutputMsg("\nI_Error(): %s\n", buffer);
 	// ---
 
-	R_SaveVoicePreferences();
+	if (initedvoiceprefs)
+		R_SaveVoicePreferences();
+
 	M_SaveConfig(NULL); // save game config, cvars..
 	D_SaveBan(); // save the ban list
 	G_SaveGameData(); // Tails 12-08-2002

@@ -33,6 +33,8 @@ extern "C"
 
     char voicepref_buffer[VOICEPREFBUFSIZE] = {0};
 
+    boolean initedvoiceprefs = false;
+
     // Assign a preferred voice for a given skin name to a local player.
     void R_SetLocalPreferredVoiceForSkin(UINT8 local_pid,
                                          const char* skin_name,
@@ -282,6 +284,8 @@ extern "C"
         return static_cast<INT32>(output.size());
     }
 
+    #define PREFPATH_OVERSHOOT (256)
+
     // Saves voice preferences to a file.
     // Returns false if any of the four files fail to save; returns true otherwise.
     boolean R_SaveVoicePreferences()
@@ -293,8 +297,8 @@ extern "C"
 
         FILE* f = NULL;
 
-        char currconfig[MAX_WADPATH + 4] = {0};
-        char backupfile[MAX_WADPATH + 4] = {0};
+        char currconfig[MAX_WADPATH + PREFPATH_OVERSHOOT] = {0};
+        char backupfile[MAX_WADPATH + PREFPATH_OVERSHOOT] = {0};
 
         char temp_skin_name[SKINNAMESIZE + 1] = {0};
         char temp_vox_name[VOICENAMESIZE + 1] = {0};
@@ -418,8 +422,8 @@ extern "C"
 
         FILE* f = NULL;
 
-        char currconfig[MAX_WADPATH + 4] = {0};
-        char backupfile[MAX_WADPATH + 4] = {0};
+        char currconfig[MAX_WADPATH + PREFPATH_OVERSHOOT] = {0};
+        char backupfile[MAX_WADPATH + PREFPATH_OVERSHOOT] = {0};
 
         char buffer[MAXLINELEN] = {0};
 
@@ -528,4 +532,6 @@ extern "C"
 
         return (strikes >= 4) ? false : true;
     }
+
+    #undef PREFPATH_OVERSHOOT
 }
