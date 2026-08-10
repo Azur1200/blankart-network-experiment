@@ -116,16 +116,6 @@ extern "C" {
 
 typedef int32_t dboolean;
 
-#ifndef __cplusplus
-#ifndef _WIN32
-#define false 0
-#define true 1
-#else
-#define false FALSE
-#define true TRUE
-#endif
-#endif
-
 /* 7.18.2.1  Limits of exact-width integer types */
 
 #ifndef INT8_MIN
