@@ -2852,7 +2852,7 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 		}
 
 		STRBUFCPY(playername, tab[i].name);
-		strncpy(clanname, &tab[i].clan, MAXCLANTAG);
+		strncpy(clanname, tab[i].clan, MAXCLANTAG);
 
 		if (players[tab[i].num].mo->color)
 		{

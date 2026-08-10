@@ -15,6 +15,7 @@
 #define __HU_STUFF_H__
 
 #include "d_event.h"
+#include "doomdef.h"
 #include "w_wad.h"
 #include "r_defs.h"
 #include "font.h"
@@ -77,7 +78,7 @@ struct playersort_t
 	char string[48];
 	INT32 num;
 	const char *name;
-	char clan;
+	char clan[MAXCLANTAG];
 };
 
 //------------------------------------

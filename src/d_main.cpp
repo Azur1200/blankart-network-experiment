@@ -1845,7 +1845,7 @@ void D_SRB2Main(void)
 	//--------------------------------------------------------- CONFIG.CFG
 	M_FirstLoadConfig(); // WARNING : this do a "COM_BufExecute()"
 
-	R_LoadVoicePreferences();
+	initedvoiceprefs = R_LoadVoicePreferences();
 
 	VID_PrepareModeList(); // Regenerate Modelist according to cv_fullscreen
 

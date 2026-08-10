@@ -264,15 +264,14 @@ static tic_t stop_spamming[MAXPLAYERS];
 // Generate a message for an authenticating client to sign, with some guarantees about who we are.
 void GenerateChallenge(uint8_t *buf)
 {
-#ifndef SRB2_LITTLE_ENDIAN
-	#error  "FIXME: 64-bit timestamp field is not supported on Big Endian"
+	uint64_t now = LONGLONG(time(NULL));
+#if 0 // im sorry I have to do this but....
+	uint32_t our_ip_le = LONG(ourIP);
 #endif
-
-	UINT64 now = time(NULL);
 	csprng(buf, CHALLENGELENGTH); // Random noise as a baseline, but...
 	memcpy(buf, &now, sizeof(now)); // Timestamp limits the reuse window.
 #if 0 // im sorry I have to do this but....
-	memcpy(buf + sizeof(now), &ourIP, sizeof(ourIP)); // IP prevents captured signatures from being used elsewhere.
+	memcpy(buf + sizeof(now), &our_ip_le, sizeof(our_ip_le)); // IP prevents captured signatures from being used elsewhere.
 #else
 	UINT32 dummy = UINT32_MAX;
 	memcpy(buf + sizeof(now), &dummy, sizeof(dummy)); // Dummy since ip breaks VPN and other check is not good enough.
@@ -299,10 +298,6 @@ void GenerateChallenge(uint8_t *buf)
 // Don't sign anything that wasn't generated just for us!
 shouldsign_t ShouldSignChallenge(uint8_t *message)
 {
-#ifndef SRB2_LITTLE_ENDIAN
-	#error  "FIXME: 64-bit timestamp field is not supported on Big Endian"
-#endif
-
 #if 1
 	(void)message;
 #endif
@@ -313,7 +308,9 @@ shouldsign_t ShouldSignChallenge(uint8_t *message)
 
 	now = time(NULL);
 	memcpy(&then, message, sizeof(then));
+	then = LONGLONG(then); // LE 64
 	memcpy(&claimedIP, message + sizeof(then), sizeof(claimedIP));
+	claimedIP = LONG(claimedIP); // LE 32 - TODO needs to be BE 128 bit for ipv6
 	realIP = I_GetNodeAddressInt(servernode);
 
 	if ((max(now, then) - min(now, then)) > 60*15)
@@ -6946,7 +6943,7 @@ static void SV_SendTics(void)
 	tic_t realfirsttic, lasttictosend, i;
 	UINT32 n;
 	INT32 j;
-	size_t packsize;
+	size_t packsize, packnum;
 	UINT8 *bufpos;
 	UINT8 *ntextcmd;
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
@@ -6955,10 +6952,14 @@ static void SV_SendTics(void)
 	// for each node create a packet with x tics and send it
 	// x is computed using supposedtics[n], max packet size and maketic
 	for (n = 1; n < MAXNETNODES; n++)
-		if (nodeingame[n])
+	{
+		if (!nodeingame[n])
+			continue;
+
+		for (packnum = 0; packnum < 3; packnum++)
 		{
 			// assert supposedtics[n]>=nettics[n]
-			realfirsttic = max(supposedtics[n], firstticstosend);
+			realfirsttic = supposedtics[n];
 			lasttictosend = min(maketic, nettics[n] + CLIENTBACKUPTICS);
 
 			if (realfirsttic >= lasttictosend)
@@ -6968,9 +6969,9 @@ static void SV_SendTics(void)
 				// packet detection work when we have received packet with firsttic > neededtic
 				// (getpacket servertics case)
 				DEBFILE(va("Nothing to send node %u mak=%u sup=%u net=%u \n",
-					n, lasttictosend, supposedtics[n], nettics[n]));
+						   n, lasttictosend, supposedtics[n], nettics[n]));
 				realfirsttic = nettics[n];
-				if (realfirsttic >= lasttictosend || (I_GetTime() + n)&3)
+				if (realfirsttic >= maketic || packnum > 0 || (I_GetTime() + n)&3)
 					// all tic are ok
 					continue;
 				DEBFILE(va("Sent %d anyway\n", realfirsttic));
@@ -6988,7 +6989,7 @@ static void SV_SendTics(void)
 				if (packsize > software_MAXPACKETLENGTH)
 				{
 					DEBFILE(va("packet too large (%s) at tic %d (should be from %d to %d)\n",
-						sizeu1(packsize), i, realfirsttic, lasttictosend));
+							   sizeu1(packsize), i, realfirsttic, lasttictosend));
 					lasttictosend = i;
 
 					// too bad: too much player have send extradata and there is too
@@ -6999,8 +7000,8 @@ static void SV_SendTics(void)
 					{
 						if (packsize > MAXPACKETLENGTH)
 							I_Error("Too many players: can't send %s data for %d players to node %d\n"
-							        "Well sorry nobody is perfect....\n",
-							        sizeu1(packsize), doomcom->numslots, n);
+							"Well sorry nobody is perfect....\n",
+							sizeu1(packsize), doomcom->numslots, n);
 						else
 						{
 							lasttictosend++; // send it anyway!
@@ -7044,6 +7045,10 @@ static void SV_SendTics(void)
 			}
 			packsize = bufpos - (UINT8 *)&(netbuffer->u);
 
+			// packet size warning here?
+			if (packsize > software_MAXPACKETLENGTH)
+				CONS_Alert(CONS_ERROR, "Servertics packet went beyond allocated packet size (%" PRIuPTR "/%d), and may have corrupted some memory...\n", packsize, software_MAXPACKETLENGTH);
+
 			HSendPacket(n, false, 0, packsize);
 			// when tic are too large, only one tic is sent so don't go backward!
 			if (lasttictosend-doomcom->extratics > realfirsttic)
@@ -7053,6 +7058,7 @@ static void SV_SendTics(void)
 
 			supposedtics[n] = max(supposedtics[n], nettics[n]);
 		}
+	}
 	// node 0 is me!
 	supposedtics[0] = maketic;
 }

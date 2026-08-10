@@ -29,6 +29,7 @@ extern "C"
     // Where to save preferences
     extern char preferencesdir[512];
     extern char voicepref_buffer[VOICEPREFBUFSIZE];
+    extern boolean initedvoiceprefs;
 
     void R_SetLocalPreferredVoiceForSkin(UINT8 local_pid,
                                          const char* skin_name,
