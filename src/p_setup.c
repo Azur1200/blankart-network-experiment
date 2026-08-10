@@ -8806,6 +8806,14 @@ static tic_t P_GenerateAutoParTime(void)
 		return 0;
 	}
 
+	double lap_mul = (double)(numlaps);
+
+	if ((mapheaderinfo[gamemap-1]->levelflags & LF_SECTIONRACE) == LF_SECTIONRACE)
+	{
+		// The course length IS how long the sectioned course is, AKA: DON'T multiply the damn distances!
+		lap_mul = 1.0;
+	}
+
 	const UINT32 course_length = K_GetCircuitLength();
 	double course_length_f = ((double)(course_length) / FIXED_TO_FLOAT(mapobjectscale)) * (double)(numlaps);
 	double divisor = DIST_TO_SECONDS / max(1.0, FIXED_TO_FLOAT(K_GetKartGameSpeedScalar(gamespeed)));

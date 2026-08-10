@@ -127,10 +127,10 @@ extern vector3_t clusterpoint, clusterdtf;
 #define BUBBLEMINWEIGHT (5 * FRACUNIT)
 
 // Ranks: Worst possible score
-#define LOWESTRANKSCORE (-200)
+#define LOWESTRANKSCORE (0)
 
 // Ranks: Best possible score
-#define HIGHESTRANKSCORE (1000)
+#define HIGHESTRANKSCORE (150)
 
 #if (LOWESTRANKSCORE < 0)
 #define LOWESTRANKSCORE_ABS (-LOWESTRANKSCORE)
@@ -142,6 +142,7 @@ extern vector3_t clusterpoint, clusterdtf;
 #define PARTIMEMERCY (33 * TICRATE)
 
 #define RANKPOINTS_PARTIME CV_Get(&cv_kartrank_partimepoints)
+#define RANKPOINTS_COMEBACKSCORE CV_Get(&cv_kartrank_comebackpoints)
 
 #define RANKPOINTS_LEADERTIME CV_Get(&cv_kartrank_leadertimepoints)
 #define RANKPOINTS_SPBTIME CV_Get(&cv_kartrank_spbtimepoints)
@@ -164,9 +165,6 @@ extern vector3_t clusterpoint, clusterdtf;
 
 #define RANKPOINTS_HZRDMERCY CV_Get(&cv_kartrank_hazardmercy)
 #define RANKPOINTS_RSPWMERCY CV_Get(&cv_kartrank_respawnmercy)
-
-#define RANKPOINTS_LAPGRADEMUL_WITHPENALTIES CV_Get(&cv_kartrank_lapgrademul)
-#define RANKPOINTS_LAPGRADEMUL_NOPENALTIES CV_Get(&cv_kartrank_lapgrademul_penaltiesoff)
 
 // Invincibility damage value
 #define INVINDAMAGE CV_Get(&cv_kartinvindamage)
@@ -520,7 +518,7 @@ ranktier_e K_GetRankTier(INT32 rank_score, SINT8 prankoverride);
 void K_UpdateIndividualPlayerRank(player_t *player);
 void K_UpdateRankScore(void);
 void K_UpdatePositionFactorAndPlayerRanks(void);
-void K_CalculateLapGrading(player_t *player, INT32 addmulpct, INT32 submulpct);
+void K_CalculateLapGrading(player_t *player);
 
 fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmin,fixed_t newmax);
 void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, fixed_t handleboost, boolean stack, boolean visible);

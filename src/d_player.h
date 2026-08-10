@@ -574,6 +574,7 @@ struct ranklog_t
 	// "I JUST GOT HIT, ASSHOLE!"
 	// Prevents certain penalties if the player was hit or bumped recently.
 	INT32 ijustgothitasshole;
+
 	UINT16 numlapgrades; // How many times did we grade a lap?
 	boolean lapwasgraded; // Was a lap graded?
 	boolean prankeligible; // (Grand Prix) This player knows what they're doing; they're contending for a P-Rank!
@@ -592,7 +593,7 @@ struct ranklog_t
 	// VOLATILE (can increment or decrement)
 	//
 
-	INT32 lapgrading; // "Pseudo-EXP"; grading points calculated based on a percentage value (race position) each lap.
+	INT32 posgrading; // "Pseudo-EXP"; grading points calculated based on a percentage value (race position) each lap.
 	INT32 gaining; // Gaining/losing value
 
 	//
@@ -612,8 +613,8 @@ struct rankscorefactor_t
 	// VOLATILE (can increment or decrement)
 	//
 
-	INT32 lapgradescore; // Points earned/lost dependent on the player's position at tne end of each lap
-	INT32 partimescore; // Points earned/lost against the par-time for the course
+	INT32 posgradescore; // Points earned/lost dependent on the player's position over time
+	INT32 comebackscore;
 
 	//
 	// BONUSES

@@ -576,6 +576,7 @@ void K_RegisterKartStuff(void)
 
 	// Ranking point values
 	CV_RegisterVar(&cv_kartrank_partimepoints);
+	CV_RegisterVar(&cv_kartrank_comebackpoints);
 	CV_RegisterVar(&cv_kartrank_leadertimepoints);
 	CV_RegisterVar(&cv_kartrank_spbtimepoints);
 	CV_RegisterVar(&cv_kartrank_startboostpoints);
@@ -589,10 +590,6 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartrank_retirepenalty);
 	CV_RegisterVar(&cv_kartrank_hazardmercy);
 	CV_RegisterVar(&cv_kartrank_respawnmercy);
-	CV_RegisterVar(&cv_kartrank_lapgrademul);
-	CV_RegisterVar(&cv_kartrank_lapgrademul_penaltiesoff);
-	CV_RegisterVar(&cv_kartrank_lossmul);
-	CV_RegisterVar(&cv_kartrank_gainmul);
 
 	// Ranks: Helper cvar for par times
 	CV_RegisterVar(&cv_kartrank_partimehelper);
@@ -13247,7 +13244,7 @@ boolean K_RankHitBonusActive(void)
 }
 
 #define WALLBONKPENALTYDIV (3) // Every 3 bumps, since hitting walls is inevitable.
-#define GENERICPARTIME (TICRATE * 205) // 3 minutes 25 seconds; an average Kart race is 2 minutes, so this is an overshoot
+#define GENERICPARTIME (TICRATE * 145) // 2 minutes 25 seconds; an average Kart race is 2 minutes, so this is an overshoot
 #define TIMECHECKOFFSET (5 * TICRATE / 2)
 
 static INT32 K_GetDriftBoostRankScore(player_t * player)
@@ -13259,7 +13256,8 @@ static INT32 K_GetDriftBoostRankScore(player_t * player)
 	return bluepoints + redpoints + purplepoints + rainbowpoints;
 }
 
-void K_CalculateLapGrading(player_t *player, INT32 addmulpct, INT32 submulpct)
+// Only really kept for very specific systems at this point...
+void K_CalculateLapGrading(player_t *player)
 {
 	// Calculate rank score.
 	const INT64 posfac_64 = min(POSGRADEFACTOR, (INT64)(positionfactor) * max(0, players_racing - player->position));
@@ -13287,24 +13285,9 @@ void K_CalculateLapGrading(player_t *player, INT32 addmulpct, INT32 submulpct)
 
 	// Update gaining values
 	player->ranklog.gaining += intsign(lapgrade_addend);
-
-	if (lapgrade_addend > 0)
-	{
-		// If we're adding: multiply the addend by this percentage
-		lapgrade_addend *= addmulpct;
-		lapgrade_addend /= 100;
-	}
-	else if (lapgrade_addend < 0)
-	{
-		// If we're subtracting: multiply the subtrahend by this percentage
-		lapgrade_addend *= submulpct;
-		lapgrade_addend /= 100;
-	}
-
-	player->ranklog.lapgrading += lapgrade_addend;
 }
 
-#define BEST_SCORE_BEFORE_P_RANK (960 + LOWESTRANKSCORE_ABS)
+#define BEST_SCORE_BEFORE_P_RANK (145 + LOWESTRANKSCORE_ABS)
 #define RANKSCORE_DIVISOR (BEST_SCORE_BEFORE_P_RANK / NUMSTDRANKTIERS)
 
 // Gets a tier value based on the provided ranking score.
@@ -13387,24 +13370,18 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 		}
 	}
 
-	const float partimepoints = FIXED_TO_FLOAT(RANKPOINTS_PARTIME);
+	const double partimepoints = FixedToDouble(RANKPOINTS_PARTIME) / krtTime;
 
-	// Calculate time bonus
-	player->rankscorefactor.partimescore =
-	    partimepoints * (krtTime - max(0, (INT64)(player->realtime) - TIMECHECKOFFSET)) /
-	    krtTime;
+	// Calculate time bonus; the more you lead, the higher the gain
+	// Frontrun the whole race for the full bonus :)
+	player->rankscorefactor.posgradescore = (player->ranklog.leadertics / 32) * partimepoints;
 
 	if (leveltime > (starttime + TIMECHECKOFFSET))
 	{
-		const float leadertimepoints = FIXED_TO_FLOAT(RANKPOINTS_LEADERTIME);
 		const float spbtimepoints = FIXED_TO_FLOAT(RANKPOINTS_SPBTIME);
 		const float spbtimepoints_lunatic = (spbtimepoints / 1.8);
 
-		// Calculate time bonus corresponding to the time spent in 1st place,
-		// and the time spent being targeted by an SPB.
-		player->rankscorefactor.positionbonus =
-		    ((player->ranklog.leadertics / 32) * leadertimepoints) /
-		    krtTime;
+		// Calculate time bonus corresponding to the time spent being targeted by an SPB.
 		player->rankscorefactor.spbattackbonus =
 		    (player->ranklog.spbattack *
 		     ((grandprixinfo.lunaticmode) ? spbtimepoints_lunatic : spbtimepoints)) /
@@ -13472,19 +13449,10 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 		player->rankscorefactor.respawnpenalty = (outOfBounds * RANKPOINTS_RSPWPENALTY);
 	}
 
-	// Apply bonus/penalty based on lap grading.
-	// If we're not counting miscellaneous penalties. we need to weigh lap grading much more
-	// heavily.
-	INT32 lapgradeweight = (penalizing) ? RANKPOINTS_LAPGRADEMUL_WITHPENALTIES
-					    : RANKPOINTS_LAPGRADEMUL_NOPENALTIES;
-
-	player->rankscorefactor.lapgradescore =
-	    (player->ranklog.lapgrading * lapgradeweight / numlaps);
-
 	// FINALLY, apply all bonuses, penalties, and volatile scores...
 	raceStarRankScore =
-	    (player->rankscorefactor.partimescore + player->rankscorefactor.lapgradescore -
-	     player->rankscorefactor.dnfpenalty) +
+	    (player->rankscorefactor.posgradescore + player->rankscorefactor.comebackscore -
+	    player->rankscorefactor.dnfpenalty) +
 	    (player->rankscorefactor.positionbonus + player->rankscorefactor.spbattackbonus +
 	     player->rankscorefactor.startbonus + player->rankscorefactor.driftbonus +
 	     player->rankscorefactor.hitbonus) -

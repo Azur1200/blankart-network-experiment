@@ -594,28 +594,28 @@ static boolean RankScreenVis_ShowGrade(void)
 			if (rankresultsphase >= 2)
 			{
 				const INT32 totallapgrade =
-				    (players[pid].rankscorefactor.lapgradescore -
+				    (players[pid].rankscorefactor.posgradescore -
 				     players[pid].rankscorefactor.dnfpenalty);
 
-				// Lap Grading
+				// Position Grading
 				yy += 14;
 				Y_DrawThinStringWithBacking(
-				    xx, yy, curwidth, textflags, 0, usecolor, "Lap Grading");
+				    xx, yy, curwidth, textflags, 0, usecolor, "Position Grading");
 				V_DrawRightAlignedString(
 				    point_x,
 				    yy,
 				    textflags,
 				    va("%d", totallapgrade));
 
-				// Par-time Score
+				// Comeback Score
 				yy += 11;
 				Y_DrawThinStringWithBacking(
-				    xx, yy, curwidth, textflags, 0, usecolor, "Par-time Score");
+				    xx, yy, curwidth, textflags, 0, usecolor, "Comeback Score");
 				V_DrawRightAlignedString(
 				    point_x,
 				    yy,
 				    textflags,
-				    va("%d", players[pid].rankscorefactor.partimescore));
+				    va("%d", players[pid].rankscorefactor.comebackscore));
 			}
 
 			//
@@ -734,25 +734,25 @@ static boolean RankScreenVis_ShowGrade(void)
 
 			if (rankresultsphase >= 2)
 			{
-				// Lap Grading
+				// Position Grading
 				yy += 14;
 				Y_DrawThinStringWithBacking(
-				    xx, yy, curwidth, textflags, 0, usecolor, "Lap Grading");
+				    xx, yy, curwidth, textflags, 0, usecolor, "Position Grading");
 				V_DrawRightAlignedString(
 				    point_x,
 				    yy,
 				    textflags,
-				    va("%d", players[pid].rankscorefactor.lapgradescore));
+				    va("%d", players[pid].rankscorefactor.posgradescore));
 
-				// Par-time Score
+				// Comeback Score
 				yy += 11;
 				Y_DrawThinStringWithBacking(
-				    xx, yy, curwidth, textflags, 0, usecolor, "Par-time Score");
+				    xx, yy, curwidth, textflags, 0, usecolor, "Comeback Score");
 				V_DrawRightAlignedString(
 				    point_x,
 				    yy,
 				    textflags,
-				    va("%d", players[pid].rankscorefactor.partimescore));
+				    va("%d", players[pid].rankscorefactor.comebackscore));
 			}
 
 			//
@@ -801,7 +801,7 @@ static boolean RankScreenVis_ShowGrade(void)
 #define CHARTLINEWIDTH (FRACUNIT * 3)
 #define CHART_HEIGHT (128)
 #define CHART_WIDTH (224)
-#define CHARTHEIGHTDIV (629145)  // 9.6; 1200 / 125 = 9.6
+#define CHARTHEIGHTDIV (78643)  // 1.2; 150 / 125 = 1.2
 #define FILLTIMETOTICS ((tic_t)(2.30 * TICRATE))
 #define FILLSTARTTIC (TICRATE * 1)
 

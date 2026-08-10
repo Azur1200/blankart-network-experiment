@@ -588,7 +588,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].ranklog.leadertics);
 		SYNC(players[i].ranklog.spbattack);
 		SYNC(players[i].ranklog.startboostgrading);
-		SYNC(players[i].ranklog.lapgrading);
+		SYNC(players[i].ranklog.posgrading);
 		SYNC(players[i].ranklog.gaining);
 		SYNC(players[i].ranklog.timeoffroadcurrent);
 		SYNC(players[i].ranklog.timeoffroadtotal);
@@ -600,8 +600,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNCBOOLEAN(players[i].ranklog.lapwasgraded);
 		SYNCBOOLEAN(players[i].ranklog.prankeligible);
 		// Rankscore Factor
-		SYNC(players[i].rankscorefactor.lapgradescore);
-		SYNC(players[i].rankscorefactor.partimescore);
+		SYNC(players[i].rankscorefactor.posgradescore);
+		SYNC(players[i].rankscorefactor.comebackscore);
 		SYNC(players[i].rankscorefactor.hitbonus);
 		SYNC(players[i].rankscorefactor.driftbonus);
 		SYNC(players[i].rankscorefactor.positionbonus);

@@ -774,55 +774,45 @@ consvar_t cv_kartrank_hitbonus = CVAR_INIT ("rank_hitbonus", "Off", CV_NETVAR|CV
 // Tracks time in a race and displays a potential par time. Helps if you want to manually make par times!
 consvar_t cv_kartrank_partimehelper = CVAR_INIT ("partimehelper", "Off", 0, CV_OnOff, NULL);
 
-// Ranks: the point value constantly decreasing due to a set course's time limit (the "par time")
-consvar_t cv_kartrank_partimepoints = CVAR_INIT ("rank_partimepoints", "500.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+// Ranks: the point value players earn based on a set course's time limit (the "par time")
+consvar_t cv_kartrank_partimepoints = CVAR_INIT ("rank_partimepoints", "230.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+consvar_t cv_kartrank_comebackpoints = CVAR_INIT ("rank_comebackpoints", "110.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
 // Ranks: the point bonus given dependent on position (1st place gets the raw value), meant to offset the par-time deficit
 consvar_t cv_kartrank_leadertimepoints = CVAR_INIT ("rank_leadertimepoints", "400.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
 // Ranks: the point bonus given for being chased by an SPB; varies by distance
-consvar_t cv_kartrank_spbtimepoints = CVAR_INIT ("rank_spbtimepoints", "250.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+consvar_t cv_kartrank_spbtimepoints = CVAR_INIT ("rank_spbtimepoints", "45.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
 // Ranks: the point bonus given, based on how well you perform the starting boost.
-consvar_t cv_kartrank_startboostpoints = CVAR_INIT ("rank_startboostpoints", "50", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+consvar_t cv_kartrank_startboostpoints = CVAR_INIT ("rank_startboostpoints", "4", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
 
 // Ranks: the point bonus given with each drift boost.
 // Higher driftboost tiers multiply this value to give more points.
-consvar_t cv_kartrank_driftboostpoints = CVAR_INIT ("rank_driftboostpoints", "6", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+consvar_t cv_kartrank_driftboostpoints = CVAR_INIT ("rank_driftboostpoints", "2", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
 
 // Ranks: the point bonus given for hitting other players.
-consvar_t cv_kartrank_hitconfirmpoints = CVAR_INIT ("rank_hitconfirmpoints", "10", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+consvar_t cv_kartrank_hitconfirmpoints = CVAR_INIT ("rank_hitconfirmpoints", "3", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
 
 static CV_PossibleValue_t kartoffroadpenaltydiv_cons_t[] = {{1, "MIN"},  {256, "MAX"}, {0, NULL}};
 
 // Ranks: the value the tics spent offroad is divided by, to determine the amount of points taken for going offroad.
-consvar_t cv_kartrank_offroad_divisor = CVAR_INIT ("rank_offroad_divisor", "6", CV_NETVAR|CV_CHEAT|CV_GUARD, kartoffroadpenaltydiv_cons_t, NULL);
+consvar_t cv_kartrank_offroad_divisor = CVAR_INIT ("rank_offroad_divisor", "24", CV_NETVAR|CV_CHEAT|CV_GUARD, kartoffroadpenaltydiv_cons_t, NULL);
 
 // Ranks: the time, in seconds, before the player is fully penalzied for driving through offroad.
 consvar_t cv_kartrank_lawnmowerthreshold = CVAR_INIT ("rank_lawnmowerthreshold", "3.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_FloatingTicrateDiv, NULL);
 
-consvar_t cv_kartrank_wallbonkpenalty = CVAR_INIT ("rank_wallbonkpenalty", "5", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+consvar_t cv_kartrank_wallbonkpenalty = CVAR_INIT ("rank_wallbonkpenalty", "3", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
 
 static CV_PossibleValue_t kartrank_mercy_cons_t[] = {{0, "MIN"}, {0x7FFF, "MAX"}, {0, NULL}};
 
 consvar_t cv_kartrank_hazardmercy = CVAR_INIT ("rank_hazardmercy", "5", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_mercy_cons_t, NULL);
-consvar_t cv_kartrank_hazardpenalty = CVAR_INIT ("rank_hazardpenalty", "56", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+consvar_t cv_kartrank_hazardpenalty = CVAR_INIT ("rank_hazardpenalty", "5", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
 
 consvar_t cv_kartrank_respawnmercy = CVAR_INIT ("rank_respawnmercy", "5", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_mercy_cons_t, NULL);
-consvar_t cv_kartrank_respawnpenalty = CVAR_INIT ("rank_respawnpenalty", "100", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
-consvar_t cv_kartrank_retirepenalty = CVAR_INIT ("rank_dnfpenalty", "100", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+consvar_t cv_kartrank_respawnpenalty = CVAR_INIT ("rank_respawnpenalty", "40", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+consvar_t cv_kartrank_retirepenalty = CVAR_INIT ("rank_dnfpenalty", "12", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
 
-static CV_PossibleValue_t kartrank_lapgrademul_cons_t[] = {{0, "MIN"}, {100, "MAX"}, {0, NULL}};
-
-consvar_t cv_kartrank_lapgrademul = CVAR_INIT ("rank_lapgrademul", "6", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_lapgrademul_cons_t, NULL);
-consvar_t cv_kartrank_lapgrademul_penaltiesoff = CVAR_INIT ("rank_lapgrademul_penaltiesoff", "8", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_lapgrademul_cons_t, NULL);
-
-static CV_PossibleValue_t kartrank_gainlossmul_cons_t[] = {{0, "MIN"}, {1000 * FRACUNIT, "MAX"}, {0, NULL}};
-
-consvar_t cv_kartrank_gainmul = CVAR_INIT ("rank_comeback_gainpct", "125.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrank_gainlossmul_cons_t, NULL);
-consvar_t cv_kartrank_lossmul = CVAR_INIT ("rank_comeback_losspct", "25.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrank_gainlossmul_cons_t, NULL);
-
-// Invincibility damage toggles
 static CV_PossibleValue_t kartinvindmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {0, NULL}};
 
 // Experiment: Let's allow changing the damage type

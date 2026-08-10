@@ -1345,25 +1345,31 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			// Handle the player headcount and grading BEFORE positions are finalized
 			K_GetPlayerNumber();
 
-			// Gaining percentage
-			INT32 gainmul = 100;
+			const double rankscorebounds = (double)(HIGHESTRANKSCORE - LOWESTRANKSCORE);
+			const double rankscorediv = max(0.00001, rankscorebounds);
+			const double scoremul = FixedToDouble(RANKPOINTS_COMEBACKSCORE);
 
 			if (player->ranklog.gaining < 0)
 			{
-				// If you're on a downward trend, your gain is proportional to your current loss
-				gainmul = (INT32)(abs(player->ranklog.gaining) * (FixedToDouble(cv_kartrank_gainmul.value)));
+				// If the player's been beaten down all race, give them a hefty point bonus to
+				// give them a comeback
+				const INT32 playerseed = max(0, players_racing - 1);
+
+				if (playerseed > 0)
+				{
+					const INT32 leaderfactor = max(0, playerseed - max(0, player->position - 1));
+					const INT32 convtopercent = ((1 << 24) / playerseed);
+
+					// There's always a chance some off-kilter value fucks up the multiplier, so we
+					// "round up" by a tiiny bit...
+					const fixed_t leadermul = min(FRACUNIT, ((convtopercent / 256) * leaderfactor) + 2);
+
+					// Use this to create a comeback score for one final push!
+					player->rankscorefactor.comebackscore = (scoremul * FixedToDouble(leadermul));
+				}
 			}
 
-			// Losing percentage
-			INT32 lossmul = 100;
-
-			if (player->ranklog.gaining > 0)
-			{
-				// If you're on an upward trend, your loss is cut by your current gain
-				lossmul = (INT32)(abs(player->ranklog.gaining) * FixedToDouble(cv_kartrank_lossmul.value));
-			}
-
-			K_CalculateLapGrading(player, gainmul, lossmul);
+			K_CalculateLapGrading(player);
 			K_UpdatePositionFactorAndPlayerRanks();
 			K_AddScoreToTracker((UINT16)(player - players), player->rankscore + LOWESTRANKSCORE_ABS);
 
