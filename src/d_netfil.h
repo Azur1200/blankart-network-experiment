@@ -13,6 +13,8 @@
 #ifndef __D_NETFIL__
 #define __D_NETFIL__
 
+#include <time.h>
+
 #include "d_net.h"
 #include "d_clisrv.h"
 #include "w_wad.h"

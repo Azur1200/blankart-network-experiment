@@ -12,6 +12,10 @@
 ///	        FS_BADHASH;
 ///	        FS_FOUND
 
+#ifdef _MSC_VER
+#define _CRT_NONSTDC_NO_WARNINGS // stat, etc.
+#endif
+
 #include <stdio.h>
 #ifdef __GNUC__
 #include <dirent.h>

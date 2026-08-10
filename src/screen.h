@@ -15,14 +15,6 @@
 
 #include "command.h"
 
-#if defined (_WIN32) && !defined (__CYGWIN__)
-#define RPC_NO_WINDOWS_H
-#include <windows.h>
-#define DNWH HWND
-#else
-#define DNWH void * // unused in DOS version
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif

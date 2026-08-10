@@ -164,11 +164,6 @@ typedef union
 
 #define IPV6_MULTICAST_ADDRESS "ff15::57e1:1a12"
 
-// define socklen_t in DOS/Windows if it is not already defined
-#ifdef USE_WINSOCK1
-	typedef int socklen_t;
-#endif
-
 typedef struct
 {
 	mysockaddr_t address;
@@ -271,7 +266,7 @@ static const char* inet_ntopA(short af, const void *cp, char *buf, socklen_t len
 		return NULL;
 	return buf;
 }
-#elif !defined (USE_WINSOCK1)
+#else
 #define HAVE_NTOP
 #endif
 
@@ -933,15 +928,10 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 
 #ifdef USE_WINSOCK
 	{ // Alam_GBC: disable the new UDP connection reset behavior for Win2k and up
-#ifdef USE_WINSOCK2
 		DWORD dwBytesReturned = 0;
 		BOOL bfalse = FALSE;
 		rc = WSAIoctl(s, SIO_UDP_CONNRESET, &bfalse, sizeof(bfalse),
 		         NULL, 0, &dwBytesReturned, NULL, NULL);
-#else
-		unsigned long falseval = false;
-		rc = ioctl(s, SIO_UDP_CONNRESET, &falseval);
-#endif
 		if (rc == -1)
 		{
 			e = errno;
@@ -1305,11 +1295,7 @@ boolean I_InitTcpDriver(void)
 	if (!init_tcp_driver)
 	{
 #ifdef USE_WINSOCK
-#ifdef USE_WINSOCK2
 		const WORD VerNeed = MAKEWORD(2,2);
-#else
-		const WORD VerNeed = MAKEWORD(1,1);
-#endif
 		WSADATA WSAData;
 		const int WSAresult = WSAStartup(VerNeed, &WSAData);
 		if (WSAresult != 0)
@@ -1336,21 +1322,12 @@ boolean I_InitTcpDriver(void)
 			if (WSAresult != WSAVERNOTSUPPORTED)
 				CONS_Debug(DBG_NETPLAY, "WinSock(TCP/IP) error: %s\n",WSError);
 		}
-#ifdef USE_WINSOCK2
 		if(LOBYTE(WSAData.wVersion) != 2 ||
 			HIBYTE(WSAData.wVersion) != 2)
 		{
 			WSACleanup();
 			CONS_Debug(DBG_NETPLAY, "No WinSock(TCP/IP) 2.2 driver detected\n");
 		}
-#else
-		if (LOBYTE(WSAData.wVersion) != 1 ||
-			HIBYTE(WSAData.wVersion) != 1)
-		{
-			WSACleanup();
-			CONS_Debug(DBG_NETPLAY, "No WinSock(TCP/IP) 1.1 driver detected\n");
-		}
-#endif
 		CONS_Debug(DBG_NETPLAY, "WinSock description: %s\n",WSAData.szDescription);
 		CONS_Debug(DBG_NETPLAY, "WinSock System Status: %s\n",WSAData.szSystemStatus);
 #endif

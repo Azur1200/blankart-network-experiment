@@ -14,6 +14,8 @@
 #ifndef __I_NET__
 #define __I_NET__
 
+#include <time.h>
+
 #include "doomdef.h"
 #include "command.h"
 
