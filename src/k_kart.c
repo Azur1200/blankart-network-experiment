@@ -2857,7 +2857,7 @@ static fixed_t K_KartDiminish(fixed_t speedboost)
 	return FixedSqrt(speedboost + DIMINISHPARAM) - FixedSqrt(DIMINISHPARAM);
 }
 
-static fixed_t K_KartMetabolism(fixed_t weight)
+static fixed_t K_KartMetabolism(UINT8 weight)
 {
 	return (FRACUNIT - ((weight - 1) * (FRACUNIT * 17 / 100) / 8));
 }
