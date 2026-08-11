@@ -236,6 +236,9 @@ extern consvar_t cv_kartsmonitor_decaydist;
 extern consvar_t cv_kartsmonitor_decaytime;
 extern consvar_t cv_kartsmonitor_intangible;
 
+// Rank-score bounds
+extern consvar_t cv_kartrank_lowestscore, cv_kartrank_highestscore;
+
 // Ranking values, since this is overall opinionated
 extern consvar_t cv_kartrank_partimepoints, cv_kartrank_spbtimepoints,
     cv_kartrank_driftboostpoints, cv_kartrank_hitconfirmpoints, cv_kartrank_offroad_divisor,

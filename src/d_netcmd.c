@@ -765,6 +765,7 @@ consvar_t cv_kartinvintheme = CVAR_INIT ("kartinvintheme", "Standard", CV_SAVE, 
 
 static CV_PossibleValue_t kartrankpts_f_cons_t[] = {{0, "MIN"},  {(INT32_MAX / 2), "MAX"}, {0, NULL}};
 static CV_PossibleValue_t kartrankpts_cons_t[] = {{0, "MIN"},  {0x3fff, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t kartrankpts_signed_cons_t[] = {{-16383, "MIN"}, {16383, "MAX"}, {0, NULL}};
 
 consvar_t cv_kartraceranks = CVAR_INIT ("raceranks", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRaceRanks_OnChange);
 consvar_t cv_kartrankpenalties = CVAR_INIT ("racerankpenalties", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRankPenalties_OnChange);
@@ -774,8 +775,11 @@ consvar_t cv_kartrank_hitbonus = CVAR_INIT ("rank_hitbonus", "Off", CV_NETVAR|CV
 // Tracks time in a race and displays a potential par time. Helps if you want to manually make par times!
 consvar_t cv_kartrank_partimehelper = CVAR_INIT ("partimehelper", "Off", 0, CV_OnOff, NULL);
 
+consvar_t cv_kartrank_lowestscore = CVAR_INIT ("rank_lowestscore", "0", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_signed_cons_t, NULL);
+consvar_t cv_kartrank_highestscore = CVAR_INIT ("rank_highestscore", "150", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_signed_cons_t, NULL);
+
 // Ranks: the point value players earn based on a set course's time limit (the "par time")
-consvar_t cv_kartrank_partimepoints = CVAR_INIT ("rank_partimepoints", "230.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+consvar_t cv_kartrank_partimepoints = CVAR_INIT ("rank_partimepoints", "220.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 consvar_t cv_kartrank_comebackpoints = CVAR_INIT ("rank_comebackpoints", "110.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
 // Ranks: the point bonus given dependent on position (1st place gets the raw value), meant to offset the par-time deficit

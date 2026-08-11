@@ -575,6 +575,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartsmonitor_intangible);
 
 	// Ranking point values
+	CV_RegisterVar(&cv_kartrank_highestscore);
+	CV_RegisterVar(&cv_kartrank_lowestscore);
 	CV_RegisterVar(&cv_kartrank_partimepoints);
 	CV_RegisterVar(&cv_kartrank_comebackpoints);
 	CV_RegisterVar(&cv_kartrank_leadertimepoints);
@@ -13286,13 +13288,14 @@ void K_CalculateLapGrading(player_t *player)
 	player->ranklog.gaining += intsign(lapgrade_addend);
 }
 
-#define BEST_SCORE_BEFORE_P_RANK (145 + LOWESTRANKSCORE_ABS)
+#define BEST_SCORE_BEFORE_P_RANK (FixedMul(HIGHESTRANKSCORE, 63569) + LOWESTRANKSCORE_ABS)
 #define RANKSCORE_DIVISOR (BEST_SCORE_BEFORE_P_RANK / NUMSTDRANKTIERS)
 
 // Gets a tier value based on the provided ranking score.
 ranktier_e K_GetRankTier(INT32 rank_score, SINT8 prankoverride)
 {
-	INT32 _rank_score = rank_score + LOWESTRANKSCORE_ABS; // Rank scores can go as low as -200
+	// Rank scores can go as low as the host wants
+	INT32 _rank_score = rank_score + LOWESTRANKSCORE_ABS;
 
 	boolean prankcondition =
 		(grandprixinfo.gp && prankoverride >= 0) ?
@@ -13308,7 +13311,7 @@ ranktier_e K_GetRankTier(INT32 rank_score, SINT8 prankoverride)
 	// Cap the rank score
 	_rank_score = min(BEST_SCORE_BEFORE_P_RANK, _rank_score);
 
-	// All other ranks are decided by dividing the score by a multiple
+	// All other ranks are decided by dividing the score by a multipler
 	return (ranktier_e)(max(0, min(NUMSTDRANKTIERS - 1, _rank_score / RANKSCORE_DIVISOR)));
 }
 

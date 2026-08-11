@@ -787,12 +787,26 @@ static boolean RankScreenVis_ShowGrade(void)
 #undef BACKINGWIDTH
 #undef BACKINGWIDTH_HALF
 
-#define CHARTLINEWIDTH (FRACUNIT * 3)
+FUNCINLINE static ATTRINLINE double Y_GenerateChartBounds(void);
+
+#define CHARTLINEWIDTH_INT (3)
+#define CHARTLINEWIDTH (FRACUNIT * CHARTLINEWIDTH_INT)
 #define CHART_HEIGHT (128)
+#define CHART_HEIGHT_LINECLAMP (CHART_HEIGHT - CHARTLINEWIDTH_INT)
 #define CHART_WIDTH (224)
-#define CHARTHEIGHTDIV (78643)  // 1.2; 150 / 125 = 1.2
+#define CHARTHEIGHTDIV ((fixed_t)((Y_GenerateChartBounds() / (double)(CHART_HEIGHT_LINECLAMP)) * (double)(FRACUNIT)))  // Range / 125
 #define FILLTIMETOTICS ((tic_t)(2.30 * TICRATE))
 #define FILLSTARTTIC (TICRATE * 1)
+
+
+// Only exists so the compiler stops vomiting warnings...
+FUNCINLINE static ATTRINLINE double Y_GenerateChartBounds(void)
+{
+	const double best = HIGHESTRANKSCORE;
+	const double worst = LOWESTRANKSCORE;
+
+	return (best - worst);
+}
 
 static void Y_DrawChartForPlayer(UINT16 pid,
 				 INT32 screen_x,
@@ -886,8 +900,10 @@ static void Y_DrawChartForPlayer(UINT16 pid,
 	}
 }
 
+#undef CHARTLINEWIDTH_INT
 #undef CHARTLINEWIDTH
 #undef CHART_HEIGHT
+#undef CHART_HEIGHT_LINECLAMP
 #undef CHART_WIDTH
 #undef CHARTHEIGHTDIV
 

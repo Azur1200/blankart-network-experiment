@@ -127,16 +127,12 @@ extern vector3_t clusterpoint, clusterdtf;
 #define BUBBLEMINWEIGHT (5 * FRACUNIT)
 
 // Ranks: Worst possible score
-#define LOWESTRANKSCORE (0)
+#define LOWESTRANKSCORE CV_Get(&cv_kartrank_lowestscore)
 
 // Ranks: Best possible score
-#define HIGHESTRANKSCORE (150)
+#define HIGHESTRANKSCORE CV_Get(&cv_kartrank_highestscore)
 
-#if (LOWESTRANKSCORE < 0)
-#define LOWESTRANKSCORE_ABS (-LOWESTRANKSCORE)
-#else
-#define LOWESTRANKSCORE_ABS (LOWESTRANKSCORE)
-#endif
+#define LOWESTRANKSCORE_ABS ((LOWESTRANKSCORE < 0) ? (-LOWESTRANKSCORE) : LOWESTRANKSCORE)
 
 // "Mercy value" for par times
 #define PARTIMEMERCY (33 * TICRATE)
