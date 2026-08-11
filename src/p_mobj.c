@@ -1554,7 +1554,7 @@ static dboolean P_CheckSkyHit(mobj_t *mo)
 }
 
 // P_LostSoulReset
-static boolean P_SkullFlyReset(mobj_t *mo)
+static dboolean P_SkullFlyReset(mobj_t *mo)
 {
 	if (!mo->momx && !mo->momy && (mo->flags2 & MF2_SKULLFLY))
 	{
