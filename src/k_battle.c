@@ -21,7 +21,7 @@
 #include "p_spec.h"
 
 // Item Breaker mode enabled for this map?
-boolean itembreaker = false;
+dboolean itembreaker = false;
 
 // box respawning in battle mode
 INT32 nummapboxes = 0;
@@ -38,7 +38,7 @@ INT32 K_StartingBumperCount(void)
 	return cv_kartbumpers.value;
 }
 
-boolean K_IsPlayerWanted(player_t *player)
+dboolean K_IsPlayerWanted(player_t *player)
 {
 	UINT8 i;
 
@@ -55,7 +55,7 @@ boolean K_IsPlayerWanted(player_t *player)
 	return false;
 }
 
-boolean K_IsPlayerMostWanted(player_t *player)
+dboolean K_IsPlayerMostWanted(player_t *player)
 {
 	if (mostwanted == -1)
 		return false;
@@ -225,7 +225,7 @@ void K_CheckBumpers(void)
 	UINT8 numingame = 0;
 	SINT8 winnernum = -1;
 	UINT32 winnerscoreadd = 0, maxroundscore = 0;
-	boolean nobumpers = false;
+	dboolean nobumpers = false;
 
 	if (!(gametypes[gametype]->rules & GTR_BUMPERS))
 		return;
@@ -487,7 +487,7 @@ void K_SpawnPlayerBattleBumpers(player_t *p)
 	}
 }
 
-void K_BattleInit(boolean singleplayercontext)
+void K_BattleInit(dboolean singleplayercontext)
 {
 	if ((gametypes[gametype]->rules & GTR_ITEMBREAKER) && singleplayercontext && !itembreaker && !bossinfo.boss)
 	{

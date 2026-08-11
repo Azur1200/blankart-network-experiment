@@ -71,7 +71,7 @@ static void create_poly_vert(void)
 }
 
 // Return true if p1 is a level map polyvertex in the poly_vert structure.
-static inline boolean in_poly_vert(polyvertex_t * p1)
+static inline dboolean in_poly_vert(polyvertex_t * p1)
 {
 	return((p1 >= poly_vert) && (p1 < &poly_vert[numvertexes]));
 }
@@ -95,7 +95,7 @@ polyvertex_store_t *polyvert_store = NULL;
 // Dist 0.4999 cures HOM in Freedoom map09
 #define SAME_DIST 0.4999f
 //  ep : the max difference in x or y.
-static inline boolean SameVertex(polyvertex_t* p1, polyvertex_t* p2, float ep)
+static inline dboolean SameVertex(polyvertex_t* p1, polyvertex_t* p2, float ep)
 {
 	if (fabsf(p2->x - p1->x) > ep)
 	   return false;
@@ -663,7 +663,7 @@ typedef struct
 	polyvertex_t * vertex;  // when same as segment endpoint
 	float divfrac; // how far along the partline vector is the crossing point
 	int before, after;  // index modifiers for hitting a vertex
-	boolean	 at_vert;  // crossing point is at a vertex
+	dboolean	 at_vert;  // crossing point is at a vertex
 } div_result_t;
 
 #ifdef DEBUG_HWBSP
@@ -1341,7 +1341,7 @@ typedef struct seg_chain_s
    loose_seg_t *first_seg;    // head of seg-chain
    loose_seg_t *last_seg;     // tail of seg-chain
    polyvertex_t *p1, *p2;     // ends in clockwise order
-   boolean loose1, loose2;  // loose ends of the seg-chain
+   dboolean loose1, loose2;  // loose ends of the seg-chain
    INT32 num_seg;
 } seg_chain_t;
 
@@ -1439,13 +1439,13 @@ combine:
 //  B_A_order : the vertex order is B A for clockwise
 static void save_loose_seg(seg_t *loose_seg,
 					 polyvertex_t *vA, polyvertex_t *vB,
-					 boolean looseA, boolean looseB,
-					 boolean B_A_order)
+					 dboolean looseA, dboolean looseB,
+					 dboolean B_A_order)
 {
 	loose_seg_t *lsp;
 	seg_chain_t *sctp;
 	polyvertex_t *pv1, *pv2;
-	boolean  loose1, loose2;
+	dboolean  loose1, loose2;
 
 	// B_A_order is determined by the order of the polygon sides.
 	if (B_A_order)
@@ -1522,9 +1522,9 @@ static void save_loose_seg(seg_t *loose_seg,
 
 // Apply the list of loose end seg chains.
 // Return true if a possible non-convex cut is made.
-static boolean apply_seg_chains(wpoly_t *poly)
+static dboolean apply_seg_chains(wpoly_t *poly)
 {
-	boolean check_convex = false;
+	dboolean check_convex = false;
 	wpoly_t comb_poly;  // combine seg-chain and poly
 	loose_seg_t *lsp;
 	seg_chain_t *sctp;
@@ -1642,11 +1642,11 @@ static void CutOutSubsecPoly(INT32 ssindex, /*INOUT*/ wpoly_t* poly)
 	INT16 segcount; // number of seg in the array
 
 	polyvertex_t *rv1, *rv2;  // A,B or B,A
-	boolean cut_at_vert;
+	dboolean cut_at_vert;
 
 #ifdef CUTOUT_NON_CONVEX
-	boolean check_convex = false;
-	boolean looseA, looseB;
+	dboolean check_convex = false;
+	dboolean looseA, looseB;
 #endif
 
 	vertex_t *v1, *v2;
@@ -2223,7 +2223,7 @@ static void HWR_Freepolysubsectors(void)
 // BP: can't move vertex : DON'T change polygon geometry ! (convex)
 //#define MOVEVERTEX
 // Is vertex va  within the seg v1, v2
-static boolean PointInSeg(polyvertex_t* va, polyvertex_t* v1, polyvertex_t* v2)
+static dboolean PointInSeg(polyvertex_t* va, polyvertex_t* v1, polyvertex_t* v2)
 {
 	register float ax, ay, bx, by, cx, cy, d, norm;
 

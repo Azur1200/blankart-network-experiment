@@ -377,9 +377,9 @@ extern consvar_t cv_debugmappatch;
 extern consvar_t cv_allowmismatchmappatch;
 
 extern char timedemo_name[256];
-extern boolean timedemo_csv;
+extern dboolean timedemo_csv;
 extern char timedemo_csv_id[256];
-extern boolean timedemo_quit;
+extern dboolean timedemo_quit;
 
 typedef enum
 {
@@ -459,7 +459,7 @@ typedef union {
 void D_RegisterServerCommands(void);
 void D_RegisterClientCommands(void);
 void CleanupPlayerName(INT32 playernum, const char *newname);
-boolean EnsurePlayerNameIsGood(char *name, INT32 playernum);
+dboolean EnsurePlayerNameIsGood(char *name, INT32 playernum);
 void WeaponPref_Send(UINT8 ssplayer);
 void WeaponPref_Save(UINT8 **cp, INT32 playernum);
 void WeaponPref_Parse(UINT8 **cp, INT32 playernum);
@@ -467,12 +467,12 @@ void D_SendPlayerConfig(UINT8 n);
 void Command_ExitGame_f(void);
 void Command_Retry_f(void);
 void D_GameTypeChanged(INT32 lastgametype); // not a real _OnChange function anymore
-void D_MapChange(mapnum_t pmapnum, INT32 pgametype, boolean pencoremode, boolean presetplayers, INT32 pdelay, boolean pskipprecutscene, boolean pforcespecialstage);
+void D_MapChange(mapnum_t pmapnum, INT32 pgametype, dboolean pencoremode, dboolean presetplayers, INT32 pdelay, dboolean pskipprecutscene, dboolean pforcespecialstage);
 void D_SetupVote(void);
 void D_ModifyClientVote(UINT8 player, SINT8 voted);
 void D_PickVote(void);
 void ObjectPlace_OnChange(void);
-boolean IsPlayerAdmin(INT32 playernum);
+dboolean IsPlayerAdmin(INT32 playernum);
 void SetAdminPlayer(INT32 playernum);
 void ClearAdminPlayers(void);
 void RemoveAdminPlayer(INT32 playernum);

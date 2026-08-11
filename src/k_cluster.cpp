@@ -53,7 +53,7 @@ UINT32 K_GetDTFDifference(player_t* source, player_t* destination)
     return (source->distancetofinish - destination->distancetofinish);
 }
 
-boolean K_ClusterFilter_NoFilter(player_t* player, UINT32 fval)
+dboolean K_ClusterFilter_NoFilter(player_t* player, UINT32 fval)
 {
     // Ignores literally every parameter and returns true.
     return true;
@@ -61,11 +61,11 @@ boolean K_ClusterFilter_NoFilter(player_t* player, UINT32 fval)
 
 // Store our last memory of the cluster player (because we're clearing it out for the second
 // cluster).
-// static boolean clusterplayer_memory[MAXPLAYERS];
+// static dboolean clusterplayer_memory[MAXPLAYERS];
 
 // Filters players based on various factors, such as playercount and position.
 // fval = pingame
-boolean K_ClusterFilter_BaseFilter(player_t* player, UINT32 fval)
+dboolean K_ClusterFilter_BaseFilter(player_t* player, UINT32 fval)
 {
     UINT8 pingame = static_cast<UINT8>(fval & 0xFF);
 
@@ -254,7 +254,7 @@ INT32 K_CountNeighboringPlayersByDistance(player_t* sourcePlayer,
 }
 
 static std::vector<player_t*> dtf_vec;
-static boolean cleardtf = true;
+static dboolean cleardtf = true;
 
 static UINT32 K_GetU32Diff(UINT32 a, UINT32 b)
 {
@@ -404,7 +404,7 @@ INT32 K_CountNeighboringPlayers(player_t* sourcePlayer,
     return result;
 }
 
-boolean K_FilterNodeByEuclideanDistance(clusternode_t* a, clusternode_t* b, fixed_t eps)
+dboolean K_FilterNodeByEuclideanDistance(clusternode_t* a, clusternode_t* b, fixed_t eps)
 {
     INT64 eps_integer = (INT32)(eps / FRACUNIT);
 
@@ -412,7 +412,7 @@ boolean K_FilterNodeByEuclideanDistance(clusternode_t* a, clusternode_t* b, fixe
             eps_integer);
 }
 
-boolean K_FilterNodeByDTF(clusternode_t* a, clusternode_t* b, fixed_t eps)
+dboolean K_FilterNodeByDTF(clusternode_t* a, clusternode_t* b, fixed_t eps)
 {
     if (!a)
         return false;

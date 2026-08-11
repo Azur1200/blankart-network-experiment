@@ -9,7 +9,7 @@
 
 typedef struct kartstats_s {
 	// Remember if stats we loaded are vanilla ones or not
-	boolean vanilla;
+	dboolean vanilla;
 
 	// Vanilla
 	tic_t totalplaytime;
@@ -57,10 +57,10 @@ void K_StatRound(void);
 void K_EraseStats(void);
 
 // If vanilla is true, only read vanilla-supported fields. Everything else is initialized to 0
-void K_ReadStats(savebuffer_t *save, boolean vanilla);
+void K_ReadStats(savebuffer_t *save, dboolean vanilla);
 
 // Same as above, except it just doesn't write non-vanilla fields if vanilla is true
-void K_WriteStats(savebuffer_t *save, boolean vanilla);
+void K_WriteStats(savebuffer_t *save, dboolean vanilla);
 
 
 #endif

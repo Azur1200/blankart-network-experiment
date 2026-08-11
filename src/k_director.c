@@ -50,7 +50,7 @@ static INT32 K_PlayersPlaying(void)
 	return num;
 }
 
-static inline boolean race_rules(void)
+static inline dboolean race_rules(void)
 {
 	return (gametypes[gametype]->rules & GTR_CIRCUIT);
 }
@@ -60,14 +60,14 @@ static fixed_t ScaleFromMap(fixed_t n, fixed_t scale)
 	return FixedMul(n, FixedDiv(scale, mapobjectscale));
 }
 
-boolean K_DirectorIsAvailable(void)
+dboolean K_DirectorIsAvailable(void)
 {
 	if (splitscreen || dedicated || (demo.playback && demo.title) || modeattacking)
 		return false;
 	return ((gamestate == GS_LEVEL) && ((demo.playback && !camera[0].freecam) || (players[consoleplayer].spectator && (K_PlayersPlaying() > 1))));
 }
 
-static boolean K_DirectorIsEnabled(void)
+static dboolean K_DirectorIsEnabled(void)
 {
 	return (cv_director.value && K_DirectorIsAvailable());
 }
@@ -209,7 +209,7 @@ static void K_UpdateDirectorPositions(void)
 	directorinfo.maxdist = ScaleFromMap(K_GetLegacyDistanceToFinish(players[directorinfo.sortedplayers[0]]), FRACUNIT);
 }
 
-static boolean K_CanSwitchDirector(void)
+static dboolean K_CanSwitchDirector(void)
 {
 	if (directorinfo.cooldown > 0)
 	{
@@ -219,7 +219,7 @@ static boolean K_CanSwitchDirector(void)
 	return true;
 }
 
-void K_DirectorSwitch(INT32 player, boolean force)
+void K_DirectorSwitch(INT32 player, dboolean force)
 {
 	if (!K_DirectorIsEnabled())
 	{

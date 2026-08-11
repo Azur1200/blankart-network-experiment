@@ -44,7 +44,7 @@
 #include <tracy/tracy/TracyC.h>
 
 lua_State *gL = NULL;
-boolean lua_compatmode = false;
+dboolean lua_compatmode = false;
 
 // List of internal libraries to load from SRB2
 static lua_CFunction liblist[] = {
@@ -148,9 +148,9 @@ int LUA_GetErrorMessage(lua_State *L)
 	return 1;
 }
 
-int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, boolean compat, boolean printerror)
+int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, dboolean compat, dboolean printerror)
 {
-	boolean oldcompat = lua_compatmode;
+	dboolean oldcompat = lua_compatmode;
 	lua_compatmode = compat;
 
 	int err = lua_pcall(L, nargs, nresults, errorhandlerindex);
@@ -317,25 +317,25 @@ int LUA_PushGlobals(lua_State *L)
 			lua_pushinteger(L, lua_compatmode ? G_NativeMapToKart(gamemap) : gamemap);
 			return 1;
 		case global_udmf:
-			lua_pushboolean(L, udmf);
+			lua_pushdboolean(L, udmf);
 			return 1;
 		case global_maptol:
 			lua_pushinteger(L, maptol);
 			return 1;
 		case global_circuitmap:
-			lua_pushboolean(L, circuitmap);
+			lua_pushdboolean(L, circuitmap);
 			return 1;
 		case global_stoppedclock:
-			lua_pushboolean(L, stoppedclock);
+			lua_pushdboolean(L, stoppedclock);
 			return 1;
 		case global_netgame:
-			lua_pushboolean(L, netgame);
+			lua_pushdboolean(L, netgame);
 			return 1;
 		case global_multiplayer:
-			lua_pushboolean(L, multiplayer);
+			lua_pushdboolean(L, multiplayer);
 			return 1;
 		case global_modeattacking:
-			lua_pushboolean(L, modeattacking);
+			lua_pushdboolean(L, modeattacking);
 			return 1;
 		case global_splitscreen:
 		{
@@ -349,22 +349,22 @@ int LUA_PushGlobals(lua_State *L)
 			return 1;
 		}
 		case global_gamecomplete:
-			lua_pushboolean(L, (gamecomplete != 0));
+			lua_pushdboolean(L, (gamecomplete != 0));
 			return 1;
 		case global_marathonmode:
 			lua_pushinteger(L, marathonmode);
 			return 1;
 		case global_devparm:
-			lua_pushboolean(L, devparm);
+			lua_pushdboolean(L, devparm);
 			return 1;
 		case global_modifiedgame:
-			lua_pushboolean(L, modifiedgame && !savemoddata);
+			lua_pushdboolean(L, modifiedgame && !savemoddata);
 			return 1;
 		case global_menuactive:
-			lua_pushboolean(L, menustack[0]);
+			lua_pushdboolean(L, menustack[0]);
 			return 1;
 		case global_paused:
-			lua_pushboolean(L, paused);
+			lua_pushdboolean(L, paused);
 			return 1;
 		case global_bluescore:
 			lua_pushinteger(L, bluescore);
@@ -383,7 +383,7 @@ int LUA_PushGlobals(lua_State *L)
 			lua_pushstring(L, titlemap);
 			return 1;
 		case global_titlemapinaction:
-			lua_pushboolean(L, (titlemapinaction != TITLEMAP_OFF));
+			lua_pushdboolean(L, (titlemapinaction != TITLEMAP_OFF));
 			return 1;
 		case global_bootmap:
 			lua_pushstring(L, bootmap);
@@ -392,7 +392,7 @@ int LUA_PushGlobals(lua_State *L)
 			lua_pushstring(L, tutorialmap);
 			return 1;
 		case global_tutorialmode:
-			lua_pushboolean(L, tutorialmode);
+			lua_pushdboolean(L, tutorialmode);
 			return 1;
 		// end map vars
 		// begin CTF colors
@@ -487,10 +487,10 @@ int LUA_PushGlobals(lua_State *L)
 			LUA_PushUserdata(L, &players[consoleplayer], META_PLAYER);
 			return 1;
 		case global_isserver:
-			lua_pushboolean(L, server);
+			lua_pushdboolean(L, server);
 			return 1;
 		case global_isdedicatedserver:
-			lua_pushboolean(L, dedicated);
+			lua_pushdboolean(L, dedicated);
 			return 1;
 		// end local player variables
 		case global_server:
@@ -539,28 +539,28 @@ int LUA_PushGlobals(lua_State *L)
 			lua_pushinteger(L, numgotboxes);
 			return 1;
 		case global_itembreaker:
-			lua_pushboolean(L, itembreaker);
+			lua_pushdboolean(L, itembreaker);
 			return 1;
 		case global_battleprisons:
-			lua_pushboolean(L, itembreaker);
+			lua_pushdboolean(L, itembreaker);
 			return 1;
 		case global_ringsactive:
-			lua_pushboolean(L, ringsactive);
+			lua_pushdboolean(L, ringsactive);
 			return 1;
 		case global_stackingactive:
-			lua_pushboolean(L, stackingactive);
+			lua_pushdboolean(L, stackingactive);
 			return 1;
 		case global_chainingactive:
-			lua_pushboolean(L, chainingactive);
+			lua_pushdboolean(L, chainingactive);
 			return 1;
 		case global_slipdashactive:
-			lua_pushboolean(L, slipdashactive);
+			lua_pushdboolean(L, slipdashactive);
 			return 1;
 		case global_slopeboostactive:
-			lua_pushboolean(L, slopeboostactive);
+			lua_pushdboolean(L, slopeboostactive);
 			return 1;
 		case global_draftingactive:
-			lua_pushboolean(L, draftingactive);
+			lua_pushdboolean(L, draftingactive);
 			return 1;
 		case global_airdropactive:
 			lua_pushinteger(L, airdropactive);
@@ -569,53 +569,53 @@ int LUA_PushGlobals(lua_State *L)
 			lua_pushinteger(L, bumpsparkactive);
 			return 1;
 		case global_purpledriftactive:
-			lua_pushboolean(L, purpledriftactive);
+			lua_pushdboolean(L, purpledriftactive);
 			return 1;
 		case global_recoverydashactive:
-			lua_pushboolean(L, recoverydashactive);
+			lua_pushdboolean(L, recoverydashactive);
 			return 1;
 		case global_keepstuffactive:
-			lua_pushboolean(L, keepstuffactive);
+			lua_pushdboolean(L, keepstuffactive);
 			return 1;
 		case global_itemlittering:
-			lua_pushboolean(L, itemlittering);
+			lua_pushdboolean(L, itemlittering);
 			return 1;
 		case global_itempushing:
-			lua_pushboolean(L, itempushing); // hmm... i think this should be a boolean
+			lua_pushdboolean(L, itempushing); // hmm... i think this should be a dboolean
 			return 1;
 		case global_trailslow_active:
 		case global_trailslowactive:
-			lua_pushboolean(L, trailslow_active); // I agree!
+			lua_pushdboolean(L, trailslow_active); // I agree!
 			return 1;
 		case global_playerbumpactive:
 			lua_pushinteger(L, playerbumpactive);
 			return 1;
 		case global_rankingactive:
-			lua_pushboolean(L, rankingactive);
+			lua_pushdboolean(L, rankingactive);
 			return 1;
 		case global_ranking_penaltyactive:
-			lua_pushboolean(L, ranking_penaltyactive);
+			lua_pushdboolean(L, ranking_penaltyactive);
 			return 1;
 		case global_ranking_hitbonusactive:
-			lua_pushboolean(L, ranking_hitbonusactive);
+			lua_pushdboolean(L, ranking_hitbonusactive);
 			return 1;
 		case global_ranking_driftbonusactive:
-			lua_pushboolean(L, ranking_driftbonusactive);
+			lua_pushdboolean(L, ranking_driftbonusactive);
 			return 1;
 		case global_cannotrank:
-			lua_pushboolean(L, cannotrank);
+			lua_pushdboolean(L, cannotrank);
 			return 1;
 		case global_hyubgone:
 			lua_pushinteger(L, K_GetKartResult("hyudoro")->cooldown);
 			return 1;
 		case global_encoremode:
-			lua_pushboolean(L, encoremode);
+			lua_pushdboolean(L, encoremode);
 			return 1;
 		case global_franticitems:
-			lua_pushboolean(L, franticitems);
+			lua_pushdboolean(L, franticitems);
 			return 1;
 		case global_comeback:
-			lua_pushboolean(L, comeback);
+			lua_pushdboolean(L, comeback);
 			return 1;
 		case global_wantedcalcdelay:
 			lua_pushinteger(L, wantedcalcdelay);
@@ -624,7 +624,7 @@ int LUA_PushGlobals(lua_State *L)
 			lua_pushinteger(L, K_GetIndirectItemCooldown());
 			return 1;
 		case global_thwompsactive:
-			lua_pushboolean(L, thwompsactive);
+			lua_pushdboolean(L, thwompsactive);
 			return 1;
 		case global_lastLowestLap:
 			lua_pushinteger(L, lastLowestLap);
@@ -645,13 +645,13 @@ int LUA_PushGlobals(lua_State *L)
 			lua_pushinteger(L, exitcountdown);	// This name is pretty dumb. Hence why we'll prefer more descriptive names at least in Lua...
 			return 1;
 		case global_replayplayback:
-			lua_pushboolean(L, demo.playback);
+			lua_pushdboolean(L, demo.playback);
 			return 1;
 		case global_gamestate:
 			lua_pushinteger(L, gamestate);
 			return 1;
 		case global_compatmode:
-			lua_pushboolean(L, lua_compatmode);
+			lua_pushdboolean(L, lua_compatmode);
 			return 1;
 		case global_hyudorotime:
 			lua_pushinteger(L, hyudorotime);
@@ -736,7 +736,7 @@ int LUA_WriteGlobals(lua_State *L)
 			gravity = (fixed_t)luaL_checkinteger(L, 2);
 			break;
 		case global_stoppedclock:
-			stoppedclock = luaL_checkboolean(L, 2);
+			stoppedclock = luaL_checkdboolean(L, 2);
 			break;
 		case global_mapmusname:
 		{
@@ -779,25 +779,25 @@ int LUA_WriteGlobals(lua_State *L)
 			break;
 		case global_itembreaker:
 		case global_battleprisons:
-			itembreaker = luaL_checkboolean(L, 2);
+			itembreaker = luaL_checkdboolean(L, 2);
 			break;
 		case global_ringsactive:
-			ringsactive = luaL_checkboolean(L, 2);
+			ringsactive = luaL_checkdboolean(L, 2);
 			break;
 		case global_stackingactive:
-			stackingactive = luaL_checkboolean(L, 2);
+			stackingactive = luaL_checkdboolean(L, 2);
 			break;
 		case global_chainingactive:
-			chainingactive = luaL_checkboolean(L, 2);
+			chainingactive = luaL_checkdboolean(L, 2);
 			break;
 		case global_slipdashactive:
-			slipdashactive = luaL_checkboolean(L, 2);
+			slipdashactive = luaL_checkdboolean(L, 2);
 			break;
 		case global_slopeboostactive:
-			slopeboostactive = luaL_checkboolean(L, 2);
+			slopeboostactive = luaL_checkdboolean(L, 2);
 			break;
 		case global_draftingactive:
-			draftingactive = luaL_checkboolean(L, 2);
+			draftingactive = luaL_checkdboolean(L, 2);
 			break;
 		case global_airdropactive:
 			airdropactive = luaL_checkinteger(L, 2);
@@ -806,40 +806,40 @@ int LUA_WriteGlobals(lua_State *L)
 			bumpsparkactive = luaL_checkinteger(L, 2);
 			break;
 		case global_purpledriftactive:
-			purpledriftactive = luaL_checkboolean(L, 2);
+			purpledriftactive = luaL_checkdboolean(L, 2);
 			break;
 		case global_recoverydashactive:
-			recoverydashactive = luaL_checkboolean(L, 2);
+			recoverydashactive = luaL_checkdboolean(L, 2);
 			break;
 		case global_itemlittering:
-			itemlittering = luaL_checkboolean(L, 2);
+			itemlittering = luaL_checkdboolean(L, 2);
 			break;
 		case global_keepstuffactive:
-			keepstuffactive = luaL_checkboolean(L, 2);
+			keepstuffactive = luaL_checkdboolean(L, 2);
 			break;
 		case global_itempushing:
-			itempushing = luaL_checkboolean(L, 2);
+			itempushing = luaL_checkdboolean(L, 2);
 			break;
 		case global_trailslowactive:
-			trailslow_active = luaL_checkboolean(L, 2);
+			trailslow_active = luaL_checkdboolean(L, 2);
 			break;
 		case global_trailslow_active:
-			trailslow_active = luaL_checkboolean(L, 2);
+			trailslow_active = luaL_checkdboolean(L, 2);
 			break;
 		case global_playerbumpactive:
 			playerbumpactive = luaL_checkinteger(L, 2);
 			break;
 		case global_rankingactive:
-			rankingactive = luaL_checkboolean(L, 2);
+			rankingactive = luaL_checkdboolean(L, 2);
 			break;
 		case global_ranking_penaltyactive:
-			ranking_penaltyactive = luaL_checkboolean(L, 2);
+			ranking_penaltyactive = luaL_checkdboolean(L, 2);
 			break;
 		case global_ranking_hitbonusactive:
-			ranking_hitbonusactive = luaL_checkboolean(L, 2);
+			ranking_hitbonusactive = luaL_checkdboolean(L, 2);
 			break;
 		case global_ranking_driftbonusactive:
-			ranking_driftbonusactive = luaL_checkboolean(L, 2);
+			ranking_driftbonusactive = luaL_checkdboolean(L, 2);
 			break;
 		case global_cannotrank:
 			return NOSET;
@@ -887,7 +887,7 @@ int LUA_WriteGlobals(lua_State *L)
 			wantedfrequency = (INT32)luaL_checkinteger(L, 2);
 			break;
 		case global_compatmode:
-			lua_compatmode = luaL_checkboolean(L, 2); // you'd BETTER not forget to change it back afterwards!
+			lua_compatmode = luaL_checkdboolean(L, 2); // you'd BETTER not forget to change it back afterwards!
 			break;
 		default:
 			return 0;
@@ -1002,7 +1002,7 @@ void LUA_ClearExtVars(void)
 INT32 lua_lumploading = 0;
 
 // Load a script from a MYFILE
-static inline void LUA_LoadFile(MYFILE *f, char *name, boolean noresults)
+static inline void LUA_LoadFile(MYFILE *f, char *name, dboolean noresults)
 {
 	int errorhandlerindex;
 
@@ -1029,7 +1029,7 @@ static inline void LUA_LoadFile(MYFILE *f, char *name, boolean noresults)
 }
 
 // Load a script from a lump
-void LUA_LoadLump(UINT16 wad, UINT16 lump, boolean noresults)
+void LUA_LoadLump(UINT16 wad, UINT16 lump, dboolean noresults)
 {
 	MYFILE f;
 	char *name;
@@ -1167,7 +1167,7 @@ fixed_t LUA_EvalMathEx(const char *word, const char **error)
 
 		// open only enum lib
 		lua_pushcfunction(L, LUA_EnumLib);
-		lua_pushboolean(L, true);
+		lua_pushdboolean(L, true);
 		lua_call(L, 1, 0);
 	}
 
@@ -1506,7 +1506,7 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		WRITEUINT8(*p, ARCH_NULL);
 		return 2;
 	case LUA_TBOOLEAN:
-		WRITEUINT8(*p, lua_toboolean(gL, myindex) ? ARCH_TRUE : ARCH_FALSE);
+		WRITEUINT8(*p, lua_todboolean(gL, myindex) ? ARCH_TRUE : ARCH_FALSE);
 		break;
 	case LUA_TNUMBER:
 	{
@@ -1556,7 +1556,7 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 	}
 	case LUA_TTABLE:
 	{
-		boolean found = false;
+		dboolean found = false;
 		INT32 i;
 		UINT16 t = (UINT16)lua_objlen(gL, TABLESINDEX);
 
@@ -1959,7 +1959,7 @@ static void ArchiveTables(UINT8 **p)
 	}
 }
 
-static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX, boolean compat)
+static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX, dboolean compat)
 {
 	UINT8 type = READUINT8(*p);
 
@@ -1969,7 +1969,7 @@ static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX, boolean compat)
 	case ARCH_TEND:
 		break;
 	case 1: // ARCH_BOOLEAN
-		lua_pushboolean(gL, READUINT8(*p));
+		lua_pushdboolean(gL, READUINT8(*p));
 		return 0;
 	case 2: // ARCH_SIGNED
 		type = ARCH_INT32;
@@ -2005,10 +2005,10 @@ static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX, boolean compat)
 		lua_pushnil(gL);
 		break;
 	case ARCH_TRUE:
-		lua_pushboolean(gL, true);
+		lua_pushdboolean(gL, true);
 		break;
 	case ARCH_FALSE:
-		lua_pushboolean(gL, false);
+		lua_pushdboolean(gL, false);
 		break;
 	case ARCH_INT8:
 		lua_pushinteger(gL, READSINT8(*p));
@@ -2133,7 +2133,7 @@ static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX, boolean compat)
 	return 0;
 }
 
-static void UnArchiveExtVars(UINT8 **p, void *pointer, boolean compat)
+static void UnArchiveExtVars(UINT8 **p, void *pointer, dboolean compat)
 {
 	int TABLESINDEX;
 	UINT16 field_count = READUINT16(*p);
@@ -2172,7 +2172,7 @@ static int NetUnArchive(lua_State *L)
 	return n;
 }
 
-static void UnArchiveTables(UINT8 **p, boolean compat)
+static void UnArchiveTables(UINT8 **p, dboolean compat)
 {
 	int TABLESINDEX;
 	UINT16 i, n;
@@ -2238,7 +2238,7 @@ static void UnArchiveTables(UINT8 **p, boolean compat)
 // 	}
 // }
 
-void LUA_Sync(savebuffer_t *save, boolean network, boolean compat)
+void LUA_Sync(savebuffer_t *save, dboolean network, dboolean compat)
 {
 	UINT32 mobjnum;
 	INT32 i;

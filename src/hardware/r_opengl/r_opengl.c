@@ -9,11 +9,6 @@
 /// \file r_opengl.c
 /// \brief OpenGL API for Sonic Robo Blast 2
 
-#if defined (_WIN32)
-//#define WIN32_LEAN_AND_MEAN
-#define RPC_NO_WINDOWS_H
-#include <windows.h>
-#endif
 #undef GETTEXT
 #ifdef __GNUC__
 #include <unistd.h>
@@ -99,8 +94,8 @@ static GLboolean MipMap = GL_FALSE;
 static GLint min_filter = GL_LINEAR;
 static GLint mag_filter = GL_LINEAR;
 static GLint anisotropic_filter = 0;
-static boolean model_lighting = false;
-boolean supportMipMap = false;
+static dboolean model_lighting = false;
+dboolean supportMipMap = false;
 
 const GLubyte *gl_version = NULL;
 const GLubyte *gl_renderer = NULL;
@@ -498,7 +493,7 @@ static PFNglDebugMessageCallback pglDebugMessageCallback;
 #define GL_STATIC_DRAW 0x88E4
 #endif
 
-boolean SetupGLfunc(void)
+dboolean SetupGLfunc(void)
 {
 #ifndef STATIC_OPENGL
 #define GETOPENGLFUNC(func, proc) \
@@ -582,7 +577,7 @@ boolean SetupGLfunc(void)
 	return true;
 }
 
-static boolean gl_shadersenabled = false;
+static dboolean gl_shadersenabled = false;
 static INT32 gl_allowshaders = 0;
 
 #ifdef GL_SHADERS
@@ -683,7 +678,7 @@ typedef struct gl_shaderstate_s
 	gl_shader_t *current;
 	GLuint type;
 	GLuint program;
-	boolean changed;
+	dboolean changed;
 } gl_shaderstate_t;
 static gl_shaderstate_t gl_shaderstate;
 
@@ -696,7 +691,7 @@ static INT32 shader_light_contrast = 0;
 static INT32 shader_light_backlight = 0;
 
 // Lactozilla: Shader functions
-static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i);
+static dboolean Shader_CompileProgram(gl_shader_t *shader, GLint i);
 static void Shader_CompileError(const char *message, GLuint program, INT32 shadernum);
 static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade);
 
@@ -751,7 +746,7 @@ void SetupGLFunc4(void)
 #endif
 }
 
-boolean GL_InitShaders(void)
+dboolean GL_InitShaders(void)
 {
 #ifdef GL_SHADERS
 
@@ -805,7 +800,7 @@ void GL_LoadShader(int slot, char *code, hwdshaderstage_t stage)
 }
 
 
-boolean GL_CompileShader(int slot)
+dboolean GL_CompileShader(int slot)
 {
 #ifdef GL_SHADERS
 	if (slot < 0 || slot >= HWR_MAXSHADERS)
@@ -1268,7 +1263,7 @@ INT32 isExtAvailable(const char *extension, const GLubyte *start)
 // -----------------+
 // Init             : Initialise the OpenGL interface API
 // -----------------+
-boolean GL_Init(void)
+dboolean GL_Init(void)
 {
 	return LoadGL();
 }
@@ -1653,7 +1648,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 {
 	// Upload a texture
 	GLuint num = pTexInfo->downloaded;
-	boolean update = true;
+	dboolean update = true;
 
 	INT32 w = pTexInfo->width, h = pTexInfo->height;
 	INT32 i, j;
@@ -1915,7 +1910,7 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 		UNIFORM_4(shader->uniforms[gluniform_tint_color], tint->red, tint->green, tint->blue, tint->alpha, pglUniform4f);
 		UNIFORM_4(shader->uniforms[gluniform_fade_color], fade->red, fade->green, fade->blue, fade->alpha, pglUniform4f);
 
-		boolean directional = false;
+		dboolean directional = false;
 		if (Surface != NULL)
 		{
 			UNIFORM_1(shader->uniforms[gluniform_lighting], Surface->LightInfo.light_level, pglUniform1f);
@@ -1962,7 +1957,7 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 #endif
 }
 
-static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
+static dboolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 {
 	GLuint gl_vertShader = 0;
 	GLuint gl_fragShader = 0;
@@ -2664,9 +2659,9 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 	float pol = 0.0f;
 	float scalex, scaley, scalez;
 
-	boolean useTinyFrames;
+	dboolean useTinyFrames;
 
-	boolean useVBO = true;
+	dboolean useVBO = true;
 
 	FBITFIELD flags;
 	int i;
@@ -2766,7 +2761,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 	// pos->mirror is if the screen is flipped horizontally
 	// XOR all the flips together to figure out what culling to use!
 	{
-		boolean reversecull = (flipped ^ hflipped ^ !!(pos->fliptype & TRANSFORM_FLIP) ^ !!(pos->fliptype & TRANSFORM_MIRROR));
+		dboolean reversecull = (flipped ^ hflipped ^ !!(pos->fliptype & TRANSFORM_FLIP) ^ !!(pos->fliptype & TRANSFORM_MIRROR));
 		if (reversecull)
 			pglCullFace(GL_FRONT);
 		else
@@ -2952,8 +2947,8 @@ void GL_DrawModel(model_t *model, INT32 frameIndex, float duration, float tics, 
 // -----------------+
 void GL_SetTransform(FTransform *stransform)
 {
-	boolean special_splitscreen = false;
-	boolean shearing = false;
+	dboolean special_splitscreen = false;
+	dboolean shearing = false;
 	float used_fov;
 
 	pglLoadIdentity();
@@ -3281,7 +3276,7 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 // Create a texture from the screen.
 void GL_MakeScreenTexture(int tex)
 {
-	boolean firstTime = (screenTextures[tex] == 0);
+	dboolean firstTime = (screenTextures[tex] == 0);
 
 	if (!gl_enable_screen_textures)
 		return;

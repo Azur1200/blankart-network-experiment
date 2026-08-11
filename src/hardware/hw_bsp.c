@@ -22,16 +22,16 @@
 //
 // e6y: Check whether the player can look beyond this line
 //
-boolean checkforemptylines = true;
+dboolean checkforemptylines = true;
 
 // Don't modify anything here, just check
 // Kalaron: Modified for sloped linedefs
-static boolean CheckClip(seg_t * seg, sector_t * afrontsector, sector_t * abacksector)
+static dboolean CheckClip(seg_t * seg, sector_t * afrontsector, sector_t * abacksector)
 {
 	fixed_t frontf1,frontf2, frontc1, frontc2; // front floor/ceiling ends
 	fixed_t backf1, backf2, backc1, backc2; // back floor ceiling ends
 
-	boolean bothceilingssky = false, bothfloorssky = false;
+	dboolean bothceilingssky = false, bothfloorssky = false;
 
 	if (mapnamespace != MNS_SRB2KART)
 	{
@@ -214,7 +214,7 @@ static boolean CheckClip(seg_t * seg, sector_t * afrontsector, sector_t * abacks
 
 // returns true if the point is on the correct (viewable) side of the
 // portal destination line
-static boolean HWR_PortalCheckPointSide(fixed_t x, fixed_t y)
+static dboolean HWR_PortalCheckPointSide(fixed_t x, fixed_t y)
 {
 	// we are checking if the point is on the viewable side of the portal exit.
 	// being exactly on the portal exit line is not enough to pass the test.
@@ -235,7 +235,7 @@ static boolean HWR_PortalCheckPointSide(fixed_t x, fixed_t y)
 static void HWR_AddLine(seg_t * line)
 {
 	angle_t angle1, angle2;
-	boolean skipseg = false;
+	dboolean skipseg = false;
 
 	// SoM: Backsector needs to be run through R_FakeFlat
 	static sector_t tempsec;
@@ -332,7 +332,7 @@ static void HWR_AddLine(seg_t * line)
 	}
 	else
 	{
-		boolean bothceilingssky = false, bothfloorssky = false;
+		dboolean bothceilingssky = false, bothfloorssky = false;
 
 		gl_backsector = R_FakeFlat(gl_backsector, &tempsec, NULL, NULL, true);
 
@@ -380,7 +380,7 @@ static void HWR_AddLine(seg_t * line)
 //
 // modified to use local variables
 
-static boolean HWR_CheckBBox(const fixed_t *bspcoord)
+static dboolean HWR_CheckBBox(const fixed_t *bspcoord)
 {
 	INT32 boxpos;
 	fixed_t px1, py1, px2, py2;
@@ -418,7 +418,7 @@ static boolean HWR_CheckBBox(const fixed_t *bspcoord)
 
 // Check if bounding box is (partially or fully) in the correct side
 // of the portal destination.
-static boolean HWR_PortalCheckBBox(const fixed_t *bspcoord)
+static dboolean HWR_PortalCheckBBox(const fixed_t *bspcoord)
 {
 	if (!gl_portalclipline)
 		return true;
@@ -537,7 +537,7 @@ static void HWR_AddPolyObjectPlanes(void)
 	}
 }
 
-static FBITFIELD HWR_RippleBlend(sector_t *sector, ffloor_t *rover, boolean ceiling)
+static FBITFIELD HWR_RippleBlend(sector_t *sector, ffloor_t *rover, dboolean ceiling)
 {
 	return R_IsRipplePlane(sector, rover, ceiling) ? PF_Ripple : 0;
 }
@@ -622,7 +622,7 @@ static void HWR_Subsector(size_t num)
 
 	if (gl_frontsector->ffloors)
 	{
-		boolean anyMoved = gl_frontsector->moved;
+		dboolean anyMoved = gl_frontsector->moved;
 
 		if (anyMoved == false)
 		{

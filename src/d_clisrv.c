@@ -102,11 +102,11 @@
 
 I_StaticAssert(sizeof(doomdata_t) < MAXPACKETLENGTH); // can't send a packet larger than the max packet length!
 
-boolean server = true; // true or false but !server == client
+dboolean server = true; // true or false but !server == client
 #define client (!server)
-boolean nodownload = false;
-boolean serverrunning = false;
-boolean connectedtodedicated = false;
+dboolean nodownload = false;
+dboolean serverrunning = false;
+dboolean connectedtodedicated = false;
 INT32 serverplayer = 0;
 char server_context[8]; // Unique Context (even without Mumble support)
 
@@ -119,8 +119,8 @@ UINT8 playernode[MAXPLAYERS] = {UINT8_MAX};
 // Minimum timeout for sending the savegame
 // The actual timeout will be longer depending on the savegame length
 tic_t jointimeout = (3*TICRATE);
-static boolean sendingsavegame[MAXNETNODES]; // Are we sending the savegame?
-static boolean resendingsavegame[MAXNETNODES]; // Are we resending the savegame?
+static dboolean sendingsavegame[MAXNETNODES]; // Are we sending the savegame?
+static dboolean resendingsavegame[MAXNETNODES]; // Are we resending the savegame?
 static tic_t savegameresendcooldown[MAXNETNODES]; // How long before we can resend again?
 tic_t freezetimeout[MAXNETNODES]; // Until when can this node freeze the server before getting a timeout?
 
@@ -142,10 +142,10 @@ SINT8 nodetoplayer2[MAXNETNODES]; // say the numplayer for this node if any (spl
 SINT8 nodetoplayer3[MAXNETNODES]; // say the numplayer for this node if any (splitscreen == 2)
 SINT8 nodetoplayer4[MAXNETNODES]; // say the numplayer for this node if any (splitscreen == 3)
 UINT8 playerpernode[MAXNETNODES]; // used specialy for splitscreen
-boolean nodeingame[MAXNETNODES]; // set false as nodes leave game
-boolean nodeneedsauth[MAXNETNODES];
+dboolean nodeingame[MAXNETNODES]; // set false as nodes leave game
+dboolean nodeneedsauth[MAXNETNODES];
 
-boolean receivedplayerinfo = false;
+dboolean receivedplayerinfo = false;
 
 tic_t servermaxping = 20; // server's max delay, in frames. Defaults to 20
 static tic_t nettics[MAXNETNODES]; // what tic the client have received
@@ -166,7 +166,7 @@ static UINT8 player_joining = false;
 UINT8 hu_redownloadinggamestate = 0;
 
 // kart, true when a player is connecting or disconnecting so that the gameplay has stopped in its tracks
-boolean hu_stopped = false;
+dboolean hu_stopped = false;
 
 char *reqpass;
 char **adminpass;
@@ -175,10 +175,10 @@ static char adminsalt[MAXNETNODES][9];
 
 // Client specific
 static ticcmd_t localcmds[MAXSPLITSCREENPLAYERS][MAXGENTLEMENDELAY];
-static boolean cl_packetmissed;
+static dboolean cl_packetmissed;
 // here it is for the secondary local player (splitscreen)
 static UINT8 mynode; // my address pointofview server
-static boolean cl_redownloadinggamestate = false;
+static dboolean cl_redownloadinggamestate = false;
 
 static UINT8 localtextcmd[MAXSPLITSCREENPLAYERS][MAXTEXTCMD];
 static tic_t neededtic;
@@ -192,7 +192,7 @@ char connectedservermotd[MAXSERVERMOTD];
 
 /// \brief do we accept new players?
 /// \todo WORK!
-boolean acceptnewnode = true;
+dboolean acceptnewnode = true;
 
 UINT32 ourIP; // Used when populating PT_SERVERCHALLENGE (guards against signature reuse)
 uint8_t lastReceivedKey[MAXNETNODES][MAXSPLITSCREENPLAYERS][PUBKEYLENGTH]; // Player's public key (join process only! active players have it on player_t)
@@ -201,11 +201,11 @@ uint8_t awaitingChallenge[CHALLENGELENGTH]; // The message the server asked our 
 uint8_t lastChallengeAll[CHALLENGELENGTH]; // The message we asked EVERYONE to sign for client-to-client identity proofs
 uint8_t lastReceivedSignature[MAXPLAYERS][SIGNATURELENGTH]; // Everyone's response to lastChallengeAll
 uint8_t knownWhenChallenged[MAXPLAYERS][PUBKEYLENGTH]; // Everyone a client saw at the moment a challenge should be initiated
-boolean expectChallenge = false; // Were we in-game before a client-to-client challenge should have been sent?
+dboolean expectChallenge = false; // Were we in-game before a client-to-client challenge should have been sent?
 
 uint8_t priorKeys[MAXPLAYERS][PUBKEYLENGTH]; // Make a note of keys before consuming a new gamestate, and if the server tries to send us a gamestate where keys differ, assume shenanigans
 
-boolean serverisfull = false; //lets us be aware if the server was full after we check files, but before downloading, so we can ask if the user still wants to download or not
+dboolean serverisfull = false; //lets us be aware if the server was full after we check files, but before downloading, so we can ask if the user still wants to download or not
 tic_t firstconnectattempttime = 0;
 
 #ifdef DEVELOP
@@ -264,9 +264,9 @@ static tic_t stop_spamming[MAXPLAYERS];
 // Generate a message for an authenticating client to sign, with some guarantees about who we are.
 void GenerateChallenge(uint8_t *buf)
 {
-	uint64_t now = LONGLONG(time(NULL));
+	uint64_t now = LSBF_LONGLONG(time(NULL));
 #if 0 // im sorry I have to do this but....
-	uint32_t our_ip_le = LONG(ourIP);
+	uint32_t our_ip_le = LSBF_LONG(ourIP);
 #endif
 	csprng(buf, CHALLENGELENGTH); // Random noise as a baseline, but...
 	memcpy(buf, &now, sizeof(now)); // Timestamp limits the reuse window.
@@ -308,9 +308,9 @@ shouldsign_t ShouldSignChallenge(uint8_t *message)
 
 	now = time(NULL);
 	memcpy(&then, message, sizeof(then));
-	then = LONGLONG(then); // LE 64
+	then = LSBF_LONGLONG(then); // LE 64
 	memcpy(&claimedIP, message + sizeof(then), sizeof(claimedIP));
-	claimedIP = LONG(claimedIP); // LE 32 - TODO needs to be BE 128 bit for ipv6
+	claimedIP = LSBF_LONG(claimedIP); // LE 32 - TODO needs to be BE 128 bit for ipv6
 	realIP = I_GetNodeAddressInt(servernode);
 
 	if ((max(now, then) - min(now, then)) > 60*15)
@@ -526,9 +526,9 @@ static UINT8* D_GetTextcmd(tic_t tic, INT32 playernum)
 	return textcmdtic->playercmds[playernum];
 }
 
-static boolean ExtraDataTicker(void)
+static dboolean ExtraDataTicker(void)
 {
-	boolean anyNetCmd = false;
+	dboolean anyNetCmd = false;
 	INT32 i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -643,12 +643,12 @@ void SendKick(UINT8 playernum, UINT8 msg)
 //   char[MAXPLAYERNAME] | name of the player
 // endif
 // if (xd & XD_WEAPON_PREF)
-//   byte   | original weapon switch: boolean, true if use the old
+//   byte   | original weapon switch: dboolean, true if use the old
 //          | weapon switch methode
 //   char[NUMWEAPONS] | the weapon switch priority
 //   byte   | autoaim: true if use the old autoaim system
 // endif
-/*boolean AddLmpExtradata(UINT8 **demo_point, INT32 playernum)
+/*dboolean AddLmpExtradata(UINT8 **demo_point, INT32 playernum)
 {
 	UINT8 *textcmd = D_GetExistingTextcmd(gametic, playernum);
 
@@ -691,9 +691,9 @@ char http_source[MAX_MIRROR_LENGTH];
 
 static UINT16 cl_lastcheckedfilecount = 0;	// used for full file list
 
-void ChangeServMusic(const char* musname, boolean fallback, boolean keepPos)
+void ChangeServMusic(const char* musname, dboolean fallback, dboolean keepPos)
 {
-	boolean viewserver = (cl_mode == CL_VIEWSERVER);
+	dboolean viewserver = (cl_mode == CL_VIEWSERVER);
 	if (S_MusicExists(musname))
 		if (keepPos)
 			S_ChangeMusicEx(musname,0,true, S_GetMusicPosition(), 0,0);
@@ -954,7 +954,7 @@ static inline void CL_DrawConnectionStatus(void)
 	}
 }
 
-static boolean CL_AskFileList(INT32 firstfile)
+static dboolean CL_AskFileList(INT32 firstfile)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	netbuffer->packettype = PT_TELLFILESNEEDED;
@@ -973,7 +973,7 @@ static boolean CL_AskFileList(INT32 firstfile)
   *       Is it even used...?
   *
   */
-static boolean CL_SendJoin(void)
+static dboolean CL_SendJoin(void)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	UINT8 localplayers = 1;
@@ -1060,7 +1060,7 @@ static boolean CL_SendJoin(void)
 	return HSendPacket(servernode, false, 0, sizeof (clientconfig_pak));
 }
 
-static boolean CL_SendKey(void)
+static dboolean CL_SendKey(void)
 {
 	int i;
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
@@ -1158,8 +1158,8 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 	strncpy(netbuffer->u.serverinfo.application, SRB2APPLICATION,
 			sizeof netbuffer->u.serverinfo.application);
 	// return back the time value so client can compute their ping
-	netbuffer->u.serverinfo.time = (tic_t)LONG(servertime);
-	netbuffer->u.serverinfo.leveltime = (tic_t)LONG(leveltime);
+	netbuffer->u.serverinfo.time = (tic_t)LSBF_LONG(servertime);
+	netbuffer->u.serverinfo.leveltime = (tic_t)LSBF_LONG(leveltime);
 
 	netbuffer->u.serverinfo.numberofplayer = (UINT8)D_NumPlayers();
 	netbuffer->u.serverinfo.maxplayer = (UINT8)(min((dedicated ? MAXPLAYERS-1 : MAXPLAYERS), cv_maxplayers.value));
@@ -1300,8 +1300,8 @@ static void SV_SendPlayerInfo(INT32 node)
 				netbuffer->u.playerinfo[i].team = 0;
 		}
 
-		netbuffer->u.playerinfo[i].score = LONG(players[i].score);
-		netbuffer->u.playerinfo[i].timeinserver = SHORT((UINT16)(players[i].jointime / TICRATE));
+		netbuffer->u.playerinfo[i].score = LSBF_LONG(players[i].score);
+		netbuffer->u.playerinfo[i].timeinserver = LSBF_SHORT((UINT16)(players[i].jointime / TICRATE));
 		netbuffer->u.playerinfo[i].skin = (UINT16)(players[i].skin);
 
 		// Extra data
@@ -1317,9 +1317,9 @@ static void SV_SendPlayerInfo(INT32 node)
   * \return True if the packet was successfully sent
   *
   */
-static boolean SV_SendServerConfig(INT32 node)
+static dboolean SV_SendServerConfig(INT32 node)
 {
-	boolean waspacketsent;
+	dboolean waspacketsent;
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	memset(&netbuffer->u.servercfg, 0, sizeof netbuffer->u.servercfg);
@@ -1331,16 +1331,16 @@ static boolean SV_SendServerConfig(INT32 node)
 
 	netbuffer->u.servercfg.serverplayer = (UINT8)serverplayer;
 	netbuffer->u.servercfg.totalslotnum = (UINT8)(doomcom->numslots);
-	netbuffer->u.servercfg.gametic = (tic_t)LONG(gametic);
+	netbuffer->u.servercfg.gametic = (tic_t)LSBF_LONG(gametic);
 	netbuffer->u.servercfg.clientnode = (UINT8)node;
 	netbuffer->u.servercfg.gamestate = (UINT8)gamestate;
 	netbuffer->u.servercfg.gametype = (UINT8)gametype;
 	netbuffer->u.servercfg.modifiedgame = (UINT8)modifiedgame;
-	netbuffer->u.servercfg.dedicated = (boolean)dedicated;
+	netbuffer->u.servercfg.dedicated = (dboolean)dedicated;
 
 	netbuffer->u.servercfg.maxplayer = (UINT8)(min((dedicated ? MAXPLAYERS-1 : MAXPLAYERS), cv_maxplayers.value));
 	netbuffer->u.servercfg.allownewplayer = cv_allownewplayer.value;
-	netbuffer->u.servercfg.discordinvites = (boolean)cv_discordinvites.value;
+	netbuffer->u.servercfg.discordinvites = (dboolean)cv_discordinvites.value;
 
 	memcpy(netbuffer->u.servercfg.server_context, server_context, 8);
 
@@ -1375,7 +1375,7 @@ static boolean SV_SendServerConfig(INT32 node)
 	return waspacketsent;
 }
 
-static boolean SV_ResendingSavegameToAnyone(void)
+static dboolean SV_ResendingSavegameToAnyone(void)
 {
 	INT32 i;
 
@@ -1385,7 +1385,7 @@ static boolean SV_ResendingSavegameToAnyone(void)
 	return false;
 }
 
-static void SV_SendSaveGame(INT32 node, boolean resending)
+static void SV_SendSaveGame(INT32 node, dboolean resending)
 {
 	size_t length, compressedlen;
 	savebuffer_t save = {0};
@@ -1503,7 +1503,7 @@ static void SV_SavedGame(void)
 #define TMPSAVENAME "$$$.sav"
 
 
-static void CL_LoadReceivedSavegame(boolean reloading)
+static void CL_LoadReceivedSavegame(dboolean reloading)
 {
 	savebuffer_t save = {0};
 	size_t length, decompressedlen;
@@ -1654,7 +1654,7 @@ static void SendAskInfo(INT32 node)
 
 	netbuffer->packettype = PT_ASKINFO;
 	netbuffer->u.askinfo.version = VERSION;
-	netbuffer->u.askinfo.time = (tic_t)LONG(asktime);
+	netbuffer->u.askinfo.time = (tic_t)LSBF_LONG(asktime);
 
 	// Even if this never arrives due to the host being firewalled, we've
 	// now allowed traffic from the host to us in, so once the MS relays
@@ -1666,7 +1666,7 @@ serverelem_t serverlist[MAXSERVERLIST];
 UINT32 serverlistcount = 0;
 UINT32 serverlistultimatecount = 0;
 
-static boolean resendserverlistnode[MAXNETNODES];
+static dboolean resendserverlistnode[MAXNETNODES];
 static tic_t serverlistepoch;
 
 static void SL_ClearServerList(INT32 connectedserver)
@@ -1773,7 +1773,7 @@ void CL_TimeoutServerList(void)
 	{
 		const tic_t timediff = I_GetTime() - serverlistepoch;
 		const tic_t timetoresend = timediff % SERVERLISTRESENDRATE;
-		const boolean timedout = timediff > connectiontimeout;
+		const dboolean timedout = timediff > connectiontimeout;
 
 		if (timedout || (timediff > 0 && timetoresend == 0))
 		{
@@ -1849,7 +1849,7 @@ static void M_ConfirmConnect(INT32 choice)
 	}
 }
 
-static boolean CL_FinishedFileList(void)
+static dboolean CL_FinishedFileList(void)
 {
 	INT32 i;
 	char *downloadsize = NULL;
@@ -1987,7 +1987,7 @@ static boolean CL_FinishedFileList(void)
   * \sa CL_ConnectToServer
   *
   */
-static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
+static dboolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 {
 	INT32 i;
 
@@ -2091,9 +2091,9 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
   * \sa CL_ConnectToServer
   *
   */
-static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic_t *asksent)
+static dboolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic_t *asksent)
 {
-	boolean waitmore;
+	dboolean waitmore;
 	INT32 i;
 
 	switch (cl_mode)
@@ -2546,7 +2546,7 @@ static void Command_ShowBan(void) //Print out ban list
 		CONS_Printf(M_GetText("(empty)\n"));
 }
 
-static boolean bansLoaded = false;
+static dboolean bansLoaded = false;
 // If you're a community contributor looking to improve how bans are written, please
 // offer your changes back to our Git repository. Kart Krew reserve the right to
 // utilise format numbers in use by community builds for different layouts.
@@ -2633,7 +2633,7 @@ static void Command_ClearBans(void)
 	D_SaveBan();
 }
 
-void D_LoadBan(boolean warning)
+void D_LoadBan(dboolean warning)
 {
 	FILE *f;
 	size_t i, j;
@@ -2642,7 +2642,7 @@ void D_LoadBan(boolean warning)
 	time_t unbanTime = NO_BAN_TIME;
 	char buffer[MAX_WADPATH];
 	UINT8 banmode = 0;
-	boolean malformed = false;
+	dboolean malformed = false;
 
 	if (!I_ClearBans)
 		return;
@@ -3148,8 +3148,8 @@ static void Command_Listplayers(void)
 	const char *address;
 	int width = 0;
 
-	boolean admin;
-	boolean spectator;
+	dboolean admin;
+	dboolean spectator;
 
 	/*
 	Mode of player status for an individual player (admin, spectator).
@@ -4278,14 +4278,14 @@ static void Got_AddBot(UINT8 **p, INT32 playernum)
 	K_SetBot(newplayernum, skinnum, difficulty, style);
 }
 
-static boolean SV_AddWaitingPlayers(SINT8 node, UINT8 *availabilities,
+static dboolean SV_AddWaitingPlayers(SINT8 node, UINT8 *availabilities,
 const char *name, uint8_t *key, const char *name2, uint8_t *key2,
 const char *name3, uint8_t *key3, const char *name4, uint8_t *key4)
 {
 	INT32 n, newplayernum, i;
 	UINT8 buf[4 + MAXPLAYERNAME + PUBKEYLENGTH + MAXAVAILABILITY];
 	UINT8 *buf_p = buf;
-	boolean newplayer = false;
+	dboolean newplayer = false;
 
 	{
 		// splitscreen can allow 2+ players in one node
@@ -4388,11 +4388,11 @@ const char *name3, uint8_t *key3, const char *name4, uint8_t *key4)
 }
 
 /*--------------------------------------------------
-	boolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
+	dboolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
+dboolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
 {
 	UINT8 newplayernum = *p;
 
@@ -4490,20 +4490,20 @@ static void GotOurIP(UINT32 address)
 }
 
 // is there a game running
-boolean Playing(void)
+dboolean Playing(void)
 {
 	return (server && serverrunning) || (client && cl_mode == CL_CONNECTED);
 }
 
-boolean InADedicatedServer(void)
+dboolean InADedicatedServer(void)
 {
 	return Playing() && (dedicated || connectedtodedicated);
 }
 
-boolean SV_SpawnServer(void)
+dboolean SV_SpawnServer(void)
 {
 	// Screw Testers mode, worst idea ever.
-	boolean result = false;
+	dboolean result = false;
 	if (demo.playback)
 		G_StopDemo(); // reset engine parameter
 	if (metalplayback)
@@ -4582,7 +4582,7 @@ void SV_StopServer(void)
 }
 
 // called at singleplayer start and stopdemo
-void SV_StartSinglePlayerServer(INT32 dogametype, boolean donetgame)
+void SV_StartSinglePlayerServer(INT32 dogametype, dboolean donetgame)
 {
 	INT32 lastgametype = gametype;
 	server = true;
@@ -4751,7 +4751,7 @@ static void HandleConnect(SINT8 node)
 	else
 	{
 		int sigcheck;
-		boolean newnode = false;
+		dboolean newnode = false;
 		char allZero[PUBKEYLENGTH];
 		memset(allZero, 0, sizeof(allZero));
 
@@ -4954,9 +4954,9 @@ static void HandleServerInfo(SINT8 node)
 	char servername[MAXSERVERNAME];
 	// compute ping in ms
 	const tic_t ticnow = I_GetTime();
-	const tic_t ticthen = (tic_t)LONG(netbuffer->u.serverinfo.time);
+	const tic_t ticthen = (tic_t)LSBF_LONG(netbuffer->u.serverinfo.time);
 	const tic_t ticdiff = (ticnow - ticthen)*1000/NEWTICRATE;
-	netbuffer->u.serverinfo.time = (tic_t)LONG(ticdiff);
+	netbuffer->u.serverinfo.time = (tic_t)LSBF_LONG(ticdiff);
 	netbuffer->u.serverinfo.servername[MAXSERVERNAME-1] = 0;
 	netbuffer->u.serverinfo.application
 		[sizeof netbuffer->u.serverinfo.application - 1] = '\0';
@@ -4970,7 +4970,7 @@ static void HandleServerInfo(SINT8 node)
 
 // Helper function for packets that should only be sent by the server
 // If it is NOT from the server, bail out and close the connection!
-static boolean ServerOnly(SINT8 node)
+static dboolean ServerOnly(SINT8 node)
 {
 	if (node == servernode)
 		return false;
@@ -5029,7 +5029,7 @@ static void PT_AskInfo(SINT8 node)
 
 	if (server && serverrunning)
 	{
-		SV_SendServerInfo(node, (tic_t)LONG(netbuffer->u.askinfo.time));
+		SV_SendServerInfo(node, (tic_t)LSBF_LONG(netbuffer->u.askinfo.time));
 		SV_SendPlayerInfo(node); // Send extra info
 	}
 	Net_CloseConnection(node);
@@ -5109,7 +5109,7 @@ static void PT_ServerCFG(SINT8 node)
 
 	if (client)
 	{
-		maketic = gametic = neededtic = (tic_t)LONG(netbuffer->u.servercfg.gametic);
+		maketic = gametic = neededtic = (tic_t)LSBF_LONG(netbuffer->u.servercfg.gametic);
 
 		G_SetGametype(netbuffer->u.servercfg.gametype);
 
@@ -5127,7 +5127,7 @@ static void PT_ServerCFG(SINT8 node)
 
 	nodeingame[(UINT8)servernode] = true;
 	serverplayer = netbuffer->u.servercfg.serverplayer;
-	doomcom->numslots = SHORT(netbuffer->u.servercfg.totalslotnum);
+	doomcom->numslots = LSBF_SHORT(netbuffer->u.servercfg.totalslotnum);
 	mynode = netbuffer->u.servercfg.clientnode;
 	if (serverplayer >= 0)
 		playernode[(UINT8)serverplayer] = servernode;
@@ -5151,7 +5151,7 @@ static void PT_ServerCFG(SINT8 node)
  * \sa HandlePacketFromPlayer
  *
  */
-static boolean CheckForSpeedHacks(UINT8 p)
+static dboolean CheckForSpeedHacks(UINT8 p)
 {
 	if (netcmds[maketic%BACKUPTICS][p].forwardmove > MAXPLMOVE || netcmds[maketic%BACKUPTICS][p].forwardmove < -MAXPLMOVE
 		|| netcmds[maketic%BACKUPTICS][p].sidemove > MAXPLMOVE || netcmds[maketic%BACKUPTICS][p].sidemove < -MAXPLMOVE
@@ -5320,16 +5320,16 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 		{
 			I_OutputMsg("------------\n");
 			I_OutputMsg(M_GetText("Testing consistency of player %d (%s)...\n"), netconsole+1, player_names[netconsole]);
-			I_OutputMsg("Synching: %s\n", (consistancy[realstart%BACKUPTICS].checksum != SHORT(clientconsistancy.checksum)) ? "false" : "true");
+			I_OutputMsg("Synching: %s\n", (consistancy[realstart%BACKUPTICS].checksum != LSBF_SHORT(clientconsistancy.checksum)) ? "false" : "true");
 			I_OutputMsg("Checksum (Server): %d\n", consistancy[realstart%BACKUPTICS].checksum);
-			I_OutputMsg("Checksum (Player %d): %d\n", netconsole+1, SHORT(clientconsistancy.checksum));
+			I_OutputMsg("Checksum (Player %d): %d\n", netconsole+1, LSBF_SHORT(clientconsistancy.checksum));
 			I_OutputMsg("------------\n");
 		}
 	}
 
 	// Check player consistancy during the level
 	if (realstart <= gametic && realstart + BACKUPTICS - 1 > gametic && gamestate == GS_LEVEL
-		&& consistancy[realstart%BACKUPTICS].checksum != SHORT(clientconsistancy.checksum)
+		&& consistancy[realstart%BACKUPTICS].checksum != LSBF_SHORT(clientconsistancy.checksum)
 		&& !resendingsavegame[node] && savegameresendcooldown[node] <= I_GetTime()
 		&& !SV_ResendingSavegameToAnyone())
 	{
@@ -5386,7 +5386,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 				CONS_Printf(M_GetText("Synch failure for player %d (%s); expected %hd, got %hd\n"),
 					netconsole+1, player_names[netconsole],
 					consistancy[realstart%BACKUPTICS].checksum,
-					SHORT(clientconsistancy.checksum));
+					LSBF_SHORT(clientconsistancy.checksum));
 
 				// Extremely elaborate debug!
 				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
@@ -5394,7 +5394,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 			}
 			DEBFILE(va("Restoring player %d (synch failure) [%update] %d!=%d\n",
 				netconsole, realstart, consistancy[realstart%BACKUPTICS].checksum,
-			SHORT(clientconsistancy.checksum)));
+			LSBF_SHORT(clientconsistancy.checksum)));
 			return;
 		}
 		else
@@ -5410,7 +5410,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 				CONS_Printf(M_GetText("Kicking desynching player %d (%s); expected %hd, got %hd\n"),
 					netconsole+1, player_names[netconsole],
 					consistancy[realstart%BACKUPTICS].checksum,
-					SHORT(clientconsistancy.checksum));
+					LSBF_SHORT(clientconsistancy.checksum));
 
 				// Extremely elaborate debug!
 				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
@@ -5440,7 +5440,7 @@ static void PT_ClientCmd(SINT8 node, INT32 netconsole)
 			SendKick(netconsole, KICK_MSG_CON_FAIL);
 			DEBFILE(va("player %d kicked (synch failure) [%u] %d!=%d\n",
 						netconsole, realstart, consistancy[realstart%BACKUPTICS].checksum,
-						SHORT(clientconsistancy.checksum)));
+						LSBF_SHORT(clientconsistancy.checksum)));
 			return;
 		}
 	}
@@ -5992,7 +5992,7 @@ static void PT_ReqMapQueue(int node)
 		}
 	}
 
-	const boolean doclear = (reqmapqueue.newgametype == ROUNDQUEUE_CMD_CLEAR);
+	const dboolean doclear = (reqmapqueue.newgametype == ROUNDQUEUE_CMD_CLEAR);
 
 	// The following prints will only appear when multiple clients
 	// attempt to affect the round queue at similar time increments
@@ -6833,7 +6833,7 @@ static void CL_SendClientCmd(void)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	size_t packetsize = 0;
-	boolean mis = false;
+	dboolean mis = false;
 
 	netbuffer->packettype = PT_CLIENTCMD;
 
@@ -7016,7 +7016,7 @@ static void SV_SendTics(void)
 			netbuffer->packettype = PT_SERVERTICS;
 			netbuffer->u.serverpak.starttic = (UINT8)realfirsttic;
 			netbuffer->u.serverpak.numtics = (UINT8)(lasttictosend - realfirsttic);
-			netbuffer->u.serverpak.numslots = (UINT8)SHORT(doomcom->numslots);
+			netbuffer->u.serverpak.numslots = (UINT8)LSBF_SHORT(doomcom->numslots);
 			bufpos = (UINT8 *)&netbuffer->u.serverpak.cmds;
 
 			for (i = realfirsttic; i < lasttictosend; i++)
@@ -7125,9 +7125,9 @@ static void SV_Maketic(void)
 	maketic++;
 }
 
-boolean TryRunTics(tic_t realtics)
+dboolean TryRunTics(tic_t realtics)
 {
-	boolean ticking;
+	dboolean ticking;
 
 	// the machine has lagged but it is not so bad
 	if (realtics > TICRATE/7) // FIXME: consistency failure!!
@@ -7205,9 +7205,9 @@ boolean TryRunTics(tic_t realtics)
 			// run the count * tics
 			while (neededtic > gametic)
 			{
-				boolean dontRun = false;
+				dboolean dontRun = false;
 
-				boolean update_stats = !(paused || P_AutoPause());
+				dboolean update_stats = !(paused || P_AutoPause());
 
 				DEBFILE(va("============ Running tic %d (local %d)\n", gametic, localgametic));
 
@@ -7281,10 +7281,10 @@ static INT32 pingtimeout[MAXPLAYERS];
 static inline void PingUpdate(void)
 {
 	INT32 i;
-	boolean laggers[MAXPLAYERS];
+	dboolean laggers[MAXPLAYERS];
 	UINT8 numlaggers = 0;
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-	memset(laggers, 0, sizeof(boolean) * MAXPLAYERS);
+	memset(laggers, 0, sizeof(dboolean) * MAXPLAYERS);
 
 	netbuffer->packettype = PT_PING;
 
@@ -7890,7 +7890,7 @@ INT32 D_NumPlayers(void)
 
 /** Return whether a player is a real person (not a CPU) and not spectating.
   */
-boolean D_IsPlayerHumanAndGaming (INT32 player_number)
+dboolean D_IsPlayerHumanAndGaming (INT32 player_number)
 {
 	player_t * player = &players[player_number];
 	return (

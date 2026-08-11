@@ -17,7 +17,7 @@ extern "C" {
 #include "../doomstat.h"
 #include "../deh_soc.h"
 
-boolean B_UseWallTransfer(mobj_t *mo);
+dboolean B_UseWallTransfer(mobj_t *mo);
 INT32 B_TrackComplexity(void);
 fixed_t K_TrackModifierMax(void);
 

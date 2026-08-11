@@ -127,7 +127,7 @@ void P_ResetData(INT32 flags)
 {
 	INT32 i;
 	UINT16 lumpnum;
-	boolean init = numwadfiles == 0;
+	dboolean init = numwadfiles == 0;
 	const char *name;
 
 	// sprnames

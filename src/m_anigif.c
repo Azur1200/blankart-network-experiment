@@ -41,13 +41,13 @@ consvar_t cv_gif_dynamicdelay = CVAR_INIT ("gif_dynamicdelay", "On", CV_SAVE, gi
 consvar_t cv_gif_localcolortable =  CVAR_INIT ("gif_localcolortable", "On", CV_SAVE, CV_OnOff, NULL);
 
 #ifdef HAVE_ANIGIF
-static boolean gif_optimize = false; // So nobody can do something dumb
-static boolean gif_downscale = false; // like changing cvars mid output
+static dboolean gif_optimize = false; // So nobody can do something dumb
+static dboolean gif_downscale = false; // like changing cvars mid output
 static UINT8 gif_dynamicdelay = (UINT8)0; // and messing something up
 
 // Palette handling
-static boolean gif_localcolortable = false;
-static boolean gif_colorprofile = false;
+static dboolean gif_localcolortable = false;
+static dboolean gif_colorprofile = false;
 static RGBA_t *gif_headerpalette = NULL;
 static RGBA_t *gif_framepalette = NULL;
 
@@ -527,7 +527,7 @@ static void GIF_framewrite(void)
 	UINT8 *base_screen = scrbuf_screens;
 	UINT8 *movie_screen = scrbuf_screens;
 	INT32 blitx, blity, blitw, blith;
-	boolean palchanged;
+	dboolean palchanged;
 
 	if (!gifframe_data)
 		gifframe_data = Z_Malloc(gifframe_size, PU_STATIC, NULL);

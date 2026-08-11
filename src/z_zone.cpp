@@ -48,7 +48,7 @@
 
 #ifdef HAVE_VALGRIND
 #include "valgrind.h"
-static boolean Z_calloc = false;
+static dboolean Z_calloc = false;
 #endif
 
 #define ZONEID 0xa441d13d
@@ -391,7 +391,7 @@ void Z_FreeTags(INT32 lowtag, INT32 hightag)
   * \param hightag The highest tag to consider.
   * \param iterfunc The iterator function.
   */
-void Z_IterateTags(INT32 lowtag, INT32 hightag, boolean (*iterfunc)(void *))
+void Z_IterateTags(INT32 lowtag, INT32 hightag, dboolean (*iterfunc)(void *))
 {
 	memblock_t *block, *next;
 	TracyCZone(__zone, true);
@@ -406,7 +406,7 @@ void Z_IterateTags(INT32 lowtag, INT32 hightag, boolean (*iterfunc)(void *))
 		if (block->tag >= lowtag && block->tag <= hightag)
 		{
 			void *mem = MEMORY(block);
-			boolean free = iterfunc(mem);
+			dboolean free = iterfunc(mem);
 			if (free)
 				Z_Free(mem);
 		}

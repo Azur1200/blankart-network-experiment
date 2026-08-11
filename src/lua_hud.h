@@ -51,15 +51,15 @@ enum hud {
 	hud_MAX
 };
 
-extern boolean hud_running;
+extern dboolean hud_running;
 
-extern boolean hud_interpolate; // interpolation enabled
+extern dboolean hud_interpolate; // interpolation enabled
 extern UINT8 hud_interptag; // current tag
 extern UINT32 hud_interpcounter; // number of HUD hooks ran
-extern boolean hud_interpstring; // string mode
-extern boolean hud_interplatch; // string mode was toggled
+extern dboolean hud_interpstring; // string mode
+extern dboolean hud_interplatch; // string mode was toggled
 
-boolean LUA_HudEnabled(enum hud option);
+dboolean LUA_HudEnabled(enum hud option);
 
 void LUA_SetHudHook(int hook, huddrawlist_h list);
 

@@ -31,7 +31,7 @@ extern "C" {
 //
 
 // Called by main loop.
-void ST_Ticker(boolean run);
+void ST_Ticker(dboolean run);
 
 #ifdef HAVE_DISCORDRPC
 // Called when you have Discord asks
@@ -67,16 +67,16 @@ void ST_preLevelTitleCardDrawer(void);
 extern tic_t lt_ticker, lt_lasttic;
 extern tic_t lt_exitticker, lt_endtime;
 
-void ST_DrawServerSplash(boolean timelimited);
+void ST_DrawServerSplash(dboolean timelimited);
 
 // return if player a is in the same team as player b
-boolean ST_SameTeam(player_t *a, player_t *b);
+dboolean ST_SameTeam(player_t *a, player_t *b);
 
 //--------------------
 // status bar overlay
 //--------------------
 
-extern boolean st_overlay; // sb overlay on or off when fullscreen
+extern dboolean st_overlay; // sb overlay on or off when fullscreen
 extern INT32 st_palette; // 0 is default, any others are special palettes.
 extern player_t *stplyr; // for splitscreen correct palette changes and overlay
 extern UINT8 stplyrnum;

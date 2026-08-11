@@ -114,7 +114,7 @@ jingle_t jingleinfo[NUMJINGLES] = {
 // 16 pixels of bob
 //#define MAXBOB (0x10 << FRACBITS)
 
-static boolean onground;
+static dboolean onground;
 
 //
 // P_Thrust
@@ -194,7 +194,7 @@ fixed_t P_ReturnThrustY(mobj_t *mo, angle_t angle, fixed_t move)
 // P_AutoPause
 // Returns true when gameplay should be halted even if the game isn't necessarily paused.
 //
-boolean P_AutoPause(void)
+dboolean P_AutoPause(void)
 {
 	// Don't pause even on menu-up or focus-lost in netgames or record attack
 	if (netgame || modeattacking || gamestate == GS_TITLESCREEN)
@@ -292,7 +292,7 @@ void P_CalcHeight(player_t *player)
   * \return True if the player is considered to be moving.
   * \author Graue <graue@oceanbase.org>
   */
-boolean P_PlayerMoving(INT32 pnum)
+dboolean P_PlayerMoving(INT32 pnum)
 {
 	player_t *p = &players[pnum];
 
@@ -331,7 +331,7 @@ UINT8 P_GetNextEmerald(void)
 // Award an emerald upon completion
 // of a special stage.
 //
-void P_GiveEmerald(boolean spawnObj)
+void P_GiveEmerald(dboolean spawnObj)
 {
 	UINT8 em = P_GetNextEmerald();
 
@@ -469,7 +469,7 @@ UINT8 P_FindHighestLap(void)
 // Is player in pain??
 // Checks for painstate and flashing, if both found return true
 //
-boolean P_PlayerInPain(const player_t *player)
+dboolean P_PlayerInPain(const player_t *player)
 {
 	if (K_IsPlayerDamaged(player) || player->squishedtimer)
 		return true;
@@ -576,7 +576,7 @@ void P_PlayJingle(player_t *player, jingletype_t jingletype)
 {
 	const char *musname = jingleinfo[jingletype].musname;
 	UINT16 musflags = 0;
-	boolean looping = jingleinfo[jingletype].looping;
+	dboolean looping = jingleinfo[jingletype].looping;
 
 	char newmusic[7];
 	strncpy(newmusic, musname, 7);
@@ -592,7 +592,7 @@ void P_PlayJingle(player_t *player, jingletype_t jingletype)
 //
 // P_PlayJingleMusic
 //
-void P_PlayJingleMusic(player_t *player, const char *musname, UINT16 musflags, boolean looping, UINT16 status)
+void P_PlayJingleMusic(player_t *player, const char *musname, UINT16 musflags, dboolean looping, UINT16 status)
 {
 	// If gamestate != GS_LEVEL, always play the jingle (1-up intermission)
 	if (gamestate == GS_LEVEL && player && !P_IsLocalPlayer(player))
@@ -603,11 +603,11 @@ void P_PlayJingleMusic(player_t *player, const char *musname, UINT16 musflags, b
 	S_ChangeMusicInternal(musname, looping);
 }
 
-boolean P_EvaluateMusicStatus(UINT16 status, const char *musname)
+dboolean P_EvaluateMusicStatus(UINT16 status, const char *musname)
 {
 	// \todo lua hook
 	int i;
-	boolean result = false;
+	dboolean result = false;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -706,10 +706,10 @@ void P_PlayVictorySound(mobj_t *source)
 //
 // Consistently sets ending music!
 //
-boolean P_EndingMusic(player_t *player)
+dboolean P_EndingMusic(player_t *player)
 {
 	char buffer[9];
-	boolean looping = true;
+	dboolean looping = true;
 	INT32 bestlocalpos, test;
 	player_t *bestlocalplayer;
 
@@ -719,8 +719,8 @@ boolean P_EndingMusic(player_t *player)
 	if (multiplayer && demo.playback) // Don't play this in multiplayer replays
 		return false;
 
-	const boolean racemode = (gametypes[gametype]->rules & GTR_CIRCUIT);
-	const boolean racewasgraded = (!cannotrank);
+	const dboolean racemode = (gametypes[gametype]->rules & GTR_CIRCUIT);
+	const dboolean racewasgraded = (!cannotrank);
 
 	// Event - Level Finish
 	// Check for if this is valid or not
@@ -766,7 +766,7 @@ boolean P_EndingMusic(player_t *player)
 
 #undef getplayerpos
 
-	boolean forcestandardresults = false;
+	dboolean forcestandardresults = false;
 
 	if (racemode && bestlocalpos == MAXPLAYERS+1)
 	{
@@ -933,7 +933,7 @@ void P_RestoreMusic(player_t *player)
 // Returns true if the object is inside goop water.
 // (Spectators and objects otherwise without gravity cannot have goop gravity!)
 //
-boolean P_IsObjectInGoop(const mobj_t *mo)
+dboolean P_IsObjectInGoop(const mobj_t *mo)
 {
 	if (mo->player && mo->player->spectator)
 		return false;
@@ -951,7 +951,7 @@ boolean P_IsObjectInGoop(const mobj_t *mo)
 // on the ground. Takes reverse
 // gravity and FOFs into account.
 //
-boolean P_IsObjectOnGround(const mobj_t *mo)
+dboolean P_IsObjectOnGround(const mobj_t *mo)
 {
 	if (P_IsObjectInGoop(mo))
 	{
@@ -996,7 +996,7 @@ boolean P_IsObjectOnGround(const mobj_t *mo)
 // on the ground in a specific sector. Takes reverse
 // gravity and FOFs into account.
 //
-boolean P_IsObjectOnGroundIn(const mobj_t *mo, const sector_t *sec)
+dboolean P_IsObjectOnGroundIn(const mobj_t *mo, const sector_t *sec)
 {
 	ffloor_t *rover;
 
@@ -1083,7 +1083,7 @@ boolean P_IsObjectOnGroundIn(const mobj_t *mo, const sector_t *sec)
 // Really simple, but personally I think it's also incredibly helpful. I think this is fine in p_user.c
 // -- Sal
 
-boolean P_IsObjectOnRealGround(const mobj_t *mo, const sector_t *sec)
+dboolean P_IsObjectOnRealGround(const mobj_t *mo, const sector_t *sec)
 {
 	// Is the object in reverse gravity?
 	if (mo->eflags & MFE_VERTICALFLIP)
@@ -1108,7 +1108,7 @@ boolean P_IsObjectOnRealGround(const mobj_t *mo, const sector_t *sec)
 // Sets the player momz appropriately.
 // Takes reverse gravity into account.
 //
-void P_SetObjectMomZ(mobj_t *mo, fixed_t value, boolean relative)
+void P_SetObjectMomZ(mobj_t *mo, fixed_t value, dboolean relative)
 {
 	if (mo->eflags & MFE_VERTICALFLIP)
 		value = -value;
@@ -1150,7 +1150,7 @@ fixed_t P_GetPlayerSpinHeight(player_t *player)
 // Returns true if player is
 // ACTUALLY on the local machine
 //
-boolean P_IsMachineLocalPlayer(player_t *player)
+dboolean P_IsMachineLocalPlayer(player_t *player)
 {
 	UINT8 i;
 
@@ -1175,7 +1175,7 @@ boolean P_IsMachineLocalPlayer(player_t *player)
 // on the local machine
 // (or simulated party)
 //
-boolean P_IsLocalPlayer(const player_t *player)
+dboolean P_IsLocalPlayer(const player_t *player)
 {
 	if (player == NULL)
 	{
@@ -1196,7 +1196,7 @@ boolean P_IsLocalPlayer(const player_t *player)
 // Returns true if player is
 // currently being watched.
 //
-boolean P_IsDisplayPlayer(player_t *player)
+dboolean P_IsDisplayPlayer(player_t *player)
 {
 	UINT8 i;
 
@@ -1228,7 +1228,7 @@ boolean P_IsDisplayPlayer(player_t *player)
 //
 // Spawns a ghost object on the player. Has an option for "legacy mode".
 //
-mobj_t *P_SpawnGhostMobjEX(mobj_t *mobj, boolean legacy)
+mobj_t *P_SpawnGhostMobjEX(mobj_t *mobj, dboolean legacy)
 {
 	mobj_t *ghost = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_GHOST);
 
@@ -1339,7 +1339,7 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 
 	if (!player->spectator)
 	{
-		boolean losing;
+		dboolean losing;
 		if ((gametypes[gametype]->rules & GTR_CIRCUIT)) // If in Race Mode, allow
 		{
 			// Handle the player headcount and grading BEFORE positions are finalized
@@ -1503,10 +1503,10 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 // P_DoAllPlayersExit
 //
 // All players exit the map via event
-void P_DoAllPlayersExit(pflags_t flags, boolean trygivelife)
+void P_DoAllPlayersExit(pflags_t flags, dboolean trygivelife)
 {
 	UINT8 i;
-	boolean givenlife = false;
+	dboolean givenlife = false;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -1542,9 +1542,9 @@ void P_DoAllPlayersExit(pflags_t flags, boolean trygivelife)
 //
 // Handles player hitting floor surface.
 // Returns whether to clip momz.
-boolean P_PlayerHitFloor(player_t *player, boolean fromAir)
+dboolean P_PlayerHitFloor(player_t *player, dboolean fromAir)
 {
-	boolean clipmomz;
+	dboolean clipmomz;
 
 	I_Assert(player->mo != NULL);
 
@@ -1579,7 +1579,7 @@ boolean P_PlayerHitFloor(player_t *player, boolean fromAir)
 	return clipmomz;
 }
 
-boolean P_InQuicksand(const mobj_t *mo) // Returns true if you are in quicksand
+dboolean P_InQuicksand(const mobj_t *mo) // Returns true if you are in quicksand
 {
 	sector_t *sector = mo->subsector->sector;
 	fixed_t topheight, bottomheight;
@@ -1614,7 +1614,7 @@ boolean P_InQuicksand(const mobj_t *mo) // Returns true if you are in quicksand
 	return false; // No sand here, Captain!
 }
 
-static boolean P_PlayerCanBust(player_t *player, ffloor_t *rover)
+static dboolean P_PlayerCanBust(player_t *player, ffloor_t *rover)
 {
 	// TODO: Make these act like the Lua SA2 boxes.
 	// (void)player;
@@ -2179,7 +2179,7 @@ static void P_3dMovement(player_t *player)
 	TracyCZoneEnd(__zone);
 }
 
-boolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd)
+dboolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd)
 {
 	if (player->spectator || objectplacing)
 	{
@@ -2249,7 +2249,7 @@ static void P_UpdatePlayerAiming(player_t *player)
 static void P_UpdatePlayerAngle(player_t *player)
 {
 	INT16 angle_diff, max_left_turn, max_right_turn;
-	boolean add_delta = true;
+	dboolean add_delta = true;
 	ticcmd_t *cmd = &player->cmd;
 	angle_t anglechange = player->angleturn;
 
@@ -2573,7 +2573,7 @@ static void P_DoZoomTube(player_t *player)
 	fixed_t speed;
 	mobj_t *waypoint = NULL;
 	fixed_t dist;
-	boolean reverse;
+	dboolean reverse;
 
 	if (player->speed > 0)
 		reverse = false;
@@ -2782,7 +2782,7 @@ static void P_ConsiderAllGone(void)
 //
 static void P_DeathThink(player_t *player)
 {
-	boolean playerGone = false;
+	dboolean playerGone = false;
 
 	player->deltaviewheight = 0;
 
@@ -3087,16 +3087,16 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 	while (!P_MoveChaseCamera(player,thiscam,true) && ++tries < 2*TICRATE);
 }
 
-boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcalled)
+dboolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, dboolean resetcalled)
 {
-	static boolean lookbackactive[MAXSPLITSCREENPLAYERS];
+	static dboolean lookbackactive[MAXSPLITSCREENPLAYERS];
 	static UINT8 lookbackdelay[MAXSPLITSCREENPLAYERS];
 	UINT8 num;
 	angle_t angle = 0, focusangle = 0, focusaiming = 0, pitch = 0;
 	fixed_t x, y, z, dist, distxy, distz, viewpointx, viewpointy, camspeed, camdist, camheight, pviewheight;
 	fixed_t pan, xpan, ypan;
 	INT32 camrotate, camfreelookrotate = 0;
-	boolean camstill, lookback, lookbackdown;
+	dboolean camstill, lookback, lookbackdown;
 	UINT8 timeover;
 	mobj_t *mo;
 	fixed_t f1, f2;
@@ -3105,7 +3105,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	sonicloopcamvars_t *loop = &player->loop.camera;
 	tic_t loop_out = leveltime - loop->enter_tic;
 	tic_t loop_in = max(leveltime, loop->exit_tic) - loop->exit_tic;
-	boolean affected_by_loop = (loop_out <=
+	dboolean affected_by_loop = (loop_out <=
 		(loop->zoom_in_speed + loop->zoom_out_speed) && leveltime > introtime);
 
 	thiscam->old_x = thiscam->x;
@@ -3367,7 +3367,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		else
 		{
 			angle_t input = focusangle + FixedAngle(camrotate<<FRACBITS) + FixedAngle(camfreelookrotate) - thiscam->angle;
-			boolean invert = (input > ANGLE_180);
+			dboolean invert = (input > ANGLE_180);
 			if (invert)
 				input = InvAngle(input);
 
@@ -3591,7 +3591,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		else
 		{
 			angle_t input;
-			boolean invert;
+			dboolean invert;
 
 			input = thiscam->aiming - angle;
 			invert = (input > ANGLE_180);
@@ -3629,7 +3629,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 }
 
-boolean P_SpectatorJoinGame(player_t *player)
+dboolean P_SpectatorJoinGame(player_t *player)
 {
 	INT32 changeto = 0;
 	const char *text = NULL;
@@ -3705,7 +3705,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 	return true; // no more player->mo, cannot continue.
 }
 
-static boolean P_CameraCheckHeatFirstperson(player_t *player, sector_t *sector, fixed_t pviewheight)
+static dboolean P_CameraCheckHeatFirstperson(player_t *player, sector_t *sector, fixed_t pviewheight)
 {
 	if (sector->flags & MSF_HEATWAVE)
 		return true;
@@ -3732,7 +3732,7 @@ static boolean P_CameraCheckHeatFirstperson(player_t *player, sector_t *sector, 
 	return false;
 }
 
-static boolean P_CameraCheckWaterFirstperson(player_t *player, sector_t *sector, fixed_t pviewheight)
+static dboolean P_CameraCheckWaterFirstperson(player_t *player, sector_t *sector, fixed_t pviewheight)
 {
 	if (sector->ffloors)
 	{
@@ -3989,7 +3989,7 @@ Quaketilt (player_t *player)
 	INT32 delta = (INT32)( player->mo->angle - moma );
 	fixed_t speed;
 
-	boolean sliptiding = K_Sliptiding(player);
+	dboolean sliptiding = K_Sliptiding(player);
 
 	if (delta == (INT32)ANGLE_180)/* FUCK YOU HAVE A HACK */
 	{
@@ -4409,7 +4409,7 @@ void P_PlayerThink(player_t *player)
 							NetPacket.packet.playernum = n;
 							NetPacket.packet.verification = true;
 
-							usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
+							usvalue = LSBF_SHORT(NetPacket.value.l|NetPacket.value.b);
 							SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 						}
 					}
@@ -4593,7 +4593,7 @@ void P_PlayerThink(player_t *player)
 		mobj_t *gmobj = P_SpawnGhostMobj(player->mo);
 
 		{
-			boolean stacking = (player->numboosts > 1);
+			dboolean stacking = (player->numboosts > 1);
 			gmobj->fuse = min(stacking ? player->numboosts+1 : 2, 5);
 
 			if (stacking)
@@ -4849,7 +4849,7 @@ angle_t P_GetLocalAngle(player_t *player)
 	return 0;
 }
 
-void P_ForceLocalAngle(player_t *player, angle_t angle, boolean interp)
+void P_ForceLocalAngle(player_t *player, angle_t angle, dboolean interp)
 {
 	UINT8 i;
 
@@ -4872,7 +4872,7 @@ void P_ForceLocalAngle(player_t *player, angle_t angle, boolean interp)
 	}
 }
 
-boolean P_PlayerFullbright(player_t *player)
+dboolean P_PlayerFullbright(player_t *player)
 {
 	return (player->invincibilitytimer > 0) || (player->smonitortimer > 0);
 }

@@ -178,7 +178,7 @@ static char filenamebuf[MAX_WADPATH];
 // This #if is copied from filesrch.c, so not sure if it is 100% suitable for
 // this
 #if defined (_WIN32) && !defined (_XBOX)
-//#define WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
 
@@ -214,7 +214,7 @@ FILE* fopen_utf8(const char* filename, const char* mode)
 // Returns the FILE * handle for the file, or NULL if not found or could not be opened
 // If "useerrors" is true then print errors in the console, else just don't bother
 // "filename" may be modified to have the correct path the actual file is located in, if necessary
-FILE *W_OpenWadFile(const char **filename, boolean useerrors)
+FILE *W_OpenWadFile(const char **filename, dboolean useerrors)
 {
 	FILE *handle;
 
@@ -260,7 +260,7 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors)
 }
 
 // Look for all DEHACKED and Lua scripts inside a PK3 archive.
-static inline void W_LoadDehackedLumpsPK3(UINT16 wadnum, boolean mainfile)
+static inline void W_LoadDehackedLumpsPK3(UINT16 wadnum, dboolean mainfile)
 {
 	UINT16 posStart, posEnd;
 
@@ -304,7 +304,7 @@ static inline void W_LoadDehackedLumpsPK3(UINT16 wadnum, boolean mainfile)
 }
 
 // search for all DEHACKED lump in all wads and load it
-static inline void W_LoadDehackedLumps(UINT16 wadnum, boolean mainfile)
+static inline void W_LoadDehackedLumps(UINT16 wadnum, dboolean mainfile)
 {
 	UINT16 lump;
 
@@ -347,14 +347,14 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum, boolean mainfile)
 	}
 }
 
-static inline boolean CheckCompatFilename(const char *filename)
+static inline dboolean CheckCompatFilename(const char *filename)
 {
 	// check for a K prefix
 	char *basename = (char *)strrchr(filename, *PATHSEP);
 	return (toupper(basename ? basename[1] : filename[0]) == 'K');
 }
 
-static inline boolean CheckCompatExtension(const char *filename)
+static inline dboolean CheckCompatExtension(const char *filename)
 {
 	char *basename = (char *)strrchr(filename, '.');
 
@@ -364,7 +364,7 @@ static inline boolean CheckCompatExtension(const char *filename)
 	return false;
 }
 
-static inline boolean CheckCompatSkins(UINT16 wadnum)
+static inline dboolean CheckCompatSkins(UINT16 wadnum)
 {
 #if 0
 	UINT16 skin = W_CheckNumForNamePwad("S_SKIN", wadnum, 0);
@@ -396,7 +396,7 @@ static inline boolean CheckCompatSkins(UINT16 wadnum)
 }
 
 // try to figure out if a PK3 file needs compatmode enabled (palette remap)
-static inline boolean CheckCompatZip(UINT16 wadnum)
+static inline dboolean CheckCompatZip(UINT16 wadnum)
 {
 	if (CheckCompatFilename(wadfiles[wadnum]->filename) || CheckCompatSkins(wadnum))
 		return true;
@@ -406,7 +406,7 @@ static inline boolean CheckCompatZip(UINT16 wadnum)
 }
 
 // ditto, but for WADs
-static inline boolean CheckCompatWad(UINT16 wadnum)
+static inline dboolean CheckCompatWad(UINT16 wadnum)
 {
 	if (CheckCompatFilename(wadfiles[wadnum]->filename) || CheckCompatSkins(wadnum)
 		|| CheckCompatExtension(wadfiles[wadnum]->filename))
@@ -440,7 +440,7 @@ static UINT64 hashfile(FILE *f)
   * \param ret pointer to UINT64 to store hash
   * \return true on success, false on error
   */
-boolean W_MakeFileHash(const char *filename, boolean openwad, UINT64 *ret)
+dboolean W_MakeFileHash(const char *filename, dboolean openwad, UINT64 *ret)
 {
 #ifdef NOFILEHASH
 	(void)filename;
@@ -555,8 +555,8 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 		return NULL;
 	}
 
-	header.numlumps = LONG(header.numlumps);
-	header.infotableofs = LONG(header.infotableofs);
+	header.numlumps = LSBF_LONG(header.numlumps);
+	header.infotableofs = LSBF_LONG(header.infotableofs);
 
 	// read wad file directory
 	i = header.numlumps * sizeof (*fileinfo);
@@ -575,8 +575,8 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 	lump_p = lumpinfo = (lumpinfo_t *)Z_Malloc(numlumps * sizeof (*lumpinfo), PU_STATIC, NULL);
 	for (i = 0; i < numlumps; i++, lump_p++, fileinfo++)
 	{
-		lump_p->position = LONG(fileinfo->filepos);
-		lump_p->size = lump_p->disksize = LONG(fileinfo->size);
+		lump_p->position = LSBF_LONG(fileinfo->filepos);
+		lump_p->size = lump_p->disksize = LSBF_LONG(fileinfo->size);
 		if (compressed) // wad is compressed, lump might be
 		{
 			UINT32 realsize = 0;
@@ -587,7 +587,7 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 				I_Error("corrupt compressed file: %s; maybe %s", /// \todo Avoid the bailout?
 					filename, M_FileError(handle));
 			}
-			realsize = LONG(realsize);
+			realsize = LSBF_LONG(realsize);
 			if (realsize != 0)
 			{
 				lump_p->size = realsize;
@@ -697,7 +697,7 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 
 /** Optimized pattern search in a file.
  */
-static boolean ResFindSignature (FILE* handle, char endPat[], UINT32 startpos)
+static dboolean ResFindSignature (FILE* handle, char endPat[], UINT32 startpos)
 {
 	char *s;
 	int c;
@@ -912,7 +912,7 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 	return lumpinfo;
 }
 
-static UINT16 W_InitFileError (const char *filename, boolean exitworthy)
+static UINT16 W_InitFileError (const char *filename, dboolean exitworthy)
 {
 	if (exitworthy)
 	{
@@ -938,7 +938,7 @@ static UINT16 W_InitFileError (const char *filename, boolean exitworthy)
 //
 // Can now load dehacked files (.soc)
 //
-UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boolean local, wadcompat_t compat)
+UINT16 W_InitFile(const char *filename, dboolean mainfile, dboolean startup, dboolean local, wadcompat_t compat)
 {
 	FILE *handle;
 	lumpinfo_t *lumpinfo = NULL;
@@ -1143,7 +1143,7 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boole
   *
   * \param filenames A null-terminated list of files to use.
   */
-INT32 W_InitMultipleFiles(char **filenames, boolean addons)
+INT32 W_InitMultipleFiles(char **filenames, dboolean addons)
 {
 	INT32 rc = 1;
 	INT32 overallrc = 1;
@@ -1170,7 +1170,7 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 /** Make sure a lump number is valid.
   * Compiles away to nothing if PARANOIA is not defined.
   */
-static boolean TestValidLump(UINT16 wad, UINT16 lump)
+static dboolean TestValidLump(UINT16 wad, UINT16 lump)
 {
 	I_Assert(wad < MAX_WADFILES);
 	if (!wadfiles[wad]) // make sure the wad file exists
@@ -1244,7 +1244,7 @@ UINT16 W_FindNextEmptyInPwad(UINT16 wad, UINT16 startlump)
 UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 startlump)
 {
 	UINT16 i, end;
-	boolean compatload = false;
+	dboolean compatload = false;
 
 	if (wadfiles[wad]->compatmode)
 	{
@@ -1610,7 +1610,7 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 
 // Look for valid map data through all added files in descendant order.
 // Get a map marker for WADs, and a standalone WAD file lump inside PK3s.
-lumpnum_t W_CheckNumForMap(const char *name, boolean checktofirst)
+lumpnum_t W_CheckNumForMap(const char *name, dboolean checktofirst)
 {
 	lumpnum_t check = INT16_MAX;
 	UINT32 uhash;
@@ -1805,7 +1805,7 @@ size_t W_LumpLength(lumpnum_t lumpnum)
 // W_IsLumpWad
 // Is the lump a WAD? (presumably in a PK3)
 //
-boolean W_IsLumpWad(lumpnum_t lumpnum)
+dboolean W_IsLumpWad(lumpnum_t lumpnum)
 {
 	if (wadfiles[WADFILENUM(lumpnum)]->type == RET_PK3)
 	{
@@ -1823,7 +1823,7 @@ boolean W_IsLumpWad(lumpnum_t lumpnum)
 // W_IsLumpFolder
 // Is the lump a folder? (in a PK3 obviously)
 //
-boolean W_IsLumpFolder(UINT16 wad, UINT16 lump)
+dboolean W_IsLumpFolder(UINT16 wad, UINT16 lump)
 {
 	if (wadfiles[wad]->type == RET_PK3)
 	{
@@ -1863,7 +1863,7 @@ void zerr(int ret)
 #endif
 
 // returns true if the given lump is not cached, AND comes from a compatmode file (AND isn't special-cased)
-boolean W_NeedPaletteRemapPwad(UINT16 wad, UINT16 lump, boolean ignorecache)
+dboolean W_NeedPaletteRemapPwad(UINT16 wad, UINT16 lump, dboolean ignorecache)
 {
 	if (!wadfiles[wad]->lumpcache[lump] || ignorecache)
 	{
@@ -1879,7 +1879,7 @@ boolean W_NeedPaletteRemapPwad(UINT16 wad, UINT16 lump, boolean ignorecache)
 	return false;
 }
 
-boolean W_NeedPaletteRemap(lumpnum_t lump, boolean ignorecache)
+dboolean W_NeedPaletteRemap(lumpnum_t lump, dboolean ignorecache)
 {
 	return W_NeedPaletteRemapPwad(WADFILENUM(lump), LUMPNUM(lump), ignorecache);
 }
@@ -2115,7 +2115,7 @@ void *W_CacheLumpNumForce(lumpnum_t lumpnum, INT32 tag)
 // return false.
 //
 // no outside code uses the PWAD form, for now
-static inline boolean W_IsLumpCachedPWAD(UINT16 wad, UINT16 lump, void *ptr)
+static inline dboolean W_IsLumpCachedPWAD(UINT16 wad, UINT16 lump, void *ptr)
 {
 	void *lcache;
 
@@ -2135,7 +2135,7 @@ static inline boolean W_IsLumpCachedPWAD(UINT16 wad, UINT16 lump, void *ptr)
 	return false;
 }
 
-boolean W_IsLumpCached(lumpnum_t lumpnum, void *ptr)
+dboolean W_IsLumpCached(lumpnum_t lumpnum, void *ptr)
 {
 	return W_IsLumpCachedPWAD(WADFILENUM(lumpnum),LUMPNUM(lumpnum), ptr);
 }
@@ -2147,7 +2147,7 @@ boolean W_IsLumpCached(lumpnum_t lumpnum, void *ptr)
 // return false.
 //
 // no outside code uses the PWAD form, for now
-static inline boolean W_IsPatchCachedPWAD(UINT16 wad, UINT16 lump, void *ptr)
+static inline dboolean W_IsPatchCachedPWAD(UINT16 wad, UINT16 lump, void *ptr)
 {
 	void *lcache;
 
@@ -2167,7 +2167,7 @@ static inline boolean W_IsPatchCachedPWAD(UINT16 wad, UINT16 lump, void *ptr)
 	return false;
 }
 
-boolean W_IsPatchCached(lumpnum_t lumpnum, void *ptr)
+dboolean W_IsPatchCached(lumpnum_t lumpnum, void *ptr)
 {
 	return W_IsPatchCachedPWAD(WADFILENUM(lumpnum),LUMPNUM(lumpnum), ptr);
 }
@@ -2195,7 +2195,7 @@ void *W_CacheLumpName(const char *name, INT32 tag)
 // Cache a patch into heap memory, convert the patch format as necessary
 //
 
-static void *MakePatch(void *lumpdata, size_t size, INT32 tag, void *cache, boolean remap)
+static void *MakePatch(void *lumpdata, size_t size, INT32 tag, void *cache, dboolean remap)
 {
 	void *ptr, *dest;
 	size_t len = size;
@@ -2411,7 +2411,7 @@ void W_VerifyFileHash(UINT16 wadfilenum, UINT64 matchhash)
 // formats. checklist assumed to be valid.
 
 static int
-W_VerifyName (const char *name, lumpchecklist_t *checklist, boolean status)
+W_VerifyName (const char *name, lumpchecklist_t *checklist, dboolean status)
 {
 	size_t j;
 	for (j = 0; checklist[j].len && checklist[j].name; ++j)
@@ -2426,7 +2426,7 @@ W_VerifyName (const char *name, lumpchecklist_t *checklist, boolean status)
 }
 
 static int
-W_VerifyWAD (FILE *fp, lumpchecklist_t *checklist, boolean status)
+W_VerifyWAD (FILE *fp, lumpchecklist_t *checklist, dboolean status)
 {
 	size_t i;
 
@@ -2445,8 +2445,8 @@ W_VerifyWAD (FILE *fp, lumpchecklist_t *checklist, boolean status)
 		return true;
 	}
 
-	header.numlumps = LONG(header.numlumps);
-	header.infotableofs = LONG(header.infotableofs);
+	header.numlumps = LSBF_LONG(header.numlumps);
+	header.infotableofs = LSBF_LONG(header.infotableofs);
 
 	// let seek to the lumpinfo list
 	if (fseek(fp, header.infotableofs, SEEK_SET) == -1)
@@ -2458,8 +2458,8 @@ W_VerifyWAD (FILE *fp, lumpchecklist_t *checklist, boolean status)
 		if (fread(&lumpinfo, sizeof (lumpinfo), 1 , fp) != 1)
 			return true;
 
-		lumpinfo.filepos = LONG(lumpinfo.filepos);
-		lumpinfo.size = LONG(lumpinfo.size);
+		lumpinfo.filepos = LSBF_LONG(lumpinfo.filepos);
+		lumpinfo.size = LSBF_LONG(lumpinfo.size);
 
 		if (lumpinfo.size == 0)
 			continue;
@@ -2485,7 +2485,7 @@ static lumpchecklist_t folderblacklist[] =
 };
 
 static int
-W_VerifyPK3 (FILE *fp, lumpchecklist_t *checklist, boolean status)
+W_VerifyPK3 (FILE *fp, lumpchecklist_t *checklist, dboolean status)
 {
 	int verified = true;
 
@@ -2619,7 +2619,7 @@ W_VerifyPK3 (FILE *fp, lumpchecklist_t *checklist, boolean status)
 // Note: This never opens lumps themselves and therefore doesn't have to
 // deal with compressed lumps.
 static int W_VerifyFile(const char *filename, lumpchecklist_t *checklist,
-	boolean status)
+	dboolean status)
 {
 	FILE *handle;
 	int goodfile = false;
@@ -2658,7 +2658,7 @@ static int W_VerifyFile(const char *filename, lumpchecklist_t *checklist,
   *         file exists with that filename
   * \author Alam Arias
   */
-int W_VerifyNMUSlumps(const char *filename, boolean exit_on_error)
+int W_VerifyNMUSlumps(const char *filename, dboolean exit_on_error)
 {
 	lumpchecklist_t NMUSlist[] =
 	{

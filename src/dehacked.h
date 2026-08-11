@@ -26,7 +26,7 @@ struct dehinfo_t
 };
 
 void DEH_LoadDehackedLump(lumpnum_t lumpnum);
-void DEH_LoadDehackedLumpPwad(UINT16 wad, UINT16 lump, boolean mainfile);
+void DEH_LoadDehackedLumpPwad(UINT16 wad, UINT16 lump, dboolean mainfile);
 void DEH_Link(const char *name, dehinfo_t *info, strbuf_t **buf);
 INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out);
 
@@ -38,9 +38,9 @@ fixed_t get_number(const char *word);
 FUNCPRINTF void deh_warning(const char *first, ...);
 void deh_strlcpy(char *dst, const char *src, size_t size, const char *warntext);
 
-extern boolean gamedataadded;
-extern boolean titlechanged;
-extern boolean introchanged;
+extern dboolean gamedataadded;
+extern dboolean titlechanged;
+extern dboolean introchanged;
 
 #define MAXRECURSION 30
 extern const char *superactions[MAXRECURSION];

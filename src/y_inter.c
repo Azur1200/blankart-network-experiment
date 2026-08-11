@@ -89,10 +89,10 @@ typedef struct
 	UINT32 val[MAXPLAYERS]; // Gametype-specific value
 	UINT8 pos[MAXPLAYERS]; // player positions. used for ties
 
-	boolean rankingsmode; // rankings mode
-	boolean gradingmode; // Displaying the player's final rankscore
-	boolean itemrolls;
-	boolean encore; // encore mode
+	dboolean rankingsmode; // rankings mode
+	dboolean gradingmode; // Displaying the player's final rankscore
+	dboolean itemrolls;
+	dboolean encore; // encore mode
 } y_data;
 
 static y_data data;
@@ -102,9 +102,9 @@ static patch_t *bgtile = NULL;      // SPECTILE/SRB2BACK
 static patch_t *interpic = NULL;    // custom picture defined in map header
 
 static INT32 timer;
-static boolean freezetimer = false;
+static dboolean freezetimer = false;
 
-static boolean useinterpic;
+static dboolean useinterpic;
 
 static INT32 powertype = PWRLV_DISABLED;
 static UINT8 *y_screenbuffer;
@@ -137,7 +137,7 @@ static rankresultsmode_e nextrankmode[NUMRANKRESULTSMODES] = {
 };
 
 static fixed_t listscroll_length = 0;
-static boolean listscroll_reverse = false;
+static dboolean listscroll_reverse = false;
 static INT32 listscroll_delay = 0;
 static fixed_t xscroll = 0;
 
@@ -208,13 +208,13 @@ static void Y_CompareRank(INT32 i)
 static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 {
 	INT32 i, j;
-	boolean completed[MAXPLAYERS];
+	dboolean completed[MAXPLAYERS];
 	INT32 numplayersingame = 0;
 
 	// Initialize variables
 	if (rankingsmode > 1)
 		;
-	else if ((data.rankingsmode = (boolean)rankingsmode))
+	else if ((data.rankingsmode = (dboolean)rankingsmode))
 	{
 		sprintf(data.levelstring, "\x82*\x80 Total Rankings \x82*\x80");
 		data.encore = false;
@@ -340,7 +340,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 	}
 }
 
-boolean Y_ItemListActive(void)
+dboolean Y_ItemListActive(void)
 {
 	UINT8 i = 0, nump = 0;
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -419,7 +419,7 @@ static void Y_DrawThinStringWithBacking(INT32 x,
 #define BACKINGWIDTH (255)
 #define BACKINGWIDTH_HALF (134)
 
-static boolean RankScreenVis_ShowGrade(void)
+static dboolean RankScreenVis_ShowGrade(void)
 {
 	INT32 dupadjust = (vid.scaledwidth), duptweak = (dupadjust - BASEVIDWIDTH) / 2;
 
@@ -465,7 +465,7 @@ static boolean RankScreenVis_ShowGrade(void)
 	char norankstring[11] = "No rank..."; // Spectators aren't ranked
 	patch_t* rankpatch = NULL;
 
-	boolean half_y = false;
+	dboolean half_y = false;
 
 	if (r_splitscreen)
 	{
@@ -910,7 +910,7 @@ static void Y_DrawChartForPlayer(UINT16 pid,
 #define LINECOLORINDEX (4)
 #define LINEDIM (FRACHALF)
 
-static ATTRUSED boolean RankScreenVis_Graph(void)
+static ATTRUSED dboolean RankScreenVis_Graph(void)
 {
 	INT32 screen_x = 0;
 
@@ -957,7 +957,7 @@ static ATTRUSED boolean RankScreenVis_Graph(void)
 	INT32 i = 0;
 	INT32 j = 0;
 
-	boolean islocal = false;
+	dboolean islocal = false;
 
 	// First loop: Find the local players we want to display in front of the rest
 	for (i = 0; i < data.numplayers; i++)
@@ -1154,9 +1154,9 @@ void Y_IntermissionDrawer(void)
 		fixed_t newlist_xpush = (BASEVIDWIDTH/2) * FRACUNIT;
 		const char *timeheader;
 
-		boolean manyplayers16 = (data.numplayers > NUMFORNEWCOLUMN*2);
-		boolean manyplayers8 = (data.numplayers > NUMFORNEWCOLUMN);
-		boolean displayitemrolls = (data.itemrolls && (intertic <= rolltic));
+		dboolean manyplayers16 = (data.numplayers > NUMFORNEWCOLUMN*2);
+		dboolean manyplayers8 = (data.numplayers > NUMFORNEWCOLUMN);
+		dboolean displayitemrolls = (data.itemrolls && (intertic <= rolltic));
 
 		if (displayitemrolls)
 			manyplayers16 = manyplayers8 = false;
@@ -1226,7 +1226,7 @@ void Y_IntermissionDrawer(void)
 
 			for (i = 0; i < data.numplayers; i++)
 			{
-				boolean dojitter = data.jitter[data.num[i]];
+				dboolean dojitter = data.jitter[data.num[i]];
 				data.jitter[data.num[i]] = 0;
 
 				if (data.num[i] != MAXPLAYERS && playeringame[data.num[i]] && !players[data.num[i]].spectator)
@@ -1255,7 +1255,7 @@ void Y_IntermissionDrawer(void)
 						UINT8 *colormap = R_GetTranslationColormap(*data.character[i], *data.color[i], GTC_CACHE);
 						patch_t *facerank;
 
-						boolean hires = K_UseHighResPortraits() && !manyplayers16 && !displayitemrolls;
+						dboolean hires = K_UseHighResPortraits() && !manyplayers16 && !displayitemrolls;
 						facerank = faceprefix[*data.character[i]][hires ? FACE_WANTED : FACE_RANK];
 						SINT8 hiresoffsetx = hires ? 8: 0;
 						SINT8 hiresoffsety = hires ? 2: 0;
@@ -1403,8 +1403,8 @@ void Y_IntermissionDrawer(void)
 							V_DrawRightAlignedThinString(x+(manyplayers16 ? 100 : 152)+gutter, y-1, (manyplayers8 ? V_6WIDTHSPACE : 0), "NO CONTEST.");
 						else
 						{
-							const boolean unrankedrace = (intertype == int_race && cannotrank);
-							const boolean signedval_inter = (intertype == int_race && (!cannotrank));
+							const dboolean unrankedrace = (intertype == int_race && cannotrank);
+							const dboolean signedval_inter = (intertype == int_race && (!cannotrank));
 
 							if (unrankedrace || intertype == int_battletime)
 							{
@@ -1633,7 +1633,7 @@ static void RankTick_Graph(void)
 			INT32 i = 0;
 			UINT16 bestlocalplayer = 0;
 			UINT16 bestlocalpos = MAXPLAYERS;
-			boolean everyonespectates = true;
+			dboolean everyonespectates = true;
 			for (i = 0; i < (r_splitscreen + 1); i++)
 			{
 				if (ranksort_positions[displayplayers[i]] < bestlocalpos)
@@ -1893,7 +1893,7 @@ void Y_Ticker(void)
 			P_DoTeamscrambling();
 	}*/
 
-	boolean timerfinish = false;
+	dboolean timerfinish = false;
 
 	if (timer)
 	{
@@ -1941,7 +1941,7 @@ void Y_Ticker(void)
 			if (data.rankingsmode && intertic > sorttic+16+(2*TICRATE))
 			{
 				INT32 q=0,r=0;
-				boolean kaching = true;
+				dboolean kaching = true;
 
 				for (q = 0; q < data.numplayers; q++)
 				{

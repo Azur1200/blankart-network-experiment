@@ -29,8 +29,8 @@ typedef struct
 	FSurfaceInfo  Surf;
 	INT32         texnum;
 	FBITFIELD     blend;
-	boolean fogwall;
-	boolean noencore;
+	dboolean fogwall;
+	dboolean noencore;
 	INT32 lightlevel;
 	extracolormap_t *wallcolormap; // Doing the lighting in HWR_RenderWall now for correct fog after sorting
 } wallinfo_t;
@@ -38,21 +38,21 @@ typedef struct
 typedef struct
 {
 	poly_subsector_t *xsub;
-	boolean isceiling;
+	dboolean isceiling;
 	fixed_t fixedheight;
 	INT32 lightlevel;
 	levelflat_t *levelflat;
 	INT32 alpha;
 	sector_t *FOFSector;
 	FBITFIELD blend;
-	boolean fogplane;
+	dboolean fogplane;
 	extracolormap_t *planecolormap;
 } planeinfo_t;
 
 typedef struct
 {
 	polyobj_t *polysector;
-	boolean isceiling;
+	dboolean isceiling;
 	fixed_t fixedheight;
 	INT32 lightlevel;
 	levelflat_t *levelflat;
@@ -128,7 +128,7 @@ static void *HWR_CreateDrawNode(gl_drawnode_type_t type)
     return NULL;
 }
 
-void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
+void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, dboolean noencore, FBITFIELD blend, dboolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
 {
 	wallinfo_t *wallinfo = HWR_CreateDrawNode(DRAWNODE_WALL);
 
@@ -143,7 +143,7 @@ void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 te
 }
 
 // This will likely turn into a copy of HWR_Add3DWater and replace it.
-void HWR_AddTransparentFloor(levelflat_t *levelflat, poly_subsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap)
+void HWR_AddTransparentFloor(levelflat_t *levelflat, poly_subsector_t *xsub, dboolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, dboolean fogplane, extracolormap_t *planecolormap)
 {
 	planeinfo_t *planeinfo = HWR_CreateDrawNode(DRAWNODE_PLANE);
 
@@ -161,7 +161,7 @@ void HWR_AddTransparentFloor(levelflat_t *levelflat, poly_subsector_t *xsub, boo
 
 // Adding this for now until I can create extrasubsector info for polyobjects
 // When that happens it'll just be done through HWR_AddTransparentFloor and HWR_RenderPlane
-void HWR_AddTransparentPolyobjectFloor(levelflat_t *levelflat, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap)
+void HWR_AddTransparentPolyobjectFloor(levelflat_t *levelflat, polyobj_t *polysector, dboolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap)
 {
 	polyplaneinfo_t *polyplaneinfo = HWR_CreateDrawNode(DRAWNODE_POLYOBJECT_PLANE);
 

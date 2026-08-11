@@ -183,10 +183,10 @@ INT16 K_CalculatePowerLevelAvg(void)
 	return (INT16)(avg >> FRACBITS);
 }
 
-void K_UpdatePowerLevels(player_t *player, UINT8 lap, boolean forfeit)
+void K_UpdatePowerLevels(player_t *player, UINT8 lap, dboolean forfeit)
 {
 	const UINT8 playerNum = player - players;
-	const boolean exitBonus = ((lap > numlaps) || (player->pflags & PF_NOCONTEST));
+	const dboolean exitBonus = ((lap > numlaps) || (player->pflags & PF_NOCONTEST));
 
 	SINT8 powerType = K_UsingPowerLevels();
 
@@ -235,7 +235,7 @@ void K_UpdatePowerLevels(player_t *player, UINT8 lap, boolean forfeit)
 		INT16 diff = 0; // Loser PWR.LV - Winner PWR.LV
 		INT16 inc = 0; // Total pt increment
 
-		boolean won = false;
+		dboolean won = false;
 
 		if (i == playerNum) // Same person
 		{
@@ -463,7 +463,7 @@ void K_SetPowerLevelScrambles(SINT8 powertype)
 			if (cv_kartspeed.value == -1 || cv_kartencore.value == -1)
 			{
 				UINT8 speed = KARTSPEED_DEFAULT;
-				boolean encore = false;
+				dboolean encore = false;
 				INT16 avg = 0, min = 0;
 				UINT8 i, t = 1;
 
@@ -602,7 +602,7 @@ void K_SetPowerLevelScrambles(SINT8 powertype)
 	}
 }
 
-void K_PlayerForfeit(UINT8 playerNum, boolean pointLoss)
+void K_PlayerForfeit(UINT8 playerNum, dboolean pointLoss)
 {
 	UINT8 p = 0;
 

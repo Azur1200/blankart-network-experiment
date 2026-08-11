@@ -28,9 +28,9 @@ extern "C" {
 
 extern void *GLUhandle;
 
-boolean OglSdlSurface(INT32 w, INT32 h);
+dboolean OglSdlSurface(INT32 w, INT32 h);
 
-void OglSdlFinishUpdate(boolean vidwait);
+void OglSdlFinishUpdate(dboolean vidwait);
 
 extern SDL_Renderer *renderer;
 extern SDL_GLContext sdlglcontext;

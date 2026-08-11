@@ -73,7 +73,7 @@ const char *DRPC_HideUsername(const char *input)
 	return buffer;
 }
 
-boolean drpc_init = false;
+dboolean drpc_init = false;
 
 /*--------------------------------------------------
 	static char *DRPC_XORIPString(const char *input)
@@ -192,7 +192,7 @@ static void DRPC_HandleJoin(const char *secret)
 }
 
 /*--------------------------------------------------
-	static boolean DRPC_InvitesAreAllowed(void)
+	static dboolean DRPC_InvitesAreAllowed(void)
 
 		Determines whenever or not invites or
 		ask to join requests are allowed.
@@ -203,7 +203,7 @@ static void DRPC_HandleJoin(const char *secret)
 	Return:-
 		true if invites are allowed, false otherwise.
 --------------------------------------------------*/
-static boolean DRPC_InvitesAreAllowed(void)
+static dboolean DRPC_InvitesAreAllowed(void)
 {
 	if (!Playing())
 	{
@@ -342,7 +342,7 @@ void DRPC_RemoveRequest(discordRequest_t *removeRequest)
 }
 
 #ifdef _DEBUG
-static boolean comregistered = false;
+static dboolean comregistered = false;
 static void COM_DiscordTest_f(void)
 {
 	DiscordUser test = {
@@ -499,7 +499,7 @@ void DRPC_UpdatePresence(void)
 	char charimg[4+SKINNAMESIZE+2];
 	char charname[11+SKINNAMESIZE+1];
 
-	boolean joinSecretSet = false;
+	dboolean joinSecretSet = false;
 
 	DiscordRichPresence discordPresence;
 	memset(&discordPresence, 0, sizeof(discordPresence));
@@ -722,7 +722,7 @@ void DRPC_UpdatePresence(void)
 				NULL
 			};
 
-			boolean customMap = true;
+			dboolean customMap = true;
 			UINT16 checkMap = 0;
 
 			// Map image

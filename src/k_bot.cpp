@@ -201,11 +201,11 @@ void K_SetBot(UINT8 newplayernum, UINT16 skinnum, UINT8 difficulty, botStyle_e s
 }
 
 /*--------------------------------------------------
-	boolean K_AddBot(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
+	dboolean K_AddBot(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean K_AddBot(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
+dboolean K_AddBot(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
 {
 	UINT8 newplayernum = *p;
 
@@ -416,11 +416,11 @@ void K_UpdateMatchRaceBots(void)
 }
 
 /*--------------------------------------------------
-	boolean K_PlayerUsesBotMovement(const player_t *player)
+	dboolean K_PlayerUsesBotMovement(const player_t *player)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean K_PlayerUsesBotMovement(const player_t *player)
+dboolean K_PlayerUsesBotMovement(const player_t *player)
 {
 	// Lua can't override the podium sequence result, but it can
 	// override the following results:
@@ -440,11 +440,11 @@ boolean K_PlayerUsesBotMovement(const player_t *player)
 }
 
 /*--------------------------------------------------
-	boolean K_BotCanTakeCut(player_t *player)
+	dboolean K_BotCanTakeCut(player_t *player)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean K_BotCanTakeCut(const player_t *player)
+dboolean K_BotCanTakeCut(const player_t *player)
 {
 	if (
 		(K_TripwirePassConditions(player) != TRIPWIRE_NONE || K_ApplyOffroad(player) == false)
@@ -929,7 +929,7 @@ static fixed_t K_ScaleWPDistWithSlope(fixed_t disttonext, angle_t angletonext, c
 }
 
 // Calculates a point further along the track to attempt to drive towards.
-static boolean K_CreateBotPrediction(botdata_t *bd, const player_t *player)
+static dboolean K_CreateBotPrediction(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -959,9 +959,9 @@ static boolean K_CreateBotPrediction(botdata_t *bd, const player_t *player)
 	waypoint_t *wp = player->nextwaypoint;
 	mobj_t *prevwpmobj = player->mo;
 
-	const boolean useshortcuts = K_BotCanTakeCut(player);
-	const boolean huntbackwards = false;
-	boolean pathfindsuccess = false;
+	const dboolean useshortcuts = K_BotCanTakeCut(player);
+	const dboolean huntbackwards = false;
+	dboolean pathfindsuccess = false;
 	path_t pathtofinish = {0};
 
 	size_t i;
@@ -1154,7 +1154,7 @@ void K_BotSetDriftState(const player_t *player, botdrift_e newstate, tic_t locko
 static void K_BotStartDrift(botdata_t *bd, const player_t* player)
 {
 	// Handle DRIFTING towards waypoints!
-	boolean shouldDrift;
+	dboolean shouldDrift;
 	fixed_t botDriftSpeed;
 	driftSetting_e driftsetting = DRIFT_NONE;
 	fixed_t speedfactor = FixedDiv(player->speed, K_GetKartSpeed(player, false, false));
@@ -1271,7 +1271,7 @@ static INT32 K_HandleBotTrack(botdata_t *bd, const player_t *player, angle_t des
 	angle_t moveangle;
 	INT32 anglediff, anglediff2;
 	fixed_t speedfactor = FixedDiv(player->speed, K_GetKartSpeed(player, false, false));
-	boolean onground = P_IsObjectOnGround(player->mo);
+	dboolean onground = P_IsObjectOnGround(player->mo);
 
 	moveangle = player->mo->angle;
 	anglediff = AngleDeltaSigned(moveangle, destangle);
@@ -1425,7 +1425,7 @@ static void K_IncrementBotRespawn(const player_t *player, UINT8 *respawn, const 
 {
 	const fixed_t requireDist = (12*player->mo->scale) / FRACUNIT;
 	INT32 progress = player->distancetofinishprev - player->distancetofinish;
-	boolean exceptions = (
+	dboolean exceptions = (
 		(leveltime < starttime)
 		|| player->flashing != 0
 		|| player->spinouttimer != 0
@@ -1610,7 +1610,7 @@ void K_BotTicker(const player_t *player)
 	bd->acceldown = bd->brakedown = bd->driftdown = bd->itemdown = false;
 	bd->dolookback = false;
 	bd->itemthrow = 0;
-	boolean onground = P_IsObjectOnGround(player->mo);
+	dboolean onground = P_IsObjectOnGround(player->mo);
 
 	if (!(gametypes[gametype]->rules & GTR_BOTS) // No bot behaviors
 		|| K_GetNumWaypoints() == 0 // No waypoints
@@ -1680,7 +1680,7 @@ void K_BotTicker(const player_t *player)
 	// it's time to start predicting
 	memset(&bd->predict, 0, sizeof(bd->predict));
 
-	boolean forcedDir = false;
+	dboolean forcedDir = false;
 	if (botController != nullptr && (botController->flags & TMBOT_FORCEDIR) == TMBOT_FORCEDIR)
 	{
 		const fixed_t dist = DEFAULT_WAYPOINT_RADIUS * player->mo->scale;
@@ -1942,7 +1942,7 @@ void K_BotReborn(const player_t *player)
 	bd->driftstatedelay = TICRATE/5;
 }
 
-void K_BotResetItemConfirm(const player_t *player, boolean setdelay)
+void K_BotResetItemConfirm(const player_t *player, dboolean setdelay)
 {
 	botdata_t *bd = &botdata[player - players];
 	bd->itemconfirm = 0;

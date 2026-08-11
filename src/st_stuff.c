@@ -112,7 +112,7 @@ static huddrawlist_h luahuddrawlist_titlecard;
 // STATUS BAR CODE
 //
 
-boolean ST_SameTeam(player_t *a, player_t *b)
+dboolean ST_SameTeam(player_t *a, player_t *b)
 {
 	// Spectator chat.
 	if (a->spectator && b->spectator)
@@ -133,7 +133,7 @@ boolean ST_SameTeam(player_t *a, player_t *b)
 	}
 }
 
-static boolean st_stopped = true;
+static dboolean st_stopped = true;
 
 static void ST_doPaletteStuff(void)
 {
@@ -158,7 +158,7 @@ static void ST_doPaletteStuff(void)
 	}
 }
 
-void ST_Ticker(boolean run)
+void ST_Ticker(dboolean run)
 {
 	if (st_stopped)
 		return;
@@ -205,7 +205,7 @@ void ST_LoadGraphics(void)
 #endif
 }
 
-static boolean ST_IconCanSpinout(UINT8 icon)
+static dboolean ST_IconCanSpinout(UINT8 icon)
 {
 	return ((icon == FACE_MINIMAP)||(icon == FACE_RANK)||(icon == FACE_WANTED));
 }
@@ -218,7 +218,7 @@ void ST_LoadFaceGraphics(INT32 skinnum)
 	spriteframe_t* sprframe;
 	UINT8 i = 0, maxer = min(sprdef->numframes, FACE_MAX);
 	INT16 baseleftoffs, basetopoffs;
-	boolean alreadycentered = false;
+	dboolean alreadycentered = false;
 	while (i < maxer)
 	{
 		// Reset "base" offsets.
@@ -342,7 +342,7 @@ void ST_changeDemoView(void)
 //                         STATUS BAR OVERLAY
 // =========================================================================
 
-boolean st_overlay;
+dboolean st_overlay;
 
 /*
 static INT32 SCZ(INT32 z)
@@ -451,7 +451,7 @@ static void ST_drawMusicDebug(INT32 *height)
 {
 	char mname[7];
 	UINT16 mflags; // unused
-	boolean looping;
+	dboolean looping;
 	UINT8 i = 0;
 
 	const musicdef_t *def;
@@ -691,8 +691,8 @@ void ST_preDrawTitleCard(void)
 //
 void ST_runTitleCard(void)
 {
-	boolean run = !(paused || P_AutoPause());
-	//boolean gp = (marathonmode || (grandprixinfo.gp && grandprixinfo.roundnum));
+	dboolean run = !(paused || P_AutoPause());
+	//dboolean gp = (marathonmode || (grandprixinfo.gp && grandprixinfo.roundnum));
 
 	if (!G_IsTitleCardAvailable())
 		return;
@@ -828,7 +828,7 @@ void ST_preLevelTitleCardDrawer(void)
 // returns the actual button name for any gamecontrol
 // if unbound is set, it returns "Unbound" as a string should there be no button bound to a gamecontrol
 // if gamectrl is set, it adds an extra "-" for cases where theres also a hardcoded button like accelerate
-static const char *ST_GetButtonName(INT32 control, const char *inputtext, boolean unbound, boolean gamectrl)
+static const char *ST_GetButtonName(INT32 control, const char *inputtext, dboolean unbound, dboolean gamectrl)
 {
 	static char buttname[32] = "";
 	const char *butt1 = (gamecontrol[0][control][0] != 0 ? G_KeynumToString(gamecontrol[0][control][0]) : NULL);
@@ -1033,11 +1033,11 @@ static INT32 ST_ServerSplash_OpacityFlag(INT32 opacity)
 	return (NUMTRANSMAPS - opacity) << V_ALPHASHIFT;
 }
 
-void ST_DrawServerSplash(boolean timelimited)
-{
-	static const fixed_t SPLASH_LEN = (FRACUNIT * TICRATE) * 3;
-	static const fixed_t SPLASH_WAIT = (FRACUNIT * TICRATE) / 2;
+#define SPLASH_LEN ((FRACUNIT * TICRATE) * 3)
+#define SPLASH_WAIT ((FRACUNIT * TICRATE) / 2)
 
+void ST_DrawServerSplash(dboolean timelimited)
+{
 	static fixed_t splashTime = -SPLASH_WAIT;
 	static char prevContext[8] = {0};
 
@@ -1158,7 +1158,7 @@ void ST_DrawServerSplash(boolean timelimited)
 
 void ST_Drawer(void)
 {
-	boolean stagetitle = false; // Decide whether to draw the stage title or not
+	dboolean stagetitle = false; // Decide whether to draw the stage title or not
 
 	// Doom's status bar only updated if necessary.
 	// However, ours updates every frame regardless, so the "refresh" param was removed

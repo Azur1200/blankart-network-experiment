@@ -40,11 +40,11 @@ INT32 K_FollowerAvailable(const char *name)
 }
 
 /*--------------------------------------------------
-	boolean K_SetFollowerByName(INT32 playernum, const char *skinname)
+	dboolean K_SetFollowerByName(INT32 playernum, const char *skinname)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean K_SetFollowerByName(INT32 playernum, const char *skinname)
+dboolean K_SetFollowerByName(INT32 playernum, const char *skinname)
 {
 	INT32 i;
 	player_t *player = &players[playernum];
@@ -733,7 +733,7 @@ void K_FollowerHornTaunt(player_t *taunter, player_t *victim)
 
 	const follower_t *fl = &followers[taunter->followerskin];
 
-	const boolean tasteful = (taunter->karthud[khud_taunthorns] == 0);
+	const dboolean tasteful = (taunter->karthud[khud_taunthorns] == 0);
 
 	if (tasteful || cv_karthorns.value == 2)
 	{

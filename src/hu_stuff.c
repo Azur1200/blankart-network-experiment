@@ -86,12 +86,12 @@ patch_t *frameslash;	// framerate stuff. Used in screen.c
 patch_t *srb2back = NULL;
 
 static player_t *plr;
-boolean hu_keystrokes; // :)
-boolean chat_on; // entering a chat message?
+dboolean hu_keystrokes; // :)
+dboolean chat_on; // entering a chat message?
 static char w_chat_buf[HU_MAXMSGLEN + 1];
 static textinput_t w_chat;
-static boolean headsupactive = false;
-boolean hu_showscores; // draw rankings
+static dboolean headsupactive = false;
+dboolean hu_showscores; // draw rankings
 static char hu_tick;
 static tic_t hu_emoteanim = 0;
 emote_autocomplete_t emote_autocomplete = {0};
@@ -274,7 +274,7 @@ void HU_Init(void)
 	luahuddrawlist_scores = LUA_HUD_CreateDrawList();
 }
 
-patch_t *HU_UpdateOrBlankPatch(patch_t **user, boolean required, const char *format, ...)
+patch_t *HU_UpdateOrBlankPatch(patch_t **user, dboolean required, const char *format, ...)
 {
 	va_list ap;
 	char buffer[9];
@@ -369,7 +369,7 @@ static char chat_log[CHAT_BUFSIZE][255]; // hold the last 48 or so messages in t
 static char chat_mini[8][255]; // display up to 8 messages that will fade away / get overwritten
 static tic_t chat_timers[8];
 
-static boolean chat_scrollmedown = false; // force instant scroll down on the chat log. Happens when you open it / send a message.
+static dboolean chat_scrollmedown = false; // force instant scroll down on the chat log. Happens when you open it / send a message.
 
 // remove text from minichat table
 
@@ -402,7 +402,7 @@ static void HU_removeChatText_Log(void)
 	chat_nummsg_log--; // lost 1 msg.
 }
 
-void HU_AddChatText(const char *text, boolean playsound)
+void HU_AddChatText(const char *text, dboolean playsound)
 {
 	if (playsound && cv_consolechat.value != 2)	// Don't play the sound if we're using hidden chat.
 		S_StartSound(NULL, sfx_radio);
@@ -584,7 +584,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 	UINT8 flags;
 	const char *dispname;
 	char *msg;
-	boolean action = false;
+	dboolean action = false;
 	char *ptr;
 
 	CONS_Debug(DBG_NETPLAY,"Received SAY cmd from Player %d (%s)\n", playernum+1, player_names[playernum]);
@@ -916,13 +916,13 @@ void HU_Ticker(void)
 	resynch_ticker++;
 }
 
-static boolean teamtalk = false;
-static boolean justscrolleddown;
-static boolean justscrolledup;
+static dboolean teamtalk = false;
+static dboolean justscrolleddown;
+static dboolean justscrolledup;
 static INT16 typelines = 1; // number of drawfill lines we need when drawing the chat. it's some weird hack and might be one frame off but I'm lazy to make another loop.
 // It's up here since it has to be reset when we open the chat.
 
-static boolean HU_chatboxContainsOnlySpaces(void)
+static dboolean HU_chatboxContainsOnlySpaces(void)
 {
 	size_t i;
 
@@ -1021,7 +1021,7 @@ void HU_clearChatChars(void)
 //
 // Returns true if key eaten
 //
-boolean HU_Responder(event_t *ev)
+dboolean HU_Responder(event_t *ev)
 {
 	if (ev->type != ev_keydown)
 		return false;
@@ -1221,7 +1221,7 @@ static void HU_drawMiniChat(void)
 	INT32 boxw = cv_chatwidth.value;
 	INT32 dx = 0, dy = 0;
 	size_t i = chat_nummsg_min;
-	boolean prev_linereturn = false; // a hack to prevent double \n while I have no idea why they happen in the first place.
+	dboolean prev_linereturn = false; // a hack to prevent double \n while I have no idea why they happen in the first place.
 
 	INT32 msglines = 0;
 	// process all messages once without rendering anything or doing anything fancy so that we know how many lines each message has...
@@ -1394,7 +1394,7 @@ static void HU_drawChatLog(INT32 offset)
 	UINT32 i = 0;
 	INT32 chat_topy, chat_bottomy;
 	INT32 highlight = HU_GetHighlightColor();
-	boolean atbottom = false;
+	dboolean atbottom = false;
 
 	// make sure that our scroll position isn't "illegal";
 	if (chat_scroll > chat_maxscroll)
@@ -1605,7 +1605,7 @@ static void HU_DrawChat(void)
 
 	while (w_chat_buf[i])
 	{
-		boolean skippedline = false;
+		dboolean skippedline = false;
 		emote_t *emote = NULL;
 		int emotelen = 0;
 		int drawwidth = charwidth; // if we've drawn emote, selection needs to account for that
@@ -2166,7 +2166,7 @@ Ping_gfx_color (int lag)
 }
 
 static int
-PL_gfx_color (int pl, boolean mode)
+PL_gfx_color (int pl, dboolean mode)
 {
 	if (mode)
 	{
@@ -2220,7 +2220,7 @@ Ping_conversion (UINT32 lag)
 //
 // HU_drawPing
 //
-void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT32 flags, boolean icon)
+void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT32 flags, dboolean icon)
 {
 	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
 	INT32 gfxnum; // gfx to draw
@@ -2347,7 +2347,7 @@ HU_drawMiniPing (INT32 x, INT32 y, UINT32 ping, UINT32 lag, INT32 flags)
 		patch = mping[Ping_gfx_num(ping)];
 
 	if (( flags & V_SNAPTORIGHT ))
-		x += ( w - SHORT (patch->width) );
+		x += ( w - LSBF_SHORT (patch->width) );
 
 	V_DrawScaledPatch(x, y, flags, patch);
 }
@@ -2425,7 +2425,7 @@ static void HU_DrawRankings(void)
 {
 	playersort_t tab[MAXPLAYERS];
 	INT32 i, j, scorelines, hilicol, numplayersingame = 0;
-	boolean completed[MAXPLAYERS];
+	dboolean completed[MAXPLAYERS];
 	UINT32 whiteplayer = MAXPLAYERS;
 
 	V_DrawFadeScreen(0xFF00, 16); // A little more readable, and prevents cheating the fades under other circumstances.

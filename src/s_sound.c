@@ -37,7 +37,7 @@
 #include "m_menu.h" // M_ChangeMenuMusic
 #include "k_grandprix.h" // grandprixinfo
 
-static boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch, sfxinfo_t *sfxinfo);
+static dboolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch, sfxinfo_t *sfxinfo);
 
 CV_PossibleValue_t soundvolume_cons_t[] = {{0, "MIN"}, {MAX_VOLUME, "MAX"}, {0, NULL}};
 static void SetChannelsNum(void);
@@ -57,7 +57,7 @@ static void ModFilter_OnChange(void);
 
 static lumpnum_t S_GetMusicLumpNum(const char *mname);
 
-static boolean S_CheckQueue(void);
+static dboolean S_CheckQueue(void);
 
 consvar_t cv_samplerate = CVAR_INIT ("samplerate", "22050", 0, CV_Unsigned, NULL); //Alam: For easy hacking?
 
@@ -346,7 +346,7 @@ lumpnum_t S_GetSfxLumpNum(sfxinfo_t *sfx)
 // Sound Status
 //
 
-boolean S_SoundDisabled(void)
+dboolean S_SoundDisabled(void)
 {
 	return (
 			sound_disabled ||
@@ -401,7 +401,7 @@ void S_StopSoundByNum(sfxenum_t sfxnum)
 void S_StartCaption(sfxenum_t sfx_id, INT32 cnum, UINT16 lifespan)
 {
 	UINT8 i, set, moveup, start;
-	boolean same = false;
+	dboolean same = false;
 	sfxinfo_t *sfx;
 
 	if (!cv_closedcaptioning.value) // no captions at all
@@ -505,13 +505,13 @@ void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, INT32 volume
 {
 	const mobj_t *origin = (const mobj_t *)origin_p;
 	const sfxenum_t actual_id = sfx_id;
-	const boolean reverse = (stereoreverse.value ^ encoremode);
+	const dboolean reverse = (stereoreverse.value ^ encoremode);
 	const INT32 initial_volume = (origin ? S_ScaleVolumeWithSplitscreen(volume) : volume);
 
 	sfxinfo_t *sfx;
 	INT32 sep, pitch, priority, cnum;
-	boolean anyListeners = false;
-	boolean itsUs = false;
+	dboolean anyListeners = false;
+	dboolean itsUs = false;
 	INT32 i;
 
 	listener_t listener[MAXSPLITSCREENPLAYERS];
@@ -609,7 +609,7 @@ void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, INT32 volume
 		// Check to see if it is audible, and if not, modify the params
 		if (origin && !itsUs)
 		{
-			boolean audible = false;
+			dboolean audible = false;
 
 			if (r_splitscreen > 0)
 			{
@@ -749,7 +749,7 @@ static INT32 actualdigmusicvolume;
 void S_UpdateSounds(void)
 {
 	INT32 cnum, volume, sep, pitch;
-	boolean audible = false;
+	dboolean audible = false;
 	channel_t *c;
 	INT32 i;
 
@@ -866,7 +866,7 @@ notinlevel:
 		volume = c->volume; // 8 bits internal volume precision
 		pitch = NORM_PITCH;
 		sep = NORM_SEP;
-		boolean itsUs = false;
+		dboolean itsUs = false;
 
 		for (i = r_splitscreen; i >= 0; i--)
 		{
@@ -940,7 +940,7 @@ notinlevel:
 void S_UpdateClosedCaptions(void)
 {
 	UINT8 i;
-	boolean gamestopped = (paused || P_AutoPause());
+	dboolean gamestopped = (paused || P_AutoPause());
 
 	for (i = 0; i < NUMCAPTIONS; i++) // update captions
 	{
@@ -1043,10 +1043,10 @@ INT32 S_GetSoundVolume(sfxinfo_t *sfx, INT32 volume)
 // If the sound is not audible, returns a 0.
 // Otherwise, modifies parameters and returns 1.
 //
-boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch,
+dboolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch,
 	sfxinfo_t *sfxinfo)
 {
-	const boolean reverse = (stereoreverse.value ^ encoremode);
+	const dboolean reverse = (stereoreverse.value ^ encoremode);
 
 	fixed_t approx_dist;
 
@@ -1303,13 +1303,13 @@ void S_InitSfxChannels(INT32 sfxVolume)
 static char      music_name[7]; // up to 6-character name
 static void      *music_data;
 static UINT16    music_flags;
-static boolean   music_looping;
+static dboolean   music_looping;
 static consvar_t *music_refade_cv;
 static int       music_usage;
 
 static char      queue_name[7];
 static UINT16    queue_flags;
-static boolean   queue_looping;
+static dboolean   queue_looping;
 static UINT32    queue_position;
 static UINT32    queue_fadeinms;
 
@@ -1357,7 +1357,7 @@ musicdef_t *S_FindMusicDef(const char *name, UINT8 *i)
 	return NULL;
 }
 
-static boolean
+static dboolean
 MusicDefError
 (
 		alerttype_t  level,
@@ -1380,7 +1380,7 @@ MusicDefError
 	return false;
 }
 
-static boolean
+static dboolean
 ReadMusicDefFields
 (
 		lumpnum_t     lumpnum,
@@ -1794,7 +1794,7 @@ INT32 numsoundtestdefs = 0;
 //
 // Prepare sound test. What am I, your butler?
 //
-boolean S_PrepareSoundTest(void)
+dboolean S_PrepareSoundTest(void)
 {
 	musicdef_t *def;
 	INT32 pos = numsoundtestdefs = 0;
@@ -1825,27 +1825,27 @@ boolean S_PrepareSoundTest(void)
 /// Music Status
 /// ------------------------
 
-boolean S_DigMusicDisabled(void)
+dboolean S_DigMusicDisabled(void)
 {
 	return digital_disabled;
 }
 
-boolean S_MusicDisabled(void)
+dboolean S_MusicDisabled(void)
 {
 	return digital_disabled;
 }
 
-boolean S_MusicPlaying(void)
+dboolean S_MusicPlaying(void)
 {
 	return I_SongPlaying();
 }
 
-boolean S_MusicPaused(void)
+dboolean S_MusicPaused(void)
 {
 	return I_SongPaused();
 }
 
-boolean S_MusicNotInFocus(void)
+dboolean S_MusicNotInFocus(void)
 {
 	return (
 			( window_notinfocus && ! cv_playmusicifunfocused.value )
@@ -1906,7 +1906,7 @@ const char *S_MusicName(void)
 	return music_name;
 }
 
-boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping)
+dboolean S_MusicInfo(char *mname, UINT16 *mflags, dboolean *looping)
 {
 	if (!I_SongPlaying())
 		return false;
@@ -1916,10 +1916,10 @@ boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping)
 	*mflags = music_flags;
 	*looping = music_looping;
 
-	return (boolean)mname[0];
+	return (dboolean)mname[0];
 }
 
-boolean S_MusicExists(const char *mname)
+dboolean S_MusicExists(const char *mname)
 {
 	return W_CheckNumForName(va("O_%s", mname)) != LUMPERROR;
 }
@@ -1928,7 +1928,7 @@ boolean S_MusicExists(const char *mname)
 /// Music Effects
 /// ------------------------
 
-boolean S_SpeedMusic(float speed)
+dboolean S_SpeedMusic(float speed)
 {
 	return I_SetSongSpeed(speed);
 }
@@ -1942,7 +1942,7 @@ UINT32 S_GetMusicLength(void)
 	return I_GetSongLength();
 }
 
-boolean S_SetMusicLoopPoint(UINT32 looppoint)
+dboolean S_SetMusicLoopPoint(UINT32 looppoint)
 {
 	return I_SetSongLoopPoint(looppoint);
 }
@@ -1952,7 +1952,7 @@ UINT32 S_GetMusicLoopPoint(void)
 	return I_GetSongLoopPoint();
 }
 
-boolean S_SetMusicPosition(UINT32 position)
+dboolean S_SetMusicPosition(UINT32 position)
 {
 	return I_SetSongPosition(position);
 }
@@ -1968,7 +1968,7 @@ UINT32 S_GetMusicPosition(void)
 /// ------------------------
 
 char music_stack_nextmusname[7];
-boolean music_stack_noposition = false;
+dboolean music_stack_noposition = false;
 UINT32 music_stack_fadeout = 0;
 UINT32 music_stack_fadein = 0;
 static musicstack_t *music_stacks = NULL;
@@ -2043,7 +2043,7 @@ static void S_RemoveMusicStackEntryByStatus(UINT16 status)
 	}
 }
 
-static void S_AddMusicStackEntry(const char *mname, UINT16 mflags, boolean looping, UINT32 position, UINT16 status)
+static void S_AddMusicStackEntry(const char *mname, UINT16 mflags, dboolean looping, UINT32 position, UINT16 status)
 {
 	musicstack_t *mst, *new_mst;
 
@@ -2085,7 +2085,7 @@ static void S_AddMusicStackEntry(const char *mname, UINT16 mflags, boolean loopi
 	last_music_stack = new_mst;
 }
 
-static musicstack_t *S_GetMusicStackEntry(UINT16 status, boolean fromfirst, INT16 startindex)
+static musicstack_t *S_GetMusicStackEntry(UINT16 status, dboolean fromfirst, INT16 startindex)
 {
 	musicstack_t *mst, *start_mst = NULL, *mst_next;
 
@@ -2124,7 +2124,7 @@ static musicstack_t *S_GetMusicStackEntry(UINT16 status, boolean fromfirst, INT1
 	return NULL;
 }
 
-void S_RetainMusic(const char *mname, UINT16 mflags, boolean looping, UINT32 position, UINT16 status)
+void S_RetainMusic(const char *mname, UINT16 mflags, dboolean looping, UINT32 position, UINT16 status)
 {
 	musicstack_t *mst;
 
@@ -2150,10 +2150,10 @@ void S_RetainMusic(const char *mname, UINT16 mflags, boolean looping, UINT32 pos
 	S_AddMusicStackEntry(mname, mflags, looping, position, status);
 }
 
-boolean S_RecallMusic(UINT16 status, boolean fromfirst)
+dboolean S_RecallMusic(UINT16 status, dboolean fromfirst)
 {
 	UINT32 newpos = 0;
-	boolean mapmuschanged = false;
+	dboolean mapmuschanged = false;
 	musicstack_t *result;
 	musicstack_t *entry = Z_Calloc(sizeof (*result), PU_MUSIC, NULL);
 
@@ -2218,7 +2218,7 @@ boolean S_RecallMusic(UINT16 status, boolean fromfirst)
 		{
 			S_ChangeMusicEx(entry->musname, entry->musflags, entry->looping, 0, 0, music_stack_fadein);
 
-			if (!entry->noposition && !music_stack_noposition) // HACK: Global boolean to toggle position resuming, e.g., de-superize
+			if (!entry->noposition && !music_stack_noposition) // HACK: Global dboolean to toggle position resuming, e.g., de-superize
 			{
 				UINT32 poslapse = 0;
 
@@ -2263,7 +2263,7 @@ static lumpnum_t S_GetMusicLumpNum(const char *mname)
 		return LUMPERROR;
 }
 
-static boolean S_LoadMusic(const char *mname)
+static dboolean S_LoadMusic(const char *mname)
 {
 	lumpnum_t mlumpnum;
 	void *mdata;
@@ -2314,7 +2314,7 @@ static void S_UnloadMusic(void)
 }
 
 /* Don't Play content id unsafe music pls */
-static boolean S_CheckMusicIsSafe(void)
+static dboolean S_CheckMusicIsSafe(void)
 {
 	if (cv_streamersafemusic.value)
 	{
@@ -2333,7 +2333,7 @@ static boolean S_CheckMusicIsSafe(void)
 	return true;
 }
 
-static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)
+static dboolean S_PlayMusic(dboolean looping, UINT32 fadeinms)
 {
 	if (S_MusicDisabled())
 		return false;
@@ -2374,7 +2374,7 @@ static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)
 	return true;
 }
 
-static void S_QueueMusic(const char *mmusic, UINT16 mflags, boolean looping, UINT32 position, UINT32 fadeinms)
+static void S_QueueMusic(const char *mmusic, UINT16 mflags, dboolean looping, UINT32 position, UINT32 fadeinms)
 {
 	strncpy(queue_name, mmusic, 7);
 	queue_flags = mflags;
@@ -2383,7 +2383,7 @@ static void S_QueueMusic(const char *mmusic, UINT16 mflags, boolean looping, UIN
 	queue_fadeinms = fadeinms;
 }
 
-static boolean S_CheckQueue(void)
+static dboolean S_CheckQueue(void)
 {
 	return queue_name[0];
 }
@@ -2399,7 +2399,7 @@ static void S_ChangeMusicToQueue(void)
 	S_ClearQueue();
 }
 
-void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 position, UINT32 prefadems, UINT32 fadeinms)
+void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, dboolean looping, UINT32 position, UINT32 prefadems, UINT32 fadeinms)
 {
 	char newmusic[7];
 
@@ -2529,7 +2529,7 @@ void S_ChangeMusicSpecial (const char *mmusic)
 
 void S_StopMusic(void)
 {
-	boolean safe = S_CheckMusicIsSafe();
+	dboolean safe = S_CheckMusicIsSafe();
 	if (!I_SongPlaying()
 		|| demo.rewinding // Don't mess with music while rewinding!
 		|| demo.title) // SRB2Kart: Demos don't interrupt title screen music
@@ -2639,7 +2639,7 @@ void S_StopFadingMusic(void)
 	I_StopFadingSong();
 }
 
-boolean S_FadeMusicFromVolume(UINT8 target_volume, INT16 source_volume, UINT32 ms)
+dboolean S_FadeMusicFromVolume(UINT8 target_volume, INT16 source_volume, UINT32 ms)
 {
 	if (source_volume < 0)
 		return I_FadeSong(target_volume, ms, NULL);
@@ -2647,7 +2647,7 @@ boolean S_FadeMusicFromVolume(UINT8 target_volume, INT16 source_volume, UINT32 m
 		return I_FadeSongFromVolume(target_volume, source_volume, ms, NULL);
 }
 
-boolean S_FadeOutStopMusic(UINT32 ms)
+dboolean S_FadeOutStopMusic(UINT32 ms)
 {
 	return I_FadeSong(0, ms, &S_StopMusic);
 }
@@ -2661,13 +2661,13 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 // Kills playing sounds at start of level,
 //  determines music if any, changes music.
 //
-void S_InitLevelMusic(boolean fromnetsave)
+void S_InitLevelMusic(dboolean fromnetsave)
 {
 	mapheader_t* mapheader = mapheaderinfo[gamemap - 1];
 	INT16 usemusrng = 0;
 	INT16 altmusonlysize = 0;
 
-	boolean validencore = (encoremode && (mapheader->encoremusname_size > 0));
+	dboolean validencore = (encoremode && (mapheader->encoremusname_size > 0));
 
 	UINT8 truesize = validencore ? mapheader->encoremusname_size : mapheader->musname_size;
 
@@ -2708,7 +2708,7 @@ void S_InitLevelMusic(boolean fromnetsave)
 		usemusrng = mapmusrng;
 
 		// In Lunatic Mode GPs, force alternate music on to make them special (sort of).
-		const boolean inlunaticgp = ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode == true));
+		const dboolean inlunaticgp = ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode == true));
 
 		if ((cv_altmusic.value == ALTMUSIC_OFF) && (!inlunaticgp))
 		{

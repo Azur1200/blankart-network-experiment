@@ -13,6 +13,8 @@
 #ifndef __D_NETFIL__
 #define __D_NETFIL__
 
+#include <time.h>
+
 #include "d_net.h"
 #include "d_clisrv.h"
 #include "w_wad.h"
@@ -56,12 +58,12 @@ struct fileneeded_t
 	char filename[MAX_WADPATH];
 	UINT64 hash;
 	filestatus_t status; // The value returned by recsearch
-	boolean justdownloaded; // To prevent late fragments from causing an I_Error
-	boolean compatmode;
+	dboolean justdownloaded; // To prevent late fragments from causing an I_Error
+	dboolean compatmode;
 
 	// Used only for download
 	FILE *file;
-	boolean *receivedfragments;
+	dboolean *receivedfragments;
 	UINT32 fragmentsize;
 	UINT8 iteration;
 	fileack_pak *ackpacket;
@@ -82,8 +84,8 @@ extern INT32 totalfilesrequestednum;
 extern UINT32 totalfilesrequestedsize;
 
 #ifdef HAVE_CURL
-extern boolean curl_failedwebdownload;
-extern boolean curl_running;
+extern dboolean curl_failedwebdownload;
+extern dboolean curl_running;
 extern INT32 curl_transfers;
 
 extern struct HTTP_login
@@ -100,20 +102,20 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 void CL_PrepareDownloadSaveGame(const char *tmpsave);
 
 INT32 CL_CheckFiles(void);
-boolean CL_LoadServerFiles(void);
+dboolean CL_LoadServerFiles(void);
 void AddRamToSendQueue(INT32 node, void *data, size_t size, freemethod_t freemethod,
 	UINT8 fileid);
 
 void FileSendTicker(void);
 void PT_FileAck(SINT8 node);
 void PT_FileReceived(SINT8 node);
-boolean SendingFile(INT32 node);
+dboolean SendingFile(INT32 node);
 
 void FileReceiveTicker(void);
 void PT_FileFragment(SINT8 node, INT32 netconsole);
 
-boolean CL_CheckDownloadable(void);
-boolean CL_SendFileRequest(void);
+dboolean CL_CheckDownloadable(void);
+dboolean CL_SendFileRequest(void);
 void PT_RequestFile(INT32 node);
 
 void PT_ClientKey(INT32 node);
@@ -135,20 +137,20 @@ struct luafiletransfer_t
 	char *realfilename;
 	char mode[4]; // rb+/wb+/ab+ + null character
 	INT32 id; // Callback ID
-	boolean ongoing;
+	dboolean ongoing;
 	luafiletransfernodestatus_t nodestatus[MAXNETNODES];
 	tic_t nodetimeouts[MAXNETNODES];
 	luafiletransfer_t *next;
 };
 
 extern luafiletransfer_t *luafiletransfers;
-extern boolean waitingforluafiletransfer;
-extern boolean waitingforluafilecommand;
+extern dboolean waitingforluafiletransfer;
+extern dboolean waitingforluafilecommand;
 extern char luafiledir[256 + 16];
 
 void AddLuaFileTransfer(const char *filename, const char *mode);
 void SV_PrepareSendLuaFile(void);
-boolean AddLuaFileToSendQueue(INT32 node, const char *filename);
+dboolean AddLuaFileToSendQueue(INT32 node, const char *filename);
 void SV_HandleLuaFileSent(UINT8 node);
 void RemoveLuaFileTransfer(void);
 void RemoveAllLuaFileTransfers(void);
@@ -165,11 +167,11 @@ void CL_AbortDownloadResume(void);
 
 void Command_Downloads_f(void);
 
-boolean fileexist(char *filename, time_t ptime);
+dboolean fileexist(char *filename, time_t ptime);
 
 // Search a file in the wadpath, return FS_FOUND when found
 filestatus_t findfile(char *filename, UINT64 wantedhash,
-	boolean completepath);
+	dboolean completepath);
 filestatus_t checkfilehash(const char *filename, UINT64 wantedhash);
 
 void nameonly(char *s);

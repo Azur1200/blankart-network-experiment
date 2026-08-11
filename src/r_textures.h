@@ -56,7 +56,7 @@ struct texture_t
 	UINT32 hash;
 	UINT8 type; // TEXTURETYPE_
 	INT16 width, height;
-	boolean holes;
+	dboolean holes;
 	UINT8 flip; // 1 = flipx, 2 = flipy, 3 = both
 	void *flat; // The texture, as a flat.
 	size_t terrainID;
@@ -87,10 +87,10 @@ UINT8 *R_GetFlatForTexture(size_t texnum);
 UINT8 *R_GenerateTextureBrightmap(size_t texnum);
 INT32 R_GetTextureNum(INT32 texnum);
 INT32 R_GetTextureBrightmap(INT32 texnum);
-boolean R_TextureHasBrightmap(INT32 texnum);
-boolean R_TextureCanRemap(INT32 texnum);
+dboolean R_TextureHasBrightmap(INT32 texnum);
+dboolean R_TextureCanRemap(INT32 texnum);
 void R_CheckTextureCache(INT32 tex);
-void R_ClearTextureNumCache(boolean btell);
+void R_ClearTextureNumCache(dboolean btell);
 void R_DoPaletteRemapPatch(softwarepatch_t *patch, size_t size);
 void R_DoPaletteRemapFlat(UINT8 *data, size_t size);
 
@@ -101,13 +101,13 @@ void *R_GetFlat(levelflat_t *levelflat);
 
 INT32 R_GetTextureNumForFlat(levelflat_t *levelflat);
 
-boolean R_CheckPowersOfTwo(drawspandata_t* ds);
+dboolean R_CheckPowersOfTwo(drawspandata_t* ds);
 void R_CheckFlatLength(drawspandata_t* ds, size_t size);
 
 void R_UpdateTextureBrightmap(INT32 tx, INT32 bm);
 
 // Returns the texture number for the texture name.
-INT32 R_TextureNumForNameEx(const char *name, boolean lua);
+INT32 R_TextureNumForNameEx(const char *name, dboolean lua);
 #define R_TextureNumForName(name) R_TextureNumForNameEx(name, false)
 INT32 R_CheckTextureNumForName(const char *name, UINT8 type);
 

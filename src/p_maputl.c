@@ -422,7 +422,7 @@ void P_CameraLineOpening(line_t *linedef, opening_t *open)
 	open->range = (open->ceiling - open->floor);
 }
 
-boolean
+dboolean
 P_GetMidtextureTopBottom
 (		line_t * linedef,
 		opening_t *open,
@@ -499,7 +499,7 @@ P_GetMidtextureTopBottom
 	return true;
 }
 
-boolean
+dboolean
 P_GetTripwireTopBottom
 (		line_t * linedef,
 		fixed_t x,
@@ -588,7 +588,7 @@ P_GetTripwireTopBottom
 	return true;
 }
 
-boolean P_MidtextureIsSolid(line_t *linedef, mobj_t *mobj)
+dboolean P_MidtextureIsSolid(line_t *linedef, mobj_t *mobj)
 {
 	if (linedef->polyobj)
 	{
@@ -1376,7 +1376,7 @@ void P_SetPrecipitationThingPosition(precipmobj_t *thing)
 // to P_BlockLinesIterator, then make one or more calls
 // to it.
 //
-boolean P_BlockLinesIterator(INT32 x, INT32 y, BlockItReturn_t (*func)(line_t *))
+dboolean P_BlockLinesIterator(INT32 x, INT32 y, BlockItReturn_t (*func)(line_t *))
 {
 	INT32 offset;
 	const INT32 *list; // Big blockmap
@@ -1454,7 +1454,7 @@ boolean P_BlockLinesIterator(INT32 x, INT32 y, BlockItReturn_t (*func)(line_t *)
 //
 // P_BlockThingsIterator
 //
-boolean P_BlockThingsIterator(INT32 x, INT32 y, BlockItReturn_t (*func)(mobj_t *))
+dboolean P_BlockThingsIterator(INT32 x, INT32 y, BlockItReturn_t (*func)(mobj_t *))
 {
 	mobj_t *mobj, *bnext = NULL;
 
@@ -1693,7 +1693,7 @@ static BlockItReturn_t PIT_AddThingIntercepts(mobj_t *thing)
 //
 // killough 5/3/98: reformatted, cleaned up
 //
-static boolean P_TraverseIntercepts(traverser_t func, fixed_t maxfrac)
+static dboolean P_TraverseIntercepts(traverser_t func, fixed_t maxfrac)
 {
 	size_t count;
 	intercept_t *in = NULL;
@@ -1740,7 +1740,7 @@ static boolean P_TraverseIntercepts(traverser_t func, fixed_t maxfrac)
 // Returns true if the traverser function returns true
 // for all lines.
 //
-boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
+dboolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 	INT32 flags, traverser_t trav)
 {
 	validcount++;
@@ -1878,8 +1878,8 @@ boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 
 //abandoned, maybe I'll need it someday..
 /*
-boolean P_RadiusLinesCheck(fixed_t radius, fixed_t x, fixed_t y,
-	boolean (*func)(line_t *))
+dboolean P_RadiusLinesCheck(fixed_t radius, fixed_t x, fixed_t y,
+	dboolean (*func)(line_t *))
 {
 	INT32 xl, xh, yl, yh;
 	INT32 bx, by;

@@ -167,7 +167,7 @@ STUN_parse_attribute (const char * const attribute)
 	return align4(4U + length);
 }
 
-boolean
+dboolean
 STUN_got_response
 (
 		const char * const buffer,

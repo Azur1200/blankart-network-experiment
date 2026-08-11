@@ -158,7 +158,7 @@ static int splash_get(lua_State *L)
 		switch (field)
 		{
 			case splash_valid:
-				lua_pushboolean(L, false);
+				lua_pushdboolean(L, false);
 				return 1;
 			default:
 				return LUA_ErrInvalid(L, "t_splash_t");
@@ -168,7 +168,7 @@ static int splash_get(lua_State *L)
 	switch (field)
 	{
 	case splash_valid:
-		lua_pushboolean(L, true);
+		lua_pushdboolean(L, true);
 		break;
 	case splash_name:
 		lua_pushstring(L, splash->name);
@@ -305,7 +305,7 @@ static int footstep_get(lua_State *L)
 		switch (field)
 		{
 			case footstep_valid:
-				lua_pushboolean(L, false);
+				lua_pushdboolean(L, false);
 				return 1;
 			default:
 				return LUA_ErrInvalid(L, "t_footstep_t");
@@ -315,7 +315,7 @@ static int footstep_get(lua_State *L)
 	switch (field)
 	{
 	case footstep_valid:
-		lua_pushboolean(L, true);
+		lua_pushdboolean(L, true);
 		break;
 	case footstep_name:
 		lua_pushstring(L, footstep->name);
@@ -458,7 +458,7 @@ static int overlay_get(lua_State *L)
 		switch (field)
 		{
 			case overlay_valid:
-				lua_pushboolean(L, false);
+				lua_pushdboolean(L, false);
 				return 1;
 			default:
 				return LUA_ErrInvalid(L, "t_overlay_t");
@@ -468,7 +468,7 @@ static int overlay_get(lua_State *L)
 	switch (field)
 	{
 	case overlay_valid:
-		lua_pushboolean(L, true);
+		lua_pushdboolean(L, true);
 		break;
 	case overlay_name:
 		lua_pushstring(L, overlay->name);
@@ -485,7 +485,7 @@ static int overlay_get(lua_State *L)
 		}
 		break;
 	case overlay_scale:
-		lua_pushboolean(L, overlay->scale);
+		lua_pushdboolean(L, overlay->scale);
 		break;
 	case overlay_color:
 		lua_pushnumber(L, overlay->color);
@@ -599,7 +599,7 @@ static int terrain_get(lua_State *L)
 		switch (field)
 		{
 			case terrain_valid:
-				lua_pushboolean(L, false);
+				lua_pushdboolean(L, false);
 				return 1;
 			default:
 				return LUA_ErrInvalid(L, "terrain_t");
@@ -609,7 +609,7 @@ static int terrain_get(lua_State *L)
 	switch (field)
 	{
 	case terrain_valid:
-		lua_pushboolean(L, true);
+		lua_pushdboolean(L, true);
 		break;
 	case terrain_name:
 		lua_pushstring(L, terrain->name);

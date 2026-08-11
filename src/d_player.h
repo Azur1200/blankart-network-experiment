@@ -14,6 +14,8 @@
 #ifndef __D_PLAYER__
 #define __D_PLAYER__
 
+#include <stdint.h>
+
 // The player data structure depends on a number
 // of other structs: items (internal inventory),
 // animation states (closely tied to the sprites
@@ -416,7 +418,7 @@ struct botvars_t
 
 	UINT8 difficulty; // Bot's difficulty setting
 	UINT8 diffincrease; // In GP: bot difficulty will increase this much next round
-	boolean rival; // If true, they're the GP rival
+	dboolean rival; // If true, they're the GP rival
 
 	fixed_t rubberband; // Bot rubberband value
 	UINT16 controller; // Special bot controller linedef ID
@@ -441,7 +443,7 @@ struct sonicloopvars_t
 	vector3_t origin;
 	vector2_t origin_shift;
 	vector2_t shift;
-	boolean flip;
+	dboolean flip;
 	sonicloopcamvars_t camera;
 };
 
@@ -456,9 +458,9 @@ struct boostinfo_t {
 // player_t struct for saltyhop related variables
 struct saltyhop_t
 {
-	boolean jump; // Player has the ability to do the hop
-	boolean ready; // Saltyhop is ready
-	boolean tapping; // Player is tapping the drift button
+	dboolean jump; // Player has the ability to do the hop
+	dboolean ready; // Saltyhop is ready
+	dboolean tapping; // Player is tapping the drift button
 
 	fixed_t momz, zoffset; // erm... the mechanism....
 };
@@ -576,8 +578,8 @@ struct ranklog_t
 	INT32 ijustgothitasshole;
 
 	UINT16 numlapgrades; // How many times did we grade a lap?
-	boolean lapwasgraded; // Was a lap graded?
-	boolean prankeligible; // (Grand Prix) This player knows what they're doing; they're contending for a P-Rank!
+	dboolean lapwasgraded; // Was a lap graded?
+	dboolean prankeligible; // (Grand Prix) This player knows what they're doing; they're contending for a P-Rank!
 
 	//
 	// BONUSES
@@ -700,14 +702,14 @@ struct player_t
 
 	UINT8 kartspeedrestat; // Player's wanted kart speed from restat
 	UINT8 kartweightrestat; // Player's wanted kart weight from restat
-	boolean randomrestat; // Randomly set the restat values of the player every game
+	dboolean randomrestat; // Randomly set the restat values of the player every game
 
 	// Blan: Adjusts speeds in an attempt to "magnetize" the player towards a target position.
 	// This affects the BASE SPEED, and is not a traditional speed boost.
 	playermagnet_t kartmagnet;
 
 	INT32 followerskin;		// Kart: This player's follower "skin"
-	boolean followerready;	// Kart: Used to know when we can have a follower or not. (This is set on the first NameAndColor follower update)
+	dboolean followerready;	// Kart: Used to know when we can have a follower or not. (This is set on the first NameAndColor follower update)
 	UINT16 followercolor;	// Kart: Used to store the follower colour the player wishes to use
 	mobj_t *follower;		// Kart: This is the follower object we have. (If any)
 
@@ -729,7 +731,7 @@ struct player_t
 	// SRB2kart stuff
 	INT32 kartstuff[NUMKARTSTUFF];
 	INT32 karthud[NUMKARTHUD];
-	boolean jitterlegacy; // If true, makes Ring Racers characters jitter during drifts like
+	dboolean jitterlegacy; // If true, makes Ring Racers characters jitter during drifts like
 						  // SRB2Kart.
 
 
@@ -745,7 +747,7 @@ struct player_t
 
 	waypoint_t *currentwaypoint;
 	waypoint_t *nextwaypoint;
-	boolean onbadwaypoint;	// This waypoint is bad, so we need to find a better one
+	dboolean onbadwaypoint;	// This waypoint is bad, so we need to find a better one
 	UINT16 bigwaypointgap;
 	tic_t airtime; 			// Keep track of how long you've been in the air
 	UINT8 startboost;		// (0 to 125) - Boost you get from start of race or respawn drop dash
@@ -773,12 +775,12 @@ struct player_t
 	fixed_t crash_zoffset_delta;	// How much we should modify the Z offset while crashing
 	fixed_t crash_zoffset_lerp;		// When reorienting, play a fancy animation of our offset "fixing" itself
 	SINT8 crash_side;		// Side from which the crash victim was attacked from
-	boolean crash_bumpme;	// "Bump me!" This crashing player should bump for this interaction only
+	dboolean crash_bumpme;	// "Bump me!" This crashing player should bump for this interaction only
 
 	UINT8 instashield;		// Instashield no-damage animation timer
 	UINT8 wipeoutslow;		// Timer before you slowdown when getting wiped out
 	UINT8 justbumped;		// Prevent players from endlessly bumping into each other
-	boolean noclip;			// Fix Grow breaking the "noclip" cheat. Also applies noclip as a bonus.
+	dboolean noclip;			// Fix Grow breaking the "noclip" cheat. Also applies noclip as a bonus.
 
 	ranklog_t ranklog;		// Data relevant to a player's rank.
 	rankscorefactor_t rankscorefactor;	// The point values that factor into your final rank
@@ -899,7 +901,7 @@ struct player_t
 
 	tic_t attractioncharge; // charge of Attraction Shield
 	tic_t attractionattack; // attack timer for Attraction Shield
-	boolean attractionattack_hipower; // Attraction Shield attack's power is maximum
+	dboolean attractionattack_hipower; // Attraction Shield attack's power is maximum
 	fixed_t attractionboost; // while using the Attraction Shield attack, controls the intensity of the boost recieved (stronger when facing towards the target)
 
 	UINT8 bubblecool;	// Bubble Shield use cooldown
@@ -939,7 +941,7 @@ struct player_t
 	INT16 squishedtimer;			// Duration of being squished
 
 	INT16 altshrinktimeshit;		// (Alt. Shrink) How many times were you flipped over while shrunk?
-	boolean inarrowbullet;			// (Alt. Shrink) Are we in the Arrow Bullet state?
+	dboolean inarrowbullet;			// (Alt. Shrink) Are we in the Arrow Bullet state?
 	mobj_t *arrowbullet;			// (Alt. Shrink) Arrow Bullet aura visual
 
 	UINT16 rocketsneakertimer;		// Rocket Sneaker duration timer
@@ -950,7 +952,7 @@ struct player_t
 	UINT16 maxsmonitortime;    		// Initial time for the S-Monitor, used for the item bar.
 	UINT16 smonitorexpiring; 		// Once you pass the cluster player, this starts the time limit for your S-Monitor invincibility.
 	INT16 smonitorcancel;           // Duration of S-Monitor canceling.
-	UINT8 smonitorwarning;          // "Timer warning" boolean to signal the S-Monitor is running out.
+	UINT8 smonitorwarning;          // "Timer warning" dboolean to signal the S-Monitor is running out.
 
 	UINT8 eggmanexplode;	// Fake item recieved, explode in a few seconds
 	SINT8 eggmanblame;		// (-1 to 15) - Fake item recieved, who set this fake
@@ -999,7 +1001,7 @@ struct player_t
 
 	INT32 deadtimer; // End game if game over lasts too long
 	INT32 deadbounces; // Bounce like a beach ball all over
-	boolean extendeddeath; // Bouncing more than one time
+	dboolean extendeddeath; // Bouncing more than one time
 	tic_t exiting; // Exitlevel timer
 
 	////////////////////////////
@@ -1023,7 +1025,7 @@ struct player_t
 	angle_t starpostangle; // Angle that the starpost is facing - you respawn facing this way
 	INT32 starpostnum; // The number of the last starpost you hit
 	tic_t starposttime; // NOIRE: The time of the last cheatcheck you hit
-	boolean starpostflip;
+	dboolean starpostflip;
 	
 	INT32 prevcheck; // Distance from Previous Legacy Checkpoint
 	INT32 nextcheck; // Distace to Next Legacy Checkpoint
@@ -1042,11 +1044,11 @@ struct player_t
 	INT32 awayviewtics;
 	angle_t awayviewaiming; // Used for cut-away view
 
-	boolean spectator;
+	dboolean spectator;
 	tic_t spectatewait;		// reimplementable as UINT8 queue - How long have you been waiting as a spectator
-	boolean enteredGame;
+	dboolean enteredGame;
 
-	boolean bot;
+	dboolean bot;
 	botvars_t botvars;
 
 	UINT8 splitscreenindex;
@@ -1076,9 +1078,9 @@ struct player_t
 
 	saltyhop_t salty;
 
-	boolean prevonground;
+	dboolean prevonground;
 
-	boolean walltransfered;
+	dboolean walltransfered;
 	UINT8 walltransferboost;
 
 	uint8_t public_key[PUBKEYLENGTH];

@@ -33,7 +33,7 @@ extern "C"
 
     char voicepref_buffer[VOICEPREFBUFSIZE] = {0};
 
-    boolean initedvoiceprefs = false;
+    dboolean initedvoiceprefs = false;
 
     // Assign a preferred voice for a given skin name to a local player.
     void R_SetLocalPreferredVoiceForSkin(UINT8 local_pid,
@@ -180,7 +180,7 @@ extern "C"
         INT32 i = 0;
         const INT32 real_page_num = std::max(0, page_num - 1);
         const INT32 preflistsize = static_cast<INT32>(localvoiceprefs[local_pid].size());
-        boolean noskin = false;
+        dboolean noskin = false;
 
         INT32 numpages = (preflistsize / MAXPREFSKINSPERPAGE) + 1;
 
@@ -288,7 +288,7 @@ extern "C"
 
     // Saves voice preferences to a file.
     // Returns false if any of the four files fail to save; returns true otherwise.
-    boolean R_SaveVoicePreferences()
+    dboolean R_SaveVoicePreferences()
     {
         static char voxpref_file[MAXSPLITSCREENPLAYERS][21] = {"blanpreferences.cfg",
                                                                "blanpreferences2.cfg",
@@ -306,7 +306,7 @@ extern "C"
         INT32 i = 0;
         INT32 skin_id = 0;
         std::string file_output = "";
-        boolean noskin = false;
+        dboolean noskin = false;
 
         M_MkdirEach(preferencesdir, M_PathParts(preferencesdir) - 2, 0755);
 
@@ -413,7 +413,7 @@ extern "C"
 
     // Loads voice preferences from a file.
     // Returns false if all 4 players fail to load a config; true otherwise.
-    boolean R_LoadVoicePreferences()
+    dboolean R_LoadVoicePreferences()
     {
         static char voxpref_file[MAXSPLITSCREENPLAYERS][21] = {"blanpreferences.cfg",
                                                                "blanpreferences2.cfg",

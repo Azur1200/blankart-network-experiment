@@ -133,7 +133,7 @@ typedef struct
 		float hfreference;
 		float lfreference;
 		float room_rolloff_factor;
-		boolean decay_hflimit;
+		dboolean decay_hflimit;
 	} eaxreverb;
 
 	struct
@@ -150,7 +150,7 @@ typedef struct
 		float late_reverb_delay;
 		float air_absorption_gainhf;
 		float room_rolloff_factor;
-		boolean decay_hflimit;
+		dboolean decay_hflimit;
 	} reverb;
 
 	struct
@@ -231,7 +231,7 @@ typedef struct
 
 	struct
 	{
-		boolean onoff;
+		dboolean onoff;
 	} compressor;
 
 	struct
@@ -315,7 +315,7 @@ void I_UpdateSound(void);
 
 	\return	0 if no longer playing, 1 if playing.
 */
-boolean I_SoundIsPlaying(INT32 handle);
+dboolean I_SoundIsPlaying(INT32 handle);
 
 
 
@@ -355,14 +355,14 @@ void I_ShutdownMusic(void);
 /// ------------------------
 
 musictype_t I_SongType(void);
-boolean I_SongPlaying(void);
-boolean I_SongPaused(void);
+dboolean I_SongPlaying(void);
+dboolean I_SongPaused(void);
 
 /// ------------------------
 //  MUSIC EFFECTS
 /// ------------------------
 
-boolean I_SetSongSpeed(float speed);
+dboolean I_SetSongSpeed(float speed);
 
 /// ------------------------
 //  MUSIC SEEKING
@@ -370,10 +370,10 @@ boolean I_SetSongSpeed(float speed);
 
 UINT32 I_GetSongLength(void);
 
-boolean I_SetSongLoopPoint(UINT32 looppoint);
+dboolean I_SetSongLoopPoint(UINT32 looppoint);
 UINT32 I_GetSongLoopPoint(void);
 
-boolean I_SetSongPosition(UINT32 position);
+dboolean I_SetSongPosition(UINT32 position);
 UINT32 I_GetSongPosition(void);
 
 void I_UpdateSongLagThreshold (void);
@@ -392,7 +392,7 @@ void I_UpdateSongLagConditions (void);
 
 	\todo Remove this
 */
-boolean I_LoadSong(char *data, size_t len);
+dboolean I_LoadSong(char *data, size_t len);
 
 /**	\brief	See ::I_LoadSong, then think backwards
 
@@ -412,7 +412,7 @@ void I_UnloadSong(void);
 
 	\todo pass music name, not handle
 */
-boolean I_PlaySong(boolean looping);
+dboolean I_PlaySong(dboolean looping);
 
 /**	\brief	Stops a song over 3 seconds
 
@@ -447,7 +447,7 @@ void I_ResumeSong(void);
 */
 void I_SetMusicVolume(UINT8 volume);
 
-boolean I_SetSongTrack(INT32 track);
+dboolean I_SetSongTrack(INT32 track);
 
 /// ------------------------
 /// MUSIC FADING
@@ -455,10 +455,10 @@ boolean I_SetSongTrack(INT32 track);
 
 void I_SetInternalMusicVolume(UINT8 volume);
 void I_StopFadingSong(void);
-boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms, void (*callback)(void));
-boolean I_FadeSong(UINT8 target_volume, UINT32 ms, void (*callback)(void));
-boolean I_FadeOutStopSong(UINT32 ms);
-boolean I_FadeInPlaySong(UINT32 ms, boolean looping);
+dboolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms, void (*callback)(void));
+dboolean I_FadeSong(UINT8 target_volume, UINT32 ms, void (*callback)(void));
+dboolean I_FadeOutStopSong(UINT32 ms);
+dboolean I_FadeInPlaySong(UINT32 ms, dboolean looping);
 
 efx_t *I_CreateEFX(efx_t *efx);
 float I_GetEFXTail(efx_t *efx);

@@ -17,10 +17,8 @@
 
 #ifdef HAVE_GME
 #ifdef HAVE_ZLIB
-#ifndef _MSC_VER
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
-#endif
 #endif
 
 #ifndef _LFS64_LARGEFILE
@@ -134,15 +132,15 @@ static LPALGETAUXILIARYEFFECTSLOTF alGetAuxiliaryEffectSlotf;
 static LPALGETAUXILIARYEFFECTSLOTFV alGetAuxiliaryEffectSlotfv;
 
 // fading
-static boolean is_fading;
+static dboolean is_fading;
 static float fading_source;
 static float fading_target;
 static UINT32 fading_timer;
 static UINT32 fading_duration;
 static INT32 fading_id;
 static void (*fading_callback)(void);
-static boolean fading_do_callback;
-static boolean fading_nocleanup;
+static dboolean fading_do_callback;
+static dboolean fading_nocleanup;
 
 static void SoundEFX_OnChange(void)
 {
@@ -165,17 +163,17 @@ typedef struct audiostate_s
 	ALuint musicbuffers[BUFFERCOUNT];
 	ALuint music;
 	float loop_point;
-	boolean looping;
+	dboolean looping;
 
 	struct
 	{
-		boolean enabled;
+		dboolean enabled;
 		ALuint effect;
 		ALuint slot;
 	} globalefx;
 
-	boolean startplay;
-	boolean shutdown;
+	dboolean startplay;
+	dboolean shutdown;
 } audiostate_t;
 static audiostate_t audio;
 
@@ -205,7 +203,7 @@ static int result;
 
 #define TRY(func, ...) (func(__VA_ARGS__), ALError(__func__, #func))
 
-static boolean ALError(const char *srcfunc, const char *alfunc)
+static dboolean ALError(const char *srcfunc, const char *alfunc)
 {
 	const char *str;
 	switch (alGetError())
@@ -479,7 +477,7 @@ void I_ShutdownSound(void)
 	}
 }
 
-static boolean I_UpdateMusicVolume(void)
+static dboolean I_UpdateMusicVolume(void)
 {
 	LOCKAUDIO;
 	return TRY(alSourcef, audio.music, AL_GAIN, music_volume*internal_volume*(musicdef_volume/(float)MAX_VOLUME));
@@ -496,7 +494,7 @@ static sf_count_t SecondsToSamples(float seconds, int sampleRate) {
 	return (sf_count_t)lround(seconds * sampleRate);
 }
 
-static boolean I_QueueNextSample(boolean unqueue)
+static dboolean I_QueueNextSample(dboolean unqueue)
 {
 	TracyCZone(__zone, true);
 	static INT16 *stream = NULL;
@@ -649,7 +647,7 @@ static void UpdateSound(audiostate_t *aud)
 		}
 
 		// semi-hack because this is sometimes not called for a longer period of time
-		boolean need_restart = processed == BUFFERCOUNT;
+		dboolean need_restart = processed == BUFFERCOUNT;
 		while (processed > 0)
 		{
 			if (!I_QueueNextSample(true))
@@ -1076,7 +1074,7 @@ void I_StopSound(INT32 handle)
 	TRY(alDeleteSources, 1, &source);
 }
 
-boolean I_SoundIsPlaying(INT32 handle)
+dboolean I_SoundIsPlaying(INT32 handle)
 {
 	if (handle == INVALID_HANDLE || !alIsSource((ALuint)handle))
 		return false;
@@ -1196,7 +1194,7 @@ musictype_t I_SongType(void)
 	return MU_NONE;
 }
 
-/*boolean I_SongAcutallyPlaying(void)
+/*dboolean I_SongAcutallyPlaying(void)
 {
 	LOCKAUDIO;
 
@@ -1210,7 +1208,7 @@ musictype_t I_SongType(void)
 	return value == AL_PLAYING;
 }*/
 
-boolean I_SongPlaying(void)
+dboolean I_SongPlaying(void)
 {
 	LOCKAUDIO;
 
@@ -1220,7 +1218,7 @@ boolean I_SongPlaying(void)
 	return true;
 }
 
-boolean I_SongPaused(void)
+dboolean I_SongPaused(void)
 {
 	LOCKAUDIO;
 
@@ -1234,7 +1232,7 @@ boolean I_SongPaused(void)
 	return value == AL_PAUSED;
 }
 
-boolean I_SetSongSpeed(float speed)
+dboolean I_SetSongSpeed(float speed)
 {
 	LOCKAUDIO;
 
@@ -1308,7 +1306,7 @@ UINT32 I_GetSongLength(void)
 	return position * 1000.0f;
 }
 
-boolean I_SetSongLoopPoint(UINT32 looppoint)
+dboolean I_SetSongLoopPoint(UINT32 looppoint)
 {
 	(void)looppoint;
 
@@ -1362,7 +1360,7 @@ UINT32 I_GetSongLoopPoint(void)
 	return (UINT32)(audio.loop_point * 1000);
 }
 
-boolean I_SetSongPosition(UINT32 position)
+dboolean I_SetSongPosition(UINT32 position)
 {
 	LOCKAUDIO;
 
@@ -1473,7 +1471,7 @@ UINT32 I_GetSongPosition(void)
 }
 
 
-static boolean InitializeMusicStreaming(void *input, size_t size)
+static dboolean InitializeMusicStreaming(void *input, size_t size)
 {
 	LOCKAUDIO;
 
@@ -1587,7 +1585,7 @@ static boolean InitializeMusicStreaming(void *input, size_t size)
 #endif
 }
 
-boolean I_LoadSong(char *data, size_t len)
+dboolean I_LoadSong(char *data, size_t len)
 {
 	const char *key1 = "LOOP";
 	const char *key2 = "POINT=";
@@ -1690,7 +1688,7 @@ void I_UnloadSong(void)
 	}
 }
 
-boolean I_PlaySong(boolean looping)
+dboolean I_PlaySong(dboolean looping)
 {
 	LOCKAUDIO;
 
@@ -1778,7 +1776,7 @@ void I_SetMusicVolume(UINT8 volume)
 		I_UpdateMusicVolume();
 }
 
-boolean I_SetSongTrack(INT32 track)
+dboolean I_SetSongTrack(INT32 track)
 {
 	LOCKAUDIO;
 
@@ -1858,7 +1856,7 @@ void I_StopFadingSong(void)
 	// in var_cleanup()
 }
 
-boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms, void (*callback)(void))
+dboolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms, void (*callback)(void))
 {
 	INT16 volume_delta;
 
@@ -1910,16 +1908,16 @@ boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms
 	return is_fading;
 }
 
-boolean I_FadeSong(UINT8 target_volume, UINT32 ms, void (*callback)(void))
+dboolean I_FadeSong(UINT8 target_volume, UINT32 ms, void (*callback)(void))
 {
 	return I_FadeSongFromVolume(target_volume, (internal_volume * 100.f), ms, callback);
 }
-boolean I_FadeOutStopSong(UINT32 ms)
+dboolean I_FadeOutStopSong(UINT32 ms)
 {
 	return I_FadeSongFromVolume(0, (internal_volume * 100.f), ms, &I_StopSong);
 }
 
-boolean I_FadeInPlaySong(UINT32 ms, boolean looping)
+dboolean I_FadeInPlaySong(UINT32 ms, dboolean looping)
 {
 	if (I_PlaySong(looping))
 		return I_FadeSongFromVolume(100, 0, ms, NULL);

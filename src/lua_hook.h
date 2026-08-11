@@ -138,7 +138,7 @@ ENUM (STRING_HOOK);
 #define LUA_HOOK(type) LUA_HookVoid(HOOK(type))
 //#define LUA_HUDHOOK(type) LUA_HookHUD(HUD_HOOK(type))
 
-extern boolean hook_cmd_running;
+extern dboolean hook_cmd_running;
 extern int hook_defrosting;
 
 void LUA_HookVoid(int hook);
@@ -148,7 +148,7 @@ int  LUA_HookMobj(mobj_t *, int hook);
 int  LUA_Hook2Mobj(mobj_t *, mobj_t *, int hook);
 void LUA_HookInt(INT32 integer, int hook);
 void LUA_HookGamemap(int hook);
-void LUA_HookBool(boolean value, int hook);
+void LUA_HookBool(dboolean value, int hook);
 int  LUA_HookPlayer(player_t *, int hook);
 int  LUA_HookPlayerForceResults(player_t *, int hook);
 int  LUA_HookTiccmd(player_t *, ticcmd_t *, int hook);
@@ -180,27 +180,27 @@ int  LUA_HookCameraThinker(player_t *, camera_t *);
 int  LUA_HookPlayerCanDamage(player_t *, mobj_t *);
 void LUA_HookPlayerQuit(player_t *, kickreason_t);
 int  LUA_HookNameChange(player_t *plr, const char *name);
-int  LUA_HookTeamSwitch(player_t *, int newteam, boolean fromspectators, boolean tryingautobalance, boolean tryingscramble);
-int  LUA_HookViewpointSwitch(player_t *player, player_t *newdisplayplayer, boolean forced);
+int  LUA_HookTeamSwitch(player_t *, int newteam, dboolean fromspectators, dboolean tryingautobalance, dboolean tryingscramble);
+int  LUA_HookViewpointSwitch(player_t *player, player_t *newdisplayplayer, dboolean forced);
 int  LUA_HookSeenPlayer(player_t *player, player_t *seenfriend);
 int LUA_HookGPRankPoints(UINT8 position, UINT8 numplayers, INT16 *points);
 int  LUA_HookShouldJingleContinue(player_t *, const char *musname);
 int  LUA_HookMusicChange(const char *oldname, struct MusicChange *);
 
 // Item shit
-boolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, boolean wasHoldingItem, boolean *force);
-boolean LUA_HookPlayerItemThink(player_t *player, UINT8 itemType);
-boolean LUA_HookPlayerItemUse(player_t *player, UINT8 itemType, boolean attackJustDown, boolean onground, boolean force, boolean noHyudoro);
-boolean LUA_HookPlayerItemHoldUse(player_t *player, UINT8 itemType, boolean attackJustDown, boolean onground, boolean force, boolean noHyudoro);
-boolean LUA_HookPlayerItemReleaseUse(player_t *player, UINT8 itemType, boolean attackJustDown, boolean onground, boolean force, boolean noHyudoro);
+dboolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, dboolean wasHoldingItem, dboolean *force);
+dboolean LUA_HookPlayerItemThink(player_t *player, UINT8 itemType);
+dboolean LUA_HookPlayerItemUse(player_t *player, UINT8 itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro);
+dboolean LUA_HookPlayerItemHoldUse(player_t *player, UINT8 itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro);
+dboolean LUA_HookPlayerItemReleaseUse(player_t *player, UINT8 itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro);
 
-boolean LUA_HookKartHyudoro(player_t *player, INT32 *target, boolean sink); // SRB2Kart: Hook for K_DoHyudoroSteal and overriding its results.
-boolean LUA_HookMobjScaleChange(mobj_t *target, fixed_t newscale, fixed_t oldscale); // SRB2Kart: Hook for P_SetScale.
-boolean LUA_HookKartSneaker(player_t *player, int type); // SRB2Kart: Hook for K_DoSneaker.
-boolean LUA_HookKartStripItems(player_t *player, UINT8 item); // SRB2Kart: Hook for K_StripItems.
-boolean LUA_HookKartStripOther(player_t *player); // SRB2Kart: Hook for K_StripOther.
-boolean LUA_HookCanPickupItem(player_t *player, UINT8 weapon, boolean *force); // SRB2Kart: Hook for P_CanPickupItem.
-int		LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t droptype, boolean *orbit, boolean *dropall); // SRB2Kart: Hook for K_DropHnextList.
+dboolean LUA_HookKartHyudoro(player_t *player, INT32 *target, dboolean sink); // SRB2Kart: Hook for K_DoHyudoroSteal and overriding its results.
+dboolean LUA_HookMobjScaleChange(mobj_t *target, fixed_t newscale, fixed_t oldscale); // SRB2Kart: Hook for P_SetScale.
+dboolean LUA_HookKartSneaker(player_t *player, int type); // SRB2Kart: Hook for K_DoSneaker.
+dboolean LUA_HookKartStripItems(player_t *player, UINT8 item); // SRB2Kart: Hook for K_StripItems.
+dboolean LUA_HookKartStripOther(player_t *player); // SRB2Kart: Hook for K_StripOther.
+dboolean LUA_HookCanPickupItem(player_t *player, UINT8 weapon, dboolean *force); // SRB2Kart: Hook for P_CanPickupItem.
+int		LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t droptype, dboolean *orbit, dboolean *dropall); // SRB2Kart: Hook for K_DropHnextList.
 
 #ifdef __cplusplus
 } // extern "C"

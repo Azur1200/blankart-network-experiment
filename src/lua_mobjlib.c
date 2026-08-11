@@ -326,7 +326,7 @@ static int mobj_get(lua_State *L)
 
 	if (!mo || !G_GamestateUsesLevel()) {
 		if (field == mobj_valid) {
-			lua_pushboolean(L, 0);
+			lua_pushdboolean(L, 0);
 			return 1;
 		}
 		if (!mo) {
@@ -338,7 +338,7 @@ static int mobj_get(lua_State *L)
 	switch(field)
 	{
 	case mobj_valid:
-		lua_pushboolean(L, 1);
+		lua_pushdboolean(L, 1);
 		break;
 	case mobj_x:
 		lua_pushfixed(L, mo->x);
@@ -624,16 +624,16 @@ static int mobj_get(lua_State *L)
 		LUA_PushUserdata(L, mo->standingslope, META_SLOPE);
 		break;
 	case mobj_colorized:
-		lua_pushboolean(L, mo->colorized);
+		lua_pushdboolean(L, mo->colorized);
 		break;
 	case mobj_mirrored:
-		lua_pushboolean(L, mo->mirrored);
+		lua_pushdboolean(L, mo->mirrored);
 		break;
 	case mobj_shadowscale:
 		lua_pushfixed(L, mo->shadowscale);
 		break;
 	case mobj_whiteshadow:
-		lua_pushboolean(L, mo->whiteshadow);
+		lua_pushdboolean(L, mo->whiteshadow);
 		break;
 	case mobj_sprxoff:
 		lua_pushfixed(L, mo->sprxoff);
@@ -1149,16 +1149,16 @@ static int mobj_set(lua_State *L)
 	case mobj_standingslope:
 		return NOSET;
 	case mobj_colorized:
-		mo->colorized = luaL_checkboolean(L, 3);
+		mo->colorized = luaL_checkdboolean(L, 3);
 		break;
 	case mobj_mirrored:
-		mo->mirrored = luaL_checkboolean(L, 3);
+		mo->mirrored = luaL_checkdboolean(L, 3);
 		break;
 	case mobj_shadowscale:
 		mo->shadowscale = luaL_checkfixed(L, 3);
 		break;
 	case mobj_whiteshadow:
-		mo->whiteshadow = luaL_checkboolean(L, 3);
+		mo->whiteshadow = luaL_checkdboolean(L, 3);
 		break;
 	case mobj_sprxoff:
 		mo->sprxoff = luaL_checkfixed(L, 3);
@@ -1319,7 +1319,7 @@ static int mapthing_get(lua_State *L)
 
 	if (!mt) {
 		if (field == mapthing_valid) {
-			lua_pushboolean(L, false);
+			lua_pushdboolean(L, false);
 			return 1;
 		}
 		if (devparm)
@@ -1330,7 +1330,7 @@ static int mapthing_get(lua_State *L)
 	switch (field)
 	{
 		case mapthing_valid:
-			lua_pushboolean(L, true);
+			lua_pushdboolean(L, true);
 			break;
 		case mapthing_x:
 			lua_pushinteger(L, mt->x);

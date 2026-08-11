@@ -125,7 +125,7 @@ struct kartitem_t
 	spritedef_t spritedef;
 
 	consvar_t *altcvar; // if not NULL, an altitem exists
-	boolean altenabled;
+	dboolean altenabled;
 };
 
 struct kartresult_t
@@ -136,7 +136,7 @@ struct kartresult_t
 	UINT8 amount;
 
 	char *displayname;
-	boolean isalt; // is alt (i salt)
+	dboolean isalt; // is alt (i salt)
 	kartresultflags_e flags;
 	UINT8 odds[MAXODDSTABLES][MAXODDS];
 	consvar_t *augcvar[2]; // "Runner Augment" console variable
@@ -158,13 +158,13 @@ struct kartroulette_t
 	UINT32 ourDist; // the player's finish line distance
 	UINT32 clusterDist; // distance to cluster
 	fixed_t mashed;
-	boolean spbrush;
-	boolean bot;
-	boolean rival;
-	boolean shrink_freebie;
-	boolean is_shrunk; // Under the effects of Alt. Shrink, which changes odds significantly
-	boolean rival_frontrunner; // Is a Rival bot frontrunning?
-	boolean inBottom;
+	dboolean spbrush;
+	dboolean bot;
+	dboolean rival;
+	dboolean shrink_freebie;
+	dboolean is_shrunk; // Under the effects of Alt. Shrink, which changes odds significantly
+	dboolean rival_frontrunner; // Is a Rival bot frontrunning?
+	dboolean inBottom;
 
 	// output: which results are being forced into a player's item slot for one reason or another. Higher value = higher priority.
 	UINT8 forceme[MAXKARTRESULTS];
@@ -187,7 +187,7 @@ extern UINT8 numkartresults;
 extern UINT8 oddstablemax[MAXODDSTABLES];
 
 typedef void (itemthinkfunc_f)(player_t *player);
-typedef void (itemusefunc_f)(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro);
+typedef void (itemusefunc_f)(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro);
 // item usage functions
 itemusefunc_f K_UseItem_Sneaker;
 itemusefunc_f K_UseItem_RocketSneaker;
@@ -233,19 +233,19 @@ UINT32 K_IntDistanceForMap(fixed_t curx,
 			   fixed_t desty,
 			   fixed_t destz);
 void K_RegisterItem(kartitemtype_e itemtype);
-kartresult_t *K_RegisterResult(const char *name, boolean alternate);
-kartresult_t *K_GetKartResultAlt(const char *name, boolean alternate);
+kartresult_t *K_RegisterResult(const char *name, dboolean alternate);
+kartresult_t *K_GetKartResultAlt(const char *name, dboolean alternate);
 #define K_GetKartResult(name) K_GetKartResultAlt(name, false)
 void K_SetupItemOdds(void);
-boolean K_ItemResultEnabled(const kartresult_t *result);
-boolean K_IsKartItemAlternate(kartitemtype_e itemtype);
+dboolean K_ItemResultEnabled(const kartresult_t *result);
+dboolean K_IsKartItemAlternate(kartitemtype_e itemtype);
 kartitemflags_e K_GetItemFlags(kartitemtype_e itemtype);
 kartitemequip_e K_GetItemEquipStyle(kartitemtype_e mobjtype);
-UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny);
-patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, boolean tiny, UINT8 amount, SINT8 altmode);
+UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, dboolean tiny);
+patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, dboolean tiny, UINT8 amount, SINT8 altmode);
 #define K_GetCachedItemPatch(type, tiny, amount) K_GetCachedItemPatchEx(type, tiny, amount, -1)
 
-boolean K_DontDoubleMyItems(kartresult_t *res);
+dboolean K_DontDoubleMyItems(kartresult_t *res);
 
 void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags);
 void K_UnsetItemOutEx(player_t *player, itemflags_t flags);
@@ -257,20 +257,20 @@ void K_RemoveEquippedItem(mobj_t *equipmo);
 void K_DecrementAndCheckCurrentItem(player_t *player);
 
 void K_AddPlayerReserveItem(player_t *player, kartitemtype_e type, UINT8 amount);
-void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, boolean nodoubles, kartitemblink_e blink);
-void K_AwardPlayerItemOrReserve(player_t *player, kartitemtype_e type, UINT8 amount, boolean nodoubles, kartitemblink_e blink);
+void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, dboolean nodoubles, kartitemblink_e blink);
+void K_AwardPlayerItemOrReserve(player_t *player, kartitemtype_e type, UINT8 amount, dboolean nodoubles, kartitemblink_e blink);
 void K_TransferPlayerReserveItem(player_t *player);
 void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCount);
 void K_UpdateItemCooldown(void);
 tic_t K_GetIndirectItemCooldown(void);
 void K_SetIndirectItemCooldown(tic_t cooldown);
-boolean K_LegacyOddsMode(void);
+dboolean K_LegacyOddsMode(void);
 UINT32 K_GetCongaLineDistance(const player_t *player, UINT8 startPos);
 
 UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame);
-UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, boolean *spbrush);
-UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbumper, boolean spbrush);
-UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush);
+UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, dboolean *spbrush);
+UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbumper, dboolean spbrush);
+UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, dboolean spbrush);
 INT32 K_GetRollingRouletteItem(player_t *player);
 INT32 K_GetRollingRouletteItemOffset(player_t *player, INT16 offset, INT32 animspeed);
 UINT8* K_GetRollableItems(void);
@@ -279,7 +279,7 @@ void K_StartRoulette(player_t *player, kartroulettetype_e roulettetype);
 
 void K_AwardPlayerResult(player_t *player, kartresult_t *result, kartitemblink_e blink);
 
-void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force);
+void K_SetPlayerItemCooldown(player_t *player, tic_t timer, dboolean force);
 
 useoddsfunc_f KO_SMonitorOdds;
 useoddsfunc_f KO_SPBRaceOdds;
@@ -289,18 +289,18 @@ void K_DoThunderShield(player_t *player);
 void K_DoAttractionShield(player_t *player, fixed_t power);
 void K_BreakBubbleShield(player_t* player);
 INT16 K_GetShrinkTime(const player_t *player);
-boolean K_IsAltShrunk(const player_t *player);
+dboolean K_IsAltShrunk(const player_t *player);
 void K_AltShrinkPityIncrease(player_t *player);
 
 void K_SpawnEggMineBumpEffect(mobj_t *mo);
 void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source);
 
-void K_EnableSeekingReticule(player_t *player, boolean passive);
+void K_EnableSeekingReticule(player_t *player, dboolean passive);
 void K_DisableSeekingReticule(player_t *player);
 void K_KartSeekingReticule(player_t *player);
 player_t *K_FindJawzTarget(mobj_t *actor, player_t *source);
 
-void K_PlayerItemThink(player_t *player, boolean onground);
+void K_PlayerItemThink(player_t *player, dboolean onground);
 
 extern consvar_t cv_karteggmine_slotlock;
 extern consvar_t cv_karteggmine_slotbrick;
@@ -314,7 +314,7 @@ extern consvar_t cv_kartthunder_radius;
 #define ATTRACTIONATTACKTIME_MAX (3*TICRATE/4)
 #define ATTRACTIONATTACKTIME_MIN (TICRATE/2)
 
-void K_DoGrowShrink(player_t *player, boolean shrinking);
+void K_DoGrowShrink(player_t *player, dboolean shrinking);
 
 #ifdef __cplusplus
 } // extern "C"

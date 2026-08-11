@@ -17,7 +17,7 @@
 #include <dirent.h>
 #endif
 #if defined (_WIN32) && !defined (_XBOX)
-//#define WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
 #endif
@@ -65,7 +65,7 @@ static const char *exclude_paths[] = {
 	NULL
 };
 
-filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash, boolean completepath, int maxsearchdepth)
+filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash, dboolean completepath, int maxsearchdepth)
 {
 	filestatus_t retval = FS_NOTFOUND;
 	DIR **dirhandle;
@@ -165,7 +165,7 @@ filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash
 			{
 				// When we're at the root of the search, we exclude certain folders.
 
-				boolean skipfolder = false;
+				dboolean skipfolder = false;
 
 				for (; *path != NULL; path++)
 				{
@@ -238,7 +238,7 @@ char exttable[NUM_EXT_TABLE][7] = { // maximum extension length (currently 4) pl
 
 char filenamebuf[MAX_WADFILES][MAX_WADPATH] = {0};
 
-static boolean filemenucmp(char *haystack, char *needle)
+static dboolean filemenucmp(char *haystack, char *needle)
 {
 	static char localhaystack[128];
 	strlcpy(localhaystack, haystack, 128);
@@ -252,7 +252,7 @@ static boolean filemenucmp(char *haystack, char *needle)
 	return (!strncmp(localhaystack, needle, menusearch.length));
 }
 
-void closefilemenu(boolean validsize)
+void closefilemenu(dboolean validsize)
 {
 	// search
 	if (dirmenu)
@@ -388,7 +388,7 @@ void searchfilemenu(char *tempname)
 	}
 }
 
-boolean preparefilemenu(boolean samedepth, boolean replayhut)
+dboolean preparefilemenu(dboolean samedepth, dboolean replayhut)
 {
 	DIR *dirhandle;
 	struct dirent *dent;

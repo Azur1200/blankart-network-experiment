@@ -248,7 +248,7 @@ UINT8 M_UpdateUnlockablesAndExtraEmblems(void)
 void M_SilentUpdateUnlockablesAndEmblems(void)
 {
 	INT32 i;
-	boolean checkAgain = false;
+	dboolean checkAgain = false;
 
 	// Just in case they aren't to sync
 	M_CheckUnlockConditions();
@@ -548,7 +548,7 @@ skincolornum_t M_GetEmblemColor(emblem_t *em)
 	return em->color;
 }
 
-const char *M_GetEmblemPatch(emblem_t *em, boolean big)
+const char *M_GetEmblemPatch(emblem_t *em, dboolean big)
 {
 	static char pnamebuf[7];
 
@@ -574,7 +574,7 @@ skincolornum_t M_GetExtraEmblemColor(extraemblem_t *em)
 	return em->color;
 }
 
-const char *M_GetExtraEmblemPatch(extraemblem_t *em, boolean big)
+const char *M_GetExtraEmblemPatch(extraemblem_t *em, dboolean big)
 {
 	static char pnamebuf[7];
 

@@ -15,14 +15,6 @@
 
 #include "command.h"
 
-#if defined (_WIN32) && !defined (__CYGWIN__)
-#define RPC_NO_WINDOWS_H
-#include <windows.h>
-#define DNWH HWND
-#else
-#define DNWH void * // unused in DOS version
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -63,7 +55,7 @@ struct viddef_t
 	INT32 width; // PIXELS per scanline
 	INT32 height;
 	INT32 modenum; // vidmode num indexes videomodes list
-	boolean recalc; // if true, recalc vid-based stuff
+	dboolean recalc; // if true, recalc vid-based stuff
 
 	INT32 dup; // scale 1, 2, 3 value for menus & overlays
 	INT32 fdup; // same as dup, but exact value when aspect ratio isn't 320/200
@@ -116,12 +108,12 @@ void SCR_SetMode(void);
 
 // Set current column / span drawers
 //void R_SetColumnContext(enum columncontext_e _columncontext); // declared in r_draw!
-void R_SetColumnFunc(size_t id, boolean brightmapped);
-void R_SetSpanFunc(size_t id, boolean npo2, boolean brightmapped);
-boolean R_SetSpanFuncFlat(size_t id); // flat color
+void R_SetColumnFunc(size_t id, dboolean brightmapped);
+void R_SetSpanFunc(size_t id, dboolean npo2, dboolean brightmapped);
+dboolean R_SetSpanFuncFlat(size_t id); // flat color
 
 // Compare current column drawer
-boolean R_CheckColumnFunc(size_t id);
+dboolean R_CheckColumnFunc(size_t id);
 
 // Recalc screen size dependent stuff
 void SCR_Recalc(void);
@@ -134,7 +126,7 @@ void SCR_SetDefaultMode(void);
 
 void SCR_CalculateFPS(void);
 
-FUNCMATH boolean SCR_IsAspectCorrect(INT32 width, INT32 height);
+FUNCMATH dboolean SCR_IsAspectCorrect(INT32 width, INT32 height);
 
 // move out to main code for consistency
 void SCR_DisplayTicRate(void);

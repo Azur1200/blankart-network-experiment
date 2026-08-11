@@ -86,19 +86,19 @@ consvar_t cv_dummyreplaysave = CVAR_INIT ("dummyreplaysave", "", CV_HIDEN, NULL,
 static char replaytext[] = "Enter the name of the replay";
 menuitem_t replaysave = {.text = replaytext, .cvar = &cv_dummyreplaysave, .routine = &ReplaySave};
 
-boolean nodrawers; // for comparative timing purposes
-boolean noblit; // for comparative timing purposes
+dboolean nodrawers; // for comparative timing purposes
+dboolean noblit; // for comparative timing purposes
 tic_t demostarttime; // for comparative timing purposes
 
 static char demoname[MAX_WADPATH];
 static savebuffer_t demobuf = {0};
 static UINT8 *demotime_p, *demoinfo_p;
 static UINT8 demoflags;
-boolean demosynced = true; // console warning message
+dboolean demosynced = true; // console warning message
 
 struct demovars_s demo;
 
-boolean metalrecording; // recording as metal sonic
+dboolean metalrecording; // recording as metal sonic
 mobj_t *metalplayback;
 static UINT8 *metalbuffer = NULL;
 static UINT8 *metal_p;
@@ -214,7 +214,7 @@ static ticcmd_t oldcmd[MAXPLAYERS];
 //
 // Checks if auto-saving demos is allowed.
 //
-boolean G_DemoWillAutoSave(void)
+dboolean G_DemoWillAutoSave(void)
 {
 	if (cv_recordmultiplayerdemos.value == DEMOSAVE_AUTO_NETONLY)
 	{
@@ -232,14 +232,14 @@ typedef struct
 {
 	char *filename;
 	UINT64 filehash;
-	boolean compatmode;
+	dboolean compatmode;
 } demofile_t;
 
 typedef struct
 {
 	char *name; // NULL = bad netid
 	char *value;
-	boolean stealth;
+	dboolean stealth;
 	UINT16 legacynetid;
 } democvar_t;
 
@@ -252,7 +252,7 @@ typedef struct
 	{
 		UINT8 difficulty;
 		UINT8 diffincrease;
-		boolean rival;
+		dboolean rival;
 	} bot;
 
 	char name[21+1];
@@ -300,7 +300,7 @@ typedef struct
 	} attacking;
 
 	UINT32 randseed[PRNUMCLASS];
-	boolean single_seed;
+	dboolean single_seed;
 	UINT32 extrainfo;
 
 	UINT16 numcvars;
@@ -308,8 +308,8 @@ typedef struct
 
 	struct // DF_GRANDPRIX
 	{
-		boolean masterbots;
-		boolean lunaticmode;
+		dboolean masterbots;
+		dboolean lunaticmode;
 		UINT8 gamespeed;
 		UINT8 eventmode;
 	} grandprix;
@@ -319,7 +319,7 @@ typedef struct
 	UINT8 numplayers;
 	demoplayer_t *playerdata;
 
-	boolean empty;
+	dboolean empty;
 	UINT32 endofs;
 } demoheader_t;
 
@@ -371,10 +371,10 @@ typedef struct
 
 	struct // DXD_JOINDATA
 	{
-		boolean bot;
+		dboolean bot;
 		UINT8 difficulty;
 		UINT8 diffincrease;
-		boolean rival;
+		dboolean rival;
 	} joindata;
 
 	// DXD_PLAYSTATE
@@ -412,7 +412,7 @@ typedef enum
 static UINT8 *G_ReadZipTic(ticcmd_t *cmd, UINT8 *dp, UINT16 version)
 {
 	UINT16 ziptic;
-	boolean kart = version <= 0x0002;
+	dboolean kart = version <= 0x0002;
 	if (kart)
 	{
 		ziptic = READUINT8(dp);
@@ -455,7 +455,7 @@ static UINT8 *G_ReadZipTic(ticcmd_t *cmd, UINT8 *dp, UINT16 version)
 // call G_FreeExtraZipTic, you get the idea
 static UINT8 *G_ReadExtraZipTic(ziptic_t *zt, UINT8 *dp, UINT16 version, mobj_t *mo)
 {
-	boolean kart = version <= 0x0002;
+	dboolean kart = version <= 0x0002;
 	UINT8 ziptic = READUINT8(dp);
 
 	if (kart)
@@ -597,8 +597,8 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 	INT32 i;
 	UINT8 extradata;
 	extra->playernum = READUINT8(dp);
-	boolean kart = version <= 0x0002;
-	boolean singleseed = version <= 0x0012;
+	dboolean kart = version <= 0x0002;
+	dboolean singleseed = version <= 0x0012;
 
 	if (extra->playernum >= DW_EXTRASTUFF)
 	{
@@ -660,7 +660,7 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 		{
 			extra->joindata.difficulty = READUINT8(dp);
 			extra->joindata.diffincrease = READUINT8(dp); // needed to avoid having to duplicate logic
-			extra->joindata.rival = (boolean)READUINT8(dp);
+			extra->joindata.rival = (dboolean)READUINT8(dp);
 		}
 	}
 	if (!kart) // READING ORDER MATTERS if that wasn't obvious
@@ -753,15 +753,15 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 {
 	UINT8 *startdp = dp;
 	UINT8 attack;
-	boolean kart = false, oldkart = false;
-	boolean raflag = false;
-	boolean serverinfo = true;
-	boolean servermotd = true;
-	boolean rapreset = true; // + extended serverinfo length
-	boolean dubs = true; // Multiple voices
-	boolean availabilities = true; // Store player availabilities
-	boolean gplunatic = true; // Grand Prix: Lunatic mode
-	boolean multiseed = true; // Multi-seeded RNG
+	dboolean kart = false, oldkart = false;
+	dboolean raflag = false;
+	dboolean serverinfo = true;
+	dboolean servermotd = true;
+	dboolean rapreset = true; // + extended serverinfo length
+	dboolean dubs = true; // Multiple voices
+	dboolean availabilities = true; // Store player availabilities
+	dboolean gplunatic = true; // Grand Prix: Lunatic mode
+	dboolean multiseed = true; // Multi-seeded RNG
 	INT32 i;
 
 	// these may not be present in old demo formats, so initialize them
@@ -1069,7 +1069,7 @@ skipfiles:
 		{
 			plr->bot.difficulty = READUINT8(dp);
 			plr->bot.diffincrease = READUINT8(dp); // needed to avoid having to duplicate logic
-			plr->bot.rival = (boolean)READUINT8(dp);
+			plr->bot.rival = (dboolean)READUINT8(dp);
 		}
 
 		if (rapreset)
@@ -1204,7 +1204,7 @@ static strbuf_t *G_GetRecordPresetVersionForDemo(demoheader_t *header)
 
 // and now, the rest of g_demo.c
 
-boolean G_CompatLevel(UINT16 level)
+dboolean G_CompatLevel(UINT16 level)
 {
 	if (demo.playback)
 	{
@@ -1259,7 +1259,7 @@ static void FindClosestSkinForStats(UINT32 p, UINT8 kartspeed, UINT8 kartweight)
 	SetPlayerSkinByNum(p, closest_skin);
 }
 
-void G_LoadDemoCvars(void **p, void (*setvalue)(consvar_t *, const char *, boolean))
+void G_LoadDemoCvars(void **p, void (*setvalue)(consvar_t *, const char *, dboolean))
 {
 	demoheader_t *header = *p;
 	for (UINT16 i = 0; i < header->numcvars; i++)
@@ -1735,7 +1735,7 @@ void G_GhostAddHit(INT32 playernum, mobj_t *victim)
 
 void G_WriteAllGhostTics(void)
 {
-	boolean toobig = false;
+	dboolean toobig = false;
 	INT32 i, counter = leveltime;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -2400,7 +2400,7 @@ typedef struct rewindinfo_s {
 	tic_t leveltime;
 
 	struct {
-		boolean ingame;
+		dboolean ingame;
 		player_t player;
 		mobj_t mobj;
 	} playerinfo[MAXPLAYERS];
@@ -2529,7 +2529,7 @@ void G_ConfirmRewind(tic_t rewindtime)
 {
 	SINT8 i;
 	tic_t j;
-	boolean oldsounddisabled = sound_disabled;
+	dboolean oldsounddisabled = sound_disabled;
 
 	INT32 olddp1 = displayplayers[0], olddp2 = displayplayers[1], olddp3 = displayplayers[2], olddp4 = displayplayers[3];
 	UINT8 oldss = splitscreen;
@@ -3268,8 +3268,8 @@ void G_SetDemoTime(UINT32 ptime, UINT32 plap)
 static void G_LoadDemoExtraFiles(demoheader_t *header)
 {
 	filestatus_t ncs;
-	boolean toomany = false;
-	boolean alreadyloaded;
+	dboolean toomany = false;
+	dboolean alreadyloaded;
 	UINT8 i, j;
 
 	for (i = 0; i < header->numfiles; i++)
@@ -3327,11 +3327,11 @@ static void G_LoadDemoExtraFiles(demoheader_t *header)
 
 // G_CheckDemoExtraFiles: checks if our loaded WAD list matches the demo's.
 // Enabling quick prevents filesystem checks to see if needed files are available to load.
-static UINT8 G_CheckDemoExtraFiles(demoheader_t *header, boolean quick)
+static UINT8 G_CheckDemoExtraFiles(demoheader_t *header, dboolean quick)
 {
 	UINT8 filesloaded, nmusfilecount;
-	boolean toomany = false;
-	boolean alreadyloaded;
+	dboolean toomany = false;
+	dboolean alreadyloaded;
 	UINT8 i, j;
 	UINT8 error = 0;
 
@@ -3404,7 +3404,7 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 	UINT8 c;
 	UINT16 s ATTRUNUSED;
 	UINT8 aflags = 0;
-	boolean uselaps = false;
+	dboolean uselaps = false;
 
 	// load the new file
 	FIL_DefaultExtension(newname, ".lmp");
@@ -3677,7 +3677,7 @@ void G_DoPlayDemo(char *defdemoname)
 	CLEANUP(FreeDemoBuffer) savebuffer_t *freebuffer = NULL;
 
 #if defined(SKIPERRORS) && !defined(DEVELOP)
-	boolean skiperrors = false;
+	dboolean skiperrors = false;
 #endif
 
 	msg[0] = '\0';
@@ -4476,9 +4476,9 @@ void G_StopMetalDemo(void)
 }
 
 // Stops metal sonic recording.
-ATTRNORETURN void FUNCNORETURN G_StopMetalRecording(boolean kill)
+ATTRNORETURN void FUNCNORETURN G_StopMetalRecording(dboolean kill)
 {
-	boolean saved = false;
+	dboolean saved = false;
 	if (demobuf.p)
 	{
 		WRITEUINT8(demobuf.p, (kill) ? METALDEATH : DEMOMARKER); // add the demo end (or metal death) marker
@@ -4515,7 +4515,7 @@ static void G_StopTimingDemo(void)
 		const char *csvpath = va("%s"PATHSEP"%s", srb2home, "timedemo.csv");
 		const char *header = "id,demoname,seconds,avgfps,leveltime,demotime,framecount,ticrate,rendermode,vidmode,vidwidth,vidheight,procbits\n";
 		const char *rowformat = "\"%s\",\"%s\",%f,%f,%u,%d,%u,%u,%u,%u,%u,%u,%u\n";
-		boolean headerrow = !FIL_FileExists(csvpath);
+		dboolean headerrow = !FIL_FileExists(csvpath);
 		UINT8 procbits = 0;
 
 		// Bitness
@@ -4579,7 +4579,7 @@ void G_StopDemo(void)
 	D_ClearState();
 }
 
-boolean G_CheckDemoStatus(void)
+dboolean G_CheckDemoStatus(void)
 {
 	G_FreeGhosts();
 
@@ -4601,7 +4601,7 @@ boolean G_CheckDemoStatus(void)
 		else
 		{
 			UINT8 wasmodeattacking = modeattacking;
-			boolean wastitledemo = demo.title;
+			dboolean wastitledemo = demo.title;
 			G_StopDemo();
 
 			if (timedemo_quit)
@@ -4671,7 +4671,7 @@ void G_SaveDemo(void)
 		char demo_slug[128];
 		char *writepoint;
 		size_t i, strindex = 0;
-		boolean dash = true;
+		dboolean dash = true;
 
 		//for (i = 0; demo.titlename[i] && i < 127; i++) ?????
 		for (i = 0; i < 64 && demo.titlename[i]; i++)

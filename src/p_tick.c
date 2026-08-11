@@ -62,7 +62,7 @@
 #endif
 
 tic_t leveltime;
-boolean thinkersCompleted;
+dboolean thinkersCompleted;
 
 UINT32 thinker_era = 0;
 
@@ -582,7 +582,7 @@ static void P_DoAutobalanceTeams(void)
 			NetPacket.packet.verification = true;
 			NetPacket.packet.autobalance = true;
 
-			usvalue  = SHORT(NetPacket.value.l|NetPacket.value.b);
+			usvalue  = LSBF_SHORT(NetPacket.value.l|NetPacket.value.b);
 			SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 		}
 		else //if (totalblue > totalred)
@@ -593,7 +593,7 @@ static void P_DoAutobalanceTeams(void)
 			NetPacket.packet.verification = true;
 			NetPacket.packet.autobalance = true;
 
-			usvalue  = SHORT(NetPacket.value.l|NetPacket.value.b);
+			usvalue  = LSBF_SHORT(NetPacket.value.l|NetPacket.value.b);
 			SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 		}
 	}
@@ -625,7 +625,7 @@ void P_DoTeamscrambling(void)
 			NetPacket.packet.verification = true;
 			NetPacket.packet.scrambled = true;
 
-			usvalue = SHORT(NetPacket.value.l|NetPacket.value.b);
+			usvalue = LSBF_SHORT(NetPacket.value.l|NetPacket.value.b);
 			SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 		}
 
@@ -805,7 +805,7 @@ void P_RunChaseCameras(void)
 //
 // P_Ticker
 //
-void P_Ticker(boolean run)
+void P_Ticker(dboolean run)
 {
 	TracyCZone(__zone, true);
 
@@ -1181,7 +1181,7 @@ void P_Ticker(boolean run)
 				if (!player->mo)
 					continue;
 
-				const boolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
+				const dboolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
 
 				if (skyVisiblePerPlayer[i] && skybox)
 				{

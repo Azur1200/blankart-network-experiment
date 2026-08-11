@@ -29,7 +29,7 @@ extern "C"
     // Where to save preferences
     extern char preferencesdir[512];
     extern char voicepref_buffer[VOICEPREFBUFSIZE];
-    extern boolean initedvoiceprefs;
+    extern dboolean initedvoiceprefs;
 
     void R_SetLocalPreferredVoiceForSkin(UINT8 local_pid,
                                          const char* skin_name,
@@ -44,8 +44,8 @@ extern "C"
                                     size_t str_capacity,
                                     INT32 page_num);
 
-    boolean R_SaveVoicePreferences();
-    boolean R_LoadVoicePreferences();
+    dboolean R_SaveVoicePreferences();
+    dboolean R_LoadVoicePreferences();
 
 #ifdef __cplusplus
 }

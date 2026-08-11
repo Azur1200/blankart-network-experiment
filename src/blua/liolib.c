@@ -58,7 +58,7 @@ static const char *whitelist[] = {
 static int pushresult (lua_State *L, int i, const char *filename) {
   int en = errno;  /* calls to Lua API may change this value */
   if (i) {
-    lua_pushboolean(L, 1);
+    lua_pushdboolean(L, 1);
     return 1;
   }
   else {
@@ -185,10 +185,10 @@ void MakePathDirs(char *path)
 }
 
 
-static int CheckFileName(lua_State* L, const char* filename, boolean extensioncheck)
+static int CheckFileName(lua_State* L, const char* filename, dboolean extensioncheck)
 {
 	int length = strlen(filename);
-	boolean pass = false;
+	dboolean pass = false;
 	size_t i;
 
 	if (strchr(filename, '\\'))
@@ -254,7 +254,7 @@ static int io_openlocal (lua_State *L) {
 	int checkresult;
 
     // Decision was made for normal reading (binary + text) to have no whitelist restrictions
-	boolean readcheck = (strchr(mode, 'w') != NULL) || (strchr(mode, 'a') != NULL) || (strchr(mode, '+') != NULL);
+	dboolean readcheck = (strchr(mode, 'w') != NULL) || (strchr(mode, 'a') != NULL) || (strchr(mode, '+') != NULL);
 
 	checkresult = CheckFileName(L, filename, readcheck);
 	if (checkresult)
@@ -405,7 +405,7 @@ static int io_readline (lua_State *L);
 
 static void aux_lines (lua_State *L, int idx, int toclose) {
   lua_pushvalue(L, idx);
-  lua_pushboolean(L, toclose);  /* close/not close file when finished */
+  lua_pushdboolean(L, toclose);  /* close/not close file when finished */
   lua_pushcclosure(L, io_readline, 2);
 }
 
@@ -544,7 +544,7 @@ static int io_readline (lua_State *L) {
     return luaL_error(L, "%s", strerror(errno));
   if (sucess) return 1;
   else {  /* EOF */
-    if (lua_toboolean(L, lua_upvalueindex(2))) {  /* generator created file? */
+    if (lua_todboolean(L, lua_upvalueindex(2))) {  /* generator created file? */
       lua_settop(L, 0);
       lua_pushvalue(L, lua_upvalueindex(1));
       aux_close(L);  /* close it */

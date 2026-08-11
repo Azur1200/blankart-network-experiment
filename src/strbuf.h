@@ -45,7 +45,7 @@ FUNCINLINE static ATTRINLINE char strbuf_byte(strbuf_t *strbuf, UINT32 ofs)
 }
 
 // checks wheter two strbufs have the same contents (i.e. memcmp, but no length param)
-FUNCINLINE static ATTRINLINE boolean strbuf_cmp(strbuf_t *buf1, strbuf_t *buf2)
+FUNCINLINE static ATTRINLINE dboolean strbuf_cmp(strbuf_t *buf1, strbuf_t *buf2)
 {
 	return buf1->size == buf2->size && !memcmp(buf1->buf, buf2->buf, buf1->size);
 }

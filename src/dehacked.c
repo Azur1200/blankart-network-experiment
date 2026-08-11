@@ -18,9 +18,9 @@
 #include "k_hud.h"
 #include "d_main.h"
 
-boolean gamedataadded = false;
-boolean titlechanged = false;
-boolean introchanged = false;
+dboolean gamedataadded = false;
+dboolean titlechanged = false;
+dboolean introchanged = false;
 
 static int dbg_line;
 static INT32 deh_num_warning = 0;
@@ -397,7 +397,7 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 	return -2;
 }
 
-static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
+static void DEH_LoadDehackedFile(MYFILE *f, dboolean mainfile)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char textline[MAXLINELEN];
@@ -816,7 +816,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 				}
 				else if (fastncmp(word, "KARTRESULT", 10))
 				{
-					boolean alternate = fastcmp(word, "KARTRESULTALT");
+					dboolean alternate = fastcmp(word, "KARTRESULTALT");
 					kartresult_t *result = K_GetKartResultAlt(word2, alternate);
 					if (result == NULL)
 						result = K_RegisterResult(word2, alternate);
@@ -872,7 +872,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 				// (then again, modifiedgame will prevent game data saving anyway)
 				else if (fastcmp(word, "CLEAR"))
 				{
-					boolean clearall = (fastcmp(word2, "ALL"));
+					dboolean clearall = (fastcmp(word2, "ALL"));
 
 					if (!mainfile && !gamedataadded)
 					{
@@ -948,7 +948,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 
 // read dehacked lump in a wad (there is special trick for for deh
 // file that are converted to wad in w_wad.c)
-void DEH_LoadDehackedLumpPwad(UINT16 wad, UINT16 lump, boolean mainfile)
+void DEH_LoadDehackedLumpPwad(UINT16 wad, UINT16 lump, dboolean mainfile)
 {
 	MYFILE f;
 	f.wad = wad;

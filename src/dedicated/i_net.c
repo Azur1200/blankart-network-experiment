@@ -20,7 +20,7 @@
 #include "../i_net.h"
 
 
-boolean I_InitNetwork(void)
+dboolean I_InitNetwork(void)
 {
 	// NOTE: this is no longer used.
 	return false;

@@ -118,7 +118,7 @@ msgstr ""
 
 #: command.c:724
 #, c-format
-msgid "%s is not a boolean value\n"
+msgid "%s is not a dboolean value\n"
 msgstr ""
 
 #: command.c:912

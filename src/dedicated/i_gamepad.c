@@ -141,37 +141,37 @@ const char *I_GetControllerName(INT32 joyid)
 // Controller Rumble and RGB LED stuff
 //
 
-boolean I_ControllerSupportsRumble(INT32 playernum)
+dboolean I_ControllerSupportsRumble(INT32 playernum)
 {
 	(void)playernum;
 	return false;
 }
 
-boolean I_ControllerSupportsIndicatorMono(INT32 playernum)
+dboolean I_ControllerSupportsIndicatorMono(INT32 playernum)
 {
 	(void)playernum;
 	return false;
 }
 
-boolean I_ControllerSupportsIndicatorColor(INT32 playernum)
+dboolean I_ControllerSupportsIndicatorColor(INT32 playernum)
 {
 	(void)playernum;
 	return false;
 }
 
-boolean I_ControllerSupportsIndicatorPlayer(INT32 playernum)
+dboolean I_ControllerSupportsIndicatorPlayer(INT32 playernum)
 {
 	(void)playernum;
 	return false;
 }
 
-boolean I_ControllerSupportsSensorAccelerometer(INT32 playernum)
+dboolean I_ControllerSupportsSensorAccelerometer(INT32 playernum)
 {
 	(void)playernum;
 	return false;
 }
 
-boolean I_ControllerSupportsSensorGyro(INT32 playernum)
+dboolean I_ControllerSupportsSensorGyro(INT32 playernum)
 {
 	(void)playernum;
 	return false;

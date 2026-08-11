@@ -407,7 +407,7 @@ static void P_RelinkWaypoint(savebuffer_t *save, waypoint_t **ptr)
 #define SYNCAS(t, v) SYNC2(v, (t)v)
 
 #define SYNCBOOLEAN(v) v = _Generic(v, \
-	boolean: P_SyncUINT8 \
+	dboolean: P_SyncUINT8 \
 )(save, v)
 
 // SYNC AND RELINK MACROS
@@ -1376,7 +1376,7 @@ enum ffloordiff_e
 	FD_ALPHA,
 };
 
-static boolean P_SectorArgsEqual(const sector_t *sc, const sector_t *spawnsc)
+static dboolean P_SectorArgsEqual(const sector_t *sc, const sector_t *spawnsc)
 {
 	UINT8 i;
 	for (i = 0; i < NUM_SCRIPT_ARGS; i++)
@@ -1386,7 +1386,7 @@ static boolean P_SectorArgsEqual(const sector_t *sc, const sector_t *spawnsc)
 	return true;
 }
 
-static boolean P_SectorStringArgsEqual(const sector_t *sc, const sector_t *spawnsc)
+static dboolean P_SectorStringArgsEqual(const sector_t *sc, const sector_t *spawnsc)
 {
 	UINT8 i;
 	for (i = 0; i < NUM_SCRIPT_STRINGARGS; i++)
@@ -1445,7 +1445,7 @@ enum linediff_e
 // if diff includes b, sync v, else if in read mode, set v to d(efault)
 #define SYNCDEF(b, v, d) (GETB(b) ? SYNC(v) : !save->write ? (v = d) : (void)0)
 
-static boolean P_LineArgsEqual(const line_t *li, const line_t *spawnli)
+static dboolean P_LineArgsEqual(const line_t *li, const line_t *spawnli)
 {
 	UINT8 i;
 	for (i = 0; i < NUM_SCRIPT_ARGS; i++)
@@ -1455,7 +1455,7 @@ static boolean P_LineArgsEqual(const line_t *li, const line_t *spawnli)
 	return true;
 }
 
-static boolean P_LineStringArgsEqual(const line_t *li, const line_t *spawnli)
+static dboolean P_LineStringArgsEqual(const line_t *li, const line_t *spawnli)
 {
 	UINT8 i;
 	for (i = 0; i < NUM_SCRIPT_STRINGARGS; i++)
@@ -1476,7 +1476,7 @@ static boolean P_LineStringArgsEqual(const line_t *li, const line_t *spawnli)
 }
 
 // Check if any of the sector's FOFs differ from how they spawned
-static boolean CheckFFloorDiff(const sector_t *ss)
+static dboolean CheckFFloorDiff(const sector_t *ss)
 {
 	ffloor_t *rover;
 
@@ -1948,7 +1948,7 @@ static void P_NetSyncWorld(savebuffer_t *save)
 // Thinkers
 //
 
-static boolean P_ThingArgsEqual(const mobj_t *mobj, const mapthing_t *mapthing)
+static dboolean P_ThingArgsEqual(const mobj_t *mobj, const mapthing_t *mapthing)
 {
 	UINT8 i;
 	for (i = 0; i < NUM_MAPTHING_ARGS; i++)
@@ -1972,7 +1972,7 @@ static boolean P_ThingArgsEqual(const mobj_t *mobj, const mapthing_t *mapthing)
 	return true;
 }
 
-static boolean P_ThingScriptEqual(const mobj_t *mobj, const mapthing_t *mapthing)
+static dboolean P_ThingScriptEqual(const mobj_t *mobj, const mapthing_t *mapthing)
 {
 	UINT8 i;
 	if (mobj->special != mapthing->special)
@@ -2230,7 +2230,7 @@ static void DiffMobj(const mobj_t *mobj, UINT32 diff[])
 	DIFF(mobj->voice, MD3_VOICE);
 }
 
-boolean MobjIsNetSynced(mobj_t *mobj)
+dboolean MobjIsNetSynced(mobj_t *mobj)
 {
 	// Ignore stationary hoops - these will be respawned from mapthings.
 	if (mobj->type == MT_HOOP)
@@ -3040,7 +3040,7 @@ static thinker_t *SyncFireflickerThinker(savebuffer_t *save, actionf_p1 thinker,
 
 static thinker_t *SyncElevatorThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	boolean setplanedata = thinker == (actionf_p1)T_MoveElevator;
+	dboolean setplanedata = thinker == (actionf_p1)T_MoveElevator;
 	elevator_t *ht = (void *)th;
 	if (save->write)
 	{
@@ -3702,7 +3702,7 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 
 	thinker_t *currentthinker;
 	thinker_t *next;
-	boolean restoreNum = false;
+	dboolean restoreNum = false;
 	UINT32 i;
 
 	if (P_SyncUINT32(save, ARCHIVEBLOCK_THINKERS) != ARCHIVEBLOCK_THINKERS)
@@ -4171,7 +4171,7 @@ static void P_NetSyncRNG(savebuffer_t *save)
 	UINT32 init = 0;
 	UINT32 seed = 0;
 
-	const boolean reading_netsave = (!save->write);
+	const dboolean reading_netsave = (!save->write);
 
 	for (i = 0; i < PRNUMCLASS; i++)
 	{
@@ -4183,7 +4183,7 @@ static void P_NetSyncRNG(savebuffer_t *save)
 	}
 }
 
-static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
+static dboolean P_NetSyncMisc(savebuffer_t *save, dboolean resending)
 {
 	TracyCZone(__zone, true);
 
@@ -4615,7 +4615,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNC(extratimeintics);
 	SYNC(secretextratime);
 
-	SYNC(paused); // surprisingly not a boolean
+	SYNC(paused); // surprisingly not a dboolean
 
 	if (save->write)
 	{
@@ -4679,11 +4679,11 @@ static inline void P_ArchiveLuabanksAndConsistency(savebuffer_t *save)
 	TracyCZoneEnd(__zone);
 }
 
-static inline boolean P_UnArchiveLuabanksAndConsistency(savebuffer_t *save)
+static inline dboolean P_UnArchiveLuabanksAndConsistency(savebuffer_t *save)
 {
 	TracyCZone(__zone, true);
 
-	boolean ret = true;
+	dboolean ret = true;
 	switch (READUINT8(save->p))
 	{
 		case 0xb7: // luabanks marker
@@ -4723,7 +4723,7 @@ void P_SaveGame(savebuffer_t *save, mapnum_t mapnum)
 	P_ArchiveLuabanksAndConsistency(save);
 }
 
-void P_SaveNetGame(savebuffer_t *save, boolean resending)
+void P_SaveNetGame(savebuffer_t *save, dboolean resending)
 {
 	TracyCZone(__zone, true);
 
@@ -4774,7 +4774,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 	TracyCZoneEnd(__zone);
 }
 
-boolean P_LoadGame(savebuffer_t *save, mapnum_t mapoverride)
+dboolean P_LoadGame(savebuffer_t *save, mapnum_t mapoverride)
 {
 	if (gamestate == GS_INTERMISSION)
 		Y_EndIntermission();
@@ -4795,7 +4795,7 @@ boolean P_LoadGame(savebuffer_t *save, mapnum_t mapoverride)
 	return true;
 }
 
-boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
+dboolean P_LoadNetGame(savebuffer_t *save, dboolean reloading)
 {
 	TracyCZone(__zone, true);
 
@@ -4828,13 +4828,13 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 	// so the thinkers would be deleted later. Therefore, P_SetupLevel will *not* spawn
 	// precipitation when loading a netgame save. Instead, precip has to be spawned here.
 	// This is done in P_NetUnArchiveSpecials now.
-	boolean ret = P_UnArchiveLuabanksAndConsistency(save);
+	dboolean ret = P_UnArchiveLuabanksAndConsistency(save);
 
 	TracyCZoneEnd(__zone);
 	return ret;
 }
 
-boolean P_SaveBufferZAlloc(savebuffer_t *save, size_t alloc_size, INT32 tag, void *user)
+dboolean P_SaveBufferZAlloc(savebuffer_t *save, size_t alloc_size, INT32 tag, void *user)
 {
 	I_Assert(save->buffer == NULL);
 	save->buffer = (UINT8 *)Z_Malloc(alloc_size, tag, user);
@@ -4851,7 +4851,7 @@ boolean P_SaveBufferZAlloc(savebuffer_t *save, size_t alloc_size, INT32 tag, voi
 	return true;
 }
 
-boolean P_SaveBufferFromExisting(savebuffer_t *save, UINT8 *existing_buffer, size_t existing_size)
+dboolean P_SaveBufferFromExisting(savebuffer_t *save, UINT8 *existing_buffer, size_t existing_size)
 {
 	I_Assert(save->buffer == NULL);
 
@@ -4869,7 +4869,7 @@ boolean P_SaveBufferFromExisting(savebuffer_t *save, UINT8 *existing_buffer, siz
 	return true;
 }
 
-boolean P_SaveBufferFromLump(savebuffer_t *save, lumpnum_t lump)
+dboolean P_SaveBufferFromLump(savebuffer_t *save, lumpnum_t lump)
 {
 	I_Assert(save->buffer == NULL);
 

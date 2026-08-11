@@ -22,9 +22,16 @@ extern "C" {
 #endif
 
 #ifdef _WIN32
-//#define WIN32_LEAN_AND_MEAN
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef RPC_NO_WINDOWS_H
 #define RPC_NO_WINDOWS_H
+#endif
 #include <windows.h>
+// win32 sucks
+#undef min
+#undef max
 #endif
 
 /* 7.18.1.1  Exact-width integer types */
@@ -33,8 +40,6 @@ extern "C" {
 #include <stdint.h>
 
 #define UINT8 uint8_t
-#define SINT8 int8_t
-
 #define UINT16 uint16_t
 #define INT16 int16_t
 
@@ -42,6 +47,8 @@ extern "C" {
 #define UINT32 uint32_t
 #define INT64  int64_t
 #define UINT64 uint64_t
+
+#define SINT8 int8_t
 
 #ifdef __APPLE_CC__
 #define DEBUG_LOG
@@ -103,25 +110,11 @@ extern "C" {
 
 /* Boolean type definition */
 
-// Note: C++ bool and C99/C11 _Bool are NOT compatible.
-// Historically, boolean was win32 BOOL on Windows. For equivalence, it's now
-// int32_t. "true" and "false" are only declared for C code; in C++, conversion
-// between "bool" and "int32_t" takes over.
-#ifndef _WIN32
-typedef int32_t boolean;
-#else
-#define boolean BOOL
+#ifndef __cplusplus
+#include <stdbool.h>
 #endif
 
-#ifndef __cplusplus
-#ifndef _WIN32
-#define false 0
-#define true 1
-#else
-#define false FALSE
-#define true TRUE
-#endif
-#endif
+typedef int32_t dboolean;
 
 /* 7.18.2.1  Limits of exact-width integer types */
 

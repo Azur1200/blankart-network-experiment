@@ -212,7 +212,7 @@ void ACS_Tick(void);
 
 
 /*--------------------------------------------------
-	boolean ACS_Execute(const INT32 *args, size_t numArgs, const char *const *stringArgs, size_t numStringArgs, activator_t *activator);
+	dboolean ACS_Execute(const INT32 *args, size_t numArgs, const char *const *stringArgs, size_t numStringArgs, activator_t *activator);
 
 		Runs an ACS script by its string name.
 		Only one instance of the script will run at
@@ -233,11 +233,11 @@ void ACS_Tick(void);
 		true if we were able to run the script, otherwise false.
 --------------------------------------------------*/
 
-boolean ACS_Execute(const char *name, const INT32 *args, size_t numArgs, const char *const *stringArgs, size_t numStringArgs, activator_t *activator);
+dboolean ACS_Execute(const char *name, const INT32 *args, size_t numArgs, const char *const *stringArgs, size_t numStringArgs, activator_t *activator);
 
 
 /*--------------------------------------------------
-	boolean ACS_ExecuteAlways(const INT32 *args, size_t numArgs, const char *const *stringArgs, size_t numStringArgs, activator_t *activator)
+	dboolean ACS_ExecuteAlways(const INT32 *args, size_t numArgs, const char *const *stringArgs, size_t numStringArgs, activator_t *activator)
 
 		Runs an ACS script by its string name.
 		If the script is already running, this method
@@ -259,11 +259,11 @@ boolean ACS_Execute(const char *name, const INT32 *args, size_t numArgs, const c
 		true if we were able to run the script, otherwise false.
 --------------------------------------------------*/
 
-boolean ACS_ExecuteAlways(const char *name, const INT32 *args, size_t numArgs, const char *const *stringArgs, size_t numStringArgs, activator_t *activator);
+dboolean ACS_ExecuteAlways(const char *name, const INT32 *args, size_t numArgs, const char *const *stringArgs, size_t numStringArgs, activator_t *activator);
 
 
 /*--------------------------------------------------
-	boolean ACS_ExecuteResult(const char *name, const INT32 *args, size_t numArgs, activator_t *activator)
+	dboolean ACS_ExecuteResult(const char *name, const INT32 *args, size_t numArgs, activator_t *activator)
 
 		Runs an ACS script by its string name.
 		Will return the scripts special result
@@ -282,11 +282,11 @@ boolean ACS_ExecuteAlways(const char *name, const INT32 *args, size_t numArgs, c
 		true if we were able to run the script, otherwise false.
 --------------------------------------------------*/
 
-boolean ACS_ExecuteResult(const char *name, const INT32 *args, size_t numArgs, activator_t *activator);
+dboolean ACS_ExecuteResult(const char *name, const INT32 *args, size_t numArgs, activator_t *activator);
 
 
 /*--------------------------------------------------
-	boolean ACS_Suspend(const char *name);
+	dboolean ACS_Suspend(const char *name);
 
 		Pauses an ACS script by its string name.
 
@@ -297,11 +297,11 @@ boolean ACS_ExecuteResult(const char *name, const INT32 *args, size_t numArgs, a
 		true if we were able to pause the script, otherwise false.
 --------------------------------------------------*/
 
-boolean ACS_Suspend(const char *name);
+dboolean ACS_Suspend(const char *name);
 
 
 /*--------------------------------------------------
-	boolean ACS_Terminate(const char *name);
+	dboolean ACS_Terminate(const char *name);
 
 		Stops an ACS script by its string name.
 
@@ -312,7 +312,7 @@ boolean ACS_Suspend(const char *name);
 		true if we were able to stop the script, otherwise false.
 --------------------------------------------------*/
 
-boolean ACS_Terminate(const char *name);
+dboolean ACS_Terminate(const char *name);
 
 
 /*--------------------------------------------------

@@ -59,9 +59,9 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES Windows)
 	target_link_libraries(BLANKART PRIVATE
 		ws2_32
 	)
-	target_compile_options(BLANKART PRIVATE
-		-U_WINDOWS
-	)
+	#target_compile_options(BLANKART PRIVATE
+	#	-U_WINDOWS
+	#)
 endif()
 
 find_package(SDL3 CONFIG REQUIRED)

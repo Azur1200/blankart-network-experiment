@@ -40,7 +40,7 @@ void Got_Luacmd(UINT8 **cp, INT32 playernum)
 	UINT8 i, argc, flags;
 	const char *argv[256];
 	char buf[256];
-	boolean compat;
+	dboolean compat;
 
 	argc = READUINT8(*cp);
 	argv[0] = (const char*)*cp;
@@ -71,8 +71,8 @@ void Got_Luacmd(UINT8 **cp, INT32 playernum)
 	lua_remove(gL, -2); // pop COM_Command
 
 	lua_rawgeti(gL, -1, 2); // push flags from command info table
-	if (lua_isboolean(gL, -1))
-		flags = (lua_toboolean(gL, -1) ? 1 : 0);
+	if (lua_isdboolean(gL, -1))
+		flags = (lua_todboolean(gL, -1) ? 1 : 0);
 	else
 		flags = (UINT8)lua_tointeger(gL, -1);
 	lua_pop(gL, 1); // pop flags
@@ -82,7 +82,7 @@ void Got_Luacmd(UINT8 **cp, INT32 playernum)
 		goto deny;
 
 	lua_rawgeti(gL, -1, 3); // push compatmode from command info table
-	compat = lua_toboolean(gL, -1);
+	compat = lua_todboolean(gL, -1);
 	lua_pop(gL, 1); // pop compatmode
 
 	lua_rawgeti(gL, -1, 1); // push function from command info table
@@ -130,7 +130,7 @@ void COM_Lua_f(void)
 	UINT16 flags;
 	UINT8 lpn = 0;
 	INT32 playernum = consoleplayer;
-	boolean compat;
+	dboolean compat;
 
 	I_Assert(gL != NULL);
 
@@ -149,8 +149,8 @@ void COM_Lua_f(void)
 	Z_Free(buf);
 
 	lua_rawgeti(gL, -1, 2); // push flags from command info table
-	if (lua_isboolean(gL, -1))
-		flags = (lua_toboolean(gL, -1) ? COM_ADMIN : 0);
+	if (lua_isdboolean(gL, -1))
+		flags = (lua_todboolean(gL, -1) ? COM_ADMIN : 0);
 	else
 		flags = (UINT16)lua_tointeger(gL, -1);
 	lua_pop(gL, 1); // pop flags
@@ -204,7 +204,7 @@ void COM_Lua_f(void)
 	}
 
 	lua_rawgeti(gL, -1, 3); // push compatmode from command info table
-	compat = lua_toboolean(gL, -1);
+	compat = lua_todboolean(gL, -1);
 	lua_pop(gL, 1); // pop compatmode
 
 	// Do the command locally, NetXCmds don't go through outside of GS_LEVEL || GS_INTERMISSION || GS_VOTING
@@ -240,12 +240,12 @@ static int lib_comAddCommand(lua_State *L)
 	luaL_checktype(L, 2, LUA_TFUNCTION);
 	//NOHOOK
 	if (lua_gettop(L) >= 3)
-	{ // For the third argument, only take a boolean or a number.
+	{ // For the third argument, only take a dboolean or a number.
 		lua_settop(L, 3);
 		if (lua_type(L, 3) == LUA_TBOOLEAN)
 		{
 			CONS_Alert(CONS_WARNING,
-					"Using a boolean for admin commands is "
+					"Using a dboolean for admin commands is "
 					"deprecated and will be removed.\n"
 					"Use \"COM_ADMIN\" instead.\n"
 			);
@@ -269,7 +269,7 @@ static int lib_comAddCommand(lua_State *L)
 		lua_pushvalue(L, 3);
 		lua_rawseti(L, -2, 2);
 
-		lua_pushboolean(L, lua_compatmode);
+		lua_pushdboolean(L, lua_compatmode);
 		lua_rawseti(L, -2, 3);
 	lua_setfield(L, -2, name);
 
@@ -332,7 +332,7 @@ void LUA_CVarChanged(void *cvar)
 
 static void Lua_OnChange(void)
 {
-	boolean compat;
+	dboolean compat;
 
 	lua_pushcfunction(gL, LUA_GetErrorMessage);
 	lua_insert(gL, 1); // Because LUA_Call wants it at index 1.
@@ -342,7 +342,7 @@ static void Lua_OnChange(void)
 	I_Assert(lua_istable(gL, -1));
 	lua_pushlightuserdata(gL, this_cvar);
 	lua_rawget(gL, -2);
-	compat = luaL_checkboolean(gL, -1);
+	compat = luaL_checkdboolean(gL, -1);
 	lua_pop(gL, 2);
 
 	// From CV_OnChange registry field, get the function for this cvar by name.
@@ -456,7 +456,7 @@ static int lib_cvRegisterVar(lua_State *L)
 			lua_getfield(L, LUA_REGISTRYINDEX, "CV_OnChangeCompat");
 			I_Assert(lua_istable(L, 5));
 			lua_pushlightuserdata(L, cvar);
-			lua_pushboolean(L, lua_compatmode);
+			lua_pushdboolean(L, lua_compatmode);
 			lua_rawset(L, 5);
 			lua_pop(L, 1);
 
@@ -621,7 +621,7 @@ static int cvar_get(lua_State *L)
 	else if(fastcmp(field,"string"))
 		lua_pushstring(L, cvar == &cv_fakenumlaps ? va("%d", numlaps) : cvar->string);
 	else if(fastcmp(field,"changed"))
-		lua_pushboolean(L, cvar->changed);
+		lua_pushdboolean(L, cvar->changed);
 	else if (devparm)
 		return luaL_error(L, LUA_QL("consvar_t") " has no field named " LUA_QS ".", lua_tostring(L, 2));
 	else

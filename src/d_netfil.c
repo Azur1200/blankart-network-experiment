@@ -11,25 +11,8 @@
 /// \brief Transfer a file using HSendPacket.
 
 #include <stdio.h>
-#include <sys/stat.h>
 
 #include <time.h>
-
-#ifdef _WIN32
-#include <io.h>
-#include <direct.h>
-#else
-#include <sys/types.h>
-#include <dirent.h>
-#include <utime.h>
-#endif
-
-#ifdef __GNUC__
-#include <unistd.h>
-#include <limits.h>
-#elif defined (_WIN32)
-#include <sys/utime.h>
-#endif
 
 #ifdef HAVE_CURL
 #include "curl/curl.h"
@@ -57,7 +40,7 @@
 #include <errno.h>
 
 // Prototypes
-static boolean AddFileToSendQueue(INT32 node, const char *filename, UINT8 fileid);
+static dboolean AddFileToSendQueue(INT32 node, const char *filename, UINT8 fileid);
 
 #ifdef HAVE_CURL
 static size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream);
@@ -85,7 +68,7 @@ typedef struct filetran_s
 	UINT8 iteration;
 	UINT8 ackediteration;
 	UINT32 position; // The current position in the file
-	boolean *ackedfragments;
+	dboolean *ackedfragments;
 	UINT32 ackedsize;
 	FILE *currentfile; // The file currently being sent/received
 	tic_t dontsenduntil;
@@ -108,7 +91,7 @@ typedef struct
 {
 	char filename[MAX_WADPATH];
 	UINT64 hash;
-	boolean *receivedfragments;
+	dboolean *receivedfragments;
 	UINT32 fragmentsize;
 	UINT32 currentsize;
 } pauseddownload_t;
@@ -124,8 +107,8 @@ UINT32 totalfilesrequestedsize = 0;
 #ifdef HAVE_CURL
 static CURL *http_handle;
 static CURLM *multi_handle;
-boolean curl_running = false;
-boolean curl_failedwebdownload = false;
+dboolean curl_running = false;
+dboolean curl_failedwebdownload = false;
 static curl_off_t curl_dlnow;
 static curl_off_t curl_dltotal;
 static time_t curl_starttime;
@@ -139,8 +122,8 @@ HTTP_login *curl_logins;
 #endif
 
 luafiletransfer_t *luafiletransfers = NULL;
-boolean waitingforluafiletransfer = false;
-boolean waitingforluafilecommand = false;
+dboolean waitingforluafiletransfer = false;
+dboolean waitingforluafilecommand = false;
 char luafiledir[256 + 16] = "luafiles";
 
 enum
@@ -278,7 +261,7 @@ void CL_PrepareDownloadSaveGame(const char *tmpsave)
   * \return True if we can download all the files
   *
   */
-boolean CL_CheckDownloadable(void)
+dboolean CL_CheckDownloadable(void)
 {
 	UINT8 i;
 	UINT8 dlstatus = DLSTATUS_OK;
@@ -338,7 +321,7 @@ boolean CL_CheckDownloadable(void)
   * \return True if the transfer can be resumed
   *
   */
-static boolean CL_CanResumeDownload(fileneeded_t *file)
+static dboolean CL_CanResumeDownload(fileneeded_t *file)
 {
 	return pauseddownload
 		&& fastcmp(pauseddownload->filename, file->filename) // Same name
@@ -367,14 +350,14 @@ void CL_AbortDownloadResume(void)
   * \note Sends a PT_REQUESTFILE packet
   *
   */
-boolean CL_SendFileRequest(void)
+dboolean CL_SendFileRequest(void)
 {
 	char *p;
 	INT32 i;
 	INT64 totalfreespaceneeded = 0, availablefreespace;
 	INT32 skippedafile = -1;
 #ifdef MORELEGACYDOWNLOADER
-	boolean firstloop = true;
+	dboolean firstloop = true;
 #endif
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
@@ -549,7 +532,7 @@ INT32 CL_CheckFiles(void)
 	char wadfilename[MAX_WADPATH];
 	size_t packetsize = 0;
 	size_t filestoload = 0;
-	boolean downloadrequired = false;
+	dboolean downloadrequired = false;
 
 //	if (M_CheckParm("-nofiles"))
 //		return 1;
@@ -658,7 +641,7 @@ INT32 CL_CheckFiles(void)
 }
 
 // Load it now
-boolean CL_LoadServerFiles(void)
+dboolean CL_LoadServerFiles(void)
 {
 	INT32 i;
 
@@ -912,7 +895,7 @@ static INT32 filestosend = 0;
   * \sa AddLuaFileToSendQueue
   *
   */
-static boolean AddFileToSendQueue(INT32 node, const char *filename, UINT8 fileid)
+static dboolean AddFileToSendQueue(INT32 node, const char *filename, UINT8 fileid)
 {
 	filetx_t **q; // A pointer to the "next" field of the last file in the list
 	filetx_t *p; // The new file request
@@ -1040,7 +1023,7 @@ void AddRamToSendQueue(INT32 node, void *data, size_t size, freemethod_t freemet
   * \sa AddRamToSendQueue
   *
   */
-boolean AddLuaFileToSendQueue(INT32 node, const char *filename)
+dboolean AddLuaFileToSendQueue(INT32 node, const char *filename)
 {
 	filetx_t **q; // A pointer to the "next" field of the last file in the list
 	filetx_t *p; // The new file request
@@ -1252,10 +1235,10 @@ void FileSendTicker(void)
 				I_Error("FileSendTicker: can't read %s byte on %s at %d because %s", sizeu1(fragmentsize), f->id.filename, transfer[i].position, M_FileError(transfer[i].currentfile));
 		}
 		p->iteration = transfer[i].iteration;
-		p->position = LONG(transfer[i].position);
+		p->position = LSBF_LONG(transfer[i].position);
 		p->fileid = f->fileid;
-		p->filesize = LONG(f->size);
-		p->size = SHORT((UINT16)FILEFRAGMENTSIZE);
+		p->filesize = LSBF_LONG(f->size);
+		p->size = LSBF_SHORT((UINT16)FILEFRAGMENTSIZE);
 
 		// Send the packet
 		if (HSendPacket(i, false, 0, FILETXHEADER + fragmentsize)) // Don't use the default acknowledgement system
@@ -1310,17 +1293,17 @@ void PT_FileAck(SINT8 node)
 		fileacksegment_t *segment = &packet->segments[i];
 
 		for (j = 0; j < 32; j++)
-			if (LONG(segment->acks) & (1 << j))
+			if (LSBF_LONG(segment->acks) & (1 << j))
 			{
-				if (LONG(segment->start) * FILEFRAGMENTSIZE >= trans->txlist->size)
+				if (LSBF_LONG(segment->start) * FILEFRAGMENTSIZE >= trans->txlist->size)
 				{
 					Net_CloseConnection(node);
 					return;
 				}
 
-				if (!trans->ackedfragments[LONG(segment->start) + j])
+				if (!trans->ackedfragments[LSBF_LONG(segment->start) + j])
 				{
-					trans->ackedfragments[LONG(segment->start) + j] = true;
+					trans->ackedfragments[LSBF_LONG(segment->start) + j] = true;
 					trans->ackedsize += FILEFRAGMENTSIZE;
 
 					// If the last missing fragment was acked, finish!
@@ -1394,8 +1377,8 @@ static void SendAckPacket(fileack_pak *packet, UINT8 fileid)
 	packet->fileid = fileid;
 	for (i = 0; i < packet->numsegments; i++)
 	{
-		packet->segments[i].start = LONG(packet->segments[i].start);
-		packet->segments[i].acks = LONG(packet->segments[i].acks);
+		packet->segments[i].start = LSBF_LONG(packet->segments[i].start);
+		packet->segments[i].acks = LSBF_LONG(packet->segments[i].acks);
 	}
 
 	// Send the packet
@@ -1478,7 +1461,7 @@ static void OpenNewFileForDownload(doomdata_t *netbuffer, fileneeded_t *file, co
 		I_Error("Can't create file %s: %s", filename, strerror(errno));
 
 	file->currentsize = 0;
-	file->totalsize = LONG(pak->filesize);
+	file->totalsize = LSBF_LONG(pak->filesize);
 	file->ackresendposition = UINT32_MAX; // Only used for resumed downloads
 
 	file->receivedfragments = calloc(file->totalsize / file->fragmentsize + 1, sizeof(*file->receivedfragments));
@@ -1511,8 +1494,8 @@ void PT_FileFragment(SINT8 node, INT32 netconsole)
 	filetx_pak *pak = (void*)&netbuffer->u.filetxpak;
 	INT32 filenum = pak->fileid;
 	fileneeded_t *file = &fileneeded[filenum];
-	UINT32 fragmentpos = LONG(pak->position);
-	UINT16 fragmentsize = SHORT(pak->size);
+	UINT32 fragmentpos = LSBF_LONG(pak->position);
+	UINT16 fragmentsize = LSBF_SHORT(pak->size);
 	UINT16 boundedfragmentsize = doomcom->datalength - BASEPACKETSIZE - sizeof(netbuffer->u.filetxpak);
 	char *filename;
 
@@ -1685,7 +1668,7 @@ void PT_FileFragment(SINT8 node, INT32 netconsole)
  * \return True if the node is downloading a file
  *
  */
-boolean SendingFile(INT32 node)
+dboolean SendingFile(INT32 node)
 {
 	return transfer[node].txlist != NULL;
 }
@@ -1833,10 +1816,10 @@ filestatus_t checkfilehash(const char *filename, UINT64 wantedhash)
 // Rewritten by Monster Iestyn to be less stupid
 // Note: if completepath is true, "filename" is modified, but only if FS_FOUND is going to be returned
 // (Don't worry about WinCE's version of filesearch, nobody cares about that OS anymore)
-filestatus_t findfile(char *filename, UINT64 wantedhash, boolean completepath)
+filestatus_t findfile(char *filename, UINT64 wantedhash, dboolean completepath)
 {
 	filestatus_t homecheck; // store result of last file search
-	boolean badhash = false; // store whether hash was bad from either of the first two searches (if nothing was found in the third)
+	dboolean badhash = false; // store whether hash was bad from either of the first two searches (if nothing was found in the third)
 
 	// see IdentifyVersion
 	// Iwads skip findfile due to passing fullpath to W_OpenWadFile
@@ -2038,7 +2021,7 @@ void CURLGetFile(void)
 	const char *easy_handle_error;
 
 #ifdef HAVE_THREADS
-	boolean running = true;
+	dboolean running = true;
 
 	I_lock_mutex(&downloadmutex);
 	while (running && curl_running)

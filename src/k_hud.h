@@ -86,21 +86,21 @@ struct trackingResult_t
 {
 	fixed_t x, y;
 	fixed_t scale;
-	boolean onScreen;
+	dboolean onScreen;
 	INT32 angle, pitch;
 	fixed_t fov;
 };
 
 void K_RegisterKartHUDStuff(void);
 
-void K_ObjectTracking(trackingResult_t *result, const vector3_t *point, boolean reverse);
+void K_ObjectTracking(trackingResult_t *result, const vector3_t *point, dboolean reverse);
 
 typedef struct
 {
 	INT32 x;
 	INT32 y;
 	INT32 flags;
-	boolean flipamount;
+	dboolean flipamount;
 	fixed_t hudScale;
 	float hudScaleFloat;
 } drawinfo_t;
@@ -124,10 +124,10 @@ typedef struct
 	rinfoflags_t flags;
 } rouletteinfo_t;
 
-patch_t *K_getItemBoxPatch(boolean small, boolean dark);
-patch_t *K_getItemMulPatch(boolean small);
-patch_t *K_getItemAltPatch(boolean small, boolean multimode);
-boolean K_ShowAltItemIcon(kartitemtype_e type, boolean small);
+patch_t *K_getItemBoxPatch(dboolean small, dboolean dark);
+patch_t *K_getItemMulPatch(dboolean small);
+patch_t *K_getItemAltPatch(dboolean small, dboolean multimode);
+dboolean K_ShowAltItemIcon(kartitemtype_e type, dboolean small);
 void K_getItemBoxDrawinfo(drawinfo_t *out, rouletteinfo_t *rinfo);
 void K_getLapsDrawinfo(drawinfo_t *out);
 void K_getRingsDrawinfo(drawinfo_t *out);
@@ -135,13 +135,13 @@ void K_getMinimapDrawinfo(drawinfo_t *out);
 void K_getSlipstreamDrawinfo(drawinfo_t *out);
 void K_getLivesnStatsDrawinfo(drawinfo_t *out);
 void K_ReloadHUDColorCvar(void);
-boolean K_UseColorHud(void);
+dboolean K_UseColorHud(void);
 skincolornum_t K_GetHudColor(void);
 void K_LoadKartHUDGraphics(void);
 void K_drawKartHUD(void);
 void K_drawKartFreePlay(void);
 void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, mapnum_t emblemmap, UINT8 mode);
-INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer, INT32 hilicol, boolean split);
+INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer, INT32 hilicol, dboolean split);
 void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer, INT32 hilicol);
 
 #define MAXSERVERMODS 255
@@ -153,7 +153,7 @@ struct servermods_t
 	UINT32 hash;
 	const consvar_t *cvar;
 	SINT8 active; // -1 is N/A (example: if using cvar activation), 0 is off, 1 is on.
-	boolean valid;
+	dboolean valid;
 };
 
 typedef enum
@@ -185,7 +185,7 @@ typedef enum
 playertagtype_t;
 
 playertagtype_t K_WhichPlayerTag(player_t *p);
-void K_DrawPlayerTag(fixed_t x, fixed_t y, player_t *p, playertagtype_t type, boolean foreground);
+void K_DrawPlayerTag(fixed_t x, fixed_t y, player_t *p, playertagtype_t type, dboolean foreground);
 void K_drawTargetHUD(const vector3_t *origin, player_t *player);
 
 extern patch_t *kp_itemtarget_arrow[2][2];
@@ -197,7 +197,7 @@ extern patch_t *kp_itemtarget_near[2][8];
 extern patch_t *kp_ranktier[NUMRANKTIERS];
 extern patch_t *kp_ranktier4p[NUMRANKTIERS];
 
-boolean K_UseHighResPortraits(void);
+dboolean K_UseHighResPortraits(void);
 
 extern patch_t *kp_splitlapflag;
 extern consvar_t cv_show_riders_finish_ticker;

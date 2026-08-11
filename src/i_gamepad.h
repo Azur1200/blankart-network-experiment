@@ -107,13 +107,13 @@ const char *I_GetControllerName(INT32 joyid);
 
 INT32 I_GetControllerSlotfromID(INT32 id);
 
-boolean I_ControllerSupportsRumble(INT32 playernum);
-boolean I_ControllerSupportsIndicatorMono(INT32 playernum);
-boolean I_ControllerSupportsIndicatorColor(INT32 playernum);
-boolean I_ControllerSupportsIndicatorPlayer(INT32 playernum);
+dboolean I_ControllerSupportsRumble(INT32 playernum);
+dboolean I_ControllerSupportsIndicatorMono(INT32 playernum);
+dboolean I_ControllerSupportsIndicatorColor(INT32 playernum);
+dboolean I_ControllerSupportsIndicatorPlayer(INT32 playernum);
 
-boolean I_ControllerSupportsSensorAccelerometer(INT32 playernum);
-boolean I_ControllerSupportsSensorGyro(INT32 playernum);
+dboolean I_ControllerSupportsSensorAccelerometer(INT32 playernum);
+dboolean I_ControllerSupportsSensorGyro(INT32 playernum);
 
 void I_ControllerRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
 void I_SetControllerIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 blue);

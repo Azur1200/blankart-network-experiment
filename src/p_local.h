@@ -96,8 +96,8 @@ void P_UnlinkThinker(thinker_t *thinker);
 //
 struct camera_t
 {
-	boolean chase;
-	boolean freecam;
+	dboolean chase;
+	dboolean freecam;
 
 	angle_t aiming;
 
@@ -136,9 +136,9 @@ struct camera_t
 	// Freecam: A button was held since entering from menu, so don't move camera
 	UINT8 button_a_held;
 	
-	boolean reset_aiming;	// camera aiming needs to be reset from chase camera
+	dboolean reset_aiming;	// camera aiming needs to be reset from chase camera
 	
-	boolean freelook_held;
+	dboolean freelook_held;
 	// pitch freelook
 	// between -45 deg and 45 deg
 	fixed_t freelook_pitch;
@@ -178,62 +178,62 @@ extern fixed_t t_cam_dist[MAXSPLITSCREENPLAYERS], t_cam_height[MAXSPLITSCREENPLA
 
 void P_AddPlayerScore(player_t *player, UINT32 amount);
 void P_ResetCamera(player_t *player, camera_t *thiscam);
-boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam);
+dboolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam);
 void P_DemoCameraMovement(camera_t *cam, UINT8 num);
 void P_ToggleDemoCamera(UINT8 viewnum);
-boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcalled);
+dboolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, dboolean resetcalled);
 void P_CalcChasePostImg(player_t *player, camera_t *thiscam);
 
-boolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd);
+dboolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd);
 
-boolean P_PlayerInPain(const player_t *player);
+dboolean P_PlayerInPain(const player_t *player);
 void P_ResetPlayer(player_t *player);
-boolean P_PlayerCanDamage(player_t *player, mobj_t *thing);
+dboolean P_PlayerCanDamage(player_t *player, mobj_t *thing);
 
 fixed_t P_GetPlayerHeight(player_t *player);
 fixed_t P_GetPlayerSpinHeight(player_t *player);
-boolean P_IsLocalPlayer(const player_t *player);
-boolean P_IsMachineLocalPlayer(player_t *player);
-boolean P_IsDisplayPlayer(player_t *player);
+dboolean P_IsLocalPlayer(const player_t *player);
+dboolean P_IsMachineLocalPlayer(player_t *player);
+dboolean P_IsDisplayPlayer(player_t *player);
 
 void P_SetPlayerAngle(player_t *player, angle_t angle);
 angle_t P_GetLocalAngle(player_t *player);
-void P_ForceLocalAngle(player_t *player, angle_t angle, boolean interp);
-boolean P_PlayerFullbright(player_t *player);
+void P_ForceLocalAngle(player_t *player, angle_t angle, dboolean interp);
+dboolean P_PlayerFullbright(player_t *player);
 
-boolean P_IsObjectInGoop(const mobj_t *mo);
-boolean P_IsObjectOnGround(const mobj_t *mo);
-boolean P_IsObjectOnGroundIn(const mobj_t *mo, const sector_t *sec);
-boolean P_IsObjectOnRealGround(const mobj_t *mo, const sector_t *sec); // SRB2Kart
+dboolean P_IsObjectInGoop(const mobj_t *mo);
+dboolean P_IsObjectOnGround(const mobj_t *mo);
+dboolean P_IsObjectOnGroundIn(const mobj_t *mo, const sector_t *sec);
+dboolean P_IsObjectOnRealGround(const mobj_t *mo, const sector_t *sec); // SRB2Kart
 #define P_IsObjectFlipped(o) (((o)->eflags & MFE_VERTICALFLIP) == MFE_VERTICALFLIP)
-boolean P_InQuicksand(const mobj_t *mo);
-boolean P_PlayerHitFloor(player_t *player, boolean fromAir);
+dboolean P_InQuicksand(const mobj_t *mo);
+dboolean P_PlayerHitFloor(player_t *player, dboolean fromAir);
 
-void P_SetObjectMomZ(mobj_t *mo, fixed_t value, boolean relative);
+void P_SetObjectMomZ(mobj_t *mo, fixed_t value, dboolean relative);
 void P_RestoreMusic(player_t *player);
-boolean P_EndingMusic(player_t *player);
-mobj_t *P_SpawnGhostMobjEX(mobj_t *mobj, boolean legacy);
+dboolean P_EndingMusic(player_t *player);
+mobj_t *P_SpawnGhostMobjEX(mobj_t *mobj, dboolean legacy);
 #define P_SpawnGhostMobj(mobj) P_SpawnGhostMobjEX(mobj, false)
 INT32 P_GivePlayerRings(player_t *player, INT32 num_rings);
 void P_GivePlayerLives(player_t *player, INT32 numlives);
 UINT8 P_GetNextEmerald(void);
-void P_GiveEmerald(boolean spawnObj);
+void P_GiveEmerald(dboolean spawnObj);
 void P_GiveFinishFlags(player_t *player);
-boolean P_AutoPause(void);
+dboolean P_AutoPause(void);
 
-void P_ElementalFire(player_t *player, boolean cropcircle);
-void P_SpawnSkidDust(player_t *player, fixed_t radius, boolean sound);
+void P_ElementalFire(player_t *player, dboolean cropcircle);
+void P_SpawnSkidDust(player_t *player, fixed_t radius, dboolean sound);
 
 void P_HaltPlayerOrbit(player_t *player);
 void P_ExitPlayerOrbit(player_t *player);
-boolean P_PlayerOrbit(player_t *player);
+dboolean P_PlayerOrbit(player_t *player);
 
 fixed_t P_KartAltShrinkAuraScalar(player_t *player);
 void P_MovePlayer(player_t *player);
 void P_PlayerThink(player_t *player);
 void P_PlayerAfterThink(player_t *player);
 void P_DoPlayerExit(player_t *player, pflags_t flags);
-void P_DoAllPlayersExit(pflags_t flags, boolean trygivelife);
+void P_DoAllPlayersExit(pflags_t flags, dboolean trygivelife);
 void P_DoTimeOver(player_t *player);
 
 void P_InstaThrust(mobj_t *mo, angle_t angle, fixed_t move);
@@ -247,15 +247,15 @@ void P_NukeEnemies(mobj_t *inflictor, mobj_t *source, fixed_t radius);
 UINT8 P_FindLowestLap(void);
 UINT8 P_FindHighestLap(void);
 
-boolean P_PlayerMoving(INT32 pnum);
+dboolean P_PlayerMoving(INT32 pnum);
 
 void P_PlayLivesJingle(player_t *player);
 void P_PlayRinglossSound(mobj_t *source);
 void P_PlayDeathSound(mobj_t *source);
 void P_PlayVictorySound(mobj_t *source);
 
-boolean P_GetLives(player_t *player);
-boolean P_SpectatorJoinGame(player_t *player);
+dboolean P_GetLives(player_t *player);
+dboolean P_SpectatorJoinGame(player_t *player);
 void P_RestoreMultiMusic(player_t *player);
 
 /// ------------------------
@@ -288,7 +288,7 @@ typedef enum
 struct jingle_t
 {
 	char musname[7];
-	boolean looping;
+	dboolean looping;
 };
 
 extern jingle_t jingleinfo[NUMJINGLES];
@@ -296,8 +296,8 @@ extern jingle_t jingleinfo[NUMJINGLES];
 #define JINGLEPOSTFADE 1000
 
 void P_PlayJingle(player_t *player, jingletype_t jingletype);
-boolean P_EvaluateMusicStatus(UINT16 status, const char *musname);
-void P_PlayJingleMusic(player_t *player, const char *musname, UINT16 musflags, boolean looping, UINT16 status);
+dboolean P_EvaluateMusicStatus(UINT16 status, const char *musname);
+void P_PlayJingleMusic(player_t *player, const char *musname, UINT16 musflags, dboolean looping, UINT16 status);
 
 //
 // P_MOBJ
@@ -328,8 +328,8 @@ void P_PrecipitationEffects(void);
 
 void P_RemoveMobj(mobj_t *th);
 void P_RemoveSavegameMobj(mobj_t *th);
-boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state);
-boolean P_SetMobjState(mobj_t *mobj, statenum_t state);
+dboolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state);
+dboolean P_SetMobjState(mobj_t *mobj, statenum_t state);
 
 void P_RunOverlays(void);
 #define OV_DONTSCREENOFFSET	1
@@ -341,19 +341,19 @@ void P_RunOverlays(void);
 
 void P_HandleMinecartSegments(mobj_t *mobj);
 void P_MobjThinker(mobj_t *mobj);
-boolean P_RailThinker(mobj_t *mobj);
+dboolean P_RailThinker(mobj_t *mobj);
 void P_PushableThinker(mobj_t *mobj);
 void P_SceneryThinker(mobj_t *mobj);
 
 // This does not need to be added to Lua.
 // To test it in Lua, check mobj.valid
-FUNCINLINE static ATTRINLINE boolean P_MobjWasRemoved(const mobj_t *mobj)
+FUNCINLINE static ATTRINLINE dboolean P_MobjWasRemoved(const mobj_t *mobj)
 {
 	return mobj == NULL || mobj->thinker.function != (actionf_p1)P_MobjThinker;
 }
 
-fixed_t P_MobjFloorZ(const mobj_t *mobj, const sector_t *sector, const sector_t *boundsec, fixed_t x, fixed_t y, const line_t *line, boolean lowest, boolean perfect);
-fixed_t P_MobjCeilingZ(const mobj_t *mobj, const sector_t *sector, const sector_t *boundsec, fixed_t x, fixed_t y, const line_t *line, boolean lowest, boolean perfect);
+fixed_t P_MobjFloorZ(const mobj_t *mobj, const sector_t *sector, const sector_t *boundsec, fixed_t x, fixed_t y, const line_t *line, dboolean lowest, dboolean perfect);
+fixed_t P_MobjCeilingZ(const mobj_t *mobj, const sector_t *sector, const sector_t *boundsec, fixed_t x, fixed_t y, const line_t *line, dboolean lowest, dboolean perfect);
 #define P_GetFloorZ(mobj, sector, x, y, line) P_MobjFloorZ(mobj, sector, NULL, x, y, line, false, false)
 #define P_GetCeilingZ(mobj, sector, x, y, line) P_MobjCeilingZ(mobj, sector, NULL, x, y, line, true, false)
 #define P_GetFOFTopZ(mobj, sector, fof, x, y, line) P_MobjCeilingZ(mobj, sectors + fof->secnum, sector, x, y, line, false, false)
@@ -361,8 +361,8 @@ fixed_t P_MobjCeilingZ(const mobj_t *mobj, const sector_t *sector, const sector_
 #define P_GetSpecialBottomZ(mobj, src, bound) P_MobjFloorZ(mobj, src, bound, mobj->x, mobj->y, NULL, src != bound, true)
 #define P_GetSpecialTopZ(mobj, src, bound) P_MobjCeilingZ(mobj, src, bound, mobj->x, mobj->y, NULL, src == bound, true)
 
-fixed_t P_CameraFloorZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect);
-fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect);
+fixed_t P_CameraFloorZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, dboolean lowest, dboolean perfect);
+fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, dboolean lowest, dboolean perfect);
 #define P_CameraGetFloorZ(mobj, sector, x, y, line) P_CameraFloorZ(mobj, sector, NULL, x, y, line, false, false)
 #define P_CameraGetCeilingZ(mobj, sector, x, y, line) P_CameraCeilingZ(mobj, sector, NULL, x, y, line, true, false)
 #define P_CameraGetFOFTopZ(mobj, sector, fof, x, y, line) P_CameraCeilingZ(mobj, sectors + fof->secnum, sector, x, y, line, false, false)
@@ -370,10 +370,10 @@ fixed_t P_CameraCeilingZ(camera_t *mobj, sector_t *sector, sector_t *boundsec, f
 
 INT32 P_FloorPicAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height);
 
-boolean P_InsideANonSolidFFloor(mobj_t *mobj, ffloor_t *rover);
-boolean P_CheckDeathPitCollide(const mobj_t *mo);
-boolean P_CheckSolidLava(ffloor_t *rover);
-boolean P_CheckDeathPitFOFs(const mobj_t *mo);
+dboolean P_InsideANonSolidFFloor(mobj_t *mobj, ffloor_t *rover);
+dboolean P_CheckDeathPitCollide(const mobj_t *mo);
+dboolean P_CheckSolidLava(ffloor_t *rover);
+dboolean P_CheckDeathPitFOFs(const mobj_t *mo);
 void P_AdjustMobjFloorZ_FFloors(mobj_t *mo, sector_t *sector, UINT8 motype);
 
 mobj_t *P_SpawnMobjFromMobjUnscaled(mobj_t *mobj, fixed_t xofs, fixed_t yofs, fixed_t zofs, mobjtype_t type);
@@ -391,13 +391,13 @@ SINT8 P_MobjFlip(mobj_t *mobj);
 fixed_t P_GetMobjGravity(mobj_t *mo);
 
 void P_CalcChasePostImg(player_t *player, camera_t *thiscam);
-boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled);
+dboolean P_CameraThinker(player_t *player, camera_t *thiscam, dboolean resetcalled);
 
-void P_Attract(mobj_t *source, mobj_t *enemy, boolean nightsgrab);
+void P_Attract(mobj_t *source, mobj_t *enemy, dboolean nightsgrab);
 mobj_t *P_GetClosestAxis(mobj_t *source);
 
-boolean P_CanRunOnWater(mobj_t *mobj, ffloor_t *rover);
-boolean P_CheckSolidFFloorSurface(mobj_t *mobj, ffloor_t *rover);
+dboolean P_CanRunOnWater(mobj_t *mobj, ffloor_t *rover);
+dboolean P_CheckSolidFFloorSurface(mobj_t *mobj, ffloor_t *rover);
 
 void P_MaceRotate(mobj_t *center, INT32 baserot, INT32 baseprevrot);
 
@@ -415,18 +415,18 @@ void P_FlashPal(player_t *pl, UINT16 type, UINT16 duration);
 extern INT32 var1;
 extern INT32 var2;
 
-boolean P_CheckMeleeRange(mobj_t *actor);
-boolean P_JetbCheckMeleeRange(mobj_t *actor);
-boolean P_FaceStabCheckMeleeRange(mobj_t *actor);
-boolean P_SkimCheckMeleeRange(mobj_t *actor);
-boolean P_CheckMissileRange(mobj_t *actor);
+dboolean P_CheckMeleeRange(mobj_t *actor);
+dboolean P_JetbCheckMeleeRange(mobj_t *actor);
+dboolean P_FaceStabCheckMeleeRange(mobj_t *actor);
+dboolean P_SkimCheckMeleeRange(mobj_t *actor);
+dboolean P_CheckMissileRange(mobj_t *actor);
 
 void P_NewChaseDir(mobj_t *actor);
-boolean P_LookForPlayers(mobj_t *actor, boolean allaround, boolean tracer, fixed_t dist);
+dboolean P_LookForPlayers(mobj_t *actor, dboolean allaround, dboolean tracer, fixed_t dist);
 
 void P_HomingAttack(mobj_t *source, mobj_t *enemy);
 
-mobj_t *P_InternalFlickySpawn(mobj_t *actor, mobjtype_t flickytype, fixed_t momz, boolean lookforplayers, SINT8 moveforward);
+mobj_t *P_InternalFlickySpawn(mobj_t *actor, mobjtype_t flickytype, fixed_t momz, dboolean lookforplayers, SINT8 moveforward);
 void P_InternalFlickySetColor(mobj_t *actor, UINT8 color);
 #define P_IsFlickyCenter(type) (type > MT_FLICKY_01 && type < MT_SEED && (type - MT_FLICKY_01) % 2 ? 1 : 0)
 void P_InternalFlickyBubble(mobj_t *actor);
@@ -449,7 +449,7 @@ struct tm_t
 
 	// If "floatok" true, move would be ok
 	// if within "g_tm.floorz - g_tm.ceilingz".
-	boolean floatok;
+	dboolean floatok;
 
 	fixed_t floorz, ceilingz;
 	fixed_t dropoffz, drpoffceilz; // drop-off floor/ceiling heights
@@ -465,12 +465,12 @@ struct tm_t
 	line_t *ceilingline;
 
 	// P_CheckPosition: this position blocks movement
-	boolean blocking;
+	dboolean blocking;
 
 	// P_CheckPosition: set this before each call to
 	// P_CheckPosition to enable a line sweep on collided
 	// lines
-	boolean sweep;
+	dboolean sweep;
 
 	// sweep: max step up at g_tm.x, g_tm.y
 	fixed_t maxstep;
@@ -496,39 +496,39 @@ void P_SetUnderlayPosition(mobj_t *thing);
 
 struct TryMoveResult_t
 {
-	boolean success;
+	dboolean success;
 	line_t *line;
 	mobj_t *mo;
-	boolean slideout; // set if bouncing failed, and the moving mobj should slide
+	dboolean slideout; // set if bouncing failed, and the moving mobj should slide
 	vector2_t normal;
 };
 
-boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *result);
-boolean P_CheckMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff, TryMoveResult_t *result);
-boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff, TryMoveResult_t *result);
-boolean P_SceneryTryMove(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *result);
+dboolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *result);
+dboolean P_CheckMove(mobj_t *thing, fixed_t x, fixed_t y, dboolean allowdropoff, TryMoveResult_t *result);
+dboolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, dboolean allowdropoff, TryMoveResult_t *result);
+dboolean P_SceneryTryMove(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *result);
 
 void P_TestLine(line_t *ld);
 void P_ClearTestLines(void);
 line_t *P_SweepTestLines(fixed_t ax, fixed_t ay, fixed_t bx, fixed_t by, fixed_t r, vector2_t *return_normal);
 
-boolean P_IsLineBlocking(const line_t *ld, const mobj_t *thing);
-boolean P_IsLineTripWire(const line_t *ld);
-boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam);
+dboolean P_IsLineBlocking(const line_t *ld, const mobj_t *thing);
+dboolean P_IsLineTripWire(const line_t *ld);
+dboolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam);
 fixed_t P_BaseStepUp(void);
 fixed_t P_GetThingStepUp(mobj_t *thing, fixed_t destX, fixed_t destY);
-boolean P_Move(mobj_t *actor, fixed_t speed);
-boolean P_SetOrigin(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z);
-boolean P_MoveOrigin(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z);
+dboolean P_Move(mobj_t *actor, fixed_t speed);
+dboolean P_SetOrigin(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z);
+dboolean P_MoveOrigin(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z);
 void P_SlideMove(mobj_t *mo, TryMoveResult_t *result);
 void P_BounceMove(mobj_t *mo, TryMoveResult_t *result);
-boolean P_CheckSight(mobj_t *t1, mobj_t *t2);
-boolean P_TraceBlockingLines(mobj_t *t1, mobj_t *t2);
-boolean P_TraceBotTraversal(mobj_t *t1, mobj_t *t2);
-boolean P_TraceWaypointTraversal(mobj_t *t1, mobj_t *t2);
+dboolean P_CheckSight(mobj_t *t1, mobj_t *t2);
+dboolean P_TraceBlockingLines(mobj_t *t1, mobj_t *t2);
+dboolean P_TraceBotTraversal(mobj_t *t1, mobj_t *t2);
+dboolean P_TraceWaypointTraversal(mobj_t *t1, mobj_t *t2);
 void P_CheckHoopPosition(mobj_t *hoopthing, fixed_t x, fixed_t y, fixed_t z, fixed_t radius);
 
-boolean P_CheckSector(sector_t *sector, boolean crunch);
+dboolean P_CheckSector(sector_t *sector, dboolean crunch);
 
 void P_DelSeclist(msecnode_t *node);
 void P_DelPrecipSeclist(mprecipsecnode_t *node);
@@ -536,14 +536,14 @@ void P_DelPrecipSeclist(mprecipsecnode_t *node);
 void P_CreateSecNodeList(mobj_t *thing, fixed_t x, fixed_t y);
 void P_Initsecnode(void);
 
-void P_RadiusAttack(mobj_t *spot, mobj_t *source, fixed_t damagedist, UINT8 damagetype, boolean sightcheck);
+void P_RadiusAttack(mobj_t *spot, mobj_t *source, fixed_t damagedist, UINT8 damagetype, dboolean sightcheck);
 
 fixed_t P_FloorzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height);
 fixed_t P_CeilingzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height);
 BlockItReturn_t PIT_PushableMoved(mobj_t *thing);
 
 void P_DoSpringRR(mobj_t * object,fixed_t scaleVal, fixed_t vertispeed, fixed_t horizspeed, angle_t finalAngle);
-boolean P_DoSpring(mobj_t *spring, mobj_t *object);
+dboolean P_DoSpring(mobj_t *spring, mobj_t *object);
 
 INT32 P_GetSectorLightNumAt(sector_t *sector, fixed_t x, fixed_t y, fixed_t z);
 INT32 P_GetLightLevelFromSectorAt(sector_t *sector, fixed_t x, fixed_t y, fixed_t z);
@@ -609,15 +609,15 @@ extern struct minimapinfo
 #define DMG_TYPEMASK     0x0F // Get type without any flags
 
 void P_SpecialStageDamage(player_t *player, mobj_t *inflictor, mobj_t *source);
-boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
+dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
 void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damagetype);
 void P_PlayerRingBurst(player_t *player, INT32 num_rings); /// \todo better fit in p_user.c
 
-void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck);
-void P_TouchStarPost(mobj_t *starpost, player_t *player, boolean snaptopost);
+void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, dboolean heightcheck);
+void P_TouchStarPost(mobj_t *starpost, player_t *player, dboolean snaptopost);
 void P_CheckTimeLimit(void);
 void P_CheckPointLimit(void);
-boolean P_CheckRacers(void);
+dboolean P_CheckRacers(void);
 
 typedef enum
 {
@@ -629,7 +629,7 @@ typedef enum
 	PICKUPITEM_RESERVE,
 } pickupitem_e;
 
-boolean P_CanPickupItem(player_t *player, UINT8 weapon);
+dboolean P_CanPickupItem(player_t *player, UINT8 weapon);
 
 //
 // P_SPEC
@@ -646,12 +646,12 @@ void P_MixUp(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle,
 			fixed_t starpostx, fixed_t starposty, fixed_t starpostz,
 			INT32 starpostnum, tic_t starposttime, angle_t starpostangle,
 			fixed_t starpostscale, angle_t drawangle, INT32 flags2);
-boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle, boolean flash, boolean dontstopmove);
-boolean P_SetMobjStateNF(mobj_t *mobj, statenum_t state);
-boolean P_CheckMissileSpawn(mobj_t *th);
+dboolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle, dboolean flash, dboolean dontstopmove);
+dboolean P_SetMobjStateNF(mobj_t *mobj, statenum_t state);
+dboolean P_CheckMissileSpawn(mobj_t *th);
 void P_Thrust(mobj_t *mo, angle_t angle, fixed_t move);
 void P_ExplodeMissile(mobj_t *mo);
-void P_CheckGravity(mobj_t *mo, boolean affect);
+void P_CheckGravity(mobj_t *mo, dboolean affect);
 void P_SetPitchRollFromSlope(mobj_t *mo, pslope_t *slope);
 void P_SetPitchRoll(mobj_t *mo, angle_t pitch, angle_t yaw);
 fixed_t P_ScaleFromMap(fixed_t n, fixed_t scale);
@@ -659,7 +659,7 @@ fixed_t P_GetMobjHead(const mobj_t *);
 fixed_t P_GetMobjFeet(const mobj_t *);
 fixed_t P_GetMobjGround(const mobj_t *);
 fixed_t P_GetMobjZMovement(mobj_t *mo);
-boolean P_WaterRunning(mobj_t *thing);
+dboolean P_WaterRunning(mobj_t *thing);
 
 void P_InitTIDHash(void);
 void P_AddThingTID(mobj_t *mo);

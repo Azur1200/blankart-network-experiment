@@ -18,6 +18,8 @@
 #include "hardware/hw_data.h"
 #endif
 
+#include "doomtype.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -133,8 +135,8 @@ struct wadfile_t
 	UINT32 filesize; // for network
 	UINT64 hash;
 
-	boolean important; // also network - !W_VerifyNMUSlumps
-	boolean compatmode;
+	dboolean important; // also network - !W_VerifyNMUSlumps
+	dboolean compatmode;
 };
 
 typedef enum wadcompat
@@ -153,16 +155,16 @@ extern wadfile_t *wadfiles[MAX_WADFILES];
 // =========================================================================
 
 // Opens a WAD file. Returns the FILE * handle for the file, or NULL if not found or could not be opened
-FILE *W_OpenWadFile(const char **filename, boolean useerrors);
+FILE *W_OpenWadFile(const char **filename, dboolean useerrors);
 // Load and add a wadfile to the active wad files, returns numbers of lumps, INT16_MAX on error
-UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boolean local, wadcompat_t compat);
+UINT16 W_InitFile(const char *filename, dboolean mainfile, dboolean startup, dboolean local, wadcompat_t compat);
 
-boolean W_MakeFileHash(const char *filename, boolean openwad, UINT64 *ret);
+dboolean W_MakeFileHash(const char *filename, dboolean openwad, UINT64 *ret);
 
 // W_InitMultipleFiles returns 1 if all is okay, 0 otherwise,
 // so that it stops with a message if a file was not found, but not if all is okay.
 // W_InitMultipleFiles exits if a file was not found, but not if all is okay.
-INT32 W_InitMultipleFiles(char **filenames, boolean addons);
+INT32 W_InitMultipleFiles(char **filenames, dboolean addons);
 
 const char *W_CheckNameForNumPwad(UINT16 wad, UINT16 lump);
 const char *W_CheckNameForNum(lumpnum_t lumpnum);
@@ -180,7 +182,7 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump);
 
-lumpnum_t W_CheckNumForMap(const char *name, boolean checktofirst);
+lumpnum_t W_CheckNumForMap(const char *name, dboolean checktofirst);
 lumpnum_t W_CheckNumForName(const char *name);
 lumpnum_t W_CheckNumForLongName(const char *name);
 lumpnum_t W_GetNumForName(const char *name); // like W_CheckNumForName but I_Error on LUMPERROR
@@ -192,8 +194,8 @@ UINT8 W_LumpExists(const char *name); // Lua uses this.
 size_t W_LumpLengthPwad(UINT16 wad, UINT16 lump);
 size_t W_LumpLength(lumpnum_t lumpnum);
 
-boolean W_IsLumpWad(lumpnum_t lumpnum); // for loading maps from WADs in PK3s
-boolean W_IsLumpFolder(UINT16 wad, UINT16 lump); // for detecting folder "lumps"
+dboolean W_IsLumpWad(lumpnum_t lumpnum); // for loading maps from WADs in PK3s
+dboolean W_IsLumpFolder(UINT16 wad, UINT16 lump); // for detecting folder "lumps"
 
 #ifdef HAVE_ZLIB
 void zerr(int ret); // zlib error checking
@@ -208,10 +210,10 @@ void *W_CacheLumpNumPwad(UINT16 wad, UINT16 lump, INT32 tag);
 void *W_CacheLumpNum(lumpnum_t lump, INT32 tag);
 void *W_CacheLumpNumForce(lumpnum_t lumpnum, INT32 tag);
 
-boolean W_IsLumpCached(lumpnum_t lump, void *ptr);
-boolean W_IsPatchCached(lumpnum_t lump, void *ptr);
-boolean W_NeedPaletteRemapPwad(UINT16 wad, UINT16 lump, boolean ignorecache);
-boolean W_NeedPaletteRemap(lumpnum_t lump, boolean ignorecache);
+dboolean W_IsLumpCached(lumpnum_t lump, void *ptr);
+dboolean W_IsPatchCached(lumpnum_t lump, void *ptr);
+dboolean W_NeedPaletteRemapPwad(UINT16 wad, UINT16 lump, dboolean ignorecache);
+dboolean W_NeedPaletteRemap(lumpnum_t lump, dboolean ignorecache);
 
 void *W_CacheLumpName(const char *name, INT32 tag);
 void *W_CachePatchName(const char *name, INT32 tag);
@@ -236,7 +238,7 @@ void W_UnlockCachedPatch(void *patch);
 
 void W_VerifyFileHash(UINT16 wadfilenum, UINT64 matchhash);
 
-int W_VerifyNMUSlumps(const char *filename, boolean exit_on_error);
+int W_VerifyNMUSlumps(const char *filename, dboolean exit_on_error);
 
 #ifdef __cplusplus
 } // extern "C"

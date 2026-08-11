@@ -883,7 +883,7 @@ void G_ControllerRumbleTick(void)
 }
 
 // If keybind is necessary to navigate menus, it's on this list.
-boolean G_KeyBindIsNecessary(INT32 gc)
+dboolean G_KeyBindIsNecessary(INT32 gc)
 {
 	switch (gc)
 	{
@@ -902,7 +902,7 @@ boolean G_KeyBindIsNecessary(INT32 gc)
 }
 
 // Returns false if a key is deemed unreachable for this device.
-boolean G_KeyIsAvailable(INT32 key, INT32 deviceID, boolean digital)
+dboolean G_KeyIsAvailable(INT32 key, INT32 deviceID, dboolean digital)
 {
 	// Invalid key number.
 	if (key <= 0 || key >= NUMINPUTS)
@@ -1114,7 +1114,7 @@ void G_SaveKeySetting(FILE *f, INT32 (*fromcontrolsa)[MAXINPUTMAPPING], INT32 (*
 	}
 }
 
-INT32 G_CheckDoubleUsage(INT32 keynum, INT32 playernum, boolean modify)
+INT32 G_CheckDoubleUsage(INT32 keynum, INT32 playernum, dboolean modify)
 {
 	INT32 result = gc_null;
 
@@ -1274,7 +1274,7 @@ void Command_Setcontrol4_f(void)
 #define GyroCalibrationStart (TICRATE/2)
 #define GyroCalibrationTrust (1*FRACUNIT/100)
 
-boolean localgyrocalibrating[MAXSPLITSCREENPLAYERS];
+dboolean localgyrocalibrating[MAXSPLITSCREENPLAYERS];
 vector3_t localgyrovectors[MAXSPLITSCREENPLAYERS];
 
 tic_t localgyrocalibrationsamples[MAXSPLITSCREENPLAYERS];
@@ -1333,7 +1333,7 @@ vector3_t G_GetCalibratedGyroOffset(INT32 p)
 	return localgyrocalibrationoffset[p];
 }
 
-void G_UpdateGamepadAutoCalibration(INT32 p, vector3_t accel, vector3_t gyro, boolean allowautocalibration)
+void G_UpdateGamepadAutoCalibration(INT32 p, vector3_t accel, vector3_t gyro, dboolean allowautocalibration)
 {
 	(void)gyro;
 
@@ -1584,7 +1584,7 @@ vector3_t G_GetGamepadCalibratedGyro(INT32 p)
 	return localgyrovectors[p];
 }
 
-boolean G_GetGamepadCanUseTilt(INT32 p)
+dboolean G_GetGamepadCanUseTilt(INT32 p)
 {
 	if (p >= MAXSPLITSCREENPLAYERS)
 	{

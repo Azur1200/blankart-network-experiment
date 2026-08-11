@@ -36,14 +36,14 @@ struct weakspot_t
 	spottype_t type;
 	tic_t time;
 	UINT16 color;
-	boolean minimap;
+	dboolean minimap;
 };
 
 #define BOSSHEALTHBARLEN 110
 
 extern struct bossinfo
 {
-	boolean boss;						///< If true, then we are fighting a boss
+	dboolean boss;						///< If true, then we are fighting a boss
 	UINT8 healthbar;					///< Actual health bar fill amount
 	UINT8 visualbar;					///< Tracks above, but with delay
 	fixed_t visualdiv;					///< How far apart health bar divisions should appear
@@ -52,7 +52,7 @@ extern struct bossinfo
 	UINT8 barlen;						///< The length of the bar (only reduced when a boss is deceased)
 	char *enemyname;					///< The name next to the bar
 	weakspot_t weakspots[NUMWEAKSPOTS]; ///< Array of weak spots (for minimap/object tracking)
-	boolean encore;						///< Copy of encore, just to make sure you can't cheat it with cvars
+	dboolean encore;						///< Copy of encore, just to make sure you can't cheat it with cvars
 	spottype_t doweakspotsound;			///< If nonzero, at least one weakspot was declared this tic
 	tic_t titleshow;					///< Show this many letters on the titlecard
 	sfxenum_t titlesound;				///< Sound to play when title typing
@@ -103,7 +103,7 @@ void K_InitBossHealthBar(const char *enemyname, const char *subtitle, sfxenum_t 
 void K_UpdateBossHealthBar(fixed_t magnitude, tic_t jitterlen);
 
 /*--------------------------------------------------
-	void K_DeclareWeakspot(mobj_t *spot, spottype_t spottype, UINT16 color, boolean minimap);
+	void K_DeclareWeakspot(mobj_t *spot, spottype_t spottype, UINT16 color, dboolean minimap);
 
 		Updates the list of Weakspots for the HUD/minimap object tracking.
 
@@ -114,7 +114,7 @@ void K_UpdateBossHealthBar(fixed_t magnitude, tic_t jitterlen);
 		minimap - If true, appear on minimap.
 --------------------------------------------------*/
 
-void K_DeclareWeakspot(mobj_t *spot, spottype_t spottype, UINT16 color, boolean minimap);
+void K_DeclareWeakspot(mobj_t *spot, spottype_t spottype, UINT16 color, dboolean minimap);
 
 #ifdef __cplusplus
 } // extern "C"

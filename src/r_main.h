@@ -42,7 +42,7 @@ extern size_t validcount, linecount, loopcount, framecount;
 // Evaluated delta tics for this frame (how many tics since the last frame)
 extern fixed_t renderdeltatics;
 // The current render is a new logical tic
-extern boolean renderisnewtic;
+extern dboolean renderisnewtic;
 
 //
 // Lighting LUT.
@@ -111,7 +111,7 @@ FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsectorFast(fixed_t x, fixe
 	return &subsectors[nodenum & ~NF_SUBSECTOR];
 }
 
-boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixed_t bottomh, fixed_t toph);
+dboolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixed_t bottomh, fixed_t toph);
 
 void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32 *yl, INT32 *yh);
 
@@ -206,17 +206,17 @@ void R_ApplyViewMorph(int split);
 angle_t R_ViewRollAngle(const player_t *player, UINT8 viewnum);
 
 // just sets setsizeneeded true
-extern boolean setsizeneeded;
+extern dboolean setsizeneeded;
 void R_SetViewSize(void);
 
 // do it (sometimes explicitly called)
 void R_ExecuteSetViewSize(void);
 
-void R_SetupFrame(int split, boolean skybox);
+void R_SetupFrame(int split, dboolean skybox);
 void R_SkyboxFrame(int split);
 
-boolean R_ViewpointHasChasecam(player_t *player);
-boolean R_IsViewpointThirdPerson(player_t *player, boolean skybox);
+dboolean R_ViewpointHasChasecam(player_t *player);
+dboolean R_IsViewpointThirdPerson(player_t *player, dboolean skybox);
 
 // Called by D_Display.
 void R_RenderPlayerView(void);

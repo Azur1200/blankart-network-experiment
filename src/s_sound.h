@@ -132,7 +132,7 @@ void S_InitSfxChannels(INT32 sfxVolume);
 //
 void S_StopSounds(void);
 void S_ClearSfx(void);
-void S_InitLevelMusic(boolean fromnetsave);
+void S_InitLevelMusic(dboolean fromnetsave);
 
 //
 // Basically a W_GetNumForName that adds "ds" at the beginning of the string. Returns a lumpnum.
@@ -143,7 +143,7 @@ lumpnum_t S_GetSfxLumpNum(sfxinfo_t *sfx);
 // Sound Status
 //
 
-boolean S_SoundDisabled(void);
+dboolean S_SoundDisabled(void);
 
 //
 // Start sound for thing at <origin> using <sound_id> from sounds.h
@@ -161,17 +161,17 @@ void S_StopSound(void *origin);
 // Music Status
 //
 
-boolean S_DigMusicDisabled(void);
-boolean S_MusicDisabled(void);
-boolean S_MusicPlaying(void);
-boolean S_MusicPaused(void);
-boolean S_MusicNotInFocus(void);
+dboolean S_DigMusicDisabled(void);
+dboolean S_MusicDisabled(void);
+dboolean S_MusicPlaying(void);
+dboolean S_MusicPaused(void);
+dboolean S_MusicNotInFocus(void);
 musictype_t S_MusicType(void);
 const char *S_MusicTypeName(musictype_t mustype);
 const char *S_MusicName(void);
 
-boolean S_MusicExists(const char *mname);
-boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping);
+dboolean S_MusicExists(const char *mname);
+dboolean S_MusicInfo(char *mname, UINT16 *mflags, dboolean *looping);
 
 
 //
@@ -179,7 +179,7 @@ boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping);
 //
 
 // Set Speed of Music
-boolean S_SpeedMusic(float speed);
+dboolean S_SpeedMusic(float speed);
 
 #define MAXDEFTRACKS 3
 
@@ -195,8 +195,8 @@ struct musicdef_t
 	char *composers;
 	char *usage;
 	int volume;
-	boolean contentidunsafe;
-	boolean legacy;
+	dboolean contentidunsafe;
+	dboolean legacy;
 	musicdef_t *next;
 };
 
@@ -228,7 +228,7 @@ void S_UnloadMusicCredit(void);
 void S_ShowMusicCredit(fixed_t yoffset, UINT16 animtime, INT32 snapflags);
 void S_ChangeMusicCreditSettings(INT32 yoffset, INT32 snapflags);
 void S_StopMusicCredit(void);
-boolean S_PrepareSoundTest(void);
+dboolean S_PrepareSoundTest(void);
 
 //
 // Music Seeking
@@ -238,13 +238,13 @@ boolean S_PrepareSoundTest(void);
 UINT32 S_GetMusicLength(void);
 
 // Set LoopPoint of Music
-boolean S_SetMusicLoopPoint(UINT32 looppoint);
+dboolean S_SetMusicLoopPoint(UINT32 looppoint);
 
 // Get LoopPoint of Music
 UINT32 S_GetMusicLoopPoint(void);
 
 // Set Position of Music
-boolean S_SetMusicPosition(UINT32 position);
+dboolean S_SetMusicPosition(UINT32 position);
 
 // Get Position of Music
 UINT32 S_GetMusicPosition(void);
@@ -257,26 +257,26 @@ struct musicstack_t
 {
 	char musname[7];
 	UINT16 musflags;
-	boolean looping;
+	dboolean looping;
 	UINT32 position;
 	tic_t tic;
 	UINT16 status;
 	lumpnum_t mlumpnum;
-	boolean noposition; // force music stack resuming from zero (like music_stack_noposition)
+	dboolean noposition; // force music stack resuming from zero (like music_stack_noposition)
 
     musicstack_t *prev;
     musicstack_t *next;
 };
 
 extern char music_stack_nextmusname[7];
-extern boolean music_stack_noposition;
+extern dboolean music_stack_noposition;
 extern UINT32 music_stack_fadeout;
 extern UINT32 music_stack_fadein;
 
 void S_SetStackAdjustmentStart(void);
 void S_AdjustMusicStackTics(void);
-void S_RetainMusic(const char *mname, UINT16 mflags, boolean looping, UINT32 position, UINT16 status);
-boolean S_RecallMusic(UINT16 status, boolean fromfirst);
+void S_RetainMusic(const char *mname, UINT16 mflags, dboolean looping, UINT32 position, UINT16 status);
+dboolean S_RecallMusic(UINT16 status, dboolean fromfirst);
 
 //
 // Music Playback
@@ -286,7 +286,7 @@ boolean S_RecallMusic(UINT16 status, boolean fromfirst);
 struct MusicChange {
 	char    * newname;
 	UINT16  * mflags;
-	boolean * looping;
+	dboolean * looping;
 	UINT32  * position;
 	UINT32  * prefadems;
 	UINT32  * fadeinms;
@@ -301,7 +301,7 @@ enum
 // note: music flags 12 bits for tracknum (gme, other formats with more than one track)
 //       13-15 aren't used yet
 //       and the last bit we ignore (internal game flag for resetting music on reload)
-void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 position, UINT32 prefadems, UINT32 fadeinms);
+void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, dboolean looping, UINT32 position, UINT32 prefadems, UINT32 fadeinms);
 #define S_ChangeMusicInternal(a,b) S_ChangeMusicEx(a,0,b,0,0,0)
 #define S_ChangeMusic(a,b,c) S_ChangeMusicEx(a,b,c,0,0,0)
 
@@ -336,10 +336,10 @@ void S_DisableSound(void);
 
 void S_SetInternalMusicVolume(INT32 volume);
 void S_StopFadingMusic(void);
-boolean S_FadeMusicFromVolume(UINT8 target_volume, INT16 source_volume, UINT32 ms);
+dboolean S_FadeMusicFromVolume(UINT8 target_volume, INT16 source_volume, UINT32 ms);
 #define S_FadeMusic(a, b) S_FadeMusicFromVolume(a, -1, b)
 #define S_FadeInChangeMusic(a,b,c,d) S_ChangeMusicEx(a,b,c,0,0,d)
-boolean S_FadeOutStopMusic(UINT32 ms);
+dboolean S_FadeOutStopMusic(UINT32 ms);
 
 //
 // Updates music & sounds

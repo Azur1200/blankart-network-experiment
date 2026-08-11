@@ -99,7 +99,7 @@ struct extracolormap_t
 struct vertex_t
 {
 	fixed_t x, y;
-	boolean floorzset, ceilingzset;
+	dboolean floorzset, ceilingzset;
 	fixed_t floorz, ceilingz;
 };
 
@@ -526,7 +526,7 @@ struct sector_t
 
 	// floor and ceiling lighting
 	INT16 floorlightlevel, ceilinglightlevel;
-	boolean floorlightabsolute, ceilinglightabsolute; // absolute or relative to sector's light level?
+	dboolean floorlightabsolute, ceilinglightabsolute; // absolute or relative to sector's light level?
 	INT32 floorlightsec, ceilinglightsec; // take floor/ceiling light level from another sector
 
 	INT32 crumblestate; // used for crumbling and bobbing
@@ -541,16 +541,16 @@ struct sector_t
 	// Improved fake floor hack
 	ffloor_t *ffloors;
 	size_t *attached;
-	boolean *attachedsolid;
+	dboolean *attachedsolid;
 	size_t numattached;
 	size_t maxattached;
 	lightlist_t *lightlist;
 	INT32 numlights;
-	boolean moved;
+	dboolean moved;
 
 	// per-sector colormaps!
 	extracolormap_t *extra_colormap;
-	boolean colormap_protected;
+	dboolean colormap_protected;
 
 	fixed_t gravity; // per-sector gravity factor
 	fixed_t *gravityptr; // For binary format: Read gravity from floor height of master sector
@@ -581,7 +581,7 @@ struct sector_t
 	// Eternity engine slope
 	pslope_t *f_slope; // floor slope
 	pslope_t *c_slope; // ceiling slope
-	boolean hasslope; // The sector, or one of its visible FOFs, contains a slope
+	dboolean hasslope; // The sector, or one of its visible FOFs, contains a slope
 
 	// for fade thinker
 	INT16 spawn_lightlevel;
@@ -651,9 +651,9 @@ struct line_t
 	size_t validcount; // if == validcount, already checked
 	polyobj_t *polyobj; // Belongs to a polyobject?
 
-	boolean tripwire;
-	boolean blockplayers;
-	boolean blockintransfer;
+	dboolean tripwire;
+	dboolean blockplayers;
+	dboolean blockintransfer;
 
 	char *text; // a concatenation of all front and back texture names, for linedef specials that require a string.
 	INT16 callcount; // no. of calls left before triggering, for the "X calls" linedef specials, defaults to 0
@@ -679,7 +679,7 @@ struct side_t
 	INT32 toptexture, bottomtexture, midtexture;
 
 	// Interpolator installed? (R_CreateInterpolator_SideScroll)
-	boolean acs_interpolated;
+	dboolean acs_interpolated;
 
 	// Linedef the sidedef belongs to
 	line_t *line;
@@ -735,7 +735,7 @@ struct msecnode_t
 	msecnode_t *m_sectorlist_next;  // next msecnode_t for this thing
 	msecnode_t *m_thinglist_prev;  // prev msecnode_t for this sector
 	msecnode_t *m_thinglist_next;  // next msecnode_t for this sector
-	boolean visited; // used in search algorithms
+	dboolean visited; // used in search algorithms
 };
 
 struct mprecipsecnode_t
@@ -746,7 +746,7 @@ struct mprecipsecnode_t
 	mprecipsecnode_t *m_sectorlist_next;  // next msecnode_t for this thing
 	mprecipsecnode_t *m_thinglist_prev;  // prev msecnode_t for this sector
 	mprecipsecnode_t *m_thinglist_next;  // next msecnode_t for this sector
-	boolean visited; // used in search algorithms
+	dboolean visited; // used in search algorithms
 };
 
 // for now, only used in hardware mode
@@ -810,8 +810,8 @@ struct seg_t
 	size_t numlights;
 	r_lightlist_t *rlights;
 	polyobj_t *polyseg;
-	boolean dontrenderme;
-	boolean glseg;
+	dboolean dontrenderme;
+	dboolean glseg;
 
 	// Fake contrast calculated on level load
 	SINT8 lightOffset;
@@ -1205,7 +1205,7 @@ typedef struct
 
 	UINT16 flatwidth;
 	UINT16 flatheight;
-	boolean powersoftwo;
+	dboolean powersoftwo;
 
 	visplane_t *currentplane;
 	UINT8 *source;
@@ -1242,7 +1242,7 @@ typedef struct
 	{
 		INT32 offset;
 		fixed_t xfrac, yfrac;
-		boolean active;
+		dboolean active;
 	} planeripple;
 
 	UINT8 r8_flatcolor;

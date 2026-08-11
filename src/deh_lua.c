@@ -108,7 +108,7 @@ static void CacheAndPushConstant(lua_State *L, const char *name, lua_Integer val
 
 // Search for a matching constant variable.
 // Result is stored into _G for faster subsequent use. (Except for SPR_ in the SOC parser)
-static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
+static int ScanConstants(lua_State *L, dboolean mathlib, const char *word)
 {
 	const char *p;
 	size_t i;
@@ -556,7 +556,7 @@ static inline int lib_getenum(lua_State *L)
 {
 	const char *word;
 	fixed_t i;
-	boolean mathlib = lua_toboolean(L, lua_upvalueindex(1));
+	dboolean mathlib = lua_todboolean(L, lua_upvalueindex(1));
 	if (lua_type(L,2) != LUA_TSTRING)
 		return 0;
 	word = lua_tostring(L,2);
@@ -636,13 +636,13 @@ void LUA_UpdateSprName(const char *name, lua_Integer value)
 int LUA_EnumLib(lua_State *L)
 {
 	if (lua_gettop(L) == 0)
-		lua_pushboolean(L, 0);
+		lua_pushdboolean(L, 0);
 
 	global_fields_ref = Lua_CreateFieldTable(L, global_opt);
 
 	// Set the global metatable
 	lua_createtable(L, 0, 1);
-	lua_pushvalue(L, 1); // boolean passed to LUA_EnumLib as first argument.
+	lua_pushvalue(L, 1); // dboolean passed to LUA_EnumLib as first argument.
 	lua_pushcclosure(L, lib_getenum, 1);
 	lua_setfield(L, -2, "__index");
 	lua_setmetatable(L, LUA_GLOBALSINDEX);

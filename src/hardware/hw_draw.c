@@ -1267,7 +1267,7 @@ void HWR_DrawFixedLine(INT32 x1, INT32 y1, INT32 x2, INT32 y2, fixed_t w, INT32 
 // --------------------------------------------------------------------------
 // save screenshots with TGA format
 // --------------------------------------------------------------------------
-static inline boolean saveTGA(const char *file_name, void *buffer,
+static inline dboolean saveTGA(const char *file_name, void *buffer,
 	INT32 width, INT32 height)
 {
 	INT32 fd;
@@ -1280,8 +1280,8 @@ static inline boolean saveTGA(const char *file_name, void *buffer,
 		return false;
 
 	memset(&tga_hdr, 0, sizeof (tga_hdr));
-	tga_hdr.width = SHORT(width);
-	tga_hdr.height = SHORT(height);
+	tga_hdr.width = LSBF_SHORT(width);
+	tga_hdr.height = LSBF_SHORT(height);
 	tga_hdr.image_pix_size = 24;
 	tga_hdr.image_type = 2;
 	tga_hdr.image_descriptor = 32;

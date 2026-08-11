@@ -231,7 +231,7 @@ void R_DrawThingBoundingBox(vissprite_t *vis)
 	draw_bbox_row(&bb, 2, 0);
 }
 
-static boolean is_tangible (mobj_t *thing)
+static dboolean is_tangible (mobj_t *thing)
 {
 	// These objects can never touch another
 	if (thing->flags & (MF_NOCLIPTHING))
@@ -251,7 +251,7 @@ static boolean is_tangible (mobj_t *thing)
 	return true;
 }
 
-boolean R_ThingBoundingBoxVisible(mobj_t *thing)
+dboolean R_ThingBoundingBoxVisible(mobj_t *thing)
 {
 	INT32 cvmode = cv_renderhitbox.value;
 

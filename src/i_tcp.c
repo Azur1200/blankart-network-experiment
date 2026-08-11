@@ -164,11 +164,6 @@ typedef union
 
 #define IPV6_MULTICAST_ADDRESS "ff15::57e1:1a12"
 
-// define socklen_t in DOS/Windows if it is not already defined
-#ifdef USE_WINSOCK1
-	typedef int socklen_t;
-#endif
-
 typedef struct
 {
 	mysockaddr_t address;
@@ -185,7 +180,7 @@ static SOCKET_TYPE nodesocket[MAXNETNODES+1] = {ERRSOCKET};
 static mysockaddr_t clientaddress[MAXNETNODES+1];
 static mysockaddr_t broadcastaddress[MAXNETNODES+1];
 static size_t broadcastaddresses = 0;
-static boolean nodeconnected[MAXNETNODES+1];
+static dboolean nodeconnected[MAXNETNODES+1];
 static banned_t *banned;
 static const INT32 hole_punch_magic = MSBF_LONG (0x52eb11);
 
@@ -193,7 +188,7 @@ static size_t numbans = 0;
 static size_t banned_size = 0;
 
 static bannednode_t SOCK_bannednode[MAXNETNODES+1]; /// \note do we really need the +1?
-static boolean init_tcp_driver = false;
+static dboolean init_tcp_driver = false;
 
 static const char *serverport_name = DEFAULTPORT;
 static const char *clientport_name;/* any port */
@@ -271,7 +266,7 @@ static const char* inet_ntopA(short af, const void *cp, char *buf, socklen_t len
 		return NULL;
 	return buf;
 }
-#elif !defined (USE_WINSOCK1)
+#else
 #define HAVE_NTOP
 #endif
 
@@ -518,7 +513,7 @@ static time_t SOCK_GetUnbanTime(size_t ban)
 }
 
 #ifdef HAVE_IPV6
-static boolean SOCK_cmpipv6(mysockaddr_t *a, mysockaddr_t *b, UINT8 mask)
+static dboolean SOCK_cmpipv6(mysockaddr_t *a, mysockaddr_t *b, UINT8 mask)
 {
 	UINT8 bitmask;
 	I_Assert(mask <= 128);
@@ -533,7 +528,7 @@ static boolean SOCK_cmpipv6(mysockaddr_t *a, mysockaddr_t *b, UINT8 mask)
 }
 #endif
 
-static boolean SOCK_cmpaddr(mysockaddr_t *a, mysockaddr_t *b, UINT8 mask)
+static dboolean SOCK_cmpaddr(mysockaddr_t *a, mysockaddr_t *b, UINT8 mask)
 {
 	UINT32 bitmask = INADDR_NONE;
 
@@ -639,7 +634,7 @@ void Command_Numnodes(void)
 				connected, ingame);
 }
 
-static boolean hole_punch(ssize_t c)
+static dboolean hole_punch(ptrdiff_t c)
 {
 	holepunch_t *holepunchpacket = HOLEPUNCH_DATA(doomcom);
 
@@ -664,11 +659,11 @@ static boolean hole_punch(ssize_t c)
 }
 
 // Returns true if a packet was received from a new node, false in all other cases
-static boolean SOCK_Get(void)
+static dboolean SOCK_Get(void)
 {
 	size_t i, n;
 	int j;
-	ssize_t c;
+	ptrdiff_t c;
 	mysockaddr_t fromaddress;
 	socklen_t fromlen;
 
@@ -770,10 +765,10 @@ static boolean SOCK_Get(void)
 static fd_set masterset;
 
 #ifdef SELECTTEST
-static boolean FD_CPY(fd_set *src, fd_set *dst, SOCKET_TYPE *fd, size_t len)
+static dboolean FD_CPY(fd_set *src, fd_set *dst, SOCKET_TYPE *fd, size_t len)
 {
 	size_t i;
-	boolean testset = false;
+	dboolean testset = false;
 	FD_ZERO(dst);
 	for (i = 0; i < len;i++)
 	{
@@ -787,7 +782,7 @@ static boolean FD_CPY(fd_set *src, fd_set *dst, SOCKET_TYPE *fd, size_t len)
 	return testset;
 }
 
-static boolean SOCK_CanSend(void)
+static dboolean SOCK_CanSend(void)
 {
 	struct timeval timeval_for_select = {0, 0};
 	fd_set tset;
@@ -801,7 +796,7 @@ static boolean SOCK_CanSend(void)
 	return false;
 }
 
-static boolean SOCK_CanGet(void)
+static dboolean SOCK_CanGet(void)
 {
 	struct timeval timeval_for_select = {0, 0};
 	fd_set tset;
@@ -816,7 +811,7 @@ static boolean SOCK_CanGet(void)
 }
 #endif
 
-static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr)
+static inline ptrdiff_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr)
 {
 	socklen_t d4 = (socklen_t)sizeof(struct sockaddr_in);
 #ifdef HAVE_IPV6
@@ -846,8 +841,8 @@ static inline ssize_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockaddr
 
 static void SOCK_Send(void)
 {
-	ssize_t c = ERRSOCKET;
-	size_t i, j;
+	ptrdiff_t c = ERRSOCKET;
+	ptrdiff_t i, j;
 
 	if (doomcom->remotenode < 0 || !nodeconnected[doomcom->remotenode])
 		return;
@@ -933,15 +928,10 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 
 #ifdef USE_WINSOCK
 	{ // Alam_GBC: disable the new UDP connection reset behavior for Win2k and up
-#ifdef USE_WINSOCK2
 		DWORD dwBytesReturned = 0;
 		BOOL bfalse = FALSE;
 		rc = WSAIoctl(s, SIO_UDP_CONNRESET, &bfalse, sizeof(bfalse),
 		         NULL, 0, &dwBytesReturned, NULL, NULL);
-#else
-		unsigned long falseval = false;
-		rc = ioctl(s, SIO_UDP_CONNRESET, &falseval);
-#endif
 		if (rc == -1)
 		{
 			e = errno;
@@ -1128,7 +1118,7 @@ static SOCKET_TYPE UDP_Bind(int family, struct sockaddr *addr, socklen_t addrlen
 	return s;
 }
 
-static boolean UDP_Socket(void)
+static dboolean UDP_Socket(void)
 {
 	size_t s;
 	struct my_addrinfo *ai, *runp, hints;
@@ -1299,17 +1289,13 @@ static boolean UDP_Socket(void)
 	return true;
 }
 
-boolean I_InitTcpDriver(void)
+dboolean I_InitTcpDriver(void)
 {
-	boolean tcp_was_up = init_tcp_driver;
+	dboolean tcp_was_up = init_tcp_driver;
 	if (!init_tcp_driver)
 	{
 #ifdef USE_WINSOCK
-#ifdef USE_WINSOCK2
 		const WORD VerNeed = MAKEWORD(2,2);
-#else
-		const WORD VerNeed = MAKEWORD(1,1);
-#endif
 		WSADATA WSAData;
 		const int WSAresult = WSAStartup(VerNeed, &WSAData);
 		if (WSAresult != 0)
@@ -1336,21 +1322,12 @@ boolean I_InitTcpDriver(void)
 			if (WSAresult != WSAVERNOTSUPPORTED)
 				CONS_Debug(DBG_NETPLAY, "WinSock(TCP/IP) error: %s\n",WSError);
 		}
-#ifdef USE_WINSOCK2
 		if(LOBYTE(WSAData.wVersion) != 2 ||
 			HIBYTE(WSAData.wVersion) != 2)
 		{
 			WSACleanup();
 			CONS_Debug(DBG_NETPLAY, "No WinSock(TCP/IP) 2.2 driver detected\n");
 		}
-#else
-		if (LOBYTE(WSAData.wVersion) != 1 ||
-			HIBYTE(WSAData.wVersion) != 1)
-		{
-			WSACleanup();
-			CONS_Debug(DBG_NETPLAY, "No WinSock(TCP/IP) 1.1 driver detected\n");
-		}
-#endif
 		CONS_Debug(DBG_NETPLAY, "WinSock description: %s\n",WSAData.szDescription);
 		CONS_Debug(DBG_NETPLAY, "WinSock System Status: %s\n",WSAData.szSystemStatus);
 #endif
@@ -1397,7 +1374,7 @@ void I_ShutdownTcpDriver(void)
 	init_tcp_driver = false;
 }
 
-static boolean SOCK_GetAddr(struct sockaddr_in *sin, const char *address, const char *port, boolean test)
+static dboolean SOCK_GetAddr(struct sockaddr_in *sin, const char *address, const char *port, dboolean test)
 {
 	struct my_addrinfo *ai = NULL, *runp, hints;
 	int gaie;
@@ -1522,7 +1499,7 @@ static void SOCK_RegisterHolePunch(void)
 	rendezvous(4);
 }
 
-static boolean SOCK_OpenSocket(void)
+static dboolean SOCK_OpenSocket(void)
 {
 	size_t i;
 
@@ -1577,7 +1554,7 @@ static void AddBannedIndex(void)
 	numbans++;
 }
 
-static boolean SOCK_Ban(INT32 node)
+static dboolean SOCK_Ban(INT32 node)
 {
 	INT32 ban;
 
@@ -1605,7 +1582,7 @@ static boolean SOCK_Ban(INT32 node)
 	return true;
 }
 
-static boolean SOCK_SetBanUsername(const char *username)
+static dboolean SOCK_SetBanUsername(const char *username)
 {
 	if (username == NULL || strlen(username) == 0)
 	{
@@ -1619,7 +1596,7 @@ static boolean SOCK_SetBanUsername(const char *username)
 	return true;
 }
 
-static boolean SOCK_SetBanReason(const char *reason)
+static dboolean SOCK_SetBanReason(const char *reason)
 {
 	if (reason == NULL || strlen(reason) == 0)
 	{
@@ -1633,13 +1610,13 @@ static boolean SOCK_SetBanReason(const char *reason)
 	return true;
 }
 
-static boolean SOCK_SetUnbanTime(time_t timestamp)
+static dboolean SOCK_SetUnbanTime(time_t timestamp)
 {
 	banned[numbans - 1].timestamp = timestamp;
 	return true;
 }
 
-static boolean SOCK_SetBanAddress(const char *address, const char *mask)
+static dboolean SOCK_SetBanAddress(const char *address, const char *mask)
 {
 	struct my_addrinfo *ai, *runp, hints;
 	int gaie;
@@ -1735,11 +1712,11 @@ static int SOCK_IsExternalAddress (const void *p)
 	}
 }
 
-boolean I_InitTcpNetwork(void)
+dboolean I_InitTcpNetwork(void)
 {
 	char serverhostname[255];
 	const char *urlparam = NULL;
-	boolean ret = false;
+	dboolean ret = false;
 	// initilize the OS's TCP/IP stack
 	if (!I_InitTcpDriver())
 		return false;
