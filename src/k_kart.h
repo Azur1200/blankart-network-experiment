@@ -143,6 +143,7 @@ extern vector3_t clusterpoint, clusterdtf;
 #define SPEEDBOOSTDROPOFF CV_Get(&cv_kartstacking_speedboostdropoff)
 #define SPEEDBOOSTDROPOFF_BRAKE CV_Get(&cv_kartstacking_speedboostdropoff_brake)
 #define ACCELSTACK CV_Get(&cv_kartstacking_accelstack)
+#define METABOLISM CV_Get(&cv_kartstacking_metabolism)
 
 // Vanilla Boosts
 #define EASYSNEAKERSPEEDBOOST CV_Get(&cv_kartstacking_sneaker_easyspeedboost)

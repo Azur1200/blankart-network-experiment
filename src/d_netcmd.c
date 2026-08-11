@@ -545,6 +545,8 @@ consvar_t cv_kartstacking_speedboostdropoff_brake = CVAR_INIT ("kartstacking_spe
 // V recreates neptunes old ass misread of stacking code lmao
 consvar_t cv_kartstacking_accelstack = CVAR_INIT ("kartstacking_accelstack", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
+consvar_t cv_kartstacking_metabolism = CVAR_INIT ("kartstacking_metabolism", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
+
 // Vanilla Stacking boosts.
 consvar_t cv_kartstacking_sneaker_easyspeedboost = CVAR_INIT ("vanillaboost_sneaker_easyspeedboost", "0.8317", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_sneaker_normalspeedboost = CVAR_INIT ("vanillaboost_sneaker_normalspeedboost", "0.5", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);

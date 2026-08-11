@@ -112,6 +112,7 @@ extern consvar_t cv_kartstacking_maxvanillaboost;
 extern consvar_t cv_kartstacking_speedboostdropoff;
 extern consvar_t cv_kartstacking_speedboostdropoff_brake;
 extern consvar_t cv_kartstacking_accelstack;
+extern consvar_t cv_kartstacking_metabolism;
 
 extern consvar_t cv_kartstacking_sneaker_easyspeedboost;
 extern consvar_t cv_kartstacking_sneaker_normalspeedboost;

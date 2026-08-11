@@ -299,6 +299,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_speedboostdropoff);
 	CV_RegisterVar(&cv_kartstacking_speedboostdropoff_brake);
 	CV_RegisterVar(&cv_kartstacking_accelstack);
+	CV_RegisterVar(&cv_kartstacking_metabolism);
 	CV_RegisterVar(&cv_kartstacking_colorflame);
 	CV_RegisterVar(&cv_kartstacking_sneakerstacksound);
 
@@ -2851,23 +2852,36 @@ fixed_t K_GetSMonitorHandling(UINT16 time)
     return Easing_OutCubic(t, 0, SMNTRHANDLEBOOST);
 }
 
-static fixed_t diminish(fixed_t speedboost)
+static fixed_t K_KartDiminish(fixed_t speedboost)
 {
 	return FixedSqrt(speedboost + DIMINISHPARAM) - FixedSqrt(DIMINISHPARAM);
 }
 
+static fixed_t K_KartMetabolism(fixed_t weight)
+{
+	return (FRACUNIT - ((weight - 1) * (FRACUNIT * 17 / 100) / 8));
+}
+
 void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, fixed_t handleboost, dboolean stack, dboolean visible)
 {
+	fixed_t metabolism = K_KartMetabolism(player->kartweight);
+
 	if (stack && K_StackingActive())
 	{
-		player->boostinfo.stackspeedboost += speedboost;
+		if (METABOLISM)
+			player->boostinfo.stackspeedboost += FixedMul(speedboost, metabolism);
+		else
+			player->boostinfo.stackspeedboost += speedboost;
 	}
 
 	player->boostinfo.nonstackspeedboost = max(player->boostinfo.nonstackspeedboost, speedboost);
 
 	if (cv_kartstacking_accelstack.value && K_StackingActive())
 	{
-		player->boostinfo.accelboost += accelboost;
+		if (METABOLISM)
+			player->boostinfo.accelboost += FixedMul(accelboost, metabolism);
+		else
+			player->boostinfo.accelboost += accelboost;
 	}
 	else
 	{
@@ -3183,10 +3197,15 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->draftpower > 0) // Drafting
 	{
+		fixed_t metabolism = K_KartMetabolism(player->kartweight);
 		fixed_t draftspeed = K_BoostRescale(player->kartspeed*FRACUNIT, 9*FRACUNIT, FRACUNIT, DRAFTMINSPEED, DRAFTMAXSPEED);
 		fixed_t bonusaccel = FRACUNIT/4;
 
-		player->boostinfo.stackspeedboost += FixedMul(draftspeed, player->draftpower);
+		if (METABOLISM)
+			player->boostinfo.stackspeedboost += FixedMul(FixedMul(draftspeed, player->draftpower), metabolism);
+		else
+			player->boostinfo.stackspeedboost += FixedMul(draftspeed, player->draftpower);
+
 		player->boostinfo.nonstackspeedboost = max(player->boostinfo.nonstackspeedboost, FixedMul(draftspeed, player->draftpower));
 
 		// Now for a small amount of bonus accel
@@ -3195,7 +3214,10 @@ static void K_GetKartBoostPower(player_t *player)
 			// CONS_Printf("bonusaccel: %d\n", bonusaccel);
 			if (cv_kartstacking_accelstack.value && K_StackingActive())
 			{
-				player->boostinfo.accelboost += bonusaccel;
+				if (METABOLISM)
+					player->boostinfo.accelboost += FixedMul(bonusaccel, metabolism);
+				else
+					player->boostinfo.accelboost += bonusaccel;
 			}
 			else
 			{
@@ -3209,7 +3231,7 @@ static void K_GetKartBoostPower(player_t *player)
 	player->boostpower = boostpower;
 
 	// Combine nonstack and stacking boosts here.
-	finalspeedboost = max(player->boostinfo.nonstackspeedboost, diminish(player->boostinfo.stackspeedboost));
+	finalspeedboost = max(player->boostinfo.nonstackspeedboost, K_KartDiminish(player->boostinfo.stackspeedboost));
 	finalaccelboost = player->boostinfo.accelboost;
 	finalhandleboost = player->boostinfo.handleboost;
 	finalgrade = player->boostinfo.grade;
