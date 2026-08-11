@@ -2052,7 +2052,7 @@ static void k_drawKartRaceRank(player_t* p, INT32 x, INT32 y, UINT32 flags, UINT
 			align--;
 		}
 
-		const INT32 pingwidth = SHORT(fontv[PINGNUM_FONT].font[0]->width);
+		const INT32 pingwidth = LSBF_SHORT(fontv[PINGNUM_FONT].font[0]->width);
 
 		// Pingnums are only ever right-aligned, so we have to force it to be left-aligned
 		xx += (pingwidth - 1) * align;

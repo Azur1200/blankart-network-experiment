@@ -54,7 +54,7 @@ extern consvar_t cv_streamersafemusic;
 
 extern char musicqueue_string[];
 extern INT64 musicqueue_time;
-extern boolean musicqueue_loops;
+extern dboolean musicqueue_loops;
 extern UINT16 musicqueue_flags;
 
 #ifdef HAVE_OPENMPT
@@ -305,7 +305,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, dboolean looping, UINT32
 #define S_ChangeMusicInternal(a,b) S_ChangeMusicEx(a,0,b,0,0,0)
 #define S_ChangeMusic(a,b,c) S_ChangeMusicEx(a,b,c,0,0,0)
 
-void S_SetMusicQueue(const char *mmusic, boolean looping, tic_t time);
+void S_SetMusicQueue(const char *mmusic, dboolean looping, tic_t time);
 void S_ClearMusicQueue(void);
 void S_TickMusicQueue(void);
 

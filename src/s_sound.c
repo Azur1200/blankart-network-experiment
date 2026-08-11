@@ -78,7 +78,7 @@ consvar_t surround = CVAR_INIT ("surround", "Off", CV_SAVE, CV_OnOff, NULL);
 
 char musicqueue_string[9] = {0};
 INT64 musicqueue_time = -1;
-boolean musicqueue_loops = false;
+dboolean musicqueue_loops = false;
 UINT16 musicqueue_flags = 0;
 
 static void Captioning_OnChange(void)
@@ -2486,7 +2486,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, dboolean looping, UINT32
 	}
 }
 
-void S_SetMusicQueue(const char *mmusic, boolean looping, tic_t time)
+void S_SetMusicQueue(const char *mmusic, dboolean looping, tic_t time)
 {
 	memset(musicqueue_string, 0, sizeof(musicqueue_string));
 	UINT8 musstrlen = min(7, (UINT8)(strlen(mmusic) + 1));
