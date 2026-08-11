@@ -72,6 +72,7 @@ END
 //
 // Version
 //
+#include "../doomdef.h" // Needed for version string
 
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION 2,0,0,0
@@ -93,14 +94,14 @@ BEGIN
             VALUE "Comments", "A kart racing mod based on the 3D Sonic the Hedgehog fangame Sonic Robo Blast 2.\0"
             VALUE "CompanyName", "BlanKart Dev\0"
             VALUE "FileDescription", "BlanKart\0"
-            VALUE "FileVersion", 2.0
+            VALUE "FileVersion", VERSIONSTRING_RC
             VALUE "InternalName", "blankart\0"
             VALUE "LegalCopyright", "Copyright 2025 by BlanKart Dev, SRB2Kart Copyright 2018-2020 by Kart Krew\0"
             VALUE "LegalTrademarks", "Sonic the Hedgehog and related characters are trademarks of Sega, SRB2Kart Copyright 2018-2020 by Kart Krew\0"
             VALUE "OriginalFilename", "blankart.exe\0"
             VALUE "PrivateBuild", "\0"
             VALUE "ProductName", "BlanKart\0"
-            VALUE "ProductVersion", 2.0
+            VALUE "ProductVersion", VERSIONSTRING_RC
             VALUE "SpecialBuild", "\0"
         END
     END
