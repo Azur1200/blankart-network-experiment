@@ -587,7 +587,7 @@ struct ranklog_t
 	INT32 driftboostcount[4]; // Number of driftboosts performed, separated by tier.
 	INT32 leadertics; // Time spent leading the pack.
 	INT32 spbattack; // Time spent being tailed by a Self-Propelled Bomb. The closer it is, the faster this increases.
-	fixed_t startboostgrading; // How well did this player perform the startboost?
+	fixed_t startboostgrading; // (Currently unused) How well did this player perform the startboost?
 
 	//
 	// VOLATILE (can increment or decrement)
@@ -624,7 +624,6 @@ struct rankscorefactor_t
 	INT32 driftbonus; // Points earned for driftboosts performed
 	INT32 positionbonus; // Points earned based on "leadertics"; you earn the most for leading the pack!
 	INT32 spbattackbonus; // Points earned for having a Self-Propelled Bomb trail you
-	INT32 startbonus; // Points earned based on how well you did the initial startboost
 
 	//
 	// PENALTIES

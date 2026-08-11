@@ -146,7 +146,6 @@ extern vector3_t clusterpoint, clusterdtf;
 
 #define RANKPOINTS_LEADERTIME CV_Get(&cv_kartrank_leadertimepoints)
 #define RANKPOINTS_SPBTIME CV_Get(&cv_kartrank_spbtimepoints)
-#define RANKPOINTS_STARTBOOST CV_Get(&cv_kartrank_startboostpoints)
 #define RANKPOINTS_DRIFTBOOST CV_Get(&cv_kartrank_driftboostpoints)
 #define RANKPOINTS_HITCONFIRM CV_Get(&cv_kartrank_hitconfirmpoints)
 

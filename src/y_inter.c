@@ -575,16 +575,6 @@ static boolean RankScreenVis_ShowGrade(void)
 				    yy,
 				    textflags | V_SKYMAP,
 				    va("%d", players[pid].rankscorefactor.spbattackbonus));
-
-				// Start Bonus
-				yy += 11;
-				Y_DrawThinStringWithBacking(
-				    xx, yy, curwidth, textflags, 0, usecolor, "Start Bonus");
-				V_DrawRightAlignedString(
-				    point_x,
-				    yy,
-				    textflags | V_SKYMAP,
-				    va("%d", players[pid].rankscorefactor.startbonus));
 			}
 
 			//
@@ -598,7 +588,7 @@ static boolean RankScreenVis_ShowGrade(void)
 				     players[pid].rankscorefactor.dnfpenalty);
 
 				// Position Grading
-				yy += 14;
+				yy += 20;
 				Y_DrawThinStringWithBacking(
 				    xx, yy, curwidth, textflags, 0, usecolor, "Position Grading");
 				V_DrawRightAlignedString(
@@ -625,7 +615,7 @@ static boolean RankScreenVis_ShowGrade(void)
 			if (rankresultsphase >= 3)
 			{
 				// Offroad Penalty
-				yy += 14;
+				yy += 20;
 				Y_DrawThinStringWithBacking(
 				    xx, yy, curwidth, textflags, 0, usecolor, "Offroad Penalty");
 				V_DrawRightAlignedString(
@@ -708,8 +698,7 @@ static boolean RankScreenVis_ShowGrade(void)
 			const INT32 bonustotal = (players[pid].rankscorefactor.hitbonus +
 						  players[pid].rankscorefactor.driftbonus +
 						  players[pid].rankscorefactor.positionbonus +
-						  players[pid].rankscorefactor.spbattackbonus +
-						  players[pid].rankscorefactor.startbonus);
+						  players[pid].rankscorefactor.spbattackbonus);
 			const INT32 penaltytotal = (players[pid].rankscorefactor.offroadpenalty +
 						    players[pid].rankscorefactor.wallpenalty +
 						    players[pid].rankscorefactor.hazardpenalty +

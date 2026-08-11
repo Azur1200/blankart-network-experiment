@@ -1351,21 +1351,28 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 
 			if (player->ranklog.gaining < 0)
 			{
-				// If the player's been beaten down all race, give them a hefty point bonus to
-				// give them a comeback
-				const INT32 playerseed = max(0, players_racing - 1);
+				const INT32 loss_severity = abs(player->ranklog.gaining);
 
-				if (playerseed > 0)
+				// Quick bandaid: Only benefit players at a major deficit (behind the entire race)
+				// Prevents over-generous comeback bonuses
+				if (loss_severity >= ((INT32)(numlaps) - 1))
 				{
-					const INT32 leaderfactor = max(0, playerseed - max(0, player->position - 1));
-					const INT32 convtopercent = ((1 << 24) / playerseed);
+					// If the player's been beaten down all race, give them a hefty point bonus to
+					// give them a comeback
+					const INT32 playerseed = max(0, players_racing - 1);
 
-					// There's always a chance some off-kilter value fucks up the multiplier, so we
-					// "round up" by a tiiny bit...
-					const fixed_t leadermul = min(FRACUNIT, ((convtopercent / 256) * leaderfactor) + 2);
+					if (playerseed > 0)
+					{
+						const INT32 leaderfactor = max(0, playerseed - max(0, player->position - 1));
+						const INT32 convtopercent = ((1 << 24) / playerseed);
 
-					// Use this to create a comeback score for one final push!
-					player->rankscorefactor.comebackscore = (scoremul * FixedToDouble(leadermul));
+						// There's always a chance some off-kilter value fucks up the multiplier, so we
+						// "round up" by a tiiny bit...
+						const fixed_t leadermul = min(FRACUNIT, ((convtopercent / 256) * leaderfactor) + 2);
+
+						// Use this to create a comeback score for one final push!
+						player->rankscorefactor.comebackscore = (scoremul * FixedToDouble(leadermul));
+					}
 				}
 			}
 

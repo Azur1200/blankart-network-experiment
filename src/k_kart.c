@@ -579,7 +579,6 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartrank_comebackpoints);
 	CV_RegisterVar(&cv_kartrank_leadertimepoints);
 	CV_RegisterVar(&cv_kartrank_spbtimepoints);
-	CV_RegisterVar(&cv_kartrank_startboostpoints);
 	CV_RegisterVar(&cv_kartrank_driftboostpoints);
 	CV_RegisterVar(&cv_kartrank_hitconfirmpoints);
 	CV_RegisterVar(&cv_kartrank_offroad_divisor);
@@ -13389,11 +13388,7 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 	}
 
 	// Apply bonus for successful rocket start.
-	if (player->ranklog.startboostgrading)
-	{
-		player->rankscorefactor.startbonus =
-		    FixedMul(RANKPOINTS_STARTBOOST, player->ranklog.startboostgrading);
-	}
+	// yama: On second thought: Start Bonus sucks ass, let's... not
 
 	if (ranking_driftbonusactive)
 	{
@@ -13454,8 +13449,7 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 	    (player->rankscorefactor.posgradescore + player->rankscorefactor.comebackscore -
 	    player->rankscorefactor.dnfpenalty) +
 	    (player->rankscorefactor.positionbonus + player->rankscorefactor.spbattackbonus +
-	     player->rankscorefactor.startbonus + player->rankscorefactor.driftbonus +
-	     player->rankscorefactor.hitbonus) -
+	     player->rankscorefactor.driftbonus + player->rankscorefactor.hitbonus) -
 	    (player->rankscorefactor.offroadpenalty + player->rankscorefactor.wallpenalty +
 	     player->rankscorefactor.hazardpenalty + player->rankscorefactor.respawnpenalty);
 

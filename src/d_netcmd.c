@@ -784,9 +784,6 @@ consvar_t cv_kartrank_leadertimepoints = CVAR_INIT ("rank_leadertimepoints", "40
 // Ranks: the point bonus given for being chased by an SPB; varies by distance
 consvar_t cv_kartrank_spbtimepoints = CVAR_INIT ("rank_spbtimepoints", "45.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
-// Ranks: the point bonus given, based on how well you perform the starting boost.
-consvar_t cv_kartrank_startboostpoints = CVAR_INIT ("rank_startboostpoints", "4", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
-
 // Ranks: the point bonus given with each drift boost.
 // Higher driftboost tiers multiply this value to give more points.
 consvar_t cv_kartrank_driftboostpoints = CVAR_INIT ("rank_driftboostpoints", "2", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
