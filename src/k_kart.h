@@ -134,6 +134,12 @@ extern vector3_t clusterpoint, clusterdtf;
 
 #define LOWESTRANKSCORE_ABS ((LOWESTRANKSCORE < 0) ? (-LOWESTRANKSCORE) : LOWESTRANKSCORE)
 
+// Generic par-time for ranked races in non-waypointed maps.
+// On waypointed maps, the game attempts to create a par-time automatically based on the given path.
+#define GENERICPARTIME CV_Get(&cv_kartrank_genericpartime)
+
+#define TIMECHECKOFFSET (5 * TICRATE / 2)
+
 // "Mercy value" for par times
 #define PARTIMEMERCY (33 * TICRATE)
 
@@ -418,6 +424,7 @@ INT32 K_GetKartDriftSparkValue(const player_t *player);
 INT32 K_GetKartDriftSparkValueForStage(const player_t *player, UINT8 stage);
 UINT8 K_GetKartDriftSparkStageForValue(const player_t *player, INT32 value);
 INT32 K_GetDriftAngleOffset(player_t *player);
+void K_IncrementLeaderTics(player_t *player, fixed_t position);
 void K_KartUpdatePosition(player_t *player);
 void K_KartLegacyUpdatePosition(player_t *player);
 void K_UpdateClusterPoints(void);

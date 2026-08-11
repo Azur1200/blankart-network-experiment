@@ -577,6 +577,7 @@ void K_RegisterKartStuff(void)
 	// Ranking point values
 	CV_RegisterVar(&cv_kartrank_highestscore);
 	CV_RegisterVar(&cv_kartrank_lowestscore);
+	CV_RegisterVar(&cv_kartrank_genericpartime);
 	CV_RegisterVar(&cv_kartrank_partimepoints);
 	CV_RegisterVar(&cv_kartrank_comebackpoints);
 	CV_RegisterVar(&cv_kartrank_leadertimepoints);
@@ -11703,6 +11704,41 @@ UINT32 K_GetClusterDistanceForPlayer(player_t * player)
 
 #undef MINCLUSTERPLAYERS
 
+void K_IncrementLeaderTics(player_t* player, fixed_t position)
+{
+	UINT16 buttons = K_GetKartButtons(player);
+
+	// If you have accel down, are null-drifting, or at least are moving AT ALL, you're
+	// accelerating
+	boolean accelerating =
+	    ((buttons & BT_ACCELERATE) || (K_GetSpeedPercentage(player) > (FRACUNIT / 100)) ||
+	     (player->nulldrift));
+
+	if (!accelerating)
+	{
+		// Don't squat for free points, dickhead
+		// This won't stop players feathering accel, or hell, driving backwards, but at
+		// least they're MOVING
+		return;
+	}
+
+	const INT32 playerseed = max(0, players_racing - 1);
+	const boolean do_leadertics = (leveltime > (starttime + TIMECHECKOFFSET));
+
+	if ((playerseed > 0) && do_leadertics)
+	{
+		const INT32 leaderfactor = max(0, playerseed - max(0, position - 1));
+		const INT32 convtopercent = ((1 << 24) / playerseed);
+
+		// There's always a chance some off-kilter value fucks up the multiplier, so we
+		// "round up" by a tiiny bit...
+		const fixed_t leadermul = min(FRACUNIT, ((convtopercent / 256) * leaderfactor) + 2);
+
+		// ...let's just make this consistent
+		player->ranklog.leadertics += max(0, FixedMul(32, leadermul));
+	}
+}
+
 //
 // K_KartUpdatePosition
 //
@@ -11775,20 +11811,7 @@ void K_KartUpdatePosition(player_t *player)
 
 	player->position = position;
 
-	const INT32 playerseed = max(0, players_racing - 1);
-
-	if (playerseed > 0)
-	{
-		const INT32 leaderfactor = max(0, playerseed - max(0, position - 1));
-		const INT32 convtopercent = ((1 << 24) / playerseed);
-
-		// There's always a chance some off-kilter value fucks up the multiplier, so we
-		// "round up" by a tiiny bit...
-		const fixed_t leadermul = min(FRACUNIT, ((convtopercent / 256) * leaderfactor) + 2);
-
-		// ...let's just make this consistent
-		player->ranklog.leadertics += max(0, FixedMul(32, leadermul));
-	}
+	K_IncrementLeaderTics(player, position);
 }
 
 void K_KartLegacyUpdatePosition(player_t *player)
@@ -11913,20 +11936,7 @@ void K_KartLegacyUpdatePosition(player_t *player)
 
 	player->position = position;
 
-	const INT32 playerseed = max(0, players_racing - 1);
-
-	if (playerseed > 0)
-	{
-		const INT32 leaderfactor = max(0, playerseed - max(0, position - 1));
-		const INT32 convtopercent = ((1 << 24) / playerseed);
-
-		// There's always a chance some off-kilter value fucks up the multiplier, so we
-		// "round up" by a tiiny bit...
-		const fixed_t leadermul = min(FRACUNIT, ((convtopercent / 256) * leaderfactor) + 2);
-
-		// ...let's just make this consistent
-		player->ranklog.leadertics += max(0, FixedMul(32, leadermul));
-	}
+	K_IncrementLeaderTics(player, position);
 }
 
 UINT32 clusterid = 0;
@@ -13245,8 +13255,6 @@ boolean K_RankHitBonusActive(void)
 }
 
 #define WALLBONKPENALTYDIV (3) // Every 3 bumps, since hitting walls is inevitable.
-#define GENERICPARTIME (TICRATE * 145) // 2 minutes 25 seconds; an average Kart race is 2 minutes, so this is an overshoot
-#define TIMECHECKOFFSET (5 * TICRATE / 2)
 
 static INT32 K_GetDriftBoostRankScore(player_t * player)
 {
@@ -13368,7 +13376,8 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 		else
 		{
 			// Nope? Use a flat rate.
-			krtTime = (INT64)((double)(GENERICPARTIME) / FixedToDouble(K_GetKartGameSpeedScalar(engineClass)));
+			const double generic_time = DoubleToTicrate(FixedToDouble(GENERICPARTIME));
+			krtTime = (INT64)(generic_time / FixedToDouble(K_GetKartGameSpeedScalar(engineClass)));
 		}
 	}
 
@@ -13526,9 +13535,6 @@ void K_UpdateRankScore(void)
         K_UpdateIndividualPlayerRank(&players[i]);
     }
 }
-
-#undef GENERICPARTIME
-#undef TIMECHECKOFFSET
 
 boolean K_UsingLegacyCheckpoints(void)
 {

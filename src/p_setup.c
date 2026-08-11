@@ -8815,7 +8815,7 @@ static tic_t P_GenerateAutoParTime(void)
 	}
 
 	const UINT32 course_length = K_GetCircuitLength();
-	double course_length_f = ((double)(course_length) / FIXED_TO_FLOAT(mapobjectscale)) * (double)(numlaps);
+	double course_length_f = ((double)(course_length) / FIXED_TO_FLOAT(mapobjectscale)) * lap_mul;
 	double divisor = DIST_TO_SECONDS / max(1.0, FIXED_TO_FLOAT(K_GetKartGameSpeedScalar(gamespeed)));
 	tic_t result = 0;
 
