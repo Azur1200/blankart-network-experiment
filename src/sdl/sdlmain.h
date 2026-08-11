@@ -54,24 +54,24 @@ typedef struct SDLJoyInfo_s
 	INT32 scale;
 
 	// Rumble Support
-	boolean hasrumble;
+	dboolean hasrumble;
 	// Mono LED Support
-	boolean hasmonoled;
+	dboolean hasmonoled;
 	// RGB LED Support
-	boolean hasrgbled;
+	dboolean hasrgbled;
 	// Player LED Support
-	boolean hasplayerled;
+	dboolean hasplayerled;
 
 	// Accelerometer Support
-	boolean hasaccelerometer;
+	dboolean hasaccelerometer;
 	// Gyroscope Support
-	boolean hasgyro;
+	dboolean hasgyro;
 
 	// you can pry my nintendo button layout out of my cold dead hands, SDL3
-	boolean flipbuttons;
+	dboolean flipbuttons;
 	// >swapping X and B
 	// ?????????????????????????????
-	boolean flipgc;
+	dboolean flipgc;
 } controllerinfo_t;
 
 /**	\brief SDL info about controllers

@@ -32,7 +32,7 @@ struct divline_t
 struct intercept_t
 {
 	fixed_t frac; // along trace line
-	boolean isaline;
+	dboolean isaline;
 	union
 	{
 		mobj_t *thing;
@@ -40,9 +40,9 @@ struct intercept_t
 	} d;
 };
 
-typedef boolean (*traverser_t)(intercept_t *in);
+typedef dboolean (*traverser_t)(intercept_t *in);
 
-boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
+dboolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 	INT32 pflags, traverser_t ptrav);
 
 #define P_AproxDistance(dx, dy) FixedHypot(dx, dy)
@@ -77,9 +77,9 @@ void P_SetPrecipitationThingPosition(precipmobj_t *thing);
 void P_CreatePrecipSecNodeList(precipmobj_t *thing, fixed_t x,fixed_t y);
 void P_HitSpecialLines(mobj_t *thing, fixed_t x, fixed_t y, fixed_t momx, fixed_t momy);
 
-boolean P_GetMidtextureTopBottom(line_t *linedef, opening_t *open, fixed_t *return_top, fixed_t *return_bottom);
-boolean P_GetTripwireTopBottom(line_t *linedef, fixed_t x, fixed_t y, fixed_t *return_top, fixed_t *return_bottom);
-boolean P_MidtextureIsSolid(line_t *linedef, mobj_t *mobj);
+dboolean P_GetMidtextureTopBottom(line_t *linedef, opening_t *open, fixed_t *return_top, fixed_t *return_bottom);
+dboolean P_GetTripwireTopBottom(line_t *linedef, fixed_t x, fixed_t y, fixed_t *return_top, fixed_t *return_bottom);
+dboolean P_MidtextureIsSolid(line_t *linedef, mobj_t *mobj);
 
 typedef enum
 {
@@ -88,8 +88,8 @@ typedef enum
 	BMIT_ABORT // End blockmap search with failure
 } BlockItReturn_t;
 
-boolean P_BlockLinesIterator(INT32 x, INT32 y, BlockItReturn_t(*func)(line_t *));
-boolean P_BlockThingsIterator(INT32 x, INT32 y, BlockItReturn_t(*func)(mobj_t *));
+dboolean P_BlockLinesIterator(INT32 x, INT32 y, BlockItReturn_t(*func)(line_t *));
+dboolean P_BlockThingsIterator(INT32 x, INT32 y, BlockItReturn_t(*func)(mobj_t *));
 
 #define PT_ADDLINES		(1)
 #define PT_ADDTHINGS	(2)
@@ -98,8 +98,8 @@ extern divline_t g_trace;
 
 // call your user function for each line of the blockmap in the
 // bbox defined by the radius
-//boolean P_RadiusLinesCheck(fixed_t radius, fixed_t x, fixed_t y,
-//	boolean (*func)(line_t *));
+//dboolean P_RadiusLinesCheck(fixed_t radius, fixed_t x, fixed_t y,
+//	dboolean (*func)(line_t *));
 
 #ifdef __cplusplus
 } // extern "C"

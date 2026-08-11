@@ -35,15 +35,15 @@ extern consvar_t cv_writetextmap_includemappatch;
 extern mapthing_t *deathmatchstarts[MAX_DM_STARTS];
 extern INT32 numdmstarts, numcoopstarts, numredctfstarts, numbluectfstarts;
 
-extern boolean levelloading;
-extern boolean levelloaded; // is there an actual level loaded? for intermission
+extern dboolean levelloading;
+extern dboolean levelloaded; // is there an actual level loaded? for intermission
                             // (i.e. is it safe to call D_RenderLevel?)
 extern UINT8 levelfadecol;
 
 extern lumpnum_t lastloadedmaplumpnum; // for comparative savegame
 extern virtres_t *curmapvirt;
 
-extern boolean usedspawnfinishline;
+extern dboolean usedspawnfinishline;
 
 typedef enum
 {
@@ -85,20 +85,20 @@ extern size_t nummapthings;
 extern mapthing_t *mapthings;
 
 const char *P_MapNamespaceString(mapnamespace_t mns);
-void P_SetupLevelSky(const char *skytexname, boolean global);
+void P_SetupLevelSky(const char *skytexname, dboolean global);
 void P_RespawnThings(void);
 void P_FreeLevelState(void);
-boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate);
+dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate);
 void P_PostLoadLevel(void);
 #ifdef HWRENDER
 void HWR_LoadLevel(void);
 #endif
 void P_UnloadLevel(void);
-boolean P_AddWadFile(const char *wadfilename, wadcompat_t compat, boolean local);
+dboolean P_AddWadFile(const char *wadfilename, wadcompat_t compat, dboolean local);
 
 #define MAPRET_ADDED (1)
 #define MAPRET_CURRENTREPLACED (1<<1)
-UINT8 P_InitMapData(boolean existingmapheaders);
+UINT8 P_InitMapData(dboolean existingmapheaders);
 extern lumpnum_t wadnamelump;
 extern mapnum_t wadnamemap;
 #define WADNAMECHECK(name) (!strncmp(name, "WADNAME", 7))
@@ -106,7 +106,7 @@ extern mapnum_t wadnamemap;
 // WARNING: The following functions should be grouped as follows:
 // any amount of PartialAdds followed by MultiSetups until returned true,
 // as soon as possible.
-UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat, boolean local);
+UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat, dboolean local);
 // Run a single stage of multisetup, or all of them if fullsetup set.
 //   fullsetup true: run everything
 //   otherwise
@@ -115,7 +115,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat, boolean 
 //   stage 2: reload animdefs and run post-setup actions
 // returns true if setup finished on this call, false otherwise (always true on fullsetup)
 // throws I_Error if called without any partial adds started as a safeguard
-boolean P_MultiSetupWadFiles(boolean fullsetup);
+dboolean P_MultiSetupWadFiles(dboolean fullsetup);
 // Get the current setup stage.
 //   if negative, no PartialAdds done since last MultiSetup
 //   if 0, partial adds done but MultiSetup not called yet
@@ -123,14 +123,14 @@ boolean P_MultiSetupWadFiles(boolean fullsetup);
 SINT8 P_PartialAddGetStage(void);
 extern UINT16 partadd_earliestfile;
 
-boolean P_RunSOC(const char *socfilename);
+dboolean P_RunSOC(const char *socfilename);
 void P_LoadSoundsRange(UINT16 wadnum, UINT16 first, UINT16 num);
 void P_LoadMusicsRange(UINT16 wadnum, UINT16 first, UINT16 num);
 //void P_WriteThings(void);
 void P_UpdateSegLightOffset(seg_t *li);
-boolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector);
-boolean P_ApplyLightOffsetFine(UINT8 baselightlevel, const sector_t *sector);
-boolean P_SectorUsesDirectionalLighting(const sector_t *sector);
+dboolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector);
+dboolean P_ApplyLightOffsetFine(UINT8 baselightlevel, const sector_t *sector);
+dboolean P_SectorUsesDirectionalLighting(const sector_t *sector);
 size_t P_PrecacheLevelFlats(void);
 void P_AllocMapHeader(mapnum_t i);
 

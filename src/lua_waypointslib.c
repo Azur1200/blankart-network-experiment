@@ -64,7 +64,7 @@ static int waypoint_get(lua_State *L)
 		switch (field)
 		{
 			case waypointvars_valid:
-				lua_pushboolean(L, false);
+				lua_pushdboolean(L, false);
 				return 1;
 			default:
 				return LUA_ErrInvalid(L, "waypoint_t");
@@ -81,7 +81,7 @@ static int waypoint_get(lua_State *L)
 	switch (field)
 	{
 		case waypointvars_valid:
-			lua_pushboolean(L, true);
+			lua_pushdboolean(L, true);
 			break;
 		case waypointvars_mobj:
 			return RNOGET;
@@ -104,7 +104,7 @@ static int waypoint_get(lua_State *L)
 				lua_pushnil(L);
 			break;
 		case waypointvars_onaline:
-			lua_pushboolean(L, waypoint->onaline);
+			lua_pushdboolean(L, waypoint->onaline);
 			break;
 		case waypointvars_nextwaypoints:
 			lua_createtable(L, waypoint->numnextwaypoints, 0);

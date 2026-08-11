@@ -39,19 +39,19 @@
 
 #define HUDONLY if (!hud_running) return luaL_error(L, "HUD rendering code should not be called outside of rendering hooks!");
 
-boolean hud_running = false;
+dboolean hud_running = false;
 
-boolean hud_interpolate = false;
+dboolean hud_interpolate = false;
 UINT8 hud_interptag = 0;
 UINT32 hud_interpcounter = 0;
-boolean hud_interpstring = false;
-boolean hud_interplatch = false;
+dboolean hud_interpstring = false;
+dboolean hud_interplatch = false;
 
 static UINT8 hud_enabled[(hud_MAX/8)+1];
 
 static UINT8 camnum = 1;
 
-static boolean cliprectenabled;
+static dboolean cliprectenabled;
 
 // must match enum hud in lua_hud.h
 static const char *const hud_disable_options[] = {
@@ -247,7 +247,7 @@ static int patch_get(lua_State *L)
 	// patches are invalidated when switching renderers
 	if (!patch) {
 		if (field == patch_valid) {
-			lua_pushboolean(L, 0);
+			lua_pushdboolean(L, 0);
 			return 1;
 		}
 		return LUA_ErrInvalid(L, "patch_t");
@@ -256,7 +256,7 @@ static int patch_get(lua_State *L)
 	switch (field)
 	{
 	case patch_valid:
-		lua_pushboolean(L, patch != NULL);
+		lua_pushdboolean(L, patch != NULL);
 		break;
 	case patch_width:
 		lua_pushinteger(L, patch->width);
@@ -292,7 +292,7 @@ static int camera_get(lua_State *L)
 	switch (field)
 	{
 	case camera_chase:
-		lua_pushboolean(L, cam->chase);
+		lua_pushdboolean(L, cam->chase);
 		break;
 	case camera_aiming:
 		lua_pushinteger(L, cam->aiming);
@@ -343,7 +343,7 @@ static int camera_get(lua_State *L)
 		lua_pushinteger(L, camnum);
 		break;
 	case camera_freecam:
-		lua_pushboolean(L, cam->freecam);
+		lua_pushdboolean(L, cam->freecam);
 		break;
 	}
 	return 1;
@@ -386,7 +386,7 @@ static int lib_lenCamera(lua_State *L)
 static int libd_patchExists(lua_State *L)
 {
 	HUDONLY
-	lua_pushboolean(L, W_LumpExists(luaL_checkstring(L, 1)));
+	lua_pushdboolean(L, W_LumpExists(luaL_checkstring(L, 1)));
 	return 1;
 }
 
@@ -488,8 +488,8 @@ static int libd_getSpritePatch(lua_State *L)
 		if (rot) {
 			patch_t *rotsprite = Patch_GetRotatedSprite(sprframe, frame, angle, sprframe->flip & (1<<angle), true, &spriteinfo[i], rot);
 			LUA_PushUserdata(L, rotsprite, META_PATCH);
-			lua_pushboolean(L, false);
-			lua_pushboolean(L, true);
+			lua_pushdboolean(L, false);
+			lua_pushdboolean(L, true);
 			return 3;
 		}
 	}
@@ -497,7 +497,7 @@ static int libd_getSpritePatch(lua_State *L)
 
 	// push both the patch and it's "flip" value
 	LUA_PushUserdata(L, W_CachePatchNum(sprframe->lumppat[angle], PU_SPRITE), META_PATCH);
-	lua_pushboolean(L, (sprframe->flip & (1<<angle)) != 0);
+	lua_pushdboolean(L, (sprframe->flip & (1<<angle)) != 0);
 	return 2;
 }
 
@@ -510,7 +510,7 @@ static int libd_getSprite2Patch(lua_State *L)
 	UINT8 angle = 0;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
-	boolean super = false; // add FF_SPR2SUPER to sprite2 if true
+	dboolean super = false; // add FF_SPR2SUPER to sprite2 if true
 	HUDONLY
 
 	// get skin first!
@@ -558,19 +558,19 @@ static int libd_getSprite2Patch(lua_State *L)
 		for (j = 0; j < free_spr2; j++)
 			if (fastcmp(name, spr2names[j]))
 				break;
-		// if you want super flags you'll have to use the optional boolean following this
+		// if you want super flags you'll have to use the optional dboolean following this
 		if (j >= free_spr2)
 			return 0;
 	}
 	else
 		return 0;
 
-	if (lua_isboolean(L, 2)) // optional boolean for superness
+	if (lua_isdboolean(L, 2)) // optional dboolean for superness
 	{
-		super = lua_toboolean(L, 2); // note: this can override FF_SPR2SUPER from sprite number
+		super = lua_todboolean(L, 2); // note: this can override FF_SPR2SUPER from sprite number
 		lua_remove(L, 2); // remove
 	}
-	// if it's not boolean then just assume it's the frame number
+	// if it's not dboolean then just assume it's the frame number
 
 	if (super)
 		j |= FF_SPR2SUPER;
@@ -607,8 +607,8 @@ static int libd_getSprite2Patch(lua_State *L)
 		if (rot) {
 			patch_t *rotsprite = Patch_GetRotatedSprite(sprframe, frame, angle, sprframe->flip & (1<<angle), true, &skins[i]->sprinfo[j], rot);
 			LUA_PushUserdata(L, rotsprite, META_PATCH);
-			lua_pushboolean(L, false);
-			lua_pushboolean(L, true);
+			lua_pushdboolean(L, false);
+			lua_pushdboolean(L, true);
 			return 3;
 		}
 	}
@@ -616,7 +616,7 @@ static int libd_getSprite2Patch(lua_State *L)
 
 	// push both the patch and it's "flip" value
 	LUA_PushUserdata(L, W_CachePatchNum(sprframe->lumppat[angle], PU_SPRITE), META_PATCH);
-	lua_pushboolean(L, (sprframe->flip & (1<<angle)) != 0);
+	lua_pushdboolean(L, (sprframe->flip & (1<<angle)) != 0);
 	return 2;
 }
 
@@ -777,7 +777,7 @@ static int libd_drawOnMinimap(lua_State *L)
 	fixed_t x, y, scale;	// coordinates of the object
 	patch_t *patch;	// patch we want to draw
 	UINT8 *colormap = NULL;	// do we want to colormap this patch?
-	boolean centered;	// the patch is centered and doesn't need readjusting on x/y coordinates.
+	dboolean centered;	// the patch is centered and doesn't need readjusting on x/y coordinates.
 	huddrawlist_h list;
 
 	// variables used to replicate k_kart's mmap drawer:
@@ -800,7 +800,7 @@ static int libd_drawOnMinimap(lua_State *L)
 	patch = *((patch_t **)luaL_checkudata(L, 4, META_PATCH));
 	if (!lua_isnoneornil(L, 5))
 		colormap = *((UINT8 **)luaL_checkudata(L, 5, META_COLORMAP));
-	centered = lua_optboolean(L, 6);
+	centered = lua_optdboolean(L, 6);
 
 	// replicate exactly what source does for its minimap drawer; AKA hardcoded garbo.
 
@@ -1033,7 +1033,7 @@ static int libd_drawFixedLine(lua_State *L)
 
 static int libd_getSectorColormap(lua_State *L)
 {
-	boolean has_sector = false;
+	dboolean has_sector = false;
 	sector_t *sector = NULL;
 	if (!lua_isnoneornil(L, 1))
 	{
@@ -1174,7 +1174,7 @@ static int libd_drawTitleCardString(lua_State *L)
 	fixed_t y = luaL_checkinteger(L, 2);
 	const char *str = luaL_checkstring(L, 3);
 	INT32 flags = luaL_optinteger(L, 4, V_ALLOWLOWERCASE);
-	boolean rightalign = lua_optboolean(L, 5);
+	dboolean rightalign = lua_optdboolean(L, 5);
 	INT32 timer = luaL_optinteger(L, 6, 0);
 	INT32 threshold = luaL_optinteger(L, 7, 0);
 	huddrawlist_h list;
@@ -1362,23 +1362,23 @@ static int libd_getColorHudPatch(lua_State *L)
 	enum hudpatch option = Lua_optoption(L, 1, -1, hud_patch_fields_ref);
 	patch_t *patch;
 	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-	boolean small, dark, multi;
+	dboolean small, dark, multi;
 
 	switch (option) {
 		case hudpatch_item:
-			small = lua_optboolean(L, 2);
-			dark = lua_optboolean(L, 3);
+			small = lua_optdboolean(L, 2);
+			dark = lua_optdboolean(L, 3);
 			patch = K_getItemBoxPatch(small, dark);
 			if (!cv_colorizeditembox.value)
 				colormap = NULL;
 			break;
 		case hudpatch_itemmul:
-			small = lua_optboolean(L, 2);
+			small = lua_optdboolean(L, 2);
 			patch = K_getItemMulPatch(small);
 			break;
 		case hudpatch_itemalt:
-			small = lua_optboolean(L, 2);
-			multi = lua_optboolean(L, 3);
+			small = lua_optdboolean(L, 2);
+			multi = lua_optdboolean(L, 3);
 			patch = K_getItemAltPatch(small, multi);
 			break;
 		default:
@@ -1404,7 +1404,7 @@ static int libd_getHudColor(lua_State *L)
 static int libd_useColorHud(lua_State *L)
 {
 	HUDONLY
-	lua_pushboolean(L, K_UseColorHud());
+	lua_pushdboolean(L, K_UseColorHud());
 	return 1;
 }
 
@@ -1546,7 +1546,7 @@ static int libd_RandomChance(lua_State *L)
 {
 	fixed_t p = luaL_checkfixed(L, 1);
 	HUDONLY
-	lua_pushboolean(L, M_RandomChance(p));
+	lua_pushdboolean(L, M_RandomChance(p));
 	return 1;
 }
 
@@ -1678,7 +1678,7 @@ static int libd_interpolate(lua_State *L)
 	HUDONLY
 
 	// do type checking even if interpolation is disabled
-	boolean newinterpolate;
+	dboolean newinterpolate;
 	UINT8 newtag;
 
 	if (lua_isnumber(L, 1))
@@ -1688,7 +1688,7 @@ static int libd_interpolate(lua_State *L)
 	}
 	else
 	{
-		newinterpolate = luaL_checkboolean(L, 1);
+		newinterpolate = luaL_checkdboolean(L, 1);
 		newtag = 0;
 	}
 
@@ -1701,7 +1701,7 @@ static int libd_interpolate(lua_State *L)
 static int libd_interpLatch(lua_State *L)
 {
 	HUDONLY
-	hud_interpstring = hud_interplatch = luaL_checkboolean(L, 1);
+	hud_interpstring = hud_interplatch = luaL_checkdboolean(L, 1);
 	return 0;
 }
 
@@ -1793,9 +1793,9 @@ static int lib_hudenabled(lua_State *L)
 {
 	enum hud option = Lua_optoption(L, 1, -1, hud_disable_fields_ref);
 	if (hud_enabled[option/8] & (1<<(option%8)))
-		lua_pushboolean(L, true);
+		lua_pushdboolean(L, true);
 	else
-		lua_pushboolean(L, false);
+		lua_pushdboolean(L, false);
 
 	return 1;
 }
@@ -1895,7 +1895,7 @@ static int lib_hudaddtimer(lua_State *L)
 
 	UINT32 flags = luaL_optinteger(L, 5, 0);
 
-	boolean unsorted = lua_toboolean(L, 6);
+	dboolean unsorted = lua_todboolean(L, 6);
 
 	lua_Integer timer_func_ref;
 
@@ -1979,7 +1979,7 @@ int LUA_HudLib(lua_State *L)
 	return 0;
 }
 
-boolean LUA_HudEnabled(enum hud option)
+dboolean LUA_HudEnabled(enum hud option)
 {
 	if (!gL || hud_enabled[option/8] & (1<<(option%8)))
 		return true;

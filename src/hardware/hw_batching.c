@@ -25,7 +25,7 @@ typedef struct
 	GLMipmap_t *brightmap;
 	int shader;
 	// this tells batching that the plane belongs to a horizon line and must be drawn in correct order with the skywalls
-	boolean horizonSpecial;
+	dboolean horizonSpecial;
 } DrawCallInfo;
 
 // The texture for the next polygon given to HWR_ProcessPolygon.
@@ -40,7 +40,7 @@ GLMipmap_t *current_brightmap = NULL;
 
 typedef struct
 {
-	boolean currently_batching;
+	dboolean currently_batching;
 	DrawCallInfo *drawCalls;
 	int drawCallsSize;
 	int drawCallsCapacity;
@@ -136,7 +136,7 @@ void HWR_SetCurrentTexture(GLMipmap_t *texture)
 		GL_SetTexture(texture);
 }
 
-static void HWR_CollectDrawCallInfo(FSurfaceInfo *pSurf, FUINT iNumPts, FBITFIELD PolyFlags, int shader_target, boolean horizonSpecial)
+static void HWR_CollectDrawCallInfo(FSurfaceInfo *pSurf, FUINT iNumPts, FBITFIELD PolyFlags, int shader_target, dboolean horizonSpecial)
 {
 	// make sure dynamic array has capacity
 	if (cst->drawCallsSize == cst->drawCallsCapacity)
@@ -186,7 +186,7 @@ static void HWR_CollectDrawCallVertices(FOutVector *pOutVerts, FUINT iNumPts)
 // If batching is enabled, this function collects the polygon data and the chosen texture
 // for later use in HWR_RenderBatches. Otherwise the rendering backend is used to
 // render the polygon immediately.
-void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, int shader_target, boolean horizonSpecial)
+void HWR_ProcessPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, int shader_target, dboolean horizonSpecial)
 {
 	if (cst->currently_batching)
 	{
@@ -500,7 +500,7 @@ void HWR_RenderBatches(void)
 	//   and send them as a combined draw call when a state change occurs
 	while (1)
 	{
-		boolean stopFlag = false;
+		dboolean stopFlag = false;
 
 		// steps:
 		// write vertices

@@ -35,7 +35,7 @@ typedef struct
 {
 	char *vertex;
 	char *fragment;
-	boolean compiled;
+	dboolean compiled;
 } shader_t; // these are in an array and accessed by indices
 
 // the array has NUMSHADERTARGETS entries for base shaders and for custom shaders
@@ -53,7 +53,7 @@ static shadertarget_t gl_shadertargets[NUMSHADERTARGETS];
 
 // Initialize shader variables and the backend's shader system. Load the base shaders.
 // Returns false if shaders cannot be used.
-boolean HWR_InitShaders(void)
+dboolean HWR_InitShaders(void)
 {
 	int i;
 
@@ -451,7 +451,7 @@ void HWR_LoadAllBaseShaders(void)
 	}
 }
 
-void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3, boolean startup)
+void HWR_LoadCustomShadersFromFile(UINT16 wadnum, dboolean PK3, dboolean startup)
 {
 	UINT16 lump;
 	char *shaderdef, *line;
@@ -461,7 +461,7 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3, boolean startup)
 	int linenum = 1;
 	int shadertype = 0;
 	int i;
-	boolean modified_shaders[NUMSHADERTARGETS] = {0};
+	dboolean modified_shaders[NUMSHADERTARGETS] = {0};
 
 	if (!startup && !gl_shadersavailable)
 		return;

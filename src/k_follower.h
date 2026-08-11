@@ -125,7 +125,7 @@ INT32 K_FollowerAvailable(const char *name);
 
 
 /*--------------------------------------------------
-	boolean K_SetFollowerByName(INT32 playernum, const char *skinname)
+	dboolean K_SetFollowerByName(INT32 playernum, const char *skinname)
 
 		Updates a player's follower type via a named value.
 		Calls "K_SetFollowerByNum" internally.
@@ -139,7 +139,7 @@ INT32 K_FollowerAvailable(const char *name);
 		otherwise false.
 --------------------------------------------------*/
 
-boolean K_SetFollowerByName(INT32 playernum, const char *skinname);
+dboolean K_SetFollowerByName(INT32 playernum, const char *skinname);
 
 
 /*--------------------------------------------------

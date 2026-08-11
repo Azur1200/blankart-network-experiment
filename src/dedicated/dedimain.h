@@ -22,8 +22,8 @@
 #include "../m_fixed.h"
 #include "../doomdef.h"
 
-extern boolean consolevent;
-extern boolean framebuffer;
+extern dboolean consolevent;
+extern dboolean framebuffer;
 
 #ifdef __cplusplus
 extern "C" {

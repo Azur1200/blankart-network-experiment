@@ -10,10 +10,10 @@
 #include "../b_soc.h"
 
 // Map header toggle for wall transfering.
-boolean B_UseWallTransfer(mobj_t *mo)
+dboolean B_UseWallTransfer(mobj_t *mo)
 {
 	const mapheader_t *mapheader = mapheaderinfo[gamemap - 1];
-	boolean value = false;
+	dboolean value = false;
 
 	if (mo && mo->subsector && (mo->subsector->sector->specialflags & SSF_WALLTRANSFER))
 		return true;

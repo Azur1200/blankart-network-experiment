@@ -347,7 +347,7 @@ void R_AddKartItemSprites(kartitem_t *item)
 //
 // Returns true if the sprite was succesfully added
 //
-boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16 wadnum, UINT16 startlump, UINT16 endlump)
+dboolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16 wadnum, UINT16 startlump, UINT16 endlump)
 {
 	UINT16 l;
 	UINT8 frame;
@@ -355,7 +355,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 	lumpinfo_t *lumpinfo;
 	softwarepatch_t patch;
 	UINT16 numadded = 0;
-	boolean compat = wadfiles[wadnum]->compatmode;
+	dboolean compat = wadfiles[wadnum]->compatmode;
 
 	memset(sprtemp,0xFF, sizeof (sprtemp));
 	maxframe = (size_t)-1;
@@ -387,7 +387,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 			INT32 width, height;
 			INT16 topoffset, leftoffset;
 #ifndef NO_PNG_LUMPS
-			boolean isPNG = false;
+			dboolean isPNG = false;
 #endif
 
 			frame = R_Char2Frame(lumpinfo[l].name[4], compat);
@@ -419,7 +419,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 				//
 				// If neither pass, this isn't a valid sprite, and we can safely
 				// ignore it. There WILL be false positives: be warned.
-				boolean invalidframe = false;
+				dboolean invalidframe = false;
 
 				if (lumpinfo[l].name[7])
 				{
@@ -467,10 +467,10 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 			if (!isPNG)
 #endif
 			{
-				width = (INT32)(SHORT(patch.width));
-				height = (INT32)(SHORT(patch.height));
-				topoffset = (INT16)(SHORT(patch.topoffset));
-				leftoffset = (INT16)(SHORT(patch.leftoffset));
+				width = (INT32)(LSBF_SHORT(patch.width));
+				height = (INT32)(LSBF_SHORT(patch.height));
+				topoffset = (INT16)(LSBF_SHORT(patch.topoffset));
+				leftoffset = (INT16)(LSBF_SHORT(patch.leftoffset));
 			}
 
 			spritecachedinfo[numspritelumps].width = width<<FRACBITS;
@@ -919,7 +919,7 @@ void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t 
 	dc->texturemid = basetexturemid;
 }
 
-static boolean baddie_is_flashing(mobj_t *thing)
+static dboolean baddie_is_flashing(mobj_t *thing)
 {
 	return
 		(thing->flags & (MF_ENEMY|MF_BOSS)) &&
@@ -927,13 +927,13 @@ static boolean baddie_is_flashing(mobj_t *thing)
 		!(thing->flags & MF_GRENADEBOUNCE);
 }
 
-boolean R_ThingIsFlashing(mobj_t *thing)
+dboolean R_ThingIsFlashing(mobj_t *thing)
 {
 	return
 		baddie_is_flashing(thing);
 }
 
-boolean R_ThingIsUsingBakedOffsets(mobj_t* thing)
+dboolean R_ThingIsUsingBakedOffsets(mobj_t* thing)
 {
 	return ((thing->bakexoff) || (thing->bakeyoff) || (thing->bakezoff) ||
 			(thing->bakexpiv) || (thing->bakeypiv) || (thing->bakezpiv) ||
@@ -1082,7 +1082,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	if (vis->cut & SC_AFFINE)
 	{
 		// Specialized affine drawing functions, primarily for player sprites.
-		boolean affinebrightmap = (bmpatch != NULL);
+		dboolean affinebrightmap = (bmpatch != NULL);
 
 		if (dc.translation) // translate green skin to another color
 		{
@@ -1649,7 +1649,7 @@ fixed_t R_GetShadowZ(
 	mobj_t *thing, pslope_t **shadowslope)
 {
 	fixed_t halfHeight;
-	boolean isflipped = thing->eflags & MFE_VERTICALFLIP;
+	dboolean isflipped = thing->eflags & MFE_VERTICALFLIP;
 	fixed_t floorz;
 	fixed_t ceilingz;
 	fixed_t z, groundz = isflipped ? INT32_MAX : INT32_MIN;
@@ -1786,7 +1786,7 @@ static void R_ProjectDropShadow(mobj_t *thing, vissprite_t *vis, fixed_t scale, 
 	fixed_t floordiff;
 	fixed_t groundz;
 	pslope_t *groundslope;
-	boolean isflipped = thing->eflags & MFE_VERTICALFLIP;
+	dboolean isflipped = thing->eflags & MFE_VERTICALFLIP;
 	interpmobjstate_t interp = {0};
 
 	groundz = R_GetShadowZ(thing, &groundslope);
@@ -2064,9 +2064,9 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	size_t frame, rot;
 	UINT16 flip;
-	boolean vflip = (!(thing->eflags & MFE_VERTICALFLIP) != !R_ThingVerticallyFlipped(thing));
-	boolean mirrored = thing->mirrored;
-	boolean hflip = (!R_ThingHorizontallyFlipped(thing) != !mirrored);
+	dboolean vflip = (!(thing->eflags & MFE_VERTICALFLIP) != !R_ThingVerticallyFlipped(thing));
+	dboolean mirrored = thing->mirrored;
+	dboolean hflip = (!R_ThingHorizontallyFlipped(thing) != !mirrored);
 
 	INT32 lindex;
 	UINT32 blendmode;
@@ -2086,9 +2086,9 @@ static void R_ProjectSprite(mobj_t *thing)
 	fixed_t shadowscale = FRACUNIT;
 	fixed_t basetx, basetz; // drop shadows
 
-	boolean shadowdraw, shadoweffects, shadowskew;
-	boolean splat = R_ThingIsFloorSprite(thing);
-	boolean papersprite = (R_ThingIsPaperSprite(thing) && !splat);
+	dboolean shadowdraw, shadoweffects, shadowskew;
+	dboolean splat = R_ThingIsFloorSprite(thing);
+	dboolean papersprite = (R_ThingIsPaperSprite(thing) && !splat);
 	fixed_t paperoffset = 0, paperdistance = 0;
 	angle_t centerangle = 0;
 
@@ -2120,7 +2120,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	mobj_t *interptarg = thing;
 
 	// Affines
-	boolean affinesprite = (((thing->player != NULL) || R_ThingIsAffineSprite(thing)) && (!splat));
+	dboolean affinesprite = (((thing->player != NULL) || R_ThingIsAffineSprite(thing)) && (!splat));
 	affine_t affine_transform = {0};
 	affine_bounding_t affine_bounds = {};
 	vector2_t affine_scale = {0};
@@ -2435,7 +2435,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		angle = R_ConvToRollAngle(spriterotangle) * flipsign;
 
-		const boolean renderflip = ((thing->renderflags & RF_FLIPOFFSETS) == RF_FLIPOFFSETS);
+		const dboolean renderflip = ((thing->renderflags & RF_FLIPOFFSETS) == RF_FLIPOFFSETS);
 		const fixed_t rolloffs_x = FixedDiv(interptarg->rollingxoffset * FRACUNIT, highresscale) * (((!renderflip) && flip) ? -1 : 1);
 		const fixed_t rolloffs_y = FixedDiv(interptarg->rollingyoffset * FRACUNIT, highresscale) * (((!renderflip) && vflip) ? -1 : 1);
 		fixed_t y_piv = affine_pivot.y;
@@ -2779,7 +2779,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (shadowdraw || shadoweffects)
 	{
 		fixed_t groundz = R_GetShadowZ(thing, NULL);
-		boolean isflipped = (thing->eflags & MFE_VERTICALFLIP);
+		dboolean isflipped = (thing->eflags & MFE_VERTICALFLIP);
 		mobj_t *caster = thing->target;
 		interpmobjstate_t casterinterp = { 0 }; // MSVC compatibility - SSNTails
 
@@ -2847,7 +2847,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			useheight = FixedMul(spr_height, FixedMul(spriteyscale, this_scale));
 		}
 
-		const boolean vflipaffine = (vflip && (affinesprite));
+		const dboolean vflipaffine = (vflip && (affinesprite));
 
 		if (vflip && (!affinesprite))
 		{
@@ -3448,7 +3448,7 @@ void R_AddPrecipitationSprites(void)
 	}
 }
 
-static boolean R_SortVisSpriteFunc(vissprite_t *ds, fixed_t bestscale, INT32 bestdispoffset)
+static dboolean R_SortVisSpriteFunc(vissprite_t *ds, fixed_t bestscale, INT32 bestdispoffset)
 {
 	if (ds->sortscale < bestscale)
 	{
@@ -3615,7 +3615,7 @@ static drawnode_t *R_CreateDrawNode(drawnode_t *link);
 
 static drawnode_t nodebankhead;
 
-static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean tempskip)
+static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, dboolean tempskip)
 {
 	drawnode_t *entry;
 	drawseg_t *ds;
@@ -3735,7 +3735,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 
 	for (rover = vsprsortedhead.prev; rover != &vsprsortedhead; rover = rover->prev)
 	{
-		const boolean alwaysontop = cv_debugrender_spriteclip.value || (rover->renderflags & RF_ALWAYSONTOP);
+		const dboolean alwaysontop = cv_debugrender_spriteclip.value || (rover->renderflags & RF_ALWAYSONTOP);
 		const INT32 ontopflag = cv_debugrender_spriteclip.value ? 0 : (rover->renderflags & RF_ALWAYSONTOP);
 
 		if (rover->szt > vidheight || rover->sz < 0)
@@ -3865,14 +3865,14 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 			}
 			else if (r2->sprite)
 			{
-				boolean infront = (r2->sprite->sortscale > rover->sortscale
+				dboolean infront = (r2->sprite->sortscale > rover->sortscale
 								|| (r2->sprite->sortscale == rover->sortscale && r2->sprite->dispoffset > rover->dispoffset));
 
 				if (rover->cut & SC_SPLAT || r2->sprite->cut & SC_SPLAT)
 				{
 					fixed_t scale1 = (rover->cut & SC_SPLAT ? rover->sortsplat : rover->sortscale);
 					fixed_t scale2 = (r2->sprite->cut & SC_SPLAT ? r2->sprite->sortsplat : r2->sprite->sortscale);
-					boolean behind = (scale2 > scale1 || (scale2 == scale1 && r2->sprite->dispoffset > rover->dispoffset));
+					dboolean behind = (scale2 > scale1 || (scale2 == scale1 && r2->sprite->dispoffset > rover->dispoffset));
 
 					if (!behind)
 					{
@@ -4339,7 +4339,7 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 }
 
 /* Check if thing may be drawn from our current view. */
-boolean R_ThingVisible (mobj_t *thing)
+dboolean R_ThingVisible (mobj_t *thing)
 {
 	if (UNLIKELY(thing->sprite == SPR_NULL))
 		return false;
@@ -4356,7 +4356,7 @@ boolean R_ThingVisible (mobj_t *thing)
 	return true;
 }
 
-boolean R_ThingWithinDist (mobj_t *thing, fixed_t limit_dist)
+dboolean R_ThingWithinDist (mobj_t *thing, fixed_t limit_dist)
 {
 	const fixed_t dist = R_PointToDist(thing->x, thing->y);
 
@@ -4414,7 +4414,7 @@ fixed_t R_GetThingFade(mobj_t *thing)
 }
 
 /* Check if precipitation may be drawn from our current view. */
-boolean R_PrecipThingVisible (precipmobj_t *precipthing)
+dboolean R_PrecipThingVisible (precipmobj_t *precipthing)
 {
 	if (( precipthing->precipflags & PCF_INVISIBLE ))
 		return false;
@@ -4422,59 +4422,59 @@ boolean R_PrecipThingVisible (precipmobj_t *precipthing)
 	return true;
 }
 
-boolean R_ThingHorizontallyFlipped(mobj_t *thing)
+dboolean R_ThingHorizontallyFlipped(mobj_t *thing)
 {
 	return (thing->frame & FF_HORIZONTALFLIP || thing->renderflags & RF_HORIZONTALFLIP);
 }
 
-boolean R_ThingVerticallyFlipped(mobj_t *thing)
+dboolean R_ThingVerticallyFlipped(mobj_t *thing)
 {
 	return (thing->frame & FF_VERTICALFLIP || thing->renderflags & RF_VERTICALFLIP);
 }
 
-boolean R_ThingIsPaperSprite(mobj_t *thing)
+dboolean R_ThingIsPaperSprite(mobj_t *thing)
 {
 	return (thing->frame & FF_PAPERSPRITE || thing->renderflags & RF_PAPERSPRITE);
 }
 
-boolean R_ThingIsAffineSprite(mobj_t *thing)
+dboolean R_ThingIsAffineSprite(mobj_t *thing)
 {
 	// Affine papersprites are messy in software rendering.
 	// Yes, I'm lazy; I've been at this for TWO WEEKS.
-	boolean papersprite = (R_ThingIsPaperSprite(thing));
+	dboolean papersprite = (R_ThingIsPaperSprite(thing));
 
-	boolean notaffine = ((thing->frame & FF_NOAFFINE || thing->renderflags & RF_NOAFFINE) || papersprite);
+	dboolean notaffine = ((thing->frame & FF_NOAFFINE || thing->renderflags & RF_NOAFFINE) || papersprite);
 
 	return (!notaffine);
 }
 
-boolean R_ThingIsFloorSprite(mobj_t *thing)
+dboolean R_ThingIsFloorSprite(mobj_t *thing)
 {
 	return (thing->flags2 & MF2_SPLAT || thing->frame & FF_FLOORSPRITE || thing->renderflags & RF_FLOORSPRITE);
 }
 
-boolean R_ThingIsFullBright(mobj_t *thing)
+dboolean R_ThingIsFullBright(mobj_t *thing)
 {
 	if (thing->renderflags & RF_BRIGHTMASK)
 		return ((thing->renderflags & RF_BRIGHTMASK) == RF_FULLBRIGHT);
 	return ((thing->frame & FF_BRIGHTMASK) == FF_FULLBRIGHT);
 }
 
-boolean R_ThingIsSemiBright(mobj_t *thing)
+dboolean R_ThingIsSemiBright(mobj_t *thing)
 {
 	if (thing->renderflags & RF_BRIGHTMASK)
 		return ((thing->renderflags & RF_BRIGHTMASK) == RF_SEMIBRIGHT);
 	return ((thing->frame & FF_BRIGHTMASK) == FF_SEMIBRIGHT);
 }
 
-boolean R_ThingIsFullDark(mobj_t *thing)
+dboolean R_ThingIsFullDark(mobj_t *thing)
 {
 	if (thing->renderflags & RF_BRIGHTMASK)
 		return ((thing->renderflags & RF_BRIGHTMASK) == RF_FULLDARK);
 	return ((thing->frame & FF_BRIGHTMASK) == FF_FULLDARK);
 }
 
-boolean R_AffinePreScale(mobj_t *thing)
+dboolean R_AffinePreScale(mobj_t *thing)
 {
 	return (cv_affineprescale.value || thing->renderflags & RF_AFFINEPRESCALE);
 }

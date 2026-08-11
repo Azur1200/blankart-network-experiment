@@ -16,9 +16,9 @@
 extern "C" {
 #endif
 
-extern boolean usebuffer;
+extern dboolean usebuffer;
 
-boolean Y_ItemListActive(void);
+dboolean Y_ItemListActive(void);
 void Y_IntermissionDrawer(void);
 void Y_Ticker(void);
 

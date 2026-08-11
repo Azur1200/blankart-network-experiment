@@ -23,7 +23,7 @@ extern "C" {
 //
 extern INT32 myargc;
 extern char **myargv;
-extern boolean myargmalloc;
+extern dboolean myargmalloc;
 
 // Looks for an srb2:// (or similar) URL passed in as an argument and returns the IP to connect to if found.
 const char *M_GetUrlProtocolArg(void);
@@ -35,7 +35,7 @@ INT32 M_CheckParm(const char *check);
 void M_PushSpecialParameters(void);
 
 // Returns true if there are available parameters.
-boolean M_IsNextParm(void);
+dboolean M_IsNextParm(void);
 
 // Returns the next parameter after a M_CheckParm, NULL if not found.
 const char *M_GetNextParm(void);

@@ -169,7 +169,7 @@ void *M_AATreeGet(aatree_t *aatree, INT32 key)
 	return M_AATreeGet_Node(aatree->root, key);
 }
 
-boolean M_AATreeEmpty(aatree_t *aatree)
+dboolean M_AATreeEmpty(aatree_t *aatree)
 {
     return aatree->root == NULL;
 }

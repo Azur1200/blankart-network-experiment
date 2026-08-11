@@ -177,9 +177,9 @@ INT32 M_CountEmblems(void);
 // Emblem shit
 emblem_t *M_GetLevelEmblems(mapnum_t mapnum);
 skincolornum_t M_GetEmblemColor(emblem_t *em);
-const char *M_GetEmblemPatch(emblem_t *em, boolean big);
+const char *M_GetEmblemPatch(emblem_t *em, dboolean big);
 skincolornum_t M_GetExtraEmblemColor(extraemblem_t *em);
-const char *M_GetExtraEmblemPatch(extraemblem_t *em, boolean big);
+const char *M_GetExtraEmblemPatch(extraemblem_t *em, dboolean big);
 
 // If you're looking to compare stats for unlocks or what not, use these
 // They stop checking upon reaching the target number so they

@@ -1,3 +1,4 @@
+#include <winres.h>
 //Microsoft Developer Studio generated resource script.
 //
 #include "resource.h"
@@ -71,7 +72,6 @@ END
 //
 // Version
 //
-
 #include "../doomdef.h" // Needed for version string
 
 VS_VERSION_INFO VERSIONINFO

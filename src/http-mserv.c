@@ -86,7 +86,7 @@ Contact_error (void)
 static void
 Printf_url (const char *url)
 {
-	boolean startup;
+	dboolean startup;
 
 	I_lock_mutex(&con_mutex);
 	startup = con_startup;

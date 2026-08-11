@@ -478,7 +478,7 @@ void K_UpdateMobjTerrain(mobj_t *mo, INT32 flatID)
 --------------------------------------------------*/
 static void K_SetTerrainFriction(mobj_t *mo)
 {
-	boolean isPlayer = false;
+	dboolean isPlayer = false;
 	fixed_t strength = mo->terrain->friction;
 	terrain_t *terrain = NULL;
 	fixed_t newFriction = INT32_MAX;
@@ -973,7 +973,7 @@ static void K_SpawnFootstepParticle(mobj_t *mo, t_footstep_t *fs, tic_t timer)
 
 	if (mo->player != NULL)
 	{
-		boolean karmabomb = ((gametypes[gametype]->rules & GTR_BUMPERS) && mo->player->bumper <= 0);
+		dboolean karmabomb = ((gametypes[gametype]->rules & GTR_BUMPERS) && mo->player->bumper <= 0);
 		tireAngle = (mo->player->drawangle + ANGLE_180);
 		speedValue = K_GetKartSpeedFromStat(mo->player->kartspeed, karmabomb, mo->player->kartmagnet.factor);
 	}
@@ -1147,7 +1147,7 @@ static void K_CleanupTerrainOverlay(mobj_t *mo)
 }
 
 /*--------------------------------------------------
-	static boolean K_InitTerrainOverlay(mobj_t *mo)
+	static dboolean K_InitTerrainOverlay(mobj_t *mo)
 
 		Creates a new terrain overlay for an object.
 
@@ -1157,7 +1157,7 @@ static void K_CleanupTerrainOverlay(mobj_t *mo)
 	Return:-
 		true if successful, otherwise false.
 --------------------------------------------------*/
-static boolean K_InitTerrainOverlay(mobj_t *mo)
+static dboolean K_InitTerrainOverlay(mobj_t *mo)
 {
 	mobj_t *new = P_SpawnMobjFromMobj(mo, 0, 0, 0, MT_OVERLAY);
 
@@ -1185,7 +1185,7 @@ static boolean K_InitTerrainOverlay(mobj_t *mo)
 --------------------------------------------------*/
 static t_overlay_action_t K_DesiredTerrainOverlayAction(mobj_t *mo)
 {
-	const boolean moving = (P_AproxDistance(mo->momx, mo->momy) >= (mo->scale >> 1));
+	const dboolean moving = (P_AproxDistance(mo->momx, mo->momy) >= (mo->scale >> 1));
 
 	if (moving == true)
 	{
@@ -1674,12 +1674,12 @@ static void K_TerrainDefaults(terrain_t *terrain)
 }
 
 /*--------------------------------------------------
-	boolean K_TerrainHasAffect(terrain_t *terrain, boolean badonly, boolean followmaprules)
+	dboolean K_TerrainHasAffect(terrain_t *terrain, dboolean badonly, dboolean followmaprules)
 
 		See header file for description.
 --------------------------------------------------*/
 
-boolean K_TerrainHasAffect(terrain_t *terrain, boolean badonly, boolean followmaprules)
+dboolean K_TerrainHasAffect(terrain_t *terrain, dboolean badonly, dboolean followmaprules)
 {
 	if (followmaprules && !K_AffectingTerrainActive())
 		return false;
@@ -1859,7 +1859,7 @@ static void K_NewTerrainFloorDefs(void)
 }
 
 /*--------------------------------------------------
-	static boolean K_DoTERRAINLumpParse(size_t num, void (*parser)(UINT32, char *, char *))
+	static dboolean K_DoTERRAINLumpParse(size_t num, void (*parser)(UINT32, char *, char *))
 
 		Runs another parser function for the TERRAIN
 		lump, handling the nitty-gritty parts of the
@@ -1872,7 +1872,7 @@ static void K_NewTerrainFloorDefs(void)
 	Return:-
 		false if any errors occured, otherwise true.
 --------------------------------------------------*/
-static boolean K_DoTERRAINLumpParse(size_t num, void (*parser)(size_t, char *, char *))
+static dboolean K_DoTERRAINLumpParse(size_t num, void (*parser)(size_t, char *, char *))
 {
 	char *param, *val;
 
@@ -1908,7 +1908,7 @@ static boolean K_DoTERRAINLumpParse(size_t num, void (*parser)(size_t, char *, c
 }
 
 /*--------------------------------------------------
-	static boolean K_TERRAINLumpParser(char *data, size_t size)
+	static dboolean K_TERRAINLumpParser(char *data, size_t size)
 
 		Parses inputted lump data as a TERRAIN lump.
 
@@ -1919,7 +1919,7 @@ static boolean K_DoTERRAINLumpParse(size_t num, void (*parser)(size_t, char *, c
 	Return:-
 		false if any errors occured, otherwise true.
 --------------------------------------------------*/
-static boolean K_TERRAINLumpParser(char *data, size_t size)
+static dboolean K_TERRAINLumpParser(char *data, size_t size)
 {
 	char *tkn = M_GetToken(data);
 	UINT32 tknHash = 0;
@@ -1928,7 +1928,7 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 
 	while (tkn && (pos = M_GetTokenPos()) < size)
 	{
-		boolean valid = true;
+		dboolean valid = true;
 
 		// Avoid anything inside bracketed stuff, only look for external keywords.
 		if (fastcmp(tkn, "{") || fastcmp(tkn, "}"))
@@ -2295,11 +2295,11 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean K_InitTerrainPwad(UINT16 wadNum)
+dboolean K_InitTerrainPwad(UINT16 wadNum)
 {
 	UINT16 lumpNum;
 	lumpinfo_t *lump_p = wadfiles[wadNum]->lumpinfo;
-	boolean terrainLoaded = false;
+	dboolean terrainLoaded = false;
 
 	// Iterate through all lumps and compare the name individually.
 	// In PK3 files, you can potentially have multiple TERRAIN differentiated by
@@ -2373,10 +2373,10 @@ void K_InitTerrain(void)
 }
 
 // Map header toggle for Affecting Terrain Defs.
-boolean K_AffectingTerrainActive(void)
+dboolean K_AffectingTerrainActive(void)
 {
 	const mapheader_t *mapheader = mapheaderinfo[gamemap - 1];
-	boolean value = false;
+	dboolean value = false;
 
 	if (mapnamespace == MNS_RINGRACERS)
 		return true;

@@ -91,12 +91,12 @@ static int polyobjvertices_get(lua_State *L)
 		if (!polyverts || !(*polyverts))
 		{
 			if (field == 0) {
-				lua_pushboolean(L, 0);
+				lua_pushdboolean(L, 0);
 				return 1;
 			}
 			return luaL_error(L, "accessed polyobj_t.vertices doesn't exist anymore.");
 		} else if (field == 0) {
-			lua_pushboolean(L, 1);
+			lua_pushdboolean(L, 1);
 			return 1;
 		}
 	}
@@ -148,12 +148,12 @@ static int polyobjlines_get(lua_State *L)
 		if (!polylines || !(*polylines))
 		{
 			if (field == 0) {
-				lua_pushboolean(L, 0);
+				lua_pushdboolean(L, 0);
 				return 1;
 			}
 			return luaL_error(L, "accessed polyobj_t.lines doesn't exist anymore.");
 		} else if (field == 0) {
-			lua_pushboolean(L, 1);
+			lua_pushdboolean(L, 1);
 			return 1;
 		}
 	}
@@ -197,7 +197,7 @@ static int lib_polyobj_PointInside(lua_State *L)
 	INLEVEL
 	if (!po)
 		return LUA_ErrInvalid(L, "polyobj_t");
-	lua_pushboolean(L, P_PointInsidePolyobj(po, x, y));
+	lua_pushdboolean(L, P_PointInsidePolyobj(po, x, y));
 	return 1;
 }
 
@@ -210,7 +210,7 @@ static int lib_polyobj_MobjTouching(lua_State *L)
 		return LUA_ErrInvalid(L, "polyobj_t");
 	if (!mo)
 		return LUA_ErrInvalid(L, "mobj_t");
-	lua_pushboolean(L, P_MobjTouchingPolyobj(po, mo));
+	lua_pushdboolean(L, P_MobjTouchingPolyobj(po, mo));
 	return 1;
 }
 
@@ -223,7 +223,7 @@ static int lib_polyobj_MobjInside(lua_State *L)
 		return LUA_ErrInvalid(L, "polyobj_t");
 	if (!mo)
 		return LUA_ErrInvalid(L, "mobj_t");
-	lua_pushboolean(L, P_MobjInsidePolyobj(po, mo));
+	lua_pushdboolean(L, P_MobjInsidePolyobj(po, mo));
 	return 1;
 }
 
@@ -233,12 +233,12 @@ static int lib_polyobj_moveXY(lua_State *L)
 	polyobj_t *po = *((polyobj_t **)luaL_checkudata(L, 1, META_POLYOBJ));
 	fixed_t x = luaL_checkfixed(L, 2);
 	fixed_t y = luaL_checkfixed(L, 3);
-	boolean checkmobjs = lua_opttrueboolean(L, 4);
+	dboolean checkmobjs = lua_opttruedboolean(L, 4);
 	NOHUD
 	INLEVEL
 	if (!po)
 		return LUA_ErrInvalid(L, "polyobj_t");
-	lua_pushboolean(L, Polyobj_moveXY(po, x, y, checkmobjs));
+	lua_pushdboolean(L, Polyobj_moveXY(po, x, y, checkmobjs));
 	return 1;
 }
 
@@ -246,14 +246,14 @@ static int lib_polyobj_rotate(lua_State *L)
 {
 	polyobj_t *po = *((polyobj_t **)luaL_checkudata(L, 1, META_POLYOBJ));
 	angle_t delta = luaL_checkangle(L, 2);
-	boolean turnplayers = lua_opttrueboolean(L, 3);
-	boolean turnothers = lua_opttrueboolean(L, 4);
-	boolean checkmobjs = lua_opttrueboolean(L, 5);
+	dboolean turnplayers = lua_opttruedboolean(L, 3);
+	dboolean turnothers = lua_opttruedboolean(L, 4);
+	dboolean checkmobjs = lua_opttruedboolean(L, 5);
 	NOHUD
 	INLEVEL
 	if (!po)
 		return LUA_ErrInvalid(L, "polyobj_t");
-	lua_pushboolean(L, Polyobj_rotate(po, delta, turnplayers, turnothers, checkmobjs));
+	lua_pushdboolean(L, Polyobj_rotate(po, delta, turnplayers, turnothers, checkmobjs));
 	return 1;
 }
 
@@ -270,7 +270,7 @@ static int polyobj_get(lua_State *L)
 
 	if (!polyobj) {
 		if (field == polyobj_valid) {
-			lua_pushboolean(L, false);
+			lua_pushdboolean(L, false);
 			return 1;
 		}
 		return LUA_ErrInvalid(L, "polyobj_t");
@@ -280,7 +280,7 @@ static int polyobj_get(lua_State *L)
 	{
 	// properties
 	case polyobj_valid:
-		lua_pushboolean(L, true);
+		lua_pushdboolean(L, true);
 		break;
 	case polyobj_id:
 		lua_pushinteger(L, polyobj->id);

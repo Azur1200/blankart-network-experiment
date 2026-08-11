@@ -24,17 +24,17 @@ extern "C" {
 void CON_Init(void);
 void CON_Register(void);
 
-boolean CON_Responder(event_t *ev);
+dboolean CON_Responder(event_t *ev);
 
 #ifdef HAVE_THREADS
 extern I_mutex con_mutex;
 #endif
 
 // set true when screen size has changed, to adapt console
-extern boolean con_recalc;
+extern dboolean con_recalc;
 
 // console being displayed at game startup
-extern boolean con_startup;
+extern dboolean con_startup;
 
 // when modifying the below, you must also adjust d_main and console.c
 typedef enum
@@ -74,7 +74,7 @@ extern UINT8 *consolebgmap;
 extern UINT8 *promptbgmap;
 
 INT32 CON_ShiftChar(INT32 ch);
-void CON_SetupBackColormapEx(INT32 color, boolean prompt);
+void CON_SetupBackColormapEx(INT32 color, dboolean prompt);
 void CON_SetupBackColormap(void);
 void CON_ClearHUD(void); // clear heads up messages
 
@@ -87,7 +87,7 @@ void CONS_Error(const char *msg); // print out error msg, and wait a key
 void CON_ToggleOff(void);
 
 // Is console down?
-boolean CON_Ready(void);
+dboolean CON_Ready(void);
 
 void CON_LogMessage(const char *msg);
 

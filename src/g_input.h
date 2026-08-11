@@ -137,7 +137,7 @@ typedef enum
 } tiltcontrol_e;
 extern consvar_t cv_tiltcontrol[MAXSPLITSCREENPLAYERS];
 
-// current state of the keys: JOYAXISRANGE or 0 when boolean.
+// current state of the keys: JOYAXISRANGE or 0 when dboolean.
 // Or anything inbetween for analog values
 #define MAXDEVICES (MAXGAMEPADS + 1) // Gamepads + keyboard & mouse
 // the above is horrid since device tracks the gamepad id for whatever godawful reason
@@ -191,8 +191,8 @@ void G_MapEventsToControls(event_t *ev);
 const char *G_KeynumToString(INT32 keynum);
 INT32 G_KeyStringtoNum(const char *keystr);
 
-boolean G_KeyBindIsNecessary(INT32 gc);
-boolean G_KeyIsAvailable(INT32 key, INT32 deviceID, boolean digital);
+dboolean G_KeyBindIsNecessary(INT32 gc);
+dboolean G_KeyIsAvailable(INT32 key, INT32 deviceID, dboolean digital);
 
 // detach any keys associated to the given game control
 void G_ClearControlKeys(INT32 (*setupcontrols)[MAXINPUTMAPPING], INT32 control);
@@ -204,13 +204,13 @@ void Command_Setcontrol4_f(void);
 INT32 G_GetControlScheme(INT32 (*fromcontrols)[MAXINPUTMAPPING], const INT32 *gclist, INT32 gclen);
 void G_ResetControls(UINT8 p);
 void G_SaveKeySetting(FILE *f, INT32 (*fromcontrolsa)[MAXINPUTMAPPING], INT32 (*fromcontrolsb)[MAXINPUTMAPPING], INT32 (*fromcontrolsc)[MAXINPUTMAPPING], INT32 (*fromcontrolsd)[MAXINPUTMAPPING]);
-INT32 G_CheckDoubleUsage(INT32 keynum, INT32 playernum, boolean modify);
+INT32 G_CheckDoubleUsage(INT32 keynum, INT32 playernum, dboolean modify);
 
 #define MAXGAMEPADTILT (55*FRACUNIT/100)
 #define ACCELEROMETERGRAVITY (642688) // 9.80665
-boolean G_GetGamepadCanUseTilt(INT32 p);
+dboolean G_GetGamepadCanUseTilt(INT32 p);
 void G_ResetGyroCalibration(INT32 p);
-void G_UpdateGamepadAutoCalibration(INT32 p, vector3_t accel, vector3_t gyro, boolean allowautocalibration);
+void G_UpdateGamepadAutoCalibration(INT32 p, vector3_t accel, vector3_t gyro, dboolean allowautocalibration);
 void G_UpdateGamepadGyro(INT32 p, vector3_t gyro);
 void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel);
 fixed_t G_GetGamepadShakinessFactor(INT32 p);

@@ -107,7 +107,7 @@ void K_StatRound(void)
 void K_EraseStats(void)
 {
 	// The only field we want to remember
-	boolean vanilla = kartstats.vanilla;
+	dboolean vanilla = kartstats.vanilla;
 
 	Z_Free(kartstats.copy);
 
@@ -144,7 +144,7 @@ static void K_ReadStatsCustom(savebuffer_t *save)
 	//kartstats.somenewfield = READUINT32(save->p);
 }
 
-void K_ReadStats(savebuffer_t *save, boolean vanilla)
+void K_ReadStats(savebuffer_t *save, dboolean vanilla)
 {
 	// Basically, free old kartstats.copy if needed and memset kartstats with zeros
 	K_EraseStats();
@@ -200,7 +200,7 @@ static void K_WriteStatsCustom(savebuffer_t *save)
 	//WRITEUINT32(save->p, kartstats.somenewfield);
 }
 
-void K_WriteStats(savebuffer_t *save, boolean vanilla)
+void K_WriteStats(savebuffer_t *save, dboolean vanilla)
 {
 	WRITEUINT32(save->p, kartstats.totalplaytime);
 	WRITEUINT32(save->p, kartstats.matchesplayed);

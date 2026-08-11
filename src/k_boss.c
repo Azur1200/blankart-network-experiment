@@ -165,11 +165,11 @@ void K_UpdateBossHealthBar(fixed_t magnitude, tic_t jitterlen)
 }
 
 /*--------------------------------------------------
-	void K_DeclareWeakspot(mobj_t *weakspot, spottype_t spottype, boolean minimap)
+	void K_DeclareWeakspot(mobj_t *weakspot, spottype_t spottype, dboolean minimap)
 
 		See header file for description.
 --------------------------------------------------*/
-void K_DeclareWeakspot(mobj_t *spot, spottype_t spottype, UINT16 color, boolean minimap)
+void K_DeclareWeakspot(mobj_t *spot, spottype_t spottype, UINT16 color, dboolean minimap)
 {
 	UINT8 i;
 

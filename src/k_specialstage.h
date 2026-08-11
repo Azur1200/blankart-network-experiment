@@ -22,8 +22,8 @@ extern "C" {
 
 extern struct specialStage
 {
-	boolean active;						///< If true, then we are in a special stage
-	boolean encore;						///< Copy of encore, just to make sure you can't cheat it with cvars
+	dboolean active;						///< If true, then we are in a special stage
+	dboolean encore;						///< Copy of encore, just to make sure you can't cheat it with cvars
 
 	UINT32 beamDist;					///< Where the exit beam is.
 	mobj_t *capsule;					///< The Chaos Emerald capsule.

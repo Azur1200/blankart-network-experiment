@@ -60,7 +60,7 @@ angle_t R_GetPitchRollAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_
 	return rollOrPitch;
 }
 
-static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer, boolean fliptilt)
+static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer, dboolean fliptilt)
 {
 	angle_t viewingAngle = R_PointToAnglePlayer(viewPlayer, player->mo->x, player->mo->y);
 	angle_t angleDelta = (viewingAngle - player->mo->angle);
@@ -68,7 +68,7 @@ static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer, bo
 	INT32 nulltilt = (K_NullDriftTiltEnabled()) ? FixedAngle(player->karttilt) : 0;
 	INT32 aiztilt = (cv_sliptidetilt.value) ? player->aizdrifttilt : 0;
 
-	boolean nullBeforeSlip = (abs(aiztilt) < abs(nulltilt));
+	dboolean nullBeforeSlip = (abs(aiztilt) < abs(nulltilt));
 	INT32 liftsign = ((nullBeforeSlip) ? intsign(nulltilt) : intsign(aiztilt));
 
 	// Sliptide tilt: Nulldrifts take priority if and ONLY if they're the larger value compared to sliptides.
@@ -99,15 +99,15 @@ static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer, bo
 	return rollAngle;
 }
 
-// Hacky boolean to check if we're the rainbow S-Monitor overlay
-boolean R_IsOverlayingSMonitorPlayer(mobj_t* mobj)
+// Hacky dboolean to check if we're the rainbow S-Monitor overlay
+dboolean R_IsOverlayingSMonitorPlayer(mobj_t* mobj)
 {
 	return ((mobj->type == MT_OVERLAY) &&
 			(mobj->target) && (mobj->extravalue2) && (mobj->target->player) &&
 			(mobj->target->player->smonitortimer));
 }
 
-angle_t R_ModelRotationAngle(mobj_t *mobj, player_t *viewPlayer, boolean fliptilt)
+angle_t R_ModelRotationAngle(mobj_t *mobj, player_t *viewPlayer, dboolean fliptilt)
 {
 	angle_t rollAngle = mobj->rollangle;
 
@@ -123,7 +123,7 @@ angle_t R_ModelRotationAngle(mobj_t *mobj, player_t *viewPlayer, boolean fliptil
 	return rollAngle;
 }
 
-angle_t R_SpriteRotationAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_t *interp, boolean fliptilt)
+angle_t R_SpriteRotationAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_t *interp, dboolean fliptilt)
 {
 	angle_t rollOrPitch;
 	
@@ -159,9 +159,9 @@ angle_t R_ConvToRollAngle(angle_t ang)
 
 vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 	mobj_t* mobj,
-	boolean vflip,
-	boolean hflip,
-	boolean affine,
+	dboolean vflip,
+	dboolean hflip,
+	dboolean affine,
 	interpmobjstate_t *interp,
 	vector2_t* out,
 	vector2_t* rolloffs)
@@ -262,7 +262,7 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 
 #undef VISROTMUL
 
-patch_t *Patch_GetRotated(patch_t *patch, INT32 angle, boolean flip)
+patch_t *Patch_GetRotated(patch_t *patch, INT32 angle, dboolean flip)
 {
 	rotsprite_t *rotsprite = patch->rotated;
 	if (angle < 1 || angle >= ROTANGLES)
@@ -301,7 +301,7 @@ patch_t *Patch_GetRotated(patch_t *patch, INT32 angle, boolean flip)
 patch_t *Patch_GetRotatedSprite(
 	spriteframe_t *sprite,
 	size_t frame, size_t spriteangle,
-	boolean flip, boolean adjustfeet,
+	dboolean flip, dboolean adjustfeet,
 	void *info, INT32 rotationangle)
 {
 	rotsprite_t *rotsprite;
@@ -366,7 +366,7 @@ patch_t *Patch_GetRotatedSprite(
 	return rotsprite->patches[idx];
 }
 
-void Patch_Rotate(patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, boolean flip)
+void Patch_Rotate(patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, dboolean flip)
 {
 	if (patch->rotated == NULL)
 		patch->rotated = RotatedPatch_Create(ROTANGLES);
@@ -403,7 +403,7 @@ static void RotatedPatch_CalculateDimensions(
 	*newheight = max(height, max(h1, h2));
 }
 
-void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, boolean flip)
+void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, dboolean flip)
 {
 	patch_t *rotated;
 	UINT16 *rawdst, *rawconv;

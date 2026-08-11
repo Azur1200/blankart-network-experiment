@@ -101,9 +101,9 @@ struct botdata_t
 	fixed_t driftskill; // The bot's "skill" at drifts.
 	                    // Determines how soon a bot starts to drift.
 
-	boolean acceldown, brakedown, driftdown, itemdown; // buttons
-	boolean dolookback; // look out behind you
-	boolean itemwasdown; // last tic's item button
+	dboolean acceldown, brakedown, driftdown, itemdown; // buttons
+	dboolean dolookback; // look out behind you
+	dboolean itemwasdown; // last tic's item button
 	SINT8 itemthrow; // throwdir
 	INT16 turnamt; // turning
 
@@ -118,7 +118,7 @@ void K_BotTicker(const player_t *player);
 void K_DrawBotDebugger(const player_t *player);
 
 /*--------------------------------------------------
-	boolean K_PlayerUsesBotMovement(const player_t *player);
+	dboolean K_PlayerUsesBotMovement(const player_t *player);
 
 		Tells if this player is being controlled via bot movement code (is a bot, or is exiting).
 
@@ -129,11 +129,11 @@ void K_DrawBotDebugger(const player_t *player);
 		true if using bot movement code, otherwise false.
 --------------------------------------------------*/
 
-boolean K_PlayerUsesBotMovement(const player_t *player);
+dboolean K_PlayerUsesBotMovement(const player_t *player);
 
 
 /*--------------------------------------------------
-	boolean K_BotCanTakeCut(const player_t *player);
+	dboolean K_BotCanTakeCut(const player_t *player);
 
 		Tells if this bot is able to take shortcuts (currently unaffected by offroad,
 		or has certain items ready).
@@ -145,7 +145,7 @@ boolean K_PlayerUsesBotMovement(const player_t *player);
 		true if able to take shortcuts, otherwise false.
 --------------------------------------------------*/
 
-boolean K_BotCanTakeCut(const player_t *player);
+dboolean K_BotCanTakeCut(const player_t *player);
 
 
 /*--------------------------------------------------
@@ -238,7 +238,7 @@ fixed_t K_DistanceOfLineFromPoint(fixed_t v1x, fixed_t v1y, fixed_t v2x, fixed_t
 
 
 /*--------------------------------------------------
-	boolean K_AddBot(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p);
+	dboolean K_AddBot(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p);
 
 		Adds a new bot, using code intended to run on all clients.
 
@@ -253,7 +253,7 @@ fixed_t K_DistanceOfLineFromPoint(fixed_t v1x, fixed_t v1y, fixed_t v2x, fixed_t
 		true if a bot was added, otherwise false.
 --------------------------------------------------*/
 
-boolean K_AddBot(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p);
+dboolean K_AddBot(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p);
 
 
 // NOT AVAILABLE FOR LUA
@@ -324,7 +324,7 @@ UINT8 K_EggboxStealth(fixed_t x, fixed_t y);
 
 
 /*--------------------------------------------------
-	boolean K_BotHatesThisSector(const player_t *player, sector_t *sec, fixed_t x, fixed_t y)
+	dboolean K_BotHatesThisSector(const player_t *player, sector_t *sec, fixed_t x, fixed_t y)
 
 		Tells us if a bot will play more careful around
 		this sector. Checks FOFs in the sector, as well.
@@ -339,7 +339,7 @@ UINT8 K_EggboxStealth(fixed_t x, fixed_t y);
 		true if avoiding this sector, false otherwise.
 --------------------------------------------------*/
 
-boolean K_BotHatesThisSector(const player_t *player, sector_t *sec, fixed_t x, fixed_t y);
+dboolean K_BotHatesThisSector(const player_t *player, sector_t *sec, fixed_t x, fixed_t y);
 
 // Moves the bot's prediction, based on objects around the bot.
 void K_NudgePredictionTowardsObjects(botdata_t *bd, const player_t *player);
@@ -361,7 +361,7 @@ INT32 K_PositionBully(const player_t *player);
 
 
 /*--------------------------------------------------
-	boolean K_GetBlockedShieldItem(const player_t *player, , fixed_t radius)
+	dboolean K_GetBlockedShieldItem(const player_t *player, , fixed_t radius)
 
 		Searches the blockmap for items to block with Shields
 
@@ -373,7 +373,7 @@ INT32 K_PositionBully(const player_t *player);
 		false if couldn't find anything, otherwise true to attempt blocking item.
 --------------------------------------------------*/
 
-boolean K_GetBlockedShieldItem(const player_t *player, fixed_t radius);
+dboolean K_GetBlockedShieldItem(const player_t *player, fixed_t radius);
 
 /*--------------------------------------------------
 	void K_BuildBotTiccmd(player_t *player, ticcmd_t *cmd);
@@ -429,7 +429,7 @@ void K_BotItemUsage(botdata_t *bd, const player_t *player);
 
 void K_BotReborn(const player_t *player);
 
-void K_BotResetItemConfirm(const player_t *player, boolean setdelay);
+void K_BotResetItemConfirm(const player_t *player, dboolean setdelay);
 
 void K_BotSetDriftState(const player_t *player, botdrift_e newstate, tic_t lockout);
 

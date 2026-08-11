@@ -28,8 +28,8 @@
 extern "C" {
 #endif
 
-#define lua_optboolean(L, i) (!lua_isnoneornil(L, i) && lua_toboolean(L, i))
-#define lua_opttrueboolean(L, i) (lua_isnoneornil(L, i) || lua_toboolean(L, i))
+#define lua_optdboolean(L, i) (!lua_isnoneornil(L, i) && lua_todboolean(L, i))
+#define lua_opttruedboolean(L, i) (lua_isnoneornil(L, i) || lua_todboolean(L, i))
 
 // fixed_t casting
 // TODO add some distinction between fixed numbers and integer numbers
@@ -51,18 +51,18 @@ void LUA_ClearExtVars(void);
 void LUA_ClearState(void);
 
 extern INT32 lua_lumploading; // is LUA_LoadLump being called?
-extern boolean lua_compatmode; // compatmode enabled for this lump/hook?
+extern dboolean lua_compatmode; // compatmode enabled for this lump/hook?
 
 int LUA_GetErrorMessage(lua_State *L);
-int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, boolean compat, boolean printerror);
-void LUA_LoadLump(UINT16 wad, UINT16 lump, boolean noresults);
+int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, dboolean compat, dboolean printerror);
+void LUA_LoadLump(UINT16 wad, UINT16 lump, dboolean noresults);
 #ifdef LUA_ALLOW_BYTECODE
 void LUA_DumpFile(const char *filename);
 #endif
 fixed_t LUA_EvalMathEx(const char *word, const char **error);
 fixed_t LUA_EvalMath(const char *word);
 // void LUA_Step(void);
-void LUA_Sync(savebuffer_t *save, boolean network, boolean compat);
+void LUA_Sync(savebuffer_t *save, dboolean network, dboolean compat);
 
 void LUA_SetCFunctionField(lua_State *L, const char *name, lua_CFunction value);
 

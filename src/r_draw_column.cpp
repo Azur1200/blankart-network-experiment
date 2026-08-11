@@ -131,7 +131,7 @@ FUNCINLINE static ATTRINLINE constexpr UINT16 R_DrawColumnAffinePixel(drawcolumn
 		col = dc->translation[col];
 	}
 
-	boolean was_brightmapped = false;
+	dboolean was_brightmapped = false;
 
 	if constexpr (Type & DrawColumnType::DC_BRIGHTMAP)
 	{
@@ -628,7 +628,7 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 
 		const INT32 pw = dc->sourcelength, ph = dc->texheight;
 
-		const boolean vflip = (dc->affineystep < 0);
+		const dboolean vflip = (dc->affineystep < 0);
 		const fixed_t ystep_delta = abs(dc->affineystep);
 
 		fixed_t ydiff = (bounds->yup * FRACUNIT) - cy;
@@ -646,9 +646,9 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 		const float y_mosaic = std::max(1.0f, dc->affinemosaic.y);
 		const float x_mosaic = std::max(1.0f, dc->affinemosaic.x);
 
-		const boolean mosaic_on = cv_affinemosaic.value;
-		const boolean xmosaic_on = (FLOAT_TO_FIXED(x_mosaic) > FRACUNIT);
-		const boolean ymosaic_on = (FLOAT_TO_FIXED(y_mosaic) > FRACUNIT);
+		const dboolean mosaic_on = cv_affinemosaic.value;
+		const dboolean xmosaic_on = (FLOAT_TO_FIXED(x_mosaic) > FRACUNIT);
+		const dboolean ymosaic_on = (FLOAT_TO_FIXED(y_mosaic) > FRACUNIT);
 
 		fixed_t usefrac = dc->frac;
 

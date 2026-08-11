@@ -24,15 +24,15 @@ gl_portal_array_t gl_portal_arrays[MAXPORTALS_CAP+1] = {0};
 
 INT32 gl_portal_level = 0; // portal recursion level
 
-boolean gl_drawing_stencil = false; // used when drawing segs to stencil buffer
+dboolean gl_drawing_stencil = false; // used when drawing segs to stencil buffer
 sector_t *gl_portalcullsector = NULL;
 line_t *gl_portalclipline = NULL;
 
 // debug tools
-boolean gl_printportals = false; // print info about portals on this frame
+dboolean gl_printportals = false; // print info about portals on this frame
 INT32 gl_debugportal = 0; // hide main viewpoint and only render this portal without stencil
 
-void HWR_PortalFrame(gl_portal_t *portal, boolean set_culling)
+void HWR_PortalFrame(gl_portal_t *portal, dboolean set_culling)
 {
 	viewx = portal->viewx;
 	viewy = portal->viewy;
@@ -60,7 +60,7 @@ gl_portal_array_t *HWR_GetPortalArray(void)
 	return &gl_portal_arrays[level];
 }
 
-boolean HWR_AddPortal(line_t *start, line_t *dest, seg_t *seg)
+dboolean HWR_AddPortal(line_t *start, line_t *dest, seg_t *seg)
 {
 	gl_portal_array_t *array;
 	gl_portal_t *portal;
@@ -174,7 +174,7 @@ void HWR_SetStencilState(INT32 state)
 // clear the depth buffer from the stenciled area so portal
 // content doesn't get clipped by previous buffer content
 // (glClear ignores the stencil buffer so can't be used for this purpose)
-void HWR_RenderDepthEraser(boolean visible)
+void HWR_RenderDepthEraser(dboolean visible)
 {
 	FOutVector verts[4] = {0};
 	FBITFIELD blendflags = PF_Occlude|PF_NoDepthTest|PF_NoTexture|PF_NoAlphaTest;
@@ -191,7 +191,7 @@ void HWR_RenderDepthEraser(boolean visible)
 	GL_DrawPolygon(NULL, verts, 4, blendflags);
 }
 
-void HWR_RenderPortal(gl_portal_t *portal, gl_portal_t *rootportal, player_t *player, boolean is_skybox)
+void HWR_RenderPortal(gl_portal_t *portal, gl_portal_t *rootportal, player_t *player, dboolean is_skybox)
 {
 	HWR_PushSpriteState();
 	HWR_PushDrawNodeState();

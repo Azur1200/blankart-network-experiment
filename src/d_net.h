@@ -38,7 +38,7 @@ extern INT32 ticruned, ticmiss;
 extern INT32 getbps, sendbps;
 extern float lostpercent, duppercent, gamelostpercent;
 extern INT32 packetheaderlength;
-boolean Net_GetNetStat(void);
+dboolean Net_GetNetStat(void);
 extern INT32 getbytes;
 extern INT64 sendbytes; // Realtime updated
 extern UINT8 plcycle;
@@ -50,22 +50,21 @@ extern SINT8 nodetoplayer2[MAXNETNODES]; // Say the numplayer for this node if a
 extern SINT8 nodetoplayer3[MAXNETNODES]; // Say the numplayer for this node if any (splitscreen == 2)
 extern SINT8 nodetoplayer4[MAXNETNODES]; // Say the numplayer for this node if any (splitscreen == 3)
 extern UINT8 playerpernode[MAXNETNODES]; // Used specially for splitscreen
-extern boolean nodeingame[MAXNETNODES]; // Set false as nodes leave game
-extern boolean nodeneedsauth[MAXNETNODES];
+extern dboolean nodeingame[MAXNETNODES]; // Set false as nodes leave game
+extern dboolean nodeneedsauth[MAXNETNODES];
 
-extern boolean serverrunning;
+extern dboolean serverrunning;
 
-INT32 Net_GetFreeAcks(boolean urgent);
 void Net_AckTicker(void);
 
 // If reliable return true if packet sent, 0 else
-boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum,
+dboolean HSendPacket(INT32 node, dboolean reliable, UINT8 acknum,
 	size_t packetlength);
-boolean HGetPacket(void);
+dboolean HGetPacket(void);
 void D_SetDoomcom(void);
 void D_SaveBan(void);
-void D_LoadBan(boolean warning);
-boolean D_CheckNetGame(void);
+void D_LoadBan(dboolean warning);
+dboolean D_CheckNetGame(void);
 void D_CloseConnection(void);
 void Net_UnAcknowledgePacket(INT32 node);
 void Net_CloseConnection(INT32 node);
@@ -74,7 +73,7 @@ void Net_AbortPacketType(UINT8 packettype);
 void Net_SendAcks(INT32 node);
 void Net_WaitAllAckReceived(UINT32 timeout);
 
-boolean IsPacketSigned(int packettype);
+dboolean IsPacketSigned(int packettype);
 
 #ifdef __cplusplus
 } // extern "C"

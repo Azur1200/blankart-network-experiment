@@ -28,10 +28,10 @@ void Y_SetupVoteFinish(SINT8 pick, SINT8 level);
 // Votescreen stuff
 typedef struct
 {
-	boolean race;       // non lua race patch replaced
-	boolean widerace;   // non lua widescreen race patch replaced
-	boolean battle;     // non lua battle patch replaced
-	boolean widebattle; // non lua widescreen battle patch replaced
+	dboolean race;       // non lua race patch replaced
+	dboolean widerace;   // non lua widescreen race patch replaced
+	dboolean battle;     // non lua battle patch replaced
+	dboolean widebattle; // non lua widescreen battle patch replaced
 } votereplace_t;
 
 // VEXTRN - Vote (V) Extra (EXT) Race (R) Normal (N - Normal sized patch)
@@ -59,7 +59,7 @@ typedef struct
 } votescreen_t;
 extern votescreen_t VoteScreen;
 
-boolean Y_PlayerIDCanVote(const UINT8 id);
+dboolean Y_PlayerIDCanVote(const UINT8 id);
 
 typedef enum
 {

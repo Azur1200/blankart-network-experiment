@@ -476,10 +476,10 @@ INT32 FindSortedSkinIndex(INT32 skinnum)
 
 // returns true if available in circumstances, otherwise nope
 // warning don't use with an invalid skinnum other than -1 which always returns true
-boolean R_SkinUsable(INT32 playernum, INT32 skinnum)
+dboolean R_SkinUsable(INT32 playernum, INT32 skinnum)
 {
-	boolean needsunlocked = false;
-	boolean useplayerstruct = (Playing() && playernum != -1);
+	dboolean needsunlocked = false;
+	dboolean useplayerstruct = (Playing() && playernum != -1);
 	UINT8 i;
 	INT32 skinid;
 
@@ -546,12 +546,12 @@ boolean R_SkinUsable(INT32 playernum, INT32 skinnum)
 	}
 
 	// Use the unlockables table directly
-	return (boolean)(unlockables[i].unlocked);
+	return (dboolean)(unlockables[i].unlocked);
 }
 
 // returns the skin number if the skin name is found (loaded from pwad)
 // warning return -1 if not found
-INT32 R_SkinAvailableEx(const char *name, boolean usehash)
+INT32 R_SkinAvailableEx(const char *name, dboolean usehash)
 {
 	INT32 i;
 
@@ -909,7 +909,7 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 		*lastlump = newlastlump; // okay, make the normal sprite set loading end there
 	}*/
 
-	boolean sonic = fastcmp(skin->name, "sonic") && wadnum == MAINWAD_MAIN;
+	dboolean sonic = fastcmp(skin->name, "sonic") && wadnum == MAINWAD_MAIN;
 
 	if (!wadfiles[wadnum]->compatmode && !sonic)
 	{
@@ -942,7 +942,7 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 #define SPR2COUNT sizeof(kart2spr2)/sizeof(*kart2spr2)
 		for (i = 0; i < SPR2COUNT - NUMKARTFRAMES + tmp.numframes; i++)
 		{
-			boolean excess = i >= SPR2COUNT;
+			dboolean excess = i >= SPR2COUNT;
 			sf = &tmp.spriteframes[excess ? i - SPR2COUNT + NUMKARTFRAMES : kart2spr2[i][0]];
 			sd = &skin->sprites[excess ? SPR2_KART : kart2spr2[i][1]];
 			sd->spriteframes = Z_Realloc(sd->spriteframes, sizeof(*sd->spriteframes) * (sd->numframes+1), PU_STATIC, NULL);
@@ -1105,9 +1105,9 @@ static INT32 R_AllocKartVoice(skin_t *skin, const char* name)
 }
 
 // returns whether found appropriate property
-static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
+static dboolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 {
-	boolean compat = wadfiles[skin->wadnum]->compatmode;
+	dboolean compat = wadfiles[skin->wadnum]->compatmode;
 
 	if (fasticmp(stoken, "rivals"))
 	{
@@ -1352,8 +1352,8 @@ void R_AddSkins(UINT16 wadnum)
 	char *value;
 	size_t size;
 	skin_t *skin;
-	boolean realname;
-	boolean iscompatskin = false;
+	dboolean realname;
+	dboolean iscompatskin = false;
 
 	//
 	// search for all skin markers in pwad
@@ -1498,7 +1498,7 @@ void R_PatchSkins(UINT16 wadnum)
 	char *value;
 	size_t size;
 	skin_t *skin;
-	boolean noskincomplain, realname;
+	dboolean noskincomplain, realname;
 
 	//
 	// search for all skin patch markers in pwad

@@ -108,7 +108,7 @@ typedef enum
 
 #define CLUSTERCHANGEDTIME (6 * TICRATE)
 
-extern boolean clusterplayer[MAXPLAYERS];
+extern dboolean clusterplayer[MAXPLAYERS];
 extern UINT32 clusterid; // ID of the "cluster player", the one closest to the cluster point.
 extern clustermode_e clustermode;
 extern tic_t clusterjustchanged;
@@ -143,6 +143,7 @@ extern vector3_t clusterpoint, clusterdtf;
 #define SPEEDBOOSTDROPOFF CV_Get(&cv_kartstacking_speedboostdropoff)
 #define SPEEDBOOSTDROPOFF_BRAKE CV_Get(&cv_kartstacking_speedboostdropoff_brake)
 #define ACCELSTACK CV_Get(&cv_kartstacking_accelstack)
+#define METABOLISM CV_Get(&cv_kartstacking_metabolism)
 
 // Vanilla Boosts
 #define EASYSNEAKERSPEEDBOOST CV_Get(&cv_kartstacking_sneaker_easyspeedboost)
@@ -265,18 +266,18 @@ void K_RegisterKartStuff(void);
 void K_TimerReset(void);
 void K_TimerInit(void);
 UINT32 K_GetPlayerDontDrawFlag(player_t *player);
-boolean K_IsPlayerLosing(const player_t *player);
+dboolean K_IsPlayerLosing(const player_t *player);
 fixed_t K_GetKartGameSpeedScalar(SINT8 value);
 
 fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against);
-boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid);
+dboolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, dboolean bounce, dboolean solid);
 void K_KartPainEnergyFling(player_t *player);
 void K_FlipFromObject(mobj_t *mo, mobj_t *master);
 void K_MatchGenericExtraFlags(mobj_t *mo, mobj_t *master);
 void K_GenericExtraFlagsNoZAdjust(mobj_t *mo, mobj_t *master);
-void K_SpawnDashDustRelease(player_t *player, boolean force);
+void K_SpawnDashDustRelease(player_t *player, dboolean force);
 void K_SpawnNormalSpeedLines(player_t *player);
-void K_SpawnDraftSpeedLines(player_t *player, fixed_t scale, skincolornum_t color, boolean translucent);
+void K_SpawnDraftSpeedLines(player_t *player, fixed_t scale, skincolornum_t color, dboolean translucent);
 void K_SpawnDashAreaSpeedLines(mobj_t *mo);
 void K_SpawnBumpEffect(mobj_t *mo);
 void K_KartMoveAnimation(player_t *player);
@@ -287,11 +288,11 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd);
 void K_KartPlayerAfterThink(player_t *player);
 angle_t K_MomentumAngle(mobj_t *mo);
 
-fixed_t K_GetMomentum(mobj_t *mo, boolean twodee);
+fixed_t K_GetMomentum(mobj_t *mo, dboolean twodee);
 #define K_Momentum2D(mo) (K_GetMomentum(mo, true))
 #define K_Momentum3D(mo) (K_GetMomentum(mo, false))
 
-void K_AwardPlayerRings(player_t *player, UINT16 rings, boolean overload);
+void K_AwardPlayerRings(player_t *player, UINT16 rings, dboolean overload);
 void K_HandleRaceSplits(player_t *player, tic_t time, UINT8 checkpoint);
 void K_DoInstashield(player_t *player);
 void K_BattleAwardHit(player_t *player, player_t *victim, mobj_t *inflictor, UINT8 bumpersRemoved);
@@ -299,21 +300,21 @@ void K_SpinPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 typ
 void K_FlipPlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
-boolean K_IsPlayerDamaged(const player_t *player);
+dboolean K_IsPlayerDamaged(const player_t *player);
 void K_ResetCrashOffsetData(player_t *player);
 void K_ResetCrashData(player_t *player);
 void K_Player_CrashThinker(player_t *player);
 void K_HandleBumperChanges(player_t *player, UINT8 prevBumpers);
 void K_DestroyBumpers(player_t *player, UINT8 amount);
 void K_TakeBumpersFromPlayer(player_t *player, player_t *victim, UINT8 amount);
-void K_SpawnKartExplosion(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32 number, mobjtype_t type, angle_t rotangle, boolean spawncenter, boolean ghostit, mobj_t *source);
+void K_SpawnKartExplosion(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32 number, mobjtype_t type, angle_t rotangle, dboolean spawncenter, dboolean ghostit, mobj_t *source);
 void K_SpawnMineExplosion(mobj_t *source, UINT8 color);
 UINT16 K_DriftSparkColor(player_t *player, INT32 charge);
 void K_SpawnBoostTrail(player_t *player);
 void K_SpawnSparkleTrail(mobj_t *mo);
-mobj_t *K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent);
+mobj_t *K_SpawnWipeoutTrail(mobj_t *mo, dboolean translucent);
 void K_DriftDustHandling(mobj_t *spawner);
-mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t mapthing, INT32 defaultDir, INT32 altthrow);
+mobj_t *K_ThrowKartItem(player_t *player, dboolean missile, mobjtype_t mapthing, INT32 defaultDir, INT32 altthrow);
 void K_PuntMine(mobj_t *mine, mobj_t *punter);
 
 typedef enum
@@ -328,12 +329,12 @@ void K_DoSneaker(player_t *player, INT32 type);
 
 void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound);
 fixed_t K_GetSpeedPercentage(const player_t *player);
-boolean K_AltShrinkArrowBulletCondition(const player_t *player);
-boolean K_InterceptArrowBullet(player_t *player);
+dboolean K_AltShrinkArrowBulletCondition(const player_t *player);
+dboolean K_InterceptArrowBullet(player_t *player);
 void K_ResetPogoSpring(player_t *player);
 
-extern boolean forcefullinvintheme;
-boolean K_PlayFullInvinTheme(void);
+extern dboolean forcefullinvintheme;
+dboolean K_PlayFullInvinTheme(void);
 void K_DoInvincibility(player_t *player, tic_t time);
 void K_DoSMonitor(player_t *player, tic_t time);
 #define SMONITORWARNINGTIME (5*FRACUNIT/6)
@@ -341,24 +342,24 @@ fixed_t K_SMonitorGradient(UINT16 time);
 fixed_t K_GetSMonitorSpeed(UINT16 time);
 fixed_t K_GetSMonitorAccel(UINT16 time);
 fixed_t K_GetSMonitorHandling(UINT16 time);
-boolean K_SMonitorSlotHogging(player_t *player);
+dboolean K_SMonitorSlotHogging(player_t *player);
 
 void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source);
-void K_UpdateHnextList(player_t *player, boolean clean);
+void K_UpdateHnextList(player_t *player, dboolean clean);
 void K_DropHnextList(player_t *player);
 void K_PopPlayerShield(player_t *player);
-boolean K_IsBubbleDefending(const player_t *player);
+dboolean K_IsBubbleDefending(const player_t *player);
 void K_RemoveBubbleHealth(player_t *player, INT16 sub);
-boolean K_CheckBubbleChip(const mobj_t *mobj);
+dboolean K_CheckBubbleChip(const mobj_t *mobj);
 void K_RepairOrbitChain(mobj_t *orbit);
-void K_CalculateBananaSlope(mobj_t *mobj, fixed_t x, fixed_t y, fixed_t z, fixed_t radius, fixed_t height, boolean flip, boolean player);
-INT32 K_GetKartBaseRingPower(const player_t *player, boolean boosted);
+void K_CalculateBananaSlope(mobj_t *mobj, fixed_t x, fixed_t y, fixed_t z, fixed_t radius, fixed_t height, dboolean flip, dboolean player);
+INT32 K_GetKartBaseRingPower(const player_t *player, dboolean boosted);
 UINT8 K_GetKartRingCap(const player_t *player);
-boolean K_IsPlayerRingBurnt(const player_t *player, UINT16 ringpower);
-INT32 K_GetKartRingPower(const player_t *player, boolean boosted);
+dboolean K_IsPlayerRingBurnt(const player_t *player, UINT16 ringpower);
+INT32 K_GetKartRingPower(const player_t *player, dboolean boosted);
 size_t K_NextRespawnWaypointIndex(waypoint_t *waypoint);
-boolean K_CheckPlayersRespawnColliding(INT32 playernum, fixed_t x, fixed_t y);
-boolean K_SafeRespawnWaypoint(waypoint_t *waypoint);
+dboolean K_CheckPlayersRespawnColliding(INT32 playernum, fixed_t x, fixed_t y);
+dboolean K_SafeRespawnWaypoint(waypoint_t *waypoint);
 void K_SetRespawnAtNextWaypoint(player_t * player);
 INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue);
 INT32 K_GetKartDriftSparkValue(const player_t *player);
@@ -377,40 +378,40 @@ void K_DropKitchenSink(player_t *player);
 void K_StripItems(player_t *player);
 void K_StripOther(player_t *player);
 void K_MomentumToFacing(player_t *player);
-boolean K_ApplyOffroad(const player_t *player);
+dboolean K_ApplyOffroad(const player_t *player);
 fixed_t K_GetSneakerBoostSpeed(void);
 fixed_t K_PlayerTripwireSpeedThreshold(const player_t *player);
 tripwirepass_t K_TripwirePassConditions(const player_t *player);
-boolean K_TripwirePass(const player_t *player);
-boolean K_PlayerCanPunt(const player_t *player);
-boolean K_WaterRun(mobj_t *mobj);
-boolean K_CanPlayerMaintainWaterRun(player_t *player);
+dboolean K_TripwirePass(const player_t *player);
+dboolean K_PlayerCanPunt(const player_t *player);
+dboolean K_WaterRun(mobj_t *mobj);
+dboolean K_CanPlayerMaintainWaterRun(player_t *player);
 void K_SpawnWaterTrail(mobj_t *mobj);
-boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item);
+dboolean K_ItemMobjAllowedtoWaterRun(mobj_t *item);
 void K_SetTireGrease(player_t *player, tic_t tics);
-boolean K_SlopeResistance(const player_t *player);
+dboolean K_SlopeResistance(const player_t *player);
 void K_RemoveGrowShrink(player_t *player);
 void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 void K_ApplyTripWire(player_t *player, tripwirestate_t state);
-fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb, fixed_t extrapct);
-fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dorubberbanding);
+fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, dboolean karmabomb, fixed_t extrapct);
+fixed_t K_GetKartSpeed(const player_t *player, dboolean doboostpower, dboolean dorubberbanding);
 fixed_t K_GetKartAccel(const player_t *player);
 void K_DoKartMagnetGradient(player_t *player);
 void K_KartMagnetThinker(player_t *player);
 UINT16 K_GetKartFlashing(const player_t *player);
-boolean K_PlayerShrinkCheat(const player_t *player);
+dboolean K_PlayerShrinkCheat(const player_t *player);
 void K_UpdateShrinkCheat(player_t *player);
-boolean K_KartKickstart(const player_t *player);
+dboolean K_KartKickstart(const player_t *player);
 UINT16 K_GetKartButtons(const player_t *player);
 SINT8 K_GetForwardMove(const player_t *player);
 SINT8 K_GetSideMove(const player_t *player);
 fixed_t K_GetNewSpeed(const player_t *player);
-fixed_t K_3dKartMovement(const player_t *player, boolean onground, SINT8 fowardmove);
+fixed_t K_3dKartMovement(const player_t *player, dboolean onground, SINT8 fowardmove);
 SINT8 K_Sliptiding(const player_t *player);
 fixed_t K_PlayerBaseFriction(const player_t *player, fixed_t original);
-void K_MoveKartPlayer(player_t *player, boolean onground);
-void K_CheckSpectateStatus(boolean considermapreset);
-boolean K_IsSPBInGame(void);
+void K_MoveKartPlayer(player_t *player, dboolean onground);
+void K_CheckSpectateStatus(dboolean considermapreset);
+dboolean K_IsSPBInGame(void);
 
 // sound stuff for lua
 void K_PlayAttackTaunt(mobj_t *source);
@@ -424,38 +425,38 @@ void K_PlayPowerGloatSound(mobj_t *source);
 INT32 K_GetShieldFromPlayer(const player_t *player);
 INT32 K_GetShieldFromItem(INT32 item);
 
-boolean K_SafeRespawnPositionEx(fixed_t x, fixed_t y, fixed_t z, boolean flip);
+dboolean K_SafeRespawnPositionEx(fixed_t x, fixed_t y, fixed_t z, dboolean flip);
 #define K_SafeRespawnPosition(mobj) K_SafeRespawnPositionEx(mobj->x, mobj->y, mobj->z, (mobj->eflags & MFE_VERTICALFLIP) ? true : false)
 
-boolean K_RingsActive(void);
-boolean K_PurpleDriftActive(void);
-boolean K_StackingActive(void);
-boolean K_ChainingActive(void);
-boolean K_SlipdashActive(void);
-boolean K_SlopeBoostActive(void);
-boolean K_DraftingActive(void);
+dboolean K_RingsActive(void);
+dboolean K_PurpleDriftActive(void);
+dboolean K_StackingActive(void);
+dboolean K_ChainingActive(void);
+dboolean K_SlipdashActive(void);
+dboolean K_SlopeBoostActive(void);
+dboolean K_DraftingActive(void);
 SINT8 K_AirDropActive(void);
 SINT8 K_AirThrustActive(void);
-boolean K_RecoveryDashActive(void);
-boolean K_WaterskipBricksActive(void);
-boolean K_KeepStuffActive(void);
-boolean K_ItemLitterActive(void);
-boolean K_ItemListActive(void);
-boolean K_ItemPushingActive(void);
-boolean K_TrailSlowActive(void);
+dboolean K_RecoveryDashActive(void);
+dboolean K_WaterskipBricksActive(void);
+dboolean K_KeepStuffActive(void);
+dboolean K_ItemLitterActive(void);
+dboolean K_ItemListActive(void);
+dboolean K_ItemPushingActive(void);
+dboolean K_TrailSlowActive(void);
 INT32 K_GetBumpSpark(void);
 playerbumptype_t K_GetPlayerBump(void);
-boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);
-INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement, boolean chainsound);
-boolean K_UsingLegacyCheckpoints(void);
-boolean K_UsingPatchedMap(void);
-INT32 K_CheckpointThreshold(boolean roundup);
+dboolean K_BoostChain(player_t *player, INT32 timer, dboolean chainsound);
+INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement, dboolean chainsound);
+dboolean K_UsingLegacyCheckpoints(void);
+dboolean K_UsingPatchedMap(void);
+INT32 K_CheckpointThreshold(dboolean roundup);
 
 fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmin,fixed_t newmax);
-void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, fixed_t handleboost, boolean stack, boolean visible);
+void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, fixed_t handleboost, dboolean stack, dboolean visible);
 void K_ClearBoost(player_t *player);
 
-boolean K_NotFreePlay(void);
+dboolean K_NotFreePlay(void);
 typedef enum
 {
 	ASR_ITEMBOX = 0,
@@ -465,7 +466,7 @@ typedef enum
 void K_AwardScaledPlayerRings(player_t *player, SINT8 mode);
 
 void K_QuiteSaltyHop(player_t *player);
-boolean K_CheckWaterskipLockout(player_t *player);
+dboolean K_CheckWaterskipLockout(player_t *player);
 
 typedef enum
 {
@@ -495,7 +496,7 @@ typedef enum
 
 void K_KillAirDrop(player_t *player, p_airdropflags_t airdropflags);
 
-boolean K_NullDriftTiltEnabled(void);
+dboolean K_NullDriftTiltEnabled(void);
 
 void K_AddTiltMomentum(player_t *player, fixed_t angularvelocity);
 void K_AddTiltImpulse(player_t *player, fixed_t distance, fixed_t force);
@@ -511,7 +512,7 @@ void K_KartAttractHomingAttack(player_t *player);
 
 void K_KartPlayerBumpyRoad(player_t *player);
 
-fixed_t K_HandleAirDrag(player_t *player, boolean onground, fixed_t speed, fixed_t airdrag);
+fixed_t K_HandleAirDrag(player_t *player, dboolean onground, fixed_t speed, fixed_t airdrag);
 
 void K_ShoveObject(mobj_t *victim, mobj_t *source, fixed_t force);
 

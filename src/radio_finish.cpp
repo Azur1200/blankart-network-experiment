@@ -33,13 +33,13 @@ void KartFinishLineTicker_OnChange(void)
 
 struct PlayerFinishTicker {
 	std::string position;
-	boolean is_local_player;
+	dboolean is_local_player;
 	fixed_t x;
 	fixed_t old_x;
 };
 
 static std::deque<PlayerFinishTicker> playerFinishTickerQueue;
-static boolean drawLapFlagAtStart = false;
+static dboolean drawLapFlagAtStart = false;
 
 #define offscreen_offset() \
 	(vid.scaledwidth - BASEVIDWIDTH)/ 2

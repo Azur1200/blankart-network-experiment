@@ -19,7 +19,7 @@
 #ifndef __WIN32_WIN_DBG_H__
 #define __WIN32_WIN_DBG_H__
 
-//#define WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
 

@@ -744,11 +744,11 @@ void K_PlayerLoseLife(player_t *player)
 }
 
 /*--------------------------------------------------
-	boolean K_CanChangeRules(boolean allowdemos)
+	dboolean K_CanChangeRules(dboolean allowdemos)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean K_CanChangeRules(boolean allowdemos)
+dboolean K_CanChangeRules(dboolean allowdemos)
 {
 	if (grandprixinfo.gp == true)
 	{
@@ -790,11 +790,11 @@ boolean K_CanChangeRules(boolean allowdemos)
 }
 
 /*--------------------------------------------------
-	boolean K_BotDefaultSpectator(player_t *player);
+	dboolean K_BotDefaultSpectator(player_t *player);
 
 		See header file for description.
 --------------------------------------------------*/
-boolean K_BotDefaultSpectator(void)
+dboolean K_BotDefaultSpectator(void)
 {
 	if (cv_forcebots.value)
 	{

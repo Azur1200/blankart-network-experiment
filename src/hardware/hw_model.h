@@ -31,7 +31,7 @@ typedef struct
 {
 	float ambient[4], diffuse[4], specular[4], emissive[4];
 	float shininess;
-	boolean spheremap;
+	dboolean spheremap;
 //	Texture::texture_t *texture;
 //	Texture::texture_t *lightmap;
 } material_t;
@@ -88,7 +88,7 @@ typedef struct
 {
 	INT32 frames[256];
 	UINT8 numframes;
-	boolean interpolate;
+	dboolean interpolate;
 } modelspr2frames_t;
 
 typedef enum
@@ -110,7 +110,7 @@ typedef struct model_s
 	tag_t *tags;
 
 	char *mdlFilename;
-	boolean unloaded;
+	dboolean unloaded;
 	modeltype_t modeltype;
 
 	char *framenames;

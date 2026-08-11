@@ -271,14 +271,14 @@ struct serverconfig_pak
 
 	UINT8 gametype;
 	UINT8 modifiedgame;
-	boolean dedicated;
+	dboolean dedicated;
 
 	char server_context[8]; // Unique context id, generated at server startup.
 
 	// Discord info (always defined for net compatibility)
 	UINT8 maxplayer;
-	boolean allownewplayer;
-	boolean discordinvites;
+	dboolean allownewplayer;
+	dboolean discordinvites;
 } ATTRPACK;
 
 struct filetx_pak
@@ -559,13 +559,13 @@ typedef enum
 #define MAXNAMECHANGES (5)
 #define NAMECHANGERATE (60*TICRATE)
 
-extern boolean server;
-extern boolean serverrunning;
+extern dboolean server;
+extern dboolean serverrunning;
 #define client (!server)
-extern boolean dedicated; // For dedicated server
-extern boolean connectedtodedicated; // Client that is connected to a dedicated server.
+extern dboolean dedicated; // For dedicated server
+extern dboolean connectedtodedicated; // Client that is connected to a dedicated server.
 extern UINT16 software_MAXPACKETLENGTH;
-extern boolean acceptnewnode;
+extern dboolean acceptnewnode;
 extern SINT8 servernode;
 extern char connectedservermotd[MAXSERVERMOTD];
 extern char connectedservername[MAXSERVERNAME];
@@ -577,7 +577,7 @@ extern uint8_t lastSentChallenge[MAXNETNODES][CHALLENGELENGTH];
 extern uint8_t lastChallengeAll[CHALLENGELENGTH];
 extern uint8_t lastReceivedSignature[MAXPLAYERS][SIGNATURELENGTH];
 extern uint8_t knownWhenChallenged[MAXPLAYERS][PUBKEYLENGTH];
-extern boolean expectChallenge;
+extern dboolean expectChallenge;
 
 void Command_Ping_f(void);
 extern tic_t connectiontimeout;
@@ -656,13 +656,13 @@ typedef enum
 void NetKeepAlive(void);
 void NetUpdate(void);
 
-void SV_StartSinglePlayerServer(INT32 dogametype, boolean donetgame);
-boolean SV_SpawnServer(void);
+void SV_StartSinglePlayerServer(INT32 dogametype, dboolean donetgame);
+dboolean SV_SpawnServer(void);
 void SV_StopServer(void);
 void SV_ResetServer(void);
 
 /*--------------------------------------------------
-	boolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *newplayernum);
+	dboolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *newplayernum);
 
 		Adds a new bot, using a server-sided packet sent to all clients.
 		Using regular K_AddBot wherever possible is better, but this is kept
@@ -679,7 +679,7 @@ void SV_ResetServer(void);
 		true if a bot can be added via a packet later, otherwise false.
 --------------------------------------------------*/
 
-boolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p);
+dboolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p);
 
 void CL_AddSplitscreenPlayer(void);
 void CL_RemoveSplitscreenPlayer(UINT8 p);
@@ -690,8 +690,8 @@ void CL_QueryServerList(msg_server_t *list);
 void CL_UpdateServerList(void);
 void CL_TimeoutServerList(void);
 // Is there a game running
-boolean Playing(void);
-boolean InADedicatedServer(void);
+dboolean Playing(void);
+dboolean InADedicatedServer(void);
 
 void CopyCaretColors (char *p, const char *s, int n);
 
@@ -700,11 +700,11 @@ void CopyCaretColors (char *p, const char *s, int n);
 void D_QuitNetGame(void);
 
 //? How many ticks to run?
-boolean TryRunTics(tic_t realtic);
+dboolean TryRunTics(tic_t realtic);
 
 // extra data for lmps
 // these functions scare me. they contain magic.
-/*boolean AddLmpExtradata(UINT8 **demo_p, INT32 playernum);
+/*dboolean AddLmpExtradata(UINT8 **demo_p, INT32 playernum);
 void ReadLmpExtraData(UINT8 **demo_pointer, INT32 playernum);*/
 
 // translate a playername in a player number return -1 if not found and
@@ -721,13 +721,13 @@ extern SINT8 joinnode;
 #define SERVMUS_1 "SRVMS1"
 #define SERVMUS_2 "SRVMS2"
 
-void ChangeServMusic(const char* musname, boolean fallback, boolean keepPos);
+void ChangeServMusic(const char* musname, dboolean fallback, dboolean keepPos);
 
 INT32 GetClientMode(void);
 void ChangeClientMode(INT32 mode);
 
 INT32 D_NumPlayers(void);
-boolean D_IsPlayerHumanAndGaming(INT32 player_number);
+dboolean D_IsPlayerHumanAndGaming(INT32 player_number);
 void D_ResetTiccmds(void);
 ticcmd_t *D_LocalTiccmd(UINT8 ss);
 
@@ -744,7 +744,7 @@ extern char *reqpass;
 extern char **adminpass;
 extern UINT32 adminpasscount;
 
-extern boolean hu_stopped;
+extern dboolean hu_stopped;
 
 //
 // SRB2Kart

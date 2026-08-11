@@ -145,10 +145,10 @@ void *Picture_PatchConvert(
 		if (Picture_IsDoomPatchFormat(informat))
 		{
 			softwarepatch_t *doompatch = (softwarepatch_t *)picture;
-			inwidth = SHORT(doompatch->width);
-			inheight = SHORT(doompatch->height);
-			inleftoffset = SHORT(doompatch->leftoffset);
-			intopoffset = SHORT(doompatch->topoffset);
+			inwidth = LSBF_SHORT(doompatch->width);
+			inheight = LSBF_SHORT(doompatch->height);
+			inleftoffset = LSBF_SHORT(doompatch->leftoffset);
+			intopoffset = LSBF_SHORT(doompatch->topoffset);
 		}
 		else
 		{
@@ -183,7 +183,7 @@ void *Picture_PatchConvert(
 		for (y = 0; y < inheight; y++)
 		{
 			void *input = NULL;
-			boolean opaque = false;
+			dboolean opaque = false;
 
 			// Read pixel
 			if (Picture_IsPatchFormat(informat))
@@ -424,8 +424,8 @@ void *Picture_FlatConvert(
 		if (Picture_IsDoomPatchFormat(informat))
 		{
 			softwarepatch_t *doompatch = ((softwarepatch_t *)picture);
-			inwidth = SHORT(doompatch->width);
-			inheight = SHORT(doompatch->height);
+			inwidth = LSBF_SHORT(doompatch->width);
+			inheight = LSBF_SHORT(doompatch->height);
 		}
 		else
 		{
@@ -541,19 +541,19 @@ void *Picture_GetPatchPixel(
 	column_t *column;
 	INT32 inbpp = Picture_FormatBPP(informat);
 	softwarepatch_t *doompatch = (softwarepatch_t *)patch;
-	boolean isdoompatch = Picture_IsDoomPatchFormat(informat);
+	dboolean isdoompatch = Picture_IsDoomPatchFormat(informat);
 	INT16 width;
 
 	if (patch == NULL)
 		I_Error("Picture_GetPatchPixel: patch == NULL");
 
-	width = (isdoompatch ? SHORT(doompatch->width) : patch->width);
+	width = (isdoompatch ? LSBF_SHORT(doompatch->width) : patch->width);
 
 	if (x >= 0 && x < width)
 	{
 		INT32 colx = (flags & PICFLAGS_XFLIP) ? (width-1)-x : x;
 		INT32 topdelta, prevdelta = -1;
-		INT32 colofs = (isdoompatch ? LONG(doompatch->columnofs[colx]) : patch->columnofs[colx]);
+		INT32 colofs = (isdoompatch ? LSBF_LONG(doompatch->columnofs[colx]) : patch->columnofs[colx]);
 
 		// Column offsets are pointers, so no casting is required.
 		if (isdoompatch)
@@ -640,7 +640,7 @@ INT32 Picture_FormatBPP(pictureformat_t format)
   * \param format Input picture format.
   * \return True if the picture format is a patch, false if not.
   */
-boolean Picture_IsPatchFormat(pictureformat_t format)
+dboolean Picture_IsPatchFormat(pictureformat_t format)
 {
 	return (Picture_IsInternalPatchFormat(format) || Picture_IsDoomPatchFormat(format));
 }
@@ -650,7 +650,7 @@ boolean Picture_IsPatchFormat(pictureformat_t format)
   * \param format Input picture format.
   * \return True if the picture format is an internal patch, false if not.
   */
-boolean Picture_IsInternalPatchFormat(pictureformat_t format)
+dboolean Picture_IsInternalPatchFormat(pictureformat_t format)
 {
 	switch (format)
 	{
@@ -668,7 +668,7 @@ boolean Picture_IsInternalPatchFormat(pictureformat_t format)
   * \param format Input picture format.
   * \return True if the picture format is a Doom patch, false if not.
   */
-boolean Picture_IsDoomPatchFormat(pictureformat_t format)
+dboolean Picture_IsDoomPatchFormat(pictureformat_t format)
 {
 	switch (format)
 	{
@@ -686,7 +686,7 @@ boolean Picture_IsDoomPatchFormat(pictureformat_t format)
   * \param format Input picture format.
   * \return True if the picture format is a flat, false if not.
   */
-boolean Picture_IsFlatFormat(pictureformat_t format)
+dboolean Picture_IsFlatFormat(pictureformat_t format)
 {
 	return (format == PICFMT_FLAT || format == PICFMT_FLAT16 || format == PICFMT_FLAT32);
 }
@@ -698,17 +698,17 @@ boolean Picture_IsFlatFormat(pictureformat_t format)
   * \param picture Input patch size.
   * \return True if the input patch is valid.
   */
-boolean Picture_CheckIfDoomPatch(softwarepatch_t *patch, size_t size)
+dboolean Picture_CheckIfDoomPatch(softwarepatch_t *patch, size_t size)
 {
 	INT16 width, height;
-	boolean result;
+	dboolean result;
 
 	// minimum length of a valid Doom patch
 	if (size < 13)
 		return false;
 
-	width = SHORT(patch->width);
-	height = SHORT(patch->height);
+	width = LSBF_SHORT(patch->width);
+	height = LSBF_SHORT(patch->height);
 	result = (height > 0 && height <= 16384 && width > 0 && width <= 16384);
 
 	if (result)
@@ -721,7 +721,7 @@ boolean Picture_CheckIfDoomPatch(softwarepatch_t *patch, size_t size)
 
 		for (x = 0; x < width; x++)
 		{
-			UINT32 ofs = LONG(patch->columnofs[x]);
+			UINT32 ofs = LSBF_LONG(patch->columnofs[x]);
 
 			// Need one byte for an empty column (but there's patches that don't know that!)
 			if (ofs < (UINT32)width * 4 + 8 || ofs >= (UINT32)size)
@@ -817,7 +817,7 @@ void *Picture_TextureToFlat(size_t trickytex)
   * \param s The lump size.
   * \return True if the lump is a PNG image.
   */
-boolean Picture_IsLumpPNG(const UINT8 *d, size_t s)
+dboolean Picture_IsLumpPNG(const UINT8 *d, size_t s)
 {
 	if (s < 67) // http://garethrees.org/2007/11/14/pngcrush/
 		return false;
@@ -889,7 +889,7 @@ static png_byte grAb_chunk[5] = {'g', 'r', 'A', 'b', (png_byte)'\0'};
 static png_bytep *PNG_Read(
 	const UINT8 *png,
 	INT32 *w, INT32 *h, INT16 *topoffset, INT16 *leftoffset,
-	boolean *use_palette, size_t size)
+	dboolean *use_palette, size_t size)
 {
 	png_structp png_ptr;
 	png_infop png_info_ptr;
@@ -967,7 +967,7 @@ static png_bytep *PNG_Read(
 		png_set_gray_to_rgb(png_ptr);
 	else if (color_type == PNG_COLOR_TYPE_PALETTE)
 	{
-		boolean usepal = false;
+		dboolean usepal = false;
 
 		// Lactozilla: Check if the PNG has a palette, and if its color count
 		// matches the color count of SRB2's palette: 256 colors.
@@ -997,7 +997,7 @@ static png_bytep *PNG_Read(
 		// color is present on the image, the palette flag is disabled.
 		if (usepal)
 		{
-			boolean valid = png_get_tRNS(png_ptr, png_info_ptr, &trans, &trans_num, &trans_values);
+			dboolean valid = png_get_tRNS(png_ptr, png_info_ptr, &trans, &trans_num, &trans_values);
 
 			if (valid && trans && trans_num > 0)
 			{
@@ -1089,7 +1089,7 @@ void *Picture_PNGConvert(
 	size_t flatsize;
 	png_uint_32 x, y;
 	png_bytep row;
-	boolean palette = false;
+	dboolean palette = false;
 	png_bytep *row_pointers = NULL;
 	png_uint_32 width, height;
 
@@ -1312,7 +1312,7 @@ void *Picture_PNGConvert(
   * \param size The input picture's size.
   * \return True if reading the file succeeded, false if it failed.
   */
-boolean Picture_PNGDimensions(UINT8 *png, INT32 *width, INT32 *height, INT16 *topoffset, INT16 *leftoffset, size_t size)
+dboolean Picture_PNGDimensions(UINT8 *png, INT32 *width, INT32 *height, INT16 *topoffset, INT16 *leftoffset, size_t size)
 {
 	png_structp png_ptr;
 	png_infop png_info_ptr;
@@ -1395,11 +1395,11 @@ boolean Picture_PNGDimensions(UINT8 *png, INT32 *width, INT32 *height, INT16 *to
 #endif
 
 struct ParseSpriteInfoState {
-	boolean spr2;
+	dboolean spr2;
 	spriteinfo_t *info;
 	spritenum_t sprnum;
 	playersprite_t spr2num;
-	boolean any;
+	dboolean any;
 	INT32 skinnumbers[MAXSKINS];
 	INT32 foundskins;
 };
@@ -1466,7 +1466,7 @@ static void copy_to_skin (struct ParseSpriteInfoState *parser, INT32 skinnum)
 	}
 }
 
-static boolean R_ParseSpriteInfoFrame(struct ParseSpriteInfoState *parser, boolean all)
+static dboolean R_ParseSpriteInfoFrame(struct ParseSpriteInfoState *parser, dboolean all)
 {
 	char *sprinfoToken;
 	size_t sprinfoTokenLength;
@@ -1593,7 +1593,7 @@ static boolean R_ParseSpriteInfoFrame(struct ParseSpriteInfoState *parser, boole
 			for (i = 0; i < numskins; i++)
 			{
 				// ignore v1 skins or else they will break
-				boolean compat = wadfiles[skins[i]->wadnum]->compatmode;
+				dboolean compat = wadfiles[skins[i]->wadnum]->compatmode;
 				if (!compat)
 				{
 					copy_to_skin(parser, i);
@@ -1633,7 +1633,7 @@ static boolean R_ParseSpriteInfoFrame(struct ParseSpriteInfoState *parser, boole
 //
 // Parse a SPRTINFO lump.
 //
-static boolean R_ParseSpriteInfo(boolean spr2)
+static dboolean R_ParseSpriteInfo(dboolean spr2)
 {
 	char *sprinfoToken;
 	size_t sprinfoTokenLength;
@@ -1728,7 +1728,7 @@ static boolean R_ParseSpriteInfo(boolean spr2)
 		return false;
 	}
 
-	boolean error = false;
+	dboolean error = false;
 
 	if (fastcmp(sprinfoToken,"{"))
 	{
@@ -1831,7 +1831,7 @@ void R_ParseSPRTINFOLump(UINT16 wadNum, UINT16 lumpNum)
 	sprinfoToken = M_GetToken(sprinfoText);
 	while (sprinfoToken != NULL)
 	{
-		boolean error = true;
+		dboolean error = true;
 
 		if (fasticmp(sprinfoToken, "SPRITE"))
 			error = !R_ParseSpriteInfo(false);

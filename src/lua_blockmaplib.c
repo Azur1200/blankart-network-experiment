@@ -37,7 +37,7 @@ static const char *const search_opt[] = {
 // 2 - stop search completely
 typedef UINT8 (*blockmap_func)(lua_State *, INT32, INT32, mobj_t *);
 
-static boolean blockfuncerror = false; // errors should only print once per search blockmap call
+static dboolean blockfuncerror = false; // errors should only print once per search blockmap call
 
 // Helper function for "objects" search
 static UINT8 lib_searchBlockmap_Objects(lua_State *L, INT32 x, INT32 y, mobj_t *thing)
@@ -67,7 +67,7 @@ static UINT8 lib_searchBlockmap_Objects(lua_State *L, INT32 x, INT32 y, mobj_t *
 		if (!lua_isnil(gL, -1))
 		{ // if nil, continue
 			P_SetTarget(&bnext, NULL);
-			if (lua_toboolean(gL, -1))
+			if (lua_todboolean(gL, -1))
 				return 2; // stop whole search
 			else
 				return 1; // stop block search
@@ -126,7 +126,7 @@ static UINT8 lib_searchBlockmap_Lines(lua_State *L, INT32 x, INT32 y, mobj_t *th
 				}
 				if (!lua_isnil(gL, -1))
 				{ // if nil, continue
-					if (lua_toboolean(gL, -1))
+					if (lua_todboolean(gL, -1))
 						return 2; // stop whole search
 					else
 						return 1; // stop block search
@@ -163,7 +163,7 @@ static UINT8 lib_searchBlockmap_Lines(lua_State *L, INT32 x, INT32 y, mobj_t *th
 		}
 		if (!lua_isnil(gL, -1))
 		{ // if nil, continue
-			if (lua_toboolean(gL, -1))
+			if (lua_todboolean(gL, -1))
 				return 2; // stop whole search
 			else
 				return 1; // stop block search
@@ -209,7 +209,7 @@ static UINT8 lib_searchBlockmap_PolyObjs(lua_State *L, INT32 x, INT32 y, mobj_t 
 			}
 			if (!lua_isnil(gL, -1))
 			{ // if nil, continue
-				if (lua_toboolean(gL, -1))
+				if (lua_todboolean(gL, -1))
 					return 2; // stop whole search
 				else
 					return 1; // stop block search
@@ -238,7 +238,7 @@ static int lib_searchBlockmap(lua_State *L)
 	mobj_t *mobj;
 	INT32 xl, xh, yl, yh, bx, by;
 	fixed_t x1, x2, y1, y2;
-	boolean retval = true;
+	dboolean retval = true;
 	UINT8 funcret = 0;
 	blockmap_func searchFunc;
 
@@ -301,18 +301,18 @@ static int lib_searchBlockmap(lua_State *L)
 			funcret = searchFunc(L, bx, by, mobj);
 			// return value of searchFunc determines searchFunc's return value and/or when to stop
 			if (funcret == 2){ // stop whole search
-				lua_pushboolean(L, false); // return false
+				lua_pushdboolean(L, false); // return false
 				return 1;
 			}
 			else if (funcret == 1) // search was interrupted for this block
 				retval = false; // this changes the return value, but doesn't stop the whole search
 			// else don't do anything, continue as normal
 			if (P_MobjWasRemoved(mobj)){ // ...unless the original object was removed
-				lua_pushboolean(L, false); // in which case we have to stop now regardless
+				lua_pushdboolean(L, false); // in which case we have to stop now regardless
 				return 1;
 			}
 		}
-	lua_pushboolean(L, retval);
+	lua_pushdboolean(L, retval);
 	return 1;
 }
 

@@ -45,15 +45,15 @@ extern INT16 shift_virtualKeyboard[5][NUMVIRTUALKEYSINROW];
 
 typedef struct menutyping_s
 {
-	boolean active;                         // Active
-	boolean menutypingclose;        // Closing
-	boolean keyboardtyping;         // If true, all keystrokes are treated as typing (ignores MBT_A etc). This is unset if you try moving the cursor on the virtual keyboard or use your controller
+	dboolean active;                         // Active
+	dboolean menutypingclose;        // Closing
+	dboolean keyboardtyping;         // If true, all keystrokes are treated as typing (ignores MBT_A etc). This is unset if you try moving the cursor on the virtual keyboard or use your controller
 	SINT8 menutypingfade;           // fade in and out
 
 	SINT8 keyboardx;
 	SINT8 keyboardy;
-	boolean keyboardcapslock;
-	boolean keyboardshift;
+	dboolean keyboardcapslock;
+	dboolean keyboardshift;
 
 	textinput_t *textinput;
 	menuitem_t *item;
@@ -94,7 +94,7 @@ typedef struct menucmd_s
 	UINT16 delay; // menu wait
 	UINT32 delayCount; // num times ya did menu wait (to make the wait shorter each time)
 
-	boolean wipebuffer; // Hold the last input sent.
+	dboolean wipebuffer; // Hold the last input sent.
 } menucmd_t;
 
 extern menucmd_t menucmd[MAXSPLITSCREENPLAYERS];
@@ -132,7 +132,7 @@ void M_SetMenuCurTitlePics(void);
 // Even when the menu is not displayed,
 // this can resize the view and change game parameters.
 // Does all the real work of the menu interaction.
-boolean M_Responder(event_t *ev);
+dboolean M_Responder(event_t *ev);
 
 menupanelinst_t *M_GetCurrentMenuPanelInst(void);
 menupaneldef_t *M_GetCurrentMenuPanelDef(menupanelinst_t *curpi);
@@ -140,19 +140,19 @@ menuitem_t *M_GetCurrentMenuItem(menupanelinst_t *curpi);
 void M_HandleMessageBox(INT32 thisMenuKey);
 void M_SetMenuDelay(UINT8 i);
 void M_HandleDpadEvent(event_t* ev);
-void M_UpdateMenuCMD(UINT8 i, boolean bailrequired);
-boolean M_MenuButtonPressed(UINT8 pid, UINT32 bt);
-boolean M_MenuButtonHeld(UINT8 pid, UINT32 bt);
+void M_UpdateMenuCMD(UINT8 i, dboolean bailrequired);
+dboolean M_MenuButtonPressed(UINT8 pid, UINT32 bt);
+dboolean M_MenuButtonHeld(UINT8 pid, UINT32 bt);
 sfxenum_t M_MenuTypingSounds(INT32 key);
 void M_MenuTypingInput(INT32 key);
-void M_SwitchVirtualKeyboard(boolean gamepad);
+void M_SwitchVirtualKeyboard(dboolean gamepad);
 void M_AbortVirtualKeyboard(void);
 void M_OpenVirtualKeyboard(textinput_t *textinput, char *buffer, menuitem_t *item);
 
 void M_DoItemRoutine(menuitem_t *item, INT32 thisMenuKey);
 
 // Called by main loop, runs for demo playback. If this returns true, nullify any further user input.
-boolean M_DemoResponder(event_t *ev);
+dboolean M_DemoResponder(event_t *ev);
 
 // Called by main loop, only used for menu (skull cursor) animation.
 void M_Ticker(void);
@@ -196,7 +196,7 @@ typedef union
 
 typedef struct
 {
-	boolean active;
+	dboolean active;
 	char *headertext;
 	char *text;
 	char *confirmtext;
@@ -222,11 +222,11 @@ extern messagebox_t messageboxqueue[NUMMENULEVELS];
 #define MB_HANDLER(func) (messagebox_callback){.handler = func}
 #define MB_NONE (messagebox_callback){0}
 
-const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback, boolean forcekeyboard);
-char *M_MessageConfirmText(boolean gamequit, boolean forcekeyboard);
-char *M_MessageCancelText(boolean gamequit, boolean forcekeyboard);
+const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback, dboolean forcekeyboard);
+char *M_MessageConfirmText(dboolean gamequit, dboolean forcekeyboard);
+char *M_MessageCancelText(dboolean gamequit, dboolean forcekeyboard);
 
-void M_MessageboxClose(boolean clearstack);
+void M_MessageboxClose(dboolean clearstack);
 
 //#define M_StartMessage(string, routine, itemtype) M_StartMessage2(NULL, string, ROUTINECAST(routine), itemtype, NULL, NULL)
 void M_StartMessage2(const char *headerstr, const char *str, messagebox_callback callback,
@@ -257,7 +257,7 @@ typedef enum
 void M_QuitResponse(INT32 ch);
 
 // Determines whether to show a level in the list (platter version does not need to be exposed)
-boolean M_CanShowLevelInList(mapnum_t mapnum);
+dboolean M_CanShowLevelInList(mapnum_t mapnum);
 
 typedef enum
 {
@@ -324,10 +324,10 @@ struct menuitempart_t
 	itempartsource_e source, source2;
 
 	UINT8 font;
-	boolean fontalt; // V_6WIDTHSPACE
-	boolean small;
-	boolean translucent;
-	boolean nohighlight;
+	dboolean fontalt; // V_6WIDTHSPACE
+	dboolean small;
+	dboolean translucent;
+	dboolean nohighlight;
 	fixed_t xofs, yofs;
 	char *fixedstring, *fixedstring2;
 };
@@ -337,7 +337,7 @@ struct menuitemstyle_t
 	dehinfo_t info;
 	size_t parent;
 	menuitempart_t parts[MAXMENUITEMPARTS];
-	boolean partenabled[MAXMENUITEMPARTS];
+	dboolean partenabled[MAXMENUITEMPARTS];
 };
 
 struct menuitem_t
@@ -366,16 +366,16 @@ struct menupaneldef_t
 	UINT16         numitems;           // # of menu items
 	menuitem_t   *items;              // menu items
 	menudrawer_f *drawroutine;        // draw routine
-	boolean       scrollbar;          // draw scrollbar
+	dboolean       scrollbar;          // draw scrollbar
 	INT16         scrollheight;       // height of scrolling area
 	INT16         cursoroffset;       // X offset of cursor
 	INT16         lineheight;         // default Y offset to add for each item
 	menufunc_f   *keyhandler;         // called before key press is processed
 	panelfunc_f  *initializer;        // called when panel instance is setup
 	panelfunc_f  *tickroutine;        // called when panel is active
-	boolean multinav;                 // navigation in two dimensions!? (disables cvar arrows)
+	dboolean multinav;                 // navigation in two dimensions!? (disables cvar arrows)
 	INT32 navitemcount;               // items per column (or row if horizontal is true)
-	boolean horizontal;               // navigate with left/right instead of up/down
+	dboolean horizontal;               // navigate with left/right instead of up/down
 };
 
 struct menupanelinst_t
@@ -389,13 +389,13 @@ struct menupanelinst_t
 	menuitem_t *items;
 	UINT16 itemon; // currently selected item, OR last selected item for menudef panels
 	INT32 vflags;
-	boolean visible;
+	dboolean visible;
 	INT32 navitemcount;
-	boolean disabled; // can't be selected
-	boolean altscroll; // viewserver hell (list scrolling, usually paired with disabled = true)
+	dboolean disabled; // can't be selected
+	dboolean altscroll; // viewserver hell (list scrolling, usually paired with disabled = true)
 	INT32 layer; // higher number draws on top
-	boolean cliprect; // Clips everything contained inside it
-	boolean cliprect_relative; // use the x and y position of the panel for the cliprect
+	dboolean cliprect; // Clips everything contained inside it
+	dboolean cliprect_relative; // use the x and y position of the panel for the cliprect
 	fixed_t cliprect_x, cliprect_y; // X and Y of a cliprect when not relative
 	fixed_t cliprect_width, cliprect_height; // Width and Height of added cliprect
 };
@@ -415,8 +415,8 @@ struct menu_t
 	INT32 bgcolor; // fill color, overrides bg name. -1 means follow bg name rules.
 	INT32 titlescrollxspeed; // background gfx scroll per menu; inherits global setting
 	INT32 titlescrollyspeed; // y scroll
-	boolean bghide; // for titlemaps, hide the background.
-	boolean vhs; // Do the VHS effect.
+	dboolean bghide; // for titlemaps, hide the background.
+	dboolean vhs; // Do the VHS effect.
 
 	SINT8 hidetitlepics; // hide title gfx per menu; -1 means undefined, inherits global setting
 	ttmode_enum ttmode; // title wing animation mode; default TTMODE_KART
@@ -429,18 +429,18 @@ struct menu_t
 
 	char musname[7]; ///< Music track to play. "" for no music.
 	UINT16 mustrack; ///< Subsong to play. Only really relevant for music modules and specific formats supported by GME. 0 to ignore.
-	boolean muslooping; ///< Loop the music
-	boolean musstop; ///< Don't play any music
-	boolean musignore; ///< Let the current music keep playing
+	dboolean muslooping; ///< Loop the music
+	dboolean musstop; ///< Don't play any music
+	dboolean musignore; ///< Let the current music keep playing
 
 	// Music credit shit.
-	boolean muscreditshow;
+	dboolean muscreditshow;
 	fixed_t muscredity;
 	UINT16 muscreditanimtime;
 	INT32 muscreditsnapflags;
 
-	boolean enterbubble; // run all entrance line execs after common ancestor and up to child. If false, only run the child's exec
-	boolean exitbubble; // run all exit line execs from child and up to before common ancestor. If false, only run the child's exec
+	dboolean enterbubble; // run all entrance line execs after common ancestor and up to child. If false, only run the child's exec
+	dboolean exitbubble; // run all exit line execs from child and up to before common ancestor. If false, only run the child's exec
 	INT32 entertag; // line exec to run on menu enter, if titlemap
 	INT32 exittag; // line exec to run on menu exit, if titlemap
 	INT16 enterwipe; // wipe type to run on menu enter, -1 means default
@@ -458,15 +458,15 @@ extern size_t nummenupanels;
 extern menuitemstyle_t menuitemstyles[MAXMENUITEMSTYLES];
 extern size_t nummenuitemstyles;
 
-void M_EnterMenu(menutype_t menu, boolean callexit, INT32 arg);
+void M_EnterMenu(menutype_t menu, dboolean callexit, INT32 arg);
 void M_ExitMenu(void);
-void M_ClearMenusEx(boolean callexitmenufunc, boolean notitle);
+void M_ClearMenusEx(dboolean callexitmenufunc, dboolean notitle);
 #define M_ClearMenus(callexitmenufunc) M_ClearMenusEx(callexitmenufunc, false)
 /*FNONULL*/ menupaneldef_t *M_AllocateMenuPanelDef(const char *name);
 /*RNONULL INONULL1(1)*/ menuitemstyle_t *M_AllocateMenuItemStyle(const char *name, const menuitemstyle_t *parent);
 /*ANONULL*/ menuitem_t *M_CheckMenuItemDef(const menupaneldef_t *pd, const char *name);
 /*FNONULL*/ menuitem_t *M_GetMenuItemDef(const menupaneldef_t *pd, const char *name);
-void M_RestoreMenuStack(boolean backup);
+void M_RestoreMenuStack(dboolean backup);
 
 panelfunc_f
 MP_SinglePlayerMain, MP_Options, MP_GameOptions, MP_SetupControls, MP_CameraSetup,
@@ -596,9 +596,9 @@ void MP_TickReplayHutDemoTitle(menupanelinst_t *pi);
 void MP_TickOptions(menupanelinst_t *pi);
 
 // Maybe this goes here????? Who knows.
-boolean M_MouseNeeded(void);
+dboolean M_MouseNeeded(void);
 
-boolean M_AttackOnStack(void);
+dboolean M_AttackOnStack(void);
 void M_ReturnToConnectMenu(void);
 
 #ifdef HAVE_THREADS

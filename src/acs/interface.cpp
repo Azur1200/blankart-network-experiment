@@ -416,11 +416,11 @@ static std::vector<ACSVM::Word> ACS_MixArgs(tcb::span<const INT32> args, tcb::sp
 }
 
 /*--------------------------------------------------
-	boolean ACS_Execute(const char *name, const INT32 *args, size_t numArgs, const char *const *stringArgs, size_t numStringArgs, activator_t *activator)
+	dboolean ACS_Execute(const char *name, const INT32 *args, size_t numArgs, const char *const *stringArgs, size_t numStringArgs, activator_t *activator)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean ACS_Execute(const char *name, const INT32 *args, size_t numArgs, const char *const *stringArgs, size_t numStringArgs, activator_t *activator)
+dboolean ACS_Execute(const char *name, const INT32 *args, size_t numArgs, const char *const *stringArgs, size_t numStringArgs, activator_t *activator)
 {
 	Environment *env = &ACSEnv;
 
@@ -437,11 +437,11 @@ boolean ACS_Execute(const char *name, const INT32 *args, size_t numArgs, const c
 }
 
 /*--------------------------------------------------
-	boolean ACS_ExecuteAlways(const char *name, const INT32 *args, size_t numArgs, const char *const *stringArgs, size_t numStringArgs, activator_t *activator)
+	dboolean ACS_ExecuteAlways(const char *name, const INT32 *args, size_t numArgs, const char *const *stringArgs, size_t numStringArgs, activator_t *activator)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean ACS_ExecuteAlways(const char *name, const INT32 *args, size_t numArgs, const char *const *stringArgs, size_t numStringArgs, activator_t *activator)
+dboolean ACS_ExecuteAlways(const char *name, const INT32 *args, size_t numArgs, const char *const *stringArgs, size_t numStringArgs, activator_t *activator)
 {
 	Environment *env = &ACSEnv;
 
@@ -458,11 +458,11 @@ boolean ACS_ExecuteAlways(const char *name, const INT32 *args, size_t numArgs, c
 }
 
 /*--------------------------------------------------
-	boolean ACS_ExecuteResult(const char *name, const INT32 *args, size_t numArgs, activator_t *activator)
+	dboolean ACS_ExecuteResult(const char *name, const INT32 *args, size_t numArgs, activator_t *activator)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean ACS_ExecuteResult(const char *name, const INT32 *args, size_t numArgs, activator_t *activator)
+dboolean ACS_ExecuteResult(const char *name, const INT32 *args, size_t numArgs, activator_t *activator)
 {
 	Environment *env = &ACSEnv;
 
@@ -477,11 +477,11 @@ boolean ACS_ExecuteResult(const char *name, const INT32 *args, size_t numArgs, a
 }
 
 /*--------------------------------------------------
-	boolean ACS_Suspend(const char *name)
+	dboolean ACS_Suspend(const char *name)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean ACS_Suspend(const char *name)
+dboolean ACS_Suspend(const char *name)
 {
 	Environment *env = &ACSEnv;
 
@@ -495,11 +495,11 @@ boolean ACS_Suspend(const char *name)
 }
 
 /*--------------------------------------------------
-	boolean ACS_Terminate(const char *name)
+	dboolean ACS_Terminate(const char *name)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean ACS_Terminate(const char *name)
+dboolean ACS_Terminate(const char *name)
 {
 	Environment *env = &ACSEnv;
 
@@ -523,7 +523,7 @@ void ACS_Archive(savebuffer_t *save)
 
 	SaveBuffer buffer{save};
 	std::ostream stream{&buffer};
-	ACSVM::Serial serial{stream};
+	ACSVM::SerialSTD serial{stream};
 
 #if 0
 	// Enable debug signatures.
@@ -553,7 +553,7 @@ void ACS_UnArchive(savebuffer_t *save)
 
 	SaveBuffer buffer{save};
 	std::istream stream{&buffer};
-	ACSVM::Serial serial{stream};
+	ACSVM::SerialSTD serial{stream};
 
 	try
 	{

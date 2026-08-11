@@ -523,7 +523,7 @@ static int player_get(lua_State *L)
 	{
 		if (field == player_valid)
 		{
-			lua_pushboolean(L, false);
+			lua_pushdboolean(L, false);
 			return 1;
 		}
 		return LUA_ErrInvalid(L, "player_t");
@@ -536,7 +536,7 @@ static int player_get(lua_State *L)
 	switch (field)
 	{
 	case player_valid:
-		lua_pushboolean(L, true);
+		lua_pushdboolean(L, true);
 		break;
 	case player_name:
 		lua_pushstring(L, player_names[plr-players]);
@@ -697,7 +697,7 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->crash_reorient_start);
 		break;
 	case player_crash_bumpme:
-		lua_pushboolean(L, plr->crash_bumpme);
+		lua_pushdboolean(L, plr->crash_bumpme);
 		break;
 	case player_instashield:
 		lua_pushinteger(L, plr->instashield);
@@ -994,7 +994,7 @@ static int player_get(lua_State *L)
 		LUA_PushUserdata(L, plr->arrowbullet, META_MOBJ);
 		break;
 	case player_inarrowbullet:
-		lua_pushboolean(L, plr->inarrowbullet);
+		lua_pushdboolean(L, plr->inarrowbullet);
 		break;
 	case player_rocketsneakertimer:
 		lua_pushinteger(L, plr->rocketsneakertimer);
@@ -1016,7 +1016,7 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->smonitorcancel);
 		break;
 	case player_smonitorwarning:
-		lua_pushboolean(L, (boolean)plr->smonitorwarning);
+		lua_pushdboolean(L, (dboolean)plr->smonitorwarning);
 		break;
 	case player_eggmanexplode:
 		lua_pushinteger(L, plr->eggmanexplode);
@@ -1123,7 +1123,7 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->followerskin);
 		break;
 	case player_followerready:
-		lua_pushboolean(L, plr->followerready);
+		lua_pushdboolean(L, plr->followerready);
 		break;
 	case player_followercolor:
 		lua_pushinteger(L, plr->followercolor);
@@ -1213,7 +1213,7 @@ static int player_get(lua_State *L)
 		lua_pushangle(L, plr->starpostangle);
 		break;
 	case player_starpostflip:
-		lua_pushboolean(L, plr->starpostflip);
+		lua_pushdboolean(L, plr->starpostflip);
 		break;
 	case player_starpostnum:
 		lua_pushinteger(L, plr->starpostnum);
@@ -1240,13 +1240,13 @@ static int player_get(lua_State *L)
 		lua_pushangle(L, plr->awayviewaiming);
 		break;
 	case player_spectator:
-		lua_pushboolean(L, plr->spectator);
+		lua_pushdboolean(L, plr->spectator);
 		break;
 	case player_spectatewait:
 		lua_pushinteger(L, plr->spectatewait);
 		break;
 	case player_bot:
-		lua_pushboolean(L, plr->bot);
+		lua_pushdboolean(L, plr->bot);
 		break;
 	case player_botvars:
 		LUA_PushUserdata(L, &plr->botvars, META_BOTVARS);
@@ -1291,10 +1291,10 @@ static int player_get(lua_State *L)
 		LUA_PushUserdata(L, &plr->loop, META_SONICLOOPVARS);
 		break;
 	case player_prevonground:
-		lua_pushboolean(L, plr->prevonground);
+		lua_pushdboolean(L, plr->prevonground);
 		break;
 	case player_walltransfered:
-		lua_pushboolean(L, plr->walltransfered);
+		lua_pushdboolean(L, plr->walltransfered);
 		break;
 	case player_walltransferboost:
 		lua_pushinteger(L, plr->walltransferboost);
@@ -1581,7 +1581,7 @@ static int player_set(lua_State *L)
 		plr->crash_reorient_start = luaL_checkinteger(L, 3);
 		break;
 	case player_crash_bumpme:
-		plr->crash_bumpme = luaL_checkboolean(L, 3);
+		plr->crash_bumpme = luaL_checkdboolean(L, 3);
 		break;
 	case player_instashield:
 		plr->instashield = luaL_checkinteger(L, 3);
@@ -1720,11 +1720,18 @@ static int player_set(lua_State *L)
 		break;
 	case player_itemroulette:
 		{
-			if (plr->itemroulette == 0 && lua_compatmode)
+			if (plr->itemroulette == 0)
 			{
 				K_StartRoulette(plr, KROULETTETYPE_NORMAL);
+				if (plr->itemroulette)
+				{
+					plr->itemroulette = luaL_checkinteger(L, 3);
+				}
 			}
-			plr->itemroulette = luaL_checkinteger(L, 3);
+			else
+			{
+				plr->itemroulette = luaL_checkinteger(L, 3);
+			}
 		}
 		break;
 	case player_previtemroulette:
@@ -1884,7 +1891,7 @@ static int player_set(lua_State *L)
 	case player_arrowbullet:
 		return NOSET;
 	case player_inarrowbullet:
-		plr->inarrowbullet = luaL_checkboolean(L, 3);
+		plr->inarrowbullet = luaL_checkdboolean(L, 3);
 		break;
 	case player_rocketsneakertimer:
 		plr->rocketsneakertimer = luaL_checkinteger(L, 3);
@@ -1908,7 +1915,7 @@ static int player_set(lua_State *L)
 		plr->smonitorcancel = (INT16)luaL_checkinteger(L, 3);
 		break;
 	case player_smonitorwarning:
-		plr->smonitorwarning = (UINT8)luaL_checkboolean(L, 3);
+		plr->smonitorwarning = (UINT8)luaL_checkdboolean(L, 3);
 		break;
 	case player_eggmanexplode:
 		plr->eggmanexplode = luaL_checkinteger(L, 3);
@@ -1977,7 +1984,7 @@ static int player_set(lua_State *L)
 		plr->followercolor = luaL_checkinteger(L, 3);
 		break;
 	case player_followerready:
-		plr->followerready = luaL_checkboolean(L, 3);
+		plr->followerready = luaL_checkdboolean(L, 3);
 		break;
 	case player_follower:	// it's probably best we don't allow the follower mobj to change.
 		return NOSET;
@@ -2073,7 +2080,7 @@ static int player_set(lua_State *L)
 		plr->starpostangle = luaL_checkangle(L, 3);
 		break;
 	case player_starpostflip:
-		plr->starpostflip = luaL_checkboolean(L, 3);
+		plr->starpostflip = luaL_checkdboolean(L, 3);
 		break;
 	case player_starpostnum:
 		plr->starpostnum = (INT32)luaL_checkinteger(L, 3);
@@ -2109,7 +2116,7 @@ static int player_set(lua_State *L)
 		plr->awayviewaiming = luaL_checkangle(L, 3);
 		break;
 	case player_spectator:
-		plr->spectator = lua_toboolean(L, 3);
+		plr->spectator = lua_todboolean(L, 3);
 		break;
 	case player_spectatewait:
 		plr->spectatewait = luaL_checkinteger(L, 3);
@@ -2152,7 +2159,7 @@ static int player_set(lua_State *L)
 	case player_prevonground:
 		return NOSET;
 	case player_walltransfered:
-		plr->walltransfered = lua_toboolean(L, 3);
+		plr->walltransfered = lua_todboolean(L, 3);
 		break;
 	case player_walltransferboost:
 		plr->walltransferboost = lua_tointeger(L, 3);
@@ -2576,241 +2583,264 @@ static int kartstuff_set(lua_State *L)
 		case k_nextcheck:
 			plr->nextcheck = i;
 			break;
-			/*case k_waypoint:
-			 *	lua_pushinteger(L, plr->waypoint);
-			 *	break;*/
-			/*case k_starpostwp:
-			 *	lua_pushinteger(L, plr->starpostwp);
-			 *	break;*/
-			case k_starpostflip:
-				plr->starpostflip = i;
-				break;
-			case k_respawn:
-				plr->respawn = i;
-				break;
-			case k_dropdash:
-				plr->dropdash = i;
-				break;
-			case k_throwdir:
-				plr->throwdir = i;
-				break;
+		/*case k_waypoint:
+		 *	lua_pushinteger(L, plr->waypoint);
+		 *	break;*/
+		/*case k_starpostwp:
+		 *	lua_pushinteger(L, plr->starpostwp);
+		 *	break;*/
+		case k_starpostflip:
+			plr->starpostflip = i;
+			break;
+		case k_respawn:
+			plr->respawn = i;
+			break;
+		case k_dropdash:
+			plr->dropdash = i;
+			break;
+		case k_throwdir:
+			plr->throwdir = i;
+			break;
 
-			case k_lapanimation:
-				plr->karthud[khud_lapanimation] = i;
-				break;
-			case k_laphand:
-				plr->karthud[khud_laphand] = i;
-				break;
-			case k_cardanimation:
-				plr->karthud[khud_cardanimation] = i;
-				break;
-			case k_voices:
-				plr->karthud[khud_voices] = i;
-				break;
-			case k_tauntvoices:
-				plr->karthud[khud_tauntvoices] = i;
-				break;
-			case k_instashield:
-				plr->instashield = i;
-				break;
-			case k_enginesnd:
-				plr->karthud[khud_enginesnd] = i;
-				break;
+		case k_lapanimation:
+			plr->karthud[khud_lapanimation] = i;
+			break;
+		case k_laphand:
+			plr->karthud[khud_laphand] = i;
+			break;
+		case k_cardanimation:
+			plr->karthud[khud_cardanimation] = i;
+			break;
+		case k_voices:
+			plr->karthud[khud_voices] = i;
+			break;
+		case k_tauntvoices:
+			plr->karthud[khud_tauntvoices] = i;
+			break;
+		case k_instashield:
+			plr->instashield = i;
+			break;
+		case k_enginesnd:
+			plr->karthud[khud_enginesnd] = i;
+			break;
 
-			case k_floorboost:
-				plr->floorboost = i;
-				break;
-			case k_spinouttype:
-				plr->spinouttype = i;
-				break;
-			case k_drift:
-				plr->drift = i;
-				break;
-			case k_driftend:
-				if (i > 0)
-					plr->pflags |= PF_DRIFTEND;
-				break;
-			case k_driftcharge:
-				plr->driftcharge  = i;
-				break;
-			case k_driftboost:
-				plr->driftboost = CLAMP(i, 0, UINT8_MAX);
-				break;
-			case k_boostcharge:
-				plr->boostcharge = i;
-				break;
-			case k_startboost:
-				plr->startboost = CLAMP(i, 0, UINT8_MAX);
-				break;
-			/*case k_jmp:
-				plr->pflags |= PF_DRIFTINPUT;
-				return 1;*/
-			case k_offroad:
-				plr->offroad = i;
-				break;
-			case k_pogospring:
-				plr->pogospring = i;
-				break;
-			case k_brakestop:
-				plr->brakestop = i;
-				break;
-			case k_waterskip:
-				plr->waterskip = i;
-				break;
-			case k_dashpadcooldown:
-				plr->dashpadcooldown = i;
-				break;
-			case k_boostpower:
-				plr->boostpower = i;
-				break;
-			case k_speedboost:
-				plr->speedboost = i;
-				break;
-			case k_accelboost:
-				plr->accelboost = i;
-				break;
-			case k_boostangle:
-				plr->boostangle = i;
-				break;
-			case k_boostcam:
-				plr->karthud[khud_boostcam] = i;
-				break;
-			case k_destboostcam:
-				plr->karthud[khud_destboostcam] = i;
-				break;
-			case k_timeovercam:
-				plr->karthud[khud_timeovercam] = i;
-				break;
-			case k_aizdriftstrat:
-				plr->aizdriftstrat = i;
-				break;
-			case k_brakedrift:
-				if (i > 0)
-					plr->pflags |= PF_BRAKEDRIFT;
-				break;
-			case k_itemroulette:
-				plr->itemroulette = i;
-				break;
-			case k_roulettetype:
-				plr->roulettetype = i;
-				break;
-			case k_itemtype:
-				plr->itemtype = i;
-				break;
-			case k_itemamount:
-				plr->itemamount = i;
-				break;
-			case k_itemheld:
-				if (i > 0)
-					plr->itemflags |= IF_ITEMOUT;
-				break;
-			case k_curshield:
-				// i have no clue where you'd find a script that sets k_curshield, but... this will do?
-				if (!P_MobjWasRemoved(plr->shieldtracer) && K_GetShieldFromPlayer(plr) != i)
-					P_RemoveMobj(plr->shieldtracer);
-				break;
-			case k_hyudorotimer:
-				plr->hyudorotimer = i;
-				break;
-			case k_stealingtimer:
-				plr->stealingtimer = i;
-				break;
-			case k_stolentimer:
-				plr->stolentimer = i;
-				break;
-			case k_sneakertimer:
-				plr->sneakertimer = CLAMP(i, 0, UINT16_MAX);
-				break;
-			case k_growshrinktimer:
-				plr->growshrinktimer = CLAMP(i, INT16_MIN, INT16_MAX);
-				break;
-			case k_squishedtimer:
+		case k_floorboost:
+			plr->floorboost = i;
+			break;
+		case k_spinouttype:
+			plr->spinouttype = i;
+			break;
+		case k_drift:
+			plr->drift = i;
+			break;
+		case k_driftend:
+			if (i > 0)
+				plr->pflags |= PF_DRIFTEND;
+			else if (i == 0)
+				plr->pflags &= ~PF_DRIFTEND;
+			break;
+		case k_driftcharge:
+			plr->driftcharge  = i;
+			break;
+		case k_driftboost:
+			plr->driftboost = CLAMP(i, 0, UINT8_MAX);
+			break;
+		case k_boostcharge:
+			plr->boostcharge = i;
+			break;
+		case k_startboost:
+			plr->startboost = CLAMP(i, 0, UINT8_MAX);
+			break;
+		/*case k_jmp:
+			plr->pflags |= PF_DRIFTINPUT;
+			return 1;*/
+		case k_offroad:
+			plr->offroad = i;
+			break;
+		case k_pogospring:
+			plr->pogospring = i;
+			break;
+		case k_brakestop:
+			plr->brakestop = i;
+			break;
+		case k_waterskip:
+			plr->waterskip = i;
+			break;
+		case k_dashpadcooldown:
+			plr->dashpadcooldown = i;
+			break;
+		case k_boostpower:
+			plr->boostpower = i;
+			break;
+		case k_speedboost:
+			plr->speedboost = i;
+			break;
+		case k_accelboost:
+			plr->accelboost = i;
+			break;
+		case k_boostangle:
+			plr->boostangle = i;
+			break;
+		case k_boostcam:
+			plr->karthud[khud_boostcam] = i;
+			break;
+		case k_destboostcam:
+			plr->karthud[khud_destboostcam] = i;
+			break;
+		case k_timeovercam:
+			plr->karthud[khud_timeovercam] = i;
+			break;
+		case k_aizdriftstrat:
+			plr->aizdriftstrat = i;
+			break;
+		case k_brakedrift:
+			if (i > 0)
+				plr->pflags |= PF_BRAKEDRIFT;
+			else if (i == 0)
+				plr->pflags &= ~PF_BRAKEDRIFT;
+			break;
+		case k_itemroulette:
 			{
-				// Unsquish for the ease of Lua programmers
-				if (i == 0)
-					plr->mo->spriteyscale = FRACUNIT;
-
-				plr->squishedtimer = CLAMP(i, INT16_MIN, INT16_MAX);
-				break;
+				if (plr->itemroulette == 0)
+				{
+					K_StartRoulette(plr, KROULETTETYPE_NORMAL);
+					if (plr->itemroulette)
+					{
+						plr->itemroulette = i;
+					}
+				}
+				else
+				{
+					plr->itemroulette = i;
+				}
 			}
-			case k_rocketsneakertimer:
-				plr->rocketsneakertimer = CLAMP(i, 0, UINT16_MAX);
-				break;
-			case k_invincibilitytimer:
-				plr->invincibilitytimer = CLAMP(i, 0, UINT16_MAX);
-				break;
-			case k_eggmanheld:
-				if (i > 0)
-					plr->itemflags |= IF_EGGMANOUT;
-				break;
-			case k_eggmanexplode:
-				plr->eggmanexplode = CLAMP(i, 0, UINT8_MAX);
-				break;
-			case k_eggmanblame:
-				plr->eggmanblame = i;
-				break;
-			case k_lastjawztarget:
-				plr->lastitemtarget = i;
-				break;
-			case k_bananadrag:
-				plr->bananadrag = CLAMP(i, 0, UINT16_MAX);
-				break;
-			case k_spinouttimer:
-				plr->spinouttimer = CLAMP(i, 0, UINT16_MAX);
-				break;
-			case k_wipeoutslow:
-				plr->wipeoutslow = CLAMP(i, 0, UINT8_MAX);
-				break;
-			case k_justbumped:
-				plr->justbumped = i;
-				break;
-			case k_comebacktimer:
-				plr->karmadelay = i;
-				break;
-			case k_sadtimer:
-				plr->sadtimer = i;
-				break;
+			break;
+		case k_roulettetype:
+			plr->roulettetype = i;
+			break;
+		case k_itemtype:
+			plr->itemtype = i;
+			break;
+		case k_itemamount:
+			plr->itemamount = i;
+			break;
+		case k_itemheld:
+			if (i > 0)
+				plr->itemflags |= IF_ITEMOUT;
+			else if (i == 0)
+				plr->itemflags &= ~IF_ITEMOUT;
+			break;
+		case k_curshield:
+			// i have no clue where you'd find a script that sets k_curshield, but... this will do?
+			if (!P_MobjWasRemoved(plr->shieldtracer) && K_GetShieldFromPlayer(plr) != i)
+				P_RemoveMobj(plr->shieldtracer);
+			break;
+		case k_hyudorotimer:
+			plr->hyudorotimer = i;
+			break;
+		case k_stealingtimer:
+			plr->stealingtimer = i;
+			break;
+		case k_stolentimer:
+			plr->stolentimer = i;
+			break;
+		case k_sneakertimer:
+			plr->sneakertimer = CLAMP(i, 0, UINT16_MAX);
+			break;
+		case k_growshrinktimer:
+			plr->growshrinktimer = CLAMP(i, INT16_MIN, INT16_MAX);
+			break;
+		case k_squishedtimer:
+		{
+			// Unsquish for the ease of Lua programmers
+			if (i == 0)
+				plr->mo->spriteyscale = FRACUNIT;
 
-				// Battle Mode vars
-			case k_bumper:
-				plr->bumper = i;
-				break;
-			case k_comebackpoints:
-				plr->karmapoints = i;
-				break;
-			case k_comebackmode:
-				plr->karmamode = i;
-				break;
-			case k_wanted:
-				plr->wanted = i;
-				break;
-			case k_yougotem:
-				plr->karthud[khud_yougotem] = i;
-				break;
+			plr->squishedtimer = CLAMP(i, INT16_MIN, INT16_MAX);
+			break;
+		}
+		case k_rocketsneakertimer:
+			plr->rocketsneakertimer = CLAMP(i, 0, UINT16_MAX);
+			break;
+		case k_invincibilitytimer:
+			plr->invincibilitytimer = CLAMP(i, 0, UINT16_MAX);
+			break;
+		case k_eggmanheld:
+			if (i > 0)
+				plr->itemflags |= IF_EGGMANOUT;
+			else if (i == 0)
+				plr->itemflags &= ~IF_EGGMANOUT;
+			break;
+		case k_eggmanexplode:
+			plr->eggmanexplode = CLAMP(i, 0, UINT8_MAX);
+			break;
+		case k_eggmanblame:
+			plr->eggmanblame = i;
+			break;
+		case k_lastjawztarget:
+			plr->lastitemtarget = i;
+			break;
+		case k_bananadrag:
+			plr->bananadrag = CLAMP(i, 0, UINT16_MAX);
+			break;
+		case k_spinouttimer:
+			plr->spinouttimer = CLAMP(i, 0, UINT16_MAX);
+			break;
+		case k_wipeoutslow:
+			plr->wipeoutslow = CLAMP(i, 0, UINT8_MAX);
+			break;
+		case k_justbumped:
+			plr->justbumped = i;
+			break;
+		case k_comebacktimer:
+			plr->karmadelay = i;
+			break;
+		case k_sadtimer:
+			plr->sadtimer = i;
+			break;
 
-				// v1.0.2+ vars
-			case k_itemblink:
-				plr->itemblink = i;
-				break;
-			case k_itemblinkmode:
-				plr->itemblinkmode = i;
-				break;
-			case k_getsparks:
-				if (i > 0)
-					plr->pflags |= PF_GETSPARKS;
-				break;
-			case k_jawztargetdelay:
-				plr->itemtargetdelay = i;
-				break;
-			case k_spectatewait:
-				plr->spectatewait = i;
-				break;
-			case k_growcancel:
-				plr->growcancel = i;
-				break;
-			default:
-				kartstuff[ks] = i;
-				break;
+			// Battle Mode vars
+		case k_bumper:
+			plr->bumper = i;
+			break;
+		case k_comebackpoints:
+			plr->karmapoints = i;
+			break;
+		case k_comebackmode:
+			plr->karmamode = i;
+			break;
+		case k_wanted:
+			plr->wanted = i;
+			break;
+		case k_yougotem:
+			plr->karthud[khud_yougotem] = i;
+			break;
+
+			// v1.0.2+ vars
+		case k_itemblink:
+			plr->itemblink = i;
+			break;
+		case k_itemblinkmode:
+			plr->itemblinkmode = i;
+			break;
+		case k_getsparks:
+			if (i > 0)
+				plr->pflags |= PF_GETSPARKS;
+			else if (i == 0)
+				plr->pflags &= ~PF_GETSPARKS;
+			break;
+		case k_jawztargetdelay:
+			plr->itemtargetdelay = i;
+			break;
+		case k_spectatewait:
+			plr->spectatewait = i;
+			break;
+		case k_growcancel:
+			plr->growcancel = i;
+			break;
+		default:
+			kartstuff[ks] = i;
+			break;
 	}
 
 	return 0;
@@ -3074,7 +3104,7 @@ static int sonicloopvars_get(lua_State *L)
 		lua_pushfixed(L, sonicloopvars->shift.y);
 		break;
 	case sonicloopvars_flip:
-		lua_pushboolean(L, sonicloopvars->flip);
+		lua_pushdboolean(L, sonicloopvars->flip);
 		break;
 	case sonicloopvars_camera:
 		LUA_PushUserdata(L, &sonicloopvars->camera, META_SONICLOOPCAMVARS);

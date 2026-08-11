@@ -487,7 +487,7 @@ static void md2_loadBlendTexture(md2_t *model)
 }
 
 // Don't spam the console, or the OS with fopen requests!
-static boolean nomd2s = false;
+static dboolean nomd2s = false;
 
 typedef enum
 {
@@ -593,7 +593,7 @@ addskinmodel:
 		{
 			if (fasticmp(skinname, skins[s]->name))
 			{
-				boolean iscompatskin = wadfiles[skins[s]->wadnum]->compatmode;
+				dboolean iscompatskin = wadfiles[skins[s]->wadnum]->compatmode;
 				md2_playermodels[s].skin = s;
 				md2_playermodels[s].scale = scale;
 				md2_playermodels[s].offset = offset;
@@ -667,7 +667,7 @@ void HWR_AddPlayerModel(int skin) // For skins that were added after startup
 
 		if (fasticmp(skinname, skins[skin]->name))
 		{
-			boolean iscompatskin = wadfiles[skins[skin]->wadnum]->compatmode;
+			dboolean iscompatskin = wadfiles[skins[skin]->wadnum]->compatmode;
 			md2_playermodels[skin].skin = skin;
 			md2_playermodels[skin].scale = scale;
 			md2_playermodels[skin].offset = offset;
@@ -1200,7 +1200,7 @@ static void HWR_GetBlendedTexture(patch_t *patch, patch_t *blendpatch, INT32 ski
 	Z_ChangeTag(newMipmap->data, PU_HWRMODELTEXTURE_UNLOCKED);
 }
 
-static boolean HWR_AllowModel(mobj_t *mobj)
+static dboolean HWR_AllowModel(mobj_t *mobj)
 {
 	// Signpost overlay. Not needed.
 	if (mobj->state-states == S_KART_SIGN)
@@ -1210,7 +1210,7 @@ static boolean HWR_AllowModel(mobj_t *mobj)
 	return true;
 }
 
-static boolean HWR_CanInterpolateModel(mobj_t *mobj, model_t *model)
+static dboolean HWR_CanInterpolateModel(mobj_t *mobj, model_t *model)
 {
 	// SRB2Kart: Interpoleration should ALWAYS be up to the modeler.
 #ifdef BAD_MODEL_OPTIONS
@@ -1220,7 +1220,7 @@ static boolean HWR_CanInterpolateModel(mobj_t *mobj, model_t *model)
 	return model->interpolate[(mobj->frame & FF_FRAMEMASK)];
 }
 
-static boolean HWR_CanInterpolateSprite2(modelspr2frames_t *spr2frame)
+static dboolean HWR_CanInterpolateSprite2(modelspr2frames_t *spr2frame)
 {
 #ifdef BAD_MODEL_OPTIONS
 	if (cv_glmodelinterpolation.value == 2) // Always interpolate
@@ -1327,7 +1327,7 @@ static void adjustTextureCoords(model_t *model, patch_t *patch)
 // HWR_DrawModel
 //
 
-boolean HWR_DrawModel(gl_vissprite_t *spr)
+dboolean HWR_DrawModel(gl_vissprite_t *spr)
 {
 	md2_t *md2;
 
@@ -1353,7 +1353,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 	{
 		sector_t *sector = spr->mobj->subsector->sector;
 		INT32 lightlevel = 255;
-		boolean lightset = HWR_OverrideObjectLightLevel(spr->mobj, &lightlevel);
+		dboolean lightset = HWR_OverrideObjectLightLevel(spr->mobj, &lightlevel);
 		extracolormap_t *colormap = NULL;
 
 		if (sector->numlights)
@@ -1390,7 +1390,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 		GLPatch_t *hwrPatch = NULL, *hwrBlendPatch = NULL;
 		float durs = (float)spr->mobj->state->tics;
 		float tics = (float)spr->mobj->tics;
-		const boolean papersprite = (R_ThingIsPaperSprite(spr->mobj) && !R_ThingIsFloorSprite(spr->mobj));
+		const dboolean papersprite = (R_ThingIsPaperSprite(spr->mobj) && !R_ThingIsFloorSprite(spr->mobj));
 		const UINT8 flip = (UINT8)(!(spr->mobj->eflags & MFE_VERTICALFLIP) != !R_ThingVerticallyFlipped(spr->mobj));
 		const UINT8 hflip = (UINT8)(!(spr->mobj->mirrored) != !R_ThingHorizontallyFlipped(spr->mobj));
 		spritedef_t *sprdef;

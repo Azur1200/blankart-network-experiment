@@ -15,6 +15,7 @@
 #define __HU_STUFF_H__
 
 #include "d_event.h"
+#include "doomdef.h"
 #include "w_wad.h"
 #include "r_defs.h"
 #include "font.h"
@@ -77,7 +78,7 @@ struct playersort_t
 	char string[48];
 	INT32 num;
 	const char *name;
-	char clan;
+	char clan[MAXCLANTAG];
 };
 
 //------------------------------------
@@ -101,13 +102,13 @@ typedef enum
 } sayflags_t;
 
 // some functions
-void HU_AddChatText(const char *text, boolean playsound);
+void HU_AddChatText(const char *text, dboolean playsound);
 
 // set true when entering a chat message
-extern boolean chat_on;
+extern dboolean chat_on;
 
 // keystrokes in the console or chat window
-extern boolean hu_keystrokes;
+extern dboolean hu_keystrokes;
 
 extern patch_t *pinggfx[5];
 extern patch_t *framecounter;
@@ -115,7 +116,7 @@ extern patch_t *frameslash;
 extern patch_t *srb2back;
 
 // set true whenever the tab rankings are being shown for any reason
-extern boolean hu_showscores;
+extern dboolean hu_showscores;
 
 extern consvar_t cv_chat_xoffset;
 extern consvar_t cv_chat_yoffset;
@@ -126,22 +127,22 @@ void HU_Init(void);
 
 void HU_LoadGraphics(void);
 
-// Load a HUDGFX patch or NULL/missingpat (dependent on required boolean).
-patch_t *HU_UpdateOrBlankPatch(patch_t **user, boolean required, const char *format, ...);
+// Load a HUDGFX patch or NULL/missingpat (dependent on required dboolean).
+patch_t *HU_UpdateOrBlankPatch(patch_t **user, dboolean required, const char *format, ...);
 //#define HU_CachePatch(...) HU_UpdateOrBlankPatch(NULL, false, __VA_ARGS__) -- not sure how to default the missingpat here plus not currently used
 #define HU_UpdatePatch(user, ...) HU_UpdateOrBlankPatch(user, true, __VA_ARGS__)
 
 // reset heads up when consoleplayer respawns.
 void HU_Start(void);
 
-boolean HU_Responder(event_t *ev);
+dboolean HU_Responder(event_t *ev);
 void HU_Ticker(void);
 void HU_TickSongCredits(void);
 void HU_DrawSongCredits(void);
 void HU_Drawer(void);
 char HU_dequeueChatChar(void);
 void HU_clearChatChars(void);
-void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT32 flags, boolean icon);
+void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT32 flags, dboolean icon);
 void HU_drawOldPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT32 flags);
 void HU_drawMiniPing (INT32 x, INT32 y, UINT32 ping, UINT32 lag, INT32 flags);
 

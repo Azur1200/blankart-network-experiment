@@ -73,9 +73,9 @@ extern GLfloat projMatrix[16];
 //                                                                     PROTOS
 // ==========================================================================
 
-boolean LoadGL(void);
+dboolean LoadGL(void);
 void *GetGLFunc(const char *proc);
-boolean SetupGLfunc(void);
+dboolean SetupGLfunc(void);
 void SetupGLFunc4(void);
 void Flush(void);
 INT32 isExtAvailable(const char *extension, const GLubyte *start);
@@ -88,7 +88,7 @@ void SetStates(void);
 #endif
 
 #ifdef USE_WGL_SWAP
-typedef BOOL (APIENTRY *PFNWGLEXTSWAPCONTROLPROC) (int);
+typedef int (APIENTRY *PFNWGLEXTSWAPCONTROLPROC) (int);
 typedef int (APIENTRY *PFNWGLEXTGETSWAPINTERVALPROC) (void);
 extern PFNWGLEXTSWAPCONTROLPROC wglSwapIntervalEXT;
 extern PFNWGLEXTGETSWAPINTERVALPROC wglGetSwapIntervalEXT;
@@ -125,7 +125,7 @@ extern GLint			screen_width;
 extern GLint			screen_height;
 extern GLbyte			screen_depth;
 extern GLint			maximumAnisotropy;
-extern boolean 			supportMipMap;
+extern dboolean 			supportMipMap;
 
 /**	\brief OpenGL flags for video driver
 */

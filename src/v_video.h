@@ -63,12 +63,12 @@ void V_Recalc(void);
 
 struct colorlookup_t
 {
-	boolean init;
+	dboolean init;
 	RGBA_t palette[256];
 	UINT16 table[0xFFFF+1];
 };
 
-void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors);
+void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, dboolean makecolors);
 UINT8 GetColorLUT(colorlookup_t *lut, UINT8 r, UINT8 g, UINT8 b);
 UINT8 GetColorLUTDirect(colorlookup_t *lut, UINT8 r, UINT8 g, UINT8 b);
 
@@ -198,7 +198,7 @@ struct cliprect_t
 {
 	fixed_t left, right, top, bottom;
 	INT32 flags;
-	boolean enabled;
+	dboolean enabled;
 };
 
 const cliprect_t *V_GetClipRect(void);
@@ -229,7 +229,7 @@ affine_bounding_t* V_GetAffineBounds(const affine_t* transform,
 				     patch_t* patch,
 					 fixed_t divisor,
 				     affine_bounding_t* out,
-					 boolean unrestrict_bound);
+					 dboolean unrestrict_bound);
 void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, INT32 scrn, patch_t *patch, const UINT8 *colormap);
 void V_DrawRotatedPatch(fixed_t x, fixed_t y, angle_t angle, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap);
 
@@ -257,7 +257,7 @@ UINT8 V_GetHudTransDouble(void);
 
 
 // draw wobbly VHS pause stuff
-void V_DrawVhsEffect(boolean rewind);
+void V_DrawVhsEffect(dboolean rewind);
 
 // fade down the screen buffer before drawing the menu over
 void V_DrawFadeScreen(UINT16 color, UINT8 strength);
@@ -285,9 +285,9 @@ INT32 V_DanceYOffset(INT32 counter);
 
 // draw a single character
 #define V_DrawCharacter(x, y, c, l) V_DrawFixedCharacter((x)*FRACUNIT, (y)*FRACUNIT, c, l)
-void V_DrawFixedCharacter(fixed_t x, fixed_t y, INT32 c, boolean lowercaseallowed);
+void V_DrawFixedCharacter(fixed_t x, fixed_t y, INT32 c, dboolean lowercaseallowed);
 // draw a single character, but for the chat
-void V_DrawChatCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed, UINT8 *colormap);
+void V_DrawChatCharacter(INT32 x, INT32 y, INT32 c, dboolean lowercaseallowed, UINT8 *colormap);
 
 UINT8 *V_GetStringColormap(INT32 colorflags);
 
@@ -374,7 +374,7 @@ void V_DrawRightAlignedThinStringAtFixed(fixed_t x, fixed_t y, INT32 option, con
 // threshold: when the letters start disappearing (leave to 0 to disable) (both are INT32 in case you supply negative values...)
 // NOTE: This function ignores most conventional string flags (V_RETURN8, V_ALLOWLOWERCASE ...)
 // NOTE: This font only works with uppercase letters.
-void V_DrawTitleCardString(INT32 x, INT32 y, const char *str, INT32 flags, boolean bossmode, INT32 timer, INT32 threshold);
+void V_DrawTitleCardString(INT32 x, INT32 y, const char *str, INT32 flags, dboolean bossmode, INT32 timer, INT32 threshold);
 
 // returns thr width of a string drawn using the above function.
 INT32 V_TitleCardStringWidth(const char *str);

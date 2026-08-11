@@ -23,7 +23,7 @@ struct clusternode_t
     UINT16 id; // ID in the cluster
     fixed_t x, y, z;
     clusternodetype_t label;
-    boolean visited, in_cluster;
+    dboolean visited, in_cluster;
     player_t * player;
 };
 
@@ -36,9 +36,9 @@ struct clusterdata_t
     INT16 pids[MAXPLAYERS]; // IDs of the players that belong to the nodes in this cluster
 };
 
-typedef boolean (playerfilter_f)(player_t *player, UINT32 filter_value);
+typedef dboolean (playerfilter_f)(player_t *player, UINT32 filter_value);
 
-typedef boolean (nodefunc_f)(clusternode_t * a, clusternode_t * b, fixed_t eps);
+typedef dboolean (nodefunc_f)(clusternode_t * a, clusternode_t * b, fixed_t eps);
 
 extern clusterdata_t * player_clusters;
 extern INT32 num_player_clusters;
@@ -49,15 +49,15 @@ fixed_t K_Distance3D(fixed_t x1, fixed_t y1, fixed_t z1, fixed_t x2, fixed_t y2,
 UINT32 K_GetDTFDifference(player_t *source, player_t *destination);
 
 // Literally allows any player to pass through.
-boolean K_ClusterFilter_NoFilter(player_t *player, UINT32 fval);
+dboolean K_ClusterFilter_NoFilter(player_t *player, UINT32 fval);
 
-boolean K_ClusterFilter_BaseFilter(player_t *player, UINT32 fval);
+dboolean K_ClusterFilter_BaseFilter(player_t *player, UINT32 fval);
 
 // Filter function (`nodefunc_f`) for evaluating if a node is part of a cluster using its raw position in the database.
-boolean K_FilterNodeByEuclideanDistance(clusternode_t * a, clusternode_t * b, fixed_t eps);
+dboolean K_FilterNodeByEuclideanDistance(clusternode_t * a, clusternode_t * b, fixed_t eps);
 
 // Filter function (`nodefunc_f`) for evaluating if a node is part of a cluster using its child player's distance to finish (DtF).
-boolean K_FilterNodeByDTF(clusternode_t * a, clusternode_t * b, fixed_t eps);
+dboolean K_FilterNodeByDTF(clusternode_t * a, clusternode_t * b, fixed_t eps);
 
 // Update the global player cluster array by using DBSCAN filtering
 void K_UpdateGlobalClusters(fixed_t eps, INT32 min_pts, nodefunc_f * neighbor_func, playerfilter_f* cluster_filter, UINT32 filterval);

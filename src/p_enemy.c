@@ -34,7 +34,7 @@
 #include "k_items.h"
 #include "k_objects.h"
 
-boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor);
+dboolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor);
 
 INT32 var1;
 INT32 var2;
@@ -63,7 +63,7 @@ static dirtype_t diags[] =
 //
 // P_CheckMeleeRange
 //
-boolean P_CheckMeleeRange(mobj_t *actor)
+dboolean P_CheckMeleeRange(mobj_t *actor)
 {
 	mobj_t *pl;
 	fixed_t dist;
@@ -89,7 +89,7 @@ boolean P_CheckMeleeRange(mobj_t *actor)
 }
 
 // P_CheckMeleeRange for Jettysyn Bomber.
-boolean P_JetbCheckMeleeRange(mobj_t *actor)
+dboolean P_JetbCheckMeleeRange(mobj_t *actor)
 {
 	mobj_t *pl;
 	fixed_t dist;
@@ -118,7 +118,7 @@ boolean P_JetbCheckMeleeRange(mobj_t *actor)
 }
 
 // P_CheckMeleeRange for CastleBot FaceStabber.
-boolean P_FaceStabCheckMeleeRange(mobj_t *actor)
+dboolean P_FaceStabCheckMeleeRange(mobj_t *actor)
 {
 	mobj_t *pl;
 	fixed_t dist;
@@ -142,7 +142,7 @@ boolean P_FaceStabCheckMeleeRange(mobj_t *actor)
 }
 
 // P_CheckMeleeRange for Skim.
-boolean P_SkimCheckMeleeRange(mobj_t *actor)
+dboolean P_SkimCheckMeleeRange(mobj_t *actor)
 {
 	mobj_t *pl;
 	fixed_t dist;
@@ -173,7 +173,7 @@ boolean P_SkimCheckMeleeRange(mobj_t *actor)
 //
 // P_CheckMissileRange
 //
-boolean P_CheckMissileRange(mobj_t *actor)
+dboolean P_CheckMissileRange(mobj_t *actor)
 {
 	fixed_t dist;
 
@@ -217,7 +217,7 @@ boolean P_CheckMissileRange(mobj_t *actor)
   * \return True if there's water at this location, false if not.
   * \sa ::MT_SKIM
   */
-static boolean P_WaterInSector(mobj_t *mobj, fixed_t x, fixed_t y)
+static dboolean P_WaterInSector(mobj_t *mobj, fixed_t x, fixed_t y)
 {
 	sector_t *sector;
 
@@ -248,7 +248,7 @@ static const fixed_t yspeed[NUMDIRS] = {0, 46341>>(16-FRACBITS), FRACUNIT, 46341
   * \param actor Actor object to move.
   * \return False if the move is blocked, otherwise true.
   */
-boolean P_Move(mobj_t *actor, fixed_t speed)
+dboolean P_Move(mobj_t *actor, fixed_t speed)
 {
 	fixed_t tryx, tryy;
 	dirtype_t movedir = actor->movedir;
@@ -296,7 +296,7 @@ boolean P_Move(mobj_t *actor, fixed_t speed)
   * \param actor Actor to move.
   * \return True if the move succeeds, false if the move is blocked.
   */
-static boolean P_TryWalk(mobj_t *actor)
+static dboolean P_TryWalk(mobj_t *actor)
 {
 	if (!P_Move(actor, actor->info->speed))
 		return false;
@@ -436,7 +436,7 @@ void P_NewChaseDir(mobj_t *actor)
   * \return True if a player is found, otherwise false.
   * \sa P_SupermanLook4Players
   */
-boolean P_LookForPlayers(mobj_t *actor, boolean allaround, boolean tracer, fixed_t dist)
+dboolean P_LookForPlayers(mobj_t *actor, dboolean allaround, dboolean tracer, fixed_t dist)
 {
 	INT32 c = 0, stop;
 	INT32 i, pcount = 0;
@@ -944,7 +944,7 @@ void A_PointyThink(void *thing)
 	TVector *res;
 	angle_t fa;
 	fixed_t radius = FixedMul(actor->info->radius*actor->info->reactiontime, actor->scale);
-	boolean firsttime = true;
+	dboolean firsttime = true;
 	INT32 sign;
 
 	if (LUA_CallAction(A_POINTYTHINK, actor))
@@ -3220,7 +3220,7 @@ void A_AttractChase(void *thing)
 		}
 
 		INT32 ringpower = K_GetKartBaseRingPower(actor->target->player, true);
-		boolean ringburnt = K_IsPlayerRingBurnt(actor->target->player, ringpower);
+		dboolean ringburnt = K_IsPlayerRingBurnt(actor->target->player, ringpower);
 
 		if (ringburnt)
 		{
@@ -4404,7 +4404,7 @@ void A_UnidusBall(void *thing)
 {
 	mobj_t *actor = thing;
 	INT32 locvar1 = var1;
-	boolean canthrow = false;
+	dboolean canthrow = false;
 
 	if (LUA_CallAction(A_UNIDUSBALL, actor))
 		return;
@@ -4455,7 +4455,7 @@ void A_UnidusBall(void *thing)
 	}
 	else if (locvar1 == 2)
 	{
-		boolean skull = (actor->target->flags2 & MF2_SKULLFLY) == MF2_SKULLFLY;
+		dboolean skull = (actor->target->flags2 & MF2_SKULLFLY) == MF2_SKULLFLY;
 		if (actor->target->state == &states[actor->target->info->painstate])
 		{
 			P_KillMobj(actor, NULL, NULL, DMG_NORMAL);
@@ -4624,7 +4624,7 @@ void A_CrawlaCommanderThink(void *thing)
 	fixed_t thefloor;
 	INT32 locvar1 = var1;
 	INT32 locvar2 = var2;
-	boolean hovermode = (actor->health > 1 || actor->fuse);
+	dboolean hovermode = (actor->health > 1 || actor->fuse);
 
 	if (LUA_CallAction(A_CRAWLACOMMANDERTHINK, actor))
 		return;
@@ -4819,7 +4819,7 @@ void A_OldRingExplode(void *thing)
 	mobj_t *mo;
 	const fixed_t ns = FixedMul(20 * FRACUNIT, actor->scale);
 	INT32 locvar1 = var1;
-	boolean changecolor = (actor->target && actor->target->player);
+	dboolean changecolor = (actor->target && actor->target->player);
 
 	if (LUA_CallAction(A_OLDRINGEXPLODE, actor))
 		return;
@@ -4895,7 +4895,7 @@ void A_OldRingExplode(void *thing)
 void A_MixUp(void *thing)
 {
 	mobj_t *actor = thing;
-	boolean teleported[MAXPLAYERS];
+	dboolean teleported[MAXPLAYERS];
 	INT32 i, numplayers = 0, prandom = 0;
 
 	if (LUA_CallAction(A_MIXUP, actor))
@@ -5262,7 +5262,7 @@ void A_Boss2Chase(void *thing)
 {
 	mobj_t *actor = thing;
 	fixed_t radius;
-	boolean reverse = false;
+	dboolean reverse = false;
 	INT32 speedvar;
 
 	if (LUA_CallAction(A_BOSS2CHASE, actor))
@@ -7149,7 +7149,7 @@ void A_SetObjectFlags(void *thing)
 	mobj_t *actor = thing;
 	INT32 locvar1 = var1;
 	INT32 locvar2 = var2;
-	boolean unlinkthings = false;
+	dboolean unlinkthings = false;
 
 	if (LUA_CallAction(A_SETOBJECTFLAGS, actor))
 		return;
@@ -7595,8 +7595,8 @@ void A_OrbitNights(void* thing)
 {
 	mobj_t *actor = thing;
 	INT32 ofs = (var2 & 0x3FF);
-	boolean ishelper = (var2 & 0x10000);
-	boolean donotrescale = (var2 & 0x40000);
+	dboolean ishelper = (var2 & 0x10000);
+	dboolean donotrescale = (var2 & 0x40000);
 	INT32 xfactor = 32, yfactor = 32, zfactor = 20;
 
 	(void)ishelper;
@@ -9041,7 +9041,7 @@ void A_TrapShot(void *thing)
 	mobj_t *actor = thing;
 	INT32 locvar1 = var1;
 	INT32 locvar2 = var2;
-	boolean oldstyle = (locvar2 & 32768) ? true : false;
+	dboolean oldstyle = (locvar2 & 32768) ? true : false;
 	mobjtype_t type = (mobjtype_t)(locvar1 & 65535);
 	mobj_t *missile;
 	INT16 frontoff = (INT16)(locvar1 >> 16);
@@ -9742,7 +9742,7 @@ void A_SpawnFreshCopy(void *thing)
 	mobj_t *actor = thing;
 	mobj_t *newObject;
 
-	const boolean copyspawn = (boolean)(var1 != 0);
+	const dboolean copyspawn = (dboolean)(var1 != 0);
 
 	if (LUA_CallAction(A_SPAWNFRESHCOPY, actor))
 		return;
@@ -9806,7 +9806,7 @@ void A_WarpToSpawnpoint(void *thing)
 }
 
 // Internal Flicky spawning function.
-mobj_t *P_InternalFlickySpawn(mobj_t *actor, mobjtype_t flickytype, fixed_t momz, boolean lookforplayers, SINT8 moveforward)
+mobj_t *P_InternalFlickySpawn(mobj_t *actor, mobjtype_t flickytype, fixed_t momz, dboolean lookforplayers, SINT8 moveforward)
 {
 	mobj_t *flicky;
 	fixed_t offsx = 0, offsy = 0;
@@ -10037,7 +10037,7 @@ void A_FlickyAim(void *thing)
 	mobj_t *actor = thing;
 	INT32 locvar1 = var1;
 	INT32 locvar2 = var2;
-	boolean flickyhitwall = false;
+	dboolean flickyhitwall = false;
 
 	if (LUA_CallAction(A_FLICKYAIM, actor))
 		return;
@@ -10829,7 +10829,7 @@ void A_ChangeHeight(void *thing)
 	INT32 locvar1 = var1;
 	INT32 locvar2 = var2;
 	fixed_t height = locvar1;
-	boolean reverse;
+	dboolean reverse;
 
 	if (LUA_CallAction(A_CHANGEHEIGHT, actor))
 		return;
@@ -11189,7 +11189,7 @@ void A_SPBChase(void *thing)
 			{
 				// Smoothly rotate horz angle
 				angle_t input = hang - actor->angle;
-				boolean invert = (input > ANGLE_180);
+				dboolean invert = (input > ANGLE_180);
 				if (invert)
 					input = InvAngle(input);
 
@@ -11321,7 +11321,7 @@ void A_SPBChase(void *thing)
 		{
 			// Smoothly rotate horz angle
 			angle_t input = hang - actor->angle;
-			boolean invert = (input > ANGLE_180);
+			dboolean invert = (input > ANGLE_180);
 			if (invert)
 				input = InvAngle(input);
 

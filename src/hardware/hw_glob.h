@@ -76,10 +76,10 @@ typedef struct gl_vissprite_s
 	UINT32 renderflags;
 	UINT8 rotateflags;
 
-	boolean flip, vflip;
-	boolean precip; // Tails 08-25-2002
-	boolean bbox;
-	boolean rotated;
+	dboolean flip, vflip;
+	dboolean precip; // Tails 08-25-2002
+	dboolean bbox;
+	dboolean rotated;
 	UINT8 translucency;       //alpha level 0-255
 
 	angle_t angle; // for splats
@@ -114,7 +114,7 @@ typedef struct gl_vissprite_s
 	mobj_t *mobj; // NOTE: This is a precipmobj_t if precip is true !!! Watch out.
 } gl_vissprite_t;
 
-void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, boolean model);
+void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, dboolean model);
 
 typedef struct
 {
@@ -144,8 +144,8 @@ typedef struct
 // hw_main.c
 // -------
 
-void HWR_RenderViewpoint(player_t *player, boolean drawSkyTexture, boolean is_skybox, boolean timing, gl_portal_t *rootportal);
-void HWR_PrepareTransform(player_t *player, boolean is_skybox);
+void HWR_RenderViewpoint(player_t *player, dboolean drawSkyTexture, dboolean is_skybox, dboolean timing, gl_portal_t *rootportal);
+void HWR_PrepareTransform(player_t *player, dboolean is_skybox);
 void HWR_ResetClipper(void);
 
 // --------
@@ -175,9 +175,9 @@ void HWR_GetMappedPatch(patch_t *patch, const UINT8 *colormap);
 void HWR_GetFadeMask(lumpnum_t fademasklumpnum);
 patch_t *HWR_GetPic(lumpnum_t lumpnum);
 
-GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencoremap);
-void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap);
-void HWR_GetRawFlat(lumpnum_t flatlumpnum, boolean noencoremap);
+GLMapTexture_t *HWR_GetTexture(INT32 tex, dboolean noencoremap);
+void HWR_GetLevelFlat(levelflat_t *levelflat, dboolean noencoremap);
+void HWR_GetRawFlat(lumpnum_t flatlumpnum, dboolean noencoremap);
 
 void HWR_FreeTexture(patch_t *patch);
 void HWR_FreeTextureData(patch_t *patch);
@@ -206,17 +206,17 @@ extern INT32 textureformat;
 // --------
 // hw_plane.c
 // --------
-void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, boolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, levelflat_t *levelflat, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap);
-void HWR_RenderPolyObjectPlane(polyobj_t *polysector, boolean isceiling, fixed_t fixedheight,
+void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, dboolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, levelflat_t *levelflat, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap);
+void HWR_RenderPolyObjectPlane(polyobj_t *polysector, dboolean isceiling, fixed_t fixedheight,
 							   FBITFIELD blendmode, UINT8 lightlevel, levelflat_t *levelflat, sector_t *FOFsector,
 							   UINT8 alpha, extracolormap_t *planecolormap);
 
 // --------
 // hw_drawnodes.c
 // --------
-void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
-void HWR_AddTransparentFloor(levelflat_t *levelflat, poly_subsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
-void HWR_AddTransparentPolyobjectFloor(levelflat_t *levelflat, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight,
+void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, dboolean noencore, FBITFIELD blend, dboolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
+void HWR_AddTransparentFloor(levelflat_t *levelflat, poly_subsector_t *xsub, dboolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, dboolean fogplane, extracolormap_t *planecolormap);
+void HWR_AddTransparentPolyobjectFloor(levelflat_t *levelflat, polyobj_t *polysector, dboolean isceiling, fixed_t fixedheight,
 									   INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
 void HWR_PushDrawNodeState(void);
 void HWR_PopDrawNodeState(void);
@@ -226,18 +226,18 @@ void HWR_RenderDrawNodes(void);
 // hw_segs.c
 // --------
 void HWR_ProcessSeg(void);
-void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
+void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, dboolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
 
 // --------
 // hw_shaders.c
 // --------
-boolean HWR_InitShaders(void);
+dboolean HWR_InitShaders(void);
 void HWR_CompileShaders(void);
 
 int HWR_GetShaderFromTarget(int shader_target);
 
 void HWR_LoadAllBaseShaders(void);
-void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3, boolean startup);
+void HWR_LoadCustomShadersFromFile(UINT16 wadnum, dboolean PK3, dboolean startup);
 const char *HWR_GetShaderName(INT32 shader);
 
 extern customshaderxlat_t shaderxlat[];
@@ -268,23 +268,23 @@ void HWR_ProjectBoundingBox(mobj_t *thing);
 
 #define INIT_PORTAL_ARRAY_SIZE 4
 
-void HWR_PortalFrame(gl_portal_t *portal, boolean set_culling);
+void HWR_PortalFrame(gl_portal_t *portal, dboolean set_culling);
 gl_portal_array_t *HWR_GetPortalArray(void);
-boolean HWR_AddPortal(line_t *start, line_t *dest, seg_t *seg);
+dboolean HWR_AddPortal(line_t *start, line_t *dest, seg_t *seg);
 void HWR_ClearPortals(void);
 void HWR_PortalClipping(gl_portal_t *portal);
 void HWR_RenderPortalSeg(seg_t *seg);
 void HWR_SetStencilState(INT32 state);
-void HWR_RenderDepthEraser(boolean visible);
-void HWR_RenderPortal(gl_portal_t *portal, gl_portal_t *rootportal, player_t *player, boolean is_skybox);
+void HWR_RenderDepthEraser(dboolean visible);
+void HWR_RenderPortal(gl_portal_t *portal, gl_portal_t *rootportal, player_t *player, dboolean is_skybox);
 
 extern INT32 gl_portal_level;
 
-extern boolean gl_drawing_stencil;
+extern dboolean gl_drawing_stencil;
 extern sector_t *gl_portalcullsector;
 extern line_t *gl_portalclipline;
 
-extern boolean gl_printportals;
+extern dboolean gl_printportals;
 extern INT32 gl_debugportal;
 
 

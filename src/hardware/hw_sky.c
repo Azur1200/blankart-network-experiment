@@ -24,7 +24,7 @@
 
 static gl_sky_t gl_sky;
 
-static void HWR_SkyDomeVertex(gl_sky_t *sky, gl_skyvertex_t *vbo, int r, int c, signed char yflip, float delta, boolean foglayer)
+static void HWR_SkyDomeVertex(gl_sky_t *sky, gl_skyvertex_t *vbo, int r, int c, signed char yflip, float delta, dboolean foglayer)
 {
 	const float radians = (float)(M_PIl / 180.0f);
 	const float scale = 10000.0f;

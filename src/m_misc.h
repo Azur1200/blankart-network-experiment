@@ -46,30 +46,30 @@ void M_StopMovie(void);
 // the file where game vars and settings are saved
 #define CONFIGFILENAME "blanconfig.cfg"
 
-boolean FIL_WriteFile(char const *name, const void *source, size_t length);
+dboolean FIL_WriteFile(char const *name, const void *source, size_t length);
 size_t FIL_ReadFileTag(char const *name, UINT8 **buffer, INT32 tag);
 #define FIL_ReadFile(n, b) FIL_ReadFileTag(n, b, PU_STATIC)
 
-boolean FIL_ConvertTextFileToBinary(const char *textfilename, const char *binfilename);
+dboolean FIL_ConvertTextFileToBinary(const char *textfilename, const char *binfilename);
 
-boolean FIL_FileExists(const char *name);
-boolean FIL_WriteFileOK(char const *name);
-boolean FIL_ReadFileOK(char const *name);
-boolean FIL_FileOK(char const *name);
-boolean FIL_CopyFile(const char *src, const char *dst);
+dboolean FIL_FileExists(const char *name);
+dboolean FIL_WriteFileOK(char const *name);
+dboolean FIL_ReadFileOK(char const *name);
+dboolean FIL_FileOK(char const *name);
+dboolean FIL_CopyFile(const char *src, const char *dst);
 
 void FIL_DefaultExtension (char *path, const char *extension);
 void FIL_ForceExtension(char *path, const char *extension);
-boolean FIL_CheckExtension(const char *in);
+dboolean FIL_CheckExtension(const char *in);
 
 #ifdef HAVE_PNG
-boolean M_SavePNG(const char *filename, void *data, int width, int height, const UINT8 *palette);
+dboolean M_SavePNG(const char *filename, void *data, int width, int height, const UINT8 *palette);
 #endif
 
-extern boolean takescreenshot;
+extern dboolean takescreenshot;
 void M_ScreenShot(void);
 void M_DoScreenShot(void);
-boolean M_ScreenshotResponder(event_t *ev);
+dboolean M_ScreenshotResponder(event_t *ev);
 
 void M_MinimapGenerate(void);
 
@@ -102,7 +102,7 @@ void strcatbf(char *s1, const char *s2, const char *s3);
 const char *M_FileError(FILE *handle);
 
 int     M_PathParts      (const char *path);
-boolean M_IsPathAbsolute (const char *path);
+dboolean M_IsPathAbsolute (const char *path);
 void    M_MkdirEach      (const char *path, int start, int mode);
 void    M_MkdirEachUntil (const char *path, int start, int end, int mode);
 
@@ -128,11 +128,11 @@ UINT32 FNV1a_QuickCaseHash(const char *message, size_t size);
 
 UINT32 FNV1a_HashLowercaseString(const char *message);
 
-boolean M_IsStringEmpty(const char *s);
+dboolean M_IsStringEmpty(const char *s);
 
 int M_RoundUp(double number);
 
-char *GetPrettyRRID(const unsigned char *bin, boolean brief);
+char *GetPrettyRRID(const unsigned char *bin, dboolean brief);
 
 #include "w_wad.h"
 extern char configfile[MAX_WADPATH];

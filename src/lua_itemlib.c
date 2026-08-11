@@ -69,7 +69,7 @@ static int item_get(lua_State *L)
 		LUA_PushUserdata(L, item->altcvar, META_CVAR);
 		break;
 	case itemvars_altenabled:
-		lua_pushboolean(L, item->altenabled);
+		lua_pushdboolean(L, item->altenabled);
 		break;
 	default:
 		return luaL_error(L, LUA_QL("kartitem_t") " has no field named " LUA_QS, itemvars_opt[field]);
@@ -142,7 +142,7 @@ static int result_get(lua_State *L)
 		lua_pushstring(L, result->displayname);
 		break;
 	case resultvars_isalt:
-		lua_pushboolean(L, result->isalt);
+		lua_pushdboolean(L, result->isalt);
 		break;
 	case resultvars_flags:
 		lua_pushinteger(L, result->flags);

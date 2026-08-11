@@ -50,7 +50,7 @@ typedef struct
     char str[62];
     UINT8 gtc;
     const char *gts;
-    boolean encore;
+    dboolean encore;
 } y_votelvlinfo;
 
 // Clientside & splitscreen player info.
@@ -67,7 +67,7 @@ typedef struct
     UINT8 roffset;
     UINT8 rsynctime;
     UINT8 rendoff;
-    boolean loaded;
+    dboolean loaded;
 } y_voteclient;
 
 // votescreen stuff
@@ -80,8 +80,8 @@ static INT32 lastvotetic;
 static INT32 voteendtic = -1;
 static SINT8 votemax = 3;
 static INT32 voterowmem = 0;
-static boolean rowchange = false;
-static boolean votenotyetpicked;
+static dboolean rowchange = false;
+static dboolean votenotyetpicked;
 
 static void Y_UnloadVoteData(void);
 
@@ -111,8 +111,8 @@ void Y_VoteScreenCheck(void)
 	for (;;)
 	{
 		// Check if the lumps exist (checking for VEXTR(N|W)xx for race and VEXTRB(N|W)xx for battle)
-		boolean normalLumpExists = W_LumpExists(va("%sC%d", VoteScreen.Prefix, i));
-		boolean wideLumpExists = W_LumpExists(va("%sW%d", VoteScreen.Prefix, i));
+		dboolean normalLumpExists = W_LumpExists(va("%sC%d", VoteScreen.Prefix, i));
+		dboolean wideLumpExists = W_LumpExists(va("%sW%d", VoteScreen.Prefix, i));
 
 		if (normalLumpExists || wideLumpExists)
 		{
@@ -129,7 +129,7 @@ void Y_VoteScreenCheck(void)
 	}
 
 	// non lua vote background handling
-	boolean prefbattletype = ((g_voteLevels[0][1] & ~VOTEMODIFIER_ENCORE) == GT_BATTLE);
+	dboolean prefbattletype = ((g_voteLevels[0][1] & ~VOTEMODIFIER_ENCORE) == GT_BATTLE);
 	VoteScreen.widebgpatch = W_CachePatchName((prefbattletype ? "BATTLSCW" : "INTERSCW"), PU_PATCH);
 	VoteScreen.bgpatch = W_CachePatchName((prefbattletype ? "BATTLSCR" : "INTERSCR"), PU_PATCH);
 }
@@ -167,7 +167,7 @@ static void Y_VoteBackgroundDrawer(patch_t *patch)
 // Handles votebackgrounds set by "setVoteBackground"
 // Aswell as animated patches
 //
-static void Y_DrawLuaVoteScreenPatch(boolean widePatch)
+static void Y_DrawLuaVoteScreenPatch(dboolean widePatch)
 {
 	INT32 nextframe = 0;
 	patch_t *votebg = NULL;
@@ -207,7 +207,7 @@ static void Y_DrawLuaVoteScreenPatch(boolean widePatch)
 static void Y_DrawVoteScreenPatch(void)
 {
 	patch_t *votebg = NULL;
-	const boolean widescreen = (vid.scaledwidth > 320);
+	const dboolean widescreen = (vid.scaledwidth > 320);
 
 	if (VoteScreen.foundLuaVoteWideFrames || VoteScreen.foundLuaVoteFrames)
 	{
@@ -219,8 +219,8 @@ static void Y_DrawVoteScreenPatch(void)
 	votebg = VoteScreen.bgpatch;
 
 	UINT8 prefgametype = (g_voteLevels[0][1] & ~VOTEMODIFIER_ENCORE);
-	const boolean widebgreplaced = (prefgametype == GT_BATTLE) ? VoteScreen.replaced.widebattle : VoteScreen.replaced.widerace;
-	const boolean bgreplaced = (prefgametype == GT_BATTLE) ? VoteScreen.replaced.battle : VoteScreen.replaced.race;
+	const dboolean widebgreplaced = (prefgametype == GT_BATTLE) ? VoteScreen.replaced.widebattle : VoteScreen.replaced.widerace;
+	const dboolean bgreplaced = (prefgametype == GT_BATTLE) ? VoteScreen.replaced.battle : VoteScreen.replaced.race;
 
 	// we check a bunch of stuff to always have a "valid" fallback
 	if ((widescreen && (widebgreplaced || !bgreplaced))
@@ -248,7 +248,7 @@ static fixed_t Y_CalculatePicScale(fixed_t picscale, INT32 hypoti)
 	return picscale;
 }
 
-boolean Y_PlayerIDCanVote(const UINT8 id)
+dboolean Y_PlayerIDCanVote(const UINT8 id)
 {
 	if (id >= MAXPLAYERS)
 	{
@@ -291,7 +291,7 @@ void Y_VoteDrawer(void)
 	INT32 hypoti = 0;
 
 	INT32 numplayers = 0;
-	boolean highplayers = false;
+	dboolean highplayers = false;
 
 	// get the hypotenuse
 	hypoti = (vidx*vidx) + (vidy*vidy);
@@ -601,7 +601,7 @@ void Y_VoteDrawer(void)
 			if (players[i].skincolor)
 			{
 				UINT8 *colormap = R_GetTranslationColormap(players[i].skin, players[i].skincolor, GTC_CACHE);
-				boolean hires = K_UseHighResPortraits();
+				dboolean hires = K_UseHighResPortraits();
 				patch_t *facerank = faceprefix[players[i].skin][hires ? FACE_WANTED : FACE_RANK];
 				fixed_t hiresscale = hires ? FRACUNIT/2 : FRACUNIT;
 
@@ -699,7 +699,7 @@ static void Y_VoteStops(const SINT8 pick, const SINT8 level)
 void Y_VoteTicker(void)
 {
 	INT32 i, j;
-	boolean everyone_voted;
+	dboolean everyone_voted;
 
 	if (paused || P_AutoPause() || !voteclient.loaded)
 		return;
@@ -819,7 +819,7 @@ void Y_VoteTicker(void)
 			for (i = 0; i <= splitscreen; i++)
 			{
 				UINT8 p;
-				boolean pressed = false;
+				dboolean pressed = false;
 				SINT8 votewrap = 0;
 
 				if (votemax == 2)

@@ -396,7 +396,7 @@ void readthing(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
-void readskincolor(MYFILE *f, INT32 num, boolean mainfile)
+void readskincolor(MYFILE *f, INT32 num, dboolean mainfile)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word = s;
@@ -504,7 +504,7 @@ void readskincolor(MYFILE *f, INT32 num, boolean mainfile)
 			else if (fastcmp(word, "ACCESSIBLE"))
 			{
 				if (mainfile || num > FIRSTSUPERCOLOR)
-					skincolors[num].accessible = (boolean)(atoi(word2) || word2[0] == 'T' || word2[0] == 'Y');
+					skincolors[num].accessible = (dboolean)(atoi(word2) || word2[0] == 'T' || word2[0] == 'Y');
 			}
 			else
 				deh_warning("Skincolor %d: unknown word '%s'", num, word);
@@ -2555,7 +2555,7 @@ void readmenupanel(MYFILE *f, menupaneldef_t *pd)
 		}
 		else if (fastcmp(word, "SCROLLBAR"))
 		{
-			pd->scrollbar = (boolean)(word2[0] == 'T' || word2[0] == 'Y' || get_number(word2));
+			pd->scrollbar = (dboolean)(word2[0] == 'T' || word2[0] == 'Y' || get_number(word2));
 		}
 		else if (fastcmp(word, "SCROLLHEIGHT"))
 		{
@@ -2813,7 +2813,7 @@ void readmenu(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "HIDEBACKGROUND"))
 			{
-				menudefs[num].bghide = (boolean)(value || word2[0] == 'T' || word2[0] == 'Y');
+				menudefs[num].bghide = (dboolean)(value || word2[0] == 'T' || word2[0] == 'Y');
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "BACKGROUNDCOLOR"))
@@ -2824,7 +2824,7 @@ void readmenu(MYFILE *f, INT32 num)
 			else if (fastcmp(word, "HIDETITLEPICS") || fastcmp(word, "HIDEPICS") || fastcmp(word, "TITLEPICSHIDE"))
 			{
 				// true by default, except MM_MAIN
-				menudefs[num].hidetitlepics = (boolean)(value || word2[0] == 'T' || word2[0] == 'Y');
+				menudefs[num].hidetitlepics = (dboolean)(value || word2[0] == 'T' || word2[0] == 'Y');
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSMODE"))
@@ -2885,7 +2885,7 @@ void readmenu(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "VHS"))
 			{
-				menudefs[num].vhs = (boolean)(value || word2[0] == 'T' || word2[0] == 'Y');
+				menudefs[num].vhs = (dboolean)(value || word2[0] == 'T' || word2[0] == 'Y');
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "MUSIC"))
@@ -3075,7 +3075,7 @@ void readframe(MYFILE *f, INT32 num)
 			else if (fastcmp(word1, "ACTION"))
 			{
 				size_t z;
-				boolean found = false;
+				dboolean found = false;
 				char actiontocompare[32];
 
 				memset(actiontocompare, 0x00, sizeof(actiontocompare));
@@ -3216,7 +3216,7 @@ void readsound(MYFILE *f, INT32 num)
  * \sa readmaincfg()
  * \author Graue <graue@oceanbase.org>
  */
-/*static boolean GoodDataFileName(const char *s)
+/*static dboolean GoodDataFileName(const char *s)
 {
 	const char *p;
 	const char *tail = ".dat";
@@ -3945,7 +3945,7 @@ void readmaincfg(MYFILE *f)
 			}
 			else if (fastcmp(word, "HIDETITLEPICS") || fastcmp(word, "TITLEPICSHIDE"))
 			{
-				hidetitlepics = (boolean)(value || word2[0] == 'T' || word2[0] == 'Y');
+				hidetitlepics = (dboolean)(value || word2[0] == 'T' || word2[0] == 'Y');
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSMODE"))
@@ -4398,7 +4398,7 @@ void readfollower(MYFILE *f)
 	char *tmp;
 	char testname[SKINNAMESIZE+1];
 
-	boolean nameset;
+	dboolean nameset;
 	INT32 fallbackstate = 0;
 	INT32 res;
 	INT32 i;
@@ -4901,7 +4901,7 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 		}
 		else if (fastcmp(word, "ISALT"))
 		{
-			result->isalt = (boolean)(atoi(word2) || word2[0] == 'T' || word2[0] == 'Y');
+			result->isalt = (dboolean)(atoi(word2) || word2[0] == 'T' || word2[0] == 'Y');
 		}
 		else if (fastcmp(word, "FLAGS"))
 		{

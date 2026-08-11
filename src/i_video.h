@@ -20,8 +20,8 @@
 extern "C" {
 #endif
 
-boolean I_UseNativeKeyboard(void);
-void I_SetTextInput(boolean enable);
+dboolean I_UseNativeKeyboard(void);
+void I_SetTextInput(dboolean enable);
 
 typedef enum
 {
@@ -45,7 +45,7 @@ extern rendermode_t chosenrendermode;
 
 /**	\brief use highcolor modes if true
 */
-extern boolean highcolor;
+extern dboolean highcolor;
 
 /**	\brief setup video mode
 */
@@ -94,7 +94,7 @@ INT32 VID_SetMode(INT32 modenum);
 /**	\brief Checks the render state
 	\return	true if the renderer changed
 */
-boolean VID_CheckRenderer(void);
+dboolean VID_CheckRenderer(void);
 
 /**	\brief Load OpenGL mode
 */
@@ -116,7 +116,7 @@ void VID_PrepareModeList(void);
 
 /**	\brief can video system do fullscreen
 */
-extern boolean allow_fullscreen;
+extern dboolean allow_fullscreen;
 
 /**	\brief Update video system without updating frame
 */

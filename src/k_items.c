@@ -140,7 +140,7 @@ void K_RegisterItem(kartitemtype_e itemtype)
 	kartdebugitem_cons_t[itemtype + 1].value = 0;
 }
 
-kartresult_t *K_RegisterResult(const char *name, boolean alternate)
+kartresult_t *K_RegisterResult(const char *name, dboolean alternate)
 {
 	kartresult_t *result = &kartresults[numkartresults];
 
@@ -191,7 +191,7 @@ kartresult_t *K_RegisterResult(const char *name, boolean alternate)
 	return result;
 }
 
-kartresult_t *K_GetKartResultAlt(const char *name, boolean alternate)
+kartresult_t *K_GetKartResultAlt(const char *name, dboolean alternate)
 {
 	for (UINT8 i = 0; i < numkartresults; i++)
 	{
@@ -219,7 +219,7 @@ void K_SetupItemOdds(void)
 		kartresults[i].cooldown = 0;
 }
 
-boolean K_ItemResultEnabled(const kartresult_t *result)
+dboolean K_ItemResultEnabled(const kartresult_t *result)
 {
 	if (result == NULL)
 		return false;
@@ -230,7 +230,7 @@ boolean K_ItemResultEnabled(const kartresult_t *result)
 	return result->cvar->value == 1;
 }
 
-boolean K_IsKartItemAlternate(kartitemtype_e itemtype)
+dboolean K_IsKartItemAlternate(kartitemtype_e itemtype)
 {
 	if (!itemtype) return false;
 	return itemtype < numkartitems && kartitems[itemtype].altenabled;
@@ -252,7 +252,7 @@ kartitemequip_e K_GetItemEquipStyle(kartitemtype_e itemtype)
 	return kartitems[itemtype].equipstyle[K_IsKartItemAlternate(itemtype) ? 1 : 0];
 }
 
-UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny)
+UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, dboolean tiny)
 {
 	if (type == MAXKARTITEMS)
 		type = 0; // KITEM_SAD displays like normal
@@ -265,10 +265,10 @@ UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny)
 	return K_GetItemFlags(type) & KIF_ANIMATED ? 2 : kartitems[type].graphics[tiny ? 1 : 0].numpatches + 1;
 }
 
-patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, boolean tiny, UINT8 amount, SINT8 altmode)
+patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, dboolean tiny, UINT8 amount, SINT8 altmode)
 {
 	kartitem_t *item = &kartitems[type >= numkartresults ? 0 : type];
-	boolean alt = altmode == -1 ? K_IsKartItemAlternate(type) : !!altmode;
+	dboolean alt = altmode == -1 ? K_IsKartItemAlternate(type) : !!altmode;
 	kartitemgraphics_t *graphics = &item->graphics[(tiny ? 1 : 0) + (alt ? 2 : 0)];
 
 	// fallback if alt graphics don't exist
@@ -309,12 +309,12 @@ void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCo
 
 	\return	true if kartforcelegacyodds is enabled, or the map uses legacy WPs
 */
-boolean K_LegacyOddsMode(void)
+dboolean K_LegacyOddsMode(void)
 {
 	return (K_UsingLegacyCheckpoints() || (cv_kartforcelegacyodds.value));
 }
 
-static boolean K_InStartCooldown(void)
+static dboolean K_InStartCooldown(void)
 {
 	return (leveltime < (30*TICRATE)+starttime);
 }
@@ -324,7 +324,7 @@ static boolean K_InStartCooldown(void)
 
 #define ENDDIST (12*ACTIVEDISTVAR) // Distance when the game stops giving you bananas
 
-static boolean K_RaceForceSPB(SINT8 playerpos, UINT32 pdis)
+static dboolean K_RaceForceSPB(SINT8 playerpos, UINT32 pdis)
 {
 	UINT8 idx = K_LegacyOddsMode() ? 1 : 0;
 
@@ -403,7 +403,7 @@ UINT32 K_IntDistanceForMap(fixed_t curx,
 
 	\return	Don't double for this item?
 */
-boolean K_DontDoubleMyItems(kartresult_t *res)
+dboolean K_DontDoubleMyItems(kartresult_t *res)
 {
 	if (res == NULL)
 		return false;
@@ -451,7 +451,7 @@ void K_AddPlayerReserveItem(player_t *player, kartitemtype_e type, UINT8 amount)
 	player->itemreserveamount += amount;
 }
 
-void K_AwardPlayerItemOrReserve(player_t *player, kartitemtype_e type, UINT8 amount, boolean nodoubles, kartitemblink_e blink)
+void K_AwardPlayerItemOrReserve(player_t *player, kartitemtype_e type, UINT8 amount, dboolean nodoubles, kartitemblink_e blink)
 {
 	if (player->itemtype == KITEM_NONE && player->itemamount == 0)
 	{
@@ -467,7 +467,7 @@ void K_AwardPlayerItemOrReserve(player_t *player, kartitemtype_e type, UINT8 amo
 }
 
 // be careful with invalid item types here
-void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, boolean nodoubles, kartitemblink_e blink)
+void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, dboolean nodoubles, kartitemblink_e blink)
 {
 	K_BotResetItemConfirm(player, true);
 
@@ -538,7 +538,7 @@ void K_AwardPlayerResult(player_t *player, kartresult_t *result, kartitemblink_e
 {
 	kartitemtype_e type = result != NULL ? result->type : MAXKARTITEMS;
 	UINT8 amount = result != NULL ? result->amount : 1;
-	const boolean nodoubles = K_DontDoubleMyItems(result);
+	const dboolean nodoubles = K_DontDoubleMyItems(result);
 
 	K_AwardPlayerItem(player, type, amount, nodoubles, blink);
 
@@ -549,7 +549,7 @@ void K_AwardPlayerResult(player_t *player, kartresult_t *result, kartitemblink_e
 		result->cooldown = result->basecooldown;
 }
 
-static fixed_t K_ItemOddsScale(UINT8 numPlayers, boolean spbrush)
+static fixed_t K_ItemOddsScale(UINT8 numPlayers, dboolean spbrush)
 {
 	// CEP: due to how baseplayer works, 17P+ lobbies will STILL have the disastrous odds of 0.22 prior, if not WORSE
 	// let's try adding another condition
@@ -594,7 +594,7 @@ static fixed_t K_ItemOddsScale(UINT8 numPlayers, boolean spbrush)
 	return playerScaling;
 }
 
-UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
+UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, dboolean spbrush)
 {
 	if (mapobjectscale != FRACUNIT)
 	{
@@ -647,7 +647,7 @@ void K_UpdateItemCooldown(void)
 			kartresults[i].cooldown--;
 
 	// figure out which unique items need their cooldown set
-	boolean setcooldown[MAXKARTITEMS] = {0};
+	dboolean setcooldown[MAXKARTITEMS] = {0};
 
 	// start by checking each player's item slot (KIF_UNIQUESLOT)
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -1014,20 +1014,20 @@ void K_KartGetItemOdds(kartroulette_t *roulette, INT32 outodds[static MAXKARTRES
 
 //{ SRB2kart Roulette Code - Distance Based, yes waypoints
 
-UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbumper, boolean spbrush)
+UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbumper, dboolean spbrush)
 {
 	fixed_t oddsfac = max(FRACUNIT, (MAXODDS * FRACUNIT) / 8);
 	UINT8 i, j;
 	UINT8 useodds = 0;
 	UINT8 disttable[(MAXODDS - 1) * 2];
 	UINT8 distlen = 0;
-	boolean oddsvalid[MAXODDS];
+	dboolean oddsvalid[MAXODDS];
 
-	boolean rivalodds = false;
-	boolean rivalrunner = false;
+	dboolean rivalodds = false;
+	dboolean rivalrunner = false;
 
-	boolean shrinkodds = false;
-	//boolean shrinkfreebie = false;
+	dboolean shrinkodds = false;
+	//dboolean shrinkfreebie = false;
 
 	// Unused now, oops :V
 	(void)bestbumper;
@@ -1069,7 +1069,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 
 	for (i = 0; i < MAXODDS; i++)
 	{
-		boolean available = false;
+		dboolean available = false;
 
 		if ((gametypes[gametype]->rules & GTR_BATTLEODDS) && i > 1)
 		{
@@ -1427,7 +1427,7 @@ UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 
 #undef LEGACYODDSEXAGGERATE
 
-UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, boolean *spbrush)
+UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, dboolean *spbrush)
 {
 	UINT32 pdis = 0;
 
@@ -1455,9 +1455,9 @@ UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, boolean *spbrus
 	return pdis;
 }
 
-static boolean K_BattleForceSPB(player_t *player)
+static dboolean K_BattleForceSPB(player_t *player)
 {
-	boolean battlecond = ((gametypes[gametype]->rules & GTR_WANTED) && (gametypes[gametype]->rules & GTR_WANTEDSPB) && (mostwanted != -1) && (!K_IsPlayerMostWanted(player)));
+	dboolean battlecond = ((gametypes[gametype]->rules & GTR_WANTED) && (gametypes[gametype]->rules & GTR_WANTEDSPB) && (mostwanted != -1) && (!K_IsPlayerMostWanted(player)));
 
 	return battlecond;
 }
@@ -1473,8 +1473,8 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	INT64 totalspawnchance = 0; // 75-scale numbers are going to get BIG. This is for paranoia's sake.
 	UINT8 bestbumper = 0;
 	fixed_t mashed = 0;
-	boolean dontforcespb = false;
-	boolean spbrush = false;
+	dboolean dontforcespb = false;
+	dboolean spbrush = false;
 	INT32 roulettespeed = 3;
 
 	// This makes the roulette cycle through items - if this is 0, you shouldn't be here.
@@ -1696,7 +1696,7 @@ void K_StartRoulette(player_t *player, kartroulettetype_e roulettetype)
 	player->roulettetype = roulettetype;
 }
 
-void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force)
+void K_SetPlayerItemCooldown(player_t *player, tic_t timer, dboolean force)
 {
 	if ((timer >= player->itemusecooldown) || force)
 	{
@@ -1797,7 +1797,7 @@ INT32 KO_GrowRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresu
 #define NEIGHBOR_IFRAMES (TICRATE / 2)
 #define BASE_IFRAMES (2 * TICRATE)
 
-void K_DoGrowShrink(player_t *player, boolean shrinking)
+void K_DoGrowShrink(player_t *player, dboolean shrinking)
 {
 	player->mo->scalespeed = mapobjectscale/TICRATE;
 	player->mo->destscale = FixedMul(mapobjectscale, (shrinking) ? SHRINK_SCALE : GROW_SCALE);
@@ -1925,8 +1925,8 @@ static void K_DoHyudoroSteal(player_t *player)
 	INT32 playerswappable[MAXPLAYERS];
 	INT32 stealplayer = -1; // The player that's getting stolen from
 	INT32 prandom = 0;
-	boolean sink = P_RandomChance(PR_ITEM_HYUDORO, FRACUNIT/64);
-	boolean force_sink = false;
+	dboolean sink = P_RandomChance(PR_ITEM_HYUDORO, FRACUNIT/64);
+	dboolean force_sink = false;
 	INT32 hyu = hyudorotime;
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -2229,19 +2229,19 @@ static void K_ThrowLandMine(player_t *player)
 	throwmo->movecount = 0; // above player
 }
 
-void K_PlayerItemThink(player_t *player, boolean onground)
+void K_PlayerItemThink(player_t *player, dboolean onground)
 {
 	TracyCZone(__zone, true);
 
 	const UINT16 buttons = K_GetKartButtons(player);
-	const boolean ATTACK_JUST_DOWN = ((buttons & BT_ATTACK) && !(player->oldcmd.buttons & BT_ATTACK));
-	const boolean HOLDING_ITEM = (player->equippeditem != 0);
-	const boolean NO_HYUDORO = (player->stealingtimer == 0 && player->stolentimer == 0);
+	const dboolean ATTACK_JUST_DOWN = ((buttons & BT_ATTACK) && !(player->oldcmd.buttons & BT_ATTACK));
+	const dboolean HOLDING_ITEM = (player->equippeditem != 0);
+	const dboolean NO_HYUDORO = (player->stealingtimer == 0 && player->stolentimer == 0);
 	
 	// actions of the equipped item go first, then the item in the player's item slot (relevant for standard eggman)
 	kartitemtype_e itemtype = player->equippeditem;
-	boolean altitem = K_IsKartItemAlternate(itemtype);
-	boolean force = false;
+	dboolean altitem = K_IsKartItemAlternate(itemtype);
+	dboolean force = false;
 
 #ifdef TRACY_ENABLE
 	{
@@ -2317,7 +2317,7 @@ INT16 K_GetShrinkTime(const player_t *player)
 	return player->growshrinktimer * -1;
 }
 
-boolean K_IsAltShrunk(const player_t *player)
+dboolean K_IsAltShrunk(const player_t *player)
 {
 	if (!player)
 	{
@@ -2394,7 +2394,7 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 	}
 }
 
-void K_EnableSeekingReticule(player_t *player, boolean passive)
+void K_EnableSeekingReticule(player_t *player, dboolean passive)
 {
 	player->itemflags |= IF_SEEKING;
 	if (passive)
@@ -2627,7 +2627,7 @@ void K_DecrementAndCheckCurrentItem(player_t *player)
 	}
 }
 
-void K_UseItem_Sneaker(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Sneaker(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)itemjustdown;
 
@@ -2640,7 +2640,7 @@ void K_UseItem_Sneaker(player_t *player, boolean itemjustdown, boolean onground,
 	}
 }
 
-void K_UseItem_RocketSneaker(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_RocketSneaker(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)itemjustdown;
 
@@ -2682,7 +2682,7 @@ void K_UseItem_RocketSneaker(player_t *player, boolean itemjustdown, boolean ong
 	}
 }
 
-void K_UseItem_Invincibility(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Invincibility(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -2697,7 +2697,7 @@ void K_UseItem_Invincibility(player_t *player, boolean itemjustdown, boolean ong
 	}
 }
 
-void K_UseItem_SMonitor(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_SMonitor(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -2712,7 +2712,7 @@ void K_UseItem_SMonitor(player_t *player, boolean itemjustdown, boolean onground
 	}
 }
 
-void K_UseItem_Banana(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Banana(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -2755,7 +2755,7 @@ void K_UseItem_Banana(player_t *player, boolean itemjustdown, boolean onground, 
 	}
 }
 
-void K_UseItem_Eggman(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Eggman(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -2785,7 +2785,7 @@ void K_UseItem_Eggman(player_t *player, boolean itemjustdown, boolean onground, 
 	}
 }
 
-void K_UseItem_EggMine(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_EggMine(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -2846,7 +2846,7 @@ void K_UseItem_EggMine(player_t *player, boolean itemjustdown, boolean onground,
 	}
 }
 
-void K_UseItem_Orbinaut(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Orbinaut(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -2885,7 +2885,7 @@ void K_UseItem_Orbinaut(player_t *player, boolean itemjustdown, boolean onground
 	}
 }
 
-void K_UseItem_Jawz(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Jawz(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -2931,7 +2931,7 @@ void K_UseItem_Jawz(player_t *player, boolean itemjustdown, boolean onground, bo
 	}
 }
 
-void K_UseItem_Mine(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Mine(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -2960,7 +2960,7 @@ void K_UseItem_Mine(player_t *player, boolean itemjustdown, boolean onground, bo
 	}
 }
 
-void K_UseItem_LandMine(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_LandMine(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -2975,7 +2975,7 @@ void K_UseItem_LandMine(player_t *player, boolean itemjustdown, boolean onground
 	}
 }
 
-void K_UseItem_Ballhog(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Ballhog(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -2990,7 +2990,7 @@ void K_UseItem_Ballhog(player_t *player, boolean itemjustdown, boolean onground,
 	}
 }
 
-void K_UseItem_SPB(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_SPB(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -3005,7 +3005,7 @@ void K_UseItem_SPB(player_t *player, boolean itemjustdown, boolean onground, boo
 	}
 }
 
-void K_UseItem_Grow(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Grow(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -3039,7 +3039,7 @@ void K_UseItem_Grow(player_t *player, boolean itemjustdown, boolean onground, bo
 	}
 }
 
-void K_UseItem_Shrink(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Shrink(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -3054,7 +3054,7 @@ void K_UseItem_Shrink(player_t *player, boolean itemjustdown, boolean onground, 
 	}
 }
 
-void K_UseItem_Mini(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Mini(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -3076,7 +3076,7 @@ void K_UseItem_Mini(player_t *player, boolean itemjustdown, boolean onground, bo
 	}
 }
 
-void K_UseItem_ThunderShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_ThunderShield(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -3099,7 +3099,7 @@ void K_UseItem_ThunderShield(player_t *player, boolean itemjustdown, boolean ong
 	}
 }
 
-void K_UseItem_AttractionShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_AttractionShield(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {	
 	if (nohyudoro)
 	{
@@ -3108,7 +3108,7 @@ void K_UseItem_AttractionShield(player_t *player, boolean itemjustdown, boolean 
 	}
 }
 
-void K_HoldUseItem_AttractionShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_HoldUseItem_AttractionShield(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -3175,7 +3175,7 @@ void K_HoldUseItem_AttractionShield(player_t *player, boolean itemjustdown, bool
 	player->attractioncharge++;
 }
 
-void K_ReleaseUseItem_AttractionShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_ReleaseUseItem_AttractionShield(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -3217,7 +3217,7 @@ void K_ReleaseUseItem_AttractionShield(player_t *player, boolean itemjustdown, b
 	player->attractioncharge = 0;
 }
 
-void K_UseItem_FlameShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_FlameShield(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {	
 	if (nohyudoro)
 	{
@@ -3236,7 +3236,7 @@ void K_UseItem_FlameShield(player_t *player, boolean itemjustdown, boolean ongro
 	}
 }
 
-void K_HoldUseItem_FlameShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_HoldUseItem_FlameShield(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -3283,7 +3283,7 @@ void K_HoldUseItem_FlameShield(player_t *player, boolean itemjustdown, boolean o
 	}
 }
 
-void K_ReleaseUseItem_FlameShield(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_ReleaseUseItem_FlameShield(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -3295,7 +3295,7 @@ void K_ReleaseUseItem_FlameShield(player_t *player, boolean itemjustdown, boolea
 	}
 }
 
-void K_UseItem_Hyudoro(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Hyudoro(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -3310,7 +3310,7 @@ void K_UseItem_Hyudoro(player_t *player, boolean itemjustdown, boolean onground,
 	}
 }
 
-void K_UseItem_PogoSpring(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_PogoSpring(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	if (nohyudoro && (onground || force) && player->pogospring == 0)
 	{
@@ -3322,7 +3322,7 @@ void K_UseItem_PogoSpring(player_t *player, boolean itemjustdown, boolean ongrou
 	}
 }
 
-void K_UseItem_SuperRing(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_SuperRing(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -3330,7 +3330,7 @@ void K_UseItem_SuperRing(player_t *player, boolean itemjustdown, boolean ongroun
 	
 	if (nohyudoro)
 	{
-		boolean offroad = (player->offroad && K_ApplyOffroad(player));
+		dboolean offroad = (player->offroad && K_ApplyOffroad(player));
 		player->superringdrag = max(K_GetKartSpeed(player, true, false), player->speed);
 		INT32 thrustspeed = 12*player->mo->scale;
 
@@ -3375,7 +3375,7 @@ void K_UseItem_SuperRing(player_t *player, boolean itemjustdown, boolean ongroun
 	}
 }
 
-void K_UseItem_KitchenSink(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_KitchenSink(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -3403,7 +3403,7 @@ void K_UseItem_KitchenSink(player_t *player, boolean itemjustdown, boolean ongro
 	}
 }
 
-void K_UseItem_EggBrick(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_EggBrick(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;
@@ -3418,7 +3418,7 @@ void K_UseItem_EggBrick(player_t *player, boolean itemjustdown, boolean onground
 	}
 }
 
-void K_UseItem_Sad(player_t *player, boolean itemjustdown, boolean onground, boolean force, boolean nohyudoro)
+void K_UseItem_Sad(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
 	(void)onground;
 	(void)force;

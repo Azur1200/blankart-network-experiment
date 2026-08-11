@@ -28,13 +28,13 @@ extern "C" {
 //
 
 // Called by main loop.
-boolean F_IntroResponder(event_t *ev);
-boolean F_CutsceneResponder(event_t *ev);
-boolean F_CreditResponder(event_t *ev);
+dboolean F_IntroResponder(event_t *ev);
+dboolean F_CutsceneResponder(event_t *ev);
+dboolean F_CreditResponder(event_t *ev);
 
 // Called by main loop.
 void F_IntroTicker(void);
-void F_TitleScreenTicker(boolean run);
+void F_TitleScreenTicker(dboolean run);
 void F_CutsceneTicker(void);
 void F_TitleDemoTicker(void);
 void F_TextPromptTicker(void);
@@ -60,16 +60,16 @@ void F_CreditDrawer(void);
 void F_BlanCreditTicker(void);
 void F_BlanCreditDrawer(void);
 
-void F_StartCustomCutscene(INT32 cutscenenum, boolean precutscene, boolean resetplayer);
+void F_StartCustomCutscene(INT32 cutscenenum, dboolean precutscene, dboolean resetplayer);
 void F_CutsceneDrawer(void);
 void F_EndCutScene(void);
 
-void F_StartTextPrompt(INT32 promptnum, INT32 pagenum, mobj_t *mo, UINT16 postexectag, boolean blockcontrols, boolean freezerealtime);
+void F_StartTextPrompt(INT32 promptnum, INT32 pagenum, mobj_t *mo, UINT16 postexectag, dboolean blockcontrols, dboolean freezerealtime);
 void F_GetPromptPageByNamedTag(const char *tag, INT32 *promptnum, INT32 *pagenum);
 void F_TextPromptDrawer(void);
-void F_EndTextPrompt(boolean forceexec, boolean noexec);
-boolean F_GetPromptHideHudAll(void);
-boolean F_GetPromptHideHud(fixed_t y);
+void F_EndTextPrompt(dboolean forceexec, dboolean noexec);
+dboolean F_GetPromptHideHudAll(void);
+dboolean F_GetPromptHideHud(fixed_t y);
 
 void F_StartIntro(void);
 void F_StartTitleScreen(void);
@@ -103,7 +103,7 @@ extern INT16 ttx;
 extern INT16 tty;
 extern INT16 ttloop;
 extern UINT16 tttics;
-extern boolean ttavailable[6];
+extern dboolean ttavailable[6];
 extern const char *blancredits[];
 
 typedef enum
@@ -121,10 +121,10 @@ extern SINT8 curfadevalue;
 extern INT32 curbgcolor;
 extern INT32 curbgxspeed;
 extern INT32 curbgyspeed;
-extern boolean curbghide;
-extern boolean hidetitlemap;
+extern dboolean curbghide;
+extern dboolean hidetitlemap;
 
-extern boolean curhidepics;
+extern dboolean curhidepics;
 extern ttmode_enum curttmode;
 extern UINT8 curttscale;
 // ttmode user vars
@@ -136,15 +136,15 @@ extern UINT16 curtttics;
 
 #define TITLEBACKGROUNDACTIVE (curfadevalue >= 0 || curbgname[0])
 
-void F_InitMenuPresValues(boolean title);
-void F_MenuPresTicker(boolean run);
+void F_InitMenuPresValues(dboolean title);
+void F_MenuPresTicker(dboolean run);
 
 //
 // WIPE
 //
 
 extern UINT8 WipeInAction;
-extern boolean WipeStageTitle;
+extern dboolean WipeStageTitle;
 
 // Don't know where else to place this constant
 // But this file seems appropriate
@@ -154,9 +154,9 @@ fademask_t *F_GetFadeMask(UINT8 masknum, UINT8 scrnnum);
 void F_DoWipe(fademask_t *fademask);
 void F_WipeStartScreen(void);
 void F_WipeEndScreen(void);
-void F_RunWipe(UINT8 wipetype, boolean drawMenu);
+void F_RunWipe(UINT8 wipetype, dboolean drawMenu);
 tic_t F_GetWipeLength(UINT8 wipetype);
-boolean F_WipeExists(UINT8 wipetype);
+dboolean F_WipeExists(UINT8 wipetype);
 void F_WipeStageTitle(void);
 #define F_WipeColorFill(c) V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, c)
 

@@ -46,18 +46,18 @@ extern tic_t demostarttime;
 struct demovars_s {
 	char titlename[65];
 	textinput_t titlenameinput;
-	boolean recording, playback, timing;
+	dboolean recording, playback, timing;
 	UINT16 version; // Current file format of the demo being played
-	boolean title; // Title Screen demo can be cancelled by any key
-	boolean rewinding; // Rewind in progress
+	dboolean title; // Title Screen demo can be cancelled by any key
+	dboolean rewinding; // Rewind in progress
 
-	boolean loadfiles, ignorefiles; // Demo file loading options
-	boolean fromtitle; // SRB2Kart: Don't stop the music
-	boolean inreplayhut; // Go back to replayhut after demos
-	boolean quitafterplaying; // quit after playing a demo from cmdline
-	boolean deferstart; // don't start playing demo right away
-	boolean netgame; // multiplayer netgame
-	boolean single_seed; // During playback, only has one RNG seed
+	dboolean loadfiles, ignorefiles; // Demo file loading options
+	dboolean fromtitle; // SRB2Kart: Don't stop the music
+	dboolean inreplayhut; // Go back to replayhut after demos
+	dboolean quitafterplaying; // quit after playing a demo from cmdline
+	dboolean deferstart; // don't start playing demo right away
+	dboolean netgame; // multiplayer netgame
+	dboolean single_seed; // During playback, only has one RNG seed
 
 	tic_t savebutton; // Used to determine when the local player can choose to save the replay while the race is still going
 	enum {
@@ -68,7 +68,7 @@ struct demovars_s {
 		DSM_SAVED
 	} savemode;
 
-	boolean freecam;
+	dboolean freecam;
 
 	const savebuffer_t *buffer; // debug, valid only if recording or playback
 };
@@ -102,7 +102,7 @@ struct menudemo_t {
 	} standings[MAXPLAYERS];
 };
 
-boolean G_CompatLevel(UINT16 level);
+dboolean G_CompatLevel(UINT16 level);
 
 extern mobj_t *metalplayback;
 
@@ -145,7 +145,7 @@ extern UINT8 demo_writerng;
 #define DXD_PST_SPECTATING 0x02
 #define DXD_PST_LEFT       0x03
 
-void G_LoadDemoCvars(void **p, void (*setvalue)(consvar_t *, const char *, boolean));
+void G_LoadDemoCvars(void **p, void (*setvalue)(consvar_t *, const char *, dboolean));
 
 // Record/playback tics
 void G_ReadDemoExtraData(void);
@@ -179,8 +179,8 @@ struct demoghost {
 	UINT8 *buffer, *p, color;
 	UINT8 fadein;
 	UINT16 version;
-	boolean linecrossed;
-	boolean done;
+	dboolean linecrossed;
+	dboolean done;
 	mobj_t oldmo, *mo;
 	struct demoghost *next;
 };
@@ -193,7 +193,7 @@ extern demoghost *ghosts;
 #define DFILE_ERROR_CANNOTLOAD           0x04 // Files are missing and cannot be loaded.
 #define DFILE_ERROR_EXTRAFILES           0x05 // Extra files outside of the replay's file list are loaded.
 
-boolean G_DemoWillAutoSave(void);
+dboolean G_DemoWillAutoSave(void);
 void G_DeferedPlayDemo(const char *demo);
 void G_DoPlayDemo(char *defdemoname);
 void G_SetupDemoPlayer(INT32 i);
@@ -205,10 +205,10 @@ void G_DoneLevelLoad(void);
 
 void G_DoPlayMetal(void);
 void G_StopMetalDemo(void);
-ATTRNORETURN void FUNCNORETURN G_StopMetalRecording(boolean kill);
+ATTRNORETURN void FUNCNORETURN G_StopMetalRecording(dboolean kill);
 
 void G_StopDemo(void);
-boolean G_CheckDemoStatus(void);
+dboolean G_CheckDemoStatus(void);
 
 void G_LoadDemoInfo(menudemo_t *pdemo);
 void G_DeferedPlayDemo(const char *demo);

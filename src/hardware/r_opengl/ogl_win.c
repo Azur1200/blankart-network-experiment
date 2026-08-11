@@ -24,7 +24,7 @@
 
 #if defined (_WIN32)
 
-//#define WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
 #include <time.h>
@@ -140,7 +140,7 @@ void *GetGLFunc(const char *proc)
 }
 #endif
 
-boolean LoadGL(void)
+dboolean LoadGL(void)
 {
 #ifndef STATIC_OPENGL
 	OGL32 = LoadLibrary("OPENGL32.DLL");

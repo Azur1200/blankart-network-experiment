@@ -50,6 +50,7 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <unistd.h>
 #endif
 #if defined (__unix__) || defined (UNIXCOMMON)
+#include <sys/stat.h>
 #include <fcntl.h>
 #endif
 
@@ -292,7 +293,7 @@ static void write_backtrace(INT32 signal)
 #undef CRASHLOG_STDERR_WRITE
 #endif // UNIXBACKTRACE
 
-static void I_ShowErrorMessageBox(const char *messagefordevelopers, boolean dumpmade)
+static void I_ShowErrorMessageBox(const char *messagefordevelopers, dboolean dumpmade)
 {
 	static char finalmessage[2048];
 	size_t firstimpressionsline = 3; // "BlanKart" has encountered...
@@ -433,7 +434,7 @@ static void I_ReportSignal(int num, int coredumped)
 	);
 }
 
-boolean I_In_Exiting_Signal_Handler(void)
+dboolean I_In_Exiting_Signal_Handler(void)
 {
 	return g_in_exiting_signal_handler;
 }
@@ -464,7 +465,7 @@ static ATTRNORETURN void signal_handler(INT32 num)
 
 static volatile sig_atomic_t interrupted = false;
 
-boolean I_Interrupted(void)
+dboolean I_Interrupted(void)
 {
 	return interrupted;
 }
@@ -697,7 +698,7 @@ static BOOL I_ReadyConsole(HANDLE ci)
 	return (GetNumberOfConsoleInputEvents(ci, &gotinput) && gotinput);
 }
 
-static boolean entering_con_command = false;
+static dboolean entering_con_command = false;
 
 static void Impl_HandleKeyboardConsoleEvent(KEY_EVENT_RECORD evt, HANDLE co)
 {
@@ -1475,7 +1476,7 @@ INT32 I_StartupSystem(void)
 	return 0;
 }
 
-boolean is_quitting = false;
+dboolean is_quitting = false;
 
 //
 // I_Quit
@@ -1489,7 +1490,9 @@ void I_Quit(void)
 	is_quitting = true;
 	SDLforceUngrabMouse();
 
-	R_SaveVoicePreferences();
+	if (initedvoiceprefs)
+		R_SaveVoicePreferences();
+
 	M_SaveConfig(NULL); //save game config, cvars..
 	D_SaveBan(); // save the ban list
 
@@ -1551,7 +1554,7 @@ static INT32 errorcount = 0;
 
 /**	\brief recursive error detecting
 */
-static boolean shutdowning = false;
+static dboolean shutdowning = false;
 
 FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 {
@@ -1585,7 +1588,9 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 			SDL_Quit();
 		if (errorcount == 8)
 		{
-			R_SaveVoicePreferences();
+			if (initedvoiceprefs)
+				R_SaveVoicePreferences();
+
 			M_SaveConfig(NULL);
 			G_SaveGameData();
 		}
@@ -1621,7 +1626,9 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 	I_OutputMsg("\nI_Error(): %s\n", buffer);
 	// ---
 
-	R_SaveVoicePreferences();
+	if (initedvoiceprefs)
+		R_SaveVoicePreferences();
+
 	M_SaveConfig(NULL); // save game config, cvars..
 	D_SaveBan(); // save the ban list
 	G_SaveGameData(); // Tails 12-08-2002
@@ -1793,12 +1800,12 @@ void I_GetDiskFreeSpace(INT64 *freespace)
 #endif
 #elif defined (_WIN32)
 	static p_GetDiskFreeSpaceExA pfnGetDiskFreeSpaceEx = NULL;
-	static boolean testwin95 = false;
+	static dboolean testwin95 = false;
 	ULARGE_INTEGER usedbytes, lfreespace;
 
 	if (!testwin95)
 	{
-		*(void**)&pfnGetDiskFreeSpaceEx = FUNCPTRCAST(GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetDiskFreeSpaceExA"));
+		reinterpret_cast<decltype(pfnGetDiskFreeSpaceEx)>(GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetDiskFreeSpaceExA"));
 		testwin95 = true;
 	}
 	if (pfnGetDiskFreeSpaceEx)
@@ -1868,6 +1875,24 @@ INT32 I_mkdir(const char *dirname, INT32 unixright)
 	(void)dirname;
 	(void)unixright;
 	return false;
+#endif
+}
+
+INT32 I_ChDir(const char *path)
+{
+#ifdef _WIN32
+	return (SetCurrentDirectoryA(path) ? 0 : -1);
+#else
+	return chdir(path);
+#endif
+}
+
+char *I_GetCwd(char *buf, size_t size)
+{
+#ifdef _WIN32
+	return (GetCurrentDirectoryA((DWORD)size, buf) ? buf : NULL);
+#else
+	return getcwd(buf, size);
 #endif
 }
 
@@ -1970,7 +1995,7 @@ const char *I_ClipboardPaste(void)
 
 
 */
-static boolean isWadPathOk(const char *path)
+static dboolean isWadPathOk(const char *path)
 {
 	char *wad3path = static_cast<char*>(malloc(256));
 

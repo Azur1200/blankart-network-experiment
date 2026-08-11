@@ -86,7 +86,7 @@ rendermode_t chosenrendermode = render_none; // set by command line arguments
 static CV_PossibleValue_t keyboardlayout_cons_t[] = {{1,"Default US"}, {2, "Native"}, {0, NULL}};
 consvar_t cv_keyboardlayout = CVAR_INIT ("keyboardlayout", "Default US", CV_SAVE, keyboardlayout_cons_t, NULL);
 
-boolean highcolor = false;
+dboolean highcolor = false;
 
 
 // synchronize page flipping with screen refresh
@@ -97,7 +97,7 @@ static consvar_t cv_alwaysgrabmouse = CVAR_INIT ("alwaysgrabmouse", "Off", CV_SA
 UINT8 graphics_started = 0; // Is used in console.c and screen.c
 
 // To disable fullscreen at startup; is set in VID_PrepareModeList
-boolean allow_fullscreen = false;
+dboolean allow_fullscreen = false;
 static bool disable_fullscreen = false;
 
 // hack to avoid resolution being forced back to 320x200 on entering fullscreen
@@ -127,7 +127,7 @@ static bool      havefocus = true;
 
 static UINT32 refresh_rate;
 
-static boolean video_init = false;
+static dboolean video_init = false;
 
 static SDL_Window *Impl_CreateWindow(void);
 
@@ -454,7 +454,7 @@ static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 	return 0;
 }
 
-static boolean IgnoreMouse(void)
+static dboolean IgnoreMouse(void)
 {
 	if (cv_alwaysgrabmouse.value)
 		return false;
@@ -541,7 +541,7 @@ static void VID_Command_Mode_f (void)
 	}
 }
 
-static void Impl_SetFocused(boolean focused)
+static void Impl_SetFocused(dboolean focused)
 {
 	window_notinfocus = !focused;
 
@@ -716,15 +716,15 @@ static INT32 Impl_SDL_Keysym_To_Keycode(SDL_KeyboardEvent evt)
 	return Impl_SDL_Scancode_To_Keycode(scancode);
 }
 
-static boolean native_input_active = false;
+static dboolean native_input_active = false;
 
 // used to supress the games shift/alt handling
-boolean I_UseNativeKeyboard(void)
+dboolean I_UseNativeKeyboard(void)
 {
 	return (cv_keyboardlayout.value == 2 && native_input_active);
 }
 
-void I_SetTextInput(boolean enable)
+void I_SetTextInput(dboolean enable)
 {
 	if (!window)
 		return;
@@ -813,7 +813,7 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 
 static void Impl_HandleMouseMotionEvent(SDL_MouseMotionEvent evt)
 {
-	static boolean firstmove = true;
+	static dboolean firstmove = true;
 
 	if (USE_MOUSEINPUT)
 	{
@@ -1278,7 +1278,7 @@ void I_UpdateNoBlit(void)
 //
 // Returns true if it thinks we can afford to skip this frame
 // from PrBoom's src/SDL/i_video.c
-static inline boolean I_SkipFrame(void)
+static inline dboolean I_SkipFrame(void)
 {
 #if 1
 	// While I fixed the FPS counter bugging out with this,
@@ -1287,7 +1287,7 @@ static inline boolean I_SkipFrame(void)
 	// without game logic changes.
 	return false;
 #else
-	static boolean skip = false;
+	static dboolean skip = false;
 
 	skip = !skip;
 
@@ -1515,9 +1515,9 @@ void VID_CheckGLLoaded(rendermode_t oldrender)
 #endif
 }
 
-boolean VID_CheckRenderer(void)
+dboolean VID_CheckRenderer(void)
 {
-	boolean rendererchanged = false;
+	dboolean rendererchanged = false;
 
 #ifdef HWRENDER
 	rendermode_t oldrenderer = rendermode;

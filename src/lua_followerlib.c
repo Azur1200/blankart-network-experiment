@@ -94,7 +94,7 @@ static int follower_get(lua_State *L)
 	switch (field)
 	{
 	case follower_valid:
-		lua_pushboolean(L, follower != NULL);
+		lua_pushdboolean(L, follower != NULL);
 		break;
 	case follower_name:
 		lua_pushstring(L, follower->name);
