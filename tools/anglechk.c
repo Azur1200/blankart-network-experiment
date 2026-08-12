@@ -180,6 +180,9 @@ fixed_t AngleFixed205(angle_t af)
 }
 
 #ifdef FIXEDPOINTCONV
+
+#define boolean dboolean
+
 static FUNCMATH angle_t AngleAdj(const fixed_t fa, const fixed_t wf,
                                  angle_t ra)
 {
@@ -209,6 +212,9 @@ static FUNCMATH angle_t AngleAdj(const fixed_t fa, const fixed_t wf,
 	else
 		return ra;
 }
+
+#undef boolean
+
 #endif
 
 angle_t FixedAngleC205(fixed_t fa, fixed_t factor)
@@ -293,6 +299,8 @@ angle_t FixedAngle205(fixed_t fa)
 #endif
 }
 
+#define INT64 int64_t
+
 int main(int argc, char** argv)
 {
 	fixed_t f, f204, f205;
@@ -349,6 +357,8 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+
+#undef INT64
 
 static void *cpu_cpy(void *dest, const void *src, size_t n)
 {
