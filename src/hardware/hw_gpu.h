@@ -25,34 +25,34 @@ extern "C" {
 
 dboolean GL_Init(void);
 void GL_SetPalette(RGBA_t *palette);
-void GL_FinishUpdate(INT32 waitvbl);
+void GL_FinishUpdate(int32_t waitvbl);
 void GL_Draw2DLine(F2DCoord *v1, F2DCoord *v2, RGBA_t Color);
 void GL_DrawPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags);
-void GL_DrawIndexedTriangles(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, UINT32 *IndexArray);
+void GL_DrawIndexedTriangles(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, uint32_t *IndexArray);
 void GL_RenderSkyDome(gl_sky_t *sky);
 void GL_SetBlend(FBITFIELD PolyFlags);
 void GL_ClearBuffer(FBOOLEAN ColorMask, FBOOLEAN DepthMask, FBOOLEAN StencilMask, FRGBAFloat *ClearColor);
 void GL_SetTexture(GLMipmap_t *pTexInfo);
 void GL_UpdateTexture(GLMipmap_t *pTexInfo);
 void GL_DeleteTexture(GLMipmap_t *pTexInfo);
-void GL_ReadScreenTexture(int tex, UINT8 *restrict dest, INT32 scale);
-void GL_GClipRect(INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip);
+void GL_ReadScreenTexture(int tex, uint8_t *restrict dest, int32_t scale);
+void GL_GClipRect(int32_t minx, int32_t miny, int32_t maxx, int32_t maxy, float nearclip);
 void GL_ClearMipMapCache(void);
 
-void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value);
-void GL_SetStencilMode(hwdstencilmode_t mode, INT32 ref);
+void GL_SetSpecialState(hwdspecialstate_t IdState, int32_t Value);
+void GL_SetStencilMode(hwdstencilmode_t mode, int32_t ref);
 
 // Hurdler: added for new development
-void GL_DrawModel(model_t *model, INT32 frameIndex, float duration, float tics, INT32 nextFrameIndex, FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface);
+void GL_DrawModel(model_t *model, int32_t frameIndex, float duration, float tics, int32_t nextFrameIndex, FTransform *pos, float hscale, float vscale, uint8_t flipped, uint8_t hflipped, FSurfaceInfo *Surface);
 void GL_CreateModelVBOs(model_t *model);
 void GL_SetTransform(FTransform *ptransform);
-INT32 GL_GetTextureUsed(void);
+int32_t GL_GetTextureUsed(void);
 
 void GL_FlushScreenTextures(void);
 void GL_DoScreenWipe(int wipeStart, int wipeEnd);
 void GL_DrawScreenTexture(int tex, FSurfaceInfo *surf, FBITFIELD polyflags);
 void GL_MakeScreenTexture(int tex);
-void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
+void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, uint8_t updistort, uint8_t downdistort, uint8_t barsize);
 void GL_DrawScreenFinalTexture(int tex, int width, int height);
 
 #define SCREENVERTS 10
@@ -64,11 +64,11 @@ dboolean GL_CompileShader(int slot);
 void GL_SetShader(int slot);
 void GL_UnSetShader(void);
 
-void GL_SetShaderInfo(hwdshaderinfo_t info, INT32 value);
+void GL_SetShaderInfo(hwdshaderinfo_t info, int32_t value);
 
-void GL_SetPaletteLookup(UINT8 *lut);
-UINT32 GL_CreateLightTable(RGBA_t *hw_lighttable);
-void GL_UpdateLightTable(UINT32 id, RGBA_t *hw_lighttable);
+void GL_SetPaletteLookup(uint8_t *lut);
+uint32_t GL_CreateLightTable(RGBA_t *hw_lighttable);
+void GL_UpdateLightTable(uint32_t id, RGBA_t *hw_lighttable);
 void GL_ClearLightTables(void);
 void GL_SetScreenPalette(RGBA_t *palette);
 

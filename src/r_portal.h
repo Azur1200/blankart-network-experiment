@@ -34,29 +34,29 @@ struct portal_t
 	fixed_t viewz;
 	angle_t viewangle;
 
-	UINT8 pass;          /**< Keeps track of the portal's recursion depth. */
-	INT32 clipline;      /**< Optional clipline for line-based portals. */
+	uint8_t pass;          /**< Keeps track of the portal's recursion depth. */
+	int32_t clipline;      /**< Optional clipline for line-based portals. */
 	dboolean isskybox;
 
 	// Clipping information.
-	INT32 start;         /**< First horizontal pixel coordinate to draw at. */
-	INT32 end;           /**< Last horizontal pixel coordinate to draw at. */
-	INT16 *ceilingclip;  /**< Temporary screen top clipping array. */
-	INT16 *floorclip;    /**< Temporary screen bottom clipping array. */
+	int32_t start;         /**< First horizontal pixel coordinate to draw at. */
+	int32_t end;           /**< Last horizontal pixel coordinate to draw at. */
+	int16_t *ceilingclip;  /**< Temporary screen top clipping array. */
+	int16_t *floorclip;    /**< Temporary screen bottom clipping array. */
 	fixed_t *frontscale; /**< Temporary screen bottom clipping array. */
 };
 
 extern portal_t* portal_base;
 extern portal_t* portal_cap;
-extern UINT8 portalrender;
+extern uint8_t portalrender;
 
 extern line_t *portalclipline;
 extern sector_t *portalcullsector;
-extern INT32 portalclipstart, portalclipend;
+extern int32_t portalclipstart, portalclipend;
 
 void Portal_InitList(void);
 void Portal_Remove(portal_t* portal);
-void Portal_Add2Lines(const INT32 line1, const INT32 line2, const INT32 x1, const INT32 x2);
+void Portal_Add2Lines(const int32_t line1, const int32_t line2, const int32_t x1, const int32_t x2);
 void Portal_AddSkybox(const visplane_t* plane);
 
 void Portal_ClipRange(portal_t* portal);

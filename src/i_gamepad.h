@@ -33,7 +33,7 @@ extern "C" {
 
 // detect a bug if we increase JOYBUTTONS above DIJOYSTATE's number of buttons
 #if (JOYBUTTONS > 64)
-"JOYBUTTONS is greater than INT64 bits can hold"
+"JOYBUTTONS is greater than int64_t bits can hold"
 #endif
 
 /**	\brief	The struct JoyType_s
@@ -46,7 +46,7 @@ struct JoyType_t
 {
 	/*! this joystick is a gamepad, read: digital axes
 	if FALSE, interpret the joystick event data as JOYAXISRANGE (see above) */
-	INT32 bGamepadStyle;
+	int32_t bGamepadStyle;
 
 };
 /**	\brief Joystick info
@@ -75,7 +75,7 @@ void I_ControllerScale4(void);
 
 /**	\brief to startup a joystick
 */
-void I_InitController(UINT8 index);
+void I_InitController(uint8_t index);
 
 /**	\brief to startup the first joystick
 */
@@ -95,7 +95,7 @@ void I_InitController4(void);
 
 /**	\brief return the number of joystick on the system
 */
-INT32 I_NumControllers(void);
+int32_t I_NumControllers(void);
 
 /**	\brief	The *I_GetControllerName function
 
@@ -103,22 +103,22 @@ INT32 I_NumControllers(void);
 
 	\return	joystick name
 */
-const char *I_GetControllerName(INT32 joyid);
+const char *I_GetControllerName(int32_t joyid);
 
-INT32 I_GetControllerSlotfromID(INT32 id);
+int32_t I_GetControllerSlotfromID(int32_t id);
 
-dboolean I_ControllerSupportsRumble(INT32 playernum);
-dboolean I_ControllerSupportsIndicatorMono(INT32 playernum);
-dboolean I_ControllerSupportsIndicatorColor(INT32 playernum);
-dboolean I_ControllerSupportsIndicatorPlayer(INT32 playernum);
+dboolean I_ControllerSupportsRumble(int32_t playernum);
+dboolean I_ControllerSupportsIndicatorMono(int32_t playernum);
+dboolean I_ControllerSupportsIndicatorColor(int32_t playernum);
+dboolean I_ControllerSupportsIndicatorPlayer(int32_t playernum);
 
-dboolean I_ControllerSupportsSensorAccelerometer(INT32 playernum);
-dboolean I_ControllerSupportsSensorGyro(INT32 playernum);
+dboolean I_ControllerSupportsSensorAccelerometer(int32_t playernum);
+dboolean I_ControllerSupportsSensorGyro(int32_t playernum);
 
-void I_ControllerRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
-void I_SetControllerIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 blue);
-void I_SetControllerIndicatorMonochrome(INT32 playernum, UINT8 brightness);
-void I_SetControllerPlayerNumber(INT32 playernum, INT32 number);
+void I_ControllerRumble(int32_t playernum, uint16_t low_strength, uint16_t high_strength, uint32_t duration);
+void I_SetControllerIndicatorColor(int32_t playernum, uint8_t red, uint8_t green, uint8_t blue);
+void I_SetControllerIndicatorMonochrome(int32_t playernum, uint8_t brightness);
+void I_SetControllerPlayerNumber(int32_t playernum, int32_t number);
 
 #ifdef __cplusplus
 } // extern "C"

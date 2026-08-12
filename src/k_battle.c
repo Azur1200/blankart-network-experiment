@@ -24,13 +24,13 @@
 dboolean itembreaker = false;
 
 // box respawning in battle mode
-INT32 nummapboxes = 0;
-INT32 numgotboxes = 0;
+int32_t nummapboxes = 0;
+int32_t numgotboxes = 0;
 
 // Item Breaker counters
-UINT8 numtargets = 0; // Itemboxes busted
+uint8_t numtargets = 0; // Itemboxes busted
 
-INT32 K_StartingBumperCount(void)
+int32_t K_StartingBumperCount(void)
 {
 	if (itembreaker)
 		return 1; // always 1 hit in Item Breaker
@@ -40,7 +40,7 @@ INT32 K_StartingBumperCount(void)
 
 dboolean K_IsPlayerWanted(player_t *player)
 {
-	UINT8 i;
+	uint8_t i;
 
 	if (!(gametypes[gametype]->rules & GTR_WANTED))
 		return false;
@@ -71,10 +71,10 @@ dboolean K_IsPlayerMostWanted(player_t *player)
 
 void K_CalculateBattleWanted(void)
 {
-	UINT8 numingame = 0, numwanted = 0;
-	SINT8 camppos[MAXPLAYERS]; // who is the biggest camper
-	UINT8 ties = 0, nextcamppos = 0;
-	UINT8 i, j;
+	uint8_t numingame = 0, numwanted = 0;
+	int8_t camppos[MAXPLAYERS]; // who is the biggest camper
+	uint8_t ties = 0, nextcamppos = 0;
+	uint8_t i, j;
 
 	mostwanted = -1;
 
@@ -89,7 +89,7 @@ void K_CalculateBattleWanted(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		UINT8 position = 1;
+		uint8_t position = 1;
 
 		if (!playeringame[i] || players[i].spectator) // Not playing
 			continue;
@@ -190,7 +190,7 @@ void K_CalculateBattleWanted(void)
 	}
 }
 
-void K_SpawnBattlePoints(player_t *source, player_t *victim, UINT8 amount)
+void K_SpawnBattlePoints(player_t *source, player_t *victim, uint8_t amount)
 {
 	statenum_t st;
 	mobj_t *pt;
@@ -221,10 +221,10 @@ void K_SpawnBattlePoints(player_t *source, player_t *victim, UINT8 amount)
 
 void K_CheckBumpers(void)
 {
-	UINT8 i;
-	UINT8 numingame = 0;
-	SINT8 winnernum = -1;
-	UINT32 winnerscoreadd = 0, maxroundscore = 0;
+	uint8_t i;
+	uint8_t numingame = 0;
+	int8_t winnernum = -1;
+	uint32_t winnerscoreadd = 0, maxroundscore = 0;
 	dboolean nobumpers = false;
 
 	if (!(gametypes[gametype]->rules & GTR_BUMPERS))
@@ -302,14 +302,14 @@ void K_CheckBumpers(void)
 	P_DoAllPlayersExit(0, false);
 }
 
-UINT8 K_NumEmeralds(player_t *player)
+uint8_t K_NumEmeralds(player_t *player)
 {
-	UINT8 i;
-	UINT8 num = 0;
+	uint8_t i;
+	uint8_t num = 0;
 
 	for (i = 0; i < 14; i++)
 	{
-		UINT32 emeraldFlag = (1 << i);
+		uint32_t emeraldFlag = (1 << i);
 
 		if (player->emeralds & emeraldFlag)
 		{
@@ -327,8 +327,8 @@ void K_RunPaperItemSpawners(void)
 	thinker_t *th;
 	mobj_t *mo;
 
-	UINT8 pcount = 0;
-	INT16 i;
+	uint8_t pcount = 0;
+	int16_t i;
 
 	if (itembreaker || bossinfo.boss)
 	{
@@ -368,10 +368,10 @@ void K_RunPaperItemSpawners(void)
 		{
 #define MAXITEM 64
 			mobj_t *spotList[MAXITEM];
-			UINT8 spotMap[MAXITEM];
-			UINT8 spotCount = 0, spotBackup = 0;
+			uint8_t spotMap[MAXITEM];
+			uint8_t spotCount = 0, spotBackup = 0;
 
-			INT16 starti = 0;
+			int16_t starti = 0;
 
 			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 			{
@@ -401,9 +401,9 @@ void K_RunPaperItemSpawners(void)
 			spotBackup = spotCount;
 			for (i = starti; i < pcount; i++)
 			{
-				UINT8 r = 0, key = 0;
+				uint8_t r = 0, key = 0;
 				mobj_t *drop = NULL;
-				SINT8 flip = 1;
+				int8_t flip = 1;
 
 				if (spotCount == 0)
 				{
@@ -463,7 +463,7 @@ void K_SpawnPlayerBattleBumpers(player_t *p)
 		return;
 
 	{
-		INT32 i;
+		int32_t i;
 		angle_t diff = FixedAngle(360*FRACUNIT/p->bumper);
 		angle_t newangle = p->mo->angle;
 		mobj_t *bump;
@@ -503,8 +503,8 @@ void K_BattleInit(dboolean singleplayercontext)
 
 	if (gametypes[gametype]->rules & GTR_BUMPERS)
 	{
-		INT32 maxbumpers = K_StartingBumperCount();
-		UINT8 i;
+		int32_t maxbumpers = K_StartingBumperCount();
+		uint8_t i;
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{

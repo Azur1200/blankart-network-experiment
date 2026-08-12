@@ -117,7 +117,7 @@
 int    VERSION;
 int SUBVERSION;
 // #ifdef COMMITVERSION
-UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
+uint8_t comprevision_abbrev_bin[GIT_SHA_ABBREV];
 // #endif
 
 #ifdef HAVE_DISCORDRPC
@@ -125,9 +125,9 @@ UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
 #endif
 
 // platform independant focus loss
-UINT8 window_notinfocus = false;
+uint8_t window_notinfocus = false;
 
-UINT32 initial_seed = 0;
+uint32_t initial_seed = 0;
 
 //
 // DEMO LOOP
@@ -140,9 +140,9 @@ dboolean devparm = false; // started game with -devparm
 dboolean singletics = false; // timedemo
 dboolean lastdraw = false;
 
-static INT32 lastwipetic = 0;
+static int32_t lastwipetic = 0;
 
-INT32 postimgparam[MAXSPLITSCREENPLAYERS];
+int32_t postimgparam[MAXSPLITSCREENPLAYERS];
 
 // These variables are in effect
 // whether the respective sound system is disabled
@@ -152,10 +152,10 @@ dboolean sound_disabled = false;
 dboolean digital_disabled = false;
 
 #ifdef DEBUGFILE
-INT32 debugload = 0;
+int32_t debugload = 0;
 #endif
 
-UINT16 numskincolors;
+uint16_t numskincolors;
 menucolor_t *menucolorhead, *menucolortail;
 
 char savegamename[256];
@@ -176,7 +176,7 @@ char downloaddir[sizeof addonsdir + sizeof DOWNLOADDIR_PART] = "DOWNLOAD";
 // referenced from i_system.c for I_GetKey()
 
 event_t events[MAXEVENTS];
-INT32 eventhead, eventtail;
+int32_t eventhead, eventtail;
 
 dboolean dedicated = false;
 
@@ -198,9 +198,9 @@ void D_PostEvent(const event_t *ev)
 
 // modifier keys
 // Now handled in I_OsPolling
-UINT8 shiftdown = 0; // 0x1 left, 0x2 right
-UINT8 ctrldown = 0; // 0x1 left, 0x2 right
-UINT8 altdown = 0; // 0x1 left, 0x2 right
+uint8_t shiftdown = 0; // 0x1 left, 0x2 right
+uint8_t ctrldown = 0; // 0x1 left, 0x2 right
+uint8_t altdown = 0; // 0x1 left, 0x2 right
 dboolean capslock = 0;	// gee i wonder what this does.
 
 static dboolean recursioncheck = false;
@@ -211,7 +211,7 @@ static dboolean recursioncheck = false;
 //
 void D_ProcessEvents(void)
 {
-	INT32 i;
+	int32_t i;
 	event_t *ev;
 
 	dboolean eaten = false;
@@ -306,7 +306,7 @@ void D_ProcessEvents(void)
 
 dboolean D_RenderLevel(void)
 {
-	UINT8 i;
+	uint8_t i;
 
 	if (automapactive || dedicated || !cv_renderview.value || !levelloaded)
 		return false;
@@ -339,7 +339,7 @@ dboolean D_RenderLevel(void)
 		if (r_splitscreen == 2) // Draw over the fourth screen so you don't have to stare at a HOM :V
 		{
 			// V_DrawPatchFill, but for the fourth screen only
-			INT32 x, y, pw = LSBF_SHORT(srb2back->width) * vid.dup, ph = LSBF_SHORT(srb2back->height) * vid.dup;
+			int32_t x, y, pw = LSBF_SHORT(srb2back->width) * vid.dup, ph = LSBF_SHORT(srb2back->height) * vid.dup;
 
 			for (x = vid.width>>1; x < vid.width; x += pw)
 			{
@@ -422,15 +422,15 @@ dboolean D_RenderLevel(void)
 // added comment : there is a wipe eatch change of the gamestate
 gamestate_t wipegamestate = GS_LEVEL;
 // -1: Default; 0-n: Wipe index; INT16_MAX: do not wipe
-INT16 wipetypepre = -1;
-INT16 wipetypepost = -1;
+int16_t wipetypepre = -1;
+int16_t wipetypepost = -1;
 
 static void D_Display(void)
 {
 	dboolean forcerefresh = false;
 	static dboolean wipe = false;
-	INT32 wipedefindex = 0;
-	UINT8 i;
+	int32_t wipedefindex = 0;
+	uint8_t i;
 
 	ZoneScoped;
 
@@ -657,7 +657,7 @@ static void D_Display(void)
 	// draw pause pic
 	if (paused && cv_showhud.value && !demo.playback)
 	{
-		INT32 py;
+		int32_t py;
 		patch_t *patch;
 		if (automapactive)
 			py = 4;
@@ -824,7 +824,7 @@ static double D_EndFrame(precise_t enterprecise, int *frameskip)
 
 	// Use the time before sleep for frameskip calculations:
 	// post-sleep time is literally being intentionally wasted
-	double deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
+	double deltasecs = (double)((int64_t)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
 	double deltatics = deltasecs * NEWTICRATE;
 
 	// If time spent this game loop exceeds a single tic,
@@ -858,7 +858,7 @@ static double D_EndFrame(precise_t enterprecise, int *frameskip)
 
 	// Capture the time once more to get the real delta time.
 	finishprecise = I_GetPreciseTime();
-	deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
+	deltasecs = (double)((int64_t)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
 
 	// I looked at the possibility of putting in a float drawer for
 	// perfstats and it's very complicated, so we'll just do this instead...
@@ -868,7 +868,7 @@ static double D_EndFrame(precise_t enterprecise, int *frameskip)
 	return deltasecs * NEWTICRATE;
 }
 
-static INT32 endtimes[] = {
+static int32_t endtimes[] = {
 	UINT8_MAX, // WIPELOOP_RUNWIPE
 	PRELEVELTIME*NEWTICRATERATIO, // WIPELOOP_TITLECARD
 	3*TICRATE/2, // WIPELOOP_ENCORE
@@ -879,10 +879,10 @@ static bool ranwipe = false;
 
 // one single function for all the extra main loops in this god-forsaken codebase
 // should make it easier to fold these back into D_SRB2Loop at some point...
-void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, dboolean drawMenu)
+void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 {
 	tic_t nowtime, endtime;
-	UINT8 wipeframe = 0;
+	uint8_t wipeframe = 0;
 	fademask_t *fmask;
 	double delta = 0.0;
 
@@ -1203,7 +1203,7 @@ void D_ClearState(void)
 	if (dedicated)
 		I_Error("D_StartTitle is called on dedicated server");
 
-	INT32 i;
+	int32_t i;
 
 	// okay, stop now
 	// (otherwise the game still thinks we're playing!)
@@ -1445,7 +1445,7 @@ static void IdentifyVersion(void)
 // #ifdef COMMITVERSION
 static void D_AbbrevCommit (void)
 {
-       UINT8 i;
+       uint8_t i;
 
        for (i = 0; i < GIT_SHA_ABBREV; ++i)
        {
@@ -1496,7 +1496,7 @@ static void Command_crash(void)
 //
 void D_SRB2Main(void)
 {
-	INT32 p;
+	int32_t p;
 
 	mapnum_t pstartmap = (mapnum_t)0;
 	dboolean autostart = false;
@@ -1918,7 +1918,7 @@ void D_SRB2Main(void)
 #define RRIDWARNINGNAME "DO_NOT_SHARE_THESE"
 #define RRIDWARNINGMESSAGE "This folder contains keys that should not be shared.\nThe base game and mods may use these to keep track of gamedata."
 	static char keyfile[MAXSPLITSCREENPLAYERS][10] = {"bkid1.dat", "bkid2.dat", "bkid3.dat", "bkid4.dat"};
-	INT32 snum;
+	int32_t snum;
 
 	for (snum = 0; snum < MAXSPLITSCREENPLAYERS; snum++)
 	{
@@ -1942,8 +1942,8 @@ void D_SRB2Main(void)
 
 		if (FIL_ReadFileOK(file))
 		{
-			UINT8 *readbuffer = NULL;
-			UINT16 lengthRead = FIL_ReadFile(file, &readbuffer);
+			uint8_t *readbuffer = NULL;
+			uint16_t lengthRead = FIL_ReadFile(file, &readbuffer);
 			if (readbuffer == NULL || lengthRead != totalsize)
 				I_Error("Malformed keyfile %d", snum);
 			memcpy(g_secret_key[snum], readbuffer, sk_size);
@@ -2024,7 +2024,7 @@ void D_SRB2Main(void)
 	// Set up splitscreen players before joining!
 	if (!dedicated && (M_CheckParm("-splitscreen") && M_IsNextParm()))
 	{
-		UINT8 num = atoi(M_GetNextParm());
+		uint8_t num = atoi(M_GetNextParm());
 		if (num >= 1 && num <= 4)
 		{
 			CV_StealthSetValue(&cv_splitplayers, num);
@@ -2134,8 +2134,8 @@ void D_SRB2Main(void)
 		if (M_CheckParm("-gametype") && M_IsNextParm())
 		{
 			// from Command_Map_f
-			INT32 j;
-			INT16 newgametype = -1;
+			int32_t j;
+			int16_t newgametype = -1;
 			const char *sgametype = M_GetNextParm();
 
 			newgametype = G_GetGametypeByName(sgametype);
@@ -2144,7 +2144,7 @@ void D_SRB2Main(void)
 			{
 				j = atoi(sgametype); // assume they gave us a gametype number, which is okay too
 				if (j >= 0 && j < numgametypes)
-					newgametype = (INT16)j;
+					newgametype = (int16_t)j;
 			}
 
 			if (newgametype != -1)
@@ -2157,15 +2157,15 @@ void D_SRB2Main(void)
 
 		if (M_CheckParm("-skill") && M_IsNextParm())
 		{
-			INT32 j;
-			INT16 newskill = -1;
+			int32_t j;
+			int16_t newskill = -1;
 			const char *sskill = M_GetNextParm();
 
 			for (j = 0; gpdifficulty_cons_t[j].strvalue; j++)
 			{
 				if (!strcasecmp(gpdifficulty_cons_t[j].strvalue, sskill))
 				{
-					newskill = (INT16)gpdifficulty_cons_t[j].value;
+					newskill = (int16_t)gpdifficulty_cons_t[j].value;
 					break;
 				}
 			}
@@ -2174,7 +2174,7 @@ void D_SRB2Main(void)
 			{
 				j = atoi(sskill); // assume they gave us a skill number, which is okay too
 				if (j >= KARTSPEED_EASY && j <= KARTGP_MANIAC)
-					newskill = (INT16)j;
+					newskill = (int16_t)j;
 			}
 
 			if (grandprixinfo.gp == true)

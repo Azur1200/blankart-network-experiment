@@ -13,13 +13,13 @@ typedef struct kartstats_s {
 
 	// Vanilla
 	tic_t totalplaytime;
-	UINT32 matchesplayed;
+	uint32_t matchesplayed;
 
 	// Custom data, fields go in same order as they are written into game save
 
 	// IMPORTANT: size **must be first**, so K_WriteStats can overwrite it (not that we're gonna change order, but just in case)
-	UINT32 size; // Size required for our stats. If older version reads save from newer one, it will just skip unread fields, avoiding reading corrupted values
-	UINT32 version; // Version, so we know which fields we actually can read
+	uint32_t size; // Size required for our stats. If older version reads save from newer one, it will just skip unread fields, avoiding reading corrupted values
+	uint32_t version; // Version, so we know which fields we actually can read
 
 	tic_t raplaytime;
 	tic_t onlineplaytime;
@@ -27,15 +27,15 @@ typedef struct kartstats_s {
 	tic_t battleplaytime;
 	tic_t spbtargettime;
 	tic_t spinouttime;
-	UINT32 totalwins; // 1st place
-	UINT32 totalpodium; // 2nd and 3rd place, *but not 1st*
-	UINT32 hits;
-	UINT32 selfhits;
-	UINT32 sinks; // Times hitting *others* by kitchen sink
-	UINT32 sinked; // Times *being hit* by kitchen sink
-	UINT32 respawns;
+	uint32_t totalwins; // 1st place
+	uint32_t totalpodium; // 2nd and 3rd place, *but not 1st*
+	uint32_t hits;
+	uint32_t selfhits;
+	uint32_t sinks; // Times hitting *others* by kitchen sink
+	uint32_t sinked; // Times *being hit* by kitchen sink
+	uint32_t respawns;
 
-	UINT8 *copy; // Copy of stats block that has been read from file. In case we're older version that reads newer save, we will keep values that we couldn't read
+	uint8_t *copy; // Copy of stats block that has been read from file. In case we're older version that reads newer save, we will keep values that we couldn't read
 } kartstats_t;
 
 extern kartstats_t kartstats;

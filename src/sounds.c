@@ -67,7 +67,7 @@ static char soundnames[NUMSFX][7] = {
 void S_InitRuntimeSounds (void)
 {
 	sfxenum_t i;
-	INT32 value;
+	int32_t value;
 	char soundname[10];
 
 	for (i = 0; i < NUMSFX; i++)

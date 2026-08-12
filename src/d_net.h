@@ -26,7 +26,7 @@ extern "C" {
 
 // Max computers in a game
 // 127 is probably as high as this can go, because
-// SINT8 is used for nodes sometimes >:(
+// int8_t is used for nodes sometimes >:(
 #define MAXNETNODES 127
 #define BROADCASTADDR MAXNETNODES
 #define NETSPLITSCREEN // Kart's splitscreen netgame feature
@@ -34,22 +34,22 @@ extern "C" {
 #define STATLENGTH (TICRATE*2)
 
 // stat of net
-extern INT32 ticruned, ticmiss;
-extern INT32 getbps, sendbps;
+extern int32_t ticruned, ticmiss;
+extern int32_t getbps, sendbps;
 extern float lostpercent, duppercent, gamelostpercent;
-extern INT32 packetheaderlength;
+extern int32_t packetheaderlength;
 dboolean Net_GetNetStat(void);
-extern INT32 getbytes;
-extern INT64 sendbytes; // Realtime updated
-extern UINT8 plcycle;
-extern UINT32 sentpackets[PACKETLOSSCYCLES][MAXNETNODES];
-extern UINT32 lostpackets[PACKETLOSSCYCLES][MAXNETNODES];
+extern int32_t getbytes;
+extern int64_t sendbytes; // Realtime updated
+extern uint8_t plcycle;
+extern uint32_t sentpackets[PACKETLOSSCYCLES][MAXNETNODES];
+extern uint32_t lostpackets[PACKETLOSSCYCLES][MAXNETNODES];
 
-extern SINT8 nodetoplayer[MAXNETNODES];
-extern SINT8 nodetoplayer2[MAXNETNODES]; // Say the numplayer for this node if any (splitscreen)
-extern SINT8 nodetoplayer3[MAXNETNODES]; // Say the numplayer for this node if any (splitscreen == 2)
-extern SINT8 nodetoplayer4[MAXNETNODES]; // Say the numplayer for this node if any (splitscreen == 3)
-extern UINT8 playerpernode[MAXNETNODES]; // Used specially for splitscreen
+extern int8_t nodetoplayer[MAXNETNODES];
+extern int8_t nodetoplayer2[MAXNETNODES]; // Say the numplayer for this node if any (splitscreen)
+extern int8_t nodetoplayer3[MAXNETNODES]; // Say the numplayer for this node if any (splitscreen == 2)
+extern int8_t nodetoplayer4[MAXNETNODES]; // Say the numplayer for this node if any (splitscreen == 3)
+extern uint8_t playerpernode[MAXNETNODES]; // Used specially for splitscreen
 extern dboolean nodeingame[MAXNETNODES]; // Set false as nodes leave game
 extern dboolean nodeneedsauth[MAXNETNODES];
 
@@ -58,7 +58,7 @@ extern dboolean serverrunning;
 void Net_AckTicker(void);
 
 // If reliable return true if packet sent, 0 else
-dboolean HSendPacket(INT32 node, dboolean reliable, UINT8 acknum,
+dboolean HSendPacket(int32_t node, dboolean reliable, uint8_t acknum,
 	size_t packetlength);
 dboolean HGetPacket(void);
 void D_SetDoomcom(void);
@@ -66,12 +66,12 @@ void D_SaveBan(void);
 void D_LoadBan(dboolean warning);
 dboolean D_CheckNetGame(void);
 void D_CloseConnection(void);
-void Net_UnAcknowledgePacket(INT32 node);
-void Net_CloseConnection(INT32 node);
-void Net_ConnectionTimeout(INT32 node);
-void Net_AbortPacketType(UINT8 packettype);
-void Net_SendAcks(INT32 node);
-void Net_WaitAllAckReceived(UINT32 timeout);
+void Net_UnAcknowledgePacket(int32_t node);
+void Net_CloseConnection(int32_t node);
+void Net_ConnectionTimeout(int32_t node);
+void Net_AbortPacketType(uint8_t packettype);
+void Net_SendAcks(int32_t node);
+void Net_WaitAllAckReceived(uint32_t timeout);
 
 dboolean IsPacketSigned(int packettype);
 

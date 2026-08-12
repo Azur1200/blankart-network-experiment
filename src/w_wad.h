@@ -28,8 +28,8 @@ extern "C" {
 // NOTE: This sits here and not in w_wad.c because p_setup.c makes use of it to load map WADs inside PK3s.
 struct filelump_t
 {
-	UINT32 filepos; // file offset of the resource
-	UINT32 size; // size of the resource
+	uint32_t filepos; // file offset of the resource
+	uint32_t size; // size of the resource
 	char name[8]; // name of the resource
 } ATTRPACK;
 
@@ -41,8 +41,8 @@ struct filelump_t
 struct wadinfo_t
 {
 	char identification[4]; // should be "IWAD" or "PWAD"
-	UINT32 numlumps; // how many resources
-	UINT32 infotableofs; // the 'directory' of resources
+	uint32_t numlumps; // how many resources
+	uint32_t infotableofs; // the 'directory' of resources
 };
 
 // Available compression methods for lumps.
@@ -72,9 +72,9 @@ struct lumpinfo_t
 	size_t fullnamelength;  // length of fullname
 
 	struct {
-		UINT32 name;        // hash of name
-		UINT32 longname;    // hash of longname
-		UINT32 fullname;    // hash of fullname
+		uint32_t name;        // hash of name
+		uint32_t longname;    // hash of longname
+		uint32_t fullname;    // hash of fullname
 	} hash;
 };
 
@@ -84,7 +84,7 @@ struct lumpinfo_t
 
 struct virtlump_t {
 	char name[9];
-	UINT8* data;
+	uint8_t* data;
 	size_t size;
 };
 
@@ -96,7 +96,7 @@ struct virtres_t {
 virtres_t* vres_GetMap(lumpnum_t);
 void vres_Free(virtres_t*);
 virtlump_t* vres_Find(const virtres_t*, const char*);
-void* vres_GetPatch(virtlump_t *vlump, INT32 tag);
+void* vres_GetPatch(virtlump_t *vlump, int32_t tag);
 
 // =========================================================================
 //                         DYNAMIC WAD LOADING
@@ -104,9 +104,9 @@ void* vres_GetPatch(virtlump_t *vlump, INT32 tag);
 
 #define MAX_WADPATH 512
 #define MAX_WADFILES 255 // maximum of wad files used at the same time
-// Replay code relies on it being an UINT8. There are no SINT8s handling WAD indices, though.
+// Replay code relies on it being an uint8_t. There are no SINT8s handling WAD indices, though.
 // Can be set all the way up to 255 but not 256,
-// because an UINT8 will never be >= 256, probably breaking some conditionals.
+// because an uint8_t will never be >= 256, probably breaking some conditionals.
 
 #define lumpcache_t void *
 
@@ -130,10 +130,10 @@ struct wadfile_t
 	lumpcache_t *rotcache;
 	struct FolderCache *startfolders;
 	struct FolderCache *endfolders;
-	UINT16 numlumps; // this wad's number of resources
+	uint16_t numlumps; // this wad's number of resources
 	FILE *handle;
-	UINT32 filesize; // for network
-	UINT64 hash;
+	uint32_t filesize; // for network
+	uint64_t hash;
 
 	dboolean important; // also network - !W_VerifyNMUSlumps
 	dboolean compatmode;
@@ -146,10 +146,10 @@ typedef enum wadcompat
 	WC_OFF,
 } wadcompat_t;
 
-#define WADFILENUM(lumpnum) (UINT16)((lumpnum)>>16) // wad flumpnum>>16) // wad file number in upper word
-#define LUMPNUM(lumpnum) (UINT16)((lumpnum)&0xFFFF) // lump number for this pwad
+#define WADFILENUM(lumpnum) (uint16_t)((lumpnum)>>16) // wad flumpnum>>16) // wad file number in upper word
+#define LUMPNUM(lumpnum) (uint16_t)((lumpnum)&0xFFFF) // lump number for this pwad
 
-extern UINT16 numwadfiles;
+extern uint16_t numwadfiles;
 extern wadfile_t *wadfiles[MAX_WADFILES];
 
 // =========================================================================
@@ -157,30 +157,30 @@ extern wadfile_t *wadfiles[MAX_WADFILES];
 // Opens a WAD file. Returns the FILE * handle for the file, or NULL if not found or could not be opened
 FILE *W_OpenWadFile(const char **filename, dboolean useerrors);
 // Load and add a wadfile to the active wad files, returns numbers of lumps, INT16_MAX on error
-UINT16 W_InitFile(const char *filename, dboolean mainfile, dboolean startup, dboolean local, wadcompat_t compat);
+uint16_t W_InitFile(const char *filename, dboolean mainfile, dboolean startup, dboolean local, wadcompat_t compat);
 
-dboolean W_MakeFileHash(const char *filename, dboolean openwad, UINT64 *ret);
+dboolean W_MakeFileHash(const char *filename, dboolean openwad, uint64_t *ret);
 
 // W_InitMultipleFiles returns 1 if all is okay, 0 otherwise,
 // so that it stops with a message if a file was not found, but not if all is okay.
 // W_InitMultipleFiles exits if a file was not found, but not if all is okay.
-INT32 W_InitMultipleFiles(char **filenames, dboolean addons);
+int32_t W_InitMultipleFiles(char **filenames, dboolean addons);
 
-const char *W_CheckNameForNumPwad(UINT16 wad, UINT16 lump);
+const char *W_CheckNameForNumPwad(uint16_t wad, uint16_t lump);
 const char *W_CheckNameForNum(lumpnum_t lumpnum);
 
-UINT16 W_FindNextEmptyInPwad(UINT16 wad, UINT16 startlump); // checks only in one pwad
+uint16_t W_FindNextEmptyInPwad(uint16_t wad, uint16_t startlump); // checks only in one pwad
 
-UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 startlump);
-UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump); // checks only in one pwad
-UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump);
+uint16_t W_CheckNumForMapPwad(const char *name, uint32_t hash, uint16_t wad, uint16_t startlump);
+uint16_t W_CheckNumForNamePwad(const char *name, uint16_t wad, uint16_t startlump); // checks only in one pwad
+uint16_t W_CheckNumForLongNamePwad(const char *name, uint16_t wad, uint16_t startlump);
 
 /* Find the first lump after F_START for instance. */
-UINT16 W_CheckNumForMarkerStartPwad(const char *name, UINT16 wad, UINT16 startlump);
+uint16_t W_CheckNumForMarkerStartPwad(const char *name, uint16_t wad, uint16_t startlump);
 
-UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump);
-UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlump);
-UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump);
+uint16_t W_CheckNumForFullNamePK3(const char *name, uint16_t wad, uint16_t startlump);
+uint16_t W_CheckNumForFolderStartPK3(const char *name, uint16_t wad, uint16_t startlump);
+uint16_t W_CheckNumForFolderEndPK3(const char *name, uint16_t wad, uint16_t startlump);
 
 lumpnum_t W_CheckNumForMap(const char *name, dboolean checktofirst);
 lumpnum_t W_CheckNumForName(const char *name);
@@ -189,54 +189,54 @@ lumpnum_t W_GetNumForName(const char *name); // like W_CheckNumForName but I_Err
 lumpnum_t W_GetNumForLongName(const char *name);
 lumpnum_t W_CheckNumForNameInBlock(const char *name, const char *blockstart, const char *blockend);
 lumpnum_t W_CheckNumForNameInFolder(const char *lump, const char *folder);
-UINT8 W_LumpExists(const char *name); // Lua uses this.
+uint8_t W_LumpExists(const char *name); // Lua uses this.
 
-size_t W_LumpLengthPwad(UINT16 wad, UINT16 lump);
+size_t W_LumpLengthPwad(uint16_t wad, uint16_t lump);
 size_t W_LumpLength(lumpnum_t lumpnum);
 
 dboolean W_IsLumpWad(lumpnum_t lumpnum); // for loading maps from WADs in PK3s
-dboolean W_IsLumpFolder(UINT16 wad, UINT16 lump); // for detecting folder "lumps"
+dboolean W_IsLumpFolder(uint16_t wad, uint16_t lump); // for detecting folder "lumps"
 
 #ifdef HAVE_ZLIB
 void zerr(int ret); // zlib error checking
 #endif
 
-size_t W_ReadLumpHeaderPwad(UINT16 wad, UINT16 lump, void *dest, size_t size, size_t offset);
+size_t W_ReadLumpHeaderPwad(uint16_t wad, uint16_t lump, void *dest, size_t size, size_t offset);
 size_t W_ReadLumpHeader(lumpnum_t lump, void *dest, size_t size, size_t offest); // read all or a part of a lump
-void W_ReadLumpPwad(UINT16 wad, UINT16 lump, void *dest);
+void W_ReadLumpPwad(uint16_t wad, uint16_t lump, void *dest);
 void W_ReadLump(lumpnum_t lump, void *dest);
 
-void *W_CacheLumpNumPwad(UINT16 wad, UINT16 lump, INT32 tag);
-void *W_CacheLumpNum(lumpnum_t lump, INT32 tag);
-void *W_CacheLumpNumForce(lumpnum_t lumpnum, INT32 tag);
+void *W_CacheLumpNumPwad(uint16_t wad, uint16_t lump, int32_t tag);
+void *W_CacheLumpNum(lumpnum_t lump, int32_t tag);
+void *W_CacheLumpNumForce(lumpnum_t lumpnum, int32_t tag);
 
 dboolean W_IsLumpCached(lumpnum_t lump, void *ptr);
 dboolean W_IsPatchCached(lumpnum_t lump, void *ptr);
-dboolean W_NeedPaletteRemapPwad(UINT16 wad, UINT16 lump, dboolean ignorecache);
+dboolean W_NeedPaletteRemapPwad(uint16_t wad, uint16_t lump, dboolean ignorecache);
 dboolean W_NeedPaletteRemap(lumpnum_t lump, dboolean ignorecache);
 
-void *W_CacheLumpName(const char *name, INT32 tag);
-void *W_CachePatchName(const char *name, INT32 tag);
-void *W_CachePatchLongName(const char *name, INT32 tag);
+void *W_CacheLumpName(const char *name, int32_t tag);
+void *W_CachePatchName(const char *name, int32_t tag);
+void *W_CachePatchLongName(const char *name, int32_t tag);
 
 // Returns either a Software patch, or an OpenGL patch.
 // Performs any necessary conversions from PNG images.
-void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag);
+void *W_CachePatchNumPwad(uint16_t wad, uint16_t lump, int32_t tag);
 #ifdef ROTSPRITE
-void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag);
+void *W_CachePatchNameRotated(const char *name, int32_t rotationangle, int32_t tag);
 #endif
-void *W_CachePatchNum(lumpnum_t lumpnum, INT32 tag);
+void *W_CachePatchNum(lumpnum_t lumpnum, int32_t tag);
 
-void *W_GetCachedRotPatchPwad(UINT16 wadnum, UINT16 lumpnum);
+void *W_GetCachedRotPatchPwad(uint16_t wadnum, uint16_t lumpnum);
 
 // Returns a Software patch.
 // Performs any necessary conversions from PNG images.
-void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag);
-void *W_CacheSoftwarePatchNum(lumpnum_t lumpnum, INT32 tag);
+void *W_CacheSoftwarePatchNumPwad(uint16_t wad, uint16_t lump, int32_t tag);
+void *W_CacheSoftwarePatchNum(lumpnum_t lumpnum, int32_t tag);
 
 void W_UnlockCachedPatch(void *patch);
 
-void W_VerifyFileHash(UINT16 wadfilenum, UINT64 matchhash);
+void W_VerifyFileHash(uint16_t wadfilenum, uint64_t matchhash);
 
 int W_VerifyNMUSlumps(const char *filename, dboolean exit_on_error);
 

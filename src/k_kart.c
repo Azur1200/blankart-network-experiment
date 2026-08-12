@@ -109,8 +109,8 @@ void K_TimerReset(void)
 
 void K_TimerInit(void)
 {
-	UINT8 i;
-	UINT8 numPlayers = 0;
+	uint8_t i;
+	uint8_t numPlayers = 0;
 	dboolean domodeattack = ((modeattacking != ATTACKING_NONE)
 		|| (grandprixinfo.gp == true && grandprixinfo.eventmode != GPEVENT_NONE));
 
@@ -172,9 +172,9 @@ void K_TimerInit(void)
 	}
 }
 
-UINT32 K_GetPlayerDontDrawFlag(player_t *player)
+uint32_t K_GetPlayerDontDrawFlag(player_t *player)
 {
-	UINT32 flag = 0;
+	uint32_t flag = 0;
 
 	if (player == &players[displayplayers[0]])
 		flag = RF_DONTDRAWP1;
@@ -191,7 +191,7 @@ UINT32 K_GetPlayerDontDrawFlag(player_t *player)
 // Angle reflection used by springs & speed pads
 angle_t K_ReflectAngle(angle_t yourangle, angle_t theirangle, fixed_t yourspeed, fixed_t theirspeed)
 {
-	INT32 angoffset;
+	int32_t angoffset;
 	dboolean subtract = false;
 
 	angoffset = yourangle - theirangle;
@@ -521,8 +521,8 @@ void K_RegisterKartStuff(void)
 
 dboolean K_IsPlayerLosing(const player_t *player)
 {
-	INT32 winningpos = 1;
-	UINT8 i, pcount = 0;
+	int32_t winningpos = 1;
+	uint8_t i, pcount = 0;
 
 	if (itembreaker && numtargets == 0)
 		return true; // Didn't even TRY?
@@ -551,7 +551,7 @@ dboolean K_IsPlayerLosing(const player_t *player)
 	return (player->position > winningpos);
 }
 
-fixed_t K_GetKartGameSpeedScalar(SINT8 value)
+fixed_t K_GetKartGameSpeedScalar(int8_t value)
 {
 	// Easy = 81.25%
 	// Normal = 100%
@@ -783,7 +783,7 @@ static mobj_t *K_SpawnBumpsForMobj(mobj_t *mobj1, mobj_t *mobj2)
 
 static void K_SetPlayerBumped(player_t *player, mobj_t *comparemobj)
 {
-	INT32 pshield;
+	int32_t pshield;
 
 	if (!player)
 		return;
@@ -856,7 +856,7 @@ dboolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, dboolean bounce, dboolean 
 		return false;
 
 	{ // Don't bump if you're flashing
-		INT32 flash;
+		int32_t flash;
 
 		flash = K_GetKartFlashing(mobj1->player);
 		if (mobj1->player && mobj1->player->flashing > 0 && mobj1->player->flashing < flash)
@@ -1041,7 +1041,7 @@ static fixed_t K_CheckOffroadCollide(mobj_t *mo)
 		{
 			if (mapnamespace == MNS_SRB2KART && s->offroad == 0) // some maps remap offroad live so lets account for that.
 			{
-				INT32 i;
+				int32_t i;
 				for (i = 2; i < 5; i++)	// check for sector special
 
 					if (GETSECSPECIAL(s->special, 1) == i)
@@ -1069,7 +1069,7 @@ static fixed_t K_CheckOffroadCollide(mobj_t *mo)
 			{
 				if (mapnamespace == MNS_SRB2KART && s->offroad == 0) // some maps remap offroad live so lets account for that.
 				{
-					INT32 i;
+					int32_t i;
 					for (i = 2; i < 5; i++)	// check for sector special
 
 						if (GETSECSPECIAL(s->special, 1) == i)
@@ -1208,8 +1208,8 @@ static void K_UpdateDraft(player_t *player)
 	fixed_t topspd = K_GetKartSpeed(player, false, false);
 	fixed_t draftdistance;
 	fixed_t minDist;
-	UINT8 leniency;
-	UINT8 i;
+	uint8_t leniency;
+	uint8_t i;
 
 	// Distance you have to be to draft. If you're still accelerating, then this distance is lessened.
 	// This distance biases toward low weight! (min weight gets ??? units, max weight gets 2560 units)
@@ -1301,7 +1301,7 @@ static void K_UpdateDraft(player_t *player)
 
 			// Bots are unusually good at keeping their facing aligned on long, tight turns.
 			// Force them to give up draft in these situations, like a drifting player typically would.
-			UINT16 rejectThreshold = KART_FULLTURN/4;
+			uint16_t rejectThreshold = KART_FULLTURN/4;
 			if (K_PlayerUsesBotMovement(player) && (abs(player->oldcmd.turning + player->cmd.turning) >= rejectThreshold))
 			{
 				continue;
@@ -1358,8 +1358,8 @@ static void K_UpdateDraft(player_t *player)
 
 void K_KartPainEnergyFling(player_t *player)
 {
-	static const UINT8 numfling = 5;
-	INT32 i;
+	static const uint8_t numfling = 5;
+	int32_t i;
 	mobj_t *mo;
 	angle_t fa;
 	fixed_t ns;
@@ -1374,7 +1374,7 @@ void K_KartPainEnergyFling(player_t *player)
 
 	for (i = 0; i < numfling; i++)
 	{
-		INT32 objType = mobjinfo[MT_FLINGENERGY].reactiontime;
+		int32_t objType = mobjinfo[MT_FLINGENERGY].reactiontime;
 		fixed_t momxy, momz; // base horizonal/vertical thrusts
 
 		z = player->mo->z;
@@ -1455,7 +1455,7 @@ void K_SpawnDashDustRelease(player_t *player, dboolean force)
 	fixed_t newy;
 	mobj_t *dust;
 	angle_t travelangle;
-	INT32 i;
+	int32_t i;
 
 	I_Assert(player != NULL);
 	I_Assert(player->mo != NULL);
@@ -1661,7 +1661,7 @@ static void K_HonkFollowerHorn(player_t *honkPlayer)
 {
 	const dboolean tasteful = (honkPlayer->karthud[khud_taunthorns] == 0);
 
-	UINT8 i;
+	uint8_t i;
 
 	// Loop through all players and make them hear your honking!
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -1695,13 +1695,13 @@ static void K_HonkFollowerHorn(player_t *honkPlayer)
 		honkPlayer->karthud[khud_taunthorns] = 2*TICRATE;
 }
 
-static SINT8 K_GlanceAtPlayers(player_t *glancePlayer)
+static int8_t K_GlanceAtPlayers(player_t *glancePlayer)
 {
 	const fixed_t maxdistance = FixedMul(1280 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
 	const angle_t blindSpotSize = ANG10; // ANG5
-	UINT8 i;
-	SINT8 glanceDir = 0;
-	SINT8 lastValidGlance = 0;
+	uint8_t i;
+	int8_t glanceDir = 0;
+	int8_t lastValidGlance = 0;
 
 	// See if there's any players coming up behind us.
 	// If so, your character will glance at 'em.
@@ -1711,7 +1711,7 @@ static SINT8 K_GlanceAtPlayers(player_t *glancePlayer)
 		angle_t back;
 		angle_t diff;
 		fixed_t distance;
-		SINT8 dir = -1;
+		int8_t dir = -1;
 
 		if (!playeringame[i])
 		{
@@ -1800,13 +1800,13 @@ static void K_UpdateKeepstuff(player_t *player)
 		return;
 	}
 
-	UINT16 flags = player->keepstuff.flags;
+	uint16_t flags = player->keepstuff.flags;
 
 	if (flags & KEEPSTUFF_ROCKET)
 	{
 		if (!player->rocketsneakertimer)
 		{
-			INT32 moloop;
+			int32_t moloop;
 			mobj_t *mo = NULL;
 			mobj_t *prev = player->mo;
 
@@ -1885,7 +1885,7 @@ static void K_ClearKeepstuff(player_t *player)
 static void K_RespawnChecker(player_t *player)
 {
 	TracyCZone(__zone, true);
-	UINT16 buttons = K_GetKartButtons(player);
+	uint16_t buttons = K_GetKartButtons(player);
 	if (player->spectator)
 	{
 		TracyCZoneEnd(__zone);
@@ -1902,7 +1902,7 @@ static void K_RespawnChecker(player_t *player)
 		player->nocontrol = 2;
 		if (leveltime % 8 == 0)
 		{
-			INT32 i;
+			int32_t i;
 			if (!mapreset)
 				S_StartSound(player->mo, sfx_s3kcas);
 
@@ -2002,15 +2002,15 @@ void K_KartMoveAnimation(player_t *player)
 
 	const dboolean onground = P_IsObjectOnGround(player->mo);
 
-	UINT16 buttons = K_GetKartButtons(player);
+	uint16_t buttons = K_GetKartButtons(player);
 	const dboolean spinningwheels = (player->speed > 0);
 	const dboolean lookback = ((buttons & BT_LOOKBACK) == BT_LOOKBACK);
 	const dboolean skincompat = wadfiles[((skin_t *)player->mo->skin)->wadnum]->compatmode;
 
-	SINT8 turndir = 0;
-	SINT8 destGlanceDir = 0;
-	SINT8 drift = player->drift;
-	UINT8 spr2, glanceofs;
+	int8_t turndir = 0;
+	int8_t destGlanceDir = 0;
+	int8_t drift = player->drift;
+	uint8_t spr2, glanceofs;
 
 	player->mo->rollingxoffset = 0;
 	player->mo->rollingyoffset = 0;
@@ -2676,8 +2676,8 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 			
 			const angle_t forwardangle = K_MomentumAngle(mobj);
 			const fixed_t visualradius = mobj->radius + (4 * mobj->scale);
-			const SINT8 numFrames = 5;
-			const INT32 curFrame = (leveltime % numFrames)|FF_PAPERSPRITE;
+			const int8_t numFrames = 5;
+			const int32_t curFrame = (leveltime % numFrames)|FF_PAPERSPRITE;
 			fixed_t x1, x2, y1, y2;
 			fixed_t sideScale;
 			vector3_t cross = {0};
@@ -2753,7 +2753,7 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 
 			if (!S_SoundPlaying(mobj, sfx_s3kdbs))
 			{
-				const INT32 volume = (min(trailScale, FRACUNIT) * 255) / FRACUNIT;
+				const int32_t volume = (min(trailScale, FRACUNIT) * 255) / FRACUNIT;
 				S_StartSoundAtVolume(mobj, sfx_s3kdbs, volume);
 			}
 		}
@@ -2784,7 +2784,7 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 	}
 }
 
-static fixed_t K_FlameShieldDashVar(INT32 val)
+static fixed_t K_FlameShieldDashVar(int32_t val)
 {
 	// 1 second = base% + ~16.8% top speed
 	return FixedMul(val * 500, FixedDiv(FRACUNIT, FRACUNIT + val*FRACUNIT/60));
@@ -2829,24 +2829,24 @@ fixed_t K_GetSneakerBoostSpeed(void)
 }
 
 // Used to determine the speed and power of Invincibility.
-fixed_t K_SMonitorGradient(UINT16 time)
+fixed_t K_SMonitorGradient(uint16_t time)
 {
     return (min(936, (fixed_t)time) * FRACUNIT / (6 * TICRATE));
 }
 
-fixed_t K_GetSMonitorSpeed(UINT16 time)
+fixed_t K_GetSMonitorSpeed(uint16_t time)
 {
     fixed_t t = min(FRACUNIT, K_SMonitorGradient(time));
     return Easing_OutCubic(t, 0, SMNTRSPEEDBOOST);
 }
 
-fixed_t K_GetSMonitorAccel(UINT16 time)
+fixed_t K_GetSMonitorAccel(uint16_t time)
 {
     fixed_t t = min(FRACUNIT, K_SMonitorGradient(time));
     return Easing_OutCubic(t, 0, SMNTRACCELBOOST);
 }
 
-fixed_t K_GetSMonitorHandling(UINT16 time)
+fixed_t K_GetSMonitorHandling(uint16_t time)
 {
     fixed_t t = min(FRACUNIT, K_SMonitorGradient(time));
     return Easing_OutCubic(t, 0, SMNTRHANDLEBOOST);
@@ -2857,7 +2857,7 @@ static fixed_t K_KartDiminish(fixed_t speedboost)
 	return FixedSqrt(speedboost + DIMINISHPARAM) - FixedSqrt(DIMINISHPARAM);
 }
 
-static fixed_t K_KartMetabolism(UINT8 weight)
+static fixed_t K_KartMetabolism(uint8_t weight)
 {
 	return (FRACUNIT - ((weight - 1) * (FRACUNIT * 17 / 100) / 8));
 }
@@ -2927,12 +2927,12 @@ static fixed_t K_RingDurationBoost(const player_t *player)
 	return ret;
 }
 
-static fixed_t K_DecaySlopeBoost(fixed_t prevslopeboost, INT32 brake)
+static fixed_t K_DecaySlopeBoost(fixed_t prevslopeboost, int32_t brake)
 {
 	return max(prevslopeboost - (SLOPEDECAY + brake + prevslopeboost/60), 0);
 }
 
-static void K_DoSlopeBrake(player_t *player, fixed_t prevslopeboost, INT32 brake)
+static void K_DoSlopeBrake(player_t *player, fixed_t prevslopeboost, int32_t brake)
 {
 	player->slopeboost = K_DecaySlopeBoost(prevslopeboost, brake);
 	player->slopeaccel = 0;
@@ -2946,7 +2946,7 @@ static void K_UpdateSlopeBoost(player_t *player)
 	angle_t momangle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy), hillangle = 0;
 	fixed_t anglemult = 0, slopemult = 0, mult = 0;
 	fixed_t addedboost = 0, addedaccel = 0;
-	INT32 brake = 0;
+	int32_t brake = 0;
 
 	if (!K_SlopeBoostActive())
 	{
@@ -3031,7 +3031,7 @@ static void K_GetKartBoostPower(player_t *player)
 	fixed_t finalspeedboost = 0;
 	fixed_t finalaccelboost = 0;
 	fixed_t finalhandleboost = 0;
-	UINT8 finalgrade = 0;
+	uint8_t finalgrade = 0;
 
 	if (player->spinouttimer && player->wipeoutslow == 1) // Slow down after you've been bumped
 	{
@@ -3049,9 +3049,9 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->sneakertimer) // Sneaker
 	{
-		UINT8 i;
+		uint8_t i;
 		fixed_t sneakerspeedboost = K_GetSneakerBoostSpeed();
-		UINT8 numsneakers = max(player->numsneakers + player->numpanels, 1);
+		uint8_t numsneakers = max(player->numsneakers + player->numpanels, 1);
 
 		for (i = 0; i < numsneakers; i++)
 		{
@@ -3301,7 +3301,7 @@ static fixed_t K_GrowShrinkOrNormal(const player_t *player)
 }
 
 // Returns kart speed from a stat. Boost power and scale are NOT taken into account, no player or object is necessary.
-fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, dboolean karmabomb, fixed_t extrapct)
+fixed_t K_GetKartSpeedFromStat(uint8_t kartspeed, dboolean karmabomb, fixed_t extrapct)
 {
 	const fixed_t xspd = (3*FRACUNIT)/64;
 	fixed_t g_cc = K_GetKartGameSpeedScalar(gamespeed) + xspd;
@@ -3370,7 +3370,7 @@ fixed_t K_GetKartSpeed(const player_t *player, dboolean doboostpower, dboolean d
 fixed_t K_GetKartAccel(const player_t *player)
 {
 	fixed_t k_accel = 32; // 36;
-	UINT8 kartspeed = player->kartspeed;
+	uint8_t kartspeed = player->kartspeed;
 	fixed_t finalaccel = FRACUNIT;
 
 	if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
@@ -3384,9 +3384,9 @@ fixed_t K_GetKartAccel(const player_t *player)
 	return FixedMul(k_accel, finalaccel);
 }
 
-UINT16 K_GetKartFlashing(const player_t *player)
+uint16_t K_GetKartFlashing(const player_t *player)
 {
-	UINT16 tics = flashingtics;
+	uint16_t tics = flashingtics;
 
 	if (player == NULL)
 	{
@@ -3441,15 +3441,15 @@ dboolean K_KartKickstart(const player_t *player)
 		&& (player->kickstartaccel >= ACCEL_KICKSTART));
 }
 
-UINT16 K_GetKartButtons(const player_t *player)
+uint16_t K_GetKartButtons(const player_t *player)
 {
 	return (player->cmd.buttons |
 		(K_KartKickstart(player) ? BT_ACCELERATE : 0));
 }
 
-SINT8 K_GetForwardMove(const player_t *player)
+int8_t K_GetForwardMove(const player_t *player)
 {
-	SINT8 forwardmove = player->cmd.forwardmove;
+	int8_t forwardmove = player->cmd.forwardmove;
 
 	if (K_KartKickstart(player)) // unlike the brute forward of sneakers, allow for backwards easing here
 	{
@@ -3478,9 +3478,9 @@ SINT8 K_GetForwardMove(const player_t *player)
 	return forwardmove;
 }
 
-SINT8 K_GetSideMove(const player_t *player)
+int8_t K_GetSideMove(const player_t *player)
 {
-	SINT8 sidemove = player->cmd.sidemove;
+	int8_t sidemove = player->cmd.sidemove;
 
 	if ((player->exiting || mapreset) ||
 		player->pflags & PF_STASIS ||
@@ -3538,7 +3538,7 @@ fixed_t K_GetNewSpeed(const player_t *player)
 	return finalspeed;
 }
 
-fixed_t K_3dKartMovement(const player_t *player, dboolean onground, SINT8 forwardmove)
+fixed_t K_3dKartMovement(const player_t *player, dboolean onground, int8_t forwardmove)
 {
 	fixed_t finalspeed = K_GetNewSpeed(player);
 
@@ -3588,13 +3588,13 @@ fixed_t K_GetMomentum(mobj_t *mo, dboolean twodee)
 	return R_PointToDist2(0, 0, xydist, mo->momz);
 }
 
-void K_AwardPlayerRings(player_t *player, UINT16 rings, dboolean overload)
+void K_AwardPlayerRings(player_t *player, uint16_t rings, dboolean overload)
 {
-	UINT16 superring;
+	uint16_t superring;
 
 	if (!overload)
 	{
-		INT32 totalrings =
+		int32_t totalrings =
 			RINGTOTAL(player) + (player->superring);
 
 		/* capped at 20 rings */
@@ -3613,7 +3613,7 @@ void K_AwardPlayerRings(player_t *player, UINT16 rings, dboolean overload)
 		player->superring = superring;
 }
 
-static INT32 K_GetRaceSplitsToggle(void)
+static int32_t K_GetRaceSplitsToggle(void)
 {
 	if (cv_showlapemblem.value < 2)
 	{
@@ -3625,17 +3625,17 @@ static INT32 K_GetRaceSplitsToggle(void)
 		return 0;
 
 	// Not taking any chances with this stupid goddamn engine.
-	return max((INT32)(cv_racesplits.value), 1);
+	return max((int32_t)(cv_racesplits.value), 1);
 }
 
 static void K_SetupSplitForPlayer(player_t *us, player_t *them, tic_t ourtime, tic_t theirtime)
 {
 	us->karthud[khud_splittimer] = 3*TICRATE;
 
-	INT32 delta = (INT32)theirtime - (INT32)ourtime; 	// how ahead are we? bigger number = more ahead, negative = behind
+	int32_t delta = (int32_t)theirtime - (int32_t)ourtime; 	// how ahead are we? bigger number = more ahead, negative = behind
 	us->karthud[khud_splittime] = -1 * delta; 			// (HUD expects this to be backwards, but this is how i felt today!)
 
-	INT32 winning = 0;
+	int32_t winning = 0;
 
 	if (delta > 0)
 		winning = 2; // winning aid gaining
@@ -3658,21 +3658,21 @@ static void K_SetupSplitForPlayer(player_t *us, player_t *them, tic_t ourtime, t
 		us->karthud[khud_splitposition] = 0;
 }
 
-void K_HandleRaceSplits(player_t *player, tic_t time, UINT8 checkpoint)
+void K_HandleRaceSplits(player_t *player, tic_t time, uint8_t checkpoint)
 {
 	if (checkpoint >= MAXRACESPLITS)
 		return;
 
-	const INT32 splitstoggle = K_GetRaceSplitsToggle();
+	const int32_t splitstoggle = K_GetRaceSplitsToggle();
 
 	player->splits[checkpoint] = time;
 
 	player_t *lowest = player;
 	player_t *next = player;
-	UINT8 numrealsplits = 0;
+	uint8_t numrealsplits = 0;
 
 	// find fastest player for this checkpoint and # players who have already crossed
-	for (UINT8 i = 0; i < MAXPLAYERS; i++)
+	for (uint8_t i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i])
 			continue;
@@ -3737,9 +3737,9 @@ void K_DoInstashield(player_t *player)
 	P_SetTarget(&layerb->target, player->mo);
 }
 
-void K_BattleAwardHit(player_t *player, player_t *victim, mobj_t *inflictor, UINT8 bumpersRemoved)
+void K_BattleAwardHit(player_t *player, player_t *victim, mobj_t *inflictor, uint8_t bumpersRemoved)
 {
-	UINT8 points = 1;
+	uint8_t points = 1;
 	dboolean trapItem = false;
 
 	if (player == NULL || victim == NULL)
@@ -3784,7 +3784,7 @@ void K_BattleAwardHit(player_t *player, player_t *victim, mobj_t *inflictor, UIN
 	}
 }
 
-void K_SpinPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 type)
+void K_SpinPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, int32_t type)
 {
 	(void)inflictor;
 	(void)source;
@@ -3894,7 +3894,7 @@ void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 
 		player->crash_zoffset_delta = zjump * P_MobjFlip(player->mo);
 
-		SINT8 direction = 1;
+		int8_t direction = 1;
 		{
 			vector3_t fwd = {P_ReturnThrustX(player->mo, player->mo->angle, FRACUNIT), P_ReturnThrustY(player->mo, player->mo->angle, FRACUNIT), 0};
 			vector3_t side = {inflictor->x - player->mo->x, inflictor->y - player->mo->y, 0};
@@ -4195,9 +4195,9 @@ void K_ApplyTripWire(player_t *player, tripwirestate_t state)
 	player->tripwireUnstuck += 10;
 }
 
-INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source) // A bit of a hack, we just throw the player up higher here and extend their spinout timer
+int32_t K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source) // A bit of a hack, we just throw the player up higher here and extend their spinout timer
 {
-	INT32 ringburst = 5;
+	int32_t ringburst = 5;
 
 	(void)source;
 
@@ -4247,7 +4247,7 @@ dboolean K_IsPlayerDamaged(const player_t *player)
 	return ((player->spinouttimer > 0) || (player->flipovertimer > 0) || (player->crash_state != 0));
 }
 
-void K_HandleBumperChanges(player_t *player, UINT8 prevBumpers)
+void K_HandleBumperChanges(player_t *player, uint8_t prevBumpers)
 {
 	if (!(gametypes[gametype]->rules & GTR_BUMPERS))
 	{
@@ -4288,9 +4288,9 @@ void K_HandleBumperChanges(player_t *player, UINT8 prevBumpers)
 	K_CheckBumpers();
 }
 
-void K_DestroyBumpers(player_t *player, UINT8 amount)
+void K_DestroyBumpers(player_t *player, uint8_t amount)
 {
-	UINT8 oldBumpers = player->bumper;
+	uint8_t oldBumpers = player->bumper;
 
 	if (!(gametypes[gametype]->rules & GTR_BUMPERS))
 	{
@@ -4308,12 +4308,12 @@ void K_DestroyBumpers(player_t *player, UINT8 amount)
 	K_HandleBumperChanges(player, oldBumpers);
 }
 
-void K_TakeBumpersFromPlayer(player_t *player, player_t *victim, UINT8 amount)
+void K_TakeBumpersFromPlayer(player_t *player, player_t *victim, uint8_t amount)
 {
-	UINT8 oldPlayerBumpers = player->bumper;
-	UINT8 oldVictimBumpers = victim->bumper;
+	uint8_t oldPlayerBumpers = player->bumper;
+	uint8_t oldVictimBumpers = victim->bumper;
 
-	UINT8 tookBumpers = 0;
+	uint8_t tookBumpers = 0;
 
 	if (!(gametypes[gametype]->rules & GTR_BUMPERS))
 	{
@@ -4329,7 +4329,7 @@ void K_TakeBumpersFromPlayer(player_t *player, player_t *victim, UINT8 amount)
 
 	while ((tookBumpers < amount) && (victim->bumper > 0))
 	{
-		UINT8 newbumper = player->bumper;
+		uint8_t newbumper = player->bumper;
 
 		angle_t newangle, diff;
 		fixed_t newx, newy;
@@ -4392,11 +4392,11 @@ void K_TakeBumpersFromPlayer(player_t *player, player_t *victim, UINT8 amount)
 
 // source is the mobj that originally threw the bomb that exploded etc.
 // Spawns the sphere around the explosion that handles spinout
-void K_SpawnKartExplosion(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32 number, mobjtype_t type, angle_t rotangle, dboolean spawncenter, dboolean ghostit, mobj_t *source)
+void K_SpawnKartExplosion(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, int32_t number, mobjtype_t type, angle_t rotangle, dboolean spawncenter, dboolean ghostit, mobj_t *source)
 {
 	mobj_t *mobj;
 	mobj_t *ghost = NULL;
-	INT32 i;
+	int32_t i;
 	TVector v;
 	TVector *res;
 	fixed_t finalx, finaly, finalz, dist;
@@ -4475,13 +4475,13 @@ void K_SpawnKartExplosion(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32
 #define MINEQUAKEDIST 4096
 
 // Spawns the purely visual explosion
-void K_SpawnMineExplosion(mobj_t *source, UINT8 color)
+void K_SpawnMineExplosion(mobj_t *source, uint8_t color)
 {
-	INT32 i, radius, height;
+	int32_t i, radius, height;
 	mobj_t *smoldering = P_SpawnMobj(source->x, source->y, source->z, MT_SMOLDERING);
 	mobj_t *dust;
 	mobj_t *truc;
-	INT32 speed, speed2;
+	int32_t speed, speed2;
 	fixed_t rand_x;
 	fixed_t rand_y;
 	fixed_t rand_z;
@@ -4561,7 +4561,7 @@ void K_SpawnMineExplosion(mobj_t *source, UINT8 color)
 	}
 }
 
-static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, INT32 flags2, fixed_t speed)
+static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, int32_t flags2, fixed_t speed)
 {
 	mobj_t *missile;
 	fixed_t x, y, z;
@@ -4643,7 +4643,7 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 		case MT_JAWZ:
 			if (source && source->player)
 			{
-				INT32 lasttarg = source->player->lastitemtarget;
+				int32_t lasttarg = source->player->lastitemtarget;
 				missile->cvmem = source->player->skincolor;
 				if ((lasttarg >= 0 && lasttarg < MAXPLAYERS)
 					&& playeringame[lasttarg]
@@ -4703,10 +4703,10 @@ static dboolean K_AirThrustRateLimit(const player_t *player)
 	       && player->speed - player->airdriftspeed > player->airdriftspeed/AIRTHRUST_SPAMFACTOR;
 }
 
-UINT16 K_DriftSparkColor(player_t *player, INT32 charge)
+uint16_t K_DriftSparkColor(player_t *player, int32_t charge)
 {
-	INT32 ds = K_GetKartDriftSparkValue(player);
-	UINT16 color = SKINCOLOR_NONE;
+	int32_t ds = K_GetKartDriftSparkValue(player);
+	uint16_t color = SKINCOLOR_NONE;
 
 	if (charge < 0)
 	{
@@ -4777,7 +4777,7 @@ static void K_SpawnDriftSparks(player_t *player)
 	fixed_t newy;
 	mobj_t *spark;
 	angle_t travelangle;
-	INT32 i;
+	int32_t i;
 
 	I_Assert(player != NULL);
 	I_Assert(player->mo != NULL);
@@ -4914,7 +4914,7 @@ void K_SpawnBoostTrail(player_t *player)
 	fixed_t ground;
 	mobj_t *flame;
 	angle_t travelangle;
-	INT32 i;
+	int32_t i;
 
 	I_Assert(player != NULL);
 	I_Assert(player->mo != NULL);
@@ -4973,9 +4973,9 @@ void K_SpawnBoostTrail(player_t *player)
 
 void K_SpawnSparkleTrail(mobj_t *mo)
 {
-	const INT32 rad = (mo->radius*2)>>FRACBITS;
+	const int32_t rad = (mo->radius*2)>>FRACBITS;
 	mobj_t *sparkle;
-	INT32 i;
+	int32_t i;
 
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
@@ -5005,7 +5005,7 @@ static void K_SpawnDraftDust(mobj_t *mo)
 
 	if (leveltime % 2)
 	{
-		SINT8 i;
+		int8_t i;
 		for (i = 0; i < 2; i++)
 		{
 			fixed_t newx = mo->x + P_ReturnThrustX(mo, mo->angle + ((i == 0) ? -1 : 1)*ANGLE_90, FixedMul(16*FRACUNIT, mo->scale));
@@ -5081,7 +5081,7 @@ mobj_t *K_SpawnWipeoutTrail(mobj_t *mo, dboolean translucent)
 void K_DriftDustHandling(mobj_t *spawner)
 {
 	angle_t anglediff;
-	const INT16 spawnrange = spawner->radius>>FRACBITS;
+	const int16_t spawnrange = spawner->radius>>FRACBITS;
 
 	if (!P_IsObjectOnGround(spawner) || leveltime % 2 != 0)
 		return;
@@ -5122,7 +5122,7 @@ void K_DriftDustHandling(mobj_t *spawner)
 	{
 		fixed_t spawnx = P_RandomRange(PR_DECORATION, -spawnrange, spawnrange)<<FRACBITS;
 		fixed_t spawny = P_RandomRange(PR_DECORATION, -spawnrange, spawnrange)<<FRACBITS;
-		INT32 speedrange = 2;
+		int32_t speedrange = 2;
 		mobj_t *dust = P_SpawnMobj(spawner->x + spawnx, spawner->y + spawny, spawner->z, MT_DRIFTDUST);
 		dust->momx = FixedMul(spawner->momx + (P_RandomRange(PR_DECORATION, -speedrange, speedrange)<<FRACBITS), 3*(spawner->scale)/4);
 		dust->momy = FixedMul(spawner->momy + (P_RandomRange(PR_DECORATION, -speedrange, speedrange)<<FRACBITS), 3*(spawner->scale)/4);
@@ -5154,10 +5154,10 @@ static mobj_t *K_FindLastTrailMobj(player_t *player)
 	return trail;
 }
 
-mobj_t *K_ThrowKartItem(player_t *player, dboolean missile, mobjtype_t mapthing, INT32 defaultDir, INT32 altthrow)
+mobj_t *K_ThrowKartItem(player_t *player, dboolean missile, mobjtype_t mapthing, int32_t defaultDir, int32_t altthrow)
 {
 	mobj_t *mo;
-	INT32 dir;
+	int32_t dir;
 	fixed_t PROJSPEED;
 	angle_t newangle;
 	fixed_t newx, newy, newz;
@@ -5450,7 +5450,7 @@ void K_PuntMine(mobj_t *origMine, mobj_t *punter)
 
 static void K_FlameDashLeftoverSmoke(mobj_t *src)
 {
-	UINT8 i;
+	uint8_t i;
 
 	for (i = 0; i < 2; i++)
 	{
@@ -5478,7 +5478,7 @@ static void K_FlameDashLeftoverSmoke(mobj_t *src)
 }
 
 // Handle these else where to reduce code duplication between panels and sneakers
-static void K_SneakerPanelStackSound(player_t *player, INT32 type)
+static void K_SneakerPanelStackSound(player_t *player, int32_t type)
 {
 	const sfxenum_t normalsfx = sfx_cdfm01;
 	const sfxenum_t smallsfx = sfx_cdfm40;
@@ -5498,7 +5498,7 @@ static void K_SneakerPanelStackSound(player_t *player, INT32 type)
 		S_StartSound(player->mo, sfx_kc3c);
 }
 
-static void K_SneakerPanelEffect(player_t *player, INT32 type)
+static void K_SneakerPanelEffect(player_t *player, int32_t type)
 {
 	if (!player->sneakertimer)
 	{
@@ -5531,7 +5531,7 @@ static void K_SneakerPanelEffect(player_t *player, INT32 type)
 	}
 }
 
-void K_DoSneaker(player_t *player, INT32 type)
+void K_DoSneaker(player_t *player, int32_t type)
 {
 	const fixed_t intendedboost = K_GetSneakerBoostSpeed();
 	const tic_t sneakerduration = (type == SNEAKERTYPE_WATERPANEL) ? waterpaneltime : sneakertime;
@@ -5583,7 +5583,7 @@ void K_DoSneaker(player_t *player, INT32 type)
 	player->boostangle = player->mo->angle;
 }
 
-void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound)
+void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, uint8_t sound)
 {
 	fixed_t objscale = mo->scale;
 	dboolean airdropbounce = false;
@@ -5776,7 +5776,7 @@ void K_UpdateHnextList(player_t *player, dboolean clean)
 	{
 		nextwork = work->hnext;
 
-		if (!clean && (!work->movedir || work->movedir <= (UINT16)player->itemamount))
+		if (!clean && (!work->movedir || work->movedir <= (uint16_t)player->itemamount))
 		{
 			continue;
 		}
@@ -5796,7 +5796,7 @@ void K_UpdateHnextList(player_t *player, dboolean clean)
 void K_DropHnextList(player_t *player)
 {
 	mobj_t *work = player->mo, *nextwork, *dropwork;
-	INT32 flip;
+	int32_t flip;
 	mobjtype_t type = MT_NULL;
 	dboolean orbit = true;
 	dboolean dropall = true;
@@ -6006,7 +6006,7 @@ void K_DropHnextList(player_t *player)
 // For getting hit!
 void K_PopPlayerShield(player_t *player)
 {
-	INT32 shield = K_GetShieldFromPlayer(player);
+	int32_t shield = K_GetShieldFromPlayer(player);
 
 	// Doesn't apply if player is invalid.
 	if (player->mo == NULL || P_MobjWasRemoved(player->mo))
@@ -6062,7 +6062,7 @@ dboolean K_IsBubbleDefending(const player_t *player)
 }
 
 // Depletes a bubble shield's health, and pops the shield at 0 health.
-void K_RemoveBubbleHealth(player_t *player, INT16 sub)
+void K_RemoveBubbleHealth(player_t *player, int16_t sub)
 {
 	// don't damage if we have some buffer time
 	if (player->bubblebuffer > 0)
@@ -6075,7 +6075,7 @@ void K_RemoveBubbleHealth(player_t *player, INT16 sub)
 	{
 		sub = FixedMul(sub<<FRACBITS, cv_kartbubble_defense_damagerate.value)>>FRACBITS;
 	}
-	player->bubblehealth = (UINT8)(max(0, (INT16)(player->bubblehealth) - sub));
+	player->bubblehealth = (uint8_t)(max(0, (int16_t)(player->bubblehealth) - sub));
 
 	if (player->bubblehealth <= 0)
 	{
@@ -6117,7 +6117,7 @@ dboolean K_CheckBubbleChip(const mobj_t *mobj)
 	return false;
 }
 
-mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 flip, UINT8 type, UINT8 amount)
+mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, int8_t flip, uint8_t type, uint8_t amount)
 {
 	mobj_t *drop = P_SpawnMobj(x, y, z, MT_FLOATINGITEM);
 	P_SetScale(drop, drop->scale>>4);
@@ -6132,10 +6132,10 @@ mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 
 
 	if (type == 0)
 	{
-		UINT8 useodds = 0;
-		INT32 spawnchance[MAXKARTRESULTS];
-		INT32 totalspawnchance = 0;
-		INT32 i;
+		uint8_t useodds = 0;
+		int32_t spawnchance[MAXKARTRESULTS];
+		int32_t totalspawnchance = 0;
+		int32_t i;
 
 		memset(spawnchance, 0, sizeof (spawnchance));
 
@@ -6175,7 +6175,7 @@ mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 
 
 			if (result->amount > 1)
 			{
-				UINT8 j;
+				uint8_t j;
 
 				for (j = 0; j < result->amount-1; j++)
 				{
@@ -6318,7 +6318,7 @@ void K_RepairOrbitChain(mobj_t *orbit)
 	// Then recount to make sure item amount is correct
 	if (orbit->target && orbit->target->player && !P_MobjWasRemoved(orbit->target))
 	{
-		INT32 num = 0;
+		int32_t num = 0;
 
 		mobj_t *cur = orbit->target->hnext;
 		mobj_t *prev = NULL;
@@ -6702,7 +6702,7 @@ static void K_MoveHeldObjects(player_t *player)
 		case KITEMEQUIP_ROCKETS: //TODO: generalize with customizable offsets (Special rocket sneaker stuff)
 			{
 				mobj_t *cur = player->mo->hnext;
-				INT32 num = 0;
+				int32_t num = 0;
 
 				while (cur && !P_MobjWasRemoved(cur))
 				{
@@ -6799,22 +6799,22 @@ static void K_MoveHeldObjects(player_t *player)
 // Engine Sounds.
 static void K_UpdateEngineSounds(player_t *player)
 {
-	const INT32 numsnds = 13;
+	const int32_t numsnds = 13;
 
 	const fixed_t closedist = 160*FRACUNIT;
 	const fixed_t fardist = 1536*FRACUNIT;
 
-	const UINT8 dampenval = 48; // 255 * 48 = close enough to FRACUNIT/6
+	const uint8_t dampenval = 48; // 255 * 48 = close enough to FRACUNIT/6
 
-	const UINT16 buttons = K_GetKartButtons(player);
+	const uint16_t buttons = K_GetKartButtons(player);
 
-	INT32 class, s, w; // engine class number
+	int32_t class, s, w; // engine class number
 
-	UINT8 volume = 255;
+	uint8_t volume = 255;
 	fixed_t volumedampen = FRACUNIT;
 
-	INT32 targetsnd = 0;
-	INT32 i;
+	int32_t targetsnd = 0;
+	int32_t i;
 
 	s = (player->kartspeed - 1) / 3;
 	w = (player->kartweight - 1) / 3;
@@ -6875,7 +6875,7 @@ static void K_UpdateEngineSounds(player_t *player)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		UINT8 thisvol = 0;
+		uint8_t thisvol = 0;
 		fixed_t dist;
 
 		if (!playeringame[i] || !players[i].mo)
@@ -6937,7 +6937,7 @@ static void K_UpdateEngineSounds(player_t *player)
 }
 static void K_UpdateInvincibilitySounds(player_t *player)
 {
-	INT32 sfxnum = sfx_None;
+	int32_t sfxnum = sfx_None;
 	dboolean localplayer = P_IsLocalPlayer(player);
 
 	if (player->mo->health > 0)
@@ -7135,7 +7135,7 @@ static inline BlockItReturn_t PIT_AttractingRings(mobj_t *thing)
   */
 static void K_LookForRings(mobj_t *pmo)
 {
-	INT32 bx, by, xl, xh, yl, yh;
+	int32_t bx, by, xl, xh, yl, yh;
 
 	attractmo = pmo;
 	attractdist = (400 * pmo->scale);
@@ -7198,7 +7198,7 @@ static void K_RaceStart(player_t *player)
 			// RA ez charge for less annoying starts.
 			if (modeattacking != ATTACKING_NONE && !G_CompatLevel(0x000A))
 			{
-				SINT8 clampsize = 0;
+				int8_t clampsize = 0;
 				// Let players choose between startboost and sneaker boost by holding item.
 				if (player->cmd.buttons & BT_ATTACK)
 					clampsize = 37;
@@ -7283,7 +7283,7 @@ static void K_RaceStart(player_t *player)
 
 }
 
-UINT8 K_RaceLapCount(mapnum_t mapNum)
+uint8_t K_RaceLapCount(mapnum_t mapNum)
 {
 	if (!(gametypes[gametype]->rules & GTR_CIRCUIT))
 	{
@@ -7311,11 +7311,11 @@ UINT8 K_RaceLapCount(mapnum_t mapNum)
 
 static void K_TireGreaseEffect(player_t *player)
 {
-	const INT16 spawnrange = player->mo->radius>>FRACBITS;
+	const int16_t spawnrange = player->mo->radius>>FRACBITS;
 
 	fixed_t spawnx = P_RandomRange(PR_DECORATION, -spawnrange, spawnrange)<<FRACBITS;
 	fixed_t spawny = P_RandomRange(PR_DECORATION, -spawnrange, spawnrange)<<FRACBITS;
-	INT32 speedrange = 2;
+	int32_t speedrange = 2;
 	mobj_t *dust = P_SpawnMobj(player->mo->x + spawnx, player->mo->y + spawny, player->mo->z, MT_DRIFTDUST);
 	dust->momx = FixedMul(player->mo->momx + (P_RandomRange(PR_DECORATION, -speedrange, speedrange)<<FRACBITS), 3*(player->mo->scale)/4);
 	dust->momy = FixedMul(player->mo->momy + (P_RandomRange(PR_DECORATION, -speedrange, speedrange)<<FRACBITS), 3*(player->mo->scale)/4);
@@ -7332,7 +7332,7 @@ static void K_TireGreaseEffect(player_t *player)
 		S_StartSound(player->mo, sfx_ruburn);
 }
 
-dboolean K_BoostChain(player_t *player, INT32 timer, dboolean chainsound)
+dboolean K_BoostChain(player_t *player, int32_t timer, dboolean chainsound)
 {
 	if (!chainingactive)
 	{
@@ -7365,7 +7365,7 @@ dboolean K_BoostChain(player_t *player, INT32 timer, dboolean chainsound)
 	return false;
 }
 
-INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement, dboolean chainsound)
+int32_t K_ChainOrDeincrementTime(player_t *player, int32_t timer, int32_t deincrement, dboolean chainsound)
 {
 	timer -= deincrement;
 
@@ -7380,15 +7380,15 @@ INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement,
 }
 
 // Get the tic inverse sum using kartspeed, kartweight and your number of boosts.
-static INT32 K_TicInversesum(UINT8 kartspeed, UINT8 kartweight, UINT8 grade)
+static int32_t K_TicInversesum(uint8_t kartspeed, uint8_t kartweight, uint8_t grade)
 {
     return (TICRATE / CLAMP(kartspeed, 1, 5)) + (TICRATE / kartweight) + grade;
 }
 
 // Get the threshold for the ringnerf based on kartspeed and kartweight
-static INT32 K_StackThreshold(UINT8 kartspeed, UINT8 kartweight)
+static int32_t K_StackThreshold(uint8_t kartspeed, uint8_t kartweight)
 {
-	INT32 scaledsw = (9 - kartspeed) + (9 - kartweight);
+	int32_t scaledsw = (9 - kartspeed) + (9 - kartweight);
     fixed_t result = 4*FRACUNIT - (FixedMul(scaledsw*FRACUNIT/16, 2*FRACUNIT));
 
     // Stay within range please!
@@ -7401,20 +7401,20 @@ static void K_HandleRingDeincrement(player_t *player, dboolean chainnerf)
 {
 	// Aggressively reduce extreme ringboost duration.
 	// Less aggressive for accel types.
-	UINT8 roller = TICRATE;
-	UINT16 finalringtimer;
+	uint8_t roller = TICRATE;
+	uint16_t finalringtimer;
 	roller += 4*(8-player->kartspeed);
 
 	finalringtimer = max((player->ringboost / roller), 1);
 
 	if (chainnerf)
 	{
-		UINT8 requiredgrade = K_StackThreshold(player->kartspeed, player->kartweight);
+		uint8_t requiredgrade = K_StackThreshold(player->kartspeed, player->kartweight);
 
 		if (player->numboosts >= requiredgrade)
 		{
-			INT32 insum = K_TicInversesum(player->kartspeed, player->kartweight, player->numboosts);
-			INT32 subring = (player->ringboost*2)/insum;
+			int32_t insum = K_TicInversesum(player->kartspeed, player->kartweight, player->numboosts);
+			int32_t subring = (player->ringboost*2)/insum;
 
 			if (player->kartspeed == 1)
 			{
@@ -7432,7 +7432,7 @@ static void K_HandleRingDeincrement(player_t *player, dboolean chainnerf)
 }
 
 // Handles the gaining of rings in a scaled way based on player position
-void K_AwardScaledPlayerRings(player_t *player, SINT8 mode)
+void K_AwardScaledPlayerRings(player_t *player, int8_t mode)
 {
 	if (!player)
 	{
@@ -7449,7 +7449,7 @@ void K_AwardScaledPlayerRings(player_t *player, SINT8 mode)
 	}
 
 	// Let Ring-less maps in on the rings fun as well!
-	SINT8 awardamount = (mode == ASR_SUPERRING) ? 15 : 10;
+	int8_t awardamount = (mode == ASR_SUPERRING) ? 15 : 10;
 	if (player->position == ASR_SUPERRING)
 	{
 		awardamount = (mode == ASR_SUPERRING) ? 5 : 3;
@@ -7468,7 +7468,7 @@ static void K_SpawnAirdropTrail(player_t *player)
 	fixed_t tx, ty, tz;
 	mobj_t *dust;
 	angle_t travelangle;
-	INT32 i, j;
+	int32_t i, j;
 
 	I_Assert(player != NULL);
 	I_Assert(player->mo != NULL);
@@ -7543,15 +7543,15 @@ static void K_SpawnFallLines(player_t *player, dboolean ringdrop)
 
 static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 {
-	const INT32 heavydrophipowertime = TICRATE/3;
-	const INT32 heavydrophipowertime_fusion = TICRATE/8;
+	const int32_t heavydrophipowertime = TICRATE/3;
+	const int32_t heavydrophipowertime_fusion = TICRATE/8;
 
-	const INT32 heavydropassistmin = TICRATE/2;
-	const INT32 heavydropassistmax = 3*TICRATE/2;
+	const int32_t heavydropassistmin = TICRATE/2;
+	const int32_t heavydropassistmax = 3*TICRATE/2;
 
 	// in fusion, extend heavy airdrop's delay slightly so light airdrop isn't totally useless
-	const INT32 airbrakedelay_light = TICRATE/3;
-	const INT32 airbrakedelay_heavy = airdropactive == AIRDROP_FUSION ? 3*airbrakedelay_light/5 : TICRATE/8;
+	const int32_t airbrakedelay_light = TICRATE/3;
+	const int32_t airbrakedelay_heavy = airdropactive == AIRDROP_FUSION ? 3*airbrakedelay_light/5 : TICRATE/8;
 
 	if (P_IsObjectOnGround(player->mo))
 	{
@@ -7562,7 +7562,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		player->airdropbuffer--;
 	}
 
-	UINT16 buttons = cmd->buttons;
+	uint16_t buttons = cmd->buttons;
 
 	// kickstart needs a little special treatment in fusion...
 	// heavy airdrop should be the two-button input, not light airdrop
@@ -7712,7 +7712,7 @@ void K_KillAirDrop(player_t *player, p_airdropflags_t airdropflags)
 }
 
 // Returns the bumpspark value as an enum.
-INT32 K_GetBumpSpark(void)
+int32_t K_GetBumpSpark(void)
 {
 	return max(min(BUMPSPARK_ALL, (bumpsparktype_t)bumpsparkactive), BUMPSPARK_NONE);
 }
@@ -7895,7 +7895,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->wipeoutslow = 0;
 
 		if ((P_IsObjectOnGround(player->mo) &&
-		     ((INT32)(player->flipovertimer - 1) > 2)) ||  // Hit the ground...
+		     ((int32_t)(player->flipovertimer - 1) > 2)) ||  // Hit the ground...
 		    (player->flipovertimer >
 		     FLIPOVERLIMIT))  // ...or we've been tumbling around for too long.
 		{
@@ -8056,8 +8056,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	{
 		if (player->smonitortimer > 2)
 		{
-			INT16 pingame = 0;
-			INT32 i;
+			int16_t pingame = 0;
+			int32_t i;
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
 				if (!playeringame[i] || players[i].spectator)
@@ -8071,17 +8071,17 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			}
 
 			// Value to subtract from the S-Monitor timer.
-			INT16 smonitor_subtrahend = (pingame > 1) ? SMONITORDECAYTIME : 1;
+			int16_t smonitor_subtrahend = (pingame > 1) ? SMONITORDECAYTIME : 1;
 
-			UINT32 usedist = K_GetClusterDistanceForPlayer(player);
+			uint32_t usedist = K_GetClusterDistanceForPlayer(player);
 
 			// First place is an S-Monitor candidate in 4P lobbies and lower, so anything in that
 			// range is "tinypop"
 			dboolean tinypop = (pingame <= 4);
 
-			INT16 podium = (tinypop) ? 1 : max(2, min(4, (3 * pingame / 8)));
+			int16_t podium = (tinypop) ? 1 : max(2, min(4, (3 * pingame / 8)));
 
-			dboolean nodecay = ((usedist > (UINT32)SMONITORDECAYDIST) && (player->position > podium));
+			dboolean nodecay = ((usedist > (uint32_t)SMONITORDECAYDIST) && (player->position > podium));
 
 			if (nodecay)
 			{
@@ -8097,8 +8097,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 				player->smonitorexpiring = 1;
 			}
 
-			player->smonitortimer = (UINT16)(max(
-			    2, (INT32)(player->smonitortimer) - smonitor_subtrahend));
+			player->smonitortimer = (uint16_t)(max(
+			    2, (int32_t)(player->smonitortimer) - smonitor_subtrahend));
 
 			const dboolean warning_cond =
 			    (K_SMonitorGradient(player->smonitortimer) < SMONITORWARNINGTIME);
@@ -8131,7 +8131,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->checkskip)
 		player->checkskip--;
 
-	UINT8 unstuckthreshold = (P_IsObjectOnGround(player->mo)) ? 80 : 40;
+	uint8_t unstuckthreshold = (P_IsObjectOnGround(player->mo)) ? 80 : 40;
 
 	if (player->tripwireUnstuck > unstuckthreshold)
 	{
@@ -8192,7 +8192,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->superring)
 	{
 		player->nextringaward++;
-		UINT8 ringrate = 3 - min(2, player->superring / 20); // Used to consume fat stacks of cash faster.
+		uint8_t ringrate = 3 - min(2, player->superring / 20); // Used to consume fat stacks of cash faster.
 		if (player->nextringaward >= ringrate)
 		{
 			mobj_t *ring = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_RING);
@@ -8278,8 +8278,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		// Remove grease faster if players are moving slower; players that are recovering
 		// from mistakes (or who got sprung purely for track traversal) need steering!
 		// Up to 4x degrease speed below 10FU/t (speed at which you lose drift sparks).
-		INT16 toDegrease = 1;
-		INT16 driftSpeedIncrements = player->speed / (10 * player->mo->scale); // Same breakpoints used for driftcharge stages.
+		int16_t toDegrease = 1;
+		int16_t driftSpeedIncrements = player->speed / (10 * player->mo->scale); // Same breakpoints used for driftcharge stages.
 		toDegrease += max(3 - driftSpeedIncrements, 0);
 
 		if (player->tiregrease <= toDegrease)
@@ -8530,7 +8530,7 @@ static void K_KartResetPlayerFullbright(player_t *player)
 
 	if (player->eggmanexplode) // You're gonna diiiiie
 	{
-		const INT32 flashtime = 4<<(player->eggmanexplode/TICRATE);
+		const int32_t flashtime = 4<<(player->eggmanexplode/TICRATE);
 		if (player->eggmanexplode % (flashtime/2) != 0)
 		{
 			;
@@ -8610,7 +8610,7 @@ void K_KartResetPlayerColor(player_t *player)
 
 	if (player->eggmanexplode) // You're gonna diiiiie
 	{
-		const INT32 flashtime = 4<<(player->eggmanexplode/TICRATE);
+		const int32_t flashtime = 4<<(player->eggmanexplode/TICRATE);
 		if (player->eggmanexplode % (flashtime/2) != 0)
 		{
 			;
@@ -8774,7 +8774,7 @@ typedef struct respawnresult_s
 
 	fixed_t finaldistances[3];
 
-	SINT8 type;
+	int8_t type;
 } respawnresult_t;
 
 typedef enum
@@ -8849,7 +8849,7 @@ dboolean K_SafeRespawnPositionEx(fixed_t x, fixed_t y, fixed_t z, dboolean flip)
 
 	if (numPolyObjects)
 	{
-		INT32 xl, xh, yl, yh, bx, by;
+		int32_t xl, xh, yl, yh, bx, by;
 
 		yh = (unsigned)(y - bmaporgy)>>MAPBLOCKSHIFT;
 		yl = (unsigned)(y - bmaporgy)>>MAPBLOCKSHIFT;
@@ -8866,7 +8866,7 @@ dboolean K_SafeRespawnPositionEx(fixed_t x, fixed_t y, fixed_t z, dboolean flip)
 			{
 				for (bx = xl; bx <= xh; bx++)
 				{
-					INT32 offset;
+					int32_t offset;
 					polymaplink_t *plink; // haleyjd 02/22/06
 
 					if (bx < 0 || by < 0 || bx >= bmapwidth || by >= bmapheight)
@@ -9297,8 +9297,8 @@ static void K_UpdateDistanceFromFinishLine(player_t *player)
 				path_t pathBackwards = {0};
 
 				fixed_t disttonext = 0;
-				UINT32 traveldist = 0;
-				UINT32 adddist = 0;
+				uint32_t traveldist = 0;
+				uint32_t adddist = 0;
 
 				disttonext =
 					P_AproxDistance(
@@ -9306,7 +9306,7 @@ static void K_UpdateDistanceFromFinishLine(player_t *player)
 						(player->mo->y >> FRACBITS) - (player->nextwaypoint->mobj->y >> FRACBITS));
 				disttonext = P_AproxDistance(disttonext, (player->mo->z >> FRACBITS) - (player->nextwaypoint->mobj->z >> FRACBITS));
 
-				traveldist = ((UINT32)disttonext) * 2;
+				traveldist = ((uint32_t)disttonext) * 2;
 				pathBackwardsSuccess =
 					K_PathfindThruCircuit(player->nextwaypoint, traveldist, &pathBackwards, false, pathBackwardsReverse);
 
@@ -9321,7 +9321,7 @@ static void K_UpdateDistanceFromFinishLine(player_t *player)
 						vector3_t best;
 						fixed_t bestPoint = INT32_MAX;
 						fixed_t bestDist = INT32_MAX;
-						UINT32 bestGScore = UINT32_MAX;
+						uint32_t bestGScore = UINT32_MAX;
 
 						point.x = player->mo->x;
 						point.y = player->mo->y;
@@ -9340,7 +9340,7 @@ static void K_UpdateDistanceFromFinishLine(player_t *player)
 							waypoint_t *wp = (waypoint_t *)pathBackwards.array[i].nodedata;
 
 							fixed_t pDist = 0;
-							UINT32 g = pathBackwards.array[i - 1].gscore;
+							uint32_t g = pathBackwards.array[i - 1].gscore;
 
 							line[0].x = pwp->mobj->x;
 							line[0].y = pwp->mobj->y;
@@ -9367,7 +9367,7 @@ static void K_UpdateDistanceFromFinishLine(player_t *player)
 										(result.y >> FRACBITS) - (line[0].y >> FRACBITS));
 								bestDist = P_AproxDistance(bestDist, (result.z >> FRACBITS) - (line[0].z >> FRACBITS));
 
-								bestGScore = g + ((UINT32)bestDist);
+								bestGScore = g + ((uint32_t)bestDist);
 							}
 						}
 
@@ -9398,7 +9398,7 @@ static void K_UpdateDistanceFromFinishLine(player_t *player)
 								(player->mo->y >> FRACBITS) - (wp->mobj->y >> FRACBITS));
 						disttowaypoint = P_AproxDistance(disttowaypoint, (player->mo->z >> FRACBITS) - (wp->mobj->z >> FRACBITS));
 
-						adddist = (UINT32)disttowaypoint;
+						adddist = (uint32_t)disttowaypoint;
 					}
 					*/
 					Z_Free(pathBackwards.array);
@@ -9407,7 +9407,7 @@ static void K_UpdateDistanceFromFinishLine(player_t *player)
 				else
 				{
 					// Fallback to adding euclidean distance to the next waypoint to the distancetofinish
-					adddist = (UINT32)disttonext;
+					adddist = (uint32_t)disttonext;
 				}
 				*/
 
@@ -9435,7 +9435,7 @@ static void K_UpdateDistanceFromFinishLine(player_t *player)
 				const mapheader_t *mapheader = mapheaderinfo[gamemap - 1];
 				if ((mapheader->levelflags & LF_SECTIONRACE) == 0U)
 				{
-					const UINT8 numfulllapsleft = ((UINT8)numlaps - player->laps) / mapheader->lapspersection;
+					const uint8_t numfulllapsleft = ((uint8_t)numlaps - player->laps) / mapheader->lapspersection;
 					player->distancetofinish += numfulllapsleft * K_GetCircuitLength();
 				}
 			}
@@ -9679,12 +9679,12 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 		return;
 	}
 
-	const UINT32 distance_threshold = FixedMul(32768, mapobjectscale);
+	const uint32_t distance_threshold = FixedMul(32768, mapobjectscale);
 
 	waypoint_t *const old_currentwaypoint = player->currentwaypoint;
 	waypoint_t *const old_nextwaypoint = player->nextwaypoint;
 
-	const UINT32 prevwpdtf = player->currentwaypoint ? player->currentwaypoint->distancetofinish : UINT32_MAX;
+	const uint32_t prevwpdtf = player->currentwaypoint ? player->currentwaypoint->distancetofinish : UINT32_MAX;
 
 	dboolean updaterespawn = K_SetPlayerNextWaypoint(player);
 
@@ -9692,8 +9692,8 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 	player->distancetofinishprev = player->distancetofinish;
 	K_UpdateDistanceFromFinishLine(player);
 
-	UINT32 delta = u32_delta(player->distancetofinish, player->distancetofinishprev);
-	UINT32 wpdelta = prevwpdtf != UINT32_MAX && player->currentwaypoint != NULL ? u32_delta(prevwpdtf, player->currentwaypoint->distancetofinish) : 0;
+	uint32_t delta = u32_delta(player->distancetofinish, player->distancetofinishprev);
+	uint32_t wpdelta = prevwpdtf != UINT32_MAX && player->currentwaypoint != NULL ? u32_delta(prevwpdtf, player->currentwaypoint->distancetofinish) : 0;
 	if ((/*delta > distance_threshold || */wpdelta > K_GetCircuitLength()/2) &&
 		!player->respawn && // Respawning should be a full reset.
 		old_currentwaypoint != NULL && // So should touching the first waypoint ever.
@@ -9760,7 +9760,7 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 	player->pflags &= ~PF_TRUSTWAYPOINTS; // clear special exception
 }
 
-INT32 K_GetKartBaseRingPower(const player_t *player, dboolean boosted)
+int32_t K_GetKartBaseRingPower(const player_t *player, dboolean boosted)
 {
 	fixed_t ringPower = ((9 - player->kartspeed) + (9 - player->kartweight)) * (FRACUNIT/2);
 
@@ -9783,14 +9783,14 @@ INT32 K_GetKartBaseRingPower(const player_t *player, dboolean boosted)
 	return ringPower;
 }
 
-UINT8 K_GetKartRingCap(const player_t *player)
+uint8_t K_GetKartRingCap(const player_t *player)
 {
 	return 18 - ((9 - player->kartspeed) + (9 - player->kartweight))/2;
 }
 
-dboolean K_IsPlayerRingBurnt(const player_t *player, UINT16 ringpower)
+dboolean K_IsPlayerRingBurnt(const player_t *player, uint16_t ringpower)
 {
-	UINT8 ringcap = K_GetKartRingCap(player);
+	uint8_t ringcap = K_GetKartRingCap(player);
 
 	if (player->ringtime >= ringpower*ringcap)
 	{
@@ -9800,10 +9800,10 @@ dboolean K_IsPlayerRingBurnt(const player_t *player, UINT16 ringpower)
 	return false;
 }
 
-INT32 K_GetKartRingPower(const player_t *player, dboolean boosted)
+int32_t K_GetKartRingPower(const player_t *player, dboolean boosted)
 {
-	UINT16 finalPower = K_GetKartBaseRingPower(player, boosted);
-	UINT8 ringcap = K_GetKartRingCap(player);
+	uint16_t finalPower = K_GetKartBaseRingPower(player, boosted);
+	uint8_t ringcap = K_GetKartRingCap(player);
 
 	// If you use alot of rings at a time, you start gaining less ring timer...
 	fixed_t burnStart = finalPower*ringcap;
@@ -9834,9 +9834,9 @@ INT32 K_GetKartRingPower(const player_t *player, dboolean boosted)
 // Returns false if this player being placed here causes them to collide with any other player
 // Used in g_game.c for match etc. respawning
 // This does not check along the z because the z is not correctly set for the spawnee at this point
-dboolean K_CheckPlayersRespawnColliding(INT32 playernum, fixed_t x, fixed_t y)
+dboolean K_CheckPlayersRespawnColliding(int32_t playernum, fixed_t x, fixed_t y)
 {
-	INT32 i;
+	int32_t i;
 	fixed_t p1radius = players[playernum].mo->radius;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -9855,9 +9855,9 @@ dboolean K_CheckPlayersRespawnColliding(INT32 playernum, fixed_t x, fixed_t y)
 
 // countersteer is how strong the controls are telling us we are turning
 // turndir is the direction the controls are telling us to turn, -1 if turning right and 1 if turning left
-static INT16 K_GetKartDriftValue(const player_t *player, fixed_t countersteer)
+static int16_t K_GetKartDriftValue(const player_t *player, fixed_t countersteer)
 {
-	INT16 basedrift, driftangle;
+	int16_t basedrift, driftangle;
 	fixed_t driftweight = player->kartweight*14; // 12
 
 	if (player->drift == 0 || !P_IsObjectOnGround(player->mo))
@@ -9882,7 +9882,7 @@ static INT16 K_GetKartDriftValue(const player_t *player, fixed_t countersteer)
 	return basedrift + FixedMul(driftangle, countersteer);
 }
 
-INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
+int16_t K_GetKartTurnValue(const player_t *player, int16_t turnvalue)
 {
 	fixed_t p_topspeed = K_GetKartSpeed(player, false, false);
 	fixed_t p_curspeed = min(player->speed, p_topspeed * 2);
@@ -9907,7 +9907,7 @@ INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
 			turnvalue = K_GetKartDriftValue(player, countersteer);
 		}
 		else
-			turnvalue = (INT16)(turnvalue + K_GetKartDriftValue(player, FRACUNIT));
+			turnvalue = (int16_t)(turnvalue + K_GetKartDriftValue(player, FRACUNIT));
 
 		if (player->handleboost > 0)
 		{
@@ -9947,17 +9947,17 @@ INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
 	return turnvalue;
 }
 
-INT32 K_GetKartDriftSparkValue(const player_t *player)
+int32_t K_GetKartDriftSparkValue(const player_t *player)
 {
-	UINT8 kartspeed = ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
+	uint8_t kartspeed = ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 		? 1
 		: player->kartspeed;
 	return (26*4 + kartspeed*2 + (9 - player->kartweight))*8;
 }
 
-INT32 K_GetKartDriftSparkValueForStage(const player_t *player, UINT8 stage)
+int32_t K_GetKartDriftSparkValueForStage(const player_t *player, uint8_t stage)
 {
-	const INT32 dsv = K_GetKartDriftSparkValue(player);
+	const int32_t dsv = K_GetKartDriftSparkValue(player);
 
 	// This code is function is pretty much useless now that the timing changes are linear but bleh.
 	// G: but it is somewhat useful for purple drift
@@ -9971,9 +9971,9 @@ INT32 K_GetKartDriftSparkValueForStage(const player_t *player, UINT8 stage)
 	}
 }
 
-UINT8 K_GetKartDriftSparkStageForValue(const player_t *player, INT32 value)
+uint8_t K_GetKartDriftSparkStageForValue(const player_t *player, int32_t value)
 {
-	const INT32 dsv = K_GetKartDriftSparkValue(player);
+	const int32_t dsv = K_GetKartDriftSparkValue(player);
 
 	if (value < 0)
 		return 0;
@@ -9988,7 +9988,7 @@ UINT8 K_GetKartDriftSparkStageForValue(const player_t *player, INT32 value)
 	}
 }
 
-static void K_SpawnDriftEFX(player_t *player, SINT8 level, dboolean pencil)
+static void K_SpawnDriftEFX(player_t *player, int8_t level, dboolean pencil)
 {
 	mobj_t *overlay = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BOOSTFLAME);
 	P_SetMobjState(overlay, S_DRIFTBOOSTFLAME);
@@ -10080,7 +10080,7 @@ void K_DoKartMagnetGradient(player_t *player)
 	if (P_MobjWasRemoved(player->mo))
 		return;
 
-	INT64 distfactor = (INT64)(K_GetClusterDistanceForPlayer(player));
+	int64_t distfactor = (int64_t)(K_GetClusterDistanceForPlayer(player));
 
 	distfactor = max(0, min(FRACUNIT, (distfactor * FRACUNIT) / MAGNET_TURNS));
 
@@ -10220,7 +10220,7 @@ void K_AddTiltMomentum(player_t *player, fixed_t angularvelocity)
 
 static void K_HandleKartTilt(player_t *player)
 {
-	SINT8 startsign = intsign(player->karttilt);
+	int8_t startsign = intsign(player->karttilt);
 	fixed_t lineargravity = max(abs(P_GetMobjGravity(player->mo)), FRACUNIT/10);
 	fixed_t angulargravity = lineargravity * (P_IsObjectOnGround(player->mo) ? 12 : 3);
 	fixed_t angaccelgravity = 0;
@@ -10267,7 +10267,7 @@ static void K_HandleKartTilt(player_t *player)
 #undef PLAYERTILTCAP
 #undef PLAYERTILTMOMENTUMCAP
 
-static void K_ApplyAirThrust(player_t *player, UINT8 driftstage)
+static void K_ApplyAirThrust(player_t *player, uint8_t driftstage)
 {
 	static consvar_t *powervars[] = {
 		[1] = &cv_kartairthrust_power1,
@@ -10296,9 +10296,9 @@ static void K_KartDrift(player_t *player, dboolean onground)
 {
 	fixed_t minspeed = (10 * player->mo->scale);
 	fixed_t driftadditive = FixedMul(24, FRACUNIT + (player->handleboost / 2));
-	const INT32 dsv = K_GetKartDriftSparkValue(player);
-	const UINT8 driftstage = K_GetKartDriftSparkStageForValue(player, player->driftcharge);
-	UINT16 buttons = K_GetKartButtons(player);
+	const int32_t dsv = K_GetKartDriftSparkValue(player);
+	const uint8_t driftstage = K_GetKartDriftSparkStageForValue(player, player->driftcharge);
+	uint16_t buttons = K_GetKartButtons(player);
 
 	// Grown players taking yellow spring panels will go below minspeed for one tic,
 	// and will then wrongdrift or have their sparks removed because of this.
@@ -10346,7 +10346,7 @@ static void K_KartDrift(player_t *player, dboolean onground)
 	{
 		if (driftstage && (onground || K_AirThrustActive() == AIRTHRUST_BURST))
 		{
-			UINT8 boost = 0;
+			uint8_t boost = 0;
 
 			if (!cv_kartdriftsounds.value || driftstage < 3)
 				S_StartSound(player->mo, sfx_s23c);
@@ -10634,7 +10634,7 @@ static void K_KartSlipdash(player_t *player, dboolean onground)
 	}
 	else if (player->slipdashcharge && onground)
 	{
-		INT32 i;
+		int32_t i;
 		dboolean driftbonus = player->driftcharge && !snaked;
 
 		if (snaked)
@@ -10660,7 +10660,7 @@ static void K_KartSlipdash(player_t *player, dboolean onground)
 
 		if (driftbonus)
 		{
-			INT32 dsv = K_GetKartDriftSparkValue(player);
+			int32_t dsv = K_GetKartDriftSparkValue(player);
 			player->driftcharge = min(player->driftcharge + FixedMul(player->slipdashcharge, dsv), dsv-1);
 			S_StartSound(player->mo, sfx_s3k45);
 		}
@@ -10800,7 +10800,7 @@ static void K_RecoveryDash(player_t *player)
 				mobj_t *skid;
 				angle_t travelangle;
 				travelangle = player->mo->angle;
-				for (INT32 i = 0; i < 2; i++)
+				for (int32_t i = 0; i < 2; i++)
 				{
 					if (player->karttilt && ((player->karttilt < 0 && !(i & 1)) || (player->karttilt > 0 && (i & 1))))
 					{
@@ -10845,7 +10845,7 @@ static void K_RecoveryDash(player_t *player)
 				angle_t travelangle, sparkangle;
 				travelangle = player->mo->angle;
 				sparkangle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
-				for (INT32 i = 0; i < 2; i++)
+				for (int32_t i = 0; i < 2; i++)
 				{
 					if (P_IsObjectOnGround(player->mo) && player->karttilt &&
 						((player->karttilt < 0 && !(i & 1)) || (player->karttilt > 0 && (i & 1)))
@@ -10880,9 +10880,9 @@ static void K_RecoveryDash(player_t *player)
 	}
 }
 
-INT32 K_GetDriftAngleOffset(player_t *player)
+int32_t K_GetDriftAngleOffset(player_t *player)
 {
-	INT32 a = 0;
+	int32_t a = 0;
 	dboolean onground = P_IsObjectOnGround(player->mo);
 	dboolean compat = wadfiles[skins[player->skin]->wadnum]->compatmode;
 
@@ -10919,7 +10919,7 @@ static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
 }*/
 
 /*--------------------------------------------------
-	UINT32 K_UndoMapScaling(UINT32 distance)
+	uint32_t K_UndoMapScaling(uint32_t distance)
 
 		Takes a raw map distance and adjusts it to
 		be in x1 scale.
@@ -10930,7 +10930,7 @@ static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
 	Return:-
 		Distance unscaled by mapobjectscale.
 --------------------------------------------------*/
-static UINT32 K_UndoMapScaling(UINT32 distance)
+static uint32_t K_UndoMapScaling(uint32_t distance)
 {
 	if (mapobjectscale != FRACUNIT)
 	{
@@ -10946,7 +10946,7 @@ static UINT32 K_UndoMapScaling(UINT32 distance)
 // 1.27 * FRACUNIT
 #define LEGACYCLUSTERMUL (127 * FRACUNIT / 100)
 
-static dboolean K_CheckBestRankForCluster(player_t *player, UINT32 pingame)
+static dboolean K_CheckBestRankForCluster(player_t *player, uint32_t pingame)
 {
 
 	if (pingame > 6)
@@ -10959,7 +10959,7 @@ static dboolean K_CheckBestRankForCluster(player_t *player, UINT32 pingame)
 			}
 			else
 			{
-				const UINT32 podium = pingame / 8; // 1/8th the playercount for parity with cluster allocation
+				const uint32_t podium = pingame / 8; // 1/8th the playercount for parity with cluster allocation
 				if (player->position <= podium)
 				{
 					// Ignore the top players.
@@ -10987,7 +10987,7 @@ static dboolean K_CheckBestRankForCluster(player_t *player, UINT32 pingame)
 
 #define FARTHESTCLUSDIS (4224)
 
-static UINT32 K_UpdateDistanceFromCluster(player_t* player)
+static uint32_t K_UpdateDistanceFromCluster(player_t* player)
 {
 	if (!player)
 	{
@@ -10996,13 +10996,13 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 	}
 
 	player_t* cluster_p;
-	UINT32 i, pingame;
-	SINT8 first, second, bestpid, bestpidcluster, worstloser, tinypoptarget;
+	uint32_t i, pingame;
+	int8_t first, second, bestpid, bestpidcluster, worstloser, tinypoptarget;
 
-	INT16 bestpos, worstloserpos;
-	INT16 bestposcluster = INT16_MAX;
+	int16_t bestpos, worstloserpos;
+	int16_t bestposcluster = INT16_MAX;
 
-	INT32 divmul;
+	int32_t divmul;
 
 	pingame = 0;
 
@@ -11050,7 +11050,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 			{
 				// This player is the best fit, per the cluster filter
 				bestposcluster = players[i].position;
-				bestpidcluster = (SINT8)i;
+				bestpidcluster = (int8_t)i;
 			}
 
 			if ((players[i].position < bestpos) && (players[i].position < pingame) &&
@@ -11058,14 +11058,14 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 			{
 				// This player is the highest-ranking best-fit.
 				bestpos = players[i].position;
-				bestpid = (SINT8)i;
+				bestpid = (int8_t)i;
 			}
 			else if ((players[i].position > worstloserpos) &&
 				 (players[i].position < pingame) && (K_IsPlayerLosing(&players[i])))
 			{
 				// This player is the lowest-ranking "loser".
 				worstloserpos = players[i].position;
-				worstloser = (SINT8)i;
+				worstloser = (int8_t)i;
 			}
 		}
 	}
@@ -11120,9 +11120,9 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 
 	dboolean usedbestfit = false;
 
-	UINT32 bestfitid = clusterid;
+	uint32_t bestfitid = clusterid;
 
-	UINT32 distancetobest = 0;
+	uint32_t distancetobest = 0;
 
 	// We're not done yet! Get the best-fitting node from the global cluster database, and
 	// compare ourselves to them
@@ -11141,7 +11141,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 				// Ignore the best-fit if we're actually AHEAD of it
 				if (players[clusterid].position > bestfit.nucleus.player->position)
 				{
-					bestfitid = (UINT32)(bestfit.nucleus.player - players);
+					bestfitid = (uint32_t)(bestfit.nucleus.player - players);
 
 					if (K_LegacyOddsMode())
 					{
@@ -11157,7 +11157,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 					if (distancetobest > FARTHESTCLUSDIS)
 					{
 						// We're way too far away! Let the best-fit take over...
-						clusterid = (UINT32)(bestfit.nucleus.player - players);
+						clusterid = (uint32_t)(bestfit.nucleus.player - players);
 
 						if (clustermode != CLSMODE_BESTFIT)
 						{
@@ -11172,7 +11172,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 			else
 			{
 				// Cluster player is nonexistent, but we exist. By default, we're the cluster player!
-				clusterid = (UINT32)(bestfit.nucleus.player - players);
+				clusterid = (uint32_t)(bestfit.nucleus.player - players);
 
 				if (clustermode != CLSMODE_BESTFIT)
 				{
@@ -11245,10 +11245,10 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 	}
 
 	// Compare against best-fit first
-	INT32 bestfitdiv = divmul;
+	int32_t bestfitdiv = divmul;
 
-	SINT8 tinypopbest = 0;
-	UINT8 bestfit_pos = -1;
+	int8_t tinypopbest = 0;
+	uint8_t bestfit_pos = -1;
 
 	player->distancefrombestfit = 0;
 
@@ -11411,7 +11411,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 
 		// Return the 3D distance from the cluster player.
 		// Multiply by a multiplier to make up for shoddy euclidean distance checks.
-		UINT8 cluster_pos = cluster_p->position;
+		uint8_t cluster_pos = cluster_p->position;
 
 		if (bestfitid == clusterid)
 			player->distancefrombestfit =
@@ -11464,18 +11464,18 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 						players[tinypoptarget].distancetofinish);
 		}
 
-		UINT32 targetdtf;
+		uint32_t targetdtf;
 
 		if (clusterid != UINT32_MAX)
 		{
 			// Use the cluster player's DtF.
 
-			clusterdtf.x = (INT32)(players[clusterid].distancetofinish);
+			clusterdtf.x = (int32_t)(players[clusterid].distancetofinish);
 			targetdtf = players[clusterid].distancetofinish;
 		}
 		else
 		{
-			targetdtf = (UINT32)(clusterdtf.x);
+			targetdtf = (uint32_t)(clusterdtf.x);
 		}
 
 		if (player->distancetofinish <= targetdtf)
@@ -11497,7 +11497,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t* player)
 
 #undef FARTHESTCLUSDIS
 
-UINT32 K_GetClusterDistanceForPlayer(player_t * player)
+uint32_t K_GetClusterDistanceForPlayer(player_t * player)
 {
 	if (clusterjustchanged)
 	{
@@ -11605,8 +11605,8 @@ void K_KartLegacyUpdatePosition(player_t *player)
 
 		if (gametypes[gametype]->rules & GTR_CIRCUIT)
 		{
-			const INT32 iplayerlaps = (players[i].starpostnum + (numstarposts + 1) * players[i].laps);
-			const INT32 pplayerlaps = (player->starpostnum + (numstarposts + 1) * player->laps);
+			const int32_t iplayerlaps = (players[i].starpostnum + (numstarposts + 1) * players[i].laps);
+			const int32_t pplayerlaps = (player->starpostnum + (numstarposts + 1) * player->laps);
 
 			if (iplayerlaps > pplayerlaps)
 				position++;
@@ -11708,19 +11708,19 @@ void K_KartLegacyUpdatePosition(player_t *player)
 	player->position = position;
 }
 
-UINT32 clusterid = 0;
+uint32_t clusterid = 0;
 clustermode_e clustermode = CLSMODE_AVERAGES;
 tic_t clusterjustchanged = 0;
 
 // Uses distance averaging to find a player cluster.
 static vector3_t* K_FindPlayerCluster(vector3_t* out)
 {
-	INT32 i;
+	int32_t i;
 	player_t *player = NULL;
 	player_t *leader = NULL;
 
-	INT32 nump = 0;
-	INT64 distavg = 0;
+	int32_t nump = 0;
+	int64_t distavg = 0;
 
 	out->x = 0;
 	out->y = 0;
@@ -11776,11 +11776,11 @@ static vector3_t* K_FindPlayerCluster(vector3_t* out)
 
 		if (K_LegacyOddsMode())
 		{
-			distavg += (INT64)(K_GetCongaLineDistance(player, 1));
+			distavg += (int64_t)(K_GetCongaLineDistance(player, 1));
 		}
 		else
 		{
-			distavg += max(0, (INT64)(player->distancetofinish) - (INT64)(leader->distancetofinish));
+			distavg += max(0, (int64_t)(player->distancetofinish) - (int64_t)(leader->distancetofinish));
 		}
 	}
 
@@ -11789,8 +11789,8 @@ static vector3_t* K_FindPlayerCluster(vector3_t* out)
 		distavg /= nump;
 	}
 
-	INT64 distsample = 0;
-	INT64 bestsample = INT64_MAX;
+	int64_t distsample = 0;
+	int64_t bestsample = INT64_MAX;
 
 	// Find the player closest to the sample.
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -11808,11 +11808,11 @@ static vector3_t* K_FindPlayerCluster(vector3_t* out)
 
 		if (K_LegacyOddsMode())
 		{
-			distsample = (INT64)(K_GetCongaLineDistance(player, 1)) - distavg;
+			distsample = (int64_t)(K_GetCongaLineDistance(player, 1)) - distavg;
 		}
 		else
 		{
-			distsample = max(0, (INT64)(player->distancetofinish) - (INT64)(leader->distancetofinish)) - distavg;
+			distsample = max(0, (int64_t)(player->distancetofinish) - (int64_t)(leader->distancetofinish)) - distavg;
 		}
 
 		if ((distsample < bestsample))
@@ -11863,12 +11863,12 @@ void K_UpdateClusterPoints(void)
 		return;
 	}
 
-	INT32 i = 0;
+	int32_t i = 0;
 
 	// FIXME: CAN WE GET A **FUCKING** GENERALIZED FUNCTION ALREADY?!
 	// I'LL PORT THE SHIT FROM `gprank` IF I HAVE TO
 	// THERE ARE T W O OF THESE STUPID ASS PLAYER HEADCOUNT LOOPS IN THIS ROUTINE *ALONE*!
-	INT32 pcount = 0;
+	int32_t pcount = 0;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -11925,7 +11925,7 @@ void K_UpdateClusterPoints(void)
 
 void K_UpdateAllPlayerPositions(void)
 {
-	INT32 i;
+	int32_t i;
 	if (!K_UsingLegacyCheckpoints())
 	{
 		// First loop: Ensure all players' distance to the finish line are all accurate
@@ -12027,7 +12027,7 @@ void K_StripOther(player_t *player)
 	}
 }
 
-SINT8 K_Sliptiding(const player_t *player)
+int8_t K_Sliptiding(const player_t *player)
 {
 	return player->drift ? 0 : player->aizdriftstrat;
 }
@@ -12236,7 +12236,7 @@ dboolean K_SlopeResistance(const player_t *player)
 	return false;
 }
 
-INT32 K_GetShieldFromPlayer(const player_t *player)
+int32_t K_GetShieldFromPlayer(const player_t *player)
 {
 	if (P_MobjWasRemoved(player->shieldtracer))
 		return KSHIELD_NONE;
@@ -12251,7 +12251,7 @@ INT32 K_GetShieldFromPlayer(const player_t *player)
 	}
 }
 
-INT32 K_GetShieldFromItem(INT32 item)
+int32_t K_GetShieldFromItem(int32_t item)
 {
 	switch (item)
 	{
@@ -12277,7 +12277,7 @@ void K_MoveKartPlayer(player_t *player, dboolean onground)
 {
 	TracyCZone(__zone, true);
 
-	UINT16 buttons = K_GetKartButtons(player);
+	uint16_t buttons = K_GetKartButtons(player);
 	dboolean ATTACK_IS_DOWN = ((buttons & BT_ATTACK) && !(player->oldcmd.buttons & BT_ATTACK));
 	dboolean HOLDING_ITEM = (player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT));
 	dboolean NO_HYUDORO = (player->stealingtimer == 0 && player->stolentimer == 0);
@@ -12368,8 +12368,8 @@ void K_MoveKartPlayer(player_t *player, dboolean onground)
 
 					if (P_IsDisplayPlayer(player))
 					{
-						UINT8 startfade = 220;
-						UINT8 transfactor = 10 * (min(startfade, player->ringtransparency)) / startfade;
+						uint8_t startfade = 220;
+						uint8_t transfactor = 10 * (min(startfade, player->ringtransparency)) / startfade;
 						if (transfactor < 10)
 						{
 							transfactor = max(transfactor, 4);
@@ -12489,7 +12489,7 @@ void K_MoveKartPlayer(player_t *player, dboolean onground)
 
 	if (player->hyudorotimer > 0)
 	{
-		INT32 hyu = hyudorotime;
+		int32_t hyu = hyudorotime;
 
 		if (leveltime & 1)
 		{
@@ -12566,9 +12566,9 @@ void K_MoveKartPlayer(player_t *player, dboolean onground)
 
 void K_CheckSpectateStatus(dboolean considermapreset)
 {
-	UINT8 respawnlist[MAXPLAYERS];
-	UINT8 i, j, numingame = 0, numjoiners = 0;
-	UINT8 numhumans = 0, numbots = 0;
+	uint8_t respawnlist[MAXPLAYERS];
+	uint8_t i, j, numingame = 0, numjoiners = 0;
+	uint8_t numhumans = 0, numbots = 0;
 
 	// Maintain spectate wait timer
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -12682,16 +12682,16 @@ void K_CheckSpectateStatus(dboolean considermapreset)
 	// Organize by spectate wait timer (if there's more than one to sort)
 	if (cv_ingamecap.value && numjoiners > 1)
 	{
-		UINT8 oldrespawnlist[MAXPLAYERS];
+		uint8_t oldrespawnlist[MAXPLAYERS];
 		memcpy(oldrespawnlist, respawnlist, numjoiners);
 		for (i = 0; i < numjoiners; i++)
 		{
-			UINT8 pos = 0;
-			INT32 ispecwait = players[oldrespawnlist[i]].spectatewait;
+			uint8_t pos = 0;
+			int32_t ispecwait = players[oldrespawnlist[i]].spectatewait;
 
 			for (j = 0; j < numjoiners; j++)
 			{
-				INT32 jspecwait = players[oldrespawnlist[j]].spectatewait;
+				int32_t jspecwait = players[oldrespawnlist[j]].spectatewait;
 				if (j == i)
 					continue;
 				if (jspecwait > ispecwait)
@@ -12704,8 +12704,8 @@ void K_CheckSpectateStatus(dboolean considermapreset)
 		}
 	}
 
-	const UINT8 previngame = numingame;
-	INT16 removeBotID = MAXPLAYERS - 1;
+	const uint8_t previngame = numingame;
+	int16_t removeBotID = MAXPLAYERS - 1;
 
 	// Finally, we can de-spectate everyone!
 	for (i = 0; i < numjoiners; i++)
@@ -12761,7 +12761,7 @@ void K_CheckSpectateStatus(dboolean considermapreset)
 
 dboolean K_IsSPBInGame(void)
 {
-	UINT8 i;
+	uint8_t i;
 	thinker_t *think;
 
 	// is there an SPB chasing anyone?
@@ -12874,12 +12874,12 @@ dboolean K_DraftingActive(void)
 	return false;
 }
 
-SINT8 K_AirDropActive(void)
+int8_t K_AirDropActive(void)
 {
 	return airdropactive;
 }
 
-SINT8 K_AirThrustActive(void)
+int8_t K_AirThrustActive(void)
 {
 	return airthrustactive;
 }
@@ -12983,7 +12983,7 @@ dboolean K_UsingPatchedMap(void)
 	return false;
 }
 
-INT32 K_CheckpointThreshold(dboolean roundup)
+int32_t K_CheckpointThreshold(dboolean roundup)
 {
 	if (K_UsingLegacyCheckpoints() || K_UsingPatchedMap())
 		return roundup ? numstarposts - numstarposts/2 : numstarposts/2;
@@ -12993,8 +12993,8 @@ INT32 K_CheckpointThreshold(dboolean roundup)
 
 dboolean K_NotFreePlay(void)
 {
-	UINT8 i;
-	UINT8 nump = 0;
+	uint8_t i;
+	uint8_t nump = 0;
 
 	if (K_CanChangeRules(true) == false)
 	{
@@ -13140,7 +13140,7 @@ void K_KartAttractHomingAttack(player_t *player)
 	fixed_t influence = 0;
 	fixed_t angleassist = 0;
 	fixed_t targetangleassist = cv_kartattraction_assistpower.value;
-	INT32 lastTarg = player->lastitemtarget;
+	int32_t lastTarg = player->lastitemtarget;
 
 	if (lastTarg >= 0 && lastTarg < MAXPLAYERS)
 	{
@@ -13258,7 +13258,7 @@ void K_KartPlayerBumpyRoad(player_t *player)
 
 		// dust ptcl (not netsynched)
 		{
-			INT32 speedrange = 1;
+			int32_t speedrange = 1;
 			fixed_t sidex = P_ReturnThrustX(NULL, player->mo->angle + (ANGLE_90 * player->bumpyroadside), player->mo->radius);
 			fixed_t sidey = P_ReturnThrustY(NULL, player->mo->angle + (ANGLE_90 * player->bumpyroadside), player->mo->radius);
 			fixed_t backoffsetx = P_ReturnThrustX(NULL, player->mo->angle + ANGLE_180, player->mo->radius);
@@ -13284,7 +13284,7 @@ void K_ShoveObject(mobj_t *victim, mobj_t *source, fixed_t force)
 	vector3_t fwd = {P_ReturnThrustX(victim, victim->angle, FRACUNIT), P_ReturnThrustY(victim, victim->angle, FRACUNIT), 0};
 	vector3_t side = {source->x - victim->x, source->y - victim->y, 0};
 	vector3_t cross = {0};
-	SINT8 direction = 0;
+	int8_t direction = 0;
 
 	FV3_Cross(&fwd, &side, &cross);
 	// pick using victim's left/right (negative is right of the victim here)

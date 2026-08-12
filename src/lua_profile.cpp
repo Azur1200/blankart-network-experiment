@@ -147,7 +147,7 @@ void LUA_RenderTimers(void)
 	float row_y = kRowHeight;
 
 	// pretty much what the whole srb2::Draw does lol
-	auto draw_row = [](float x, float y, INT32 flags, const char *str)
+	auto draw_row = [](float x, float y, int32_t flags, const char *str)
 	{
 		V_DrawSmallStringAtFixed(
 			FloatToFixed(x),
@@ -200,7 +200,7 @@ void LUA_RenderTimers(void)
 		}
 
 		{
-			const INT32 tally_flags = color_flag(cum * 1'000'000.0);
+			const int32_t tally_flags = color_flag(cum * 1'000'000.0);
 
 			draw_row(0.f, row_y, tally_flags, va("%8.2f us - TOTAL", cum * 1'000'000.0));
 			draw_row(0.f, row_y + kRowHeight, tally_flags, va("%8.2f ms", cum * 1000.0));

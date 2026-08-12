@@ -77,7 +77,7 @@ static CV_PossibleValue_t rngseed_cons_t[] = {\
 
 consvar_t cv_rngpeek = CVAR_INIT("rngpeek", "Off", CV_SAVE, rngseed_cons_t, NULL);
 
-UINT16 objectsdrawn = 0;
+uint16_t objectsdrawn = 0;
 
 // dumb fade thing for director toggle
 tic_t directortoggletimer = 0;
@@ -103,7 +103,7 @@ static patch_t *envelope;
 
 // current player for overlay drawing
 player_t *stplyr;
-UINT8 stplyrnum;
+uint8_t stplyrnum;
 
 static huddrawlist_h luahuddrawlist_game[MAXSPLITSCREENPLAYERS];
 static huddrawlist_h luahuddrawlist_titlecard;
@@ -137,7 +137,7 @@ static dboolean st_stopped = true;
 
 static void ST_doPaletteStuff(void)
 {
-	INT32 palette = 0;
+	int32_t palette = 0;
 
 	#ifdef HWRENDER
 	if (rendermode == render_opengl && !HWR_ShouldUsePaletteRendering())
@@ -174,8 +174,8 @@ void ST_Ticker(dboolean run)
 }
 
 // 0 is default, any others are special palettes.
-INT32 st_palette = 0;
-UINT32 st_translucency = 10;
+int32_t st_palette = 0;
+uint32_t st_translucency = 10;
 fixed_t st_fadein = 0;
 
 void ST_UnloadGraphics(void)
@@ -205,19 +205,19 @@ void ST_LoadGraphics(void)
 #endif
 }
 
-static dboolean ST_IconCanSpinout(UINT8 icon)
+static dboolean ST_IconCanSpinout(uint8_t icon)
 {
 	return ((icon == FACE_MINIMAP)||(icon == FACE_RANK)||(icon == FACE_WANTED));
 }
 
 // made separate so that skins code can reload custom face graphics
-void ST_LoadFaceGraphics(INT32 skinnum)
+void ST_LoadFaceGraphics(int32_t skinnum)
 {
 #define FACE_MAX (FACE_MINIMAP + 1)
 	spritedef_t* sprdef = &skins[skinnum]->sprites[SPR2_XTRA];
 	spriteframe_t* sprframe;
-	UINT8 i = 0, maxer = min(sprdef->numframes, FACE_MAX);
-	INT16 baseleftoffs, basetopoffs;
+	uint8_t i = 0, maxer = min(sprdef->numframes, FACE_MAX);
+	int16_t baseleftoffs, basetopoffs;
 	dboolean alreadycentered = false;
 	while (i < maxer)
 	{
@@ -271,7 +271,7 @@ void ST_LoadFaceGraphics(INT32 skinnum)
 
 void ST_ReloadSkinFaceGraphics(void)
 {
-	INT32 i;
+	int32_t i;
 
 	for (i = 0; i < numskins; i++)
 		ST_LoadFaceGraphics(i);
@@ -345,14 +345,14 @@ void ST_changeDemoView(void)
 dboolean st_overlay;
 
 /*
-static INT32 SCZ(INT32 z)
+static int32_t SCZ(int32_t z)
 {
 	return FixedInt(FixedMul(z<<FRACBITS, vid.fdup));
 }
 */
 
 /*
-static INT32 SCY(INT32 y)
+static int32_t SCY(int32_t y)
 {
 	//31/10/99: fixed by Hurdler so it _works_ also in hardware mode
 	// do not scale to resolution for hardware accelerated
@@ -369,7 +369,7 @@ static INT32 SCY(INT32 y)
 */
 
 /*
-static INT32 STRINGY(INT32 y)
+static int32_t STRINGY(int32_t y)
 {
 	//31/10/99: fixed by Hurdler so it _works_ also in hardware mode
 	// do not scale to resolution for hardware accelerated
@@ -385,7 +385,7 @@ static INT32 STRINGY(INT32 y)
 */
 
 /*
-static INT32 SPLITFLAGS(INT32 f)
+static int32_t SPLITFLAGS(int32_t f)
 {
 	// Pass this V_SNAPTO(TOP|BOTTOM) and it'll trim them to account for splitscreen! -Red
 	if (splitscreen)
@@ -400,14 +400,14 @@ static INT32 SPLITFLAGS(INT32 f)
 */
 
 /*
-static INT32 SCX(INT32 x)
+static int32_t SCX(int32_t x)
 {
 	return FixedInt(FixedMul(x<<FRACBITS, vid.fdup));
 }
 */
 
 #if 0
-static INT32 SCR(INT32 r)
+static int32_t SCR(int32_t r)
 {
 	fixed_t y;
 		//31/10/99: fixed by Hurdler so it _works_ also in hardware mode
@@ -430,29 +430,29 @@ static INT32 SCR(INT32 r)
 
 // Devmode information
 
-static void ST_pushRow(INT32 *height)
+static void ST_pushRow(int32_t *height)
 {
 	*height -= 4;
 }
 
-static void ST_pushDebugString(INT32 *height, const char *string)
+static void ST_pushDebugString(int32_t *height, const char *string)
 {
 	V_DrawRightAlignedString(320, *height, V_MONOSPACE, string);
 	*height -= 8;
 }
 
-static void ST_pushDebugTimeMS(INT32 *height, const char *label, UINT32 ms)
+static void ST_pushDebugTimeMS(int32_t *height, const char *label, uint32_t ms)
 {
 	ST_pushDebugString(height, va("%s%02d:%05.2f", label,
 				ms / 60000, ms % 60000 / 1000.f));
 }
 
-static void ST_drawMusicDebug(INT32 *height)
+static void ST_drawMusicDebug(int32_t *height)
 {
 	char mname[7];
-	UINT16 mflags; // unused
+	uint16_t mflags; // unused
 	dboolean looping;
-	UINT8 i = 0;
+	uint8_t i = 0;
 
 	const musicdef_t *def;
 	musictype_t format;
@@ -490,9 +490,9 @@ static void ST_drawMusicDebug(INT32 *height)
 	ST_pushDebugString(height, va("    Song: %8s", mname));
 }
 
-static void ST_drawImuDebug(INT32 *height)
+static void ST_drawImuDebug(int32_t *height)
 {
-	INT32 pnum = stplyrnum;
+	int32_t pnum = stplyrnum;
 	vector3_t accel, gyro, gyrocalibrated, grav, shake;
 	if (demo.playback || (!P_IsMachineLocalPlayer(stplyr)))
 	{
@@ -513,7 +513,7 @@ static void ST_drawImuDebug(INT32 *height)
 	ST_pushDebugString(height, va("Accel :%4.2f,%4.2f,%4.2f", FixedToFloat(accel.x), FixedToFloat(accel.y), FixedToFloat(accel.z)));
 }
 
-static void ST_drawRenderDebug(INT32 *height)
+static void ST_drawRenderDebug(int32_t *height)
 {
 	const struct RenderStats *i = &g_renderstats;
 
@@ -525,7 +525,7 @@ static void ST_drawRenderDebug(INT32 *height)
 	ST_pushDebugString(height, va("Skybox Portals: %4s", sizeu1(i->skybox_portals)));
 }
 
-static void ST_drawDemoDebug(INT32 *height)
+static void ST_drawDemoDebug(int32_t *height)
 {
 	if (!demo.recording && !demo.playback)
 		return;
@@ -552,7 +552,7 @@ static void ST_drawDemoDebug(INT32 *height)
 
 static void ST_drawDebugInfo(void)
 {
-	INT32 height = 192;
+	int32_t height = 192;
 
 	if (!stplyr->mo)
 		return;
@@ -601,7 +601,7 @@ static void ST_drawDebugInfo(void)
 	// which should be phased out as much as possible anyway.
 	// Figure out some other way to display all of the RNG classes.
 	// yama: Maybe a cvar will do?
-	INT32 rngdebug = cv_rngpeek.value;
+	int32_t rngdebug = cv_rngpeek.value;
 
 	// The actual seed we're debugging.
 	pr_class_t debug_class = (pr_class_t)(rngdebug);
@@ -652,7 +652,7 @@ tic_t lt_exitticker = 0, lt_endtime = 0;
 //
 static void ST_cacheLevelTitle(void)
 {
-	//UINT8 i;
+	//uint8_t i;
 	//char buf[9];
 
 }
@@ -721,16 +721,16 @@ void ST_drawTitleCard(void)
 	char *subttl = mapheaderinfo[gamemap-1]->subttl;
 	char *zonttl = mapheaderinfo[gamemap-1]->zonttl; // SRB2kart
 	char *actnum = mapheaderinfo[gamemap-1]->actnum;
-	INT32 lvlttlxpos;
-	INT32 ttlnumxpos;
-	INT32 zonexpos;
-	INT32 dupcalc = (vid.scaledwidth);
-	UINT8 gtc = G_GetGametypeColor(gametype);
-	INT32 sub = 0;
-	INT32 bary = (r_splitscreen)
+	int32_t lvlttlxpos;
+	int32_t ttlnumxpos;
+	int32_t zonexpos;
+	int32_t dupcalc = (vid.scaledwidth);
+	uint8_t gtc = G_GetGametypeColor(gametype);
+	int32_t sub = 0;
+	int32_t bary = (r_splitscreen)
 		? BASEVIDHEIGHT/2
 		: 163;
-	INT32 lvlw;
+	int32_t lvlw;
 
 	if (!cv_stagetitle.value)
 		return;
@@ -762,11 +762,11 @@ void ST_drawTitleCard(void)
 
 	if (timeinmap > 105)
 	{
-		INT32 count = (113 - (INT32)(timeinmap));
+		int32_t count = (113 - (int32_t)(timeinmap));
 
 		// uh... "fill in the bits" of sub, or something... no idea what I came up with
 		// VERY janky, but doesn't require m_easing
-		INT32 frac = (FixedMul(R_GetTimeFrac(RTF_LEVEL), FixedDiv(dupcalc, BASEVIDWIDTH)) >> (count + 4))/13; // these two magic numbers seem to do the trick
+		int32_t frac = (FixedMul(R_GetTimeFrac(RTF_LEVEL), FixedDiv(dupcalc, BASEVIDWIDTH)) >> (count + 4))/13; // these two magic numbers seem to do the trick
 
 		sub = dupcalc;
 		while (count-- > 0)
@@ -828,7 +828,7 @@ void ST_preLevelTitleCardDrawer(void)
 // returns the actual button name for any gamecontrol
 // if unbound is set, it returns "Unbound" as a string should there be no button bound to a gamecontrol
 // if gamectrl is set, it adds an extra "-" for cases where theres also a hardcoded button like accelerate
-static const char *ST_GetButtonName(INT32 control, const char *inputtext, dboolean unbound, dboolean gamectrl)
+static const char *ST_GetButtonName(int32_t control, const char *inputtext, dboolean unbound, dboolean gamectrl)
 {
 	static char buttname[32] = "";
 	const char *butt1 = (gamecontrol[0][control][0] != 0 ? G_KeynumToString(gamecontrol[0][control][0]) : NULL);
@@ -850,7 +850,7 @@ static const char *ST_GetButtonName(INT32 control, const char *inputtext, dboole
 //
 static void ST_overlayDrawer(void)
 {
-	const UINT8 viewnum = R_GetViewNumber();
+	const uint8_t viewnum = R_GetViewNumber();
 
 	// hu_showscores = auto hide score/time/rings when tab rankings are shown
 	if (!(hu_showscores && (netgame || multiplayer)))
@@ -903,7 +903,7 @@ static void ST_overlayDrawer(void)
 				{
 					char name[MAXPLAYERNAME+12];
 
-					INT32 y = (stplyrnum == 0) ? 4 : BASEVIDHEIGHT/2-12;
+					int32_t y = (stplyrnum == 0) ? 4 : BASEVIDHEIGHT/2-12;
 					sprintf(name, "VIEWPOINT: %s", player_names[stplyr-players]);
 					V_DrawRightAlignedThinString(BASEVIDWIDTH-40, y, V_HUDTRANSHALF|V_ALLOWLOWERCASE|V_SNAPTOTOP|V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_SPLITSCREEN, name);
 				}
@@ -930,8 +930,8 @@ static void ST_overlayDrawer(void)
 
 			if (cv_ingamecap.value)
 			{
-				UINT8 numingame = 0;
-				UINT8 i;
+				uint8_t numingame = 0;
+				uint8_t i;
 
 				for (i = 0; i < MAXPLAYERS; i++)
 					if (playeringame[i] && !players[i].spectator)
@@ -961,7 +961,7 @@ static void ST_overlayDrawer(void)
 // MayonakaStatic: draw Midnight Channel's TV-like borders
 static void ST_MayonakaStatic(void)
 {
-	INT32 flag;
+	int32_t flag;
 	if (cv_lessflicker.value)
 		flag = V_70TRANS;
 	else
@@ -1022,7 +1022,7 @@ static fixed_t ST_CalculateFadeIn(player_t *player)
 	return FRACUNIT;
 }
 
-static INT32 ST_ServerSplash_OpacityFlag(INT32 opacity)
+static int32_t ST_ServerSplash_OpacityFlag(int32_t opacity)
 {
 	if (opacity >= NUMTRANSMAPS)
 	{
@@ -1068,8 +1068,8 @@ void ST_DrawServerSplash(dboolean timelimited)
 		return;
 	}
 
-	const INT32 splashTic = splashTime >> FRACBITS;
-	INT32 opacity = NUMTRANSMAPS;
+	const int32_t splashTic = splashTime >> FRACBITS;
+	int32_t opacity = NUMTRANSMAPS;
 
 	if (timelimited)
 	{
@@ -1084,7 +1084,7 @@ void ST_DrawServerSplash(dboolean timelimited)
 		}
 	}
 
-	INT32 opacityFlag = ST_ServerSplash_OpacityFlag(opacity);
+	int32_t opacityFlag = ST_ServerSplash_OpacityFlag(opacity);
 
 	patch_t *gridPatch = W_CachePatchName("MOTDBG", PU_CACHE);
 
@@ -1092,7 +1092,7 @@ void ST_DrawServerSplash(dboolean timelimited)
 	{
 		fixed_t gridX = -(splashTime / 3) % (gridPatch->width * FRACUNIT);
 		fixed_t gridY = (gridPatch->height) * FRACUNIT;
-		INT32 gridOpacity = ST_ServerSplash_OpacityFlag(opacity / 2);
+		int32_t gridOpacity = ST_ServerSplash_OpacityFlag(opacity / 2);
 		fixed_t maxX = (vid.width * FRACUNIT) / vid.dup;
 
 		while (gridX < maxX)
@@ -1176,7 +1176,7 @@ void ST_Drawer(void)
 	// the last one remaining.
 	{
 		fixed_t maxFade = 0;
-		UINT8 i;
+		uint8_t i;
 
 		for (i = 0; i <= r_splitscreen; i++)
 		{
@@ -1204,7 +1204,7 @@ void ST_Drawer(void)
 
 	if (st_overlay)
 	{
-		UINT8 i;
+		uint8_t i;
 		// No deadview!
 		for (i = 0; i <= r_splitscreen; i++)
 		{
@@ -1236,13 +1236,13 @@ void ST_Drawer(void)
 	// Replay manual-save stuff
 	if (demo.recording && multiplayer && demo.savebutton && demo.savebutton + 3*TICRATE < leveltime)
 	{
-		INT32 gtc = HU_GetHighlightColor();
+		int32_t gtc = HU_GetHighlightColor();
 		switch (demo.savemode)
 		{
 		case DSM_NOTSAVING:
 		{
 			char replaytext[60] = {0};
-			INT32 flags = 0;
+			int32_t flags = 0;
 			const char *item1 = gamecontrol[0][gc_lookback][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][0]) : NULL;
 			const char *item2 = gamecontrol[0][gc_lookback][1] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][1]) : NULL;
 			const char *item3 = gamecontrol[0][gc_lookback][2] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][2]) : NULL;
@@ -1275,7 +1275,7 @@ void ST_Drawer(void)
 		case DSM_WILLAUTOSAVE:
 		{
 			char replaytext[100] = {0};
-			INT32 flags = 0;
+			int32_t flags = 0;
 			const char *button = M_ButtonName(0, gc_lookback, "Look Backwards", false);
 
 			snprintf(replaytext, 100, "Replay will be saved. (%s: Change title)", button);

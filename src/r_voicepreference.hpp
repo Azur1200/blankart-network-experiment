@@ -31,18 +31,18 @@ extern "C"
     extern char voicepref_buffer[VOICEPREFBUFSIZE];
     extern dboolean initedvoiceprefs;
 
-    void R_SetLocalPreferredVoiceForSkin(UINT8 local_pid,
+    void R_SetLocalPreferredVoiceForSkin(uint8_t local_pid,
                                          const char* skin_name,
                                          const char* vox_name);
-    kartvoicenum_t R_GetLocalPreferredVoiceForSkin(UINT8 local_pid, const char* skin_name);
+    kartvoicenum_t R_GetLocalPreferredVoiceForSkin(uint8_t local_pid, const char* skin_name);
 
-    void R_SetLocalPreferredVoiceForSkinByID(UINT8 local_pid, INT32 skin_id, const char* vox_name);
-    kartvoicenum_t R_GetLocalPreferredVoiceForSkinByID(UINT8 local_pid, INT32 skin_id);
+    void R_SetLocalPreferredVoiceForSkinByID(uint8_t local_pid, int32_t skin_id, const char* vox_name);
+    kartvoicenum_t R_GetLocalPreferredVoiceForSkinByID(uint8_t local_pid, int32_t skin_id);
 
-    INT32 R_MakePreferredVoicesList(UINT8 local_pid,
+    int32_t R_MakePreferredVoicesList(uint8_t local_pid,
                                     char* str_ptr,
                                     size_t str_capacity,
-                                    INT32 page_num);
+                                    int32_t page_num);
 
     dboolean R_SaveVoicePreferences();
     dboolean R_LoadVoicePreferences();

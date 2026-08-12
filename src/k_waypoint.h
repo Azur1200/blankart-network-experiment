@@ -45,11 +45,11 @@ struct waypoint_t
 	mobj_t             *mobj;
 	waypoint_t        **nextwaypoints;
 	waypoint_t        **prevwaypoints;
-	UINT32             *nextwaypointdistances;
-	UINT32             *prevwaypointdistances;
+	uint32_t             *nextwaypointdistances;
+	uint32_t             *prevwaypointdistances;
 	size_t              numnextwaypoints;
 	size_t              numprevwaypoints;
-	UINT32              distancetofinish;
+	uint32_t              distancetofinish;
 	driftSetting_e      driftsettings;
 	dboolean             onaline;
 	waypointstatus_e    respawnstatus;
@@ -161,7 +161,7 @@ dboolean K_GetWaypointIsSpawnpoint(waypoint_t *waypoint);
 
 
 /*--------------------------------------------------
-	INT32 K_GetWaypointNextID(waypoint_t *waypoint)
+	int32_t K_GetWaypointNextID(waypoint_t *waypoint)
 
 		Returns the waypoint's next waypoint ID.
 
@@ -172,11 +172,11 @@ dboolean K_GetWaypointIsSpawnpoint(waypoint_t *waypoint);
 		The next waypoint ID, -1 if there is no waypoint or mobj.
 --------------------------------------------------*/
 
-INT32 K_GetWaypointNextID(waypoint_t *waypoint);
+int32_t K_GetWaypointNextID(waypoint_t *waypoint);
 
 
 /*--------------------------------------------------
-	INT32 K_GetWaypointID(waypoint_t *waypoint)
+	int32_t K_GetWaypointID(waypoint_t *waypoint)
 
 		Returns the waypoint's ID.
 
@@ -187,11 +187,11 @@ INT32 K_GetWaypointNextID(waypoint_t *waypoint);
 		The waypoint ID, -1 if there is no waypoint or mobj.
 --------------------------------------------------*/
 
-INT32 K_GetWaypointID(waypoint_t *waypoint);
+int32_t K_GetWaypointID(waypoint_t *waypoint);
 
 
 /*--------------------------------------------------
-	waypoint_t *K_GetWaypointFromID(INT32 waypointID)
+	waypoint_t *K_GetWaypointFromID(int32_t waypointID)
 
 		Returns the first waypoint with the specified ID.
 
@@ -202,11 +202,11 @@ INT32 K_GetWaypointID(waypoint_t *waypoint);
 		The first waypoint with this ID, NULL if the ID doesn't exist at all in the map
 --------------------------------------------------*/
 
-waypoint_t *K_GetWaypointFromID(INT32 waypointID);
+waypoint_t *K_GetWaypointFromID(int32_t waypointID);
 
 
 /*--------------------------------------------------
-	UINT32 K_GetCircuitLength(void)
+	uint32_t K_GetCircuitLength(void)
 
 		Returns the circuit length, 0 on sprint maps.
 
@@ -216,11 +216,11 @@ waypoint_t *K_GetWaypointFromID(INT32 waypointID);
 		The circuit length.
 --------------------------------------------------*/
 
-UINT32 K_GetCircuitLength(void);
+uint32_t K_GetCircuitLength(void);
 
 
 /*--------------------------------------------------
-	INT32 K_GetTrackComplexity(void)
+	int32_t K_GetTrackComplexity(void)
 
 		Returns the track complexity values. This depends
 		on how many turns the map has, and is used for
@@ -232,7 +232,7 @@ UINT32 K_GetCircuitLength(void);
 		The track complexity value.
 --------------------------------------------------*/
 
-INT32 K_GetTrackComplexity(void);
+int32_t K_GetTrackComplexity(void);
 
 
 /*--------------------------------------------------
@@ -250,7 +250,7 @@ waypoint_t *K_GetClosestWaypointToMobj(mobj_t *const mobj);
 
 waypoint_t *K_GetSpawnWaypointForMobj(const mobj_t *mobj);
 
-UINT32 K_GetWaypointSnapThreshold(void);
+uint32_t K_GetWaypointSnapThreshold(void);
 
 /*--------------------------------------------------
 	waypoint_t *K_GetBestWaypointForMobj(mobj_t *const mobj, waypoint_t *const hint);
@@ -303,7 +303,7 @@ dboolean K_PathfindToWaypoint(
 /*--------------------------------------------------
 	dboolean K_PathfindThruCircuit(
 		waypoint_t *const sourcewaypoint,
-		const UINT32      traveldistance,
+		const uint32_t      traveldistance,
 		path_t *const     returnpath,
 		const dboolean     useshortcuts,
 		const dboolean     huntbackwards)
@@ -325,7 +325,7 @@ dboolean K_PathfindToWaypoint(
 
 dboolean K_PathfindThruCircuit(
 	waypoint_t *const sourcewaypoint,
-	const UINT32      traveldistance,
+	const uint32_t      traveldistance,
 	path_t *const     returnpath,
 	const dboolean     useshortcuts,
 	const dboolean     huntbackwards);
@@ -334,7 +334,7 @@ dboolean K_PathfindThruCircuit(
 /*--------------------------------------------------
 	dboolean K_PathfindThruCircuitSpawnable(
 		waypoint_t *const sourcewaypoint,
-		const UINT32      traveldistance,
+		const uint32_t      traveldistance,
 		path_t *const     returnpath,
 		const dboolean     useshortcuts,
 		const dboolean     huntbackwards)
@@ -355,7 +355,7 @@ dboolean K_PathfindThruCircuit(
 
 dboolean K_PathfindThruCircuitSpawnable(
 	waypoint_t *const sourcewaypoint,
-	const UINT32      traveldistance,
+	const uint32_t      traveldistance,
 	path_t *const     returnpath,
 	const dboolean     useshortcuts,
 	const dboolean     huntbackwards);

@@ -84,7 +84,7 @@ struct trackingResult_t
 	fixed_t x, y;
 	fixed_t scale;
 	dboolean onScreen;
-	INT32 angle, pitch;
+	int32_t angle, pitch;
 	fixed_t fov;
 };
 
@@ -94,9 +94,9 @@ void K_ObjectTracking(trackingResult_t *result, const vector3_t *point, dboolean
 
 typedef struct
 {
-	INT32 x;
-	INT32 y;
-	INT32 flags;
+	int32_t x;
+	int32_t y;
+	int32_t flags;
 	dboolean flipamount;
 	fixed_t hudScale;
 	float hudScaleFloat;
@@ -137,9 +137,9 @@ skincolornum_t K_GetHudColor(void);
 void K_LoadKartHUDGraphics(void);
 void K_drawKartHUD(void);
 void K_drawKartFreePlay(void);
-void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, mapnum_t emblemmap, UINT8 mode);
-INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer, INT32 hilicol, dboolean split);
-void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer, INT32 hilicol);
+void K_drawKartTimestamp(tic_t drawtime, int32_t TX, int32_t TY, mapnum_t emblemmap, uint8_t mode);
+int32_t K_DrawNeoTabRankings(int32_t x, int32_t y, playersort_t *tab, int32_t scorelines, int32_t whiteplayer, int32_t hilicol, dboolean split);
+void K_DrawTabRankings(int32_t x, int32_t y, playersort_t *tab, int32_t scorelines, int32_t whiteplayer, int32_t hilicol);
 
 #define MAXSERVERMODS 255
 #define MAXSERVERMODNAME 14
@@ -147,9 +147,9 @@ void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, IN
 struct servermods_t
 {
 	char modname[MAXSERVERMODNAME];
-	UINT32 hash;
+	uint32_t hash;
 	const consvar_t *cvar;
-	SINT8 active; // -1 is N/A (example: if using cvar activation), 0 is off, 1 is on.
+	int8_t active; // -1 is N/A (example: if using cvar activation), 0 is off, 1 is on.
 	dboolean valid;
 };
 
@@ -161,11 +161,11 @@ typedef enum
 } scoreboardmod_e;
 
 extern servermods_t customservermods[MAXSERVERMODS];
-extern UINT8 numcustomservermods;
-void K_AddNewScoreboardMod(const char *name, const consvar_t *cvar, SINT8 active);
-void K_SetScoreboardModStatus(const char *name, SINT8 active);
+extern uint8_t numcustomservermods;
+void K_AddNewScoreboardMod(const char *name, const consvar_t *cvar, int8_t active);
+void K_SetScoreboardModStatus(const char *name, int8_t active);
 
-void K_DrawServerDescrption(INT32 x, INT32 y);
+void K_DrawServerDescrption(int32_t x, int32_t y);
 
 void K_DrawDriftGauge(void);
 void K_DrawFlamometer(void);

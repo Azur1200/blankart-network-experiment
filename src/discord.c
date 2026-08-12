@@ -84,9 +84,9 @@ dboolean drpc_init = false;
 --------------------------------------------------*/
 static char *DRPC_XORIPString(const char *input)
 {
-	const UINT8 xor[IP_SIZE] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21};
+	const uint8_t xor[IP_SIZE] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21};
 	char *output = malloc(sizeof(char) * (IP_SIZE+1));
-	UINT8 i;
+	uint8_t i;
 
 	for (i = 0; i < IP_SIZE; i++)
 	{
@@ -414,7 +414,7 @@ static void Discordrp_OnChange(void)
 }
 
 /*--------------------------------------------------
-	static void DRPC_GotServerIP(UINT32 address)
+	static void DRPC_GotServerIP(uint32_t address)
 
 		Callback triggered by successful STUN response.
 
@@ -424,7 +424,7 @@ static void Discordrp_OnChange(void)
 	Return:-
 		None
 --------------------------------------------------*/
-static void DRPC_GotServerIP(UINT32 address)
+static void DRPC_GotServerIP(uint32_t address)
 {
 	const unsigned char * p = (const unsigned char *)&address;
 	sprintf(self_ip, "%u.%u.%u.%u:%u", p[0], p[1], p[2], p[3], current_port);
@@ -723,7 +723,7 @@ void DRPC_UpdatePresence(void)
 			};
 
 			dboolean customMap = true;
-			UINT16 checkMap = 0;
+			uint16_t checkMap = 0;
 
 			// Map image
 			while (supportedMaps[checkMap] != NULL)

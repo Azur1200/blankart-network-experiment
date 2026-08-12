@@ -303,10 +303,10 @@ static int io_open (lua_State *L) {
 	return 0;
 }
 
-void Got_LuaFile(UINT8 **cp, INT32 playernum)
+void Got_LuaFile(uint8_t **cp, int32_t playernum)
 {
 	FILE **pf = NULL;
-	UINT8 success = READUINT8(*cp); // The first (and only) byte indicates whether the file could be opened
+	uint8_t success = READUINT8(*cp); // The first (and only) byte indicates whether the file could be opened
 
 	if (playernum != serverplayer)
 	{
@@ -375,7 +375,7 @@ void Got_LuaFile(UINT8 **cp, INT32 playernum)
 }
 
 
-void StoreLuaFileCallback(INT32 id)
+void StoreLuaFileCallback(int32_t id)
 {
 	lua_pushfstring(gL, FMT_FILECALLBACKID, id);
 	lua_pushvalue(gL, 3); // Parameter 3 is the callback
@@ -383,7 +383,7 @@ void StoreLuaFileCallback(INT32 id)
 }
 
 
-void RemoveLuaFileCallback(INT32 id)
+void RemoveLuaFileCallback(int32_t id)
 {
 	lua_pushfstring(gL, FMT_FILECALLBACKID, id);
 	lua_pushnil(gL);

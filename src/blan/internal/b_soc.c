@@ -34,11 +34,11 @@ dboolean B_UseWallTransfer(mobj_t *mo)
 }
 
 // Give each map a custom track complexity
-INT32 B_TrackComplexity(void)
+int32_t B_TrackComplexity(void)
 {
 	const mapheader_t *mapheader = mapheaderinfo[gamemap - 1];
-	const INT32 defaultvalue = atoi(cv_kartbot_basetrackcomplexity.defaultvalue);
-	const INT32 mapvalue = mapheader->base_track_complexity;
+	const int32_t defaultvalue = atoi(cv_kartbot_basetrackcomplexity.defaultvalue);
+	const int32_t mapvalue = mapheader->base_track_complexity;
 
 	if (cv_kartbot_basetrackcomplexity.value != defaultvalue || mapvalue == INT32_MAX)
 		return cv_kartbot_basetrackcomplexity.value;

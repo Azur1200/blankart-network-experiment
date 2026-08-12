@@ -20,7 +20,7 @@
 
 static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t *sector, const dboolean fof)
 {
-	INT16 finallight = lightnum;
+	int16_t finallight = lightnum;
 
 	if (slope != NULL && sector != NULL && P_ApplyLightOffsetFine(lightnum, sector))
 	{
@@ -40,13 +40,13 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t 
 // -----------------+
 // HWR_RenderPlane  : Render a floor or ceiling convex polygon
 // -----------------+
-void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, dboolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, levelflat_t *levelflat, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap)
+void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, dboolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, int32_t lightlevel, levelflat_t *levelflat, sector_t *FOFsector, uint8_t alpha, extracolormap_t *planecolormap)
 {
 	polyvertex_t *  pv;
 	float           height; //constant y for all points on the convex flat polygon
 	FOutVector      *v3d;
-	INT32             nrPlaneVerts;   //verts original define of convex flat polygon
-	INT32             i;
+	int32_t             nrPlaneVerts;   //verts original define of convex flat polygon
+	int32_t             i;
 	float           flatxref,flatyref;
 	float fflatwidth = 64.0f, fflatheight = 64.0f;
 	float scrollx = 0.0f, scrolly = 0.0f, anglef = 0.0f;
@@ -56,9 +56,9 @@ void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, dboolean is
 	pslope_t *slope = NULL;
 
 	static FOutVector *planeVerts = NULL;
-	static UINT16 numAllocedPlaneVerts = 0;
+	static uint16_t numAllocedPlaneVerts = 0;
 
-	INT32 shader = SHADER_NONE;
+	int32_t shader = SHADER_NONE;
 
 	// no convex poly were generated for this subsector
 	if (!xsub->planepoly)
@@ -95,7 +95,7 @@ void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, dboolean is
 	// Allocate plane-vertex buffer if we need to
 	if (!planeVerts || nrPlaneVerts > numAllocedPlaneVerts)
 	{
-		numAllocedPlaneVerts = (UINT16)nrPlaneVerts;
+		numAllocedPlaneVerts = (uint16_t)nrPlaneVerts;
 		Z_Free(planeVerts);
 		Z_Malloc(numAllocedPlaneVerts * sizeof (FOutVector), PU_LEVEL, &planeVerts);
 	}
@@ -182,7 +182,7 @@ void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, dboolean is
 
 	if (PolyFlags & PF_EnvironmentTrans)
 	{
-		Surf.PolyColor.s.alpha = (UINT8)alpha;
+		Surf.PolyColor.s.alpha = (uint8_t)alpha;
 		PolyFlags |= PF_Modulated;
 	}
 	else
@@ -208,7 +208,7 @@ void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, dboolean is
 		FOutVector horizonpts[6];
 		float dist, vx, vy;
 		float x1, y1, xd, yd;
-		UINT8 numplanes, j;
+		uint8_t numplanes, j;
 		vertex_t v; // For determining the closest distance from the line to the camera, to split render planes for minimum distortion;
 
 		const float renderdist = 27000.0f; // How far out to properly render the plane
@@ -249,7 +249,7 @@ void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, dboolean is
 				if (dist > 100.0f)
 					numplanes = 100;
 				else
-					numplanes = (UINT8)dist + 1;
+					numplanes = (uint8_t)dist + 1;
 
 				for (j = 0; j < numplanes; j++)
 				{
@@ -293,15 +293,15 @@ void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, dboolean is
 }
 
 void HWR_RenderPolyObjectPlane(polyobj_t *polysector, dboolean isceiling, fixed_t fixedheight,
-									FBITFIELD blendmode, UINT8 lightlevel, levelflat_t *levelflat, sector_t *FOFsector,
-									UINT8 alpha, extracolormap_t *planecolormap)
+									FBITFIELD blendmode, uint8_t lightlevel, levelflat_t *levelflat, sector_t *FOFsector,
+									uint8_t alpha, extracolormap_t *planecolormap)
 {
 	FSurfaceInfo Surf = {};
 	FOutVector *v3d;
-	INT32 shader = SHADER_NONE;
+	int32_t shader = SHADER_NONE;
 
 	size_t nrPlaneVerts = polysector->numVertices;
-	INT32 i;
+	int32_t i;
 
 	float height = FIXED_TO_FLOAT(fixedheight); // constant y for all points on the convex flat polygon
 	float flatxref, flatyref;
@@ -312,7 +312,7 @@ void HWR_RenderPolyObjectPlane(polyobj_t *polysector, dboolean isceiling, fixed_
 	fixed_t tempxs, tempyt;
 
 	static FOutVector *planeVerts = NULL;
-	static UINT16 numAllocedPlaneVerts = 0;
+	static uint16_t numAllocedPlaneVerts = 0;
 
 	if (nrPlaneVerts < 3)   // Not even a triangle?
 		return;
@@ -325,7 +325,7 @@ void HWR_RenderPolyObjectPlane(polyobj_t *polysector, dboolean isceiling, fixed_
 	// Allocate plane-vertex buffer if we need to
 	if (!planeVerts || nrPlaneVerts > numAllocedPlaneVerts)
 	{
-		numAllocedPlaneVerts = (UINT16)nrPlaneVerts;
+		numAllocedPlaneVerts = (uint16_t)nrPlaneVerts;
 		Z_Free(planeVerts);
 		Z_Malloc(numAllocedPlaneVerts * sizeof (FOutVector), PU_LEVEL, &planeVerts);
 	}
@@ -378,7 +378,7 @@ void HWR_RenderPolyObjectPlane(polyobj_t *polysector, dboolean isceiling, fixed_
 		}
 	}
 
-	for (i = 0; i < (INT32)nrPlaneVerts; i++,v3d++)
+	for (i = 0; i < (int32_t)nrPlaneVerts; i++,v3d++)
 	{
 		// Go from the polysector's original vertex locations
 		// Means the flat is offset based on the original vertex locations
@@ -404,7 +404,7 @@ void HWR_RenderPolyObjectPlane(polyobj_t *polysector, dboolean isceiling, fixed_
 
 	if (blendmode & PF_Translucent)
 	{
-		Surf.PolyColor.s.alpha = (UINT8)alpha;
+		Surf.PolyColor.s.alpha = (uint8_t)alpha;
 		blendmode |= PF_Modulated|PF_Occlude;
 	}
 	else

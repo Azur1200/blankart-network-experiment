@@ -97,7 +97,7 @@ dboolean HWR_InitShaders(void)
 
 // helper function: strstr but returns an int with the substring position
 // returns INT32_MAX if not found
-static INT32 strstr_int(const char *str1, const char *str2)
+static int32_t strstr_int(const char *str1, const char *str2)
 {
 	char *location = strstr(str1, str2);
 	if (location)
@@ -207,9 +207,9 @@ static char *HWR_PreprocessShader(char *original)
 		{
 			// go to next newline or end of next block comment if it starts before the newline
 			// and is not inside a line comment
-			INT32 newline_pos = strstr_int(read_pos, line_ending);
-			INT32 line_comment_pos;
-			INT32 block_comment_pos;
+			int32_t newline_pos = strstr_int(read_pos, line_ending);
+			int32_t line_comment_pos;
+			int32_t block_comment_pos;
 			// optimization: temporarily put a null at the line ending, so strstr does not needlessly
 			// look past it since we're only interested in the current line
 			if (newline_pos != INT32_MAX)
@@ -235,7 +235,7 @@ static char *HWR_PreprocessShader(char *original)
 			else if (block_comment_pos < line_comment_pos)
 			{
 				// block comment found, skip past it
-				INT32 block_comment_end;
+				int32_t block_comment_end;
 				ADVANCE(block_comment_pos + 2)
 				block_comment_end = strstr_int(read_pos, "*/");
 				if (block_comment_end == INT32_MAX)
@@ -410,9 +410,9 @@ int HWR_GetShaderFromTarget(int shader_target)
 		return gl_shadertargets[shader_target].base_shader;
 }
 
-static inline UINT16 HWR_FindShaderDefs(UINT16 wadnum)
+static inline uint16_t HWR_FindShaderDefs(uint16_t wadnum)
 {
-	UINT16 i;
+	uint16_t i;
 	lumpinfo_t *lump_p;
 
 	lump_p = wadfiles[wadnum]->lumpinfo;
@@ -442,7 +442,7 @@ customshaderxlat_t shaderxlat[] =
 
 void HWR_LoadAllBaseShaders(void)
 {
-	INT32 i;
+	int32_t i;
 
 	// read every base shader added by iwads.
 	for (i = 0; i < numwadfiles; i++)
@@ -451,9 +451,9 @@ void HWR_LoadAllBaseShaders(void)
 	}
 }
 
-void HWR_LoadCustomShadersFromFile(UINT16 wadnum, dboolean PK3, dboolean startup)
+void HWR_LoadCustomShadersFromFile(uint16_t wadnum, dboolean PK3, dboolean startup)
 {
-	UINT16 lump;
+	uint16_t lump;
 	char *shaderdef, *line;
 	char *stoken;
 	char *value;
@@ -530,7 +530,7 @@ skip_lump:
 					size_t shader_string_length;
 					char *shader_source;
 					char *shader_lumpname;
-					UINT16 shader_lumpnum;
+					uint16_t shader_lumpnum;
 					int shader_index; // index in gl_shaders
 
 					if (PK3)
@@ -663,9 +663,9 @@ skip_field:
 	return;
 }
 
-const char *HWR_GetShaderName(INT32 shader)
+const char *HWR_GetShaderName(int32_t shader)
 {
-	INT32 i;
+	int32_t i;
 
 	for (i = 0; shaderxlat[i].type; i++)
 	{

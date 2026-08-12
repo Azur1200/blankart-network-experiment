@@ -19,17 +19,17 @@ extern "C" {
 // for simplicity's sake, the header is included in the size (keeps the allocation aligned!)
 struct strbuf_t
 {
-	UINT32 size;
+	uint32_t size;
 	char buf[];
 };
 
 strbuf_t *strbuf_alloc(void);
-UINT32 strbuf_append(strbuf_t **strbuf, const char *str);
-UINT32 strbuf_write(strbuf_t **strbuf, const UINT8 *src, size_t len);
+uint32_t strbuf_append(strbuf_t **strbuf, const char *str);
+uint32_t strbuf_write(strbuf_t **strbuf, const uint8_t *src, size_t len);
 
 // returns the string at the given offset
 // NOTE: use only with strbuf_append/strbuf_write, the offsets are relative to the address of the struct!
-FUNCINLINE static ATTRINLINE char *strbuf_get(strbuf_t *strbuf, UINT32 ofs)
+FUNCINLINE static ATTRINLINE char *strbuf_get(strbuf_t *strbuf, uint32_t ofs)
 {
 #ifdef __cplusplus
 	return reinterpret_cast<char *>(strbuf) + ofs;
@@ -39,7 +39,7 @@ FUNCINLINE static ATTRINLINE char *strbuf_get(strbuf_t *strbuf, UINT32 ofs)
 }
 
 // returns the byte at the index within the buffer
-FUNCINLINE static ATTRINLINE char strbuf_byte(strbuf_t *strbuf, UINT32 ofs)
+FUNCINLINE static ATTRINLINE char strbuf_byte(strbuf_t *strbuf, uint32_t ofs)
 {
 	return strbuf->buf[ofs];
 }
@@ -51,9 +51,9 @@ FUNCINLINE static ATTRINLINE dboolean strbuf_cmp(strbuf_t *buf1, strbuf_t *buf2)
 }
 
 // returns the length of the buffer
-FUNCINLINE static ATTRINLINE UINT32 strbuf_len(strbuf_t *strbuf)
+FUNCINLINE static ATTRINLINE uint32_t strbuf_len(strbuf_t *strbuf)
 {
-	return strbuf->size - sizeof(UINT32);
+	return strbuf->size - sizeof(uint32_t);
 }
 
 #ifdef __cplusplus

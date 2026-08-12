@@ -121,14 +121,14 @@ typedef struct
 	FLOAT       anglex,angley,anglez;   // aimingangle / viewangle
 	FLOAT       scalex,scaley,scalez;
 	FLOAT       fovxangle, fovyangle;
-	UINT8       splitscreen;
+	uint8_t       splitscreen;
 	dboolean     shearing;        // 14042019
 	float       viewaiming;      // 17052019
 	dboolean     roll;
 	FLOAT       rollangle; // done to not override USE_FTRANSFORM_ANGLEZ
 	FLOAT       centerx, centery;
 	FLOAT       rollx, rollz;
-	UINT8       fliptype;
+	uint8_t       fliptype;
 } FTransform;
 
 enum
@@ -178,7 +178,7 @@ enum
 typedef struct
 {
 	const char *type;
-	INT32 id;
+	int32_t id;
 } customshaderxlat_t;
 
 #endif
@@ -275,9 +275,9 @@ enum ETextureFlags
 
 struct FTextureInfo
 {
-	UINT32 width, height;
-	UINT32 downloaded;
-	UINT32 format;
+	uint32_t width, height;
+	uint32_t downloaded;
+	uint32_t format;
 
 	struct GLMipmap_s *texture;
 	struct FTextureInfo *prev, *next;
@@ -301,7 +301,7 @@ struct FSurfaceInfo
 	RGBA_t			PolyColor;
 	RGBA_t			TintColor;
 	RGBA_t			FadeColor;
-	UINT32			LightTableId;
+	uint32_t			LightTableId;
 	FLightInfo		LightInfo;
 };
 typedef struct FSurfaceInfo FSurfaceInfo;

@@ -30,9 +30,9 @@ patch_t *Patch_Create(softwarepatch_t *source, size_t srcsize, void *dest)
 
 	if (source)
 	{
-		INT32 col, colsize;
-		size_t size = sizeof(INT32) * LSBF_SHORT(source->width);
-		size_t offs = (sizeof(INT16) * 4) + size;
+		int32_t col, colsize;
+		size_t size = sizeof(int32_t) * LSBF_SHORT(source->width);
+		size_t offs = (sizeof(int16_t) * 4) + size;
 
 		patch->width      = LSBF_SHORT(source->width);
 		patch->height     = LSBF_SHORT(source->height);
@@ -50,12 +50,12 @@ patch_t *Patch_Create(softwarepatch_t *source, size_t srcsize, void *dest)
 		if (!srcsize)
 			I_Error("Patch_Create: no source size!");
 
-		colsize = (INT32)(srcsize) - (INT32)offs;
+		colsize = (int32_t)(srcsize) - (int32_t)offs;
 		if (colsize <= 0)
 			I_Error("Patch_Create: no column data!");
 
 		patch->columns = Z_Calloc(colsize, PU_PATCH_DATA, NULL);
-		memcpy(patch->columns, ((UINT8 *)source + LSBF_LONG(source->columnofs[0])), colsize);
+		memcpy(patch->columns, ((uint8_t *)source + LSBF_LONG(source->columnofs[0])), colsize);
 	}
 
 	return patch;
@@ -67,7 +67,7 @@ patch_t *Patch_Create(softwarepatch_t *source, size_t srcsize, void *dest)
 
 static void Patch_FreeData(patch_t *patch)
 {
-	INT32 i;
+	int32_t i;
 
 #ifdef HWRENDER
 	if (patch->hardware)
@@ -118,14 +118,14 @@ static dboolean Patch_FreeTagsCallback(void *mem)
 	return true;
 }
 
-void Patch_FreeTags(INT32 lowtag, INT32 hightag)
+void Patch_FreeTags(int32_t lowtag, int32_t hightag)
 {
 	Z_IterateTags(lowtag, hightag, Patch_FreeTagsCallback);
 }
 
 void Patch_GenerateFlat(patch_t *patch, pictureflags_t flags)
 {
-	UINT8 flip = (flags & (PICFLAGS_XFLIP | PICFLAGS_YFLIP));
+	uint8_t flip = (flags & (PICFLAGS_XFLIP | PICFLAGS_YFLIP));
 	if (patch->flats[flip] == NULL)
 		patch->flats[flip] = Picture_Convert(PICFMT_PATCH, patch, PICFMT_FLAT16, 0, NULL, 0, 0, 0, 0, flags);
 }

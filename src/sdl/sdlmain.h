@@ -51,7 +51,7 @@ typedef struct SDLJoyInfo_s
 	/// name of controller
 	//const char *name;
 	/// scale of axises
-	INT32 scale;
+	int32_t scale;
 
 	// Rumble Support
 	dboolean hasrumble;
@@ -81,10 +81,10 @@ extern controllerinfo_t controllerInfo[MAXSPLITSCREENPLAYERS];
 void I_ShutdownControllerSystem(void);
 
 // So we can call this from i_video event loop
-void I_ShutdownController(UINT8 index);
+void I_ShutdownController(uint8_t index);
 
 // Cheat to get the device index for a game controller handle
-INT32 I_GetControllerID(SDL_Gamepad *dev);
+int32_t I_GetControllerID(SDL_Gamepad *dev);
 
 void I_UpdateControllerList(void);
 

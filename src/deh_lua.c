@@ -50,7 +50,7 @@ static inline int lib_freeslot(lua_State *L)
 		if (fastcmp(type, "SFX"))
 			strlwr(word);
 
-		INT32 index;
+		int32_t index;
 		if (!DEH_ReadFreeslot(type, word, &index))
 		{
 			if (lua_compatmode)
@@ -78,8 +78,8 @@ static int action_call(lua_State *L)
 	//actionf_p1 *action = lua_touserdata(L,lua_upvalueindex(1));
 	actionf_p1 *action = *((actionf_p1 **)luaL_checkudata(L, 1, META_ACTION));
 	mobj_t *actor = *((mobj_t **)luaL_checkudata(L, 2, META_MOBJ));
-	var1 = (INT32)luaL_optinteger(L, 3, 0);
-	var2 = (INT32)luaL_optinteger(L, 4, 0);
+	var1 = (int32_t)luaL_optinteger(L, 3, 0);
+	var2 = (int32_t)luaL_optinteger(L, 4, 0);
 	if (!actor)
 		return LUA_ErrInvalid(L, "mobj_t");
 	(*action)(actor);
@@ -89,7 +89,7 @@ static int action_call(lua_State *L)
 // Hardcoded A_Action name to call for super() or NULL if super() would be invalid.
 // Set in lua_infolib.
 const char *superactions[MAXRECURSION] = {};
-UINT8 superstack = 0;
+uint8_t superstack = 0;
 
 static int lib_dummysuper(lua_State *L)
 {
@@ -203,7 +203,7 @@ static int ScanConstants(lua_State *L, dboolean mathlib, const char *word)
 	else if (fastncmp("GT_", word, 3)) {
 		p = word;
 		i = 0;
-		INT32 j = 0;
+		int32_t j = 0;
 		while (gametypes[i] != NULL)
 		{
 			if (fastcmp(p, gametypes[i]->constant))

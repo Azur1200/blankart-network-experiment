@@ -54,8 +54,8 @@ enum hud {
 extern dboolean hud_running;
 
 extern dboolean hud_interpolate; // interpolation enabled
-extern UINT8 hud_interptag; // current tag
-extern UINT32 hud_interpcounter; // number of HUD hooks ran
+extern uint8_t hud_interptag; // current tag
+extern uint32_t hud_interpcounter; // number of HUD hooks ran
 extern dboolean hud_interpstring; // string mode
 extern dboolean hud_interplatch; // string mode was toggled
 

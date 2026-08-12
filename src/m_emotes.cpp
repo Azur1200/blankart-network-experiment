@@ -22,9 +22,9 @@ static void Command_ListEmotes_f(void);
 static std::map<std::string, emote_t> emotes;
 
 // TODO - Would be really nice to generalize soc-like file parsing and not reimplement it 100 times :)))))
-void M_LoadEmotes(UINT16 wadnum)
+void M_LoadEmotes(uint16_t wadnum)
 {
-	UINT16 lumpnum = W_CheckNumForNamePwad("EMOTES", wadnum, 0);
+	uint16_t lumpnum = W_CheckNumForNamePwad("EMOTES", wadnum, 0);
 
 	if (lumpnum == INT16_MAX)
 		return;
@@ -108,7 +108,7 @@ void M_LoadEmotes(UINT16 wadnum)
 
 			if (fasticmp(field.c_str(), "frames"))
 			{
-				UINT8 numframes = 0;
+				uint8_t numframes = 0;
 
 				auto copy_frame = [&] {
 					size_t list_split = value.find(',');
@@ -186,7 +186,7 @@ void M_LoadEmotes(UINT16 wadnum)
 
 void M_InitEmotes(void)
 {
-	UINT16 i;
+	uint16_t i;
 	for (i = 0; i < numwadfiles; i++)
 		M_LoadEmotes(i);
 
@@ -251,13 +251,13 @@ emote_t *M_VerifyEmote(const char *name, int *emotelen)
 	return match;
 }
 
-void M_DrawScaledEmote(fixed_t x, fixed_t y, fixed_t scale, emote_t *emote, INT32 flags)
+void M_DrawScaledEmote(fixed_t x, fixed_t y, fixed_t scale, emote_t *emote, int32_t flags)
 {
 	if (emote->numframes == 0)
 		return;
 
 	//const char *lumpname = emote->frames[(I_GetTime()/emote->timeperframe) % emote->numframes];
-	INT32 emoteframe = (I_GetTime()/emote->timeperframe) % emote->numframes;
+	int32_t emoteframe = (I_GetTime()/emote->timeperframe) % emote->numframes;
 	patch_t *emotepatch = emote->frames_cached[emoteframe];
 
 	if (!emotepatch)

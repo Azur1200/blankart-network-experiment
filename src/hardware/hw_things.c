@@ -36,10 +36,10 @@ typedef struct
 
 typedef struct
 {
-	UINT32 gl_visspritecount;
+	uint32_t gl_visspritecount;
 	gl_vissprite_t *gl_visspritechunks[MAXVISSPRITES >> VISSPRITECHUNKBITS];
 	zbuffersprite_t linkdrawlist[MAXVISSPRITES];
-	UINT32 linkdrawcount;
+	uint32_t linkdrawcount;
 } gl_sprite_state_t;
 
 // TODO this array is ~3 megabytes because of linkdrawlist...
@@ -81,9 +81,9 @@ void HWR_PopSpriteState(void)
 // --------------------------------------------------------------------------
 static gl_vissprite_t gl_overflowsprite;
 
-static gl_vissprite_t *HWR_GetVisSprite(UINT32 num)
+static gl_vissprite_t *HWR_GetVisSprite(uint32_t num)
 {
-		UINT32 chunk = num >> VISSPRITECHUNKBITS;
+		uint32_t chunk = num >> VISSPRITECHUNKBITS;
 
 		// Allocate chunk if necessary
 		if (!cst->gl_visspritechunks[chunk])
@@ -120,7 +120,7 @@ static void HWR_LinkDrawHackAdd(FOutVector *verts, gl_vissprite_t *spr)
 // process and clear the list of sprites for delayed z-buffer drawing
 static void HWR_LinkDrawHackFinish(void)
 {
-	UINT32 i;
+	uint32_t i;
 	FSurfaceInfo surf = {};
 	surf.PolyColor.rgba = 0xFFFFFFFF;
 	surf.TintColor.rgba = 0xFFFFFFFF;
@@ -190,12 +190,12 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	float fscale; float fx; float fy; float offset;
 	extracolormap_t *colormap = NULL;
 	FBITFIELD blendmode = PF_ReverseSubtract;
-	INT32 shader = SHADER_NONE;
-	UINT8 i;
-	INT32 heightsec, phs;
-	SINT8 flip = P_MobjFlip(thing);
+	int32_t shader = SHADER_NONE;
+	uint8_t i;
+	int32_t heightsec, phs;
+	int8_t flip = P_MobjFlip(thing);
 
-	INT32 light;
+	int32_t light;
 	fixed_t scalemul;
 	fixed_t floordiff;
 	fixed_t groundz;
@@ -417,15 +417,15 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 	GLPatch_t *hwrpatch;
 	FSurfaceInfo Surf = {};
 	extracolormap_t *colormap = NULL;
-	INT32 lightlevel;
+	int32_t lightlevel;
 	dboolean lightset = true;
 	FBITFIELD blend = 0;
 	FBITFIELD occlusion;
-	INT32 shader = SHADER_NONE;
+	int32_t shader = SHADER_NONE;
 	dboolean use_linkdraw_hack = false;
-	UINT8 alpha;
+	uint8_t alpha;
 
-	INT32 i;
+	int32_t i;
 	float realtop, realbot, top, bot;
 	float ttop, tbot, tmult;
 	float bheight;
@@ -530,7 +530,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 
 	// Determine the blendmode and translucency value
 	{
-		UINT32 blendmode, trans;
+		uint32_t blendmode, trans;
 		if (spr->mobj->renderflags & RF_BLENDMASK)
 			blendmode = (spr->mobj->renderflags & RF_BLENDMASK) >> RF_BLENDSHIFT;
 		else
@@ -819,7 +819,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		float scale = spr->scale;
 		float zoffset = (P_MobjFlip(spr->mobj) * 0.05f);
 		pslope_t *splatslope = NULL;
-		INT32 i;
+		int32_t i;
 
 		renderflags_t renderflags = spr->renderflags;
 		if (renderflags & RF_SHADOWEFFECTS)
@@ -1038,7 +1038,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	// colormap test
 	{
 		sector_t *sector = spr->mobj->subsector->sector;
-		INT32 lightlevel = 0;
+		int32_t lightlevel = 0;
 		dboolean lightset = HWR_OverrideObjectLightLevel(spr->mobj, &lightlevel);
 		extracolormap_t *colormap = NULL;
 
@@ -1059,7 +1059,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 				_zoffs = spr->mobj->height; // Always use the light at the top instead of whatever I was doing before
 			}
 
-			INT32 light = R_GetPlaneLight(sector, spr->mobj->z + _zoffs, false);
+			int32_t light = R_GetPlaneLight(sector, spr->mobj->z + _zoffs, false);
 
 			if (!lightset)
 				lightlevel = *sector->lightlist[light].lightlevel > 255 ? 255 : *sector->lightlist[light].lightlevel;
@@ -1077,7 +1077,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	}
 
 	{
-		INT32 shader = SHADER_NONE;
+		int32_t shader = SHADER_NONE;
 		FBITFIELD blend = 0;
 		FBITFIELD occlusion;
 		dboolean use_linkdraw_hack = false;
@@ -1091,7 +1091,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 		// Determine the blendmode and translucency value
 		{
-			UINT32 blendmode, trans;
+			uint32_t blendmode, trans;
 			if (spr->mobj->renderflags & RF_BLENDMASK)
 				blendmode = (spr->mobj->renderflags & RF_BLENDMASK) >> RF_BLENDSHIFT;
 			else
@@ -1125,12 +1125,12 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 		if (spr->renderflags & RF_SHADOWEFFECTS)
 		{
-			INT32 alpha = Surf.PolyColor.s.alpha;
-			alpha -= ((INT32)(spr->shadowheight / 4.0f)) + 75;
+			int32_t alpha = Surf.PolyColor.s.alpha;
+			alpha -= ((int32_t)(spr->shadowheight / 4.0f)) + 75;
 			if (alpha < 1)
 				return;
 
-			Surf.PolyColor.s.alpha = (UINT8)(alpha);
+			Surf.PolyColor.s.alpha = (uint8_t)(alpha);
 			blend = PF_Translucent|occlusion;
 			if (!occlusion) use_linkdraw_hack = true;
 		}
@@ -1153,7 +1153,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 // Sprite drawer for precipitation
 static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 {
-	INT32 shader = SHADER_NONE;
+	int32_t shader = SHADER_NONE;
 	FBITFIELD blend = 0;
 	FOutVector wallVerts[4];
 	patch_t *gpatch;
@@ -1201,13 +1201,13 @@ static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 	// colormap test
 	{
 		sector_t *sector = spr->mobj->subsector->sector;
-		UINT8 lightlevel = 255;
+		uint8_t lightlevel = 255;
 		extracolormap_t *colormap = sector->extra_colormap;
 
 		if (sector->numlights)
 		{
 			// Always use the light at the top instead of whatever I was doing before
-			INT32 light = R_GetPlaneLight(sector, spr->mobj->z + spr->mobj->height, false);
+			int32_t light = R_GetPlaneLight(sector, spr->mobj->z + spr->mobj->height, false);
 
 			if (!R_ThingIsFullBright(spr->mobj))
 				lightlevel = *sector->lightlist[light].lightlevel > 255 ? 255 : *sector->lightlist[light].lightlevel;
@@ -1237,7 +1237,7 @@ static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 
 	// Determine the blendmode and translucency value
 	{
-		UINT32 blendmode, trans;
+		uint32_t blendmode, trans;
 		if (spr->mobj->renderflags & RF_BLENDMASK)
 			blendmode = (spr->mobj->renderflags & RF_BLENDMASK) >> RF_BLENDSHIFT;
 		else
@@ -1375,9 +1375,9 @@ static int CompareVisSprites(const void *p1, const void *p2)
 		return -1;
 }
 
-UINT32 HWR_SortVisSprites(void)
+uint32_t HWR_SortVisSprites(void)
 {
-	UINT32 i;
+	uint32_t i;
 	for (i = 0; i < cst->gl_visspritecount; i++)
 	{
 		gl_vsprorder[i] = HWR_GetVisSprite(i);
@@ -1393,7 +1393,7 @@ UINT32 HWR_SortVisSprites(void)
 // added the stransform so they can be switched as drawing happenes so MD2s and sprites are sorted correctly with each other
 void HWR_DrawSprites(void)
 {
-	UINT32 i;
+	uint32_t i;
 	dboolean skipshadow = false; // skip shadow if it was drawn already for a linkdraw sprite encountered earlier in the list
 
 #ifdef BAD_MODEL_OPTIONS
@@ -1477,7 +1477,7 @@ void HWR_DrawSprites(void)
 // HWR_AddSprites
 // During BSP traversal, this adds sprites by sector.
 // --------------------------------------------------------------------------
-static UINT8 sectorlight;
+static uint8_t sectorlight;
 void HWR_AddSprites(sector_t *sec)
 {
 	mobj_t *thing;
@@ -1523,7 +1523,7 @@ void HWR_AddPrecipitationSprites(void)
 {
 	const fixed_t drawdist = cv_drawdist_precip.value * mapobjectscale;
 
-	INT32 xl, xh, yl, yh, bx, by;
+	int32_t xl, xh, yl, yh, bx, by;
 	precipmobj_t *th;
 
 	// no, no infinite draw distance for precipitation. this option at zero is supposed to turn it off
@@ -1581,14 +1581,14 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	md2_t *md2;
 	size_t lumpoff;
 	unsigned rot;
-	UINT16 flip;
+	uint16_t flip;
 	dboolean vflip = (!(thing->eflags & MFE_VERTICALFLIP) != !R_ThingVerticallyFlipped(thing));
 	dboolean mirrored = thing->mirrored;
 	dboolean hflip = (!R_ThingHorizontallyFlipped(thing) != !mirrored);
-	INT32 dispoffset;
+	int32_t dispoffset;
 
 	angle_t ang;
-	INT32 heightsec, phs;
+	int32_t heightsec, phs;
 	const dboolean splat = R_ThingIsFloorSprite(thing);
 	const dboolean papersprite = (R_ThingIsPaperSprite(thing) && !splat);
 	float z1, z2;
@@ -1597,7 +1597,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	fixed_t spr_offset, spr_topoffset;
 #ifdef ROTSPRITE
 	patch_t *rotsprite = NULL;
-	INT32 rollangle = 0;
+	int32_t rollangle = 0;
 	angle_t spriterotangle = 0;
 	vector2_t visoffs, rotoffset;
 #endif
@@ -1857,7 +1857,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		}
 		else
 		{
-			SINT8 flipoffset = 1;
+			int8_t flipoffset = 1;
 			if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
 				flipoffset = -1;
 			use_xoffset += (FixedDiv(interp.spritexoffset,highresscale) * flipoffset);
@@ -1871,7 +1871,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 		angle_t angle;
 
-		INT32 flipsign = ((flip && papersprite) ? -1 : 1); // Flip OGL affine papersprites for Software parity
+		int32_t flipsign = ((flip && papersprite) ? -1 : 1); // Flip OGL affine papersprites for Software parity
 
 		angle = R_ConvToRollAngle(spriterotangle) * flipsign;
 
@@ -1922,7 +1922,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	}
 	else
 	{
-		SINT8 flipoffset = 1;
+		int8_t flipoffset = 1;
 
 		if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
 			flipoffset = -1;
@@ -2367,7 +2367,7 @@ nodeterminant:
 		else if (thing->skin && thing->sprite == SPR_PLAY) // This thing is a player!
 		{
 			size_t skinnum = ((skin_t*)thing->skin)->skinnum;
-			vis->colormap = R_GetTranslationColormap((INT32)skinnum, thing->color, GTC_CACHE);
+			vis->colormap = R_GetTranslationColormap((int32_t)skinnum, thing->color, GTC_CACHE);
 		}
 		else
 		{
@@ -2414,7 +2414,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	spriteframe_t *sprframe;
 	size_t lumpoff;
 	unsigned rot = 0;
-	UINT8 flip;
+	uint8_t flip;
 
 	if (!thing)
 		return;
@@ -2457,7 +2457,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	sprdef = &sprites[thing->sprite];
 
-	if ((UINT8)(thing->frame&FF_FRAMEMASK) >= sprdef->numframes)
+	if ((uint8_t)(thing->frame&FF_FRAMEMASK) >= sprdef->numframes)
 	{
 		CONS_Debug(DBG_RENDER, "R_ProjectPrecipitationSprite: invalid sprite frame %d : %d for %s\n",
 			thing->sprite, thing->frame, sprnames[thing->sprite]);

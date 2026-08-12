@@ -48,9 +48,9 @@
 
 typedef struct
 {
-	UINT8 *p;
-	UINT8 (*func)(void); // called when cheat confirmed.
-	UINT8 *sequence;
+	uint8_t *p;
+	uint8_t (*func)(void); // called when cheat confirmed.
+	uint8_t *sequence;
 } cheatseq_t;
 
 // ==========================================================================
@@ -58,7 +58,7 @@ typedef struct
 // ==========================================================================
 
 // Cheat responders
-/*static UINT8 cheatf_ultimate(void)
+/*static uint8_t cheatf_ultimate(void)
 {
 	if (menustack[0] != MN_MAIN && menustack[0] != MN_SP_LOAD))
 		return 0; // Only on the main menu, or the save select!
@@ -72,9 +72,9 @@ typedef struct
 	return 1;
 }*/
 
-static UINT8 cheatf_warp(void)
+static uint8_t cheatf_warp(void)
 {
-	UINT8 i;
+	uint8_t i;
 	dboolean success = false;
 
 	/*if (modifiedgame)
@@ -108,9 +108,9 @@ static UINT8 cheatf_warp(void)
 }
 
 #ifdef DEVELOP
-static UINT8 cheatf_devmode(void)
+static uint8_t cheatf_devmode(void)
 {
-	UINT8 i;
+	uint8_t i;
 
 	if (modifiedgame)
 		return 0;
@@ -149,7 +149,7 @@ static UINT8 cheatf_devmode(void)
 static cheatseq_t cheat_warp = {
 	0, cheatf_warp,
 	//{ SCRAMBLE('r'), SCRAMBLE('e'), SCRAMBLE('d'), SCRAMBLE('x'), SCRAMBLE('v'), SCRAMBLE('i'), 0xff }
-	(UINT8[]){ SCRAMBLE('b'), SCRAMBLE('a'), SCRAMBLE('n'), SCRAMBLE('a'), SCRAMBLE('n'), SCRAMBLE('a'), 0xff }
+	(uint8_t[]){ SCRAMBLE('b'), SCRAMBLE('a'), SCRAMBLE('n'), SCRAMBLE('a'), SCRAMBLE('n'), SCRAMBLE('a'), 0xff }
 };
 
 static cheatseq_t cheat_warp_joy = {
@@ -158,7 +158,7 @@ static cheatseq_t cheat_warp_joy = {
 	  SCRAMBLE(KEY_RIGHTARROW), SCRAMBLE(KEY_RIGHTARROW), SCRAMBLE(KEY_UPARROW),
 	  SCRAMBLE(KEY_LEFTARROW), SCRAMBLE(KEY_UPARROW),
 	  SCRAMBLE(KEY_ENTER), 0xff }*/
-	  (UINT8[]){ SCRAMBLE(KEY_LEFTARROW), SCRAMBLE(KEY_UPARROW), SCRAMBLE(KEY_RIGHTARROW),
+	  (uint8_t[]){ SCRAMBLE(KEY_LEFTARROW), SCRAMBLE(KEY_UPARROW), SCRAMBLE(KEY_RIGHTARROW),
 	  SCRAMBLE(KEY_RIGHTARROW), SCRAMBLE(KEY_UPARROW), SCRAMBLE(KEY_LEFTARROW),
 	  SCRAMBLE(KEY_DOWNARROW), SCRAMBLE(KEY_RIGHTARROW),
 	  SCRAMBLE(KEY_ENTER), 0xff }
@@ -167,7 +167,7 @@ static cheatseq_t cheat_warp_joy = {
 #ifdef DEVELOP
 static cheatseq_t cheat_devmode = {
 	0, cheatf_devmode,
-	(UINT8[]){ SCRAMBLE('d'), SCRAMBLE('e'), SCRAMBLE('v'), SCRAMBLE('m'), SCRAMBLE('o'), SCRAMBLE('d'), SCRAMBLE('e'), 0xff }
+	(uint8_t[]){ SCRAMBLE('d'), SCRAMBLE('e'), SCRAMBLE('v'), SCRAMBLE('m'), SCRAMBLE('o'), SCRAMBLE('d'), SCRAMBLE('e'), 0xff }
 };
 #endif
 
@@ -175,16 +175,16 @@ static cheatseq_t cheat_devmode = {
 //                        CHEAT SEQUENCE PACKAGE
 // ==========================================================================
 
-static UINT8 cheat_xlate_table[256];
+static uint8_t cheat_xlate_table[256];
 
 void cht_Init(void)
 {
 	size_t i = 0;
-	INT16 pi = 0;
+	int16_t pi = 0;
 	for (; i < 256; i++, pi++)
 	{
-		const INT32 cc = SCRAMBLE(pi);
-		cheat_xlate_table[i] = (UINT8)cc;
+		const int32_t cc = SCRAMBLE(pi);
+		cheat_xlate_table[i] = (uint8_t)cc;
 	}
 }
 
@@ -192,16 +192,16 @@ void cht_Init(void)
 // Called in st_stuff module, which handles the input.
 // Returns a 1 if the cheat was successful, 0 if failed.
 //
-static UINT8 cht_CheckCheat(cheatseq_t *cht, char key)
+static uint8_t cht_CheckCheat(cheatseq_t *cht, char key)
 {
-	UINT8 rc = 0;
+	uint8_t rc = 0;
 
 	if (!cht->p)
 		cht->p = cht->sequence; // initialize if first time
 
 	if (*cht->p == 0)
 		*(cht->p++) = key;
-	else if (cheat_xlate_table[(UINT8)key] == *cht->p)
+	else if (cheat_xlate_table[(uint8_t)key] == *cht->p)
 		cht->p++;
 	else
 		cht->p = cht->sequence;
@@ -219,7 +219,7 @@ static UINT8 cht_CheckCheat(cheatseq_t *cht, char key)
 
 dboolean cht_Responder(event_t *ev)
 {
-	UINT8 ret = 0, ch = 0;
+	uint8_t ret = 0, ch = 0;
 	if (ev->type != ev_keydown)
 		return false;
 
@@ -251,7 +251,7 @@ dboolean cht_Responder(event_t *ev)
 		}
 	}
 	else
-		ch = (UINT8)ev->data1;
+		ch = (uint8_t)ev->data1;
 
 	//ret += cht_CheckCheat(&cheat_ultimate, (char)ch);
 	//ret += cht_CheckCheat(&cheat_ultimate_joy, (char)ch);
@@ -375,8 +375,8 @@ void Command_ATeleport_f(void)
 	i = COM_CheckParm("-sp");
 	if (i)
 	{
-		INT32 starpostnum = atoi(COM_Argv(i + 1)); // starpost number
-		INT32 starpostpath = atoi(COM_Argv(i + 2)); // quick, dirty way to distinguish between paths
+		int32_t starpostnum = atoi(COM_Argv(i + 1)); // starpost number
+		int32_t starpostpath = atoi(COM_Argv(i + 2)); // quick, dirty way to distinguish between paths
 
 		if (starpostnum < 0 || starpostpath < 0)
 		{
@@ -433,7 +433,7 @@ void Command_ATeleport_f(void)
 			mobj_t *mo2 = NULL;
 			thinker_t *th;
 
-			INT32 starpostmax = 0;
+			int32_t starpostmax = 0;
 			intz = starpostpath; // variable reuse - counting down for selection purposes
 
 			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
@@ -648,7 +648,7 @@ void Command_CauseCfail_f(void)
 	players[consoleplayer].mo->y = 123311; //cfail cansuled kthxbye
 	players[consoleplayer].mo->z = 123311;
 	players[consoleplayer].score = 1337;
-	players[consoleplayer].rings = (SINT8)1337;
+	players[consoleplayer].rings = (int8_t)1337;
 	players[consoleplayer].mo->destscale = 25;
 	P_SetThingPosition(players[consoleplayer].mo);
 }
@@ -713,7 +713,7 @@ void Command_Resetemeralds_f(void)
 // Devmode
 //
 
-UINT32 cht_debug = 0;
+uint32_t cht_debug = 0;
 
 struct debugFlagNames_s const debug_flag_names[] =
 {
@@ -757,7 +757,7 @@ void Command_Devmode_f(void)
 	argc = COM_Argc();
 	if (argc > 1)
 	{
-		UINT32 flags = 0;
+		uint32_t flags = 0;
 		size_t i;
 
 		for (i = 1; i < argc; i++)
@@ -849,23 +849,23 @@ consvar_t cv_ophoopflags = CVAR_INIT ("op_hoopflags", "4", CV_NOTINNET, op_hoopf
 
 dboolean objectplacing = false;
 mobjtype_t op_currentthing = 0; // For the object placement mode
-UINT16 op_currentdoomednum = 0; // For display, etc
-UINT32 op_displayflags = 0; // for display in ST_stuff
+uint16_t op_currentdoomednum = 0; // For display, etc
+uint32_t op_displayflags = 0; // for display in ST_stuff
 
 static pflags_t op_oldpflags = 0;
 static mobjflag_t op_oldflags1 = 0;
 static mobjflag2_t op_oldflags2 = 0;
-static UINT32 op_oldeflags = 0;
+static uint32_t op_oldeflags = 0;
 static fixed_t op_oldmomx = 0, op_oldmomy = 0, op_oldmomz = 0, op_oldheight = 0;
 static statenum_t op_oldstate = 0;
-static UINT16 op_oldcolor = 0;
+static uint16_t op_oldcolor = 0;
 
 //
 // Static calculation / common output help
 //
-static void OP_CycleThings(INT32 amt)
+static void OP_CycleThings(int32_t amt)
 {
-	INT32 add = (amt > 0 ? 1 : -1);
+	int32_t add = (amt > 0 ? 1 : -1);
 
 	while (amt)
 	{
@@ -905,7 +905,7 @@ static void OP_CycleThings(INT32 amt)
 	op_currentdoomednum = mobjinfo[op_currentthing].doomednum;
 }
 
-static dboolean OP_HeightOkay(player_t *player, UINT8 ceiling)
+static dboolean OP_HeightOkay(player_t *player, uint8_t ceiling)
 {
 	sector_t *sec = player->mo->subsector->sector;
 
@@ -935,7 +935,7 @@ static dboolean OP_HeightOkay(player_t *player, UINT8 ceiling)
 	return true;
 }
 
-static mapthing_t *OP_CreateNewMapThing(player_t *player, UINT16 type, dboolean ceiling)
+static mapthing_t *OP_CreateNewMapThing(player_t *player, uint16_t type, dboolean ceiling)
 {
 	mapthing_t *mt = mapthings;
 	sector_t *sec = player->mo->subsector->sector;
@@ -967,21 +967,21 @@ static mapthing_t *OP_CreateNewMapThing(player_t *player, UINT16 type, dboolean 
 	mt = (mapthings+nummapthings-1);
 
 	mt->type = type;
-	mt->x = (INT16)(player->mo->x>>FRACBITS);
-	mt->y = (INT16)(player->mo->y>>FRACBITS);
+	mt->x = (int16_t)(player->mo->x>>FRACBITS);
+	mt->y = (int16_t)(player->mo->y>>FRACBITS);
 	if (ceiling)
 	{
 		fixed_t cheight = P_GetSectorCeilingZAt(sec, mt->x << FRACBITS, mt->y << FRACBITS);
-		mt->z = (UINT16)((cheight - player->mo->z - player->mo->height)>>FRACBITS);
+		mt->z = (uint16_t)((cheight - player->mo->z - player->mo->height)>>FRACBITS);
 	}
 	else
 	{
 		fixed_t fheight = P_GetSectorFloorZAt(sec, mt->x << FRACBITS, mt->y << FRACBITS);
-		mt->z = (UINT16)((player->mo->z - fheight)>>FRACBITS);
+		mt->z = (uint16_t)((player->mo->z - fheight)>>FRACBITS);
 	}
-	mt->angle = (INT16)(FixedInt(AngleFixed(player->mo->angle)));
+	mt->angle = (int16_t)(FixedInt(AngleFixed(player->mo->angle)));
 
-	mt->options = (mt->z << ZSHIFT) | (UINT16)cv_opflags.value;
+	mt->options = (mt->z << ZSHIFT) | (uint16_t)cv_opflags.value;
 	mt->scale = player->mo->scale;
 	memset(mt->args, 0, NUM_MAPTHING_ARGS*sizeof(*mt->args));
 	memset(mt->stringargs, 0x00, NUM_MAPTHING_STRINGARGS*sizeof(*mt->stringargs));
@@ -1062,15 +1062,15 @@ void OP_ObjectplaceMovement(player_t *player)
 		if (!!(mobjinfo[op_currentthing].flags & MF_SPAWNCEILING) ^ !!(cv_opflags.value & MTF_OBJECTFLIP))
 		{
 			fixed_t cheight = P_GetSectorCeilingZAt(sec, player->mo->x & 0xFFFF0000, player->mo->y & 0xFFFF0000);
-			op_displayflags = (UINT16)((cheight - player->mo->z - mobjinfo[op_currentthing].height)>>FRACBITS);
+			op_displayflags = (uint16_t)((cheight - player->mo->z - mobjinfo[op_currentthing].height)>>FRACBITS);
 		}
 		else
 		{
 			fixed_t fheight = P_GetSectorFloorZAt(sec, player->mo->x & 0xFFFF0000, player->mo->y & 0xFFFF0000);
-			op_displayflags = (UINT16)((player->mo->z - fheight)>>FRACBITS);
+			op_displayflags = (uint16_t)((player->mo->z - fheight)>>FRACBITS);
 		}
 		op_displayflags <<= ZSHIFT;
-		op_displayflags |= (UINT16)cv_opflags.value;
+		op_displayflags |= (uint16_t)cv_opflags.value;
 	}
 
 
@@ -1124,7 +1124,7 @@ void OP_ObjectplaceMovement(player_t *player)
 		if (!OP_HeightOkay(player, ceiling))
 			return;
 
-		mt = OP_CreateNewMapThing(player, (UINT16)spawnthing, ceiling);
+		mt = OP_CreateNewMapThing(player, (uint16_t)spawnthing, ceiling);
 		if (mt->type >= 600 && mt->type <= 611) // Placement patterns
 			P_SpawnItemPattern(mt);
 		else if (mt->type == 1713) // NiGHTS Hoops
@@ -1223,7 +1223,7 @@ void Command_ObjectPlace_f(void)
 
 		if (thingarg < COM_Argc())
 		{
-			UINT16 mapthingnum = atoi(COM_Argv(thingarg));
+			uint16_t mapthingnum = atoi(COM_Argv(thingarg));
 			mobjtype_t type = P_GetMobjtype(mapthingnum);
 			if (type == MT_UNKNOWN)
 				CONS_Printf(M_GetText("No mobj type delegated to thing type %d.\n"), mapthingnum);

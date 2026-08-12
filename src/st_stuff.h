@@ -54,7 +54,7 @@ void ST_UnloadGraphics(void);
 void ST_LoadGraphics(void);
 
 // face load graphics, called when skin changes
-void ST_LoadFaceGraphics(INT32 playernum);
+void ST_LoadFaceGraphics(int32_t playernum);
 void ST_ReloadSkinFaceGraphics(void);
 
 // title card
@@ -77,17 +77,17 @@ dboolean ST_SameTeam(player_t *a, player_t *b);
 //--------------------
 
 extern dboolean st_overlay; // sb overlay on or off when fullscreen
-extern INT32 st_palette; // 0 is default, any others are special palettes.
+extern int32_t st_palette; // 0 is default, any others are special palettes.
 extern player_t *stplyr; // for splitscreen correct palette changes and overlay
-extern UINT8 stplyrnum;
-extern UINT32 st_translucency; // HUD fading for elements not attached to specific players
+extern uint8_t stplyrnum;
+extern uint32_t st_translucency; // HUD fading for elements not attached to specific players
 extern fixed_t st_fadein; // transitioning value per player, FRACUNIT = fully in view
 
 extern lumpnum_t st_borderpatchnum;
 // patches, also used in intermission
 extern patch_t *faceprefix[MAXSKINS][NUMFACES];
 
-extern UINT16 objectsdrawn;
+extern uint16_t objectsdrawn;
 extern tic_t directortoggletimer;
 
 // variable to stop mayonaka static from flickering

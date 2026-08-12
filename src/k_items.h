@@ -105,13 +105,13 @@ typedef enum
 } ATTRPACK kartresultflags_e;
 
 // Unique useodds function
-typedef INT32 (useoddsfunc_f)(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme);
+typedef int32_t (useoddsfunc_f)(int32_t odds, const kartroulette_t *roulette, const kartresult_t *result, uint8_t *forceme);
 
 #define MAXITEMPATCHES 10
 
 struct kartitemgraphics_t
 {
-	UINT8 numpatches;
+	uint8_t numpatches;
 	char *patchnames[MAXITEMPATCHES];
 	patch_t *patches[MAXITEMPATCHES];
 };
@@ -133,14 +133,14 @@ struct kartresult_t
 	// this block is shared by all item variants
 	consvar_t *cvar; // contains name
 	kartitemtype_e type;
-	UINT8 amount;
+	uint8_t amount;
 
 	char *displayname;
 	dboolean isalt; // is alt (i salt)
 	kartresultflags_e flags;
-	UINT8 odds[MAXODDSTABLES][MAXODDS];
+	uint8_t odds[MAXODDSTABLES][MAXODDS];
 	consvar_t *augcvar[2]; // "Runner Augment" console variable
-	UINT16 baserunneraug[2]; // Base "max distance" value for KRF_RUNNERAUGMENT items
+	uint16_t baserunneraug[2]; // Base "max distance" value for KRF_RUNNERAUGMENT items
 
 	// Functions that tell the game to use unique means of rolling these items.
 	// If NULL, the functions never execute.
@@ -152,11 +152,11 @@ struct kartresult_t
 // contains all data for a call to K_KartGetItemOdds
 struct kartroulette_t
 {
-	UINT32 pdis; // the player's PDIS value
-	SINT8 playerpos; // the player's position
-	UINT8 pos; // position in the odds table (why is this just "pos"???)
-	UINT32 ourDist; // the player's finish line distance
-	UINT32 clusterDist; // distance to cluster
+	uint32_t pdis; // the player's PDIS value
+	int8_t playerpos; // the player's position
+	uint8_t pos; // position in the odds table (why is this just "pos"???)
+	uint32_t ourDist; // the player's finish line distance
+	uint32_t clusterDist; // distance to cluster
 	fixed_t mashed;
 	dboolean spbrush;
 	dboolean bot;
@@ -167,12 +167,12 @@ struct kartroulette_t
 	dboolean inBottom;
 
 	// output: which results are being forced into a player's item slot for one reason or another. Higher value = higher priority.
-	UINT8 forceme[MAXKARTRESULTS];
+	uint8_t forceme[MAXKARTRESULTS];
 
 	// extras for useodds functions
-	UINT8 pingame;
-	UINT8 pexiting;
-	UINT32 firstDist;
+	uint8_t pingame;
+	uint8_t pexiting;
+	uint32_t firstDist;
 };
 
 extern consvar_t cv_fancyroulette;
@@ -181,10 +181,10 @@ extern consvar_t cv_fancyroulettespeed;
 extern consvar_t cv_huditemamount;
 
 extern kartitem_t kartitems[MAXKARTITEMS];
-extern UINT8 numkartitems;
+extern uint8_t numkartitems;
 extern kartresult_t kartresults[MAXKARTRESULTS];
-extern UINT8 numkartresults;
-extern UINT8 oddstablemax[MAXODDSTABLES];
+extern uint8_t numkartresults;
+extern uint8_t oddstablemax[MAXODDSTABLES];
 
 typedef void (itemthinkfunc_f)(player_t *player);
 typedef void (itemusefunc_f)(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro);
@@ -226,7 +226,7 @@ itemthinkfunc_f K_ItemThink_AttractionShield;
 itemthinkfunc_f K_ItemThink_BubbleShield;
 itemthinkfunc_f K_ItemThink_BonusRoll;
 
-UINT32 K_IntDistanceForMap(fixed_t curx,
+uint32_t K_IntDistanceForMap(fixed_t curx,
 			   fixed_t cury,
 			   fixed_t curz,
 			   fixed_t destx,
@@ -241,8 +241,8 @@ dboolean K_ItemResultEnabled(const kartresult_t *result);
 dboolean K_IsKartItemAlternate(kartitemtype_e itemtype);
 kartitemflags_e K_GetItemFlags(kartitemtype_e itemtype);
 kartitemequip_e K_GetItemEquipStyle(kartitemtype_e mobjtype);
-UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, dboolean tiny);
-patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, dboolean tiny, UINT8 amount, SINT8 altmode);
+uint8_t K_GetItemNumberDisplayMin(kartitemtype_e type, dboolean tiny);
+patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, dboolean tiny, uint8_t amount, int8_t altmode);
 #define K_GetCachedItemPatch(type, tiny, amount) K_GetCachedItemPatchEx(type, tiny, amount, -1)
 
 dboolean K_DontDoubleMyItems(kartresult_t *res);
@@ -251,29 +251,29 @@ void K_SetItemOut(player_t *player, kartitemtype_e itemtype, itemflags_t flags);
 void K_UnsetItemOutEx(player_t *player, itemflags_t flags);
 #define K_UnsetItemOut(player) K_UnsetItemOutEx(player, IF_ITEMOUT|IF_EGGMANOUT)
 
-mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, INT32 moloop, INT32 totalamount, mobj_t *prev);
+mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, int32_t moloop, int32_t totalamount, mobj_t *prev);
 void K_RemoveEquippedItem(mobj_t *equipmo);
 
 void K_DecrementAndCheckCurrentItem(player_t *player);
 
-void K_AddPlayerReserveItem(player_t *player, kartitemtype_e type, UINT8 amount);
-void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, dboolean nodoubles, kartitemblink_e blink);
-void K_AwardPlayerItemOrReserve(player_t *player, kartitemtype_e type, UINT8 amount, dboolean nodoubles, kartitemblink_e blink);
+void K_AddPlayerReserveItem(player_t *player, kartitemtype_e type, uint8_t amount);
+void K_AwardPlayerItem(player_t *player, kartitemtype_e type, uint8_t amount, dboolean nodoubles, kartitemblink_e blink);
+void K_AwardPlayerItemOrReserve(player_t *player, kartitemtype_e type, uint8_t amount, dboolean nodoubles, kartitemblink_e blink);
 void K_TransferPlayerReserveItem(player_t *player);
-void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCount);
+void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, uint8_t itemCount);
 void K_UpdateItemCooldown(void);
 tic_t K_GetIndirectItemCooldown(void);
 void K_SetIndirectItemCooldown(tic_t cooldown);
 dboolean K_LegacyOddsMode(void);
-UINT32 K_GetCongaLineDistance(const player_t *player, UINT8 startPos);
+uint32_t K_GetCongaLineDistance(const player_t *player, uint8_t startPos);
 
-UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame);
-UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, dboolean *spbrush);
-UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbumper, dboolean spbrush);
-UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, dboolean spbrush);
-INT32 K_GetRollingRouletteItem(player_t *player);
-INT32 K_GetRollingRouletteItemOffset(player_t *player, INT16 offset, INT32 animspeed);
-UINT8* K_GetRollableItems(void);
+uint32_t K_CalculateInitalPDIS(const player_t *player, uint8_t pingame);
+uint32_t K_CalculatePDIS(const player_t *player, uint8_t numPlayers, dboolean *spbrush);
+uint8_t K_FindUseodds(const player_t *player, fixed_t mashed, uint32_t pdis, uint8_t bestbumper, dboolean spbrush);
+uint32_t K_ScaleItemDistance(uint32_t distance, uint8_t numPlayers, dboolean spbrush);
+int32_t K_GetRollingRouletteItem(player_t *player);
+int32_t K_GetRollingRouletteItemOffset(player_t *player, int16_t offset, int32_t animspeed);
+uint8_t* K_GetRollableItems(void);
 void K_KartItemRoulette(player_t *player, ticcmd_t *cmd);
 void K_StartRoulette(player_t *player, kartroulettetype_e roulettetype);
 
@@ -288,7 +288,7 @@ useoddsfunc_f KO_GrowRaceOdds;
 void K_DoThunderShield(player_t *player);
 void K_DoAttractionShield(player_t *player, fixed_t power);
 void K_BreakBubbleShield(player_t* player);
-INT16 K_GetShrinkTime(const player_t *player);
+int16_t K_GetShrinkTime(const player_t *player);
 dboolean K_IsAltShrunk(const player_t *player);
 void K_AltShrinkPityIncrease(player_t *player);
 
@@ -321,7 +321,7 @@ void K_DoGrowShrink(player_t *player, dboolean shrinking);
 #endif
 
 #ifndef __cplusplus
-void K_KartGetItemOdds(kartroulette_t *roulette, INT32 outodds[static MAXKARTRESULTS]);
+void K_KartGetItemOdds(kartroulette_t *roulette, int32_t outodds[static MAXKARTRESULTS]);
 #endif
 
 #endif // __K_ITEMS__

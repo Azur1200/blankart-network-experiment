@@ -33,8 +33,8 @@ void K_UpdateDirector(void);
 void K_DrawDirectorDebugger(void);
 void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source);
 void K_ToggleDirector(void);
-void K_DirectorSwitch(INT32 player, dboolean force);
-void K_DirectorForceSwitch(INT32 player, INT32 time);
+void K_DirectorSwitch(int32_t player, dboolean force);
+void K_DirectorForceSwitch(int32_t player, int32_t time);
 
 
 #ifdef __cplusplus

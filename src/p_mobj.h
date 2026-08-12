@@ -301,13 +301,13 @@ struct mobj_t
 	angle_t old_angle2, old_pitch2, old_roll2;
 	angle_t rollangle;
 	spritenum_t sprite; // used to find patch_t and flip value
-	UINT32 frame; // frame number, plus bits see p_pspr.h
-	UINT8 sprite2; // player sprites
-	UINT16 anim_duration; // for FF_ANIMATE states
+	uint32_t frame; // frame number, plus bits see p_pspr.h
+	uint8_t sprite2; // player sprites
+	uint16_t anim_duration; // for FF_ANIMATE states
 
-	UINT32 renderflags; // render flags
+	uint32_t renderflags; // render flags
 #if 0
-	UINT32 renderflags2; // More render flags
+	uint32_t renderflags2; // More render flags
 #endif
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
@@ -317,10 +317,10 @@ struct mobj_t
 	fixed_t old_spritexoffset2, old_spriteyoffset2;
 
 	// X and Y offsets that rotate alongside the sprite.
-	INT16 rollingxoffset, rollingyoffset;
+	int16_t rollingxoffset, rollingyoffset;
 	
 	pslope_t *floorspriteslope; // The slope that the floorsprite is rotated by
-	INT16 lightlevel; // Add to sector lightlevel, -255 - 255
+	int16_t lightlevel; // Add to sector lightlevel, -255 - 255
 
 	msecnode_t *touching_sectorlist; // a linked list of sectors where this object appears
 
@@ -342,11 +342,11 @@ struct mobj_t
 	fixed_t momx, momy, momz;
 	fixed_t pmomz; // If you're on a moving floor, its "momz" would be here
 
-	INT32 tics; // state tic counter
+	int32_t tics; // state tic counter
 	state_t *state;
-	UINT32 flags; // flags from mobjinfo tables
-	UINT32 flags2; // MF2_ flags
-	UINT16 eflags; // extra flags
+	uint32_t flags; // flags from mobjinfo tables
+	uint32_t flags2; // MF2_ flags
+	uint16_t eflags; // extra flags
 
 	mtag_t tid;
 	mobj_t *tid_next;
@@ -360,7 +360,7 @@ struct mobj_t
 	// the game attempts to use tke skin's voice, should this object have a skin assigned.
 	kartvoice_t *voice;
 
-	UINT16 color; // This replaces MF_TRANSLATION. Use 0 for default (no translation).
+	uint16_t color; // This replaces MF_TRANSLATION. Use 0 for default (no translation).
 
 	// More list: links in sector (if needed)
 	mobj_t *snext;
@@ -373,23 +373,23 @@ struct mobj_t
 	// One last pointer for kart item lists
 	mobj_t *itnext;
 
-	INT32 health; // for player this is rings + 1 -- no it isn't, not any more!!
+	int32_t health; // for player this is rings + 1 -- no it isn't, not any more!!
 
 	// Movement direction, movement generation (zig-zagging).
 	angle_t movedir; // dirtype_t 0-7; also used by Deton for up/down angle
-	INT32 movecount; // when 0, select a new dir
+	int32_t movecount; // when 0, select a new dir
 
 	mobj_t *target; // Thing being chased/attacked (or NULL), and originator for missiles.
 
-	INT32 reactiontime; // If not 0, don't attack yet.
+	int32_t reactiontime; // If not 0, don't attack yet.
 
-	INT32 threshold; // If >0, the target will be chased no matter what.
+	int32_t threshold; // If >0, the target will be chased no matter what.
 
 	// Additional info record for player avatars only.
 	// Only valid if type == MT_PLAYER
 	player_t *player;
 
-	INT32 lastlook; // Player number last looked for.
+	int32_t lastlook; // Player number last looked for.
 
 	mapthing_t *spawnpoint; // Used for CTF flags, objectplace, and a handful other applications.
 
@@ -400,11 +400,11 @@ struct mobj_t
 	fixed_t gravity;
 	fixed_t lastmomz;
 
-	INT32 fuse; // Does something in P_MobjThinker on reaching 0.
+	int32_t fuse; // Does something in P_MobjThinker on reaching 0.
 	fixed_t watertop; // top of the water FOF the mobj is in
 	fixed_t waterbottom; // bottom of the water FOF the mobj is in
 
-	UINT32 mobjnum; // A unique number for this mobj. Used for restoring pointers on save games.
+	uint32_t mobjnum; // A unique number for this mobj. Used for restoring pointers on save games.
 
 	fixed_t scale;
 	fixed_t old_scale; // interpolation
@@ -413,17 +413,17 @@ struct mobj_t
 	fixed_t scalespeed;
 
 	// Extra values are for internal use for whatever you want
-	INT32 extravalue1;
-	INT32 extravalue2;
-	INT32 extravalue3;
+	int32_t extravalue1;
+	int32_t extravalue2;
+	int32_t extravalue3;
 
 	// Custom values are not to be altered by us!
 	// They are for SOCs to store things in.
-	INT32 cusval;
-	INT32 cvmem;
+	int32_t cusval;
+	int32_t cvmem;
 
 	// Time Mobj has been alive for, useful for stats or gameplay tracking purposes.
-	UINT16 mobjlifetime;
+	uint16_t mobjlifetime;
 
 	pslope_t *standingslope; // The slope that the object is standing on (shouldn't need synced in savegames, right?)
 
@@ -433,7 +433,7 @@ struct mobj_t
 
 	fixed_t shadowscale; // If this object casts a shadow, and the size relative to radius
 	dboolean whiteshadow; // Use white shadow, set to true by default for fullbright objects
-	UINT8 shadowcolor; // Palette index to use for rendering the shadow
+	uint8_t shadowcolor; // Palette index to use for rendering the shadow
 
 	fixed_t sprxoff, spryoff, sprzoff; // Sprite offsets in real space, does NOT affect position or collision
 	fixed_t bakexoff, bakeyoff, bakezoff; // BAKED sprite offsets. Simulates visuals in real space, and rotates along the object's sprite
@@ -442,16 +442,16 @@ struct mobj_t
 	terrain_t *terrain; // Terrain definition of the floor this object last hit. NULL when in the air.
 	mobj_t *terrainOverlay; // Overlay sprite object for terrain
 
-	INT32 dispoffset;
+	int32_t dispoffset;
 
-	INT32 args[NUM_MAPTHING_ARGS];
+	int32_t args[NUM_MAPTHING_ARGS];
 	char *stringargs[NUM_MAPTHING_STRINGARGS];
 
-	INT16 special;
-	INT32 script_args[NUM_SCRIPT_ARGS];
+	int16_t special;
+	int32_t script_args[NUM_SCRIPT_ARGS];
 	char *script_stringargs[NUM_SCRIPT_STRINGARGS];
 
-	INT32 po_movecount; // Polyobject carrying (NOT savegame, NOT Lua)
+	int32_t po_movecount; // Polyobject carrying (NOT savegame, NOT Lua)
 
 	// WARNING: New fields must be added separately to savegame and Lua.
 };
@@ -493,13 +493,13 @@ struct precipmobj_t
 	angle_t old_angle2, old_pitch2, old_roll2;
 	angle_t rollangle;
 	spritenum_t sprite; // used to find patch_t and flip value
-	UINT32 frame; // frame number, plus bits see p_pspr.h
-	UINT8 sprite2; // player sprites
-	UINT16 anim_duration; // for FF_ANIMATE states
+	uint32_t frame; // frame number, plus bits see p_pspr.h
+	uint8_t sprite2; // player sprites
+	uint16_t anim_duration; // for FF_ANIMATE states
 
-	UINT32 renderflags; // render flags
+	uint32_t renderflags; // render flags
 #if 0
-	UINT32 renderflags2; // More render flags
+	uint32_t renderflags2; // More render flags
 #endif
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
@@ -509,10 +509,10 @@ struct precipmobj_t
 	fixed_t old_spritexoffset2, old_spriteyoffset2;
 
 	// X and Y offsets that rotate alongside the sprite.
-	INT16 rollingxoffset, rollingyoffset;
+	int16_t rollingxoffset, rollingyoffset;
 
 	pslope_t *floorspriteslope; // The slope that the floorsprite is rotated by
-	INT16 lightlevel; // Add to sector lightlevel, -255 - 255
+	int16_t lightlevel; // Add to sector lightlevel, -255 - 255
 
 	mprecipsecnode_t *touching_sectorlist; // a linked list of sectors where this object appears
 
@@ -534,9 +534,9 @@ struct precipmobj_t
 	fixed_t momx, momy, momz;
 	fixed_t precipflags; // fixed_t so it uses the same spot as "pmomz" even as we use precipflags_t for it
 
-	INT32 tics; // state tic counter
+	int32_t tics; // state tic counter
 	state_t *state;
-	UINT32 flags; // flags from mobjinfo tables
+	uint32_t flags; // flags from mobjinfo tables
 	
 	tic_t lastThink;
 };
@@ -546,7 +546,7 @@ struct actioncache_t
 	actioncache_t *next;
 	actioncache_t *prev;
 	mobj_t *mobj;
-	INT32 statenum;
+	int32_t statenum;
 };
 
 extern actioncache_t actioncachehead;
@@ -558,14 +558,14 @@ extern mobj_t *misccap;
 
 void P_InitCachedActions(void);
 void P_RunCachedActions(void);
-void P_AddCachedAction(mobj_t *mobj, INT32 statenum);
+void P_AddCachedAction(mobj_t *mobj, int32_t statenum);
 
 // kartitem stuff: Returns true if the specified 'type' is one of the kart item constants we want in the kitemcap list
-dboolean P_IsKartFieldItem(INT32 type);
-dboolean P_IsKartEquippedItem(INT32 type);
-dboolean P_IsKartItem(INT32 type);
+dboolean P_IsKartFieldItem(int32_t type);
+dboolean P_IsKartEquippedItem(int32_t type);
+dboolean P_IsKartItem(int32_t type);
 dboolean K_IsMissileOrKartItem(mobj_t *mo);
-dboolean P_CanDeleteKartItem(INT32 type);
+dboolean P_CanDeleteKartItem(int32_t type);
 void P_AddKartItem(mobj_t *thing);	// needs to be called in k_kart.c
 void P_RunKartItems(void);
 
@@ -576,10 +576,10 @@ void P_RunMiscCap(void);
 void P_MobjCheckWater(mobj_t *mobj);
 
 // Player spawn points
-void P_SpawnPlayer(INT32 playernum);
-void P_MovePlayerToSpawn(INT32 playernum, mapthing_t *mthing);
-void P_MovePlayerToStarpost(INT32 playernum);
-void P_AfterPlayerSpawn(INT32 playernum, dboolean starpost);
+void P_SpawnPlayer(int32_t playernum);
+void P_MovePlayerToSpawn(int32_t playernum, mapthing_t *mthing);
+void P_MovePlayerToStarpost(int32_t playernum);
+void P_AfterPlayerSpawn(int32_t playernum, dboolean starpost);
 
 fixed_t P_GetMobjSpawnHeight(const mobjtype_t mobjtype, const fixed_t x, const fixed_t y, const fixed_t dz, const fixed_t offset, const size_t layer, const dboolean flip, const fixed_t scale);
 fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mthing, const fixed_t x, const fixed_t y);
@@ -590,9 +590,9 @@ void P_CopyMapThingSpecialFieldsToMobj(const mapthing_t *mthing, mobj_t *mobj);
 void P_SpawnHoop(mapthing_t *mthing);
 void P_SpawnItemPattern(mapthing_t *mthing);
 void P_SpawnItemLine(mapthing_t *mt1, mapthing_t *mt2);
-void P_SpawnHoopOfSomething(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32 number, mobjtype_t type, angle_t rotangle);
+void P_SpawnHoopOfSomething(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, int32_t number, mobjtype_t type, angle_t rotangle);
 void P_SpawnPrecipitation(void);
-void P_SpawnParaloop(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32 number, mobjtype_t type, statenum_t nstate, angle_t rotangle, dboolean spawncenter);
+void P_SpawnParaloop(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, int32_t number, mobjtype_t type, statenum_t nstate, angle_t rotangle, dboolean spawncenter);
 void *P_CreateFloorSpriteSlope(mobj_t *mobj);
 void P_RemoveFloorSpriteSlope(mobj_t *mobj);
 dboolean P_BossTargetPlayer(mobj_t *actor, dboolean closest);
@@ -612,15 +612,15 @@ void P_PlayerZMovement(mobj_t *mo);
 
 kartvoice_t *P_GetMobjVoice(const mobj_t *mo);
 
-extern INT32 modulothing;
+extern int32_t modulothing;
 
 #define MAXHUNTEMERALDS 64
 extern mapthing_t *huntemeralds[MAXHUNTEMERALDS];
-extern INT32 numhuntemeralds;
+extern int32_t numhuntemeralds;
 extern dboolean runemeraldmanager;
-extern UINT16 emeraldspawndelay;
-extern INT32 numstarposts;
-extern INT32 numbosswaypoints;
+extern uint16_t emeraldspawndelay;
+extern int32_t numstarposts;
+extern int32_t numbosswaypoints;
 extern dboolean ringsactive;
 extern dboolean stackingactive;
 extern dboolean chainingactive;
@@ -628,17 +628,17 @@ extern dboolean slipdashactive;
 extern dboolean purpledriftactive;
 extern dboolean slopeboostactive;
 extern dboolean draftingactive;
-extern UINT8 airdropactive;
-extern UINT8 airthrustactive;
+extern uint8_t airdropactive;
+extern uint8_t airthrustactive;
 extern dboolean recoverydashactive;
 extern dboolean keepstuffactive;
 extern dboolean waterskipbricks;
 extern dboolean itemlittering;
 extern dboolean itempushing;
-extern UINT8   bumpsparkactive;
+extern uint8_t   bumpsparkactive;
 extern dboolean itemlistactive;
 extern dboolean trailslow_active;
-extern UINT16 bossdisabled;
+extern uint16_t bossdisabled;
 extern dboolean stoppedclock;
 
 #ifdef __cplusplus

@@ -121,7 +121,7 @@ static int voice_num(lua_State* L)
 static int voice_array_get(lua_State *L)
 {
 	sfxenum_t *voice_array = *((sfxenum_t **)luaL_checkudata(L, 1, META_VOICE_ARRAY));
-	INT32 i = luaL_checkinteger(L, 2);
+	int32_t i = luaL_checkinteger(L, 2);
 
 	if (i < 0 || i >= VOICEARRAYSIZE)
 		return luaL_error(L, "index %d out of range (0 - %d)", i, VOICEARRAYSIZE-1);
@@ -133,7 +133,7 @@ static int voice_array_get(lua_State *L)
 static int voice_array_set(lua_State *L)
 {
 	sfxenum_t *voice_array = *((sfxenum_t **)luaL_checkudata(L, 1, META_VOICE_ARRAY));
-	INT32 i = luaL_checkinteger(L, 2);
+	int32_t i = luaL_checkinteger(L, 2);
 
 	if (hud_running)
 		return luaL_error(L, "Do not alter kartvoice_t.array[] in HUD rendering code!");
@@ -161,7 +161,7 @@ static int voice_array_num(lua_State *L)
 static int voice_array1_get(lua_State *L)
 {
 	sfxenum_t *voice_array = *((sfxenum_t **)luaL_checkudata(L, 1, META_VOICE_ARRAY1));
-	INT32 i = luaL_checkinteger(L, 2);
+	int32_t i = luaL_checkinteger(L, 2);
 
 	if (i < 0 || i >= 1)
 		return luaL_error(L, "index %d out of range (0 - %d)", i, 1-1);
@@ -173,7 +173,7 @@ static int voice_array1_get(lua_State *L)
 static int voice_array1_set(lua_State *L)
 {
 	sfxenum_t *voice_array = *((sfxenum_t **)luaL_checkudata(L, 1, META_VOICE_ARRAY1));
-	INT32 i = luaL_checkinteger(L, 2);
+	int32_t i = luaL_checkinteger(L, 2);
 
 	if (hud_running)
 		return luaL_error(L, "Do not alter kartvoice_t.array[1] in HUD rendering code!");

@@ -352,7 +352,7 @@ static int botdata_set(lua_State *L)
 
 static int lib_iterateBotData(lua_State *L)
 {
-	INT32 i;
+	int32_t i;
 
 	if (lua_gettop(L) < 2)
 	{
@@ -364,7 +364,7 @@ static int lib_iterateBotData(lua_State *L)
 	lua_remove(L, 1); // state is unused.
 
 	if (!lua_isnil(L, 1))
-		i = (INT32)(*((botdata_t **)luaL_checkudata(L, 1, META_BOTDATA)) - K_GetBotData(0)) + 1;
+		i = (int32_t)(*((botdata_t **)luaL_checkudata(L, 1, META_BOTDATA)) - K_GetBotData(0)) + 1;
 	else
 		i = 0;
 
@@ -379,7 +379,7 @@ static int lib_iterateBotData(lua_State *L)
 
 static int lib_getBotData(lua_State *L)
 {
-	INT32 i;
+	int32_t i;
 
 	if (lua_type(L, 2) == LUA_TNUMBER)
 	{

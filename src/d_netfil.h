@@ -54,9 +54,9 @@ typedef enum
 
 struct fileneeded_t
 {
-	UINT8 willsend; // Is the server willing to send it?
+	uint8_t willsend; // Is the server willing to send it?
 	char filename[MAX_WADPATH];
-	UINT64 hash;
+	uint64_t hash;
 	filestatus_t status; // The value returned by recsearch
 	dboolean justdownloaded; // To prevent late fragments from causing an I_Error
 	dboolean compatmode;
@@ -64,29 +64,29 @@ struct fileneeded_t
 	// Used only for download
 	FILE *file;
 	dboolean *receivedfragments;
-	UINT32 fragmentsize;
-	UINT8 iteration;
+	uint32_t fragmentsize;
+	uint8_t iteration;
 	fileack_pak *ackpacket;
-	UINT32 currentsize;
-	UINT32 totalsize;
-	UINT32 ackresendposition; // Used when resuming downloads
+	uint32_t currentsize;
+	uint32_t totalsize;
+	uint32_t ackresendposition; // Used when resuming downloads
 };
 
-extern INT32 fileneedednum;
+extern int32_t fileneedednum;
 extern fileneeded_t fileneeded[MAX_WADFILES];
 #define DOWNLOADDIR_PART "downloads"
 extern char downloaddir[];
 
-extern INT32 lastfilenum;
-extern INT32 downloadcompletednum;
-extern UINT32 downloadcompletedsize;
-extern INT32 totalfilesrequestednum;
-extern UINT32 totalfilesrequestedsize;
+extern int32_t lastfilenum;
+extern int32_t downloadcompletednum;
+extern uint32_t downloadcompletedsize;
+extern int32_t totalfilesrequestednum;
+extern uint32_t totalfilesrequestedsize;
 
 #ifdef HAVE_CURL
 extern dboolean curl_failedwebdownload;
 extern dboolean curl_running;
-extern INT32 curl_transfers;
+extern int32_t curl_transfers;
 
 extern struct HTTP_login
 {
@@ -97,30 +97,30 @@ extern struct HTTP_login
 *curl_logins;
 #endif
 
-UINT8 *PutFileNeeded(UINT16 firstfile);
-void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 firstfile);
+uint8_t *PutFileNeeded(uint16_t firstfile);
+void D_ParseFileneeded(int32_t fileneedednum_parm, uint8_t *fileneededstr, uint16_t firstfile);
 void CL_PrepareDownloadSaveGame(const char *tmpsave);
 
-INT32 CL_CheckFiles(void);
+int32_t CL_CheckFiles(void);
 dboolean CL_LoadServerFiles(void);
-void AddRamToSendQueue(INT32 node, void *data, size_t size, freemethod_t freemethod,
-	UINT8 fileid);
+void AddRamToSendQueue(int32_t node, void *data, size_t size, freemethod_t freemethod,
+	uint8_t fileid);
 
 void FileSendTicker(void);
-void PT_FileAck(SINT8 node);
-void PT_FileReceived(SINT8 node);
-dboolean SendingFile(INT32 node);
+void PT_FileAck(int8_t node);
+void PT_FileReceived(int8_t node);
+dboolean SendingFile(int32_t node);
 
 void FileReceiveTicker(void);
-void PT_FileFragment(SINT8 node, INT32 netconsole);
+void PT_FileFragment(int8_t node, int32_t netconsole);
 
 dboolean CL_CheckDownloadable(void);
 dboolean CL_SendFileRequest(void);
-void PT_RequestFile(INT32 node);
+void PT_RequestFile(int32_t node);
 
-void PT_ClientKey(INT32 node);
+void PT_ClientKey(int32_t node);
 
-void PT_ServerChallenge(INT32 node, cl_mode_t *cl_mode);
+void PT_ServerChallenge(int32_t node, cl_mode_t *cl_mode);
 
 typedef enum
 {
@@ -136,7 +136,7 @@ struct luafiletransfer_t
 	char *filename;
 	char *realfilename;
 	char mode[4]; // rb+/wb+/ab+ + null character
-	INT32 id; // Callback ID
+	int32_t id; // Callback ID
 	dboolean ongoing;
 	luafiletransfernodestatus_t nodestatus[MAXNETNODES];
 	tic_t nodetimeouts[MAXNETNODES];
@@ -150,18 +150,18 @@ extern char luafiledir[256 + 16];
 
 void AddLuaFileTransfer(const char *filename, const char *mode);
 void SV_PrepareSendLuaFile(void);
-dboolean AddLuaFileToSendQueue(INT32 node, const char *filename);
-void SV_HandleLuaFileSent(UINT8 node);
+dboolean AddLuaFileToSendQueue(int32_t node, const char *filename);
+void SV_HandleLuaFileSent(uint8_t node);
 void RemoveLuaFileTransfer(void);
 void RemoveAllLuaFileTransfers(void);
-void SV_AbortLuaFileTransfer(INT32 node);
+void SV_AbortLuaFileTransfer(int32_t node);
 void CL_PrepareDownloadLuaFile(void);
-void Got_LuaFile(UINT8 **cp, INT32 playernum);
-void StoreLuaFileCallback(INT32 id);
-void RemoveLuaFileCallback(INT32 id);
+void Got_LuaFile(uint8_t **cp, int32_t playernum);
+void StoreLuaFileCallback(int32_t id);
+void RemoveLuaFileCallback(int32_t id);
 void MakePathDirs(char *path);
 
-void SV_AbortSendFiles(INT32 node);
+void SV_AbortSendFiles(int32_t node);
 void CloseNetFile(void);
 void CL_AbortDownloadResume(void);
 
@@ -170,9 +170,9 @@ void Command_Downloads_f(void);
 dboolean fileexist(char *filename, time_t ptime);
 
 // Search a file in the wadpath, return FS_FOUND when found
-filestatus_t findfile(char *filename, UINT64 wantedhash,
+filestatus_t findfile(char *filename, uint64_t wantedhash,
 	dboolean completepath);
-filestatus_t checkfilehash(const char *filename, UINT64 wantedhash);
+filestatus_t checkfilehash(const char *filename, uint64_t wantedhash);
 
 void nameonly(char *s);
 size_t nameonlylength(const char *s);

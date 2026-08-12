@@ -182,7 +182,7 @@ static int skin_num(lua_State *L)
 
 static int lib_iterateSkins(lua_State *L)
 {
-	INT32 i;
+	int32_t i;
 
 	if (lua_gettop(L) < 2)
 	{
@@ -195,7 +195,7 @@ static int lib_iterateSkins(lua_State *L)
 	lua_remove(L, 1); // state is unused.
 
 	if (!lua_isnil(L, 1))
-		i = (INT32)((*((skin_t **)luaL_checkudata(L, 1, META_SKIN)))->skinnum) + 1;
+		i = (int32_t)((*((skin_t **)luaL_checkudata(L, 1, META_SKIN)))->skinnum) + 1;
 	else
 		i = 0;
 
@@ -212,7 +212,7 @@ static int lib_iterateSkins(lua_State *L)
 static int lib_getSkin(lua_State *L)
 {
 	const char *field;
-	INT32 i;
+	int32_t i;
 
 	// find skin by number
 	if (lua_type(L, 2) == LUA_TNUMBER)
@@ -235,7 +235,7 @@ static int lib_getSkin(lua_State *L)
 		return 1;
 	}
 
-	UINT32 hash = HASH32(field, strlen(field));
+	uint32_t hash = HASH32(field, strlen(field));
 
 	// find skin by name
 	for (i = 0; i < numskins; i++)
@@ -267,7 +267,7 @@ static int soundsid_get(lua_State *L)
 	sfxenum_t *soundsid = *((sfxenum_t **)luaL_checkudata(L, 1, META_SOUNDSID));
 	skin_t *s = (skin_t*)((char*)soundsid - offsetof(skin_t, soundsid[0]));
 
-	INT32 i = luaL_checkinteger(L, 2);
+	int32_t i = luaL_checkinteger(L, 2);
 
 	if (i < 0 || i >= NUMSKINSOUNDS)
 		return luaL_error(L, "%s cannot be %s", LUA_QL("skinsound_t"), va("%u", i));
@@ -289,7 +289,7 @@ static int skinvoices_get(lua_State *L)
 	sfxenum_t *svoices = *((sfxenum_t **)luaL_checkudata(L, 1, META_SKINVOICES));
 	skin_t *s = (skin_t*)((char*)svoices - offsetof(skin_t, soundsid[1]));
 
-	INT32 i = luaL_checkinteger(L, 2);
+	int32_t i = luaL_checkinteger(L, 2);
 
 	if (i < 0 || i >= s->numvoices)
 		return luaL_error(L, "skin.voices[] index %s out of range (0 - %d)", va("%u", i), s->numvoices - 1);

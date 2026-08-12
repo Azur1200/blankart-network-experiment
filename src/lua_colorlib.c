@@ -34,7 +34,7 @@
 
 static int lib_colorPaletteToRgb(lua_State *L)
 {
-	RGBA_t color = V_GetMasterColor((UINT8)luaL_checkinteger(L, 1));
+	RGBA_t color = V_GetMasterColor((uint8_t)luaL_checkinteger(L, 1));
 	lua_pushinteger(L, color.s.red);
 	lua_pushinteger(L, color.s.green);
 	lua_pushinteger(L, color.s.blue);
@@ -44,14 +44,14 @@ static int lib_colorPaletteToRgb(lua_State *L)
 static int lib_paletteFromSkincolor(lua_State *L)
 {
 	skincolornum_t skincolor = luaL_checkinteger(L, 1);
-	UINT8 table_index = 4;
+	uint8_t table_index = 4;
 
 	if (!lua_isnoneornil(L, 2))
 	{
-		table_index = (UINT8)luaL_checkinteger(L, 2);
+		table_index = (uint8_t)luaL_checkinteger(L, 2);
 	}
 
-	UINT8 pal_index = V_GetColorFromSkinColorEx(skincolor, table_index);
+	uint8_t pal_index = V_GetColorFromSkinColorEx(skincolor, table_index);
 
 	lua_pushinteger(L, pal_index);
 	return 1;
@@ -60,10 +60,10 @@ static int lib_paletteFromSkincolor(lua_State *L)
 static int lib_paletteFromSkincolorDimmed(lua_State *L)
 {
 	skincolornum_t skincolor = luaL_checkinteger(L, 1);
-	UINT8 table_index = (UINT8)luaL_checkinteger(L, 2);
+	uint8_t table_index = (uint8_t)luaL_checkinteger(L, 2);
 	fixed_t brightness = luaL_checkfixed(L, 3);
 
-	UINT8 pal_index = V_GetColorFromSkinColorWithBrightness(skincolor, table_index, brightness);
+	uint8_t pal_index = V_GetColorFromSkinColorWithBrightness(skincolor, table_index, brightness);
 
 	lua_pushinteger(L, pal_index);
 	return 1;
@@ -72,7 +72,7 @@ static int lib_paletteFromSkincolorDimmed(lua_State *L)
 #define IS_HEX_CHAR(x) ((x >= '0' && x <= '9') || (x >= 'a' && x <= 'f') || (x >= 'A' && x <= 'F'))
 #define ARE_HEX_CHARS(str, i) IS_HEX_CHAR(str[i]) && IS_HEX_CHAR(str[i + 1])
 
-static UINT32 hex2int(char x)
+static uint32_t hex2int(char x)
 {
 	if (x >= '0' && x <= '9')
 		return x - '0';
@@ -84,14 +84,14 @@ static UINT32 hex2int(char x)
 	return 0;
 }
 
-static UINT8 GetHTMLColorLength(const char *str)
+static uint8_t GetHTMLColorLength(const char *str)
 {
 	if (str[0] == '#')
 		str++;
 	return strlen(str) >= 8 ? 4 : 3;
 }
 
-static UINT8 ParseHTMLColor(const char *str, UINT8 *rgba, size_t numc)
+static uint8_t ParseHTMLColor(const char *str, uint8_t *rgba, size_t numc)
 {
 	const char *hex = str;
 
@@ -110,7 +110,7 @@ static UINT8 ParseHTMLColor(const char *str, UINT8 *rgba, size_t numc)
 			if (!IS_HEX_CHAR(hex[i]))
 				return 0;
 
-			UINT32 hx = hex2int(hex[i]);
+			uint32_t hx = hex2int(hex[i]);
 			*rgba++ = (hx * 16) + hx;
 		}
 
@@ -136,7 +136,7 @@ static UINT8 ParseHTMLColor(const char *str, UINT8 *rgba, size_t numc)
 	return 0;
 }
 
-static UINT8 GetPackedRGBA(UINT32 colors, UINT8 *rgba)
+static uint8_t GetPackedRGBA(uint32_t colors, uint8_t *rgba)
 {
 	if (colors > 0xFFFFFF)
 	{
@@ -156,10 +156,10 @@ static UINT8 GetPackedRGBA(UINT32 colors, UINT8 *rgba)
 	}
 }
 
-static UINT8 GetArgsRGBA(lua_State *L, UINT8 index, INT32 *r, INT32 *g, INT32 *b, INT32 *a)
+static uint8_t GetArgsRGBA(lua_State *L, uint8_t index, int32_t *r, int32_t *g, int32_t *b, int32_t *a)
 {
-	UINT8 rgba[4] = { 0, 0, 0, 255 };
-	UINT8 num = 0;
+	uint8_t rgba[4] = { 0, 0, 0, 255 };
+	uint8_t num = 0;
 
 	if (lua_gettop(L) == 1 && lua_type(L, index) == LUA_TNUMBER)
 	{
@@ -174,7 +174,7 @@ static UINT8 GetArgsRGBA(lua_State *L, UINT8 index, INT32 *r, INT32 *g, INT32 *b
 	else if (lua_type(L, index) == LUA_TSTRING)
 	{
 		const char *str = lua_tostring(L, index);
-		UINT8 parsed = ParseHTMLColor(str, rgba, GetHTMLColorLength(str));
+		uint8_t parsed = ParseHTMLColor(str, rgba, GetHTMLColorLength(str));
 		if (!parsed)
 			luaL_error(L, "Malformed HTML color '%s'", str);
 
@@ -188,7 +188,7 @@ static UINT8 GetArgsRGBA(lua_State *L, UINT8 index, INT32 *r, INT32 *g, INT32 *b
 	}
 	else
 	{
-		INT32 temp;
+		int32_t temp;
 
 #define CHECKINT(i) luaL_checkinteger(L, i)
 #define GETCOLOR(c, i, desc) { \
@@ -217,7 +217,7 @@ static UINT8 GetArgsRGBA(lua_State *L, UINT8 index, INT32 *r, INT32 *g, INT32 *b
 
 static int lib_colorRgbToPalette(lua_State *L)
 {
-	INT32 r, g, b;
+	int32_t r, g, b;
 	GetArgsRGBA(L, 1, &r, &g, &b, NULL);
 
 #ifdef COLORLIB_USE_LOOKUP
@@ -297,7 +297,7 @@ static int lib_colorHslToRgb(lua_State *L)
 
 static int lib_colorRgbToHsl(lua_State *L)
 {
-	INT32 ir, ig, ib;
+	int32_t ir, ig, ib;
 	GetArgsRGBA(L, 1, &ir, &ig, &ib, NULL);
 
 	fixed_t r = SCALE_UINT8_TO_FIXED(ir);
@@ -348,10 +348,10 @@ static int lib_colorRgbToHsl(lua_State *L)
 
 static int lib_colorHexToRgb(lua_State *L)
 {
-	UINT8 rgba[4] = { 0, 0, 0, 255 };
+	uint8_t rgba[4] = { 0, 0, 0, 255 };
 
 	const char *str = luaL_checkstring(L, 1);
-	UINT8 parsed = ParseHTMLColor(str, rgba, 4), num = 3;
+	uint8_t parsed = ParseHTMLColor(str, rgba, 4), num = 3;
 	if (!parsed)
 		luaL_error(L, "Malformed HTML color '%s'", str);
 	else if (parsed == 8)
@@ -368,8 +368,8 @@ static int lib_colorHexToRgb(lua_State *L)
 
 static int lib_colorRgbToHex(lua_State *L)
 {
-	INT32 r, g, b, a;
-	UINT8 num = GetArgsRGBA(L, 1, &r, &g, &b, &a);
+	int32_t r, g, b, a;
+	uint8_t num = GetArgsRGBA(L, 1, &r, &g, &b, &a);
 
 	char buffer[10];
 	if (num >= 4)
@@ -383,11 +383,11 @@ static int lib_colorRgbToHex(lua_State *L)
 
 static int lib_colorPackRgb(lua_State *L)
 {
-	INT32 r, g, b;
+	int32_t r, g, b;
 
 	GetArgsRGBA(L, 1, &r, &g, &b, NULL);
 
-	UINT32 packed = ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
+	uint32_t packed = ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | (b & 0xFF);
 
 	lua_pushinteger(L, packed);
 	return 1;
@@ -395,11 +395,11 @@ static int lib_colorPackRgb(lua_State *L)
 
 static int lib_colorPackRgba(lua_State *L)
 {
-	INT32 r, g, b, a;
+	int32_t r, g, b, a;
 
 	GetArgsRGBA(L, 1, &r, &g, &b, &a);
 
-	UINT32 packed = ((r & 0xFF) << 24) | ((g & 0xFF) << 16) | ((b & 0xFF) << 8) | (a & 0xFF);
+	uint32_t packed = ((r & 0xFF) << 24) | ((g & 0xFF) << 16) | ((b & 0xFF) << 8) | (a & 0xFF);
 
 	lua_pushinteger(L, packed);
 	return 1;
@@ -407,11 +407,11 @@ static int lib_colorPackRgba(lua_State *L)
 
 static int lib_colorUnpackRgb(lua_State *L)
 {
-	UINT8 rgba[4];
+	uint8_t rgba[4];
 
-	UINT8 num = GetPackedRGBA(lua_tointeger(L, 1), rgba);
+	uint8_t num = GetPackedRGBA(lua_tointeger(L, 1), rgba);
 
-	for (UINT8 i = 0; i < num; i++)
+	for (uint8_t i = 0; i < num; i++)
 	{
 		lua_pushinteger(L, rgba[i]);
 	}
@@ -535,14 +535,14 @@ static int extracolormap_get(lua_State *L)
 	return 1;
 }
 
-static void GetExtraColormapRGBA(lua_State *L, UINT8 *rgba, int arg)
+static void GetExtraColormapRGBA(lua_State *L, uint8_t *rgba, int arg)
 {
 	rgba[3] = SCALE_ALPHA_UP(rgba[3]);
 
 	if (lua_type(L, arg) == LUA_TSTRING)
 	{
 		const char *str = lua_tostring(L, arg);
-		UINT8 parsed = ParseHTMLColor(str, rgba, 4);
+		uint8_t parsed = ParseHTMLColor(str, rgba, 4);
 		if (!parsed)
 			luaL_error(L, "Malformed HTML color '%s'", str);
 	}
@@ -562,20 +562,20 @@ static int extracolormap_set(lua_State *L)
 	if (!exc)
 		return LUA_ErrInvalid(L, "extracolormap_t");
 
-	UINT8 r = R_GetRgbaR(exc->rgba);
-	UINT8 g = R_GetRgbaG(exc->rgba);
-	UINT8 b = R_GetRgbaB(exc->rgba);
-	UINT8 a = R_GetRgbaA(exc->rgba);
+	uint8_t r = R_GetRgbaR(exc->rgba);
+	uint8_t g = R_GetRgbaG(exc->rgba);
+	uint8_t b = R_GetRgbaB(exc->rgba);
+	uint8_t a = R_GetRgbaA(exc->rgba);
 
-	UINT8 fr = R_GetRgbaR(exc->fadergba);
-	UINT8 fg = R_GetRgbaG(exc->fadergba);
-	UINT8 fb = R_GetRgbaB(exc->fadergba);
-	UINT8 fa = R_GetRgbaA(exc->fadergba);
+	uint8_t fr = R_GetRgbaR(exc->fadergba);
+	uint8_t fg = R_GetRgbaG(exc->fadergba);
+	uint8_t fb = R_GetRgbaB(exc->fadergba);
+	uint8_t fa = R_GetRgbaA(exc->fadergba);
 
-	UINT8 rgba[4];
+	uint8_t rgba[4];
 
-	INT32 old_rgba = exc->rgba, old_fade_rgba = exc->fadergba; // It's not unsigned?
-	UINT8 old_fade_start = exc->fadestart, old_fade_end = exc->fadeend;
+	int32_t old_rgba = exc->rgba, old_fade_rgba = exc->fadergba; // It's not unsigned?
+	uint8_t old_fade_start = exc->fadestart, old_fade_end = exc->fadeend;
 
 #define val luaL_checkinteger(L, 3)
 
@@ -651,7 +651,7 @@ static int lighttable_get(lua_State *L)
 	void **userdata;
 
 	lighttable_t *table = *((lighttable_t **)luaL_checkudata(L, 1, META_LIGHTTABLE));
-	UINT32 row = luaL_checkinteger(L, 2);
+	uint32_t row = luaL_checkinteger(L, 2);
 	if (row < 1 || row > 34)
 		return luaL_error(L, "lighttable row %d out of range (1 - %d)", row, 34);
 

@@ -107,7 +107,7 @@ typedef struct
 	} al;
 #endif
 
-	UINT32 type;
+	uint32_t type;
 
 	struct
 	{
@@ -155,8 +155,8 @@ typedef struct
 
 	struct
 	{
-		SINT8 waveform;
-		INT16 phase;
+		int8_t waveform;
+		int16_t phase;
 		float rate;
 		float depth;
 		float feedback;
@@ -183,8 +183,8 @@ typedef struct
 
 	struct
 	{
-		SINT8 waveform;
-		INT16 phase;
+		int8_t waveform;
+		int16_t phase;
 		float rate;
 		float depth;
 		float feedback;
@@ -194,31 +194,31 @@ typedef struct
 	struct
 	{
 		float frequency;
-		SINT8 left_direction;
-		SINT8 right_direction;
+		int8_t left_direction;
+		int8_t right_direction;
 	} freqshift;
 
 	struct
 	{
-		SINT8 phonemea;
-		SINT8 phonemeb;
-		SINT8 phonemea_coarse_tuning;
-		SINT8 phonemeb_coarse_tuning;
-		SINT8 waveform;
+		int8_t phonemea;
+		int8_t phonemeb;
+		int8_t phonemea_coarse_tuning;
+		int8_t phonemeb_coarse_tuning;
+		int8_t waveform;
 		float rate;
 	} vocal_morpher;
 
 	struct
 	{
-		SINT8 coarse_tune;
-		SINT8 fine_tune;
+		int8_t coarse_tune;
+		int8_t fine_tune;
 	} pitchshift;
 
 	struct
 	{
 		float frequency;
 		float highpass_cutoff;
-		SINT8 waveform;
+		int8_t waveform;
 	} ringmod;
 
 	struct
@@ -251,7 +251,7 @@ typedef struct
 
 /**	\brief Sound subsystem runing and waiting
 */
-extern UINT8 sound_started;
+extern uint8_t sound_started;
 
 /**	\brief info of samplerate
 */
@@ -295,7 +295,7 @@ void I_ShutdownSound(void);
 
 	\return	sfx handle
 */
-INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel, efx_t *efx, const void *origin);
+int32_t I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t priority, int32_t channel, efx_t *efx, const void *origin);
 
 /**	\brief	Stops a sound channel.
 
@@ -303,7 +303,7 @@ INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priori
 
 	\return	void
 */
-void I_StopSound(INT32 handle);
+void I_StopSound(int32_t handle);
 
 /**	\brief Some digital sound drivers need this.
 */
@@ -315,7 +315,7 @@ void I_UpdateSound(void);
 
 	\return	0 if no longer playing, 1 if playing.
 */
-dboolean I_SoundIsPlaying(INT32 handle);
+dboolean I_SoundIsPlaying(int32_t handle);
 
 
 
@@ -328,7 +328,7 @@ dboolean I_SoundIsPlaying(INT32 handle);
 
 	\return	void
 */
-void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch, efx_t *efx, const void *origin);
+void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch, efx_t *efx, const void *origin);
 
 /**	\brief	The I_SetSfxVolume function
 
@@ -336,7 +336,7 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch, efx_t 
 
 	\return	void
 */
-void I_SetSfxVolume(UINT8 volume);
+void I_SetSfxVolume(uint8_t volume);
 
 /// ------------------------
 //  MUSIC SYSTEM
@@ -368,13 +368,13 @@ dboolean I_SetSongSpeed(float speed);
 //  MUSIC SEEKING
 /// ------------------------
 
-UINT32 I_GetSongLength(void);
+uint32_t I_GetSongLength(void);
 
-dboolean I_SetSongLoopPoint(UINT32 looppoint);
-UINT32 I_GetSongLoopPoint(void);
+dboolean I_SetSongLoopPoint(uint32_t looppoint);
+uint32_t I_GetSongLoopPoint(void);
 
-dboolean I_SetSongPosition(UINT32 position);
-UINT32 I_GetSongPosition(void);
+dboolean I_SetSongPosition(uint32_t position);
+uint32_t I_GetSongPosition(void);
 
 void I_UpdateSongLagThreshold (void);
 void I_UpdateSongLagConditions (void);
@@ -445,20 +445,20 @@ void I_ResumeSong(void);
 
 	\return	void
 */
-void I_SetMusicVolume(UINT8 volume);
+void I_SetMusicVolume(uint8_t volume);
 
-dboolean I_SetSongTrack(INT32 track);
+dboolean I_SetSongTrack(int32_t track);
 
 /// ------------------------
 /// MUSIC FADING
 /// ------------------------
 
-void I_SetInternalMusicVolume(UINT8 volume);
+void I_SetInternalMusicVolume(uint8_t volume);
 void I_StopFadingSong(void);
-dboolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms, void (*callback)(void));
-dboolean I_FadeSong(UINT8 target_volume, UINT32 ms, void (*callback)(void));
-dboolean I_FadeOutStopSong(UINT32 ms);
-dboolean I_FadeInPlaySong(UINT32 ms, dboolean looping);
+dboolean I_FadeSongFromVolume(uint8_t target_volume, uint8_t source_volume, uint32_t ms, void (*callback)(void));
+dboolean I_FadeSong(uint8_t target_volume, uint32_t ms, void (*callback)(void));
+dboolean I_FadeOutStopSong(uint32_t ms);
+dboolean I_FadeInPlaySong(uint32_t ms, dboolean looping);
 
 efx_t *I_CreateEFX(efx_t *efx);
 float I_GetEFXTail(efx_t *efx);

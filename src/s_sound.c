@@ -37,7 +37,7 @@
 #include "m_menu.h" // M_ChangeMenuMusic
 #include "k_grandprix.h" // grandprixinfo
 
-static dboolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch, sfxinfo_t *sfxinfo);
+static dboolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, int32_t *vol, int32_t *sep, int32_t *pitch, sfxinfo_t *sfxinfo);
 
 CV_PossibleValue_t soundvolume_cons_t[] = {{0, "MIN"}, {MAX_VOLUME, "MAX"}, {0, NULL}};
 static void SetChannelsNum(void);
@@ -160,13 +160,13 @@ consvar_t cv_modfilter = CVAR_INIT ("modfilter", "0", CV_SAVE|CV_CALL, interpola
 
 // the set of channels available
 static channel_t *channels = NULL;
-static INT32 numofchannels = 0;
+static int32_t numofchannels = 0;
 
 caption_t closedcaptions[NUMCAPTIONS];
 
 void S_ResetCaptions(void)
 {
-	UINT8 i;
+	uint8_t i;
 	for (i = 0; i < NUMCAPTIONS; i++)
 	{
 		closedcaptions[i].c = NULL;
@@ -179,17 +179,17 @@ void S_ResetCaptions(void)
 //
 // Internals.
 //
-static void S_StopChannel(INT32 cnum);
+static void S_StopChannel(int32_t cnum);
 
 //
 // S_getChannel
 //
 // If none available, return -1. Otherwise channel #.
 //
-static INT32 S_getChannel(const void *origin, sfxinfo_t *sfxinfo, efx_t *efx)
+static int32_t S_getChannel(const void *origin, sfxinfo_t *sfxinfo, efx_t *efx)
 {
 	// channel number to use
-	INT32 cnum;
+	int32_t cnum;
 
 	// Find an open channel
 	for (cnum = 0; cnum < numofchannels; cnum++)
@@ -281,7 +281,7 @@ void S_RegisterSoundStuff(void)
 
 static void SetChannelsNum(void)
 {
-	INT32 i;
+	int32_t i;
 
 	// Allocating the internal channels for mixing
 	// (the maximum number of sounds rendered
@@ -352,7 +352,7 @@ dboolean S_SoundDisabled(void)
 // Stop all sounds, load level info, THEN start sounds.
 void S_StopSounds(void)
 {
-	INT32 cnum;
+	int32_t cnum;
 
 	// kill all playing sounds at start of level
 	for (cnum = 0; cnum < numofchannels; cnum++)
@@ -364,7 +364,7 @@ void S_StopSounds(void)
 
 void S_StopSoundByID(void *origin, sfxenum_t sfx_id)
 {
-	INT32 cnum;
+	int32_t cnum;
 
 	// Sounds without origin can have multiple sources, they shouldn't
 	// be stopped by new sounds.
@@ -382,7 +382,7 @@ void S_StopSoundByID(void *origin, sfxenum_t sfx_id)
 
 void S_StopSoundByNum(sfxenum_t sfxnum)
 {
-	INT32 cnum;
+	int32_t cnum;
 
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
@@ -393,9 +393,9 @@ void S_StopSoundByNum(sfxenum_t sfxnum)
 	}
 }
 
-void S_StartCaption(sfxenum_t sfx_id, INT32 cnum, UINT16 lifespan)
+void S_StartCaption(sfxenum_t sfx_id, int32_t cnum, uint16_t lifespan)
 {
-	UINT8 i, set, moveup, start;
+	uint8_t i, set, moveup, start;
 	dboolean same = false;
 	sfxinfo_t *sfx;
 
@@ -479,7 +479,7 @@ void S_StartCaption(sfxenum_t sfx_id, INT32 cnum, UINT16 lifespan)
 	closedcaptions[set].b = 3; // bob
 }
 
-static INT32 S_ScaleVolumeWithSplitscreen(INT32 volume)
+static int32_t S_ScaleVolumeWithSplitscreen(int32_t volume)
 {
 	fixed_t root = INT32_MAX;
 
@@ -496,18 +496,18 @@ static INT32 S_ScaleVolumeWithSplitscreen(INT32 volume)
 	) / FRACUNIT;
 }
 
-void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, INT32 volume, efx_t *efx)
+void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, int32_t volume, efx_t *efx)
 {
 	const mobj_t *origin = (const mobj_t *)origin_p;
 	const sfxenum_t actual_id = sfx_id;
 	const dboolean reverse = (stereoreverse.value ^ encoremode);
-	const INT32 initial_volume = (origin ? S_ScaleVolumeWithSplitscreen(volume) : volume);
+	const int32_t initial_volume = (origin ? S_ScaleVolumeWithSplitscreen(volume) : volume);
 
 	sfxinfo_t *sfx;
-	INT32 sep, pitch, priority, cnum;
+	int32_t sep, pitch, priority, cnum;
 	dboolean anyListeners = false;
 	dboolean itsUs = false;
-	INT32 i;
+	int32_t i;
 
 	listener_t listener[MAXSPLITSCREENPLAYERS];
 	mobj_t *listenmobj[MAXSPLITSCREENPLAYERS];
@@ -609,7 +609,7 @@ void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, INT32 volume
 			if (r_splitscreen > 0)
 			{
 				fixed_t recdist = INT32_MAX;
-				UINT8 j = 0;
+				uint8_t j = 0;
 
 				for (; j <= r_splitscreen; j++)
 				{
@@ -719,7 +719,7 @@ void S_StartSound(const void *origin, sfxenum_t sfx_id)
 
 void S_StopSound(void *origin)
 {
-	INT32 cnum;
+	int32_t cnum;
 
 	// Sounds without origin can have multiple sources, they shouldn't
 	// be stopped by new sounds.
@@ -738,15 +738,15 @@ void S_StopSound(void *origin)
 //
 // Updates music & sounds
 //
-static INT32 actualsfxvolume; // check for change through console
-static INT32 actualdigmusicvolume;
+static int32_t actualsfxvolume; // check for change through console
+static int32_t actualdigmusicvolume;
 
 void S_UpdateSounds(void)
 {
-	INT32 cnum, volume, sep, pitch;
+	int32_t cnum, volume, sep, pitch;
 	dboolean audible = false;
 	channel_t *c;
-	INT32 i;
+	int32_t i;
 
 	listener_t listener[MAXSPLITSCREENPLAYERS];
 	mobj_t *listenmobj[MAXSPLITSCREENPLAYERS];
@@ -888,7 +888,7 @@ notinlevel:
 			if (r_splitscreen > 0)
 			{
 				fixed_t recdist = INT32_MAX;
-				UINT8 j = 0;
+				uint8_t j = 0;
 
 				for (; j <= r_splitscreen; j++)
 				{
@@ -934,7 +934,7 @@ notinlevel:
 
 void S_UpdateClosedCaptions(void)
 {
-	UINT8 i;
+	uint8_t i;
 	dboolean gamestopped = (paused || P_AutoPause());
 
 	for (i = 0; i < NUMCAPTIONS; i++) // update captions
@@ -959,7 +959,7 @@ void S_UpdateClosedCaptions(void)
 	}
 }
 
-void S_SetSfxVolume(INT32 volume)
+void S_SetSfxVolume(int32_t volume)
 {
 	actualsfxvolume = volume;
 
@@ -974,7 +974,7 @@ void S_ClearSfx(void)
 		I_FreeSfx(S_sfx + i);
 }
 
-static void S_StopChannel(INT32 cnum)
+static void S_StopChannel(int32_t cnum)
 {
 	channel_t *c = &channels[cnum];
 
@@ -1024,7 +1024,7 @@ fixed_t S_CalculateSoundDistance(fixed_t sx1, fixed_t sy1, fixed_t sz1, fixed_t 
 	return FixedDiv(approx_dist, mapobjectscale); // approx_dist
 }
 
-INT32 S_GetSoundVolume(sfxinfo_t *sfx, INT32 volume)
+int32_t S_GetSoundVolume(sfxinfo_t *sfx, int32_t volume)
 {
 	if (sfx->volume > 0)
 		return (volume * sfx->volume) / 100;
@@ -1038,7 +1038,7 @@ INT32 S_GetSoundVolume(sfxinfo_t *sfx, INT32 volume)
 // If the sound is not audible, returns a 0.
 // Otherwise, modifies parameters and returns 1.
 //
-dboolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 *vol, INT32 *sep, INT32 *pitch,
+dboolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, int32_t *vol, int32_t *sep, int32_t *pitch,
 	sfxinfo_t *sfxinfo)
 {
 	const dboolean reverse = (stereoreverse.value ^ encoremode);
@@ -1046,7 +1046,7 @@ dboolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32
 	fixed_t approx_dist;
 
 	listener_t listensource;
-	INT32 i;
+	int32_t i;
 
 	(void)pitch;
 
@@ -1157,7 +1157,7 @@ dboolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32
 	if (approx_dist >= S_CLOSE_DIST)
 	{
 		// distance effect
-		INT32 n = (15 * ((S_CLIPPING_DIST - approx_dist)>>FRACBITS));
+		int32_t n = (15 * ((S_CLIPPING_DIST - approx_dist)>>FRACBITS));
 		*vol = FixedMul(*vol * FRACUNIT / 255, n) / S_ATTENUATOR;
 	}
 
@@ -1166,9 +1166,9 @@ dboolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32
 
 // Searches through the channels and checks if a sound is playing
 // on the given origin.
-INT32 S_OriginPlaying(void *origin)
+int32_t S_OriginPlaying(void *origin)
 {
-	INT32 cnum;
+	int32_t cnum;
 	if (!origin)
 		return false;
 
@@ -1180,9 +1180,9 @@ INT32 S_OriginPlaying(void *origin)
 
 // Searches through the channels and checks if a given id
 // is playing anywhere.
-INT32 S_IdPlaying(sfxenum_t id)
+int32_t S_IdPlaying(sfxenum_t id)
 {
-	INT32 cnum;
+	int32_t cnum;
 
 	for (cnum = 0; cnum < numofchannels; cnum++)
 		if ((size_t)(channels[cnum].sfxinfo - S_sfx) == (size_t)id)
@@ -1192,9 +1192,9 @@ INT32 S_IdPlaying(sfxenum_t id)
 
 // Searches through the channels and checks for
 // origin x playing sound id y.
-INT32 S_SoundPlaying(void *origin, sfxenum_t id)
+int32_t S_SoundPlaying(void *origin, sfxenum_t id)
 {
-	INT32 cnum;
+	int32_t cnum;
 	if (!origin)
 		return 0;
 
@@ -1215,7 +1215,7 @@ static sfxenum_t newsounds[MAXNEWSOUNDS] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 void S_StartSoundName(void *mo, const char *soundname)
 {
-	INT32 i, soundnum = 0;
+	int32_t i, soundnum = 0;
 	// Search existing sounds...
 	for (i = sfx_None + 1; i < NUMSFX; i++)
 	{
@@ -1259,9 +1259,9 @@ void S_StartSoundName(void *mo, const char *soundname)
 // Sets channels, SFX volume,
 //  allocates channel buffer, sets S_sfx lookup.
 //
-void S_InitSfxChannels(INT32 sfxVolume)
+void S_InitSfxChannels(int32_t sfxVolume)
 {
-	INT32 i;
+	int32_t i;
 
 	if (dedicated)
 		return;
@@ -1297,16 +1297,16 @@ void S_InitSfxChannels(INT32 sfxVolume)
 
 static char      music_name[7]; // up to 6-character name
 static void      *music_data;
-static UINT16    music_flags;
+static uint16_t    music_flags;
 static dboolean   music_looping;
 static consvar_t *music_refade_cv;
 static int       music_usage;
 
 static char      queue_name[7];
-static UINT16    queue_flags;
+static uint16_t    queue_flags;
 static dboolean   queue_looping;
-static UINT32    queue_position;
-static UINT32    queue_fadeinms;
+static uint32_t    queue_position;
+static uint32_t    queue_fadeinms;
 
 static tic_t     pause_starttic;
 
@@ -1324,9 +1324,9 @@ int musicdef_volume;
 //
 // Find music def by 6 char name
 //
-musicdef_t *S_FindMusicDef(const char *name, UINT8 *i)
+musicdef_t *S_FindMusicDef(const char *name, uint8_t *i)
 {
-	UINT32 hash;
+	uint32_t hash;
 	musicdef_t *def;
 
 	if (!name || !name[0])
@@ -1399,7 +1399,7 @@ ReadMusicDefFields
 		}
 		else
 		{
-			UINT8 i = 0;
+			uint8_t i = 0;
 
 			def = S_FindMusicDef(value, &i);
 
@@ -1616,11 +1616,11 @@ static void S_LoadMusicDefLump(lumpnum_t lumpnum)
 	free(musdeftext);
 }
 
-void S_LoadMusicDefs(UINT16 wad)
+void S_LoadMusicDefs(uint16_t wad)
 {
 	const lumpnum_t wadnum = wad << 16;
 
-	UINT16 lump = 0;
+	uint16_t lump = 0;
 
 	while (( lump = W_CheckNumForNamePwad("MUSICDEF", wad, lump) ) != INT16_MAX)
 	{
@@ -1637,7 +1637,7 @@ void S_LoadMusicDefs(UINT16 wad)
 //
 void S_InitMusicDefs(void)
 {
-	UINT16 i;
+	uint16_t i;
 
 	char *tempname;
 	for (i = 0; i < numwadfiles; i++)
@@ -1660,13 +1660,13 @@ void S_InitMusicDefs(void)
 //
 void S_LoadMusicCredit(void)
 {
-	UINT8 i = 0;
+	uint8_t i = 0;
 	musicdef_t *def = S_FindMusicDef(music_name, &i);
 
 	char credittext[128+1] = "";
 	char *work = NULL;
 	size_t len = 128, worklen;
-	INT32 widthused = (3*BASEVIDWIDTH/4) - 7, workwidth;
+	int32_t widthused = (3*BASEVIDWIDTH/4) - 7, workwidth;
 
 	S_UnloadMusicCredit();
 
@@ -1739,7 +1739,7 @@ void S_UnloadMusicCredit(void)
 //
 // Display current song's credit on screen
 //
-void S_ShowMusicCredit(fixed_t yoffset, UINT16 animtime, INT32 snapflags)
+void S_ShowMusicCredit(fixed_t yoffset, uint16_t animtime, int32_t snapflags)
 {
 	if (!cv_songcredits.value || demo.rewinding)
 		return;
@@ -1760,7 +1760,7 @@ void S_ShowMusicCredit(fixed_t yoffset, UINT16 animtime, INT32 snapflags)
 	cursongcredit.trans = NUMTRANSMAPS;
 }
 
-void S_ChangeMusicCreditSettings(INT32 yoffset, INT32 snapflags)
+void S_ChangeMusicCreditSettings(int32_t yoffset, int32_t snapflags)
 {
 	if (cursongcredit.text != NULL)
 	{
@@ -1782,7 +1782,7 @@ void S_StopMusicCredit(void)
 }
 
 musicdef_t **soundtestdefs = NULL;
-INT32 numsoundtestdefs = 0;
+int32_t numsoundtestdefs = 0;
 
 //
 // S_PrepareSoundTest
@@ -1792,7 +1792,7 @@ INT32 numsoundtestdefs = 0;
 dboolean S_PrepareSoundTest(void)
 {
 	musicdef_t *def;
-	INT32 pos = numsoundtestdefs = 0;
+	int32_t pos = numsoundtestdefs = 0;
 
 	for (def = musicdefstart; def; def = def->next)
 	{
@@ -1901,7 +1901,7 @@ const char *S_MusicName(void)
 	return music_name;
 }
 
-dboolean S_MusicInfo(char *mname, UINT16 *mflags, dboolean *looping)
+dboolean S_MusicInfo(char *mname, uint16_t *mflags, dboolean *looping)
 {
 	if (!I_SongPlaying())
 		return false;
@@ -1932,27 +1932,27 @@ dboolean S_SpeedMusic(float speed)
 /// Music Seeking
 /// ------------------------
 
-UINT32 S_GetMusicLength(void)
+uint32_t S_GetMusicLength(void)
 {
 	return I_GetSongLength();
 }
 
-dboolean S_SetMusicLoopPoint(UINT32 looppoint)
+dboolean S_SetMusicLoopPoint(uint32_t looppoint)
 {
 	return I_SetSongLoopPoint(looppoint);
 }
 
-UINT32 S_GetMusicLoopPoint(void)
+uint32_t S_GetMusicLoopPoint(void)
 {
 	return I_GetSongLoopPoint();
 }
 
-dboolean S_SetMusicPosition(UINT32 position)
+dboolean S_SetMusicPosition(uint32_t position)
 {
 	return I_SetSongPosition(position);
 }
 
-UINT32 S_GetMusicPosition(void)
+uint32_t S_GetMusicPosition(void)
 {
 	return I_GetSongPosition();
 }
@@ -1964,8 +1964,8 @@ UINT32 S_GetMusicPosition(void)
 
 char music_stack_nextmusname[7];
 dboolean music_stack_noposition = false;
-UINT32 music_stack_fadeout = 0;
-UINT32 music_stack_fadein = 0;
+uint32_t music_stack_fadeout = 0;
+uint32_t music_stack_fadein = 0;
 static musicstack_t *music_stacks = NULL;
 static musicstack_t *last_music_stack = NULL;
 
@@ -2023,7 +2023,7 @@ static void S_RemoveMusicStackEntry(musicstack_t *entry)
 	Z_Free(entry);
 }
 
-static void S_RemoveMusicStackEntryByStatus(UINT16 status)
+static void S_RemoveMusicStackEntryByStatus(uint16_t status)
 {
 	musicstack_t *mst, *mst_next;
 
@@ -2038,7 +2038,7 @@ static void S_RemoveMusicStackEntryByStatus(UINT16 status)
 	}
 }
 
-static void S_AddMusicStackEntry(const char *mname, UINT16 mflags, dboolean looping, UINT32 position, UINT16 status)
+static void S_AddMusicStackEntry(const char *mname, uint16_t mflags, dboolean looping, uint32_t position, uint16_t status)
 {
 	musicstack_t *mst, *new_mst;
 
@@ -2080,7 +2080,7 @@ static void S_AddMusicStackEntry(const char *mname, UINT16 mflags, dboolean loop
 	last_music_stack = new_mst;
 }
 
-static musicstack_t *S_GetMusicStackEntry(UINT16 status, dboolean fromfirst, INT16 startindex)
+static musicstack_t *S_GetMusicStackEntry(uint16_t status, dboolean fromfirst, int16_t startindex)
 {
 	musicstack_t *mst, *start_mst = NULL, *mst_next;
 
@@ -2091,7 +2091,7 @@ static musicstack_t *S_GetMusicStackEntry(UINT16 status, dboolean fromfirst, INT
 
 	if (startindex >= 0)
 	{
-		INT16 i = 0;
+		int16_t i = 0;
 		for (mst = music_stacks; mst && i <= startindex; mst = mst->next, i++)
 			start_mst = mst;
 	}
@@ -2119,7 +2119,7 @@ static musicstack_t *S_GetMusicStackEntry(UINT16 status, dboolean fromfirst, INT
 	return NULL;
 }
 
-void S_RetainMusic(const char *mname, UINT16 mflags, dboolean looping, UINT32 position, UINT16 status)
+void S_RetainMusic(const char *mname, uint16_t mflags, dboolean looping, uint32_t position, uint16_t status)
 {
 	musicstack_t *mst;
 
@@ -2145,9 +2145,9 @@ void S_RetainMusic(const char *mname, UINT16 mflags, dboolean looping, UINT32 po
 	S_AddMusicStackEntry(mname, mflags, looping, position, status);
 }
 
-dboolean S_RecallMusic(UINT16 status, dboolean fromfirst)
+dboolean S_RecallMusic(uint16_t status, dboolean fromfirst)
 {
-	UINT32 newpos = 0;
+	uint32_t newpos = 0;
 	dboolean mapmuschanged = false;
 	musicstack_t *result;
 	musicstack_t *entry = Z_Calloc(sizeof (*result), PU_MUSIC, NULL);
@@ -2215,13 +2215,13 @@ dboolean S_RecallMusic(UINT16 status, dboolean fromfirst)
 
 			if (!entry->noposition && !music_stack_noposition) // HACK: Global dboolean to toggle position resuming, e.g., de-superize
 			{
-				UINT32 poslapse = 0;
+				uint32_t poslapse = 0;
 
 				// To prevent the game from jumping past the end of the music, we need
 				// to check if we can get the song's length. Otherwise, if the lapsed resume time goes
 				// over a LOOPPOINT, mixer_sound.c will be unable to calculate the new resume position.
 				if (S_GetMusicLength())
-					poslapse = (UINT32)((float)(gametic - entry->tic)/(float)TICRATE*(float)MUSICRATE);
+					poslapse = (uint32_t)((float)(gametic - entry->tic)/(float)TICRATE*(float)MUSICRATE);
 
 				newpos = entry->position + poslapse;
 			}
@@ -2313,7 +2313,7 @@ static dboolean S_CheckMusicIsSafe(void)
 {
 	if (cv_streamersafemusic.value)
 	{
-		UINT8 i = 0;
+		uint8_t i = 0;
 		musicdef_t *def = S_FindMusicDef(music_name, &i);
 
 		if (def)
@@ -2328,7 +2328,7 @@ static dboolean S_CheckMusicIsSafe(void)
 	return true;
 }
 
-static dboolean S_PlayMusic(dboolean looping, UINT32 fadeinms)
+static dboolean S_PlayMusic(dboolean looping, uint32_t fadeinms)
 {
 	if (S_MusicDisabled())
 		return false;
@@ -2369,7 +2369,7 @@ static dboolean S_PlayMusic(dboolean looping, UINT32 fadeinms)
 	return true;
 }
 
-static void S_QueueMusic(const char *mmusic, UINT16 mflags, dboolean looping, UINT32 position, UINT32 fadeinms)
+static void S_QueueMusic(const char *mmusic, uint16_t mflags, dboolean looping, uint32_t position, uint32_t fadeinms)
 {
 	strncpy(queue_name, mmusic, 7);
 	queue_flags = mflags;
@@ -2394,7 +2394,7 @@ static void S_ChangeMusicToQueue(void)
 	S_ClearQueue();
 }
 
-void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, dboolean looping, UINT32 position, UINT32 prefadems, UINT32 fadeinms)
+void S_ChangeMusicEx(const char *mmusic, uint16_t mflags, dboolean looping, uint32_t position, uint32_t prefadems, uint32_t fadeinms)
 {
 	char newmusic[7];
 
@@ -2452,7 +2452,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, dboolean looping, UINT32
 		musicdef_volume = MAX_VOLUME;
 
 		{
-			UINT8 i = 0;
+			uint8_t i = 0;
 			musicdef_t *def = S_FindMusicDef(music_name, &i);
 
 			if (def)
@@ -2550,7 +2550,7 @@ void S_ResumeAudio(void)
 	S_AdjustMusicStackTics();
 }
 
-void S_SetMusicVolume(INT32 digvolume)
+void S_SetMusicVolume(int32_t digvolume)
 {
 	if (digvolume < 0)
 		digvolume = cv_digmusicvolume.value;
@@ -2591,7 +2591,7 @@ S_MusicUsage (void)
 /// Music Fading
 /// ------------------------
 
-void S_SetInternalMusicVolume(INT32 volume)
+void S_SetInternalMusicVolume(int32_t volume)
 {
 	I_SetInternalMusicVolume(min(max(volume, 0), 100));
 }
@@ -2601,7 +2601,7 @@ void S_StopFadingMusic(void)
 	I_StopFadingSong();
 }
 
-dboolean S_FadeMusicFromVolume(UINT8 target_volume, INT16 source_volume, UINT32 ms)
+dboolean S_FadeMusicFromVolume(uint8_t target_volume, int16_t source_volume, uint32_t ms)
 {
 	if (source_volume < 0)
 		return I_FadeSong(target_volume, ms, NULL);
@@ -2609,7 +2609,7 @@ dboolean S_FadeMusicFromVolume(UINT8 target_volume, INT16 source_volume, UINT32 
 		return I_FadeSongFromVolume(target_volume, source_volume, ms, NULL);
 }
 
-dboolean S_FadeOutStopMusic(UINT32 ms)
+dboolean S_FadeOutStopMusic(uint32_t ms)
 {
 	return I_FadeSong(0, ms, &S_StopMusic);
 }
@@ -2626,12 +2626,12 @@ dboolean S_FadeOutStopMusic(UINT32 ms)
 void S_InitLevelMusic(dboolean fromnetsave)
 {
 	mapheader_t* mapheader = mapheaderinfo[gamemap - 1];
-	INT16 usemusrng = 0;
-	INT16 altmusonlysize = 0;
+	int16_t usemusrng = 0;
+	int16_t altmusonlysize = 0;
 
 	dboolean validencore = (encoremode && (mapheader->encoremusname_size > 0));
 
-	UINT8 truesize = validencore ? mapheader->encoremusname_size : mapheader->musname_size;
+	uint8_t truesize = validencore ? mapheader->encoremusname_size : mapheader->musname_size;
 
 	if (mapmusflags & MUSIC_RELOADRESET)
 	{
@@ -2728,7 +2728,7 @@ static inline void PrintMusicDefField(const char *label, const char *field)
 	}
 }
 
-static void PrintSongAuthors(const musicdef_t *def, UINT8 i)
+static void PrintSongAuthors(const musicdef_t *def, uint8_t i)
 {
 	if (def->numtracks > 1)
 	{
@@ -2750,8 +2750,8 @@ static void PrintSongAuthors(const musicdef_t *def, UINT8 i)
 static void Command_Tunes_f(void)
 {
 	const char *tunearg;
-	UINT16 track = 0;
-	UINT32 position = 0;
+	uint16_t track = 0;
+	uint32_t position = 0;
 	const size_t argc = COM_Argc();
 
 	if (argc < 2) //tunes slot ...
@@ -2770,7 +2770,7 @@ static void Command_Tunes_f(void)
 
 	if (!strcasecmp(tunearg, "-show"))
 	{
-		UINT8 i = 0;
+		uint8_t i = 0;
 		const musicdef_t *def = S_FindMusicDef(music_name, &i);
 
 		CONS_Printf(M_GetText("The current tune is: %s [track %d]\n"),
@@ -2784,7 +2784,7 @@ static void Command_Tunes_f(void)
 	}
 	if (!strcasecmp(tunearg, "-showdefault"))
 	{
-		UINT8 i = 0;
+		uint8_t i = 0;
 		const musicdef_t *def = S_FindMusicDef(mapmusname, &i);
 
 		CONS_Printf(M_GetText("The current tune is: %s [track %d]\n"),
@@ -2811,12 +2811,12 @@ static void Command_Tunes_f(void)
 		CONS_Alert(CONS_NOTICE, M_GetText("Music name too long - truncated to six characters.\n"));
 
 	if (argc > 2)
-		track = (UINT16)atoi(COM_Argv(2))-1;
+		track = (uint16_t)atoi(COM_Argv(2))-1;
 
 	strncpy(mapmusname, tunearg, 7);
 
 	if (argc > 4)
-		position = (UINT32)atoi(COM_Argv(4));
+		position = (uint32_t)atoi(COM_Argv(4));
 
 	mapmusname[6] = 0;
 	mapmusflags = (track & MUSIC_TRACKMASK);

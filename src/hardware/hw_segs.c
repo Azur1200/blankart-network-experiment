@@ -20,7 +20,7 @@
 
 static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg)
 {
-    INT16 finallight = lightnum;
+    int16_t finallight = lightnum;
 
     if (seg != NULL && P_ApplyLightOffsetFine(lightnum, seg->frontsector))
     {
@@ -33,12 +33,12 @@ static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg)
     return (FUINT)finallight;
 }
 
-void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, dboolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
+void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, dboolean fogwall, int32_t lightlevel, extracolormap_t *wallcolormap)
 {
 	FBITFIELD blendmode = blend;
-	UINT8 alpha = pSurf->PolyColor.s.alpha; // retain the alpha
+	uint8_t alpha = pSurf->PolyColor.s.alpha; // retain the alpha
 
-	INT32 shader = SHADER_NONE;
+	int32_t shader = SHADER_NONE;
 
 	// Lighting is done here instead so that fog isn't drawn incorrectly on transparent walls after sorting
 	HWR_Lighting(pSurf, lightlevel, wallcolormap, P_SectorUsesDirectionalLighting(gl_frontsector));
@@ -80,9 +80,9 @@ void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend,
 //
 // HWR_ProjectWall
 //
-static void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blendmode, INT32 lightlevel, extracolormap_t *wallcolormap)
+static void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blendmode, int32_t lightlevel, extracolormap_t *wallcolormap)
 {
-	INT32 shader = SHADER_NONE;
+	int32_t shader = SHADER_NONE;
 
 	HWR_Lighting(pSurf, lightlevel, wallcolormap, P_SectorUsesDirectionalLighting(gl_frontsector));
 
@@ -111,7 +111,7 @@ static void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIEL
 // SoM: split up and light walls according to the lightlist.
 // This may also include leaving out parts of the wall that can't be seen
 //
-static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, dboolean noencore, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags)
+static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, int32_t texnum, dboolean noencore, FSurfaceInfo* Surf, int32_t cutflag, ffloor_t *pfloor, FBITFIELD polyflags)
 {
 	float realtop, realbot, top, bot;
 	float pegt, pegb, pegmul;
@@ -128,7 +128,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	fixed_t v2x = FloatToFixed(wallVerts[1].x);
 	fixed_t v2y = FloatToFixed(wallVerts[1].z);
 
-	const UINT8 alpha = Surf->PolyColor.s.alpha;
+	const uint8_t alpha = Surf->PolyColor.s.alpha;
 	FUINT lightnum = sector->lightlevel;
 	extracolormap_t *colormap = NULL;
 
@@ -159,7 +159,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	else
 		endpegmul = (endpegb - endpegt) / diff;
 
-	for (INT32 i = 0; i < sector->numlights; i++)
+	for (int32_t i = 0; i < sector->numlights; i++)
 	{
 		if (endtop < endrealbot && top < realbot)
 			return;
@@ -331,7 +331,7 @@ typedef struct
 	end2 = P_GetZAt(slope, v2x, v2y, normalheight);
 
 static void HWR_ProcessTwoSidedSegTop(FOutVector *wallVerts, FSurfaceInfo *Surf, gl_seg_bounds *b,
-		float cliplow, float cliphigh, FUINT lightnum, INT32 gl_toptexture, dboolean noencore)
+		float cliplow, float cliphigh, FUINT lightnum, int32_t gl_toptexture, dboolean noencore)
 {
 	GLMapTexture_t *grTex = HWR_GetTexture(gl_toptexture, noencore);
 
@@ -400,7 +400,7 @@ static void HWR_ProcessTwoSidedSegTop(FOutVector *wallVerts, FSurfaceInfo *Surf,
 }
 
 static void HWR_ProcessTwoSidedSegBottom(FOutVector *wallVerts, FSurfaceInfo *Surf, gl_seg_bounds *b,
-										 float cliplow, float cliphigh, FUINT lightnum, INT32 gl_bottomtexture, dboolean noencore)
+										 float cliplow, float cliphigh, FUINT lightnum, int32_t gl_bottomtexture, dboolean noencore)
 {
 	GLMapTexture_t *grTex = HWR_GetTexture(gl_bottomtexture, noencore);
 
@@ -471,7 +471,7 @@ static void HWR_ProcessTwoSidedSegBottom(FOutVector *wallVerts, FSurfaceInfo *Su
 // gl_midtexture can be inactive for this function
 // when rendering twosided portal midtextures
 static void HWR_ProcessTwoSidedSegMiddle(FOutVector *wallVerts, FSurfaceInfo *Surf, gl_seg_bounds *b,
-										 float cliplow, float cliphigh, FUINT lightnum, INT32 gl_midtexture, dboolean noencore, dboolean tripwire)
+										 float cliplow, float cliphigh, FUINT lightnum, int32_t gl_midtexture, dboolean noencore, dboolean tripwire)
 {
 	GLMapTexture_t *grTex = NULL;
 
@@ -482,7 +482,7 @@ static void HWR_ProcessTwoSidedSegMiddle(FOutVector *wallVerts, FSurfaceInfo *Su
 	fixed_t popentop, popenbottom, polytop, polybottom, lowcut, highcut;
 	fixed_t popentopslope, popenbottomslope, polytopslope, polybottomslope, lowcutslope, highcutslope;
 	fixed_t texturevpeg = 0;
-	INT32 repeats;
+	int32_t repeats;
 	fixed_t midtexheight = 0;
 	fixed_t texturevpegslope = 0;
 
@@ -722,8 +722,8 @@ static void HWR_ProcessTwoSidedSeg(FOutVector *wallVerts, gl_seg_bounds *b,
 {
 	FSurfaceInfo Surf = {};
 
-	INT32 gl_toptexture = 0, gl_bottomtexture = 0;
-	INT32 gl_midtexture;
+	int32_t gl_toptexture = 0, gl_bottomtexture = 0;
+	int32_t gl_midtexture;
 	dboolean bothceilingssky = false; // turned on if both back and front ceilings are sky
 	dboolean bothfloorssky = false; // likewise, but for floors
 
@@ -891,7 +891,7 @@ static void HWR_ProcessSingleSidedSeg(FOutVector *wallVerts, gl_seg_bounds *b,
 	Surf.PolyColor.s.alpha = 255;
 
 	// Single sided line... Deal only with the middletexture (if one exists)
-	INT32 gl_midtexture = R_GetTextureNum(gl_sidedef->midtexture);
+	int32_t gl_midtexture = R_GetTextureNum(gl_sidedef->midtexture);
 	if (gl_midtexture && gl_linedef->special != HORIZONSPECIAL) // (Ignore horizon line for OGL)
 	{
 		fixed_t texturevpeg;
@@ -1009,7 +1009,7 @@ static void HWR_ProcessSegFOFsSector(FOutVector *wallVerts, gl_fof_cuts *c,
 	fixed_t high1, highslope1, low1, lowslope1;
 	fixed_t high2, highslope2, low2, lowslope2;
 
-	INT32 texnum;
+	int32_t texnum;
 	line_t * newline = NULL; // Multi-Property FOF
 
 	for (rover = this_sector->ffloors; rover; rover = rover->next)
@@ -1189,7 +1189,7 @@ static void HWR_ProcessSegFOFsSector(FOutVector *wallVerts, gl_fof_cuts *c,
 				if (rover->alpha < 256 || rover->blend)
 				{
 					blendmode = HWR_GetBlendModeFlag(rover->blend);
-					Surf.PolyColor.s.alpha = (UINT8)(max(0, min(rover->alpha, 255)));
+					Surf.PolyColor.s.alpha = (uint8_t)(max(0, min(rover->alpha, 255)));
 				}
 			}
 

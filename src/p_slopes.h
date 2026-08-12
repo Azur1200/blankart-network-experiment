@@ -20,7 +20,7 @@ extern "C" {
 #endif
 
 extern pslope_t *slopelist;
-extern UINT16 slopecount;
+extern uint16_t slopecount;
 
 typedef enum
 {
@@ -82,7 +82,7 @@ void P_SpawnSlopes(const dboolean fromsave);
 //
 void P_CopySectorSlope(line_t *line);
 
-pslope_t *P_SlopeById(UINT16 id);
+pslope_t *P_SlopeById(uint16_t id);
 
 // Returns the height of the sloped plane at (x, y) as a fixed_t
 fixed_t P_GetSlopeZAt(const pslope_t *slope, fixed_t x, fixed_t y);
@@ -138,7 +138,7 @@ struct dynvertexplanethink_t
 	vector3_t vex[3];
 	fixed_t origsecheights[3];
 	fixed_t origvecheights[3];
-	UINT8 relative;
+	uint8_t relative;
 };
 
 void T_DynamicSlopeLine (dynlineplanethink_t* th);

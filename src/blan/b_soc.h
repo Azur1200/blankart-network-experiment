@@ -18,7 +18,7 @@ extern "C" {
 #include "../deh_soc.h"
 
 dboolean B_UseWallTransfer(mobj_t *mo);
-INT32 B_TrackComplexity(void);
+int32_t B_TrackComplexity(void);
 fixed_t K_TrackModifierMax(void);
 
 #ifdef __cplusplus

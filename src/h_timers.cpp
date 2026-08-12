@@ -56,10 +56,10 @@ consvar_t cv_itemtimers_mode = CVAR_INIT ("itemtimers_mode", "HUD", CV_SAVE, ite
 typedef struct itimer_s
 {
 	const char* name;						// name of timer
-	INT32 timer;							// current time
+	int32_t timer;							// current time
 	std::vector<patch_t*> patches;	// timer graphics (small)
-	INT32 anim_frames = 1;					// tic duration for each graphic
-	UINT32 flags = 0;						// settings for timer
+	int32_t anim_frames = 1;					// tic duration for each graphic
+	uint32_t flags = 0;						// settings for timer
 	lua_Integer timer_func_ref = LUA_NOREF; // if set, calls a function from registry to get timer value
 	dboolean timer_func_error = false;       // don't print error every frame
 } itimer_t;
@@ -70,23 +70,23 @@ static bool sorttimers(itimer_t a, itimer_t b)
 	return a.timer < b.timer;
 }
 
-static inline INT32 G_TicsToDeciseconds(tic_t tics)
+static inline int32_t G_TicsToDeciseconds(tic_t tics)
 {
-	return (INT32)((tics%TICRATE) * (10.00f/TICRATE));
+	return (int32_t)((tics%TICRATE) * (10.00f/TICRATE));
 }
 
 tic_t spbTimers[MAXPLAYERS] = {0};
 
-UINT8 K_GetBestRank(void)
+uint8_t K_GetBestRank(void)
 {
-	UINT8 best = UINT8_MAX;
-	INT32 i;
+	uint8_t best = UINT8_MAX;
+	int32_t i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].exiting || players[i].spectator)
 			continue;
-		best = std::min<UINT8>(best, players[i].position);
+		best = std::min<uint8_t>(best, players[i].position);
 	}
 
 	return best;
@@ -101,13 +101,13 @@ void K_UpdateSPBTimer(void)
 		memset(spbTimers, 0, sizeof spbTimers);
 		return;
 	}
-	INT32 i, bestrank = 255;
+	int32_t i, bestrank = 255;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].exiting || players[i].spectator)
 			continue;
 		spbTimers[i] = 0;
-		bestrank = std::min<INT32>(bestrank, players[i].position);
+		bestrank = std::min<int32_t>(bestrank, players[i].position);
 
 		// check for spb
 		mobj_t *mobj, *next;
@@ -157,15 +157,15 @@ void K_AddItemTimerEx(
 	const char *name,
 	lua_Integer timer_func_ref,
 	const char **patches,
-	INT32 patches_size,
-	INT32 anim_duration,
-	UINT32 flags, dboolean unsorted)
+	int32_t patches_size,
+	int32_t anim_duration,
+	uint32_t flags, dboolean unsorted)
 {
 	itimer_t t; // woo yeah baby
 
 	t.name = name;
 	t.timer_func_ref = timer_func_ref;
-	INT32 i;
+	int32_t i;
 
 	for (i = 0; i < patches_size; i++)
 		t.patches.push_back(qche(patches[i]));
@@ -202,7 +202,7 @@ static trackingResult_t K_getTimersPositionForTrackingPlayer(void)
 
 void K_getTimersDrawinfo(drawinfo_t *out)
 {
-	INT32 fx, fy, flags = V_HUDTRANS|V_SNAPTOBOTTOM|V_SPLITSCREEN;
+	int32_t fx, fy, flags = V_HUDTRANS|V_SNAPTOBOTTOM|V_SPLITSCREEN;
 
 	fx = 160 + cv_timers_xoffset.value;
 	fy = 170 + cv_timers_yoffset.value;
@@ -228,9 +228,9 @@ void K_getTimersDrawinfo(drawinfo_t *out)
 
 		if(result.x != 0 && result.y != 0)
 		{
-			INT32 base_x = 15;
-			INT32 base_y = 18;
-			INT32 baseUpsideDown_y = 18;
+			int32_t base_x = 15;
+			int32_t base_y = 18;
+			int32_t baseUpsideDown_y = 18;
 
 			const dboolean isupsidedown = (stplyr->mo->eflags & MFE_VERTICALFLIP);
 
@@ -250,7 +250,7 @@ void K_getTimersDrawinfo(drawinfo_t *out)
 	out->flags = flags;
 }
 
-static INT32 getLuaTimer(itimer_t *itimer)
+static int32_t getLuaTimer(itimer_t *itimer)
 {
 	lua_pushcfunction(gL, LUA_GetErrorMessage);
 
@@ -315,7 +315,7 @@ void K_DisplayItemTimers(void)
 		},
 		{ // grow
 			"grow",
-			std::max<INT16>(0, stplyr->growshrinktimer),
+			std::max<int16_t>(0, stplyr->growshrinktimer),
 			{qche("K_TIGROW")},
 			1,
 		},
@@ -379,7 +379,7 @@ void K_DisplayItemTimers(void)
 	timers.push_back(
 		{ // spinout
 			"spinout",
-			std::max<UINT16>(stplyr->spinouttimer, stplyr->wipeoutslow),
+			std::max<uint16_t>(stplyr->spinouttimer, stplyr->wipeoutslow),
 			{qche("K_TISPN1"), qche("K_TISPN2"), qche("K_TISPN3"), qche("K_TISPN4")},
 			3,
 			TIMER_RED,
@@ -388,7 +388,7 @@ void K_DisplayItemTimers(void)
 	timers.push_back(
 		{ // shrink
 			"shrink",
-			std::max<INT16>(0, -stplyr->growshrinktimer),
+			std::max<int16_t>(0, -stplyr->growshrinktimer),
 			{qche("K_TISHRK")},
 			1,
 			static_cast<uint32_t>((K_IsAltShrunk(stplyr) ? 0 : TIMER_RED)),
@@ -397,7 +397,7 @@ void K_DisplayItemTimers(void)
 	timers.push_back(
 		{ // spb
 			"spb",
-			(INT32)spbTimers[stplyr-players],
+			(int32_t)spbTimers[stplyr-players],
 			{qche("K_TISPB")},
 			1,
 			static_cast<uint32_t>((stplyr->position == K_GetBestRank()) ? TIMER_RED : 0),
@@ -416,7 +416,7 @@ void K_DisplayItemTimers(void)
 	timers.push_back(
 		{ // item cooldown
 			"itemusecooldown",
-			(INT32)stplyr->itemusecooldown,
+			(int32_t)stplyr->itemusecooldown,
 			{qche("SERVLOCK")},
 			1,
 		}
@@ -427,10 +427,10 @@ void K_DisplayItemTimers(void)
 
 	if (!modeattacking) // "HOME" style, with icons at the bottom
 	{
-		INT32 itemx = 0, itemy = 0;
-		INT32 flags = 0;
-		INT32 step = 25;
-		INT32 offs = 0;
+		int32_t itemx = 0, itemy = 0;
+		int32_t flags = 0;
+		int32_t step = 25;
+		int32_t offs = 0;
 
 		drawinfo_t info;
 		K_getTimersDrawinfo(&info);
@@ -445,7 +445,7 @@ void K_DisplayItemTimers(void)
 
 		for (itimer_t& t : timers)
 		{
-			INT32 timer = t.timer;
+			int32_t timer = t.timer;
 			if (t.timer_func_ref != LUA_NOREF) timer = getLuaTimer(&t);
 			if (stplyr->deadtimer) continue;
 			if (timer > 0)
@@ -460,18 +460,18 @@ void K_DisplayItemTimers(void)
 		{
 			if (t.timer <= 0) continue;
 			if (stplyr->deadtimer) continue;
-			INT32 timer = t.timer;
-			INT32 seconds = timer / TICRATE, _centiseconds = G_TicsToCentiseconds(timer);
+			int32_t timer = t.timer;
+			int32_t seconds = timer / TICRATE, _centiseconds = G_TicsToCentiseconds(timer);
 
 			const char* str = va("%d.%02d", seconds, _centiseconds);
 			if (seconds > 9) // exceeds 9 seconds?
 				str = va("%d.%01d", seconds, G_TicsToDeciseconds(timer));
 			if (seconds > 99) // exceeds 100 seconds?
 				str = va("%d", seconds);
-			INT32 animsize = t.patches.size();
-			INT32 patchnum = (leveltime % (t.anim_frames * animsize) / t.anim_frames);
-			UINT8 *cmap = NULL, *textcmap = NULL;
-			INT32 font = TINY_FONT;
+			int32_t animsize = t.patches.size();
+			int32_t patchnum = (leveltime % (t.anim_frames * animsize) / t.anim_frames);
+			uint8_t *cmap = NULL, *textcmap = NULL;
+			int32_t font = TINY_FONT;
 
 			if (fastcmp(t.name, "driftsparkboost"))
 			{
@@ -491,7 +491,7 @@ void K_DisplayItemTimers(void)
 				str = va("%d", timer);
 				font = HU_FONT;
 			}
-			INT32 width = V_StringScaledWidth(FRACUNIT, FRACUNIT, FRACUNIT, flags|V_MONOSPACE, font, str) >> FRACBITS;
+			int32_t width = V_StringScaledWidth(FRACUNIT, FRACUNIT, FRACUNIT, flags|V_MONOSPACE, font, str) >> FRACBITS;
 
 #define COLORTIMER(color) \
 	if (t.flags & TIMER_##color) \

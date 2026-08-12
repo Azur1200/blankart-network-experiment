@@ -22,7 +22,7 @@ FUNCINLINE static ATTRINLINE PUREFUNC dboolean fastcmp(const char *s, const char
 
 // length-limited of the above
 // only true if both strings are at least l characters long AND match, case-sensitively!
-FUNCINLINE static ATTRINLINE PUREFUNC dboolean fastncmp(const char *s, const char *c, UINT16 l)
+FUNCINLINE static ATTRINLINE PUREFUNC dboolean fastncmp(const char *s, const char *c, uint16_t l)
 {
 	for (; *s && *s == *c && --l; s++, c++) ;
 	return !l; // make sure you reached the end

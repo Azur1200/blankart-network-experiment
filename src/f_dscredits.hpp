@@ -38,23 +38,23 @@ typedef struct dscredits_s {
 	longtic_t ticker;
 	tic_t delaytoplayer;
     tic_t delaytobg;
-    UINT16 creditsscene; // "Scene" number of credits, iterated by 1 for each timing.
+    uint16_t creditsscene; // "Scene" number of credits, iterated by 1 for each timing.
 	struct dscreditsobj_s
 	{
         dboolean active;
         dboolean player; // Are we a player?
-		UINT16 skin;
-        UINT16 color;
+		uint16_t skin;
+        uint16_t color;
         patch_t *patch; // Patch.
-		INT32 position[2]; // Position
+		int32_t position[2]; // Position
         fixed_t scale; // Scale
-        INT32 speed[2]; // Speed
+        int32_t speed[2]; // Speed
 
-        INT64 movestop; // Stops our movement after
-        INT64 movestart; // Restarts our movement
-        INT32 movestartspd[2]; // Speed to apply on movestart
+        int64_t movestop; // Stops our movement after
+        int64_t movestart; // Restarts our movement
+        int32_t movestartspd[2]; // Speed to apply on movestart
 
-        UINT8 glance; // They look at one another as they drive
+        uint8_t glance; // They look at one another as they drive
 		dboolean spinout; // Spinning out?
 	} creditsobj[MAXDSOBJECTS + DSUNIQUEPLAYERS];
     

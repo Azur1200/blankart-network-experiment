@@ -82,16 +82,16 @@ struct state_t
 {
 	dehinfo_t info;
 	spritenum_t sprite;
-	UINT32 frame; // we use the upper 16 bits for translucency and other shade effects
-	INT32 tics;
+	uint32_t frame; // we use the upper 16 bits for translucency and other shade effects
+	int32_t tics;
 	actionf_p1 action;
-	INT32 var1;
-	INT32 var2;
+	int32_t var1;
+	int32_t var2;
 	statenum_t nextstate;
 };
 
 extern state_t states[NUMSTATES];
-extern UINT16 numstates;
+extern uint16_t numstates;
 extern char sprnames[NUMSPRITES + 1][5];
 extern char spr2names[NUMPLAYERSPRITES][5];
 extern playersprite_t spr2defaults[NUMPLAYERSPRITES];
@@ -111,15 +111,15 @@ typedef enum mobj_type
 struct mobjinfo_t
 {
 	dehinfo_t info;
-	INT32 doomednum;
+	int32_t doomednum;
 	statenum_t spawnstate;
-	INT32 spawnhealth;
+	int32_t spawnhealth;
 	statenum_t seestate;
 	sfxenum_t seesound;
-	INT32 reactiontime;
+	int32_t reactiontime;
 	sfxenum_t attacksound;
 	statenum_t painstate;
-	INT32 painchance;
+	int32_t painchance;
 	sfxenum_t painsound;
 	statenum_t meleestate;
 	statenum_t missilestate;
@@ -129,17 +129,17 @@ struct mobjinfo_t
 	fixed_t speed;
 	fixed_t radius;
 	fixed_t height;
-	INT32 dispoffset;
-	INT32 mass;
-	INT32 damage;
+	int32_t dispoffset;
+	int32_t mass;
+	int32_t damage;
 	sfxenum_t activesound;
-	UINT32 flags;
+	uint32_t flags;
 	statenum_t raisestate;
 	dboolean compatmode;
 };
 
 extern mobjinfo_t mobjinfo[NUMMOBJTYPES];
-extern UINT16 nummobjtypes;
+extern uint16_t nummobjtypes;
 
 typedef enum
 {
@@ -159,17 +159,17 @@ struct skincolor_t
 {
 	dehinfo_t info;             // Internal name hash and offset
 	char name[MAXCOLORNAME+1];  // Skincolor name
-	UINT8 ramp[COLORRAMPSIZE];  // Colormap ramp
-	UINT16 invcolor;            // Signpost color
-	UINT8 invshade;             // Signpost color shade
-	UINT16 chatcolor;           // Chat color
+	uint8_t ramp[COLORRAMPSIZE];  // Colormap ramp
+	uint16_t invcolor;            // Signpost color
+	uint8_t invshade;             // Signpost color shade
+	uint16_t chatcolor;           // Chat color
 	dboolean accessible;         // Accessible by the color command + setup menu
 };
 
 extern skincolor_t skincolors[MAXSKINCOLORS];
-extern UINT16 numskincolors;
+extern uint16_t numskincolors;
 
-void P_ResetData(INT32 flags);
+void P_ResetData(int32_t flags);
 
 #ifdef __cplusplus
 } // extern "C"

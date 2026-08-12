@@ -44,7 +44,7 @@ extern "C" {
 struct viddef_t
 {
 	// Each screen is [vid.width*vid.height];
-	UINT8 *screens[5];
+	uint8_t *screens[5];
 	// screens[0] = main display window
 	// screens[1] = back screen, alternative blitting
 	// screens[2] = screenshot buffer, gif movie buffer
@@ -52,21 +52,21 @@ struct viddef_t
 	// screens[4] = fade screen end, postimage tempoarary buffer
 
 	size_t rowbytes; // bytes per scanline of the VIDEO mode
-	INT32 width; // PIXELS per scanline
-	INT32 height;
-	INT32 modenum; // vidmode num indexes videomodes list
+	int32_t width; // PIXELS per scanline
+	int32_t height;
+	int32_t modenum; // vidmode num indexes videomodes list
 	dboolean recalc; // if true, recalc vid-based stuff
 
-	INT32 dup; // scale 1, 2, 3 value for menus & overlays
-	INT32 fdup; // same as dup, but exact value when aspect ratio isn't 320/200
-	INT32 udup;        // same as dup but does not account for highreshudscale
-	UINT8 smalldup; // factor for a little bit of scaling
-	UINT8 meddup; // factor for moderate, but not full, scaling
+	int32_t dup; // scale 1, 2, 3 value for menus & overlays
+	int32_t fdup; // same as dup, but exact value when aspect ratio isn't 320/200
+	int32_t udup;        // same as dup but does not account for highreshudscale
+	uint8_t smalldup; // factor for a little bit of scaling
+	uint8_t meddup; // factor for moderate, but not full, scaling
 
-	INT32 scaledwidth; // width / dup
-	INT32 scaledheight; // height / dup
+	int32_t scaledwidth; // width / dup
+	int32_t scaledheight; // height / dup
 #ifdef HWRENDER
-	INT32 glstate;
+	int32_t glstate;
 #endif
 };
 
@@ -81,8 +81,8 @@ enum
 // screen variables
 // ----------------
 extern viddef_t vid;
-extern INT32 setmodeneeded; // mode number to set if needed, or 0
-extern UINT8 setrenderneeded;
+extern int32_t setmodeneeded; // mode number to set if needed, or 0
+extern uint8_t setrenderneeded;
 
 extern double averageFPS;
 
@@ -126,7 +126,7 @@ void SCR_SetDefaultMode(void);
 
 void SCR_CalculateFPS(void);
 
-FUNCMATH dboolean SCR_IsAspectCorrect(INT32 width, INT32 height);
+FUNCMATH dboolean SCR_IsAspectCorrect(int32_t width, int32_t height);
 
 // move out to main code for consistency
 void SCR_DisplayTicRate(void);

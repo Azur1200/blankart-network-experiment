@@ -10,17 +10,17 @@ extern "C"
 #endif
 
     void K_ClearItemRollLists(void);
-    void K_AddItemRollToList(INT32 pid, kartitemtype_e item, INT32 amount);
-    fixed_t K_DrawItemList(INT32 pid, fixed_t x, fixed_t y);
-    UINT32 K_GetItemListSize(INT32 pid);
+    void K_AddItemRollToList(int32_t pid, kartitemtype_e item, int32_t amount);
+    fixed_t K_DrawItemList(int32_t pid, fixed_t x, fixed_t y);
+    uint32_t K_GetItemListSize(int32_t pid);
 
     // Getter and setter
 
-    void K_SetItemListEntry(INT32 pid, kartitemtype_e item, INT32 num);
-    UINT32 K_GetItemListEntry(INT32 pid, kartitemtype_e item);
+    void K_SetItemListEntry(int32_t pid, kartitemtype_e item, int32_t num);
+    uint32_t K_GetItemListEntry(int32_t pid, kartitemtype_e item);
 
     // Netsynch; returns the size of the list buffer, always.
-    UINT32 K_SyncItemList(savebuffer_t *save, INT32 pid);
+    uint32_t K_SyncItemList(savebuffer_t *save, int32_t pid);
 
 #ifdef __cplusplus
 }

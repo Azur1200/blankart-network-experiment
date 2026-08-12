@@ -18,8 +18,8 @@
 /// \note  no includes because this is included as part of r_draw.cpp
 
 template<ColumnFlushType Type>
-FUNCINLINE static ATTRINLINE constexpr UINT8
-R_GetFlushPixelTranslated(const drawcolumndata_temp_t *t_dc, UINT8 col)
+FUNCINLINE static ATTRINLINE constexpr uint8_t
+R_GetFlushPixelTranslated(const drawcolumndata_temp_t *t_dc, uint8_t col)
 {
 	if constexpr (Type & (ColumnFlushType::FLUSH_COLORMAP | ColumnFlushType::FLUSH_COLORMAP_TRANS))
 	{
@@ -30,8 +30,8 @@ R_GetFlushPixelTranslated(const drawcolumndata_temp_t *t_dc, UINT8 col)
 }
 
 template<ColumnFlushType Type>
-FUNCINLINE static ATTRINLINE constexpr UINT8
-R_GetFlushPixelTranslucent(const drawcolumndata_temp_t *t_dc, UINT8 * restrict dest, UINT8 col)
+FUNCINLINE static ATTRINLINE constexpr uint8_t
+R_GetFlushPixelTranslucent(const drawcolumndata_temp_t *t_dc, uint8_t * restrict dest, uint8_t col)
 {
 	col = R_GetFlushPixelTranslated<Type>(t_dc, col);
 
@@ -47,10 +47,10 @@ R_GetFlushPixelTranslucent(const drawcolumndata_temp_t *t_dc, UINT8 * restrict d
 }
 
 template<ColumnFlushType Type>
-FUNCINLINE static ATTRINLINE constexpr UINT8
-R_DrawFlushPixel(const drawcolumndata_temp_t *t_dc, UINT8 * restrict dest, const UINT8 * restrict source)
+FUNCINLINE static ATTRINLINE constexpr uint8_t
+R_DrawFlushPixel(const drawcolumndata_temp_t *t_dc, uint8_t * restrict dest, const uint8_t * restrict source)
 {
-	UINT8 col = *source;
+	uint8_t col = *source;
 	return R_GetFlushPixelTranslucent<Type>(t_dc, dest, col);
 }
 
@@ -63,12 +63,12 @@ R_DrawFlushPixel(const drawcolumndata_temp_t *t_dc, UINT8 * restrict dest, const
 template<ColumnFlushType Type>
 static void R_FlushWhole(void)
 {
-	UINT8 * restrict source;
-	UINT8 * restrict dest;
-	INT32 count, yl;
-	const INT32 stride = vid.width;
+	uint8_t * restrict source;
+	uint8_t * restrict dest;
+	int32_t count, yl;
+	const int32_t stride = vid.width;
 	drawcolumndata_temp_t *t_dc = &temp_dc;
-	UINT8 *restrict buf = t_dc->buf;
+	uint8_t *restrict buf = t_dc->buf;
 
 	while (--t_dc->x >= 0)
 	{
@@ -95,13 +95,13 @@ static void R_FlushWhole(void)
 template<ColumnFlushType Type>
 static void R_FlushHT(void)
 {
-	UINT8 * restrict source;
-	UINT8 * restrict dest;
-	INT32 count, colnum = 0;
-	INT32 yl, yh;
-	const INT32 stride = vid.width;
+	uint8_t * restrict source;
+	uint8_t * restrict dest;
+	int32_t count, colnum = 0;
+	int32_t yl, yh;
+	const int32_t stride = vid.width;
 	const drawcolumndata_temp_t *t_dc = &temp_dc;
-	UINT8 *restrict buf = t_dc->buf;
+	uint8_t *restrict buf = t_dc->buf;
 
 	while (colnum < 8)
 	{
@@ -146,13 +146,13 @@ static void R_FlushHT(void)
 template<ColumnFlushType Type>
 static void R_FlushQuad(void)
 {
-	const INT32 stride = vid.width;
+	const int32_t stride = vid.width;
 	const drawcolumndata_temp_t *t_dc = &temp_dc;
-	INT32 count = t_dc->commonbot - t_dc->commontop + 1;
-	const UINT8 *restrict buf = t_dc->buf;
+	int32_t count = t_dc->commonbot - t_dc->commontop + 1;
+	const uint8_t *restrict buf = t_dc->buf;
 
-	const UINT8 * restrict source = buf + (t_dc->commontop << 3);
-	UINT8 * restrict dest = R_Address(t_dc->startx, t_dc->commontop);
+	const uint8_t * restrict source = buf + (t_dc->commontop << 3);
+	uint8_t * restrict dest = R_Address(t_dc->startx, t_dc->commontop);
 
 	if constexpr (Type & ColumnFlushType::FLUSH_OPAQUE)
 	{
@@ -160,9 +160,9 @@ static void R_FlushQuad(void)
 		// 8 byte aligned copy -- make sure our dest ptr, source ptr AND stride are a multiple of 8!
 		if ((((uintptr_t)dest | (uintptr_t)source | stride) & 7) == 0)
 		{
-			const INT64 *source64 = reinterpret_cast<const INT64 *>(source);
-			INT64 *dest64 = reinterpret_cast<INT64 *>(dest);
-			const INT32 deststep = stride / 8;
+			const int64_t *source64 = reinterpret_cast<const int64_t *>(source);
+			int64_t *dest64 = reinterpret_cast<int64_t *>(dest);
+			const int32_t deststep = stride / 8;
 
 			while (--count >= 0)
 			{
@@ -210,7 +210,7 @@ static void R_FlushQuad(void)
 // functions to minimize the number of branches and take advantage
 // of as much precalculated information as possible.
 template<ColumnFlushType Type>
-static UINT8 *R_GetBuffer(drawcolumndata_t *dc)
+static uint8_t *R_GetBuffer(drawcolumndata_t *dc)
 {
 	drawcolumndata_temp_t *t_dc = &temp_dc;
 
@@ -256,7 +256,7 @@ static UINT8 *R_GetBuffer(drawcolumndata_t *dc)
 }
 
 #define DEFINE_GETBUF_FUNC(name, flags) \
-	FUNCINLINE static ATTRINLINE UINT8 *name(drawcolumndata_t *dc) \
+	FUNCINLINE static ATTRINLINE uint8_t *name(drawcolumndata_t *dc) \
 	{ \
 		constexpr ColumnFlushType opt = static_cast<ColumnFlushType>(flags); \
 		return R_GetBuffer<opt>(dc); \

@@ -99,7 +99,7 @@ t_splash_t *K_GetSplashByIndex(size_t checkIndex)
 --------------------------------------------------*/
 t_splash_t *K_GetSplashByName(const char *checkName)
 {
-	UINT32 checkHash = FNV1a_QuickCaseHash(checkName, TERRAIN_NAME_LEN);
+	uint32_t checkHash = FNV1a_QuickCaseHash(checkName, TERRAIN_NAME_LEN);
 	size_t i;
 
 	if (numSplashDefs == 0)
@@ -168,7 +168,7 @@ t_footstep_t *K_GetFootstepByIndex(size_t checkIndex)
 --------------------------------------------------*/
 t_footstep_t *K_GetFootstepByName(const char *checkName)
 {
-	UINT32 checkHash = FNV1a_QuickCaseHash(checkName, TERRAIN_NAME_LEN);
+	uint32_t checkHash = FNV1a_QuickCaseHash(checkName, TERRAIN_NAME_LEN);
 	size_t i;
 
 	if (numFootstepDefs == 0)
@@ -237,7 +237,7 @@ t_overlay_t *K_GetOverlayByIndex(size_t checkIndex)
 --------------------------------------------------*/
 t_overlay_t *K_GetOverlayByName(const char *checkName)
 {
-	UINT32 checkHash = FNV1a_QuickCaseHash(checkName, TERRAIN_NAME_LEN);
+	uint32_t checkHash = FNV1a_QuickCaseHash(checkName, TERRAIN_NAME_LEN);
 	size_t i;
 
 	if (numOverlayDefs == 0)
@@ -306,7 +306,7 @@ terrain_t *K_GetTerrainByIndex(size_t checkIndex)
 --------------------------------------------------*/
 terrain_t *K_GetTerrainByName(const char *checkName)
 {
-	UINT32 checkHash = FNV1a_QuickCaseHash(checkName, TERRAIN_NAME_LEN);
+	uint32_t checkHash = FNV1a_QuickCaseHash(checkName, TERRAIN_NAME_LEN);
 	size_t i;
 
 	if (numTerrainDefs > 0)
@@ -353,7 +353,7 @@ size_t K_GetDefaultTerrainID(void)
 --------------------------------------------------*/
 terrain_t *K_GetTerrainForTextureName(const char *checkName)
 {
-	UINT32 checkHash = FNV1a_QuickCaseHash(checkName, 8);
+	uint32_t checkHash = FNV1a_QuickCaseHash(checkName, 8);
 	size_t i;
 
 	if (numTerrainFloorDefs > 0)
@@ -381,7 +381,7 @@ terrain_t *K_GetTerrainForTextureName(const char *checkName)
 --------------------------------------------------*/
 size_t K_GetTerrainIDForTextureName(const char *checkName)
 {
-	UINT32 checkHash = FNV1a_QuickCaseHash(checkName, 8);
+	uint32_t checkHash = FNV1a_QuickCaseHash(checkName, 8);
 	size_t i;
 
 	if (numTerrainFloorDefs > 0)
@@ -403,11 +403,11 @@ size_t K_GetTerrainIDForTextureName(const char *checkName)
 }
 
 /*--------------------------------------------------
-	terrain_t *K_GetTerrainForTextureNum(INT32 textureNum)
+	terrain_t *K_GetTerrainForTextureNum(int32_t textureNum)
 
 		See header file for description.
 --------------------------------------------------*/
-terrain_t *K_GetTerrainForTextureNum(INT32 textureNum)
+terrain_t *K_GetTerrainForTextureNum(int32_t textureNum)
 {
 	if (textureNum >= 0 && textureNum < numtextures)
 	{
@@ -421,11 +421,11 @@ terrain_t *K_GetTerrainForTextureNum(INT32 textureNum)
 }
 
 /*--------------------------------------------------
-	terrain_t *K_GetTerrainForFlatNum(INT32 flatID)
+	terrain_t *K_GetTerrainForFlatNum(int32_t flatID)
 
 		See header file for description.
 --------------------------------------------------*/
-terrain_t *K_GetTerrainForFlatNum(INT32 flatID)
+terrain_t *K_GetTerrainForFlatNum(int32_t flatID)
 {
 	if (flatID < 0 || flatID >= (signed)numlevelflats)
 	{
@@ -437,11 +437,11 @@ terrain_t *K_GetTerrainForFlatNum(INT32 flatID)
 }
 
 /*--------------------------------------------------
-	void K_UpdateMobjTerrain(mobj_t *mo, INT32 flatID)
+	void K_UpdateMobjTerrain(mobj_t *mo, int32_t flatID)
 
 		See header file for description.
 --------------------------------------------------*/
-void K_UpdateMobjTerrain(mobj_t *mo, INT32 flatID)
+void K_UpdateMobjTerrain(mobj_t *mo, int32_t flatID)
 {
 	if (mo == NULL || P_MobjWasRemoved(mo) == true)
 	{
@@ -605,7 +605,7 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 	// Damage effects
 	if (terrain->damageType > 0)
 	{
-		UINT8 dmg = (terrain->damageType & 0xFF);
+		uint8_t dmg = (terrain->damageType & 0xFF);
 
 		if (dmg & DMG_FLIPOVER)
 		{
@@ -813,7 +813,7 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 --------------------------------------------------*/
 static void K_SpawnSplashParticles(mobj_t *mo, t_splash_t *s, fixed_t impact)
 {
-	const UINT8 numParticles = s->numParticles;
+	const uint8_t numParticles = s->numParticles;
 	const angle_t particleSpread = ANGLE_MAX / numParticles;
 
 	fixed_t momH = INT32_MAX;
@@ -1321,12 +1321,12 @@ void K_UpdateTerrainOverlay(mobj_t *mo)
 		fixed_t speedDiv = FRACUNIT + FixedMul(FixedDiv(speed, maxSpeed), o->speed);
 		tic_t animSpeed = max(FixedDiv(mo->state->tics, speedDiv), 1);
 
-		mo->tics = min(mo->tics, (INT32)animSpeed);
+		mo->tics = min(mo->tics, (int32_t)animSpeed);
 	}
 }
 
 /*--------------------------------------------------
-	static void K_FlagBoolean(UINT32 *inputFlags, UINT32 newFlag, char *val)
+	static void K_FlagBoolean(uint32_t *inputFlags, uint32_t newFlag, char *val)
 
 		Sets a flag to true or false depending on
 		the string input.
@@ -1339,7 +1339,7 @@ void K_UpdateTerrainOverlay(mobj_t *mo)
 	Return:-
 		None
 --------------------------------------------------*/
-static void K_FlagBoolean(UINT32 *inputFlags, UINT32 newFlag, char *val)
+static void K_FlagBoolean(uint32_t *inputFlags, uint32_t newFlag, char *val)
 {
 	if (fasticmp(val, "true"))
 	{
@@ -1447,7 +1447,7 @@ static void K_ParseSplashParameter(size_t i, char *param, char *val)
 	}
 	else if (fasticmp(param, "numParticles"))
 	{
-		splash->numParticles = (UINT8)atoi(val);
+		splash->numParticles = (uint8_t)atoi(val);
 	}
 }
 
@@ -1756,23 +1756,23 @@ static void K_ParseTerrainParameter(size_t i, char *param, char *val)
 	}
 	else if (fasticmp(param, "offroad"))
 	{
-		terrain->offroad = (UINT8)get_number(val); // offroad strength enum?
+		terrain->offroad = (uint8_t)get_number(val); // offroad strength enum?
 	}
 	else if (fasticmp(param, "damageType"))
 	{
-		terrain->damageType = (INT16)get_number(val);
+		terrain->damageType = (int16_t)get_number(val);
 	}
 	else if (fasticmp(param, "pogoSpring"))
 	{
-		terrain->pogoSpring = (UINT8)get_number(val);
+		terrain->pogoSpring = (uint8_t)get_number(val);
 	}
 	else if (fasticmp(param, "pogoMinSpeed") || fasticmp(param, "pogoSpringMinSpeed"))
 	{
-		terrain->pogoSpringMin = (UINT8)get_number(val);
+		terrain->pogoSpringMin = (uint8_t)get_number(val);
 	}
 	else if (fasticmp(param, "pogoMaxSpeed") || fasticmp(param, "pogoSpringMaxSpeed"))
 	{
-		terrain->pogoSpringMax = (UINT8)get_number(val);
+		terrain->pogoSpringMax = (uint8_t)get_number(val);
 	}
 	else if (fasticmp(param, "speedPad"))
 	{
@@ -1859,7 +1859,7 @@ static void K_NewTerrainFloorDefs(void)
 }
 
 /*--------------------------------------------------
-	static dboolean K_DoTERRAINLumpParse(size_t num, void (*parser)(UINT32, char *, char *))
+	static dboolean K_DoTERRAINLumpParse(size_t num, void (*parser)(uint32_t, char *, char *))
 
 		Runs another parser function for the TERRAIN
 		lump, handling the nitty-gritty parts of the
@@ -1922,7 +1922,7 @@ static dboolean K_DoTERRAINLumpParse(size_t num, void (*parser)(size_t, char *, 
 static dboolean K_TERRAINLumpParser(char *data, size_t size)
 {
 	char *tkn = M_GetToken(data);
-	UINT32 tknHash = 0;
+	uint32_t tknHash = 0;
 	size_t pos = 0;
 	size_t i;
 
@@ -2161,7 +2161,7 @@ static dboolean K_TERRAINLumpParser(char *data, size_t size)
 							f->terrainID = K_GetTerrainHeapIndex(t);
 							CONS_Printf("Texture '%s' set to Terrain '%s'\n", f->textureName, tkn);
 
-							INT32 tex = R_CheckTextureNumForName(f->textureName, TEXTURETYPE_TEXTURE);
+							int32_t tex = R_CheckTextureNumForName(f->textureName, TEXTURETYPE_TEXTURE);
 
 							if (tex == -1)
 							{
@@ -2291,13 +2291,13 @@ static dboolean K_TERRAINLumpParser(char *data, size_t size)
 }
 
 /*--------------------------------------------------
-	void K_InitTerrainPwad(UINT16 wadNum)
+	void K_InitTerrainPwad(uint16_t wadNum)
 
 		See header file for description.
 --------------------------------------------------*/
-dboolean K_InitTerrainPwad(UINT16 wadNum)
+dboolean K_InitTerrainPwad(uint16_t wadNum)
 {
-	UINT16 lumpNum;
+	uint16_t lumpNum;
 	lumpinfo_t *lump_p = wadfiles[wadNum]->lumpinfo;
 	dboolean terrainLoaded = false;
 
@@ -2306,14 +2306,14 @@ dboolean K_InitTerrainPwad(UINT16 wadNum)
 	// their file extension.
 	for (lumpNum = 0; lumpNum < wadfiles[wadNum]->numlumps; lumpNum++, lump_p++)
 	{
-		UINT8 *data;
+		uint8_t *data;
 
 		if (memcmp(lump_p->name, "TERRAIN", 8) != 0)
 		{
 			continue;
 		}
 
-		data = (UINT8 *)W_CacheLumpNumPwad(wadNum, lumpNum, PU_STATIC);
+		data = (uint8_t *)W_CacheLumpNumPwad(wadNum, lumpNum, PU_STATIC);
 
 		// If that didn't exist, we have nothing to do here.
 		if (data == NULL)
@@ -2364,7 +2364,7 @@ dboolean K_InitTerrainPwad(UINT16 wadNum)
 --------------------------------------------------*/
 void K_InitTerrain(void)
 {
-	INT32 wadNum;
+	int32_t wadNum;
 
 	for (wadNum = 0; wadNum < numwadfiles; wadNum++)
 	{

@@ -170,7 +170,7 @@ void HWR_DrawSkyBackground(player_t *player)
 
 	if (cv_glskydome.value)
 	{
-		UINT8 viewnum = R_GetViewNumber();
+		uint8_t viewnum = R_GetViewNumber();
 		camera_t *thiscam = &camera[viewnum];
 
 		FTransform dometransform;

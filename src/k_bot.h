@@ -86,17 +86,17 @@ struct botdata_t
 	tic_t itemdelay; // Delay before using item at all
 	tic_t itemconfirm; // When high enough, they will use their item
 
-	SINT8 turnconfirm; // Confirm turn direction
-	UINT8 respawnconfirm; // Confirm when respawn is needed.
+	int8_t turnconfirm; // Confirm turn direction
+	uint8_t respawnconfirm; // Confirm when respawn is needed.
 
 	botdrift_e driftstate; // Drifting state
-	SINT8 driftturn; // Drifting turn direction
+	int8_t driftturn; // Drifting turn direction
 	tic_t drifttime; // Time spent drifting
 	tic_t driftlockout; // do not allow drifting for this many tics
 
-	UINT16 driftmaxdist; // how far to look for drift waypoints
-	UINT16 driftpowerdiv; // arbitrary divider on drift turning
-	UINT16 driftstatedelay; // max time to wait between drift state changes
+	uint16_t driftmaxdist; // how far to look for drift waypoints
+	uint16_t driftpowerdiv; // arbitrary divider on drift turning
+	uint16_t driftstatedelay; // max time to wait between drift state changes
 
 	fixed_t driftskill; // The bot's "skill" at drifts.
 	                    // Determines how soon a bot starts to drift.
@@ -104,8 +104,8 @@ struct botdata_t
 	dboolean acceldown, brakedown, driftdown, itemdown; // buttons
 	dboolean dolookback; // look out behind you
 	dboolean itemwasdown; // last tic's item button
-	SINT8 itemthrow; // throwdir
-	INT16 turnamt; // turning
+	int8_t itemthrow; // throwdir
+	int16_t turnamt; // turning
 
 	angle_t predictionerror; // How bad is our momentum angle relative to where we're trying to go?
 	angle_t griplockout; // When you need to prevent grip braking, use this.
@@ -238,7 +238,7 @@ fixed_t K_DistanceOfLineFromPoint(fixed_t v1x, fixed_t v1y, fixed_t v2x, fixed_t
 
 
 /*--------------------------------------------------
-	dboolean K_AddBot(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p);
+	dboolean K_AddBot(uint16_t skin, uint8_t difficulty, botStyle_e style, uint8_t *p);
 
 		Adds a new bot, using code intended to run on all clients.
 
@@ -253,14 +253,14 @@ fixed_t K_DistanceOfLineFromPoint(fixed_t v1x, fixed_t v1y, fixed_t v2x, fixed_t
 		true if a bot was added, otherwise false.
 --------------------------------------------------*/
 
-dboolean K_AddBot(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p);
+dboolean K_AddBot(uint16_t skin, uint8_t difficulty, botStyle_e style, uint8_t *p);
 
 
 // NOT AVAILABLE FOR LUA
 
 
 /*--------------------------------------------------
-	void K_SetNameForBot(UINT8 newplayernum, const char *realname)
+	void K_SetNameForBot(uint8_t newplayernum, const char *realname)
 
 		Sets a bot's name.
 		by K_AddBot, and indirectly by K_AddBotFromServer by sending
@@ -274,11 +274,11 @@ dboolean K_AddBot(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p);
 		None
 --------------------------------------------------*/
 
-void K_SetNameForBot(UINT8 newplayernum, const char *realname);
+void K_SetNameForBot(uint8_t newplayernum, const char *realname);
 
 
 /*--------------------------------------------------
-	void K_SetBot(UINT8 newplayernum, UINT16 skinnum, UINT8 difficulty, botStyle_e style);
+	void K_SetBot(uint8_t newplayernum, uint16_t skinnum, uint8_t difficulty, botStyle_e style);
 
 		Sets a player ID to be a new bot directly. Invoked directly
 		by K_AddBot, and indirectly by K_AddBotFromServer by sending
@@ -294,7 +294,7 @@ void K_SetNameForBot(UINT8 newplayernum, const char *realname);
 		None
 --------------------------------------------------*/
 
-void K_SetBot(UINT8 newplayernum, UINT16 skinnum, UINT8 difficulty, botStyle_e style);
+void K_SetBot(uint8_t newplayernum, uint16_t skinnum, uint8_t difficulty, botStyle_e style);
 
 
 /*--------------------------------------------------
@@ -307,7 +307,7 @@ void K_UpdateMatchRaceBots(void);
 
 
 /*--------------------------------------------------
-	UINT8 K_EggboxStealth(fixed_t x, fixed_t y);
+	uint8_t K_EggboxStealth(fixed_t x, fixed_t y);
 
 		Gets a "stealth" value for a position, to figure out how
 		well Eggman boxes blend into random items.
@@ -320,7 +320,7 @@ void K_UpdateMatchRaceBots(void);
 		Stealth value for the position.
 --------------------------------------------------*/
 
-UINT8 K_EggboxStealth(fixed_t x, fixed_t y);
+uint8_t K_EggboxStealth(fixed_t x, fixed_t y);
 
 
 /*--------------------------------------------------
@@ -346,7 +346,7 @@ void K_NudgePredictionTowardsObjects(botdata_t *bd, const player_t *player);
 
 
 /*--------------------------------------------------
-	INT32 K_PositionBully(const player_t *player)
+	int32_t K_PositionBully(const player_t *player)
 
 		Calculates a turn value to reach a player that can be bullied.
 
@@ -357,7 +357,7 @@ void K_NudgePredictionTowardsObjects(botdata_t *bd, const player_t *player);
 		INT32_MAX if couldn't find anything, otherwise a steering value.
 --------------------------------------------------*/
 
-INT32 K_PositionBully(const player_t *player);
+int32_t K_PositionBully(const player_t *player);
 
 
 /*--------------------------------------------------
@@ -433,7 +433,7 @@ void K_BotResetItemConfirm(const player_t *player, dboolean setdelay);
 
 void K_BotSetDriftState(const player_t *player, botdrift_e newstate, tic_t lockout);
 
-botdata_t *K_GetBotData(UINT8 num);
+botdata_t *K_GetBotData(uint8_t num);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -64,15 +64,15 @@ typedef enum
 // 16 bytes long now!
 struct ticcmd_t
 {
-	SINT8 forwardmove; // -MAXPLMOVE to MAXPLMOVE (50) (has anticheat)
-	SINT8 sidemove; // -MAXPLMOVE to MAXPLMOVE (50) (has anticheat)
-	INT16 turning; // "Steering Wheel" turn speed when driving (has anticheat)
-	INT16 angle; // Predicted angle, use me if you can!
-	INT16 throwdir; // Forwards/Backwards item use direction (has anticheat)
-	INT16 aiming; // vertical aiming, see G_BuildTicCmd
-	UINT16 buttons;
-	UINT8 latency; // Netgames: how many tics ago was this ticcmd generated from this player's end?
-	UINT8 flags;
+	int8_t forwardmove; // -MAXPLMOVE to MAXPLMOVE (50) (has anticheat)
+	int8_t sidemove; // -MAXPLMOVE to MAXPLMOVE (50) (has anticheat)
+	int16_t turning; // "Steering Wheel" turn speed when driving (has anticheat)
+	int16_t angle; // Predicted angle, use me if you can!
+	int16_t throwdir; // Forwards/Backwards item use direction (has anticheat)
+	int16_t aiming; // vertical aiming, see G_BuildTicCmd
+	uint16_t buttons;
+	uint8_t latency; // Netgames: how many tics ago was this ticcmd generated from this player's end?
+	uint8_t flags;
 } ATTRPACK;
 
 #ifdef __cplusplus

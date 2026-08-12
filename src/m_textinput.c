@@ -231,7 +231,7 @@ void M_TextInputSetString(textinput_t *input, const char *c)
 	input->cursor = input->select = input->length = strlen(input->buffer);
 }
 
-static dboolean M_TextInputHandleBase(textinput_t *input, INT32 key, dboolean emotes)
+static dboolean M_TextInputHandleBase(textinput_t *input, int32_t key, dboolean emotes)
 {
 	if (key == KEY_LSHIFT || key == KEY_RSHIFT
 		|| key == KEY_LCTRL || key == KEY_RCTRL
@@ -394,7 +394,7 @@ static dboolean M_TextInputHandleBase(textinput_t *input, INT32 key, dboolean em
 }
 
 // Just an alias, more or less
-dboolean M_TextInputHandle(textinput_t *input, INT32 key)
+dboolean M_TextInputHandle(textinput_t *input, int32_t key)
 {
 	return M_TextInputHandleBase(input, key, false);
 }
@@ -480,7 +480,7 @@ static dboolean M_TextInputCompleteEmote(textinput_t *input, emote_autocomplete_
 	return true;
 }
 
-dboolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_autocomplete_t *autocomplete)
+dboolean M_TextInputHandleEmotes(textinput_t *input, int32_t key, emote_autocomplete_t *autocomplete)
 {
 	dboolean ret = M_TextInputHandleBase(input, key, true);
 
@@ -506,7 +506,7 @@ dboolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_autocomple
 	return ret;
 }
 
-void M_DrawTextInputScroll(INT32 x, INT32 y, textinput_t *input, INT32 flags, INT32 MAXINPUTWIDTH)
+void M_DrawTextInputScroll(int32_t x, int32_t y, textinput_t *input, int32_t flags, int32_t MAXINPUTWIDTH)
 {
 	if (renderisnewtic)
 		input->skull++;
@@ -517,7 +517,7 @@ void M_DrawTextInputScroll(INT32 x, INT32 y, textinput_t *input, INT32 flags, IN
 	size_t drawstart = 0;
 	size_t drawend = 0; // Only used for selection
 
-	INT32 skullx = x;
+	int32_t skullx = x;
 
 	while (V_SubStringWidth(input->buffer+drawstart, input->cursor-drawstart, flags) > MAXINPUTWIDTH)
 		++drawstart;
@@ -543,8 +543,8 @@ void M_DrawTextInputScroll(INT32 x, INT32 y, textinput_t *input, INT32 flags, IN
 		size_t end =   max(input->select, input->cursor);
 
 		ssize_t leftofs = start - drawstart;
-		INT32 startx = leftofs >= 0 ? V_SubStringWidth(nametodraw, leftofs, flags) : -2;
-		INT32 width = V_SubStringWidth(nametodraw + max(0, leftofs), end - start + min(0, leftofs), flags);
+		int32_t startx = leftofs >= 0 ? V_SubStringWidth(nametodraw, leftofs, flags) : -2;
+		int32_t width = V_SubStringWidth(nametodraw + max(0, leftofs), end - start + min(0, leftofs), flags);
 		if (startx < 0)
 			width -= startx;
 		if (end > drawend)

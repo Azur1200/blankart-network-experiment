@@ -25,7 +25,7 @@ typedef struct
 {
 	union {
 		precise_t p;
-		INT32 i;
+		int32_t i;
 	} value;
 	void *history;
 } ps_metric_t;

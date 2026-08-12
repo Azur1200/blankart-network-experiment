@@ -76,7 +76,7 @@ enum
 struct playersort_t
 {
 	char string[48];
-	INT32 num;
+	int32_t num;
 	const char *name;
 	char clan[MAXCLANTAG];
 };
@@ -142,23 +142,23 @@ void HU_DrawSongCredits(void);
 void HU_Drawer(void);
 char HU_dequeueChatChar(void);
 void HU_clearChatChars(void);
-void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT32 flags, dboolean icon);
-void HU_drawOldPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT32 flags);
-void HU_drawMiniPing (INT32 x, INT32 y, UINT32 ping, UINT32 lag, INT32 flags);
+void HU_drawPing(int32_t x, int32_t y, uint32_t ping, uint32_t mindelay, uint32_t pl, int32_t flags, dboolean icon);
+void HU_drawOldPing(int32_t x, int32_t y, uint32_t ping, uint32_t mindelay, uint32_t pl, int32_t flags);
+void HU_drawMiniPing (int32_t x, int32_t y, uint32_t ping, uint32_t lag, int32_t flags);
 
-INT32 HU_CreateTeamScoresTbl(playersort_t *tab, UINT32 dmtotals[]);
+int32_t HU_CreateTeamScoresTbl(playersort_t *tab, uint32_t dmtotals[]);
 
 // CECHO interface.
 void HU_ClearCEcho(void);
-void HU_SetCEchoDuration(INT32 seconds);
-void HU_SetCEchoFlags(INT32 flags);
+void HU_SetCEchoDuration(int32_t seconds);
+void HU_SetCEchoFlags(int32_t flags);
 void HU_DoCEcho(const char *msg);
 
-void DoSayCommand(char *message, SINT8 target, UINT8 flags, UINT8 source);
+void DoSayCommand(char *message, int8_t target, uint8_t flags, uint8_t source);
 
 // Demo playback info
-extern UINT32 hu_demotime;
-extern UINT32 hu_demolap;
+extern uint32_t hu_demotime;
+extern uint32_t hu_demolap;
 
 #ifdef __cplusplus
 } // extern "C"

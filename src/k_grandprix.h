@@ -31,18 +31,18 @@ extern struct grandprixinfo
 {
 	dboolean gp;				///< If true, then we are in a Grand Prix.
 	cupheader_t *cup;		///< Which cup are we playing?
-	UINT8 gamespeed;		///< Copy of gamespeed, just to make sure you can't cheat it with cvars
+	uint8_t gamespeed;		///< Copy of gamespeed, just to make sure you can't cheat it with cvars
 	dboolean encore;			///< Ditto, but for encore mode
 	dboolean masterbots;		///< If true, all bots should be max difficulty (Master Mode)
 	dboolean lunaticmode;	///< If true, make this GP especially difficult (Lunatic Mode)
 	dboolean initalize;		///< If true, we need to initialize a new session.
 	dboolean wonround;		///< If false, then we retry the map instead of going to the next.
-	UINT8 eventmode;		///< See GPEVENT_ constants
+	uint8_t eventmode;		///< See GPEVENT_ constants
 } grandprixinfo;
 
 
 /*--------------------------------------------------
-	UINT8 K_BotStartingDifficulty(SINT8 value);
+	uint8_t K_BotStartingDifficulty(int8_t value);
 
 		Determines the starting difficulty of the bots
 		for a specific game speed.
@@ -54,11 +54,11 @@ extern struct grandprixinfo
 		Bot difficulty level.
 --------------------------------------------------*/
 
-UINT8 K_BotStartingDifficulty(SINT8 value);
+uint8_t K_BotStartingDifficulty(int8_t value);
 
 
 /*--------------------------------------------------
-	INT16 K_CalculateGPRankPoints(UINT8 position, UINT8 numplayers);
+	int16_t K_CalculateGPRankPoints(uint8_t position, uint8_t numplayers);
 
 		Calculates the number of points that a player would
 		recieve if they won the round.
@@ -71,20 +71,20 @@ UINT8 K_BotStartingDifficulty(SINT8 value);
 		Number of points to give.
 --------------------------------------------------*/
 
-INT16 K_CalculateGPRankPoints(UINT8 position, UINT8 numplayers);
+int16_t K_CalculateGPRankPoints(uint8_t position, uint8_t numplayers);
 
 
 /*--------------------------------------------------
-	UINT16 K_BotDefaultSkin(void);
+	uint16_t K_BotDefaultSkin(void);
 
 		Returns the skin number of the skin the game
 		uses as a fallback option.
 --------------------------------------------------*/
 
-UINT16 K_BotDefaultSkin(void);
+uint16_t K_BotDefaultSkin(void);
 
 /*--------------------------------------------------
-	UINT8 K_GetGPPlayerCount(UINT8 humans)
+	uint8_t K_GetGPPlayerCount(uint8_t humans)
 
 		Counts the number of total players,
 		including humans and bots, to put into
@@ -97,7 +97,7 @@ UINT16 K_BotDefaultSkin(void);
 		Number of both human players and CPU.
 --------------------------------------------------*/
 
-UINT8 K_GetGPPlayerCount(UINT8 humans);
+uint8_t K_GetGPPlayerCount(uint8_t humans);
 
 /*--------------------------------------------------
 	void K_InitGrandPrixBots(void);

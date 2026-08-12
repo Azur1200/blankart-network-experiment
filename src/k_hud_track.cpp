@@ -448,7 +448,7 @@ void K_DrawTargetTracking(const TargetTracking& target)
 	{
 		// Draw simple overlay.
 		vector2_t targetPos = {result.x, result.y};
-		INT32 trans = [&]
+		int32_t trans = [&]
 		{
 			switch (visibility)
 			{
@@ -484,7 +484,7 @@ void K_CullTargetList(std::vector<TargetTracking>& targetList)
 	constexpr int kBlockHeight = 10;
 	constexpr int kXBlocks = BASEVIDWIDTH / kBlockWidth;
 	constexpr int kYBlocks = BASEVIDHEIGHT / kBlockHeight;
-	UINT8 map[kXBlocks][kYBlocks] = {};
+	uint8_t map[kXBlocks][kYBlocks] = {};
 
 	constexpr fixed_t kTrackerRadius = 30*FRACUNIT/2; // just an approximation of common HUD tracker
 
@@ -501,7 +501,7 @@ void K_CullTargetList(std::vector<TargetTracking>& targetList)
 			}
 
 			fixed_t x1, x2, y1, y2;
-			UINT8 bit = 1;
+			uint8_t bit = 1;
 
 			// TODO: there should be some generic system
 			// instead of this special case.
@@ -535,10 +535,10 @@ void K_CullTargetList(std::vector<TargetTracking>& targetList)
 				y2 = tr.result.y + kTrackerRadius;
 			}
 
-			x1 = std::max<INT32>(x1 / kBlockWidth / FRACUNIT, 0);
-			x2 = std::min<INT32>(x2 / kBlockWidth / FRACUNIT, kXBlocks - 1);
-			y1 = std::max<INT32>(y1 / kBlockHeight / FRACUNIT, 0);
-			y2 = std::min<INT32>(y2 / kBlockHeight / FRACUNIT, kYBlocks - 1);
+			x1 = std::max<int32_t>(x1 / kBlockWidth / FRACUNIT, 0);
+			x2 = std::min<int32_t>(x2 / kBlockWidth / FRACUNIT, kXBlocks - 1);
+			y1 = std::max<int32_t>(y1 / kBlockHeight / FRACUNIT, 0);
+			y2 = std::min<int32_t>(y2 / kBlockHeight / FRACUNIT, kYBlocks - 1);
 
 			bool allMine = true;
 

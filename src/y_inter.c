@@ -64,27 +64,27 @@
 typedef struct
 {
 	char patch[9];
-	 INT32 points;
-	UINT8 display;
+	 int32_t points;
+	uint8_t display;
 } y_bonus_t;
 
 typedef struct
 {
-	INT32 *character[MAXPLAYERS]; // Winner's character #
-	UINT16 *color[MAXPLAYERS]; // Winner's color #
-	SINT8 num[MAXPLAYERS]; // Winner's player #
+	int32_t *character[MAXPLAYERS]; // Winner's character #
+	uint16_t *color[MAXPLAYERS]; // Winner's color #
+	int8_t num[MAXPLAYERS]; // Winner's player #
 	char *name[MAXPLAYERS]; // Winner's name
 
-	UINT8 numplayers; // Number of players being displayed
+	uint8_t numplayers; // Number of players being displayed
 
 	char levelstring[64]; // holds levelnames up to 64 characters
 
 	// SRB2kart
-	INT32 increase[MAXPLAYERS]; // how much did the score increase by?
-	UINT8 jitter[MAXPLAYERS]; // wiggle
+	int32_t increase[MAXPLAYERS]; // how much did the score increase by?
+	uint8_t jitter[MAXPLAYERS]; // wiggle
 
-	UINT32 val[MAXPLAYERS]; // Gametype-specific value
-	UINT8 pos[MAXPLAYERS]; // player positions. used for ties
+	uint32_t val[MAXPLAYERS]; // Gametype-specific value
+	uint8_t pos[MAXPLAYERS]; // player positions. used for ties
 
 	dboolean rankingsmode; // rankings mode
 	dboolean itemrolls;
@@ -97,21 +97,21 @@ static y_data data;
 static patch_t *bgtile = NULL;      // SPECTILE/SRB2BACK
 static patch_t *interpic = NULL;    // custom picture defined in map header
 
-static INT32 timer;
+static int32_t timer;
 
 static dboolean useinterpic;
 
-static INT32 powertype = PWRLV_DISABLED;
-static UINT8 *y_screenbuffer;
+static int32_t powertype = PWRLV_DISABLED;
+static uint8_t *y_screenbuffer;
 
-static INT32 intertic;
-static INT32 endtic = -1;
-static INT32 sorttic = -1;
-static INT32 rolltic = -1;
+static int32_t intertic;
+static int32_t endtic = -1;
+static int32_t sorttic = -1;
+static int32_t rolltic = -1;
 
 static fixed_t listscroll_length = 0;
 static dboolean listscroll_reverse = false;
-static INT32 listscroll_delay = 0;
+static int32_t listscroll_delay = 0;
 static fixed_t xscroll = 0;
 
 intertype_t intertype = int_none;
@@ -123,9 +123,9 @@ static void Y_UnloadData(void);
 //
 // SRB2Kart - Y_CalculateMatchData and ancillary functions
 //
-static void Y_CompareTime(INT32 i)
+static void Y_CompareTime(int32_t i)
 {
-	UINT32 val = ((players[i].pflags & PF_NOCONTEST || players[i].realtime == UINT32_MAX)
+	uint32_t val = ((players[i].pflags & PF_NOCONTEST || players[i].realtime == UINT32_MAX)
 		? (UINT32_MAX-1) : players[i].realtime);
 
 	if (!(val < data.val[data.numplayers]))
@@ -135,9 +135,9 @@ static void Y_CompareTime(INT32 i)
 	data.num[data.numplayers] = i;
 }
 
-static void Y_CompareScore(INT32 i)
+static void Y_CompareScore(int32_t i)
 {
-	UINT32 val = ((players[i].pflags & PF_NOCONTEST)
+	uint32_t val = ((players[i].pflags & PF_NOCONTEST)
 			? (UINT32_MAX-1) : players[i].roundscore);
 
 	if (!(data.val[data.numplayers] == UINT32_MAX
@@ -148,10 +148,10 @@ static void Y_CompareScore(INT32 i)
 	data.num[data.numplayers] = i;
 }
 
-static void Y_CompareRank(INT32 i)
+static void Y_CompareRank(int32_t i)
 {
-	INT32 increase = ((data.increase[i] == INT32_MIN) ? 0 : data.increase[i]);
-	UINT32 score = players[i].score;
+	int32_t increase = ((data.increase[i] == INT32_MIN) ? 0 : data.increase[i]);
+	uint32_t score = players[i].score;
 
 	if (powertype != PWRLV_DISABLED)
 	{
@@ -165,11 +165,11 @@ static void Y_CompareRank(INT32 i)
 	data.num[data.numplayers] = i;
 }
 
-static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
+static void Y_CalculateMatchData(uint8_t rankingsmode, void (*comparison)(int32_t))
 {
-	INT32 i, j;
+	int32_t i, j;
 	dboolean completed[MAXPLAYERS];
-	INT32 numplayersingame = 0;
+	int32_t numplayersingame = 0;
 
 	// Initialize variables
 	if (rankingsmode > 1)
@@ -302,7 +302,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 
 dboolean Y_ItemListActive(void)
 {
-	UINT8 i = 0, nump = 0;
+	uint8_t i = 0, nump = 0;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator)
@@ -362,17 +362,17 @@ void Y_CleanupScreenBuffer(void)
 //
 void Y_IntermissionDrawer(void)
 {
-	INT32 i, whiteplayer = MAXPLAYERS, x = 4, hilicol = V_YELLOWMAP; // fallback
-	INT32 xx = x, x_base = x;
+	int32_t i, whiteplayer = MAXPLAYERS, x = 4, hilicol = V_YELLOWMAP; // fallback
+	int32_t xx = x, x_base = x;
 
 	if (intertype == int_none || rendermode == render_none)
 		return;
 
-	//INT32 w = vid.scaledwidth;
-	//INT32 h = (vid.height / vid.dup);
+	//int32_t w = vid.scaledwidth;
+	//int32_t h = (vid.height / vid.dup);
 
-	//const INT32 vidxdiff = (w - BASEVIDWIDTH) / 2;
-	//const INT32 vidydiff = (h - BASEVIDHEIGHT) / 2;
+	//const int32_t vidxdiff = (w - BASEVIDWIDTH) / 2;
+	//const int32_t vidydiff = (h - BASEVIDHEIGHT) / 2;
 
 	if (!useinterpic && y_screenbuffer == NULL
 #ifdef HWRENDER
@@ -424,7 +424,7 @@ void Y_IntermissionDrawer(void)
 
 	if (rolltic != -1 && intertic > (rolltic - 8) && (intertic < (rolltic + 8)))
 	{
-		INT32 count = (intertic - (rolltic - 8));
+		int32_t count = (intertic - (rolltic - 8));
 
 		if (count < 8)
 			x -= ((((count<<FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dup);
@@ -435,7 +435,7 @@ void Y_IntermissionDrawer(void)
 	}
 	else if (sorttic != -1 && intertic > sorttic)
 	{
-		INT32 count = (intertic - sorttic);
+		int32_t count = (intertic - sorttic);
 
 		if (count < 8)
 			x -= ((((count<<FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dup);
@@ -448,8 +448,8 @@ void Y_IntermissionDrawer(void)
 	if (intertype == int_race || intertype == int_battle || intertype == int_battletime)
 	{
 #define NUMFORNEWCOLUMN 8
-		INT32 y = 41, gutter = ((data.numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
-		INT32 dupadjust = (vid.scaledwidth), duptweak = (dupadjust - BASEVIDWIDTH)/2;
+		int32_t y = 41, gutter = ((data.numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
+		int32_t dupadjust = (vid.scaledwidth), duptweak = (dupadjust - BASEVIDWIDTH)/2;
 		fixed_t newlist_xpush = (BASEVIDWIDTH/2) * FRACUNIT;
 		const char *timeheader;
 
@@ -514,7 +514,7 @@ void Y_IntermissionDrawer(void)
 			V_DrawRightAlignedString(x+152, 24, hilicol, timeheader);
 		}
 
-		INT32 xscroll_px = (xscroll / FRACUNIT);
+		int32_t xscroll_px = (xscroll / FRACUNIT);
 
 		for (i = 0; i < data.numplayers; i++)
 		{
@@ -544,13 +544,13 @@ void Y_IntermissionDrawer(void)
 
 				if (data.color[i])
 				{
-					UINT8 *colormap = R_GetTranslationColormap(*data.character[i], *data.color[i], GTC_CACHE);
+					uint8_t *colormap = R_GetTranslationColormap(*data.character[i], *data.color[i], GTC_CACHE);
 					patch_t *facerank;
 
 					dboolean hires = K_UseHighResPortraits() && !manyplayers16 && !displayitemrolls;
 					facerank = faceprefix[*data.character[i]][hires ? FACE_WANTED : FACE_RANK];
-					SINT8 hiresoffsetx = hires ? 8: 0;
-					SINT8 hiresoffsety = hires ? 2: 0;
+					int8_t hiresoffsetx = hires ? 8: 0;
+					int8_t hiresoffsety = hires ? 2: 0;
 
 					fixed_t scale = hires ? FRACUNIT / 2 : FRACUNIT;
 
@@ -562,9 +562,9 @@ void Y_IntermissionDrawer(void)
 					}
 					else
 					{
-						INT32 xoffs, yoffs;
-						INT16 leftoffset = hires ? facerank->leftoffset / 2 : facerank->leftoffset;
-						INT16 topoffset = hires ? facerank->topoffset / 2 :facerank->topoffset;
+						int32_t xoffs, yoffs;
+						int16_t leftoffset = hires ? facerank->leftoffset / 2 : facerank->leftoffset;
+						int16_t topoffset = hires ? facerank->topoffset / 2 :facerank->topoffset;
 
 						scale = (hires || displayitemrolls) ? FRACUNIT/2 : FRACUNIT;
 
@@ -599,7 +599,7 @@ void Y_IntermissionDrawer(void)
 
 				if ((!displayitemrolls) && data.num[i] == whiteplayer && data.numplayers <= NUMFORNEWCOLUMN*2)
 				{
-					UINT8 cursorframe = (intertic / 4) % 8;
+					uint8_t cursorframe = (intertic / 4) % 8;
 					patch_t *highlight = W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE);
 					V_DrawScaledPatch(x+16+highlight->leftoffset, y-4+highlight->topoffset, 0, highlight);
 				}
@@ -618,8 +618,8 @@ void Y_IntermissionDrawer(void)
 
 				y2 = y;
 
-				INT32 slen = 0;
-				INT32 slen_temp = slen;
+				int32_t slen = 0;
+				int32_t slen_temp = slen;
 
 				if (manyplayers16)
 					V_DrawThinString(x+18, y, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
@@ -628,7 +628,7 @@ void Y_IntermissionDrawer(void)
 					V_DrawThinString(x + 20 - xscroll_px, y, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 
 					// Get the longest string size. This is... gross.
-					INT32 ii;
+					int32_t ii;
 
 					for (ii = 0; ii < data.numplayers; ii++)
 					{
@@ -686,7 +686,7 @@ void Y_IntermissionDrawer(void)
 				}
 				else if (data.itemrolls && (intertic <= rolltic))
 				{
-					const fixed_t itemlistlen = K_DrawItemList((INT32)(data.num[i]), ((xx+2+slen-xscroll_px) * FRACUNIT), ((y+1) * FRACUNIT));
+					const fixed_t itemlistlen = K_DrawItemList((int32_t)(data.num[i]), ((xx+2+slen-xscroll_px) * FRACUNIT), ((y+1) * FRACUNIT));
 					newlist_xpush = max(newlist_xpush, ((x_base+9+slen) * FRACUNIT) + itemlistlen);
 				}
 				else
@@ -761,7 +761,7 @@ skiptallydrawer:
 	if (timer && grandprixinfo.gp == false && bossinfo.boss == false)
 	{
 		const char *string;
-		INT32 tickdown = (timer+1)/TICRATE;
+		int32_t tickdown = (timer+1)/TICRATE;
 
 		if (multiplayer && demo.playback)
 			string = va("Replay ends in %d", tickdown);
@@ -798,7 +798,7 @@ skiptallydrawer:
 		case DSM_NOTSAVING:
 		{
 			char replaytext[60] = {0};
-			INT32 flags = 0;
+			int32_t flags = 0;
 			const char *item1 = gamecontrol[0][gc_lookback][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][0]) : NULL;
 			const char *item2 = gamecontrol[0][gc_lookback][1] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][1]) : NULL;
 			const char *item3 = gamecontrol[0][gc_lookback][2] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][2]) : NULL;
@@ -964,7 +964,7 @@ void Y_Ticker(void)
 
 			if (data.rankingsmode && intertic > sorttic+16+(2*TICRATE))
 			{
-				INT32 q=0,r=0;
+				int32_t q=0,r=0;
 				dboolean kaching = true;
 
 				for (q = 0; q < data.numplayers; q++)
@@ -989,7 +989,7 @@ void Y_Ticker(void)
 						}
 						else
 						{
-							SINT8 remove = 0; // default (should not happen)
+							int8_t remove = 0; // default (should not happen)
 
 							if (data.increase[data.num[q]] < 0)
 								remove = -10;
@@ -1009,8 +1009,8 @@ void Y_Ticker(void)
 						// Basic bitch points
 						if (data.increase[data.num[q]])
 						{
-							INT32 diff = 1;
-							INT32 increase = data.increase[data.num[q]];
+							int32_t diff = 1;
+							int32_t increase = data.increase[data.num[q]];
 							if (increase > 25)
 								diff = increase/10;
 							// This is wordy... But allows negative "increase"
@@ -1055,7 +1055,7 @@ void Y_DetermineIntermissionType(void)
 			intertype = int_none;
 		else
 		{
-			UINT8 i = 0, nump = 0;
+			uint8_t i = 0, nump = 0;
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
 				if (!playeringame[i] || players[i].spectator)
@@ -1074,7 +1074,7 @@ void Y_DetermineIntermissionType(void)
 //
 void Y_StartIntermission(void)
 {
-	UINT8 i = 0, nump = 0;
+	uint8_t i = 0, nump = 0;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator)

@@ -68,7 +68,7 @@ consvar_t *CV_FindVar(const char *name);
 static const char *CV_StringValue(const char *var_name);
 
 consvar_t *consvar_vars; // list of registered console variables
-UINT16     consvar_number_of_netids = 0;
+uint16_t     consvar_number_of_netids = 0;
 
 static char com_token[1024];
 static char *COM_Parse(char *data);
@@ -114,13 +114,13 @@ consvar_t cv_execversion = CVAR_INIT ("execversion","1",CV_CALL,CV_Unsigned, CV_
 // for default joyaxis detection
 #if 0
 static dboolean joyaxis_default[4] = {false,false,false,false};
-static INT32 joyaxis_count[4] = {0,0,0,0};
+static int32_t joyaxis_count[4] = {0,0,0,0};
 #endif
 
 #define COM_BUF_SIZE (32<<10) // command buffer size
 #define MAX_ALIAS_RECURSION 100 // max recursion allowed for aliases
 
-static INT32 com_wait; // one command per frame (for cmd sequences)
+static int32_t com_wait; // one command per frame (for cmd sequences)
 
 // command aliases
 //
@@ -195,7 +195,7 @@ void COM_BufAddTextEx(const char *ptext, int flags)
   */
 void COM_BufInsertTextEx(const char *ptext, int flags)
 {
-	const INT32 old_wait = com_wait;
+	const int32_t old_wait = com_wait;
 
 	char *temp = NULL;
 	size_t templen;
@@ -245,7 +245,7 @@ void COM_BufExecute(void)
 	size_t i;
 	char *ptext;
 	char line[1024] = "";
-	INT32 quotes;
+	int32_t quotes;
 
 	while (com_text.cursize)
 	{
@@ -302,7 +302,7 @@ void COM_ImmedExecute(const char *ptext)
 {
 	size_t i = 0, j = 0;
 	char line[1024] = "";
-	INT32 quotes;
+	int32_t quotes;
 
 	while (i < strlen(ptext))
 	{
@@ -349,7 +349,7 @@ static const char *com_null_string = "";
 static char *com_args = NULL; // current command args or NULL
 static int com_flags;
 
-static void Got_NetVar(UINT8 **p, INT32 playernum);
+static void Got_NetVar(uint8_t **p, int32_t playernum);
 
 /** Initializes command buffer and adds basic commands.
   */
@@ -608,7 +608,7 @@ static dboolean COM_Exists(const char *com_name)
   * \return The complete command name, or NULL.
   * \sa CV_CompleteAlias, CV_CompleteVar
   */
-const char *COM_CompleteCommand(const char *partial, INT32 skips)
+const char *COM_CompleteCommand(const char *partial, int32_t skips)
 {
 	xcommand_t *cmd;
 	size_t len;
@@ -634,7 +634,7 @@ const char *COM_CompleteCommand(const char *partial, INT32 skips)
   * \return The complete alias name, or NULL.
   * \sa CV_CompleteCommand, CV_CompleteVar
   */
-const char *COM_CompleteAlias(const char *partial, INT32 skips)
+const char *COM_CompleteAlias(const char *partial, int32_t skips)
 {
 	cmdalias_t *a;
 	size_t len;
@@ -662,7 +662,7 @@ static void COM_ExecuteString(char *ptext)
 {
 	xcommand_t *cmd;
 	cmdalias_t *a;
-	static INT32 recursion = 0; // detects recursion and stops it if it goes too far
+	static int32_t recursion = 0; // detects recursion and stops it if it goes too far
 
 	COM_TokenizeString(ptext);
 
@@ -853,7 +853,7 @@ static void COM_CEchoDuration_f(void)
   */
 static void COM_Exec_f(void)
 {
-	UINT8 *buf = NULL;
+	uint8_t *buf = NULL;
 	char filename[256];
 
 	if (COM_Argc() < 2 || COM_Argc() > 3)
@@ -920,7 +920,7 @@ static void COM_Help_f(void)
 {
 	xcommand_t *cmd;
 	consvar_t *cvar;
-	INT32 i = 0;
+	int32_t i = 0;
 
 	if (COM_Argc() > 1)
 	{
@@ -1174,7 +1174,7 @@ static void COM_Toggle_f(void)
 		for (i = 2; i < COM_Argc() - 1; ++i)
 		{
 			const char *str = COM_Argv(i);
-			INT32 val;
+			int32_t val;
 
 			if (CV_CompleteValue(cvar, &str, &val))
 			{
@@ -1237,9 +1237,9 @@ static void COM_ChooseWeighted_f(void)
 	size_t na = COM_Argc();
 	size_t i, cmd;
 	const char *commands[40];
-	INT32 weights[40];
-	INT32 totalWeight = 0;
-	INT32 roll;
+	int32_t weights[40];
+	int32_t totalWeight = 0;
+	int32_t roll;
 
 	if (na < 3)
 	{
@@ -1426,9 +1426,9 @@ void VS_Print(vsbuf_t *buf, const char *data)
 	len = strlen(data) + 1;
 
 	if (buf->data[buf->cursize-1])
-		memcpy((UINT8 *)VS_GetSpace(buf, len), data, len); // no trailing 0
+		memcpy((uint8_t *)VS_GetSpace(buf, len), data, len); // no trailing 0
 	else
-		memcpy((UINT8 *)VS_GetSpace(buf, len-1) - 1, data, len); // write over trailing 0
+		memcpy((uint8_t *)VS_GetSpace(buf, len-1) - 1, data, len); // write over trailing 0
 }
 
 // =========================================================================
@@ -1451,14 +1451,14 @@ void VS_Print(vsbuf_t *buf, const char *data)
 #include "verstable.h"
 
 #define NAME      netvar_map_t
-#define KEY_TY    UINT16
+#define KEY_TY    uint16_t
 #define VAL_TY    consvar_t *
 #define HASH_FN   vt_hash_integer
 #define CMPR_FN   vt_cmpr_integer
 #include "verstable.h"
 
 #define NAME      compatnetvar_map_t
-#define KEY_TY    UINT16
+#define KEY_TY    uint16_t
 #define VAL_TY    consvar_t *
 #define HASH_FN   vt_hash_integer
 #define CMPR_FN   vt_cmpr_integer
@@ -1514,16 +1514,16 @@ consvar_t *CV_FindVar(const char *name)
 }
 
 // Sets up a compat netid for old ass demos.
-static inline UINT16 CV_ComputeLegacyNetid(const char *s)
+static inline uint16_t CV_ComputeLegacyNetid(const char *s)
 {
-	UINT16 ret = 0, i = 0;
-	static UINT16 premiers[16] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53};
+	uint16_t ret = 0, i = 0;
+	static uint16_t premiers[16] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53};
 
 	while (*s)
 	{
-		ret = (UINT16)(ret + (*s)*premiers[i]);
+		ret = (uint16_t)(ret + (*s)*premiers[i]);
 		s++;
-		i = (UINT16)((i+1) % 16);
+		i = (uint16_t)((i+1) % 16);
 	}
 	return ret;
 }
@@ -1533,7 +1533,7 @@ static inline UINT16 CV_ComputeLegacyNetid(const char *s)
   * \param netid The variable's identifier number.
   * \return A pointer to the variable itself if found, or NULL.
   */
-static consvar_t *CV_FindNetVar(UINT16 netid)
+static consvar_t *CV_FindNetVar(uint16_t netid)
 {
 	netvar_map_t_itr it = netvar_map_t_get(&netvar_map, netid);
 	if (!netvar_map_t_is_end(it))
@@ -1555,7 +1555,7 @@ static consvar_t *CV_FindNetVar(UINT16 netid)
 	return NULL;
 }
 
-consvar_t *CV_FindLegacyNetVar(UINT16 netid)
+consvar_t *CV_FindLegacyNetVar(uint16_t netid)
 {
 	compatnetvar_map_t_itr it = compatnetvar_map_t_get(&compatnetvar_map, netid);
 	if (!compatnetvar_map_t_is_end(it))
@@ -1608,7 +1608,7 @@ void CV_RegisterVar(consvar_t *variable)
 
 		// Register Legacy netid and warn on conflicts.
 		{
-			UINT16 legacynetid = CV_ComputeLegacyNetid(variable->name);
+			uint16_t legacynetid = CV_ComputeLegacyNetid(variable->name);
 			consvar_t *conflictcheck = CV_FindLegacyNetVar(legacynetid);
 
 			if (conflictcheck && (conflictcheck->netid == legacynetid))
@@ -1678,7 +1678,7 @@ static const char *CV_StringValue(const char *var_name)
   * \return The complete variable name, or NULL.
   * \sa COM_CompleteCommand, CV_CompleteAlias
   */
-const char *CV_CompleteVar(char *partial, INT32 skips)
+const char *CV_CompleteVar(char *partial, int32_t skips)
 {
 	consvar_t *cvar;
 	size_t len;
@@ -1703,13 +1703,13 @@ const char *CV_CompleteVar(char *partial, INT32 skips)
 	return NULL;
 }
 
-dboolean CV_CompleteValue(consvar_t *var, const char **valstrp, INT32 *intval)
+dboolean CV_CompleteValue(consvar_t *var, const char **valstrp, int32_t *intval)
 {
 	const char *valstr = *valstrp;
 
-	INT32 overrideval = 0;
+	int32_t overrideval = 0;
 
-	INT32 v;
+	int32_t v;
 
 	if (var == &cv_forceskin)
 	{
@@ -1723,7 +1723,7 @@ dboolean CV_CompleteValue(consvar_t *var, const char **valstrp, INT32 *intval)
 
 	if (var->PossibleValue)
 	{
-		INT32 i;
+		int32_t i;
 
 		if (var->flags & CV_FLOAT)
 		{
@@ -1731,7 +1731,7 @@ dboolean CV_CompleteValue(consvar_t *var, const char **valstrp, INT32 *intval)
 			if (fpclassify(d) == FP_ZERO && valstr[0] != '0')
 				v = INT32_MIN;
 			else
-				v = (INT32)(d * FRACUNIT);
+				v = (int32_t)(d * FRACUNIT);
 		}
 		else
 		{
@@ -1778,7 +1778,7 @@ dboolean CV_CompleteValue(consvar_t *var, const char **valstrp, INT32 *intval)
 					goto found;
 			if (v != INT32_MIN)
 			{
-				// check INT32 now
+				// check int32_t now
 				for (i = 0; var->PossibleValue[i].strvalue; i++)
 					if (v == var->PossibleValue[i].value)
 						goto found;
@@ -1829,7 +1829,7 @@ badinput:
 static void Setvalue(consvar_t *var, const char *valstr, dboolean stealth)
 {
 	dboolean override = false;
-	INT32 overrideval = 0;
+	int32_t overrideval = 0;
 
 	// If we want messages informing us if cheats have been enabled or disabled,
 	// we need to rework the consvars a little bit.  This call crashes the game
@@ -1898,7 +1898,7 @@ static void Setvalue(consvar_t *var, const char *valstr, dboolean stealth)
 		if (var->flags & CV_FLOAT)
 		{
 			double d = atof(var->string);
-			var->value = (INT32)(d * FRACUNIT);
+			var->value = (int32_t)(d * FRACUNIT);
 		}
 		else
 			var->value = atoi(var->string);
@@ -1952,9 +1952,9 @@ badinput:
 static dboolean serverloading = false;
 
 static consvar_t *
-ReadNetVar (UINT8 **p, char **return_value, dboolean *return_stealth)
+ReadNetVar (uint8_t **p, char **return_value, dboolean *return_stealth)
 {
-	UINT16  netid;
+	uint16_t  netid;
 	char   *val;
 	dboolean stealth;
 
@@ -1980,7 +1980,7 @@ ReadNetVar (UINT8 **p, char **return_value, dboolean *return_stealth)
 	return cvar;
 }
 
-static void Got_NetVar(UINT8 **p, INT32 playernum)
+static void Got_NetVar(uint8_t **p, int32_t playernum)
 {
 	consvar_t *cvar;
 	char *svalue;
@@ -2001,11 +2001,11 @@ static void Got_NetVar(UINT8 **p, INT32 playernum)
 		Setvalue(cvar, svalue, stealth);
 }
 
-void CV_SaveVars(UINT8 **p, dboolean in_demo)
+void CV_SaveVars(uint8_t **p, dboolean in_demo)
 {
 	consvar_t *cvar;
-	UINT8 *count_p = *p;
-	UINT16 count = 0;
+	uint8_t *count_p = *p;
+	uint16_t count = 0;
 
 	// send only changed cvars ...
 	// the client will reset all netvars to default before loading
@@ -2026,13 +2026,13 @@ void CV_SaveVars(UINT8 **p, dboolean in_demo)
 	WRITEUINT16(count_p, count);
 }
 
-static void CV_LoadVars(UINT8 **p,
-		consvar_t *(*got)(UINT8 **p, char **ret_value, dboolean *ret_stealth))
+static void CV_LoadVars(uint8_t **p,
+		consvar_t *(*got)(uint8_t **p, char **ret_value, dboolean *ret_stealth))
 {
 	const dboolean store = cv_resetnetvars.value && (client || demo.playback);
 
 	consvar_t *cvar;
-	UINT16 count;
+	uint16_t count;
 
 	char *val;
 	dboolean stealth;
@@ -2118,14 +2118,14 @@ void CV_RevertNetVars(void)
 	}
 }
 
-void CV_LoadNetVars(UINT8 **p)
+void CV_LoadNetVars(uint8_t **p)
 {
 	CV_LoadVars(p, ReadNetVar);
 }
 
 void CV_LoadDemoVars(void *p)
 {
-	CV_LoadVars((UINT8 **)&p, NULL);
+	CV_LoadVars((uint8_t **)&p, NULL);
 }
 
 static void CV_SetCVar(consvar_t *var, const char *value, dboolean stealth);
@@ -2153,9 +2153,9 @@ dboolean CV_IsSetToDefault(consvar_t *v)
 
 // If any cheats CVars are not at their default settings, return true.
 // Else return false.
-// This returns a UINT8 because I'm too lazy to deal with the packet structure.
+// This returns a uint8_t because I'm too lazy to deal with the packet structure.
 // Deal with it. =P
-UINT8 CV_CheatsEnabled(void)
+uint8_t CV_CheatsEnabled(void)
 {
 	consvar_t *cvar;
 
@@ -2187,8 +2187,8 @@ static void CV_SetCVar(consvar_t *var, const char *value, dboolean stealth)
 	if (var->flags & CV_NETVAR)
 	{
 		// send the value of the variable
-		UINT8 buf[128];
-		UINT8 *p = buf;
+		uint8_t buf[128];
+		uint8_t *p = buf;
 
 		// Loading from a config in a netgame? Set revert value.
 		if (client && execversion_enabled)
@@ -2220,7 +2220,7 @@ static void CV_SetCVar(consvar_t *var, const char *value, dboolean stealth)
 
 		if (var == &cv_forceskin)
 		{
-			INT32 skin = R_SkinAvailable(value);
+			int32_t skin = R_SkinAvailable(value);
 			if ((!fasticmp(value, "None")) && ((skin == -1) || !R_SkinUsable(-1, skin)))
 			{
 				CONS_Printf("Please provide a valid skin name (\"None\" disables).\n");
@@ -2268,7 +2268,7 @@ void CV_StealthSet(consvar_t *var, const char *value)
   * \param value The numeric value, converted to a string before setting.
   * \param stealth Do we call the callback function or not?
   */
-static void CV_SetValueMaybeStealth(consvar_t *var, INT32 value, dboolean stealth)
+static void CV_SetValueMaybeStealth(consvar_t *var, int32_t value, dboolean stealth)
 {
 	char val[SKINNAMESIZE+1];
 
@@ -2294,7 +2294,7 @@ static void CV_SetValueMaybeStealth(consvar_t *var, INT32 value, dboolean stealt
   * \param value The numeric value, converted to a string before setting.
   * \sa CV_SetValue, CV_StealthSet
   */
-void CV_StealthSetValue(consvar_t *var, INT32 value)
+void CV_StealthSetValue(consvar_t *var, int32_t value)
 {
 	CV_SetValueMaybeStealth(var, value, true);
 }
@@ -2312,7 +2312,7 @@ void CV_Set(consvar_t *var, const char *value)
   * \param value The numeric value, converted to a string before setting.
   * \sa CV_Set, CV_StealthSetValue
   */
-void CV_SetValue(consvar_t *var, INT32 value)
+void CV_SetValue(consvar_t *var, int32_t value)
 {
 	CV_SetValueMaybeStealth(var, value, false);
 }
@@ -2327,17 +2327,17 @@ void CV_SetValue(consvar_t *var, INT32 value)
   *                  decrement.
   * \sa CV_SetValue
   */
-void CV_AddValue(consvar_t *var, INT32 increment)
+void CV_AddValue(consvar_t *var, int32_t increment)
 {
-	INT32 newvalue, max;
+	int32_t newvalue, max;
 
 	if (!increment)
 		return;
 
 	if (var == &cv_forceskin || var == &cv_chooseskin) // Special handling.
 	{
-		INT32 oldvalue = var->value;
-		INT32 min = var == &cv_forceskin ? -1 : 0;
+		int32_t oldvalue = var->value;
+		int32_t min = var == &cv_forceskin ? -1 : 0;
 		newvalue = oldvalue;
 		do
 		{
@@ -2377,7 +2377,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 
 			if (newvalue < var->PossibleValue[MINVAL].value || newvalue > var->PossibleValue[MAXVAL].value)
 			{
-				INT32 currentindice = -1, newindice;
+				int32_t currentindice = -1, newindice;
 				for (max = MAXVAL+1; var->PossibleValue[max].strvalue; max++)
 				{
 					if (var->PossibleValue[max].value == newvalue)
@@ -2416,7 +2416,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 #undef MAXVAL
 		else
 		{
-			INT32 currentindice = -1, newindice;
+			int32_t currentindice = -1, newindice;
 
 			// this code do not support more than same value for differant PossibleValue
 			for (max = 0; var->PossibleValue[max].strvalue; max++)
@@ -2450,7 +2450,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 
 // a GETTER for cvars!?
 // used along with CV_GUARD to protect cvar values
-INT32 CV_Get(consvar_t *cvar)
+int32_t CV_Get(consvar_t *cvar)
 {
 	if (!(cvar->flags & CV_GUARD))
 		I_Error("CV_Get used with non-CV_GUARD variable %s", cvar->name);
@@ -2458,7 +2458,7 @@ INT32 CV_Get(consvar_t *cvar)
 	if (modeattacking != ATTACKING_NONE /*|| !K_CanChangeRules()*/)
 	{
 		const char *string = cvar->defaultvalue;
-		INT32 value;
+		int32_t value;
 		if (CV_CompleteValue(cvar, &string, &value))
 			return value;
 		else
@@ -2479,7 +2479,7 @@ void CV_ResetGuardVars(void)
 void CV_InitFilterVar(void)
 {
 #if 0
-	UINT8 i;
+	uint8_t i;
 	for (i = 0; i < 4; i++)
 	{
 		joyaxis_default[i] = true;
@@ -2613,7 +2613,7 @@ void CV_SaveVariables(FILE *f)
 
 				if (which || fasticmp(string, "MIN"))
 				{
-					INT32 value = cvar->PossibleValue[which].value;
+					int32_t value = cvar->PossibleValue[which].value;
 
 					if (cvar->flags & CV_FLOAT)
 						sprintf(stringtowrite, "%f", FIXED_TO_FLOAT(value));

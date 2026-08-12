@@ -34,31 +34,31 @@ void P_SaveNetGame(savebuffer_t *save, dboolean resending);
 dboolean P_LoadGame(savebuffer_t *save, mapnum_t mapoverride);
 dboolean P_LoadNetGame(savebuffer_t *save, dboolean reloading);
 
-mobj_t *P_FindNewPosition(UINT32 oldposition);
+mobj_t *P_FindNewPosition(uint32_t oldposition);
 
 struct savedata_t
 {
-	UINT16 skin;
-	INT32 score;
-	INT32 lives;
-	UINT16 emeralds;
-	UINT8 numgameovers;
+	uint16_t skin;
+	int32_t score;
+	int32_t lives;
+	uint16_t emeralds;
+	uint8_t numgameovers;
 };
 
 extern savedata_t savedata;
 
 struct savebuffer_t
 {
-	UINT8 *buffer;
-	UINT8 *p;
-	UINT8 *end;
+	uint8_t *buffer;
+	uint8_t *p;
+	uint8_t *end;
 	size_t size;
 	dboolean write;
 };
 
-dboolean P_SaveBufferZAlloc(savebuffer_t *save, size_t alloc_size, INT32 tag, void *user);
+dboolean P_SaveBufferZAlloc(savebuffer_t *save, size_t alloc_size, int32_t tag, void *user);
 #define P_SaveBufferAlloc(a,b) P_SaveBufferZAlloc(a, b, PU_STATIC, NULL)
-dboolean P_SaveBufferFromExisting(savebuffer_t *save, UINT8 *existing_buffer, size_t existing_size);
+dboolean P_SaveBufferFromExisting(savebuffer_t *save, uint8_t *existing_buffer, size_t existing_size);
 dboolean P_SaveBufferFromLump(savebuffer_t *save, lumpnum_t lump);
 size_t P_SaveBufferFromFile(savebuffer_t *save, char const *name);
 void P_SaveBufferFree(savebuffer_t *save);

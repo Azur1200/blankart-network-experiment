@@ -40,13 +40,13 @@ struct sfxinfo_t
 	dboolean singularity;
 
 	// Sfx priority
-	INT32 priority;
+	int32_t priority;
 
 	// Sfx flags
-	INT32 flags;
+	int32_t flags;
 
 	// volume if a link
-	INT32 volume;
+	int32_t volume;
 
 	// sound data
 	void *data;
@@ -57,7 +57,7 @@ struct sfxinfo_t
 	// this is checked every second to see if sound
 	// can be thrown out (if 0, then decrement, if -1,
 	// then throw out, if > 0, then it is in use)
-	INT32 usefulness;
+	int32_t usefulness;
 
 	// lump number of sfx
 	lumpnum_t lumpnum;

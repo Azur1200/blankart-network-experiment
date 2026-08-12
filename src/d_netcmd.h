@@ -55,7 +55,7 @@ extern consvar_t cv_itemrespawn;
 extern consvar_t cv_pointlimit;
 extern consvar_t cv_timelimit;
 extern consvar_t cv_numlaps;
-extern UINT32 timelimitintics, extratimeintics, secretextratime;
+extern uint32_t timelimitintics, extratimeintics, secretextratime;
 extern consvar_t cv_allowexitlevel;
 
 extern consvar_t cv_votemaxrows;
@@ -418,20 +418,20 @@ extern const char *netxcmdnames[MAXNETXCMD - 1];
 //bitwise structs make packing bits a little easier, but byte alignment harder?
 //todo: decide whether to make the other netcommands conform, or just get rid of this experiment.
 struct changeteam_packet_t {
-	UINT32 playernum    : 5;  // value 0 to 31
-	UINT32 newteam      : 5;  // value 0 to 31
-	UINT32 verification : 1;  // value 0 to 1
-	UINT32 autobalance  : 1;  // value 0 to 1
-	UINT32 scrambled    : 1;  // value 0 to 1
+	uint32_t playernum    : 5;  // value 0 to 31
+	uint32_t newteam      : 5;  // value 0 to 31
+	uint32_t verification : 1;  // value 0 to 1
+	uint32_t autobalance  : 1;  // value 0 to 1
+	uint32_t scrambled    : 1;  // value 0 to 1
 } ATTRPACK;
 
 struct changeteam_value_t {
-	UINT16 l; // liitle endian
-	UINT16 b; // big enian
+	uint16_t l; // liitle endian
+	uint16_t b; // big enian
 } ATTRPACK;
 
 //Since we do not want other files/modules to know about this data buffer we union it here with a Short Int.
-//Other files/modules will hand the INT16 back to us and we will decode it here.
+//Other files/modules will hand the int16_t back to us and we will decode it here.
 //We don't have to use a union, but we would then send four bytes instead of two.
 typedef union {
 	changeteam_packet_t packet;
@@ -441,34 +441,34 @@ typedef union {
 // add game commands, needs cleanup
 void D_RegisterServerCommands(void);
 void D_RegisterClientCommands(void);
-void CleanupPlayerName(INT32 playernum, const char *newname);
-dboolean EnsurePlayerNameIsGood(char *name, INT32 playernum);
-void WeaponPref_Send(UINT8 ssplayer);
-void WeaponPref_Save(UINT8 **cp, INT32 playernum);
-void WeaponPref_Parse(UINT8 **cp, INT32 playernum);
-void D_SendPlayerConfig(UINT8 n);
+void CleanupPlayerName(int32_t playernum, const char *newname);
+dboolean EnsurePlayerNameIsGood(char *name, int32_t playernum);
+void WeaponPref_Send(uint8_t ssplayer);
+void WeaponPref_Save(uint8_t **cp, int32_t playernum);
+void WeaponPref_Parse(uint8_t **cp, int32_t playernum);
+void D_SendPlayerConfig(uint8_t n);
 void Command_ExitGame_f(void);
 void Command_Retry_f(void);
-void D_GameTypeChanged(INT32 lastgametype); // not a real _OnChange function anymore
-void D_MapChange(mapnum_t pmapnum, INT32 pgametype, dboolean pencoremode, dboolean presetplayers, INT32 pdelay, dboolean pskipprecutscene, dboolean pforcespecialstage);
+void D_GameTypeChanged(int32_t lastgametype); // not a real _OnChange function anymore
+void D_MapChange(mapnum_t pmapnum, int32_t pgametype, dboolean pencoremode, dboolean presetplayers, int32_t pdelay, dboolean pskipprecutscene, dboolean pforcespecialstage);
 void D_SetupVote(void);
-void D_ModifyClientVote(UINT8 player, SINT8 voted);
+void D_ModifyClientVote(uint8_t player, int8_t voted);
 void D_PickVote(void);
 void ObjectPlace_OnChange(void);
-dboolean IsPlayerAdmin(INT32 playernum);
-void SetAdminPlayer(INT32 playernum);
+dboolean IsPlayerAdmin(int32_t playernum);
+void SetAdminPlayer(int32_t playernum);
 void ClearAdminPlayers(void);
-void RemoveAdminPlayer(INT32 playernum);
+void RemoveAdminPlayer(int32_t playernum);
 void ItemFinder_OnChange(void);
 void D_SetPassword(const char *pw);
 void D_ClearPassword(void);
 
-void P_SetPlayerSpectator(INT32 playernum);
+void P_SetPlayerSpectator(int32_t playernum);
 
 struct scheduleTask_t
 {
-	UINT16 basetime;
-	UINT16 timer;
+	uint16_t basetime;
+	uint16_t timer;
 	char *command;
 };
 
@@ -478,7 +478,7 @@ extern size_t schedule_len;
 
 void Schedule_Run(void);
 void Schedule_Insert(scheduleTask_t *addTask);
-void Schedule_Add(INT16 basetime, INT16 timeleft, const char *command);
+void Schedule_Add(int16_t basetime, int16_t timeleft, const char *command);
 void Schedule_Clear(void);
 
 typedef enum
@@ -496,10 +496,10 @@ void Automate_Run(automateEvents_t type);
 void Automate_Set(automateEvents_t type, const char *command);
 void Automate_Clear(void);
 
-void D_Cheat(INT32 playernum, INT32 cheat, ...);
+void D_Cheat(int32_t playernum, int32_t cheat, ...);
 
 // used for the player setup menu
-UINT8 CanChangeSkin(INT32 playernum);
+uint8_t CanChangeSkin(int32_t playernum);
 
 #ifdef __cplusplus
 } // extern "C"

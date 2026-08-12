@@ -37,21 +37,21 @@ extern "C" {
 // MENUS
 //
 
-extern INT32 menuKey; // keyboard key pressed for menu
+extern int32_t menuKey; // keyboard key pressed for menu
 
 #define NUMVIRTUALKEYSINROW (10+2) // 1-9, 0, and a right-side gutter of two keys' width
-extern INT16 virtualKeyboard[5][NUMVIRTUALKEYSINROW];
-extern INT16 shift_virtualKeyboard[5][NUMVIRTUALKEYSINROW];
+extern int16_t virtualKeyboard[5][NUMVIRTUALKEYSINROW];
+extern int16_t shift_virtualKeyboard[5][NUMVIRTUALKEYSINROW];
 
 typedef struct menutyping_s
 {
 	dboolean active;                         // Active
 	dboolean menutypingclose;        // Closing
 	dboolean keyboardtyping;         // If true, all keystrokes are treated as typing (ignores MBT_A etc). This is unset if you try moving the cursor on the virtual keyboard or use your controller
-	SINT8 menutypingfade;           // fade in and out
+	int8_t menutypingfade;           // fade in and out
 
-	SINT8 keyboardx;
-	SINT8 keyboardy;
+	int8_t keyboardx;
+	int8_t keyboardy;
 	dboolean keyboardcapslock;
 	dboolean keyboardshift;
 
@@ -78,21 +78,21 @@ typedef enum
 
 typedef struct menucmd_s
 {
-	SINT8 ev_dpad_ud; // Handles up and down for the actual dpad set by events
-	SINT8 ev_dpad_lr; // Handles left and right for the actual dpad set by events
+	int8_t ev_dpad_ud; // Handles up and down for the actual dpad set by events
+	int8_t ev_dpad_lr; // Handles left and right for the actual dpad set by events
 
 	// Current frame's data
-	SINT8 dpad_ud; // up / down dpad
-	SINT8 dpad_lr; // left / right
-	UINT32 buttons; // buttons
+	int8_t dpad_ud; // up / down dpad
+	int8_t dpad_lr; // left / right
+	uint32_t buttons; // buttons
 
 	// Previous frame's data
-	SINT8 prev_dpad_ud;
-	SINT8 prev_dpad_lr;
-	UINT32 buttonsHeld; // prev frame's buttons
+	int8_t prev_dpad_ud;
+	int8_t prev_dpad_lr;
+	uint32_t buttonsHeld; // prev frame's buttons
 
-	UINT16 delay; // menu wait
-	UINT32 delayCount; // num times ya did menu wait (to make the wait shorter each time)
+	uint16_t delay; // menu wait
+	uint32_t delayCount; // num times ya did menu wait (to make the wait shorter each time)
 
 	dboolean wipebuffer; // Hold the last input sent.
 } menucmd_t;
@@ -137,19 +137,19 @@ dboolean M_Responder(event_t *ev);
 menupanelinst_t *M_GetCurrentMenuPanelInst(void);
 menupaneldef_t *M_GetCurrentMenuPanelDef(menupanelinst_t *curpi);
 menuitem_t *M_GetCurrentMenuItem(menupanelinst_t *curpi);
-void M_HandleMessageBox(INT32 thisMenuKey);
-void M_SetMenuDelay(UINT8 i);
+void M_HandleMessageBox(int32_t thisMenuKey);
+void M_SetMenuDelay(uint8_t i);
 void M_HandleDpadEvent(event_t* ev);
-void M_UpdateMenuCMD(UINT8 i, dboolean bailrequired);
-dboolean M_MenuButtonPressed(UINT8 pid, UINT32 bt);
-dboolean M_MenuButtonHeld(UINT8 pid, UINT32 bt);
-sfxenum_t M_MenuTypingSounds(INT32 key);
-void M_MenuTypingInput(INT32 key);
+void M_UpdateMenuCMD(uint8_t i, dboolean bailrequired);
+dboolean M_MenuButtonPressed(uint8_t pid, uint32_t bt);
+dboolean M_MenuButtonHeld(uint8_t pid, uint32_t bt);
+sfxenum_t M_MenuTypingSounds(int32_t key);
+void M_MenuTypingInput(int32_t key);
 void M_SwitchVirtualKeyboard(dboolean gamepad);
 void M_AbortVirtualKeyboard(void);
 void M_OpenVirtualKeyboard(textinput_t *textinput, char *buffer, menuitem_t *item);
 
-void M_DoItemRoutine(menuitem_t *item, INT32 thisMenuKey);
+void M_DoItemRoutine(menuitem_t *item, int32_t thisMenuKey);
 
 // Called by main loop, runs for demo playback. If this returns true, nullify any further user input.
 dboolean M_DemoResponder(event_t *ev);
@@ -171,14 +171,14 @@ void M_StartControlPanel(void);
 void M_SortServerList(void);
 
 // Draws a box with a texture inside as background for messages
-void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines, INT32 flags);
+void M_DrawTextBox(int32_t x, int32_t y, int32_t width, int32_t boxlines, int32_t flags);
 
 // Used in d_netcmd to restart time attack
-INT32 MR_ModeAttackRetry(INT32 choice);
+int32_t MR_ModeAttackRetry(int32_t choice);
 
 // the function to show a message box typing with the string inside
 // string must be static (not in the stack)
-// routine is a function taking a INT32 in parameter
+// routine is a function taking a int32_t in parameter
 
 typedef enum
 {
@@ -190,7 +190,7 @@ typedef enum
 
 typedef union
 {
-	void (*routine)(INT32); // MM_YESNO
+	void (*routine)(int32_t); // MM_YESNO
 	void (*handler)(event_t *); // MM_EVENTHANDLER
 } messagebox_callback;
 
@@ -203,9 +203,9 @@ typedef struct
 	char *declinetext;
 	messagebox_callback callback;
 	menumessagetype_t messagetype;
-	INT16 x, y;
-	INT16 numlines;
-	INT16 maxlength;
+	int16_t x, y;
+	int16_t numlines;
+	int16_t maxlength;
 } messagebox_t;
 
 typedef enum
@@ -222,7 +222,7 @@ extern messagebox_t messageboxqueue[NUMMENULEVELS];
 #define MB_HANDLER(func) (messagebox_callback){.handler = func}
 #define MB_NONE (messagebox_callback){0}
 
-const char *M_ButtonName(UINT8 p, gamecontrols_e gc, const char *fallback, dboolean forcekeyboard);
+const char *M_ButtonName(uint8_t p, gamecontrols_e gc, const char *fallback, dboolean forcekeyboard);
 char *M_MessageConfirmText(dboolean gamequit, dboolean forcekeyboard);
 char *M_MessageCancelText(dboolean gamequit, dboolean forcekeyboard);
 
@@ -254,7 +254,7 @@ typedef enum
 } levellistmode_e;
 
 // Called by linux_x/i_video_xshm.c
-void M_QuitResponse(INT32 ch);
+void M_QuitResponse(int32_t ch);
 
 // Determines whether to show a level in the list (platter version does not need to be exposed)
 dboolean M_CanShowLevelInList(mapnum_t mapnum);
@@ -309,7 +309,7 @@ typedef enum
 	ITS_DERIVED, // (parent style's source)
 } ATTRPACK itempartsource_e;
 
-typedef INT32 (menufunc_f)(INT32);
+typedef int32_t (menufunc_f)(int32_t);
 typedef void  (menudrawer_f)(menupanelinst_t *);
 typedef void  (panelfunc_f)(menupanelinst_t *);
 
@@ -323,7 +323,7 @@ struct menuitempart_t
 	itempartalign_e align;
 	itempartsource_e source, source2;
 
-	UINT8 font;
+	uint8_t font;
 	dboolean fontalt; // V_6WIDTHSPACE
 	dboolean small;
 	dboolean translucent;
@@ -356,25 +356,25 @@ struct menuitem_t
 	menuitemflags_t status; // show IT_xxx
 	const menuitemstyle_t *style;
 
-	INT32 argument; // passed to routine/submenu, OR step size for cvars
+	int32_t argument; // passed to routine/submenu, OR step size for cvars
 	fixed_t x, y;     // coordinates, see menuitemflags
 };
 
 struct menupaneldef_t
 {
 	dehinfo_t     info;
-	UINT16         numitems;           // # of menu items
+	uint16_t         numitems;           // # of menu items
 	menuitem_t   *items;              // menu items
 	menudrawer_f *drawroutine;        // draw routine
 	dboolean       scrollbar;          // draw scrollbar
-	INT16         scrollheight;       // height of scrolling area
-	INT16         cursoroffset;       // X offset of cursor
-	INT16         lineheight;         // default Y offset to add for each item
+	int16_t         scrollheight;       // height of scrolling area
+	int16_t         cursoroffset;       // X offset of cursor
+	int16_t         lineheight;         // default Y offset to add for each item
 	menufunc_f   *keyhandler;         // called before key press is processed
 	panelfunc_f  *initializer;        // called when panel instance is setup
 	panelfunc_f  *tickroutine;        // called when panel is active
 	dboolean multinav;                 // navigation in two dimensions!? (disables cvar arrows)
-	INT32 navitemcount;               // items per column (or row if horizontal is true)
+	int32_t navitemcount;               // items per column (or row if horizontal is true)
 	dboolean horizontal;               // navigate with left/right instead of up/down
 };
 
@@ -385,15 +385,15 @@ struct menupanelinst_t
 	fixed_t x, y;
 	fixed_t scrollheight;
 	fixed_t cursoroffset;
-	UINT16 numitems;
+	uint16_t numitems;
 	menuitem_t *items;
-	UINT16 itemon; // currently selected item, OR last selected item for menudef panels
-	INT32 vflags;
+	uint16_t itemon; // currently selected item, OR last selected item for menudef panels
+	int32_t vflags;
 	dboolean visible;
-	INT32 navitemcount;
+	int32_t navitemcount;
 	dboolean disabled; // can't be selected
 	dboolean altscroll; // viewserver hell (list scrolling, usually paired with disabled = true)
-	INT32 layer; // higher number draws on top
+	int32_t layer; // higher number draws on top
 	dboolean cliprect; // Clips everything contained inside it
 	dboolean cliprect_relative; // use the x and y position of the panel for the cliprect
 	fixed_t cliprect_x, cliprect_y; // X and Y of a cliprect when not relative
@@ -411,24 +411,24 @@ struct menu_t
 	menupanelinst_t *panels;
 
 	char bgname[8]; // name for background gfx lump; lays over titlemap if this is set
-	SINT8 fadestrength;  // darken background when displaying this menu, strength 0-31 or -1 for undefined
-	INT32 bgcolor; // fill color, overrides bg name. -1 means follow bg name rules.
-	INT32 titlescrollxspeed; // background gfx scroll per menu; inherits global setting
-	INT32 titlescrollyspeed; // y scroll
+	int8_t fadestrength;  // darken background when displaying this menu, strength 0-31 or -1 for undefined
+	int32_t bgcolor; // fill color, overrides bg name. -1 means follow bg name rules.
+	int32_t titlescrollxspeed; // background gfx scroll per menu; inherits global setting
+	int32_t titlescrollyspeed; // y scroll
 	dboolean bghide; // for titlemaps, hide the background.
 	dboolean vhs; // Do the VHS effect.
 
-	SINT8 hidetitlepics; // hide title gfx per menu; -1 means undefined, inherits global setting
+	int8_t hidetitlepics; // hide title gfx per menu; -1 means undefined, inherits global setting
 	ttmode_enum ttmode; // title wing animation mode; default TTMODE_KART
-	UINT8 ttscale; // scale of title wing gfx (FRACUNIT / ttscale); -1 means undefined, inherits global setting
+	uint8_t ttscale; // scale of title wing gfx (FRACUNIT / ttscale); -1 means undefined, inherits global setting
 	char ttname[9]; // lump name of title wing gfx. If name length is <= 6, engine will attempt to load numbered frames (TTNAMExx)
-	INT16 ttx; // X position of title wing
-	INT16 tty; // Y position of title wing
-	INT16 ttloop; // # frame to loop; -1 means dont loop
-	UINT16 tttics; // # of tics per frame
+	int16_t ttx; // X position of title wing
+	int16_t tty; // Y position of title wing
+	int16_t ttloop; // # frame to loop; -1 means dont loop
+	uint16_t tttics; // # of tics per frame
 
 	char musname[7]; ///< Music track to play. "" for no music.
-	UINT16 mustrack; ///< Subsong to play. Only really relevant for music modules and specific formats supported by GME. 0 to ignore.
+	uint16_t mustrack; ///< Subsong to play. Only really relevant for music modules and specific formats supported by GME. 0 to ignore.
 	dboolean muslooping; ///< Loop the music
 	dboolean musstop; ///< Don't play any music
 	dboolean musignore; ///< Let the current music keep playing
@@ -436,19 +436,19 @@ struct menu_t
 	// Music credit shit.
 	dboolean muscreditshow;
 	fixed_t muscredity;
-	UINT16 muscreditanimtime;
-	INT32 muscreditsnapflags;
+	uint16_t muscreditanimtime;
+	int32_t muscreditsnapflags;
 
 	dboolean enterbubble; // run all entrance line execs after common ancestor and up to child. If false, only run the child's exec
 	dboolean exitbubble; // run all exit line execs from child and up to before common ancestor. If false, only run the child's exec
-	INT32 entertag; // line exec to run on menu enter, if titlemap
-	INT32 exittag; // line exec to run on menu exit, if titlemap
-	INT16 enterwipe; // wipe type to run on menu enter, -1 means default
-	INT16 exitwipe; // wipe type to run on menu exit, -1 means default
+	int32_t entertag; // line exec to run on menu enter, if titlemap
+	int32_t exittag; // line exec to run on menu exit, if titlemap
+	int16_t enterwipe; // wipe type to run on menu enter, -1 means default
+	int16_t exitwipe; // wipe type to run on menu exit, -1 means default
 };
 
 extern menu_t menudefs[MAXMENUTYPES];
-extern UINT16 nummenutypes;
+extern uint16_t nummenutypes;
 
 #define MAXMENUPANELS 4096
 extern menupaneldef_t menupanels[MAXMENUPANELS];
@@ -458,7 +458,7 @@ extern size_t nummenupanels;
 extern menuitemstyle_t menuitemstyles[MAXMENUITEMSTYLES];
 extern size_t nummenuitemstyles;
 
-void M_EnterMenu(menutype_t menu, dboolean callexit, INT32 arg);
+void M_EnterMenu(menutype_t menu, dboolean callexit, int32_t arg);
 void M_ExitMenu(void);
 void M_ClearMenusEx(dboolean callexitmenufunc, dboolean notitle);
 #define M_ClearMenus(callexitmenufunc) M_ClearMenusEx(callexitmenufunc, false)
@@ -477,80 +477,80 @@ MP_TimeAttackMenu, MP_TimeAttackPresets, MP_SetupViewServer, MP_ViewServerPlayer
 MP_ViewServerAddons, MP_PrepAddonList, MP_StatsRecords, MP_StatsRecordsBG,
 MP_StatsPlaytime, MP_StatsExtra, MP_UnlockablesChecklist
 ;
-INT32 MR_Addons(INT32 choice);
-INT32 MR_QuitAddons(INT32 choice);
-INT32 MR_QuitSRB2(INT32 choice);
-INT32 MR_HandleLevelStats(INT32 choice);
-INT32 MR_QuitReplayHut(INT32 choice);
-INT32 MR_HandleReplayHutList(INT32 choice);
-INT32 MR_GrandPrixTemp(INT32 choice);
-INT32 MR_TimeAttack(INT32 arg);
-INT32 MR_StartGrandPrix(INT32 choice);
-INT32 MR_QuitTimeAttackMenu(INT32 choice);
-INT32 MR_ChooseTimeAttack(INT32 choice);
-INT32 MR_SetGuestReplay(INT32 arg);
-INT32 MR_TimeAttackPreset(INT32 arg);
-INT32 MR_ReplayTimeAttack(INT32 arg);
-INT32 MR_ReplayStaff(INT32 choice);
-INT32 MR_ConnectIP(INT32 choice);
-INT32 MR_ConnectLastServer(INT32 choice);
-INT32 MR_QuitMultiPlayerMenu(INT32 choice);
-INT32 MR_StartServer(INT32 choice);
-INT32 MR_ConnectMenuModChecks(INT32 choice);
-INT32 MR_CancelConnect(INT32 choice);
-INT32 MR_SetupControlsMenu(INT32 arg);
-INT32 MR_Refresh(INT32 choice);
-INT32 MR_Connect(INT32 arg);
-INT32 MR_SetVideoMode(INT32 choice);
+int32_t MR_Addons(int32_t choice);
+int32_t MR_QuitAddons(int32_t choice);
+int32_t MR_QuitSRB2(int32_t choice);
+int32_t MR_HandleLevelStats(int32_t choice);
+int32_t MR_QuitReplayHut(int32_t choice);
+int32_t MR_HandleReplayHutList(int32_t choice);
+int32_t MR_GrandPrixTemp(int32_t choice);
+int32_t MR_TimeAttack(int32_t arg);
+int32_t MR_StartGrandPrix(int32_t choice);
+int32_t MR_QuitTimeAttackMenu(int32_t choice);
+int32_t MR_ChooseTimeAttack(int32_t choice);
+int32_t MR_SetGuestReplay(int32_t arg);
+int32_t MR_TimeAttackPreset(int32_t arg);
+int32_t MR_ReplayTimeAttack(int32_t arg);
+int32_t MR_ReplayStaff(int32_t choice);
+int32_t MR_ConnectIP(int32_t choice);
+int32_t MR_ConnectLastServer(int32_t choice);
+int32_t MR_QuitMultiPlayerMenu(int32_t choice);
+int32_t MR_StartServer(int32_t choice);
+int32_t MR_ConnectMenuModChecks(int32_t choice);
+int32_t MR_CancelConnect(int32_t choice);
+int32_t MR_SetupControlsMenu(int32_t arg);
+int32_t MR_Refresh(int32_t choice);
+int32_t MR_Connect(int32_t arg);
+int32_t MR_SetVideoMode(int32_t choice);
 #ifdef HWRENDER
-INT32 MR_OpenGLOptionsMenu(INT32 choice);
+int32_t MR_OpenGLOptionsMenu(int32_t choice);
 #endif
-INT32 MR_HandleVideoMode(INT32 ch);
-INT32 MR_PlaySound(INT32 choice);
-INT32 MR_MusicTest(INT32 choice);
-INT32 MR_QuitMusicTest(INT32 choice);
-INT32 MR_EraseData(INT32 arg);
-INT32 MR_Credits(INT32 choice);
-INT32 MR_BlanCredits(INT32 choice);
-INT32 MR_SecretCredits(INT32 choice);
-INT32 MR_HandleAddons(INT32 choice);
-INT32 MR_SelectableClearMenus(INT32 choice);
-INT32 MR_GoBack(INT32 choice);
-INT32 MR_ModeAttackEndGame(INT32 choice);
-INT32 MR_Retry(INT32 choice);
-INT32 MR_EndGame(INT32 choice);
-INT32 MR_SetupMultiPlayer(INT32 choice);
-INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice);
-INT32 MR_ConfirmSpectate(INT32 choice);
-INT32 MR_ConfirmEnterGame(INT32 choice);
-INT32 MR_ConfirmTeamScramble(INT32 choice);
-INT32 MR_ConfirmTeamChange(INT32 choice);
-INT32 MR_ConfirmSpectateChange(INT32 choice);
-INT32 MR_ChangeLevel(INT32 choice);
-INT32 MR_HutStartReplay(INT32 choice);
-INT32 MR_PlaybackRewind(INT32 choice);
-INT32 MR_PlaybackPause(INT32 choice);
-INT32 MR_PlaybackFastForward(INT32 choice);
-INT32 MR_PlaybackAdvance(INT32 choice);
-INT32 MR_PlaybackSetViews(INT32 choice);
-INT32 MR_PlaybackAdjustView(INT32 choice);
-INT32 MR_PlaybackToggleFreecam(INT32 choice);
-INT32 MR_PlaybackToggleDirector(INT32 choice);
-INT32 MR_PlaybackQuit(INT32 choice);
-INT32 MR_HandleImageDef(INT32 choice);
-INT32 MR_HandleMusicTest(INT32 choice);
-INT32 MR_ResetControls(INT32 choice);
-INT32 MR_ChangeControl(INT32 arg);
-INT32 MR_AssignJoystick(INT32 arg);
-INT32 MR_HandleMonitorToggles(INT32 choice);
-INT32 MR_RestartAudio(INT32 choice);
-INT32 MR_QuitViewServer(INT32 choice);
-INT32 MR_HandleViewServer(INT32 choice);
-INT32 MR_SetLevelListMode(INT32 choice);
-INT32 MR_HandleLevelPlatter(INT32 choice);
-INT32 MR_LevelPlatterRandom(INT32 choice);
+int32_t MR_HandleVideoMode(int32_t ch);
+int32_t MR_PlaySound(int32_t choice);
+int32_t MR_MusicTest(int32_t choice);
+int32_t MR_QuitMusicTest(int32_t choice);
+int32_t MR_EraseData(int32_t arg);
+int32_t MR_Credits(int32_t choice);
+int32_t MR_BlanCredits(int32_t choice);
+int32_t MR_SecretCredits(int32_t choice);
+int32_t MR_HandleAddons(int32_t choice);
+int32_t MR_SelectableClearMenus(int32_t choice);
+int32_t MR_GoBack(int32_t choice);
+int32_t MR_ModeAttackEndGame(int32_t choice);
+int32_t MR_Retry(int32_t choice);
+int32_t MR_EndGame(int32_t choice);
+int32_t MR_SetupMultiPlayer(int32_t choice);
+int32_t MR_HandleSetupMultiPlayerMenu(int32_t choice);
+int32_t MR_ConfirmSpectate(int32_t choice);
+int32_t MR_ConfirmEnterGame(int32_t choice);
+int32_t MR_ConfirmTeamScramble(int32_t choice);
+int32_t MR_ConfirmTeamChange(int32_t choice);
+int32_t MR_ConfirmSpectateChange(int32_t choice);
+int32_t MR_ChangeLevel(int32_t choice);
+int32_t MR_HutStartReplay(int32_t choice);
+int32_t MR_PlaybackRewind(int32_t choice);
+int32_t MR_PlaybackPause(int32_t choice);
+int32_t MR_PlaybackFastForward(int32_t choice);
+int32_t MR_PlaybackAdvance(int32_t choice);
+int32_t MR_PlaybackSetViews(int32_t choice);
+int32_t MR_PlaybackAdjustView(int32_t choice);
+int32_t MR_PlaybackToggleFreecam(int32_t choice);
+int32_t MR_PlaybackToggleDirector(int32_t choice);
+int32_t MR_PlaybackQuit(int32_t choice);
+int32_t MR_HandleImageDef(int32_t choice);
+int32_t MR_HandleMusicTest(int32_t choice);
+int32_t MR_ResetControls(int32_t choice);
+int32_t MR_ChangeControl(int32_t arg);
+int32_t MR_AssignJoystick(int32_t arg);
+int32_t MR_HandleMonitorToggles(int32_t choice);
+int32_t MR_RestartAudio(int32_t choice);
+int32_t MR_QuitViewServer(int32_t choice);
+int32_t MR_HandleViewServer(int32_t choice);
+int32_t MR_SetLevelListMode(int32_t choice);
+int32_t MR_HandleLevelPlatter(int32_t choice);
+int32_t MR_LevelPlatterRandom(int32_t choice);
 #ifdef HAVE_DISCORDRPC
-INT32 MR_HandleDiscordRequests(INT32 choice);
+int32_t MR_HandleDiscordRequests(int32_t choice);
 #endif
 
 void MD_DrawLevelStats(menupanelinst_t *pi);
@@ -573,10 +573,10 @@ void MD_DrawDiscordRequests(menupanelinst_t *pi);
 #endif
 
 // Tickers
-INT32 MR_TickStats(INT32 choice);
-INT32 MR_TickReplayHutReplayInfo(INT32 choice);
-INT32 MR_TickDiscordRequests(INT32 choice);
-INT32 MR_TickViewServer(INT32 choice);
+int32_t MR_TickStats(int32_t choice);
+int32_t MR_TickReplayHutReplayInfo(int32_t choice);
+int32_t MR_TickDiscordRequests(int32_t choice);
+int32_t MR_TickViewServer(int32_t choice);
 
 // Panel Tickers
 void MP_TickPlayBackMenu(menupanelinst_t *pi);
@@ -612,12 +612,12 @@ void M_UpdateJoystickMenu(void);
 typedef struct
 {
 	char levelname[32];
-	UINT16 skinnum;
-	UINT8 numemeralds;
-	UINT8 numgameovers;
-	INT32 lives;
-	INT32 continuescore;
-	INT32 gamemap;
+	uint16_t skinnum;
+	uint8_t numemeralds;
+	uint8_t numgameovers;
+	int32_t lives;
+	int32_t continuescore;
+	int32_t gamemap;
 } saveinfo_t;
 
 extern consvar_t cv_showfocuslost;
@@ -639,9 +639,9 @@ void M_UpdateNumServerPages(void);
 
 extern char dummystaffname[22];
 
-extern INT16 startmap;
-extern INT32 ultimate_selectable;
-extern INT16 char_on, startchar;
+extern int16_t startmap;
+extern int32_t ultimate_selectable;
+extern int16_t char_on, startchar;
 
 #define MAXSAVEGAMES 31
 #define NOSAVESLOT 0 //slot where Play Without Saving appears
@@ -659,12 +659,12 @@ void Screenshot_option_Onchange(void);
 // Addons menu updating
 void Addons_option_Onchange(void);
 
-INT32 MR_ReplayHut(INT32 choice);
+int32_t MR_ReplayHut(int32_t choice);
 void M_SetPlaybackMenuPointer(void);
 
 void M_RefreshPauseMenu(void);
 
-INT32 HU_GetHighlightColor(void);
+int32_t HU_GetHighlightColor(void);
 
 fixed_t M_GetMapThumbnail(mapnum_t mapnum, patch_t **out);
 
@@ -678,16 +678,16 @@ void Skinselectstyle_option_Onchange(void);
 struct menucolor_t {
 	menucolor_t *next;
 	menucolor_t *prev;
-	UINT16 color;
+	uint16_t color;
 };
 
 extern menucolor_t *menucolorhead, *menucolortail;
 
-void M_AddMenuColor(UINT16 color);
-void M_MoveColorBefore(UINT16 color, UINT16 targ);
-void M_MoveColorAfter(UINT16 color, UINT16 targ);
-UINT16 M_GetColorBefore(UINT16 color);
-UINT16 M_GetColorAfter(UINT16 color);
+void M_AddMenuColor(uint16_t color);
+void M_MoveColorBefore(uint16_t color, uint16_t targ);
+void M_MoveColorAfter(uint16_t color, uint16_t targ);
+uint16_t M_GetColorBefore(uint16_t color);
+uint16_t M_GetColorAfter(uint16_t color);
 void M_InitPlayerSetupColors(void);
 void M_FreePlayerSetupColors(void);
 

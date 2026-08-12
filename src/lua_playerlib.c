@@ -28,7 +28,7 @@
 
 static int lib_iteratePlayers(lua_State *L)
 {
-	INT32 i = -1;
+	int32_t i = -1;
 	if (lua_gettop(L) < 2)
 	{
 		//return luaL_error(L, "Don't call players.iterate() directly, use it as 'for player in players.iterate do <block> end'.");
@@ -38,7 +38,7 @@ static int lib_iteratePlayers(lua_State *L)
 	lua_settop(L, 2);
 	lua_remove(L, 1); // state is unused.
 	if (!lua_isnil(L, 1))
-		i = (INT32)(*((player_t **)luaL_checkudata(L, 1, META_PLAYER)) - players);
+		i = (int32_t)(*((player_t **)luaL_checkudata(L, 1, META_PLAYER)) - players);
 	for (i++; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i])
@@ -89,9 +89,9 @@ static int lib_lenPlayer(lua_State *L)
 
 static int lib_iterateDisplayplayers(lua_State *L)
 {
-	INT32 i = -1;
-	INT32 temp = -1;
-	INT32 iter = 0;
+	int32_t i = -1;
+	int32_t temp = -1;
+	int32_t iter = 0;
 
 	if (lua_gettop(L) < 2)
 	{
@@ -103,7 +103,7 @@ static int lib_iterateDisplayplayers(lua_State *L)
 	lua_remove(L, 1); // state is unused.
 	if (!lua_isnil(L, 1))
 	{
-		temp = (INT32)(*((player_t **)luaL_checkudata(L, 1, META_PLAYER)) - players);	// get the player # of the last iterated player.
+		temp = (int32_t)(*((player_t **)luaL_checkudata(L, 1, META_PLAYER)) - players);	// get the player # of the last iterated player.
 
 		// @FIXME:
 		// I didn't quite find a better way for this; Here, we go back to which player in displayplayers we last iterated to resume the for loop below for this new function call
@@ -170,7 +170,7 @@ static int lib_lenDisplayplayers(lua_State *L)
 
 static int lib_iterateLocalplayers(lua_State *L)
 {
-	INT32 i = lua_tonumber(L, lua_upvalueindex(1));
+	int32_t i = lua_tonumber(L, lua_upvalueindex(1));
 
 	if (lua_gettop(L) < 2)
 	{
@@ -1009,8 +1009,8 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->maxsmonitortime);
 		break;
 	case player_smonitorexpiring:
-		// Push as an INT16 due to the negative value signal systems.
-		lua_pushinteger(L, (INT16)plr->smonitorexpiring);
+		// Push as an int16_t due to the negative value signal systems.
+		lua_pushinteger(L, (int16_t)plr->smonitorexpiring);
 		break;
 	case player_smonitorcancel:
 		lua_pushinteger(L, plr->smonitorcancel);
@@ -1074,7 +1074,7 @@ static int player_get(lua_State *L)
 		break;
 	case player_pflags:
 	{
-		UINT32 pflags = plr->pflags;
+		uint32_t pflags = plr->pflags;
 
 		if (lua_compatmode && plr->carry == CR_SLIDING)
 			pflags |= PF_SLIDING;
@@ -1329,7 +1329,7 @@ static int player_get(lua_State *L)
 	case player_playerid:
 		// Doesn't actually exist in hardcode, but this is very useful and relevant
 		// to prototyping nonetheless
-		lua_pushinteger(L, (UINT32)(plr - players));
+		lua_pushinteger(L, (uint32_t)(plr - players));
 		break;
 #ifdef HWRENDER
 	case player_fovadd:
@@ -1411,7 +1411,7 @@ static int player_set(lua_State *L)
 		break;
 	case player_aiming:
 	{
-		UINT8 i;
+		uint8_t i;
 		plr->aiming = luaL_checkangle(L, 3);
 		for (i = 0; i <= r_splitscreen; i++)
 		{
@@ -1438,7 +1438,7 @@ static int player_set(lua_State *L)
 	}
 	case player_pflags:
 	{
-		UINT32 pflags = luaL_checkinteger(L, 3);
+		uint32_t pflags = luaL_checkinteger(L, 3);
 
 		if (lua_compatmode)
 		{
@@ -1472,7 +1472,7 @@ static int player_set(lua_State *L)
 		break;
 	case player_skincolor:
 	{
-		UINT16 newcolor = luaL_checkinteger(L,3);
+		uint16_t newcolor = luaL_checkinteger(L,3);
 		if (newcolor >= numskincolors)
 			return luaL_error(L, "player.skincolor %d out of range (0 - %d).", newcolor, numskincolors-1);
 		plr->skincolor = newcolor;
@@ -1880,7 +1880,7 @@ static int player_set(lua_State *L)
 	case player_squishedtimer:
 	{
 		// Unsquish for the ease of Lua programmers
-		INT16 squishtimer = (INT16)luaL_checkinteger(L, 3);
+		int16_t squishtimer = (int16_t)luaL_checkinteger(L, 3);
 
 		if (squishtimer == 0)
 			plr->mo->spriteyscale = FRACUNIT;
@@ -1904,18 +1904,18 @@ static int player_set(lua_State *L)
 		break;
 	case player_maxsmonitortime:
 	{
-		UINT16 maxinv = max(1, (UINT16)luaL_checkinteger(L, 3)); // Prevent zero-divides
+		uint16_t maxinv = max(1, (uint16_t)luaL_checkinteger(L, 3)); // Prevent zero-divides
 		plr->maxsmonitortime = maxinv;
 		break;
 	}
 	case player_smonitorexpiring:
-		plr->smonitorexpiring = (UINT16)luaL_checkinteger(L, 3);
+		plr->smonitorexpiring = (uint16_t)luaL_checkinteger(L, 3);
 		break;
 	case player_smonitorcancel:
-		plr->smonitorcancel = (INT16)luaL_checkinteger(L, 3);
+		plr->smonitorcancel = (int16_t)luaL_checkinteger(L, 3);
 		break;
 	case player_smonitorwarning:
-		plr->smonitorwarning = (UINT8)luaL_checkdboolean(L, 3);
+		plr->smonitorwarning = (uint8_t)luaL_checkdboolean(L, 3);
 		break;
 	case player_eggmanexplode:
 		plr->eggmanexplode = luaL_checkinteger(L, 3);
@@ -1990,7 +1990,7 @@ static int player_set(lua_State *L)
 		return NOSET;
 	//
 	case player_charflags:
-		plr->charflags = (UINT32)luaL_checkinteger(L, 3);
+		plr->charflags = (uint32_t)luaL_checkinteger(L, 3);
 		break;
 	case player_followitem:
 		plr->followitem = luaL_checkinteger(L, 3);
@@ -2004,10 +2004,10 @@ static int player_set(lua_State *L)
 		break;
 	}
 	case player_lives:
-		plr->lives = (SINT8)luaL_checkinteger(L, 3);
+		plr->lives = (int8_t)luaL_checkinteger(L, 3);
 		break;
 	case player_xtralife:
-		plr->xtralife = (SINT8)luaL_checkinteger(L, 3);
+		plr->xtralife = (int8_t)luaL_checkinteger(L, 3);
 		break;
 	case player_speed:
 		plr->speed = luaL_checkfixed(L, 3);
@@ -2016,7 +2016,7 @@ static int player_set(lua_State *L)
 		plr->lastspeed = luaL_checkfixed(L, 3);
 		break;
 	case player_deadtimer:
-		plr->deadtimer = (INT32)luaL_checkinteger(L, 3);
+		plr->deadtimer = (int32_t)luaL_checkinteger(L, 3);
 		break;
 	case player_exiting:
 		plr->exiting = (tic_t)luaL_checkinteger(L, 3);
@@ -2034,14 +2034,14 @@ static int player_set(lua_State *L)
 		plr->rmomy = luaL_checkfixed(L, 3);
 		break;
 	case player_totalring:
-		plr->totalring = (INT16)luaL_checkinteger(L, 3);
+		plr->totalring = (int16_t)luaL_checkinteger(L, 3);
 		break;
 	case player_realtime:
 		plr->realtime = (tic_t)luaL_checkinteger(L, 3);
 		break;
 	case player_laps:
 	{
-		UINT8 laps = (UINT8)luaL_checkinteger(L, 3);
+		uint8_t laps = (uint8_t)luaL_checkinteger(L, 3);
 		if (lua_compatmode)
 		{
 			plr->laps = max(laps +1, 0);
@@ -2052,7 +2052,7 @@ static int player_set(lua_State *L)
 	}
 	case player_latestlap:
 	{
-		UINT8 laps = (UINT8)luaL_checkinteger(L, 3);
+		uint8_t laps = (uint8_t)luaL_checkinteger(L, 3);
 
 		if (lua_compatmode)
 			plr->latestlap = max(laps + 1, 0);
@@ -2061,11 +2061,11 @@ static int player_set(lua_State *L)
 		break;
 	}
 	case player_ctfteam:
-		plr->ctfteam = (INT32)luaL_checkinteger(L, 3);
+		plr->ctfteam = (int32_t)luaL_checkinteger(L, 3);
 		break;
 	case player_tossdelay:
 	case player_checkskip:
-		plr->checkskip = (INT32)luaL_checkinteger(L, 3);
+		plr->checkskip = (int32_t)luaL_checkinteger(L, 3);
 		break;
 	case player_starpostx:
 		plr->starpostx = luaL_checkfixed(L, 3) << (lua_compatmode ? 16 : 0);
@@ -2083,19 +2083,19 @@ static int player_set(lua_State *L)
 		plr->starpostflip = luaL_checkdboolean(L, 3);
 		break;
 	case player_starpostnum:
-		plr->starpostnum = (INT32)luaL_checkinteger(L, 3);
+		plr->starpostnum = (int32_t)luaL_checkinteger(L, 3);
 		break;
 	case player_starposttime:
 		plr->starposttime = (tic_t)luaL_checkinteger(L, 3);
 		break;
 	case player_lastsidehit:
-		plr->lastsidehit = (INT16)luaL_checkinteger(L, 3);
+		plr->lastsidehit = (int16_t)luaL_checkinteger(L, 3);
 		break;
 	case player_lastlinehit:
-		plr->lastlinehit = (INT16)luaL_checkinteger(L, 3);
+		plr->lastlinehit = (int16_t)luaL_checkinteger(L, 3);
 		break;
 	case player_onconveyor:
-		plr->onconveyor = (INT32)luaL_checkinteger(L, 3);
+		plr->onconveyor = (int32_t)luaL_checkinteger(L, 3);
 		break;
 	case player_awayviewmobj:
 	{
@@ -2107,7 +2107,7 @@ static int player_set(lua_State *L)
 	}
 	case player_awayviewtics:
 	{
-		plr->awayviewtics = (INT32)luaL_checkinteger(L, 3);
+		plr->awayviewtics = (int32_t)luaL_checkinteger(L, 3);
 		if (plr->awayviewtics && !plr->awayviewmobj) // awayviewtics must ALWAYS have an awayviewmobj set!!
 			P_SetTarget(&plr->awayviewmobj, plr->mo); // but since the script might set awayviewmobj immediately AFTER setting awayviewtics, use player mobj as filler for now.
 		break;
@@ -2134,7 +2134,7 @@ static int player_set(lua_State *L)
 		plr->grieftime = (tic_t)luaL_checkinteger(L, 3);
 		break;
 	case player_griefstrikes:
-		plr->griefstrikes = (UINT8)luaL_checkinteger(L, 3);
+		plr->griefstrikes = (uint8_t)luaL_checkinteger(L, 3);
 		break;
 	case player_splitscreenindex:
 		return NOSET;
@@ -2142,13 +2142,13 @@ static int player_set(lua_State *L)
 		plr->bumpertime = (tic_t)luaL_checkinteger(L, 3);
 		break;
 	case player_linkcount:
-		plr->linkcount = (INT32)luaL_checkinteger(L, 3);
+		plr->linkcount = (int32_t)luaL_checkinteger(L, 3);
 		break;
 	case player_linktimer:
 		plr->linktimer = (tic_t)luaL_checkinteger(L, 3);
 		break;
 	case player_maxlink:
-		plr->maxlink = (INT32)luaL_checkinteger(L, 3);
+		plr->maxlink = (int32_t)luaL_checkinteger(L, 3);
 		break;
 	case player_ping:
 		return NOSET;
@@ -2234,7 +2234,7 @@ static int player_num(lua_State *L)
 // powers, p -> powers[p]
 static int power_get(lua_State *L)
 {
-	UINT16 *powers = *((UINT16 **)luaL_checkudata(L, 1, META_POWERS));
+	uint16_t *powers = *((uint16_t **)luaL_checkudata(L, 1, META_POWERS));
 	powertype_t p = luaL_checkinteger(L, 2);
 	player_t *plr = (player_t*)((char*)powers - offsetof(player_t, powers));
 	if (p >= NUMPOWERS)
@@ -2261,10 +2261,10 @@ static int power_get(lua_State *L)
 // powers, p, value -> powers[p] = value
 static int power_set(lua_State *L)
 {
-	UINT16 *powers = *((UINT16 **)luaL_checkudata(L, 1, META_POWERS));
+	uint16_t *powers = *((uint16_t **)luaL_checkudata(L, 1, META_POWERS));
 	powertype_t p = luaL_checkinteger(L, 2);
 	player_t *plr = (player_t*)((char*)powers - offsetof(player_t, powers));
-	UINT16 i = (UINT16)luaL_checkinteger(L, 3);
+	uint16_t i = (uint16_t)luaL_checkinteger(L, 3);
 	if (p >= NUMPOWERS)
 		return luaL_error(L, LUA_QL("powertype_t") " cannot be %u", p);
 	if (hud_running)
@@ -2301,7 +2301,7 @@ static int power_len(lua_State *L)
 // ???, ks -> kartstuff[ks]
 static int kartstuff_get(lua_State *L)
 {
-	INT32 *kartstuff = *((INT32 **)luaL_checkudata(L, 1, META_KARTSTUFF));
+	int32_t *kartstuff = *((int32_t **)luaL_checkudata(L, 1, META_KARTSTUFF));
 	player_t *plr = (player_t*)((char*)kartstuff - offsetof(player_t, kartstuff));
 	kartstufftype_t ks = luaL_checkinteger(L, 2);
 
@@ -2554,10 +2554,10 @@ static int kartstuff_get(lua_State *L)
 // kartstuff, ks, value -> plt->??? = value
 static int kartstuff_set(lua_State *L)
 {
-	INT32 *kartstuff = *((INT32 **)luaL_checkudata(L, 1, META_KARTSTUFF));
+	int32_t *kartstuff = *((int32_t **)luaL_checkudata(L, 1, META_KARTSTUFF));
 	player_t *plr = (player_t*)((char*)kartstuff - offsetof(player_t, kartstuff));
 	kartstufftype_t ks = luaL_checkinteger(L, 2);
-	INT32 i = (INT32)luaL_checkinteger(L, 3);
+	int32_t i = (int32_t)luaL_checkinteger(L, 3);
 
 	if (ks >= NUMKARTSTUFF)
 		return luaL_error(L, LUA_QL("kartstufftype_t") " cannot be %u", ks);
@@ -2856,7 +2856,7 @@ static int kartstuff_len(lua_State *L)
 // karthud, ks -> karthud[ks]
 static int karthud_get(lua_State *L)
 {
-	INT32 *karthud = *((INT32 **)luaL_checkudata(L, 1, META_KARTHUD));
+	int32_t *karthud = *((int32_t **)luaL_checkudata(L, 1, META_KARTHUD));
 	karthudtype_t ks = luaL_checkinteger(L, 2);
 	if (ks >= NUMKARTHUD)
 		return luaL_error(L, LUA_QL("karthudtype_t") " cannot be %u", ks);
@@ -2867,9 +2867,9 @@ static int karthud_get(lua_State *L)
 // karthud, ks, value -> karthud[ks] = value
 static int karthud_set(lua_State *L)
 {
-	INT32 *karthud = *((INT32 **)luaL_checkudata(L, 1, META_KARTHUD));
+	int32_t *karthud = *((int32_t **)luaL_checkudata(L, 1, META_KARTHUD));
 	karthudtype_t ks = luaL_checkinteger(L, 2);
-	INT32 i = (INT32)luaL_checkinteger(L, 3);
+	int32_t i = (int32_t)luaL_checkinteger(L, 3);
 	if (ks >= NUMKARTHUD)
 		return luaL_error(L, LUA_QL("karthudtype_t") " cannot be %u", ks);
 	if (hud_running)
@@ -2984,27 +2984,27 @@ static int ticcmd_set(lua_State *L)
 	switch (field)
 	{
 	case ticcmd_forwardmove:
-		cmd->forwardmove = (SINT8)luaL_checkinteger(L, 3);
+		cmd->forwardmove = (int8_t)luaL_checkinteger(L, 3);
 		break;
 	case ticcmd_sidemove:
-		cmd->sidemove = (SINT8)luaL_checkinteger(L, 3);
+		cmd->sidemove = (int8_t)luaL_checkinteger(L, 3);
 		break;
 	case ticcmd_turning:
 	case ticcmd_driftturn:
-		cmd->turning = (INT16)luaL_checkinteger(L, 3);
+		cmd->turning = (int16_t)luaL_checkinteger(L, 3);
 		break;
 	case ticcmd_angle:
 	case ticcmd_angleturn:
-		cmd->angle = (INT16)luaL_checkinteger(L, 3);
+		cmd->angle = (int16_t)luaL_checkinteger(L, 3);
 		break;
 	case ticcmd_throwdir:
-		cmd->throwdir = (INT16)luaL_checkinteger(L, 3);
+		cmd->throwdir = (int16_t)luaL_checkinteger(L, 3);
 		break;
 	case ticcmd_aiming:
-		cmd->aiming = (INT16)luaL_checkinteger(L, 3);
+		cmd->aiming = (int16_t)luaL_checkinteger(L, 3);
 		break;
 	case ticcmd_buttons:
-		cmd->buttons = (UINT16)luaL_checkinteger(L, 3);
+		cmd->buttons = (uint16_t)luaL_checkinteger(L, 3);
 		break;
 	case ticcmd_latency:
 		return NOSET;
@@ -3264,7 +3264,7 @@ static int boostinfo_set(lua_State *L)
 			boostinfo->handleboost = luaL_checkfixed(L, 3);
 			break;
 		case boostinfo_grade:
-			boostinfo->grade = (UINT8)luaL_checkinteger(L, 3);
+			boostinfo->grade = (uint8_t)luaL_checkinteger(L, 3);
 			break;
 	}
 

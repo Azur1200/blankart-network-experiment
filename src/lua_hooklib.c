@@ -71,10 +71,10 @@ static int * hookRefs;
 static int   nextid;
 
 // After a hook errors once, don't print the error again.
-static UINT8 * hooksErrored;
+static uint8_t * hooksErrored;
 
 // compat mode for each hook
-static UINT8 * hookCompat;
+static uint8_t * hookCompat;
 
 static int errorRef;
 
@@ -286,7 +286,7 @@ typedef struct Hook_State Hook_State;
 typedef void (*Hook_Callback)(Hook_State *);
 
 struct Hook_State {
-	INT32        status;/* return status to calling function */
+	int32_t        status;/* return status to calling function */
 	void       * userdata;
 	int          hook_type;
 	mobjtype_t    mobj_type;  /* != NONMOHOOK if mobj hook */
@@ -573,7 +573,7 @@ static int call_string_hooks(Hook_State *hook)
 
 static int call_mobj_type_hooks(Hook_State *hook, mobjtype_t mobj_type)
 {
-	static UINT8 seen = 0; // so we dont have to check all this shit constantly
+	static uint8_t seen = 0; // so we dont have to check all this shit constantly
 	int numCalls = call_mapped(hook, &mobjHookIds[mobj_type][hook->hook_type]);
 
 	if (!seen && numCalls > 0 && mobj_type == MT_NULL && (
@@ -709,7 +709,7 @@ void LUA_HookVoid(int type)
 		call_hooks(&hook, 0, res_none);
 }
 
-void LUA_HookInt(INT32 number, int hook_type)
+void LUA_HookInt(int32_t number, int hook_type)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, 0, hook_type))
@@ -859,7 +859,7 @@ void LUA_HookPlayerThink(player_t *player)
 	TracyCZoneEnd(__zone);
 }
 
-static void thinkframe_hook_base(const int type, INT32 ps_type, void (*perfstatfunc)(int, precise_t, char *))
+static void thinkframe_hook_base(const int type, int32_t ps_type, void (*perfstatfunc)(int, precise_t, char *))
 {
 	TracyCZone(__zone, true);
 
@@ -954,8 +954,8 @@ static int damage_hook
 		mobj_t *target,
 		mobj_t *inflictor,
 		mobj_t *source,
-		INT32   damage,
-		UINT8   damagetype,
+		int32_t   damage,
+		uint8_t   damagetype,
 		int     hook_type,
 		Hook_Callback results_handler
 ){
@@ -978,8 +978,8 @@ static int playerdamage_hook
 	mobj_t *target,
  mobj_t *inflictor,
  mobj_t *source,
- INT32   damage,
- UINT8   damagetype,
+ int32_t   damage,
+ uint8_t   damagetype,
  int     hook_type,
  Hook_Callback results_handler
 ){
@@ -996,55 +996,55 @@ static int playerdamage_hook
 	return hook.status;
 }
 
-int LUA_HookShouldDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+int LUA_HookShouldDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype)
 {
 	return damage_hook(target, inflictor, source, damage, damagetype,
 			MOBJ_HOOK(ShouldDamage), res_force);
 }
 
-int LUA_HookShouldSpin(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+int LUA_HookShouldSpin(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype)
 {
 		return playerdamage_hook(target, inflictor, source, damage, damagetype,
 					   MOBJ_HOOK(ShouldSpin), res_force);
 }
 
-int LUA_HookShouldExplode(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+int LUA_HookShouldExplode(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype)
 {
 		return playerdamage_hook(target, inflictor, source, damage, damagetype,
 					   MOBJ_HOOK(ShouldExplode), res_force);
 }
 
-int LUA_HookShouldSquish(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+int LUA_HookShouldSquish(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype)
 {
 		return playerdamage_hook(target, inflictor, source, damage, damagetype,
 				MOBJ_HOOK(ShouldSquish), res_force);
 }
 
-int LUA_HookMobjDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+int LUA_HookMobjDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype)
 {
 	return damage_hook(target, inflictor, source, damage, damagetype,
 					   MOBJ_HOOK(MobjDamage), res_true);
 }
 
-int LUA_HookPlayerSpin(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+int LUA_HookPlayerSpin(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype)
 {
 		return playerdamage_hook(target, inflictor, source, damage, damagetype,
 					   MOBJ_HOOK(PlayerSpin), res_true);
 }
 
-int LUA_HookPlayerExplode(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+int LUA_HookPlayerExplode(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype)
 {
 		return playerdamage_hook(target, inflictor, source, damage, damagetype,
 						MOBJ_HOOK(PlayerExplode), res_true);
 }
 
-int LUA_HookPlayerSquish(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+int LUA_HookPlayerSquish(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype)
 {
 		return playerdamage_hook(target, inflictor, source, damage, damagetype,
 					   MOBJ_HOOK(PlayerSquish), res_true);
 }
 
-int LUA_HookMobjDeath(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damagetype)
+int LUA_HookMobjDeath(mobj_t *target, mobj_t *inflictor, mobj_t *source, uint8_t damagetype)
 {
 	return damage_hook(target, inflictor, source, 0, damagetype,
 			MOBJ_HOOK(MobjDeath), res_true);
@@ -1082,7 +1082,7 @@ void LUA_HookLinedefExecute(line_t *line, mobj_t *mo, sector_t *sector)
 	}
 }
 
-void LUA_HookSpecialExecute(activator_t *activator, INT32 *args, char **stringargs)
+void LUA_HookSpecialExecute(activator_t *activator, int32_t *args, char **stringargs)
 {
 	Hook_State hook = {};
 
@@ -1137,7 +1137,7 @@ int LUA_HookPlayerMsg(int source, int target, int flags, char *msg)
 	return hook.status;
 }
 
-int LUA_HookHurtMsg(player_t *player, mobj_t *inflictor, mobj_t *source, UINT8 damagetype)
+int LUA_HookHurtMsg(player_t *player, mobj_t *inflictor, mobj_t *source, uint8_t damagetype)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(HurtMsg)))
@@ -1322,13 +1322,13 @@ static void res_gprankpoints(Hook_State *hook)
 {
 	if (!lua_isnil(gL, -1))
 	{
-		INT16 *points = (INT16*)hook->userdata;
+		int16_t *points = (int16_t*)hook->userdata;
 		*points = lua_tointeger(gL, -1);
 		hook->status = true;
 	}
 }
 
-int LUA_HookGPRankPoints(UINT8 position, UINT8 numplayers, INT16 *points)
+int LUA_HookGPRankPoints(uint8_t position, uint8_t numplayers, int16_t *points)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, 0, HOOK(GPRankPoints)))
@@ -1448,7 +1448,7 @@ static void res_trueforce(Hook_State *hook)
 		state->force = lua_todboolean(gL, -1);
 };
 
-dboolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, dboolean wasHoldingItem, dboolean *force)
+dboolean LUA_HookPlayerItem(player_t *player, uint8_t itemType, dboolean wasHoldingItem, dboolean *force)
 {
 	Hook_State hook = {};
 	TrueForce_State state = {0};
@@ -1468,7 +1468,7 @@ dboolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, dboolean wasHoldin
 	return state.override;
 }
 
-dboolean LUA_HookPlayerItemThink(player_t *player, UINT8 itemType)
+dboolean LUA_HookPlayerItemThink(player_t *player, uint8_t itemType)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(PlayerItemThink)))
@@ -1482,7 +1482,7 @@ dboolean LUA_HookPlayerItemThink(player_t *player, UINT8 itemType)
 	return hook.status;
 }
 
-dboolean LUA_HookPlayerItemUse(player_t *player, UINT8 itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro)
+dboolean LUA_HookPlayerItemUse(player_t *player, uint8_t itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(PlayerItemUse)))
@@ -1500,7 +1500,7 @@ dboolean LUA_HookPlayerItemUse(player_t *player, UINT8 itemType, dboolean attack
 	return hook.status;
 }
 
-dboolean LUA_HookPlayerItemHoldUse(player_t *player, UINT8 itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro)
+dboolean LUA_HookPlayerItemHoldUse(player_t *player, uint8_t itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(PlayerItemHoldUse)))
@@ -1518,7 +1518,7 @@ dboolean LUA_HookPlayerItemHoldUse(player_t *player, UINT8 itemType, dboolean at
 	return hook.status;
 }
 
-dboolean LUA_HookPlayerItemReleaseUse(player_t *player, UINT8 itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro)
+dboolean LUA_HookPlayerItemReleaseUse(player_t *player, uint8_t itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(PlayerItemReleaseUse)))
@@ -1537,7 +1537,7 @@ dboolean LUA_HookPlayerItemReleaseUse(player_t *player, UINT8 itemType, dboolean
 }
 
 typedef struct {
-	INT32 *target;
+	int32_t *target;
 	dboolean force_sink;
 } KartHyudoro_State;
 
@@ -1557,7 +1557,7 @@ static void res_karthyudoro(Hook_State *hook)
 		state->force_sink = lua_todboolean(gL, -1);
 }
 
-dboolean LUA_HookKartHyudoro(player_t *player, INT32 *target, dboolean sink)
+dboolean LUA_HookKartHyudoro(player_t *player, int32_t *target, dboolean sink)
 {
 	Hook_State hook = {};
 	KartHyudoro_State state = {0};
@@ -1610,7 +1610,7 @@ dboolean LUA_HookKartSneaker(player_t *player, int type)
 	return hook.status;
 }
 
-dboolean LUA_HookKartStripItems(player_t* player, UINT8 item)
+dboolean LUA_HookKartStripItems(player_t* player, uint8_t item)
 {
 	Hook_State hook = {};
 	if (prepare_hook(&hook, false, HOOK(KartStripItems)))
@@ -1637,7 +1637,7 @@ dboolean LUA_HookKartStripOther(player_t* player)
 	return hook.status;
 }
 
-dboolean LUA_HookCanPickupItem(player_t *player, UINT8 weapon, dboolean *force)
+dboolean LUA_HookCanPickupItem(player_t *player, uint8_t weapon, dboolean *force)
 {
 	Hook_State hook = {};
 	TrueForce_State state = {0};

@@ -6,7 +6,7 @@
 rendermode_t rendermode = render_none;
 rendermode_t chosenrendermode = render_none;
 
-UINT8 graphics_started = 0; // Is used in console.c and screen.c
+uint8_t graphics_started = 0; // Is used in console.c and screen.c
 
 dboolean highcolor = false;
 
@@ -24,12 +24,12 @@ void I_SetPalette(RGBA_t *palette)
 	(void)palette;
 }
 
-INT32 VID_NumModes(void)
+int32_t VID_NumModes(void)
 {
 	return 0;
 }
 
-INT32 VID_GetModeForSize(INT32 w, INT32 h)
+int32_t VID_GetModeForSize(int32_t w, int32_t h)
 {
 	(void)w;
 	(void)h;
@@ -38,7 +38,7 @@ INT32 VID_GetModeForSize(INT32 w, INT32 h)
 
 void VID_PrepareModeList(void){}
 
-INT32 VID_SetMode(INT32 modenum)
+int32_t VID_SetMode(int32_t modenum)
 {
 	(void)modenum;
 	return 0;
@@ -54,13 +54,13 @@ void VID_CheckGLLoaded(rendermode_t oldrender)
 	(void)oldrender;
 }
 
-const char *VID_GetModeName(INT32 modenum)
+const char *VID_GetModeName(int32_t modenum)
 {
 	(void)modenum;
 	return NULL;
 }
 
-UINT32 I_GetRefreshRate(void) { return 35; }
+uint32_t I_GetRefreshRate(void) { return 35; }
 
 void I_UpdateNoBlit(void){}
 
@@ -68,7 +68,7 @@ void I_FinishUpdate(void){}
 
 void I_UpdateNoVsync(void) {}
 
-void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
+void I_ReadScreen(uint8_t * restrict scr, int32_t scale)
 {
 	(void)scr;
 	(void)scale;

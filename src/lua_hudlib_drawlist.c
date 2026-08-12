@@ -45,34 +45,34 @@ enum drawitem_e {
 
 // A single draw item with all possible arguments needed for a draw call.
 typedef struct drawitem_s {
-	UINT64 id;
+	uint64_t id;
 	enum drawitem_e type;
 	fixed_t x;
 	fixed_t y;
 	fixed_t line_width;
 	union {
-		INT32 flags;
-		INT32 c;
+		int32_t flags;
+		int32_t c;
 	};
 	union {
 		fixed_t scale;  // drawScaled
 		fixed_t hscale; // drawStretched
 		fixed_t w;      // drawFill
 		fixed_t x2;     // drawFixedLine
-		INT32 align;    // drawString
-		INT32 num;      // drawNum, drawPaddedNum, drawPingNum
-		UINT16 color;   // fadeScreen
-		INT32 timer;    // drawTitleCardString
+		int32_t align;    // drawString
+		int32_t num;      // drawNum, drawPaddedNum, drawPingNum
+		uint16_t color;   // fadeScreen
+		int32_t timer;    // drawTitleCardString
 	};
 	union {
 		fixed_t vscale; // drawStretched
 		fixed_t h;      // drawFill
 		fixed_t y2;     // drawFixedLine
-		INT32 digits;   // drawPaddedNum
-		UINT8 strength; // fadeScreen
-		INT32 threshold; // drawTitleCardString
+		int32_t digits;   // drawPaddedNum
+		uint8_t strength; // fadeScreen
+		int32_t threshold; // drawTitleCardString
 	};
-	UINT8 *colormap;
+	uint8_t *colormap;
 
 	// pointers (and size_t's) last, for potentially better packing
 	union {
@@ -206,7 +206,7 @@ static void CalcStringCoords(drawitem_t *item, const char *string)
 {
 	if (!(item->flags & V_NOSCALESTART))
 	{
-		INT32 dup = vid.dup;
+		int32_t dup = vid.dup;
 
 		item->flags |= V_NOSCALESTART;
 
@@ -225,8 +225,8 @@ static void CalcStringCoords(drawitem_t *item, const char *string)
 				break;
 		}
 
-		INT32 x = item->x * dup;
-		INT32 y = item->y * dup;
+		int32_t x = item->x * dup;
+		int32_t y = item->y * dup;
 
 		if (item->flags & V_SPLITSCREEN)
 			y += (BASEVIDHEIGHT * (dup - 1))/2;
@@ -265,10 +265,10 @@ static void CalcFillCoords(drawitem_t *item)
 {
 	if (!(item->flags & V_NOSCALESTART))
 	{
-		INT32 dup = vid.dup;
-		INT32 x = item->x * dup;
-		INT32 y = item->y * dup;
-		INT32 c = item->c;
+		int32_t dup = vid.dup;
+		int32_t x = item->x * dup;
+		int32_t y = item->y * dup;
+		int32_t c = item->c;
 
 		item->flags |= V_NOSCALESTART;
 		item->w *= dup;
@@ -307,13 +307,13 @@ static void CalcFillCoords(drawitem_t *item)
 #define INTERP_STRING 2
 #define INTERP_FLAGMASK 0x3
 
-static UINT64 GetItemId(void)
+static uint64_t GetItemId(void)
 {
 	if (!hud_interpolate)
 		return 0;
 
 	// leave bits 0 and 1 free for the string mode
-	UINT64 id = ((uintptr_t)gL->savedpc << 32) | (hud_interpcounter << 10) | (hud_interptag << 2);
+	uint64_t id = ((uintptr_t)gL->savedpc << 32) | (hud_interpcounter << 10) | (hud_interptag << 2);
 
 	if (hud_interplatch)
 	{
@@ -328,11 +328,11 @@ static UINT64 GetItemId(void)
 
 void LUA_HUD_AddDraw(
 	huddrawlist_h list,
-	INT32 x,
-	INT32 y,
+	int32_t x,
+	int32_t y,
 	patch_t *patch,
-	INT32 flags,
-	UINT8 *colormap
+	int32_t flags,
+	uint8_t *colormap
 )
 {
 	size_t i = AllocateDrawItem(list);
@@ -352,8 +352,8 @@ void LUA_HUD_AddDrawScaled(
 	fixed_t y,
 	fixed_t scale,
 	patch_t *patch,
-	INT32 flags,
-	UINT8 *colormap
+	int32_t flags,
+	uint8_t *colormap
 )
 {
 	size_t i = AllocateDrawItem(list);
@@ -375,8 +375,8 @@ void LUA_HUD_AddDrawStretched(
 	fixed_t hscale,
 	fixed_t vscale,
 	patch_t *patch,
-	INT32 flags,
-	UINT8 *colormap
+	int32_t flags,
+	uint8_t *colormap
 )
 {
 	size_t i = AllocateDrawItem(list);
@@ -394,10 +394,10 @@ void LUA_HUD_AddDrawStretched(
 
 void LUA_HUD_AddDrawNum(
 	huddrawlist_h list,
-	INT32 x,
-	INT32 y,
-	INT32 num,
-	INT32 flags
+	int32_t x,
+	int32_t y,
+	int32_t num,
+	int32_t flags
 )
 {
 	size_t i = AllocateDrawItem(list);
@@ -413,11 +413,11 @@ void LUA_HUD_AddDrawNum(
 
 void LUA_HUD_AddDrawPaddedNum(
 	huddrawlist_h list,
-	INT32 x,
-	INT32 y,
-	INT32 num,
-	INT32 digits,
-	INT32 flags
+	int32_t x,
+	int32_t y,
+	int32_t num,
+	int32_t digits,
+	int32_t flags
 )
 {
 	size_t i = AllocateDrawItem(list);
@@ -434,11 +434,11 @@ void LUA_HUD_AddDrawPaddedNum(
 
 void LUA_HUD_AddDrawPingNum(
 	huddrawlist_h list,
-	INT32 x,
-	INT32 y,
-	INT32 flags,
-	INT32 num,
-	UINT8 *colormap
+	int32_t x,
+	int32_t y,
+	int32_t flags,
+	int32_t num,
+	uint8_t *colormap
 )
 {
 	size_t i = AllocateDrawItem(list);
@@ -455,11 +455,11 @@ void LUA_HUD_AddDrawPingNum(
 
 void LUA_HUD_AddDrawFill(
 	huddrawlist_h list,
-	INT32 x,
-	INT32 y,
-	INT32 w,
-	INT32 h,
-	INT32 c
+	int32_t x,
+	int32_t y,
+	int32_t w,
+	int32_t h,
+	int32_t c
 )
 {
 	size_t i = AllocateDrawItem(list);
@@ -481,7 +481,7 @@ void LUA_HUD_AddDrawFixedLine(
 	fixed_t x2,
 	fixed_t y2,
 	fixed_t width,
-	INT32 c
+	int32_t c
 )
 {
 	size_t i = AllocateDrawItem(list);
@@ -501,8 +501,8 @@ void LUA_HUD_AddDrawString(
 	fixed_t x,
 	fixed_t y,
 	const char *str,
-	INT32 flags,
-	INT32 align
+	int32_t flags,
+	int32_t align
 )
 {
 	size_t i = AllocateDrawItem(list);
@@ -519,8 +519,8 @@ void LUA_HUD_AddDrawString(
 
 void LUA_HUD_AddFadeScreen(
 	huddrawlist_h list,
-	UINT16 color,
-	UINT8 strength
+	uint16_t color,
+	uint8_t strength
 )
 {
 	size_t i = AllocateDrawItem(list);
@@ -534,13 +534,13 @@ void LUA_HUD_AddFadeScreen(
 
 void LUA_HUD_AddDrawTitleCardString(
 	huddrawlist_h list,
-	INT32 x,
-	INT32 y,
-	INT32 flags,
+	int32_t x,
+	int32_t y,
+	int32_t flags,
 	const char *str,
 	dboolean bossmode,
-	INT32 timer,
-	INT32 threshold
+	int32_t timer,
+	int32_t threshold
 )
 {
 	size_t i = AllocateDrawItem(list);
@@ -560,7 +560,7 @@ void LUA_HUD_AddDrawKartString(
 	fixed_t x,
 	fixed_t y,
 	const char *str,
-	INT32 flags
+	int32_t flags
 )
 {
 	size_t i = AllocateDrawItem(list);
@@ -580,7 +580,7 @@ void LUA_HUD_AddSetClipRect(
 	fixed_t y,
 	fixed_t w,
 	fixed_t h,
-	INT32 flags
+	int32_t flags
 )
 {
 	size_t i = AllocateDrawItem(list);

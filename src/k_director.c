@@ -29,17 +29,17 @@ struct directorinfo
 	tic_t cooldown; // how long has it been since we last switched?
 	tic_t chaosleep;// how long did we watch the same player?
 	tic_t freeze;   // when nonzero, fixed switch pending, freeze logic!
-	INT32 attacker; // who to switch to when freeze delay elapses
-	INT32 maxdist;  // how far is the closest player from finishing?
+	int32_t attacker; // who to switch to when freeze delay elapses
+	int32_t maxdist;  // how far is the closest player from finishing?
 
-	INT32 sortedplayers[MAXPLAYERS]; // position-1 goes in, player index comes out.
-	INT32 gap[MAXPLAYERS];           // gap between a given position and their closest pursuer
-	INT32 boredom[MAXPLAYERS];       // how long has a given position had no credible attackers?
+	int32_t sortedplayers[MAXPLAYERS]; // position-1 goes in, player index comes out.
+	int32_t gap[MAXPLAYERS];           // gap between a given position and their closest pursuer
+	int32_t boredom[MAXPLAYERS];       // how long has a given position had no credible attackers?
 } directorinfo;
 
-static INT32 K_PlayersPlaying(void)
+static int32_t K_PlayersPlaying(void)
 {
-	INT32 num = 0, i;
+	int32_t num = 0, i;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator || !players[i].mo)
@@ -80,8 +80,8 @@ static mobj_t *finishmo = NULL;
 // waypoints with the same values, but idk if its really worth it
 static void K_SetupFinishMo(void)
 {
-	INT16 maxMoveCount = -1;
-	INT16 maxAngle = -1;
+	int16_t maxMoveCount = -1;
+	int16_t maxAngle = -1;
 
 	finishmo = NULL;
 
@@ -116,7 +116,7 @@ static void K_SetupFinishMo(void)
 
 void K_InitDirector(void)
 {
-	INT32 playernum;
+	int32_t playernum;
 
 	directorinfo.cooldown = DIRECTORSWITCHTIME;
 	directorinfo.freeze = 0;
@@ -146,7 +146,7 @@ static fixed_t K_GetLegacyDistanceToFinish(player_t player)
 						finishmo->z - player.mo->z) / FRACUNIT;
 }
 
-static fixed_t K_GetFinishGap(INT32 leader, INT32 follower)
+static fixed_t K_GetFinishGap(int32_t leader, int32_t follower)
 {
 	fixed_t dista = K_UsingLegacyCheckpoints() ? K_GetLegacyDistanceToFinish(players[follower]) : (fixed_t)players[follower].distancetofinish;
 	fixed_t distb = K_UsingLegacyCheckpoints() ? K_GetLegacyDistanceToFinish(players[leader]) : (fixed_t)players[leader].distancetofinish;
@@ -163,8 +163,8 @@ static fixed_t K_GetFinishGap(INT32 leader, INT32 follower)
 
 static void K_UpdateDirectorPositions(void)
 {
-	INT32 playernum;
-	INT32 position;
+	int32_t playernum;
+	int32_t position;
 	player_t* target;
 
 	for (playernum = 0; playernum < MAXPLAYERS; playernum++)
@@ -192,7 +192,7 @@ static void K_UpdateDirectorPositions(void)
 
 		if (directorinfo.gap[position] >= DIRECTORBREAKAWAYDIST)
 		{
-			directorinfo.boredom[position] = (INT32)(min(DIRECTORBOREDOMTIME * 2, directorinfo.boredom[position] + 1));
+			directorinfo.boredom[position] = (int32_t)(min(DIRECTORBOREDOMTIME * 2, directorinfo.boredom[position] + 1));
 		}
 		else if (directorinfo.boredom[position] > 0)
 		{
@@ -219,7 +219,7 @@ static dboolean K_CanSwitchDirector(void)
 	return true;
 }
 
-void K_DirectorSwitch(INT32 player, dboolean force)
+void K_DirectorSwitch(int32_t player, dboolean force)
 {
 	if (!K_DirectorIsEnabled())
 	{
@@ -241,7 +241,7 @@ void K_DirectorSwitch(INT32 player, dboolean force)
 	directorinfo.chaosleep = 0;
 }
 
-void K_DirectorForceSwitch(INT32 player, INT32 time)
+void K_DirectorForceSwitch(int32_t player, int32_t time)
 {
 	if (!K_DirectorIsEnabled())
 	{
@@ -260,10 +260,10 @@ void K_DirectorForceSwitch(INT32 player, INT32 time)
 
 static void K_DirectorSwitchRandom(void)
 {
-	INT32 randomplayer = -1;
+	int32_t randomplayer = -1;
 
 	// kinda dumb but just check if the random player is existing lmao
-	for (INT32 h = 0; h < MAXPLAYERS; h++)
+	for (int32_t h = 0; h < MAXPLAYERS; h++)
 	{
 		randomplayer = directorinfo.sortedplayers[M_RandomRange(0, K_PlayersPlaying()-1)]; // switch to someone random
 
@@ -301,10 +301,10 @@ void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
 
 void K_DrawDirectorDebugger(void)
 {
-	INT32 position;
-	INT32 leader;
-	INT32 follower;
-	INT32 ytxt;
+	int32_t position;
+	int32_t leader;
+	int32_t follower;
+	int32_t ytxt;
 
 	if (!cv_kartdebugdirector.value)
 	{
@@ -354,7 +354,7 @@ void K_DrawDirectorDebugger(void)
 
 void K_UpdateDirector(void)
 {
-	INT32 targetposition;
+	int32_t targetposition;
 	directorinfo.viewplayer = &players[displayplayers[0]];
 
 	if (!K_DirectorIsEnabled())
@@ -413,7 +413,7 @@ void K_UpdateDirector(void)
 	// we adjust for this when comparing to player->position or when looking at the leading player, Don't Freak Out
 	for (targetposition = 1; targetposition < MAXPLAYERS; targetposition++)
 	{
-		INT32 target;
+		int32_t target;
 
 		// you are out of players, try again
 		if (directorinfo.sortedplayers[targetposition] == -1)

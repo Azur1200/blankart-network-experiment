@@ -58,7 +58,7 @@ PFNglGetString pglGetString;
 
 #define MAX_VIDEO_MODES   32
 static  vmode_t     video_modes[MAX_VIDEO_MODES];
-INT32     oglflags = 0;
+int32_t     oglflags = 0;
 
 // **************************************************************************
 //                                                                  FUNCTIONS
@@ -165,10 +165,10 @@ dboolean LoadGL(void)
 //                  : doesn't work. (ultimately for different pixel formats, we
 //                  : should close the window, and re-create it)
 // -----------------+
-int SetupPixelFormat(INT32 WantColorBits, INT32 WantStencilBits, INT32 WantDepthBits)
+int SetupPixelFormat(int32_t WantColorBits, int32_t WantStencilBits, int32_t WantDepthBits)
 {
 	static DWORD iLastPFD = 0;
-	INT32 nPixelFormat;
+	int32_t nPixelFormat;
 	PIXELFORMATDESCRIPTOR pfd =
 	{
 		sizeof (PIXELFORMATDESCRIPTOR),  // size
@@ -228,7 +228,7 @@ int SetupPixelFormat(INT32 WantColorBits, INT32 WantStencilBits, INT32 WantDepth
 // SetRes           : Set a display mode
 // Notes            : pcurrentmode is actually not used
 // -----------------+
-static INT32 WINAPI SetRes(viddef_t *lvid, vmode_t *pcurrentmode)
+static int32_t WINAPI SetRes(viddef_t *lvid, vmode_t *pcurrentmode)
 {
 	LPCSTR renderer;
 	BOOL WantFullScreen = !(lvid->u.windowed);  //(lvid->u.windowed ? 0 : CDS_FULLSCREEN);
@@ -275,8 +275,8 @@ static INT32 WINAPI SetRes(viddef_t *lvid, vmode_t *pcurrentmode)
 	else
 	{
 		RECT bounds;
-		INT32 x, y;
-		INT32 w = lvid->width, h = lvid->height;
+		int32_t x, y;
+		int32_t w = lvid->width, h = lvid->height;
 		GetWindowRect(hWnd, &bounds);
 		bounds.right = bounds.left+w;
 		bounds.bottom = bounds.top+h;
@@ -297,7 +297,7 @@ static INT32 WINAPI SetRes(viddef_t *lvid, vmode_t *pcurrentmode)
 	}
 
 	{
-		INT32 res;
+		int32_t res;
 
 		// Set res.
 		res = SetupPixelFormat(lvid->bpp*8, 0, 16);
@@ -392,12 +392,12 @@ static void UnSetRes(void)
 // Returns          : pvidmodes   - points to list of detected OpenGL video modes
 //                  : numvidmodes - number of detected OpenGL video modes
 // -----------------+
-void GL_GetModeList(vmode_t** pvidmodes, INT32 *numvidmodes)
+void GL_GetModeList(vmode_t** pvidmodes, int32_t *numvidmodes)
 {
-	INT32  i;
+	int32_t  i;
 
 #if 1
-	INT32 iMode;
+	int32_t iMode;
 /*
 	faB test code
 
@@ -427,7 +427,7 @@ void GL_GetModeList(vmode_t** pvidmodes, INT32 *numvidmodes)
 			video_modes[iMode].windowed = 0;                    // fullscreen is the default
 			video_modes[iMode].misc = 0;
 			video_modes[iMode].name = malloc(12 * sizeof (CHAR));
-			sprintf(video_modes[iMode].name, "%dx%d", (INT32)Tmp.dmPelsWidth, (INT32)Tmp.dmPelsHeight);
+			sprintf(video_modes[iMode].name, "%dx%d", (int32_t)Tmp.dmPelsWidth, (int32_t)Tmp.dmPelsHeight);
 			GL_DBG_Printf ("Mode: %s\n", video_modes[iMode].name);
 			video_modes[iMode].width = Tmp.dmPelsWidth;
 			video_modes[iMode].height = Tmp.dmPelsHeight;
@@ -443,7 +443,7 @@ void GL_GetModeList(vmode_t** pvidmodes, INT32 *numvidmodes)
 
 	// classic video modes (fullscreen/windowed)
 	// Added some. Tails
-	INT32 res[][2] = {
+	int32_t res[][2] = {
 					{ 320, 200},
 					{ 320, 240},
 					{ 400, 300},
@@ -463,7 +463,7 @@ void GL_GetModeList(vmode_t** pvidmodes, INT32 *numvidmodes)
 };
 
 	HDC bpphdc;
-	INT32 iBitsPerPel;
+	int32_t iBitsPerPel;
 
 	GL_DBG_Printf ("HWRAPI GetModeList()\n");
 
@@ -526,10 +526,10 @@ void GL_Shutdown(void)
 // -----------------+
 // FinishUpdate     : Swap front and back buffers
 // -----------------+
-void GL_FinishUpdate(INT32 waitvbl)
+void GL_FinishUpdate(int32_t waitvbl)
 {
 #ifdef USE_WGL_SWAP
-	static INT32 oldwaitvbl = 0;
+	static int32_t oldwaitvbl = 0;
 #else
 	UNREFERENCED_PARAMETER(waitvbl);
 #endif

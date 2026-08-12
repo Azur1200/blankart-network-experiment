@@ -211,7 +211,7 @@ static int result_num(lua_State *L)
 static int graphics_get(lua_State *L)
 {
 	kartitemgraphics_t *graphics = *((kartitemgraphics_t**)luaL_checkudata(L, 1, META_KARTITEMGRAPHICS));
-	INT32 index = luaL_checkinteger(L, 2);
+	int32_t index = luaL_checkinteger(L, 2);
 
 	if (index < 0 || index >= graphics->numpatches)
 		return luaL_error(L, "patch index %d out of range (0 - %d)", index, graphics->numpatches-1);
@@ -234,7 +234,7 @@ static int graphics_num(lua_State *L)
 
 static int lib_iterateKartItems(lua_State *L)
 {
-	INT32 i;
+	int32_t i;
 
 	if (lua_gettop(L) < 2)
 	{
@@ -261,7 +261,7 @@ static int lib_iterateKartItems(lua_State *L)
 
 static int lib_iterateKartResults(lua_State *L)
 {
-	INT32 i;
+	int32_t i;
 
 	if (lua_gettop(L) < 2)
 	{
@@ -290,7 +290,7 @@ static int lib_getKartItem(lua_State *L)
 {
 	if (lua_type(L, 2) == LUA_TNUMBER)
 	{
-		INT32 i = luaL_checkinteger(L, 2);
+		int32_t i = luaL_checkinteger(L, 2);
 		if (i < 1 || i >= numkartitems)
 			return luaL_error(L, "kartitem index %d out of range (1 - %d)", i, numkartitems-1);
 		LUA_PushUserdata(L, &kartitems[i], META_KARTITEM);
@@ -316,7 +316,7 @@ static int lib_getKartResult(lua_State *L)
 {
 	if (lua_type(L, 2) == LUA_TNUMBER)
 	{
-		INT32 i = luaL_checkinteger(L, 2);
+		int32_t i = luaL_checkinteger(L, 2);
 		if (i < 0 || i >= numkartresults)
 			return luaL_error(L, "kartresult index %d out of range (0 - %d)", i, numkartresults-1);
 		LUA_PushUserdata(L, &kartresults[i], META_KARTRESULT);

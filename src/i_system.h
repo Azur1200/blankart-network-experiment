@@ -28,11 +28,11 @@ extern "C" {
 
 /**	\brief Graphic system had started up
 */
-extern UINT8 graphics_started;
+extern uint8_t graphics_started;
 
 /**	\brief Keyboard system is up and run
 */
-extern UINT8 keyboard_started;
+extern uint8_t keyboard_started;
 
 /** \brief Set to true when inside a signal handler that will exit the program. */
 dboolean I_In_Exiting_Signal_Handler(void);
@@ -43,7 +43,7 @@ dboolean I_In_Exiting_Signal_Handler(void);
 
 	\return	free memory in the system
 */
-UINT32 I_GetFreeMem(UINT32 *total);
+uint32_t I_GetFreeMem(uint32_t *total);
 
 /**	\brief	Returns precise time value for performance measurement. The precise
             time should be a monotonically increasing counter, and will wrap.
@@ -59,7 +59,7 @@ size_t I_GetRandomBytes(char *destination, size_t count);
 /** \brief  Get the precision of precise_t in units per second. Invocations of
             this function for the program's duration MUST return the same value.
   */
-UINT64 I_GetPrecisePrecision(void);
+uint64_t I_GetPrecisePrecision(void);
 
 /** \brief  Get the current time in rendering tics, including fractions.
 */
@@ -74,7 +74,7 @@ double I_GetFrameTime(void);
 
 	\return	void
 */
-void I_Sleep(UINT32 ms);
+void I_Sleep(uint32_t ms);
 
 dboolean I_CheckFrameCap(precise_t start, precise_t end);
 
@@ -156,7 +156,7 @@ void I_RemoveExitFunc(void (*func)());
 
 /**	\brief Setup signal handler, plus stuff for trapping errors and cleanly exit.
 */
-INT32 I_StartupSystem(void);
+int32_t I_StartupSystem(void);
 
 /**	\brief Shutdown systems
 */
@@ -166,11 +166,11 @@ dboolean I_Interrupted(void);
 
 /**	\brief	The I_GetDiskFreeSpace function
 
-	\param	freespace	a INT64 pointer to hold the free space amount
+	\param	freespace	a int64_t pointer to hold the free space amount
 
 	\return	void
 */
-void I_GetDiskFreeSpace(INT64 *freespace);
+void I_GetDiskFreeSpace(int64_t *freespace);
 
 /**	\brief find out the user's name
 */
@@ -183,14 +183,14 @@ char *I_GetUserName(void);
 
 	\return status of new folder
 */
-INT32 I_mkdir(const char *dirname, INT32 unixright);
+int32_t I_mkdir(const char *dirname, int32_t unixright);
 
 /**	\brief Change current working directory
 
 	\param path directory path
 	\return 0 on success, -1 on error
 */
-INT32 I_ChDir(const char *path);
+int32_t I_ChDir(const char *path);
 
 /**	\brief Get current working directory
 
@@ -207,9 +207,9 @@ const char *I_LocateWad(void);
 
 /**	\brief First Joystick's events
 */
-void I_GetJoystickEvents(UINT8 index);
+void I_GetJoystickEvents(uint8_t index);
 
-INT32 I_GetControllerIDForPlayer(UINT8 pnum);
+int32_t I_GetControllerIDForPlayer(uint8_t pnum);
 
 /**	\brief Checks if the mouse needs to be grabbed
 */
@@ -217,11 +217,11 @@ void I_UpdateMouseGrab(void);
 
 char *I_GetEnv(const char *name);
 
-INT32 I_PutEnv(char *variable);
+int32_t I_PutEnv(char *variable);
 
 /** \brief Put data in system clipboard
 */
-INT32 I_ClipboardCopy(const char *data, size_t size);
+int32_t I_ClipboardCopy(const char *data, size_t size);
 
 /** \brief Retrieve data from system clipboard
 */

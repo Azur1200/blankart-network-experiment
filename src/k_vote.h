@@ -23,7 +23,7 @@ void Y_VoteDrawer(void);
 void Y_VoteTicker(void);
 void Y_StartVote(void);
 void Y_EndVote(void);
-void Y_SetupVoteFinish(SINT8 pick, SINT8 level);
+void Y_SetupVoteFinish(int8_t pick, int8_t level);
 
 // Votescreen stuff
 typedef struct
@@ -43,11 +43,11 @@ typedef struct
 	char Prefix[5];                 // Race = INTSX, Battle = BTLSX
 	char luaPrefix[5];              // prefix for lua votescreens
 
-	INT32 currentAnimFrame;         // current animated background frame
-	INT32 timePerAnimFrame;         // time for 1 frame in ticks, 2 by default
+	int32_t currentAnimFrame;         // current animated background frame
+	int32_t timePerAnimFrame;         // time for 1 frame in ticks, 2 by default
 
-	INT32 foundLuaVoteFrames;       // normal lua patch frames
-	INT32 foundLuaVoteWideFrames;   // widescreen lua patch frames
+	int32_t foundLuaVoteFrames;       // normal lua patch frames
+	int32_t foundLuaVoteWideFrames;   // widescreen lua patch frames
 
 	votereplace_t replaced;         // checks which non lua patch has been replaced
 
@@ -59,7 +59,7 @@ typedef struct
 } votescreen_t;
 extern votescreen_t VoteScreen;
 
-dboolean Y_PlayerIDCanVote(const UINT8 id);
+dboolean Y_PlayerIDCanVote(const uint8_t id);
 
 typedef enum
 {

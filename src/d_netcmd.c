@@ -87,34 +87,34 @@
 // protos
 // ------
 
-static void Got_NameAndColor(UINT8 **cp, INT32 playernum);
-static void Got_WeaponPref(UINT8 **cp, INT32 playernum);
-static void Got_PowerLevel(UINT8 **cp, INT32 playernum);
-static void Got_PartyInvite(UINT8 **cp, INT32 playernum);
-static void Got_AcceptPartyInvite(UINT8 **cp, INT32 playernum);
-static void Got_CancelPartyInvite(UINT8 **cp, INT32 playernum);
-static void Got_LeaveParty(UINT8 **cp, INT32 playernum);
-static void Got_Mapcmd(UINT8 **cp, INT32 playernum);
-static void Got_ExitLevelcmd(UINT8 **cp, INT32 playernum);
-static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum);
-static void Got_ModifyVotecmd(UINT8 **cp, INT32 playernum);
-static void Got_PickVotecmd(UINT8 **cp, INT32 playernum);
-static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum);
-static void Got_Addfilecmd(UINT8 **cp, INT32 playernum);
-static void Got_Pause(UINT8 **cp, INT32 playernum);
-static void Got_Respawn(UINT8 **cp, INT32 playernum);
-static void Got_RandomSeed(UINT8 **cp, INT32 playernum);
-static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum);
-static void Got_Teamchange(UINT8 **cp, INT32 playernum);
-static void Got_Clearscores(UINT8 **cp, INT32 playernum);
-static void Got_DiscordInfo(UINT8 **cp, INT32 playernum);
-static void Got_ScheduleTaskcmd(UINT8 **cp, INT32 playernum);
-static void Got_ScheduleClearcmd(UINT8 **cp, INT32 playernum);
-static void Got_Automatecmd(UINT8 **cp, INT32 playernum);
-static void Got_MapQueuecmd(UINT8 **cp, INT32 playernum);
-static void Got_Cheat(UINT8 **cp, INT32 playernum);
-static void Got_ClanTagSet(UINT8 **cp, INT32 playernum);
-static void Got_ClanTagClear(UINT8 **cp, INT32 playernum);
+static void Got_NameAndColor(uint8_t **cp, int32_t playernum);
+static void Got_WeaponPref(uint8_t **cp, int32_t playernum);
+static void Got_PowerLevel(uint8_t **cp, int32_t playernum);
+static void Got_PartyInvite(uint8_t **cp, int32_t playernum);
+static void Got_AcceptPartyInvite(uint8_t **cp, int32_t playernum);
+static void Got_CancelPartyInvite(uint8_t **cp, int32_t playernum);
+static void Got_LeaveParty(uint8_t **cp, int32_t playernum);
+static void Got_Mapcmd(uint8_t **cp, int32_t playernum);
+static void Got_ExitLevelcmd(uint8_t **cp, int32_t playernum);
+static void Got_SetupVotecmd(uint8_t **cp, int32_t playernum);
+static void Got_ModifyVotecmd(uint8_t **cp, int32_t playernum);
+static void Got_PickVotecmd(uint8_t **cp, int32_t playernum);
+static void Got_RequestAddfilecmd(uint8_t **cp, int32_t playernum);
+static void Got_Addfilecmd(uint8_t **cp, int32_t playernum);
+static void Got_Pause(uint8_t **cp, int32_t playernum);
+static void Got_Respawn(uint8_t **cp, int32_t playernum);
+static void Got_RandomSeed(uint8_t **cp, int32_t playernum);
+static void Got_RunSOCcmd(uint8_t **cp, int32_t playernum);
+static void Got_Teamchange(uint8_t **cp, int32_t playernum);
+static void Got_Clearscores(uint8_t **cp, int32_t playernum);
+static void Got_DiscordInfo(uint8_t **cp, int32_t playernum);
+static void Got_ScheduleTaskcmd(uint8_t **cp, int32_t playernum);
+static void Got_ScheduleClearcmd(uint8_t **cp, int32_t playernum);
+static void Got_Automatecmd(uint8_t **cp, int32_t playernum);
+static void Got_MapQueuecmd(uint8_t **cp, int32_t playernum);
+static void Got_Cheat(uint8_t **cp, int32_t playernum);
+static void Got_ClanTagSet(uint8_t **cp, int32_t playernum);
+static void Got_ClanTagClear(uint8_t **cp, int32_t playernum);
 
 static void PointLimit_OnChange(void);
 static void TimeLimit_OnChange(void);
@@ -265,8 +265,8 @@ static void Command_Clearscores_f(void);
 static void Command_Changepassword_f(void);
 static void Command_Clearpassword_f(void);
 static void Command_Login_f(void);
-static void Got_Verification(UINT8 **cp, INT32 playernum);
-static void Got_Removal(UINT8 **cp, INT32 playernum);
+static void Got_Verification(uint8_t **cp, int32_t playernum);
+static void Got_Removal(uint8_t **cp, int32_t playernum);
 static void Command_Verify_f(void);
 static void Command_RemoveAdmin_f(void);
 static void Command_MotD_f(void);
@@ -303,7 +303,7 @@ static void Command_Automate_Set(void);
 
 static void Command_PlaySound(void);
 
-static void Got_PlaySound(UINT8 **cp, INT32 playernum);
+static void Got_PlaySound(uint8_t **cp, int32_t playernum);
 
 static void Command_WriteTextmap(void);
 
@@ -363,7 +363,7 @@ consvar_t cv_playername[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("name4", "Eggman", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Name4_OnChange)
 };
 // player colors
-UINT16 lastgoodcolor[MAXSPLITSCREENPLAYERS] = {SKINCOLOR_BLUE, SKINCOLOR_BLUE, SKINCOLOR_BLUE, SKINCOLOR_BLUE};
+uint16_t lastgoodcolor[MAXSPLITSCREENPLAYERS] = {SKINCOLOR_BLUE, SKINCOLOR_BLUE, SKINCOLOR_BLUE, SKINCOLOR_BLUE};
 consvar_t cv_playercolor[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("color", "Blue", CV_SAVE|CV_CALL|CV_NOINIT, Color_cons_t, Color_OnChange),
 	CVAR_INIT ("color2", "Orange", CV_SAVE|CV_CALL|CV_NOINIT, Color_cons_t, Color2_OnChange),
@@ -999,15 +999,15 @@ dboolean timedemo_csv;
 char timedemo_csv_id[256];
 dboolean timedemo_quit;
 
-INT16 gametype = GT_RACE;
-INT16 numgametypes = GT_FIRSTFREESLOT;
+int16_t gametype = GT_RACE;
+int16_t numgametypes = GT_FIRSTFREESLOT;
 
 dboolean forceresetplayers = false;
 dboolean deferencoremode = false;
 dboolean forcespecialstage = false;
-UINT8 splitscreen = 0;
+uint8_t splitscreen = 0;
 dboolean circuitmap = false;
-INT32 adminplayers[MAXPLAYERS] = {};
+int32_t adminplayers[MAXPLAYERS] = {};
 
 #define VOTEROWS ((cv_votemaxrows.value*3) + ((cv_votemaxrows.value > 1) ? (cv_votemaxrows.value - 1) : 0))
 #define VOTEROWSADDSONE ((cv_votemaxrows.value*3) + 1 + ((cv_votemaxrows.value > 1) ? (cv_votemaxrows.value - 1) : 0))
@@ -1088,7 +1088,7 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
   */
 void D_RegisterServerCommands(void)
 {
-	INT32 i;
+	int32_t i;
 	Forceskin_cons_t[0].value = -1;
 	Forceskin_cons_t[0].strvalue = "Off";
 
@@ -1363,7 +1363,7 @@ void D_RegisterServerCommands(void)
   */
 void D_RegisterClientCommands(void)
 {
-	INT32 i;
+	int32_t i;
 
 	for (i = 0; i < MAXSKINCOLORS; i++)
 	{
@@ -1701,7 +1701,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_serverinfoscreen);
 }
 
-static void RestatForPlayer(UINT32 ssplayer)
+static void RestatForPlayer(uint32_t ssplayer)
 {
 	if (!cv_allowrestat.value)
 	{
@@ -1831,11 +1831,11 @@ static void Command_Restat4(void)
  */
 static void Skin_FindRealNameSkin(consvar_t *cvar)
 {
-	INT32 matches[MAXSKINS] = {0}; // Skin numbers of matching skins
-	INT32 matches_pos[MAXSKINS] = {0}; // Index of matching substring
-	INT32 nummatches = 0;
+	int32_t matches[MAXSKINS] = {0}; // Skin numbers of matching skins
+	int32_t matches_pos[MAXSKINS] = {0}; // Index of matching substring
+	int32_t nummatches = 0;
 
-	INT32 i;
+	int32_t i;
 	const char *value = cvar->string;
 
 	for (i = 0; i < numskins; i++)
@@ -1911,15 +1911,15 @@ static void Skin_FindRealNameSkin(consvar_t *cvar)
 
 static dboolean AllowedPlayerNameChar(char ch)
 {
-	if (!isprint(ch) || ch == ';' || ch == '"' || (UINT8)(ch) >= 0x80)
+	if (!isprint(ch) || ch == ';' || ch == '"' || (uint8_t)(ch) >= 0x80)
 		return false;
 
 	return true;
 }
 
-dboolean EnsurePlayerNameIsGood(char *name, INT32 playernum)
+dboolean EnsurePlayerNameIsGood(char *name, int32_t playernum)
 {
-	INT32 ix;
+	int32_t ix;
 
 	if (strlen(name) == 0 || strlen(name) > MAXPLAYERNAME)
 		return false; // Empty or too long.
@@ -1995,12 +1995,12 @@ dboolean EnsurePlayerNameIsGood(char *name, INT32 playernum)
   * \sa cv_playername, SendNameAndColor, SetPlayerName
   * \author Graue <graue@oceanbase.org>
   */
-void CleanupPlayerName(INT32 playernum, const char *newname)
+void CleanupPlayerName(int32_t playernum, const char *newname)
 {
 	char *buf;
 	char *p;
 	char *tmpname = NULL;
-	INT32 i;
+	int32_t i;
 	dboolean namefailed = true;
 	dboolean clientjoin = !!(playernum >= MAXPLAYERS);
 
@@ -2123,7 +2123,7 @@ void CleanupPlayerName(INT32 playernum, const char *newname)
   * \sa CleanupPlayerName, EnsurePlayerNameIsGood
   * \author Graue <graue@oceanbase.org>
   */
-static void SetPlayerName(INT32 playernum, char *newname)
+static void SetPlayerName(int32_t playernum, char *newname)
 {
 	if (EnsurePlayerNameIsGood(newname, playernum))
 	{
@@ -2154,7 +2154,7 @@ static void SetPlayerName(INT32 playernum, char *newname)
 	}
 }
 
-UINT8 CanChangeSkin(INT32 playernum)
+uint8_t CanChangeSkin(int32_t playernum)
 {
 	// Of course we can change if we're not playing
 	if (!Playing() || !addedtogame)
@@ -2185,9 +2185,9 @@ UINT8 CanChangeSkin(INT32 playernum)
 	return true;
 }
 
-static void ForceAllSkins(INT32 forcedskin)
+static void ForceAllSkins(int32_t forcedskin)
 {
-	INT32 i, j;
+	int32_t i, j;
 
 	if (demo.playback)
 		return; // DXD_SKIN should handle all changes for us
@@ -2246,10 +2246,10 @@ VaguePartyDescription (int playernum, int size, int default_color)
 	return party_description;
 }
 
-static INT32 snacpending[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
-static INT32 chmappending = 0;
+static int32_t snacpending[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
+static int32_t chmappending = 0;
 
-static void setVoiceDataByName(UINT8 n, const char * vox_name)
+static void setVoiceDataByName(uint8_t n, const char * vox_name)
 {
 	strncpy(localvoicedata[n].name, vox_name, VOICENAMESIZE);
 	localvoicedata[n].name[32] = 0;
@@ -2257,19 +2257,19 @@ static void setVoiceDataByName(UINT8 n, const char * vox_name)
 
 // name, color, skin, or voice has changed
 //
-static void SendNameAndColor(UINT8 n)
+static void SendNameAndColor(uint8_t n)
 {
-	const INT32 playernum = g_localplayers[n];
+	const int32_t playernum = g_localplayers[n];
 	player_t* player = &players[playernum];
 	kartvoice_t* voice;
 	kartvoice_t* valuevoice;
-	INT32 prevskin;
+	int32_t prevskin;
 	kartvoicenum_t prefvox = MAXSKINVOICES;
 
 	char buf[MAXPLAYERNAME + 12];
 	char* p;
 
-	UINT16 i = 0;
+	uint16_t i = 0;
 
 	if (!Playing())
 	{
@@ -2339,7 +2339,7 @@ static void SendNameAndColor(UINT8 n)
 	// If you're not in a netgame, merely update the skin, color, and name.
 	if (!netgame)
 	{
-		INT32 foundskin;
+		int32_t foundskin;
 
 		CleanupPlayerName(playernum, cv_playername[n].zstring);
 		strcpy(player_names[playernum], cv_playername[n].zstring);
@@ -2626,7 +2626,7 @@ static void SendNameAndColor(UINT8 n)
 	}
 
 	// After EVERYTHING, do one last check on our voice so we can set the value.
-	INT32 cvar_voxid = R_FindIDForVoice(skins[cv_skin[n].value], localvoicedata[n].name);
+	int32_t cvar_voxid = R_FindIDForVoice(skins[cv_skin[n].value], localvoicedata[n].name);
 
 	if (cvar_voxid == MAXSKINVOICES)
 	{
@@ -2649,24 +2649,24 @@ static void SendNameAndColor(UINT8 n)
 
 	// Finally write out the complete packet and send it off.
 	WRITESTRINGN(p, cv_playername[n].zstring, MAXPLAYERNAME);
-	WRITEUINT16(p, (UINT16)cv_playercolor[n].value);
-	WRITEUINT16(p, (UINT16)cv_skin[n].value);
-	WRITEINT32(p, (INT32)cv_follower[n].value);
-	WRITEUINT16(p, (UINT16)cv_followercolor[n].value);
-	WRITEUINT16(p, (UINT16)localvoicedata[n].value);
+	WRITEUINT16(p, (uint16_t)cv_playercolor[n].value);
+	WRITEUINT16(p, (uint16_t)cv_skin[n].value);
+	WRITEINT32(p, (int32_t)cv_follower[n].value);
+	WRITEUINT16(p, (uint16_t)cv_followercolor[n].value);
+	WRITEUINT16(p, (uint16_t)localvoicedata[n].value);
 
 	SendNetXCmdForPlayer(n, XD_NAMEANDCOLOR, buf, p - buf);
 }
 
-static void Got_NameAndColor(UINT8** cp, INT32 playernum)
+static void Got_NameAndColor(uint8_t** cp, int32_t playernum)
 {
 	player_t* p = &players[playernum];
 	char name[MAXPLAYERNAME + 1];
-	UINT16 color, followercolor;
-	UINT16 skin, voice;
-	INT32 follower;
-	SINT8 localplayer = -1;
-	UINT16 i;
+	uint16_t color, followercolor;
+	uint16_t skin, voice;
+	int32_t follower;
+	int8_t localplayer = -1;
+	uint16_t i;
 
 #ifdef PARANOIA
 	if (playernum < 0 || playernum > MAXPLAYERS)
@@ -2706,7 +2706,7 @@ static void Got_NameAndColor(UINT8** cp, INT32 playernum)
 	// set color
 	p->skincolor = color % numskincolors;
 	if (p->mo)
-		p->mo->color = (UINT16)p->skincolor;
+		p->mo->color = (uint16_t)p->skincolor;
 	demo_extradata[playernum] |= DXD_COLOR;
 
 	// normal player colors
@@ -2745,7 +2745,7 @@ static void Got_NameAndColor(UINT8** cp, INT32 playernum)
 	if (cv_forceskin.value >= 0 &&
 	    K_CanChangeRules(true))  // Server wants everyone to use the same player
 	{
-		const INT32 forcedskin = cv_forceskin.value;
+		const int32_t forcedskin = cv_forceskin.value;
 		SetPlayerSkinByNum(playernum, forcedskin);
 
 		kartvoicenum_t forcedvox = 0;
@@ -2800,9 +2800,9 @@ enum {
 	WP_RANDOMRESTAT = 1<<4
 };
 
-void WeaponPref_Send(UINT8 ssplayer)
+void WeaponPref_Send(uint8_t ssplayer)
 {
-	UINT8 prefs = 0;
+	uint8_t prefs = 0;
 
 	if (cv_dummyrestatspeed[ssplayer].value > 9 || cv_dummyrestatspeed[ssplayer].value < 0)
 		CV_StealthSetValue(&cv_dummyrestatspeed[ssplayer], 0);
@@ -2824,7 +2824,7 @@ void WeaponPref_Send(UINT8 ssplayer)
 	if (cv_dummyrestatrandom[ssplayer].value)
 		prefs |= WP_RANDOMRESTAT;
 
-	UINT8 buf[5];
+	uint8_t buf[5];
 	buf[0] = prefs;
 	buf[1] = cv_mindelay.value;
 	buf[2] = cv_dummyrestatspeed[ssplayer].value;
@@ -2834,11 +2834,11 @@ void WeaponPref_Send(UINT8 ssplayer)
 	SendNetXCmdForPlayer(ssplayer, XD_WEAPONPREF, buf, sizeof buf);
 }
 
-void WeaponPref_Save(UINT8 **cp, INT32 playernum)
+void WeaponPref_Save(uint8_t **cp, int32_t playernum)
 {
 	player_t *player = &players[playernum];
 
-	UINT8 prefs = 0;
+	uint8_t prefs = 0;
 
 	if (player->pflags & PF_KICKSTARTACCEL)
 		prefs |= WP_KICKSTARTACCEL;
@@ -2858,11 +2858,11 @@ void WeaponPref_Save(UINT8 **cp, INT32 playernum)
 	WRITEUINT8(*cp, prefs);
 }
 
-void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
+void WeaponPref_Parse(uint8_t **cp, int32_t playernum)
 {
 	player_t *player = &players[playernum];
 
-	UINT8 prefs = READUINT8(*cp);
+	uint8_t prefs = READUINT8(*cp);
 
 	player->pflags &= ~(PF_KICKSTARTACCEL|PF_SHRINKME|PF_FLIPCAM);
 	player->jitterlegacy = false;
@@ -2892,20 +2892,20 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 	}
 }
 
-static void Got_WeaponPref(UINT8 **cp,INT32 playernum)
+static void Got_WeaponPref(uint8_t **cp,int32_t playernum)
 {
 	player_t *player = &players[playernum];
 
 	WeaponPref_Parse(cp, playernum);
 
-	UINT8 mindelay = READUINT8(*cp);
+	uint8_t mindelay = READUINT8(*cp);
 	if (server)
 	{
-		for (UINT8 i = 0; i < G_LocalSplitscreenPartySize(playernum); ++i)
+		for (uint8_t i = 0; i < G_LocalSplitscreenPartySize(playernum); ++i)
 		playerdelaytable[G_LocalSplitscreenPartyMember(playernum, i)] = mindelay;
 	}
-	UINT8 kartspeedrestat = READUINT8(*cp);
-	UINT8 kartweightrestat = READUINT8(*cp);
+	uint8_t kartspeedrestat = READUINT8(*cp);
+	uint8_t kartweightrestat = READUINT8(*cp);
 	if (/*kartspeedrestat < 0 || */kartspeedrestat > 9 ||
 		/*kartweightrestat < 0 || */kartweightrestat > 9)
 	{
@@ -2917,7 +2917,7 @@ static void Got_WeaponPref(UINT8 **cp,INT32 playernum)
 	player->kartspeedrestat = kartspeedrestat;
 	player->kartweightrestat = kartweightrestat;
 
-	UINT8 driftmode = READUINT8(*cp);
+	uint8_t driftmode = READUINT8(*cp);
 	if (driftmode >= NUMDRIFTMODES)
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal drift mode received from %s\n"), player_names[playernum]);
@@ -2931,10 +2931,10 @@ static void Got_WeaponPref(UINT8 **cp,INT32 playernum)
 	demo_extradata[playernum] |= DXD_WEAPONPREF;
 }
 
-static void Got_PowerLevel(UINT8 **cp,INT32 playernum)
+static void Got_PowerLevel(uint8_t **cp,int32_t playernum)
 {
-	UINT16 race = (UINT16)READUINT16(*cp);
-	UINT16 battle = (UINT16)READUINT16(*cp);
+	uint16_t race = (uint16_t)READUINT16(*cp);
+	uint16_t battle = (uint16_t)READUINT16(*cp);
 
 	clientpowerlevels[playernum][PWRLV_RACE] = min(PWRLVRECORD_MAX, race);
 	clientpowerlevels[playernum][PWRLV_BATTLE] = min(PWRLVRECORD_MAX, battle);
@@ -2942,9 +2942,9 @@ static void Got_PowerLevel(UINT8 **cp,INT32 playernum)
 	CONS_Debug(DBG_GAMELOGIC, "set player %d to power %d\n", playernum, race);
 }
 
-static void Got_PartyInvite(UINT8 **cp,INT32 playernum)
+static void Got_PartyInvite(uint8_t **cp,int32_t playernum)
 {
-	UINT8 invitee;
+	uint8_t invitee;
 
 	dboolean kick = false;
 
@@ -2986,7 +2986,7 @@ static void Got_PartyInvite(UINT8 **cp,INT32 playernum)
 	}
 }
 
-static void Got_AcceptPartyInvite(UINT8 **cp,INT32 playernum)
+static void Got_AcceptPartyInvite(uint8_t **cp,int32_t playernum)
 {
 	int invitation;
 
@@ -3027,9 +3027,9 @@ static void Got_AcceptPartyInvite(UINT8 **cp,INT32 playernum)
 	}
 }
 
-static void Got_CancelPartyInvite(UINT8 **cp,INT32 playernum)
+static void Got_CancelPartyInvite(uint8_t **cp,int32_t playernum)
 {
-	UINT8 invitee;
+	uint8_t invitee;
 
 	invitee = READUINT8 (*cp);
 
@@ -3057,7 +3057,7 @@ static void Got_CancelPartyInvite(UINT8 **cp,INT32 playernum)
 	}
 }
 
-static void Got_LeaveParty(UINT8 **cp,INT32 playernum)
+static void Got_LeaveParty(uint8_t **cp,int32_t playernum)
 {
 	(void)cp;
 
@@ -3091,10 +3091,10 @@ static void Got_LeaveParty(UINT8 **cp,INT32 playernum)
 	G_LeaveParty(playernum);
 }
 
-void D_SendPlayerConfig(UINT8 n)
+void D_SendPlayerConfig(uint8_t n)
 {
-	UINT8 buf[4];
-	UINT8 *p = buf;
+	uint8_t buf[4];
+	uint8_t *p = buf;
 
 	SendNameAndColor(n);
 	WeaponPref_Send(n);
@@ -3115,12 +3115,12 @@ void D_SendPlayerConfig(UINT8 n)
 	SendNetXCmdForPlayer(n, XD_POWERLEVEL, buf, p-buf);
 }
 
-void D_Cheat(INT32 playernum, INT32 cheat, ...)
+void D_Cheat(int32_t playernum, int32_t cheat, ...)
 {
 	va_list ap;
 
-	UINT8 buf[64];
-	UINT8 *p = buf;
+	uint8_t buf[64];
+	uint8_t *p = buf;
 
 	if (client && !IsPlayerAdmin(consoleplayer))
 	{
@@ -3135,7 +3135,7 @@ void D_Cheat(INT32 playernum, INT32 cheat, ...)
 		// TODO: maybe allow everything, even though it would
 		// desync replays? May be useful for debugging.
 		va_start(ap, cheat);
-		cht_debug = va_arg(ap, UINT32);
+		cht_debug = va_arg(ap, uint32_t);
 		va_end(ap);
 		return;
 	}
@@ -3163,7 +3163,7 @@ void D_Cheat(INT32 playernum, INT32 cheat, ...)
 		case CHEAT_RINGS:
 		case CHEAT_LIVES:
 			// If you're confused why 'int' instead of
-			// 'SINT8', search online: 'default argument promotions'
+			// 'int8_t', search online: 'default argument promotions'
 			COPY(WRITESINT8, int);
 			break;
 
@@ -3172,7 +3172,7 @@ void D_Cheat(INT32 playernum, INT32 cheat, ...)
 			break;
 
 		case CHEAT_HURT:
-			COPY(WRITEINT32, INT32);
+			COPY(WRITEINT32, int32_t);
 			break;
 
 		case CHEAT_RELATIVE_TELEPORT:
@@ -3183,7 +3183,7 @@ void D_Cheat(INT32 playernum, INT32 cheat, ...)
 			break;
 
 		case CHEAT_DEVMODE:
-			COPY(WRITEUINT32, UINT32);
+			COPY(WRITEUINT32, uint32_t);
 			break;
 
 		case CHEAT_GIVEITEM:
@@ -3192,7 +3192,7 @@ void D_Cheat(INT32 playernum, INT32 cheat, ...)
 			break;
 
 		case CHEAT_SCORE:
-			COPY(WRITEUINT32, UINT32);
+			COPY(WRITEUINT32, uint32_t);
 			break;
 
 		case CHEAT_ANGLE:
@@ -3214,9 +3214,9 @@ static void Command_ResetCamera_f(void)
 }
 
 /* Consider replacing nametonum with this */
-static INT32 LookupPlayer(const char *s)
+static int32_t LookupPlayer(const char *s)
 {
-	INT32 playernum;
+	int32_t playernum;
 
 	if (*s == '0')/* clever way to bypass atoi */
 		return 0;
@@ -3239,9 +3239,9 @@ static INT32 LookupPlayer(const char *s)
 	return -1;
 }
 
-static INT32 FindPlayerByPlace(INT32 place)
+static int32_t FindPlayerByPlace(int32_t place)
 {
-	INT32 playernum;
+	int32_t playernum;
 	for (playernum = 0; playernum < MAXPLAYERS; ++playernum)
 		if (playeringame[playernum])
 	{
@@ -3258,10 +3258,10 @@ static INT32 FindPlayerByPlace(INT32 place)
 // Return in first and last, that player available to view, sorted by placement
 // in the race.
 //
-static void GetViewablePlayerPlaceRange(INT32 *first, INT32 *last)
+static void GetViewablePlayerPlaceRange(int32_t *first, int32_t *last)
 {
-	INT32 i;
-	INT32 place;
+	int32_t i;
+	int32_t place;
 
 	(*first) = MAXPLAYERS;
 	(*last) = 0;
@@ -3282,13 +3282,13 @@ static void GetViewablePlayerPlaceRange(INT32 *first, INT32 *last)
 			(*displayplayerp), player_names[(*displayplayerp)]);
 static void Command_View_f(void)
 {
-	INT32 *displayplayerp;
-	INT32 olddisplayplayer;
+	int32_t *displayplayerp;
+	int32_t olddisplayplayer;
 	int viewnum;
 	const char *playerparam;
-	INT32 placenum;
-	INT32 playernum;
-	INT32 firstplace, lastplace;
+	int32_t placenum;
+	int32_t playernum;
+	int32_t firstplace, lastplace;
 	char c;
 	/* easy peasy */
 	c = COM_Argv(0)[strlen(COM_Argv(0))-1];/* may be digit */
@@ -3378,8 +3378,8 @@ static void Command_View_f(void)
 
 static void Command_SetViews_f(void)
 {
-	UINT8 splits;
-	UINT8 newsplits;
+	uint8_t splits;
+	uint8_t newsplits;
 
 	if (COM_Argc() != 2)
 	{
@@ -3413,7 +3413,7 @@ static void Command_SetViews_f(void)
 
 		// If promoting (outside of replays), make sure the
 		// camera is in the correct position.
-		UINT8 i;
+		uint8_t i;
 		for (i = splits + 1; i <= newsplits; ++i)
 		{
 			G_FixCamera(i);
@@ -3424,7 +3424,7 @@ static void Command_SetViews_f(void)
 static void
 Command_Invite_f (void)
 {
-	UINT8 buffer[1];
+	uint8_t buffer[1];
 
 	int invitee;
 
@@ -3488,7 +3488,7 @@ Command_Invite_f (void)
 static void
 Command_CancelInvite_f (void)
 {
-	UINT8 buffer[1];
+	uint8_t buffer[1];
 
 	int invitee;
 
@@ -3574,7 +3574,7 @@ Command_LeaveParty_f (void)
 // play a demo, add .lmp for external demos
 // eg: playdemo demo1 plays the internal game demo
 //
-// UINT8 *demofile; // demo file buffer
+// uint8_t *demofile; // demo file buffer
 static void Command_Playdemo_f(void)
 {
 	char name[256];
@@ -3678,7 +3678,7 @@ static void Command_StopMovie_f(void)
 	M_StopMovie();
 }
 
-INT32 mapchangepending = 0;
+int32_t mapchangepending = 0;
 
 /** Runs a map change.
   * The supplied data are assumed to be good. If provided by a user, they will
@@ -3702,7 +3702,7 @@ INT32 mapchangepending = 0;
   * \sa D_GameTypeChanged, Command_Map_f
   * \author Graue <graue@oceanbase.org>
   */
-void D_MapChange(mapnum_t mapnum, INT32 newgametype, dboolean pencoremode, dboolean presetplayers, INT32 delay, dboolean skipprecutscene, dboolean pforcespecialstage)
+void D_MapChange(mapnum_t mapnum, int32_t newgametype, dboolean pencoremode, dboolean presetplayers, int32_t delay, dboolean skipprecutscene, dboolean pforcespecialstage)
 {
 	static char buf[1+1+1+1+2+2+4];
 	static char *buf_p = buf;
@@ -3714,7 +3714,7 @@ void D_MapChange(mapnum_t mapnum, INT32 newgametype, dboolean pencoremode, dbool
 
 	if (delay != 2)
 	{
-		UINT8 flags = 0;
+		uint8_t flags = 0;
 		//I_Assert(W_CheckNumForName(mapname) != LUMPERROR);
 		buf_p = buf;
 		if (pencoremode)
@@ -3769,11 +3769,11 @@ void D_MapChange(mapnum_t mapnum, INT32 newgametype, dboolean pencoremode, dbool
 
 void D_SetupVote(void)
 {
-	UINT8 buf[13*2]; // twelve UINT16 maps (at twice the width of a UINT8), and two gametypes
-	UINT8 *p = buf;
-	INT32 i;
-	UINT8 gt = (cv_kartgametypepreference.value == -1) ? gametype : cv_kartgametypepreference.value;
-	UINT8 secondgt = G_SometimesGetDifferentGametype(gt);
+	uint8_t buf[13*2]; // twelve uint16_t maps (at twice the width of a uint8_t), and two gametypes
+	uint8_t *p = buf;
+	int32_t i;
+	uint8_t gt = (cv_kartgametypepreference.value == -1) ? gametype : cv_kartgametypepreference.value;
+	uint8_t secondgt = G_SometimesGetDifferentGametype(gt);
 	mapnum_t votebuffer[4] = {NEXTMAP_INVALID,NEXTMAP_INVALID,NEXTMAP_INVALID,0};
 
 	if (cv_kartencore.value && cv_encorevotes.value == 1 && (gametypes[gt]->rules & GTR_CIRCUIT))
@@ -3789,8 +3789,8 @@ void D_SetupVote(void)
 
 	for (i = 0; i < VOTEROWSADDSONE; i++)
 	{
-		UINT16 m;
-		UINT16 hellpick = 0;
+		uint16_t m;
+		uint16_t hellpick = 0;
 
 		hellpick = ((i == ((VOTEROWS) + 1) ) ? 2 : 0);
 
@@ -3811,11 +3811,11 @@ void D_SetupVote(void)
 	SendNetXCmd(XD_SETUPVOTE, buf, p - buf);
 }
 
-void D_ModifyClientVote(UINT8 player, SINT8 voted)
+void D_ModifyClientVote(uint8_t player, int8_t voted)
 {
 	char buf[3];
 	char *p = buf;
-	UINT8 sendPlayer = 0;
+	uint8_t sendPlayer = 0;
 
 	if (player >= MAXPLAYERS)
 	{
@@ -3830,7 +3830,7 @@ void D_ModifyClientVote(UINT8 player, SINT8 voted)
 
 	if (player <= MAXPLAYERS)
 	{
-		INT32 i;
+		int32_t i;
 		for (i = 0; i <= splitscreen; i++)
 		{
 			if (g_localplayers[i] == player)
@@ -3848,11 +3848,11 @@ void D_PickVote(void)
 {
 	char buf[2];
 	char* p = buf;
-	SINT8 temppicks[MAXPLAYERS];
-	SINT8 templevels[MAXPLAYERS];
-	SINT8 votecompare = VOTE_NOT_PICKED;
-	UINT8 numvotes = 0, key = 0;
-	INT32 i;
+	int8_t temppicks[MAXPLAYERS];
+	int8_t templevels[MAXPLAYERS];
+	int8_t votecompare = VOTE_NOT_PICKED;
+	uint8_t numvotes = 0, key = 0;
+	int32_t i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -3928,10 +3928,10 @@ static char *ConcatCommandArgv (int start, int end)
 // Largely rewritten by James.
 //
 
-static INT32 GetGametypeParm(size_t option_gametype)
+static int32_t GetGametypeParm(size_t option_gametype)
 {
 	const char *gametypename;
-	INT32 newgametype;
+	int32_t newgametype;
 
 	if (COM_Argc() < option_gametype + 2)/* no argument after? */
 	{
@@ -3952,7 +3952,7 @@ static INT32 GetGametypeParm(size_t option_gametype)
 		/* Did they give us a gametype number? That's okay too! */
 		if (isdigit(gametypename[0]))
 		{
-			INT16 d = atoi(gametypename);
+			int16_t d = atoi(gametypename);
 			if (d >= 0 && d < numgametypes)
 				newgametype = d;
 			else
@@ -3998,12 +3998,12 @@ static void Command_Map_f(void)
 
 	dboolean mustmodifygame;
 
-	INT32 newmapnum;
+	int32_t newmapnum;
 
 	char   *    mapname = NULL;
 	char   *realmapname = NULL;
 
-	INT32 newgametype = gametype;
+	int32_t newgametype = gametype;
 	dboolean newencoremode = (cv_kartencore.value == 1);
 
 	if (client && !IsPlayerAdmin(consoleplayer))
@@ -4109,12 +4109,12 @@ static void Command_Map_f(void)
 
 	if (option_random)
 	{
-		//UINT8 numPlayers = 0;
-		UINT16 oldmapnum = UINT16_MAX;
+		//uint8_t numPlayers = 0;
+		uint16_t oldmapnum = UINT16_MAX;
 
 		if (Playing())
 		{
-			//UINT8 i;
+			//uint8_t i;
 			/*for (i = 0; i < MAXPLAYERS; ++i)
 			{
 				if (!playeringame[i] || players[i].spectator)
@@ -4232,23 +4232,23 @@ static void Command_Map_f(void)
 				if (option_skill)
 				{
 					const char *skillname = COM_Argv(option_skill + 1);
-					INT32 newskill = -1;
-					INT32 j;
+					int32_t newskill = -1;
+					int32_t j;
 
 					for (j = 0; gpdifficulty_cons_t[j].strvalue; j++)
 					{
 						if (!strcasecmp(gpdifficulty_cons_t[j].strvalue, skillname))
 						{
-							newskill = (INT16)gpdifficulty_cons_t[j].value;
+							newskill = (int16_t)gpdifficulty_cons_t[j].value;
 							break;
 						}
 					}
 
 					if (!gpdifficulty_cons_t[j].strvalue) // reached end of the list with no match
 					{
-						INT32 num = atoi(COM_Argv(option_skill + 1)); // assume they gave us a skill number, which is okay too
+						int32_t num = atoi(COM_Argv(option_skill + 1)); // assume they gave us a skill number, which is okay too
 						if (num >= KARTSPEED_EASY && num <= KARTGP_MANIAC)
-							newskill = (INT16)num;
+							newskill = (int16_t)num;
 					}
 
 					if (newskill != -1)
@@ -4291,7 +4291,7 @@ static void Command_Map_f(void)
 
 				if (!Playing())
 				{
-					UINT8 ssplayers = cv_splitplayers.value-1;
+					uint8_t ssplayers = cv_splitplayers.value-1;
 
 					grandprixinfo.cup = NULL;
 					grandprixinfo.initalize = true;
@@ -4329,13 +4329,13 @@ static void Command_Map_f(void)
   *                  ::serverplayer or ::adminplayer.
   * \sa D_MapChange
   */
-static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
+static void Got_Mapcmd(uint8_t **cp, int32_t playernum)
 {
-	UINT8 flags;
-	INT32 presetplayer = 1;
-	UINT8 skipprecutscene, pforcespecialstage;
+	uint8_t flags;
+	int32_t presetplayer = 1;
+	uint8_t skipprecutscene, pforcespecialstage;
 	dboolean pencoremode, hasroundqueuedata;
-	UINT16 lastgametype;
+	uint16_t lastgametype;
 	mapnum_t mapnumber;
 
 	forceresetplayers = deferencoremode = false;
@@ -4362,9 +4362,9 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 
 	if (hasroundqueuedata)
 	{
-		UINT8 position = READUINT8(*cp);
-		UINT8 size = READUINT8(*cp);
-		UINT8 roundnum = READUINT8(*cp);
+		uint8_t position = READUINT8(*cp);
+		uint8_t size = READUINT8(*cp);
+		uint8_t roundnum = READUINT8(*cp);
 
 		if (playernum != serverplayer // Clients, even admin clients, don't have full roundqueue data
 			|| position > size // Sanity check A (intentionally not a >= comparison)
@@ -4499,10 +4499,10 @@ static void Command_RestartLevel(void)
 	D_MapChange(gamemap, gametype, encoremode, false, 0, false, false);
 }
 
-static void Handle_MapQueueSend(UINT16 newmapnum, UINT16 newgametype, dboolean newencoremode)
+static void Handle_MapQueueSend(uint16_t newmapnum, uint16_t newgametype, dboolean newencoremode)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-	UINT8 flags = 0;
+	uint8_t flags = 0;
 
 	CONS_Debug(DBG_GAMELOGIC, "Map queue: mapnum=%d newgametype=%d newencoremode=%d\n",
 	           newmapnum, newgametype, newencoremode);
@@ -4533,12 +4533,12 @@ static void Command_QueueMap_f(void)
 	size_t option_show;
 	size_t option_random;
 
-	INT32 newmapnum;
+	int32_t newmapnum;
 
 	char   *    mapname = NULL;
 	char   *realmapname = NULL;
 
-	INT32 newgametype = gametype;
+	int32_t newgametype = gametype;
 	dboolean newencoremode = (cv_kartencore.value == 1);
 
 	if (!Playing())
@@ -4669,12 +4669,12 @@ static void Command_QueueMap_f(void)
 	Z_Free(mapname);
 }
 
-static void Got_MapQueuecmd(UINT8 **cp, INT32 playernum)
+static void Got_MapQueuecmd(uint8_t **cp, int32_t playernum)
 {
-	UINT8 flags, queueposition;
+	uint8_t flags, queueposition;
 	dboolean setencore;
 	dboolean doclear = false;
-	UINT16 setgametype;
+	uint16_t setgametype;
 
 	flags = READUINT8(*cp);
 
@@ -4729,8 +4729,8 @@ static void Got_MapQueuecmd(UINT8 **cp, INT32 playernum)
 
 static void Command_Pause(void)
 {
-	UINT8 buf[2];
-	UINT8 *cp = buf;
+	uint8_t buf[2];
+	uint8_t *cp = buf;
 
 	if (COM_Argc() > 1)
 		WRITEUINT8(cp, (char)(atoi(COM_Argv(1)) != 0));
@@ -4761,9 +4761,9 @@ static void Command_Pause(void)
 		CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
 }
 
-static void Got_Pause(UINT8 **cp, INT32 playernum)
+static void Got_Pause(uint8_t **cp, int32_t playernum)
 {
-	UINT8 dedicatedpause = false;
+	uint8_t dedicatedpause = false;
 	const char *playername;
 
 	if (netgame && !cv_pause.value && playernum != serverplayer && !IsPlayerAdmin(playernum))
@@ -4872,10 +4872,10 @@ static dboolean JawzCheck(mobj_t *playermo)
 }
 
 // Command for stuck characters in netgames, griefing, etc.
-static void HandleRespawnCommand(UINT8 localplayer)
+static void HandleRespawnCommand(uint8_t localplayer)
 {
-	UINT8 buf[1];
-	UINT8 *cp = buf;
+	uint8_t buf[1];
+	uint8_t *cp = buf;
 
 	if (!(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
 	{
@@ -4932,9 +4932,9 @@ static void Command_Respawn4(void)
 	HandleRespawnCommand(3);
 }
 
-static void Got_Respawn(UINT8 **cp, INT32 playernum)
+static void Got_Respawn(uint8_t **cp, int32_t playernum)
 {
-	INT32 respawnplayer = READUINT8(*cp);
+	int32_t respawnplayer = READUINT8(*cp);
 
 	// You can't respawn someone else. Nice try, there.
 	// Unless it's a bot. They can respawn whenever they feel like it, if the server says so.
@@ -4978,9 +4978,9 @@ static void Got_Respawn(UINT8 **cp, INT32 playernum)
   * \param playernum Player responsible for the message. Must be ::serverplayer.
   * \author Graue <graue@oceanbase.org>
   */
-static void Got_RandomSeed(UINT8 **cp, INT32 playernum)
+static void Got_RandomSeed(uint8_t **cp, int32_t playernum)
 {
-	UINT32 seed;
+	uint32_t seed;
 
 	seed = READUINT32(*cp);
 
@@ -5015,9 +5015,9 @@ static void Command_Clearscores_f(void)
   * \sa XD_CLEARSCORES, Command_Clearscores_f
   * \author SSNTails <http://www.ssntails.org>
   */
-static void Got_Clearscores(UINT8 **cp, INT32 playernum)
+static void Got_Clearscores(uint8_t **cp, int32_t playernum)
 {
-	INT32 i;
+	int32_t i;
 
 	(void)cp;
 	if (playernum != serverplayer && !IsPlayerAdmin(playernum))
@@ -5052,8 +5052,8 @@ static void Command_ScoreboardAdd(void)
 		size_t i, j = COM_Argc();
 		char message[MAXSERVERDESCRIPTIONLINE+1];
 		char *finalstring;
-		INT32 strlensize = 0;
-		INT32 serverdesclen = 0;
+		int32_t strlensize = 0;
+		int32_t serverdesclen = 0;
 
 		// Steal from the motd code so you don't have to put the string in quotes.
 		strlcpy(message, COM_Argv(1), sizeof message);
@@ -5112,12 +5112,12 @@ static void Command_ScoreboardClear(void)
 }
 
 // Team changing functions
-static void HandleTeamChangeCommand(UINT8 localplayer)
+static void HandleTeamChangeCommand(uint8_t localplayer)
 {
 	const char *commandname = NULL;
 	changeteam_union NetPacket;
 	dboolean error = false;
-	UINT16 usvalue;
+	uint16_t usvalue;
 	NetPacket.value.l = NetPacket.value.b = 0;
 
 	switch (localplayer)
@@ -5230,7 +5230,7 @@ static void Command_ServerTeamChange_f(void)
 {
 	changeteam_union NetPacket;
 	dboolean error = false;
-	UINT16 usvalue;
+	uint16_t usvalue;
 	NetPacket.value.l = NetPacket.value.b = 0;
 
 	if (!(server || (IsPlayerAdmin(consoleplayer))))
@@ -5325,7 +5325,7 @@ static void Command_ServerTeamChange_f(void)
 	SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 }
 
-void P_SetPlayerSpectator(INT32 playernum)
+void P_SetPlayerSpectator(int32_t playernum)
 {
 	//Make sure you're in the right gametype.
 	if (!G_GametypeHasTeams() && !G_GametypeHasSpectators())
@@ -5342,7 +5342,7 @@ void P_SetPlayerSpectator(INT32 playernum)
 }
 
 //todo: This and the other teamchange functions are getting too long and messy. Needs cleaning.
-static void Got_Teamchange(UINT8 **cp, INT32 playernum)
+static void Got_Teamchange(uint8_t **cp, int32_t playernum)
 {
 	changeteam_union NetPacket;
 	dboolean error = false, wasspectator = false;
@@ -5493,7 +5493,7 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 	{
 		if (NetPacket.packet.newteam)
 		{
-			UINT8 i;
+			uint8_t i;
 			for (i = 0; i <= splitscreen; i++)
 			{
 				if (playernum == g_localplayers[i]) //CTF and Team Match colors.
@@ -5545,7 +5545,7 @@ void D_SetPassword(const char *pw)
 
 void D_ClearPassword(void)
 {
-	UINT32 i;
+	uint32_t i;
 	for (i = 0; i < adminpasscount; i++)
 		Z_Free(adminpass[i]);
 	Z_Free(adminpass);
@@ -5618,12 +5618,12 @@ static void Command_Login_f(void)
 	HSendPacket(servernode, true, 0, 0);
 }
 
-dboolean IsPlayerAdmin(INT32 playernum)
+dboolean IsPlayerAdmin(int32_t playernum)
 {
 #if defined (DEVELOP)
 	return playernum != serverplayer;
 #else
-	INT32 i;
+	int32_t i;
 	for (i = 0; i < MAXPLAYERS; i++)
 		if (playernum == adminplayers[i])
 			return true;
@@ -5632,9 +5632,9 @@ dboolean IsPlayerAdmin(INT32 playernum)
 #endif
 }
 
-void SetAdminPlayer(INT32 playernum)
+void SetAdminPlayer(int32_t playernum)
 {
-	INT32 i;
+	int32_t i;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (playernum == adminplayers[i])
@@ -5653,9 +5653,9 @@ void ClearAdminPlayers(void)
 	memset(adminplayers, -1, sizeof(adminplayers));
 }
 
-void RemoveAdminPlayer(INT32 playernum)
+void RemoveAdminPlayer(int32_t playernum)
 {
-	INT32 i;
+	int32_t i;
 	for (i = 0; i < MAXPLAYERS; i++)
 		if (playernum == adminplayers[i])
 			adminplayers[i] = -1;
@@ -5665,7 +5665,7 @@ static void Command_Verify_f(void)
 {
 	char buf[8]; // Should be plenty
 	char *temp;
-	INT32 playernum;
+	int32_t playernum;
 
 	if (client)
 	{
@@ -5697,9 +5697,9 @@ static void Command_Verify_f(void)
 		SendNetXCmd(XD_VERIFIED, buf, 1);
 }
 
-static void Got_Verification(UINT8 **cp, INT32 playernum)
+static void Got_Verification(uint8_t **cp, int32_t playernum)
 {
-	INT16 num = READUINT8(*cp);
+	int16_t num = READUINT8(*cp);
 
 	if (playernum != serverplayer) // it's not from the server (hacker or bug)
 	{
@@ -5721,7 +5721,7 @@ static void Command_RemoveAdmin_f(void)
 {
 	char buf[8]; // Should be plenty
 	char *temp;
-	INT32 playernum;
+	int32_t playernum;
 
 	if (client)
 	{
@@ -5747,9 +5747,9 @@ static void Command_RemoveAdmin_f(void)
 		SendNetXCmd(XD_DEMOTED, buf, 1);
 }
 
-static void Got_Removal(UINT8 **cp, INT32 playernum)
+static void Got_Removal(uint8_t **cp, int32_t playernum)
 {
-	UINT8 num = READUINT8(*cp);
+	uint8_t num = READUINT8(*cp);
 
 	if (playernum != serverplayer) // it's not from the server (hacker or bug)
 	{
@@ -5851,7 +5851,7 @@ void Schedule_Insert(scheduleTask_t *addTask)
 	schedule_len++;
 }
 
-void Schedule_Add(INT16 basetime, INT16 timeleft, const char *command)
+void Schedule_Add(int16_t basetime, int16_t timeleft, const char *command)
 {
 	scheduleTask_t *task = (scheduleTask_t*) Z_CallocAlign(
 		sizeof(scheduleTask_t),
@@ -6052,7 +6052,7 @@ static void Command_RunSOC(void)
 	SendNetXCmd(XD_RUNSOC, buf, length);
 }
 
-static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum)
+static void Got_RunSOCcmd(uint8_t **cp, int32_t playernum)
 {
 	char filename[256];
 	filestatus_t ncs = FS_NOTCHECKED;
@@ -6096,7 +6096,7 @@ static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum)
 static void Command_Addfilelocal(void)
 {
 	const char *fn;
-	INT32 i;
+	int32_t i;
 	size_t docompat = COM_CheckPartialParm("-c");
 	size_t nocompat = COM_CheckPartialParm("-n");
 	wadcompat_t compat = WC_AUTO;
@@ -6169,7 +6169,7 @@ static void Command_Addfile(void)
 		const char *fn, *p;
 		char buf[256];
 		char *buf_p = buf;
-		INT32 i;
+		int32_t i;
 		size_t ii;
 		int musiconly; // W_VerifyNMUSlumps isn't dboolean
 		dboolean fileadded = false;
@@ -6247,7 +6247,7 @@ static void Command_Addfile(void)
 
 		// calculate and check the hash
 		{
-			UINT64 filehash;
+			uint64_t filehash;
 #ifdef NOFILEHASH
 			filehash = 0;
 #else
@@ -6284,14 +6284,14 @@ static void Command_Addfile(void)
 	}
 }
 
-static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
+static void Got_RequestAddfilecmd(uint8_t **cp, int32_t playernum)
 {
 	char filename[241];
 	filestatus_t ncs = FS_NOTCHECKED;
-	UINT64 filehash;
+	uint64_t filehash;
 	dboolean kick = false;
 	dboolean toomany = false;
-	INT32 i,j;
+	int32_t i,j;
 
 	READSTRINGN(*cp, filename, 240);
 	filehash = READUINT64(cp);
@@ -6344,11 +6344,11 @@ static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 	COM_BufAddText(va("addfile %s %s\n", compat == WC_ON ? "-c" : (compat == WC_OFF ? "-n" : ""), filename));
 }
 
-static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
+static void Got_Addfilecmd(uint8_t **cp, int32_t playernum)
 {
 	char filename[241];
 	filestatus_t ncs = FS_NOTCHECKED;
-	UINT64 filehash;
+	uint64_t filehash;
 
 	READSTRINGN(*cp, filename, 240);
 	filehash = READUINT64(*cp);
@@ -6395,7 +6395,7 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 
 static void Command_ListWADS_f(void)
 {
-	INT32 i = numwadfiles;
+	int32_t i = numwadfiles;
 	char *tempname;
 	CONS_Printf(M_GetText("There are %d wads loaded:\n"),numwadfiles);
 	for (i--; i >= 0; i--)
@@ -6443,11 +6443,11 @@ static void Command_LocateLump_f(void)
 
 static void Command_ListDoomednums_f(void)
 {
-	INT32 i, j, focusstart = 0, focusend = 0;
-	INT32 argc = COM_Argc(), argstart = 0;
-	INT32 table[MAXDOOMEDNUM];
+	int32_t i, j, focusstart = 0, focusend = 0;
+	int32_t argc = COM_Argc(), argstart = 0;
+	int32_t table[MAXDOOMEDNUM];
 	dboolean nodoubles = false;
-	UINT8 doubles[(MAXDOOMEDNUM+8/8)];
+	uint8_t doubles[(MAXDOOMEDNUM+8/8)];
 
 	if (argc > 1)
 	{
@@ -6748,9 +6748,9 @@ Lagless_OnChange (void)
 		server_lagless = cv_lagless.value;
 }
 
-UINT32 timelimitintics = 0;
-UINT32 extratimeintics = 0;
-UINT32 secretextratime = 0;
+uint32_t timelimitintics = 0;
+uint32_t extratimeintics = 0;
+uint32_t secretextratime = 0;
 
 /** Deals with a timelimit change by printing the change to the console.
   * If the gametype is single player, cooperative, or race, the timelimit is
@@ -6805,7 +6805,7 @@ static void TimeLimit_OnChange(void)
   * \author Graue <graue@oceanbase.org>
   * \todo Get rid of the hardcoded stuff, ugly stuff, etc.
   */
-void D_GameTypeChanged(INT32 lastgametype)
+void D_GameTypeChanged(int32_t lastgametype)
 {
 	if (netgame)
 	{
@@ -6837,7 +6837,7 @@ void D_GameTypeChanged(INT32 lastgametype)
 	// also, stop any and all forms of team scrambling that might otherwise take place.
 	if (G_GametypeHasTeams())
 	{
-		INT32 i;
+		int32_t i;
 		for (i = 0; i < MAXPLAYERS; i++)
 			if (playeringame[i])
 				players[i].ctfteam = 0;
@@ -6874,7 +6874,7 @@ static void Gravity_OnChange(void)
 
 static void SoundTest_OnChange(void)
 {
-	INT32 sfxfreeint = (INT32)sfxfree;
+	int32_t sfxfreeint = (int32_t)sfxfree;
 	if (cv_soundtest.value < 0)
 	{
 		CV_SetValue(&cv_soundtest, sfxfreeint-1);
@@ -6893,17 +6893,17 @@ static void SoundTest_OnChange(void)
 
 static void AutoBalance_OnChange(void)
 {
-	autobalance = (INT16)cv_autobalance.value;
+	autobalance = (int16_t)cv_autobalance.value;
 }
 
 static void TeamScramble_OnChange(void)
 {
-	INT16 i = 0, j = 0, playercount = 0;
+	int16_t i = 0, j = 0, playercount = 0;
 	dboolean repick = true;
-	INT32 blue = 0, red = 0;
-	INT32 maxcomposition = 0;
-	INT16 newteam = 0;
-	INT32 retries = 0;
+	int32_t blue = 0, red = 0;
+	int32_t maxcomposition = 0;
+	int16_t newteam = 0;
+	int32_t retries = 0;
 	dboolean success = false;
 
 	// Don't trigger outside level or intermission!
@@ -6959,7 +6959,7 @@ retryscramble:
 		for (i = 0; i < playercount; i++)
 		{
 			if (repick)
-				newteam = (INT16)((M_RandomByte() % 2) + 1);
+				newteam = (int16_t)((M_RandomByte() % 2) + 1);
 
 			// One team has the most players they can get, assign the rest to the other team.
 			if (red == maxcomposition || blue == maxcomposition)
@@ -6987,7 +6987,7 @@ retryscramble:
 		{
 			for (j = i; j < playercount; j++)
 			{
-				INT16 tempplayer = 0;
+				int16_t tempplayer = 0;
 
 				if ((players[scrambleplayers[i-1]].score > players[scrambleplayers[j]].score))
 				{
@@ -7004,7 +7004,7 @@ retryscramble:
 		{
 			if (repick)
 			{
-				newteam = (INT16)((M_RandomByte() % 2) + 1);
+				newteam = (int16_t)((M_RandomByte() % 2) + 1);
 				repick = false;
 			}
 			// (i != 2) means it does ABBABABA, instead of ABABABAB.
@@ -7041,7 +7041,7 @@ retryscramble:
 	if (cv_teamscramble.value)
 	{
 		scrambletotal = playercount;
-		teamscramble = (INT16)cv_teamscramble.value;
+		teamscramble = (int16_t)cv_teamscramble.value;
 
 		if (!(gamestate == GS_INTERMISSION && cv_scrambleonchange.value))
 			CONS_Printf(M_GetText("Teams will be scrambled next round.\n"));
@@ -7050,13 +7050,13 @@ retryscramble:
 
 static void Command_Showmap_f(void)
 {
-	UINT16 printmap = NEXTMAP_INVALID;
+	uint16_t printmap = NEXTMAP_INVALID;
 
 	size_t first_option;
 	size_t option_random;
 	size_t option_gametype;
 
-	INT32 newgametype = gametype;
+	int32_t newgametype = gametype;
 
 	char   *    mapname = NULL;
 	char   *realmapname = NULL;
@@ -7078,11 +7078,11 @@ static void Command_Showmap_f(void)
 
 	if (option_random)
 	{
-		//UINT8 numPlayers = 0;
-		UINT16 oldmapnum = UINT16_MAX;
+		//uint8_t numPlayers = 0;
+		uint16_t oldmapnum = UINT16_MAX;
 		if (Playing())
 		{
-			/*UINT8 i;
+			/*uint8_t i;
 			for (i = 0; i < MAXPLAYERS; ++i)
 			{
 				if (!playeringame[i] || players[i].spectator)
@@ -7205,7 +7205,7 @@ static void Command_ExitLevel_f(void)
 		SendNetXCmd(XD_EXITLEVEL, NULL, 0);
 }
 
-static void Got_ExitLevelcmd(UINT8 **cp, INT32 playernum)
+static void Got_ExitLevelcmd(uint8_t **cp, int32_t playernum)
 {
 	(void)cp;
 
@@ -7224,11 +7224,11 @@ static void Got_ExitLevelcmd(UINT8 **cp, INT32 playernum)
 	G_FinishExitLevel();
 }
 
-static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
+static void Got_SetupVotecmd(uint8_t **cp, int32_t playernum)
 {
-	INT32 i;
-	UINT8 gt, secondgt;
-	INT16 tempvotelevels[12][2];
+	int32_t i;
+	uint8_t gt, secondgt;
+	int16_t tempvotelevels[12][2];
 
 	if (playernum != serverplayer) // admin shouldn't be able to set up vote...
 	{
@@ -7239,8 +7239,8 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 	}
 
 	// Get gametype data.
-	gt = (UINT8)READUINT8(*cp);
-	secondgt = (UINT8)READUINT8(*cp);
+	gt = (uint8_t)READUINT8(*cp);
+	secondgt = (uint8_t)READUINT8(*cp);
 
 	// Strip illegal Encore flag.
 	if ((gt & VOTEMODIFIER_ENCORE)
@@ -7269,7 +7269,7 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 
 	for (i = 0; i < VOTEROWSADDSONE; i++)
 	{
-		tempvotelevels[i][0] = (UINT16)READUINT16(*cp);
+		tempvotelevels[i][0] = (uint16_t)READUINT16(*cp);
 		tempvotelevels[i][1] = gt;
 		if (tempvotelevels[i][0] < nummapheaders && mapheaderinfo[tempvotelevels[i][0]])
 			continue;
@@ -7303,10 +7303,10 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 	Y_StartVote();
 }
 
-static void Got_ModifyVotecmd(UINT8 **cp, INT32 playernum)
+static void Got_ModifyVotecmd(uint8_t **cp, int32_t playernum)
 {
-	UINT8 targetID = READUINT8(*cp);
-	SINT8 vote = READSINT8(*cp);
+	uint8_t targetID = READUINT8(*cp);
+	int8_t vote = READSINT8(*cp);
 
 	if (targetID >= MAXPLAYERS)
 	{
@@ -7346,10 +7346,10 @@ fail:
 	}
 }
 
-static void Got_PickVotecmd(UINT8 **cp, INT32 playernum)
+static void Got_PickVotecmd(uint8_t **cp, int32_t playernum)
 {
-	SINT8 pick = READSINT8(*cp);
-	SINT8 level = READSINT8(*cp);
+	int8_t pick = READSINT8(*cp);
+	int8_t level = READSINT8(*cp);
 
 	if (playernum != serverplayer && !IsPlayerAdmin(playernum))
 	{
@@ -7362,10 +7362,10 @@ static void Got_PickVotecmd(UINT8 **cp, INT32 playernum)
 	Y_SetupVoteFinish(pick, level);
 }
 
-static void Got_ScheduleTaskcmd(UINT8 **cp, INT32 playernum)
+static void Got_ScheduleTaskcmd(uint8_t **cp, int32_t playernum)
 {
 	char command[MAXTEXTCMD];
-	INT16 seconds;
+	int16_t seconds;
 
 	seconds = READINT16(*cp);
 	READSTRING(*cp, command);
@@ -7392,7 +7392,7 @@ static void Got_ScheduleTaskcmd(UINT8 **cp, INT32 playernum)
 	}
 }
 
-static void Got_ScheduleClearcmd(UINT8 **cp, INT32 playernum)
+static void Got_ScheduleClearcmd(uint8_t **cp, int32_t playernum)
 {
 	(void)cp;
 
@@ -7414,9 +7414,9 @@ static void Got_ScheduleClearcmd(UINT8 **cp, INT32 playernum)
 	}
 }
 
-static void Got_Automatecmd(UINT8 **cp, INT32 playernum)
+static void Got_Automatecmd(uint8_t **cp, int32_t playernum)
 {
-	UINT8 eventID;
+	uint8_t eventID;
 	char command[MAXTEXTCMD];
 
 	eventID = READUINT8(*cp);
@@ -7457,7 +7457,7 @@ static void Got_Automatecmd(UINT8 **cp, INT32 playernum)
 	}
 }
 // Consistent print about cheaters in multiplayer.
-static void CV_CheaterWarning(UINT8 playerID, const char *command)
+static void CV_CheaterWarning(uint8_t playerID, const char *command)
 {
 	if (netgame)
 	{
@@ -7465,9 +7465,9 @@ static void CV_CheaterWarning(UINT8 playerID, const char *command)
 	}
 }
 
-static void Got_Cheat(UINT8 **cp, INT32 playernum)
+static void Got_Cheat(uint8_t **cp, int32_t playernum)
 {
-	UINT8 targetPlayer = READUINT8(*cp);
+	uint8_t targetPlayer = READUINT8(*cp);
 	cheat_t cheat = READUINT8(*cp);
 
 	player_t *player;
@@ -7528,7 +7528,7 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 		}
 
 		case CHEAT_RINGS: {
-			SINT8 rings = READSINT8(*cp);
+			int8_t rings = READSINT8(*cp);
 
 			// P_GivePlayerRings does value clamping
 			player->rings = 0;
@@ -7539,7 +7539,7 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 		}
 
 		case CHEAT_LIVES: {
-			SINT8 lives = READSINT8(*cp);
+			int8_t lives = READSINT8(*cp);
 
 			// P_GivePlayerLives does value clamping
 			player->lives = 0;
@@ -7579,7 +7579,7 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 		}
 
 		case CHEAT_HURT: {
-			INT32 damage = READINT32(*cp);
+			int32_t damage = READINT32(*cp);
 
 			if (!P_MobjWasRemoved(player->mo))
 			{
@@ -7638,15 +7638,15 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 		}
 
 		case CHEAT_DEVMODE: {
-			UINT32 flags = READUINT32(*cp);
+			uint32_t flags = READUINT32(*cp);
 			cht_debug = flags;
 			CV_CheaterWarning(targetPlayer, va("devmode %x", flags));
 			break;
 		}
 
 		case CHEAT_GIVEITEM: {
-			UINT8 item = READUINT8(*cp);
-			UINT8 amt = READUINT8(*cp);
+			uint8_t item = READUINT8(*cp);
+			uint8_t amt = READUINT8(*cp);
 
 			item = min(item, numkartitems - 1);
 
@@ -7664,7 +7664,7 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			}
 			else
 			{
-				K_AddItemRollToList((INT32)(player - players), item, amt);
+				K_AddItemRollToList((int32_t)(player - players), item, amt);
 
 				CV_CheaterWarning(playernum, va("give item %s x%d", DEH_KartItemName(item), amt));
 			}
@@ -7672,7 +7672,7 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 		}
 
 		case CHEAT_SCORE: {
-			UINT32 score = READUINT32(*cp);
+			uint32_t score = READUINT32(*cp);
 
 			player->roundscore = score;
 
@@ -7695,9 +7695,9 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 	}
 }
 
-static void Got_PlaySound(UINT8 **cp, INT32 playernum)
+static void Got_PlaySound(uint8_t **cp, int32_t playernum)
 {
-	INT32 sound_id = READINT32(*cp);
+	int32_t sound_id = READINT32(*cp);
 
 	if (playernum != serverplayer && !IsPlayerAdmin(playernum)) // hacked client, or disasterous bug
 	{
@@ -7716,9 +7716,9 @@ static void Got_PlaySound(UINT8 **cp, INT32 playernum)
 	S_StartSound(NULL, sound_id);
 }
 
-static void HandleClantagSetCommand(UINT8 localplayer)
+static void HandleClantagSetCommand(uint8_t localplayer)
 {
-	char buf[sizeof(UINT8)+MAXCLANTAG];
+	char buf[sizeof(uint8_t)+MAXCLANTAG];
 	char *cp = buf;
 	char temp[MAXCLANTAG*4];
 	char clantag[MAXCLANTAG];
@@ -7792,10 +7792,10 @@ static void Command_ClantagSet4(void)
 	HandleClantagSetCommand(3);
 }
 
-static void Got_ClanTagSet(UINT8 **cp, INT32 playernum)
+static void Got_ClanTagSet(uint8_t **cp, int32_t playernum)
 {
 	char clantag[MAXCLANTAG];
-	UINT8 targetPlayer = READUINT8(*cp);
+	uint8_t targetPlayer = READUINT8(*cp);
 	READSTRINGN(*cp, clantag, MAXCLANTAG);
 
 	if (targetPlayer >= MAXPLAYERS
@@ -7815,7 +7815,7 @@ static void Got_ClanTagSet(UINT8 **cp, INT32 playernum)
 	strncpy(players[targetPlayer].clan, clantag, MAXCLANTAG);
 }
 
-static void HandleClantagClearCommand(UINT8 localplayer)
+static void HandleClantagClearCommand(uint8_t localplayer)
 {
 	char buf[1];
 	char *cp = buf;
@@ -7856,9 +7856,9 @@ static void Command_ClantagClear4(void)
 	HandleClantagClearCommand(3);
 }
 
-static void Got_ClanTagClear(UINT8 **cp, INT32 playernum)
+static void Got_ClanTagClear(uint8_t **cp, int32_t playernum)
 {
-	UINT8 targetPlayer = READUINT8(*cp);
+	uint8_t targetPlayer = READUINT8(*cp);
 
 	if (targetPlayer >= MAXPLAYERS || playernode[targetPlayer] != playernode[playernum])
 	{
@@ -7957,7 +7957,7 @@ static void Command_Displayplayer_f(void)
   */
 void Command_ExitGame_f(void)
 {
-	INT32 i;
+	int32_t i;
 
 	if (dedicated)
 	{
@@ -8074,7 +8074,7 @@ static void Command_Togglemodified_f(void)
 static void Command_Archivetest_f(void)
 {
 	savebuffer_t save = {0};
-	UINT32 i, wrote;
+	uint32_t i, wrote;
 	thinker_t *th;
 	if (gamestate != GS_LEVEL)
 	{
@@ -8100,7 +8100,7 @@ static void Command_Archivetest_f(void)
 	save.write = true;
 	LUA_Sync(&save, true, false);
 	WRITEUINT8(save.p, 0x7F);
-	wrote = (UINT32)(save.p - save.buffer);
+	wrote = (uint32_t)(save.p - save.buffer);
 
 	// clear Lua state, so we can really see what happens!
 	CONS_Printf("Clearing state!\n");
@@ -8112,9 +8112,9 @@ static void Command_Archivetest_f(void)
 	CONS_Printf("LUA_Sync Unarchive...\n");
 	LUA_Sync(&save, true, false);
 	i = READUINT8(save.p);
-	if (i != 0x7F || wrote != (UINT32)(save.p - save.buffer))
+	if (i != 0x7F || wrote != (uint32_t)(save.p - save.buffer))
 	{
-		CONS_Printf("Savegame corrupted. (write %u, read %u)\n", wrote, (UINT32)(save.p - save.buffer));
+		CONS_Printf("Savegame corrupted. (write %u, read %u)\n", wrote, (uint32_t)(save.p - save.buffer));
 	}
 
 	// free buffer
@@ -8127,11 +8127,11 @@ static void Command_Archivetest_f(void)
 
 static void Command_KartGiveItem_f(void)
 {
-	UINT8 localplayer = g_localplayers[consoleplayer];
+	uint8_t localplayer = g_localplayers[consoleplayer];
 
 	int           ac;
 	const char *name;
-	INT32       item;
+	int32_t       item;
 
 	int i;
 
@@ -8173,7 +8173,7 @@ static void Command_KartGiveItem_f(void)
 
 		if (item < numkartitems)
 		{
-			INT32 amt;
+			int32_t amt;
 
 			if (ac > 2)
 				amt = atoi(COM_Argv(2));
@@ -8193,11 +8193,11 @@ static void Command_KartGiveItem_f(void)
 
 static void Command_Schedule_Add(void)
 {
-	UINT8 buf[MAXTEXTCMD];
-	UINT8 *buf_p = buf;
+	uint8_t buf[MAXTEXTCMD];
+	uint8_t *buf_p = buf;
 
 	size_t ac;
-	INT16 seconds;
+	int16_t seconds;
 	const char *command;
 
 	if (!(server || IsPlayerAdmin(consoleplayer)))
@@ -8273,8 +8273,8 @@ static void Command_Schedule_List(void)
 
 static void Command_Automate_Set(void)
 {
-	UINT8 buf[MAXTEXTCMD];
-	UINT8 *buf_p = buf;
+	uint8_t buf[MAXTEXTCMD];
+	uint8_t *buf_p = buf;
 
 	size_t ac;
 
@@ -8325,8 +8325,8 @@ static void Command_PlaySound(void)
 	const char *sound;
 	const size_t argc = COM_Argc();
 	sfxenum_t sfx = NUMSFX;
-	UINT8 buf[4];
-	UINT8 *buf_p = buf;
+	uint8_t buf[4];
+	uint8_t *buf_p = buf;
 
 	if (argc < 2)
 	{
@@ -8412,7 +8412,7 @@ ROUNDQUEUE_MAX
 
 	for (i = 1; i < COM_Argc(); ++i)
 	{
-		INT32 map = G_MapNumber(COM_Argv(i));
+		int32_t map = G_MapNumber(COM_Argv(i));
 
 		if (map < 0 || map >= nummapheaders)
 		{
@@ -8423,7 +8423,7 @@ ROUNDQUEUE_MAX
 			return;
 		}
 
-		INT32 gt = G_GuessGametypeByTOL(mapheaderinfo[map]->typeoflevel);
+		int32_t gt = G_GuessGametypeByTOL(mapheaderinfo[map]->typeoflevel);
 
 		G_MapIntoRoundQueue(map, gt != -1 ? gt : GT_RACE, false, false);
 	}
@@ -8515,7 +8515,7 @@ static void Name4_OnChange(void)
 static void Follower_OnChange(void)
 {
 	char str[SKINNAMESIZE+1], cpy[SKINNAMESIZE+1];
-	INT32 num;
+	int32_t num;
 
 	// there is a slight chance that we will actually use a string instead so...
 	// let's investigate the string...
@@ -8568,7 +8568,7 @@ static void Followercolor_OnChange(void)
 static void Follower2_OnChange(void)
 {
 	char str[SKINNAMESIZE+1], cpy[SKINNAMESIZE+1];
-	INT32 num;
+	int32_t num;
 
 	// there is a slight chance that we will actually use a string instead so...
 	// let's investigate the string...
@@ -8618,7 +8618,7 @@ static void Followercolor2_OnChange(void)
 static void Follower3_OnChange(void)
 {
 	char str[SKINNAMESIZE+1], cpy[SKINNAMESIZE+1];
-	INT32 num;
+	int32_t num;
 
 	// there is a slight chance that we will actually use a string instead so...
 	// let's investigate the string...
@@ -8668,7 +8668,7 @@ static void Followercolor3_OnChange(void)
 static void Follower4_OnChange(void)
 {
 	char str[SKINNAMESIZE+1], cpy[SKINNAMESIZE+1];
-	INT32 num;
+	int32_t num;
 
 	// there is a slight chance that we will actually use a string instead so...
 	// let's investigate the string...
@@ -8843,7 +8843,7 @@ static void Command_ListSkins(void)
 	for (i = page * 10; i < numskins && i < (page + 1) * 10; i++)
 	{
 		skin_t *skin = skins[i];
-		UINT16 chatcolor = skincolors[skin->prefcolor].chatcolor;
+		uint16_t chatcolor = skincolors[skin->prefcolor].chatcolor;
 		char color_prefix[2];
 
 		if (chatcolor > V_TANMAP)
@@ -8876,8 +8876,8 @@ static void Command_ListSkins(void)
 static void Command_SkinSearch(void)
 {
 	size_t i;
-	UINT16 s;
-	UINT16 ic = 0;
+	uint16_t s;
+	uint16_t ic = 0;
 
 	for (i = 1; i < COM_Argc(); i++)
 	{
@@ -8887,7 +8887,7 @@ static void Command_SkinSearch(void)
 
 			if (strcasestr(skininput->realname, COM_Argv(i)))
 			{
-				UINT16 chatcolor = skincolors[skininput->prefcolor].chatcolor;
+				uint16_t chatcolor = skincolors[skininput->prefcolor].chatcolor;
 				char color_prefix[2];
 
 				if (chatcolor > V_TANMAP)
@@ -8908,7 +8908,7 @@ static void Command_SkinSearch(void)
 	CONS_Printf("Total %d skins.\n", ic);
 }
 
-static void __voice_cmd_func(INT32 pid, UINT8 pnum)
+static void __voice_cmd_func(int32_t pid, uint8_t pnum)
 {
 	int vo_id = 0;
 	int skin_id = 0;
@@ -9222,7 +9222,7 @@ __attribute__((used)) static void outputVoicesForSkin(skin_t * skin)
 	const int voice_num = skin->numvoices;
 	const int voice_lastiter = (voice_num - 1);
 
-	UINT16 chatcolor = skincolors[skin->prefcolor].chatcolor;
+	uint16_t chatcolor = skincolors[skin->prefcolor].chatcolor;
 
 	if (chatcolor > V_TANMAP)
 	{
@@ -9303,7 +9303,7 @@ static void Command_ListVoices(void)
 				return;
 			}
 			// Assume the player is searching by skin name instead.
-			INT32 j = R_SkinAvailable(COM_Argv(1));
+			int32_t j = R_SkinAvailable(COM_Argv(1));
 
 			if (j == -1)
 			{
@@ -9463,8 +9463,8 @@ char prefvoiceliststr[PREFLISTSIZE] = {0};
 
 static void Command_ListVoicePrefs(void)
 {
-	INT32 pnum = 0;
-	INT32 page = 1;
+	int32_t pnum = 0;
+	int32_t page = 1;
 
 	if (COM_Argc() == 2)
 	{
@@ -9545,7 +9545,7 @@ static void Command_ListVoicePrefs(void)
 		return;
 	}
 
-	INT32 str_size = R_MakePreferredVoicesList(pnum, prefvoiceliststr, PREFLISTSIZE, page);
+	int32_t str_size = R_MakePreferredVoicesList(pnum, prefvoiceliststr, PREFLISTSIZE, page);
 
 	if (str_size <= 0)
 	{
@@ -9715,7 +9715,7 @@ static void DummyConsvar_OnChange(void)
 
 static void Command_ShowScores_f(void)
 {
-	UINT8 i;
+	uint8_t i;
 
 	if (!(netgame || multiplayer))
 	{
@@ -9806,7 +9806,7 @@ static void KartSpeed_OnChange(void)
 	if (gamestate == GS_LEVEL && leveltime < starttime && cv_kartspeed.value != KARTSPEED_AUTO)
 	{
 		CONS_Printf(M_GetText("Race speed has been changed to \"%s\".\n"), cv_kartspeed.string);
-		gamespeed = (UINT8)cv_kartspeed.value;
+		gamespeed = (uint8_t)cv_kartspeed.value;
 	}
 	else
 	{
@@ -9831,7 +9831,7 @@ static void KartBattleSpeed_OnChange(void)
 	if (leveltime < starttime && cv_kartbattlespeed.value != KARTSPEED_AUTO)
 	{
 		CONS_Printf(M_GetText("Battle speed has been changed to \"%s\".\n"), cv_kartbattlespeed.string);
-		gamespeed = (UINT8)cv_kartbattlespeed.value;
+		gamespeed = (uint8_t)cv_kartbattlespeed.value;
 	}
 	else
 	{
@@ -10097,7 +10097,7 @@ static void KartAirDrop_OnChange(void)
 	if (leveltime < starttime)
 	{
 		CONS_Printf(M_GetText("Air Drop has been set to \"%s\".\n"), cv_kartairdrop.string);
-		airdropactive = (UINT8)cv_kartairdrop.value;
+		airdropactive = (uint8_t)cv_kartairdrop.value;
 	}
 	else
 	{
@@ -10347,7 +10347,7 @@ static void KartBumpSpark_OnChange(void)
 	if (leveltime < starttime)
 	{
 		CONS_Printf(M_GetText("Bump spark type has been changed to \"%s\".\n"), cv_kartbumpspark.string);
-		bumpsparkactive = (UINT8)cv_kartbumpspark.value;
+		bumpsparkactive = (uint8_t)cv_kartbumpspark.value;
 	}
 	else
 	{
@@ -10463,7 +10463,7 @@ static void Schedule_OnChange(void)
 
 
 
-void Got_DiscordInfo(UINT8 **p, INT32 playernum)
+void Got_DiscordInfo(uint8_t **p, int32_t playernum)
 {
 	if (playernum != serverplayer /*&& !IsPlayerAdmin(playernum)*/)
 	{

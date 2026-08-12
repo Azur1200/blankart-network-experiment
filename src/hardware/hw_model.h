@@ -86,8 +86,8 @@ typedef struct tag_s
 
 typedef struct
 {
-	INT32 frames[256];
-	UINT8 numframes;
+	int32_t frames[256];
+	uint8_t numframes;
 	dboolean interpolate;
 } modelspr2frames_t;
 
@@ -114,7 +114,7 @@ typedef struct model_s
 	modeltype_t modeltype;
 
 	char *framenames;
-	UINT8 interpolate[256];
+	uint8_t interpolate[256];
 	modelspr2frames_t *spr2frames;
 
 	// the max_s and max_t values that the uvs are currently adjusted to

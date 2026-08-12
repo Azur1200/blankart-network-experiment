@@ -32,12 +32,12 @@ struct perfstatrow {
 	const char  * lores_label;
 	const char  * hires_label;
 	ps_metric_t * metric;
-	UINT8         flags;
+	uint8_t         flags;
 };
 
 // perfstatrow_t flags
 
-#define PS_TIME      1  // metric measures time (uses precise_t instead of INT32)
+#define PS_TIME      1  // metric measures time (uses precise_t instead of int32_t)
 #define PS_LEVEL     2  // metric is valid only when a level is active
 #define PS_SW        4  // metric is valid only in software mode
 #define PS_HW        8  // metric is valid only in opengl mode
@@ -350,17 +350,17 @@ static dboolean PS_IsRowVisible(perfstatrow_t *row)
 typedef union
 {
 	char *c;
-	UINT32 *i;
+	uint32_t *i;
 	precise_t *p;
 } history_read_pos_t;
 
-static INT32 PS_GetMetricAverage(ps_metric_t *metric, dboolean time_metric)
+static int32_t PS_GetMetricAverage(ps_metric_t *metric, dboolean time_metric)
 {
 	history_read_pos_t history_read_pos;
 	history_read_pos.c = metric->history; // char* used for pointer arithmetic
-	INT64 sum = 0;
+	int64_t sum = 0;
 	int i;
-	int value_size = time_metric ? sizeof(precise_t) : sizeof(INT32);
+	int value_size = time_metric ? sizeof(precise_t) : sizeof(int32_t);
 
 	for (i = 0; i < cv_ps_samplesize.value; i++)
 	{
@@ -374,17 +374,17 @@ static INT32 PS_GetMetricAverage(ps_metric_t *metric, dboolean time_metric)
 	return sum / cv_ps_samplesize.value;
 }
 
-static INT32 PS_GetMetricMinOrMax(ps_metric_t *metric, dboolean time_metric, dboolean get_max)
+static int32_t PS_GetMetricMinOrMax(ps_metric_t *metric, dboolean time_metric, dboolean get_max)
 {
 	history_read_pos_t history_read_pos;
 	history_read_pos.c = metric->history; // char* used for pointer arithmetic
-	INT32 found_value = get_max ? INT32_MIN : INT32_MAX;
+	int32_t found_value = get_max ? INT32_MIN : INT32_MAX;
 	int i;
-	int value_size = time_metric ? sizeof(precise_t) : sizeof(INT32);
+	int value_size = time_metric ? sizeof(precise_t) : sizeof(int32_t);
 
 	for (i = 0; i < cv_ps_samplesize.value; i++)
 	{
-		INT32 value;
+		int32_t value;
 
 		if (time_metric)
 			value = *history_read_pos.p / (I_GetPrecisePrecision() / 1000000);
@@ -404,18 +404,18 @@ static INT32 PS_GetMetricMinOrMax(ps_metric_t *metric, dboolean time_metric, dbo
 }
 
 // Calculates the standard deviation for metric.
-static INT32 PS_GetMetricSD(ps_metric_t *metric, dboolean time_metric)
+static int32_t PS_GetMetricSD(ps_metric_t *metric, dboolean time_metric)
 {
 	history_read_pos_t history_read_pos;
 	history_read_pos.c = metric->history; // char* used for pointer arithmetic
-	INT64 sum = 0;
+	int64_t sum = 0;
 	int i;
-	int value_size = time_metric ? sizeof(precise_t) : sizeof(INT32);
-	INT32 avg = PS_GetMetricAverage(metric, time_metric);
+	int value_size = time_metric ? sizeof(precise_t) : sizeof(int32_t);
+	int32_t avg = PS_GetMetricAverage(metric, time_metric);
 
 	for (i = 0; i < cv_ps_samplesize.value; i++)
 	{
-		INT64 value;
+		int64_t value;
 
 		if (time_metric)
 			value = *history_read_pos.p / (I_GetPrecisePrecision() / 1000000);
@@ -432,7 +432,7 @@ static INT32 PS_GetMetricSD(ps_metric_t *metric, dboolean time_metric)
 }
 
 // Returns the value to show on screen for metric.
-static INT32 PS_GetMetricScreenValue(ps_metric_t *metric, dboolean time_metric)
+static int32_t PS_GetMetricScreenValue(ps_metric_t *metric, dboolean time_metric)
 {
 	if (cv_ps_samplesize.value > 1 && metric->history)
 	{
@@ -460,7 +460,7 @@ static INT32 PS_GetMetricScreenValue(ps_metric_t *metric, dboolean time_metric)
 static int PS_DrawPerfRows(int x, int y, int color, perfstatrow_t *rows)
 {
 	const dboolean hires = PS_HighResolution();
-	INT32 draw_flags = V_MONOSPACE | color;
+	int32_t draw_flags = V_MONOSPACE | color;
 	perfstatrow_t * row;
 	int draw_y = y;
 
@@ -470,7 +470,7 @@ static int PS_DrawPerfRows(int x, int y, int color, perfstatrow_t *rows)
 	for (row = rows; row->lores_label; ++row)
 	{
 		const char *label;
-		INT32 value;
+		int32_t value;
 		char *final_str;
 
 		if (!PS_IsRowVisible(row))
@@ -502,7 +502,7 @@ static void PS_UpdateMetricHistory(ps_metric_t *metric, dboolean time_metric, db
 	if (!metric->history)
 	{
 		// allocate history table
-		int value_size = time_metric ? sizeof(precise_t) : sizeof(INT32);
+		int value_size = time_metric ? sizeof(precise_t) : sizeof(int32_t);
 		void** memory_user = &metric->history;
 
 		metric->history = Z_Calloc(value_size * cv_ps_samplesize.value, PU_PERFSTATS,
@@ -522,7 +522,7 @@ static void PS_UpdateMetricHistory(ps_metric_t *metric, dboolean time_metric, db
 	}
 	else
 	{
-		INT32 *history = (INT32*)metric->history;
+		int32_t *history = (int32_t*)metric->history;
 		history[index] = metric->value.i;
 	}
 }
@@ -748,7 +748,7 @@ static void PS_DrawDescriptorHeader(void)
 
 		const dboolean hires = PS_HighResolution();
 		char* str;
-		INT32 flags = V_MONOSPACE | V_ALLOWLOWERCASE;
+		int32_t flags = V_MONOSPACE | V_ALLOWLOWERCASE;
 		int samples_left = max(ps_frame_samples_left, ps_tick_samples_left);
 		int x, y;
 
@@ -862,11 +862,11 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 	// text writing position
 	int x = START_X;
 	int y = START_Y;
-	UINT32 text_color;
+	uint32_t text_color;
 	char tempbuffer[LUA_IDSIZE];
 	char last_mod_name[LUA_IDSIZE];
 	last_mod_name[0] = '\0';
-	INT32 total = 0;
+	int32_t total = 0;
 
 	//Decide page length based and drawn text on choosen thinker type
 	switch (cv_perfstats.value)
@@ -909,7 +909,7 @@ static void draw_think_frame_stats(int hook_length, ps_hookinfo_t *hook)
 	{
 #define NEXT_ROW() y += HEIGHT;
 
-		INT32 value = PS_GetMetricScreenValue(&hook[i].time_taken, true);
+		int32_t value = PS_GetMetricScreenValue(&hook[i].time_taken, true);
 		total += value;
 
 		if (i < pagestart || i >= pageend) continue;

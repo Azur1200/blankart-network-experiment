@@ -21,14 +21,14 @@ extern "C" {
 
 struct dehinfo_t
 {
-	UINT32 namehash; // excluding prefix (no MT_ or S_)
-	UINT32 nameofs; // into strbuf_t
+	uint32_t namehash; // excluding prefix (no MT_ or S_)
+	uint32_t nameofs; // into strbuf_t
 };
 
 void DEH_LoadDehackedLump(lumpnum_t lumpnum);
-void DEH_LoadDehackedLumpPwad(UINT16 wad, UINT16 lump, dboolean mainfile);
+void DEH_LoadDehackedLumpPwad(uint16_t wad, uint16_t lump, dboolean mainfile);
 void DEH_Link(const char *name, dehinfo_t *info, strbuf_t **buf);
-INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out);
+int32_t DEH_ReadFreeslot(const char *type, const char *word, int32_t *out);
 
 // SRB2Kart
 extern int freeslotusage[2][2];
@@ -44,7 +44,7 @@ extern dboolean introchanged;
 
 #define MAXRECURSION 30
 extern const char *superactions[MAXRECURSION];
-extern UINT8 superstack;
+extern uint8_t superstack;
 
 // If the dehacked patch does not match this version, we throw a warning
 #define PATCHVERSION 2
@@ -58,7 +58,7 @@ struct MYFILE
 	char *data;
 	char *curpos;
 	size_t size;
-	UINT16 wad;
+	uint16_t wad;
 };
 #define myfeof(a) (a->data + a->size <= a->curpos)
 char *myfgets(char *buf, size_t bufsize, MYFILE *f);

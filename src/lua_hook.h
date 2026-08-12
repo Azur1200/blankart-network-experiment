@@ -146,7 +146,7 @@ void LUA_HookHUD(huddrawlist_h, int hook);
 
 int  LUA_HookMobj(mobj_t *, int hook);
 int  LUA_Hook2Mobj(mobj_t *, mobj_t *, int hook);
-void LUA_HookInt(INT32 integer, int hook);
+void LUA_HookInt(int32_t integer, int hook);
 void LUA_HookGamemap(int hook);
 void LUA_HookBool(dboolean value, int hook);
 int  LUA_HookPlayer(player_t *, int hook);
@@ -160,20 +160,20 @@ void LUA_HookThinkFrame(void);
 void LUA_HookPostThinkFrame(void);
 int  LUA_HookMobjLineCollide(mobj_t *, line_t *);
 int  LUA_HookTouchSpecial(mobj_t *special, mobj_t *toucher);
-int  LUA_HookShouldDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
-int  LUA_HookShouldSpin(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
-int  LUA_HookShouldExplode(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
-int  LUA_HookShouldSquish(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
-int  LUA_HookMobjDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
-int  LUA_HookPlayerSpin(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
-int  LUA_HookPlayerExplode(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
-int  LUA_HookPlayerSquish(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
-int  LUA_HookMobjDeath(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damagetype);
+int  LUA_HookShouldDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype);
+int  LUA_HookShouldSpin(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype);
+int  LUA_HookShouldExplode(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype);
+int  LUA_HookShouldSquish(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype);
+int  LUA_HookMobjDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype);
+int  LUA_HookPlayerSpin(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype);
+int  LUA_HookPlayerExplode(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype);
+int  LUA_HookPlayerSquish(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype);
+int  LUA_HookMobjDeath(mobj_t *target, mobj_t *inflictor, mobj_t *source, uint8_t damagetype);
 int  LUA_HookMobjMoveBlocked(mobj_t *, mobj_t *, line_t *);
-void LUA_HookSpecialExecute(activator_t *activator, INT32 *args, char **stringargs);
+void LUA_HookSpecialExecute(activator_t *activator, int32_t *args, char **stringargs);
 void LUA_HookLinedefExecute(line_t *, mobj_t *, sector_t *);
 int  LUA_HookPlayerMsg(int source, int target, int flags, char *msg);
-int  LUA_HookHurtMsg(player_t *, mobj_t *inflictor, mobj_t *source, UINT8 damagetype);
+int  LUA_HookHurtMsg(player_t *, mobj_t *inflictor, mobj_t *source, uint8_t damagetype);
 int  LUA_HookMapThingSpawn(mobj_t *, mapthing_t *);
 int  LUA_HookFollowMobj(player_t *, mobj_t *);
 int  LUA_HookCameraThinker(player_t *, camera_t *);
@@ -183,23 +183,23 @@ int  LUA_HookNameChange(player_t *plr, const char *name);
 int  LUA_HookTeamSwitch(player_t *, int newteam, dboolean fromspectators, dboolean tryingautobalance, dboolean tryingscramble);
 int  LUA_HookViewpointSwitch(player_t *player, player_t *newdisplayplayer, dboolean forced);
 int  LUA_HookSeenPlayer(player_t *player, player_t *seenfriend);
-int LUA_HookGPRankPoints(UINT8 position, UINT8 numplayers, INT16 *points);
+int LUA_HookGPRankPoints(uint8_t position, uint8_t numplayers, int16_t *points);
 int  LUA_HookShouldJingleContinue(player_t *, const char *musname);
 int  LUA_HookMusicChange(const char *oldname, struct MusicChange *);
 
 // Item shit
-dboolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, dboolean wasHoldingItem, dboolean *force);
-dboolean LUA_HookPlayerItemThink(player_t *player, UINT8 itemType);
-dboolean LUA_HookPlayerItemUse(player_t *player, UINT8 itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro);
-dboolean LUA_HookPlayerItemHoldUse(player_t *player, UINT8 itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro);
-dboolean LUA_HookPlayerItemReleaseUse(player_t *player, UINT8 itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro);
+dboolean LUA_HookPlayerItem(player_t *player, uint8_t itemType, dboolean wasHoldingItem, dboolean *force);
+dboolean LUA_HookPlayerItemThink(player_t *player, uint8_t itemType);
+dboolean LUA_HookPlayerItemUse(player_t *player, uint8_t itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro);
+dboolean LUA_HookPlayerItemHoldUse(player_t *player, uint8_t itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro);
+dboolean LUA_HookPlayerItemReleaseUse(player_t *player, uint8_t itemType, dboolean attackJustDown, dboolean onground, dboolean force, dboolean noHyudoro);
 
-dboolean LUA_HookKartHyudoro(player_t *player, INT32 *target, dboolean sink); // SRB2Kart: Hook for K_DoHyudoroSteal and overriding its results.
+dboolean LUA_HookKartHyudoro(player_t *player, int32_t *target, dboolean sink); // SRB2Kart: Hook for K_DoHyudoroSteal and overriding its results.
 dboolean LUA_HookMobjScaleChange(mobj_t *target, fixed_t newscale, fixed_t oldscale); // SRB2Kart: Hook for P_SetScale.
 dboolean LUA_HookKartSneaker(player_t *player, int type); // SRB2Kart: Hook for K_DoSneaker.
-dboolean LUA_HookKartStripItems(player_t *player, UINT8 item); // SRB2Kart: Hook for K_StripItems.
+dboolean LUA_HookKartStripItems(player_t *player, uint8_t item); // SRB2Kart: Hook for K_StripItems.
 dboolean LUA_HookKartStripOther(player_t *player); // SRB2Kart: Hook for K_StripOther.
-dboolean LUA_HookCanPickupItem(player_t *player, UINT8 weapon, dboolean *force); // SRB2Kart: Hook for P_CanPickupItem.
+dboolean LUA_HookCanPickupItem(player_t *player, uint8_t weapon, dboolean *force); // SRB2Kart: Hook for P_CanPickupItem.
 int		LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t droptype, dboolean *orbit, dboolean *dropall); // SRB2Kart: Hook for K_DropHnextList.
 
 #ifdef __cplusplus

@@ -79,7 +79,7 @@ static inline dboolean in_poly_vert(polyvertex_t * p1)
 #define POLYSTORE_NUM_VERT 256
 typedef struct polyvertex_store_s {
    struct polyvertex_store_s *next;  // linked list
-   INT32 num_vert_used;
+   int32_t num_vert_used;
    polyvertex_t pv[POLYSTORE_NUM_VERT];
 } polyvertex_store_t;
 
@@ -131,7 +131,7 @@ static polyvertex_t *find_close_polyvertex(float x, float y, float ep)
 	polyvertex_store_t *psv;
 	polyvertex_t *pv;
 	float dx, dy;
-	INT32 i;
+	int32_t i;
 
 	// eep!
 	const float eep = ep*ep;
@@ -253,16 +253,16 @@ static inline polyvertex_t *store_vertex(vertex_t *v1, float ep)
 // Working poly
 // A convex 'plane' polygon, clockwise order
 typedef struct {
-	INT32 num_alloc, numpts;  // allocation size and how many used
+	int32_t num_alloc, numpts;  // allocation size and how many used
 	polyvertex_t **ppts;      // ptr to array of ptrs
                               // Allocate with Z_Malloc, PU_HWRPLANE
 #ifdef DEBUG_TRACE
-	UINT32 id1, id2, id3;  // Tracking poly history
+	uint32_t id1, id2, id3;  // Tracking poly history
 #endif
 } wpoly_t;
 
 #ifdef DEBUG_TRACE
-UINT32 poly_id = 1;
+uint32_t poly_id = 1;
 #endif
 
 #ifdef DEBUG_HWBSP
@@ -319,7 +319,7 @@ static void wpoly_init_0(wpoly_t * wpoly)
 
 // Initialize at an initial size.
 //  num_alloc : num vertex, greater than 0
-static void wpoly_init_alloc(INT32 num_alloc, wpoly_t * wpoly)
+static void wpoly_init_alloc(int32_t num_alloc, wpoly_t * wpoly)
 {
 	wpoly->numpts = 0;
 	wpoly->num_alloc = num_alloc;
@@ -357,10 +357,10 @@ static void wpoly_move(wpoly_t * from_poly, /*OUT*/ wpoly_t * to_poly)
 
 // Append a range from one poly to another poly.
 // Does not alloc more, will limit copy to allocation size.
-static void wpoly_append(wpoly_t *src_poly, INT32 copy_from, INT32 copy_cnt, /*OUT*/ wpoly_t *dest_poly)
+static void wpoly_append(wpoly_t *src_poly, int32_t copy_from, int32_t copy_cnt, /*OUT*/ wpoly_t *dest_poly)
 {
 	polyvertex_t **pvp;
-	INT32 n;
+	int32_t n;
 
 #ifdef DEBUG_HWBSP
 	if (copy_cnt > src_poly->numpts)
@@ -431,11 +431,11 @@ static void wpoly_append(wpoly_t *src_poly, INT32 copy_from, INT32 copy_cnt, /*O
 //  copy_from, copy_cnt : the indexes of the vertexes to copy
 //  dest_poly : the destination poly
 static void wpoly_split_copy(polyvertex_t * v1, polyvertex_t * v2,
-							wpoly_t * src_poly, INT32 copy_from, INT32 copy_cnt,
+							wpoly_t * src_poly, int32_t copy_from, int32_t copy_cnt,
 							/*OUT*/ wpoly_t * dest_poly)
 {
 	polyvertex_t **pvp;
-	INT32 n = 0;
+	int32_t n = 0;
 
 	// Count the dest vertexes.
 	if (v1)
@@ -470,7 +470,7 @@ static void wpoly_split_copy(polyvertex_t * v1, polyvertex_t * v2,
 //  v1, v2 : polyvertex to be inserted as first vertex of poly, in this order
 //  v_from, v_cnt : the indexes of the vertexes to save
 //  xpoly : the source and destination poly
-static void wpoly_insert_cut(polyvertex_t *v1, polyvertex_t *v2, INT32 v_from, INT32 v_cnt, /*INOUT*/ wpoly_t *xpoly)
+static void wpoly_insert_cut(polyvertex_t *v1, polyvertex_t *v2, int32_t v_from, int32_t v_cnt, /*INOUT*/ wpoly_t *xpoly)
 {
 	wpoly_t tmp_poly;
 
@@ -485,10 +485,10 @@ static void wpoly_insert_cut(polyvertex_t *v1, polyvertex_t *v2, INT32 v_from, I
 //  v1 : polyvertex to be inserted
 //  v_at : the index where v1 is inserted
 //  xpoly : the source and destination poly
-static void wpoly_insert_vert(polyvertex_t *v1, INT32 v_at, /*INOUT*/ wpoly_t *xpoly)
+static void wpoly_insert_vert(polyvertex_t *v1, int32_t v_at, /*INOUT*/ wpoly_t *xpoly)
 {
 	wpoly_t tmp_poly;
-	INT32 numpts = xpoly->numpts;
+	int32_t numpts = xpoly->numpts;
 
 	if (v_at > numpts)
 		return;
@@ -573,7 +573,7 @@ void HWR_FreePolyPool(void)
 	HWR_ClearPolys();
 }
 
-static poly_t* HWR_AllocPoly(INT32 numpts)
+static poly_t* HWR_AllocPoly(int32_t numpts)
 {
 	poly_t* p;
 	size_t size;
@@ -815,7 +815,7 @@ static inline double cross_product(polyvertex_t *p1, polyvertex_t *p2, polyverte
 typedef struct polytile_store_s
 {
 	struct polytile_store_s *next;  // link for search
-	INT32 num_tile_used;
+	int32_t num_tile_used;
 	wpoly_t *tile[POLYTILE_NUM_POLY];
 } polytile_store_t;
 
@@ -915,11 +915,11 @@ found:
 //  newvert : add this vertex
 //  poly : the poly being split
 //  i1, i2 : indexes of the split side
-static void add_vertex_between(polyvertex_t * newvert, wpoly_t * poly, INT32 i1, INT32 i2)
+static void add_vertex_between(polyvertex_t * newvert, wpoly_t * poly, int32_t i1, int32_t i2)
 {
 	polytile_store_t *ptp;
 	wpoly_t *wp;
-	INT32 t, j2;
+	int32_t t, j2;
 	polyvertex_t *s1, *s2;
 	polyvertex_t *v1 = poly->ppts[i1];
 	polyvertex_t *v2 = poly->ppts[i2];
@@ -1003,9 +1003,9 @@ static void SplitPoly(fdivline_t *dlnp, wpoly_t *poly, /*OUT*/  wpoly_t *frontpo
 	// Split poly at A and B.
 	wpoly_t *polyA;  // the poly from A to B, clockwise
 	wpoly_t *polyB;  // the poly from B to A, clockwise
-	INT32 n, i, j;
+	int32_t n, i, j;
 #ifdef POLYTILE
-	INT32 A_before_wrap, B_after_wrap;
+	int32_t A_before_wrap, B_after_wrap;
 #endif
 	divline_e dle;
 	div_result_t A = {}, B = {};  // dividing points
@@ -1276,8 +1276,8 @@ poly_degenerate:
 static void enforce_convex(wpoly_t * poly)
 {
 	polyvertex_t *rv1, *rv2, *rv3;
-	INT32 i1, i2, i3;
-	INT32 numpts = poly->numpts;
+	int32_t i1, i2, i3;
+	int32_t numpts = poly->numpts;
 
 	for (i2 = 0; i2 < numpts;)
 	{
@@ -1342,7 +1342,7 @@ typedef struct seg_chain_s
    loose_seg_t *last_seg;     // tail of seg-chain
    polyvertex_t *p1, *p2;     // ends in clockwise order
    dboolean loose1, loose2;  // loose ends of the seg-chain
-   INT32 num_seg;
+   int32_t num_seg;
 } seg_chain_t;
 
 // Nothing to gain by making this a parameter, this saves param passing.
@@ -1529,8 +1529,8 @@ static dboolean apply_seg_chains(wpoly_t *poly)
 	loose_seg_t *lsp;
 	seg_chain_t *sctp;
 	polyvertex_t *rv1, *rv2;
-	INT32 n, i1, i2;
-	INT32 numpts = poly->numpts;
+	int32_t n, i1, i2;
+	int32_t numpts = poly->numpts;
 
 	// All the seg-chains are part of the polygon.  If a seg-chain is
 	// outside the polygon, the polygon must be expanded to include it.
@@ -1635,11 +1635,11 @@ reject:
 //  poly : surrounding convex polygon, non-destructive
 //  ssindex : subsec index, 0..(numsubsectors-1)
 // Called from: HWR_SubsecPoly
-static void CutOutSubsecPoly(INT32 ssindex, /*INOUT*/ wpoly_t* poly)
+static void CutOutSubsecPoly(int32_t ssindex, /*INOUT*/ wpoly_t* poly)
 {
 	subsector_t* sub;
 	seg_t *lseg; // array of seg
-	INT16 segcount; // number of seg in the array
+	int16_t segcount; // number of seg in the array
 
 	polyvertex_t *rv1, *rv2;  // A,B or B,A
 	dboolean cut_at_vert;
@@ -1656,8 +1656,8 @@ static void CutOutSubsecPoly(INT32 ssindex, /*INOUT*/ wpoly_t* poly)
 
 	div_result_t A = {}, B = {};  // dividing points
 	div_result_t *result = NULL;
-	INT32 poly_num_pts, ps, n;
-	INT32 i1, i2;
+	int32_t poly_num_pts, ps, n;
+	int32_t i1, i2;
 
 	poly_num_pts = poly->numpts;
 	sub = &subsectors[ssindex];
@@ -2021,7 +2021,7 @@ static inline void set_divline(node_t* bsp, fdivline_t *divline)
 #ifdef HWR_LOADING_SCREEN
 //Hurdler: implement a loading status
 static size_t ls_count = 0;
-static UINT8 ls_percent = 0;
+static uint8_t ls_percent = 0;
 
 static void loading_status(void)
 {
@@ -2054,7 +2054,7 @@ static void loading_status(void)
 //  leafnode : & children []
 //  Call HWR_WalkBSPNode_degen for degenerate case.
 // Called from HWR_CreatePlanePolygons at load time.
-static void HWR_WalkBSPNode(INT32 bspnum, wpoly_t* poly, UINT16 *leafnode, fixed_t *bbox)
+static void HWR_WalkBSPNode(int32_t bspnum, wpoly_t* poly, uint16_t *leafnode, fixed_t *bbox)
 {
 	node_t* bsp;
 	wpoly_t backpoly;
@@ -2062,7 +2062,7 @@ static void HWR_WalkBSPNode(INT32 bspnum, wpoly_t* poly, UINT16 *leafnode, fixed
 	fdivline_t fdivline;
 	polyvertex_t *pt;
 	size_t subsecnum;  // subsector index
-	INT32 i;
+	int32_t i;
 
 	(void)leafnode; // unused
 
@@ -2122,7 +2122,7 @@ static void HWR_WalkBSPNode(INT32 bspnum, wpoly_t* poly, UINT16 *leafnode, fixed
 	}
 
 	// Node reference: bspnum is another node of the tree.
-	if (bspnum >= (INT32)numnodes)
+	if (bspnum >= (int32_t)numnodes)
 		goto bad_node;
 
 	bsp = &nodes[bspnum];
@@ -2330,12 +2330,12 @@ typedef struct {
 #define SEARCHSEG_VERTEX_DIST 0.4999f
 
 // Recursive descent in BSP.
-static void SearchSegInBSP(INT32 bspnum, split_T_t * stp)
+static void SearchSegInBSP(int32_t bspnum, split_T_t * stp)
 {
 	wpoly_t *wq = stp->poly;
 	polyvertex_t *pt = stp->pt;
 	size_t subsecnum;
-	INT32  numpts, i1, i2;
+	int32_t  numpts, i1, i2;
 
 	const fixed_t maxy = stp->max_y;
 	const fixed_t maxx = stp->max_x;
@@ -2426,7 +2426,7 @@ static void SolveTProblem(void)
 {
 	split_T_t splitt;  // parameter to search
 	wpoly_t *wp;
-	INT32 numpts, i, j;
+	int32_t numpts, i, j;
 	size_t ssnum;
 
 	if (!cv_glsolvetjoin.value)
@@ -2509,7 +2509,7 @@ static sector_t *find_poly_sector(wpoly_t *ssp)
 	line_t *best_lp = NULL;
 	fixed_t best_dd = 0x7fffffff;
 	fixed_t px, py;
-	INT32 j;
+	int32_t j;
 	size_t k;
 
 	// Find an average point, not on a line, within the sector.
@@ -2555,8 +2555,8 @@ static sector_t *find_poly_sector(wpoly_t *ssp)
 		if (((dx1 ^ dx2) < 0) && (lp->dx != 0))  // bracket px, and line not vert.
 		{
 			// Distance to line, measured along x-axis.
-			// This calc has a tendency to overflow, so use INT64.
-			INT64 dy3 = ((INT64)dx1) * lp->dy / lp->dx;
+			// This calc has a tendency to overflow, so use int64_t.
+			int64_t dy3 = ((int64_t)dx1) * lp->dy / lp->dx;
 #ifdef DEBUG_FPS
 			CONS_Debug(DBG_RENDER, "FPS X: line= %i  (%6.2f,%6.2f) to (%6.2f,%6.2f) dx,dy=(%6.2f,%6.2f) \n",
 				k, FIXED_TO_FLOAT(lp->v1->x), FIXED_TO_FLOAT(lp->v1->y), FIXED_TO_FLOAT(lp->v2->x), FIXED_TO_FLOAT(lp->v2->y),
@@ -2582,8 +2582,8 @@ static sector_t *find_poly_sector(wpoly_t *ssp)
 		if (((dy1 ^ dy2) < 0) && (lp->dy != 0))  // bracket py, and line not horz.
 		{
 			// Distance to line, measured along y-axis.
-			// This calc has a tendency to overflow, so use INT64.
-			INT64 dx3 = ((INT64)dy1) * lp->dx / lp->dy;
+			// This calc has a tendency to overflow, so use int64_t.
+			int64_t dx3 = ((int64_t)dy1) * lp->dx / lp->dy;
 #ifdef DEBUG_FPS
 			CONS_Debug(DBG_RENDER, "FPS Y: line= %i  (%6.2f,%6.2f) to (%6.2f,%6.2f) dx,dy=(%6.2f,%6.2f) \n",
 				k, FIXED_TO_FLOAT(lp->v1->x), FIXED_TO_FLOAT(lp->v1->y), FIXED_TO_FLOAT(lp->v2->x), FIXED_TO_FLOAT(lp->v2->y),
@@ -2639,15 +2639,15 @@ static void AdjustSegs(void)
 	int fixed_segsec_cnt = 0;
 	int lost_segsec_cnt = 0;
 #endif
-	INT16 segcount;
+	int16_t segcount;
 	size_t ssnum;
-	INT32 j;
+	int32_t j;
 #ifdef CHANGESUBSEC
 	sector_t *ss_sector, *poly_sector, *lseg_sector;
 #endif
 	seg_t* lseg;
 	wpoly_t *wp;
-	INT32 v1found = 0, v2found = 0;
+	int32_t v1found = 0, v2found = 0;
 	float nearv1, nearv2;
 
 	// for all segs in all sectors
@@ -2843,7 +2843,7 @@ static void finalize_polygons(void)
 	poly_t *dpoly;  // drawing poly
 	polyvertex_t *pv;
 	size_t ssnum;
-	INT16 ps;
+	int16_t ps;
 
 	// For all segs in all sectors.
 	for (ssnum = 0; ssnum < numsubsectors; ssnum++)
@@ -2871,7 +2871,7 @@ static void finalize_polygons(void)
 // Call this routine after the BSP of a Doom wad file is loaded,
 // and it will generate all the convex polys for the hardware renderer.
 // Called from P_SetupLevel
-void HWR_CreatePlanePolygons(INT32 bspnum)
+void HWR_CreatePlanePolygons(int32_t bspnum)
 {
 	wpoly_t rootp;
 	polyvertex_t** rootpv;

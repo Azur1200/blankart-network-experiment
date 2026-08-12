@@ -40,7 +40,7 @@ void K_ResetSpecialStage(void)
 --------------------------------------------------*/
 void K_InitSpecialStage(void)
 {
-	INT32 i;
+	int32_t i;
 
 	specialStage.beamDist = UINT32_MAX; // TODO: make proper value
 
@@ -76,8 +76,8 @@ void K_InitSpecialStage(void)
 --------------------------------------------------*/
 static void K_MoveExitBeam(void)
 {
-	UINT32 moveDist = 0;
-	INT32 i;
+	uint32_t moveDist = 0;
+	int32_t i;
 
 	if (leveltime <= 2)
 	{

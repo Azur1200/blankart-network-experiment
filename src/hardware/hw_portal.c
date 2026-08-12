@@ -22,7 +22,7 @@
 // TODO magic number 16
 gl_portal_array_t gl_portal_arrays[MAXPORTALS_CAP+1] = {0};
 
-INT32 gl_portal_level = 0; // portal recursion level
+int32_t gl_portal_level = 0; // portal recursion level
 
 dboolean gl_drawing_stencil = false; // used when drawing segs to stencil buffer
 sector_t *gl_portalcullsector = NULL;
@@ -30,7 +30,7 @@ line_t *gl_portalclipline = NULL;
 
 // debug tools
 dboolean gl_printportals = false; // print info about portals on this frame
-INT32 gl_debugportal = 0; // hide main viewpoint and only render this portal without stencil
+int32_t gl_debugportal = 0; // hide main viewpoint and only render this portal without stencil
 
 void HWR_PortalFrame(gl_portal_t *portal, dboolean set_culling)
 {
@@ -54,7 +54,7 @@ void HWR_PortalFrame(gl_portal_t *portal, dboolean set_culling)
 // get currently used portal array
 gl_portal_array_t *HWR_GetPortalArray(void)
 {
-	INT32 level = gl_portal_level;
+	int32_t level = gl_portal_level;
 	if (gl_rendering_skybox)
 		level++;
 	return &gl_portal_arrays[level];
@@ -166,7 +166,7 @@ void HWR_RenderPortalSeg(seg_t *seg)
 	GL_SetBlend(PF_Translucent|PF_Occlude|PF_Masked);
 }
 
-void HWR_SetStencilState(INT32 state)
+void HWR_SetStencilState(int32_t state)
 {
 	GL_SetStencilMode(state, gl_portal_level);
 }
