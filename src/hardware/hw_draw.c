@@ -36,29 +36,29 @@
 
 typedef struct
 {
-	UINT8 id_field_length ; // 1
-	UINT8 color_map_type  ; // 2
-	UINT8 image_type      ; // 3
-	UINT8 dummy[5]        ; // 4,  8
-	INT16 x_origin        ; // 9, 10
-	INT16 y_origin        ; //11, 12
-	INT16 width           ; //13, 14
-	INT16 height          ; //15, 16
-	UINT8 image_pix_size  ; //17
-	UINT8 image_descriptor; //18
+	uint8_t id_field_length ; // 1
+	uint8_t color_map_type  ; // 2
+	uint8_t image_type      ; // 3
+	uint8_t dummy[5]        ; // 4,  8
+	int16_t x_origin        ; // 9, 10
+	int16_t y_origin        ; //11, 12
+	int16_t width           ; //13, 14
+	int16_t height          ; //15, 16
+	uint8_t image_pix_size  ; //17
+	uint8_t image_descriptor; //18
 } ATTRPACK TGAHeader; // sizeof is 18
 
-static UINT8 softwaretranstogl[11]    = {  0, 25, 51, 76,102,127,153,178,204,229,255};
-static UINT8 softwaretranstogl_hi[11] = {  0, 51,102,153,204,255,255,255,255,255,255};
-static UINT8 softwaretranstogl_lo[11] = {  0, 12, 24, 36, 48, 60, 71, 83, 95,111,127};
+static uint8_t softwaretranstogl[11]    = {  0, 25, 51, 76,102,127,153,178,204,229,255};
+static uint8_t softwaretranstogl_hi[11] = {  0, 51,102,153,204,255,255,255,255,255,255};
+static uint8_t softwaretranstogl_lo[11] = {  0, 12, 24, 36, 48, 60, 71, 83, 95,111,127};
 
-void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap)
+void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, int32_t option, const uint8_t *colormap)
 {
 	FOutVector v[4];
 	FBITFIELD flags;
 	float cx = FIXED_TO_FLOAT(x);
 	float cy = FIXED_TO_FLOAT(y);
-	UINT32 alphalevel, blendmode;
+	uint32_t alphalevel, blendmode;
 	GLPatch_t *hwrPatch;
 
 //  3--2
@@ -127,9 +127,9 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 
 		if (!(option & V_SCALEPATCHMASK))
 		{
-			INT32 intx, inty;
-			intx = (INT32)cx;
-			inty = (INT32)cy;
+			int32_t intx, inty;
+			intx = (int32_t)cx;
+			inty = (int32_t)cy;
 			V_AdjustXYWithSnap(&intx, &inty, option, dup);
 			cx = (float)intx;
 			cy = (float)inty;
@@ -261,7 +261,7 @@ void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t p
 		GL_DrawPolygon(NULL, v, 4, flags|PF_Translucent);
 }
 
-void HWR_DrawAffinePatch(patch_t *gpatch, fixed_t x, fixed_t y, const affine_t *transform, INT32 option, const UINT8 *colormap)
+void HWR_DrawAffinePatch(patch_t *gpatch, fixed_t x, fixed_t y, const affine_t *transform, int32_t option, const uint8_t *colormap)
 {
 	//const cliprect_t *clip = V_GetClipRect();
 
@@ -358,8 +358,8 @@ void HWR_DrawAffinePatch(patch_t *gpatch, fixed_t x, fixed_t y, const affine_t *
 	FBITFIELD flags = PF_NoDepthTest;
 
 	// clip it since it is used for bunny scroll in doom I
-	UINT32 alphalevel = (option & V_ALPHAMASK) >> V_ALPHASHIFT;
-	UINT32 blendmode = (option & V_BLENDMASK) >> V_BLENDSHIFT;
+	uint32_t alphalevel = (option & V_ALPHAMASK) >> V_ALPHASHIFT;
+	uint32_t blendmode = (option & V_BLENDMASK) >> V_BLENDSHIFT;
 	if (blendmode)
 		blendmode++; // realign to constants
 	if (alphalevel || blendmode)
@@ -386,13 +386,13 @@ void HWR_DrawAffinePatch(patch_t *gpatch, fixed_t x, fixed_t y, const affine_t *
 		GL_DrawPolygon(NULL, v, 4, flags|PF_Translucent);
 }
 
-void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, INT32 option, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h)
+void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, int32_t option, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h)
 {
 	FOutVector v[4];
 	FBITFIELD flags;
 	float cx = FIXED_TO_FLOAT(x);
 	float cy = FIXED_TO_FLOAT(y);
-	UINT32 alphalevel, blendmode;
+	uint32_t alphalevel, blendmode;
 	GLPatch_t *hwrPatch;
 
 //  3--2
@@ -538,7 +538,7 @@ void HWR_DrawCroppedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale,
 		GL_DrawPolygon(NULL, v, 4, flags|PF_Translucent);
 }
 
-void HWR_DrawPic(INT32 x, INT32 y, lumpnum_t lumpnum)
+void HWR_DrawPic(int32_t x, int32_t y, lumpnum_t lumpnum)
 {
 	FOutVector      v[4];
 	const patch_t    *patch;
@@ -582,13 +582,13 @@ void HWR_DrawPic(INT32 x, INT32 y, lumpnum_t lumpnum)
 // Fills a box of pixels using a flat texture as a pattern
 // Fixed to properly align like the other draw functions -luigi budd
 // --------------------------------------------------------------------------
-void HWR_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum)
+void HWR_DrawFlatFill(int32_t x, int32_t y, int32_t w, int32_t h, lumpnum_t flatlumpnum)
 {
 	const size_t len = W_LumpLength(flatlumpnum);
 
 	size_t sflatsize;
 	double dflatsize;
-	INT32 flatflag;
+	int32_t flatflag;
 
 	FOutVector v[4];
 
@@ -633,7 +633,7 @@ void HWR_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum)
 //  | /|
 //  |/ |
 //  0--1
-void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
+void HWR_FadeScreenMenuBack(uint16_t color, uint8_t strength)
 {
 	FOutVector  v[4];
 	FSurfaceInfo Surf = {};
@@ -679,7 +679,7 @@ void HWR_FadeScreenMenuBack(UINT16 color, UINT8 strength)
 // -----------------+
 // HWR_DrawFadeFill : draw flat coloured rectangle, with transparency
 // -----------------+
-void HWR_DrawFadeFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT16 actualcolor, UINT8 strength)
+void HWR_DrawFadeFill(int32_t x, int32_t y, int32_t w, int32_t h, int32_t color, uint16_t actualcolor, uint8_t strength)
 {
 	FOutVector v[4];
 	FSurfaceInfo Surf = {};
@@ -759,7 +759,7 @@ void HWR_DrawFadeFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT16 ac
 }
 
 // Draw the console background with translucency support
-void HWR_DrawConsoleBack(UINT32 color, INT32 height)
+void HWR_DrawConsoleBack(uint32_t color, int32_t height)
 {
 	FOutVector  v[4];
 	FSurfaceInfo Surf = {};
@@ -807,11 +807,11 @@ void HWR_EncoreInvertScreen(void)
 }
 
 // Very similar to HWR_DrawConsoleBack, except we draw from the middle(-ish) of the screen to the bottom.
-void HWR_DrawTutorialBack(UINT32 color, INT32 boxheight)
+void HWR_DrawTutorialBack(uint32_t color, int32_t boxheight)
 {
 	FOutVector  v[4];
 	FSurfaceInfo Surf = {};
-	INT32 height;
+	int32_t height;
 	if (boxheight < 0)
 		height = -boxheight;
 	else
@@ -844,7 +844,7 @@ void HWR_DrawTutorialBack(UINT32 color, INT32 boxheight)
 // HWR_drawAMline   : draw a line of the automap (the clipping is already done in automap code)
 // Arg              : color is a RGB 888 value
 // -----------------+
-void HWR_drawAMline(const fline_t *fl, INT32 color)
+void HWR_drawAMline(const fline_t *fl, int32_t color)
 {
 	F2DCoord v1, v2;
 	RGBA_t color_rgba;
@@ -864,7 +864,7 @@ void HWR_drawAMline(const fline_t *fl, INT32 color)
 // -----------------+
 // HWR_DrawDiag     : draw flat coloured rectangle, with no texture
 // -----------------+
-void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
+void HWR_DrawDiag(int32_t x, int32_t y, int32_t wh, int32_t color)
 {
 	FOutVector v[4];
 	FSurfaceInfo Surf = {};
@@ -958,7 +958,7 @@ void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color)
 // -------------------+
 // HWR_DrawConsoleFill     : draw flat coloured transparent rectangle because that's cool, and hw sucks less than sw for that.
 // -------------------+
-void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT32 actualcolor)
+void HWR_DrawConsoleFill(int32_t x, int32_t y, int32_t w, int32_t h, int32_t color, uint32_t actualcolor)
 {
 	FOutVector v[4];
 	FSurfaceInfo Surf = {};
@@ -977,15 +977,15 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT32
 	if (!(color & V_NOSCALESTART))
 	{
 		float dup = (float)vid.dup;
-		INT32 intx, inty;
+		int32_t intx, inty;
 
 		fx *= dup;
 		fy *= dup;
 		fw *= dup;
 		fh *= dup;
 
-		intx = (INT32)fx;
-		inty = (INT32)fy;
+		intx = (int32_t)fx;
+		inty = (int32_t)fy;
 		V_AdjustXYWithSnap(&intx, &inty, color, dup);
 		fx = (float)intx;
 		fy = (float)inty;
@@ -1037,14 +1037,14 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT32
 // -----------------+
 // HWR_DrawFill     : draw flat coloured rectangle, with no texture
 // -----------------+
-void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
+void HWR_DrawFill(int32_t x, int32_t y, int32_t w, int32_t h, int32_t color)
 {
 	FOutVector v[4];
 	FBITFIELD flags;
 	FSurfaceInfo Surf = {};
 	float fx, fy, fw, fh;
-	UINT8 alphalevel = ((color & V_ALPHAMASK) >> V_ALPHASHIFT);
-	UINT8 blendmode = ((color & V_BLENDMASK) >> V_BLENDSHIFT);
+	uint8_t alphalevel = ((color & V_ALPHAMASK) >> V_ALPHASHIFT);
+	uint8_t blendmode = ((color & V_BLENDMASK) >> V_BLENDSHIFT);
 	RGBA_t *palette = HWR_GetTexturePalette();
 
 //  3--2
@@ -1109,7 +1109,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 // -------------------+
 // HWR_DrawFixedLine  : draw flat coloured rectangle, with no texture
 // -------------------+
-void HWR_DrawFixedLine(INT32 x1, INT32 y1, INT32 x2, INT32 y2, fixed_t w, INT32 color)
+void HWR_DrawFixedLine(int32_t x1, int32_t y1, int32_t x2, int32_t y2, fixed_t w, int32_t color)
 {
 	FOutVector v1[4] = {0};
 	FOutVector v2[4] = {0};
@@ -1117,8 +1117,8 @@ void HWR_DrawFixedLine(INT32 x1, INT32 y1, INT32 x2, INT32 y2, fixed_t w, INT32 
 	FBITFIELD flags;
 	FSurfaceInfo Surf[3] = {0};
 	float fx, fy, fx2, fy2, fw, fh;
-	UINT8 alphalevel = ((color & V_ALPHAMASK) >> V_ALPHASHIFT);
-	UINT8 blendmode = ((color & V_BLENDMASK) >> V_BLENDSHIFT);
+	uint8_t alphalevel = ((color & V_ALPHAMASK) >> V_ALPHASHIFT);
+	uint8_t blendmode = ((color & V_BLENDMASK) >> V_BLENDSHIFT);
 	RGBA_t *palette = HWR_GetTexturePalette();
 
 //     3-4
@@ -1142,7 +1142,7 @@ void HWR_DrawFixedLine(INT32 x1, INT32 y1, INT32 x2, INT32 y2, fixed_t w, INT32 
 	fh = fw;
 	
 	// Get the angle between the two points to determine the quadrant
-	UINT8 quadrant = (UINT8)((R_PointToAngleFloat2(x1, y1, x2, y2) >> 30));
+	uint8_t quadrant = (uint8_t)((R_PointToAngleFloat2(x1, y1, x2, y2) >> 30));
 
 	float sx = (((quadrant >= 1) && (quadrant < 3)) ? -1.0f : 1.0f);
 	float sy = (((quadrant >> 1) & 1) ? -1.0f : 1.0f);
@@ -1268,12 +1268,12 @@ void HWR_DrawFixedLine(INT32 x1, INT32 y1, INT32 x2, INT32 y2, fixed_t w, INT32 
 // save screenshots with TGA format
 // --------------------------------------------------------------------------
 static inline dboolean saveTGA(const char *file_name, void *buffer,
-	INT32 width, INT32 height)
+	int32_t width, int32_t height)
 {
-	INT32 fd;
+	int32_t fd;
 	TGAHeader tga_hdr;
-	INT32 i;
-	UINT8 *buf8 = buffer;
+	int32_t i;
+	uint8_t *buf8 = buffer;
 
 	fd = open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (fd < 0)
@@ -1294,7 +1294,7 @@ static inline dboolean saveTGA(const char *file_name, void *buffer,
 	// format to 888 BGR
 	for (i = 0; i < width * height * 3; i+=3)
 	{
-		const UINT8 temp = buf8[i];
+		const uint8_t temp = buf8[i];
 		buf8[i] = buf8[i+2];
 		buf8[i+2] = temp;
 	}
@@ -1312,9 +1312,9 @@ static inline dboolean saveTGA(const char *file_name, void *buffer,
 // screen shot
 // --------------------------------------------------------------------------
 
-UINT8 *HWR_GetScreenshot(INT32 scale)
+uint8_t *HWR_GetScreenshot(int32_t scale)
 {
-	static UINT8 *buf = NULL;
+	static uint8_t *buf = NULL;
 	int tex = HWR_ShouldUsePaletteRendering() ? HWD_SCREENTEXTURE_GENERIC3 : HWD_SCREENTEXTURE_GENERIC2;
 
 	buf = realloc(buf, (vid.width/scale)*(vid.height/scale)*3);

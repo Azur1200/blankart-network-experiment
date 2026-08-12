@@ -237,7 +237,7 @@ model_t *LoadModel(const char *filename, int ztag, modeltype_t modeltype)
 void HWR_ReloadModels(void)
 {
 	size_t i;
-	INT32 s;
+	int32_t s;
 
 	for (s = 0; s < MAXSKINS; s++)
 	{
@@ -254,8 +254,8 @@ void HWR_ReloadModels(void)
 
 void LoadModelInterpolationSettings(model_t *model)
 {
-	INT32 i;
-	INT32 numframes = model->meshes[0].numFrames;
+	int32_t i;
+	int32_t numframes = model->meshes[0].numFrames;
 	const char *framename = model->framenames;
 
 	if (!framename)
@@ -291,9 +291,9 @@ void LoadModelInterpolationSettings(model_t *model)
 
 void LoadModelSprite2(model_t *model, modeltype_t modeltype)
 {
-	INT32 i;
+	int32_t i;
 	modelspr2frames_t *spr2frames = NULL;
-	INT32 numframes = model->meshes[0].numFrames;
+	int32_t numframes = model->meshes[0].numFrames;
 	const char *framename = model->framenames;
 
 	if (modeltype != MODELTYPE_PLAYER && modeltype != MODELTYPE_OLDPLAYER)
@@ -306,8 +306,8 @@ void LoadModelSprite2(model_t *model, modeltype_t modeltype)
 	{
 		const char *name;
 		const char *framechars;
-		UINT8 frame;
-		UINT8 spr2idx;
+		uint8_t frame;
+		uint8_t spr2idx;
 		dboolean interpolate;
 		dboolean super;
 

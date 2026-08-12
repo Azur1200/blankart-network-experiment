@@ -65,17 +65,17 @@ static void K_SetHitThing(mobj_t *t1, mobj_t *t2)
 
 #define NOMOREWIPEOUTS (10) // This is when wipeout damage becomes egregious
 
-UINT8 K_GetOrbiJawzDamage(void)
+uint8_t K_GetOrbiJawzDamage(void)
 {
 	if (cv_kartorbijawzdmg.value)
-		return (UINT8)(cv_kartorbijawzdmg.value); // Just return the raw damage value, since it's part of the cvar
+		return (uint8_t)(cv_kartorbijawzdmg.value); // Just return the raw damage value, since it's part of the cvar
 
 	// Otherwise, we're likely doing automatic damage balancing
 
 	// FIXME: Do I need to say it?
 
-	INT32 i = 0;
-	INT32 numplaying = 0;
+	int32_t i = 0;
+	int32_t numplaying = 0;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i])
@@ -103,7 +103,7 @@ dboolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 	dboolean damageitem = false;
 	dboolean sprung = false;
 
-	UINT8 orbidamage = K_GetOrbiJawzDamage();
+	uint8_t orbidamage = K_GetOrbiJawzDamage();
 
 	if (itempushing && t2->type == MT_RANDOMITEM
 	 && (t1->type == MT_JAWZ_DUD || (t1->type == MT_ORBINAUT && t1->flags2 & MF2_AMBUSH)))
@@ -712,7 +712,7 @@ static inline BlockItReturn_t PIT_ThunderShieldAttack(mobj_t *thing)
 
 void K_ThunderShieldAttack(mobj_t *actor, fixed_t size)
 {
-	INT32 bx, by, xl, xh, yl, yh;
+	int32_t bx, by, xl, xh, yl, yh;
 
 	lightningDist = FixedMul(size, actor->scale);
 	lightningSource = actor;
@@ -818,7 +818,7 @@ static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
 
 void K_AttractionShieldAttack(mobj_t *actor, fixed_t size, fixed_t powerrate, dboolean hipower)
 {
-	INT32 bx, by, xl, xh, yl, yh;
+	int32_t bx, by, xl, xh, yl, yh;
 
 	lightningDist = FixedMul(size, actor->scale);
 	lightningSource = actor;
@@ -838,7 +838,7 @@ void K_AttractionShieldAttack(mobj_t *actor, fixed_t size, fixed_t powerrate, db
 			P_BlockThingsIterator(bx, by, PIT_AttractionShieldAttack);
 }
 
-static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, INT16 dmg)
+static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, int16_t dmg)
 {
 	if (!player)
 	{
@@ -959,14 +959,14 @@ dboolean K_BubbleShieldCanReflect(mobj_t *t)
 		|| t->type == MT_PLAYER);
 }
 
-static INT16 K_GetBubbleDamage(mobj_t* itm)
+static int16_t K_GetBubbleDamage(mobj_t* itm)
 {
 	if ((!itm) || (P_MobjWasRemoved(itm)))
 	{
 		return 0;
 	}
 
-	INT16 dmg = BUBBLEITMDAMAGE;
+	int16_t dmg = BUBBLEITMDAMAGE;
 	fixed_t momentum_epsilon = 32*mapobjectscale;
 
 	switch (itm->type)
@@ -1154,7 +1154,7 @@ dboolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	dboolean t1Condition = false;
 	dboolean t2Condition = false;
 
-	UINT8 invindamage = INVINDAMAGE;
+	uint8_t invindamage = INVINDAMAGE;
 
 	if (invindamage)
 	{
@@ -1345,7 +1345,7 @@ dboolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	t2Condition = (t2->player->attractionattack && t2->player->attractionattack_hipower && (K_GetShieldFromPlayer(t1->player) != KSHIELD_BUBBLE));
 	if (t1Condition == true && t2Condition == false)
 	{
-		UINT8 damage = DMG_FLIPOVER;
+		uint8_t damage = DMG_FLIPOVER;
 
 		if (gametypes[gametype]->rules & GTR_BUMPERS)
 			damage |= DMG_STEAL;
@@ -1354,7 +1354,7 @@ dboolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	}
 	else if (t1Condition == false && t2Condition == true)
 	{
-		UINT8 damage = DMG_FLIPOVER;
+		uint8_t damage = DMG_FLIPOVER;
 
 		if (gametypes[gametype]->rules & GTR_BUMPERS)
 			damage |= DMG_STEAL;

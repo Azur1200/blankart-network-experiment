@@ -9,16 +9,16 @@ extern "C" {
 #endif
 
 extern dboolean itembreaker;
-extern INT32 nummapboxes, numgotboxes; // keep track of spawned battle mode items
-extern UINT8 numtargets;
+extern int32_t nummapboxes, numgotboxes; // keep track of spawned battle mode items
+extern uint8_t numtargets;
 
-INT32 K_StartingBumperCount(void);
+int32_t K_StartingBumperCount(void);
 dboolean K_IsPlayerWanted(player_t *player);
 dboolean K_IsPlayerMostWanted(player_t *player);
 void K_CalculateBattleWanted(void);
-void K_SpawnBattlePoints(player_t *source, player_t *victim, UINT8 amount);
+void K_SpawnBattlePoints(player_t *source, player_t *victim, uint8_t amount);
 void K_CheckBumpers(void);
-UINT8 K_NumEmeralds(player_t *player);
+uint8_t K_NumEmeralds(player_t *player);
 void K_RunPaperItemSpawners(void);
 void K_SpawnPlayerBattleBumpers(player_t *p);
 void K_BattleInit(dboolean singleplayercontext);

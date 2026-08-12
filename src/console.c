@@ -72,11 +72,11 @@ static tic_t con_tick; // console ticker for blinking prompt cursor
 static dboolean consoletoggle; // true when console key pushed, ticker will handle
 static dboolean consoleready;  // console prompt is ready
 
-       INT32 con_destlines; // vid lines used by console at final position
-static INT32 con_curlines;  // vid lines currently used by console
+       int32_t con_destlines; // vid lines used by console at final position
+static int32_t con_curlines;  // vid lines currently used by console
 
-static INT32 con_hudlines;        // number of console heads up message lines
-static INT32 con_hudtime[MAXHUDLINES];      // remaining time of display for hud msg lines
+static int32_t con_hudlines;        // number of console heads up message lines
+static int32_t con_hudtime[MAXHUDLINES];      // remaining time of display for hud msg lines
 
 // console text output
 static char *con_line;          // console text output current line
@@ -89,7 +89,7 @@ static size_t con_totallines;      // lines of console text into the console buf
 static size_t con_width;           // columns of chars, depend on vid mode width
 
 static size_t con_scrollup;        // how many rows of text to scroll up (pgup/pgdn)
-UINT32 con_scalefactor;            // text size scale factor
+uint32_t con_scalefactor;            // text size scale factor
 
 // hold 32 last lines of input for history
 #define CON_MAXPROMPTCHARS 256
@@ -97,8 +97,8 @@ UINT32 con_scalefactor;            // text size scale factor
 
 static char inputlines[32][CON_MAXPROMPTCHARS]; // hold last 32 prompt lines
 
-static INT32 inputline;    // current input line number
-static INT32 inputhist;    // line number of history input line to restore
+static int32_t inputline;    // current input line number
+static int32_t inputhist;    // line number of history input line to restore
 static textinput_t input;
 // notice: input does NOT include the "$" at the start of the line. - 11/3/16
 
@@ -191,7 +191,7 @@ static void CONS_height_Change(void)
 //
 static void CONS_hudlines_Change(void)
 {
-	INT32 i;
+	int32_t i;
 
 	Lock_state();
 
@@ -232,7 +232,7 @@ static char *bindtable[NUMINPUTS];
 static void CONS_Bind_f(void)
 {
 	size_t na;
-	INT32 key;
+	int32_t key;
 
 	na = COM_Argc();
 
@@ -275,20 +275,20 @@ static void CONS_Bind_f(void)
 // These colormaps are 99% identical, with just a few changed bytes
 // This could EASILY be handled by modifying a centralised colormap
 // for software depending on the prior state - but yknow, OpenGL...
-UINT8 *yellowmap, *purplemap, *greenmap, *bluemap, *graymap, *redmap, *orangemap,\
+uint8_t *yellowmap, *purplemap, *greenmap, *bluemap, *graymap, *redmap, *orangemap,\
  *skymap, *goldmap, *lavendermap, *aquamap, *magentamap, *pinkmap, *brownmap, *tanmap;
 
 // Console BG color
-UINT8 *consolebgmap = NULL;
-UINT8 *promptbgmap = NULL;
-static UINT8 promptbgcolor = UINT8_MAX;
+uint8_t *consolebgmap = NULL;
+uint8_t *promptbgmap = NULL;
+static uint8_t promptbgcolor = UINT8_MAX;
 
-void CON_SetupBackColormapEx(INT32 color, dboolean prompt)
+void CON_SetupBackColormapEx(int32_t color, dboolean prompt)
 {
-	UINT16 i, palsum;
-	UINT8 j, palindex;
-	UINT8 *pal = W_CacheLumpName(GetPalette(), PU_CACHE);
-	INT32 shift = 6;
+	uint16_t i, palsum;
+	uint8_t j, palindex;
+	uint8_t *pal = W_CacheLumpName(GetPalette(), PU_CACHE);
+	int32_t shift = 6;
 
 	if (color == INT32_MAX)
 		color = cons_backcolor.value;
@@ -323,7 +323,7 @@ void CON_SetupBackColormapEx(INT32 color, dboolean prompt)
 	if (prompt)
 	{
 		if (!promptbgmap)
-			promptbgmap = (UINT8 *)Z_Malloc(256, PU_STATIC, NULL);
+			promptbgmap = (uint8_t *)Z_Malloc(256, PU_STATIC, NULL);
 
 		if (color == promptbgcolor)
 			return;
@@ -331,16 +331,16 @@ void CON_SetupBackColormapEx(INT32 color, dboolean prompt)
 			promptbgcolor = color;
 	}
 	else if (!consolebgmap)
-		consolebgmap = (UINT8 *)Z_Malloc(256, PU_STATIC, NULL);
+		consolebgmap = (uint8_t *)Z_Malloc(256, PU_STATIC, NULL);
 
 	// setup background colormap
 	for (i = 0, j = 0; i < 768; i += 3, j++)
 	{
 		palsum = (pal[i] + pal[i+1] + pal[i+2]) >> shift;
 		if (prompt)
-			promptbgmap[j] = (UINT8)(palindex - palsum);
+			promptbgmap[j] = (uint8_t)(palindex - palsum);
 		else
-			consolebgmap[j] = (UINT8)(palindex - palsum);
+			consolebgmap[j] = (uint8_t)(palindex - palsum);
 	}
 }
 
@@ -357,8 +357,8 @@ static void CONS_backcolor_Change(void)
 
 static void CON_SetupColormaps(void)
 {
-	INT32 i;
-	UINT8 *memorysrc = (UINT8 *)Z_Malloc((256*15), PU_STATIC, NULL);
+	int32_t i;
+	uint8_t *memorysrc = (uint8_t *)Z_Malloc((256*15), PU_STATIC, NULL);
 
 	purplemap   = memorysrc;
 	yellowmap   = (purplemap+256);
@@ -382,23 +382,23 @@ static void CON_SetupColormaps(void)
 	// V_DrawMappedPatch() into optimised asm.
 
 	for (i = 0; i < (256*15); i++, ++memorysrc)
-		*memorysrc = (UINT8)(i & 0xFF); // remap each color to itself...
+		*memorysrc = (uint8_t)(i & 0xFF); // remap each color to itself...
 
-	purplemap[0]   = (UINT8)163;
-	yellowmap[0]   = (UINT8)73;
-	greenmap[0]    = (UINT8)98;
-	bluemap[0]     = (UINT8)148;
-	redmap[0]      = (UINT8)34; // battle
-	graymap[0]     = (UINT8)10;
-	orangemap[0]   = (UINT8)52; // record attack
-	skymap[0]      = (UINT8)132; // race
-	lavendermap[0] = (UINT8)192;
-	goldmap[0]     = (UINT8)65;
-	aquamap[0]     = (UINT8)121;
-	magentamap[0]  = (UINT8)182;
-	pinkmap[0]     = (UINT8)210;
-	brownmap[0]    = (UINT8)224;
-	tanmap[0]      = (UINT8)217; // no longer nice :(
+	purplemap[0]   = (uint8_t)163;
+	yellowmap[0]   = (uint8_t)73;
+	greenmap[0]    = (uint8_t)98;
+	bluemap[0]     = (uint8_t)148;
+	redmap[0]      = (uint8_t)34; // battle
+	graymap[0]     = (uint8_t)10;
+	orangemap[0]   = (uint8_t)52; // record attack
+	skymap[0]      = (uint8_t)132; // race
+	lavendermap[0] = (uint8_t)192;
+	goldmap[0]     = (uint8_t)65;
+	aquamap[0]     = (uint8_t)121;
+	magentamap[0]  = (uint8_t)182;
+	pinkmap[0]     = (uint8_t)210;
+	brownmap[0]    = (uint8_t)224;
+	tanmap[0]      = (uint8_t)217; // no longer nice :(
 
 	// Init back colormap
 	CON_SetupBackColormap();
@@ -408,7 +408,7 @@ static void CON_SetupColormaps(void)
 //
 void CON_Init(void)
 {
-	INT32 i;
+	int32_t i;
 
 	for (i = 0; i < NUMINPUTS; i++)
 		bindtable[i] = NULL;
@@ -603,7 +603,7 @@ static void CON_RecalcSize(void)
 
 static void CON_ChangeHeight(void)
 {
-	INT32 minheight;
+	int32_t minheight;
 
 	Lock_state();
 
@@ -708,9 +708,9 @@ static char shiftxform[] =
 	'{', '|', '}', '~', 127
 };
 
-INT32 CON_ShiftChar(INT32 ch)
+int32_t CON_ShiftChar(int32_t ch)
 {
-	if (I_UseNativeKeyboard() || ch >= (INT32)sizeof(shiftxform))
+	if (I_UseNativeKeyboard() || ch >= (int32_t)sizeof(shiftxform))
 		return ch;
 
 	// warning: shiftdown is NOT a dboolean, it's 1 or 2 for lshift/rshift
@@ -724,7 +724,7 @@ INT32 CON_ShiftChar(INT32 ch)
 //
 void CON_ClearHUD(void)
 {
-	INT32 i;
+	int32_t i;
 
 	Lock_state();
 
@@ -773,8 +773,8 @@ dboolean CON_Ready(void)
 //
 void CON_Ticker(void)
 {
-	INT32 i;
-	INT32 minheight;
+	int32_t i;
+	int32_t minheight;
 
 	Lock_state();
 
@@ -828,15 +828,15 @@ void CON_Ticker(void)
 // ----
 //
 
-static void AdjustTextSize(INT32 n)
+static void AdjustTextSize(int32_t n)
 {
-	INT32 range = vid.dup;
+	int32_t range = vid.dup;
 	if (range < 3) // make bigger jumps if the resolution is small
 		n *= 4 - range;
 
 	// 1-3 ascending is larger
 	// but 0 is special and is the largest
-	INT32 cur = (cv_constextsize.value & V_SCALEPATCHMASK) >> V_SCALEPATCHSHIFT;
+	int32_t cur = (cv_constextsize.value & V_SCALEPATCHMASK) >> V_SCALEPATCHSHIFT;
 	if (!cur) // reverse direction at 0
 	{
 		if (n < 0)
@@ -857,20 +857,20 @@ static void AdjustTextSize(INT32 n)
 //
 dboolean CON_Responder(event_t *ev)
 {
-	static UINT8 consdown = false; // console is treated differently due to rare usage
+	static uint8_t consdown = false; // console is treated differently due to rare usage
 
 	// sequential completions a la 4dos
 	static char completioncmd[80 + sizeof("find ")] = "find ";
 	static char *completion = &completioncmd[sizeof("find ")-1];
 
-	static INT32 skips;
+	static int32_t skips;
 
-	static INT32   com_skips;
-	static INT32   var_skips;
-	static INT32 alias_skips;
+	static int32_t   com_skips;
+	static int32_t   var_skips;
+	static int32_t alias_skips;
 
 	const char *cmd = NULL;
-	INT32 key;
+	int32_t key;
 
 	if (chat_on)
 		return false;
@@ -893,7 +893,7 @@ dboolean CON_Responder(event_t *ev)
 
 		if (ev->data1 >= NUMKEYS) // See also: HUD_Responder
 		{
-			INT32 i;
+			int32_t i;
 			for (i = 0; i < num_gamecontrols; i++)
 			{
 				if (G_ControlBoundToKey(0, i, ev->data1, false))
@@ -1176,7 +1176,7 @@ static void CON_Linefeed(void)
 static void CON_Print(char *msg)
 {
 	size_t l;
-	INT32 controlchars = 0; // for color changing
+	int32_t controlchars = 0; // for color changing
 	char color = '\x80';  // keep color across lines
 
 	if (msg == NULL)
@@ -1364,7 +1364,7 @@ void CONS_Alert(alerttype_t level, const char *fmt, ...)
 	CONS_Printf("%s", txt);
 }
 
-void CONS_Debug(UINT32 debugflags, const char *fmt, ...)
+void CONS_Debug(uint32_t debugflags, const char *fmt, ...)
 {
 	va_list argptr;
 	static char *txt = NULL;
@@ -1405,11 +1405,11 @@ void CONS_Error(const char *msg)
 //
 static void CON_DrawInput(void)
 {
-	INT32 charwidth = (INT32)con_scalefactor << 3;
+	int32_t charwidth = (int32_t)con_scalefactor << 3;
 	const char *p = inputlines[inputline];
 	size_t c, clen, cend;
-	UINT8 lellip = 0, rellip = 0;
-	INT32 x, y, i;
+	uint8_t lellip = 0, rellip = 0;
+	int32_t x, y, i;
 
 	y = con_curlines - 12 * con_scalefactor;
 	x = charwidth*2;
@@ -1493,12 +1493,12 @@ static void CON_DrawInput(void)
 // draw the last lines of console text to the top of the screen
 static void CON_DrawHudlines(void)
 {
-	UINT8 *p;
+	uint8_t *p;
 	size_t i;
-	INT32 y;
-	INT32 charflags = 0;
-	INT32 charwidth = 8 * con_scalefactor;
-	INT32 charheight = 8 * con_scalefactor;
+	int32_t y;
+	int32_t charflags = 0;
+	int32_t charwidth = 8 * con_scalefactor;
+	int32_t charheight = 8 * con_scalefactor;
 
 	if (con_hudlines <= 0)
 		return;
@@ -1511,14 +1511,14 @@ static void CON_DrawHudlines(void)
 	for (i = con_cy - con_hudlines+1; i <= con_cy; i++)
 	{
 		size_t c;
-		INT32 x;
+		int32_t x;
 
 		if ((signed)i < 0)
 			continue;
 		if (con_hudtime[i%con_hudlines] == 0)
 			continue;
 
-		p = (UINT8 *)&con_buffer[(i%con_totallines)*con_width];
+		p = (uint8_t *)&con_buffer[(i%con_totallines)*con_width];
 
 		for (c = 0, x = 0; c < con_width; c++, x += charwidth, p++)
 		{
@@ -1546,7 +1546,7 @@ static void CON_DrawHudlines(void)
 			else
 			{
 				//charwidth = (hu_font['A'-HU_FONTSTART]->width) * con_scalefactor;
-				V_DrawCharacter(x, y, (INT32)(*p) | charflags | cv_constextsize.value | V_NOSCALESTART, true);
+				V_DrawCharacter(x, y, (int32_t)(*p) | charflags | cv_constextsize.value | V_NOSCALESTART, true);
 			}
 		}
 
@@ -1583,11 +1583,11 @@ static void CON_DrawBackpic(void)
 	// then fill the sides with a solid color.
 	if (x > 0)
 	{
-		column_t *column = (column_t *)((UINT8 *)(con_backpic->columns) + (con_backpic->columnofs[0]));
+		column_t *column = (column_t *)((uint8_t *)(con_backpic->columns) + (con_backpic->columnofs[0]));
 		if (!column->topdelta)
 		{
-			UINT8 *source = (UINT8 *)(column) + 3;
-			INT32 color = (source[0] | V_NOSCALESTART);
+			uint8_t *source = (uint8_t *)(column) + 3;
+			int32_t color = (source[0] | V_NOSCALESTART);
 			// left side
 			V_DrawFill(0, 0, x, con_curlines, color);
 			// right side
@@ -1607,13 +1607,13 @@ static void CON_DrawBackpic(void)
 //
 static void CON_DrawConsole(void)
 {
-	UINT8 *p;
+	uint8_t *p;
 	size_t i;
-	INT32 y;
-	INT32 charflags = 0;
-	INT32 charwidth = (INT32)con_scalefactor << 3;
-	INT32 charheight = charwidth;
-	INT32 minheight = 20 * con_scalefactor;	// 20 = 8+8+4
+	int32_t y;
+	int32_t charflags = 0;
+	int32_t charwidth = (int32_t)con_scalefactor << 3;
+	int32_t charheight = charwidth;
+	int32_t minheight = 20 * con_scalefactor;	// 20 = 8+8+4
 
 	if (con_curlines <= 0)
 		return;
@@ -1642,10 +1642,10 @@ static void CON_DrawConsole(void)
 
 		for (y = (con_curlines-minheight) % charheight; y <= con_curlines-minheight; y += charheight, i++)
 		{
-			INT32 x;
+			int32_t x;
 			size_t c;
 
-			p = (UINT8 *)&con_buffer[((i > 0 ? i : 0)%con_totallines)*con_width];
+			p = (uint8_t *)&con_buffer[((i > 0 ? i : 0)%con_totallines)*con_width];
 
 			for (c = 0, x = charwidth; c < con_width; c++, x += charwidth, p++)
 			{
@@ -1668,7 +1668,7 @@ static void CON_DrawConsole(void)
 					c += emotelen-1;
 					continue;
 				}
-				V_DrawCharacter(x, y, (INT32)(*p) | charflags | cv_constextsize.value | V_NOSCALESTART, true);
+				V_DrawCharacter(x, y, (int32_t)(*p) | charflags | cv_constextsize.value | V_NOSCALESTART, true);
 			}
 		}
 	}
@@ -1779,8 +1779,8 @@ void CON_SetLoadingProgress(con_loadprogress_t newStep)
 //
 void CON_DrawLoadBar(void)
 {
-	const INT16 barheight = 2;
-	INT16 barwidth = 0;
+	const int16_t barheight = 2;
+	int16_t barwidth = 0;
 
 	Lock_state();
 

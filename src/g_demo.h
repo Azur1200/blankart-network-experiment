@@ -47,7 +47,7 @@ struct demovars_s {
 	char titlename[65];
 	textinput_t titlenameinput;
 	dboolean recording, playback, timing;
-	UINT16 version; // Current file format of the demo being played
+	uint16_t version; // Current file format of the demo being played
 	dboolean title; // Title Screen demo can be cancelled by any key
 	dboolean rewinding; // Rewind in progress
 
@@ -88,21 +88,21 @@ struct menudemo_t {
 	menudemotype_e type;
 
 	char title[65]; // Null-terminated for string prints
-	UINT16 map;
-	UINT8 addonstatus; // What do we need to do addon-wise to play this demo?
-	UINT8 gametype;
-	SINT8 kartspeed; // Add OR DF_ENCORE for encore mode, idk
-	UINT8 numlaps;
+	uint16_t map;
+	uint8_t addonstatus; // What do we need to do addon-wise to play this demo?
+	uint8_t gametype;
+	int8_t kartspeed; // Add OR DF_ENCORE for encore mode, idk
+	uint8_t numlaps;
 
 	struct {
-		UINT8 ranking;
+		uint8_t ranking;
 		char name[21+1];
-		UINT16 skin, color;
-		UINT32 timeorscore;
+		uint16_t skin, color;
+		uint32_t timeorscore;
 	} standings[MAXPLAYERS];
 };
 
-dboolean G_CompatLevel(UINT16 level);
+dboolean G_CompatLevel(uint16_t level);
 
 extern mobj_t *metalplayback;
 
@@ -113,9 +113,9 @@ void G_BeginRecording(void);
 void G_BeginMetal(void);
 
 // Only called by shutdown code.
-void G_WriteStanding(UINT8 ranking, char *name, INT32 skinnum, UINT16 color, UINT32 val);
-void G_SetDemoTime(UINT32 ptime, UINT32 plap);
-UINT8 G_CmpDemoTime(char *oldname, char *newname);
+void G_WriteStanding(uint8_t ranking, char *name, int32_t skinnum, uint16_t color, uint32_t val);
+void G_SetDemoTime(uint32_t ptime, uint32_t plap);
+uint8_t G_CmpDemoTime(char *oldname, char *newname);
 
 typedef enum
 {
@@ -126,8 +126,8 @@ typedef enum
 	GHC_RETURNSKIN // not actually a colour
 } ghostcolor_t;
 
-extern UINT8 demo_extradata[MAXPLAYERS];
-extern UINT8 demo_writerng;
+extern uint8_t demo_extradata[MAXPLAYERS];
+extern uint8_t demo_writerng;
 
 #define DXD_JOINDATA   0x01 // join-specific data
 #define DXD_PLAYSTATE	0x02 // state changed between playing, spectating, or not in-game
@@ -150,16 +150,16 @@ void G_LoadDemoCvars(void **p, void (*setvalue)(consvar_t *, const char *, dbool
 // Record/playback tics
 void G_ReadDemoExtraData(void);
 void G_WriteDemoExtraData(void);
-void G_ReadDemoTiccmd(ticcmd_t *cmd, INT32 playernum);
-void G_WriteDemoTiccmd(ticcmd_t *cmd, INT32 playernum);
-void G_GhostAddColor(INT32 playernum, ghostcolor_t color);
-void G_GhostAddFlip(INT32 playernum);
-void G_GhostAddScale(INT32 playernum, fixed_t scale);
-void G_GhostAddHit(INT32 playernum, mobj_t *victim);
+void G_ReadDemoTiccmd(ticcmd_t *cmd, int32_t playernum);
+void G_WriteDemoTiccmd(ticcmd_t *cmd, int32_t playernum);
+void G_GhostAddColor(int32_t playernum, ghostcolor_t color);
+void G_GhostAddFlip(int32_t playernum);
+void G_GhostAddScale(int32_t playernum, fixed_t scale);
+void G_GhostAddHit(int32_t playernum, mobj_t *victim);
 void G_WriteAllGhostTics(void);
-void G_WriteGhostTic(mobj_t *ghost, INT32 playernum);
+void G_WriteGhostTic(mobj_t *ghost, int32_t playernum);
 void G_ConsAllGhostTics(void);
-void G_ConsGhostTic(INT32 playernum);
+void G_ConsGhostTic(int32_t playernum);
 void G_GhostTicker(void);
 
 void G_InitDemoRewind(void);
@@ -169,16 +169,16 @@ void G_ConfirmRewind(tic_t rewindtime);
 
 void G_ReadMetalTic(mobj_t *metal);
 void G_WriteMetalTic(mobj_t *metal);
-void G_SaveMetal(UINT8 **buffer);
-void G_LoadMetal(UINT8 **buffer);
+void G_SaveMetal(uint8_t **buffer);
+void G_LoadMetal(uint8_t **buffer);
 
 // Your naming conventions are stupid and useless.
 // There is no conflict here.
 struct demoghost {
-	UINT64 checksum;
-	UINT8 *buffer, *p, color;
-	UINT8 fadein;
-	UINT16 version;
+	uint64_t checksum;
+	uint8_t *buffer, *p, color;
+	uint8_t fadein;
+	uint16_t version;
 	dboolean linecrossed;
 	dboolean done;
 	mobj_t oldmo, *mo;
@@ -196,7 +196,7 @@ extern demoghost *ghosts;
 dboolean G_DemoWillAutoSave(void);
 void G_DeferedPlayDemo(const char *demo);
 void G_DoPlayDemo(char *defdemoname);
-void G_SetupDemoPlayer(INT32 i);
+void G_SetupDemoPlayer(int32_t i);
 void G_TimeDemo(const char *name);
 void G_AddGhost(char *defdemoname);
 void G_UpdateStaffGhostName(lumpnum_t l);
@@ -217,7 +217,7 @@ void G_SaveDemo(void);
 
 void G_SetAutoSaveName(void);
 
-void G_SyncDemoParty(INT32 rem, INT32 newsplitscreen);
+void G_SyncDemoParty(int32_t rem, int32_t newsplitscreen);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -50,7 +50,7 @@
 #include "lua_hud.h"
 #include "lua_hook.h"
 
-//static INT16 dscredits_idx = 0;
+//static int16_t dscredits_idx = 0;
 
 static longtic_t elapsed = 0;
 static longtic_t lastelapsed = 0;
@@ -69,7 +69,7 @@ static fixed_t blancredits_dividend = blancredits_length / FRACUNIT;
 static fixed_t blancredits_height;
 
 static longtic_t finalescene;
-static INT32 finalesecs, finalespeed;
+static int32_t finalesecs, finalespeed;
 
 static dboolean dscredits_running = false;
 
@@ -117,7 +117,7 @@ std::chrono::high_resolution_clock::time_point start, curr;
 #define LASTSCENE (21)
 
 // Converts microseconds to fixed-point values.
-#define UsecToFixed(x) (static_cast<fixed_t>((static_cast<INT64>(x / 1000) * FRACUNIT) / 1000))
+#define UsecToFixed(x) (static_cast<fixed_t>((static_cast<int64_t>(x / 1000) * FRACUNIT) / 1000))
 
 static fixed_t scroll_slow = (5033164); // 192 pixels in 2.5 seconds
 static fixed_t scroll_fast = (12582912); // 192 pixels in 1 second
@@ -132,31 +132,31 @@ static longtic_t hityler;
 static longtic_t building_delay;
 static longtic_t player_delay;
 
-static UINT16 numbuildings;
-static UINT16 numplayerobjs;
+static uint16_t numbuildings;
+static uint16_t numplayerobjs;
 
 static dboolean spawnplayers;
-static INT32 playersadded;
-static INT32 player_iterate;
+static int32_t playersadded;
+static int32_t player_iterate;
 
 
-static UINT16 specialiterate;
+static uint16_t specialiterate;
 
-static inline INT64 LongFixedMul(fixed_t a, fixed_t b)
+static inline int64_t LongFixedMul(fixed_t a, fixed_t b)
 {
 	// Need to cast to unsigned before shifting to avoid undefined behaviour
 	// for negative integers
-	return (INT64)(((UINT64)((INT64)a * b)) >> FRACBITS);
+	return (int64_t)(((uint64_t)((int64_t)a * b)) >> FRACBITS);
 }
 
 // Handles interpolating microseconds into a scroll offset.
 #define CreditsScrollFx(x,y) (static_cast<fixed_t>(LongFixedMul(UsecToFixed(x), y)))
 #define CreditsScroll(x,y) (CreditsScrollFx(x,y) >> FRACBITS)
 
-static UINT16 credits_skins[CREDSKINCOUNT];
-static UINT16 credits_colors[CREDSKINCOUNT];
+static uint16_t credits_skins[CREDSKINCOUNT];
+static uint16_t credits_colors[CREDSKINCOUNT];
 
-static UINT16 player1_idx, rival_idx, special_idx, specialp, tylermemoriam;
+static uint16_t player1_idx, rival_idx, special_idx, specialp, tylermemoriam;
 
 static const char* gamettl = "SRB2KART";
 
@@ -361,9 +361,9 @@ static const char *credits[] = {
 
 tic_t dscreditsticks = 0;
 
-static INT32 F_FindFirstFreeObj()
+static int32_t F_FindFirstFreeObj()
 {
-    INT32 i = 0;
+    int32_t i = 0;
     for (i = 0; i < MAXMISCOBJS; i++)
     {
         // Found one.
@@ -376,7 +376,7 @@ static INT32 F_FindFirstFreeObj()
     return i;
 }
 
-static void F_SpawnCreditsObject(INT32 id, INT32 x, INT32 y, fixed_t scale, patch_t *patch, INT64 stopat)
+static void F_SpawnCreditsObject(int32_t id, int32_t x, int32_t y, fixed_t scale, patch_t *patch, int64_t stopat)
 {
     dscredits.creditsobj[id].active = true;
 
@@ -389,9 +389,9 @@ static void F_SpawnCreditsObject(INT32 id, INT32 x, INT32 y, fixed_t scale, patc
     dscredits.creditsobj[id].movestop = stopat;
 }
 
-static INT32 F_FindFirstFreePlayer()
+static int32_t F_FindFirstFreePlayer()
 {
-    INT32 i = 0;
+    int32_t i = 0;
     for (i = MAXMISCOBJS; i < MAXDSOBJECTS; i++)
     {
         // Found one.
@@ -404,7 +404,7 @@ static INT32 F_FindFirstFreePlayer()
     return i;
 }
 
-static void F_SpawnCreditsPlayer(INT32 id, INT32 x, INT32 y, fixed_t scale, UINT16 skin, UINT16 color, INT64 stopat)
+static void F_SpawnCreditsPlayer(int32_t id, int32_t x, int32_t y, fixed_t scale, uint16_t skin, uint16_t color, int64_t stopat)
 {
     dscredits.creditsobj[id].active = true;
 
@@ -426,9 +426,9 @@ static fixed_t F_FixedLerp(fixed_t v0, fixed_t v1, fixed_t t)
 
 void F_SecretCreditsTicker(void)
 {
-    UINT16 i;
-    INT32 credskins;
-    UINT16 pskin, pcol;
+    uint16_t i;
+    int32_t credskins;
+    uint16_t pskin, pcol;
 
     if (dscreditsticks < 1)
     {
@@ -520,8 +520,8 @@ void F_SecretCreditsTicker(void)
         }
 
         // Allocate the rival's skin, if possible.
-        UINT16 grabskins[MAXSKINS];
-        UINT16 rand, rivalskin;
+        uint16_t grabskins[MAXSKINS];
+        uint16_t rand, rivalskin;
 
         grabskins[0] = R_SkinAvailable(skins[pskin]->rivals[0]);
         grabskins[1] = R_SkinAvailable(skins[pskin]->rivals[1]);
@@ -561,8 +561,8 @@ void F_SecretCreditsTicker(void)
         rival_idx = credskins;
         credits_skins[credskins--] = rivalskin;
 
-        UINT16 usableskins = 0;
-        UINT16 j;
+        uint16_t usableskins = 0;
+        uint16_t j;
 
         for (i = 0; i < numskins; i++)
         {
@@ -651,11 +651,11 @@ void F_SecretCreditsTicker(void)
 
     dscreditsticks++;
 
-    INT32 w = vid.scaledwidth;
-    INT32 h = (vid.height / vid.dup);
+    int32_t w = vid.scaledwidth;
+    int32_t h = (vid.height / vid.dup);
 
-    const INT32 vidxdiff = (w - BASEVIDWIDTH) / 2;
-    const INT32 vidydiff = (h - BASEVIDHEIGHT) / 2;
+    const int32_t vidxdiff = (w - BASEVIDWIDTH) / 2;
+    const int32_t vidydiff = (h - BASEVIDHEIGHT) / 2;
 
     if (dscreditsticks == CREDITSDELAY)
     {
@@ -751,12 +751,12 @@ void F_SecretCreditsTicker(void)
 
     if (dscredits.creditsscene > 2)
     {
-        INT16 idx;
+        int16_t idx;
 
         numbuildings = 0;
         numplayerobjs = 0;
 
-        building_delay = static_cast<longtic_t>(std::max(static_cast<INT64>(0), static_cast<INT64>(building_delay) - static_cast<INT64>(elapsed_diff)));
+        building_delay = static_cast<longtic_t>(std::max(static_cast<int64_t>(0), static_cast<int64_t>(building_delay) - static_cast<int64_t>(elapsed_diff)));
 
         if (!building_delay)
         {
@@ -782,7 +782,7 @@ void F_SecretCreditsTicker(void)
 
         if (spawnplayers)
         {
-            player_delay = static_cast<longtic_t>(std::max(static_cast<INT64>(0), static_cast<INT64>(player_delay) - static_cast<INT64>(elapsed_diff)));
+            player_delay = static_cast<longtic_t>(std::max(static_cast<int64_t>(0), static_cast<int64_t>(player_delay) - static_cast<int64_t>(elapsed_diff)));
 
             if (!player_delay)
             {
@@ -855,9 +855,9 @@ void F_SecretCreditsTicker(void)
             if (dscredits.creditsobj[rival_idx + MAXMISCOBJS].movestop > 0)
             {
                 dscredits.creditsobj[rival_idx + MAXMISCOBJS].movestop = std::max(
-                        static_cast<INT64>(0),
-                        static_cast<INT64>(dscredits.creditsobj[rival_idx + MAXMISCOBJS].movestop) -
-                            static_cast<INT64>(elapsed_diff));
+                        static_cast<int64_t>(0),
+                        static_cast<int64_t>(dscredits.creditsobj[rival_idx + MAXMISCOBJS].movestop) -
+                            static_cast<int64_t>(elapsed_diff));
 
                 if (!dscredits.creditsobj[rival_idx + MAXMISCOBJS].movestop)
                 {
@@ -1051,9 +1051,9 @@ void F_SecretCreditsTicker(void)
             if (dscredits.creditsobj[i].movestop > 0)
             {
                 dscredits.creditsobj[i].movestop = std::max(
-                        static_cast<INT64>(0),
-                        static_cast<INT64>(dscredits.creditsobj[i].movestop) -
-                            static_cast<INT64>(elapsed_diff));
+                        static_cast<int64_t>(0),
+                        static_cast<int64_t>(dscredits.creditsobj[i].movestop) -
+                            static_cast<int64_t>(elapsed_diff));
 
                 if (!dscredits.creditsobj[i].movestop)
                 {
@@ -1065,9 +1065,9 @@ void F_SecretCreditsTicker(void)
             if (dscredits.creditsobj[i].movestart > 0)
             {
                 dscredits.creditsobj[i].movestart = std::max(
-                        static_cast<INT64>(0),
-                        static_cast<INT64>(dscredits.creditsobj[i].movestart) -
-                            static_cast<INT64>(elapsed_diff));
+                        static_cast<int64_t>(0),
+                        static_cast<int64_t>(dscredits.creditsobj[i].movestart) -
+                            static_cast<int64_t>(elapsed_diff));
 
                 if (!dscredits.creditsobj[i].movestart)
                 {
@@ -1157,7 +1157,7 @@ void F_SecretCreditsTicker(void)
 #define absmod(x,y) ((abs(x) % y) * sign(x))
 
 // Repeats horizontally until it reaches across the screen.
-static void F_DrawBannerPatch(fixed_t x, fixed_t y, fixed_t scale, INT32 scrn, patch_t *patch, const UINT8 *colormap)
+static void F_DrawBannerPatch(fixed_t x, fixed_t y, fixed_t scale, int32_t scrn, patch_t *patch, const uint8_t *colormap)
 {
     fixed_t w = vid.scaledwidth;
     fixed_t vidxdiff = ((w - BASEVIDWIDTH) << FRACBITS) / 2;
@@ -1175,9 +1175,9 @@ static void F_DrawBannerPatch(fixed_t x, fixed_t y, fixed_t scale, INT32 scrn, p
 #undef sign
 
 // returns false if the character couldn't be rendered
-static dboolean M_DrawCharacterSprite(INT16 x, INT16 y, fixed_t scale, UINT8 fade, INT16 skin, UINT8 spr2, UINT8 rotation, UINT32 frame, INT32 addflags, UINT8 *colormap)
+static dboolean M_DrawCharacterSprite(int16_t x, int16_t y, fixed_t scale, uint8_t fade, int16_t skin, uint8_t spr2, uint8_t rotation, uint32_t frame, int32_t addflags, uint8_t *colormap)
 {
-	UINT8 spr;
+	uint8_t spr;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
 	patch_t *sprpatch;
@@ -1185,8 +1185,8 @@ static dboolean M_DrawCharacterSprite(INT16 x, INT16 y, fixed_t scale, UINT8 fad
 	spr = P_GetSkinSprite2(skins[skin], spr2, NULL);
 	sprdef = &skins[skin]->sprites[spr];
 
-    UINT8 *fademap = R_GetTranslationColormap(TC_BLINK, SKINCOLOR_BLACK, GTC_MENUCACHE);
-    INT16 fadealpha = 10 - fade;
+    uint8_t *fademap = R_GetTranslationColormap(TC_BLINK, SKINCOLOR_BLACK, GTC_MENUCACHE);
+    int16_t fadealpha = 10 - fade;
 
 	if (!sprdef->numframes) // No frames ??
 		return false; // Can't render!
@@ -1232,9 +1232,9 @@ static dboolean M_DrawCharacterSprite(INT16 x, INT16 y, fixed_t scale, UINT8 fad
 
 static void F_DrawCreditsObjects()
 {
-    INT32 ticker = FixedMul(TICRATE, UsecToFixed(elapsed));
+    int32_t ticker = FixedMul(TICRATE, UsecToFixed(elapsed));
 
-    INT32 i;
+    int32_t i;
     for (i = 0; i < MAXDSOBJECTS + DSUNIQUEPLAYERS; i++)
     {
         if (!dscredits.creditsobj[i].active)
@@ -1246,7 +1246,7 @@ static void F_DrawCreditsObjects()
         {
             // Player object.
             //char debug[256];
-            UINT8 *colormap = R_GetTranslationColormap(dscredits.creditsobj[i].skin,
+            uint8_t *colormap = R_GetTranslationColormap(dscredits.creditsobj[i].skin,
                                                        static_cast<skincolornum_t>(dscredits.creditsobj[i].color),
                                                        GTC_MENUCACHE);
 
@@ -1254,7 +1254,7 @@ static void F_DrawCreditsObjects()
                 "xspd: %f\nstopat: %d\nspinout: %d\n",
                 FIXED_TO_FLOAT(CreditsScrollFx((elapsed_diff), dscredits.creditsobj[i].speed[0])),
                 dscredits.creditsobj[i].movestop,
-                static_cast<UINT8>(dscredits.creditsobj[i].spinout));*/
+                static_cast<uint8_t>(dscredits.creditsobj[i].spinout));*/
 
             M_DrawCharacterSprite(dscredits.creditsobj[i].position[0] >> FRACBITS,
                                   dscredits.creditsobj[i].position[1] >> FRACBITS,
@@ -1318,13 +1318,13 @@ static void F_DrawCreditsArea(fixed_t y_root, fixed_t height, fixed_t xdiff)
 // Not really "fake" considering this is the actual title sequence.
 static void F_FakeTitleScreen(tic_t count)
 {
-    INT32 w, h;
+    int32_t w, h;
 
     w = vid.scaledwidth;
     h = (vid.height / vid.dup);
 
-    const INT32 vidxdiff = (w - BASEVIDWIDTH) / 2;
-    const INT32 vidydiff = (h - BASEVIDHEIGHT) / 2;
+    const int32_t vidxdiff = (w - BASEVIDWIDTH) / 2;
+    const int32_t vidydiff = (h - BASEVIDHEIGHT) / 2;
 
 	if (count < 50)
 	{
@@ -1342,7 +1342,7 @@ static void F_FakeTitleScreen(tic_t count)
 	}
 	else
 	{
-		INT32 transval = 0;
+		int32_t transval = 0;
 
 		if (count <= (50+(9<<1)))
 			transval = (count - 50)>>1;
@@ -1365,15 +1365,15 @@ static void F_FakeTitleScreen(tic_t count)
 
 void F_SecretCreditsDrawer(void)
 {
-    INT32 alpha = 0, titlealpha = 0, titlefade = 0;
-    INT32 w, h;
-    UINT8 bgcolor = 31;
+    int32_t alpha = 0, titlealpha = 0, titlefade = 0;
+    int32_t w, h;
+    uint8_t bgcolor = 31;
 
     w = vid.scaledwidth;
     h = (vid.height / vid.dup);
 
-    const INT32 vidxdiff = (w - BASEVIDWIDTH) / 2;
-    const INT32 vidydiff = (h - BASEVIDHEIGHT) / 2;
+    const int32_t vidxdiff = (w - BASEVIDWIDTH) / 2;
+    const int32_t vidydiff = (h - BASEVIDHEIGHT) / 2;
 
     if (!dscredits_running)
     {
@@ -1440,7 +1440,7 @@ void F_SecretCreditsDrawer(void)
         }
     }
 
-    INT32 y, i;
+    int32_t y, i;
     // The credits text overlays everything.
     if ((dscredits.creditsscene > 1) && (dscredits.creditsscene < 8))
     {

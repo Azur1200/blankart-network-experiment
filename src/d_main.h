@@ -80,7 +80,7 @@ typedef enum
 	WIPELOOP_TITLEBLACK,
 } wipelooptype_t;
 
-void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, dboolean drawMenu);
+void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu);
 
 //
 // D_SRB2Main()

@@ -40,7 +40,7 @@ static dboolean K_BotUseItemNearPlayer(botdata_t *bd, const player_t *player, fi
 {
 	ZoneScoped;
 
-	UINT8 i;
+	uint8_t i;
 
 	if (bd->itemwasdown)
 	{
@@ -100,7 +100,7 @@ static player_t *K_PlayerNearSpot(const player_t *player, fixed_t x, fixed_t y, 
 {
 	ZoneScoped;
 
-	UINT8 i;
+	uint8_t i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -136,7 +136,7 @@ static player_t *K_PlayerNearSpot(const player_t *player, fixed_t x, fixed_t y, 
 }
 
 /*--------------------------------------------------
-	static player_t *K_PlayerPredictThrow(const player_t *player, UINT8 extra)
+	static player_t *K_PlayerPredictThrow(const player_t *player, uint8_t extra)
 
 		Looks for players around the predicted coordinates of their thrown item.
 
@@ -147,12 +147,12 @@ static player_t *K_PlayerNearSpot(const player_t *player, fixed_t x, fixed_t y, 
 	Return:-
 		The player we're trying to throw at, NULL if none was found.
 --------------------------------------------------*/
-static player_t *K_PlayerPredictThrow(const player_t *player, UINT8 extra)
+static player_t *K_PlayerPredictThrow(const player_t *player, uint8_t extra)
 {
 	ZoneScoped;
 
 	const fixed_t dist = (30 + (extra * 10)) * player->mo->scale;
-	const UINT32 airtime = FixedDiv(dist + player->mo->momz, gravity);
+	const uint32_t airtime = FixedDiv(dist + player->mo->momz, gravity);
 	const fixed_t throwspeed = FixedMul(82 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
 	const fixed_t estx = player->mo->x + P_ReturnThrustX(NULL, player->mo->angle, (throwspeed + player->speed) * airtime);
 	const fixed_t esty = player->mo->y + P_ReturnThrustY(NULL, player->mo->angle, (throwspeed + player->speed) * airtime);
@@ -161,7 +161,7 @@ static player_t *K_PlayerPredictThrow(const player_t *player, UINT8 extra)
 }
 
 /*--------------------------------------------------
-	static player_t *K_PlayerInCone(const player_t *player, UINT16 cone, dboolean flip)
+	static player_t *K_PlayerInCone(const player_t *player, uint16_t cone, dboolean flip)
 
 		Looks for players in the .
 
@@ -174,11 +174,11 @@ static player_t *K_PlayerPredictThrow(const player_t *player, UINT8 extra)
 	Return:-
 		true if a player was found in the cone, otherwise false.
 --------------------------------------------------*/
-static player_t *K_PlayerInCone(const player_t *player, fixed_t radius, UINT16 cone, dboolean flip)
+static player_t *K_PlayerInCone(const player_t *player, fixed_t radius, uint16_t cone, dboolean flip)
 {
 	ZoneScoped;
 
-	UINT8 i;
+	uint8_t i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -209,7 +209,7 @@ static player_t *K_PlayerInCone(const player_t *player, fixed_t radius, UINT16 c
 		if (dist <= radius)
 		{
 			angle_t a = player->mo->angle - R_PointToAngle2(player->mo->x, player->mo->y, target->mo->x, target->mo->y);
-			INT16 ad = 0;
+			int16_t ad = 0;
 
 			if (a < ANGLE_180)
 			{
@@ -287,7 +287,7 @@ static dboolean K_RivalBotAggression(const player_t *bot, const player_t *target
 // Handles updating item confirm values for offense items.
 // target - Who the bot wants to attack.
 // amount - Amount to increase item confirm time by.
-static void K_ItemConfirmForTarget(botdata_t *bd, const player_t *bot, const player_t *target, UINT16 amount)
+static void K_ItemConfirmForTarget(botdata_t *bd, const player_t *bot, const player_t *target, uint16_t amount)
 {
 	if (bot == NULL || target == NULL)
 	{
@@ -318,7 +318,7 @@ static dboolean K_CheckBotItemCooldown(const player_t *bot)
 // Presses the item button & aim buttons for the bot.
 // dir - Aiming direction: 1 for forwards, -1 for backwards, 0 for neutral.
 // Returns true if we could press, false if not.
-static dboolean K_BotGenericPressItem(botdata_t *bd, SINT8 dir)
+static dboolean K_BotGenericPressItem(botdata_t *bd, int8_t dir)
 {
 	ZoneScoped;
 
@@ -416,7 +416,7 @@ static void K_BotItemGenericOrbitShield(botdata_t *bd, const player_t *player)
 }
 
 // Less skilled bots stack wastefully, low enough bots don't stack at all.
-static SINT8 K_BotSneakerStackThreshold(SINT8 difficulty)
+static int8_t K_BotSneakerStackThreshold(int8_t difficulty)
 {
 	if (difficulty < 5)
 		return 0;
@@ -437,7 +437,7 @@ static void K_BotItemSneaker(botdata_t *bd, const player_t *player)
 
 	dboolean stack = K_StackingActive();
 	dboolean sneakerstack = (stack && (cv_kartstacking_sneaker_maxgrade.value > 1));
-	const SINT8 stacktime = K_BotSneakerStackThreshold(player->botvars.difficulty);
+	const int8_t stacktime = K_BotSneakerStackThreshold(player->botvars.difficulty);
 
 	if ((player->offroad && K_ApplyOffroad(player)) // Stuck in offroad, use it NOW
 		|| K_GetWaypointIsShortcut(player->nextwaypoint) == true // Going toward a shortcut!
@@ -499,7 +499,7 @@ static void K_BotItemBanana(botdata_t *bd, const player_t *player)
 	ZoneScoped;
 
 	const fixed_t coneDist = FixedMul(1280 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
-	SINT8 throwdir = -1;
+	int8_t throwdir = -1;
 	dboolean tryLookback = false;
 	player_t *target = NULL;
 
@@ -546,7 +546,7 @@ static void K_BotItemMine(botdata_t *bd, const player_t *player)
 	ZoneScoped;
 
 	const fixed_t coneDist = FixedMul(1280 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
-	SINT8 throwdir = 0;
+	int8_t throwdir = 0;
 	dboolean tryLookback = false;
 	player_t *target = NULL;
 
@@ -627,8 +627,8 @@ static void K_BotItemEggman(botdata_t *bd, const player_t *player)
 	ZoneScoped;
 
 	const fixed_t coneDist = FixedMul(1280 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
-	const UINT8 stealth = K_EggboxStealth(player->mo->x, player->mo->y);
-	SINT8 throwdir = -1;
+	const uint8_t stealth = K_EggboxStealth(player->mo->x, player->mo->y);
+	int8_t throwdir = -1;
 	dboolean tryLookback = false;
 	player_t *target = NULL;
 
@@ -682,7 +682,7 @@ static dboolean K_BotRevealsEggbox(const player_t *player)
 	ZoneScoped;
 
 	const fixed_t coneDist = FixedMul(1280 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
-	const UINT8 stealth = K_EggboxStealth(player->mo->x, player->mo->y);
+	const uint8_t stealth = K_EggboxStealth(player->mo->x, player->mo->y);
 	player_t *target = NULL;
 
 	// This is a stealthy spot for an eggbox, lets reveal it!
@@ -748,9 +748,9 @@ static void K_BotItemOrbinaut(botdata_t *bd, const player_t *player)
 
 	const fixed_t topspeed = K_GetKartSpeed(player, false, true);
 	fixed_t radius = FixedMul(2560 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
-	SINT8 throwdir = -1;
+	int8_t throwdir = -1;
 	dboolean tryLookback = false;
-	UINT8 snipeMul = 2;
+	uint8_t snipeMul = 2;
 	player_t *target = NULL;
 
 	if (player->speed > topspeed)
@@ -797,9 +797,9 @@ static void K_BotItemBallhog(botdata_t *bd, const player_t *player)
 
 	const fixed_t topspeed = K_GetKartSpeed(player, false, true);
 	fixed_t radius = FixedMul(2560 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
-	SINT8 throwdir = -1;
+	int8_t throwdir = -1;
 	dboolean tryLookback = false;
-	UINT8 snipeMul = 2;
+	uint8_t snipeMul = 2;
 	player_t *target = NULL;
 	dboolean hold = false;
 
@@ -862,10 +862,10 @@ static void K_BotItemJawz(botdata_t *bd, const player_t *player)
 
 	const fixed_t topspeed = K_GetKartSpeed(player, false, true);
 	fixed_t radius = FixedMul(2560 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
-	SINT8 throwdir = 1;
+	int8_t throwdir = 1;
 	dboolean tryLookback = false;
-	UINT8 snipeMul = 2;
-	INT32 lastTarg = player->lastitemtarget;
+	uint8_t snipeMul = 2;
+	int32_t lastTarg = player->lastitemtarget;
 	player_t *target = NULL;
 
 	if (player->speed > topspeed)
@@ -1017,7 +1017,7 @@ static void K_BotItemFlame(botdata_t *bd, const player_t *player)
 		}
 		else
 		{
-			UINT8 difficultyadjust = MAXBOTDIFFICULTY - player->botvars.difficulty;
+			uint8_t difficultyadjust = MAXBOTDIFFICULTY - player->botvars.difficulty;
 			bd->itemdelay = (TICRATE/2) + difficultyadjust;
 		}
 
@@ -1035,7 +1035,7 @@ static void K_BotItemRings(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
-	INT32 saferingsval = 16 - K_GetKartRingPower(player, false);
+	int32_t saferingsval = 16 - K_GetKartRingPower(player, false);
 
 	if (leveltime < starttime)
 	{
@@ -1093,12 +1093,12 @@ static void K_BotItemRings(botdata_t *bd, const player_t *player)
 	Return:-
 		Returns the useodds of this bot.
 --------------------------------------------------*/
-static UINT32 K_BotCalculateUseodds(const player_t *player)
+static uint32_t K_BotCalculateUseodds(const player_t *player)
 {
-	UINT32 pdis = 0;
-	UINT8 pingame = 0, bestbumper = 0;
+	uint32_t pdis = 0;
+	uint8_t pingame = 0, bestbumper = 0;
 	dboolean spbrush = false;
-	UINT8 i;
+	uint8_t i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{

@@ -104,11 +104,11 @@ struct follower_t
 	sfxenum_t hornsound;		// Press (B) to announce you are pressing (B)
 };
 
-extern INT32 numfollowers;
+extern int32_t numfollowers;
 extern follower_t followers[MAXSKINS];
 
 /*--------------------------------------------------
-	INT32 K_FollowerAvailable(const char *name)
+	int32_t K_FollowerAvailable(const char *name)
 
 		Check if a follower with the specified name
 		exists or not.
@@ -121,11 +121,11 @@ extern follower_t followers[MAXSKINS];
 		or -1 if it doesn't exist.
 --------------------------------------------------*/
 
-INT32 K_FollowerAvailable(const char *name);
+int32_t K_FollowerAvailable(const char *name);
 
 
 /*--------------------------------------------------
-	dboolean K_SetFollowerByName(INT32 playernum, const char *skinname)
+	dboolean K_SetFollowerByName(int32_t playernum, const char *skinname)
 
 		Updates a player's follower type via a named value.
 		Calls "K_SetFollowerByNum" internally.
@@ -139,11 +139,11 @@ INT32 K_FollowerAvailable(const char *name);
 		otherwise false.
 --------------------------------------------------*/
 
-dboolean K_SetFollowerByName(INT32 playernum, const char *skinname);
+dboolean K_SetFollowerByName(int32_t playernum, const char *skinname);
 
 
 /*--------------------------------------------------
-	void K_SetFollowerByNum(INT32 playernum, INT32 skinnum)
+	void K_SetFollowerByNum(int32_t playernum, int32_t skinnum)
 
 		Updates a player's follower type via a numerical ID.
 
@@ -155,11 +155,11 @@ dboolean K_SetFollowerByName(INT32 playernum, const char *skinname);
 		None
 --------------------------------------------------*/
 
-void K_SetFollowerByNum(INT32 playernum, INT32 skinnum);
+void K_SetFollowerByNum(int32_t playernum, int32_t skinnum);
 
 
 /*--------------------------------------------------
-	UINT16 K_GetEffectiveFollowerColor(UINT16 followercolor, follower_t *follower, UINT16 playercolor, skin_t *playerskin)
+	uint16_t K_GetEffectiveFollowerColor(uint16_t followercolor, follower_t *follower, uint16_t playercolor, skin_t *playerskin)
 
 		Updates a player's follower pointer, and does
 		its positioning and animations.
@@ -174,7 +174,7 @@ void K_SetFollowerByNum(INT32 playernum, INT32 skinnum);
 		The resultant skincolor enum for the follower
 --------------------------------------------------*/
 
-UINT16 K_GetEffectiveFollowerColor(UINT16 followercolor, follower_t *follower, UINT16 playercolor, skin_t *playerskin);
+uint16_t K_GetEffectiveFollowerColor(uint16_t followercolor, follower_t *follower, uint16_t playercolor, skin_t *playerskin);
 
 
 /*--------------------------------------------------

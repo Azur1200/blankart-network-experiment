@@ -225,7 +225,7 @@ static std::thread::id g_main_thread_id;
 bool consolevent = false;
 bool framebuffer = false;
 
-UINT8 keyboard_started = false;
+uint8_t keyboard_started = false;
 static volatile sig_atomic_t g_in_exiting_signal_handler = false;
 
 #ifdef UNIXBACKTRACE
@@ -236,7 +236,7 @@ static volatile sig_atomic_t g_in_exiting_signal_handler = false;
 		write(fd, string, strlen(string));\
 	I_OutputMsg("%s", string)
 
-static void write_backtrace(INT32 signal)
+static void write_backtrace(int32_t signal)
 {
 	int fd = -1;
 	size_t size;
@@ -440,7 +440,7 @@ dboolean I_In_Exiting_Signal_Handler(void)
 }
 
 #ifndef NEWSIGNALHANDLER
-static ATTRNORETURN void signal_handler(INT32 num)
+static ATTRNORETURN void signal_handler(int32_t num)
 {
 	g_in_exiting_signal_handler = true;
 
@@ -491,11 +491,11 @@ feild_t tty_con;
 // when printing general stuff to stdout stderr (Sys_Printf)
 //   we need to disable the tty console stuff
 // this increments so we can recursively disable
-static INT32 ttycon_hide = 0;
+static int32_t ttycon_hide = 0;
 // some key codes that the terminal may be using
 // TTimo NOTE: I'm not sure how relevant this is
-static INT32 tty_erase;
-static INT32 tty_eof;
+static int32_t tty_erase;
+static int32_t tty_eof;
 
 static struct termios tty_tc;
 
@@ -771,7 +771,7 @@ void I_GetConsoleEvents(void)
 static void I_StartupConsole(void)
 {
 	HANDLE ci, co;
-	const INT32 ded = M_CheckParm("-dedicated");
+	const int32_t ded = M_CheckParm("-dedicated");
 	BOOL gotConsole = FALSE;
 	if (M_CheckParm("-console") || ded)
 		gotConsole = AllocConsole();
@@ -854,7 +854,7 @@ static void I_RegisterSignals (void)
 }
 
 #ifdef NEWSIGNALHANDLER
-static void signal_handler_child(INT32 num)
+static void signal_handler_child(int32_t num)
 {
 #ifdef UNIXBACKTRACE
 	write_backtrace(num);
@@ -991,11 +991,11 @@ void I_OutputMsg(const char *fmt, ...)
 //
 // I_GetKey
 //
-INT32 I_GetKey (void)
+int32_t I_GetKey (void)
 {
 	// Warning: I_GetKey empties the event queue till next keypress
 	event_t *ev;
-	INT32 rc = 0;
+	int32_t rc = 0;
 
 	// return the first keypress from the event queue
 	for (; eventtail != eventhead; eventtail = (eventtail+1)&(MAXEVENTS-1))
@@ -1023,7 +1023,7 @@ INT32 I_GetKey (void)
 
 static struct mumble_s {
 #ifdef WINMUMBLE
-	UINT32 uiVersion;
+	uint32_t uiVersion;
 	DWORD uiTick;
 #else
 	Uint32 uiVersion;
@@ -1038,7 +1038,7 @@ static struct mumble_s {
 	float fCameraTop[3]; // defaults to Y-is-up (only used for leaning)
 	wchar_t identity[256]; // player id
 #ifdef WINMUMBLE
-	UINT32 context_len;
+	uint32_t context_len;
 #else
 	Uint32 context_len;
 #endif
@@ -1100,10 +1100,10 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 	}
 
 	{
-		UINT8 *p = mumble->context;
+		uint8_t *p = mumble->context;
 		WRITEMEM(p, server_context, 8);
 		WRITEINT16(p, gamemap);
-		mumble->context_len = (UINT32)(p - mumble->context);
+		mumble->context_len = (uint32_t)(p - mumble->context);
 	}
 
 	if (mobj) {
@@ -1191,7 +1191,7 @@ precise_t I_GetPreciseTime(void)
 #endif
 }
 
-UINT64 I_GetPrecisePrecision(void)
+uint64_t I_GetPrecisePrecision(void)
 {
 #if defined(_WIN32)
 	LARGE_INTEGER frequency;
@@ -1202,13 +1202,13 @@ UINT64 I_GetPrecisePrecision(void)
 #endif
 }
 
-static UINT32 frame_rate;
+static uint32_t frame_rate;
 
 static double frame_frequency;
-static UINT64 frame_epoch;
+static uint64_t frame_epoch;
 static double elapsed_frames;
 
-static void I_InitFrameTime(const UINT64 now, const UINT32 cap)
+static void I_InitFrameTime(const uint64_t now, const uint32_t cap)
 {
 	frame_rate = cap;
 	frame_epoch = now;
@@ -1230,11 +1230,11 @@ double I_GetFrameTime(void)
 #if defined(_WIN32)
 	LARGE_INTEGER now;
     QueryPerformanceCounter(&now);
-    const UINT64 nowValue = now.QuadPart;
+    const uint64_t nowValue = now.QuadPart;
 #else
-	const UINT64 now = SDL_GetPerformanceCounter();
+	const uint64_t now = SDL_GetPerformanceCounter();
 #endif
-	const UINT32 cap = R_GetFramerateCap();
+	const uint32_t cap = R_GetFramerateCap();
 
 	if (cap != frame_rate)
 	{
@@ -1285,7 +1285,7 @@ void I_StartupTimer(void)
 	elapsed_frames  = 0.0;
 }
 
-void I_Sleep(UINT32 ms)
+void I_Sleep(uint32_t ms)
 {
 	SDL_Delay(ms);
 }
@@ -1293,7 +1293,7 @@ void I_Sleep(UINT32 ms)
 void I_SleepDuration(precise_t duration)
 {
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__HAIKU__) || defined(__OpenBSD__)
-	UINT64 precision = I_GetPrecisePrecision();
+	uint64_t precision = I_GetPrecisePrecision();
 	precise_t dest = I_GetPreciseTime() + duration;
 #ifdef __OpenBSD__
 	precise_t slack = (precision / 50); // 20 ms slack
@@ -1317,17 +1317,17 @@ void I_SleepDuration(precise_t duration)
 	}
 
 	// busy-wait the rest
-	while (((INT64)dest - (INT64)I_GetPreciseTime()) > 0);
+	while (((int64_t)dest - (int64_t)I_GetPreciseTime()) > 0);
 #elif defined (MIN_SLEEP_DURATION_MS)
-	UINT64 precision = I_GetPrecisePrecision();
-	INT32 sleepvalue = cv_sleep.value;
-	UINT64 delaygranularity;
+	uint64_t precision = I_GetPrecisePrecision();
+	int32_t sleepvalue = cv_sleep.value;
+	uint64_t delaygranularity;
 	precise_t cur;
 	precise_t dest;
 
 	{
 		double gran = round(((double)(precision / 1000) * sleepvalue * MIN_SLEEP_DURATION_MS));
-		delaygranularity = (UINT64)gran;
+		delaygranularity = (uint64_t)gran;
 	}
 
 	cur = I_GetPreciseTime();
@@ -1337,7 +1337,7 @@ void I_SleepDuration(precise_t duration)
 	// two's complement arithmetic is our friend here, though!
 	// e.g. cur 0xFFFFFFFFFFFFFFFE = -2, dest 0x0000000000000001 = 1
 	// 0x0000000000000001 - 0xFFFFFFFFFFFFFFFE = 3
-	while ((INT64)(dest - cur) > 0)
+	while ((int64_t)(dest - cur) > 0)
 	{
 		// If our cv_sleep value exceeds the remaining sleep duration, use the
 		// hard sleep function.
@@ -1446,7 +1446,7 @@ static void I_Fork(void)
 }
 #endif/*NEWSIGNALHANDLER*/
 
-INT32 I_StartupSystem(void)
+int32_t I_StartupSystem(void)
 {
 	int SDLlinked = SDL_GetVersion();
 	I_StartupConsole();
@@ -1531,7 +1531,7 @@ void I_Quit(void)
 	exit(0);
 }
 
-void I_WaitVBL(INT32 count)
+void I_WaitVBL(int32_t count)
 {
 	count = 1;
 	SDL_Delay(count);
@@ -1550,7 +1550,7 @@ void I_EndRead(void)
 //
 /**	\brief phuck recursive errors
 */
-static INT32 errorcount = 0;
+static int32_t errorcount = 0;
 
 /**	\brief recursive error detecting
 */
@@ -1657,7 +1657,7 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 	SDL_Quit();
 
 #if defined (PARANOIA) || defined (DEVELOP)
-	*(volatile INT32 *)0 = 4; //Alam: Debug!
+	*(volatile int32_t *)0 = 4; //Alam: Debug!
 #endif
 
 	exit(-1);
@@ -1672,7 +1672,7 @@ static quitfuncptr quit_funcs[MAX_QUIT_FUNCS]; /* initialized to all bits 0 */
 //
 void I_AddExitFunc(void (*func)())
 {
-	INT32 c;
+	int32_t c;
 
 	for (c = 0; c < MAX_QUIT_FUNCS; c++)
 	{
@@ -1691,7 +1691,7 @@ void I_AddExitFunc(void (*func)())
 //
 void I_RemoveExitFunc(void (*func)())
 {
-	INT32 c;
+	int32_t c;
 
 	for (c = 0; c < MAX_QUIT_FUNCS; c++)
 	{
@@ -1759,7 +1759,7 @@ static void Shittylogcopy(void)
 //
 void I_ShutdownSystem(void)
 {
-	INT32 c;
+	int32_t c;
 
 #ifdef NEWSIGNALHANDLER
 	if (M_CheckParm("-nofork"))
@@ -1783,7 +1783,7 @@ void I_ShutdownSystem(void)
 
 }
 
-void I_GetDiskFreeSpace(INT64 *freespace)
+void I_GetDiskFreeSpace(int64_t *freespace)
 {
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 #if defined (SOLARIS) || defined (__HAIKU__)
@@ -1863,7 +1863,7 @@ char *I_GetUserName(void)
 	return NULL; // dummy for platform independent version
 }
 
-INT32 I_mkdir(const char *dirname, INT32 unixright)
+int32_t I_mkdir(const char *dirname, int32_t unixright)
 {
 //[segabor]
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON) || defined (__CYGWIN__)
@@ -1878,7 +1878,7 @@ INT32 I_mkdir(const char *dirname, INT32 unixright)
 #endif
 }
 
-INT32 I_ChDir(const char *path)
+int32_t I_ChDir(const char *path)
 {
 #ifdef _WIN32
 	return (SetCurrentDirectoryA(path) ? 0 : -1);
@@ -1937,7 +1937,7 @@ size_t I_GetRandomBytes(char *destination, size_t count)
 #endif
 }
 
-INT32 I_PutEnv(char *variable)
+int32_t I_PutEnv(char *variable)
 {
 #ifdef NEED_SDL_GETENV
 	return SDL_putenv(variable);
@@ -1946,7 +1946,7 @@ INT32 I_PutEnv(char *variable)
 #endif
 }
 
-INT32 I_ClipboardCopy(const char *data, size_t size)
+int32_t I_ClipboardCopy(const char *data, size_t size)
 {
 	char storage[256];
 	if (size > 255)
@@ -2178,7 +2178,7 @@ static long get_entry(const char* name, const char* buf)
 #endif
 
 // quick fix for compil
-UINT32 I_GetFreeMem(UINT32 *total)
+uint32_t I_GetFreeMem(uint32_t *total)
 {
 #ifdef FREEBSD
 	u_int v_free_count, v_page_size, v_page_count;
@@ -2211,8 +2211,8 @@ UINT32 I_GetFreeMem(UINT32 *total)
 	char *memTag;
 	size_t freeKBytes;
 	size_t totalKBytes;
-	INT32 n;
-	INT32 meminfo_fd = -1;
+	int32_t n;
+	int32_t meminfo_fd = -1;
 	long Cached;
 	long MemFree;
 	long Buffers;

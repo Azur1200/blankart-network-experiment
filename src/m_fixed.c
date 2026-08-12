@@ -23,7 +23,7 @@ fixed_t FixedSqrt(fixed_t x)
 	// Assembly 2006, 3rd- 6th August 2006
 	// (Revised: September 13, 2006)
 	// URL: http://jet.ro/files/The_neglected_art_of_Fixed_Point_arithmetic_20060913.pdf
-	register UINT32 root, remHi, remLo, testDiv, count;
+	register uint32_t root, remHi, remLo, testDiv, count;
 	root = 0;         /* Clear root */
 	remHi = 0;        /* Clear high part of partial remainder */
 	remLo = x;        /* Get argument into low part of partial remainder */
@@ -43,7 +43,7 @@ fixed_t FixedSqrt(fixed_t x)
 }
 
 // Shitty 64-bit duplicate so certain distancing edgecases in k_odds die
-INT64 FixedSqrt64(INT64 x)
+int64_t FixedSqrt64(int64_t x)
 {
 	// The neglected art of Fixed Point arithmetic
 	// Jetro Lauha
@@ -51,7 +51,7 @@ INT64 FixedSqrt64(INT64 x)
 	// Assembly 2006, 3rd- 6th August 2006
 	// (Revised: September 13, 2006)
 	// URL: http://jet.ro/files/The_neglected_art_of_Fixed_Point_arithmetic_20060913.pdf
-	register UINT64 root, remHi, remLo, testDiv, count;
+	register uint64_t root, remHi, remLo, testDiv, count;
 	root = 0;         /* Clear root */
 	remHi = 0;        /* Clear high part of partial remainder */
 	remLo = x;        /* Get argument into low part of partial remainder */
@@ -652,7 +652,7 @@ void FV3_ClosestPointOnVector(const vector3_t *dir, const vector3_t *p, vector3_
 //
 void FV3_ClosestPointOnTriangle(const vector3_t *tri, const vector3_t *point, vector3_t *result)
 {
-	UINT8 i;
+	uint8_t i;
 	fixed_t dist, closestdist;
 	vector3_t EdgePoints[3];
 	vector3_t Line[2];
@@ -890,11 +890,11 @@ vector3_t *FV3_IntersectionPoint(const vector3_t *vNormal, const vector3_t *vLin
 // If on the back side of the line, returns 0.
 // 2D only.
 //
-UINT8 FV3_PointOnLineSide(const vector3_t *point, const vector3_t *line)
+uint8_t FV3_PointOnLineSide(const vector3_t *point, const vector3_t *line)
 {
 	fixed_t s1 = FixedMul((point->y - line[0].y), (line[1].x - line[0].x));
 	fixed_t s2 = FixedMul((point->x - line[0].x), (line[1].y - line[0].y));
-	return (UINT8)(s1 - s2 < 0);
+	return (uint8_t)(s1 - s2 < 0);
 }
 
 //
@@ -1036,7 +1036,7 @@ const vector4_t *FM_MultMatrixVec4(const matrix_t *matrix, const vector4_t *vec,
 //
 void FM_MultMatrixEx(const matrix_t *m1, const matrix_t *m2, matrix_t *dest)
 {
-	UINT8 i, j;
+	uint8_t i, j;
 #define M(row,col)  m1->m[col * 4 + row]
 #define D(row,col)  m2->m[col * 4 + row]
 #define R(row,col)  dest->m[col * 4 + row]
@@ -1102,23 +1102,23 @@ void FM_Scale(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z)
 // "Approach" functions taken from or based on the (decompiled) SM64 implementation
 // https://github.com/n64decomp/sm64/blob/master/src/engine/math_util.c
 
-/** \brief Returns the INT32 value 'current' after it tries to approach target, going up at most
+/** \brief Returns the int32_t value 'current' after it tries to approach target, going up at most
  'inc' and going down at most 'dec'.
  *
- * If target is close to the max or min of INT32, then it's possible to overflow past it without
+ * If target is close to the max or min of int32_t, then it's possible to overflow past it without
  stopping.
 
-	\param current	(INT32) current value
+	\param current	(int32_t) current value
 
-	\param target	(INT32) target value
+	\param target	(int32_t) target value
 
-	\param inc	(INT32) value to increment by
+	\param inc	(int32_t) value to increment by
 
-	\param dec	(INT32) value to decrement by
+	\param dec	(int32_t) value to decrement by
 
-	\return		(INT32) current value after incrementing/decrementing
+	\return		(int32_t) current value after incrementing/decrementing
 */
-INT32 ApproachINT32(INT32 current, INT32 target, INT32 inc, INT32 dec)
+int32_t ApproachINT32(int32_t current, int32_t target, int32_t inc, int32_t dec)
 {
 	if (current < target)
 	{
@@ -1139,23 +1139,23 @@ INT32 ApproachINT32(INT32 current, INT32 target, INT32 inc, INT32 dec)
 	return current;
 }
 
-/** \brief Returns the unsigned INT32 value ``current`` after it tries to approach target, going
+/** \brief Returns the unsigned int32_t value ``current`` after it tries to approach target, going
  up at most ``inc`` and going down at most ``dec``.
  *
- * If target is close to the max or min of UINT32, then it's possible to overflow past it without
+ * If target is close to the max or min of uint32_t, then it's possible to overflow past it without
  stopping.
 
-	\param current	(UINT32) current value
+	\param current	(uint32_t) current value
 
-	\param target	(UINT32) target value
+	\param target	(uint32_t) target value
 
-	\param inc	(UINT32) value to increment by
+	\param inc	(uint32_t) value to increment by
 
-	\param dec	(UINT32) value to decrement by
+	\param dec	(uint32_t) value to decrement by
 
-	\return		(UINT32) current value after incrementing/decrementing
+	\return		(uint32_t) current value after incrementing/decrementing
 */
-UINT32 ApproachUINT32(UINT32 current, UINT32 target, UINT32 inc, UINT32 dec)
+uint32_t ApproachUINT32(uint32_t current, uint32_t target, uint32_t inc, uint32_t dec)
 {
 	if (current < target)
 	{
@@ -1179,20 +1179,20 @@ UINT32 ApproachUINT32(UINT32 current, UINT32 target, UINT32 inc, UINT32 dec)
 /** \brief Returns the signed 64-bit value 'current' after it tries to approach target, going up at most
  'inc' and going down at most 'dec'.
  *
- * If target is close to the max or min of INT64, then it's possible to overflow past it without
+ * If target is close to the max or min of int64_t, then it's possible to overflow past it without
  stopping.
 
-	\param current	(INT64) current value
+	\param current	(int64_t) current value
 
-	\param target	(INT64) target value
+	\param target	(int64_t) target value
 
-	\param inc	(INT64) value to increment by
+	\param inc	(int64_t) value to increment by
 
-	\param dec	(INT64) value to decrement by
+	\param dec	(int64_t) value to decrement by
 
-	\return		(INT64) current value after incrementing/decrementing
+	\return		(int64_t) current value after incrementing/decrementing
 */
-INT64 ApproachINT64(INT64 current, INT64 target, INT64 inc, INT64 dec)
+int64_t ApproachINT64(int64_t current, int64_t target, int64_t inc, int64_t dec)
 {
 	if (current < target)
 	{

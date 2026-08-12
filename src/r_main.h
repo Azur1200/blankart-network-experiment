@@ -28,8 +28,8 @@ extern "C" {
 // POV related.
 //
 extern fixed_t viewcos, viewsin;
-extern INT32 viewheight;
-extern INT32 centerx, centery;
+extern int32_t viewheight;
+extern int32_t centerx, centery;
 
 extern fixed_t centerxfrac;
 extern fixed_t centeryfrac;
@@ -72,22 +72,22 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 
 // Utility functions.
 #define R_PointOnSide(x,y,node) (mapnamespace != MNS_SRB2KART) ? R_PointOnSideUDMF(x,y,node) : R_PointOnSideKart(x,y,node) // maybe a function pointer would be more appropiate?
-INT32 R_PointOnSideUDMF(fixed_t x, fixed_t y, const node_t *node);
-INT32 R_PointOnSideKart(fixed_t x, fixed_t y, const node_t *node);
+int32_t R_PointOnSideUDMF(fixed_t x, fixed_t y, const node_t *node);
+int32_t R_PointOnSideKart(fixed_t x, fixed_t y, const node_t *node);
 
 // This is not as accurate
 // SHOULD NOT BE USED FOR ANYTHING GAMEPLAY RELATED!!
-FUNCINLINE static ATTRINLINE INT32 R_PointOnSideFast(fixed_t x, fixed_t y, const node_t *node)
+FUNCINLINE static ATTRINLINE int32_t R_PointOnSideFast(fixed_t x, fixed_t y, const node_t *node)
 {
 	// use cross product to determine side quickly
-	return ((INT64)y - node->y) * node->dx - ((INT64)x - node->x) * node->dy > 0;
+	return ((int64_t)y - node->y) * node->dx - ((int64_t)x - node->x) * node->dy > 0;
 }
 
-INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line);
+int32_t R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line);
 #define R_PointToAngle(x, y) R_PointToAngle2(viewx, viewy, x, y)
 #define R_PointToAngleFloat(x, y) (R_PointToAngleFloat2(viewx, viewy, x, y))
 angle_t R_PointToAnglePlayer(player_t *player, fixed_t x, fixed_t y);
-angle_t R_PointToAngle64(INT64 x, INT64 y);
+angle_t R_PointToAngle64(int64_t x, int64_t y);
 angle_t R_PointToAngle2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1);
 angle_t R_PointToAngleFloat2(fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2);
 angle_t R_PointToAngle2Precise(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y);
@@ -113,7 +113,7 @@ FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsectorFast(fixed_t x, fixe
 
 dboolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixed_t bottomh, fixed_t toph);
 
-void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32 *yl, INT32 *yh);
+void R_GetRenderBlockMapDimensions(fixed_t drawdist, int32_t *xl, int32_t *xh, int32_t *yl, int32_t *yh);
 
 // Render stats
 
@@ -185,11 +185,11 @@ typedef enum {
 	NUM_SW_HI
 } debugrender_highlight_t;
 
-extern UINT32 debugrender_highlight;
+extern uint32_t debugrender_highlight;
 
 void R_CheckDebugHighlight(debugrender_highlight_t type);
-INT32 R_AdjustLightLevel(INT32 light);
-UINT8 R_DebugLineColor(const line_t *ld);
+int32_t R_AdjustLightLevel(int32_t light);
+uint8_t R_DebugLineColor(const line_t *ld);
 
 void Command_Debugrender_highlight(void);
 
@@ -203,7 +203,7 @@ void R_Init(void);
 
 void R_CheckViewMorph(int split);
 void R_ApplyViewMorph(int split);
-angle_t R_ViewRollAngle(const player_t *player, UINT8 viewnum);
+angle_t R_ViewRollAngle(const player_t *player, uint8_t viewnum);
 
 // just sets setsizeneeded true
 extern dboolean setsizeneeded;

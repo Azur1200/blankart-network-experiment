@@ -17,7 +17,7 @@
 extern "C" {
 #endif
 
-extern UINT16 current_port;
+extern uint16_t current_port;
 
 /**	\brief	The I_InitTcpNetwork function
 

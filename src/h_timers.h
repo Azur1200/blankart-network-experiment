@@ -46,16 +46,16 @@ typedef enum timerflags_e
 extern consvar_t cv_itemtimers;
 extern consvar_t cv_itemtimers_mode;
 extern tic_t spbTimers[MAXPLAYERS];
-UINT8 K_GetBestRank(void);
+uint8_t K_GetBestRank(void);
 void K_UpdateSPBTimer(void);
 // Adds an item timer.
 void K_AddItemTimerEx(
 	const char *name,
 	lua_Integer timer_func_ref,
 	const char **patches,
-	INT32 patches_size,
-	INT32 anim_duration,
-	UINT32 flags, dboolean unsorted);
+	int32_t patches_size,
+	int32_t anim_duration,
+	uint32_t flags, dboolean unsorted);
 void K_DisplayItemTimers(void);
 void K_getTimersDrawinfo(drawinfo_t *out);
 

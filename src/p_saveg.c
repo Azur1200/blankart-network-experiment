@@ -56,7 +56,7 @@
 
 savedata_t savedata;
 
-static UINT8 P_SyncUINT8(savebuffer_t *save, UINT8 v)
+static uint8_t P_SyncUINT8(savebuffer_t *save, uint8_t v)
 {
 	if (save->write)
 	{
@@ -67,18 +67,18 @@ static UINT8 P_SyncUINT8(savebuffer_t *save, UINT8 v)
 		return READUINT8(save->p);
 }
 
-static SINT8 P_SyncSINT8(savebuffer_t *save, SINT8 v)
+static int8_t P_SyncSINT8(savebuffer_t *save, int8_t v)
 {
 	if (save->write)
 	{
-		WRITESINT8(save->p,v);
+		WRITEINT8(save->p,v);
 		return v;
 	}
 	else
-		return READSINT8(save->p);
+		return READINT8(save->p);
 }
 
-static UINT16 P_SyncUINT16(savebuffer_t *save, UINT16 v)
+static uint16_t P_SyncUINT16(savebuffer_t *save, uint16_t v)
 {
 	if (save->write)
 	{
@@ -89,7 +89,7 @@ static UINT16 P_SyncUINT16(savebuffer_t *save, UINT16 v)
 		return READUINT16(save->p);
 }
 
-static INT16 P_SyncINT16(savebuffer_t *save, INT16 v)
+static int16_t P_SyncINT16(savebuffer_t *save, int16_t v)
 {
 	if (save->write)
 	{
@@ -100,7 +100,7 @@ static INT16 P_SyncINT16(savebuffer_t *save, INT16 v)
 		return READINT16(save->p);
 }
 
-static UINT32 P_SyncUINT32(savebuffer_t *save, UINT32 v)
+static uint32_t P_SyncUINT32(savebuffer_t *save, uint32_t v)
 {
 	if (save->write)
 	{
@@ -111,7 +111,7 @@ static UINT32 P_SyncUINT32(savebuffer_t *save, UINT32 v)
 		return READUINT32(save->p);
 }
 
-static INT32 P_SyncINT32(savebuffer_t *save, INT32 v)
+static int32_t P_SyncINT32(savebuffer_t *save, int32_t v)
 {
 	if (save->write)
 	{
@@ -122,7 +122,7 @@ static INT32 P_SyncINT32(savebuffer_t *save, INT32 v)
 		return READINT32(save->p);
 }
 
-static UINT64 P_SyncUINT64(savebuffer_t *save, UINT32 v)
+static uint64_t P_SyncUINT64(savebuffer_t *save, uint32_t v)
 {
 	if (save->write)
 	{
@@ -133,7 +133,7 @@ static UINT64 P_SyncUINT64(savebuffer_t *save, UINT32 v)
 		return READUINT64(save->p);
 }
 
-static INT64 P_SyncINT64(savebuffer_t *save, INT32 v)
+static int64_t P_SyncINT64(savebuffer_t *save, int32_t v)
 {
 	if (save->write)
 	{
@@ -215,7 +215,7 @@ static void P_SyncMem(savebuffer_t *save, void *s, size_t n)
 
 static player_t *P_SyncPlayer(savebuffer_t *save, player_t *player)
 {
-	UINT8 playernum = P_SyncUINT8(save, player != NULL ? player - players : UINT8_MAX);
+	uint8_t playernum = P_SyncUINT8(save, player != NULL ? player - players : UINT8_MAX);
 
 	if (save->write)
 		return player;
@@ -230,7 +230,7 @@ static player_t *P_SyncPlayer(savebuffer_t *save, player_t *player)
 
 static state_t *P_SyncState(savebuffer_t *save, state_t *state)
 {
-	UINT16 statenum = P_SyncUINT16(save, state != NULL ? state - states : UINT16_MAX);
+	uint16_t statenum = P_SyncUINT16(save, state != NULL ? state - states : UINT16_MAX);
 
 	if (save->write)
 		return state;
@@ -245,7 +245,7 @@ static state_t *P_SyncState(savebuffer_t *save, state_t *state)
 
 static line_t *P_SyncLine(savebuffer_t *save, line_t *line)
 {
-	UINT32 linenum = P_SyncUINT32(save, line != NULL ? line - lines : UINT32_MAX);
+	uint32_t linenum = P_SyncUINT32(save, line != NULL ? line - lines : UINT32_MAX);
 
 	if (save->write)
 		return line;
@@ -260,7 +260,7 @@ static line_t *P_SyncLine(savebuffer_t *save, line_t *line)
 
 static sector_t *P_SyncSector(savebuffer_t *save, sector_t *sector)
 {
-	UINT32 sectornum = P_SyncUINT32(save, sector != NULL ? sector - sectors : UINT32_MAX);
+	uint32_t sectornum = P_SyncUINT32(save, sector != NULL ? sector - sectors : UINT32_MAX);
 
 	if (save->write)
 		return sector;
@@ -275,7 +275,7 @@ static sector_t *P_SyncSector(savebuffer_t *save, sector_t *sector)
 
 static pslope_t *P_SyncSlope(savebuffer_t *save, pslope_t *slope)
 {
-	UINT16 slopeid = P_SyncUINT16(save, slope != NULL ? slope->id : UINT16_MAX);
+	uint16_t slopeid = P_SyncUINT16(save, slope != NULL ? slope->id : UINT16_MAX);
 
 	if (save->write)
 		return slope;
@@ -292,7 +292,7 @@ static pslope_t *P_SyncSlope(savebuffer_t *save, pslope_t *slope)
 static ffloor_t *P_SyncFFloor(savebuffer_t *save, ffloor_t *fof)
 {
 	sector_t *sec = P_SyncSector(save, fof ? fof->target : NULL);
-	UINT16 id = P_SyncUINT16(save, P_GetFFloorID(fof));
+	uint16_t id = P_SyncUINT16(save, P_GetFFloorID(fof));
 
 	if (save->write)
 		return fof;
@@ -308,7 +308,7 @@ static ffloor_t *P_SyncFFloor(savebuffer_t *save, ffloor_t *fof)
 
 static terrain_t *P_SyncTerrain(savebuffer_t *save, terrain_t *terrain)
 {
-	UINT32 terrain_index = P_SyncUINT32(save, terrain != NULL ? K_GetTerrainHeapIndex(terrain) : UINT32_MAX);
+	uint32_t terrain_index = P_SyncUINT32(save, terrain != NULL ? K_GetTerrainHeapIndex(terrain) : UINT32_MAX);
 
 	if (save->write)
 		return terrain;
@@ -338,7 +338,7 @@ static void P_RelinkMobj(savebuffer_t *save, mobj_t **ptr)
 	if (save->write)
 		return;
 
-	UINT32 mobjnum = (UINT32)(uintptr_t)*ptr;
+	uint32_t mobjnum = (uint32_t)(uintptr_t)*ptr;
 	*ptr = NULL;
 
 	if (mobjnum == 0)
@@ -369,7 +369,7 @@ static void P_RelinkWaypoint(savebuffer_t *save, waypoint_t **ptr)
 	if (save->write)
 		return;
 
-	UINT32 index = (UINT32)(uintptr_t)*ptr;
+	uint32_t index = (uint32_t)(uintptr_t)*ptr;
 	*ptr = NULL;
 
 	if (index == UINT32_MAX)
@@ -386,14 +386,14 @@ static void P_RelinkWaypoint(savebuffer_t *save, waypoint_t **ptr)
 // can be used without caveats (assuming world is synced before thinkers)
 
 #define SYNC2(out, in) out = _Generic(in, \
-	SINT8: P_SyncSINT8, \
-	INT16: P_SyncINT16, \
-	INT32: P_SyncINT32, \
-	INT64: P_SyncINT64, \
-	UINT8: P_SyncUINT8, \
-	UINT16: P_SyncUINT16, \
-	UINT32: P_SyncUINT32, \
-	UINT64: P_SyncUINT64, \
+	int8_t: P_SyncSINT8, \
+	int16_t: P_SyncINT16, \
+	int32_t: P_SyncINT32, \
+	int64_t: P_SyncINT64, \
+	uint8_t: P_SyncUINT8, \
+	uint16_t: P_SyncUINT16, \
+	uint32_t: P_SyncUINT32, \
+	uint64_t: P_SyncUINT64, \
 	player_t *: P_SyncPlayer, \
 	state_t *: P_SyncState, \
 	ffloor_t *: P_SyncFFloor, \
@@ -440,10 +440,10 @@ static void P_RelinkWaypoint(savebuffer_t *save, waypoint_t **ptr)
 #define PLYRSYNC_ITEMLIST (PLYRSYNC_TOKEN|1)
 #define PLYRSYNC_RANKPTLOG (PLYRSYNC_TOKEN|2)
 
-static UINT32 P_SyncRankScoreLog(savebuffer_t* save, INT32 pid)
+static uint32_t P_SyncRankScoreLog(savebuffer_t* save, int32_t pid)
 {
-	UINT32 buffer_size = 0;
-	UINT32 i = 0;
+	uint32_t buffer_size = 0;
+	uint32_t i = 0;
 
 	if (save->write)
 	{
@@ -467,7 +467,7 @@ static UINT32 P_SyncRankScoreLog(savebuffer_t* save, INT32 pid)
 
 		cvector_resize(rankscore_tracker[pid], buffer_size, 0);
 
-		INT32 this_rankscore = 0;
+		int32_t this_rankscore = 0;
 
 		for (i = 0; i < buffer_size; i++)
 		{
@@ -487,24 +487,24 @@ static UINT32 P_SyncRankScoreLog(savebuffer_t* save, INT32 pid)
 static inline void P_ArchivePlayer(savebuffer_t *save)
 {
 	const player_t *player = &players[consoleplayer];
-	INT16 skininfo = player->skin;
-	SINT8 pllives = player->lives;
+	int16_t skininfo = player->skin;
+	int8_t pllives = player->lives;
 	if (pllives < startinglivesbalance[numgameovers]) // Bump up to 3 lives if the player
 		pllives = startinglivesbalance[numgameovers]; // has less than that.
 
 	WRITEUINT16(save->p, skininfo);
 	WRITEUINT8(save->p, numgameovers);
-	WRITESINT8(save->p, pllives);
+	WRITEINT8(save->p, pllives);
 	WRITEUINT32(save->p, player->score);
 }
 
 static inline void P_UnArchivePlayer(savebuffer_t *save)
 {
-	INT16 skininfo = READUINT16(save->p);
+	int16_t skininfo = READUINT16(save->p);
 	savedata.skin = skininfo;
 
 	savedata.numgameovers = READUINT8(save->p);
-	savedata.lives = READSINT8(save->p);
+	savedata.lives = READINT8(save->p);
 	savedata.score = READUINT32(save->p);
 }
 
@@ -512,14 +512,14 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 {
 	TracyCZone(__zone, true);
 
-	INT32 i, j;
+	int32_t i, j;
 
 	if (P_SyncUINT32(save, ARCHIVEBLOCK_PLAYERS) != ARCHIVEBLOCK_PLAYERS)
 		I_Error("Bad $$$.sav at archive block Players");
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		SYNCAS(SINT8, adminplayers[i]);
+		SYNCAS(int8_t, adminplayers[i]);
 
 		for (j = 0; j < PWRLV_NUMTYPES; j++)
 		{
@@ -1010,8 +1010,8 @@ static void P_NetSyncParties(savebuffer_t *save)
 {
 	TracyCZone(__zone, true);
 
-	INT32 i, k;
-	UINT8 partySize;
+	int32_t i, k;
+	uint8_t partySize;
 
 	if (P_SyncUINT32(save, ARCHIVEBLOCK_PARTIES) != ARCHIVEBLOCK_PARTIES)
 		I_Error("Bad $$$.sav at archive block Parties");
@@ -1066,7 +1066,7 @@ static void P_NetSyncParties(savebuffer_t *save)
 
 static void P_NetSyncRoundQueue(savebuffer_t *save)
 {
-	UINT8 i;
+	uint8_t i;
 
 	if (P_SyncUINT32(save, ARCHIVEBLOCK_ROUNDQUEUE) != ARCHIVEBLOCK_ROUNDQUEUE)
 		I_Error("Bad $$$.sav at archive block RoundQueue");
@@ -1097,15 +1097,15 @@ static void P_NetSyncRoundQueue(savebuffer_t *save)
 ///
 
 static extracolormap_t *net_colormaps = NULL;
-static UINT32 num_net_colormaps = 0;
-static UINT32 num_ffloors = 0; // for loading
+static uint32_t num_net_colormaps = 0;
+static uint32_t num_ffloors = 0; // for loading
 
 // Copypasta from r_data.c AddColormapToList
 // But also check for equality and return the matching index
-static UINT32 CheckAddNetColormapToList(extracolormap_t *extra_colormap)
+static uint32_t CheckAddNetColormapToList(extracolormap_t *extra_colormap)
 {
 	extracolormap_t *exc, *exc_prev = NULL;
-	UINT32 i = 0;
+	uint32_t i = 0;
 
 	if (!net_colormaps)
 	{
@@ -1131,7 +1131,7 @@ static UINT32 CheckAddNetColormapToList(extracolormap_t *extra_colormap)
 	return i;
 }
 
-static extracolormap_t *GetNetColormapFromList(UINT32 index)
+static extracolormap_t *GetNetColormapFromList(uint32_t index)
 {
 	// For loading, we have to be tricky:
 	// We load the sectors BEFORE knowing the colormap values
@@ -1140,7 +1140,7 @@ static extracolormap_t *GetNetColormapFromList(UINT32 index)
 	// Then when we load the color data, we set up the dummy colormaps
 
 	extracolormap_t *exc, *last_exc = NULL;
-	UINT32 i = 0;
+	uint32_t i = 0;
 
 	if (!net_colormaps) // initialize our list
 		net_colormaps = R_CreateDefaultColormap(false);
@@ -1158,7 +1158,7 @@ static extracolormap_t *GetNetColormapFromList(UINT32 index)
 	if (index >= numsectors*3 + num_ffloors)
 		// if every sector had a unique colormap change AND a fade color thinker which has two colormap entries
 		// AND every ffloor had a fade FOF thinker with one colormap entry
-		I_Error("Colormap %d from server is too high for sectors %d", index, (UINT32)numsectors);
+		I_Error("Colormap %d from server is too high for sectors %d", index, (uint32_t)numsectors);
 
 	// our index doesn't exist, so just make the entry
 	for (; i <= index; i++)
@@ -1197,7 +1197,7 @@ static void P_NetSyncColormaps(savebuffer_t *save)
 	// dummy colormaps. Now that we are loading the color data,
 	// set up the dummies.
 	extracolormap_t *exc, *existing_exc = NULL, *exc_next = NULL;
-	UINT32 i = 0;
+	uint32_t i = 0;
 
 	SYNC(num_net_colormaps);
 
@@ -1227,8 +1227,8 @@ static void P_NetSyncColormaps(savebuffer_t *save)
 		}
 		else
 		{
-			UINT8 fadestart, fadeend, flags;
-			INT32 rgba, fadergba;
+			uint8_t fadestart, fadeend, flags;
+			int32_t rgba, fadergba;
 #ifdef EXTRACOLORMAPLUMPS
 			char lumpname[9];
 #endif
@@ -1378,7 +1378,7 @@ enum ffloordiff_e
 
 static dboolean P_SectorArgsEqual(const sector_t *sc, const sector_t *spawnsc)
 {
-	UINT8 i;
+	uint8_t i;
 	for (i = 0; i < NUM_SCRIPT_ARGS; i++)
 		if (sc->args[i] != spawnsc->args[i])
 			return false;
@@ -1388,7 +1388,7 @@ static dboolean P_SectorArgsEqual(const sector_t *sc, const sector_t *spawnsc)
 
 static dboolean P_SectorStringArgsEqual(const sector_t *sc, const sector_t *spawnsc)
 {
-	UINT8 i;
+	uint8_t i;
 	for (i = 0; i < NUM_SCRIPT_STRINGARGS; i++)
 	{
 		if (sc->stringargs[i] == NULL || spawnsc->stringargs[i] == NULL)
@@ -1447,7 +1447,7 @@ enum linediff_e
 
 static dboolean P_LineArgsEqual(const line_t *li, const line_t *spawnli)
 {
-	UINT8 i;
+	uint8_t i;
 	for (i = 0; i < NUM_SCRIPT_ARGS; i++)
 		if (li->args[i] != spawnli->args[i])
 			return false;
@@ -1457,7 +1457,7 @@ static dboolean P_LineArgsEqual(const line_t *li, const line_t *spawnli)
 
 static dboolean P_LineStringArgsEqual(const line_t *li, const line_t *spawnli)
 {
-	UINT8 i;
+	uint8_t i;
 	for (i = 0; i < NUM_SCRIPT_STRINGARGS; i++)
 	{
 		if (li->stringargs[i] == NULL || spawnli->stringargs[i] == NULL)
@@ -1498,8 +1498,8 @@ static void SyncFFloors(savebuffer_t *save, const sector_t *ss)
 {
 	size_t j = 0; // ss->ffloors is saved as ffloor #0, ss->ffloors->next is #1, etc
 	ffloor_t *rover;
-	UINT16 fflr_i; // saved ffloor "number" of next modified ffloor
-	UINT8 diff[1];
+	uint16_t fflr_i; // saved ffloor "number" of next modified ffloor
+	uint8_t diff[1];
 
 	if (!save->write)
 		fflr_i = READUINT16(save->p); // get first modified ffloor's number ready
@@ -1539,7 +1539,7 @@ static void SyncFFloors(savebuffer_t *save, const sector_t *ss)
 		WRITEUINT16(save->p, 0xffff);
 }
 
-static void DiffSectors(const sector_t *ss, const sector_t *spawnss, UINT8 diff[])
+static void DiffSectors(const sector_t *ss, const sector_t *spawnss, uint8_t diff[])
 {
 	DIFFNE(ss, floorheight, SD_FLOORHT);
 	DIFFNE(ss, ceilingheight, SD_CEILHT);
@@ -1593,7 +1593,7 @@ static void SyncSectors(savebuffer_t *save)
 {
 	size_t i = 0, j = 0;
 	sector_t *sec;
-	UINT8 diff[(SD__MAX>>3) + 1];
+	uint8_t diff[(SD__MAX>>3) + 1];
 
 	for (i = 0;; i++)
 	{
@@ -1614,7 +1614,7 @@ static void SyncSectors(savebuffer_t *save)
 				continue;
 		}
 
-		SYNCAS(UINT16, i);
+		SYNCAS(uint16_t, i);
 
 		if (i == 0xffff)
 			break;
@@ -1763,7 +1763,7 @@ static void SyncSectors(savebuffer_t *save)
 	}
 }
 
-static void DiffLines(const line_t *li, const line_t *spawnli, UINT8 diff[])
+static void DiffLines(const line_t *li, const line_t *spawnli, uint8_t diff[])
 {
 	const side_t *si, *spawnsi;
 
@@ -1806,7 +1806,7 @@ static void SyncLines(savebuffer_t *save)
 	size_t i = 0, j = 0;
 	line_t *li;
 	side_t *si;
-	UINT8 diff[(LD__MAX>>3)+1];
+	uint8_t diff[(LD__MAX>>3)+1];
 
 	for (i = 0;; i++)
 	{
@@ -1827,7 +1827,7 @@ static void SyncLines(savebuffer_t *save)
 				continue;
 		}
 
-		SYNCAS(UINT16, i);
+		SYNCAS(uint16_t, i);
 
 		if (i == 0xffff)
 			break;
@@ -1950,7 +1950,7 @@ static void P_NetSyncWorld(savebuffer_t *save)
 
 static dboolean P_ThingArgsEqual(const mobj_t *mobj, const mapthing_t *mapthing)
 {
-	UINT8 i;
+	uint8_t i;
 	for (i = 0; i < NUM_MAPTHING_ARGS; i++)
 		if (mobj->args[i] != mapthing->args[i])
 			return false;
@@ -1974,7 +1974,7 @@ static dboolean P_ThingArgsEqual(const mobj_t *mobj, const mapthing_t *mapthing)
 
 static dboolean P_ThingScriptEqual(const mobj_t *mobj, const mapthing_t *mapthing)
 {
-	UINT8 i;
+	uint8_t i;
 	if (mobj->special != mapthing->special)
 		return false;
 
@@ -2085,7 +2085,7 @@ static void CalculateDoomednumToMobjtype(void)
 	}
 }
 
-static void DiffMobj(const mobj_t *mobj, UINT32 diff[])
+static void DiffMobj(const mobj_t *mobj, uint32_t diff[])
 {
 	if (mobj->spawnpoint && mobj->info->doomednum != -1)
 	{
@@ -2164,7 +2164,7 @@ static void DiffMobj(const mobj_t *mobj, UINT32 diff[])
 	DIFF(mobj->sprite != mobj->state->sprite, MD_SPRITE);
 	DIFF(mobj->sprite == SPR_PLAY && mobj->sprite2 != (mobj->state->frame&FF_FRAMEMASK), MD_SPRITE);
 	DIFF(mobj->frame != mobj->state->frame, MD_FRAME);
-	DIFF(mobj->anim_duration != (UINT16)mobj->state->var2, MD_FRAME);
+	DIFF(mobj->anim_duration != (uint16_t)mobj->state->var2, MD_FRAME);
 	DIFF(mobj->eflags, MD_EFLAGS);
 	DIFF(mobj->player, MD_PLAYER);
 
@@ -2259,10 +2259,10 @@ dboolean MobjIsNetSynced(mobj_t *mobj)
 	return true;
 }
 
-static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	mobj_t *mobj = (mobj_t *)th;
-	UINT32 diff[(MD__MAX>>5)+1] = {0};
+	uint32_t diff[(MD__MAX>>5)+1] = {0};
 	size_t j;
 
 	if (save->write)
@@ -2307,7 +2307,7 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 		}
 		else
 		{
-			UINT16 spawnpointnum = READUINT16(save->p);
+			uint16_t spawnpointnum = READUINT16(save->p);
 
 			if (mapthings[spawnpointnum].type == 1713) // NiGHTS Hoop special case
 			{
@@ -2397,7 +2397,7 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	if (mobj->sprite == SPR_PLAY)
 		SYNCDEF(MD_SPRITE, mobj->sprite2, mobj->state->frame & FF_FRAMEMASK);
 	SYNCDEF(MD_FRAME, mobj->frame, mobj->state->frame);
-	SYNCDEF(MD_FRAME, mobj->anim_duration, (UINT16)mobj->state->var2);
+	SYNCDEF(MD_FRAME, mobj->anim_duration, (uint16_t)mobj->state->var2);
 	SYNCF(MD_EFLAGS, mobj->eflags);
 	if (GETB(MD_PLAYER))
 	{
@@ -2452,7 +2452,7 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	if (GETB(MD2_SKIN))
 	{
 		if (save->write)
-			WRITEUINT16(save->p, (UINT16)((skin_t *)mobj->skin)->skinnum);
+			WRITEUINT16(save->p, (uint16_t)((skin_t *)mobj->skin)->skinnum);
 		else
 			R_ApplySkin(mobj, skins[READUINT16(save->p)]);
 	}
@@ -2473,8 +2473,8 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	{
 		if (save->write)
 		{
-			UINT32 rf = mobj->renderflags;
-			UINT32 q = rf & RF_DONTDRAW;
+			uint32_t rf = mobj->renderflags;
+			uint32_t q = rf & RF_DONTDRAW;
 
 			if (q != RF_DONTDRAW // visible for more than one local player
 			&& q != (RF_DONTDRAWP1|RF_DONTDRAWP2|RF_DONTDRAWP3)
@@ -2577,10 +2577,10 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	if (GETB(MD3_VOICE) && mobj->skin)
 	{
 		if (save->write)
-			WRITEUINT16(save->p, (UINT16)(mobj->voice - &((skin_t *)(mobj->skin))->voices[0]));
+			WRITEUINT16(save->p, (uint16_t)(mobj->voice - &((skin_t *)(mobj->skin))->voices[0]));
 		else
 		{
-			UINT16 savedvoice = READUINT16(save->p);
+			uint16_t savedvoice = READUINT16(save->p);
 
 			if (savedvoice > ((skin_t *)(mobj->skin))->numvoices)
 				savedvoice = 0;
@@ -2639,7 +2639,7 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	return &mobj->thinker;
 }
 
-static thinker_t *SyncNoEnemiesThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncNoEnemiesThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	noenemies_t *ht = (void *)th;
 	if (save->write)
@@ -2657,7 +2657,7 @@ static thinker_t *SyncNoEnemiesThinker(savebuffer_t *save, actionf_p1 thinker, t
 	return &ht->thinker;
 }
 
-static thinker_t *SyncBounceCheeseThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncBounceCheeseThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	bouncecheese_t *ht = (void *)th;
 	if (save->write)
@@ -2684,7 +2684,7 @@ static thinker_t *SyncBounceCheeseThinker(savebuffer_t *save, actionf_p1 thinker
 	return &ht->thinker;
 }
 
-static thinker_t *SyncContinuousFallThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncContinuousFallThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	continuousfall_t *ht  = (void *)th;
 	if (save->write)
@@ -2713,7 +2713,7 @@ static thinker_t *SyncContinuousFallThinker(savebuffer_t *save, actionf_p1 think
 	return &ht->thinker;
 }
 
-static thinker_t *SyncMarioBlockThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncMarioBlockThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	mariothink_t *ht = (void *)th;
 	if (save->write)
@@ -2742,7 +2742,7 @@ static thinker_t *SyncMarioBlockThinker(savebuffer_t *save, actionf_p1 thinker, 
 	return &ht->thinker;
 }
 
-static thinker_t *SyncMarioCheckThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncMarioCheckThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	mariocheck_t *ht = (void *)th;
 	if (save->write)
@@ -2762,7 +2762,7 @@ static thinker_t *SyncMarioCheckThinker(savebuffer_t *save, actionf_p1 thinker, 
 	return &ht->thinker;
 }
 
-static thinker_t *SyncThwompThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncThwompThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	thwomp_t *ht = (void *)th;
 	if (save->write)
@@ -2796,7 +2796,7 @@ static thinker_t *SyncThwompThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	return &ht->thinker;
 }
 
-static thinker_t *SyncFloatThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncFloatThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	floatthink_t *ht = (void *)th;
 	if (save->write)
@@ -2817,7 +2817,7 @@ static thinker_t *SyncFloatThinker(savebuffer_t *save, actionf_p1 thinker, think
 	return &ht->thinker;
 }
 
-static thinker_t *SyncEachTimeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncEachTimeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	eachtime_t *ht = (void *)th;
 	if (save->write)
@@ -2842,7 +2842,7 @@ static thinker_t *SyncEachTimeThinker(savebuffer_t *save, actionf_p1 thinker, th
 	return &ht->thinker;
 }
 
-static thinker_t *SyncRaiseThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncRaiseThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	raise_t *ht = (void *)th;
 	if (save->write)
@@ -2868,7 +2868,7 @@ static thinker_t *SyncRaiseThinker(savebuffer_t *save, actionf_p1 thinker, think
 	return &ht->thinker;
 }
 
-static thinker_t *SyncCeilingThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncCeilingThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	ceiling_t *ht = (void *)th;
 	if (save->write)
@@ -2906,7 +2906,7 @@ static thinker_t *SyncCeilingThinker(savebuffer_t *save, actionf_p1 thinker, thi
 	return &ht->thinker;
 }
 
-static thinker_t *SyncFloormoveThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncFloormoveThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	floormove_t *ht = (void *)th;
 	if (save->write)
@@ -2940,7 +2940,7 @@ static thinker_t *SyncFloormoveThinker(savebuffer_t *save, actionf_p1 thinker, t
 	return &ht->thinker;
 }
 
-static thinker_t *SyncLightflashThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncLightflashThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	lightflash_t *ht = (void *)th;
 	if (save->write)
@@ -2962,7 +2962,7 @@ static thinker_t *SyncLightflashThinker(savebuffer_t *save, actionf_p1 thinker, 
 	return &ht->thinker;
 }
 
-static thinker_t *SyncStrobeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncStrobeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	strobe_t *ht = (void *)th;
 	if (save->write)
@@ -2988,7 +2988,7 @@ static thinker_t *SyncStrobeThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	return &ht->thinker;
 }
 
-static thinker_t *SyncGlowThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncGlowThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	glow_t *ht = (void *)th;
 	if (save->write)
@@ -3013,7 +3013,7 @@ static thinker_t *SyncGlowThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	return &ht->thinker;
 }
 
-static thinker_t *SyncFireflickerThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncFireflickerThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	fireflicker_t *ht = (void *)th;
 	if (save->write)
@@ -3038,7 +3038,7 @@ static thinker_t *SyncFireflickerThinker(savebuffer_t *save, actionf_p1 thinker,
 	return &ht->thinker;
 }
 
-static thinker_t *SyncElevatorThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncElevatorThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	dboolean setplanedata = thinker == (actionf_p1)T_MoveElevator;
 	elevator_t *ht = (void *)th;
@@ -3078,7 +3078,7 @@ static thinker_t *SyncElevatorThinker(savebuffer_t *save, actionf_p1 thinker, th
 	return &ht->thinker;
 }
 
-static thinker_t *SyncCrumbleThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncCrumbleThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	crumble_t *ht = (void *)th;
 	if (save->write)
@@ -3111,7 +3111,7 @@ static thinker_t *SyncCrumbleThinker(savebuffer_t *save, actionf_p1 thinker, thi
 	return &ht->thinker;
 }
 
-static thinker_t *SyncScrollThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncScrollThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	scroll_t *ht = (void *)th;
 	if (save->write)
@@ -3139,7 +3139,7 @@ static thinker_t *SyncScrollThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	return &ht->thinker;
 }
 
-static thinker_t *SyncFrictionThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncFrictionThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	friction_t *ht = (void *)th;
 	if (save->write)
@@ -3162,7 +3162,7 @@ static thinker_t *SyncFrictionThinker(savebuffer_t *save, actionf_p1 thinker, th
 	return &ht->thinker;
 }
 
-static thinker_t *SyncPusherThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncPusherThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	pusher_t *ht = (void *)th;
 	if (save->write)
@@ -3189,7 +3189,7 @@ static thinker_t *SyncPusherThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	return &ht->thinker;
 }
 
-static thinker_t *SyncLaserThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncLaserThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	laserthink_t *ht = (void *)th;
 	if (save->write)
@@ -3210,7 +3210,7 @@ static thinker_t *SyncLaserThinker(savebuffer_t *save, actionf_p1 thinker, think
 	return &ht->thinker;
 }
 
-static thinker_t *SyncLightlevelThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncLightlevelThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	lightlevel_t *ht = (void *)th;
 	if (save->write)
@@ -3236,7 +3236,7 @@ static thinker_t *SyncLightlevelThinker(savebuffer_t *save, actionf_p1 thinker, 
 	return &ht->thinker;
 }
 
-static thinker_t *SyncExecutorThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncExecutorThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	executor_t *ht = (void *)th;
 	if (save->write)
@@ -3258,7 +3258,7 @@ static thinker_t *SyncExecutorThinker(savebuffer_t *save, actionf_p1 thinker, th
 	return &ht->thinker;
 }
 
-static thinker_t *SyncDisappearThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncDisappearThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	disappear_t *ht = (void *)th;
 	if (save->write)
@@ -3283,7 +3283,7 @@ static thinker_t *SyncDisappearThinker(savebuffer_t *save, actionf_p1 thinker, t
 	return &ht->thinker;
 }
 
-static thinker_t *SyncFadeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncFadeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	fade_t *ht = (void *)th;
 	if (save->write)
@@ -3338,7 +3338,7 @@ static thinker_t *SyncFadeThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	return &ht->thinker;
 }
 
-static thinker_t *SyncFadeColormapThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncFadeColormapThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	fadecolormap_t *ht = (void *)th;
 	if (save->write)
@@ -3364,7 +3364,7 @@ static thinker_t *SyncFadeColormapThinker(savebuffer_t *save, actionf_p1 thinker
 	return &ht->thinker;
 }
 
-static thinker_t *SyncPlaneDisplaceThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncPlaneDisplaceThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	planedisplace_t *ht = (void *)th;
 	if (save->write)
@@ -3387,7 +3387,7 @@ static thinker_t *SyncPlaneDisplaceThinker(savebuffer_t *save, actionf_p1 thinke
 	return &ht->thinker;
 }
 
-static thinker_t *SyncDynamicLineSlopeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncDynamicLineSlopeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	dynlineplanethink_t *ht = (void *)th;
 	if (save->write)
@@ -3409,7 +3409,7 @@ static thinker_t *SyncDynamicLineSlopeThinker(savebuffer_t *save, actionf_p1 thi
 	return &ht->thinker;
 }
 
-static thinker_t *SyncDynamicVertexSlopeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncDynamicVertexSlopeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	size_t i;
 	dynvertexplanethink_t *ht = (void *)th;
@@ -3435,7 +3435,7 @@ static thinker_t *SyncDynamicVertexSlopeThinker(savebuffer_t *save, actionf_p1 t
 	return &ht->thinker;
 }
 
-static thinker_t *SyncPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	polyrotate_t *ht = (void *)th;
 	if (save->write)
@@ -3457,7 +3457,7 @@ static thinker_t *SyncPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker,
 	return &ht->thinker;
 }
 
-static thinker_t *SyncPolymoveThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncPolymoveThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	polymove_t *ht = (void *)th;
 	if (save->write)
@@ -3481,7 +3481,7 @@ static thinker_t *SyncPolymoveThinker(savebuffer_t *save, actionf_p1 thinker, th
 	return &ht->thinker;
 }
 
-static thinker_t *SyncPolywaypointThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncPolywaypointThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	polywaypoint_t *ht = (void *)th;
 	if (save->write)
@@ -3507,7 +3507,7 @@ static thinker_t *SyncPolywaypointThinker(savebuffer_t *save, actionf_p1 thinker
 	return &ht->thinker;
 }
 
-static thinker_t *SyncPolyslidedoorThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncPolyslidedoorThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	polyslidedoor_t *ht = (void *)th;
 	if (save->write)
@@ -3538,7 +3538,7 @@ static thinker_t *SyncPolyslidedoorThinker(savebuffer_t *save, actionf_p1 thinke
 	return &ht->thinker;
 }
 
-static thinker_t *SyncPolyswingdoorThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncPolyswingdoorThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	polyswingdoor_t *ht = (void *)th;
 	if (save->write)
@@ -3564,7 +3564,7 @@ static thinker_t *SyncPolyswingdoorThinker(savebuffer_t *save, actionf_p1 thinke
 	return &ht->thinker;
 }
 
-static thinker_t *SyncPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	polydisplace_t *ht = (void *)th;
 	if (save->write)
@@ -3587,7 +3587,7 @@ static thinker_t *SyncPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinker
 	return &ht->thinker;
 }
 
-static thinker_t *SyncPolyrotdisplaceThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncPolyrotdisplaceThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	polyrotdisplace_t *ht = (void *)th;
 	if (save->write)
@@ -3610,7 +3610,7 @@ static thinker_t *SyncPolyrotdisplaceThinker(savebuffer_t *save, actionf_p1 thin
 	return &ht->thinker;
 }
 
-static thinker_t *SyncPolyfadeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+static thinker_t *SyncPolyfadeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	polyfade_t *ht = (void *)th;
 	if (save->write)
@@ -3636,7 +3636,7 @@ static thinker_t *SyncPolyfadeThinker(savebuffer_t *save, actionf_p1 thinker, th
 	return &ht->thinker;
 }
 
-typedef thinker_t *thinkersync_f(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type);
+typedef thinker_t *thinkersync_f(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type);
 
 #define ITER_THINKERS \
 	_(P_MobjThinker,        SyncMobjThinker,               tc_mobj) \
@@ -3703,7 +3703,7 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 	thinker_t *currentthinker;
 	thinker_t *next;
 	dboolean restoreNum = false;
-	UINT32 i;
+	uint32_t i;
 
 	if (P_SyncUINT32(save, ARCHIVEBLOCK_THINKERS) != ARCHIVEBLOCK_THINKERS)
 		I_Error("Bad $$$.sav at archive block Thinkers");
@@ -3761,7 +3761,7 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 	for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
 		thinker_t* th = &thlist[i];
-		UINT32 numloaded = 0;
+		uint32_t numloaded = 0;
 		for (;;)
 		{
 			actionf_p1 acp;
@@ -3780,7 +3780,7 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 			}
 			else
 			{
-				UINT8 tclass = READUINT8(save->p); // NOTE: this is normally written within the sync functions
+				uint8_t tclass = READUINT8(save->p); // NOTE: this is normally written within the sync functions
 				if (tclass == tc_end)
 					break;
 				else if (tclass > tc_end)
@@ -3837,8 +3837,8 @@ static void P_NetSyncWaypoints(savebuffer_t *save)
 	TracyCZone(__zone, true);
 
 	waypoint_t *waypoint;
-	UINT32 i;
-	UINT32 numWaypoints = K_GetNumWaypoints();
+	uint32_t i;
+	uint32_t numWaypoints = K_GetNumWaypoints();
 
 	if (P_SyncUINT32(save, ARCHIVEBLOCK_WAYPOINTS) != ARCHIVEBLOCK_WAYPOINTS)
 		I_Error("Bad $$$.sav at archive block Waypoints");
@@ -3861,7 +3861,7 @@ static void P_NetSyncWaypoints(savebuffer_t *save)
 static void P_NetSyncTubeWaypoints(savebuffer_t *save)
 {
 	TracyCZone(__zone, true);
-	INT32 i, j;
+	int32_t i, j;
 
 	for (i = 0; i < NUMTUBEWAYPOINTSEQUENCES; i++)
 	{
@@ -3879,7 +3879,7 @@ static void P_NetSyncTubeWaypoints(savebuffer_t *save)
 // relink to this; the savegame contains the old position in the pointer
 // field copyed in the info field temporarily, but finally we just search
 // for the old position and relink to it.
-mobj_t *P_FindNewPosition(UINT32 oldposition)
+mobj_t *P_FindNewPosition(uint32_t oldposition)
 {
 	thinker_t *th;
 	mobj_t *mobj;
@@ -3913,11 +3913,11 @@ enum pobj_diff_t
 
 static inline void P_SynchPolyObj(savebuffer_t *save, polyobj_t *po)
 {
-	INT32 id;
-	UINT32 angle;
+	int32_t id;
+	uint32_t angle;
 	fixed_t x, y;
-	UINT8 diff[(PD__MAX>>3) + 1] = {0};
-	INT32 j = 0;
+	uint8_t diff[(PD__MAX>>3) + 1] = {0};
+	int32_t j = 0;
 
 	if (save->write)
 	{
@@ -3960,7 +3960,7 @@ static inline void P_SynchPolyObj(savebuffer_t *save, polyobj_t *po)
 
 static inline void P_SyncPolyObjects(savebuffer_t *save)
 {
-	INT32 i, numSavedPolys;
+	int32_t i, numSavedPolys;
 
 	if (P_SyncUINT32(save, ARCHIVEBLOCK_POBJS) != ARCHIVEBLOCK_POBJS)
 		I_Error("Bad $$$.sav at archive block Pobjs");
@@ -3978,7 +3978,7 @@ static void P_RelinkPointers(savebuffer_t *save)
 {
 	thinker_t *currentthinker;
 	mobj_t *mobj;
-	UINT32 i;
+	uint32_t i;
 
 	// use info field (value = oldposition) to relink mobjs
 	for (currentthinker = thlist[THINK_MOBJ].next; currentthinker != &thlist[THINK_MOBJ];
@@ -4168,8 +4168,8 @@ static inline void P_UnArchiveSPGame(savebuffer_t *save, mapnum_t mapoverride)
 static void P_NetSyncRNG(savebuffer_t *save)
 {
 	size_t i;
-	UINT32 init = 0;
-	UINT32 seed = 0;
+	uint32_t init = 0;
+	uint32_t seed = 0;
 
 	const dboolean reading_netsave = (!save->write);
 
@@ -4189,7 +4189,7 @@ static dboolean P_NetSyncMisc(savebuffer_t *save, dboolean resending)
 
 	size_t i, j;
 	size_t numTasks;
-	const INT16 prevgamemap = gamemap;
+	const int16_t prevgamemap = gamemap;
 
 	if (P_SyncUINT32(save, ARCHIVEBLOCK_MISC) != ARCHIVEBLOCK_MISC)
 		I_Error("Bad $$$.sav at archive block Misc");
@@ -4228,14 +4228,14 @@ static dboolean P_NetSyncMisc(savebuffer_t *save, dboolean resending)
 
 	if (save->write)
 	{
-		UINT32 pig = 0;
+		uint32_t pig = 0;
 		for (i = 0; i < MAXPLAYERS; i++)
 			pig |= (playeringame[i] != 0)<<i;
 		WRITEUINT32(save->p, pig);
 	}
 	else
 	{
-		UINT32 pig = READUINT32(save->p);
+		uint32_t pig = READUINT32(save->p);
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
 			playeringame[i] = (pig & (1<<i)) != 0;
@@ -4510,7 +4510,7 @@ static dboolean P_NetSyncMisc(savebuffer_t *save, dboolean resending)
 	SYNC(emeralds);
 	if (save->write)
 	{
-		UINT8 globools = 0;
+		uint8_t globools = 0;
 		if (stagefailed)
 			globools |= 1;
 		if (stoppedclock)
@@ -4519,7 +4519,7 @@ static dboolean P_NetSyncMisc(savebuffer_t *save, dboolean resending)
 	}
 	else
 	{
-		UINT8 globools = READUINT8(save->p);
+		uint8_t globools = READUINT8(save->p);
 		stagefailed = !!(globools & 1);
 		stoppedclock = !!(globools & (1<<1));
 	}
@@ -4639,8 +4639,8 @@ static dboolean P_NetSyncMisc(savebuffer_t *save, dboolean resending)
 		numTasks = READUINT32(save->p);
 		for (i = 0; i < numTasks; i++)
 		{
-			INT16 basetime;
-			INT16 timer;
+			int16_t basetime;
+			int16_t timer;
 			char command[MAXTEXTCMD];
 
 			basetime = READINT16(save->p);
@@ -4661,7 +4661,7 @@ static inline void P_ArchiveLuabanksAndConsistency(savebuffer_t *save)
 {
 	TracyCZone(__zone, true);
 
-	UINT8 i, banksinuse = NUM_LUABANKS;
+	uint8_t i, banksinuse = NUM_LUABANKS;
 
 	while (banksinuse && !luabanks[banksinuse-1])
 		banksinuse--; // get the last used bank
@@ -4688,7 +4688,7 @@ static inline dboolean P_UnArchiveLuabanksAndConsistency(savebuffer_t *save)
 	{
 		case 0xb7: // luabanks marker
 			{
-				UINT8 i, banksinuse = READUINT8(save->p);
+				uint8_t i, banksinuse = READUINT8(save->p);
 				if (banksinuse > NUM_LUABANKS)
 				{
 					CONS_Alert(CONS_ERROR, M_GetText("Corrupt Luabanks! (Too many banks in use)\n"));
@@ -4729,7 +4729,7 @@ void P_SaveNetGame(savebuffer_t *save, dboolean resending)
 
 	thinker_t *th;
 	mobj_t *mobj;
-	UINT32 i = 1; // don't start from 0, it'd be confused with a blank pointer otherwise
+	uint32_t i = 1; // don't start from 0, it'd be confused with a blank pointer otherwise
 
 	save->write = true;
 
@@ -4834,10 +4834,10 @@ dboolean P_LoadNetGame(savebuffer_t *save, dboolean reloading)
 	return ret;
 }
 
-dboolean P_SaveBufferZAlloc(savebuffer_t *save, size_t alloc_size, INT32 tag, void *user)
+dboolean P_SaveBufferZAlloc(savebuffer_t *save, size_t alloc_size, int32_t tag, void *user)
 {
 	I_Assert(save->buffer == NULL);
-	save->buffer = (UINT8 *)Z_Malloc(alloc_size, tag, user);
+	save->buffer = (uint8_t *)Z_Malloc(alloc_size, tag, user);
 
 	if (save->buffer == NULL)
 	{
@@ -4851,7 +4851,7 @@ dboolean P_SaveBufferZAlloc(savebuffer_t *save, size_t alloc_size, INT32 tag, vo
 	return true;
 }
 
-dboolean P_SaveBufferFromExisting(savebuffer_t *save, UINT8 *existing_buffer, size_t existing_size)
+dboolean P_SaveBufferFromExisting(savebuffer_t *save, uint8_t *existing_buffer, size_t existing_size)
 {
 	I_Assert(save->buffer == NULL);
 
@@ -4878,7 +4878,7 @@ dboolean P_SaveBufferFromLump(savebuffer_t *save, lumpnum_t lump)
 		return false;
 	}
 
-	save->buffer = (UINT8 *)W_CacheLumpNum(lump, PU_STATIC);
+	save->buffer = (uint8_t *)W_CacheLumpNum(lump, PU_STATIC);
 
 	if (save->buffer == NULL)
 	{

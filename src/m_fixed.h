@@ -33,7 +33,7 @@ extern "C" {
 #define FRACUNIT (1<<FRACBITS)
 #define FRACHALF (1<<(FRACBITS-1))
 #define FRACMASK (FRACUNIT -1)
-/**	\brief	Redefinition of INT32 as fixed_t
+/**	\brief	Redefinition of int32_t as fixed_t
 	unit used as fixed_t
 */
 
@@ -43,7 +43,7 @@ extern "C" {
 
 #define M_PI_FIXED (M_TAU_FIXED >> 1)
 
-typedef INT32 fixed_t;
+typedef int32_t fixed_t;
 
 /*!
   \brief convert fixed_t into floating number
@@ -86,7 +86,7 @@ FUNCMATH FUNCINLINE static ATTRINLINE tic_t DoubleToTicrate(double f)
 */
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t SecsToFixed(tic_t t)
 {
-	return (fixed_t)(((UINT64)t * FRACUNIT) / (TICRATE));
+	return (fixed_t)(((uint64_t)t * FRACUNIT) / (TICRATE));
 }
 
 /** \brief Converts tens of seconds (in tics) to fixed-point number values; 10 seconds is 1
@@ -98,7 +98,7 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t SecsToFixed(tic_t t)
 */
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t SecsToFixedTens(tic_t t)
 {
-	return (fixed_t)(((UINT64)t * FRACUNIT) / (10 * TICRATE));
+	return (fixed_t)(((uint64_t)t * FRACUNIT) / (10 * TICRATE));
 }
 
 /** \brief 64-bit version of SecsToFixed. Converts seconds (in tics) to fixed-point number values; 1
@@ -108,9 +108,9 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t SecsToFixedTens(tic_t t)
 
 	\return		(sint64_t) seconds as fracunits
 */
-FUNCMATH FUNCINLINE static ATTRINLINE INT64 SecsToFixed64(tic_t t)
+FUNCMATH FUNCINLINE static ATTRINLINE int64_t SecsToFixed64(tic_t t)
 {
-	return (INT64)(((UINT64)t * FRACUNIT) / (TICRATE));
+	return (int64_t)(((uint64_t)t * FRACUNIT) / (TICRATE));
 }
 
 /** \brief 64-bit version of SecsToFixedTens. Converts tens of seconds (in tics) to fixed-point
@@ -120,9 +120,9 @@ FUNCMATH FUNCINLINE static ATTRINLINE INT64 SecsToFixed64(tic_t t)
 
 	\return		(sint64_t) tens of seconds as fracunits
 */
-FUNCMATH FUNCINLINE static ATTRINLINE INT64 SecsToFixedTens64(tic_t t)
+FUNCMATH FUNCINLINE static ATTRINLINE int64_t SecsToFixedTens64(tic_t t)
 {
-	return (INT64)(((UINT64)t * FRACUNIT) / (10 * TICRATE));
+	return (int64_t)(((uint64_t)t * FRACUNIT) / (10 * TICRATE));
 }
 
 // for backwards compat
@@ -141,14 +141,14 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedMul(fixed_t a, fixed_t b)
 {
 	// Need to cast to unsigned before shifting to avoid undefined behaviour
 	// for negative integers
-	return (fixed_t)(((UINT64)((INT64)a * b)) >> FRACBITS);
+	return (fixed_t)(((uint64_t)((int64_t)a * b)) >> FRACBITS);
 }
 
-FUNCMATH FUNCINLINE static ATTRINLINE INT64 FixedMul64(INT64 a, INT64 b)
+FUNCMATH FUNCINLINE static ATTRINLINE int64_t FixedMul64(int64_t a, int64_t b)
 {
 	// Need to cast to unsigned before shifting to avoid undefined behaviour
 	// for negative integers
-	return (INT64)(((UINT64)(a * b)) >> FRACBITS);
+	return (int64_t)(((uint64_t)(a * b)) >> FRACBITS);
 }
 
 /**	\brief	The FixedDiv2 function
@@ -163,7 +163,7 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedDiv2(fixed_t a, fixed_t b)
 {
 	// This does not check for division overflow or division by 0!
 	// That is the caller's responsibility.
-	return (fixed_t)(((INT64)a * FRACUNIT) / b);
+	return (fixed_t)(((int64_t)a * FRACUNIT) / b);
 }
 
 /**	\brief	The FixedInt function
@@ -198,7 +198,7 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedDiv(fixed_t a, fixed_t b)
 /*!
   \brief Converts a percentage into a fixed number.
 */
-FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedPercentage(INT32 percent)
+FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedPercentage(int32_t percent)
 {
 	return FixedDiv((percent * FRACUNIT), 100 * FRACUNIT);
 }
@@ -217,12 +217,12 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedPercentageFloat(float fpercen
 
 */
 FUNCMATH fixed_t FixedSqrt(fixed_t x);
-FUNCMATH INT64 FixedSqrt64(INT64 x);
+FUNCMATH int64_t FixedSqrt64(int64_t x);
 
 // Theoretically, we can feed this any integer value and it'll output an
 // accurate square root * 256.
-#define IntSqrt(x) (INT32)(FixedSqrt(x) / 256)
-#define IntSqrt64(x) (INT64)(FixedSqrt64(x) / 256)
+#define IntSqrt(x) (int32_t)(FixedSqrt(x) / 256)
+#define IntSqrt64(x) (int64_t)(FixedSqrt64(x) / 256)
 
 /**	\brief	The FixedHypot function
 
@@ -381,7 +381,7 @@ struct vector3_t
 
 struct vector3_64_t
 {
-	INT64 x, y, z;
+	int64_t x, y, z;
 };
 
 struct f_vector3_t
@@ -423,7 +423,7 @@ dboolean FV3_IntersectedPlane(const vector3_t *a_triangle, const vector3_t *a_li
 fixed_t FV3_PlaneIntersection(const vector3_t *pOrigin, const vector3_t *pNormal, const vector3_t *rOrigin, const vector3_t *rVector);
 fixed_t FV3_IntersectRaySphere(const vector3_t *rO, const vector3_t *rV, const vector3_t *sO, fixed_t sR);
 vector3_t *FV3_IntersectionPoint(const vector3_t *vNormal, const vector3_t *vLine, fixed_t distance, vector3_t *ReturnVec);
-UINT8 FV3_PointOnLineSide(const vector3_t *point, const vector3_t *line);
+uint8_t FV3_PointOnLineSide(const vector3_t *point, const vector3_t *line);
 dboolean FV3_PointInsideBox(const vector3_t *point, const vector3_t *box);
 
 struct vector4_t
@@ -470,40 +470,40 @@ void FM_Scale(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z);
 // Approach functions, see m_fixed.c for details
 //
 
-INT32 ApproachINT32(INT32 current, INT32 target, INT32 inc, INT32 dec);
-UINT32 ApproachUINT32(UINT32 current, UINT32 target, UINT32 inc, UINT32 dec);
-INT64 ApproachINT64(INT64 current, INT64 target, INT64 inc, INT64 dec);
+int32_t ApproachINT32(int32_t current, int32_t target, int32_t inc, int32_t dec);
+uint32_t ApproachUINT32(uint32_t current, uint32_t target, uint32_t inc, uint32_t dec);
+int64_t ApproachINT64(int64_t current, int64_t target, int64_t inc, int64_t dec);
 fixed_t ApproachFixed(fixed_t current, fixed_t target, fixed_t inc, fixed_t dec);
 
-/** \brief Returns the INT32 value ``current`` after it tries to approach ``target``, going up
+/** \brief Returns the int32_t value ``current`` after it tries to approach ``target``, going up
  or down at most ``delta``.
  *
- * If ``target`` is close to the max or min of INT32, then it's possible to overflow past it
+ * If ``target`` is close to the max or min of int32_t, then it's possible to overflow past it
  without stopping.
 
-	\param current	(INT32) current value
+	\param current	(int32_t) current value
 
-	\param target	(INT32) target value
+	\param target	(int32_t) target value
 
-	\param delta	(INT32) value to increment/decrement by
+	\param delta	(int32_t) value to increment/decrement by
 
-	\return		(INT32) current value after incrementing/decrementing
+	\return		(int32_t) current value after incrementing/decrementing
 */
 #define ApproachOneWayINT32(current, target, delta) (ApproachINT32(current, target, delta, delta))
 
-/** \brief Returns the unsigned INT32 value ``current`` after it tries to approach ``target``,
+/** \brief Returns the unsigned int32_t value ``current`` after it tries to approach ``target``,
  going up or down at most ``delta``.
  *
- * If ``target`` is close to the max or min of UINT32, then it's possible to overflow past it
+ * If ``target`` is close to the max or min of uint32_t, then it's possible to overflow past it
  without stopping.
 
-	\param current	(UINT32) current value
+	\param current	(uint32_t) current value
 
-	\param target	(UINT32) target value
+	\param target	(uint32_t) target value
 
-	\param delta	(UINT32) value to increment/decrement by
+	\param delta	(uint32_t) value to increment/decrement by
 
-	\return		(UINT32) current value after incrementing/decrementing
+	\return		(uint32_t) current value after incrementing/decrementing
 */
 #define ApproachOneWayUINT32(current, target, delta) (ApproachUINT32(current, target, delta, delta))
 

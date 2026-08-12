@@ -94,7 +94,7 @@ consvar_t cv_vidwait = CVAR_INIT ("vid_wait", "On", CV_SAVE, CV_OnOff, NULL);
 static consvar_t cv_stretch = CVAR_INIT ("stretch", "Off", CV_SAVE|CV_NOSHOWHELP, CV_OnOff, NULL);
 static consvar_t cv_alwaysgrabmouse = CVAR_INIT ("alwaysgrabmouse", "Off", CV_SAVE, CV_OnOff, NULL);
 
-UINT8 graphics_started = 0; // Is used in console.c and screen.c
+uint8_t graphics_started = 0; // Is used in console.c and screen.c
 
 // To disable fullscreen at startup; is set in VID_PrepareModeList
 dboolean allow_fullscreen = false;
@@ -111,10 +111,10 @@ static bool disable_mouse = false;
 #define MOUSEBUTTONS_MAX MOUSEBUTTONS
 
 // Total mouse motion X/Y offsets
-static      INT32        mousemovex = 0, mousemovey = 0;
+static      int32_t        mousemovex = 0, mousemovey = 0;
 
 // SDL vars
-static      UINT32    localPalette[256];
+static      uint32_t    localPalette[256];
 static      bool    wrapmouseok = false;
 #define HalfWarpMouse(x,y) if (wrapmouseok) SDL_WarpMouseInWindow(window, (Uint16)(x/2),(Uint16)(y/2))
 static       bool    usesdlsoft = false;
@@ -125,7 +125,7 @@ SDL_Renderer *renderer = NULL;
 static SDL_Texture  *texture = NULL;
 static bool      havefocus = true;
 
-static UINT32 refresh_rate;
+static uint32_t refresh_rate;
 
 static dboolean video_init = false;
 
@@ -145,7 +145,7 @@ static SDL_Surface *icoSurface = NULL;
 #endif
 
 // windowed video modes from which to choose from.
-static INT32 windowedModes[MAXWINMODES][2] =
+static int32_t windowedModes[MAXWINMODES][2] =
 {
 	{2560,1440}, // 1.66
 	{1920,1200}, // 1.60,6.00
@@ -172,8 +172,8 @@ static INT32 windowedModes[MAXWINMODES][2] =
 };
 
 #define CUSTOMMODENUM 9999
-static INT32 custom_width = 0;
-static INT32 custom_height = 0;
+static int32_t custom_width = 0;
+static int32_t custom_height = 0;
 
 static char vidModeName[MAXWINMODES][32];
 static const char *fallback_resolution_name = "Fallback";
@@ -289,7 +289,7 @@ static void Impl_VideoSetupSurfaces(int width, int height)
 
 static SDL_FRect src_rect = { 0, 0, 0, 0 };
 
-static bool SDLSetMode(INT32 width, INT32 height, bool fullscreen, bool reposition)
+static bool SDLSetMode(int32_t width, int32_t height, bool fullscreen, bool reposition)
 {
 	static bool wasfullscreen = false;
 	int fullscreen_type = SDL_WINDOW_FULLSCREEN;
@@ -343,7 +343,7 @@ static bool SDLSetMode(INT32 width, INT32 height, bool fullscreen, bool repositi
 	return true;
 }
 
-static UINT32 VID_GetRefreshRate(void)
+static uint32_t VID_GetRefreshRate(void)
 {
 	int index = SDL_GetDisplayForWindow(window);
 	const SDL_DisplayMode *m;
@@ -364,7 +364,7 @@ static UINT32 VID_GetRefreshRate(void)
 	return m->refresh_rate;
 }
 
-static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
+static int32_t Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 {
 	if (code >= SDL_SCANCODE_A && code <= SDL_SCANCODE_Z)
 	{
@@ -517,13 +517,13 @@ static void VID_Command_NumModes_f (void)
 
 static void VID_Command_ModeList_f(void)
 {
-	for (INT32 i = 0; i < MAXWINMODES; i++)
+	for (int32_t i = 0; i < MAXWINMODES; i++)
 		CONS_Printf("%2d: %dx%d\n", i, windowedModes[i][0], windowedModes[i][1]);
 }
 
 static void VID_Command_Mode_f (void)
 {
-	INT32 modenum;
+	int32_t modenum;
 
 	if (COM_Argc()!= 2)
 	{
@@ -560,10 +560,10 @@ static void Impl_SetFocused(dboolean focused)
 	}
 }
 
-static INT32 SDLJoyAxis(const Sint16 axis, UINT8 pid)
+static int32_t SDLJoyAxis(const Sint16 axis, uint8_t pid)
 {
 	// -32768 to 32767
-	INT32 raxis = axis / 32;
+	int32_t raxis = axis / 32;
 
 	if (Joystick[pid].bGamepadStyle)
 	{
@@ -638,7 +638,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 	}
 }
 
-static INT32 Impl_SDL_Keysym_To_Keycode(SDL_KeyboardEvent evt)
+static int32_t Impl_SDL_Keysym_To_Keycode(SDL_KeyboardEvent evt)
 {
 	SDL_Keycode keycode = evt.key;
 	SDL_Scancode scancode = evt.scancode;
@@ -742,7 +742,7 @@ void I_SetTextInput(dboolean enable)
 }
 
 // Get the equivalent ASCII (Unicode?) character for a keypress.
-static INT32 GetTypedChar(SDL_KeyboardEvent evt)
+static int32_t GetTypedChar(SDL_KeyboardEvent evt)
 {
 	SDL_Event next_event;
 	SDL_Keycode keycode = evt.key;
@@ -1001,11 +1001,11 @@ static void Impl_HandleControllerButtonEvent(SDL_GamepadButtonEvent evt, Uint32 
 		return;
 	}
 
-	UINT8 button = evt.button;
+	uint8_t button = evt.button;
 	if (button >= JOYBUTTONS)
 		return;
 
-	for (INT32 i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	for (int32_t i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		if (controllerInfo[i].dev == NULL || controllerInfo[i].id != evt.which)
 			continue;
@@ -1084,7 +1084,7 @@ static void Impl_HandleControllerSensorEvent(SDL_GamepadSensorEvent evt)
 
 static void Impl_HandleControllerAddEvent(SDL_Event evt)
 {
-	UINT8 i;
+	uint8_t i;
 	SDL_JoystickID joystick_id = evt.gdevice.which;
 
 	if (joystick_id == 0)
@@ -1109,7 +1109,7 @@ static void Impl_HandleControllerAddEvent(SDL_Event evt)
 
 static void Impl_HandleControllerRemoveEvent(SDL_Event evt)
 {
-	UINT8 i;
+	uint8_t i;
 	SDL_JoystickID joystick_id = evt.gdevice.which;
 
 	if (joystick_id == 0)
@@ -1138,7 +1138,7 @@ void I_GetEvent(void)
 	SDL_Event evt;
 	const char* dropped_filedir;
 
-	UINT8 i;
+	uint8_t i;
 
 	mousemovex = mousemovey = 0;
 
@@ -1202,8 +1202,8 @@ void I_GetEvent(void)
 		event.type = ev_mouse;
 		event.device = 0; // TODO device
 		event.data1 = 0;
-		event.data2 = (INT32)lround(mousemovex * ((float)wwidth / (float)vid.width));
-		event.data3 = (INT32)lround(mousemovey * ((float)wheight / (float)vid.height));
+		event.data2 = (int32_t)lround(mousemovex * ((float)wwidth / (float)vid.width));
+		event.data3 = (int32_t)lround(mousemovey * ((float)wheight / (float)vid.height));
 		D_PostEvent(&event);
 	}
 
@@ -1367,12 +1367,12 @@ void I_FinishUpdate(void)
 		int pitch;
 		SDL_LockTexture(texture, NULL, &pixels, &pitch);
 		int step = pitch / 4 - vid.width;
-		UINT32 *restrict dst = (UINT32*)pixels;
-		UINT8 *restrict src = vid.screens[0];
-		UINT32 *restrict palette = localPalette;
+		uint32_t *restrict dst = (uint32_t*)pixels;
+		uint8_t *restrict src = vid.screens[0];
+		uint32_t *restrict palette = localPalette;
 		for (int32_t y = 0; y < vid.height; y++)
 		{
-			UINT8 *restrict end = src + vid.width;
+			uint8_t *restrict end = src + vid.width;
 			do *dst++ = palette[*src++];
 			while (src < end);
 			dst += step;
@@ -1405,7 +1405,7 @@ void I_FinishUpdate(void)
 //
 void I_UpdateNoVsync(void)
 {
-	INT32 real_vidwait = cv_vidwait.value;
+	int32_t real_vidwait = cv_vidwait.value;
 	cv_vidwait.value = 0;
 	I_FinishUpdate();
 	cv_vidwait.value = real_vidwait;
@@ -1414,7 +1414,7 @@ void I_UpdateNoVsync(void)
 //
 // I_ReadScreen
 //
-void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
+void I_ReadScreen(uint8_t * restrict scr, int32_t scale)
 {
 	if (rendermode != render_soft)
 		I_Error ("I_ReadScreen: called while in non-software mode");
@@ -1424,10 +1424,10 @@ void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 			vid.rowbytes, vid.rowbytes);
 	else
 	{
-		UINT8 * restrict source = vid.screens[0];
+		uint8_t * restrict source = vid.screens[0];
 		uintptr_t w = vid.width/scale*scale, h = vid.height/scale*scale;
 
-		// size_t saves a lea + movsxd over INT32. mind your types!
+		// size_t saves a lea + movsxd over int32_t. mind your types!
 		// uintptr_t is even better since it's guaranteed to be the size of a pointer
 		for (uintptr_t y = 0; y < h; y += scale)
 			for (uintptr_t x = 0; x < w; x += scale)
@@ -1451,12 +1451,12 @@ void I_SetPalette(RGBA_t *palette)
 }
 
 // return number of fullscreen + X11 modes
-INT32 VID_NumModes(void)
+int32_t VID_NumModes(void)
 {
 	return MAXWINMODES;
 }
 
-const char *VID_GetModeName(INT32 modeNum)
+const char *VID_GetModeName(int32_t modeNum)
 {
 
 	if (modeNum == -1)
@@ -1468,7 +1468,7 @@ const char *VID_GetModeName(INT32 modeNum)
 	return &vidModeName[modeNum][0];
 }
 
-INT32 VID_GetModeForSize(INT32 w, INT32 h)
+int32_t VID_GetModeForSize(int32_t w, int32_t h)
 {
 	int i;
 	for (i = 0; i < MAXWINMODES; i++)
@@ -1584,7 +1584,7 @@ dboolean VID_CheckRenderer(void)
 	return rendererchanged;
 }
 
-INT32 VID_SetMode(INT32 modeNum)
+int32_t VID_SetMode(int32_t modeNum)
 {
 	SDLdoUngrabMouse();
 
@@ -1763,7 +1763,7 @@ void I_StartupGraphics(void)
 	// Takes priority over the config.
 	if (M_CheckParm("-renderer"))
 	{
-		INT32 i = 0;
+		int32_t i = 0;
 		CV_PossibleValue_t *renderer_list = cv_renderer_t;
 		const char *modeparm = M_GetNextParm();
 		while (renderer_list[i].strvalue)
@@ -1885,7 +1885,7 @@ void I_ShutdownGraphics(void)
 	framebuffer = false;
 }
 
-UINT32 I_GetRefreshRate(void)
+uint32_t I_GetRefreshRate(void)
 {
 	// Moved to VID_GetRefreshRate.
 	// Precalculating it like that won't work as

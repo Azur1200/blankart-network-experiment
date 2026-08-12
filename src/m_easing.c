@@ -47,8 +47,8 @@ static fixed_t logtabdec[FRACBITS] =
 
 static fixed_t fixlog2(fixed_t a)
 {
-	UINT32 x = a, y = 0;
-	INT32 t, i, shift = 8;
+	uint32_t x = a, y = 0;
+	int32_t t, i, shift = 8;
 
 	if (x > FRACUNIT)
 		x = FixedDiv(FRACUNIT, x);
@@ -93,9 +93,9 @@ static fixed_t fixlog2(fixed_t a)
 }
 
 // Notice how this is symmetric to fixlog2.
-static INT32 fixexp(fixed_t a)
+static int32_t fixexp(fixed_t a)
 {
-	UINT32 x, y;
+	uint32_t x, y;
 	fixed_t t, i, shift = 8;
 
 	// Underflow prevention.

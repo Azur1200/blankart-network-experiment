@@ -43,7 +43,7 @@ strbuf_t *skincolornames;
 strbuf_t *menunames;
 strbuf_t *kartitemnames;
 
-UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
+uint8_t used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
 const char *DEH_MobjtypeName(mobjtype_t i)
 {
@@ -83,7 +83,7 @@ const char *DEH_KartItemName(kartitemtype_e i)
 mobjtype_t DEH_FindMobjtype(const char *word)
 {
 	mobjtype_t i;
-	UINT32 hash = HASH32(word, strlen(word));
+	uint32_t hash = HASH32(word, strlen(word));
 	for (i = 0; i < nummobjtypes; i++) {
 		if (hash != mobjinfo[i].info.namehash)
 			continue;
@@ -96,7 +96,7 @@ mobjtype_t DEH_FindMobjtype(const char *word)
 statenum_t DEH_FindState(const char *word)
 {
 	statenum_t i;
-	UINT32 hash = HASH32(word, strlen(word));
+	uint32_t hash = HASH32(word, strlen(word));
 	for (i = 0; i < numstates; i++) {
 		if (hash != states[i].info.namehash)
 			continue;
@@ -109,7 +109,7 @@ statenum_t DEH_FindState(const char *word)
 skincolornum_t DEH_FindSkincolor(const char *word)
 {
 	skincolornum_t i;
-	UINT32 hash = HASH32(word, strlen(word));
+	uint32_t hash = HASH32(word, strlen(word));
 	for (i = 0; i < numskincolors; i++) {
 		if (hash != skincolors[i].info.namehash)
 			continue;
@@ -122,7 +122,7 @@ skincolornum_t DEH_FindSkincolor(const char *word)
 menutype_t DEH_FindMenutype(const char *word)
 {
 	menutype_t i;
-	UINT32 hash = HASH32(word, strlen(word));
+	uint32_t hash = HASH32(word, strlen(word));
 	for (i = 0; i < nummenutypes; i++) {
 		if (hash != menudefs[i].info.namehash)
 			continue;
@@ -134,7 +134,7 @@ menutype_t DEH_FindMenutype(const char *word)
 
 menupaneldef_t *DEH_FindMenuPanel(const char *word)
 {
-	UINT32 hash = HASH32(word, strlen(word));
+	uint32_t hash = HASH32(word, strlen(word));
 	for (size_t i = 0; i < nummenupanels; i++) {
 		menupaneldef_t *pd = &menupanels[i];
 		if (hash != pd->info.namehash)
@@ -147,7 +147,7 @@ menupaneldef_t *DEH_FindMenuPanel(const char *word)
 
 menuitemstyle_t *DEH_FindMenuItemStyle(const char *word)
 {
-	UINT32 hash = HASH32(word, strlen(word));
+	uint32_t hash = HASH32(word, strlen(word));
 	for (size_t i = 0; i < nummenuitemstyles; i++) {
 		menuitemstyle_t *style = &menuitemstyles[i];
 		if (hash != style->info.namehash)
@@ -161,7 +161,7 @@ menuitemstyle_t *DEH_FindMenuItemStyle(const char *word)
 kartitemtype_e DEH_FindKartItem(const char *word)
 {
 	kartitemtype_e i;
-	UINT32 hash = HASH32(word, strlen(word));
+	uint32_t hash = HASH32(word, strlen(word));
 	for (i = 0; i < numkartitems; i++) {
 		if (hash != kartitems[i].info.namehash)
 			continue;
@@ -982,7 +982,7 @@ struct int_const_s const INT_CONST[] = {
 	// the value to 0 or something.
 
 	// integer type limits, from doomtype.h
-	// INT64 and UINT64 limits not included, they're too big for most purposes anyway
+	// int64_t and uint64_t limits not included, they're too big for most purposes anyway
 	// signed
 	{"INT8_MIN",INT8_MIN},
 	{"INT16_MIN",INT16_MIN},

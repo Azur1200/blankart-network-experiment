@@ -64,9 +64,9 @@
 tic_t leveltime;
 dboolean thinkersCompleted;
 
-UINT32 thinker_era = 0;
+uint32_t thinker_era = 0;
 
-INT32 P_AltFlip(INT32 n, tic_t tics)
+int32_t P_AltFlip(int32_t n, tic_t tics)
 {
 	return leveltime % (2 * tics) < tics ? n : -(n);
 }
@@ -84,8 +84,8 @@ thinker_t thlist[NUM_THINKERLISTS];
 
 void Command_Numthinkers_f(void)
 {
-	INT32 num;
-	INT32 count = 0;
+	int32_t num;
+	int32_t count = 0;
 	actionf_p1 action;
 	thinker_t *think;
 	thinklistnum_t start = 0;
@@ -161,7 +161,7 @@ void Command_CountMobjs_f(void)
 {
 	thinker_t *th;
 	mobjtype_t i;
-	INT32 count;
+	int32_t count;
 
 	if (gamestate != GS_LEVEL)
 	{
@@ -222,7 +222,7 @@ void Command_CountMobjs_f(void)
 //
 void P_InitThinkers(void)
 {
-	UINT8 i;
+	uint8_t i;
 
 	P_InvalidateThinkersWithoutInit();
 
@@ -339,7 +339,7 @@ void P_RemoveThinkerDelayed(thinker_t *thinker)
 		// the removed mobj is removed after the other object
 		// thinks, the reference management is delayed by one
 		// tic (or two?)
-		const UINT8 delay = 2;
+		const uint8_t delay = 2;
 
 		if (thinker->debug_time > leveltime)
 		{
@@ -524,12 +524,12 @@ static void P_RunThinkers(void)
 static void P_DoAutobalanceTeams(void)
 {
 	changeteam_union NetPacket;
-	UINT16 usvalue;
-	INT32 i=0;
-	INT32 red=0, blue=0;
-	INT32 redarray[MAXPLAYERS], bluearray[MAXPLAYERS];
-	//INT32 redflagcarrier = 0, blueflagcarrier = 0;
-	INT32 totalred = 0, totalblue = 0;
+	uint16_t usvalue;
+	int32_t i=0;
+	int32_t red=0, blue=0;
+	int32_t redarray[MAXPLAYERS], bluearray[MAXPLAYERS];
+	//int32_t redflagcarrier = 0, blueflagcarrier = 0;
+	int32_t totalred = 0, totalblue = 0;
 
 	NetPacket.value.l = NetPacket.value.b = 0;
 	memset(redarray, 0, sizeof(redarray));
@@ -608,7 +608,7 @@ static void P_DoAutobalanceTeams(void)
 void P_DoTeamscrambling(void)
 {
 	changeteam_union NetPacket;
-	UINT16 usvalue;
+	uint16_t usvalue;
 	NetPacket.value.l = NetPacket.value.b = 0;
 
 	// Only do it if we have enough room in the net buffer to send it.
@@ -666,7 +666,7 @@ static fixed_t FixedAngleDifference(fixed_t angle1, fixed_t angle2 )
     return diff < -(180<<FRACBITS) ? diff + (360<<FRACBITS) : diff;
 }
 
-static void P_HandleCameraFreelookYaw(UINT8 pnum, player_t *player, camera_t *cam)
+static void P_HandleCameraFreelookYaw(uint8_t pnum, player_t *player, camera_t *cam)
 {
 	if (menustack[0])
 		return;
@@ -685,8 +685,8 @@ static void P_HandleCameraFreelookYaw(UINT8 pnum, player_t *player, camera_t *ca
 			{
 				case FREELOOKSTYLE_FLICK:
 					{
-						INT32 flickstick_xaxis = G_PlayerInputAnalog(pnum, gc_flickstick_right, false, DEADZONE_NONE) - G_PlayerInputAnalog(pnum, gc_flickstick_left, false, DEADZONE_NONE);
-						INT32 flickstick_yaxis = G_PlayerInputAnalog(pnum, gc_flickstick_back, false, DEADZONE_NONE) - G_PlayerInputAnalog(pnum, gc_flickstick_forward, false, DEADZONE_NONE);
+						int32_t flickstick_xaxis = G_PlayerInputAnalog(pnum, gc_flickstick_right, false, DEADZONE_NONE) - G_PlayerInputAnalog(pnum, gc_flickstick_left, false, DEADZONE_NONE);
+						int32_t flickstick_yaxis = G_PlayerInputAnalog(pnum, gc_flickstick_back, false, DEADZONE_NONE) - G_PlayerInputAnalog(pnum, gc_flickstick_forward, false, DEADZONE_NONE);
 						fixed_t tilt = FixedHypot(abs(flickstick_xaxis) * FRACUNIT, abs(flickstick_yaxis) * FRACUNIT);
 
 						if (abs(tilt) >= ((JOYAXISRANGE * G_GetDeadZoneType(pnum, DEADZONE_2D))))
@@ -702,7 +702,7 @@ static void P_HandleCameraFreelookYaw(UINT8 pnum, player_t *player, camera_t *ca
 					break;
 				case FREELOOKSTYLE_ROTATIONAL:
 					{
-						INT32 flickstick_xaxis = G_PlayerInputAnalog(pnum, gc_flickstick_right, false, DEADZONE_X) - G_PlayerInputAnalog(pnum, gc_flickstick_left, false, DEADZONE_X);
+						int32_t flickstick_xaxis = G_PlayerInputAnalog(pnum, gc_flickstick_right, false, DEADZONE_X) - G_PlayerInputAnalog(pnum, gc_flickstick_left, false, DEADZONE_X);
 						if (flickstick_xaxis == 0 && 
 							(((player->cmd.buttons & (BT_ACCELERATE|BT_BRAKE)) != 0 && !(player->spectator || cam->freecam)) ||
 							((player->spectator || cam->freecam) && G_PlayerInputDown(pnum, gc_camreset, false, DEADZONE_BUTTON)))
@@ -763,13 +763,13 @@ static void P_HandleCameraFreelookYaw(UINT8 pnum, player_t *player, camera_t *ca
 
 void P_RunChaseCameras(void)
 {
-	UINT8 i;
+	uint8_t i;
 
 	for (i = 0; i <= r_splitscreen; i++)
 	{
 		if (camera[i].chase)
 		{
-			INT32 forplayer = displayplayers[i];
+			int32_t forplayer = displayplayers[i];
 			player_t *p = &players[forplayer];
 			camera_t *cam = &camera[i];
 
@@ -809,7 +809,7 @@ void P_Ticker(dboolean run)
 {
 	TracyCZone(__zone, true);
 
-	INT32 i;
+	int32_t i;
 
 	thinkersCompleted = false;
 
@@ -916,7 +916,7 @@ void P_Ticker(dboolean run)
 		K_LogPlayerRankScores();
 
 		// OK! Now that we got all of that sorted, players can think!
-		UINT8 p = 0;
+		uint8_t p = 0;
 		{
 			TracyCZoneN(__zone, "PlayerThink", true);
 			for (i = 0; i < MAXPLAYERS; i++)

@@ -64,7 +64,7 @@ BatchingState *cst = &stateStack[0];
 
 // contains sorted order (array indices) for drawCalls
 // (therefore size and capacity shared with it)
-UINT32* drawCallOrder = NULL;
+uint32_t* drawCallOrder = NULL;
 
 // contains subset of sorted vertices and texture coordinates to be sent to gpu
 FOutVector* finalVertices = NULL;
@@ -73,7 +73,7 @@ int finalVerticesCapacity = 65536;
 
 // contains vertex indices into finalVertices for glDrawElements,
 // taking into account fan->triangles conversion
-UINT32* finalIndices = NULL; // this is alloced with 3x finalVertices size
+uint32_t* finalIndices = NULL; // this is alloced with 3x finalVertices size
 int finalIndicesSize = 0;
 
 // Enables batching mode. HWR_ProcessPolygon will collect polygons instead of passing them directly to the rendering backend.
@@ -95,8 +95,8 @@ void HWR_StartBatching(void)
 	if (!finalVertices)
 	{
 		finalVertices = malloc(finalVerticesCapacity * sizeof(FOutVector));
-		finalIndices = malloc(finalVerticesCapacity * 3 * sizeof(UINT32));
-		drawCallOrder = malloc(cst->drawCallsCapacity * sizeof(UINT32));
+		finalIndices = malloc(finalVerticesCapacity * 3 * sizeof(uint32_t));
+		drawCallOrder = malloc(cst->drawCallsCapacity * sizeof(uint32_t));
 	}
 
 	cst->currently_batching = true;
@@ -150,7 +150,7 @@ static void HWR_CollectDrawCallInfo(FSurfaceInfo *pSurf, FUINT iNumPts, FBITFIEL
 		cst->drawCalls = new_array;
 		// also need to redo the index array, dont need to copy it though
 		free(drawCallOrder);
-		drawCallOrder = malloc(cst->drawCallsCapacity * sizeof(UINT32));
+		drawCallOrder = malloc(cst->drawCallsCapacity * sizeof(uint32_t));
 	}
 	// add entry to array
 	cst->drawCalls[cst->drawCallsSize].surf = *pSurf;
@@ -226,14 +226,14 @@ void HWR_PopBatchingState(void)
 
 static int compareDrawCalls(const void *p1, const void *p2)
 {
-	UINT32 index1 = *(const UINT32*)p1;
-	UINT32 index2 = *(const UINT32*)p2;
+	uint32_t index1 = *(const uint32_t*)p1;
+	uint32_t index2 = *(const uint32_t*)p2;
 	DrawCallInfo* poly1 = &cst->drawCalls[index1];
 	DrawCallInfo* poly2 = &cst->drawCalls[index2];
 	int diff;
-	INT64 diff64;
-	UINT32 downloaded1 = 0;
-	UINT32 downloaded2 = 0;
+	int64_t diff64;
+	uint32_t downloaded1 = 0;
+	uint32_t downloaded2 = 0;
 
 	int shader1 = poly1->shader;
 	int shader2 = poly2->shader;
@@ -295,12 +295,12 @@ static int compareDrawCallsNoShaders(const void *p1, const void *p2)
 	DrawCallInfo* poly1 = &cst->drawCalls[index1];
 	DrawCallInfo* poly2 = &cst->drawCalls[index2];
 	int diff;
-	INT64 diff64;
+	int64_t diff64;
 
 	GLMipmap_t *texture1 = poly1->texture;
 	GLMipmap_t *texture2 = poly2->texture;
-	UINT32 downloaded1 = 0;
-	UINT32 downloaded2 = 0;
+	uint32_t downloaded1 = 0;
+	uint32_t downloaded2 = 0;
 	if (poly1->polyFlags & PF_NoTexture || poly1->horizonSpecial)
 		texture1 = NULL;
 	if (poly2->polyFlags & PF_NoTexture || poly2->horizonSpecial)
@@ -335,7 +335,7 @@ static void HWR_CollectVerticesIntoBatch(DrawCallInfo *drawCall)
 	while (finalVerticesSize + numVerts > finalVerticesCapacity)
 	{
 		FOutVector* new_array;
-		UINT32* new_index_array;
+		uint32_t* new_index_array;
 		finalVerticesCapacity *= 2;
 		new_array = malloc(finalVerticesCapacity * sizeof(FOutVector));
 		memcpy(new_array, finalVertices, finalVerticesSize * sizeof(FOutVector));
@@ -343,8 +343,8 @@ static void HWR_CollectVerticesIntoBatch(DrawCallInfo *drawCall)
 		finalVertices = new_array;
 		// also increase size of index array, 3x of vertex array since
 		// going from fans to triangles increases vertex count to 3x
-		new_index_array = malloc(finalVerticesCapacity * 3 * sizeof(UINT32));
-		memcpy(new_index_array, finalIndices, finalIndicesSize * sizeof(UINT32));
+		new_index_array = malloc(finalVerticesCapacity * 3 * sizeof(uint32_t));
+		memcpy(new_index_array, finalIndices, finalIndicesSize * sizeof(uint32_t));
 		free(finalIndices);
 		finalIndices = new_index_array;
 	}
@@ -478,9 +478,9 @@ void HWR_RenderBatches(void)
 	// sort the draw calls
 	PS_START_TIMING(ps_hw_batchsorttime);
 	if (cv_glshaders.value && gl_shadersavailable)
-		qs22j(drawCallOrder, cst->drawCallsSize, sizeof(UINT32), compareDrawCalls);
+		qs22j(drawCallOrder, cst->drawCallsSize, sizeof(uint32_t), compareDrawCalls);
 	else
-		qs22j(drawCallOrder, cst->drawCallsSize, sizeof(UINT32), compareDrawCallsNoShaders);
+		qs22j(drawCallOrder, cst->drawCallsSize, sizeof(uint32_t), compareDrawCallsNoShaders);
 	PS_STOP_TIMING(ps_hw_batchsorttime);
 	// sort grouping order
 	// 1. shader

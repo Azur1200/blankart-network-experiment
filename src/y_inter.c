@@ -67,27 +67,27 @@
 typedef struct
 {
 	char patch[9];
-	 INT32 points;
-	UINT8 display;
+	 int32_t points;
+	uint8_t display;
 } y_bonus_t;
 
 typedef struct
 {
-	INT32 *character[MAXPLAYERS]; // Winner's character #
-	UINT16 *color[MAXPLAYERS]; // Winner's color #
-	SINT8 num[MAXPLAYERS]; // Winner's player #
+	int32_t *character[MAXPLAYERS]; // Winner's character #
+	uint16_t *color[MAXPLAYERS]; // Winner's color #
+	int8_t num[MAXPLAYERS]; // Winner's player #
 	char *name[MAXPLAYERS]; // Winner's name
 
-	UINT8 numplayers; // Number of players being displayed
+	uint8_t numplayers; // Number of players being displayed
 
 	char levelstring[64]; // holds levelnames up to 64 characters
 
 	// SRB2kart
-	INT32 increase[MAXPLAYERS]; // how much did the score increase by?
-	UINT8 jitter[MAXPLAYERS]; // wiggle
+	int32_t increase[MAXPLAYERS]; // how much did the score increase by?
+	uint8_t jitter[MAXPLAYERS]; // wiggle
 
-	UINT32 val[MAXPLAYERS]; // Gametype-specific value
-	UINT8 pos[MAXPLAYERS]; // player positions. used for ties
+	uint32_t val[MAXPLAYERS]; // Gametype-specific value
+	uint8_t pos[MAXPLAYERS]; // player positions. used for ties
 
 	dboolean rankingsmode; // rankings mode
 	dboolean gradingmode; // Displaying the player's final rankscore
@@ -101,22 +101,22 @@ static y_data data;
 static patch_t *bgtile = NULL;      // SPECTILE/SRB2BACK
 static patch_t *interpic = NULL;    // custom picture defined in map header
 
-static INT32 timer;
+static int32_t timer;
 static dboolean freezetimer = false;
 
 static dboolean useinterpic;
 
-static INT32 powertype = PWRLV_DISABLED;
-static UINT8 *y_screenbuffer;
+static int32_t powertype = PWRLV_DISABLED;
+static uint8_t *y_screenbuffer;
 
-static INT32 intertic;
-static INT32 endtic = -1;
-static INT32 sorttic = -1;
-static INT32 rolltic = -1;
-static INT32 ranktic = -1;
-static INT32 slidetic = 0;
+static int32_t intertic;
+static int32_t endtic = -1;
+static int32_t sorttic = -1;
+static int32_t rolltic = -1;
+static int32_t ranktic = -1;
+static int32_t slidetic = 0;
 
-static UINT8 rankresultsphase = 0;
+static uint8_t rankresultsphase = 0;
 
 typedef enum
 {
@@ -138,7 +138,7 @@ static rankresultsmode_e nextrankmode[NUMRANKRESULTSMODES] = {
 
 static fixed_t listscroll_length = 0;
 static dboolean listscroll_reverse = false;
-static INT32 listscroll_delay = 0;
+static int32_t listscroll_delay = 0;
 static fixed_t xscroll = 0;
 
 intertype_t intertype = int_none;
@@ -150,9 +150,9 @@ static void Y_UnloadData(void);
 //
 // SRB2Kart - Y_CalculateMatchData and ancillary functions
 //
-static void Y_CompareTime(INT32 i)
+static void Y_CompareTime(int32_t i)
 {
-	UINT32 val = ((players[i].pflags & PF_NOCONTEST || players[i].realtime == UINT32_MAX)
+	uint32_t val = ((players[i].pflags & PF_NOCONTEST || players[i].realtime == UINT32_MAX)
 		? (UINT32_MAX-1) : players[i].realtime);
 
 	if (!(val < data.val[data.numplayers]))
@@ -162,22 +162,22 @@ static void Y_CompareTime(INT32 i)
 	data.num[data.numplayers] = i;
 }
 
-static void Y_CompareRankScore(INT32 i)
+static void Y_CompareRankScore(int32_t i)
 {
 	// Retired players still have a fighting chance in ranked races
-	INT32 val = players[i].rankscore;
-	INT32 comparevalsigned = (signed)(data.val[data.numplayers]);
+	int32_t val = players[i].rankscore;
+	int32_t comparevalsigned = (signed)(data.val[data.numplayers]);
 
 	if (!(data.val[data.numplayers] == UINT32_MAX || (val > comparevalsigned)))
 		return;
 
-	data.val[data.numplayers] = (UINT32)(val);
+	data.val[data.numplayers] = (uint32_t)(val);
 	data.num[data.numplayers] = i;
 }
 
-static void Y_CompareScore(INT32 i)
+static void Y_CompareScore(int32_t i)
 {
-	UINT32 val = ((players[i].pflags & PF_NOCONTEST)
+	uint32_t val = ((players[i].pflags & PF_NOCONTEST)
 			? (UINT32_MAX-1) : players[i].roundscore);
 
 	if (!(data.val[data.numplayers] == UINT32_MAX
@@ -188,10 +188,10 @@ static void Y_CompareScore(INT32 i)
 	data.num[data.numplayers] = i;
 }
 
-static void Y_CompareRank(INT32 i)
+static void Y_CompareRank(int32_t i)
 {
-	INT32 increase = ((data.increase[i] == INT32_MIN) ? 0 : data.increase[i]);
-	UINT32 score = players[i].score;
+	int32_t increase = ((data.increase[i] == INT32_MIN) ? 0 : data.increase[i]);
+	uint32_t score = players[i].score;
 
 	if (powertype != PWRLV_DISABLED)
 	{
@@ -205,11 +205,11 @@ static void Y_CompareRank(INT32 i)
 	data.num[data.numplayers] = i;
 }
 
-static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
+static void Y_CalculateMatchData(uint8_t rankingsmode, void (*comparison)(int32_t))
 {
-	INT32 i, j;
+	int32_t i, j;
 	dboolean completed[MAXPLAYERS];
-	INT32 numplayersingame = 0;
+	int32_t numplayersingame = 0;
 
 	// Initialize variables
 	if (rankingsmode > 1)
@@ -342,7 +342,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 
 dboolean Y_ItemListActive(void)
 {
-	UINT8 i = 0, nump = 0;
+	uint8_t i = 0, nump = 0;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator)
@@ -394,16 +394,16 @@ void Y_CleanupScreenBuffer(void)
 	y_screenbuffer = NULL;
 }
 
-static void Y_DrawThinStringWithBacking(INT32 x,
-					INT32 y,
-					INT32 backwidth,
-					UINT32 flags,
-					UINT32 backflags,
+static void Y_DrawThinStringWithBacking(int32_t x,
+					int32_t y,
+					int32_t backwidth,
+					uint32_t flags,
+					uint32_t backflags,
 					skincolornum_t color,
 					const char* text)
 {
-	UINT8* cmap = R_GetTranslationColormap(TC_DEFAULT, color, GTC_CACHE);
-	UINT8 fillcolor = V_GetColorFromSkinColorEx(color, 9);
+	uint8_t* cmap = R_GetTranslationColormap(TC_DEFAULT, color, GTC_CACHE);
+	uint8_t fillcolor = V_GetColorFromSkinColorEx(color, 9);
 
 	patch_t* backpatch_left = W_CachePatchName("RNKST1", PU_CACHE);
 	patch_t* backpatch_right = W_CachePatchName("RNKST2", PU_CACHE);
@@ -421,13 +421,13 @@ static void Y_DrawThinStringWithBacking(INT32 x,
 
 static dboolean RankScreenVis_ShowGrade(void)
 {
-	INT32 dupadjust = (vid.scaledwidth), duptweak = (dupadjust - BASEVIDWIDTH) / 2;
+	int32_t dupadjust = (vid.scaledwidth), duptweak = (dupadjust - BASEVIDWIDTH) / 2;
 
-	INT32 screen_x = 0;
+	int32_t screen_x = 0;
 
 	if (slidetic && (slidetic < 16))
 	{
-		INT32 count = slidetic;
+		int32_t count = slidetic;
 
 		if (count < 8)
 		{
@@ -449,17 +449,17 @@ static dboolean RankScreenVis_ShowGrade(void)
 		}
 	}
 
-	INT32 base_x = screen_x + 32;
-	INT32 base_y = 36;
-	INT32 xx = base_x;
-	INT32 yy = base_y;
-	INT32 pid = MAXPLAYERS;
-	INT32 curwidth = BACKINGWIDTH;
-	INT32 finrank_xoffs = 79;
-	INT32 strwidth = 80;
-	UINT32 textflags = V_ALLOWLOWERCASE | V_6WIDTHSPACE;
+	int32_t base_x = screen_x + 32;
+	int32_t base_y = 36;
+	int32_t xx = base_x;
+	int32_t yy = base_y;
+	int32_t pid = MAXPLAYERS;
+	int32_t curwidth = BACKINGWIDTH;
+	int32_t finrank_xoffs = 79;
+	int32_t strwidth = 80;
+	uint32_t textflags = V_ALLOWLOWERCASE | V_6WIDTHSPACE;
 	skincolornum_t usecolor = SKINCOLOR_GREEN;
-	UINT8* cmap = NULL;
+	uint8_t* cmap = NULL;
 
 	char finrankstring[12] = "FINAL RANK:";
 	char norankstring[11] = "No rank..."; // Spectators aren't ranked
@@ -495,11 +495,11 @@ static dboolean RankScreenVis_ShowGrade(void)
 		V_DrawFill((screen_x + 1) - duptweak, 116, dupadjust - 2, 1, 0);
 	}
 
-	const INT32 drawcnt = min(MAXSPLITSCREENPLAYERS, r_splitscreen + 1);
+	const int32_t drawcnt = min(MAXSPLITSCREENPLAYERS, r_splitscreen + 1);
 
 	// I_OutputMsg("drawcnt: %d", drawcnt);
 
-	INT32 i = 0;
+	int32_t i = 0;
 	for (i = 0; i < drawcnt; i++)
 	{
 		pid = MAXPLAYERS;
@@ -517,7 +517,7 @@ static dboolean RankScreenVis_ShowGrade(void)
 
 		usecolor = players[pid].skincolor;
 
-		const INT32 point_x = xx + curwidth;
+		const int32_t point_x = xx + curwidth;
 
 		if (!half_y)
 		{
@@ -527,10 +527,10 @@ static dboolean RankScreenVis_ShowGrade(void)
 
 			if (rankresultsphase >= 1)
 			{
-				const UINT32 hitbonuscolor =
+				const uint32_t hitbonuscolor =
 				    (ranking_hitbonusactive) ? V_SKYMAP : V_BLUEMAP;
 
-				const UINT32 driftbonuscolor =
+				const uint32_t driftbonuscolor =
 				    (ranking_driftbonusactive) ? V_SKYMAP : V_BLUEMAP;
 
 				// Hit Bonus
@@ -583,7 +583,7 @@ static dboolean RankScreenVis_ShowGrade(void)
 
 			if (rankresultsphase >= 2)
 			{
-				const INT32 totallapgrade =
+				const int32_t totallapgrade =
 				    (players[pid].rankscorefactor.posgradescore -
 				     players[pid].rankscorefactor.dnfpenalty);
 
@@ -695,11 +695,11 @@ static dboolean RankScreenVis_ShowGrade(void)
 		{
 			// Compress this down to 3 score displays
 
-			const INT32 bonustotal = (players[pid].rankscorefactor.hitbonus +
+			const int32_t bonustotal = (players[pid].rankscorefactor.hitbonus +
 						  players[pid].rankscorefactor.driftbonus +
 						  players[pid].rankscorefactor.positionbonus +
 						  players[pid].rankscorefactor.spbattackbonus);
-			const INT32 penaltytotal = (players[pid].rankscorefactor.offroadpenalty +
+			const int32_t penaltytotal = (players[pid].rankscorefactor.offroadpenalty +
 						    players[pid].rankscorefactor.wallpenalty +
 						    players[pid].rankscorefactor.hazardpenalty +
 						    players[pid].rankscorefactor.respawnpenalty);
@@ -808,45 +808,45 @@ FUNCINLINE static ATTRINLINE double Y_GenerateChartBounds(void)
 	return (best - worst);
 }
 
-static void Y_DrawChartForPlayer(UINT16 pid,
-				 INT32 screen_x,
-				 UINT8 linecolor,
-				 UINT32 drawflags,
-				 UINT8* colormap)
+static void Y_DrawChartForPlayer(uint16_t pid,
+				 int32_t screen_x,
+				 uint8_t linecolor,
+				 uint32_t drawflags,
+				 uint8_t* colormap)
 {
-	UINT32 scorelog_len = cvector_size(rankscore_tracker[pid]);
+	uint32_t scorelog_len = cvector_size(rankscore_tracker[pid]);
 
 	if ((!scorelog_len) || (scorelog_len < 2))
 		return;
 
-	INT32 chartwidthdiv =
+	int32_t chartwidthdiv =
 	    ((CHART_WIDTH * FRACUNIT) - CHARTLINEWIDTH) / max(1, scorelog_len - 1);
 	const double widthdiv_d = FixedToDouble(chartwidthdiv);
 
-	INT32 base_y = 166 * FRACUNIT;
-	INT32 base_x = (screen_x * FRACUNIT) + (49 * FRACUNIT);
+	int32_t base_y = 166 * FRACUNIT;
+	int32_t base_x = (screen_x * FRACUNIT) + (49 * FRACUNIT);
 
-	INT32 prev_x = base_x;
-	INT32 prev_y = base_y - FixedDiv(rankscore_tracker[pid][0] * FRACUNIT, CHARTHEIGHTDIV);
+	int32_t prev_x = base_x;
+	int32_t prev_y = base_y - FixedDiv(rankscore_tracker[pid][0] * FRACUNIT, CHARTHEIGHTDIV);
 
-	INT32 x = prev_x;
-	INT32 y = prev_y;
-	INT32 vis_x = x;
-	INT32 vis_y = y;
+	int32_t x = prev_x;
+	int32_t y = prev_y;
+	int32_t vis_x = x;
+	int32_t vis_y = y;
 
 	double m = 0.0;       // Slope
 	double xdelta = 0.0;  // Difference (in pixels) between the two X values
 	double filltimeperlog = ((double)(FILLTIMETOTICS) / (double)(max(1, scorelog_len)));
-	const INT32 filltime32 = (INT32)(filltimeperlog);
+	const int32_t filltime32 = (int32_t)(filltimeperlog);
 
 	double perlogmul = (widthdiv_d / max(1.0, filltimeperlog));
 
-	INT32 filltic = max(0, ranktic - (FILLSTARTTIC));
+	int32_t filltic = max(0, ranktic - (FILLSTARTTIC));
 	double thistic = 0;
 
 	if (filltic)
 	{
-		INT32 i = 0;
+		int32_t i = 0;
 		for (i = 1; i < (signed)(scorelog_len); i++)
 		{
 			x = base_x + (chartwidthdiv * i);
@@ -857,7 +857,7 @@ static void Y_DrawChartForPlayer(UINT16 pid,
 			// Slope = rise/run
 			m = (FixedToDouble(y) - FixedToDouble(prev_y)) / widthdiv_d;
 
-			if (filltic >= ((INT32)(thisfilltime) + filltime32))
+			if (filltic >= ((int32_t)(thisfilltime) + filltime32))
 			{
 				thistic = filltimeperlog;
 				xdelta = widthdiv_d;
@@ -912,11 +912,11 @@ static void Y_DrawChartForPlayer(UINT16 pid,
 
 static ATTRUSED dboolean RankScreenVis_Graph(void)
 {
-	INT32 screen_x = 0;
+	int32_t screen_x = 0;
 
 	if (slidetic && (slidetic < 16))
 	{
-		INT32 count = slidetic;
+		int32_t count = slidetic;
 
 		if (count < 8)
 		{
@@ -938,7 +938,7 @@ static ATTRUSED dboolean RankScreenVis_Graph(void)
 		}
 	}
 
-	UINT8 my_pal_index = 0;
+	uint8_t my_pal_index = 0;
 
 	patch_t* chartpatch = NULL;
 	chartpatch = W_CachePatchName("RNKCHT", PU_CACHE);
@@ -948,14 +948,14 @@ static ATTRUSED dboolean RankScreenVis_Graph(void)
 		V_DrawScaledPatch(screen_x, 0, 0, chartpatch);
 	}
 
-	UINT16 num_displayplayers = 0;
-	UINT16 disp_players[MAXSPLITSCREENPLAYERS] = {0};
+	uint16_t num_displayplayers = 0;
+	uint16_t disp_players[MAXSPLITSCREENPLAYERS] = {0};
 
-	UINT16 bg_players[MAXPLAYERS] = {0};
-	UINT16 num_bgplayers = 0;
+	uint16_t bg_players[MAXPLAYERS] = {0};
+	uint16_t num_bgplayers = 0;
 
-	INT32 i = 0;
-	INT32 j = 0;
+	int32_t i = 0;
+	int32_t j = 0;
 
 	dboolean islocal = false;
 
@@ -985,7 +985,7 @@ static ATTRUSED dboolean RankScreenVis_Graph(void)
 		}
 	}
 
-	UINT8* cmap = NULL;
+	uint8_t* cmap = NULL;
 
 	// Second loop: Draw the miscellaneous players
 	i = 0;
@@ -1052,17 +1052,17 @@ static void Y_DrawGradingResults(void)
 //
 void Y_IntermissionDrawer(void)
 {
-	INT32 i, whiteplayer = MAXPLAYERS, x = 4, hilicol = V_YELLOWMAP; // fallback
-	INT32 xx = x, x_base = x;
+	int32_t i, whiteplayer = MAXPLAYERS, x = 4, hilicol = V_YELLOWMAP; // fallback
+	int32_t xx = x, x_base = x;
 
 	if (intertype == int_none || rendermode == render_none)
 		return;
 
-	//INT32 w = vid.scaledwidth;
-	//INT32 h = (vid.height / vid.dup);
+	//int32_t w = vid.scaledwidth;
+	//int32_t h = (vid.height / vid.dup);
 
-	//const INT32 vidxdiff = (w - BASEVIDWIDTH) / 2;
-	//const INT32 vidydiff = (h - BASEVIDHEIGHT) / 2;
+	//const int32_t vidxdiff = (w - BASEVIDWIDTH) / 2;
+	//const int32_t vidydiff = (h - BASEVIDHEIGHT) / 2;
 
 	if (!useinterpic && y_screenbuffer == NULL
 #ifdef HWRENDER
@@ -1114,7 +1114,7 @@ void Y_IntermissionDrawer(void)
 
 	if (slidetic && (slidetic < 16)) // Custom slide out/in, independent of any timer
 	{
-		INT32 count = slidetic;
+		int32_t count = slidetic;
 
 		if (count < 8)
 			x -= ((((count<<FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dup);
@@ -1125,7 +1125,7 @@ void Y_IntermissionDrawer(void)
 	}
 	else if (rolltic != -1 && intertic > (rolltic - 8) && (intertic < (rolltic + 8)))
 	{
-		INT32 count = (intertic - (rolltic - 8));
+		int32_t count = (intertic - (rolltic - 8));
 
 		if (count < 8)
 			x -= ((((count<<FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dup);
@@ -1136,7 +1136,7 @@ void Y_IntermissionDrawer(void)
 	}
 	else if (sorttic != -1 && intertic > sorttic)
 	{
-		INT32 count = (intertic - sorttic);
+		int32_t count = (intertic - sorttic);
 
 		if (count < 8)
 			x -= ((((count<<FRACBITS) + R_GetTimeFrac(RTF_INTER)) * vid.width)>>FRACBITS) / (8 * vid.dup);
@@ -1149,8 +1149,8 @@ void Y_IntermissionDrawer(void)
 	if (intertype == int_race || intertype == int_battle || intertype == int_battletime)
 	{
 #define NUMFORNEWCOLUMN 8
-		INT32 y = 41, gutter = ((data.numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
-		INT32 dupadjust = (vid.scaledwidth), duptweak = (dupadjust - BASEVIDWIDTH)/2;
+		int32_t y = 41, gutter = ((data.numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
+		int32_t dupadjust = (vid.scaledwidth), duptweak = (dupadjust - BASEVIDWIDTH)/2;
 		fixed_t newlist_xpush = (BASEVIDWIDTH/2) * FRACUNIT;
 		const char *timeheader;
 
@@ -1222,7 +1222,7 @@ void Y_IntermissionDrawer(void)
 				V_DrawRightAlignedString(x+152, 24, hilicol, timeheader);
 			}
 
-			INT32 xscroll_px = (xscroll / FRACUNIT);
+			int32_t xscroll_px = (xscroll / FRACUNIT);
 
 			for (i = 0; i < data.numplayers; i++)
 			{
@@ -1252,13 +1252,13 @@ void Y_IntermissionDrawer(void)
 
 					if (data.color[i])
 					{
-						UINT8 *colormap = R_GetTranslationColormap(*data.character[i], *data.color[i], GTC_CACHE);
+						uint8_t *colormap = R_GetTranslationColormap(*data.character[i], *data.color[i], GTC_CACHE);
 						patch_t *facerank;
 
 						dboolean hires = K_UseHighResPortraits() && !manyplayers16 && !displayitemrolls;
 						facerank = faceprefix[*data.character[i]][hires ? FACE_WANTED : FACE_RANK];
-						SINT8 hiresoffsetx = hires ? 8: 0;
-						SINT8 hiresoffsety = hires ? 2: 0;
+						int8_t hiresoffsetx = hires ? 8: 0;
+						int8_t hiresoffsety = hires ? 2: 0;
 
 						fixed_t scale = hires ? FRACUNIT / 2 : FRACUNIT;
 
@@ -1270,9 +1270,9 @@ void Y_IntermissionDrawer(void)
 						}
 						else
 						{
-							INT32 xoffs, yoffs;
-							INT16 leftoffset = hires ? facerank->leftoffset / 2 : facerank->leftoffset;
-							INT16 topoffset = hires ? facerank->topoffset / 2 :facerank->topoffset;
+							int32_t xoffs, yoffs;
+							int16_t leftoffset = hires ? facerank->leftoffset / 2 : facerank->leftoffset;
+							int16_t topoffset = hires ? facerank->topoffset / 2 :facerank->topoffset;
 
 							scale = (hires || displayitemrolls) ? FRACUNIT/2 : FRACUNIT;
 
@@ -1307,7 +1307,7 @@ void Y_IntermissionDrawer(void)
 
 					if ((!displayitemrolls) && data.num[i] == whiteplayer && data.numplayers <= NUMFORNEWCOLUMN*2)
 					{
-						UINT8 cursorframe = (intertic / 4) % 8;
+						uint8_t cursorframe = (intertic / 4) % 8;
 						patch_t *highlight = W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE);
 						V_DrawScaledPatch(x+16+highlight->leftoffset, y-4+highlight->topoffset, 0, highlight);
 					}
@@ -1326,8 +1326,8 @@ void Y_IntermissionDrawer(void)
 
 					y2 = y;
 
-					INT32 slen = 0;
-					INT32 slen_temp = slen;
+					int32_t slen = 0;
+					int32_t slen_temp = slen;
 
 					if (manyplayers16)
 						V_DrawThinString(x+18, y, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
@@ -1336,7 +1336,7 @@ void Y_IntermissionDrawer(void)
 						V_DrawThinString(x + 20 - xscroll_px, y, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 
 						// Get the longest string size. This is... gross.
-						INT32 ii;
+						int32_t ii;
 
 						for (ii = 0; ii < data.numplayers; ii++)
 						{
@@ -1394,7 +1394,7 @@ void Y_IntermissionDrawer(void)
 					}
 					else if (data.itemrolls && (intertic <= rolltic))
 					{
-						const fixed_t itemlistlen = K_DrawItemList((INT32)(data.num[i]), ((xx+2+slen-xscroll_px) * FRACUNIT), ((y+1) * FRACUNIT));
+						const fixed_t itemlistlen = K_DrawItemList((int32_t)(data.num[i]), ((xx+2+slen-xscroll_px) * FRACUNIT), ((y+1) * FRACUNIT));
 						newlist_xpush = max(newlist_xpush, ((x_base+9+slen) * FRACUNIT) + itemlistlen);
 					}
 					else
@@ -1484,7 +1484,7 @@ skiptallydrawer:
 	if (timer && (!freezetimer) && grandprixinfo.gp == false && bossinfo.boss == false)
 	{
 		const char *string;
-		INT32 tickdown = (timer+1)/TICRATE;
+		int32_t tickdown = (timer+1)/TICRATE;
 
 		if (multiplayer && demo.playback)
 			string = va("Replay ends in %d", tickdown);
@@ -1521,7 +1521,7 @@ skiptallydrawer:
 		case DSM_NOTSAVING:
 		{
 			char replaytext[60] = {0};
-			INT32 flags = 0;
+			int32_t flags = 0;
 			const char *item1 = gamecontrol[0][gc_lookback][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][0]) : NULL;
 			const char *item2 = gamecontrol[0][gc_lookback][1] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][1]) : NULL;
 			const char *item3 = gamecontrol[0][gc_lookback][2] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][2]) : NULL;
@@ -1601,14 +1601,14 @@ static ranklevel_e ranktiertolevel[NUMRANKTIERS] =
 	[RTIER_P] = RANKLEVEL_VERYGOOD
 };
 
-static INT32 graphstoptic = 0;
+static int32_t graphstoptic = 0;
 
 // Handles timings and logic for the graph display
 static void RankTick_Graph(void)
 {
 	if (rankresultsphase)
 	{
-		const INT32 phase2tic = max(0, ranktic - graphstoptic);
+		const int32_t phase2tic = max(0, ranktic - graphstoptic);
 
 		if (phase2tic >= (signed)(DoubleToTicrate(FixedToDouble(cv_graphtime.value))))
 		{
@@ -1630,9 +1630,9 @@ static void RankTick_Graph(void)
 			graphstoptic = ranktic;
 			rankresultsphase++;
 
-			INT32 i = 0;
-			UINT16 bestlocalplayer = 0;
-			UINT16 bestlocalpos = MAXPLAYERS;
+			int32_t i = 0;
+			uint16_t bestlocalplayer = 0;
+			uint16_t bestlocalpos = MAXPLAYERS;
 			dboolean everyonespectates = true;
 			for (i = 0; i < (r_splitscreen + 1); i++)
 			{
@@ -1700,7 +1700,7 @@ static void RankTick_ShowGrade(void)
 	else if (ranktic == (3 * TICRATE))
 	{
 		// Display rank
-		const INT32 useplayer = demo.playback ? displayplayers[0] : consoleplayer;
+		const int32_t useplayer = demo.playback ? displayplayers[0] : consoleplayer;
 
 		if (r_splitscreen || (players[useplayer].spectator))
 		{
@@ -1940,7 +1940,7 @@ void Y_Ticker(void)
 
 			if (data.rankingsmode && intertic > sorttic+16+(2*TICRATE))
 			{
-				INT32 q=0,r=0;
+				int32_t q=0,r=0;
 				dboolean kaching = true;
 
 				for (q = 0; q < data.numplayers; q++)
@@ -1965,7 +1965,7 @@ void Y_Ticker(void)
 						}
 						else
 						{
-							SINT8 remove = 0; // default (should not happen)
+							int8_t remove = 0; // default (should not happen)
 
 							if (data.increase[data.num[q]] < 0)
 								remove = -10;
@@ -1985,8 +1985,8 @@ void Y_Ticker(void)
 						// Basic bitch points
 						if (data.increase[data.num[q]])
 						{
-							INT32 diff = 1;
-							INT32 increase = data.increase[data.num[q]];
+							int32_t diff = 1;
+							int32_t increase = data.increase[data.num[q]];
 							if (increase > 25)
 								diff = increase/10;
 							// This is wordy... But allows negative "increase"
@@ -2031,7 +2031,7 @@ void Y_DetermineIntermissionType(void)
 			intertype = int_none;
 		else
 		{
-			UINT8 i = 0, nump = 0;
+			uint8_t i = 0, nump = 0;
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
 				if (!playeringame[i] || players[i].spectator)
@@ -2050,7 +2050,7 @@ void Y_DetermineIntermissionType(void)
 //
 void Y_StartIntermission(void)
 {
-	UINT8 i = 0, nump = 0;
+	uint8_t i = 0, nump = 0;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator)
@@ -2108,11 +2108,11 @@ void Y_StartIntermission(void)
 	else
 	{
 		// Minimum two seconds for match results, then two second slideover approx halfway through
-		INT32 sorttimer = (timer/2) - 2*TICRATE;
+		int32_t sorttimer = (timer/2) - 2*TICRATE;
 
 		if (!cannotrank)
 		{
-			const INT32 _rankscoretime = (signed)(DoubleToTicrate(FixedToDouble(cv_rankscoretime.value)));
+			const int32_t _rankscoretime = (signed)(DoubleToTicrate(FixedToDouble(cv_rankscoretime.value)));
 
 			if (_rankscoretime > sorttimer)
 			{

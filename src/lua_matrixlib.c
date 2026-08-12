@@ -119,8 +119,8 @@ static int matrix_clone(lua_State *L)
 static int matrix_getvalue(lua_State *L)
 {
 	matrix_t *mat = luaL_checkudata(L, 1, META_MATRIX);
-	INT32 row = luaL_checkinteger(L, 2);
-	INT32 col = luaL_checkinteger(L, 3);
+	int32_t row = luaL_checkinteger(L, 2);
+	int32_t col = luaL_checkinteger(L, 3);
 
 	if (row < 1 || row > 4)
 		return luaL_error(L, "matrix row %d out of range (1 - 4)", row);
@@ -134,8 +134,8 @@ static int matrix_getvalue(lua_State *L)
 static int matrix_setvalue(lua_State *L)
 {
 	matrix_t *mat = luaL_checkudata(L, 1, META_MATRIX);
-	INT32 row = luaL_checkinteger(L, 2);
-	INT32 col = luaL_checkinteger(L, 3);
+	int32_t row = luaL_checkinteger(L, 2);
+	int32_t col = luaL_checkinteger(L, 3);
 	fixed_t value = luaL_checkfixed(L, 4);
 
 	if (row < 1 || row > 4)

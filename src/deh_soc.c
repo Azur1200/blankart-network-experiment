@@ -58,7 +58,7 @@ fixed_t get_number(const char *word)
 
 	/*// DESPERATELY NEEDED: Order of operations support! :x
 	fixed_t i = find_const(&word);
-	INT32 o;
+	int32_t o;
 	while(*word) {
 		o = operation_pad(&word);
 		if (o != -1)
@@ -76,36 +76,36 @@ fixed_t get_number(const char *word)
 /* ======================================================================== */
 /* a sample to see
                    Thing 1 (Player)       {           // MT_PLAYER
-INT32 doomednum;     ID # = 3232              -1,             // doomednum
-INT32 spawnstate;    Initial frame = 32       "PLAY",         // spawnstate
-INT32 spawnhealth;   Hit points = 3232        100,            // spawnhealth
-INT32 seestate;      First moving frame = 32  "PLAY_RUN1",    // seestate
-INT32 seesound;      Alert sound = 32         sfx_None,       // seesound
-INT32 reactiontime;  Reaction time = 3232     0,              // reactiontime
-INT32 attacksound;   Attack sound = 32        sfx_None,       // attacksound
-INT32 painstate;     Injury frame = 32        "PLAY_PAIN",    // painstate
-INT32 painchance;    Pain chance = 3232       255,            // painchance
-INT32 painsound;     Pain sound = 32          sfx_plpain,     // painsound
-INT32 meleestate;    Close attack frame = 32  "NULL",         // meleestate
-INT32 missilestate;  Far attack frame = 32    "PLAY_ATK1",    // missilestate
-INT32 deathstate;    Death frame = 32         "PLAY_DIE1",    // deathstate
-INT32 xdeathstate;   Exploding frame = 32     "PLAY_XDIE1",   // xdeathstate
-INT32 deathsound;    Death sound = 32         sfx_pldeth,     // deathsound
-INT32 speed;         Speed = 3232             0,              // speed
-INT32 radius;        Width = 211812352        16*FRACUNIT,    // radius
-INT32 height;        Height = 211812352       56*FRACUNIT,    // height
-INT32 dispoffset;    DispOffset = 0           0,              // dispoffset
-INT32 mass;          Mass = 3232              100,            // mass
-INT32 damage;        Missile damage = 3232    0,              // damage
-INT32 activesound;   Action sound = 32        sfx_None,       // activesound
-INT32 flags;         Bits = 3232              MF_SOLID|MF_SHOOTABLE|MF_DROPOFF|MF_PICKUP|MF_NOTDMATCH,
-INT32 raisestate;    Respawn frame = 32       S_NULL          // raisestate
+int32_t doomednum;     ID # = 3232              -1,             // doomednum
+int32_t spawnstate;    Initial frame = 32       "PLAY",         // spawnstate
+int32_t spawnhealth;   Hit points = 3232        100,            // spawnhealth
+int32_t seestate;      First moving frame = 32  "PLAY_RUN1",    // seestate
+int32_t seesound;      Alert sound = 32         sfx_None,       // seesound
+int32_t reactiontime;  Reaction time = 3232     0,              // reactiontime
+int32_t attacksound;   Attack sound = 32        sfx_None,       // attacksound
+int32_t painstate;     Injury frame = 32        "PLAY_PAIN",    // painstate
+int32_t painchance;    Pain chance = 3232       255,            // painchance
+int32_t painsound;     Pain sound = 32          sfx_plpain,     // painsound
+int32_t meleestate;    Close attack frame = 32  "NULL",         // meleestate
+int32_t missilestate;  Far attack frame = 32    "PLAY_ATK1",    // missilestate
+int32_t deathstate;    Death frame = 32         "PLAY_DIE1",    // deathstate
+int32_t xdeathstate;   Exploding frame = 32     "PLAY_XDIE1",   // xdeathstate
+int32_t deathsound;    Death sound = 32         sfx_pldeth,     // deathsound
+int32_t speed;         Speed = 3232             0,              // speed
+int32_t radius;        Width = 211812352        16*FRACUNIT,    // radius
+int32_t height;        Height = 211812352       56*FRACUNIT,    // height
+int32_t dispoffset;    DispOffset = 0           0,              // dispoffset
+int32_t mass;          Mass = 3232              100,            // mass
+int32_t damage;        Missile damage = 3232    0,              // damage
+int32_t activesound;   Action sound = 32        sfx_None,       // activesound
+int32_t flags;         Bits = 3232              MF_SOLID|MF_SHOOTABLE|MF_DROPOFF|MF_PICKUP|MF_NOTDMATCH,
+int32_t raisestate;    Respawn frame = 32       S_NULL          // raisestate
                                          }, */
 
 // These are for clearing all of various things
 void clear_emblems(void)
 {
-	INT32 i;
+	int32_t i;
 
 	for (i = 0; i < MAXEMBLEMS; ++i)
 	{
@@ -122,7 +122,7 @@ void clear_emblems(void)
 
 void clear_unlockables(void)
 {
-	INT32 i;
+	int32_t i;
 
 	for (i = 0; i < MAXUNLOCKABLES; ++i)
 	{
@@ -135,7 +135,7 @@ void clear_unlockables(void)
 
 void clear_conditionsets(void)
 {
-	UINT8 i;
+	uint8_t i;
 	for (i = 0; i < MAXCONDITIONSETS; ++i)
 		M_ClearConditionSet(i+1);
 }
@@ -169,7 +169,7 @@ void clear_levels(void)
 	// Clear out the cache
 	{
 		cupheader_t *cup = kartcupheaders;
-		UINT8 i;
+		uint8_t i;
 
 		while (cup)
 		{
@@ -245,7 +245,7 @@ void readfreeslots(MYFILE *f)
 			else
 				break;
 
-			INT32 index;
+			int32_t index;
 			if (DEH_ReadFreeslot(type, word, &index) == -2)
 				deh_warning("Freeslots: unknown enum class '%s' for '%s_%s'", type, type, word);
 		}
@@ -254,7 +254,7 @@ void readfreeslots(MYFILE *f)
 	Z_Free(s);
 }
 
-void readthing(MYFILE *f, INT32 num)
+void readthing(MYFILE *f, int32_t num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word, *word2;
@@ -289,7 +289,7 @@ void readthing(MYFILE *f, INT32 num)
 
 			if (fastcmp(word, "MAPTHINGNUM") || fastcmp(word, "DOOMEDNUM"))
 			{
-				mobjinfo[num].doomednum = (INT32)atoi(word2);
+				mobjinfo[num].doomednum = (int32_t)atoi(word2);
 			}
 			else if (fastcmp(word, "SPAWNSTATE"))
 			{
@@ -297,7 +297,7 @@ void readthing(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "SPAWNHEALTH"))
 			{
-				mobjinfo[num].spawnhealth = (INT32)get_number(word2);
+				mobjinfo[num].spawnhealth = (int32_t)get_number(word2);
 			}
 			else if (fastcmp(word, "SEESTATE"))
 			{
@@ -309,7 +309,7 @@ void readthing(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "REACTIONTIME"))
 			{
-				mobjinfo[num].reactiontime = (INT32)get_number(word2);
+				mobjinfo[num].reactiontime = (int32_t)get_number(word2);
 			}
 			else if (fastcmp(word, "ATTACKSOUND"))
 			{
@@ -321,7 +321,7 @@ void readthing(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "PAINCHANCE"))
 			{
-				mobjinfo[num].painchance = (INT32)get_number(word2);
+				mobjinfo[num].painchance = (int32_t)get_number(word2);
 			}
 			else if (fastcmp(word, "PAINSOUND"))
 			{
@@ -365,11 +365,11 @@ void readthing(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "MASS"))
 			{
-				mobjinfo[num].mass = (INT32)get_number(word2);
+				mobjinfo[num].mass = (int32_t)get_number(word2);
 			}
 			else if (fastcmp(word, "DAMAGE"))
 			{
-				mobjinfo[num].damage = (INT32)get_number(word2);
+				mobjinfo[num].damage = (int32_t)get_number(word2);
 			}
 			else if (fastcmp(word, "ACTIVESOUND"))
 			{
@@ -377,7 +377,7 @@ void readthing(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "FLAGS"))
 			{
-				mobjinfo[num].flags = (INT32)get_number(word2);
+				mobjinfo[num].flags = (int32_t)get_number(word2);
 			}
 			else if (fastcmp(word, "RAISESTATE"))
 			{
@@ -396,7 +396,7 @@ void readthing(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
-void readskincolor(MYFILE *f, INT32 num, dboolean mainfile)
+void readskincolor(MYFILE *f, int32_t num, dboolean mainfile)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word = s;
@@ -438,7 +438,7 @@ void readskincolor(MYFILE *f, INT32 num, dboolean mainfile)
 			{
 				size_t namesize = sizeof(skincolors[num].name);
 				char truncword[namesize];
-				UINT16 dupecheck;
+				uint16_t dupecheck;
 
 				deh_strlcpy(truncword, word2, namesize, va("Skincolor %d: name", num)); // truncate here to check for dupes
 				dupecheck = R_GetColorByName(truncword);
@@ -476,10 +476,10 @@ void readskincolor(MYFILE *f, INT32 num, dboolean mainfile)
 			}
 			else if (fastcmp(word, "RAMP"))
 			{
-				UINT8 i;
+				uint8_t i;
 				tmp = strtok(word2,",");
 				for (i = 0; i < COLORRAMPSIZE; i++) {
-					skincolors[num].ramp[i] = (UINT8)get_number(tmp);
+					skincolors[num].ramp[i] = (uint8_t)get_number(tmp);
 					if ((tmp = strtok(NULL,",")) == NULL)
 						break;
 				}
@@ -487,7 +487,7 @@ void readskincolor(MYFILE *f, INT32 num, dboolean mainfile)
 			}
 			else if (fastcmp(word, "INVCOLOR"))
 			{
-				UINT16 v = (UINT16)get_number(word2);
+				uint16_t v = (uint16_t)get_number(word2);
 				if (v < numskincolors)
 					skincolors[num].invcolor = v;
 				else
@@ -514,7 +514,7 @@ void readskincolor(MYFILE *f, INT32 num, dboolean mainfile)
 	Z_Free(s);
 }
 
-void readsprite2(MYFILE *f, INT32 num)
+void readsprite2(MYFILE *f, int32_t num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word, *word2;
@@ -564,15 +564,15 @@ void readgametype(MYFILE *f, char *gtname)
 	char *word;
 	char *word2, *word2lwr = NULL;
 	char *tmp;
-	INT32 i, j;
+	int32_t i, j;
 
 	gametype_t *newgametype = NULL;
-	UINT32 newgtrules = 0;
-	UINT32 newgttol = 0;
-	INT32 newgtpointlimit = 0;
-	INT32 newgttimelimit = 0;
-	INT32 newgtcolor = V_YELLOWMAP;
-	UINT8 newgtinttype = 0;
+	uint32_t newgtrules = 0;
+	uint32_t newgttol = 0;
+	int32_t newgtpointlimit = 0;
+	int32_t newgttimelimit = 0;
+	int32_t newgtcolor = V_YELLOWMAP;
+	uint8_t newgtinttype = 0;
 	char gtconst[MAXLINELEN];
 
 	// Empty strings.
@@ -610,7 +610,7 @@ void readgametype(MYFILE *f, char *gtname)
 			if (fastcmp(word, "RULES"))
 			{
 				// GTR_
-				newgtrules = (UINT32)get_number(word2);
+				newgtrules = (uint32_t)get_number(word2);
 			}
 			// Identifier
 			else if (fastcmp(word, "IDENTIFIER"))
@@ -620,9 +620,9 @@ void readgametype(MYFILE *f, char *gtname)
 			}
 			// Point and time limits
 			else if (fastcmp(word, "DEFAULTPOINTLIMIT"))
-				newgtpointlimit = (INT32)i;
+				newgtpointlimit = (int32_t)i;
 			else if (fastcmp(word, "DEFAULTTIMELIMIT"))
-				newgttimelimit = (INT32)i;
+				newgttimelimit = (int32_t)i;
 			// Intermission type
 			else if (fastcmp(word, "INTERMISSIONTYPE"))
 			{
@@ -633,10 +633,10 @@ void readgametype(MYFILE *f, char *gtname)
 			else if (fastcmp(word, "TYPEOFLEVEL"))
 			{
 				if (i) // it's just a number
-					newgttol = (UINT32)i;
+					newgttol = (uint32_t)i;
 				else
 				{
-					UINT32 tol = 0;
+					uint32_t tol = 0;
 					tmp = strtok(word2,",");
 					do {
 						for (i = 0; TYPEOFLEVEL[i].name; i++)
@@ -652,7 +652,7 @@ void readgametype(MYFILE *f, char *gtname)
 			// Menu Color
 			else if (fastcmp(word, "MENUCOLOR"))
 			{
-				INT32 color = (INT32)get_number(word2);
+				int32_t color = (int32_t)get_number(word2);
 				// Mask out other flags so they aren't passed into menu code.
 				newgtcolor = color & V_CHARCOLORMASK; // V_
 			}
@@ -662,7 +662,7 @@ void readgametype(MYFILE *f, char *gtname)
 			// This is completely valid, and looks better anyway.
 			else
 			{
-				UINT32 wordgt = 0;
+				uint32_t wordgt = 0;
 				for (j = 0; GAMETYPERULE_LIST[j]; j++)
 					if (fastcmp(word, GAMETYPERULE_LIST[j])) {
 						wordgt |= (1<<j);
@@ -770,7 +770,7 @@ if (fastcmp(word, name)) \
 #define FIELDSET_CONSTANT(name, minname, maxname, field, word2, min, max) \
 if (fastcmp(word, name)) \
 { \
-	INT32 constnum = get_number(word2); \
+	int32_t constnum = get_number(word2); \
 	if (constnum >= min && constnum <= max) \
 		mapheaderinfo[mapnum]->globalEFX->field = constnum; \
 	else \
@@ -802,7 +802,7 @@ static void processvector(const char* name, mapnum_t mapnum, char *word2, f_vect
 }
 
 // Handle parsing globalefx info
-static void globalmapefxparameters(mapnum_t mapnum, INT32 i, char *word, char *word2)
+static void globalmapefxparameters(mapnum_t mapnum, int32_t i, char *word, char *word2)
 {
 	// Take off GLOBALEFX_
 	word += 10;
@@ -974,10 +974,10 @@ void readlevelheader(MYFILE *f, char * name)
 	//char *word3; // Non-uppercase version of word2
 
 	char *tmp;
-	INT32 i;
+	int32_t i;
 
 	// convert old map names to MAPxx
-	INT32 exnum = atoi(name);
+	int32_t exnum = atoi(name);
 	if (exnum > 0 && exnum <= NUMMAPS)
 	{
 		if (exnum < 100)
@@ -996,7 +996,7 @@ void readlevelheader(MYFILE *f, char * name)
 
 	if (num >= nummapheaders)
 	{
-		P_AllocMapHeader((INT16)(num = nummapheaders));
+		P_AllocMapHeader((int16_t)(num = nummapheaders));
 	}
 	else if (f->wad >= NUMMAINWADS)
 	{
@@ -1081,7 +1081,7 @@ void readlevelheader(MYFILE *f, char * name)
 			// Lua custom options also go above, contents may be case sensitive.
 			if (fastncmp(word, "LUA.", 4))
 			{
-				UINT8 j;
+				uint8_t j;
 				customoption_t *modoption;
 
 				// Note: we actualy strlwr word here, so things are made a little easier for Lua
@@ -1208,7 +1208,7 @@ void readlevelheader(MYFILE *f, char * name)
 			else if (fastcmp(word, "ACT"))
 			{
 				/*if (i >= 0 && i < 20) // 0 for no act number, TTL1 through TTL19
-					mapheaderinfo[num]->actnum = (UINT8)i;
+					mapheaderinfo[num]->actnum = (uint8_t)i;
 				else
 					deh_warning("Level header %d: invalid act number %d", num, i);*/
 				deh_strlcpy(mapheaderinfo[num]->actnum, word2,
@@ -1219,10 +1219,10 @@ void readlevelheader(MYFILE *f, char * name)
 				if (fastcmp(word2, "NONE")) // No type of level? Sure!
 					mapheaderinfo[num]->typeoflevel = 0;
 				else if (i) // it's just a number
-					mapheaderinfo[num]->typeoflevel = (UINT32)i;
+					mapheaderinfo[num]->typeoflevel = (uint32_t)i;
 				else
 				{
-					UINT32 tol = 0;
+					uint32_t tol = 0;
 					tmp = strtok(word2,",");
 					do {
 						for (i = 0; TYPEOFLEVEL[i].name; i++)
@@ -1249,7 +1249,7 @@ void readlevelheader(MYFILE *f, char * name)
 				}
 				else
 				{
-					UINT8 j = 0; // i was declared elsewhere
+					uint8_t j = 0; // i was declared elsewhere
 					tmp = strtok(word2, ",");
 					do {
 						if (j >= MAXMUSNAMES)
@@ -1273,7 +1273,7 @@ void readlevelheader(MYFILE *f, char * name)
 				}
 				else
 				{
-					UINT8 j = 0; // i was declared elsewhere
+					uint8_t j = 0; // i was declared elsewhere
 					tmp = strtok(word2, ",");
 					do {
 						if (j >= MAXMUSNAMES)
@@ -1291,9 +1291,9 @@ void readlevelheader(MYFILE *f, char * name)
 			else if (fastcmp(word, "MUSICSLOT"))
 				deh_warning("Level header %d: MusicSlot parameter is deprecated and will be removed.\nUse \"Music\" instead.", num);
 			else if (fastcmp(word, "MUSICTRACK"))
-				mapheaderinfo[num]->mustrack = ((UINT16)i - 1);
+				mapheaderinfo[num]->mustrack = ((uint16_t)i - 1);
 			else if (fastcmp(word, "MUSICPOS"))
-				mapheaderinfo[num]->muspos = (UINT32)get_number(word2);
+				mapheaderinfo[num]->muspos = (uint32_t)get_number(word2);
 			else if (fastcmp(word, "WEATHER"))
 				mapheaderinfo[num]->weather = get_precip(word2);
 			else if (fastcmp(word, "SKYTEXTURE"))
@@ -1308,38 +1308,38 @@ void readlevelheader(MYFILE *f, char * name)
 					sizeof(mapheaderinfo[num]->skytexture), va("Level header %d: sky texture", num));
 			}
 			else if (fastcmp(word, "PRECUTSCENENUM"))
-				mapheaderinfo[num]->precutscenenum = (UINT8)i;
+				mapheaderinfo[num]->precutscenenum = (uint8_t)i;
 			else if (fastcmp(word, "CUTSCENENUM"))
-				mapheaderinfo[num]->cutscenenum = (UINT8)i;
+				mapheaderinfo[num]->cutscenenum = (uint8_t)i;
 			else if (fastcmp(word, "PALETTE"))
-				mapheaderinfo[num]->palette = (UINT16)i;
+				mapheaderinfo[num]->palette = (uint16_t)i;
 			else if (fastcmp(word, "ENCOREPAL"))
-				mapheaderinfo[num]->encorepal = (UINT16)i;
+				mapheaderinfo[num]->encorepal = (uint16_t)i;
 			else if (fastcmp(word, "NUMLAPS"))
-				mapheaderinfo[num]->numlaps = (UINT8)i;
+				mapheaderinfo[num]->numlaps = (uint8_t)i;
 			else if (fastcmp(word, "BASETRACKCOMPLEXITY"))
 				mapheaderinfo[num]->base_track_complexity = i;
 			else if (fastcmp(word, "TRACKMODIFIERMAX"))
 				mapheaderinfo[num]->track_modifier_max = FloatToFixed(atof(word2));
 			else if (fastcmp(word, "LAPSPERSECTION"))
-				mapheaderinfo[num]->lapspersection = max((UINT8)i, 1u);
+				mapheaderinfo[num]->lapspersection = max((uint8_t)i, 1u);
 			else if (fastcmp(word, "UNLOCKABLE"))
 			{
 				if (i >= 0 && i <= MAXUNLOCKABLES) // 0 for no unlock required, anything else requires something
-					mapheaderinfo[num]->unlockrequired = (SINT8)i - 1;
+					mapheaderinfo[num]->unlockrequired = (int8_t)i - 1;
 				else
 					deh_warning("Level header %d: invalid unlockable number %d", num, i);
 			}
 			else if (fastcmp(word, "LEVELSELECT"))
-				mapheaderinfo[num]->levelselect = (UINT8)i;
+				mapheaderinfo[num]->levelselect = (uint8_t)i;
 			else if (fastcmp(word, "SKYBOXSCALE"))
-				mapheaderinfo[num]->skybox_scalex = mapheaderinfo[num]->skybox_scaley = mapheaderinfo[num]->skybox_scalez = (INT16)i;
+				mapheaderinfo[num]->skybox_scalex = mapheaderinfo[num]->skybox_scaley = mapheaderinfo[num]->skybox_scalez = (int16_t)i;
 			else if (fastcmp(word, "SKYBOXSCALEX"))
-				mapheaderinfo[num]->skybox_scalex = (INT16)i;
+				mapheaderinfo[num]->skybox_scalex = (int16_t)i;
 			else if (fastcmp(word, "SKYBOXSCALEY"))
-				mapheaderinfo[num]->skybox_scaley = (INT16)i;
+				mapheaderinfo[num]->skybox_scaley = (int16_t)i;
 			else if (fastcmp(word, "SKYBOXSCALEZ"))
-				mapheaderinfo[num]->skybox_scalez = (INT16)i;
+				mapheaderinfo[num]->skybox_scalez = (int16_t)i;
 			else if (fastcmp(word, "LEVELFLAGS"))
 				mapheaderinfo[num]->levelflags = get_number(word2);
 			else if (fastcmp(word, "MENUFLAGS"))
@@ -1351,12 +1351,12 @@ void readlevelheader(MYFILE *f, char * name)
 				mapheaderinfo[num]->default_waypoint_radius = get_number(word2);
 			else if (fastcmp(word, "LIGHTCONTRAST"))
 			{
-				usemaplighting(num, word)->light_contrast = (UINT8)i;
+				usemaplighting(num, word)->light_contrast = (uint8_t)i;
 				usemaplighting(num, word)->use_custom_light = true;
 			}
 			else if (fastcmp(word, "SPRITEBACKLIGHT") || fastcmp(word, "ENCORESPRITEBACKLIGHT"))
 			{
-				usemaplighting(num, word)->sprite_backlight = (SINT8)i;
+				usemaplighting(num, word)->sprite_backlight = (int8_t)i;
 				usemaplighting(num, word)->use_custom_light = true;
 			}
 			else if (fastcmp(word, "LIGHTANGLE") || fastcmp(word, "ENCORELIGHTANGLE"))
@@ -1494,14 +1494,14 @@ void readlevelheader(MYFILE *f, char * name)
 	Z_Free(s);
 }
 
-static void readcutscenescene(MYFILE *f, INT32 num, INT32 scenenum)
+static void readcutscenescene(MYFILE *f, int32_t num, int32_t scenenum)
 {
 	char *s = Z_Calloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word;
 	char *word2;
-	INT32 i;
-	UINT16 usi;
-	UINT8 picid;
+	int32_t i;
+	uint16_t usi;
+	uint8_t picid;
 
 	do
 	{
@@ -1574,16 +1574,16 @@ static void readcutscenescene(MYFILE *f, INT32 num, INT32 scenenum)
 			if (word2[strlen(word2)-1] == '\n')
 				word2[strlen(word2)-1] = '\0';
 			i = atoi(word2);
-			usi = (UINT16)i;
+			usi = (uint16_t)i;
 
 
 			if (fastcmp(word, "NUMBEROFPICS"))
 			{
-				cutscenes[num]->scene[scenenum].numpics = (UINT8)i;
+				cutscenes[num]->scene[scenenum].numpics = (uint8_t)i;
 			}
 			else if (fastncmp(word, "PIC", 3))
 			{
-				picid = (UINT8)atoi(word + 3);
+				picid = (uint8_t)atoi(word + 3);
 				if (picid > 8 || picid == 0)
 				{
 					deh_warning("CutSceneScene %d: unknown word '%s'", num, word);
@@ -1597,7 +1597,7 @@ static void readcutscenescene(MYFILE *f, INT32 num, INT32 scenenum)
 				}
 				else if (fastcmp(word+4, "HIRES"))
 				{
-					cutscenes[num]->scene[scenenum].pichires[picid] = (UINT8)(i || word2[0] == 'T' || word2[0] == 'Y');
+					cutscenes[num]->scene[scenenum].pichires[picid] = (uint8_t)(i || word2[0] == 'T' || word2[0] == 'Y');
 				}
 				else if (fastcmp(word+4, "DURATION"))
 				{
@@ -1621,15 +1621,15 @@ static void readcutscenescene(MYFILE *f, INT32 num, INT32 scenenum)
 			}
 			else if (fastcmp(word, "MUSICTRACK"))
 			{
-				cutscenes[num]->scene[scenenum].musswitchflags = ((UINT16)i) & MUSIC_TRACKMASK;
+				cutscenes[num]->scene[scenenum].musswitchflags = ((uint16_t)i) & MUSIC_TRACKMASK;
 			}
 			else if (fastcmp(word, "MUSICPOS"))
 			{
-				cutscenes[num]->scene[scenenum].musswitchposition = (UINT32)get_number(word2);
+				cutscenes[num]->scene[scenenum].musswitchposition = (uint32_t)get_number(word2);
 			}
 			else if (fastcmp(word, "MUSICLOOP"))
 			{
-				cutscenes[num]->scene[scenenum].musicloop = (UINT8)(i || word2[0] == 'T' || word2[0] == 'Y');
+				cutscenes[num]->scene[scenenum].musicloop = (uint8_t)(i || word2[0] == 'T' || word2[0] == 'Y');
 			}
 			else if (fastcmp(word, "TEXTXPOS"))
 			{
@@ -1641,15 +1641,15 @@ static void readcutscenescene(MYFILE *f, INT32 num, INT32 scenenum)
 			}
 			else if (fastcmp(word, "FADEINID"))
 			{
-				cutscenes[num]->scene[scenenum].fadeinid = (UINT8)i;
+				cutscenes[num]->scene[scenenum].fadeinid = (uint8_t)i;
 			}
 			else if (fastcmp(word, "FADEOUTID"))
 			{
-				cutscenes[num]->scene[scenenum].fadeoutid = (UINT8)i;
+				cutscenes[num]->scene[scenenum].fadeoutid = (uint8_t)i;
 			}
 			else if (fastcmp(word, "FADECOLOR"))
 			{
-				cutscenes[num]->scene[scenenum].fadecolor = (UINT8)i;
+				cutscenes[num]->scene[scenenum].fadecolor = (uint8_t)i;
 			}
 			else
 				deh_warning("CutSceneScene %d: unknown word '%s'", num, word);
@@ -1659,13 +1659,13 @@ static void readcutscenescene(MYFILE *f, INT32 num, INT32 scenenum)
 	Z_Free(s);
 }
 
-void readcutscene(MYFILE *f, INT32 num)
+void readcutscene(MYFILE *f, int32_t num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word;
 	char *word2;
 	char *tmp;
-	INT32 value;
+	int32_t value;
 
 	// Allocate memory for this cutscene if we don't yet have any
 	if (!cutscenes[num])
@@ -1721,14 +1721,14 @@ void readcutscene(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
-static void readtextpromptpage(MYFILE *f, INT32 num, INT32 pagenum)
+static void readtextpromptpage(MYFILE *f, int32_t num, int32_t pagenum)
 {
 	char *s = Z_Calloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word;
 	char *word2;
-	INT32 i;
-	UINT16 usi;
-	UINT8 picid;
+	int32_t i;
+	uint16_t usi;
+	uint8_t picid;
 
 	do
 	{
@@ -1804,29 +1804,29 @@ static void readtextpromptpage(MYFILE *f, INT32 num, INT32 pagenum)
 			if (word2[strlen(word2)-1] == '\n')
 				word2[strlen(word2)-1] = '\0';
 			i = atoi(word2);
-			usi = (UINT16)i;
+			usi = (uint16_t)i;
 
 			// copypasta from readcutscenescene
 			if (fastcmp(word, "NUMBEROFPICS"))
 			{
-				textprompts[num]->page[pagenum].numpics = (UINT8)i;
+				textprompts[num]->page[pagenum].numpics = (uint8_t)i;
 			}
 			else if (fastcmp(word, "PICMODE"))
 			{
-				UINT8 picmode = 0; // PROMPT_PIC_PERSIST
+				uint8_t picmode = 0; // PROMPT_PIC_PERSIST
 				if (usi == 1 || word2[0] == 'L') picmode = PROMPT_PIC_LOOP;
 				else if (usi == 2 || word2[0] == 'D' || word2[0] == 'H') picmode = PROMPT_PIC_DESTROY;
 				textprompts[num]->page[pagenum].picmode = picmode;
 			}
 			else if (fastcmp(word, "PICTOLOOP"))
-				textprompts[num]->page[pagenum].pictoloop = (UINT8)i;
+				textprompts[num]->page[pagenum].pictoloop = (uint8_t)i;
 			else if (fastcmp(word, "PICTOSTART"))
-				textprompts[num]->page[pagenum].pictostart = (UINT8)i;
+				textprompts[num]->page[pagenum].pictostart = (uint8_t)i;
 			else if (fastcmp(word, "PICSMETAPAGE"))
 			{
 				if (usi && usi <= textprompts[num]->numpages)
 				{
-					UINT8 metapagenum = usi - 1;
+					uint8_t metapagenum = usi - 1;
 
 					textprompts[num]->page[pagenum].numpics = textprompts[num]->page[metapagenum].numpics;
 					textprompts[num]->page[pagenum].picmode = textprompts[num]->page[metapagenum].picmode;
@@ -1845,7 +1845,7 @@ static void readtextpromptpage(MYFILE *f, INT32 num, INT32 pagenum)
 			}
 			else if (fastncmp(word, "PIC", 3))
 			{
-				picid = (UINT8)atoi(word + 3);
+				picid = (uint8_t)atoi(word + 3);
 				if (picid > MAX_PROMPT_PICS || picid == 0)
 				{
 					deh_warning("textpromptscene %d: unknown word '%s'", num, word);
@@ -1859,7 +1859,7 @@ static void readtextpromptpage(MYFILE *f, INT32 num, INT32 pagenum)
 				}
 				else if (fastcmp(word+4, "HIRES"))
 				{
-					textprompts[num]->page[pagenum].pichires[picid] = (UINT8)(i || word2[0] == 'T' || word2[0] == 'Y');
+					textprompts[num]->page[pagenum].pichires[picid] = (uint8_t)(i || word2[0] == 'T' || word2[0] == 'Y');
 				}
 				else if (fastcmp(word+4, "DURATION"))
 				{
@@ -1883,18 +1883,18 @@ static void readtextpromptpage(MYFILE *f, INT32 num, INT32 pagenum)
 			}
 			else if (fastcmp(word, "MUSICTRACK"))
 			{
-				textprompts[num]->page[pagenum].musswitchflags = ((UINT16)i) & MUSIC_TRACKMASK;
+				textprompts[num]->page[pagenum].musswitchflags = ((uint16_t)i) & MUSIC_TRACKMASK;
 			}
 			else if (fastcmp(word, "MUSICLOOP"))
 			{
-				textprompts[num]->page[pagenum].musicloop = (UINT8)(i || word2[0] == 'T' || word2[0] == 'Y');
+				textprompts[num]->page[pagenum].musicloop = (uint8_t)(i || word2[0] == 'T' || word2[0] == 'Y');
 			}
 			// end copypasta from readcutscenescene
 			else if (fastcmp(word, "NAME"))
 			{
 				if (*word2 != '\0')
 				{
-					INT32 j;
+					int32_t j;
 
 					// HACK: Add yellow control char now
 					// so the drawing function doesn't call it repeatedly
@@ -1926,7 +1926,7 @@ static void readtextpromptpage(MYFILE *f, INT32 num, INT32 pagenum)
 				textprompts[num]->page[pagenum].lines = usi;
 			else if (fastcmp(word, "BACKCOLOR"))
 			{
-				INT32 backcolor;
+				int32_t backcolor;
 				if      (i == 0 || fastcmp(word2, "WHITE")) backcolor = 0;
 				else if (i == 1 || fastcmp(word2, "GRAY") || fastcmp(word2, "GREY") ||
 					fastcmp(word2, "BLACK")) backcolor = 1;
@@ -1954,14 +1954,14 @@ static void readtextpromptpage(MYFILE *f, INT32 num, INT32 pagenum)
 			}
 			else if (fastcmp(word, "ALIGN"))
 			{
-				UINT8 align = 0; // left
+				uint8_t align = 0; // left
 				if (usi == 1 || word2[0] == 'R') align = 1;
 				else if (usi == 2 || word2[0] == 'C' || word2[0] == 'M') align = 2;
 				textprompts[num]->page[pagenum].align = align;
 			}
 			else if (fastcmp(word, "VERTICALALIGN"))
 			{
-				UINT8 align = 0; // top
+				uint8_t align = 0; // top
 				if (usi == 1 || word2[0] == 'B') align = 1;
 				else if (usi == 2 || word2[0] == 'C' || word2[0] == 'M') align = 2;
 				textprompts[num]->page[pagenum].verticalalign = align;
@@ -1972,7 +1972,7 @@ static void readtextpromptpage(MYFILE *f, INT32 num, INT32 pagenum)
 				textprompts[num]->page[pagenum].textsfx = get_number(word2);
 			else if (fastcmp(word, "HIDEHUD"))
 			{
-				UINT8 hidehud = 0;
+				uint8_t hidehud = 0;
 				if ((word2[0] == 'F' && (word2[1] == 'A' || !word2[1])) || word2[0] == 'N') hidehud = 0; // false
 				else if (usi == 1 || word2[0] == 'T' || word2[0] == 'Y') hidehud = 1; // true (hide appropriate HUD elements)
 				else if (usi == 2 || word2[0] == 'A' || (word2[0] == 'F' && word2[1] == 'O')) hidehud = 2; // force (hide all HUD elements)
@@ -1982,7 +1982,7 @@ static void readtextpromptpage(MYFILE *f, INT32 num, INT32 pagenum)
 			{
 				if (usi && usi <= textprompts[num]->numpages)
 				{
-					UINT8 metapagenum = usi - 1;
+					uint8_t metapagenum = usi - 1;
 
 					strncpy(textprompts[num]->page[pagenum].name, textprompts[num]->page[metapagenum].name, 32);
 					strncpy(textprompts[num]->page[pagenum].iconname, textprompts[num]->page[metapagenum].iconname, 8);
@@ -2017,13 +2017,13 @@ static void readtextpromptpage(MYFILE *f, INT32 num, INT32 pagenum)
 	Z_Free(s);
 }
 
-void readtextprompt(MYFILE *f, INT32 num)
+void readtextprompt(MYFILE *f, int32_t num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word;
 	char *word2;
 	char *tmp;
-	INT32 value;
+	int32_t value;
 
 	// Allocate memory for this prompt if we don't yet have any
 	if (!textprompts[num])
@@ -2341,7 +2341,7 @@ void readmenuitemstyle(MYFILE *f, menuitemstyle_t *style)
 		}
 		else if (word2 == NULL && !strnicmp(s, "PART ", 5))
 		{
-			INT32 index = atoi(s + 5);
+			int32_t index = atoi(s + 5);
 			if (index < 0 || index >= MAXMENUITEMPARTS)
 			{
 				deh_warning("Part index out of range");
@@ -2619,7 +2619,7 @@ void readmenupanel(MYFILE *f, menupaneldef_t *pd)
 
 #define WARN(str, ...) deh_warning("Menu %s: " str, DEH_MenutypeName(num), __VA_ARGS__)
 #define WARN0(str) deh_warning("Menu %s: " str, DEH_MenutypeName(num))
-static void readmenupanelinstances(MYFILE *f, INT32 num)
+static void readmenupanelinstances(MYFILE *f, int32_t num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word = s;
@@ -2728,7 +2728,7 @@ static void readmenupanelinstances(MYFILE *f, INT32 num)
 		}
 		else if (fastcmp(word, "FLAGS"))
 		{
-			UINT32 allow = V_SNAPTOTOP|V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_SNAPTORIGHT
+			uint32_t allow = V_SNAPTOTOP|V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_SNAPTORIGHT
 			              |V_ALLOWLOWERCASE // overrides menucaps
 			              |V_ALPHAMASK; // woah, transparency!
 			pi->vflags = get_number(word2) & allow;
@@ -2772,13 +2772,13 @@ static void readmenupanelinstances(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
-void readmenu(MYFILE *f, INT32 num)
+void readmenu(MYFILE *f, int32_t num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word = s;
 	char *word2;
 	char *tmp;
-	INT32 value;
+	int32_t value;
 
 	menu_t *menudef = &menudefs[num];
 
@@ -2861,7 +2861,7 @@ void readmenu(MYFILE *f, INT32 num)
 			else if (fastcmp(word, "TITLEPICSSCALE"))
 			{
 				// Don't handle Alacroix special case here; see Maincfg section.
-				menudefs[num].ttscale = max(1, min(8, (UINT8)get_number(word2)));
+				menudefs[num].ttscale = max(1, min(8, (uint8_t)get_number(word2)));
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSNAME"))
@@ -2871,22 +2871,22 @@ void readmenu(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "TITLEPICSX"))
 			{
-				menudefs[num].ttx = (INT16)get_number(word2);
+				menudefs[num].ttx = (int16_t)get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSY"))
 			{
-				menudefs[num].tty = (INT16)get_number(word2);
+				menudefs[num].tty = (int16_t)get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSLOOP"))
 			{
-				menudefs[num].ttloop = (INT16)get_number(word2);
+				menudefs[num].ttloop = (int16_t)get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSTICS"))
 			{
-				menudefs[num].tttics = (UINT16)get_number(word2);
+				menudefs[num].tttics = (uint16_t)get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLESCROLLSPEED") || fastcmp(word, "TITLESCROLLXSPEED")
@@ -2913,7 +2913,7 @@ void readmenu(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "MUSICTRACK"))
 			{
-				menudefs[num].mustrack = ((UINT16)value - 1);
+				menudefs[num].mustrack = ((uint16_t)value - 1);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "MUSICLOOP"))
@@ -2942,11 +2942,11 @@ void readmenu(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "MUSICCREDITANIMTIME") || fastcmp(word, "MUSICCREDITANIMATIONTIME"))
 			{
-				menudefs[num].muscreditanimtime = (UINT16)get_number(word2);
+				menudefs[num].muscreditanimtime = (uint16_t)get_number(word2);
 			}
 			else if (fastcmp(word, "MUSICCREDITSNAPFLAGS"))
 			{
-				menudefs[num].muscreditsnapflags = (INT32)get_number(word2);
+				menudefs[num].muscreditsnapflags = (int32_t)get_number(word2);
 			}
 			else if (fastcmp(word, "FADESTRENGTH"))
 			{
@@ -3030,7 +3030,7 @@ void readmenu(MYFILE *f, INT32 num)
 #undef WARN
 #undef WARN0
 
-void readframe(MYFILE *f, INT32 num)
+void readframe(MYFILE *f, int32_t num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word1;
@@ -3070,11 +3070,11 @@ void readframe(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word1, "SPRITESUBNUMBER") || fastcmp(word1, "SPRITEFRAME"))
 			{
-				states[num].frame = (INT32)get_number(word2); // So the FF_ flags get calculated
+				states[num].frame = (int32_t)get_number(word2); // So the FF_ flags get calculated
 			}
 			else if (fastcmp(word1, "DURATION"))
 			{
-				states[num].tics = (INT32)get_number(word2); // So TICRATE can be used
+				states[num].tics = (int32_t)get_number(word2); // So TICRATE can be used
 			}
 			else if (fastcmp(word1, "NEXT"))
 			{
@@ -3083,11 +3083,11 @@ void readframe(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word1, "VAR1"))
 			{
-				states[num].var1 = (INT32)get_number(word2);
+				states[num].var1 = (int32_t)get_number(word2);
 			}
 			else if (fastcmp(word1, "VAR2"))
 			{
-				states[num].var2 = (INT32)get_number(word2);
+				states[num].var2 = (int32_t)get_number(word2);
 			}
 			else if (fastcmp(word1, "ACTION"))
 			{
@@ -3141,13 +3141,13 @@ void readframe(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
-void readsound(MYFILE *f, INT32 num)
+void readsound(MYFILE *f, int32_t num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word;
 	char *word2;
 	char *tmp;
-	INT32 value;
+	int32_t value;
 
 	do
 	{
@@ -3250,13 +3250,13 @@ void readsound(MYFILE *f, INT32 num)
 	return true;
 }*/
 
-void reademblemdata(MYFILE *f, INT32 num)
+void reademblemdata(MYFILE *f, int32_t num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word = s;
 	char *word2;
 	char *tmp;
-	INT32 value;
+	int32_t value;
 
 	memset(&emblemlocations[num-1], 0, sizeof(emblem_t));
 
@@ -3309,10 +3309,10 @@ void reademblemdata(MYFILE *f, INT32 num)
 				else if (fastcmp(word2, "TIME"))
 					emblemlocations[num-1].type = ET_TIME;
 				else
-					emblemlocations[num-1].type = (UINT8)value;
+					emblemlocations[num-1].type = (uint8_t)value;
 			}
 			else if (fastcmp(word, "TAG"))
-				emblemlocations[num-1].tag = (INT16)value;
+				emblemlocations[num-1].tag = (int16_t)value;
 			else if (fastcmp(word, "MAPNAME"))
 			{
 				emblemlocations[num-1].level = Z_StrDup(word2);
@@ -3327,7 +3327,7 @@ void reademblemdata(MYFILE *f, INT32 num)
 				if (value < 'A' || value > 'Z')
 					deh_warning("Emblem %d: sprite must be from A - Z (1 - 26)", num);
 				else
-					emblemlocations[num-1].sprite = (UINT8)value;
+					emblemlocations[num-1].sprite = (uint8_t)value;
 			}
 			else if (fastcmp(word, "COLOR"))
 				emblemlocations[num-1].color = get_number(word2);
@@ -3362,13 +3362,13 @@ void reademblemdata(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
-void readextraemblemdata(MYFILE *f, INT32 num)
+void readextraemblemdata(MYFILE *f, int32_t num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word = s;
 	char *word2;
 	char *tmp;
-	INT32 value;
+	int32_t value;
 
 	memset(&extraemblems[num-1], 0, sizeof(extraemblem_t));
 
@@ -3410,9 +3410,9 @@ void readextraemblemdata(MYFILE *f, INT32 num)
 				deh_strlcpy(extraemblems[num-1].description, word2,
 					sizeof (extraemblems[num-1].description), va("Extra emblem %d: objective", num));
 			else if (fastcmp(word, "CONDITIONSET"))
-				extraemblems[num-1].conditionset = (UINT8)value;
+				extraemblems[num-1].conditionset = (uint8_t)value;
 			else if (fastcmp(word, "SHOWCONDITIONSET"))
-				extraemblems[num-1].showconditionset = (UINT8)value;
+				extraemblems[num-1].showconditionset = (uint8_t)value;
 			else
 			{
 				strupr(word2);
@@ -3426,7 +3426,7 @@ void readextraemblemdata(MYFILE *f, INT32 num)
 					if (value < 'A' || value > 'Z')
 						deh_warning("Emblem %d: sprite must be from A - Z (1 - 26)", num);
 					else
-						extraemblems[num-1].sprite = (UINT8)value;
+						extraemblems[num-1].sprite = (uint8_t)value;
 				}
 				else if (fastcmp(word, "COLOR"))
 					extraemblems[num-1].color = get_number(word2);
@@ -3444,13 +3444,13 @@ void readextraemblemdata(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
-void readunlockable(MYFILE *f, INT32 num)
+void readunlockable(MYFILE *f, int32_t num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word = s;
 	char *word2;
 	char *tmp;
-	INT32 i;
+	int32_t i;
 
 	memset(&unlockables[num], 0, sizeof(unlockable_t));
 	unlockables[num].objective[0] = '/';
@@ -3497,13 +3497,13 @@ void readunlockable(MYFILE *f, INT32 num)
 				strupr(word2);
 
 				if (fastcmp(word, "CONDITIONSET"))
-					unlockables[num].conditionset = (UINT8)i;
+					unlockables[num].conditionset = (uint8_t)i;
 				else if (fastcmp(word, "SHOWCONDITIONSET"))
-					unlockables[num].showconditionset = (UINT8)i;
+					unlockables[num].showconditionset = (uint8_t)i;
 				else if (fastcmp(word, "NOCECHO"))
-					unlockables[num].nocecho = (UINT8)(i || word2[0] == 'T' || word2[0] == 'Y');
+					unlockables[num].nocecho = (uint8_t)(i || word2[0] == 'T' || word2[0] == 'Y');
 				else if (fastcmp(word, "NOCHECKLIST"))
-					unlockables[num].nochecklist = (UINT8)(i || word2[0] == 'T' || word2[0] == 'Y');
+					unlockables[num].nochecklist = (uint8_t)(i || word2[0] == 'T' || word2[0] == 'Y');
 				else if (fastcmp(word, "TYPE"))
 				{
 					if (fastcmp(word2, "NONE"))
@@ -3537,7 +3537,7 @@ void readunlockable(MYFILE *f, INT32 num)
 					else if (fastcmp(word2, "PANDORA"))
 						unlockables[num].type = SECRET_PANDORA;
 					else
-						unlockables[num].type = (INT16)i;
+						unlockables[num].type = (int16_t)i;
 				}
 				else if (fastcmp(word, "VAR"))
 				{
@@ -3554,17 +3554,17 @@ void readunlockable(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
-static void readcondition(UINT8 set, UINT32 id, char *word2)
+static void readcondition(uint8_t set, uint32_t id, char *word2)
 {
-	INT32 i;
+	int32_t i;
 	char *params[4]; // condition, requirement, extra info, extra info
 	char *spos;
 
 	conditiontype_t ty;
-	INT32 re;
-	INT16 x1 = 0, x2 = 0;
+	int32_t re;
+	int16_t x1 = 0, x2 = 0;
 
-	INT32 offset = 0;
+	int32_t offset = 0;
 
 	spos = strtok(word2, " ");
 
@@ -3703,17 +3703,17 @@ static void readcondition(UINT8 set, UINT32 id, char *word2)
 		return;
 	}
 
-	M_AddRawCondition(set, (UINT8)id, ty, re, x1, x2);
+	M_AddRawCondition(set, (uint8_t)id, ty, re, x1, x2);
 }
 
-void readconditionset(MYFILE *f, UINT8 setnum)
+void readconditionset(MYFILE *f, uint8_t setnum)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word = s;
 	char *word2;
 	char *tmp;
-	UINT8 id;
-	UINT8 previd = 0;
+	uint8_t id;
+	uint8_t previd = 0;
 
 	M_ClearConditionSet(setnum);
 
@@ -3749,7 +3749,7 @@ void readconditionset(MYFILE *f, UINT8 setnum)
 
 			if (fastncmp(word, "CONDITION", 9))
 			{
-				id = (UINT8)atoi(word + 9);
+				id = (uint8_t)atoi(word + 9);
 				if (id == 0)
 				{
 					deh_warning("Condition set %d: unknown word '%s'", setnum, word);
@@ -3779,7 +3779,7 @@ void readmaincfg(MYFILE *f)
 	char *word = s;
 	char *word2;
 	char *tmp;
-	INT32 value;
+	int32_t value;
 
 	do
 	{
@@ -3836,51 +3836,51 @@ void readmaincfg(MYFILE *f)
 			}
 			else if (fastcmp(word, "REDTEAM"))
 			{
-				skincolor_redteam = (UINT16)get_number(word2);
+				skincolor_redteam = (uint16_t)get_number(word2);
 			}
 			else if (fastcmp(word, "BLUETEAM"))
 			{
-				skincolor_blueteam = (UINT16)get_number(word2);
+				skincolor_blueteam = (uint16_t)get_number(word2);
 			}
 			else if (fastcmp(word, "REDRING"))
 			{
-				skincolor_redring = (UINT16)get_number(word2);
+				skincolor_redring = (uint16_t)get_number(word2);
 			}
 			else if (fastcmp(word, "BLUERING"))
 			{
-				skincolor_bluering = (UINT16)get_number(word2);
+				skincolor_bluering = (uint16_t)get_number(word2);
 			}
 			else if (fastcmp(word, "INVULNTICS"))
 			{
-				invulntics = (UINT16)get_number(word2);
+				invulntics = (uint16_t)get_number(word2);
 			}
 			else if (fastcmp(word, "SNEAKERTICS"))
 			{
-				sneakertics = (UINT16)get_number(word2);
+				sneakertics = (uint16_t)get_number(word2);
 			}
 			else if (fastcmp(word, "FLASHINGTICS"))
 			{
-				flashingtics = (UINT16)get_number(word2);
+				flashingtics = (uint16_t)get_number(word2);
 			}
 			else if (fastcmp(word, "TAILSFLYTICS"))
 			{
-				tailsflytics = (UINT16)get_number(word2);
+				tailsflytics = (uint16_t)get_number(word2);
 			}
 			else if (fastcmp(word, "UNDERWATERTICS"))
 			{
-				underwatertics = (UINT16)get_number(word2);
+				underwatertics = (uint16_t)get_number(word2);
 			}
 			else if (fastcmp(word, "SPACETIMETICS"))
 			{
-				spacetimetics = (UINT16)get_number(word2);
+				spacetimetics = (uint16_t)get_number(word2);
 			}
 			else if (fastcmp(word, "EXTRALIFETICS"))
 			{
-				extralifetics = (UINT16)get_number(word2);
+				extralifetics = (uint16_t)get_number(word2);
 			}
 			else if (fastcmp(word, "NIGHTSLINKTICS"))
 			{
-				nightslinktics = (UINT16)get_number(word2);
+				nightslinktics = (uint16_t)get_number(word2);
 			}
 			else if (fastcmp(word, "GAMEOVERTICS"))
 			{
@@ -3937,7 +3937,7 @@ void readmaincfg(MYFILE *f)
 			}
 			else if (fastcmp(word, "INTROTOPLAY"))
 			{
-				introtoplay = (UINT8)get_number(word2);
+				introtoplay = (uint8_t)get_number(word2);
 				// range check, you morons.
 				if (introtoplay > 128)
 					introtoplay = 128;
@@ -3945,7 +3945,7 @@ void readmaincfg(MYFILE *f)
 			}
 			else if (fastcmp(word, "CREDITSCUTSCENE"))
 			{
-				creditscutscene = (UINT8)get_number(word2);
+				creditscutscene = (uint8_t)get_number(word2);
 				// range check, you morons.
 				if (creditscutscene > 128)
 					creditscutscene = 128;
@@ -3986,22 +3986,22 @@ void readmaincfg(MYFILE *f)
 			}
 			else if (fastcmp(word, "TITLEPICSX"))
 			{
-				ttx = (INT16)get_number(word2);
+				ttx = (int16_t)get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSY"))
 			{
-				tty = (INT16)get_number(word2);
+				tty = (int16_t)get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSLOOP"))
 			{
-				ttloop = (INT16)get_number(word2);
+				ttloop = (int16_t)get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSTICS"))
 			{
-				tttics = (UINT16)get_number(word2);
+				tttics = (uint16_t)get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLESCROLLSPEED") || fastcmp(word, "TITLESCROLLXSPEED"))
@@ -4016,7 +4016,7 @@ void readmaincfg(MYFILE *f)
 			}
 			else if (fastcmp(word, "NUMDEMOS"))
 			{
-				numDemos = (UINT8)get_number(word2);
+				numDemos = (uint8_t)get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "DEMODELAYTIME"))
@@ -4031,11 +4031,11 @@ void readmaincfg(MYFILE *f)
 			}
 			else if (fastcmp(word, "USE1UPSOUND"))
 			{
-				use1upSound = (UINT8)(value || word2[0] == 'T' || word2[0] == 'Y');
+				use1upSound = (uint8_t)(value || word2[0] == 'T' || word2[0] == 'Y');
 			}
 			else if (fastcmp(word, "MAXXTRALIFE"))
 			{
-				maxXtraLife = (UINT8)get_number(word2);
+				maxXtraLife = (uint8_t)get_number(word2);
 			}
 
 			else if (fastcmp(word, "GAMEDATA"))
@@ -4103,10 +4103,10 @@ void readmaincfg(MYFILE *f)
 // SRB2KART
 //
 
-static void invalidateacrosscups(UINT16 map)
+static void invalidateacrosscups(uint16_t map)
 {
 	cupheader_t *cup = kartcupheaders;
-	UINT8 i;
+	uint8_t i;
 
 	if (map >= nummapheaders)
 		return;
@@ -4141,8 +4141,8 @@ void readwipes(MYFILE *f)
 	char *pword;
 	char *word2;
 	char *tmp;
-	INT32 value;
-	INT32 wipeoffset;
+	int32_t value;
+	int32_t wipeoffset;
 
 	do
 	{
@@ -4259,7 +4259,7 @@ void readwipes(MYFILE *f)
 				continue;
 			}
 
-			wipedefs[wipeoffset] = (UINT8)value;
+			wipedefs[wipeoffset] = (uint8_t)value;
 		}
 	} while (!myfeof(f));
 
@@ -4276,7 +4276,7 @@ void readcupheader(MYFILE *f, cupheader_t *cup)
 	char *word;
 	char *word2;
 	char *tmp;
-	INT32 i;
+	int32_t i;
 
 	do
 	{
@@ -4389,14 +4389,14 @@ void readcupheader(MYFILE *f, cupheader_t *cup)
 			else if (fastcmp(word, "EMERALDNUM"))
 			{
 				if (i >= 0 && i <= 14)
-					cup->emeraldnum = (UINT8)i;
+					cup->emeraldnum = (uint8_t)i;
 				else
 					deh_warning("%s Cup: invalid emerald number %d", cup->name, i);
 			}
 			else if (fastcmp(word, "UNLOCKABLE"))
 			{
 				if (i >= 0 && i <= MAXUNLOCKABLES) // 0 for no unlock required, anything else requires something
-					cup->unlockrequired = (SINT8)i - 1;
+					cup->unlockrequired = (int8_t)i - 1;
 				else
 					deh_warning("%s Cup: invalid unlockable number %d", cup->name, i);
 			}
@@ -4416,9 +4416,9 @@ void readfollower(MYFILE *f)
 	char testname[SKINNAMESIZE+1];
 
 	dboolean nameset;
-	INT32 fallbackstate = 0;
-	INT32 res;
-	INT32 i;
+	int32_t fallbackstate = 0;
+	int32_t res;
+	int32_t i;
 
 	if (numfollowers > MAXFOLLOWERS)
 	{
@@ -4633,7 +4633,7 @@ void readfollower(MYFILE *f)
 	res = K_FollowerAvailable(testname);
 	if (res > -1)	// yikes, someone else has stolen our name already
 	{
-		INT32 startlen = strlen(testname);
+		int32_t startlen = strlen(testname);
 		char cpy[2];
 		//deh_warning("There was already a follower with the same name. (%s)", testname);	This warning probably isn't necessary anymore?
 		sprintf(cpy, "%d", numfollowers);
@@ -4716,7 +4716,7 @@ if (!followers[numfollowers].field) \
 	Z_Free(s);
 }
 
-void readweather(MYFILE *f, INT32 num)
+void readweather(MYFILE *f, int32_t num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word;
@@ -4780,7 +4780,7 @@ void readkartitem(MYFILE *f, kartitem_t *item)
 	char *word = s;
 	char *word2;
 	char *tmp;
-	INT32 i;
+	int32_t i;
 
 	do if (myfgets(s, MAXLINELEN, f))
 	{
@@ -4813,7 +4813,7 @@ void readkartitem(MYFILE *f, kartitem_t *item)
 		if (fastcmp(word, "BIGPATCHES") || fastcmp(word, "SMALLPATCHES") ||
 		    fastcmp(word, "BIGALTPATCHES") || fastcmp(word, "SMALLALTPATCHES"))
 		{
-			UINT8 patch_idx = (word[0] == 'B') ? 0 : 1;
+			uint8_t patch_idx = (word[0] == 'B') ? 0 : 1;
 
 			// Alt. patches are stored in the same array, just in their own slots.
 			patch_idx += (word[3 + (patch_idx << 1)] == 'A') ? 2 : 0;
@@ -4926,7 +4926,7 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 		}
 		else if (fastncmp(word, "RUNNERDISTANCE", 14))
 		{
-			const UINT8 idx = (fastcmp(word+14, "LEGACY") ? 1 : 0);
+			const uint8_t idx = (fastcmp(word+14, "LEGACY") ? 1 : 0);
 
 			result->baserunneraug[idx] = get_number(word2);
 
@@ -4934,7 +4934,7 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 			{
 				char *cvname;
 
-				UINT16 distprefixlen = strlen(result->isalt ? "runnerdistalt" : "runnerdist");
+				uint16_t distprefixlen = strlen(result->isalt ? "runnerdistalt" : "runnerdist");
 
 				if (idx)
 				{
@@ -4975,7 +4975,7 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 		}
 		else if (fastncmp(word, "ODDS", 4))
 		{
-			UINT8 oddstable;
+			uint8_t oddstable;
 			if (fastcmp(word+4, "RACE"))
 				oddstable = ODDS_RACE;
 			else if (fastcmp(word+4, "BATTLE"))
@@ -4988,10 +4988,10 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 				continue;
 			}
 
-			UINT8 *odds = result->odds[oddstable];
+			uint8_t *odds = result->odds[oddstable];
 			memset(odds, 0, sizeof(*odds)*MAXODDS);
 			tmp = strtok(word2,",");
-			for (UINT8 i = 0; i <= MAXODDS; i++)
+			for (uint8_t i = 0; i <= MAXODDS; i++)
 			{
 				if (i == oddstablemax[oddstable])
 				{
@@ -5005,7 +5005,7 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 		}
 		else if (fastncmp(word, "UNIQUEODDS", 10))
 		{
-			UINT8 oddstable;
+			uint8_t oddstable;
 			if (fastcmp(word+10, "RACE"))
 				oddstable = ODDS_RACE;
 			else if (fastcmp(word+10, "BATTLE"))
@@ -5175,9 +5175,9 @@ panelfunc_f *get_panelfunc(const char *word)
 	return NULL;
 }
 
-/*static INT16 get_gametype(const char *word)
+/*static int16_t get_gametype(const char *word)
 { // Returns the value of GT_ enumerations
-	INT16 i;
+	int16_t i;
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
 	if (fastncmp("GT_",word,3))
@@ -5261,7 +5261,7 @@ struct {
 {
 	// Part 1: You got the start of the word, now find the end.
   const char *p;
-	INT32 i;
+	int32_t i;
 	for (p = line+1; *p; p++) {
 		if (*p == ' ' || *p == '\t')
 			break;
@@ -5284,9 +5284,9 @@ struct {
 	}
 }
 
-static INT32 operation_pad(const char **word)
+static int32_t operation_pad(const char **word)
 { // Brings word the next operation and returns the operation number.
-	INT32 i;
+	int32_t i;
 	for (; **word; (*word)++) {
 		if (**word == ' ' || **word == '\t')
 			continue;
@@ -5311,7 +5311,7 @@ static void const_warning(const char *type, const char *word)
 
 static fixed_t find_const(const char **rword)
 { // Finds the value of constants and returns it, bringing word to the next operation.
-	INT32 i;
+	int32_t i;
 	fixed_t r;
 	char *word = read_word(*rword);
 	*rword += strlen(word);

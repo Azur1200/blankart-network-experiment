@@ -40,7 +40,7 @@ typedef struct GLRGBAFloat GLRGBAFloat;
 // lighttable list item
 struct LTListItem
 {
-	UINT32 id;
+	uint32_t id;
 	struct LTListItem *next;
 };
 typedef struct LTListItem LTListItem;
@@ -578,7 +578,7 @@ dboolean SetupGLfunc(void)
 }
 
 static dboolean gl_shadersenabled = false;
-static INT32 gl_allowshaders = 0;
+static int32_t gl_allowshaders = 0;
 
 #ifdef GL_SHADERS
 typedef GLuint 	(APIENTRY *PFNglCreateShader)		(GLenum);
@@ -627,7 +627,7 @@ static PFNglGetUniformLocation pglGetUniformLocation;
 
 // 13062019
 
-static INT32 gl_enable_screen_textures = 2;
+static int32_t gl_enable_screen_textures = 2;
 
 typedef enum
 {
@@ -687,12 +687,12 @@ static float shader_leveltime = 0.0f;
 static float shader_light_x = 0.0f;
 static float shader_light_y = 0.0f;
 static float shader_light_z = 0.0f;
-static INT32 shader_light_contrast = 0;
-static INT32 shader_light_backlight = 0;
+static int32_t shader_light_contrast = 0;
+static int32_t shader_light_backlight = 0;
 
 // Lactozilla: Shader functions
 static dboolean Shader_CompileProgram(gl_shader_t *shader, GLint i);
-static void Shader_CompileError(const char *message, GLuint program, INT32 shadernum);
+static void Shader_CompileError(const char *message, GLuint program, int32_t shadernum);
 static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAFloat *tint, GLRGBAFloat *fade);
 
 static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -826,7 +826,7 @@ dboolean GL_CompileShader(int slot)
 // Those are given to the uniforms.
 //
 
-void GL_SetShaderInfo(hwdshaderinfo_t info, INT32 value)
+void GL_SetShaderInfo(hwdshaderinfo_t info, int32_t value)
 {
 #ifdef GL_SHADERS
 	switch (info)
@@ -1236,7 +1236,7 @@ void Flush(void)
 // isExtAvailable   : Look if an OpenGL extension is available
 // Returns          : true if extension available
 // -----------------+
-INT32 isExtAvailable(const char *extension, const GLubyte *start)
+int32_t isExtAvailable(const char *extension, const GLubyte *start)
 {
 	GLubyte         *where, *terminator;
 
@@ -1280,10 +1280,10 @@ void GL_ClearMipMapCache(void)
 // Writes screen texture tex into dst_data.
 // Pixel format is 24-bit RGB. Row order is top to bottom.
 // Dimensions are screen_width * screen_height.
-void GL_ReadScreenTexture(int tex, UINT8 *restrict dest, INT32 scale)
+void GL_ReadScreenTexture(int tex, uint8_t *restrict dest, int32_t scale)
 {
-	const INT32 stride = (screen_width/scale)*3;
-	INT32 scanlines = screen_height;
+	const int32_t stride = (screen_width/scale)*3;
+	int32_t scanlines = screen_height;
 	GLubyte * restrict image;
 
 	// at the time this function is called, generic2 can be found drawn on the framebuffer
@@ -1309,7 +1309,7 @@ void GL_ReadScreenTexture(int tex, UINT8 *restrict dest, INT32 scale)
 		image -= screen_width*scale*3;
 		if (scale == 1)
 			memcpy(dest, image, stride);
-		else for (INT32 i = 0; i < stride; i += 3)
+		else for (int32_t i = 0; i < stride; i += 3)
 			memcpy(dest + i, image + i*scale, 3);
 		dest += stride;
 	}
@@ -1336,7 +1336,7 @@ void GL_SetPalette(RGBA_t *palette)
 // -----------------+
 // GClipRect        : Defines the 2D hardware clipping window
 // -----------------+
-void GL_GClipRect(INT32 minx, INT32 miny, INT32 maxx, INT32 maxy, float nearclip)
+void GL_GClipRect(int32_t minx, int32_t miny, int32_t maxx, int32_t maxy, float nearclip)
 {
 	// GL_DBG_Printf ("GClipRect(%d, %d, %d, %d)\n", minx, miny, maxx, maxy);
 
@@ -1650,9 +1650,9 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 	GLuint num = pTexInfo->downloaded;
 	dboolean update = true;
 
-	INT32 w = pTexInfo->width, h = pTexInfo->height;
-	INT32 i, j;
-	INT32 idx;
+	int32_t w = pTexInfo->width, h = pTexInfo->height;
+	int32_t i, j;
+	int32_t idx;
 
 	const GLubyte *pImgData = (const GLubyte *)pTexInfo->data;
 	const GLvoid *ptex = NULL;
@@ -1668,7 +1668,7 @@ void GL_UpdateTexture(GLMipmap_t *pTexInfo)
 		update = false;
 	}
 
-	//GL_DBG_Printf("UpdateTexture %d %x\n", (INT32)num, pImgData);
+	//GL_DBG_Printf("UpdateTexture %d %x\n", (int32_t)num, pImgData);
 
 	texformat = textureformatGL;
 	const GLTextureFormat_t texinfoformat = pTexInfo->format;
@@ -1843,10 +1843,10 @@ void GL_SetTexture(GLMipmap_t *pTexInfo)
 		GL_UpdateTexture(pTexInfo);
 
 		newTex->texture = pTexInfo;
-		newTex->downloaded = (UINT32)pTexInfo->downloaded;
-		newTex->width = (UINT32)pTexInfo->width;
-		newTex->height = (UINT32)pTexInfo->height;
-		newTex->format = (UINT32)pTexInfo->format;
+		newTex->downloaded = (uint32_t)pTexInfo->downloaded;
+		newTex->width = (uint32_t)pTexInfo->width;
+		newTex->height = (uint32_t)pTexInfo->height;
+		newTex->format = (uint32_t)pTexInfo->format;
 
 		// insertion at the tail
 		if (TexCacheTail)
@@ -2102,7 +2102,7 @@ static dboolean Shader_CompileProgram(gl_shader_t *shader, GLint i)
 	return true;
 }
 
-static void Shader_CompileError(const char *message, GLuint program, INT32 shadernum)
+static void Shader_CompileError(const char *message, GLuint program, int32_t shadernum)
 {
 	GLchar *infoLog = NULL;
 	GLint logLength;
@@ -2205,7 +2205,7 @@ static void PreparePolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FBITFIELD
 			return;
 
 		// the damned slow glReadPixels functions :(
-		pglReadPixels((INT32)px-4, (INT32)py, 8, 8, GL_DEPTH_COMPONENT, GL_FLOAT, buf);
+		pglReadPixels((int32_t)px-4, (int32_t)py, 8, 8, GL_DEPTH_COMPONENT, GL_FLOAT, buf);
 		//GL_DBG_Printf("DepthBuffer: %f %f\n", buf[0][0], buf[3][3]);
 
 		for (i = 0; i < 8; i++)
@@ -2259,7 +2259,7 @@ void GL_DrawPolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, F
 		Clamp2D(GL_TEXTURE_WRAP_T);
 }
 
-void GL_DrawIndexedTriangles(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, UINT32 *IndexArray)
+void GL_DrawIndexedTriangles(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FUINT iNumPts, FBITFIELD PolyFlags, uint32_t *IndexArray)
 {
 	PreparePolygon(pSurf, pOutVerts, PolyFlags);
 
@@ -2351,7 +2351,7 @@ void GL_RenderSkyDome(gl_sky_t *sky)
 	pglDisableClientState(GL_COLOR_ARRAY);
 }
 
-void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value)
+void GL_SetSpecialState(hwdspecialstate_t IdState, int32_t Value)
 {
 	switch (IdState)
 	{
@@ -2425,7 +2425,7 @@ void GL_SetSpecialState(hwdspecialstate_t IdState, INT32 Value)
 	}
 }
 
-void GL_SetStencilMode(hwdstencilmode_t mode, INT32 ref)
+void GL_SetStencilMode(hwdstencilmode_t mode, int32_t ref)
 {
 	switch (mode)
 	{
@@ -2650,7 +2650,7 @@ void GL_CreateModelVBOs(model_t *model)
 
 #define BUFFER_OFFSET(i) ((void*)(i))
 
-static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float tics, INT32 nextFrameIndex, FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface)
+static void DrawModelEx(model_t *model, int32_t frameIndex, float duration, float tics, int32_t nextFrameIndex, FTransform *pos, float hscale, float vscale, uint8_t flipped, uint8_t hflipped, FSurfaceInfo *Surface)
 {
 	static GLRGBAFloat poly = {0,0,0,0};
 	static GLRGBAFloat tint = {0,0,0,0};
@@ -2937,7 +2937,7 @@ static void DrawModelEx(model_t *model, INT32 frameIndex, float duration, float 
 // -----------------+
 // HWRAPI DrawModel : Draw a model
 // -----------------+
-void GL_DrawModel(model_t *model, INT32 frameIndex, float duration, float tics, INT32 nextFrameIndex, FTransform *pos, float hscale, float vscale, UINT8 flipped, UINT8 hflipped, FSurfaceInfo *Surface)
+void GL_DrawModel(model_t *model, int32_t frameIndex, float duration, float tics, int32_t nextFrameIndex, FTransform *pos, float hscale, float vscale, uint8_t flipped, uint8_t hflipped, FSurfaceInfo *Surface)
 {
 	DrawModelEx(model, frameIndex, duration, tics, nextFrameIndex, pos, hscale, vscale, flipped, hflipped, Surface);
 }
@@ -3021,10 +3021,10 @@ void GL_SetTransform(FTransform *stransform)
 
 }
 
-INT32 GL_GetTextureUsed(void)
+int32_t GL_GetTextureUsed(void)
 {
 	FTextureInfo *tmp = TexCacheHead;
-	INT32 res = 0;
+	int32_t res = 0;
 
 	while (tmp)
 	{
@@ -3048,7 +3048,7 @@ INT32 GL_GetTextureUsed(void)
 
 void GL_PostImgRedraw(float points[SCREENVERTS][SCREENVERTS][2])
 {
-	INT32 x, y;
+	int32_t x, y;
 	float float_x, float_y, float_nextx, float_nexty;
 	float xfix, yfix;
 
@@ -3196,7 +3196,7 @@ void GL_DoScreenWipe(int wipeStart, int wipeEnd)
 {
 	float xfix, yfix;
 
-	INT32 fademaskdownloaded = tex_downloaded; // the fade mask that has been set
+	int32_t fademaskdownloaded = tex_downloaded; // the fade mask that has been set
 
 	if (!gl_enable_screen_textures)
 		return;
@@ -3300,7 +3300,7 @@ void GL_MakeScreenTexture(int tex)
 	tex_downloaded = screenTextures[tex];
 }
 
-void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
+void GL_RenderVhsEffect(fixed_t upbary, fixed_t downbary, uint8_t updistort, uint8_t downdistort, uint8_t barsize)
 {
 	float xfix, yfix;
 	float fix[8];
@@ -3487,7 +3487,7 @@ void GL_DrawScreenFinalTexture(int tex, int width, int height)
 	tex_downloaded = screenTextures[tex];
 }
 
-void GL_SetPaletteLookup(UINT8 *lut)
+void GL_SetPaletteLookup(uint8_t *lut)
 {
 	GLenum internalFormat;
 	if (gl_version[0] == '1' || gl_version[0] == '2')
@@ -3513,7 +3513,7 @@ void GL_SetPaletteLookup(UINT8 *lut)
 	pglActiveTexture(GL_TEXTURE0);
 }
 
-UINT32 GL_CreateLightTable(RGBA_t *hw_lighttable)
+uint32_t GL_CreateLightTable(RGBA_t *hw_lighttable)
 {
 	LTListItem *item = malloc(sizeof(LTListItem));
 	if (!LightTablesTail)

@@ -41,13 +41,13 @@
 
 #include "discord.h"
 
-INT32 numskins = 0;
-INT32 num_multivoiceskins = 0;
+int32_t numskins = 0;
+int32_t num_multivoiceskins = 0;
 
 skin_t **skins;
 skin_t * multivoiceskins[MAXSKINS];
 
-INT32 skinsorted[MAXSKINS];
+int32_t skinsorted[MAXSKINS];
 
 // FIXTHIS: don't work because it must be inistilised before the config load
 //#define SKINVALUES
@@ -71,9 +71,9 @@ kartvoiceinfo_t localvoicedata[MAXSPLITSCREENPLAYERS] = {
 // For super players, does the same as above - but tries the super equivalent for each sprite2 before the non-super version.
 //
 
-UINT8 P_GetSkinSprite2(skin_t *skin, UINT8 spr2, player_t *player)
+uint8_t P_GetSkinSprite2(skin_t *skin, uint8_t spr2, player_t *player)
 {
-	UINT8 super = 0, i = 0;
+	uint8_t super = 0, i = 0;
 
 	(void)player;
 
@@ -115,9 +115,9 @@ UINT8 P_GetSkinSprite2(skin_t *skin, UINT8 spr2, player_t *player)
 }
 
 // converts the kart player frame in inframe to the equivalent sprite2 + frame
-UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe)
+uint8_t P_KartFrameToSprite2(skin_t *skin, uint8_t inframe, uint8_t *outframe)
 {
-	UINT8 spr2, frame = 0;
+	uint8_t spr2, frame = 0;
 #define F(x) case x - 'A':
 	switch (inframe & FF_FRAMEMASK)
 	{
@@ -186,7 +186,7 @@ UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe)
 }
 
 // returns the sound flags that should be applied to a voice's sound array
-static INT32 R_GetVoiceArraySoundFlags(const kartvoice_t *voice, const sfxenum_t *array)
+static int32_t R_GetVoiceArraySoundFlags(const kartvoice_t *voice, const sfxenum_t *array)
 {
 	if (array == &voice->overtake || array == &voice->hitem)
 		return SF_NOINTERRUPT;
@@ -256,7 +256,7 @@ static void Sk_SetDefaultValue(skin_t *skin)
 	//
 	memset(skin, 0, sizeof (skin_t));
 	snprintf(skin->name,
-		sizeof skin->name, "skin %u", (UINT32)(skin->skinnum));
+		sizeof skin->name, "skin %u", (uint32_t)(skin->skinnum));
 	skin->name[sizeof skin->name - 1] = '\0';
 	skin->wadnum = INT16_MAX;
 
@@ -279,7 +279,7 @@ static void Sk_SetDefaultValue(skin_t *skin)
 	skin->highresscale = FRACUNIT;
 }
 
-static void R_IHateThatHedgehog(UINT16 wadnum);
+static void R_IHateThatHedgehog(uint16_t wadnum);
 
 //
 // Initialize the basic skins
@@ -296,10 +296,10 @@ void R_InitSkins(void)
 	for (i = 0; i < numwadfiles; i++)
 	{
 		if (i == MAINWAD_CHARS)
-			R_IHateThatHedgehog((UINT16)i);
-		R_AddSkins((UINT16)i);
+			R_IHateThatHedgehog((uint16_t)i);
+		R_AddSkins((uint16_t)i);
 		if (!wadfiles[i]->compatmode)
-			R_PatchSkins((UINT16)i);
+			R_PatchSkins((uint16_t)i);
 		R_LoadSpriteInfoLumps(i, wadfiles[i]->numlumps);
 
 #ifdef HAVE_DISCORDRPC
@@ -310,11 +310,11 @@ void R_InitSkins(void)
 	ST_ReloadSkinFaceGraphics();
 }
 
-UINT8 *R_GetSkinAvailabilities(void)
+uint8_t *R_GetSkinAvailabilities(void)
 {
-	UINT8 i, shif, byte;
-	INT32 skinid;
-	static UINT8 responsebuffer[MAXAVAILABILITY];
+	uint8_t i, shif, byte;
+	int32_t skinid;
+	static uint8_t responsebuffer[MAXAVAILABILITY];
 
 	memset(&responsebuffer, 0, sizeof(responsebuffer));
 
@@ -346,8 +346,8 @@ UINT8 *R_GetSkinAvailabilities(void)
 //
 static int CompareSkinIds(const void *a, const void *b)
 {
-	const INT32 val_a = *((const INT32 *)a);
-	const INT32 val_b = *((const INT32 *)b);
+	const int32_t val_a = *((const int32_t *)a);
+	const int32_t val_b = *((const int32_t *)b);
 	if (val_a > val_b)
 			return 1;
 	else if (val_a < val_b)
@@ -358,16 +358,16 @@ static int CompareSkinIds(const void *a, const void *b)
 
 static int CompareSkinNames(const void *a, const void *b)
 {
-	const skin_t *in1 = skins[*(const INT32 *)a];
-	const skin_t *in2 = skins[*(const INT32 *)b];
+	const skin_t *in1 = skins[*(const int32_t *)a];
+	const skin_t *in2 = skins[*(const int32_t *)b];
 	return strcmp(in1->realname, in2->realname);
 }
 
 static int CompareSkinSpeeds(const void *a, const void *b)
 {
-	const skin_t *in1 = skins[*(const INT32 *)a];
-	const skin_t *in2 = skins[*(const INT32 *)b];
-	INT32 temp = 0;
+	const skin_t *in1 = skins[*(const int32_t *)a];
+	const skin_t *in2 = skins[*(const int32_t *)b];
+	int32_t temp = 0;
 	// check speed
 	if (in1->kartspeed < in2->kartspeed)
 		return -1;
@@ -387,9 +387,9 @@ static int CompareSkinSpeeds(const void *a, const void *b)
 
 static int CompareSkinWeights(const void *a, const void *b)
 {
-	const skin_t *in1 = skins[*(const INT32 *)a];
-	const skin_t *in2 = skins[*(const INT32 *)b];
-	INT32 temp = 0;
+	const skin_t *in1 = skins[*(const int32_t *)a];
+	const skin_t *in2 = skins[*(const int32_t *)b];
+	int32_t temp = 0;
 	// check weight
 	if (in1->kartweight < in2->kartweight)
 		return -1;
@@ -419,9 +419,9 @@ static int CompareSkinHandlings(const void *a, const void *b)
 
 static int CompareSkinColours(const void *a, const void *b)
 {
-	const skin_t *in1 = skins[*(const INT32 *)a];
-	const skin_t *in2 = skins[*(const INT32 *)b];
-	INT32 temp = 0;
+	const skin_t *in1 = skins[*(const int32_t *)a];
+	const skin_t *in2 = skins[*(const int32_t *)b];
+	int32_t temp = 0;
 
 	// check prefcolor
 	if (in1->prefcolor < in2->prefcolor)
@@ -462,12 +462,12 @@ void SortSkins(void)
 			_sortingFunc = CompareSkinIds;
 			break;
 	}
-	qs22j(skinsorted, numskins, sizeof(INT32), _sortingFunc);
+	qs22j(skinsorted, numskins, sizeof(int32_t), _sortingFunc);
 }
 
-INT32 FindSortedSkinIndex(INT32 skinnum)
+int32_t FindSortedSkinIndex(int32_t skinnum)
 {
-	for (INT32 i = 0; i < numskins; i++)
+	for (int32_t i = 0; i < numskins; i++)
 	{
 		if (skinsorted[i] == skinnum) return i;
 	}
@@ -476,12 +476,12 @@ INT32 FindSortedSkinIndex(INT32 skinnum)
 
 // returns true if available in circumstances, otherwise nope
 // warning don't use with an invalid skinnum other than -1 which always returns true
-dboolean R_SkinUsable(INT32 playernum, INT32 skinnum)
+dboolean R_SkinUsable(int32_t playernum, int32_t skinnum)
 {
 	dboolean needsunlocked = false;
 	dboolean useplayerstruct = (Playing() && playernum != -1);
-	UINT8 i;
-	INT32 skinid;
+	uint8_t i;
+	int32_t skinid;
 
 	if (skinnum == -1)
 	{
@@ -504,7 +504,7 @@ dboolean R_SkinUsable(INT32 playernum, INT32 skinnum)
 	if (metalrecording)
 	{
 		// Recording a Metal Sonic race
-		const INT32 metalskin = R_SkinAvailable("metalsonic");
+		const int32_t metalskin = R_SkinAvailable("metalsonic");
 		return (skinnum == metalskin);
 	}
 
@@ -540,8 +540,8 @@ dboolean R_SkinUsable(INT32 playernum, INT32 skinnum)
 	if (useplayerstruct)
 	{
 		// Use the netgame synchronized unlocks.
-		UINT8 shif = (skinnum % 8);
-		UINT8 byte = (skinnum / 8);
+		uint8_t shif = (skinnum % 8);
+		uint8_t byte = (skinnum / 8);
 		return !!(players[playernum].availabilities[byte] & (1 << shif));
 	}
 
@@ -551,14 +551,14 @@ dboolean R_SkinUsable(INT32 playernum, INT32 skinnum)
 
 // returns the skin number if the skin name is found (loaded from pwad)
 // warning return -1 if not found
-INT32 R_SkinAvailableEx(const char *name, dboolean usehash)
+int32_t R_SkinAvailableEx(const char *name, dboolean usehash)
 {
-	INT32 i;
+	int32_t i;
 
 	if (name == NULL)
 		return -1;
 
-	UINT32 hash = usehash == false ? 0 : HASH32(name, strlen(name));
+	uint32_t hash = usehash == false ? 0 : HASH32(name, strlen(name));
 
 	for (i = 0; i < numskins; i++)
 	{
@@ -573,9 +573,9 @@ INT32 R_SkinAvailableEx(const char *name, dboolean usehash)
 
 // Gets the player to the first usuable skin in the game.
 // (If your mod locked them all, then you kinda stupid)
-static INT32 GetPlayerDefaultSkin(INT32 playernum)
+static int32_t GetPlayerDefaultSkin(int32_t playernum)
 {
-	INT32 i;
+	int32_t i;
 
 	for (i = 0; i < numskins; i++)
 	{
@@ -590,9 +590,9 @@ static INT32 GetPlayerDefaultSkin(INT32 playernum)
 }
 
 // network code calls this when a 'skin change' is received
-void SetPlayerSkin(INT32 playernum, const char *skinname)
+void SetPlayerSkin(int32_t playernum, const char *skinname)
 {
-	INT32 i = R_SkinAvailable(skinname);
+	int32_t i = R_SkinAvailable(skinname);
 	player_t *player = &players[playernum];
 
 	if ((i != -1) && R_SkinUsable(playernum, i))
@@ -611,18 +611,18 @@ void SetPlayerSkin(INT32 playernum, const char *skinname)
 
 // Same as SetPlayerSkin, but uses the skin #.
 // network code calls this when a 'skin change' is received
-void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
+void SetPlayerSkinByNum(int32_t playernum, int32_t skinnum)
 {
 	player_t *player = &players[playernum];
 	skin_t *skin = skins[skinnum];
-	//UINT16 newcolor = 0;
-	//UINT8 i;
+	//uint16_t newcolor = 0;
+	//uint8_t i;
 
 	if (skinnum >= 0 && skinnum < numskins && R_SkinUsable(playernum, skinnum)) // Make sure it exists!
 	{
 		player->skin = skinnum;
 
-		player->charflags = (UINT32)skin->flags;
+		player->charflags = (uint32_t)skin->flags;
 
 		player->followitem = skin->followitem;
 
@@ -688,9 +688,9 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 
 // Gets the corresponding voice ID for a given voice's name.
 // Returns MAXSKINVOICES if nothing is found.
-INT32 R_FindIDForVoice(skin_t *skin, const char* voicename)
+int32_t R_FindIDForVoice(skin_t *skin, const char* voicename)
 {
-	INT32 i;
+	int32_t i;
 
 	if (skin == NULL || voicename == NULL)
 		return MAXSKINVOICES;
@@ -723,9 +723,9 @@ INT32 R_FindIDForVoice(skin_t *skin, const char* voicename)
 }
 
 // network code calls this when a 'voice change' is received
-void SetPlayerVoice(INT32 playernum, const char *voicename)
+void SetPlayerVoice(int32_t playernum, const char *voicename)
 {
-	INT32 voxid = R_FindIDForVoice(skins[players[playernum].skin], voicename);
+	int32_t voxid = R_FindIDForVoice(skins[players[playernum].skin], voicename);
 
 	if (voxid == MAXSKINVOICES)
 	{
@@ -737,7 +737,7 @@ void SetPlayerVoice(INT32 playernum, const char *voicename)
 }
 
 // network code calls this when a 'voice change' is received
-void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
+void SetPlayerVoiceByNum(int32_t playernum, uint16_t voicenum)
 {
 	player_t* player = &players[playernum];
 
@@ -797,9 +797,9 @@ void R_ApplySkinOnly(mobj_t *mo, skin_t *skin)
 // the first 6 characters (this is so we can have S_SKIN1, S_SKIN2..
 // for wad editors that don't like multiple resources of the same name)
 //
-static UINT16 W_CheckForSkinMarkerInPwad(UINT16 wadid, UINT16 startlump)
+static uint16_t W_CheckForSkinMarkerInPwad(uint16_t wadid, uint16_t startlump)
 {
-	UINT16 i;
+	uint16_t i;
 	const char *S_SKIN = "S_SKIN";
 	lumpinfo_t *lump_p;
 
@@ -828,9 +828,9 @@ static UINT16 W_CheckForSkinMarkerInPwad(UINT16 wadid, UINT16 startlump)
 // the first 6 characters (this is so we can have P_SKIN1, P_SKIN2..
 // for wad editors that don't like multiple resources of the same name)
 //
-static UINT16 W_CheckForPatchSkinMarkerInPwad(UINT16 wadid, UINT16 startlump)
+static uint16_t W_CheckForPatchSkinMarkerInPwad(uint16_t wadid, uint16_t startlump)
 {
-	UINT16 i;
+	uint16_t i;
 	const char *P_SKIN = "P_SKIN";
 	lumpinfo_t *lump_p;
 
@@ -847,7 +847,7 @@ static UINT16 W_CheckForPatchSkinMarkerInPwad(UINT16 wadid, UINT16 startlump)
 
 #define NUMKARTFRAMES 19
 #define S(f, s) { f - 'A', SPR2_##s },
-const UINT8 kart2spr2[26][2] = {
+const uint8_t kart2spr2[26][2] = {
 	S('A', STIN)
 	S('B', STIN)
 	S('C', STIL)
@@ -877,10 +877,10 @@ const UINT8 kart2spr2[26][2] = {
 };
 #undef S
 
-static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, skin_t *skin)
+static void R_LoadSkinSprites(uint16_t wadnum, uint16_t *lump, uint16_t *lastlump, skin_t *skin)
 {
-	UINT16 newlastlump;
-	UINT8 sprite2;
+	uint16_t newlastlump;
+	uint8_t sprite2;
 
 	*lump += 1; // start after S_SKIN
 	*lastlump = W_CheckNumForNamePwad("S_END",wadnum,*lump); // stop at S_END
@@ -1001,7 +1001,7 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 }
 #undef NUMKARTFRAMES
 
-static void R_IHateThatHedgehog(UINT16 wadnum)
+static void R_IHateThatHedgehog(uint16_t wadnum)
 {
 	skin_t *skin;;
 
@@ -1025,7 +1025,7 @@ static void R_IHateThatHedgehog(UINT16 wadnum)
 
 static kartvoice_t *allocvoice;
 
-static INT32 R_AddSkinToMultiVoiceArray(skin_t * skin)
+static int32_t R_AddSkinToMultiVoiceArray(skin_t * skin)
 {
 	if (num_multivoiceskins < 1)
 	{
@@ -1048,7 +1048,7 @@ static INT32 R_AddSkinToMultiVoiceArray(skin_t * skin)
 		}
 		else
 		{
-			INT32 i = 0;
+			int32_t i = 0;
 
 			for (i = 0; i < num_multivoiceskins; i++)
 			{
@@ -1070,9 +1070,9 @@ static INT32 R_AddSkinToMultiVoiceArray(skin_t * skin)
 // Allocates a voice onto the dehacked list, and iterates the provided output pointer
 // (should it exist).
 //
-static INT32 R_AllocKartVoice(skin_t *skin, const char* name)
+static int32_t R_AllocKartVoice(skin_t *skin, const char* name)
 {
-	INT32 vox_id = R_FindIDForVoice(skin, name);
+	int32_t vox_id = R_FindIDForVoice(skin, name);
 	if (vox_id != MAXSKINVOICES)
 		return vox_id; // already allocated
 
@@ -1114,8 +1114,8 @@ static dboolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value
 		size_t len = strlen(value);
 		size_t i;
 		char rivalname[SKINNAMESIZE+1] = {0};
-		UINT8 pos = 0;
-		UINT8 numrivals = 0;
+		uint8_t pos = 0;
+		uint8_t numrivals = 0;
 
 		// Can't use strtok, because the above function's already using it.
 		// Using it causes it to upset the saved pointer,
@@ -1175,7 +1175,7 @@ static dboolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value
 
 #define GETSKINCOLOR(field) else if (fasticmp(stoken, #field)) \
 { \
-	UINT16 color = R_GetColorByName(value); \
+	uint16_t color = R_GetColorByName(value); \
 	skin->field = (color ? color : SKINCOLOR_GREEN); \
 }
 	GETSKINCOLOR(prefcolor)
@@ -1183,7 +1183,7 @@ static dboolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value
 #undef GETSKINCOLOR
 	else if (fasticmp(stoken, "supercolor"))
 	{
-		UINT16 color = R_GetSuperColorByName(value);
+		uint16_t color = R_GetSuperColorByName(value);
 		skin->supercolor = (color ? color : SKINCOLOR_SUPER1);
 	}
 
@@ -1244,8 +1244,8 @@ static dboolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value
 		size_t len = strlen(value);
 		size_t i;
 		char voicename[VOICENAMESIZE] = "";
-		UINT8 pos = 0;
-		UINT8 numvoices = 0;
+		uint8_t pos = 0;
+		uint8_t numvoices = 0;
 
 		if (allocvoice == NULL)
 			I_Error("Skin %s: cannot set voice sounds without a voice selected", skin->name);
@@ -1328,7 +1328,7 @@ static dboolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value
 			return false;
 
 		// grab the flags now before messing with the pointer
-		INT32 flags = R_GetVoiceArraySoundFlags(allocvoice, voicearray);
+		int32_t flags = R_GetVoiceArraySoundFlags(allocvoice, voicearray);
 
 		if (i == sfx_khurt2 || i == sfx_kattk2 || i == sfx_kbost2)
 			voicearray++;
@@ -1343,9 +1343,9 @@ static dboolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value
 //
 // Find skin sprites, sounds & optional status bar face, & add them
 //
-void R_AddSkins(UINT16 wadnum)
+void R_AddSkins(uint16_t wadnum)
 {
-	UINT16 lump, lastlump = 0;
+	uint16_t lump, lastlump = 0;
 	char *buf;
 	char *buf2;
 	char *stoken;
@@ -1409,7 +1409,7 @@ void R_AddSkins(UINT16 wadnum)
 			// Others can't go in there because we don't want them to be patchable.
 			if (fasticmp(stoken, "name"))
 			{
-				INT32 skinnum = R_SkinAvailable(value);
+				int32_t skinnum = R_SkinAvailable(value);
 				strlwr(value);
 				if (skinnum == -1)
 				{
@@ -1489,9 +1489,9 @@ void R_AddSkins(UINT16 wadnum)
 //
 // Patch skin sprites
 //
-void R_PatchSkins(UINT16 wadnum)
+void R_PatchSkins(uint16_t wadnum)
 {
-	UINT16 lump, lastlump = 0;
+	uint16_t lump, lastlump = 0;
 	char *buf;
 	char *buf2;
 	char *stoken;
@@ -1506,7 +1506,7 @@ void R_PatchSkins(UINT16 wadnum)
 
 	while ((lump = W_CheckForPatchSkinMarkerInPwad(wadnum, lastlump)) != INT16_MAX)
 	{
-		INT32 skinnum = 0;
+		int32_t skinnum = 0;
 
 		// advance by default
 		lastlump = lump + 1;
@@ -1576,8 +1576,8 @@ void R_PatchSkins(UINT16 wadnum)
 					size_t len = strlen(value);
 					size_t i;
 					char rivalname[SKINNAMESIZE] = "";
-					UINT8 pos = 0;
-					UINT8 numrivals = 0;
+					uint8_t pos = 0;
+					uint8_t numrivals = 0;
 
 					// Can't use strtok, because this function's already using it.
 					// Using it causes it to upset the saved pointer,

@@ -42,14 +42,14 @@
 dboolean hud_running = false;
 
 dboolean hud_interpolate = false;
-UINT8 hud_interptag = 0;
-UINT32 hud_interpcounter = 0;
+uint8_t hud_interptag = 0;
+uint32_t hud_interpcounter = 0;
 dboolean hud_interpstring = false;
 dboolean hud_interplatch = false;
 
-static UINT8 hud_enabled[(hud_MAX/8)+1];
+static uint8_t hud_enabled[(hud_MAX/8)+1];
 
-static UINT8 camnum = 1;
+static uint8_t camnum = 1;
 
 static dboolean cliprectenabled;
 
@@ -229,8 +229,8 @@ static const char *const hud_offsets_options[] = {
 
 static int colormap_get(lua_State *L)
 {
-	const UINT8 *colormap = *((UINT8 **)luaL_checkudata(L, 1, META_COLORMAP));
-	UINT32 i = luaL_checkinteger(L, 2);
+	const uint8_t *colormap = *((uint8_t **)luaL_checkudata(L, 1, META_COLORMAP));
+	uint32_t i = luaL_checkinteger(L, 2);
 	if (i >= 256)
 		return luaL_error(L, "colormap index %d out of range (0 - %d)", i, 255);
 	lua_pushinteger(L, colormap[i]);
@@ -398,9 +398,9 @@ static int libd_cachePatch(lua_State *L)
 	if (name[0] && name[0] <= NUMFACES)
 	{
 		// skin.facerank has a secret message for us
-		INT32 skin = R_SkinAvailableEx(name+1, false);
+		int32_t skin = R_SkinAvailableEx(name+1, false);
 		if (skin != -1)
-			patch = faceprefix[skin][(UINT8)name[0]-1];
+			patch = faceprefix[skin][(uint8_t)name[0]-1];
 		else
 			return luaL_error(L, "Skin %s not found", name+1);
 	}
@@ -411,7 +411,7 @@ static int libd_cachePatch(lua_State *L)
 	if (lua_isnumber(L, 2))
 	{
 		angle_t rollangle = luaL_checkangle(L, 2);
-		INT32 rot = R_GetRollAngle(rollangle);
+		int32_t rot = R_GetRollAngle(rollangle);
 		if (rot) {
 			patch_t *rotpatch = Patch_GetRotated(patch, rot, false);
 			LUA_PushUserdata(L, rotpatch, META_PATCH);
@@ -427,9 +427,9 @@ static int libd_cachePatch(lua_State *L)
 // v.getSpritePatch(sprite, [frame, [angle, [rollangle]]])
 static int libd_getSpritePatch(lua_State *L)
 {
-	UINT32 i; // sprite prefix
-	UINT32 frame = 0; // 'A'
-	UINT8 angle = 0;
+	uint32_t i; // sprite prefix
+	uint32_t frame = 0; // 'A'
+	uint8_t angle = 0;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
 	HUDONLY
@@ -483,7 +483,7 @@ static int libd_getSpritePatch(lua_State *L)
 	{
 		// rotsprite?????
 		angle_t rollangle = luaL_checkangle(L, 4);
-		INT32 rot = R_GetRollAngle(rollangle);
+		int32_t rot = R_GetRollAngle(rollangle);
 
 		if (rot) {
 			patch_t *rotsprite = Patch_GetRotatedSprite(sprframe, frame, angle, sprframe->flip & (1<<angle), true, &spriteinfo[i], rot);
@@ -504,10 +504,10 @@ static int libd_getSpritePatch(lua_State *L)
 // v.getSprite2Patch(skin, sprite, [super?,] [frame, [angle, [rollangle]]])
 static int libd_getSprite2Patch(lua_State *L)
 {
-	INT32 i; // skin number
+	int32_t i; // skin number
 	playersprite_t j; // sprite2 prefix
-	UINT32 frame = 0; // 'A'
-	UINT8 angle = 0;
+	uint32_t frame = 0; // 'A'
+	uint8_t angle = 0;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
 	dboolean super = false; // add FF_SPR2SUPER to sprite2 if true
@@ -525,7 +525,7 @@ static int libd_getSprite2Patch(lua_State *L)
 	else // find skin by name
 	{
 		const char *name = luaL_checkstring(L, 1);
-		UINT32 hash = HASH32(name, strlen(name));
+		uint32_t hash = HASH32(name, strlen(name));
 		for (i = 0; i < numskins; i++)
 		{
 			if (skins[i]->namehash != hash)
@@ -602,7 +602,7 @@ static int libd_getSprite2Patch(lua_State *L)
 	{
 		// rotsprite?????
 		angle_t rollangle = luaL_checkangle(L, 4);
-		INT32 rot = R_GetRollAngle(rollangle);
+		int32_t rot = R_GetRollAngle(rollangle);
 
 		if (rot) {
 			patch_t *rotsprite = Patch_GetRotatedSprite(sprframe, frame, angle, sprframe->flip & (1<<angle), true, &skins[i]->sprinfo[j], rot);
@@ -622,9 +622,9 @@ static int libd_getSprite2Patch(lua_State *L)
 
 static int libd_draw(lua_State *L)
 {
-	INT32 x, y, flags;
+	int32_t x, y, flags;
 	patch_t *patch;
-	UINT8 *colormap = NULL;
+	uint8_t *colormap = NULL;
 	huddrawlist_h list;
 
 	HUDONLY
@@ -635,7 +635,7 @@ static int libd_draw(lua_State *L)
 		return LUA_ErrInvalid(L, "patch_t");
 	flags = luaL_optinteger(L, 4, 0);
 	if (!lua_isnoneornil(L, 5))
-		colormap = *((UINT8 **)luaL_checkudata(L, 5, META_COLORMAP));
+		colormap = *((uint8_t **)luaL_checkudata(L, 5, META_COLORMAP));
 
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
@@ -653,9 +653,9 @@ static int libd_draw(lua_State *L)
 static int libd_drawScaled(lua_State *L)
 {
 	fixed_t x, y, scale;
-	INT32 flags;
+	int32_t flags;
 	patch_t *patch;
-	UINT8 *colormap = NULL;
+	uint8_t *colormap = NULL;
 	huddrawlist_h list;
 
 	HUDONLY
@@ -669,7 +669,7 @@ static int libd_drawScaled(lua_State *L)
 		return LUA_ErrInvalid(L, "patch_t");
 	flags = luaL_optinteger(L, 5, 0);
 	if (!lua_isnoneornil(L, 6))
-		colormap = *((UINT8 **)luaL_checkudata(L, 6, META_COLORMAP));
+		colormap = *((uint8_t **)luaL_checkudata(L, 6, META_COLORMAP));
 
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
@@ -687,9 +687,9 @@ static int libd_drawScaled(lua_State *L)
 static int libd_drawStretched(lua_State *L)
 {
 	fixed_t x, y, hscale, vscale;
-	INT32 flags;
+	int32_t flags;
 	patch_t *patch;
-	UINT8 *colormap = NULL;
+	uint8_t *colormap = NULL;
 	huddrawlist_h list;
 
 	HUDONLY
@@ -704,7 +704,7 @@ static int libd_drawStretched(lua_State *L)
 	patch = *((patch_t **)luaL_checkudata(L, 5, META_PATCH));
 	flags = luaL_optinteger(L, 6, 0);
 	if (!lua_isnoneornil(L, 7))
-		colormap = *((UINT8 **)luaL_checkudata(L, 7, META_COLORMAP));
+		colormap = *((uint8_t **)luaL_checkudata(L, 7, META_COLORMAP));
 
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 
@@ -727,15 +727,15 @@ static int libd_drawAffine(lua_State *L)
 	affine_t transform = {};
 	luaL_checktype(L, 3, LUA_TTABLE);
 	patch_t *patch = *((patch_t **)luaL_checkudata(L, 4, META_PATCH));
-	INT32 flags = luaL_optinteger(L, 5, 0);
-	UINT8 *colormap = NULL;
+	int32_t flags = luaL_optinteger(L, 5, 0);
+	uint8_t *colormap = NULL;
 	if (!lua_isnoneornil(L, 6))
-		colormap = *((UINT8 **)luaL_checkudata(L, 6, META_COLORMAP));
+		colormap = *((uint8_t **)luaL_checkudata(L, 6, META_COLORMAP));
 
 	lua_pushnil(L);
 	while (lua_next(L, 3))
 	{
-		INT32 i = 0;
+		int32_t i = 0;
 		const char *k = NULL;
 		if (lua_isnumber(L, -2))
 			i = lua_tointeger(L, -2);
@@ -776,20 +776,20 @@ static int libd_drawOnMinimap(lua_State *L)
 {
 	fixed_t x, y, scale;	// coordinates of the object
 	patch_t *patch;	// patch we want to draw
-	UINT8 *colormap = NULL;	// do we want to colormap this patch?
+	uint8_t *colormap = NULL;	// do we want to colormap this patch?
 	dboolean centered;	// the patch is centered and doesn't need readjusting on x/y coordinates.
 	huddrawlist_h list;
 
 	// variables used to replicate k_kart's mmap drawer:
-	INT32 mx, my;
-	INT32 splitflags, minimaptrans;
+	int32_t mx, my;
+	int32_t splitflags, minimaptrans;
 
 	// base position of the minimap which also takes splits into account:
-	INT32 MM_X, MM_Y;
+	int32_t MM_X, MM_Y;
 
 	// variables used for actually drawing the icon:
 	fixed_t amnumxpos, amnumypos;
-	INT32 amxpos, amypos;
+	int32_t amxpos, amypos;
 
 	fixed_t patchw, patchh;
 
@@ -799,7 +799,7 @@ static int libd_drawOnMinimap(lua_State *L)
 	scale = luaL_checkinteger(L, 3);
 	patch = *((patch_t **)luaL_checkudata(L, 4, META_PATCH));
 	if (!lua_isnoneornil(L, 5))
-		colormap = *((UINT8 **)luaL_checkudata(L, 5, META_COLORMAP));
+		colormap = *((uint8_t **)luaL_checkudata(L, 5, META_COLORMAP));
 	centered = lua_optdboolean(L, 6);
 
 	// replicate exactly what source does for its minimap drawer; AKA hardcoded garbo.
@@ -833,7 +833,7 @@ static int libd_drawOnMinimap(lua_State *L)
 			return 0;
 		minimaptrans = cv_kartminimap.value;
 		if (lt_exitticker < length)
-			minimaptrans = (((INT32)lt_exitticker)*minimaptrans)/((INT32)length);
+			minimaptrans = (((int32_t)lt_exitticker)*minimaptrans)/((int32_t)length);
 		if (!minimaptrans)
 			return 0;
 	}
@@ -909,7 +909,7 @@ static int libd_drawOnMinimap(lua_State *L)
 
 static int libd_drawNum(lua_State *L)
 {
-	INT32 x, y, flags, num;
+	int32_t x, y, flags, num;
 	huddrawlist_h list;
 
 	HUDONLY
@@ -932,7 +932,7 @@ static int libd_drawNum(lua_State *L)
 
 static int libd_drawPaddedNum(lua_State *L)
 {
-	INT32 x, y, flags, num, digits;
+	int32_t x, y, flags, num, digits;
 	huddrawlist_h list;
 
 	HUDONLY
@@ -956,8 +956,8 @@ static int libd_drawPaddedNum(lua_State *L)
 
 static int libd_drawPingNum(lua_State *L)
 {
-	INT32 x, y, flags, num;
-	UINT8 *colormap = NULL;
+	int32_t x, y, flags, num;
+	uint8_t *colormap = NULL;
 	huddrawlist_h list;
 	HUDONLY
 	x = luaL_checkinteger(L, 1);
@@ -966,7 +966,7 @@ static int libd_drawPingNum(lua_State *L)
 	flags = luaL_optinteger(L, 4, 0);
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
 	if (!lua_isnoneornil(L, 5))
-		colormap = *((UINT8 **)luaL_checkudata(L, 5, META_COLORMAP));
+		colormap = *((uint8_t **)luaL_checkudata(L, 5, META_COLORMAP));
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 	list = (huddrawlist_h)lua_touserdata(L, -1);
@@ -982,11 +982,11 @@ static int libd_drawPingNum(lua_State *L)
 static int libd_drawFill(lua_State *L)
 {
 	huddrawlist_h list;
-	INT32 x = luaL_optinteger(L, 1, 0);
-	INT32 y = luaL_optinteger(L, 2, 0);
-	INT32 w = luaL_optinteger(L, 3, BASEVIDWIDTH);
-	INT32 h = luaL_optinteger(L, 4, BASEVIDHEIGHT);
-	INT32 c = luaL_optinteger(L, 5, 31);
+	int32_t x = luaL_optinteger(L, 1, 0);
+	int32_t y = luaL_optinteger(L, 2, 0);
+	int32_t w = luaL_optinteger(L, 3, BASEVIDWIDTH);
+	int32_t h = luaL_optinteger(L, 4, BASEVIDHEIGHT);
+	int32_t c = luaL_optinteger(L, 5, 31);
 
 	HUDONLY
 
@@ -1007,12 +1007,12 @@ static int libd_drawFill(lua_State *L)
 static int libd_drawFixedLine(lua_State *L)
 {
 	huddrawlist_h list;
-	INT32 x1 = luaL_optinteger(L, 1, 0);
-	INT32 y1 = luaL_optinteger(L, 2, 0);
-	INT32 x2 = luaL_optinteger(L, 3, 0);
-	INT32 y2 = luaL_optinteger(L, 4, 0);
-	INT32 width = luaL_optinteger(L, 5, FRACUNIT);
-	INT32 c = luaL_optinteger(L, 6, 31);
+	int32_t x1 = luaL_optinteger(L, 1, 0);
+	int32_t y1 = luaL_optinteger(L, 2, 0);
+	int32_t x2 = luaL_optinteger(L, 3, 0);
+	int32_t y2 = luaL_optinteger(L, 4, 0);
+	int32_t width = luaL_optinteger(L, 5, FRACUNIT);
+	int32_t c = luaL_optinteger(L, 6, 31);
 
 	HUDONLY
 
@@ -1044,7 +1044,7 @@ static int libd_getSectorColormap(lua_State *L)
 	fixed_t y = luaL_checkfixed(L, 3);
 	fixed_t z = luaL_checkfixed(L, 4);
 	int lightlevel = luaL_optinteger(L, 5, 255);
-	UINT8 *colormap = NULL;
+	uint8_t *colormap = NULL;
 	extracolormap_t *exc = NULL;
 
 	INLEVEL
@@ -1072,9 +1072,9 @@ static int libd_getSectorColormap(lua_State *L)
 
 static int libd_fadeScreen(lua_State *L)
 {
-	UINT16 color = luaL_checkinteger(L, 1);
-	UINT8 strength = luaL_checkinteger(L, 2);
-	const UINT8 maxstrength = ((color & 0xFF00) ? 32 : 10);
+	uint16_t color = luaL_checkinteger(L, 1);
+	uint8_t strength = luaL_checkinteger(L, 2);
+	const uint8_t maxstrength = ((color & 0xFF00) ? 32 : 10);
 	huddrawlist_h list;
 
 	HUDONLY
@@ -1116,7 +1116,7 @@ static int libd_drawString(lua_State *L)
 	fixed_t x = luaL_checkinteger(L, 1);
 	fixed_t y = luaL_checkinteger(L, 2);
 	const char *str = luaL_checkstring(L, 3);
-	INT32 flags = luaL_optinteger(L, 4, V_ALLOWLOWERCASE);
+	int32_t flags = luaL_optinteger(L, 4, V_ALLOWLOWERCASE);
 	enum align align = Lua_optoption(L, 5, align_left, align_fields_ref);
 
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
@@ -1173,10 +1173,10 @@ static int libd_drawTitleCardString(lua_State *L)
 	fixed_t x = luaL_checkinteger(L, 1);
 	fixed_t y = luaL_checkinteger(L, 2);
 	const char *str = luaL_checkstring(L, 3);
-	INT32 flags = luaL_optinteger(L, 4, V_ALLOWLOWERCASE);
+	int32_t flags = luaL_optinteger(L, 4, V_ALLOWLOWERCASE);
 	dboolean rightalign = lua_optdboolean(L, 5);
-	INT32 timer = luaL_optinteger(L, 6, 0);
-	INT32 threshold = luaL_optinteger(L, 7, 0);
+	int32_t timer = luaL_optinteger(L, 6, 0);
+	int32_t threshold = luaL_optinteger(L, 7, 0);
 	huddrawlist_h list;
 
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
@@ -1198,7 +1198,7 @@ static int libd_drawKartString(lua_State *L)
 	fixed_t x = luaL_checkinteger(L, 1);
 	fixed_t y = luaL_checkinteger(L, 2);
 	const char *str = luaL_checkstring(L, 3);
-	INT32 flags = luaL_optinteger(L, 4, V_ALLOWLOWERCASE);
+	int32_t flags = luaL_optinteger(L, 4, V_ALLOWLOWERCASE);
 	huddrawlist_h list;
 
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
@@ -1221,7 +1221,7 @@ static int libd_setClipRect(lua_State *L)
 	fixed_t y = luaL_checkinteger(L, 2);
 	fixed_t w = luaL_checkinteger(L, 3);
 	fixed_t h = luaL_checkinteger(L, 4);
-	INT32 flags = luaL_optinteger(L, 5, 0);
+	int32_t flags = luaL_optinteger(L, 5, 0);
 	huddrawlist_h list;
 
 	flags &= ~V_PARAMMASK; // Don't let crashes happen.
@@ -1270,7 +1270,7 @@ int widtht_fields_ref = LUA_NOREF;
 static int libd_stringWidth(lua_State *L)
 {
 	const char *str = luaL_checkstring(L, 1);
-	INT32 flags = luaL_optinteger(L, 2, V_ALLOWLOWERCASE);
+	int32_t flags = luaL_optinteger(L, 2, V_ALLOWLOWERCASE);
 	enum widtht widtht = Lua_optoption(L, 3, widtht_normal, widtht_fields_ref);
 
 	HUDONLY
@@ -1291,15 +1291,15 @@ static int libd_stringWidth(lua_State *L)
 
 static int libd_getColormap(lua_State *L)
 {
-	INT32 skinnum = TC_DEFAULT;
+	int32_t skinnum = TC_DEFAULT;
 	skincolornum_t color = luaL_optinteger(L, 2, 0);
-	UINT8* colormap = NULL;
+	uint8_t* colormap = NULL;
 	HUDONLY
 	if (lua_isnoneornil(L, 1))
 		; // defaults to TC_DEFAULT
 	else if (lua_type(L, 1) == LUA_TNUMBER) // skin number
 	{
-		skinnum = (INT32)luaL_checkinteger(L, 1);
+		skinnum = (int32_t)luaL_checkinteger(L, 1);
 
 		if (lua_compatmode)
 		{
@@ -1342,7 +1342,7 @@ static int libd_getColormap(lua_State *L)
 	else // skin name
 	{
 		const char *skinname = luaL_checkstring(L, 1);
-		INT32 i = R_SkinAvailable(skinname);
+		int32_t i = R_SkinAvailable(skinname);
 		if (i != -1) // if -1, just default to TC_DEFAULT as above
 			skinnum = i;
 	}
@@ -1361,7 +1361,7 @@ static int libd_getColorHudPatch(lua_State *L)
 	HUDONLY
 	enum hudpatch option = Lua_optoption(L, 1, -1, hud_patch_fields_ref);
 	patch_t *patch;
-	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+	uint8_t *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 	dboolean small, dark, multi;
 
 	switch (option) {
@@ -1410,8 +1410,8 @@ static int libd_useColorHud(lua_State *L)
 
 static int libd_getStringColormap(lua_State *L)
 {
-	INT32 flags = luaL_checkinteger(L, 1);
-	UINT8* colormap = NULL;
+	int32_t flags = luaL_checkinteger(L, 1);
+	uint8_t* colormap = NULL;
 	HUDONLY
 	colormap = V_GetStringColormap(flags & V_CHARCOLORMASK);
 	if (colormap) {
@@ -1508,7 +1508,7 @@ static int libd_RandomByte(lua_State *L)
 
 static int libd_RandomKey(lua_State *L)
 {
-	INT32 a = (INT32)luaL_checkinteger(L, 1);
+	int32_t a = (int32_t)luaL_checkinteger(L, 1);
 
 	HUDONLY
 	if (a > 65536)
@@ -1519,12 +1519,12 @@ static int libd_RandomKey(lua_State *L)
 
 static int libd_RandomRange(lua_State *L)
 {
-	INT32 a = (INT32)luaL_checkinteger(L, 1);
-	INT32 b = (INT32)luaL_checkinteger(L, 2);
+	int32_t a = (int32_t)luaL_checkinteger(L, 1);
+	int32_t b = (int32_t)luaL_checkinteger(L, 2);
 
 	HUDONLY
 	if (b < a) {
-		INT32 c = a;
+		int32_t c = a;
 		a = b;
 		b = c;
 	}
@@ -1679,7 +1679,7 @@ static int libd_interpolate(lua_State *L)
 
 	// do type checking even if interpolation is disabled
 	dboolean newinterpolate;
-	UINT8 newtag;
+	uint8_t newtag;
 
 	if (lua_isnumber(L, 1))
 	{
@@ -1821,7 +1821,7 @@ static int lib_hudsetvotebackground(lua_State *L)
 
 	if (!lua_isnoneornil(L, 2))
 	{
-		INT32 time_per_frame = luaL_checkinteger(L, 2);
+		int32_t time_per_frame = luaL_checkinteger(L, 2);
 
 		if (time_per_frame <= 0)
 			return luaL_argerror(L, 2, "time per frame should be 1 or more");
@@ -1841,7 +1841,7 @@ int hud_offsets_fields_ref = LUA_NOREF;
 static int lib_hudgetoffsets(lua_State *L)
 {
 	enum hudoffsets option = Lua_optoption(L, 1, -1, hud_offsets_fields_ref);
-	INT32 ofx, ofy;
+	int32_t ofx, ofy;
 
 #define OFS(it) ofx = cv_##it##_xoffset.value; ofy = cv_##it##_yoffset.value; break;
 #define OFY(it) ofx = 0; ofy = cv_##it##_yoffset.value; break;
@@ -1878,22 +1878,22 @@ static int lib_hudaddtimer(lua_State *L)
 
 	luaL_checktype(L, 3, LUA_TTABLE);
 
-	INT32 patches_size = lua_objlen(L, 3);
+	int32_t patches_size = lua_objlen(L, 3);
 	CLEANUP(pfree) const char **patches = calloc(patches_size, sizeof(const char*));
 
 	if (patches == NULL)
 		I_Error("lib_hudaddtimer: Out of memory!\n");
 
-	for (INT32 i = 0; i < patches_size; ++i)
+	for (int32_t i = 0; i < patches_size; ++i)
 	{
 		lua_rawgeti(L, 3, i+1);
 		patches[i] = lua_tostring(L, -1);
 		lua_pop(L, 1);
 	}
 
-	INT32 anim_duration = luaL_optinteger(L, 4, 1);
+	int32_t anim_duration = luaL_optinteger(L, 4, 1);
 
-	UINT32 flags = luaL_optinteger(L, 5, 0);
+	uint32_t flags = luaL_optinteger(L, 5, 0);
 
 	dboolean unsorted = lua_todboolean(L, 6);
 

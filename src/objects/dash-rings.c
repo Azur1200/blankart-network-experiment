@@ -80,9 +80,9 @@ void Obj_RainbowDashRingSpawn(mobj_t *mobj)
 
 void Obj_DashRingSetup(mobj_t *mobj, mapthing_t *mthing)
 {
-	static const UINT8 numColors = sizeof(ring_colors) / sizeof(skincolornum_t);
-	const UINT8 additionalThrust = mthing->args[1];
-	const UINT8 baseThrust = mthing->args[2] ? mthing->args[2] : 4;
+	static const uint8_t numColors = sizeof(ring_colors) / sizeof(skincolornum_t);
+	const uint8_t additionalThrust = mthing->args[1];
+	const uint8_t baseThrust = mthing->args[2] ? mthing->args[2] : 4;
 	const skincolornum_t skinColor = mthing->stringargs[0] ? get_number(mthing->stringargs[0]) : SKINCOLOR_NONE;
 	statenum_t ringState, overlayState;
 
@@ -121,7 +121,7 @@ void Obj_DashRingSetup(mobj_t *mobj, mapthing_t *mthing)
 
 void Obj_RainbowDashRingThink(mobj_t *mobj)
 {
-	static const UINT8 numColors = sizeof(rainbow_colors) / sizeof(skincolornum_t);
+	static const uint8_t numColors = sizeof(rainbow_colors) / sizeof(skincolornum_t);
 	mobj->color = rainbow_colors[(leveltime / 2) % numColors];
 }
 

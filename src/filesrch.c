@@ -54,7 +54,7 @@ textinput_t menusearch = {};
 char **dirmenu, **coredirmenu; // core only local for this file
 size_t sizedirmenu, sizecoredirmenu; // ditto
 size_t dir_on[menudepth];
-UINT8 refreshdirmenu = 0;
+uint8_t refreshdirmenu = 0;
 char *refreshdirname = NULL;
 
 // skip those folders, they will not have any addons
@@ -65,7 +65,7 @@ static const char *exclude_paths[] = {
 	NULL
 };
 
-filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash, dboolean completepath, int maxsearchdepth)
+filestatus_t filesearch(char *filename, const char *startpath, uint64_t wantedhash, dboolean completepath, int maxsearchdepth)
 {
 	filestatus_t retval = FS_NOTFOUND;
 	DIR **dirhandle;
@@ -259,7 +259,7 @@ void closefilemenu(dboolean validsize)
 	{
 		if (dirmenu != coredirmenu)
 		{
-			if (dirmenu[0] && ((UINT8)(dirmenu[0][DIR_TYPE]) == EXT_NORESULTS))
+			if (dirmenu[0] && ((uint8_t)(dirmenu[0][DIR_TYPE]) == EXT_NORESULTS))
 			{
 				Z_Free(dirmenu[0]);
 				dirmenu[0] = NULL;
@@ -301,7 +301,7 @@ void searchfilemenu(char *tempname)
 	{
 		if (dirmenu != coredirmenu)
 		{
-			if (dirmenu[0] && ((UINT8)(dirmenu[0][DIR_TYPE]) == EXT_NORESULTS))
+			if (dirmenu[0] && ((uint8_t)(dirmenu[0][DIR_TYPE]) == EXT_NORESULTS))
 			{
 				Z_Free(dirmenu[0]);
 				dirmenu[0] = NULL;
@@ -312,7 +312,7 @@ void searchfilemenu(char *tempname)
 			dirmenu = NULL;
 	}
 
-	first = (((UINT8)(coredirmenu[0][DIR_TYPE]) == EXT_UP) ? 1 : 0); // skip UP...
+	first = (((uint8_t)(coredirmenu[0][DIR_TYPE]) == EXT_UP) ? 1 : 0); // skip UP...
 
 	if (!menusearch.length)
 	{
@@ -464,7 +464,7 @@ dboolean preparefilemenu(dboolean samedepth, dboolean replayhut)
 				}
 				else if (!cv_addons_showall.value)
 				{
-					UINT8 ext;
+					uint8_t ext;
 					for (ext = 0; ext < NUM_EXT_TABLE; ext++)
 						if (!strcasecmp(exttable[ext]+1, dent->d_name+len-(exttable[ext][0])))
 							break; // extension comparison
@@ -533,8 +533,8 @@ dboolean preparefilemenu(dboolean samedepth, dboolean replayhut)
 		{
 			char *temp;
 			size_t len = strlen(dent->d_name)+1;
-			UINT8 ext = EXT_FOLDER;
-			UINT8 folder;
+			uint8_t ext = EXT_FOLDER;
+			uint8_t folder;
 
 #ifndef _WIN32
 			if (!S_ISDIR(fsstat.st_mode)) // file
@@ -603,7 +603,7 @@ dboolean preparefilemenu(dboolean samedepth, dboolean replayhut)
 				I_Error("preparefilemenu(): could not create file entry.");
 
 			temp[DIR_TYPE] = ext;
-			temp[DIR_LEN] = (UINT8)(len);
+			temp[DIR_LEN] = (uint8_t)(len);
 			strlcpy(temp+DIR_STRING, dent->d_name, len);
 
 			if (folder)

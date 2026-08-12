@@ -88,7 +88,7 @@ typedef struct
 	char *end;
 } viofile_t;
 
-UINT8 sound_started = false;
+uint8_t sound_started = false;
 
 static float music_volume, sfx_volume, internal_volume = 1.0f;
 
@@ -135,9 +135,9 @@ static LPALGETAUXILIARYEFFECTSLOTFV alGetAuxiliaryEffectSlotfv;
 static dboolean is_fading;
 static float fading_source;
 static float fading_target;
-static UINT32 fading_timer;
-static UINT32 fading_duration;
-static INT32 fading_id;
+static uint32_t fading_timer;
+static uint32_t fading_duration;
+static int32_t fading_id;
 static void (*fading_callback)(void);
 static dboolean fading_do_callback;
 static dboolean fading_nocleanup;
@@ -190,13 +190,13 @@ static void UnlockMutex(char *dummy)
 
 #ifdef HAVE_GME
 static Music_Emu *gme;
-static UINT16 current_track;
+static uint16_t current_track;
 #endif
 
 #ifdef HAVE_OPENMPT
 static int mod_err = OPENMPT_ERROR_OK;
 static const char *mod_err_str;
-static INT16 current_subsong = -1;
+static int16_t current_subsong = -1;
 static size_t probesize;
 static int result;
 #endif
@@ -497,21 +497,21 @@ static sf_count_t SecondsToSamples(float seconds, int sampleRate) {
 static dboolean I_QueueNextSample(dboolean unqueue)
 {
 	TracyCZone(__zone, true);
-	static INT16 *stream = NULL;
+	static int16_t *stream = NULL;
 	ALenum format = AL_FORMAT_MONO16;
 
 	LOCKAUDIO;
 
 	// keeping it at PU_CACHE_UNLOCKED is fine since we won't do any Z allocations while we use it
 	if (stream == NULL)
-		Z_Malloc(sizeof(INT16) * 2 * BUFFERSIZE, PU_CACHE_UNLOCKED, &stream);
+		Z_Malloc(sizeof(int16_t) * 2 * BUFFERSIZE, PU_CACHE_UNLOCKED, &stream);
 
 	size_t samplerate = SAMPLERATE;
 	size_t count;
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle != NULL)
 	{
-		count = openmpt_module_read_interleaved_stereo(openmpt_mhandle, SAMPLERATE, BUFFERSIZE, stream) * 2 * sizeof(INT16);
+		count = openmpt_module_read_interleaved_stereo(openmpt_mhandle, SAMPLERATE, BUFFERSIZE, stream) * 2 * sizeof(int16_t);
 		format = AL_FORMAT_STEREO16;
 
 		// this is kinda dumb but works lol
@@ -526,7 +526,7 @@ static dboolean I_QueueNextSample(dboolean unqueue)
 #ifdef HAVE_GME
 	if (gme != NULL)
 	{
-		count = BUFFERSIZE * 2 * sizeof(INT16);
+		count = BUFFERSIZE * 2 * sizeof(int16_t);
 		gme_play(gme, BUFFERSIZE * 2, stream);
 		format = AL_FORMAT_STEREO16;
 		samplerate = SAMPLERATE;
@@ -702,11 +702,11 @@ static void AudioThread(void *userdata)
 
 static char *ds2chunk(const void *stream, size_t *len, size_t *samplerate)
 {
-	UINT16 ver, freq;
-	UINT32 samples, i;
-	UINT8 *sound;
+	uint16_t ver, freq;
+	uint32_t samples, i;
+	uint8_t *sound;
 
-	INT16 o;
+	int16_t o;
 
 	// lump header
 	ver = READUINT16(stream); // sound version format?
@@ -725,15 +725,15 @@ static char *ds2chunk(const void *stream, size_t *len, size_t *samplerate)
 
 	sound = Z_Malloc(samples<<2, PU_SOUND, NULL); // samples * frequency shift * bytes per sample * channels
 
-	const SINT8 *s = stream;
-	UINT8 *d = sound;
+	const int8_t *s = stream;
+	uint8_t *d = sound;
 
 	i = 0;
 
 	// dont resample shit, let openal handle everything
 	while (i++ < samples)
 	{
-		o = ((INT16)(*s++)+0x80)<<8; // changed signedness and shift up to 16 bits
+		o = ((int16_t)(*s++)+0x80)<<8; // changed signedness and shift up to 16 bits
 		WRITEINT16(d, o); // left channel
 		WRITEINT16(d, o); // right channel
 	}
@@ -811,21 +811,21 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 		gme_info_t *gme_info;
 
 		// VGZ format
-		if (((UINT8 *)input)[0] == 0x1F
-			&& ((UINT8 *)input)[1] == 0x8B)
+		if (((uint8_t *)input)[0] == 0x1F
+			&& ((uint8_t *)input)[1] == 0x8B)
 		{
 #ifdef HAVE_ZLIB
-			UINT8 *inflatedData;
+			uint8_t *inflatedData;
 			size_t inflatedLen;
 			z_stream stream;
 			int zErr; // Somewhere to handle any error messages zlib tosses out
 			memset(&stream, 0x00, sizeof (z_stream)); // Init zlib stream
 			// Begin the inflation process
-			inflatedLen = *(UINT32 *)input + (size-4); // Last 4 bytes are the decompressed size, typically
-			inflatedData = (UINT8 *)Z_Malloc(inflatedLen, PU_SOUND, NULL); // Make room for the decompressed data
+			inflatedLen = *(uint32_t *)input + (size-4); // Last 4 bytes are the decompressed size, typically
+			inflatedData = (uint8_t *)Z_Malloc(inflatedLen, PU_SOUND, NULL); // Make room for the decompressed data
 			stream.total_in = stream.avail_in = size;
 			stream.total_out = stream.avail_out = inflatedLen;
-			stream.next_in = (UINT8 *)input;
+			stream.next_in = (uint8_t *)input;
 			stream.next_out = inflatedData;
 			zErr = inflateInit2(&stream, 32 + MAX_WBITS);
 			if (zErr == Z_OK) // We're good to go
@@ -836,7 +836,7 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 					if (!gme_open_data(inflatedData, inflatedLen, &emu, SAMPLERATE))
 					{
 						short *mem;
-						UINT32 len;
+						uint32_t len;
 						gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
 
 						Z_Free(inflatedData); // GME supposedly makes a copy for itself, so we don't need this lying around
@@ -990,7 +990,7 @@ void I_FreeSfx(sfxinfo_t *sfx)
 	sfx->lumpnum = LUMPERROR;
 }
 
-void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch, efx_t *efx, const void *origin)
+void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch, efx_t *efx, const void *origin)
 {
 	LOCKAUDIO;
 
@@ -1032,7 +1032,7 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch, efx_t 
 	}
 }
 
-INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel, efx_t *efx, const void * origin)
+int32_t I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t priority, int32_t channel, efx_t *efx, const void * origin)
 {
 	ALuint source;
 	if (!TRY(alGenSources, 1, &source))
@@ -1064,7 +1064,7 @@ INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priori
 	return source;
 }
 
-void I_StopSound(INT32 handle)
+void I_StopSound(int32_t handle)
 {
 	if (handle == INVALID_HANDLE)
 		return;
@@ -1074,7 +1074,7 @@ void I_StopSound(INT32 handle)
 	TRY(alDeleteSources, 1, &source);
 }
 
-dboolean I_SoundIsPlaying(INT32 handle)
+dboolean I_SoundIsPlaying(int32_t handle)
 {
 	if (handle == INVALID_HANDLE || !alIsSource((ALuint)handle))
 		return false;
@@ -1086,7 +1086,7 @@ dboolean I_SoundIsPlaying(INT32 handle)
 	return value == AL_PLAYING;
 }
 
-void I_SetSfxVolume(UINT8 volume)
+void I_SetSfxVolume(uint8_t volume)
 {
 	sfx_volume = volume / VOLUME_DIV;
 }
@@ -1097,7 +1097,7 @@ static void do_fading_callback(void)
 	fading_do_callback = true;
 }
 
-static UINT32 music_fade(void *userdata, SDL_TimerID timerID, Uint32 interval)
+static uint32_t music_fade(void *userdata, SDL_TimerID timerID, Uint32 interval)
 {
 	(void)userdata;
 	(void)timerID;
@@ -1245,21 +1245,21 @@ dboolean I_SetSongSpeed(float speed)
 	return false;
 }
 
-static UINT32 get_adjusted_position(UINT32 position)
+static uint32_t get_adjusted_position(uint32_t position)
 {
 	// all in milliseconds
-	UINT32 length = I_GetSongLength();
+	uint32_t length = I_GetSongLength();
 
 	if (length)
 	{
-		UINT32 looppoint = I_GetSongLoopPoint();
+		uint32_t looppoint = I_GetSongLoopPoint();
 		return position >= length ? (position % (length-looppoint)) : position;
 	}
 	else
 		return position;
 }
 
-UINT32 I_GetSongLength(void)
+uint32_t I_GetSongLength(void)
 {
 	LOCKAUDIO;
 
@@ -1298,7 +1298,7 @@ UINT32 I_GetSongLength(void)
 #endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
-		return (UINT32)(openmpt_module_get_duration_seconds(openmpt_mhandle) * 1000.);
+		return (uint32_t)(openmpt_module_get_duration_seconds(openmpt_mhandle) * 1000.);
 #endif
 
 	float position = SamplesToSeconds(audio.musicinfo.frames, audio.musicinfo.samplerate);
@@ -1306,7 +1306,7 @@ UINT32 I_GetSongLength(void)
 	return position * 1000.0f;
 }
 
-dboolean I_SetSongLoopPoint(UINT32 looppoint)
+dboolean I_SetSongLoopPoint(uint32_t looppoint)
 {
 	(void)looppoint;
 
@@ -1317,7 +1317,7 @@ dboolean I_SetSongLoopPoint(UINT32 looppoint)
 	if (mustype == MU_GME || mustype == MU_MOD)
 		return false;
 
-	UINT32 length = I_GetSongLength();
+	uint32_t length = I_GetSongLength();
 
 	if (length > 0)
 		looppoint %= length;
@@ -1327,7 +1327,7 @@ dboolean I_SetSongLoopPoint(UINT32 looppoint)
 	return true;
 }
 
-UINT32 I_GetSongLoopPoint(void)
+uint32_t I_GetSongLoopPoint(void)
 {
 	LOCKAUDIO;
 
@@ -1337,7 +1337,7 @@ UINT32 I_GetSongLoopPoint(void)
 #ifdef HAVE_GME
 	if (gme)
 	{
-		INT32 looppoint;
+		int32_t looppoint;
 		gme_info_t *info;
 		gme_err_t gme_e = gme_track_info(gme, &info, current_track);
 
@@ -1357,10 +1357,10 @@ UINT32 I_GetSongLoopPoint(void)
 	else
 #endif
 
-	return (UINT32)(audio.loop_point * 1000);
+	return (uint32_t)(audio.loop_point * 1000);
 }
 
-dboolean I_SetSongPosition(UINT32 position)
+dboolean I_SetSongPosition(uint32_t position)
 {
 	LOCKAUDIO;
 
@@ -1403,7 +1403,7 @@ dboolean I_SetSongPosition(UINT32 position)
 	else
 #endif
 	{
-		UINT32 length = I_GetSongLength(); // get it in MS
+		uint32_t length = I_GetSongLength(); // get it in MS
 
 		if (length)
 			position = get_adjusted_position(position);
@@ -1417,7 +1417,7 @@ dboolean I_SetSongPosition(UINT32 position)
 	}
 }
 
-UINT32 I_GetSongPosition(void)
+uint32_t I_GetSongPosition(void)
 {
 	LOCKAUDIO;
 
@@ -1427,7 +1427,7 @@ UINT32 I_GetSongPosition(void)
 #ifdef HAVE_GME
 	if (gme)
 	{
-		INT32 position = gme_tell(gme);
+		int32_t position = gme_tell(gme);
 
 		gme_info_t *info;
 		gme_err_t gme_e = gme_track_info(gme, &info, current_track);
@@ -1450,7 +1450,7 @@ UINT32 I_GetSongPosition(void)
 
 		gme_free_info(info);
 
-		return (UINT32)(max(position, 0));
+		return (uint32_t)(max(position, 0));
 	}
 	else
 #endif
@@ -1458,7 +1458,7 @@ UINT32 I_GetSongPosition(void)
 	if (openmpt_mhandle)
 		// This will be incorrect if we adjust for length because we can't get loop points.
 		// So return unadjusted. See note in SetMusicPosition: we adjust for that.
-		return (UINT32)(openmpt_module_get_position_seconds(openmpt_mhandle)*1000.);
+		return (uint32_t)(openmpt_module_get_position_seconds(openmpt_mhandle)*1000.);
 	else
 #endif
 	{
@@ -1466,7 +1466,7 @@ UINT32 I_GetSongPosition(void)
 
 		float position = SamplesToSeconds(samples, audio.musicinfo.samplerate);
 
-		return (UINT32)(position * 1000.0f);
+		return (uint32_t)(position * 1000.0f);
 	}
 }
 
@@ -1479,22 +1479,22 @@ static dboolean InitializeMusicStreaming(void *input, size_t size)
 
 #ifdef HAVE_GME
 	// VGZ format
-	if (((UINT8 *)input)[0] == 0x1F
-		&& ((UINT8 *)input)[1] == 0x8B)
+	if (((uint8_t *)input)[0] == 0x1F
+		&& ((uint8_t *)input)[1] == 0x8B)
 	{
 #ifdef HAVE_ZLIB
-		UINT8 *inflatedData;
+		uint8_t *inflatedData;
 		size_t inflatedLen;
 		z_stream stream;
 		int zErr; // Somewhere to handle any error messages zlib tosses out
 
 		memset(&stream, 0x00, sizeof (z_stream)); // Init zlib stream
 		// Begin the inflation process
-		inflatedLen = *(UINT32 *)input + (size-4); // Last 4 bytes are the decompressed size, typically
-		inflatedData = (UINT8 *)Z_Malloc(inflatedLen, PU_SOUND, NULL); // Make room for the decompressed data
+		inflatedLen = *(uint32_t *)input + (size-4); // Last 4 bytes are the decompressed size, typically
+		inflatedData = (uint8_t *)Z_Malloc(inflatedLen, PU_SOUND, NULL); // Make room for the decompressed data
 		stream.total_in = stream.avail_in = size;
 		stream.total_out = stream.avail_out = inflatedLen;
-		stream.next_in = (UINT8 *)input;
+		stream.next_in = (uint8_t *)input;
 		stream.next_out = inflatedData;
 
 		zErr = inflateInit2(&stream, 32 + MAX_WBITS);
@@ -1620,7 +1620,7 @@ dboolean I_LoadSong(char *data, size_t len)
 	// Find the OGG loop point.
 	audio.loop_point = 0.0f;
 
-	while ((UINT32)(p - data) < len)
+	while ((uint32_t)(p - data) < len)
 	{
 		if (fpclassify(audio.loop_point) == FP_ZERO && !strncmp(p, key1, key1len))
 		{
@@ -1767,7 +1767,7 @@ void I_ResumeSong(void)
 	alSourcePlay(audio.music);
 }
 
-void I_SetMusicVolume(UINT8 volume)
+void I_SetMusicVolume(uint8_t volume)
 {
 	LOCKAUDIO;
 
@@ -1776,7 +1776,7 @@ void I_SetMusicVolume(UINT8 volume)
 		I_UpdateMusicVolume();
 }
 
-dboolean I_SetSongTrack(INT32 track)
+dboolean I_SetSongTrack(int32_t track)
 {
 	LOCKAUDIO;
 
@@ -1836,7 +1836,7 @@ dboolean I_SetSongTrack(INT32 track)
 void I_UpdateSongLagThreshold(void){}
 void I_UpdateSongLagConditions(void){}
 
-void I_SetInternalMusicVolume(UINT8 volume)
+void I_SetInternalMusicVolume(uint8_t volume)
 {
 	LOCKAUDIO;
 
@@ -1856,12 +1856,12 @@ void I_StopFadingSong(void)
 	// in var_cleanup()
 }
 
-dboolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms, void (*callback)(void))
+dboolean I_FadeSongFromVolume(uint8_t target_volume, uint8_t source_volume, uint32_t ms, void (*callback)(void))
 {
-	INT16 volume_delta;
+	int16_t volume_delta;
 
 	source_volume = min(source_volume, MAX_VOLUME);
-	volume_delta = (INT16)(target_volume - source_volume);
+	volume_delta = (int16_t)(target_volume - source_volume);
 
 	I_StopFadingSong();
 
@@ -1908,16 +1908,16 @@ dboolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 m
 	return is_fading;
 }
 
-dboolean I_FadeSong(UINT8 target_volume, UINT32 ms, void (*callback)(void))
+dboolean I_FadeSong(uint8_t target_volume, uint32_t ms, void (*callback)(void))
 {
 	return I_FadeSongFromVolume(target_volume, (internal_volume * 100.f), ms, callback);
 }
-dboolean I_FadeOutStopSong(UINT32 ms)
+dboolean I_FadeOutStopSong(uint32_t ms)
 {
 	return I_FadeSongFromVolume(0, (internal_volume * 100.f), ms, &I_StopSong);
 }
 
-dboolean I_FadeInPlaySong(UINT32 ms, dboolean looping)
+dboolean I_FadeInPlaySong(uint32_t ms, dboolean looping)
 {
 	if (I_PlaySong(looping))
 		return I_FadeSongFromVolume(100, 0, ms, NULL);

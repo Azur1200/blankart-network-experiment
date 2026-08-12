@@ -159,7 +159,7 @@ void K_ReadStats(savebuffer_t *save, dboolean vanilla)
 		return;
 
 	// Save where block of custom stats starts
-	UINT8 *customblockstart = save->p;
+	uint8_t *customblockstart = save->p;
 
 	K_ReadStatsCustom(save);
 
@@ -210,13 +210,13 @@ void K_WriteStats(savebuffer_t *save, dboolean vanilla)
 		return;
 
 	// Now need to be careful... We save start of custom stats block
-	UINT8 *customblockstart = save->p;
+	uint8_t *customblockstart = save->p;
 
 	// Write everything we know how to write
 	K_WriteStatsCustom(save);
 
 	// Calculate size of data that we wrote
-	UINT32 size = (UINT32)(save->p - customblockstart);
+	uint32_t size = (uint32_t)(save->p - customblockstart);
 
 	// Now, if we wrote less data than save originally had, that means our copy that we kept in K_ReadStats
 	// has stats from newer version that we need to append

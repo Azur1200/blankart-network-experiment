@@ -300,8 +300,8 @@ static void HWR_AddLine(seg_t * line)
 		if (line->side == 0)
 		{
 			mtag_t tag = Tag_FGet(&line->linedef->tags);
-			INT32 li1 = line->linedef-lines;
-			INT32 li2;
+			int32_t li1 = line->linedef-lines;
+			int32_t li2;
 
 			// Find the other side!
 			li2 = P_FindSpecialLineFromTag(40, tag, -1);
@@ -382,7 +382,7 @@ static void HWR_AddLine(seg_t * line)
 
 static dboolean HWR_CheckBBox(const fixed_t *bspcoord)
 {
-	INT32 boxpos;
+	int32_t boxpos;
 	fixed_t px1, py1, px2, py2;
 	angle_t angle1, angle2;
 
@@ -476,7 +476,7 @@ static void HWR_AddPolyObjectPlanes(void)
 {
 	size_t i;
 	sector_t *polyobjsector;
-	INT32 light = 0;
+	int32_t light = 0;
 
 	// Polyobject Planes need their own function for drawing because they don't have poly_subsectors by themselves
 	// It should be okay because polyobjects should always be convex anyway
@@ -550,21 +550,21 @@ static FBITFIELD HWR_RippleBlend(sector_t *sector, ffloor_t *rover, dboolean cei
 // -----------------+
 static void HWR_Subsector(size_t num)
 {
-	INT16 count;
+	int16_t count;
 	seg_t *line;
 	subsector_t *sub;
 	static sector_t tempsec; //SoM: 4/7/2000
-	INT32 floorlightlevel;
-	INT32 ceilinglightlevel;
-	INT32 locFloorHeight, locCeilingHeight;
-	INT32 cullFloorHeight, cullCeilingHeight;
-	INT32 light = 0;
+	int32_t floorlightlevel;
+	int32_t ceilinglightlevel;
+	int32_t locFloorHeight, locCeilingHeight;
+	int32_t cullFloorHeight, cullCeilingHeight;
+	int32_t light = 0;
 	extracolormap_t *floorcolormap;
 	extracolormap_t *ceilingcolormap;
 	ffloor_t *rover;
 
 	//if (gl_printportals && gl_portalclipline)
-	//	CONS_Printf("subsector %d in portal\n", (INT32)num);
+	//	CONS_Printf("subsector %d in portal\n", (int32_t)num);
 
 #ifdef PARANOIA //no risk while developing, enough debugging nights!
 	if (num >= num_poly_subsector)
@@ -719,7 +719,7 @@ static void HWR_Subsector(size_t num)
 			{
 				if (rover->fofflags & FOF_FOG)
 				{
-					UINT8 alpha;
+					uint8_t alpha;
 
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < cullHeight ? true : false);
 					alpha = HWR_FogBlockAlpha(*gl_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
@@ -767,7 +767,7 @@ static void HWR_Subsector(size_t num)
 			{
 				if (rover->fofflags & FOF_FOG)
 				{
-					UINT8 alpha;
+					uint8_t alpha;
 
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < cullHeight ? true : false);
 					alpha = HWR_FogBlockAlpha(*gl_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
@@ -836,7 +836,7 @@ static void HWR_Subsector(size_t num)
 		}
 	}
 
-// Hurder ici se passe les choses INT32�essantes!
+// Hurder ici se passe les choses int32_t�essantes!
 // on vient de tracer le sol et le plafond
 // on trace �pr�ent d'abord les sprites et ensuite les murs
 // hurdler: faux: on ajoute seulement les sprites, le murs sont trac� d'abord
@@ -872,10 +872,10 @@ static void HWR_Subsector(size_t num)
 // Renders all subsectors below a given node,
 //  traversing subtree recursively.
 // Just call with BSP root.
-void HWR_RenderBSPNode(INT32 bspnum)
+void HWR_RenderBSPNode(int32_t bspnum)
 {
 	const node_t *bsp;
-	INT32 side;
+	int32_t side;
 	ps_numbspcalls.value.i++;
 
 	while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?

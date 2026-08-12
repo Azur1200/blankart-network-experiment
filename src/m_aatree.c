@@ -25,8 +25,8 @@
 
 typedef struct aatree_node_s
 {
-	INT32	level;
-	INT32	key;
+	int32_t	level;
+	int32_t	key;
 	void*	value;
 
 	struct aatree_node_s *left, *right;
@@ -35,7 +35,7 @@ typedef struct aatree_node_s
 struct aatree_t
 {
 	aatree_node_t	*root;
-	UINT32		flags;
+	uint32_t		flags;
     size_t size;
 };
 
@@ -49,7 +49,7 @@ struct aatree_iterator_s
     mqueue_t nodes;
 };
 
-aatree_t *M_AATreeAlloc(UINT32 flags)
+aatree_t *M_AATreeAlloc(uint32_t flags)
 {
 	aatree_t *aatree = Z_Malloc(sizeof (aatree_t), PU_STATIC, NULL);
 	aatree->root = NULL;
@@ -110,7 +110,7 @@ static aatree_node_t *M_AATreeSplit(aatree_node_t *node)
 	return node;
 }
 
-static aatree_node_t *M_AATreeSet_Node(aatree_t *aatree, aatree_node_t *node, UINT32 flags, INT32 key, void* value)
+static aatree_node_t *M_AATreeSet_Node(aatree_t *aatree, aatree_node_t *node, uint32_t flags, int32_t key, void* value)
 {
 	if (!node)
 	{
@@ -142,14 +142,14 @@ static aatree_node_t *M_AATreeSet_Node(aatree_t *aatree, aatree_node_t *node, UI
 	return node;
 }
 
-void M_AATreeSet(aatree_t *aatree, INT32 key, void* value)
+void M_AATreeSet(aatree_t *aatree, int32_t key, void* value)
 {
 	aatree->root = M_AATreeSet_Node(aatree, aatree->root, aatree->flags, key, value);
 }
 
 // Caveat: we don't distinguish between nodes that don't exists
 // and nodes with value == NULL.
-static void *M_AATreeGet_Node(aatree_node_t *node, INT32 key)
+static void *M_AATreeGet_Node(aatree_node_t *node, int32_t key)
 {
 	if (LIKELY(node))
 	{
@@ -164,7 +164,7 @@ static void *M_AATreeGet_Node(aatree_node_t *node, INT32 key)
 	return NULL;
 }
 
-void *M_AATreeGet(aatree_t *aatree, INT32 key)
+void *M_AATreeGet(aatree_t *aatree, int32_t key)
 {
 	return M_AATreeGet_Node(aatree->root, key);
 }
@@ -257,7 +257,7 @@ void *M_AATreeIteratorNext(aatree_iterator_t *iterator)
     return ((aatree_iterator_node_t*)M_QueueIterator(&iterator->nodes))->node->value;
 }
 
-INT32 M_AATreeIteratorKey(aatree_iterator_t *iterator)
+int32_t M_AATreeIteratorKey(aatree_iterator_t *iterator)
 {
     // Uuh
     if (iterator->nodes.rover == NULL)

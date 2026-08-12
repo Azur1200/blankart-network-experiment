@@ -58,7 +58,7 @@
 //
 // Returns true if the player is in a state where they can pick up items.
 //
-dboolean P_CanPickupItem(player_t *player, UINT8 weapon)
+dboolean P_CanPickupItem(player_t *player, uint8_t weapon)
 {
 	dboolean force = false;
 
@@ -146,7 +146,7 @@ static void P_DoNightsScore(player_t *player)
 
 	/*if (G_IsSpecialStage(gamemap)) // Global link count? Maybe not a good idea...
 	{
-		INT32 i;
+		int32_t i;
 		for (i = 0; i < MAXPLAYERS; i++)
 			if (playeringame[i])
 			{
@@ -215,7 +215,7 @@ static void P_DoNightsScore(player_t *player)
 void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, dboolean heightcheck)
 {
 	player_t *player;
-	INT32 i;
+	int32_t i;
 
 	if (objectplacing)
 		return;
@@ -309,7 +309,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, dboolean heightcheck)
 			else
 			{
 				player->itemtype = special->threshold;
-				if ((UINT16)(player->itemamount) + special->movecount > 255)
+				if ((uint16_t)(player->itemamount) + special->movecount > 255)
 					player->itemamount = 255;
 				else
 					player->itemamount += special->movecount;
@@ -317,7 +317,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, dboolean heightcheck)
 				// Add the pickup to our roll list
 				if (itemlistactive)
 				{
-					K_AddItemRollToList((INT32)(player - players),
+					K_AddItemRollToList((int32_t)(player - players),
 								player->itemtype,
 								player->itemamount);
 				}
@@ -442,13 +442,13 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, dboolean heightcheck)
 			else if (special->target->player->karmamode == KARMAMODE_EGGMAN && P_CanPickupItem(player, PICKUPITEM_EGGMAN))
 			{
 				mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
-				UINT8 ptadd = 1; // No WANTED bonus for tricking
+				uint8_t ptadd = 1; // No WANTED bonus for tricking
 
 				S_StartSound(poof, special->info->seesound);
 
 				if (player->bumper == 1) // If you have only one bumper left, and see if it's a 1v1
 				{
-					INT32 numingame = 0;
+					int32_t numingame = 0;
 
 					for (i = 0; i < MAXPLAYERS; i++)
 					{
@@ -597,7 +597,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, dboolean heightcheck)
 		case MT_TUMBLEGEM:
 		case MT_TUMBLECOIN:
 			{
-				SINT8 flip = P_MobjFlip(special);
+				int8_t flip = P_MobjFlip(special);
 				if ((toucher->momx || toucher->momy) && (flip * special->momz <= 0))
 				{
 					special->momx = toucher->momx;
@@ -1003,7 +1003,7 @@ void P_TouchStarPost(mobj_t *post, player_t *player, dboolean snaptopost)
   */
 void P_CheckTimeLimit(void)
 {
-	INT32 i, k;
+	int32_t i, k;
 
 	if (exitcountdown)
 		return;
@@ -1018,7 +1018,7 @@ void P_CheckTimeLimit(void)
 		return;
 	}
 
-	INT32 timeleft = timelimitintics + starttime - leveltime;
+	int32_t timeleft = timelimitintics + starttime - leveltime;
 	if (timeleft > 0)
 	{
 		if (secretextratime)
@@ -1073,10 +1073,10 @@ void P_CheckTimeLimit(void)
 
 	if (!itembreaker && !grandprixinfo.gp && cv_overtime.value)
 	{
-		INT32 playerarray[MAXPLAYERS];
-		INT32 tempplayer = 0;
-		INT32 spectators = 0;
-		INT32 playercount = 0;
+		int32_t playerarray[MAXPLAYERS];
+		int32_t tempplayer = 0;
+		int32_t spectators = 0;
+		int32_t playercount = 0;
 
 		//Figure out if we have enough participating players to care.
 		for (i = 0; i < MAXPLAYERS; i++)
@@ -1164,7 +1164,7 @@ overtimesound:
   */
 void P_CheckPointLimit(void)
 {
-	INT32 i;
+	int32_t i;
 
 	if (exitcountdown)
 		return;
@@ -1185,7 +1185,7 @@ void P_CheckPointLimit(void)
 	if (G_GametypeHasTeams())
 	{
 		// Just check both teams
-		if ((UINT32)cv_pointlimit.value <= redscore || (UINT32)cv_pointlimit.value <= bluescore)
+		if ((uint32_t)cv_pointlimit.value <= redscore || (uint32_t)cv_pointlimit.value <= bluescore)
 		{
 			if (server)
 				SendNetXCmd(XD_EXITLEVEL, NULL, 0);
@@ -1198,7 +1198,7 @@ void P_CheckPointLimit(void)
 			if (!playeringame[i] || players[i].spectator)
 				continue;
 
-			if ((UINT32)cv_pointlimit.value <= players[i].roundscore)
+			if ((uint32_t)cv_pointlimit.value <= players[i].roundscore)
 			{
 				P_DoAllPlayersExit(0, false);
 
@@ -1219,12 +1219,12 @@ dboolean P_CheckRacers(void)
 	dboolean allHumansDone = true;
 	//dboolean allBotsDone = true;
 
-	UINT8 numPlaying = 0;
-	UINT8 numExiting = 0;
-	UINT8 numHumans = 0;
-	UINT8 numBots = 0;
+	uint8_t numPlaying = 0;
+	uint8_t numExiting = 0;
+	uint8_t numHumans = 0;
+	uint8_t numBots = 0;
 
-	UINT8 i;
+	uint8_t i;
 
 	// Check if all the players in the race have finished. If so, end the level.
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -1323,7 +1323,7 @@ dboolean P_CheckRacers(void)
 	if (racecountdown == 0)
 	{
 		// If the winners are all done, then start the death timer.
-		UINT8 winningPos = max(1, numPlaying / 2);
+		uint8_t winningPos = max(1, numPlaying / 2);
 
 		if (numPlaying % 2) // Any remainder? Then round up.
 		{
@@ -1367,7 +1367,7 @@ dboolean P_CheckRacers(void)
   * \todo Cleanup, refactor, split up.
   * \sa P_DamageMobj
   */
-void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damagetype)
+void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, uint8_t damagetype)
 {
 	mobj_t *mo;
 
@@ -1421,7 +1421,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			kartitemequip_e equipstyle = K_GetItemEquipStyle(target->target->player->equippeditem);
 			if (equipstyle == KITEMEQUIP_TRAIL)
 			{
-				if (target->movedir != 0 && target->movedir < (UINT16)target->target->player->itemamount)
+				if (target->movedir != 0 && target->movedir < (uint16_t)target->target->player->itemamount)
 				{
 					if (target->target->hnext)
 						K_KillBananaChain(target->target->hnext, inflictor, source);
@@ -1504,7 +1504,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 	// if a player avatar dies...
 	if (target->player)
 	{
-		UINT8 i;
+		uint8_t i;
 
 		target->flags &= ~(MF_SOLID|MF_SHOOTABLE); // does not block
 		P_UnsetThingPosition(target);
@@ -1575,7 +1575,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 		case MT_EGGMOBILE3:
 			{
 				thinker_t *th;
-				UINT32 i = 0; // to check how many clones we've removed
+				uint32_t i = 0; // to check how many clones we've removed
 
 				// scan the thinkers to make sure all the old pinch dummies are gone on death
 				for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
@@ -1646,7 +1646,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			{
 				target->fuse = -1;
 
-				const INT32 numbounces = (cv_kartdeathbounces.value > 0) ? cv_kartdeathbounces.value - 1 : cv_kartdeathbounces.value;
+				const int32_t numbounces = (cv_kartdeathbounces.value > 0) ? cv_kartdeathbounces.value - 1 : cv_kartdeathbounces.value;
 				target->player->deadbounces = numbounces; // FIXME: Customizable bounce lengths...
 				flatout2 = true;
 			}
@@ -1668,7 +1668,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 
 			if (target->player->pflags & PF_NOCONTEST)
 			{
-				UINT32 bounceflags = (flatout2) ? MF_NOCLIP : 0;
+				uint32_t bounceflags = (flatout2) ? MF_NOCLIP : 0;
 				target->flags &= ~(MF_NOCLIPHEIGHT|bounceflags); // do the bounce!
 				target->friction = 4*FRACUNIT/5; // reduce momentum if we die on the ground
 				angleoffset /= 2;
@@ -1874,7 +1874,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 		const angle_t ang = ((inflictor) ? inflictor->angle : 0) + ANGLE_90;
 		const fixed_t scale = target->scale;
 		const fixed_t xoffs = P_ReturnThrustX(target, ang, 8*scale), yoffs = P_ReturnThrustY(target, ang, 8*scale);
-		const UINT16 flip = (target->eflags & MFE_VERTICALFLIP);
+		const uint16_t flip = (target->eflags & MFE_VERTICALFLIP);
 		mobj_t *chunk;
 		fixed_t momz;
 
@@ -1941,7 +1941,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 		const angle_t ang = (/*(inflictor) ? inflictor->angle : */target->angle) + ANGLE_90;
 		const fixed_t scale = target->scale;
 		const fixed_t xoffs = P_ReturnThrustX(target, ang, 8*scale), yoffs = P_ReturnThrustY(target, ang, 8*scale), forwardxoffs = P_ReturnThrustX(target, target->angle, 7*scale), forwardyoffs = P_ReturnThrustY(target, target->angle, 7*scale);
-		const UINT16 flip = (target->eflags & MFE_VERTICALFLIP);
+		const uint16_t flip = (target->eflags & MFE_VERTICALFLIP);
 		mobj_t *chunk;
 		dboolean sprflip;
 
@@ -2026,7 +2026,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 	   Graue 12-22-2003 */
 }
 
-static dboolean P_PlayerHitsPlayer(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+static dboolean P_PlayerHitsPlayer(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype)
 {
 	(void)inflictor;
 	(void)damage;
@@ -2049,7 +2049,7 @@ static dboolean P_PlayerHitsPlayer(mobj_t *target, mobj_t *inflictor, mobj_t *so
 	return true;
 }
 
-static dboolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, UINT8 type)
+static dboolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, uint8_t type)
 {
 	(void)source;
 	(void)inflictor;
@@ -2119,12 +2119,12 @@ static dboolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source
 }
 
 // Determines what ShouldX Hook's status should be used.
-static UINT8 P_ShouldHookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+static uint8_t P_ShouldHookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype)
 {
 	dboolean targetisplayer = false;
 	const dboolean killer = (damagetype & DMG_DEATHMASK);
 	const dboolean specdamage = (damagetype == DMG_SPECTATOR);
-	INT32 use_damage = damage;
+	int32_t use_damage = damage;
 
 	if (target && (!P_MobjWasRemoved(target)) && target->player)
 	{
@@ -2142,12 +2142,12 @@ static UINT8 P_ShouldHookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *sourc
 		use_damage = 10000;
 	}
 
-	UINT8 shouldDamage = LUA_HookShouldDamage(target, inflictor, source, use_damage, damagetype);
-	UINT8 shouldSpin = LUA_HookShouldSpin(target, inflictor, source, use_damage, damagetype);
-	UINT8 shouldExplode = LUA_HookShouldExplode(target, inflictor, source, use_damage, damagetype);
-	UINT8 shouldSquish = LUA_HookShouldSquish(target, inflictor, source, use_damage, damagetype);
-	UINT8 status;
-	const UINT8 type = (damagetype & DMG_TYPEMASK);
+	uint8_t shouldDamage = LUA_HookShouldDamage(target, inflictor, source, use_damage, damagetype);
+	uint8_t shouldSpin = LUA_HookShouldSpin(target, inflictor, source, use_damage, damagetype);
+	uint8_t shouldExplode = LUA_HookShouldExplode(target, inflictor, source, use_damage, damagetype);
+	uint8_t shouldSquish = LUA_HookShouldSquish(target, inflictor, source, use_damage, damagetype);
+	uint8_t status;
+	const uint8_t type = (damagetype & DMG_TYPEMASK);
 	status = shouldDamage;
 
 	if (!killer && !specdamage)
@@ -2181,7 +2181,7 @@ static UINT8 P_ShouldHookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *sourc
   * \sa P_KillMobj
   */
 
-dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t damage, uint8_t damagetype)
 {
 	player_t *player;
 	dboolean force = false;
@@ -2218,7 +2218,7 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 d
 	// Everything above here can't be forced.
 	if (!metalrecording)
 	{
-		UINT8 shouldForce = P_ShouldHookDamage(target, inflictor, source, damage, damagetype);
+		uint8_t shouldForce = P_ShouldHookDamage(target, inflictor, source, damage, damagetype);
 		if (P_MobjWasRemoved(target))
 			return (shouldForce == 1); // mobj was removed
 		if (shouldForce == 1)
@@ -2298,7 +2298,7 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 d
 		}
 		else
 		{
-			const UINT8 type = (damagetype & DMG_TYPEMASK);
+			const uint8_t type = (damagetype & DMG_TYPEMASK);
 
 			const dboolean explosioncombo = type == DMG_EXPLODE // This damage type can do evil stuff like ALWAYS combo
 			                               && player->bubbleboost == 0; // ...but popping a Bubble Shield protects you!
@@ -2455,7 +2455,7 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 d
 				}
 			}
 
-			INT16 ringburst = 3;
+			int16_t ringburst = 3;
 
 			// Handle ringloss based on hittype.
 			if (inflictor)
@@ -2633,7 +2633,7 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 d
 		target->health -= damage;
 
 	if (source && source->player && target)
-		G_GhostAddHit((INT32) (source->player - players), target);
+		G_GhostAddHit((int32_t) (source->player - players), target);
 
 	if (target->health <= 0)
 	{
@@ -2665,7 +2665,7 @@ static void P_FlingBurst
 		mobjtype_t objType,
 		tic_t objFuse,
 		fixed_t objScale,
-		INT32 i)
+		int32_t i)
 {
 	mobj_t *mo = P_SpawnMobjFromMobj(player->mo, 0, 0, 0, objType);
 	P_SetTarget(&mo->target, player->mo);
@@ -2688,7 +2688,7 @@ static void P_FlingBurst
 	angle_t offset = ANGLE_90 / (RING_LAYER_SIDE_SIZE + 2);
 	angle_t fp = offset + (((i / 2) % RING_LAYER_SIDE_SIZE) * (offset * 3 >> 1));
 
-	const UINT8 layer = i / RING_LAYER_SIZE;
+	const uint8_t layer = i / RING_LAYER_SIZE;
 	const fixed_t thrust = (13 * mo->scale) + (7 * mo->scale * layer);
 	mo->momx = (player->mo->momx / 2) + FixedMul(FixedMul(thrust, FINECOSINE(fp >> ANGLETOFINESHIFT)), FINECOSINE(fa >> ANGLETOFINESHIFT));
 	mo->momy = (player->mo->momy / 2) + FixedMul(FixedMul(thrust, FINECOSINE(fp >> ANGLETOFINESHIFT)), FINESINE(fa >> ANGLETOFINESHIFT));
@@ -2702,10 +2702,10 @@ static void P_FlingBurst
   *                  spawned.
   * \sa P_PlayerFlagBurst
   */
-void P_PlayerRingBurst(player_t *player, INT32 num_rings)
+void P_PlayerRingBurst(player_t *player, int32_t num_rings)
 {
-	INT32 spill_total, num_fling_rings;
-	INT32 i;
+	int32_t spill_total, num_fling_rings;
+	int32_t i;
 	angle_t fa;
 
 	// Rings need to be enabled!

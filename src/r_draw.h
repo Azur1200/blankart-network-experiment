@@ -24,11 +24,11 @@ extern "C" {
 // COMMON STUFF FOR 8bpp AND 16bpp
 // -------------------------------
 
-FUNCINLINE static ATTRINLINE UINT8 *R_Address(INT32 px, INT32 py)
+FUNCINLINE static ATTRINLINE uint8_t *R_Address(int32_t px, int32_t py)
 {
 	return vid.screens[0] + (py + viewwindowy) * vid.width + (viewwindowx + px);
 }
-extern UINT8 r8_flatcolor;
+extern uint8_t r8_flatcolor;
 
 // -------------------------
 // COLUMN DRAWING CODE STUFF
@@ -144,12 +144,12 @@ enum
 
 // Custom player skin translation
 // Initialize color translation tables, for player rendering etc.
-UINT8* R_GetTranslationColormap(INT32 skinnum, skincolornum_t color, UINT8 flags);
+uint8_t* R_GetTranslationColormap(int32_t skinnum, skincolornum_t color, uint8_t flags);
 void R_FlushTranslationColormapCache(void);
-UINT16 R_GetColorByName(const char *name);
-UINT16 R_GetSuperColorByName(const char *name);
+uint16_t R_GetColorByName(const char *name);
+uint16_t R_GetSuperColorByName(const char *name);
 
-extern UINT8 *transtables; // translucency tables, should be (*transtables)[5][256][256]
+extern uint8_t *transtables; // translucency tables, should be (*transtables)[5][256][256]
 
 enum
 {
@@ -160,24 +160,24 @@ enum
 	NUMBLENDMAPS
 };
 
-extern UINT8 *blendtables[NUMBLENDMAPS];
+extern uint8_t *blendtables[NUMBLENDMAPS];
 
-extern UINT8 *palremap, *invremap;
+extern uint8_t *palremap, *invremap;
 
 void R_InitTranslucencyTables(void);
 void R_GenerateBlendTables(void);
 void R_InitPaletteRemap(void);
 
-UINT8 *R_GetTranslucencyTable(INT32 alphalevel);
-UINT8 *R_GetBlendTable(int style, INT32 alphalevel);
-UINT8 R_GetPaletteRemap(UINT8 color);
-UINT8 R_InvPaletteRemap(UINT8 color);
+uint8_t *R_GetTranslucencyTable(int32_t alphalevel);
+uint8_t *R_GetBlendTable(int style, int32_t alphalevel);
+uint8_t R_GetPaletteRemap(uint8_t color);
+uint8_t R_InvPaletteRemap(uint8_t color);
 
 // Color ramp modification should force a recache
-extern UINT8 skincolor_modified[];
+extern uint8_t skincolor_modified[];
 
 void R_InitViewBuffer(void);
-void R_VideoErase(size_t ofs, INT32 count);
+void R_VideoErase(size_t ofs, int32_t count);
 
 #define TRANSPARENTPIXEL 255
 #define BRIGHTPIXEL 0

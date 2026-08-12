@@ -48,10 +48,10 @@ mobj_t *P_SetTarget2(mobj_t **mo, mobj_t *target
 const char *P_MobjTypeName(const mobj_t *mobj);
 #endif
 
-extern UINT32 thinker_era;
+extern uint32_t thinker_era;
 
 // Negate the value for tics
-INT32 P_AltFlip(INT32 value, tic_t tics);
+int32_t P_AltFlip(int32_t value, tic_t tics);
 #define P_RandomFlip(value) P_AltFlip(value, 1)
 
 #ifdef __cplusplus

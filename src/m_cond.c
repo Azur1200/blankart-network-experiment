@@ -26,7 +26,7 @@
 
 // Map triggers for linedef executors
 // 32 triggers, one bit each
-UINT32 unlocktriggers;
+uint32_t unlocktriggers;
 
 // The meat of this system lies in condition sets
 conditionset_t conditionSets[MAXCONDITIONSETS];
@@ -41,13 +41,13 @@ extraemblem_t extraemblems[MAXEXTRAEMBLEMS] = {0};
 unlockable_t unlockables[MAXUNLOCKABLES] = {0};
 
 // Number of emblems and extra emblems
-INT32 numemblems = 0;
-INT32 numextraemblems = 0;
+int32_t numemblems = 0;
+int32_t numextraemblems = 0;
 
-void M_AddRawCondition(UINT8 set, UINT8 id, conditiontype_t c, INT32 r, INT16 x1, INT16 x2)
+void M_AddRawCondition(uint8_t set, uint8_t id, conditiontype_t c, int32_t r, int16_t x1, int16_t x2)
 {
 	condition_t *cond;
-	UINT32 num, wnum;
+	uint32_t num, wnum;
 
 	I_Assert(set && set <= MAXCONDITIONSETS);
 
@@ -65,7 +65,7 @@ void M_AddRawCondition(UINT8 set, UINT8 id, conditiontype_t c, INT32 r, INT16 x1
 	cond[wnum].extrainfo2 = x2;
 }
 
-void M_ClearConditionSet(UINT8 set)
+void M_ClearConditionSet(uint8_t set)
 {
 	Z_Free(conditionSets[set - 1].condition);
 	conditionSets[set - 1].condition = NULL;
@@ -76,7 +76,7 @@ void M_ClearConditionSet(UINT8 set)
 // Clear ALL secrets.
 void M_ClearSecrets(void)
 {
-	INT32 i;
+	int32_t i;
 
 	for (size_t j = 0; j < nummaprecords; j++)
 		maprecords[j]->visited = 0;
@@ -99,7 +99,7 @@ void M_ClearSecrets(void)
 // ----------------------
 // Condition set checking
 // ----------------------
-UINT8 M_CheckCondition(const condition_t *cn)
+uint8_t M_CheckCondition(const condition_t *cn)
 {
 	switch (cn->type)
 	{
@@ -117,7 +117,7 @@ UINT8 M_CheckCondition(const condition_t *cn)
 		case UC_MAPBEATEN: // Requires map x to be beaten
 		case UC_MAPENCORE: // Requires map x to be beaten in encore
 		{
-			UINT8 mvtype = MV_VISITED;
+			uint8_t mvtype = MV_VISITED;
 			if (cn->type == UC_MAPBEATEN)
 				mvtype = MV_BEATEN;
 			else if (cn->type == UC_MAPENCORE)
@@ -145,12 +145,12 @@ UINT8 M_CheckCondition(const condition_t *cn)
 	return false;
 }
 
-static UINT8 M_CheckConditionSet(conditionset_t *c)
+static uint8_t M_CheckConditionSet(conditionset_t *c)
 {
-	UINT32 i;
-	UINT32 lastID = 0;
+	uint32_t i;
+	uint32_t lastID = 0;
 	condition_t *cn;
-	UINT8 achievedSoFar = true;
+	uint8_t achievedSoFar = true;
 
 	for (i = 0; i < c->numconditions; ++i)
 	{
@@ -174,7 +174,7 @@ static UINT8 M_CheckConditionSet(conditionset_t *c)
 
 void M_CheckUnlockConditions(void)
 {
-	INT32 i;
+	int32_t i;
 	conditionset_t *c;
 
 	for (i = 0; i < MAXCONDITIONSETS; ++i)
@@ -187,11 +187,11 @@ void M_CheckUnlockConditions(void)
 	}
 }
 
-UINT8 M_UpdateUnlockablesAndExtraEmblems(void)
+uint8_t M_UpdateUnlockablesAndExtraEmblems(void)
 {
-	INT32 i;
+	int32_t i;
 	char cechoText[992] = "";
-	UINT8 cechoLines = 0;
+	uint8_t cechoLines = 0;
 
 	M_CheckUnlockConditions();
 
@@ -247,7 +247,7 @@ UINT8 M_UpdateUnlockablesAndExtraEmblems(void)
 // Used when loading gamedata to make sure all unlocks are synched with conditions
 void M_SilentUpdateUnlockablesAndEmblems(void)
 {
-	INT32 i;
+	int32_t i;
 	dboolean checkAgain = false;
 
 	// Just in case they aren't to sync
@@ -277,13 +277,13 @@ void M_SilentUpdateUnlockablesAndEmblems(void)
 }
 
 // Emblem unlocking shit
-UINT8 M_CheckLevelEmblems(void)
+uint8_t M_CheckLevelEmblems(void)
 {
-	INT32 i;
-	INT32 valToReach;
-	INT16 levelnum;
-	UINT8 res;
-	UINT8 somethingUnlocked = 0;
+	int32_t i;
+	int32_t valToReach;
+	int16_t levelnum;
+	uint8_t res;
+	uint8_t somethingUnlocked = 0;
 
 	if (!G_EmblemsEnabled())
 		return false;
@@ -291,7 +291,7 @@ UINT8 M_CheckLevelEmblems(void)
 	// Update Score, Time, Rings emblems
 	for (i = 0; i < numemblems; ++i)
 	{
-		INT32 checkLevel;
+		int32_t checkLevel;
 
 		if (emblemlocations[i].type < ET_TIME || emblemlocations[i].collected)
 			continue;
@@ -321,18 +321,18 @@ UINT8 M_CheckLevelEmblems(void)
 }
 
 // Unseal when we add more emblems
-/*UINT8 M_CompletionEmblems(void) // Bah! Duplication sucks, but it's for a separate print when awarding emblems and it's sorta different enough.
+/*uint8_t M_CompletionEmblems(void) // Bah! Duplication sucks, but it's for a separate print when awarding emblems and it's sorta different enough.
 {
-	INT32 i;
-	INT32 embtype;
-	INT16 levelnum;
-	UINT8 res;
-	UINT8 somethingUnlocked = 0;
-	UINT8 flags;
+	int32_t i;
+	int32_t embtype;
+	int16_t levelnum;
+	uint8_t res;
+	uint8_t somethingUnlocked = 0;
+	uint8_t flags;
 
 	for (i = 0; i < numemblems; ++i)
 	{
-		INT32 checkLevel;
+		int32_t checkLevel;
 
 		if (emblemlocations[i].type < ET_TIME || emblemlocations[i].collected)
 			continue;
@@ -361,9 +361,9 @@ UINT8 M_CheckLevelEmblems(void)
 // -------------------
 // Quick unlock checks
 // -------------------
-UINT8 M_AnySecretUnlocked(void)
+uint8_t M_AnySecretUnlocked(void)
 {
-	INT32 i;
+	int32_t i;
 
 #ifdef DEVELOP
 	if (1)
@@ -378,9 +378,9 @@ UINT8 M_AnySecretUnlocked(void)
 	return false;
 }
 
-UINT8 M_SecretUnlocked(INT32 type)
+uint8_t M_SecretUnlocked(int32_t type)
 {
-	INT32 i;
+	int32_t i;
 
 #if 1
 	if (dedicated)
@@ -403,7 +403,7 @@ UINT8 M_SecretUnlocked(INT32 type)
 #undef CHADYES
 }
 
-UINT8 M_MapLocked(mapnum_t mapnum)
+uint8_t M_MapLocked(mapnum_t mapnum)
 {
 
 #ifdef DEVELOP
@@ -419,9 +419,9 @@ UINT8 M_MapLocked(mapnum_t mapnum)
 	return false;
 }
 
-INT32 M_CountEmblems(void)
+int32_t M_CountEmblems(void)
 {
-	INT32 found = 0, i;
+	int32_t found = 0, i;
 	for (i = 0; i < numemblems; ++i)
 	{
 		if (emblemlocations[i].collected)
@@ -441,9 +441,9 @@ INT32 M_CountEmblems(void)
 
 // Theoretically faster than using M_CountEmblems()
 // Stops when it reaches the target number of emblems.
-UINT8 M_GotEnoughEmblems(INT32 number)
+uint8_t M_GotEnoughEmblems(int32_t number)
 {
-	INT32 i, gottenemblems = 0;
+	int32_t i, gottenemblems = 0;
 	for (i = 0; i < numemblems; ++i)
 	{
 		if (emblemlocations[i].collected)
@@ -457,13 +457,13 @@ UINT8 M_GotEnoughEmblems(INT32 number)
 	return false;
 }
 
-UINT8 M_GotLowEnoughTime(INT32 tictime)
+uint8_t M_GotLowEnoughTime(int32_t tictime)
 {
 	(void)tictime;
 	I_Error("fixme M_GotLowEnoughTime");
 	/*
-	INT32 curtics = 0;
-	INT32 i;
+	int32_t curtics = 0;
+	int32_t i;
 
 	for (i = 0; i < nummapheaders; ++i)
 	{
@@ -481,7 +481,7 @@ UINT8 M_GotLowEnoughTime(INT32 tictime)
 }
 
 // Gets the skin number for a SECRET_SKIN unlockable.
-INT32 M_UnlockableSkinNum(unlockable_t *unlock)
+int32_t M_UnlockableSkinNum(unlockable_t *unlock)
 {
 	if (unlock->type != SECRET_SKIN)
 	{
@@ -492,7 +492,7 @@ INT32 M_UnlockableSkinNum(unlockable_t *unlock)
 	if (unlock->stringVar && strcmp(unlock->stringVar, ""))
 	{
 		// Get the skin from the string.
-		INT32 skinnum = R_SkinAvailable(unlock->stringVar);
+		int32_t skinnum = R_SkinAvailable(unlock->stringVar);
 		if (skinnum != -1)
 		{
 			return skinnum;
@@ -519,8 +519,8 @@ INT32 M_UnlockableSkinNum(unlockable_t *unlock)
 // note that this goes in reverse!!
 emblem_t *M_GetLevelEmblems(mapnum_t mapnum)
 {
-	static INT32 map = -1;
-	static INT32 i = -1;
+	static int32_t map = -1;
+	static int32_t i = -1;
 
 	if (mapnum != NEXTMAP_INVALID)
 	{
@@ -530,7 +530,7 @@ emblem_t *M_GetLevelEmblems(mapnum_t mapnum)
 
 	while (--i >= 0)
 	{
-		INT32 checkLevel = G_MapNumber(emblemlocations[i].level);
+		int32_t checkLevel = G_MapNumber(emblemlocations[i].level);
 
 		if (checkLevel >= nummapheaders || !mapheaderinfo[checkLevel])
 			continue;

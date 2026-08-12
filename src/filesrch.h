@@ -29,7 +29,7 @@ extern consvar_t cv_addons_option, cv_addons_folder, cv_addons_md5, cv_addons_sh
 
 */
 
-filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash,
+filestatus_t filesearch(char *filename, const char *startpath, uint64_t wantedhash,
 	dboolean completepath, int maxsearchdepth);
 
 #define menudepth 20
@@ -45,7 +45,7 @@ extern textinput_t menusearch;
 extern char **dirmenu;
 extern size_t sizedirmenu;
 extern size_t dir_on[menudepth];
-extern UINT8 refreshdirmenu;
+extern uint8_t refreshdirmenu;
 extern char *refreshdirname;
 
 typedef enum

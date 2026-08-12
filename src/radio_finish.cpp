@@ -58,7 +58,7 @@ void RR_resetRidersFinishTicker(void)
 void RR_addPlayerToFinshTicker(player_t *player)
 {
 	// https://www.mathsisfun.com/numbers/cardinal-ordinal-chart.html
-	auto position_string = [](UINT8 position) -> std::string
+	auto position_string = [](uint8_t position) -> std::string
 	{
 		if (position % 10 == 1 && position % 100 != 11)
 			return std::to_string(position) + "st";
@@ -94,7 +94,7 @@ void RR_ridersFinishTick(void)
 	playerFinishTickerQueue.front().old_x = playerFinishTickerQueue.front().x;
 	playerFinishTickerQueue.front().x -= (2*FRACUNIT);
 
-	auto string_width = [](std::string string) -> INT32
+	auto string_width = [](std::string string) -> int32_t
 	{
 		return V_ThinStringWidth(string.c_str(), 0);
 	};
@@ -116,7 +116,7 @@ void RR_ridersFinishTick(void)
 		}
 	}
 
-	const INT32 OFFSCREEN_X = 0 - offscreen_offset() - string_width(
+	const int32_t OFFSCREEN_X = 0 - offscreen_offset() - string_width(
 		playerFinishTickerQueue.front().position.c_str()
 	);
 
@@ -147,7 +147,7 @@ void RR_drawRidersFinishTicker(void)
 	{
 		PlayerFinishTicker &player = playerFinishTickerQueue[i];
 
-		INT32 flags = V_20TRANS;
+		int32_t flags = V_20TRANS;
 
 		if (player.is_local_player)
 		{

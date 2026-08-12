@@ -27,13 +27,13 @@ void M_TextInputClear(textinput_t *input);
 
 void M_TextInputSetString(textinput_t *input, const char *c);
 
-dboolean M_TextInputHandle(textinput_t *input, INT32 key);
+dboolean M_TextInputHandle(textinput_t *input, int32_t key);
 
 // Does everything same as M_TextInputHandle, but also handles emotes in input string
 // If currently typing something that looks like an existing emote, return suggestions for it
-dboolean M_TextInputHandleEmotes(textinput_t *input, INT32 key, emote_autocomplete_t *autocomplete);
+dboolean M_TextInputHandleEmotes(textinput_t *input, int32_t key, emote_autocomplete_t *autocomplete);
 
 #define M_DrawTextInput(x, y, input, flags) M_DrawTextInputScroll((x), (y), (input), (flags), ((input)->buffer_size-2)*8)
-void M_DrawTextInputScroll(INT32 x, INT32 y, textinput_t *input, INT32 flags, INT32 MAXINPUTWIDTH);
+void M_DrawTextInputScroll(int32_t x, int32_t y, textinput_t *input, int32_t flags, int32_t MAXINPUTWIDTH);
 
 #endif

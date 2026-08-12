@@ -256,7 +256,7 @@ typedef enum
 
 void CONS_Printf(const char *fmt, ...) FUNCPRINTF;
 void CONS_Alert(alerttype_t level, const char *fmt, ...) FUNCDEBUG;
-void CONS_Debug(UINT32 debugflags, const char *fmt, ...) FUNCDEBUG;
+void CONS_Debug(uint32_t debugflags, const char *fmt, ...) FUNCDEBUG;
 
 // For help debugging functions.
 #define POTENTIALLYUNUSED CONS_Alert(CONS_WARNING, "(%s:%d) Unused code appears to be used.\n", __FILE__, __LINE__)
@@ -281,13 +281,13 @@ char *va(const char *format, ...) FUNCPRINTF;
 
 char *M_GetToken(const char *inputString);
 void M_UnGetToken(void);
-UINT32 M_GetTokenPos(void);
+uint32_t M_GetTokenPos(void);
 
 void M_TokenizerOpen(const char *inputString, size_t inputLength);
 void M_TokenizerClose(void);
-const char *M_TokenizerRead(UINT32 i);
-UINT32 M_TokenizerGetEndPos(void);
-void M_TokenizerSetEndPos(UINT32 newPos);
+const char *M_TokenizerRead(uint32_t i);
+uint32_t M_TokenizerGetEndPos(void);
+void M_TokenizerSetEndPos(uint32_t newPos);
 dboolean M_TokenizerJustReadString(void);
 
 char *sizeu1(size_t num);
@@ -307,13 +307,13 @@ extern int SUBVERSION;
 // P.S. 8 is also what comptime generates
 // #ifdef COMMITVERSION
 #define GIT_SHA_ABBREV (4)
-extern UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
+extern uint8_t comprevision_abbrev_bin[GIT_SHA_ABBREV];
 // #endif
 
 extern dboolean devparm; // development mode (-debug)
 
 // m_cheat.c
-extern UINT32 cht_debug;
+extern uint32_t cht_debug;
 
 typedef enum
 {
@@ -353,24 +353,24 @@ extern struct debugFlagNames_s const debug_flag_names[];
 #define ANG2RAD(angle) ((float)((angle)*M_PI)/ANGLE_180)
 
 // Modifier key variables, accessible anywhere
-extern UINT8 shiftdown, ctrldown, altdown;
+extern uint8_t shiftdown, ctrldown, altdown;
 extern dboolean capslock;
 
 // WARNING: a should be unsigned but to add with 2048, it isn't!
-#define AIMINGTODY(a) FixedDiv((FINETANGENT((2048+(((INT32)a)>>ANGLETOFINESHIFT)) & FINEMASK)*160), fovtan[viewssnum])
+#define AIMINGTODY(a) FixedDiv((FINETANGENT((2048+(((int32_t)a)>>ANGLETOFINESHIFT)) & FINEMASK)*160), fovtan[viewssnum])
 
 // if we ever make our alloc stuff...
 #define ZZ_Alloc(x) Z_Malloc(x, PU_STATIC, NULL)
 #define ZZ_Calloc(x) Z_Calloc(x, PU_STATIC, NULL)
 
 // i_system.c, replace getchar() once the keyboard has been appropriated
-INT32 I_GetKey(void);
+int32_t I_GetKey(void);
 
 // Standard Hashing Functions (tm)
 // see W_MakeFileHash for hashing files
 #include "xxhash.h"
-#define HASH64(p, n) ((UINT64)XXH3_64bits(p, n))
-#define HASH32(p, n) ((UINT32)(XXH3_64bits(p, n) & UINT32_MAX))
+#define HASH64(p, n) ((uint64_t)XXH3_64bits(p, n))
+#define HASH32(p, n) ((uint32_t)(XXH3_64bits(p, n) & UINT32_MAX))
 #define HASHFMT "%016jx"
 
 #ifndef __cplusplus

@@ -462,7 +462,7 @@ dboolean P_DoSpring(mobj_t *spring, mobj_t *object)
 
 			if (!demo.playback)
 			{
-				for (SINT8 j = 0; j <= r_splitscreen; j++)
+				for (int8_t j = 0; j <= r_splitscreen; j++)
 				{
 					if (object->player == &players[displayplayers[j]])
 					{
@@ -487,7 +487,7 @@ static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 	player_t *p = object->player; // will be NULL if not a player
 	fixed_t zdist; // distance between bottoms
 	fixed_t speed = spring->info->mass; // conveniently, both fans and gas jets use this for the vertical thrust
-	SINT8 flipval = P_MobjFlip(spring); // virtually everything here centers around the thruster's gravity, not the object's!
+	int8_t flipval = P_MobjFlip(spring); // virtually everything here centers around the thruster's gravity, not the object's!
 
 	// something something S_KART_PAIN being unused (see T_Pusher)
 	if (p && false)//object->state == &states[object->info->painstate]) // can't use fans and gas jets when player is in pain!
@@ -696,7 +696,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 
 		if (g_tm.thing->flags & MF_PAPERCOLLISION) // more strenuous checking to prevent clipping issues
 		{
-			INT32 check1, check2, check3, check4;
+			int32_t check1, check2, check3, check4;
 			fixed_t tmcosradius = FixedMul(g_tm.thing->radius, FINECOSINE(g_tm.thing->angle>>ANGLETOFINESHIFT));
 			fixed_t tmsinradius = FixedMul(g_tm.thing->radius, FINESINE(g_tm.thing->angle>>ANGLETOFINESHIFT));
 			if (abs(thing->x - g_tm.x) >= (abs(tmcosradius) + abs(cosradius)) || abs(thing->y - g_tm.y) >= (abs(tmsinradius) + abs(sinradius)))
@@ -750,7 +750,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 	}
 
 	{
-		UINT8 shouldCollide = LUA_Hook2Mobj(thing, g_tm.thing, MOBJ_HOOK(MobjCollide)); // checks hook for thing's type
+		uint8_t shouldCollide = LUA_Hook2Mobj(thing, g_tm.thing, MOBJ_HOOK(MobjCollide)); // checks hook for thing's type
 		if (P_MobjWasRemoved(g_tm.thing) || P_MobjWasRemoved(thing))
 			return BMIT_CONTINUE; // one of them was removed???
 		if (shouldCollide == 1)
@@ -851,7 +851,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			return BMIT_CONTINUE; // underneath
 		if (g_tm.thing->player && g_tm.thing->flags & MF_SHOOTABLE && thing->health > 0)
 		{
-			UINT32 damagetype = (thing->info->mass & DMG_TYPEMASK);
+			uint32_t damagetype = (thing->info->mass & DMG_TYPEMASK);
 			if (thing->info->compatmode || !damagetype) // OWWWWW!
 				damagetype = DMG_NORMAL;
 			P_DamageMobj(g_tm.thing, thing, thing, 1, damagetype);
@@ -867,7 +867,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			return BMIT_CONTINUE; // underneath
 		if (thing->player && thing->flags & MF_SHOOTABLE && g_tm.thing->health > 0)
 		{
-			UINT32 damagetype = (g_tm.thing->info->mass & DMG_TYPEMASK);
+			uint32_t damagetype = (g_tm.thing->info->mass & DMG_TYPEMASK);
 			if (g_tm.thing->info->compatmode || !damagetype) // OWWWWW!
 				damagetype = DMG_NORMAL;
 			P_DamageMobj(thing, g_tm.thing, g_tm.thing, 1, damagetype);
@@ -1152,7 +1152,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 	// missiles can hit other things
 	if (g_tm.thing->flags & MF_MISSILE)
 	{
-		UINT8 damagetype = g_tm.thing->info->mass;
+		uint8_t damagetype = g_tm.thing->info->mass;
 
 		// see if it went over / under
 		if (g_tm.thing->z > thing->z + thing->height)
@@ -1906,7 +1906,7 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 	// this line is out of the if so upper and lower textures can be hit by a splat
 
 	{
-		UINT8 shouldCollide = LUA_HookMobjLineCollide(g_tm.thing, ld); // checks hook for thing's type
+		uint8_t shouldCollide = LUA_HookMobjLineCollide(g_tm.thing, ld); // checks hook for thing's type
 		if (P_MobjWasRemoved(g_tm.thing))
 			return BMIT_CONTINUE; // one of them was removed???
 		if (shouldCollide == 1)
@@ -2078,8 +2078,8 @@ static const fixed_t hoophalfheight = (56*FRACUNIT)/2;
 
 dboolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *result)
 {
-	INT32 thingtop = thing->z + thing->height;
-	INT32 xl, xh, yl, yh, bx, by;
+	int32_t thingtop = thing->z + thing->height;
+	int32_t xl, xh, yl, yh, bx, by;
 	subsector_t *newsubsec;
 	dboolean blockval = true;
 
@@ -2268,7 +2268,7 @@ dboolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *r
 		{
 			for (bx = xl; bx <= xh; bx++)
 			{
-				INT32 offset;
+				int32_t offset;
 				polymaplink_t *plink; // haleyjd 02/22/06
 
 				if (bx < 0 || by < 0 || bx >= bmapwidth || by >= bmapheight)
@@ -2475,7 +2475,7 @@ dboolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *r
 // P_CheckPosition optimized for the MT_HOOPCOLLIDE object. This needs to be as fast as possible!
 void P_CheckHoopPosition(mobj_t *hoopthing, fixed_t x, fixed_t y, fixed_t z, fixed_t radius)
 {
-	INT32 i;
+	int32_t i;
 
 	(void)radius; //unused
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -2501,7 +2501,7 @@ void P_CheckHoopPosition(mobj_t *hoopthing, fixed_t x, fixed_t y, fixed_t z, fix
 //
 dboolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 {
-	INT32 xl, xh, yl, yh, bx, by;
+	int32_t xl, xh, yl, yh, bx, by;
 	subsector_t *newsubsec;
 
 	g_tm.x = x;
@@ -2556,7 +2556,7 @@ dboolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 	{
 		ffloor_t *rover;
 		fixed_t delta1, delta2;
-		INT32 thingtop = thiscam->z + thiscam->height;
+		int32_t thingtop = thiscam->z + thiscam->height;
 
 		for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
 		{
@@ -2603,7 +2603,7 @@ dboolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 		for (by = yl; by <= yh; by++)
 			for (bx = xl; bx <= xh; bx++)
 			{
-				INT32 offset;
+				int32_t offset;
 				polymaplink_t *plink; // haleyjd 02/22/06
 
 				if (bx < 0 || by < 0 || bx >= bmapwidth || by >= bmapheight)
@@ -2691,7 +2691,7 @@ dboolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 	subsector_t *s = NULL;
 	dboolean retval = true;
 
-	UINT8 i;
+	uint8_t i;
 
 	g_tm.floatok = false;
 
@@ -2915,7 +2915,7 @@ static dboolean P_SlopeWedgeHit(const mobj_t *thing, fixed_t tryx, fixed_t tryy,
 
 	// don't ask me why this needs to copy the sign bits from normal
 	// it's the only way i could make this damn thing work
-	INT32 flip = P_GetSlopeZAt(hitslope, tryx, tryy) >= thing->z + thing->height/2 ? -1 : 1;
+	int32_t flip = P_GetSlopeZAt(hitslope, tryx, tryy) >= thing->z + thing->height/2 ? -1 : 1;
 	outnormal->x = abs(hitslope->d.x) * intsign(hitslope->normal.x) * flip;
 	outnormal->y = abs(hitslope->d.y) * intsign(hitslope->normal.y) * flip;
 	return true;
@@ -3134,7 +3134,7 @@ dboolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, dboolean allowdropoff, T
 	// standing on top and move it, too.
 	if (thing->flags & MF_PUSHABLE)
 	{
-		INT32 bx, by, xl, xh, yl, yh;
+		int32_t bx, by, xl, xh, yl, yh;
 
 		yh = (unsigned)(thing->y + MAXRADIUS - bmaporgy)>>MAPBLOCKSHIFT;
 		yl = (unsigned)(thing->y - MAXRADIUS - bmaporgy)>>MAPBLOCKSHIFT;
@@ -3230,7 +3230,7 @@ dboolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, dboolean allowdropoff, T
 	if (!(thing->flags & (MF_NOCLIP)))
 	{
 		line_t *ld = NULL;
-		INT32 side = 0, oldside = 0;
+		int32_t side = 0, oldside = 0;
 		while (numspechitint--)
 		{
 			ld = &lines[spechitint[numspechitint]];
@@ -3350,7 +3350,7 @@ void P_HitSpecialLines(mobj_t *thing, fixed_t x, fixed_t y, fixed_t momx, fixed_
 	fixed_t leadx, leady;
 	fixed_t trailx, traily;
 	line_t *ld = NULL;
-	INT32 side = 0, oldside = 0;
+	int32_t side = 0, oldside = 0;
 
 	I_Assert(thing != NULL);
 #ifdef PARANOIA
@@ -3510,13 +3510,15 @@ static fixed_t tmxmove, tmymove;
 //
 static void P_HitSlideLine(line_t *ld)
 {
-	INT32 side;
+	int32_t side;
 	angle_t lineangle;
 	fixed_t nx, ny;
 	fixed_t d;
 
 	side = P_PointOnLineSide(slidemo->x, slidemo->y, ld);
-	lineangle = ld->angle - ANGLE_90;
+	// lineangle = ld->angle - ANGLE_90;
+	lineangle = R_PointToAngle2(0, 0, ld->dx, ld->dy) - ANGLE_90;
+	
 
 	if (side == 1)
 		lineangle += ANGLE_180;
@@ -3530,6 +3532,110 @@ static void P_HitSlideLine(line_t *ld)
 
 	tmxmove -= FixedMul(nx, d);
 	tmymove -= FixedMul(ny, d);
+}
+
+// https://gamedev.stackexchange.com/a/30220
+static void P_ClipPlayerMoveToLine(line_t *ld)
+{
+	vector2_t lineDir = {ld->dx, ld->dy};
+	vector2_t lineMin = {0};
+	vector2_t lineMax = {0};
+
+	vector2_t boxMin = {slidemo->x - slidemo->radius, slidemo->y - slidemo->radius};
+	vector2_t boxMax = {slidemo->x + slidemo->radius, slidemo->y + slidemo->radius};
+
+	fixed_t hitTime = 0;
+	fixed_t outTime = FRACUNIT;
+
+	vector2_t norm = {-ld->dy, ld->dx};
+	FV2_Normalize(&norm);
+
+	if (lineDir.x > 0.0f) //right
+	{
+		lineMin.x = ld->v1->x;
+		lineMax.x = ld->v2->x;
+	}
+	else //left
+	{
+		lineMin.x = ld->v2->x;
+		lineMax.x = ld->v1->x;
+	}
+
+	if (lineDir.y > 0.0f) //up
+	{
+		lineMin.y = ld->v1->y;
+		lineMax.y = ld->v2->y;
+	}
+	else //down
+	{
+		lineMin.y = ld->v2->y;
+		lineMax.y = ld->v1->y;
+	}
+
+	vector2_t dist = {ld->v1->x - slidemo->x, ld->v1->y - slidemo->y};
+	vector2_t vel = {tmxmove, tmymove};
+	vector2_t outVel = {tmxmove, tmymove};
+
+	fixed_t r = FixedMul(slidemo->radius, abs(norm.x)) + FixedMul(slidemo->radius, abs(norm.y)); //radius to Line
+	fixed_t boxProj = FV2_Dot(&dist, &norm); //projected Line distance to N
+	fixed_t velProj = FV2_Dot(&vel, &norm); //projected Velocity to N
+
+	if(velProj < 0) r *= -1;
+	
+	hitTime = max(FixedDiv(boxProj - r , velProj), hitTime);
+	outTime = min(FixedDiv(boxProj + r , velProj), outTime);
+	
+	// X axis overlap
+	if( vel.x < 0 ) //Sweeping left
+	{
+		if( boxMax.x < lineMin.x ) return;
+		hitTime = max(FixedDiv(lineMax.x - boxMin.x, vel.x), hitTime);
+		outTime = min(FixedDiv(lineMin.x - boxMax.x, vel.x), outTime);
+	}
+	else if( vel.x > 0 ) //Sweeping right
+	{
+		if( boxMin.x > lineMax.x ) return;
+		hitTime = max(FixedDiv(lineMin.x - boxMax.x, vel.x), hitTime);
+		outTime = min(FixedDiv(lineMax.x - boxMin.x, vel.x), outTime);
+	}
+	else
+	{
+		if(lineMin.x > boxMax.x || lineMax.x < boxMin.x) return;
+	}
+
+	if( hitTime > outTime ) return;
+
+	// Y axis overlap
+	if( vel.y < 0 ) //Sweeping down
+	{
+		if( boxMax.y < lineMin.y ) return;
+		hitTime = max(FixedDiv(lineMax.y - boxMin.y, vel.y), hitTime);
+		outTime = min(FixedDiv(lineMin.y - boxMax.y, vel.y), outTime);
+	}
+	else if( vel.y > 0 ) //Sweeping up
+	{
+		if( boxMin.y > lineMax.y ) return;
+		hitTime = max(FixedDiv(lineMin.y - boxMax.y, vel.y), hitTime);
+		outTime = min(FixedDiv(lineMax.y - boxMin.y, vel.y), outTime);
+	}
+	else
+	{
+		if(lineMin.y > boxMax.y || lineMax.y < boxMin.y) return;
+	}
+
+	if( hitTime > outTime ) return;
+
+	hitTime -= 1;
+	FV2_Mul(&outVel, hitTime);
+	if (!P_TryMove(slidemo, slidemo->x + outVel.x, slidemo->y + outVel.y, true, NULL))
+	{
+		hitTime -= 63;
+		FV2_Mul(&outVel, hitTime);
+		P_TryMove(slidemo, slidemo->x + outVel.x, slidemo->y + outVel.y, true, NULL);
+	}
+
+	tmxmove = outVel.x;
+	tmymove = outVel.y;
 }
 
 //
@@ -3600,7 +3706,7 @@ static void P_HitBounceLine(line_t *ld)
 	tmxmove = FixedMul(movelen, FINECOSINE(deltaangle));
 	tmymove = FixedMul(movelen, FINESINE(deltaangle));
 
-	deltaangle = R_PointToAngle2(0, 0, tmxmove, tmymove);
+	// deltaangle = R_PointToAngle2(0, 0, tmxmove, tmymove);
 }
 
 /*
@@ -3941,10 +4047,10 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	impactspeed = R_PointToDist2(0, 0, mmomx, mmomy);
 
-	UINT32 bumpspark = K_GetBumpSpark();
+	uint32_t bumpspark = K_GetBumpSpark();
 
 	// The easy solution is to do this :^)
-	UINT32 basecharge = min(mo->player->driftcharge, K_GetKartDriftSparkValue(mo->player));
+	uint32_t basecharge = min(mo->player->driftcharge, K_GetKartDriftSparkValue(mo->player));
 
 	if ((bumpspark < BUMPSPARK_ALL) ||
 	    (modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
@@ -3972,6 +4078,39 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	slidemo = mo;
 
+	int32_t bump_penalty = 1;
+	dboolean dontpenalize = false;
+
+	if (tripwire)
+	{
+		// TRIPWIRE CANNOT BE MADE NONBOUNCY
+		K_ApplyTripWire(mo->player, TRIPSTATE_BLOCKED);
+
+		// Running into a tripwire will cost you double!
+		bump_penalty = 2;
+	}
+	else
+	{
+		// Some walls aren't bouncy even if you are
+		// wall transfer only lines always make players slide along em even if they'd be bouncy otherwise
+		// todo: let wall transfer override the tripwire case too?
+		if (result->line != NULL)
+		{
+			tmxmove = mmomx;
+			tmymove = mmomy;
+			P_ClipPlayerMoveToLine(result->line); // clip the moves
+		}
+		if (slideline)
+		{
+			// SRB2Kart: Non-bouncy line!
+			P_SlideMove(mo, result);
+			dontpenalize = true;
+			return;
+		}
+
+		K_SpawnBumpEffect(mo);
+	}
+
 	/*if (mo->health <= 0)
 	{
 		tmxmove = mo->momx;
@@ -3989,35 +4128,10 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
 	}
 
-	INT32 bump_penalty = 1;
-
-	if (tripwire)
-	{
-		// TRIPWIRE CANNOT BE MADE NONBOUNCY
-		K_ApplyTripWire(mo->player, TRIPSTATE_BLOCKED);
-
-		// Running into a tripwire will cost you double!
-		bump_penalty = 2;
-	}
-	else
-	{
-		// Some walls aren't bouncy even if you are
-		// wall transfer only lines always make players slide along em even if they'd be bouncy otherwise
-		// todo: let wall transfer override the tripwire case too?
-		if (slideline)
-		{
-			// SRB2Kart: Non-bouncy line!
-			P_SlideMove(mo, result);
-			return;
-		}
-
-		K_SpawnBumpEffect(mo);
-	}
-
 	P_PlayerHitBounceLine(&result->normal, tripwire);
 	mo->eflags |= MFE_JUSTBOUNCEDWALL;
 
-	if (mo->player)
+	if (mo->player && (!dontpenalize))
 	{
 		if ((impactspeed >= FixedMul(K_GetKartSpeed(mo->player, false, false), VALIDLOGBUMPPCT)) && (!mo->player->ranklog.ijustgothitasshole))
 		{
@@ -4042,6 +4156,14 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 			P_TryMove(mo, mo->x - oldmomx, mo->y - oldmomy, true, NULL);
 		}
 	}
+
+	P_ThingHeightClip(mo);
+	if (P_MobjWasRemoved(mo)) return;
+
+	mo->momx = tmxmove;
+	mo->momy = tmymove;
+	mo->player->cmomx = tmxmove;
+	mo->player->cmomy = tmymove;
 }
 
 //
@@ -4129,7 +4251,7 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 static fixed_t bombdamage;
 static mobj_t *bombsource;
 static mobj_t *bombspot;
-static UINT8 bombdamagetype;
+static uint8_t bombdamagetype;
 static dboolean bombsightcheck;
 
 //
@@ -4181,10 +4303,10 @@ static BlockItReturn_t PIT_RadiusAttack(mobj_t *thing)
 // P_RadiusAttack
 // Source is the creature that caused the explosion at spot.
 //
-void P_RadiusAttack(mobj_t *spot, mobj_t *source, fixed_t damagedist, UINT8 damagetype, dboolean sightcheck)
+void P_RadiusAttack(mobj_t *spot, mobj_t *source, fixed_t damagedist, uint8_t damagetype, dboolean sightcheck)
 {
-	INT32 x, y;
-	INT32 xl, xh, yl, yh;
+	int32_t x, y;
+	int32_t xl, xh, yl, yh;
 	fixed_t dist;
 
 	dist = FixedMul(damagedist, spot->scale) + MAXRADIUS;
@@ -4261,7 +4383,7 @@ static dboolean PIT_ChangeSector(mobj_t *thing, dboolean realcrush)
 			ffloor_t *rover;
 			fixed_t topheight, bottomheight;
 			fixed_t delta1, delta2;
-			INT32 thingtop = thing->z + thing->height;
+			int32_t thingtop = thing->z + thing->height;
 
 			for (rover = thing->subsector->sector->ffloors; rover; rover = rover->next)
 			{
@@ -4367,7 +4489,7 @@ dboolean P_CheckSector(sector_t *sector, dboolean crunch)
 				continue;
 			if (po->lines[0]->backsector == sector) // Make sure you're currently checking the control sector
 			{
-				INT32 x, y;
+				int32_t x, y;
 				po->validcount = validcount;
 
 				for (y = po->blockbox[BOXBOTTOM]; y <= po->blockbox[BOXTOP]; ++y)
@@ -4477,7 +4599,7 @@ dboolean P_CheckSector(sector_t *sector, dboolean crunch)
 				continue;
 			if (po->lines[0]->backsector == sector) // Make sure you're currently checking the control sector
 			{
-				INT32 x, y;
+				int32_t x, y;
 				po->validcount = validcount;
 
 				for (y = po->blockbox[BOXBOTTOM]; y <= po->blockbox[BOXTOP]; ++y)
@@ -4859,7 +4981,7 @@ static inline BlockItReturn_t PIT_GetPrecipSectors(line_t *ld)
 
 void P_CreateSecNodeList(mobj_t *thing, fixed_t x, fixed_t y)
 {
-	INT32 xl, xh, yl, yh, bx, by;
+	int32_t xl, xh, yl, yh, bx, by;
 	msecnode_t *node = sector_list;
 	tm_t ptm = g_tm;
  /* cph - see comment at func end */
@@ -4931,7 +5053,7 @@ void P_CreateSecNodeList(mobj_t *thing, fixed_t x, fixed_t y)
 // More crazy crap Tails 08-25-2002
 void P_CreatePrecipSecNodeList(precipmobj_t *thing,fixed_t x,fixed_t y)
 {
-	INT32 xl, xh, yl, yh, bx, by;
+	int32_t xl, xh, yl, yh, bx, by;
 	mprecipsecnode_t *node = precipsector_list;
 	tm_t ptm = g_tm;
  /* cph - see comment at func end */
@@ -5099,15 +5221,15 @@ fixed_t P_CeilingzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height)
 	return ceilingz;
 }
 
-INT32 P_GetSectorLightNumAt(sector_t *sector, fixed_t x, fixed_t y, fixed_t z)
+int32_t P_GetSectorLightNumAt(sector_t *sector, fixed_t x, fixed_t y, fixed_t z)
 {
 	if (!sector->numlights)
 		return -1;
 
-	INT32 light = sector->numlights - 1;
+	int32_t light = sector->numlights - 1;
 
 	// R_GetPlaneLight won't work on sloped lights!
-	for (INT32 lightnum = 1; lightnum < sector->numlights; lightnum++) {
+	for (int32_t lightnum = 1; lightnum < sector->numlights; lightnum++) {
 		fixed_t h = P_GetLightZAt(&sector->lightlist[lightnum], x, y);
 		if (h <= z) {
 			light = lightnum - 1;
@@ -5118,7 +5240,7 @@ INT32 P_GetSectorLightNumAt(sector_t *sector, fixed_t x, fixed_t y, fixed_t z)
 	return light;
 }
 
-INT32 P_GetLightLevelFromSectorAt(sector_t *sector, fixed_t x, fixed_t y, fixed_t z)
+int32_t P_GetLightLevelFromSectorAt(sector_t *sector, fixed_t x, fixed_t y, fixed_t z)
 {
 	if (sector->numlights)
 		return *sector->lightlist[P_GetSectorLightNumAt(sector, x, y, z)].lightlevel;
@@ -5126,7 +5248,7 @@ INT32 P_GetLightLevelFromSectorAt(sector_t *sector, fixed_t x, fixed_t y, fixed_
 		return sector->lightlevel;
 }
 
-INT32 P_GetSectorLightLevelAt(fixed_t x, fixed_t y, fixed_t z)
+int32_t P_GetSectorLightLevelAt(fixed_t x, fixed_t y, fixed_t z)
 {
 	return P_GetLightLevelFromSectorAt(R_PointInSubsector(x, y)->sector, x, y, z);
 }

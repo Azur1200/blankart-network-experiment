@@ -27,11 +27,11 @@ typedef struct
 {
 	FOutVector    wallVerts[4];
 	FSurfaceInfo  Surf;
-	INT32         texnum;
+	int32_t         texnum;
 	FBITFIELD     blend;
 	dboolean fogwall;
 	dboolean noencore;
-	INT32 lightlevel;
+	int32_t lightlevel;
 	extracolormap_t *wallcolormap; // Doing the lighting in HWR_RenderWall now for correct fog after sorting
 } wallinfo_t;
 
@@ -40,9 +40,9 @@ typedef struct
 	poly_subsector_t *xsub;
 	dboolean isceiling;
 	fixed_t fixedheight;
-	INT32 lightlevel;
+	int32_t lightlevel;
 	levelflat_t *levelflat;
-	INT32 alpha;
+	int32_t alpha;
 	sector_t *FOFSector;
 	FBITFIELD blend;
 	dboolean fogplane;
@@ -54,9 +54,9 @@ typedef struct
 	polyobj_t *polysector;
 	dboolean isceiling;
 	fixed_t fixedheight;
-	INT32 lightlevel;
+	int32_t lightlevel;
 	levelflat_t *levelflat;
-	INT32 alpha;
+	int32_t alpha;
 	sector_t *FOFSector;
 	FBITFIELD blend;
 	extracolormap_t *planecolormap;
@@ -86,8 +86,8 @@ typedef struct
 typedef struct
 {
 	gl_drawnode_t *drawnodes;
-	INT32 numdrawnodes;
-	INT32 alloceddrawnodes;
+	int32_t numdrawnodes;
+	int32_t alloceddrawnodes;
 } gl_drawnode_state_t;
 
 // portal rendering will push and pop this stack
@@ -128,7 +128,7 @@ static void *HWR_CreateDrawNode(gl_drawnode_type_t type)
     return NULL;
 }
 
-void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, dboolean noencore, FBITFIELD blend, dboolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
+void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, int32_t texnum, dboolean noencore, FBITFIELD blend, dboolean fogwall, int32_t lightlevel, extracolormap_t *wallcolormap)
 {
 	wallinfo_t *wallinfo = HWR_CreateDrawNode(DRAWNODE_WALL);
 
@@ -143,7 +143,7 @@ void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 te
 }
 
 // This will likely turn into a copy of HWR_Add3DWater and replace it.
-void HWR_AddTransparentFloor(levelflat_t *levelflat, poly_subsector_t *xsub, dboolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, dboolean fogplane, extracolormap_t *planecolormap)
+void HWR_AddTransparentFloor(levelflat_t *levelflat, poly_subsector_t *xsub, dboolean isceiling, fixed_t fixedheight, int32_t lightlevel, int32_t alpha, sector_t *FOFSector, FBITFIELD blend, dboolean fogplane, extracolormap_t *planecolormap)
 {
 	planeinfo_t *planeinfo = HWR_CreateDrawNode(DRAWNODE_PLANE);
 
@@ -161,7 +161,7 @@ void HWR_AddTransparentFloor(levelflat_t *levelflat, poly_subsector_t *xsub, dbo
 
 // Adding this for now until I can create extrasubsector info for polyobjects
 // When that happens it'll just be done through HWR_AddTransparentFloor and HWR_RenderPlane
-void HWR_AddTransparentPolyobjectFloor(levelflat_t *levelflat, polyobj_t *polysector, dboolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap)
+void HWR_AddTransparentPolyobjectFloor(levelflat_t *levelflat, polyobj_t *polysector, dboolean isceiling, fixed_t fixedheight, int32_t lightlevel, int32_t alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap)
 {
 	polyplaneinfo_t *polyplaneinfo = HWR_CreateDrawNode(DRAWNODE_POLYOBJECT_PLANE);
 
@@ -197,8 +197,8 @@ void HWR_PopDrawNodeState(void)
 
 static int CompareDrawNodePlanes(const void *p1, const void *p2)
 {
-	INT32 n1 = *(const INT32*)p1;
-	INT32 n2 = *(const INT32*)p2;
+	int32_t n1 = *(const int32_t*)p1;
+	int32_t n2 = *(const int32_t*)p2;
 
 	return ABS(cst->drawnodes[n2].u.plane.fixedheight - viewz) - ABS(cst->drawnodes[n1].u.plane.fixedheight - viewz);
 }
@@ -206,11 +206,11 @@ static int CompareDrawNodePlanes(const void *p1, const void *p2)
 // Sorts and renders the list of drawnodes for the scene being rendered.
 void HWR_RenderDrawNodes(void)
 {
-	INT32 i = 0, run_start = 0;
+	int32_t i = 0, run_start = 0;
 
 	// Array for storing the rendering order.
 	// A list of indices into the drawnodes array.
-	INT32 *sortindex;
+	int32_t *sortindex;
 
 	if (!cst->numdrawnodes)
 		return;
@@ -219,7 +219,7 @@ void HWR_RenderDrawNodes(void)
 
 	PS_START_TIMING(ps_hw_nodesorttime);
 
-	sortindex = Z_Malloc(sizeof(INT32) * cst->numdrawnodes, PU_STATIC, NULL);
+	sortindex = Z_Malloc(sizeof(int32_t) * cst->numdrawnodes, PU_STATIC, NULL);
 
 	// Reversed order
 	for (i = 0; i < cst->numdrawnodes; i++)
@@ -235,7 +235,7 @@ void HWR_RenderDrawNodes(void)
 		if (cst->drawnodes[sortindex[run_start]].type == DRAWNODE_PLANE)
 		{
 			// found it, now look for run end
-			INT32 run_end;// (inclusive)
+			int32_t run_end;// (inclusive)
 
 			for (i = run_start+1; i < cst->numdrawnodes; i++)
 			{
@@ -245,7 +245,7 @@ void HWR_RenderDrawNodes(void)
 			if (run_end > run_start) // if there are multiple consecutive planes, not just one
 			{
 				// consecutive run of planes found, now sort it
-				qs22j(sortindex + run_start, run_end - run_start + 1, sizeof(INT32), CompareDrawNodePlanes);
+				qs22j(sortindex + run_start, run_end - run_start + 1, sizeof(int32_t), CompareDrawNodePlanes);
 			}
 			run_start = run_end + 1; // continue looking for runs coming right after this one
 		}

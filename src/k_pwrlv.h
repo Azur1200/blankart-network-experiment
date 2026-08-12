@@ -32,25 +32,25 @@ typedef enum
 #define PWRLVRECORD_MIN 1
 #define PWRLVRECORD_MAX 9999
 
-extern SINT8 speedscramble;
-extern SINT8 encorescramble;
+extern int8_t speedscramble;
+extern int8_t encorescramble;
 
-extern UINT16 vspowerlevel[PWRLV_NUMTYPES];
-extern UINT16 clientpowerlevels[MAXPLAYERS][PWRLV_NUMTYPES];
-extern INT16 clientPowerAdd[MAXPLAYERS];
-extern UINT8 spectateGriefed;
+extern uint16_t vspowerlevel[PWRLV_NUMTYPES];
+extern uint16_t clientpowerlevels[MAXPLAYERS][PWRLV_NUMTYPES];
+extern int16_t clientPowerAdd[MAXPLAYERS];
+extern uint8_t spectateGriefed;
 
-SINT8 K_UsingPowerLevels(void);
+int8_t K_UsingPowerLevels(void);
 void K_ClearClientPowerLevels(void);
-INT16 K_CalculatePowerLevelInc(INT16 diff);
-INT16 K_PowerLevelPlacementScore(player_t *player);
-INT16 K_CalculatePowerLevelAvg(void);
-void K_UpdatePowerLevels(player_t *player, UINT8 lap, dboolean forfeit);
+int16_t K_CalculatePowerLevelInc(int16_t diff);
+int16_t K_PowerLevelPlacementScore(player_t *player);
+int16_t K_CalculatePowerLevelAvg(void);
+void K_UpdatePowerLevels(player_t *player, uint8_t lap, dboolean forfeit);
 void K_UpdatePowerLevelsOnFailure(player_t *player);
-INT16 K_FinalPowerIncrement(player_t *player, INT16 yourPower, INT16 increment);
+int16_t K_FinalPowerIncrement(player_t *player, int16_t yourPower, int16_t increment);
 void K_CashInPowerLevels(void);
-void K_SetPowerLevelScrambles(SINT8 powertype);
-void K_PlayerForfeit(UINT8 playernum, dboolean nopointloss);
+void K_SetPowerLevelScrambles(int8_t powertype);
+void K_PlayerForfeit(uint8_t playernum, dboolean nopointloss);
 
 #ifdef __cplusplus
 } // extern "C"

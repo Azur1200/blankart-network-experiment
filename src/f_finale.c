@@ -45,60 +45,60 @@
 
 // Stage of animation:
 // 0 = text, 1 = art screen
-INT32 finalecount;
-INT32 titlescrollxspeed = 16;
-INT32 titlescrollyspeed = 0;
+int32_t finalecount;
+int32_t titlescrollxspeed = 16;
+int32_t titlescrollyspeed = 0;
 dboolean titlemapinaction = false;
 
-static INT32 timetonext; // Delay between screen changes
+static int32_t timetonext; // Delay between screen changes
 
 static tic_t animtimer; // Used for some animation timings
 static tic_t credbgtimer; // Credits background
-static INT16 skullAnimCounter; // Prompts: Chevron animation
+static int16_t skullAnimCounter; // Prompts: Chevron animation
 
 static tic_t stoptimer;
 
 static dboolean keypressed = false;
 
-INT32 menuanimtimer; // Title screen: background animation timing
+int32_t menuanimtimer; // Title screen: background animation timing
 mobj_t *titlemapcameraref = NULL;
 
 // menu presentation state
 char curbgname[9];
-SINT8 curfadevalue;
-INT32 curbgcolor;
-INT32 curbgxspeed;
-INT32 curbgyspeed;
+int8_t curfadevalue;
+int32_t curbgcolor;
+int32_t curbgxspeed;
+int32_t curbgyspeed;
 dboolean curbghide;
 dboolean hidetitlemap;		// WARNING: set to false by M_SetupNextMenu and M_ClearMenus
 
 #if 0
-static UINT8  laststaff = 0;
+static uint8_t  laststaff = 0;
 #endif
-//static UINT8  curDemo = 0;
-static UINT32 demoDelayLeft;
-static UINT32 demoIdleLeft;
+//static uint8_t  curDemo = 0;
+static uint32_t demoDelayLeft;
+static uint32_t demoIdleLeft;
 
 // customizable title screen graphics
 
 ttmode_enum ttmode = TTMODE_KART;
-UINT8 ttscale = 1; // FRACUNIT / ttscale
+uint8_t ttscale = 1; // FRACUNIT / ttscale
 // ttmode user vars
 char ttname[9];
-INT16 ttx = 0;
-INT16 tty = 0;
-INT16 ttloop = -1;
-UINT16 tttics = 1;
+int16_t ttx = 0;
+int16_t tty = 0;
+int16_t ttloop = -1;
+uint16_t tttics = 1;
 
 dboolean curhidepics;
 ttmode_enum curttmode;
-UINT8 curttscale;
+uint8_t curttscale;
 // ttmode user vars
 char curttname[9];
-INT16 curttx;
-INT16 curtty;
-INT16 curttloop;
-UINT16 curtttics;
+int16_t curttx;
+int16_t curtty;
+int16_t curttloop;
+uint16_t curtttics;
 
 // ttmode kart
 static patch_t *ttbanner; // SONIC ROBO BLAST 2
@@ -110,35 +110,35 @@ static patch_t *ttkflash; // flash screen
 
 #ifdef NOWAY
 static patch_t *driver[2]; // Driving character on the waiting screen
-static UINT8 *waitcolormap; // colormap for the spinning character
+static uint8_t *waitcolormap; // colormap for the spinning character
 #endif
 
 // ttmode user
 static patch_t *ttuser[TTMAX_USER];
-static INT32 ttuser_count = 0;
+static int32_t ttuser_count = 0;
 
 //
 // PROMPT STATE
 //
 dboolean promptactive = false;
 static mobj_t *promptmo;
-static INT16 promptpostexectag;
+static int16_t promptpostexectag;
 static dboolean promptblockcontrols;
 static char *promptpagetext = NULL;
-static INT32 callpromptnum = INT32_MAX;
-static INT32 callpagenum = INT32_MAX;
-static INT32 callplayer = INT32_MAX;
+static int32_t callpromptnum = INT32_MAX;
+static int32_t callpagenum = INT32_MAX;
+static int32_t callplayer = INT32_MAX;
 
 //
 // CUTSCENE TEXT WRITING
 //
 static const char *cutscene_basetext = NULL;
 static char cutscene_disptext[1024];
-static INT32 cutscene_baseptr = 0;
-static INT32 cutscene_writeptr = 0;
-static INT32 cutscene_textcount = 0;
-static INT32 cutscene_textspeed = 0;
-static UINT8 cutscene_boostspeed = 0;
+static int32_t cutscene_baseptr = 0;
+static int32_t cutscene_writeptr = 0;
+static int32_t cutscene_textcount = 0;
+static int32_t cutscene_textspeed = 0;
+static uint8_t cutscene_boostspeed = 0;
 static tic_t cutscene_lasttextwrite = 0;
 
 // STJR Intro
@@ -151,9 +151,9 @@ static huddrawlist_h luahuddrawlist_title;
 // Use the typical string drawing functions to display it.
 // Returns 0 if \0 is reached (end of input)
 //
-static UINT8 F_WriteText(void)
+static uint8_t F_WriteText(void)
 {
-	INT32 numtowrite = 1;
+	int32_t numtowrite = 1;
 	const char *c;
 	tic_t ltw = I_GetTime();
 
@@ -183,15 +183,15 @@ static UINT8 F_WriteText(void)
 			return 0;
 
 		// \xA0 - \xAF = change text speed
-		if ((UINT8)*c >= 0xA0 && (UINT8)*c <= 0xAF)
+		if ((uint8_t)*c >= 0xA0 && (uint8_t)*c <= 0xAF)
 		{
-			cutscene_textspeed = (INT32)((UINT8)*c - 0xA0);
+			cutscene_textspeed = (int32_t)((uint8_t)*c - 0xA0);
 			continue;
 		}
 		// \xB0 - \xD2 = delay character for up to one second (35 tics)
-		else if ((UINT8)*c >= 0xB0 && (UINT8)*c <= (0xB0+TICRATE-1))
+		else if ((uint8_t)*c >= 0xB0 && (uint8_t)*c <= (0xB0+TICRATE-1))
 		{
-			cutscene_textcount = (INT32)((UINT8)*c - 0xAF);
+			cutscene_textcount = (int32_t)((uint8_t)*c - 0xAF);
 			numtowrite = 0;
 			continue;
 		}
@@ -199,7 +199,7 @@ static UINT8 F_WriteText(void)
 		cutscene_disptext[cutscene_writeptr++] = *c;
 
 		// Ignore other control codes (color)
-		if ((UINT8)*c < 0x80)
+		if ((uint8_t)*c < 0x80)
 			--numtowrite;
 	}
 	// Reset textcount for next tic based on speed
@@ -226,11 +226,11 @@ static void F_NewCutscene(const char *basetext)
 // F_TitleBGScroll
 //
 
-void F_TitleBGScroll(INT32 scrollspeed, INT32 ticker)
+void F_TitleBGScroll(int32_t scrollspeed, int32_t ticker)
 {
-	INT32 x, y, w;
+	int32_t x, y, w;
 	patch_t *pat, *pat2;
-	INT32 anim2 = 0;
+	int32_t anim2 = 0;
 
 	pat = W_CachePatchName("TITLEBG1", PU_CACHE);
 	pat2 = W_CachePatchName("TITLEBG2", PU_CACHE);
@@ -272,8 +272,8 @@ void F_TitleBGScroll(INT32 scrollspeed, INT32 ticker)
 //  INTRO SCENE
 // =============
 #define NUMINTROSCENES 2
-INT32 intro_scenenum = 0;
-INT32 intro_curtime = 0;
+int32_t intro_scenenum = 0;
+int32_t intro_curtime = 0;
 
 const char *introtext[NUMINTROSCENES];
 
@@ -284,7 +284,7 @@ static tic_t introscenetime[NUMINTROSCENES] =
 };
 
 // custom intros
-void F_StartCustomCutscene(INT32 cutscenenum, dboolean precutscene, dboolean resetplayer);
+void F_StartCustomCutscene(int32_t cutscenenum, dboolean precutscene, dboolean resetplayer);
 
 void F_StartIntro(void)
 {
@@ -328,9 +328,9 @@ void F_StartIntro(void)
 static void F_IntroDrawScene(void)
 {
 	dboolean highres = true;
-	INT32 cx = 8, cy = 128;
+	int32_t cx = 8, cy = 128;
 	patch_t *background = NULL;
-	INT32 bgxoffs = 0;
+	int32_t bgxoffs = 0;
 
 	// DRAW A FULL PIC INSTEAD OF FLAT!
 	if (intro_scenenum == 0)
@@ -411,8 +411,8 @@ void F_IntroTicker(void)
 		else if (finalecount == 47)
 		{
 			// Need to use M_Random otherwise it always uses the same sound
-			INT32 rskin = M_RandomKey(numskins);
-			UINT8 rtaunt = M_RandomKey(2);
+			int32_t rskin = M_RandomKey(numskins);
+			uint8_t rtaunt = M_RandomKey(2);
 
 			sfxenum_t rsound = skins[rskin]->voices[0].boost[rtaunt];
 			S_StartSound(NULL, rsound);
@@ -446,8 +446,8 @@ void F_IntroTicker(void)
 			// Sakura: Yama
 			// Doomguy: Minenice
 			char chars[6][10] = {"tails", "chao", "aiai", "sakura", "doom"};
-			SINT8 random = M_RandomRange(0, 4);
-			const INT32 rskin = R_SkinAvailable(chars[random]);
+			int8_t random = M_RandomRange(0, 4);
+			const int32_t rskin = R_SkinAvailable(chars[random]);
 			
 			sfxenum_t rsound = skins[rskin]->voices[0].win;
 			S_StartSound(NULL, sfx_flgcap);
@@ -472,7 +472,7 @@ void F_IntroTicker(void)
 //
 dboolean F_IntroResponder(event_t *event)
 {
-	INT32 key = event->data1;
+	int32_t key = event->data1;
 
 	// remap virtual keys (mouse & joystick buttons)
 	switch (key)
@@ -670,9 +670,9 @@ static const char *credits[] = {
 #define CREDITS_RIGHT ((BASEVIDWIDTH) - 8)
 
 static struct {
-	UINT32 x, y;
+	uint32_t x, y;
 	const char *patch;
-	UINT8 colorize;
+	uint8_t colorize;
 } credits_pics[] = {
 	// We don't have time to be fancy, let's just colorize some item sprites :V
 	{224, 80+(216* 1), "K_ITJAWZ", SKINCOLOR_CREAMSICLE},
@@ -729,7 +729,7 @@ void F_StartCredits(void)
 
 void F_CreditDrawer(void)
 {
-	UINT16 i;
+	uint16_t i;
 	fixed_t y = (80<<FRACBITS) - 5*(animtimer<<FRACBITS)/8;
 
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
@@ -743,7 +743,7 @@ void F_CreditDrawer(void)
 	// Draw pictures
 	for (i = 0; credits_pics[i].patch; i++)
 	{
-		UINT8 *colormap = NULL;
+		uint8_t *colormap = NULL;
 		fixed_t sc = FRACUNIT>>1;
 
 		if (credits_pics[i].colorize != SKINCOLOR_NONE)
@@ -785,7 +785,7 @@ void F_CreditDrawer(void)
 void F_CreditTicker(void)
 {
 	// "Simulate" the drawing of the credits so that dedicated mode doesn't get stuck
-	UINT16 i;
+	uint16_t i;
 	fixed_t y = (80<<FRACBITS) - 5*(animtimer<<FRACBITS)/8;
 
 	// Draw credits text on top
@@ -821,7 +821,7 @@ void F_CreditTicker(void)
 
 dboolean F_CreditResponder(event_t *event)
 {
-	INT32 key = event->data1;
+	int32_t key = event->data1;
 
 	// remap virtual keys (mouse & joystick buttons)
 	switch (key)
@@ -1129,7 +1129,7 @@ void F_StartSecretCredits(void)
 
 static void F_DrawDiagCubes(void)
 {
-	INT32 j;
+	int32_t j;
 	for (j = -4; j < 5; j++)
 	{
 		//Up Cubes
@@ -1147,7 +1147,7 @@ static void F_DrawDiagCubes(void)
 
 void F_BlanCreditDrawer(void)
 {
-	UINT8 i;
+	uint8_t i;
 	fixed_t y = (80<<FRACBITS) - 5*(animtimer<<FRACBITS)/8;
 	fixed_t yscroll = FixedMul(32<<FRACBITS, FixedDiv(credbgtimer%TICRATE, TICRATE));
 
@@ -1184,7 +1184,7 @@ void F_BlanCreditDrawer(void)
 void F_BlanCreditTicker(void)
 {
 	// "Simulate" the drawing of the credits so that dedicated mode doesn't get stuck
-	UINT16 i;
+	uint16_t i;
 	fixed_t y = (80<<FRACBITS) - 5*(animtimer<<FRACBITS)/8;
 
 	// Draw credits text on top
@@ -1313,15 +1313,15 @@ void F_InitMenuPresValues(dboolean title)
 //
 // F_SkyScroll
 //
-void F_SkyScroll(INT32 scrollxspeed, INT32 scrollyspeed, const char *patchname)
+void F_SkyScroll(int32_t scrollxspeed, int32_t scrollyspeed, const char *patchname)
 {
-	INT32 xscrolled, x, xneg = (scrollxspeed > 0) - (scrollxspeed < 0), tilex;
-	INT32 yscrolled, y, yneg = (scrollyspeed > 0) - (scrollyspeed < 0), tiley;
+	int32_t xscrolled, x, xneg = (scrollxspeed > 0) - (scrollxspeed < 0), tilex;
+	int32_t yscrolled, y, yneg = (scrollyspeed > 0) - (scrollyspeed < 0), tiley;
 	dboolean xispos = (scrollxspeed >= 0), yispos = (scrollyspeed >= 0);
-	INT16 patwidth, patheight;
-	INT32 pw, ph; // scaled by vid.dup
+	int16_t patwidth, patheight;
+	int32_t pw, ph; // scaled by vid.dup
 	patch_t *pat;
-	INT32 i, j;
+	int32_t i, j;
 	fixed_t fracmenuanimtimer, xscrolltimer, yscrolltimer;
 
 	if (rendermode == render_none)
@@ -1387,7 +1387,7 @@ else if (strlen(name) <= 6) \
 	strncpy(lumpname, name, 7); \
 	for (i = 0; i < maxf-1; i++) \
 	{ \
-		sprintf(&lumpname[cnt], "%.2hu", (UINT16)(i+1)); \
+		sprintf(&lumpname[cnt], "%.2hu", (uint16_t)(i+1)); \
 		lumpname[8] = 0; \
 		lumpnum = W_CheckNumForName(lumpname); \
 		if (lumpnum != LUMPERROR) \
@@ -1402,7 +1402,7 @@ else \
 
 void F_CacheTitleScreen(void)
 {
-	UINT16 i;
+	uint16_t i;
 
 	switch(curttmode)
 	{
@@ -1429,7 +1429,7 @@ void F_CacheTitleScreen(void)
 
 void F_StartTitleScreen(void)
 {
-	INT32 titleMapNum;
+	int32_t titleMapNum;
 
 	encoremode = false;
 
@@ -1564,7 +1564,7 @@ void F_TitleScreenDrawer(void)
 			}
 			else
 			{
-				INT32 transval = 0;
+				int32_t transval = 0;
 
 				if (finalecount <= (50+(9<<1)))
 					transval = (finalecount - 50)>>1;
@@ -1732,7 +1732,7 @@ void F_TitleScreenTicker(dboolean run)
 	{
 		char dname[MAXMAPLUMPNAME+1+8+1] = {0};
 		mapnum_t mapnum = 0;
-		UINT8 numstaff = 0;
+		uint8_t numstaff = 0;
 		static dboolean use_netreplay = false;
 
 		if ((use_netreplay = !use_netreplay))
@@ -1813,8 +1813,8 @@ void F_TitleDemoTicker(void)
 void F_StartWaitingPlayers(void)
 {
 #ifdef NOWAY
-	INT32 i;
-	INT32 randskin;
+	int32_t i;
+	int32_t randskin;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
 #endif
@@ -1856,7 +1856,7 @@ void F_WaitingPlayersTicker(void)
 void F_WaitingPlayersDrawer(void)
 {
 #ifdef NOWAY
-	UINT32 frame = (finalecount % 8) / 4; // The game only tics every other frame while waitingplayers
+	uint32_t frame = (finalecount % 8) / 4; // The game only tics every other frame while waitingplayers
 #endif
 	const char *waittext1 = "You will join";
 	const char *waittext2 = "the next race...";
@@ -1871,9 +1871,9 @@ void F_WaitingPlayersDrawer(void)
 // ==================
 //  CUSTOM CUTSCENES
 // ==================
-static INT32 scenenum, cutnum;
-static INT32 picxpos, picypos, picnum, pictime, picmode, numpics, pictoloop;
-static INT32 textxpos, textypos;
+static int32_t scenenum, cutnum;
+static int32_t picxpos, picypos, picnum, pictime, picmode, numpics, pictoloop;
+static int32_t textxpos, textypos;
 static dboolean dofadenow = false, cutsceneover = false;
 static dboolean runningprecutscene = false, precutresetplayer = false;
 
@@ -1934,7 +1934,7 @@ void F_EndCutScene(void)
 	}
 }
 
-void F_StartCustomCutscene(INT32 cutscenenum, dboolean precutscene, dboolean resetplayer)
+void F_StartCustomCutscene(int32_t cutscenenum, dboolean precutscene, dboolean resetplayer)
 {
 	if (!cutscenes[cutscenenum])
 		return;
@@ -2022,7 +2022,7 @@ void F_CutsceneDrawer(void)
 
 void F_CutsceneTicker(void)
 {
-	INT32 i;
+	int32_t i;
 
 	// Online clients tend not to instantly get the map change, so just wait
 	// and don't send 30 of them.
@@ -2086,7 +2086,7 @@ dboolean F_CutsceneResponder(event_t *event)
 //  TEXT PROMPTS
 // ==================
 
-static void F_GetPageTextGeometry(UINT8 *pagelines, dboolean *rightside, INT32 *boxh, INT32 *texth, INT32 *texty, INT32 *namey, INT32 *chevrony, INT32 *textx, INT32 *textr)
+static void F_GetPageTextGeometry(uint8_t *pagelines, dboolean *rightside, int32_t *boxh, int32_t *texth, int32_t *texty, int32_t *namey, int32_t *chevrony, int32_t *textx, int32_t *textr)
 {
 	// reuse:
 	// cutnum -> promptnum
@@ -2112,10 +2112,10 @@ static void F_GetPageTextGeometry(UINT8 *pagelines, dboolean *rightside, INT32 *
 
 static fixed_t F_GetPromptHideHudBound(void)
 {
-	UINT8 pagelines;
+	uint8_t pagelines;
 	dboolean rightside;
-	INT32 boxh, texth, texty, namey, chevrony;
-	INT32 textx, textr;
+	int32_t boxh, texth, texty, namey, chevrony;
+	int32_t textx, textr;
 
 	if (cutnum == INT32_MAX || scenenum == INT32_MAX || !textprompts[cutnum] || scenenum >= textprompts[cutnum]->numpages ||
 		!textprompts[cutnum]->page[scenenum].hidehud ||
@@ -2150,7 +2150,7 @@ dboolean F_GetPromptHideHudAll(void)
 
 dboolean F_GetPromptHideHud(fixed_t y)
 {
-	INT32 ybound;
+	int32_t ybound;
 	dboolean fromtop;
 	fixed_t ytest;
 
@@ -2166,10 +2166,10 @@ dboolean F_GetPromptHideHud(fixed_t y)
 
 static void F_PreparePageText(char *pagetext)
 {
-	UINT8 pagelines;
+	uint8_t pagelines;
 	dboolean rightside;
-	INT32 boxh, texth, texty, namey, chevrony;
-	INT32 textx, textr;
+	int32_t boxh, texth, texty, namey, chevrony;
+	int32_t textx, textr;
 
 	F_GetPageTextGeometry(&pagelines, &rightside, &boxh, &texth, &texty, &namey, &chevrony, &textx, &textr);
 
@@ -2188,7 +2188,7 @@ static void F_PreparePageText(char *pagetext)
 
 static void F_AdvanceToNextPage(void)
 {
-	INT32 nextprompt = textprompts[cutnum]->page[scenenum].nextprompt ? textprompts[cutnum]->page[scenenum].nextprompt - 1 : INT32_MAX,
+	int32_t nextprompt = textprompts[cutnum]->page[scenenum].nextprompt ? textprompts[cutnum]->page[scenenum].nextprompt - 1 : INT32_MAX,
 		nextpage = textprompts[cutnum]->page[scenenum].nextpage ? textprompts[cutnum]->page[scenenum].nextpage - 1 : INT32_MAX,
 		oldcutnum = cutnum;
 
@@ -2278,9 +2278,9 @@ void F_EndTextPrompt(dboolean forceexec, dboolean noexec)
 	}
 }
 
-void F_StartTextPrompt(INT32 promptnum, INT32 pagenum, mobj_t *mo, UINT16 postexectag, dboolean blockcontrols, dboolean freezerealtime)
+void F_StartTextPrompt(int32_t promptnum, int32_t pagenum, mobj_t *mo, uint16_t postexectag, dboolean blockcontrols, dboolean freezerealtime)
 {
-	INT32 i;
+	int32_t i;
 
 	// if splitscreen and we already have a prompt active, ignore.
 	// \todo Proper per-player splitscreen support (individual prompts)
@@ -2354,9 +2354,9 @@ void F_StartTextPrompt(INT32 promptnum, INT32 pagenum, mobj_t *mo, UINT16 postex
 		F_EndTextPrompt(true, false); // run the post-effects immediately
 }
 
-static dboolean F_GetTextPromptTutorialTag(char *tag, INT32 length)
+static dboolean F_GetTextPromptTutorialTag(char *tag, int32_t length)
 {
-	INT32 gcs = 0;
+	int32_t gcs = 0;
 	dboolean suffixed = true;
 
 	if (!tag || !tag[0] || !tutorialmode)
@@ -2387,10 +2387,10 @@ static dboolean F_GetTextPromptTutorialTag(char *tag, INT32 length)
 	return suffixed;
 }
 
-void F_GetPromptPageByNamedTag(const char *tag, INT32 *promptnum, INT32 *pagenum)
+void F_GetPromptPageByNamedTag(const char *tag, int32_t *promptnum, int32_t *pagenum)
 {
-	INT32 nosuffixpromptnum = INT32_MAX, nosuffixpagenum = INT32_MAX;
-	INT32 tutorialpromptnum = (tutorialmode) ? TUTORIAL_PROMPT-1 : 0;
+	int32_t nosuffixpromptnum = INT32_MAX, nosuffixpagenum = INT32_MAX;
+	int32_t tutorialpromptnum = (tutorialmode) ? TUTORIAL_PROMPT-1 : 0;
 	dboolean suffixed = false, found = false;
 	char suffixedtag[33];
 
@@ -2455,10 +2455,10 @@ void F_TextPromptDrawer(void)
 	// cutnum -> promptnum
 	// scenenum -> pagenum
 	lumpnum_t iconlump;
-	UINT8 pagelines;
+	uint8_t pagelines;
 	dboolean rightside;
-	INT32 boxh, texth, texty, namey, chevrony;
-	INT32 textx, textr;
+	int32_t boxh, texth, texty, namey, chevrony;
+	int32_t textx, textr;
 
 	// Data
 	patch_t *patch;
@@ -2486,7 +2486,7 @@ void F_TextPromptDrawer(void)
 	// Draw narrator icon
 	if (iconlump != LUMPERROR)
 	{
-		INT32 iconx, icony, scale, scaledsize;
+		int32_t iconx, icony, scale, scaledsize;
 		patch = W_CachePatchName(textprompts[cutnum]->page[scenenum].iconname, PU_PATCH_LOWPRIORITY);
 
 		// scale and center
@@ -2543,7 +2543,7 @@ void F_TextPromptDrawer(void)
 
 void F_TextPromptTicker(void)
 {
-	INT32 i;
+	int32_t i;
 
 	if (!promptactive || paused || P_AutoPause())
 		return;
@@ -2567,7 +2567,7 @@ void F_TextPromptTicker(void)
 					continue;
 				else
 				{
-					UINT8 j;
+					uint8_t j;
 
 					// Both players' controls are locked,
 					// But only consoleplayer can advance the prompt.
@@ -2602,7 +2602,7 @@ void F_TextPromptTicker(void)
 					continue;
 				else
 				{
-					UINT8 j;
+					uint8_t j;
 
 					players[i].nocontrol = 1;
 

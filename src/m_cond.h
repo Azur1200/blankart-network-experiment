@@ -47,20 +47,20 @@ typedef enum
 // Condition Set information
 struct condition_t
 {
-	UINT32 id;           /// <- The ID of this condition.
+	uint32_t id;           /// <- The ID of this condition.
 	                     ///    In an unlock condition, all conditions with the same ID
 	                     ///    must be true to fulfill the unlockable requirements.
 	                     ///    Only one ID set needs to be true, however.
 	conditiontype_t type;/// <- The type of condition
-	INT32 requirement;   /// <- The requirement for this variable.
-	INT16 extrainfo1;    /// <- Extra information for the condition when needed.
-	INT16 extrainfo2;    /// <- Extra information for the condition when needed.
+	int32_t requirement;   /// <- The requirement for this variable.
+	int16_t extrainfo1;    /// <- Extra information for the condition when needed.
+	int16_t extrainfo2;    /// <- Extra information for the condition when needed.
 };
 struct conditionset_t
 {
-	UINT32 numconditions;   /// <- number of conditions.
+	uint32_t numconditions;   /// <- number of conditions.
 	condition_t *condition; /// <- All conditionals to be checked.
-	UINT8 achieved;         /// <- Whether this conditional has been achieved already or not.
+	uint8_t achieved;         /// <- Whether this conditional has been achieved already or not.
 	                        ///    (Conditional checking is skipped if true -- it's assumed you can't relock an unlockable)
 };
 
@@ -79,25 +79,25 @@ struct conditionset_t
 
 struct emblem_t
 {
-	UINT8 type;      ///< Emblem type
-	INT16 tag;       ///< Tag of emblem mapthing
+	uint8_t type;      ///< Emblem type
+	int16_t tag;       ///< Tag of emblem mapthing
 	char * level;     ///< Level on which this emblem can be found.
-	UINT8 sprite;    ///< emblem sprite to use, 0 - 25
-	UINT16 color;    ///< skincolor to use
-	INT32 var;       ///< If needed, specifies information on the target amount to achieve (or target skin)
+	uint8_t sprite;    ///< emblem sprite to use, 0 - 25
+	uint16_t color;    ///< skincolor to use
+	int32_t var;       ///< If needed, specifies information on the target amount to achieve (or target skin)
 	char *stringVar; ///< String version
 	char hint[110];  ///< Hint for emblem hints menu
-	UINT8 collected; ///< Do you have this emblem?
+	uint8_t collected; ///< Do you have this emblem?
 };
 struct extraemblem_t
 {
 	char name[20];          ///< Name of the goal (used in the "emblem awarded" cecho)
 	char description[40];   ///< Description of goal (used in statistics)
-	UINT8 conditionset;     ///< Condition set that awards this emblem.
-	UINT8 showconditionset; ///< Condition set that shows this emblem.
-	UINT8 sprite;           ///< emblem sprite to use, 0 - 25
-	UINT16 color;           ///< skincolor to use
-	UINT8 collected;        ///< Do you have this emblem?
+	uint8_t conditionset;     ///< Condition set that awards this emblem.
+	uint8_t showconditionset; ///< Condition set that shows this emblem.
+	uint8_t sprite;           ///< emblem sprite to use, 0 - 25
+	uint16_t color;           ///< skincolor to use
+	uint8_t collected;        ///< Do you have this emblem?
 };
 
 // Unlockable information
@@ -105,14 +105,14 @@ struct unlockable_t
 {
 	char name[64];
 	char objective[64];
-	UINT8 conditionset;
-	UINT8 showconditionset;
-	INT16 type;
-	INT16 variable;
+	uint8_t conditionset;
+	uint8_t showconditionset;
+	int16_t type;
+	int16_t variable;
 	char *stringVar;
-	UINT8 nocecho;
-	UINT8 nochecklist;
-	UINT8 unlocked;
+	uint8_t nocecho;
+	uint8_t nochecklist;
+	uint8_t unlocked;
 };
 
 #define SECRET_NONE			 0 // Does nil.  Use with levels locked by UnlockRequired
@@ -148,31 +148,31 @@ extern emblem_t emblemlocations[MAXEMBLEMS];
 extern extraemblem_t extraemblems[MAXEXTRAEMBLEMS];
 extern unlockable_t unlockables[MAXUNLOCKABLES];
 
-extern INT32 numemblems;
-extern INT32 numextraemblems;
+extern int32_t numemblems;
+extern int32_t numextraemblems;
 
-extern UINT32 unlocktriggers;
+extern uint32_t unlocktriggers;
 
 // Condition set setup
-void M_AddRawCondition(UINT8 set, UINT8 id, conditiontype_t c, INT32 r, INT16 x1, INT16 x2);
+void M_AddRawCondition(uint8_t set, uint8_t id, conditiontype_t c, int32_t r, int16_t x1, int16_t x2);
 
 // Clearing secrets
-void M_ClearConditionSet(UINT8 set);
+void M_ClearConditionSet(uint8_t set);
 void M_ClearSecrets(void);
 
 // Updating conditions and unlockables
 void M_CheckUnlockConditions(void);
-UINT8 M_CheckCondition(const condition_t *cn);
-UINT8 M_UpdateUnlockablesAndExtraEmblems(void);
+uint8_t M_CheckCondition(const condition_t *cn);
+uint8_t M_UpdateUnlockablesAndExtraEmblems(void);
 void M_SilentUpdateUnlockablesAndEmblems(void);
-UINT8 M_CheckLevelEmblems(void);
-//UINT8 M_CompletionEmblems(void);
+uint8_t M_CheckLevelEmblems(void);
+//uint8_t M_CompletionEmblems(void);
 
 // Checking unlockable status
-UINT8 M_AnySecretUnlocked(void);
-UINT8 M_SecretUnlocked(INT32 type);
-UINT8 M_MapLocked(mapnum_t mapnum);
-INT32 M_CountEmblems(void);
+uint8_t M_AnySecretUnlocked(void);
+uint8_t M_SecretUnlocked(int32_t type);
+uint8_t M_MapLocked(mapnum_t mapnum);
+int32_t M_CountEmblems(void);
 
 // Emblem shit
 emblem_t *M_GetLevelEmblems(mapnum_t mapnum);
@@ -184,11 +184,11 @@ const char *M_GetExtraEmblemPatch(extraemblem_t *em, dboolean big);
 // If you're looking to compare stats for unlocks or what not, use these
 // They stop checking upon reaching the target number so they
 // should be (theoretically?) slightly faster.
-UINT8 M_GotEnoughEmblems(INT32 number);
-UINT8 M_GotLowEnoughTime(INT32 tictime);
+uint8_t M_GotEnoughEmblems(int32_t number);
+uint8_t M_GotLowEnoughTime(int32_t tictime);
 
-INT32 M_UnlockableSkinNum(unlockable_t *unlock);
-INT32 M_EmblemSkinNum(emblem_t *emblem);
+int32_t M_UnlockableSkinNum(unlockable_t *unlock);
+int32_t M_EmblemSkinNum(emblem_t *emblem);
 
 //                     vvvvvvvvvv anti-integer promotion, do not remove
 #define M_Achieved(a) ((unsigned)(a) >= MAXCONDITIONSETS || conditionSets[a].achieved)

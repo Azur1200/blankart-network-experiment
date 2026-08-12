@@ -24,7 +24,7 @@ extern "C" {
 #define NUM_PALETTE_ENTRIES 256
 
 /*--------------------------------------------------
-	UINT8 K_ColorRelativeLuminance(UINT8 r, UINT8 g, UINT8 b);
+	uint8_t K_ColorRelativeLuminance(uint8_t r, uint8_t g, uint8_t b);
 
 		Gives you the brightness value of the provided RGB value, based on how the human eye interprets it.
 		See https://en.wikipedia.org/wiki/Relative_luminance for more info.
@@ -38,10 +38,10 @@ extern "C" {
 		Brightness value from 0 to 255.
 --------------------------------------------------*/
 
-UINT8 K_ColorRelativeLuminance(UINT8 r, UINT8 g, UINT8 b);
+uint8_t K_ColorRelativeLuminance(uint8_t r, uint8_t g, uint8_t b);
 
 /*--------------------------------------------------
-	UINT16 K_RainbowColor(tic_t time)
+	uint16_t K_RainbowColor(tic_t time)
 
 		Gives you a color to use for rainbow effects (like invincibility).
 
@@ -52,10 +52,10 @@ UINT8 K_ColorRelativeLuminance(UINT8 r, UINT8 g, UINT8 b);
 		Skincolor value.
 --------------------------------------------------*/
 
-UINT16 K_RainbowColor(tic_t time);
+uint16_t K_RainbowColor(tic_t time);
 
 /*--------------------------------------------------
-	UINT16 K_SMonitorColor(tic_t time)
+	uint16_t K_SMonitorColor(tic_t time)
 
 		Gives you a color from the S-Monitor color table, for less
 		aggressive rainbow coloring.
@@ -67,10 +67,10 @@ UINT16 K_RainbowColor(tic_t time);
 		Skincolor value.
 --------------------------------------------------*/
 
-UINT16 K_SMonitorColor(tic_t time);
+uint16_t K_SMonitorColor(tic_t time);
 
 /*--------------------------------------------------
-	void K_RainbowColormap(UINT8 *dest_colormap, skincolornum_t skincolor);
+	void K_RainbowColormap(uint8_t *dest_colormap, skincolornum_t skincolor);
 
 		Generates a colormap to "colorize" all palette indicies
 		to the provided skincolor.
@@ -83,11 +83,11 @@ UINT16 K_SMonitorColor(tic_t time);
 		None
 --------------------------------------------------*/
 
-void K_RainbowColormap(UINT8 *dest_colormap, skincolornum_t skincolor);
+void K_RainbowColormap(uint8_t *dest_colormap, skincolornum_t skincolor);
 
 
 /*--------------------------------------------------
-	void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, skincolornum_t color);
+	void K_GenerateKartColormap(uint8_t *dest_colormap, int32_t skinnum, skincolornum_t color);
 
 		Generates a translation colormap for Kart, to replace R_GenerateTranslationColormap in r_draw.c
 
@@ -100,7 +100,7 @@ void K_RainbowColormap(UINT8 *dest_colormap, skincolornum_t skincolor);
 		None
 --------------------------------------------------*/
 
-void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, skincolornum_t color);
+void K_GenerateKartColormap(uint8_t *dest_colormap, int32_t skinnum, skincolornum_t color);
 
 #ifdef __cplusplus
 } // extern "C"

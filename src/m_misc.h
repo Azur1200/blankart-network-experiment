@@ -47,7 +47,7 @@ void M_StopMovie(void);
 #define CONFIGFILENAME "blanconfig.cfg"
 
 dboolean FIL_WriteFile(char const *name, const void *source, size_t length);
-size_t FIL_ReadFileTag(char const *name, UINT8 **buffer, INT32 tag);
+size_t FIL_ReadFileTag(char const *name, uint8_t **buffer, int32_t tag);
 #define FIL_ReadFile(n, b) FIL_ReadFileTag(n, b, PU_STATIC)
 
 dboolean FIL_ConvertTextFileToBinary(const char *textfilename, const char *binfilename);
@@ -63,7 +63,7 @@ void FIL_ForceExtension(char *path, const char *extension);
 dboolean FIL_CheckExtension(const char *in);
 
 #ifdef HAVE_PNG
-dboolean M_SavePNG(const char *filename, void *data, int width, int height, const UINT8 *palette);
+dboolean M_SavePNG(const char *filename, void *data, int width, int height, const uint8_t *palette);
 #endif
 
 extern dboolean takescreenshot;
@@ -81,7 +81,7 @@ void M_FirstLoadConfig(void);
 // save game config: cvars, aliases..
 void M_SaveConfig(const char *filename);
 
-INT32 axtoi(const char *hexStg);
+int32_t axtoi(const char *hexStg);
 
 const char *GetRevisionString(void);
 
@@ -121,12 +121,12 @@ trailing zeros, or "" if the fractional part is zero.
 const char * M_Ftrim (double);
 
 // counting bits, for weapon ammo code, usually
-FUNCMATH UINT8 M_CountBits(UINT32 num, UINT8 size);
+FUNCMATH uint8_t M_CountBits(uint32_t num, uint8_t size);
 
 // Hashes some message using FNV-1a
-UINT32 FNV1a_QuickCaseHash(const char *message, size_t size);
+uint32_t FNV1a_QuickCaseHash(const char *message, size_t size);
 
-UINT32 FNV1a_HashLowercaseString(const char *message);
+uint32_t FNV1a_HashLowercaseString(const char *message);
 
 dboolean M_IsStringEmpty(const char *s);
 

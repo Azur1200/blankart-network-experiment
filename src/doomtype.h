@@ -17,42 +17,13 @@
 #ifndef __DOOMTYPE__
 #define __DOOMTYPE__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifdef _WIN32
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#ifndef RPC_NO_WINDOWS_H
-#define RPC_NO_WINDOWS_H
-#endif
-#include <windows.h>
-// win32 sucks
-#undef min
-#undef max
-#endif
-
-/* 7.18.1.1  Exact-width integer types */
-
-#define __STDC_LIMIT_MACROS
+#include <string.h>
 #include <stdint.h>
 
-#define UINT8 uint8_t
-#define UINT16 uint16_t
-#define INT16 int16_t
+#include "config.h"
 
-#define INT32 int32_t
-#define UINT32 uint32_t
-#define INT64  int64_t
-#define UINT64 uint64_t
-
-#define SINT8 int8_t
-
-#ifdef __APPLE_CC__
-#define DEBUG_LOG
-#define NOIPX
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 /* Strings and some misc platform specific stuff */
@@ -268,26 +239,26 @@ typedef int32_t dboolean;
 
 typedef struct
 {
-	UINT8 red;
-	UINT8 green;
-	UINT8 blue;
-	UINT8 alpha;
+	uint8_t red;
+	uint8_t green;
+	uint8_t blue;
+	uint8_t alpha;
 } byteColor_t;
 
 union FColorRGBA
 {
-	UINT32 rgba;
+	uint32_t rgba;
 	byteColor_t s;
 } ATTRPACK;
 typedef union FColorRGBA RGBA_t;
 
-typedef UINT32 lumpnum_t; // 16 : 16 unsigned long (wad num: lump num)
+typedef uint32_t lumpnum_t; // 16 : 16 unsigned long (wad num: lump num)
 #define LUMPERROR UINT32_MAX
 
-typedef UINT32 tic_t;
+typedef uint32_t tic_t;
 #define INFTICS UINT32_MAX
 
-typedef UINT64 longtic_t;
+typedef uint64_t longtic_t;
 #define INFLONGTICS UINT64_MAX
 
 #include "endian.h" // This is needed to make sure the below macro acts correctly in big endian builds
@@ -295,7 +266,7 @@ typedef UINT64 longtic_t;
 #ifdef SRB2_BIG_ENDIAN
 #define UINT2RGBA(a) a
 #else
-#define UINT2RGBA(a) (UINT32)((a&0xff)<<24)|((a&0xff00)<<8)|((a&0xff0000)>>8)|(((UINT32)a&0xff000000)>>24)
+#define UINT2RGBA(a) (uint32_t)((a&0xff)<<24)|((a&0xff00)<<8)|((a&0xff0000)>>8)|(((uint32_t)a&0xff000000)>>24)
 #endif
 
 #define TOSTR(x) #x
@@ -312,7 +283,7 @@ Needed for some lua shenanigans.
 #define FIELDFROM( type, field, have, want ) \
 	(void *)((intptr_t)(field) - offsetof (type, have) + offsetof (type, want))
 
-typedef UINT8 bitarray_t;
+typedef uint8_t bitarray_t;
 
 #define BIT_ARRAY_SIZE(n) (((n) + 7) >> 3)
 
@@ -334,7 +305,7 @@ unset_bit_array (bitarray_t * const array, const int value)
 	array[value >> 3] &= ~(1<<(value & 7));
 }
 
-typedef UINT64 precise_t;
+typedef uint64_t precise_t;
 
 #define intsign(n) \
 	((n) < 0 ? -1 : (n) > 0 ? 1 : 0)

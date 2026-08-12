@@ -48,9 +48,9 @@
 
 kartitem_t kartitems[MAXKARTITEMS] = {0};
 kartresult_t kartresults[MAXKARTRESULTS] = {0};
-UINT8 numkartitems = 0;
-UINT8 numkartresults = 0;
-UINT8 oddstablemax[MAXODDSTABLES] = { MAXODDS, 2, 4 };
+uint8_t numkartitems = 0;
+uint8_t numkartresults = 0;
+uint8_t oddstablemax[MAXODDSTABLES] = { MAXODDS, 2, 4 };
 
 static CV_PossibleValue_t kartdebugitem_cons_t[MAXKARTITEMS] = {{0, "NONE"}, {0, NULL}};
 consvar_t cv_kartdebugitem = CVAR_INIT ("kartdebugitem", "NONE", CV_NETVAR|CV_CHEAT, kartdebugitem_cons_t, NULL);
@@ -193,7 +193,7 @@ kartresult_t *K_RegisterResult(const char *name, dboolean alternate)
 
 kartresult_t *K_GetKartResultAlt(const char *name, dboolean alternate)
 {
-	for (UINT8 i = 0; i < numkartresults; i++)
+	for (uint8_t i = 0; i < numkartresults; i++)
 	{
 		if (fasticmp(name, kartresults[i].cvar->name) && kartresults[i].isalt == alternate)
 			return &kartresults[i];
@@ -215,7 +215,7 @@ void K_SetupItemOdds(void)
 		}
 	}
 
-	for (UINT8 i = 0; i < numkartresults; i++)
+	for (uint8_t i = 0; i < numkartresults; i++)
 		kartresults[i].cooldown = 0;
 }
 
@@ -252,7 +252,7 @@ kartitemequip_e K_GetItemEquipStyle(kartitemtype_e itemtype)
 	return kartitems[itemtype].equipstyle[K_IsKartItemAlternate(itemtype) ? 1 : 0];
 }
 
-UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, dboolean tiny)
+uint8_t K_GetItemNumberDisplayMin(kartitemtype_e type, dboolean tiny)
 {
 	if (type == MAXKARTITEMS)
 		type = 0; // KITEM_SAD displays like normal
@@ -265,7 +265,7 @@ UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, dboolean tiny)
 	return K_GetItemFlags(type) & KIF_ANIMATED ? 2 : kartitems[type].graphics[tiny ? 1 : 0].numpatches + 1;
 }
 
-patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, dboolean tiny, UINT8 amount, SINT8 altmode)
+patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, dboolean tiny, uint8_t amount, int8_t altmode)
 {
 	kartitem_t *item = &kartitems[type >= numkartresults ? 0 : type];
 	dboolean alt = altmode == -1 ? K_IsKartItemAlternate(type) : !!altmode;
@@ -290,7 +290,7 @@ patch_t *K_GetCachedItemPatchEx(kartitemtype_e type, dboolean tiny, UINT8 amount
 
 // sprite3 baybeeeee!!!!
 // the renderer uses mobj->threshold to determine the item type
-void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCount)
+void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, uint8_t itemCount)
 {
 	part->sprite = SPR_ITEM;
 	part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE;
@@ -298,7 +298,7 @@ void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCo
 	if (itemType >= numkartitems)
 		itemType = 0;
 
-	UINT8 numpatches = kartitems[itemType].graphics[0].numpatches;
+	uint8_t numpatches = kartitems[itemType].graphics[0].numpatches;
 	if (K_GetItemFlags(itemType) & KIF_ANIMATED)
 		part->frame |= (leveltime % (numpatches*3)) / 3;
 	else
@@ -324,9 +324,9 @@ static dboolean K_InStartCooldown(void)
 
 #define ENDDIST (12*ACTIVEDISTVAR) // Distance when the game stops giving you bananas
 
-static dboolean K_RaceForceSPB(SINT8 playerpos, UINT32 pdis)
+static dboolean K_RaceForceSPB(int8_t playerpos, uint32_t pdis)
 {
-	UINT8 idx = K_LegacyOddsMode() ? 1 : 0;
+	uint8_t idx = K_LegacyOddsMode() ? 1 : 0;
 
 	kartresult_t *spb_res = K_GetKartResult("selfpropelledbomb");
 
@@ -341,24 +341,24 @@ static dboolean K_RaceForceSPB(SINT8 playerpos, UINT32 pdis)
 		return false;
 	}
 
-	return ((gametypes[gametype]->rules & GTR_CIRCUIT) && playerpos == 2 && pdis > (UINT32)(7 * spb_res->augcvar[idx]->value / 2));
+	return ((gametypes[gametype]->rules & GTR_CIRCUIT) && playerpos == 2 && pdis > (uint32_t)(7 * spb_res->augcvar[idx]->value / 2));
 }
 
 // 1/21/2025: I hate tiptoeing around the integer limit.
 // This is at a smaller scale.
-static UINT32 K_Dist2D(INT32 x1, INT32 y1, INT32 x2, INT32 y2)
+static uint32_t K_Dist2D(int32_t x1, int32_t y1, int32_t x2, int32_t y2)
 {
 	// d = √((x2 - x1)² + (y2 - y1)²)
-	INT32 xdiff, ydiff;
-	INT64 xprod, yprod;
+	int32_t xdiff, ydiff;
+	int64_t xprod, yprod;
 
 	xdiff = (x2 - x1);
 	ydiff = (y2 - y1);
 
-	xprod = ((INT64)xdiff * (INT64)xdiff);
-	yprod = ((INT64)ydiff * (INT64)ydiff);
+	xprod = ((int64_t)xdiff * (int64_t)xdiff);
+	yprod = ((int64_t)ydiff * (int64_t)ydiff);
 
-	return (UINT32)(IntSqrt64(xprod + yprod));
+	return (uint32_t)(IntSqrt64(xprod + yprod));
 }
 
 // Basic integer distancing, to quote myself:
@@ -366,7 +366,7 @@ static UINT32 K_Dist2D(INT32 x1, INT32 y1, INT32 x2, INT32 y2)
 // deal with overflows on a system that's already being pushed to the limit by needing 65536 units
 // for precision. No seriously, I don't think anyone's losing sleep over "hmmmmm, 0.0000152 or
 // 0.0039?????" when most 2D game engines only give a fuck about MAYBE 0.001"
-/*static UINT32 K_IntDistance(fixed_t curx,
+/*static uint32_t K_IntDistance(fixed_t curx,
 			 fixed_t cury,
 			 fixed_t curz,
 			 fixed_t destx,
@@ -380,7 +380,7 @@ static UINT32 K_Dist2D(INT32 x1, INT32 y1, INT32 x2, INT32 y2)
 }*/
 
 // This one uses map scaling instead, use in case of loss of depth on mobjscaled maps.
-UINT32 K_IntDistanceForMap(fixed_t curx,
+uint32_t K_IntDistanceForMap(fixed_t curx,
 			   fixed_t cury,
 			   fixed_t curz,
 			   fixed_t destx,
@@ -438,7 +438,7 @@ static sfxenum_t resultfx[] = {
 	[KITEMBLINK_DEBUG] = sfx_dbgsal,
 };
 
-void K_AddPlayerReserveItem(player_t *player, kartitemtype_e type, UINT8 amount)
+void K_AddPlayerReserveItem(player_t *player, kartitemtype_e type, uint8_t amount)
 {
 	// will disallow adding non-matching items
 	if (player->itemreservetype != 0 && type != player->itemreservetype)
@@ -451,7 +451,7 @@ void K_AddPlayerReserveItem(player_t *player, kartitemtype_e type, UINT8 amount)
 	player->itemreserveamount += amount;
 }
 
-void K_AwardPlayerItemOrReserve(player_t *player, kartitemtype_e type, UINT8 amount, dboolean nodoubles, kartitemblink_e blink)
+void K_AwardPlayerItemOrReserve(player_t *player, kartitemtype_e type, uint8_t amount, dboolean nodoubles, kartitemblink_e blink)
 {
 	if (player->itemtype == KITEM_NONE && player->itemamount == 0)
 	{
@@ -467,7 +467,7 @@ void K_AwardPlayerItemOrReserve(player_t *player, kartitemtype_e type, UINT8 amo
 }
 
 // be careful with invalid item types here
-void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, dboolean nodoubles, kartitemblink_e blink)
+void K_AwardPlayerItem(player_t *player, kartitemtype_e type, uint8_t amount, dboolean nodoubles, kartitemblink_e blink)
 {
 	K_BotResetItemConfirm(player, true);
 
@@ -487,12 +487,12 @@ void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, dboo
 	player->itemamount = amount;
 
 	if (itemlistactive)
-		K_AddItemRollToList((INT32)(player - players), type, amount);
+		K_AddItemRollToList((int32_t)(player - players), type, amount);
 }
 
 void K_TransferPlayerReserveItem(player_t *player)
 {
-	UINT8 transferamount = player->itemreserveamount;
+	uint8_t transferamount = player->itemreserveamount;
 	if (transferamount == 0 || player->itemreservetype == 0)
 		return;
 	if (!P_CanPickupItem(player, PICKUPITEM_RESERVE))
@@ -523,7 +523,7 @@ void K_TransferPlayerReserveItem(player_t *player)
 		player->itemamount = transferamount;
 
 		if (itemlistactive)
-			K_AddItemRollToList((INT32)(player - players), player->itemreservetype, player->itemreserveamount);
+			K_AddItemRollToList((int32_t)(player - players), player->itemreservetype, player->itemreserveamount);
 	}
 
 	// update reserve
@@ -537,7 +537,7 @@ void K_TransferPlayerReserveItem(player_t *player)
 void K_AwardPlayerResult(player_t *player, kartresult_t *result, kartitemblink_e blink)
 {
 	kartitemtype_e type = result != NULL ? result->type : MAXKARTITEMS;
-	UINT8 amount = result != NULL ? result->amount : 1;
+	uint8_t amount = result != NULL ? result->amount : 1;
 	const dboolean nodoubles = K_DontDoubleMyItems(result);
 
 	K_AwardPlayerItem(player, type, amount, nodoubles, blink);
@@ -549,16 +549,16 @@ void K_AwardPlayerResult(player_t *player, kartresult_t *result, kartitemblink_e
 		result->cooldown = result->basecooldown;
 }
 
-static fixed_t K_ItemOddsScale(UINT8 numPlayers, dboolean spbrush)
+static fixed_t K_ItemOddsScale(uint8_t numPlayers, dboolean spbrush)
 {
 	// CEP: due to how baseplayer works, 17P+ lobbies will STILL have the disastrous odds of 0.22 prior, if not WORSE
 	// let's try adding another condition
 
-	const UINT8 basePlayer = 16; // The player count we design most of the game around.
-	const UINT8 vanillaMax = 17; // CEP: Maximum players in "vanilla" (non-30P) clients.
-	const UINT8 extPlayer = 24; // CEP: Cap for 17P+ so that odds don't get too muddled.
+	const uint8_t basePlayer = 16; // The player count we design most of the game around.
+	const uint8_t vanillaMax = 17; // CEP: Maximum players in "vanilla" (non-30P) clients.
+	const uint8_t extPlayer = 24; // CEP: Cap for 17P+ so that odds don't get too muddled.
 
-	UINT8 playerCount = (spbrush ? 2 : numPlayers);
+	uint8_t playerCount = (spbrush ? 2 : numPlayers);
 	fixed_t playerScaling = 0;
 
 	// Then, it multiplies it further if the player count isn't equal to basePlayer.
@@ -594,7 +594,7 @@ static fixed_t K_ItemOddsScale(UINT8 numPlayers, dboolean spbrush)
 	return playerScaling;
 }
 
-UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, dboolean spbrush)
+uint32_t K_ScaleItemDistance(uint32_t distance, uint8_t numPlayers, dboolean spbrush)
 {
 	if (mapobjectscale != FRACUNIT)
 	{
@@ -629,9 +629,9 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, dboolean spbrush)
 // Odds value for the S-Monitor to force itself on trailing players.
 #define SMONITOR_FORCEODDS (MAXSMONITORODDS / 2)
 
-static INT32 K_KartGetSMonitorOdds(UINT32 dist)
+static int32_t K_KartGetSMonitorOdds(uint32_t dist)
 {
-	const UINT32 forcedist = (UINT32)(K_LegacyOddsMode() ? SMONITORCONGADIST : SMONITORDIST);
+	const uint32_t forcedist = (uint32_t)(K_LegacyOddsMode() ? SMONITORCONGADIST : SMONITORDIST);
 	// If you're far enough for this to be in your item slot, you're far enough to SERIOUSLY need this.
 	return dist >= forcedist ? MAXSMONITORODDS : 0;
 }
@@ -639,7 +639,7 @@ static INT32 K_KartGetSMonitorOdds(UINT32 dist)
 // updates all result cooldown timers, and sets cooldowns for "unique" items
 void K_UpdateItemCooldown(void)
 {
-	INT32 i;
+	int32_t i;
 
 	// tick down the cooldown timers
 	for (i = 0; i < numkartresults; i++)
@@ -713,7 +713,7 @@ void K_UpdateItemCooldown(void)
 tic_t K_GetIndirectItemCooldown(void)
 {
 	tic_t maxcooldown = 0;
-	for (UINT8 i = 0; i < numkartresults; i++)
+	for (uint8_t i = 0; i < numkartresults; i++)
 	{
 		if (kartresults[i].flags & KRF_INDIRECTITEM)
 			maxcooldown = max(maxcooldown, kartresults[i].cooldown);
@@ -723,7 +723,7 @@ tic_t K_GetIndirectItemCooldown(void)
 
 void K_SetIndirectItemCooldown(tic_t cooldown)
 {
-	for (UINT8 i = 0; i < numkartresults; i++)
+	for (uint8_t i = 0; i < numkartresults; i++)
 	{
 		if (kartresults[i].flags & KRF_INDIRECTITEM)
 			kartresults[i].cooldown = cooldown;
@@ -732,15 +732,15 @@ void K_SetIndirectItemCooldown(tic_t cooldown)
 
 #define LUNATIC_RUNNERAUG_CRUNCHER (29127) // FRACUNIT / 2.25
 
-static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *forceme)
+static int32_t GetItemOdds(kartroulette_t *roulette, kartresult_t *result, uint8_t *forceme)
 {
-	INT32 newodds;
-	INT32 i;
+	int32_t newodds;
+	int32_t i;
 
-	SINT8 first = -1, second = -1;
-	UINT32 secondToFirst = UINT32_MAX;
+	int8_t first = -1, second = -1;
+	uint32_t secondToFirst = UINT32_MAX;
 
-	UINT8 flags = result->flags;
+	uint8_t flags = result->flags;
 
 	if (result->cvar->value == 0 && !modeattacking)
 		return 0;
@@ -765,10 +765,10 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 	}
 	*/
 
-	INT32 oddsmul = BASEODDSMUL;
+	int32_t oddsmul = BASEODDSMUL;
 
 	// Item type used for actual odds retrieval and cooldown assignments.
-	UINT8 oddstable;
+	uint8_t oddstable;
 
 	if (gametypes[gametype]->rules & GTR_BATTLEODDS)
 		oddstable = ODDS_BATTLE;
@@ -788,7 +788,7 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 	// Blow up the odds with a multiplier.
 	newodds *= oddsmul;
 
-	INT32 shieldtype = K_GetShieldFromItem(result->type);
+	int32_t shieldtype = K_GetShieldFromItem(result->type);
 
 	roulette->pexiting = 0;
 	roulette->pingame = 0;
@@ -903,12 +903,12 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 		return newodds;
 	}
 
-	UINT8 aug_idx = K_LegacyOddsMode() ? 1 : 0;
+	uint8_t aug_idx = K_LegacyOddsMode() ? 1 : 0;
 
 	if ((flags & KRF_RUNNERAUGMENT) && (result->augcvar[aug_idx] != NULL))
 	{
 		// These odds get stronger as 1st's frontrun increases.
-		INT32 runner_distval = result->augcvar[aug_idx]->value;
+		int32_t runner_distval = result->augcvar[aug_idx]->value;
 
 		if ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode == true))
 		{
@@ -924,11 +924,11 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 			runner_distval = (runner_distval / 2);
 		}
 
-		const INT32 distFromStart = max(secondToFirst - runner_distval, 0);
-		const INT32 distRange = (7 * runner_distval / 2) - runner_distval;
-		const INT32 mulMax = 24;
+		const int32_t distFromStart = max(secondToFirst - runner_distval, 0);
+		const int32_t distRange = (7 * runner_distval / 2) - runner_distval;
+		const int32_t mulMax = 24;
 
-		INT32 multiplier = (distFromStart * mulMax) / distRange;
+		int32_t multiplier = (distFromStart * mulMax) / distRange;
 
 		if (multiplier < 0)
 			multiplier = 0;
@@ -948,7 +948,7 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 		// This item should not appear at the beginning of a race. (Usually really powerful crowd-breaking items)
 		newodds = 0;
 	}
-	else if (!K_LegacyOddsMode() && flags & KRF_NOTNEAREND && roulette->ourDist < (UINT32)ENDDIST)
+	else if (!K_LegacyOddsMode() && flags & KRF_NOTNEAREND && roulette->ourDist < (uint32_t)ENDDIST)
 	{
 		// This item should not appear at the end of a race. (Usually trap items that lose their effectiveness)
 		newodds = 0;
@@ -1001,12 +1001,12 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 
 #undef LUNATIC_RUNNERAUG_CRUNCHER
 
-void K_KartGetItemOdds(kartroulette_t *roulette, INT32 outodds[static MAXKARTRESULTS])
+void K_KartGetItemOdds(kartroulette_t *roulette, int32_t outodds[static MAXKARTRESULTS])
 {
 	// Reset forceme
 	memset(roulette->forceme, 0, sizeof(roulette->forceme));
 
-	for (UINT8 i = 0; i < numkartresults; i++)
+	for (uint8_t i = 0; i < numkartresults; i++)
 	{
 		outodds[i] = GetItemOdds(roulette, &kartresults[i], &roulette->forceme[i]);
 	}
@@ -1014,13 +1014,13 @@ void K_KartGetItemOdds(kartroulette_t *roulette, INT32 outodds[static MAXKARTRES
 
 //{ SRB2kart Roulette Code - Distance Based, yes waypoints
 
-UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbumper, dboolean spbrush)
+uint8_t K_FindUseodds(const player_t *player, fixed_t mashed, uint32_t pdis, uint8_t bestbumper, dboolean spbrush)
 {
 	fixed_t oddsfac = max(FRACUNIT, (MAXODDS * FRACUNIT) / 8);
-	UINT8 i, j;
-	UINT8 useodds = 0;
-	UINT8 disttable[(MAXODDS - 1) * 2];
-	UINT8 distlen = 0;
+	uint8_t i, j;
+	uint8_t useodds = 0;
+	uint8_t disttable[(MAXODDS - 1) * 2];
+	uint8_t distlen = 0;
 	dboolean oddsvalid[MAXODDS];
 
 	dboolean rivalodds = false;
@@ -1050,7 +1050,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 		rivalrunner = true;
 	}
 
-	INT32 itemodds[MAXKARTRESULTS];
+	int32_t itemodds[MAXKARTRESULTS];
 	kartroulette_t roulette = {
 		.pdis = pdis,
 		.playerpos = player->position,
@@ -1121,8 +1121,8 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 	else if (gametypes[gametype]->rules & GTR_RACEODDS)
 	{
 
-		INT32 tablediv = FixedMul(2, oddsfac);
-		INT32 jj;
+		int32_t tablediv = FixedMul(2, oddsfac);
+		int32_t jj;
 
 		// "Why j instead of i"?
 		// Using i causes an infinite loop due to SETUPDISTTABLE. Yep.
@@ -1157,19 +1157,19 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 		SETUPDISTTABLE(6,3);
 		SETUPDISTTABLE(7,1);*/
 
-		const INT32 usedistvar = FixedDiv(ACTIVEDISTVAR, oddsfac);
+		const int32_t usedistvar = FixedDiv(ACTIVEDISTVAR, oddsfac);
 
 		if (pdis == 0)
 			useodds = disttable[0];
-		else if (pdis > (UINT32)ACTIVEDISTVAR * ((12 * distlen) / sizeof(disttable)))
+		else if (pdis > (uint32_t)ACTIVEDISTVAR * ((12 * distlen) / sizeof(disttable)))
 			useodds = disttable[distlen ? distlen - 1 : distlen];
 		else
 		{
 			for (i = 1; i < (sizeof(disttable) - 1); i++)
 			{
-				INT32 distcalc = min(distlen-1u, (i * distlen) / sizeof(disttable));
+				int32_t distcalc = min(distlen-1u, (i * distlen) / sizeof(disttable));
 
-				if (pdis <= (UINT32)usedistvar * distcalc)
+				if (pdis <= (uint32_t)usedistvar * distcalc)
 				{
 					useodds = disttable[distcalc];
 					break;
@@ -1183,32 +1183,32 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 	return min(MAXODDS - 1, useodds);
 }
 
-UINT16 roulette_size;
-INT32 K_GetRollingRouletteItem(player_t *player)
+uint16_t roulette_size;
+int32_t K_GetRollingRouletteItem(player_t *player)
 {
-	UINT8* translation = K_GetRollableItems();
+	uint8_t* translation = K_GetRollableItems();
 	return translation[(player->itemroulette / 3) % roulette_size];
 }
 
-INT32 K_GetRollingRouletteItemOffset(player_t *player, INT16 offset, INT32 animspeed)
+int32_t K_GetRollingRouletteItemOffset(player_t *player, int16_t offset, int32_t animspeed)
 {
-	UINT8* translation = K_GetRollableItems();
-	INT32 icon = ((player->itemroulette + animspeed)/animspeed);
+	uint8_t* translation = K_GetRollableItems();
+	int32_t icon = ((player->itemroulette + animspeed)/animspeed);
 	return translation[((icon + offset + roulette_size) % roulette_size)];
 }
 
-UINT8* K_GetRollableItems(void)
+uint8_t* K_GetRollableItems(void)
 {
-	static UINT8 translation[MAXKARTRESULTS];
+	static uint8_t translation[MAXKARTRESULTS];
 
-	static INT16 odds_cached = -1;
+	static int16_t odds_cached = -1;
 
 	// Race odds have more columns than Battle
-	const UINT8 EMPTYODDS[MAXODDS] = {0}; // or not
+	const uint8_t EMPTYODDS[MAXODDS] = {0}; // or not
 
 	if (odds_cached != gametype)
 	{
-		UINT8 oddstable = 0;
+		uint8_t oddstable = 0;
 		kartitemtype_e seen[MAXKARTITEMS];
 		size_t numseen = 0, j;
 
@@ -1219,7 +1219,7 @@ UINT8* K_GetRollableItems(void)
 		else
 			oddstable = ODDS_RACE;
 
-		for (UINT8 i = 0; i < numkartresults; i++)
+		for (uint8_t i = 0; i < numkartresults; i++)
 		{
 			kartresult_t *result = &kartresults[i];
 
@@ -1249,15 +1249,15 @@ UINT8* K_GetRollableItems(void)
 	\param	player	player object
 	\param  startPos first position to trace to the player from
 
-	\return	(UINT32) pdis
+	\return	(uint32_t) pdis
 */
-UINT32 K_GetCongaLineDistance(const player_t *player, UINT8 startPos)
+uint32_t K_GetCongaLineDistance(const player_t *player, uint8_t startPos)
 {
-	SINT8 sortedPlayers[MAXPLAYERS];
-	UINT8 sortLength = 0;
+	int8_t sortedPlayers[MAXPLAYERS];
+	uint8_t sortLength = 0;
 
-	UINT32 pdis = 0;
-	INT32 i;
+	uint32_t pdis = 0;
+	int32_t i;
 
 	memset(sortedPlayers, -1, sizeof(sortedPlayers));
 
@@ -1280,14 +1280,14 @@ UINT32 K_GetCongaLineDistance(const player_t *player, UINT8 startPos)
 		// more than yourself in the list.
 		if (sortLength > 1)
 		{
-			SINT8 firstIndex = -1;
-			SINT8 secondIndex = -1;
-			INT32 startFrom = INT32_MAX;
+			int8_t firstIndex = -1;
+			int8_t secondIndex = -1;
+			int32_t startFrom = INT32_MAX;
 
 			// Add all of the other players.
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				INT32 pos = INT32_MAX;
+				int32_t pos = INT32_MAX;
 
 				if (!playeringame[i] || players[i].spectator)
 				{
@@ -1378,10 +1378,10 @@ UINT32 K_GetCongaLineDistance(const player_t *player, UINT8 startPos)
 	return pdis;
 }
 
-UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
+uint32_t K_CalculateInitalPDIS(const player_t *player, uint8_t pingame)
 {
-	UINT8 i;
-	UINT32 pdis = 0;
+	uint8_t i;
+	uint32_t pdis = 0;
 
 	(void)pingame;
 
@@ -1427,9 +1427,9 @@ UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 
 #undef LEGACYODDSEXAGGERATE
 
-UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, dboolean *spbrush)
+uint32_t K_CalculatePDIS(const player_t *player, uint8_t numPlayers, dboolean *spbrush)
 {
-	UINT32 pdis = 0;
+	uint32_t pdis = 0;
 
 	pdis = K_CalculateInitalPDIS(player, numPlayers);
 
@@ -1464,18 +1464,18 @@ static dboolean K_BattleForceSPB(player_t *player)
 
 void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 {
-	INT32 i;
-	UINT8 pingame = 0;
-	UINT8 roulettestop;
-	UINT32 pdis = 0;
-	UINT8 useodds = 0;
-	INT32 spawnchance[MAXKARTRESULTS];
-	INT64 totalspawnchance = 0; // 75-scale numbers are going to get BIG. This is for paranoia's sake.
-	UINT8 bestbumper = 0;
+	int32_t i;
+	uint8_t pingame = 0;
+	uint8_t roulettestop;
+	uint32_t pdis = 0;
+	uint8_t useodds = 0;
+	int32_t spawnchance[MAXKARTRESULTS];
+	int64_t totalspawnchance = 0; // 75-scale numbers are going to get BIG. This is for paranoia's sake.
+	uint8_t bestbumper = 0;
 	fixed_t mashed = 0;
 	dboolean dontforcespb = false;
 	dboolean spbrush = false;
-	INT32 roulettespeed = 3;
+	int32_t roulettespeed = 3;
 
 	// This makes the roulette cycle through items - if this is 0, you shouldn't be here.
 	if (!player->itemroulette)
@@ -1557,7 +1557,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// This Gametype never specified an odds type. Roll something random please!
 	if (!(gametypes[gametype]->rules & GTR_RACEODDS) && !(gametypes[gametype]->rules & GTR_BATTLEODDS))
 	{
-		UINT8 itemroll = P_RandomRange(PR_ITEM_ROULETTE, 0, numkartresults - 1);
+		uint8_t itemroll = P_RandomRange(PR_ITEM_ROULETTE, 0, numkartresults - 1);
 		K_AwardPlayerResult(player, &kartresults[itemroll], KITEMBLINK_NORMAL);
 		return;
 	}
@@ -1598,7 +1598,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// Being in ring debt occasionally forces Super Ring on you if you mashed
 	if (K_ItemResultEnabled(K_GetKartResult("superring")) && mashed && player->rings < 0)
 	{
-		INT32 debtamount = min(abs(player->ringmin), abs(player->rings));
+		int32_t debtamount = min(abs(player->ringmin), abs(player->rings));
 		if (P_RandomChance(PR_ITEM_ROULETTE, (debtamount*FRACUNIT)/abs(player->ringmin)))
 		{
 			K_AwardPlayerResult(player, K_GetKartResult("superring"), KITEMBLINK_MASHED);
@@ -1645,7 +1645,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// Item forcing; the item with the highest "forceme" priority is the one given.
 	{
 		kartresult_t *forceresult;
-		UINT8 bestforce = 0;
+		uint8_t bestforce = 0;
 
 		for (i = 0; i < numkartresults; i++)
 		{
@@ -1708,11 +1708,11 @@ void K_SetPlayerItemCooldown(player_t *player, tic_t timer, dboolean force)
 // Unique odds functions, for REAL this time
 
 // S-Monitor odds 
-INT32 KO_SMonitorOdds(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme)
+int32_t KO_SMonitorOdds(int32_t odds, const kartroulette_t *roulette, const kartresult_t *result, uint8_t *forceme)
 {
 	(void)result;
 
-	UINT32 cdist = roulette->clusterDist;
+	uint32_t cdist = roulette->clusterDist;
 
 	if ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode))
 	{
@@ -1738,10 +1738,10 @@ INT32 KO_SMonitorOdds(INT32 odds, const kartroulette_t *roulette, const kartresu
 }
 
 // SPB odds
-INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme)
+int32_t KO_SPBRaceOdds(int32_t odds, const kartroulette_t *roulette, const kartresult_t *result, uint8_t *forceme)
 {
 	(void)result;
-	if (!K_LegacyOddsMode() && roulette->firstDist < (UINT32)ENDDIST) // No SPB near the end of the race
+	if (!K_LegacyOddsMode() && roulette->firstDist < (uint32_t)ENDDIST) // No SPB near the end of the race
 	{
 		odds = 0;
 	}
@@ -1750,7 +1750,7 @@ INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresul
 		odds = 0;
 	}
 
-	UINT32 raceforce_pdis = roulette->pdis;
+	uint32_t raceforce_pdis = roulette->pdis;
 
 	if ((grandprixinfo.gp == true) && (grandprixinfo.lunaticmode == true))
 	{
@@ -1780,7 +1780,7 @@ INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresul
 }
 
 // Grow odds
-INT32 KO_GrowRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme)
+int32_t KO_GrowRaceOdds(int32_t odds, const kartroulette_t *roulette, const kartresult_t *result, uint8_t *forceme)
 {
 	(void)result;
 	(void)forceme;
@@ -1819,10 +1819,10 @@ void K_DoGrowShrink(player_t *player, dboolean shrinking)
 	if (shrinking)
 	{
 		// Find neighbors
-		INT32 n = K_CountNeighboringPlayers(player, ALTSHRINK_EPSILON, &K_ClusterFilter_NoFilter, 0, &(vector3_t){});
+		int32_t n = K_CountNeighboringPlayers(player, ALTSHRINK_EPSILON, &K_ClusterFilter_NoFilter, 0, &(vector3_t){});
 
 		// For every neighbor, add some iframes for a clean breakaway.
-		UINT32 iframes = BASE_IFRAMES + n * NEIGHBOR_IFRAMES;
+		uint32_t iframes = BASE_IFRAMES + n * NEIGHBOR_IFRAMES;
 		player->flashing = iframes > UINT16_MAX ? UINT16_MAX : iframes;
 	}
 
@@ -1851,7 +1851,7 @@ void K_DoGrowShrink(player_t *player, dboolean shrinking)
 
 static void K_DoShrink(player_t *user)
 {
-	INT32 i;
+	int32_t i;
 	mobj_t *mobj, *next;
 
 	S_StartSound(user->mo, sfx_kc46); // Sound the BANG!
@@ -1921,13 +1921,13 @@ static void K_DoShrink(player_t *user)
 
 static void K_DoHyudoroSteal(player_t *player)
 {
-	INT32 i, numplayers = 0;
-	INT32 playerswappable[MAXPLAYERS];
-	INT32 stealplayer = -1; // The player that's getting stolen from
-	INT32 prandom = 0;
+	int32_t i, numplayers = 0;
+	int32_t playerswappable[MAXPLAYERS];
+	int32_t stealplayer = -1; // The player that's getting stolen from
+	int32_t prandom = 0;
 	dboolean sink = P_RandomChance(PR_ITEM_HYUDORO, FRACUNIT/64);
 	dboolean force_sink = false;
-	INT32 hyu = hyudorotime;
+	int32_t hyu = hyudorotime;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -1989,7 +1989,7 @@ static void K_DoHyudoroSteal(player_t *player)
 
 		// Add the Sink roll to the list
 		if (itemlistactive)
-			K_AddItemRollToList((INT32)(player - players), KITEM_KITCHENSINK, 1);
+			K_AddItemRollToList((int32_t)(player - players), KITEM_KITCHENSINK, 1);
 
 		// Woah this could be big, lets get the inside scoop...
 		if (!player->exiting)
@@ -2015,7 +2015,7 @@ static void K_DoHyudoroSteal(player_t *player)
 
 		if (itemlistactive)
 		{
-			K_AddItemRollToList((INT32)(player - players),
+			K_AddItemRollToList((int32_t)(player - players),
 					    players[stealplayer].itemtype,
 					    players[stealplayer].itemamount);
 		}
@@ -2143,11 +2143,11 @@ void K_BreakBubbleShield(player_t* player)
 	if (K_GetShieldFromPlayer(player) != KSHIELD_BUBBLE)
 		return;
 
-	const INT32 flip = P_MobjFlip(player->mo);
+	const int32_t flip = P_MobjFlip(player->mo);
 	const fixed_t scalediff = player->shieldtracer->scale - mapobjectscale;
 	const fixed_t shieldrad = player->shieldtracer->radius;
 
-	for (INT32 i = 0; i < MAXSHARDCOUNT; i++)
+	for (int32_t i = 0; i < MAXSHARDCOUNT; i++)
 	{
 		vector2_t mul_vec = { FRACUNIT, 0 };
 
@@ -2233,7 +2233,7 @@ void K_PlayerItemThink(player_t *player, dboolean onground)
 {
 	TracyCZone(__zone, true);
 
-	const UINT16 buttons = K_GetKartButtons(player);
+	const uint16_t buttons = K_GetKartButtons(player);
 	const dboolean ATTACK_JUST_DOWN = ((buttons & BT_ATTACK) && !(player->oldcmd.buttons & BT_ATTACK));
 	const dboolean HOLDING_ITEM = (player->equippeditem != 0);
 	const dboolean NO_HYUDORO = (player->stealingtimer == 0 && player->stolentimer == 0);
@@ -2312,7 +2312,7 @@ void K_PlayerItemThink(player_t *player, dboolean onground)
 	TracyCZoneEnd(__zone);
 }
 
-INT16 K_GetShrinkTime(const player_t *player)
+int16_t K_GetShrinkTime(const player_t *player)
 {
 	return player->growshrinktimer * -1;
 }
@@ -2335,7 +2335,7 @@ dboolean K_IsAltShrunk(const player_t *player)
 void K_AltShrinkPityIncrease(player_t *player)
 {
     // Increase your shrink timer by a little bit for every player you run into.
-    INT32 shrinktime = K_GetShrinkTime(player);
+    int32_t shrinktime = K_GetShrinkTime(player);
 
     fixed_t dimin = FRACUNIT;
 
@@ -2343,7 +2343,7 @@ void K_AltShrinkPityIncrease(player_t *player)
 
     shrinktime = min(INT16_MAX, shrinktime + PITY_SHRINKINCREASE_BASE + FixedMul(PITY_SHRINKINCREASE, dimin));
 
-    player->growshrinktimer = ((INT16)shrinktime) * -1;
+    player->growshrinktimer = ((int16_t)shrinktime) * -1;
 }
 
 #undef PITY_SHRINKINCREASE_BASE
@@ -2385,7 +2385,7 @@ void K_DoEggMineStrip(mobj_t *tmo, mobj_t *inflictor, mobj_t *source)
 				tmo->player->itemamount = 1;
 
 				if (itemlistactive)
-					K_AddItemRollToList((INT32)(tmo->player - players), KITEM_EGGBRICK, 1);
+					K_AddItemRollToList((int32_t)(tmo->player - players), KITEM_EGGBRICK, 1);
 
 				tmo->player->itemblink = TICRATE;
 				tmo->player->itemblinkmode = KITEMBLINK_MASHED;
@@ -2413,7 +2413,7 @@ void K_KartSeekingReticule(player_t *player)
 	// seeking item reticule
 	if (player->itemflags & IF_SEEKING)
 	{
-		INT32 lasttarg = player->lastitemtarget;
+		int32_t lasttarg = player->lastitemtarget;
 		player_t *targ;
 		mobj_t *ret;
 
@@ -2468,7 +2468,7 @@ player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
 {
 	fixed_t best = -1;
 	player_t *wtarg = NULL;
-	INT32 i;
+	int32_t i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -2559,7 +2559,7 @@ player_t *K_FindJawzTarget(mobj_t *actor, player_t *source)
 }
 
 // after using this you must handle setting any additional values on the mobj (like skincolour)
-mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, INT32 moloop, INT32 totalamount, mobj_t *prev)
+mobj_t *K_SpawnEquippedItem(player_t *player, kartitemequip_e equipstyle, mobjtype_t type, int32_t moloop, int32_t totalamount, mobj_t *prev)
 {
 	mobj_t *mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, type);
 	angle_t newangle;
@@ -2648,7 +2648,7 @@ void K_UseItem_RocketSneaker(player_t *player, dboolean itemjustdown, dboolean o
 	{
 		if (player->rocketsneakertimer == 0)
 		{
-			INT32 moloop;
+			int32_t moloop;
 			mobj_t *mo = NULL;
 			mobj_t *prev = player->mo;
 
@@ -2731,7 +2731,7 @@ void K_UseItem_Banana(player_t *player, dboolean itemjustdown, dboolean onground
 	}
 	else if (nohyudoro)
 	{
-		INT32 moloop;
+		int32_t moloop;
 		mobj_t *mo;
 		mobj_t *prev = player->mo;
 
@@ -2825,7 +2825,7 @@ void K_UseItem_EggMine(player_t *player, dboolean itemjustdown, dboolean ongroun
 	}
 	else if (nohyudoro)
 	{
-		INT32 moloop;
+		int32_t moloop;
 		mobj_t *mo = NULL;
 		mobj_t *prev = player->mo;
 
@@ -2862,7 +2862,7 @@ void K_UseItem_Orbinaut(player_t *player, dboolean itemjustdown, dboolean ongrou
 	}
 	else if (nohyudoro)
 	{
-		INT32 moloop;
+		int32_t moloop;
 		mobj_t *mo = NULL;
 		mobj_t *prev = player->mo;
 
@@ -2908,7 +2908,7 @@ void K_UseItem_Jawz(player_t *player, dboolean itemjustdown, dboolean onground, 
 	}
 	else if (nohyudoro)
 	{
-		INT32 moloop;
+		int32_t moloop;
 		mobj_t *mo = NULL;
 		mobj_t *prev = player->mo;
 
@@ -3244,9 +3244,9 @@ void K_HoldUseItem_FlameShield(player_t *player, dboolean itemjustdown, dboolean
 	
 	if (player->equippeditem == KITEM_FLAMESHIELD && (player->itemflags & IF_HOLDREADY))
 	{
-		SINT8 incr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 3 : 2;
-		SINT8 metincr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 4 : 3;
-		SINT8 comincr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 10 : 4;
+		int8_t incr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 3 : 2;
+		int8_t metincr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 4 : 3;
+		int8_t comincr = (gametypes[gametype]->rules & GTR_CLOSERPLAYERS) ? 10 : 4;
 
 		// uses fuel faster, but raises temperature faster
 		if (cv_kartflame_fastfuel.value && (!player->flameburnstop))
@@ -3332,7 +3332,7 @@ void K_UseItem_SuperRing(player_t *player, dboolean itemjustdown, dboolean ongro
 	{
 		dboolean offroad = (player->offroad && K_ApplyOffroad(player));
 		player->superringdrag = max(K_GetKartSpeed(player, true, false), player->speed);
-		INT32 thrustspeed = 12*player->mo->scale;
+		int32_t thrustspeed = 12*player->mo->scale;
 
 		if (onground && !offroad)
 		{
@@ -3358,7 +3358,7 @@ void K_UseItem_SuperRing(player_t *player, dboolean itemjustdown, dboolean ongro
 
 		K_SpawnDashDustRelease(player, true);
 
-		UINT8 modifier = 32 / (player->kartspeed + player->kartweight + 2);
+		uint8_t modifier = 32 / (player->kartspeed + player->kartweight + 2);
 
 		player->ringboost += (TICRATE/6) + modifier;
 		if (onground)

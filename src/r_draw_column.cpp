@@ -40,7 +40,7 @@ enum DrawColumnType
 };
 
 template<DrawColumnType Type>
-FUNCINLINE static ATTRINLINE constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col)
+FUNCINLINE static ATTRINLINE constexpr uint8_t R_GetColumnTranslated(drawcolumndata_t* dc, uint8_t col)
 {
 	if constexpr (Type & DrawColumnType::DC_COLORMAP)
 	{
@@ -53,7 +53,7 @@ FUNCINLINE static ATTRINLINE constexpr UINT8 R_GetColumnTranslated(drawcolumndat
 }
 
 template<DrawColumnType Type>
-FUNCINLINE static ATTRINLINE constexpr UINT8 R_GetColumnBrightmapped(drawcolumndata_t* dc, UINT32 bit, UINT8 col)
+FUNCINLINE static ATTRINLINE constexpr uint8_t R_GetColumnBrightmapped(drawcolumndata_t* dc, uint32_t bit, uint8_t col)
 {
 	col = R_GetColumnTranslated<Type>(dc, col);
 
@@ -70,7 +70,7 @@ FUNCINLINE static ATTRINLINE constexpr UINT8 R_GetColumnBrightmapped(drawcolumnd
 
 // translucency is handled on flush side now!
 template<DrawColumnType Type>
-FUNCINLINE static ATTRINLINE constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 *dest, UINT32 bit, UINT8 col)
+FUNCINLINE static ATTRINLINE constexpr uint8_t R_GetColumnTranslucent(drawcolumndata_t* dc, uint8_t *dest, uint32_t bit, uint8_t col)
 {
 	col = R_GetColumnBrightmapped<Type>(dc, bit, col);
 
@@ -85,9 +85,9 @@ FUNCINLINE static ATTRINLINE constexpr UINT8 R_GetColumnTranslucent(drawcolumnda
 }
 
 template<DrawColumnType Type>
-FUNCINLINE static ATTRINLINE constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 *dest, UINT32 bit)
+FUNCINLINE static ATTRINLINE constexpr uint8_t R_DrawColumnPixel(drawcolumndata_t* dc, uint8_t *dest, uint32_t bit)
 {
-	UINT8 col = dc->source[bit];
+	uint8_t col = dc->source[bit];
 
 	if constexpr (Type & DrawColumnType::DC_HOLES)
 	{
@@ -106,11 +106,11 @@ FUNCINLINE static ATTRINLINE constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t*
 // I make-a da code-a
 
 template<DrawColumnType Type>
-FUNCINLINE static ATTRINLINE constexpr UINT16 R_DrawColumnAffinePixel(drawcolumndata_t* dc, UINT8 *dest, INT32 bit)
+FUNCINLINE static ATTRINLINE constexpr uint16_t R_DrawColumnAffinePixel(drawcolumndata_t* dc, uint8_t *dest, int32_t bit)
 {
-	const UINT16 pixel = reinterpret_cast<UINT16 *>(dc->source)[bit];
+	const uint16_t pixel = reinterpret_cast<uint16_t *>(dc->source)[bit];
 
-	UINT8 col = (UINT8)(pixel & 0xff);
+	uint8_t col = (uint8_t)(pixel & 0xff);
 
 	if (pixel < 0xff00)
 	{
@@ -140,7 +140,7 @@ FUNCINLINE static ATTRINLINE constexpr UINT16 R_DrawColumnAffinePixel(drawcolumn
 
 		if (dc->brightmap)
 		{
-			const UINT16 bmpixel = reinterpret_cast<UINT16 *>(dc->brightmap)[bit];
+			const uint16_t bmpixel = reinterpret_cast<uint16_t *>(dc->brightmap)[bit];
 
 			if ((bmpixel & 0xff) == BRIGHTPIXEL)
 			{
@@ -173,8 +173,8 @@ FUNCINLINE static ATTRINLINE constexpr UINT16 R_DrawColumnAffinePixel(drawcolumn
 template<DrawColumnType Type>
 static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 {
-	INT32 count;
-	const INT32 vidheight = vid.height;
+	int32_t count;
+	const int32_t vidheight = vid.height;
 
 	// leban 1/17/99:
 	// removed the + 1 here, adjusted the if test, and added an increment
@@ -201,7 +201,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 	if constexpr (Type & DrawColumnType::DC_LIGHTLIST)
 	{
 		constexpr DrawColumnType NewType = static_cast<DrawColumnType>(Type & ~DC_LIGHTLIST);
-		INT32 i, realyh, height, bheight = 0, solid = 0;
+		int32_t i, realyh, height, bheight = 0, solid = 0;
 		drawcolumndata_t dc_copy = *dc;
 
 		realyh = dc_copy.yh;
@@ -224,7 +224,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 					// even including cases where the top and bottom heights
 					// should actually be the same!
 					// swap the height values as a workaround for this quirk
-					INT32 temp = height;
+					int32_t temp = height;
 					height = bheight;
 					bheight = temp;
 				}
@@ -296,12 +296,12 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		// Looks familiar.
 		const intptr_t fracstep = dc->iscale;
 		const intptr_t heightmask = dc->sourcelength-1; // CPhipps - specify type
-		constexpr INT32 npow2min = -1;
-		const INT32 npow2max = dc->sourcelength;
+		constexpr int32_t npow2min = -1;
+		const int32_t npow2max = dc->sourcelength;
 
 		// Framebuffer destination address.
 		// SoM: MAGIC
-		UINT8 * restrict dest;
+		uint8_t * restrict dest;
 
 		if constexpr (Type & DrawColumnType::DC_DIRECT)
 			dest = R_Address(dc->x, dc->yl);
@@ -315,7 +315,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		else
 			dest = R_GetBufferOpaque(dc);
 
-		INT32 stride = 8; // SoM: Oh, Oh it's MAGIC! You know...
+		int32_t stride = 8; // SoM: Oh, Oh it's MAGIC! You know...
 
 		if constexpr (Type & DrawColumnType::DC_DIRECT)
 			stride = vid.width;
@@ -459,10 +459,10 @@ void R_DrawFogColumn(drawcolumndata_t *dc)
 {
 	ZoneScoped;
 
-	INT32 count;
-	UINT8 *dest;
-	const INT32 vidheight = vid.height;
-	const INT32 vidwidth = vid.width;
+	int32_t count;
+	uint8_t *dest;
+	const int32_t vidheight = vid.height;
+	const int32_t vidwidth = vid.width;
 
 	count = dc->yh - dc->yl;
 
@@ -496,9 +496,9 @@ void R_DrawDropShadowColumn(drawcolumndata_t *dc)
 	// needed for the current design of the shadows, so this function bypasses the issue
 	// by not using those variables at all.
 
-	INT32 count;
-	UINT8 *dest;
-	const INT32 vidwidth = vid.width;
+	int32_t count;
+	uint8_t *dest;
+	const int32_t vidwidth = vid.width;
 
 	count = dc->yh - dc->yl + 1;
 
@@ -507,7 +507,7 @@ void R_DrawDropShadowColumn(drawcolumndata_t *dc)
 
 	dest = R_Address(dc->x, dc->yl);
 
-	const UINT8 *transmap_offset = dc->transmap + (dc->shadowcolor << 8);
+	const uint8_t *transmap_offset = dc->transmap + (dc->shadowcolor << 8);
 	while ((count -= 2) >= 0)
 	{
 		*dest = *(transmap_offset + (*dest));
@@ -524,11 +524,11 @@ void R_DrawColumn_Flat(drawcolumndata_t *dc)
 {
 	ZoneScoped;
 
-	INT32 count;
-	UINT8 color = dc->lightmap[dc->r8_flatcolor];
-	UINT8 *dest;
-	const INT32 vidheight = vid.height;
-	const INT32 vidwidth = vid.width;
+	int32_t count;
+	uint8_t color = dc->lightmap[dc->r8_flatcolor];
+	uint8_t *dest;
+	const int32_t vidheight = vid.height;
+	const int32_t vidwidth = vid.width;
 
 	count = dc->yh - dc->yl;
 
@@ -554,8 +554,8 @@ void R_DrawColumn_Flat(drawcolumndata_t *dc)
 template<DrawColumnType Type>
 static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 {
-	INT32 count;
-	const INT32 vidheight = vid.height;
+	int32_t count;
+	const int32_t vidheight = vid.height;
 
 	// leban 1/17/99:
 	// removed the + 1 here, adjusted the if test, and added an increment
@@ -590,12 +590,12 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 		// Looks familiar.
 		const intptr_t fracstep = dc->iscale;
 		//const intptr_t heightmask = dc->sourcelength-1; // CPhipps - specify type
-		//constexpr INT32 npow2min = -1;
-		//const INT32 npow2max = dc->sourcelength;
+		//constexpr int32_t npow2min = -1;
+		//const int32_t npow2max = dc->sourcelength;
 
 		// Framebuffer destination address.
 		// SoM: MAGIC
-		UINT8 * restrict dest;
+		uint8_t * restrict dest;
 
 		if constexpr (Type & DrawColumnType::DC_DIRECT)
 			dest = R_Address(dc->x, dc->yl);
@@ -609,7 +609,7 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 		else
 			dest = R_GetBufferOpaque(dc);
 
-		const INT32 stride = vid.width; // SoM: Oh, Oh it's MAGIC! You know...
+		const int32_t stride = vid.width; // SoM: Oh, Oh it's MAGIC! You know...
 
 		count++;
 
@@ -626,7 +626,7 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 		fixed_t cx = transform->ox;
 		fixed_t cy = transform->oy;
 
-		const INT32 pw = dc->sourcelength, ph = dc->texheight;
+		const int32_t pw = dc->sourcelength, ph = dc->texheight;
 
 		const dboolean vflip = (dc->affineystep < 0);
 		const fixed_t ystep_delta = abs(dc->affineystep);
@@ -654,7 +654,7 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 
 		if (mosaic_on && xmosaic_on)
 		{
-			usefrac = FLOAT_TO_FIXED(static_cast<INT32>(FIXED_TO_FLOAT(dc->frac) / x_mosaic) * x_mosaic);
+			usefrac = FLOAT_TO_FIXED(static_cast<int32_t>(FIXED_TO_FLOAT(dc->frac) / x_mosaic) * x_mosaic);
 		}
 
 		float ypx = 0.0f;
@@ -674,13 +674,13 @@ static void R_DrawAffineColumnTemplate(drawcolumndata_t *dc)
 		{
 			ypx += 1.0f;
 
-			const INT32 srcx = ux >> FRACBITS;
-			const INT32 srcy = (vflip) ? (ph - (uy >> FRACBITS)) : (uy >> FRACBITS);
-			INT32 y_real = static_cast<INT32>(ypx);
+			const int32_t srcx = ux >> FRACBITS;
+			const int32_t srcy = (vflip) ? (ph - (uy >> FRACBITS)) : (uy >> FRACBITS);
+			int32_t y_real = static_cast<int32_t>(ypx);
 
 			if (mosaic_on && ymosaic_on)
 			{
-				y_real = (static_cast<INT32>(ypx / y_mosaic) * y_mosaic);
+				y_real = (static_cast<int32_t>(ypx / y_mosaic) * y_mosaic);
 			}
 
 			ux = FLOAT_TO_FIXED(ux_base + (f_b * y_real));

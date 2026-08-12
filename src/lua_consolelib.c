@@ -35,9 +35,9 @@ static void clear_lua_stack(void)
 		lua_settop(gL, 0); // clear stack
 }
 
-void Got_Luacmd(UINT8 **cp, INT32 playernum)
+void Got_Luacmd(uint8_t **cp, int32_t playernum)
 {
-	UINT8 i, argc, flags;
+	uint8_t i, argc, flags;
 	const char *argv[256];
 	char buf[256];
 	dboolean compat;
@@ -74,7 +74,7 @@ void Got_Luacmd(UINT8 **cp, INT32 playernum)
 	if (lua_isdboolean(gL, -1))
 		flags = (lua_todboolean(gL, -1) ? 1 : 0);
 	else
-		flags = (UINT8)lua_tointeger(gL, -1);
+		flags = (uint8_t)lua_tointeger(gL, -1);
 	lua_pop(gL, 1); // pop flags
 
 	// requires server/admin and the player is not one of them
@@ -125,11 +125,11 @@ deny:
 void COM_Lua_f(void)
 {
 	char *buf, *p;
-	UINT8 i;
-	UINT16 len;
-	UINT16 flags;
-	UINT8 lpn = 0;
-	INT32 playernum = consoleplayer;
+	uint8_t i;
+	uint16_t len;
+	uint16_t flags;
+	uint8_t lpn = 0;
+	int32_t playernum = consoleplayer;
 	dboolean compat;
 
 	I_Assert(gL != NULL);
@@ -152,7 +152,7 @@ void COM_Lua_f(void)
 	if (lua_isdboolean(gL, -1))
 		flags = (lua_todboolean(gL, -1) ? COM_ADMIN : 0);
 	else
-		flags = (UINT16)lua_tointeger(gL, -1);
+		flags = (uint16_t)lua_tointeger(gL, -1);
 	lua_pop(gL, 1); // pop flags
 
 	if (flags & COM_SPLITSCREEN) // splitscreen player command.
@@ -170,7 +170,7 @@ void COM_Lua_f(void)
 
 	if (netgame && !( flags & COM_LOCAL ))/* don't send local commands */
 	{ // Send the command through the network
-		UINT8 argc;
+		uint8_t argc;
 		lua_pop(gL, 2); // pop command info table and LUA_GetErrorMessage
 
 		if ((flags & COM_ADMIN) && !server && !IsPlayerAdmin(playernum)) // only server/admin can use this command.
@@ -182,7 +182,7 @@ void COM_Lua_f(void)
 		if (COM_Argc() > UINT8_MAX)
 			argc = UINT8_MAX;
 		else
-			argc = (UINT8)COM_Argc();
+			argc = (uint8_t)COM_Argc();
 		if (argc == UINT8_MAX)
 			len = UINT16_MAX;
 		else
@@ -394,7 +394,7 @@ static int lib_cvRegisterVar(lua_State *L)
 		} else if (i == 3 || (k && fasticmp(k, "flags"))) {
 			if (!lua_isnumber(L, 4))
 				TYPEERROR("flags", LUA_TNUMBER)
-			cvar->flags = (INT32)lua_tointeger(L, 4);
+			cvar->flags = (int32_t)lua_tointeger(L, 4);
 		} else if (i == 4 || (k && fasticmp(k, "PossibleValue"))) {
 			if (lua_islightuserdata(L, 4)) {
 				CV_PossibleValue_t *pv = lua_touserdata(L, 4);
@@ -434,7 +434,7 @@ static int lib_cvRegisterVar(lua_State *L)
 					|| lua_type(L, 6) != LUA_TNUMBER)
 						FIELDERROR("PossibleValue", "custom PossibleValue table requires a format of string=integer, i.e. {MIN=0, MAX=9999}");
 					cvpv[i].strvalue = Z_StrDup(lua_tostring(L, 5));
-					cvpv[i].value = (INT32)lua_tonumber(L, 6);
+					cvpv[i].value = (int32_t)lua_tonumber(L, 6);
 					i++;
 					lua_pop(L, 1);
 				}
@@ -514,7 +514,7 @@ static int CVarSetFunction
 (
 		lua_State *L,
 		void (*Set)(consvar_t *, const char *),
-		void (*SetValue)(consvar_t *, INT32)
+		void (*SetValue)(consvar_t *, int32_t)
 ){
 	consvar_t *cvar = *(consvar_t **)luaL_checkudata(L, 1, META_CVAR);
 
@@ -527,7 +527,7 @@ static int CVarSetFunction
 			(*Set)(cvar, lua_tostring(L, 2));
 			break;
 		case LUA_TNUMBER:
-			(*SetValue)(cvar, (INT32)lua_tonumber(L, 2));
+			(*SetValue)(cvar, (int32_t)lua_tonumber(L, 2));
 			break;
 		default:
 			return luaL_typerror(L, 1, "string or number");
@@ -553,7 +553,7 @@ static int lib_cvAddValue(lua_State *L)
 	if (cvar->flags & CV_NOLUA)
 		return luaL_error(L, "Variable %s cannot be set from Lua.", cvar->name);
 
-	CV_AddValue(cvar, (INT32)luaL_checknumber(L, 2));
+	CV_AddValue(cvar, (int32_t)luaL_checknumber(L, 2));
 
 	return 0;
 }

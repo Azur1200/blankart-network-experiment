@@ -56,13 +56,13 @@ consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("turnsmoothing4", "Off", CV_SAVE, turnsmooth_cons_t, NULL)
 };
 
-static void G_ResetPlayerControllerRumble(INT32 player);
+static void G_ResetPlayerControllerRumble(int32_t player);
 static void rumble_off_handle(void);
 static void rumble_off_handle2(void);
 static void rumble_off_handle3(void);
 static void rumble_off_handle4(void);
 
-static void G_ResetPlayerControllerIndicatorColor(INT32 player);
+static void G_ResetPlayerControllerIndicatorColor(int32_t player);
 static void led_off_handle(void);
 static void led_off_handle2(void);
 static void led_off_handle3(void);
@@ -150,9 +150,9 @@ inputpoll_t gamekeydown = {};
 inputpoll_t gamekeydown_msec = {};
 
 // several key codes (or virtual key) per game control
-INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][MAXINPUTMAPPING] = {};
+int32_t gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][MAXINPUTMAPPING] = {};
 
-INT32 gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING] = {
+int32_t gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING] = {
 	[gc_aimforward        ] = {KEY_UPARROW,    KEY_AXIS1+2             }, // Left Y-
 	[gc_aimbackward       ] = {KEY_DOWNARROW,  KEY_AXIS1+3             }, // Left Y+
 	[gc_turnleft          ] = {KEY_LEFTARROW,  KEY_AXIS1+0             }, // Left X-
@@ -189,30 +189,30 @@ INT32 gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING] = {
 
 // lists of GC codes for selective operation
 /*
-const INT32 gcl_accelerate[num_gcl_accelerate] = { gc_accelerate };
+const int32_t gcl_accelerate[num_gcl_accelerate] = { gc_accelerate };
 
-const INT32 gcl_brake[num_gcl_brake] = { gc_brake };
+const int32_t gcl_brake[num_gcl_brake] = { gc_brake };
 
-const INT32 gcl_drift[num_gcl_drift] = { gc_drift };
+const int32_t gcl_drift[num_gcl_drift] = { gc_drift };
 
-const INT32 gcl_movement[num_gcl_movement] = {
+const int32_t gcl_movement[num_gcl_movement] = {
 	gc_accelerate, gc_drift, gc_brake, gc_turnleft, gc_turnright
 };
 
-const INT32 gcl_item[num_gcl_item] = {
+const int32_t gcl_item[num_gcl_item] = {
 	gc_fire, gc_aimforward, gc_aimbackward
 };
 
-const INT32 gcl_full[num_gcl_full] = {
+const int32_t gcl_full[num_gcl_full] = {
 	gc_accelerate, gc_drift, gc_brake, gc_turnleft, gc_turnright,
 	gc_fire, gc_aimforward, gc_aimbackward,
 	gc_lookback
 };
 */
 
-INT32 G_GetDevicePlayer(INT32 deviceID)
+int32_t G_GetDevicePlayer(int32_t deviceID)
 {
-	INT32 i;
+	int32_t i;
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
@@ -226,14 +226,14 @@ INT32 G_GetDevicePlayer(INT32 deviceID)
 }
 
 // converts ev_joystick axis to its corresponding key
-INT32 G_AxisToKey(event_t *ev)
+int32_t G_AxisToKey(event_t *ev)
 {
 	return KEY_AXIS1 + (ev->data1 >= JOYANALOGS
 						? ev->data1 + JOYANALOGS // triggers
 						: ev->data1*2 + (ev->data2 >= 0)); // analog sticks
 }
 
-static void update_vkb_axis(INT32 axis)
+static void update_vkb_axis(int32_t axis)
 {
 	if (axis > JOYAXISRANGE/2)
 		M_SwitchVirtualKeyboard(true);
@@ -248,9 +248,9 @@ static void update_vkb_axis(INT32 axis)
 //
 void G_MapEventsToControls(event_t *ev)
 {
-	INT32 i;
+	int32_t i;
 
-	INT32 device = ev->device;
+	int32_t device = ev->device;
 
 	// not a keyboard?
 	// try to see if its a controller in use
@@ -398,7 +398,7 @@ void G_MapEventsToControls(event_t *ev)
 
 typedef struct
 {
-	INT32 keynum;
+	int32_t keynum;
 	const char *name;
 } keyname_t;
 
@@ -580,7 +580,7 @@ static const char *gamecontrolname[num_gamecontrols] =
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))
 
-skincolornum_t G_GetSkinColorForController(INT32 playernum)
+skincolornum_t G_GetSkinColorForController(int32_t playernum)
 {
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
@@ -606,7 +606,7 @@ skincolornum_t G_GetSkinColorForController(INT32 playernum)
 
 // Sets the Indicator LED on supported gamepads to a desired skincolor
 // pass SKINCOLOR_NONE/0 to set the players skin color
-void G_SetPlayerControllerIndicatorColor(INT32 playernum, UINT16 color)
+void G_SetPlayerControllerIndicatorColor(int32_t playernum, uint16_t color)
 {
 	skincolornum_t skincolor;
 	byteColor_t byte_color;
@@ -625,7 +625,7 @@ void G_SetPlayerControllerIndicatorColor(INT32 playernum, UINT16 color)
 	I_SetControllerIndicatorColor(playernum, byte_color.red, byte_color.green, byte_color.blue);
 }
 
-static void G_ResetPlayerControllerIndicatorColor(INT32 playernum)
+static void G_ResetPlayerControllerIndicatorColor(int32_t playernum)
 {
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
@@ -643,9 +643,9 @@ static skincolornum_t curcolor[MAXSPLITSCREENPLAYERS] = {};
 
 void G_ControllerLEDTick(void)
 {
-	UINT8 i;
+	uint8_t i;
 	static skincolornum_t newcolor = SKINCOLOR_NONE;
-	const INT32 numcontrollers = I_NumControllers();
+	const int32_t numcontrollers = I_NumControllers();
 
 	if (numcontrollers == 0)
 	{
@@ -676,7 +676,7 @@ void G_ResetControllerLED(void)
 	memset(curcolor, 0, sizeof(curcolor));
 }
 
-static void G_ResetPlayerControllerRumble(INT32 playernum)
+static void G_ResetPlayerControllerRumble(int32_t playernum)
 {
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
@@ -691,7 +691,7 @@ void G_ResetAllControllerRumbles(void)
 	}
 }
 
-void G_PlayerControllerRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
+void G_PlayerControllerRumble(int32_t playernum, uint16_t low_strength, uint16_t high_strength, uint32_t duration)
 {
 	I_Assert(playernum >= 0 && playernum < MAXSPLITSCREENPLAYERS);
 
@@ -703,8 +703,8 @@ void G_PlayerControllerRumble(INT32 playernum, UINT16 low_strength, UINT16 high_
 	// doesent need to be super precise
 	// but ensure this is within range (0-65535)
 	// placed here so it applies to lua aswell
-	low_strength = (UINT16)min(FixedMul(low_strength, cv_rumblestrength[playernum].value), UINT16_MAX);
-	high_strength = (UINT16)min(FixedMul(high_strength, cv_rumblestrength[playernum].value), UINT16_MAX);
+	low_strength = (uint16_t)min(FixedMul(low_strength, cv_rumblestrength[playernum].value), UINT16_MAX);
+	high_strength = (uint16_t)min(FixedMul(high_strength, cv_rumblestrength[playernum].value), UINT16_MAX);
 
 	I_ControllerRumble(playernum, low_strength, high_strength, duration);
 }
@@ -724,8 +724,8 @@ enum
 // and makes your controller rumble accordingly
 void G_ControllerRumbleTick(void)
 {
-	UINT8 i;
-	const INT32 numcontrollers = I_NumControllers();
+	uint8_t i;
+	const int32_t numcontrollers = I_NumControllers();
 
 	if (dedicated || numcontrollers == 0 || gamestate != GS_LEVEL)
 	{
@@ -748,9 +748,9 @@ void G_ControllerRumbleTick(void)
 			continue;
 		}
 
-		UINT16 low = 0, high = 0;
+		uint16_t low = 0, high = 0;
 		// for how long the action should rumble, in ms
-		UINT16 lenght = 57; // 57ms is a short pulse, matches super well with this updating once per tic
+		uint16_t lenght = 57; // 57ms is a short pulse, matches super well with this updating once per tic
 		const player_t *player = &players[g_localplayers[i]];
 
 		// allow lua to do some crap for spectators
@@ -883,7 +883,7 @@ void G_ControllerRumbleTick(void)
 }
 
 // If keybind is necessary to navigate menus, it's on this list.
-dboolean G_KeyBindIsNecessary(INT32 gc)
+dboolean G_KeyBindIsNecessary(int32_t gc)
 {
 	switch (gc)
 	{
@@ -902,7 +902,7 @@ dboolean G_KeyBindIsNecessary(INT32 gc)
 }
 
 // Returns false if a key is deemed unreachable for this device.
-dboolean G_KeyIsAvailable(INT32 key, INT32 deviceID, dboolean digital)
+dboolean G_KeyIsAvailable(int32_t key, int32_t deviceID, dboolean digital)
 {
 	// Invalid key number.
 	if (key <= 0 || key >= NUMINPUTS)
@@ -942,9 +942,9 @@ dboolean G_KeyIsAvailable(INT32 key, INT32 deviceID, dboolean digital)
 //
 // Detach any keys associated to the given game control
 // - pass the pointer to the gamecontrol table for the player being edited
-void G_ClearControlKeys(INT32 (*setupcontrols)[MAXINPUTMAPPING], INT32 control)
+void G_ClearControlKeys(int32_t (*setupcontrols)[MAXINPUTMAPPING], int32_t control)
 {
-	INT32 i;
+	int32_t i;
 	for (i = 0; i < MAXINPUTMAPPING; i++)
 	{
 		setupcontrols[control][i] = KEY_NULL;
@@ -953,7 +953,7 @@ void G_ClearControlKeys(INT32 (*setupcontrols)[MAXINPUTMAPPING], INT32 control)
 
 void G_ClearAllControlKeys(void)
 {
-	INT32 i, j;
+	int32_t i, j;
 	for (j = 0; j < MAXSPLITSCREENPLAYERS; j++)
 	{
 		for (i = 0; i < num_gamecontrols; i++)
@@ -967,11 +967,11 @@ void G_ClearAllControlKeys(void)
 // Returns the name of a key (or virtual key for mouse and joy)
 // the input value being an keynum
 //
-const char *G_KeynumToString(INT32 keynum)
+const char *G_KeynumToString(int32_t keynum)
 {
 	static char keynamestr[8];
 
-	UINT32 j;
+	uint32_t j;
 
 	// return a string with the ascii char if displayable
 	if (keynum > ' ' && keynum <= 'z' && keynum != KEY_CONSOLE)
@@ -991,9 +991,9 @@ const char *G_KeynumToString(INT32 keynum)
 	return keynamestr;
 }
 
-INT32 G_KeyStringtoNum(const char *keystr)
+int32_t G_KeyStringtoNum(const char *keystr)
 {
-	UINT32 j;
+	uint32_t j;
 
 	if (!keystr[0])
 		return 0;
@@ -1017,15 +1017,15 @@ INT32 G_KeyStringtoNum(const char *keystr)
 	return 0;
 }
 
-void G_ResetControls(UINT8 p)
+void G_ResetControls(uint8_t p)
 {
-	INT32 i, j, k;
+	int32_t i, j, k;
 
 	for (i = 0; i < num_gamecontrols; i++)
 	{
 		for (j = k = 0; j < MAXINPUTMAPPING; j++)
 		{
-			INT32 key = gamecontroldefault[i][j];
+			int32_t key = gamecontroldefault[i][j];
 			gamecontrol[p][i][j] = 0;
 			if (p == 0 || key >= NUMKEYS) // keyboard is for P1 only
 				gamecontrol[p][i][k++] = key;
@@ -1033,9 +1033,9 @@ void G_ResetControls(UINT8 p)
 	}
 }
 
-void G_SaveKeySetting(FILE *f, INT32 (*fromcontrolsa)[MAXINPUTMAPPING], INT32 (*fromcontrolsb)[MAXINPUTMAPPING], INT32 (*fromcontrolsc)[MAXINPUTMAPPING], INT32 (*fromcontrolsd)[MAXINPUTMAPPING])
+void G_SaveKeySetting(FILE *f, int32_t (*fromcontrolsa)[MAXINPUTMAPPING], int32_t (*fromcontrolsb)[MAXINPUTMAPPING], int32_t (*fromcontrolsc)[MAXINPUTMAPPING], int32_t (*fromcontrolsd)[MAXINPUTMAPPING])
 {
-	INT32 i, j;
+	int32_t i, j;
 
 	// TODO: would be nice to get rid of this code duplication
 	for (i = 1; i < num_gamecontrols; i++)
@@ -1114,13 +1114,13 @@ void G_SaveKeySetting(FILE *f, INT32 (*fromcontrolsa)[MAXINPUTMAPPING], INT32 (*
 	}
 }
 
-INT32 G_CheckDoubleUsage(INT32 keynum, INT32 playernum, dboolean modify)
+int32_t G_CheckDoubleUsage(int32_t keynum, int32_t playernum, dboolean modify)
 {
-	INT32 result = gc_null;
+	int32_t result = gc_null;
 
 	if (cv_controlperkey.value == 1)
 	{
-		INT32 i, j;
+		int32_t i, j;
 		for (i = 0; i < num_gamecontrols; i++)
 		{
 			for (j = 0; j < MAXINPUTMAPPING; j++)
@@ -1143,13 +1143,13 @@ INT32 G_CheckDoubleUsage(INT32 keynum, INT32 playernum, dboolean modify)
 	return result;
 }
 
-static void setcontrol(UINT8 player)
+static void setcontrol(uint8_t player)
 {
-	INT32 numctrl;
+	int32_t numctrl;
 	const char *namectrl;
-	INT32 keynum;
-	INT32 inputMap = 0;
-	INT32 i;
+	int32_t keynum;
+	int32_t inputMap = 0;
+	int32_t i;
 
 	namectrl = COM_Argv(1);
 
@@ -1209,9 +1209,9 @@ static void setcontrol(UINT8 player)
 
 void Command_Setcontrol_f(void)
 {
-	INT32 na;
+	int32_t na;
 
-	na = (INT32)COM_Argc();
+	na = (int32_t)COM_Argc();
 
 	if (na < 3 || na > MAXINPUTMAPPING+2)
 	{
@@ -1224,9 +1224,9 @@ void Command_Setcontrol_f(void)
 
 void Command_Setcontrol2_f(void)
 {
-	INT32 na;
+	int32_t na;
 
-	na = (INT32)COM_Argc();
+	na = (int32_t)COM_Argc();
 
 	if (na < 3 || na > MAXINPUTMAPPING+2)
 	{
@@ -1239,9 +1239,9 @@ void Command_Setcontrol2_f(void)
 
 void Command_Setcontrol3_f(void)
 {
-	INT32 na;
+	int32_t na;
 
-	na = (INT32)COM_Argc();
+	na = (int32_t)COM_Argc();
 
 	if (na < 3 || na > MAXINPUTMAPPING+2)
 	{
@@ -1254,9 +1254,9 @@ void Command_Setcontrol3_f(void)
 
 void Command_Setcontrol4_f(void)
 {
-	INT32 na;
+	int32_t na;
 
-	na = (INT32)COM_Argc();
+	na = (int32_t)COM_Argc();
 
 	if (na < 3 || na > MAXINPUTMAPPING+2)
 	{
@@ -1328,12 +1328,12 @@ inline static vector4_t AngleAxis(fixed_t angle, fixed_t x, fixed_t y, fixed_t z
 	return result;
 }
 
-vector3_t G_GetCalibratedGyroOffset(INT32 p)
+vector3_t G_GetCalibratedGyroOffset(int32_t p)
 {
 	return localgyrocalibrationoffset[p];
 }
 
-void G_UpdateGamepadAutoCalibration(INT32 p, vector3_t accel, vector3_t gyro, dboolean allowautocalibration)
+void G_UpdateGamepadAutoCalibration(int32_t p, vector3_t accel, vector3_t gyro, dboolean allowautocalibration)
 {
 	(void)gyro;
 
@@ -1372,7 +1372,7 @@ void G_UpdateGamepadAutoCalibration(INT32 p, vector3_t accel, vector3_t gyro, db
 	}
 }
 
-void G_UpdateGamepadGyro(INT32 p, vector3_t gyro)
+void G_UpdateGamepadGyro(int32_t p, vector3_t gyro)
 {
 	vector3_t offset = {0};
 
@@ -1424,7 +1424,7 @@ void G_UpdateGamepadGyro(INT32 p, vector3_t gyro)
 // no matter what, always apply a minimum of this much correction to our gravity vector
 #define CorrectionMinimumSpeed (1*FRACUNIT/100)
 
-void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
+void G_UpdateGamepadGravity(int32_t p, vector3_t gyro, vector3_t accel)
 {
 	// convert gyro input to reverse rotation
 	vector3_t invAccel = {-accel.x, -accel.y, -accel.z};
@@ -1531,7 +1531,7 @@ void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel)
 	}
 }
 
-INT32 G_GetGamepadTilt(INT32 p)
+int32_t G_GetGamepadTilt(int32_t p)
 {
 	fixed_t tilt;
 	fixed_t curve;
@@ -1545,14 +1545,14 @@ INT32 G_GetGamepadTilt(INT32 p)
 	return (JOYAXISRANGE * curve)/FRACUNIT;
 }
 
-vector3_t G_GetGamepadGravity(INT32 p)
+vector3_t G_GetGamepadGravity(int32_t p)
 {
 	const vector3_t zero = {0, -ACCELEROMETERGRAVITY, 0};
 	if (!G_GetGamepadCanUseTilt(p)) return zero;
 	return localgravityvectors[p];
 }
 
-vector3_t G_GetGamepadShake(INT32 p)
+vector3_t G_GetGamepadShake(int32_t p)
 {
 	vector3_t accel = {0};
 	if (!G_GetGamepadCanUseTilt(p)) return accel;
@@ -1562,13 +1562,13 @@ vector3_t G_GetGamepadShake(INT32 p)
 	return accel;
 }
 
-fixed_t G_GetGamepadShakinessFactor(INT32 p)
+fixed_t G_GetGamepadShakinessFactor(int32_t p)
 {
 	if (!G_GetGamepadCanUseTilt(p)) return 0;
 	return localshakinessfac[p];
 }
 
-vector3_t G_GetGamepadCalibratedGyro(INT32 p)
+vector3_t G_GetGamepadCalibratedGyro(int32_t p)
 {
 	vector3_t zero = {0};
 	if (p >= MAXSPLITSCREENPLAYERS)
@@ -1584,7 +1584,7 @@ vector3_t G_GetGamepadCalibratedGyro(INT32 p)
 	return localgyrovectors[p];
 }
 
-dboolean G_GetGamepadCanUseTilt(INT32 p)
+dboolean G_GetGamepadCanUseTilt(int32_t p)
 {
 	if (p >= MAXSPLITSCREENPLAYERS)
 	{

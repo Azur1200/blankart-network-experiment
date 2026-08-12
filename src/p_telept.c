@@ -33,11 +33,11 @@
 */
 void P_MixUp(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle,
 			fixed_t starpostx, fixed_t starposty, fixed_t starpostz,
-			INT32 starpostnum, tic_t starposttime, angle_t starpostangle,
-			fixed_t starpostscale, angle_t drawangle, INT32 flags2)
+			int32_t starpostnum, tic_t starposttime, angle_t starpostangle,
+			fixed_t starpostscale, angle_t drawangle, int32_t flags2)
 {
-	const INT32 takeflags2 = MF2_OBJECTFLIP;
-	UINT8 i;
+	const int32_t takeflags2 = MF2_OBJECTFLIP;
+	uint8_t i;
 
 	(void)starposttime;
 	(void)starpostangle;
@@ -124,7 +124,7 @@ void P_MixUp(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle,
 */
 dboolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle, dboolean flash, dboolean dontstopmove)
 {
-	UINT8 i;
+	uint8_t i;
 
 	if (!P_SetOrigin(thing, x, y, z))
 		return false;

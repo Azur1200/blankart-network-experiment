@@ -20,24 +20,24 @@
 
 // Online rankings for the main gametypes.
 // This array is saved to the gamedata.
-UINT16 vspowerlevel[PWRLV_NUMTYPES];
+uint16_t vspowerlevel[PWRLV_NUMTYPES];
 
 // Client-sided calculations done for Power Levels.
 // This is done so that clients will never be able to hack someone else's score over the server.
-UINT16 clientpowerlevels[MAXPLAYERS][PWRLV_NUMTYPES];
+uint16_t clientpowerlevels[MAXPLAYERS][PWRLV_NUMTYPES];
 
 // Total calculated power add during the match,
 // totalled at the end of the round.
-INT16 clientPowerAdd[MAXPLAYERS];
+int16_t clientPowerAdd[MAXPLAYERS];
 
 // Players who spectated mid-race
-UINT8 spectateGriefed = 0;
+uint8_t spectateGriefed = 0;
 
 // Game setting scrambles based on server Power Level
-SINT8 speedscramble = -1;
-SINT8 encorescramble = -1;
+int8_t speedscramble = -1;
+int8_t encorescramble = -1;
 
-SINT8 K_UsingPowerLevels(void)
+int8_t K_UsingPowerLevels(void)
 {
 	if (!cv_kartusepwrlv.value)
 	{
@@ -77,12 +77,12 @@ void K_ClearClientPowerLevels(void)
 }
 
 // Adapted from this: http://wiki.tockdom.com/wiki/Player_Rating
-INT16 K_CalculatePowerLevelInc(INT16 diff)
+int16_t K_CalculatePowerLevelInc(int16_t diff)
 {
-	INT16 control[10] = {0,0,0,1,8,50,125,125,125,125};
+	int16_t control[10] = {0,0,0,1,8,50,125,125,125,125};
 	fixed_t increment = 0;
 	fixed_t x;
-	UINT8 j;
+	uint8_t j;
 
 #define MAXDIFF (PWRLVRECORD_MAX - 1)
 	if (diff > MAXDIFF)
@@ -115,10 +115,10 @@ INT16 K_CalculatePowerLevelInc(INT16 diff)
 		increment += (add * control[j]);
 	}
 
-	return (INT16)(increment >> FRACBITS);
+	return (int16_t)(increment >> FRACBITS);
 }
 
-INT16 K_PowerLevelPlacementScore(player_t *player)
+int16_t K_PowerLevelPlacementScore(player_t *player)
 {
 	if ((player->pflags & PF_NOCONTEST) || (player->spectator))
 	{
@@ -138,12 +138,12 @@ INT16 K_PowerLevelPlacementScore(player_t *player)
 	}
 }
 
-INT16 K_CalculatePowerLevelAvg(void)
+int16_t K_CalculatePowerLevelAvg(void)
 {
 	fixed_t avg = 0;
-	UINT8 div = 0;
-	SINT8 t = PWRLV_DISABLED;
-	UINT8 i;
+	uint8_t div = 0;
+	int8_t t = PWRLV_DISABLED;
+	uint8_t i;
 
 	if (!netgame || !cv_kartusepwrlv.value)
 	{
@@ -180,20 +180,20 @@ INT16 K_CalculatePowerLevelAvg(void)
 
 	avg /= div;
 
-	return (INT16)(avg >> FRACBITS);
+	return (int16_t)(avg >> FRACBITS);
 }
 
-void K_UpdatePowerLevels(player_t *player, UINT8 lap, dboolean forfeit)
+void K_UpdatePowerLevels(player_t *player, uint8_t lap, dboolean forfeit)
 {
-	const UINT8 playerNum = player - players;
+	const uint8_t playerNum = player - players;
 	const dboolean exitBonus = ((lap > numlaps) || (player->pflags & PF_NOCONTEST));
 
-	SINT8 powerType = K_UsingPowerLevels();
+	int8_t powerType = K_UsingPowerLevels();
 
-	INT16 yourScore = 0;
-	UINT16 yourPower = 0;
+	int16_t yourScore = 0;
+	uint16_t yourPower = 0;
 
-	UINT8 i;
+	uint8_t i;
 
 	// Compare every single player against each other for power level increases.
 	// Every player you won against gives you more points, and vice versa.
@@ -229,11 +229,11 @@ void K_UpdatePowerLevels(player_t *player, UINT8 lap, dboolean forfeit)
 	//CONS_Printf("========\n");
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		UINT16 theirScore = 0;
-		INT16 theirPower = 0;
+		uint16_t theirScore = 0;
+		int16_t theirPower = 0;
 
-		INT16 diff = 0; // Loser PWR.LV - Winner PWR.LV
-		INT16 inc = 0; // Total pt increment
+		int16_t diff = 0; // Loser PWR.LV - Winner PWR.LV
+		int16_t inc = 0; // Total pt increment
 
 		dboolean won = false;
 
@@ -284,7 +284,7 @@ void K_UpdatePowerLevels(player_t *player, UINT8 lap, dboolean forfeit)
 
 		if (exitBonus == false)
 		{
-			INT16 prevInc = inc;
+			int16_t prevInc = inc;
 
 			inc /= max(numlaps-1, 1);
 
@@ -329,8 +329,8 @@ void K_UpdatePowerLevels(player_t *player, UINT8 lap, dboolean forfeit)
 void K_UpdatePowerLevelsOnFailure(player_t *player)
 {
 	// Update upon spectate / quit / NO CONTEST
-	INT16 lapsLeft = 0;
-	UINT8 i;
+	int16_t lapsLeft = 0;
+	uint8_t i;
 
 	lapsLeft = (numlaps - player->latestlap) + 1;
 
@@ -347,11 +347,11 @@ void K_UpdatePowerLevelsOnFailure(player_t *player)
 	player->latestlap = numlaps+1;
 }
 
-INT16 K_FinalPowerIncrement(player_t *player, INT16 yourPower, INT16 baseInc)
+int16_t K_FinalPowerIncrement(player_t *player, int16_t yourPower, int16_t baseInc)
 {
-	INT16 inc = baseInc;
-	UINT8 numPlayers = 0;
-	UINT8 i;
+	int16_t inc = baseInc;
+	uint8_t numPlayers = 0;
+	uint8_t i;
 
 	if (yourPower == 0)
 	{
@@ -359,7 +359,7 @@ INT16 K_FinalPowerIncrement(player_t *player, INT16 yourPower, INT16 baseInc)
 		return 0;
 	}
 
-	SINT8 powerType = K_UsingPowerLevels();
+	int8_t powerType = K_UsingPowerLevels();
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator)
@@ -367,7 +367,7 @@ INT16 K_FinalPowerIncrement(player_t *player, INT16 yourPower, INT16 baseInc)
 			continue;
 		}
 
-		INT16 theirPower = clientpowerlevels[i][powerType];
+		int16_t theirPower = clientpowerlevels[i][powerType];
 		if (theirPower == 0)
 		{
 			// Don't count guests or bots.
@@ -420,8 +420,8 @@ INT16 K_FinalPowerIncrement(player_t *player, INT16 yourPower, INT16 baseInc)
 
 void K_CashInPowerLevels(void)
 {
-	SINT8 powerType = K_UsingPowerLevels();
-	UINT8 i;
+	int8_t powerType = K_UsingPowerLevels();
+	uint8_t i;
 
 	//CONS_Printf("\n========\n");
 	//CONS_Printf("Cashing in power level changes...\n");
@@ -431,7 +431,7 @@ void K_CashInPowerLevels(void)
 	{
 		if (playeringame[i] == true && powerType != PWRLV_DISABLED)
 		{
-			INT16 inc = K_FinalPowerIncrement(&players[i], clientpowerlevels[i][powerType], clientPowerAdd[i]);
+			int16_t inc = K_FinalPowerIncrement(&players[i], clientpowerlevels[i][powerType], clientPowerAdd[i]);
 			clientpowerlevels[i][powerType] += inc;
 
 			//CONS_Printf("%s: %d -> %d (%d)\n", player_names[i], clientpowerlevels[i][powerType] - inc, clientpowerlevels[i][powerType], inc);
@@ -455,17 +455,17 @@ void K_CashInPowerLevels(void)
 	//CONS_Printf("========\n");
 }
 
-void K_SetPowerLevelScrambles(SINT8 powertype)
+void K_SetPowerLevelScrambles(int8_t powertype)
 {
 	switch (powertype)
 	{
 		case PWRLV_RACE:
 			if (cv_kartspeed.value == -1 || cv_kartencore.value == -1)
 			{
-				UINT8 speed = KARTSPEED_DEFAULT;
+				uint8_t speed = KARTSPEED_DEFAULT;
 				dboolean encore = false;
-				INT16 avg = 0, min = 0;
-				UINT8 i, t = 1;
+				int16_t avg = 0, min = 0;
+				uint8_t i, t = 1;
 
 				avg = K_CalculatePowerLevelAvg();
 
@@ -602,15 +602,15 @@ void K_SetPowerLevelScrambles(SINT8 powertype)
 	}
 }
 
-void K_PlayerForfeit(UINT8 playerNum, dboolean pointLoss)
+void K_PlayerForfeit(uint8_t playerNum, dboolean pointLoss)
 {
-	UINT8 p = 0;
+	uint8_t p = 0;
 
-	SINT8 powerType = PWRLV_DISABLED;
-	UINT16 yourPower = 0;
-	INT16 inc = 0;
+	int8_t powerType = PWRLV_DISABLED;
+	uint16_t yourPower = 0;
+	int16_t inc = 0;
 
-	UINT8 i;
+	uint8_t i;
 
 	// power level & spectating is netgames only
 	if (!netgame)

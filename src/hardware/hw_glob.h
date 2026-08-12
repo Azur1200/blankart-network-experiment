@@ -46,7 +46,7 @@ typedef struct
 // a convex 'plane' polygon, clockwise order
 typedef struct
 {
-	INT32 numpts;
+	int32_t numpts;
 	polyvertex_t pts[];
 } poly_t;
 
@@ -73,14 +73,14 @@ typedef struct gl_vissprite_s
 	float spritexscale, spriteyscale;
 	float spritexoffset, spriteyoffset;
 
-	UINT32 renderflags;
-	UINT8 rotateflags;
+	uint32_t renderflags;
+	uint8_t rotateflags;
 
 	dboolean flip, vflip;
 	dboolean precip; // Tails 08-25-2002
 	dboolean bbox;
 	dboolean rotated;
-	UINT8 translucency;       //alpha level 0-255
+	uint8_t translucency;       //alpha level 0-255
 
 	angle_t angle; // for splats
 
@@ -107,14 +107,14 @@ typedef struct gl_vissprite_s
 	} affine;
 
 	//Hurdler: 25/04/2000: now support colormap in hardware mode
-	UINT8 *colormap;
-	INT32 dispoffset; // copy of info->dispoffset, affects ordering but not drawing
+	uint8_t *colormap;
+	int32_t dispoffset; // copy of info->dispoffset, affects ordering but not drawing
 
 	patch_t *gpatch;
 	mobj_t *mobj; // NOTE: This is a precipmobj_t if precip is true !!! Watch out.
 } gl_vissprite_t;
 
-void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, dboolean model);
+void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, int32_t *lightlevel, dboolean model);
 
 typedef struct
 {
@@ -167,15 +167,15 @@ void HWR_LoadMapTextures(size_t pnumtextures);
 void HWR_FreeMapTextures(void);
 void HWR_PrecacheLevel(void);
 
-patch_t *HWR_GetCachedGLPatchPwad(UINT16 wad, UINT16 lump);
+patch_t *HWR_GetCachedGLPatchPwad(uint16_t wad, uint16_t lump);
 patch_t *HWR_GetCachedGLPatch(lumpnum_t lumpnum);
 
 void HWR_GetPatch(patch_t *patch);
-void HWR_GetMappedPatch(patch_t *patch, const UINT8 *colormap);
+void HWR_GetMappedPatch(patch_t *patch, const uint8_t *colormap);
 void HWR_GetFadeMask(lumpnum_t fademasklumpnum);
 patch_t *HWR_GetPic(lumpnum_t lumpnum);
 
-GLMapTexture_t *HWR_GetTexture(INT32 tex, dboolean noencoremap);
+GLMapTexture_t *HWR_GetTexture(int32_t tex, dboolean noencoremap);
 void HWR_GetLevelFlat(levelflat_t *levelflat, dboolean noencoremap);
 void HWR_GetRawFlat(lumpnum_t flatlumpnum, dboolean noencoremap);
 
@@ -188,36 +188,36 @@ void HWR_UnlockCachedPatch(GLPatch_t *gpatch);
 
 void HWR_SetPalette(RGBA_t *palette);
 void HWR_SetMapPalette(void);
-UINT32 HWR_CreateLightTable(UINT8 *lighttable);
-UINT32 HWR_GetLightTableID(extracolormap_t *colormap);
+uint32_t HWR_CreateLightTable(uint8_t *lighttable);
+uint32_t HWR_GetLightTableID(extracolormap_t *colormap);
 void HWR_ClearLightTables(void);
 
 // --------
 // hw_bsp.c
 // --------
-void HWR_RenderBSPNode(INT32 bspnum);
+void HWR_RenderBSPNode(int32_t bspnum);
 
 // --------
 // hw_draw.c
 // --------
-extern INT32 patchformat;
-extern INT32 textureformat;
+extern int32_t patchformat;
+extern int32_t textureformat;
 
 // --------
 // hw_plane.c
 // --------
-void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, dboolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, INT32 lightlevel, levelflat_t *levelflat, sector_t *FOFsector, UINT8 alpha, extracolormap_t *planecolormap);
+void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, dboolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, int32_t lightlevel, levelflat_t *levelflat, sector_t *FOFsector, uint8_t alpha, extracolormap_t *planecolormap);
 void HWR_RenderPolyObjectPlane(polyobj_t *polysector, dboolean isceiling, fixed_t fixedheight,
-							   FBITFIELD blendmode, UINT8 lightlevel, levelflat_t *levelflat, sector_t *FOFsector,
-							   UINT8 alpha, extracolormap_t *planecolormap);
+							   FBITFIELD blendmode, uint8_t lightlevel, levelflat_t *levelflat, sector_t *FOFsector,
+							   uint8_t alpha, extracolormap_t *planecolormap);
 
 // --------
 // hw_drawnodes.c
 // --------
-void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, dboolean noencore, FBITFIELD blend, dboolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
-void HWR_AddTransparentFloor(levelflat_t *levelflat, poly_subsector_t *xsub, dboolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, dboolean fogplane, extracolormap_t *planecolormap);
+void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, int32_t texnum, dboolean noencore, FBITFIELD blend, dboolean fogwall, int32_t lightlevel, extracolormap_t *wallcolormap);
+void HWR_AddTransparentFloor(levelflat_t *levelflat, poly_subsector_t *xsub, dboolean isceiling, fixed_t fixedheight, int32_t lightlevel, int32_t alpha, sector_t *FOFSector, FBITFIELD blend, dboolean fogplane, extracolormap_t *planecolormap);
 void HWR_AddTransparentPolyobjectFloor(levelflat_t *levelflat, polyobj_t *polysector, dboolean isceiling, fixed_t fixedheight,
-									   INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
+									   int32_t lightlevel, int32_t alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
 void HWR_PushDrawNodeState(void);
 void HWR_PopDrawNodeState(void);
 void HWR_RenderDrawNodes(void);
@@ -226,7 +226,7 @@ void HWR_RenderDrawNodes(void);
 // hw_segs.c
 // --------
 void HWR_ProcessSeg(void);
-void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, dboolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
+void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, dboolean fogwall, int32_t lightlevel, extracolormap_t *wallcolormap);
 
 // --------
 // hw_shaders.c
@@ -237,8 +237,8 @@ void HWR_CompileShaders(void);
 int HWR_GetShaderFromTarget(int shader_target);
 
 void HWR_LoadAllBaseShaders(void);
-void HWR_LoadCustomShadersFromFile(UINT16 wadnum, dboolean PK3, dboolean startup);
-const char *HWR_GetShaderName(INT32 shader);
+void HWR_LoadCustomShadersFromFile(uint16_t wadnum, dboolean PK3, dboolean startup);
+const char *HWR_GetShaderName(int32_t shader);
 
 extern customshaderxlat_t shaderxlat[];
 
@@ -258,7 +258,7 @@ void HWR_PushSpriteState(void);
 void HWR_PopSpriteState(void);
 void HWR_AddSprites(sector_t *sec);
 void HWR_AddPrecipitationSprites(void);
-UINT32 HWR_SortVisSprites(void);
+uint32_t HWR_SortVisSprites(void);
 void HWR_DrawSprites(void);
 void HWR_ProjectBoundingBox(mobj_t *thing);
 
@@ -274,18 +274,18 @@ dboolean HWR_AddPortal(line_t *start, line_t *dest, seg_t *seg);
 void HWR_ClearPortals(void);
 void HWR_PortalClipping(gl_portal_t *portal);
 void HWR_RenderPortalSeg(seg_t *seg);
-void HWR_SetStencilState(INT32 state);
+void HWR_SetStencilState(int32_t state);
 void HWR_RenderDepthEraser(dboolean visible);
 void HWR_RenderPortal(gl_portal_t *portal, gl_portal_t *rootportal, player_t *player, dboolean is_skybox);
 
-extern INT32 gl_portal_level;
+extern int32_t gl_portal_level;
 
 extern dboolean gl_drawing_stencil;
 extern sector_t *gl_portalcullsector;
 extern line_t *gl_portalclipline;
 
 extern dboolean gl_printportals;
-extern INT32 gl_debugportal;
+extern int32_t gl_debugportal;
 
 
 #ifdef __cplusplus

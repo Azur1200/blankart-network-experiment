@@ -143,12 +143,12 @@ extern consvar_t cv_tiltcontrol[MAXSPLITSCREENPLAYERS];
 // the above is horrid since device tracks the gamepad id for whatever godawful reason
 // the gamepad instance id may be alot larger than (MAXGAMEPADS + 1)/"9"
 
-typedef INT32 inputpoll_t[MAXDEVICES][NUMINPUTS];
+typedef int32_t inputpoll_t[MAXDEVICES][NUMINPUTS];
 extern inputpoll_t gamekeydown, gamekeydown_msec;
 
 // several key codes (or virtual key) per game control
-extern INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][MAXINPUTMAPPING];
-extern INT32 gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING]; // default control storage
+extern int32_t gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][MAXINPUTMAPPING];
+extern int32_t gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING]; // default control storage
 
 /*
 #define num_gcl_accelerate 1
@@ -158,12 +158,12 @@ extern INT32 gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING]; // default c
 #define num_gcl_item 3
 #define num_gcl_full 10
 
-extern const INT32 gcl_accelerate[num_gcl_accelerate];
-extern const INT32 gcl_brake[num_gcl_brake];
-extern const INT32 gcl_drift[num_gcl_drift];
-extern const INT32 gcl_movement[num_gcl_movement];
-extern const INT32 gcl_item[num_gcl_item];
-extern const INT32 gcl_full[num_gcl_full];
+extern const int32_t gcl_accelerate[num_gcl_accelerate];
+extern const int32_t gcl_brake[num_gcl_brake];
+extern const int32_t gcl_drift[num_gcl_drift];
+extern const int32_t gcl_movement[num_gcl_movement];
+extern const int32_t gcl_item[num_gcl_item];
+extern const int32_t gcl_full[num_gcl_full];
 */
 
 // peace to my little coder fingers!
@@ -172,54 +172,54 @@ extern const INT32 gcl_full[num_gcl_full];
 #define INVALID_DEVICE -1
 #define KEYBOARD_MOUSE_DEVICE 0
 
-skincolornum_t G_GetSkinColorForController(INT32 playernum);
-void G_SetPlayerControllerIndicatorColor(INT32 playernum, UINT16 color);
+skincolornum_t G_GetSkinColorForController(int32_t playernum);
+void G_SetPlayerControllerIndicatorColor(int32_t playernum, uint16_t color);
 void G_ControllerLEDTick(void);
 void G_ResetControllerLED(void);
 void G_ResetAllControllerRumbles(void);
-void G_PlayerControllerRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration);
+void G_PlayerControllerRumble(int32_t playernum, uint16_t low_strength, uint16_t high_strength, uint32_t duration);
 void G_ControllerRumbleTick(void);
 
-INT32 G_GetDevicePlayer(INT32 deviceID);
+int32_t G_GetDevicePlayer(int32_t deviceID);
 
-INT32 G_AxisToKey(event_t *ev);
+int32_t G_AxisToKey(event_t *ev);
 
 // remaps the input event to a game control.
 void G_MapEventsToControls(event_t *ev);
 
 // returns the name of a key
-const char *G_KeynumToString(INT32 keynum);
-INT32 G_KeyStringtoNum(const char *keystr);
+const char *G_KeynumToString(int32_t keynum);
+int32_t G_KeyStringtoNum(const char *keystr);
 
-dboolean G_KeyBindIsNecessary(INT32 gc);
-dboolean G_KeyIsAvailable(INT32 key, INT32 deviceID, dboolean digital);
+dboolean G_KeyBindIsNecessary(int32_t gc);
+dboolean G_KeyIsAvailable(int32_t key, int32_t deviceID, dboolean digital);
 
 // detach any keys associated to the given game control
-void G_ClearControlKeys(INT32 (*setupcontrols)[MAXINPUTMAPPING], INT32 control);
+void G_ClearControlKeys(int32_t (*setupcontrols)[MAXINPUTMAPPING], int32_t control);
 void G_ClearAllControlKeys(void);
 void Command_Setcontrol_f(void);
 void Command_Setcontrol2_f(void);
 void Command_Setcontrol3_f(void);
 void Command_Setcontrol4_f(void);
-INT32 G_GetControlScheme(INT32 (*fromcontrols)[MAXINPUTMAPPING], const INT32 *gclist, INT32 gclen);
-void G_ResetControls(UINT8 p);
-void G_SaveKeySetting(FILE *f, INT32 (*fromcontrolsa)[MAXINPUTMAPPING], INT32 (*fromcontrolsb)[MAXINPUTMAPPING], INT32 (*fromcontrolsc)[MAXINPUTMAPPING], INT32 (*fromcontrolsd)[MAXINPUTMAPPING]);
-INT32 G_CheckDoubleUsage(INT32 keynum, INT32 playernum, dboolean modify);
+int32_t G_GetControlScheme(int32_t (*fromcontrols)[MAXINPUTMAPPING], const int32_t *gclist, int32_t gclen);
+void G_ResetControls(uint8_t p);
+void G_SaveKeySetting(FILE *f, int32_t (*fromcontrolsa)[MAXINPUTMAPPING], int32_t (*fromcontrolsb)[MAXINPUTMAPPING], int32_t (*fromcontrolsc)[MAXINPUTMAPPING], int32_t (*fromcontrolsd)[MAXINPUTMAPPING]);
+int32_t G_CheckDoubleUsage(int32_t keynum, int32_t playernum, dboolean modify);
 
 #define MAXGAMEPADTILT (55*FRACUNIT/100)
 #define ACCELEROMETERGRAVITY (642688) // 9.80665
-dboolean G_GetGamepadCanUseTilt(INT32 p);
-void G_ResetGyroCalibration(INT32 p);
-void G_UpdateGamepadAutoCalibration(INT32 p, vector3_t accel, vector3_t gyro, dboolean allowautocalibration);
-void G_UpdateGamepadGyro(INT32 p, vector3_t gyro);
-void G_UpdateGamepadGravity(INT32 p, vector3_t gyro, vector3_t accel);
-fixed_t G_GetGamepadShakinessFactor(INT32 p);
-vector3_t G_GetGamepadShake(INT32 p);
-vector3_t G_GetGamepadGravity(INT32 p);
-vector3_t G_GetCalibratedGyroOffset(INT32 p);
-vector3_t G_GetGamepadCalibratedGyro(INT32 p);
-vector3_t G_PlayerInputSensor(UINT8 p, motionsensortype_e sensor);
-INT32 G_GetGamepadTilt(INT32 p);
+dboolean G_GetGamepadCanUseTilt(int32_t p);
+void G_ResetGyroCalibration(int32_t p);
+void G_UpdateGamepadAutoCalibration(int32_t p, vector3_t accel, vector3_t gyro, dboolean allowautocalibration);
+void G_UpdateGamepadGyro(int32_t p, vector3_t gyro);
+void G_UpdateGamepadGravity(int32_t p, vector3_t gyro, vector3_t accel);
+fixed_t G_GetGamepadShakinessFactor(int32_t p);
+vector3_t G_GetGamepadShake(int32_t p);
+vector3_t G_GetGamepadGravity(int32_t p);
+vector3_t G_GetCalibratedGyroOffset(int32_t p);
+vector3_t G_GetGamepadCalibratedGyro(int32_t p);
+vector3_t G_PlayerInputSensor(uint8_t p, motionsensortype_e sensor);
+int32_t G_GetGamepadTilt(int32_t p);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -52,7 +52,7 @@ extern kartvoiceinfo_t localvoicedata[MAXSPLITSCREENPLAYERS];
 // Player voice struct
 struct kartvoice_t
 {
-    UINT32 id;
+    uint32_t id;
 
 	// The voice's name.
 	char name[VOICENAMESIZE+1];
@@ -74,26 +74,26 @@ struct kartvoice_t
 struct skin_t
 {
 	char name[SKINNAMESIZE+1]; // name of skin
-	UINT32 namehash;
-	UINT16 skinnum;
-	UINT16 wadnum;
+	uint32_t namehash;
+	uint16_t skinnum;
+	uint16_t wadnum;
 	skinflags_t flags;
 
 	char realname[SKINNAMESIZE+1]; // Display name for level completion.
 	char facerank[9], facewant[9], facemmap[9]; // Arbitrarily named patch lumps
 
 	// SRB2kart
-	UINT8 kartspeed;
-	UINT8 kartweight;
+	uint8_t kartspeed;
+	uint8_t kartweight;
 	//
 
-	INT32 followitem;
+	int32_t followitem;
 
 	// Definable color translation table
-	UINT8 starttranscolor;
-	UINT16 prefcolor;
-	UINT16 supercolor;
-	UINT16 prefoppositecolor; // if 0 use tables instead
+	uint8_t starttranscolor;
+	uint16_t prefcolor;
+	uint16_t supercolor;
+	uint16_t prefoppositecolor; // if 0 use tables instead
 
 	fixed_t highresscale; // scale of highres, default is 0.5
 
@@ -108,7 +108,7 @@ struct skin_t
 	// Proxy value for the (now removed) soundsid array.
 	// This is ONLY used in a Lua context.
 	// It doesn't actually have anything and will never actually have anything.
-	UINT8 soundsid[2];
+	uint8_t soundsid[2];
 
 	// contains super versions too
 	spritedef_t sprites[NUMPLAYERSPRITES*2];
@@ -135,40 +135,40 @@ enum skinmenusortoption
 };
 
 /// Externs
-extern INT32 numskins;
+extern int32_t numskins;
 extern skin_t **skins;
 
-extern INT32 num_multivoiceskins;
+extern int32_t num_multivoiceskins;
 extern skin_t * multivoiceskins[MAXSKINS];
 
-extern INT32 skinsorted[MAXSKINS];
+extern int32_t skinsorted[MAXSKINS];
 
 extern CV_PossibleValue_t Forceskin_cons_t[];
 
-extern const UINT8 kart2spr2[26][2];
+extern const uint8_t kart2spr2[26][2];
 
 /// Function prototypes
 void R_InitSkins(void);
 void SortSkins(void);
-INT32 FindSortedSkinIndex(INT32 skinnum);
+int32_t FindSortedSkinIndex(int32_t skinnum);
 
-void SetPlayerSkin(INT32 playernum,const char *skinname);
-void SetPlayerSkinByNum(INT32 playernum,INT32 skinnum); // Tails 03-16-2002
-dboolean R_SkinUsable(INT32 playernum, INT32 skinnum);
-UINT8 *R_GetSkinAvailabilities(void);
-INT32 R_SkinAvailableEx(const char *name, dboolean usehash);
+void SetPlayerSkin(int32_t playernum,const char *skinname);
+void SetPlayerSkinByNum(int32_t playernum,int32_t skinnum); // Tails 03-16-2002
+dboolean R_SkinUsable(int32_t playernum, int32_t skinnum);
+uint8_t *R_GetSkinAvailabilities(void);
+int32_t R_SkinAvailableEx(const char *name, dboolean usehash);
 #define R_SkinAvailable(name) R_SkinAvailableEx(name, true)
-void R_PatchSkins(UINT16 wadnum);
-void R_AddSkins(UINT16 wadnum);
+void R_PatchSkins(uint16_t wadnum);
+void R_AddSkins(uint16_t wadnum);
 void R_ApplySkin(mobj_t *mo, skin_t *skin);
 void R_ApplySkinOnly(mobj_t *mo, skin_t *skin);
 
-UINT8 P_GetSkinSprite2(skin_t *skin, UINT8 spr2, player_t *player);
-UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe);
+uint8_t P_GetSkinSprite2(skin_t *skin, uint8_t spr2, player_t *player);
+uint8_t P_KartFrameToSprite2(skin_t *skin, uint8_t inframe, uint8_t *outframe);
 
-INT32 R_FindIDForVoice(skin_t *skin, const char *voicename);
-void SetPlayerVoice(INT32 playernum, const char *voicename);
-void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum);
+int32_t R_FindIDForVoice(skin_t *skin, const char *voicename);
+void SetPlayerVoice(int32_t playernum, const char *voicename);
+void SetPlayerVoiceByNum(int32_t playernum, uint16_t voicenum);
 sfxenum_t R_GetLegacySkinSound(const kartvoice_t *voice, sfxenum_t sound);
 
 #ifdef __cplusplus

@@ -226,7 +226,7 @@ static const char *const mobj_opt[] = {
 #define UNIMPLEMENTED luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " is not implemented for Lua and cannot be accessed.", mobj_opt[field])
 
 #define F(x) x - 'A'
-static UINT32 spr2frame(UINT8 spr2, UINT32 frame)
+static uint32_t spr2frame(uint8_t spr2, uint32_t frame)
 {
 	switch (spr2)
 	{
@@ -380,7 +380,7 @@ static int mobj_get(lua_State *L)
 		break;
 	case mobj_frame:
 	{
-		UINT32 frame = mo->frame;
+		uint32_t frame = mo->frame;
 		// translate SPR2 back to frames
 		if (lua_compatmode && mo->sprite == SPR_PLAY)
 			frame = (frame & ~FF_FRAMEMASK) | spr2frame(mo->sprite2, mo->frame);
@@ -461,7 +461,7 @@ static int mobj_get(lua_State *L)
 		break;
 	case mobj_flags2:
 	{
-		UINT32 flags2 = mo->flags2;
+		uint32_t flags2 = mo->flags2;
 		if (lua_compatmode && (mo->renderflags & RF_DONTDRAW) == RF_DONTDRAW)
 			flags2 |= MF2_DONTDRAW;
 		if (lua_compatmode && (mo->renderflags & RF_GHOSTLY))
@@ -471,7 +471,7 @@ static int mobj_get(lua_State *L)
 	}
 	case mobj_eflags:
 	{
-		UINT32 eflags = mo->eflags;  // yes, not UINT16
+		uint32_t eflags = mo->eflags;  // yes, not uint16_t
 		if (lua_compatmode)
 		{
 			// The old eflags compat system causes rendering issues for characters like
@@ -698,21 +698,21 @@ static int mobj_get(lua_State *L)
 	return 1;
 }
 
-static inline UINT32 eflags_vischeck(UINT32 eflags)
+static inline uint32_t eflags_vischeck(uint32_t eflags)
 {
-	UINT8 playerhide;
+	uint8_t playerhide;
 
 	playerhide = 0;
 	if (eflags & RF_DONTDRAW)
 	{
 		// Visibility checks are necessary
-		playerhide = (UINT8)((eflags & RF_DONTDRAW) >> RF_HIDESHIFT);
+		playerhide = (uint8_t)((eflags & RF_DONTDRAW) >> RF_HIDESHIFT);
 
 		// Hiding is the opposite of visibility.
 		playerhide = (~playerhide) & 0x0F;
 	}
 
-	return ((UINT32)(playerhide) << RF_HIDESHIFT);
+	return ((uint32_t)(playerhide) << RF_HIDESHIFT);
 }
 
 #define NOSET luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly.", mobj_opt[field])
@@ -786,7 +786,7 @@ static int mobj_set(lua_State *L)
 		{
 			if (mo->sprite != SPR_PLAY && newsprite == SPR_PLAY) // switch to spr2
 			{
-				UINT8 outframe;
+				uint8_t outframe;
 				mo->sprite2 = P_KartFrameToSprite2(mo->skin, mo->frame, &outframe);
 				mo->frame = (mo->frame & ~FF_FRAMEMASK) | outframe;
 			}
@@ -802,19 +802,19 @@ static int mobj_set(lua_State *L)
 		// Check for SPR2
 		if (lua_compatmode && mo->sprite == SPR_PLAY)
 		{
-			UINT8 outframe;
-			UINT32 newframe = luaL_checkinteger(L, 3);
+			uint8_t outframe;
+			uint32_t newframe = luaL_checkinteger(L, 3);
 			mo->sprite2 = P_KartFrameToSprite2(mo->skin, newframe, &outframe);
 			mo->frame = (newframe & ~FF_FRAMEMASK) | outframe;
 		}
 		else
-			mo->frame = (UINT32)luaL_checkinteger(L, 3);
+			mo->frame = (uint32_t)luaL_checkinteger(L, 3);
 		break;
 	case mobj_sprite2:
-		mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), (UINT8)luaL_checkinteger(L, 3), mo->player);
+		mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), (uint8_t)luaL_checkinteger(L, 3), mo->player);
 		break;
 	case mobj_anim_duration:
-		mo->anim_duration = (UINT16)luaL_checkinteger(L, 3);
+		mo->anim_duration = (uint16_t)luaL_checkinteger(L, 3);
 		break;
 	case mobj_spritexscale:
 		mo->spritexscale = luaL_checkfixed(L, 3);
@@ -831,7 +831,7 @@ static int mobj_set(lua_State *L)
 	case mobj_floorspriteslope:
 		return NOSET;
 	case mobj_lightlevel:
-		mo->lightlevel = (INT16)luaL_checkinteger(L, 3);
+		mo->lightlevel = (int16_t)luaL_checkinteger(L, 3);
 		break;
 	case mobj_sectors:
 		return NOSETPOS;
@@ -906,7 +906,7 @@ static int mobj_set(lua_State *L)
 	}
 	case mobj_flags: // special handling for MF_NOBLOCKMAP and MF_NOSECTOR
 	{
-		UINT32 flags = luaL_checkinteger(L, 3);
+		uint32_t flags = luaL_checkinteger(L, 3);
 		if ((flags & (MF_NOBLOCKMAP|MF_NOSECTOR)) != (mo->flags & (MF_NOBLOCKMAP|MF_NOSECTOR)))
 		{
 			P_UnsetThingPosition(mo);
@@ -926,7 +926,7 @@ static int mobj_set(lua_State *L)
 	}
 	case mobj_flags2:
 	{
-		UINT32 flags2 = luaL_checkinteger(L, 3);
+		uint32_t flags2 = luaL_checkinteger(L, 3);
 		if (lua_compatmode)
 		{
 			if (flags2 & MF2_DONTDRAW)
@@ -944,8 +944,8 @@ static int mobj_set(lua_State *L)
 	}
 	case mobj_eflags:
 	{
-		UINT32 eflags = luaL_checkinteger(L, 3);
-		UINT32 visflags = 0;
+		uint32_t eflags = luaL_checkinteger(L, 3);
+		uint32_t visflags = 0;
 		if (lua_compatmode)
 		{
 			// eeeyup.
@@ -958,24 +958,24 @@ static int mobj_set(lua_State *L)
 				mo->renderflags |= visflags;
 			}
 		}
-		mo->eflags = (UINT16)eflags;
+		mo->eflags = (uint16_t)eflags;
 		break;
 	}
 	case mobj_renderflags:
-		mo->renderflags = (UINT32)luaL_checkinteger(L, 3);
+		mo->renderflags = (uint32_t)luaL_checkinteger(L, 3);
 		break;
 #if 0
 	case mobj_renderflags2:
-		mo->renderflags2 = (UINT32)luaL_checkinteger(L, 3);
+		mo->renderflags2 = (uint32_t)luaL_checkinteger(L, 3);
 		break;
 #endif
 	case mobj_skin: // set skin by name
 	{
-		INT32 i;
+		int32_t i;
 		char skin[SKINNAMESIZE+1]; // all skin names are limited to this length
 		strlcpy(skin, luaL_checkstring(L, 3), sizeof skin);
 		strlwr(skin); // all skin names are lowercase
-		UINT32 hash = HASH32(skin, strlen(skin));
+		uint32_t hash = HASH32(skin, strlen(skin));
 		for (i = 0; i < numskins; i++)
 		{
 			if (skins[i]->namehash != hash)
@@ -1000,7 +1000,7 @@ static int mobj_set(lua_State *L)
 		//break;
 	case mobj_color:
 	{
-		UINT16 newcolor = (UINT16)luaL_checkinteger(L,3);
+		uint16_t newcolor = (uint16_t)luaL_checkinteger(L,3);
 		if (newcolor >= numskincolors)
 			return luaL_error(L, "mobj.color %d out of range (0 - %d).", newcolor, numskincolors-1);
 		mo->color = newcolor;
@@ -1234,7 +1234,7 @@ static int mobj_set(lua_State *L)
 // args, i -> args[i]
 static int thingargs_get(lua_State *L)
 {
-	INT32 *args = *((INT32**)luaL_checkudata(L, 1, META_THINGARGS));
+	int32_t *args = *((int32_t**)luaL_checkudata(L, 1, META_THINGARGS));
 	int i = luaL_checkinteger(L, 2);
 	if (i < 0 || i >= NUM_MAPTHING_ARGS)
 		return luaL_error(L, LUA_QL("mapthing_t.args") " index cannot be %d", i);
@@ -1407,25 +1407,25 @@ static int mapthing_set(lua_State *L)
 	switch (field)
 	{
 		case mapthing_x:
-			mt->x = (INT16)luaL_checkinteger(L, 3);
+			mt->x = (int16_t)luaL_checkinteger(L, 3);
 			break;
 		case mapthing_y:
-			mt->y = (INT16)luaL_checkinteger(L, 3);
+			mt->y = (int16_t)luaL_checkinteger(L, 3);
 			break;
 		case mapthing_angle:
-			mt->angle = (INT16)luaL_checkinteger(L, 3);
+			mt->angle = (int16_t)luaL_checkinteger(L, 3);
 			break;
 		case mapthing_pitch:
-			mt->pitch = (INT16)luaL_checkinteger(L, 3);
+			mt->pitch = (int16_t)luaL_checkinteger(L, 3);
 			break;
 		case mapthing_roll:
-			mt->roll = (INT16)luaL_checkinteger(L, 3);
+			mt->roll = (int16_t)luaL_checkinteger(L, 3);
 			break;
 		case mapthing_type:
-			mt->type = (UINT16)luaL_checkinteger(L, 3);
+			mt->type = (uint16_t)luaL_checkinteger(L, 3);
 			break;
 		case mapthing_options:
-			mt->options = (UINT16)luaL_checkinteger(L, 3);
+			mt->options = (uint16_t)luaL_checkinteger(L, 3);
 			break;
 		case mapthing_scale:
 			mt->scale = luaL_checkfixed(L, 3);
@@ -1437,14 +1437,14 @@ static int mapthing_set(lua_State *L)
 			mt->spriteyscale = luaL_checkfixed(L, 3);
 			break;
 		case mapthing_z:
-			mt->z = (INT16)luaL_checkinteger(L, 3);
+			mt->z = (int16_t)luaL_checkinteger(L, 3);
 			break;
 		case mapthing_extrainfo:
 		{
-			INT32 extrainfo = luaL_checkinteger(L, 3);
+			int32_t extrainfo = luaL_checkinteger(L, 3);
 			if (extrainfo & ~15)
 				return luaL_error(L, "mapthing_t extrainfo set %d out of range (%d - %d)", extrainfo, 0, 15);
-			mt->extrainfo = (UINT8)extrainfo;
+			mt->extrainfo = (uint8_t)extrainfo;
 			break;
 		}
 		case mapthing_tid:

@@ -124,7 +124,7 @@ dboolean HWR_IsWireframeMode(void)
 	return (cv_glwireframe.value /*&& cv_debug*/);
 }
 
-dboolean HWR_OverrideObjectLightLevel(mobj_t *thing, INT32 *lightlevel)
+dboolean HWR_OverrideObjectLightLevel(mobj_t *thing, int32_t *lightlevel)
 {
 	if (R_ThingIsFullBright(thing))
 		*lightlevel = 255;
@@ -138,7 +138,7 @@ dboolean HWR_OverrideObjectLightLevel(mobj_t *thing, INT32 *lightlevel)
 	return true;
 }
 
-void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32 *lightlevel, dboolean model)
+void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, int32_t *lightlevel, dboolean model)
 {
 	const dboolean semibright = R_ThingIsSemiBright(spr->mobj);
 	const dboolean papersprite = R_ThingIsPaperSprite(spr->mobj);
@@ -191,13 +191,13 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, INT32
 	}
 }
 
-void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *colormap, const dboolean directional)
+void HWR_Lighting(FSurfaceInfo *Surface, int32_t light_level, extracolormap_t *colormap, const dboolean directional)
 {
 	RGBA_t poly_color, tint_color, fade_color;
 
 	poly_color.rgba = 0xFFFFFFFF;
-	tint_color.rgba = (colormap != NULL) ? (UINT32)colormap->rgba : GL_DEFAULTMIX;
-	fade_color.rgba = (colormap != NULL) ? (UINT32)colormap->fadergba : GL_DEFAULTFOG;
+	tint_color.rgba = (colormap != NULL) ? (uint32_t)colormap->rgba : GL_DEFAULTMIX;
+	fade_color.rgba = (colormap != NULL) ? (uint32_t)colormap->fadergba : GL_DEFAULTFOG;
 
 	// Crappy backup coloring if you can't do shaders
 	if (!HWR_UseShader())
@@ -231,9 +231,9 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 		green = (fade_color.s.green * fade_alpha) + (green * (1.0f - fade_alpha));
 		blue = (fade_color.s.blue * fade_alpha) + (blue * (1.0f - fade_alpha));
 
-		poly_color.s.red = (UINT8)red;
-		poly_color.s.green = (UINT8)green;
-		poly_color.s.blue = (UINT8)blue;
+		poly_color.s.red = (uint8_t)red;
+		poly_color.s.green = (uint8_t)green;
+		poly_color.s.blue = (uint8_t)blue;
 	}
 
 	// Shift the lightlevel for Palette rendering mode to replicate software´s limited 32 lightlevels
@@ -262,10 +262,10 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 		Surface->LightTableId = 0;
 }
 
-UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if this can work
+uint8_t HWR_FogBlockAlpha(int32_t light, extracolormap_t *colormap) // Let's see if this can work
 {
 	RGBA_t realcolor, surfcolor;
-	INT32 alpha;
+	int32_t alpha;
 
 	realcolor.rgba = (colormap != NULL) ? colormap->rgba : GL_DEFAULTMIX;
 
@@ -292,7 +292,7 @@ UINT8 HWR_FogBlockAlpha(INT32 light, extracolormap_t *colormap) // Let's see if 
 	return surfcolor.s.alpha;
 }
 
-FBITFIELD HWR_GetBlendModeFlag(INT32 ast)
+FBITFIELD HWR_GetBlendModeFlag(int32_t ast)
 {
 	switch (ast)
 	{
@@ -314,7 +314,7 @@ FBITFIELD HWR_GetBlendModeFlag(INT32 ast)
 	return 0;
 }
 
-UINT8 HWR_GetTranstableAlpha(INT32 transtablenum)
+uint8_t HWR_GetTranstableAlpha(int32_t transtablenum)
 {
 	transtablenum = max(min(transtablenum, tr_trans90), 0);
 
@@ -335,7 +335,7 @@ UINT8 HWR_GetTranstableAlpha(INT32 transtablenum)
 	return 0xff;
 }
 
-FBITFIELD HWR_SurfaceBlend(INT32 style, INT32 transtablenum, FSurfaceInfo *pSurf)
+FBITFIELD HWR_SurfaceBlend(int32_t style, int32_t transtablenum, FSurfaceInfo *pSurf)
 {
 	pSurf->PolyColor.s.alpha = 0xff;
 
@@ -349,7 +349,7 @@ FBITFIELD HWR_SurfaceBlend(INT32 style, INT32 transtablenum, FSurfaceInfo *pSurf
 	return HWR_GetBlendModeFlag(style);
 }
 
-FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf)
+FBITFIELD HWR_TranstableToAlpha(int32_t transtablenum, FSurfaceInfo *pSurf)
 {
 	if (!transtablenum)
 	{
@@ -445,14 +445,14 @@ void HWR_ResetClipper(void)
 // Tells the backend are shaders being used for 3d rendering.
 static void HWR_SetShaderState(void)
 {
-	GL_SetSpecialState(HWD_SET_SHADERS, (INT32)HWR_UseShader());
+	GL_SetSpecialState(HWD_SET_SHADERS, (int32_t)HWR_UseShader());
 }
 
 // prepare all transform related variables based on the current "frame"
 // (R_SetupFrame etc)
 void HWR_PrepareTransform(player_t *player, dboolean is_skybox)
 {
-	UINT8 viewnum = R_GetViewNumber();
+	uint8_t viewnum = R_GetViewNumber();
 	camera_t *thiscam = &camera[viewnum];
 	const float fpov = FIXED_TO_FLOAT(cv_fov[viewssnum].value+player->fovadd);
 
@@ -549,7 +549,7 @@ void HWR_RenderViewpoint(player_t *player, dboolean drawSkyTexture, dboolean is_
 
 	HWR_AddPrecipitationSprites();
 
-	HWR_RenderBSPNode((INT32)numnodes-1);
+	HWR_RenderBSPNode((int32_t)numnodes-1);
 	// restore portal clipping variables
 	gl_portalcullsector = NULL;
 	gl_portalclipline = NULL;
@@ -647,7 +647,7 @@ void HWR_RenderViewpoint(player_t *player, dboolean drawSkyTexture, dboolean is_
 		PS_START_TIMING(ps_hw_spritesorttime);
 	}
 
-	UINT32 count = HWR_SortVisSprites();
+	uint32_t count = HWR_SortVisSprites();
 
 	if (timing)
 		ps_numsprites.value.i = count;
@@ -742,7 +742,7 @@ void HWR_RenderPlayerView(void)
 
 	if (cv_glshaders.value)
 	{
-		GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (INT32)leveltime); // The water surface shader needs the leveltime.
+		GL_SetShaderInfo(HWD_SHADERINFO_LEVELTIME, (int32_t)leveltime); // The water surface shader needs the leveltime.
 
 		const angle_t light_angle = maplighting.angle - viewangle + ANGLE_90; // I fucking hate OGL's coordinate system
 		GL_SetShaderInfo(HWD_SHADERINFO_LIGHT_X, FINECOSINE(light_angle >> ANGLETOFINESHIFT));
@@ -856,7 +856,7 @@ static void HWR_TogglePaletteRendering(void)
 
 void HWR_LoadLevel(void)
 {
-	HWR_CreatePlanePolygons((INT32)numnodes - 1);
+	HWR_CreatePlanePolygons((int32_t)numnodes - 1);
 
 	// Build the sky dome
 	HWR_ClearSkyDome();
@@ -1186,7 +1186,7 @@ void transform(float *cx, float *cy, float *cz)
 	*cx *= gl_fovlud;
 }
 
-INT32 HWR_GetTextureUsed(void)
+int32_t HWR_GetTextureUsed(void)
 {
 	return GL_GetTextureUsed();
 }
@@ -1233,7 +1233,7 @@ void HWR_DoPostProcessor(player_t *player)
 	if (r_splitscreen) // Not supported in splitscreen - someone want to add support?
 		return;
 
-	//UINT8 viewnum = R_GetViewNumber(); // see above
+	//uint8_t viewnum = R_GetViewNumber(); // see above
 	//camera_t *thiscam = &camera[viewnum];
 	camera_t *thiscam = &camera[0];
 
@@ -1244,10 +1244,10 @@ void HWR_DoPostProcessor(player_t *player)
 		float v[SCREENVERTS][SCREENVERTS][2];
 		float disStart = (leveltime-1) + FIXED_TO_FLOAT(R_GetTimeFrac(RTF_LEVEL));
 
-		UINT8 x, y;
-		INT32 WAVELENGTH;
-		INT32 AMPLITUDE;
-		INT32 FREQUENCY;
+		uint8_t x, y;
+		int32_t WAVELENGTH;
+		int32_t AMPLITUDE;
+		int32_t FREQUENCY;
 
 		// Modifies the wave.
 		if (thiscam->postimgflags & POSTIMG_WATER)
@@ -1304,7 +1304,7 @@ void HWR_DrawIntermissionBG(void)
 static lumpnum_t wipelumpnum;
 
 // puts wipe lumpname in wipename[9]
-static dboolean HWR_WipeCheck(UINT8 wipenum, UINT8 scrnnum)
+static dboolean HWR_WipeCheck(uint8_t wipenum, uint8_t scrnnum)
 {
 	static char lumpname[9] = "FADEmmss";
 	size_t lsize;
@@ -1334,7 +1334,7 @@ static dboolean HWR_WipeCheck(UINT8 wipenum, UINT8 scrnnum)
 	return true;
 }
 
-void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
+void HWR_DoWipe(uint8_t wipenum, uint8_t scrnnum)
 {
 	if (cv_glscreentextures.value == 0)
 	{
@@ -1349,13 +1349,13 @@ void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum)
 	GL_DoScreenWipe(HWD_SCREENTEXTURE_WIPE_START, HWD_SCREENTEXTURE_WIPE_END);
 }
 
-void HWR_DoTintedWipe(UINT8 wipenum, UINT8 scrnnum)
+void HWR_DoTintedWipe(uint8_t wipenum, uint8_t scrnnum)
 {
 	// It does the same thing
 	HWR_DoWipe(wipenum, scrnnum);
 }
 
-void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
+void HWR_RenderVhsEffect(fixed_t upbary, fixed_t downbary, uint8_t updistort, uint8_t downdistort, uint8_t barsize)
 {
 	GL_RenderVhsEffect(upbary, downbary, updistort, downdistort, barsize);
 }

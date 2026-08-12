@@ -82,10 +82,10 @@ playersprite_t spr2defaults[NUMPLAYERSPRITES] = {
 
 // Doesn't work with g++, needs actionf_p1 (don't modify this comment)
 state_t states[NUMSTATES] = {0};
-UINT16 numstates;
+uint16_t numstates;
 
 mobjinfo_t mobjinfo[NUMMOBJTYPES] = {0};
-UINT16 nummobjtypes;
+uint16_t nummobjtypes;
 
 skincolor_t skincolors[MAXSKINCOLORS] = {0};
 
@@ -123,17 +123,17 @@ static const char *hardcodeitems =
 #undef _
 ;
 
-void P_ResetData(INT32 flags)
+void P_ResetData(int32_t flags)
 {
-	INT32 i;
-	UINT16 lumpnum;
+	int32_t i;
+	uint16_t lumpnum;
 	dboolean init = numwadfiles == 0;
 	const char *name;
 
 	// sprnames
 	if (flags & 1)
 	{
-		memset(used_spr,0,sizeof(UINT8) * ((NUMSPRITEFREESLOTS / 8) + 1));
+		memset(used_spr,0,sizeof(uint8_t) * ((NUMSPRITEFREESLOTS / 8) + 1));
 
 		// vanilla sprnames are immutable
 		for (i = SPR_FIRSTFREESLOT; i <= SPR_LASTFREESLOT; i++)

@@ -38,7 +38,7 @@ consvar_t cv_debugrender_visplanes = CVAR_INIT("debugrender_visplanes", "Off", C
 consvar_t cv_debugfinishline = CVAR_INIT ("debugfinishline", "Off", CV_CHEAT, CV_OnOff, nullptr);
 consvar_t cv_debugrender_freezebsp = CVAR_INIT ("debugrender_freezebsp", "Off", CV_CHEAT, CV_OnOff, nullptr);
 
-UINT32 debugrender_highlight;
+uint32_t debugrender_highlight;
 
 void R_CheckDebugHighlight(debugrender_highlight_t k)
 {
@@ -52,7 +52,7 @@ void R_CheckDebugHighlight(debugrender_highlight_t k)
 	}
 }
 
-INT32 R_AdjustLightLevel(INT32 light)
+int32_t R_AdjustLightLevel(int32_t light)
 {
 	constexpr fixed_t kRange = (LIGHTLEVELS - 1) * FRACUNIT;
 	const fixed_t adjust = FixedMul(cv_debugrender_contrast.value, kRange);
@@ -72,7 +72,7 @@ INT32 R_AdjustLightLevel(INT32 light)
 	return light / FRACUNIT;
 }
 
-UINT8 R_DebugLineColor(const line_t *ld)
+uint8_t R_DebugLineColor(const line_t *ld)
 {
 	const bool alt = (I_GetTime() % 70 < 35);
 

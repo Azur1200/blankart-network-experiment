@@ -65,7 +65,7 @@ void I_SetPalette(RGBA_t *palette);
 
 /**	\brief return the number of video modes
 */
-INT32 VID_NumModes(void);
+int32_t VID_NumModes(void);
 
 /**	\brief	The VID_GetModeForSize function
 
@@ -74,7 +74,7 @@ INT32 VID_NumModes(void);
 
 	\return	vidmode closest to w : h
 */
-INT32 VID_GetModeForSize(INT32 w, INT32 h);
+int32_t VID_GetModeForSize(int32_t w, int32_t h);
 
 
 /**	\brief	The VID_SetMode function
@@ -89,7 +89,7 @@ INT32 VID_GetModeForSize(INT32 w, INT32 h);
 
 	\return	current video mode
 */
-INT32 VID_SetMode(INT32 modenum);
+int32_t VID_SetMode(int32_t modenum);
 
 /**	\brief Checks the render state
 	\return	true if the renderer changed
@@ -110,7 +110,7 @@ void VID_CheckGLLoaded(rendermode_t oldrender);
 
 	\return	name of video mode
 */
-const char *VID_GetModeName(INT32 modenum);
+const char *VID_GetModeName(int32_t modenum);
 
 void VID_PrepareModeList(void);
 
@@ -136,7 +136,7 @@ void I_UpdateNoVsync(void);
 
 	\return	void
 */
-void I_WaitVBL(INT32 count);
+void I_WaitVBL(int32_t count);
 
 /**	\brief	The I_ReadScreen function
 
@@ -144,7 +144,7 @@ void I_WaitVBL(INT32 count);
 
 	\return	void
 */
-void I_ReadScreen(UINT8 * restrict scr, INT32 scale);
+void I_ReadScreen(uint8_t * restrict scr, int32_t scale);
 
 /**	\brief Start disk icon
 */
@@ -154,7 +154,7 @@ void I_BeginRead(void);
 */
 void I_EndRead(void);
 
-UINT32 I_GetRefreshRate(void);
+uint32_t I_GetRefreshRate(void);
 
 extern consvar_t cv_keyboardlayout;
 

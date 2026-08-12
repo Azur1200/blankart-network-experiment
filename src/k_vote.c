@@ -39,7 +39,7 @@
 #include "k_vote.h"
 #include "k_hud.h"
 
-static INT32 votetimer;
+static int32_t votetimer;
 
 static huddrawlist_h luahuddrawlist_vote;
 
@@ -48,7 +48,7 @@ static huddrawlist_h luahuddrawlist_vote;
 typedef struct
 {
     char str[62];
-    UINT8 gtc;
+    uint8_t gtc;
     const char *gts;
     dboolean encore;
 } y_votelvlinfo;
@@ -56,17 +56,17 @@ typedef struct
 // Clientside & splitscreen player info.
 typedef struct
 {
-    SINT8 selection;
+    int8_t selection;
 } y_voteplayer;
 
 typedef struct
 {
     y_voteplayer playerinfo[4];
-    UINT8 ranim;
-    UINT8 rtics;
-    UINT8 roffset;
-    UINT8 rsynctime;
-    UINT8 rendoff;
+    uint8_t ranim;
+    uint8_t rtics;
+    uint8_t roffset;
+    uint8_t rsynctime;
+    uint8_t rendoff;
     dboolean loaded;
 } y_voteclient;
 
@@ -75,11 +75,11 @@ votescreen_t VoteScreen = {0};
 
 static y_votelvlinfo levelinfo[13];
 static y_voteclient voteclient;
-static INT32 votetic;
-static INT32 lastvotetic;
-static INT32 voteendtic = -1;
-static SINT8 votemax = 3;
-static INT32 voterowmem = 0;
+static int32_t votetic;
+static int32_t lastvotetic;
+static int32_t voteendtic = -1;
+static int8_t votemax = 3;
+static int32_t voterowmem = 0;
 static dboolean rowchange = false;
 static dboolean votenotyetpicked;
 
@@ -105,7 +105,7 @@ void Y_VoteScreenCheck(void)
 	if (VoteScreen.timePerAnimFrame == 0)
 		VoteScreen.timePerAnimFrame = 2;
 
-	INT32 i = 1;
+	int32_t i = 1;
 
 	// check for lua vote background replacements
 	for (;;)
@@ -169,10 +169,10 @@ static void Y_VoteBackgroundDrawer(patch_t *patch)
 //
 static void Y_DrawLuaVoteScreenPatch(dboolean widePatch)
 {
-	INT32 nextframe = 0;
+	int32_t nextframe = 0;
 	patch_t *votebg = NULL;
 	char tempPrefix[6];
-	const INT32 tempfoundAnimLuaVoteFrames = ((widePatch ? VoteScreen.foundLuaVoteWideFrames : VoteScreen.foundLuaVoteFrames) - 1);
+	const int32_t tempfoundAnimLuaVoteFrames = ((widePatch ? VoteScreen.foundLuaVoteWideFrames : VoteScreen.foundLuaVoteFrames) - 1);
 
 	strcpy(tempPrefix, va("%s%s", VoteScreen.Prefix, (widePatch ? "W" : "C")));
 
@@ -218,7 +218,7 @@ static void Y_DrawVoteScreenPatch(void)
 	// non widescreen patch
 	votebg = VoteScreen.bgpatch;
 
-	UINT8 prefgametype = (g_voteLevels[0][1] & ~VOTEMODIFIER_ENCORE);
+	uint8_t prefgametype = (g_voteLevels[0][1] & ~VOTEMODIFIER_ENCORE);
 	const dboolean widebgreplaced = (prefgametype == GT_BATTLE) ? VoteScreen.replaced.widebattle : VoteScreen.replaced.widerace;
 	const dboolean bgreplaced = (prefgametype == GT_BATTLE) ? VoteScreen.replaced.battle : VoteScreen.replaced.race;
 
@@ -232,7 +232,7 @@ static void Y_DrawVoteScreenPatch(void)
 	Y_VoteBackgroundDrawer(votebg);
 }
 
-static fixed_t Y_CalculatePicScale(fixed_t picscale, INT32 hypoti)
+static fixed_t Y_CalculatePicScale(fixed_t picscale, int32_t hypoti)
 {
 	picscale *= 10;
 	picscale /= (40-hypoti);
@@ -248,7 +248,7 @@ static fixed_t Y_CalculatePicScale(fixed_t picscale, INT32 hypoti)
 	return picscale;
 }
 
-dboolean Y_PlayerIDCanVote(const UINT8 id)
+dboolean Y_PlayerIDCanVote(const uint8_t id)
 {
 	if (id >= MAXPLAYERS)
 	{
@@ -276,8 +276,8 @@ dboolean Y_PlayerIDCanVote(const UINT8 id)
 //
 void Y_VoteDrawer(void)
 {
-	INT32 rowval, i, px, lvls, x, picdiff, y = 0, height = 0;
-	UINT8 selected[12];
+	int32_t rowval, i, px, lvls, x, picdiff, y = 0, height = 0;
+	uint8_t selected[12];
 	fixed_t rubyheight = 0;
 	fixed_t scale;
 	patch_t *pic;
@@ -285,12 +285,12 @@ void Y_VoteDrawer(void)
 	fixed_t picwidth = 160;
 
 	// CEP: scale by screen hypotenuse for extra voting rows
-	INT32 vidx = vid.scaledwidth;
-	INT32 vidy = ((vid.height) / vid.dup);
+	int32_t vidx = vid.scaledwidth;
+	int32_t vidy = ((vid.height) / vid.dup);
 	fixed_t hypotf = 0;
-	INT32 hypoti = 0;
+	int32_t hypoti = 0;
 
-	INT32 numplayers = 0;
+	int32_t numplayers = 0;
 	dboolean highplayers = false;
 
 	// get the hypotenuse
@@ -307,7 +307,7 @@ void Y_VoteDrawer(void)
 	}
 
 	// divisor for rescaling
-	INT32 hypotdiv = max(10, (40-hypoti));
+	int32_t hypotdiv = max(10, (40-hypoti));
 
 	// readjust the picscale
 	picwidth *= Y_CalculatePicScale(FRACUNIT, hypoti);
@@ -335,7 +335,7 @@ void Y_VoteDrawer(void)
 	rowval = (votemax*3)+((votemax > 1) ? (votemax - 1) : 0);
 	for (i = 0; i < (rowval+1); i++) // First, we need to figure out the height of this thing...
 	{
-		UINT8 j;
+		uint8_t j;
 		selected[i] = 0; // Initialize
 
 		for (j = 0; j <= splitscreen; j++)
@@ -362,13 +362,13 @@ void Y_VoteDrawer(void)
 	for (i = 0; i < (rowval+1); i++)
 	{
 		const char *str;
-		UINT8 j, color;
+		uint8_t j, color;
 
 		// CEP: hack hell
-		INT32 scaledpicdiff = ((picdiff*10)/hypotdiv);
-		INT32 fillscale = 800/hypotdiv;
-		INT32 hypotmod = (hypoti % 5); // hypotenuse mod 5, rescale the bounding box
-		INT32 hypotadd = ((hypotmod > 1) ? (hypotmod/4) : hypotmod); // how much do we add the bounding box by?
+		int32_t scaledpicdiff = ((picdiff*10)/hypotdiv);
+		int32_t fillscale = 800/hypotdiv;
+		int32_t hypotmod = (hypoti % 5); // hypotenuse mod 5, rescale the bounding box
+		int32_t hypotadd = ((hypotmod > 1) ? (hypotmod/4) : hypotmod); // how much do we add the bounding box by?
 
 		// integer scaling makes me want to DIE
 		if (hypotmod == 3)
@@ -391,13 +391,13 @@ void Y_VoteDrawer(void)
 
 		if (selected[i])
 		{
-			UINT8 sizeadd = selected[i];
+			uint8_t sizeadd = selected[i];
 
 			for (j = 0; j <= splitscreen; j++) // another loop for drawing the selection backgrounds in the right order, grumble grumble..
 			{
-				INT32 handy = y;
-				UINT8 p;
-				UINT8 *colormap;
+				int32_t handy = y;
+				uint8_t p;
+				uint8_t *colormap;
 				patch_t *thiscurs;
 
 				if (voteclient.playerinfo[j].selection != i)
@@ -462,7 +462,7 @@ void Y_VoteDrawer(void)
 
 			if (levelinfo[i].gts)
 			{
-				INT32 w = V_ThinStringWidth(levelinfo[i].gts, V_SNAPTORIGHT)+1;
+				int32_t w = V_ThinStringWidth(levelinfo[i].gts, V_SNAPTORIGHT)+1;
 				w *= 10;
 				w /= (hypotdiv);
 
@@ -548,12 +548,12 @@ void Y_VoteDrawer(void)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		INT32 bigaddx = 60; INT32 bigaddy = 30;
-		INT32 smalladdx = 42; INT32 smalladdy = 18;
-		INT32 smallfaceheight = 0; INT32 bigfaceheight = 9;
-		INT32 smallrectheight = 18; INT32 bigrectheight = 27;
-		INT32 smallrubyoffset = 4<<FRACBITS;
-		INT32 smallpicoffset = 4<<FRACBITS;
+		int32_t bigaddx = 60; int32_t bigaddy = 30;
+		int32_t smalladdx = 42; int32_t smalladdy = 18;
+		int32_t smallfaceheight = 0; int32_t bigfaceheight = 9;
+		int32_t smallrectheight = 18; int32_t bigrectheight = 27;
+		int32_t smallrubyoffset = 4<<FRACBITS;
+		int32_t smallpicoffset = 4<<FRACBITS;
 
 		if (dedicated && i == 0) // While leaving blank spots for non-existent players is largely intentional, the first spot *always* being blank looks a tad silly :V
 			continue;
@@ -600,7 +600,7 @@ void Y_VoteDrawer(void)
 
 			if (players[i].skincolor)
 			{
-				UINT8 *colormap = R_GetTranslationColormap(players[i].skin, players[i].skincolor, GTC_CACHE);
+				uint8_t *colormap = R_GetTranslationColormap(players[i].skin, players[i].skincolor, GTC_CACHE);
 				dboolean hires = K_UseHighResPortraits();
 				patch_t *facerank = faceprefix[players[i].skin][hires ? FACE_WANTED : FACE_RANK];
 				fixed_t hiresscale = hires ? FRACUNIT/2 : FRACUNIT;
@@ -610,7 +610,7 @@ void Y_VoteDrawer(void)
 
 			if (!splitscreen && i == consoleplayer)
 			{
-				UINT8 cursorframe = (votetic / 4) % 8;
+				uint8_t cursorframe = (votetic / 4) % 8;
 				patch_t *highlight = W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE);
 				V_DrawScaledPatch(x+24+highlight->leftoffset, y+(highplayers ? smallfaceheight : bigfaceheight)+highlight->topoffset, V_SNAPTOLEFT, highlight);
 			}
@@ -627,7 +627,7 @@ void Y_VoteDrawer(void)
 
 	if (votetimer)
 	{
-		INT32 hilicol, tickdown = (votetimer+1)/TICRATE;
+		int32_t hilicol, tickdown = (votetimer+1)/TICRATE;
 
 		if (cons_menuhighlight.value)
 			hilicol = cons_menuhighlight.value;
@@ -653,22 +653,22 @@ void Y_VoteDrawer(void)
 //
 // Vote screen's selection stops moving
 //
-static void Y_FinalizeVote(const SINT8 level)
+static void Y_FinalizeVote(const int8_t level)
 {
 	nextmap = g_voteLevels[level][0];
 	deferencoremode = (levelinfo[level].encore);
 
 	if (gametype != g_voteLevels[level][1])
 	{
-		INT16 lastgametype = gametype;
+		int16_t lastgametype = gametype;
 		G_SetGametype(g_voteLevels[level][1]);
 		D_GameTypeChanged(lastgametype);
 		forceresetplayers = true;
 	}
 }
 
-SINT8 deferredlevel = 0;
-static void Y_VoteStops(const SINT8 pick, const SINT8 level)
+int8_t deferredlevel = 0;
+static void Y_VoteStops(const int8_t pick, const int8_t level)
 {
 	Y_FinalizeVote(level);
 
@@ -698,7 +698,7 @@ static void Y_VoteStops(const SINT8 pick, const SINT8 level)
 //
 void Y_VoteTicker(void)
 {
-	INT32 i, j;
+	int32_t i, j;
 	dboolean everyone_voted;
 
 	if (paused || P_AutoPause() || !voteclient.loaded)
@@ -742,8 +742,8 @@ void Y_VoteTicker(void)
 
 		if (voteendtic == -1)
 		{
-			UINT8 tempvotes[MAXPLAYERS];
-			UINT8 numvotes = 0;
+			uint8_t tempvotes[MAXPLAYERS];
+			uint8_t numvotes = 0;
 
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
@@ -818,9 +818,9 @@ void Y_VoteTicker(void)
 		{
 			for (i = 0; i <= splitscreen; i++)
 			{
-				UINT8 p;
+				uint8_t p;
 				dboolean pressed = false;
-				SINT8 votewrap = 0;
+				int8_t votewrap = 0;
 
 				if (votemax == 2)
 					votewrap = 3;
@@ -926,7 +926,7 @@ void Y_VoteTicker(void)
 						{
 #define VOTEROWSADDSONE ((cv_votemaxrows.value*3) + 1 + ((cv_votemaxrows.value > 1) ? (cv_votemaxrows.value - 1) : 0))
 							// bots vote randomly
-							INT32 rng = M_RandomKey(VOTEROWSADDSONE);
+							int32_t rng = M_RandomKey(VOTEROWSADDSONE);
 							for (j = 0; j < VOTEROWSADDSONE; j++)
 							{
 								rng++;
@@ -987,8 +987,8 @@ static void Y_InitVoteDrawing(void)
 
 void Y_StartVote(void)
 {
-	INT32 i = 0;
-	INT32 rowval = (cv_votemaxrows.value*3)+((cv_votemaxrows.value > 1) ? (cv_votemaxrows.value - 1) : 0);
+	int32_t i = 0;
+	int32_t rowval = (cv_votemaxrows.value*3)+((cv_votemaxrows.value > 1) ? (cv_votemaxrows.value - 1) : 0);
 
 	votemax = cv_votemaxrows.value; // can we please avoid SIGSEGVs
 	voterowmem = cv_votemaxrows.value; // this is just for the notif system
@@ -1116,7 +1116,7 @@ static void Y_UnloadVoteData(void)
 //
 // Y_SetupVoteFinish
 //
-void Y_SetupVoteFinish(SINT8 pick, SINT8 level)
+void Y_SetupVoteFinish(int8_t pick, int8_t level)
 {
 	if (!voteclient.loaded)
 		return;
@@ -1130,9 +1130,9 @@ void Y_SetupVoteFinish(SINT8 pick, SINT8 level)
 
 	if (g_pickedVote == VOTE_NOT_PICKED)
 	{
-		INT32 i;
-		SINT8 votecompare = VOTE_NOT_PICKED;
-		INT32 endtype = 0;
+		int32_t i;
+		int8_t votecompare = VOTE_NOT_PICKED;
+		int32_t endtype = 0;
 
 		voteclient.rsynctime = 0;
 

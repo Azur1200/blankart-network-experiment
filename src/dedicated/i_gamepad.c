@@ -25,7 +25,7 @@
 //
 // I_ShutdownController
 //
-void I_ShutdownController(UINT8 index)
+void I_ShutdownController(uint8_t index)
 {
 	(void)index;
 }
@@ -38,7 +38,7 @@ void I_ShutdownControllerSystem(void)
 //
 // I_InitController
 //
-void I_InitController(UINT8 playernum)
+void I_InitController(uint8_t playernum)
 {
 	(void)playernum;
 }
@@ -96,13 +96,13 @@ void I_UpdateControllerList(void)
 // I_GetControllerID
 // Cheat to get the device index for a game controller handle
 //
-INT32 I_GetControllerID(void *dev)
+int32_t I_GetControllerID(void *dev)
 {
 	(void)dev;
 	return -1;
 }
 
-INT32 I_GetControllerSlotfromID(INT32 id)
+int32_t I_GetControllerSlotfromID(int32_t id)
 {
 	(void)id;
 	return -1;
@@ -112,7 +112,7 @@ INT32 I_GetControllerSlotfromID(INT32 id)
 // I_GetControllerIDForPlayer
 // Cheat to get the device index for a specified player
 //
-INT32 I_GetControllerIDForPlayer(UINT8 pnum)
+int32_t I_GetControllerIDForPlayer(uint8_t pnum)
 {
 	(void)pnum;
 	return -1;
@@ -122,7 +122,7 @@ INT32 I_GetControllerIDForPlayer(UINT8 pnum)
 // I_NumControllers
 // Updates the number of connected controllers
 //
-INT32 I_NumControllers(void)
+int32_t I_NumControllers(void)
 {
 	return 0;
 }
@@ -131,7 +131,7 @@ INT32 I_NumControllers(void)
 // I_GetControllerName
 // joystick name is straight from the driver
 //
-const char *I_GetControllerName(INT32 joyid)
+const char *I_GetControllerName(int32_t joyid)
 {
 	(void)joyid;
 	return NULL;
@@ -141,43 +141,43 @@ const char *I_GetControllerName(INT32 joyid)
 // Controller Rumble and RGB LED stuff
 //
 
-dboolean I_ControllerSupportsRumble(INT32 playernum)
+dboolean I_ControllerSupportsRumble(int32_t playernum)
 {
 	(void)playernum;
 	return false;
 }
 
-dboolean I_ControllerSupportsIndicatorMono(INT32 playernum)
+dboolean I_ControllerSupportsIndicatorMono(int32_t playernum)
 {
 	(void)playernum;
 	return false;
 }
 
-dboolean I_ControllerSupportsIndicatorColor(INT32 playernum)
+dboolean I_ControllerSupportsIndicatorColor(int32_t playernum)
 {
 	(void)playernum;
 	return false;
 }
 
-dboolean I_ControllerSupportsIndicatorPlayer(INT32 playernum)
+dboolean I_ControllerSupportsIndicatorPlayer(int32_t playernum)
 {
 	(void)playernum;
 	return false;
 }
 
-dboolean I_ControllerSupportsSensorAccelerometer(INT32 playernum)
+dboolean I_ControllerSupportsSensorAccelerometer(int32_t playernum)
 {
 	(void)playernum;
 	return false;
 }
 
-dboolean I_ControllerSupportsSensorGyro(INT32 playernum)
+dboolean I_ControllerSupportsSensorGyro(int32_t playernum)
 {
 	(void)playernum;
 	return false;
 }
 
-void I_ControllerRumble(INT32 playernum, UINT16 low_strength, UINT16 high_strength, UINT32 duration)
+void I_ControllerRumble(int32_t playernum, uint16_t low_strength, uint16_t high_strength, uint32_t duration)
 {
 	(void)playernum;
 	(void)low_strength;
@@ -185,7 +185,7 @@ void I_ControllerRumble(INT32 playernum, UINT16 low_strength, UINT16 high_streng
 	(void)duration;
 }
 
-void I_SetControllerIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT8 blue)
+void I_SetControllerIndicatorColor(int32_t playernum, uint8_t red, uint8_t green, uint8_t blue)
 {
 	(void)playernum;
 	(void)red;
@@ -193,13 +193,13 @@ void I_SetControllerIndicatorColor(INT32 playernum, UINT8 red, UINT8 green, UINT
 	(void)blue;
 }
 
-void I_SetControllerIndicatorMonochrome(INT32 playernum, UINT8 brightness)
+void I_SetControllerIndicatorMonochrome(int32_t playernum, uint8_t brightness)
 {
 	(void)playernum;
 	(void)brightness;
 }
 
-void I_SetControllerPlayerNumber(INT32 playernum, INT32 number)
+void I_SetControllerPlayerNumber(int32_t playernum, int32_t number)
 {
 	(void)playernum;
 	(void)number;

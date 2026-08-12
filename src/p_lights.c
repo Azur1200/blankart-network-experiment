@@ -46,12 +46,12 @@ void P_RemoveLighting(sector_t *sector)
   */
 void T_FireFlicker(fireflicker_t *flick)
 {
-	INT16 amount;
+	int16_t amount;
 
 	if (--flick->count)
 		return;
 
-	amount = (INT16)((UINT8)(P_RandomByte(PR_LIGHTS) & 3) * 16);
+	amount = (int16_t)((uint8_t)(P_RandomByte(PR_LIGHTS) & 3) * 16);
 
 	if (flick->sector->lightlevel - amount < flick->minlight)
 		flick->sector->lightlevel = flick->minlight;
@@ -69,7 +69,7 @@ void T_FireFlicker(fireflicker_t *flick)
   * \param length    Four times the number of tics between flickers.
   * \sa T_FireFlicker
   */
-fireflicker_t *P_SpawnAdjustableFireFlicker(sector_t *sector, INT16 lighta, INT16 lightb, INT32 length)
+fireflicker_t *P_SpawnAdjustableFireFlicker(sector_t *sector, int16_t lighta, int16_t lightb, int32_t length)
 {
 	fireflicker_t *flick;
 
@@ -119,7 +119,7 @@ void T_LightningFlash(lightflash_t *flash)
 
 	if (flash->sector->lightlevel <= flash->minlight)
 	{
-		flash->sector->lightlevel = (INT16)flash->minlight;
+		flash->sector->lightlevel = (int16_t)flash->minlight;
 		P_RemoveLighting(flash->sector);
 	}
 }
@@ -131,7 +131,7 @@ void T_LightningFlash(lightflash_t *flash)
   */
 void P_SpawnLightningFlash(sector_t *sector)
 {
-	INT32 minlight;
+	int32_t minlight;
 	lightflash_t *flash;
 
 	minlight = sector->lightlevel;
@@ -161,7 +161,7 @@ void P_SpawnLightningFlash(sector_t *sector)
 	flash->sector = sector;
 	flash->maxlight = 255;
 	flash->minlight = minlight;
-	sector->lightlevel = (INT16)flash->maxlight;
+	sector->lightlevel = (int16_t)flash->maxlight;
 
 	sector->lightingdata = flash;
 }
@@ -207,7 +207,7 @@ void T_StrobeFlash(strobe_t *flash)
   *                   the strobe flash is random.
   * \sa T_StrobeFlash
   */
-strobe_t *P_SpawnAdjustableStrobeFlash(sector_t *sector, INT16 lighta, INT16 lightb, INT32 darktime, INT32 brighttime, dboolean inSync)
+strobe_t *P_SpawnAdjustableStrobeFlash(sector_t *sector, int16_t lighta, int16_t lightb, int32_t darktime, int32_t brighttime, dboolean inSync)
 {
 	strobe_t *flash;
 
@@ -279,7 +279,7 @@ void T_Glow(glow_t *g)
   * \param length    The speed of the effect.
   * \sa T_Glow
   */
-glow_t *P_SpawnAdjustableGlowingLight(sector_t *sector, INT16 lighta, INT16 lightb, INT32 length)
+glow_t *P_SpawnAdjustableGlowingLight(sector_t *sector, int16_t lighta, int16_t lightb, int32_t length)
 {
 	glow_t *g;
 
@@ -295,7 +295,7 @@ glow_t *P_SpawnAdjustableGlowingLight(sector_t *sector, INT16 lighta, INT16 ligh
 	g->maxlight = max(lighta, lightb);
 	g->thinker.function = (actionf_p1)T_Glow;
 	g->direction = 1;
-	g->speed = (INT16)(length/4);
+	g->speed = (int16_t)(length/4);
 	if (g->speed > (g->maxlight - g->minlight)/2) // don't make it ridiculous speed
 		g->speed = (g->maxlight - g->minlight)/2;
 
@@ -328,7 +328,7 @@ glow_t *P_SpawnAdjustableGlowingLight(sector_t *sector, INT16 lighta, INT16 ligh
   * \param ticbased  Use a specific duration for the fade, defined by speed
   * \sa T_LightFade
   */
-void P_FadeLightBySector(sector_t *sector, INT32 destvalue, INT32 speed, dboolean ticbased)
+void P_FadeLightBySector(sector_t *sector, int32_t destvalue, int32_t speed, dboolean ticbased)
 {
 	lightlevel_t *ll;
 
@@ -368,10 +368,10 @@ void P_FadeLightBySector(sector_t *sector, INT32 destvalue, INT32 speed, dboolea
 	}
 }
 
-void P_FadeLight(INT16 tag, INT32 destvalue, INT32 speed, dboolean ticbased, dboolean force, dboolean relative)
+void P_FadeLight(int16_t tag, int32_t destvalue, int32_t speed, dboolean ticbased, dboolean force, dboolean relative)
 {
-	INT32 i;
-	INT32 realdestvalue;
+	int32_t i;
+	int32_t realdestvalue;
 
 	// search all sectors for ones with tag
 	TAG_ITER_SECTORS(tag, i)

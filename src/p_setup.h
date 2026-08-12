@@ -26,19 +26,19 @@ extern "C" {
 #endif
 
 // map hash, sent to players via PT_SERVERINFO
-extern UINT64 maphash;
+extern uint64_t maphash;
 
 extern consvar_t cv_writetextmap_includemappatch;
 
 // Player spawn spots for deathmatch.
 #define MAX_DM_STARTS 64
 extern mapthing_t *deathmatchstarts[MAX_DM_STARTS];
-extern INT32 numdmstarts, numcoopstarts, numredctfstarts, numbluectfstarts;
+extern int32_t numdmstarts, numcoopstarts, numredctfstarts, numbluectfstarts;
 
 extern dboolean levelloading;
 extern dboolean levelloaded; // is there an actual level loaded? for intermission
                             // (i.e. is it safe to call D_RenderLevel?)
-extern UINT8 levelfadecol;
+extern uint8_t levelfadecol;
 
 extern lumpnum_t lastloadedmaplumpnum; // for comparative savegame
 extern virtres_t *curmapvirt;
@@ -71,15 +71,15 @@ struct levelflat_t
 {
 	char name[9]; // resource name from wad
 	terrain_t *terrain;
-	UINT8 type;
-	INT32 texture_id;
+	uint8_t type;
+	int32_t texture_id;
 };
 
 extern size_t numlevelflats;
 extern levelflat_t *levelflats;
-INT32 P_AddLevelFlat(const char *flatname, levelflat_t *levelflat);
-INT32 P_AddLevelFlatRuntime(const char *flatname);
-INT32 P_CheckLevelFlat(const char *flatname);
+int32_t P_AddLevelFlat(const char *flatname, levelflat_t *levelflat);
+int32_t P_AddLevelFlatRuntime(const char *flatname);
+int32_t P_CheckLevelFlat(const char *flatname);
 
 extern size_t nummapthings;
 extern mapthing_t *mapthings;
@@ -98,7 +98,7 @@ dboolean P_AddWadFile(const char *wadfilename, wadcompat_t compat, dboolean loca
 
 #define MAPRET_ADDED (1)
 #define MAPRET_CURRENTREPLACED (1<<1)
-UINT8 P_InitMapData(dboolean existingmapheaders);
+uint8_t P_InitMapData(dboolean existingmapheaders);
 extern lumpnum_t wadnamelump;
 extern mapnum_t wadnamemap;
 #define WADNAMECHECK(name) (!strncmp(name, "WADNAME", 7))
@@ -106,7 +106,7 @@ extern mapnum_t wadnamemap;
 // WARNING: The following functions should be grouped as follows:
 // any amount of PartialAdds followed by MultiSetups until returned true,
 // as soon as possible.
-UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat, dboolean local);
+uint16_t P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat, dboolean local);
 // Run a single stage of multisetup, or all of them if fullsetup set.
 //   fullsetup true: run everything
 //   otherwise
@@ -120,16 +120,16 @@ dboolean P_MultiSetupWadFiles(dboolean fullsetup);
 //   if negative, no PartialAdds done since last MultiSetup
 //   if 0, partial adds done but MultiSetup not called yet
 //   if positive, setup's partway done
-SINT8 P_PartialAddGetStage(void);
-extern UINT16 partadd_earliestfile;
+int8_t P_PartialAddGetStage(void);
+extern uint16_t partadd_earliestfile;
 
 dboolean P_RunSOC(const char *socfilename);
-void P_LoadSoundsRange(UINT16 wadnum, UINT16 first, UINT16 num);
-void P_LoadMusicsRange(UINT16 wadnum, UINT16 first, UINT16 num);
+void P_LoadSoundsRange(uint16_t wadnum, uint16_t first, uint16_t num);
+void P_LoadMusicsRange(uint16_t wadnum, uint16_t first, uint16_t num);
 //void P_WriteThings(void);
 void P_UpdateSegLightOffset(seg_t *li);
-dboolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector);
-dboolean P_ApplyLightOffsetFine(UINT8 baselightlevel, const sector_t *sector);
+dboolean P_ApplyLightOffset(uint8_t baselightnum, const sector_t *sector);
+dboolean P_ApplyLightOffsetFine(uint8_t baselightlevel, const sector_t *sector);
 dboolean P_SectorUsesDirectionalLighting(const sector_t *sector);
 size_t P_PrecacheLevelFlats(void);
 void P_AllocMapHeader(mapnum_t i);

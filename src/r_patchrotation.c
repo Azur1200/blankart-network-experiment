@@ -65,11 +65,11 @@ static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer, db
 	angle_t viewingAngle = R_PointToAnglePlayer(viewPlayer, player->mo->x, player->mo->y);
 	angle_t angleDelta = (viewingAngle - player->mo->angle);
 
-	INT32 nulltilt = (K_NullDriftTiltEnabled()) ? FixedAngle(player->karttilt) : 0;
-	INT32 aiztilt = (cv_sliptidetilt.value) ? player->aizdrifttilt : 0;
+	int32_t nulltilt = (K_NullDriftTiltEnabled()) ? FixedAngle(player->karttilt) : 0;
+	int32_t aiztilt = (cv_sliptidetilt.value) ? player->aizdrifttilt : 0;
 
 	dboolean nullBeforeSlip = (abs(aiztilt) < abs(nulltilt));
-	INT32 liftsign = ((nullBeforeSlip) ? intsign(nulltilt) : intsign(aiztilt));
+	int32_t liftsign = ((nullBeforeSlip) ? intsign(nulltilt) : intsign(aiztilt));
 
 	// Sliptide tilt: Nulldrifts take priority if and ONLY if they're the larger value compared to sliptides.
 	angle_t sliptideLift = max(abs(aiztilt), abs(nulltilt)) * liftsign;
@@ -138,9 +138,9 @@ angle_t R_SpriteRotationAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstat
 	return (rollOrPitch + R_ModelRotationAngle(mobj, viewPlayer, fliptilt));
 }
 
-INT32 R_GetRollAngle(angle_t rollangle)
+int32_t R_GetRollAngle(angle_t rollangle)
 {
-	INT32 ra = AngleFixed(rollangle)>>FRACBITS;
+	int32_t ra = AngleFixed(rollangle)>>FRACBITS;
 #if (ROTANGDIFF > 1)
 	ra += (ROTANGDIFF/2);
 #endif
@@ -174,8 +174,8 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 	fixed_t xoffs, yoffs, xpiv, ypiv;
 
 	// final offsets
-	INT16 visx, visy, visz;
-	INT16 vxpiv, vypiv;
+	int16_t visx, visy, visz;
+	int16_t vxpiv, vypiv;
 
 	// visual rotation
 	angle_t visrollang;
@@ -217,12 +217,12 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 
 	// get visual positions
 	visz = visy = visx = 0;
-	visz = (INT16)(-(mobj->bakezoff / FRACUNIT));
-	visx = (INT16)(FixedMul((yoffs / FRACUNIT), rollMul));
-	visy = (INT16)(FixedMul((xoffs / FRACUNIT), pitchMul));
+	visz = (int16_t)(-(mobj->bakezoff / FRACUNIT));
+	visx = (int16_t)(FixedMul((yoffs / FRACUNIT), rollMul));
+	visy = (int16_t)(FixedMul((xoffs / FRACUNIT), pitchMul));
 
-	vxpiv = (INT16)(FixedMul((ypiv / FRACUNIT), rollMul));
-	vypiv = (INT16)(FixedMul((xpiv / FRACUNIT), pitchMul));
+	vxpiv = (int16_t)(FixedMul((ypiv / FRACUNIT), rollMul));
+	vypiv = (int16_t)(FixedMul((xpiv / FRACUNIT), pitchMul));
 
 	// rotate by rollangle
 	finx = (visx + visy);
@@ -262,7 +262,7 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 
 #undef VISROTMUL
 
-patch_t *Patch_GetRotated(patch_t *patch, INT32 angle, dboolean flip)
+patch_t *Patch_GetRotated(patch_t *patch, int32_t angle, dboolean flip)
 {
 	rotsprite_t *rotsprite = patch->rotated;
 	if (angle < 1 || angle >= ROTANGLES)
@@ -279,7 +279,7 @@ patch_t *Patch_GetRotated(patch_t *patch, INT32 angle, dboolean flip)
 
 	if (rotsprite->patches[angle] == NULL)
 	{
-		INT32 xpivot = 0, ypivot = 0;
+		int32_t xpivot = 0, ypivot = 0;
 
 		if (patch->alignflags & PATCHALIGN_USEPIVOTS)
 		{
@@ -302,12 +302,12 @@ patch_t *Patch_GetRotatedSprite(
 	spriteframe_t *sprite,
 	size_t frame, size_t spriteangle,
 	dboolean flip, dboolean adjustfeet,
-	void *info, INT32 rotationangle)
+	void *info, int32_t rotationangle)
 {
 	rotsprite_t *rotsprite;
 	spriteinfo_t *sprinfo = (spriteinfo_t *)info;
-	INT32 idx = rotationangle;
-	UINT8 type = (adjustfeet ? 1 : 0);
+	int32_t idx = rotationangle;
+	uint8_t type = (adjustfeet ? 1 : 0);
 
 	if (rotationangle < 1 || rotationangle >= ROTANGLES)
 		return NULL;
@@ -326,7 +326,7 @@ patch_t *Patch_GetRotatedSprite(
 	if (rotsprite->patches[idx] == NULL)
 	{
 		patch_t *patch;
-		INT32 xpivot = 0, ypivot = 0;
+		int32_t xpivot = 0, ypivot = 0;
 		lumpnum_t lump = sprite->lumppat[spriteangle];
 
 		if (lump == LUMPERROR)
@@ -366,14 +366,14 @@ patch_t *Patch_GetRotatedSprite(
 	return rotsprite->patches[idx];
 }
 
-void Patch_Rotate(patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, dboolean flip)
+void Patch_Rotate(patch_t *patch, int32_t angle, int32_t xpivot, int32_t ypivot, dboolean flip)
 {
 	if (patch->rotated == NULL)
 		patch->rotated = RotatedPatch_Create(ROTANGLES);
 	RotatedPatch_DoRotation(patch->rotated, patch, angle, xpivot, ypivot, flip);
 }
 
-rotsprite_t *RotatedPatch_Create(INT32 numangles)
+rotsprite_t *RotatedPatch_Create(int32_t numangles)
 {
 	rotsprite_t *rotsprite = Z_Calloc(sizeof(rotsprite_t), PU_STATIC, NULL);
 	rotsprite->angles = numangles;
@@ -382,9 +382,9 @@ rotsprite_t *RotatedPatch_Create(INT32 numangles)
 }
 
 static void RotatedPatch_CalculateDimensions(
-	INT32 width, INT32 height,
+	int32_t width, int32_t height,
 	fixed_t ca, fixed_t sa,
-	INT32 *newwidth, INT32 *newheight)
+	int32_t *newwidth, int32_t *newheight)
 {
 	fixed_t fixedwidth = (width * FRACUNIT);
 	fixed_t fixedheight = (height * FRACUNIT);
@@ -403,27 +403,27 @@ static void RotatedPatch_CalculateDimensions(
 	*newheight = max(height, max(h1, h2));
 }
 
-void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle, INT32 xpivot, INT32 ypivot, dboolean flip)
+void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, int32_t angle, int32_t xpivot, int32_t ypivot, dboolean flip)
 {
 	patch_t *rotated;
-	UINT16 *rawdst, *rawconv;
+	uint16_t *rawdst, *rawconv;
 	size_t size;
 	pictureflags_t bflip = (flip) ? PICFLAGS_XFLIP : 0;
 
-	INT32 width = patch->width;
-	INT32 height = patch->height;
-	INT32 leftoffset = patch->leftoffset;
-	INT32 newwidth, newheight;
+	int32_t width = patch->width;
+	int32_t height = patch->height;
+	int32_t leftoffset = patch->leftoffset;
+	int32_t newwidth, newheight;
 
 	fixed_t ca = rollcosang[angle];
 	fixed_t sa = rollsinang[angle];
 	fixed_t xcenter, ycenter;
-	INT32 idx = angle;
-	INT32 x, y;
-	INT32 sx, sy;
-	INT32 dx, dy;
-	INT32 ox, oy;
-	INT32 minx, miny, maxx, maxy;
+	int32_t idx = angle;
+	int32_t x, y;
+	int32_t sx, sy;
+	int32_t dx, dy;
+	int32_t ox, oy;
+	int32_t minx, miny, maxx, maxy;
 
 	// Don't cache angle = 0
 	if (angle < 1 || angle >= ROTANGLES)
@@ -460,7 +460,7 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 	size = (newwidth * newheight);
 	if (!size)
 		size = (width * height);
-	rawdst = Z_Calloc(size * sizeof(UINT16), PU_STATIC, NULL);
+	rawdst = Z_Calloc(size * sizeof(uint16_t), PU_STATIC, NULL);
 
 	for (dy = 0; dy < newheight; dy++)
 	{
@@ -479,7 +479,7 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 				void *input = Picture_GetPatchPixel(patch, PICFMT_PATCH, sx, sy, bflip);
 				if (input != NULL)
 				{
-					rawdst[(dy * newwidth) + dx] = (0xFF00 | (*(UINT8 *)input));
+					rawdst[(dy * newwidth) + dx] = (0xFF00 | (*(uint8_t *)input));
 					if (dx < minx)
 						minx = dx;
 					if (dy < miny)
@@ -500,10 +500,10 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 
 	if ((unsigned)(width * height) > size)
 	{
-		UINT16 *src, *dest;
+		uint16_t *src, *dest;
 
 		size = (width * height);
-		rawconv = Z_Calloc(size * sizeof(UINT16), PU_STATIC, NULL);
+		rawconv = Z_Calloc(size * sizeof(uint16_t), PU_STATIC, NULL);
 
 		src = &rawdst[(miny * newwidth) + minx];
 		dest = rawconv;
@@ -511,7 +511,7 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, INT32 angle
 
 		while (dy--)
 		{
-			memcpy(dest, src, width * sizeof(UINT16));
+			memcpy(dest, src, width * sizeof(uint16_t));
 			dest += width;
 			src += newwidth;
 		}

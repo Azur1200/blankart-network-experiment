@@ -125,7 +125,7 @@ consvar_t cv_chat_showlimit = CVAR_INIT ("chat_showlimit", "Yes", CV_SAVE, CV_Ye
 static char cechotext[1024];
 static tic_t cechotimer = 0;
 static tic_t cechoduration = 5*TICRATE;
-static INT32 cechoflags = 0;
+static int32_t cechoflags = 0;
 
 static tic_t resynch_ticker = 0;
 
@@ -141,11 +141,11 @@ static void Command_Sayto_f(void);
 static void Command_Sayteam_f(void);
 static void Command_CSay_f(void);
 static void Command_Shout(void);
-static void Got_Saycmd(UINT8 **p, INT32 playernum);
+static void Got_Saycmd(uint8_t **p, int32_t playernum);
 
 void HU_LoadGraphics(void)
 {
-	INT32 i;
+	int32_t i;
 
 	if (dedicated)
 		return;
@@ -288,7 +288,7 @@ patch_t *HU_UpdateOrBlankPatch(patch_t **user, dboolean required, const char *fo
 
 	if (user && partadd_earliestfile != UINT16_MAX)
 	{
-		UINT16 fileref = numwadfiles;
+		uint16_t fileref = numwadfiles;
 		lump = INT16_MAX;
 
 		while ((lump == INT16_MAX) && ((--fileref) >= partadd_earliestfile))
@@ -355,12 +355,12 @@ void HU_Start(void)
 
 // EVERY CHANGE IN THIS SCRIPT IS LOL XD! BY VINCYTM
 
-static UINT32 chat_nummsg_log = 0;
-static UINT32 chat_nummsg_min = 0;
-static UINT32 chat_scroll = 0;
+static uint32_t chat_nummsg_log = 0;
+static uint32_t chat_nummsg_min = 0;
+static uint32_t chat_scroll = 0;
 static tic_t chat_scrolltime = 0;
 
-static UINT32 chat_maxscroll = 0; // how far can we scroll?
+static uint32_t chat_maxscroll = 0; // how far can we scroll?
 
 //static chatmsg_t chat_mini[CHAT_BUFSIZE]; // Display the last few messages sent.
 //static chatmsg_t chat_log[CHAT_BUFSIZE]; // Keep every message sent to us in memory so we can scroll n shit, it's cool.
@@ -373,7 +373,7 @@ static dboolean chat_scrollmedown = false; // force instant scroll down on the c
 
 // remove text from minichat table
 
-static INT16 addy = 0; // use this to make the messages scroll smoothly when one fades away
+static int16_t addy = 0; // use this to make the messages scroll smoothly when one fades away
 
 static void HU_removeChatText_Mini(void)
 {
@@ -450,7 +450,7 @@ void HU_AddChatText(const char *text, dboolean playsound)
   * \author Graue <graue@oceanbase.org>
   */
 
-void DoSayCommand(char *message, SINT8 target, UINT8 flags, UINT8 source)
+void DoSayCommand(char *message, int8_t target, uint8_t flags, uint8_t source)
 {
 	char buf[2 + HU_MAXMSGLEN + 1];
 	char *msg = &buf[3];
@@ -494,7 +494,7 @@ static void Command_Say_f(void)
   */
 static void Command_Sayto_f(void)
 {
-	INT32 target;
+	int32_t target;
 
 	if (COM_Argc() < 3)
 	{
@@ -510,7 +510,7 @@ static void Command_Sayto_f(void)
 	}
 	target++; // Internally we use 0 to 31, but say command uses 1 to 32.
 
-	DoSayPacketFromCommand((SINT8)target, 2, 0);
+	DoSayPacketFromCommand((int8_t)target, 2, 0);
 }
 
 /** Send a message to members of the player's team.
@@ -578,10 +578,10 @@ static void Command_Shout(void)
   * \sa DoSayPacket
   * \author Graue <graue@oceanbase.org>
   */
-static void Got_Saycmd(UINT8 **p, INT32 playernum)
+static void Got_Saycmd(uint8_t **p, int32_t playernum)
 {
-	SINT8 target;
-	UINT8 flags;
+	int8_t target;
+	uint8_t flags;
 	const char *dispname;
 	char *msg;
 	dboolean action = false;
@@ -593,7 +593,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 	if (playernum != serverplayer)
 		return;
 
-	target = READSINT8(*p);
+	target = READINT8(*p);
 	flags = READUINT8(*p);
 	playernum = READUINT8(*p);
 	msg = (char *)*p;
@@ -665,7 +665,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 		{
 			if (cv_shoutcolor.value == -1)
 			{
-				UINT16 chatcolor = skincolors[players[playernum].skincolor].chatcolor;
+				uint16_t chatcolor = skincolors[players[playernum].skincolor].chatcolor;
 
 				if (chatcolor > V_TANMAP)
 				{
@@ -704,7 +704,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 		}
 		else
 		{
-			UINT16 chatcolor = skincolors[players[playernum].skincolor].chatcolor;
+			uint16_t chatcolor = skincolors[players[playernum].skincolor].chatcolor;
 
 			if (chatcolor > V_TANMAP)
 			{
@@ -826,7 +826,7 @@ void HU_TickSongCredits(void)
 
 	if (cursongcredit.anim > 0)
 	{
-		INT32 len = V_ThinStringWidth(cursongcredit.text, V_ALLOWLOWERCASE|V_6WIDTHSPACE);
+		int32_t len = V_ThinStringWidth(cursongcredit.text, V_ALLOWLOWERCASE|V_6WIDTHSPACE);
 		fixed_t destx = (len+7) * FRACUNIT;
 
 		if (cursongcredit.trans > 0)
@@ -919,7 +919,7 @@ void HU_Ticker(void)
 static dboolean teamtalk = false;
 static dboolean justscrolleddown;
 static dboolean justscrolledup;
-static INT16 typelines = 1; // number of drawfill lines we need when drawing the chat. it's some weird hack and might be one frame off but I'm lazy to make another loop.
+static int16_t typelines = 1; // number of drawfill lines we need when drawing the chat. it's some weird hack and might be one frame off but I'm lazy to make another loop.
 // It's up here since it has to be reset when we open the chat.
 
 static dboolean HU_chatboxContainsOnlySpaces(void)
@@ -938,7 +938,7 @@ static void HU_sendChatMessage(void)
 	char buf[2 + HU_MAXMSGLEN + 1];
 	char *msg = &buf[2];
 	size_t ci;
-	INT32 target = 0;
+	int32_t target = 0;
 
 	// if our message was nothing but spaces, don't send it.
 	if (HU_chatboxContainsOnlySpaces())
@@ -957,7 +957,7 @@ static void HU_sendChatMessage(void)
 
 	if (strlen(msg) > 4 && strnicmp(msg, "/pm", 3) == 0) // used /pm
 	{
-		INT32 spc = 1; // used if playernum[1] is a space.
+		int32_t spc = 1; // used if playernum[1] is a space.
 		char playernum[3];
 		const char *newmsg;
 
@@ -1037,7 +1037,7 @@ dboolean HU_Responder(event_t *ev)
 
 	if (ev->data1 >= NUMKEYS)
 	{
-		INT32 i;
+		int32_t i;
 		for (i = 0; i < num_gamecontrols; i++)
 		{
 			if (G_ControlBoundToKey(0, i, ev->data1, false))
@@ -1080,7 +1080,7 @@ dboolean HU_Responder(event_t *ev)
 	}
 	else // if chat_on
 	{
-		INT32 c = (INT32)ev->data1;
+		int32_t c = (int32_t)ev->data1;
 
 		// Ignore modifier keys
 		// Note that we do this here so users can still set
@@ -1143,13 +1143,13 @@ dboolean HU_Responder(event_t *ev)
 // This is a muuuch better method than V_WORDWRAP.
 // again stolen and modified a bit from video.c, don't mind me, will need to rearrange this one day.
 // this one is simplified for the chat drawer.
-static char *CHAT_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
+static char *CHAT_WordWrap(int32_t x, int32_t w, int32_t option, const char *string)
 {
-	INT32 c;
+	int32_t c;
 	size_t chw, i, lastusablespace = 0;
 	size_t slen;
 	char *newstring = Z_StrDup(string);
-	INT32 spacewidth = (vid.width < 640) ? 8 : 4, charwidth = (vid.width < 640) ? 8 : 4;
+	int32_t spacewidth = (vid.width < 640) ? 8 : 4, charwidth = (vid.width < 640) ? 8 : 4;
 	emote_t *emote = NULL;
 	int emotelen = 0;
 
@@ -1159,7 +1159,7 @@ static char *CHAT_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 	for (i = 0; i < slen; ++i)
 	{
 		c = newstring[i];
-		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
+		if ((uint8_t)c >= 0x80 && (uint8_t)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
 			continue;
 
 		if (c == '\n')
@@ -1205,8 +1205,8 @@ static char *CHAT_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 
 // let's use this as our coordinates
 // :chao: guess this just works lol
-#define chatx ((INT16)(13 + (cv_chat_xoffset.value)))
-#define chaty ((INT16)(169 + (cv_chat_yoffset.value)))
+#define chatx ((int16_t)(13 + (cv_chat_xoffset.value)))
+#define chaty ((int16_t)(169 + (cv_chat_yoffset.value)))
 
 #define CHATSNAP (V_SNAPTOBOTTOM|V_SNAPTOLEFT)
 
@@ -1216,16 +1216,16 @@ static char *CHAT_WordWrap(INT32 x, INT32 w, INT32 option, const char *string)
 
 static void HU_drawMiniChat(void)
 {
-	INT32 x = chatx+2;
-	INT32 charwidth = 4, charheight = 6;
-	INT32 boxw = cv_chatwidth.value;
-	INT32 dx = 0, dy = 0;
+	int32_t x = chatx+2;
+	int32_t charwidth = 4, charheight = 6;
+	int32_t boxw = cv_chatwidth.value;
+	int32_t dx = 0, dy = 0;
 	size_t i = chat_nummsg_min;
 	dboolean prev_linereturn = false; // a hack to prevent double \n while I have no idea why they happen in the first place.
 
-	INT32 msglines = 0;
+	int32_t msglines = 0;
 	// process all messages once without rendering anything or doing anything fancy so that we know how many lines each message has...
-	INT32 y;
+	int32_t y;
 
 	if (!chat_nummsg_min)
 		return; // needless to say it's useless to do anything if we don't have anything to draw.
@@ -1237,7 +1237,7 @@ static void HU_drawMiniChat(void)
 	{
 		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), CHATSNAP|V_ALLOWLOWERCASE, chat_mini[i-1]);
 		size_t j = 0;
-		INT32 linescount = 0;
+		int32_t linescount = 0;
 		emote_t *emote = NULL;
 		int emotelen = 0;
 
@@ -1312,12 +1312,12 @@ static void HU_drawMiniChat(void)
 
 	for (; i<=(chat_nummsg_min-1); i++) // iterate through our hot messages
 	{
-		INT32 clrflag = 0;
-		INT32 timer = ((cv_chattime.value*TICRATE)-chat_timers[i]) - cv_chattime.value*TICRATE+9; // see below...
-		INT32 transflag = (timer >= 0 && timer <= 9) ? (timer*V_10TRANS) : 0; // you can make bad jokes out of this one.
+		int32_t clrflag = 0;
+		int32_t timer = ((cv_chattime.value*TICRATE)-chat_timers[i]) - cv_chattime.value*TICRATE+9; // see below...
+		int32_t transflag = (timer >= 0 && timer <= 9) ? (timer*V_10TRANS) : 0; // you can make bad jokes out of this one.
 		size_t j = 0;
 		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), CHATSNAP|V_ALLOWLOWERCASE, chat_mini[i]); // get the current message, and word wrap it.
-		UINT8 *colormap = NULL;
+		uint8_t *colormap = NULL;
 		emote_t *emote = NULL;
 		int emotelen = 0;
 
@@ -1386,14 +1386,14 @@ static void HU_drawMiniChat(void)
 
 // HU_DrawChatLog
 
-static void HU_drawChatLog(INT32 offset)
+static void HU_drawChatLog(int32_t offset)
 {
-	INT32 charwidth = 4, charheight = 6;
-	INT32 boxw = cv_chatwidth.value, boxh = cv_chatheight.value;
-	INT32 x = chatx+2, y, dx = 0, dy = 0;
-	UINT32 i = 0;
-	INT32 chat_topy, chat_bottomy;
-	INT32 highlight = HU_GetHighlightColor();
+	int32_t charwidth = 4, charheight = 6;
+	int32_t boxw = cv_chatwidth.value, boxh = cv_chatheight.value;
+	int32_t x = chatx+2, y, dx = 0, dy = 0;
+	uint32_t i = 0;
+	int32_t chat_topy, chat_bottomy;
+	int32_t highlight = HU_GetHighlightColor();
 	dboolean atbottom = false;
 
 	// make sure that our scroll position isn't "illegal";
@@ -1432,10 +1432,10 @@ static void HU_drawChatLog(INT32 offset)
 
 	for (i = 0; i < chat_nummsg_log; i++) // iterate through our chatlog
 	{
-		INT32 clrflag = 0;
-		INT32 j = 0;
+		int32_t clrflag = 0;
+		int32_t j = 0;
 		char *msg = CHAT_WordWrap(x+2, boxw-(charwidth*2), CHATSNAP|V_ALLOWLOWERCASE, chat_log[i]); // get the current message, and word wrap it.
-		UINT8 *colormap = NULL;
+		uint8_t *colormap = NULL;
 		emote_t *emote = NULL;
 		int emotelen = 0;
 
@@ -1524,12 +1524,12 @@ static void HU_drawChatLog(INT32 offset)
 
 static void HU_DrawChat(void)
 {
-	INT32 charwidth = 4, charheight = 6;
-	INT32 boxw = cv_chatwidth.value;
-	INT32 t = 0, c = 0, y = chaty - (typelines*charheight);
-	UINT32 i = 0, saylen = strlen(w_chat_buf); // You learn new things everyday!
-	UINT32 charcount = 0;
-	INT32 cflag = 0;\
+	int32_t charwidth = 4, charheight = 6;
+	int32_t boxw = cv_chatwidth.value;
+	int32_t t = 0, c = 0, y = chaty - (typelines*charheight);
+	uint32_t i = 0, saylen = strlen(w_chat_buf); // You learn new things everyday!
+	uint32_t charcount = 0;
+	int32_t cflag = 0;\
 	size_t select_start = 0, select_end = 0;
 	const char *ntalk = "Say: ", *ttalk = "Team: ";
 	const char *talk = ntalk;
@@ -1634,8 +1634,8 @@ static void HU_DrawChat(void)
 
 		if (w_chat.cursor == i)
 		{
-			INT32 cursorx = (c+charwidth < boxw-charwidth) ? (chatx + 2 + c+charwidth) : (chatx+1); // we may have to go down.
-			INT32 cursory = (cursorx != chatx+1) ? (y) : (y+charheight);
+			int32_t cursorx = (c+charwidth < boxw-charwidth) ? (chatx + 2 + c+charwidth) : (chatx+1); // we may have to go down.
+			int32_t cursory = (cursorx != chatx+1) ? (y) : (y+charheight);
 			if (hu_tick < 4)
 				V_DrawChatCharacter(cursorx, cursory+1, '_' |CHATSNAP|t, true, NULL);
 
@@ -1675,7 +1675,7 @@ static void HU_DrawChat(void)
 		}
 
 		// A bit of copy-paste from /pm code :p
-		INT32 suggesty = chaty - charheight - 1;
+		int32_t suggesty = chaty - charheight - 1;
 		size_t longest_suggestion_length = 0;
 
 		while ((suggest = M_FindEmote(complete, complete_len, skip)) != NULL)
@@ -1716,15 +1716,15 @@ static void HU_DrawChat(void)
 	if (cv_chat_showlimit.value)
 	{
 		// Limit
-		const INT32 clr = ((HU_MAXMSGLEN - charcount) > 64 ? V_TRANSLUCENT : (charcount == HU_MAXMSGLEN ? V_REDMAP : V_YELLOWMAP));
+		const int32_t clr = ((HU_MAXMSGLEN - charcount) > 64 ? V_TRANSLUCENT : (charcount == HU_MAXMSGLEN ? V_REDMAP : V_YELLOWMAP));
 		V_DrawSmallString(chatx, y+7, CHATSNAP|clr, va("%d/%d", charcount, HU_MAXMSGLEN));
 	}
 
 	// handle /pm list. It's messy, horrible and I don't care.
 	if (strnicmp(w_chat_buf, "/pm", 3) == 0 && vid.width >= 400 && !teamtalk) // 320x200 unsupported kthxbai
 	{
-		INT32 count = 0;
-		INT32 p_dispy = chaty - charheight -1;
+		int32_t count = 0;
+		int32_t p_dispy = chaty - charheight -1;
 #ifdef NETSPLITSCREEN
 		if (r_splitscreen)
 		{
@@ -1745,7 +1745,7 @@ static void HU_DrawChat(void)
 			if (w_chat_buf[3])
 			{
 				char playernum[3];
-				UINT32 n;
+				uint32_t n;
 				// right, that's half important: (w_chat_buf[4] may be a space since /pm0 msg is perfectly acceptable!)
 				if ( ( ((w_chat_buf[3] != 0) && ((w_chat_buf[3] < '0') || (w_chat_buf[3] > '9'))) || ((w_chat_buf[4] != 0) && (((w_chat_buf[4] < '0') || (w_chat_buf[4] > '9'))))) && (w_chat_buf[4] != ' '))
 					break;
@@ -1806,14 +1806,14 @@ static void HU_DrawChat(void)
 
 static void HU_DrawChat_Old(void)
 {
-	INT32 t = 0, c = 0, y = HU_INPUTY;
-	UINT32 charcount = 0;
+	int32_t t = 0, c = 0, y = HU_INPUTY;
+	uint32_t charcount = 0;
 	size_t i = 0;
 	const char *ntalk = "Say: ", *ttalk = "Say-Team: ";
 	const char *talk = ntalk;
 	size_t select_start = 0, select_end = 0;
-	INT32 charwidth = 8 * con_scalefactor; //(fontv[HU_FONT].font['A'-HU_FONTSTART]->width) * con_scalefactor;
-	INT32 charheight = 8 * con_scalefactor; //(fontv[HU_FONT].font['A'-HU_FONTSTART]->height) * con_scalefactor;
+	int32_t charwidth = 8 * con_scalefactor; //(fontv[HU_FONT].font['A'-HU_FONTSTART]->width) * con_scalefactor;
+	int32_t charheight = 8 * con_scalefactor; //(fontv[HU_FONT].font['A'-HU_FONTSTART]->height) * con_scalefactor;
 	if (teamtalk)
 	{
 		talk = ttalk;
@@ -1880,8 +1880,8 @@ static void HU_DrawChat_Old(void)
 
 		if (w_chat.cursor == i && hu_tick < 4)
 		{
-			INT32 cursorx = (HU_INPUTX+c+charwidth < vid.width) ? (HU_INPUTX + c + charwidth) : (HU_INPUTX); // we may have to go down.
-			INT32 cursory = (cursorx != HU_INPUTX) ? (y) : (y+charheight);
+			int32_t cursorx = (HU_INPUTX+c+charwidth < vid.width) ? (HU_INPUTX + c + charwidth) : (HU_INPUTX); // we may have to go down.
+			int32_t cursory = (cursorx != HU_INPUTX) ? (y) : (y+charheight);
 			V_DrawCharacter(cursorx, cursory+2*con_scalefactor, '_' |cv_constextsize.value | V_NOSCALESTART|t, true);
 		}
 
@@ -1913,11 +1913,11 @@ static void HU_DrawChat_Old(void)
 
 static void HU_DrawCEcho(void)
 {
-	INT32 i = 0;
-	INT32 y = (BASEVIDHEIGHT/2)-4;
-	INT32 pnumlines = 0;
+	int32_t i = 0;
+	int32_t y = (BASEVIDHEIGHT/2)-4;
+	int32_t pnumlines = 0;
 
-	UINT32 realflags = cechoflags|V_SPLITSCREEN; // requested as part of splitscreen's stuff
+	uint32_t realflags = cechoflags|V_SPLITSCREEN; // requested as part of splitscreen's stuff
 
 	char *line;
 	char *echoptr;
@@ -1960,8 +1960,8 @@ static void HU_DrawCEcho(void)
 //
 // demo info stuff
 //
-UINT32 hu_demotime;
-UINT32 hu_demolap;
+uint32_t hu_demotime;
+uint32_t hu_demolap;
 
 static void HU_DrawDemoInfo(void)
 {
@@ -2005,8 +2005,8 @@ void HU_DrawSongCredits(void)
 {
 	fixed_t x;
 	fixed_t y = ((r_splitscreen && G_GamestateUsesLevel()) ? (BASEVIDHEIGHT/2)-4 : 32) * FRACUNIT;
-	INT32 snapflags = cursongcredit.snapflags;
-	INT32 bgt;
+	int32_t snapflags = cursongcredit.snapflags;
+	int32_t bgt;
 
 	if (!cursongcredit.text || cursongcredit.trans >= NUMTRANSMAPS) // No def
 	{
@@ -2105,7 +2105,7 @@ void HU_Drawer(void)
 	if (hu_redownloadinggamestate)
 	{
 		char resynch_text[14];
-		UINT32 i;
+		uint32_t i;
 
 		// Animate the dots
 		strcpy(resynch_text, "Resynching");
@@ -2117,8 +2117,8 @@ void HU_Drawer(void)
 
 	if (modeattacking && pausedelay > 0)
 	{
-		INT32 strength = ((pausedelay - 1 - NEWTICRATE/2)*10)/(NEWTICRATE/3);
-		INT32 x = BASEVIDWIDTH/2, y = BASEVIDHEIGHT/2; // obviously incorrect values while we scrap hudinfo
+		int32_t strength = ((pausedelay - 1 - NEWTICRATE/2)*10)/(NEWTICRATE/3);
+		int32_t x = BASEVIDWIDTH/2, y = BASEVIDHEIGHT/2; // obviously incorrect values while we scrap hudinfo
 
 		V_DrawThinString(x, y,
 			((leveltime & 4) ? V_SKYMAP : V_BLUEMAP),
@@ -2192,10 +2192,10 @@ PL_gfx_color (int pl, dboolean mode)
 	}
 }
 
-static const UINT8 *
-Ping_gfx_colormap (UINT32 ping, UINT32 lag)
+static const uint8_t *
+Ping_gfx_colormap (uint32_t ping, uint32_t lag)
 {
-	const UINT8 *colormap = R_GetTranslationColormap(TC_RAINBOW, Ping_gfx_color(lag), GTC_CACHE);
+	const uint8_t *colormap = R_GetTranslationColormap(TC_RAINBOW, Ping_gfx_color(lag), GTC_CACHE);
 
 	if (servermaxping && ping > servermaxping && hu_tick < 4)
 	{
@@ -2206,12 +2206,12 @@ Ping_gfx_colormap (UINT32 ping, UINT32 lag)
 	return colormap;
 }
 
-static UINT32
-Ping_conversion (UINT32 lag)
+static uint32_t
+Ping_conversion (uint32_t lag)
 {
 	if (cv_pingmeasurement.value)
 	{
-		lag = (INT32)(lag * (1000.00f / TICRATE));
+		lag = (int32_t)(lag * (1000.00f / TICRATE));
 	}
 
 	return lag;
@@ -2220,12 +2220,12 @@ Ping_conversion (UINT32 lag)
 //
 // HU_drawPing
 //
-void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT32 flags, dboolean icon)
+void HU_drawPing(int32_t x, int32_t y, uint32_t ping, uint32_t mindelay, uint32_t pl, int32_t flags, dboolean icon)
 {
-	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
-	INT32 gfxnum; // gfx to draw
-	UINT32 lag = max(ping, mindelay);
-	UINT8 *colormap = NULL;
+	int32_t measureid = cv_pingmeasurement.value ? 1 : 0;
+	int32_t gfxnum; // gfx to draw
+	uint32_t lag = max(ping, mindelay);
+	uint8_t *colormap = NULL;
 
 	gfxnum = Ping_gfx_num(ping);
 
@@ -2261,16 +2261,16 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT3
 //
 // HU_drawOldPing
 //
-void HU_drawOldPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT32 flags)
+void HU_drawOldPing(int32_t x, int32_t y, uint32_t ping, uint32_t mindelay, uint32_t pl, int32_t flags)
 {
-	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
-	UINT32 lag = max(ping, mindelay);
+	int32_t measureid = cv_pingmeasurement.value ? 1 : 0;
+	uint32_t lag = max(ping, mindelay);
 
 	//SRB2/Kart v1.0 style
-	UINT8 numbars = 0; // how many ping bars do we draw?
-	UINT8 barcolor = 31; // color we use for the bars (green, yellow, red or black)
-	SINT8 i = 0;
-	SINT8 yoffset = 6;
+	uint8_t numbars = 0; // how many ping bars do we draw?
+	uint8_t barcolor = 31; // color we use for the bars (green, yellow, red or black)
+	int8_t i = 0;
+	int8_t yoffset = 6;
 
 	if (vid.width >= 640)	// how sad, we're using a shit resolution.
 	{
@@ -2328,10 +2328,10 @@ void HU_drawOldPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, I
 }
 
 void
-HU_drawMiniPing (INT32 x, INT32 y, UINT32 ping, UINT32 lag, INT32 flags)
+HU_drawMiniPing (int32_t x, int32_t y, uint32_t ping, uint32_t lag, int32_t flags)
 {
 	patch_t *patch;
-	INT32 w = BASEVIDWIDTH;
+	int32_t w = BASEVIDWIDTH;
 
 	// draw new graphics later.
 	return;
@@ -2357,10 +2357,10 @@ HU_drawMiniPing (INT32 x, INT32 y, UINT32 ping, UINT32 lag, INT32 flags)
 //
 static inline void HU_DrawSpectatorTicker(void)
 {
-	INT32 i;
-	INT32 length = 0, height = 174;
-	INT32 totallength = 0, templength = -8;
-	INT32 dupadjust = vid.scaledwidth, duptweak = (dupadjust - BASEVIDWIDTH)/2;
+	int32_t i;
+	int32_t length = 0, height = 174;
+	int32_t totallength = 0, templength = -8;
+	int32_t dupadjust = vid.scaledwidth, duptweak = (dupadjust - BASEVIDWIDTH)/2;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 		if (playeringame[i] && players[i].spectator)
@@ -2376,7 +2376,7 @@ static inline void HU_DrawSpectatorTicker(void)
 			char *pos;
 			char initial[MAXPLAYERNAME+1];
 			char current[MAXPLAYERNAME+1];
-			INT32 len;
+			int32_t len;
 
 			len = ((signed)strlen(player_names[i]) * 8 + 16);
 
@@ -2387,7 +2387,7 @@ static inline void HU_DrawSpectatorTicker(void)
 			{
 				if (length < -8)
 				{
-					UINT8 eatenchars = (UINT8)(abs(length) / 8);
+					uint8_t eatenchars = (uint8_t)(abs(length) / 8);
 
 					if (eatenchars <= strlen(initial))
 					{
@@ -2424,9 +2424,9 @@ static inline void HU_DrawSpectatorTicker(void)
 static void HU_DrawRankings(void)
 {
 	playersort_t tab[MAXPLAYERS];
-	INT32 i, j, scorelines, hilicol, numplayersingame = 0;
+	int32_t i, j, scorelines, hilicol, numplayersingame = 0;
 	dboolean completed[MAXPLAYERS];
-	UINT32 whiteplayer = MAXPLAYERS;
+	uint32_t whiteplayer = MAXPLAYERS;
 
 	V_DrawFadeScreen(0xFF00, 16); // A little more readable, and prevents cheating the fades under other circumstances.
 
@@ -2462,7 +2462,7 @@ static void HU_DrawRankings(void)
 	{
 		if ((gametypes[gametype]->rules & GTR_TIMELIMIT) && timelimitintics > 0)
 		{
-			UINT32 timeval = (timelimitintics + starttime + 1 - leveltime);
+			uint32_t timeval = (timelimitintics + starttime + 1 - leveltime);
 			if (timeval > timelimitintics+1)
 				timeval = timelimitintics+1;
 			timeval /= TICRATE;
@@ -2522,7 +2522,7 @@ static void HU_DrawRankings(void)
 
 	for (j = 0; j < numplayersingame; j++)
 	{
-		UINT8 lowestposition = MAXPLAYERS+1;
+		uint8_t lowestposition = MAXPLAYERS+1;
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
 			if (completed[i] || !playeringame[i] || players[i].spectator || !players[i].mo)
@@ -2548,9 +2548,9 @@ static void HU_DrawRankings(void)
 				sprintf(tab[scorelines].string, "Lap %d", players[i].laps);
 			else
 			{
-				INT32 min = G_TicsToMinutes(players[i].realtime, true);
-				INT32 sec = G_TicsToSeconds(players[i].realtime);
-				INT32 cen = G_TicsToCentiseconds(players[i].realtime);
+				int32_t min = G_TicsToMinutes(players[i].realtime, true);
+				int32_t sec = G_TicsToSeconds(players[i].realtime);
+				int32_t cen = G_TicsToCentiseconds(players[i].realtime);
 
 				sprintf(tab[scorelines].string, "%i'%02i\"%02i", min, sec, cen);
 			}
@@ -2568,7 +2568,7 @@ static void HU_DrawRankings(void)
 
 	if (!grandprixinfo.gp && cv_newtabranking.value)
 	{
-		INT32 xoffset = K_DrawNeoTabRankings(0, 33, tab, scorelines, whiteplayer, hilicol, true);
+		int32_t xoffset = K_DrawNeoTabRankings(0, 33, tab, scorelines, whiteplayer, hilicol, true);
 		K_DrawServerDescrption(xoffset+10, 33);
 	}
 	else
@@ -2588,12 +2588,12 @@ void HU_ClearCEcho(void)
 	cechotimer = 0;
 }
 
-void HU_SetCEchoDuration(INT32 seconds)
+void HU_SetCEchoDuration(int32_t seconds)
 {
 	cechoduration = seconds * TICRATE;
 }
 
-void HU_SetCEchoFlags(INT32 flags)
+void HU_SetCEchoFlags(int32_t flags)
 {
 	// Don't allow cechoflags to contain any bits in V_PARAMMASK
 	cechoflags = (flags & ~V_PARAMMASK);

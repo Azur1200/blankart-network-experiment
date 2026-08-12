@@ -36,7 +36,7 @@ extern "C"
     dboolean initedvoiceprefs = false;
 
     // Assign a preferred voice for a given skin name to a local player.
-    void R_SetLocalPreferredVoiceForSkin(UINT8 local_pid,
+    void R_SetLocalPreferredVoiceForSkin(uint8_t local_pid,
                                          const char* skin_name,
                                          const char* vox_name)
     {
@@ -55,7 +55,7 @@ extern "C"
 
     // Search through a local (non-netsynched) hashmap for a player's preferred voice for the given
     // skin name. Returns MAXSKINVOICES if nothing is found.
-    kartvoicenum_t R_GetLocalPreferredVoiceForSkin(UINT8 local_pid, const char* skin_name)
+    kartvoicenum_t R_GetLocalPreferredVoiceForSkin(uint8_t local_pid, const char* skin_name)
     {
         if (auto search = localvoiceprefs[local_pid].find(skin_name);
             search != localvoiceprefs[local_pid].end())
@@ -64,7 +64,7 @@ extern "C"
             // sure we can load it in for real
             const std::string found_vox = localvoiceprefs[local_pid][skin_name];
 
-            const INT32 skin_id = R_SkinAvailable(skin_name);
+            const int32_t skin_id = R_SkinAvailable(skin_name);
 
             if (skin_id == -1)
             {
@@ -87,7 +87,7 @@ extern "C"
     }
 
     // Assign a preferred voice for a given skin ID number to a local player.
-    void R_SetLocalPreferredVoiceForSkinByID(UINT8 local_pid, INT32 skin_id, const char* vox_name)
+    void R_SetLocalPreferredVoiceForSkinByID(uint8_t local_pid, int32_t skin_id, const char* vox_name)
     {
         if (skin_id >= numskins)
         {
@@ -96,7 +96,7 @@ extern "C"
         }
 
         // Preferred voice exists in this map; make sure the skin's loaded in, then overwrite
-        const INT32 _skin_id = R_SkinAvailable(skins[skin_id]->name);
+        const int32_t _skin_id = R_SkinAvailable(skins[skin_id]->name);
 
         if (_skin_id < 0)  // Doing a less-than-zero check so any garbage data in the negatives gets
                            // ensnared by this...
@@ -122,7 +122,7 @@ extern "C"
 
     // Search through a local (non-netsynched) hashmap for a player's preferred voice for the given
     // skin ID. Returns MAXSKINVOICES if nothing is found.
-    kartvoicenum_t R_GetLocalPreferredVoiceForSkinByID(UINT8 local_pid, INT32 skin_id)
+    kartvoicenum_t R_GetLocalPreferredVoiceForSkinByID(uint8_t local_pid, int32_t skin_id)
     {
         if (skin_id >= numskins)
         {
@@ -131,7 +131,7 @@ extern "C"
         }
 
         // Preferred voice exists in this map; make sure the skin's loaded in, then overwrite
-        const INT32 _skin_id = R_SkinAvailable(skins[skin_id]->name);
+        const int32_t _skin_id = R_SkinAvailable(skins[skin_id]->name);
 
         if (_skin_id < 0)  // Doing a less-than-zero check so any garbage data in the negatives gets
                            // ensnared by this...
@@ -165,24 +165,24 @@ extern "C"
 
     // Clones a list of a the given local player's preferred voices to a string pointer.
     // Returns true or false if any data is written to the string in question.
-    INT32 R_MakePreferredVoicesList(UINT8 local_pid,
+    int32_t R_MakePreferredVoicesList(uint8_t local_pid,
                                     char* str_ptr,
                                     size_t str_capacity,
-                                    INT32 page_num)
+                                    int32_t page_num)
     {
         std::string output = "";
         char color_prefix[2] = {0};
         char temp_skin_name[SKINNAMESIZE + 1] = {0};
         char temp_vox_name[VOICENAMESIZE + 1] = {0};
 
-        UINT16 chatcolor = 0;
-        INT32 skin_id = -1;
-        INT32 i = 0;
-        const INT32 real_page_num = std::max(0, page_num - 1);
-        const INT32 preflistsize = static_cast<INT32>(localvoiceprefs[local_pid].size());
+        uint16_t chatcolor = 0;
+        int32_t skin_id = -1;
+        int32_t i = 0;
+        const int32_t real_page_num = std::max(0, page_num - 1);
+        const int32_t preflistsize = static_cast<int32_t>(localvoiceprefs[local_pid].size());
         dboolean noskin = false;
 
-        INT32 numpages = (preflistsize / MAXPREFSKINSPERPAGE) + 1;
+        int32_t numpages = (preflistsize / MAXPREFSKINSPERPAGE) + 1;
 
         if (page_num > numpages)
         {
@@ -196,7 +196,7 @@ extern "C"
             // After everything, copy the output to our destination pointer
             output.copy(str_ptr, str_capacity);
 
-            return static_cast<INT32>(output.size());
+            return static_cast<int32_t>(output.size());
         }
 
         for (const auto& n : localvoiceprefs[local_pid])
@@ -275,13 +275,13 @@ extern "C"
                      numpages);
 
         // For debug/size estimation; we have 4096 skins, man.
-        // CONS_Printf("Final output string size: %d\n", static_cast<INT32>(output.size()));
+        // CONS_Printf("Final output string size: %d\n", static_cast<int32_t>(output.size()));
 
         // After everything, copy the output to our destination pointer
         output.copy(str_ptr, str_capacity);
 
         // Finally, return the signal that we succeeded
-        return static_cast<INT32>(output.size());
+        return static_cast<int32_t>(output.size());
     }
 
     #define PREFPATH_OVERSHOOT (256)
@@ -303,14 +303,14 @@ extern "C"
         char temp_skin_name[SKINNAMESIZE + 1] = {0};
         char temp_vox_name[VOICENAMESIZE + 1] = {0};
 
-        INT32 i = 0;
-        INT32 skin_id = 0;
+        int32_t i = 0;
+        int32_t skin_id = 0;
         std::string file_output = "";
         dboolean noskin = false;
 
         M_MkdirEach(preferencesdir, M_PathParts(preferencesdir) - 2, 0755);
 
-        INT32 snum = 0;
+        int32_t snum = 0;
         for (snum = 0; snum < MAXSPLITSCREENPLAYERS; snum++)
         {
             file_output.clear();
@@ -431,9 +431,9 @@ extern "C"
         char* word2;
         char* word3;
 
-        INT32 i = 0;
-        INT32 snum = 0;
-        INT32 strikes = 0;
+        int32_t i = 0;
+        int32_t snum = 0;
+        int32_t strikes = 0;
 
         std::vector<std::string> data_to_load[2];
         char name_buffer[2][VOICENAMESIZE] = {{0}};
@@ -510,7 +510,7 @@ extern "C"
             // Load in the data, back-to-front to avoid annoying shuffling
             while (data_to_load[0].size() > 0)
             {
-                i = static_cast<INT32>(data_to_load[0].size() - 1);
+                i = static_cast<int32_t>(data_to_load[0].size() - 1);
                 memset(name_buffer[0], 0, sizeof(name_buffer[0]));
                 memset(name_buffer[1], 0, sizeof(name_buffer[0]));
 

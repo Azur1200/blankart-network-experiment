@@ -78,7 +78,7 @@ void *GetGLFunc(const char *proc);
 dboolean SetupGLfunc(void);
 void SetupGLFunc4(void);
 void Flush(void);
-INT32 isExtAvailable(const char *extension, const GLubyte *start);
+int32_t isExtAvailable(const char *extension, const GLubyte *start);
 void SetModelView(GLint w, GLint h);
 void SetStates(void);
 
@@ -129,7 +129,7 @@ extern dboolean 			supportMipMap;
 
 /**	\brief OpenGL flags for video driver
 */
-extern INT32            oglflags;
+extern int32_t            oglflags;
 extern GLint            textureformatGL;
 
 typedef enum

@@ -164,28 +164,28 @@ typedef enum
 
 typedef struct consistancy_s
 {
-	INT16 checksum; // Total consistancy checksum
+	int16_t checksum; // Total consistancy checksum
 
-	INT32 playerpos[2];
-	INT32 position[3]; // Position checksum
+	int32_t playerpos[2];
+	int32_t position[3]; // Position checksum
 
-	INT32 momentum[3]; // Speed checksum
+	int32_t momentum[3]; // Speed checksum
 
-	INT32 itemsum; // Player item checksum
+	int32_t itemsum; // Player item checksum
 
-	UINT32 rngseed[PRNUMCLASS];
-	INT32 seed_checksum; // Sum of all RNG seeds
+	uint32_t rngseed[PRNUMCLASS];
+	int32_t seed_checksum; // Sum of all RNG seeds
 
 	// Object data checksum
-	INT32 mobjtype;
-	INT32 mobjangle;
-	INT32 mobjflags;
-	INT32 mobjflags2;
-	INT32 mobjeflags;
-	INT32 mobjstate;
-	INT32 mobjtics;
-	INT32 mobjsprite;
-	INT32 mobjframe;
+	int32_t mobjtype;
+	int32_t mobjangle;
+	int32_t mobjflags;
+	int32_t mobjflags2;
+	int32_t mobjeflags;
+	int32_t mobjstate;
+	int32_t mobjtics;
+	int32_t mobjsprite;
+	int32_t mobjframe;
 } consistancy_t;
 
 void SPrintConsistancy(char *out, consistancy_t *c);
@@ -199,8 +199,8 @@ void Command_Numnodes(void);
 // Client to server packet
 struct clientcmd_pak
 {
-	UINT8 client_tic;
-	UINT8 resendfrom;
+	uint8_t client_tic;
+	uint8_t resendfrom;
 	consistancy_t consistancy;
 	ticcmd_t cmd;
 } ATTRPACK;
@@ -209,8 +209,8 @@ struct clientcmd_pak
 // WARNING: must have the same format of clientcmd_pak, for more easy use
 struct client2cmd_pak
 {
-	UINT8 client_tic;
-	UINT8 resendfrom;
+	uint8_t client_tic;
+	uint8_t resendfrom;
 	consistancy_t consistancy;
 	ticcmd_t cmd, cmd2;
 } ATTRPACK;
@@ -219,8 +219,8 @@ struct client2cmd_pak
 // WARNING: must have the same format of clientcmd_pak, for more easy use
 struct client3cmd_pak
 {
-	UINT8 client_tic;
-	UINT8 resendfrom;
+	uint8_t client_tic;
+	uint8_t resendfrom;
 	consistancy_t consistancy;
 	ticcmd_t cmd, cmd2, cmd3;
 } ATTRPACK;
@@ -229,19 +229,19 @@ struct client3cmd_pak
 // WARNING: must have the same format of clientcmd_pak, for more easy use
 struct client4cmd_pak
 {
-	UINT8 client_tic;
-	UINT8 resendfrom;
+	uint8_t client_tic;
+	uint8_t resendfrom;
 	consistancy_t consistancy;
 	ticcmd_t cmd, cmd2, cmd3, cmd4;
 } ATTRPACK;
 
 struct rngdiagnosis_pak
 {
-	UINT32 server_seeds[PRNUMCLASS];
-	UINT32 client_seeds[PRNUMCLASS];
-	UINT32 checksums[2];
-	UINT16 client_id;
-	UINT8 client_node;
+	uint32_t server_seeds[PRNUMCLASS];
+	uint32_t client_seeds[PRNUMCLASS];
+	uint32_t checksums[2];
+	uint16_t client_id;
+	uint8_t client_node;
 	tic_t ticmemory;
 	packettype_t nextpacket;
 } ATTRPACK;
@@ -250,58 +250,58 @@ struct rngdiagnosis_pak
 // this packet is too large
 struct servertics_pak
 {
-	UINT8 starttic;
-	UINT8 numtics;
-	UINT8 numslots; // "Slots filled": Highest player number in use plus one.
+	uint8_t starttic;
+	uint8_t numtics;
+	uint8_t numslots; // "Slots filled": Highest player number in use plus one.
 	ticcmd_t cmds[45]; // Normally [BACKUPTIC][MAXPLAYERS] but too large
 } ATTRPACK;
 
 struct serverconfig_pak
 {
-	UINT8 version; // Different versions don't work
-	UINT8 subversion; // Contains build version
+	uint8_t version; // Different versions don't work
+	uint8_t subversion; // Contains build version
 
 	// Server launch stuffs
-	UINT8 serverplayer;
-	UINT8 totalslotnum; // "Slots": highest player number in use plus one.
+	uint8_t serverplayer;
+	uint8_t totalslotnum; // "Slots": highest player number in use plus one.
 
 	tic_t gametic;
-	UINT8 clientnode;
-	UINT8 gamestate;
+	uint8_t clientnode;
+	uint8_t gamestate;
 
-	UINT8 gametype;
-	UINT8 modifiedgame;
+	uint8_t gametype;
+	uint8_t modifiedgame;
 	dboolean dedicated;
 
 	char server_context[8]; // Unique context id, generated at server startup.
 
 	// Discord info (always defined for net compatibility)
-	UINT8 maxplayer;
+	uint8_t maxplayer;
 	dboolean allownewplayer;
 	dboolean discordinvites;
 } ATTRPACK;
 
 struct filetx_pak
 {
-	UINT8 fileid;
-	UINT32 filesize;
-	UINT8 iteration;
-	UINT32 position;
-	UINT16 size;
-	UINT8 data[]; // Size is variable using hardware_MAXPACKETLENGTH
+	uint8_t fileid;
+	uint32_t filesize;
+	uint8_t iteration;
+	uint32_t position;
+	uint16_t size;
+	uint8_t data[]; // Size is variable using hardware_MAXPACKETLENGTH
 } ATTRPACK;
 
 struct fileacksegment_t
 {
-	UINT32 start;
-	UINT32 acks;
+	uint32_t start;
+	uint32_t acks;
 } ATTRPACK;
 
 struct fileack_pak
 {
-	UINT8 fileid;
-	UINT8 iteration;
-	UINT8 numsegments;
+	uint8_t fileid;
+	uint8_t iteration;
+	uint8_t numsegments;
 	fileacksegment_t segments[];
 } ATTRPACK;
 
@@ -309,15 +309,15 @@ struct fileack_pak
 
 struct clientconfig_pak
 {
-	UINT8 _255;/* see serverinfo_pak */
-	UINT8 packetversion;
+	uint8_t _255;/* see serverinfo_pak */
+	uint8_t packetversion;
 	char application[MAXAPPLICATION];
-	UINT8 version; // Different versions don't work
-	UINT8 subversion; // Contains build version
-	UINT8 localplayers;	// number of splitscreen players
-	UINT8 mode;
+	uint8_t version; // Different versions don't work
+	uint8_t subversion; // Contains build version
+	uint8_t localplayers;	// number of splitscreen players
+	uint8_t mode;
 	char names[MAXSPLITSCREENPLAYERS][MAXPLAYERNAME];
-	UINT8 availabilities[MAXAVAILABILITY];
+	uint8_t availabilities[MAXAVAILABILITY];
 	uint8_t challengeResponse[MAXSPLITSCREENPLAYERS][SIGNATURELENGTH];
 } ATTRPACK;
 
@@ -335,30 +335,30 @@ struct serverinfo_pak
 	to 255 always, so older versions won't be confused with the new
 	versions or vice-versa.
 	*/
-	UINT8 _255;
-	UINT8 packetversion;
+	uint8_t _255;
+	uint8_t packetversion;
 	char  application[MAXAPPLICATION];
-	UINT8 version;
-	UINT8 subversion;
-	UINT8 commit[GIT_SHA_ABBREV];
-	UINT8 numberofplayer;
-	UINT8 maxplayer;
-	UINT8 refusereason; // 0: joinable, 1: joins disabled, 2: full
+	uint8_t version;
+	uint8_t subversion;
+	uint8_t commit[GIT_SHA_ABBREV];
+	uint8_t numberofplayer;
+	uint8_t maxplayer;
+	uint8_t refusereason; // 0: joinable, 1: joins disabled, 2: full
 	char gametypename[24];
-	UINT8 modifiedgame;
-	UINT8 cheatsenabled;
-	UINT8 kartvars; // Previously isdedicated, now appropriated for our own nefarious purposes
-	UINT8 fileneedednum;
+	uint8_t modifiedgame;
+	uint8_t cheatsenabled;
+	uint8_t kartvars; // Previously isdedicated, now appropriated for our own nefarious purposes
+	uint8_t fileneedednum;
 	tic_t time;
 	tic_t leveltime;
 	char servername[MAXSERVERNAME];
 	char maptitle[33];
-	UINT64 maphash;
-	UINT8 actnum;
-	UINT8 iszone;
+	uint64_t maphash;
+	uint8_t actnum;
+	uint8_t iszone;
 	char httpsource[MAX_MIRROR_LENGTH]; // HTTP URL to download from, always defined for compatibility
-	INT16 avgpwrlv; // Kart avg power level
-	UINT8 fileneeded[MAXFILENEEDED]; // is filled with writexxx (byteptr.h)
+	int16_t avgpwrlv; // Kart avg power level
+	uint8_t fileneeded[MAXFILENEEDED]; // is filled with writexxx (byteptr.h)
 } ATTRPACK;
 
 struct serverinfoupdate_pak
@@ -376,7 +376,7 @@ struct serverrefuse_pak
 
 struct askinfo_pak
 {
-	UINT8 version;
+	uint8_t version;
 	tic_t time; // used for ping evaluation
 } ATTRPACK;
 
@@ -389,29 +389,29 @@ struct msaskinfo_pak
 // Shorter player information for external use.
 struct plrinfo
 {
-	UINT8 num;
+	uint8_t num;
 	char name[MAXPLAYERNAME+1];
-	UINT8 team;
-	UINT16 skin;
-	UINT8 data; // Color is first four bits, hasflag, isit and issuper have one bit each, the last is unused.
-	UINT32 score;
-	UINT16 timeinserver; // In seconds.
+	uint8_t team;
+	uint16_t skin;
+	uint8_t data; // Color is first four bits, hasflag, isit and issuper have one bit each, the last is unused.
+	uint32_t score;
+	uint16_t timeinserver; // In seconds.
 } ATTRPACK;
 
 struct filesneededconfig_pak
 {
-	INT32 first;
-	UINT8 num;
-	UINT8 more;
-	UINT8 files[MAXFILENEEDED]; // is filled with writexxx (byteptr.h)
+	int32_t first;
+	uint8_t num;
+	uint8_t more;
+	uint8_t files[MAXFILENEEDED]; // is filled with writexxx (byteptr.h)
 } ATTRPACK;
 
 struct reqmapqueue_pak
 {
-	UINT16 newmapnum;
-	UINT16 newgametype;
-	UINT8 flags;
-	UINT8 source;
+	uint16_t newmapnum;
+	uint16_t newgametype;
+	uint8_t flags;
+	uint8_t source;
 } ATTRPACK;
 
 struct clientkey_pak
@@ -442,17 +442,17 @@ struct resultsall_pak
 
 struct netinfo_pak
 {
-	UINT32 pingtable[MAXPLAYERS+1];
-	UINT32 packetloss[MAXPLAYERS+1];
-	UINT32 delay[MAXPLAYERS+1];
+	uint32_t pingtable[MAXPLAYERS+1];
+	uint32_t packetloss[MAXPLAYERS+1];
+	uint32_t delay[MAXPLAYERS+1];
 } ATTRPACK;
 
 struct say_pak
 {
 	char message[HU_MAXMSGLEN + 1];
-	UINT8 target;
-	UINT8 flags;
-	UINT8 source;
+	uint8_t target;
+	uint8_t flags;
+	uint8_t source;
 } ATTRPACK;
 
 //
@@ -460,15 +460,15 @@ struct say_pak
 //
 struct doomdata_t
 {
-	UINT32 checksum;
-	UINT8 ack; // If not zero the node asks for acknowledgement, the receiver must resend the ack
-	UINT8 ackreturn; // The return of the ack number
+	uint32_t checksum;
+	uint8_t ack; // If not zero the node asks for acknowledgement, the receiver must resend the ack
+	uint8_t ackreturn; // The return of the ack number
 
-	UINT8 packettype;
+	uint8_t packettype;
 #ifdef SIGNGAMETRAFFIC
 	uint8_t signature[MAXSPLITSCREENPLAYERS][SIGNATURELENGTH];
 #endif
-	UINT8 packetindex;
+	uint8_t packetindex;
 	union
 	{
 		// NOTICE: UPDATE THE COMMENT SIZES WHEN YOU CHANGE STUFF.
@@ -479,20 +479,20 @@ struct doomdata_t
 		servertics_pak serverpak; // 633 bytes
 		rngdiagnosis_pak rngdiagnosis; // 412 bytes
 		serverconfig_pak servercfg; // 33 bytes
-		UINT8 textcmd[MAXTEXTCMD+1]; // 257 bytes
+		uint8_t textcmd[MAXTEXTCMD+1]; // 257 bytes
 		char filetxpak[sizeof (filetx_pak)]; // 12 bytes
 		char fileack[sizeof (fileack_pak)]; // 3 bytes
-		UINT8 filereceived; // 1 byte
+		uint8_t filereceived; // 1 byte
 		clientconfig_pak clientcfg; // 378 bytes
 		char salt[9]; // 9 bytes
-		UINT8 sha256sum[32]; // 32 bytes
+		uint8_t sha256sum[32]; // 32 bytes
 		serverinfo_pak serverinfo; // 1311 bytes
 		serverrefuse_pak serverrefuse; // 255 bytes
 		serverinfoupdate_pak serverinfoupdate; // 1662 bytes
 		askinfo_pak askinfo; // 5 bytes
 		msaskinfo_pak msaskinfo; // 26 bytes
 		plrinfo playerinfo[MAXPLAYERINFO]; // 1056 bytes
-		INT32 filesneedednum; // 4 bytes
+		int32_t filesneedednum; // 4 bytes
 		filesneededconfig_pak filesneededcfg; // 921 bytes
 		netinfo_pak netinfo; // 396 bytes
 		say_pak say; // 227 bytes
@@ -508,14 +508,14 @@ struct doomdata_t
 #define MAXSERVERLIST (MAXNETNODES-1)
 struct serverelem_t
 {
-	SINT8 node;
+	int8_t node;
 	serverinfo_pak info;
 };
 
 extern serverelem_t serverlist[MAXSERVERLIST];
-extern UINT32 serverlistcount;
-extern UINT32 serverlistultimatecount;
-extern INT32 mapchangepending;
+extern uint32_t serverlistcount;
+extern uint32_t serverlistultimatecount;
+extern int32_t mapchangepending;
 
 // Points inside doomcom
 extern consvar_t cv_stunserver;
@@ -564,14 +564,14 @@ extern dboolean serverrunning;
 #define client (!server)
 extern dboolean dedicated; // For dedicated server
 extern dboolean connectedtodedicated; // Client that is connected to a dedicated server.
-extern UINT16 software_MAXPACKETLENGTH;
+extern uint16_t software_MAXPACKETLENGTH;
 extern dboolean acceptnewnode;
-extern SINT8 servernode;
+extern int8_t servernode;
 extern char connectedservermotd[MAXSERVERMOTD];
 extern char connectedservername[MAXSERVERNAME];
 extern char connectedservercontact[MAXSERVERCONTACT];
 extern char connectedserverdescription[MAXSERVERDESCRIPTION];
-extern UINT32 ourIP;
+extern uint32_t ourIP;
 extern uint8_t lastReceivedKey[MAXNETNODES][MAXSPLITSCREENPLAYERS][PUBKEYLENGTH];
 extern uint8_t lastSentChallenge[MAXNETNODES][CHALLENGELENGTH];
 extern uint8_t lastChallengeAll[CHALLENGELENGTH];
@@ -583,14 +583,14 @@ void Command_Ping_f(void);
 extern tic_t connectiontimeout;
 extern tic_t jointimeout;
 extern tic_t freezetimeout[MAXNETNODES];
-extern UINT16 pingmeasurecount;
-extern UINT32 realpingtable[MAXPLAYERS];
-extern UINT32 playerpingtable[MAXPLAYERS];
-extern UINT32 playerpacketlosstable[MAXPLAYERS];
-extern UINT32 playerdelaytable[MAXPLAYERS];
+extern uint16_t pingmeasurecount;
+extern uint32_t realpingtable[MAXPLAYERS];
+extern uint32_t playerpingtable[MAXPLAYERS];
+extern uint32_t playerpacketlosstable[MAXPLAYERS];
+extern uint32_t playerdelaytable[MAXPLAYERS];
 extern tic_t servermaxping;
 
-extern SINT8 server_lagless;
+extern int8_t server_lagless;
 extern consvar_t cv_mindelay;
 
 extern consvar_t cv_netticbuffer, cv_allownewplayer, cv_maxplayers, cv_joindelay;
@@ -616,17 +616,17 @@ extern consvar_t cv_discordinvites;
 #endif
 
 // Used in d_net, the only dependence
-tic_t ExpandTics(INT32 low, tic_t basetic);
+tic_t ExpandTics(int32_t low, tic_t basetic);
 void D_ClientServerInit(void);
 
 void GenerateChallenge(uint8_t *buf);
 shouldsign_t ShouldSignChallenge(uint8_t *message);
 
 // Initialise the other field
-void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(UINT8 **p, INT32 playernum));
-void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_t nparam);
+void RegisterNetXCmd(netxcmd_t id, void (*cmd_f)(uint8_t **p, int32_t playernum));
+void SendNetXCmdForPlayer(uint8_t playerid, netxcmd_t id, const void *param, size_t nparam);
 #define SendNetXCmd(id, param, nparam) SendNetXCmdForPlayer(0, id, param, nparam) // Shortcut for P1
-void SendKick(UINT8 playernum, UINT8 msg);
+void SendKick(uint8_t playernum, uint8_t msg);
 
 typedef enum
 {
@@ -656,13 +656,13 @@ typedef enum
 void NetKeepAlive(void);
 void NetUpdate(void);
 
-void SV_StartSinglePlayerServer(INT32 dogametype, dboolean donetgame);
+void SV_StartSinglePlayerServer(int32_t dogametype, dboolean donetgame);
 dboolean SV_SpawnServer(void);
 void SV_StopServer(void);
 void SV_ResetServer(void);
 
 /*--------------------------------------------------
-	dboolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *newplayernum);
+	dboolean K_AddBotFromServer(uint16_t skin, uint8_t difficulty, botStyle_e style, uint8_t *newplayernum);
 
 		Adds a new bot, using a server-sided packet sent to all clients.
 		Using regular K_AddBot wherever possible is better, but this is kept
@@ -679,13 +679,13 @@ void SV_ResetServer(void);
 		true if a bot can be added via a packet later, otherwise false.
 --------------------------------------------------*/
 
-dboolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p);
+dboolean K_AddBotFromServer(uint16_t skin, uint8_t difficulty, botStyle_e style, uint8_t *p);
 
 void CL_AddSplitscreenPlayer(void);
-void CL_RemoveSplitscreenPlayer(UINT8 p);
+void CL_RemoveSplitscreenPlayer(uint8_t p);
 void CL_Reset(void);
-void CL_ClearPlayer(INT32 playernum);
-void CL_RemovePlayer(INT32 playernum, kickreason_t reason);
+void CL_ClearPlayer(int32_t playernum);
+void CL_RemovePlayer(int32_t playernum, kickreason_t reason);
 void CL_QueryServerList(msg_server_t *list);
 void CL_UpdateServerList(void);
 void CL_TimeoutServerList(void);
@@ -704,45 +704,45 @@ dboolean TryRunTics(tic_t realtic);
 
 // extra data for lmps
 // these functions scare me. they contain magic.
-/*dboolean AddLmpExtradata(UINT8 **demo_p, INT32 playernum);
-void ReadLmpExtraData(UINT8 **demo_pointer, INT32 playernum);*/
+/*dboolean AddLmpExtradata(uint8_t **demo_p, int32_t playernum);
+void ReadLmpExtraData(uint8_t **demo_pointer, int32_t playernum);*/
 
 // translate a playername in a player number return -1 if not found and
 // print a error message in the console
-SINT8 nametonum(const char *name);
+int8_t nametonum(const char *name);
 
 extern char server_context[8];
-extern UINT8 playernode[MAXPLAYERS];
+extern uint8_t playernode[MAXPLAYERS];
 /* consoleplayer of this player (splitscreen) */
-extern UINT8 playerconsole[MAXPLAYERS];
+extern uint8_t playerconsole[MAXPLAYERS];
 extern plrinfo playerinfo[MAXPLAYERINFO];
-extern SINT8 joinnode;
+extern int8_t joinnode;
 
 #define SERVMUS_1 "SRVMS1"
 #define SERVMUS_2 "SRVMS2"
 
 void ChangeServMusic(const char* musname, dboolean fallback, dboolean keepPos);
 
-INT32 GetClientMode(void);
-void ChangeClientMode(INT32 mode);
+int32_t GetClientMode(void);
+void ChangeClientMode(int32_t mode);
 
-INT32 D_NumPlayers(void);
-dboolean D_IsPlayerHumanAndGaming(INT32 player_number);
+int32_t D_NumPlayers(void);
+dboolean D_IsPlayerHumanAndGaming(int32_t player_number);
 void D_ResetTiccmds(void);
-ticcmd_t *D_LocalTiccmd(UINT8 ss);
+ticcmd_t *D_LocalTiccmd(uint8_t ss);
 
-tic_t GetLag(INT32 node);
-UINT8 GetFreeXCmdSize(UINT8 playerid);
+tic_t GetLag(int32_t node);
+uint8_t GetFreeXCmdSize(uint8_t playerid);
 
 #ifndef __cplusplus
-void D_SHA256PasswordPass(const UINT8 *buffer, size_t len, const char *salt, UINT8 dest[static 32]);
+void D_SHA256PasswordPass(const uint8_t *buffer, size_t len, const char *salt, uint8_t dest[static 32]);
 #endif
 
-extern UINT8 hu_redownloadinggamestate;
+extern uint8_t hu_redownloadinggamestate;
 
 extern char *reqpass;
 extern char **adminpass;
-extern UINT32 adminpasscount;
+extern uint32_t adminpasscount;
 
 extern dboolean hu_stopped;
 
@@ -751,7 +751,7 @@ extern dboolean hu_stopped;
 //
 
 struct rewind_t {
-	UINT8 savebuffer[NETSAVEGAMESIZE];
+	uint8_t savebuffer[NETSAVEGAMESIZE];
 	tic_t leveltime;
 	size_t demopos;
 
@@ -767,9 +767,9 @@ rewind_t *CL_RewindToTime(tic_t time);
 
 void HandleSigfail(const char *string);
 
-void DoSayPacket(SINT8 target, UINT8 flags, UINT8 source, char *message);
-void DoSayPacketFromCommand(SINT8 target, size_t usedargs, UINT8 flags);
-void SendServerNotice(SINT8 target, char *message);
+void DoSayPacket(int8_t target, uint8_t flags, uint8_t source, char *message);
+void DoSayPacketFromCommand(int8_t target, size_t usedargs, uint8_t flags);
+void SendServerNotice(int8_t target, char *message);
 
 // We give clients a chance to verify each other once per race.
 // When is that challenge sent, and when should clients bail if they don't receive the responses?

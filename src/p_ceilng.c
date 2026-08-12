@@ -25,7 +25,7 @@
 // ==========================================================================
 
 // the list of ceilings moving currently, including crushers
-INT32 ceilmovesound = sfx_None;
+int32_t ceilmovesound = sfx_None;
 
 /** Moves a moving ceiling.
   *
@@ -240,7 +240,7 @@ void T_CrushCeiling(ceiling_t *ceiling)
   * \return 1 if at least one ceiling mover was started, 0 otherwise.
   * \sa EV_DoCrush, EV_DoFloor, EV_DoElevator, T_MoveCeiling
   */
-INT32 EV_DoCeiling(mtag_t tag, line_t *line, ceiling_e type)
+int32_t EV_DoCeiling(mtag_t tag, line_t *line, ceiling_e type)
 {
 	// This function is deprecated.
 	// Use any of the following functions directly, instead.
@@ -256,16 +256,16 @@ INT32 EV_DoCeiling(mtag_t tag, line_t *line, ceiling_e type)
 			return 0;
 
 		case raiseToHighest:
-			return (INT32)EV_DoRaiseCeilingToHighest(tag);
+			return (int32_t)EV_DoRaiseCeilingToHighest(tag);
 
 		case lowerToLowestFast:
-			return (INT32)EV_DoLowerCeilingToLowestFast(tag);
+			return (int32_t)EV_DoLowerCeilingToLowestFast(tag);
 
 		case instantRaise:
-			return (INT32)EV_DoInstantRaiseCeiling(tag);
+			return (int32_t)EV_DoInstantRaiseCeiling(tag);
 
 		case moveCeilingByFrontSector:
-			return (INT32)EV_DoMoveCeilingByHeight(
+			return (int32_t)EV_DoMoveCeilingByHeight(
 				tag,
 				line->frontsector->ceilingheight,
 				line->args[2] << (FRACBITS - 3),
@@ -274,14 +274,14 @@ INT32 EV_DoCeiling(mtag_t tag, line_t *line, ceiling_e type)
 			);
 
 		case instantMoveCeilingByFrontSector:
-			return (INT32)EV_DoInstantMoveCeilingByHeight(
+			return (int32_t)EV_DoInstantMoveCeilingByHeight(
 				tag,
 				line->frontsector->ceilingheight,
 				line->args[2] ? line->frontsector->ceilingpic : -1
 			);
 
 		case moveCeilingByDistance:
-			return (INT32)EV_DoMoveCeilingByDistance(
+			return (int32_t)EV_DoMoveCeilingByDistance(
 				tag,
 				line->args[2] << FRACBITS,
 				line->args[3] << (FRACBITS - 3),
@@ -290,7 +290,7 @@ INT32 EV_DoCeiling(mtag_t tag, line_t *line, ceiling_e type)
 
 		case bounceCeiling:
 		case bounceCeilingCrush:
-			return (INT32)EV_DoBounceCeiling(
+			return (int32_t)EV_DoBounceCeiling(
 				tag,
 				(type == bounceCeilingCrush),
 				line->frontsector->ceilingheight,
@@ -305,10 +305,10 @@ INT32 EV_DoCeiling(mtag_t tag, line_t *line, ceiling_e type)
 
 // This is here for backwards compatibility in Binary kart maps. Do not use for UDMF!
 
-INT32 EV_DoCeilingOLD(mtag_t tag, line_t *line, ceiling_e type)
+int32_t EV_DoCeilingOLD(mtag_t tag, line_t *line, ceiling_e type)
 {
-	INT32 rtn = 0, firstone = 1;
-	INT32 secnum = -1;
+	int32_t rtn = 0, firstone = 1;
+	int32_t secnum = -1;
 	sector_t *sec;
 	ceiling_t *ceiling;
 
@@ -327,7 +327,7 @@ INT32 EV_DoCeilingOLD(mtag_t tag, line_t *line, ceiling_e type)
 		ceiling->thinker.function = (actionf_p1)T_MoveCeiling;
 		ceiling->sector = sec;
 		ceiling->crush = false;
-		ceiling->sourceline = (INT32)(line-lines);
+		ceiling->sourceline = (int32_t)(line-lines);
 
 		switch (type)
 		{
@@ -367,7 +367,7 @@ INT32 EV_DoCeilingOLD(mtag_t tag, line_t *line, ceiling_e type)
 				// only set it on ONE of the moving sectors (the smallest numbered)
 				// only set it if there isn't also a floor mover
 				//if (line->args[3] && line->args[1] == 1)
-					//ceiling->tag = firstone ? (INT16)line->args[3] : 0;
+					//ceiling->tag = firstone ? (int16_t)line->args[3] : 0;
 
 				// chained linedef executing ability
 				// only set it on ONE of the moving sectors (the smallest numbered)
@@ -481,7 +481,7 @@ static ceiling_t *CreateCeilingThinker(sector_t *sec)
 dboolean EV_DoRaiseCeilingToHighest(mtag_t tag)
 {
 	dboolean rtn = false;
-	INT32 secnum = -1;
+	int32_t secnum = -1;
 	sector_t *sec;
 
 	TAG_ITER_SECTORS(tag, secnum)
@@ -510,7 +510,7 @@ dboolean EV_DoRaiseCeilingToHighest(mtag_t tag)
 dboolean EV_DoLowerCeilingToLowestFast(mtag_t tag)
 {
 	dboolean rtn = false;
-	INT32 secnum = -1;
+	int32_t secnum = -1;
 	sector_t *sec;
 
 	TAG_ITER_SECTORS(tag, secnum)
@@ -539,7 +539,7 @@ dboolean EV_DoLowerCeilingToLowestFast(mtag_t tag)
 dboolean EV_DoInstantRaiseCeiling(mtag_t tag)
 {
 	dboolean rtn = false;
-	INT32 secnum = -1;
+	int32_t secnum = -1;
 	sector_t *sec;
 
 	TAG_ITER_SECTORS(tag, secnum)
@@ -565,11 +565,11 @@ dboolean EV_DoInstantRaiseCeiling(mtag_t tag)
 	return rtn;
 }
 
-dboolean EV_DoMoveCeilingByHeight(mtag_t tag, fixed_t height, fixed_t speed, mtag_t chain, INT32 texture)
+dboolean EV_DoMoveCeilingByHeight(mtag_t tag, fixed_t height, fixed_t speed, mtag_t chain, int32_t texture)
 {
 	dboolean rtn = false;
 	dboolean firstone = true;
-	INT32 secnum = -1;
+	int32_t secnum = -1;
 	sector_t *sec;
 
 	TAG_ITER_SECTORS(tag, secnum)
@@ -600,7 +600,7 @@ dboolean EV_DoMoveCeilingByHeight(mtag_t tag, fixed_t height, fixed_t speed, mta
 		// chained linedef executing ability
 		// only set it on ONE of the moving sectors (the smallest numbered)
 		if (chain)
-			ceiling->tag = firstone ? (INT16)chain : 0;
+			ceiling->tag = firstone ? (int16_t)chain : 0;
 
 		// flat changing ability
 		ceiling->texture = texture;
@@ -612,10 +612,10 @@ dboolean EV_DoMoveCeilingByHeight(mtag_t tag, fixed_t height, fixed_t speed, mta
 	return rtn;
 }
 
-dboolean EV_DoInstantMoveCeilingByHeight(mtag_t tag, fixed_t height, INT32 texture)
+dboolean EV_DoInstantMoveCeilingByHeight(mtag_t tag, fixed_t height, int32_t texture)
 {
 	dboolean rtn = false;
-	INT32 secnum = -1;
+	int32_t secnum = -1;
 	sector_t *sec;
 
 	TAG_ITER_SECTORS(tag, secnum)
@@ -655,7 +655,7 @@ dboolean EV_DoInstantMoveCeilingByHeight(mtag_t tag, fixed_t height, INT32 textu
 dboolean EV_DoMoveCeilingByDistance(mtag_t tag, fixed_t distance, fixed_t speed, dboolean instant)
 {
 	dboolean rtn = false;
-	INT32 secnum = -1;
+	int32_t secnum = -1;
 	sector_t *sec;
 
 	TAG_ITER_SECTORS(tag, secnum)
@@ -693,10 +693,10 @@ dboolean EV_DoMoveCeilingByDistance(mtag_t tag, fixed_t distance, fixed_t speed,
 	return rtn;
 }
 
-dboolean EV_DoBounceCeiling(mtag_t tag, dboolean crush, fixed_t crushHeight, fixed_t crushSpeed, fixed_t returnHeight, fixed_t returnSpeed, INT32 delayInit, INT32 delay)
+dboolean EV_DoBounceCeiling(mtag_t tag, dboolean crush, fixed_t crushHeight, fixed_t crushSpeed, fixed_t returnHeight, fixed_t returnSpeed, int32_t delayInit, int32_t delay)
 {
 	dboolean rtn = false;
-	INT32 secnum = -1;
+	int32_t secnum = -1;
 	sector_t *sec;
 
 	TAG_ITER_SECTORS(tag, secnum)
@@ -751,7 +751,7 @@ dboolean EV_DoBounceCeiling(mtag_t tag, dboolean crush, fixed_t crushHeight, fix
   * \return 1 if at least one crusher was started, 0 otherwise.
   * \sa EV_DoCeiling, EV_DoFloor, EV_DoElevator, T_CrushCeiling
   */
-INT32 EV_DoCrush(mtag_t tag, line_t *line, ceiling_e type)
+int32_t EV_DoCrush(mtag_t tag, line_t *line, ceiling_e type)
 {
 	// This function is deprecated.
 	// Use any of the following functions directly, instead.
@@ -769,24 +769,24 @@ INT32 EV_DoCrush(mtag_t tag, line_t *line, ceiling_e type)
 			return 0;
 
 		case raiseAndCrush:
-			return (INT32)EV_DoRaiseAndCrushCeiling(tag, speed,
+			return (int32_t)EV_DoRaiseAndCrushCeiling(tag, speed,
 				// Retain stupid behavior for backwards compatibility
 				(!udmf && !(line->flags & ML_MIDSOLID)) ? (speed / 2)
 					: (line->args[3] << (FRACBITS - 2))
 			);
 
 		case crushBothOnce:
-			return (INT32)EV_DoCrushBothOnce(tag, speed);
+			return (int32_t)EV_DoCrushBothOnce(tag, speed);
 
 		case crushCeilOnce:
-			return (INT32)EV_DoCrushCeilingOnce(tag, speed);
+			return (int32_t)EV_DoCrushCeilingOnce(tag, speed);
 	}
 }
 
-INT32 EV_DoCrushOLD(mtag_t tag, line_t *line, ceiling_e type)
+int32_t EV_DoCrushOLD(mtag_t tag, line_t *line, ceiling_e type)
 {
-	INT32 rtn = 0;
-	INT32 secnum = -1;
+	int32_t rtn = 0;
+	int32_t secnum = -1;
 	sector_t *sec;
 	ceiling_t *ceiling;
 
@@ -805,7 +805,7 @@ INT32 EV_DoCrushOLD(mtag_t tag, line_t *line, ceiling_e type)
 		ceiling->thinker.function = (actionf_p1)T_CrushCeiling;
 		ceiling->sector = sec;
 		ceiling->crush = true;
-		ceiling->sourceline = (INT32)(line-lines);
+		ceiling->sourceline = (int32_t)(line-lines);
 		ceiling->speed = ceiling->origspeed = line->args[2] << (FRACBITS - 2);
 
 		switch(type)
@@ -872,7 +872,7 @@ static ceiling_t *CreateCrushThinker(sector_t *sec)
 dboolean EV_DoRaiseAndCrushCeiling(mtag_t tag, fixed_t speed, fixed_t returnSpeed)
 {
 	dboolean rtn = false;
-	INT32 secnum = -1;
+	int32_t secnum = -1;
 	sector_t *sec;
 
 	TAG_ITER_SECTORS(tag, secnum)
@@ -904,7 +904,7 @@ dboolean EV_DoRaiseAndCrushCeiling(mtag_t tag, fixed_t speed, fixed_t returnSpee
 dboolean EV_DoCrushBothOnce(mtag_t tag, fixed_t speed)
 {
 	dboolean rtn = false;
-	INT32 secnum = -1;
+	int32_t secnum = -1;
 	sector_t *sec;
 
 	TAG_ITER_SECTORS(tag, secnum)
@@ -934,7 +934,7 @@ dboolean EV_DoCrushBothOnce(mtag_t tag, fixed_t speed)
 dboolean EV_DoCrushCeilingOnce(mtag_t tag, fixed_t speed)
 {
 	dboolean rtn = false;
-	INT32 secnum = -1;
+	int32_t secnum = -1;
 	sector_t *sec;
 
 	TAG_ITER_SECTORS(tag, secnum)

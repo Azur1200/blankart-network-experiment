@@ -58,7 +58,7 @@ extern consvar_t cv_debugrender_freezebsp;
 // increment every time a check is made
 size_t validcount = 1;
 
-INT32 centerx, centery;
+int32_t centerx, centery;
 
 fixed_t centerxfrac, centeryfrac;
 fixed_t projection[MAXSPLITSCREENPLAYERS];
@@ -72,7 +72,7 @@ size_t loopcount;
 
 fixed_t viewx, viewy, viewz;
 angle_t viewangle, aimingangle, viewroll;
-UINT8 viewssnum;
+uint8_t viewssnum;
 fixed_t viewcos, viewsin;
 dboolean skyVisible;
 dboolean skyVisiblePerPlayer[MAXSPLITSCREENPLAYERS]; // saved values of skyVisible for each splitscreen player
@@ -95,7 +95,7 @@ angle_t doubleclipangle[MAXSPLITSCREENPLAYERS];
 // maps the visible view angles to screen X coordinates,
 // flattening the arc to a flat projection plane.
 // There will be many angles mapped to the same X.
-INT32 viewangletox[MAXSPLITSCREENPLAYERS][FINEANGLES/2];
+int32_t viewangletox[MAXSPLITSCREENPLAYERS][FINEANGLES/2];
 
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
@@ -208,7 +208,7 @@ consvar_t cv_affinemosaic = CVAR_INIT ("affinemosaic", "Off", CV_SAVE, CV_OnOff,
 
 void SplitScreen_OnChange(void)
 {
-	UINT8 i;
+	uint8_t i;
 
 	/*
 	local splitscreen is updated before you're in a game,
@@ -241,7 +241,7 @@ void SplitScreen_OnChange(void)
 		{
 			if (playeringame[i] && i != consoleplayer)
 			{
-				UINT8 j;
+				uint8_t j;
 				for (j = 1; j < MAXSPLITSCREENPLAYERS; j++)
 				{
 					if (displayplayers[j] == consoleplayer)
@@ -271,7 +271,7 @@ void Fov_OnChange(void)
 //
 // killough 5/2/98: reformatted
 //
-INT32 R_PointOnSideUDMF(fixed_t x, fixed_t y, const node_t *node)
+int32_t R_PointOnSideUDMF(fixed_t x, fixed_t y, const node_t *node)
 {
 	if (!node->dx)
 		return x <= node->x ? node->dy > 0 : node->dy < 0;
@@ -283,12 +283,12 @@ INT32 R_PointOnSideUDMF(fixed_t x, fixed_t y, const node_t *node)
 	fixed_t dy = (y >> 1) - (node->y >> 1);
 
 	// Try to quickly decide by looking at sign bits.
-	INT32 mask = (((node->dy ^ node->dx ^ dx ^ dy) < 0) ? -1 : 0);
+	int32_t mask = (((node->dy ^ node->dx ^ dx ^ dy) < 0) ? -1 : 0);
 	return (mask & ((node->dy ^ dx) < 0)) |  // (left is negative)
 		   (~mask & (FixedMul(dy, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, dx)));
 }
 
-INT32 R_PointOnSideKart(fixed_t x, fixed_t y, const node_t *node)
+int32_t R_PointOnSideKart(fixed_t x, fixed_t y, const node_t *node)
 {
 	if (!node->dx)
 		return x <= node->x ? node->dy > 0 : node->dy < 0;
@@ -301,13 +301,13 @@ INT32 R_PointOnSideKart(fixed_t x, fixed_t y, const node_t *node)
 
 	// Try to quickly decide by looking at sign bits.
 	// also use a mask to avoid branch prediction
-	INT32 mask = (((node->dy ^ node->dx ^ x ^ y) < 0) ? -1 : 0);
+	int32_t mask = (((node->dy ^ node->dx ^ x ^ y) < 0) ? -1 : 0);
 	return (mask & ((node->dy ^ x) < 0)) |  // (left is negative)
 		   (~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
 }
 
 // killough 5/2/98: reformatted
-INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
+int32_t R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line)
 {
 	fixed_t lx = line->v1->x;
 	fixed_t ly = line->v1->y;
@@ -336,7 +336,7 @@ angle_t R_PointToAnglePlayer(player_t *player, fixed_t x, fixed_t y)
 {
 	fixed_t refx = viewx, refy = viewy;
 	camera_t *cam = NULL;
-	UINT8 i;
+	uint8_t i;
 
 	for (i = 0; i < r_splitscreen; i++)
 	{
@@ -359,7 +359,7 @@ angle_t R_PointToAnglePlayer(player_t *player, fixed_t x, fixed_t y)
 
 // This version uses 64-bit variables to avoid overflows with large values.
 // Currently used only by OpenGL rendering.
-angle_t R_PointToAngle64(INT64 x, INT64 y)
+angle_t R_PointToAngle64(int64_t x, int64_t y)
 {
 	return (y -= viewy, (x -= viewx) || y) ?
 	x >= 0 ?
@@ -517,7 +517,7 @@ dboolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fix
 }
 
 // Returns search dimensions within a blockmap, in the direction of viewangle and out to a certain distance.
-void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32 *yl, INT32 *yh)
+void R_GetRenderBlockMapDimensions(fixed_t drawdist, int32_t *xl, int32_t *xh, int32_t *yl, int32_t *yh)
 {
 	const angle_t left = viewangle - clipangle[viewssnum];
 	const angle_t right = viewangle + clipangle[viewssnum];
@@ -548,9 +548,9 @@ void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32
 //
 static void R_InitTextureMapping(int s)
 {
-	INT32 i;
-	INT32 x;
-	INT32 t;
+	int32_t i;
+	int32_t x;
+	int32_t t;
 	fixed_t focallength;
 
 	// Use tangent table to generate viewangletox:
@@ -618,11 +618,11 @@ static void R_InitTextureMapping(int s)
 
 static inline void R_InitLightTables(void)
 {
-	INT32 i;
-	INT32 j;
-	INT32 level;
-	INT32 startmapl;
-	INT32 scale;
+	int32_t i;
+	int32_t j;
+	int32_t level;
+	int32_t startmapl;
+	int32_t scale;
 
 	// Calculate the light levels to use
 	//  for each level / distance combination.
@@ -664,11 +664,11 @@ static struct viewmorph {
 #endif
 
 	fixed_t zoomneeded;
-	INT32 *scrmap;
-	INT32 scrmapsize;
+	int32_t *scrmap;
+	int32_t scrmapsize;
 
-	INT32 x1; // clip rendering horizontally for efficiency
-	INT16 ceilingclip[MAXVIDWIDTH], floorclip[MAXVIDWIDTH];
+	int32_t x1; // clip rendering horizontally for efficiency
+	int16_t ceilingclip[MAXVIDWIDTH], floorclip[MAXVIDWIDTH];
 
 	dboolean use;
 } viewmorph[MAXSPLITSCREENPLAYERS] = {
@@ -687,15 +687,15 @@ void R_CheckViewMorph(int s)
 	float zoomfactor, rollcos, rollsin;
 	float x1, y1, x2, y2;
 	fixed_t temp;
-	INT32 end, vx, vy, pos, usedpos;
-	INT32 realend;
-	INT32 usedx, usedy;
+	int32_t end, vx, vy, pos, usedpos;
+	int32_t realend;
+	int32_t usedx, usedy;
 
-	INT32 width = vid.width;
-	INT32 height = vid.height;
+	int32_t width = vid.width;
+	int32_t height = vid.height;
 
-	INT32 halfwidth;
-	INT32 halfheight;
+	int32_t halfwidth;
+	int32_t halfheight;
 
 #ifdef WOUGHMP_WOUGHMP
 	float fisheyemap[MAXVIDWIDTH/2 + 1];
@@ -757,7 +757,7 @@ void R_CheckViewMorph(int s)
 	{
 		if (v->scrmap)
 			free(v->scrmap);
-		v->scrmap = static_cast<INT32*>(malloc(width * height * sizeof(INT32)));
+		v->scrmap = static_cast<int32_t*>(malloc(width * height * sizeof(int32_t)));
 		v->scrmapsize = width * height;
 	}
 
@@ -820,10 +820,10 @@ void R_CheckViewMorph(int s)
 
 #ifdef WOUGHMP_WOUGHMP
 	if (fisheye)
-		v->x1 = (INT32)(halfwidth - (halfwidth * fabsf(rollcos) + halfheight * fabsf(rollsin)) * fisheyemap[halfwidth]);
+		v->x1 = (int32_t)(halfwidth - (halfwidth * fabsf(rollcos) + halfheight * fabsf(rollsin)) * fisheyemap[halfwidth]);
 	else
 #endif
-	v->x1 = (INT32)(halfwidth - (halfwidth * fabsf(rollcos) + halfheight * fabsf(rollsin)));
+	v->x1 = (int32_t)(halfwidth - (halfwidth * fabsf(rollcos) + halfheight * fabsf(rollsin)));
 	//CONS_Printf("saving %d cols\n", v->x1);
 
 	// Set ceilingclip and floorclip
@@ -836,7 +836,7 @@ void R_CheckViewMorph(int s)
 	y2 = y1;
 	for (vx = 0; vx < width; vx++)
 	{
-		INT16 xa, ya, xb, yb;
+		int16_t xa, ya, xb, yb;
 		xa = x2+halfwidth;
 		ya = y2+halfheight-1;
 		xb = width-1-xa;
@@ -853,7 +853,7 @@ void R_CheckViewMorph(int s)
 	y2 = y1;
 	for (vy = 0; vy < height; vy++)
 	{
-		INT16 xa, ya, xb, yb;
+		int16_t xa, ya, xb, yb;
 		xa = x2+halfwidth;
 		ya = y2+halfheight;
 		xb = width-1-xa;
@@ -932,12 +932,12 @@ void R_CheckViewMorph(int s)
 
 void R_ApplyViewMorph(int s)
 {
-	UINT8 *tmpscr = vid.screens[4];
-	UINT8 *srcscr = vid.screens[0];
-	INT32 width = vid.width;
-	INT32 height = vid.height;
-	INT32 p;
-	INT32 end;
+	uint8_t *tmpscr = vid.screens[4];
+	uint8_t *srcscr = vid.screens[0];
+	int32_t width = vid.width;
+	int32_t height = vid.height;
+	int32_t p;
+	int32_t end;
 
 	if (!viewmorph[s].use)
 		return;
@@ -977,7 +977,7 @@ void R_ApplyViewMorph(int s)
 	VID_BlitLinearScreen(tmpscr, srcscr, width, height, width, vid.width);
 }
 
-angle_t R_ViewRollAngle(const player_t *player, UINT8 viewnum)
+angle_t R_ViewRollAngle(const player_t *player, uint8_t viewnum)
 {
 	angle_t roll = player->viewrollangle;
 
@@ -1020,10 +1020,10 @@ void R_SetViewSize(void)
 void R_ExecuteSetViewSize(void)
 {
 	fixed_t dy;
-	INT32 i;
-	INT32 j;
-	INT32 level;
-	INT32 startmapl;
+	int32_t i;
+	int32_t j;
+	int32_t level;
+	int32_t startmapl;
 	angle_t fov;
 	int s;
 
@@ -1080,7 +1080,7 @@ void R_ExecuteSetViewSize(void)
 
 	// thing clipping
 	for (i = 0; i < viewwidth; i++)
-		screenheightarray[i] = (INT16)viewheight;
+		screenheightarray[i] = (int16_t)viewheight;
 
 	// setup sky scaling
 	R_SetSkyScale();
@@ -1185,7 +1185,7 @@ dboolean R_IsPointInSector(sector_t *sector, fixed_t x, fixed_t y)
 		if (v1->y < y && y <= v2->y)
 		{
 			// if the y axis in inside the line, find the point where we intersect on the x axis...
-			fixed_t vx = v1->x + (INT64)(v2->x - v1->x) * (y - v1->y) / (v2->y - v1->y);
+			fixed_t vx = v1->x + (int64_t)(v2->x - v1->x) * (y - v1->y) / (v2->y - v1->y);
 
 			// ...and if that point is to the left of the point, count it as inside.
 			if (vx < x)
@@ -1216,7 +1216,7 @@ subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
 subsector_t *R_PointInSubsectorOrNull(fixed_t x, fixed_t y)
 {
 	node_t *node;
-	INT32 side, i;
+	int32_t side, i;
 	size_t nodenum;
 	subsector_t *ret;
 	seg_t *seg;
@@ -1257,7 +1257,7 @@ R_SetupCommonFrame
 (		player_t * player,
 		subsector_t * subsector)
 {
-	const UINT8 viewnum = R_GetViewNumber();
+	const uint8_t viewnum = R_GetViewNumber();
 	newview->player = player;
 
 	newview->x += quake.x;
@@ -1475,7 +1475,7 @@ void R_SkyboxFrame(int s)
 dboolean R_ViewpointHasChasecam(player_t *player)
 {
 	dboolean chasecam = false;
-	UINT8 i;
+	uint8_t i;
 
 	for (i = 0; i <= splitscreen; i++)
 	{
@@ -1561,7 +1561,7 @@ static void Mask_Post(maskcount_t* m)
 // ================
 
 // viewx, viewy, viewangle, all that good stuff must be set
-static void R_RenderViewpoint(maskcount_t* mask, INT32 cachenum, dboolean drawprecip)
+static void R_RenderViewpoint(maskcount_t* mask, int32_t cachenum, dboolean drawprecip)
 {
 	Mask_Pre(mask);
 
@@ -1584,7 +1584,7 @@ static void R_RenderViewpoint(maskcount_t* mask, INT32 cachenum, dboolean drawpr
 
 void R_RenderPlayerView(void)
 {
-	INT32         nummasks = 1;
+	int32_t         nummasks = 1;
 	maskcount_t*  masks    = static_cast<maskcount_t*>(malloc(sizeof(maskcount_t)));
 	const dboolean skybox   = (skyboxmo[0] && cv_skybox.value);
 	const dboolean oldsky   = (skybox && mapnamespace == MNS_SRB2KART);
@@ -1627,8 +1627,8 @@ void R_RenderPlayerView(void)
 		portalclipstart = viewmorph[viewssnum].x1;
 		portalclipend = viewwidth-viewmorph[viewssnum].x1-1;
 		R_PortalClearClipSegs(portalclipstart, portalclipend);
-		memcpy(ceilingclip, viewmorph[viewssnum].ceilingclip, sizeof(INT16)*vid.width);
-		memcpy(floorclip,   viewmorph[viewssnum].floorclip,   sizeof(INT16)*vid.width);
+		memcpy(ceilingclip, viewmorph[viewssnum].ceilingclip, sizeof(int16_t)*vid.width);
+		memcpy(floorclip,   viewmorph[viewssnum].floorclip,   sizeof(int16_t)*vid.width);
 	}
 	else
 	{
@@ -1725,7 +1725,7 @@ void R_RenderPlayerView(void)
 
 	if (cv_debugrender_visplanes.value)
 	{
-		for (INT32 i = 0; i < MAXVISPLANES; i++)
+		for (int32_t i = 0; i < MAXVISPLANES; i++)
 		{
 			for (visplane_t* pl = visplanes[i]; pl; pl = pl->next)
 			{
@@ -1741,7 +1741,7 @@ void R_RenderPlayerView(void)
 					if (bot > viewheight-1)
 						bot = viewheight-1;
 
-					UINT8* p =  R_Address(x, top);
+					uint8_t* p =  R_Address(x, top);
 
 					while (top <= bot)
 					{
@@ -1757,16 +1757,16 @@ void R_RenderPlayerView(void)
 						col(x, top, bot);
 				};
 
-				INT32 top = pl->top[pl->minx];
-				INT32 bottom = pl->bottom[pl->minx];
+				int32_t top = pl->top[pl->minx];
+				int32_t bottom = pl->bottom[pl->minx];
 
 				span(pl->minx, top, bottom);
 				span(pl->maxx, pl->top[pl->maxx], pl->bottom[pl->maxx]);
 
-				for (INT32 x = pl->minx + 1; x < std::min(pl->maxx, viewwidth); ++x)
+				for (int32_t x = pl->minx + 1; x < std::min(pl->maxx, viewwidth); ++x)
 				{
-					INT32 new_top = pl->top[x];
-					INT32 new_bottom = pl->bottom[x];
+					int32_t new_top = pl->top[x];
+					int32_t new_bottom = pl->bottom[x];
 
 					if (new_top > new_bottom)
 						continue;
@@ -1793,17 +1793,17 @@ void R_RenderPlayerView(void)
 	if (portal_base && cv_debugrender_portal.value)
 	{
 		portal_t *portal;
-		constexpr UINT8 pal = 0x23; // red
+		constexpr uint8_t pal = 0x23; // red
 
 		for (portal = portal_base; portal; portal = portal_base)
 		{
-			INT32 i;
-			INT32 width = (portal->end - portal->start);
+			int32_t i;
+			int32_t width = (portal->end - portal->start);
 
 			for (i = 0; i < std::min(width, viewwidth); ++i)
 			{
-				INT32 yl = std::max(portal->ceilingclip[i] + 1, 0);
-				INT32 yh = std::min(static_cast<INT32>(portal->floorclip[i]), viewheight);
+				int32_t yl = std::max(portal->ceilingclip[i] + 1, 0);
+				int32_t yh = std::min(static_cast<int32_t>(portal->floorclip[i]), viewheight);
 
 				for (; yl < yh; ++yl)
 				{
@@ -1828,7 +1828,7 @@ void R_RenderPlayerView(void)
 
 void R_RegisterEngineStuff(void)
 {
-	UINT8 i;
+	uint8_t i;
 
 	CV_RegisterVar(&cv_gravity);
 	CV_RegisterVar(&cv_allowmlook);

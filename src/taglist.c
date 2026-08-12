@@ -40,7 +40,7 @@ void Tag_Add (taglist_t* list, const mtag_t tag)
 /// \warning This does not rebuild the global taggroups, which are used for iteration.
 void Tag_Remove(taglist_t* list, const mtag_t tag)
 {
-	UINT16 i;
+	uint16_t i;
 
 	for (i = 0; i < list->count; i++)
 	{
@@ -137,7 +137,7 @@ size_t Taggroup_Count (const taggroup_t *group)
 }
 
 /// Iterate thru elements in a global taggroup.
-INT32 Taggroup_Iterate
+int32_t Taggroup_Iterate
 (		taggroup_t *garray[],
 		const size_t max_elements,
 		const mtag_t tag,
@@ -152,7 +152,7 @@ INT32 Taggroup_Iterate
 		return -1;
 	}
 
-	group = garray[(UINT16)tag];
+	group = garray[(uint16_t)tag];
 
 	if (group)
 	{
@@ -172,23 +172,23 @@ void Taggroup_Add (taggroup_t *garray[], const mtag_t tag, size_t id)
 	if (tag == MTAG_GLOBAL)
 		return;
 
-	group = garray[(UINT16)tag];
+	group = garray[(uint16_t)tag];
 
 	// Don't add duplicate entries.
 	if (Taggroup_Find(group, id) != (size_t)-1)
 		return;
 
-	if (! in_bit_array(tags_available, (UINT16)tag))
+	if (! in_bit_array(tags_available, (uint16_t)tag))
 	{
 		num_tags++;
-		set_bit_array(tags_available, (UINT16)tag);
+		set_bit_array(tags_available, (uint16_t)tag);
 	}
 
 	// Create group if empty.
 	if (!group)
 	{
 		i = 0;
-		group = garray[(UINT16)tag] = Z_Calloc(sizeof(taggroup_t), PU_LEVEL, NULL);
+		group = garray[(uint16_t)tag] = Z_Calloc(sizeof(taggroup_t), PU_LEVEL, NULL);
 	}
 	else
 	{
@@ -216,17 +216,17 @@ static void Taggroup_Add_Init(taggroup_t *garray[], const mtag_t tag, size_t id)
 	if (tag == MTAG_GLOBAL)
 		return;
 
-	group = garray[(UINT16)tag];
+	group = garray[(uint16_t)tag];
 
-	if (! in_bit_array(tags_available, (UINT16)tag))
+	if (! in_bit_array(tags_available, (uint16_t)tag))
 	{
 		num_tags++;
-		set_bit_array(tags_available, (UINT16)tag);
+		set_bit_array(tags_available, (uint16_t)tag);
 	}
 
 	// Create group if empty.
 	if (!group)
-		group = garray[(UINT16)tag] = Z_Calloc(sizeof(taggroup_t), PU_LEVEL, NULL);
+		group = garray[(uint16_t)tag] = Z_Calloc(sizeof(taggroup_t), PU_LEVEL, NULL);
 	else if (group->elements[group->count - 1] == id)
 		return; // Don't add duplicates
 
@@ -260,7 +260,7 @@ void Taggroup_Remove (taggroup_t *garray[], const mtag_t tag, size_t id)
 	if (tag == MTAG_GLOBAL)
 		return;
 
-	group = garray[(UINT16)tag];
+	group = garray[(uint16_t)tag];
 
 	if ((rempos = Taggroup_Find(group, id)) == (size_t)-1)
 		return;
@@ -268,7 +268,7 @@ void Taggroup_Remove (taggroup_t *garray[], const mtag_t tag, size_t id)
 	if (group->count == 1 && total_elements_with_tag(tag) == 1)
 	{
 		num_tags--;
-		unset_bit_array(tags_available, (UINT16)tag);
+		unset_bit_array(tags_available, (uint16_t)tag);
 	}
 
 	// Strip away taggroup if no elements left.
@@ -276,7 +276,7 @@ void Taggroup_Remove (taggroup_t *garray[], const mtag_t tag, size_t id)
 	{
 		Z_Free(group->elements);
 		Z_Free(group);
-		garray[(UINT16)tag] = NULL;
+		garray[(uint16_t)tag] = NULL;
 	}
 	else
 	{
@@ -335,17 +335,17 @@ void Taglist_InitGlobalTables(void)
 
 // Iteration, ingame search.
 
-INT32 Tag_Iterate_Sectors (const mtag_t tag, const size_t p)
+int32_t Tag_Iterate_Sectors (const mtag_t tag, const size_t p)
 {
 	return Taggroup_Iterate(tags_sectors, numsectors, tag, p);
 }
 
-INT32 Tag_Iterate_Lines (const mtag_t tag, const size_t p)
+int32_t Tag_Iterate_Lines (const mtag_t tag, const size_t p)
 {
 	return Taggroup_Iterate(tags_lines, numlines, tag, p);
 }
 
-INT32 Tag_FindLineSpecial(const INT16 special, const mtag_t tag)
+int32_t Tag_FindLineSpecial(const int16_t special, const mtag_t tag)
 {
 	size_t i;
 
@@ -355,9 +355,9 @@ INT32 Tag_FindLineSpecial(const INT16 special, const mtag_t tag)
 			if (lines[i].special == special)
 				return i;
 	}
-	else if (tags_lines[(UINT16)tag])
+	else if (tags_lines[(uint16_t)tag])
 	{
-		taggroup_t *tagged = tags_lines[(UINT16)tag];
+		taggroup_t *tagged = tags_lines[(uint16_t)tag];
 		for (i = 0; i < tagged->count; i++)
 			if (lines[tagged->elements[i]].special == special)
 				return tagged->elements[i];
@@ -366,16 +366,16 @@ INT32 Tag_FindLineSpecial(const INT16 special, const mtag_t tag)
 }
 
 /// Backwards compatibility iteration function for Lua scripts.
-INT32 P_FindSpecialLineFromTag(INT16 special, INT16 tag, INT32 start)
+int32_t P_FindSpecialLineFromTag(int16_t special, int16_t tag, int32_t start)
 {
 	if (tag == -1)
 	{
 		start++;
 
-		if (start >= (INT32)numlines)
+		if (start >= (int32_t)numlines)
 			return -1;
 
-		while (start < (INT32)numlines && lines[start].special != special)
+		while (start < (int32_t)numlines && lines[start].special != special)
 			start++;
 
 		return start;
@@ -383,7 +383,7 @@ INT32 P_FindSpecialLineFromTag(INT16 special, INT16 tag, INT32 start)
 	else
 	{
 		size_t p = 0;
-		INT32 id;
+		int32_t id;
 
 		// For backwards compatibility's sake, simulate the old linked taglist behavior:
 		// Iterate through the taglist and find the "start" line's position in the list,
@@ -440,9 +440,9 @@ void Tag_SectorFSet (const size_t id, const mtag_t tag)
 
 mtag_t Tag_NextUnused(mtag_t start)
 {
-	while ((UINT16)start < MAXTAGS)
+	while ((uint16_t)start < MAXTAGS)
 	{
-		if (!in_bit_array(tags_available, (UINT16)start))
+		if (!in_bit_array(tags_available, (uint16_t)start))
 			return start;
 
 		start++;
@@ -453,7 +453,7 @@ mtag_t Tag_NextUnused(mtag_t start)
 
 // This is no longer a tag list to maintain parity with mobjs,
 // but it's convenient to keep it in this file anyway.
-INT32 Tag_Iterate_Things (const mtag_t tag, const size_t p)
+int32_t Tag_Iterate_Things (const mtag_t tag, const size_t p)
 {
 	size_t i = SIZE_MAX;
 

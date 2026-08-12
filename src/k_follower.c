@@ -14,7 +14,7 @@
 #include "s_sound.h"
 #include "m_cond.h"
 
-INT32 numfollowers = 0;
+int32_t numfollowers = 0;
 follower_t followers[MAXSKINS];
 
 CV_PossibleValue_t Followercolor_cons_t[MAXSKINCOLORS+3];	// +3 to account for "Match", "Opposite" & NULL
@@ -22,13 +22,13 @@ CV_PossibleValue_t Followercolor_cons_t[MAXSKINCOLORS+3];	// +3 to account for "
 consvar_t cv_hidefollowers = CVAR_INIT ("hidefollowers", "Off", CV_SAVE, CV_OnOff, NULL);
 
 /*--------------------------------------------------
-	INT32 K_FollowerAvailable(const char *name)
+	int32_t K_FollowerAvailable(const char *name)
 
 		See header file for description.
 --------------------------------------------------*/
-INT32 K_FollowerAvailable(const char *name)
+int32_t K_FollowerAvailable(const char *name)
 {
-	INT32 i;
+	int32_t i;
 
 	for (i = 0; i < numfollowers; i++)
 	{
@@ -40,13 +40,13 @@ INT32 K_FollowerAvailable(const char *name)
 }
 
 /*--------------------------------------------------
-	dboolean K_SetFollowerByName(INT32 playernum, const char *skinname)
+	dboolean K_SetFollowerByName(int32_t playernum, const char *skinname)
 
 		See header file for description.
 --------------------------------------------------*/
-dboolean K_SetFollowerByName(INT32 playernum, const char *skinname)
+dboolean K_SetFollowerByName(int32_t playernum, const char *skinname)
 {
-	INT32 i;
+	int32_t i;
 	player_t *player = &players[playernum];
 
 	if (fasticmp("None", skinname))
@@ -79,11 +79,11 @@ dboolean K_SetFollowerByName(INT32 playernum, const char *skinname)
 }
 
 /*--------------------------------------------------
-	void K_SetFollowerByNum(INT32 playernum, INT32 skinnum)
+	void K_SetFollowerByNum(int32_t playernum, int32_t skinnum)
 
 		See header file for description.
 --------------------------------------------------*/
-void K_SetFollowerByNum(INT32 playernum, INT32 skinnum)
+void K_SetFollowerByNum(int32_t playernum, int32_t skinnum)
 {
 	player_t *player = &players[playernum];
 	mobj_t *bub;
@@ -180,11 +180,11 @@ static void K_SetFollowerState(mobj_t *f, statenum_t state)
 }
 
 /*--------------------------------------------------
-	UINT16 K_GetEffectiveFollowerColor(UINT16 followercolor, follower_t *follower, UINT16 playercolor, skin_t *playerskin)
+	uint16_t K_GetEffectiveFollowerColor(uint16_t followercolor, follower_t *follower, uint16_t playercolor, skin_t *playerskin)
 
 		See header file for description.
 --------------------------------------------------*/
-UINT16 K_GetEffectiveFollowerColor(UINT16 followercolor, follower_t *follower, UINT16 playercolor, skin_t *playerskin)
+uint16_t K_GetEffectiveFollowerColor(uint16_t followercolor, follower_t *follower, uint16_t playercolor, skin_t *playerskin)
 {
 	if (followercolor == SKINCOLOR_NONE && follower != NULL) // "Default"
 	{
@@ -238,7 +238,7 @@ static void K_UpdateFollowerState(mobj_t *f, statenum_t state, followerstate_t t
 		return;
 	}
 
-	if (f->extravalue1 != (INT32)type)
+	if (f->extravalue1 != (int32_t)type)
 	{
 		K_SetFollowerState(f, state);
 		f->extravalue1 = type;
@@ -268,7 +268,7 @@ static void K_UpdateFollowerMood(mobj_t *f, followermood_t mood, tic_t time)
 
 
 	f->extravalue3 = mood;
-	f->cvmem = (INT32)(time);
+	f->cvmem = (int32_t)(time);
 }
 
 /*--------------------------------------------------
@@ -284,13 +284,13 @@ void K_HandleFollower(player_t *player)
 	fixed_t ourheight;
 	fixed_t sx, sy, sz, deltaz;
 	fixed_t fh = INT32_MIN, ch = INT32_MAX;
-	UINT16 color;
+	uint16_t color;
 
 	fixed_t bubble; // bubble scale (0 if no bubble)
 	mobj_t *bmobj; // temp bubble mobj
 
 	angle_t destAngle;
-	INT32 angleDiff;
+	int32_t angleDiff;
 
 	if (player->followerready == false)
 	{

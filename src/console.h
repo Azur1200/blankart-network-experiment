@@ -60,21 +60,21 @@ typedef enum
 extern con_loadprogress_t con_startup_loadprogress;
 
 // 0 means console if off, or moving out
-extern INT32 con_destlines;
+extern int32_t con_destlines;
 
-extern UINT32 con_scalefactor; // console text scale factor
+extern uint32_t con_scalefactor; // console text scale factor
 
 extern consvar_t cons_backcolor, cons_menuhighlight;
 
-extern UINT8 *yellowmap, *purplemap, *greenmap, *bluemap, *graymap, *redmap, *orangemap,\
+extern uint8_t *yellowmap, *purplemap, *greenmap, *bluemap, *graymap, *redmap, *orangemap,\
  *skymap, *goldmap, *lavendermap, *aquamap, *magentamap, *pinkmap, *brownmap, *tanmap;
 
 // Console bg color (auto updated to match)
-extern UINT8 *consolebgmap;
-extern UINT8 *promptbgmap;
+extern uint8_t *consolebgmap;
+extern uint8_t *promptbgmap;
 
-INT32 CON_ShiftChar(INT32 ch);
-void CON_SetupBackColormapEx(INT32 color, dboolean prompt);
+int32_t CON_ShiftChar(int32_t ch);
+void CON_SetupBackColormapEx(int32_t color, dboolean prompt);
 void CON_SetupBackColormap(void);
 void CON_ClearHUD(void); // clear heads up messages
 

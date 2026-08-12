@@ -18,13 +18,13 @@ extern consvar_t cv_emotes;
 typedef struct emote_s {
 	char name[MAXEMOTENAME+1];
 	char frames[MAXEMOTEFRAMES][9];
-	UINT8 numframes;
+	uint8_t numframes;
 	tic_t timeperframe;
 	patch_t *frames_cached[MAXEMOTEFRAMES];
 } emote_t;
 
 // Reads and adds emotes from EMOTES lump, with syntax similar to soc
-void M_LoadEmotes(UINT16 wadnum);
+void M_LoadEmotes(uint16_t wadnum);
 
 // Load emotes from all base wads
 void M_InitEmotes(void);
@@ -41,7 +41,7 @@ emote_t *M_VerifyEmote(const char *name, int *emotelen);
 
 // Draw the emote, animation for animated emotes is done via I_GetTime
 #define M_DrawEmote(x, y, emote, flags) M_DrawScaledEmote((x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, emote, flags)
-void M_DrawScaledEmote(fixed_t x, fixed_t y, fixed_t scale, emote_t *emote, INT32 flags);
+void M_DrawScaledEmote(fixed_t x, fixed_t y, fixed_t scale, emote_t *emote, int32_t flags);
 
 #ifdef __cplusplus
 } // extern "C"

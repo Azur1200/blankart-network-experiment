@@ -33,7 +33,7 @@ extern strbuf_t *skincolornames;
 extern strbuf_t *menunames;
 extern strbuf_t *kartitemnames;
 
-extern UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
+extern uint8_t used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
 const char *DEH_MobjtypeName(mobjtype_t i);
 const char *DEH_StateName(statenum_t i);

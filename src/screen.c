@@ -49,8 +49,8 @@
 // global video state
 // ------------------
 viddef_t vid;
-INT32 setmodeneeded; //video mode change needed if > 0 (the mode number to set + 1)
-UINT8 setrenderneeded = 0;
+int32_t setmodeneeded; //video mode change needed if > 0 (the mode number to set + 1)
+uint8_t setrenderneeded = 0;
 
 //added : 03-02-98: default screen mode, as loaded/saved in config
 consvar_t cv_scr_width = CVAR_INIT ("scr_width", "640", CV_SAVE, CV_Unsigned, NULL);
@@ -386,7 +386,7 @@ void SCR_SetMode(void)
 	// Shoot! The screen texture was flushed!
 	Y_CleanupScreenBuffer();
 
-	// set the apprpriate drawer for the sky (tall or INT16)
+	// set the apprpriate drawer for the sky (tall or int16_t)
 	setmodeneeded = 0;
 	setrenderneeded = 0;
 }
@@ -446,7 +446,7 @@ void SCR_Recalc(void)
 
 void SCR_CheckDefaultMode(void)
 {
-	INT32 scr_forcex, scr_forcey; // resolution asked from the cmd-line
+	int32_t scr_forcex, scr_forcey; // resolution asked from the cmd-line
 
 	if (dedicated)
 		return;
@@ -550,7 +550,7 @@ void SCR_ChangeRenderer(void)
 	setrenderneeded = cv_renderer.value;
 }
 
-dboolean SCR_IsAspectCorrect(INT32 width, INT32 height)
+dboolean SCR_IsAspectCorrect(int32_t width, int32_t height)
 {
 	return
 	 (  width % BASEVIDWIDTH == 0
@@ -589,7 +589,7 @@ void SCR_CalculateFPS(void)
 	}
 
 	fps_finish = I_GetPreciseTime();
-	frameElapsed = (double)((INT64)(fps_finish - fps_enter)) / I_GetPrecisePrecision();
+	frameElapsed = (double)((int64_t)(fps_finish - fps_enter)) / I_GetPrecisePrecision();
 	fps_enter = fps_finish;
 
 #ifdef USE_FPS_SAMPLES
@@ -641,15 +641,15 @@ void SCR_CalculateFPS(void)
 
 void SCR_DisplayTicRate(void)
 {
-	UINT32 cap = R_GetFramerateCap();
-	UINT32 benchmark = (cap == 0) ? I_GetRefreshRate() : cap;
+	uint32_t cap = R_GetFramerateCap();
+	uint32_t benchmark = (cap == 0) ? I_GetRefreshRate() : cap;
 	double fps = round(averageFPS);
-	INT32 fpsflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
+	int32_t fpsflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
 
 	if (cv_ticrate.value == 1 || cv_ticrate.value == 2)
 	{
-		const UINT8 *ticcntcolor = NULL;
-		INT32 x = 318;
+		const uint8_t *ticcntcolor = NULL;
+		int32_t x = 318;
 
 		// draw "FPS"
 		if (cv_ticrate.value == 1)
@@ -662,8 +662,8 @@ void SCR_DisplayTicRate(void)
 
 		if (cap != 0)
 		{
-			UINT32 digits = 1;
-			UINT32 c2 = cap;
+			uint32_t digits = 1;
+			uint32_t c2 = cap;
 
 			while (c2 > 0)
 			{
@@ -685,7 +685,7 @@ void SCR_DisplayTicRate(void)
 	else if (cv_ticrate.value == 3 || cv_ticrate.value == 4) // kart v1.0/srb2 counter
 	{
 		const char *fps_string;
-		INT32 ticcntcolor2 = 0;
+		int32_t ticcntcolor2 = 0;
 
 		if (fps > (benchmark - 5))
 			ticcntcolor2 = V_GREENMAP;
@@ -693,9 +693,9 @@ void SCR_DisplayTicRate(void)
 			ticcntcolor2 = V_REDMAP;
 
 		if (cap != 0)
-			fps_string = va("%d/%d\x82", (INT32)fps, cap);
+			fps_string = va("%d/%d\x82", (int32_t)fps, cap);
 		else
-			fps_string = va("%d\x82", (INT32)fps);
+			fps_string = va("%d\x82", (int32_t)fps);
 
 		// draw "FPS"
 		if (cv_ticrate.value == 3)
@@ -710,13 +710,13 @@ void SCR_DisplayTicRate(void)
 
 void SCR_DisplayLocalPing(void)
 {
-	UINT32 mindelay = playerdelaytable[consoleplayer];
-	UINT32 ping = playerpingtable[consoleplayer];	// consoleplayer's ping is everyone's ping in a splitnetgame :P
-	UINT32 pl = playerpacketlosstable[consoleplayer];
+	uint32_t mindelay = playerdelaytable[consoleplayer];
+	uint32_t ping = playerpingtable[consoleplayer];	// consoleplayer's ping is everyone's ping in a splitnetgame :P
+	uint32_t pl = playerpacketlosstable[consoleplayer];
 	if (( cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping) ))	// only show 2 (warning) if our ping is at a bad level
 	{
-		INT32 dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2 || cv_ticrate.value == 4) ? 172 : ((cv_ticrate.value == 3) ? 163 : 181)); // absolute buttpain
-		INT32 pingflags = V_LocalTransFlag()|V_SNAPTORIGHT|V_SNAPTOBOTTOM;
+		int32_t dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2 || cv_ticrate.value == 4) ? 172 : ((cv_ticrate.value == 3) ? 163 : 181)); // absolute buttpain
+		int32_t pingflags = V_LocalTransFlag()|V_SNAPTORIGHT|V_SNAPTOBOTTOM;
 
 		if (cv_pingstyle.value)
 			HU_drawOldPing(308, dispy,  ping, mindelay, pl, pingflags);
@@ -728,9 +728,9 @@ void SCR_DisplayLocalPing(void)
 
 void SCR_ClosedCaptions(void)
 {
-	UINT8 i;
+	uint8_t i;
 	dboolean gamestopped = (paused || P_AutoPause());
-	INT32 basey = BASEVIDHEIGHT - 20;
+	int32_t basey = BASEVIDHEIGHT - 20;
 
 	if (gamestate != wipegamestate)
 		return;
@@ -745,7 +745,7 @@ void SCR_ClosedCaptions(void)
 
 	for (i = 0; i < NUMCAPTIONS; i++)
 	{
-		INT32 flags;
+		int32_t flags;
 		fixed_t y;
 		char dot;
 		dboolean music;
@@ -792,7 +792,7 @@ void SCR_ClosedCaptions(void)
 
 void SCR_DisplayMarathonInfo(void)
 {
-	INT32 flags = V_SNAPTOBOTTOM;
+	int32_t flags = V_SNAPTOBOTTOM;
 	static tic_t entertic, oldentertics = 0, antisplice[2] = {48,0};
 	const char *str;
 #if 0 // eh, this probably isn't going to be a problem
