@@ -422,9 +422,9 @@ static uint8_t *G_ReadZipTic(ticcmd_t *cmd, uint8_t *dp, uint16_t version)
 		ziptic = READUINT16(dp);
 
 	if (ziptic & ZT_FWD)
-		cmd->forwardmove = READSINT8(dp);
+		cmd->forwardmove = READINT8(dp);
 	if (ziptic & ZT_SIDE)
-		cmd->sidemove = READSINT8(dp);
+		cmd->sidemove = READINT8(dp);
 	if (!kart && ziptic & ZT_TURNING)
 		cmd->turning = READINT16(dp);
 	if (ziptic & ZT_ANGLE)
@@ -445,9 +445,9 @@ static uint8_t *G_ReadZipTic(ticcmd_t *cmd, uint8_t *dp, uint16_t version)
 	if (version < 0x000a && ziptic & 0x8000) // ZT_BOT
 	{
 		uint16_t botziptic = READUINT16(dp);
-		if (botziptic & 1) (void)READSINT8(dp);
-		if (botziptic & 2) (void)READSINT8(dp);
-		if (botziptic & 4) (void)READSINT8(dp);
+		if (botziptic & 1) (void)READINT8(dp);
+		if (botziptic & 2) (void)READINT8(dp);
+		if (botziptic & 4) (void)READINT8(dp);
 	}
 	return dp;
 }
@@ -1618,14 +1618,14 @@ void G_WriteDemoTiccmd(ticcmd_t *cmd, int32_t playernum)
 
 	if (cmd->forwardmove != oldcmd[playernum].forwardmove)
 	{
-		WRITESINT8(demobuf.p,cmd->forwardmove);
+		WRITEINT8(demobuf.p,cmd->forwardmove);
 		oldcmd[playernum].forwardmove = cmd->forwardmove;
 		ziptic |= ZT_FWD;
 	}
 
 	if (cmd->sidemove != oldcmd[playernum].sidemove)
 	{
-		WRITESINT8(demobuf.p,cmd->sidemove);
+		WRITEINT8(demobuf.p,cmd->sidemove);
 		oldcmd[playernum].sidemove = cmd->sidemove;
 		ziptic |= ZT_SIDE;
 	}

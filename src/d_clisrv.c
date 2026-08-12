@@ -3396,7 +3396,7 @@ static void Command_Kick(void)
 			return;
 		}
 
-		WRITESINT8(p, pn);
+		WRITEINT8(p, pn);
 
 		if (COM_Argc() == 2)
 		{

@@ -1477,7 +1477,7 @@ static uint8_t ArchiveValue(uint8_t **p, int TABLESINDEX, int myindex)
 		if (number >= INT8_MIN && number <= INT8_MAX)
 		{
 			WRITEUINT8(*p, ARCH_INT8);
-			WRITESINT8(*p, number);
+			WRITEINT8(*p, number);
 		}
 		else if (number >= INT16_MIN && number <= INT16_MAX)
 		{
@@ -1974,7 +1974,7 @@ static uint8_t UnArchiveValue(uint8_t **p, int TABLESINDEX, dboolean compat)
 		lua_pushdboolean(gL, false);
 		break;
 	case ARCH_INT8:
-		lua_pushinteger(gL, READSINT8(*p));
+		lua_pushinteger(gL, READINT8(*p));
 		break;
 	case ARCH_INT16:
 		lua_pushinteger(gL, READINT16(*p));

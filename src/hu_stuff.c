@@ -593,7 +593,7 @@ static void Got_Saycmd(uint8_t **p, int32_t playernum)
 	if (playernum != serverplayer)
 		return;
 
-	target = READSINT8(*p);
+	target = READINT8(*p);
 	flags = READUINT8(*p);
 	playernum = READUINT8(*p);
 	msg = (char *)*p;

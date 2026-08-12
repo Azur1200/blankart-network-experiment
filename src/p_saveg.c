@@ -69,11 +69,11 @@ static int8_t P_SyncSINT8(savebuffer_t *save, int8_t v)
 {
 	if (save->write)
 	{
-		WRITESINT8(save->p,v);
+		WRITEINT8(save->p,v);
 		return v;
 	}
 	else
-		return READSINT8(save->p);
+		return READINT8(save->p);
 }
 
 static uint16_t P_SyncUINT16(savebuffer_t *save, uint16_t v)
@@ -446,7 +446,7 @@ static inline void P_ArchivePlayer(savebuffer_t *save)
 
 	WRITEUINT16(save->p, skininfo);
 	WRITEUINT8(save->p, numgameovers);
-	WRITESINT8(save->p, pllives);
+	WRITEINT8(save->p, pllives);
 	WRITEUINT32(save->p, player->score);
 }
 
@@ -456,7 +456,7 @@ static inline void P_UnArchivePlayer(savebuffer_t *save)
 	savedata.skin = skininfo;
 
 	savedata.numgameovers = READUINT8(save->p);
-	savedata.lives = READSINT8(save->p);
+	savedata.lives = READINT8(save->p);
 	savedata.score = READUINT32(save->p);
 }
 

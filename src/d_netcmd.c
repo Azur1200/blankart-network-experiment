@@ -3164,7 +3164,7 @@ void D_Cheat(int32_t playernum, int32_t cheat, ...)
 		case CHEAT_LIVES:
 			// If you're confused why 'int' instead of
 			// 'int8_t', search online: 'default argument promotions'
-			COPY(WRITESINT8, int);
+			COPY(WRITEINT8, int);
 			break;
 
 		case CHEAT_SCALE:
@@ -3187,7 +3187,7 @@ void D_Cheat(int32_t playernum, int32_t cheat, ...)
 			break;
 
 		case CHEAT_GIVEITEM:
-			COPY(WRITESINT8, int);
+			COPY(WRITEINT8, int);
 			COPY(WRITEUINT8, unsigned int);
 			break;
 
@@ -3840,7 +3840,7 @@ void D_ModifyClientVote(uint8_t player, int8_t voted)
 		}
 	}
 
-	WRITESINT8(p, voted);
+	WRITEINT8(p, voted);
 	SendNetXCmdForPlayer(sendPlayer, XD_MODIFYVOTE, &buf, p - buf);
 }
 
@@ -3871,13 +3871,13 @@ void D_PickVote(void)
 	if (numvotes > 0)
 	{
 		key = M_RandomKey(numvotes);
-		WRITESINT8(p, temppicks[key]);
-		WRITESINT8(p, templevels[key]);
+		WRITEINT8(p, temppicks[key]);
+		WRITEINT8(p, templevels[key]);
 	}
 	else
 	{
-		WRITESINT8(p, VOTE_NOT_PICKED);
-		WRITESINT8(p, 0);
+		WRITEINT8(p, VOTE_NOT_PICKED);
+		WRITEINT8(p, 0);
 	}
 
 	SendNetXCmd(XD_PICKVOTE, &buf, 2);
@@ -7306,7 +7306,7 @@ static void Got_SetupVotecmd(uint8_t **cp, int32_t playernum)
 static void Got_ModifyVotecmd(uint8_t **cp, int32_t playernum)
 {
 	uint8_t targetID = READUINT8(*cp);
-	int8_t vote = READSINT8(*cp);
+	int8_t vote = READINT8(*cp);
 
 	if (targetID >= MAXPLAYERS)
 	{
@@ -7348,8 +7348,8 @@ fail:
 
 static void Got_PickVotecmd(uint8_t **cp, int32_t playernum)
 {
-	int8_t pick = READSINT8(*cp);
-	int8_t level = READSINT8(*cp);
+	int8_t pick = READINT8(*cp);
+	int8_t level = READINT8(*cp);
 
 	if (playernum != serverplayer && !IsPlayerAdmin(playernum))
 	{
@@ -7528,7 +7528,7 @@ static void Got_Cheat(uint8_t **cp, int32_t playernum)
 		}
 
 		case CHEAT_RINGS: {
-			int8_t rings = READSINT8(*cp);
+			int8_t rings = READINT8(*cp);
 
 			// P_GivePlayerRings does value clamping
 			player->rings = 0;
@@ -7539,7 +7539,7 @@ static void Got_Cheat(uint8_t **cp, int32_t playernum)
 		}
 
 		case CHEAT_LIVES: {
-			int8_t lives = READSINT8(*cp);
+			int8_t lives = READINT8(*cp);
 
 			// P_GivePlayerLives does value clamping
 			player->lives = 0;

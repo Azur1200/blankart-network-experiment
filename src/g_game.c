@@ -6345,12 +6345,12 @@ void G_SaveGameOver(uint32_t slot, dboolean modifylives)
 		CHECKPOS
 
 		lives_p = save.p;
-		pllives = READSINT8(save.p); // lives
+		pllives = READINT8(save.p); // lives
 		CHECKPOS
 		if (modifylives && pllives < startinglivesbalance[numgameovers])
 		{
 			pllives = startinglivesbalance[numgameovers];
-			WRITESINT8(lives_p, pllives);
+			WRITEINT8(lives_p, pllives);
 		}
 
 		(void)READINT32(save.p); // Score

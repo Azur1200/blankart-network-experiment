@@ -27,7 +27,7 @@ extern "C" {
 //
 
 #define WRITEUINT8(p,b)     do {   uint8_t *p_tmp = (  uint8_t *)p; const   uint8_t tv = (  uint8_t)(b); memcpy(p, &tv, sizeof(  uint8_t)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
-#define WRITESINT8(p,b)     do {   int8_t *p_tmp = (  int8_t *)p; const   int8_t tv = (  int8_t)(b); memcpy(p, &tv, sizeof(  int8_t)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
+#define WRITEINT8(p,b)     do {   int8_t *p_tmp = (  int8_t *)p; const   int8_t tv = (  int8_t)(b); memcpy(p, &tv, sizeof(  int8_t)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
 #define WRITEINT16(p,b)     do {   int16_t *p_tmp = (  int16_t *)p; const   int16_t tv = (  int16_t)(b); memcpy(p, &tv, sizeof(  int16_t)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
 #define WRITEUINT16(p,b)    do {  uint16_t *p_tmp = ( uint16_t *)p; const  uint16_t tv = ( uint16_t)(b); memcpy(p, &tv, sizeof( uint16_t)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
 #define WRITEINT32(p,b)     do {   int32_t *p_tmp = (  int32_t *)p; const   int32_t tv = (  int32_t)(b); memcpy(p, &tv, sizeof(  int32_t)); p_tmp++; *(void**)(&(p)) = (void *)p_tmp; } while (0)
@@ -41,7 +41,7 @@ extern "C" {
 // what is this?
 #if defined (__GNUC__)
 #define READUINT8(p)        ({   const uint8_t *p_tmp = (const uint8_t   *)p;   uint8_t b; memcpy(&b, p, sizeof(  uint8_t)); p_tmp++; *(const void**)(&(p)) = (const void *)p_tmp; b; })
-#define READSINT8(p)        ({   const int8_t *p_tmp = (const int8_t   *)p;   int8_t b; memcpy(&b, p, sizeof(  int8_t)); p_tmp++; *(const void**)(&(p)) = (const void *)p_tmp; b; })
+#define READINT8(p)        ({   const int8_t *p_tmp = (const int8_t   *)p;   int8_t b; memcpy(&b, p, sizeof(  int8_t)); p_tmp++; *(const void**)(&(p)) = (const void *)p_tmp; b; })
 #define READINT16(p)        ({   const int16_t *p_tmp = (const int16_t   *)p;   int16_t b; memcpy(&b, p, sizeof(  int16_t)); p_tmp++; *(const void**)(&(p)) = (const void *)p_tmp; b; })
 #define READUINT16(p)       ({  const uint16_t *p_tmp = (const uint16_t  *)p;  uint16_t b; memcpy(&b, p, sizeof( uint16_t)); p_tmp++; *(const void**)(&(p)) = (const void *)p_tmp; b; })
 #define READINT32(p)        ({   const int32_t *p_tmp = (const int32_t   *)p;   int32_t b; memcpy(&b, p, sizeof(  int32_t)); p_tmp++; *(const void**)(&(p)) = (const void *)p_tmp; b; })
@@ -53,7 +53,7 @@ extern "C" {
 #define READANGLE(p)        ({ const angle_t *p_tmp = (const angle_t *)p; angle_t b; memcpy(&b, p, sizeof(angle_t)); p_tmp++; *(const void**)(&(p)) = (const void *)p_tmp; b; })
 #else
 #define READUINT8(p)        ((const uint8_t*)  (*(const void**)(&(p)) = (const void*)&((const uint8_t*)  (p))[1]))[-1]
-#define READSINT8(p)        ((const int8_t*)  (*(const void**)(&(p)) = (const void*)&((const int8_t*)  (p))[1]))[-1]
+#define READINT8(p)        ((const int8_t*)  (*(const void**)(&(p)) = (const void*)&((const int8_t*)  (p))[1]))[-1]
 #define READINT16(p)        ((const int16_t*)  (*(const void**)(&(p)) = (const void*)&((const int16_t*)  (p))[1]))[-1]
 #define READUINT16(p)       ((const uint16_t*) (*(const void**)(&(p)) = (const void*)&((const uint16_t*) (p))[1]))[-1]
 #define READINT32(p)        ((const int32_t*)  (*(const void**)(&(p)) = (const void*)&((const int32_t*)  (p))[1]))[-1]
@@ -101,7 +101,7 @@ FUNCINLINE static ATTRINLINE void writelonglong(void *ptr, int64_t val)
 }
 
 #define WRITEUINT8(p,b)     do {  uint8_t *p_tmp = (  uint8_t *)p; *p_tmp       = (  uint8_t)(b) ; p_tmp++; p = (void *)p_tmp;} while (0)
-#define WRITESINT8(p,b)     do {  int8_t *p_tmp = (  int8_t *)p; *p_tmp       = (  int8_t)(b) ; p_tmp++; p = (void *)p_tmp;} while (0)
+#define WRITEINT8(p,b)     do {  int8_t *p_tmp = (  int8_t *)p; *p_tmp       = (  int8_t)(b) ; p_tmp++; p = (void *)p_tmp;} while (0)
 #define WRITEINT16(p,b)     do {  int16_t *p_tmp = (  int16_t *)p; writeshort (p, (  int16_t)(b)); p_tmp++; p = (void *)p_tmp;} while (0)
 #define WRITEUINT16(p,b)    do { uint16_t *p_tmp = ( uint16_t *)p; writeshort (p, ( uint16_t)(b)); p_tmp++; p = (void *)p_tmp;} while (0)
 #define WRITEINT32(p,b)     do {  int32_t *p_tmp = (  int32_t *)p; writelong  (p, (  int32_t)(b)); p_tmp++; p = (void *)p_tmp;} while (0)
@@ -146,7 +146,7 @@ FUNCINLINE static ATTRINLINE uint64_t readulonglong(void *ptr)
 }
 
 #define READUINT8(p)        ((const uint8_t*)(p = (const void*)&((const uint8_t*)p)[1]))[-1]
-#define READSINT8(p)        ((const int8_t*)(p = (const void*)&((const int8_t*)p)[1]))[-1]
+#define READINT8(p)        ((const int8_t*)(p = (const void*)&((const int8_t*)p)[1]))[-1]
 #define READINT16(p)        readshort(&((const int16_t*)(p = (const void*)&((const int16_t*)p)[1]))[-1])
 #define READUINT16(p)       readushort(&((const uint16_t*)(p = (const void*)&((const uint16_t*)p)[1]))[-1])
 #define READINT32(p)        readlong(&((const int32_t*)(p = (const void*)&((const int32_t*)p)[1]))[-1])
