@@ -1473,7 +1473,7 @@ static void SV_SavedGame(void)
 	if (!cv_dumpconsistency.value)
 		return;
 
-	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
+	snprintf(tmpsave, sizeof(tmpsave), "%s" PATHSEP TMPSAVENAME, srb2home);
 
 	// first save it in a malloced buffer
 	if (P_SaveBufferAlloc(&save, NETSAVEGAMESIZE) == false)
@@ -1510,7 +1510,7 @@ static void CL_LoadReceivedSavegame(dboolean reloading)
 	char tmpsave[256];
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
-	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
+	snprintf(tmpsave, sizeof(tmpsave), "%s" PATHSEP TMPSAVENAME, srb2home);
 
 	if (P_SaveBufferFromFile(&save, tmpsave) == false)
 	{
@@ -1610,7 +1610,7 @@ static void CL_ReloadReceivedSavegame(void)
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		LUA_InvalidatePlayer(&players[i]);
-		sprintf(player_names[i], "Player %c", 'A' + i);
+		snprintf(player_names[i], MAXPLAYERNAME+1, "Player %c", 'A' + i);
 	}
 
 	CL_LoadReceivedSavegame(true);
@@ -2027,7 +2027,7 @@ static dboolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 
 				for (n = 0; n < GIT_SHA_ABBREV; ++n)
 				{
-					sprintf(&theirs[n * 2], "%02hhx",
+					snprintf(&theirs[n * 2], sizeof(theirs) - n * 2, "%02hhx",
 							serverlist[i].info.commit[n]);
 				}
 
@@ -2403,7 +2403,7 @@ static void CL_ConnectToServer(void)
 	tic_t asksent;
 	char tmpsave[256];
 
-	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
+	snprintf(tmpsave, sizeof(tmpsave), "%s" PATHSEP TMPSAVENAME, srb2home);
 
 	lastfilenum = -1;
 	receivedplayerinfo = false;
@@ -2964,7 +2964,7 @@ void CL_RemovePlayer(int32_t playernum, kickreason_t reason)
 		doomcom->numslots--;
 
 	// Reset the name
-	sprintf(player_names[playernum], "Player %c", 'A' + playernum);
+	snprintf(player_names[playernum], MAXPLAYERNAME+1, "Player %c", 'A' + playernum);
 
 	player_name_changes[playernum] = 0;
 
@@ -3205,11 +3205,11 @@ static void Command_Listplayers(void)
 
 		if (chatcolor > V_TANMAP)
 		{
-			sprintf(pcc, "%c", '\x80');
+			snprintf(pcc, sizeof(pcc), "%c", '\x80');
 		}
 		else
 		{
-			sprintf(pcc, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+			snprintf(pcc, sizeof(pcc), "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
 		}
 
 		CONS_Printf("%.2d: ""%s""%-*s""\x80", i, pcc,width, player_names[i]);
@@ -3965,7 +3965,7 @@ void SV_ResetServer(void)
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		LUA_InvalidatePlayer(&players[i]);
-		sprintf(player_names[i], "Player %c", 'A' + i);
+		snprintf(player_names[i], MAXPLAYERNAME+1, "Player %c", 'A' + i);
 	}
 
 	memset(playeringame, false, sizeof playeringame);
@@ -5911,7 +5911,7 @@ static void PT_WillResendGamestate(int8_t node)
 
 	CONS_Printf(M_GetText("Reloading game state...\n"));
 
-	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
+	snprintf(tmpsave, sizeof(tmpsave), "%s" PATHSEP TMPSAVENAME, srb2home);
 
 	// Don't get a corrupt savegame error because tmpsave already exists
 	if (FIL_FileExists(tmpsave) && unlink(tmpsave) == -1)

@@ -379,11 +379,11 @@ FUNCNORETURN static ATTRNORETURN void CorruptMapError(const char *msg)
 
 	if (gamemap > 0 && gamemap <= nummapheaders && mapheaderinfo[gamemap-1])
 	{
-		sprintf(mapname, "%s", mapheaderinfo[gamemap-1]->lumpname);
+		snprintf(mapname, sizeof(mapname), "%s", mapheaderinfo[gamemap-1]->lumpname);
 	}
 	else
 	{
-		sprintf(mapname, "ID %d", gamemap-1);
+		snprintf(mapname, sizeof(mapname), "ID %d", gamemap-1);
 	}
 
 	CON_LogMessage("Map ");
@@ -1170,7 +1170,7 @@ static void P_WriteConstant(int32_t constant, char **target, const char *desc, u
 	(void)desc;
 	(void)id;
 
-	sprintf(buffer, "%d", constant);
+	snprintf(buffer, sizeof(buffer), "%d", constant);
 	len = strlen(buffer) + 1;
 	*target = Z_Malloc(len, PU_LEVEL, NULL);
 	memcpy(*target, buffer, len);
@@ -8815,7 +8815,7 @@ static void P_InitGametype(void)
 		int parts;
 
 #ifdef DEVELOP
-		sprintf(ver, "%s-%s", compbranch, comprevision);
+		snprintf(ver, sizeof(ver), "%s-%s", compbranch, comprevision);
 #else
 		strcpy(ver, VERSIONSTRING);
 #endif

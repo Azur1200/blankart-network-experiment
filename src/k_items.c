@@ -160,8 +160,9 @@ kartresult_t *K_RegisterResult(const char *name, dboolean alternate)
 		kartitem_t *item = &kartitems[result->type];
 		if (item->altcvar == NULL)
 		{
-			char *cvname = malloc(strlen(DEH_KartItemName(result->type))+1 + 8);
-			sprintf(cvname, "altitem_%s", DEH_KartItemName(result->type));
+			size_t cvlength = strlen(DEH_KartItemName(result->type))+1 + 8;
+			char *cvname = malloc(cvlength);
+			snprintf(cvname, cvlength, "altitem_%s", DEH_KartItemName(result->type));
 			strlwr(cvname);
 
 			consvar_t *var = Z_Calloc(sizeof(consvar_t), PU_STATIC, &item->altcvar);

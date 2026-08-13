@@ -212,7 +212,7 @@ static char *get_WSAErrorStr(int e)
 		NULL);
 
 	if (!buf[0]) // provide a fallback error message if no message is available for some reason
-		sprintf(buf, "Unknown error");
+		snprintf(buf, sizeof(buf), "Unknown error");
 
 	return buf;
 }
@@ -413,11 +413,11 @@ static const char *SOCK_AddrToStr(mysockaddr_t *sk)
 		addr = NULL;
 
 	if(addr == NULL)
-		sprintf(s, "No address");
+		snprintf(s, sizeof(s), "No address");
 	else if(inet_ntop(sk->any.sa_family, addr, &s[v6], sizeof (s) - v6) == NULL)
 	{
 		e = errno;
-		sprintf(s, "Unknown family type, error #%u: %s", e, strerror(e));
+		snprintf(s, sizeof(s), "Unknown family type, error #%u: %s", e, strerror(e));
 	}
 #ifdef HAVE_IPV6
 	else if(sk->any.sa_family == AF_INET6)
@@ -438,7 +438,7 @@ static const char *SOCK_AddrToStr(mysockaddr_t *sk)
 		if (sk->ip4.sin_port != 0) strcat(s, va(":%d", ntohs(sk->ip4.sin_port)));
 	}
 	else
-		sprintf(s, "Unknown type");
+		snprintf(s, sizeof(s), "Unknown type");
 #endif
 	return s;
 }
@@ -486,7 +486,7 @@ static const char *SOCK_GetBanMask(size_t ban)
 	static char s[16]; //255.255.255.255 netmask? no, just CDIR for only
 	if (ban >= numbans)
 		return NULL;
-	if (sprintf(s,"%d",banned[ban].mask) > 0)
+	if (snprintf(s, sizeof(s), "%d", banned[ban].mask) > 0)
 		return s;
 	return NULL;
 }

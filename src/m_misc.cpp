@@ -1732,7 +1732,7 @@ char *va(const char *format, ...)
 	static char string[1024];
 
 	va_start(argptr, format);
-	vsprintf(string, format, argptr);
+	vsnprintf(string, sizeof(string), format, argptr);
 	va_end(argptr);
 
 	return string;
@@ -2268,35 +2268,35 @@ TMatrix *RotateZMatrix(angle_t rad)
 char *sizeu1(size_t num)
 {
 	static char sizeu1_buf[28];
-	sprintf(sizeu1_buf, "%" PRIdS, num);
+	snprintf(sizeu1_buf, sizeof(sizeu1_buf), "%" PRIdS, num);
 	return sizeu1_buf;
 }
 
 char *sizeu2(size_t num)
 {
 	static char sizeu2_buf[28];
-	sprintf(sizeu2_buf, "%" PRIdS, num);
+	snprintf(sizeu2_buf, sizeof(sizeu2_buf), "%" PRIdS, num);
 	return sizeu2_buf;
 }
 
 char *sizeu3(size_t num)
 {
 	static char sizeu3_buf[28];
-	sprintf(sizeu3_buf, "%" PRIdS, num);
+	snprintf(sizeu3_buf, sizeof(sizeu3_buf), "%" PRIdS, num);
 	return sizeu3_buf;
 }
 
 char *sizeu4(size_t num)
 {
 	static char sizeu4_buf[28];
-	sprintf(sizeu4_buf, "%" PRIdS, num);
+	snprintf(sizeu4_buf, sizeof(sizeu4_buf), "%" PRIdS, num);
 	return sizeu4_buf;
 }
 
 char *sizeu5(size_t num)
 {
 	static char sizeu5_buf[28];
-	sprintf(sizeu5_buf, "%" PRIdS, num);
+	snprintf(sizeu5_buf, sizeof(sizeu5_buf), "%" PRIdS, num);
 	return sizeu5_buf;
 }
 
@@ -2438,7 +2438,7 @@ const char * M_Ftrim (double f)
 	static char dig[9];/* "0." + 6 digits (6 is printf's default) */
 	int i;
 	/* I know I said it's the default, but just in case... */
-	sprintf(dig, "%.6f", fabs(modf(f, &f)));
+	snprintf(dig, sizeof(dig), "%.6f", fabs(modf(f, &f)));
 	/* trim trailing zeroes */
 	for (i = strlen(dig)-1; dig[i] == '0'; --i)
 		;

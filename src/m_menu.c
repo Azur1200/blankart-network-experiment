@@ -946,7 +946,7 @@ static void Dummystaff_OnChange(void)
 		while (*temp)
 			temp++;
 
-		sprintf(temp, " - %d", cv_dummystaff.value);
+		snprintf(temp, sizeof(dummystaffname), " - %d", cv_dummystaff.value);
 	}
 }
 
@@ -1374,7 +1374,7 @@ static void M_ChangeCvar(menuitem_t *item, int8_t direction)
 	{
 		char s[20];
 		float n = FIXED_TO_FLOAT(cv->value + amount);
-		sprintf(s, "%ld%s", (long)n, M_Ftrim(n));
+		snprintf(s, sizeof(s), "%ld%s", (long)n, M_Ftrim(n));
 		CV_Set(cv, s);
 	}
 	else
@@ -2206,7 +2206,7 @@ void M_ClearMenusEx(dboolean callexitmenufunc, dboolean notitle)
 
 		// Save the config file. I'm sick of crashing the game later and losing all my changes!
 		char buf[sizeof(configfile) + 50];
-		sprintf(buf, "saveconfig \"%s\" -silent\n", configfile);
+		snprintf(buf, sizeof(buf), "saveconfig \"%s\" -silent\n", configfile);
 		COM_BufAddText(buf);
 
 		if (currentMenu->exitwipe >= 0)
@@ -6118,7 +6118,7 @@ void MP_PrepReplayList(menupanelinst_t *pi)
 		if (dirmenu[i][DIR_TYPE] == EXT_UP)
 		{
 			demolist[i].type = MD_SUBDIR;
-			sprintf(demolist[i].title, "UP");
+			snprintf(demolist[i].title, sizeof(demolist[i].title), "UP");
 		}
 		else if (dirmenu[i][DIR_TYPE] == EXT_FOLDER)
 		{
@@ -6129,7 +6129,7 @@ void MP_PrepReplayList(menupanelinst_t *pi)
 		{
 			demolist[i].type = MD_NOTLOADED;
 			snprintf(demolist[i].filepath, MAXFILEPATH, "%s%s", menupath, dirmenu[i] + DIR_STRING);
-			sprintf(demolist[i].title, ".....");
+			snprintf(demolist[i].title, sizeof(demolist[i].title), ".....");
 		}
 
 		menuitem_t *item = M_AppendMenuItem(pi, 0, i*10*FRACUNIT, IT_INTERACT);
@@ -8636,15 +8636,15 @@ static void M_DrawServerLines(const menupanelinst_t *pi, int32_t x, int32_t page
 		V_DrawSmallString(x+44,S_LINEY(i)+8, globalflags,
 						  va("Players: %02d/%02d", serverlist[slindex].info.numberofplayer, serverlist[slindex].info.maxplayer));
 
-		sprintf(servergametype, "%s (%s)", serverlist[slindex].info.gametypename, kartspeed_cons_t[(serverlist[slindex].info.kartvars & SV_SPEEDMASK)+1].strvalue);
+		snprintf(servergametype, sizeof(servergametype), "%s (%s)", serverlist[slindex].info.gametypename, kartspeed_cons_t[(serverlist[slindex].info.kartvars & SV_SPEEDMASK)+1].strvalue);
 		V_DrawSmallString(x+108, S_LINEY(i)+8, globalflags, servergametype);
 
 		if (serverlist[slindex].info.avgpwrlv == -1)
-			sprintf(pwr, "PWR.LV: Off");
+			snprintf(pwr, sizeof(pwr), "PWR.LV: Off");
 		else if (serverlist[slindex].info.avgpwrlv > 0)
-			sprintf(pwr, "PWR.LV: %04d", serverlist[slindex].info.avgpwrlv);
+			snprintf(pwr, sizeof(pwr), "PWR.LV: %04d", serverlist[slindex].info.avgpwrlv);
 		else
-			sprintf(pwr, "PWR.LV: ----");
+			snprintf(pwr, sizeof(pwr), "PWR.LV: ----");
 		V_DrawSmallString(x+181, S_LINEY(i)+8, globalflags, pwr);
 
 		// Don't use color flags intentionally, the global yellow color will auto override the text color code
@@ -8797,7 +8797,7 @@ static void M_CheckMODVersion(int id)
 	const char *updatecheck = GetMODVersion(id);
 	if(updatecheck)
 	{
-		sprintf(updatestring, UPDATE_ALERT_STRING, VERSIONSTRING, updatecheck);
+		snprintf(updatestring, sizeof(updatestring), UPDATE_ALERT_STRING, VERSIONSTRING, updatecheck);
 #ifdef HAVE_THREADS
 		I_lock_mutex(&m_menu_mutex);
 #endif
@@ -10298,10 +10298,10 @@ static void M_ChangecontrolResponse(event_t *ev)
 	// 	static char tmp[158];
 
 	// 	if (controltochange == gc_pause)
-	// 		sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nyou may select another key. \n\nHit another key for\n%s\n"),
+	// 		snprintf(tmp, sizeof(tmp), M_GetText("The \x82Pause Key \x80is enabled, but \nyou may select another key. \n\nHit another key for\n%s\n"),
 	// 			controltochangetext);
 	// 	else
-	// 		sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nit is not configurable. \n\nHit another key for\n%s\n"),
+	// 		snprintf(tmp, sizeof(tmp), M_GetText("The \x82Pause Key \x80is enabled, but \nit is not configurable. \n\nHit another key for\n%s\n"),
 	// 			controltochangetext);
 
 	// 	M_StartMessage2("Rebinding Control", tmp, ROUTINECAST(M_ChangecontrolResponse), MM_EVENTHANDLER, NULL, "ESC to Cancel");
@@ -10323,7 +10323,7 @@ int32_t MR_ChangeControl(int32_t arg)
 	static char tmp[68];
 
 	controltochange = arg;
-	sprintf(tmp, M_GetText("Hit the new key for\n%s\n"),
+	snprintf(tmp, sizeof(tmp), M_GetText("Hit the new key for\n%s\n"),
 		pi->items[pi->itemon].text);
 	strlcpy(controltochangetext, pi->items[pi->itemon].text, 33);
 

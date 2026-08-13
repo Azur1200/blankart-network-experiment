@@ -764,15 +764,15 @@ dboolean P_EndingMusic(player_t *player)
 #undef getplayerpos
 
 	if ((gametypes[gametype]->rules & GTR_CIRCUIT) && bestlocalpos == MAXPLAYERS+1)
-		sprintf(buffer, "k*fail"); // F-Zero death results theme
+		snprintf(buffer, sizeof(buffer), "k*fail"); // F-Zero death results theme
 	else
 	{
 		if (K_IsPlayerLosing(bestlocalplayer))
-			sprintf(buffer, "k*lose");
+			snprintf(buffer, sizeof(buffer), "k*lose");
 		else if (bestlocalpos == 1)
-			sprintf(buffer, "k*win");
+			snprintf(buffer, sizeof(buffer), "k*win");
 		else
-			sprintf(buffer, "k*ok");
+			snprintf(buffer, sizeof(buffer), "k*ok");
 	}
 
 	S_SpeedMusic(1.0f);

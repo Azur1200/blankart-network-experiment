@@ -294,9 +294,8 @@ static inline void W_LoadDehackedLumpsPK3(uint16_t wadnum, dboolean mainfile)
 			if (!name)
 				I_Error("W_LoadDehackedLumpsPK3: Out of memory!\n");
 
-			sprintf(name, "%s|%s", wadfiles[wadnum]->filename, lump_p->fullname);
-			name[length] = '\0';
-			CONS_Printf(M_GetText("Loading SOC from %s\n"), name);
+			snprintf(name, length + 1, "%s|%s", wadfiles[wadnum]->filename, lump_p->fullname);
+			CONS_Printf(M_GetText(" SOC from %s\n"), name);
 			DEH_LoadDehackedLumpPwad(wadnum, posStart, mainfile);
 			free(name);
 		}
@@ -327,8 +326,7 @@ static inline void W_LoadDehackedLumps(uint16_t wadnum, dboolean mainfile)
 				if (!name)
 					I_Error("W_LoadDehackedLumps: Out of memory!\n");
 
-				sprintf(name, "%s|%s", wadfiles[wadnum]->filename, lump_p->fullname);
-				name[length] = '\0';
+				snprintf(name, length + 1, "%s|%s", wadfiles[wadnum]->filename, lump_p->fullname);
 
 				CONS_Printf(M_GetText("Loading SOC from %s\n"), name);
 				DEH_LoadDehackedLumpPwad(wadnum, lump, mainfile);

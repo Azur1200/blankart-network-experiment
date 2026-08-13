@@ -318,7 +318,7 @@ static void I_ReportSignal(int num, int coredumped)
 		sigmsg = "SIGABRT - abnormal termination triggered by abort call";
 		break;
 	default:
-		sprintf(msg,"signal number %d", num);
+		snprintf(msg, sizeof(msg),"signal number %d", num);
 		if (coredumped)
 			sigmsg = 0;
 		else
@@ -791,10 +791,10 @@ void I_OutputMsg(const char *fmt, ...)
 		return;
 
 	va_start(argptr,fmt);
-	vsprintf(txt, fmt, argptr);
+	vsnprintf(txt, 8192, fmt, argptr);
 	va_end(argptr);
 
-	len = strlen(txt);
+	len = strnlen(txt, sizeof(txt));
 
 #ifdef LOGMESSAGES
 	if (logstream)
@@ -1795,7 +1795,7 @@ static dboolean isWadPathOk(const char *path)
 	if (!wad3path)
 		return false;
 
-	sprintf(wad3path, pandf, path, WADKEYWORD);
+	snprintf(wad3path, 256, pandf, path, WADKEYWORD);
 
 	if (FIL_ReadFileOK(wad3path))
 	{
@@ -1807,11 +1807,11 @@ static dboolean isWadPathOk(const char *path)
 	return false;
 }
 
-static void pathonly(char *s)
+static void pathonly(char *s, size_t size)
 {
 	size_t j;
 
-	for (j = strlen(s); j != (size_t)-1; j--)
+	for (j = strnlen(s, size); j != (size_t)-1; j--)
 		if ((s[j] == '\\') || (s[j] == ':') || (s[j] == '/'))
 		{
 			if (s[j] == ':') s[j+1] = 0;
@@ -1833,11 +1833,11 @@ static const char *searchWad(const char *searchDir)
 	static char tempsw[256] = "";
 	filestatus_t fstemp;
 
-	strcpy(tempsw, WADKEYWORD);
+	snprintf(tempsw, sizeof(tempsw), "%s", WADKEYWORD);
 	fstemp = filesearch(tempsw,searchDir,0,true,20);
 	if (fstemp == FS_FOUND)
 	{
-		pathonly(tempsw);
+		pathonly(tempsw, sizeof(tempsw));
 		return tempsw;
 	}
 
@@ -1875,7 +1875,7 @@ static const char *locateWad(void)
 
 #ifndef NOCWD
 	// examine current dir
-	strcpy(returnWadPath, ".");
+	snprintf(returnWadPath, sizeof(returnWadPath), "%s", ".");
 	I_OutputMsg(",%s", returnWadPath);
 	if (isWadPathOk(returnWadPath))
 		return NULL;
@@ -1889,7 +1889,7 @@ static const char *locateWad(void)
 	// examine default dirs
 	for (i = 0; wadDefaultPaths[i]; i++)
 	{
-		strcpy(returnWadPath, wadDefaultPaths[i]);
+		snprintf(returnWadPath, sizeof(returnWadPath), "%s", wadDefaultPaths[i]);
 		CHECKWADPATH(returnWadPath);
 	}
 

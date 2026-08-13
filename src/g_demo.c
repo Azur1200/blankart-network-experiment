@@ -862,9 +862,9 @@ static headerstatus_e G_ReadDemoHeader(uint8_t *dp, demoheader_t *header)
 	{
 		int16_t mapnum = READINT16(dp);
 		if (mapnum < 100)
-			sprintf(header->maptitle, "MAP%02d", mapnum);
+			snprintf(header->maptitle, sizeof(header->maptitle), "MAP%02d", mapnum);
 		else
-			sprintf(header->maptitle, "MAP%c%c", 'A' + (mapnum - 100)/36, ((mapnum - 100) % 36 < 10 ? '0' : 'A'-10) + (mapnum - 100) % 36);
+			snprintf(header->maptitle, sizeof(header->maptitle), "MAP%c%c", 'A' + (mapnum - 100)/36, ((mapnum - 100) % 36 < 10 ? '0' : 'A'-10) + (mapnum - 100) % 36);
 	}
 	else
 	{
@@ -3492,7 +3492,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Failed to read file '%s'.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
-		sprintf(pdemo->title, "INVALID REPLAY");
+		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 
@@ -3507,19 +3507,19 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	case HEADER_BADMAGIC:
 		CONS_Alert(CONS_ERROR, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
-		sprintf(pdemo->title, "INVALID REPLAY");
+		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 
 	case HEADER_BADVERSION:
 		CONS_Alert(CONS_ERROR, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
-		sprintf(pdemo->title, "INVALID REPLAY");
+		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 
 	case HEADER_BADFORMAT:
 		CONS_Alert(CONS_ERROR, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
-		sprintf(pdemo->title, "INVALID REPLAY");
+		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 
@@ -4717,7 +4717,7 @@ void G_SaveDemo(void)
 			if (flen > 0 && flen < 128)
 			{
 				demo_slug[flen] = '\0';
-				sprintf(writepoint, "%s.lmp", demo_slug);
+				snprintf(writepoint, sizeof(demoname) - (writepoint - demoname), "%s.lmp", demo_slug);
 			}
 		}
 	}

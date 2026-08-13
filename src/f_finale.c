@@ -1387,7 +1387,7 @@ else if (strlen(name) <= 6) \
 	strncpy(lumpname, name, 7); \
 	for (i = 0; i < maxf-1; i++) \
 	{ \
-		sprintf(&lumpname[cnt], "%.2hu", (uint16_t)(i+1)); \
+		snprintf(&lumpname[cnt], 3, "%.2hu", (uint16_t)(i+1)); \
 		lumpname[8] = 0; \
 		lumpnum = W_CheckNumForName(lumpname); \
 		if (lumpnum != LUMPERROR) \
@@ -1769,7 +1769,7 @@ void F_TitleScreenTicker(dboolean run)
 		}
 
 		// Setup demo name
-		sprintf(dname, "%s/GHOST_%u", mapheaderinfo[mapnum]->lumpname, numstaff);
+		snprintf(dname, sizeof(dname), "%s/GHOST_%u", mapheaderinfo[mapnum]->lumpname, numstaff);
 
 		{
 			// vres GHOST_%u
@@ -1783,7 +1783,7 @@ void F_TitleScreenTicker(dboolean run)
 			{
 
 				if (((W_CheckNumForName(va("%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff)))) != LUMPERROR)
-					sprintf(dname, "%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff);
+					snprintf(dname, sizeof(dname), "%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff);
 				else
 				{
 					vres_Free(vRes);

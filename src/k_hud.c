@@ -400,26 +400,26 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_racefinish[5], "K_2PFINB");
 
 	// Position numbers
-	sprintf(buffer, "K_POSNxx");
+	snprintf(buffer, sizeof(buffer), "K_POSNxx");
 	for (i = 0; i < NUMPOSNUMS; i++)
 	{
 		buffer[6] = '0'+i;
 		for (j = 0; j < NUMPOSFRAMES; j++)
 		{
-			//sprintf(buffer, "K_POSN%d%d", i, j);
+			//snprintf(buffer, sizeof(buffer), "K_POSN%d%d", i, j);
 			buffer[7] = '0'+j;
 			HU_UpdatePatch(&kp_positionnum[i][j], "%s", buffer);
 		}
 	}
 
-	sprintf(buffer, "K_POSNWx");
+	snprintf(buffer, sizeof(buffer), "K_POSNWx");
 	for (i = 0; i < NUMWINFRAMES; i++)
 	{
 		buffer[7] = '0'+i;
 		HU_UpdatePatch(&kp_winnernum[i], "%s", buffer);
 	}
 
-	sprintf(buffer, "OPPRNKxx");
+	snprintf(buffer, sizeof(buffer), "OPPRNKxx");
 	for (i = 0; i <= MAXPLAYERS; i++)
 	{
 		buffer[6] = '0'+(i/10);
@@ -427,7 +427,7 @@ void K_LoadKartHUDGraphics(void)
 		HU_UpdatePatch(&kp_facenum[i], "%s", buffer);
 	}
 
-	sprintf(buffer, "K_CHILIx");
+	snprintf(buffer, sizeof(buffer), "K_CHILIx");
 	for (i = 0; i < 8; i++)
 	{
 		buffer[7] = '0'+(i+1);
@@ -478,14 +478,14 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_speedpatchesdial[6], "SC_DFRAC");
 	HU_UpdatePatch(&kp_speedpatchesdial[7], "SC_DPERC");
 
-	sprintf(buffer, "K_DSPNMx");
+	snprintf(buffer, sizeof(buffer), "K_DSPNMx");
 	for (i = 0; i < 10; i++)
 	{
 		buffer[7] = '0'+(i%10);
 		HU_UpdatePatch(&kp_dialnum[i], "%s", buffer);
 	}
 
-	sprintf(buffer, "K_DSPNCx");
+	snprintf(buffer, sizeof(buffer), "K_DSPNCx");
 	for (i = 0; i < 10; i++)
 	{
 		buffer[7] = '0'+(i%10);
@@ -656,7 +656,7 @@ void K_LoadKartHUDGraphics(void)
 	}
 
 	// CHECK indicators
-	sprintf(buffer, "K_CHECKx");
+	snprintf(buffer, sizeof(buffer), "K_CHECKx");
 	for (i = 0; i < 10; i++)
 	{
 		buffer[7] = '1'+i;
@@ -665,7 +665,7 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_check[10], "K_CHECKA");
 
 	// Eggman warning numbers
-	sprintf(buffer, "K_EGGNx");
+	snprintf(buffer, sizeof(buffer), "K_EGGNx");
 	for (i = 0; i < 4; i++)
 	{
 		buffer[6] = '0'+i;
@@ -700,7 +700,7 @@ void K_LoadKartHUDGraphics(void)
 		(PATCHALIGN_AUTOCENTER | PATCHALIGN_USEPIVOTS);
 
 	// HERE COMES A NEW CHALLENGER
-	sprintf(buffer, "K_CHALxx");
+	snprintf(buffer, sizeof(buffer), "K_CHALxx");
 	for (i = 0; i < 25; i++)
 	{
 		buffer[6] = '0'+((i+1)/10);
@@ -709,14 +709,14 @@ void K_LoadKartHUDGraphics(void)
 	}
 
 	// Lap start animation
-	sprintf(buffer, "K_LAP0x");
+	snprintf(buffer, sizeof(buffer), "K_LAP0x");
 	for (i = 0; i < 7; i++)
 	{
 		buffer[6] = '0'+(i+1);
 		HU_UpdatePatch(&kp_lapanim_lap[i], "%s", buffer);
 	}
 
-	sprintf(buffer, "K_LAPFxx");
+	snprintf(buffer, sizeof(buffer), "K_LAPFxx");
 	for (i = 0; i < 11; i++)
 	{
 		buffer[6] = '0'+((i+1)/10);
@@ -724,7 +724,7 @@ void K_LoadKartHUDGraphics(void)
 		HU_UpdatePatch(&kp_lapanim_final[i], "%s", buffer);
 	}
 
-	sprintf(buffer, "K_LAPNxx");
+	snprintf(buffer, sizeof(buffer), "K_LAPNxx");
 	for (i = 0; i < 10; i++)
 	{
 		buffer[6] = '0'+i;
@@ -735,14 +735,14 @@ void K_LoadKartHUDGraphics(void)
 		}
 	}
 
-	sprintf(buffer, "K_LAPE0x");
+	snprintf(buffer, sizeof(buffer), "K_LAPE0x");
 	for (i = 0; i < 2; i++)
 	{
 		buffer[7] = '0'+(i+1);
 		HU_UpdatePatch(&kp_lapanim_emblem[i], "%s", buffer);
 	}
 
-	sprintf(buffer, "K_LAPH0x");
+	snprintf(buffer, sizeof(buffer), "K_LAPH0x");
 	for (i = 0; i < 3; i++)
 	{
 		buffer[7] = '0'+(i+1);
@@ -751,21 +751,21 @@ void K_LoadKartHUDGraphics(void)
 
 	HU_UpdatePatch(&kp_yougotem, "YOUGOTEM");
 
-	sprintf(buffer, "K_BOSB0x");
+	snprintf(buffer, sizeof(buffer), "K_BOSB0x");
 	for (i = 0; i < 8; i++)
 	{
 		buffer[7] = '0'+((i+1)%10);
 		HU_UpdatePatch(&kp_bossbar[i], "%s", buffer);
 	}
 
-	sprintf(buffer, "K_BOSR0x");
+	snprintf(buffer, sizeof(buffer), "K_BOSR0x");
 	for (i = 0; i < 4; i++)
 	{
 		buffer[7] = '0'+((i+1)%10);
 		HU_UpdatePatch(&kp_bossret[i], "%s", buffer);
 	}
 
-	sprintf(buffer, "HITEARxx");
+	snprintf(buffer, sizeof(buffer), "HITEARxx");
 	for (i = 0; i < 2; i++)
 	{
 		buffer[6] = 'A'+i;
@@ -777,42 +777,42 @@ void K_LoadKartHUDGraphics(void)
 		}
 	}
 
-	sprintf(buffer, "HUDITEDx");
+	snprintf(buffer, sizeof(buffer), "HUDITEDx");
 	for (i = 0; i < 2; i++)
 	{
 		buffer[7] = '0'+i;
 		HU_UpdatePatch(&kp_itemtarget_far_text[i], "%s", buffer);
 	}
 
-	sprintf(buffer, "HUDITECx");
+	snprintf(buffer, sizeof(buffer), "HUDITECx");
 	for (i = 0; i < 2; i++)
 	{
 		buffer[7] = '0'+i;
 		HU_UpdatePatch(&kp_itemtarget_icon[i], "%s", buffer);
 	}
 
-	sprintf(buffer, "HUDITEBx");
+	snprintf(buffer, sizeof(buffer), "HUDITEBx");
 	for (i = 0; i < 2; i++)
 	{
 		buffer[7] = '0'+i;
 		HU_UpdatePatch(&kp_itemtarget_far[0][i], "%s", buffer);
 	}
 
-	sprintf(buffer, "HUDI4PBx");
+	snprintf(buffer, sizeof(buffer), "HUDI4PBx");
 	for (i = 0; i < 2; i++)
 	{
 		buffer[7] = '0'+i;
 		HU_UpdatePatch(&kp_itemtarget_far[1][i], "%s", buffer);
 	}
 
-	sprintf(buffer, "HUDITEAx");
+	snprintf(buffer, sizeof(buffer), "HUDITEAx");
 	for (i = 0; i < 8; i++)
 	{
 		buffer[7] = '0'+i;
 		HU_UpdatePatch(&kp_itemtarget_near[0][i], "%s", buffer);
 	}
 
-	sprintf(buffer, "HUDI4PAx");
+	snprintf(buffer, sizeof(buffer), "HUDI4PAx");
 	for (i = 0; i < 8; i++)
 	{
 		buffer[7] = '0'+i;

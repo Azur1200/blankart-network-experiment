@@ -669,16 +669,16 @@ static void Got_Saycmd(uint8_t **p, int32_t playernum)
 
 				if (chatcolor > V_TANMAP)
 				{
-					sprintf(color_prefix, "%c", '\x80');
+					snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80');
 				}
 				else
 				{
-					sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+					snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
 				}
 			}
 			else
 			{
-				sprintf(color_prefix, "%c", '\x80' + cv_shoutcolor.value);
+				snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80' + cv_shoutcolor.value);
 			}
 
 			// Colorize full text
@@ -708,11 +708,11 @@ static void Got_Saycmd(uint8_t **p, int32_t playernum)
 
 			if (chatcolor > V_TANMAP)
 			{
-				sprintf(color_prefix, "%c", '\x80');
+				snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80');
 			}
 			else
 			{
-				sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+				snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
 			}
 
 			cstart = color_prefix;
@@ -2545,18 +2545,18 @@ static void HU_DrawRankings(void)
 		if (gametypes[gametype]->rules & GTR_CIRCUIT)
 		{
 			if (!players[i].exiting)
-				sprintf(tab[scorelines].string, "Lap %d", players[i].laps);
+				snprintf(tab[scorelines].string, sizeof(tab[scorelines].string), "Lap %d", players[i].laps);
 			else
 			{
 				int32_t min = G_TicsToMinutes(players[i].realtime, true);
 				int32_t sec = G_TicsToSeconds(players[i].realtime);
 				int32_t cen = G_TicsToCentiseconds(players[i].realtime);
 
-				sprintf(tab[scorelines].string, "%i'%02i\"%02i", min, sec, cen);
+				snprintf(tab[scorelines].string, sizeof(tab[scorelines].string), "%i'%02i\"%02i", min, sec, cen);
 			}
 		}
 		else if (gametypes[gametype]->rules & GTR_POINTS)
-			sprintf(tab[scorelines].string, "%d", players[i].roundscore);
+			snprintf(tab[scorelines].string, sizeof(tab[scorelines].string), "%d", players[i].roundscore);
 
 		scorelines++;
 

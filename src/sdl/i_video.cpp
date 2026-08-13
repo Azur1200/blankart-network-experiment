@@ -1662,7 +1662,7 @@ static SDL_Window *Impl_CreateWindow(void)
 #ifdef COMMITVERSION
 	{
 		char versionstring[256];
-		sprintf(versionstring, "BlanKart Indev %s", comprevision);
+		snprintf(versionstring, sizeof(versionstring), "BlanKart Indev %s", comprevision);
 
 		win = SDL_CreateWindow(versionstring, vid.width, vid.height, flags);
 	}
