@@ -491,7 +491,7 @@ static void K_DBSCAN(std::vector<clusternode_t> DB,
     std::vector<clusternode_t> neighbors2;
 
     std::vector<clusterdata_t> pending_globals;
-    clusterdata_t new_data = {0};
+    clusterdata_t new_data = {};
     vector3_64_t average_point = {0};
 
     int32_t average_player_pos = 0;

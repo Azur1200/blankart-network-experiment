@@ -5793,6 +5793,7 @@ static void PT_Ping(int8_t node, int32_t netconsole)
 
 static void PT_WillDiagnoseRNG(int8_t node, int32_t netconsole)
 {
+	(void)netconsole;
 	I_OutputMsg(M_GetText("Preparing RNG diagnosis...\n"));
 
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);

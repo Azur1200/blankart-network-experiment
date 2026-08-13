@@ -3114,6 +3114,7 @@ void K_HoldUseItem_AttractionShield(player_t *player, dboolean itemjustdown, dbo
 	(void)onground;
 	(void)force;
 	(void)itemjustdown;
+	(void)nohyudoro;
 	
 	fixed_t effectscale = 75*player->mo->scale/100;
 
@@ -3181,6 +3182,7 @@ void K_ReleaseUseItem_AttractionShield(player_t *player, dboolean itemjustdown, 
 	(void)onground;
 	(void)force;
 	(void)itemjustdown;
+	(void)nohyudoro;
 	
 	if (player->attractioncharge)
 	{
@@ -3242,6 +3244,7 @@ void K_HoldUseItem_FlameShield(player_t *player, dboolean itemjustdown, dboolean
 	(void)onground;
 	(void)force;
 	(void)itemjustdown;
+	(void)nohyudoro;
 	
 	if (player->equippeditem == KITEM_FLAMESHIELD && (player->itemflags & IF_HOLDREADY))
 	{
@@ -3289,6 +3292,7 @@ void K_ReleaseUseItem_FlameShield(player_t *player, dboolean itemjustdown, dbool
 	(void)onground;
 	(void)force;
 	(void)itemjustdown;
+	(void)nohyudoro;
 
 	if (!(player->itemflags & IF_HOLDREADY))
 	{
@@ -3313,6 +3317,8 @@ void K_UseItem_Hyudoro(player_t *player, dboolean itemjustdown, dboolean ongroun
 
 void K_UseItem_PogoSpring(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {
+	(void)itemjustdown;
+
 	if (nohyudoro && (onground || force) && player->pogospring == 0)
 	{
 		K_DecrementAndCheckCurrentItem(player);
