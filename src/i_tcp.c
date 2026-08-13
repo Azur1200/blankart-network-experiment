@@ -842,7 +842,7 @@ static inline ptrdiff_t SOCK_SendToAddr(SOCKET_TYPE socket, mysockaddr_t *sockad
 static void SOCK_Send(void)
 {
 	ptrdiff_t c = ERRSOCKET;
-	ptrdiff_t i, j;
+	size_t i, j;
 
 	if (doomcom->remotenode < 0 || !nodeconnected[doomcom->remotenode])
 		return;
