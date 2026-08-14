@@ -83,6 +83,8 @@ static int32_t voterowmem = 0;
 static dboolean rowchange = false;
 static dboolean votenotyetpicked;
 
+static void Y_UnloadVoteData(void);
+
 // SRB2Kart: Voting!
 
 //
@@ -128,8 +130,8 @@ void Y_VoteScreenCheck(void)
 
 	// non lua vote background handling
 	dboolean prefbattletype = ((g_voteLevels[0][1] & ~VOTEMODIFIER_ENCORE) == GT_BATTLE);
-	VoteScreen.widebgpatch = W_CachePatchName((prefbattletype ? "BATTLSCW" : "INTERSCW"), PU_PATCH_LOWPRIORITY);
-	VoteScreen.bgpatch = W_CachePatchName((prefbattletype ? "BATTLSCR" : "INTERSCR"), PU_PATCH_LOWPRIORITY);
+	VoteScreen.widebgpatch = W_CachePatchName((prefbattletype ? "BATTLSCW" : "INTERSCW"), PU_PATCH);
+	VoteScreen.bgpatch = W_CachePatchName((prefbattletype ? "BATTLSCR" : "INTERSCR"), PU_PATCH);
 }
 
 //
@@ -177,7 +179,7 @@ static void Y_DrawLuaVoteScreenPatch(dboolean widePatch)
 	// Draw non animated patch
 	if (!tempfoundAnimLuaVoteFrames)
 	{
-		votebg = W_CachePatchName(va("%s1", tempPrefix), PU_PATCH_LOWPRIORITY);
+		votebg = W_CachePatchName(va("%s1", tempPrefix), PU_PATCH);
 		Y_VoteBackgroundDrawer(votebg);
 		return;
 	}
@@ -190,7 +192,7 @@ static void Y_DrawLuaVoteScreenPatch(dboolean widePatch)
 
 	nextframe = (VoteScreen.currentAnimFrame + 1);
 
-	votebg = W_CachePatchName(va("%s%d", tempPrefix, nextframe), PU_PATCH_LOWPRIORITY);
+	votebg = W_CachePatchName(va("%s%d", tempPrefix, nextframe), PU_PATCH);
 
 	Y_VoteBackgroundDrawer(votebg);
 
@@ -609,7 +611,7 @@ void Y_VoteDrawer(void)
 			if (!splitscreen && i == consoleplayer)
 			{
 				uint8_t cursorframe = (votetic / 4) % 8;
-				patch_t *highlight = W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_PATCH_LOWPRIORITY);
+				patch_t *highlight = W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE);
 				V_DrawScaledPatch(x+24+highlight->leftoffset, y+(highplayers ? smallfaceheight : bigfaceheight)+highlight->topoffset, V_SNAPTOLEFT, highlight);
 			}
 		}
@@ -974,13 +976,13 @@ static void Y_InitVoteDrawing(void)
 	// setup the background patches
 	Y_VoteScreenCheck();
 
-	VoteScreen.cursor[0] = W_CachePatchName("M_CURSOR", PU_PATCH_LOWPRIORITY);
-	VoteScreen.cursor[1] = W_CachePatchName("P1CURSOR", PU_PATCH_LOWPRIORITY);
-	VoteScreen.cursor[2] = W_CachePatchName("P2CURSOR", PU_PATCH_LOWPRIORITY);
-	VoteScreen.cursor[3] = W_CachePatchName("P3CURSOR", PU_PATCH_LOWPRIORITY);
-	VoteScreen.cursor[4] = W_CachePatchName("P4CURSOR", PU_PATCH_LOWPRIORITY);
+	VoteScreen.cursor[0] = W_CachePatchName("M_CURSOR", PU_PATCH);
+	VoteScreen.cursor[1] = W_CachePatchName("P1CURSOR", PU_PATCH);
+	VoteScreen.cursor[2] = W_CachePatchName("P2CURSOR", PU_PATCH);
+	VoteScreen.cursor[3] = W_CachePatchName("P3CURSOR", PU_PATCH);
+	VoteScreen.cursor[4] = W_CachePatchName("P4CURSOR", PU_PATCH);
 
-	VoteScreen.rubyicon  = W_CachePatchName("RUBYICON", PU_PATCH_LOWPRIORITY);
+	VoteScreen.rubyicon  = W_CachePatchName("RUBYICON", PU_PATCH);
 }
 
 void Y_StartVote(void)
@@ -1085,23 +1087,30 @@ void Y_EndVote(void)
 		Y_FinalizeVote(0);
 	}
 
-	voteclient.loaded = false;
+	Y_UnloadVoteData();
 	voteendtic = -1;
 }
 
+#define UNLOAD(x) {if ((x) != NULL) {Patch_Free(x);} x = NULL;}
+
 //
-// Y_VoteClear
-// Resets patches to prevent dangling pointers
+// Y_UnloadVoteData
 //
-void Y_VoteClear(void)
+static void Y_UnloadVoteData(void)
 {
-	VoteScreen.bgpatch = NULL;
-	VoteScreen.widebgpatch = NULL;
+	voteclient.loaded = false;
 
-	for (size_t i = 0; i < sizeof(VoteScreen.cursor)/sizeof(VoteScreen.cursor[0]); ++i)
-		VoteScreen.cursor[i] = NULL;
+	if (dedicated)
+		return;
 
-	VoteScreen.rubyicon = NULL;
+	UNLOAD(VoteScreen.widebgpatch);
+	UNLOAD(VoteScreen.bgpatch);
+	UNLOAD(VoteScreen.cursor[0]);
+	UNLOAD(VoteScreen.cursor[1]);
+	UNLOAD(VoteScreen.cursor[2]);
+	UNLOAD(VoteScreen.cursor[3]);
+	UNLOAD(VoteScreen.cursor[4]);
+	UNLOAD(VoteScreen.rubyicon);
 }
 
 //

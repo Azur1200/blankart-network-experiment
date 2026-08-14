@@ -185,6 +185,7 @@ void HWR_FreeTexture(patch_t *patch);
 void HWR_FreeTextureData(patch_t *patch);
 void HWR_FreeTextureColormaps(patch_t *patch);
 void HWR_ClearAllTextures(void);
+void HWR_FreeColormapCache(void);
 void HWR_UnlockCachedPatch(GLPatch_t *gpatch);
 
 void HWR_SetPalette(RGBA_t *palette);

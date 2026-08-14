@@ -727,8 +727,7 @@ static void HWR_FreePatchCache(dboolean freeall)
 	if (!freeall)
 		callback = FreeColormapsCallback;
 
-	//Z_IterateTags(PU_PATCH, PU_PATCH_ROTATED, callback);
-	Z_IterateTags(PU_PATCH, PU_PATCH_LOWPRIORITY, callback);
+	Z_IterateTags(PU_PATCH, PU_PATCH_ROTATED, callback);
 	Z_IterateTags(PU_SPRITE, PU_HUDGFX, callback);
 }
 
@@ -737,6 +736,11 @@ void HWR_ClearAllTextures(void)
 {
 	GL_ClearMipMapCache(); // free references to the textures
 	HWR_FreePatchCache(true);
+}
+
+void HWR_FreeColormapCache(void)
+{
+	HWR_FreePatchCache(false);
 }
 
 void HWR_InitMapTextures(void)
@@ -1341,6 +1345,7 @@ void HWR_GetMappedPatch(patch_t *patch, const uint8_t *colormap)
 
 	//BP: WARNING: don't free it manually without clearing the cache of harware renderer
 	//              (it have a liste of mipmap)
+	//    this malloc is cleared in HWR_FreeColormapCache
 	//    (...) unfortunately z_malloc fragment alot the memory :(so malloc is better
 	newMipmap = calloc(1, sizeof (*newMipmap));
 	if (newMipmap == NULL)
