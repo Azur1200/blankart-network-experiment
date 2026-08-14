@@ -728,6 +728,7 @@ static void HWR_FreePatchCache(dboolean freeall)
 		callback = FreeColormapsCallback;
 
 	//Z_IterateTags(PU_PATCH, PU_PATCH_ROTATED, callback);
+	Z_IterateTags(PU_PATCH, PU_PATCH, callback);
 	Z_IterateTags(PU_SPRITE, PU_HUDGFX, callback);
 }
 
