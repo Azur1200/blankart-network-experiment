@@ -118,6 +118,8 @@ intertype_t intertype = int_none;
 
 static huddrawlist_h luahuddrawlist_intermission;
 
+static void Y_UnloadData(void);
+
 //
 // SRB2Kart - Y_CalculateMatchData and ancillary functions
 //
@@ -1203,7 +1205,7 @@ void Y_StartIntermission(void)
 		Automate_Run(AEV_QUEUEEND);
 	}
 
-	bgtile = W_CachePatchName("SRB2BACK", PU_PATCH_LOWPRIORITY);
+	bgtile = W_CachePatchName("SRB2BACK", PU_STATIC);
 	useinterpic = false;
 	Automate_Run(AEV_INTERMISSIONSTART);
 }
@@ -1220,6 +1222,9 @@ void Y_EndIntermission(void)
 		K_RetireBots();
 	}
 
+	if (!dedicated)
+		Y_UnloadData();
+
 	endtic = -1;
 	sorttic = -1;
 	intertype = int_none;
@@ -1234,6 +1239,18 @@ void Y_FollowIntermission(void)
 	// or simply go to the next level.
 	// No need to duplicate the code here!
 	G_AfterIntermission();
+}
+
+#define UNLOAD(x) {if ((x) != NULL) {Patch_Free(x);} x = NULL;}
+
+//
+// Y_UnloadData
+//
+static void Y_UnloadData(void)
+{
+	// unload the background patches
+	UNLOAD(bgtile);
+	UNLOAD(interpic);
 }
 
 #undef ITEMLIST_PLAYER_YOFFSET

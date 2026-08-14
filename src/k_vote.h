@@ -68,8 +68,6 @@ typedef enum
 
 void Y_VoteScreenCheck(void);
 
-void Y_VoteClear(void);
-
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -8963,15 +8963,9 @@ void P_FreeLevelState(void)
 		HWR_ClearAllTextures();
 #endif
 
-	if (rendermode != render_none)
-	{
-		Patch_FreeTag(PU_PATCH_LOWPRIORITY);
-		Patch_FreeTag(PU_PATCH_ROTATED);
-	}
-
+	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
+	Patch_FreeTag(PU_PATCH_ROTATED);
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
-
-	Y_VoteClear();
 
 	R_InitMobjInterpolators();
 	R_InitializeLevelInterpolators();
