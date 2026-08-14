@@ -25,6 +25,8 @@
 #include "../i_system.h"
 #include "../i_video.h"
 
+#include <tracy/tracy/TracyC.h>
+
 #define FIXED_TO_FLOAT_MULT (1.0f / 65536.0f)
 
 //#define DEBUG_HWBSP
@@ -55,6 +57,8 @@ polyvertex_t* poly_vert = NULL;
 // These are freed by Z_Free(PU_HWRPLANE).
 static void create_poly_vert(void)
 {
+	TracyCZone(__zone, true);
+
 	polyvertex_t * pv;
 	size_t size = sizeof(polyvertex_t) * numvertexes;
 	size_t i;
@@ -68,6 +72,7 @@ static void create_poly_vert(void)
 		pv->y = FIXED_TO_FLOAT(vertexes[i].y);
 		pv++;
 	}
+	TracyCZoneEnd(__zone);
 }
 
 // Return true if p1 is a level map polyvertex in the poly_vert structure.
@@ -109,6 +114,7 @@ static inline dboolean SameVertex(polyvertex_t* p1, polyvertex_t* p2, float ep)
 // These are freed by Z_Free( PU_HWRPLANE ).
 static polyvertex_t *new_polyvertex(void)
 {
+	TracyCZone(__zone, true);
 	polyvertex_store_t *psp = polyvert_store;
 
 	if (!polyvert_store
@@ -120,6 +126,7 @@ static polyvertex_t *new_polyvertex(void)
 		polyvert_store->num_vert_used = 0;
 	}
 
+	TracyCZoneEnd(__zone);
 	// Return the next polyvertex in the storage unit.
 	return &polyvert_store->pv[polyvert_store->num_vert_used++];
 }
@@ -128,6 +135,8 @@ static polyvertex_t *new_polyvertex(void)
 //  ep: how close they must be to be the same ( 0.001 to 1.5 )
 static polyvertex_t *find_close_polyvertex(float x, float y, float ep)
 {
+	TracyCZone(__zone, true);
+
 	polyvertex_store_t *psv;
 	polyvertex_t *pv;
 	float dx, dy;
@@ -148,7 +157,10 @@ static polyvertex_t *find_close_polyvertex(float x, float y, float ep)
 		dy = (p)->y - y; \
 		if (!(dy < -ep || dy > ep)) \
 			if (dx*dx + dy*dy < eep) /* close enough to be the same vertex */ \
+			{ \
+				TracyCZoneEnd(__zone); \
 				return (p); \
+			} \
 	}
 
 	// Search level map vertexes.
@@ -202,6 +214,7 @@ static polyvertex_t *find_close_polyvertex(float x, float y, float ep)
 	}
 #undef CHECKVERTEX
 
+	TracyCZoneEnd(__zone);
 	// none found
 	return NULL;
 }
@@ -212,6 +225,8 @@ static polyvertex_t *find_close_polyvertex(float x, float y, float ep)
 //  ep: how close an existing vertex must be to be the same ( 0.001 to 1.5 )
 static inline polyvertex_t *store_polyvertex(polyvertex_t *vert, float ep)
 {
+	TracyCZone(__zone, true);
+
 	const float fx = vert->x;
 	const float fy = vert->y;
 
@@ -224,6 +239,7 @@ static inline polyvertex_t *store_polyvertex(polyvertex_t *vert, float ep)
 		vp->y = fy;
 	}
 
+	TracyCZoneEnd(__zone);
 	return vp;
 }
 
@@ -232,6 +248,8 @@ static inline polyvertex_t *store_polyvertex(polyvertex_t *vert, float ep)
 //  ep: how close an existing vertex must be to be the same ( 0.001 to 1.5 )
 static inline polyvertex_t *store_vertex(vertex_t *v1, float ep)
 {
+	TracyCZone(__zone, true);
+
 	const float fx = FIXED_TO_FLOAT(v1->x);
 	const float fy = FIXED_TO_FLOAT(v1->y);
 	polyvertex_t * vp = find_close_polyvertex(fx, fy, ep);
@@ -243,6 +261,7 @@ static inline polyvertex_t *store_vertex(vertex_t *v1, float ep)
 		vp->y = fy;
 	}
 
+	TracyCZoneEnd(__zone);
 	return vp;
 }
 
@@ -312,23 +331,33 @@ static void wpoly_dump(const char *str, wpoly_t *poly)
 // Most basic initialize.
 static void wpoly_init_0(wpoly_t * wpoly)
 {
+	TracyCZone(__zone, true);
+
 	wpoly->numpts = 0;
 	wpoly->num_alloc = 0;
 	wpoly->ppts = NULL;
+
+	TracyCZoneEnd(__zone);
 }
 
 // Initialize at an initial size.
 //  num_alloc : num vertex, greater than 0
 static void wpoly_init_alloc(int32_t num_alloc, wpoly_t * wpoly)
 {
+	TracyCZone(__zone, true);
+
 	wpoly->numpts = 0;
 	wpoly->num_alloc = num_alloc;
 	wpoly->ppts = Z_Malloc((sizeof(void*) * num_alloc), PU_HWRPLANE, NULL);
+
+	TracyCZoneEnd(__zone);
 }
 
 // Frees the allocation used by the wpoly.
 static void wpoly_free(wpoly_t * wpoly)
 {
+	TracyCZone(__zone, true);
+
 	wpoly->num_alloc = 0;
 	wpoly->numpts = 0;
 
@@ -337,6 +366,8 @@ static void wpoly_free(wpoly_t * wpoly)
 		Z_Free(wpoly->ppts);
 		wpoly->ppts = NULL;
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 // Move all vertex from one poly to another.
@@ -344,6 +375,8 @@ static void wpoly_free(wpoly_t * wpoly)
 //   to_poly : previous content is lost
 static void wpoly_move(wpoly_t * from_poly, /*OUT*/ wpoly_t * to_poly)
 {
+	TracyCZone(__zone, true);
+
 	if (to_poly->ppts)
 		wpoly_free(to_poly);
 
@@ -353,12 +386,16 @@ static void wpoly_move(wpoly_t * from_poly, /*OUT*/ wpoly_t * to_poly)
 	from_poly->num_alloc = 0;
 	from_poly->numpts = 0;
 	// from_poly is empty.
+
+	TracyCZoneEnd(__zone);
 }
 
 // Append a range from one poly to another poly.
 // Does not alloc more, will limit copy to allocation size.
 static void wpoly_append(wpoly_t *src_poly, int32_t copy_from, int32_t copy_cnt, /*OUT*/ wpoly_t *dest_poly)
 {
+	TracyCZone(__zone, true);
+
 	polyvertex_t **pvp;
 	int32_t n;
 
@@ -386,6 +423,7 @@ static void wpoly_append(wpoly_t *src_poly, int32_t copy_from, int32_t copy_cnt,
 		CONS_Debug(DBG_RENDER,  "ERROR wpoly_append, zero copy cnt, copy_cnt= %i\n",
 				   copy_cnt);
 #endif
+		TracyCZoneEnd(__zone);
 		return;
 	}
 
@@ -422,6 +460,8 @@ static void wpoly_append(wpoly_t *src_poly, int32_t copy_from, int32_t copy_cnt,
 	{
 		memcpy(pvp, &(src_poly->ppts[copy_from]), copy_cnt*sizeof(void*));
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 // Insert some new vertex, and then,
@@ -434,6 +474,7 @@ static void wpoly_split_copy(polyvertex_t * v1, polyvertex_t * v2,
 							wpoly_t * src_poly, int32_t copy_from, int32_t copy_cnt,
 							/*OUT*/ wpoly_t * dest_poly)
 {
+	TracyCZone(__zone, true);
 	polyvertex_t **pvp;
 	int32_t n = 0;
 
@@ -464,6 +505,8 @@ static void wpoly_split_copy(polyvertex_t * v1, polyvertex_t * v2,
 		*pvp++ = v2;
 
 	wpoly_append(src_poly, copy_from, copy_cnt, /*OUT*/ dest_poly);
+
+	TracyCZoneEnd(__zone);
  }
 
 // Insert vertexes into the destination poly, cutout some vertexes, save some.
@@ -472,12 +515,15 @@ static void wpoly_split_copy(polyvertex_t * v1, polyvertex_t * v2,
 //  xpoly : the source and destination poly
 static void wpoly_insert_cut(polyvertex_t *v1, polyvertex_t *v2, int32_t v_from, int32_t v_cnt, /*INOUT*/ wpoly_t *xpoly)
 {
+	TracyCZone(__zone, true);
+
 	wpoly_t tmp_poly;
 
 	tmp_poly = *xpoly;  // save ptrs and sizes
 	xpoly->ppts = NULL;  // so does not get freed
 	wpoly_split_copy(v1, v2, &tmp_poly, v_from, v_cnt, /*OUT*/ xpoly);
 	wpoly_free(&tmp_poly);  // release saved poly content
+	TracyCZoneEnd(__zone);
 }
 
 
@@ -487,11 +533,16 @@ static void wpoly_insert_cut(polyvertex_t *v1, polyvertex_t *v2, int32_t v_from,
 //  xpoly : the source and destination poly
 static void wpoly_insert_vert(polyvertex_t *v1, int32_t v_at, /*INOUT*/ wpoly_t *xpoly)
 {
+	TracyCZone(__zone, true);
+
 	wpoly_t tmp_poly;
 	int32_t numpts = xpoly->numpts;
 
 	if (v_at > numpts)
+	{
+		TracyCZoneEnd(__zone);
 		return;
+	}
 
 	tmp_poly = *xpoly;  // save ptrs and sizes
 	// Copy back from tmp_poly to xpoly
@@ -521,6 +572,8 @@ static void wpoly_insert_vert(polyvertex_t *v1, int32_t v_at, /*INOUT*/ wpoly_t 
 	}
 
 	wpoly_free(&tmp_poly);  // release saved poly content
+
+	TracyCZoneEnd(__zone);
 }
 
 // ---- Subsectors
@@ -556,9 +609,13 @@ static void HWR_Freepolysubsectors(void);
 // only between levels, clear poly pool
 static void HWR_ClearPolys(void)
 {
+	TracyCZone(__zone, true);
+
 	Z_FreeTag(PU_HWRPLANE);
 	poly_vert = NULL;
 	polyvert_store = NULL;
+
+	TracyCZoneEnd(__zone);
 }
 
 // allocate pool for fast alloc of polys
@@ -575,6 +632,8 @@ void HWR_FreePolyPool(void)
 
 static poly_t* HWR_AllocPoly(int32_t numpts)
 {
+	TracyCZone(__zone, true);
+
 	poly_t* p;
 	size_t size;
 
@@ -582,6 +641,7 @@ static poly_t* HWR_AllocPoly(int32_t numpts)
 	p = Z_Malloc(size, PU_HWRPLANE, NULL);
 	p->numpts = numpts;
 
+	TracyCZoneEnd(__zone);
 	return p;
 }
 
@@ -704,6 +764,8 @@ static void divresult_dump(const char *str, div_result_t *dr)
 static divline_e fracdivline(fdivline_t* partline, polyvertex_t* v1, polyvertex_t* v2,
 					/*OUT*/ div_result_t * result)
 {
+	TracyCZone(__zone, true);
+
 	double frac;
 	double den; // numerator, denominator
 	double v1x, v1y, v1dx, v1dy;  // polygon side vector, v1->v2
@@ -723,7 +785,10 @@ static divline_e fracdivline(fdivline_t* partline, polyvertex_t* v1, polyvertex_
 
 	den = v3dy*v1dx - v3dx*v1dy;
 	if (fabs(den) < 1.0E-36f) // avoid check of float for exact 0
+	{
+		TracyCZoneEnd(__zone);
 		return DVL_none;  // partline and polygon side are effectively parallel
+	}
 
 	// first check the frac along the polygon segment,
 	// (do not accept hit with the extensions)
@@ -732,7 +797,10 @@ static divline_e fracdivline(fdivline_t* partline, polyvertex_t* v1, polyvertex_
 
 	// 0= cross at v1, 1.0= cross at v2
 	if (frac < 0.0 || frac > 1.0)  // double
+	{
 		return DVL_none;  // not within the polygon side
+		TracyCZoneEnd(__zone);
+	}
 
 	// now get the frac along the BSP line
 	// which is useful to determine what is left, what is right
@@ -755,6 +823,7 @@ static divline_e fracdivline(fdivline_t* partline, polyvertex_t* v1, polyvertex_
 		result->before = -1;  // before v1
 		result->after = 1;   // at v2
 		result->at_vert = true;
+		TracyCZoneEnd(__zone);
 		return DVL_v1;
 	}
 
@@ -765,6 +834,7 @@ static divline_e fracdivline(fdivline_t* partline, polyvertex_t* v1, polyvertex_
 		result->before = 0; // at v1
 		result->after = 2;  // after v2
 		result->at_vert = true;
+		TracyCZoneEnd(__zone);
 		return DVL_v2;
 	}
 
@@ -773,6 +843,7 @@ static divline_e fracdivline(fdivline_t* partline, polyvertex_t* v1, polyvertex_
 	result->before = 0; // at v1
 	result->after = 1;  // at v2
 	result->at_vert = false;
+	TracyCZoneEnd(__zone);
 	return DVL_mid;
 }
 
@@ -826,6 +897,8 @@ polytile_store_t *polytile_free = NULL;
 // Cleanup after usage.
 static void polytile_clean(void)
 {
+	TracyCZone(__zone, true);
+
 	while (polytile_store)
 	{
 		polytile_store_t *ptp = polytile_store;
@@ -835,18 +908,27 @@ static void polytile_clean(void)
 
 	// null this just in case, we dont want any dingalinging pointers
 	polytile_free = NULL;
+
+	TracyCZoneEnd(__zone);
 }
 
 // Save the poly ptr within the polytile lists.
 static void polytile_enter(wpoly_t * poly)
 {
+	TracyCZone(__zone, true);
 	polytile_store_t *ptp = polytile_store;
 
 	if (!cv_glpolytile.value)
+	{
+		TracyCZoneEnd(__zone);
 		return;
+	}
 
 	if (poly->numpts == 0)
-		return;  // do not enter NULL poly
+	{
+		TracyCZoneEnd(__zone);
+		return; // do not enter NULL poly
+	}
 
 	if (!polytile_store
 		|| (polytile_store->num_tile_used >= POLYTILE_NUM_POLY))
@@ -867,10 +949,14 @@ static void polytile_enter(wpoly_t * poly)
 	}
 
 	polytile_store->tile[polytile_store->num_tile_used++] = poly;
+
+	TracyCZoneEnd(__zone);
 }
 
 static void polytile_remove(wpoly_t * poly)
 {
+	TracyCZone(__zone, true);
+
 	polytile_store_t *ptp;
 	wpoly_t **wpp;
 	wpoly_t *lp;
@@ -891,6 +977,7 @@ static void polytile_remove(wpoly_t * poly)
 		}
 		ptp = ptp->next;
 	}
+	TracyCZoneEnd(__zone);
 	return;  // not found
 
 found:
@@ -909,6 +996,7 @@ found:
 		ptp->next = polytile_free;
 		polytile_free = ptp;
 	}
+	TracyCZoneEnd(__zone);
 }
 
 // Seach polytile and add the new vertex between the vertex of the poly side.
@@ -917,6 +1005,8 @@ found:
 //  i1, i2 : indexes of the split side
 static void add_vertex_between(polyvertex_t * newvert, wpoly_t * poly, int32_t i1, int32_t i2)
 {
+	TracyCZone(__zone, true);
+
 	polytile_store_t *ptp;
 	wpoly_t *wp;
 	int32_t t, j2;
@@ -925,7 +1015,10 @@ static void add_vertex_between(polyvertex_t * newvert, wpoly_t * poly, int32_t i
 	polyvertex_t *v2 = poly->ppts[i2];
 
 	if (!cv_glpolytile.value)
+	{
+		TracyCZoneEnd(__zone);
 		return;
+	}
 
 // shut up compiler
 #pragma GCC diagnostic push
@@ -933,10 +1026,16 @@ static void add_vertex_between(polyvertex_t * newvert, wpoly_t * poly, int32_t i
 	// Do not need to enter a vertex in vert or horz segments.
 	// Those do not cause problems with cracks.
 	if ((newvert->x == v1->x) && (newvert->x == v2->x))
+	{
+		TracyCZoneEnd(__zone);
 		return;
+	};
 
 	if ((newvert->y == v1->y) && (newvert->y == v2->y))
+	{
+		TracyCZoneEnd(__zone);
 		return;
+	}
 #pragma GCC diagnostic pop
 
 	// Search poly tiling.
@@ -970,6 +1069,7 @@ static void add_vertex_between(polyvertex_t * newvert, wpoly_t * poly, int32_t i
 		}
 		ptp = ptp->next;
 	}
+	TracyCZoneEnd(__zone);
 	return;  // not found
 
 found:
@@ -988,6 +1088,7 @@ found:
 	// (j2-1) is vertex index of s1, j2 is vertex index of s2.
 	wpoly_insert_vert(newvert, j2, /*INOUT*/ wp);
 	// Result is in the same wp.
+	TracyCZoneEnd(__zone);
 }
 #endif
 
@@ -1000,6 +1101,8 @@ found:
 // Called from: HWR_WalkBSPNode
 static void SplitPoly(fdivline_t *dlnp, wpoly_t *poly, /*OUT*/  wpoly_t *frontpoly, wpoly_t *backpoly)
 {
+	TracyCZone(__zone, true);
+
 	// Split poly at A and B.
 	wpoly_t *polyA;  // the poly from A to B, clockwise
 	wpoly_t *polyB;  // the poly from B to A, clockwise
@@ -1152,6 +1255,7 @@ split_poly:
 	}
 #endif
 
+	TracyCZoneEnd(__zone);
 	return;
 
 no_split:
@@ -1240,12 +1344,14 @@ poly_rightside:
 	// poly is to rightside of divline.
 	wpoly_move(poly, frontpoly);
 	backpoly->numpts = 0;
+	TracyCZoneEnd(__zone);
 	return;
 
 poly_leftside:
 	// poly is to leftside of divline.
 	wpoly_move(poly, backpoly);
 	frontpoly->numpts = 0;
+	TracyCZoneEnd(__zone);
 	return;
 
 poly_degenerate:
@@ -1255,6 +1361,7 @@ poly_degenerate:
 #endif
 	frontpoly->numpts = 0;
 	backpoly->numpts = 0;
+	TracyCZoneEnd(__zone);
 	return;
 }
 
@@ -1275,6 +1382,8 @@ poly_degenerate:
 // Force convex solution.
 static void enforce_convex(wpoly_t * poly)
 {
+	TracyCZone(__zone, true);
+
 	polyvertex_t *rv1, *rv2, *rv3;
 	int32_t i1, i2, i3;
 	int32_t numpts = poly->numpts;
@@ -1318,6 +1427,7 @@ static void enforce_convex(wpoly_t * poly)
 	}
 
 	poly->numpts = numpts;
+	TracyCZoneEnd(__zone);
 }
 #endif
 
@@ -1351,6 +1461,8 @@ static seg_chain_t *seg_chain = NULL;  // Z_Malloc
 
 static void free_first_seg_chain(void)
 {
+	TracyCZone(__zone, true);
+
 	seg_chain_t *sctp;
 	loose_seg_t *lsp, *lsp2;
 
@@ -1371,18 +1483,24 @@ static void free_first_seg_chain(void)
 
 		Z_Free(sctp);
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 // Clear out the seg_chain structure
 static void clear_seg_chains(void)
 {
+	TracyCZone(__zone, true);
 	while (seg_chain)
 		free_first_seg_chain();
+	TracyCZoneEnd(__zone);
 }
 
 // The seg-chains may be in portions, due to entry order.
 static void condense_seg_chains(void)
 {
+	TracyCZone(__zone, true);
+
 	seg_chain_t *sctp;
 	seg_chain_t *sctp2;
 	seg_chain_t *sctp2_prev;
@@ -1433,6 +1551,8 @@ combine:
 
 		continue;  // with same sctp
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 // Save loose segs in the seg_chain structure.
@@ -1442,6 +1562,8 @@ static void save_loose_seg(seg_t *loose_seg,
 					 dboolean looseA, dboolean looseB,
 					 dboolean B_A_order)
 {
+	TracyCZone(__zone, true);
+
 	loose_seg_t *lsp;
 	seg_chain_t *sctp;
 	polyvertex_t *pv1, *pv2;
@@ -1483,6 +1605,7 @@ static void save_loose_seg(seg_t *loose_seg,
 			sctp->p1 = pv1;
 			sctp->loose1 = loose1;
 			sctp->num_seg++;
+			TracyCZoneEnd(__zone);
 			return;
 		}
 
@@ -1497,6 +1620,7 @@ static void save_loose_seg(seg_t *loose_seg,
 			sctp->p2 = pv2;
 			sctp->loose2 = loose2;
 			sctp->num_seg++;
+			TracyCZoneEnd(__zone);
 			return;
 		}
 
@@ -1515,6 +1639,7 @@ static void save_loose_seg(seg_t *loose_seg,
 	sctp->loose2 = loose2;
 	sctp->next = seg_chain;
 	seg_chain = sctp;
+	TracyCZoneEnd(__zone);
 }
 
 
@@ -1524,6 +1649,8 @@ static void save_loose_seg(seg_t *loose_seg,
 // Return true if a possible non-convex cut is made.
 static dboolean apply_seg_chains(wpoly_t *poly)
 {
+	TracyCZone(__zone, true);
+
 	dboolean check_convex = false;
 	wpoly_t comb_poly;  // combine seg-chain and poly
 	loose_seg_t *lsp;
@@ -1622,6 +1749,7 @@ reject:
 		free_first_seg_chain();
 	}
 
+	TracyCZoneEnd(__zone);
 	return check_convex;
 }
 
@@ -1637,6 +1765,8 @@ reject:
 // Called from: HWR_SubsecPoly
 static void CutOutSubsecPoly(int32_t ssindex, /*INOUT*/ wpoly_t* poly)
 {
+	TracyCZone(__zone, true);
+
 	subsector_t* sub;
 	seg_t *lseg; // array of seg
 	int16_t segcount; // number of seg in the array
@@ -1957,6 +2087,7 @@ cut_poly:
 		enforce_convex(poly);
 	}
 #endif
+	TracyCZoneEnd(__zone);
 }
 
 
@@ -1970,6 +2101,8 @@ cut_poly:
 // Called from HWR_WalkBSPNode
 static void HWR_SubsecPoly(int ssindex, wpoly_t* poly)
 {
+	TracyCZone(__zone, true);
+
 #ifdef DEBUG_HWBSP
 #ifdef DEBUG_TRACE
 	{
@@ -1989,7 +2122,10 @@ static void HWR_SubsecPoly(int ssindex, wpoly_t* poly)
 #endif
 #endif
 	if (poly->numpts <= 0)
+	{
+		TracyCZoneEnd(__zone);
 		return;
+	}
 
 	if (cv_glpolyshape.value > 0)
 	{
@@ -2006,6 +2142,8 @@ static void HWR_SubsecPoly(int ssindex, wpoly_t* poly)
 #ifdef DEBUG_HWBSP
 	total_subsecpoly_cnt++;
 #endif
+
+	TracyCZoneEnd(__zone);
 }
 
 // The bsp divline does not have enough precision.
