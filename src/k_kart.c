@@ -8992,6 +8992,7 @@ static void K_UpdateProgressThroughCourse(player_t *player)
 			player->progressupdate = true;
 		}
 	}
+	Z_Free(pathtofinish.array);
 }
 
 #undef LEGACYWAYPOINTCHECK
