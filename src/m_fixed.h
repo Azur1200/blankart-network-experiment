@@ -33,6 +33,10 @@ extern "C" {
 #define FRACUNIT (1<<FRACBITS)
 #define FRACHALF (1<<(FRACBITS-1))
 #define FRACMASK (FRACUNIT -1)
+/*!
+  \brief FRACUNIT as a double-precision floating-point value
+*/
+#define FRACDOUBLE 65536.0
 /**	\brief	Redefinition of int32_t as fixed_t
 	unit used as fixed_t
 */
