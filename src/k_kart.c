@@ -580,7 +580,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartrank_highestscore);
 	CV_RegisterVar(&cv_kartrank_lowestscore);
 	CV_RegisterVar(&cv_kartrank_genericpartime);
-	CV_RegisterVar(&cv_kartrank_partimepoints);
+	CV_RegisterVar(&cv_kartrank_progressionpoints);
 	CV_RegisterVar(&cv_kartrank_comebackpoints);
 	CV_RegisterVar(&cv_kartrank_leadertimepoints);
 	CV_RegisterVar(&cv_kartrank_spbtimepoints);
@@ -13505,11 +13505,11 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 		}
 	}
 
-	const double partimepoints = FixedToDouble(RANKPOINTS_PARTIME);
+	const double progpoints = FixedToDouble(RANKPOINTS_PROGRESS);
 
 	// Calculate position bonus; the more you lead, the higher the gain
 	// Frontrun the whole race for the full bonus :)
-	player->rankscorefactor.posgradescore = FixedToDouble((player->ranklog.leaderscore / 32) >> 8) * partimepoints;
+	player->rankscorefactor.posgradescore = LOWESTRANKSCORE + (FixedToDouble((player->ranklog.leaderscore / 32) >> 8) * progpoints);
 
 	if (leveltime > (starttime + TIMECHECKOFFSET))
 	{

@@ -143,7 +143,7 @@ extern vector3_t clusterpoint, clusterdtf;
 // "Mercy value" for par times
 #define PARTIMEMERCY (33 * TICRATE)
 
-#define RANKPOINTS_PARTIME CV_Get(&cv_kartrank_partimepoints)
+#define RANKPOINTS_PROGRESS CV_Get(&cv_kartrank_progressionpoints)
 #define RANKPOINTS_COMEBACKSCORE CV_Get(&cv_kartrank_comebackpoints)
 
 #define RANKPOINTS_LEADERTIME CV_Get(&cv_kartrank_leadertimepoints)
