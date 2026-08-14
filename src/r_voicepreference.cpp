@@ -298,7 +298,7 @@ extern "C"
         FILE* f = NULL;
 
         char currconfig[MAX_WADPATH + PREFPATH_OVERSHOOT] = {0};
-        char backupfile[MAX_WADPATH + PREFPATH_OVERSHOOT] = {0};
+        char backupfile[MAX_WADPATH + PREFPATH_OVERSHOOT + 4] = {0};
 
         char temp_skin_name[SKINNAMESIZE + 1] = {0};
         char temp_vox_name[VOICENAMESIZE + 1] = {0};

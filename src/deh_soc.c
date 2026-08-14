@@ -4931,7 +4931,7 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 				{
 					cvlength = strlen(result->cvar->name) + 2 + distprefixlen;
 					cvname = malloc(cvlength);
-					snprintf(cvname, sizeof(cvlength), "%s_%s", result->isalt ? "runnerdistalt" : "runnerdist", result->cvar->name);
+					snprintf(cvname, cvlength, "%s_%s", result->isalt ? "runnerdistalt" : "runnerdist", result->cvar->name);
 					strlwr(cvname);
 				}
 

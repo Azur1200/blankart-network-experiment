@@ -50,7 +50,7 @@ discordRequest_t *discordRequestList = NULL;
 
 size_t g_discord_skins = 0;
 
-static char self_ip[IP_SIZE];
+static char self_ip[IP_SIZE+1];
 
 /*--------------------------------------------------
  *	const char *DRPC_HideUsername(const char *input)
@@ -427,7 +427,7 @@ static void Discordrp_OnChange(void)
 static void DRPC_GotServerIP(uint32_t address)
 {
 	const unsigned char * p = (const unsigned char *)&address;
-	snprintf(self_ip, IP_SIZE, "%u.%u.%u.%u:%u", p[0], p[1], p[2], p[3], current_port);
+	snprintf(self_ip, IP_SIZE+1, "%u.%u.%u.%u:%u", p[0], p[1], p[2], p[3], current_port);
 	DRPC_UpdatePresence();
 }
 

@@ -8607,7 +8607,7 @@ static void M_DrawServerLines(const menupanelinst_t *pi, int32_t x, int32_t page
 {
 	uint16_t i;
 	char servergametype[30];
-	char pwr[13];
+	char pwr[16];
 	uint16_t firstserverline = M_GetMenuIndex(pi, "LINE1");
 	uint32_t serversperpage = M_ServersPerPage(); // server sperpage?
 
