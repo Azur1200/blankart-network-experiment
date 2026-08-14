@@ -1250,7 +1250,7 @@ static void F_DrawCreditsObjects()
                                                        static_cast<skincolornum_t>(dscredits.creditsobj[i].color),
                                                        GTC_MENUCACHE);
 
-            /*sprintf(debug,
+            /*snprintf(debug, sizeof(debug),
                 "xspd: %f\nstopat: %d\nspinout: %d\n",
                 FIXED_TO_FLOAT(CreditsScrollFx((elapsed_diff), dscredits.creditsobj[i].speed[0])),
                 dscredits.creditsobj[i].movestop,
@@ -1508,7 +1508,7 @@ void F_SecretCreditsDrawer(void)
 
     /*char debug[256];
 
-    sprintf(debug,"Tics: %d\n",static_cast<tic_t>(elapsed / MICROSEC_TICS));
+    snprintf(debug, sizeof(debug), "Tics: %d\n",static_cast<tic_t>(elapsed / MICROSEC_TICS));
 
     V_DrawRightAlignedThinString(-vidxdiff + w, -vidydiff, V_ALLOWLOWERCASE, debug);*/
 }

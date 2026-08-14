@@ -965,7 +965,7 @@ static void G_SetSaveGameModified(void)
 
 	strcpy(savegamename, timeattackfolder);
 	strlcat(savegamename, "%u.ssg", sizeof(savegamename));
-	// can't use sprintf since there is %u in savegamename
+	// can't use snprintf since there is %u in savegamename
 	strcatbf(savegamename, srb2home, PATHSEP);
 
 	G_LoadGameData();
@@ -1086,25 +1086,25 @@ mapnum_t G_LevelTitleToMapNum(const char * leveltitle)
 
 	for (map = 0; map < nummapheaders; ++map)
 	{
-		sprintf(levelname, "%s", mapheaderinfo[map]->lvlttl);
+		snprintf(levelname, sizeof(levelname), "%s", mapheaderinfo[map]->lvlttl);
 		if (!strcasecmp(leveltitle, levelname))
 		{
 			return map;
 		}
 
-		sprintf(levelname, "%s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->actnum);
+		snprintf(levelname, sizeof(levelname), "%s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->actnum);
 		if (!strcasecmp(leveltitle, levelname))
 		{
 			return map;
 		}
 
-		sprintf(levelname, "%s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->zonttl);
+		snprintf(levelname, sizeof(levelname), "%s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->zonttl);
 		if (!strcasecmp(leveltitle, levelname))
 		{
 			return map;
 		}
 
-		sprintf(levelname, "%s %s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->zonttl, mapheaderinfo[map]->actnum);
+		snprintf(levelname, sizeof(levelname), "%s %s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->zonttl, mapheaderinfo[map]->actnum);
 		if (!strcasecmp(leveltitle, levelname))
 		{
 			return map;
@@ -2955,11 +2955,11 @@ void G_HandleRestatMessage(restatmessage_t *rm)
 
 	if (chatcolor > V_TANMAP)
 	{
-		sprintf(color_prefix, "%c", '\x80');
+		snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80');
 	}
 	else
 	{
-		sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+		snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
 	}
 
 
@@ -6210,9 +6210,9 @@ void G_LoadGame(uint32_t slot, mapnum_t mapoverride)
 #endif
 
 	if (marathonmode)
-		strcpy(savename, liveeventbackup);
+		snprintf(savename, sizeof(savename), "%s", liveeventbackup);
 	else
-		sprintf(savename, savegamename, slot);
+		snprintf(savename, sizeof(savename), savegamename, slot);
 
 	if (P_SaveBufferFromFile(&save, savename) == false)
 	{
@@ -6221,7 +6221,7 @@ void G_LoadGame(uint32_t slot, mapnum_t mapoverride)
 	}
 
 	memset(vcheck, 0, sizeof (vcheck));
-	sprintf(vcheck, (marathonmode ? "back-up %d" : "version %d"), VERSION);
+	snprintf(vcheck, sizeof(vcheck), (marathonmode ? "back-up %d" : "version %d"), VERSION);
 	if (!fastcmp((const char *)save.p, (const char *)vcheck))
 	{
 #ifdef SAVEGAME_OTHERVERSIONS
@@ -6296,9 +6296,9 @@ void G_SaveGame(uint32_t slot, mapnum_t mapnum)
 	savebuffer_t save = {0};
 
 	if (marathonmode)
-		strcpy(savename, liveeventbackup);
+		snprintf(savename, sizeof(savename), "%s", liveeventbackup);
 	else
-		sprintf(savename, savegamename, slot);
+		snprintf(savename, sizeof(savename), savegamename, slot);
 	backup = va("%s",savename);
 
 	gameaction = ga_nothing;
@@ -6313,7 +6313,7 @@ void G_SaveGame(uint32_t slot, mapnum_t mapnum)
 		}
 
 		memset(name, 0, sizeof (name));
-		sprintf(name, (marathonmode ? "back-up %d" : "version %d"), VERSION);
+		snprintf(name, sizeof(name), (marathonmode ? "back-up %d" : "version %d"), VERSION);
 		WRITEMEM(save.p, name, VERSIONSIZE);
 
 		P_SaveGame(&save, mapnum);
@@ -6351,9 +6351,9 @@ void G_SaveGameOver(uint32_t slot, dboolean modifylives)
 	savebuffer_t save = {0};
 
 	if (marathonmode)
-		strcpy(savename, liveeventbackup);
+		snprintf(savename, sizeof(savename), "%s", liveeventbackup);
 	else
-		sprintf(savename, savegamename, slot);
+		snprintf(savename, sizeof(savename), savegamename, slot);
 	backup = va("%s",savename);
 
 	if (P_SaveBufferFromFile(&save, savename) == false)
@@ -6371,7 +6371,7 @@ void G_SaveGameOver(uint32_t slot, dboolean modifylives)
 
 		// Version check
 		memset(vcheck, 0, sizeof (vcheck));
-		sprintf(vcheck, (marathonmode ? "back-up %d" : "version %d"), VERSION);
+		snprintf(vcheck, sizeof(vcheck), (marathonmode ? "back-up %d" : "version %d"), VERSION);
 		if (!fastcmp((const char *)save.p, (const char *)vcheck)) BADSAVE
 		save.p += VERSIONSIZE;
 
@@ -6626,9 +6626,9 @@ char *G_BuildMapTitle(mapnum_t mapnum)
 		if (!title)
 			return NULL;
 
-		sprintf(title, "%s", mapheaderinfo[mapnum-1]->lvlttl);
-		if (zonetext) sprintf(title + strlen(title), " %s", zonetext);
-		if (actnum) sprintf(title + strlen(title), " %s", actnum);
+		snprintf(title, len, "%s", mapheaderinfo[mapnum-1]->lvlttl);
+		if (zonetext) snprintf(title + strlen(title), len - strlen(title), " %s", zonetext);
+		if (actnum) snprintf(title + strlen(title), len - strlen(title), " %s", actnum);
 	}
 
 	return title;

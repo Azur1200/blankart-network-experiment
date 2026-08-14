@@ -233,11 +233,11 @@ extern "C"
 
             if (chatcolor > V_TANMAP)
             {
-                sprintf(color_prefix, "%c", '\x80');
+                snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80');
             }
             else
             {
-                sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+                snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
             }
 
             color_prefix[1] = 0;

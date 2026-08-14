@@ -1462,7 +1462,7 @@ void D_RegisterClientCommands(void)
 	// Set default player names
 	// Monster Iestyn (12/08/19): not sure where else I could have actually put this, but oh well
 	for (i = 0; i < MAXPLAYERS; i++)
-		sprintf(player_names[i], "Player %c", 'A' + i); // SRB2Kart: Letters like Sonic 3!
+		snprintf(player_names[i], sizeof(player_names[i]), "Player %c", 'A' + i); // SRB2Kart: Letters like Sonic 3!
 
 	if (dedicated)
 		return;
@@ -2034,7 +2034,7 @@ dboolean EnsurePlayerNameIsGood(char *name, int32_t playernum)
 			else if (len == 1) // Agh!
 			{
 				// Last ditch effort...
-				sprintf(name, "%d", M_RandomKey(10));
+				snprintf(name, MAXPLAYERNAME+1, "%d", 'A' + M_RandomKey(26));
 				if (!EnsurePlayerNameIsGood (name, playernum))
 					return false;
 			}
@@ -2297,7 +2297,8 @@ VaguePartyDescription (int playernum, int size, int default_color)
 	*/
 	if (size > 1 && size <= MAXSPLITSCREENPLAYERS)
 	{
-		sprintf(party_description,
+		snprintf(party_description,
+				 sizeof(party_description),
 				"\x83%s%c and %d other%s",
 				name,
 				default_color,
@@ -2307,7 +2308,8 @@ VaguePartyDescription (int playernum, int size, int default_color)
 	}
 	else
 	{
-		sprintf(party_description,
+		snprintf(party_description,
+				sizeof(party_description),
 				"\x83%s%c",
 				name,
 				default_color
@@ -3982,7 +3984,8 @@ static char *ConcatCommandArgv (int start, int end)
 
 	for (i = start; i < end; ++i)
 	{
-		p += sprintf(p, "%s ", COM_Argv(i));
+		if (size - (p - final) > 0)
+			p += snprintf(p, size - (p - final), "%s ", COM_Argv(i));
 	}
 
 	/* at this point "end" is actually the last argument's position */
@@ -6394,13 +6397,13 @@ static void Got_RequestAddfilecmd(uint8_t **cp, int32_t playernum)
 		char message[275];
 
 		if (toomany)
-			sprintf(message, M_GetText("Too many files loaded to add %s\n"), filename);
+			snprintf(message, sizeof(message), M_GetText("Too many files loaded to add %s\n"), filename);
 		else if (ncs == FS_NOTFOUND)
-			sprintf(message, M_GetText("The server doesn't have %s\n"), filename);
+			snprintf(message, sizeof(message), M_GetText("The server doesn't have %s\n"), filename);
 		else if (ncs == FS_BADHASH)
-			sprintf(message, M_GetText("Checksum mismatch on %s\n"), filename);
+			snprintf(message, sizeof(message), M_GetText("Checksum mismatch on %s\n"), filename);
 		else
-			sprintf(message, M_GetText("Unknown error finding wad file (%s)\n"), filename);
+			snprintf(message, sizeof(message), M_GetText("Unknown error finding wad file (%s)\n"), filename);
 
 		CONS_Printf("%s",message);
 
@@ -8918,11 +8921,11 @@ static void Command_ListSkins(void)
 
 		if (chatcolor > V_TANMAP)
 		{
-			sprintf(color_prefix, "%c", '\x80');
+			snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80');
 		}
 		else
 		{
-			sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+			snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
 		}
 
 		CONS_Printf(
@@ -8962,11 +8965,11 @@ static void Command_SkinSearch(void)
 
 				if (chatcolor > V_TANMAP)
 				{
-					sprintf(color_prefix, "%c", '\x80');
+					snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80');
 				}
 				else
 				{
-					sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+					snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
 				}
 
 				ic++;
@@ -9296,11 +9299,11 @@ __attribute__((used)) static void outputVoicesForSkin(skin_t * skin)
 
 	if (chatcolor > V_TANMAP)
 	{
-		sprintf(color_prefix, "%c", '\x80');
+		snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80');
 	}
 	else
 	{
-		sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+		snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
 	}
 
 	color_prefix[1] = 0;

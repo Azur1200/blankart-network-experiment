@@ -154,13 +154,13 @@ void I_InitController(uint8_t playernum)
 
 	{
 		char dbpath[1024];
-		sprintf(dbpath, "%s" PATHSEP "gamecontrollerdb.txt", srb2path);
+		snprintf(dbpath, sizeof(dbpath), "%s" PATHSEP "gamecontrollerdb.txt", srb2path);
 		SDL_AddGamepadMappingsFromFile(dbpath);
 	}
 
 	{
 		char dbpath[1024];
-		sprintf(dbpath, "%s" PATHSEP "gamecontrollerdb_user.txt", srb2home);
+		snprintf(dbpath, sizeof(dbpath), "%s" PATHSEP "gamecontrollerdb_user.txt", srb2home);
 		SDL_AddGamepadMappingsFromFile(dbpath);
 	}
 

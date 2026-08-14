@@ -216,7 +216,7 @@ static void Y_CalculateMatchData(uint8_t rankingsmode, void (*comparison)(int32_
 		;
 	else if ((data.rankingsmode = (dboolean)rankingsmode))
 	{
-		sprintf(data.levelstring, "\x82*\x80 Total Rankings \x82*\x80");
+		snprintf(data.levelstring, sizeof(data.levelstring), "\x82*\x80 Total Rankings \x82*\x80");
 		data.encore = false;
 	}
 	else

@@ -1589,7 +1589,7 @@ void D_SRB2Main(void)
 			else
 				snprintf(configfile, sizeof configfile, "%s" PATHSEP CONFIGFILENAME, srb2home);
 
-			// can't use sprintf since there is %u in savegamename
+			// can't use snprintf since there is %u in savegamename
 			strcatbf(savegamename, srb2home, PATHSEP);
 			strcatbf(liveeventbackup, srb2home, PATHSEP);
 
@@ -1602,7 +1602,7 @@ void D_SRB2Main(void)
 			else
 				snprintf(configfile, sizeof configfile, "%s" PATHSEP CONFIGFILENAME, userhome);
 
-			// can't use sprintf since there is %u in savegamename
+			// can't use snprintf since there is %u in savegamename
 			strcatbf(savegamename, userhome, PATHSEP);
 			strcatbf(liveeventbackup, userhome, PATHSEP);
 

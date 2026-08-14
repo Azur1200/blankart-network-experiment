@@ -37,9 +37,7 @@ typedef long            FINT;
 typedef unsigned long   FUINT;
 typedef unsigned char   FUBYTE;
 typedef unsigned long   FBITFIELD;
-#ifndef __MINGW32__
 typedef float           FLOAT;
-#endif
 typedef unsigned char   FBOOLEAN;
 
 // ==========================================================================

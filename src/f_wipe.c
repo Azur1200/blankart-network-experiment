@@ -112,9 +112,6 @@ fademask_t *F_GetFadeMask(uint8_t masknum, uint8_t scrnnum) {
 	if (masknum > 99 || scrnnum > 99)
 		goto freemask;
 
-	// SRB2Kart: This suddenly triggers ERRORMODE now
-	//sprintf(&lumpname[4], "%.2hu%.2hu", (uint16_t)masknum, (uint16_t)scrnnum);
-
 	lumpname[4] = '0'+(masknum/10);
 	lumpname[5] = '0'+(masknum%10);
 
@@ -393,7 +390,7 @@ tic_t F_GetWipeLength(uint8_t wipetype)
 
 	for (wipeframe = 0; wipeframe < 100; wipeframe++)
 	{
-		sprintf(&lumpname[4], "%.2hu%.2hu", (uint16_t)wipetype, (uint16_t)wipeframe);
+		snprintf(&lumpname[4], sizeof(lumpname) - 4, "%.2hu%.2hu", (uint16_t)wipetype, (uint16_t)wipeframe);
 
 		lumpnum = W_CheckNumForName(lumpname);
 		if (lumpnum == LUMPERROR)
@@ -417,7 +414,7 @@ dboolean F_WipeExists(uint8_t wipetype)
 	if (wipetype > 99)
 		return false;
 
-	sprintf(&lumpname[4], "%.2hu00", (uint16_t)wipetype);
+	snprintf(&lumpname[4], sizeof(lumpname) - 4, "%.2hu00", (uint16_t)wipetype);
 
 	lumpnum = W_CheckNumForName(lumpname);
 	return !(lumpnum == LUMPERROR);

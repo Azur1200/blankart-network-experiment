@@ -904,7 +904,7 @@ static void ST_overlayDrawer(void)
 					char name[MAXPLAYERNAME+12];
 
 					int32_t y = (stplyrnum == 0) ? 4 : BASEVIDHEIGHT/2-12;
-					sprintf(name, "VIEWPOINT: %s", player_names[stplyr-players]);
+					snprintf(name, sizeof(name), "VIEWPOINT: %s", player_names[stplyr-players]);
 					V_DrawRightAlignedThinString(BASEVIDWIDTH-40, y, V_HUDTRANSHALF|V_ALLOWLOWERCASE|V_SNAPTOTOP|V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_SPLITSCREEN, name);
 				}
 				else if (r_splitscreen)

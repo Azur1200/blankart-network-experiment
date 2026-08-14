@@ -1303,7 +1303,7 @@ void readlevelheader(MYFILE *f, char * name)
 			{
 				char namebuf[9];
 
-				sprintf(namebuf, "SKY%.5s", word2);
+				snprintf(namebuf, sizeof(namebuf), "SKY%.5s", word2);
 				deh_strlcpy(mapheaderinfo[num]->skytexture, namebuf,
 					sizeof(mapheaderinfo[num]->skytexture), va("Level header %d: sky texture", num));
 			}
@@ -4062,7 +4062,7 @@ void readmaincfg(MYFILE *f)
 
 				strcpy(savegamename, timeattackfolder);
 				strlcat(savegamename, "%u.ssg", sizeof(savegamename));
-				// can't use sprintf since there is %u in savegamename
+				// can't use snprintf since there is %u in savegamename
 				strcatbf(savegamename, srb2home, PATHSEP);
 
 				strcpy(liveeventbackup, va("live%s.bkp", timeattackfolder));
@@ -4636,7 +4636,7 @@ void readfollower(MYFILE *f)
 		int32_t startlen = strlen(testname);
 		char cpy[2];
 		//deh_warning("There was already a follower with the same name. (%s)", testname);	This warning probably isn't necessary anymore?
-		sprintf(cpy, "%d", numfollowers);
+		snprintf(cpy, sizeof(cpy), "%d", numfollowers);
 		memcpy(&testname[startlen], cpy, 2);
 		// in that case, we'll be very lazy and copy numfollowers to the end of our skin name.
 	}
@@ -4932,20 +4932,23 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 
 			if (result->augcvar[idx] == NULL)
 			{
-				char *cvname;
+				char *cvname = NULL;
+				size_t cvlength = 0;
 
 				uint16_t distprefixlen = strlen(result->isalt ? "runnerdistalt" : "runnerdist");
 
 				if (idx)
 				{
-					cvname = malloc(strlen(result->cvar->name) + 9 + distprefixlen);
-					sprintf(cvname, "%s_%s_legacy", result->isalt ? "runnerdistalt" : "runnerdist", result->cvar->name);
+					cvlength = strlen(result->cvar->name) + 9 + distprefixlen;
+					cvname = malloc(cvlength);
+					snprintf(cvname, cvlength, "%s_%s_legacy", result->isalt ? "runnerdistalt" : "runnerdist", result->cvar->name);
 					strlwr(cvname);
 				}
 				else
 				{
-					cvname = malloc(strlen(result->cvar->name) + 2 + distprefixlen);
-					sprintf(cvname, "%s_%s", result->isalt ? "runnerdistalt" : "runnerdist", result->cvar->name);
+					cvlength = strlen(result->cvar->name) + 2 + distprefixlen;
+					cvname = malloc(cvlength);
+					snprintf(cvname, sizeof(cvlength), "%s_%s", result->isalt ? "runnerdistalt" : "runnerdist", result->cvar->name);
 					strlwr(cvname);
 				}
 

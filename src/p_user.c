@@ -770,7 +770,7 @@ dboolean P_EndingMusic(player_t *player)
 
 	if (racemode && bestlocalpos == MAXPLAYERS+1)
 	{
-		sprintf(buffer, "k*fail"); // F-Zero death results theme
+		snprintf(buffer, sizeof(buffer), "k*fail"); // F-Zero death results theme
 		forcestandardresults = true;
 	}
 	else if (racemode && racewasgraded)
@@ -778,22 +778,22 @@ dboolean P_EndingMusic(player_t *player)
 		// Race used ranks; play a fanfare and prepare the ticker for the intermission music
 		looping = false;
 		if (K_IsPlayerLosing(bestlocalplayer))
-			sprintf(buffer, "pgdbad");
+			snprintf(buffer, sizeof(buffer), "pgdbad");
 		else if (bestlocalpos == 1)
-			sprintf(buffer, "pgdfst");
+			snprintf(buffer, sizeof(buffer), "pgdfst");
 		else
-			sprintf(buffer, "pgdgud");
+			snprintf(buffer, sizeof(buffer), "pgdgud");
 
 		S_SetMusicQueue("grade", true, (9 * TICRATE / 2));
 	}
 	else
 	{
 		if (K_IsPlayerLosing(bestlocalplayer))
-			sprintf(buffer, "k*lose");
+			snprintf(buffer, sizeof(buffer), "k*lose");
 		else if (bestlocalpos == 1)
-			sprintf(buffer, "k*win");
+			snprintf(buffer, sizeof(buffer), "k*win");
 		else
-			sprintf(buffer, "k*ok");
+			snprintf(buffer, sizeof(buffer), "k*ok");
 	}
 
 	S_SpeedMusic(1.0f);

@@ -327,7 +327,7 @@ lumpnum_t S_GetSfxLumpNum(sfxinfo_t *sfx)
 	char namebuf[9];
 	lumpnum_t sfxlump;
 
-	sprintf(namebuf, "ds%s", sfx->name);
+	snprintf(namebuf, sizeof(namebuf), "ds%s", sfx->name);
 
 	sfxlump = W_CheckNumForName(namebuf);
 	if (sfxlump != LUMPERROR)
@@ -2735,9 +2735,9 @@ void S_InitLevelMusic(dboolean fromnetsave)
 		char musicname[7];
 
 		if (!validencore && mapheader->musname[0][0] == 0)
-			sprintf(musicname, "%sM", G_BuildMapName(gamemap));
+			snprintf(musicname, sizeof(musicname), "%sM", G_BuildMapName(gamemap));
 		else
-			sprintf(musicname, "%s",(validencore ? mapheader->encoremusname : mapheader->musname)[usemusrng]);
+			snprintf(musicname, sizeof(musicname), "%s",(validencore ? mapheader->encoremusname : mapheader->musname)[usemusrng]);
 
 		strncpy(mapmusname, musicname, 7);
 

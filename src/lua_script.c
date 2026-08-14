@@ -1066,8 +1066,7 @@ void LUA_LoadLump(uint16_t wad, uint16_t lump, dboolean noresults)
 		if (!name)
 			I_Error("LUA_LoadLump: Out of memory!\n");
 
-		sprintf(name, "%s|%s", wadfiles[wad]->filename, lump_p->fullname);
-		name[len] = '\0';
+		snprintf(name, len + 1, "%s|%s", wadfiles[wad]->filename, lump_p->fullname);
 	}
 
 	lua_compatmode = wadfiles[wad]->compatmode;

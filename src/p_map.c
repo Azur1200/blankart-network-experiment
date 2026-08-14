@@ -3534,8 +3534,10 @@ static void P_HitSlideLine(line_t *ld)
 	tmymove -= FixedMul(ny, d);
 }
 
-// https://gamedev.stackexchange.com/a/30220
-static void P_ClipPlayerMoveToLine(line_t *ld)
+/// https://gamedev.stackexchange.com/a/30220
+/// clips an object's movement right up to a line (having already collided with this line)
+/// doesn't perform collision detection against lines on its own
+static void P_ClipAABBMoveToLine(line_t *ld)
 {
 	vector2_t lineDir = {ld->dx, ld->dy};
 	vector2_t lineMin = {0};
@@ -4098,7 +4100,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		{
 			tmxmove = mmomx;
 			tmymove = mmomy;
-			P_ClipPlayerMoveToLine(result->line); // clip the moves
+			P_ClipAABBMoveToLine(result->line); // clip the moves
 		}
 		if (slideline)
 		{
@@ -4200,6 +4202,13 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 
 	slidemo = mo;
 
+	if (result->line != NULL)
+	{
+		tmxmove = mmomx;
+		tmymove = mmomy;
+		P_ClipAABBMoveToLine(result->line); // clip the moves
+	}
+
 	if (mo->type == MT_SHELL)
 	{
 		tmxmove = mmomx;
@@ -4243,6 +4252,9 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 		mo->momx = FixedMul(mo->momx, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
 		mo->momy = FixedMul(mo->momy, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
 	}
+
+	P_ThingHeightClip(mo);
+	if (P_MobjWasRemoved(mo)) return;
 }
 
 //

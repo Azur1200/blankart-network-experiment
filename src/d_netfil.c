@@ -1762,9 +1762,6 @@ void nameonly(char *s)
 	size_t j, len;
 	void *ns;
 
-	if (s == NULL)
-		return;
-
 	for (j = strlen(s); j != (size_t)-1; j--)
 		if ((s[j] == '\\') || (s[j] == ':') || (s[j] == '/'))
 		{
