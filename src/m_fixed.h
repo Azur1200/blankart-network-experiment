@@ -45,6 +45,23 @@ extern "C" {
 
 typedef int32_t fixed_t;
 
+#define BIGFRACBITS 24
+
+/*!
+  \brief 8.24 fixed-point value (range: 0.0 to 127.99)
+*/
+#define BIGFRACUNIT (1<<BIGFRACBITS)
+/*!
+  \brief BIGFRACUNIT as a double-precision floating-point value
+*/
+#define BIGFRACDOUBLE 16777216.0
+/*!
+  \brief Bits to convert a BIGFRACUNIT to a FRACUNIT
+*/
+#define BIGTOSTDBITS (BIGFRACBITS - FRACBITS)
+
+#define BIGFRACMASK (BIGFRACUNIT - 1)
+
 /*!
   \brief convert fixed_t into floating number
 */
@@ -77,6 +94,13 @@ FUNCMATH FUNCINLINE static ATTRINLINE tic_t DoubleToTicrate(double f)
 {
 	return (tic_t)(f * TICRATE);
 }
+
+#define BigFixedToFloat(x) FixedToFloat(x >> BIGTOSTDBITS)
+#define BigFixedToDouble(x) FixedToDouble(x >> BIGTOSTDBITS)
+#define BigFixedToTicrate(x) DoubleToTicrate(FixedToDouble(x >> BIGTOSTDBITS))
+
+#define FloatToBigFixed(x) (FloatToFixed(x) << BIGTOSTDBITS)
+#define DoubleToBigFixed(x) (DoubleToFixed(x) << BIGTOSTDBITS)
 
 /** \brief Converts seconds (in tics) to fixed-point number values; 1 second is 1 fracunit.
 
