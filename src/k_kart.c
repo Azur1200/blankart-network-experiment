@@ -383,6 +383,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdebugdistribution);
 	CV_RegisterVar(&cv_kartdebughuddrop);
 	CV_RegisterVar(&cv_kartdebugwaypoints);
+	CV_RegisterVar(&cv_kartdebugprogress);
 	CV_RegisterVar(&cv_kartdebuglap);
 	CV_RegisterVar(&cv_kartdebugbot);
     CV_RegisterVar(&cv_kartdebugcluster);
@@ -8908,6 +8909,93 @@ void K_KartPlayerAfterThink(player_t *player)
 	TracyCZoneEnd(__zone);
 }
 
+// "If waypointcap is NULL, assume Legacy/Classic systems are being used"
+#define LEGACYWAYPOINTCHECK (waypointcap == NULL)
+
+static void K_UpdateProgressThroughCourseClassic(player_t *player)
+{
+	/* FIXME: DO SOMETHING!!! */
+}
+
+static void K_UpdateProgressThroughCourse(player_t *player)
+{
+	if ((player == NULL) || (P_MobjWasRemoved(player->mo)))
+	{
+		return;
+	}
+
+	player->progressupdate = false;
+
+	if LEGACYWAYPOINTCHECK
+	{
+		// Map isn't waypointed, attempt to use old-school checkpoints
+		K_UpdateProgressThroughCourseClassic(player);
+		return;
+	}
+
+	const dboolean sectionrace = ((mapheaderinfo[gamemap-1]->levelflags & LF_SECTIONRACE) == LF_SECTIONRACE);
+
+	waypoint_t *tracestart = (sectionrace) ? K_GetStartingWaypoint() : K_GetFinishLineWaypoint();
+
+	if ((player->currentwaypoint == NULL) || (tracestart == NULL) || (player->laps < 1))
+	{
+		return;
+	}
+
+	const dboolean useshortcuts = false;
+	const dboolean huntbackwards = false;
+	dboolean pathfindsuccess = false;
+	path_t pathtofinish = {0};
+
+	pathfindsuccess =
+		K_PathfindToWaypoint(tracestart, player->currentwaypoint, &pathtofinish, useshortcuts, huntbackwards);
+
+	if (!pathfindsuccess)
+	{
+		// We failed...
+		// Lets try shortcut waypoints if that happens to be the only path.
+		pathfindsuccess =
+		K_PathfindToWaypoint(tracestart, player->currentwaypoint, &pathtofinish, true, huntbackwards);
+	}
+
+	if (pathfindsuccess)
+	{
+		// Using floating points for this, because trying fixed-point bullshit will make me age at mach speed
+		double nextlap_mul = (sectionrace) ? 0.0 : max(0, player->laps - 1);
+		double coursedist_d = K_GetCircuitLength();
+		double pathdist_d = (double)(pathtofinish.totaldist) + (coursedist_d * nextlap_mul);
+		double lap_mul = (double)(numlaps);
+
+		if (sectionrace)
+		{
+			// The course length IS how long the sectioned course is, AKA: DON'T multiply the damn distances!
+			lap_mul = 1.0;
+		}
+
+		// Multiply the course distance by the lap count to get the length of the entire race
+		coursedist_d = (coursedist_d) * lap_mul;
+
+		// Divide our distance by the overall course distance
+		double factor = pathdist_d / coursedist_d;
+
+		// On EXCRUCIATINGLY long maps, this will throw off the delta calculation system
+		// But we have to keep things 32-bit for Lua's sake...
+
+		// (1 << 24) * factor
+		uint32_t current_progress = (uint32_t)(min(16777216.0, max(0, 16777216.0 * factor)));
+
+		// Only ever count progress increments
+		if (current_progress > player->progressthrumap)
+		{
+			player->progressdelta = (int32_t)((int64_t)(current_progress) - (int64_t)(player->progressthrumap));
+			player->progressthrumap = current_progress;
+			player->progressupdate = true;
+		}
+	}
+}
+
+#undef LEGACYWAYPOINTCHECK
+
 static int clostVal(fixed_t arr[], int N, fixed_t K)
 {
 	// Stores the closest
@@ -9246,6 +9334,9 @@ static dboolean K_SetPlayerNextWaypoint(player_t *player)
 		{
 			player->currentwaypoint = bestwaypoint;
 
+			// The current waypoint changed, so update our progress!
+			K_UpdateProgressThroughCourse(player);
+
 			// if currentwaypoint is the finish line, don't set nextwaypoint to it!
 			// fixes bigwaypointgap triggering if we're facing the back of the finish line
 			if (bestwaypoint == finishline)
@@ -9450,7 +9541,6 @@ static dboolean K_SetPlayerNextWaypoint(player_t *player)
 
 	return updaterespawn;
 }
-
 
 /*--------------------------------------------------
 	static void K_UpdateDistanceFromFinishLine(player_t *const player)
@@ -9924,6 +10014,9 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 			player->currentwaypoint = old_currentwaypoint;
 			player->nextwaypoint = old_nextwaypoint;
 			player->distancetofinish = player->distancetofinishprev;
+
+			// Just in case: update progress, even if we may have not gone anywhere
+			K_UpdateProgressThroughCourse(player);
 
 			// Start the auto respawn timer when the distance jumps.
 			if (!player->bigwaypointgap)
@@ -11132,6 +11225,31 @@ static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
     return K_Distance3D(source->mo->x,source->mo->y,source->mo->z,destination->mo->x,destination->mo->y,destination->mo->z);
 }*/
 
+// Gets a fixed_t value between 0.0 and 1.0 representing their position in the race.
+// 1st place -> 1.0, last place -> 0.0
+fixed_t K_GetPositionMultiplier(int32_t position)
+{
+	const int32_t playerseed = max(0, players_racing - 1);
+
+	if (playerseed > 0)
+	{
+		const int32_t leaderfactor = max(0, playerseed - max(0, position - 1));
+		const int32_t convtopercent = ((1 << 24) / playerseed);
+
+		// There's always a chance some off-kilter value fucks up the multiplier, so we
+		// "round up" by a tiiny bit...
+		const fixed_t leadermul = min(FRACUNIT, ((convtopercent / 256) * leaderfactor) + 2);
+
+		return leadermul;
+	}
+
+	// Check if we're racing alone, if we fall through
+	if (players_racing == 1)
+		return FRACUNIT;
+
+	return 0; // Nobody's around...
+}
+
 /*--------------------------------------------------
 	uint32_t K_UndoMapScaling(uint32_t distance)
 
@@ -11726,41 +11844,6 @@ uint32_t K_GetClusterDistanceForPlayer(player_t * player)
 
 #undef MINCLUSTERPLAYERS
 
-void K_IncrementLeaderTics(player_t* player, fixed_t position)
-{
-	uint16_t buttons = K_GetKartButtons(player);
-
-	// If you have accel down, are null-drifting, or at least are moving AT ALL, you're
-	// accelerating
-	dboolean accelerating =
-	    ((buttons & BT_ACCELERATE) || (K_GetSpeedPercentage(player) > (FRACUNIT / 100)) ||
-	     (player->nulldrift));
-
-	if (!accelerating)
-	{
-		// Don't squat for free points, dickhead
-		// This won't stop players feathering accel, or hell, driving backwards, but at
-		// least they're MOVING
-		return;
-	}
-
-	const int32_t playerseed = max(0, players_racing - 1);
-	const dboolean do_leadertics = (leveltime > (starttime + TIMECHECKOFFSET));
-
-	if ((playerseed > 0) && do_leadertics)
-	{
-		const int32_t leaderfactor = max(0, playerseed - max(0, position - 1));
-		const int32_t convtopercent = ((1 << 24) / playerseed);
-
-		// There's always a chance some off-kilter value fucks up the multiplier, so we
-		// "round up" by a tiiny bit...
-		const fixed_t leadermul = min(FRACUNIT, ((convtopercent / 256) * leaderfactor) + 2);
-
-		// ...let's just make this consistent
-		player->ranklog.leadertics += max(0, FixedMul(32, leadermul));
-	}
-}
-
 //
 // K_KartUpdatePosition
 //
@@ -11832,8 +11915,6 @@ void K_KartUpdatePosition(player_t *player)
 	}
 
 	player->position = position;
-
-	K_IncrementLeaderTics(player, position);
 }
 
 void K_KartLegacyUpdatePosition(player_t *player)
@@ -11957,8 +12038,6 @@ void K_KartLegacyUpdatePosition(player_t *player)
 		player->positiondelay = 10; // Position number growth
 
 	player->position = position;
-
-	K_IncrementLeaderTics(player, position);
 }
 
 uint32_t clusterid = 0;
@@ -12192,6 +12271,28 @@ void K_UpdateAllPlayerPositions(void)
 			}
 
 			K_UpdatePlayerWaypoints(player);
+
+			if (player->progressupdate)
+			{
+				// Sprint/section maps ALWAYS force playergradelap to think it's lap 1
+				const dboolean sprintmap = ((mapheaderinfo[gamemap-1]->levelflags & LF_SECTIONRACE) == LF_SECTIONRACE);
+
+				// Even for circuit-based sprint-races, this updating is fine
+				int32_t checklap = (sprintmap) ? 1 : player->laps;
+
+				// player->progressupdate will likely be false if there's no current waypoint, but just in case...
+				if (player->currentwaypoint)
+				{
+					if (player->laps > player->currentwaypoint->playergradelap[i])
+					{
+						player->currentwaypoint->playergradelap[i] = checklap;
+
+						// Progress updated; update leaderscore
+						const fixed_t leadermul = K_GetPositionMultiplier(player->position);
+						player->ranklog.leaderscore += (player->progressdelta * FixedMul(32, leadermul));
+					}
+				}
+			}
 		}
 	}
 
@@ -13403,11 +13504,11 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 		}
 	}
 
-	const double partimepoints = FixedToDouble(RANKPOINTS_PARTIME) / krtTime;
+	const double partimepoints = FixedToDouble(RANKPOINTS_PARTIME);
 
-	// Calculate time bonus; the more you lead, the higher the gain
+	// Calculate position bonus; the more you lead, the higher the gain
 	// Frontrun the whole race for the full bonus :)
-	player->rankscorefactor.posgradescore = (player->ranklog.leadertics / 32) * partimepoints;
+	player->rankscorefactor.posgradescore = FixedToDouble((player->ranklog.leaderscore / 32) >> 8) * partimepoints;
 
 	if (leveltime > (starttime + TIMECHECKOFFSET))
 	{

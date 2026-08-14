@@ -324,6 +324,7 @@ extern consvar_t cv_kartdebugitem, cv_kartdebugamount, cv_kartdebugdistribution,
 extern consvar_t cv_kartdebugshrink;
 extern consvar_t cv_kartdebugcheckpoint, cv_kartdebugnodes, cv_kartdebugcolorize, cv_kartdebugdirector;
 extern consvar_t cv_kartdebugwaypoints, cv_kartdebuglap, cv_kartdebugbot, cv_kartdebugcluster, cv_kartdebugrings;
+extern consvar_t cv_kartdebugprogress;
 extern consvar_t cv_gptest;
 
 extern consvar_t cv_itemfinder;

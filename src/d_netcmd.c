@@ -781,14 +781,14 @@ consvar_t cv_kartrank_lowestscore = CVAR_INIT ("rank_lowestscore", "0", CV_NETVA
 consvar_t cv_kartrank_highestscore = CVAR_INIT ("rank_highestscore", "150", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_signed_cons_t, NULL);
 
 // Ranks: the point value players earn based on a set course's time limit (the "par time")
-consvar_t cv_kartrank_partimepoints = CVAR_INIT ("rank_partimepoints", "210.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+consvar_t cv_kartrank_partimepoints = CVAR_INIT ("rank_partimepoints", "225.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
 // Ranks: The generic par-time for non-waypointed maps.
 // Default is 3 minutes 55 seconds; an average Kart race on Hard is about 3 minutes 15 seconds.
 // Since the average time can vary HEAVILY based on the server, let hosts customize this.
 consvar_t cv_kartrank_genericpartime = CVAR_INIT ("rank_genericpartime", "235.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_FloatingTicrate, NULL);
 
-consvar_t cv_kartrank_comebackpoints = CVAR_INIT ("rank_comebackpoints", "110.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+consvar_t cv_kartrank_comebackpoints = CVAR_INIT ("rank_comebackpoints", "95.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
 // Ranks: the point bonus given dependent on position (1st place gets the raw value), meant to offset the par-time deficit
 consvar_t cv_kartrank_leadertimepoints = CVAR_INIT ("rank_leadertimepoints", "400.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
@@ -892,6 +892,7 @@ consvar_t cv_kartdebuglap = CVAR_INIT ("kartdebuglap", "Off", CV_NETVAR|CV_CHEAT
 consvar_t cv_kartdebugbot = CVAR_INIT ("kartdebugbot", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_kartdebugcluster = CVAR_INIT ("kartdebugcluster", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_kartdebugrings = CVAR_INIT ("kartdebugrings", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_kartdebugprogress = CVAR_INIT ("kartdebugprogress", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 consvar_t cv_kartdebugcheckpoint = CVAR_INIT ("kartdebugcheckpoint", "Off", 0, CV_OnOff, NULL);
 consvar_t cv_kartdebugnodes = CVAR_INIT ("kartdebugnodes", "Off", 0, CV_OnOff, NULL);

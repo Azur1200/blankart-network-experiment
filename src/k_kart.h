@@ -425,7 +425,7 @@ int32_t K_GetKartDriftSparkValue(const player_t *player);
 int32_t K_GetKartDriftSparkValueForStage(const player_t *player, uint8_t stage);
 uint8_t K_GetKartDriftSparkStageForValue(const player_t *player, int32_t value);
 int32_t K_GetDriftAngleOffset(player_t *player);
-void K_IncrementLeaderTics(player_t *player, fixed_t position);
+fixed_t K_GetPositionMultiplier(int32_t position);
 void K_KartUpdatePosition(player_t *player);
 void K_KartLegacyUpdatePosition(player_t *player);
 void K_UpdateClusterPoints(void);

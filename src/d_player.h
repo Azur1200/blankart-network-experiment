@@ -587,7 +587,7 @@ struct ranklog_t
 
 	uint16_t numhitconfirms; // How many times did you hit other players with items?
 	int32_t driftboostcount[4]; // Number of driftboosts performed, separated by tier.
-	int32_t leadertics; // Time spent leading the pack.
+	int32_t leaderscore; // Points earned based on position. Per the name, the leader (1st place) gets the most!
 	int32_t spbattack; // Time spent being tailed by a Self-Propelled Bomb. The closer it is, the faster this increases.
 	fixed_t startboostgrading; // (Currently unused) How well did this player perform the startboost?
 
@@ -624,7 +624,7 @@ struct rankscorefactor_t
 
 	int32_t hitbonus; // Points earned for each hitconfirm
 	int32_t driftbonus; // Points earned for driftboosts performed
-	int32_t positionbonus; // Points earned based on "leadertics"; you earn the most for leading the pack!
+	int32_t positionbonus; // Points earned based on "leaderscore"; you earn the most for leading the pack!
 	int32_t spbattackbonus; // Points earned for having a Self-Propelled Bomb trail you
 
 	//
@@ -744,6 +744,13 @@ struct player_t
 
 	uint32_t distancefromcluster;
 	uint32_t distancefrombestfit;
+
+	// Progress through the map, based on waypoints/checkpoints
+	// Checkpoints use the total count, waypoints use the pathfinding distance
+	uint32_t progressthrumap;
+	int32_t progressdelta;
+
+	dboolean progressupdate;
 
 	waypoint_t *currentwaypoint;
 	waypoint_t *nextwaypoint;

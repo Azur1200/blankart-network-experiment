@@ -3098,6 +3098,10 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 	int32_t rankpts = 0;
 	int32_t real_rankpts = 0;
 
+	uint32_t progress = 0;
+	int32_t progdelta = 0;
+	dboolean progupdate = false;
+
 	tic_t laptime[LAP__MAX];
 
 	// Keep stuff shit
@@ -3218,6 +3222,9 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 		starposttime = 0;
 		prevcheck = 0;
 		nextcheck = 0;
+		progress = 0;
+		progdelta = 0;
+		progupdate = false;
 
 		// keepstuff
 		ksflags = 0;
@@ -3372,6 +3379,9 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 		lastsafelap = players[player].lastsafelap;
 		lastsafestarpost = players[player].lastsafestarpost;
 		bigwaypointgap = players[player].bigwaypointgap;
+		progress = players[player].progressthrumap;
+		progdelta = players[player].progressdelta;
+		progupdate = players[player].progressupdate;
 
 		for (i = 0; i < LAP__MAX; i++)
 		{
@@ -3485,6 +3495,9 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 	p->nocontrol = nocontrol;
 	p->kickstartaccel = kickstartaccel;
 	p->jitterlegacy = jitterlegacy;
+	p->progressthrumap = progress;
+	p->progressdelta = progdelta;
+	p->progressupdate = progupdate;
 
 	// keepstuff
 	p->keepstuff.flags = ksflags;

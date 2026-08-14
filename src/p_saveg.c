@@ -585,7 +585,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].ranklog.driftboostcount[1]);
 		SYNC(players[i].ranklog.driftboostcount[2]);
 		SYNC(players[i].ranklog.driftboostcount[3]);
-		SYNC(players[i].ranklog.leadertics);
+		SYNC(players[i].ranklog.leaderscore);
 		SYNC(players[i].ranklog.spbattack);
 		SYNC(players[i].ranklog.startboostgrading);
 		SYNC(players[i].ranklog.posgrading);
