@@ -6198,7 +6198,7 @@ void G_SaveGameData(void)
 void G_LoadGame(uint32_t slot, mapnum_t mapoverride)
 {
 	char vcheck[VERSIONSIZE];
-	char savename[255];
+	char savename[256];
 	savebuffer_t save = {0};
 
 	// memset savedata to all 0, fixes calling perfectly valid saves corrupt because of bots
@@ -6346,7 +6346,7 @@ void G_SaveGameOver(uint32_t slot, dboolean modifylives)
 	dboolean saved = false;
 	size_t length;
 	char vcheck[VERSIONSIZE];
-	char savename[255];
+	char savename[256];
 	const char *backup;
 	savebuffer_t save = {0};
 

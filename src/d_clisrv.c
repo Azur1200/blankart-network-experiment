@@ -1468,7 +1468,7 @@ static void SV_SavedGame(void)
 {
 	size_t length;
 	savebuffer_t save = {0};
-	char tmpsave[256];
+	char tmpsave[264];
 
 	if (!cv_dumpconsistency.value)
 		return;
@@ -1507,7 +1507,7 @@ static void CL_LoadReceivedSavegame(dboolean reloading)
 {
 	savebuffer_t save = {0};
 	size_t length, decompressedlen;
-	char tmpsave[256];
+	char tmpsave[264];
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	snprintf(tmpsave, sizeof(tmpsave), "%s" PATHSEP TMPSAVENAME, srb2home);
@@ -2401,7 +2401,7 @@ static void CL_ConnectToServer(void)
 	int32_t pnumnodes, nodewaited = doomcom->numnodes, i;
 	tic_t oldtic;
 	tic_t asksent;
-	char tmpsave[256];
+	char tmpsave[264];
 
 	snprintf(tmpsave, sizeof(tmpsave), "%s" PATHSEP TMPSAVENAME, srb2home);
 
@@ -5890,7 +5890,7 @@ static void PT_WillResendGamestate(int8_t node)
 {
 	(void)node;
 
-	char tmpsave[256];
+	char tmpsave[264];
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (server || cl_redownloadinggamestate)

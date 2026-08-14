@@ -9038,9 +9038,15 @@ void P_FreeLevelState(void)
 		HWR_ClearAllTextures();
 #endif
 
-	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
-	Patch_FreeTag(PU_PATCH_ROTATED);
+	if (rendermode != render_none)
+	{
+		Patch_FreeTag(PU_PATCH_LOWPRIORITY);
+		//Patch_FreeTag(PU_PATCH_ROTATED); // we keep those ty!
+	}
+
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
+
+	Y_VoteClear();
 
 	R_InitMobjInterpolators();
 	R_InitializeLevelInterpolators();
@@ -9342,6 +9348,7 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 	// Load the ccheckpoints and waypoints please!
 	if (gametypes[gametype]->rules & GTR_CIRCUIT && gamestate != GS_TITLESCREEN)
 	{
+
 		if ((K_SetupWaypointList() == false))
 		{
 			if (!K_UsingLegacyCheckpoints())
@@ -9358,8 +9365,8 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 #ifdef HWRENDER // not win32 only 19990829 by Kin
 	gl_maploaded = false;
 
-	// Lactozilla: Free poly_subsectors regardless of renderer.
-	HWR_FreePolyPool();
+	// Lactozilla: Free extrasubsectors regardless of renderer.
+	HWR_FreeExtraSubsectors();
 
 	// Create plane polygons.
 	if (rendermode == render_opengl)

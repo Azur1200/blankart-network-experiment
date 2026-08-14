@@ -478,7 +478,7 @@ static void HWR_AddPolyObjectPlanes(void)
 	sector_t *polyobjsector;
 	int32_t light = 0;
 
-	// Polyobject Planes need their own function for drawing because they don't have poly_subsectors by themselves
+	// Polyobject Planes need their own function for drawing because they don't have extrasubsectors by themselves
 	// It should be okay because polyobjects should always be convex anyway
 
 	for (i  = 0; i < numpolys; i++)
@@ -567,9 +567,9 @@ static void HWR_Subsector(size_t num)
 	//	CONS_Printf("subsector %d in portal\n", (int32_t)num);
 
 #ifdef PARANOIA //no risk while developing, enough debugging nights!
-	if (num >= num_poly_subsector)
+	if (num >= addsubsector)
 		I_Error("HWR_Subsector: ss %s with numss = %s, addss = %s\n",
-			sizeu1(num), sizeu2(numsubsectors), sizeu3(num_poly_subsector));
+			sizeu1(num), sizeu2(numsubsectors), sizeu3(addsubsector));
 
 	/*if (num >= numsubsectors)
 		I_Error("HWR_Subsector: ss %i with numss = %i",
@@ -668,7 +668,7 @@ static void HWR_Subsector(size_t num)
 			if (sub->validcount != validcount)
 			{
 				HWR_GetLevelFlat(&levelflats[gl_frontsector->floorpic], R_NoEncore(gl_frontsector, &levelflats[gl_frontsector->floorpic], false));
-				HWR_RenderPlane(sub, &poly_subsectors[num], false,
+				HWR_RenderPlane(sub, &extrasubsectors[num], false,
 					// Hack to make things continue to work around slopes.
 					locFloorHeight == cullFloorHeight ? locFloorHeight : gl_frontsector->floorheight,
 					// We now return you to your regularly scheduled rendering.
@@ -685,7 +685,7 @@ static void HWR_Subsector(size_t num)
 			if (sub->validcount != validcount)
 			{
 				HWR_GetLevelFlat(&levelflats[gl_frontsector->ceilingpic], R_NoEncore(gl_frontsector, &levelflats[gl_frontsector->ceilingpic], true));
-				HWR_RenderPlane(sub, &poly_subsectors[num], true,
+				HWR_RenderPlane(sub, &extrasubsectors[num], true,
 					// Hack to make things continue to work around slopes.
 					locCeilingHeight == cullCeilingHeight ? locCeilingHeight : gl_frontsector->ceilingheight,
 					// We now return you to your regularly scheduled rendering.
@@ -725,7 +725,7 @@ static void HWR_Subsector(size_t num)
 					alpha = HWR_FogBlockAlpha(*gl_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
 
 					HWR_AddTransparentFloor(0,
-					                       &poly_subsectors[num],
+					                       &extrasubsectors[num],
 										   false,
 					                       *rover->bottomheight,
 					                       *gl_frontsector->lightlist[light].lightlevel,
@@ -740,7 +740,7 @@ static void HWR_Subsector(size_t num)
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < cullHeight ? true : false);
 
 					HWR_AddTransparentFloor(&levelflats[*rover->bottompic],
-					                       &poly_subsectors[num],
+					                       &extrasubsectors[num],
 										   false,
 					                       *rover->bottomheight,
 					                       *gl_frontsector->lightlist[light].lightlevel,
@@ -751,7 +751,7 @@ static void HWR_Subsector(size_t num)
 				{
 					HWR_GetLevelFlat(&levelflats[*rover->bottompic], R_NoEncore(gl_frontsector, &levelflats[*rover->bottompic], false));
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < cullHeight ? true : false);
-					HWR_RenderPlane(sub, &poly_subsectors[num], false, *rover->bottomheight, HWR_RippleBlend(gl_frontsector, rover, false) | PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, &levelflats[*rover->bottompic],
+					HWR_RenderPlane(sub, &extrasubsectors[num], false, *rover->bottomheight, HWR_RippleBlend(gl_frontsector, rover, false) | PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, &levelflats[*rover->bottompic],
 					                rover->master->frontsector, 255, *gl_frontsector->lightlist[light].extra_colormap);
 				}
 			}
@@ -773,7 +773,7 @@ static void HWR_Subsector(size_t num)
 					alpha = HWR_FogBlockAlpha(*gl_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
 
 					HWR_AddTransparentFloor(0,
-					                       &poly_subsectors[num],
+					                       &extrasubsectors[num],
 										   true,
 					                       *rover->topheight,
 					                       *gl_frontsector->lightlist[light].lightlevel,
@@ -788,7 +788,7 @@ static void HWR_Subsector(size_t num)
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < cullHeight ? true : false);
 
 					HWR_AddTransparentFloor(&levelflats[*rover->toppic],
-					                        &poly_subsectors[num],
+					                        &extrasubsectors[num],
 											true,
 					                        *rover->topheight,
 					                        *gl_frontsector->lightlist[light].lightlevel,
@@ -799,7 +799,7 @@ static void HWR_Subsector(size_t num)
 				{
 					HWR_GetLevelFlat(&levelflats[*rover->toppic], R_NoEncore(gl_frontsector, &levelflats[*rover->toppic], true));
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < cullHeight ? true : false);
-					HWR_RenderPlane(sub, &poly_subsectors[num], true, *rover->topheight, HWR_RippleBlend(gl_frontsector, rover, true) | PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, &levelflats[*rover->toppic],
+					HWR_RenderPlane(sub, &extrasubsectors[num], true, *rover->topheight, HWR_RippleBlend(gl_frontsector, rover, true) | PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, &levelflats[*rover->toppic],
 					                  rover->master->frontsector, 255, *gl_frontsector->lightlist[light].extra_colormap);
 				}
 			}
