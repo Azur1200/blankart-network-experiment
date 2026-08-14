@@ -8966,7 +8966,7 @@ void P_FreeLevelState(void)
 	if (rendermode != render_none)
 	{
 		Patch_FreeTag(PU_PATCH_LOWPRIORITY);
-		Patch_FreeTag(PU_PATCH_ROTATED);
+		//Patch_FreeTag(PU_PATCH_ROTATED); // we keep those ty!
 	}
 
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
