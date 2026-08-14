@@ -56,6 +56,7 @@
 #include "k_hud.h" // SRB2kart
 #include "v_video.h"
 #include "r_skins.h" // NUMFACES
+#include "k_kart.h"
 
 #include "r_fps.h"
 
@@ -550,6 +551,34 @@ static void ST_drawDemoDebug(int32_t *height)
 	ST_pushDebugString(height, va("Demo (%s)", demo.recording ? "recording" : "playback"));
 }
 
+static int32_t ST_FixedToPercent(fixed_t value)
+{
+	return (value >> 14) + (value >> 11) + (value >> 10);
+}
+
+static void ST_drawPlayerDebug(void)
+{
+	fixed_t boostpower = stplyr->boostpower;
+	fixed_t speedboost = stplyr->speedboost;
+	fixed_t accelboost = stplyr->accelboost;
+	fixed_t handleboost = stplyr->handleboost;
+	fixed_t totalspeed = (FixedDiv(stplyr->speed, FixedMul(K_GetKartSpeed(stplyr, false, false), K_PlayerBaseFriction(stplyr, ORIG_FRICTION)))*100)>>FRACBITS; // Stolen from speedometer lol
+	int32_t flags =  V_SNAPTOLEFT|V_6WIDTHSPACE|V_ALLOWLOWERCASE;
+
+	V_DrawThinString(9, 30, flags, va("RRID: %s", GetPrettyRRID(stplyr->public_key, true)));
+	V_DrawThinString(9, 40, flags, va("Name: %s", player_names[stplyr-players]));
+
+	V_DrawThinString(9, 60, flags, va("Laps: %d", stplyr->laps));
+	V_DrawThinString(9, 70, flags, va("Rings: %d", stplyr->rings));
+
+	V_DrawThinString(9, 90, flags, va("TtlSpdPrc: %d%%", totalspeed));
+	V_DrawThinString(65, 90, flags, va("SpdBstPrc: %d%%", ST_FixedToPercent(speedboost+boostpower)));
+	V_DrawThinString(9, 100, flags, va("SpdBst: %d (%d%%)", speedboost, ST_FixedToPercent(speedboost)));
+	V_DrawThinString(9, 110, flags, va("AclBst: %d (%d%%)", accelboost, ST_FixedToPercent(accelboost)));
+	V_DrawThinString(9, 120, flags, va("HdlBst: %d (%d%%)", handleboost, ST_FixedToPercent(handleboost)));
+	V_DrawThinString(9, 130, flags, va("NumBst: %d", stplyr->numboosts));
+}
+
 static void ST_drawDebugInfo(void)
 {
 	int32_t height = 192;
@@ -595,6 +624,11 @@ static void ST_drawDebugInfo(void)
 		V_DrawRightAlignedString(320, height,      V_MONOSPACE, va("SPEED: %6d", stplyr->speed>>FRACBITS));
 
 		height -= 120;
+	}
+
+	if (cht_debug & DBG_PLAYER)
+	{
+		ST_drawPlayerDebug();
 	}
 
 	// TODO: this only accounts for the undefined class,
