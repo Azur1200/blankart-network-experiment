@@ -921,7 +921,7 @@ consvar_t cv_glanisotropicmode = CVAR_INIT ("gr_anisotropicmode", "1", CV_SAVE|C
 
 consvar_t cv_glsolvetjoin = CVAR_INIT ("gr_solvetjoin", "On", 0, CV_OnOff, NULL);
 
-consvar_t cv_glpolytile = CVAR_INIT ("gr_polytile", "Off", 0, CV_OnOff, NULL);
+consvar_t cv_glpolytile = CVAR_INIT ("gr_polytile", "On", 0, CV_OnOff, NULL);
 
 CV_PossibleValue_t grpolyshape_cons_t[] = {
 	{0, "Subsector"},
