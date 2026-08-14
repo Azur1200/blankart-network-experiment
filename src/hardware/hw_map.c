@@ -130,46 +130,16 @@ static polyvertex_t *find_close_polyvertex(float x, float y, float ep)
 {
 	polyvertex_store_t *psv;
 	polyvertex_t *pv;
-	float dx, dy;
 	int32_t i;
-
-	// eep!
-	const float eep = ep*ep;
-
-	// we do some lööp unrollin
-	// those checks stink in debug builds and take literal ages
-	// unrolling the loops to check 8 at a time with extra early rejects
-	// cuts the total time by around 54% on my maschine
-
-#define CHECKVERTEX(p) \
-	dx = (p)->x - x; \
-	/* reject vertices that are waaay off by checking in a square */ \
-	if (!(dx < -ep || dx > ep)) { \
-		dy = (p)->y - y; \
-		if (!(dy < -ep || dy > ep)) \
-			if (dx*dx + dy*dy < eep) /* close enough to be the same vertex */ \
-				return (p); \
-	}
 
 	// Search level map vertexes.
 	pv = poly_vert;
-	for (i = numvertexes; i >= 8; i -= 8)
+	for (i = numvertexes; i > 0; i--)
 	{
-		CHECKVERTEX(pv);
-		CHECKVERTEX(pv + 1);
-		CHECKVERTEX(pv + 2);
-		CHECKVERTEX(pv + 3);
-		CHECKVERTEX(pv + 4);
-		CHECKVERTEX(pv + 5);
-		CHECKVERTEX(pv + 6);
-		CHECKVERTEX(pv + 7);
-
-		pv += 8;
-	}
-
-	for (; i > 0; i--)
-	{
-		CHECKVERTEX(pv);
+		const float dx = pv->x - x;
+		const float dy = pv->y - y;
+		if (dx*dx + dy*dy < ep*ep)
+			return pv;  // close enough to be the same vertex
 		pv++;
 	}
 
@@ -177,33 +147,20 @@ static polyvertex_t *find_close_polyvertex(float x, float y, float ep)
 	psv = polyvert_store;
 	while (psv)
 	{
+		// Search all vertex in a polyvertex_store_t
 		pv = psv->pv;
-		for (i = psv->num_vert_used; i >= 8; i -= 8)
+		for (i = psv->num_vert_used; i > 0; i--)
 		{
-			CHECKVERTEX(pv);
-			CHECKVERTEX(pv + 1);
-			CHECKVERTEX(pv + 2);
-			CHECKVERTEX(pv + 3);
-			CHECKVERTEX(pv + 4);
-			CHECKVERTEX(pv + 5);
-			CHECKVERTEX(pv + 6);
-			CHECKVERTEX(pv + 7);
-
-			pv += 8;
-		}
-
-		for (; i > 0; i--)
-		{
-			CHECKVERTEX(pv);
+			const float dx = pv->x - x;
+			const float dy = pv->y - y;
+			if (dx*dx + dy*dy < ep*ep)
+				return pv;  // close enough to be the same vertex
 			pv++;
 		}
-
 		psv = psv->next;
 	}
-#undef CHECKVERTEX
 
-	// none found
-	return NULL;
+	return NULL;  // none found
 }
 
 // Store a new polyvertex.
