@@ -2748,6 +2748,7 @@ void S_InitLevelMusic(dboolean fromnetsave)
 	}
 
 	S_StopMusic(); // Starting ambience should always be restarted, if playing.
+	S_ClearMusicQueue();
 
 	S_ChangeMusicEx(((grandprixinfo.gp == true
 	) ? "gpstrt" : (encoremode ? "estart" : "kstart")), 0, false, mapmusposition, 0, 0);

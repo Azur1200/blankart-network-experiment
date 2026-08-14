@@ -6872,6 +6872,11 @@ mapnum_t G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 	return newmapnum;
 }
 
+static dboolean G_ShouldntClearQueue(gamestate_t gamestate)
+{
+	return ((gamestate == GS_INTERMISSION));
+}
+
 //
 // G_SetGamestate
 //
@@ -6880,6 +6885,13 @@ mapnum_t G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 void G_SetGamestate(gamestate_t newstate)
 {
 	gamestate = newstate;
+
+	if (!G_ShouldntClearQueue(gamestate))
+	{
+		// Let's prevent uphill battles; only let specific gamestates clear the queue
+		S_ClearMusicQueue();
+	}
+
 #ifdef HAVE_DISCORDRPC
 	DRPC_UpdatePresence();
 #endif

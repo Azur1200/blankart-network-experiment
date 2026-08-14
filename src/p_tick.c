@@ -1030,8 +1030,11 @@ void P_Ticker(dboolean run)
 						}
 
 						if (leveltime < startingtime) // SRB2Kart
+						{
+							S_ClearMusicQueue(); // Clear the queue, stupid!
 							S_ChangeMusicInternal(((grandprixinfo.gp == true
 							) ? "gpstrt" : (encoremode ? "estart" : "kstart")), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
+						}
 							else if (leveltime == startingtime) // The GO! sound stops the level start ambience
 								S_StopMusic();
 					}
