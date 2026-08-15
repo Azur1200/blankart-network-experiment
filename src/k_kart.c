@@ -104,6 +104,13 @@ vector3_t clusterpoint, clusterdtf;
 
 cvector(int32_t) rankscore_tracker[MAXPLAYERS] = {NULL};
 
+// Dynamically-allocated array for non-waypointed maps; this keeps track of which lap
+// the player's progress was updated on, so that Position Grading only changes when necessary
+int16_t *legacygradelap = NULL;
+
+// Size of the legacygradelap array
+uint32_t legacygradelap_size = 0;
+
 uint16_t ranksort_positions[MAXPLAYERS] = {0};
 
 void K_InitRankScoreTrackers(void)
@@ -8909,15 +8916,48 @@ void K_KartPlayerAfterThink(player_t *player)
 	TracyCZoneEnd(__zone);
 }
 
-// "If waypointcap is NULL, assume Legacy/Classic systems are being used"
-#define LEGACYWAYPOINTCHECK (waypointcap == NULL)
-
 static void K_UpdateProgressThroughCourseClassic(player_t *player)
 {
-	/* FIXME: DO SOMETHING!!! */
+	if ((player == NULL) || (P_MobjWasRemoved(player->mo)))
+	{
+		return;
+	}
+
+	if (!numstarposts)
+	{
+		// No starposts...
+		return;
+	}
+
+	// Using floating points for this, because trying fixed-point bullshit will make me age at mach speed
+	double nextlap_mul = max(0, player->laps - 1);
+	double checkpts_d = numstarposts;
+	double playerprog_d = (double)(player->starpostnum) + (checkpts_d * nextlap_mul);
+	double lap_mul = (double)(numlaps);
+
+	// Multiply the checkpoint number by the lap count to get the length of the entire race
+	checkpts_d = (checkpts_d) * lap_mul;
+
+	// Divide our distance by the overall course distance
+	double factor = playerprog_d / checkpts_d;
+
+	// On EXCRUCIATINGLY long maps, this will throw off the delta calculation system
+	// But we have to keep things 32-bit for Lua's sake...
+
+	// BIGFRACUNIT * factor
+	uint32_t current_progress = (uint32_t)(min(BIGFRACDOUBLE, max(0, BIGFRACDOUBLE * factor)));
+
+	// Only ever count progress increments
+	if (current_progress > player->progressthrumap)
+	{
+		player->progressdelta = (int32_t)((int64_t)(current_progress) - (int64_t)(player->progressthrumap));
+		player->progressthrumap = current_progress;
+		player->progressupdate = true;
+	}
 }
 
-static void K_UpdateProgressThroughCourse(player_t *player)
+// Updates a player's progress multiplier through the map.
+void K_UpdateProgressThroughCourse(player_t *player)
 {
 	if ((player == NULL) || (P_MobjWasRemoved(player->mo)))
 	{
@@ -8926,7 +8966,7 @@ static void K_UpdateProgressThroughCourse(player_t *player)
 
 	player->progressupdate = false;
 
-	if LEGACYWAYPOINTCHECK
+	if (waypointcap == NULL)
 	{
 		// Map isn't waypointed, attempt to use old-school checkpoints
 		K_UpdateProgressThroughCourseClassic(player);
@@ -8981,8 +9021,8 @@ static void K_UpdateProgressThroughCourse(player_t *player)
 		// On EXCRUCIATINGLY long maps, this will throw off the delta calculation system
 		// But we have to keep things 32-bit for Lua's sake...
 
-		// (1 << 24) * factor
-		uint32_t current_progress = (uint32_t)(min(16777216.0, max(0, 16777216.0 * factor)));
+		// BIGFRACUNIT * factor
+		uint32_t current_progress = (uint32_t)(min(BIGFRACDOUBLE, max(0, BIGFRACDOUBLE * factor)));
 
 		// Only ever count progress increments
 		if (current_progress > player->progressthrumap)
@@ -8995,8 +9035,6 @@ static void K_UpdateProgressThroughCourse(player_t *player)
 		Z_Free(pathtofinish.array);
 	}
 }
-
-#undef LEGACYWAYPOINTCHECK
 
 static int clostVal(fixed_t arr[], int N, fixed_t K)
 {
@@ -11236,7 +11274,7 @@ fixed_t K_GetPositionMultiplier(int32_t position)
 	if (playerseed > 0)
 	{
 		const int32_t leaderfactor = max(0, playerseed - max(0, position - 1));
-		const int32_t convtopercent = ((1 << 24) / playerseed);
+		const int32_t convtopercent = ((1 << BIGFRACBITS) / playerseed);
 
 		// There's always a chance some off-kilter value fucks up the multiplier, so we
 		// "round up" by a tiiny bit...
@@ -12282,16 +12320,51 @@ void K_UpdateAllPlayerPositions(void)
 				// Even for circuit-based sprint-races, this updating is fine
 				int32_t checklap = (sprintmap) ? 1 : player->laps;
 
-				// player->progressupdate will likely be false if there's no current waypoint, but just in case...
-				if (player->currentwaypoint)
+				if (waypointcap != NULL)
 				{
-					if (player->laps > player->currentwaypoint->playergradelap[i])
+					// player->progressupdate will likely be false if there's no current waypoint, but just in case...
+					if (player->currentwaypoint)
 					{
-						player->currentwaypoint->playergradelap[i] = checklap;
+						if (checklap > player->currentwaypoint->playergradelap[i])
+						{
+							player->currentwaypoint->playergradelap[i] = checklap;
 
-						// Progress updated; update leaderscore
-						const fixed_t leadermul = K_GetPositionMultiplier(player->position);
-						player->ranklog.leaderscore += (player->progressdelta * FixedMul(32, leadermul));
+							// Progress updated; update leaderscore
+							const fixed_t leadermul = K_GetPositionMultiplier(player->position);
+							player->ranklog.leaderscore += (player->progressdelta * FixedMul(32, leadermul));
+						}
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		// Just do a quick loop for legacy WPs
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
+			player_t* player = &players[i];
+			if (!playeringame[i] || player->spectator || !player->mo ||
+			    P_MobjWasRemoved(player->mo))
+			{
+				continue;
+			}
+
+			if (player->progressupdate)
+			{
+				if (waypointcap == NULL)
+				{
+					if (legacygradelap)
+					{
+						const size_t idx = (max(0, player->starpostnum) * MAXPLAYERS) + i;
+						if (player->laps > legacygradelap[idx])
+						{
+							legacygradelap[idx] = player->laps;
+
+							// Progress updated; update leaderscore
+							const fixed_t leadermul = K_GetPositionMultiplier(player->position);
+							player->ranklog.leaderscore += (player->progressdelta * FixedMul(32, leadermul));
+						}
 					}
 				}
 			}
@@ -13510,7 +13583,7 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 
 	// Calculate position bonus; the more you lead, the higher the gain
 	// Frontrun the whole race for the full bonus :)
-	player->rankscorefactor.posgradescore = LOWESTRANKSCORE + (FixedToDouble((player->ranklog.leaderscore / 32) >> 8) * progpoints);
+	player->rankscorefactor.posgradescore = LOWESTRANKSCORE + (FixedToDouble((player->ranklog.leaderscore / 32) >> BIGTOSTDBITS) * progpoints);
 
 	if (leveltime > (starttime + TIMECHECKOFFSET))
 	{

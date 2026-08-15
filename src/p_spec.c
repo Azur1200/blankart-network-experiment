@@ -1976,6 +1976,12 @@ static void K_HandleLapIncrement(player_t *player)
 			player->starpostnum = 0;
 			player->laps++;
 
+			if (waypointcap == NULL)
+			{
+				// On a lap increment in non-waypointed maps, update our progress
+				K_UpdateProgressThroughCourse(player);
+			}
+
 			// P_DoPlayerExit can edit latestlap, so we do this first
 			dboolean lapisfresh = (player->laps > player->latestlap);
 			if (lapisfresh) // mcgamer would be proud

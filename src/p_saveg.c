@@ -440,6 +440,9 @@ static void P_RelinkWaypoint(savebuffer_t *save, waypoint_t **ptr)
 #define PLYRSYNC_ITEMLIST (PLYRSYNC_TOKEN|1)
 #define PLYRSYNC_RANKPTLOG (PLYRSYNC_TOKEN|2)
 
+#define WYPTSYNC_TOKEN (0x57500000) // Upper bytes: "WP"
+#define WYPTSYNC_OLDGRADE (WYPTSYNC_TOKEN|1) // legacygradelap
+
 static uint32_t P_SyncRankScoreLog(savebuffer_t* save, int32_t pid)
 {
 	uint32_t buffer_size = 0;
@@ -714,6 +717,9 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		RSYNC(players[i].nextwaypoint);
 		SYNCBOOLEAN(players[i].onbadwaypoint);
 		SYNC(players[i].bigwaypointgap);
+		SYNC(players[i].progressthrumap);
+		SYNC(players[i].progressdelta);
+		SYNCBOOLEAN(players[i].progressupdate);
 		SYNC(players[i].airtime);
 		SYNC(players[i].startboost);
 
@@ -3846,13 +3852,63 @@ static void P_NetSyncWaypoints(savebuffer_t *save)
 	if (P_SyncUINT32(save, numWaypoints) != numWaypoints)
 		I_Error("Bad $$$.sav: More saved waypoints than created!");
 
-	// The only thing we save for each waypoint is the mobj.
-	// Waypoints should NEVER be completely created or destroyed mid-race as a result of this
-	for (i = 0U; i < numWaypoints; i++)
+	if (numWaypoints > 0)
 	{
-		waypoint = K_GetWaypointFromIndex(i);
-		RSYNC(waypoint->mobj);
-		RELINK(&waypoint->mobj);
+		// The only thing we save for each waypoint is the mobj.
+		// Waypoints should NEVER be completely created or destroyed mid-race as a result of this
+		for (i = 0U; i < numWaypoints; i++)
+		{
+			waypoint = K_GetWaypointFromIndex(i);
+			RSYNC(waypoint->mobj);
+			RELINK(&waypoint->mobj);
+		}
+	}
+
+	// If we have a legacygradelap array set up, synch that as well
+	if (P_SyncUINT32(save, ((legacygradelap != NULL) ? WYPTSYNC_OLDGRADE : 0)))
+	{
+		const uint32_t server_gradelapsize = P_SyncUINT32(save, legacygradelap_size);
+
+		if (server_gradelapsize)
+		{
+			// Lap grades do indeed exist; run some checks to synch the data over
+			const size_t arraysize = sizeof(int16_t) * legacygradelap_size;
+
+			if (server_gradelapsize != legacygradelap_size)
+			{
+				I_OutputMsg("WYPTSYNC_OLDGRADE: expected array capacity (%d) doesn't match current (%d); resizing\n", server_gradelapsize, legacygradelap_size);
+				// Our array size doesn't match the server's, so we need to reallocate
+				if (legacygradelap)
+				{
+					legacygradelap = Z_Realloc(legacygradelap, arraysize, PU_STATIC, NULL);
+				}
+				else
+				{
+					// legacygradelap never existed, so let's just initialize it
+					legacygradelap = Z_Malloc(arraysize, PU_STATIC, NULL);
+				}
+
+				// This either goes well, or horribly!
+				memset(legacygradelap, 0, arraysize);
+			}
+
+			legacygradelap_size = server_gradelapsize;
+
+			const size_t iter = (legacygradelap_size / MAXPLAYERS);
+			size_t j = 0;
+			size_t k = 0;
+
+			// Send the actual data over
+			for (j = 0; j < iter; j++)
+			{
+				const size_t idx = (j * MAXPLAYERS);
+
+				for (k = 0; k < MAXPLAYERS; k++)
+				{
+					SYNC(legacygradelap[idx + k]);
+				}
+			}
+		}
 	}
 
 	TracyCZoneEnd(__zone);

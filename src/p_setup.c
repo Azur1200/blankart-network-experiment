@@ -8491,6 +8491,13 @@ static void P_InitLevelSettings(dboolean reloadinggamestate)
 	if (!reloadinggamestate)
 		timeinmap = 0;
 
+	if (legacygradelap)
+	{
+		Z_Free(legacygradelap);
+		legacygradelap = NULL;
+		legacygradelap_size = 0;
+	}
+
 	// special stage
 	stagefailed = true; // assume failed unless proven otherwise - P_GiveEmerald or emerald touchspecial
 	// Reset temporary record data
@@ -9309,6 +9316,22 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 
 	// ...NOW we can spawn patched mapthings
 	P_SpawnMapThings(!fromnetsave, true);
+
+	if (legacygradelap)
+	{
+		I_Error("legacygradelap is dirty!\n");
+		return false;
+	}
+
+	if ((waypointcap == NULL) && (numstarposts))
+	{
+		legacygradelap_size = (numstarposts + 1) * MAXPLAYERS;
+
+		const size_t arraysize = sizeof(int16_t) * legacygradelap_size;
+		legacygradelap = Z_Malloc(arraysize, PU_STATIC, NULL);
+
+		memset(legacygradelap, 0, arraysize);
+	}
 
 	skyboxmo[0] = skyboxviewpnts[0];
 	skyboxmo[1] = skyboxcenterpnts[0];

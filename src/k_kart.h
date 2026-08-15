@@ -416,6 +416,7 @@ int32_t K_GetKartBaseRingPower(const player_t *player, dboolean boosted);
 uint8_t K_GetKartRingCap(const player_t *player);
 dboolean K_IsPlayerRingBurnt(const player_t *player, uint16_t ringpower);
 int32_t K_GetKartRingPower(const player_t *player, dboolean boosted);
+void K_UpdateProgressThroughCourse(player_t *player);
 size_t K_NextRespawnWaypointIndex(waypoint_t *waypoint);
 dboolean K_CheckPlayersRespawnColliding(int32_t playernum, fixed_t x, fixed_t y);
 dboolean K_SafeRespawnWaypoint(waypoint_t *waypoint);
@@ -594,6 +595,9 @@ extern int32_t *rankscore_tracker[MAXPLAYERS];
 extern uint16_t ranksort_positions[MAXPLAYERS];
 
 void K_GetRankBasedPositions(void);
+
+extern int16_t *legacygradelap;
+extern uint32_t legacygradelap_size;
 
 #ifdef __cplusplus
 } // extern "C"

@@ -993,6 +993,9 @@ void P_TouchStarPost(mobj_t *post, player_t *player, dboolean snaptopost)
 
 	player->grieftime = 0;
 	player->starpostnum = post->health;
+
+	if (waypointcap == NULL)
+		K_UpdateProgressThroughCourse(player);
 }
 
 /** Checks if the level timer is over the timelimit and the round should end,

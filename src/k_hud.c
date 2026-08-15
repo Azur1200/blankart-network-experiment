@@ -6801,22 +6801,15 @@ static void K_DrawProgressDebugger(void)
 
 	int32_t y = 146;
 
-	if (waypointcap != NULL)
-	{
-		const int32_t leaderscore = stplyr->ranklog.leaderscore;
-		const uint32_t progress = stplyr->progressthrumap;
-		const double prog_d = FixedToDouble(progress >> 8);
+	const int32_t leaderscore = stplyr->ranklog.leaderscore;
+	const uint32_t progress = stplyr->progressthrumap;
+	const double prog_d = FixedToDouble(progress >> BIGTOSTDBITS);
 
-		V_DrawThinString(8, y, vflags, va("Leader score: %f, raw: %d", FixedToDouble((leaderscore / 32) >> 8) * 100.0, leaderscore));
-		y -= 10;
+	V_DrawThinString(8, y, vflags, va("Leader score: %f, raw: %d", FixedToDouble((leaderscore / 32) >> BIGTOSTDBITS) * 100.0, leaderscore));
+	y -= 10;
 
-		V_DrawThinString(8, y, vflags, va("Progress percentage: %f, fixed: %d, raw: %d", (prog_d * 100.0), (progress >> 8), progress));
-		y -= 10;
-	}
-	else
-	{
-		// Legacy eventually, I promise... 🥹
-	}
+	V_DrawThinString(8, y, vflags, va("Progress percentage: %f, fixed: %d, raw: %d", (prog_d * 100.0), (progress >> BIGTOSTDBITS), progress));
+	y -= 10;
 }
 
 void K_getSlipstreamDrawinfo(drawinfo_t *out)
