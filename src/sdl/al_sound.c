@@ -580,20 +580,23 @@ static dboolean I_QueueNextSample(dboolean unqueue)
 		return false;
 	}
 
-	if (!TRY(alBufferData, audio.musicbuffers[audio.bufferindex], format, stream, count, samplerate))
+	if (count != 0)
 	{
-		TracyCZoneEnd(__zone);
-		return false;
+
+		if (!TRY(alBufferData, audio.musicbuffers[audio.bufferindex], format, stream, count, samplerate))
+		{
+			TracyCZoneEnd(__zone);
+			return false;
+		}
+
+		if (!TRY(alSourceQueueBuffers, audio.music, 1, &audio.musicbuffers[audio.bufferindex]))
+		{
+			TracyCZoneEnd(__zone);
+			return false;
+		}
+
+		audio.bufferindex = (audio.bufferindex + 1) % BUFFERCOUNT;
 	}
-
-	if (!TRY(alSourceQueueBuffers, audio.music, 1, &audio.musicbuffers[audio.bufferindex]))
-	{
-		TracyCZoneEnd(__zone);
-		return false;
-	}
-
-	audio.bufferindex = (audio.bufferindex + 1) % BUFFERCOUNT;
-
 
 	if (count == 0 && !audio.looping)
 	{
