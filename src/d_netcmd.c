@@ -807,10 +807,10 @@ consvar_t cv_kartrank_hitconfirmpoints = CVAR_INIT ("rank_hitconfirmpoints", "3"
 static CV_PossibleValue_t kartoffroadpenaltydiv_cons_t[] = {{1, "MIN"},  {256, "MAX"}, {0, NULL}};
 
 // Ranks: the value the tics spent offroad is divided by, to determine the amount of points taken for going offroad.
-consvar_t cv_kartrank_offroad_divisor = CVAR_INIT ("rank_offroad_divisor", "24", CV_NETVAR|CV_CHEAT|CV_GUARD, kartoffroadpenaltydiv_cons_t, NULL);
+consvar_t cv_kartrank_offroad_divisor = CVAR_INIT ("rank_offroad_divisor", "40", CV_NETVAR|CV_CHEAT|CV_GUARD, kartoffroadpenaltydiv_cons_t, NULL);
 
 // Ranks: the time, in seconds, before the player is fully penalzied for driving through offroad.
-consvar_t cv_kartrank_lawnmowerthreshold = CVAR_INIT ("rank_lawnmowerthreshold", "3.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_FloatingTicrateDiv, NULL);
+consvar_t cv_kartrank_lawnmowerthreshold = CVAR_INIT ("rank_lawnmowerthreshold", "4.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_FloatingTicrateDiv, NULL);
 
 consvar_t cv_kartrank_wallbonkpenalty = CVAR_INIT ("rank_wallbonkpenalty", "3", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
 
