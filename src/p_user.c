@@ -720,7 +720,7 @@ dboolean P_EndingMusic(player_t *player)
 		return false;
 
 	const dboolean racemode = (gametypes[gametype]->rules & GTR_CIRCUIT);
-	const dboolean racewasgraded = (!cannotrank);
+	const dboolean racewasgraded = (!cannotrank) && ((!grandprixinfo.gp) || (grandprixinfo.gp && grandprixinfo.ranked));
 
 	// Event - Level Finish
 	// Check for if this is valid or not
@@ -1345,8 +1345,6 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			// Handle the player headcount and grading BEFORE positions are finalized
 			K_GetPlayerNumber();
 
-			const double rankscorebounds = (double)(HIGHESTRANKSCORE - LOWESTRANKSCORE);
-			const double rankscorediv = max(0.00001, rankscorebounds);
 			const double scoremul = FixedToDouble(RANKPOINTS_COMEBACKSCORE);
 
 			if (player->ranklog.gaining < 0)
