@@ -13699,8 +13699,8 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 			   ((raceStarRankScore + 200) >= BEST_SCORE_BEFORE_P_RANK)));
 
 	if (grandprixinfo.gp && player->position <= 1 && player->ranklog.numlapgrades < 2 &&
-	    player->ranklog.lapwasgraded && player->ranktier >= RTIER_ONESTAR &&
-	    newtier >= RTIER_ONESTAR)
+	    player->ranklog.lapwasgraded && player->ranklog.gaining >= 1 &&
+	    (player->laps < numlaps))
 	{
 		// This player is officially in the running for a P-Rank; set it as so and update
 		// their tier again

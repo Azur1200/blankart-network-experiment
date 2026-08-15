@@ -8003,6 +8003,7 @@ int32_t MR_StartGrandPrix(int32_t choice)
 	I_Assert(gpcup != NULL);
 
 	grandprixinfo.gp = true;
+	grandprixinfo.ranked = (dboolean)(cv_kartraceranks.value);
 	grandprixinfo.wonround = false;
 	grandprixinfo.initalize = true;
 	grandprixinfo.cup = gpcup;

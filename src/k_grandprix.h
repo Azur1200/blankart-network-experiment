@@ -35,6 +35,7 @@ extern struct grandprixinfo
 	dboolean encore;			///< Ditto, but for encore mode
 	dboolean masterbots;		///< If true, all bots should be max difficulty (Master Mode)
 	dboolean lunaticmode;	///< If true, make this GP especially difficult (Lunatic Mode)
+	dboolean ranked;		///< If true, this GP is ranked.
 	dboolean initalize;		///< If true, we need to initialize a new session.
 	dboolean wonround;		///< If false, then we retry the map instead of going to the next.
 	uint8_t eventmode;		///< See GPEVENT_ constants

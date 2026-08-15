@@ -4303,6 +4303,7 @@ static void Command_Map_f(void)
 				grandprixinfo.gamespeed = (cv_kartspeed.value == KARTSPEED_AUTO ? KARTSPEED_DEFAULT : cv_kartspeed.value);
 				grandprixinfo.masterbots = false;
 				grandprixinfo.lunaticmode = false;
+				grandprixinfo.ranked = (dboolean)(cv_kartraceranks.value);
 
 				if (option_skill)
 				{

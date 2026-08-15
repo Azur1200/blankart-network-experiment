@@ -5507,6 +5507,12 @@ static void G_DoCompleted(void)
 		cannotrank = true;
 	}
 
+	if (grandprixinfo.gp && (!grandprixinfo.ranked))
+	{
+		// In a Grand Prix, unless ranked races are on for it, the rank is just for show. Don't rank!
+		cannotrank = true;
+	}
+
 	if (!cannotrank)
 		K_GetRankBasedPositions();
 

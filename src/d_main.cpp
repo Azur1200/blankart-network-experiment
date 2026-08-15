@@ -2010,6 +2010,7 @@ void D_SRB2Main(void)
 			grandprixinfo.gamespeed = KARTSPEED_HARD;
 			grandprixinfo.masterbots = false;
 			grandprixinfo.lunaticmode = false;
+			grandprixinfo.ranked = false;
 
 			grandprixinfo.gp = true;
 			grandprixinfo.cup = NULL;

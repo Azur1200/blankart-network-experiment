@@ -1377,6 +1377,11 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			}
 
 			K_CalculateLapGrading(player);
+			if (grandprixinfo.gp && (player->ranktier < RTIER_ONESTAR) && (player->laps >= numlaps))
+			{
+				// If you're below one star, you can't get a P-rank in GP
+				player->ranklog.prankeligible = false;
+			}
 			K_UpdatePositionFactorAndPlayerRanks();
 			K_AddScoreToTracker((uint16_t)(player - players), player->rankscore + LOWESTRANKSCORE_ABS);
 
