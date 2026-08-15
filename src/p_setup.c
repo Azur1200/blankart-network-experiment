@@ -8450,7 +8450,7 @@ static void P_InitLevelSettings(dboolean reloadinggamestate)
 	if (cv_itemlist.value)
 		itemlistactive = true;
 	
-	if (cv_kartraceranks.value || grandprixinfo.gp)
+	if ((cv_kartraceranks.value || grandprixinfo.gp) && (!modeattacking))
 	{
 		rankingactive = true;
 

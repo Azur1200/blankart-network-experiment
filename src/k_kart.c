@@ -8918,6 +8918,12 @@ void K_KartPlayerAfterThink(player_t *player)
 
 static void K_UpdateProgressThroughCourseClassic(player_t *player)
 {
+	if (!(gametypes[gametype]->rules & GTR_CIRCUIT))
+	{
+		// Not racing, don't bother
+		return;
+	}
+
 	if ((player == NULL) || (P_MobjWasRemoved(player->mo)))
 	{
 		return;
@@ -8959,6 +8965,12 @@ static void K_UpdateProgressThroughCourseClassic(player_t *player)
 // Updates a player's progress multiplier through the map.
 void K_UpdateProgressThroughCourse(player_t *player)
 {
+	if (!(gametypes[gametype]->rules & GTR_CIRCUIT))
+	{
+		// Not racing, don't bother
+		return;
+	}
+
 	if ((player == NULL) || (P_MobjWasRemoved(player->mo)))
 	{
 		return;
@@ -12399,7 +12411,7 @@ void K_UpdatePositionFactorAndPlayerRanks(void)
 {
 	cannotrank = false;
 
-	if (!rankingactive || (gametypes[gametype]->rules & GTR_BUMPERS) || (players_racing <= 1))
+	if (!rankingactive || (!(gametypes[gametype]->rules & GTR_CIRCUIT)) || (players_racing <= 1) || (modeattacking))
 	{
 		// Can't do nuthin'
 		positionfactor = 0;
