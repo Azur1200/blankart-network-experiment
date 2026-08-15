@@ -523,6 +523,7 @@ static dboolean RankScreenVis_ShowGrade(void)
 		{
 			//
 			// BONUSES
+			// Overall height on the intermission should be 44 pixels
 			//
 
 			if (rankresultsphase >= 1)
@@ -545,7 +546,7 @@ static dboolean RankScreenVis_ShowGrade(void)
 					: "N/A");
 
 				// Drift Bonus
-				yy += 11;
+				yy += 14;
 				Y_DrawThinStringWithBacking(
 				    xx, yy, curwidth, textflags, 0, usecolor, "Drift Bonus");
 				V_DrawRightAlignedString(
@@ -556,18 +557,8 @@ static dboolean RankScreenVis_ShowGrade(void)
 					? va("%d", players[pid].rankscorefactor.driftbonus)
 					: "N/A");
 
-				// Position Bonus
-				yy += 11;
-				Y_DrawThinStringWithBacking(
-				    xx, yy, curwidth, textflags, 0, usecolor, "Position Bonus");
-				V_DrawRightAlignedString(
-				    point_x,
-				    yy,
-				    textflags | V_SKYMAP,
-				    va("%d", players[pid].rankscorefactor.positionbonus));
-
 				// SPB Bonus
-				yy += 11;
+				yy += 14;
 				Y_DrawThinStringWithBacking(
 				    xx, yy, curwidth, textflags, 0, usecolor, "SPB-Attack Bonus");
 				V_DrawRightAlignedString(
@@ -697,7 +688,6 @@ static dboolean RankScreenVis_ShowGrade(void)
 
 			const int32_t bonustotal = (players[pid].rankscorefactor.hitbonus +
 						  players[pid].rankscorefactor.driftbonus +
-						  players[pid].rankscorefactor.positionbonus +
 						  players[pid].rankscorefactor.spbattackbonus);
 			const int32_t penaltytotal = (players[pid].rankscorefactor.offroadpenalty +
 						    players[pid].rankscorefactor.wallpenalty +

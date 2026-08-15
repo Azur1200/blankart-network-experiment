@@ -624,7 +624,6 @@ struct rankscorefactor_t
 
 	int32_t hitbonus; // Points earned for each hitconfirm
 	int32_t driftbonus; // Points earned for driftboosts performed
-	int32_t positionbonus; // Points earned based on "leaderscore"; you earn the most for leading the pack!
 	int32_t spbattackbonus; // Points earned for having a Self-Propelled Bomb trail you
 
 	//

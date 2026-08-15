@@ -13670,8 +13670,8 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 	raceStarRankScore =
 	    (player->rankscorefactor.posgradescore + player->rankscorefactor.comebackscore -
 	    player->rankscorefactor.dnfpenalty) +
-	    (player->rankscorefactor.positionbonus + player->rankscorefactor.spbattackbonus +
-	     player->rankscorefactor.driftbonus + player->rankscorefactor.hitbonus) -
+	    (player->rankscorefactor.spbattackbonus + player->rankscorefactor.driftbonus +
+	    player->rankscorefactor.hitbonus) -
 	    (player->rankscorefactor.offroadpenalty + player->rankscorefactor.wallpenalty +
 	     player->rankscorefactor.hazardpenalty + player->rankscorefactor.respawnpenalty);
 
@@ -13698,9 +13698,13 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 			  (player->ranklog.prankeligible &&
 			   ((raceStarRankScore + 200) >= BEST_SCORE_BEFORE_P_RANK)));
 
+	// NEW P-RANK ALGORITHM:
+	// - Must be leading by rankscore
+	// - Must lead before the next lap
+	// It's tougher to start with Star ranks with this new system
+
 	if (grandprixinfo.gp && player->position <= 1 && player->ranklog.numlapgrades < 2 &&
-	    player->ranklog.lapwasgraded && player->ranklog.gaining >= 1 &&
-	    (player->laps < numlaps))
+	    player->ranklog.lapwasgraded && (ranksort_positions[player - players] < 2))
 	{
 		// This player is officially in the running for a P-Rank; set it as so and update
 		// their tier again

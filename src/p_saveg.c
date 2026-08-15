@@ -607,7 +607,6 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].rankscorefactor.comebackscore);
 		SYNC(players[i].rankscorefactor.hitbonus);
 		SYNC(players[i].rankscorefactor.driftbonus);
-		SYNC(players[i].rankscorefactor.positionbonus);
 		SYNC(players[i].rankscorefactor.spbattackbonus);
 		SYNC(players[i].rankscorefactor.offroadpenalty);
 		SYNC(players[i].rankscorefactor.wallpenalty);
