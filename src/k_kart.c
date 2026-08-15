@@ -8951,7 +8951,7 @@ static void K_UpdateProgressThroughCourseClassic(player_t *player)
 	// But we have to keep things 32-bit for Lua's sake...
 
 	// BIGFRACUNIT * factor
-	uint32_t current_progress = (uint32_t)(min(BIGFRACDOUBLE, max(0, BIGFRACDOUBLE * factor)));
+	uint32_t current_progress = (uint32_t)(min(BIGFRACFLOAT, max(0, BIGFRACFLOAT * factor)));
 
 	// Only ever count progress increments
 	if (current_progress > player->progressthrumap)
@@ -9034,7 +9034,7 @@ void K_UpdateProgressThroughCourse(player_t *player)
 		// But we have to keep things 32-bit for Lua's sake...
 
 		// BIGFRACUNIT * factor
-		uint32_t current_progress = (uint32_t)(min(BIGFRACDOUBLE, max(0, BIGFRACDOUBLE * factor)));
+		uint32_t current_progress = (uint32_t)(min(BIGFRACFLOAT, max(0, BIGFRACFLOAT * factor)));
 
 		// Only ever count progress increments
 		if (current_progress > player->progressthrumap)

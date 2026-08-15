@@ -36,7 +36,7 @@ extern "C" {
 /*!
   \brief FRACUNIT as a double-precision floating-point value
 */
-#define FRACDOUBLE 65536.0
+#define FRACFLOAT 65536.0
 /**	\brief	Redefinition of int32_t as fixed_t
 	unit used as fixed_t
 */
@@ -58,7 +58,7 @@ typedef int32_t fixed_t;
 /*!
   \brief BIGFRACUNIT as a double-precision floating-point value
 */
-#define BIGFRACDOUBLE 16777216.0
+#define BIGFRACFLOAT 16777216.0
 /*!
   \brief Bits to convert a BIGFRACUNIT to a FRACUNIT
 */
