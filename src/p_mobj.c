@@ -10309,6 +10309,12 @@ static dboolean P_MobjRegularThink(mobj_t *mobj)
 				mobj->tracer->y + P_ReturnThrustY(NULL, mobj->tracer->angle+ANGLE_90, (mobj->cvmem)<<FRACBITS),
 				mobj->tracer->z - (4*mobj->tracer->scale) + (P_RandomRange(PR_ITEM_BUBBLE, -abs(mobj->cvmem), abs(mobj->cvmem))<<FRACBITS));
 
+			if (P_PlayerInPain(player))
+			{
+				// If the player is feeling pain, give em a break. tick their spinout timer regardless
+				player->spinouttype |= KSPIN_AIRTIMER;
+			}
+
 			if (mobj->movecount > 5*TICRATE)
 			{
 				S_StartSound(mobj->tracer, sfx_s3k77);
