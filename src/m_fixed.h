@@ -31,6 +31,9 @@ extern "C" {
   \brief units of the fraction
 */
 #define FRACUNIT (1<<FRACBITS)
+/*!
+  \brief Half of FRACUNIT
+*/
 #define FRACHALF (1<<(FRACBITS-1))
 #define FRACMASK (FRACUNIT -1)
 /*!
@@ -55,6 +58,10 @@ typedef int32_t fixed_t;
   \brief 8.24 fixed-point value (range: 0.0 to 127.99)
 */
 #define BIGFRACUNIT (1<<BIGFRACBITS)
+/*!
+  \brief Half of BIGFRACUNIT
+*/
+#define BIGFRACHALF (1<<(BIGFRACBITS-1))
 /*!
   \brief BIGFRACUNIT as a double-precision floating-point value
 */
