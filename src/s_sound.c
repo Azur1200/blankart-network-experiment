@@ -2490,7 +2490,7 @@ void S_SetMusicQueue(const char *mmusic, dboolean looping, tic_t time)
 {
 	memset(musicqueue_string, 0, sizeof(musicqueue_string));
 	uint8_t musstrlen = min(7, (uint8_t)(strlen(mmusic) + 1));
-	snprintf(musicqueue_string, musstrlen, mmusic);
+	snprintf(musicqueue_string, musstrlen, "%s", mmusic);
 
 	musicqueue_loops = looping;
 	musicqueue_time = (int64_t)(time);

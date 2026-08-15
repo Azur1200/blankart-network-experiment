@@ -6878,9 +6878,9 @@ mapnum_t G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 	return newmapnum;
 }
 
-static dboolean G_ShouldntClearQueue(gamestate_t gamestate)
+static dboolean G_ShouldntClearQueue(gamestate_t _gamestate)
 {
-	return ((gamestate == GS_INTERMISSION));
+	return ((_gamestate == GS_INTERMISSION));
 }
 
 //
