@@ -134,7 +134,8 @@ dboolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 		if (t2->player->smonitortimer)
 		{
 			// t2's player has an S-Monitor, let them plow through us
-			damageitem = true;
+			K_ItemDamage(t1, t2, false);
+			return true; // Don't interact past this
 		}
 
 		if (t2->player->flamestore && (K_GetShieldFromPlayer(t2->player) == KSHIELD_FLAME))
