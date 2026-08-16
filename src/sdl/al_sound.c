@@ -1099,13 +1099,19 @@ void I_FreeSfx(sfxinfo_t *sfx)
 {
 	if (sfx->data)
 	{
+#ifdef DUALSNDBUFFER
 		sfxdatapair_t *datapair = sfx->data;
 
 		TRY(alDeleteBuffers, 1, &datapair->L);
 		TRY(alDeleteBuffers, 1, &datapair->R);
+#else
+		ALuint buffer = (uintptr_t)sfx->data;
+		alDeleteBuffers(1, &buffer);
+#endif
 	}
-
+#ifdef DUALSNDBUFFER
 	Z_Free(sfx->data);
+#endif
 	sfx->data = NULL;
 	sfx->lumpnum = LUMPERROR;
 }
