@@ -309,6 +309,12 @@ static void SetChannelsNum(void)
 		channels[i].origin = NULL;
 		channels[i].efxtail = 0;
 		channels[i].efx = NULL;
+#ifdef DUALSNDBUFFER
+		channels[i].handleL = 0;
+		channels[i].handleR = 0;
+#else
+		channels[i].handle = 0;
+#endif
 	}
 
 	S_ResetCaptions();
@@ -704,7 +710,11 @@ void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, int32_t volu
 			channels[cnum].efx = NULL;
 		}
 
+#ifdef DUALSNDBUFFER
+		I_StartSound(sfx_id, S_GetSoundVolume(sfx, volume), sep, pitch, priority, cnum, channels[cnum].efx, channels[cnum].origin, &channels[cnum].handleL, &channels[cnum].handleR);
+#else
 		channels[cnum].handle = I_StartSound(sfx_id, S_GetSoundVolume(sfx, volume), sep, pitch, priority, cnum, channels[cnum].efx, channels[cnum].origin);
+#endif
 	}
 }
 
@@ -831,7 +841,11 @@ notinlevel:
 			continue;
 
 		// if channel is allocated but sound has stopped, free it
+#ifdef DUALSNDBUFFER
+		if (!I_SoundIsPlaying(c->handleL) && (!c->sfxinfo->stereo || !I_SoundIsPlaying(c->handleR)))
+#else
 		if (!I_SoundIsPlaying(c->handle))
+#endif
 		{
 			c->endtime += 1;
 
@@ -922,7 +936,16 @@ notinlevel:
 
 			if (audible)
 			{
+#ifdef DUALSNDBUFFER
+				I_UpdateSoundParams(c->handleL, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch, c->efx, c->origin, c->sfxinfo->stereo ? -1 : 0);
+
+				if (c->sfxinfo->stereo)
+				{
+					I_UpdateSoundParams(c->handleR, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch, c->efx, c->origin, 1);
+				}
+#else
 				I_UpdateSoundParams(c->handle, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch, c->efx, c->origin);
+#endif
 			}
 			else
 				S_StopChannel(cnum);
@@ -950,7 +973,13 @@ void S_UpdateClosedCaptions(void)
 			closedcaptions[i].c = NULL;
 			closedcaptions[i].s = NULL;
 		}
+#ifdef DUALSNDBUFFER
+		else if (closedcaptions[i].c && !I_SoundIsPlaying(closedcaptions[i].c->handleL)
+			&& ((closedcaptions[i].c->sfxinfo && !closedcaptions[i].c->sfxinfo->stereo)
+			|| !I_SoundIsPlaying(closedcaptions[i].c->handleR)))
+#else
 		else if (closedcaptions[i].c && !I_SoundIsPlaying(closedcaptions[i].c->handle))
+#endif
 		{
 			closedcaptions[i].c = NULL;
 			if (closedcaptions[i].t > CAPTIONFADETICS)
@@ -981,7 +1010,12 @@ static void S_StopChannel(int32_t cnum)
 	if (c->sfxinfo)
 	{
 		// stop the sound playing
+#ifdef DUALSNDBUFFER
+		I_StopSound(c->handleL);
+		I_StopSound(c->handleR);
+#else
 		I_StopSound(c->handle);
+#endif
 
 		// degrade usefulness of sound data
 		c->sfxinfo->usefulness--;
@@ -994,6 +1028,12 @@ static void S_StopChannel(int32_t cnum)
 	I_DeleteEFX(c->efx);
 	c->efxtail = 0;
 	c->efx = NULL;
+#ifdef DUALSNDBUFFER
+	c->handleL = 0;
+	c->handleR = 0;
+#else
+	c->handle = 0;
+#endif
 }
 
 //
@@ -1275,6 +1315,9 @@ void S_InitSfxChannels(int32_t sfxVolume)
 	{
 		S_sfx[i].usefulness = -1; // for I_GetSfx()
 		S_sfx[i].lumpnum = LUMPERROR;
+#ifdef DUALSNDBUFFER
+		S_sfx[i].stereo = false;
+#endif
 	}
 
 	// precache sounds if requested by cmdline, or precachesound var true

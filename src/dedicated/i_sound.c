@@ -45,7 +45,11 @@ void I_FreeSfx(sfxinfo_t *sfx)
 	(void)sfx;
 }
 
+#ifdef DUALSNDBUFFER
+void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch, efx_t *efx, const void *origin, int8_t direction)
+#else
 void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch, efx_t *efx, const void *origin)
+#endif
 {
 	(void)handle;
 	(void)vol;
@@ -53,9 +57,16 @@ void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch
 	(void)pitch;
 	(void)efx;
 	(void)origin;
+#ifdef DUALSNDBUFFER
+	(void)direction;
+#endif
 }
 
-int32_t I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t priority, int32_t channel, efx_t *efx, const void * origin)
+#ifdef DUALSNDBUFFER
+void I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t priority, int32_t channel, efx_t *efx, const void *origin, int32_t *handleL, int32_t *handleR)
+#else
+int32_t I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t priority, int32_t channel, efx_t *efx, const void *origin)
+#endif
 {
 	(void)id;
 	(void)vol;
@@ -65,7 +76,12 @@ int32_t I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint
 	(void)channel;
 	(void)efx;
 	(void)origin;
+#ifdef DUALSNDBUFFER
+	(void)handleL;
+	(void)handleR;
+#else
 	return 0;
+#endif
 }
 
 void I_StopSound(int32_t handle)

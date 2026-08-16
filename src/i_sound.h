@@ -295,7 +295,12 @@ void I_ShutdownSound(void);
 
 	\return	sfx handle
 */
+
+#ifdef DUALSNDBUFFER
+void I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t priority, int32_t channel, efx_t *efx, const void *origin, int32_t *handleL, int32_t *handleR);
+#else
 int32_t I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t priority, int32_t channel, efx_t *efx, const void *origin);
+#endif
 
 /**	\brief	Stops a sound channel.
 
@@ -328,7 +333,11 @@ dboolean I_SoundIsPlaying(int32_t handle);
 
 	\return	void
 */
+#ifdef DUALSNDBUFFER
+void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch, efx_t *efx, const void *origin, int8_t direction);
+#else
 void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch, efx_t *efx, const void *origin);
+#endif
 
 /**	\brief	The I_SetSfxVolume function
 
