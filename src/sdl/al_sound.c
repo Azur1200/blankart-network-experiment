@@ -274,7 +274,7 @@ static sample_format_t I_GetSampleFormat(SF_INFO info)
 #endif
 			// check if we actually even support shit
 			// otherwise everything will explode kek
-			if (alIsExtensionPresent("AL_EXT_FLOAT32"))
+			if (TRY(alIsExtensionPresent,"AL_EXT_FLOAT32"))
 			{
 				return Float;
 			}
@@ -1001,7 +1001,9 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 				{
 					size <<= 1;
 					data = Z_Realloc(data, size, PU_SOUND, NULL);
+#ifdef DUALSNDBUFFER
 					temp = Z_Realloc(temp, size*info.channels, PU_SOUND, NULL);
+#endif
 				}
 			}
 #ifdef DUALSNDBUFFER
@@ -1027,7 +1029,7 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 
 	if (!TRY(alBufferData, buffer, format, data, size, samplerate))
 	{
-		alDeleteBuffers(1, &buffer);
+		TRY(alDeleteBuffers, 1, &buffer);
 		return INVALID_HANDLE;
 	}
 
@@ -1052,31 +1054,37 @@ void *I_GetSfx(sfxinfo_t *sfx)
 		sfx->lumpnum = S_GetSfxLumpNum(sfx);
 	sfx->length = W_LumpLength(sfx->lumpnum);
 
+	sfx->stereo = false;
+
 	void *lump = W_CacheLumpNum(sfx->lumpnum, PU_SOUND);
 
 #ifdef DUALSNDBUFFER
 	dboolean stereo = false;
+	sfxdatapair_t *datapair = NULL;
 
-	sfxdatapair_t *datapair = Z_Calloc(sizeof(sfxdatapair_t), PU_SOUND, NULL);
+	ALuint bufferL = LoadDataIntoBuffer(lump, sfx->length, SFXCHANNEL_LEFT, &stereo);
+	ALuint bufferR = LoadDataIntoBuffer(lump, sfx->length, SFXCHANNEL_RIGHT, &stereo);
+
+	if (bufferL == INVALID_HANDLE || (stereo && bufferR == INVALID_HANDLE))
+		return NULL;
+
+	datapair = Z_Calloc(sizeof(sfxdatapair_t), PU_SOUND, NULL);
 
 	if (datapair == NULL)
 	{
-		I_Error("Failed to allocate datapair for sound effect id");
+		I_Error("Failed to allocate datapair for sfx_%s", sfx->name);
 		return NULL;
 	}
 
-	datapair->L = LoadDataIntoBuffer(lump, sfx->length, SFXCHANNEL_LEFT, &stereo);
+	datapair->L = bufferL;
 
 	if (stereo)
-		datapair->R = LoadDataIntoBuffer(lump, sfx->length, SFXCHANNEL_RIGHT, &stereo);
-
-	if (datapair->L == INVALID_HANDLE || (stereo && datapair->R == INVALID_HANDLE))
-		return NULL;
+		datapair->R = bufferR;
 
 	datapair->stereo = stereo;
-	sfx->stereo = stereo;
 
 	sfx->data = (void *)datapair;
+	sfx->stereo = stereo;
 #else
 	ALuint buffer = LoadDataIntoBuffer(lump, sfx->length);
 	if (buffer == INVALID_HANDLE)
@@ -1091,14 +1099,22 @@ void I_FreeSfx(sfxinfo_t *sfx)
 {
 	if (sfx->data)
 	{
-		ALuint buffer = (uintptr_t)sfx->data;
-		alDeleteBuffers(1, &buffer);
+		sfxdatapair_t *datapair = sfx->data;
+
+		TRY(alDeleteBuffers, 1, &datapair->L);
+		TRY(alDeleteBuffers, 1, &datapair->R);
 	}
+
+	Z_Free(sfx->data);
 	sfx->data = NULL;
 	sfx->lumpnum = LUMPERROR;
 }
 
+#ifdef DUALSNDBUFFER
+void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch, efx_t *efx, const void *origin, int8_t direction)
+#else
 void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch, efx_t *efx, const void *origin)
+#endif
 {
 	LOCKAUDIO;
 
@@ -1113,8 +1129,14 @@ void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch
 	// TODO: Real 3D Audio.
 	// create a panning effect by moving the source in an arc around the listener
 	// Based on https://github.com/kcat/openal-soft/issues/194
+#ifdef DUALSNDBUFFER
+	float channelpan = CLAMP(sep + direction * (255.0f - sep), 0, 255);
+	float leftpan = min((0xff-channelpan)*2.0, 0xff) / 255.0f;
+	float rightpan = min(channelpan*2.0, 0xff) / 255.0f;
+#else
 	float leftpan = min((0xff-sep)<<1, 0xff) / 255.0f;
 	float rightpan = min(sep<<1, 0xff) / 255.0f;
+#endif
 	float pan = (acosf(leftpan) + asinf(rightpan)) / ((float)M_PI); // average angle in [0,1]
 	pan = 2 * pan - 1; // convert to [-1, 1]
 	pan = pan * 0.5f; // 0.5 = sin(30') for a +/- 30 degree arc
@@ -1155,23 +1177,23 @@ void I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t
 
 	if (!TRY(alSourcei, sourceL, AL_BUFFER, (uintptr_t)datapair->L))
 	{
-		alDeleteSources(1, &sourceL);
+		TRY(alDeleteSources, 1, &sourceL);
 		*handleL = INVALID_HANDLE;
 		return;
 	}
 
 	if (!TRY(alSourcei, sourceL, AL_SOURCE_RELATIVE, AL_TRUE))
 	{
-		alDeleteSources(1, &sourceL);
+		TRY(alDeleteSources, 1, &sourceL);
 		*handleL = INVALID_HANDLE;
 		return;
 	}
 
-	I_UpdateSoundParams(sourceL, vol, sep, pitch, efx, origin);
+	I_UpdateSoundParams(sourceL, vol, sep, pitch, efx, origin, datapair->stereo ? -1 : 0);
 
 	if (!TRY(alSourcePlay, sourceL))
 	{
-		alDeleteSources(1, &sourceL);
+		TRY(alDeleteSources, 1, &sourceL);
 		*handleL = INVALID_HANDLE;
 		return;
 	}
@@ -1187,8 +1209,8 @@ void I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t
 
 		if (!TRY(alSourcei, sourceR, AL_BUFFER, (uintptr_t)datapair->R))
 		{
-			alDeleteSources(1, &sourceL);
-			alDeleteSources(1, &sourceR);
+			TRY(alDeleteSources, 1, &sourceL);
+			TRY(alDeleteSources, 1, &sourceR);
 			*handleL = INVALID_HANDLE;
 			*handleR = INVALID_HANDLE;
 			return;
@@ -1196,19 +1218,19 @@ void I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t
 
 		if (!TRY(alSourcei, sourceR, AL_SOURCE_RELATIVE, AL_TRUE))
 		{
-			alDeleteSources(1, &sourceL);
-			alDeleteSources(1, &sourceR);
+			TRY(alDeleteSources, 1, &sourceL);
+			TRY(alDeleteSources, 1, &sourceR);
 			*handleL = INVALID_HANDLE;
 			*handleR = INVALID_HANDLE;
 			return;
 		}
 
-		I_UpdateSoundParams(sourceR, vol, sep, pitch, efx, origin);
+		I_UpdateSoundParams(sourceR, vol, sep, pitch, efx, origin, 1);
 
 		if (!TRY(alSourcePlay, sourceR))
 		{
-			alDeleteSources(1, &sourceL);
-			alDeleteSources(1, &sourceR);
+			TRY(alDeleteSources, 1, &sourceL);
+			TRY(alDeleteSources, 1, &sourceR);
 			*handleL = INVALID_HANDLE;
 			*handleR = INVALID_HANDLE;
 			return;
@@ -1240,13 +1262,13 @@ int32_t I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint
 
 	if (!TRY(alSourcei, source, AL_BUFFER, (uintptr_t)S_sfx[id].data))
 	{
-		alDeleteSources(1, &source);
+		TRY(alDeleteSources, 1, &source);
 		return INVALID_HANDLE;
 	}
 
 	if (!TRY(alSourcei, source, AL_SOURCE_RELATIVE, AL_TRUE))
 	{
-		alDeleteSources(1, &source);
+		TRY(alDeleteSources, 1, &source);
 		return INVALID_HANDLE;
 	}
 
@@ -1254,7 +1276,7 @@ int32_t I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint
 
 	if (!TRY(alSourcePlay, source))
 	{
-		alDeleteSources(1, &source);
+		TRY(alDeleteSources, 1, &source);
 		return INVALID_HANDLE;
 	}
 
@@ -1277,7 +1299,7 @@ void I_StopSound(int32_t handle)
 
 dboolean I_SoundIsPlaying(int32_t handle)
 {
-	if (handle == INVALID_HANDLE || !alIsSource((ALuint)handle))
+	if (handle == INVALID_HANDLE || !TRY(alIsSource, ((ALuint)handle)))
 		return false;
 
 	ALint value;
@@ -1879,8 +1901,8 @@ void I_UnloadSong(void)
 	}
 	if (audio.music != INVALID_HANDLE)
 	{
-		alDeleteSources(1, &audio.music);
-		alDeleteBuffers(BUFFERCOUNT, audio.musicbuffers);
+		TRY(alDeleteSources, 1, &audio.music);
+		TRY(alDeleteBuffers, BUFFERCOUNT, audio.musicbuffers);
 		for (size_t i = 0; i < BUFFERCOUNT; i++)
 			audio.musicbuffers[i] = INVALID_HANDLE;
 		audio.music = INVALID_HANDLE;
@@ -1948,7 +1970,7 @@ void I_StopSong(void)
 		current_subsong = -1;
 #endif
 	if (audio.music != INVALID_HANDLE)
-		alSourceStop(audio.music);
+		TRY(alSourceStop, audio.music);
 
 	var_cleanup();
 }
@@ -1958,14 +1980,14 @@ void I_PauseSong(void)
 	LOCKAUDIO;
 
 	if (audio.music != INVALID_HANDLE)
-		alSourcePause(audio.music);
+		TRY(alSourcePause, audio.music);
 }
 
 void I_ResumeSong(void)
 {
 	LOCKAUDIO;
 
-	alSourcePlay(audio.music);
+	TRY(alSourcePlay, audio.music);
 }
 
 void I_SetMusicVolume(uint8_t volume)

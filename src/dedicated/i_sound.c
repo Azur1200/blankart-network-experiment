@@ -45,7 +45,11 @@ void I_FreeSfx(sfxinfo_t *sfx)
 	(void)sfx;
 }
 
+#ifdef DUALSNDBUFFER
+void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch, efx_t *efx, const void *origin, int8_t direction)
+#else
 void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch, efx_t *efx, const void *origin)
+#endif
 {
 	(void)handle;
 	(void)vol;
@@ -53,6 +57,9 @@ void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch
 	(void)pitch;
 	(void)efx;
 	(void)origin;
+#ifdef DUALSNDBUFFER
+	(void)direction;
+#endif
 }
 
 #ifdef DUALSNDBUFFER

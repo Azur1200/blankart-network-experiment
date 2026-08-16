@@ -333,7 +333,11 @@ dboolean I_SoundIsPlaying(int32_t handle);
 
 	\return	void
 */
+#ifdef DUALSNDBUFFER
+void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch, efx_t *efx, const void *origin, int8_t direction);
+#else
 void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch, efx_t *efx, const void *origin);
+#endif
 
 /**	\brief	The I_SetSfxVolume function
 

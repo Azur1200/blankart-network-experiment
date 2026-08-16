@@ -90,7 +90,6 @@ struct channel_t
 #ifdef DUALSNDBUFFER
 	int32_t handleL;
 	int32_t handleR;
-	dboolean stereo;
 #else
 	int32_t handle;
 #endif
