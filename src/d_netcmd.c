@@ -789,7 +789,8 @@ consvar_t cv_kartrank_progressionpoints = CVAR_INIT ("rank_progressionpoints", "
 // Since the average time can vary HEAVILY based on the server, let hosts customize this.
 consvar_t cv_kartrank_genericpartime = CVAR_INIT ("rank_genericpartime", "235.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_FloatingTicrate, NULL);
 
-consvar_t cv_kartrank_comebackpoints = CVAR_INIT ("rank_comebackpoints", "65.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+consvar_t cv_kartrank_finishbonus = CVAR_INIT ("rank_finishbonus", "65.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+consvar_t cv_kartrank_finishpenalty = CVAR_INIT ("rank_finishpenalty", "12.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
 // Ranks: the point bonus given dependent on position (1st place gets the raw value), meant to offset the par-time deficit
 consvar_t cv_kartrank_leadertimepoints = CVAR_INIT ("rank_leadertimepoints", "400.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
@@ -821,7 +822,6 @@ consvar_t cv_kartrank_hazardpenalty = CVAR_INIT ("rank_hazardpenalty", "5", CV_N
 
 consvar_t cv_kartrank_respawnmercy = CVAR_INIT ("rank_respawnmercy", "5", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_mercy_cons_t, NULL);
 consvar_t cv_kartrank_respawnpenalty = CVAR_INIT ("rank_respawnpenalty", "40", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
-consvar_t cv_kartrank_retirepenalty = CVAR_INIT ("rank_dnfpenalty", "12", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
 
 static CV_PossibleValue_t kartinvindmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {0, NULL}};
 

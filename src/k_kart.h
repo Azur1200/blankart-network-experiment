@@ -144,7 +144,8 @@ extern vector3_t clusterpoint, clusterdtf;
 #define PARTIMEMERCY (33 * TICRATE)
 
 #define RANKPOINTS_PROGRESS CV_Get(&cv_kartrank_progressionpoints)
-#define RANKPOINTS_COMEBACKSCORE CV_Get(&cv_kartrank_comebackpoints)
+#define RANKPOINTS_FINISHBONUS CV_Get(&cv_kartrank_finishbonus)
+#define RANKPOINTS_FINISHPENALTY CV_Get(&cv_kartrank_finishpenalty)
 
 #define RANKPOINTS_LEADERTIME CV_Get(&cv_kartrank_leadertimepoints)
 #define RANKPOINTS_SPBTIME CV_Get(&cv_kartrank_spbtimepoints)
@@ -162,7 +163,6 @@ extern vector3_t clusterpoint, clusterdtf;
 #define RANKPOINTS_WALLPENALTY CV_Get(&cv_kartrank_wallbonkpenalty)
 #define RANKPOINTS_HZRDPENALTY CV_Get(&cv_kartrank_hazardpenalty)
 #define RANKPOINTS_RSPWPENALTY CV_Get(&cv_kartrank_respawnpenalty)
-#define RANKPOINTS_DNFPENALTY CV_Get(&cv_kartrank_retirepenalty)
 
 #define RANKPOINTS_HZRDMERCY CV_Get(&cv_kartrank_hazardmercy)
 #define RANKPOINTS_RSPWMERCY CV_Get(&cv_kartrank_respawnmercy)

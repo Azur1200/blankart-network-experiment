@@ -1318,6 +1318,9 @@ mobj_t *P_SpawnGhostMobjEX(mobj_t *mobj, dboolean legacy)
 	return ghost;
 }
 
+// FRACUNIT / 3
+#define FRAC_1div3 21845
+
 //
 // P_DoPlayerExit
 //
@@ -1345,31 +1348,44 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			// Handle the player headcount and grading BEFORE positions are finalized
 			K_GetPlayerNumber();
 
-			const double scoremul = FixedToDouble(RANKPOINTS_COMEBACKSCORE);
+			const size_t pid = (player - players);
+			const fixed_t leadermul = (K_GetPositionMultiplier(ranksort_positions[pid]) >> (BIGTOSTDBITS - 1));
 
-			if (player->ranklog.gaining < 0)
+			// Win/loss severity per the player's rank-based position
+			// Range: [-1.0, 1.0]
+			fixed_t winlosefac = abs(leadermul - FRACUNIT);
+
+			if (players_racing < 6)
 			{
-				const int32_t loss_severity = abs(player->ranklog.gaining);
+				// Don't bother running this for small lobbies
+				winlosefac = 0;
+			}
+			else
+			{
+				const dboolean losingbyrank = K_IsPlayerLosingByRank(player);
+				const dboolean losingbypos = K_IsPlayerLosing(player);
 
-				// Quick bandaid: Only benefit players at a major deficit (behind the entire race)
-				// Prevents over-generous comeback bonuses
-				if (loss_severity >= ((int32_t)(numlaps) - 1))
+				if (P_IsLocalPlayer(player))
 				{
-					// If the player's been beaten down all race, give them a hefty point bonus to
-					// give them a comeback
-					const int32_t playerseed = max(0, players_racing - 1);
+					I_OutputMsg("winlosefac: %f percent\n", (FixedToDouble(winlosefac) * 100.0));
+				}
 
-					if (playerseed > 0)
+				// Don't benefit/penalize the people stuck in the middle...
+				// This seems overly punishing for middle-of-the-road players, but rank-cheesing
+				// needs a kick in the shins
+				if (winlosefac >= FRAC_1div3)
+				{
+					if (losingbyrank && (!losingbypos))
 					{
-						const int32_t leaderfactor = max(0, playerseed - max(0, player->position - 1));
-						const int32_t convtopercent = ((1 << 24) / playerseed);
-
-						// There's always a chance some off-kilter value fucks up the multiplier, so we
-						// "round up" by a tiiny bit...
-						const fixed_t leadermul = min(FRACUNIT, ((convtopercent / 256) * leaderfactor) + 2);
-
-						// Use this to create a comeback score for one final push!
-						player->rankscorefactor.comebackscore = (scoremul * FixedToDouble(leadermul));
+						// This player was struggling all race, and got a good finish!
+						// Give them a bonus for a chance at a comeback!
+						player->rankscorefactor.finishgrading = FixedMul(RANKPOINTS_FINISHBONUS, winlosefac) >> FRACBITS;
+					}
+					else if (losingbypos && (!losingbyrank))
+					{
+						// A high-performing player blew it at the end...
+						// Penalize them for their folly!
+						player->rankscorefactor.finishgrading = (FixedMul(RANKPOINTS_FINISHPENALTY, winlosefac) >> FRACBITS) * -1;
 					}
 				}
 			}
@@ -1501,6 +1517,8 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 
 	ACS_RunPlayerFinishScript(player);
 }
+
+#undef FRAC_1div3
 
 //
 // P_DoAllPlayersExit
@@ -3856,7 +3874,7 @@ void P_DoTimeOver(player_t *player)
 			player->pflags &= ~PF_NOCONTEST;
 
 			// Punish the player's rank dearly for their folly
-			player->rankscorefactor.dnfpenalty = RANKPOINTS_DNFPENALTY;
+			player->rankscorefactor.finishgrading = (RANKPOINTS_FINISHPENALTY >> FRACBITS) * -1;
 
 			K_UpdateIndividualPlayerRank(player); // Update ranks with the new data
 

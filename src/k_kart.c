@@ -588,7 +588,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartrank_lowestscore);
 	CV_RegisterVar(&cv_kartrank_genericpartime);
 	CV_RegisterVar(&cv_kartrank_progressionpoints);
-	CV_RegisterVar(&cv_kartrank_comebackpoints);
+	CV_RegisterVar(&cv_kartrank_finishbonus);
+	CV_RegisterVar(&cv_kartrank_finishpenalty);
 	CV_RegisterVar(&cv_kartrank_leadertimepoints);
 	CV_RegisterVar(&cv_kartrank_spbtimepoints);
 	CV_RegisterVar(&cv_kartrank_driftboostpoints);
@@ -598,7 +599,6 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartrank_wallbonkpenalty);
 	CV_RegisterVar(&cv_kartrank_hazardpenalty);
 	CV_RegisterVar(&cv_kartrank_respawnpenalty);
-	CV_RegisterVar(&cv_kartrank_retirepenalty);
 	CV_RegisterVar(&cv_kartrank_hazardmercy);
 	CV_RegisterVar(&cv_kartrank_respawnmercy);
 
@@ -11277,7 +11277,7 @@ static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
     return K_Distance3D(source->mo->x,source->mo->y,source->mo->z,destination->mo->x,destination->mo->y,destination->mo->z);
 }*/
 
-// Gets a fixed_t value between 0.0 and 1.0 representing their position in the race.
+// Gets an 8.24 fixed_t value between 0.0 and 1.0 representing their position in the race.
 // 1st place -> 1.0, last place -> 0.0
 fixed_t K_GetPositionMultiplier(int32_t position)
 {
@@ -11286,18 +11286,18 @@ fixed_t K_GetPositionMultiplier(int32_t position)
 	if (playerseed > 0)
 	{
 		const int32_t leaderfactor = max(0, playerseed - max(0, position - 1));
-		const int32_t convtopercent = ((1 << BIGFRACBITS) / playerseed);
+		const int32_t convtopercent = (BIGFRACUNIT / playerseed);
 
 		// There's always a chance some off-kilter value fucks up the multiplier, so we
 		// "round up" by a tiiny bit...
-		const fixed_t leadermul = min(FRACUNIT, ((convtopercent / 256) * leaderfactor) + 2);
+		const fixed_t leadermul = min(BIGFRACUNIT, (convtopercent * leaderfactor) + 512);
 
 		return leadermul;
 	}
 
 	// Check if we're racing alone, if we fall through
 	if (players_racing == 1)
-		return FRACUNIT;
+		return BIGFRACUNIT;
 
 	return 0; // Nobody's around...
 }
@@ -12342,7 +12342,7 @@ void K_UpdateAllPlayerPositions(void)
 							player->currentwaypoint->playergradelap[i] = checklap;
 
 							// Progress updated; update leaderscore
-							const fixed_t leadermul = K_GetPositionMultiplier(player->position);
+							const fixed_t leadermul = (K_GetPositionMultiplier(player->position) >> BIGTOSTDBITS);
 							player->ranklog.leaderscore += (player->progressdelta * FixedMul(32, leadermul));
 						}
 					}
@@ -12374,7 +12374,7 @@ void K_UpdateAllPlayerPositions(void)
 							legacygradelap[idx] = player->laps;
 
 							// Progress updated; update leaderscore
-							const fixed_t leadermul = K_GetPositionMultiplier(player->position);
+							const fixed_t leadermul = (K_GetPositionMultiplier(player->position) >> BIGTOSTDBITS);
 							player->ranklog.leaderscore += (player->progressdelta * FixedMul(32, leadermul));
 						}
 					}
@@ -13668,8 +13668,7 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 
 	// FINALLY, apply all bonuses, penalties, and volatile scores...
 	raceStarRankScore =
-	    (player->rankscorefactor.posgradescore + player->rankscorefactor.comebackscore -
-	    player->rankscorefactor.dnfpenalty) +
+	    (player->rankscorefactor.posgradescore + player->rankscorefactor.finishgrading) +
 	    (player->rankscorefactor.spbattackbonus + player->rankscorefactor.driftbonus +
 	    player->rankscorefactor.hitbonus) -
 	    (player->rankscorefactor.offroadpenalty + player->rankscorefactor.wallpenalty +

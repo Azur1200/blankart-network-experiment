@@ -574,10 +574,6 @@ static dboolean RankScreenVis_ShowGrade(void)
 
 			if (rankresultsphase >= 2)
 			{
-				const int32_t totallapgrade =
-				    (players[pid].rankscorefactor.posgradescore -
-				     players[pid].rankscorefactor.dnfpenalty);
-
 				// Position Grading
 				yy += 20;
 				Y_DrawThinStringWithBacking(
@@ -586,17 +582,17 @@ static dboolean RankScreenVis_ShowGrade(void)
 				    point_x,
 				    yy,
 				    textflags,
-				    va("%d", totallapgrade));
+				    va("%d", players[pid].rankscorefactor.posgradescore));
 
-				// Comeback Score
+				// Finish Grading
 				yy += 11;
 				Y_DrawThinStringWithBacking(
-				    xx, yy, curwidth, textflags, 0, usecolor, "Comeback Score");
+				    xx, yy, curwidth, textflags, 0, usecolor, "Finish Grading");
 				V_DrawRightAlignedString(
 				    point_x,
 				    yy,
 				    textflags,
-				    va("%d", players[pid].rankscorefactor.comebackscore));
+				    va("%d", players[pid].rankscorefactor.finishgrading));
 			}
 
 			//
@@ -723,15 +719,15 @@ static dboolean RankScreenVis_ShowGrade(void)
 				    textflags,
 				    va("%d", players[pid].rankscorefactor.posgradescore));
 
-				// Comeback Score
+				// Finish Grading
 				yy += 11;
 				Y_DrawThinStringWithBacking(
-				    xx, yy, curwidth, textflags, 0, usecolor, "Comeback Score");
+				    xx, yy, curwidth, textflags, 0, usecolor, "Finish Grading");
 				V_DrawRightAlignedString(
 				    point_x,
 				    yy,
 				    textflags,
-				    va("%d", players[pid].rankscorefactor.comebackscore));
+				    va("%d", players[pid].rankscorefactor.finishgrading));
 			}
 
 			//

@@ -616,7 +616,7 @@ struct rankscorefactor_t
 	//
 
 	int32_t posgradescore; // Points earned/lost dependent on the player's position over time
-	int32_t comebackscore;
+	int32_t finishgrading;
 
 	//
 	// BONUSES
@@ -634,7 +634,6 @@ struct rankscorefactor_t
 	int32_t wallpenalty; // Points lost for hitting walls past a speed threshold
 	int32_t hazardpenalty; // Points lost for running into course hazards or damaging sectors
 	int32_t respawnpenalty; // Points lost for respawning past a grace threshold
-	int32_t dnfpenalty; // Points lost when the player retires (NO CONTEST)
 };
 
 // ========================================================================
