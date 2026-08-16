@@ -790,13 +790,13 @@ consvar_t cv_kartrank_progressionpoints = CVAR_INIT ("rank_progressionpoints", "
 consvar_t cv_kartrank_genericpartime = CVAR_INIT ("rank_genericpartime", "235.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_FloatingTicrate, NULL);
 
 consvar_t cv_kartrank_finishbonus = CVAR_INIT ("rank_finishbonus", "65.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
-consvar_t cv_kartrank_finishpenalty = CVAR_INIT ("rank_finishpenalty", "12.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+consvar_t cv_kartrank_finishpenalty = CVAR_INIT ("rank_finishpenalty", "55.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
 // Ranks: the point bonus given dependent on position (1st place gets the raw value), meant to offset the par-time deficit
 consvar_t cv_kartrank_leadertimepoints = CVAR_INIT ("rank_leadertimepoints", "400.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
 // Ranks: the point bonus given for being chased by an SPB; varies by distance
-consvar_t cv_kartrank_spbtimepoints = CVAR_INIT ("rank_spbtimepoints", "45.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+consvar_t cv_kartrank_spbtimepoints = CVAR_INIT ("rank_spbtimepoints", "15.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
 // Ranks: the point bonus given with each drift boost.
 // Higher driftboost tiers multiply this value to give more points.
