@@ -1054,11 +1054,11 @@ void *I_GetSfx(sfxinfo_t *sfx)
 		sfx->lumpnum = S_GetSfxLumpNum(sfx);
 	sfx->length = W_LumpLength(sfx->lumpnum);
 
-	sfx->stereo = false;
-
 	void *lump = W_CacheLumpNum(sfx->lumpnum, PU_SOUND);
 
 #ifdef DUALSNDBUFFER
+	sfx->stereo = false;
+
 	dboolean stereo = false;
 	sfxdatapair_t *datapair = NULL;
 
