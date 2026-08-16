@@ -131,6 +131,12 @@ dboolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 		if (t2->player->hyudorotimer)
 			return true; // no interaction
 
+		if (t2->player->smonitortimer)
+		{
+			// t2's player has an S-Monitor, let them plow through us
+			damageitem = true;
+		}
+
 		if (t2->player->flamestore && (K_GetShieldFromPlayer(t2->player) == KSHIELD_FLAME))
 		{
 			// Melt item
@@ -293,6 +299,12 @@ dboolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 
 		if (t1->health <= 0 || t2->health <= 0)
 			return true;
+
+		if (t2->player->smonitortimer)
+		{
+			// t2's player has an S-Monitor, don't do squat
+			return true;
+		}
 
 		if (!P_CanPickupItem(t2->player, PICKUPITEM_EGGMAN))
 			return true;
