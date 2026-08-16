@@ -574,8 +574,8 @@ consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_inv
 //
 // S-Monitor
 //
-consvar_t cv_kartstacking_smonitor_speedboost = CVAR_INIT ("vanillaboost_smonitor_speedboost", "0.75", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_smonitor_fastestspeed = CVAR_INIT ("vanillaboost_smonitor_fastestspeed", "73.26", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_smonitor_speedboost = CVAR_INIT ("vanillaboost_smonitor_speedboost", "0.60", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_smonitor_fastestspeed = CVAR_INIT ("vanillaboost_smonitor_fastestspeed", "60", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_smonitor_accelboost = CVAR_INIT ("vanillaboost_smonitor_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_smonitor_handleboost = CVAR_INIT ("vanillaboost_smonitor_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_smonitor_stackable = CVAR_INIT ("vanillaboost_smonitor_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
