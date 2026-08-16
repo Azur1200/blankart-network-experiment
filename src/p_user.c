@@ -1365,11 +1365,6 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 				const dboolean losingbyrank = K_IsPlayerLosingByRank(player);
 				const dboolean losingbypos = K_IsPlayerLosing(player);
 
-				if (P_IsLocalPlayer(player))
-				{
-					I_OutputMsg("winlosefac: %f percent\n", (FixedToDouble(winlosefac) * 100.0));
-				}
-
 				// Don't benefit/penalize the people stuck in the middle...
 				// This seems overly punishing for middle-of-the-road players, but rank-cheesing
 				// needs a kick in the shins
