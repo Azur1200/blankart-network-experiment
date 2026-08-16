@@ -9642,6 +9642,7 @@ void P_LoadSoundsRange(uint16_t wadnum, uint16_t first, uint16_t num)
 				// since sfx->data will be NULL
 				CONS_Debug(DBG_SETUP, "Sound %.8s replaced\n", lumpinfo->name);
 
+				S_StopSounds();
 				I_FreeSfx(&S_sfx[j]);
 				break; // there shouldn't be two sounds with the same name, so stop looking
 			}
@@ -9865,6 +9866,7 @@ static dboolean P_CheckSoundReplacements(char *name, size_t i)
 					// since sfx->data will be NULL
 					CONS_Debug(DBG_SETUP, "Sound %.8s replaced\n", name);
 
+					S_StopSounds();
 					I_FreeSfx(&S_sfx[i]);
 
 					// Re-cache it

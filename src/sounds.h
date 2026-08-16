@@ -20,6 +20,8 @@
 extern "C" {
 #endif
 
+#define DUALSNDBUFFER // use two handles per channel (OpenAL workaround :face_holding_back_tears:)
+
 // keep this one around at least, for compatibility code
 #define NUMSKINSOUNDS 11
 
@@ -50,6 +52,10 @@ struct sfxinfo_t
 
 	// sound data
 	void *data;
+
+#ifdef DUALSNDBUFFER
+	dboolean stereo;
+#endif
 
 	// length of sound data
 	size_t length;

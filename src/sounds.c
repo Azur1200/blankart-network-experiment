@@ -85,6 +85,9 @@ void S_InitRuntimeSounds (void)
 		S_sfx[i].flags = 0;
 		S_sfx[i].volume = -1;
 		S_sfx[i].data = NULL;
+#ifdef DUALSNDBUFFER
+		S_sfx[i].stereo = false;
+#endif
 		S_sfx[i].length = 0;
 		S_sfx[i].usefulness = -1;
 		S_sfx[i].lumpnum = LUMPERROR;
@@ -130,6 +133,10 @@ sfxenum_t S_AddSoundFx(const char *name, dboolean skinsound)
 
 	/// \todo if precached load it here
 	S_sfx[i].data = NULL;
+
+#ifdef DUALSNDBUFFER
+	S_sfx[i].stereo = false;
+#endif
 
 	return i;
 }
