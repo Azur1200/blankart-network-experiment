@@ -704,7 +704,11 @@ void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, int32_t volu
 			channels[cnum].efx = NULL;
 		}
 
+#ifdef DUALSNDBUFFER
+		I_StartSound(sfx_id, S_GetSoundVolume(sfx, volume), sep, pitch, priority, cnum, channels[cnum].efx, channels[cnum].origin, &channels[cnum].handleL, &channels[cnum].handleR);
+#else
 		channels[cnum].handle = I_StartSound(sfx_id, S_GetSoundVolume(sfx, volume), sep, pitch, priority, cnum, channels[cnum].efx, channels[cnum].origin);
+#endif
 	}
 }
 
@@ -831,7 +835,11 @@ notinlevel:
 			continue;
 
 		// if channel is allocated but sound has stopped, free it
+#ifdef DUALSNDBUFFER
+		if (!I_SoundIsPlaying(c->handleL) && (!c->stereo || !I_SoundIsPlaying(c->handleR)))
+#else
 		if (!I_SoundIsPlaying(c->handle))
+#endif
 		{
 			c->endtime += 1;
 
@@ -922,7 +930,16 @@ notinlevel:
 
 			if (audible)
 			{
+#ifdef DUALSNDBUFFER
+				I_UpdateSoundParams(c->handleL, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch, c->efx, c->origin);
+
+				if (c->stereo)
+				{
+					I_UpdateSoundParams(c->handleR, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch, c->efx, c->origin);
+				}
+#else
 				I_UpdateSoundParams(c->handle, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch, c->efx, c->origin);
+#endif
 			}
 			else
 				S_StopChannel(cnum);
@@ -950,7 +967,11 @@ void S_UpdateClosedCaptions(void)
 			closedcaptions[i].c = NULL;
 			closedcaptions[i].s = NULL;
 		}
+#ifdef DUALSNDBUFFER
+		else if (closedcaptions[i].c && !I_SoundIsPlaying(closedcaptions[i].c->handleL) && (!closedcaptions[i].c->stereo || !I_SoundIsPlaying(closedcaptions[i].c->handleR)))
+#else
 		else if (closedcaptions[i].c && !I_SoundIsPlaying(closedcaptions[i].c->handle))
+#endif
 		{
 			closedcaptions[i].c = NULL;
 			if (closedcaptions[i].t > CAPTIONFADETICS)
@@ -981,7 +1002,17 @@ static void S_StopChannel(int32_t cnum)
 	if (c->sfxinfo)
 	{
 		// stop the sound playing
+#ifdef DUALSNDBUFFER
+		I_StopSound(c->handleL);
+
+		if (c->stereo)
+		{
+			I_StopSound(c->handleR);
+		}
+
+#else
 		I_StopSound(c->handle);
+#endif
 
 		// degrade usefulness of sound data
 		c->sfxinfo->usefulness--;

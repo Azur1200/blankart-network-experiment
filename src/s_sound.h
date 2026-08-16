@@ -14,6 +14,7 @@
 #ifndef __S_SOUND__
 #define __S_SOUND__
 
+#include "doomtype.h"
 #include "i_sound.h" // musictype_t
 #include "sounds.h"
 #include "m_fixed.h"
@@ -86,8 +87,13 @@ struct channel_t
 	int32_t volume;
 
 	// handle of the sound being played
+#ifdef DUALSNDBUFFER
+	int32_t handleL;
+	int32_t handleR;
+	dboolean stereo;
+#else
 	int32_t handle;
-
+#endif
 	// length sound has been playing
 	float duration;
 	float endtime;

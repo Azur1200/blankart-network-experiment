@@ -801,7 +801,17 @@ static SF_VIRTUAL_IO virtual_io =
 	.tell = TellVIOFile,
 };
 
+#ifdef DUALSNDBUFFER
+typedef enum
+{
+	SFXCHANNEL_LEFT = 0,
+	SFXCHANNEL_RIGHT,
+} sfxchannel_e;
+
+static ALuint LoadDataIntoBuffer(void *input, size_t size, sfxchannel_e sfxchannel, dboolean *stereo)
+#else
 static ALuint LoadDataIntoBuffer(void *input, size_t size)
+#endif
 {
 	size_t samplerate = SAMPLERATE;
 	CLEANUP(Z_Pfree) char *data = ds2chunk(input, &size, &samplerate);
@@ -853,6 +863,9 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 						gme_play(emu, len >> 1, mem);
 						gme_free_info(gme_info);
 						gme_delete(emu);
+#ifdef DUALSNDBUFFER
+						*stereo = true;
+#endif
 
 						data = (char *)mem;
 						size = len;
@@ -884,6 +897,9 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 			gme_play(emu, size >> 1, mem);
 			gme_free_info(gme_info);
 			gme_delete(emu);
+#ifdef DUALSNDBUFFER
+			*stereo = true;
+#endif
 
 			data = (char *)mem;
 		}
@@ -909,33 +925,88 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 			if (snd == NULL)
 				return INVALID_HANDLE;
 
+#ifdef DUALSNDBUFFER
+			if (info.channels == 2)
+			{
+				*stereo = true;
+			}
+#endif
+
 			size = 4096;
 			size_t pos = 0;
 			data = Z_Malloc(size, PU_SOUND, NULL);
 
 			format = I_GetALFormat(info);
 			sample_format_t sample_format = I_GetSampleFormat(info);
+			size_t samplesize = (sample_format == Float) ? sizeof(float) : sizeof(short);
+
+#ifdef DUALSNDBUFFER
+			char *temp = Z_Calloc(size*info.channels, PU_SOUND, NULL);
+#endif
 
 			for (;;)
 			{
 				sf_count_t count;
 
-				if (sample_format == Float)
-					count = sf_read_float(snd, (float *)&data[pos], (size - pos) / sizeof(float));
+#ifdef DUALSNDBUFFER
+				if (info.channels == 2)
+				{
+					if (sample_format == Float)
+						count = sf_readf_float(snd, (float *)temp, (size - pos) / samplesize);
+					else
+						count = sf_readf_short(snd, (short *)temp, (size - pos) / samplesize);
+
+					sf_count_t frame;
+					sf_count_t samplepos = pos / samplesize;
+
+					// Based on:
+					// https://github.com/libsndfile/libsndfile/blob/7ff854d1e0bd9a751a9ff52ed980c62afced91fe/programs/sndfile-deinterleave.c#L207
+					if (sample_format == Float)
+					{
+						float *tempd = (float *)temp;
+						float *datad = (float *)data;
+
+						for (frame = 0; frame < count; frame++)
+						{
+							datad[samplepos + frame] = tempd[frame * info.channels + sfxchannel];
+						}
+					}
+					else
+					{
+						short *tempd = (short *)temp;
+						short *datad = (short *)data;
+
+						for (frame = 0; frame < count; frame++)
+						{
+							datad[samplepos + frame] = tempd[frame * info.channels + sfxchannel];
+						}
+					}
+
+					format = (sample_format == Float) ? AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_MONO16;
+				}
 				else
-					count = sf_read_short(snd, (short *)&data[pos], (size - pos) / sizeof(short));
+#endif
+				{
+					if (sample_format == Float)
+						count = sf_read_float(snd, (float *)&data[pos], (size - pos) / samplesize);
+					else
+						count = sf_read_short(snd, (short *)&data[pos], (size - pos) / samplesize);
+				}
 
 				if (count == 0)
 					break;
 
-				pos += count * ((sample_format == Float) ? sizeof(float) : sizeof(short));
+				pos += count * samplesize;
 				if (pos >= size)
 				{
 					size <<= 1;
 					data = Z_Realloc(data, size, PU_SOUND, NULL);
+					temp = Z_Realloc(temp, size*info.channels, PU_SOUND, NULL);
 				}
 			}
-
+#ifdef DUALSNDBUFFER
+			Z_Free(temp);
+#endif
 			size = pos;
 			samplerate = info.samplerate;
 			sf_close(snd);
@@ -963,6 +1034,15 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 	return buffer;
 }
 
+#ifdef DUALSNDBUFFER
+typedef struct
+{
+	ALuint L;
+	ALuint R;
+	dboolean stereo;
+} sfxdatapair_t;
+#endif
+
 void *I_GetSfx(sfxinfo_t *sfx)
 {
 	if (sfx->data != NULL)
@@ -974,11 +1054,36 @@ void *I_GetSfx(sfxinfo_t *sfx)
 
 	void *lump = W_CacheLumpNum(sfx->lumpnum, PU_SOUND);
 
+#ifdef DUALSNDBUFFER
+	dboolean stereo = false;
+
+	sfxdatapair_t *datapair = Z_Calloc(sizeof(sfxdatapair_t), PU_SOUND, NULL);
+
+	if (datapair == NULL)
+	{
+		I_Error("Failed to allocate datapair for sound effect id");
+		return NULL;
+	}
+
+	datapair->L = LoadDataIntoBuffer(lump, sfx->length, SFXCHANNEL_LEFT, &stereo);
+
+	if (stereo)
+		datapair->R = LoadDataIntoBuffer(lump, sfx->length, SFXCHANNEL_RIGHT, &stereo);
+
+	if (datapair->L == INVALID_HANDLE || (stereo && datapair->R == INVALID_HANDLE))
+		return NULL;
+
+	datapair->stereo = stereo;
+	sfx->stereo = stereo;
+
+	sfx->data = (void *)datapair;
+#else
 	ALuint buffer = LoadDataIntoBuffer(lump, sfx->length);
 	if (buffer == INVALID_HANDLE)
 		return NULL;
 
 	sfx->data = (void *)(uintptr_t)buffer;
+#endif
 	return sfx->data;
 }
 
@@ -1035,6 +1140,98 @@ void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch
 	}
 }
 
+#ifdef DUALSNDBUFFER
+void I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t priority, int32_t channel, efx_t *efx, const void *origin, int32_t *handleL, int32_t *handleR)
+{
+	ALuint sourceL;
+	ALuint sourceR;
+	sfxdatapair_t *datapair = S_sfx[id].data;
+
+	if (!TRY(alGenSources, 1, &sourceL))
+	{
+		*handleL = INVALID_HANDLE;
+		return;
+	}
+
+	if (!TRY(alSourcei, sourceL, AL_BUFFER, (uintptr_t)datapair->L))
+	{
+		alDeleteSources(1, &sourceL);
+		*handleL = INVALID_HANDLE;
+		return;
+	}
+
+	if (!TRY(alSourcei, sourceL, AL_SOURCE_RELATIVE, AL_TRUE))
+	{
+		alDeleteSources(1, &sourceL);
+		*handleL = INVALID_HANDLE;
+		return;
+	}
+
+	I_UpdateSoundParams(sourceL, vol, sep, pitch, efx, origin);
+
+	if (!TRY(alSourcePlay, sourceL))
+	{
+		alDeleteSources(1, &sourceL);
+		*handleL = INVALID_HANDLE;
+		return;
+	}
+
+	if (datapair->stereo)
+	{
+		if (!TRY(alGenSources, 1, &sourceR))
+		{
+			*handleL = INVALID_HANDLE;
+			*handleR = INVALID_HANDLE;
+			return;
+		}
+
+		if (!TRY(alSourcei, sourceR, AL_BUFFER, (uintptr_t)datapair->R))
+		{
+			alDeleteSources(1, &sourceL);
+			alDeleteSources(1, &sourceR);
+			*handleL = INVALID_HANDLE;
+			*handleR = INVALID_HANDLE;
+			return;
+		}
+
+		if (!TRY(alSourcei, sourceR, AL_SOURCE_RELATIVE, AL_TRUE))
+		{
+			alDeleteSources(1, &sourceL);
+			alDeleteSources(1, &sourceR);
+			*handleL = INVALID_HANDLE;
+			*handleR = INVALID_HANDLE;
+			return;
+		}
+
+		I_UpdateSoundParams(sourceR, vol, sep, pitch, efx, origin);
+
+		if (!TRY(alSourcePlay, sourceR))
+		{
+			alDeleteSources(1, &sourceL);
+			alDeleteSources(1, &sourceR);
+			*handleL = INVALID_HANDLE;
+			*handleR = INVALID_HANDLE;
+			return;
+		}
+
+	}
+
+	//(void)sep; // panning is now handled by real object positioning instead
+	(void)priority; // priority and channel management is handled by SRB2...
+	(void)channel; // no longer used
+
+	*handleL = sourceL;
+
+	if (datapair->stereo)
+	{
+		*handleR = sourceR;
+	}
+	else
+	{
+		*handleR = INVALID_HANDLE;
+	}
+}
+#else
 int32_t I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t priority, int32_t channel, efx_t *efx, const void * origin)
 {
 	ALuint source;
@@ -1066,6 +1263,7 @@ int32_t I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint
 	(void)channel; // no longer used
 	return source;
 }
+#endif
 
 void I_StopSound(int32_t handle)
 {
