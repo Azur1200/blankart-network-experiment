@@ -4655,7 +4655,7 @@ void G_SetAutoSaveName(void)
 		M_TextInputInit(&demo.titlenameinput, demo.titlename, sizeof(demo.titlename));
 
 		// This will indirectly assign to demo.titlename too
-		M_TextInputSetString(&demo.titlenameinput, cv_dummyreplaysave.string);
+		M_TextInputSetString(&demo.titlenameinput, va("%s", cv_dummyreplaysave.string));
 	}
 }
 

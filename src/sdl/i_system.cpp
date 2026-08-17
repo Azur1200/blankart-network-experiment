@@ -881,7 +881,7 @@ static void I_RegisterChildSignals(void)
 void I_OutputMsg(const char *fmt, ...)
 {
 	size_t len;
-	char txt[8192];
+	char txt[8192] = {};
 	va_list  argptr;
 
 	if (!fmt)
