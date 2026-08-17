@@ -1270,6 +1270,9 @@ void D_ClearState(void)
 	// The title screen is obviously not a tutorial! (Unless I'm mistaken)
 	tutorialmode = false;
 
+	P_FreeLevelState();
+	P_InvalidateThinkersWithoutInit();
+
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;
 }

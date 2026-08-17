@@ -8930,6 +8930,47 @@ static void P_InitMinimapInfo(void)
 	minimapinfo.offs_y = FixedMul((minimapinfo.min_y + minimapinfo.map_h/2) << FRACBITS, minimapinfo.zoom);
 }
 
+void P_FreeLevelState(void)
+{
+	if (numsectors)
+	{
+		// Close text prompt before freeing the old level
+		F_EndTextPrompt(false, true);
+
+		ACS_InvalidateMapScope();
+
+		LUA_InvalidateLevel();
+
+		sector_t *ss;
+		for (ss = sectors; sectors+numsectors != ss; ss++)
+		{
+			Z_Free(ss->attached);
+			Z_Free(ss->attachedsolid);
+		}
+
+		// This is the simplest guard against double frees.
+		// No valid map has zero sectors. Or, come to think
+		// of it, less than two in general! ~toast 310525
+		numsectors = 0;
+	}
+
+	// Clear pointers that would be left dangling by the purge
+	R_FlushTranslationColormapCache();
+
+#ifdef HWRENDER
+	// Free GPU textures before freeing patches.
+	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
+		HWR_ClearAllTextures();
+#endif
+
+	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
+	Patch_FreeTag(PU_PATCH_ROTATED);
+	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
+
+	R_InitMobjInterpolators();
+	R_InitializeLevelInterpolators();
+}
+
 /** Loads a level from a lump or external wad.
   *
   * \param fromnetsave If true, skip some stuff because we're loading a netgame snapshot.
@@ -8943,8 +8984,6 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 	// 99% of the things already did, so.
 	// Map header should always be in place at this point
 	int32_t i, ranspecialwipe = 0;
-	sector_t *ss;
-
 	virtlump_t *encoreLump = NULL;
 	lumpnum_t oldEncore = LUMPERROR;
 
@@ -9098,36 +9137,8 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 				F_RunWipe(wipedefs[wipe], false);
 		}
 	}
-	/*if (!titlemapinaction)
-		wipegamestate = GS_LEVEL;*/
 
-	// Close text prompt before freeing the old level
-	F_EndTextPrompt(false, true);
-
-	ACS_InvalidateMapScope();
-
-	LUA_InvalidateLevel();
-
-	for (ss = sectors; sectors+numsectors != ss; ss++)
-	{
-		Z_Free(ss->attached);
-		Z_Free(ss->attachedsolid);
-	}
-
-	// Clear pointers that would be left dangling by the purge
-	R_FlushTranslationColormapCache();
-
-#ifdef HWRENDER
-	// Free GPU textures before freeing patches.
-	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
-		HWR_ClearAllTextures();
-#endif
-
-	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
-	Patch_FreeTag(PU_PATCH_ROTATED);
-	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
-
-	R_InitializeLevelInterpolators();
+	P_FreeLevelState();
 
 	P_InitThinkers();
 	P_InitTIDHash();
