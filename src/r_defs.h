@@ -444,15 +444,7 @@ typedef enum
 	SECSPAC_CEILINGMISSILE		= 0x00001000,
 } sectoractionflags_t;
 
-typedef enum
-{
-	SD_NONE = 0,
-	SD_GENERIC = 1,
-	SD_LAVA = 2,
-	SD_DEATHPIT = 3,
-	SD_INSTAKILL = 4,
-	SD_FLIPOVER = 5,
-} sectordamage_t;
+// sectordamage_t moved to p_mobj.h
 
 typedef enum
 {

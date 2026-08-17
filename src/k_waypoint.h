@@ -505,6 +505,16 @@ void K_ClearWaypoints(void);
 
 void K_AdjustWaypointsParameters (void);
 
+
+/*--------------------------------------------------
+	void K_MarkAndNotifyBadWaypoint(waypoint_t *wp)
+
+		Sends out a soft-error and applies the "bad waypoint" signal to the given waypoint.
+		When a waypoint is considered "bad", it is treated exactly the same as if the mapper had set it to not respawn players there.
+		Ideally, a map SHOULD NOT HAVE BAD WAYPOINTS, and the offending waypoint should be marked as "No Respawn" in the future.
+--------------------------------------------------*/
+void K_MarkAndNotifyBadWaypoint(waypoint_t *wp);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

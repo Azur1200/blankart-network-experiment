@@ -42,6 +42,7 @@
 #include "p_spec.h"
 #include "k_objects.h"
 #include "k_items.h"
+#include "k_waypoint.h"
 #include "acs/interface.h"
 #include "k_itemlist.hpp"
 
@@ -2278,7 +2279,20 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 		if ((damagetype & DMG_DEATHMASK))
 		{
 			if (!P_KillPlayer(player, inflictor, source, damagetype))
+			{
 				return false;
+			}
+			else if (((player->postspawnsectordamage == SD_DEATHPIT) || (player->postspawnsectordamage == SD_INSTAKILL)) && (waypointcap != NULL) && (damagetype != DMG_TIMEOVER))
+			{
+				// Died from an instant-kill sector right after spawning; this is a bad waypoint!
+				if (player->currentwaypoint)
+				{
+					K_MarkAndNotifyBadWaypoint(player->currentwaypoint);
+
+					// We need a new waypoint RIGHT NOW, so search for the next waypoint once we've flagged this one
+					K_SetRespawnAtNextWaypoint(player);
+				}
+			}
 		}
 		else if (LUA_HookMobjDamage(target, inflictor, source, damage, damagetype))
 		{

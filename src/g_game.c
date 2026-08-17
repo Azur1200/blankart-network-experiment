@@ -3560,7 +3560,10 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 		S_ShowMusicCredit(0, 5*TICRATE, 0);
 
 	if (leveltime > (starttime + (TICRATE/2)) && !p->spectator)
+	{
 		p->respawn = 48; // Respawn effect
+		p->postspawnsectordamage = SD_UNDEFINED;
+	}
 }
 
 //

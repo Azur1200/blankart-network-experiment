@@ -12668,6 +12668,7 @@ void P_SpawnPlayer(int32_t playernum)
 
 	p->grieftime = 0;
 	p->spinoutrot = 0;
+	p->postspawnsectordamage = SD_UNDEFINED;
 
 	if (gametypes[gametype]->rules & GTR_ITEMARROWS)
 	{
@@ -12761,8 +12762,7 @@ void P_AfterPlayerSpawn(int32_t playernum, dboolean starpost)
 
 		if (p->onbadwaypoint)
 		{
-			CONS_Alert(CONS_ERROR, "BAD WAYPOINT at ID %d; respawn is on a deathpit!\n", K_GetWaypointID(spawn_wp));
-			spawn_wp->respawnstatus = WPSTATUS_BADWAYPOINT;
+			K_MarkAndNotifyBadWaypoint(spawn_wp);
 
 			p->onbadwaypoint = false;
 

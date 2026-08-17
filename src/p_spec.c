@@ -5604,25 +5604,41 @@ static void P_EvaluateSpecialFlags(player_t *player, sector_t *sector, sector_t 
 
 static void P_EvaluateDamageType(player_t *player, sector_t *sector, dboolean isTouching)
 {
+	dboolean hurtme = false;
+
+	if ((player->postspawnsectordamage == SD_UNDEFINED) && (isTouching))
+	{
+		player->postspawnsectordamage = sector->damagetype;
+	}
+
 	switch (sector->damagetype)
 	{
 		case SD_GENERIC:
 			if (isTouching)
-				P_DamageMobj(player->mo, NULL, NULL, 1, DMG_NORMAL);
+				hurtme = P_DamageMobj(player->mo, NULL, NULL, 1, DMG_NORMAL);
 			break;
 		case SD_DEATHPIT:
 			if (isTouching)
-				P_DamageMobj(player->mo, NULL, NULL, 1, DMG_DEATHPIT);
+				hurtme = P_DamageMobj(player->mo, NULL, NULL, 1, DMG_DEATHPIT);
 			break;
 		case SD_INSTAKILL:
-			P_DamageMobj(player->mo, NULL, NULL, 1, DMG_INSTAKILL);
+			hurtme = P_DamageMobj(player->mo, NULL, NULL, 1, DMG_INSTAKILL);
 			break;
 		case SD_FLIPOVER:
 			if (isTouching)
+			{
 				K_FlipPlayer(player, NULL, NULL);
+				hurtme = true;
+			}
 			break;
 		default:
 			break;
+	}
+
+	if ((player->postspawnsectordamage != SD_UNDEFINED) && (isTouching) && (!hurtme))
+	{
+		// Sector didn't actually damage us; this is a false positive...
+		player->postspawnsectordamage = SD_NONE;
 	}
 }
 
