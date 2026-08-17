@@ -981,6 +981,7 @@ void P_TouchStarPost(mobj_t *post, player_t *player, dboolean snaptopost)
 		return; // Already hit this post
 
 	// Handles Respawning related things on maps wtih starposts
+	if ((K_UsingPatchedMap() && K_UsingLegacyCheckpoints()) || !K_UsingPatchedMap())
 	{
 		// Save the player's time and position.
 		player->starposttime = player->realtime; //this makes race mode's timers work correctly whilst not affecting sp -x
