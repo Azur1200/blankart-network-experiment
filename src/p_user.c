@@ -4526,6 +4526,15 @@ void P_PlayerThink(player_t *player)
 
 	if (!player->spectator)
 		P_PlayerInSpecialSector(player);
+
+	// Redundant "on ground" check so that damaging specials go first
+	if (P_IsObjectOnGround(player->mo) == true)
+	{
+		if (player->postspawnsectordamage == SD_UNDEFINED)
+		{
+			player->postspawnsectordamage = SD_NONE;
+		}
+	}
 #endif
 
 	if (player->playerstate == PST_DEAD)
@@ -4730,6 +4739,15 @@ void P_PlayerAfterThink(player_t *player)
 
 	if (!player->spectator)
 		P_PlayerInSpecialSector(player);
+
+	// Redundant "on ground" check so that damaging specials go first
+	if (P_IsObjectOnGround(player->mo) == true)
+	{
+		if (player->postspawnsectordamage == SD_UNDEFINED)
+		{
+			player->postspawnsectordamage = SD_NONE;
+		}
+	}
 #endif
 
 	for (i = 0; i <= r_splitscreen; i++)

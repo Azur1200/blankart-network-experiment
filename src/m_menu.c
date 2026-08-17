@@ -1536,7 +1536,7 @@ dboolean M_Responder(event_t *ev)
 		menuKey = ev->data1;
 	}
 
-	if (ev->type == ev_keydown && messagebox.active && messagebox.messagetype == MM_EVENTHANDLER)
+	if (messagebox.active && messagebox.messagetype == MM_EVENTHANDLER)
 	{
 		if (menucmd[0].delay > 0)
 			return true;
@@ -4749,8 +4749,13 @@ void MP_PrepareLevelPlatter(menupanelinst_t *pi)
 
 	M_UpdateLevelPlatter();
 
+	// start on current map for convenience if found and inside level otherwise
+	int32_t found = M_FindOnPlatter(gamemap-1);
+
 	// start on nextmap for convenience
-	int32_t found = M_FindOnPlatter(levellistmode == LLM_CUPSELECT ? cv_nextcup.value - 1 : cv_nextmap.value - 1);
+	if (gamestate != GS_LEVEL || found == -1)
+		found = M_FindOnPlatter(levellistmode == LLM_CUPSELECT ? cv_nextcup.value - 1 : cv_nextmap.value - 1);
+
 	if (found != -1)
 	{
 		levelselect.row = found & 0xffff;

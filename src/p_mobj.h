@@ -32,6 +32,21 @@
 extern "C" {
 #endif
 
+// From r_defs.h; need to shove it here so that d_player.h picks it up, now that it has elevated
+// importance
+//
+// Literally just defines sector damage types
+typedef enum
+{
+	SD_UNDEFINED = -1,
+	SD_NONE = 0,
+	SD_GENERIC = 1,
+	SD_LAVA = 2,
+	SD_DEATHPIT = 3,
+	SD_INSTAKILL = 4,
+	SD_FLIPOVER = 5,
+} sectordamage_t;
+
 //
 // NOTES: mobj_t
 //

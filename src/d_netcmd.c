@@ -4967,13 +4967,18 @@ static void HandleRespawnCommand(uint8_t localplayer)
 
 	if (players[g_localplayers[localplayer]].mo && (P_PlayerInPain(&players[g_localplayers[localplayer]]) || spbplace == players[g_localplayers[localplayer]].position)) // KART: Nice try, but no, you won't be cheesing spb anymore (x2)
 	{
-		CONS_Printf(M_GetText("Nice try.\n"));
+		// yama: "Nice try" sounds kind of mean, so let's just throw in stupid references
+		if (spbplace == players[g_localplayers[localplayer]].position)
+			CONS_Printf(M_GetText("You may not respawn now, a Self-Propelled Bomb is tailing you.\n"));
+		else
+			CONS_Printf(M_GetText("I've fallen, and I can't get up!\n"));
+
 		return;
 	}
 
 	if (JawzCheck(players[g_localplayers[localplayer]].mo)) // KART: You can't cheese Jawz, Nice try :)
 	{
-		CONS_Printf(M_GetText("Nice try.\n"));
+		CONS_Printf(M_GetText("You may not respawn now, there are monsters nearby.\n"));
 		return;
 	}
 

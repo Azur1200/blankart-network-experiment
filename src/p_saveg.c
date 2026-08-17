@@ -1006,6 +1006,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].itemreserveamount);
 
 		SYNC(players[i].dashareapower);
+
+		SYNC(players[i].postspawnsectordamage);
 	}
 	TracyCZoneEnd(__zone);
 }

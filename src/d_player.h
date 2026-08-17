@@ -1094,6 +1094,9 @@ struct player_t
 
 	char clan[MAXCLANTAG];
 
+	// The sector damage of the first sector you land on after spawning.
+	sectordamage_t postspawnsectordamage;
+
 #ifdef HWRENDER
 	fixed_t fovadd; // adjust FOV for hw rendering
 #endif

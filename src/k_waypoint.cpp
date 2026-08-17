@@ -3155,3 +3155,40 @@ void K_AdjustWaypointsParameters (void)
 		}
 	}
 }
+
+void K_MarkAndNotifyBadWaypoint(waypoint_t *wp)
+{
+	if (!wp)
+	{
+		// Bro...
+		return;
+	}
+
+	if (wp->respawnstatus == WPSTATUS_BADWAYPOINT)
+	{
+		// We already know this waypoint is bad; don't run this twice!
+		return;
+	}
+
+	const int32_t wp_id = K_GetWaypointID(wp);
+
+	CONS_Alert(CONS_ERROR, "BAD WAYPOINT at ID %d; respawn is on a deathpit!\n", wp_id);
+	wp->respawnstatus = WPSTATUS_BADWAYPOINT;
+
+	fixed_t rad = -1;
+	int32_t _x = 0, _y = 0, _z = 0;
+
+	if (wp->mobj)
+	{
+		rad = (wp->mobj->radius / FRACUNIT);
+		_x = (wp->mobj->x / FRACUNIT);
+		_y = (wp->mobj->y / FRACUNIT);
+		_z = (wp->mobj->z / FRACUNIT);
+	}
+
+	// Spit out some nerd-data for the mappers
+	I_OutputMsg("Please send the following data to a mapper:\n-------------------------------------\n");
+	I_OutputMsg("Bad Waypoint ID: %d\nX: %d, Y: %d, Z:%d\nRadius: %d\n", wp_id, _x, _y, _z, rad);
+	I_OutputMsg("You should fix this waypoint as soon as possible; either move it to a less softlock-prone area, or set the \"No Respawn\" flag in your map editor.\n");
+	I_OutputMsg("-------------------------------------\n");
+}

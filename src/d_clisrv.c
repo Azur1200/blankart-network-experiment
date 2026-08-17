@@ -6972,7 +6972,7 @@ static void SV_SendTics(void)
 				DEBFILE(va("Nothing to send node %u mak=%u sup=%u net=%u \n",
 						   n, lasttictosend, supposedtics[n], nettics[n]));
 				realfirsttic = nettics[n];
-				if (realfirsttic >= maketic || packnum > 0 || (I_GetTime() + n)&3)
+				if (realfirsttic >= lasttictosend || packnum > 0 || (I_GetTime() + n)&3)
 					// all tic are ok
 					continue;
 				DEBFILE(va("Sent %d anyway\n", realfirsttic));
@@ -6982,6 +6982,7 @@ static void SV_SendTics(void)
 
 			// compute the length of the packet and cut it if too large
 			packsize = BASESERVERTICSSIZE;
+
 			for (i = realfirsttic; i < lasttictosend; i++)
 			{
 				packsize += sizeof (ticcmd_t) * doomcom->numslots;
