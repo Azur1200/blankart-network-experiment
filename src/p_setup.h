@@ -87,7 +87,6 @@ extern mapthing_t *mapthings;
 const char *P_MapNamespaceString(mapnamespace_t mns);
 void P_SetupLevelSky(const char *skytexname, dboolean global);
 void P_RespawnThings(void);
-void P_FreeLevelState(void);
 dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate);
 void P_PostLoadLevel(void);
 #ifdef HWRENDER
