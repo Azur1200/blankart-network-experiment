@@ -175,7 +175,7 @@ typedef struct audiostate_s
 	dboolean startplay;
 	dboolean shutdown;
 } audiostate_t;
-static audiostate_t audio;
+static audiostate_t audio = {0};
 
 // use this helper to avoid boilerplate!
 #define LOCKAUDIO \
@@ -562,6 +562,15 @@ static dboolean I_QueueNextSample(dboolean unqueue)
 
 				sf_count_t finalposition = SecondsToSamples(looppoint, audio.musicinfo.samplerate);
 				sf_seek(audio.musicstream, finalposition, SF_SEEK_SET);
+
+				if (sample_format == Float)
+				{
+					count = sf_read_float(audio.musicstream, (float *)stream, BUFFERSIZE) * sizeof(float); // float is 4 bytes not 2, so just double this shit for now kek
+				}
+				else
+				{
+					count = sf_read_short(audio.musicstream, (short *)stream, BUFFERSIZE) * sizeof(short);
+				}
 			}
 		}
 
@@ -1537,8 +1546,6 @@ uint32_t I_GetSongLength(void)
 
 dboolean I_SetSongLoopPoint(uint32_t looppoint)
 {
-	(void)looppoint;
-
 	LOCKAUDIO;
 
 	const musictype_t mustype = I_SongType();
