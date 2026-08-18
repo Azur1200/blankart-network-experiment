@@ -18,6 +18,7 @@
 #include "sounds.h"
 #include "command.h"
 #include "m_fixed.h"
+#include "tables.h"
 
 #ifdef HAVE_OPENAL
 #include "AL/al.h"
@@ -477,6 +478,8 @@ void I_CreateGlobalEFX(efx_t *efx);
 void I_DeleteGlobalEFX(void);
 
 void I_InitEFXArray(efx_t *efx);
+
+void I_UpdateListener(listener_t *listener);
 
 extern consvar_t cv_soundefx;
 

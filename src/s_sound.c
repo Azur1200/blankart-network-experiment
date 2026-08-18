@@ -566,6 +566,9 @@ void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, int32_t volu
 			listener[i].x = camera[i].x;
 			listener[i].y = camera[i].y;
 			listener[i].z = camera[i].z;
+			listener[i].momx = camera[i].momx;
+			listener[i].momy = camera[i].momy;
+			listener[i].momz = camera[i].momz;
 			listener[i].angle = camera[i].angle;
 			anyListeners = true;
 		}
@@ -574,6 +577,9 @@ void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, int32_t volu
 			listener[i].x = listenmobj[i]->x;
 			listener[i].y = listenmobj[i]->y;
 			listener[i].z = listenmobj[i]->z;
+			listener[i].momx = listenmobj[i]->momx;
+			listener[i].momy = listenmobj[i]->momy;
+			listener[i].momz = listenmobj[i]->momz;
 			listener[i].angle = listenmobj[i]->angle;
 			anyListeners = true;
 		}
@@ -828,6 +834,43 @@ void S_UpdateSounds(void)
 		}
 	}
 
+	// 3D Audio.
+	const player_t *player = &players[displayplayers[0]];
+	mobj_t *listenermobj = NULL;
+	listener_t listener3d = {0};
+
+	if ((camera[0].chase && !player->awayviewtics) || camera[0].freecam || !player->mo)
+	{
+		listener3d.x = camera[0].x;
+		listener3d.y = camera[0].y;
+		listener3d.z = camera[0].z;
+		listener3d.momx = camera[0].momx;
+		listener3d.momy = camera[0].momy;
+		listener3d.momz = camera[0].momz;
+		listener3d.angle = camera[0].angle;
+	}
+	else
+	{
+		if (player->awayviewtics)
+		{
+			listenermobj =  player->awayviewmobj;
+		}
+		else
+		{
+			listenermobj =  player->mo;
+		}
+
+		listener3d.x = listenermobj->x;
+		listener3d.y = listenermobj->y;
+		listener3d.z = listenermobj->z;
+		listener3d.momx = listenermobj->momx;
+		listener3d.momy = listenermobj->momy;
+		listener3d.momz = listenermobj->momz;
+		listener3d.angle = listenermobj->angle;
+	}
+
+	I_UpdateListener(&listener3d);
+
 #ifndef NOMUMBLE
 	I_UpdateMumble(players[consoleplayer].mo, listener[0]);
 #endif
@@ -892,6 +935,19 @@ notinlevel:
 		{
 			// origin was removed, stop the music
 			S_StopChannel(cnum);
+		}
+		else if (itsUs == true)
+		{
+			const mobj_t *origin = c->origin;
+			if (listenermobj == origin && !camera[0].freecam)
+			{
+				I_UpdateSoundParams(c->handleL, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch, c->efx, c->origin, c->sfxinfo->stereo ? -1 : 0);
+
+				if (c->sfxinfo->stereo)
+				{
+					I_UpdateSoundParams(c->handleR, S_GetSoundVolume(c->sfxinfo, volume), sep, pitch, c->efx, c->origin, 1);
+				}
+			}
 		}
 		else if (itsUs == false)
 		{
