@@ -10155,15 +10155,40 @@ dboolean K_InterceptArrowBullet(player_t *player)
 // 1 + 0.25 (1.25) is the (hardcoded) handleboost of a Sneaker.
 #define HANDLEBOOSTTHRESHOLD (FRACUNIT / 4)
 
+#define SLIPTILT_DELTA (ANGLE_11hh / 4)
+
+static dboolean K_DashAreaSliptideCondition(const player_t* player)
+{
+	if (!player)
+		return false;  // NULL player
+
+	if (player->dashareapower < HANDLEBOOSTTHRESHOLD)
+		return false;  // Dash area can't possibly make us fast enough
+
+	const fixed_t speedPercent = FixedDiv(player->speed, K_GetKartSpeed(player, false, false));
+
+	const dboolean sliptiding =
+	    K_Sliptiding(player) && (abs(player->aizdrifttilt) > SLIPTILT_DELTA);
+
+	const fixed_t slip_percent =
+	    (sliptiding) ? (3 * FRACUNIT / 4) : (FRACUNIT + HANDLEBOOSTTHRESHOLD);
+
+	// Allow sliptides if you're moving above 125% speed. When you're still sliptiding, don't
+	// kill it until you go below 75%
+	return (speedPercent > slip_percent);
+}
+
+#undef SLIPTILT_DELTA
+
 // Generalized sliptide conditions.
 static dboolean K_OtherSliptideCondition(player_t* player)
 {
 	if (!player)
 		return false;
 
-	return (
-	    K_SMonitorSliptideCondition(player) || K_AltShrinkSliptideCondition(player) ||
-	    (cv_handleboostslip.value && (player->handleboost >= HANDLEBOOSTTHRESHOLD)));
+	return (K_SMonitorSliptideCondition(player) || K_AltShrinkSliptideCondition(player) ||
+		K_DashAreaSliptideCondition(player) ||
+		(cv_handleboostslip.value && (player->handleboost >= HANDLEBOOSTTHRESHOLD)));
 }
 
 #undef HANDLEBOOSTTHRESHOLD
