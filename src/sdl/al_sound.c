@@ -171,7 +171,10 @@ static void al_doppler_OnChange(void)
 
 static void al_speedofsound_OnChange(void)
 {
-	TRY(alSpeedOfSound, FIXED_TO_FLOAT(cv_al_speedofsound.value));
+	if (gamestate == GS_LEVEL)
+		I_UpdateSpeedofSoundScale(mapobjectscale);
+	else
+		I_UpdateSpeedofSoundScale(FRACUNIT);
 }
 
 // any access (read/write) to this struct MUST lock the mutex
@@ -438,7 +441,7 @@ void I_StartupSound(void)
 	music_volume = sfx_volume = 0.f;
 
 	TRY(alDopplerFactor, FIXED_TO_FLOAT(cv_al_doppler.value));
-	TRY(alSpeedOfSound, FIXED_TO_FLOAT(cv_al_speedofsound.value));
+	I_UpdateSpeedofSoundScale(FRACUNIT);
 	TRY(alDistanceModel, AL_INVERSE_DISTANCE_CLAMPED);
 
 #ifdef HAVE_OPENMPT
@@ -1220,8 +1223,8 @@ void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch
 
 	if (I_3DSound() && originmobj && gamestate == GS_LEVEL && listenermobj != originmobj)
 	{
-#define MIN_DISTANCE (cv_al_mindistance.value*FRACUNIT)
-#define MAX_DISTANCE (cv_al_maxdistance.value*FRACUNIT)
+#define MIN_DISTANCE (cv_al_mindistance.value*mapobjectscale)
+#define MAX_DISTANCE (cv_al_maxdistance.value*mapobjectscale)
 
 		TRY(alSourcei, source, AL_SOURCE_RELATIVE, AL_FALSE);
 		TRY(alSourcef, source, AL_REFERENCE_DISTANCE, MIN_DISTANCE);
@@ -2715,6 +2718,11 @@ void I_RegisterSoundStuff(void)
 dboolean I_3DSound(void)
 {
 	return cv_3dsound.value && splitscreen == 0;
+}
+
+void I_UpdateSpeedofSoundScale(fixed_t scale)
+{
+	TRY(alSpeedOfSound,  FIXED_TO_FLOAT(FixedMul(cv_al_speedofsound.value, scale)));
 }
 
 #undef RESET_EFFECT

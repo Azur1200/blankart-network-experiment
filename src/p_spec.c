@@ -7157,6 +7157,8 @@ void P_InitSpecials(void)
 	// Set the map object scale
 	mapobjectscale = mapheaderinfo[gamemap-1]->mobj_scale;
 
+	I_UpdateSpeedofSoundScale(mapobjectscale);
+
 	// Set the default gravity. Custom gravity overrides this setting.
 	gravity = mapheaderinfo[gamemap-1]->gravity;
 

@@ -484,6 +484,7 @@ void I_UpdateListener(listener_t *listener);
 void I_RegisterSoundStuff(void);
 
 dboolean I_3DSound(void);
+void I_UpdateSpeedofSoundScale(fixed_t scale);
 
 #ifdef __cplusplus
 } // extern "C"
