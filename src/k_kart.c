@@ -939,6 +939,9 @@ dboolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, dboolean bounce, dboolean 
 
 	const dboolean mobj1_intercepting = ((mobj1->player) && (K_InterceptArrowBullet(mobj1->player)));
 	const dboolean mobj2_intercepting = ((mobj2->player) && (K_InterceptArrowBullet(mobj2->player)));
+	const dboolean softbump = (cv_kartsoftbump.value 
+		&& mobj1->player && mobj2->player
+		&& !(K_GetShieldFromPlayer(mobj1->player) == KSHIELD_BUBBLE || K_GetShieldFromPlayer(mobj2->player) == KSHIELD_BUBBLE));
 
 	// The other player is an Arrow Bullet, ignore them.
 	if (mobj1->player && K_AltShrinkArrowBulletCondition(mobj1->player) && (!mobj2_intercepting))
@@ -959,9 +962,8 @@ dboolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, dboolean bounce, dboolean 
 		mass2 = mass1;
 	else
 	{
-		if (cv_kartsoftbump.value && mobj1->player && mobj2->player)
+		if (softbump)
 		{
-			mass1 /= 4;
 			mass2 = mass1;
 		}
 		else
@@ -975,9 +977,9 @@ dboolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, dboolean bounce, dboolean 
 	disty = (mobj1->y + mobj2->momy*3) - (mobj2->y + mobj1->momy*3);
 
 	force = K_GetBounceForce(mobj1, mobj2, &distx, &disty, true);
-	if (cv_kartsoftbump.value && mobj1->player && mobj2->player)
+	if (softbump)
 	{
-		force /= 4;
+		force = 3 * force / 8;
 	}
 
 	if (force == 0)
@@ -987,7 +989,14 @@ dboolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, dboolean bounce, dboolean 
 
 	if (bounce == true && mass2 > 0) // Perform a Goomba Bounce.
 	{
-		mobj1->momz = -mobj1->momz;
+		if (softbump)
+		{
+			mobj1->momz = -(mobj1->momz) / 3;
+		}
+		else
+		{
+			mobj1->momz = -mobj1->momz;
+		}
 	}
 	else
 	{
