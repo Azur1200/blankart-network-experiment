@@ -1296,9 +1296,14 @@ void I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t
 	ALuint sourceR;
 	sfxdatapair_t *datapair = S_sfx[id].data;
 
+	//(void)sep; // panning is now handled by real object positioning instead
+	(void)priority; // priority and channel management is handled by SRB2...
+	(void)channel; // no longer used
+
 	if (!TRY(alGenSources, 1, &sourceL))
 	{
 		*handleL = INVALID_HANDLE;
+		*handleR = INVALID_HANDLE;
 		return;
 	}
 
@@ -1306,17 +1311,11 @@ void I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t
 	{
 		TRY(alDeleteSources, 1, &sourceL);
 		*handleL = INVALID_HANDLE;
+		*handleR = INVALID_HANDLE;
 		return;
 	}
 
 	I_UpdateSoundParams(sourceL, vol, sep, pitch, efx, origin, datapair->stereo ? -1 : 0);
-
-	if (!TRY(alSourcePlay, sourceL))
-	{
-		TRY(alDeleteSources, 1, &sourceL);
-		*handleL = INVALID_HANDLE;
-		return;
-	}
 
 	if (datapair->stereo)
 	{
@@ -1338,7 +1337,9 @@ void I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t
 
 		I_UpdateSoundParams(sourceR, vol, sep, pitch, efx, origin, 1);
 
-		if (!TRY(alSourcePlay, sourceR))
+		ALuint sources[] = { sourceL, sourceR };
+
+		if (!TRY(alSourcePlayv,2,  sources))
 		{
 			TRY(alDeleteSources, 1, &sourceL);
 			TRY(alDeleteSources, 1, &sourceR);
@@ -1347,20 +1348,20 @@ void I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t
 			return;
 		}
 
-	}
-
-	//(void)sep; // panning is now handled by real object positioning instead
-	(void)priority; // priority and channel management is handled by SRB2...
-	(void)channel; // no longer used
-
-	*handleL = sourceL;
-
-	if (datapair->stereo)
-	{
+		*handleL = sourceL;
 		*handleR = sourceR;
 	}
 	else
 	{
+		if (!TRY(alSourcePlay, sourceL))
+		{
+			TRY(alDeleteSources, 1, &sourceL);
+			*handleL = INVALID_HANDLE;
+			*handleR = INVALID_HANDLE;
+			return;
+		}
+
+		*handleL = sourceL;
 		*handleR = INVALID_HANDLE;
 	}
 }
