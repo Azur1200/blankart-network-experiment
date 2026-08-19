@@ -938,7 +938,7 @@ notinlevel:
 			// origin was removed, stop the music
 			S_StopChannel(cnum);
 		}
-		else if (itsUs == true && I_3DSound())
+		else if (I_3DSound() && itsUs == true)
 		{
 			const mobj_t *origin = c->origin;
 			if (listenermobj == origin && !camera[0].freecam)

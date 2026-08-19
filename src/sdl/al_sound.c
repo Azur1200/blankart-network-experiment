@@ -1213,8 +1213,7 @@ void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch
 		listenermobj =  player->mo;
 	}
 
-	// TODO: Real 3D Audio.
-	if (originmobj && gamestate == GS_LEVEL && listenermobj != originmobj && I_3DSound())
+	if (I_3DSound() && originmobj && gamestate == GS_LEVEL && listenermobj != originmobj)
 	{
 #define MIN_DISTANCE (cv_al_mindistance.value*FRACUNIT)
 #define MAX_DISTANCE (cv_al_maxdistance.value*FRACUNIT)
