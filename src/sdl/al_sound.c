@@ -2714,11 +2714,11 @@ void I_RegisterSoundStuff(void)
 
 dboolean I_3DSound(void)
 {
-	return cv_3dsound.value;
+	return cv_3dsound.value && splitscreen == 0;
 }
 
 #undef RESET_EFFECT
-#undef RESET_EFFECT_FVEC3
+#undef RESET_EFFECT_FVEC3d
 #undef VAL
 
 #endif // defined(HAVE_OPENAL)
