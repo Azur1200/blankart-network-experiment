@@ -349,7 +349,6 @@ void I_StartupSound(void)
 		ALC_OUTPUT_LIMITER_SOFT, ALC_FALSE, // G: too noticeable
 		ALC_HRTF_SOFT, ALC_FALSE,
 		ALC_FREQUENCY, SAMPLERATE, // G: resampling to 48 kHz muffles the audio on My Machine
-		ALC_REFRESH, 35,
 		0
 	};
 
@@ -699,11 +698,10 @@ void I_UpdateSound(void)
 
 void I_UpdateListener(listener_t *listener)
 {
-	ALdouble f_angle = (ALdouble)(ANGLE2DEG(listener->angle) / 180.0l * M_PIl);
 	ALfloat facing[6];
-	facing[0] = (ALfloat)cosf(f_angle);
+	facing[0] = FixedToFloat(FINECOSINE(listener->angle>>ANGLETOFINESHIFT));
 	facing[1] = 0.0f;
-	facing[2] = (ALfloat)-sinf(f_angle);
+	facing[2] = -FixedToFloat(FINESINE(listener->angle>>ANGLETOFINESHIFT));
 	facing[3] = 0.0f;
 	facing[4] = 1.0f;
 	facing[5] = 0.0f;
@@ -712,17 +710,17 @@ void I_UpdateListener(listener_t *listener)
 		AL_POSITION,
 		FIXED_TO_FLOAT(listener->x),
 		FIXED_TO_FLOAT(listener->z),
-		FIXED_TO_FLOAT(listener->y)
+		-FIXED_TO_FLOAT(listener->y)
 	);
 
 	TRY(alListener3f,
 		AL_VELOCITY,
 		FIXED_TO_FLOAT(listener->momx),
 		FIXED_TO_FLOAT(listener->momz),
-		FIXED_TO_FLOAT(listener->momy)
+		-FIXED_TO_FLOAT(listener->momy)
 	);
 
-	alListenerfv(AL_ORIENTATION, facing);
+	TRY(alListenerfv, AL_ORIENTATION, facing);
 }
 
 static void AudioThread(void *userdata)
@@ -1202,11 +1200,10 @@ void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch
 		TRY(alSourcef, source, AL_MAX_DISTANCE, MAX_DISTANCE);
 
 		{
-#define ANGLE2DEG(x) (((double)(x)) / ((double)ANGLE_45/45))
 			ALfloat facing[6];
-			facing[0] = (ALfloat)cos(ANGLE2DEG(originmobj->angle) / 180.0l * M_PIl);
+			facing[0] = FixedToFloat(FINECOSINE(originmobj->angle>>ANGLETOFINESHIFT));
 			facing[1] = 0.0f;
-			facing[2] = (ALfloat)sin(ANGLE2DEG(originmobj->angle) / 180.0l * M_PIl);
+			facing[2] = -FixedToFloat(FINESINE(originmobj->angle>>ANGLETOFINESHIFT));
 			facing[3] = 0.0f;
 			facing[4] = 1.0f;
 			facing[5] = 0.0f;
@@ -1216,7 +1213,7 @@ void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch
 				AL_POSITION,
 				FIXED_TO_FLOAT(originmobj->x),
 				FIXED_TO_FLOAT(originmobj->z),
-				FIXED_TO_FLOAT(originmobj->y)
+				-FIXED_TO_FLOAT(originmobj->y)
 			);
 
 			TRY(alSource3f,
@@ -1224,10 +1221,10 @@ void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch
 				AL_VELOCITY,
 				FIXED_TO_FLOAT(originmobj->momx),
 				FIXED_TO_FLOAT(originmobj->momz),
-				FIXED_TO_FLOAT(originmobj->momy)
+				-FIXED_TO_FLOAT(originmobj->momy)
 			);
 
-			alSourcefv(source, AL_ORIENTATION, facing);
+			//TRY(alSourcefv, source, AL_ORIENTATION, facing);
 		}
 	}
 	else
