@@ -78,6 +78,8 @@ typedef enum
 #include "../i_system.h" // I_Sleep
 #include "../fastcmp.h"
 #include "../r_defs.h"
+#include "../p_local.h"
+#include "../g_game.h"
 
 #include <SDL3/SDL.h>
 
@@ -142,12 +144,35 @@ static void (*fading_callback)(void);
 static dboolean fading_do_callback;
 static dboolean fading_nocleanup;
 
+static dboolean ALError(const char *srcfunc, const char *alfunc);
+
+#define TRY(func, ...) (func(__VA_ARGS__), ALError(__func__, #func))
+
+static void al_doppler_OnChange(void);
+static void al_speedofsound_OnChange(void);
+
 static void SoundEFX_OnChange(void)
 {
 	COM_ImmedExecute("restartaudio");
 }
 
 consvar_t cv_soundefx = CVAR_INIT ("soundefx", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, SoundEFX_OnChange);
+consvar_t cv_3dsound = CVAR_INIT ("3dsound", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_al_doppler = CVAR_INIT ("al_doppler", "0.1", CV_SAVE|CV_FLOAT|CV_CALL|CV_NOINIT, CV_Natural, al_doppler_OnChange);
+consvar_t cv_al_speedofsound = CVAR_INIT ("al_speedofsound", "343", CV_SAVE|CV_FLOAT|CV_CALL|CV_NOINIT, CV_Natural, al_speedofsound_OnChange);
+consvar_t cv_al_mindistance = CVAR_INIT ("al_mindistance", "160", 0, CV_Natural, NULL);
+consvar_t cv_al_maxdistance = CVAR_INIT ("al_maxdistance", "1536", 0, CV_Natural, NULL);
+
+
+static void al_doppler_OnChange(void)
+{
+	TRY(alDopplerFactor, FIXED_TO_FLOAT(cv_al_doppler.value));
+}
+
+static void al_speedofsound_OnChange(void)
+{
+	TRY(alSpeedOfSound, FIXED_TO_FLOAT(cv_al_speedofsound.value));
+}
 
 // any access (read/write) to this struct MUST lock the mutex
 typedef struct audiostate_s
@@ -200,8 +225,6 @@ static int16_t current_subsong = -1;
 static size_t probesize;
 static int result;
 #endif
-
-#define TRY(func, ...) (func(__VA_ARGS__), ALError(__func__, #func))
 
 static dboolean ALError(const char *srcfunc, const char *alfunc)
 {
@@ -413,6 +436,10 @@ void I_StartupSound(void)
 
 	var_cleanup();
 	music_volume = sfx_volume = 0.f;
+
+	TRY(alDopplerFactor, FIXED_TO_FLOAT(cv_al_doppler.value));
+	TRY(alSpeedOfSound, FIXED_TO_FLOAT(cv_al_speedofsound.value));
+	TRY(alDistanceModel, AL_INVERSE_DISTANCE_CLAMPED);
 
 #ifdef HAVE_OPENMPT
 	const char *openmptstr;
@@ -669,6 +696,7 @@ static void UpdateSound(audiostate_t *aud)
 		if (need_restart)
 			TRY(alSourcePlay, aud->music);
 	}
+
 	TracyCZoneEnd(__zone);
 }
 
@@ -685,6 +713,38 @@ void I_UpdateSound(void)
 		fading_callback = NULL;
 		fading_do_callback = false;
 	}
+}
+
+#define ANGLE2DEG(x) (((double)(x)) / ((double)ANGLE_45/45))
+
+void I_UpdateListener(listener_t *listener)
+{
+	if (!I_3DSound())
+		return;
+
+	ALfloat facing[6];
+	facing[0] = FixedToFloat(FINECOSINE(listener->angle>>ANGLETOFINESHIFT));
+	facing[1] = 0.0f;
+	facing[2] = -FixedToFloat(FINESINE(listener->angle>>ANGLETOFINESHIFT));
+	facing[3] = 0.0f;
+	facing[4] = 1.0f;
+	facing[5] = 0.0f;
+
+	TRY(alListener3f,
+		AL_POSITION,
+		FIXED_TO_FLOAT(listener->x),
+		FIXED_TO_FLOAT(listener->z),
+		-FIXED_TO_FLOAT(listener->y)
+	);
+
+	TRY(alListener3f,
+		AL_VELOCITY,
+		FIXED_TO_FLOAT(listener->momx),
+		FIXED_TO_FLOAT(listener->momz),
+		-FIXED_TO_FLOAT(listener->momy)
+	);
+
+	TRY(alListenerfv, AL_ORIENTATION, facing);
 }
 
 static void AudioThread(void *userdata)
@@ -1141,22 +1201,74 @@ void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch
 	TRY(alSourcef, source, AL_GAIN, sfx_volume * (vol / 255.0f));
 	TRY(alSourcef, source, AL_PITCH, pitch / 128.0f);
 
+	const player_t *player = &players[displayplayers[0]];
+	mobj_t *listenermobj = NULL;
+
+	if (player->awayviewtics)
+	{
+		listenermobj =  player->awayviewmobj;
+	}
+	else
+	{
+		listenermobj =  player->mo;
+	}
+
 	// TODO: Real 3D Audio.
-	// create a panning effect by moving the source in an arc around the listener
-	// Based on https://github.com/kcat/openal-soft/issues/194
+	if (originmobj && gamestate == GS_LEVEL && listenermobj != originmobj && I_3DSound())
+	{
+#define MIN_DISTANCE (cv_al_mindistance.value*FRACUNIT)
+#define MAX_DISTANCE (cv_al_maxdistance.value*FRACUNIT)
+
+		TRY(alSourcei, source, AL_SOURCE_RELATIVE, AL_FALSE);
+		TRY(alSourcef, source, AL_REFERENCE_DISTANCE, MIN_DISTANCE);
+		TRY(alSourcef, source, AL_MAX_DISTANCE, MAX_DISTANCE);
+
+		{
+			ALfloat facing[6];
+			facing[0] = FixedToFloat(FINECOSINE(originmobj->angle>>ANGLETOFINESHIFT));
+			facing[1] = 0.0f;
+			facing[2] = -FixedToFloat(FINESINE(originmobj->angle>>ANGLETOFINESHIFT));
+			facing[3] = 0.0f;
+			facing[4] = 1.0f;
+			facing[5] = 0.0f;
+
+			TRY(alSource3f,
+				source,
+				AL_POSITION,
+				FIXED_TO_FLOAT(originmobj->x),
+				FIXED_TO_FLOAT(originmobj->z),
+				-FIXED_TO_FLOAT(originmobj->y)
+			);
+
+			TRY(alSource3f,
+				source,
+				AL_VELOCITY,
+				FIXED_TO_FLOAT(originmobj->momx),
+				FIXED_TO_FLOAT(originmobj->momz),
+				-FIXED_TO_FLOAT(originmobj->momy)
+			);
+
+			//TRY(alSourcefv, source, AL_ORIENTATION, facing);
+		}
+	}
+	else
+	{
+		// create a panning effect by moving the source in an arc around the listener
+		// Based on https://github.com/kcat/openal-soft/issues/194
+		TRY(alSourcei, source, AL_SOURCE_RELATIVE, AL_TRUE);
 #ifdef DUALSNDBUFFER
-	float channelpan = CLAMP(sep + direction * (255.0f - sep), 0, 255);
-	float leftpan = min((0xff-channelpan)*2.0, 0xff) / 255.0f;
-	float rightpan = min(channelpan*2.0, 0xff) / 255.0f;
+		float channelpan = CLAMP(sep + direction * (255.0f - sep), 0, 255);
+		float leftpan = min((0xff-channelpan)*2.0, 0xff) / 255.0f;
+		float rightpan = min(channelpan*2.0, 0xff) / 255.0f;
 #else
-	float leftpan = min((0xff-sep)<<1, 0xff) / 255.0f;
-	float rightpan = min(sep<<1, 0xff) / 255.0f;
+		float leftpan = min((0xff-sep)<<1, 0xff) / 255.0f;
+		float rightpan = min(sep<<1, 0xff) / 255.0f;
 #endif
-	float pan = (acosf(leftpan) + asinf(rightpan)) / ((float)M_PI); // average angle in [0,1]
-	pan = 2 * pan - 1; // convert to [-1, 1]
-	pan = pan * 0.5f; // 0.5 = sin(30') for a +/- 30 degree arc
-	TRY(alSourcei, source, AL_SOURCE_RELATIVE, AL_TRUE);
-	TRY(alSource3f, source, AL_POSITION, pan, 0, -sqrtf(1.0f - pan*pan));
+		float pan = (acosf(leftpan) + asinf(rightpan)) / ((float)M_PI); // average angle in [0,1]
+		pan = 2 * pan - 1; // convert to [-1, 1]
+		pan = pan * 0.5f; // 0.5 = sin(30') for a +/- 30 degree arc
+		TRY(alSource3f, source, AL_POSITION, pan, 0, -sqrtf(1.0f - pan*pan));
+	}
 
 	if (cv_soundefx.value && !dedicated)
 	{
@@ -1184,9 +1296,14 @@ void I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t
 	ALuint sourceR;
 	sfxdatapair_t *datapair = S_sfx[id].data;
 
+	//(void)sep; // panning is now handled by real object positioning instead
+	(void)priority; // priority and channel management is handled by SRB2...
+	(void)channel; // no longer used
+
 	if (!TRY(alGenSources, 1, &sourceL))
 	{
 		*handleL = INVALID_HANDLE;
+		*handleR = INVALID_HANDLE;
 		return;
 	}
 
@@ -1194,24 +1311,11 @@ void I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t
 	{
 		TRY(alDeleteSources, 1, &sourceL);
 		*handleL = INVALID_HANDLE;
-		return;
-	}
-
-	if (!TRY(alSourcei, sourceL, AL_SOURCE_RELATIVE, AL_TRUE))
-	{
-		TRY(alDeleteSources, 1, &sourceL);
-		*handleL = INVALID_HANDLE;
+		*handleR = INVALID_HANDLE;
 		return;
 	}
 
 	I_UpdateSoundParams(sourceL, vol, sep, pitch, efx, origin, datapair->stereo ? -1 : 0);
-
-	if (!TRY(alSourcePlay, sourceL))
-	{
-		TRY(alDeleteSources, 1, &sourceL);
-		*handleL = INVALID_HANDLE;
-		return;
-	}
 
 	if (datapair->stereo)
 	{
@@ -1231,18 +1335,11 @@ void I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t
 			return;
 		}
 
-		if (!TRY(alSourcei, sourceR, AL_SOURCE_RELATIVE, AL_TRUE))
-		{
-			TRY(alDeleteSources, 1, &sourceL);
-			TRY(alDeleteSources, 1, &sourceR);
-			*handleL = INVALID_HANDLE;
-			*handleR = INVALID_HANDLE;
-			return;
-		}
-
 		I_UpdateSoundParams(sourceR, vol, sep, pitch, efx, origin, 1);
 
-		if (!TRY(alSourcePlay, sourceR))
+		ALuint sources[] = { sourceL, sourceR };
+
+		if (!TRY(alSourcePlayv,2,  sources))
 		{
 			TRY(alDeleteSources, 1, &sourceL);
 			TRY(alDeleteSources, 1, &sourceR);
@@ -1251,20 +1348,20 @@ void I_StartSound(sfxenum_t id, uint8_t vol, uint8_t sep, uint8_t pitch, uint8_t
 			return;
 		}
 
-	}
-
-	//(void)sep; // panning is now handled by real object positioning instead
-	(void)priority; // priority and channel management is handled by SRB2...
-	(void)channel; // no longer used
-
-	*handleL = sourceL;
-
-	if (datapair->stereo)
-	{
+		*handleL = sourceL;
 		*handleR = sourceR;
 	}
 	else
 	{
+		if (!TRY(alSourcePlay, sourceL))
+		{
+			TRY(alDeleteSources, 1, &sourceL);
+			*handleL = INVALID_HANDLE;
+			*handleR = INVALID_HANDLE;
+			return;
+		}
+
+		*handleL = sourceL;
 		*handleR = INVALID_HANDLE;
 	}
 }
@@ -2606,6 +2703,22 @@ void I_InitEFXArray(efx_t *efx)
 	RESET_EFFECT(eq.mid2_width, EQUALIZER, MID2_WIDTH);
 	RESET_EFFECT(eq.high_gain, EQUALIZER, HIGH_GAIN);
 	RESET_EFFECT(eq.high_cutoff, EQUALIZER, HIGH_CUTOFF);
+}
+
+void I_RegisterSoundStuff(void)
+{
+	// al_sound.c
+	CV_RegisterVar(&cv_soundefx);
+	CV_RegisterVar(&cv_3dsound);
+	CV_RegisterVar(&cv_al_doppler);
+	CV_RegisterVar(&cv_al_speedofsound);
+	CV_RegisterVar(&cv_al_mindistance);
+	CV_RegisterVar(&cv_al_maxdistance);
+}
+
+dboolean I_3DSound(void)
+{
+	return cv_3dsound.value;
 }
 
 #undef RESET_EFFECT

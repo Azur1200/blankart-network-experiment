@@ -72,6 +72,7 @@ typedef enum
 
 struct listener_t {
 	fixed_t x, y, z;
+	fixed_t momx, momy, momz;
 	angle_t angle;
 };
 
