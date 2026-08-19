@@ -722,6 +722,8 @@ void I_UpdateListener(listener_t *listener)
 	if (!I_3DSound())
 		return;
 
+	const dboolean reverse = (stereoreverse.value ^ encoremode);
+
 	ALfloat facing[6];
 	facing[0] = FixedToFloat(FINECOSINE(listener->angle>>ANGLETOFINESHIFT));
 	facing[1] = 0.0f;
@@ -730,16 +732,19 @@ void I_UpdateListener(listener_t *listener)
 	facing[4] = 1.0f;
 	facing[5] = 0.0f;
 
+	if (reverse)
+		facing[0] = -facing[0];
+
 	TRY(alListener3f,
 		AL_POSITION,
-		FIXED_TO_FLOAT(listener->x),
+		reverse ? -FIXED_TO_FLOAT(listener->x) : FIXED_TO_FLOAT(listener->x),
 		FIXED_TO_FLOAT(listener->z),
 		-FIXED_TO_FLOAT(listener->y)
 	);
 
 	TRY(alListener3f,
 		AL_VELOCITY,
-		FIXED_TO_FLOAT(listener->momx),
+		reverse ? -FIXED_TO_FLOAT(listener->momx) : FIXED_TO_FLOAT(listener->momx),
 		FIXED_TO_FLOAT(listener->momz),
 		-FIXED_TO_FLOAT(listener->momy)
 	);
@@ -1223,18 +1228,12 @@ void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch
 		TRY(alSourcef, source, AL_MAX_DISTANCE, MAX_DISTANCE);
 
 		{
-			ALfloat facing[6];
-			facing[0] = FixedToFloat(FINECOSINE(originmobj->angle>>ANGLETOFINESHIFT));
-			facing[1] = 0.0f;
-			facing[2] = -FixedToFloat(FINESINE(originmobj->angle>>ANGLETOFINESHIFT));
-			facing[3] = 0.0f;
-			facing[4] = 1.0f;
-			facing[5] = 0.0f;
+			const dboolean reverse = (stereoreverse.value ^ encoremode);
 
 			TRY(alSource3f,
 				source,
 				AL_POSITION,
-				FIXED_TO_FLOAT(originmobj->x),
+				reverse ? -FIXED_TO_FLOAT(originmobj->x) : FIXED_TO_FLOAT(originmobj->x),
 				FIXED_TO_FLOAT(originmobj->z),
 				-FIXED_TO_FLOAT(originmobj->y)
 			);
@@ -1242,12 +1241,10 @@ void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch
 			TRY(alSource3f,
 				source,
 				AL_VELOCITY,
-				FIXED_TO_FLOAT(originmobj->momx),
+				reverse ? -FIXED_TO_FLOAT(originmobj->momx) : FIXED_TO_FLOAT(originmobj->momx),
 				FIXED_TO_FLOAT(originmobj->momz),
 				-FIXED_TO_FLOAT(originmobj->momy)
 			);
-
-			//TRY(alSourcefv, source, AL_ORIENTATION, facing);
 		}
 	}
 	else
