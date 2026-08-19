@@ -479,6 +479,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartaltshrink_runneranger);
 
 	CV_RegisterVar(&cv_kartstartboost_runnerbonus);
+	CV_RegisterVar(&cv_kartsoftbump);
 
 	CV_RegisterVar(&cv_kartairsquish);
 
@@ -957,13 +958,27 @@ dboolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, dboolean bounce, dboolean 
 	if (solid == true && mass1 > 0)
 		mass2 = mass1;
 	else
-		mass2 = K_GetMobjWeight(mobj2, mobj1);
+	{
+		if (cv_kartsoftbump.value && mobj1->player && mobj2->player)
+		{
+			mass1 /= 4;
+			mass2 = mass1;
+		}
+		else
+		{
+			mass2 = K_GetMobjWeight(mobj2, mobj1);
+		}
+	}
 
 	// Adds the OTHER player's momentum times a bunch, for the best chance of getting the correct direction
 	distx = (mobj1->x + mobj2->momx*3) - (mobj2->x + mobj1->momx*3);
 	disty = (mobj1->y + mobj2->momy*3) - (mobj2->y + mobj1->momy*3);
 
 	force = K_GetBounceForce(mobj1, mobj2, &distx, &disty, true);
+	if (cv_kartsoftbump.value && mobj1->player && mobj2->player)
+	{
+		force /= 4;
+	}
 
 	if (force == 0)
 	{
