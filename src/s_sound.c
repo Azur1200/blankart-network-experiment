@@ -256,6 +256,8 @@ void S_RegisterSoundStuff(void)
 		return;
 	}
 
+	I_RegisterSoundStuff();
+
 	CV_RegisterVar(&stereoreverse);
 	CV_RegisterVar(&precachesound);
 
@@ -936,7 +938,7 @@ notinlevel:
 			// origin was removed, stop the music
 			S_StopChannel(cnum);
 		}
-		else if (itsUs == true)
+		else if (itsUs == true && I_3DSound())
 		{
 			const mobj_t *origin = c->origin;
 			if (listenermobj == origin && !camera[0].freecam)

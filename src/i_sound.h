@@ -481,7 +481,9 @@ void I_InitEFXArray(efx_t *efx);
 
 void I_UpdateListener(listener_t *listener);
 
-extern consvar_t cv_soundefx;
+void I_RegisterSoundStuff(void);
+
+dboolean I_3DSound(void);
 
 #ifdef __cplusplus
 } // extern "C"

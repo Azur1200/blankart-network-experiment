@@ -144,12 +144,35 @@ static void (*fading_callback)(void);
 static dboolean fading_do_callback;
 static dboolean fading_nocleanup;
 
+static dboolean ALError(const char *srcfunc, const char *alfunc);
+
+#define TRY(func, ...) (func(__VA_ARGS__), ALError(__func__, #func))
+
+static void al_doppler_OnChange(void);
+static void al_speedofsound_OnChange(void);
+
 static void SoundEFX_OnChange(void)
 {
 	COM_ImmedExecute("restartaudio");
 }
 
 consvar_t cv_soundefx = CVAR_INIT ("soundefx", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, SoundEFX_OnChange);
+consvar_t cv_3dsound = CVAR_INIT ("3dsound", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_al_doppler = CVAR_INIT ("al_doppler", "0.2", CV_SAVE|CV_FLOAT|CV_CALL|CV_NOINIT, CV_Natural, al_doppler_OnChange);
+consvar_t cv_al_speedofsound = CVAR_INIT ("al_speedofsound", "343", CV_SAVE|CV_FLOAT|CV_CALL|CV_NOINIT, CV_Natural, al_speedofsound_OnChange);
+consvar_t cv_al_mindistance = CVAR_INIT ("al_mindistance", "160", 0, CV_Natural, NULL);
+consvar_t cv_al_maxdistance = CVAR_INIT ("al_maxdistance", "1536", 0, CV_Natural, NULL);
+
+
+static void al_doppler_OnChange(void)
+{
+	TRY(alDopplerFactor, FIXED_TO_FLOAT(cv_al_doppler.value));
+}
+
+static void al_speedofsound_OnChange(void)
+{
+	TRY(alSpeedOfSound, FIXED_TO_FLOAT(cv_al_speedofsound.value));
+}
 
 // any access (read/write) to this struct MUST lock the mutex
 typedef struct audiostate_s
@@ -202,8 +225,6 @@ static int16_t current_subsong = -1;
 static size_t probesize;
 static int result;
 #endif
-
-#define TRY(func, ...) (func(__VA_ARGS__), ALError(__func__, #func))
 
 static dboolean ALError(const char *srcfunc, const char *alfunc)
 {
@@ -416,8 +437,8 @@ void I_StartupSound(void)
 	var_cleanup();
 	music_volume = sfx_volume = 0.f;
 
-	TRY(alDopplerFactor, 0.2f);
-	TRY(alSpeedOfSound, 343.0f);
+	TRY(alDopplerFactor, FIXED_TO_FLOAT(cv_al_doppler.value));
+	TRY(alSpeedOfSound, FIXED_TO_FLOAT(cv_al_speedofsound.value));
 	TRY(alDistanceModel, AL_INVERSE_DISTANCE_CLAMPED);
 
 #ifdef HAVE_OPENMPT
@@ -698,6 +719,9 @@ void I_UpdateSound(void)
 
 void I_UpdateListener(listener_t *listener)
 {
+	if (!I_3DSound())
+		return;
+
 	ALfloat facing[6];
 	facing[0] = FixedToFloat(FINECOSINE(listener->angle>>ANGLETOFINESHIFT));
 	facing[1] = 0.0f;
@@ -1190,10 +1214,10 @@ void I_UpdateSoundParams(int32_t handle, uint8_t vol, uint8_t sep, uint8_t pitch
 	}
 
 	// TODO: Real 3D Audio.
-	if (originmobj && gamestate == GS_LEVEL && listenermobj != originmobj)
+	if (originmobj && gamestate == GS_LEVEL && listenermobj != originmobj && I_3DSound())
 	{
-#define MIN_DISTANCE (160*FRACUNIT)
-#define MAX_DISTANCE (1536*FRACUNIT)
+#define MIN_DISTANCE (cv_al_mindistance.value*FRACUNIT)
+#define MAX_DISTANCE (cv_al_maxdistance.value*FRACUNIT)
 
 		TRY(alSourcei, source, AL_SOURCE_RELATIVE, AL_FALSE);
 		TRY(alSourcef, source, AL_REFERENCE_DISTANCE, MIN_DISTANCE);
@@ -2678,6 +2702,22 @@ void I_InitEFXArray(efx_t *efx)
 	RESET_EFFECT(eq.mid2_width, EQUALIZER, MID2_WIDTH);
 	RESET_EFFECT(eq.high_gain, EQUALIZER, HIGH_GAIN);
 	RESET_EFFECT(eq.high_cutoff, EQUALIZER, HIGH_CUTOFF);
+}
+
+void I_RegisterSoundStuff(void)
+{
+	// al_sound.c
+	CV_RegisterVar(&cv_soundefx);
+	CV_RegisterVar(&cv_3dsound);
+	CV_RegisterVar(&cv_al_doppler);
+	CV_RegisterVar(&cv_al_speedofsound);
+	CV_RegisterVar(&cv_al_mindistance);
+	CV_RegisterVar(&cv_al_maxdistance);
+}
+
+dboolean I_3DSound(void)
+{
+	return cv_3dsound.value;
 }
 
 #undef RESET_EFFECT
