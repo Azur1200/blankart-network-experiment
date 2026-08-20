@@ -567,14 +567,15 @@ static dboolean I_QueueNextSample(dboolean unqueue)
 	{
 		format = I_GetALFormat(audio.musicinfo);
 		sample_format_t sample_format = I_GetSampleFormat(audio.musicinfo);
+		size_t samplesize = (sample_format == Float) ? sizeof(float) : sizeof(short); // float is 4 bytes not 2, so just double this shit for now kek
 
 		if (sample_format == Float)
 		{
-			count = sf_read_float(audio.musicstream, (float *)stream, BUFFERSIZE) * sizeof(float); // float is 4 bytes not 2, so just double this shit for now kek
+			count = sf_read_float(audio.musicstream, (float *)stream, BUFFERSIZE) * samplesize;
 		}
 		else
 		{
-			count = sf_read_short(audio.musicstream, (short *)stream, BUFFERSIZE) * sizeof(short);
+			count = sf_read_short(audio.musicstream, (short *)stream, BUFFERSIZE) * samplesize;
 		}
 
 		if (count == 0)
@@ -593,13 +594,16 @@ static dboolean I_QueueNextSample(dboolean unqueue)
 				sf_count_t finalposition = SecondsToSamples(looppoint, audio.musicinfo.samplerate);
 				sf_seek(audio.musicstream, finalposition, SF_SEEK_SET);
 
-				if (sample_format == Float)
+				if (!audio.startplay) // Don't do this if a song is starting.
 				{
-					count = sf_read_float(audio.musicstream, (float *)stream, BUFFERSIZE) * sizeof(float); // float is 4 bytes not 2, so just double this shit for now kek
-				}
-				else
-				{
-					count = sf_read_short(audio.musicstream, (short *)stream, BUFFERSIZE) * sizeof(short);
+					if (sample_format == Float)
+					{
+						count = sf_read_float(audio.musicstream, (float *)stream, BUFFERSIZE) * samplesize;
+					}
+					else
+					{
+						count = sf_read_short(audio.musicstream, (short *)stream, BUFFERSIZE) * samplesize;
+					}
 				}
 			}
 		}
