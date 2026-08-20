@@ -594,16 +594,13 @@ static dboolean I_QueueNextSample(dboolean unqueue)
 				sf_count_t finalposition = SecondsToSamples(looppoint, audio.musicinfo.samplerate);
 				sf_seek(audio.musicstream, finalposition, SF_SEEK_SET);
 
-				if (!audio.startplay) // Don't do this if a song is starting.
+				if (sample_format == Float)
 				{
-					if (sample_format == Float)
-					{
-						count = sf_read_float(audio.musicstream, (float *)stream, BUFFERSIZE) * samplesize;
-					}
-					else
-					{
-						count = sf_read_short(audio.musicstream, (short *)stream, BUFFERSIZE) * samplesize;
-					}
+					count = sf_read_float(audio.musicstream, (float *)stream, BUFFERSIZE) * samplesize;
+				}
+				else
+				{
+					count = sf_read_short(audio.musicstream, (short *)stream, BUFFERSIZE) * samplesize;
 				}
 			}
 		}
@@ -2059,6 +2056,8 @@ dboolean I_PlaySong(dboolean looping)
 
 	//if (!TRY(alSourcePlay, audio.music))
 		//return false;
+
+	TRY(alSourcei, audio.music, AL_SOURCE_RELATIVE, AL_TRUE);
 
 	audio.startplay = true;
 
