@@ -33,6 +33,11 @@ void I_UpdateSound(void)
 
 }
 
+void I_UpdateListener(listener_t *listener)
+{
+	(void)listener;
+}
+
 void *I_GetSfx(sfxinfo_t *sfx)
 {
 	(void)sfx;
@@ -293,3 +298,5 @@ void I_UpdateSpeedofSoundScale(fixed_t scale)
 {
 
 }
+
+
