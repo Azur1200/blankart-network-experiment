@@ -278,3 +278,18 @@ void I_InitEFXArray(efx_t *efx)
 {
 	(void)efx;
 }
+
+void I_RegisterSoundStuff(void)
+{
+
+}
+
+dboolean I_3DSound(void)
+{
+	return false;
+}
+
+void I_UpdateSpeedofSoundScale(fixed_t scale)
+{
+
+}
