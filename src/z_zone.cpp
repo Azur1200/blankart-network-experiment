@@ -385,8 +385,8 @@ void Z_FreeTags(int32_t lowtag, int32_t hightag)
 			for (block = headlist[i].next; block != &headlist[i]; block = next)
 			{
 				next = block->next; // get link before freeing
-				if (block->tag >= lowtag && block->tag <= hightag)
-					Z_Free(MEMORY(block));
+
+				Z_Free(MEMORY(block));
 			}
 		}
 		TracyCZoneEnd(__zone);
