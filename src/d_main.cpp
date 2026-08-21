@@ -889,7 +889,7 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 	nowtime = lastwipetic = I_GetTime();
 	endtime = nowtime + endtimes[type];
 
-	if (gamestate != GS_TITLESCREEN && gamestate != GS_INTRO && gamestate != GS_MENU)
+	if (gamestate != GS_TITLESCREEN && gamestate != GS_INTRO && gamestate != GS_MENU && !dedicated)
 		drawMenu = true;
 
 	WipeInAction = 1 + !drawMenu;
@@ -903,6 +903,7 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 
 		nowtime = I_GetTime();
 
+		NetKeepAlive();
 		// wait loop
 		if (nowtime - lastwipetic)
 		{
@@ -915,6 +916,8 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 		else
 			renderisnewtic = false;
 
+		NetKeepAlive();
+
 		// draw loop
 		R_SetTimeFrac(g_time.timefrac);
 		renderdeltatics = FLOAT_TO_FIXED(delta);
@@ -922,6 +925,8 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 #ifndef NOWIPE
 		if (type == WIPELOOP_RUNWIPE)
 		{
+			NetKeepAlive();
+
 			if (I_Interrupted())
 			{
 				I_Quit();
@@ -947,6 +952,8 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 
 		D_WipeDraw(drawMenu);
 		I_UpdateSound();
+
+		NetKeepAlive();
 
 		// Only take screenshots after drawing.
 		if (moviemode)
