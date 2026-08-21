@@ -2720,11 +2720,17 @@ void I_RegisterSoundStuff(void)
 
 dboolean I_3DSound(void)
 {
+	if (dedicated)
+		return false;
+
 	return cv_3dsound.value && splitscreen == 0;
 }
 
 void I_UpdateSpeedofSoundScale(fixed_t scale)
 {
+	if (dedicated)
+		return;
+
 	TRY(alSpeedOfSound,  FIXED_TO_FLOAT(FixedMul(cv_al_speedofsound.value, scale)));
 }
 
