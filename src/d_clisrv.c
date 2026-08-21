@@ -6944,7 +6944,7 @@ static void SV_SendTics(void)
 	tic_t realfirsttic, lasttictosend, i;
 	uint32_t n;
 	int32_t j;
-	size_t packsize, packnum;
+	size_t packsize;
 	uint8_t *bufpos;
 	uint8_t *ntextcmd;
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
@@ -6957,109 +6957,102 @@ static void SV_SendTics(void)
 		if (!nodeingame[n])
 			continue;
 
-		for (packnum = 0; packnum < 3; packnum++)
+		// assert supposedtics[n]>=nettics[n]
+		realfirsttic = supposedtics[n];
+		lasttictosend = min(maketic, nettics[n] + CLIENTBACKUPTICS);
+
+		if (realfirsttic >= lasttictosend)
 		{
-			// assert supposedtics[n]>=nettics[n]
-			realfirsttic = supposedtics[n];
-			lasttictosend = min(maketic, nettics[n] + CLIENTBACKUPTICS);
-
-			if (realfirsttic >= lasttictosend)
-			{
-				// well we have sent all tics we will so use extrabandwidth
-				// to resent packet that are supposed lost (this is necessary since lost
-				// packet detection work when we have received packet with firsttic > neededtic
-				// (getpacket servertics case)
-				DEBFILE(va("Nothing to send node %u mak=%u sup=%u net=%u \n",
-						   n, lasttictosend, supposedtics[n], nettics[n]));
-				realfirsttic = nettics[n];
-				if (realfirsttic >= lasttictosend || packnum > 0 || (I_GetTime() + n)&3)
-					// all tic are ok
-					continue;
-				DEBFILE(va("Sent %d anyway\n", realfirsttic));
-			}
-
-			realfirsttic = max(realfirsttic, firstticstosend);
-
-			// compute the length of the packet and cut it if too large
-			packsize = BASESERVERTICSSIZE;
-
-			for (i = realfirsttic; i < lasttictosend; i++)
-			{
-				packsize += sizeof (ticcmd_t) * doomcom->numslots;
-				packsize += TotalTextCmdPerTic(i);
-
-				if (packsize > software_MAXPACKETLENGTH)
-				{
-					DEBFILE(va("packet too large (%s) at tic %d (should be from %d to %d)\n",
-							   sizeu1(packsize), i, realfirsttic, lasttictosend));
-					lasttictosend = i;
-
-					// too bad: too much player have send extradata and there is too
-					//          much data in one tic.
-					// To avoid it put the data on the next tic. (see getpacket
-					// textcmd case) but when numplayer changes the computation can be different
-					if (lasttictosend == realfirsttic)
-					{
-						if (packsize > MAXPACKETLENGTH)
-							I_Error("Too many players: can't send %s data for %d players to node %d\n"
-							"Well sorry nobody is perfect....\n",
-							sizeu1(packsize), doomcom->numslots, n);
-						else
-						{
-							lasttictosend++; // send it anyway!
-							DEBFILE("sending it anyway\n");
-						}
-					}
-					break;
-				}
-			}
-
-			// Send the tics
-			netbuffer->packettype = PT_SERVERTICS;
-			netbuffer->u.serverpak.starttic = (uint8_t)realfirsttic;
-			netbuffer->u.serverpak.numtics = (uint8_t)(lasttictosend - realfirsttic);
-			netbuffer->u.serverpak.numslots = (uint8_t)LSBF_SHORT(doomcom->numslots);
-			bufpos = (uint8_t *)&netbuffer->u.serverpak.cmds;
-
-			for (i = realfirsttic; i < lasttictosend; i++)
-			{
-				bufpos = G_DcpyTiccmd(bufpos, netcmds[i%BACKUPTICS], doomcom->numslots * sizeof (ticcmd_t));
-			}
-
-			// add textcmds
-			for (i = realfirsttic; i < lasttictosend; i++)
-			{
-				ntextcmd = bufpos++;
-				*ntextcmd = 0;
-				for (j = 0; j < MAXPLAYERS; j++)
-				{
-					uint8_t *textcmd = D_GetExistingTextcmd(i, j);
-					int32_t size = textcmd ? textcmd[0] : 0;
-
-					if ((!j || playeringame[j]) && size)
-					{
-						(*ntextcmd)++;
-						WRITEUINT8(bufpos, j);
-						memcpy(bufpos, textcmd, size + 1);
-						bufpos += size + 1;
-					}
-				}
-			}
-			packsize = bufpos - (uint8_t *)&(netbuffer->u);
-
-			// packet size warning here?
-			if (packsize > software_MAXPACKETLENGTH)
-				CONS_Alert(CONS_ERROR, "Servertics packet went beyond allocated packet size (%" PRIuPTR "/%d), and may have corrupted some memory...\n", packsize, software_MAXPACKETLENGTH);
-
-			HSendPacket(n, false, 0, packsize);
-			// when tic are too large, only one tic is sent so don't go backward!
-			if (lasttictosend-doomcom->extratics > realfirsttic)
-				supposedtics[n] = lasttictosend-doomcom->extratics;
-			else
-				supposedtics[n] = lasttictosend;
-
-			supposedtics[n] = max(supposedtics[n], nettics[n]);
+			// well we have sent all tics we will so use extrabandwidth
+			// to resent packet that are supposed lost (this is necessary since lost
+			// packet detection work when we have received packet with firsttic > neededtic
+			// (getpacket servertics case)
+			DEBFILE(va("Nothing to send node %u mak=%u sup=%u net=%u \n",
+					   n, lasttictosend, supposedtics[n], nettics[n]));
+			realfirsttic = nettics[n];
+			if (realfirsttic >= lasttictosend || (I_GetTime() + n)&3)
+				// all tic are ok
+				continue;
+			DEBFILE(va("Sent %d anyway\n", realfirsttic));
 		}
+
+		realfirsttic = max(realfirsttic, firstticstosend);
+
+		// compute the length of the packet and cut it if too large
+		packsize = BASESERVERTICSSIZE;
+
+		for (i = realfirsttic; i < lasttictosend; i++)
+		{
+			packsize += sizeof (ticcmd_t) * doomcom->numslots;
+			packsize += TotalTextCmdPerTic(i);
+
+			if (packsize > software_MAXPACKETLENGTH)
+			{
+				DEBFILE(va("packet too large (%s) at tic %d (should be from %d to %d)\n",
+						   sizeu1(packsize), i, realfirsttic, lasttictosend));
+				lasttictosend = i;
+
+				// too bad: too much player have send extradata and there is too
+				//          much data in one tic.
+				// To avoid it put the data on the next tic. (see getpacket
+				// textcmd case) but when numplayer changes the computation can be different
+				if (lasttictosend == realfirsttic)
+				{
+					if (packsize > MAXPACKETLENGTH)
+						I_Error("Too many players: can't send %s data for %d players to node %d\n"
+						"Well sorry nobody is perfect....\n",
+						sizeu1(packsize), doomcom->numslots, n);
+					else
+					{
+						lasttictosend++; // send it anyway!
+						DEBFILE("sending it anyway\n");
+					}
+				}
+				break;
+			}
+		}
+
+		// Send the tics
+		netbuffer->packettype = PT_SERVERTICS;
+		netbuffer->u.serverpak.starttic = (uint8_t)realfirsttic;
+		netbuffer->u.serverpak.numtics = (uint8_t)(lasttictosend - realfirsttic);
+		netbuffer->u.serverpak.numslots = (uint8_t)LSBF_SHORT(doomcom->numslots);
+		bufpos = (uint8_t *)&netbuffer->u.serverpak.cmds;
+
+		for (i = realfirsttic; i < lasttictosend; i++)
+		{
+			bufpos = G_DcpyTiccmd(bufpos, netcmds[i%BACKUPTICS], doomcom->numslots * sizeof (ticcmd_t));
+		}
+
+		// add textcmds
+		for (i = realfirsttic; i < lasttictosend; i++)
+		{
+			ntextcmd = bufpos++;
+			*ntextcmd = 0;
+			for (j = 0; j < MAXPLAYERS; j++)
+			{
+				uint8_t *textcmd = D_GetExistingTextcmd(i, j);
+				int32_t size = textcmd ? textcmd[0] : 0;
+
+				if ((!j || playeringame[j]) && size)
+				{
+					(*ntextcmd)++;
+					WRITEUINT8(bufpos, j);
+					memcpy(bufpos, textcmd, size + 1);
+					bufpos += size + 1;
+				}
+			}
+		}
+		packsize = bufpos - (uint8_t *)&(netbuffer->u);
+
+		HSendPacket(n, false, 0, packsize);
+		// when tic are too large, only one tic is sent so don't go backward!
+		if (lasttictosend-doomcom->extratics > realfirsttic)
+			supposedtics[n] = lasttictosend-doomcom->extratics;
+		else
+			supposedtics[n] = lasttictosend;
+
+		supposedtics[n] = max(supposedtics[n], nettics[n]);
 	}
 	// node 0 is me!
 	supposedtics[0] = maketic;
