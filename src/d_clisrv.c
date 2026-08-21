@@ -4882,17 +4882,16 @@ void ServerInfoUpdateSend(void)
 
 	for (n = 1; n < MAXNETNODES; n++)
 	{
-		// Do Shit
-		if (nodeingame[n])
-		{
-			strncpy(netbuffer->u.serverinfoupdate.servermotd, connectedservermotd, MAXSERVERMOTD);
-			CopyCaretColors(netbuffer->u.serverinfoupdate.servername, cv_servername.string, MAXSERVERNAME);
-			CopyCaretColors(netbuffer->u.serverinfoupdate.servercontact, cv_server_contact.string, MAXSERVERCONTACT);
-			strncpy(netbuffer->u.serverinfoupdate.serverdescription, connectedserverdescription, MAXSERVERDESCRIPTION);
+		if (!nodeingame[n])
+			continue;
 
-			netbuffer->packettype = PT_SERVERINFOUPDATE;
-			HSendPacket(n, true, 0, sizeof(netbuffer->u.serverinfoupdate));
-		}
+		strncpy(netbuffer->u.serverinfoupdate.servermotd, connectedservermotd, MAXSERVERMOTD);
+		CopyCaretColors(netbuffer->u.serverinfoupdate.servername, cv_servername.string, MAXSERVERNAME);
+		CopyCaretColors(netbuffer->u.serverinfoupdate.servercontact, cv_server_contact.string, MAXSERVERCONTACT);
+		strncpy(netbuffer->u.serverinfoupdate.serverdescription, connectedserverdescription, MAXSERVERDESCRIPTION);
+
+		netbuffer->packettype = PT_SERVERINFOUPDATE;
+		HSendPacket(n, true, 0, sizeof(netbuffer->u.serverinfoupdate));
 	}
 }
 
@@ -6794,11 +6793,11 @@ static void SV_SendServerKeepAlive(void)
 
 	for (n = 1; n < MAXNETNODES; n++)
 	{
-		if (nodeingame[n])
-		{
-			netbuffer->packettype = PT_BASICKEEPALIVE;
-			HSendPacket(n, false, 0, 0);
-		}
+		if (!nodeingame[n])
+			continue;
+
+		netbuffer->packettype = PT_BASICKEEPALIVE;
+		HSendPacket(n, false, 0, 0);
 	}
 }
 
