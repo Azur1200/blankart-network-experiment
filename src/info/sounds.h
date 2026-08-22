@@ -1029,6 +1029,10 @@ _(vclgna)
 _(bckuse)
 _(egrbhe)
 
+// Countdown
+_(cntdwn)
+_(cntdwg)
+
 // Laps and Finish
 _(nxtlap)
 _(finlap)
