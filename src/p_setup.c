@@ -8172,7 +8172,7 @@ static void P_RemapDoomedNum(dboolean mappatch)
 #define TYPECONVERTSPRING(mobjtype, doomed, springtype) { \
 	if (mapthings && mapthings[i].type  == doomed) \
 	{ \
-		mapthings[i].args[2] = springtype; \
+		mapthings[i].args[3] = springtype; \
 		TYPECONVERT(mobjtype, doomed); \
 	} \
 } \
@@ -8235,28 +8235,29 @@ static void P_SetCompatArgs(void)
 			case MT_NEOSPRING:
 			case MT_NEODIAG:
 			case MT_NEOHORIZ:
-				if (!(mapthings[i].args[2] > 0))
+				if (!(mapthings[i].args[3] > 0))
 					continue;
 
-				switch (mapthings[i].args[2])
+				switch (mapthings[i].args[3])
 				{
 					case GRAYRR:
-						mapthings[i].args[1] = 25;
+						mapthings[i].args[2] = 25;
 						break;
 					case YELLOWRR:
-						mapthings[i].args[1] = 40;
+						mapthings[i].args[2] = 40;
 						break;
 					case REDRR:
-						mapthings[i].args[1] = 64;
+						mapthings[i].args[2] = 64;
 						break;
 					case BLUERR:
-						mapthings[i].args[1] = 102;
+						mapthings[i].args[2] = 102;
 						break;
 					default:
 						break;
 				}
 
-				mapthings[i].args[0] |= TMSPR_NOGRAVITY;
+				if (mobjtype != MT_NEOHORIZ)
+					mapthings[i].args[0] |= TMSPR_NOGRAVITY;
 				break;
 			default:
 				break;

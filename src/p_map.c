@@ -264,6 +264,7 @@ static dboolean P_ShouldSpringForceAngle(mobj_t *spring, ticcmd_t *cmd)
 		case MT_REDDIAG:
 		case MT_BLUEDIAG:
 		case MT_GRAYDIAG:
+		case MT_NEODIAG:
 			if (spring->args[0] & TMSPR_FORCEANGLE)
 				return true;
 			break;
@@ -271,6 +272,7 @@ static dboolean P_ShouldSpringForceAngle(mobj_t *spring, ticcmd_t *cmd)
 		case MT_REDHORIZ:
 		case MT_BLUEHORIZ:
 		case MT_GRAYHORIZ:
+		case MT_NEOHORIZ:
 			if (spring->args[1] & TMSPR_FORCEANGLE)
 				return true;
 			break;
@@ -289,11 +291,11 @@ static dboolean P_ShouldSpringForceAngle(mobj_t *spring, ticcmd_t *cmd)
 void
 P_DoSpringRR
 (
-		mobj_t * object,
-		fixed_t scaleVal,
-   fixed_t vertispeed,
-   fixed_t horizspeed,
-   angle_t finalAngle)
+	mobj_t * object,
+	fixed_t scaleVal,
+	fixed_t vertispeed,
+	fixed_t horizspeed,
+	angle_t finalAngle)
 {
 	if (object->eflags & MFE_SPRUNG)
 	{
