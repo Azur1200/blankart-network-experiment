@@ -504,6 +504,9 @@ dboolean P_DoSpring(mobj_t *spring, mobj_t *object)
 			// clear air thrust target speed too
 			object->player->airdriftspeed = 0;
 		}
+
+		// Kill heavy airdrop too so you don't get softlocked.
+		K_KillAirDrop(object->player, PAF_AIRDROP_HEAVY);
 	}
 	return true;
 }
