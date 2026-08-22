@@ -8241,16 +8241,16 @@ static void P_SetCompatArgs(void)
 				switch (mapthings[i].args[2])
 				{
 					case GRAYRR:
-						mapthings[i].args[1] = 25*FRACUNIT;
+						mapthings[i].args[1] = 25;
 						break;
 					case YELLOWRR:
-						mapthings[i].args[1] = 40*FRACUNIT;
+						mapthings[i].args[1] = 40;
 						break;
 					case REDRR:
-						mapthings[i].args[1] = 64*FRACUNIT;
+						mapthings[i].args[1] = 64;
 						break;
 					case BLUERR:
-						mapthings[i].args[1] = 102*FRACUNIT;
+						mapthings[i].args[1] = 102;
 						break;
 					default:
 						break;

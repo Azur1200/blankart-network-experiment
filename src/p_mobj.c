@@ -14201,7 +14201,7 @@ static dboolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, dboolea
 		break;
 	}
 	case MT_NEOSPRING:
-		mobj->extravalue1 = mthing->args[1] > 0 ? mthing->args[1] : mobj->info->mass;
+		mobj->extravalue1 = mthing->args[1] > 0 ? mthing->args[1]*FRACUNIT : mobj->info->mass;
 		mobj->extravalue2 = 0;
 
 		if (mthing->args[0] & TMSPR_NOGRAVITY)
@@ -14210,8 +14210,8 @@ static dboolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, dboolea
 		mobj->color = P_HandleNewSpringColor(mobj->extravalue1);
 		break;
 	case MT_NEODIAG:
-		mobj->extravalue1 = mthing->args[1] > 0 ? mthing->args[1] : mobj->info->mass;
-		mobj->extravalue2 = mthing->args[1] > 0 ? mthing->args[1] : mobj->info->damage;
+		mobj->extravalue1 = mthing->args[1] > 0 ? mthing->args[1]*FRACUNIT : mobj->info->mass;
+		mobj->extravalue2 = mthing->args[1] > 0 ? mthing->args[1]*FRACUNIT : mobj->info->damage;
 
 		mobj->angle = FixedAngle(mthing->angle << FRACBITS);
 		if (mthing->args[0] & TMSPR_NOGRAVITY)
@@ -14226,7 +14226,7 @@ static dboolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, dboolea
 	case MT_NEOHORIZ:
 	{
 		mobj->extravalue1 = 0;
-		mobj->extravalue2 = mthing->args[1] > 0 ? mthing->args[1] : mobj->info->damage;
+		mobj->extravalue2 = mthing->args[1] > 0 ? mthing->args[1]*FRACUNIT : mobj->info->damage;
 
 		// Offset sprite of horizontal springs
 		angle_t a = mobj->angle + ANGLE_180;
