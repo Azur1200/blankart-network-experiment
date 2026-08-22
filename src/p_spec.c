@@ -2027,12 +2027,35 @@ static void K_HandleLapIncrement(player_t *player)
 				player->starpostangle = player->starpostx = player->starposty = player->starpostz = player->starpostflip = 0;
 			}
 
+			dboolean lastlapsound = true;
+			dboolean nextlapsound = true;
+			const dboolean localplayer = P_IsDisplayPlayer(player);
+
+			if (player->laps == numlaps) // final lap
+			{
+				lastlapsound = (!LUA_HookPlayerFinalLap(player, localplayer));
+			}
+			else if ((player->laps > 1) && (player->laps < numlaps)) // non-final lap
+			{
+				nextlapsound = (!LUA_HookPlayerNextLap(player, localplayer));
+			}
+
 			if (P_IsDisplayPlayer(player))
 			{
 				if (player->laps == numlaps) // final lap
-					S_StartSound(NULL, sfx_s3k68);
+				{
+					if (lastlapsound)
+					{
+						S_StartSound(NULL, sfx_s3k68);
+					}
+				}
 				else if ((player->laps > 1) && (player->laps < numlaps)) // non-final lap
-					S_StartSound(NULL, sfx_s221);
+				{
+					if (nextlapsound)
+					{
+						S_StartSound(NULL, sfx_s221);
+					}
+				}
 				else if (player->laps > numlaps)
 				{
 					// finished

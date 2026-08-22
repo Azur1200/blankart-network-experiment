@@ -1437,6 +1437,10 @@ typedef struct {
 	dboolean force;
 } TrueForce_State;
 
+typedef struct {
+	dboolean losing;
+} BlanFinish_State;
+
 static void res_trueforce(Hook_State *hook)
 {
 	TrueForce_State *state = (TrueForce_State*)hook->userdata;
@@ -1446,6 +1450,14 @@ static void res_trueforce(Hook_State *hook)
 
 	if (lua_isdboolean(gL, -1))
 		state->force = lua_todboolean(gL, -1);
+};
+
+static void res_blanfinish(Hook_State *hook)
+{
+	BlanFinish_State *state = (BlanFinish_State*)hook->userdata;
+
+	if (lua_isdboolean(gL, -1))
+		state->losing = lua_todboolean(gL, -1);
 };
 
 dboolean LUA_HookPlayerItem(player_t *player, uint8_t itemType, dboolean wasHoldingItem, dboolean *force)
@@ -1533,6 +1545,50 @@ dboolean LUA_HookPlayerItemReleaseUse(player_t *player, uint8_t itemType, dboole
 		call_hooks(&hook, 1, res_true);
 	}
 	
+	return hook.status;
+}
+
+dboolean LUA_HookPlayerNextLap(player_t *player, dboolean localplayer)
+{
+	Hook_State hook = {};
+	if (prepare_hook(&hook, false, HOOK(PlayerNextLap)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushdboolean(gL, localplayer);
+
+		call_hooks(&hook, 1, res_true);
+	}
+
+	return hook.status;
+}
+
+dboolean LUA_HookPlayerFinalLap(player_t *player, dboolean localplayer)
+{
+	Hook_State hook = {};
+	if (prepare_hook(&hook, false, HOOK(PlayerFinalLap)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushdboolean(gL, localplayer);
+
+		call_hooks(&hook, 1, res_true);
+	}
+
+	return hook.status;
+}
+
+int LUA_HookPlayerFinish(player_t *player, dboolean dnf, dboolean losing)
+{
+	Hook_State hook = {};
+
+	if (prepare_hook(&hook, 0, HOOK(PlayerFinish)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushdboolean(gL, losing);
+		lua_pushdboolean(gL, dnf);
+
+		call_hooks(&hook, 1, res_force);
+	}
+
 	return hook.status;
 }
 
