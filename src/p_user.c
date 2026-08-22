@@ -1333,7 +1333,6 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			if (should_force_winloss)
 			{
 				losing = (should_force_winloss > 1) ? false : true;
-				I_OutputMsg("[player finish] lose value modified by lua; new value: %s\n", (losing) ? "true" : "false");
 			}
 
 			if (cv_kartvoices.value)
@@ -3772,7 +3771,6 @@ void P_DoTimeOver(player_t *player)
 	if (should_force_winloss)
 	{
 		confirmloss = (should_force_winloss > 1) ? false : true;
-		I_OutputMsg("[DNF] lose value modified by lua; new value: %s\n", (confirmloss) ? "true" : "false");
 	}
 
 	if (confirmloss)
