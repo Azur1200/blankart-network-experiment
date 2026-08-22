@@ -542,7 +542,7 @@ fixed_t P_FloorzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height);
 fixed_t P_CeilingzAtPos(fixed_t x, fixed_t y, fixed_t z, fixed_t height);
 BlockItReturn_t PIT_PushableMoved(mobj_t *thing);
 
-void P_DoSpringRR(mobj_t * object,fixed_t scaleVal, fixed_t vertispeed, fixed_t horizspeed, angle_t finalAngle);
+void P_DoSpringRR(mobj_t * object, fixed_t scaleVal, fixed_t vertispeed, fixed_t horizspeed, angle_t finalAngle);
 dboolean P_DoSpring(mobj_t *spring, mobj_t *object);
 
 int32_t P_GetSectorLightNumAt(sector_t *sector, fixed_t x, fixed_t y, fixed_t z);

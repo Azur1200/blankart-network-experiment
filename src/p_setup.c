@@ -8167,6 +8167,21 @@ static void P_RemapDoomedNum(dboolean mappatch)
 		continue; \
 	} \
 }
+
+
+#define TYPECONVERTSPRING(mobjtype, doomed, springtype) { \
+	if (mapthings && mapthings[i].type  == doomed) \
+	{ \
+		mapthings[i].args[2] = springtype; \
+		TYPECONVERT(mobjtype, doomed); \
+	} \
+} \
+
+#define GRAYRR 1
+#define YELLOWRR 2
+#define REDRR 3
+#define BLUERR 4
+
 	for (i = 0; i < nummapthings; i++)
 	{
 		// Now remap the types.
@@ -8175,14 +8190,18 @@ static void P_RemapDoomedNum(dboolean mappatch)
 		{
 			// Ring Racers only.
 			TYPECONVERT(MT_BALLOON, 543)
-			TYPECONVERT(MT_GRAYDIAG, 557)
-			TYPECONVERT(MT_BLUEDIAG, 556)
-			TYPECONVERT(MT_REDDIAG, 555)
-			TYPECONVERT(MT_YELLOWDIAG, 554)
-			TYPECONVERT(MT_YELLOWHORIZ, 558)
-			TYPECONVERT(MT_REDHORIZ, 559)
-			TYPECONVERT(MT_BLUEHORIZ, 560)
-			TYPECONVERT(MT_GRAYHORIZ, 561)
+			TYPECONVERTSPRING(MT_NEOSPRING, 550, YELLOWRR)
+			TYPECONVERTSPRING(MT_NEOSPRING, 551, REDRR)
+			TYPECONVERTSPRING(MT_NEOSPRING, 552, BLUERR)
+			TYPECONVERTSPRING(MT_NEOSPRING, 553, GRAYRR)
+			TYPECONVERTSPRING(MT_NEODIAG, 554, YELLOWRR)
+			TYPECONVERTSPRING(MT_NEODIAG, 555, REDRR)
+			TYPECONVERTSPRING(MT_NEODIAG, 556, BLUERR)
+			TYPECONVERTSPRING(MT_NEODIAG, 557, GRAYRR)
+			TYPECONVERTSPRING(MT_NEOHORIZ, 558, YELLOWRR)
+			TYPECONVERTSPRING(MT_NEOHORIZ, 559, REDRR)
+			TYPECONVERTSPRING(MT_NEOHORIZ, 560, BLUERR)
+			TYPECONVERTSPRING(MT_NEOHORIZ, 561, GRAYRR)
 			TYPECONVERT(MT_SNEAKERPANEL, 510)
 			TYPECONVERT(MT_SNEAKERPANELSPAWNER, 511)
 			TYPECONVERT(MT_DASHRING, 3441)
@@ -8209,17 +8228,34 @@ static void P_SetCompatArgs(void)
 
 	for (i = 0; i < nummapthings; i++)
 	{
-		switch(mapthings[i].type)
+		int32_t mobjtype = P_GetMobjtype(mapthings[i].type);
+
+		switch(mobjtype)
 		{
-			case MT_YELLOWDIAG:
-			case MT_REDDIAG:
-			case MT_BLUEDIAG:
-			case MT_GRAYDIAG:
-			case MT_REDSPRING:
-			case MT_BLUESPRING:
-			case MT_GRAYSPRING:
-			case MT_YELLOWSPRING:
-			case MT_INVISSPRING:
+			case MT_NEOSPRING:
+			case MT_NEODIAG:
+			case MT_NEOHORIZ:
+				if (!(mapthings[i].args[2] > 0))
+					continue;
+
+				switch (mapthings[i].args[2])
+				{
+					case GRAYRR:
+						mapthings[i].args[1] = 25*FRACUNIT;
+						break;
+					case YELLOWRR:
+						mapthings[i].args[1] = 40*FRACUNIT;
+						break;
+					case REDRR:
+						mapthings[i].args[1] = 64*FRACUNIT;
+						break;
+					case BLUERR:
+						mapthings[i].args[1] = 102*FRACUNIT;
+						break;
+					default:
+						break;
+				}
+
 				mapthings[i].args[0] |= TMSPR_NOGRAVITY;
 				break;
 			default:
@@ -8227,6 +8263,13 @@ static void P_SetCompatArgs(void)
 		}
 	}
 }
+
+#undef TYPECONVERT
+#undef TYPECONVERTSPRING
+#undef GRAYRR
+#undef YELLOWRR
+#undef REDRR
+#undef BLUERR
 
 static dboolean P_LoadMapFromFile(void)
 {

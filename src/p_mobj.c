@@ -13651,6 +13651,30 @@ static dboolean P_MapAlreadyHasStarPost(mobj_t *mobj)
 	return false;
 }
 
+static skincolornum_t P_HandleNewSpringColor(fixed_t speedval)
+{
+	if (speedval >= 70 *FRACUNIT)
+	{
+		return SKINCOLOR_RED;
+	}
+	else if (speedval > 40*FRACUNIT && speedval < 70*FRACUNIT)
+	{
+		return SKINCOLOR_YELLOW;
+	}
+	else if (speedval > 30*FRACUNIT && speedval <= 40*FRACUNIT)
+	{
+		return SKINCOLOR_BLUEBERRY;
+	}
+	else if (speedval > 0 && speedval <= 30 *FRACUNIT)
+	{
+		return SKINCOLOR_GREY;
+	}
+	else
+	{
+		return SKINCOLOR_WHITE;
+	}
+}
+
 static dboolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, dboolean *doangle)
 {
 	dboolean override = LUA_HookMapThingSpawn(mobj, mthing);
@@ -14174,6 +14198,45 @@ static dboolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, dboolea
 	case MT_SNEAKERPANELSPAWNER:
 	{
 		Obj_SneakerPanelSpawnerSetup(mobj, mthing);
+		break;
+	}
+	case MT_NEOSPRING:
+		mobj->extravalue1 = mthing->args[1] > 0 ? mthing->args[1] : mobj->info->mass;
+		mobj->extravalue2 = 0;
+
+		if (mthing->args[0] & TMSPR_NOGRAVITY)
+			mobj->flags |= MF_NOGRAVITY;
+
+		mobj->color = P_HandleNewSpringColor(mobj->extravalue1);
+		break;
+	case MT_NEODIAG:
+		mobj->extravalue1 = mthing->args[1] > 0 ? mthing->args[1] : mobj->info->mass;
+		mobj->extravalue2 = mthing->args[1] > 0 ? mthing->args[1] : mobj->info->damage;
+
+		mobj->angle = FixedAngle(mthing->angle << FRACBITS);
+		if (mthing->args[0] & TMSPR_NOGRAVITY)
+			mobj->flags |= MF_NOGRAVITY;
+		if (mthing->args[0] & TMSPR_ROTATEEXTRA)
+			mobj->angle += ANGLE_22h;
+
+		mobj->color = P_HandleNewSpringColor(max(mobj->extravalue1, mobj->extravalue2));
+
+		*doangle = false;
+		break;
+	case MT_NEOHORIZ:
+	{
+		mobj->extravalue1 = 0;
+		mobj->extravalue2 = mthing->args[1] > 0 ? mthing->args[1] : mobj->info->damage;
+
+		// Offset sprite of horizontal springs
+		angle_t a = mobj->angle + ANGLE_180;
+		mobj->sprxoff = FixedMul(mobj->radius, FINECOSINE(a >> ANGLETOFINESHIFT));
+		mobj->spryoff = FixedMul(mobj->radius, FINESINE(a >> ANGLETOFINESHIFT));
+
+		if (mthing->args[0] & TMSPR_NOGRAVITY)
+			mobj->flags |= MF_NOGRAVITY;
+
+		mobj->color = P_HandleNewSpringColor(mobj->extravalue2);
 		break;
 	}
 	default:

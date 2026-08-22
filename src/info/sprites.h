@@ -661,3 +661,8 @@ _(FHRN)
 
 // First person view sprites; this is a sprite so that it can be replaced by a specialized MD2 draw later
 _(VIEW)
+
+// New Spring.
+_(NSPV)
+_(NSPD)
+_(NSPH)

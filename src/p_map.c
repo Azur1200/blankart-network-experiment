@@ -288,7 +288,8 @@ static dboolean P_ShouldSpringForceAngle(mobj_t *spring, ticcmd_t *cmd)
 
 void
 P_DoSpringRR
-(		mobj_t * object,
+(
+		mobj_t * object,
 		fixed_t scaleVal,
    fixed_t vertispeed,
    fixed_t horizspeed,
@@ -372,11 +373,17 @@ dboolean P_DoSpring(mobj_t *spring, mobj_t *object)
 		objscale = max(object->scale, mapobjectscale);
 	}
 	
-	const fixed_t hscale = mapobjectscale + (mapobjectscale - objscale);
-	const fixed_t vscale = mapobjectscale + (objscale - mapobjectscale);
-	fixed_t offx, offy;
 	fixed_t vertispeed = spring->info->mass;
 	fixed_t horizspeed = spring->info->damage;
+	fixed_t savemomx = object->momx;
+	fixed_t savemomy = object->momy;
+	dboolean newspring =( spring->info->painchance == INT32_MAX);
+
+	if (newspring)
+	{
+		vertispeed = spring->extravalue1;
+		horizspeed = spring->extravalue2;
+	}
 
 	if (object->eflags & MFE_SPRUNG) // Object was already sprung this tic
 		return false;
@@ -385,13 +392,15 @@ dboolean P_DoSpring(mobj_t *spring, mobj_t *object)
 	if (object->player && object->player->spectator)
 		return false;
 
-	object->standingslope = NULL; // Okay, now we can't return - no launching off at silly angles for you.
+	if (vertispeed == 0 && horizspeed == 0 && newspring)
+		return false;
 
-	object->eflags |= MFE_SPRUNG; // apply this flag asap!
+	object->standingslope = NULL; // Okay, now we can't return - no launching off at silly angles for you.
+	object->terrain = NULL;
 
 	spring->flags &= ~(MF_SOLID|MF_SPECIAL); // De-solidify
 
-	if (horizspeed && vertispeed) // Mimic SA
+	if (horizspeed && vertispeed && !newspring) // Mimic SA
 	{
 		object->momx = object->momy = 0;
 		P_TryMove(object, spring->x, spring->y, true, NULL);
@@ -406,7 +415,11 @@ dboolean P_DoSpring(mobj_t *spring, mobj_t *object)
 		object->z = spring->z - object->height - 1;
 	else
 	{
+		fixed_t offx, offy;
+
 		// Horizontal springs teleport you in FRONT of them.
+		savemomx = object->momx;
+		savemomy = object->momy;
 		object->momx = object->momy = 0;
 
 		// Overestimate the distance to position you at
@@ -419,30 +432,41 @@ dboolean P_DoSpring(mobj_t *spring, mobj_t *object)
 		else if (offx < -(spring->radius + object->radius + 1))
 			offx = -(spring->radius + object->radius + 1);
 
-		if (offy > (spring->radius + object->radius + 1))
-			offy = spring->radius + object->radius + 1;
-		else if (offy < -(spring->radius + object->radius + 1))
-			offy = -(spring->radius + object->radius + 1);
-
 		P_TryMove(object, spring->x + offx, spring->y + offy, true, NULL);
 	}
 
-	if (vertispeed)
-		object->momz = FixedMul(vertispeed,FixedSqrt(FixedMul(vscale, spring->scale)));
-
-	if (horizspeed)
+	if (newspring)
 	{
-		if (!object->player)
-			P_InstaThrust(object, spring->angle, FixedMul(horizspeed,FixedSqrt(FixedMul(hscale, spring->scale))));
-		else
+		object->momx = savemomx;
+		object->momy = savemomy;
+
+		P_DoSpringRR(object, mapobjectscale, vertispeed, horizspeed,
+					 spring->angle);
+	}
+	else
+	{
+		const fixed_t hscale = mapobjectscale + (mapobjectscale - objscale);
+		const fixed_t vscale = mapobjectscale + (objscale - mapobjectscale);
+
+		object->eflags |= MFE_SPRUNG; // apply this flag asap!
+
+		if (vertispeed)
+			object->momz = FixedMul(vertispeed,FixedSqrt(FixedMul(vscale, spring->scale)));
+
+		if (horizspeed)
 		{
-			fixed_t finalSpeed = FixedDiv(horizspeed, hscale);
-			fixed_t pSpeed = object->player->speed;
+			if (!object->player)
+				P_InstaThrust(object, spring->angle, FixedMul(horizspeed,FixedSqrt(FixedMul(hscale, spring->scale))));
+			else
+			{
+				fixed_t finalSpeed = FixedDiv(horizspeed, hscale);
+				fixed_t pSpeed = object->player->speed;
 
-			if (pSpeed > finalSpeed)
-				finalSpeed = pSpeed;
+				if (pSpeed > finalSpeed)
+					finalSpeed = pSpeed;
 
-			P_InstaThrust(object, spring->angle, FixedMul(finalSpeed,FixedSqrt(FixedMul(hscale, spring->scale))));
+				P_InstaThrust(object, spring->angle, FixedMul(finalSpeed,FixedSqrt(FixedMul(hscale, spring->scale))));
+			}
 		}
 	}
 
