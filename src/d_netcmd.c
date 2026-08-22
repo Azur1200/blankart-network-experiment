@@ -751,6 +751,9 @@ consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "1500", CV_NE
 // SPB Rush toggle; toggles on/off the more aggressive "pressure" odds when an SPB is active
 consvar_t cv_kartspbrush = CVAR_INIT ("kartspbrush", "On", CV_NETVAR, CV_OnOff, NULL);
 
+// Uses the sounds from the general sound library instead of unique sounds for laps and finish
+consvar_t cv_usegenericlapsounds = CVAR_INIT ("usegenericlapsounds", "Off", CV_SAVE, CV_OnOff, NULL);
+
 consvar_t cv_itemlist = CVAR_INIT ("kartitemlist", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemList_OnChange);
 
 // Time limit for Alt. Shrink

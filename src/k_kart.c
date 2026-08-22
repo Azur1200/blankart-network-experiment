@@ -490,6 +490,8 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartspbrush);
 
+	CV_RegisterVar(&cv_usegenericlapsounds);
+
 	CV_RegisterVar(&cv_kartdriftsounds);
 	CV_RegisterVar(&cv_kartdriftefx);
 	CV_RegisterVar(&cv_kartsplashefx);

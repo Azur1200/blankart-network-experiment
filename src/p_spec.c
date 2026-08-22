@@ -2046,20 +2046,20 @@ static void K_HandleLapIncrement(player_t *player)
 				{
 					if (lastlapsound)
 					{
-						S_StartSound(NULL, sfx_s3k68);
+						S_StartSound(NULL, ((cv_usegenericlapsounds.value) ? sfx_s3k68 : sfx_finlap));
 					}
 				}
 				else if ((player->laps > 1) && (player->laps < numlaps)) // non-final lap
 				{
 					if (nextlapsound)
 					{
-						S_StartSound(NULL, sfx_s221);
+						S_StartSound(NULL, ((cv_usegenericlapsounds.value) ? sfx_s221 : sfx_nxtlap));
 					}
 				}
 				else if (player->laps > numlaps)
 				{
 					// finished
-					S_StartSound(NULL, sfx_s3k6a);
+					S_StartSound(NULL, ((cv_usegenericlapsounds.value) ? sfx_s3k6a : sfx_rcefin));
 				}
 			}
 			else

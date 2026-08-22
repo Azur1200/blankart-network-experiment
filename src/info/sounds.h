@@ -1028,3 +1028,8 @@ _(vclgna)
 // Egg mine
 _(bckuse)
 _(egrbhe)
+
+// Laps and Finish
+_(nxtlap)
+_(finlap)
+_(rcefin)
