@@ -1437,10 +1437,6 @@ typedef struct {
 	dboolean force;
 } TrueForce_State;
 
-typedef struct {
-	dboolean losing;
-} BlanFinish_State;
-
 static void res_trueforce(Hook_State *hook)
 {
 	TrueForce_State *state = (TrueForce_State*)hook->userdata;
@@ -1450,14 +1446,6 @@ static void res_trueforce(Hook_State *hook)
 
 	if (lua_isdboolean(gL, -1))
 		state->force = lua_todboolean(gL, -1);
-};
-
-static void res_blanfinish(Hook_State *hook)
-{
-	BlanFinish_State *state = (BlanFinish_State*)hook->userdata;
-
-	if (lua_isdboolean(gL, -1))
-		state->losing = lua_todboolean(gL, -1);
 };
 
 dboolean LUA_HookPlayerItem(player_t *player, uint8_t itemType, dboolean wasHoldingItem, dboolean *force)
