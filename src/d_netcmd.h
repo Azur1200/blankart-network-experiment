@@ -252,6 +252,7 @@ extern consvar_t cv_kartattraction_aoeshove;
 extern consvar_t cv_kartaltshrink_arrowbullet;
 extern consvar_t cv_kartaltshrink_arrowbulletthres;
 extern consvar_t cv_kartaltshrink_runneranger;
+extern consvar_t cv_kartaltshrink_rouletteonuse;
 
 extern consvar_t cv_kartstartboost_runnerbonus;
 extern consvar_t cv_kartsoftbump;

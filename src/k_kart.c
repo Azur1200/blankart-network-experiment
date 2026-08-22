@@ -477,6 +477,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartaltshrink_arrowbullet);
 	CV_RegisterVar(&cv_kartaltshrink_arrowbulletthres);
 	CV_RegisterVar(&cv_kartaltshrink_runneranger);
+	CV_RegisterVar(&cv_kartaltshrink_rouletteonuse);
 
 	CV_RegisterVar(&cv_kartstartboost_runnerbonus);
 	CV_RegisterVar(&cv_kartsoftbump);

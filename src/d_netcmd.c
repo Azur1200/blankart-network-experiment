@@ -818,6 +818,8 @@ consvar_t cv_kartaltshrink_arrowbulletthres = CVAR_INIT ("kart_altshrink_arrowbu
 // If you're in Alt. Shrink state, you'll roll KRF_RUNNERAUGMENT items at earlier distances with this on.
 consvar_t cv_kartaltshrink_runneranger = CVAR_INIT ("kart_altshrink_runneranger", "Off", CV_NETVAR, CV_OnOff, NULL);
 
+consvar_t cv_kartaltshrink_rouletteonuse = CVAR_INIT ("kart_altshrink_rouletteonuse", "On", CV_NETVAR, CV_OnOff, NULL);
+
 consvar_t cv_kartstartboost_runnerbonus = CVAR_INIT ("kart_startboost_runnerbonus", "Off", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartsoftbump = CVAR_INIT ("kart_softbump", "Off", CV_NETVAR, CV_OnOff, NULL);
 
