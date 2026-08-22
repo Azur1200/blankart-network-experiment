@@ -1941,6 +1941,11 @@ dboolean S_MusicPaused(void)
 	return I_SongPaused();
 }
 
+dboolean S_MusicStopped(void)
+{
+	return I_SongStopped();
+}
+
 dboolean S_MusicNotInFocus(void)
 {
 	return (

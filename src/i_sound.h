@@ -367,6 +367,7 @@ void I_ShutdownMusic(void);
 musictype_t I_SongType(void);
 dboolean I_SongPlaying(void);
 dboolean I_SongPaused(void);
+dboolean I_SongStopped(void);
 
 /// ------------------------
 //  MUSIC EFFECTS

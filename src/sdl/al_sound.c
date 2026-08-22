@@ -1567,6 +1567,20 @@ dboolean I_SongPaused(void)
 	return value == AL_PAUSED;
 }
 
+dboolean I_SongStopped(void)
+{
+	LOCKAUDIO;
+
+	if (audio.music == INVALID_HANDLE)
+		return false;
+
+	ALint value;
+	if (!TRY(alGetSourcei, audio.music, AL_SOURCE_STATE, &value))
+		return false;
+
+	return value == AL_STOPPED;
+}
+
 dboolean I_SetSongSpeed(float speed)
 {
 	LOCKAUDIO;

@@ -130,6 +130,11 @@ dboolean I_SongPaused(void)
 	return false;
 }
 
+dboolean I_SongStopped(void)
+{
+	return false;
+}
+
 dboolean I_SetSongSpeed(float speed)
 {
 	(void)speed;

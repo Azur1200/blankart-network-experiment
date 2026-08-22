@@ -166,6 +166,7 @@ dboolean S_DigMusicDisabled(void);
 dboolean S_MusicDisabled(void);
 dboolean S_MusicPlaying(void);
 dboolean S_MusicPaused(void);
+dboolean S_MusicStopped(void);
 dboolean S_MusicNotInFocus(void);
 musictype_t S_MusicType(void);
 const char *S_MusicTypeName(musictype_t mustype);
