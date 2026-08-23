@@ -1516,6 +1516,9 @@ int8_t pausehack = 0;
 //
 dboolean M_Responder(event_t *ev)
 {
+	if (ev->type == ev_gyroscope || ev->type == ev_accelerometer)
+		return false;
+
 	if (dedicated
 		|| (demo.playback && demo.title)
 		|| M_GamestateCanOpenMenu() == false)
