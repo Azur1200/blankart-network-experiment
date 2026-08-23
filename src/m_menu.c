@@ -1541,7 +1541,8 @@ dboolean M_Responder(event_t *ev)
 		if (menucmd[0].delay > 0)
 			return true;
 
-		if (messagebox.callback.handler)
+		// dirty hack: for customising controls, I want only buttons/keys/axes, not mouse
+		if (messagebox.callback.handler && !(ev->type == ev_mouse || (ev->type == ev_joystick && messagebox.callback.handler != M_ChangecontrolResponse)))
 			messagebox.callback.handler(ev);
 
 		M_SetMenuDelay(0);
@@ -10240,9 +10241,6 @@ static void M_ChangecontrolResponse(event_t *ev)
 	int32_t        ch = ev->data1;
 
 	if (ev->device > 0 && G_GetDevicePlayer(ev->device) != setupcontrolplayer-1)
-		return;
-
-	if (ev->type != ev_keydown &&  ev->type != ev_joystick)
 		return;
 
 	if (ev->type == ev_joystick)
