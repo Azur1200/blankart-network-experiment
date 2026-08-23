@@ -10243,6 +10243,9 @@ static void M_ChangecontrolResponse(event_t *ev)
 	if (ev->device > 0 && G_GetDevicePlayer(ev->device) != setupcontrolplayer-1)
 		return;
 
+	if (ev->type == ev_accelerometer || ev->type == ev_gyroscope)
+		return;
+
 	if (ev->type == ev_joystick)
 	{
 		if (!G_AxisInDeadzone(setupcontrolplayer-1, ev))
