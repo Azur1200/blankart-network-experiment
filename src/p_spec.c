@@ -2029,18 +2029,19 @@ static void K_HandleLapIncrement(player_t *player)
 
 			dboolean lastlapsound = true;
 			dboolean nextlapsound = true;
-			const dboolean localplayer = P_IsDisplayPlayer(player);
+			const dboolean localplayer = P_IsLocalPlayer(player);
+			const dboolean displayplayer = P_IsDisplayPlayer(player);
 
 			if (player->laps == numlaps) // final lap
 			{
-				lastlapsound = (!LUA_HookPlayerFinalLap(player, localplayer));
+				lastlapsound = (!LUA_HookPlayerFinalLap(player, displayplayer, localplayer));
 			}
 			else if ((player->laps > 1) && (player->laps < numlaps)) // non-final lap
 			{
-				nextlapsound = (!LUA_HookPlayerNextLap(player, localplayer));
+				nextlapsound = (!LUA_HookPlayerNextLap(player, displayplayer, localplayer));
 			}
 
-			if (P_IsDisplayPlayer(player))
+			if (displayplayer)
 			{
 				if (player->laps == numlaps) // final lap
 				{
