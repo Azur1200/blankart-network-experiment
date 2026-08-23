@@ -1508,6 +1508,9 @@ static dboolean M_GamestateCanOpenMenu(void)
 	}
 }
 
+// Prevent go back+systemmenu on the same key from conflicting.
+int8_t pausehack = 0;
+
 //
 // M_Responder
 //
@@ -1617,8 +1620,10 @@ dboolean M_Responder(event_t *ev)
 				HU_clearChatChars();
 				chat_on = false;
 			}
-			else
+			else if (pausehack == 0)
+			{
 				M_StartControlPanel();
+			}
 			return true;
 		}
 
@@ -2660,6 +2665,7 @@ static dboolean M_HandleGoBack(int32_t thisMenuKey)
 		}
 		M_ExitMenu();
 
+		pausehack = MENUDELAYTIME;
 		return true;
 	}
 
@@ -3343,6 +3349,11 @@ void M_Ticker(void)
 		{
 			menucmd[i].delay--;
 		}
+	}
+
+	if (pausehack > 0)
+	{
+		pausehack--;
 	}
 
 	if (noFurtherInput <= 0)
