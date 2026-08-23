@@ -1542,7 +1542,7 @@ dboolean M_Responder(event_t *ev)
 			return true;
 
 		// dirty hack: for customising controls, I want only buttons/keys/axes, not mouse
-		if (messagebox.callback.handler && !(ev->type == ev_mouse || (ev->type == ev_joystick && messagebox.callback.handler != M_ChangecontrolResponse)))
+		if (messagebox.callback.handler && !(ev->type == ev_accelerometer || ev->type == ev_gyroscope || ev->type == ev_mouse || (ev->type == ev_joystick && messagebox.callback.handler != M_ChangecontrolResponse)))
 			messagebox.callback.handler(ev);
 
 		M_SetMenuDelay(0);
