@@ -434,6 +434,11 @@ dboolean P_DoSpring(mobj_t *spring, mobj_t *object)
 		else if (offx < -(spring->radius + object->radius + 1))
 			offx = -(spring->radius + object->radius + 1);
 
+		if (offy > (spring->radius + object->radius + 1))
+			offy = spring->radius + object->radius + 1;
+		else if (offy < -(spring->radius + object->radius + 1))
+			offy = -(spring->radius + object->radius + 1);
+
 		P_TryMove(object, spring->x + offx, spring->y + offy, true, NULL);
 	}
 
