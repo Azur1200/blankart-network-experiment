@@ -519,6 +519,15 @@ void Z_CheckHeap(int32_t i)
 					block->ownerfile, block->ownerline
 				);
 			}
+
+			if (block->tag != j)
+			{
+				I_Error("Z_CheckHeap %d: block %u"
+					"(owned by %s:%d)"
+					" block is contained in the wrong headlist (got: %d expected: %zu)", i, blocknumon,
+					block->ownerfile, block->ownerline , block->tag, j
+				);
+			}
 		}
 	}
 
@@ -556,6 +565,14 @@ void Z_ChangeTag(void *ptr, int32_t tag)
 	if (tag >= PU_PURGELEVEL && block->user == NULL)
 		I_Error("Internal memory management error: "
 			"tried to make block purgable but it has no owner");
+
+	block->prev->next = block->next;
+	block->next->prev = block->prev;
+
+	block->next = headlist[tag].next;
+	block->prev = &headlist[tag];
+	headlist[tag].next = block;
+	block->next->prev = block;
 
 	block->tag = tag;
 }
@@ -689,7 +706,7 @@ static void Command_Memdump_f(void)
 		for (block = headlist[i].next; block != &headlist[i]; block = block->next)
 		{
 			const char *filename = strrchr(block->ownerfile, PATHSEP[0]);
-			CONS_Printf("[%3d] %s (%s) bytes @ %s:%d\n", block->tag, sizeu1(block->size), sizeu2(block->realsize), filename ? filename + 1 : block->ownerfile, block->ownerline);
+			CONS_Printf("[%3d] %s (%s) bytes @ %s:%d tag: %d (%d)\n", block->tag, sizeu1(block->size), sizeu2(block->realsize), filename ? filename + 1 : block->ownerfile, block->ownerline, block->tag, i);
 		}
 	}
 }
