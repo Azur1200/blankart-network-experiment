@@ -997,6 +997,26 @@ consvar_t cv_debugmappatch = CVAR_INIT ("debugmappatch", "", 0, NULL, NULL);
 
 consvar_t cv_allowmismatchmappatch = CVAR_INIT ("allowmismatchmappatch", "No", CV_NETVAR, CV_YesNo, NULL);
 
+consvar_t cv_neospringbackx = CVAR_INIT ("sbx", "0", 0, CV_Signed, NULL);
+consvar_t cv_neospringbacky = CVAR_INIT ("sby", "0", 0, CV_Signed, NULL);
+
+consvar_t cv_neospringfrontx = CVAR_INIT ("sfx", "0", 0, CV_Signed, NULL);
+consvar_t cv_neospringfronty = CVAR_INIT ("sfy", "0", 0, CV_Signed, NULL);
+consvar_t cv_neospringfrontbackz = CVAR_INIT ("sfbz", "0", 0, CV_Signed, NULL);
+
+consvar_t cv_neospringtopbotx = CVAR_INIT ("stbx", "0", 0, CV_Signed, NULL);
+consvar_t cv_neospringtopboty = CVAR_INIT ("stby", "0", 0, CV_Signed, NULL);
+consvar_t cv_neospringtopz = CVAR_INIT ("stz", "0", 0, CV_Signed, NULL);
+consvar_t cv_neospringbotz = CVAR_INIT ("sbz", "0", 0, CV_Signed, NULL);
+
+consvar_t cv_neospringleftx = CVAR_INIT ("slx", "0", 0, CV_Signed, NULL);
+consvar_t cv_neospringlefty = CVAR_INIT ("sly", "0", 0, CV_Signed, NULL);
+consvar_t cv_neospringleftz = CVAR_INIT ("slz", "0", 0, CV_Signed, NULL);
+
+consvar_t cv_neospringrightx = CVAR_INIT ("srx", "0", 0, CV_Signed, NULL);
+consvar_t cv_neospringrighty = CVAR_INIT ("sry", "0", 0, CV_Signed, NULL);
+consvar_t cv_neospringrightz = CVAR_INIT ("srz", "0", 0, CV_Signed, NULL);
+
 // NOTE: this should be in hw_main.c, but we can't put it there as it breaks dedicated build
 consvar_t cv_glallowshaders = CVAR_INIT ("gr_allowclientshaders", "On", CV_NETVAR, CV_OnOff, NULL);
 
@@ -1485,6 +1505,26 @@ void D_RegisterClientCommands(void)
 	COM_AddCommand("restat2", Command_Restat2);
 	COM_AddCommand("restat3", Command_Restat3);
 	COM_AddCommand("restat4", Command_Restat4);
+
+	CV_RegisterVar(&cv_neospringbackx);
+	CV_RegisterVar(&cv_neospringbacky);
+
+	CV_RegisterVar(&cv_neospringfrontx);
+	CV_RegisterVar(&cv_neospringfronty);
+	CV_RegisterVar(&cv_neospringfrontbackz);
+
+	CV_RegisterVar(&cv_neospringtopbotx);
+	CV_RegisterVar(&cv_neospringtopboty);
+	CV_RegisterVar(&cv_neospringtopz);
+	CV_RegisterVar(&cv_neospringbotz);
+
+	CV_RegisterVar(&cv_neospringleftx);
+	CV_RegisterVar(&cv_neospringlefty);
+	CV_RegisterVar(&cv_neospringleftz);
+
+	CV_RegisterVar(&cv_neospringrightx);
+	CV_RegisterVar(&cv_neospringrighty);
+	CV_RegisterVar(&cv_neospringrightz);
 
 	// preferred number of players
 	CV_RegisterVar(&cv_splitplayers);

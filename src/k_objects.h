@@ -34,6 +34,11 @@ void Obj_SneakerPanelSpawnerSpawn(mobj_t *mobj);
 void Obj_SneakerPanelSpawnerSetup(mobj_t *mobj, mapthing_t *mthing);
 void Obj_SneakerPanelSpawnerFuse(mobj_t *mobj);
 
+/* Neo-Spring */
+skincolornum_t Obj_HandleNeoSpringColor(fixed_t speedval);
+void Obj_ThinkNeoSpring(mobj_t * spring);
+
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
