@@ -3573,89 +3573,90 @@ static void P_ClipPlayerMoveToLine(line_t *ld)
 	vector2_t boxMin = {slidemo->x - slidemo->radius, slidemo->y - slidemo->radius};
 	vector2_t boxMax = {slidemo->x + slidemo->radius, slidemo->y + slidemo->radius};
 
-	fixed_t hitTime = 0;
-	fixed_t outTime = FRACUNIT;
+    fixed_t hitTime = 0;
+    fixed_t outTime = FRACUNIT;
+    vector2_t overlapTime = {0};
 
 	vector2_t norm = {-ld->dy, ld->dx};
 	FV2_Normalize(&norm);
 
 	if (lineDir.x > 0.0f) //right
-	{
-		lineMin.x = ld->v1->x;
-		lineMax.x = ld->v2->x;
-	}
-	else //left
-	{
-		lineMin.x = ld->v2->x;
-		lineMax.x = ld->v1->x;
-	}
+    {
+        lineMin.x = ld->v1->x;
+        lineMax.x = ld->v2->x;
+    }
+    else //left
+    {
+        lineMin.x = ld->v2->x;
+        lineMax.x = ld->v1->x;
+    }
 
-	if (lineDir.y > 0.0f) //up
-	{
-		lineMin.y = ld->v1->y;
-		lineMax.y = ld->v2->y;
-	}
-	else //down
-	{
-		lineMin.y = ld->v2->y;
-		lineMax.y = ld->v1->y;
-	}
+    if (lineDir.y > 0.0f) //up
+    {
+        lineMin.y = ld->v1->y;
+        lineMax.y = ld->v2->y;
+    }
+    else //down
+    {
+        lineMin.y = ld->v2->y;
+        lineMax.y = ld->v1->y;
+    }
 
 	vector2_t dist = {ld->v1->x - slidemo->x, ld->v1->y - slidemo->y};
 	vector2_t vel = {tmxmove, tmymove};
 	vector2_t outVel = {tmxmove, tmymove};
 
-	fixed_t r = FixedMul(slidemo->radius, abs(norm.x)) + FixedMul(slidemo->radius, abs(norm.y)); //radius to Line
-	fixed_t boxProj = FV2_Dot(&dist, &norm); //projected Line distance to N
-	fixed_t velProj = FV2_Dot(&vel, &norm); //projected Velocity to N
+    fixed_t r = FixedMul(slidemo->radius, abs(norm.x)) + (slidemo->radius, abs(norm.y)); //radius to Line
+    fixed_t boxProj = FV2_Dot(&dist, &norm); //projected Line distance to N
+    fixed_t velProj = FV2_Dot(&vel, &norm); //projected Velocity to N
 
-	if(velProj < 0) r *= -1;
+    if(velProj < 0) r *= -1;
 	
-	hitTime = max(FixedDiv(boxProj - r , velProj), hitTime);
-	outTime = min(FixedDiv(boxProj + r , velProj), outTime);
+    hitTime = max(FixedDiv(boxProj - r , velProj), hitTime);
+    outTime = min(FixedDiv(boxProj + r , velProj), outTime);
 	
-	// X axis overlap
-	if( vel.x < 0 ) //Sweeping left
-	{
-		if( boxMax.x < lineMin.x ) return;
-		hitTime = max(FixedDiv(lineMax.x - boxMin.x, vel.x), hitTime);
-		outTime = min(FixedDiv(lineMin.x - boxMax.x, vel.x), outTime);
-	}
-	else if( vel.x > 0 ) //Sweeping right
-	{
-		if( boxMin.x > lineMax.x ) return;
-		hitTime = max(FixedDiv(lineMin.x - boxMax.x, vel.x), hitTime);
-		outTime = min(FixedDiv(lineMax.x - boxMin.x, vel.x), outTime);
-	}
-	else
-	{
-		if(lineMin.x > boxMax.x || lineMax.x < boxMin.x) return;
-	}
+    // X axis overlap
+    if( vel.x < 0 ) //Sweeping left
+    {
+        if( boxMax.x < lineMin.x ) return;
+        hitTime = max(FixedDiv(lineMax.x - boxMin.x, vel.x), hitTime);
+        outTime = min(FixedDiv(lineMin.x - boxMax.x, vel.x), outTime);
+    }
+    else if( vel.x > 0 ) //Sweeping right
+    {
+        if( boxMin.x > lineMax.x ) return;
+        hitTime = max(FixedDiv(lineMin.x - boxMax.x, vel.x), hitTime);
+        outTime = min(FixedDiv(lineMax.x - boxMin.x, vel.x), outTime);
+    }
+    else
+    {
+        if(lineMin.x > boxMax.x || lineMax.x < boxMin.x) return;
+    }
 
-	if( hitTime > outTime ) return;
+    if( hitTime > outTime ) return;
 
-	// Y axis overlap
-	if( vel.y < 0 ) //Sweeping down
-	{
-		if( boxMax.y < lineMin.y ) return;
-		hitTime = max(FixedDiv(lineMax.y - boxMin.y, vel.y), hitTime);
-		outTime = min(FixedDiv(lineMin.y - boxMax.y, vel.y), outTime);
-	}
-	else if( vel.y > 0 ) //Sweeping up
-	{
-		if( boxMin.y > lineMax.y ) return;
-		hitTime = max(FixedDiv(lineMin.y - boxMax.y, vel.y), hitTime);
-		outTime = min(FixedDiv(lineMax.y - boxMin.y, vel.y), outTime);
-	}
-	else
-	{
-		if(lineMin.y > boxMax.y || lineMax.y < boxMin.y) return;
-	}
+    // Y axis overlap
+    if( vel.y < 0 ) //Sweeping down
+    {
+        if( boxMax.y < lineMin.y ) return;
+        hitTime = max(FixedDiv(lineMax.y - boxMin.y, vel.y), hitTime);
+        outTime = min(FixedDiv(lineMin.y - boxMax.y, vel.y), outTime);
+    }
+    else if( vel.y > 0 ) //Sweeping up
+    {
+        if( boxMin.y > lineMax.y ) return;
+        hitTime = max(FixedDiv(lineMin.y - boxMax.y, vel.y), hitTime);
+        outTime = min(FixedDiv(lineMax.y - boxMin.y, vel.y), outTime);
+    }
+    else
+    {
+        if(lineMin.y > boxMax.y || lineMax.y < boxMin.y) return;
+    }
 
-	if( hitTime > outTime ) return;
+    if( hitTime > outTime ) return;
 
 	hitTime -= 1;
-	FV2_Mul(&outVel, hitTime);
+    FV2_Mul(&outVel, hitTime);
 	if (!P_TryMove(slidemo, slidemo->x + outVel.x, slidemo->y + outVel.y, true, NULL))
 	{
 		hitTime -= 63;
@@ -4047,6 +4048,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 {
 	fixed_t mmomx = 0, mmomy = 0;
 	fixed_t oldmomx = mo->momx, oldmomy = mo->momy;
+	vector3_t slopemom = {0};
 
 	if (P_MobjWasRemoved(mo) == true)
 		return;
