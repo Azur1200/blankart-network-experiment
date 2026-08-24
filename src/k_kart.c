@@ -7996,6 +7996,12 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	}
 	else if (player->ringboost)
 	{
+		if (K_IsPlayerRingBurnt(player, K_GetKartBaseRingPower(player, true)))
+		{
+			player->pflags |= PF_RINGLOCK;
+			player->itemflags &= ~IF_USERINGS;
+		}
+
 		K_HandleRingDeincrement(player, chainingactive);
 	}
 
@@ -8011,7 +8017,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->ringlock)
 	{
-		player->chaintimer = max(player->chaintimer, player->ringboost);
 		player->ringlock--;
 
 		if (!player->ringlock)
@@ -8023,8 +8028,11 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		}
 	}
 
-	if (!player->ringboost && !player->chaintimer)
+	if (!player->ringboost && !player->chaintimer && !player->ringlock)
+	{
+		player->pflags &= ~PF_RINGLOCK;
 		player->ringtime = 0;
+	}
 
 	if (player->sneakertimer)
 		player->sneakertimer = K_ChainOrDeincrementTime(player, player->sneakertimer, 1, false);
@@ -9812,7 +9820,7 @@ int32_t K_GetKartBaseRingPower(const player_t *player, dboolean boosted)
 
 uint8_t K_GetKartRingCap(const player_t *player)
 {
-	return 18 - ((9 - player->kartspeed) + (9 - player->kartweight))/2;
+	return 19 - ((9 - player->kartspeed) + (9 - player->kartweight))/2;
 }
 
 dboolean K_IsPlayerRingBurnt(const player_t *player, uint16_t ringpower)
