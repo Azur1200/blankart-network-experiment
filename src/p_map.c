@@ -3545,9 +3545,7 @@ static void P_HitSlideLine(line_t *ld)
 	fixed_t d;
 
 	side = P_PointOnLineSide(slidemo->x, slidemo->y, ld);
-	// lineangle = ld->angle - ANGLE_90;
-	lineangle = R_PointToAngle2(0, 0, ld->dx, ld->dy) - ANGLE_90;
-	
+	lineangle = ld->angle - ANGLE_90;
 
 	if (side == 1)
 		lineangle += ANGLE_180;
@@ -3561,111 +3559,6 @@ static void P_HitSlideLine(line_t *ld)
 
 	tmxmove -= FixedMul(nx, d);
 	tmymove -= FixedMul(ny, d);
-}
-
-// https://gamedev.stackexchange.com/a/30220
-static void P_ClipPlayerMoveToLine(line_t *ld)
-{
-	vector2_t lineDir = {ld->dx, ld->dy};
-	vector2_t lineMin = {0};
-	vector2_t lineMax = {0};
-
-	vector2_t boxMin = {slidemo->x - slidemo->radius, slidemo->y - slidemo->radius};
-	vector2_t boxMax = {slidemo->x + slidemo->radius, slidemo->y + slidemo->radius};
-
-    fixed_t hitTime = 0;
-    fixed_t outTime = FRACUNIT;
-    vector2_t overlapTime = {0};
-
-	vector2_t norm = {-ld->dy, ld->dx};
-	FV2_Normalize(&norm);
-
-	if (lineDir.x > 0.0f) //right
-    {
-        lineMin.x = ld->v1->x;
-        lineMax.x = ld->v2->x;
-    }
-    else //left
-    {
-        lineMin.x = ld->v2->x;
-        lineMax.x = ld->v1->x;
-    }
-
-    if (lineDir.y > 0.0f) //up
-    {
-        lineMin.y = ld->v1->y;
-        lineMax.y = ld->v2->y;
-    }
-    else //down
-    {
-        lineMin.y = ld->v2->y;
-        lineMax.y = ld->v1->y;
-    }
-
-	vector2_t dist = {ld->v1->x - slidemo->x, ld->v1->y - slidemo->y};
-	vector2_t vel = {tmxmove, tmymove};
-	vector2_t outVel = {tmxmove, tmymove};
-
-    fixed_t r = FixedMul(slidemo->radius, abs(norm.x)) + (slidemo->radius, abs(norm.y)); //radius to Line
-    fixed_t boxProj = FV2_Dot(&dist, &norm); //projected Line distance to N
-    fixed_t velProj = FV2_Dot(&vel, &norm); //projected Velocity to N
-
-    if(velProj < 0) r *= -1;
-	
-    hitTime = max(FixedDiv(boxProj - r , velProj), hitTime);
-    outTime = min(FixedDiv(boxProj + r , velProj), outTime);
-	
-    // X axis overlap
-    if( vel.x < 0 ) //Sweeping left
-    {
-        if( boxMax.x < lineMin.x ) return;
-        hitTime = max(FixedDiv(lineMax.x - boxMin.x, vel.x), hitTime);
-        outTime = min(FixedDiv(lineMin.x - boxMax.x, vel.x), outTime);
-    }
-    else if( vel.x > 0 ) //Sweeping right
-    {
-        if( boxMin.x > lineMax.x ) return;
-        hitTime = max(FixedDiv(lineMin.x - boxMax.x, vel.x), hitTime);
-        outTime = min(FixedDiv(lineMax.x - boxMin.x, vel.x), outTime);
-    }
-    else
-    {
-        if(lineMin.x > boxMax.x || lineMax.x < boxMin.x) return;
-    }
-
-    if( hitTime > outTime ) return;
-
-    // Y axis overlap
-    if( vel.y < 0 ) //Sweeping down
-    {
-        if( boxMax.y < lineMin.y ) return;
-        hitTime = max(FixedDiv(lineMax.y - boxMin.y, vel.y), hitTime);
-        outTime = min(FixedDiv(lineMin.y - boxMax.y, vel.y), outTime);
-    }
-    else if( vel.y > 0 ) //Sweeping up
-    {
-        if( boxMin.y > lineMax.y ) return;
-        hitTime = max(FixedDiv(lineMin.y - boxMax.y, vel.y), hitTime);
-        outTime = min(FixedDiv(lineMax.y - boxMin.y, vel.y), outTime);
-    }
-    else
-    {
-        if(lineMin.y > boxMax.y || lineMax.y < boxMin.y) return;
-    }
-
-    if( hitTime > outTime ) return;
-
-	hitTime -= 1;
-    FV2_Mul(&outVel, hitTime);
-	if (!P_TryMove(slidemo, slidemo->x + outVel.x, slidemo->y + outVel.y, true, NULL))
-	{
-		hitTime -= 63;
-		FV2_Mul(&outVel, hitTime);
-		P_TryMove(slidemo, slidemo->x + outVel.x, slidemo->y + outVel.y, true, NULL);
-	}
-
-	tmxmove = outVel.x;
-	tmymove = outVel.y;
 }
 
 //
@@ -3736,7 +3629,7 @@ static void P_HitBounceLine(line_t *ld)
 	tmxmove = FixedMul(movelen, FINECOSINE(deltaangle));
 	tmymove = FixedMul(movelen, FINESINE(deltaangle));
 
-	// deltaangle = R_PointToAngle2(0, 0, tmxmove, tmymove);
+	deltaangle = R_PointToAngle2(0, 0, tmxmove, tmymove);
 }
 
 /*
@@ -4048,7 +3941,6 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 {
 	fixed_t mmomx = 0, mmomy = 0;
 	fixed_t oldmomx = mo->momx, oldmomy = mo->momy;
-	vector3_t slopemom = {0};
 
 	if (P_MobjWasRemoved(mo) == true)
 		return;
@@ -4104,32 +3996,6 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	slidemo = mo;
 
-	if (tripwire)
-	{
-		// TRIPWIRE CANNOT BE MADE NONBOUNCY
-		K_ApplyTripWire(mo->player, TRIPSTATE_BLOCKED);
-	}
-	else
-	{
-		// Some walls aren't bouncy even if you are
-		// wall transfer only lines always make players slide along em even if they'd be bouncy otherwise
-		// todo: let wall transfer override the tripwire case too?
-		if (result->line != NULL)
-		{
-			tmxmove = mmomx;
-			tmymove = mmomy;
-			P_ClipPlayerMoveToLine(result->line); // clip the moves
-		}
-		if (slideline)
-		{
-			// SRB2Kart: Non-bouncy line!
-			P_SlideMove(mo, result);
-			return;
-		}
-
-		K_SpawnBumpEffect(mo);
-	}
-
 	/*if (mo->health <= 0)
 	{
 		tmxmove = mo->momx;
@@ -4145,6 +4011,26 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	{
 		tmxmove = FixedMul(mmomx, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
 		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
+	}
+
+	if (tripwire)
+	{
+		// TRIPWIRE CANNOT BE MADE NONBOUNCY
+		K_ApplyTripWire(mo->player, TRIPSTATE_BLOCKED);
+	}
+	else
+	{
+		// Some walls aren't bouncy even if you are
+		// wall transfer only lines always make players slide along em even if they'd be bouncy otherwise
+		// todo: let wall transfer override the tripwire case too?
+		if (slideline)
+		{
+			// SRB2Kart: Non-bouncy line!
+			P_SlideMove(mo, result);
+			return;
+		}
+
+		K_SpawnBumpEffect(mo);
 	}
 
 	P_PlayerHitBounceLine(&result->normal, tripwire);
@@ -4165,14 +4051,6 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 			P_TryMove(mo, mo->x - oldmomx, mo->y - oldmomy, true, NULL);
 		}
 	}
-
-	P_ThingHeightClip(mo);
-	if (P_MobjWasRemoved(mo)) return;
-
-	mo->momx = tmxmove;
-	mo->momy = tmymove;
-	mo->player->cmomx = tmxmove;
-	mo->player->cmomy = tmymove;
 }
 
 //
