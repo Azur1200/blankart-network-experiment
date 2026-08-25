@@ -1037,3 +1037,6 @@ _(cntdwg)
 _(nxtlap)
 _(finlap)
 _(rcefin)
+
+// Adventure Spring
+_(advsp)

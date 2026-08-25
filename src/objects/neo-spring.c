@@ -34,7 +34,7 @@ skincolornum_t Obj_HandleNeoSpringColor(fixed_t speedval)
 	}
 	else if (speedval > 30*FRACUNIT && speedval <= 40*FRACUNIT)
 	{
-		return SKINCOLOR_BLUEBERRY;
+		return SKINCOLOR_SAPPHIRE;
 	}
 	else if (speedval > 0 && speedval <= 30 *FRACUNIT)
 	{
@@ -134,6 +134,7 @@ void Obj_HandleHorizNeoSpringParts(mobj_t *spring)
 				cur->angle = spring->angle - ANGLE_90;
 				cur->scale = spring->scale;
 				cur->color = spring->color;
+				cur->dispoffset = -1;
 				break;
 			}
 
@@ -145,6 +146,7 @@ void Obj_HandleHorizNeoSpringParts(mobj_t *spring)
 				cur->angle = spring->angle + ANGLE_90;
 				cur->scale = spring->scale;
 				cur->color = spring->color;
+				cur->dispoffset = 1;
 				break;
 			}
 
@@ -160,6 +162,7 @@ void Obj_HandleHorizNeoSpringParts(mobj_t *spring)
 				cur->angle = spring->angle - ANGLE_180;
 				cur->scale = spring->scale;
 				cur->color = spring->color;
+				cur->dispoffset = 1;
 				break;
 			}
 
@@ -175,6 +178,7 @@ void Obj_HandleHorizNeoSpringParts(mobj_t *spring)
 				cur->angle = spring->angle + ANGLE_180;
 				cur->scale = spring->scale;
 				cur->color = spring->color;
+				cur->dispoffset = 1;
 				break;
 			}
 
@@ -190,6 +194,7 @@ void Obj_HandleHorizNeoSpringParts(mobj_t *spring)
 				cur->angle = spring->angle + ANGLE_90;
 				cur->scale = spring->scale;
 				cur->color = spring->color;
+				cur->dispoffset = -1;
 				break;
 			}
 
@@ -214,6 +219,124 @@ void Obj_HandleHorizNeoSpringParts(mobj_t *spring)
 	}
 }
 
+void Obj_HandleVertNeoSpringParts(mobj_t *spring)
+{
+	mobj_t *cur = spring;
+
+	angle_t a = spring->angle;
+	fixed_t offsetx = 0;
+	fixed_t offsety = 0;
+
+	for (cur = spring->hnext; !P_MobjWasRemoved(cur); cur = cur->hnext)
+	{
+		switch (neospring_part_side(cur))
+		{
+			case BACK:
+			{
+				a = spring->angle;
+				offsetx =30*FRACUNIT;
+				offsety = 0;
+				UPDATEANGLE(a, offsetx, offsety);
+				UPDATEOFFSET(cur, spring, offsetx,offsety, (-26*FRACUNIT)*P_MobjFlip(spring));
+				P_SetMobjState(cur, S_NEOSPRING_SIDE);
+				cur->renderflags |= RF_PAPERSPRITE;
+				cur->rollangle = ANGLE_90;
+				cur->angle = spring->angle + ANGLE_90;
+				cur->scale = spring->scale;
+				cur->color = spring->color;
+				cur->dispoffset = 1;
+				break;
+			}
+
+			case FRONT:
+			{
+				a = spring->angle;
+				offsetx =-30*FRACUNIT;
+				offsety = 0;
+				UPDATEANGLE(a, offsetx, offsety);
+				UPDATEOFFSET(cur, spring, offsetx,offsety, (-26*FRACUNIT)*P_MobjFlip(spring));
+				P_SetMobjState(cur, S_NEOSPRING_SIDE);
+				cur->renderflags |= RF_PAPERSPRITE;
+				cur->rollangle = ANGLE_90;
+				cur->angle = spring->angle + ANGLE_90;
+				cur->scale = spring->scale;
+				cur->color = spring->color;
+				cur->dispoffset = 1;
+				break;
+			}
+
+			case SIDEL:
+			{
+				a = spring->angle - ANGLE_90;
+				offsetx = 30*FRACUNIT;
+				offsety = 0;
+				UPDATEANGLE(a, offsetx, offsety);
+				UPDATEOFFSET(cur, spring, offsetx, offsety, (-26*FRACUNIT)*P_MobjFlip(spring));
+				P_SetMobjState(cur, S_NEOSPRING_SIDE);
+				cur->renderflags |= RF_PAPERSPRITE;
+				cur->rollangle = ANGLE_90;
+				cur->angle = spring->angle - ANGLE_180;
+				cur->scale = spring->scale;
+				cur->color = spring->color;
+				cur->dispoffset = 1;
+				break;
+			}
+
+			case SIDER:
+			{
+				a = spring->angle - ANGLE_90;
+				offsetx = -30*FRACUNIT;
+				offsety = 0;
+				UPDATEANGLE(a, offsetx, offsety);
+				UPDATEOFFSET(cur, spring, offsetx, offsety,  (-26*FRACUNIT)*P_MobjFlip(spring));
+				P_SetMobjState(cur, S_NEOSPRING_SIDE);
+				cur->renderflags |= RF_PAPERSPRITE;
+				cur->rollangle = ANGLE_90;
+				cur->angle = spring->angle + ANGLE_180;
+				cur->scale = spring->scale;
+				cur->color = spring->color;
+				cur->dispoffset = 1;
+				break;
+			}
+
+			case BOTTOM:
+			{
+				a = spring->angle;
+				offsetx = -30*FRACUNIT;
+				offsety = 0;
+				UPDATEANGLE(a, offsetx, offsety);
+				UPDATEOFFSET(cur, spring, offsetx, offsety, (spring->eflags & MFE_VERTICALFLIP) ? 10*FRACUNIT : 0);
+				P_SetMobjState(cur, S_NEOSPRING_BACK);
+				cur->renderflags |= RF_FLOORSPRITE|RF_NOSPLATBILLBOARD;
+				cur->angle = spring->angle;
+				cur->scale = spring->scale;
+				cur->color = spring->color;
+				cur->dispoffset = -1;
+				break;
+			}
+
+			case TOP:
+			{
+				a = spring->angle;
+				offsetx = -30*FRACUNIT;
+				offsety = 0;
+				UPDATEANGLE(a, offsetx, offsety);
+				UPDATEOFFSET(cur, spring, offsetx, offsety, (spring->eflags & MFE_VERTICALFLIP) ? 0 : 10*FRACUNIT);
+				P_SetMobjState(cur, S_NEOSPRING_FRONT);
+				cur->renderflags |= RF_FLOORSPRITE|RF_NOSPLATBILLBOARD;
+				cur->angle = spring->angle;
+				cur->scale = spring->scale;
+				cur->color = spring->color;
+				cur->dispoffset = 2;
+				break;
+			}
+
+			default:
+				break;
+		}
+	}
+}
+
 void Obj_ThinkNeoSpring(mobj_t * spring)
 {
 	if (neospring_setup(spring) == false)
@@ -223,6 +346,7 @@ void Obj_ThinkNeoSpring(mobj_t * spring)
 	{
 
 		case MT_NEOSPRING:
+			Obj_HandleVertNeoSpringParts(spring);
 			break;
 
 		case MT_NEODIAG:
