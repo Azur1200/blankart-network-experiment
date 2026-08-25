@@ -379,7 +379,7 @@ dboolean P_DoSpring(mobj_t *spring, mobj_t *object)
 	fixed_t horizspeed = spring->info->damage;
 	fixed_t savemomx = object->momx;
 	fixed_t savemomy = object->momy;
-	dboolean newspring =( spring->info->painchance == INT32_MAX);
+	dboolean newspring = (spring->info->painchance == INT32_MAX);
 
 	if (newspring)
 	{
@@ -399,6 +399,11 @@ dboolean P_DoSpring(mobj_t *spring, mobj_t *object)
 
 	object->standingslope = NULL; // Okay, now we can't return - no launching off at silly angles for you.
 	object->terrain = NULL;
+
+	if (!newspring)
+	{
+		object->eflags |= MFE_SPRUNG; // apply this flag asap!
+	}
 
 	spring->flags &= ~(MF_SOLID|MF_SPECIAL); // De-solidify
 
@@ -454,8 +459,6 @@ dboolean P_DoSpring(mobj_t *spring, mobj_t *object)
 	{
 		const fixed_t hscale = mapobjectscale + (mapobjectscale - objscale);
 		const fixed_t vscale = mapobjectscale + (objscale - mapobjectscale);
-
-		object->eflags |= MFE_SPRUNG; // apply this flag asap!
 
 		if (vertispeed)
 			object->momz = FixedMul(vertispeed,FixedSqrt(FixedMul(vscale, spring->scale)));
