@@ -1099,7 +1099,7 @@ void P_HandleSlopeLanding(mobj_t *thing, pslope_t *slope)
 	mom.y = thing->momy;
 	// mine: this used to double momz, I suspect that this might have caused issues in our current logic
 	// this is a breaking change for compat so here's a compile flag for testing
-#if DOUBLE_MOMZ_SLOPE_LANDING
+#ifdef DOUBLE_MOMZ_SLOPE_LANDING
 	mom.z = thing->momz*2;
 #else
 	mom.z = thing->momz;
