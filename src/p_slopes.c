@@ -1078,6 +1078,7 @@ fixed_t P_GetWallTransferMomZ(mobj_t *mo, pslope_t *slope)
 	return slopemom.z;
 }
 
+#define DOUBLE_MOMZ_SLOPE_LANDING
 // Function to help handle landing on slopes
 void P_HandleSlopeLanding(mobj_t *thing, pslope_t *slope)
 {
