@@ -1078,6 +1078,7 @@ fixed_t P_GetWallTransferMomZ(mobj_t *mo, pslope_t *slope)
 	return slopemom.z;
 }
 
+#define DOUBLE_MOMZ_SLOPE_LANDING
 // Function to help handle landing on slopes
 void P_HandleSlopeLanding(mobj_t *thing, pslope_t *slope)
 {
@@ -1097,7 +1098,13 @@ void P_HandleSlopeLanding(mobj_t *thing, pslope_t *slope)
 
 	mom.x = thing->momx;
 	mom.y = thing->momy;
+	// mine: this used to double momz, I suspect that this might have caused issues in our current logic
+	// this is a breaking change for compat so here's a compile flag for testing
+#ifdef DOUBLE_MOMZ_SLOPE_LANDING
 	mom.z = thing->momz*2;
+#else
+	mom.z = thing->momz;
+#endif
 
 	P_ReverseQuantizeMomentumToSlope(&mom, slope);
 
