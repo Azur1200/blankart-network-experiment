@@ -4081,33 +4081,36 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	mmomx = mo->player->rmomx;
 	mmomy = mo->player->rmomy;
 
-	uint32_t bumpspark = K_GetBumpSpark();
-
-	// The easy solution is to do this :^)
-	uint32_t basecharge = min(mo->player->driftcharge, K_GetKartDriftSparkValue(mo->player));
-
-	if ((bumpspark < BUMPSPARK_ALL) ||
-	    (modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
+	if (!mo->player->walltransfered)
 	{
-		if (!bumpspark)
+		uint32_t bumpspark = K_GetBumpSpark();
+
+		// The easy solution is to do this :^)
+		uint32_t basecharge = min(mo->player->driftcharge, K_GetKartDriftSparkValue(mo->player));
+
+		if ((bumpspark < BUMPSPARK_ALL) ||
+			(modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
 		{
-			// Bumps removing spark would be less frustrating if you didn't get your drift
-			// removed too. Losing sparks is a fair punishment, drifting RIGHT for
-			// daring to scrape a wall for a wide LEFT turn is horrendous and leads to
-			// awful gluewalling.
-			// TL;DR: I hate wrongdrifts and hopefully this is an okay middle ground.
-			mo->player->drift = 0;
+			if (!bumpspark)
+			{
+				// Bumps removing spark would be less frustrating if you didn't get your drift
+				// removed too. Losing sparks is a fair punishment, drifting RIGHT for
+				// daring to scrape a wall for a wide LEFT turn is horrendous and leads to
+				// awful gluewalling.
+				// TL;DR: I hate wrongdrifts and hopefully this is an okay middle ground.
+				mo->player->drift = 0;
+			}
+
+			mo->player->driftcharge = (bumpspark == BUMPSPARK_RESET100) ? basecharge : 0;
 		}
 
-		mo->player->driftcharge = (bumpspark == BUMPSPARK_RESET100) ? basecharge : 0;
-	}
+		// Regardless of bumpspark, tell bots to stop drifting if they bonk a wall.
+		K_BotSetDriftState(mo->player, DRIFTSTATE_AUTO, TICRATE);
 
-	// Regardless of bumpspark, tell bots to stop drifting if they bonk a wall.
-	K_BotSetDriftState(mo->player, DRIFTSTATE_AUTO, TICRATE);
-
-	if (!cv_kartbumpspring.value || (modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
-	{
-		K_ResetPogoSpring(mo->player);
+		if (!cv_kartbumpspring.value || (modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
+		{
+			K_ResetPogoSpring(mo->player);
+		}
 	}
 
 	slidemo = mo;
