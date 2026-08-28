@@ -1801,7 +1801,10 @@ static int lib_hudenabled(lua_State *L)
 }
 
 static int lib_hudsetvotebackground(lua_State *L)
-{
+{	
+	if (dedicated)
+		return;
+
 	// Reset to default
 	memset(VoteScreen.luaPrefix, 0, sizeof(VoteScreen.luaPrefix));
 	VoteScreen.timePerAnimFrame = 2;
